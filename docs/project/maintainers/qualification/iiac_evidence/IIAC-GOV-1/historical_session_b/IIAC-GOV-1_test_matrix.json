@@ -1,0 +1,13 @@
+{
+  "tests": [
+    "tests/unit/governance/test_iiac_negative_guards.py"
+  ],
+  "validators": [
+    "verify_iiac_policy_activation.py --expect-not-in-force",
+    "verify_od_ent_02_compensating_control.py",
+    "evol_x_closure_publication_preflight.py (expect FAIL)",
+    "ent_audit_x_formal_closure_preflight.py (expect FAIL)"
+  ],
+  "pytest_result": "13 passed",
+  "execution_sha": "82f5fa319d1f33c453d9aa506d6e042e5839dcc2"
+}

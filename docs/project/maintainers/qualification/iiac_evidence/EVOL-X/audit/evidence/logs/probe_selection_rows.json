@@ -1,0 +1,506 @@
+[
+ {
+  "root": "agents/",
+  "path": "agents/local_search/rag_functional_evidence.py",
+  "status": "SELECTED",
+  "selected": 57,
+  "oracle_relevant": 57,
+  "under_selected": 0,
+  "over_selected": 0
+ },
+ {
+  "root": "agents/",
+  "path": "agents/external_contractor_adapter/tests/test_external_effect_outcome_projection.py",
+  "status": "SELECTED",
+  "selected": 57,
+  "oracle_relevant": 57,
+  "under_selected": 0,
+  "over_selected": 0
+ },
+ {
+  "root": "agents/",
+  "path": "agents/external_contractor_adapter/tests/fakes/external_work_authorization_boundary.py",
+  "status": "SELECTED",
+  "selected": 57,
+  "oracle_relevant": 57,
+  "under_selected": 0,
+  "over_selected": 0
+ },
+ {
+  "root": "agents/",
+  "path": "agents/external_contractor_adapter/tests/test_governed_continuation_composition.py",
+  "status": "SELECTED",
+  "selected": 57,
+  "oracle_relevant": 57,
+  "under_selected": 0,
+  "over_selected": 0
+ },
+ {
+  "root": "agents/",
+  "path": "agents/web_search_qualifier/contract.py",
+  "status": "SELECTED",
+  "selected": 57,
+  "oracle_relevant": 57,
+  "under_selected": 0,
+  "over_selected": 0
+ },
+ {
+  "root": "agents/",
+  "path": "agents/local_indexer/steps/__init__.py",
+  "status": "SELECTED",
+  "selected": 57,
+  "oracle_relevant": 57,
+  "under_selected": 0,
+  "over_selected": 0
+ },
+ {
+  "root": "agents/",
+  "path": "agents/problem_radar/capabilities.py",
+  "status": "SELECTED",
+  "selected": 57,
+  "oracle_relevant": 57,
+  "under_selected": 0,
+  "over_selected": 0
+ },
+ {
+  "root": "agents/",
+  "path": "agents/signoff_probe/steps/__init__.py",
+  "status": "SELECTED",
+  "selected": 57,
+  "oracle_relevant": 57,
+  "under_selected": 0,
+  "over_selected": 0
+ },
+ {
+  "root": "applications/",
+  "path": "applications/local_workspace_application/conversation/interaction_application_service.py",
+  "status": "SELECTED",
+  "selected": 57,
+  "oracle_relevant": 57,
+  "under_selected": 0,
+  "over_selected": 0
+ },
+ {
+  "root": "applications/",
+  "path": "applications/local_workspace_application/workspaces/knowledge_live_access_service.py",
+  "status": "SELECTED",
+  "selected": 57,
+  "oracle_relevant": 57,
+  "under_selected": 0,
+  "over_selected": 0
+ },
+ {
+  "root": "applications/",
+  "path": "applications/local_workspace_application/model_runtime_proof/stages.py",
+  "status": "SELECTED",
+  "selected": 57,
+  "oracle_relevant": 57,
+  "under_selected": 0,
+  "over_selected": 0
+ },
+ {
+  "root": "applications/",
+  "path": "applications/governed_contractor_application/host/sqlite_governed_external_work_host_store_bundle.py",
+  "status": "SELECTED",
+  "selected": 57,
+  "oracle_relevant": 57,
+  "under_selected": 0,
+  "over_selected": 0
+ },
+ {
+  "root": "applications/",
+  "path": "applications/local_workspace_application/tests/workspaces/test_knowledge_connection_detachment_service.py",
+  "status": "SELECTED",
+  "selected": 57,
+  "oracle_relevant": 57,
+  "under_selected": 0,
+  "over_selected": 0
+ },
+ {
+  "root": "applications/",
+  "path": "applications/attestation_demo/tests/host/test_partner_handoff_samples.py",
+  "status": "SELECTED",
+  "selected": 57,
+  "oracle_relevant": 57,
+  "under_selected": 0,
+  "over_selected": 0
+ },
+ {
+  "root": "applications/",
+  "path": "applications/legal_application/serving/schemas.py",
+  "status": "SELECTED",
+  "selected": 57,
+  "oracle_relevant": 57,
+  "under_selected": 0,
+  "over_selected": 0
+ },
+ {
+  "root": "applications/",
+  "path": "applications/local_workspace_application/tests/slack_companion/test_dedupe.py",
+  "status": "SELECTED",
+  "selected": 57,
+  "oracle_relevant": 57,
+  "under_selected": 0,
+  "over_selected": 0
+ },
+ {
+  "root": "intergrax/",
+  "path": "intergrax/tokenizers/bootstrap/__init__.py",
+  "status": "SELECTED",
+  "selected": 57,
+  "oracle_relevant": 57,
+  "under_selected": 0,
+  "over_selected": 0
+ },
+ {
+  "root": "intergrax/",
+  "path": "intergrax/runtime/task_memory/retention.py",
+  "status": "SELECTED",
+  "selected": 347,
+  "oracle_relevant": 347,
+  "under_selected": 0,
+  "over_selected": 0
+ },
+ {
+  "root": "intergrax/",
+  "path": "intergrax/tools/providers/context_tool/service.py",
+  "status": "SELECTED",
+  "selected": 347,
+  "oracle_relevant": 347,
+  "under_selected": 0,
+  "over_selected": 0
+ },
+ {
+  "root": "intergrax/",
+  "path": "intergrax/integrations/providers/issue_tracker/jira/contract_spec.py",
+  "status": "SELECTED",
+  "selected": 347,
+  "oracle_relevant": 347,
+  "under_selected": 0,
+  "over_selected": 0
+ },
+ {
+  "root": "intergrax/",
+  "path": "intergrax/runtime/policy/rules/__init__.py",
+  "status": "SELECTED",
+  "selected": 57,
+  "oracle_relevant": 57,
+  "under_selected": 0,
+  "over_selected": 0
+ },
+ {
+  "root": "intergrax/",
+  "path": "intergrax/tools/providers/rag/bundle.py",
+  "status": "SELECTED",
+  "selected": 347,
+  "oracle_relevant": 347,
+  "under_selected": 0,
+  "over_selected": 0
+ },
+ {
+  "root": "intergrax/",
+  "path": "intergrax/runtime/nexus/tools/tool_invocation_inner_governance.py",
+  "status": "SELECTED",
+  "selected": 347,
+  "oracle_relevant": 347,
+  "under_selected": 0,
+  "over_selected": 0
+ },
+ {
+  "root": "intergrax/",
+  "path": "intergrax/integrations/providers/observability_backend/grafana/integration.py",
+  "status": "SELECTED",
+  "selected": 347,
+  "oracle_relevant": 347,
+  "under_selected": 0,
+  "over_selected": 0
+ },
+ {
+  "root": "platform_proofs/",
+  "path": "platform_proofs/scenarios/enterprise_payment_uncertainty_recovery/tests/support/__init__.py",
+  "status": "SELECTED",
+  "selected": 57,
+  "oracle_relevant": 57,
+  "under_selected": 0,
+  "over_selected": 0
+ },
+ {
+  "root": "platform_proofs/",
+  "path": "platform_proofs/scenarios/verified_product_identification/scripts/build/run_data_pack_build.py",
+  "status": "SELECTED",
+  "selected": 57,
+  "oracle_relevant": 57,
+  "under_selected": 0,
+  "over_selected": 0
+ },
+ {
+  "root": "platform_proofs/",
+  "path": "platform_proofs/scenarios/verified_product_identification/scripts/storage/__init__.py",
+  "status": "SELECTED",
+  "selected": 57,
+  "oracle_relevant": 57,
+  "under_selected": 0,
+  "over_selected": 0
+ },
+ {
+  "root": "platform_proofs/",
+  "path": "platform_proofs/scenarios/enterprise_payment_uncertainty_recovery/external_payment/contracts/persistence.py",
+  "status": "SELECTED",
+  "selected": 57,
+  "oracle_relevant": 57,
+  "under_selected": 0,
+  "over_selected": 0
+ },
+ {
+  "root": "platform_proofs/",
+  "path": "platform_proofs/scenarios/verified_product_identification/storage_bootstrap/adapters/postgresql/structured_query.py",
+  "status": "SELECTED",
+  "selected": 57,
+  "oracle_relevant": 57,
+  "under_selected": 0,
+  "over_selected": 0
+ },
+ {
+  "root": "platform_proofs/",
+  "path": "platform_proofs/scenarios/verified_product_identification/application/domain/__init__.py",
+  "status": "SELECTED",
+  "selected": 57,
+  "oracle_relevant": 57,
+  "under_selected": 0,
+  "over_selected": 0
+ },
+ {
+  "root": "platform_proofs/",
+  "path": "platform_proofs/scenarios/ai_incident_investigation/application/scenario.py",
+  "status": "SELECTED",
+  "selected": 57,
+  "oracle_relevant": 57,
+  "under_selected": 0,
+  "over_selected": 0
+ },
+ {
+  "root": "platform_proofs/",
+  "path": "platform_proofs/scenarios/verified_product_identification/dataset/data_pack/application/embedding_diagnostics/metrics.py",
+  "status": "SELECTED",
+  "selected": 57,
+  "oracle_relevant": 57,
+  "under_selected": 0,
+  "over_selected": 0
+ },
+ {
+  "root": "testing_support/change_safety/",
+  "path": "testing_support/change_safety/selection/policy.py",
+  "status": "SELECTED",
+  "selected": 347,
+  "oracle_relevant": 347,
+  "under_selected": 0,
+  "over_selected": 0
+ },
+ {
+  "root": "testing_support/change_safety/",
+  "path": "testing_support/change_safety/discovery/__init__.py",
+  "status": "SELECTED",
+  "selected": 347,
+  "oracle_relevant": 347,
+  "under_selected": 0,
+  "over_selected": 0
+ },
+ {
+  "root": "testing_support/change_safety/",
+  "path": "testing_support/change_safety/graph/digest.py",
+  "status": "SELECTED",
+  "selected": 347,
+  "oracle_relevant": 347,
+  "under_selected": 0,
+  "over_selected": 0
+ },
+ {
+  "root": "testing_support/change_safety/",
+  "path": "testing_support/change_safety/diagnostics/dossier.py",
+  "status": "SELECTED",
+  "selected": 347,
+  "oracle_relevant": 347,
+  "under_selected": 0,
+  "over_selected": 0
+ },
+ {
+  "root": "testing_support/change_safety/",
+  "path": "testing_support/change_safety/assess/contract_diff.py",
+  "status": "SELECTED",
+  "selected": 347,
+  "oracle_relevant": 347,
+  "under_selected": 0,
+  "over_selected": 0
+ },
+ {
+  "root": "testing_support/change_safety/",
+  "path": "testing_support/change_safety/intake/__init__.py",
+  "status": "SELECTED",
+  "selected": 347,
+  "oracle_relevant": 347,
+  "under_selected": 0,
+  "over_selected": 0
+ },
+ {
+  "root": "testing_support/change_safety/",
+  "path": "testing_support/change_safety/metrics/runner.py",
+  "status": "SELECTED",
+  "selected": 347,
+  "oracle_relevant": 347,
+  "under_selected": 0,
+  "over_selected": 0
+ },
+ {
+  "root": "testing_support/change_safety/",
+  "path": "testing_support/change_safety/discovery/extractors.py",
+  "status": "SELECTED",
+  "selected": 347,
+  "oracle_relevant": 347,
+  "under_selected": 0,
+  "over_selected": 0
+ },
+ {
+  "root": "tests/qualification/",
+  "path": "tests/qualification/governance/gr12/test_gr12_a4_r2_r1_vector_operator_governance_qualification.py",
+  "status": "SELECTED",
+  "selected": 57,
+  "oracle_relevant": 57,
+  "under_selected": 0,
+  "over_selected": 0
+ },
+ {
+  "root": "tests/qualification/",
+  "path": "tests/qualification/ebh_7/_ebh7_skip_disposition_register.py",
+  "status": "SELECTED",
+  "selected": 57,
+  "oracle_relevant": 57,
+  "under_selected": 0,
+  "over_selected": 0
+ },
+ {
+  "root": "tests/qualification/",
+  "path": "tests/qualification/dup_x/_closed_world_inventory.py",
+  "status": "SELECTED",
+  "selected": 57,
+  "oracle_relevant": 57,
+  "under_selected": 0,
+  "over_selected": 0
+ },
+ {
+  "root": "tests/qualification/",
+  "path": "tests/qualification/host_01/threaded_adapter_import_detector.py",
+  "status": "SELECTED",
+  "selected": 57,
+  "oracle_relevant": 57,
+  "under_selected": 0,
+  "over_selected": 0
+ },
+ {
+  "root": "tests/qualification/",
+  "path": "tests/qualification/harness_01/production_scope.py",
+  "status": "SELECTED",
+  "selected": 57,
+  "oracle_relevant": 57,
+  "under_selected": 0,
+  "over_selected": 0
+ },
+ {
+  "root": "tests/qualification/",
+  "path": "tests/qualification/plug_final/test_plug_final_gates.py",
+  "status": "SELECTED",
+  "selected": 57,
+  "oracle_relevant": 57,
+  "under_selected": 0,
+  "over_selected": 0
+ },
+ {
+  "root": "tests/qualification/",
+  "path": "tests/qualification/ebh_7/test_ebh_7_closure_evidence_audit_gates.py",
+  "status": "SELECTED",
+  "selected": 57,
+  "oracle_relevant": 57,
+  "under_selected": 0,
+  "over_selected": 0
+ },
+ {
+  "root": "tests/qualification/",
+  "path": "tests/qualification/prod_q/_prod_q_strict_external_work_provider_qualification_config.py",
+  "status": "SELECTED",
+  "selected": 57,
+  "oracle_relevant": 57,
+  "under_selected": 0,
+  "over_selected": 0
+ },
+ {
+  "root": "tests/unit/",
+  "path": "tests/unit/runtime/architecture/test_agent_lifecycle_bypass_ast.py",
+  "status": "SELECTED",
+  "selected": 57,
+  "oracle_relevant": 57,
+  "under_selected": 0,
+  "over_selected": 0
+ },
+ {
+  "root": "tests/unit/",
+  "path": "tests/unit/collaborative_work/test_context_view_contract_architecture_gates.py",
+  "status": "SELECTED",
+  "selected": 57,
+  "oracle_relevant": 57,
+  "under_selected": 0,
+  "over_selected": 0
+ },
+ {
+  "root": "tests/unit/",
+  "path": "tests/unit/llm_adapters/test_p2_002_c_provider_registration.py",
+  "status": "SELECTED",
+  "selected": 57,
+  "oracle_relevant": 57,
+  "under_selected": 0,
+  "over_selected": 0
+ },
+ {
+  "root": "tests/unit/",
+  "path": "tests/unit/runtime/architecture/test_uca6c_r6_r5_5_agent_governance_pause_gates.py",
+  "status": "SELECTED",
+  "selected": 57,
+  "oracle_relevant": 57,
+  "under_selected": 0,
+  "over_selected": 0
+ },
+ {
+  "root": "tests/unit/",
+  "path": "tests/unit/runtime/self_healing/test_autonomy_decision_evaluation_r6_2.py",
+  "status": "SELECTED",
+  "selected": 57,
+  "oracle_relevant": 57,
+  "under_selected": 0,
+  "over_selected": 0
+ },
+ {
+  "root": "tests/unit/",
+  "path": "tests/unit/runtime/token_optimization/test_regression_report.py",
+  "status": "SELECTED",
+  "selected": 57,
+  "oracle_relevant": 57,
+  "under_selected": 0,
+  "over_selected": 0
+ },
+ {
+  "root": "tests/unit/",
+  "path": "tests/unit/runtime/architecture/test_ee_b4_a_mandatory_evidence_readiness.py",
+  "status": "SELECTED",
+  "selected": 57,
+  "oracle_relevant": 57,
+  "under_selected": 0,
+  "over_selected": 0
+ },
+ {
+  "root": "tests/unit/",
+  "path": "tests/unit/runtime/nexus/tools/test_parallel_semantic_batch_pattern.py",
+  "status": "SELECTED",
+  "selected": 57,
+  "oracle_relevant": 57,
+  "under_selected": 0,
+  "over_selected": 0
+ }
+]

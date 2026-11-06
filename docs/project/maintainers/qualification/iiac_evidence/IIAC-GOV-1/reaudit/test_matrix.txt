@@ -1,0 +1,16 @@
+uv run pytest tests/unit/governance/test_iiac_negative_guards.py tests/unit/governance/test_iiac_g0_inventory.py -q
+RESULT: 22 passed in 77.64s
+uv run python scripts/governance/verify_iiac_g0_inventory_completeness.py
+RESULT: PASS (17510 paths @ afe9e8abeabdbab410bf562ebed6f4a309a91057)
+uv run python scripts/governance/verify_iiac_policy_activation.py --expect-not-in-force
+RESULT: NOT_IN_FORCE
+uv run python scripts/governance/verify_od_ent_02_compensating_control.py
+RESULT: PASS (package draft)
+uv run python scripts/governance/verify_iiac_audit_manifest.py docs/project/maintainers/qualification/examples/iiac_audit_session_manifest.example.json
+RESULT: PASS
+uv run python scripts/governance/verify_iiac_role_separation.py docs/project/maintainers/qualification/examples/iiac_audit_session_manifest.example.json
+RESULT: PASS
+uv run python scripts/governance/verify_iiac_g0_inventory_completeness.py tests/fixtures/iiac/stale_g0_matrix_f01.json
+RESULT: FAIL (expected; 17482 missing governed paths; mandatory IIAC paths missing)
+uv run python scripts/governance/verify_iiac_g0_inventory_completeness.py --expect-head eab65e010f5a1abfc413bb05419435bdf6b1810b
+RESULT: FAIL (expected; inventory_source_sha afe9e8abeabd not ancestor of eab65e010f5a)

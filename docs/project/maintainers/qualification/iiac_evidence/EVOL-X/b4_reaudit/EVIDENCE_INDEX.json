@@ -1,0 +1,47 @@
+{
+  "schema_version": "iiac_evidence_index.v1",
+  "stage_id": "EVOL-X-B4-CORRECTIVE",
+  "scope": "auditor B-4 re-audit evidence (index excludes itself)",
+  "files": {
+    "audit_scope.json": {
+      "sha256": "5af4e20eddf8f5208821a61a02db8be7fc110ca1747ecccaa582ddfeeafa5db3",
+      "bytes": 1780
+    },
+    "evidence/exp_fixture.py": {
+      "sha256": "bb49becb1062545a34a9d1abd1520d5fdd69e55a400ac1ae8bcbcc3b572bdc47",
+      "bytes": 8841
+    },
+    "evidence/exp_fixture2.py": {
+      "sha256": "9394c01292da9e8dfa8b8c6209aa29e4aefed4347a2092db8cd9a07ea047eb9c",
+      "bytes": 1967
+    },
+    "evidence/exp_real.py": {
+      "sha256": "b94a6fbb2ce94febe6b7057fea8101b7694c63fd1f15fe6de0cb9d5a4bafac4f",
+      "bytes": 7688
+    },
+    "EVOL_X_B4_INDEPENDENT_REAUDIT_DOSSIER.md": {
+      "sha256": "d89f9863736ad439436c749458f9e2afe2e214f347e2bf1d6c65eb6ee199d5ff",
+      "bytes": 17805
+    },
+    "EVOL_X_B4_INDEPENDENT_REAUDIT_FINDINGS.json": {
+      "sha256": "d05188e1395f2839032cd7247c378892c7d15a7e3591f62abc43cb4119c25930",
+      "bytes": 18163
+    },
+    "EVOL_X_B4_INDEPENDENT_REAUDIT_TEST_MATRIX.txt": {
+      "sha256": "54c42fd3b3bbc8fd7dcce3d5b1d120dc112f4f13ea30f6bc6a42e700c5421749",
+      "bytes": 3695
+    },
+    "GOVERNANCE_TEST_HOTFIX_TICKET_SPEC.md": {
+      "sha256": "8d456fa8ace422c1e5c263470126f34e8c59201d45ef3b7205e330c3472b4b89",
+      "bytes": 4021
+    },
+    "iiac_audit_session_manifest.EVOL-X-B4.reaudit_draft.json": {
+      "sha256": "83db6500965e3ed55b4d0b5a397470312f013ecadd2090f95e792cd85a43b129",
+      "bytes": 2641
+    },
+    "IIAC_SESSION_HANDOFF_RECORD_EVOL_X_B4_REAUDIT.md": {
+      "sha256": "a22e7529ce038adc15770377e2ed51d18e6c1683d486004bc84e169e813990bb",
+      "bytes": 1139
+    }
+  }
+}

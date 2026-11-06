@@ -59,6 +59,43 @@ def load_push_gate_config(pyproject: Path | None = None) -> PushGateConfig:
     )
 
 
+_GLOB_CHARS = frozenset("*?[]")
+
+
+def load_ruff_exempt_prefixes(pyproject: Path | None = None) -> tuple[str, ...]:
+    """Plain directory/file entries of ``[tool.ruff] extend-exclude`` (SSOT for gate exemptions).
+
+    Ruff ignores ``exclude`` for paths passed explicitly on the command line unless
+    ``force-exclude`` is set, and ``force-exclude`` would also re-apply Ruff's default
+    excludes (``build``, ``dist``, ...) to tracked sources. The changed-path gates therefore
+    filter explicit paths against these entries only. Glob entries are not honored here,
+    so the gates can only be stricter than ``ruff check .``.
+    """
+    path = pyproject or _PYPROJECT
+    with path.open("rb") as handle:
+        data = tomllib.load(handle)
+    entries = data.get("tool", {}).get("ruff", {}).get("extend-exclude", [])
+    prefixes: list[str] = []
+    for entry in entries if isinstance(entries, list) else []:
+        text = str(entry).replace("\\", "/").strip().strip("/")
+        if text and not (_GLOB_CHARS & set(text)):
+            prefixes.append(text)
+    return tuple(prefixes)
+
+
+def ruff_exempt(path: str, prefixes: tuple[str, ...]) -> bool:
+    rel = path.replace("\\", "/").removeprefix("./")
+    return any(rel == prefix or rel.startswith(prefix + "/") for prefix in prefixes)
+
+
+def split_ruff_exempt(paths: list[str], prefixes: tuple[str, ...] | None = None) -> tuple[list[str], list[str]]:
+    """Return (lint_paths, exempt_paths) for explicit Ruff invocations."""
+    active = load_ruff_exempt_prefixes() if prefixes is None else prefixes
+    lint = [p for p in paths if not ruff_exempt(p, active)]
+    exempt = [p for p in paths if ruff_exempt(p, active)]
+    return lint, exempt
+
+
 def push_gate_skipped(config: PushGateConfig | None = None) -> bool:
     cfg = config or load_push_gate_config()
     return _truthy_env(os.environ.get(cfg.skip_env))

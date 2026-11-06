@@ -1,0 +1,92 @@
+{
+  "schema": "iiac-evidence-index.v1",
+  "policy_version": "IIAC-2026-11-05.1",
+  "policy_status": "IN_FORCE",
+  "files": [
+    {
+      "path": "docs/project/maintainers/qualification/iiac_evidence/IIAC-GOV-1/certification/IIAC-GOV-1_certification_findings.json",
+      "sha256": "4ddc8622c9b819a2096869fdb11f8dae46a6abff33ac280300de799e4f07c8a6",
+      "bytes": 1050
+    },
+    {
+      "path": "docs/project/maintainers/qualification/iiac_evidence/IIAC-GOV-1/certification/IIAC_ACT01_INDEPENDENT_REAUDIT_DOSSIER.md",
+      "sha256": "c405c65faf53243a0511b0b9584a9f3abda4db08c09ee9b9266c86fe9f6b7a4e",
+      "bytes": 13281
+    },
+    {
+      "path": "docs/project/maintainers/qualification/iiac_evidence/IIAC-GOV-1/certification/IIAC_GOV_1_CERTIFICATION_RECORD.json",
+      "sha256": "a20e9ddd0cb51b01d86eaaee0c67a79cd1240762a233204eabb781e8e4ce7bc2",
+      "bytes": 1212
+    },
+    {
+      "path": "docs/project/maintainers/qualification/iiac_evidence/IIAC-GOV-1/certification/IIAC_GOV_1_GOVERNANCE_CERTIFICATION_REPORT.md",
+      "sha256": "13d93fb1916b23cd6d174188f15415a0f8efc8352d177d21c4e2ac7ace942040",
+      "bytes": 1624
+    },
+    {
+      "path": "docs/project/maintainers/qualification/iiac_evidence/IIAC-GOV-1/certification/audit_scope.json",
+      "sha256": "65605e4be2793d0df56ea1cf93281ce9d957e12ef4656c63e6a57c532dc6a08f",
+      "bytes": 1274
+    },
+    {
+      "path": "docs/project/maintainers/qualification/iiac_evidence/IIAC-GOV-1/certification/iiac_audit_session_manifest.IIAC-GOV-1.json",
+      "sha256": "c53e95db143cc6b3525b78e929aa6f42d01984c02fbce704fd2ccf63b57cdc28",
+      "bytes": 2039
+    },
+    {
+      "path": "docs/project/maintainers/qualification/iiac_evidence/IIAC-GOV-1/certification/test_matrix.txt",
+      "sha256": "e238cd8e980df893ede2ccb6a17d85374303bea00d553a24ffed15b781304dcd",
+      "bytes": 1034
+    },
+    {
+      "path": "docs/project/maintainers/qualification/iiac_evidence/IIAC-GOV-1/historical_session_b/IIAC-GOV-1_audit_scope_manifest.json",
+      "sha256": "11191a0a48bf5e0b24bee081f3d3483a1875bb9a39db320e9d19e5c8c08c5e63",
+      "bytes": 735
+    },
+    {
+      "path": "docs/project/maintainers/qualification/iiac_evidence/IIAC-GOV-1/historical_session_b/IIAC-GOV-1_findings_register.json",
+      "sha256": "ef03e9008884a14eec713acd95fd2bd26e5849050fb96be06f25c6f4c865dd1a",
+      "bytes": 461
+    },
+    {
+      "path": "docs/project/maintainers/qualification/iiac_evidence/IIAC-GOV-1/historical_session_b/IIAC-GOV-1_test_matrix.json",
+      "sha256": "63c7b1a75feef5eb7d6367e733f04c2b1947eb3ff5295c235946fd3f992aac9b",
+      "bytes": 440
+    },
+    {
+      "path": "docs/project/maintainers/qualification/iiac_evidence/IIAC-GOV-1/historical_session_b/IIAC_SESSION_B_INDEPENDENT_GOVERNANCE_AUDIT_REPORT.md",
+      "sha256": "56c9b078e42e1408799e37a2535aa61879e31021864214e46dfa165fb41fded1",
+      "bytes": 6483
+    },
+    {
+      "path": "docs/project/maintainers/qualification/iiac_evidence/IIAC-GOV-1/historical_session_b/iiac_audit_session_manifest.IIAC-GOV-1.json",
+      "sha256": "c611d6c4dd55d12ba662ad51cda8ec06455a2e721f13edc9dc53674aa5a26b58",
+      "bytes": 1755
+    },
+    {
+      "path": "docs/project/maintainers/qualification/iiac_evidence/IIAC-GOV-1/reaudit/IIAC-GOV-1_reaudit_findings.json",
+      "sha256": "e7beab6bb1d879805fb96c88b0a58dc1e2ec37ee7611973895939ae7e4521b54",
+      "bytes": 1446
+    },
+    {
+      "path": "docs/project/maintainers/qualification/iiac_evidence/IIAC-GOV-1/reaudit/IIAC_SESSION_B_F01_F03_REAUDIT_REPORT.md",
+      "sha256": "62b93665a97024337638e966ca87cbe37f32e1b4c9c795bef46e4c1097aefbde",
+      "bytes": 12297
+    },
+    {
+      "path": "docs/project/maintainers/qualification/iiac_evidence/IIAC-GOV-1/reaudit/audit_scope.json",
+      "sha256": "506b7474b12fde83fb634018dbf821cbbc4ed60354208ab647c0b8a48f256d03",
+      "bytes": 459
+    },
+    {
+      "path": "docs/project/maintainers/qualification/iiac_evidence/IIAC-GOV-1/reaudit/iiac_audit_session_manifest.IIAC-GOV-1.json",
+      "sha256": "c6c666f100573b8b3cde38c81fe40f430c75c8464f05bc98caf2b21338a7c141",
+      "bytes": 2116
+    },
+    {
+      "path": "docs/project/maintainers/qualification/iiac_evidence/IIAC-GOV-1/reaudit/test_matrix.txt",
+      "sha256": "650db06d2caa8d3c893563ef3a6c20b56886754d93b4ad7d295d5425c4e0467d",
+      "bytes": 1267
+    }
+  ]
+}

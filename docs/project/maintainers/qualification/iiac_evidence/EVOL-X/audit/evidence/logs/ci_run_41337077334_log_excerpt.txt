@@ -1,0 +1,49 @@
+evol-x-p3-l3-qualification	Run actions/checkout@v5	2026-11-01T18:31:47.0984048Z   TEST_EXECUTION_SHA: 3c4a641b3e48a13f437e830a0562e2a80b03aabb
+evol-x-p3-l3-qualification	Checkout TEST_EXECUTION_SHA	﻿2026-11-01T18:31:55.0338115Z ##[group]Run set -euo pipefail
+evol-x-p3-l3-qualification	Checkout TEST_EXECUTION_SHA	2026-11-01T18:31:55.0338570Z ^[[36;1mset -euo pipefail^[[0m
+evol-x-p3-l3-qualification	Checkout TEST_EXECUTION_SHA	2026-11-01T18:31:55.0339281Z ^[[36;1m[[ "${TEST_EXECUTION_SHA}" =~ ^[0-9a-f]{40}$ ]] || { echo "Missing or invalid exact TEST_EXECUTION_SHA"; exit 1; }^[[0m
+evol-x-p3-l3-qualification	Checkout TEST_EXECUTION_SHA	2026-11-01T18:31:55.0340080Z ^[[36;1mgit cat-file -e "${TEST_EXECUTION_SHA}^{commit}"^[[0m
+evol-x-p3-l3-qualification	Checkout TEST_EXECUTION_SHA	2026-11-01T18:31:55.0340593Z ^[[36;1mgit checkout "${TEST_EXECUTION_SHA}"^[[0m
+evol-x-p3-l3-qualification	Checkout TEST_EXECUTION_SHA	2026-11-01T18:31:55.0341107Z ^[[36;1mtest "$(git rev-parse HEAD)" = "${TEST_EXECUTION_SHA}"^[[0m
+evol-x-p3-l3-qualification	Checkout TEST_EXECUTION_SHA	2026-11-01T18:31:55.0369022Z shell: /usr/bin/bash --noprofile --norc -e -o pipefail {0}
+evol-x-p3-l3-qualification	Checkout TEST_EXECUTION_SHA	2026-11-01T18:31:55.0369503Z env:
+evol-x-p3-l3-qualification	Checkout TEST_EXECUTION_SHA	2026-11-01T18:31:55.0369796Z   FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
+evol-x-p3-l3-qualification	Checkout TEST_EXECUTION_SHA	2026-11-01T18:31:55.0370190Z   UV_LINK_MODE: copy
+evol-x-p3-l3-qualification	Checkout TEST_EXECUTION_SHA	2026-11-01T18:31:55.0370509Z   UV_PYTHON_DOWNLOADS: never
+evol-x-p3-l3-qualification	Checkout TEST_EXECUTION_SHA	2026-11-01T18:31:55.0370944Z   TEST_EXECUTION_SHA: 3c4a641b3e48a13f437e830a0562e2a80b03aabb
+evol-x-p3-l3-qualification	Checkout TEST_EXECUTION_SHA	2026-11-01T18:31:55.0371409Z ##[endgroup]
+evol-x-p3-l3-qualification	Checkout TEST_EXECUTION_SHA	2026-11-01T18:31:55.6505504Z Note: switching to '3c4a641b3e48a13f437e830a0562e2a80b03aabb'.
+evol-x-p3-l3-qualification	Checkout TEST_EXECUTION_SHA	2026-11-01T18:31:55.6506905Z 
+evol-x-p3-l3-qualification	Checkout TEST_EXECUTION_SHA	2026-11-01T18:31:55.6507725Z You are in 'detached HEAD' state. You can look around, make experimental
+evol-x-p3-l3-qualification	Checkout TEST_EXECUTION_SHA	2026-11-01T18:31:55.6509136Z changes and commit them, and you can discard any commits you make in this
+evol-x-p3-l3-qualification	Checkout TEST_EXECUTION_SHA	2026-11-01T18:31:55.6510476Z state without impacting any branches by switching back to a branch.
+evol-x-p3-l3-qualification	Checkout TEST_EXECUTION_SHA	2026-11-01T18:31:55.6511312Z 
+evol-x-p3-l3-qualification	Checkout TEST_EXECUTION_SHA	2026-11-01T18:31:55.6511810Z If you want to create a new branch to retain commits you create, you may
+evol-x-p3-l3-qualification	Checkout TEST_EXECUTION_SHA	2026-11-01T18:31:55.6513080Z do so (now or later) by using -c with the switch command. Example:
+evol-x-p3-l3-qualification	Checkout TEST_EXECUTION_SHA	2026-11-01T18:31:55.6513892Z 
+evol-x-p3-l3-qualification	Checkout TEST_EXECUTION_SHA	2026-11-01T18:31:55.6514202Z   git switch -c <new-branch-name>
+evol-x-p3-l3-qualification	Checkout TEST_EXECUTION_SHA	2026-11-01T18:31:55.6514708Z 
+evol-x-p3-l3-qualification	Checkout TEST_EXECUTION_SHA	2026-11-01T18:31:55.6514988Z Or undo this operation with:
+evol-x-p3-l3-qualification	Checkout TEST_EXECUTION_SHA	2026-11-01T18:31:55.6515397Z 
+evol-x-p3-l3-qualification	Checkout TEST_EXECUTION_SHA	2026-11-01T18:31:55.6515642Z   git switch -
+evol-x-p3-l3-qualification	Checkout TEST_EXECUTION_SHA	2026-11-01T18:31:55.6515966Z 
+evol-x-p3-l3-qualification	Checkout TEST_EXECUTION_SHA	2026-11-01T18:31:55.6516768Z Turn off this advice by setting config variable advice.detachedHead to false
+evol-x-p3-l3-qualification	Checkout TEST_EXECUTION_SHA	2026-11-01T18:31:55.6517553Z 
+evol-x-p3-l3-qualification	Checkout TEST_EXECUTION_SHA	2026-11-01T18:31:55.6518157Z HEAD is now at 3c4a641b3 test(EVOL-X): fix VL3 manifest node order and digest (290 nodes)
+evol-x-p3-l3-qualification	Run astral-sh/setup-uv@v5	2026-11-01T18:31:55.6669279Z   TEST_EXECUTION_SHA: 3c4a641b3e48a13f437e830a0562e2a80b03aabb
+evol-x-p3-l3-qualification	Sync CI deps	2026-11-01T18:31:58.4822838Z   TEST_EXECUTION_SHA: 3c4a641b3e48a13f437e830a0562e2a80b03aabb
+evol-x-p3-l3-qualification	EVOL-X VL3 manifest integrity (W2-09, same node list as local)	﻿2026-11-01T18:32:01.2082106Z ##[group]Run set -euo pipefail
+evol-x-p3-l3-qualification	EVOL-X VL3 manifest integrity (W2-09, same node list as local)	2026-11-01T18:32:01.2082626Z ^[[36;1mset -euo pipefail^[[0m
+evol-x-p3-l3-qualification	EVOL-X VL3 manifest integrity (W2-09, same node list as local)	2026-11-01T18:32:01.2083222Z ^[[36;1muv run python scripts/qualification/evol_x_vl3_manifest.py --check^[[0m
+evol-x-p3-l3-qualification	EVOL-X VL3 manifest integrity (W2-09, same node list as local)	2026-11-01T18:32:01.2106148Z shell: /usr/bin/bash -e {0}
+evol-x-p3-l3-qualification	EVOL-X VL3 manifest integrity (W2-09, same node list as local)	2026-11-01T18:32:01.2106831Z env:
+evol-x-p3-l3-qualification	EVOL-X VL3 manifest integrity (W2-09, same node list as local)	2026-11-01T18:32:01.2107244Z   FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
+evol-x-p3-l3-qualification	EVOL-X VL3 manifest integrity (W2-09, same node list as local)	2026-11-01T18:32:01.2107710Z   UV_LINK_MODE: copy
+evol-x-p3-l3-qualification	EVOL-X VL3 manifest integrity (W2-09, same node list as local)	2026-11-01T18:32:01.2108060Z   UV_PYTHON_DOWNLOADS: never
+evol-x-p3-l3-qualification	EVOL-X VL3 manifest integrity (W2-09, same node list as local)	2026-11-01T18:32:01.2108549Z   TEST_EXECUTION_SHA: 3c4a641b3e48a13f437e830a0562e2a80b03aabb
+evol-x-p3-l3-qualification	EVOL-X VL3 manifest integrity (W2-09, same node list as local)	2026-11-01T18:32:01.2109153Z   UV_CACHE_DIR: /home/runner/work/_temp/setup-uv-cache
+evol-x-p3-l3-qualification	EVOL-X VL3 manifest integrity (W2-09, same node list as local)	2026-11-01T18:32:01.2109646Z ##[endgroup]
+evol-x-p3-l3-qualification	EVOL-X VL3 manifest integrity (W2-09, same node list as local)	2026-11-01T18:32:07.8333377Z VL3 manifest OK (290 node ids)
+evol-x-p3-l3-qualification	EVOL-X qualification suite	2026-11-01T18:32:07.8730206Z   TEST_EXECUTION_SHA: 3c4a641b3e48a13f437e830a0562e2a80b03aabb
+evol-x-p3-l3-qualification	EVOL-X qualification suite	2026-11-01T18:41:02.6495565Z 290 passed in 530.02s (0:08:50)
+evol-x-p3-l3-qualification	Run actions/upload-artifact@v4	2026-11-01T18:41:05.1449605Z   TEST_EXECUTION_SHA: 3c4a641b3e48a13f437e830a0562e2a80b03aabb

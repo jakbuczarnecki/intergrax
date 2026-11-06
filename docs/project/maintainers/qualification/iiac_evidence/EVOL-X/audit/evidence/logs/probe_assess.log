@@ -1,0 +1,61 @@
+DeploySafetyVerdict: ['ELIGIBLE', 'ELIGIBLE_WITH_DRAIN', 'REFUSE'] | Compat: ['COMPATIBLE', 'INCOMPATIBLE', 'MIGRATION_REQUIRED', 'UNKNOWN'] | WD: ['SAFE_IN_PLACE', 'VERSIONED_DEPLOY', 'MIGRATE', 'REJECT', 'EXPLICITLY_UNSUPPORTED']
+DM exhaustive: 384 combinations; invariant violations: {'I4 eligible with non-COMPATIBLE contract': 4}
+  example I4 eligible with non-COMPATIBLE contract (DeployFacts(operation='roll_forward', evidence_present=True, contract_compat=<CompatibilityAtChangeResult.MIGRATION_REQUIRED: 'MIGRATION_REQUIRED'>, persisted_schema_compatible=True, durable_forward_only_applied=True, inflight_pins=False, drain_possible=True), 'DM-07', 'ELIGIBL
+WM exhaustive: 128 inputs; my-invariant violations: NONE
+WM decisions seen: ['EXPLICITLY_UNSUPPORTED', 'MIGRATE', 'REJECT', 'SAFE_IN_PLACE', 'VERSIONED_DEPLOY']
+  ('.cursor', 'EXTENSION_ONLY') 1
+  ('.cursor', 'UNCLASSIFIED') 9
+  ('.cursorignore', 'UNCLASSIFIED') 1
+  ('.cursorindexingignore', 'UNCLASSIFIED') 1
+  ('.env.example', 'UNCLASSIFIED') 1
+  ('.gitattributes', 'UNCLASSIFIED') 1
+  ('.githooks', 'UNCLASSIFIED') 4
+  ('.github', 'EXTENSION_ONLY') 3
+  ('.github', 'UNCLASSIFIED') 17
+  ('.gitignore', 'UNCLASSIFIED') 1
+  ('.python-version', 'UNCLASSIFIED') 1
+  ('AGENTS.md', 'EXTENSION_ONLY') 1
+  ('CITATION.cff', 'UNCLASSIFIED') 1
+  ('CODE_OF_CONDUCT.md', 'EXTENSION_ONLY') 1
+  ('CONTRIBUTING.md', 'EXTENSION_ONLY') 1
+  ('LICENSE', 'UNCLASSIFIED') 1
+  ('README.md', 'EXTENSION_ONLY') 1
+  ('SECURITY.md', 'EXTENSION_ONLY') 1
+  ('agents', 'EXTENSION_ONLY') 358
+  ('applications', 'EXTENSION_ONLY') 1013
+  ('benchmarks', 'EXTENSION_ONLY') 12
+  ('benchmarks', 'UNCLASSIFIED') 10
+  ('configs', 'UNCLASSIFIED') 5
+  ('conftest.py', 'UNCLASSIFIED') 1
+  ('docs', 'EXTENSION_ONLY') 1756
+  ('examples', 'EXTENSION_ONLY') 3
+  ('examples', 'UNCLASSIFIED') 23
+  ('fixtures', 'UNCLASSIFIED') 1
+  ('infra', 'EXTENSION_ONLY') 4
+  ('infra', 'UNCLASSIFIED') 47
+  ('intergrax', 'CORE_TOUCH_UNAUTHORIZED') 1542
+  ('intergrax', 'EXTENSION_ONLY') 406
+  ('intergrax', 'UNCLASSIFIED') 5464
+  ('leaf-x.log', 'UNCLASSIFIED') 1
+  ('llms-full.txt', 'UNCLASSIFIED') 1
+  ('llms.txt', 'UNCLASSIFIED') 1
+  ('platform_proofs', 'EXTENSION_ONLY') 112
+  ('platform_proofs', 'UNCLASSIFIED') 708
+  ('prompts', 'UNCLASSIFIED') 71
+  ('proof_infrastructure', 'UNCLASSIFIED') 53
+  ('pyproject.toml', 'UNCLASSIFIED') 1
+  ('robots.txt', 'UNCLASSIFIED') 1
+  ('runbook', 'EXTENSION_ONLY') 3
+  ('scripts', 'EXTENSION_ONLY') 2
+  ('scripts', 'UNCLASSIFIED') 374
+  ('testing_support', 'EXTENSION_ONLY') 513
+  ('tests', 'EXTENSION_ONLY') 4844
+  ('tools', 'UNCLASSIFIED') 4
+  ('uv.lock', 'UNCLASSIFIED') 1
+EXTENSION_ONLY under non-extension roots (potential unflagged core-adjacent edits): {'.github': 3, 'intergrax': 406, 'scripts': 2}
+  e.g. .github ['.github/PULL_REQUEST_TEMPLATE.md', '.github/repo-management/README.md', '.github/repo-management/repository-metadata.json']
+   suffixes: {'md': 2, 'json': 1}
+  e.g. intergrax ['intergrax/applications/README.md', 'intergrax/applications/USAGE.md', 'intergrax/integrations/USAGE.md', 'intergrax/integrations/providers/billing_meter/stripe/USAGE.md', 'intergrax/integrations/providers/browser_automation/apify/USAGE.md', 'intergrax/integrations/providers/browser_automation/browserbase/USAGE
+   suffixes: {'md': 405, 'json': 1}
+  e.g. scripts ['scripts/README.md', 'scripts/maintenance/langchain_boundary_grandfather.json']
+   suffixes: {'md': 1, 'json': 1}

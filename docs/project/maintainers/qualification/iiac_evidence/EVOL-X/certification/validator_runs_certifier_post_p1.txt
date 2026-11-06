@@ -1,0 +1,19 @@
+# Certifier validator runs (post-P1, completed manifest) 2026-11-05T20:44:11+01:00 HEAD=4dee0050d1ab2d353c982da23cc82439bd79a53a
+## verify_iiac_policy_activation --require-in-force
+IIAC policy activation: IN_FORCE @ IIAC-2026-11-05.1 from f8c29fb8dfe5e14d9b06ff16659fd9cbe9ad326d
+exit=0
+## verify_iiac_audit_manifest
+verify_iiac_audit_manifest: PASS
+exit=0
+## verify_iiac_role_separation --strict-product-diff
+verify_iiac_role_separation: PASS
+exit=0
+## closure preflight (expected FAIL, legacy gates; not bypassed)
+EVOL-X closure preflight: FAIL
+  - IIAC policy IN_FORCE: missing EVOL IIAC audit manifest JSON
+  - b6_acceptance_publication_sha unset in governance JSON
+  - SHA ladder B6_ACCEPTANCE_PUBLICATION_SHA still pending/empty
+  - OD-EVOL-12 still PENDING in register
+  - OD-EVOLX-08 still PENDING in register
+  - OD-EVOL-11 auditor identity still not named
+exit=1

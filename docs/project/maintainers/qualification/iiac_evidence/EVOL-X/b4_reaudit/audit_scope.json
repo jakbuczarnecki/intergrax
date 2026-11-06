@@ -1,0 +1,26 @@
+{
+  "stage_id": "EVOL-X",
+  "audit_subject": "B-4 corrective implementation T-IGX-017-A",
+  "certification_profile": "iiac-v1",
+  "policy_version": "IIAC-2026-11-05.1",
+  "auditor_role": "independent-quality-auditor",
+  "baseline_sha": "ca2b147825ce6117cc7219e63a93d2872669cb49",
+  "audited_implementation_sha": "23feb2bbb017b1beb63f9368b5978384093ff924",
+  "audit_head_sha": "9a8fa3634713f69b56ce87ceaf9ed319fad27dae",
+  "in_scope": [
+    "scripts/qualification/evol_x_closure_publication_preflight.py (Gate A A-01..A-18, Gate B B-00..B-10, legacy diagnostic)",
+    "scripts/ci/push_gate_config.py, run_pre_commit_gate.py, run_ruff_changed_paths.py, pyproject.toml [tool.ruff] extend-exclude",
+    "tests/unit/qualification/test_evol_x_closure_preflight_b4.py, test_evol_x_b4_ruff_evidence_exemption.py",
+    "four pre-existing governance test failures: baseline vs corrective comparison and root cause",
+    "activation-record CRLF test side effect",
+    "evidence immutability: Session C (P1) and P2 evidence, IIAC activation record"
+  ],
+  "out_of_scope_by_authority": [
+    "B6 acceptance, FRZ-EVOL promotion, OD-EVOL-12 / OD-EVOLX-08 decisions, EVOL-X closure",
+    "modification of audited implementation, certification record or any evidence",
+    "entire platform test suite (no material impact identified outside the preflight and CI helpers)",
+    "evol_x_b6_independent_verification.py legacy verifier (not wired to the preflight)"
+  ],
+  "write_surface": "Auditor wrote only untracked files under docs/project/maintainers/qualification/iiac_evidence/EVOL-X/b4_reaudit/. No tracked file modified; no commit; no push. Disposable clones under C:\ia\ (outside the repository) were used for destructive experiments.",
+  "product_paths_changed_by_audited_corrective": []
+}

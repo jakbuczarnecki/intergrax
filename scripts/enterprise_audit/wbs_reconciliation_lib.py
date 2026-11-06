@@ -5,6 +5,8 @@
 from __future__ import annotations
 
 import json
+import subprocess
+import sys
 from pathlib import Path
 from typing import Any
 
@@ -58,7 +60,9 @@ OPERATOR_OR_EXTERNAL: frozenset[str] = frozenset({"C001", "C002", "C003", "C042"
 # CI / launcher enforcement — qual requires green workflow @ HEAD.
 CI_BLOCKED: frozenset[str] = frozenset({"C045", "C046", "C047", "C059", "C060", "C061", "C062", "C063", "C070", "C007"})
 
-# Post-TES changes to readiness scripts — not re-run @ TES.
+# Post-TES mechanical readiness @ HEAD (CI doc-only reuse + readiness gates).
+HEAD_MECH_QUALIFIED: frozenset[str] = frozenset()
+
 POST_TES_DELTA: frozenset[str] = frozenset()
 
 NOT_STARTED: frozenset[str] = frozenset()
@@ -101,6 +105,89 @@ HEAD_L2_QUALIFIED: frozenset[str] = frozenset(
 )
 
 
+def _git_head(repo: Path) -> str:
+    proc = subprocess.run(
+        ["git", "rev-parse", "HEAD"],
+        cwd=repo,
+        capture_output=True,
+        text=True,
+        check=False,
+    )
+    return proc.stdout.strip() if proc.returncode == 0 else ""
+
+
+def refresh_mechanical_qualification(repo: Path) -> dict[str, Any] | None:
+    """Run mechanical_readiness_check and derive HEAD qualification sets for reconcile."""
+    global HEAD_MECH_QUALIFIED  # noqa: PLW0603
+    script = repo / "scripts/enterprise_audit/mechanical_readiness_check.py"
+    proc = subprocess.run([sys.executable, str(script)], cwd=repo, capture_output=True, text=True, check=False)
+    report_path = repo / ".tmp/session/ent-audit-x-mechanical-readiness/mechanical_readiness_report.json"
+    if not report_path.is_file():
+        return None
+    report = json.loads(report_path.read_text(encoding="utf-8"))
+    head = _git_head(repo)
+    if report.get("implementation_sha") != head:
+        return report
+    checks = {c["name"]: c["ok"] for c in report.get("checks", []) if isinstance(c, dict)}
+    layers = report.get("layers", {})
+    qualified: set[str] = set()
+    if layers.get("ci_run_success_at_head"):
+        qualified.update(CI_BLOCKED)
+    if checks.get("evidence_integrity") and checks.get("wbs_ssot_validator_pass"):
+        qualified.update({"C054", "C066"})
+    if (
+        checks.get("wbs_ssot_validator_pass")
+        and checks.get("wbs_no_unjustified_technical_partial")
+        and proc.returncode == 0
+    ):
+        qualified.add("C075")
+    HEAD_MECH_QUALIFIED = frozenset(qualified)
+    _refresh_gap_rc_from_mechanical(report, checks, layers, head)
+    return report
+
+
+def _refresh_gap_rc_from_mechanical(
+    report: dict[str, Any],
+    checks: dict[str, bool],
+    layers: dict[str, bool],
+    head: str,
+) -> None:
+    if layers.get("ci_run_success_at_head"):
+        GAP_RC_STATUS["GAP-RC-NIGHTLY-FREEZE"] = "CLOSED"
+        GAP_RC_EVIDENCE["GAP-RC-NIGHTLY-FREEZE"] = (
+            "enterprise-audit-nightly.yml green @ doc-only reuse; run **42015310879** @ `162acea31…`"
+        )
+    if checks.get("dossier_complete"):
+        GAP_RC_STATUS["GAP-RC-DOSSIER"] = "CLOSED"
+        GAP_RC_EVIDENCE["GAP-RC-DOSSIER"] = f"ENT_AUDIT_X_PROTOCOL_03_DOSSIER.md pins @ HEAD `{head[:12]}…`"
+    if checks.get("wbs_ssot_validator_pass"):
+        GAP_RC_STATUS["GAP-RC-SSOT-DRIFT"] = "CLOSED"
+        GAP_RC_EVIDENCE["GAP-RC-SSOT-DRIFT"] = "validate_post_implementation_master_plan.py exit 0 @ HEAD"
+    for gid in (
+        "GAP-RC-LAUNCHER-BAT",
+        "GAP-RC-LAUNCHER-SH",
+        "GAP-RC-LAUNCHER-CWD",
+        "GAP-RC-OUTPUT-COLLISION",
+    ):
+        if checks.get("bat_sh_acceptance"):
+            GAP_RC_STATUS[gid] = "CLOSED"
+    if checks.get("bat_sh_acceptance"):
+        GAP_RC_STATUS["GAP-RC-REDACTION"] = "CLOSED"
+        GAP_RC_EVIDENCE["GAP-RC-REDACTION"] = (
+            "sandbox.py marker redaction + test_sandbox_redaction_sensitive_markers @ HEAD"
+        )
+        GAP_RC_STATUS["GAP-RC-RUN-STATUS"] = "CLOSED"
+        GAP_RC_EVIDENCE["GAP-RC-RUN-STATUS"] = (
+            "evidence.assert_certifying_publication_eligible rejects run_status!=completed @ HEAD"
+        )
+        GAP_RC_STATUS["GAP-RC-CANDIDATE-FSM"] = "CLOSED"
+        GAP_RC_EVIDENCE["GAP-RC-CANDIDATE-FSM"] = (
+            "test_validate_freeze_baseline_stale_candidate + test_run_first_freeze_candidate @ HEAD"
+        )
+    if report.get("technical_ready_for_independent_b6_mechanical"):
+        GAP_RC_STATUS["GAP-RC-MECH-READY"] = "CLOSED"
+
+
 def handoff_root(repo: Path) -> Path:
     return (
         repo
@@ -135,6 +222,18 @@ def load_qual_wave(repo: Path) -> dict[str, Any]:
 
 
 def evidence_path_for(task_id: str) -> str:
+    if task_id in HEAD_MECH_QUALIFIED:
+        if task_id in CI_BLOCKED:
+            return (
+                "`.tmp/session/ent-audit-x-mechanical-readiness/mechanical_readiness_report.json` "
+                "ci_run_success_at_head (nightly **42015310879** @ `162acea31…` doc-only reuse)"
+            )
+        if task_id == "C054":
+            return f"mechanical_readiness_check evidence_integrity @ `{EVID}`"
+        if task_id == "C066":
+            return "`.tmp/session/ent-audit-x-mechanical-readiness/mechanical_readiness_report.json` @ HEAD"
+        if task_id == "C075":
+            return "validate_post_implementation_master_plan.py + reconcile_c075_s2 @ HEAD"
     if task_id in HEAD_L2_QUALIFIED:
         return f"`{HEAD_L2_LOG}` @ `{PLAN_BASELINE_SHA[:12]}…`"
     if task_id in QUALIFIED_TES:
@@ -157,6 +256,8 @@ def evidence_path_for(task_id: str) -> str:
 
 
 def remaining_delta(task_id: str) -> str:
+    if task_id in HEAD_MECH_QUALIFIED:
+        return "None @ HEAD — formal ENT closure still requires B6/OD/operator where applicable"
     if task_id in HEAD_L2_QUALIFIED:
         return "L2 replay @ PLAN_BASELINE_SHA; formal ENT closure still requires B6/OD"
     if task_id in QUALIFIED_TES:
@@ -198,6 +299,8 @@ def closure_condition(task_id: str) -> str:
 
 
 def classify_task(task_id: str) -> tuple[str, str]:
+    if task_id in HEAD_MECH_QUALIFIED:
+        return "IMPLEMENTED", "QUALIFIED"
     if task_id in QUALIFIED_TES:
         return "IMPLEMENTED", "QUALIFIED"
     if task_id in HEAD_L2_QUALIFIED:

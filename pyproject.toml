@@ -381,6 +381,10 @@ skip_env_pre_commit = "INTERGRAX_SKIP_PRE_COMMIT_GATE"
 target-version = "py312"
 line-length = 120
 src = ["intergrax", "agents", "applications", "scripts", "tests", "testing_support"]
+# Byte-preserved IIAC evidence (auditor probe scripts are digest-bound published evidence and
+# must never be reformatted). Changed-path gates honor this list via
+# scripts/ci/push_gate_config.py::load_ruff_exempt_prefixes. Keep entries inside iiac_evidence.
+extend-exclude = ["docs/project/maintainers/qualification/iiac_evidence"]
 
 [tool.ruff.lint]
 select = ["E", "F", "I", "UP"]

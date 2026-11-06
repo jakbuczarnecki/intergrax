@@ -18,6 +18,8 @@ _MATRIX = _QUAL / "ARCH_FREEZE_FRZ_ACCEPTANCE_MATRIX.md"
 _WBS = _QUAL / "ARCH_FREEZE_WBS_AND_DEPENDENCY_DAG.md"
 _GAPS = _QUAL / "ARCH_FREEZE_CLOSED_WORLD_GAP_REGISTER.md"
 _QUAL_PLAN = _QUAL / "ARCH_FREEZE_QUALIFICATION_AND_EVIDENCE_PLAN.md"
+_IIAC_PROTOCOL = _QUAL / "INTEGRAX_INTERNAL_INDEPENDENT_AGENT_CERTIFICATION_PROTOCOL.md"
+_IIAC_ACTIVATION = _QUAL / "IIAC_POLICY_ACTIVATION_RECORD.json"
 
 PATH_B_FULL = frozenset({"FRZ-PRD-01", "FRZ-PRD-02"})
 BLOCKER_FINDINGS = frozenset(
@@ -1166,6 +1168,20 @@ def validate(*, strict_counts: bool = True) -> int:
                 errors.append("T-PATHB-EXCL must document FRZ-PRD-01 and FRZ-PRD-02")
 
     qual_text = _QUAL_PLAN.read_text(encoding="utf-8")
+    if not _IIAC_PROTOCOL.is_file():
+        errors.append("missing IIAC protocol (ARCH-FREEZE predecessor readiness G7)")
+    if _IIAC_ACTIVATION.is_file():
+        import json
+
+        act = json.loads(_IIAC_ACTIVATION.read_text(encoding="utf-8"))
+        if str(act.get("status") or "").upper() == "IN_FORCE":
+            if not act.get("effective_from_sha"):
+                errors.append("IIAC IN_FORCE without effective_from_sha in activation record")
+    pre_admission = _QUAL / "ARCH_FREEZE_PRE_ADMISSION_READINESS_REPORT.md"
+    if pre_admission.is_file():
+        pa = pre_admission.read_text(encoding="utf-8")
+        if "IIAC" not in pa and "INTERNAL AGENT CERTIFICATION" not in pa:
+            errors.append("pre-admission report must cite IIAC predecessor fields (G7)")
     run_ids = re.findall(r"^\| (L[123]-[A-Z0-9-]+) \|", qual_text, re.M)
     if len(run_ids) != len(set(run_ids)):
         errors.append("duplicate qualification RUN_ID")
@@ -1176,6 +1192,8 @@ def validate(*, strict_counts: bool = True) -> int:
 
     for rel in (
         "scripts/governance/verify_arch_freeze_plan_traceability.py",
+        "scripts/governance/verify_iiac_policy_activation.py",
+        "docs/project/maintainers/qualification/INTEGRAX_INTERNAL_INDEPENDENT_AGENT_CERTIFICATION_PROTOCOL.md",
         "scripts/enterprise_audit/run_enterprise_audit.py",
         "tests/unit/runtime/architecture/test_hardening_3_layer_boundary_gate.py",
         "tests/qualification/roadmap_replay_x/test_roadmap_replay_x_mechanical_exit_gates.py",

@@ -1,0 +1,11 @@
+IIAC-GOV-1 governance certification replay @ ae467c8c4dd9c87521c1c60a7e5e75224d3214a0
+Role: certification-governance-agent
+RESULT: certification session replay
+
+uv run python scripts/governance/verify_iiac_audit_manifest.py docs/project/maintainers/qualification/iiac_evidence/IIAC-GOV-1/reaudit/iiac_audit_session_manifest.IIAC-GOV-1.json --repo .
+uv run python scripts/governance/verify_iiac_role_separation.py docs/project/maintainers/qualification/iiac_evidence/IIAC-GOV-1/reaudit/iiac_audit_session_manifest.IIAC-GOV-1.json --strict-product-diff --repo .
+uv run python scripts/governance/verify_iiac_policy_activation.py --expect-not-in-force
+uv run python scripts/governance/verify_iiac_g0_inventory_completeness.py
+Get-FileHash -Algorithm SHA256 docs/project/maintainers/qualification/iiac_evidence/IIAC-GOV-1/certification/IIAC_ACT01_INDEPENDENT_REAUDIT_DOSSIER.md
+git merge-base --is-ancestor 2a6545f1d551814a0ba8896be79576c580353771 HEAD
+git merge-base --is-ancestor ae467c8c4dd9c87521c1c60a7e5e75224d3214a0 HEAD

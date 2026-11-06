@@ -1,0 +1,25 @@
+{
+  "schema_version": "iiac-authority-impact.v1",
+  "generated_at": "2026-11-05T13:20:24.878485+00:00",
+  "repository_head_at_generation": "eab65e010f5a1abfc413bb05419435bdf6b1810b",
+  "entry_count": 2,
+  "category_legend": {
+    "1": "Mandatory external human / stage closure → CHANGE under IIAC"
+  },
+  "entries": [
+    {
+      "category": 1,
+      "path": "docs/project/maintainers/plans/PLATFORM_ENTERPRISE_COMPLETION_ROADMAP.md",
+      "owner_hint": "qualification",
+      "migration_action": "stub",
+      "matched_pattern": "B6"
+    },
+    {
+      "category": 1,
+      "path": ".github/workflows/unit-tests.yml",
+      "owner_hint": "qualification/governance",
+      "migration_action": "stub",
+      "matched_pattern": "Protocol 03"
+    }
+  ]
+}

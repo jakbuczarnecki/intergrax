@@ -1,0 +1,10 @@
+# closure preflight BEFORE any Session C artifact is placed under evol_x/ (HEAD 06a459afbab3aa8cea89e4118865d55e7b537a34) 2026-11-05T19:00:27+01:00
+EVOL-X closure preflight: FAIL
+  - IIAC policy IN_FORCE: missing EVOL_X_IIAC_INDEPENDENT_AUDIT_PASS_RECORD.md
+  - IIAC policy IN_FORCE: missing EVOL IIAC audit manifest JSON
+  - b6_acceptance_publication_sha unset in governance JSON
+  - SHA ladder B6_ACCEPTANCE_PUBLICATION_SHA still pending/empty
+  - OD-EVOL-12 still PENDING in register
+  - OD-EVOLX-08 still PENDING in register
+  - OD-EVOL-11 auditor identity still not named
+exit=1

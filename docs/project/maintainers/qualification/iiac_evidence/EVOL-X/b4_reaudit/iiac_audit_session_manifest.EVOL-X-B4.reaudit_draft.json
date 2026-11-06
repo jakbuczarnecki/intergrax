@@ -1,0 +1,40 @@
+{
+  "stage_id": "EVOL-X-B4-CORRECTIVE",
+  "certification_profile": "iiac-v1",
+  "policy_version": "IIAC-2026-11-05.1",
+  "manifest_status": "AUDITOR_DRAFT_NOT_A_PASS",
+  "implementation_session_id": "UNRECORDED_IN_REPOSITORY__OPERATOR_TO_ATTEST_IN_HANDOFF_RECORD",
+  "implementation_agent_id": "implementer",
+  "auditor_session_id": "IIAC-C-EVOL-X-B4-REAUDIT-2026-11-05__claude-code-cf31a7e9-08ee-47f4-84ca-5b420d9a377d",
+  "auditor_agent_id": "independent-quality-auditor",
+  "certifier_session_id": "PENDING_CERTIFIER",
+  "certifier_agent_id": "certification-governance-agent",
+  "audited_implementation_sha": "23feb2bbb017b1beb63f9368b5978384093ff924",
+  "test_execution_sha": "9a8fa3634713f69b56ce87ceaf9ed319fad27dae",
+  "audit_execution_sha": "9a8fa3634713f69b56ce87ceaf9ed319fad27dae",
+  "evidence_publication_sha": "PENDING_CERTIFIER",
+  "audit_report_digest": "d89f9863736ad439436c749458f9e2afe2e214f347e2bf1d6c65eb6ee199d5ff",
+  "audit_scope_manifest_digest": "5af4e20eddf8f5208821a61a02db8be7fc110ca1747ecccaa582ddfeeafa5db3",
+  "test_matrix_digest": "54c42fd3b3bbc8fd7dcce3d5b1d120dc112f4f13ea30f6bc6a42e700c5421749",
+  "findings_digest": "d05188e1395f2839032cd7247c378892c7d15a7e3591f62abc43cb4119c25930",
+  "verdict": "CONDITIONAL",
+  "terminal_verdict_text": "EVOL-X B-4 — PARTIAL / EXACT BLOCKERS",
+  "limitations": [
+    "Blocking: RA-B4-01 (A-14 byte compare fails on default Windows CRLF checkouts), RA-B4-02 (A-18 closes blockers by absence), RA-B4-03 (B-07 accepts negated/revoked decisions), RA-B4-04 (Gate B accepts flag-only B6 acceptance)",
+    "Gate PASS is not a semantic scope guarantee (RA-B4-05); text-presence checks only",
+    "Entire platform suite not rerun; CI at the corrective SHA not available",
+    "assurance_level process_enforced; no cryptographic session proof"
+  ],
+  "certification_publication_sha": "PENDING_CERTIFIER",
+  "assurance_level": "process_enforced",
+  "audit_report_path": "docs/project/maintainers/qualification/iiac_evidence/EVOL-X/b4_reaudit/EVOL_X_B4_INDEPENDENT_REAUDIT_DOSSIER.md",
+  "findings_path": "docs/project/maintainers/qualification/iiac_evidence/EVOL-X/b4_reaudit/EVOL_X_B4_INDEPENDENT_REAUDIT_FINDINGS.json",
+  "handoff_record_path": "docs/project/maintainers/qualification/iiac_evidence/EVOL-X/b4_reaudit/IIAC_SESSION_HANDOFF_RECORD_EVOL_X_B4_REAUDIT.md",
+  "evidence_index_path": "docs/project/maintainers/qualification/iiac_evidence/EVOL-X/b4_reaudit/EVIDENCE_INDEX.json",
+  "certifier_fields_pending": [
+    "certifier_session_id",
+    "evidence_publication_sha",
+    "certification_publication_sha",
+    "implementation_session_id (operator attestation)"
+  ]
+}

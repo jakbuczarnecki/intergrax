@@ -1,0 +1,32 @@
+EVOL-X B-4 independent re-audit — test matrix (actual commands and results, 2026-11-05)
+HEAD 9a8fa3634713f69b56ce87ceaf9ed319fad27dae == origin/development (checked at start and end)
+Python: D:\Projekty\intergrax\.venv (project venv); clones: C:\ia\h (HEAD, core.autocrlf=false), C:\ia\b (ca2b14782, core.autocrlf=false), C:\ia\x (HEAD, default config, core.autocrlf=true)
+
+[1] CANONICAL: pytest tests/unit/qualification/test_evol_x_closure_preflight_b4.py tests/unit/qualification/test_evol_x_b4_ruff_evidence_exemption.py -q
+    -> 59 passed in 117.56s (0 failed, 0 skipped)
+[2] CANONICAL: pytest tests/qualification/evol_x tests/unit/qualification -q -rs
+    -> 384 passed in 695.32s (0 failed, 0 skipped)  [includes the 59 of [1]]
+[3] CLONE h (LF, HEAD): pytest tests/unit/governance -q --tb=line -rs
+    -> 6 failed, 119 passed, 1 skipped (496 s). 4 = the stale tests of §8. The other 2 (test_n05, test_n08) are artefacts of the clone: their verifier subprocesses import scripts from the canonical editable install, so they judged the canonical tree; rerun with PYTHONPATH=<clone> both pass (and leave the clone's activation record and threat model modified = HF-02). The two G0 tests that fail in CI pass here. Skip: symlink creation unavailable
+[4] CLONES b and h: pytest <4 named tests> -q
+    -> baseline ca2b14782: 4 failed ; HEAD 9a8fa3634: 4 failed (identical assertions)
+       tests/unit/governance/test_iiac_activation_gate.py::test_act_n01_inactive_policy_fails_default_and_require
+       tests/unit/governance/test_iiac_activation_gate.py::test_positive_fixture_passes_without_activating_canonical_policy
+       tests/unit/governance/test_iiac_negative_guards.py::test_n09_implementer_must_not_publish_pass_filename_glob
+       tests/unit/governance/test_iiac_negative_guards.py::test_n12_session_a_policy_not_in_force_by_default
+[5] CLONE h: pytest tests/unit/governance/test_iiac_negative_guards.py -q
+    -> 4 failed, 9 passed (n05, n08, n09, n12); activation blob c505dd5b -> c067ebc4 (CRLF), OD_ENT_02_THREAT_MODEL.md rewritten;
+       verify_iiac_policy_activation (PYTHONPATH=clone) -> FAIL 'worktree activation record does not match HEAD'; preflight mode INVALID (A-01); restored with git checkout.
+[6] CLONE x (default Windows config, core.autocrlf=true):
+    pytest tests/unit/qualification/test_evol_x_closure_preflight_b4.py::test_canonical_repository_formal_closure_fails_closed_while_b6_unpublished
+    -> 1 FAILED  (assert {'A-14','A-18'} <= {'A-18'})   [RA-B4-01]
+[7] CANONICAL validators: verify_iiac_policy_activation --require-in-force (rc 0); verify_iiac_audit_manifest <certification manifest> --repo . (PASS);
+    verify_iiac_role_separation <manifest> --strict-product-diff --repo . (PASS); verify_iiac_g0_inventory_completeness (PASS, 17510 paths @ afe9e8ab)
+[8] CANONICAL preflight: --gate b6-readiness -> FAIL (A-18 x2 only); default (formal-closure) -> FAIL
+[9] Ruff: ruff check / ruff format --check on the 6 B-4 changed Python files -> clean.
+    split_ruff_exempt path matrix, gate simulations (run_ruff_changed_paths --mode staged; run_pre_commit_gate) and directory-discovery check -> see dossier §7.
+[10] Adversarial: evidence/exp_real.py (22 cases, real-evidence clone), evidence/exp_fixture.py (18 gate cases + 8 register strings), evidence/exp_fixture2.py (4 cases + S1)
+[11] CI: gh run view 42104326792 (HEAD) governance-fast -> 6 failed, 120 passed (the 4 named + test_iiac_g0_inventory x2 on a depth-1 checkout).
+
+Not run: entire platform suite; CI at 23feb2bbb (no run exists); Linux-hosted execution of the preflight.
+The implementer's "505 passed, 4 failed, 1 skipped" is not an overall green run and was not reproduced as one run.

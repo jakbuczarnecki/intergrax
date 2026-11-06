@@ -116,11 +116,15 @@ jobs:
         )
       )
     runs-on: ubuntu-latest
-    timeout-minutes: 8
+    # 8 -> 15: tests/unit/governance now also clones the real repository three times (autocrlf true/false/input, W4-F07)
+    timeout-minutes: 15
 
     steps:
       - name: Checkout
         uses: actions/checkout@v5
+        with:
+          # IIAC activation / G0 inventory checks need ancestry (HF-03, T-IGX-018-A).
+          fetch-depth: 0
 
       - name: Install uv
         uses: astral-sh/setup-uv@v6
@@ -136,6 +140,45 @@ jobs:
 
       - name: Governance unit suite (DCP)
         run: uv run --frozen pytest tests/unit/governance/ -q --tb=line
+
+  evol-x-b4-preflight:
+    # T-IGX-019-A: the EVOL-X two-gate closure preflight (anchor, exact scope, blocker lifecycle, operator records,
+    # byte contracts) and its adversarial matrix. tests/unit/governance (governance-fast) runs the real activation
+    # gate and the real preflight in fresh clones; this job runs the synthetic-repository negative guards.
+    if: >-
+      github.event_name == 'pull_request' ||
+      (
+        github.event_name == 'push' &&
+        (
+          github.ref == 'refs/heads/main' ||
+          github.ref == 'refs/heads/development'
+        )
+      )
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v5
+        with:
+          # first-publication / blocker-history derivation needs full ancestry
+          fetch-depth: 0
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@v6
+        with:
+          enable-cache: true
+          python-version: "3.12"
+
+      - name: Install dependencies (CI minimal)
+        run: uv sync --extra dev-ci --frozen
+
+      - name: EVOL-X B4 preflight negative guards (parallel, isolated tmp repositories)
+        run: >-
+          uv run --frozen pytest
+          tests/unit/qualification/test_evol_x_closure_preflight_b4.py
+          tests/unit/qualification/test_evol_x_b4_ruff_evidence_exemption.py
+          -q --tb=short -n auto
 
   governance-policy-pin:
     if: >-

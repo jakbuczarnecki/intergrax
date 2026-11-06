@@ -1,0 +1,9 @@
+{
+  "stage_id": "IIAC-GOV-1",
+  "audited_implementation_sha": "5d6b44b05f90ecf420d45d01659ea64565b52848",
+  "inventory_source_sha": "afe9e8abeabdbab410bf562ebed6f4a309a91057",
+  "matrix_publication_sha": "9bd8559b36948aefd8134232b89b7738d6dd5bbc",
+  "historical_governance_sha": "2ae1014116d353bc7742985e62f2bccc2bfac798",
+  "independent_enumerator": ".tmp/session/IIAC-GOV-B-REAUDIT/independent_f01_enum.py",
+  "product_diff_2ae10141_to_head": []
+}

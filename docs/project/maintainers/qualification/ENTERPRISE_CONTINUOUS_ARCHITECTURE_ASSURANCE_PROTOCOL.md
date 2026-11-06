@@ -42,7 +42,8 @@ This protocol MUST ensure that enterprise compliance is **evidence-driven**, **s
 | **ECAP-P1** | Passing functional tests or a small suite MUST NOT imply enterprise compliance. |
 | **ECAP-P2** | Historical stage `CLOSED` MUST NOT imply current-HEAD `FRZ-*` PASS. |
 | **ECAP-P3** | A change-delta audit MUST NOT claim full-platform certification. |
-| **ECAP-P4** | Implementation agents MUST NOT self-accept `FRZ-*` PASS. |
+| **ECAP-P4** | Implementation agents MUST NOT self-accept `FRZ-*` PASS or publish `IIAC_*_PASS` / activate IIAC policy. |
+| **IIAC** | [INTEGRAX Internal Independent Agent Certification Protocol](INTEGRAX_INTERNAL_INDEPENDENT_AGENT_CERTIFICATION_PROTOCOL.md) — **NOT IN FORCE** until the fail-closed activation gate and an operator activation record. Session B PASS does not by itself activate the policy. |
 | **ECAP-P5** | Replaceability MUST NOT be claimed without RPL-A..H evidence where extensibility is promised. |
 | **ECAP-P6** | Corrective work MUST be opened only for proven invariant violations or missing mandatory evidence—not hypothetical perfection. |
 
@@ -83,7 +84,10 @@ Conflicts with ratified domain semantics: **STOP — ARCHITECTURE DECISION REQUI
 | --- | --- |
 | **Implementation agent** | Produce scoped changes; attach *candidate* evidence; never final PASS. |
 | **Independent auditor** | Exact-SHA verification; adversarial review; findings classification (§13). |
-| **Operator / program owner** | Stage closure on roadmap; FRZ status updates only after independent acceptance. |
+| **Certification agent** | After independent PASS: validate manifest, role separation, eligibility for ladder/FRZ publication — not a substitute for audit. |
+| **Operator / program owner** | IIAC policy activation, infrastructure outside IIAC scope, PROD-Q live, legal; FRZ status updates only after independent acceptance (human or IIAC per active policy). |
+
+**IIAC transition:** When [`IIAC_POLICY_ACTIVATION_RECORD.json`](IIAC_POLICY_ACTIVATION_RECORD.json) is `IN_FORCE`, pre-production EVOL/ENT B6 authority follows **IIAC-B6** (manifest + certifier gate). Human Protocol 03 records @ EBH-6/DUP-X/… remain **historical (category 6)**.
 
 ### ECAP-§1.7 Evidence definition
 
@@ -145,9 +149,9 @@ Conflicts with ratified domain semantics: **STOP — ARCHITECTURE DECISION REQUI
 | **B3** | Positive proofs per stage qualification record. |
 | **B4** | Adversarial negatives (fail-closed, bypass attempts). |
 | **B5** | Execution evidence bundle at exact SHA. |
-| **B6** | Independent exact-SHA acceptance recorded in roadmap §5 ledger. |
+| **B6** | Independent exact-SHA acceptance recorded in roadmap §5 ledger. **Active policy:** human Protocol 03 until IIAC `IN_FORCE`; then **IIAC-B6** (independent agent session + manifest + certifier gate — semantics preserved). |
 
-**EVOL-X scoped automation (not in force):** amendment `ECAP-P4-EVOL-SCOPE-AUTO-B6` version `2026-11-02.1-pending` is operator-direction-approved as **OD-EVOL-14** and remains activation **`PENDING_REQUIRED_APPROVALS`** / effect **`NOT_IN_FORCE`**. Until activation is `IN_FORCE`, this B6 row stays the controlling acceptance rule. The implementer commit that records the amendment does not activate it. See [evol_x/EVOL_X_PROPOSED_ECAP_AUTOMATED_B6_ORGANIZATIONAL_ACCEPTANCE_AMENDMENT.md](evol_x/EVOL_X_PROPOSED_ECAP_AUTOMATED_B6_ORGANIZATIONAL_ACCEPTANCE_AMENDMENT.md).
+**EVOL-X scoped automation (not in force):** amendment `ECAP-P4-EVOL-SCOPE-AUTO-B6` … **Superseded by IIAC** when IIAC activates — archive with pointer; no dual activation.
 
 ### ECAP-§2.C Full Platform Current-HEAD Audit
 

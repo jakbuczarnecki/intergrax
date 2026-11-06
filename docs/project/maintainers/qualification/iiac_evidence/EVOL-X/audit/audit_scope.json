@@ -1,0 +1,45 @@
+{
+  "stage_id": "EVOL-X",
+  "certification_profile": "iiac-v1",
+  "policy_version": "IIAC-2026-11-05.1",
+  "auditor_role": "independent-quality-auditor",
+  "audited_implementation_sha": "3c4a641b3e48a13f437e830a0562e2a80b03aabb",
+  "test_execution_sha": "3c4a641b3e48a13f437e830a0562e2a80b03aabb",
+  "evidence_publication_sha": "bbf3e33bc62a05fd205e07f3d2e35a6d1d689ca1",
+  "audit_execution_sha": "bbf3e33bc62a05fd205e07f3d2e35a6d1d689ca1",
+  "audit_session_head_sha": "06a459afbab3aa8cea89e4118865d55e7b537a34",
+  "ladder_reconstruction": {
+    "source": "docs/project/maintainers/qualification/evol_x/EVOL_X_SHA_LADDER.md (C-LADDER-01)",
+    "PLAN_PUBLICATION_SHA": "b4fca4bc413a650b2e5a8dd8826669a9025864c5",
+    "TEST_EXECUTION_SHA": "3c4a641b3e48a13f437e830a0562e2a80b03aabb",
+    "EVIDENCE_TECH_PUBLICATION_SHA": "1e175ff8f678d605aa841ae52362486a56ed006d",
+    "EVIDENCE_FINAL_PUBLICATION_SHA": "bbf3e33bc62a05fd205e07f3d2e35a6d1d689ca1",
+    "QUALIFIED_CI_RUN": "41337077334",
+    "B6_ACCEPTANCE_PUBLICATION_SHA": "PENDING (certifier)",
+    "FORMAL_CLOSURE_PUBLICATION_SHA": "PENDING (certifier)"
+  },
+  "in_scope": [
+    "testing_support/change_safety/** (46 files) @ TES",
+    "tests/qualification/evol_x/** (80 files, 290 VL3 node ids) @ TES",
+    "tests/fixtures/evol_x/** (S1..S8 fixture trees) @ TES",
+    "scripts/qualification/evol_x_p03_evidence.py, evol_x_vl3_manifest.py (verifier + manifest tooling) @ TES/FINAL",
+    "FINAL evidence bundle docs/project/maintainers/qualification/evol_x/evol_x_p03_independent_replay (27 artifacts) @ FINAL",
+    "FRZ-EVOL-01..10 criterion rows, master plan v3 Part VII IDs, S1..S8, CW-01..10, EVOL-M-01..11",
+    "CI run 41337077334 provenance",
+    "cross-stage regression of the EVOL-X suite at current HEAD"
+  ],
+  "out_of_scope_by_authority": [
+    "PLATFORM_CONSERVATIVE_FULL / T4 full-repo gate-unit population (master plan Part II-B)",
+    "DIM-B PROD-Q live qualification (OD-EVOL-10)",
+    "tests/unit/agents/test_reference_harness_strict.py (RC-7 baseline defect, OD-EVOL-10)",
+    "production ActivationService.rollback enforcement (OD-EVOL-05b Option 1)",
+    "M-09H human drill (OD-EVOL-13 AUTOMATION_FIRST_SCOPED)",
+    "ENT-AUDIT-X and ARCH-FREEZE closure",
+    "roadmap, checklist and ladder publication (certifier)"
+  ],
+  "write_surface": "Auditor wrote only untracked files under docs/project/maintainers/qualification/iiac_evidence/EVOL-X/audit/ and docs/project/maintainers/qualification/evol_x/EVOL_X_IIAC_INDEPENDENT_AUDIT_PASS_RECORD.md. No tracked file was modified; no commit; no push. Scratch worktrees under build/iiac-c (git-ignored).",
+  "product_paths_changed_by_auditor": [],
+  "evol_x_scope_files_changed_between_TES_and_HEAD": [],
+  "product_prefix_files_changed_between_TES_and_FINAL": [],
+  "product_prefix_files_changed_between_TES_and_HEAD_not_by_auditor": 34
+}

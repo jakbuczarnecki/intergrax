@@ -1,0 +1,36 @@
+{
+  "schema_version": "iiac_evidence_publication_binding.v1",
+  "stage_id": "EVOL-X-B4-CORRECTIVE",
+  "binding_kind": "ORIGINAL_INDEPENDENT_REAUDIT_EVIDENCE_PUBLICATION",
+  "evidence_publication_sha": "cf264f3cf99df8ddeb242142dd4b24ce5c379e4d",
+  "evidence_dir": "docs/project/maintainers/qualification/iiac_evidence/EVOL-X/b4_reaudit/",
+  "evidence_index_sha256": "4664741d3cb7f7fa907ce046cb04a3cb37dd0a611ee19f2d3913a662663226d6",
+  "indexed_artifact_count": 10,
+  "delegation_record": "docs/project/maintainers/qualification/IIAC_OD_DELEGATION_EVOLX_B4_EVIDENCE_PUBLICATION_2026-11-06.md",
+  "delegation_record_sha256": "2120852e5f06e709f3d0273b798e912740a2533ec9fb2dbafc4cb0cb69b76e15",
+  "decision_id": "OD-EVOLX-B4-PUB-01",
+  "auditor_session_id": "cf31a7e9-08ee-47f4-84ca-5b420d9a377d",
+  "publication_session_id": "9e3b9293-fa2a-4176-ab50-1f11470bebb8",
+  "implementation_session_id": "UNRECORDED_IN_REPOSITORY",
+  "auditor_verdict": "EVOL-X B-4 — PARTIAL / EXACT BLOCKERS",
+  "verdict_preserved": true,
+  "assurance_level": "process_enforced",
+  "not_certification": true,
+  "not_asserted": [
+    "PASS",
+    "B-4 closed",
+    "RA-B4-01..04 resolved",
+    "B6 acceptance",
+    "FRZ-EVOL promotion",
+    "OD-EVOL-12",
+    "OD-EVOLX-08",
+    "EVOL-X CLOSED"
+  ],
+  "supersedes": {
+    "path": "docs/project/maintainers/qualification/IIAC_EVOLX_B4_EVIDENCE_PUBLICATION_BINDING.json",
+    "sha256": "584c504e4c7d1521de0772663e5b7277d2e599c870956b6b6b664b490df75be9",
+    "transcoding": "cp1252 -> utf-8 (byte 0x97 -> U+2014)",
+    "reason": "W4-F06: the original binding is not valid UTF-8 and is kept byte-for-byte as published; this evidence-only republication changes encoding only, no field value"
+  },
+  "republication_ticket": "governance/tickets/T-IGX-019-A.md"
+}

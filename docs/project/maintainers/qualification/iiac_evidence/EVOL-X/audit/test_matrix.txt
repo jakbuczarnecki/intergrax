@@ -1,0 +1,38 @@
+EVOL-X independent IIAC audit — executed test matrix (Session C)
+Role: independent-quality-auditor
+Policy: IIAC-2026-11-05.1 (IN_FORCE @ f8c29fb8dfe5e14d9b06ff16659fd9cbe9ad326d)
+Audit session head: 06a459afbab3aa8cea89e4118865d55e7b537a34 (development == origin/development)
+Environment: Windows 11 Home 10.0.26200, Python 3.12.11, uv 0.13.4, git 2.46.0.windows.1, uv.lock sha256 faa8445d7410c2ee92c96a7373b707a04700bb467dd5a87ea0a4799a2e03355d (identical at TES and FINAL)
+Worktrees: build/iiac-c/{final,tes,probe,adv} (short paths; detached; removed after publication of evidence)
+
+ID  | Step | Command / method | Result
+C0-1 | IIAC gate | uv run python scripts/governance/verify_iiac_policy_activation.py --require-in-force | exit 0 (IN_FORCE)
+C0-2 | Activation ancestry | git merge-base --is-ancestor f8c29fb8dfe5e14d9b06ff16659fd9cbe9ad326d HEAD | yes
+C0-3 | Ladder SHAs | git cat-file -t / merge-base --is-ancestor for PLAN, TES, TECH, FINAL, internal closure, R2, formal-campaign, P03 publication SHAs | all commits, all ancestors of HEAD
+C0-4 | TES -> FINAL | merge-base --is-ancestor TES FINAL; git diff --name-only TES FINAL | yes; only scripts/qualification/evol_x_finalize_automation_first_scoped.py, evol_x_run_m09a_automated_batch.py + evidence bundle
+C0-5 | TES tree binding | git rev-parse TES^{tree} vs MANIFEST parent_test_execution_tree | 3244d4ea9c9bfb388ffb614656c71f0b7eafd3ad == 3244d4ea9c9bfb388ffb614656c71f0b7eafd3ad
+C0-6 | Independence | Session C is a new Claude Code session; no commit by the auditor; git status clean for tracked files | satisfied (operator attestation record pending: F-C-09)
+A-1  | Mode A @ FINAL | worktree FINAL; uv sync --extra dev-ci --frozen; uv run python scripts/qualification/evol_x_p03_evidence.py verify-evidence-publish | exit 0 {"status": "EVIDENCE_INTEGRITY_OK", "mode": "A", "disposition": "final", "evidence_head": "bbf3e33bc62a05fd205e07f3d2e35a6d1d689ca1"}
+A-2  | Independent digest recomputation | sha256 over git blobs @ FINAL for 27 ARTIFACT_DIGESTS entries | 27 ok / 0 bad; MANIFEST artifact_paths == digest keys
+B-1  | VL3 manifest | worktree TES; uv run python scripts/qualification/evol_x_vl3_manifest.py --check | exit 0, 290 node ids
+B-2  | Mode B pytest replay | uv run pytest tests/qualification/evol_x -q --basetemp=<outside worktree> --junitxml=mode_b_junit.xml | 290 passed in 767.63s; junit sha256 fe8abfce17f9c08584bffae211a1cd309900b631c9a36b50da97f55909bc2a05
+B-3  | Mode B verification | verify-test-execution --evidence-ref bbf3e33bc62a05fd205e07f3d2e35a6d1d689ca1 --certification --replay-junit mode_b_junit.xml | exit 0 {"status": "EVIDENCE_INTEGRITY_OK", "mode": "B", "test_execution_sha": "3c4a641b3e48a13f437e830a0562e2a80b03aabb"}
+B-4  | Outcome-map equality | replay outcome map (290) vs published evol_junit_outcomes.v1.json | identical keys and outcomes (290/290 passed)
+R-1  | HEAD regression | uv run pytest tests/qualification/evol_x -q at 06a459afb | 290 passed in 777.07s; outcome map identical to TES replay
+CI-1 | CI provenance | gh run view 41337077334 --log (job evol-x-p3-l3-qualification) | success; 'Checkout TEST_EXECUTION_SHA' asserts git rev-parse HEAD == 3c4a641b3e48a13f437e830a0562e2a80b03aabb; '290 passed in 530.02s'; run headSha a00674d6… is the workflow-definition commit, not the test tree
+C-1  | Mode A tamper (adversary re-signs digests) | evidence/probes/probe_tamper.py (12 cases T1..T12) | 12/12 DETECTED for the correct reason (probe_tamper_v2.log; v1 superseded: F-C-10)
+C-2  | Mode B replay tamper | evidence/probes/probe_modeb.py (MB1..MB5) | 5/5 rejected; MB3 and MB5 by unhandled KeyError (F-C-01)
+C-3  | Wrong evidence-ref (TES instead of FINAL) | verify-test-execution --evidence-ref TES --certification | exit 2 fail-closed
+C-4  | Certification without replay junit | verify-test-execution --certification (no --replay-junit) | exit 2 fail-closed
+C-5  | CLI with dropped replay node | verify-test-execution --certification --replay-junit <junit minus 1 testcase> | exit 1 (KeyError traceback, not exit 2): F-C-01
+C-6  | Selection safety probe | probe_selection.py: 56 stratified real paths + 3 unknown paths @ TES | 0 under-selection vs independent AST oracle; unknown paths -> CONSERVATIVE_FULL; selection sizes 57 / 347 only (F-C-04)
+C-7  | Impact vs independent AST closure | probe_impact.py: 60 real changes @ TES | 0 production modules missed (75,380 closure elements); 4,161 test modules missed (F-C-03)
+C-8  | Deployment matrix exhaustive | probe_assess.py: 384 DeployFacts combinations | no eligible verdict for missing evidence / forward-only rollback / incompatible schema / unknown operation / non-drainable pins; DM-07 roll_forward + MIGRATION_REQUIRED eligible by design (auditor invariant I4 reviewed and dismissed)
+C-9  | Workflow matrix exhaustive | probe_assess.py: 128 WorkflowChange inputs | 0 unsafe in-flight adoptions
+C-10 | Extension safety classification | probe_assess.py: classify every tracked file as a single-path change | all intergrax/*.py non-registry -> UNCLASSIFIED (Class C); 405 md + 1 json under intergrax/ -> EXTENSION_ONLY (F-C-07)
+C-11 | Metric re-derivation | probe_metrics.py: collect_all(inventory, head) vs evol_metrics.v1.json | 16/17 identical (numerator, denominator, population digest, status); EVOL-M-09A placeholder at TES, re-derived by Mode A registry oracle
+C-12 | Baseline defect RC-7 | uv run pytest tests/unit/agents/test_reference_harness_strict.py --collect-only | still ImportError at HEAD (F-C-11; outside EVOL scope by OD-EVOL-10)
+X-1  | Repo cleanliness | git status --short (tracked) before artifact publication | empty
+X-2  | EVOL-X scope drift | git diff --name-status TES HEAD -- testing_support tests/qualification/evol_x tests/fixtures/evol_x | 0 files
+X-3  | Bundle drift | git diff --name-status FINAL HEAD -- evol_x_p03_independent_replay | 0 files
+V-1  | Manifest validators on certifier-completed copy | see evidence/logs/validator_runs.txt | see file

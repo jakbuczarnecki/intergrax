@@ -1,0 +1,11 @@
+Traceback (most recent call last):
+  File "D:\Projekty\intergrax\build\iiac-c\tes\scripts\qualification\evol_x_p03_evidence.py", line 273, in <module>
+    raise SystemExit(main())
+                     ^^^^^^
+  File "D:\Projekty\intergrax\build\iiac-c\tes\scripts\qualification\evol_x_p03_evidence.py", line 259, in main
+    problems = p03.verify_mode_b(
+               ^^^^^^^^^^^^^^^^^^
+  File "D:\Projekty\intergrax\build\iiac-c\tes\testing_support\change_safety\evidence\p03.py", line 610, in verify_mode_b
+    f"non-passed replay outcome: {n}={replay_outcomes[n]}"
+                                      ~~~~~~~~~~~~~~~^^^
+KeyError: 'tests/qualification/evol_x/experiments/test_evol_x_exp_anti_vacuity.py::test_evol_x_exp_negative_arm_is_non_vacuous[S1]'

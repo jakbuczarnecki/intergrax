@@ -1,0 +1,7 @@
+replay outcomes: 290 {'passed'}
+CONTROL: OK
+[DETECTED] MB1 one test failed: ['outcome swapped for tests/qualification/evol_x/experiments/test_evol_x_exp_anti_vacuity.py::test_evol_x_exp_negative_arm_is_non_vacuous[S1]: archived=passed replay=failed', 'non-passed replay outcome: tests/qualification/evol_
+[DETECTED] MB2 one test skipped: ['outcome swapped for tests/qualification/evol_x/experiments/test_evol_x_exp_anti_vacuity.py::test_evol_x_exp_negative_arm_is_non_vacuous[S1]: archived=passed replay=skipped', 'non-passed replay outcome: tests/qualification/evo
+[DETECTED_BY_UNHANDLED_EXCEPTION] MB3 one node missing from replay: KeyError 'tests/qualification/evol_x/experiments/test_evol_x_exp_anti_vacuity.py::test_evol_x_exp_negative_arm_is_non_vacuous[S1]
+[DETECTED] MB4 extra forged node: ['unexpected in replay: tests/qualification/evol_x/forged.py::test_x']
+[DETECTED_BY_UNHANDLED_EXCEPTION] MB5 empty replay: KeyError 'tests/qualification/evol_x/experiments/test_evol_x_exp_anti_vacuity.py::test_evol_x_exp_negative_arm_is_non_vacuous[S1]

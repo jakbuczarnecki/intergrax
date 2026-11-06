@@ -1,0 +1,1141 @@
+{
+  "schema_version": "iiac_frz_evol_acceptance_matrix.v1",
+  "stage_id": "EVOL-X",
+  "audited_implementation_sha": "3c4a641b3e48a13f437e830a0562e2a80b03aabb",
+  "evidence_publication_sha": "bbf3e33bc62a05fd205e07f3d2e35a6d1d689ca1",
+  "rows": [
+    {
+      "frz_id": "FRZ-EVOL-01",
+      "checklist_requirement": "semantic change-impact assessment exists for in-scope platform surfaces",
+      "checklist_status_at_head": "OPEN",
+      "bundle_behavioral_test": "frz/test_evol_x_frz_01_semantic_impact.py::test_frz_evol_01_impact_digests_bind_to_inventory",
+      "bundle_scope_footnote": "",
+      "replayed_tests": [
+        {
+          "node": "frz/test_evol_x_frz_01_semantic_impact.py::test_frz_evol_01_impact_digests_bind_to_inventory",
+          "tes_replay": "passed",
+          "head_replay": "passed"
+        },
+        {
+          "node": "frz/test_evol_x_frz_01_semantic_impact.py::test_frz_evol_01_impact_is_graph_derived_not_filename_derived",
+          "tes_replay": "passed",
+          "head_replay": "passed"
+        },
+        {
+          "node": "frz/test_evol_x_frz_01_semantic_impact.py::test_frz_evol_01_unknown_path_is_conservative_never_guessed",
+          "tes_replay": "passed",
+          "head_replay": "passed"
+        },
+        {
+          "node": "gates/test_evol_x_intake_and_impact.py::test_evol_x_git_change_set_fails_closed_on_bad_sha",
+          "tes_replay": "passed",
+          "head_replay": "passed"
+        },
+        {
+          "node": "gates/test_evol_x_intake_and_impact.py::test_evol_x_impact_excluded_doc_path_is_explicit_not_unknown",
+          "tes_replay": "passed",
+          "head_replay": "passed"
+        },
+        {
+          "node": "gates/test_evol_x_intake_and_impact.py::test_evol_x_impact_graph_digest_is_semantic_not_inventory",
+          "tes_replay": "passed",
+          "head_replay": "passed"
+        },
+        {
+          "node": "gates/test_evol_x_intake_and_impact.py::test_evol_x_impact_rename_class_intake_marks_both_paths",
+          "tes_replay": "passed",
+          "head_replay": "passed"
+        },
+        {
+          "node": "gates/test_evol_x_intake_and_impact.py::test_evol_x_impact_transitive_consumer_witness_and_tested_by",
+          "tes_replay": "passed",
+          "head_replay": "passed"
+        },
+        {
+          "node": "gates/test_evol_x_intake_and_impact.py::test_evol_x_impact_unknown_path_is_conservative_not_silent_complete",
+          "tes_replay": "passed",
+          "head_replay": "passed"
+        },
+        {
+          "node": "gates/test_evol_x_intake_and_impact.py::test_evol_x_impact_unknown_python_path_not_in_inventory_is_unknown",
+          "tes_replay": "passed",
+          "head_replay": "passed"
+        },
+        {
+          "node": "gates/test_evol_x_intake_and_impact.py::test_evol_x_parse_name_status_rename_yields_old_and_new",
+          "tes_replay": "passed",
+          "head_replay": "passed"
+        }
+      ],
+      "experiments": {},
+      "metrics": {
+        "EVOL-M-01": {
+          "status": "MEASURED",
+          "numerator": 40,
+          "denominator": 40,
+          "passed": true
+        }
+      },
+      "auditor_probes": [
+        "P-IMP: Impact-graph vs independent AST reverse-import closure (60 changes; 0 missed production modules; test-module ownership gap quantified) \u2014 evidence/logs/probe_impact_v4.log",
+        "P-SEL: Selection safety probe (56 stratified real paths, 0 under-selection; unknown paths conservative) \u2014 evidence/logs/probe_selection_rows.json"
+      ],
+      "auditor_basis": "Impact is graph-derived (19 typed REL extractors), unknown paths fail closed to CONSERVATIVE_FULL, digests bind to the closed-world inventory. Independent AST closure probe found 0 missed production consumers in 60 sampled real changes (75,380 closure elements). Test-ownership edges are direct-import only (F-C-03).",
+      "limitations": [
+        "LIM-03"
+      ],
+      "findings": [
+        "F-C-03"
+      ],
+      "auditor_result": "PASS \u2014 SCOPED",
+      "freeze_checklist_status_change_by_auditor": "NONE (auditor does not promote FRZ rows)",
+      "certifier_eligibility": "ELIGIBLE for per-row scoped promotion text only; global FRZ PASS forbidden"
+    },
+    {
+      "frz_id": "FRZ-EVOL-02",
+      "checklist_requirement": "change-impact graph coverage meets ratified threshold (EVOL-M-02)",
+      "checklist_status_at_head": "OPEN",
+      "bundle_behavioral_test": "frz/test_evol_x_frz_02_graph_coverage.py::test_frz_evol_02_coverage_report_and_cw06_green",
+      "bundle_scope_footnote": "",
+      "replayed_tests": [
+        {
+          "node": "frz/test_evol_x_frz_02_graph_coverage.py::test_frz_evol_02_coverage_report_and_cw06_green",
+          "tes_replay": "passed",
+          "head_replay": "passed"
+        },
+        {
+          "node": "frz/test_evol_x_frz_02_graph_coverage.py::test_frz_evol_02_omission_is_detected_when_edge_removed",
+          "tes_replay": "passed",
+          "head_replay": "passed"
+        },
+        {
+          "node": "frz/test_evol_x_frz_02_graph_coverage.py::test_frz_evol_02_text_pairs_are_covered_by_graph_edges",
+          "tes_replay": "passed",
+          "head_replay": "passed"
+        },
+        {
+          "node": "gates/test_evol_x_graph_coverage.py::test_evol_x_critical_omissions_oracle_is_real_not_hardcoded",
+          "tes_replay": "passed",
+          "head_replay": "passed"
+        },
+        {
+          "node": "gates/test_evol_x_graph_coverage.py::test_evol_x_graph_digest_is_rel_aware_and_tamper_evident",
+          "tes_replay": "passed",
+          "head_replay": "passed"
+        },
+        {
+          "node": "gates/test_evol_x_graph_coverage.py::test_evol_x_leave_one_out_each_sampled_consumer_detected",
+          "tes_replay": "passed",
+          "head_replay": "passed"
+        },
+        {
+          "node": "gates/test_evol_x_graph_coverage.py::test_evol_x_semantic_graph_digest_stable",
+          "tes_replay": "passed",
+          "head_replay": "passed"
+        },
+        {
+          "node": "metrics/test_evol_x_m02_adversarial.py::test_m02_graph_text_gap_hidden_consumer_not_orphan",
+          "tes_replay": "passed",
+          "head_replay": "passed"
+        }
+      ],
+      "experiments": {},
+      "metrics": {
+        "EVOL-M-02": {
+          "status": "MEASURED",
+          "numerator": 11528,
+          "denominator": 11528,
+          "passed": true
+        },
+        "EVOL-M-02C": {
+          "status": "MEASURED",
+          "numerator": 0,
+          "denominator": 11528,
+          "passed": true
+        }
+      },
+      "auditor_probes": [
+        "P-IMP: Impact-graph vs independent AST reverse-import closure (60 changes; 0 missed production modules; test-module ownership gap quantified) \u2014 evidence/logs/probe_impact_v4.log",
+        "P-MET: Independent metric re-derivation (16/17 identical; M-09A re-derived by Mode A) \u2014 evidence/logs/probe_metrics.log"
+      ],
+      "auditor_basis": "M-02 11528/11528 CW-06 pairs, critical omissions 0, leave-one-out detection, independent re-derivation identical, independent AST closure shows 0 production misses.",
+      "limitations": [],
+      "findings": [],
+      "auditor_result": "PASS",
+      "freeze_checklist_status_change_by_auditor": "NONE (auditor does not promote FRZ rows)",
+      "certifier_eligibility": "ELIGIBLE for per-row scoped promotion text only; global FRZ PASS forbidden"
+    },
+    {
+      "frz_id": "FRZ-EVOL-03",
+      "checklist_requirement": "change isolation / blast radius explainable per scenario and application",
+      "checklist_status_at_head": "OPEN",
+      "bundle_behavioral_test": "frz/test_evol_x_frz_03_blast_radius.py::test_frz_evol_03_every_escape_on_real_inventory_has_a_witness",
+      "bundle_scope_footnote": "",
+      "replayed_tests": [
+        {
+          "node": "frz/test_evol_x_frz_03_blast_radius.py::test_frz_evol_03_every_escape_on_real_inventory_has_a_witness",
+          "tes_replay": "passed",
+          "head_replay": "passed"
+        },
+        {
+          "node": "frz/test_evol_x_frz_03_blast_radius.py::test_frz_evol_03_s1_arms_pass",
+          "tes_replay": "passed",
+          "head_replay": "passed"
+        },
+        {
+          "node": "gates/test_evol_x_isolation.py::test_cross_app_consumer_is_flagged_as_escape",
+          "tes_replay": "passed",
+          "head_replay": "passed"
+        },
+        {
+          "node": "gates/test_evol_x_isolation.py::test_declared_shared_surface_is_not_an_escape",
+          "tes_replay": "passed",
+          "head_replay": "passed"
+        },
+        {
+          "node": "gates/test_evol_x_isolation.py::test_local_change_blast_stays_in_app_or_flags_escape",
+          "tes_replay": "passed",
+          "head_replay": "passed"
+        },
+        {
+          "node": "gates/test_evol_x_isolation.py::test_node_and_path_application_parsers",
+          "tes_replay": "passed",
+          "head_replay": "passed"
+        }
+      ],
+      "experiments": {
+        "S1": [
+          {
+            "arm": "positive",
+            "passed": true,
+            "detail": "blast_apps=['app_a'] escapes=[]"
+          },
+          {
+            "arm": "negative",
+            "passed": true,
+            "detail": "escapes=['module:applications.app_b.escape'] naive_blast=['app_a'] blast=['app_a', 'app_b']"
+          }
+        ]
+      },
+      "metrics": {
+        "EVOL-M-06": {
+          "status": "MEASURED",
+          "numerator": 0,
+          "denominator": 1,
+          "passed": true
+        }
+      },
+      "auditor_probes": [
+        "P-IMP: Impact-graph vs independent AST reverse-import closure (60 changes; 0 missed production modules; test-module ownership gap quantified) \u2014 evidence/logs/probe_impact_v4.log"
+      ],
+      "auditor_basis": "Every escape on the real inventory has a witness path; S1 positive (blast=app_a) and negative (cross-app escape detected where naive blast would miss it).",
+      "limitations": [],
+      "findings": [],
+      "auditor_result": "PASS",
+      "freeze_checklist_status_change_by_auditor": "NONE (auditor does not promote FRZ rows)",
+      "certifier_eligibility": "ELIGIBLE for per-row scoped promotion text only; global FRZ PASS forbidden"
+    },
+    {
+      "frz_id": "FRZ-EVOL-04",
+      "checklist_requirement": "contract/schema evolution at change time detects consumers (COMPAT policy applied)",
+      "checklist_status_at_head": "OPEN",
+      "bundle_behavioral_test": "frz/test_evol_x_frz_04_contract_consumers.py::test_frz_evol_04_no_orphan_consumers_on_real_inventory",
+      "bundle_scope_footnote": "",
+      "replayed_tests": [
+        {
+          "node": "frz/test_evol_x_frz_04_contract_consumers.py::test_frz_evol_04_no_orphan_consumers_on_real_inventory",
+          "tes_replay": "passed",
+          "head_replay": "passed"
+        },
+        {
+          "node": "frz/test_evol_x_frz_04_contract_consumers.py::test_frz_evol_04_s2_and_s5_arms_pass",
+          "tes_replay": "passed",
+          "head_replay": "passed"
+        },
+        {
+          "node": "gates/test_evol_x_compat_adapter.py::test_evol_x_compat_registry_schema_self_compatible_and_mutations_detected[AcpSessionState]",
+          "tes_replay": "passed",
+          "head_replay": "passed"
+        },
+        {
+          "node": "gates/test_evol_x_compat_adapter.py::test_evol_x_compat_registry_schema_self_compatible_and_mutations_detected[AgentRunCheckpoint]",
+          "tes_replay": "passed",
+          "head_replay": "passed"
+        },
+        {
+          "node": "gates/test_evol_x_compat_adapter.py::test_evol_x_compat_registry_schema_self_compatible_and_mutations_detected[AgentRunRequest]",
+          "tes_replay": "passed",
+          "head_replay": "passed"
+        },
+        {
+          "node": "gates/test_evol_x_compat_adapter.py::test_evol_x_compat_registry_schema_self_compatible_and_mutations_detected[AgentRunResult]",
+          "tes_replay": "passed",
+          "head_replay": "passed"
+        },
+        {
+          "node": "gates/test_evol_x_compat_adapter.py::test_evol_x_compat_registry_schema_self_compatible_and_mutations_detected[AgentRunTrace]",
+          "tes_replay": "passed",
+          "head_replay": "passed"
+        },
+        {
+          "node": "gates/test_evol_x_compat_adapter.py::test_evol_x_compat_registry_schema_self_compatible_and_mutations_detected[ArtifactRef]",
+          "tes_replay": "passed",
+          "head_replay": "passed"
+        },
+        {
+          "node": "gates/test_evol_x_compat_adapter.py::test_evol_x_compat_registry_schema_self_compatible_and_mutations_detected[OrganizationalPolicyEnvelope]",
+          "tes_replay": "passed",
+          "head_replay": "passed"
+        },
+        {
+          "node": "gates/test_evol_x_compat_adapter.py::test_evol_x_compat_registry_schema_self_compatible_and_mutations_detected[SideEffectRecord]",
+          "tes_replay": "passed",
+          "head_replay": "passed"
+        },
+        {
+          "node": "gates/test_evol_x_compat_adapter.py::test_evol_x_compat_type_change_enum_narrowing_removed_optional",
+          "tes_replay": "passed",
+          "head_replay": "passed"
+        },
+        {
+          "node": "gates/test_evol_x_compat_adapter.py::test_evol_x_compat_unknown_when_not_comparable_fail_closed",
+          "tes_replay": "passed",
+          "head_replay": "passed"
+        },
+        {
+          "node": "gates/test_evol_x_compat_adapter.py::test_evol_x_compat_x_adapter_reads_registry",
+          "tes_replay": "passed",
+          "head_replay": "passed"
+        },
+        {
+          "node": "gates/test_evol_x_compat_adapter.py::test_evol_x_event_schema_field_removal_incompatible",
+          "tes_replay": "passed",
+          "head_replay": "passed"
+        },
+        {
+          "node": "gates/test_evol_x_compat_adapter.py::test_evol_x_persisted_schema_bump_without_migration_is_never_silent",
+          "tes_replay": "passed",
+          "head_replay": "passed"
+        },
+        {
+          "node": "gates/test_evol_x_consumer_index.py::test_evol_x_consumer_closure_orphans_zero_on_head",
+          "tes_replay": "passed",
+          "head_replay": "passed"
+        },
+        {
+          "node": "gates/test_evol_x_consumer_index.py::test_evol_x_consumer_index_non_empty",
+          "tes_replay": "passed",
+          "head_replay": "passed"
+        },
+        {
+          "node": "gates/test_evol_x_consumer_index.py::test_evol_x_orphan_import_targets_detects_dangling",
+          "tes_replay": "passed",
+          "head_replay": "passed"
+        },
+        {
+          "node": "gates/test_evol_x_consumer_index.py::test_evol_x_w3_02_hidden_consumer_detected_and_orphans_zero_on_head",
+          "tes_replay": "passed",
+          "head_replay": "passed"
+        }
+      ],
+      "experiments": {
+        "S2": [
+          {
+            "arm": "positive",
+            "passed": true,
+            "detail": "consumers=['module:agents.fx_planner.plan', 'module:applications.app_a.billing', 'module:applications.app_b.ship', 'module:applications.app_c.hidden'] orphans=0 breaking=INCOMPATIBLE"
+          },
+          {
+            "arm": "negative",
+            "passed": true,
+            "detail": "hidden=['module:applications.app_c.hidden'] naive_missed=['module:applications.app_c.hidden']"
+          }
+        ],
+        "S5": [
+          {
+            "arm": "positive",
+            "passed": true,
+            "detail": "migrate=MIGRATION_REQUIRED additive=COMPATIBLE"
+          },
+          {
+            "arm": "negative",
+            "passed": true,
+            "detail": "no_migration=INCOMPATIBLE reasons=['type changed:total', 'no migration registered (silent break)']"
+          }
+        ]
+      },
+      "metrics": {
+        "EVOL-M-07": {
+          "status": "MEASURED",
+          "numerator": 4,
+          "denominator": 4,
+          "passed": true
+        }
+      },
+      "auditor_probes": [],
+      "auditor_basis": "Consumer closure with zero orphans on the real inventory; S2 hidden consumer detected where naive search misses it; S5 incompatible migration blocked; COMPAT policy consumed, not re-owned.",
+      "limitations": [],
+      "findings": [],
+      "auditor_result": "PASS",
+      "freeze_checklist_status_change_by_auditor": "NONE (auditor does not promote FRZ rows)",
+      "certifier_eligibility": "ELIGIBLE for per-row scoped promotion text only; global FRZ PASS forbidden"
+    },
+    {
+      "frz_id": "FRZ-EVOL-05",
+      "checklist_requirement": "scenario/workflow definition evolution rules explicit (in-flight instances)",
+      "checklist_status_at_head": "OPEN",
+      "bundle_behavioral_test": "frz/test_evol_x_frz_05_workflow_evolution.py::test_frz_evol_05_matrix_total_and_no_unsafe_adoption",
+      "bundle_scope_footnote": "",
+      "replayed_tests": [
+        {
+          "node": "frz/test_evol_x_frz_05_workflow_evolution.py::test_frz_evol_05_matrix_total_and_no_unsafe_adoption",
+          "tes_replay": "passed",
+          "head_replay": "passed"
+        },
+        {
+          "node": "frz/test_evol_x_frz_05_workflow_evolution.py::test_frz_evol_05_s3_dual_arm_passes",
+          "tes_replay": "passed",
+          "head_replay": "passed"
+        },
+        {
+          "node": "gates/test_evol_x_workflow_matrix.py::test_backward_compatible_entry_point_matches_matrix",
+          "tes_replay": "passed",
+          "head_replay": "passed"
+        },
+        {
+          "node": "gates/test_evol_x_workflow_matrix.py::test_every_matrix_row_is_reachable_and_input_space_is_total",
+          "tes_replay": "passed",
+          "head_replay": "passed"
+        },
+        {
+          "node": "gates/test_evol_x_workflow_matrix.py::test_inflight_in_place_adoption_is_never_permissive",
+          "tes_replay": "passed",
+          "head_replay": "passed"
+        },
+        {
+          "node": "gates/test_evol_x_workflow_matrix.py::test_matrix_has_wm_01_to_15_and_fail_closed_tail",
+          "tes_replay": "passed",
+          "head_replay": "passed"
+        },
+        {
+          "node": "gates/test_evol_x_workflow_matrix.py::test_negative_matrix_tampering_is_detected",
+          "tes_replay": "passed",
+          "head_replay": "passed"
+        },
+        {
+          "node": "gates/test_evol_x_workflow_matrix.py::test_representative_rows[change0-WM-01-SAFE_IN_PLACE]",
+          "tes_replay": "passed",
+          "head_replay": "passed"
+        },
+        {
+          "node": "gates/test_evol_x_workflow_matrix.py::test_representative_rows[change1-WM-05-EXPLICITLY_UNSUPPORTED]",
+          "tes_replay": "passed",
+          "head_replay": "passed"
+        },
+        {
+          "node": "gates/test_evol_x_workflow_matrix.py::test_representative_rows[change2-WM-06-EXPLICITLY_UNSUPPORTED]",
+          "tes_replay": "passed",
+          "head_replay": "passed"
+        },
+        {
+          "node": "gates/test_evol_x_workflow_matrix.py::test_representative_rows[change3-WM-07-EXPLICITLY_UNSUPPORTED]",
+          "tes_replay": "passed",
+          "head_replay": "passed"
+        },
+        {
+          "node": "gates/test_evol_x_workflow_matrix.py::test_representative_rows[change4-WM-09-VERSIONED_DEPLOY]",
+          "tes_replay": "passed",
+          "head_replay": "passed"
+        },
+        {
+          "node": "gates/test_evol_x_workflow_matrix.py::test_representative_rows[change5-WM-10-REJECT]",
+          "tes_replay": "passed",
+          "head_replay": "passed"
+        },
+        {
+          "node": "gates/test_evol_x_workflow_matrix.py::test_representative_rows[change6-WM-11-MIGRATE]",
+          "tes_replay": "passed",
+          "head_replay": "passed"
+        },
+        {
+          "node": "gates/test_evol_x_workflow_matrix.py::test_representative_rows[change7-WM-02-REJECT]",
+          "tes_replay": "passed",
+          "head_replay": "passed"
+        },
+        {
+          "node": "gates/test_evol_x_workflow_matrix.py::test_representative_rows[change8-WM-04-REJECT]",
+          "tes_replay": "passed",
+          "head_replay": "passed"
+        },
+        {
+          "node": "gates/test_evol_x_workflow_matrix.py::test_representative_rows[change9-WM-03-MIGRATE]",
+          "tes_replay": "passed",
+          "head_replay": "passed"
+        }
+      ],
+      "experiments": {
+        "S3": [
+          {
+            "arm": "positive",
+            "passed": true,
+            "detail": "matrix_rows=5 pin_preserved=True"
+          },
+          {
+            "arm": "negative",
+            "passed": true,
+            "detail": "production_rejects_repin=True unsafe_adoptions=0"
+          }
+        ]
+      },
+      "metrics": {},
+      "auditor_probes": [
+        "P-ASSESS: Exhaustive DM (384) / WM (128) invariants + extension-safety classification of all tracked files \u2014 evidence/logs/probe_assess.log"
+      ],
+      "auditor_basis": "Auditor exhaustive enumeration of all 128 WorkflowChange inputs found 0 in-flight adoptions of a changed definition without rejection/migration; S3 pin preserved and unsafe adoption = 0.",
+      "limitations": [],
+      "findings": [],
+      "auditor_result": "PASS",
+      "freeze_checklist_status_change_by_auditor": "NONE (auditor does not promote FRZ rows)",
+      "certifier_eligibility": "ELIGIBLE for per-row scoped promotion text only; global FRZ PASS forbidden"
+    },
+    {
+      "frz_id": "FRZ-EVOL-06",
+      "checklist_requirement": "regression test selection from impact graph with mandatory safety suites",
+      "checklist_status_at_head": "OPEN",
+      "bundle_behavioral_test": "frz/test_evol_x_frz_06_regression_selection.py::test_frz_evol_06_policy_is_scoped_and_forbids_empty_selection",
+      "bundle_scope_footnote": "",
+      "replayed_tests": [
+        {
+          "node": "frz/test_evol_x_frz_06_regression_selection.py::test_frz_evol_06_policy_is_scoped_and_forbids_empty_selection",
+          "tes_replay": "passed",
+          "head_replay": "passed"
+        },
+        {
+          "node": "frz/test_evol_x_frz_06_regression_selection.py::test_frz_evol_06_s6_arms_pass",
+          "tes_replay": "passed",
+          "head_replay": "passed"
+        },
+        {
+          "node": "gates/test_evol_x_selection.py::test_evol_x_conservative_full_is_union_minus_exclusions",
+          "tes_replay": "passed",
+          "head_replay": "passed"
+        },
+        {
+          "node": "gates/test_evol_x_selection.py::test_evol_x_critical_omissions_never_pass_on_profile_alone",
+          "tes_replay": "passed",
+          "head_replay": "passed"
+        },
+        {
+          "node": "gates/test_evol_x_selection.py::test_evol_x_decision_id_is_deterministic_digest_not_uuid",
+          "tes_replay": "passed",
+          "head_replay": "passed"
+        },
+        {
+          "node": "gates/test_evol_x_selection.py::test_evol_x_dim_b_nodes_never_in_pop_a_selection",
+          "tes_replay": "passed",
+          "head_replay": "passed"
+        },
+        {
+          "node": "gates/test_evol_x_selection.py::test_evol_x_empty_impact_selects_mandatory_only_and_unknown_is_conservative",
+          "tes_replay": "passed",
+          "head_replay": "passed"
+        },
+        {
+          "node": "gates/test_evol_x_selection.py::test_evol_x_exclusions_type_is_frozen_policy_object",
+          "tes_replay": "passed",
+          "head_replay": "passed"
+        },
+        {
+          "node": "gates/test_evol_x_selection.py::test_evol_x_rc7_excluded_node_does_not_block_collect_integrity",
+          "tes_replay": "passed",
+          "head_replay": "passed"
+        },
+        {
+          "node": "gates/test_evol_x_selection.py::test_evol_x_selected_contains_t1_and_t3_when_self_surface_changes_and_policy_label",
+          "tes_replay": "passed",
+          "head_replay": "passed"
+        },
+        {
+          "node": "gates/test_evol_x_selection.py::test_evol_x_selection_surface_rule_maps_affected_suite_to_catalog_node",
+          "tes_replay": "passed",
+          "head_replay": "passed"
+        },
+        {
+          "node": "gates/test_evol_x_selection.py::test_evol_x_shrunk_manifest_detected_as_under_selection",
+          "tes_replay": "passed",
+          "head_replay": "passed"
+        },
+        {
+          "node": "gates/test_evol_x_selection.py::test_evol_x_t1_t2_node_ids_are_collectable_w3_04",
+          "tes_replay": "passed",
+          "head_replay": "passed"
+        },
+        {
+          "node": "gates/test_evol_x_selection.py::test_evol_x_t_missing_collect_detected_w3_04",
+          "tes_replay": "passed",
+          "head_replay": "passed"
+        },
+        {
+          "node": "gates/test_evol_x_selection.py::test_evol_x_uncollectable_required_node_refuses_integrity",
+          "tes_replay": "passed",
+          "head_replay": "passed"
+        },
+        {
+          "node": "gates/test_evol_x_selection_fault_injection.py::test_evol_x_selection_fault_conservative_full_is_scoped_policy_and_superset_of_mandatory",
+          "tes_replay": "passed",
+          "head_replay": "passed"
+        },
+        {
+          "node": "gates/test_evol_x_selection_fault_injection.py::test_evol_x_selection_fault_injection_matrix[ANALYZER_EXCEPTION]",
+          "tes_replay": "passed",
+          "head_replay": "passed"
+        },
+        {
+          "node": "gates/test_evol_x_selection_fault_injection.py::test_evol_x_selection_fault_injection_matrix[DIGEST_MISMATCH]",
+          "tes_replay": "passed",
+          "head_replay": "passed"
+        },
+        {
+          "node": "gates/test_evol_x_selection_fault_injection.py::test_evol_x_selection_fault_injection_matrix[EMPTY_CATALOG]",
+          "tes_replay": "passed",
+          "head_replay": "passed"
+        },
+        {
+          "node": "gates/test_evol_x_selection_fault_injection.py::test_evol_x_selection_fault_injection_matrix[MISSING_METADATA]",
+          "tes_replay": "passed",
+          "head_replay": "passed"
+        },
+        {
+          "node": "gates/test_evol_x_selection_fault_injection.py::test_evol_x_selection_fault_injection_matrix[MISSING_SUITE_ID]",
+          "tes_replay": "passed",
+          "head_replay": "passed"
+        },
+        {
+          "node": "gates/test_evol_x_selection_fault_injection.py::test_evol_x_selection_fault_injection_matrix[STALE_SNAPSHOT]",
+          "tes_replay": "passed",
+          "head_replay": "passed"
+        },
+        {
+          "node": "gates/test_evol_x_selection_fault_injection.py::test_evol_x_selection_fault_injection_matrix[UNKNOWN_PATH]",
+          "tes_replay": "passed",
+          "head_replay": "passed"
+        },
+        {
+          "node": "gates/test_evol_x_selection_fault_injection.py::test_evol_x_selection_fault_injection_matrix[UNRESOLVED_NODE]",
+          "tes_replay": "passed",
+          "head_replay": "passed"
+        },
+        {
+          "node": "gates/test_evol_x_selection_fault_injection.py::test_evol_x_selection_fault_matrix_has_eight_classes_with_expected_statuses",
+          "tes_replay": "passed",
+          "head_replay": "passed"
+        },
+        {
+          "node": "gates/test_evol_x_adjacent_stage_regression.py::test_adjacent_negative_phantom_node_is_detected",
+          "tes_replay": "passed",
+          "head_replay": "passed"
+        },
+        {
+          "node": "gates/test_evol_x_adjacent_stage_regression.py::test_adjacent_negative_uncollectable_adjacent_node_refuses_selection",
+          "tes_replay": "passed",
+          "head_replay": "passed"
+        },
+        {
+          "node": "gates/test_evol_x_adjacent_stage_regression.py::test_adjacent_nodes_are_collectable_in_one_collect_invocation",
+          "tes_replay": "passed",
+          "head_replay": "passed"
+        },
+        {
+          "node": "gates/test_evol_x_adjacent_stage_regression.py::test_adjacent_nodes_are_part_of_conservative_universe",
+          "tes_replay": "passed",
+          "head_replay": "passed"
+        },
+        {
+          "node": "gates/test_evol_x_adjacent_stage_regression.py::test_adjacent_registry_is_explicit_nonempty_and_compat_scoped",
+          "tes_replay": "passed",
+          "head_replay": "passed"
+        }
+      ],
+      "experiments": {
+        "S6": [
+          {
+            "arm": "positive",
+            "passed": true,
+            "detail": "detected=8/8 baseline=SELECTED"
+          },
+          {
+            "arm": "negative",
+            "passed": true,
+            "detail": "bypass_count=0 of 64 compound injections"
+          }
+        ]
+      },
+      "metrics": {
+        "EVOL-M-03": {
+          "status": "MEASURED",
+          "numerator": 2082,
+          "denominator": 2082,
+          "passed": true
+        },
+        "EVOL-M-04": {
+          "status": "MEASURED",
+          "numerator": 8,
+          "denominator": 8,
+          "passed": true
+        },
+        "EVOL-M-05": {
+          "status": "MEASURED",
+          "numerator": 2,
+          "denominator": 2,
+          "passed": true
+        }
+      },
+      "auditor_probes": [
+        "P-SEL: Selection safety probe (56 stratified real paths, 0 under-selection; unknown paths conservative) \u2014 evidence/logs/probe_selection_rows.json",
+        "P-MET: Independent metric re-derivation (16/17 identical; M-09A re-derived by Mode A) \u2014 evidence/logs/probe_metrics.log"
+      ],
+      "auditor_basis": "Policy EVOL_CONSERVATIVE_FULL only (never PLATFORM_CONSERVATIVE_FULL / T4). 8/8 fault classes fail closed, 64 compound injections 0 bypass, auditor probe 0 under-selection in scope. FINAL bundle row carries an empty scope_footnote (F-C-02): scope is stated in this record instead.",
+      "limitations": [
+        "LIM-01",
+        "LIM-03",
+        "LIM-04"
+      ],
+      "findings": [
+        "F-C-02",
+        "F-C-03",
+        "F-C-04"
+      ],
+      "auditor_result": "PASS \u2014 SCOPED",
+      "freeze_checklist_status_change_by_auditor": "NONE (auditor does not promote FRZ rows)",
+      "certifier_eligibility": "ELIGIBLE for per-row scoped promotion text only; global FRZ PASS forbidden"
+    },
+    {
+      "frz_id": "FRZ-EVOL-07",
+      "checklist_requirement": "deployment / rollback / roll-forward qualified or unsafe refusal explicit",
+      "checklist_status_at_head": "OPEN",
+      "bundle_behavioral_test": "frz/test_evol_x_frz_07_deploy_rollback.py::test_frz_evol_07_s7_arms_pass",
+      "bundle_scope_footnote": "FRZ-EVOL-07 scoped PASS: qualification-layer assessor (DM-01..07) only; production ActivationService.rollback durable-state enforcement is NOT claimed (OD-EVOL-05b Option 1).",
+      "replayed_tests": [
+        {
+          "node": "frz/test_evol_x_frz_07_deploy_rollback.py::test_frz_evol_07_s7_arms_pass",
+          "tes_replay": "passed",
+          "head_replay": "passed"
+        },
+        {
+          "node": "frz/test_evol_x_frz_07_deploy_rollback.py::test_frz_evol_07_scope_is_qualification_layer_only",
+          "tes_replay": "passed",
+          "head_replay": "passed"
+        },
+        {
+          "node": "gates/test_evol_x_deployment_safety.py::test_backward_compatible_rollback_entry_point",
+          "tes_replay": "passed",
+          "head_replay": "passed"
+        },
+        {
+          "node": "gates/test_evol_x_deployment_safety.py::test_forward_only_rollback_never_eligible_over_input_space",
+          "tes_replay": "passed",
+          "head_replay": "passed"
+        },
+        {
+          "node": "gates/test_evol_x_deployment_safety.py::test_matrix_covers_dm_01_to_07",
+          "tes_replay": "passed",
+          "head_replay": "passed"
+        },
+        {
+          "node": "gates/test_evol_x_deployment_safety.py::test_matrix_rows[facts0-DM-01-ELIGIBLE-None]",
+          "tes_replay": "passed",
+          "head_replay": "passed"
+        },
+        {
+          "node": "gates/test_evol_x_deployment_safety.py::test_matrix_rows[facts1-DM-02-REFUSE-PERSISTED_STATE_INCOMPATIBLE]",
+          "tes_replay": "passed",
+          "head_replay": "passed"
+        },
+        {
+          "node": "gates/test_evol_x_deployment_safety.py::test_matrix_rows[facts10-DM-07-REFUSE-INSUFFICIENT_EVIDENCE]",
+          "tes_replay": "passed",
+          "head_replay": "passed"
+        },
+        {
+          "node": "gates/test_evol_x_deployment_safety.py::test_matrix_rows[facts2-DM-03-ELIGIBLE_WITH_DRAIN-None]",
+          "tes_replay": "passed",
+          "head_replay": "passed"
+        },
+        {
+          "node": "gates/test_evol_x_deployment_safety.py::test_matrix_rows[facts3-DM-03-REFUSE-INFLIGHT_PINS]",
+          "tes_replay": "passed",
+          "head_replay": "passed"
+        },
+        {
+          "node": "gates/test_evol_x_deployment_safety.py::test_matrix_rows[facts4-DM-04-REFUSE-DURABLE_STATE_FORWARD_ONLY]",
+          "tes_replay": "passed",
+          "head_replay": "passed"
+        },
+        {
+          "node": "gates/test_evol_x_deployment_safety.py::test_matrix_rows[facts5-DM-05-REFUSE-CONTRACT_INCOMPATIBLE]",
+          "tes_replay": "passed",
+          "head_replay": "passed"
+        },
+        {
+          "node": "gates/test_evol_x_deployment_safety.py::test_matrix_rows[facts6-DM-05-REFUSE-CONTRACT_INCOMPATIBLE]",
+          "tes_replay": "passed",
+          "head_replay": "passed"
+        },
+        {
+          "node": "gates/test_evol_x_deployment_safety.py::test_matrix_rows[facts7-DM-06-REFUSE-INSUFFICIENT_EVIDENCE]",
+          "tes_replay": "passed",
+          "head_replay": "passed"
+        },
+        {
+          "node": "gates/test_evol_x_deployment_safety.py::test_matrix_rows[facts8-DM-06-REFUSE-INSUFFICIENT_EVIDENCE]",
+          "tes_replay": "passed",
+          "head_replay": "passed"
+        },
+        {
+          "node": "gates/test_evol_x_deployment_safety.py::test_matrix_rows[facts9-DM-07-ELIGIBLE-None]",
+          "tes_replay": "passed",
+          "head_replay": "passed"
+        },
+        {
+          "node": "gates/test_evol_x_deployment_safety.py::test_na_register_lists_na_01_to_04_out_of_scope",
+          "tes_replay": "passed",
+          "head_replay": "passed"
+        },
+        {
+          "node": "gates/test_evol_x_deployment_safety.py::test_sidecar_manifest_roundtrip_and_schema_check",
+          "tes_replay": "passed",
+          "head_replay": "passed"
+        },
+        {
+          "node": "gates/test_evol_x_deployment_safety.py::test_snapshot_derivation_forward_only_and_incompatible",
+          "tes_replay": "passed",
+          "head_replay": "passed"
+        }
+      ],
+      "experiments": {
+        "S7": [
+          {
+            "arm": "positive",
+            "passed": true,
+            "detail": "dm_outcomes=7/7 ad_rollback_ok=True"
+          },
+          {
+            "arm": "negative",
+            "passed": true,
+            "detail": "dm04=REFUSE false_safe=0 ad_layer_alone_succeeds=True"
+          }
+        ]
+      },
+      "metrics": {
+        "EVOL-M-08": {
+          "status": "MEASURED",
+          "numerator": 2,
+          "denominator": 2,
+          "passed": true
+        }
+      },
+      "auditor_probes": [
+        "P-ASSESS: Exhaustive DM (384) / WM (128) invariants + extension-safety classification of all tracked files \u2014 evidence/logs/probe_assess.log"
+      ],
+      "auditor_basis": "Auditor exhaustive enumeration of 384 DeployFacts combinations: no eligible verdict for missing evidence, forward-only durable rollback, incompatible schema or non-drainable pins. W7-03 wording determination (dossier \u00a78): checklist wording 'qualified or unsafe refusal explicit' supports the qualification-layer scoped claim only. Production ActivationService.rollback is NOT gated (S7 negative: ad_layer_alone_succeeds=True).",
+      "limitations": [
+        "LIM-05"
+      ],
+      "findings": [
+        "F-C-06"
+      ],
+      "auditor_result": "PASS \u2014 SCOPED",
+      "freeze_checklist_status_change_by_auditor": "NONE (auditor does not promote FRZ rows)",
+      "certifier_eligibility": "ELIGIBLE for per-row scoped promotion text only; global FRZ PASS forbidden"
+    },
+    {
+      "frz_id": "FRZ-EVOL-08",
+      "checklist_requirement": "change diagnostics answer what changed / what failed / which deploy introduced regression",
+      "checklist_status_at_head": "OPEN",
+      "bundle_behavioral_test": "frz/test_evol_x_frz_08_change_diagnostics.py::test_frz_evol_08_dossier_answers_all_questions_on_real_change",
+      "bundle_scope_footnote": "FRZ-EVOL-08: passive change dossier; continuous incident correlation remains ENT-AUDIT-X.",
+      "replayed_tests": [
+        {
+          "node": "frz/test_evol_x_frz_08_change_diagnostics.py::test_frz_evol_08_dossier_answers_all_questions_on_real_change",
+          "tes_replay": "passed",
+          "head_replay": "passed"
+        },
+        {
+          "node": "frz/test_evol_x_frz_08_change_diagnostics.py::test_frz_evol_08_stale_evidence_is_flagged_and_scope_is_passive",
+          "tes_replay": "passed",
+          "head_replay": "passed"
+        },
+        {
+          "node": "gates/test_evol_x_dossier_triggers.py::test_baseline_fresh_then_each_single_digest_flip_fires_exactly_its_trigger",
+          "tes_replay": "passed",
+          "head_replay": "passed"
+        },
+        {
+          "node": "gates/test_evol_x_dossier_triggers.py::test_dossier_answers_q1_to_q6_and_is_deterministic",
+          "tes_replay": "passed",
+          "head_replay": "passed"
+        },
+        {
+          "node": "gates/test_evol_x_dossier_triggers.py::test_dossier_module_is_passive_no_runtime_imports_no_writes",
+          "tes_replay": "passed",
+          "head_replay": "passed"
+        },
+        {
+          "node": "gates/test_evol_x_dossier_triggers.py::test_legacy_freshness_entry_point",
+          "tes_replay": "passed",
+          "head_replay": "passed"
+        },
+        {
+          "node": "gates/test_evol_x_dossier_triggers.py::test_missing_digest_is_stale_fail_closed",
+          "tes_replay": "passed",
+          "head_replay": "passed"
+        },
+        {
+          "node": "gates/test_evol_x_dossier_triggers.py::test_stale_freshness_marks_dossier_stale",
+          "tes_replay": "passed",
+          "head_replay": "passed"
+        },
+        {
+          "node": "gates/test_evol_x_dossier_triggers.py::test_trigger_table_is_exactly_t1_to_t9",
+          "tes_replay": "passed",
+          "head_replay": "passed"
+        },
+        {
+          "node": "gates/test_evol_x_m09_cause_identity.py::test_attribution_evidence_is_sufficient_to_compute_identity",
+          "tes_replay": "passed",
+          "head_replay": "passed"
+        },
+        {
+          "node": "gates/test_evol_x_m09_cause_identity.py::test_committed_registry_expected_matches_oracle",
+          "tes_replay": "passed",
+          "head_replay": "passed"
+        },
+        {
+          "node": "gates/test_evol_x_m09_cause_identity.py::test_impact_without_direct_module_fails",
+          "tes_replay": "passed",
+          "head_replay": "passed"
+        },
+        {
+          "node": "gates/test_evol_x_m09_cause_identity.py::test_seed_cause_identity_matrix[C1]",
+          "tes_replay": "passed",
+          "head_replay": "passed"
+        },
+        {
+          "node": "gates/test_evol_x_m09_cause_identity.py::test_seed_cause_identity_matrix[C2]",
+          "tes_replay": "passed",
+          "head_replay": "passed"
+        },
+        {
+          "node": "gates/test_evol_x_m09_cause_identity.py::test_seed_cause_identity_matrix[C3]",
+          "tes_replay": "passed",
+          "head_replay": "passed"
+        },
+        {
+          "node": "gates/test_evol_x_m09_cause_identity.py::test_unknown_seed_path_fails_closed",
+          "tes_replay": "passed",
+          "head_replay": "passed"
+        },
+        {
+          "node": "gates/test_evol_x_m09_cause_identity.py::test_wrong_node_kind_changes_digest",
+          "tes_replay": "passed",
+          "head_replay": "passed"
+        }
+      ],
+      "experiments": {},
+      "metrics": {
+        "EVOL-M-09A": {
+          "status": "MEASURED",
+          "numerator": 3,
+          "denominator": 3,
+          "passed": true
+        },
+        "EVOL-M-09H": {
+          "status": "NOT_MEASURED",
+          "numerator": 0,
+          "denominator": 0,
+          "passed": null
+        },
+        "EVOL-M-09T": {
+          "status": "MEASURED",
+          "numerator": 3,
+          "denominator": 3,
+          "passed": true
+        }
+      },
+      "auditor_probes": [
+        "P-A: Mode A tamper probe (12 consistent-digest tamper cases, 12/12 detected for the correct reason) \u2014 evidence/logs/probe_tamper_v2.log",
+        "P-MET: Independent metric re-derivation (16/17 identical; M-09A re-derived by Mode A) \u2014 evidence/logs/probe_metrics.log"
+      ],
+      "auditor_basis": "Passive Q1-Q6 dossier answers what changed, blast radius, tests selected, compatibility, deploy safety, freshness; M-09A cause identity re-derived by Mode A. Human attribution SLA (M-09H) NOT_MEASURED by OD-EVOL-13; 'what failed' and 'which deploy introduced regression' are covered only through seed attribution (no failure-evidence or deploy-identity ingestion).",
+      "limitations": [
+        "LIM-02"
+      ],
+      "findings": [
+        "F-C-05"
+      ],
+      "auditor_result": "PASS \u2014 SCOPED",
+      "freeze_checklist_status_change_by_auditor": "NONE (auditor does not promote FRZ rows)",
+      "certifier_eligibility": "ELIGIBLE for per-row scoped promotion text only; global FRZ PASS forbidden"
+    },
+    {
+      "frz_id": "FRZ-EVOL-09",
+      "checklist_requirement": "extensibility without unauthorized platform-core modification (EVOL-M-10)",
+      "checklist_status_at_head": "OPEN",
+      "bundle_behavioral_test": "frz/test_evol_x_frz_09_extensibility.py::test_frz_evol_09_core_edit_without_authorization_is_never_allowed",
+      "bundle_scope_footnote": "",
+      "replayed_tests": [
+        {
+          "node": "frz/test_evol_x_frz_09_extensibility.py::test_frz_evol_09_core_edit_without_authorization_is_never_allowed",
+          "tes_replay": "passed",
+          "head_replay": "passed"
+        },
+        {
+          "node": "frz/test_evol_x_frz_09_extensibility.py::test_frz_evol_09_s8_and_s4_arms_pass",
+          "tes_replay": "passed",
+          "head_replay": "passed"
+        },
+        {
+          "node": "gates/test_evol_x_extension_safety.py::test_authorization_record_downgrades_to_authorized_but_keeps_class",
+          "tes_replay": "passed",
+          "head_replay": "passed"
+        },
+        {
+          "node": "gates/test_evol_x_extension_safety.py::test_most_specific_surface_wins_and_windows_paths_normalised",
+          "tes_replay": "passed",
+          "head_replay": "passed"
+        },
+        {
+          "node": "gates/test_evol_x_extension_safety.py::test_new_application_scaffold_is_extension_only",
+          "tes_replay": "passed",
+          "head_replay": "passed"
+        },
+        {
+          "node": "gates/test_evol_x_extension_safety.py::test_unauthorized_core_edit_is_flagged_class_c",
+          "tes_replay": "passed",
+          "head_replay": "passed"
+        },
+        {
+          "node": "gates/test_evol_x_extension_safety.py::test_unclassified_path_is_failsafe_class_c",
+          "tes_replay": "passed",
+          "head_replay": "passed"
+        },
+        {
+          "node": "gates/test_evol_x_no_duplicate_authority.py::test_artifact_contracts_forbid_typing_any_and_authority_field_names",
+          "tes_replay": "passed",
+          "head_replay": "passed"
+        },
+        {
+          "node": "gates/test_evol_x_no_duplicate_authority.py::test_change_safety_has_no_parallel_suite_registry",
+          "tes_replay": "passed",
+          "head_replay": "passed"
+        },
+        {
+          "node": "gates/test_evol_x_no_duplicate_authority.py::test_contract_schema_authority_is_the_platform_registry_not_a_copy",
+          "tes_replay": "passed",
+          "head_replay": "passed"
+        },
+        {
+          "node": "gates/test_evol_x_no_duplicate_authority.py::test_t1_t2_are_derived_from_the_qual_x_catalog_not_copied",
+          "tes_replay": "passed",
+          "head_replay": "passed"
+        }
+      ],
+      "experiments": {
+        "S8": [
+          {
+            "arm": "positive",
+            "passed": true,
+            "detail": "scaffold=EXTENSION_ONLY real_poc_files=35"
+          },
+          {
+            "arm": "negative",
+            "passed": true,
+            "detail": "core_edit=CORE_TOUCH_UNAUTHORIZED unauthorized_surfaces=1"
+          }
+        ],
+        "S4": [
+          {
+            "arm": "positive",
+            "passed": true,
+            "detail": "rewrite_set=[] extension=EXTENSION_ONLY"
+          },
+          {
+            "arm": "negative",
+            "passed": true,
+            "detail": "rewrite_required=['module:applications.app_a.use_concrete']"
+          }
+        ]
+      },
+      "metrics": {
+        "EVOL-M-10": {
+          "status": "MEASURED",
+          "numerator": 0,
+          "denominator": 2,
+          "passed": true
+        }
+      },
+      "auditor_probes": [
+        "P-ASSESS: Exhaustive DM (384) / WM (128) invariants + extension-safety classification of all tracked files \u2014 evidence/logs/probe_assess.log"
+      ],
+      "auditor_basis": "Unauthorized core edit is never allowed (S8 negative), scaffold is EXTENSION_ONLY (35 real PoC files). Registry names 9 frozen surfaces; all other intergrax/*.py classify UNCLASSIFIED (fail-safe Class C). One non-Python data file (capability_edge_catalog.json) and 405 markdown files under intergrax/ classify EXTENSION_ONLY.",
+      "limitations": [
+        "LIM-06"
+      ],
+      "findings": [
+        "F-C-07"
+      ],
+      "auditor_result": "PASS \u2014 SCOPED",
+      "freeze_checklist_status_change_by_auditor": "NONE (auditor does not promote FRZ rows)",
+      "certifier_eligibility": "ELIGIBLE for per-row scoped promotion text only; global FRZ PASS forbidden"
+    },
+    {
+      "frz_id": "FRZ-EVOL-10",
+      "checklist_requirement": "post-freeze requalification triggers and evidence freshness enforced",
+      "checklist_status_at_head": "OPEN",
+      "bundle_behavioral_test": "frz/test_evol_x_frz_10_requalification.py::test_frz_evol_10_each_trigger_fires_independently_on_real_digests",
+      "bundle_scope_footnote": "FRZ-EVOL-10: executable triggers T1..T9 + freshness counter; scenario-wave audit remains ENT-AUDIT-X.",
+      "replayed_tests": [
+        {
+          "node": "frz/test_evol_x_frz_10_requalification.py::test_frz_evol_10_each_trigger_fires_independently_on_real_digests",
+          "tes_replay": "passed",
+          "head_replay": "passed"
+        },
+        {
+          "node": "frz/test_evol_x_frz_10_requalification.py::test_frz_evol_10_missing_baseline_digest_is_stale_never_fresh",
+          "tes_replay": "passed",
+          "head_replay": "passed"
+        },
+        {
+          "node": "gates/test_evol_x_dossier_triggers.py::test_baseline_fresh_then_each_single_digest_flip_fires_exactly_its_trigger",
+          "tes_replay": "passed",
+          "head_replay": "passed"
+        },
+        {
+          "node": "gates/test_evol_x_dossier_triggers.py::test_trigger_table_is_exactly_t1_to_t9",
+          "tes_replay": "passed",
+          "head_replay": "passed"
+        }
+      ],
+      "experiments": {},
+      "metrics": {
+        "EVOL-M-11": {
+          "status": "MEASURED",
+          "numerator": 9,
+          "denominator": 9,
+          "passed": true
+        }
+      },
+      "auditor_probes": [
+        "P-MET: Independent metric re-derivation (16/17 identical; M-09A re-derived by Mode A) \u2014 evidence/logs/probe_metrics.log"
+      ],
+      "auditor_basis": "Triggers T1..T9 fire independently on real digests, a missing baseline digest is stale never fresh; the scenario-wave audit cycle remains owned by ENT-AUDIT-X (scope footnote in FINAL bundle).",
+      "limitations": [
+        "LIM-07"
+      ],
+      "findings": [],
+      "auditor_result": "PASS \u2014 SCOPED",
+      "freeze_checklist_status_change_by_auditor": "NONE (auditor does not promote FRZ rows)",
+      "certifier_eligibility": "ELIGIBLE for per-row scoped promotion text only; global FRZ PASS forbidden"
+    }
+  ]
+}
