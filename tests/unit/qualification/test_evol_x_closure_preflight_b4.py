@@ -11,6 +11,7 @@ from __future__ import annotations
 
 import hashlib
 import json
+import os
 import re
 import shutil
 import subprocess
@@ -3688,3 +3689,101 @@ def test_w402_04_git_calls_disable_fsmonitor_and_the_commit_graph(repo, monkeypa
     for args in seen:
         assert args[:2] == ["git", "--no-replace-objects"]
         assert "core.fsmonitor=false" in args and "core.commitGraph=false" in args
+
+
+# --------------------------------------------------------------------------- defect hunt on ca78b1c1f (D1..D8)
+
+
+def test_hunt_d3_gitattributes_is_bound_to_head(repo) -> None:
+    root, _ = repo
+    _write(root, ".gitattributes", (root / ".gitattributes").read_text(encoding="utf-8") + "# tampered\n")
+    result = _eval(root)
+    assert any(".gitattributes" in e for e in _b(result.gate_a, "A-21")), result.gate_a
+    assert not result.gate_a_pass and not result.gate_b_pass
+
+
+@pytest.mark.parametrize(
+    "value",
+    [["x"], {"k": "v"}, 7, None, "free text"],
+)
+def test_hunt_d6_unvalidated_lifecycle_values_fail_closed_without_crashing(repo, value: Any) -> None:
+    root, _ = repo
+    for key in ("certification_publication_sha_binding", "stage_closure_status", "b6_acceptance"):
+        _mutate_json(root, pf.REL_CERT_RECORD, lambda c, k=key: c.update({k: value}), reindex=True)
+        result = _eval(root)
+        assert not result.gate_a_pass and not result.gate_b_pass, key
+        assert not any(e.startswith("A-99") for e in result.gate_a), (key, result.gate_a)
+        _git(root, "reset", "-q", "--hard", "HEAD~1")
+
+
+@pytest.mark.parametrize("variant", ["issued", "Issued", "ıSSUED", "IſſUED", " ISSUED"])
+def test_hunt_d7_b6_acceptance_is_compared_exactly(repo, variant: str) -> None:
+    root, _ = repo
+    _mutate_json(root, pf.REL_CERT_RECORD, lambda c: c.update(b6_acceptance=variant), reindex=True)
+    result = _eval(root)
+    assert any("b6_acceptance must be one of" in e for e in _b(result.gate_a, "A-19")), result.gate_a
+
+
+def test_hunt_d7_a_padded_publication_sha_is_not_accepted() -> None:
+    sha = "a" * 40
+    assert pf._sha(sha) == sha
+    for padded in (f" {sha}", f"{sha}\n", f"{sha} ", f"\t{sha}"):
+        assert pf._sha(padded) == ""
+    assert pf._sha(None) == "" and pf._sha(["x"]) == ""
+
+
+@pytest.mark.parametrize("constant", ["NaN", "Infinity", "-Infinity"])
+def test_hunt_d7_non_standard_json_constants_are_rejected(constant: str) -> None:
+    with pytest.raises(json.JSONDecodeError):
+        pf._strict_json_loads(f'{{"x": {constant}}}')
+
+
+def test_hunt_d8_a_gitlink_in_the_certification_directory_is_rejected(repo) -> None:
+    root, _ = repo
+    _git(root, "update-index", "--add", "--cacheinfo", f"160000,{'1' * 40},{pf.CERT_DIR}/submodule_like")
+    _git(root, "-c", "user.email=b4-fixture@example.com", "-c", "user.name=b4-fixture", "commit", "-q", "-m", "gitlink")
+    result = _eval(root)
+    assert any("submodule_like was added" in e for e in _b(result.gate_a, "A-19")), result.gate_a
+    assert not result.gate_a_pass and not result.gate_b_pass
+
+
+def test_hunt_d8_non_ascii_names_are_reported_exactly(repo) -> None:
+    root, _ = repo
+    _write(root, f"{pf.CERT_DIR}/Ünï cöde ä.txt", "x\n")
+    _reindex_cert(root)
+    _commit(root, "non-ascii name")
+    result = _eval(root)
+    assert any("Ünï cöde ä.txt" in e for e in _b(result.gate_a, "A-19")), result.gate_a
+
+
+@pytest.mark.parametrize("name", ["GIT_REPLACE_REF_BASE", "GIT_ALTERNATE_OBJECT_DIRECTORIES", "GIT_NAMESPACE"])
+def test_hunt_d5_redirecting_git_environment_variables_are_refused(
+    repo, name: str, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """The variable can break git outright (the verdict then fails closed earlier); the check names it."""
+    root, _ = repo
+    ctx = pf.Context(repo=root, activation_record=root / pf.REL_ACTIVATION, evidence_root=root)
+    assert not any(name in e for e in pf._repository_integrity_errors(ctx, "A-22")), "control: unset"
+    monkeypatch.setenv(name, "zz" if name == "GIT_NAMESPACE" else str(root))
+    assert any(name in e for e in pf._repository_integrity_errors(ctx, "A-22"))
+
+
+def test_hunt_d5_the_process_disables_replace_objects_for_every_git_call() -> None:
+    assert os.environ.get("GIT_NO_REPLACE_OBJECTS") == "1"
+
+
+def test_hunt_d4_the_script_directory_is_not_on_sys_path() -> None:
+    here = str(Path(pf.__file__).resolve().parent)
+    assert all(os.path.abspath(entry or os.getcwd()) != here for entry in sys.path)
+
+
+def test_hunt_an_unexpected_evidence_shape_is_an_internal_error_not_a_crash(repo, monkeypatch) -> None:
+    root, _ = repo
+
+    def boom(ctx):
+        raise TypeError("unhashable type: 'list'")
+
+    monkeypatch.setattr(pf, "gate_a", boom)
+    result = _eval(root)
+    assert result.mode == "INVALID" and result.gate_a[0].startswith("A-99")
+    assert not result.gate_a_pass and not result.gate_b_pass
