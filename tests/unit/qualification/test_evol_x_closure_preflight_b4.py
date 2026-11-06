@@ -3555,3 +3555,136 @@ def test_w401_ra_06_format_document_matches_the_code() -> None:
     }.items():
         assert pf.render_promoted_row(disposition) == (status, notes)
         assert f"| `{disposition}` | `{status}` | `{notes}` |" in doc
+
+
+# --------------------------------------------------------------------------- W402 delta re-audit (W402-01..04)
+
+
+def _commit_widened_checklist_then_restore_uncommitted(root: Path) -> None:
+    original = (root / pf.REL_FRZ_CHECKLIST).read_bytes()
+    _write(root, pf.REL_FRZ_CHECKLIST, original + b"\n| FRZ-EVOL-01 | widened | PASS | forged |\n")
+    _commit(root, "commit a widened checklist")
+    _write(root, pf.REL_FRZ_CHECKLIST, original)  # restored in the working tree only
+
+
+@pytest.mark.parametrize("flag", ["--skip-worktree", "--assume-unchanged"])
+def test_w402_01_index_flags_cannot_hide_an_uncommitted_input(closed, flag: str) -> None:
+    """Audit repro V-a: ``git status`` is empty once the index entry carries skip-worktree / assume-unchanged."""
+    root, _ = closed
+    assert _eval(root).gate_b_pass, "control: the closed fixture passes"
+    _commit_widened_checklist_then_restore_uncommitted(root)
+    _git(root, "update-index", flag, pf.REL_FRZ_CHECKLIST)
+    assert _git(root, "status", "--porcelain") == "", "precondition: git status is blind to the change"
+    result = _eval(root)
+    assert not result.gate_a_pass or not result.gate_b_pass
+    assert not result.gate_b_pass, "an input hidden from git status must not produce PASS"
+    assert any(pf.REL_FRZ_CHECKLIST in e for e in _b(result.gate_b, "B-12")), result.gate_b
+
+
+def test_w402_01_a_same_size_edit_is_detected_by_content(closed) -> None:
+    root, _ = closed
+    data = bytearray((root / pf.REL_REGISTER).read_bytes())
+    index = next(i for i, byte in enumerate(data) if chr(byte).isalpha())
+    data[index] = ord("Z") if data[index] != ord("Z") else ord("Y")
+    _write(root, pf.REL_REGISTER, bytes(data))
+    result = _eval(root)
+    assert not result.gate_b_pass
+    assert any(pf.REL_REGISTER in e for e in _b(result.gate_b, "B-12")), result.gate_b
+
+
+def test_w402_02_verifier_code_outside_the_read_inputs_is_bound_to_head(repo) -> None:
+    root, _ = repo
+    _write(root, "scripts/qualification/w402_verifier_helper.py", "VALUE = 1\n")
+    _commit(root, "add a verifier module")
+    assert not _b(_eval(root).gate_a, "A-21"), "control: a committed verifier module is clean"
+    _write(root, "scripts/qualification/w402_verifier_helper.py", "VALUE = 1\n# tampered\n")
+    result = _eval(root)
+    assert any("scripts/qualification/w402_verifier_helper.py" in e for e in _b(result.gate_a, "A-21")), result.gate_a
+    assert not result.gate_a_pass and not result.gate_b_pass
+    _git(root, "checkout", "--", "scripts/qualification/w402_verifier_helper.py")
+    _write(root, "scripts/qualification/w402_shadow_module.py", "VALUE = 2\n")
+    untracked = _eval(root)
+    assert any("shadow_module.py" in e for e in _b(untracked.gate_a, "A-21")), untracked.gate_a
+
+
+def test_w402_03_text_appended_to_an_open_blocker_is_rejected(repo) -> None:
+    root, _ = repo
+
+    def change(cert: dict[str, Any]) -> None:
+        cert["open_blockers_for_closure"] = [
+            f"{text} ; scope extended to all profiles" if text.startswith("B-5") else text
+            for text in cert["open_blockers_for_closure"]
+        ]
+
+    _mutate_json(root, pf.REL_CERT_RECORD, change, reindex=True)
+    result = _eval(root)
+    assert not result.gate_a_pass and not result.gate_b_pass
+    assert any("no longer carries the text it was published with" in e for e in _b(result.gate_a, "A-18")), (
+        result.gate_a
+    )
+
+
+def test_w402_03_a_free_text_key_in_a_resolved_entry_is_rejected(closed) -> None:
+    root, _ = closed
+    _mutate_json(
+        root,
+        pf.REL_CERT_RECORD,
+        lambda c: c["resolved_blockers_for_closure"][0].update(note="scope extended to all profiles"),
+        reindex=True,
+    )
+    result = _eval(root)
+    assert not result.gate_a_pass and not result.gate_b_pass
+    assert any("unexpected key 'note'" in e for e in result.gate_a + result.gate_b), (result.gate_a, result.gate_b)
+
+
+def test_w402_03_stage_closure_status_is_an_enum(repo) -> None:
+    root, _ = repo
+    _mutate_json(
+        root,
+        pf.REL_CERT_RECORD,
+        lambda c: c.update(stage_closure_status="NOT_CLOSED_SCOPE_EXTENDED_TO_ALL_PROFILES"),
+        reindex=True,
+    )
+    result = _eval(root)
+    assert any("stage_closure_status" in e for e in _b(result.gate_a, "A-19")), result.gate_a
+    assert not result.gate_a_pass and not result.gate_b_pass
+
+
+@pytest.mark.parametrize(
+    "rel",
+    [
+        f"{pf.EVIDENCE_ROOT_REL}/SCOPE_ADDENDUM.md",
+        f"{pf.EVIDENCE_ROOT_REL}/extra_dir/note.md",
+    ],
+)
+def test_w402_03_a_file_outside_the_known_evidence_directories_is_rejected(repo, rel: str) -> None:
+    root, _ = repo
+    _write(root, rel, "LIM-01..05 are withdrawn.\n")
+    _commit(root, "addendum outside the known evidence directories")
+    result = _eval(root)
+    assert any(
+        ("outside the known" in e or "neither a known" in e)
+        and rel.rsplit("/", 1)[0].split("EVOL-X/")[-1] in e
+        or rel in e
+        for e in _b(result.gate_a, "A-19")
+    ), result.gate_a
+    assert not result.gate_a_pass and not result.gate_b_pass
+
+
+def test_w402_04_git_calls_disable_fsmonitor_and_the_commit_graph(repo, monkeypatch: pytest.MonkeyPatch) -> None:
+    root, _ = repo
+    seen: list[list[str]] = []
+    real = subprocess.run
+
+    def spy(args, *a, **kw):
+        seen.append(list(args))
+        return real(args, *a, **kw)
+
+    monkeypatch.setattr(pf.subprocess, "run", spy)
+    ctx = pf.Context(repo=root, activation_record=root / pf.REL_ACTIVATION, evidence_root=root)
+    pf._git(ctx, "rev-parse", "HEAD")
+    pf._git_repo_config(ctx, "rev-parse", "HEAD")
+    assert len(seen) == 2
+    for args in seen:
+        assert args[:2] == ["git", "--no-replace-objects"]
+        assert "core.fsmonitor=false" in args and "core.commitGraph=false" in args

@@ -362,7 +362,17 @@ def _sha256(data: bytes) -> str:
 def _git(ctx: Context, *args: str) -> subprocess.CompletedProcess[bytes]:
     # W401-RA-01: replace refs must never substitute the content of a pinned commit.
     return subprocess.run(
-        ["git", "--no-replace-objects", "-c", "core.autocrlf=false", *args],
+        [
+            "git",
+            "--no-replace-objects",
+            "-c",
+            "core.autocrlf=false",
+            "-c",
+            "core.fsmonitor=false",
+            "-c",
+            "core.commitGraph=false",
+            *args,
+        ],
         cwd=ctx.repo,
         capture_output=True,
         check=False,
@@ -373,7 +383,7 @@ def _git_repo_config(ctx: Context, *args: str) -> subprocess.CompletedProcess[by
     """Git with the repository's own configuration (no overrides): used to ask whether a file is *clean* by the
     conventions the checkout was made with. Replace objects stay disabled."""
     return subprocess.run(
-        ["git", "--no-replace-objects", *args],
+        ["git", "--no-replace-objects", "-c", "core.fsmonitor=false", "-c", "core.commitGraph=false", *args],
         cwd=ctx.repo,
         capture_output=True,
         check=False,
@@ -547,35 +557,101 @@ def _repository_integrity_errors(ctx: Context, code: str) -> list[str]:
 
 
 _EVIDENCE_PREFIX = f"{EVIDENCE_ROOT_REL}/"
+# Everything the verdict stands on: the evidence tree, the qualification inputs that were read, and the verifier code
+# (the preflight itself and every module it imports live below ``scripts``).
+_BOUND_TREES = (EVIDENCE_ROOT_REL, "scripts")
+_IGNORED_PARTS = frozenset({"__pycache__"})
+
+
+def _unset_text_paths(ctx: Context, rels: list[str]) -> set[str]:
+    """Paths whose ``text`` attribute is unset (``-text``): checkout never rewrites them. One batched git call."""
+    if not rels:
+        return set()
+    proc = subprocess.run(
+        ["git", "--no-replace-objects", "check-attr", "-z", "--stdin", "text"],
+        cwd=ctx.repo,
+        input=("\x00".join(rels) + "\x00").encode("utf-8"),
+        capture_output=True,
+        check=False,
+    )
+    if proc.returncode != 0:
+        return set()
+    fields = proc.stdout.decode("utf-8", errors="replace").split("\x00")
+    return {fields[n] for n in range(0, len(fields) - 2, 3) if fields[n + 2] == "unset"}
+
+
+def _worktree_files(ctx: Context, rel_dir: str) -> set[str]:
+    root = ctx.path(rel_dir)
+    found: set[str] = set()
+    if not root.is_dir():
+        return found
+    for path in root.rglob("*"):
+        if path.is_file() and not (set(path.relative_to(ctx.repo).parts) & _IGNORED_PARTS) and path.suffix != ".pyc":
+            found.add(path.relative_to(ctx.repo).as_posix())
+    return found
 
 
 def _dirty_input_errors(ctx: Context, code: str) -> list[str]:
-    """W401-RA-03: every verified input equals the committed ``HEAD`` content.
+    """W401-RA-03 / W402-01 / W402-02: every verified input equals the committed ``HEAD`` content.
 
-    The verdict is bound to ``HEAD``: an input that the preflight read (or any file below the EVOL-X evidence root)
-    that is modified, staged or untracked makes the gate fail, so a PASS can never be obtained for an uncommitted
-    state. Uses the repository's own configuration so a normal CRLF checkout stays clean."""
-    proc = _git_repo_config(ctx, "status", "--porcelain=v1", "-z", "--untracked-files=all", "--", QUAL, "scripts")
-    if proc.returncode != 0:
-        return [f"{code} git status failed ({proc.stderr.decode('utf-8', errors='replace').strip()}): failing closed"]
+    The oracle is the file content, never ``git status``: a ``skip-worktree`` / ``assume-unchanged`` bit or a
+    ``core.fsmonitor`` program makes status report a modified file as clean, so each file is compared byte for byte
+    with its ``HEAD`` blob under the RA-B4-01 byte contract (identical, or the exact CRLF expansion of a pure-LF blob
+    on a path that checkout converts). Covered: the inputs that were read, every file below the EVOL-X evidence root
+    and every file below ``scripts`` (the verifier code), plus untracked files in those trees and any index bit that
+    hides a path from status."""
+    blobs: dict[str, str] = {}
+    for tree in _BOUND_TREES:
+        listed = _git(ctx, "ls-tree", "-r", "-z", ctx.head, "--", tree)
+        if listed.returncode != 0:
+            return [f"{code} cannot list the committed {tree} tree: failing closed"]
+        for record in listed.stdout.decode("utf-8", errors="replace").split("\x00"):
+            meta, _, path = record.partition("\t")
+            parts = meta.split()
+            if path and len(parts) == 3 and parts[1] == "blob":
+                blobs[path] = parts[2]
     read_paths: set[str] = ctx.cache.get("read_paths", set())
+    for rel in read_paths:
+        if rel not in blobs:
+            single = _git(ctx, "rev-parse", "--verify", "-q", f"{ctx.head}:{rel}")
+            if single.returncode == 0:
+                blobs[rel] = single.stdout.decode("utf-8").strip()
     dirty: list[str] = []
-    entries = proc.stdout.decode("utf-8", errors="replace").split("\x00")
-    skip_next = False
-    for entry in entries:
-        if skip_next:  # the origin path of a rename follows its destination
-            skip_next = False
-            continue
-        if len(entry) < 4:
-            continue
-        status, path = entry[:2], entry[3:]
-        if "R" in status or "C" in status:
-            skip_next = True
-        if path in read_paths or path.startswith(_EVIDENCE_PREFIX) or path == PREFLIGHT_SCRIPT_REL:
-            dirty.append(f"{path} [{status.strip() or '?'}]")
+    suspects: list[str] = []
+    for rel, blob_id in sorted(blobs.items()):
+        raw = _worktree_bytes(ctx, rel)
+        if raw is None:
+            dirty.append(f"{rel} [missing]")
+        elif _git_blob_id(raw) != blob_id:
+            blob = _show(ctx, ctx.head, rel)
+            if blob is None:
+                dirty.append(f"{rel} [unreadable at HEAD]")
+            elif b"\r" in blob or raw != blob.replace(b"\n", b"\r\n"):
+                dirty.append(f"{rel} [modified]")
+            else:
+                suspects.append(rel)
+    unset = _unset_text_paths(ctx, suspects)
+    dirty.extend(f"{rel} [modified]" for rel in suspects if rel in unset)
+    for tree in _BOUND_TREES:
+        dirty.extend(f"{rel} [untracked]" for rel in sorted(_worktree_files(ctx, tree) - set(blobs)))
+    for rel in sorted(read_paths - set(blobs)):
+        if _worktree_bytes(ctx, rel) is not None:
+            dirty.append(f"{rel} [untracked]")
+    flags = _git(ctx, "ls-files", "-v", "-z", "--", *_BOUND_TREES, QUAL)
+    if flags.returncode != 0:
+        dirty.append("<git ls-files -v failed>")
+    else:
+        for record in flags.stdout.decode("utf-8", errors="replace").split("\x00"):
+            if len(record) > 2 and record[0] != "H":
+                path = record[2:]
+                if path in blobs or path in read_paths:
+                    dirty.append(f"{path} [index flag {record[0]!r}: hidden from git status]")
     if dirty:
-        shown = ", ".join(sorted(dirty)[:5])
-        return [f"{code} uncommitted changes in verified inputs ({len(dirty)}): {shown}; the verdict must bind to HEAD"]
+        shown = ", ".join(dirty[:5])
+        return [
+            f"{code} uncommitted or hidden changes in verified inputs ({len(dirty)}): {shown}; "
+            "the verdict must bind to HEAD"
+        ]
     return []
 
 
@@ -1172,7 +1248,7 @@ def _manifest_bytes_errors(ctx: Context, p2: str) -> list[str]:
     ]
 
 
-_STATUS_TOKEN = re.compile(r"^[A-Z][A-Z0-9_]{2,63}$")
+_CLOSURE_STATES = frozenset({"NOT_CLOSED", "CLOSED"})
 _B6_STATES = frozenset({"NOT_ISSUED", "ISSUED", "ACCEPTED"})
 
 
@@ -1192,8 +1268,8 @@ def _lifecycle_value_errors(cert: dict[str, Any], base_cert: dict[str, Any] | No
     if "frz_checklist_rows_changed" in cert and not isinstance(cert["frz_checklist_rows_changed"], bool):
         errors.append("A-19 frz_checklist_rows_changed must be a boolean")
     status = cert.get("stage_closure_status")
-    if "stage_closure_status" in cert and not (isinstance(status, str) and _STATUS_TOKEN.fullmatch(status)):
-        errors.append("A-19 stage_closure_status must be a status token (A-Z, 0-9, _), not free text")
+    if "stage_closure_status" in cert and status not in _CLOSURE_STATES:
+        errors.append(f"A-19 stage_closure_status must be one of {sorted(_CLOSURE_STATES)}")
     b6_state = cert.get("b6_acceptance")
     if "b6_acceptance" in cert and not (isinstance(b6_state, str) and b6_state.upper() in _B6_STATES):
         errors.append(f"A-19 b6_acceptance must be one of {sorted(_B6_STATES)}")
@@ -1225,6 +1301,33 @@ def _certification_directory_errors(ctx: Context, p2: str) -> list[str]:
     errors.extend(
         f"A-19 {Path(rel).name} was removed from the certification directory" for rel in sorted(before - after)
     )
+    return errors
+
+
+_EVIDENCE_DIRS = frozenset({"audit", "certification", "b4_reaudit", "operator_decisions", "b6_acceptance"})
+_INDEX_NAME = re.compile(r"EVIDENCE_INDEX\.json$")
+
+
+def _evidence_layout_errors(ctx: Context) -> list[str]:
+    """W402-03: the EVOL-X evidence root holds only the known evidence directories, plus directories that bind
+    their content with an evidence index (closure evidence is referenced by an indexed re-audit directory). A file
+    placed beside them, or inside an unindexed directory, would be committed with the evidence without any gate
+    reading it."""
+    prefix = f"{EVIDENCE_ROOT_REL}/"
+    by_dir: dict[str, list[str]] = {}
+    errors: list[str] = []
+    for rel in sorted(_tree_blobs(ctx, ctx.head, EVIDENCE_ROOT_REL)):
+        head_dir, _, rest = rel[len(prefix) :].partition("/")
+        if not rest:
+            errors.append(f"A-19 {rel} is outside the known EVOL-X evidence directories")
+        else:
+            by_dir.setdefault(head_dir, []).append(rest)
+    for head_dir, files in sorted(by_dir.items()):
+        indexed = any(_INDEX_NAME.search(name) and "/" not in name for name in files)
+        if head_dir not in _EVIDENCE_DIRS and not indexed:
+            errors.append(
+                f"A-19 {prefix}{head_dir}/ is neither a known EVOL-X evidence directory nor bound by an evidence index"
+            )
     return errors
 
 
@@ -1265,6 +1368,7 @@ def _gate_a_scope_exact(ctx: Context, manifest: dict[str, Any], cert: dict[str, 
     errors.extend(_manifest_bytes_errors(ctx, anchor))
     errors.extend(_p2_evidence_immutability_errors(ctx, anchor))
     errors.extend(_certification_directory_errors(ctx, anchor))
+    errors.extend(_evidence_layout_errors(ctx))
 
     current, structural = limitation_entries(manifest.get("limitations"))
     baseline, _ = limitation_entries(base_manifest.get("limitations"))
@@ -1679,6 +1783,12 @@ def blocker_ledger(ctx: Context, manifest: dict[str, Any], cert: dict[str, Any])
             ledger.lineage.append(
                 f"{label} disappeared without closure evidence (removed, renamed or reclassified): {text}"
             )
+    for key, text in ledger.open_now.items():
+        published = ledger.origin.get(key)
+        if published is not None and text != published[1]:
+            ledger.lineage.append(
+                f"open blocker {key} no longer carries the text it was published with (text changed or extended)"
+            )
     for key in ledger.resolved:
         if ledger.origin and key not in ledger.origin:
             ledger.lineage.append(
@@ -1895,6 +2005,39 @@ def _operator_resolution_errors(
         fail("an OD-EVOL-12/OD-EVOLX-08 record cannot authorize this blocker")
 
 
+_RESOLUTION_KEYS = frozenset(
+    {
+        "blocker_id",
+        "status",
+        "baseline_text_sha256",
+        "opened_at_sha",
+        "resolution_kind",
+        "closure_publication_sha",
+    }
+)
+_REAUDIT_RESOLUTION_KEYS = frozenset(
+    {
+        "resolved_implementation_sha",
+        "closure_evidence_index_path",
+        "closure_evidence_index_digest",
+        "reaudit_manifest_path",
+        "reaudit_manifest_digest",
+        "certifier_disposition",
+    }
+)
+_OPERATOR_RESOLUTION_KEYS = frozenset({"closure_evidence"})
+_DISPOSITION_KEYS = frozenset(
+    {
+        "disposition",
+        "certifier_agent_id",
+        "certifier_session_id",
+        "policy_version",
+        "audit_report_digest",
+        "findings_digest",
+    }
+)
+
+
 def resolution_errors(ctx: Context, key: str, entry: Any, baseline_text: str, cert_sha: str, code: str) -> list[str]:
     """Independently re-verify an evidence-bound blocker resolution."""
     errors: list[str] = []
@@ -1905,6 +2048,17 @@ def resolution_errors(ctx: Context, key: str, entry: Any, baseline_text: str, ce
     if not isinstance(entry, dict):
         fail("entry is not an object")
         return errors
+    allowed = _RESOLUTION_KEYS | (
+        _REAUDIT_RESOLUTION_KEYS
+        if BLOCKER_CLOSURE_KINDS.get(key, KIND_REAUDIT) == KIND_REAUDIT
+        else _OPERATOR_RESOLUTION_KEYS
+    )
+    for extra in sorted(set(entry) - allowed):
+        fail(f"unexpected key {extra!r} (resolution entries carry only structured, gate-checked fields)")
+    disposition = entry.get("certifier_disposition")
+    if isinstance(disposition, dict):
+        for extra in sorted(set(disposition) - _DISPOSITION_KEYS):
+            fail(f"unexpected certifier_disposition key {extra!r}")
     if entry.get("status") != RESOLUTION_STATUS:
         fail(f"status must be {RESOLUTION_STATUS}")
     if entry.get("baseline_text_sha256") != _sha256(baseline_text.encode("utf-8")):
