@@ -8,9 +8,9 @@ packages = ["intergrax"]
 [project]
 name = "Intergrax-ai"
 version = "0.1.0"
-description = "Source-available operating layer for governed AI applications — reuse policy, authority, evidence, execution, and recovery across products instead of rebuilding them for every workflow."
+description = "Proprietary, all-rights-reserved operating layer for governed AI applications — policy, authority, evidence, execution, and recovery. No general license is granted; see LICENSE."
 readme = "README.md"
-license = { text = "Intergrax Evaluation and Collaboration License 1.0" }
+license = { text = "PROPRIETARY SOFTWARE — ALL RIGHTS RESERVED — NO GENERAL LICENSE GRANTED" }
 requires-python = ">=3.12,<3.13"
 keywords = [
   "ai-agents",

@@ -8,17 +8,17 @@ Thank you for your interest in Intergrax. This document explains how to contribu
 
 ## Project status
 
-Intergrax is **source-available**, **proprietary**, and under **active R&D**. Platform maturity is **capability-specific** - see current public evidence in [docs/project/proofs/PROOFS.md](docs/project/proofs/PROOFS.md). The default harness implementation queue is [§6.1 maintenance](docs/project/architecture/intergrax_runtime_architecture.md#61-harness-platform-maintenance-default--band-1) only. Business agents (Phase K) are [end of plan](docs/project/architecture/intergrax_runtime_architecture.md#63-end-of-plan--deferred-product-work-only) until explicit product prioritization.
+Intergrax is **proprietary**, **source-visible**, and under **active R&D**. No general license is granted. Platform maturity is **capability-specific** - see current public evidence in [docs/project/proofs/PROOFS.md](docs/project/proofs/PROOFS.md). The default harness implementation queue is [§6.1 maintenance](docs/project/architecture/intergrax_runtime_architecture.md#61-harness-platform-maintenance-default--band-1) only. Business agents (Phase K) are [end of plan](docs/project/architecture/intergrax_runtime_architecture.md#63-end-of-plan--deferred-product-work-only) until explicit product prioritization.
 
-Intergrax is **public and source-available proprietary** under the [Intergrax Evaluation and Collaboration License 1.0](LICENSE). You may clone, install locally, make evaluation modifications, create forks, submit patches, and open pull requests as described in [docs/project/community/COLLABORATION.md](docs/project/community/COLLABORATION.md). This is **not** an open-source license grant. Production use and commercial use require **explicit written permission**.
+Intergrax is **proprietary, source-visible** software under [LICENSE](LICENSE). Public access is not permission to run, modify, develop software based on the protected Intergrax code, redistribute, sublicense, host, or commercially use materials owned by the Licensor. No open-source license is granted. GitHub's Terms of Service may govern viewing and forking through the Service. A fork or clone does not by itself permit deployment, operation, commercialization, or distribution outside those platform permissions, a prior license for that copy, a separate written agreement, or rights that applicable law does not allow to be restricted. Submitting a pull request or merging code does not transfer copyright.
 
-Contributions are welcome under the evaluation and collaboration model. Read [docs/project/community/COLLABORATION.md](docs/project/community/COLLABORATION.md) and [LICENSE](LICENSE) before starting work. Large or architectural contributions require **prior discussion** with the maintainer.
+Read [LICENSE](LICENSE) and [docs/project/community/COLLABORATION.md](docs/project/community/COLLABORATION.md) before offering any material. Opening an issue or pull request does not license protected Intergrax materials and does not transfer copyright in them. Any contribution license requires a separate written agreement. Large or architectural submissions require **prior discussion** with the maintainer. Discussion is not authorization to install, run, or modify the software.
 
 ---
 
 ## Before contributing
 
-You may clone the Official Repository, install dependencies, run evaluation paths, make private evaluation modifications, create a GitHub fork, and prepare patches or pull requests under the [Intergrax Evaluation and Collaboration License 1.0](LICENSE). Production use, commercial use, hosted services, redistribution, and incorporation into products or services require separate explicit written permission.
+This document does not grant permission to clone beyond GitHub's Terms of Service, install dependencies, run the software, modify it, or prepare a fork for execution. Evaluation, production use, commercial use, hosted services, redistribution, and incorporation into products or services require separate explicit written permission from the Licensor, unless an earlier license covers that copy or applicable law does not allow the restriction.
 
 ### Required reading
 
@@ -149,7 +149,7 @@ Tier-1/2/3 work is **composition and wiring** of existing Tier-0 modules - not p
 
 ### 1. Fork or branch
 
-You may create a public or private GitHub fork as an **Authorized Fork** for evaluation and contribution, or branch from the Official Repository. Other evaluators may clone and test your Authorized Fork for permitted evaluation and pull-request collaboration. An Authorized Fork is not an independent distribution and does not permit Production Use or Commercial Use.
+A GitHub fork is subject to the GitHub Terms of Service. It does not grant permission to run, test, modify, host, or redistribute Intergrax, and other people may not treat that fork as permission to do so. Permission to run or modify the software has to come from a separate written agreement, an earlier license that covers that copy, or applicable law. Opening a pull request does not transfer copyright.
 
 ```bash
 git checkout -b feature/short-description
@@ -236,8 +236,8 @@ uv run pytest agents/my_agent/tests/ -q
 
 ```text
 © Artur Czarnecki. All rights reserved.
-Intergrax is source-available under the Intergrax Evaluation and Collaboration License 1.0.
-See LICENSE for permitted evaluation, collaboration, and contribution use.
+Intergrax is proprietary, source-visible software. No general use license is granted.
+See LICENSE. Third-party components and contributor-owned materials remain under their own rights.
 ```
 
 ---
@@ -278,38 +278,17 @@ Keep [`pyproject.toml`](pyproject.toml) `description` and `keywords` aligned wit
 
 ## License
 
-Intergrax is source-available proprietary software under the [Intergrax Evaluation and Collaboration License 1.0](LICENSE). It is not open source. Production use and commercial use require explicit written permission.
+Intergrax is proprietary, source-visible software under [LICENSE](LICENSE). No open-source license is granted. Public access does not grant a general right to run, modify, develop software based on the protected Intergrax code, redistribute, sublicense, host, or commercially use it.
 
-## Contribution License
+## Contributions and feedback
 
-By participating in the project, you agree to the contribution terms in [LICENSE](LICENSE). The following summarizes the workflow; the LICENSE text controls.
+Opening an issue, discussion, or pull request does not license protected Intergrax materials and does not transfer copyright in them. Merging code does not transfer copyright.
 
-### Code and documentation contributions
+This document does not grant the maintainer a license in contributor-authored code, documentation, or feedback. Any contribution license requires a separate written agreement. Do not submit confidential information or trade secrets.
 
-When you submit a **Code Contribution** or **Documentation Contribution** (for example, a pull request, patch, test, configuration file, documentation file, diagram, example, or tutorial clearly offered for inclusion), you confirm that:
+Material submitted while the Intergrax Evaluation and Collaboration License 1.0 was the published LICENSE stays under that earlier text, for a copy or submission obtained under it, together with applicable law. This page leaves those earlier grants in place.
 
-- you authored the material or otherwise have the right to submit it;
-- you retain copyright in your Code Contribution or Documentation Contribution;
-- you grant Artur Czarnecki a perpetual, worldwide, non-exclusive, royalty-free, and irrevocable license to use, reproduce, modify, create derivative works from, distribute, publicly display, publicly perform to the extent applicable, sublicense, and include your Code Contribution or Documentation Contribution in Intergrax, including under current and future licensing models for the project;
-- you will not submit material that you do not have the right to contribute or that is subject to an incompatible license.
-
-Submitting material creates the license grant described in [LICENSE](LICENSE). The contribution license takes effect when the material is submitted or clearly offered for inclusion, whether or not the maintainer later accepts or merges it. Acceptance or merge is a separate maintainer decision.
-
-Submitting a Code Contribution or Documentation Contribution does not transfer copyright to the maintainer. The maintainer may accept, reject, or request changes to any submission. Submission does not create support obligations, compensation, partnership terms, production rights, or commercial rights.
-
-### Feedback
-
-**Feedback** includes issue comments, suggestions, bug reports, feature proposals, and architecture observations that are not clearly offered for direct inclusion as a project file. Feedback is welcome and is governed by the simpler Feedback license in [LICENSE](LICENSE). Posting Feedback does not automatically make it a Code Contribution or Documentation Contribution, and does not transfer copyright in the literal text of your comment.
-
-Do not submit confidential information or trade secrets as Feedback.
-
-### Potential CLA requirement
-
-The maintainer may require a separate Contributor License Agreement before accepting substantial, corporate, or potentially patent-relevant Code Contributions or Documentation Contributions. Lack of a separate CLA may be a reason to decline a large contribution.
-
-### Patent-related contributions
-
-The current contribution process does not transfer patent rights and does not grant an automatic patent license. If you know that a contribution may be covered by your patent or your employer's patent, disclose that when submitting substantial technical material. The maintainer may request a separate written agreement for potentially patentable mechanisms.
+Patent rights are not granted by a submission. The maintainer may decline material until a separate written agreement exists. This file does not set out that agreement.
 
 ---
 

@@ -8,11 +8,15 @@ It provides reusable governed foundations for knowledge, actions, approvals,
 integrations, recovery, and reviewable evidence so product teams do not rebuild
 those mechanisms for every workflow.
 
-[![Source-available](https://img.shields.io/badge/source--available-evaluation-6c5ce7.svg)](LICENSE)
+[![Proprietary — all rights reserved](https://img.shields.io/badge/proprietary-all%20rights%20reserved-6c5ce7.svg)](LICENSE)
 [![Active R&D](https://img.shields.io/badge/active-R%26D-0969da.svg)](#license-and-collaboration)
 [![Documented proof paths](https://img.shields.io/badge/documented-proof%20paths-2ea44e.svg)](docs/project/proofs/PROOFS.md)
 
-**[Explore Proof Library](docs/project/proofs/PROOF_LIBRARY.md)** · **[See LKW](applications/local_workspace_application/docs/product/LKW_PRODUCT_TOUR.md)** · **[Run LKW locally](applications/local_workspace_application/docs/product/QUICKSTART.md)** · **[Why Intergrax](docs/project/overview/WHY_INTERGRAX.md)**
+> **PROPRIETARY SOFTWARE — ALL RIGHTS RESERVED — NO GENERAL LICENSE GRANTED**
+>
+> Intergrax is proprietary software. Public access to this repository does not grant a license to run, modify, develop software based on the protected Intergrax code, use it commercially, redistribute it, host it, sublicense it, or resell it. Separate explicit written permission from the Licensor is required, except for rights under the GitHub Terms of Service, rights effectively granted under an earlier license for a copy obtained under that earlier text, or rights that applicable law does not allow to be restricted. See [LICENSE](LICENSE).
+
+**[Explore Proof Library](docs/project/proofs/PROOF_LIBRARY.md)** · **[See LKW](applications/local_workspace_application/docs/product/LKW_PRODUCT_TOUR.md)** · **[Why Intergrax](docs/project/overview/WHY_INTERGRAX.md)**
 
 > Intergrax is not trying to win by having more agent-framework features. Agent frameworks help build agent behavior and workflows; managed platforms help deploy and operate agentic workloads. Intergrax targets the **shared operating boundaries** across specialized AI products - policy, authority, evidence, execution, recovery, and canonical history - so they do not have to be rebuilt independently around every application.
 >
@@ -26,7 +30,7 @@ those mechanisms for every workflow.
 </picture>
 </a>
 
-> Intergrax is **source-available** and under **active R&D**.
+> Intergrax is **proprietary** and under **active R&D**. No general license is granted. See [LICENSE](LICENSE).
 
 **Current reality:** [Local Knowledge Workspace](applications/local_workspace_application/docs/product/LKW_PRODUCT_TOUR.md) is the active reference product at **Backend Product Alpha / MVP** with bounded proof paths. **Real-user validation** and **commercial validation** remain incomplete. Additional portfolio directions are **selected pre-bootstrap** only - their presence does not imply implementation or runtime proof.
 
@@ -43,7 +47,7 @@ those mechanisms for every workflow.
 | Scenario explorer | [Proof Library](docs/project/proofs/PROOF_LIBRARY.md) | Explore difficult real-world problems and executable Scenario Proofs |
 | Technical Reviewer | [PROOFS](docs/project/proofs/PROOFS.md) | Audit evidence and public claims - what is implemented / boundedly proven |
 | Investor / Strategic Evaluator | [Why Intergrax](docs/project/overview/WHY_INTERGRAX.md) | Understand the platform thesis, LKW wedge, and open validation gates |
-| Design Partner / Integrator | [Partners](docs/project/community/PARTNERS.md) | Explore a bounded evaluation or pilot around a concrete workflow |
+| Design Partner / Integrator | [Partners](docs/project/community/PARTNERS.md) | Discuss one workflow. Evaluation and pilots require separate written permission |
 
 Looking for configuration, evaluation guidance, roadmap, collaboration,
 permissions, capability-specific material, or deeper technical documentation?
@@ -445,13 +449,14 @@ The program advances through a frozen portfolio of 10 enterprise-grade organizat
 
 ## License and collaboration
 
-Intergrax is **source-available** under the Intergrax Evaluation and
-Collaboration License 1.0. You may clone, install, run, test, and modify the
-repository locally for **non-production evaluation**, subject to the
-[LICENSE](LICENSE).
+> **PROPRIETARY SOFTWARE — ALL RIGHTS RESERVED — NO GENERAL LICENSE GRANTED**
+>
+> Intergrax is proprietary software. Public access to this repository does not grant a license to run, modify, develop software based on the protected Intergrax code, use it commercially, redistribute it, host it, sublicense it, or resell it. Separate explicit written permission from the Licensor is required, except for rights under the GitHub Terms of Service, rights effectively granted under an earlier license for a copy obtained under that earlier text, or rights that applicable law does not allow to be restricted.
+>
+> See [LICENSE](LICENSE). This notice does not assign third-party components or contributor-owned materials to the Licensor. Submitting a pull request or merging code does not transfer copyright.
 
-Feedback, contribution, permission, and pilot routes are described in
+Contact routes are described in
 [Collaboration](docs/project/community/COLLABORATION.md) and
-[Partners](docs/project/community/PARTNERS.md). Production use, commercial use,
-hosting, and redistribution require **explicit written permission or agreement**
-under the legally authoritative [LICENSE](LICENSE).
+[Partners](docs/project/community/PARTNERS.md). Evaluation, production use,
+commercial use, hosting, and redistribution require **separate explicit written
+permission**. [LICENSE](LICENSE) is the controlling text for Licensor materials.
