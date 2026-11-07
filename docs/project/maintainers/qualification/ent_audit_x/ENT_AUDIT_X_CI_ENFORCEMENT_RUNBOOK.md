@@ -14,7 +14,7 @@
 ## Operator steps
 
 1. GitHub → Settings → Branches → protect `development`.
-2. Require status check **Enterprise audit (ENT-AUDIT-X) / ent-audit-fast**.
+2. Require status check **ent-audit-fast** (status-check context = job name; the PR UI renders it as `Enterprise audit (ENT-AUDIT-X) / ent-audit-fast`).
 3. Record completion in operator record; update FRZ-AUD-10 only after Protocol 03 B6.
 
 **Honest status until OD-ENT-02:** FRZ-AUD-10 enforceability **BLOCKED** — workflow exists; branch protection **MISSING**.

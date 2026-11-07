@@ -165,7 +165,7 @@ flowchart TD
 
 Per [ENT_AUDIT_X_CI_ENFORCEMENT_RUNBOOK.md](docs/project/maintainers/qualification/ent_audit_x/ENT_AUDIT_X_CI_ENFORCEMENT_RUNBOOK.md):
 
-- **Required checks (minimum):** `Enterprise audit (ENT-AUDIT-X) / ent-audit-fast`, `Enterprise audit (ENT-AUDIT-X) / ent-audit-pr-gate` from [`.github/workflows/enterprise-audit.yml`](.github/workflows/enterprise-audit.yml).
+- **Required checks (minimum):** `ent-audit-fast`, `ent-audit-pr-gate` (status-check context = job name; PR UI shows `Workflow / job`) from [`.github/workflows/enterprise-audit.yml`](.github/workflows/enterprise-audit.yml).
 - Admin configures ruleset/branch protection on `development`; capture `gh api repos/jakbuczarnecki/intergrax/branches/development/protection` JSON → operator-controlled store (reference path in OD record, not secrets in repo).
 - **Negative test:** open test PR with intentional audit failure → merge blocked (manual or scripted).
 - Add repo script `scripts/governance/verify_ent_audit_branch_protection.py` (fail-closed) — agent implements; CI optional doc-only.

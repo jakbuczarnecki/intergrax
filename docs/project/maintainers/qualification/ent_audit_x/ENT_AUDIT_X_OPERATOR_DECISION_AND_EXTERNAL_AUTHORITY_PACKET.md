@@ -68,7 +68,7 @@
 | --- | --- |
 | Runbook | [ENT_AUDIT_X_CI_ENFORCEMENT_RUNBOOK.md](./ENT_AUDIT_X_CI_ENFORCEMENT_RUNBOOK.md) |
 | Operator packet | [OD_ENT_02_OPERATOR_PACKET.md](./OD_ENT_02_OPERATOR_PACKET.md) |
-| Required contexts (minimum) | `Enterprise audit (ENT-AUDIT-X) / ent-audit-fast` · `Enterprise audit (ENT-AUDIT-X) / ent-audit-pr-gate` |
+| Required contexts (minimum) | `ent-audit-fast` · `ent-audit-pr-gate` (status-check context = job name; PR UI shows `Workflow / job`) |
 | Verifier | `uv run python scripts/governance/verify_ent_audit_branch_protection.py` |
 | Campaign F0 API | **404 Branch not protected** (see `.tmp/session/ENT-AUDIT-X-FORMAL-CLOSURE/gh_branch_protection.json`) |
 | Negative test | PR with intentional audit failure → merge blocked |
