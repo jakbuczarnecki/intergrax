@@ -29,7 +29,7 @@
 | **OD-EVOL-19** | **OPERATOR APPROVED — CLOSED BY OPERATOR (TECHNICAL SCOPE)** | 2026-11-02 | Operator expressly accepts stage-end technical completion; formal Protocol 03 remains PENDING. Not equivalent to independently certified ECAP closure. See [operator closure decision](./EVOL_X_OD_EVOL_19_OPERATOR_CLOSURE.md). |
 | **OD-EVOL-11** | SIGNED / APPROVED (appointment authorized; **auditor identity NOT NAMED**) | 2026-11-01 | W0-08: operator-appointed independent auditor (must differ from implementer/agent). Operator message and auth package carry no name; **operator must record the auditor id in this row before W7-01**. Agent does not self-appoint. Appointment record: [EVOL_X_OD_EVOL_11_INDEPENDENT_AUDITOR_APPOINTMENT_RECORD.md](./EVOL_X_OD_EVOL_11_INDEPENDENT_AUDITOR_APPOINTMENT_RECORD.md). |
 | **OD-EVOL-12** | **OPERATOR APPROVED** | 2026-11-07 | W7-03 FRZ-EVOL promotion (Option A, rows follow certified dispositions). Signed by the operator-designated signing session (Amendment 01, process_enforced). Record: [EVOL_X_OD_EVOL_12_DECISION_RECORD.md](../iiac_evidence/EVOL-X/operator_decisions/EVOL_X_OD_EVOL_12_DECISION_RECORD.md) sha256: `481c6328e820c0ca1f753a1acea635138afd04eac9b8aa618a5c60d20c1746de` |
-| **OD-EVOLX-08** | **PENDING** | — | W7-04 (Batch G not in 2026-11-01 scope) |
+| **OD-EVOLX-08** | **OPERATOR APPROVED** | 2026-11-07 | W7-04 parent closure of EVOL-X (AUTOMATION_FIRST_SCOPED). Signed by the operator-designated signing session (Amendment 01, process_enforced). Record: [EVOL_X_OD_EVOLX_08_DECISION_RECORD.md](../iiac_evidence/EVOL-X/operator_decisions/EVOL_X_OD_EVOLX_08_DECISION_RECORD.md) sha256: `760cdb37c7593702672dab70a374faec4b84a4a36c821a431cf213497a5d8add` |
 
 ## Decision text (ratified where signed)
 
