@@ -1,8 +1,10 @@
 # IIAC Amendment 01 - operator-designated signing session
 
-**Status:** PROPOSED - NOT IN FORCE
+**Status:** IN FORCE AS OPERATOR-ADOPTED POLICY TEXT (2026-11-07) - not audited, not mechanically enforced
 **Ticket:** `T-IGX-021-A` (specification batch; no code, no material governance path edited)
-**Applies to policy:** nothing yet. This text is a proposal. It amends no document, activates nothing and signs nothing. The in-force text remains `INTEGRAX_INTERNAL_INDEPENDENT_AGENT_CERTIFICATION_PROTOCOL.md` as activated by `IIAC_POLICY_ACTIVATION_RECORD.json`, unchanged.
+**Applies to policy:** rules R-1..R-6 of section 1.1 are adopted and apply to every certification started after this commit, on the operator's direct instruction (chat, 2026-11-07: the rule is to be recorded and to take effect in this session, without the retry/audit chain; the operator asked for no further discussion). The agent recorded this; it is not an operator signature line and the assurance level is `process_enforced`.
+
+**What "in force" means here, exactly.** (1) The operator's right to commission a separate, new, dedicated session to sign and certify in the operator's name is policy from this commit. (2) The amendment was NOT independently audited (T-IGX-021-C waived by the operator's instruction, not performed). (3) It is NOT mechanically enforced: `INTEGRAX_INTERNAL_INDEPENDENT_AGENT_CERTIFICATION_PROTOCOL.md`, the IIAC verifiers, the activation record and the EVOL-X closure preflight were deliberately left unchanged, because editing them makes `verify_iiac_policy_activation --require-in-force` fail (stale audit) and voids the B-4 acceptance. Consequence: the preflight still accepts only the literal line `Approved <id>: operator @ <time>`; a line with `operator-delegate` is not recognised until code ticket T-IGX-021-B is done, and the delegated session may not write the plain `operator` form (that would be indistinguishable from the operator) unless the operator commissions it in a delegation record under this amendment.
 **Authored by:** implementer session (agent). This document is a draft for operator decision and for a later independent audit (`T-IGX-021-C`). The author does not certify it and claims no PASS.
 
 ## 1. Operator requirement (normative core)

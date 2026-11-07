@@ -54,7 +54,9 @@ FRZ promotion, OD-EVOL-12, OD-EVOLX-08, EVOL-X P3/B6 publication, any edit of th
 
 ## Lifecycle state
 
-quality_gate
+closed
+
+Operator note: closed by the operator's direct instruction in chat on 2026-11-07 (rule adopted as policy text; independent audit T-IGX-021-C and operator activation record waived by that instruction, not performed; code ticket T-IGX-021-B not done). No `Approved:` line was written by an agent.
 
 ## Checkpoint (implementer session; not an audit, no PASS claimed)
 
