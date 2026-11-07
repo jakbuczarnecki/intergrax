@@ -227,7 +227,7 @@ mcp = [
   "fastmcp>=3.3.1,<4",
 ]
 rag-local-embeddings = [
-  "torch==2.2.2",
+  "torch==2.13.0",
   "sentence-transformers>=3.0,<6",
   # Transformers v5 requires newer Torch; keep v4 with the pinned Torch runtime.
   "transformers>=4.41,<5",
@@ -335,7 +335,7 @@ dev-unit-cert = [
   "anthropic>=0.25,<1",
   "tiktoken>=0.7,<1",
   "pgvector>=0.3",
-  "torch==2.2.2",
+  "torch==2.13.0",
   "sentence-transformers>=3.0,<6",
   "transformers>=4.41,<5",
 ]
