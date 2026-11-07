@@ -1,5 +1,7 @@
 # QUAL-X — Enterprise Qualification Baseline & Gate Inventory (P0)
 
+Independent verification: AUD-QUALXP0 PASS_SCOPED (see roadmap L479). Erratum: Q01/Q03 gates red at a70b68cf9 (F-00); chaos script non-functional (F-02); Q03 path is tests/unit/runtime/architecture/test_ebh_2f_r2_integration_plugin_contract_typing_gate.py (F-03). Record: [`CERT_CAMPAIGN_DELEGATED_DECISIONS_2026-11-07.md`](CERT_CAMPAIGN_DELEGATED_DECISIONS_2026-11-07.md) (OD-QUALXP0-VERIFIED-2026-11-07; delegated, process_enforced). Deferred doc fixes F-04 ("32 modules" vs 35 per the P5 manifest at d9ea0d6e8) and F-06 (stale "READY FOR AUDIT" body text) are not performed here.
+
 **Status:** **QUAL-X** parent = **`QUAL-X CLOSED — POPULATION A ONLY`** (formal closure publication 2026-10-23; **READY FOR INDEPENDENT AUDIT** on GitHub @ closure commit) · **ACCEPTANCE_SHA** `d9ea0d6e87b939e4cefb9971c6bbd4fbcaecc0ce` · prior conditional **PUBLICATION_SHA** `4c5faa89aad381e293da2210ec3e83566c3a8473` · **FRZ-REG-01..10** = **OPEN** (global checklist; Population **E** / rollup unchanged) · **PROD-Q** Dimension **B** = **OPEN/BLOCKED** (unchanged) · **ENT-AUDIT-X** = **not certified**
 
 **Branch:** `development`
