@@ -15,7 +15,7 @@
   "certification_publication_sha": "ad0877715ed079ce920ff9d925fda03555b2c04e",
   "certification_publication_sha_binding": "bound to the P2 publication commit (the commit that first published this record); interim placeholder in that commit was audit_execution_sha",
   "b6_acceptance_publication_sha": "1dd769331506149a1ee2f411c2bc62e85e5bbf25",
-  "formal_closure_publication_sha": null,
+  "formal_closure_publication_sha": "be77b3a5fb97f10a3bd2df6ee038cb92aad77eca",
   "accepted_audit_report_digest": "88f9f427d52a70a2e703600261f48b2e6d1a42689f611dde5eb6ebe3208177c6",
   "findings_digest": "d0e7b5749e7b2ce006b69dad7cfc57ccc79d54a5a2881d559952c4000de1e95f",
   "audit_evidence_index_digest": "e4694606ed2bd0db420b77ea4234fa9376f584c41381b3fb155f0eb89068f59c",
