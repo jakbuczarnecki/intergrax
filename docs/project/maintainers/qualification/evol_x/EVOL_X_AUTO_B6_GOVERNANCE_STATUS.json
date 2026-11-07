@@ -27,7 +27,7 @@
   },
   "independent_attestation_environment": false,
   "b6_acceptance_publication_sha": "1dd769331506149a1ee2f411c2bc62e85e5bbf25",
-  "evol_x_closed": false,
+  "evol_x_closed": true,
   "credential_class_authorized_for_formal_b6": null,
   "formal_b6_status": "ACCEPTED",
   "b6_acceptance_policy_version": "IIAC-2026-11-05.1"

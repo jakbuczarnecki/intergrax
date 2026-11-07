@@ -4,7 +4,7 @@
   "policy_version": "IIAC-2026-11-05.1",
   "independent_audit_verdict": "PASS_SCOPED",
   "certification_verdict": "PASS_SCOPED_EVIDENCE_PUBLICATION_ONLY",
-  "stage_closure_status": "NOT_CLOSED",
+  "stage_closure_status": "CLOSED",
   "b6_acceptance": "ISSUED",
   "audited_implementation_sha": "3c4a641b3e48a13f437e830a0562e2a80b03aabb",
   "test_execution_sha": "3c4a641b3e48a13f437e830a0562e2a80b03aabb",
