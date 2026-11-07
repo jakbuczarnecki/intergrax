@@ -1871,8 +1871,9 @@ def test_ra_b4_03_real_register_rows_still_classify_correctly() -> None:
     rows = pf.parse_register((REPO / pf.REL_REGISTER).read_text(encoding="utf-8"))
     for od_id in ("OD-EVOL-05b", "OD-EVOL-10", "OD-EVOL-13"):
         assert pf.decision_recorded(*rows[od_id]), od_id
+    # T-IGX-022-A: both closing decisions are signed since the EVOL-X formal closure (W7-03 / W7-04)
     for od_id in ("OD-EVOL-12", "OD-EVOLX-08"):
-        assert not pf.decision_recorded(*rows[od_id]), od_id
+        assert pf.decision_recorded(*rows[od_id]), od_id
     # scope-limited approvals are never closing decisions
     for od_id in ("OD-EVOL-14", "OD-EVOL-15", "OD-EVOL-17"):
         assert not pf.decision_recorded(*rows[od_id]), od_id
