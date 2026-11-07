@@ -38,8 +38,7 @@
   },
   "frz_checklist_rows_changed": false,
   "open_blockers_for_closure": [
-    "B-5 OD-EVOL-12 / OD-EVOLX-08 authority confirmation or signed rows",
-    "B6 acceptance (P3), FRZ promotion (P4) and formal closure (P5) not authorized in this publication"
+    "B-5 OD-EVOL-12 / OD-EVOLX-08 authority confirmation or signed rows"
   ],
   "assessment_path": "docs/project/maintainers/qualification/iiac_evidence/EVOL-X/certification/EVOL_X_IIAC_CERTIFICATION_ASSESSMENT.md",
   "notes": "Evidence-only P1/P2 publication under operator authorization. P1 pre-commit ruff gate skipped once by operator authorization (byte-preserved auditor probe scripts). Eligible dispositions are not promotions.",
@@ -64,6 +63,21 @@
         "audit_report_digest": "966d54436aa73a8b6c01fa43d9248875222253eb73a202527ffe62dec1105109",
         "findings_digest": "ba415e90cf5d59b691ce25cc82ae65df5d4a88daaf031e144a34a204fed65b91"
       }
+    },
+    {
+      "blocker_id": "B6-P3",
+      "status": "RESOLVED_WITH_EVIDENCE",
+      "baseline_text_sha256": "61dd0bc263232a6a1ff2c41ba4f936635d21c2c5ac9232bc47c37a8f55b3990e",
+      "opened_at_sha": "ad0877715ed079ce920ff9d925fda03555b2c04e",
+      "resolution_kind": "OPERATOR_AUTHORIZATION",
+      "closure_publication_sha": "27d905027f1db6dfa36f1a7147971d3f8e3f16f0",
+      "closure_evidence": [
+        {
+          "path": "docs/project/maintainers/qualification/iiac_evidence/EVOL-X/operator_decisions/EVOL_X_P3_B6_AUTHORIZATION_RECORD.md",
+          "sha256": "90d5c3288a3d205cce37e52664c63ab03c323fe0755975f5375c6342864045b9",
+          "decision_id": "OD-EVOLX-P3-B6-2026-11-07"
+        }
+      ]
     }
   ]
 }
