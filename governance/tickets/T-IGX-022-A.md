@@ -59,4 +59,12 @@ in_progress
 
 ## Checkpoint
 
-(empty — implementer pastes `igx_gov ticket` stdout here before push)
+Implementer verification (not a PASS; hand-over READY_FOR_INDEPENDENT_AUDIT). Logs: `.tmp/session/cert-campaign/IMPL-CTENT-01/logs/`.
+
+- `verify_plan_approval.py` T-IGX-022-A --plan plans/CT-ENT-PLAN.md: OK (digest eb8707e1...b5a0).
+- `validate_post_implementation_master_plan.py`: exit 0 (was 1 at base).
+- pytest (3 files, one invocation, `-p no:xdist`): 21 passed.
+- Mutation check (lib reverted to base): 11 failed, 5 passed (both originally red tests + the new tests fail); lib restored.
+- `mechanical_readiness_check.py`: `wbs_ssot_validator_pass` OK; remaining FAILs are the documented environmental ones (not fixed).
+- `verify_iiac_policy_activation.py`: IN_FORCE, exit 0; `verify_iiac_g0_inventory_completeness.py`: PASS.
+- `igx_gov ticket`: NOT completed. Attempt 1 exit 1 (verify_commit_ticket_refs, no upstream -> full-history walk, cp1250 UnicodeDecodeError on an old commit message; environmental). Attempt 2 (`PYTHONUTF8=1`) killed by the Claude Code memory-pressure guard before start. Pre-commit ruff and diff-scoped gates passed at commit time. To be re-run by the auditor/tester.
