@@ -1,0 +1,12 @@
+   status w/ fsmonitor: 'M docs/project/maintainers/qualification/PLATFORM_ENTERPRISE_FREEZE_ACCEPTANCE_CHECKLIST.md'
+== T4 fsmonitor hook reporting no changes, corrected row only in worktree: gateA=PASS gateB=FAIL
+     B-12 uncommitted or hidden changes in verified inputs (1): docs/project/maintainers/qualification/PLATFORM_ENTERPRISE_FREEZE_ACCEPTANCE_CHECKLIST.md [modified]; the verdict must bind to HEAD
+Traceback (most recent call last):
+  File "C:\Users\XPS\AppData\Local\Temp\claude\d19482db763911f7\fc570696-4e30-4d85-ac50-378e86e4ede8\scratchpad\atk7.py", line 23, in <module>
+    t._commit(b,"gitlink in audit dir")
+  File "D:\Projekty\intergrax\.claude\worktrees\stoic-panini-83e1a9\tests\unit\qualification\test_evol_x_closure_preflight_b4.py", line 170, in _commit
+    _git(repo, "-c", "user.email=b4-fixture@example.com", "-c", "user.name=b4-fixture", "commit", "-m", message)
+  File "D:\Projekty\intergrax\.claude\worktrees\stoic-panini-83e1a9\tests\unit\qualification\test_evol_x_closure_preflight_b4.py", line 164, in _git
+    raise RuntimeError(proc.stderr.strip() or proc.stdout.strip() or f"git {' '.join(args)} failed")
+RuntimeError: On branch development
+nothing to commit, working tree clean

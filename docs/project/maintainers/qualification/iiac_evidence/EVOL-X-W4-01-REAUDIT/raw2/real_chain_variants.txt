@@ -1,0 +1,18 @@
+== V-c1 dirty verifier code: comment appended to scripts/governance/iiac_common.py (uncommitted)
+ M scripts/governance/iiac_common.py
+  A codes: ['A-18'] n= 2
+== V-c2 dirty scripts/qualification/evol_x_frz_evol_canonical_matrix.py
+ M scripts/qualification/evol_x_frz_evol_canonical_matrix.py
+  A codes: ['A-18'] n= 2
+== V-c3 dirty preflight script itself (expected flagged)
+  A codes: ['A-18', 'A-21'] n= 3
+== V-k1 real chain: replace ref on an arbitrary commit
+  A codes: ['A-18', 'A-22'] n= 3
+Deleted replace ref '6aa8c89e9b410f1e73f6e0ca0e109cfc260d4ae6'
+== V-k2 real chain after cleanup (baseline)
+  A codes: ['A-18'] n= 2
+== V-k3 real chain: info/grafts file
+  A codes: ['A-18', 'A-22'] n= 3
+== V-k4 real chain: skip-worktree on an unrelated read input (FRZ checklist modified)
+porcelain: ''
+  A codes: ['A-18'] n= 2

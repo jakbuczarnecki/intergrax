@@ -1,0 +1,53 @@
+== R1 re-run of W403-01: forged unchecked-hash pyc for the in-process modules (iiac_common, canonical matrix, activation gate)
+Traceback (most recent call last):
+  File "C:\Users\XPS\AppData\Roaming\uv\python\cpython-3.12-windows-x86_64-none\Lib\py_compile.py", line 144, in compile
+    code = loader.source_to_code(source_bytes, dfile or file,
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "<frozen importlib._bootstrap_external>", line 1063, in source_to_code
+  File "<frozen importlib._bootstrap>", line 488, in _call_with_frames_removed
+  File "scripts\governance\iiac_common.py", line 168
+    open(r"D:/w4a4/marker.txt","a").write("EXEC %s argv=%s
+                                          ^
+SyntaxError: unterminated string literal (detected at line 168)
+
+During handling of the above exception, another exception occurred:
+
+Traceback (most recent call last):
+  File "<stdin>", line 6, in <module>
+  File "C:\Users\XPS\AppData\Roaming\uv\python\cpython-3.12-windows-x86_64-none\Lib\py_compile.py", line 150, in compile
+    raise py_exc
+py_compile.PyCompileError:   File "scripts\governance\iiac_common.py", line 168
+    open(r"D:/w4a4/marker.txt","a").write("EXEC %s argv=%s
+                                          ^
+SyntaxError: unterminated string literal (detected at line 168)
+
+EVOL-X closure preflight: FAIL
+  repository: canonical | policy mode: IIAC | selected gate: formal-closure
+  Gate A - B6 acceptance readiness: FAIL
+    - A-18 open certification blocker for B6 acceptance: B-4 legacy closure preflight requires independent corrective implementation and re-audit
+    - A-18 open certification blocker for B6 acceptance: B6 acceptance (P3), FRZ promotion (P4) and formal closure (P5) not authorized in this publication
+  Gate B - formal EVOL-X closure readiness: FAIL
+    - B-00 Gate A not satisfied (2 error(s))
+    - B-01 B6 acceptance not published: governance b6_acceptance_publication_sha unset
+    - B-01 governance formal_b6_status is not ACCEPTED
+    - B-01 governance b6_acceptance_policy_version does not cite the IIAC policy in force
+    - B-02 SHA ladder B6_ACCEPTANCE_PUBLICATION_SHA still pending/empty
+    - B-02 certification record b6_acceptance is not ISSUED
+    - B-06 FRZ-EVOL-01 has no individual PASS disposition (status OPEN)
+    - B-06 FRZ-EVOL-02 has no individual PASS disposition (status OPEN)
+    - B-06 FRZ-EVOL-03 has no individual PASS disposition (status OPEN)
+    - B-06 FRZ-EVOL-04 has no individual PASS disposition (status OPEN)
+    - B-06 FRZ-EVOL-05 has no individual PASS disposition (status OPEN)
+    - B-06 FRZ-EVOL-06 has no individual PASS disposition (status OPEN)
+    - B-06 FRZ-EVOL-07 has no individual PASS disposition (status OPEN)
+    - B-06 FRZ-EVOL-08 has no individual PASS disposition (status OPEN)
+    - B-06 FRZ-EVOL-09 has no individual PASS disposition (status OPEN)
+    - B-06 FRZ-EVOL-10 has no individual PASS disposition (status OPEN)
+    - B-07 operator decision OD-EVOL-12 not recorded as decided (status 'PENDING', date '—'): decision status 'PENDING' is negated, pending or not final
+    - B-07 operator decision OD-EVOLX-08 not recorded as decided (status 'PENDING', date '—'): decision status 'PENDING' is negated, pending or not final
+    - B-09 unresolved mandatory blocker (B-4): B-4 legacy closure preflight requires independent corrective implementation and re-audit
+    - B-09 unresolved mandatory blocker (B-5): B-5 OD-EVOL-12 / OD-EVOLX-08 authority confirmation or signed rows
+    - B-09 unresolved mandatory blocker (B6-P3): B6 acceptance (P3), FRZ promotion (P4) and formal closure (P5) not authorized in this publication
+exit=1
+marker entries:
+(none)

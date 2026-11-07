@@ -1,0 +1,20 @@
+== clone autocrlf=true status:'' IIAC policy activation: IN_FORCE @ IIAC-2026-11-
+  class canonical | A codes: ['A-18'] n= 2 | B-12/13: False
+== clone autocrlf=false status:'' IIAC policy activation: IN_FORCE @ IIAC-2026-11-
+  class canonical | A codes: ['A-18'] n= 2 | B-12/13: False
+== clone autocrlf=input status:'' IIAC policy activation: IN_FORCE @ IIAC-2026-11-
+  class canonical | A codes: ['A-18'] n= 2 | B-12/13: False
+== unrelated dirty: modified README.md; untracked scripts/tmp_notes.txt; untracked scripts/dev scratch; modified tracked scripts/dev file
+  class canonical | A codes: ['A-18'] n= 2 | B-12/13: False
+  class canonical | A codes: ['A-18'] n= 2 | B-12/13: False
+== untracked file in scripts/qualification (bound tree)
+  class canonical | A codes: ['A-18', 'A-21'] n= 3 | B-12/13: True
+== linked worktree of the clone
+  class canonical | A codes: ['A-18'] n= 2 | B-12/13: False
+== audited worktree (linked worktree of main repo) dc650b8df, timing:
+  formal-closure 45 s; EVOL-X closure preflight: FAIL   repository: canonical | policy mode: IIAC | selected gate: formal-closure ; A-lines: 2 ; tail: exit=1
+  Gate A - B6 acceptance readiness: FAIL
+    - A-18 open certification blocker for B6 acceptance: B-4 legacy closure preflight requires independent corrective implementation and re-audit
+    - A-18 open certification blocker for B6 acceptance: B6 acceptance (P3), FRZ promotion (P4) and formal closure (P5) not authorized in this publica
+  Gate B - formal EVOL-X closure readiness: FAIL
+exit=1

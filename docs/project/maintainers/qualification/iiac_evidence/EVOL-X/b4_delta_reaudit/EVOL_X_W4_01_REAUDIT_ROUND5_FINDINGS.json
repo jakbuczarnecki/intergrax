@@ -1,0 +1,66 @@
+{
+  "schema_version": "auditor-findings.v1",
+  "stage_id": "EVOL-X",
+  "ticket": "T-IGX-019-A",
+  "round": 5,
+  "audited_sha": "fdb1e7a6215f8eb03bc3ca8d00cce9659dc5c3db",
+  "previous_audited_sha": "dc650b8df67349896bb813c3fd723fcd36717362",
+  "auditor_session_id": "local_e360e892-825d-4e0f-81f6-b4dc46ed4df9",
+  "auditor_agent_id": "independent-quality-auditor",
+  "not_certification": true,
+  "overall_verdict": "PARTIAL",
+  "exact_blockers_for_acceptance": [],
+  "overall_note": "No blocking finding inside the declared boundary (attacker tiers T1-T3, documented script-mode command, python -m). PARTIAL only because LOW residuals remain open (W405-01, W405-02, W404-04, RA-05/07/08, W403-04 UNVERIFIED) and the T4 boundary (OD-2) is an undecided operator matter.",
+  "attacker_capability_tiers": {
+    "T1": "write access to the working tree only: new or modified files that git status shows",
+    "T2": "write access to ignored or hidden files (git-ignored paths, __pycache__, .git/info/exclude entries, repo-root files)",
+    "T3": "write access to the git index, git config or refs",
+    "T4": "control of the Python environment or process (PYTHONPATH to a foreign directory, sitecustomize, usercustomize, .pth, venv, interpreter, temp directory)"
+  },
+  "per_previous_finding": [
+    {"id": "W404-01", "verdict": "PASS", "capability": "T1", "note": "Planted untracked scripts/qualification/{random,shutil,weakref,functools,json,argparse,hashlib,re}.py with the documented command and PYTHONPATH unset: none executed, FAIL, exit 1 (r6 replay). Only os and sys precede the bootstrap block; junction, relative and case-different invocation paths are also safe."},
+    {"id": "W404-02", "verdict": "PASS", "capability": "T2", "note": "Repo-root json.py/random.py/runpy.py: not executed in the preflight process under script mode, python -m, python -m + PYTHONPATH=<repo>, or PYTHONPATH=<repo> + script mode; the closure of the process is scripts.governance.{iiac_activation_gate,iiac_common} and the canonical matrix from the checkout, no site-packages module. An untracked root module is flagged A-21/B-12. Residue: children inherit PYTHONPATH (W405-01)."},
+    {"id": "W404-03", "verdict": "PASS", "capability": "T2", "note": "Forged unchecked-hash pycs for iiac_common, iiac_activation_gate, the canonical matrix and scripts/__init__: no forged code ran in the process or in either companion (marker absent), FAIL exit 1, with and without PYTHONPATH=<clone>."},
+    {"id": "W404-04", "verdict": "PARTIAL", "capability": "T1", "note": "accepted by the implementer and unchanged: files in operator_decisions/ and an index-edited addendum in b4_reaudit/ are still accepted; nothing reads them."},
+    {"id": "W404-05", "verdict": "PARTIAL", "capability": "T4", "note": "threat-model boundary, now reproduced also for a .pth file in the interpreter's site-packages; not closable in-script; OD-2 undecided."},
+    {"id": "W403-04", "verdict": "UNVERIFIED", "capability": "T3", "note": "forged commit-graph, GIT_DIR/GIT_INDEX_FILE, imported modules' own git calls: not exercised."},
+    {"id": "W403-03, W403-02, W403-01, W402-01..03, W401-RA-01..04, RA-06", "verdict": "PASS", "note": "all earlier repros (atk1..7 families) re-run on fdb1e7a62: rejected; W403-02 residue stays W404-04."},
+    {"id": "W401-RA-05/07/08", "verdict": "PARTIAL", "note": "open on purpose; OD-1 decided C by a delegated, process-enforced record."}
+  ],
+  "regression_and_legitimate_operations": {
+    "b4_suite": "501 passed (489 + 12 new), 0 failed, EXIT=0",
+    "governance_suite": "145 passed, 1 skipped (symlinks), EXIT=0",
+    "existing_tests_weakened": "no: the test diff removes no line",
+    "real_chain_clones_autocrlf_true_false_input": "status clean, activation IN_FORCE, canonical b6-readiness FAIL with exactly two A-18, no A-21/A-22, no B-12/B-13",
+    "linked_worktree": "clone's linked worktree and the audited worktree: exactly two A-18",
+    "unrelated_dirty_files": "modified README.md, untracked or modified files under scripts/dev, tests/, root notes.txt/scratch.md: accepted; any untracked python file or package at the repository root (even my_scratch.py) and any untracked file in scripts/governance or scripts/qualification: rejected (A-21/B-12)",
+    "canonical_gates": "b6-readiness and formal-closure FAIL, exit 1; Gate A has exactly the two A-18; no A-21/A-22/B-12/B-13",
+    "runtime": "b6-readiness 20 s idle"
+  },
+  "findings": [
+    {
+      "id": "W405-01", "severity": "LOW", "verdict": "PARTIAL", "capability": "T2 plus PYTHONPATH=<repo> in the environment", "area": "W404-02 residue",
+      "title": "Companion subprocesses inherit PYTHONPATH, so a repo-root module shadows the standard library inside them",
+      "summary": "The preflight exports PYTHONSAFEPATH=1 to its children, which suppresses the script-directory/cwd prepend but not PYTHONPATH. With PYTHONPATH=<repo root> (the form the repository's own tests/unit/governance/test_evol_x_real_repo_fresh_clone.py::_env sets) an untracked, ignored root json.py runs inside verify_iiac_audit_manifest.py and verify_iiac_role_separation.py. Without PYTHONPATH the companions are safe.",
+      "reproduction": "raw5/r4_root_modules.txt: marker lines from both companions for 'root json.py, PYTHONPATH=<clone>' and 'python -m + PYTHONPATH'; none without PYTHONPATH. The preflight process itself never ran the planted module.",
+      "impact": "Only the companions' exit codes can be influenced; after P2 their inputs (manifest, schema, audited/execution SHAs) are sealed, so no reachable false PASS is shown. Defence-in-depth gap.",
+      "required_correction": "Drop PYTHONPATH (and PYTHONHOME/PYTHONSTARTUP) from the children's environment, or run them with -I."
+    },
+    {
+      "id": "W405-02", "severity": "LOW", "verdict": "PARTIAL", "capability": "none (usability)", "area": "Legitimate operations",
+      "title": "Any untracked python file or package at the repository root blocks both gates",
+      "summary": "The new check flags every untracked *.py/*.pyc/*.pyd at the root and every untracked directory with __init__.py (even my_scratch.py, tmp_pkg/), although the root is already stripped from sys.path. Other untracked root files (notes.txt, scratch.md) and files under scripts/dev, tests/ and docs are accepted.",
+      "reproduction": "raw5/legit_ops.txt.",
+      "impact": "Fail-closed usability cost; run from a clean root.",
+      "required_correction": "Acceptable as is; optionally restrict to names that exist in the standard library."
+    },
+    {
+      "id": "W405-03", "severity": "INFO", "verdict": "UNVERIFIED", "capability": "T4 (and T2 when the venv is inside the checkout)", "area": "W404-05 boundary",
+      "title": "Interpreter-level hooks force PASS; the project venv is a git-ignored directory inside the checkout",
+      "summary": "A .pth file (importing a module that prints PASS and exits 0) in the interpreter's site-packages made the canonical clone return PASS, exit 0, git status clean. sitecustomize on PYTHONPATH did the same in round 4. The repository's .venv (git-ignored) lives inside the working tree, so for `uv run` users this is also a write-to-ignored-files case. Not closable inside the script; running on a fresh clone with a clean interpreter is the only mitigation. Untested: usercustomize, PYTHONSTARTUP (interactive only), brute-forcing the predictable pycache prefix (temp dir/evolx-preflight-no-bytecode-cache/<pid>).",
+      "reproduction": "raw5/r10_pth_env.txt (throwaway venv outside the repo).",
+      "impact": "Defines the OD-2 boundary.",
+      "required_correction": "Operator decision OD-2; certifier runs from a fresh clone with a clean interpreter."
+    }
+  ]
+}

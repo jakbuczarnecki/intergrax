@@ -1,0 +1,30 @@
+P2 dispositions -> rendered promoted rows:
+  FRZ-EVOL-01 | ELIGIBLE_PASS_SCOPED(LIM-03) => ('PASS — SCOPED', 'LIM-03')
+  FRZ-EVOL-02 | ELIGIBLE_PASS => ('PASS', '—')
+  FRZ-EVOL-03 | ELIGIBLE_PASS => ('PASS', '—')
+  FRZ-EVOL-04 | ELIGIBLE_PASS => ('PASS', '—')
+  FRZ-EVOL-05 | ELIGIBLE_PASS => ('PASS', '—')
+  FRZ-EVOL-06 | ELIGIBLE_PASS_SCOPED(LIM-01,LIM-03,LIM-04; footnote: EVOL_CONSERVATIVE_FULL scope only; not PLATFORM_CONSERVATIVE_FULL) => ('PASS — SCOPED', 'LIM-01,LIM-03,LIM-04; footnote: EVOL_CONSERVATIVE_FULL scope only; not PLATFORM_CONSERVATIVE_FULL')
+  FRZ-EVOL-07 | ELIGIBLE_PASS_EVOL_X_SCOPED(LIM-05; qualification-layer deploy/rollback safety; production ActivationService.rollback durable-state enforcement is NOT claimed) => ('PASS (EVOL-X SCOPED)', 'LIM-05; qualification-layer deploy/rollback safety; production ActivationService.rollback durable-state enforcement is NOT claimed')
+  FRZ-EVOL-08 | ELIGIBLE_PASS_SCOPED(LIM-02; change-time diagnostics; M-09H not measured) => ('PASS — SCOPED', 'LIM-02; change-time diagnostics; M-09H not measured')
+  FRZ-EVOL-09 | ELIGIBLE_PASS_SCOPED(LIM-06) => ('PASS — SCOPED', 'LIM-06')
+  FRZ-EVOL-10 | ELIGIBLE_PASS_SCOPED(LIM-07) => ('PASS — SCOPED', 'LIM-07')
+
+CHECKLIST ROW cells = 6 | | FRZ-EVOL-01 | Enterprise evolvability / change safety | semantic change-impact assessment exists for in-scope platform surfaces | **EVOL-X** | OPEN | Roadmap 
+CHECKLIST ROW cells = 6 | | FRZ-EVOL-06 | Enterprise evolvability / change safety | regression test selection from impact graph with mandatory safety suites | **EVOL-X**, QUAL-X (infra) 
+CHECKLIST ROW cells = 6 | | FRZ-EVOL-07 | Enterprise evolvability / change safety | deployment / rollback / roll-forward qualified or unsafe refusal explicit | **EVOL-X**, PROD-Q (suppor
+HDR: ['| ID | Domain | Freeze acceptance criterion | Primary closing stage(s) | Status | Evidence / historical evidence |']
+OD-EVOL-12 [('PENDING', '—', 'W7-03 (Batch G not in 2026-11-01 scope)')]
+OD-EVOLX-08 [('PENDING', '—', 'W7-04 (Batch G not in 2026-11-01 scope)')]
+OD-EVOL-05b [('SIGNED / APPROVED', '2026-11-01', '**Option 1** qual-only; **no** W4-04 port')]
+OD-EVOL-10 [('SIGNED / APPROVED', '2026-11-01', 'Before W2-09 / W3-05')]
+OD-EVOL-13 [('OPERATOR APPROVED', '2026-11-01', 'Automation-first **scoped** EVOL-X acceptance (`EVOL-M-09A`, `AUTOMATION_FIRST_SCOPED` FINAL). **M-09H human remains NOT_MEASURED.** See [EVOL_X_AUTOMATION_FIRST_SCOPED_ACCEPTANCE_POLICY.md](./EVOL_X_AUTOMATION_FIRST_SCOPED_ACCEPTANCE_POLICY.md).')]
+
+'Operator refuses B6 acceptance for EVOL-X' -> ''
+'B6 acceptance for EVOL-X cannot be authorized' -> ''
+'B6 acceptance for EVOL-X excluding everything' -> ''
+'B6 acceptance for EVOL-X except FRZ-EVOL-07' -> ''
+'B6 acceptance for EVOL-X without effect' -> ''
+'B6 acceptance for EVOL-X is NOT authorized' -> 'NOT'
+"B6 acceptance for EVOL-X isn't authorized" -> "sn't"
+'B6 acceptance for EVOL-X is not authorized' -> 'NOT'

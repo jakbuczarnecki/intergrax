@@ -1,0 +1,3 @@
+== S6a widened HEAD, no replace ref (must FAIL A): gateA=FAIL gateB=FAIL
+== S6b widened HEAD + refs/replace/<P2> -> forged P2: gateA=PASS gateB=FAIL
+== S6d mitigation GIT_NO_REPLACE_OBJECTS=1 on S6b state: gateA=FAIL gateB=FAIL

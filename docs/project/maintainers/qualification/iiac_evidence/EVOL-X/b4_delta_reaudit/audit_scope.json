@@ -1,0 +1,15 @@
+{
+  "stage_id": "EVOL-X",
+  "ticket": "T-IGX-019-A",
+  "subject": "B-4 consolidated corrective (preflight) at fdb1e7a6215f8eb03bc3ca8d00cce9659dc5c3db",
+  "in_scope": [
+    "attacker tiers T1-T3 as defined in EVOL_X_OD2_DECISION_RECORD.md"
+  ],
+  "out_of_scope": [
+    "T4 (interpreter/environment control, incl. W404-05/W405-03 per OD-2)",
+    "B-5",
+    "B6-P3/P4/P5",
+    "FRZ promotion",
+    "EVOL-X closure"
+  ]
+}

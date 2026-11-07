@@ -11,6 +11,7 @@ from __future__ import annotations
 
 import hashlib
 import json
+import os
 import re
 import shutil
 import subprocess
@@ -1215,11 +1216,14 @@ def test_mass_promotion_without_canonical_requirement_text(closed) -> None:
 
 def test_open_blocker_holds_formal_closure(closed) -> None:
     root, _ = closed
+    # W402-03: an open blocker keeps the exact text it was published with, so re-open B-5 with its P2 text.
+    published = json.loads(_git(root, "show", f"{_honest_p2(root)}:{pf.REL_CERT_RECORD}"))
+    b5_text = next(t for t in published["open_blockers_for_closure"] if t.startswith("B-5"))
     _mutate_json(
         root,
         pf.REL_CERT_RECORD,
         lambda c: c.update(
-            open_blockers_for_closure=["B-5 OD-EVOLX-08 confirmation"],
+            open_blockers_for_closure=[b5_text],
             resolved_blockers_for_closure=[e for e in c["resolved_blockers_for_closure"] if e["blocker_id"] != "B-5"],
         ),
         reindex=True,
@@ -3555,3 +3559,467 @@ def test_w401_ra_06_format_document_matches_the_code() -> None:
     }.items():
         assert pf.render_promoted_row(disposition) == (status, notes)
         assert f"| `{disposition}` | `{status}` | `{notes}` |" in doc
+
+
+# --------------------------------------------------------------------------- W402 delta re-audit (W402-01..04)
+
+
+def _commit_widened_checklist_then_restore_uncommitted(root: Path) -> None:
+    original = (root / pf.REL_FRZ_CHECKLIST).read_bytes()
+    _write(root, pf.REL_FRZ_CHECKLIST, original + b"\n| FRZ-EVOL-01 | widened | PASS | forged |\n")
+    _commit(root, "commit a widened checklist")
+    _write(root, pf.REL_FRZ_CHECKLIST, original)  # restored in the working tree only
+
+
+@pytest.mark.parametrize("flag", ["--skip-worktree", "--assume-unchanged"])
+def test_w402_01_index_flags_cannot_hide_an_uncommitted_input(closed, flag: str) -> None:
+    """Audit repro V-a: ``git status`` is empty once the index entry carries skip-worktree / assume-unchanged."""
+    root, _ = closed
+    assert _eval(root).gate_b_pass, "control: the closed fixture passes"
+    _commit_widened_checklist_then_restore_uncommitted(root)
+    _git(root, "update-index", flag, pf.REL_FRZ_CHECKLIST)
+    assert _git(root, "status", "--porcelain") == "", "precondition: git status is blind to the change"
+    result = _eval(root)
+    assert not result.gate_a_pass or not result.gate_b_pass
+    assert not result.gate_b_pass, "an input hidden from git status must not produce PASS"
+    assert any(pf.REL_FRZ_CHECKLIST in e for e in _b(result.gate_b, "B-12")), result.gate_b
+
+
+def test_w402_01_a_same_size_edit_is_detected_by_content(closed) -> None:
+    root, _ = closed
+    data = bytearray((root / pf.REL_REGISTER).read_bytes())
+    index = next(i for i, byte in enumerate(data) if chr(byte).isalpha())
+    data[index] = ord("Z") if data[index] != ord("Z") else ord("Y")
+    _write(root, pf.REL_REGISTER, bytes(data))
+    result = _eval(root)
+    assert not result.gate_b_pass
+    assert any(pf.REL_REGISTER in e for e in _b(result.gate_b, "B-12")), result.gate_b
+
+
+def test_w402_02_verifier_code_outside_the_read_inputs_is_bound_to_head(repo) -> None:
+    root, _ = repo
+    _write(root, "scripts/qualification/w402_verifier_helper.py", "VALUE = 1\n")
+    _commit(root, "add a verifier module")
+    assert not _b(_eval(root).gate_a, "A-21"), "control: a committed verifier module is clean"
+    _write(root, "scripts/qualification/w402_verifier_helper.py", "VALUE = 1\n# tampered\n")
+    result = _eval(root)
+    assert any("scripts/qualification/w402_verifier_helper.py" in e for e in _b(result.gate_a, "A-21")), result.gate_a
+    assert not result.gate_a_pass and not result.gate_b_pass
+    _git(root, "checkout", "--", "scripts/qualification/w402_verifier_helper.py")
+    _write(root, "scripts/qualification/w402_shadow_module.py", "VALUE = 2\n")
+    untracked = _eval(root)
+    assert any("shadow_module.py" in e for e in _b(untracked.gate_a, "A-21")), untracked.gate_a
+
+
+def test_w402_03_text_appended_to_an_open_blocker_is_rejected(repo) -> None:
+    root, _ = repo
+
+    def change(cert: dict[str, Any]) -> None:
+        cert["open_blockers_for_closure"] = [
+            f"{text} ; scope extended to all profiles" if text.startswith("B-5") else text
+            for text in cert["open_blockers_for_closure"]
+        ]
+
+    _mutate_json(root, pf.REL_CERT_RECORD, change, reindex=True)
+    result = _eval(root)
+    assert not result.gate_a_pass and not result.gate_b_pass
+    assert any("no longer carries the text it was published with" in e for e in _b(result.gate_a, "A-18")), (
+        result.gate_a
+    )
+
+
+def test_w402_03_a_free_text_key_in_a_resolved_entry_is_rejected(closed) -> None:
+    root, _ = closed
+    _mutate_json(
+        root,
+        pf.REL_CERT_RECORD,
+        lambda c: c["resolved_blockers_for_closure"][0].update(note="scope extended to all profiles"),
+        reindex=True,
+    )
+    result = _eval(root)
+    assert not result.gate_a_pass and not result.gate_b_pass
+    assert any("unexpected key 'note'" in e for e in result.gate_a + result.gate_b), (result.gate_a, result.gate_b)
+
+
+def test_w402_03_stage_closure_status_is_an_enum(repo) -> None:
+    root, _ = repo
+    _mutate_json(
+        root,
+        pf.REL_CERT_RECORD,
+        lambda c: c.update(stage_closure_status="NOT_CLOSED_SCOPE_EXTENDED_TO_ALL_PROFILES"),
+        reindex=True,
+    )
+    result = _eval(root)
+    assert any("stage_closure_status" in e for e in _b(result.gate_a, "A-19")), result.gate_a
+    assert not result.gate_a_pass and not result.gate_b_pass
+
+
+@pytest.mark.parametrize(
+    "rel",
+    [
+        f"{pf.EVIDENCE_ROOT_REL}/SCOPE_ADDENDUM.md",
+        f"{pf.EVIDENCE_ROOT_REL}/extra_dir/note.md",
+    ],
+)
+def test_w402_03_a_file_outside_the_known_evidence_directories_is_rejected(repo, rel: str) -> None:
+    root, _ = repo
+    _write(root, rel, "LIM-01..05 are withdrawn.\n")
+    _commit(root, "addendum outside the known evidence directories")
+    result = _eval(root)
+    assert any(
+        ("outside the known" in e or "neither a known" in e)
+        and rel.rsplit("/", 1)[0].split("EVOL-X/")[-1] in e
+        or rel in e
+        for e in _b(result.gate_a, "A-19")
+    ), result.gate_a
+    assert not result.gate_a_pass and not result.gate_b_pass
+
+
+def test_w402_04_git_calls_disable_fsmonitor_and_the_commit_graph(repo, monkeypatch: pytest.MonkeyPatch) -> None:
+    root, _ = repo
+    seen: list[list[str]] = []
+    real = subprocess.run
+
+    def spy(args, *a, **kw):
+        seen.append(list(args))
+        return real(args, *a, **kw)
+
+    monkeypatch.setattr(pf.subprocess, "run", spy)
+    ctx = pf.Context(repo=root, activation_record=root / pf.REL_ACTIVATION, evidence_root=root)
+    pf._git(ctx, "rev-parse", "HEAD")
+    pf._git_repo_config(ctx, "rev-parse", "HEAD")
+    assert len(seen) == 2
+    for args in seen:
+        assert args[:2] == ["git", "--no-replace-objects"]
+        assert "core.fsmonitor=false" in args and "core.commitGraph=false" in args
+
+
+# --------------------------------------------------------------------------- defect hunt on ca78b1c1f (D1..D8)
+
+
+def test_hunt_d3_gitattributes_is_bound_to_head(repo) -> None:
+    root, _ = repo
+    _write(root, ".gitattributes", (root / ".gitattributes").read_text(encoding="utf-8") + "# tampered\n")
+    result = _eval(root)
+    assert any(".gitattributes" in e for e in _b(result.gate_a, "A-21")), result.gate_a
+    assert not result.gate_a_pass and not result.gate_b_pass
+
+
+@pytest.mark.parametrize(
+    "value",
+    [["x"], {"k": "v"}, 7, None, "free text"],
+)
+def test_hunt_d6_unvalidated_lifecycle_values_fail_closed_without_crashing(repo, value: Any) -> None:
+    root, _ = repo
+    for key in ("certification_publication_sha_binding", "stage_closure_status", "b6_acceptance"):
+        _mutate_json(root, pf.REL_CERT_RECORD, lambda c, k=key: c.update({k: value}), reindex=True)
+        result = _eval(root)
+        assert not result.gate_a_pass and not result.gate_b_pass, key
+        assert not any(e.startswith("A-99") for e in result.gate_a), (key, result.gate_a)
+        _git(root, "reset", "-q", "--hard", "HEAD~1")
+
+
+@pytest.mark.parametrize("variant", ["issued", "Issued", "ıSSUED", "IſſUED", " ISSUED"])
+def test_hunt_d7_b6_acceptance_is_compared_exactly(repo, variant: str) -> None:
+    root, _ = repo
+    _mutate_json(root, pf.REL_CERT_RECORD, lambda c: c.update(b6_acceptance=variant), reindex=True)
+    result = _eval(root)
+    assert any("b6_acceptance must be one of" in e for e in _b(result.gate_a, "A-19")), result.gate_a
+
+
+def test_hunt_d7_a_padded_publication_sha_is_not_accepted() -> None:
+    sha = "a" * 40
+    assert pf._sha(sha) == sha
+    for padded in (f" {sha}", f"{sha}\n", f"{sha} ", f"\t{sha}"):
+        assert pf._sha(padded) == ""
+    assert pf._sha(None) == "" and pf._sha(["x"]) == ""
+
+
+@pytest.mark.parametrize("constant", ["NaN", "Infinity", "-Infinity"])
+def test_hunt_d7_non_standard_json_constants_are_rejected(constant: str) -> None:
+    with pytest.raises(json.JSONDecodeError):
+        pf._strict_json_loads(f'{{"x": {constant}}}')
+
+
+def test_hunt_d8_a_gitlink_in_the_certification_directory_is_rejected(repo) -> None:
+    root, _ = repo
+    _git(root, "update-index", "--add", "--cacheinfo", f"160000,{'1' * 40},{pf.CERT_DIR}/submodule_like")
+    _git(root, "-c", "user.email=b4-fixture@example.com", "-c", "user.name=b4-fixture", "commit", "-q", "-m", "gitlink")
+    result = _eval(root)
+    assert any("submodule_like was added" in e for e in _b(result.gate_a, "A-19")), result.gate_a
+    assert not result.gate_a_pass and not result.gate_b_pass
+
+
+def test_hunt_d8_non_ascii_names_are_reported_exactly(repo) -> None:
+    root, _ = repo
+    _write(root, f"{pf.CERT_DIR}/Ünï cöde ä.txt", "x\n")
+    _reindex_cert(root)
+    _commit(root, "non-ascii name")
+    result = _eval(root)
+    assert any("Ünï cöde ä.txt" in e for e in _b(result.gate_a, "A-19")), result.gate_a
+
+
+@pytest.mark.parametrize("name", ["GIT_REPLACE_REF_BASE", "GIT_ALTERNATE_OBJECT_DIRECTORIES", "GIT_NAMESPACE"])
+def test_hunt_d5_redirecting_git_environment_variables_are_refused(
+    repo, name: str, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """The variable can break git outright (the verdict then fails closed earlier); the check names it."""
+    root, _ = repo
+    ctx = pf.Context(repo=root, activation_record=root / pf.REL_ACTIVATION, evidence_root=root)
+    assert not any(name in e for e in pf._repository_integrity_errors(ctx, "A-22")), "control: unset"
+    monkeypatch.setenv(name, "zz" if name == "GIT_NAMESPACE" else str(root))
+    assert any(name in e for e in pf._repository_integrity_errors(ctx, "A-22"))
+
+
+def test_hunt_d5_the_process_disables_replace_objects_for_every_git_call() -> None:
+    assert os.environ.get("GIT_NO_REPLACE_OBJECTS") == "1"
+
+
+def test_hunt_d4_the_script_directory_is_not_on_sys_path() -> None:
+    here = str(Path(pf.__file__).resolve().parent)
+    assert all(os.path.abspath(entry or os.getcwd()) != here for entry in sys.path)
+
+
+def test_hunt_an_unexpected_evidence_shape_is_an_internal_error_not_a_crash(repo, monkeypatch) -> None:
+    root, _ = repo
+
+    def boom(ctx):
+        raise TypeError("unhashable type: 'list'")
+
+    monkeypatch.setattr(pf, "gate_a", boom)
+    result = _eval(root)
+    assert result.mode == "INVALID" and result.gate_a[0].startswith("A-99")
+    assert not result.gate_a_pass and not result.gate_b_pass
+
+
+# --------------------------------------------------------------------------- W403 round-3 delta re-audit (W403-01..03)
+
+
+def _clean_env() -> dict[str, str]:
+    """Environment of a plain Python child: without the settings the imported preflight module exports."""
+    drop = {"PYTHONDONTWRITEBYTECODE", "PYTHONPYCACHEPREFIX", "PYTHONPATH", "PYTHONSAFEPATH"}
+    return {k: v for k, v in os.environ.items() if k not in drop}
+
+
+def _copy_scripts_tree(tmp_path: Path) -> Path:
+    import shutil
+
+    target = tmp_path / "pyc_repo"
+    shutil.copytree(
+        Path(pf.__file__).resolve().parents[2] / "scripts",
+        target / "scripts",
+        ignore=shutil.ignore_patterns("__pycache__", "*.pyc"),
+    )
+    return target
+
+
+def test_w403_01_a_forged_bytecode_cache_is_never_loaded(tmp_path: Path) -> None:
+    """Audit repro t2: an UNCHECKED_HASH ``.pyc`` in a git-ignored ``__pycache__`` replaces the committed verifier."""
+    import py_compile
+
+    root = _copy_scripts_tree(tmp_path)
+    marker = tmp_path / "forged_bytecode_ran.txt"
+    payload = tmp_path / "payload.py"
+    payload.write_text(f"open({str(marker)!r}, 'w').write('forged')\n", encoding="utf-8")
+    source = root / "scripts" / "governance" / "iiac_common.py"
+    cache = source.parent / "__pycache__" / f"{source.stem}.{sys.implementation.cache_tag}.pyc"
+    cache.parent.mkdir(parents=True, exist_ok=True)
+    py_compile.compile(
+        str(payload), cfile=str(cache), doraise=True, invalidation_mode=py_compile.PycInvalidationMode.UNCHECKED_HASH
+    )
+    # control: a plain import of the same tree does run the forged bytecode (the plant works)
+    subprocess.run(
+        [sys.executable, "-c", f"import sys; sys.path.insert(0, {str(root)!r}); import scripts.governance.iiac_common"],
+        cwd=root,
+        env=_clean_env(),
+        capture_output=True,
+        check=False,
+    )
+    assert marker.exists(), "control failed: the forged bytecode was not loaded by a plain import"
+    marker.unlink()
+    script = root / "scripts" / "qualification" / "evol_x_closure_publication_preflight.py"
+    proc = subprocess.run(
+        [sys.executable, str(script), "--help"], cwd=root, capture_output=True, text=True, check=False
+    )
+    assert not marker.exists(), "the preflight executed forged bytecode"
+    assert proc.returncode == 0, proc.stderr[-400:]
+    assert "Gate" in proc.stdout or "gate" in proc.stdout
+
+
+def test_w403_01_the_process_never_writes_bytecode_into_the_repository() -> None:
+    assert sys.dont_write_bytecode is True
+    prefix = sys.pycache_prefix
+    assert prefix and "evolx-preflight-no-bytecode-cache" in prefix
+    repo_root = Path(pf.__file__).resolve().parents[2]
+    assert repo_root not in Path(prefix).resolve().parents, "the bytecode cache must live outside the repository"
+
+
+def test_w403_02_closure_evidence_items_accept_only_gate_checked_keys(closed) -> None:
+    root, _ = closed
+
+    def change(cert: dict[str, Any]) -> None:
+        entry = next(e for e in cert["resolved_blockers_for_closure"] if e.get("closure_evidence"))
+        entry["closure_evidence"][0]["note"] = "scope extended to all profiles"
+
+    _mutate_json(root, pf.REL_CERT_RECORD, change, reindex=True)
+    result = _eval(root)
+    assert not result.gate_b_pass
+    assert any("unexpected key 'note'" in e for e in result.gate_a + result.gate_b), (result.gate_a, result.gate_b)
+
+
+def test_w403_02_a_gitlink_in_the_audit_directory_is_rejected(repo) -> None:
+    root, _ = repo
+    _git(root, "update-index", "--add", "--cacheinfo", f"160000,{'2' * 40},{pf.AUDIT_DIR}/submodule_like")
+    _git(root, "-c", "user.email=b4-fixture@example.com", "-c", "user.name=b4-fixture", "commit", "-q", "-m", "gitlink")
+    result = _eval(root)
+    assert any("submodule_like was added to the audit directory" in e for e in _b(result.gate_a, "A-19")), result.gate_a
+    assert not result.gate_a_pass and not result.gate_b_pass
+
+
+def test_w403_02_a_new_indexed_directory_must_be_named_by_a_resolution(repo) -> None:
+    root, _ = repo
+    base = f"{pf.EVIDENCE_ROOT_REL}/unreferenced_dir"
+    _write(root, f"{base}/note.md", "LIM-01..05 are withdrawn.\n")
+    _write(root, f"{base}/EVIDENCE_INDEX.json", json.dumps({"files": {"note.md": {}}}))
+    _commit(root, "an indexed directory that no resolution names")
+    result = _eval(root)
+    assert any("unreferenced_dir" in e and "named by a blocker resolution" in e for e in _b(result.gate_a, "A-19")), (
+        result.gate_a
+    )
+    assert not result.gate_a_pass and not result.gate_b_pass
+
+
+def test_w403_02_a_file_missing_from_its_directory_index_is_rejected(closed) -> None:
+    root, _ = closed
+    index_dir = str(Path(REAUDIT_INDEX).parent).replace("\\", "/")
+    _write(root, f"{index_dir}/UNLISTED_ADDENDUM.md", "scope extended\n")
+    _commit(root, "an unindexed file in an indexed directory")
+    result = _eval(root)
+    assert any("UNLISTED_ADDENDUM.md is not listed" in e for e in _b(result.gate_a, "A-19")), result.gate_a
+    assert not result.gate_a_pass and not result.gate_b_pass
+
+
+def test_w403_03_unrelated_scripts_are_not_bound_but_the_verifier_directories_are(repo) -> None:
+    root, _ = repo
+    _write(root, "scripts/dev/scratch_tool.py", "VALUE = 1\n")
+    _write(root, "scripts/governance/verifier_helper.py", "VALUE = 1\n")
+    _commit(root, "add an unrelated and a verifier script")
+    assert not _b(_eval(root).gate_a, "A-21"), "control: clean"
+    _write(root, "scripts/dev/scratch_tool.py", "VALUE = 2  # edited\n")
+    _write(root, "scripts/dev/untracked_scratch.py", "VALUE = 3\n")
+    assert not _b(_eval(root).gate_a, "A-21"), "unrelated scripts must not block the preflight"
+    _write(root, "scripts/governance/verifier_helper.py", "VALUE = 2  # edited\n")
+    result = _eval(root)
+    assert any("scripts/governance/verifier_helper.py" in e for e in _b(result.gate_a, "A-21")), result.gate_a
+
+
+def test_w403_03_the_loaded_verifier_modules_are_part_of_the_bound_set() -> None:
+    ctx = pf.Context(repo=Path(pf.__file__).resolve().parents[2], activation_record=Path("x"), evidence_root=None)
+    loaded = pf._loaded_module_paths(ctx)
+    assert "scripts/qualification/evol_x_closure_publication_preflight.py" in loaded
+    assert "scripts/governance/iiac_common.py" in loaded
+
+
+# --------------------------------------------------------------------------- W404 round-4 re-audit (W404-01..03)
+
+
+def _plant_stdlib_shadow(directory: Path, name: str, marker: Path) -> None:
+    (directory / f"{name}.py").write_text(f"open({str(marker)!r}, 'w').write('shadow')\n", encoding="utf-8")
+
+
+@pytest.mark.parametrize("name", ["random", "shutil", "tempfile", "json", "argparse", "hashlib"])
+def test_w404_01_a_stdlib_named_file_next_to_the_script_never_runs(tmp_path: Path, name: str) -> None:
+    """Audit repro r6: an untracked ``random.py`` / ``shutil.py`` in scripts/qualification/ ran before any check."""
+    root = _copy_scripts_tree(tmp_path)
+    script_dir = root / "scripts" / "qualification"
+    marker = tmp_path / f"{name}_shadow_ran.txt"
+    _plant_stdlib_shadow(script_dir, name, marker)
+    control = subprocess.run(
+        [sys.executable, "-c", f"import sys; sys.path.insert(0, {str(script_dir)!r}); import {name}"],
+        env=_clean_env(),
+        capture_output=True,
+        check=False,
+    )
+    assert marker.exists(), (
+        f"control failed: a plain import did not run the planted {name}.py ({control.stderr[-200:]!r})"
+    )
+    marker.unlink()
+    proc = subprocess.run(
+        [sys.executable, str(script_dir / "evol_x_closure_publication_preflight.py"), "--help"],
+        cwd=root,
+        capture_output=True,
+        text=True,
+        check=False,
+    )
+    assert not marker.exists(), f"the preflight executed the planted {name}.py"
+    assert proc.returncode == 0, proc.stderr[-400:]
+
+
+@pytest.mark.parametrize("mode", ["module", "pythonpath"])
+def test_w404_02_a_stdlib_named_file_at_the_repository_root_never_runs(tmp_path: Path, mode: str) -> None:
+    """Audit repro r4b: ``python -m`` or ``PYTHONPATH=<repo>`` put the repository root first on ``sys.path``."""
+    root = _copy_scripts_tree(tmp_path)
+    marker = tmp_path / "root_shadow_ran.txt"
+    _plant_stdlib_shadow(root, "json", marker)
+    control = subprocess.run(
+        [sys.executable, "-c", "import json"], cwd=root, env=_clean_env(), capture_output=True, check=False
+    )
+    assert marker.exists(), f"control failed: the planted json.py was not imported ({control.stderr[-200:]!r})"
+    marker.unlink()
+    env = _clean_env()
+    if mode == "module":
+        command = [sys.executable, "-m", "scripts.qualification.evol_x_closure_publication_preflight", "--help"]
+    else:
+        env["PYTHONPATH"] = str(root)
+        command = [
+            sys.executable,
+            str(root / "scripts" / "qualification" / "evol_x_closure_publication_preflight.py"),
+            "--help",
+        ]
+    proc = subprocess.run(command, cwd=root, env=env, capture_output=True, text=True, check=False)
+    assert not marker.exists(), "the preflight executed a planted repository-root json.py"
+    assert proc.returncode == 0, proc.stderr[-400:]
+
+
+def test_w404_02_the_repository_modules_must_come_from_the_repository(tmp_path: Path) -> None:
+    root = _copy_scripts_tree(tmp_path)
+    foreign = tmp_path / "foreign"
+    (foreign / "scripts" / "governance").mkdir(parents=True)
+    (foreign / "scripts" / "__init__.py").write_text("", encoding="utf-8")
+    (foreign / "scripts" / "governance" / "__init__.py").write_text("", encoding="utf-8")
+    for module in ("iiac_activation_gate", "iiac_common"):
+        (foreign / "scripts" / "governance" / f"{module}.py").write_text("", encoding="utf-8")
+    env = _clean_env()
+    env["PYTHONPATH"] = str(foreign)
+    script = root / "scripts" / "qualification" / "evol_x_closure_publication_preflight.py"
+    proc = subprocess.run(
+        [sys.executable, str(script), "--help"], cwd=root, env=env, capture_output=True, text=True, check=False
+    )
+    # the foreign ``scripts`` package either is never reached (the repository wins) or the run refuses to start
+    assert proc.returncode == 0 or "was not imported from this repository" in proc.stderr + proc.stdout, proc.stderr[
+        -400:
+    ]
+
+
+def test_w404_03_children_inherit_the_bytecode_and_replace_object_settings() -> None:
+    assert os.environ.get("PYTHONDONTWRITEBYTECODE") == "1"
+    assert os.environ.get("PYTHONPYCACHEPREFIX") == sys.pycache_prefix
+    assert os.environ.get("GIT_NO_REPLACE_OBJECTS") == "1"
+
+
+def test_w404_02_an_untracked_repository_root_module_is_flagged(repo) -> None:
+    """The IIAC companion subprocesses need the repository root on their path: a stray root module could shadow
+    the standard library there, so the dirty check flags it (the file is invisible to ``git status`` when ignored)."""
+    root, _ = repo
+    assert not _b(_eval(root).gate_a, "A-21"), "control: clean"
+    _write(root, "json.py", "raise SystemExit(0)\n")
+    (root / ".git" / "info").mkdir(parents=True, exist_ok=True)
+    (root / ".git" / "info" / "exclude").write_text("json.py\n", encoding="utf-8")
+    assert _git(root, "status", "--porcelain") == "", "precondition: git status is blind to the file"
+    result = _eval(root)
+    assert any("json.py" in e and "repository-root module" in e for e in _b(result.gate_a, "A-21")), result.gate_a
+    assert not result.gate_a_pass and not result.gate_b_pass
+
+
+def test_w404_03_children_get_a_safe_path() -> None:
+    assert os.environ.get("PYTHONSAFEPATH") == "1"

@@ -1,0 +1,3 @@
+== T4: .pth file in the interpreter's site-packages (a venv; the project venv lives inside the checkout, git-ignored)
+EVOL-X closure preflight: PASS
+exit=0; git status ''

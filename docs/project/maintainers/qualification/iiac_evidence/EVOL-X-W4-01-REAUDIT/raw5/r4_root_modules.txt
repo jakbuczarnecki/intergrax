@@ -1,0 +1,16 @@
+git config for hiding root files:
+R4 root json.py, PYTHONPATH=<clone> (test-harness form) -> 'EVOL-X closure preflight: FAIL' marker=shadow executed: json argv0=D:\w4a5\cl_input\scripts\governance\verify_iiac_audit_manifest.py
+shadow executed: json argv0=D:\w4a5\cl_input\scripts\governance\verify_iiac_role_separation.py
+R4 root json.py, python -m (cwd=root) -> 'EVOL-X closure preflight: FAIL' marker=none
+R4 root json.py, python -m with PYTHONPATH=<clone> -> 'EVOL-X closure preflight: FAIL' marker=shadow executed: json argv0=D:\w4a5\cl_input\scripts\governance\verify_iiac_audit_manifest.py
+shadow executed: json argv0=D:\w4a5\cl_input\scripts\governance\verify_iiac_role_separation.py
+R4 root random.py (tempfile-style import), python -m -> 'EVOL-X closure preflight: FAIL' marker=none
+R4x root runpy.py (imported by the interpreter itself for -m, before any script code), python -m -> 'EVOL-X closure preflight: FAIL' marker=none
+R4x root runpy.py, documented script mode -> 'EVOL-X closure preflight: FAIL' marker=none
+-- detection: planted untracked root json.py in a run where it did not execute:
+Traceback (most recent call last):
+  File "<string>", line 1, in <module>
+AttributeError: module 'json' has no attribute 'load'
+Exception ignored in: <_io.TextIOWrapper name='<stdout>' mode='w' encoding='cp1250'>
+OSError: [Errno 22] Invalid argument
+status: ''

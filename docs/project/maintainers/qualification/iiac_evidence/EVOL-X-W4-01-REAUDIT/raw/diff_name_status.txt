@@ -1,0 +1,10 @@
+M	.gitattributes
+M	.github/workflows/unit-tests.yml
+A	docs/project/maintainers/qualification/IIAC_EVOLX_B4_EVIDENCE_PUBLICATION_BINDING.utf8.json
+A	docs/project/maintainers/qualification/evol_x/EVOL_X_W4_01_CONSOLIDATED_CORRECTIVE_IMPLEMENTATION_REPORT.md
+A	docs/project/maintainers/qualification/evol_x/EVOL_X_W4_01_CONSOLIDATED_REAUDIT_HANDOFF.md
+A	governance/tickets/T-IGX-019-A.md
+M	scripts/qualification/evol_x_closure_publication_preflight.py
+A	tests/unit/governance/test_evol_x_real_repo_fresh_clone.py
+A	tests/unit/qualification/conftest.py
+M	tests/unit/qualification/test_evol_x_closure_preflight_b4.py

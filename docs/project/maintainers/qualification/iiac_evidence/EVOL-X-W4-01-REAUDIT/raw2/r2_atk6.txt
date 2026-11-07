@@ -1,0 +1,23 @@
+   git status --porcelain: ''
+== V-a HEAD widened, correct row only in worktree, --skip-worktree: gateA=PASS gateB=PASS 
+   git status --porcelain: ''
+== V-a HEAD widened, correct row only in worktree, --assume-unchanged: gateA=PASS gateB=PASS 
+== V-b0 committed PENDING (must FAIL B): gateA=PASS gateB=FAIL 
+   git status: 'M docs/project/maintainers/qualification/evol_x/EVOL_X_OPERATOR_DECISION_REGISTER_W1.md'
+== V-b same-size worktree restore with old mtime: gateA=PASS gateB=FAIL 
+     B-12 uncommitted changes in verified inputs (1): docs/project/maintainers/qualification/evol_x/EVOL_X_OPERATOR_DECISION_REGISTER_W1.md [M]; the verdict must bind to HEAD
+== V-d widening text appended to open B-5 blocker text: gateA=PASS gateB=FAIL 
+== V-e free-text key in resolved blocker entries: gateA=PASS gateB=FAIL 
+== V-f stage_closure_status token with scope words: gateA=PASS gateB=FAIL 
+== V-g committed addendum at iiac_evidence/EVOL-X/ root: gateA=PASS gateB=FAIL 
+== V-g2 committed unindexed addendum in audit/ dir: gateA=FAIL gateB=FAIL 
+     A-13 unindexed evidence in docs/project/maintainers/qualification/iiac_evidence/EVOL-X/audit: SCOPE_ADDENDUM.md
+== V-h legit but shallow clone: gateA=FAIL gateB=FAIL 
+     A-01 IIAC policy claims IN_FORCE but activation gate fails: ACT-N09 governance implementation SHA: 89e17478675de75240a7f7f4d46093d0b2670206 is not an ancestor of e80757b6730a573daf2c613d57200314bda532f5
+     A-01 IIAC policy claims IN_FORCE but activation gate fails: ACT-N09 corrective implementation SHA: e80757b6730a573daf2c613d57200314bda532f5 is not an ancestor of e80757b6730a573daf2c613d57200314bda532f5
+     A-01 IIAC policy claims IN_FORCE but activation gate fails: ACT-N09 audit execution SHA: e80757b6730a573daf2c613d57200314bda532f5 is not an ancestor of 5e34b32a342a2ed0653442aded07be63334afb33
+== V-i untracked unrelated files under QUAL and scripts (should stay PASS A): gateA=PASS gateB=FAIL 
+== V-j untracked junk inside certification dir: gateA=FAIL gateB=FAIL 
+     A-13 unindexed evidence in docs/project/maintainers/qualification/iiac_evidence/EVOL-X/certification: .swp~
+     A-21 uncommitted changes in verified inputs (1): docs/project/maintainers/qualification/iiac_evidence/EVOL-X/certification/.swp~ [??]; the verdict must bind to HEAD
+     B-12 uncommitted changes in verified inputs (1): docs/project/maintainers/qualification/iiac_evidence/EVOL-X/certification/.swp~ [??]; the verdict must bind to HEAD

@@ -1,0 +1,29 @@
+# scope-of-change verification 5afaad9ea..9f8b04d2b
+intergrax changed_files=0
+agents changed_files=0
+applications changed_files=0
+scripts/governance changed_files=0
+docs/project/maintainers/qualification/IIAC_POLICY_ACTIVATION_RECORD.json changed_files=0
+docs/project/maintainers/qualification/INTEGRAX_INTERNAL_INDEPENDENT_AGENT_CERTIFICATION_PROTOCOL.md changed_files=0
+docs/project/maintainers/qualification/ENTERPRISE_CONTINUOUS_ARCHITECTURE_ASSURANCE_PROTOCOL.md changed_files=0
+docs/project/maintainers/qualification/iiac_evidence changed_files=0
+docs/project/maintainers/qualification/IIAC_EVOLX_B4_EVIDENCE_PUBLICATION_BINDING.json changed_files=0
+docs/project/maintainers/qualification/IIAC_OD_DELEGATION_EVOLX_B4_EVIDENCE_PUBLICATION_2026-11-06.md changed_files=0
+docs/project/maintainers/qualification/IIAC_SESSION_HANDOFF_RECORD_2026_11_05_CERTIFICATION.md changed_files=0
+docs/project/maintainers/qualification/evol_x changed_files=2
+
+diff-filter=M or D or R anywhere:
+M	.gitattributes
+M	.github/workflows/unit-tests.yml
+M	scripts/qualification/evol_x_closure_publication_preflight.py
+M	tests/unit/qualification/test_evol_x_closure_preflight_b4.py
+
+other scripts/ changes:
+scripts/qualification/evol_x_closure_publication_preflight.py
+tests/unit/governance/test_evol_x_real_repo_fresh_clone.py
+tests/unit/qualification/conftest.py
+tests/unit/qualification/test_evol_x_closure_preflight_b4.py
+
+blob hash handoff same:
+4cb3c761e242f4a0efba2c963c3c6d44a7166453
+4cb3c761e242f4a0efba2c963c3c6d44a7166453

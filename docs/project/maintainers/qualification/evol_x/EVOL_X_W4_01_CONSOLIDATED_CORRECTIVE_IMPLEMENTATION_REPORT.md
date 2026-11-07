@@ -194,3 +194,81 @@ Auditor session `local_e360e892-825d-4e0f-81f6-b4dc46ed4df9` (new context, own w
 * canonical `--gate b6-readiness`: FAIL with exactly the two real `A-18` blockers (B-4, B6-P3), no other code; `verify_iiac_policy_activation --require-in-force`: `IN_FORCE @ IIAC-2026-11-05.1`.
 
 No `intergrax/`, `agents/`, `applications/`, `scripts/governance/*`, activation record, protocol or existing evidence changed. A canonical or `--repo` run now requires the verified inputs to be committed: operators must commit evidence before running the preflight.
+
+## O. Round 3 — delta re-audit W402 (verdict PARTIAL on `ca78b1c1f`) and the defect hunt
+
+The delta re-audit by `local_e360e892-825d-4e0f-81f6-b4dc46ed4df9` closed W401-RA-01, RA-04 and RA-06 (PASS) and left RA-02 and RA-03 PARTIAL with one MEDIUM blocker, **W402-01** (a tracked input hidden by `skip-worktree` / `assume-unchanged` passed the HEAD-binding because the check trusted `git status`). In parallel this implementer ran a read-only adversarial review by a subagent on `ca78b1c1f`; its findings D1-D9 are folded in below (the subagent's report is not an audit and certifies nothing).
+
+| Finding | Source | Disposition | Fix and test |
+|---|---|---|---|
+| W402-01 index flags / fsmonitor hide an uncommitted input | auditor MEDIUM, hunt D2 | **Fixed in code** | `git status` is no longer the oracle: every verified input is compared byte for byte with its HEAD blob (RA-B4-01 byte contract), untracked files are found by walking the file system, and index flags other than `H` fail; `test_w402_01_*` |
+| W402-02 verifier code outside the read inputs | auditor LOW, hunt D3 | **Fixed in code** | the whole `scripts/` tree, the EVOL-X evidence tree and `.gitattributes` are HEAD-bound; `test_w402_02_*`, `test_hunt_d3_*` |
+| W402-03 free-text channels | auditor LOW, hunt D7 | **Fixed in code** | open blockers keep their published text; resolved entries and `certifier_disposition` accept only structured keys; `stage_closure_status` and `b6_acceptance` are exact enums; padded SHAs and `NaN`/`Infinity` rejected; the evidence root holds only known or index-bound directories; `test_w402_03_*`, `test_hunt_d7_*` |
+| W402-04 / D1 forged commit-graph, fsmonitor | auditor INFO, hunt D1 | **Fixed in code** | `core.commitGraph=false` and `core.fsmonitor=false` on every preflight git call; `test_w402_04_*` (the forged-graph repro itself was not re-executed; the setting disables the graph) |
+| D4 planted git-ignored module on `sys.path[0]` | hunt MEDIUM | **Fixed and checked by hand** | the script directory is removed from `sys.path` before any import; a planted ignored `json.py` in a fresh clone was not executed and the run exited 1 with an `A-21` untracked-file error; `test_hunt_d4_*` |
+| D5 `GIT_REPLACE_REF_BASE`, imported modules' git calls | hunt MEDIUM | **Fixed in code** | `GIT_NO_REPLACE_OBJECTS=1` for the whole process (imported IIAC modules included); redirecting git variables (`GIT_REPLACE_REF_BASE`, `GIT_ALTERNATE_OBJECT_DIRECTORIES`, `GIT_OBJECT_DIRECTORY`, `GIT_NAMESPACE`, `GIT_SHALLOW_FILE`, `GIT_GRAFT_FILE`) fail both gates; `test_hunt_d5_*` |
+| D6 crash on unhashable lifecycle value | hunt LOW | **Fixed in code** | values are type-checked before they are hashed; any unexpected evidence shape is an `A-99` internal error with a structured, failing verdict; `test_hunt_d6_*`, `test_hunt_an_unexpected_*` |
+| D8 gitlinks / non-ASCII names in the certification directory | hunt LOW | **Fixed in code** | `ls-tree -r -z` over every entry type; `test_hunt_d8_*` |
+| D9 / W401-RA-07 fixture PASS exits 0 | INFO | **Open, not changed** | same reason as before |
+| `GIT_DIR` / `GIT_INDEX_FILE` redirection, forged commit-graph in the *imported* activation modules | — | **UNVERIFIED / residual** | the imported material IIAC modules (not changed here) still call git without `core.commitGraph=false`; the process-wide `GIT_NO_REPLACE_OBJECTS` covers replace objects only |
+
+One existing test changed meaning on purpose: `test_open_blocker_holds_formal_closure` used to reword blocker B-5; it now re-opens B-5 with its P2 text, because rewording an open blocker is the channel W402-03 closes.
+
+**Pinned SHA for round 3: `2e0ed9c6b`** (code and tests; commits after it are documentation only). Evidence on that tree (Windows 11, `core.autocrlf=true`, short `--basetemp`):
+
+* full B4 suite (`-n 6`) at `1b89c47b3`: 480 passed, 1 failed (the stale fixture above); that test passes after the fix in `2e0ed9c6b` and the 20 `canonical` tests pass on the committed tree. The whole suite was not repeated end to end after the one-test change; CI does that;
+* `tests/unit/governance -n 4`: **145 passed, 1 skipped** (symlinks), 14 min 39 s;
+* canonical `--gate b6-readiness`: FAIL with exactly the two real `A-18` blockers and no other code; `verify_iiac_policy_activation --require-in-force`: `IN_FORCE @ IIAC-2026-11-05.1`;
+* no `intergrax/`, `agents/`, `applications/`, `scripts/governance/*`, activation record, protocol or existing evidence changed.
+
+## P. Round 4 — round-3 delta re-audit W403 (verdict PARTIAL on `2e0ed9c6b`)
+
+The auditor closed every W402 repro and found one MEDIUM blocker, **W403-01**: a forged `UNCHECKED_HASH` `.pyc` in a git-ignored `__pycache__` replaces a committed verifier module without touching the source, `git status` or the byte comparison, and can make the canonical clone print PASS.
+
+| Finding | Severity | Disposition | Fix and test |
+|---|---|---|---|
+| W403-01 forged bytecode in `__pycache__` | MEDIUM | **Fixed in code** | the preflight sets `sys.dont_write_bytecode` and a `sys.pycache_prefix` outside the repository before any import, so no repository bytecode is read or written and every imported module is compiled from the HEAD-bound source; `test_w403_01_*` plants a forged `.pyc` in a copy of `scripts/` (control: a plain import does run it; the preflight does not) |
+| W403-02 residual free-text channels | LOW | **Fixed in code** | `closure_evidence` items accept only `path`/`sha256`/`decision_id`; the audit directory is frozen like the certification directory (gitlinks included); a new evidence directory must be named by a blocker resolution (`closure_evidence_index_path`); every file of an indexed directory is listed in its index; `test_w403_02_*`. Not covered: free files inside `operator_decisions/` (no index exists for that directory) |
+| W403-03 whole-`scripts/` binding rejects unrelated files, slow | LOW | **Fixed in code** | the binding covers `scripts/governance`, `scripts/qualification`, `scripts/__init__.py`, `.gitattributes` and the modules actually loaded from `scripts/` or `intergrax/`; unrelated scripts no longer block the run; `test_w403_03_*`. A canonical run takes about 30 s on this machine |
+| W403-04 forged commit-graph, `GIT_DIR`/`GIT_INDEX_FILE`, git calls of the imported (material) IIAC modules | INFO | **UNVERIFIED / residual** | unchanged: the imported modules are material paths and were not edited |
+
+**Pinned SHA for round 4: `dc650b8df`** (code and tests; later commits are documentation only). Evidence on that tree (Windows 11, `core.autocrlf=true`, short `--basetemp`, `-n 6`): B4 + ruff-exemption + governance suites together **634 passed, 1 skipped** (symlinks), 30 min 31 s; canonical `--gate b6-readiness` FAIL with exactly the two real `A-18` blockers; no `intergrax/`, `agents/`, `applications/`, `scripts/governance/*`, activation record, protocol or existing evidence changed.
+
+**Threat-model note for the next audit and for the operator.** Rounds 2-4 each moved the same boundary: what a person with *write access to the checkout* (working tree, index, git config, ignored caches) can do. Every such attack found so far is now closed, but the class is open-ended by nature; the preflight is a fail-closed guard against accidental or careless divergence from the committed publication, not a defence against an attacker who controls the machine that runs it. A certifier should run it on a fresh clone of the pinned SHA, in a clean environment, which makes this class moot. Recording that boundary is an operator decision (suggested id: OD-2, not decided here).
+
+## Q. Round 5 — round-4 re-audit W404 (verdict PARTIAL on `dc650b8df`, HIGH regression)
+
+The auditor found that the round-4 change itself introduced **W404-01 (HIGH)**: `import tempfile` ran before the `sys.path` strip, so an untracked `random.py` / `shutil.py` next to the script executed first and could force PASS with the documented command. This was a regression of the round-3 protection (D4) and is reported here as such.
+
+| Finding | Severity | Capability | Disposition | Fix and test |
+|---|---|---|---|---|
+| W404-01 `tempfile` import before the strip | HIGH | untracked file | **Fixed in code, reproduced by hand** | the bootstrap imports only `os`/`sys` before stripping the script directory (and, as a program, the cwd and the repository root); the bytecode prefix is computed without `tempfile`; `test_w404_01_*` (random, shutil, tempfile, json, argparse, hashlib, each with a control that the plain import does run the planted file); on a fresh clone the documented command with a planted `random.py` exits 1 with an `A-21` untracked-file error and runs nothing |
+| W404-02 repository-root file shadows the stdlib (`python -m`, `PYTHONPATH`) | MEDIUM | ignored root file | **Fixed in code** | the repository `scripts` package is registered explicitly from this checkout (editable installs, `PYTHONPATH` and root files cannot supply another one) and the IIAC modules must come from it; the repository root is never put before the standard library; an untracked repository-root module (`.py`/`.pyc`/`.pyd` or package) fails the HEAD binding; `test_w404_02_*` |
+| W404-03 companion subprocesses load forged bytecode | LOW | ignored `.pyc` | **Fixed in code** | `PYTHONDONTWRITEBYTECODE`, `PYTHONPYCACHEPREFIX` and `PYTHONSAFEPATH=1` are exported to children; `test_w404_03_*`. The companion scripts still need the repository root on `PYTHONPATH` (they import `scripts.governance.*` without their own `sys.path` handling), which is why a stray root module is flagged instead of being removed from their path |
+| W404-04 free text in `operator_decisions/` and an edited `b4_reaudit/` index | LOW | committed file | **Open, accepted residual** | descriptive channels not read by any gate; freezing `b4_reaudit/` would need a pinned first-publication commit |
+| W404-05 Python-environment hooks (`sitecustomize`, `usercustomize`, `.pth`, replaced interpreter) | INFO | environment | **Outside what the script can defend** | needs the operator's threat-model decision (suggested OD-2); mitigation: run the preflight on a fresh clone in a clean environment |
+
+**Pinned SHA for round 5: `fdb1e7a62`** (code and tests; later commits are documentation only). Evidence on that tree (Windows 11, `core.autocrlf=true`, short `--basetemp`, `-n 6`): B4 + ruff-exemption + governance suites together **646 passed, 1 skipped** (symlinks), 28 min 15 s; canonical `--gate b6-readiness` FAIL with exactly the two real `A-18` blockers; no `intergrax/`, `agents/`, `applications/`, `scripts/governance/*`, activation record, protocol or existing evidence changed.
+
+A note on process: three consecutive fixes (rounds 3, 4, 5) each opened a neighbouring hole in the same bootstrap/binding code, and round 4 introduced a regression. The remaining findings are in the environment class (W404-05) that no in-script check can close. Recommended: the operator decides OD-2 (the threat-model boundary) before another corrective round, and the certifier runs the preflight on a fresh clone of the pinned SHA.
+
+## R. Round-5 re-audit result (`fdb1e7a62`): PARTIAL, no blocker
+
+The independent auditor (`local_e360e892-825d-4e0f-81f6-b4dc46ed4df9`) re-audited `fdb1e7a62`: **all three targeted findings (W404-01, W404-02, W404-03) PASS; `exact_blockers_for_acceptance` is empty.** Its own run: B4 501 passed (489 + 12 new, no existing test weakened), governance 145 passed / 1 skipped, canonical `b6-readiness` FAIL with exactly the two `A-18` blockers, clean real-chain clones with `core.autocrlf` true/false/input. The overall verdict stays **PARTIAL** only because of LOW/INFO residuals and the undecided T4 boundary. The auditor's dossier and findings are held in its worktree (`.tmp/session/evolx-w4-01-reaudit/`, round-5 files) and have not been published to the repository; publishing them is the next step and belongs to a publication session, not to this implementer.
+
+| Finding | Severity | Capability | Disposition |
+|---|---|---|---|
+| W405-01 companion subprocesses inherit `PYTHONPATH`, so a repository-root module shadows the standard library inside them | LOW | T2 + `PYTHONPATH=<repo>` | **Accepted residual** (OD-2): the companions need the repository root on their path; dropping it breaks them; the stray module is flagged by `A-21` and their exit codes cannot produce a PASS |
+| W405-02 any untracked root-level Python file or package blocks both gates | LOW | none (usability) | **Accepted** (auditor: acceptable as is) |
+| W405-03 interpreter-level hooks (`.pth`, `sitecustomize`, the git-ignored project venv inside the checkout) force PASS | INFO | T4 | **Outside the script; decided by OD-2** — mandatory procedure: certifier runs on a fresh clone of the pinned SHA in a clean environment |
+
+Open and unchanged: W404-04, W401-RA-05, W401-RA-07, W403-04 (unverified), OD-1 (decided C). OD-2 is recorded in `EVOL_X_OD2_DECISION_RECORD.md` as a delegated entry, the same way as OD-1.
+
+**Final pin for acceptance: `fdb1e7a62`** (code and tests). No further corrective round is proposed: a further round would be spent on LOW residuals and the T4 class that the script cannot close. Open before certification: publication of the auditor's evidence, the certifier session (a third, different session; its id goes into the W4-F08 record), the certifier's run on a fresh clone as defined in OD-2, and then B-4 acceptance.
+
+
+## S. Certifier result and stage closure (2026-11-07)
+
+The third session `local_dbad2215-acac-4a9e-aaf6-ad3be89aee18` ran the OD-2 procedure on a fresh clone of `fdb1e7a62` (and at `bec0a0948`, which differs only in documents). Gates, activation verifier, B4 suite (493 passed) and governance suite (145 passed, 1 skipped) matched the auditor's numbers; its own attacks in tiers T1-T3 were rejected. Verdict **ACCEPT_WITH_CONDITIONS** (`EVOL_X_W4_01_CERTIFIER_REPORT.md`, published at `b59052993`). Its new findings: C-01 (OD-2 environment wording cannot be literal; amended in OD-2), C-02 (OD-1/OD-2 were decided by the implementer; ratified by the operator on 2026-11-07), C-03 (the real B-4 resolution has not been exercised; dry run assigned to the certifier), C-04, C-05 (informational).
+
+The operator's acceptance is recorded in `EVOL_X_OD3_DECISION_RECORD.md`. The W4-F08 certifier row is filled. This closes the W4-01 corrective stage at the level of decisions and evidence. Still not done and not done by this report: the machine publication of the B-4 resolution (condition 2), P3 / B6 acceptance, FRZ promotion, OD-EVOL-12, OD-EVOLX-08 and EVOL-X closure.

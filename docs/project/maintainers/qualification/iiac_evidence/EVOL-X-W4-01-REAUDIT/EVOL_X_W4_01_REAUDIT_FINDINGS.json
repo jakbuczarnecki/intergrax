@@ -1,0 +1,102 @@
+{
+  "schema_version": "auditor-findings.v1",
+  "stage_id": "EVOL-X",
+  "ticket": "T-IGX-019-A",
+  "audited_sha": "9f8b04d2b8b670077b1e78ce812bb34b680f3968",
+  "auditor_session_id": "local_e360e892-825d-4e0f-81f6-b4dc46ed4df9",
+  "auditor_agent_id": "independent-quality-auditor",
+  "overall_verdict": "PARTIAL",
+  "exact_blockers_for_acceptance": ["W401-RA-01", "W401-RA-02", "W401-RA-03"],
+  "not_certification": true,
+  "closed_claims": [
+    {"id": "DA-01 field repoint / delete+readd / non-ancestor / fixture fallback", "verdict": "PASS"},
+    {"id": "DA-02 gate-consumed scope (LIM multiset, verdict, FRZ dispositions, notes, F-C-*, manifest bytes, P2 evidence files)", "verdict": "PASS"},
+    {"id": "W4-F01 LF/CRLF repair via .gitattributes (non-material, digest meaning kept)", "verdict": "PASS"},
+    {"id": "W4-F06/DA-09 UTF-8 binding republication", "verdict": "PASS"},
+    {"id": "RA-B4-01..04 regression", "verdict": "PASS (423/423 B4 suite plus own probes)"},
+    {"id": "Canonical repository cannot PASS Gate A or Gate B while B-4 / B6-P3 / B-5 are open", "verdict": "PASS"},
+    {"id": "No product path, material IIAC path, activation record or existing evidence changed", "verdict": "PASS"}
+  ],
+  "findings": [
+    {
+      "id": "W401-RA-01", "severity": "MEDIUM", "area": "DA-01", "verdict": "FAIL",
+      "title": "P2 scope baseline can be forged through git replace refs (refs/replace/<P2>)",
+      "summary": "All baseline reads use `git show <P2>:path` without disabling replace objects, so a refs/replace/<P2> ref in the verified repository substitutes the pinned commit's content.",
+      "reproduction": "raw/attack3b_replace_dated.txt and raw/attack3c_replace_mitigation.txt. Fixture: widen LIM-01 at HEAD (committed) -> Gate A FAIL (A-19 x2). Add `git replace <P2> <forged commit: widened manifest, same parent and date>` -> Gate A PASS with the widened LIM-01. GIT_NO_REPLACE_OBJECTS=1 restores FAIL. A plain `git clone` carries no refs/replace. Forging the blocker baseline with the same ref did NOT succeed (the history walk re-surfaced B-4/B-5/B6-P3; raw/attack4_replace_blockers.txt).",
+      "impact": "Scope baseline (limitations, verdict, dispositions) can be moved by whoever can write refs in the repository the certifier runs the preflight in. Not reachable via normal pushes or default clone/actions-checkout. Reproduced on a fixture only; real-chain impact UNVERIFIED.",
+      "required_correction": "Run every git call with --no-replace-objects (GIT_NO_REPLACE_OBJECTS=1) and refuse repositories with refs/replace/*, grafts or shallow boundaries; add a regression test."
+    },
+    {
+      "id": "W401-RA-02", "severity": "MEDIUM", "area": "DA-02", "verdict": "FAIL",
+      "title": "Scope-bearing channels outside the sealed set are accepted unchanged by Gate A",
+      "summary": "Lifecycle keys (certification_publication_sha_binding, frz_checklist_rows_changed, stage_closure_status in Gate A, b6_acceptance*), extra indexed files in the certification directory, and duplicate JSON keys in the certification record are unconstrained. The report statement 'no amendment channel exists by design' is falsified for the additive-file channel.",
+      "reproduction": "raw/attack1_lifecycle_additive.txt. S1: binding text 'SCOPE EXTENDED: LIM-01 now covers PLATFORM_CONSERVATIVE_FULL/T4; all LIM-* waived' plus frz_checklist_rows_changed={claim:...} -> Gate A PASS. S2: new indexed SCOPE_ADDENDUM.md in certification/ withdrawing LIM-01..05 -> Gate A PASS. S5: duplicate certification_verdict key (first widened, last original, Python keeps last) -> Gate A PASS.",
+      "impact": "No gate consumes these values, so none alone flips a gate; yet a signed certification record or directory can carry a widened scope statement and still earn Gate A. Gate-consumed scope IS sealed: my own repoint/widen attacks V1-V3 were rejected (raw/attack5_own_da01_da02.txt).",
+      "required_correction": "Constrain lifecycle values (type, enum or exact text), forbid or allow-list new files in the certification directory after P2, reject duplicate JSON keys for every evidence JSON."
+    },
+    {
+      "id": "W401-RA-03", "severity": "MEDIUM", "area": "RA-B4-01 byte contract", "verdict": "FAIL",
+      "title": "Gate B (and non-digest Gate A inputs) evaluate uncommitted working-tree bytes; verdict not bound to HEAD",
+      "summary": "_read_bytes returns the working-tree bytes when they differ from the HEAD blob. Digest-bound files then mismatch, but the FRZ checklist, operator register, governance status JSON and SHA ladder have no digest or HEAD-equality check.",
+      "reproduction": "raw/attack2_dirty_worktree.txt. Closed fixture: committed widened FRZ row -> Gate B FAIL (B-06/B-11); restoring the correct row UNCOMMITTED (HEAD unchanged, git status shows M) -> Gate A PASS and Gate B PASS. Same for the register and the governance JSON. _read_bytes is identical at baseline 5afaad9ea: inherited defect, present at the pin; contradicts the preflight docstring 'uncommitted edits stay a mismatch'.",
+      "impact": "A PASS can be obtained for a state that is not the committed publication. The canonical repository cannot PASS today (B-4/P3 open, B6 unpublished), so no current false closure; it matters for the future P3-P5 run.",
+      "required_correction": "Fail when git status --porcelain reports changes under the qualification tree or scripts, or read all inputs via git show HEAD:."
+    },
+    {
+      "id": "W401-RA-04", "severity": "LOW", "area": "W4-F03", "verdict": "PARTIAL",
+      "title": "Late-blocker history walk uses default history simplification",
+      "summary": "git log P2..HEAD -- <record> drops side-branch commits when a merge is TREESAME to its first parent, so a blocker published on a side branch and discarded by a merge resolution is never seen.",
+      "reproduction": "raw/attack3_sidebranch_replace.txt. Control: linear add of B-7 then silent removal -> A-18 rejects. Side branch adds B-7, merge -s ours into development -> Gate A PASS; the side commit is an ancestor of HEAD, invisible without --full-history.",
+      "impact": "A post-P2 blocker can be dropped without closure evidence when it only existed on a merged side branch.",
+      "required_correction": "Use --full-history for the blocker history (and for first-publication derivation); add a merge fixture."
+    },
+    {
+      "id": "W401-RA-05", "severity": "LOW", "area": "Parser hardening (RA-B4-03, W4-F04)", "verdict": "PARTIAL",
+      "title": "Negation scan is a denylist with gaps; non-ASCII ban rejects legitimate operator text",
+      "summary": "False accepts: Decision scope containing refuses, cannot, excluding, except, without; a prose revocation sentence or a '> Decision status: REVOKED' quoted line is ignored. False rejects: any non-ASCII character in Decision scope (Polish diacritics, typographic dash).",
+      "reproduction": "raw/parser_probe.txt, raw/real_data_probe.txt.",
+      "impact": "Gates stay fail-closed for unsigned or ill-formed records; accepts need a forged AUTHORIZED+signature record (process-enforced assurance); rejects are a usability fault for a Polish-language operator.",
+      "required_correction": "Allow-list the scope grammar or restrict to Cf/control/confusable characters; add a revocation mechanism."
+    },
+    {
+      "id": "W401-RA-06", "severity": "LOW", "area": "Legitimate operations rejected", "verdict": "PARTIAL",
+      "title": "Exact B6-record and promoted-FRZ-row formats are mandatory but undocumented",
+      "summary": "B6 record: exact title, allow-listed fields only, no extra prose or fences, exact Decision scope string, Accepted limitations = comma list of <id>:<sha256(text)>. Promoted FRZ row: exactly 6 cells and the notes cell must equal the machine rendering of the P2 disposition (FRZ-EVOL-06: 'LIM-01,LIM-03,LIM-04; footnote: EVOL_CONSERVATIVE_FULL scope only; not PLATFORM_CONSERVATIVE_FULL'), so the Evidence column cannot be kept.",
+      "reproduction": "raw/real_data_probe.txt; the B6 format appears only in the script and tests.",
+      "impact": "Fails closed; the first real P3/P4 attempt is rejected until the format is reverse-engineered from code. No safety impact.",
+      "required_correction": "Publish both formats (template or generator) in the certification documents."
+    },
+    {
+      "id": "W401-RA-07", "severity": "INFO", "area": "CLI", "verdict": "PARTIAL",
+      "title": "Fixture-class PASS returns exit code 0, like canonical PASS",
+      "summary": "Only the label or repository_class JSON field separates a fixture run (own --p2-sha/--evidence-root) from canonical. --activation-record is accepted on the canonical repo. A clone or second worktree of the real repository counts as fixture and accepts a caller-supplied P2.",
+      "reproduction": "raw/fixture_cli_exit.txt: exit=0 with 'FIXTURE (not canonical evidence)'.",
+      "impact": "Automation that tests only the exit code cannot tell the classes apart; needs caller control of CLI arguments.",
+      "required_correction": "Distinct exit code for fixture-class PASS."
+    },
+    {
+      "id": "W401-RA-08", "severity": "INFO", "area": "Residual OD-1", "verdict": "PARTIAL",
+      "title": "P2 pin lives in an ungoverned file (confirmed)",
+      "summary": "The preflight script is not in MATERIAL_GOVERNANCE_PATHS and the repository has no CODEOWNERS; editing the constant together with evidence is one unreviewed commit. Operator decision OD-1.",
+      "reproduction": "scripts/governance/iiac_activation_gate.py:40-48; no .github/CODEOWNERS.",
+      "impact": "Known residual, not an exploit of the shipped code.",
+      "required_correction": "Operator decision OD-1."
+    },
+    {
+      "id": "W401-RA-09", "severity": "INFO", "area": "Documentation", "verdict": "PARTIAL",
+      "title": "Report and handoff inconsistencies at the pinned SHA",
+      "summary": "At the pin the report has unresolved placeholders (__TEST_TABLE__, __IMPL_SHA__) and the handoff announces 424 tests while 423 are collected and pass (both corrected by later documentation commits). The .utf8 binding says 'supersedes' and adds two fields although it claims encoding-only; the original is untouched and nothing consumes either file.",
+      "reproduction": "pytest --collect-only reports 423.",
+      "impact": "Documentation only.",
+      "required_correction": "None for the code."
+    },
+    {
+      "id": "W401-RA-10", "severity": "INFO", "area": "Verification limits", "verdict": "UNVERIFIED",
+      "title": "Linux container run not reproduced by this auditor",
+      "summary": "Docker Desktop here fails with 'read-only file system' (bolt meta.db). Substitute evidence only: GitHub Actions run 42214173868 on origin/development 49b50fd74 (docs and ticket delta from the pin, verified): governance-fast and evol-x-b4-preflight succeeded; ent-audit-fast is a pre-existing unrelated failure.",
+      "reproduction": "raw/gh_run_jobs.txt, raw/linux_container_run.txt.",
+      "impact": "Linux checkout of the CRLF handoff verified by CI only.",
+      "required_correction": "Certifier may re-run in a working container."
+    }
+  ]
+}

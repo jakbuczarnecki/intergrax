@@ -1,0 +1,69 @@
+{
+  "schema_version": "auditor-findings.v1",
+  "stage_id": "EVOL-X",
+  "ticket": "T-IGX-019-A",
+  "round": 3,
+  "audited_sha": "2e0ed9c6b07fd3f4218d769b35a70cb7230db8fb",
+  "previous_audited_sha": "ca78b1c1f73f1e23c3a9bfed118988c12a0c71fa",
+  "auditor_session_id": "local_e360e892-825d-4e0f-81f6-b4dc46ed4df9",
+  "auditor_agent_id": "independent-quality-auditor",
+  "not_certification": true,
+  "overall_verdict": "PARTIAL",
+  "exact_blockers_for_acceptance": ["W403-01"],
+  "per_previous_finding": [
+    {"id": "W402-01", "verdict": "PASS", "note": "HEAD binding is a byte comparison against HEAD blobs plus an ls-files -v flag check. skip-worktree and assume-unchanged (V-a) now fail with B-12; the same-size/old-mtime edit (V-b) fails; the fsmonitor sub-case proves little because my hook did not actually hide the change from git status."},
+    {"id": "W402-02", "verdict": "PARTIAL", "note": "committed source of scripts/ and .gitattributes is bound: an edit of an unrelated tracked script or an untracked file under scripts/ gives A-21/B-12. Bytecode caches are explicitly ignored, so forged .pyc files run unseen (W403-01)."},
+    {"id": "W402-03", "verdict": "PARTIAL", "note": "V-d (open blocker text), V-e (resolved-entry keys), V-f (stage_closure_status enum), V-g (addendum at evidence root) are now rejected. Residual unbound text channels remain: W403-02."},
+    {"id": "W402-04", "verdict": "UNVERIFIED", "note": "core.fsmonitor=false and core.commitGraph=false are passed to the preflight's own git calls and GIT_NO_REPLACE_OBJECTS is exported process-wide (replace protection verified); a forged commit-graph and the imported IIAC modules' own git calls were not exercised."},
+    {"id": "W401-RA-01", "verdict": "PASS", "note": "S6b still rejected (A-22); real-chain replace/grafts detection verified in round 2."},
+    {"id": "W401-RA-02", "verdict": "PASS", "note": "S1/S2/S5 and variants V-d..V-g rejected."},
+    {"id": "W401-RA-03", "verdict": "PARTIAL", "note": "see W402-01/W402-02 and W403-01."},
+    {"id": "W401-RA-04", "verdict": "PASS", "note": "S4 rejected."},
+    {"id": "W401-RA-06", "verdict": "PASS", "note": "unchanged."},
+    {"id": "W401-RA-05/07/08", "verdict": "PARTIAL", "note": "left open on purpose; parser and exit-code code untouched; OD-1 decided C (delegated, process-enforced record)."}
+  ],
+  "regression_and_legitimate_operations": {
+    "b4_suite": "481 passed (448 + 33 new), 0 failed, EXIT=0",
+    "governance_suite": "145 passed, 1 skipped (symlinks), EXIT=0",
+    "existing_tests_weakened": "no: the test diff removes one line, a fixture literal replaced by the published B-5 text (stricter)",
+    "real_chain_clones_autocrlf_true_false_input": "status clean, activation IN_FORCE, canonical b6-readiness FAIL with exactly two A-18, no A-21/A-22, no B-12/B-13",
+    "linked_worktree": "clean linked worktree of a clone and the audited worktree: exactly two A-18",
+    "unrelated_dirty_files": "modified README.md and untracked files at repo root, under tests/ and in the qualification docs tree are accepted; a modified or untracked file anywhere under scripts/ is rejected (A-21/B-12)",
+    "canonical_formal_closure": "FAIL, exit 1, no A-21/A-22/B-12/B-13/A-99",
+    "runtime": "formal-closure 76 s on an idle machine, b6-readiness 2 min 39 s while the test suites ran"
+  },
+  "findings": [
+    {
+      "id": "W403-01", "severity": "MEDIUM", "verdict": "FAIL", "area": "W402-02 residual",
+      "title": "Forged bytecode in a git-ignored __pycache__ runs inside the verifier and is not detected",
+      "summary": "_dirty_input_errors skips every path containing __pycache__ and every *.pyc. Python loads an unchecked-hash .pyc without comparing it to the source, so a forged scripts/governance/__pycache__/iiac_common.cpython-312.pyc replaces the committed verifier module while the source file, git status and the byte comparison all stay clean.",
+      "reproduction": "raw3/t2_pyc_plant.txt. Clone of 2e0ed9c6b (canonical class): compile source plus payload with py_compile (UNCHECKED_HASH) into the cache path. (1) payload writes a marker file: marker created, A codes still exactly the two A-18, git status empty. (2) payload prints 'EVOL-X closure preflight: PASS' and exits 0: --gate formal-closure returns PASS, exit 0 on the canonical clone with B-4/B-5/P3 open and git status empty. Removing the pyc restores FAIL, exit 1.",
+      "impact": "Same access class as W402-01 (write access to the checkout, here to an ignored directory) yet a total bypass: any imported verifier module can be replaced silently, so every gate result can be forged. The round-3 claim that the verifier code is bound to HEAD is false for the code that actually executes.",
+      "required_correction": "Run the verifier with bytecode caching disabled and caches ignored (sys.dont_write_bytecode, -B, PYTHONPYCACHEPREFIX in a temp dir, or hash-checked loading), refuse any __pycache__ below scripts/ or the imported package paths, and stop skipping .pyc in the dirty check."
+    },
+    {
+      "id": "W403-02", "severity": "LOW", "verdict": "PARTIAL", "area": "W402-03 residual",
+      "title": "Remaining unbound free-text channels in the evidence tree",
+      "summary": "Accepted by Gate A: a committed addendum file inside operator_decisions/, b6_acceptance/ or b4_reaudit/; a whole new directory carrying its own EVIDENCE_INDEX.json beside the known ones; extra free-text keys inside closure_evidence items of an operator-kind resolution (the closed fixture still reaches Gate A and Gate B PASS); a gitlink entry inside audit/.",
+      "reproduction": "raw3/r3_atk7b.txt (T6a, T7 x3, T7b, T8). Rejected, for contrast: addendum at the evidence root (V-g), unindexed addendum in audit/ (V-g2), any new file or gitlink in certification/ (T6b).",
+      "impact": "Nothing consumes these values; descriptive channels only. Gate-consumed scope remains sealed.",
+      "required_correction": "Allow-list file names per evidence directory, require every file of an indexed directory to be indexed and consumed, validate closure_evidence item keys."
+    },
+    {
+      "id": "W403-03", "severity": "LOW", "verdict": "PARTIAL", "area": "Legitimate operations",
+      "title": "Binding of all of scripts/ rejects unrelated local files; preflight runtime grew",
+      "summary": "Any modified tracked or untracked file under scripts/ (editor temp file, scratch script, unrelated edit under scripts/dev) fails both gates with A-21/B-12 although it is not a verifier input; files elsewhere (README, tests/, docs outside the evidence root) are correctly ignored. Reading every file below scripts/ and the evidence root makes a canonical run take 76 s on an idle machine (2 min 39 s under load).",
+      "reproduction": "raw3/legit_ops.txt.",
+      "impact": "Fail-closed usability cost; operators must run the preflight from a clean scripts/ tree.",
+      "required_correction": "Bind the actual import closure of the verifier (loaded module files) instead of the whole tree."
+    },
+    {
+      "id": "W403-04", "severity": "INFO", "verdict": "UNVERIFIED", "area": "W402-04",
+      "title": "Not exercised: forged commit-graph, GIT_DIR/GIT_INDEX_FILE, git calls of imported IIAC modules",
+      "summary": "The imported activation gate and iiac_common run their own git subprocesses without core.commitGraph=false / core.fsmonitor=false (replace objects are covered by the process-wide environment variable). Redirecting environment variables other than the six listed are not refused. None of these was tried.",
+      "reproduction": "not executed",
+      "impact": "unknown",
+      "required_correction": "n/a"
+    }
+  ]
+}

@@ -1,0 +1,20 @@
+== clone autocrlf=true status:'' activation: IIAC policy activation: IN_FORCE @ IIAC-2026-11-05.1 from f8
+  class canonical mode IIAC | A codes: ['A-18'] n= 2 | B has B-12/13: False
+== clone autocrlf=false status:'' activation: IIAC policy activation: IN_FORCE @ IIAC-2026-11-05.1 from f8
+  class canonical mode IIAC | A codes: ['A-18'] n= 2 | B has B-12/13: False
+== clone autocrlf=input status:'' activation: IIAC policy activation: IN_FORCE @ IIAC-2026-11-05.1 from f8
+  class canonical mode IIAC | A codes: ['A-18'] n= 2 | B has B-12/13: False
+== unrelated dirty: modified repo-root README.md and an unrelated docs file
+ M README.md
+?? docs/project/maintainers/qualification/QUALIFICATION_INDEX.md
+  class canonical mode IIAC | A codes: ['A-18'] n= 2 | B has B-12/13: False
+== unrelated untracked file at repo root + in tests/
+  class canonical mode IIAC | A codes: ['A-18'] n= 2 | B has B-12/13: False
+== untracked scratch under scripts/ (e.g. editor temp)
+  class canonical mode IIAC | A codes: ['A-18', 'A-21'] n= 3 | B has B-12/13: True
+== modified unrelated tracked script under scripts/dev (uncommitted)
+  class canonical mode IIAC | A codes: ['A-18', 'A-21'] n= 3 | B has B-12/13: True
+== linked worktree (git worktree add) of the clone
+  class canonical mode IIAC | A codes: ['A-18'] n= 2 | B has B-12/13: False
+== audited worktree itself (linked worktree of the main repo), 2e0ed9c6b
+  class canonical A codes: ['A-18'] n= 2

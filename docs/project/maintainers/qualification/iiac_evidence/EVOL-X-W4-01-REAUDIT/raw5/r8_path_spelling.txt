@@ -1,0 +1,15 @@
+== detection of an untracked root module (non-executing run)
+    - A-18 open certification blocker for B6 acceptance: B-4 legacy closure preflight requires independent corrective implementation and re-audit
+    - A-18 open certification blocker for B6 acceptance: B6 acceptance (P3), FRZ promotion (P4) and formal closure (P5) not authorized in this publication
+    - A-21 uncommitted or hidden changes in verified inputs (1): json.py [untracked repository-root module: could shadow the standard library]; the verdict must bind to HEAD
+== junction invocation (script path through a directory junction), planted scripts/qualification/random.py
+Junction created for D:\w4a5\junc <<===>> D:\w4a5\cl_input
+EVOL-X closure preflight: FAIL
+  repository: canonical | policy mode: IIAC | selected gate: formal-closure
+marker: none
+== 8.3 short-name / relative invocation from inside scripts/qualification, planted random.py
+EVOL-X closure preflight: FAIL
+marker: none
+== subst-style: case-different path
+EVOL-X closure preflight: FAIL
+marker: none

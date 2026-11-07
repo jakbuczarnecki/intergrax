@@ -1,0 +1,16 @@
+clean state: status ''
+== R4 planted json.py at repo root (untracked, hidden via .git/info/exclude), invoked as module (python -m) from the repo root
+status with planted file: ''
+-- script mode (documented form: python scripts/...py):
+Traceback (most recent call last):
+  File "D:\w4a4\cl_false\scripts\qualification\evol_x_closure_publication_preflight.py", line 1029, in policy_mode
+marker: json.py shadow executed, argv0=scripts/qualification/evol_x_closure_publication_preflight.py
+-- module mode (python -m scripts.qualification.evol_x_closure_publication_preflight) cwd=repo root:
+Traceback (most recent call last):
+  File "D:\w4a4\cl_false\scripts\qualification\evol_x_closure_publication_preflight.py", line 1029, in policy_mode
+    record = _strict_json_loads(ctx.activation_record.read_text(encoding="utf-8"))
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+marker: json.py shadow executed, argv0=D:\w4a4\cl_false\scripts\qualification\evol_x_closure_publication_preflight.py
+== R5 environment-level hooks (PYTHONPATH sitecustomize) -- capability: control of the Python environment
+EVOL-X closure preflight: PASS
+exit=0

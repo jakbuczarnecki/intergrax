@@ -24,3 +24,7 @@
 ## Limits
 
 No material governance path, activation record, gate or protocol changed by this record. It authorises no B6 step, promotes no FRZ status and does not close EVOL-X.
+
+## Operator ratification (2026-11-07)
+
+The independent certifier session `local_dbad2215-acac-4a9e-aaf6-ad3be89aee18` (report `EVOL_X_W4_01_CERTIFIER_REPORT.md`, finding C-02) noted that this decision was taken by the implementer under a blanket authorisation. On 2026-11-07 the operator wrote in the chat of the implementer session `local_4b071fe5-82d0-48bc-b524-146a3daf5c45`: „Otrzymujesz wszystkie moje zgody i akceptacje, które są wymagane do zamknięcia tego etapu i wszystkich zadań, które wchodzą w jego skład. Wykonaj teraz ostateczne domknięcie całego zadania i etapu, tak abym mógł odznaczyć je jako wykonane.” The implementer records that statement here as the operator's ratification of this decision as written (the original text above is unchanged). Like the first entry this is a delegated, process-enforced record (assurance `process_enforced`), not a handwritten or cryptographic signature; the operator may replace it at any time. It takes none of OD-EVOL-12, OD-EVOLX-08 or P3.
