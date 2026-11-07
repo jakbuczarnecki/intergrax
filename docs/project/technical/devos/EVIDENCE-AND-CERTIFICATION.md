@@ -23,7 +23,7 @@ DCP implementation does **not** imply G6 PASS or FRZ closure.
 | Policy registry | `validate_policy_registry.py` + optional GOV-06 `TRUSTED_POLICY_PIN.yaml` (ADVISORY CI job) |
 | Ticket checkpoint | Paste of `igx_gov ticket` stdout in ticket file |
 
-Session diagnostics belong under `.tmp/session/` only ([session artifacts rule](../../../../.cursor/rules/intergrax-session-artifacts.mdc)).
+Session diagnostics belong under `.tmp/session/` only ([session artifacts rule](../../../../agent-env/rules/intergrax-session-artifacts.md)).
 
 ## Qualification
 

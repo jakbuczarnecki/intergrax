@@ -1,0 +1,50 @@
+---
+description: Intergrax I1+O1 token budget - minimize context; ask before expand
+loading: always
+---
+
+# Intergrax - Token budget (I1 input · O1 output)
+
+**Default:** minimize tokens. Expand only when operator approves or Full mode is triggered.
+
+## Mandatory implementation preflight
+
+Before reading or editing in an implementation step, state:
+
+- **read scope:**
+- **edit scope:**
+- **tests:**
+
+If more files are needed than the operator listed → **STOP** and ask. Do not read additional files silently.
+
+Do not load `AGENT_INSTRUCTIONS.md`, `intergrax-iteration.md`, full plan/arch hubs, domain guides, or `docs/audit_results/` control prompts unless explicitly requested.
+
+**CI/test hotfixes:** use `@agent-env/rules/intergrax-ci-hotfix.md` in a **new chat**. `AGENT_INSTRUCTIONS.md` is **forbidden** unless operator writes `ALLOW_FULL_AGENT_INSTRUCTIONS`. Words like "verification", "GitHub", or "audit" alone do **not** authorize loading it.
+
+## I1 - input (read / tools)
+
+- **Read:** `offset`/`limit` or `grep` before full file; hub **read-scope block** only unless implementing cited §.
+- **Docs-only step:** max **2** source files; max **1** file **>300 lines** without offset.
+- **No** parallel full-file reads of plan/arch hubs in one turn.
+- **No** `Task`/explore subagents unless operator asks or `RESUME:` requires it.
+- **DCP exception:** when `@intergrax-agent-roles` is loaded or the session role is set from [`governance/agent-control-plane/role_registry.yaml`](../../governance/agent-control-plane/role_registry.yaml), `Task`/subagents are allowed per `subagent_role_map` and [`igx-devos-parallel-orchestration`](../skills/igx-devos-parallel-orchestration/SKILL.md), still subject to [intergrax-test-process-budget.md](intergrax-test-process-budget.md) (one `uv run pytest` per verification step).
+- **DCP exception:** when `@intergrax-agent-roles` is loaded or the session role is set from [`governance/agent-control-plane/role_registry.yaml`](../../governance/agent-control-plane/role_registry.yaml), `Task`/subagents are allowed per `subagent_role_map` and [`igx-devos-parallel-orchestration`](../skills/igx-devos-parallel-orchestration/SKILL.md), still subject to [intergrax-test-process-budget.md](intergrax-test-process-budget.md) (one `uv run pytest` per verification step).
+- **Expand context** (full hub, subagent, >3 source files outside operator read scope, repo-wide semantic search): **STOP** - one short question; wait for OK.
+- **LKW Tier-2 tasks:** read `agents/local_indexer/steps/index_job.py` (or sibling LKW step modules) for `invoke_tool` + allowlist - **do not** open `uaep.py`, `boundary_demo`, or Nexus loop sources for pattern discovery.
+- **Expansion budget:** max **3 files** outside operator **read scope** per task; then STOP and ask.
+- Grep + path filter before semantic search. Respect `.cursorignore`. No `docs/audit_results/` or `audit_results/` unless explicitly `@`-referenced or `RESUME:` cites it.
+- **Doc topology:** domain-layer `docs/project/architecture/<DOMAIN>.md` ↔ `docs/project/maintainers/plans/<DOMAIN>.md`; multi-layer feature `docs/project/capabilities/architecture/<FEATURE>.md` ↔ `docs/project/capabilities/plan/<FEATURE>.md` - [`docs/project/capabilities/README.md`](../../docs/project/capabilities/README.md).
+
+## O1 - output (reply)
+
+| Mode | Trigger |
+|------|---------|
+| Minimal | `krótko` / `terse` → ≤6 lines |
+| Terse | **default** → ≤12 lines: outcome, paths, tests, blockers |
+| Full | `pełny raport` / `full report` / `iteration summary` / milestone |
+
+**Terse:** no diff recap, no echo of operator checklist, no doc canon restatement.
+
+**Prompt vs O1 conflict** (long checklist without Full trigger): deliver terse + offer Full.
+
+Full template: `@docs/project/technical/guides/AGENT_INSTRUCTIONS.md` § Operator communication - load only in Full mode.

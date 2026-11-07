@@ -2,7 +2,7 @@
 
 **Doc map:** [`../DOCUMENTATION_MAP.md`](../../technical/DOCUMENTATION_MAP.md) - bootstrap vs audit vs audit_results roles.
 **F3 session rule:** `ONE DOMAIN = ONE NEW CHAT` - see [`../../technical/guides/CURSOR_TOKEN_SETUP.md`](../../technical/guides/CURSOR_TOKEN_SETUP.md).
-**I1/O1:** always-on `.cursor/rules/intergrax-token-budget.mdc`. **F2 setup:** root `AGENTS.md` is a Cursor auto-load stub; full reference in `docs/project/technical/guides/AGENT_INSTRUCTIONS.md`. Do not delete stub via Settings trash icon.
+**I1/O1:** always-on `agent-env/rules/intergrax-token-budget.md`. **F2 setup:** root `AGENTS.md` is a Cursor auto-load stub; full reference in `docs/project/technical/guides/AGENT_INSTRUCTIONS.md`. Do not delete stub via Settings trash icon.
 
 Copy **entire file** into a **new** Cursor agent chat as the first message.
 

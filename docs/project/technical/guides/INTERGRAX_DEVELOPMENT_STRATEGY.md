@@ -111,7 +111,7 @@ ANALYSIS
 
 Think as a **Harness AI architect** first, then as an engineer.
 
-**Deep layer closeout** (audit → maturity, multiple sprints on one domain pair): follow [LAYER_COMPLETION_MODE.md](LAYER_COMPLETION_MODE.md). Default Cursor iterations remain single plan items per [`.cursor/rules/intergrax-iteration.mdc`](../../../../.cursor/rules/intergrax-iteration.mdc). Multi-layer features follow their feature pair, then implement the smallest domain-owned plan item.
+**Deep layer closeout** (audit → maturity, multiple sprints on one domain pair): follow [LAYER_COMPLETION_MODE.md](LAYER_COMPLETION_MODE.md). Default Cursor iterations remain single plan items per [`agent-env/rules/intergrax-iteration.md`](../../../../agent-env/rules/intergrax-iteration.md). Multi-layer features follow their feature pair, then implement the smallest domain-owned plan item.
 
 ---
 

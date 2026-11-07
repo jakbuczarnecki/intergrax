@@ -25,7 +25,7 @@ Tier-3  applications/        Deployable product environments
 
 **Per-iteration reading rule:** when implementing a harness layer, read **only** the matching architecture + plan pair (e.g. `MEMORY.md` in both folders) plus `docs/project/technical/guides/` as needed - do not load unrelated domain docs.
 
-**Cursor context budget:** respect `.cursorignore`. **I1/O1:** always-on `.cursor/rules/intergrax-token-budget.mdc`. Plan hubs + [`../plan/satellites/`](../../maintainers/plans/satellites) satellites. Platform audits: follow [`docs/audit_results/AUDIT_PROTOCOL.md`](../../../audit_results/AUDIT_PROTOCOL.md). **F2:** root `AGENTS.md` is a stub; full reference is this file - see [`CURSOR_TOKEN_SETUP.md`](CURSOR_TOKEN_SETUP.md). **F3:** one domain = one new chat; HEP → [`../bootstrap/hep_step.txt`](../../maintainers/bootstrap/hep_step.txt). **O1:** terse operator replies by default - see § Operator communication below.
+**Cursor context budget:** respect `.cursorignore`. **I1/O1:** always-on `agent-env/rules/intergrax-token-budget.md`. Plan hubs + [`../plan/satellites/`](../../maintainers/plans/satellites) satellites. Platform audits: follow [`docs/audit_results/AUDIT_PROTOCOL.md`](../../../audit_results/AUDIT_PROTOCOL.md). **F2:** root `AGENTS.md` is a stub; full reference is this file - see [`CURSOR_TOKEN_SETUP.md`](CURSOR_TOKEN_SETUP.md). **F3:** one domain = one new chat; HEP → [`../bootstrap/hep_step.txt`](../../maintainers/bootstrap/hep_step.txt). **O1:** terse operator replies by default - see § Operator communication below.
 
 **Delivery DevOS (ticket-first batches):** product-path commits require `Ref: governance/tickets/T-IGX-<NN>-<L>.md`; run `uv run python -m scripts.governance.igx_gov ticket` before push; roles/skills SSOT under `governance/agent-control-plane/`; hub [`../devos/README.md`](../devos/README.md).
 
@@ -75,7 +75,7 @@ Include **only**:
 
 ## Before you write code
 
-**CI/test hotfixes:** use `@.cursor/rules/intergrax-ci-hotfix.mdc` in a **new chat**. Do **not** read README, architecture, plan, `SYSTEM_INVARIANTS.md`, or strategy docs. Read only failing test/checker + directly related implementation files.
+**CI/test hotfixes:** use `@agent-env/rules/intergrax-ci-hotfix.md` in a **new chat**. Do **not** read README, architecture, plan, `SYSTEM_INVARIANTS.md`, or strategy docs. Read only failing test/checker + directly related implementation files.
 
 **Full onboarding** - only for new domain implementation, architecture-changing work, public behavior changes, ADR/milestone work, or full audit/closeout:
 

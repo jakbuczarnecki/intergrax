@@ -1,6 +1,45 @@
 # Intergrax - Claude Code rules
 
-Project instructions live in [`AGENTS.md`](AGENTS.md) (read it first). This file holds rules that are specific to Claude Code sessions.
+@AGENTS.md
+
+This file holds what is specific to Claude Code sessions. Rules, skills and plans are shared with Cursor and live in [`agent-env/`](agent-env/README.md) (single source of truth); `.claude/` and `.cursor/` contain only thin adapters that point there.
+
+## Shared agent environment
+
+<!-- BEGIN agent-env:generated (scripts/governance/sync_agent_env.py) - do not edit; edit agent-env/rules/ and re-run -->
+
+### Always-on rules (imported from `agent-env/rules/`)
+
+@agent-env/rules/intergrax-env-vendor-qualification.md
+@agent-env/rules/intergrax-git-branch-safety.md
+@agent-env/rules/intergrax-session-artifacts.md
+@agent-env/rules/intergrax-test-process-budget.md
+@agent-env/rules/intergrax-token-budget.md
+
+### On-demand rules (invoke as a skill: `/<name>`; canonical text in `agent-env/rules/`)
+
+| Skill | Invocation | Purpose |
+|-------|------------|---------|
+| `/intergrax-agent-roles` | operator or model | InterGRAX Delivery DevOS agent roles and handoff routing |
+| `/intergrax-ci-hotfix` | operator only | CI/test hotfix - ultra scoped; no docs, no architecture, no full verification |
+| `/intergrax-hep-step` | operator only | HEP step execution - strict scoped implementation |
+| `/intergrax-independent-audit` | operator or model | Independent G6 audit — implementer must not PASS; separate session only |
+| `/intergrax-iteration` | operator only | Intergrax Harness AI - iteration workflow, session protocol (F3) |
+| `/intergrax-micro-implement` | operator only | Micro implementation - strict scoped changes for small bounded tasks |
+
+<!-- END agent-env:generated -->
+
+### Vocabulary mapping (shared rules are written in Cursor terms)
+
+| Rule text says | In Claude Code |
+|----------------|----------------|
+| `@agent-env/rules/<id>.md`, `@<id>` | invoke the `/<id>` skill (or read the file) |
+| `Task` / `explore` / `generalPurpose` subagent | `Agent` tool: `Explore` / `general-purpose` |
+| `best-of-n-runner` / separate worktree | `Agent` with `isolation: worktree`, or a worktree per the section below |
+| `.cursorignore` | not applicable (no indexing); use judgment, read large docs only with `offset`/`limit` |
+| "Cursor Settings", Cursor token usage | not applicable |
+
+Plans (plan mode) are written to `agent-env/plans/` (`plansDirectory` in `.claude/settings.json`).
 
 ## Git worktrees (agents)
 

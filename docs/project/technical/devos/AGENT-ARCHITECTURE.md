@@ -3,7 +3,7 @@
 ## Control plane SSOT
 
 - [`governance/agent-control-plane/role_registry.yaml`](../../../../governance/agent-control-plane/role_registry.yaml) — seven roles, `default_role: orchestrator`, `subagent_role_map`.
-- [`governance/agent-control-plane/skill_routing_registry.yaml`](../../../../governance/agent-control-plane/skill_routing_registry.yaml) — skill id → role + `.cursor/skills/igx-devos-*`.
+- [`governance/agent-control-plane/skill_routing_registry.yaml`](../../../../governance/agent-control-plane/skill_routing_registry.yaml) — skill id → role + `agent-env/skills/igx-devos-*`.
 - [`governance/agent-control-plane/task_lifecycle.yaml`](../../../../governance/agent-control-plane/task_lifecycle.yaml) — ticket FSM (procedural).
 
 Generated matrix: [`MATRIX.md`](../../../../governance/agent-control-plane/MATRIX.md) via `generate_control_plane_matrix.py`.
@@ -23,8 +23,8 @@ Generated matrix: [`MATRIX.md`](../../../../governance/agent-control-plane/MATRI
 ## Cursor integration
 
 - Rules: `@intergrax-agent-roles`, `@intergrax-independent-audit`
-- Skills: `.cursor/skills/igx-devos-*/SKILL.md`
-- Token budget subagent exception when control plane active (see `intergrax-token-budget.mdc`)
+- Skills: `agent-env/skills/igx-devos-*/SKILL.md`
+- Token budget subagent exception when control plane active (see `intergrax-token-budget.md`)
 
 ## Verification
 

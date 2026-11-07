@@ -5,10 +5,10 @@ Use this bootstrap for one small, bounded implementation task in a fresh Cursor 
 Before using it, close large or unrelated editor tabs.
 
 ```text
-@.cursor/rules/intergrax-micro-implement.mdc
+@agent-env/rules/intergrax-micro-implement.md
 
 Before reading/editing, perform mandatory preflight from:
-.cursor/rules/intergrax-token-budget.mdc
+agent-env/rules/intergrax-token-budget.md
 
 Print only:
 read scope:
@@ -63,6 +63,6 @@ Do not estimate token usage.
 - Start a new Cursor chat for every micro-implementation task.
 - Keep read scope and edit scope explicit.
 - Prefer line ranges for large files.
-- Use `@.cursor/rules/intergrax-ci-hotfix.mdc` for CI/test/checker hotfixes.
-- Use `@.cursor/rules/intergrax-hep-step.mdc` for HEP/EVID implementation steps.
+- Use `@agent-env/rules/intergrax-ci-hotfix.md` for CI/test/checker hotfixes.
+- Use `@agent-env/rules/intergrax-hep-step.md` for HEP/EVID implementation steps.
 - If Cursor reads outside scope, reject the run and restart with a narrower prompt.

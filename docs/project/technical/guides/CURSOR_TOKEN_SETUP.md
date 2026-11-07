@@ -2,6 +2,8 @@
 
 **Goal:** minimize always-on and accidental bulk doc loads without losing audit quality.
 
+> **Shared environment:** rule and skill sources live in [`agent-env/`](../../../../agent-env/README.md); `.cursor/rules/*.mdc` and `.cursor/skills/` are generated adapters (`sync_agent_env.py`). `.cursorignore` / `.cursorindexingignore` stay at the repo root (Cursor-only).
+
 ---
 
 ## F2 - AGENTS.md stub
@@ -9,12 +11,12 @@
 | File | Auto-loaded | ~tok |
 |------|-------------|------|
 | `AGENTS.md` (root stub) | Yes (Cursor) | ~350 |
-| `.cursor/rules/intergrax-token-budget.mdc` | Yes (`alwaysApply: true`) | ~380 |
-| `.cursor/rules/intergrax-hep-step.mdc` | On demand / `@` | ~120 |
-| `.cursor/rules/intergrax-iteration.mdc` | On demand / `@` | ~350 |
+| `agent-env/rules/intergrax-token-budget.md` | Yes (`loading: always` → Cursor adapter `alwaysApply: true`) | ~380 |
+| `agent-env/rules/intergrax-hep-step.md` | On demand / `@` | ~120 |
+| `agent-env/rules/intergrax-iteration.md` | On demand / `@` | ~350 |
 | `docs/project/technical/guides/AGENT_INSTRUCTIONS.md` | No - `@` on demand | ~3,300 |
 
-**Only `intergrax-token-budget.mdc` is always-on.** All other rules and full guides load on explicit `@` or operator request - see root `AGENTS.md` § Cursor rule loading.
+**Only `intergrax-token-budget.md` is always-on.** All other rules and full guides load on explicit `@` or operator request - see root `AGENTS.md` § Rule loading.
 
 **Do not delete** root `AGENTS.md` via Cursor Settings trash icon.
 
@@ -24,7 +26,7 @@
 
 | Rule | When |
 |------|------|
-| [`.cursor/rules/intergrax-ci-hotfix.mdc`](../../../../.cursor/rules/intergrax-ci-hotfix.mdc) | Failing CI/test/checker - **new chat**; no `AGENT_INSTRUCTIONS.md`, no arch/plan |
+| [`agent-env/rules/intergrax-ci-hotfix.md`](../../../../agent-env/rules/intergrax-ci-hotfix.md) | Failing CI/test/checker - **new chat**; no `AGENT_INSTRUCTIONS.md`, no arch/plan |
 
 Allowed verification: failing GitHub command, exact test file, or `scripts/ci/run_ci_smoke_pytest.py`.
 
@@ -41,7 +43,7 @@ No Background Agents / Task subagents for layer audits unless operator opts in.
 
 Bootstraps encode `SESSION:` + `READ_BUDGET:` + `OUTPUT_BUDGET:` on lines 1–3.
 
-HEP implement steps: [`docs/project/maintainers/bootstrap/hep_step.txt`](../../maintainers/bootstrap/hep_step.txt) - edit `STEP=` / `SCOPE=` per C13–C16. Bootstrap lines 1–3 require `@intergrax-hep-step.mdc` + mandatory preflight before read/edit. **Also `@`:** [`.cursor/rules/intergrax-hep-step.mdc`](../../../../.cursor/rules/intergrax-hep-step.mdc).
+HEP implement steps: [`docs/project/maintainers/bootstrap/hep_step.txt`](../../maintainers/bootstrap/hep_step.txt) - edit `STEP=` / `SCOPE=` per C13–C16. Bootstrap lines 1–3 require `@intergrax-hep-step.md` + mandatory preflight before read/edit. **Also `@`:** [`agent-env/rules/intergrax-hep-step.md`](../../../../agent-env/rules/intergrax-hep-step.md).
 
 ---
 
@@ -49,15 +51,15 @@ HEP implement steps: [`docs/project/maintainers/bootstrap/hep_step.txt`](../../m
 
 | Always-on | ~tok |
 |-----------|------|
-| I1 + mandatory preflight in `intergrax-token-budget.mdc` | ~180 |
+| I1 + mandatory preflight in `intergrax-token-budget.md` | ~180 |
 
-**Mandatory preflight** (before any implementation step): state read scope, edit scope, tests. If scope exceeds operator-listed files → **STOP** and ask. Do not load `AGENT_INSTRUCTIONS.md`, `intergrax-iteration.mdc`, full hubs, `docs/audit_results/AUDIT_PROTOCOL.md`, or domain guides unless explicitly requested.
+**Mandatory preflight** (before any implementation step): state read scope, edit scope, tests. If scope exceeds operator-listed files → **STOP** and ask. Do not load `AGENT_INSTRUCTIONS.md`, `intergrax-iteration.md`, full hubs, `docs/audit_results/AUDIT_PROTOCOL.md`, or domain guides unless explicitly requested.
 
 **Default:** `offset`/`limit` or `grep` before full file; max 2 plan files on docs-only steps; no parallel full hub reads; no subagents unless operator asks.
 
 **Expand context** (full hub, subagent, >3 files): **STOP** - ask operator once; wait for OK.
 
-Domain read scope (when load is allowed): arch/plan hub read-scope blocks + one satellite - see `intergrax-iteration.mdc` (on demand only).
+Domain read scope (when load is allowed): arch/plan hub read-scope blocks + one satellite - see `intergrax-iteration.md` (on demand only).
 
 ---
 
@@ -65,7 +67,7 @@ Domain read scope (when load is allowed): arch/plan hub read-scope blocks + one 
 
 | Always-on | ~tok |
 |-----------|------|
-| O1 block in `intergrax-token-budget.mdc` | ~100 |
+| O1 block in `intergrax-token-budget.md` | ~100 |
 | Full 12-point template | `AGENT_INSTRUCTIONS.md` § Operator communication - **not** auto-loaded |
 
 **Default:** terse (≤12 lines) - outcome, paths, tests, blockers. **No** diff recap or doc restatement.
@@ -80,7 +82,7 @@ Domain read scope (when load is allowed): arch/plan hub read-scope blocks + one 
 
 | Rule | When |
 |------|------|
-| [`.cursor/rules/intergrax-hep-step.mdc`](../../../../.cursor/rules/intergrax-hep-step.mdc) | Operator asks for HEP / EVID implementation step (C13+) |
+| [`agent-env/rules/intergrax-hep-step.md`](../../../../agent-env/rules/intergrax-hep-step.md) | Operator asks for HEP / EVID implementation step (C13+) |
 
 Operator instruction + listed files = source of truth. No repo search, no full docs, no subagents, no full test suite unless listed. Token usage in final report: only if Cursor provides it - no guesses.
 

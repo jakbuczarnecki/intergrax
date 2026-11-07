@@ -93,7 +93,7 @@ Decision System
 | [integrations/impeachmentright_validation_readiness.md](../integrations/impeachmentright_validation_readiness.md) | Partner-facing readiness / five-point compatibility matrix for governed external execution | Platform architecture canon, attestation/EBE design |
 | [AGENTS.md](../../../AGENTS.md) | Cursor auto-load **stub** (~350 tok) | Full agent instructions |
 | [AGENT_INSTRUCTIONS.md](guides/AGENT_INSTRUCTIONS.md) | Full AI agent reference (routing, verification, ADR, O1 output) | Human onboarding doc |
-| [.cursor/rules/](../../../.cursor/rules/README.md) | Always-on / triggered Cursor rules | Replacement for AGENT_INSTRUCTIONS |
+| [agent-env/](../../../agent-env/README.md) | Shared agent environment: rules, skills, plans (Cursor + Claude Code adapters generated) | Replacement for AGENT_INSTRUCTIONS |
 | [bootstrap/*.txt](../maintainers/bootstrap/README.md) | Copy-paste **first message** for a new agent chat (HEP, CI preflight, micro implement) | Stored audit results |
 | [platform_proofs/](../../../platform_proofs/) | **Proof Library** - protocol, authoring, scenario/conformance packages; execution via `scripts/proof/` | Product proofs, public dashboard, duplicate runners |
 | [audit_results/](../../audit_results/) | **Canonical** platform audit methodology, campaigns, results, remediation status | Architecture canon or implementation plan |
@@ -136,7 +136,7 @@ Authoring: [AGENT_CREATION_GUIDE.md](guides/AGENT_CREATION_GUIDE.md) · Tier-3: 
 ### AI coding agent (Cursor)
 
 ```text
-AGENTS.md (stub)  →  AGENT_INSTRUCTIONS.md  →  .cursor/rules/intergrax-iteration.mdc
+AGENTS.md (stub)  →  AGENT_INSTRUCTIONS.md  →  agent-env/rules/intergrax-iteration.md
 ```
 
 - Load domain canon on demand - not bulk guides (respect `.cursorignore`)

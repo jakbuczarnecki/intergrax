@@ -6,7 +6,7 @@ When instructions conflict, resolve in this order (highest first):
 |----------|--------|-------------|
 | P0 | Root [`AGENTS.md`](../AGENTS.md) | Procedural (Cursor auto-load) + tier boundaries in code review |
 | P1 | [`governance/`](./) YAML + tickets | Technical (hooks, `igx_gov`, pytest verifiers) + procedural (ticket lifecycle) |
-| P2 | [`.cursor/rules/`](../.cursor/rules/) | Procedural (load on demand except token budget) |
+| P2 | [`agent-env/rules/`](../agent-env/rules/) | Procedural (load on demand except token budget) |
 | P3 | [`docs/project/technical/guides/AGENT_INSTRUCTIONS.md`](../docs/project/technical/guides/AGENT_INSTRUCTIONS.md) | Procedural (explicit `@` or operator keyword) |
 | P4 | Domain architecture ↔ maintainer plan pairs | Procedural (F3 one domain per chat) |
 

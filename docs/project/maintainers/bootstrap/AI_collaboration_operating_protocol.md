@@ -181,7 +181,7 @@ Preferred Intergrax wording:
 ```text
 Before reading/editing, perform mandatory preflight from:
 
-.cursor/rules/intergrax-token-budget.mdc
+agent-env/rules/intergrax-token-budget.md
 ```
 
 Cursor must:
@@ -212,32 +212,32 @@ When generating Intergrax Cursor instructions, pick the rule by task type:
 
 | Task | Rule |
 |------|------|
-| Ordinary small bounded implementation task | `@.cursor/rules/intergrax-micro-implement.mdc` - **new chat** |
-| HEP / EVID implementation step | `@.cursor/rules/intergrax-hep-step.mdc` |
-| CI / test / checker hotfix | `@.cursor/rules/intergrax-ci-hotfix.mdc` - **new chat** |
+| Ordinary small bounded implementation task | `@agent-env/rules/intergrax-micro-implement.md` - **new chat** |
+| HEP / EVID implementation step | `@agent-env/rules/intergrax-hep-step.md` |
+| CI / test / checker hotfix | `@agent-env/rules/intergrax-ci-hotfix.md` - **new chat** |
 
 **Default for bounded implementation steps** - start with:
 
 ```text
 Use:
 
-@.cursor/rules/intergrax-micro-implement.mdc
+@agent-env/rules/intergrax-micro-implement.md
 ```
 
 **Exceptions:**
 
-- Do **not** use `@.cursor/rules/intergrax-hep-step.mdc` for ordinary small implementation tasks.
-- Do **not** use `@.cursor/rules/intergrax-hep-step.mdc` for CI/test/checker hotfixes.
-- Use `@.cursor/rules/intergrax-hep-step.mdc` only when the task is explicitly HEP/EVID.
-- Use `@.cursor/rules/intergrax-ci-hotfix.mdc` only for failing CI/tests/checkers.
-- Use `@.cursor/rules/intergrax-micro-implement.mdc` for default bounded micro-implementation tasks.
+- Do **not** use `@agent-env/rules/intergrax-hep-step.md` for ordinary small implementation tasks.
+- Do **not** use `@agent-env/rules/intergrax-hep-step.md` for CI/test/checker hotfixes.
+- Use `@agent-env/rules/intergrax-hep-step.md` only when the task is explicitly HEP/EVID.
+- Use `@agent-env/rules/intergrax-ci-hotfix.md` only for failing CI/tests/checkers.
+- Use `@agent-env/rules/intergrax-micro-implement.md` for default bounded micro-implementation tasks.
 
 **CI/test/checker hotfix instructions** - use instead:
 
 ```text
 Use:
 
-@.cursor/rules/intergrax-ci-hotfix.mdc
+@agent-env/rules/intergrax-ci-hotfix.md
 
 CI HOTFIX = NEW CHAT
 ```
@@ -247,7 +247,7 @@ Also include:
 ```text
 Before reading/editing, perform mandatory preflight from:
 
-.cursor/rules/intergrax-token-budget.mdc
+agent-env/rules/intergrax-token-budget.md
 ```
 
 Only lightweight token-budget rules should be always-on.
@@ -264,7 +264,7 @@ Every important instruction must be written explicitly in the Cursor prompt.
 
 ## 7. Documentation-first rule
 
-**Exception - CI/test hotfixes:** when the task is only fixing failing CI, tests, or checkers, use `@.cursor/rules/intergrax-ci-hotfix.mdc` in a **new Cursor chat**. No documentation, journal, roadmap, or architecture updates unless the failing test is docs-specific.
+**Exception - CI/test hotfixes:** when the task is only fixing failing CI, tests, or checkers, use `@agent-env/rules/intergrax-ci-hotfix.md` in a **new Cursor chat**. No documentation, journal, roadmap, or architecture updates unless the failing test is docs-specific.
 
 Every other implementation task should update relevant documentation in the same commit when the task changes behavior, architecture, public usage, roadmap, operator workflow, or project status.
 
@@ -447,7 +447,7 @@ Do not hardcode any specific roadmap or ROI model unless the user provides it in
 
 When the user asks for a Cursor instruction, generate a complete standalone instruction that can be pasted into a fresh Cursor session.
 
-**Rule selection:** MICRO / ordinary bounded implementation → `@.cursor/rules/intergrax-micro-implement.mdc`. HEP/EVID → `@.cursor/rules/intergrax-hep-step.mdc`. CI/test/checker hotfix → `@.cursor/rules/intergrax-ci-hotfix.mdc` in a **new chat**. Do **not** use `@.cursor/rules/intergrax-hep-step.mdc` for ordinary small implementation tasks or CI/test/checker hotfixes.
+**Rule selection:** MICRO / ordinary bounded implementation → `@agent-env/rules/intergrax-micro-implement.md`. HEP/EVID → `@agent-env/rules/intergrax-hep-step.md`. CI/test/checker hotfix → `@agent-env/rules/intergrax-ci-hotfix.md` in a **new chat**. Do **not** use `@agent-env/rules/intergrax-hep-step.md` for ordinary small implementation tasks or CI/test/checker hotfixes.
 
 Every Cursor instruction should include:
 
@@ -456,11 +456,11 @@ Every Cursor instruction should include:
 
 Use:
 
-@.cursor/rules/<relevant-rule>.mdc
+@agent-env/rules/<relevant-rule>.md
 
 Before reading/editing, perform mandatory preflight from:
 
-.cursor/rules/intergrax-token-budget.mdc
+agent-env/rules/intergrax-token-budget.md
 
 Print only:
 
@@ -520,18 +520,18 @@ For docs-only tasks, include:
 
 Use this structure unless a different structure is better for the task.
 
-**Default - ordinary bounded implementation:** use `@.cursor/rules/intergrax-micro-implement.mdc`. Do **not** use `@.cursor/rules/intergrax-hep-step.mdc` for ordinary small implementation tasks.
+**Default - ordinary bounded implementation:** use `@agent-env/rules/intergrax-micro-implement.md`. Do **not** use `@agent-env/rules/intergrax-hep-step.md` for ordinary small implementation tasks.
 
-**Exception - HEP/EVID step:** use `@.cursor/rules/intergrax-hep-step.mdc` only when the task is explicitly HEP/EVID.
+**Exception - HEP/EVID step:** use `@agent-env/rules/intergrax-hep-step.md` only when the task is explicitly HEP/EVID.
 
-**Exception - CI/test/checker hotfix:** use `@.cursor/rules/intergrax-ci-hotfix.mdc` and `CI HOTFIX = NEW CHAT`. Do **not** use `@.cursor/rules/intergrax-hep-step.mdc` for hotfixes.
+**Exception - CI/test/checker hotfix:** use `@agent-env/rules/intergrax-ci-hotfix.md` and `CI HOTFIX = NEW CHAT`. Do **not** use `@agent-env/rules/intergrax-hep-step.md` for hotfixes.
 
 ```text
 # Intergrax - <Task Name>
 
 Use:
 
-@.cursor/rules/intergrax-micro-implement.mdc
+@agent-env/rules/intergrax-micro-implement.md
 ```
 
 **HEP/EVID variant** (replace the `Use:` block above):
@@ -541,7 +541,7 @@ Use:
 
 Use:
 
-@.cursor/rules/intergrax-hep-step.mdc
+@agent-env/rules/intergrax-hep-step.md
 ```
 
 **CI hotfix variant** (replace the `Use:` block above):
@@ -551,7 +551,7 @@ Use:
 
 Use:
 
-@.cursor/rules/intergrax-ci-hotfix.mdc
+@agent-env/rules/intergrax-ci-hotfix.md
 
 CI HOTFIX = NEW CHAT
 ```
@@ -563,11 +563,11 @@ CI HOTFIX = NEW CHAT
 
 Use:
 
-@.cursor/rules/intergrax-micro-implement.mdc
+@agent-env/rules/intergrax-micro-implement.md
 
 Before reading/editing, perform mandatory preflight from:
 
-.cursor/rules/intergrax-token-budget.mdc
+agent-env/rules/intergrax-token-budget.md
 
 Print only:
 
@@ -992,7 +992,7 @@ For CI/test/checker failures, the Cursor instruction must start with:
 ```text
 Use:
 
-@.cursor/rules/intergrax-ci-hotfix.mdc
+@agent-env/rules/intergrax-ci-hotfix.md
 
 CI HOTFIX = NEW CHAT
 ```

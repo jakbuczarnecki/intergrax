@@ -33,8 +33,9 @@ H2_IGNORE_PATHS = (
 AGENT_INSTRUCTIONS = ROOT / "docs" / "project" / "technical" / "guides" / "AGENT_INSTRUCTIONS.md"
 SYMBOL_INDEX = ROOT / "docs" / "project" / "technical" / "guides" / "SYMBOL_INDEX.md"
 AGENTS_STUB = ROOT / "AGENTS.md"
-ITERATION_RULE = ROOT / ".cursor" / "rules" / "intergrax-iteration.mdc"
-TOKEN_BUDGET_RULE = ROOT / ".cursor" / "rules" / "intergrax-token-budget.mdc"
+ITERATION_RULE = ROOT / "agent-env" / "rules" / "intergrax-iteration.md"
+TOKEN_BUDGET_RULE = ROOT / "agent-env" / "rules" / "intergrax-token-budget.md"
+CURSOR_RULES = ROOT / ".cursor" / "rules"
 PLAN_READ_SCOPE_MARKER = "## Cursor read scope (token budget)"
 PLAN_DIR = ROOT / "docs" / "project" / "maintainers" / "plans"
 SKIP_PLAN_HUBS = frozenset({"AUDIT_IDEAL_2026.md", "IDEAL_HARNESS_L3.md"})
@@ -46,15 +47,15 @@ O1_MARKER = "O1"
 I1_MARKER = "I1"
 STUB_MARKER = "AGENT_INSTRUCTIONS.md"
 STUB_MAX_LINES = 45
-CI_HOTFIX_RULE = ROOT / ".cursor" / "rules" / "intergrax-ci-hotfix.mdc"
+CI_HOTFIX_RULE = ROOT / "agent-env" / "rules" / "intergrax-ci-hotfix.md"
 FULL_MIN_LINES = 150
 REQUIRED_BOOTSTRAPS: tuple[str, ...] = ()
 HEP_BOOTSTRAP = "hep_step.txt"
-FORBIDDEN_BROAD_ACCESS_PHRASES = (
-    "full repository access",
-)
+FORBIDDEN_BROAD_ACCESS_PHRASES = ("full repository access",)
 BROAD_ACCESS_GUARD_PATHS = (
     ROOT / ".cursor",
+    ROOT / ".claude" / "skills",
+    ROOT / "agent-env",
     ROOT / "docs" / "project" / "maintainers" / "bootstrap",
     ROOT / "docs" / "project" / "technical" / "guides" / "CURSOR_TOKEN_SETUP.md",
 )
@@ -78,9 +79,7 @@ def _check_broad_access_phrases(errors: list[str]) -> None:
             text = candidate.read_text(encoding="utf-8")
             for phrase in FORBIDDEN_BROAD_ACCESS_PHRASES:
                 if phrase in text:
-                    errors.append(
-                        f"{candidate.relative_to(ROOT)}: forbidden broad Cursor access phrase: {phrase!r}"
-                    )
+                    errors.append(f"{candidate.relative_to(ROOT)}: forbidden broad Cursor access phrase: {phrase!r}")
 
 
 def main() -> int:
@@ -115,9 +114,7 @@ def main() -> int:
         indexing_ignore = CURSORINDEXINGIGNORE.read_text(encoding="utf-8")
         for path in H2_INDEXING_IGNORE_DIRS:
             if path not in indexing_ignore:
-                errors.append(
-                    f".cursorindexingignore must exclude token-heavy audit dir {path} (H2 indexing)"
-                )
+                errors.append(f".cursorindexingignore must exclude token-heavy audit dir {path} (H2 indexing)")
 
     if not SYMBOL_INDEX.is_file():
         errors.append("missing docs/project/technical/guides/SYMBOL_INDEX.md")
@@ -144,36 +141,42 @@ def main() -> int:
             errors.append("AGENTS.md stub must not contain full routing/verification sections")
 
     if not TOKEN_BUDGET_RULE.is_file():
-        errors.append("missing .cursor/rules/intergrax-token-budget.mdc (I1/O1 always-on)")
+        errors.append("missing agent-env/rules/intergrax-token-budget.md (I1/O1 always-on)")
     else:
         token_budget = TOKEN_BUDGET_RULE.read_text(encoding="utf-8")
-        if "alwaysApply: true" not in token_budget:
-            errors.append("intergrax-token-budget.mdc must have alwaysApply: true")
+        if "loading: always" not in token_budget:
+            errors.append("intergrax-token-budget.md must have loading: always")
+        adapter = CURSOR_RULES / "intergrax-token-budget.mdc"
+        if not adapter.is_file() or "alwaysApply: true" not in adapter.read_text(encoding="utf-8"):
+            errors.append(
+                ".cursor/rules/intergrax-token-budget.mdc adapter must exist with alwaysApply: true "
+                "(run sync_agent_env.py)"
+            )
         if I1_MARKER not in token_budget:
-            errors.append("intergrax-token-budget.mdc must include I1 input token budget")
+            errors.append("intergrax-token-budget.md must include I1 input token budget")
         if O1_MARKER not in token_budget or "terse" not in token_budget.lower():
-            errors.append("intergrax-token-budget.mdc must include O1 terse output policy")
+            errors.append("intergrax-token-budget.md must include O1 terse output policy")
         if "intergrax-ci-hotfix" not in token_budget:
-            errors.append("intergrax-token-budget.mdc must reference intergrax-ci-hotfix.mdc")
+            errors.append("intergrax-token-budget.md must reference intergrax-ci-hotfix.md")
 
     if not CI_HOTFIX_RULE.is_file():
-        errors.append("missing .cursor/rules/intergrax-ci-hotfix.mdc (CI hotfix mode)")
+        errors.append("missing agent-env/rules/intergrax-ci-hotfix.md (CI hotfix mode)")
     else:
         ci_hotfix = CI_HOTFIX_RULE.read_text(encoding="utf-8")
-        if "alwaysApply: false" not in ci_hotfix:
-            errors.append("intergrax-ci-hotfix.mdc must have alwaysApply: false")
+        if "loading: explicit" not in ci_hotfix:
+            errors.append("intergrax-ci-hotfix.md must have loading: explicit")
         if "AGENT_INSTRUCTIONS.md" not in ci_hotfix:
-            errors.append("intergrax-ci-hotfix.mdc must forbid AGENT_INSTRUCTIONS.md for hotfixes")
+            errors.append("intergrax-ci-hotfix.md must forbid AGENT_INSTRUCTIONS.md for hotfixes")
 
     iteration = ITERATION_RULE.read_text(encoding="utf-8")
     if "AGENT_INSTRUCTIONS.md" not in iteration:
-        errors.append("intergrax-iteration.mdc must reference AGENT_INSTRUCTIONS.md (F2 stub split)")
+        errors.append("intergrax-iteration.md must reference AGENT_INSTRUCTIONS.md (F2 stub split)")
     if SESSION_MARKER not in iteration and "ONE DOMAIN = ONE NEW CHAT" not in iteration:
-        errors.append("intergrax-iteration.mdc must include F3 session protocol")
+        errors.append("intergrax-iteration.md must include F3 session protocol")
     if "SYMBOL_INDEX" not in iteration:
-        errors.append("intergrax-iteration.mdc must reference SYMBOL_INDEX.md (F5)")
+        errors.append("intergrax-iteration.md must reference SYMBOL_INDEX.md (F5)")
     if "intergrax-token-budget" not in iteration:
-        errors.append("intergrax-iteration.mdc must reference intergrax-token-budget.mdc (I1/O1)")
+        errors.append("intergrax-iteration.md must reference intergrax-token-budget.md (I1/O1)")
 
     plan_gen = ROOT / "scripts" / "docs" / "generate_plan_read_scopes.py"
     if not plan_gen.is_file():
