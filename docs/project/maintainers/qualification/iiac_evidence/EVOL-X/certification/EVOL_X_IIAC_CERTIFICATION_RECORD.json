@@ -37,9 +37,7 @@
     "FRZ-EVOL-10": "ELIGIBLE_PASS_SCOPED(LIM-07)"
   },
   "frz_checklist_rows_changed": false,
-  "open_blockers_for_closure": [
-    "B-5 OD-EVOL-12 / OD-EVOLX-08 authority confirmation or signed rows"
-  ],
+  "open_blockers_for_closure": [],
   "assessment_path": "docs/project/maintainers/qualification/iiac_evidence/EVOL-X/certification/EVOL_X_IIAC_CERTIFICATION_ASSESSMENT.md",
   "notes": "Evidence-only P1/P2 publication under operator authorization. P1 pre-commit ruff gate skipped once by operator authorization (byte-preserved auditor probe scripts). Eligible dispositions are not promotions.",
   "resolved_blockers_for_closure": [
@@ -76,6 +74,26 @@
           "path": "docs/project/maintainers/qualification/iiac_evidence/EVOL-X/operator_decisions/EVOL_X_P3_B6_AUTHORIZATION_RECORD.md",
           "sha256": "90d5c3288a3d205cce37e52664c63ab03c323fe0755975f5375c6342864045b9",
           "decision_id": "OD-EVOLX-P3-B6-2026-11-07"
+        }
+      ]
+    },
+    {
+      "blocker_id": "B-5",
+      "status": "RESOLVED_WITH_EVIDENCE",
+      "baseline_text_sha256": "3bf8d5983f6db71782f39e2ac5adf451aed397b8490aaf5b4df69eb38219fe24",
+      "opened_at_sha": "ad0877715ed079ce920ff9d925fda03555b2c04e",
+      "resolution_kind": "OPERATOR_AUTHORIZATION",
+      "closure_publication_sha": "5f972703237268ef22a477c8954842508301dd51",
+      "closure_evidence": [
+        {
+          "path": "docs/project/maintainers/qualification/iiac_evidence/EVOL-X/operator_decisions/EVOL_X_OD_EVOL_12_DECISION_RECORD.md",
+          "sha256": "481c6328e820c0ca1f753a1acea635138afd04eac9b8aa618a5c60d20c1746de",
+          "decision_id": "OD-EVOL-12"
+        },
+        {
+          "path": "docs/project/maintainers/qualification/iiac_evidence/EVOL-X/operator_decisions/EVOL_X_OD_EVOLX_08_DECISION_RECORD.md",
+          "sha256": "760cdb37c7593702672dab70a374faec4b84a4a36c821a431cf213497a5d8add",
+          "decision_id": "OD-EVOLX-08"
         }
       ]
     }
