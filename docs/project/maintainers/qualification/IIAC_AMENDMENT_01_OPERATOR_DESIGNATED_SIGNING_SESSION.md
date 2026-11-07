@@ -26,6 +26,12 @@ R-2. The only condition on the designated signing session is that it is:
 - (c) **not a continuation** of any other session;
 - (d) **not an implementation session**.
 
+R-4 (operator answer 2026-11-07, OQ-2). The designated signing session may also be the certification agent of the same stage. This holds for the duration of the delegation only (R-5).
+
+R-5 (operator answer 2026-11-07, OQ-4). The designated session must act immediately after it is commissioned. The delegation is valid until the `Expires` value of its delegation record at the latest; the operator sets `Expires` in each order. The operator did not fix a numeric maximum validity; none is invented here.
+
+R-6 (procedure, operator wording 2026-11-07). When a stage reaches certification and confirmation, the operator, or another user acting as the operator, may explicitly and on request commission a separate agent session to certify in the operator's name. The commission automatically transfers to that session the certification scope to the extent that the session itself would certify. Statement of the operator's will; it takes effect only through R-1..R-5 and the activation preconditions of section 6.
+
 R-3. Nothing in this amendment relaxes the independence already required between the implementer, the independent auditor and the certification agent. The designated signing session replaces only the act of writing the operator signature line, and only as described in section 2.
 
 ## 2. Agent-proposed safeguards (strikeable by the operator)
@@ -60,7 +66,7 @@ The rule can take effect only after the following changes are implemented, audit
 5. the delegate timestamp is not after the record's `Expires` value and not before the delegation timestamp;
 6. the delegated decision is not one of the S-3 non-delegable items: the delegation record itself, IIAC policy activation (`IIAC_OD_ACTIVATION_*.md`), or an amendment of this rule. A delegate signature on any such decision is rejected fail-closed.
 
-**B-3 Role separation for the designated session.** Extend `verify_iiac_role_separation` (and the session-id inequality of `verify_iiac_audit_manifest`) so that the designated signing session id must differ from the `implementation_session_id`, from every session recorded as an implementer in the stage's ticket and handoff records, and must be dedicated: it may appear as signer of only the single delegation it is named in, may not equal the `auditor_session_id` or `certifier_session_id` of the same stage unless the operator's delegation record explicitly names that role as the dedicated task (open question OQ-2), and must not have written any product-path commit (reuse the auditor product write-surface check). This operationalises R-2(a)-(d) as far as is mechanically checkable; "new session" and "not a continuation" remain `process_enforced` assurance (see 4.4).
+**B-3 Role separation for the designated session.** Extend `verify_iiac_role_separation` (and the session-id inequality of `verify_iiac_audit_manifest`) so that the designated signing session id must differ from the `implementation_session_id`, from every session recorded as an implementer in the stage's ticket and handoff records, and must be dedicated: it may appear as signer of only the single delegation it is named in, may not equal the `auditor_session_id` or `certifier_session_id` of the same stage unless the operator's delegation record explicitly names that role as the dedicated task (OQ-2, answered permissively by R-4), and must not have written any product-path commit (reuse the auditor product write-surface check). This operationalises R-2(a)-(d) as far as is mechanically checkable; "new session" and "not a continuation" remain `process_enforced` assurance (see 4.4).
 
 **B-4 Preflight Gate B.** Gate B (the B6-record exactness check, including finding `B-11`) accepts both signature forms under B-1/B-2 and still rejects every other deviation. Specify negative cases: delegate form without delegation record; delegation expired; digest mismatch; wrong stage; wrong decision id; designated session id equals an implementer session; S-3 decision delegated; operator-form line written by a session that is registered as designated (an operator line must not be written by an agent at all).
 
@@ -134,6 +140,6 @@ Only after step 6 may this document's status change from PROPOSED - NOT IN FORCE
 ## 7. Open questions for the operator
 
 - OQ-1: Keep, strike or amend each of S-1, S-2, S-3.
-- OQ-2: May the designated signing session also be the certification agent of the same stage, or must it be a third session? (The operator condition only requires: new, dedicated, not a continuation, not an implementation session. B-3 is written so that the stricter reading can be chosen.)
+- OQ-2: ANSWERED by the operator on 2026-11-07 (R-4): the designated signing session may also be the certification agent of the same stage, for the duration of the delegation. B-3 therefore uses the permissive reading.
 - OQ-3: Should the audit manifest record delegation fields (P-2)?
-- OQ-4: Default maximum validity of a delegation (template `Expires` is a mandatory field; the maximum is a policy choice).
+- OQ-4: PARTLY ANSWERED (R-5): act immediately after commissioning; validity ends at the delegation record `Expires`. No numeric maximum was set by the operator; the maximum remains a policy choice if one is wanted.
