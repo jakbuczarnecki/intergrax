@@ -1,23 +1,22 @@
 {
   "schema_version": "iiac_evidence_index.v1",
   "stage_id": "EVOL-X",
-  "scope": "certifier P2 evidence (index excludes itself)",
   "files": {
     "EVOL_X_IIAC_CERTIFICATION_ASSESSMENT.md": {
       "sha256": "702a909b8d4bdb657fe366d5a5cb6bba45126bd822245d1be660ec1d3fc4808c",
       "bytes": 16299
     },
     "EVOL_X_IIAC_CERTIFICATION_RECORD.json": {
-      "sha256": "fb0d4618adac58ca372a021c504f262d8461903bed769dd47ab744516b25ad5e",
-      "bytes": 3329
-    },
-    "IIAC_SESSION_HANDOFF_RECORD_EVOL_X_CERTIFICATION.md": {
-      "sha256": "73323879ec54e609a9bbb77bc08d79e7e1c680e84bbce2ec9a9994b8bf87c14f",
-      "bytes": 4441
+      "sha256": "80ddffa3316739d3f7ec32f47c7252b9f907e7dd974349b123d82003253048b5",
+      "bytes": 4692
     },
     "iiac_audit_session_manifest.EVOL-X.json": {
       "sha256": "005f3bf3c827a1fca31f4e8f99acb75e07e4869257d3bdf50bf21eb33a7d1739",
       "bytes": 4057
+    },
+    "IIAC_SESSION_HANDOFF_RECORD_EVOL_X_CERTIFICATION.md": {
+      "sha256": "73323879ec54e609a9bbb77bc08d79e7e1c680e84bbce2ec9a9994b8bf87c14f",
+      "bytes": 4441
     },
     "validator_runs_certifier.txt": {
       "sha256": "23dda15679a60b3bd694da3aa5319734f4e376486631c0624c7142cf8cf88fad",
