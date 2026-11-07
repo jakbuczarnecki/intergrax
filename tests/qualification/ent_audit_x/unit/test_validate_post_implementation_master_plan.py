@@ -105,3 +105,74 @@ def test_validator_cli_passes() -> None:
         text=True,
     )
     assert proc.returncode == 0, proc.stderr
+
+
+# --- T-IGX-022-A (CT-ENT-01): accepted disposition set / anti-divergence ---------------------
+
+_DISPOSITION_ERROR_PREFIX = "disposition must declare one accepted constant"
+
+
+def _disposition_line(text: str) -> str:
+    lines = [ln for ln in text.splitlines() if ln.startswith("**Disposition:**")]
+    assert len(lines) == 1, f"expected exactly one **Disposition:** line, found {len(lines)}"
+    return lines[0]
+
+
+def _with_disposition(text: str, disposition_line: str) -> str:
+    return text.replace(_disposition_line(text), disposition_line, 1)
+
+
+def test_plan_disposition_line_declares_an_accepted_constant(baseline_plan_text: str) -> None:
+    """Anti-divergence guard: plan text and validator constants must not drift apart again (NF-01)."""
+    lib = _load_lib()
+    line = _disposition_line(baseline_plan_text)
+    found = [c for c in lib.ACCEPTED_DISPOSITIONS if c in line]
+    assert len(found) == 1, (
+        "plan **Disposition:** line and lib.ACCEPTED_DISPOSITIONS diverged: "
+        f"plan line={line!r}; accepted={list(lib.ACCEPTED_DISPOSITIONS)!r}; matched={found!r}"
+    )
+
+
+def test_internally_closed_constant_matches_published_plan_line(baseline_plan_text: str) -> None:
+    lib = _load_lib()
+    assert lib.INTERNALLY_CLOSED_DISPOSITION in lib.ACCEPTED_DISPOSITIONS
+    assert lib.INTERNALLY_CLOSED_DISPOSITION in _disposition_line(baseline_plan_text)
+
+
+def test_validator_fails_when_no_disposition_constant(baseline_plan_text: str) -> None:
+    lib = _load_lib()
+    mutated = _with_disposition(baseline_plan_text, "**Disposition:** ENT-AUDIT-X — SOMETHING ELSE")
+    errors = lib.validate_master_plan(mutated, _repo_root())
+    assert any(e.startswith(_DISPOSITION_ERROR_PREFIX) for e in errors), errors
+    assert not any("INTERNALLY CLOSED disposition incompatible" in e for e in errors), errors
+
+
+@pytest.mark.parametrize("index", range(4))
+def test_validator_accepts_each_accepted_disposition(baseline_plan_text: str, index: int) -> None:
+    lib = _load_lib()
+    constants = lib.ACCEPTED_DISPOSITIONS
+    assert len(constants) == 4
+    mutated = _with_disposition(baseline_plan_text, f"**Disposition:** `{constants[index]}`")
+    errors = lib.validate_master_plan(mutated, _repo_root())
+    # Other rules (e.g. READY-specific ones) may legitimately fire; only the disposition check is asserted.
+    assert not any(e.startswith(_DISPOSITION_ERROR_PREFIX) for e in errors), errors
+
+
+def test_internally_closed_with_other_errors_is_rejected(baseline_plan_text: str) -> None:
+    lib = _load_lib()
+    mutated = baseline_plan_text.replace(
+        "| C072 | C012,C024 | W-B |",
+        "| C072 | C012,C024 | W-A |",
+    )
+    assert lib.INTERNALLY_CLOSED_DISPOSITION in mutated
+    errors = lib.validate_master_plan(mutated, _repo_root())
+    assert any("C072" in e for e in errors), errors
+    assert "INTERNALLY CLOSED disposition incompatible with validation errors" in errors
+
+
+def test_internally_closed_does_not_whitelist_self_cert_phrases(baseline_plan_text: str) -> None:
+    lib = _load_lib()
+    mutated = baseline_plan_text + "\nB6 PASS\n"
+    assert lib.INTERNALLY_CLOSED_DISPOSITION in mutated
+    errors = lib.validate_master_plan(mutated, _repo_root())
+    assert any("B6 PASS" in e for e in errors), errors

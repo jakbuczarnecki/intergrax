@@ -93,6 +93,17 @@ PARTIAL_DISPOSITION = "ENT-AUDIT-X — PLAN PARTIAL / EXACT BLOCKERS"
 
 TECHNICAL_PARTIAL_DISPOSITION = "ENT-AUDIT-X — TECHNICAL PARTIAL / EXACT BLOCKERS"
 
+# Byte-identical to the published master-plan disposition line (plan line 3 since 477017f15).
+# This is a claim string only; it is NOT formal ENT-AUDIT-X closure, an FRZ promotion or a B6 PASS.
+INTERNALLY_CLOSED_DISPOSITION = "ENT-AUDIT-X — INTERNALLY CLOSED — AUTOMATED INTERNAL AUDIT ACCEPTED — PUBLISHED"
+
+ACCEPTED_DISPOSITIONS = (
+    READY_DISPOSITION,
+    PARTIAL_DISPOSITION,
+    TECHNICAL_PARTIAL_DISPOSITION,
+    INTERNALLY_CLOSED_DISPOSITION,
+)
+
 TASK_ID_RE = re.compile(r"^C0(?:0[1-9]|[1-6][0-9]|7[0-5])$")
 
 FORBIDDEN_SELF_CERT = (
@@ -430,8 +441,11 @@ def validate_master_plan(text: str, root: Path | None = None) -> list[str]:
     errors: list[str] = []
     root = root or repo_root()
 
-    if READY_DISPOSITION not in text and PARTIAL_DISPOSITION not in text and TECHNICAL_PARTIAL_DISPOSITION not in text:
-        errors.append("disposition must declare READY, PLAN PARTIAL, or TECHNICAL PARTIAL constant")
+    if not any(constant in text for constant in ACCEPTED_DISPOSITIONS):
+        errors.append(
+            "disposition must declare one accepted constant "
+            "(READY, PLAN PARTIAL, TECHNICAL PARTIAL, or INTERNALLY CLOSED)"
+        )
 
     for line in text.splitlines():
         for phrase in FORBIDDEN_SELF_CERT:
@@ -580,6 +594,9 @@ def validate_master_plan(text: str, root: Path | None = None) -> list[str]:
 
     if READY_DISPOSITION in text and errors:
         errors.append("READY disposition incompatible with validation errors")
+
+    if INTERNALLY_CLOSED_DISPOSITION in text and errors:
+        errors.append("INTERNALLY CLOSED disposition incompatible with validation errors")
 
     if order:
         if order.index("C066") < order.index("C051"):
