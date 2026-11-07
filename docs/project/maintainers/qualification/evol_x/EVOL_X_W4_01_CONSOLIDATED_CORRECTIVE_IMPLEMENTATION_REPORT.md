@@ -265,3 +265,10 @@ The independent auditor (`local_e360e892-825d-4e0f-81f6-b4dc46ed4df9`) re-audite
 Open and unchanged: W404-04, W401-RA-05, W401-RA-07, W403-04 (unverified), OD-1 (decided C). OD-2 is recorded in `EVOL_X_OD2_DECISION_RECORD.md` as a delegated entry, the same way as OD-1.
 
 **Final pin for acceptance: `fdb1e7a62`** (code and tests). No further corrective round is proposed: a further round would be spent on LOW residuals and the T4 class that the script cannot close. Open before certification: publication of the auditor's evidence, the certifier session (a third, different session; its id goes into the W4-F08 record), the certifier's run on a fresh clone as defined in OD-2, and then B-4 acceptance.
+
+
+## S. Certifier result and stage closure (2026-11-07)
+
+The third session `local_dbad2215-acac-4a9e-aaf6-ad3be89aee18` ran the OD-2 procedure on a fresh clone of `fdb1e7a62` (and at `bec0a0948`, which differs only in documents). Gates, activation verifier, B4 suite (493 passed) and governance suite (145 passed, 1 skipped) matched the auditor's numbers; its own attacks in tiers T1-T3 were rejected. Verdict **ACCEPT_WITH_CONDITIONS** (`EVOL_X_W4_01_CERTIFIER_REPORT.md`, published at `b59052993`). Its new findings: C-01 (OD-2 environment wording cannot be literal; amended in OD-2), C-02 (OD-1/OD-2 were decided by the implementer; ratified by the operator on 2026-11-07), C-03 (the real B-4 resolution has not been exercised; dry run assigned to the certifier), C-04, C-05 (informational).
+
+The operator's acceptance is recorded in `EVOL_X_OD3_DECISION_RECORD.md`. The W4-F08 certifier row is filled. This closes the W4-01 corrective stage at the level of decisions and evidence. Still not done and not done by this report: the machine publication of the B-4 resolution (condition 2), P3 / B6 acceptance, FRZ promotion, OD-EVOL-12, OD-EVOLX-08 and EVOL-X closure.

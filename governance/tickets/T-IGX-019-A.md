@@ -60,6 +60,10 @@ RA-07, OD-1 (decided C), threat-model boundary (suggested OD-2, undecided).
 Same ticket and files. **W404-01** (HIGH regression: bootstrap imports only os/sys before the sys.path strip), **W404-02** (repository `scripts` package pinned, untracked
 repository-root modules flagged), **W404-03** (bytecode/safe-path environment for children). Open on purpose: W404-04, W404-05 (threat-model boundary, suggested OD-2).
 
+## Stage closure - certifier and acceptance records (2026-11-07)
+
+Independent certifier session `local_dbad2215-acac-4a9e-aaf6-ad3be89aee18` recommended ACCEPT_WITH_CONDITIONS for B-4 at pin `fdb1e7a62` (report published at `b59052993`). The operator's ratification of OD-1/OD-2, the OD-2 wording amendment, the filled W4-F08 certifier row and the acceptance record OD-3 (`docs/project/maintainers/qualification/evol_x/EVOL_X_OD3_DECISION_RECORD.md`) are recorded on 2026-11-07. The machine publication of the B-4 resolution (OD-3 condition 2), P3, B6 acceptance, FRZ promotion and EVOL-X closure are not part of this entry.
+
 ## Plan digest
 
 Source: operator mission "INTEGRAX - EVOL-X B4 - ONE-PASS CONSOLIDATED CORRECTIVE IMPLEMENTATION" @ `5afaad9eadfc1655f4ef1ab59eb022960a924648`

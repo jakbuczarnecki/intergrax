@@ -29,3 +29,11 @@ The decision is re-opened if an in-scope tier (T1-T3) finding of severity MEDIUM
 ## Limits
 
 No material governance path, activation record, gate or protocol changed by this record. It authorises no B6 step, promotes no FRZ status and does not close EVOL-X.
+
+## Amendment (2026-11-07) - wording of the clean environment (certifier finding C-01)
+
+The wording "no `PYTHONPATH`" above cannot be met literally: the ACT-N10 companions (`verify_iiac_audit_manifest.py`, `verify_iiac_role_separation.py`, material and unchanged) import `scripts.governance...` and need the repository root on their path; without it the gate fails closed with `A-01 ... No module named 'scripts'`. The binding procedure is therefore: a new virtual environment **outside** the clone; no `sitecustomize`/`usercustomize`; no `.pth` file except the editable install of the project that points at the clean clone itself (`uv sync --extra dev-ci --frozen`), **or** `PYTHONPATH` set to exactly the clean clone and nothing else; interpreter from a trusted location; the commands and the environment recorded in the evidence. The certifier run of 2026-11-07 followed this form. The scope decision above is unchanged.
+
+## Operator ratification (2026-11-07)
+
+The independent certifier session `local_dbad2215-acac-4a9e-aaf6-ad3be89aee18` (report `EVOL_X_W4_01_CERTIFIER_REPORT.md`, finding C-02) noted that this decision was taken by the implementer under a blanket authorisation. On 2026-11-07 the operator wrote in the chat of the implementer session `local_4b071fe5-82d0-48bc-b524-146a3daf5c45`: „Otrzymujesz wszystkie moje zgody i akceptacje, które są wymagane do zamknięcia tego etapu i wszystkich zadań, które wchodzą w jego skład. Wykonaj teraz ostateczne domknięcie całego zadania i etapu, tak abym mógł odznaczyć je jako wykonane.” The implementer records that statement here as the operator's ratification of this decision as written (the original text above is unchanged). Like the first entry this is a delegated, process-enforced record (assurance `process_enforced`), not a handwritten or cryptographic signature; the operator may replace it at any time. It takes none of OD-EVOL-12, OD-EVOLX-08 or P3.
