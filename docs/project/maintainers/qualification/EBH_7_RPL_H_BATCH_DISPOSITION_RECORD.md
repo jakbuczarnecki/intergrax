@@ -4,6 +4,8 @@
 
 **Semantic review (Batch C @ `da1c29162` start):** evidence-derived via `_rpl_h_semantic_evidence.py` — **6 QUALIFIED**, **29 PARTIAL**, **21 BLOCKED** (legacy factory / single provider / missing category). Mechanical matrix rows below remain REPLACEABLE @ HEAD; semantic verdict overrides Package C mechanical-only claims.
 
+> **Reconciliation note (historical record, content unchanged):** the 6/29/21 semantic figures describe the Batch C start state (`da1c29162`). They were superseded by the normative 56/56 QUALIFIED layer recorded in [`EBH_7_INDEPENDENT_AUDIT_CORRECTIVE_FINDINGS.md`](EBH_7_INDEPENDENT_AUDIT_CORRECTIVE_FINDINGS.md) and [`EBH_7_GAP_REGISTER.md`](EBH_7_GAP_REGISTER.md) (`GAP-RPL-51` **CLOSED**). The matrix SSOT `rpl_h` column splits those 56 rows into QUALIFIED / FIXED SUBSTRATE / INTERNAL dispositions; the exact reconciliation belongs to the planned independent re-verification (`T-B7-VBN-INDEPENDENT-ACCEPT`).
+
 **Prior semantic review (`_rpl_h_semantic_review.py` before Batch C):** obsolete allowlist — superseded.
 
 | concern_id | rpl_h @ HEAD | EBH-7 disposition |

@@ -43,7 +43,7 @@ This protocol MUST ensure that enterprise compliance is **evidence-driven**, **s
 | **ECAP-P2** | Historical stage `CLOSED` MUST NOT imply current-HEAD `FRZ-*` PASS. |
 | **ECAP-P3** | A change-delta audit MUST NOT claim full-platform certification. |
 | **ECAP-P4** | Implementation agents MUST NOT self-accept `FRZ-*` PASS or publish `IIAC_*_PASS` / activate IIAC policy. |
-| **IIAC** | [INTEGRAX Internal Independent Agent Certification Protocol](INTEGRAX_INTERNAL_INDEPENDENT_AGENT_CERTIFICATION_PROTOCOL.md) — **NOT IN FORCE** until the fail-closed activation gate and an operator activation record. Session B PASS does not by itself activate the policy. |
+| **IIAC** | [INTEGRAX Internal Independent Agent Certification Protocol](INTEGRAX_INTERNAL_INDEPENDENT_AGENT_CERTIFICATION_PROTOCOL.md) — **`IN_FORCE`** (`IIAC-2026-11-05.1`) per [`IIAC_POLICY_ACTIVATION_RECORD.json`](IIAC_POLICY_ACTIVATION_RECORD.json), verified by the fail-closed activation gate with the operator activation record `IIAC-OD-01-2026-11-05`; the earlier "NOT IN FORCE until ..." wording is superseded. Session B PASS alone did not activate the policy. |
 | **ECAP-P5** | Replaceability MUST NOT be claimed without RPL-A..H evidence where extensibility is promised. |
 | **ECAP-P6** | Corrective work MUST be opened only for proven invariant violations or missing mandatory evidence—not hypothetical perfection. |
 

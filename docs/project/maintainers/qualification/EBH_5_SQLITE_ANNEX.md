@@ -12,7 +12,7 @@
 | Runtime persistence SQLite impls | FIXED SUBSTRATE — RATIFIED | Checkpoint, human, idempotency, trace, agent stores — Tier-3 composition |
 | `single_node_production_profile_v1` triad | FIXED SUBSTRATE — RATIFIED | GCA/PIS/AD paths under DATA_DIR |
 | Lab adaptive signal/proposal | INTERNAL | Lab factory scoped paths (GAP-01 remediated) |
-| `distributed.sqlite_kv` | REPLACEABLE — NOT YET QUALIFIED | Alternate via `KEY_VALUE_CACHE` integration — L3 debt |
+| `distributed.sqlite_kv` | REPLACEABLE — NOT YET QUALIFIED | Alternate via `KEY_VALUE_CACHE` integration — L3 debt *(historical at the EBH-5 baseline; the matrix SSOT now records `REPLACEABLE — QUALIFIED` for this concern - EBH-7)* |
 
 ## Per-touchpoint checklist (8 questions)
 

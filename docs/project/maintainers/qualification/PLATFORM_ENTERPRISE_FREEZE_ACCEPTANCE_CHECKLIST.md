@@ -46,7 +46,7 @@ A Cursor implementation report alone is **not** sufficient evidence.
 
 **Internal certification (OD-IC-01, 2026-11-04):** Operator-accepted internal technical qualification for **EVOL-X** and **ENT-AUDIT-X** is recorded in [`EVOL_ENT_INTERNAL_CERTIFICATION_RECORD_2026_11_04.md`](EVOL_ENT_INTERNAL_CERTIFICATION_RECORD_2026_11_04.md). **`FRZ-EVOL-*`** and **`FRZ-AUD-*`** rows below remain **OPEN** until formal independent acceptance and operator FRZ promotion per ECAP — internal certification does **not** fabricate PASS.
 
-**IIAC (2026-11-05):** [`INTEGRAX_INTERNAL_INDEPENDENT_AGENT_CERTIFICATION_PROTOCOL.md`](INTEGRAX_INTERNAL_INDEPENDENT_AGENT_CERTIFICATION_PROTOCOL.md) defines the post-activation closure path (`NOT_IN_FORCE` until Session B). Until activation, legacy human B6 requirements in preflights remain controlling.
+**IIAC (2026-11-05):** [`INTEGRAX_INTERNAL_INDEPENDENT_AGENT_CERTIFICATION_PROTOCOL.md`](INTEGRAX_INTERNAL_INDEPENDENT_AGENT_CERTIFICATION_PROTOCOL.md) defines the closure path for EVOL-X and ENT-AUDIT-X. Policy `IIAC-2026-11-05.1` is `IN_FORCE` per [`IIAC_POLICY_ACTIVATION_RECORD.json`](IIAC_POLICY_ACTIVATION_RECORD.json); the earlier wording "`NOT_IN_FORCE` until Session B" is superseded. Legacy human B6 records of earlier stages stay category-6 historical evidence with no retroactive rewrite ([`IIAC_REQUIREMENT_MIGRATION_MATRIX.md`](IIAC_REQUIREMENT_MIGRATION_MATRIX.md)). This note changes no FRZ status.
 
 ## Initial checklist policy
 

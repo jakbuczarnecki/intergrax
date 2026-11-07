@@ -31,7 +31,7 @@ uv run pytest tests/qualification/ebh_5/ -q
 
 ## Explicit OPEN (stage certification scope)
 
-- **52** integration/platform concerns remain **`REPLACEABLE — NOT YET QUALIFIED`** in matrix — valid for audit; not false QUALIFIED.
+- **52** integration/platform concerns remain **`REPLACEABLE — NOT YET QUALIFIED`** in matrix — valid for audit; not false QUALIFIED. *(Historical at this corrective batch. The count differs from the 51 cited in the EBH-5 pass record and the roadmap; both are superseded by EBH-7 - `GAP-RPL-51` **CLOSED**. Verdicts unchanged.)*
 - **OD-EBH5-02** SAC freeze, **OD-EBH5-07** independent auditor, **OD-EBH5-08** operator parent closure publication.
 - **EBH-6+** hardcoding register / DUP-X / replay — **out of scope** for this wave.
 

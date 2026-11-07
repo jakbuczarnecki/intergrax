@@ -1,6 +1,6 @@
 # IIAC requirement migration matrix
 
-**Policy document:** `IIAC-2026-11-05.1` · **Activation:** `NOT_IN_FORCE`. Re-audit PASS is necessary evidence; the ACT-01 gate and an operator activation decision are still required.
+**Policy document:** `IIAC-2026-11-05.1` · **Activation:** `IN_FORCE` per [`IIAC_POLICY_ACTIVATION_RECORD.json`](./IIAC_POLICY_ACTIVATION_RECORD.json) (operator decision `IIAC-OD-01-2026-11-05`; `effective_from_sha` `f8c29fb8dfe5e14d9b06ff16659fd9cbe9ad326d`). The earlier pre-activation wording (`NOT_IN_FORCE`; ACT-01 gate and operator activation decision still required) is superseded by that record; the migration table below is unchanged.
 
 | Old requirement | New IIAC requirement | Preserve substance? |
 |-----------------|----------------------|---------------------|
