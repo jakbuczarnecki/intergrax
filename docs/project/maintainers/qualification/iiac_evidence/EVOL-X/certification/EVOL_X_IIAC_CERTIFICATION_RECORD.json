@@ -5,7 +5,7 @@
   "independent_audit_verdict": "PASS_SCOPED",
   "certification_verdict": "PASS_SCOPED_EVIDENCE_PUBLICATION_ONLY",
   "stage_closure_status": "NOT_CLOSED",
-  "b6_acceptance": "NOT_ISSUED",
+  "b6_acceptance": "ISSUED",
   "audited_implementation_sha": "3c4a641b3e48a13f437e830a0562e2a80b03aabb",
   "test_execution_sha": "3c4a641b3e48a13f437e830a0562e2a80b03aabb",
   "evidence_publication_sha": "bbf3e33bc62a05fd205e07f3d2e35a6d1d689ca1",
@@ -79,5 +79,7 @@
         }
       ]
     }
-  ]
+  ],
+  "b6_acceptance_record_path": "docs/project/maintainers/qualification/iiac_evidence/EVOL-X/b6_acceptance/EVOL_X_IIAC_B6_ACCEPTANCE_RECORD.md",
+  "b6_acceptance_record_digest": "68cbec32b17049eecc8211d0e074ab4b6303467ff2d3037b08361d606c0eba1d"
 }

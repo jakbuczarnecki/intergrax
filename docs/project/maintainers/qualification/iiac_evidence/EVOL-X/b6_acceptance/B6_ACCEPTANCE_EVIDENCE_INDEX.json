@@ -1,0 +1,10 @@
+{
+  "schema_version": "iiac_evidence_index.v1",
+  "stage_id": "EVOL-X",
+  "files": {
+    "EVOL_X_IIAC_B6_ACCEPTANCE_RECORD.md": {
+      "sha256": "68cbec32b17049eecc8211d0e074ab4b6303467ff2d3037b08361d606c0eba1d",
+      "bytes": 1783
+    }
+  }
+}
