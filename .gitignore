@@ -18,6 +18,10 @@ applications/governed_contractor_application/deploy/docker-compose-local-qualifi
 temp_documents/
 .tmp/
 .worktrees/
+# Claude Code: session worktrees (full copies of the project) and personal settings are never committed;
+# the rest of .claude/ (skills, rules, settings.json, ...) is meant to be committed.
+.claude/worktrees/
+.claude/settings.local.json
 api/chat/rag_app.db
 
 # Documents
