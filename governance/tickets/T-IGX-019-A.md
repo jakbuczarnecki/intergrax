@@ -90,9 +90,13 @@ evidence, the IIAC activation record / gate / protocol, W4-F08 attestations.
 
 ## Lifecycle state
 
-ready_for_audit
+closed
 
 ## Checkpoint
 
 Implemented by an implementer session; it cannot certify its own correction. A new `independent-quality-auditor` session must re-audit the exact
 implementation SHA named in the handoff; a separate certifier then accepts. See `EVOL_X_W4_01_CONSOLIDATED_CORRECTIVE_IMPLEMENTATION_REPORT.md`.
+
+## Closure (2026-11-07)
+
+B-4 is recorded as `RESOLVED_WITH_EVIDENCE` at implementation pin `fdb1e7a62` (re-audit manifest `add7187bc`, certifier disposition `7a5476cdc`; second certifier report `EVOL_X_W4_01_SECOND_CERTIFIER_REPORT.md`; OD-2 Amendment 2 for CERT-01; OD-3 closure update; W4-F01 ratification record). The ticket scope is complete and closed. Out of this ticket and still open: B-5, B6-P3/P4/P5, FRZ promotion, OD-EVOL-12, OD-EVOLX-08 and EVOL-X closure (operator-only).

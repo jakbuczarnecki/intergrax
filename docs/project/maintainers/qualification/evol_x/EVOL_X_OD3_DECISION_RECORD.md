@@ -25,3 +25,10 @@ References to this evidence must cite commit SHAs, not paths (W404-04).
 ## Limits
 
 This record publishes no blocker resolution and changes no certification record, gate, material governance path, activation record or protocol. It does **not** authorise or perform P3 / B6 acceptance, does not promote any FRZ status, does not take OD-EVOL-12 or OD-EVOLX-08 and does not close EVOL-X. `--gate b6-readiness` keeps failing until the B-4 resolution is published and until P3 is authorised.
+
+## Closure update (2026-11-07)
+
+* **Condition 2 (dry run of the real B-4 resolution)** - satisfied by publication: the re-audit evidence and the manifest were published at `add7187bc` and the certifier disposition at `7a5476cdc`. The recovery session `local_7eeb7387-df63-460d-88e9-be7359430173` re-checked this on a fresh worktree of `7a5476cdc` in a new venv outside the repository: `verify_iiac_policy_activation --require-in-force` is `IN_FORCE`, `verify_iiac_audit_manifest` and `verify_iiac_role_separation` PASS on the re-audit manifest, and `--gate b6-readiness` fails with exactly one `A-18` (`B6-P3/P4/P5`), no other Gate A code.
+* **Second independent certifier.** `local_e34301ce-67df-40bf-b274-b2e062581541` returned `NOT CERTIFIED` for `fdb1e7a62` (report `EVOL_X_W4_01_SECOND_CERTIFIER_REPORT.md`, published unedited); its blocking findings are resolved as recorded in the publication note of that report and in Amendment 2 of `EVOL_X_OD2_DECISION_RECORD.md` (no code change, pin `fdb1e7a62` unchanged, condition 3 intact). Its residual LOW findings (CERT-02, W405-01/02, W404-04, W401-RA-05/07/08, W403-04 unverified) stay accepted as listed above.
+* **W4-F01** is ratified in `EVOL_X_W4_F01_OPERATOR_RATIFICATION_RECORD.md` (delegated).
+* Ticket `T-IGX-019-A` is set to `closed`. B-4 is closed; **B-5, B6-P3/P4/P5, FRZ-EVOL-01..10, OD-EVOL-12 and OD-EVOLX-08 stay open and EVOL-X stays `NOT_CLOSED`.** Conditions 3-5 above stay in force; OD-1 and OD-2 must be re-opened and the fresh-clone procedure re-run at the SHA that carries the resolution before P3.
