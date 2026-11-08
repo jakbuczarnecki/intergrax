@@ -48,4 +48,4 @@ Everything under `intergrax/`, `agents/`, `applications/`, `scripts/`; the six I
 
 ## Lifecycle state
 
-plan_approved
+ready_for_audit
