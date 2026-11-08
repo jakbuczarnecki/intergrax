@@ -1,4 +1,6 @@
 # Historical independent audit register
+
+> **Update 2026-11-08 (after PR 416)** - audits, reviews and designated-session decisions added after PR 408 (reports under `audits/`, decisions under `decisions/`): `rev-w0` ACCEPT_WITH_CHANGES; `q11` read-only investigation (F-015 code defect confirmed); `rev-w1` ACCEPT_WITH_CHANGES; `rev-plan` and `rev-plan2` ACCEPT_WITH_CHANGES (plan of T-IGX-031-A and Amendment A1); `aud-tests` PASS_SCOPED at `b28398026`; `aud-s12` PASS_SCOPED at `47c29b4c3`. Designated certifying sessions (process-enforced, never the implementer or auditor of their stage): `cert-w0`, `cert-w1`, `cert-031a`, `cert-031a2`. See `HISTORICAL_CERTIFICATION_CAMPAIGN_ADDENDUM_2026-11-08.md`.
 Generated 2026-11-08T11:20:52Z. Claude session ids are transcript file names (the host does not expose them); `UNKNOWN` means not recoverable.
 
 ## 1. Independent audits, reviews and approvals performed in this campaign
