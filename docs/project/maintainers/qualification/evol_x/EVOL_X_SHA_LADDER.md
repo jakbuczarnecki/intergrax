@@ -78,7 +78,7 @@ Root stub: [../EVOL_X_SHA_LADDER.md](../EVOL_X_SHA_LADDER.md) (pointer only).
 - **Final evidence (human):** adds `evol_m09_human_drill.v2.json` @ same `test_execution_sha` (OD-EVOL-08-M1).
 - **Final evidence (automation-first scoped):** `certification_profile=AUTOMATION_FIRST_SCOPED` + `evol_m09_automated_diagnostic_qualification.v1` + **EVOL-M-09A** MEASURED; **M-09H NOT_MEASURED** (OD-EVOL-13).
 - **Mode B certification** @ TES: `--certification --replay-junit` mandatory.
-- **OD-EVOL-18:** implementer/operator **technical work** on EVOL-X is **complete**; formal independent certification and closure SHAs remain **pending**.
+- **OD-EVOL-18:** implementer/operator **technical work** on EVOL-X is **complete**; formal independent certification and closure SHAs were **pending** at OD-EVOL-18 (historical) and are now published above (`B6_ACCEPTANCE_PUBLICATION_SHA`, `FORMAL_CLOSURE_PUBLICATION_SHA`, `W7_06_HANDOFF_PUBLICATION_SHA`).
 
 ## CI (W6-04)
 
