@@ -4,7 +4,7 @@ Campaign: Integrax Historical Certification Closure, W1-PLAN step 1 (accepted as
 
 Base: `origin/development` `6734971cf11297e9ac9edb0b01b8bbe8bb5799f4` (planner worktree `plan-tests`, branch `hist-cert/plan-tests-batch`).
 
-Amendment A1 (2026-11-08, Operator option A): adds ledger row S12 (section 5), step 12 (section 7), residuals R8 and R9 (section 9) and the S12 role split (section 6): a behaviour-neutral lint normalization of the four existing touched files, so that the pre-push gate and CI (`ruff check` and `ruff format --check` on every changed Python file) can pass. The plan digest changed; the approval recorded for the previous digest is superseded and a new approval is required. Nothing else in the design changed.
+Amendment A1 (2026-11-08, Operator option A): adds ledger row S12 (section 5), step 12 (section 7), residuals R8 and R9 (section 9) and the S12 role split (section 6): a behaviour-neutral lint normalization of the four existing touched files, so that the pre-push gate and CI (`ruff check` and `ruff format --check` on every changed Python file) can pass. The plan digest changed; the approval recorded for the previous digest is superseded and a new approval is required. Nothing else in the design changed. Revision of A1 after the independent review rev-plan2 (ACCEPT_WITH_CHANGES, findings F1-F5, all LOW, applied): the step 12 (b) script now handles the `noqa` fallback, checks import positions and non-`noqa` comments and computes its own PARENT; the F401 blank line, the definition of `af323c005`, the locked ruff and the R9 reviewer evidence are stated. The digest changed again; the digest of the first amended plan (commit `00df54795`) was reviewed but never approved.
 
 ### 1. Summary of findings (read this first)
 
@@ -92,15 +92,15 @@ Gate-weakening checklist (the auditor re-checks each line): no `skip` / `xfail` 
 
 #### S12 detail - mechanical lint normalization (Amendment A1)
 
-Why. The pre-push gate and CI run `scripts/ci/run_ruff_changed_paths.py`, which executes `ruff check` and `ruff format --check` on every changed Python file (config `[tool.ruff]` in `pyproject.toml`: line-length 120, rules E, F, I, UP, `src` lists directories). The implementation commits `232d03175` and `b28398026` were made with `--no-verify`; the Operator accepted that for exactly this pre-existing debt and chose option A: normalize inside this batch. The planner confirmed the defect list read-only (`ruff check` / `ruff format --check`, no fix): once on the base blobs (`git show af323c005:<file>` piped to ruff with `--stdin-filename`) and once on the tree `efc9a61e4`. The new helper is clean.
+Why. The pre-push gate and CI run `scripts/ci/run_ruff_changed_paths.py`, which executes `ruff check` and `ruff format --check` on every changed Python file (config `[tool.ruff]` in `pyproject.toml`: line-length 120, rules E, F, I, UP, `src` lists directories). The implementation commits `232d03175` and `b28398026` were made with `--no-verify`; the Operator accepted that for exactly this pre-existing debt and chose option A: normalize inside this batch. "Base `af323c005`" below means the implementation base: the merge of PR #415, the parent of the first implementation commit `232d03175` (the plan's own planning base `6734971cf` in the header is earlier). The planner confirmed the defect list read-only (`ruff check` / `ruff format --check`, no fix): once on the base blobs (`git show af323c005:<file>` piped to ruff with `--stdin-filename`) and once on the tree `efc9a61e4`. The new helper is clean.
 
 | File | Defect at base `af323c005` | Still at `efc9a61e4` | Exact fix | Why behaviour-neutral |
 |---|---|---|---|---|
 | `test_sec_ent.py` | I001 (import block, L5) | yes | `ruff check --select I --fix`: the blank line between `import pytest` and the `intergrax` imports is removed (ruff classifies `intergrax` as third-party here); no import is added, removed or renamed | only grouping/blank lines; the same names are bound; see "Import order" below |
-| `test_sec_ent.py` | F401 `intergrax.runtime.events.event_bus.RuntimeEventBus` unused (base L223, now L265) | yes | delete the function-local line `from intergrax.runtime.events.event_bus import RuntimeEventBus` in `test_defense_middleware_blocks_cross_tenant_scope` (`ruff check --select F401 --fix`); decision: REMOVE | verified by reading: the name occurs in the file only at L247/L249 and L290/L293, which are two OTHER functions that each have their own local import; inside this function it is never used; a function-local import binds a local name only, so it cannot be a re-export or module attribute; no other occurrence of the string `RuntimeEventBus` exists in the file, so no `patch("...RuntimeEventBus")`, `getattr` or string lookup uses it. The imported module `intergrax/runtime/events/event_bus.py` has no import-time side effect (module top level holds a `logger` and dataclass definitions only; grep), and the sibling tests import it anyway, so dropping this import cannot change what the test observes |
+| `test_sec_ent.py` | F401 `intergrax.runtime.events.event_bus.RuntimeEventBus` unused (base L223, now L265) | yes | delete the function-local line `from intergrax.runtime.events.event_bus import RuntimeEventBus` in `test_defense_middleware_blocks_cross_tenant_scope` (`ruff check --select F401 --fix`); decision: REMOVE | verified by reading: the name occurs in the file only at L247/L249 and L290/L293, which are two OTHER functions that each have their own local import; inside this function it is never used; a function-local import binds a local name only, so it cannot be a re-export or module attribute; no other occurrence of the string `RuntimeEventBus` exists in the file, so no `patch("...RuntimeEventBus")`, `getattr` or string lookup uses it. The imported module `intergrax/runtime/events/event_bus.py` has no import-time side effect (module top level holds a `logger` and dataclass definitions only; grep), and the sibling tests import it anyway, so dropping this import cannot change what the test observes. The blank line that followed the deleted import STAYS (ruff format 0.15.20 keeps the first empty line of the function body and `ruff format --check` passes); this is accepted, whitespace only, verified by the reviewer; the implementer must not delete it by hand |
 | W5 b2 | I001 | yes | `ruff check --select I --fix`: blank line after `import pytest` removed; `testing_support.runtime_events` and `tests.support.integration_catalog_isolation` imports move above `lab_application.*` and form their own block; `lab_application.*` become a trailing block | import order only; see "Import order" below |
 | W5 c | I001 | yes | same isort result as b2 | same |
-| W5 c | E402 late import `from intergrax.contracts.event_delivery import ObservabilityExportPayload` (base L91, now L100) | yes | MOVE it to the top by merging into the existing L18 statement: `from intergrax.contracts.event_delivery import EventDeliveryPolicy, ObservabilityExportPayload` (hand edit, then the isort fix sorts the names). No `noqa` | read: the file records no reason for the late position (no comment); the name is used exactly once, as the annotation of `_FailingExportSink.export` (L104), and the file has `from __future__ import annotations`, so the annotation is never evaluated at run time; the SAME module `intergrax.contracts.event_delivery` is already imported at L18, so module load order is unchanged and only the moment of the name binding moves earlier; nothing between L1 and L100 references the name. Fallback if the AST check (step 12 b) or the rerun (step 12 c) disagrees: keep the import in place and use `# noqa: E402` with a one-line reason; report it |
+| W5 c | E402 late import `from intergrax.contracts.event_delivery import ObservabilityExportPayload` (base L91, now L100) | yes | MOVE it to the top by merging into the existing L18 statement: `from intergrax.contracts.event_delivery import EventDeliveryPolicy, ObservabilityExportPayload` (hand edit, then the isort fix sorts the names). No `noqa` | read: the file records no reason for the late position (no comment); the name is used exactly once, as the annotation of `_FailingExportSink.export` (L104), and the file has `from __future__ import annotations`, so the annotation is never evaluated at run time; the SAME module `intergrax.contracts.event_delivery` is already imported at L18, so module load order is unchanged and only the moment of the name binding moves earlier; nothing between L1 and L100 references the name. PRIMARY fix = move (this row). Fallback, only if the move is shown to change behaviour (not expected): keep the import in place with ONE `# noqa: E402` and a one-line reason, report it, and the auditor runs the step 12 (b) script with `ALLOWED_NOQA_DELTA[FILES[2]] = 1` and reads the single added `noqa` line |
 | W5 c | `ruff format --check` red (one hunk) | yes | `ruff format`: the signature `_wired_bus_with_recorder() -> tuple[...]` collapses onto one line (fits in 120 columns) | whitespace/line breaks only |
 | W5 d | I001 (also name order inside two parenthesized lists: `ExporterKind` before `ExportError`; `ObservabilityExportSinkFactory` before `OtlpEventExportSink`) | yes | `ruff check --select I --fix` (same block move as b2) | same names bound from the same modules; only order |
 | W5 d | `ruff format --check` red (four hunks) | yes | `ruff format`: multi-line calls/signatures collapse to single lines of at most 120 columns | whitespace/line breaks only |
@@ -114,7 +114,7 @@ uv run --extra dev-ci ruff check --select I --fix $SE $B2 $C $D
 uv run --extra dev-ci ruff format $SE $B2 $C $D
 ```
 
-`--select` overrides the configured rule set for that call, so each `--fix` applies only the named rule. Do NOT run `ruff format` or `--fix` on any other file. Not edited by S12: any assertion, test body, fixture, marker, `no_ci`, skip/xfail, the helper file, and any file outside the four.
+`--select` overrides the configured rule set for that call, so each `--fix` applies only the named rule. Every ruff call in this batch (implementation and audit) is the LOCKED ruff through `uv run --extra dev-ci ruff` (version 0.15.20 in `uv.lock`); a global ruff on the machine is not evidence and may format differently. Do NOT run `ruff format` or `--fix` on any other file. Not edited by S12: any assertion, test body, fixture, marker, `no_ci`, skip/xfail, the helper file, and any file outside the four.
 
 Import order. Reordering imports could matter only if an import has an import-time side effect or if two imports depend on each other's order (catalog registration, patching, `sys.path`, plugin discovery). Read by the planner (module top level only): `applications/lab_application/host/settings.py`, `applications/lab_application/manifest.py`, `testing_support/runtime_events.py`, `tests/support/integration_catalog_isolation.py` and `intergrax/runtime/events/event_bus.py` contain no top-level call to `register_*` / `bootstrap*`, no `sys.path`, `atexit` or `os.environ` use; only definitions, decorators (`@dataclass`) and a module `logger`. Test-time effects (fixtures, `patch`) are not import-time and are untouched. `from __future__ import annotations` stays first. Within the `intergrax.*` imports the module order is unchanged (only the names inside two lists of W5 d move, same module). The transitive import graph of these modules was NOT traced; this is residual R9 and is covered empirically by step 12 (c) (a failing rerun would show it), not by reading. Nothing is excluded or pinned; if (c) shows a difference, the implementer stops and reports instead of pinning imports ad hoc.
 
@@ -145,29 +145,35 @@ Paths: `SE=tests/unit/runtime/security/test_sec_ent.py`, `B2=tests/unit/runtime/
 | 9 | `uv run --extra dev-ci ruff check <5 files>` then `uv run --extra dev-ci ruff format --check <5 files>` | n/a (Amendment A1: red at the base and at `efc9a61e4` for the four existing files, see S12) | clean; reachable only after S12 (step 12) |
 | 10 | diff guard: `git diff --name-only 6734971cf..HEAD` | n/a | only the five files plus `governance/tickets/T-IGX-031-A.md`, `governance/tickets/plans/PLAN_T-IGX-031-A.md`; nothing under `intergrax/`, `agents/`, `applications/`, `scripts/`; no CRLF in new content |
 | 11 | REQUIRED for the independent audit, NOT for the implementer's own green; a broad diagnostic run that needs a SEPARATE Operator authorization (C10/C15, `agent-env/rules/intergrax-env-vendor-qualification.md`) and a heavy slot (about 8 minutes on the pin): the worker's 27-path selection in ONE process (`run1.sh` in `.tmp/session/hist-cert-campaign/hist03/`) | pin: 21 failed, 331 passed | no `already registered` error anywhere. The 6 `p2_c_http_execution_admission` failures (F-015, a separate P2-C corrective) are expected to remain and surface with their own error; they are out of scope. Also shows whether any later file relied on a populated catalog left behind by the W5 files. Until this run is made and shows no `already registered`, the batch may not claim F-016 resolved and R3 stays open |
-| 12 | Amendment A1, after the S12 commit (a separate commit whose parent is the audited implementation HEAD, touching only the four existing files): (a) `ruff check` then `ruff format --check` on the five files; (b) the AST-equivalence check below with the parent SHA and the S12 SHA; (c) steps 1-5 rerun unchanged; (d) probes A and B and the 27-path run are NOT repeated | measured at `efc9a61e4`: `ruff check` 6 errors (I001 x4, E402 x1, F401 x1), `ruff format --check` 2 files would be reformatted | (a) clean; (b) exit 0, printing `S12 EQUIVALENT`; (c) 14 / 20 / 34 / 34 / 1 passed; the S12 diff contains only the four files |
+| 12 | Amendment A1, after the S12 commit (a separate commit whose parent is the audited implementation HEAD, touching only the four existing files): (a) the locked ruff (`uv run --extra dev-ci ruff check`, then `uv run --extra dev-ci ruff format --check`; a global ruff is not evidence) on the five files; (b) the AST-equivalence check below with the S12 SHA (the script computes PARENT itself and checks that it carries the audited content); (c) steps 1-5 rerun unchanged; (d) probes A and B and the 27-path run are NOT repeated | measured at `efc9a61e4`: `ruff check` 6 errors (I001 x4, E402 x1, F401 x1), `ruff format --check` 2 files would be reformatted | (a) clean; (b) exit 0, printing `S12 EQUIVALENT`; (c) 14 / 20 / 34 / 34 / 1 passed; the S12 diff contains only the four files |
 
-Step 12 (b), exact AST-equivalence check. Save it OUTSIDE the repository (for example `.tmp/session/t-igx-031-a/s12_equiv.py`), run it as `python -I <script> <PARENT_SHA> <S12_SHA>` from the repository root. It compares every file before and after: (1) the multiset of imported names per scope must be equal, except the one declared F401 removal; (2) the whole syntax tree with all import statements removed must be identical (this covers every function, fixture, decorator, marker, assertion and string; comments including `noqa`, blank lines and line breaks are not in the tree and are ignored); (3) the number of `noqa` occurrences must not change; (4) only the four files may differ.
+Step 12 (b), exact AST-equivalence check. Save it OUTSIDE the repository (for example `.tmp/session/t-igx-031-a/s12_equiv.py`) and run it from the repository root as `python -I <script> <S12_SHA>`. PARENT is NOT supplied by hand: the script computes `git rev-parse <S12_SHA>^` and fails unless `git diff --name-only b28398026 <PARENT> -- <the five files>` is empty (the parent must carry the audited content of the five files, `b28398026` being the audited test commit). Primary fix for the E402 import is the MOVE: every `ALLOWED_NOQA_DELTA` entry stays 0. Only if the `# noqa: E402` fallback is taken, the auditor sets `ALLOWED_NOQA_DELTA[FILES[2]] = 1` (w5_c) and reads the single added `noqa` line.
 
 ```python
 import ast
+import io
 import subprocess
 import sys
+import tokenize
 from collections import Counter
 
-PARENT, AFTER = sys.argv[1], sys.argv[2]
+AFTER = sys.argv[1]
+AUDITED = "b28398026"
+HELPER = "tests/support/integration_catalog_isolation.py"
 FILES = [
     "tests/unit/runtime/security/test_sec_ent.py",
     "tests/unit/runtime/events/test_enterprise_scale_resilience_w5_b2_composition_wiring.py",
     "tests/unit/runtime/events/test_enterprise_scale_resilience_w5_c_event_export.py",
     "tests/unit/runtime/events/test_enterprise_scale_resilience_w5_d_exporter_composition.py",
 ]
-ALLOWED_REMOVED = {
-    FILES[0]: Counter({
-        ("test_defense_middleware_blocks_cross_tenant_scope", 0,
-         "intergrax.runtime.events.event_bus", "RuntimeEventBus", None): 1,
-    }),
-}
+# Primary fix (move): every entry stays 0. Fallback only (keep the late import and add one
+# "# noqa: E402"): the auditor sets the w5_c entry to 1 and reads that single added line.
+ALLOWED_NOQA_DELTA = {path: 0 for path in FILES}
+SE_KEY = ("test_defense_middleware_blocks_cross_tenant_scope", 0, "intergrax.runtime.events.event_bus", "RuntimeEventBus", None)
+MOVED_KEY = ("<module>", 0, "intergrax.contracts.event_delivery", "ObservabilityExportPayload", None)
+SIBLING_KEY = ("<module>", 0, "intergrax.contracts.event_delivery", "EventDeliveryPolicy", None)
+ALLOWED_REMOVED = {FILES[0]: {SE_KEY}}
+MOVED = {FILES[2]: {MOVED_KEY}}
 
 
 def git(*args):
@@ -175,9 +181,13 @@ def git(*args):
 
 
 class Flat(ast.NodeVisitor):
+    """Per import alias: (scope, level, module, name, asname) and the same key plus the count of
+    non-import statements that precede it in its own body (its position)."""
+
     def __init__(self):
         self.stack = []
         self.imports = Counter()
+        self.placed = Counter()
 
     def _scoped(self, node):
         self.stack.append(node.name)
@@ -186,13 +196,26 @@ class Flat(ast.NodeVisitor):
 
     visit_FunctionDef = visit_AsyncFunctionDef = visit_ClassDef = _scoped
 
-    def visit_Import(self, node):
-        for a in node.names:
-            self.imports[(".".join(self.stack) or "<module>", 0, None, a.name, a.asname)] += 1
+    def _body(self, stmts):
+        seen = 0
+        scope = ".".join(self.stack) or "<module>"
+        for s in stmts:
+            if isinstance(s, ast.Import):
+                keys = [(scope, 0, None, a.name, a.asname) for a in s.names]
+            elif isinstance(s, ast.ImportFrom):
+                keys = [(scope, s.level, s.module, a.name, a.asname) for a in s.names]
+            else:
+                seen += 1
+                continue
+            for key in keys:
+                self.imports[key] += 1
+                self.placed[key + (seen,)] += 1
 
-    def visit_ImportFrom(self, node):
-        for a in node.names:
-            self.imports[(".".join(self.stack) or "<module>", node.level, node.module, a.name, a.asname)] += 1
+    def generic_visit(self, node):
+        for _, value in ast.iter_fields(node):
+            if isinstance(value, list) and value and all(isinstance(v, ast.stmt) for v in value):
+                self._body(value)
+        super().generic_visit(node)
 
 
 class Strip(ast.NodeTransformer):
@@ -203,11 +226,30 @@ class Strip(ast.NodeTransformer):
         return None
 
 
+def comments(src):
+    out = Counter()
+    for tok in tokenize.generate_tokens(io.StringIO(src).readline):
+        if tok.type == tokenize.COMMENT and "noqa" not in tok.string:
+            out[tok.string.strip()] += 1
+    return out
+
+
 bad = 0
+
+
+def fail(*msg):
+    global bad
+    bad += 1
+    print("FAIL", *msg)
+
+
+PARENT = git("rev-parse", AFTER + "^").strip()
+print("PARENT", PARENT)
+if git("diff", "--name-only", AUDITED, PARENT, "--", *FILES, HELPER).strip():
+    fail("the parent does not carry the audited content of the five files:", git("diff", "--name-only", AUDITED, PARENT, "--", *FILES, HELPER).split())
 changed = set(git("diff", "--name-only", PARENT, AFTER).split())
 if changed - set(FILES):
-    print("FAIL: files outside the four changed:", sorted(changed - set(FILES)))
-    bad += 1
+    fail("files outside the four changed:", sorted(changed - set(FILES)))
 for path in FILES:
     before_src, after_src = git("show", PARENT + ":" + path), git("show", AFTER + ":" + path)
     tb, ta = ast.parse(before_src), ast.parse(after_src)
@@ -215,20 +257,35 @@ for path in FILES:
     fb.visit(tb)
     fa.visit(ta)
     removed, added = fb.imports - fa.imports, fa.imports - fb.imports
-    if added or removed != ALLOWED_REMOVED.get(path, Counter()):
-        print("FAIL imports", path, "added", dict(added), "removed", dict(removed))
-        bad += 1
+    if added or set(removed) != ALLOWED_REMOVED.get(path, set()) or any(v != 1 for v in removed.values()):
+        fail("imports", path, "added", dict(added), "removed", dict(removed))
+    rp, ap = fb.placed - fa.placed, fa.placed - fb.placed
+    sibling_pos = [k[-1] for k in fa.placed if k[:-1] == SIBLING_KEY]
+    for key in list(rp):
+        if key[:-1] in ALLOWED_REMOVED.get(path, set()) or key[:-1] in MOVED.get(path, set()):
+            del rp[key]
+    for key in list(ap):
+        if key[:-1] in MOVED.get(path, set()) and key[-1] in sibling_pos:
+            del ap[key]
+    if rp or ap:
+        fail("import position changed", path, "was", dict(rp), "now", dict(ap))
     if ast.dump(Strip().visit(tb)) != ast.dump(Strip().visit(ta)):
-        print("FAIL tree without imports differs:", path)
-        bad += 1
-    if before_src.count("noqa") != after_src.count("noqa"):
-        print("FAIL noqa count changed:", path)
-        bad += 1
+        fail("tree without imports differs:", path)
+    if comments(before_src) != comments(after_src):
+        fail("comments (other than noqa) changed:", path)
+    if after_src.count("noqa") - before_src.count("noqa") != ALLOWED_NOQA_DELTA[path]:
+        fail("noqa count delta is not", ALLOWED_NOQA_DELTA[path], "in", path)
 print("S12 EQUIVALENT" if bad == 0 else "S12 NOT EQUIVALENT (%d)" % bad)
 sys.exit(1 if bad else 0)
 ```
 
-The check proves: no statement other than an import was added, removed or altered; imports differ only by order/grouping plus the single declared F401 deletion (the E402 move merges two statements of the same module, which the per-name multiset treats as equal); no `noqa` was added. The auditor additionally reads the S12 diff once (`git diff <PARENT_SHA> <S12_SHA>`) to confirm it is import blocks and line breaks only, and that no `noqa`, `skip`, `xfail` or marker appears in added lines. Probes A and B are not required again because (b) proves every test body is unchanged. The 27-path run is NOT repeated (the Operator's authorization covered one run and it was used); the delta audit must state that as residual R8.
+What the script checks, per file: (1) the multiset of imported names per scope is equal, except the one declared F401 deletion; (2) every import also keeps its position, defined as the number of non-import statements before it in its own body, except the declared w5_c move, which must land at the position of the existing `EventDeliveryPolicy` import (or stay put in the fallback); (3) the syntax tree with all import statements removed is identical (functions, fixtures, decorators, markers, assertions, strings, defaults); (4) the multiset of comments other than `noqa` is equal; (5) the change in the number of `noqa` occurrences equals `ALLOWED_NOQA_DELTA`; (6) no file other than the four changed; (7) PARENT carries the audited content.
+
+What it does NOT prove: where a non-`noqa` comment sits relative to code; blank-line placement; that a moved import is semantically in the right place beyond the count-based position (it cannot tell two imports in the same body apart by order, which is the isort change itself); runtime behaviour, dynamic or function-level imports executed at import time, `importlib` or entry-point discovery. Those are covered by the auditor's reading and by the step 12 (c) rerun. Auditor duty, by reading `git diff <PARENT> <S12_SHA>` once: read EVERY moved import; it must stay in the same scope; module-level imports must stay above any executable statement or sit in the original header block (the w5_c late import now joins the header statement at L18); function-local imports must stay before their first use; confirm that no `noqa`, `skip`, `xfail` or marker appears in added lines (except the one `noqa` in the fallback).
+
+Planner evidence for the script (scratch copies outside the repo, the locked ruff 0.15.20 applied through stdin to the real audited blobs `b28398026:<file>`, then the S12 steps; the planner's run, not the implementer's): the MOVE variant gives `S12 EQUIVALENT` with all deltas 0; the fallback variant gives `S12 EQUIVALENT` with the w5_c entry set to 1, FAILS with 0, and the move variant FAILS with 1; both variants end clean under the locked `ruff check` and `ruff format --check`. Negative cases each FAIL: a module-level import moved to the end of the file, a function-local import moved after a statement, an added non-`noqa` comment, a changed assertion, an added `noqa`, an extra changed file, a parent that does not carry the audited content. This is evidence about the script only; the implementer's real run is what counts.
+
+Probes A and B are not required again because (b) proves every test body is unchanged. The 27-path run is NOT repeated (the Operator's authorization covered one run and it was used); the delta audit must state that as residual R8.
 
 `igx_gov ticket` wraps the broad regression `fast` tier; run it only with Operator budget under C10/C15.
 
@@ -254,7 +311,7 @@ Residuals for the Operator / product batch (not fixed here):
 - R3 (OPEN until step 11 is run and shows no `already registered`): F-016's "run in separate processes" workaround in selection manifests can only be lifted after this batch is audited green AND the 27-path run is clean; this batch does not edit any manifest.
 - R7 (product, W1-PLAN step 3, NOT fixed): a pre-built non-contract secrets store escapes `resolve_restricted_payload_encryptor` as a raw `TypeError` (from `_secrets_store_configured`, outside the bridge's try blocks), not as `RestrictedPayloadEncryptorResolutionError` as the function's docstring says. Fail-closed in effect, but inconsistent with the documented contract; product decision for W1-PLAN step 3. S5 documents the current behaviour.
 - R8 (Amendment A1): the 27-path run (step 11) is NOT repeated after S12; the Operator's authorization covered one run and it was used, and that run was made before S12. S12 cannot change the F-016 conclusion because the AST check (step 12 b) proves every function, fixture, decorator, marker and assertion is identical and the only differences are import grouping/order, line breaks and one deleted unused local import, none of which registers anything in a catalog. What it cannot exclude: an effect of the changed import order of leaf modules on import-time ordering inside a large combined process (R9). The delta audit states this residual; closing it needs a new Operator authorization for another 27-path run.
-- R9 (Amendment A1): the transitive import graphs of `lab_application.host.settings`, `lab_application.manifest`, `testing_support.runtime_events` and `tests.support.integration_catalog_isolation` were not traced; only their top level was read (no registration, no `sys.path`, no side effect). Covered empirically by the step 12 (c) rerun of the four files in two orders (steps 3 and 4), not by reading.
+- R9 (Amendment A1, OPEN for the untraceable list): the planner read only the top level of `lab_application.host.settings`, `lab_application.manifest`, `testing_support.runtime_events` and `tests.support.integration_catalog_isolation`. Reviewer evidence (rev-plan2, section 3c, static AST trace of top-level imports resolved under the repo root, `applications/`, `agents/`, including package `__init__`): the closure of the test file's own `intergrax.*` imports (2965 modules) loads before either reordered group in both orders; group A (`testing_support.runtime_events`, `tests.support.integration_catalog_isolation`) adds only 4 modules not already loaded; group B (`lab_application.host.settings`, `lab_application.manifest`) adds 58; the two new sets are disjoint; the module-level statements of all 62 new modules contain no call, subscript/attribute assignment, loop or decorator other than dataclass/pytest/property-like (one `TypeVar(...)`), so swapping the relative order of A and B cannot change static top-level shared state. NOT traced and therefore still open: imports executed inside functions at import time, `importlib` or entry-point discovery, third-party package side effects, `conftest.py` imports, and the runtime behaviour of the reordered modules' functions. Covered empirically by the step 12 (c) rerun of the four files in two orders (steps 3 and 4).
 - R4: `test_p0_safety_8_retry_redelivery_authorization.py` (the other file in F-006) already passed on the pin and is untouched.
 
 Could not verify: every "after" column (nothing was run after a change, by design: the planner writes no test; for Amendment A1 only the lint defect list was confirmed, read-only, no fix and no test); the effect of `override=True` on the `ollama` rows; W5 b2/c/d alone at HEAD; the pin-versus-HEAD identity of the worker's 27-path result; the D-3 delegated signatures and anything about the ENT-AUDIT-X stream; whether one IIAC re-activation covers both streams (W1-PLAN step 2).
