@@ -220,6 +220,7 @@ Signed / recorded by: _______________  Date: ___________
 
 1. Independent audit of P3 closure **recording** commit on **`origin/development`** (operator decisions recorded; Cursor report is **not** closure certificate).
 2. **E.1** / **PROD-Q-R1-R7-Q-EXEC** — operator **execution authorization** for full D0–D4 replay per gate plan §E.1.1 (**NOT EXECUTED**).
+   > **Annotation (post-hoc, non-status; HIST-03 finding F-008).** The "**NOT EXECUTED**" statements for **E.1** in this package (header table, next-stage row and this item) record the state at P3 recording and are **superseded** by the roadmap ledger row `PROD-Q-R1-R7-Q-EXEC-E1`: **E.1 CLOSED — SCOPED D0–D4 REGRESSION / OPERATOR ACCEPTED** (21 modules / 209 tests; no monolithic pytest/CI artifact claimed; does not close **PROD-Q-R1-R7-Q** / **PROD-Q-R1** / **PROD-Q**). P3 closure scope and all statuses in this package are unchanged.
 3. Remaining **R7-Q** dimensions (§C) and **PROD-Q-R1-R7** / **PROD-Q-R1** parent gates.
 
 ---

@@ -1048,6 +1048,8 @@ Session preflight artifact: `.tmp/session/QUAL-X-FINAL-R2-4da2da22/preflight-rec
 uv run pytest -p no:xdist <32 modules from qual_x_p5_dimension_a_pytest_module_targets()>
 ```
 
+> **Editorial note (non-status; the R2 record above is unchanged):** `32` is the module count recorded for this R2 run. The P5 manifest at `d9ea0d6e87b939e4cefb9971c6bbd4fbcaecc0ce` lists 35 modules (header erratum F-04).
+
 Full command: `.tmp/session/QUAL-X-FINAL-R2-4da2da22/command.txt`
 
 | Metric | Value |
