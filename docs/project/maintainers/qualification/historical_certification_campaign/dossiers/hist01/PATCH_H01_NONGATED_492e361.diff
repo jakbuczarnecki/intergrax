@@ -1,0 +1,26 @@
+diff --git a/docs/project/maintainers/qualification/QUAL_X_ENTERPRISE_QUALIFICATION_BASELINE_AND_GATE_INVENTORY.md b/docs/project/maintainers/qualification/QUAL_X_ENTERPRISE_QUALIFICATION_BASELINE_AND_GATE_INVENTORY.md
+index f930ad6..f880ab3 100644
+--- a/docs/project/maintainers/qualification/QUAL_X_ENTERPRISE_QUALIFICATION_BASELINE_AND_GATE_INVENTORY.md
++++ b/docs/project/maintainers/qualification/QUAL_X_ENTERPRISE_QUALIFICATION_BASELINE_AND_GATE_INVENTORY.md
+@@ -1048,6 +1048,8 @@ Session preflight artifact: `.tmp/session/QUAL-X-FINAL-R2-4da2da22/preflight-rec
+ uv run pytest -p no:xdist <32 modules from qual_x_p5_dimension_a_pytest_module_targets()>
+ ```
+ 
++> **Editorial note (non-status; the R2 record above is unchanged):** `32` is the module count recorded for this R2 run. The P5 manifest at `d9ea0d6e87b939e4cefb9971c6bbd4fbcaecc0ce` lists 35 modules (header erratum F-04).
++
+ Full command: `.tmp/session/QUAL-X-FINAL-R2-4da2da22/command.txt`
+ 
+ | Metric | Value |
+diff --git a/docs/project/maintainers/qualification/TOOL_LIFE_X_PARENT_FORMAL_CLOSURE_RECONCILIATION.md b/docs/project/maintainers/qualification/TOOL_LIFE_X_PARENT_FORMAL_CLOSURE_RECONCILIATION.md
+index 3d7c295..785c77b 100644
+--- a/docs/project/maintainers/qualification/TOOL_LIFE_X_PARENT_FORMAL_CLOSURE_RECONCILIATION.md
++++ b/docs/project/maintainers/qualification/TOOL_LIFE_X_PARENT_FORMAL_CLOSURE_RECONCILIATION.md
+@@ -44,7 +44,7 @@ Canonical exit criteria: roadmap §3.0.5 (items **1–15**, qualification alias
+ 
+ | Phase | SHA (accepted historical) | Qualification record |
+ | --- | --- | --- |
+-| **P0** closed-world | `76a98cb3f3e4576ab694f03a5b3e270eb7694f9e` | [TOOL_LIFE_X_P0_CANONICAL_LIFECYCLE_CLOSED_WORLD_PRE_AUDIT.md](TOOL_LIFE_X_P0_CANONICAL_LIFECYCLE_CLOSED_WORLD_PRE_AUDIT.md) |
++| **P0** closed-world | `f5c9330973f7af7ea1d19fbbd2afd13942faac43` | [TOOL_LIFE_X_P0_CANONICAL_LIFECYCLE_CLOSED_WORLD_PRE_AUDIT.md](TOOL_LIFE_X_P0_CANONICAL_LIFECYCLE_CLOSED_WORLD_PRE_AUDIT.md) |
+ | **Batch A–E** | per batch evidence docs | `TOOL_LIFE_X_BATCH_*` |
+ | **L3** R1/R2, R6–R10, TL11 | per L3 evidence docs | `TOOL_LIFE_X_L3_*`, `TOOL_LIFE_X_TLX_TL11_*` |
+ | **R4 F8** implementation | `10804d0e024e446274b60421a84797ec55e52f88` | [TOOL_LIFE_X_R4_FINAL_ROOT_CAUSE_AND_PARENT_ACCEPTANCE_EVIDENCE.md](TOOL_LIFE_X_R4_FINAL_ROOT_CAUSE_AND_PARENT_ACCEPTANCE_EVIDENCE.md) |

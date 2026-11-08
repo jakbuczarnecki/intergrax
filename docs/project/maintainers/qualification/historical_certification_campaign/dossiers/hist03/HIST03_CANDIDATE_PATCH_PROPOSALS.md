@@ -1,0 +1,16 @@
+# HIST-03 - candidate patch proposals (NOT APPLIED; MASTER integrates; Operator-level where marked)
+
+Baseline `ba07ebaa34d04633bd60510f68c18346b1ef160d`. No shared canonical file was edited by HIST-03. None of these patches changes an FRZ status, and none is authority for promotion.
+
+| ID | Target (shared SSOT) | Level | Finding | Proposal (wording is a proposal only) |
+|---|---|---|---|---|
+| P-01 | `ROADMAP_REPLAY_X_FRZ_225_RECONCILIATION.md` header (L1-10) | MASTER/SSOT lane | F-001 | Add: "HISTORICAL @a2ed11f0 (95 PASS / 130 OPEN). The PATH_B column is NOT authoritative; the live-scoped set is defined only by PLATFORM_ENTERPRISE_FREEZE_ACCEPTANCE_CHECKLIST.md Path B table (L57-68)." Do not edit per-row tags. |
+| P-02 | Checklist evidence cells FRZ-OBS-04..07 (L135-138) | MASTER/SSOT lane after audit | F-002 | Append per row a non-status note naming the TRACE-X evidence that bears on it (OBS-04: TRC-12/TRC-01; OBS-05: TRC-10 TRACE-X-P6; OBS-06: TRC-06/TRC-03; OBS-07: TRC-01/02/11) and "stale 'remains TRACE-X' wording superseded by TRACE-X closure; OBS status unchanged (OPEN) pending independent audit". |
+| P-03 | Checklist FRZ-SEC-06 row note (L223) | **Operator-level ruling** | F-011, MASTER ruling | Proposed note (not applied): "Split: (a) plugin-trust architecture obligation - architecture-scoped, must reach PASS/N-A at ARCH-FREEZE; (b) per-provider live qualification (E2B/Modal/Daytona) - PROD-Q-P1, Dimension B. Row stays OPEN. L66 is NOT widened unless the Operator so rules." Alternative the Operator may choose instead: add FRZ-SEC-06 to L66 (this worker has no authority to do so). |
+| P-04 | Checklist FRZ-PRD-04 row note (L254) + `_p0_frz_reconciliation.py` | **Operator-level ruling** | F-004 | Ask: is PRD-04 architecture-scoped (then mechanical record must be updated by an audited change once startup evidence is executed) or live-scoped (then L66 must say so)? Until ruled: OPEN, AUTHORITY_REQUIRED. |
+| P-05 | `CTRL_X_ENTERPRISE_CONTROL_PLANE_RECERTIFICATION.md` S12 rows "retention", "data residency" + new responsibility record | MASTER + implementer | F-003 | Replace the unsupported ADR-SEC-001 citation by a new platform/infra data-responsibility record (owner per durable store, retention, deletion, redaction, encryption, residency) once written; keep N/A-WITH-EVIDENCE only where the record shows the platform is not owner. |
+| P-06 | `_p0_frz_reconciliation.py` L258-275 refs | implementer batch (tests path, audited) | F-005 | Correct REL-01/02 evidence refs (TOOL-LIFE-X Batch A for REL-01 - conditional; ADR-CTRL-X-001 retry gates for REL-02) instead of "HARNESS-W4". |
+| P-07 | P3 decision package L222; PROD_Q_PLATFORM L187 | MASTER/SSOT lane | F-008 | Annotate "E.1 superseded by ledger row (CLOSED SCOPED)"; prefix `applications/local_workspace_application/` on cited LKW paths. |
+| P-08 | Roadmap ledger TOOL-LIFE-X row vs OD-ROUTE-DS3 | HIST-01/HIST-04 owned | F-014 | HIST-03 only cross-references: ledger label "CLOSED - INDEPENDENTLY ACCEPTED" conflicts with signed DS-3 (CONDITIONAL/STOP; neither accepted nor waived). |
+
+Items needing product-path or test changes (P-06, any corrective for F-006) require a ticket under `governance/tickets/` and the `Ref:` trailer; none exists or is created yet.
