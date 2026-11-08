@@ -21,6 +21,8 @@ Plan digest: dc0fcf736456534e923000eaf4cce1d569edee9db28ef73386a5bd8284b3cc6b
 
 ## Approved
 
+Approved: operator-delegate cert-031a2 @ 2026-11-08T19:03:00+01:00 | Delegation: docs/project/maintainers/qualification/historical_certification_campaign/delegations/DELEG-HIST-031A2-2026-11-08.md@5279ffbee0cc37b0145cea9371b58b899ec7837d
+
 Previous approval (SUPERSEDED, it covers only the old plan digest a83842545c6e94534fc6d9a1a5b1990bd35a7676d4c7d84d6ce95107ed267509; history, not a current approval): operator-delegate cert-031a @ 2026-11-08T16:44:00+01:00 | Delegation: docs/project/maintainers/qualification/historical_certification_campaign/delegations/DELEG-HIST-031A-2026-11-08.md@f1d85253c7d66a413e62f5d4f9d733eba786e3da
 
 Second superseded digest: 980394592125b524504dfd081631735839242a7455f1f18b585acf5625e5a120 (commit 00df54795, the first amended plan with Amendment A1) was reviewed by rev-plan2 but was NEVER approved; it is superseded by the digest recorded in the Plan digest section above.
@@ -53,4 +55,4 @@ Everything under `intergrax/`, `agents/`, `applications/`, `scripts/`; the six I
 
 ## Lifecycle state
 
-plan_pending
+plan_approved
