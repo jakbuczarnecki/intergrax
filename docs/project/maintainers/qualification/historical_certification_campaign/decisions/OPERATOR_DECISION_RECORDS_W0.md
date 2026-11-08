@@ -1,7 +1,7 @@
 # Operator decision records W0 - DR-1, DR-2, DR-3, DR-4, DR-6, DR-8, DR-9
 
 Written by the designated certifying session `cert-w0` on 2026-11-08, under IIAC Amendment 01 (R-1..R-6, S-1 and S-3 struck, S-2 kept) and the delegation record `docs/project/maintainers/qualification/historical_certification_campaign/delegations/DELEG-HIST-W0-2026-11-08.md`.
-Every `Approved` line below is a **delegate line**. It is not written by the Operator and must never be cited as an Operator-written line. Assurance level: `process_enforced`. Each line ends with `@<SHA-PENDING>`: the commit that adds the delegation copy is not known before committing, and MASTER fills the placeholder after the commit (nothing is amended).
+Every `Approved` line below is a **delegate line**. It is not written by the Operator and must never be cited as an Operator-written line. Assurance level: `process_enforced`. Each line ends with `@cef4aea9af5e91891c57478323191b0ff83e92e3`: that is the commit that adds the delegation copy; it was not known when the lines were written, so the session left a placeholder and MASTER replaced it in a later commit (nothing was amended).
 
 ## 0. Session statements (R-2) and method
 
@@ -44,7 +44,7 @@ Every `Approved` line below is a **delegate line**. It is not written by the Ope
 
 **Verdict: SIGNED.** Patch: `decisions/EVOL_X_DELEGATED_SIGNATURES_RATIFICATION.md` (new; rewrites no earlier record).
 ```text
-Approved DR-1: operator-delegate cert-w0 @ 2026-11-08T15:04:58+01:00 | Delegation: docs/project/maintainers/qualification/historical_certification_campaign/delegations/DELEG-HIST-W0-2026-11-08.md@<SHA-PENDING>
+Approved DR-1: operator-delegate cert-w0 @ 2026-11-08T15:04:58+01:00 | Delegation: docs/project/maintainers/qualification/historical_certification_campaign/delegations/DELEG-HIST-W0-2026-11-08.md@cef4aea9af5e91891c57478323191b0ff83e92e3
 ```
 
 ---
@@ -66,7 +66,7 @@ Approved DR-1: operator-delegate cert-w0 @ 2026-11-08T15:04:58+01:00 | Delegatio
 
 **Verdict: SIGNED.**
 ```text
-Approved DR-2: operator-delegate cert-w0 @ 2026-11-08T15:04:58+01:00 | Delegation: docs/project/maintainers/qualification/historical_certification_campaign/delegations/DELEG-HIST-W0-2026-11-08.md@<SHA-PENDING>
+Approved DR-2: operator-delegate cert-w0 @ 2026-11-08T15:04:58+01:00 | Delegation: docs/project/maintainers/qualification/historical_certification_campaign/delegations/DELEG-HIST-W0-2026-11-08.md@cef4aea9af5e91891c57478323191b0ff83e92e3
 ```
 
 ---
@@ -87,7 +87,7 @@ Approved DR-2: operator-delegate cert-w0 @ 2026-11-08T15:04:58+01:00 | Delegatio
 
 **Verdict: SIGNED.**
 ```text
-Approved DR-3: operator-delegate cert-w0 @ 2026-11-08T15:04:58+01:00 | Delegation: docs/project/maintainers/qualification/historical_certification_campaign/delegations/DELEG-HIST-W0-2026-11-08.md@<SHA-PENDING>
+Approved DR-3: operator-delegate cert-w0 @ 2026-11-08T15:04:58+01:00 | Delegation: docs/project/maintainers/qualification/historical_certification_campaign/delegations/DELEG-HIST-W0-2026-11-08.md@cef4aea9af5e91891c57478323191b0ff83e92e3
 ```
 
 ---
@@ -114,7 +114,7 @@ Approved DR-3: operator-delegate cert-w0 @ 2026-11-08T15:04:58+01:00 | Delegatio
 
 **Verdict: SIGNED.**
 ```text
-Approved DR-4: operator-delegate cert-w0 @ 2026-11-08T15:04:58+01:00 | Delegation: docs/project/maintainers/qualification/historical_certification_campaign/delegations/DELEG-HIST-W0-2026-11-08.md@<SHA-PENDING>
+Approved DR-4: operator-delegate cert-w0 @ 2026-11-08T15:04:58+01:00 | Delegation: docs/project/maintainers/qualification/historical_certification_campaign/delegations/DELEG-HIST-W0-2026-11-08.md@cef4aea9af5e91891c57478323191b0ff83e92e3
 ```
 
 ---
@@ -136,7 +136,7 @@ Approved DR-4: operator-delegate cert-w0 @ 2026-11-08T15:04:58+01:00 | Delegatio
 
 **Verdict: SIGNED.**
 ```text
-Approved DR-6: operator-delegate cert-w0 @ 2026-11-08T15:04:58+01:00 | Delegation: docs/project/maintainers/qualification/historical_certification_campaign/delegations/DELEG-HIST-W0-2026-11-08.md@<SHA-PENDING>
+Approved DR-6: operator-delegate cert-w0 @ 2026-11-08T15:04:58+01:00 | Delegation: docs/project/maintainers/qualification/historical_certification_campaign/delegations/DELEG-HIST-W0-2026-11-08.md@cef4aea9af5e91891c57478323191b0ff83e92e3
 ```
 
 ---
@@ -158,7 +158,7 @@ Approved DR-6: operator-delegate cert-w0 @ 2026-11-08T15:04:58+01:00 | Delegatio
 
 **Verdict: SIGNED.**
 ```text
-Approved DR-8: operator-delegate cert-w0 @ 2026-11-08T15:04:58+01:00 | Delegation: docs/project/maintainers/qualification/historical_certification_campaign/delegations/DELEG-HIST-W0-2026-11-08.md@<SHA-PENDING>
+Approved DR-8: operator-delegate cert-w0 @ 2026-11-08T15:04:58+01:00 | Delegation: docs/project/maintainers/qualification/historical_certification_campaign/delegations/DELEG-HIST-W0-2026-11-08.md@cef4aea9af5e91891c57478323191b0ff83e92e3
 ```
 
 ---
@@ -190,7 +190,7 @@ Verification: `HIST03_PRODQ_RESIDUAL_QUALIFICATION.md` lines 17, 30: AUTH-08 HTT
 
 **Verdict: SIGNED IN PART** (9a, 9b, 9e). The line below carries its scope in brackets so it cannot be read as a full DR-9 signature.
 ```text
-Approved DR-9 [partial: P-03, P-04, waivers only; SEC-05 and Decision-03/D03-A NOT signed]: operator-delegate cert-w0 @ 2026-11-08T15:04:58+01:00 | Delegation: docs/project/maintainers/qualification/historical_certification_campaign/delegations/DELEG-HIST-W0-2026-11-08.md@<SHA-PENDING>
+Approved DR-9 [partial: P-03, P-04, waivers only; SEC-05 and Decision-03/D03-A NOT signed]: operator-delegate cert-w0 @ 2026-11-08T15:04:58+01:00 | Delegation: docs/project/maintainers/qualification/historical_certification_campaign/delegations/DELEG-HIST-W0-2026-11-08.md@cef4aea9af5e91891c57478323191b0ff83e92e3
 ```
 
 ---
