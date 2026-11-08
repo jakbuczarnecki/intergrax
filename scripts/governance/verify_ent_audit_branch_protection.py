@@ -19,11 +19,19 @@ from typing import Any
 _REPO_SLUG = "jakbuczarnecki/intergrax"
 _DEFAULT_BRANCH = "development"
 
-# From .github/workflows/enterprise-audit.yml - workflow `name` + job id (not nightly-only jobs).
+# Job names from .github/workflows/enterprise-audit.yml (not nightly-only jobs). GitHub emits the bare job name as the
+# check-run name (F-11, IIAC audit ENT-AUDIT-X), so that is what rulesets and branch protection must require; the
+# "<workflow> / <job>" display form is accepted as well.
 _REQUIRED_CONTEXTS = (
-    "Enterprise audit (ENT-AUDIT-X) / ent-audit-fast",
-    "Enterprise audit (ENT-AUDIT-X) / ent-audit-pr-gate",
+    "ent-audit-fast",
+    "ent-audit-pr-gate",
 )
+
+
+def context_matches(context: str, job: str) -> bool:
+    """True when ``context`` is the bare job name or the ``<workflow> / <job>`` display form."""
+    return context in (job, f"Enterprise audit (ENT-AUDIT-X) / {job}")
+
 
 _FORBIDDEN_NIGHTLY_ONLY = (
     "ent-audit-nightly",
@@ -112,7 +120,7 @@ def verify_branch_protection(
         return errors
 
     for req in required:
-        if req not in contexts:
+        if not any(context_matches(ctx, req) for ctx in contexts):
             errors.append(f"Missing required status check context: {req!r}")
 
     for ctx in contexts:

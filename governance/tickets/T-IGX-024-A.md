@@ -20,6 +20,20 @@ Master plan: `agent-env/plans/pasted-content-id-00e5-integrax-expressive-bubble.
 
 Then: requalification at the merged tip (TES'), B5 evidence publication, handoff to the independent IIAC auditor (W2).
 
+**Corrective loop 1 (plan section 15, W2-03; triggered by the first independent audit, verdict CONDITIONAL on `audit_execution_sha` 15347255ac62dbccfb7b64762b4c0f8af7ec38fa, 2 HIGH / 11 MEDIUM / 5 LOW / 2 INFO)**
+
+Fixed in this loop (minimal diffs, `scripts/` and `tests/` only, no `intergrax/` change, so ACT-N11 stays satisfied):
+
+| Finding | Change |
+|---------|--------|
+| F-02 (HIGH) `promote-baseline` judged the OD-ENT-01 gate against the current working directory | `scripts/enterprise_audit/run_enterprise_audit.py` passes `repo_root` of its own repository (this edit is qualification-sensitive and therefore requires a new TES) |
+| F-01 (HIGH) B5 digests only verify on a CRLF checkout | `.gitattributes` marks every new `qualification_at_*` tree `-text` (legacy 89c76eb7 tree waived explicitly); `publish_b5_evidence_bundle.py` writes the index with LF; the ladder-pinned tree must verify strictly (no skip) once it is not the legacy tree |
+| F-09 preflight accepted a fabricated manifest and pass record | preflight now runs `verify_iiac_audit_manifest`, requires real ancestor commits, report/evidence-index digests that match the files, and a pass record that cites the verdict and `audit_execution_sha` |
+| F-10 compensating route unsatisfiable by default wiring | preflight reads the active branch rules and judges ruleset controls against them |
+| F-11 LIVE verifier required context strings GitHub never emits | verifier accepts the bare job names (and the exact `Enterprise audit (ENT-AUDIT-X) / <job>` form) |
+
+Carried as declared limitations (not fixed here; the cause is under `intergrax/`, qualification-sensitive, or a documented design property): F-03, F-04, F-05, F-06, F-07, F-08, F-12, F-13, F-14, F-15, F-16, F-17, F-18, F-19, F-20 (details: audit report `IIAC_ENT_AUDIT_REPORT.md`, `findings.json`). Requalification at the new TES, republication of the B5 tree and a second independent audit follow.
+
 ## Constraints (must be honoured)
 
 - No change to any of the six `MATERIAL_GOVERNANCE_PATHS` (`scripts/governance/iiac_activation_gate.py:40-49`, incl. the IIAC protocol) and no change to the IIAC activation record; `verify_iiac_policy_activation --require-in-force` stays IN_FORCE.

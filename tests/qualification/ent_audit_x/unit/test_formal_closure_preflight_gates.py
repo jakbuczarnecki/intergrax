@@ -6,6 +6,7 @@ for the ordering cases. Every negative case must make the gate fail closed.
 
 from __future__ import annotations
 
+import hashlib
 import json
 import subprocess
 from pathlib import Path
@@ -19,12 +20,24 @@ QUAL = Path("docs/project/maintainers/qualification")
 ENT = QUAL / "ent_audit_x"
 D64 = "d" * 64
 TES, EVID, B6, BASE, FORMAL = ("1" * 40, "2" * 40, "3" * 40, "4" * 40, "5" * 40)
+AUDITED, AUDIT_EXEC = "a" * 40, "b" * 40
+AUDIT_DIR = QUAL / "iiac_evidence/ENT-AUDIT-X/audit"
+_AUDIT_FILES = {
+    "IIAC_ENT_AUDIT_REPORT.md": "# audit report\n",
+    "audit_scope.json": "{}\n",
+    "test_matrix.txt": "matrix\n",
+    "findings.json": "[]\n",
+}
 
 
 def _w(root: Path, rel: Path | str, text: str) -> None:
     path = root / rel
     path.parent.mkdir(parents=True, exist_ok=True)
     path.write_text(text, encoding="utf-8")
+
+
+def _digest(root: Path, rel: Path | str) -> str:
+    return hashlib.sha256((root / rel).read_bytes()).hexdigest()
 
 
 def _frz(
@@ -77,8 +90,19 @@ def make_tree(root: Path, gate: str = "A", **opt: Any) -> Path:  # noqa: C901 - 
     }
     status.update(opt.get("status", {}))
     _w(root, pre._STATUS, json.dumps(status))
+    audited, audit_exec = opt.get("audited", AUDITED), opt.get("audit_exec", AUDIT_EXEC)
     if opt.get("pass_record", True):
-        _w(root, pre._PASS_RECORD, "# IIAC pass record\n")
+        default_text = f"# IIAC pass record\nverdict PASS_SCOPED at {audit_exec}\n"
+        _w(root, pre._PASS_RECORD, opt.get("pass_text", default_text))
+    for name, text in _AUDIT_FILES.items():
+        _w(root, AUDIT_DIR / name, text)
+    index_files = {
+        name: {"sha256": _digest(root, AUDIT_DIR / name), "bytes": (root / AUDIT_DIR / name).stat().st_size}
+        for name in _AUDIT_FILES
+    }
+    if opt.get("index_tamper"):
+        index_files["findings.json"]["sha256"] = "0" * 64
+    _w(root, AUDIT_DIR / "EVIDENCE_INDEX.json", json.dumps({"schema_version": 1, "files": index_files}))
     manifest = {
         "stage_id": "ENT-AUDIT-X",
         "verdict": "PASS_SCOPED",
@@ -86,10 +110,15 @@ def make_tree(root: Path, gate: str = "A", **opt: Any) -> Path:  # noqa: C901 - 
         "implementation_session_id": "I",
         "auditor_session_id": "A",
         "certifier_session_id": "C",
-        "audit_report_digest": D64,
-        "audit_scope_manifest_digest": D64,
-        "test_matrix_digest": D64,
-        "findings_digest": D64,
+        "audited_implementation_sha": audited,
+        "audit_execution_sha": audit_exec,
+        "audit_report_path": (AUDIT_DIR / "IIAC_ENT_AUDIT_REPORT.md").as_posix(),
+        "evidence_index_path": (AUDIT_DIR / "EVIDENCE_INDEX.json").as_posix(),
+        "pass_record_path": pre._PASS_RECORD.as_posix(),
+        "audit_report_digest": _digest(root, AUDIT_DIR / "IIAC_ENT_AUDIT_REPORT.md"),
+        "audit_scope_manifest_digest": _digest(root, AUDIT_DIR / "audit_scope.json"),
+        "test_matrix_digest": _digest(root, AUDIT_DIR / "test_matrix.txt"),
+        "findings_digest": _digest(root, AUDIT_DIR / "findings.json"),
         "limitations": ["LIM-1 process_enforced"],
         "assurance_level": "process_enforced",
         "test_execution_sha": TES,
@@ -109,6 +138,8 @@ def run(root: Path, gate: str = "A", **kw: Any) -> list[str]:
     kw.setdefault("is_ancestor", lambda _sha: True)
     kw.setdefault("compensating_verifier", lambda _repo: [])
     kw.setdefault("live_verifier", lambda: [])
+    kw.setdefault("manifest_verifier", lambda _repo, _manifest: [])
+    kw.setdefault("branch_rules_reader", lambda: ([{"type": "deletion"}, {"type": "non_fast_forward"}], None))
     return pre.evaluate(gate, root, **kw)
 
 
@@ -152,6 +183,17 @@ GATE_A = {
     "manifest_no_limitations": ({"manifest": {"limitations": []}}, "limitations"),
     "manifest_no_assurance_level": ({"manifest": {"assurance_level": ""}}, "assurance_level"),
     "manifest_tes_differs_from_ladder": ({"manifest": {"test_execution_sha": "8" * 40}}, "test_execution_sha"),
+    "manifest_audited_sha_not_a_commit": (
+        {"manifest": {"audited_implementation_sha": "xyz"}},
+        "audited_implementation_sha",
+    ),
+    "manifest_report_digest_forged": ({"manifest": {"audit_report_digest": "f" * 64}}, "audit_report_digest differs"),
+    "manifest_findings_digest_forged": ({"manifest": {"findings_digest": "e" * 64}}, "not the sha256 of any file"),
+    "manifest_report_path_missing": ({"manifest": {"audit_report_path": "nope/missing.md"}}, "audit_report_path"),
+    "manifest_report_path_escapes_repo": ({"manifest": {"audit_report_path": "../outside.md"}}, "audit_report_path"),
+    "manifest_index_missing": ({"manifest": {"evidence_index_path": "nope/index.json"}}, "evidence_index_path"),
+    "evidence_index_digest_tampered": ({"index_tamper": True}, "does not match the file"),
+    "pass_record_one_line_fabrication": ({"pass_text": "fabricated\n"}, "must cite the manifest verdict"),
     "evol_not_closed": ({"evol": {"parent_evol_x_status": "OPEN"}}, "EVOL predecessor"),
     "evol_still_protocol_03": (
         {"evol": {"protocol_03": "PENDING", "formal_ecap_independent_b6": "PENDING"}},
@@ -266,12 +308,23 @@ def _git_tree(root: Path, *, same_commit: bool, record_after_headline: bool = Fa
         b6 = _commit(root, "record")
         _w(root, pre._ROADMAP, headline_line)
         formal = _commit(root, "headline")
-    make_tree(root, "B", pins={"B6": b6, "BASE": b6, "FORMAL": formal}, roadmap=headline_line)
+    seed_sha = _git(root, "rev-list", "--max-parents=0", "HEAD")
+    make_tree(
+        root, "B", pins={"B6": b6, "BASE": b6, "FORMAL": formal}, roadmap=headline_line, audited=seed_sha,
+        audit_exec=seed_sha,
+    )  # fmt: skip
     _commit(root, "publish status, ladder, manifest")
 
 
 def _real_git_run(root: Path) -> list[str]:
-    return pre.evaluate("B", root, iiac_in_force=True, compensating_verifier=lambda _r: [], live_verifier=lambda: [])
+    return pre.evaluate(
+        "B",
+        root,
+        iiac_in_force=True,
+        compensating_verifier=lambda _r: [],
+        live_verifier=lambda: [],
+        manifest_verifier=lambda _repo, _manifest: [],
+    )
 
 
 def test_gate_b_accepts_pass_record_published_before_the_headline(tmp_path: Path) -> None:
@@ -287,3 +340,19 @@ def test_gate_b_rejects_record_and_headline_in_one_commit(tmp_path: Path) -> Non
 def test_gate_b_rejects_record_published_after_the_headline(tmp_path: Path) -> None:
     _git_tree(tmp_path, same_commit=False, record_after_headline=True)
     assert any("earlier commit than the closure headline" in e for e in _real_git_run(tmp_path))
+
+
+def test_audit_sha_that_is_not_an_ancestor_is_rejected(tmp_path: Path) -> None:
+    errors = run(make_tree(tmp_path), is_ancestor=lambda sha: sha != AUDIT_EXEC)
+    assert any("audit_execution_sha is not a commit that is an ancestor" in e for e in errors), errors
+
+
+def test_manifest_verifier_failures_block(tmp_path: Path) -> None:
+    errors = run(make_tree(tmp_path), manifest_verifier=lambda _repo, _manifest: ["jsonschema: boom"])
+    assert any("IIAC manifest verifier: jsonschema: boom" in e for e in errors), errors
+
+
+def test_default_manifest_verifier_rejects_an_incomplete_manifest(tmp_path: Path) -> None:
+    tree = make_tree(tmp_path)
+    errors = pre._default_manifest_verifier(tree, tree / pre._MANIFEST)
+    assert errors, "the repository manifest verifier must reject a manifest that lacks required fields"

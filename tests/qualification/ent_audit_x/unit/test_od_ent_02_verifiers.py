@@ -49,7 +49,7 @@ def test_live_passes_when_classic_protection_requires_both_checks() -> None:
 def test_live_fails_when_one_check_is_missing() -> None:
     rules = (0, json.dumps(_ruleset_rule(FAST)))
     errors = live.verify_branch_protection(gh_api=_api(NOT_PROTECTED, rules))
-    assert any(GATE in e for e in errors), errors
+    assert any("ent-audit-pr-gate" in e for e in errors), errors
 
 
 def test_live_fails_closed_when_nothing_is_readable() -> None:
@@ -201,3 +201,34 @@ def test_malformed_sub_manifest_is_rejected_in_draft_mode_too(tmp_path: Path) ->
     root = _repo(tmp_path, sub=None)
     _write(root, comp.SUB_MANIFEST_REL, "{not json")
     assert any("invalid" in e for e in comp.collect_errors(root))
+
+
+# ---- F-10 / F-11 (IIAC audit ENT-AUDIT-X, loop 1) ---------------------------------------------------------
+
+
+def test_live_passes_with_bare_job_names_as_github_emits_them() -> None:
+    rules = (0, json.dumps(_ruleset_rule("ent-audit-fast", "ent-audit-pr-gate")))
+    assert live.verify_branch_protection(gh_api=_api(NOT_PROTECTED, rules)) == []
+
+
+def test_live_rejects_a_foreign_workflow_prefix() -> None:
+    rules = (0, json.dumps(_ruleset_rule("Other workflow / ent-audit-fast", "ent-audit-pr-gate")))
+    errors = live.verify_branch_protection(gh_api=_api(NOT_PROTECTED, rules))
+    assert any("ent-audit-fast" in e for e in errors), errors
+
+
+def test_preflight_default_wiring_judges_ruleset_control_against_live_rules(tmp_path: Path) -> None:
+    import scripts.qualification.ent_audit_x_formal_closure_preflight as pre
+
+    repo = _repo(tmp_path, sub=_sub())
+    good: list[str] = []
+    pre._check_od_ent_02(
+        repo, "compensating", None, None, good, lambda: ([{"type": "deletion"}, {"type": "non_fast_forward"}], None)
+    )
+    assert good == []
+    unreadable: list[str] = []
+    pre._check_od_ent_02(repo, "compensating", None, None, unreadable, lambda: (None, "cannot read rules"))
+    assert any("cannot read rules" in e for e in unreadable), unreadable
+    weak: list[str] = []
+    pre._check_od_ent_02(repo, "compensating", None, None, weak, lambda: ([{"type": "deletion"}], None))
+    assert any("lack" in e for e in weak), weak

@@ -183,3 +183,55 @@ def test_republish_fixes_digest_consistency() -> None:
     index_path = tree / "publication_index.v1.json"
     index = json.loads(index_path.read_text(encoding="utf-8"))
     assert index["qual_wave_report"]["sha256"] == sha256_file(qw)
+
+
+# ---- F-01 (IIAC audit ENT-AUDIT-X, loop 1): digests must survive a checkout on any platform -------------------------
+
+_LEGACY_TES = "89c76eb7b53a0a3ce6f75ab395cf4a2802638a91"
+_HANDOFF = "docs/project/maintainers/qualification/ent_audit_x/b6_independent_handoff"
+
+
+def _ladder_last_tes(root: Path) -> str | None:
+    ladder = root / "docs/project/maintainers/qualification/ent_audit_x/ENT_AUDIT_X_SHA_LADDER.md"
+    pinned = None
+    for line in ladder.read_text(encoding="utf-8").splitlines():
+        if line.startswith("| TEST_EXECUTION_SHA |"):
+            cells = [c.strip().strip("`*") for c in line.strip().strip("|").split("|")]
+            pinned = cells[1] if len(cells) >= 2 and len(cells[1]) == 40 else None
+    return pinned
+
+
+def test_ladder_pinned_b5_tree_verifies_strictly_on_every_platform() -> None:
+    root = _repo_root()
+    tes = _ladder_last_tes(root)
+    assert tes, "the SHA ladder has no TEST_EXECUTION_SHA"
+    if tes == _LEGACY_TES:
+        pytest.skip("waived legacy tree: LF blobs digested as CRLF (F-01); superseded by the next TES publication")
+    tree = root / _HANDOFF / f"qualification_at_{tes}"
+    assert tree.is_dir(), f"pinned B5 tree missing: {tree}"
+    assert verify_b5_publication_tree(root, tree, expected_qualification_sha=tes) == []
+
+
+def test_new_b5_trees_are_byte_preserved_by_gitattributes() -> None:
+    import subprocess
+
+    root = _repo_root()
+    for tree in sorted((root / _HANDOFF).glob("qualification_at_*")):
+        if tree.name == f"qualification_at_{_LEGACY_TES}":
+            continue
+        probe = (tree / "publication_index.v1.json").relative_to(root).as_posix()
+        done = subprocess.run(
+            ["git", "-C", str(root), "check-attr", "text", "--", probe], capture_output=True, text=True, check=True
+        )
+        assert done.stdout.strip().endswith("text: unset"), f"{tree.name} must be -text (byte-preserved): {done.stdout}"
+
+
+def test_gitattributes_marks_a_future_tree_as_byte_preserved() -> None:
+    import subprocess
+
+    root = _repo_root()
+    probe = f"{_HANDOFF}/qualification_at_{'f' * 40}/l3-cli-full/evidence_manifest.v1.json"
+    done = subprocess.run(
+        ["git", "-C", str(root), "check-attr", "text", "--", probe], capture_output=True, text=True, check=True
+    )
+    assert done.stdout.strip().endswith("text: unset"), done.stdout
