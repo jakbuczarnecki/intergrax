@@ -1,0 +1,38 @@
+# HIST-03 - Security / Reliability / Observability / Production inventory audit (CTRL-X, HARNESS, PROD-Q)
+
+Worker: HIST-03 (session id UNKNOWN). Baseline `ba07ebaa34d04633bd60510f68c18346b1ef160d` (= CAMPAIGN_START_SHA), branch `hist-cert/hist03-controls`. Status: **INVENTORY, not an audit verdict.** Implementer != auditor != certifier: nothing here is a PASS, an acceptance, or an FRZ promotion. Verification basis: reading repository records, static existence checks; **test execution: see section 9.**
+
+## 1. Authority basis (re-verified, not assumed)
+- Delegated decisions (`CERT_CAMPAIGN_DELEGATED_DECISIONS_2026-11-07.md`) state repeatedly that no FRZ row is promoted and no stage parent closed (L11, L167, L191). IIAC scope = EVOL-X + ENT-AUDIT-X only (L232). HIST-04's note (relayed by MASTER) is consistent. I cite **no** delegation/Amendment 01 as authority for any promotion; every row stays OPEN until its exact acceptance rule (exact SHA + criterion mapping + static + executed gate output + independent auditor + operator promotion, ECAP/checklist L40-45) is met.
+- TOOL-LIFE-X is **not** accepted (DS-3 CONDITIONAL/STOP @1548640708); DIST-SCALE-X independent acceptance conditional. Neither is relied on.
+
+## 2. Criteria inventory (mission items 1, 14)
+40/40 rows present and OPEN (OBS 7, SEC 10, REL 11, PRD 12) - identical to MASTER baseline. Per-ID dispositions: `HIST03_FRZ_40_PER_ID_MATRIX.json`. Distribution: VALID_SCOPED_PASS_CANDIDATE 11, QUALIFICATION_GAP 18, EVIDENCE_GAP 5, SSOT_DRIFT 4, PATH_B_LIVE_DEFERRED 2 (PRD-01, PRD-02). Dashboard: AUDIT_REQUIRED 16, QUALIFICATION_REQUIRED 21, PATH_B_DEFERRED 2, AUTHORITY_REQUIRED 1 (PRD-04). SEC-06 re-classified per MASTER ruling (architecture-side QUALIFICATION_GAP primary; provider-live = secondary; OPEN). "Candidate" means only "evidence appears sufficient to send to an independent auditor", never "passes".
+
+## 3. Architecture vs live (item 2, 11, 13)
+See `HIST03_ARCHITECTURE_VS_LIVE_SCOPE_MATRIX.md` (quotes Path B rule text, checklist L57-68) and `HIST03_PRODQ_RESIDUAL_QUALIFICATION.md`. Canonical live-scoped set is only PRD-01, PRD-02 and live parts of PRD-03/PRD-08/SEC-04. SEC-06: ruled by MASTER (not in L66, Path B not widened). Rule-gap rows still needing a ruling: PRD-04, SEC-05, and infra-dependent parts of SEC-01/REL-03/REL-05/PRD-08.
+
+## 4. HARNESS cancellation / retry / budget / admission (item 3)
+HARNESS-W4 @f38e455 independently accepted (roadmap L1868): W4-A cancellation C1-C8, W4-C external-op termination, W4-D provider termination, bounded concurrency/queue/overload/throttling tables (W4 doc S6-S11). Maps REL-04..11 only (L160). Residual debt: W2-C retry-storm test emits 100 unhandled-thread-exception warnings (assertion bounded PASS); legacy `DeclarativeToolInvoker` pool path = TRACKED FUTURE DEBT (strict production chain bounded). HARNESS-W7/W8/FINAL records exist (not individually re-read; not mapped to my rows by the checklist). REL-01/02/03 are **not** covered by W4 despite P0-module attribution (F-005).
+
+## 5. CTRL-X security + governance invariants; identity/tenant/authz (items 4, 5)
+CTRL-X @318a4d83: CX-01..CX-12, replay 44/44, suite 76 passed (historical, not re-run here); claims PASS only for FRZ-CTL; its own FRZ map for SEC/REL/OBS is "candidate only". Key code-level claims recorded: Security production FAIL_OPEN admission = 0 (R1-A), typed middleware boundary, tenant-scope fail-closed edge. Identity/tenant chain evidence: P3-A/P3-A2 (API-key strict profile), P3-B DENY/CAS, TENANT-X @5ccb72fc. Weak points: SEC-02/03/08/09/10 have no row-specific gate or evidence cell (F-009); SEC-09/10 N/A claims cite a document that does not contain them (F-003); AUTH-08 HTTP / G-08 tracked debt without waiver (F-012).
+
+## 6. Reliability and failure modes; bounded concurrency/overload/recovery (items 6, 7)
+Covered by W4 (above), CTRL-X S13 reliability matrix (unbounded production concurrency = 0; hidden infinite retry = 0 - historical counts), D3 restart reconciliation, STATE-X recovery (REC PASS). Gaps: timeout/retry ownership not mapped to rows (F-005, F-009); idempotency/external-op termination rely on ratified-not-implemented decisions of uncertain status (F-013); capacity at production level: only cross-reference (PRD-11), WL-7 4 h soak not proven.
+
+## 7. Observability identity/correlation/provenance; telemetry has no execution authority (items 8, 9)
+HARNESS-W5 @5a87046: one event/evidence spine, typed export payload preserving correlation/provenance, export success/failure does not mint ExecutionId or grant permission (W5 doc "Observability != execution truth"); W6 durable execution-truth store = 0; CX-06/CX-07 counts "Observability/Diagnostics -> Execution truth creation = 0". These support OBS-01..03 as audit candidates. OBS-04..07 depend on TRACE-X evidence that is now closed (TRC-01..12 PASS) but unmapped (F-002). W5 logs are untracked (.tmp/session/harness-w5-r1) -> reproducibility needs a pinned replay (F-007).
+
+## 8. PROD-Q review, defects, corrective surface (items 10, 12, 16, 17)
+Scoped qualifications reviewed in `HIST03_PRODQ_RESIDUAL_QUALIFICATION.md`. Confirmed defects: (a) `test_sec_ent.py` red (F-006, test-side), (b) P2-C HTTP regression (F-015, product code; owner decision pending). Other candidates: ADR-CTRL-X-001 `p0_safety_8` (now passing), (b) TOOL-LIFE-X C-1/C-2 (not HIST-03's; F-014), (c) mechanical record pins PRD-04 BLOCKER (F-004; a decision, not a code bug). **No repair has been made** (F-015 needs a design choice and a ticket/owner; F-006 is test-only and also ticket-bound), and the minimum legitimate corrective surface is documentation/evidence patches (candidate patches to be produced by MASTER-integrated lane) plus, if the test run is red, a test/fixture hygiene batch without gate weakening. Production product code is untouched; worktree clean.
+
+## 9. Test reproduction (item 15)
+Executed on the shared pin `D:/Projekty/_wt/intergrax/pin-ba07eba` (detached HEAD `ba07ebaa34d04633bd60510f68c18346b1ef160d`, unchanged and no tracked changes after the runs), `uv run --directory <pin> --extra dev-ci pytest ...`, default tmp, heavy lock held for each invocation. **Caveats:** shared venv extended by HIST-02 mid-run and the first run overlapped HIST-02's rerun; this is **not** a clean-room exact-SHA audit run and promotes nothing.
+- Combined run (27 paths): **21 failed / 331 passed**, 475.37 s, pytest exit 1 (wrapper exit-file missing; inferred from summary). Passed: ctrl_x directory, prod_q_p0_fast, P1 reachability, P2 integrated e2e, P2-C closure regression, D4 launcher, W4 arch/nexus/resilience nodes, W2-C, W5 a/b/g/h, hosting health + LKW hosted readiness, **test_p0_safety_8 (ADR-listed REL-02 failure not reproduced)**.
+- `test_sec_ent.py`: **7 failed** = real test-side defects (ineffective patch target; fake/object not satisfying SecretsStoreIntegrationContract) - F-006; not fixed (marked no_ci, so CI does not see it).
+- W5 b2/c/d: fail combined (registry slug 'already registered', 54 hits), **pass isolated** (5/6/9, exit 0) -> test-isolation finding F-016 (neither product pass nor product fail).
+- P2-C HTTP admission: **6 failed / 1 passed in isolation (exit 1)**, deterministic `ValueError: wire_skill_execution_pinning_store accepts kv_store or document_store, not both`: product-code regression since P2 acceptance, introduced with SKILL-X Batch C `d1040f485` (2026-10-23), F-015 (IMPLEMENTATION_GAP, HIGH). In the combined run these 6 were masked by registry pollution. Rows citing P2-C evidence (SEC-04, PRD-08, PRD-09) are downgraded.
+
+## 10. Findings
+16 findings: `HIST03_FINDINGS_AND_RESIDUALS.json` (contract-complete; unknown fields = "UNKNOWN").
