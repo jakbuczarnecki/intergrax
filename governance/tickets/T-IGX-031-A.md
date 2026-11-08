@@ -19,6 +19,8 @@ Plan digest: a83842545c6e94534fc6d9a1a5b1990bd35a7676d4c7d84d6ce95107ed267509
 
 ## Approved
 
+Approved: operator-delegate cert-031a @ 2026-11-08T16:44:00+01:00 | Delegation: docs/project/maintainers/qualification/historical_certification_campaign/delegations/DELEG-HIST-031A-2026-11-08.md@f1d85253c7d66a413e62f5d4f9d733eba786e3da
+
 (pending - no approval line is requested by this ticket's author; any approval line is written only by the Operator or by a commissioned `operator-delegate` session, never by the planner or the implementer.)
 
 Authority cited for the scope (given in chat and in the accepted W1-PLAN sequence, not signature lines): W1-PLAN step 1 (a test-only batch for F-006 / F-016 with an audit proving no gate is weakened; the sequence approves no ticket plan), DR-12 = B (tests now, product edits batched with the next IIAC re-activation).
@@ -46,4 +48,4 @@ Everything under `intergrax/`, `agents/`, `applications/`, `scripts/`; the six I
 
 ## Lifecycle state
 
-plan_pending
+plan_approved
