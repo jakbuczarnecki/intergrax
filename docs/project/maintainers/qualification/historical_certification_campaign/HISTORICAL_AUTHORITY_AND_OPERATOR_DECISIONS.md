@@ -1,5 +1,7 @@
 # OPERATOR DECISION REQUEST - HIST-01..04 campaign (consolidated)
 
+> **Status update 2026-11-08 (after PR 416)** - all of DR-1, 2, 3, 4, 6, 8 and 9 now have an answer on record (scope rulings with known limits), certified by designated sessions in the Operator's name (`decisions/OPERATOR_DECISION_RECORDS_W0.md` and `_W1.md`; explicit Operator confirmation in `delegations/DELEG-HIST-W0-CONFIRMATION-2026-11-08.md`). The summary table and sections below show the state at PR 408 and are not rewritten; see `HISTORICAL_CERTIFICATION_CAMPAIGN_ADDENDUM_2026-11-08.md` section 2 for the answers and their known limits.
+
 Findings baseline: `ba07ebaa34d04633bd60510f68c18346b1ef160d`. Current `origin/development`: `41908e3fb` (includes the Operator-merged ENT-AUDIT-X PRs #399-#404 and the campaign PRs #405 documentation patches, #406 Amendment 01 revision, #407 T-IGX-030-A tests only; the FRZ checklist has no status changes: 120 OPEN / 105 PASS, all 85 historical rows OPEN).
 State: all four workstreams finished their audit phase; T-IGX-030-A is independently audited (PASS_SCOPED) and merged; the product batch (T-IGX-030-B / T-IGX-030-C) is HELD; the decisions marked "open" below are the remaining items that need the Operator.
 Sources: worker dossiers (published under `dossiers/hist01..04/`), the local registry `campaign_registry.json` (identifiers `OD-*`), logs in `hist02/`, `hist03/`.
