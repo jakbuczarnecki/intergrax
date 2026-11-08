@@ -1,11 +1,11 @@
-# T-IGX-031-A — TESTS-ONLY: restore `test_sec_ent.py` (HIST03-F-006) and isolate the integration catalog for it and for W5 b2/c/d (HIST03-F-016) (W1-PLAN step 1)
+# T-IGX-031-A - TESTS-ONLY: restore `test_sec_ent.py` (HIST03-F-006) and isolate the integration catalog for it and for W5 b2/c/d (HIST03-F-016) (W1-PLAN step 1)
 
 ## Scope
 
 TESTS-ONLY batch on top of `origin/development` (`6734971cf`) for two findings of the HIST-03 dossier that share one root cause, measured by the planner at that SHA:
 
 - HIST03-F-006: `tests/unit/runtime/security/test_sec_ent.py` is red, 7 failed / 6 passed. Four independent test-side causes: bare `register_default_integrations()` fails on a clean catalog (slug `ollama` is registered by two providers); the patch target `intergrax.integrations.registry.factory.resolve_from_profile` does not bind where `security_runtime_bridge.py` looks the name up; a plain fake and `object()` are rejected by the pre-built secrets-store type guard; the spine test binds no execution identity.
-- HIST03-F-016: the failed bootstrap in `test_sec_ent.py` leaves a half-filled global integration catalog, which makes the W5 b2/c/d tests fail with `Integration slug 'redis' is already registered` when they run in the same process (measured: `test_sec_ent.py` then b2/c/d gives the 8 W5 reds seen on the pin). The W5 files are victims; they pass alone.
+- HIST03-F-016: the failed bootstrap in `test_sec_ent.py` leaves a half-filled global integration catalog, which makes the W5 b2/c/d tests fail with `Integration slug 'redis' is already registered` when they run in the same process (measured: `test_sec_ent.py` then b2/c/d gives the 8 W5 reds seen on the pin). In that reproduction the W5 files are victims and `test_sec_ent.py` is a sufficient polluter (this does not exclude other polluters in the 27-path selection); the W5 files pass alone on the pin. F-016 may NOT be claimed resolved until the 27-path run (plan section 7, step 11, required for the independent audit, needs a separate Operator authorization under C10/C15) shows no `already registered`.
 
 Exact files (nothing under `intergrax/`, `agents/`, `applications/`, `scripts/`; ACT-N11 must stay green): `tests/unit/runtime/security/test_sec_ent.py`, `tests/unit/runtime/events/test_enterprise_scale_resilience_w5_b2_composition_wiring.py`, `tests/unit/runtime/events/test_enterprise_scale_resilience_w5_c_event_export.py`, `tests/unit/runtime/events/test_enterprise_scale_resilience_w5_d_exporter_composition.py`, and one new helper `tests/support/integration_catalog_isolation.py`. Root cause per file, per-assertion before/after ledger with the no-gate-weakening argument, test contract, escape clause, risks and residuals: [`plans/PLAN_T-IGX-031-A.md`](plans/PLAN_T-IGX-031-A.md).
 
@@ -15,11 +15,11 @@ No PASS, closure, FRZ promotion or stage-parent change is implied. The implement
 
 ## Plan digest
 
-Plan digest: b17c42288d4bf50dedae540a170904a253fd49b7695a7559b8b16a46b5ec7f5e
+Plan digest: a83842545c6e94534fc6d9a1a5b1990bd35a7676d4c7d84d6ce95107ed267509
 
 ## Approved
 
-(pending — no approval line is requested by this ticket's author; any approval line is written only by the Operator or by a commissioned `operator-delegate` session, never by the planner or the implementer.)
+(pending - no approval line is requested by this ticket's author; any approval line is written only by the Operator or by a commissioned `operator-delegate` session, never by the planner or the implementer.)
 
 Authority cited for the scope (given in chat and in the accepted W1-PLAN sequence, not signature lines): W1-PLAN step 1 (a test-only batch for F-006 / F-016 with an audit proving no gate is weakened; the sequence approves no ticket plan), DR-12 = B (tests now, product edits batched with the next IIAC re-activation).
 
@@ -38,7 +38,7 @@ uv run --extra dev-ci ruff check <5 files> ; uv run --extra dev-ci ruff format -
 git diff --name-only 6734971cf..HEAD    # only the five files + ticket/plan files
 ```
 
-Exact commands, expected counts, the optional 27-path combined run and the stop rules are in section 7 of the plan.
+Exact commands, expected counts, the required (audit-time, separately authorized) 27-path combined run and the stop rules are in section 7 of the plan.
 
 ## Out of scope
 
