@@ -1,7 +1,7 @@
 # Operator decision records W0 - DR-1, DR-2, DR-3, DR-4, DR-6, DR-8, DR-9
 
 Written by the designated certifying session `cert-w0` on 2026-11-08, under IIAC Amendment 01 (R-1..R-6, S-1 and S-3 struck, S-2 kept) and the delegation record `docs/project/maintainers/qualification/historical_certification_campaign/delegations/DELEG-HIST-W0-2026-11-08.md`.
-Every `Approved` line below is a **delegate line**. It is not written by the Operator and must never be cited as an Operator-written line. Assurance level: `process_enforced`. Each line ends with `@cef4aea9af5e91891c57478323191b0ff83e92e3`: that is the commit that adds the delegation copy; it was not known when the lines were written, so the session left a placeholder and MASTER replaced it in a later commit (nothing was amended).
+Every `Approved` line below is a **delegate line**. It is not written by the Operator and must never be cited as an Operator-written line. Assurance level: `process_enforced`. Each line ends with `@6a0a531fb6b94d41d6a00ce8bd800c7504749560`: the commit that carries the English-only revision of the delegation record (section 11). The first version of the lines pointed to `cef4aea9af5e91891c57478323191b0ff83e92e3` (first copy of the record, sha256 ea101bf8...); they were rebound by MASTER in a later commit, nothing was amended. The time stamps (15:04:58+01:00) are the original batch stamp of the session and were not changed.
 
 ## 0. Session statements (R-2) and method
 
@@ -44,7 +44,7 @@ Every `Approved` line below is a **delegate line**. It is not written by the Ope
 
 **Verdict: SIGNED.** Patch: `decisions/EVOL_X_DELEGATED_SIGNATURES_RATIFICATION.md` (new; rewrites no earlier record).
 ```text
-Approved DR-1: operator-delegate cert-w0 @ 2026-11-08T15:04:58+01:00 | Delegation: docs/project/maintainers/qualification/historical_certification_campaign/delegations/DELEG-HIST-W0-2026-11-08.md@cef4aea9af5e91891c57478323191b0ff83e92e3
+Approved DR-1: operator-delegate cert-w0 @ 2026-11-08T15:04:58+01:00 | Delegation: docs/project/maintainers/qualification/historical_certification_campaign/delegations/DELEG-HIST-W0-2026-11-08.md@6a0a531fb6b94d41d6a00ce8bd800c7504749560
 ```
 
 ---
@@ -66,7 +66,7 @@ Approved DR-1: operator-delegate cert-w0 @ 2026-11-08T15:04:58+01:00 | Delegatio
 
 **Verdict: SIGNED.**
 ```text
-Approved DR-2: operator-delegate cert-w0 @ 2026-11-08T15:04:58+01:00 | Delegation: docs/project/maintainers/qualification/historical_certification_campaign/delegations/DELEG-HIST-W0-2026-11-08.md@cef4aea9af5e91891c57478323191b0ff83e92e3
+Approved DR-2: operator-delegate cert-w0 @ 2026-11-08T15:04:58+01:00 | Delegation: docs/project/maintainers/qualification/historical_certification_campaign/delegations/DELEG-HIST-W0-2026-11-08.md@6a0a531fb6b94d41d6a00ce8bd800c7504749560
 ```
 
 ---
@@ -87,7 +87,7 @@ Approved DR-2: operator-delegate cert-w0 @ 2026-11-08T15:04:58+01:00 | Delegatio
 
 **Verdict: SIGNED.**
 ```text
-Approved DR-3: operator-delegate cert-w0 @ 2026-11-08T15:04:58+01:00 | Delegation: docs/project/maintainers/qualification/historical_certification_campaign/delegations/DELEG-HIST-W0-2026-11-08.md@cef4aea9af5e91891c57478323191b0ff83e92e3
+Approved DR-3: operator-delegate cert-w0 @ 2026-11-08T15:04:58+01:00 | Delegation: docs/project/maintainers/qualification/historical_certification_campaign/delegations/DELEG-HIST-W0-2026-11-08.md@6a0a531fb6b94d41d6a00ce8bd800c7504749560
 ```
 
 ---
@@ -114,7 +114,7 @@ Approved DR-3: operator-delegate cert-w0 @ 2026-11-08T15:04:58+01:00 | Delegatio
 
 **Verdict: SIGNED.**
 ```text
-Approved DR-4: operator-delegate cert-w0 @ 2026-11-08T15:04:58+01:00 | Delegation: docs/project/maintainers/qualification/historical_certification_campaign/delegations/DELEG-HIST-W0-2026-11-08.md@cef4aea9af5e91891c57478323191b0ff83e92e3
+Approved DR-4: operator-delegate cert-w0 @ 2026-11-08T15:04:58+01:00 | Delegation: docs/project/maintainers/qualification/historical_certification_campaign/delegations/DELEG-HIST-W0-2026-11-08.md@6a0a531fb6b94d41d6a00ce8bd800c7504749560
 ```
 
 ---
@@ -136,7 +136,7 @@ Approved DR-4: operator-delegate cert-w0 @ 2026-11-08T15:04:58+01:00 | Delegatio
 
 **Verdict: SIGNED.**
 ```text
-Approved DR-6: operator-delegate cert-w0 @ 2026-11-08T15:04:58+01:00 | Delegation: docs/project/maintainers/qualification/historical_certification_campaign/delegations/DELEG-HIST-W0-2026-11-08.md@cef4aea9af5e91891c57478323191b0ff83e92e3
+Approved DR-6: operator-delegate cert-w0 @ 2026-11-08T15:04:58+01:00 | Delegation: docs/project/maintainers/qualification/historical_certification_campaign/delegations/DELEG-HIST-W0-2026-11-08.md@6a0a531fb6b94d41d6a00ce8bd800c7504749560
 ```
 
 ---
@@ -158,7 +158,7 @@ Approved DR-6: operator-delegate cert-w0 @ 2026-11-08T15:04:58+01:00 | Delegatio
 
 **Verdict: SIGNED.**
 ```text
-Approved DR-8: operator-delegate cert-w0 @ 2026-11-08T15:04:58+01:00 | Delegation: docs/project/maintainers/qualification/historical_certification_campaign/delegations/DELEG-HIST-W0-2026-11-08.md@cef4aea9af5e91891c57478323191b0ff83e92e3
+Approved DR-8: operator-delegate cert-w0 @ 2026-11-08T15:04:58+01:00 | Delegation: docs/project/maintainers/qualification/historical_certification_campaign/delegations/DELEG-HIST-W0-2026-11-08.md@6a0a531fb6b94d41d6a00ce8bd800c7504749560
 ```
 
 ---
@@ -190,7 +190,7 @@ Verification: `HIST03_PRODQ_RESIDUAL_QUALIFICATION.md` lines 17, 30: AUTH-08 HTT
 
 **Verdict: SIGNED IN PART** (9a, 9b, 9e). The line below carries its scope in brackets so it cannot be read as a full DR-9 signature.
 ```text
-Approved DR-9 [partial: P-03, P-04, waivers only; SEC-05 and Decision-03/D03-A NOT signed]: operator-delegate cert-w0 @ 2026-11-08T15:04:58+01:00 | Delegation: docs/project/maintainers/qualification/historical_certification_campaign/delegations/DELEG-HIST-W0-2026-11-08.md@cef4aea9af5e91891c57478323191b0ff83e92e3
+Approved DR-9 [partial: P-03, P-04, waivers only; SEC-05 and Decision-03/D03-A NOT signed]: operator-delegate cert-w0 @ 2026-11-08T15:04:58+01:00 | Delegation: docs/project/maintainers/qualification/historical_certification_campaign/delegations/DELEG-HIST-W0-2026-11-08.md@6a0a531fb6b94d41d6a00ce8bd800c7504749560
 ```
 
 ---
@@ -200,3 +200,16 @@ Approved DR-9 [partial: P-03, P-04, waivers only; SEC-05 and Decision-03/D03-A N
 - Files changed by `cert-w0`: the delegation copy, the ratification record, this file, one paragraph in the Amendment 01 header block, one inserted annotation in roadmap row L482. Nothing under `intergrax/ agents/ applications/ scripts/ tests/`.
 - No plan approval, FRZ promotion, checklist change, IIAC activation, ENT-AUDIT-X material, PR, push, merge, rebase, reset or amend.
 - No test was run. `verify_trusted_policy_pin.py`: exit 0 before the patches; the post-patch run is reported in `CERT_W0_REPORT.md`.
+
+## 11. Corrections after independent review (MASTER, 2026-11-08)
+
+Written by the MASTER orchestrator after the independent review `rev-w0` (verdict ACCEPT_WITH_CHANGES, `audits/rev-w0/REVIEW.md`) and the Q-11 investigation (`audits/q11/Q11_REPORT.md`). This section is a correction record: no signed line above was re-stamped, and no signature was added or withdrawn.
+
+- **F-1 (DR-3 wording).** The roadmap annotation quoted in the DR-3 section above ("this label is NOT supported by an independent PASS ...") overstated the evidence: the repository records an external review (`TOOL_LIFE_X_PARENT_FORMAL_CLOSURE_RECONCILIATION.md`, audit finding F-03: no review artefact exists in the repository). The annotation in the roadmap now reads: the only recorded independent acceptance is that external review, and the independent exact-SHA audit at the same SHA returned CONDITIONAL; the label must not be cited as current-HEAD proof. The quoted wording in the DR-3 section is superseded by this paragraph. The decision itself (option A, annotation only, status cell unchanged) is unchanged.
+- **F-2 / F-8 (delegation record).** The delegation record was revised: the Polish quotation was removed (English-only rule) and its DR-9 row no longer claims a recommendation for SEC-05 or Decision-03 / D03-A (there is none; they were never signed). The revised record has sha256 `dc1ba29882b12241a260bf7a9a900e1a19d3c1c05a0899a8e1f19cd897f5217a`; the first version (sha256 `ea101bf8f104cd6cd8db0089d7937d8de44d01f4da7877ad3b9257ca718cd660`) is superseded. The seven `Approved` lines are rebound to the commit that carries the revised copy.
+- **F-8 (authority).** The authority for these signatures is MASTER's transcription of one chat instruction and MASTER's reading that consent means the recommendations. For DR-1 in particular, Amendment 01 section 1.2 expects the Operator to confirm that the earlier EVOL-X lines were written on the Operator's authority; that confirmation is inferred, not explicit. An explicit Operator confirmation (chat line) is requested before the pull request is merged; it is to be transcribed in a new delegation record, not by editing this one.
+- **F-3.** The Amendment 01 status note was reworded (section references and the "not in force" phrase).
+- **F-4.** The `Delegation:` references point to a commit. The base history uses merge commits; the pull request must be merged with a merge commit (not squash or rebase), or a follow-up record must point to the post-merge sha.
+- **F-5.** DR-6 section: `governance/tickets/` also holds T-IGX-020-A, 021-A, 022-A/B, 023-A and 024-A; the conclusion (no ticket names F-015 or `wire_skill_execution_pinning_store`) is unchanged. DR-8 section: the hard-boundary rule is in `AGENTS.md` at line 11 (heading) and line 14 (the rule), not lines 12-15.
+- **F-6 / F-7.** All lines carry one batch time stamp; a future mechanical validator (T-IGX-021-B) needs a mapping from `DR-n` to the `OD-*` register ids - add it to that ticket's scope.
+- **DR-6 follow-up (Q-11 result, read-only, fresh investigator).** The worker thesis is CONFIRMED by code reading and one run (1 failed, 1 passed, EXIT_CODE=1 at ba07ebaa3): code defect, not configuration or fixture leakage. Strict production composition always supplies both a KV store and a document store; the SKILL-X Batch C guard in `execution_pinning_persistence.py` rejects both; sibling wirings resolve coexisting stores to KV. Introduced by `d1040f485`. Recorded green at the P2-C accepted SHA `8e43b1604` (documents only; not re-run). Recommended owner: SKILL-X; recommended authoritative store: KV. These recommendations are NOT yet a decision: the ticket and its owner need a plan approval (DR-12 applies: the fix is under `intergrax/`). The optional empirical check (a run at the parent of `d1040f485`) was not performed.
