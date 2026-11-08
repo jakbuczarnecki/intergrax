@@ -39,7 +39,21 @@ Plan digest: c1e2a3a975f80bbe791aa7a8e208b4e0fe012c9560fa32a9631f32d9213b96ed
 
 ## Approved
 
-(awaiting the operator line `Approved: <operator> @ <ISO8601>`; not written by the implementer. The master plan was approved in chat on 2026-11-08 via plan mode; branch `t-igx-024-a-docs` was approved by the operator in chat on 2026-11-08.)
+(no `Approved:` line exists; none is written by the implementer. Same form as `T-IGX-023-A`: the batch runs on the operator's explicit chat instructions of 2026-11-08. The master plan was approved in chat via plan mode; branch `t-igx-024-a-docs` and this ticket were approved by the operator in chat; the standing authorization below was agreed by the operator in chat on 2026-11-08 ("tak, zgadzam się na tę regułę, zapisz ją i ruszaj"). If a gate requires the literal `Approved: <operator> @ <ISO8601>` line, the operator must write it; it must not be synthesized.)
+
+## Standing authorization (operator, chat 2026-11-08)
+
+Recorded verbatim so that fresh sessions (auditor, certifier, signing session) can see it; sessions cannot see the chat:
+
+> „W zakresie planu ENT-AUDIT-X (T-IGX-024-A) udzielam z góry zgody na: push, PR, merge commit, workflow_dispatch, worktree i subagenty oraz na uruchamianie niezależnych sesji audytora, certyfikatora i podpisującej na podstawie rekordu delegacji. Zatrzymaj się przy FAIL/CONDITIONAL po 2 pętlach, przy każdej zmianie poza planem i przed publikacją zamknięcia."
+
+Interpretation (binding on every session working under this ticket):
+
+1. Covered: `git push` of `t-igx-024-a-*` and `ent-w1-*` branches; PR creation; merge **with a merge commit** (never squash/rebase); `workflow_dispatch` of the ENT workflows; worktrees under `<parent>/_wt/intergrax/`; sub-agents; launching the independent auditor, certifier and signing sessions as separate sub-agents with fresh context.
+2. Disclosed to and accepted by the operator: independent sessions run as sub-agents of the orchestrator, so the assurance level is `process_enforced`, not cryptographic. The manifest `limitations` must say so. Session ids in manifests are the real harness ids; none may be invented.
+3. **Not covered and not delegable:** the operator's delegation record for the signing session (O-1) and any `operator` / `operator-delegate` signature line. Until the operator signs that record, W3-01..W3-03 and W5 OD-ENT-08 cannot be written. Work up to and including W2 is unaffected.
+4. Hard stops regardless of this authorization: a failing gate whose cause is outside this plan; auditor FAIL/CONDITIONAL after the second loop; any change outside the plan (new material governance path, EVOL-X artifact, lowered threshold); anything that would require fabricating a signature, id, timestamp or test result; and the **final publication** (OD-ENT-08, roadmap CLOSED headline, W5 phase 1), where the orchestrator pauses for operator review before the commit.
+5. Nothing here promotes a status, certifies an implementation, or waives an independence rule.
 
 ## Test contract
 
@@ -56,8 +70,8 @@ W0 (docs only) needs only the first, third and last command. W1 additionally nee
 
 ## Out of scope
 
-IIAC audit and certification (W2), operator decisions and baseline promotion (W3), certifying FREEZE and FRZ-AUD promotion (W4), formal closure (W5), ARCH-FREEZE handoff (W6), Docker, vendor integrations, production configuration, PROD-Q, edits of the IIAC protocol or Amendment 01, merging the PRs.
+IIAC audit and certification (W2), operator decisions and baseline promotion (W3), certifying FREEZE and FRZ-AUD promotion (W4), formal closure (W5), ARCH-FREEZE handoff (W6), Docker, vendor integrations, production configuration, PROD-Q, edits of the IIAC protocol or Amendment 01. PR merges with a merge commit are covered by the standing authorization above.
 
 ## Lifecycle state
 
-plan_pending
+in_progress

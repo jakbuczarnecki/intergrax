@@ -51,6 +51,10 @@
 | INTERNAL_CLOSURE_PUBLICATION_SHA | `53fd582b654ab1d45cae67a4a43da1be737734d2` | Terminal report + SSOT reconcile — Ref T-IGX-002-A |
 | B3_SEMANTIC_ACCEPTANCE_HEAD_SHA | `d07fbde5745569ab543ff8a57a7397023f62ce59` | 88/88 `ENT_AUDIT_X_SEMANTIC=1` @ `.tmp/session/ent-audit-x-closure/b3-acceptance-semantic.log` |
 | B4_MECHANICAL_READINESS_PUBLICATION_SHA | `162acea31833a6d40d3a5e8e79638db7e443ce3e` | Terminal report B3/B4; nightly CI **42015310879**; `mechanical_readiness_check` exit 0 |
+| IIAC_POLICY_ACTIVATION_SHA | `f8c29fb8dfe5e14d9b06ff16659fd9cbe9ad326d` | IIAC-2026-11-05.1 IN_FORCE (operator OD-01); governs ENT formal closure - T-IGX-024-A |
+| ENT_FORMAL_CAMPAIGN_PLAN_BASELINE_SHA | `4d54dfa9e485329d81d0e0fa72436867458f3426` | Formal campaign F0 baseline (`plan_baseline_sha` in the closure status JSON) - historical |
+| ENT_FORMAL_MASTER_PLAN_PUBLICATION_SHA | `116fb6a2ae5a40605bb569ac7685b62eb0a42539` | Formal master plan publication (status JSON); Path A / human-auditor assumptions superseded by IIAC |
+| ENT_IIAC_CLOSURE_PLAN_BASELINE_SHA | `ba07ebaa34d04633bd60510f68c18346b1ef160d` | `development` tip at the start of the IIAC closure campaign (T-IGX-024-A, W0) |
 
 ## Lineage rules
 
@@ -66,3 +70,6 @@
 | EVOL TEST_EXECUTION_SHA | `3c4a641b3e48a13f437e830a0562e2a80b03aabb` |
 | EVOL EVIDENCE_FINAL_PUBLICATION_SHA | `bbf3e33bc62a05fd205e07f3d2e35a6d1d689ca1` |
 | EVOL B6_ACCEPTANCE_PUBLICATION_SHA | **PENDING** |
+| EVOL_IIAC_B6_ACCEPTANCE_SHA (supersedes the EVOL B6 row above) | `1dd769331506149a1ee2f411c2bc62e85e5bbf25` |
+| EVOL_PARENT_CLOSURE_SHA | `be77b3a5fb97f10a3bd2df6ee038cb92aad77eca` |
+| EVOL_ENT_HANDOFF_PUBLICATION_SHA | `7a4f279fd8c0986431941c77283d872ea5b0c1ba` |
