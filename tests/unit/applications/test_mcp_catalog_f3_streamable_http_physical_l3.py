@@ -9,16 +9,14 @@ import contextlib
 import socket
 import threading
 import time
+from collections.abc import Iterator
 from contextlib import contextmanager
 from dataclasses import dataclass, field
-from typing import Iterator
 from unittest.mock import AsyncMock, patch
 
 import pytest
 import uvicorn
 from fastapi import FastAPI
-from pydantic import BaseModel
-
 from intergrax.applications._shared.fastapi_mcp import couple_fastapi_with_mcp
 from intergrax.applications._shared.harness_auth import HarnessAuthState
 from intergrax.applications._shared.harness_control_plane_policy_wiring import (
@@ -28,8 +26,7 @@ from intergrax.applications._shared.mcp_catalog_invocation_bridge import (
     _METADATA_STEP_ID,
     _serialize_tool_result,
 )
-from intergrax.applications._shared.mcp_nexus_server import build_nexus_mcp_server
-from intergrax.applications._shared.mcp_nexus_server import task_from_mcp_agent_intake
+from intergrax.applications._shared.mcp_nexus_server import build_nexus_mcp_server, task_from_mcp_agent_intake
 from intergrax.applications._shared.production_catalog_tool_child_execution_wiring import (
     build_production_catalog_tool_child_execution_port,
 )
@@ -50,14 +47,14 @@ from intergrax.runtime.execution.root_execution_transport_detachment_supervision
 from intergrax.runtime.nexus.nexus_loop import NexusLoop
 from intergrax.runtime.registry.agent_registry import AgentRegistry
 from intergrax.runtime.task.active_task_registry import ActiveTaskRegistry
-from intergrax.runtime.task.task import Task, TaskState
+from intergrax.runtime.task.task import Task, TaskResult, TaskState
 from intergrax.runtime.task.task_result_authoritative_exposure_defaults import (
     terminal_task_result_exposure_no_decision_gate,
 )
-from intergrax.runtime.task.task import TaskResult
 from intergrax.tools.core.contracts import ToolContract, ToolRiskLevel
 from intergrax.tools.registry.runtime import ToolRegistry
 from intergrax.tools.tool_executor import ToolHandler
+from pydantic import BaseModel
 from tests.fixtures.harness_host_task_execution import build_harness_host_task_execution
 
 pytestmark = [pytest.mark.unit, pytest.mark.gate, pytest.mark.network]
@@ -81,7 +78,7 @@ class _Out(BaseModel):
 class _RecordingCatalogInvoker:
     results: list[ExecutionBoundCatalogToolInvokeRequest] = field(default_factory=list)
     delay_s: float = 0.35
-    started: asyncio.Event = field(default_factory=asyncio.Event)
+    started: threading.Event = field(default_factory=threading.Event)
 
     def invoke(self, request: ExecutionBoundCatalogToolInvokeRequest) -> ToolExecutionResult[_Out]:
         self.results.append(request)
@@ -153,6 +150,15 @@ def _tool_payload(result: object) -> dict[str, object]:
     return {}
 
 
+def _is_error_text(result: object) -> str | None:
+    """Return the ``ToolError`` text (``<code>: <detail>``) of an MCP error result, else ``None``."""
+    if not getattr(result, "isError", False):
+        return None
+    content = getattr(result, "content", None) or []
+    text = getattr(content[0], "text", None) if content else None
+    return text if isinstance(text, str) else ""
+
+
 def _build_http_mcp_app(
     invoker: _RecordingCatalogInvoker,
 ) -> FastAPI:
@@ -213,8 +219,7 @@ async def _clear_tasks() -> None:
 @pytest.fixture(autouse=True)
 def _fast_transport_drain(monkeypatch: pytest.MonkeyPatch) -> None:
     monkeypatch.setattr(
-        "intergrax.applications._shared.mcp_host_execution_transport_cancel."
-        "_HOST_DRAIN_AFTER_TRANSPORT_CANCEL_S",
+        "intergrax.applications._shared.mcp_host_execution_transport_cancel._HOST_DRAIN_AFTER_TRANSPORT_CANCEL_S",
         0.25,
     )
 
@@ -367,7 +372,9 @@ async def test_f3_streamable_http_parent_cancel_during_catalog_child() -> None:
             assert binding is not None
 
             async def _request_parent_cancel() -> None:
-                await asyncio.sleep(0.06)
+                # Event-driven: cancel only once the catalog child is admitted and running.
+                if not await asyncio.to_thread(invoker.started.wait, 8.0):
+                    raise TimeoutError("catalog child did not start")
                 refreshed = await ActiveTaskRegistry.get(binding.task_id)
                 assert refreshed is not None
                 CancellationCoordinator.request(
@@ -383,17 +390,119 @@ async def test_f3_streamable_http_parent_cancel_during_catalog_child() -> None:
                     "tool_id": "f3.http.ok",
                     "task_id": str(binding.task_id),
                     "run_id": str(binding.run_id),
+                    "step_id": _STEP,
                 },
             )
             await cancel_task
             await asyncio.wait_for(run_task, timeout=25.0)
 
     catalog_payload = _tool_payload(catalog)
+    assert invoker.results, "catalog child never ran; cancel was not mid-child"
+    assert _is_error_text(catalog) is None, _is_error_text(catalog)
     assert catalog_payload.get("success") is not True
     assert catalog_payload.get("error") in {
         "execution_cancelled",
         "execution_admission_denied",
-    }
+    }, catalog_payload
+
+
+@pytest.mark.asyncio
+async def test_f3_streamable_http_parent_cancel_before_admission_is_fail_closed() -> None:
+    """Parent cancelled and root deregistered before the catalog invoke: child never runs."""
+    invoker = _RecordingCatalogInvoker(delay_s=0.55)
+    app = _build_http_mcp_app(invoker)
+    root_hang = threading.Event()
+
+    async def _slow_root(_request: object) -> TaskResult:
+        task_ids = await ActiveTaskRegistry.list_ids()
+        binding = await ActiveTaskRegistry.get(task_ids[0])
+        assert binding is not None
+        task = binding.task
+        run_id = binding.run_id
+        root_hang.set()
+        deadline = time.monotonic() + 10.0
+        while time.monotonic() < deadline:
+            if CancellationCoordinator.is_requested(dict(task.metadata)):
+                return TaskResult(
+                    task_id=task.task_id,
+                    run_id=str(run_id),
+                    state=TaskState.CANCELLED,
+                    answer="",
+                    authoritative_decision_exposure=terminal_task_result_exposure_no_decision_gate(),
+                )
+            await asyncio.sleep(0.03)
+        return TaskResult(
+            task_id=task.task_id,
+            run_id=str(run_id),
+            state=TaskState.COMPLETED,
+            answer="done",
+            authoritative_decision_exposure=terminal_task_result_exposure_no_decision_gate(),
+        )
+
+    with patch.object(
+        TaskBoundAgenticDelegate,
+        "execute",
+        new_callable=AsyncMock,
+        side_effect=_slow_root,
+    ):
+        with _uvicorn_mcp_base_url(app) as base_url:
+            run_task = asyncio.create_task(
+                _streamable_call_tool(
+                    base_url,
+                    "run_agent",
+                    {"message": "f3-cancel-pre", "capability": _CAP},
+                ),
+            )
+            if not await asyncio.to_thread(root_hang.wait, 8.0):
+                raise TimeoutError("root execution did not reach slow delegate")
+            binding = await ActiveTaskRegistry.get((await ActiveTaskRegistry.list_ids())[0])
+            assert binding is not None
+            CancellationCoordinator.request(binding.task, reason="f3_http_cancel_before_admission")
+            await asyncio.wait_for(run_task, timeout=25.0)
+            deadline = time.monotonic() + 8.0
+            while await ActiveTaskRegistry.get(binding.task_id) is not None:
+                if time.monotonic() > deadline:
+                    raise TimeoutError("root did not deregister after cancel")
+                await asyncio.sleep(0.02)
+            catalog = await _streamable_call_tool(
+                base_url,
+                "invoke_catalog_tool",
+                {
+                    "tool_id": "f3.http.ok",
+                    "task_id": str(binding.task_id),
+                    "run_id": str(binding.run_id),
+                    "step_id": _STEP,
+                },
+            )
+
+    assert not invoker.results, "catalog child must never run after the root unwound"
+    error_text = _is_error_text(catalog)
+    if error_text is not None:
+        assert error_text.startswith("missing_execution_binding"), error_text
+    else:
+        assert _tool_payload(catalog).get("error") == "execution_cancelled", _tool_payload(catalog)
+
+
+@pytest.mark.asyncio
+async def test_f3_streamable_http_unknown_task_id_is_missing_execution_binding() -> None:
+    """Negative control: a never-issued canonical task_id is refused fail-closed, child never runs."""
+    invoker = _RecordingCatalogInvoker(delay_s=0.55)
+    app = _build_http_mcp_app(invoker)
+    with _uvicorn_mcp_base_url(app) as base_url:
+        catalog = await _streamable_call_tool(
+            base_url,
+            "invoke_catalog_tool",
+            {
+                "tool_id": "f3.http.ok",
+                "task_id": "task_" + "0" * 32,
+                "run_id": "run_" + "0" * 32,
+                "step_id": _STEP,
+            },
+        )
+    assert not invoker.results
+    error_text = _is_error_text(catalog)
+    assert error_text is not None, _tool_payload(catalog)
+    assert error_text.startswith("missing_execution_binding"), error_text
 
 
 @pytest.mark.asyncio
