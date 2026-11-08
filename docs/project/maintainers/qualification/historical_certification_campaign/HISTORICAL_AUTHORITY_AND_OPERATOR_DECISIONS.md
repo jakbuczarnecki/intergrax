@@ -16,7 +16,7 @@ Language: this document is English-only (project rule: repository artifacts are 
 An earlier version of this document said the Operator "must write personally" the `Approved ...: operator @ ...` records (DR-1, DR-2) and the ticket `Approved:` line. That was wrong as a rule.
 - The Operator's own words (IIAC Amendment 01, R-1..R-6) are: the Operator may commission a **new, dedicated, non-implementing session** to sign and certify in the Operator's name; the commission itself transfers the scope (R-6). Conditions: R-2 (new, dedicated, not a continuation, not an implementation session) and R-3 (implementer != auditor != certifier).
 - The "personal signature" requirements come from the safeguards **S-1 and S-3, which an earlier agent session added**. The document itself calls them "agent-proposed" and "strikeable by the operator"; they were never confirmed. `governance/tickets/README.md` says `Approved: <operator> @ <ISO8601>` without "personally".
-- Therefore wherever this document says a record must be "written personally" (DR-1, DR-2, DR-3, DR-4, DR-9), read: **to be decided by the Operator or by a session the Operator designates**. A candidate rule update is being prepared (`hist04/RULES_UPDATE_NOTE.md`); it is not applied.
+- Therefore wherever this document says a record must be "written personally" (DR-1, DR-2, DR-3, DR-4, DR-9), read: **to be decided by the Operator or by a session the Operator designates**. The rule update was applied by PR 406 (merged by the Operator; reviewed by rev-rules, final verdict ACCEPT). Whether Amendment 01 is in force as policy is still DR-2.
 - What remains is record honesty, not a rule: a delegate's line must not read as an Operator-written line, and the signing session must not be the implementer. Assurance of any delegated record is `process_enforced` (no cryptographic identity proof).
 - First use: plan approval of T-IGX-030-A by the session `cert-030a` (`delegations/DELEG-HIST-030A-2026-11-08.md`, transcribed by MASTER from the Operator's chat instruction; not signed by the Operator).
 
@@ -26,7 +26,7 @@ An earlier version of this document said the Operator "must write personally" th
 |---|---|---|---|---|---|
 | **A. Authority** | | | | | |
 | DR-1 | Ratification of delegated EVOL-X signatures | EVOL-X, FRZ-EVOL-01..10 (10 x PASS) | ratify per candidate C1 | EVOL-X closure stays `AUTHORITY_GAP` | open |
-| DR-2 | Status of IIAC Amendment 01 | all delegated signatures | strike S-1/S-3 + make text consistent (now) + T-IGX-021-B/C as a separate stage | delegated decisions keep an ambiguous basis | open (rule update drafted) |
+| DR-2 | Status of IIAC Amendment 01 | all delegated signatures | strike S-1/S-3 + make text consistent (now) + T-IGX-021-B/C as a separate stage | delegated decisions keep an ambiguous basis | open (revision merged in PR 406; status decision pending) |
 | **B. Labels and promotion scope** | | | | | |
 | DR-3 | TOOL-LIFE-X roadmap label (L482) | TOOL-LIFE-X, DIST-SCALE-X, ARCH-FREEZE intake | option A now, B after re-audit | roadmap says "CLOSED - INDEPENDENTLY ACCEPTED" against the signed DS-3 | open |
 | DR-4 | Promotion scope for FRZ-REG | REG-01..10 | HIST-01 split: (b) for REG-07/10, (a) for REG-01/04/05 | no promotion rule | open |
@@ -55,7 +55,7 @@ An earlier version of this document said the Operator "must write personally" th
 **Evidence (HIST-04):** the header says "IN FORCE AS OPERATOR-ADOPTED POLICY TEXT"; sections 5.3 and 6 say "PROPOSED - NOT IN FORCE"; commit `d82f8b722` changed only the Status and Applies lines. Audit T-IGX-021-C was waived on your instruction, implementation T-IGX-021-B was not done. Safeguards S-1..S-3 were proposed by an agent and were never confirmed or struck (OQ-1..4 open). HIST-04 conclusion: the mechanism **can** permit false acceptance or authority expansion (the identity of "the operator" in a chat cannot be proven; every commit in the chain has one git identity).
 **Update after PRs #399-#403 (HIST-04 delta addendum, worker thesis, code not executed):** PR #401 added an `operator-delegate` path for **OD-ENT-01 only** (since moved to `scripts/enterprise_audit/iiac_baseline_promotion.py` by #403). It mechanically enforces: IIAC policy IN_FORCE, a delegation published in an ancestor commit, an operator signature line on the delegation, matching decision id / policy / record path / session id, exclusion of listed implementer sessions, and a time window. It still cannot prove authorship or session identity, and it is not T-IGX-021-B as specified (EVOL-X preflight, B6 format and the `verify_iiac_*` role checks are untouched). Conclusions on Amendment 01 are unchanged; the ENT track itself records the same inconsistency. New risk: a decision-specific grammar (`OD-ENT-\d{2}`) next to the general one - a future policy should define one.
 **Options:** (a) an Operator note: Amendment 01 is in force as a process-enforced policy for certifications started after `d82f8b722`, with S-1/S-3 struck (S-2 kept or struck); (b) schedule T-IGX-021-B/C and a new audited policy version (touches material paths; voids the activation; needs an independent audit); (c) (a) now + (b) as a separate stage.
-**Recommendation:** (c). A candidate text for (a) is being drafted by HIST-04 (not applied; it avoids the six `MATERIAL_GOVERNANCE_PATHS`). **Deferral:** delegated signatures stay `process_enforced` on an ambiguous basis.
+**Recommendation:** (c). The revision text for (a) was merged in PR 406 (it touches none of the six `MATERIAL_GOVERNANCE_PATHS`). **Deferral:** delegated signatures stay `process_enforced` on an ambiguous basis.
 
 ## 3. Block B - Labels and promotion scope
 
@@ -117,7 +117,7 @@ An earlier version of this document said the Operator "must write personally" th
 | hist01 P-H01-1 and part of P-H01-3 | 2 | +2/-1 | P-H01-1 SHA correction verified: the P0 record was added by `f5c9330973f7`; `76a98cb3f` is the SKILL-X publication commit and does not touch that file |
 
 **Excluded on purpose:** anything that changes a stage label (DR-3), the REG scope (DR-4), needs DR-9, or edits signed delegated records.
-**Next:** assemble into one branch, independent non-author review, then a PR under the repository policy (no force-push), then verify `origin/development`.
+**Done:** PR 405 (merged).
 
 ## 7. Block F - Sequencing
 
@@ -127,6 +127,8 @@ An earlier version of this document said the Operator "must write personally" th
 **Answer:** B. **Consequence:** C-1/C-2 and the EBH-4 R1 gate stay red until the product batch; CI is not broken. Whether one re-activation covers both streams must be confirmed by the ENT-AUDIT-X stream - it is not assumed.
 
 ## 8. Status of answers and how to answer
+
+The answers below are relayed by the MASTER orchestrator from the Operator's chat (English rendering); no Operator-signed record exists in the repository and the chat transcript is the primary record.
 
 Received from the Operator (chat, 2026-11-08): `DR-5: 1 - DR-7: 1 - DR-10: yes - DR-11: A - DR-12: B - C4: yes (with C3)`. All other decisions are deferred and their rows stay OPEN.
 To answer the rest, one line per decision is enough, for example `DR-1: 1 - DR-2: c - DR-3: A - DR-4: split - DR-6: 1 - DR-8: 2 - DR-9: rec.`; "rec." accepts the recommendation in this document.

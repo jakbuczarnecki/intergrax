@@ -1,6 +1,6 @@
 {
  "schema": "historical-frz-85-disposition.v1",
- "generated_utc": "2026-11-08T10:56:32Z",
+ "generated_utc": "2026-11-08T11:15:30Z",
  "campaign_start_sha": "ba07ebaa34d04633bd60510f68c18346b1ef160d",
  "checklist_checked_at": "41908e3fb85d0ce86377b0f8ee0f3f84097631be",
  "checklist_check": {
@@ -15,21 +15,21 @@
  "rule": "No row is promoted. Every row stays OPEN until the checklist acceptance rule (exact SHA, code, tests, independent audit) is met.",
  "counts": {
   "by_classification": {
-   "QUALIFICATION_GAP": 33,
+   "QUALIFICATION_GAP": 34,
    "EVIDENCE_GAP": 20,
-   "PATH_B_LIVE_DEFERRED": 3,
    "VALID_SCOPED_PASS_CANDIDATE": 19,
    "AUTHORITY_GAP": 1,
    "IMPLEMENTATION_GAP": 1,
    "SSOT_DRIFT": 5,
-   "INDEPENDENT_AUDIT_GAP": 3
+   "INDEPENDENT_AUDIT_GAP": 3,
+   "PATH_B_LIVE_DEFERRED": 2
   },
   "by_dashboard_state": {
-   "QUALIFICATION_REQUIRED": 50,
+   "QUALIFICATION_REQUIRED": 51,
    "AUDIT_REQUIRED": 29,
-   "PATH_B_DEFERRED": 3,
    "AUTHORITY_REQUIRED": 2,
-   "IMPLEMENTATION_REQUIRED": 1
+   "IMPLEMENTATION_REQUIRED": 1,
+   "PATH_B_DEFERRED": 2
   },
   "by_family": {
    "REG": 10,
@@ -46,9 +46,8 @@
   },
   "by_workstream": {
    "HIST-01": {
-    "QUALIFICATION_GAP": 7,
+    "QUALIFICATION_GAP": 8,
     "EVIDENCE_GAP": 1,
-    "PATH_B_LIVE_DEFERRED": 1,
     "VALID_SCOPED_PASS_CANDIDATE": 1
    },
    "HIST-02": {
@@ -72,6 +71,17 @@
  "cross_cutting_findings_not_linked_per_row": [
   "HIST02-F-011",
   "HIST02-F-012"
+ ],
+ "master_reclassifications": [
+  {
+   "frz_id": "FRZ-REG-08",
+   "worker_classification": "PATH_B_LIVE_DEFERRED",
+   "worker_state": "PATH_B_DEFERRED",
+   "master_classification": "QUALIFICATION_GAP",
+   "master_state": "QUALIFICATION_REQUIRED",
+   "source": "independent integration audit aud-final, finding F-01",
+   "reason": "FRZ-REG-08 is not on the checklist Path B list (L66: FRZ-PRD-01, FRZ-PRD-02 and the live parts of FRZ-PRD-03, FRZ-PRD-08, FRZ-SEC-04) and is not in WBS T-PATHB-EXCL; WBS T-B7-PROMOTE-REG treats REG-01..10 as architecture-scoped. Path B was not widened. The row stays OPEN; nothing is promoted."
+  }
  ],
  "rows": [
   {
@@ -266,8 +276,8 @@
    "requirement": "environment failures cannot become false PASS",
    "accountable_workstream": "HIST-01",
    "baseline_status": "OPEN",
-   "primary_classification": "PATH_B_LIVE_DEFERRED",
-   "dashboard_state": "PATH_B_DEFERRED",
+   "primary_classification": "QUALIFICATION_GAP",
+   "dashboard_state": "QUALIFICATION_REQUIRED",
    "linked_findings": [
     "F-H4-14",
     "H01-F001",
@@ -279,11 +289,20 @@
    "current_head_applicability": "needs current-HEAD replay: False; new census work: none within this campaign",
    "audit_authority_provenance": "AUD-QUALX (Dimension A); PHYSQ independent audit per checklist",
    "path_b": {
-    "primary": true,
-    "live_obligation": null
+    "primary": false,
+    "live_obligation": "build_r1_sqlite_disposition for live HTTP / GCA is NOT_EXECUTED and owned by PROD-Q Dimension B (recorded dependency; REG-08 is not on the checklist Path B list L66)."
    },
    "residual_risk": "build_r1_sqlite_disposition is NOT_EXECUTED for live HTTP / GCA: owned by PROD-Q Dimension B (live), which this campaign must not take over. Related observation (not a REG-08 defect): the optional fastmcp extra makes 8 mandatory TLX modules fail collection under a plain `uv run pytest` (AUD-TOOLLIFE F-09), so an environment gap shows as errors, not as a silent pass.",
-   "next_required_stage": "Keep deferred; record the Path B ownership in the handoff."
+   "next_required_stage": "Exact-SHA current-HEAD replay of the REG-08 evidence (architecture-scoped, Dimension A). The live HTTP / GCA part stays with PROD-Q Dimension B as a recorded dependency, not as a deferral of the row.",
+   "worker_original": {
+    "primary_classification": "PATH_B_LIVE_DEFERRED",
+    "dashboard_state": "PATH_B_DEFERRED",
+    "path_b": {
+     "primary": true,
+     "live_obligation": null
+    },
+    "next_required_stage": "Keep deferred; record the Path B ownership in the handoff."
+   }
   },
   {
    "frz_id": "FRZ-REG-09",
@@ -354,7 +373,7 @@
    "promotion_allowed": false,
    "proposed_status": "OPEN",
    "historical_evidence": "EBH-2H 86fafaa; EBH-2I 4958c7e4; CE-01 a8d47a639; EBH-6 f27bfaf2f",
-   "current_head_applicability": "replay at pin ba07ebaa3: {\"target_sha\": \"ba07ebaa34d04633bd60510f68c18346b1ef160d\", \"results_by_path\": {\"tests/unit/architecture/test_ebh_3_dependency_ownership_gate.py\": \"PASS\", \"tests; executed: True",
+   "current_head_applicability": "replay at pin ba07ebaa3: executed=true; per-path results in dossiers/hist02/HIST02_FRZ_35_PER_ID_MATRIX.json (current_head_replay_at_pin)",
    "audit_authority_provenance": "none independent; inherited scoped proof only: True",
    "path_b": {
     "primary": false,
@@ -378,7 +397,7 @@
    "promotion_allowed": false,
    "proposed_status": "OPEN",
    "historical_evidence": "EBH-2H 86fafaa (Memory seams); CE-01",
-   "current_head_applicability": "replay at pin ba07ebaa3: {\"target_sha\": \"ba07ebaa34d04633bd60510f68c18346b1ef160d\", \"results_by_path\": {\"tests/unit/runtime/architecture/test_hardening_3_layer_boundary_gate.py\": \"PASS\"; executed: True",
+   "current_head_applicability": "replay at pin ba07ebaa3: executed=true; per-path results in dossiers/hist02/HIST02_FRZ_35_PER_ID_MATRIX.json (current_head_replay_at_pin)",
    "audit_authority_provenance": "none independent; inherited scoped proof only: True",
    "path_b": {
     "primary": false,
@@ -403,13 +422,13 @@
    "promotion_allowed": false,
    "proposed_status": "OPEN",
    "historical_evidence": "EBH-3 bd2f7d78; AW-7C 2fab207f; ARCH-FREEZE T-B2-BND03-RECONCILE f7ce9dae",
-   "current_head_applicability": "replay at pin ba07ebaa3: {\"target_sha\": \"ba07ebaa34d04633bd60510f68c18346b1ef160d\", \"results_by_path\": {\"tests/unit/architecture/test_ebh_3_dependency_ownership_gate.py\": \"PASS\", \"tests; executed: True",
+   "current_head_applicability": "replay at pin ba07ebaa3: executed=true; per-path results in dossiers/hist02/HIST02_FRZ_35_PER_ID_MATRIX.json (current_head_replay_at_pin)",
    "audit_authority_provenance": "none independent; inherited scoped proof only: True",
    "path_b": {
     "primary": false,
     "live_obligation": null
    },
-   "residual_risk": "Criterion is literally 0, AGENTS.md says MUST NOT; code has a Tier-0 -> applications import (cli/external_work.py:338) kept as a 'ratified tier exception' whose only authority is an audit document (AC1-AC6), decision id UNKNOWN. 7 further importlib Tier-2/3 imports + sys.path injection in same module not in exception tuple. REPLAY: P5-F01 member EBH-4 gate red (F-013); primary stays AUTHORITY_GAP ",
+   "residual_risk": "Criterion is literally 0, AGENTS.md says MUST NOT; code has a Tier-0 -> applications import (cli/external_work.py:338) kept as a 'ratified tier exception' whose only authority is an audit document (AC1-AC6), decision id UNKNOWN. 7 further importlib Tier-2/3 imports + sys.path injection in same module not in exception tuple. REPLAY: P5-F01 member EBH-4 gate red (F-013); primary stays AUTHORITY_GAP (F-001).",
    "next_required_stage": "Operator decision on Tier-0->Tier-3 exception in intergrax/cli/external_work.py (accept as limitation with decision id, or relocate to Tier-3) + dynamic-edge coverage; then replay and audit | owner: Operator (exception) / ARCH-FREEZE B7"
   },
   {
@@ -426,7 +445,7 @@
    "promotion_allowed": false,
    "proposed_status": "OPEN",
    "historical_evidence": "EBH-2G-R1 94eb6ae; EBH-2G 33175f8e; EBH-3 bd2f7d7",
-   "current_head_applicability": "replay at pin ba07ebaa3: {\"target_sha\": \"ba07ebaa34d04633bd60510f68c18346b1ef160d\", \"results_by_path\": {\"tests/unit/architecture/test_ebh_2a_public_contract_boundary_gate.py\": \"PASS\", \"; executed: True",
+   "current_head_applicability": "replay at pin ba07ebaa3: executed=true; per-path results in dossiers/hist02/HIST02_FRZ_35_PER_ID_MATRIX.json (current_head_replay_at_pin)",
    "audit_authority_provenance": "none independent; inherited scoped proof only: True",
    "path_b": {
     "primary": false,
@@ -447,7 +466,7 @@
    "promotion_allowed": false,
    "proposed_status": "OPEN",
    "historical_evidence": "EBH-2G 33175f8e; CE-01 a8d47a639; EBH-6",
-   "current_head_applicability": "replay at pin ba07ebaa3: {\"target_sha\": \"ba07ebaa34d04633bd60510f68c18346b1ef160d\", \"results_by_path\": {\"tests/unit/runtime/architecture/test_hardening_3_layer_boundary_gate.py\": \"PASS\"; executed: True",
+   "current_head_applicability": "replay at pin ba07ebaa3: executed=true; per-path results in dossiers/hist02/HIST02_FRZ_35_PER_ID_MATRIX.json (current_head_replay_at_pin)",
    "audit_authority_provenance": "none independent; inherited scoped proof only: True",
    "path_b": {
     "primary": false,
@@ -470,7 +489,7 @@
    "promotion_allowed": false,
    "proposed_status": "OPEN",
    "historical_evidence": "HARNESS-W5 5a87046 (via QUAL-X-FINAL row CW-HARNESS-W5-BND-06)",
-   "current_head_applicability": "replay at pin ba07ebaa3: {\"target_sha\": \"ba07ebaa34d04633bd60510f68c18346b1ef160d\", \"results_by_path\": {\"tests/unit/architecture/test_ebh_3_dependency_ownership_gate.py\": \"PASS\", \"tests; executed: True",
+   "current_head_applicability": "replay at pin ba07ebaa3: executed=true; per-path results in dossiers/hist02/HIST02_FRZ_35_PER_ID_MATRIX.json (current_head_replay_at_pin)",
    "audit_authority_provenance": "none independent; inherited scoped proof only: True",
    "path_b": {
     "primary": false,
@@ -491,7 +510,7 @@
    "promotion_allowed": false,
    "proposed_status": "OPEN",
    "historical_evidence": "EBH-2H; EBH-2I; EBH-2G; AW-7C; CE-01 a8d47a639; DUP-X a7d83925 (scoped)",
-   "current_head_applicability": "replay at pin ba07ebaa3: {\"target_sha\": \"ba07ebaa34d04633bd60510f68c18346b1ef160d\", \"results_by_path\": {\"tests/unit/architecture/test_ebh_3_dependency_ownership_gate.py\": \"PASS\", \"tests; executed: True",
+   "current_head_applicability": "replay at pin ba07ebaa3: executed=true; per-path results in dossiers/hist02/HIST02_FRZ_35_PER_ID_MATRIX.json (current_head_replay_at_pin)",
    "audit_authority_provenance": "none independent; inherited scoped proof only: True",
    "path_b": {
     "primary": false,
@@ -512,7 +531,7 @@
    "promotion_allowed": false,
    "proposed_status": "OPEN",
    "historical_evidence": "EBH-2G-R2 29c72135; AW-7C-P1-ARCH fa5853ec; CE-01",
-   "current_head_applicability": "replay at pin ba07ebaa3: {\"target_sha\": \"ba07ebaa34d04633bd60510f68c18346b1ef160d\", \"results_by_path\": {\"tests/unit/runtime/architecture/test_ebh_2f_r2_integration_plugin_contract_typin; executed: True",
+   "current_head_applicability": "replay at pin ba07ebaa3: executed=true; per-path results in dossiers/hist02/HIST02_FRZ_35_PER_ID_MATRIX.json (current_head_replay_at_pin)",
    "audit_authority_provenance": "none independent; inherited scoped proof only: True",
    "path_b": {
     "primary": false,
@@ -533,7 +552,7 @@
    "promotion_allowed": false,
    "proposed_status": "OPEN",
    "historical_evidence": "EBH-2G-R2 29c72135; AW-7C-P1-ARCH; CE-01",
-   "current_head_applicability": "replay at pin ba07ebaa3: {\"target_sha\": \"ba07ebaa34d04633bd60510f68c18346b1ef160d\", \"results_by_path\": {\"tests/unit/architecture/test_ebh_3_dependency_ownership_gate.py\": \"PASS\"}, \"note; executed: True",
+   "current_head_applicability": "replay at pin ba07ebaa3: executed=true; per-path results in dossiers/hist02/HIST02_FRZ_35_PER_ID_MATRIX.json (current_head_replay_at_pin)",
    "audit_authority_provenance": "none independent; inherited scoped proof only: True",
    "path_b": {
     "primary": false,
@@ -556,7 +575,7 @@
    "promotion_allowed": false,
    "proposed_status": "OPEN",
    "historical_evidence": "EBH-2G-R2 29c72135; EBH-2G 33175f8e (RAG only)",
-   "current_head_applicability": "replay at pin ba07ebaa3: {\"target_sha\": \"ba07ebaa34d04633bd60510f68c18346b1ef160d\", \"results_by_path\": {\"tests/unit/runtime/architecture/test_ee_final_arch_owner_uniqueness.py\": \"PASS\"}; executed: True",
+   "current_head_applicability": "replay at pin ba07ebaa3: executed=true; per-path results in dossiers/hist02/HIST02_FRZ_35_PER_ID_MATRIX.json (current_head_replay_at_pin)",
    "audit_authority_provenance": "none independent; inherited scoped proof only: True",
    "path_b": {
     "primary": false,
@@ -579,7 +598,7 @@
    "promotion_allowed": false,
    "proposed_status": "OPEN",
    "historical_evidence": "EBH-2G-R2-R1 be7e817; EBH-2G; EBH-6 bundle OWN",
-   "current_head_applicability": "replay at pin ba07ebaa3: {\"target_sha\": \"ba07ebaa34d04633bd60510f68c18346b1ef160d\", \"results_by_path\": {\"tests/unit/runtime/architecture/test_ee_final_arch_owner_uniqueness.py\": \"PASS\"}; executed: True",
+   "current_head_applicability": "replay at pin ba07ebaa3: executed=true; per-path results in dossiers/hist02/HIST02_FRZ_35_PER_ID_MATRIX.json (current_head_replay_at_pin)",
    "audit_authority_provenance": "none independent; inherited scoped proof only: True",
    "path_b": {
     "primary": false,
@@ -600,7 +619,7 @@
    "promotion_allowed": false,
    "proposed_status": "OPEN",
    "historical_evidence": "many (INT-CONFIG a5974451, EBH-2G 33175f8e, HARNESS-W5/W6, S24-GAP-04, CE-01, PROD-Q-P2 8e43b160)",
-   "current_head_applicability": "replay at pin ba07ebaa3: {\"target_sha\": \"ba07ebaa34d04633bd60510f68c18346b1ef160d\", \"results_by_path\": {\"tests/unit/runtime/architecture/test_ebh_2f_r2_integration_plugin_contract_typin; executed: True",
+   "current_head_applicability": "replay at pin ba07ebaa3: executed=true; per-path results in dossiers/hist02/HIST02_FRZ_35_PER_ID_MATRIX.json (current_head_replay_at_pin)",
    "audit_authority_provenance": "none independent; inherited scoped proof only: True",
    "path_b": {
     "primary": false,
@@ -621,7 +640,7 @@
    "promotion_allowed": false,
    "proposed_status": "OPEN",
    "historical_evidence": "INT-CONFIG a5974451; EBH-2G; S24-GAP-04-P2-R2 041057266; EBH-6 f27bfaf2f; EBH-5 33ecf19cc",
-   "current_head_applicability": "replay at pin ba07ebaa3: {\"target_sha\": \"ba07ebaa34d04633bd60510f68c18346b1ef160d\", \"results_by_path\": {\"tests/qualification/ebh_6/test_ebh_6_hardcoding_register_integrity.py\": \"PASS\", ; executed: True",
+   "current_head_applicability": "replay at pin ba07ebaa3: executed=true; per-path results in dossiers/hist02/HIST02_FRZ_35_PER_ID_MATRIX.json (current_head_replay_at_pin)",
    "audit_authority_provenance": "none independent; inherited scoped proof only: True",
    "path_b": {
     "primary": false,
@@ -642,7 +661,7 @@
    "promotion_allowed": false,
    "proposed_status": "OPEN",
    "historical_evidence": "INT-CONFIG a5974451; HARNESS-W5; HARNESS-W6",
-   "current_head_applicability": "replay at pin ba07ebaa3: {\"target_sha\": \"ba07ebaa34d04633bd60510f68c18346b1ef160d\", \"results_by_path\": {\"tests/unit/runtime/architecture/test_ebh_2f_r2_integration_plugin_contract_typin; executed: True",
+   "current_head_applicability": "replay at pin ba07ebaa3: executed=true; per-path results in dossiers/hist02/HIST02_FRZ_35_PER_ID_MATRIX.json (current_head_replay_at_pin)",
    "audit_authority_provenance": "none independent; inherited scoped proof only: True",
    "path_b": {
     "primary": false,
@@ -663,7 +682,7 @@
    "promotion_allowed": false,
    "proposed_status": "OPEN",
    "historical_evidence": "EBH-2F-R2 f7fabab; EBH-2G-R2; AW-7C-P1-ARCH",
-   "current_head_applicability": "replay at pin ba07ebaa3: {\"target_sha\": \"ba07ebaa34d04633bd60510f68c18346b1ef160d\", \"results_by_path\": {\"tests/unit/architecture/test_ebh_2a_public_contract_boundary_gate.py\": \"PASS\"}, ; executed: True",
+   "current_head_applicability": "replay at pin ba07ebaa3: executed=true; per-path results in dossiers/hist02/HIST02_FRZ_35_PER_ID_MATRIX.json (current_head_replay_at_pin)",
    "audit_authority_provenance": "none independent; inherited scoped proof only: True",
    "path_b": {
     "primary": false,
@@ -684,7 +703,7 @@
    "promotion_allowed": false,
    "proposed_status": "OPEN",
    "historical_evidence": "EBH-2G; HARNESS-W5/W6; S24-GAP-04; AW-7C-P1-ARCH; CE-01",
-   "current_head_applicability": "replay at pin ba07ebaa3: {\"target_sha\": \"ba07ebaa34d04633bd60510f68c18346b1ef160d\", \"results_by_path\": {\"tests/unit/runtime/architecture/test_ebh_2f_r2_integration_plugin_contract_typin; executed: True",
+   "current_head_applicability": "replay at pin ba07ebaa3: executed=true; per-path results in dossiers/hist02/HIST02_FRZ_35_PER_ID_MATRIX.json (current_head_replay_at_pin)",
    "audit_authority_provenance": "none independent; inherited scoped proof only: True",
    "path_b": {
     "primary": false,
@@ -705,7 +724,7 @@
    "promotion_allowed": false,
    "proposed_status": "OPEN",
    "historical_evidence": "INT-CONFIG; EBH-2G; S24-GAP-04; EBH-6; EBH-5",
-   "current_head_applicability": "replay at pin ba07ebaa3: {\"target_sha\": \"ba07ebaa34d04633bd60510f68c18346b1ef160d\", \"results_by_path\": {\"tests/qualification/ebh_6/test_ebh_6_hardcoding_register_integrity.py\": \"PASS\", ; executed: True",
+   "current_head_applicability": "replay at pin ba07ebaa3: executed=true; per-path results in dossiers/hist02/HIST02_FRZ_35_PER_ID_MATRIX.json (current_head_replay_at_pin)",
    "audit_authority_provenance": "none independent; inherited scoped proof only: True",
    "path_b": {
     "primary": false,
@@ -726,7 +745,7 @@
    "promotion_allowed": false,
    "proposed_status": "OPEN",
    "historical_evidence": "GOV-X2; INT-CONFIG; EBH-2G; EBH-2H; EBH-2I; HARNESS-W5/W6; CE-01",
-   "current_head_applicability": "replay at pin ba07ebaa3: {\"target_sha\": \"ba07ebaa34d04633bd60510f68c18346b1ef160d\", \"results_by_path\": {\"tests/unit/runtime/architecture/test_ebh_2f_r2_integration_plugin_contract_typin; executed: True",
+   "current_head_applicability": "replay at pin ba07ebaa3: executed=true; per-path results in dossiers/hist02/HIST02_FRZ_35_PER_ID_MATRIX.json (current_head_replay_at_pin)",
    "audit_authority_provenance": "none independent; inherited scoped proof only: True",
    "path_b": {
     "primary": false,
@@ -747,7 +766,7 @@
    "promotion_allowed": false,
    "proposed_status": "OPEN",
    "historical_evidence": "INT-CONFIG; EBH-2G; HARNESS-W5/W6; S24-GAP-04",
-   "current_head_applicability": "replay at pin ba07ebaa3: {\"target_sha\": \"ba07ebaa34d04633bd60510f68c18346b1ef160d\", \"results_by_path\": {\"tests/unit/runtime/architecture/test_ebh_2f_r2_integration_plugin_contract_typin; executed: True",
+   "current_head_applicability": "replay at pin ba07ebaa3: executed=true; per-path results in dossiers/hist02/HIST02_FRZ_35_PER_ID_MATRIX.json (current_head_replay_at_pin)",
    "audit_authority_provenance": "none independent; inherited scoped proof only: True",
    "path_b": {
     "primary": false,
@@ -770,7 +789,7 @@
    "promotion_allowed": false,
    "proposed_status": "OPEN",
    "historical_evidence": "GOV-X2 (Q2-D2); EBH-6 f27bfaf2f; INT-CONFIG; EBH-2G",
-   "current_head_applicability": "replay at pin ba07ebaa3: {\"target_sha\": \"ba07ebaa34d04633bd60510f68c18346b1ef160d\", \"results_by_path\": {\"tests/qualification/ebh_6/test_ebh_6_q2d2_dual_path.py\": \"PASS\", \"tests/unit/run; executed: True",
+   "current_head_applicability": "replay at pin ba07ebaa3: executed=true; per-path results in dossiers/hist02/HIST02_FRZ_35_PER_ID_MATRIX.json (current_head_replay_at_pin)",
    "audit_authority_provenance": "none independent; inherited scoped proof only: True",
    "path_b": {
     "primary": false,
@@ -793,7 +812,7 @@
    "promotion_allowed": false,
    "proposed_status": "OPEN",
    "historical_evidence": "INT-CONFIG; EBH-2I; EBH-2G; HARNESS-W5/W6",
-   "current_head_applicability": "replay at pin ba07ebaa3: {\"target_sha\": \"ba07ebaa34d04633bd60510f68c18346b1ef160d\", \"results_by_path\": {\"tests/unit/architecture/test_ebh_2i_final_rescan_gate.py\": \"PASS\"}, \"note\": \"Res; executed: True",
+   "current_head_applicability": "replay at pin ba07ebaa3: executed=true; per-path results in dossiers/hist02/HIST02_FRZ_35_PER_ID_MATRIX.json (current_head_replay_at_pin)",
    "audit_authority_provenance": "none independent; inherited scoped proof only: True",
    "path_b": {
     "primary": false,
@@ -816,7 +835,7 @@
    "promotion_allowed": false,
    "proposed_status": "OPEN",
    "historical_evidence": "HARNESS-W6 846af28 only",
-   "current_head_applicability": "replay at pin ba07ebaa3: {\"target_sha\": \"ba07ebaa34d04633bd60510f68c18346b1ef160d\", \"results_by_path\": {\"tests/unit/runtime/architecture/test_harness_w6_runtime_intelligence_boundary_ga; executed: True",
+   "current_head_applicability": "replay at pin ba07ebaa3: executed=true; per-path results in dossiers/hist02/HIST02_FRZ_35_PER_ID_MATRIX.json (current_head_replay_at_pin)",
    "audit_authority_provenance": "none independent; inherited scoped proof only: True",
    "path_b": {
     "primary": false,
@@ -837,7 +856,7 @@
    "promotion_allowed": false,
    "proposed_status": "OPEN",
    "historical_evidence": "INT-CONFIG; EBH-2G; HARNESS-W5/W6; S24-GAP-04",
-   "current_head_applicability": "replay at pin ba07ebaa3: {\"target_sha\": \"ba07ebaa34d04633bd60510f68c18346b1ef160d\", \"results_by_path\": {\"tests/unit/runtime/architecture/test_ebh_2f_r2_integration_plugin_contract_typin; executed: True",
+   "current_head_applicability": "replay at pin ba07ebaa3: executed=true; per-path results in dossiers/hist02/HIST02_FRZ_35_PER_ID_MATRIX.json (current_head_replay_at_pin)",
    "audit_authority_provenance": "none independent; inherited scoped proof only: True",
    "path_b": {
     "primary": false,
@@ -858,7 +877,7 @@
    "promotion_allowed": false,
    "proposed_status": "OPEN",
    "historical_evidence": "many scoped; EBH-6 bundle PLG",
-   "current_head_applicability": "replay at pin ba07ebaa3: {\"target_sha\": \"ba07ebaa34d04633bd60510f68c18346b1ef160d\", \"results_by_path\": {\"tests/unit/runtime/architecture/test_ebh_2f_r2_integration_plugin_contract_typin; executed: True",
+   "current_head_applicability": "replay at pin ba07ebaa3: executed=true; per-path results in dossiers/hist02/HIST02_FRZ_35_PER_ID_MATRIX.json (current_head_replay_at_pin)",
    "audit_authority_provenance": "none independent; inherited scoped proof only: True",
    "path_b": {
     "primary": false,
@@ -879,7 +898,7 @@
    "promotion_allowed": false,
    "proposed_status": "OPEN",
    "historical_evidence": "INT-CONFIG; HARNESS-W6; S24-GAP-04-P2; EBH-5 33ecf19cc",
-   "current_head_applicability": "replay at pin ba07ebaa3: {\"target_sha\": \"ba07ebaa34d04633bd60510f68c18346b1ef160d\", \"results_by_path\": {\"tests/unit/integrations/test_external_plugin.py\": \"PASS\", \"tests/unit/integratio; executed: True",
+   "current_head_applicability": "replay at pin ba07ebaa3: executed=true; per-path results in dossiers/hist02/HIST02_FRZ_35_PER_ID_MATRIX.json (current_head_replay_at_pin)",
    "audit_authority_provenance": "none independent; inherited scoped proof only: True",
    "path_b": {
     "primary": false,
@@ -900,7 +919,7 @@
    "promotion_allowed": false,
    "proposed_status": "OPEN",
    "historical_evidence": "EBH-2G-R2-R1/R2/parent (RAG graph only)",
-   "current_head_applicability": "replay at pin ba07ebaa3: {\"target_sha\": \"ba07ebaa34d04633bd60510f68c18346b1ef160d\", \"results_by_path\": {\"tests/unit/integrations/registry/test_catalog_revision_and_mutation.py\": \"PASS\"}; executed: True",
+   "current_head_applicability": "replay at pin ba07ebaa3: executed=true; per-path results in dossiers/hist02/HIST02_FRZ_35_PER_ID_MATRIX.json (current_head_replay_at_pin)",
    "audit_authority_provenance": "none independent; inherited scoped proof only: True",
    "path_b": {
     "primary": false,
@@ -921,7 +940,7 @@
    "promotion_allowed": false,
    "proposed_status": "OPEN",
    "historical_evidence": "EBH-2G (RAG); EBH-5; EBH-6 bundle PLG",
-   "current_head_applicability": "replay at pin ba07ebaa3: {\"target_sha\": \"ba07ebaa34d04633bd60510f68c18346b1ef160d\", \"results_by_path\": {\"tests/qualification/ebh_5/test_ebh_5_mechanical_exit_gates.py\": \"PASS\"}, \"note\":; executed: True",
+   "current_head_applicability": "replay at pin ba07ebaa3: executed=true; per-path results in dossiers/hist02/HIST02_FRZ_35_PER_ID_MATRIX.json (current_head_replay_at_pin)",
    "audit_authority_provenance": "none independent; inherited scoped proof only: True",
    "path_b": {
     "primary": false,
@@ -942,7 +961,7 @@
    "promotion_allowed": false,
    "proposed_status": "OPEN",
    "historical_evidence": "EBH-2G (RAG fail-closed)",
-   "current_head_applicability": "replay at pin ba07ebaa3: {\"target_sha\": \"ba07ebaa34d04633bd60510f68c18346b1ef160d\", \"results_by_path\": {\"tests/unit/applications/test_catalog_hot_reload_governance.py\": \"PASS\"}, \"note\":; executed: True",
+   "current_head_applicability": "replay at pin ba07ebaa3: executed=true; per-path results in dossiers/hist02/HIST02_FRZ_35_PER_ID_MATRIX.json (current_head_replay_at_pin)",
    "audit_authority_provenance": "none independent; inherited scoped proof only: True",
    "path_b": {
     "primary": false,
@@ -965,7 +984,7 @@
    "promotion_allowed": false,
    "proposed_status": "OPEN",
    "historical_evidence": "GR-11 (governance plugin closed world, READY FOR AUDIT doc; roadmap GOV-X1-GR11 4e5878f5)",
-   "current_head_applicability": "replay at pin ba07ebaa3: {\"target_sha\": \"ba07ebaa34d04633bd60510f68c18346b1ef160d\", \"results_by_path\": {\"tests/qualification/governance/gr11/test_gr11_plugin_enterprise_certification.py; executed: True",
+   "current_head_applicability": "replay at pin ba07ebaa3: executed=true; per-path results in dossiers/hist02/HIST02_FRZ_35_PER_ID_MATRIX.json (current_head_replay_at_pin)",
    "audit_authority_provenance": "none independent; inherited scoped proof only: True",
    "path_b": {
     "primary": false,
@@ -988,7 +1007,7 @@
    "promotion_allowed": false,
    "proposed_status": "OPEN",
    "historical_evidence": "HARNESS-W6 846af28 only",
-   "current_head_applicability": "replay at pin ba07ebaa3: {\"target_sha\": \"ba07ebaa34d04633bd60510f68c18346b1ef160d\", \"results_by_path\": {\"tests/unit/runtime/architecture/test_harness_w6_runtime_intelligence_boundary_ga; executed: True",
+   "current_head_applicability": "replay at pin ba07ebaa3: executed=true; per-path results in dossiers/hist02/HIST02_FRZ_35_PER_ID_MATRIX.json (current_head_replay_at_pin)",
    "audit_authority_provenance": "none independent; inherited scoped proof only: True",
    "path_b": {
     "primary": false,
@@ -1011,7 +1030,7 @@
    "promotion_allowed": false,
    "proposed_status": "OPEN",
    "historical_evidence": "none in checklist",
-   "current_head_applicability": "replay at pin ba07ebaa3: {\"target_sha\": \"ba07ebaa34d04633bd60510f68c18346b1ef160d\", \"results_by_path\": {\"tests/unit/integrations/registry/test_catalog_revision_and_mutation.py\": \"PASS\",; executed: True",
+   "current_head_applicability": "replay at pin ba07ebaa3: executed=true; per-path results in dossiers/hist02/HIST02_FRZ_35_PER_ID_MATRIX.json (current_head_replay_at_pin)",
    "audit_authority_provenance": "none independent; inherited scoped proof only: True",
    "path_b": {
     "primary": false,
@@ -1035,7 +1054,7 @@
    "promotion_allowed": false,
    "proposed_status": "OPEN",
    "historical_evidence": "INT-CONFIG; AW-7C-P1-ARCH; CE-01; EBH-5 33ecf19cc; EBH-7 dc18e36d9",
-   "current_head_applicability": "replay at pin ba07ebaa3: {\"target_sha\": \"ba07ebaa34d04633bd60510f68c18346b1ef160d\", \"results_by_path\": {\"tests/qualification/ebh_5/test_ebh_5_rpl_g_regression_gates.py\": \"PASS\", \"tests/; executed: True",
+   "current_head_applicability": "replay at pin ba07ebaa3: executed=true; per-path results in dossiers/hist02/HIST02_FRZ_35_PER_ID_MATRIX.json (current_head_replay_at_pin)",
    "audit_authority_provenance": "none independent; inherited scoped proof only: True",
    "path_b": {
     "primary": false,
@@ -1059,7 +1078,7 @@
    "promotion_allowed": false,
    "proposed_status": "OPEN",
    "historical_evidence": "INT-CONFIG; HARNESS-W6; AW-7C-P1-ARCH; CE-01",
-   "current_head_applicability": "replay at pin ba07ebaa3: {\"target_sha\": \"ba07ebaa34d04633bd60510f68c18346b1ef160d\", \"results_by_path\": {\"tests/qualification/ebh_5/test_ebh_5_behavioral_proofs.py\": \"PASS\", \"tests/quali; executed: True",
+   "current_head_applicability": "replay at pin ba07ebaa3: executed=true; per-path results in dossiers/hist02/HIST02_FRZ_35_PER_ID_MATRIX.json (current_head_replay_at_pin)",
    "audit_authority_provenance": "none independent; inherited scoped proof only: True",
    "path_b": {
     "primary": false,
@@ -1084,7 +1103,7 @@
    "promotion_allowed": false,
    "proposed_status": "OPEN",
    "historical_evidence": "CE-01 a8d47a639 only",
-   "current_head_applicability": "replay at pin ba07ebaa3: {\"target_sha\": \"ba07ebaa34d04633bd60510f68c18346b1ef160d\", \"results_by_path\": {\"tests/qualification/ebh_5/test_ebh_5_behavioral_proofs.py\": \"PASS\", \"tests/quali; executed: True",
+   "current_head_applicability": "replay at pin ba07ebaa3: executed=true; per-path results in dossiers/hist02/HIST02_FRZ_35_PER_ID_MATRIX.json (current_head_replay_at_pin)",
    "audit_authority_provenance": "none independent; inherited scoped proof only: True",
    "path_b": {
     "primary": false,
@@ -1107,7 +1126,7 @@
    "promotion_allowed": false,
    "proposed_status": "OPEN",
    "historical_evidence": "HARNESS-W5; HARNESS-W6; TRACE-X-P5-R2-P2 660d9d9c; EBH-6 bundle RPL",
-   "current_head_applicability": "replay at pin ba07ebaa3: {\"target_sha\": \"ba07ebaa34d04633bd60510f68c18346b1ef160d\", \"results_by_path\": {\"tests/qualification/ebh_5/test_ebh_5_rpl_g_regression_gates.py\": \"PASS\", \"tests/; executed: True",
+   "current_head_applicability": "replay at pin ba07ebaa3: executed=true; per-path results in dossiers/hist02/HIST02_FRZ_35_PER_ID_MATRIX.json (current_head_replay_at_pin)",
    "audit_authority_provenance": "none independent; inherited scoped proof only: True",
    "path_b": {
     "primary": false,
@@ -1328,7 +1347,7 @@
    "audit_authority_provenance": "none independent; acceptance rule unmet: exact SHA + criterion mapping + static + executed gate output + independent auditor sign-off + operator promotion (ECAP; checklist PASS rule L40-45)",
    "path_b": {
     "primary": false,
-    "live_obligation": "None (live secret stores are vendor concern)."
+    "live_obligation": null
    },
    "residual_risk": "Checklist cell empty ('-'); test_sec_ent.py (the only security-wiring gate for encryptor/secrets resolution) is RED at pin (7 failed, F-006; no_ci so CI does not see it); no row-specific gate or negative regression; ARCH-FREEZE matrix: QUALIFICATION_REQUIRED;INDEPENDENT_AUDIT_REQUIRED.",
    "next_required_stage": "Architecture-only matrix + AST/negative gate (no raw secret values in contracts/config/events); targeted tests; independent audit."
@@ -1517,7 +1536,7 @@
    ],
    "promotion_allowed": false,
    "proposed_status": "OPEN",
-   "historical_evidence": "[\"CTRL-X @318a4d83 (CTRL_X_ENTERPRISE_CONTROL_PLANE_RECERTIFICATION.md; own FRZ map = 'candidate only') sec-matrix: residency 'N/A' evidence '-'; encryption 'partial' (EncryptionEnforcementMiddleware; ADR-SEC-001: 'not field-level KMS encryption yet')\", \"tests/qualification/prod_q/_p0_frz_reconciliation.py (mechanical PROD-Q-P0 record) N_A_WITH_EVIDENCE with prose-only ref 'infrastructure operator",
+   "historical_evidence": "[\"CTRL-X @318a4d83 (CTRL_X_ENTERPRISE_CONTROL_PLANE_RECERTIFICATION.md; own FRZ map = 'candidate only') sec-matrix: residency 'N/A' evidence '-'; encryption 'partial' (EncryptionEnforcementMiddleware; ADR-SEC-001: 'not field-level KMS encryption yet')\", \"tests/qualification/prod_q/_p0_frz_reconciliation.py (mechanical PROD-Q-P0 record) N_A_WITH_EVIDENCE with prose-only ref 'infrastructure operator ownership documented'\"]",
    "current_head_applicability": "see evidence_route: AUTHOR_DOCS_RECORD_THEN_INDEPENDENT_AUDIT_ONLY (replay of cited gates optional)",
    "audit_authority_provenance": "none independent; acceptance rule unmet: exact SHA + criterion mapping + static + executed gate output + independent auditor sign-off + operator promotion (ECAP; checklist PASS rule L40-45)",
    "path_b": {
@@ -1543,7 +1562,7 @@
    ],
    "promotion_allowed": false,
    "proposed_status": "OPEN",
-   "historical_evidence": "[\"TOOL-LIFE-X Batch A (TOOL_LIFE_X_BATCH_A_DEADLINE_HIERARCHY_EVIDENCE.md: TL1/TL2 @693ecafd; 'advanced, not global PASS'). CAUTION: TOOL-LIFE-X is NOT accepted - AUD-TOOLLIFE CONDITIONAL/STOP @15486407 (C-1 four red tests, C-2 F3 cancel), OD-ROUTE-DS3: neither accepted nor waived (CERT_CAMPAIGN_DELEGATED_DECISIONS L291-298); do not rely on its CLOSED ledger label\", \"CTRL-X @318a4d83 (CTRL_X_ENTER",
+   "historical_evidence": "[\"TOOL-LIFE-X Batch A (TOOL_LIFE_X_BATCH_A_DEADLINE_HIERARCHY_EVIDENCE.md: TL1/TL2 @693ecafd; 'advanced, not global PASS'). CAUTION: TOOL-LIFE-X is NOT accepted - AUD-TOOLLIFE CONDITIONAL/STOP @15486407 (C-1 four red tests, C-2 F3 cancel), OD-ROUTE-DS3: neither accepted nor waived (CERT_CAMPAIGN_DELEGATED_DECISIONS L291-298); do not rely on its CLOSED ledger label\", \"CTRL-X @318a4d83 (CTRL_X_ENTERPRISE_CONTROL_PLANE_RECERTIFICATION.md; own FRZ map = 'candidate only') reliability matrix S13 (timeout owner column)\", \"tests/qualification/prod_q/_p0_frz_reconciliation.py (mechanical PROD-Q-P0 record) attributes to HARNESS-W4 though W4 FRZ list is REL-04..11\"]",
    "current_head_applicability": "see evidence_route: MAPPING_THEN_PINNED_REPLAY_THEN_AUDIT (blocked on TOOL-LIFE-X C-1/C-2 correctives for TL evidence)",
    "audit_authority_provenance": "none independent; acceptance rule unmet: exact SHA + criterion mapping + static + executed gate output + independent auditor sign-off + operator promotion (ECAP; checklist PASS rule L40-45)",
    "path_b": {
@@ -2045,7 +2064,7 @@
    ],
    "promotion_allowed": false,
    "proposed_status": "OPEN",
-   "historical_evidence": "[\"HARNESS-W4 @f38e455 (ENTERPRISE_EXECUTION_SCALE_RESILIENCE_W4_PARENT_RECERTIFICATION.md)\", \"CTRL-X @318a4d83 (CTRL_X_ENTERPRISE_CONTROL_PLANE_RECERTIFICATION.md; own FRZ map = 'candidate only') S13\", \"DIST-SCALE-X operator-scoped closure only (independent acceptance conditional on DS-4/DS-5 routing per HIST-04 note; WL-7 14400 s soak NOT PROVEN, deferred non-blocking)\", \"tests/qualification/prod",
+   "historical_evidence": "[\"HARNESS-W4 @f38e455 (ENTERPRISE_EXECUTION_SCALE_RESILIENCE_W4_PARENT_RECERTIFICATION.md)\", \"CTRL-X @318a4d83 (CTRL_X_ENTERPRISE_CONTROL_PLANE_RECERTIFICATION.md; own FRZ map = 'candidate only') S13\", \"DIST-SCALE-X operator-scoped closure only (independent acceptance conditional on DS-4/DS-5 routing per HIST-04 note; WL-7 14400 s soak NOT PROVEN, deferred non-blocking)\", \"tests/qualification/prod_q/_p0_frz_reconciliation.py (mechanical PROD-Q-P0 record) SUPPORTING_HISTORICAL\"]",
    "current_head_applicability": "see evidence_route: QUALIFICATION_WORK_FIRST_THEN_PINNED_REPLAY_THEN_INDEPENDENT_AUDIT",
    "audit_authority_provenance": "none independent; acceptance rule unmet: exact SHA + criterion mapping + static + executed gate output + independent auditor sign-off + operator promotion (ECAP; checklist PASS rule L40-45)",
    "path_b": {

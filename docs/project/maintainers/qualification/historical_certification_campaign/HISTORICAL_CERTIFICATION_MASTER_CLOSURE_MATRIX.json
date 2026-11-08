@@ -1,6 +1,6 @@
 {
  "schema": "historical-campaign-master-closure.v1",
- "generated_utc": "2026-11-08T10:56:32Z",
+ "generated_utc": "2026-11-08T11:15:30Z",
  "overall_result": "PARTIAL / EXACT BLOCKERS",
  "not": "HISTORICAL_CAMPAIGN_CLOSED_VERIFIED",
  "campaign_start_sha": "ba07ebaa34d04633bd60510f68c18346b1ef160d",
@@ -9,9 +9,10 @@
   "total_historical_requirements": 85,
   "verified_independent_closures": 0,
   "valid_scope_limited_acceptances": 0,
-  "open_architecture_blockers": 51,
-  "path_b_primary_deferrals": 3,
-  "rows_with_live_obligation_or_path_b": 20,
+  "open_architecture_blockers": 52,
+  "path_b_primary_deferrals": 2,
+  "rows_on_checklist_path_b_list_L66": 5,
+  "rows_with_worker_identified_live_dependency_or_path_b": 19,
   "outstanding_audit_requirements": 29,
   "outstanding_operator_decisions": 7,
   "findings_requiring_implementation": 4,
@@ -51,29 +52,25 @@
  },
  "dispositions": {
   "by_classification": {
-   "QUALIFICATION_GAP": 33,
+   "QUALIFICATION_GAP": 34,
    "EVIDENCE_GAP": 20,
-   "PATH_B_LIVE_DEFERRED": 3,
    "VALID_SCOPED_PASS_CANDIDATE": 19,
    "AUTHORITY_GAP": 1,
    "IMPLEMENTATION_GAP": 1,
    "SSOT_DRIFT": 5,
-   "INDEPENDENT_AUDIT_GAP": 3
+   "INDEPENDENT_AUDIT_GAP": 3,
+   "PATH_B_LIVE_DEFERRED": 2
   },
   "by_dashboard_state": {
-   "QUALIFICATION_REQUIRED": 50,
+   "QUALIFICATION_REQUIRED": 51,
    "AUDIT_REQUIRED": 29,
-   "PATH_B_DEFERRED": 3,
    "AUTHORITY_REQUIRED": 2,
-   "IMPLEMENTATION_REQUIRED": 1
+   "IMPLEMENTATION_REQUIRED": 1,
+   "PATH_B_DEFERRED": 2
   }
  },
  "operator_decisions": {
   "answered": [
-   {
-    "id": "MASTER-OD-01",
-    "answer": null
-   },
    {
     "id": "OD-HIST01-A",
     "answer": "yes: one bounded QUAL-X Dimension A replay in a fresh independent session on a pinned current SHA; MASTER sequencing: run on the post-integration candidate SHA so the evidence is for the final SHA"
@@ -102,7 +99,7 @@
    },
    {
     "id": "OD-HIST04-B",
-    "topic": "Resolve IIAC Amendment 01 status contradiction (header IN FORCE vs SS5.3/SS6 PROPOSED) and S-1..S-3 / OQ-1..4; mechanical enforcement needs T-IGX-021-B/C + new "
+    "topic": "Resolve IIAC Amendment 01 status contradiction (header IN FORCE vs SS5.3/SS6 PROPOSED) and S-1..S-3 / OQ-1..4; mechanical enforcement needs T-IGX-021-B/C + new [truncated; full text in the source dossier]"
    },
    {
     "id": "OD-HIST04-C",
@@ -110,19 +107,19 @@
    },
    {
     "id": "OD-HIST02-A",
-    "topic": "FRZ-BND-03: a Tier-0 module (intergrax/) imports a Tier-3 demo fixture (CLI demo composition), treated as 'ratified tier exception' but the only cited authority"
+    "topic": "FRZ-BND-03: a Tier-0 module (intergrax/) imports a Tier-3 demo fixture (CLI demo composition), treated as 'ratified tier exception' but the only cited authority [truncated; full text in the source dossier]"
    },
    {
     "id": "OD-HIST03-A",
-    "topic": "HIST-03 consolidated rulings: P-03 (SEC-06 split note: plugin-trust architecture part vs provider-live part; not on checklist L66 Path B list), P-04 (PRD-04 sco"
+    "topic": "HIST-03 consolidated rulings: P-03 (SEC-06 split note: plugin-trust architecture part vs provider-live part; not on checklist L66 Path B list), P-04 (PRD-04 sco [truncated; full text in the source dossier]"
    },
    {
     "id": "OD-HIST03-B",
-    "topic": "HIST03-F-015 (IMPLEMENTATION_GAP, HIGH; PRD/SEC/REL rows relying on PROD-Q P2-C HTTP admission): tests/qualification/prod_q/test_prod_q_r1_r7_q_p2_c_http_execut"
+    "topic": "HIST03-F-015 (IMPLEMENTATION_GAP, HIGH; PRD/SEC/REL rows relying on PROD-Q P2-C HTTP admission): tests/qualification/prod_q/test_prod_q_r1_r7_q_p2_c_http_execut [truncated; full text in the source dossier]"
    },
    {
     "id": "OD-HIST01-B",
-    "topic": "Scope of promotion for FRZ-REG rows (H01-F013): (a) only on ENT-AUDIT-X Pop. E rollup, (b) Pop. A-D at pinned current SHA with stated Pop. E residual, (c) all O"
+    "topic": "Scope of promotion for FRZ-REG rows (H01-F013): (a) only on ENT-AUDIT-X Pop. E rollup, (b) Pop. A-D at pinned current SHA with stated Pop. E residual, (c) all O [truncated; full text in the source dossier]"
    }
   ]
  },
@@ -363,7 +360,7 @@
    }
   },
   "verified": "each PR head == pushed tip; all tips are ancestors of origin/development; ACT-N11: 0 product-path changes vs ae467c8c4; 0 of the six MATERIAL_GOVERNANCE_PATHS changed; 21 files changed by the three PRs",
-  "post_merge_ci": "Regression gate runs on development (4e48eba82, feee82b2e) were pending/in_progress at the last check - NOT yet confirmed green",
+  "post_merge_ci": "at 2026-11-08T11:08Z (aud-final): Regression gate success on 4e48eba82 and feee82b2e; no run listed for 41908e3fb (docs-only path filter plausible, not checked)",
   "ci_failures_before_rerun": "all caused by 'Unexpected HTTP response: 504' in the uv install step (infrastructure), none by tests or verifications"
  },
  "global_acceptance_criteria": [
@@ -442,14 +439,14 @@
   {
    "n": 13,
    "criterion": "Independent integration audit has passed",
-   "status": "PENDING",
-   "basis": "audit of this package in progress"
+   "status": "PARTIAL",
+   "basis": "aud-final returned ACCEPT_WITH_CHANGES for package commit 2a7aec93d; all 13 findings are applied in the next commit; a text-only re-read of the changed counters is pending"
   },
   {
    "n": 14,
    "criterion": "All residual Path B live obligations remain correctly OPEN",
    "status": "MET",
-   "basis": "20 rows carry a live obligation or Path B primary; all OPEN"
+   "basis": "5 rows named by checklist L66 plus 14 worker-identified live dependencies; all OPEN"
   },
   {
    "n": 15,

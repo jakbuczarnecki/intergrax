@@ -1,5 +1,5 @@
 # Historical stage SHA and evidence registry
-Generated 2026-11-08T10:56:32Z from git (`origin/development` = `41908e3fb`). Every SHA below was resolved with `git rev-parse` in the local object store; "UNVERIFIED" means it could not be resolved. A SHA that exists is not evidence that the claim attached to it is true - the claim comes from the cited campaign record.
+Generated 2026-11-08T11:15:30Z from git (`origin/development` = `41908e3fb`). Every SHA below was resolved with `git rev-parse` in the local object store; "UNVERIFIED" means it could not be resolved. A SHA that exists is not evidence that the claim attached to it is true - the claim comes from the cited campaign record.
 
 ## 1. SHAs
 | group | label | SHA | date | subject | on origin/development |
@@ -73,4 +73,5 @@ Notes: SHAs in the group "unpublished" were not on any `origin` branch before PR
 - Worker dossiers (per-ID matrices, findings registers, handoffs): `dossiers/hist01..hist04/`.
 - Independent reviews and audit: `audits/`.
 - Delegation record used for the T-IGX-030-A plan approval: `delegations/DELEG-HIST-030A-2026-11-08.md` (MASTER transcription of the Operator's chat instruction; NOT signed by the Operator; sha256 in the adjacent `.sha256`).
+- The `Approved:` line in `governance/tickets/T-IGX-030-A.md` names the delegation by its original local path (`.tmp/session/hist-cert-campaign/delegations/DELEG-HIST-030A-2026-11-08.md`); the published copy is `delegations/DELEG-HIST-030A-2026-11-08.md` (sha256 `e17d1cb131cdbf6475b3330021ed85807979aaaab6292322805528db10a80364`).
 - Local evidence that is NOT published and that no claim here depends on exclusively: replay logs of the workers (`hist02/replay_ba07eba.log`, `hist03/pytest_run1.log`, `hist03/iso_*.log`), audit logs (`audits/aud-030a/*.log`).

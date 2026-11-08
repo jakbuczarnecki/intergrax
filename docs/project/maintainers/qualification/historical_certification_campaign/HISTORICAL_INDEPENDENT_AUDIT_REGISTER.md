@@ -1,5 +1,5 @@
 # Historical independent audit register
-Generated 2026-11-08T10:56:32Z. Claude session ids are transcript file names (the host does not expose them); `UNKNOWN` means not recoverable.
+Generated 2026-11-08T11:15:30Z. Claude session ids are transcript file names (the host does not expose them); `UNKNOWN` means not recoverable.
 
 ## 1. Independent audits, reviews and approvals performed in this campaign
 | name | session id | role | scope | verdict | report |

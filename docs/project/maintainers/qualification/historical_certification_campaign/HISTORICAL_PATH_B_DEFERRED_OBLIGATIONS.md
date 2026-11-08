@@ -1,19 +1,20 @@
 # Historical Path B deferred obligations
-Generated 2026-11-08T10:56:32Z. Source rule: `PLATFORM_ENTERPRISE_FREEZE_ACCEPTANCE_CHECKLIST.md` section "Path B - architecture-scoped vs live qualification acceptance" (the live-scoped list is defined only there; HIST03 finding F-001 records that `ROADMAP_REPLAY_X_FRZ_225_RECONCILIATION.md` must not be used for it). Path B defers LIVE qualification only; it never waives the architecture obligation and never grants production readiness.
+Generated 2026-11-08T11:15:30Z. Source rule: `PLATFORM_ENTERPRISE_FREEZE_ACCEPTANCE_CHECKLIST.md` section "Path B - architecture-scoped vs live qualification acceptance" (the live-scoped list is defined only there; HIST03 finding F-001 records that `ROADMAP_REPLAY_X_FRZ_225_RECONCILIATION.md` must not be used for it). Path B defers LIVE qualification only; it never waives the architecture obligation and never grants production readiness.
 
-## 1. Rows whose primary classification is PATH_B_LIVE_DEFERRED (3)
+## 1. Rows whose primary classification is PATH_B_LIVE_DEFERRED (2)
 | FRZ id | requirement | live obligation | residual |
 |---|---|---|---|
-| FRZ-REG-08 | environment failures cannot become false PASS | (see matrix) | build_r1_sqlite_disposition is NOT_EXECUTED for live HTTP / GCA: owned by PROD-Q Dimension B (live), which this campaign must not take over. Related observation |
 | FRZ-PRD-01 | production qualification independent of lab/harness | Independent production qualification evidence; acceptance owner PROD-Q live gate / SCENARIO-GATE. | Live slice NOT QUALIFIED by design. |
-| FRZ-PRD-02 | provider/plugin qualification enforced | Per-provider live qualification (PROD-Q-P1, operator profiles). | Live slice NOT QUALIFIED by design. |
+| FRZ-PRD-02 | provider/plugin qualification enforced | Per-provider live qualification (PROD-Q-P1, operator profiles). | Live slice NOT QUALIFIED by design. Architecture part (structural replaceability, EBH-5 / EBH-6) is NOT deferred: it is tracked under FRZ-RPL-01..04. |
 
-## 2. Rows that keep their ARCHITECTURE obligation and carry a LIVE obligation as a secondary cause (17)
-These rows are NOT deferred as a whole: the architecture part still has to reach its acceptance rule.
+FRZ-REG-08 is NOT in this list: HIST-01 had classified it PATH_B_LIVE_DEFERRED, but it is not on the checklist Path B list (L66) and not in WBS T-PATHB-EXCL, so the independent integration audit (F-01) required its reclassification; it is architecture-scoped (QUALIFICATION_GAP) with a PROD-Q Dimension B dependency recorded as secondary.
+
+## 2. Rows that keep their ARCHITECTURE obligation and carry a worker-identified LIVE dependency (17)
+Rows on the checklist Path B list (L66): FRZ-PRD-01, FRZ-PRD-02, and the live parts of FRZ-PRD-03, FRZ-PRD-08, FRZ-SEC-04. All other rows below are live dependencies identified by HIST-02 / HIST-03 (and FRZ-REG-08 by HIST-01) and are NOT Path B scope. These rows are NOT deferred as a whole: the architecture part still has to reach its acceptance rule.
 | FRZ id | primary classification | state | live obligation (deferred) |
 |---|---|---|---|
+| FRZ-REG-08 | QUALIFICATION_GAP | QUALIFICATION_REQUIRED | build_r1_sqlite_disposition for live HTTP / GCA is NOT_EXECUTED and owned by PROD-Q Dimension B (recorded dependency; REG-08 is not on the checklist Path B list L66). |
 | FRZ-SEC-01 | QUALIFICATION_GAP | QUALIFICATION_REQUIRED | Multi-instance (Kubernetes) trust anchor/global first-writer PIS (Decision-03; D03-A Spanner+Azure witness) - infra, not ratified/live. |
-| FRZ-SEC-02 | QUALIFICATION_GAP | QUALIFICATION_REQUIRED | None (live secret stores are vendor concern). |
 | FRZ-SEC-04 | QUALIFICATION_GAP | QUALIFICATION_REQUIRED | Operator production profiles (DIM6/DIM17) - Path B live-scoped (checklist L66). |
 | FRZ-SEC-05 | QUALIFICATION_GAP | QUALIFICATION_REQUIRED | Real provider sandboxes (see SEC-06). |
 | FRZ-SEC-06 | QUALIFICATION_GAP | QUALIFICATION_REQUIRED | E2B/Modal/Daytona production provider qualification (PROD-Q-P1) - row note says OPEN under PROD-Q. |

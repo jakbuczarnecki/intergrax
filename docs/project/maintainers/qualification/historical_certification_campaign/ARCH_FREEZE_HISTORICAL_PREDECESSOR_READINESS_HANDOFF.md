@@ -1,12 +1,12 @@
 # ARCH-FREEZE historical predecessor readiness handoff
-Generated 2026-11-08T10:56:32Z; findings baseline `ba07ebaa3`; `origin/development` = `41908e3fb`.
+Generated 2026-11-08T11:15:30Z; findings baseline `ba07ebaa3`; `origin/development` = `41908e3fb`.
 
 ## 1. Verdict
 **NOT READY** as a historical predecessor. All 85 historical FRZ rows are still OPEN; 0 were closed independently; the campaign promoted nothing. ARCH-FREEZE must not treat any of them as inherited PASS. This handoff states what is known so that the readiness review can start from facts, not from historical closure labels.
 
 ## 2. What ARCH-FREEZE can rely on
 - A per-ID disposition of all 85 rows with accountable workstream, evidence, current-HEAD applicability, next stage: `HISTORICAL_FRZ_85_DISPOSITION_MATRIX.json`.
-- 29 rows already have enough scoped evidence that only an independent audit / exact-SHA replay is missing; 50 need qualification work; 1 need an implementation fix; 2 await an Operator ruling; 3 are Path B primary.
+- 19 rows (VALID_SCOPED_PASS_CANDIDATE) have scoped evidence and still need an independent audit and an exact-SHA replay (some are also touched by the red or test-isolation items in section 3); 10 further AUDIT_REQUIRED rows still carry a documentation or evidence gap or an external blocker (OBS-04, OBS-05, OBS-06, OBS-07, PRD-06, REG-07, RPL-01, RPL-02, RPL-04, TYP-03); 51 need qualification work; 1 need an implementation fix; 2 await an Operator ruling; 2 are Path B primary.
 - An exact-SHA replay of 27 architecture test modules at `ba07ebaa3` (HIST-02): 817 passed, 1 real failure (EBH-4 R1) after environment artefacts were separated.
 
 ## 3. What blocks historical predecessor readiness (exact)
@@ -27,4 +27,4 @@ ENT-AUDIT-X (FRZ-AUD-01..10), FRZ-DOC / DEBT / FRZ and ARCH-FREEZE R1-R6 were no
 1. Operator decisions DR-1, DR-2, DR-3, DR-4, DR-6, DR-8, DR-9 (blocks A, B, D in `HISTORICAL_AUTHORITY_AND_OPERATOR_DECISIONS.md`).
 2. One IIAC re-audit / re-activation batch that also carries the product tickets T-IGX-030-B and T-IGX-030-C and the validator alignment (Q-12).
 3. Fresh independent audit of the product batch; then the Dimension A replay on the final SHA.
-4. Independent audit of the per-ID dispositions of the 29 AUDIT_REQUIRED rows; only then any checklist promotion.
+4. Independent audit of the per-ID dispositions of the 29 AUDIT_REQUIRED rows (after the documentation / evidence gaps named in section 2 are closed); only then any checklist promotion.

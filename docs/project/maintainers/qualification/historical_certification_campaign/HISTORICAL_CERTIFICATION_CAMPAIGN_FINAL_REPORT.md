@@ -1,5 +1,5 @@
 # Historical enterprise certification campaign - FINAL REPORT
-Generated 2026-11-08T10:58:31Z. Result: **PARTIAL / EXACT BLOCKERS**. This is NOT `HISTORICAL_CAMPAIGN_CLOSED_VERIFIED`. Language: English only (project rule).
+Generated 2026-11-08T11:15:35Z. Result: **PARTIAL / EXACT BLOCKERS**. This is NOT `HISTORICAL_CAMPAIGN_CLOSED_VERIFIED`. Language: English only (project rule).
 
 ## 1. Result in one paragraph
 All four workstreams completed their inventories and every one of the 85 historical FRZ rows has a reasoned disposition with evidence, owner and remaining gate. **No row was closed independently (0) and none was promoted (0 scoped acceptances)**: the checklist is unchanged (all 85 rows OPEN). The campaign found real defects that were hidden behind historical closure labels, corrected the documentation it could correct, integrated and independently audited one test-only corrective (T-IGX-030-A, PASS_SCOPED), and stopped where the next step needs an Operator decision or an IIAC re-audit / re-activation.
@@ -10,7 +10,7 @@ All four workstreams completed their inventories and every one of the 85 histori
 | repository | origin/development `ba07ebaa3` | origin/development `41908e3fb` |
 | FRZ checklist (225 rows) | 120 OPEN / 105 PASS | 120 OPEN / 105 PASS (no status changed) |
 | historical 85 rows | 85 OPEN | 85 OPEN (all dispositioned) |
-| Operator decisions | - | 6 answered, 7 open |
+| Operator decisions | - | 5 answered, 7 open |
 Expected family counts reconciled with the checklist at the start: REG 10, BND 6, OWN 5, CTR 6, TYP 6, PLG 8, RPL 4, OBS 7, SEC 10, REL 11, PRD 12 (matches: REG 10, BND 6, OWN 5, CTR 6, TYP 6, PLG 8, RPL 4, OBS 7, SEC 10, REL 11, PRD 12).
 
 ## 3. Sessions
@@ -54,27 +54,28 @@ Material ones (HIGH / MAJOR / BLOCKER) are listed per id in the four `HISTNN_FIN
 - **Authority gaps (HIST-04):** the EVOL-X chain was signed by delegated sessions in plain form although the campaign delegations exclude EVOL-X (F-H4-01); Amendment 01 was self-contradictory and its personal-signature safeguards were agent-proposed (F-H4-02, since revised by PR 406); the mechanism cannot prove authorship (F-H4-03).
 - **Label drift:** TOOL-LIFE-X is labelled "CLOSED - INDEPENDENTLY ACCEPTED" against a signed CONDITIONAL / STOP audit (H01-F001, F-H4-08); the EVOL-X roadmap row prose says CLOSED while its stage cell says PENDING_AUTHORITY.
 - **28 rows have no existing current-HEAD executable selection owner** (HIST02-F-011).
+- **FRZ-RPL-01..04 cannot move until the independent VBN acceptance exists** (HIST02-F-007, the only BLOCKER-severity finding; WBS FIND-VBN-PARTIAL / T-B7-VBN-INDEPENDENT-ACCEPT, BLOCKED_EXTERNAL); no PASS is inferred from EBH-7.
 
 ## 6. Disposition of the 85 rows (derived)
-By classification: {"QUALIFICATION_GAP": 33, "EVIDENCE_GAP": 20, "PATH_B_LIVE_DEFERRED": 3, "VALID_SCOPED_PASS_CANDIDATE": 19, "AUTHORITY_GAP": 1, "IMPLEMENTATION_GAP": 1, "SSOT_DRIFT": 5, "INDEPENDENT_AUDIT_GAP": 3}.
-By state: {"QUALIFICATION_REQUIRED": 50, "AUDIT_REQUIRED": 29, "PATH_B_DEFERRED": 3, "AUTHORITY_REQUIRED": 2, "IMPLEMENTATION_REQUIRED": 1}.
-Counters: open architecture blockers 51; outstanding audit requirements 29; Path B primary 3; rows with a live obligation or Path B primary 20; AUTHORITY_REQUIRED 2; findings requiring implementation 4; SSOT discrepancies 13.
+By classification: {"QUALIFICATION_GAP": 34, "EVIDENCE_GAP": 20, "VALID_SCOPED_PASS_CANDIDATE": 19, "AUTHORITY_GAP": 1, "IMPLEMENTATION_GAP": 1, "SSOT_DRIFT": 5, "INDEPENDENT_AUDIT_GAP": 3, "PATH_B_LIVE_DEFERRED": 2}.
+By state: {"QUALIFICATION_REQUIRED": 51, "AUDIT_REQUIRED": 29, "AUTHORITY_REQUIRED": 2, "IMPLEMENTATION_REQUIRED": 1, "PATH_B_DEFERRED": 2}.
+Counters: open architecture blockers 52; outstanding audit requirements 29; Path B primary 2; rows named by the checklist Path B list (L66) 5; rows with a worker-identified live dependency or Path B primary 19 (FRZ-REG-08 was reclassified out of Path B by the independent integration audit, F-01); AUTHORITY_REQUIRED 2; findings requiring implementation 4; SSOT discrepancies 13.
 `VALID_SCOPED_PASS_CANDIDATE` (19 rows) means "an independent audit and an exact-SHA replay are the only thing missing", not "passed".
 
 ## 7. Closed obligations
-None of the 85 rows. What was closed or established: the documentation inconsistencies of PR 405; the Amendment 01 text of PR 406 (as process-enforced policy); conditions C-1 / C-2 of the TOOL-LIFE-X audit are addressed by T-IGX-030-A (PASS_SCOPED; does not close TOOL-LIFE-X).
+None of the 85 rows. What was closed or established: the documentation inconsistencies of PR 405; the Amendment 01 revision text of PR 406 (merged by the Operator; its status as policy remains an open Operator decision, DR-2 / OD-HIST04-B); conditions C-1 / C-2 of the TOOL-LIFE-X audit are addressed by T-IGX-030-A (PASS_SCOPED; does not close TOOL-LIFE-X).
 
-## 8. Qualification results (exact commands and logs are in the dossiers)
+## 8. Qualification results (per-path results and summaries are in the dossiers; raw logs are NOT published - see the evidence registry, section 4 - so these figures are worker-reported and cannot be reproduced from published files)
 - HIST-02 replay of 27 architecture modules at `ba07ebaa3` (pinned checkout, heavy lock): 818 tests collected; first run 813 passed / 5 failed (3 missing `duckdb` extra, 1 harness artefact caused by MASTER's `--basetemp`, 1 real: EBH-4 R1); re-run of the 4 non-product failures with `--extra dev-ci`: 4 passed. Net: 817 passed, 1 real failure.
-- HIST-03 replay of 27 modules: combined run 331 passed / 21 failed = 7 `test_sec_ent.py` (ineffective patch target, F-006) + 8 W5 b2/c/d (registry pollution; pass alone, F-016) + 6 P2-C (code defect, F-015, masked by the pollution in this run). In isolation W5 b2 / c / d: 5 + 6 + 9 passed; P2-C: 1 passed / 6 failed.
+- HIST-03 replay of 27 modules: combined run 331 passed / 21 failed = 7 `test_sec_ent.py` (patch-target defect confirmed statically, runtime confirmation pending, F-006) + 8 W5 b2/c/d (registry pollution; pass alone, F-016) + 6 P2-C (worker thesis: code defect, F-015, masked by the pollution in this run). Caveat: the run used a shared pin whose venv HIST-02 extended while the run was in progress; it is not a clean-room exact-SHA run (HIST03 register, test_execution). In isolation W5 b2 / c / d: 5 + 6 + 9 passed; P2-C: 1 passed / 6 failed.
 - aud-030a at `683f95572`: side-effect module 37 passed; F3 module 5 passed x3; combined set 76 passed; ruff clean; IIAC verifier IN_FORCE; governance tests 56 passed / 1 skipped (symlinks). Negative probe: the pre-change file fails 4 of 36 tests against the same code.
 - Not run: the broad N6 replay of TOOL-LIFE-X, `igx_gov ticket`, the QUAL-X Dimension A replay (approved, sequenced after the product batch).
 
 ## 9. Operator decisions
-Answered: MASTER-OD-01, OD-HIST01-A, OD-HIST02-B, OD-INT-01, OD-PUB-01, OD-ACT-N11. Open (7): OD-HIST04-A; OD-HIST04-B; OD-HIST04-C; OD-HIST02-A; OD-HIST03-A; OD-HIST03-B; OD-HIST01-B. Full text, evidence, options and recommendations: `HISTORICAL_AUTHORITY_AND_OPERATOR_DECISIONS.md`.
+Answered (5): OD-HIST01-A, OD-HIST02-B, OD-INT-01, OD-PUB-01, OD-ACT-N11. Open (7): OD-HIST04-A; OD-HIST04-B; OD-HIST04-C; OD-HIST02-A; OD-HIST03-A; OD-HIST03-B; OD-HIST01-B. Mapping to the decision request: OD-HIST01-A = DR-10, OD-HIST02-B = DR-5, OD-INT-01 = DR-7, OD-PUB-01 = DR-11, OD-ACT-N11 = DR-12 (answered); OD-HIST04-A = DR-1, OD-HIST04-B = DR-2, OD-HIST04-C = DR-3, OD-HIST01-B = DR-4, OD-HIST03-B = DR-6, OD-HIST02-A = DR-8, OD-HIST03-A = DR-9 (open). The answers are relayed from the Operator's chat by the MASTER orchestrator; no Operator-signed record exists in the repository. Full text, evidence, options and recommendations: `HISTORICAL_AUTHORITY_AND_OPERATOR_DECISIONS.md`.
 
 ## 10. Independent audit of this package
-PENDING - the independent audit of this package has not been completed when this report was generated.
+The independent integration audit (aud-final, a fresh read-only session that authored, applied, reviewed and approved nothing in this campaign) returned **ACCEPT_WITH_CHANGES** for package commit `2a7aec93d`: 13 findings (1 HIGH - FRZ-REG-08 wrongly classified as Path B; 8 MEDIUM; 4 LOW). The central claim (PARTIAL / EXACT BLOCKERS, 85 rows dispositioned, none closed or promoted) was confirmed; no false closure language, no misrepresented Operator signature, no change outside the package directory and no material IIAC path touched were found. All findings are applied in the commit that follows it. A text-only re-read of the changed counters is pending; this section is updated with its verdict. The audit covers the fidelity of the consolidation, not the correctness of the 85 underlying worker judgements, which remain unaudited. Report: `audits/aud-final/AUDIT_REPORT.md`.
 
 ## 11. Authority risks that remain
 - The EVOL-X delegated signature lines have no valid authority until the Operator ratifies or re-signs them (DR-1); 10 FRZ-EVOL rows are PASS on the checklist on that chain.
@@ -91,7 +92,7 @@ PENDING - the independent audit of this package has not been completed when this
 5. Operator-facing documents were first written in Polish; translated (English-only rule).
 6. A failure message of the first combined run was attributed to the wrong tests; HIST-03 later separated it.
 7. A SHA-256 check in a temporary tree disagreed with the repository's pin verifier because of line endings; the verifier was authoritative and the pin was correct.
-Worker-side incidents: one worker removed another's live heavy lock (self-reported, recorded, no data loss); an aborted run left a hung process tree (HK-01, termination left to the Operator).
+Worker-side incidents: one worker removed another's live heavy lock (self-reported; HIST-03's combined run overlapped HIST-02's rerun in the same venv, so HIST-03 results carry an interference caveat; see the HIST-02 report, "Lock protocol incident"); an aborted run left a hung process tree (HK-01, termination left to the Operator).
 
 ## 13. Global acceptance criteria (section 19 of the mission)
 | # | criterion | status | basis |
@@ -108,8 +109,8 @@ Worker-side incidents: one worker removed another's live heavy lock (self-report
 | 10 | Canonical roadmap and FRZ checklist are reconciled | NOT MET | documentation patches merged (PR 405) but label/scope decisions DR-1/3/4/9 are open |
 | 11 | Required negative regression tests are green | NOT MET | known red gates at the base: EBH-4 R1 (1 test), PROD-Q P2-C (6 tests), test_sec_ent (7 tests) |
 | 12 | Publication is complete on the authorized branch | PARTIAL | PRs 405-407 merged; final package PR pending |
-| 13 | Independent integration audit has passed | PENDING | audit of this package in progress |
-| 14 | All residual Path B live obligations remain correctly OPEN | MET | 20 rows carry a live obligation or Path B primary; all OPEN |
+| 13 | Independent integration audit has passed | PARTIAL | aud-final returned ACCEPT_WITH_CHANGES for package commit 2a7aec93d; all 13 findings are applied in the next commit; a text-only re-read of the changed counters is pending |
+| 14 | All residual Path B live obligations remain correctly OPEN | MET | 5 rows named by checklist L66 plus 14 worker-identified live dependencies; all OPEN |
 | 15 | Handoff is suitable for ARCH-FREEZE readiness review | MET (as a NOT-READY handoff) | ARCH_FREEZE_HISTORICAL_PREDECESSOR_READINESS_HANDOFF.md |
 
 ## 14. Next critical steps toward ARCH-FREEZE

@@ -1,5 +1,5 @@
-# MASTER resume instructions (refreshed 2026-11-08T10:56:32Z)
-State: the campaign result is PARTIAL / EXACT BLOCKERS. The three PRs (405, 406, 407) are merged (development `41908e3fb`); the final package is in this directory and, once its PR is merged, under `docs/project/maintainers/qualification/historical_certification_campaign/`.
+# MASTER resume instructions (refreshed 2026-11-08T11:15:30Z)
+State: the campaign result is PARTIAL / EXACT BLOCKERS. The three PRs (405, 406, 407) are merged; the final package is published under `docs/project/maintainers/qualification/historical_certification_campaign/` (this directory). The local files `campaign_registry.json`, `build_final.py`, `build_report.py`, `dashboard.py`, `HOUSEKEEPING.md` and `worker-settings.json` are NOT part of the repository; MASTER keeps them under `.tmp/session/hist-cert-campaign/`.
 
 1. Re-verify: `git fetch origin`; compare `origin/development` with `41908e3fb`; read new commits (the ENT-AUDIT-X stream is a separate session: never alter its material).
 2. Source of truth for a new orchestrator: `campaign_registry.json` (local, gitignored) and `HISTORICAL_CERTIFICATION_MASTER_CLOSURE_MATRIX.json` (published). Regenerate this package with `python -I build_final.py` after updating the registry (counters derive from records).
