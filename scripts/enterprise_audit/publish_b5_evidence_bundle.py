@@ -94,7 +94,8 @@ def publish(
             "sha256": sha256_file(qw_dest),
         }
     index_path = out / "publication_index.v1.json"
-    index_path.write_text(json.dumps(index, indent=2, sort_keys=True) + "\n", encoding="utf-8")
+    with index_path.open("w", encoding="utf-8", newline="\n") as fh:
+        fh.write(json.dumps(index, indent=2, sort_keys=True) + "\n")
 
     pub_errors = verify_b5_publication_tree(root, out, expected_qualification_sha=qualification_sha)
     if pub_errors:

@@ -12,6 +12,7 @@ The historical human Protocol 03 path is superseded by IIAC and is not supported
 from __future__ import annotations
 
 import argparse
+import hashlib
 import json
 import re
 import subprocess
@@ -42,6 +43,7 @@ _OD02_MODES = frozenset({"live", "compensating"})
 _MANIFEST_DIGESTS = ("audit_report_digest", "audit_scope_manifest_digest", "test_matrix_digest", "findings_digest")
 
 Verifier = Callable[[], list[str]]
+BranchRulesReader = Callable[[], "tuple[list[dict] | None, str | None]"]
 
 
 def _iiac_in_force(repo: Path | None = None) -> bool:
@@ -109,12 +111,105 @@ def _check_evol_predecessor(repo: Path, errors: list[str]) -> None:
         errors.append("ENT preflight: EVOL predecessor is not IIAC-closed with a published ENT handoff pin (N-10)")
 
 
-def _check_manifest(repo: Path, policy: str, ladder_text: str, errors: list[str]) -> None:
+def _sha256_of(path: Path) -> str:
+    return hashlib.sha256(path.read_bytes()).hexdigest()
+
+
+def _repo_file(repo: Path, rel: object) -> Path | None:
+    """Resolve a repo-relative path; None when absent, absolute or escaping the repository."""
+    if not isinstance(rel, str) or not rel.strip() or Path(rel).is_absolute():
+        return None
+    base = repo.resolve()
+    target = (base / rel).resolve()
+    return target if target.is_file() and base in target.parents else None
+
+
+def _default_manifest_verifier(repo: Path, manifest_path: Path) -> list[str]:
+    """Run the repository's own manifest verifier (schema, session rules, N-04 ancestry)."""
+    done = subprocess.run(
+        [sys.executable, "-m", "scripts.governance.verify_iiac_audit_manifest", str(manifest_path),
+         "--require-handoff-template", "--repo", str(repo)],
+        cwd=_REPO, capture_output=True, text=True, check=False,
+    )  # fmt: skip
+    if done.returncode == 0:
+        return []
+    detail = [line.strip() for line in done.stderr.splitlines() if line.strip().startswith("-")]
+    return detail or [f"verify_iiac_audit_manifest exited {done.returncode}"]
+
+
+def _check_manifest_bindings(repo: Path, manifest: dict, ancestor: Callable[[str], bool], errors: list[str]) -> None:
+    """F-09: the manifest must be bound to real commits and to the real audit files, not only well-formed."""
+    shas: dict[str, str] = {}
+    for key in ("audited_implementation_sha", "audit_execution_sha"):
+        value = str(manifest.get(key, ""))
+        if not _SHA40.match(value):
+            errors.append(f"IIAC manifest {key} must be a 40-hex commit SHA")
+        elif not ancestor(value):
+            errors.append(f"IIAC manifest {key} is not a commit that is an ancestor of HEAD")
+        else:
+            shas[key] = value
+
+    report = _repo_file(repo, manifest.get("audit_report_path"))
+    if report is None:
+        errors.append("IIAC manifest audit_report_path must name an existing repository file")
+    elif _sha256_of(report) != manifest.get("audit_report_digest"):
+        errors.append("IIAC manifest audit_report_digest differs from the sha256 of audit_report_path")
+
+    index_path = _repo_file(repo, manifest.get("evidence_index_path"))
+    index: dict = {}
+    if index_path is None:
+        errors.append("IIAC manifest evidence_index_path must name an existing repository file")
+    else:
+        try:
+            loaded = json.loads(index_path.read_text(encoding="utf-8-sig"))
+            index = loaded if isinstance(loaded, dict) else {}
+        except json.JSONDecodeError:
+            errors.append("IIAC evidence index is not valid JSON")
+        files = index.get("files")
+        if not isinstance(files, dict) or not files:
+            errors.append("IIAC evidence index must list its files with sha256 digests")
+        else:
+            indexed: dict[str, str] = {}
+            for name, entry in files.items():
+                digest = entry.get("sha256") if isinstance(entry, dict) else None
+                target = index_path.parent / str(name)
+                if not isinstance(digest, str) or not target.is_file() or _sha256_of(target) != digest:
+                    errors.append(
+                        f"IIAC evidence index entry {name!r} is missing or its sha256 does not match the file"
+                    )
+                else:
+                    indexed[str(name)] = digest
+            known = set(indexed.values())
+            for key in _MANIFEST_DIGESTS:
+                if manifest.get(key) not in known:
+                    errors.append(f"IIAC manifest {key} is not the sha256 of any file in the evidence index")
+
+    record = _repo_file(repo, manifest.get("pass_record_path") or _PASS_RECORD.as_posix())
+    if record is None:
+        errors.append("IIAC manifest pass_record_path must name an existing repository file")
+    else:
+        text = record.read_text(encoding="utf-8-sig")
+        needed = [str(manifest.get("verdict", "")), shas.get("audit_execution_sha", "")]
+        if not all(item and item in text for item in needed):
+            errors.append("IIAC pass record must cite the manifest verdict and the audit_execution_sha")
+
+
+def _check_manifest(
+    repo: Path,
+    policy: str,
+    ladder_text: str,
+    errors: list[str],
+    ancestor: Callable[[str], bool] | None = None,
+    manifest_verifier: Callable[[Path, Path], list[str]] | None = None,
+) -> None:
     if not (repo / _PASS_RECORD).is_file():
         errors.append(f"IIAC IN_FORCE: missing {_PASS_RECORD.as_posix()}")
     manifest = _load_json(repo / _MANIFEST, "ENT IIAC audit manifest", errors)
     if manifest is None:
         return
+    verifier = manifest_verifier or _default_manifest_verifier
+    errors.extend(f"IIAC manifest verifier: {item}" for item in verifier(repo, repo / _MANIFEST))
+    _check_manifest_bindings(repo, manifest, ancestor or (lambda sha: _git_ancestor(repo, sha)), errors)
     if manifest.get("stage_id") != "ENT-AUDIT-X":
         errors.append("IIAC manifest stage_id must be ENT-AUDIT-X")
     if str(manifest.get("verdict", "")) not in _ACCEPTING_VERDICTS:
@@ -170,7 +265,12 @@ def _check_frz_aud(repo: Path, mode: str | None, errors: list[str]) -> None:
 
 
 def _check_od_ent_02(
-    repo: Path, mode: object, compensating: Callable[[Path], list[str]] | None, live: Verifier | None, errors: list[str]
+    repo: Path,
+    mode: object,
+    compensating: Callable[[Path], list[str]] | None,
+    live: Verifier | None,
+    errors: list[str],
+    branch_rules_reader: BranchRulesReader | None = None,
 ) -> None:
     if mode not in _OD02_MODES:
         errors.append("IIAC IN_FORCE: set od_ent_02_mode to live|compensating in the status JSON")
@@ -181,7 +281,13 @@ def _check_od_ent_02(
         if compensating is None:
             from scripts.governance import verify_od_ent_02_compensating_control as verifier
 
-            problems = verifier.collect_errors(repo, published=True)
+            # F-10: a ruleset control can only be judged against the branch rules that are active right now.
+            reader = branch_rules_reader or (
+                lambda: verifier._read_branch_rules(verifier._REPO_SLUG, verifier._DEFAULT_BRANCH)
+            )
+            branch_rules, problem = reader()
+            problems = [problem] if problem else []
+            problems += verifier.collect_errors(repo, published=True, branch_rules=branch_rules)
         else:
             problems = compensating(repo)
         errors.extend(f"OD-ENT-02 compensating: {item}" for item in problems)
@@ -264,6 +370,8 @@ def evaluate(
     is_ancestor: Callable[[str], bool] | None = None,
     compensating_verifier: Callable[[Path], list[str]] | None = None,
     live_verifier: Verifier | None = None,
+    manifest_verifier: Callable[[Path, Path], list[str]] | None = None,
+    branch_rules_reader: BranchRulesReader | None = None,
 ) -> list[str]:
     if gate not in {"A", "B"}:
         raise ValueError("gate must be 'A' or 'B'")
@@ -286,14 +394,16 @@ def evaluate(
     ancestor = is_ancestor or (lambda sha: _git_ancestor(repo, sha))
 
     _check_evol_predecessor(repo, errors)
-    _check_manifest(repo, policy, ladder_text, errors)
+    _check_manifest(repo, policy, ladder_text, errors, ancestor, manifest_verifier)
     if status is not None:
         if status.get("formal_b6_status") not in {"ACCEPTED", "ACCEPTED_VIA_IIAC_B6"}:
             errors.append("formal_b6_status is not ACCEPTED / ACCEPTED_VIA_IIAC_B6")
         if str(status.get("frz_aud_status", "OPEN")).upper().startswith("OPEN"):
             errors.append("frz_aud_status still OPEN")
         _check_pins(gate, status, ladder_text, ancestor, errors)
-        _check_od_ent_02(repo, status.get("od_ent_02_mode"), compensating_verifier, live_verifier, errors)
+        _check_od_ent_02(
+            repo, status.get("od_ent_02_mode"), compensating_verifier, live_verifier, errors, branch_rules_reader
+        )
         _check_frz_aud(repo, status.get("od_ent_02_mode"), errors)
     _check_roadmap(repo, gate, errors)
     if gate == "B" and is_ancestor is None:
