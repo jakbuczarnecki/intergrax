@@ -4,6 +4,8 @@
 
 from __future__ import annotations
 
+from collections.abc import Iterator
+
 import pytest
 
 from intergrax.applications._shared.environment_wiring import wire_application_environment
@@ -22,8 +24,16 @@ from intergrax.runtime.observability.event_delivery import (
 from lab_application.host.settings import LabApplicationSettings
 from lab_application.manifest import build_lab_manifest
 from testing_support.runtime_events import runtime_event_test_identity, with_preferred_canonical_payload
+from tests.support.integration_catalog_isolation import reset_integration_tool_skill_catalogs
 
 pytestmark = [pytest.mark.unit, pytest.mark.gate]
+
+
+@pytest.fixture(autouse=True)
+def _clean_catalogs() -> Iterator[None]:
+    reset_integration_tool_skill_catalogs()
+    yield
+    reset_integration_tool_skill_catalogs()
 
 
 def _bounded_delivery_environment(
