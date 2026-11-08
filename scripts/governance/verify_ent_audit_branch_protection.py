@@ -1,5 +1,11 @@
 #!/usr/bin/env python3
-"""Fail-closed verifier for OD-ENT-02 GitHub branch protection (read-only gh API)."""
+"""Fail-closed verifier for OD-ENT-02 LIVE enforcement (read-only gh API).
+
+Live enforcement means the ENT checks are REQUIRED on the branch. They may be required by classic branch
+protection (``/branches/<b>/protection``) or by an active ruleset (``/rules/branches/<b>``, which lists the
+active rules that apply to the branch). A ruleset that only blocks deletion or force-push does not satisfy
+this verifier: that is a compensating control, never live enforcement.
+"""
 
 from __future__ import annotations
 
@@ -7,12 +13,13 @@ import argparse
 import json
 import subprocess
 import sys
+from collections.abc import Callable
 from typing import Any
 
 _REPO_SLUG = "jakbuczarnecki/intergrax"
 _DEFAULT_BRANCH = "development"
 
-# From .github/workflows/enterprise-audit.yml — workflow `name` + job id (not nightly-only jobs).
+# From .github/workflows/enterprise-audit.yml - workflow `name` + job id (not nightly-only jobs).
 _REQUIRED_CONTEXTS = (
     "Enterprise audit (ENT-AUDIT-X) / ent-audit-fast",
     "Enterprise audit (ENT-AUDIT-X) / ent-audit-pr-gate",
@@ -22,6 +29,8 @@ _FORBIDDEN_NIGHTLY_ONLY = (
     "ent-audit-nightly",
     "nightly",
 )
+
+GhApi = Callable[[str], tuple[int, str]]
 
 
 def _gh_api(path: str) -> tuple[int, str]:
@@ -34,8 +43,11 @@ def _gh_api(path: str) -> tuple[int, str]:
     return proc.returncode, proc.stdout if proc.returncode == 0 else proc.stderr or proc.stdout
 
 
-def _collect_required_contexts(payload: dict[str, Any]) -> set[str]:
+def _collect_required_contexts(payload: dict[str, Any] | list[Any]) -> set[str]:
+    """Required status-check contexts from a protection payload or from a list of active branch rules."""
     contexts: set[str] = set()
+    if isinstance(payload, list):
+        payload = {"rules": payload}
     for key in ("required_status_checks", "required_pull_request_checks"):
         block = payload.get(key)
         if isinstance(block, dict):
@@ -63,20 +75,42 @@ def verify_branch_protection(
     branch: str = _DEFAULT_BRANCH,
     repo: str = _REPO_SLUG,
     required: tuple[str, ...] = _REQUIRED_CONTEXTS,
+    gh_api: GhApi = _gh_api,
 ) -> list[str]:
     errors: list[str] = []
-    code, body = _gh_api(f"repos/{repo}/branches/{branch}/protection")
-    if code != 0:
-        errors.append(f"GitHub branch protection unavailable for {branch} (gh exit {code}): {body.strip()[:500]}")
+    contexts: set[str] = set()
+    sources = 0
+    problems: list[str] = []
+
+    code, body = gh_api(f"repos/{repo}/branches/{branch}/protection")
+    if code == 0:
+        try:
+            contexts |= _collect_required_contexts(json.loads(body))
+            sources += 1
+        except json.JSONDecodeError:
+            problems.append("GitHub API returned a non-JSON protection payload")
+    else:
+        problems.append(f"branch protection unavailable for {branch} (gh exit {code}): {body.strip()[:200]}")
+
+    code, body = gh_api(f"repos/{repo}/rules/branches/{branch}")
+    if code == 0:
+        try:
+            parsed = json.loads(body)
+        except json.JSONDecodeError:
+            problems.append("GitHub API returned a non-JSON branch-rules payload")
+        else:
+            if isinstance(parsed, list):
+                contexts |= _collect_required_contexts(parsed)
+                sources += 1
+            else:
+                problems.append("GitHub branch-rules payload is not a list")
+    else:
+        problems.append(f"branch rules unavailable for {branch} (gh exit {code}): {body.strip()[:200]}")
+
+    if sources == 0:
+        errors.append("no live enforcement source readable: " + "; ".join(problems))
         return errors
 
-    try:
-        payload = json.loads(body)
-    except json.JSONDecodeError:
-        errors.append("GitHub API returned non-JSON protection payload")
-        return errors
-
-    contexts = _collect_required_contexts(payload)
     for req in required:
         if req not in contexts:
             errors.append(f"Missing required status check context: {req!r}")
