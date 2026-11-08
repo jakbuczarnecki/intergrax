@@ -1,6 +1,6 @@
 {
  "schema": "historical-campaign-master-closure.v1",
- "generated_utc": "2026-11-08T11:15:30Z",
+ "generated_utc": "2026-11-08T11:20:52Z",
  "overall_result": "PARTIAL / EXACT BLOCKERS",
  "not": "HISTORICAL_CAMPAIGN_CLOSED_VERIFIED",
  "campaign_start_sha": "ba07ebaa34d04633bd60510f68c18346b1ef160d",
@@ -439,8 +439,8 @@
   {
    "n": 13,
    "criterion": "Independent integration audit has passed",
-   "status": "PARTIAL",
-   "basis": "aud-final returned ACCEPT_WITH_CHANGES for package commit 2a7aec93d; all 13 findings are applied in the next commit; a text-only re-read of the changed counters is pending"
+   "status": "MET (conditional edit applied)",
+   "basis": "aud-final: ACCEPT_WITH_CHANGES at 2a7aec93d, re-read ACCEPT_WITH_CHANGES at 6c973c93a with one mechanical edit (R-1, four dashboard numbers); the auditor stated the package is ACCEPT once R-1 is applied and that a git-diff check is sufficient; R-1 applied in 63ff33812 and the diff shows only those numbers and the generation timestamp. No second audit round was run"
   },
   {
    "n": 14,

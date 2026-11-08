@@ -150,3 +150,63 @@ Required edit: blockers owner `Operator personally` -> `Operator, or a session t
 
 ## 6. Statement
 This audit changes nothing in the audited checkout, promotes no FRZ row, closes no stage and activates nothing. It is an integration audit of the documentation package, not an audit of the underlying 85 judgements. Verdict: **ACCEPT_WITH_CHANGES** - apply F-01..F-09 (F-10..F-13 recommended), then a text-only re-read of the changed counters.
+
+---
+
+# Re-read (text-only) - aud-final, 2026-11-08
+
+Object: commit `6c973c93a82ff6eb9845c5fa5002ab25fb219cae` on `hist-cert/final-package` (previous audited commit `2a7aec93d`). Method: `git diff 2a7aec93d 6c973c93a` (16 files, +401/-133), full recomputation of counters from the published dossiers (script in the session scratchpad), read-only. No tests run, no build script run, checkout untouched.
+
+## FINAL package verdict: ACCEPT_WITH_CHANGES
+
+One required edit remains, mechanical and numeric (R-1 below). Everything else is applied. After R-1 is applied the package is ACCEPT; no further audit round is needed for it (a `git diff` check that only those four numbers changed is enough).
+
+### R-1 (required) - dashboard still carries the pre-F-01 Path B / qualification counters
+`HISTORICAL_CERTIFICATION_CAMPAIGN_DASHBOARD.md` at 6c973c93a:
+- L12 `| 4 | Open architecture blockers (IMPLEMENTATION_REQUIRED+QUALIFICATION_REQUIRED) | 51 |` -> `... | 52 |`
+- L13 `| 5 | Valid Path B live deferrals | 3 |` -> `... | 2 |`
+- L28 `| QUALIFICATION_REQUIRED | 50 |` -> `| QUALIFICATION_REQUIRED | 51 |`
+- L34 `| PATH_B_DEFERRED | 3 |` -> `| PATH_B_DEFERRED | 2 |`
+
+Recomputed truth: QUALIFICATION_REQUIRED 51, PATH_B_DEFERRED 2, IMPLEMENTATION_REQUIRED 1, so counter #4 = 52 and counter #5 = 2. Every other document (matrix, master matrix, report, handoff, Path B document) already says 52 / 2 / 51 / 2. The dashboard therefore disagrees with all of them on exactly the point of F-01.
+
+## (1) F-01..F-13 status (evidence: `git diff 2a7aec93d 6c973c93a`)
+| # | Status | Evidence |
+|---|---|---|
+| F-01 | PARTIAL | Applied in the matrix (`FRZ-REG-08`: `QUALIFICATION_GAP` / `QUALIFICATION_REQUIRED`, `path_b.primary=false`, new next stage, `worker_original` block, top-level `master_reclassifications`), master matrix counters, report section 6, handoff, Path B document (section 1 now 2 rows plus an explicit "REG-08 is NOT in this list" paragraph). MISSING: dashboard counters #4, #5 and the per-state table (R-1) |
+| F-02 | APPLIED | `FRZ-SEC-02` removed from the live set (matrix `live_obligation` now null; removed from Path B section 2); counter renamed `rows_with_worker_identified_live_dependency_or_path_b` = 19, new `rows_on_checklist_path_b_list_L66` = 5; Path B section 2 opens with the L66 list; report #14 basis "5 rows named by checklist L66 plus 14 worker-identified live dependencies" |
+| F-03 | APPLIED | report section 7 now "Amendment 01 revision text of PR 406 (merged by the Operator; its status as policy remains an open Operator decision, DR-2 / OD-HIST04-B)" |
+| F-04 | APPLIED | handoff section 2 split 19 + 10 with the ten ids named, "51 need qualification work", "2 are Path B primary"; handoff step 4 qualified; dashboard counter #6 relabelled |
+| F-05 | APPLIED | authority document: section 0.1, DR-2 table and text, DR-11 "Done: PR 405 (merged)", relay-provenance paragraph before the answers |
+| F-06 | APPLIED | `MASTER-OD-01` removed from the master matrix; report "5 answered, 7 open", answered list of 5, OD-to-DR mapping, relay sentence. Recount: 5 answered + 7 open = 12 DRs |
+| F-07 | APPLIED | report section 8 header, HIST-03 bullet (overlap caveat, F-006 wording, "worker thesis"), section 12 incident sentence |
+| F-08 | APPLIED (alternative form) | `dossiers/README.md` (do-not-apply list incl. both EVOL-X stage-cell patches and both superseded rules patches) plus scope notes; patch files kept and labelled |
+| F-09 | APPLIED | dashboard: rev-rules "ACCEPT (final, at 937c39820 ...)", `audits/` paths, aud-final row, publication block as a list with the post-merge CI result. Worker timestamps were replaced by other values (07:27Z / 07:47Z / 09:26Z / 10:04Z, all before generation); I cannot verify them against the unpublished registry, but they are no longer in the future |
+| F-10 | APPLIED | `current_head_applicability` no longer a JSON fragment (0 fragments); no 400-character cut left in `residual_risk` / `historical_evidence`; blockers cells completed (OD-HIST02-A, OD-HIST03-A, Q-06/07/10/11/12, H01-F015 ...); master-matrix decision topics carry explicit `[truncated; full text in the source dossier]` markers (the marker option of my edit); the OD-HIST03-B cell of the blockers document also ends with the marker |
+| F-11 | APPLIED | report section 5 RPL bullet (HIST02-F-007); "Worker thesis (not independently audited)" prefix on the HIST03-F-015 and HIST02-F-013 rows |
+| F-12 | APPLIED | owner column no longer "Operator personally" (3 rows); dashboard #10 label; PRD-02 architecture sentence in the Path B document |
+| F-13 | APPLIED | resume instructions, registry section 4 mapping sentence. Absolute developer paths in 8 files left as is (optional in my report) |
+
+## (2) Counters re-derived; cross-document agreement
+Recomputed from the dossiers and the matrix rows: class {QUALIFICATION_GAP 34, EVIDENCE_GAP 20, VALID_SCOPED_PASS_CANDIDATE 19, AUTHORITY_GAP 1, IMPLEMENTATION_GAP 1, SSOT_DRIFT 5, INDEPENDENT_AUDIT_GAP 3, PATH_B_LIVE_DEFERRED 2} = 85; state {QUALIFICATION_REQUIRED 51, AUDIT_REQUIRED 29, AUTHORITY_REQUIRED 2, IMPLEMENTATION_REQUIRED 1, PATH_B_DEFERRED 2} = 85; per-workstream splits; 85 unique ids, all OPEN, `promotion_allowed=false`; findings 62 with unchanged class/severity splits; IMPLEMENTATION_GAP findings 4; SSOT_DRIFT 13; open decisions 7, answered 5.
+
+Agree with the recomputation: disposition matrix `counts`, master matrix `dispositions` and `counters`, report sections 2, 6, 9, 13, handoff, Path B document (sections 1 + 2 = 2 + 17 = 19 rows = the recomputed union, no row missing or extra), blockers document (ids and owners consistent, 7 open decisions). Disagrees: the dashboard (R-1 only).
+
+The only row differing from its worker dossier row is `FRZ-REG-08`, as intended; the other 84 rows are identical in classification and state.
+
+## (3) FRZ-REG-08
+Confirmed: the matrix row reads `QUALIFICATION_GAP` / `QUALIFICATION_REQUIRED`, `path_b.primary=false`, status OPEN, no promotion. The worker's original is preserved twice: in the row's `worker_original` block (`PATH_B_LIVE_DEFERRED`, `PATH_B_DEFERRED`, `primary=true`, original next stage) and in `master_reclassifications` (worker vs master classification and state, source "aud-final F-01", reason citing L66 and WBS T-PATHB-EXCL / T-B7-PROMOTE-REG). The HIST-01 dossier itself is untouched and still shows the worker's values; `worker_original` equals the dossier row (checked).
+
+19 is right. My earlier "18 after F-01" was an arithmetic slip: I dropped REG-08 from the count, but my own required edit gave it a recorded PROD-Q Dimension B dependency as `live_obligation`, which puts it in the worker-identified-dependency set. Recount: 19 rows with a non-"None" live obligation or Path B primary (PRD-01 and PRD-02 as primary; REG-08 and 16 others as live dependencies; no "None" string left) = 5 named by checklist L66 (PRD-01, 02, 03, 08, SEC-04) + 14 worker-identified. Path B document section 2 lists 17 rows and section 1 lists 2: the same 19.
+
+## (4) New files
+- `dossiers/README.md`: accurate (PR 405/406/407 heads match; the five do-not-apply files are named correctly; states what is left out). Acceptable.
+- `hist01/PATCH_H01_SCOPE_NOTE.md`, `hist03/PATCH_H03_SCOPE_NOTE.md`: accurate descriptions of what each patch included and excluded; no status claims. Both still say "needs independent review / not applied" in their own present tense, which is stale after PR 405; the README says the content was published via PR 405, so this is acceptable. Optional LOW edit: add a first line `Status: published through PR 405 (reviewed by rev-docs); this note is historical.` to each.
+- `hist02/HIST02_SSOT_CANDIDATE_PATCH_BND06_PLG06.diff`: touches only the evidence cells of `FRZ-BND-06` and `FRZ-PLG-06`; status cells `OPEN` before and after; the same text is present in the checklist at 41908e3fb (published via PR 405). Acceptable.
+- `audits/aud-final/AUDIT_REPORT.md` in the package is byte-identical to my first-round report (`cmp`). Acceptable; the package copy does not contain this re-read unless refreshed. After R-1, MASTER should update report section 10, criterion #13 (report and master matrix) and the dashboard aud-final row to the FINAL verdict (text only, not a finding).
+
+## (5) Scope
+`git diff --name-only 41908e3fb 6c973c93a`: 0 files outside `docs/project/maintainers/qualification/historical_certification_campaign/`; 0 of the six `MATERIAL_GOVERNANCE_PATHS`; 0 files under `intergrax/ agents/ applications/ scripts/ tests/`; no checklist, roadmap, FRZ-AUD or ARCH-FREEZE document. Worktree clean (`git status` empty).
+
+## Not verified in this round
+As in section 4 of the first round (signed OD records, raw logs, worker theses, merits of the 85 dispositions); additionally the replacement dashboard worker timestamps (registry unpublished) and the scope-note claims about throwaway-tree `git apply --check` runs.

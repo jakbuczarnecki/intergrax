@@ -1,5 +1,5 @@
 # Historical independent audit register
-Generated 2026-11-08T11:15:30Z. Claude session ids are transcript file names (the host does not expose them); `UNKNOWN` means not recoverable.
+Generated 2026-11-08T11:20:52Z. Claude session ids are transcript file names (the host does not expose them); `UNKNOWN` means not recoverable.
 
 ## 1. Independent audits, reviews and approvals performed in this campaign
 | name | session id | role | scope | verdict | report |
@@ -7,6 +7,7 @@ Generated 2026-11-08T11:15:30Z. Claude session ids are transcript file names (th
 | rev-docs | 2fa420b1-3289-4211-bdde-8f7a59068b02 | independent non-author reviewer | PR 405 / branch hist-cert/docs-patches (5 commits) | ACCEPT (after 1 correction commit; found a stage-label flip and an absent quotation) | audits/rev-docs/REVIEW.md |
 | rev-rules | 36de2835-33cd-4117-a4a4-0f201f898370 | independent non-author reviewer | PR 406 / branch hist-cert/rules-update (3 commits) | ACCEPT (after nine required edits and two follow-up defects; found a false tooling statement) | audits/rev-rules/REVIEW.md |
 | aud-030a | cdb0c03b-866b-433c-b899-a8d0ccbcc05f | independent auditor (not implementer, planner or approver) | T-IGX-030-A implementation SHA 683f955727fb (tests only) | PASS_SCOPED (conditions C-1/C-2 only; does not close TOOL-LIFE-X; OD-TLX-A/C authority not verifiable from the repo) | audits/aud-030a/AUDIT_REPORT.md |
+| aud-final | 9b703bc3-6a1e-4ac8-9a52-dc662c0f5a1c | independent integration auditor of this package (mission phase P3) | campaign final package, commits 2a7aec93d -> 6c973c93a -> 63ff33812 (documentation only) | ACCEPT_WITH_CHANGES at 2a7aec93d (13 findings: 1 HIGH, 8 MEDIUM, 4 LOW), all applied; re-read at 6c973c93a: ACCEPT_WITH_CHANGES with one mechanical numeric edit (R-1, dashboard counters), applied in 63ff33812 and checked by git diff; the auditor stated the package is ACCEPT once R-1 is applied. Covers fidelity of the consolidation, NOT the correctness of the 85 worker judgements | audits/aud-final/AUDIT_REPORT.md |
 | cert-030a | 929ea8c8-4988-4fc1-bcc6-6e66b265b0ac | designated certifying session (plan approval only, IIAC Amendment 01) | Plan of T-IGX-030-A, digest c6d1dca6... | APPROVE (plan only) | audits/cert-030a/CERT_DECISION.md |
 
 ## 2. Implementer / planner sessions (never auditors of their own work)
