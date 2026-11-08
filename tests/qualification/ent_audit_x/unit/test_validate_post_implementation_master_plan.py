@@ -93,6 +93,49 @@ def test_validator_fails_c075_w0_batch(baseline_plan_text: str) -> None:
     assert any("C075" in e for e in errors)
 
 
+def _disposition_line(text: str) -> str:
+    return next(ln for ln in text.splitlines() if ln.startswith("**Disposition:**"))
+
+
+def test_validator_accepts_published_internal_closure_disposition(baseline_plan_text: str) -> None:
+    lib = _load_lib()
+    assert lib.INTERNALLY_CLOSED_DISPOSITION in _disposition_line(baseline_plan_text)
+    errors = lib.validate_master_plan(baseline_plan_text, _repo_root())
+    assert not any("disposition" in e.lower() for e in errors), errors
+
+
+def test_validator_fails_unknown_disposition(baseline_plan_text: str) -> None:
+    lib = _load_lib()
+    mutated = baseline_plan_text.replace(lib.INTERNALLY_CLOSED_DISPOSITION, "ENT-AUDIT-X — FULLY CERTIFIED", 1)
+    errors = lib.validate_master_plan(mutated, _repo_root())
+    assert any("disposition must declare" in e for e in errors), errors
+
+
+def test_validator_fails_formal_iiac_closure_disposition(baseline_plan_text: str) -> None:
+    """This plan only ever records internal closure; the formal IIAC headline must not satisfy it."""
+    lib = _load_lib()
+    formal = "ENT-AUDIT-X — CLOSED — INDEPENDENTLY AUDITED (INTERNAL AGENT CERTIFICATION) — PUBLISHED"
+    mutated = baseline_plan_text.replace(lib.INTERNALLY_CLOSED_DISPOSITION, formal, 1)
+    errors = lib.validate_master_plan(mutated, _repo_root())
+    assert any("disposition must declare" in e for e in errors), errors
+
+
+def test_validator_fails_missing_disposition_line(baseline_plan_text: str) -> None:
+    lib = _load_lib()
+    mutated = re.sub(r"^\*\*Disposition:\*\*.*\n", "", baseline_plan_text, count=1, flags=re.MULTILINE)
+    errors = lib.validate_master_plan(mutated, _repo_root())
+    assert any("disposition line" in e for e in errors), errors
+
+
+def test_validator_disposition_constant_elsewhere_does_not_satisfy(baseline_plan_text: str) -> None:
+    """A known constant in the body must not rescue a wrong Disposition line."""
+    lib = _load_lib()
+    bad = baseline_plan_text.replace(lib.INTERNALLY_CLOSED_DISPOSITION, "ENT-AUDIT-X — FULLY CERTIFIED", 1)
+    bad += f"\n\nNote: {lib.READY_DISPOSITION}\n"
+    errors = lib.validate_master_plan(bad, _repo_root())
+    assert any("disposition must declare" in e for e in errors), errors
+
+
 def test_validator_cli_passes() -> None:
     root = _repo_root()
     script = root / "scripts/enterprise_audit/validate_post_implementation_master_plan.py"
