@@ -44,4 +44,8 @@ Everything under `intergrax/`, `agents/`, `applications/`; `29c387879` and `98b4
 
 ## Lifecycle state
 
-plan_approved
+ready_for_audit
+
+## Checkpoint
+
+Implementation commits: C1 `ec105a789`, C2 `683f95572` (both blob-equal to their source commits `0adb73380`, `10089121e`; zero files under `intergrax/`, `agents/`, `applications/`, `scripts/`). Implementer results on the mutable worktree (not exact-SHA evidence): side-effect module 37 passed; F3 module 5 passed x3; combined Batch B/C set 76 passed; ruff check and format --check clean; `verify_iiac_policy_activation --require-in-force` IN_FORCE (exit 0); governance tests 56 passed, 1 skipped. `igx_gov ticket` not run (it wraps the broad regression `fast` tier; needs Operator budget under C10/C15). No PASS is claimed; the independent audit is a separate session. Details: `handoffs/IMPL_TLX_AUDIT_HANDOFF.md` in the campaign directory.
