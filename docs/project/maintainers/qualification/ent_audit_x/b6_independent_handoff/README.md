@@ -11,7 +11,7 @@ Tracked qualification artifacts @ **TEST_EXECUTION_SHA** (see `ENT_AUDIT_X_SHA_L
 **Historical defect (ENT-W8-B6-001):** R7 tree `qualification_at_87203c1b…` @ `d18f01f22` — preserved; see
 [`R7_DEFECT_ENT-W8-B6-001.md`](./R7_DEFECT_ENT-W8-B6-001.md).
 
-**Current corrective tree:** `qualification_at_89c76eb7b53a0a3ce6f75ab395cf4a2802638a91` (W8 wave).
+**Current corrective tree:** `qualification_at_62d1c615855a3eaf569777a10e342aacc889a128` (IIAC loop-1 wave; T-IGX-024-A). Previous tree `qualification_at_89c76eb7b53a0a3ce6f75ab395cf4a2802638a91` (W8 wave) is preserved as history.
 
 **Formal B6 package (draft):** [ENT_AUDIT_X_B6_FORMAL_ACCEPTANCE_PACKAGE_DRAFT.md](../ENT_AUDIT_X_B6_FORMAL_ACCEPTANCE_PACKAGE_DRAFT.md) · trust chain [ENT_AUDIT_X_B6_TRUST_CHAIN_MATRIX.md](../ENT_AUDIT_X_B6_TRUST_CHAIN_MATRIX.md)
 

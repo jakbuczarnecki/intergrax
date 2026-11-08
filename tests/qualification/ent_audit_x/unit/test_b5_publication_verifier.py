@@ -215,7 +215,7 @@ def test_ladder_pinned_b5_tree_verifies_strictly_on_every_platform() -> None:
         tolerated = ("sha256 mismatch", "evidence manifest digest mismatch")
         assert all(any(marker in error for marker in tolerated) for error in errors), errors
         return
-    assert errors == []
+    assert list(errors) == []
 
 
 def test_new_b5_trees_are_byte_preserved_by_gitattributes() -> None:
