@@ -9,6 +9,9 @@ approvers:
   - id: maintainer
     description: Platform maintainer role (documented in AGENT_INSTRUCTIONS)
     may_approve_plans: true
+  - id: operator-delegate
+    description: Session commissioned by the operator under IIAC Amendment 01; must carry a Delegation line (process_enforced)
+    may_approve_plans: true
 
 approval_format:
   ticket_line_prefix: "Approved:"

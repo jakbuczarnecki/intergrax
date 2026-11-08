@@ -12,7 +12,10 @@ Every ticket MUST include these headings (order may vary):
 
 1. **Scope** — what changes, linked domains/plans.
 2. **Plan digest** — `Plan digest: <sha256>` from `scripts/governance/plan_digest.py` when a plan file is attached.
-3. **Approved** — `Approved: <operator> @ <ISO8601>` after plan review (procedural gateway).
+3. **Approved** — after plan review (procedural gateway), one of two permitted forms (policy; not enforced by tooling):
+   - `Approved: <operator> @ <ISO8601>` — written by the operator; or
+   - `Approved: operator-delegate @ <ISO8601>` followed on the next line by `Delegation: <reference>` — written by a session the operator commissioned (IIAC Amendment 01, rules R-1..R-6; a commission given in chat is sufficient; the reference points to its transcription, e.g. `<path>@<40-hex sha>`; tooling that follows Amendment 01 section 4.1 B-1 accepts only that form, so a local session record should first be published and referenced by commit). The commissioned session must be a new session dedicated to that task, not a continuation and not an implementation session (R-2), and must not be the implementer of the ticket (R-3).
+   An implementer never writes either form for its own ticket; assurance of the delegate form is `process_enforced`. `verify_plan_approval.py` / `verify_ticket_lifecycle.py` currently test only for a line starting `Approved:`; they do not distinguish the forms.
 4. **Test contract** — pytest/CI commands that must pass before batch close.
 5. **Out of scope** — explicit exclusions (FRZ, Docker, vendor, etc.).
 6. **Lifecycle state** — one of: `draft` | `plan_pending` | `plan_approved` | `in_progress` | `quality_gate` | `ready_for_audit` | `closed`.
@@ -37,8 +40,8 @@ Enforced by `verify_commit_ticket_refs.py` on pre-push (and `igx_gov ticket`).
 | State | Meaning |
 |-------|---------|
 | `draft` | Ticket scaffold; no product commits yet. |
-| `plan_pending` | Plan digest recorded; awaiting operator approval line. |
-| `plan_approved` | Operator `Approved:` present; implementation may start. |
+| `plan_pending` | Plan digest recorded; awaiting the approval line (operator or commissioned session). |
+| `plan_approved` | `Approved:` present (operator or `operator-delegate` with `Delegation:`); implementation may start. |
 | `in_progress` | Active worktree / agent batch. |
 | `quality_gate` | Implementer ran `igx_gov ticket`; ready for PR/review. |
 | `ready_for_audit` | Independent auditor session may start (G6). |

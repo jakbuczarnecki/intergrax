@@ -13,4 +13,4 @@ pins:
   governance/agent-control-plane/role_registry.yaml: 79f82f36ea3bd1b8b8bca6889c1def835bae87ba5a34868d2768a5ed795c7e37
   governance/agent-control-plane/skill_routing_registry.yaml: f3661e4b48382a48bb0216aa39f76d4416d3715cdc8d984581aafcf4b70bd313
   governance/agent-control-plane/task_lifecycle.yaml: 122f628cee0e3d28b99f3240f78c105146206a0293a974ed33a04ba73654994e
-  governance/agent-control-plane/plan_approvers.yaml: 8a53eff2ae403fbd8bb85836f82d01cc4dff51bed7aca903f289bba29e03d64e
+  governance/agent-control-plane/plan_approvers.yaml: 119493ce52955d9b5cdb27ed26029ea77d13577803bac25817511387a5490312
