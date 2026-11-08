@@ -209,9 +209,11 @@ def test_ladder_pinned_b5_tree_verifies_strictly_on_every_platform() -> None:
     assert tree.is_dir(), f"pinned B5 tree missing: {tree}"
     errors = verify_b5_publication_tree(root, tree, expected_qualification_sha=tes)
     if tes == _LEGACY_TES:
-        # Waived legacy tree (F-01): LF blobs were digested as CRLF, so on an LF checkout the only tolerated defect is a
-        # sha256 mismatch. Any other kind of error still fails. The waiver ends with the next TES publication.
-        assert all("sha256 mismatch" in error for error in errors), errors
+        # Waived legacy tree (F-01): LF blobs were digested as CRLF, so on an LF checkout the only tolerated defects are
+        # digest mismatches (indexed artifacts, qual-wave report, evidence manifest). Any other kind of error still
+        # fails. The waiver ends with the next TES publication.
+        tolerated = ("sha256 mismatch", "evidence manifest digest mismatch")
+        assert all(any(marker in error for marker in tolerated) for error in errors), errors
         return
     assert errors == []
 
