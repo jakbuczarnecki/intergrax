@@ -10,7 +10,6 @@ from intergrax.applications._shared.production_platform_persistence import (
 )
 from intergrax.distributed.contracts.kv_store import DistributedKVStore
 from intergrax.integrations.contracts.document_store import ConditionalDocumentStore, DocumentRecord
-from intergrax.skills.execution_binding import InMemorySkillExecutionPinningStore
 from intergrax.skills.execution_pinning_durability import DURABLE_SKILL_EXECUTION_PINNING_REQUIRED_MSG
 from intergrax.skills.execution_pinning_persistence import (
     DocumentStoreSkillExecutionPinningStore,
@@ -161,7 +160,7 @@ def test_no_stores_in_production_raises_durable_required_t6() -> None:
 
 
 def test_explicit_pinning_store_wins_t7() -> None:
-    explicit = InMemorySkillExecutionPinningStore()
+    explicit = KvSkillExecutionPinningStore(InMemoryKVStore())
     kv = InMemoryKVStore()
     doc = InMemoryConditionalDocumentStore()
     wiring = resolve_skill_execution_pinning_wiring(
