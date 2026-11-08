@@ -67,7 +67,7 @@ Risk low (error-only path, parity with existing guard). Residuals: FAILED vs NOT
 
 ## Lifecycle state
 
-plan_approved
+quality_gate
 
 ## Lease holder
 
@@ -75,4 +75,12 @@ IMPL-C0 (worktree `D:/Projekty/_wt/intergrax/cx-ic3`, branch `cert-wave/impl-c0`
 
 ## Checkpoint
 
-(empty — IMPL-C0 fills after `igx_gov ticket`; not an audit; no PASS claimed)
+IMPL-C0 implementer checkpoint (not an audit; no PASS claimed; handed over READY_FOR_INDEPENDENT_AUDIT). Base `2d14bd76f29366a6eda562c22cf857b55d515700`.
+
+- `verify_plan_approval.py` ticket vs plan: OK.
+- Red-first (tests-only commit `98b4bf514`, unfixed tree): T1, T2 (x2), T3, T4 fail only on the record-state assertion (RUNNING != FAILED); N1 passes (5 failed, 1 passed).
+- After fix: test contract command 1 = 102 passed; command 2 (EBH-7 C4) = 20 passed. Mutation check (hunk reverted): 5 new tests fail, N1 passes.
+- `ruff check` on both changed Python files: OK.
+- `igx_gov ticket` stages run individually: `verify_commit_ticket_refs.py --mode range --rev-range <base>..HEAD` OK (branch has no upstream, so `--mode push` degrades to a whole-history walk); `validate_policy_registry.py` OK; `run_regression_gate_ci.py --profile fast` PASS.
+- Diff guard: `intergrax/` diff = the single hunk of plan section 3 in `invoker.py`.
+- Full logs and report: IMPL-C0 dossier (`.tmp/session/cert-campaign/IMPL-C0/`).
