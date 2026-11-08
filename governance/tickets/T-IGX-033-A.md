@@ -18,7 +18,7 @@ Plan digest: ae167672d4075e3e4dc190ac93c78a937d7ad0c435dfc3971e615143e4273775
 
 ## Approved
 
-(pending and HELD - no approval line is requested by this ticket's author; any approval line is written only by the Operator or by a commissioned `operator-delegate` session, never by the planner or the implementer.)
+Approved: operator-delegate hist-sign-plans @ 2026-11-08T21:26:00+01:00 | Delegation: docs/project/maintainers/qualification/historical_certification_campaign/delegations/DELEG-HIST-PRODUCT-PLANS-2026-11-08.md@9bfa07fa97c5054b07ff1f1dc9799d9ca77471f5
 
 Authority cited for the scope (given in chat and recorded in `docs/project/maintainers/qualification/historical_certification_campaign/decisions/OPERATOR_DECISION_RECORDS_W0.md`, not signature lines of this ticket): DR-8 option 2 (move the Tier-0 -> Tier-3 demo composition), DR-12 = B (HELD for ACT-N11 sequencing; the fix is necessarily a product-path change), W1-PLAN step 3 (`OPERATOR_DECISION_RECORDS_W1.md`).
 
@@ -44,4 +44,4 @@ Editing, weakening, skipping or allow-listing any gate beyond the two named tole
 
 ## Lifecycle state
 
-plan_pending
+plan_approved
