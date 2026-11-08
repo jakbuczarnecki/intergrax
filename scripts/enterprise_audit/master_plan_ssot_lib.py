@@ -93,6 +93,17 @@ PARTIAL_DISPOSITION = "ENT-AUDIT-X — PLAN PARTIAL / EXACT BLOCKERS"
 
 TECHNICAL_PARTIAL_DISPOSITION = "ENT-AUDIT-X — TECHNICAL PARTIAL / EXACT BLOCKERS"
 
+# Published since 477017f15 (post-B4 internal closure). Internal closure only: it is NOT the formal
+# IIAC closure vocabulary and must not be read as one; formal closure is never declared in this plan.
+INTERNALLY_CLOSED_DISPOSITION = "ENT-AUDIT-X — INTERNALLY CLOSED — AUTOMATED INTERNAL AUDIT ACCEPTED — PUBLISHED"
+
+KNOWN_DISPOSITIONS = (
+    READY_DISPOSITION,
+    PARTIAL_DISPOSITION,
+    TECHNICAL_PARTIAL_DISPOSITION,
+    INTERNALLY_CLOSED_DISPOSITION,
+)
+
 TASK_ID_RE = re.compile(r"^C0(?:0[1-9]|[1-6][0-9]|7[0-5])$")
 
 FORBIDDEN_SELF_CERT = (
@@ -426,12 +437,24 @@ def _line_has_negated_cert(line: str, phrase: str) -> bool:
     return any(x in lower for x in ("no ", "not ", "without ", "≠", "— no", "does not"))
 
 
+def _disposition_errors(text: str) -> list[str]:
+    """The ``**Disposition:**`` line must carry exactly one known constant (checked on that line only)."""
+    line = next((ln for ln in text.splitlines() if ln.startswith("**Disposition:**")), None)
+    if line is None:
+        return ["disposition line '**Disposition:**' is missing"]
+    if not any(known in line for known in KNOWN_DISPOSITIONS):
+        return [
+            "disposition must declare READY, PLAN PARTIAL, TECHNICAL PARTIAL, or INTERNALLY CLOSED constant"
+            f" (got: {line[:90]})"
+        ]
+    return []
+
+
 def validate_master_plan(text: str, root: Path | None = None) -> list[str]:
     errors: list[str] = []
     root = root or repo_root()
 
-    if READY_DISPOSITION not in text and PARTIAL_DISPOSITION not in text and TECHNICAL_PARTIAL_DISPOSITION not in text:
-        errors.append("disposition must declare READY, PLAN PARTIAL, or TECHNICAL PARTIAL constant")
+    errors.extend(_disposition_errors(text))
 
     for line in text.splitlines():
         for phrase in FORBIDDEN_SELF_CERT:
