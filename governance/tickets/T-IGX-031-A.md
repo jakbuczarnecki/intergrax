@@ -11,17 +11,19 @@ Exact files (nothing under `intergrax/`, `agents/`, `applications/`, `scripts/`;
 
 Escape clause: any item whose only fix is a product-code edit leaves this batch and moves to the product batch (W1-PLAN step 3). The plan records one product-level residual (two providers share the slug `ollama`) and does not fix it.
 
+Amendment A1 (2026-11-08, Operator option A): the four existing touched files already fail `ruff check` / `ruff format --check` at the base (I001 in all four, F401 in `test_sec_ent.py`, E402 and format in w5_c, format in w5_d), which blocks the pre-push gate and CI. The plan gains a behaviour-neutral lint normalization of exactly those four files (ledger S12, step 12): import blocks sorted, `ruff format` applied, the unused `RuntimeEventBus` local import deleted, the late `ObservabilityExportPayload` import moved to the top. No assertion, test body, marker, `no_ci`, skip or xfail changes; no new file; the file set is unchanged. S12 is proved neutral by an AST comparison and a rerun of steps 1-5; the 27-path run is not repeated (residual R8 in the plan). The plan digest changed, so the earlier approval is superseded and a new approval of the amended plan is required.
+
 No PASS, closure, FRZ promotion or stage-parent change is implied. The implementer is not the auditor; the independent audit is run by a fresh session, and the plan approver is a third session.
 
 ## Plan digest
 
-Plan digest: a83842545c6e94534fc6d9a1a5b1990bd35a7676d4c7d84d6ce95107ed267509
+Plan digest: 980394592125b524504dfd081631735839242a7455f1f18b585acf5625e5a120
 
 ## Approved
 
-Approved: operator-delegate cert-031a @ 2026-11-08T16:44:00+01:00 | Delegation: docs/project/maintainers/qualification/historical_certification_campaign/delegations/DELEG-HIST-031A-2026-11-08.md@f1d85253c7d66a413e62f5d4f9d733eba786e3da
+Previous approval (SUPERSEDED, it covers only the old plan digest a83842545c6e94534fc6d9a1a5b1990bd35a7676d4c7d84d6ce95107ed267509; history, not a current approval): operator-delegate cert-031a @ 2026-11-08T16:44:00+01:00 | Delegation: docs/project/maintainers/qualification/historical_certification_campaign/delegations/DELEG-HIST-031A-2026-11-08.md@f1d85253c7d66a413e62f5d4f9d733eba786e3da
 
-(pending - no approval line is requested by this ticket's author; any approval line is written only by the Operator or by a commissioned `operator-delegate` session, never by the planner or the implementer.)
+(pending - the amended plan (new digest above, Amendment A1) needs a new approval from a fresh delegated session or the Operator; no approval line is requested by this ticket's author; any approval line is written only by the Operator or by a commissioned `operator-delegate` session, never by the planner or the implementer.)
 
 Authority cited for the scope (given in chat and in the accepted W1-PLAN sequence, not signature lines): W1-PLAN step 1 (a test-only batch for F-006 / F-016 with an audit proving no gate is weakened; the sequence approves no ticket plan), DR-12 = B (tests now, product edits batched with the next IIAC re-activation).
 
@@ -36,7 +38,8 @@ uv run --extra dev-ci pytest <test_sec_ent.py + the three W5 files> -q          
 uv run --extra dev-ci pytest <the three W5 files reversed + test_sec_ent.py> -q                   # ONE process, order independence; after: 34 passed
 negative probes (uncommitted, restored): restore each broken patch target / the object() input / drop the identity => exactly those tests red again; drop the fixtures => the HEAD red set again
 ACT-N11 pre-check: verify_iiac_policy_activation --require-in-force; governance tests incl. test_iiac_g0_inventory; expected green
-uv run --extra dev-ci ruff check <5 files> ; uv run --extra dev-ci ruff format --check <5 files>
+uv run --extra dev-ci ruff check <5 files> ; uv run --extra dev-ci ruff format --check <5 files>   # clean only after S12 (the four existing files carry base lint defects)
+S12 (Amendment A1), after the lint-normalization commit: ruff check / format --check clean on the five files; AST-equivalence check (plan section 7, step 12 b); steps 1-5 rerun with the same counts (14 / 20 / 34 / 34 / 1); probes A and B and the 27-path run are NOT repeated
 git diff --name-only 6734971cf..HEAD    # only the five files + ticket/plan files
 ```
 
@@ -48,4 +51,4 @@ Everything under `intergrax/`, `agents/`, `applications/`, `scripts/`; the six I
 
 ## Lifecycle state
 
-ready_for_audit
+plan_pending
