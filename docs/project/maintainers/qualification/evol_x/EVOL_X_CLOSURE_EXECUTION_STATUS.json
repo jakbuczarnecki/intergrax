@@ -33,7 +33,7 @@
   "qualified_ci_run_id": "41337077334",
   "b6_acceptance_publication_sha": "1dd769331506149a1ee2f411c2bc62e85e5bbf25",
   "formal_closure_publication_sha": "be77b3a5fb97f10a3bd2df6ee038cb92aad77eca",
-  "w7_06_handoff_publication_sha": null,
+  "w7_06_handoff_publication_sha": "7a4f279fd8c0986431941c77283d872ea5b0c1ba",
   "ent_audit_x_intake": "OPERATOR_AUTHORIZED_PREPARED_PACKAGE",
   "independent_technical_review": "EVOL_X_OD_EVOL_17_INDEPENDENT_TECHNICAL_REVIEW.md",
   "protocol_03": "SUPERSEDED_BY_IIAC_B6_ACCEPTANCE",
@@ -77,7 +77,7 @@
     "batch_5_ent_handoff": {
       "status": "INTERNAL_HANDOFF_COMPLETE",
       "record": "EVOL_X_ENT_AUDIT_X_HANDOFF_RECORD.md",
-      "formal_w7_06_pin": "PENDING_FORMAL_CLOSURE_SHA"
+      "formal_w7_06_pin": "PUBLISHED"
     },
     "w7_02": {
       "status": "NOT_APPLICABLE",
