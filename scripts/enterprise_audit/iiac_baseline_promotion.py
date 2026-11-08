@@ -22,21 +22,31 @@ A record with ``record_origin: operator-delegate`` is accepted only when ALL of 
 * the ladder B6 pin, git ancestry and dossier checks of the human path also hold.
 
 Agent origins never authorize promotion.
+
+Command line (works for human and delegated records)::
+
+    python scripts/enterprise_audit/iiac_baseline_promotion.py --od-record <record.json> --evidence-dir <closed bundle>
+
+``run_enterprise_audit.py promote-baseline`` is deliberately left unchanged: it is a qualification-sensitive path
+(``mechanical_readiness_check`` requires a new TES when it changes) and it keeps serving human records only.
 """
 
 from __future__ import annotations
 
+import argparse
 import hashlib
 import json
 import re
 import subprocess
-from collections.abc import Callable
+import sys
+from collections.abc import Callable, Sequence
 from datetime import UTC, datetime
 from pathlib import Path
 
 from intergrax.platform.enterprise_audit.baseline import (
     OD_ENT_01_DECISION_ID,
     EnterpriseAuditBaseline,
+    assert_baseline_dir_jailed,
     baseline_path,
     candidate_baseline_path,
     load_candidate_baseline,
@@ -388,3 +398,31 @@ def promote_accepted_baseline(
         ),
     )
     return out
+
+
+def main(argv: Sequence[str] | None = None) -> int:
+    parser = argparse.ArgumentParser(description="Promote the accepted ENT-AUDIT-X baseline (OD-ENT-01).")
+    parser.add_argument("--od-record", type=Path, required=True, help="OD-ENT-01 JSON record (human or delegated)")
+    parser.add_argument("--evidence-dir", type=Path, required=True, help="closed evidence bundle directory")
+    parser.add_argument("--baseline-dir", type=Path, help="qualification baseline directory")
+    parser.add_argument("--repo-root", type=Path, default=Path(__file__).resolve().parents[2])
+    args = parser.parse_args(None if argv is None else list(argv))
+
+    root = args.repo_root.resolve()
+    try:
+        baseline_dir = assert_baseline_dir_jailed(args.baseline_dir or (root / "tests/qualification/ent_audit_x"), root)
+        promote_accepted_baseline(
+            baseline_dir,
+            od_record_path=args.od_record,
+            verify_closed_bundle_dir=args.evidence_dir,
+            repo_root=root,
+        )
+    except ValueError as exc:
+        print(str(exc), file=sys.stderr)
+        return 1
+    print(f"accepted baseline promoted under {baseline_dir}")
+    return 0
+
+
+if __name__ == "__main__":
+    raise SystemExit(main())

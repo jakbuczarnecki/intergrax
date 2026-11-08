@@ -10,7 +10,10 @@ import sys
 import time
 from pathlib import Path
 
-from intergrax.platform.enterprise_audit.baseline import assert_baseline_dir_jailed
+from intergrax.platform.enterprise_audit.baseline import (
+    assert_baseline_dir_jailed,
+    promote_accepted_baseline,
+)
 from intergrax.platform.enterprise_audit.changed_since import select_checks_for_changed_since
 from intergrax.platform.enterprise_audit.contracts import AuditMode, EnterpriseAuditExitCode
 from intergrax.platform.enterprise_audit.manifest import load_default_manifest
@@ -80,24 +83,14 @@ def _cmd_run(args: argparse.Namespace) -> int:
     return int(exit_code)
 
 
-def _load_promotion():
-    """Delegated-record promotion lives next to this script (outside intergrax/, see its docstring)."""
-    try:
-        from scripts.enterprise_audit import iiac_baseline_promotion as module
-    except ModuleNotFoundError:
-        import iiac_baseline_promotion as module
-    return module
-
-
 def _cmd_promote(args: argparse.Namespace) -> int:
     root = _repo_root()
     baseline_dir = assert_baseline_dir_jailed(args.baseline_dir or (root / "tests/qualification/ent_audit_x"), root)
     try:
-        _load_promotion().promote_accepted_baseline(
+        promote_accepted_baseline(
             baseline_dir,
             od_record_path=args.od_record,
             verify_closed_bundle_dir=args.evidence_dir,
-            repo_root=root,
         )
     except ValueError as exc:
         print(str(exc), file=sys.stderr)
