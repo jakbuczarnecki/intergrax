@@ -9,7 +9,6 @@ from typing import ClassVar
 from unittest.mock import patch
 
 import pytest
-
 from intergrax.applications._shared.application_security_wiring import register_application_security_hooks
 from intergrax.applications._shared.integration_wiring import bootstrap_application_integration_catalog
 from intergrax.applications._shared.security_runtime_bridge import (
@@ -262,7 +261,6 @@ def test_register_security_hooks_wires_spine_subscriber() -> None:
 
 @pytest.mark.asyncio
 async def test_defense_middleware_blocks_cross_tenant_scope() -> None:
-    from intergrax.runtime.events.event_bus import RuntimeEventBus
 
     middleware = PluginSecurityDefenseMiddleware(
         _AllowDefensePlugin(),

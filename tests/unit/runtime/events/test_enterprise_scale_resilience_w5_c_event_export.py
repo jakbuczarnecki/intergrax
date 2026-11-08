@@ -8,14 +8,13 @@ import asyncio
 from collections.abc import Iterator
 
 import pytest
-
 from intergrax.applications._shared.harness_host_runtime import (
     build_harness_host_runtime,
 )
 from intergrax.applications.contracts.environment_profile import (
     ApplicationEnvironmentProfile,
 )
-from intergrax.contracts.event_delivery import EventDeliveryPolicy
+from intergrax.contracts.event_delivery import EventDeliveryPolicy, ObservabilityExportPayload
 from intergrax.contracts.execution_phase import ExecutionPhase
 from intergrax.runtime.events.event_bus import RuntimeEventBus
 from intergrax.runtime.events.runtime_event import RuntimeEvent, RuntimeEventType
@@ -25,10 +24,11 @@ from intergrax.runtime.observability.event_delivery import (
     RecordingEventExportSink,
     RuntimeEventExportSink,
 )
-from lab_application.host.settings import LabApplicationSettings
-from lab_application.manifest import build_lab_manifest
 from testing_support.runtime_events import runtime_event_test_identity
 from tests.support.integration_catalog_isolation import reset_integration_tool_skill_catalogs
+
+from lab_application.host.settings import LabApplicationSettings
+from lab_application.manifest import build_lab_manifest
 
 pytestmark = [pytest.mark.unit, pytest.mark.gate]
 
@@ -57,9 +57,7 @@ def _event(kind_suffix: str = "") -> RuntimeEvent:
     )
 
 
-def _wired_bus_with_recorder() -> tuple[
-    RuntimeEventBus, RecordingEventExportSink, BoundedEventSink
-]:
+def _wired_bus_with_recorder() -> tuple[RuntimeEventBus, RecordingEventExportSink, BoundedEventSink]:
     metrics = InternalDeliveryMetrics()
     recorder = RecordingEventExportSink()
     bridge = RuntimeEventExportSink(recorder, delivery_metrics=metrics)
@@ -95,9 +93,6 @@ async def test_ordering_preserved_for_100_events() -> None:
     for index in range(1, 101):
         assert kinds[index - 1] == f"qualification.w5c.event_{index}"
     assert bounded.closed
-
-
-from intergrax.contracts.event_delivery import ObservabilityExportPayload
 
 
 class _FailingExportSink:
