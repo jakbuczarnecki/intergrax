@@ -10,6 +10,7 @@ from __future__ import annotations
 
 import base64
 import hashlib
+import re
 from collections.abc import Callable
 from datetime import UTC, datetime
 from pathlib import Path
@@ -51,6 +52,7 @@ _AMENDMENT = _ROOT / (
     "EVOL_X_PROPOSED_ECAP_AUTOMATED_B6_ORGANIZATIONAL_ACCEPTANCE_AMENDMENT.md"
 )
 _REGISTER = _ROOT / "docs/project/maintainers/qualification/evol_x/EVOL_X_OPERATOR_DECISION_REGISTER_W1.md"
+_LADDER = _ROOT / "docs/project/maintainers/qualification/evol_x/EVOL_X_SHA_LADDER.md"
 _NOW = datetime(2026, 11, 2, 12, 0, tzinfo=UTC)
 _DIGEST = "ab" * 32
 
@@ -179,18 +181,30 @@ def _governance_in_force() -> dict[str, object]:
 
 
 def test_published_records_keep_formal_b6_pending() -> None:
+    """No premature CLOSED. T-IGX-022-A: since the EVOL-X formal closure the published state is evidence-bound.
+
+    The name is kept because EVOL_X_FINAL_ACCEPTANCE_EVIDENCE_MATRIX.md cites it.
+    """
     governance = load_governance(_GOVERNANCE)
     assert governance["ecap_amendment_activation"] == "PENDING_REQUIRED_APPROVALS"
     assert governance["normative_effect"] == "NOT_IN_FORCE"
-    assert governance["b6_acceptance_publication_sha"] is None
-    assert governance["evol_x_closed"] is False
     amendment = _AMENDMENT.read_text(encoding="utf-8")
     assert "PENDING_REQUIRED_APPROVALS" in amendment
     assert "NOT_IN_FORCE" in amendment
     register = _REGISTER.read_text(encoding="utf-8")
     assert "OD-EVOL-14" in register
-    assert "**OD-EVOL-12** | **PENDING**" in register
-    assert "**OD-EVOLX-08** | **PENDING**" in register
+    if governance["evol_x_closed"] is not True:
+        assert governance["b6_acceptance_publication_sha"] is None
+        assert "**OD-EVOL-12** | **PENDING**" in register
+        assert "**OD-EVOLX-08** | **PENDING**" in register
+        return
+    # closed: the claim must be backed by published SHAs and signed closing decisions
+    sha = re.compile(r"[0-9a-f]{40}")
+    assert sha.fullmatch(str(governance["b6_acceptance_publication_sha"]))
+    ladder = _LADDER.read_text(encoding="utf-8")
+    assert re.search(r"^\| FORMAL_CLOSURE_PUBLICATION_SHA \| `[0-9a-f]{40}` \|", ladder, re.MULTILINE)
+    assert re.search(r"\*\*OD-EVOL-12\*\* \| \*\*OPERATOR APPROVED\*\* \| \d{4}-\d{2}-\d{2} \|", register)
+    assert re.search(r"\*\*OD-EVOLX-08\*\* \| \*\*OPERATOR APPROVED\*\* \| \d{4}-\d{2}-\d{2} \|", register)
 
 
 def test_technical_pass_does_not_publish_acceptance() -> None:
