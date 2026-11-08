@@ -18,7 +18,7 @@ Plan digest: 2628d1a834d2fcf25f47c55b0d60355811898c9e60337306b557f152d7ba7446
 
 ## Approved
 
-(pending and HELD - no approval line is requested by this ticket's author; any approval line is written only by the Operator or by a commissioned `operator-delegate` session, never by the planner or the implementer.)
+Approved: operator-delegate hist-sign-plans @ 2026-11-08T21:26:00+01:00 | Delegation: docs/project/maintainers/qualification/historical_certification_campaign/delegations/DELEG-HIST-PRODUCT-PLANS-2026-11-08.md@9bfa07fa97c5054b07ff1f1dc9799d9ca77471f5
 
 Authority cited for the scope (given in chat and in the accepted decision records, not signature lines): DR-6 (Q-11 commissioned; ticket with an owner may follow), W1-PLAN step 3 (names the P2-C corrective with the KV store authoritative and SKILL-X as owner; a sequence only, approves no plan), DR-12 = B (HELD for ACT-N11 sequencing; the fix is necessarily a product-path change).
 
@@ -44,4 +44,4 @@ The leaf `wire_skill_execution_pinning_store` and its guard; the durability vali
 
 ## Lifecycle state
 
-plan_pending
+plan_approved
