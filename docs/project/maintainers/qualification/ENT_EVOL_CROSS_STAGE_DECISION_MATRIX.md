@@ -1,5 +1,7 @@
 # ENT-AUDIT-X + EVOL-X — Cross-stage decision matrix
 
+> **Status overlay (2026-11-08, `T-IGX-024-A`):** closure authority for ENT-AUDIT-X is now IIAC (`IIAC-2026-11-05.1`, IN_FORCE, activation `f8c29fb8dfe5e14d9b06ff16659fd9cbe9ad326d`). Statements below that assume a human Protocol 03 auditor, a named external auditor, or "ECAP-P4 NOT IN FORCE" are historical and **superseded**; this text is preserved unchanged. Current status: [ent_audit_x/ENT_AUDIT_X_IIAC_CLOSURE_MATRIX.md](ent_audit_x/ENT_AUDIT_X_IIAC_CLOSURE_MATRIX.md).
+
 **Status:** **DRAFT — NOT SIGNED — NOT ACCEPTED** (formal B6/OD chain) · **EVOL-X internal closure @ 2026-11-05** · **Internal certification @ OD-IC-01 (2026-11-04)**  
 **START_HEAD @ preparation:** `0e538269a7188075003b9ff2c7cce2545d8f1ccb`
 

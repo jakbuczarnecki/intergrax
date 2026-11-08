@@ -149,9 +149,9 @@ Conflicts with ratified domain semantics: **STOP — ARCHITECTURE DECISION REQUI
 | **B3** | Positive proofs per stage qualification record. |
 | **B4** | Adversarial negatives (fail-closed, bypass attempts). |
 | **B5** | Execution evidence bundle at exact SHA. |
-| **B6** | Independent exact-SHA acceptance recorded in roadmap §5 ledger. **Active policy:** human Protocol 03 until IIAC `IN_FORCE`; then **IIAC-B6** (independent agent session + manifest + certifier gate — semantics preserved). |
+| **B6** | Independent exact-SHA acceptance recorded in roadmap §5 ledger. **Active policy:** IIAC `IN_FORCE` since 2026-11-05 (`IIAC-2026-11-05.1`): **IIAC-B6** (independent agent session + manifest + certifier gate — semantics preserved); human Protocol 03 is historical for EVOL-X and ENT-AUDIT-X. |
 
-**EVOL-X scoped automation (not in force):** amendment `ECAP-P4-EVOL-SCOPE-AUTO-B6` … **Superseded by IIAC** when IIAC activates — archive with pointer; no dual activation.
+**EVOL-X scoped automation (never activated):** amendment `ECAP-P4-EVOL-SCOPE-AUTO-B6` … **Superseded by IIAC** (policy `IIAC-2026-11-05.1` IN_FORCE) — archived with pointer; no dual activation.
 
 ### ECAP-§2.C Full Platform Current-HEAD Audit
 
