@@ -17,10 +17,12 @@ import pytest
 from intergrax.platform.enterprise_audit.baseline import (
     EnterpriseAuditBaseline,
     candidate_baseline_path,
-    promote_accepted_baseline,
     save_candidate_baseline,
+)
+from scripts.enterprise_audit.iiac_baseline_promotion import (
+    promote_accepted_baseline,
     signed_text_digest,
-    verify_operator_decision_record,
+    verify_record,
 )
 
 POLICY = "IIAC-2026-11-05.1"
@@ -206,7 +208,7 @@ def build_world(root: Path, **opt: Any) -> World:  # noqa: C901 - one fixture, m
 
 
 def _verify(world: World) -> dict:
-    return verify_operator_decision_record(world.record_path, for_promotion=True, repo_root=world.root)
+    return verify_record(world.record_path, for_promotion=True, repo_root=world.root)
 
 
 def test_valid_delegate_record_verifies(tmp_path: Path) -> None:
@@ -291,7 +293,7 @@ def test_delegate_record_rejected(tmp_path: Path, opt: dict[str, Any], match: st
 def test_delegate_origin_requires_valid_signature_lines_even_without_promotion(tmp_path: Path) -> None:
     world = build_world(tmp_path, signature_line="Approved OD-ENT-01: operator @ " + SIGNED_AT)
     with pytest.raises(ValueError, match="signature_line must be"):
-        verify_operator_decision_record(world.record_path)
+        verify_record(world.record_path)
 
 
 def test_signature_lines_are_not_part_of_the_signed_text() -> None:
