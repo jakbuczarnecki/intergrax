@@ -16,8 +16,12 @@ from typing import Any
 import pytest
 from intergrax.platform.enterprise_audit.baseline import (
     EnterpriseAuditBaseline,
+    baseline_path,
     candidate_baseline_path,
     save_candidate_baseline,
+)
+from scripts.enterprise_audit.iiac_baseline_promotion import (
+    main as promotion_main,
 )
 from scripts.enterprise_audit.iiac_baseline_promotion import (
     promote_accepted_baseline,
@@ -245,6 +249,52 @@ def test_valid_delegate_record_promotes_baseline(tmp_path: Path, monkeypatch: py
         base, od_record_path=world.record_path, verify_closed_bundle_dir=bundle, repo_root=world.root
     )
     assert json.loads(out.read_text(encoding="utf-8"))["accepted_baseline_sha"] == ACCEPTED
+
+
+def _cli_world(tmp_path: Path, monkeypatch: pytest.MonkeyPatch, **opt: Any) -> tuple[World, Path, Path]:
+    repo = tmp_path / "repo"
+    repo.mkdir()
+    world = build_world(repo, **opt)
+    baseline_dir = repo / "tests" / "qualification" / "ent_audit_x"
+    save_candidate_baseline(
+        candidate_baseline_path(baseline_dir), EnterpriseAuditBaseline(accepted_baseline_sha=ACCEPTED, findings={})
+    )
+    bundle = tmp_path / "bundle"
+    bundle.mkdir()
+    (bundle / "evidence_manifest.v1.json").write_text(json.dumps({"qualification_sha": world.tes}), encoding="utf-8")
+    monkeypatch.setattr("intergrax.platform.enterprise_audit.validators.verify_closed_evidence_bundle", lambda _d: [])
+    return world, bundle, baseline_dir
+
+
+def _cli(world: World, bundle: Path, *extra: str) -> int:
+    return promotion_main(
+        ["--od-record", str(world.record_path), "--evidence-dir", str(bundle), "--repo-root", str(world.root), *extra]
+    )
+
+
+def test_cli_promotes_a_delegated_record(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    world, bundle, baseline_dir = _cli_world(tmp_path, monkeypatch)
+    assert _cli(world, bundle) == 0
+    assert json.loads(baseline_path(baseline_dir).read_text(encoding="utf-8"))["accepted_baseline_sha"] == ACCEPTED
+
+
+def test_cli_rejects_a_record_changed_after_delegation_and_writes_nothing(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str]
+) -> None:
+    world, bundle, baseline_dir = _cli_world(tmp_path, monkeypatch, tamper_after=True)
+    assert _cli(world, bundle) == 1
+    assert "SHA-256" in capsys.readouterr().err
+    assert not baseline_path(baseline_dir).exists()
+
+
+def test_cli_rejects_a_baseline_dir_outside_the_jail(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str]
+) -> None:
+    world, bundle, _ = _cli_world(tmp_path, monkeypatch)
+    elsewhere = tmp_path / "elsewhere"
+    assert _cli(world, bundle, "--baseline-dir", str(elsewhere)) == 1
+    assert "baseline_dir must stay under" in capsys.readouterr().err
+    assert not baseline_path(elsewhere).exists()
 
 
 REJECTED = {
