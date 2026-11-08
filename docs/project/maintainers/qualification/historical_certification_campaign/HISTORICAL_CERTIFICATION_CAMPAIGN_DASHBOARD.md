@@ -1,6 +1,6 @@
 # HISTORICAL CERTIFICATION CAMPAIGN DASHBOARD
 
-_generated 2026-11-08T11:15:35+00:00 from records; start SHA `ba07ebaa3`_
+_generated 2026-11-08T11:20:18+00:00 from records; start SHA `ba07ebaa3`_
 
 ## Counters (derived)
 
@@ -9,8 +9,8 @@ _generated 2026-11-08T11:15:35+00:00 from records; start SHA `ba07ebaa3`_
 | 1 | Total historical requirements (baseline) | 85 |
 | 2 | Verified independent closures (CLOSED_VERIFIED) | 0 |
 | 3 | Valid scope-limited acceptances (PASS_SCOPED) | 0 |
-| 4 | Open architecture blockers (IMPLEMENTATION_REQUIRED+QUALIFICATION_REQUIRED) | 51 |
-| 5 | Valid Path B live deferrals | 3 |
+| 4 | Open architecture blockers (IMPLEMENTATION_REQUIRED+QUALIFICATION_REQUIRED) | 52 |
+| 5 | Valid Path B live deferrals | 2 |
 | 6 | Rows in state AUDIT_REQUIRED (not all are audit-only; see the readiness handoff, section 2) | 29 |
 | 7 | Outstanding operator decisions | 7 |
 | 8 | Findings requiring implementation | 4 |
@@ -25,13 +25,13 @@ FRZ rows with a per-ID record: 85 / 85  (unmapped 0)
 |---|---|
 | INVENTORIED | 0 |
 | IMPLEMENTATION_REQUIRED | 1 |
-| QUALIFICATION_REQUIRED | 50 |
+| QUALIFICATION_REQUIRED | 51 |
 | AUDIT_REQUIRED | 29 |
 | AUTHORITY_REQUIRED | 2 |
 | READY_FOR_CERTIFIER | 0 |
 | PASS_SCOPED | 0 |
 | CLOSED_VERIFIED | 0 |
-| PATH_B_DEFERRED | 3 |
+| PATH_B_DEFERRED | 2 |
 | BLOCKED | 0 |
 | UNVERIFIED | 0 |
 
