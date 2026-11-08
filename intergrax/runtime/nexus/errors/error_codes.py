@@ -2,20 +2,6 @@
 # Intergrax framework – proprietary and confidential.
 # Use, modification, or distribution without written permission is prohibited.
 
-from enum import Enum
+from intergrax.contracts.runtime_error_code import RuntimeErrorCode
 
-
-class RuntimeErrorCode(str, Enum):
-    INTERNAL_ERROR = "internal_error"
-    VALIDATION_ERROR = "validation_error"
-    TIMEOUT = "timeout"
-    LLM_ERROR = "llm_error"
-    TOOL_ERROR = "tool_error"
-    USER_ERROR = "user_error"
-    POLICY_ERROR = "policy_error"
-    DEPENDENCY_ERROR = "dependency_error"
-    QUALITY_ERROR = "quality_error"
-    PERMISSION_ERROR = "permission_error"
-    RUNTIME_ERROR = "runtime_error"
-    ABANDONED = "abandoned"
-    STALLED = "stalled"
+__all__ = ["RuntimeErrorCode"]

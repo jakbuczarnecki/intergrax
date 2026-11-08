@@ -7,10 +7,13 @@ from __future__ import annotations
 
 from enum import Enum
 
+from pydantic import BaseModel
+
 from intergrax.contracts.external_operation_cancellation import (
     ExternalOperationPhysicalState,
     ExternalOperationState,
 )
+from intergrax.contracts.runtime_error_code import RuntimeErrorCode
 from intergrax.contracts.tool_execution_outcome import ToolEffectCertainty
 from intergrax.runtime.external_operations.external_operation_ownership import (
     ProcessLocalExternalOperationOwner,
@@ -19,17 +22,15 @@ from intergrax.runtime.external_operations.external_operation_ownership import (
 from intergrax.runtime.external_operations.external_operation_state_store import (
     ExternalOperationStateStore,
 )
-from intergrax.runtime.nexus.errors.error_codes import RuntimeErrorCode
 from intergrax.runtime.tools.tool_operation_retry_classification import (
     ToolOperationRetryClass,
     classify_tool_operation_retry_class,
 )
 from intergrax.tools.core.contracts import ToolContract
 from intergrax.tools.execution_models import ToolExecutionRequest
-from pydantic import BaseModel
 
 
-class ToolInvocationTerminalDisposition(str, Enum):
+class ToolInvocationTerminalDisposition(str, Enum):  # noqa: UP042
     """Sanctioned projection of roadmap terminals on the tool seam (no parallel SM)."""
 
     SUCCEEDED = "succeeded"

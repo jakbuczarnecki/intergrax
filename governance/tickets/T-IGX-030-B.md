@@ -16,7 +16,7 @@ Plan digest: 8c650422f0ece0e26254ba63d2b5a9675d61ea9e8a131d0e4212cbd8679a3378
 
 ## Approved
 
-(pending and HELD — no approval line is requested from the Operator for this ticket now; any approval line is written only by the Operator.)
+Approved: operator-delegate hist-sign-plans @ 2026-11-08T21:26:00+01:00 | Delegation: docs/project/maintainers/qualification/historical_certification_campaign/delegations/DELEG-HIST-PRODUCT-PLANS-2026-11-08.md@9bfa07fa97c5054b07ff1f1dc9799d9ca77471f5
 
 Operator decisions cited as authority for the scope (given in chat, not signature lines): DR-5 option 1 (incl. accepted defaults: module `intergrax/contracts/runtime_error_code.py`, keep the alias), DR-12 = B (HELD for ACT-N11 sequencing; the fix is necessarily a product-path change).
 
@@ -40,4 +40,4 @@ Editing/weakening/skipping/allow-listing the gate; the other failures in `replay
 
 ## Lifecycle state
 
-plan_pending
+plan_approved
