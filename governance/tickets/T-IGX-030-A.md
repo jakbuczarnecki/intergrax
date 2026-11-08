@@ -19,7 +19,7 @@ Plan digest: c6d1dca6c129e8f5ce14854698c89e998f600a8d69f11d150649e9591b18e342
 
 ## Approved
 
-(pending — the operator approval line is written only by the Operator after plan review; it is intentionally absent from this ticket.)
+Approved: operator-delegate cert-030a @ 2026-11-08T10:42:59+01:00 | Delegation: .tmp/session/hist-cert-campaign/delegations/DELEG-HIST-030A-2026-11-08.md
 
 Operator decisions cited as authority for the scope (given in chat, not signature lines): DR-7 option 1 (two test commits), DR-12 = B (product-path work split out), Q-A3 = no (no N1). No open question blocks approval.
 
@@ -44,4 +44,4 @@ Everything under `intergrax/`, `agents/`, `applications/`; `29c387879` and `98b4
 
 ## Lifecycle state
 
-plan_pending
+plan_approved
