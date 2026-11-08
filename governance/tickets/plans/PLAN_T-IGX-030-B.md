@@ -1,6 +1,8 @@
 ## PLAN `T-IGX-030-B` — HIST02-F-013: restore the EBH-4 R1 nexus-encapsulation gate by moving `RuntimeErrorCode` to the contract layer (Operator decision DR-5 option 1)
 
-Campaign: Integrax Historical Certification Closure, workstream IMPL-TLX. Implementer != auditor != certifier: this plan claims no PASS, no closure, no FRZ promotion. The gate is NOT weakened, skipped, allow-listed or edited.
+**HELD - ACT-N11 sequencing (DR-12=B): do not approve or implement until MASTER confirms the IIAC re-audit/re-activation batch.**
+
+Campaign: Integrax Historical Certification Closure, workstream IMPL-TLX. Implementer != auditor != certifier: this plan claims no PASS, no closure, no FRZ promotion. The gate is NOT weakened, skipped, allow-listed or edited. Operator defaults accepted via MASTER as part of DR-5 option 1: module location `intergrax/contracts/runtime_error_code.py` (former Q2) and keeping the re-export alias (former Q3). The independent auditor re-checks both. File-disjoint from HELD `T-IGX-030-C` (`invoker.py`), which imports `RuntimeErrorCode` through the alias, so either order works and one IIAC cycle can cover both.
 
 ### 1. Defect (evidence, re-verified read-only at HEAD `492e361c0`)
 
@@ -75,9 +77,9 @@ Phase-2 pre-checks that may change the plan (STOP and report, do not improvise):
 
 ### 9. Open questions for the Operator
 
-- Q1 ACT-N11 (critical): the fix is unavoidably a product-path change (`intergrax/`). At HEAD, `verify_iiac_policy_activation --require-in-force` is satisfied because the product-path diff vs the audit SHA `ae467c8c4` is 0 files; this ticket makes it 3 files and turns ACT-N11 red together with the governance-fast tests that run it. Relaxing the gate is forbidden; only an IIAC re-audit plus a non-delegable operator re-activation resolves it. Does the Operator accept that consequence (and who sequences the re-activation relative to `T-IGX-030-A` and the ENT-AUDIT-X stream)?
-- Q2 module name `intergrax/contracts/runtime_error_code.py` acceptable, or does the Operator prefer another contract-layer location?
-- Q3 retire the alias path later (separate ticket) or keep it permanently? (default: keep.)
+- Q1 ACT-N11: the fix is unavoidably a product-path change (`intergrax/`). It makes the product-path diff vs the audit SHA `ae467c8c4` 3 files and turns ACT-N11 red (plus the governance-fast tests that run it). Resolved by Operator DR-12 = B: this ticket is HELD until MASTER confirms the IIAC re-audit/re-activation batch. The gate is never relaxed.
+- Q2 (resolved, accepted default): module `intergrax/contracts/runtime_error_code.py`.
+- Q3 (resolved, accepted default): keep the re-export alias; retiring it is a separate later ticket.
 
 ### 10. Out of scope
 

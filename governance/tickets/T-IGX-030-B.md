@@ -1,5 +1,7 @@
 # T-IGX-030-B — HIST02-F-013: restore the EBH-4 R1 nexus-encapsulation gate (move `RuntimeErrorCode` to the contract layer) (Operator DR-5)
 
+**HELD - ACT-N11 sequencing (DR-12=B): do not approve or implement until MASTER confirms the IIAC re-audit/re-activation batch.**
+
 ## Scope
 
 `tests/unit/architecture/test_ebh_4_r1_nexus_encapsulation_gate.py::test_ebh_4_r1_production_nexus_imports_outside_ee_are_zero` is red because `intergrax/runtime/tools/tool_operation_recovery.py:22` imports `intergrax.runtime.nexus.errors.error_codes` (TOOL-LIFE-X Batch C, `a5f813a2c`). Fix: define `RuntimeErrorCode` in a new contract-layer module `intergrax/contracts/runtime_error_code.py`, turn `intergrax/runtime/nexus/errors/error_codes.py` into a re-export of the same class (identity preserved, all other importers untouched), and import from the contract module in `tool_operation_recovery.py`. The gate is not weakened, skipped, allow-listed or edited.
@@ -10,13 +12,13 @@ No PASS, closure, FRZ promotion (FRZ-BND-01..04 stay OPEN) or stage-parent chang
 
 ## Plan digest
 
-Plan digest: 9f2a26d18953e10c6193661b581303929ff5ec0132265cf9f96ca5e718f47341
+Plan digest: 8c650422f0ece0e26254ba63d2b5a9675d61ea9e8a131d0e4212cbd8679a3378
 
 ## Approved
 
-(pending — the operator approval line is written only by the Operator after plan review; it is intentionally absent from this ticket.)
+(pending and HELD — no approval line is requested from the Operator for this ticket now; any approval line is written only by the Operator.)
 
-Operator decision cited as authority for the scope (given in chat 2026-11-08, not a signature line): DR-5 option 1. Open points needing the Operator before approval: plan section 9 (Q1 ACT-N11 consequence — the fix is necessarily a product-path change; Q2 module location; Q3 alias lifetime).
+Operator decisions cited as authority for the scope (given in chat, not signature lines): DR-5 option 1 (incl. accepted defaults: module `intergrax/contracts/runtime_error_code.py`, keep the alias), DR-12 = B (HELD for ACT-N11 sequencing; the fix is necessarily a product-path change).
 
 ## Test contract
 
