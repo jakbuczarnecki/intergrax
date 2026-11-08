@@ -1,12 +1,14 @@
 # DELEG-HIST-W0-2026-11-08 - delegation record (TRANSCRIBED by MASTER from the Operator's chat instruction)
 
+Revision note (2026-11-08, after independent review rev-w0, findings F-2 and F-8): (1) language-only: the Polish quotation was removed (repository artifacts are English only; the chat transcript holds the original); (2) substance, narrowing only: the DR-9 row no longer claims that SEC-05 and Decision-03 / D03-A have a recommendation in the decisions document - they have none, they are NOT part of the consented answer. Supersedes the first version, sha256 ea101bf8f104cd6cd8db0089d7937d8de44d01f4da7877ad3b9257ca718cd660 (committed at cef4aea9a). The signatures of session cert-w0 were made under the first version; its scope was never wider than this revision (cert-w0 did not sign DR-9c / DR-9d).
+
 Provenance: this record is NOT signed by the Operator. It is a transcription by the MASTER orchestrator of the Operator's instruction given in the MASTER session chat on 2026-11-08 (processed by MASTER at 2026-11-08T14:55+01:00). The Operator wrote in Polish; the English rendering below is by MASTER and the chat transcript holds the original.
 Per IIAC Amendment 01 R-6 the commission itself transfers the certification scope to the designated session; S-1 (operator-signed delegation record) is struck, so this record is a transcription, not a condition of validity.
 Assurance level: process_enforced. No cryptographic provenance is claimed.
 
 ## Operator's words
-Original (Polish): "Chcę, abyś utworzył sesję o samej mnie i zlecił jej certyfikację wszystkich decyzji, na które wyrażam zgodę: 7 otwartych decyzji, od 1 do 9."
-English rendering (MASTER): "I want you to create a session [for me / in my name - the Polish phrase 'o samej mnie' is ambiguous and is quoted as given] and commission it to certify all the decisions to which I consent: the 7 open decisions, from 1 to 9."
+Original: given in Polish in the MASTER chat (not reproduced here). One phrase of it, rendered below as "[for me / in my name]", is grammatically ambiguous in the original (it can mean 'about me' or 'in my own name'); both readings are kept in brackets instead of choosing one.
+English rendering (MASTER): "I want you to create a session [for me / in my name] and commission it to certify all the decisions to which I consent: the 7 open decisions, from 1 to 9."
 Context: the preceding MASTER message offered the package `OPERATOR_ACCEPTANCE_AND_CERTIFICATION_PACKAGE.md`, whose section 4 lists exactly seven open decisions (D-1..D-7 = DR-1, DR-2, DR-3, DR-4, DR-6, DR-8, DR-9) with a recommendation for each.
 
 ## MASTER's reading (NOT the Operator's words - the Operator may narrow or correct it)
@@ -24,7 +26,7 @@ Decision ids and the recommended answer being consented to:
 | DR-4 (OD-HIST01-B) | The HIST-01 split: (b) for REG-07 / REG-10 only after the DR-10 replay; (a) for REG-01 / REG-04 / REG-05; REG-08 stays OPEN (not Path B); no REG promotion now |
 | DR-6 (OD-HIST03-B) | Option 1: first an independent read-only root-cause check (Q-11), then a ticket with an owner |
 | DR-8 (OD-HIST02-A) | Option 2: a ticket to move the Tier-0 -> Tier-3 demo composition (an ACCEPTED_LIMITATION only if moving proves infeasible) |
-| DR-9 (OD-HIST03-A) | "rec.": split SEC-06 without widening checklist L66; PRD-04 architecture-scoped; no waivers; PARTIAL/CONDITIONAL records unrewritten; SEC-05 and Decision-03 / D03-A rulings as recommended in the decisions document |
+| DR-9 (OD-HIST03-A) | "rec.": split SEC-06 without widening checklist L66; PRD-04 architecture-scoped; no waivers; PARTIAL/CONDITIONAL records unrewritten. SEC-05 and Decision-03 / D03-A: the decisions document gives NO recommendation for them, so they are NOT covered by this consent; they stay open for an explicit Operator ruling |
 Nothing else is delegated: no FRZ promotion, no checklist status change, no plan approval of any ticket, no IIAC activation, no PR merge, no implementation, no audit.
 ## Designated session
 - Name: cert-w0 (hc terminal), a NEW session, dedicated solely to this task, not a continuation, not an implementation session (R-2). Must not be MASTER, impl-tlx, any HIST worker, or any auditor/reviewer of this stage.
