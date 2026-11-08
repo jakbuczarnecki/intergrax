@@ -205,11 +205,15 @@ def test_ladder_pinned_b5_tree_verifies_strictly_on_every_platform() -> None:
     root = _repo_root()
     tes = _ladder_last_tes(root)
     assert tes, "the SHA ladder has no TEST_EXECUTION_SHA"
-    if tes == _LEGACY_TES:
-        pytest.skip("waived legacy tree: LF blobs digested as CRLF (F-01); superseded by the next TES publication")
     tree = root / _HANDOFF / f"qualification_at_{tes}"
     assert tree.is_dir(), f"pinned B5 tree missing: {tree}"
-    assert verify_b5_publication_tree(root, tree, expected_qualification_sha=tes) == []
+    errors = verify_b5_publication_tree(root, tree, expected_qualification_sha=tes)
+    if tes == _LEGACY_TES:
+        # Waived legacy tree (F-01): LF blobs were digested as CRLF, so on an LF checkout the only tolerated defect is a
+        # sha256 mismatch. Any other kind of error still fails. The waiver ends with the next TES publication.
+        assert all("sha256 mismatch" in error for error in errors), errors
+        return
+    assert errors == []
 
 
 def test_new_b5_trees_are_byte_preserved_by_gitattributes() -> None:
