@@ -1,6 +1,6 @@
 # IIAC operator signing delegation record (template)
 
-**Status of the governing rule:** `IIAC_AMENDMENT_01_OPERATOR_DESIGNATED_SIGNING_SESSION.md` is `PROPOSED - NOT IN FORCE`. This template creates no authority and must not be filled in or used until that amendment is activated by the operator. Safeguard S-1 (one delegation record per delegation) is agent-proposed and may be struck by the operator.
+**Status of the governing rule:** `IIAC_AMENDMENT_01_OPERATOR_DESIGNATED_SIGNING_SESSION.md` is IN FORCE as operator-adopted policy text (revised 2026-11-08). A delegation record is a transcription of a commission given in chat, not a condition of validity (S-1 struck).
 
 **Delegation ID:** `________________`
 **Policy version:** `________________`
@@ -25,11 +25,10 @@
 ## Limits
 
 - Expires (ISO-8601): `________________`
-- Not delegable (S-3): this delegation record, IIAC policy activation, any amendment of the signing rule. `[ ] the decision named above is none of these`
 - Single use: the delegation covers only the Decision ID and the SHA-256 above. `[ ] confirmed`
 
 ## Operator signature line
 
-To be written by the operator personally, once per delegation. Do not pre-fill. No agent writes this line.
+Optional under Amendment 01 (S-1 struck). Required only by validators that read it literally (currently the OD-ENT-01 baseline promotion, see Amendment 01 section 3). Keep the line shape below; do not fill it unless a validator requires it.
 
 `Approved delegation ________________: operator @ ________________`

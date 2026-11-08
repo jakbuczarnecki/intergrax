@@ -12,9 +12,9 @@ Every ticket MUST include these headings (order may vary):
 
 1. **Scope** — what changes, linked domains/plans.
 2. **Plan digest** — `Plan digest: <sha256>` from `scripts/governance/plan_digest.py` when a plan file is attached.
-3. **Approved** — after plan review (procedural gateway), one of two accepted forms:
+3. **Approved** — after plan review (procedural gateway), one of two permitted forms (policy; not enforced by tooling):
    - `Approved: <operator> @ <ISO8601>` — written by the operator; or
-   - `Approved: operator-delegate @ <ISO8601>` followed on the next line by `Delegation: <reference>` — written by a session the operator commissioned (IIAC Amendment 01, rules R-1..R-6; a commission given in chat is sufficient, the reference points to its transcription, e.g. `<path>@<sha>` or a session record with its sha256). The commissioned session must be a new session dedicated to that task, not a continuation and not an implementation session (R-2), and must not be the implementer of the ticket (R-3).
+   - `Approved: operator-delegate @ <ISO8601>` followed on the next line by `Delegation: <reference>` — written by a session the operator commissioned (IIAC Amendment 01, rules R-1..R-6; a commission given in chat is sufficient; the reference points to its transcription, e.g. `<path>@<40-hex sha>`; tooling that follows Amendment 01 section 4.1 B-1 accepts only that form, so a local session record should first be published and referenced by commit). The commissioned session must be a new session dedicated to that task, not a continuation and not an implementation session (R-2), and must not be the implementer of the ticket (R-3).
    An implementer never writes either form for its own ticket; assurance of the delegate form is `process_enforced`. `verify_plan_approval.py` / `verify_ticket_lifecycle.py` currently test only for a line starting `Approved:`; they do not distinguish the forms.
 4. **Test contract** — pytest/CI commands that must pass before batch close.
 5. **Out of scope** — explicit exclusions (FRZ, Docker, vendor, etc.).
