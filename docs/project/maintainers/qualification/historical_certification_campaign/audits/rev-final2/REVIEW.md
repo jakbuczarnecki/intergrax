@@ -1,0 +1,84 @@
+# REVIEW-FINAL2 - independent review of commit e940bc6db (branch hist-cert/final-refresh)
+
+Reviewer: fresh session (authored nothing in this chain). Read-only: `git show/diff/log/grep/cat-file/ls-files`, Read, and scratch Python scripts that only read blobs (no repo edit, no tests, no commit).
+Subject: e940bc6db, parent 51cb5f336 (= origin/development, verified with `git rev-parse e940bc6db^`).
+
+## VERDICT: ACCEPT_WITH_CHANGES
+
+Nothing promotes a row, nothing approves a ticket, the held plans are byte-identical to the planners' commits with correct digests. Four MEDIUM issues need a text fix before merge (F-1..F-4); the rest are LOW. All fixes are wording or one blank line; none touches a held plan (digest-bound).
+
+## Checks that PASSED (evidence)
+
+1. Inventory. `git diff --name-status 51cb5f336 e940bc6db` = exactly the 12 files (6 campaign-directory docs, 2 PLAN_REPORT.md, 2 tickets, 2 plans). `git diff --name-only | grep -E '^(intergrax|agents|applications|scripts|tests)/'` = empty. `git diff --name-only 991a3e410 e940bc6db -- <FRZ checklist, 85-row matrix, master closure matrix, final report, T-IGX-030-B/C and plans>` = empty (untouched since PR 408; the other changes in 991a3e410..e940bc6db come from PRs 410-416 and the ENT stream, not from this commit).
+2. Held plans. Blob ids equal: T-IGX-032-A.md `74b573b4a8ad`, PLAN_T-IGX-032-A.md `ad9aafd17de2` (= `hist-cert/plan-p2c`); T-IGX-033-A.md `733a59308fa9`, PLAN_T-IGX-033-A.md `b2bd66c37633` (= `hist-cert/plan-bnd03`). Digest recomputed with the exact `normalize_plan_text` rules of `scripts/governance/plan_digest.py` on the committed blobs: 032 = `2628d1a834d2fcf25f47c55b0d60355811898c9e60337306b557f152d7ba7446`, 033 = `ae167672d4075e3e4dc190ac93c78a937d7ad0c435dfc3971e615143e4273775` - equal to the `Plan digest:` lines (T-IGX-032-A.md:17, T-IGX-033-A.md:17) and to the expected values. Lifecycle `plan_pending` (both :47). No line matches `^Approved:` (the only "Approved" in the tickets is the `## Approved` heading at :19 followed by "(pending and HELD ...)"; `verify_plan_approval.py:17` matches only `^Approved:\s*.+$`). All four blobs: ASCII, LF, 0 backslashes.
+3. PR table (`git log --merges`, `git show`): 410 c169852bf / head de47bd2fe, 413 70cceae21 / 98f49d497, 414 6734971cf / 14ff99875, 415 af323c005 / b4afbe69a, 416 51cb5f336 / 705bedc54 - correct, as are the dashboard's 405-408 lines (41908e3fb/6d1434796, feee82b2e/937c39820, 4e48eba82/90fae38aa, 991a3e410/e799bea60). PR 410 contents (Q-11, rev-w0, ratification, W0 records, delegation, roadmap annotation, amendment note) and the head mismatch are right: `hist-cert/cert-w0` tip is 2fab754aa, three commits beyond the merged head de47bd2fe; PR 413 adds exactly the confirmation record plus 4 lines (section 12).
+4. Decisions table vs `OPERATOR_DECISION_RECORDS_W0.md` / `_W1.md`: verdicts, options, DR-9 partial scope (P-03, P-04, waivers signed; SEC-05 and Decision-03/D03-A NOT_SIGNED in W0, then W1-R1/W1-R2), W1-R3, and the "known limits" paragraph all match the records. Every `Approved` line is a delegate line; the addendum says the delegation records are transcriptions, not Operator-signed (:19) - honest.
+5. T-IGX-031-A section vs `aud-tests` / `aud-s12` reports and the tree: 14 / 20 / 34 / 34 / 1, probes A/B as predicted, 27-path `6 failed, 347 passed`, 0 "already registered" (pin: 54), the 6 failures are the P2-C tests; PASS_SCOPED @ b28398026 and @ 47c29b4c3; AST-equivalent, ruff clean; R8/R9 stated. `T-IGX-031-A.md` lifecycle on origin/development = `ready_for_audit` (:57). The `--no-verify` acceptance matches AUTH-HIST-NOVERIFY-031A.
+6. Product-plan summaries vs planner reports and plans: A2 / about 3 lines / 8 tests with RED set T1-T3 / `is_durable` hard-coded True (read at `execution_pinning_persistence.py:291,:388`); b2 injected command set, 7 product-path files (3 intergrax + 4 applications), 3 test/gate files, regenerated EBH-7 matrix, changed invocation, second edge `product_manifest_registry.py:16-22` (read) - all match. Open-item questions (P2-C Q1-Q4, BND-03 Q1-Q6) match the plans. Code facts re-read at HEAD: guard `execution_pinning_persistence.py:490-493`, resolver `skill_execution_pinning_wiring.py:35-39`, call `harness_host_runtime.py:423`, sibling `profile_resolution/wiring.py:68`, `external_work.py:338`.
+7. Language/secrets: scripted scan of the 12 files: 0 non-ASCII characters, 0 CR, 0 Polish diacritics, no secret-like strings (one false hit: the word "secrets" in addendum :57). No statement that the Operator signed a delegation record; the Operator-quote policy (labelled English rendering) is kept.
+8. Dashboard counters 1-6 and 8-10 equal the PR-408 dashboard; 4 = 1 + 51, 5 = 2, 6 = 29 recomputed from `HISTORICAL_FRZ_85_DISPOSITION_MATRIX.json` (`dashboard_state` counts). Counter 7 changed 7 -> 3 as the addendum says (see F-6). The committed dashboard is byte-identical (LF) to the local generator output. Counter 7 = the 3 `OPEN` registry entries OD-NEW-P2C, OD-NEW-BND03, OD-NEW-ENT.
+9. Resume: `build_final.py` does regenerate `HISTORICAL_INDEPENDENT_AUDIT_REGISTER.md`, `HISTORICAL_REMAINING_EXACT_BLOCKERS.md` and `MASTER_RESUME_INSTRUCTIONS.md` (lines 288, 340, 391) - the warning is true; the `locks/heavy.lock` convention matches the plans and the lock directory is empty; `hist-cert/plan-p2c` and `hist-cert/plan-bnd03` are not on origin (`git branch -r`); the worktree names exist in `git worktree list`.
+
+## FINDINGS
+
+### F-1 MEDIUM - resume item 5 gets the sequencing wrong (would deadlock)
+`MASTER_RESUME_INSTRUCTIONS.md:8`: "Do not approve or implement any of them before the ENT-AUDIT-X agreement and the single IIAC re-activation batch." W1-PLAN (the accepted order, resume :9 itself) puts the product batch (step 3) BEFORE the single IIAC re-activation (step 4, "after an independent audit at the final SHA"); the tickets say "until MASTER confirms the ... re-activation batch", i.e. confirm the plan, not wait for it to be executed. Read literally, line 8 forbids step 3 until step 4 is done, and step 4 needs the product batch.
+Fix: replace with "Do not approve or implement any of them before (a) the Operator has answered the plan questions (addendum section 5, item 1) and (b) MASTER has confirmed with the ENT-AUDIT-X stream that ONE re-activation covers both streams (W1-PLAN step 2). The re-activation itself (step 4) comes after the product batch."
+
+### F-2 MEDIUM - hang claim overstated (addendum)
+`ADDENDUM:57` "a pytest process of the 27-path selection does not exit after its summary (seen at the HIST-03 pin run and in the `aud-tests` run: not introduced by the batch)". Evidence: `aud-tests/AUDIT_REPORT.md` AUD-1 says the HIST-03 pin run "exited normally" and the hang is "not shown to be caused by this batch" (that is not "shown not to be caused"). The HK-01 tree was HIST-03's first aborted run with wrong flags (`HOUSEKEEPING.md` HK-01: "15 passed, 337 errors", log `..._ABORTED_wrong_flags.log`), not the 27-path pin run. aud-s12's four-file runs exited normally.
+Fix: "the 27-path run under `aud-tests` did not exit after its summary (AUD-1; the process tree was later killed on the Operator's instruction); the HIST-03 pin run exited normally; a similar hang was seen once on an aborted HIST-03 run (HK-01). Cause unknown; not shown to be caused by the batch."
+
+### F-3 MEDIUM - "closed" and F-016 wording go beyond the evidence; missing disclosure
+- `ADDENDUM:33` heading "Stage T-IGX-031-A (tests only) - closed on `development`" while the ticket is `ready_for_audit` (:41) and the audits are PASS_SCOPED; `HISTORICAL_REMAINING_EXACT_BLOCKERS.md:3` "HIST03-F-006 and HIST03-F-016 are closed for their scope". A reader sees "closed" next to an open lifecycle state and open R1, R2, R7, R8, R9 and `no_ci`.
+- `ADDENDUM:36` omits that the exit code of the 27-path run was NOT captured (aud-tests step 11 and "Could not verify"), although `AUTH-HIST-27PATH-2026-11-08.md` listed "exit code captured" as a condition; the dashboard row says so, the addendum does not. The "Statement allowed" at :38 should carry this condition (aud-tests "F-016 status the evidence supports").
+Fix: heading -> "merged on `development`, PASS_SCOPED by two independent audits; ticket `ready_for_audit`"; blockers status block -> "HIST03-F-006 / F-016: tests-only batch merged and PASS_SCOPED (F-016 resolved for the 27-path selection only; see addendum section 3)"; add to :36/:38 "pass/fail counts come from pytest's summary line; the exit code was not captured because the process did not exit".
+
+### F-4 MEDIUM - status blocks swallow the old text (markdown lazy continuation)
+`HISTORICAL_INDEPENDENT_AUDIT_REGISTER.md:3-4` and `HISTORICAL_REMAINING_EXACT_BLOCKERS.md:3-4`: the `>` update block is followed directly by the old "Generated ..." line with no blank line, so the old line renders as part of the quoted update (in BLOCKERS the old "Overall result: PARTIAL / EXACT BLOCKERS. Nothing below is a 'pending paperwork' item..." becomes part of the new status note). The older state is then not clearly marked as older. (`HISTORICAL_AUTHORITY_AND_OPERATOR_DECISIONS.md:4` has the blank line.)
+Fix: insert one empty line after line 3 in both files.
+
+### F-5 LOW - "all seven decisions have an answer on record" and "explicit Operator confirmation"
+`ADDENDUM:17` heading, `HISTORICAL_AUTHORITY_AND_OPERATOR_DECISIONS.md:3`, `MASTER_RESUME_INSTRUCTIONS.md:7` ("DR-1..DR-12 all have an answer on record"). True for the W0 + W1 records, but the answers for SEC-05 / Decision-03 / REG-02,03,06,09 are scope readings accepted by "I accept R-1, R-2, R-3 and plan 1-6" (W1 delegation), and the limits in :31 remain (OPEN = 0 rule vs the (b) parts; the SEC-05 tension). `ADDENDUM:19` "An explicit Operator confirmation is on record": per the record the Operator's reply was "I confirm and I consent."; its scope ("covers DR-1", "the seven signed decisions") is MASTER's reading; it covers W0 only and contains no ruling on SEC-05 / D03-A / REG scope.
+Fix: heading "... now have an answer on record (scope rulings; limits below)"; :19 "An explicit but general Operator confirmation of the W0 decisions is on record (reply 'I confirm and I consent', transcribed by MASTER; the reading of its scope is MASTER's; `delegations/DELEG-HIST-W0-CONFIRMATION-2026-11-08.md`); the W1 rulings rest on the Operator's acceptance recorded in `DELEG-HIST-W1-2026-11-08.md`."
+
+### F-6 LOW - dashboard counter 7 = 3 unexplained and incomplete
+`HISTORICAL_CERTIFICATION_CAMPAIGN_DASHBOARD.md:15`. The 3 are the registry's OPEN entries (P2-C answers, BND-03 answers, ENT-AUDIT-X agreement). Addendum section 5 lists further Operator items (Polish-text ruling :59, `.venv` erratum :58, the `is_durable` split inside item 1) that are not counted, so "3" can be read as "only three things need the Operator".
+Fix: add one line under the counters table or in addendum section 5: "Counter 7 counts the three OPEN registry entries OD-NEW-P2C, OD-NEW-BND03, OD-NEW-ENT; other Operator items are listed in addendum section 5."
+
+### F-7 LOW - unsupported statement in resume item 7
+`MASTER_RESUME_INSTRUCTIONS.md:10`: "`gh pr merge` is blocked by the auto-mode classifier, so the Operator merges." No record supports it (the only classifier denials in HOUSEKEEPING.md and the registry concern terminating processes and a permission prompt). The reason for Operator-only merge is the publication rule (item 9).
+Fix: "Sessions never merge; the Operator merges (publication rule)." Drop the classifier claim.
+
+### F-8 LOW - PR scope sentence
+`ADDENDUM:7` "Pull requests after PR 408 (all merged by the Operator)": the table lists only campaign PRs; 409, 411, 412 (ENT stream) were merged in between and changed `scripts/`, `.gitattributes`, `T-IGX-024-A` (seen in `git diff --name-only 991a3e410 e940bc6db`). "Merged by the Operator" is not verifiable from git (merge commits show the committer only).
+Fix: "Campaign pull requests after PR 408 (the ENT-AUDIT-X PRs 409, 411, 412 were merged in between and are not part of this campaign)"; keep "merged by the Operator" only if confirmed with `gh pr view --json mergedBy`.
+
+### F-9 LOW - resume item 8 details
+`MASTER_RESUME_INSTRUCTIONS.md:11`: "hist01..hist04" are really `hist01-qualification`, `hist02-architecture`, `hist03-controls`, `hist04-governance`; `cert-w0` is checked out on `hist-cert/cert-w0-confirmation`; `hist-cert/plan-amend` (worktree `plan-tests`) is also not on origin (its commits are in PR 415/416, only the branch name is local); `hist-cert/final-refresh` is the worktree of this commit.
+Fix: spell the four names; add "`hist-cert/plan-amend` and `hist-cert/final-refresh` are local names (content published by PR 415/416 and by this PR)".
+
+### F-10 LOW - resume item 6 adds process and omits the Operator gate
+`MASTER_RESUME_INSTRUCTIONS.md:9` step (3) "plan -> independent plan review -> delegated approval by a fresh session -> implementer -> fresh auditor" is richer than W1-PLAN step 3 ("each with implementer then fresh auditor"; each ticket "still needs its own plan and its own `Approved:` act"). It names delegated approval as the route, but who approves (the Operator or a designated session) is the Operator's choice, and step (3) lacks "after the Operator's answers on the plan questions". It authorizes nothing by itself, but a successor could read it as a go-ahead.
+Fix: "(3) ... each ticket needs its own `Approved:` act by the Operator or by a session the Operator designates, and only after the Operator has answered the plan questions; then implementer, then fresh auditor."
+
+### F-11 LOW - internal inconsistency inside the held P2-C plan (do NOT edit; digest-bound)
+`governance/tickets/plans/PLAN_T-IGX-032-A.md:130` (Q3) says "five named extra files"; `:105` (step 6) names four (1 research e2e + 3 strict governed-contractor units); `audits/plan-p2c/PLAN_REPORT.md` ("Questions", item 3 and "Scope") repeats "5 named files". The addendum correctly avoids the number. Do not change the plan (it would change the digest 2628d1a8...); add to addendum section 5 item 1: "(the plan says 'five' files in Q3 but names four in step 6; the plan reviewer should settle the list)".
+
+### F-12 LOW - dashboard staleness
+`HISTORICAL_CERTIFICATION_CAMPAIGN_DASHBOARD.md:66` "refresh PR pending" will be wrong as soon as this PR is merged; the Workers table (HIST-01..04 phases, `updated` 07:27-10:04Z, HIST-04 `AUTHORITY_REQUIRED`) is unchanged from PR 408 although the decisions behind it now have answers; `:61` repeats rev-plan2 "27-path rerun not needed" while aud-s12 keeps R8 open (closing it needs a new authorization). Counters 1-6 and 8-10 are consistent with the matrix, so only labelling is needed.
+Fix: "status: ALL_CAMPAIGN_PRS_MERGED (...); the refresh PR itself is not listed"; add a one-line note under "Workers": "rows as of PR 408; states derive from the PR-408 matrix and are not recomputed"; rev-plan2 cell: "27-path rerun not required for the plan; R8 stays open (aud-s12)".
+
+### F-13 INFO - pre-existing, outside this commit
+`audits/rev-w0/REVIEW.md:52` (merged with PR 410) quotes a Polish phrase; the English-only rule was applied to the delegation record but not to that review. Not a defect of e940bc6db; mention to the Operator only.
+
+## What I could NOT verify
+- CI claims in the dashboard (`Regression gate success on 51cb5f336`, `62d1c6158 incl. ENT-AUDIT-X`): no GitHub access used (brief: git read-only).
+- Who merged each PR (git shows the committer only); that every PR head equals the pushed tip at merge time beyond the `git log` parents.
+- Operator chat texts (the Polish originals) - only the English renderings in the records; the `hc`/`herdr` commands in resume item 3 (unchanged from the PR-408 text; not executed).
+- Counters 8 and 9 and the registry derivation script itself (registry read; script not re-run; counters 4, 5, 6 recomputed from the matrix). Whether the 2 AUTHORITY_REQUIRED rows should change state after W1 (the matrix is untouched by design).
+- The planners' claims that were never executed (no test was run by them or by me): all "after" columns, gate red/green, launcher import resolution, the exact ACT-N11 set; `rev-plan` "findings 1-9 applied in 9318bf1bb" (the commit exists and is an ancestor of origin/development; its content was not diffed).
+- Sections of PLAN_T-IGX-033-A.md beyond the ticket, the PLAN_REPORT and the facts the addendum repeats (docs list, cost table) were not re-read line by line.
+
+## Checked and fine (not findings)
+Status-block text does not contradict the older text it sits on (the AUTHORITY block states the older table is "not rewritten"); HK-01 closed is consistent with the registry (`housekeeping_open` empty, lock directory empty); the F-006/F-016 pointers are consistent once F-3 is applied; nothing in the commit asks for or implies approval of T-IGX-032-A/033-A.

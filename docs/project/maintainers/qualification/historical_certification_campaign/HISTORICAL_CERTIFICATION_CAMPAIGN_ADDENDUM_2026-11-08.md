@@ -4,7 +4,7 @@ Scope: what happened after the final package (PR 408) was merged, up to PR 416 (
 
 **Campaign result: still `PARTIAL / EXACT BLOCKERS`.** Independent closures: 0. Promotions: 0. The FRZ checklist is unchanged (all 85 historical rows OPEN). Nothing below promotes a row.
 
-## 1. Pull requests after PR 408 (all merged by the Operator)
+## 1. Campaign pull requests after PR 408 (merged by the Operator, as reported in the orchestrator chat; the ENT-AUDIT-X PRs 409, 411 and 412 were merged in between and are not part of this campaign)
 
 | PR | Merge commit | Content |
 |---|---|---|
@@ -14,9 +14,9 @@ Scope: what happened after the final package (PR 408) was merged, up to PR 416 (
 | 415 | `af323c005` | Ticket T-IGX-031-A and its plan with the delegated plan approval (`cert-031a`) |
 | 416 | `51cb5f336` | T-IGX-031-A implementation (tests only), the amended plan (S12), delegated approval of the amended plan (`cert-031a2`), two independent audits |
 
-## 2. Operator decisions: all seven formerly open decisions now have an answer on record
+## 2. Operator decisions: all seven formerly open decisions now have an answer on record (scope rulings; limits below)
 
-The answers are certified by designated sessions in the Operator's name (IIAC Amendment 01 R-1..R-6; assurance `process_enforced`; the delegation records are transcriptions by the orchestrator, not signed by the Operator). An explicit Operator confirmation is on record (`delegations/DELEG-HIST-W0-CONFIRMATION-2026-11-08.md`).
+The answers are certified by designated sessions in the Operator's name (IIAC Amendment 01 R-1..R-6; assurance `process_enforced`; the delegation records are transcriptions by the orchestrator, not signed by the Operator). An explicit but general Operator confirmation of the W0 decisions is on record (the reply "I confirm and I consent", transcribed by the orchestrator; the reading of its scope is the orchestrator's; `delegations/DELEG-HIST-W0-CONFIRMATION-2026-11-08.md`). The W1 rulings rest on the Operator's acceptance recorded in `delegations/DELEG-HIST-W1-2026-11-08.md`.
 
 | Decision | Answer on record | Where |
 |---|---|---|
@@ -30,12 +30,12 @@ The answers are certified by designated sessions in the Operator's name (IIAC Am
 
 Known limits of those answers (also in the records): W1-R2 does not exempt the (b) parts of SEC-01, REL-03, REL-05 from the checklist rule (`OPEN = 0` for architecture-scoped rows); SEC-05 keeps the tension "architecture-scoped" vs "PROD-Q still required"; "per-host isolation" is not defined in the repository; REL-03, REL-05 and PRD-08 do not name Decision-03 in their row text.
 
-## 3. Stage T-IGX-031-A (tests only) - closed on `development`
+## 3. Stage T-IGX-031-A (tests only) - merged on `development`, PASS_SCOPED by two independent audits; ticket state `ready_for_audit`
 
 - Problem: HIST03-F-006 (`test_sec_ent.py`, 7 red tests) and HIST03-F-016 (registry pollution in W5 b2/c/d).
-- Result: `test_sec_ent.py` 14 passed; W5 20 passed; the four files in one process in both orders 34 passed. Negative probes behave as predicted. The 27-path run (Operator-authorized, one run) shows 0 "already registered"; the 6 remaining failures are the P2-C tests of F-015.
+- Result: `test_sec_ent.py` 14 passed; W5 20 passed; the four files in one process in both orders 34 passed. Negative probes behave as predicted. The 27-path run (Operator-authorized, one run) shows 0 "already registered"; the 6 remaining failures are the P2-C tests of F-015. The pass/fail counts come from pytest's own summary line: the exit code of that run was NOT captured, because the process did not exit after the summary (the authorization listed a captured exit code as a condition).
 - Evidence: audits `aud-tests` (PASS_SCOPED at `b28398026`) and `aud-s12` (PASS_SCOPED at `47c29b4c3`, behaviour-neutral lint normalization S12, AST-equivalent, ruff clean); plan reviews `rev-plan`, `rev-plan2`; approvals `cert-031a`, `cert-031a2`.
-- Statement allowed: F-016 is resolved **for the 27-path selection of the HIST-03 run at `b28398026`**. Not claimed: the 27-path run was not repeated after S12 (R8), the transitive import order of the reordered modules is not traced (R9).
+- Statement allowed: F-016 is resolved **for the 27-path selection of the HIST-03 run at `b28398026`**, with the exit-code limitation above. Not claimed: the 27-path run was not repeated after S12 (R8), the transitive import order of the reordered modules is not traced (R9).
 - Operator-accepted deviation: the two implementation commits were made with `--no-verify` because of lint defects already present at the base (`authorizations/AUTH-HIST-NOVERIFY-031A-2026-11-08.md`); S12 removed those defects.
 - Ticket state on `development`: `ready_for_audit`.
 
@@ -50,14 +50,16 @@ Both tickets are `plan_pending`, have no `Approved:` line and are NOT reviewed o
 ## 5. Open items (exact)
 
 Operator or later batch:
-1. Answers on the two product plans (see the plan reports under `audits/plan-p2c/` and `audits/plan-bnd03/`): P2-C - confirm A2, owner SKILL-X, KV authoritative, the bounded wider measurement (C10/C15), whether the hard-coded `is_durable` becomes its own ticket; BND-03 - accept the changed CLI invocation, what to do with the old names, regenerate the EBH-7 matrix row, separate finding for `product_manifest_registry`, join the single re-activation, a decision id only if an ACCEPTED_LIMITATION is chosen.
+1. Answers on the two product plans (see the plan reports under `audits/plan-p2c/` and `audits/plan-bnd03/`): P2-C - confirm A2, owner SKILL-X, KV authoritative, the bounded wider measurement (C10/C15), whether the hard-coded `is_durable` becomes its own ticket (the P2-C plan says "five" extra files in Q3 but names four in step 6; the plan reviewer should settle the list); BND-03 - accept the changed CLI invocation, what to do with the old names, regenerate the EBH-7 matrix row, separate finding for `product_manifest_registry`, join the single re-activation, a decision id only if an ACCEPTED_LIMITATION is chosen.
 2. W1-PLAN step 2: agreement with the ENT-AUDIT-X stream (a separate session) on whether ONE IIAC re-activation covers both streams. Not assumed; no owner has contacted that stream.
 3. The single IIAC re-audit / re-activation batch, including `T-IGX-021-B/C` (they do not exist yet) and the validator alignment (Q-12).
 4. QUAL-X Dimension A replay on the final integrated SHA (DR-10, approved), then certification of the 19 candidate rows (each needs its own independent audit; no promotion without it).
-5. Residuals of T-IGX-031-A: R1 duplicate `ollama` slug (product), R7 raw `TypeError` for a pre-built non-contract secrets store (product), `no_ci` still excludes `test_sec_ent.py` from GitHub CI, R2 (about 72 other bare `register_default_integrations()` callers unmeasured), R8, R9; a pytest process of the 27-path selection does not exit after its summary (seen at the HIST-03 pin run and in the `aud-tests` run: not introduced by the batch).
+5. Residuals of T-IGX-031-A: R1 duplicate `ollama` slug (product), R7 raw `TypeError` for a pre-built non-contract secrets store (product), `no_ci` still excludes `test_sec_ent.py` from GitHub CI, R2 (about 72 other bare `register_default_integrations()` callers unmeasured), R8, R9; the 27-path run under `aud-tests` did not exit after its summary (AUD-1; the process tree was later terminated on the Operator's instruction); the HIST-03 pin run exited normally; a similar hang was seen once on an aborted HIST-03 run (HK-01, wrong flags). Cause unknown; not shown to be caused by the batch.
 6. Published plan text of T-IGX-031-A says no Operator approval was requested or given for the planner's `.venv`; the Operator later said they answered a question in the implementer's panel (the question named both cases), so that sentence may be inaccurate. An erratum is needed if the Operator confirms.
 7. Polish text in the repository (838 lines inventoried by HIST-04): a ruling on functional data is still needed; unchanged.
 8. EVOL-X roadmap row L489 inconsistency (prose says CLOSED, stage cell PENDING_AUTHORITY): DR-1 ratified the lines but edited no roadmap cell.
+
+Dashboard counter 7 counts only the three OPEN registry entries OD-NEW-P2C, OD-NEW-BND03 and OD-NEW-ENT; the other Operator items are listed in this section.
 
 Housekeeping: the hung process trees HK-01 and HK-03 were terminated on the Operator's instruction and the heavy lock is free. Sessions and worktrees listed in `MASTER_RESUME_INSTRUCTIONS.md` are for the Operator to close and remove.
 

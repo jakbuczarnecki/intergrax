@@ -1,6 +1,6 @@
 # HISTORICAL CERTIFICATION CAMPAIGN DASHBOARD
 
-_generated 2026-11-08T19:05:22+00:00 from records; start SHA `ba07ebaa3`_
+_generated 2026-11-08T19:15:00+00:00 from records; start SHA `ba07ebaa3`_
 
 ## Counters (derived)
 
@@ -19,6 +19,8 @@ _generated 2026-11-08T19:05:22+00:00 from records; start SHA `ba07ebaa3`_
 
 FRZ rows with a per-ID record: 85 / 85  (unmapped 0)
 
+Counter 7 counts the OPEN entries of the registry only (OD-NEW-P2C, OD-NEW-BND03, OD-NEW-ENT); other Operator items are listed in the addendum section 5.
+
 ## Per-state
 
 | state | rows |
@@ -36,6 +38,8 @@ FRZ rows with a per-ID record: 85 / 85  (unmapped 0)
 | UNVERIFIED | 0 |
 
 ## Workers
+
+_Rows as of PR 408: states derive from the PR-408 matrix and are not recomputed after later decisions._
 
 | id | hc terminal | session | phase | state | blockers | needs_master | updated |
 |---|---|---|---|---|---|---|---|
@@ -58,12 +62,12 @@ FRZ rows with a per-ID record: 85 / 85  (unmapped 0)
 | rev-w1 | independent non-author reviewer of hist-cert/cert-w1 | ACCEPT_WITH_CHANGES (F-1..F-7 applied in erratum); audits/rev-w1 |
 | rev-plan | independent reviewer of PLAN_T-IGX-031-A | ACCEPT_WITH_CHANGES (findings 1-9 applied in 9318bf1bb) |
 | aud-tests | independent auditor of T-IGX-031-A | PASS_SCOPED @ b28398026 (27-path: 6 failed = F-015 only, 0 already registered; exit code uncaptured: pytest process hung after summary, PID tree 59260) |
-| rev-plan2 | independent reviewer of Amendment A1 (S12) | ACCEPT_WITH_CHANGES (F1-F5 low); 27-path rerun not needed |
+| rev-plan2 | independent reviewer of Amendment A1 (S12) | ACCEPT_WITH_CHANGES (F1-F5 low); 27-path rerun not required for the plan, R8 stays open (see aud-s12) |
 | aud-s12 | delta auditor of S12 | PASS_SCOPED @ 47c29b4c3 (S12 AST equivalent; ruff clean; steps 1-5 green; R8/R9 open) |
 
 ## Publication
 
-- status: ALL_CAMPAIGN_PRS_MERGED (405, 406, 407, 408, 410, 413, 414, 415, 416); refresh PR pending
+- status: ALL_CAMPAIGN_PRS_MERGED (405, 406, 407, 408, 410, 413, 414, 415, 416); the refresh PR itself is not listed
 - origin/development after merge: 51cb5f336
 - post-merge CI: Regression gate success on 51cb5f336 (PR 416 merge); earlier: success on 62d1c6158 incl. ENT-AUDIT-X
 - PR 405: merge commit 41908e3fb, head 6d1434796
