@@ -19,7 +19,7 @@ Plan digest: 55d4c9e6e7cc05b27b794e24d71ef1c7ac02a6c4d3026ea838a3deeb007e0103
 
 ## Approved
 
-(pending and HELD — no approval line is requested from the Operator for this ticket now; any approval line is written only by the Operator.)
+Approved: operator-delegate hist-sign-plans @ 2026-11-08T21:26:00+01:00 | Delegation: docs/project/maintainers/qualification/historical_certification_campaign/delegations/DELEG-HIST-PRODUCT-PLANS-2026-11-08.md@9bfa07fa97c5054b07ff1f1dc9799d9ca77471f5
 
 ## Test contract
 
@@ -40,4 +40,4 @@ Informational and expected RED by design (not to be fixed here): `verify_iiac_po
 
 ## Lifecycle state
 
-plan_pending
+plan_approved
