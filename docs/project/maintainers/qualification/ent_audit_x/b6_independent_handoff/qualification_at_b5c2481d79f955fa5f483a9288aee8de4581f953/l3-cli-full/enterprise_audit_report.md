@@ -2,9 +2,9 @@
 
 - **Status:** PASS
 - **Exit code:** 0
-- **Mode:** FULL
-- **Current SHA:** `b5c2481d79f955fa5f483a9288aee8de4581f953`
-- **Baseline SHA:** `none`
+- **Mode:** FREEZE
+- **Current SHA:** `40b0b93bf8c9e3c042506618dc1f6969317dca4c`
+- **Baseline SHA:** `480550d80b2515fc8cbd2a0ba6f79d1ee1c44541`
 - **Checks planned/executed/skipped:** 85/85/0
 
 ## Qualification limitations
