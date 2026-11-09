@@ -200,7 +200,7 @@ parsing-pdf = [
 ]
 parsing-ocr = [
   "pytesseract>=0.3,<1",
-  "pillow>=11.0,<13",
+  "pillow>=11.0,<14",
 ]
 media-youtube = [
   "yt-dlp>=2024.0,<2027",
@@ -210,11 +210,11 @@ media-video = [
   "webvtt-py>=0.4,<1",
 ]
 media-image = [
-  "pillow>=11.0,<13",
+  "pillow>=11.0,<14",
 ]
 media-ocr = [
   "pytesseract>=0.3,<1",
-  "pillow>=11.0,<13",
+  "pillow>=11.0,<14",
 ]
 media-whisper = [
   "openai-whisper>=20240930,<20250626",
