@@ -7,7 +7,7 @@
 | P5 merge SHA | `3c91694c645ff0d97d104adf0c5a564b9a4c5b3c` (on `development`) |
 | P5 activation effective SHA | `8045915a353bb04ea5a290f9ef8b6def33dee96d` |
 | P6 POST_ACTIVATION SHA | `bf03550aa95ce239a63542916331c6a648617e33` |
-| PUBLICATION_SHA | `eae041a2d9710dc0392d56c0193d97e21bdff992` (P8 certifier closeout; pending remote) |
+| PUBLICATION_SHA | `ff172a1e004c1b9796e1034d53cd19f4a7f358c1` (P8 certifier closeout; pending remote) |
 
 See [`HISTORICAL_CORRECTIVE_EXECUTION_AND_SHA_LADDER.md`](HISTORICAL_CORRECTIVE_EXECUTION_AND_SHA_LADDER.md) and P4 [`audits/aud-product/AUDIT_REPORT.md`](audits/aud-product/AUDIT_REPORT.md).
 
