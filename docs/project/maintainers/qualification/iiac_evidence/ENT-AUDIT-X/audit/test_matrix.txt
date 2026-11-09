@@ -1,0 +1,22 @@
+# ENT-AUDIT-X IIAC round-3 (Session D / W2-02 R-AUD) — commands @ worktree D:\Projekty\_wt\intergrax\ent-w2-audit3 HEAD ee5470f5
+
+git rev-parse HEAD  -> ee5470f543d0c1494a7dd5febc41e5ff968ade72  exit 0
+git config core.autocrlf -> false  exit 0
+git diff --quiet b5c2481d..HEAD -- intergrax/ agents/ applications/  exit 0 (PRODUCT_DELTA_EMPTY)
+git merge-base --is-ancestor b5c2481d HEAD  exit 0
+git merge-base --is-ancestor 63ff8081 HEAD  exit 0
+git merge-base --is-ancestor b5c2481d 63ff8081  exit 0
+
+uv run python -c verify_b5_publication_tree(qualification_at_b5c2481d...)  exit 0 MODE_A_ERR_COUNT 0
+uv run python scripts/governance/verify_iiac_policy_activation.py --require-in-force  exit 0 IN_FORCE
+uv run pytest tests/qualification/ent_audit_x/unit/test_b5_publication_verifier.py -q  exit 0 12 passed
+uv run pytest tests/qualification/ent_audit_x/unit/test_promote_baseline_repo_root.py -q  exit 0 2 passed
+uv run python scripts/governance/verify_ent_audit_branch_protection.py  exit 1 (expected LIVE FAIL; OPEN-BP-01)
+
+gh pr view 421 --json mergeCommit,state  exit 0 MERGED @ ee5470f5
+gh run view 42593448899 --json conclusion,headSha  exit 0 success @ b5c2481d
+gh run view 42613400627 --json conclusion,headSha  exit 0 success (PR branch)
+gh run view 42614851524 --json status  exit 0 in_progress at audit cut (operator: green post-merge)
+
+B5 bundle qual_wave_report.json: status PASS, l3_cli_full 85/0/85, first_freeze_candidate 85/0/85, ci_nightly_full run 42593448899
+B5 enterprise_audit_report.json: exit_code 0, checks_executed 85, checks_skipped 0, current_sha b5c2481d
