@@ -1,6 +1,6 @@
 {
   "accepted_baseline_sha": "480550d80b2515fc8cbd2a0ba6f79d1ee1c44541",
-  "check_manifest_digest": "",
+  "check_manifest_digest": "0fe966e43a10a561c38222b6cff30269e906633e61862d76aa29c1775e691b8b",
   "findings": {},
   "schema_version": 1
 }
