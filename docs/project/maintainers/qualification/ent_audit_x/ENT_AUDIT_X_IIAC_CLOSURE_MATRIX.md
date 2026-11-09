@@ -57,8 +57,8 @@ Statuses: `QUALIFIED` · `CLOSED` · `OPEN` · `BLOCKED` · `UNVERIFIED`. `Aud` 
 | E-2 | Accepted-baseline manifest (OD-ENT-01) | BLOCKED by D-2, E-1 | W3 · OD |
 | E-3 | Certifying FREEZE vs the accepted baseline | BLOCKED by E-2 | W4 · Aud |
 | E-4 | FRZ-AUD-01..10 per-row evidence and promotion | BLOCKED by E-3 | W4 · Aud |
-| E-5 | OD-ENT-02 compensating-control package refreshed and independently accepted | OPEN | W3 · Aud · OD |
-| E-6 | OD-ENT-00 (accept EVOL formal status) | OPEN | W3 · OD |
+| E-5 | OD-ENT-02 compensating-control package refreshed and independently accepted | PARTIAL | OD recorded; **Aud** sufficiency W4-02 |
+| E-6 | OD-ENT-00 (accept EVOL formal status) | RECORDED | W3-01 done; BLK-ROADMAP-ENT-DEP satisfied at record |
 | E-7 | OD-ENT-08 (formal closure authorisation) | BLOCKED by E-1..E-5 | W5 · OD |
 | P-1 | `B6_ACCEPTANCE_PUBLICATION_SHA` | unset | W2 |
 | P-2 | `ACCEPTED_BASELINE_SHA` | unset | W3 |
@@ -77,12 +77,12 @@ All ten: `OPEN`. Requirements and test names: Annex B. PASS per row needs positi
 
 | Decision | Status | Note |
 |---|---|---|
-| OD-ENT-00 | OPEN | not present in `CERT_CAMPAIGN_DELEGATED_DECISIONS_2026-11-07.md` |
-| OD-ENT-01 | OPEN | after B6 pin; needs D-2 |
-| OD-ENT-02 | OPEN | route: COMPENSATING primary (operator, chat 2026-11-08); LIVE stays available |
-| OD-ENT-08 | OPEN | final publication; orchestrator pauses for operator review |
+| OD-ENT-00 | **RECORDED** | `iiac_evidence/ENT-AUDIT-X/operator_decisions/ENT_AUDIT_X_OD_ENT_00_DECISION_RECORD.md` @ signing session `ent-sign-w3-2026-11-09` |
+| OD-ENT-01 | OPEN | B6 pinned; **blocked:** `iiac_baseline_promotion.py` needs operator `@` on `DELEGATION_ENT_OD_ENT_01.md` |
+| OD-ENT-02 | **RECORDED** (compensating) | `od_ent_02_mode=compensating`; auditor sufficiency verdict still required (W4-02) |
+| OD-ENT-08 | OPEN | final publication; **paused** per plan W5 |
 | OD-ENT-03 | SUPERSEDED | IIAC identifies sessions, not named auditors |
-| O-1 (delegation record for the signing session) | OPEN | operator-only; required before W3-01 |
+| O-1 (delegation record for the signing session) | **TRANSCRIBED** | `ENT_AUDIT_X_O1_SIGNING_DELEGATION_RECORD.md`; validator gap on operator line |
 | OD-IC-01 | VALID, internal only | never satisfies a formal gate |
 
 ### 2.7 Open-BP-01
@@ -111,3 +111,4 @@ Superseded by this overlay (status columns only, not edited): master plan Matrix
 | Date | Step | Note |
 |---|---|---|
 | 2026-11-08 | W0-04 / W0-05 | overlay created; ladder rows appended (IIAC activation, EVOL pins, campaign baseline); status-vocabulary corrections in roadmap L490/L561/L2065/L2066, CAAP L152/L154, FRZ checklist L47 — no status promoted; ticket `T-IGX-024-A` |
+| 2026-11-09 | W3 signing | O-1 transcription; OD-ENT-00/02 published; `od_ent_02_mode=compensating`; W3-02 baseline promotion blocked on validator; W5 OD-ENT-08 paused — session `ent-sign-w3-2026-11-09` |

@@ -24,5 +24,10 @@
   "ci_nightly_proof_head_sha": "b5c2481d79f955fa5f483a9288aee8de4581f953",
   "iiac_audit_round1_historical_annex": "docs/project/maintainers/qualification/iiac_evidence/ENT-AUDIT-X/historical/IIAC_ENT_AUDIT_ROUND1_CONDITIONAL_ANNEX.md",
   "iiac_audit_round2_status": "INTERRUPTED_NO_VERDICT",
-  "r_fresh_qual_wave_session": ".tmp/session/ent-r-fresh/"
+  "r_fresh_qual_wave_session": ".tmp/session/ent-r-fresh/",
+  "od_ent_02_mode": "compensating",
+  "od_ent_00_record_path": "docs/project/maintainers/qualification/iiac_evidence/ENT-AUDIT-X/operator_decisions/ENT_AUDIT_X_OD_ENT_00_DECISION_RECORD.md",
+  "od_ent_02_record_path": "docs/project/maintainers/qualification/iiac_evidence/ENT-AUDIT-X/operator_decisions/ENT_AUDIT_X_OD_ENT_02_DECISION_RECORD.md",
+  "o1_signing_delegation_path": "docs/project/maintainers/qualification/iiac_evidence/ENT-AUDIT-X/operator_decisions/ENT_AUDIT_X_O1_SIGNING_DELEGATION_RECORD.md",
+  "signing_session_id": "ent-sign-w3-2026-11-09"
 }
