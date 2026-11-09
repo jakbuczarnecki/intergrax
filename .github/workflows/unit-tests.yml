@@ -765,7 +765,7 @@ jobs:
 
       - name: Upload qualification artifacts
         if: always()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: diagnostics-full-qualification-${{ github.event.inputs.qualification_sha }}
           path: build/qualification/
@@ -1035,7 +1035,7 @@ jobs:
 
       - name: Upload EBH-7 L3 qualification artifacts
         if: always()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: ebh7-p03-l3-${{ env.TEST_EXECUTION_SHA }}
           path: build/qualification/ebh7-l3/
@@ -1100,7 +1100,7 @@ jobs:
           set -euo pipefail
           mkdir -p build/qualification/evol-x-l3
           uv run pytest tests/qualification/evol_x -q --junitxml=build/qualification/evol-x-l3/junit.xml
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v7
         if: always()
         with:
           name: evol-x-p3-l3-${{ env.TEST_EXECUTION_SHA }}

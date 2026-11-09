@@ -62,7 +62,7 @@ jobs:
           echo "- note: certifying FULL/FREEZE only on nightly / manual qual wave" >> "$GITHUB_STEP_SUMMARY"
       - name: Upload PR audit artifacts
         if: always()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: ent-audit-pr-${{ github.event.pull_request.number || github.run_id }}
           path: .tmp/proof/ent-audit-x/
