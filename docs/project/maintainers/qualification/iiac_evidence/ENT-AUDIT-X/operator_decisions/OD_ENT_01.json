@@ -1,0 +1,12 @@
+{
+  "decision_id": "OD-ENT-01",
+  "record_origin": "operator-delegate",
+  "policy_version": "IIAC-2026-11-05.1",
+  "designated_session_id": "ent-sign-w3-2026-11-09",
+  "b6_acceptance_sha": "add6a6ce2015ebaa4bc38b7fadf3936f100a1522",
+  "evidence_publication_sha": "63ff80819da5a7324257ea598e342810c1838199",
+  "test_execution_sha": "b5c2481d79f955fa5f483a9288aee8de4581f953",
+  "accepted_baseline_sha": "480550d80b2515fc8cbd2a0ba6f79d1ee1c44541",
+  "iiac_manifest_path": "docs/project/maintainers/qualification/iiac_evidence/ENT-AUDIT-X/certification/iiac_audit_session_manifest.ENT-AUDIT-X.json",
+  "iiac_manifest_digest": "3807e72f884bbe63940e42b1f63796cbfa84d22c771ef2b443a079ad4d629f99"
+}

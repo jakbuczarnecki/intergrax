@@ -9,7 +9,7 @@
 - Stage: `ENT-AUDIT-X`
 - Decision ID (decision to be signed): `OD-ENT-01`
 - Record path (repo-relative path of the record to be signed): `docs/project/maintainers/qualification/iiac_evidence/ENT-AUDIT-X/operator_decisions/OD_ENT_01.json`
-- SHA-256 of the text to be signed: `TO_BE_PINNED_AFTER_OD_ENT_01_BODY_FINALIZED`
+- SHA-256 of the text to be signed: `69d89150deba87ff254b17e8ca35f5d0c794ef644336b9d1f8955acf05e4b097`
 - Delegated act: write the delegated signature line `Approved OD-ENT-01: operator-delegate @ <ISO-8601 timestamp>` plus the line `Delegation: <this record path>@<commit sha>` in the record above, and nothing else.
 
 ## Designated signing session
@@ -29,6 +29,6 @@
 
 **NOT FILLED BY AGENT** — required by `iiac_baseline_promotion.py` before `promote-baseline`:
 
-`Approved delegation DELEG-ENT-OD-ENT-01: operator @ ________________`
+`Approved delegation DELEG-ENT-OD-ENT-01: operator @ 2026-11-09T16:42:00+01:00`
 
 Parent commission: `ENT_AUDIT_X_O1_SIGNING_DELEGATION_RECORD.md` (`DELEG-ENT-W3-2026-11-09`).
