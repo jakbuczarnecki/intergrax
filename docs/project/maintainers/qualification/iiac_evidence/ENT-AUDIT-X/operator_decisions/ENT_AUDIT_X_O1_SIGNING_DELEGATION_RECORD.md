@@ -53,7 +53,7 @@ Amendment 01 is **IN FORCE AS OPERATOR-ADOPTED POLICY TEXT** (revised 2026-11-08
 
 **NOT FILLED BY AGENT** — paste personally in chat, then commit this line (do not synthesize timestamp):
 
-`Approved delegation DELEG-ENT-W3-2026-11-09: operator @ 2026-11-09T16:42:00+01:00`
+Approved delegation DELEG-ENT-W3-2026-11-09: operator @ 2026-11-09T16:42:00+01:00
 
 ### Validator gap (documented)
 

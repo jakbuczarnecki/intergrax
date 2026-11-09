@@ -29,6 +29,6 @@
 
 **NOT FILLED BY AGENT** — required by `iiac_baseline_promotion.py` before `promote-baseline`:
 
-`Approved delegation DELEG-ENT-OD-ENT-01: operator @ 2026-11-09T16:42:00+01:00`
+Approved delegation DELEG-ENT-OD-ENT-01: operator @ 2026-11-09T16:42:00+01:00
 
 Parent commission: `ENT_AUDIT_X_O1_SIGNING_DELEGATION_RECORD.md` (`DELEG-ENT-W3-2026-11-09`).
