@@ -4,13 +4,16 @@
 
 **ENT-AUDIT-X is NOT closed.** Published status: `INTERNALLY_CLOSED_AUTOMATED_INTERNAL_AUDIT_ACCEPTED`. Formal B6 under IIAC: not executed. `ACCEPTED_BASELINE_SHA`, `B6_ACCEPTANCE_PUBLICATION_SHA`, `FORMAL_CLOSURE_PUBLICATION_SHA`: unset. FRZ-AUD-01..10: OPEN. This overlay promotes nothing.
 
-## 1. Snapshot (W0, 2026-11-08)
+## 1. Snapshot (R-FRESH overlay facts, 2026-11-09)
 
 | Item | Value |
 |---|---|
-| `development` tip at campaign start | `ba07ebaa34d04633bd60510f68c18346b1ef160d` (= `origin/development`) |
-| Technical qualification TES | `89c76eb7b53a0a3ce6f75ab395cf4a2802638a91` (ancestor of tip: yes) |
-| B5 evidence publication | `300859537f12a1de7bf3d75fd685bc3a5c727183` (yes) |
+| Last-wins TEST_EXECUTION_SHA | `b5c2481d79f955fa5f483a9288aee8de4581f953` (R-FRESH certifying FULL 85/85 + FREEZE candidate @ `.tmp/session/ent-r-fresh/`; nightly run `42593448899`) |
+| Last-wins EVIDENCE_PUBLICATION_SHA | *pending R-PUB commit* (B5 tree `qualification_at_b5c2481d79f955fa5f483a9288aee8de4581f953`) |
+| Historical loop-1 TES / EVIDENCE | `62d1c615855a3eaf569777a10e342aacc889a128` / `163ef0c03b3cbead556499ee81cb99d640665dce` (preserved) |
+| IIAC round 1 audit | CONDITIONAL — historical annex under `iiac_evidence/ENT-AUDIT-X/historical/` (not B6 acceptance) |
+| IIAC round 2 audit | `INTERRUPTED_NO_VERDICT` (do not resume on `f9e3a932`) |
+| `development` tip at campaign start (W0) | `ba07ebaa34d04633bd60510f68c18346b1ef160d` |
 | Independent technical re-audit (not formal B6) | `0e538269a7188075003b9ff2c7cce2545d8f1ccb` (yes) |
 | IIAC activation | `f8c29fb8dfe5e14d9b06ff16659fd9cbe9ad326d` (yes) |
 | EVOL-X formal closure / ENT handoff / IIAC B6 | `be77b3a5fb97f10a3bd2df6ee038cb92aad77eca` / `7a4f279fd8c0986431941c77283d872ea5b0c1ba` / `1dd769331506149a1ee2f411c2bc62e85e5bbf25` (all yes) |
