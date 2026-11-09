@@ -53,9 +53,17 @@ uv run python -m scripts.governance.igx_gov ticket
 - CI: `ent-audit-fast` / `ent-audit-pr-gate` SUCCESS on `development` post-merge (per [W4-01 delivery](340bac7a-51f9-4687-8518-0a84e51d13e8)).
 - Known regression (out of W4-01 scope): `governance-fast` FAIL on `development` — ACT-N11 / post-C0 `intergrax/platform/enterprise_audit/baseline.py`; track as separate IIAC re-activation, not a W4-01 blocker.
 
+### W4 corrective (2026-11-09) — implementer STOP before W4-03
+
+- Worktree `D:/Projekty/_wt/intergrax/ent-w4-corr`, branch `fix/ent-audit-w4-corr`, code @ `8d43143c69ef116ff1c96270b76edf8f79f36086`; PR #428 (open).
+- C065 promotion pytest: pass on above SHA (see `.tmp/session/ent-audit-x-w4-corr/c065_promotion_pytest.log` in worktree).
+- Certifying FREEZE @ `8d43143c6`: **85/85/0 executed**, SHA fields equal, baseline pin `480550d8…`, digest `0fe966e4…` — **not CLEAN** (`VBN-REACHABILITY:FAIL`, CLI exit 1, no `evidence_manifest.v1.json`). **No** `freeze-normal` publication; dossier criterion not met.
+- Handoff: `.tmp/session/ent-audit-x-w4-corr/W4_CORRECTIVE_EVIDENCE_INDEX.md`, `W4_03_INDEPENDENT_AUDITOR_HANDOFF.md`.
+
 ### Next (ticket scope)
 
 - **W4-02:** independent auditor session (`independent-quality-auditor`); FRZ-AUD-01..10, Matrix C, GAP-RC-OD-TRUST — implementer does not self-certify.
+- **W4-03:** blocked until CLEAN FREEZE + published `freeze-normal` tree; new auditor session only.
 
 ## Lifecycle state
 
