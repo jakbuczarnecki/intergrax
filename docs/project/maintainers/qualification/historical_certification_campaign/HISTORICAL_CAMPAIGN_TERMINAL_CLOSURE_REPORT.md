@@ -11,8 +11,8 @@
 | P5 activation effective SHA | `8045915a353bb04ea5a290f9ef8b6def33dee96d` (`IIAC_POLICY_ACTIVATION_RECORD`, IN_FORCE) |
 | P6 replay SHA (authoritative) | `bf03550aa95ce239a63542916331c6a648617e33` — label **`POST_ACTIVATION`** |
 | P6 diagnostic (superseded) | `427646f41` — `PRE_ACTIVATION_DIAGNOSTIC` lineage only |
-| PUBLICATION_SHA | `b5c2481d79f955fa5f483a9288aee8de4581f953` (`merge: hist-cert/final-docs`); certifier closeout updates on `hist-cert/p8-certifier-closeout` |
-| Remote `origin/development` | Verified at certifier start `878e2e384e47cafffe39162f59e3971d83141783` |
+| PUBLICATION_SHA | `eae041a2d9710dc0392d56c0193d97e21bdff992` (`hist-cert/p8-certifier-closeout`; prior docs merge `b5c2481d7`) |
+| Remote `origin/development` | **Pending push** — target tip `eae041a2d9710dc0392d56c0193d97e21bdff992` |
 | Operator P2 consent | [`delegations/DELEG-HIST-IIAC-P2-SUPERSESSION-2026-11-09.md`](delegations/DELEG-HIST-IIAC-P2-SUPERSESSION-2026-11-09.md) |
 | Operator P8 cert commission | [`delegations/DELEG-HIST-P8-CERT-2026-11-09.md`](delegations/DELEG-HIST-P8-CERT-2026-11-09.md) |
 | P8 final audit | [`audits/final-p8/AUDIT_REPORT.md`](audits/final-p8/AUDIT_REPORT.md) — **PASS** |
