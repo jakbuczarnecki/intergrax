@@ -37,6 +37,26 @@ uv run python scripts/enterprise_audit/validate_post_implementation_master_plan.
 uv run python -m scripts.governance.igx_gov ticket
 ```
 
+## Delivery checkpoints (factual; no PASS / CLOSED / FRZ promotion)
+
+### C0 — baseline digest (merged PR #425)
+
+- Tip on `development` after C0: `40b0b93bf8c9e3c042506618dc1f6969317dca4c`.
+- Accepted baseline digest preserved (`0fe966e43a…`).
+
+### W4-01 — certifying FREEZE evidence publication (merged PR #426)
+
+- Merge commit on `development`: `bef209a1e33412f4bba6fd3518a47df4da90af81` (2026-11-09T18:37:37Z).
+- FREEZE run baseline tip (pre-merge C0): `40b0b93bf` (`audit_execution_sha` for W4-01 wave).
+- Evidence publication commit: `97be1a2d383da1c104949b171af767c7f58c8f77` (`evidence_publication_sha`).
+- `qualification_sha` (unchanged): `b5c2481d79f955fa5f483a9288aee8de4581f953`.
+- CI: `ent-audit-fast` / `ent-audit-pr-gate` SUCCESS on `development` post-merge (per [W4-01 delivery](340bac7a-51f9-4687-8518-0a84e51d13e8)).
+- Known regression (out of W4-01 scope): `governance-fast` FAIL on `development` — ACT-N11 / post-C0 `intergrax/platform/enterprise_audit/baseline.py`; track as separate IIAC re-activation, not a W4-01 blocker.
+
+### Next (ticket scope)
+
+- **W4-02:** independent auditor session (`independent-quality-auditor`); FRZ-AUD-01..10, Matrix C, GAP-RC-OD-TRUST — implementer does not self-certify.
+
 ## Lifecycle state
 
 in_progress

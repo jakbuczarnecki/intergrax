@@ -33,6 +33,8 @@ def _run_git(*args: str) -> subprocess.CompletedProcess[str]:
         check=False,
         capture_output=True,
         text=True,
+        encoding="utf-8",
+        errors="replace",
     )
 
 
@@ -101,10 +103,15 @@ def list_commits_in_range(rev_range: str) -> list[str]:
 def push_rev_range() -> str:
     upstream = _run_git("rev-parse", "--abbrev-ref", "--symbolic-full-name", "@{u}")
     if upstream.returncode != 0:
+        for base_ref in ("origin/development", "origin/main"):
+            mb = _run_git("merge-base", "HEAD", base_ref)
+            if mb.returncode == 0 and mb.stdout.strip():
+                return f"{mb.stdout.strip()}..HEAD"
         head = _run_git("rev-parse", "HEAD")
-        if head.returncode != 0:
+        if head.returncode != 0 or not head.stdout.strip():
             return "HEAD"
-        return head.stdout.strip()
+        sha = head.stdout.strip()
+        return f"{sha}^..{sha}"
     base = upstream.stdout.strip()
     merge_base = _run_git("merge-base", "HEAD", base)
     if merge_base.returncode != 0:
@@ -118,7 +125,7 @@ def verify_range(rev_range: str, config: CommitRefConfig) -> list[str]:
         if not commit_touches_product(commit, config):
             continue
         msg = _run_git("log", "-1", "--format=%B", commit)
-        if msg.returncode != 0:
+        if msg.returncode != 0 or not msg.stdout:
             errors.append(f"{commit[:12]}: unable to read commit message")
             continue
         if not message_has_valid_ref(msg.stdout, config):
