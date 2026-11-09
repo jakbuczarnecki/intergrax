@@ -3,8 +3,8 @@
   "prior_campaign_id": "ENT-AUDIT-X-POST-B4-EXACT-BLOCKER-CORRECTIVE",
   "plan_baseline_sha": "4d54dfa9e485329d81d0e0fa72436867458f3426",
   "formal_master_plan_publication_sha": "116fb6a2ae5a40605bb569ac7685b62eb0a42539",
-  "test_execution_sha": "89c76eb7b53a0a3ce6f75ab395cf4a2802638a91",
-  "evidence_publication_sha": "300859537f12a1de7bf3d75fd685bc3a5c727183",
+  "test_execution_sha": "b5c2481d79f955fa5f483a9288aee8de4581f953",
+  "evidence_publication_sha": "63ff80819da5a7324257ea598e342810c1838199",
   "b4_mechanical_ci_sha": "162acea31833a6d40d3a5e8e79638db7e443ce3e",
   "b4_nightly_run_id": "42015310879",
   "internal_closure_status": "INTERNALLY_CLOSED_AUTOMATED_INTERNAL_AUDIT_ACCEPTED",
@@ -16,6 +16,9 @@
   "b6_acceptance_publication_sha": null,
   "accepted_baseline_sha": null,
   "formal_closure_publication_sha": null,
-  "ci_nightly_proof_run_ids": ["42015310879"],
-  "ci_nightly_proof_head_sha": "162acea31833a6d40d3a5e8e79638db7e443ce3e"
+  "ci_nightly_proof_run_ids": ["42593448899"],
+  "ci_nightly_proof_head_sha": "b5c2481d79f955fa5f483a9288aee8de4581f953",
+  "iiac_audit_round1_historical_annex": "docs/project/maintainers/qualification/iiac_evidence/ENT-AUDIT-X/historical/IIAC_ENT_AUDIT_ROUND1_CONDITIONAL_ANNEX.md",
+  "iiac_audit_round2_status": "INTERRUPTED_NO_VERDICT",
+  "r_fresh_qual_wave_session": ".tmp/session/ent-r-fresh/"
 }

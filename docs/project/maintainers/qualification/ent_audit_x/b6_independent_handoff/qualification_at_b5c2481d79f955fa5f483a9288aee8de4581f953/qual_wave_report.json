@@ -1,0 +1,61 @@
+{
+  "certifying": true,
+  "clean_tree": true,
+  "error": "",
+  "interruption_class": "",
+  "pinned_sha": "b5c2481d79f955fa5f483a9288aee8de4581f953",
+  "profile": "ent-r-fresh-recovery",
+  "qualification_sha": "b5c2481d79f955fa5f483a9288aee8de4581f953",
+  "stages": [
+    {
+      "detail": "T-01 ENT L1/L2/L3 pytest exit=0 (312 passed, 91 skipped enumerated)",
+      "duration_ms": 318820,
+      "exit_code": 0,
+      "name": "l1_l2_l3_pytest",
+      "skipped": false
+    },
+    {
+      "detail": "validate_post_implementation_master_plan exit=0",
+      "duration_ms": 0,
+      "exit_code": 0,
+      "name": "validate_master_plan",
+      "skipped": false
+    },
+    {
+      "detail": "check_manifest_annex_c_alignment exit=0",
+      "duration_ms": 0,
+      "exit_code": 0,
+      "name": "annex_c_alignment",
+      "skipped": false
+    },
+    {
+      "detail": "cli_full exit=0 ms=1685281 checks=85/0/85",
+      "duration_ms": 1685281,
+      "exit_code": 0,
+      "name": "l3_cli_full",
+      "skipped": false
+    },
+    {
+      "detail": "FULL 85/85 + evidence_manifest.v1.json",
+      "duration_ms": 0,
+      "exit_code": 0,
+      "name": "l3_validate",
+      "skipped": false
+    },
+    {
+      "detail": "FREEZE bootstrap-candidate exit=0 ms=1344063 checks=85/0/85",
+      "duration_ms": 1344063,
+      "exit_code": 0,
+      "name": "first_freeze_candidate",
+      "skipped": false
+    },
+    {
+      "detail": "nightly workflow_dispatch run 42593448899 success @ ent-r-fresh-tes",
+      "duration_ms": 0,
+      "exit_code": 0,
+      "name": "ci_nightly_full",
+      "skipped": false
+    }
+  ],
+  "status": "PASS"
+}
