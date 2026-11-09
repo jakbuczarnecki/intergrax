@@ -89,6 +89,10 @@ Historical (pre-HEAD — audit context only):
 uv run python scripts/enterprise_audit/mechanical_readiness_check.py
 ```
 
+## IIAC R-FRESH promotion pins (W3-02 dossier cross-check)
+
+`b5c2481d79f955fa5f483a9288aee8de4581f953` · `63ff80819da5a7324257ea598e342810c1838199` · `add6a6ce2015ebaa4bc38b7fadf3936f100a1522`
+
 ## Operator boundaries (F-07)
 
 - Baseline **promotion** requires operator OD-ENT-01 record (`promote-baseline` CLI).

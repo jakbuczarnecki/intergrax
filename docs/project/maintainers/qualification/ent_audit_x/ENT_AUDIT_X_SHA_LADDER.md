@@ -37,7 +37,7 @@
 | INTERNAL_CERTIFICATION_PUBLICATION_SHA | `5c08e5e6c44d21998c76bd27ad1efab172440f45` | OD-IC-01 consolidated record + roadmap §5 |
 | POST_IC_CONSOLIDATION_PUBLICATION_SHA | `81829712acc19ebeadb4773467b9c5642ca975e3` | Pre-admission + IC consolidation handoff — [`ARCH_FREEZE_PRE_ADMISSION_READINESS_REPORT.md`](../ARCH_FREEZE_PRE_ADMISSION_READINESS_REPORT.md) |
 | FORMAL_CLOSURE_PUBLICATION_SHA | *unset* | OD-ENT-08 + roadmap §5 |
-| ACCEPTED_BASELINE_SHA | *unset* | Operator OD-ENT-01 after first green FREEZE |
+| ACCEPTED_BASELINE_SHA | `480550d80b2515fc8cbd2a0ba6f79d1ee1c44541` | OD-ENT-01 delegated promote @ FREEZE bootstrap-candidate HEAD (W3-02) — T-IGX-024-A |
 | EVIDENCE_PUBLICATION_SHA (historical — superseded by the TES 62d1c615 row below) | `300859537f12a1de7bf3d75fd685bc3a5c727183` | W8 B6 corrective B5 `qualification_at_89c76eb7…` (strict `verify_b5_publication_tree`) |
 | TEST_EXECUTION_SHA (historical — superseded by the TES 62d1c615 row below) | `89c76eb7b53a0a3ce6f75ab395cf4a2802638a91` | W8 B6 corrective certifying qual @ strict B5 verifier wave (supersedes R6/R7 canonical rows below) |
 | EVIDENCE_PUBLICATION_SHA (pending row placeholder) | `d18f01f2291328a073dcbdfbe05489faf98013b7` | **Superseded** — see W8 row above |
