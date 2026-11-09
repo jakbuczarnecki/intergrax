@@ -19,7 +19,7 @@
 | 7 | Gates not weakened | P4 PASS / C4 PASS_SCOPED unchanged |
 | 8 | IIAC verifier | **RED** until P5-SIGN-ACT (expected) |
 | 9 | Remote `development` | **Not** at merge SHA until Operator merge/push of `hist-cert/p5-product-merge` |
-| 10 | Independent certifier | **BLOCKED** — needs P8-AUD-FINAL PASS first |
+| 10 | Independent certifier | **DONE** — `hist-p8-cert` [`audits/cert-p8/CERT_DECISION.md`](../cert-p8/CERT_DECISION.md) |
 | 11 | ENT consent | Still absent |
 | 12 | RPL / Population E | Unresolved by design |
 | 13 | Session IDs | Disclosed as `process_enforced` where applicable |

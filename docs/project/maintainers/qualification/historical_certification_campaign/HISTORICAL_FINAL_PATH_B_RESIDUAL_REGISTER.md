@@ -15,7 +15,7 @@
 
 ## Architecture-scoped deferrals (W1-R1/R2)
 
-SEC/REL live halves remain **OPEN** with architecture evidence allowed only where prior records already scoped; no waiver and no checklist promotion in P7-PUB (blocked by P8 certifier).
+SEC/REL live halves remain **OPEN** with architecture evidence allowed only where prior records already scoped; P7-PUB completed 2026-11-09 with **no** Path B checklist Status promotion (certifier `hist-p8-cert`).
 
 ## Authority
 

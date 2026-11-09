@@ -86,6 +86,8 @@ global tenant
 
 **Historical stage closure:** historical CLOSED stages are **not** automatically tenant-certified. Historical evidence may contribute tenant proof only when **revalidated on current HEAD** during **`TENANT-X`** or an explicitly designated tenant-certification stage.
 
+**HIST campaign terminal (2026-11-09):** The Integrax historical certification closure campaign (HIST-01..04) reached verdict **`HISTORICAL_CAMPAIGN_PARTIAL_EXACT_BLOCKERS`** — not global `ARCH-FREEZE` or live PROD-Q closure. Authoritative records: [`historical_certification_campaign/HISTORICAL_CAMPAIGN_P8_VERDICT.md`](../qualification/historical_certification_campaign/HISTORICAL_CAMPAIGN_P8_VERDICT.md), [`HISTORICAL_CAMPAIGN_TERMINAL_CLOSURE_REPORT.md`](../qualification/historical_certification_campaign/HISTORICAL_CAMPAIGN_TERMINAL_CLOSURE_REPORT.md). RPL / Population E / ENT consent blockers remain external to that campaign.
+
 ### 1.1 Scenario-discovered reusable capability ownership
 
 Formal handoff from Scenario #24 / UCA discovery into this platform roadmap (docs program sync — implementation ownership below).

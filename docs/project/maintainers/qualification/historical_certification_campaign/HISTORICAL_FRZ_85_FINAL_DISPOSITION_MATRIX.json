@@ -551,6 +551,7 @@
    "next_required_stage": "Operator decision on Tier-0->Tier-3 exception in intergrax/cli/external_work.py (accept as limitation with decision id, or relocate to Tier-3) + dynamic-edge coverage; then replay and audit | owner: Operator (exception) / ARCH-FREEZE B7",
    "p7_campaign_phase": "P7-RECALC",
    "p7_disposition_note": "C4 PASS_SCOPED: Tier-0 CLI upward edges gated; HIST-F-BND-03B still OPEN.",
+   "p8_certifier_checklist_pub": "2026-11-09 hist-p8-cert evidence annotation only",
    "campaign_evidence_sha": "427646f41",
    "p7_evidence_sha": "427646f41",
    "p7_qualification_label": null,
@@ -558,7 +559,7 @@
    "p7_next_action": "C4 PASS_SCOPED: Tier-0 CLI upward edges gated; HIST-F-BND-03B still OPEN.",
    "p7_path_b": false,
    "p7_ent_dependency": false,
-   "p7_scope_limit": "No checklist edit until P8 certifier",
+   "p7_scope_limit": "P7-PUB done (cert-p8); Status column OPEN",
    "p7_residual_ids": [
     "HIST-F-BND-03B"
    ]
@@ -595,7 +596,8 @@
    "p7_next_action": "C1 PASS @ P4; EBH-4 R1 contract home remediated (T-IGX-030-B).",
    "p7_path_b": false,
    "p7_ent_dependency": false,
-   "p7_scope_limit": "No checklist edit until P8 certifier",
+   "p8_certifier_checklist_pub": "2026-11-09 hist-p8-cert evidence annotation only",
+   "p7_scope_limit": "P7-PUB done (cert-p8); Status column OPEN",
    "p7_residual_ids": []
   },
   {

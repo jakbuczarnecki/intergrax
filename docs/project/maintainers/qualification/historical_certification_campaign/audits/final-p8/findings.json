@@ -24,7 +24,7 @@
     "07_gates_not_weakened": "PASS",
     "08_iiac_verifier": "PASS",
     "09_remote_development": "PASS",
-    "10_certifier_gate": "OPEN",
+    "10_certifier_gate": "PASS",
     "11_ent_consent_absent": "PASS",
     "12_rpl_pop_e_unresolved": "PASS",
     "13_process_enforced_disclosed": "PASS"
@@ -61,7 +61,7 @@
     "RPL-01..04",
     "REG_Population_E"
   ],
-  "certifier_blockers": [
-    "P8-CERT_session_required"
-  ]
+  "certifier_blockers": [],
+  "certifier_decision": "audits/cert-p8/CERT_DECISION.md",
+  "certifier_session": "hist-p8-cert"
 }

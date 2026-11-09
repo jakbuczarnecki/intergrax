@@ -11,10 +11,13 @@
 | P5 activation effective SHA | `8045915a353bb04ea5a290f9ef8b6def33dee96d` (`IIAC_POLICY_ACTIVATION_RECORD`, IN_FORCE) |
 | P6 replay SHA (authoritative) | `bf03550aa95ce239a63542916331c6a648617e33` — label **`POST_ACTIVATION`** |
 | P6 diagnostic (superseded) | `427646f41` — `PRE_ACTIVATION_DIAGNOSTIC` lineage only |
-| PUBLICATION_SHA | `b5c2481d79f955fa5f483a9288aee8de4581f953` (`merge: hist-cert/final-docs`) |
-| Remote `origin/development` | `b5c2481d79f955fa5f483a9288aee8de4581f953` (verified) |
+| PUBLICATION_SHA | `b5c2481d79f955fa5f483a9288aee8de4581f953` (`merge: hist-cert/final-docs`); certifier closeout updates on `hist-cert/p8-certifier-closeout` |
+| Remote `origin/development` | Verified at certifier start `878e2e384e47cafffe39162f59e3971d83141783` |
 | Operator P2 consent | [`delegations/DELEG-HIST-IIAC-P2-SUPERSESSION-2026-11-09.md`](delegations/DELEG-HIST-IIAC-P2-SUPERSESSION-2026-11-09.md) |
+| Operator P8 cert commission | [`delegations/DELEG-HIST-P8-CERT-2026-11-09.md`](delegations/DELEG-HIST-P8-CERT-2026-11-09.md) |
 | P8 final audit | [`audits/final-p8/AUDIT_REPORT.md`](audits/final-p8/AUDIT_REPORT.md) — **PASS** |
+| P8 certifier | [`audits/cert-p8/CERT_DECISION.md`](audits/cert-p8/CERT_DECISION.md) — **ACCEPT** `HISTORICAL_CAMPAIGN_PARTIAL_EXACT_BLOCKERS` |
+| P8-VERDICT | [`HISTORICAL_CAMPAIGN_P8_VERDICT.md`](HISTORICAL_CAMPAIGN_P8_VERDICT.md) |
 
 ## Phase status
 
@@ -27,10 +30,11 @@
 | P5 | P5-VERIFY | **DONE** | `verify_iiac_policy_activation --require-in-force` exit **0** |
 | P6 | P6-REPLAY | **DONE** | POST_ACTIVATION 595 passed, exit 0 — [`HISTORICAL_FINAL_QUALIFICATION_EVIDENCE.md`](HISTORICAL_FINAL_QUALIFICATION_EVIDENCE.md) |
 | P7 | P7-RECALC | **DONE (draft)** | [`HISTORICAL_FRZ_85_FINAL_DISPOSITION_MATRIX.json`](HISTORICAL_FRZ_85_FINAL_DISPOSITION_MATRIX.json) |
-| P7 | P7-PUB checklist | **BLOCKED** | Awaits P8 certifier |
+| P7 | P7-PUB checklist | **DONE** | Scoped FRZ-BND-03 / FRZ-BND-04 evidence annotations only (certifier `hist-p8-cert`) |
 | P8 | P8-AUD-FINAL | **PASS** | [`audits/final-p8/AUDIT_REPORT.md`](audits/final-p8/AUDIT_REPORT.md) |
-| P8 | P8-CERT | **BLOCKED** | Needs fresh certifier after audit |
-| P8 | P8-PUB merge | **DONE** | `b5c2481d7` on `origin/development` |
+| P8 | P8-CERT | **DONE** | [`audits/cert-p8/CERT_DECISION.md`](audits/cert-p8/CERT_DECISION.md) |
+| P8 | P8-PUB merge | **DONE** | Docs package `b5c2481d7`; closeout branch merges certifier records |
+| P8 | P8-VERDICT | **DONE** | [`HISTORICAL_CAMPAIGN_P8_VERDICT.md`](HISTORICAL_CAMPAIGN_P8_VERDICT.md) |
 
 ## Product batch verdicts (P4, unchanged)
 
@@ -46,7 +50,6 @@
 | ID | Owner | Next action |
 |---|---|---|
 | ENT-REACTIVATION-CONSENT | ENT owner | Counter-sign agreement or accept shared sequencing |
-| P8-CERT | Certifier | Accept terminal label after P8-AUD-FINAL |
 | RPL-01..04 | ARCH-FREEZE | External acceptance |
 | REG Pop E | ENT-AUDIT-X | Population E rollup |
 | HIST-F-BND-03B | Future ticket | Manifest registry edge |

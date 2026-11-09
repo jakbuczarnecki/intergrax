@@ -1,5 +1,7 @@
 # HISTORICAL CERTIFICATION CAMPAIGN DASHBOARD
 
+> **Superseded for closure status** — see [`HISTORICAL_CAMPAIGN_TERMINAL_CLOSURE_REPORT.md`](HISTORICAL_CAMPAIGN_TERMINAL_CLOSURE_REPORT.md) and [`HISTORICAL_CAMPAIGN_P8_VERDICT.md`](HISTORICAL_CAMPAIGN_P8_VERDICT.md). Counters below are PR-408 era snapshots unless recomputed.
+
 _generated 2026-11-08T19:15:00+00:00 from records; start SHA `ba07ebaa3`_
 
 ## Counters (derived)
