@@ -1,0 +1,31 @@
+{
+  "stage_id": "IIAC-GOV-1",
+  "certification_profile": "iiac-v1",
+  "policy_version": "IIAC-2026-11-05.1",
+  "implementation_session_id": "HIST-P5-MERGE-ORCH-2026-11-09",
+  "implementation_agent_id": "orchestrator",
+  "auditor_session_id": "IIAC-HIST-P5-REAUDIT-2026-11-09",
+  "auditor_agent_id": "independent-quality-auditor",
+  "certifier_session_id": "IIAC-GOV-CERT-2026-11-05",
+  "certifier_agent_id": "certification-governance-agent",
+  "audited_implementation_sha": "3c91694c645ff0d97d104adf0c5a564b9a4c5b3c",
+  "test_execution_sha": "0946b11576d2ee617321fb099ed794f8b21bf5ba",
+  "evidence_publication_sha": "0946b11576d2ee617321fb099ed794f8b21bf5ba",
+  "audit_execution_sha": "0946b11576d2ee617321fb099ed794f8b21bf5ba",
+  "audit_report_digest": "c405c65faf53243a0511b0b9584a9f3abda4db08c09ee9b9266c86fe9f6b7a4e",
+  "audit_scope_manifest_digest": "a5739e924548cdd96a51ae83d4806793f0890cada4e8653dfd82cb82b3d18cb8",
+  "test_matrix_digest": "c6fff2e0a32fb64302c5c8d36f1641d59af4b92e7621921945aa20529903b562",
+  "findings_digest": "df3648f926dad3199ff40c7c83c7fae4ed7a26bd1c67701a355bc7130073f831",
+  "verdict": "PASS",
+  "limitations": [
+    "HIST P5 shared re-activation only — supplements Session B ACT-01 dossier",
+    "Does not close EVOL-X, ENT-AUDIT-X, ARCH-FREEZE, or historical campaign",
+    "T-IGX-021-B/C remains a separate stage",
+    "ENT counter-signature on shared re-activation absent",
+    "assurance_level process_enforced"
+  ],
+  "certification_publication_sha": "0946b11576d2ee617321fb099ed794f8b21bf5ba",
+  "assurance_level": "process_enforced",
+  "handoff_record_path": "docs/project/maintainers/qualification/iiac_evidence/HIST-P5-2026-11-09/IIAC_SESSION_HANDOFF_RECORD_HIST_P5_REACTIVATION.md",
+  "activation_audit_report_path": "docs/project/maintainers/qualification/iiac_evidence/IIAC-GOV-1/certification/IIAC_ACT01_INDEPENDENT_REAUDIT_DOSSIER.md"
+}
