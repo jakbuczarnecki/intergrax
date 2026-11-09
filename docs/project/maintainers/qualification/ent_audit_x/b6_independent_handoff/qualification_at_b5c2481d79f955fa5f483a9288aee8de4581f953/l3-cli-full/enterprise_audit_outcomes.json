@@ -5,9 +5,9 @@
     "skipped": false,
     "skip_reason": "",
     "exit_code": 0,
-    "duration_ms": 8025,
+    "duration_ms": 4273,
     "findings": [],
-    "stdout_tail": ".                                                                        [100%]\n1 passed in 3.11s",
+    "stdout_tail": ".                                                                        [100%]\n1 passed in 1.59s",
     "stderr_tail": ""
   },
   {
@@ -16,9 +16,9 @@
     "skipped": false,
     "skip_reason": "",
     "exit_code": 0,
-    "duration_ms": 4848,
+    "duration_ms": 3156,
     "findings": [],
-    "stdout_tail": ".                                                                        [100%]\n1 passed in 0.60s",
+    "stdout_tail": ".                                                                        [100%]\n1 passed in 0.42s",
     "stderr_tail": ""
   },
   {
@@ -27,7 +27,7 @@
     "skipped": false,
     "skip_reason": "",
     "exit_code": 0,
-    "duration_ms": 189,
+    "duration_ms": 139,
     "findings": [],
     "stdout_tail": "agents tier-3 import audit: OK",
     "stderr_tail": ""
@@ -38,9 +38,9 @@
     "skipped": false,
     "skip_reason": "",
     "exit_code": 0,
-    "duration_ms": 15256,
+    "duration_ms": 11414,
     "findings": [],
-    "stdout_tail": ".                                                                        [100%]\n1 passed in 11.60s",
+    "stdout_tail": ".                                                                        [100%]\n1 passed in 8.74s",
     "stderr_tail": ""
   },
   {
@@ -49,9 +49,9 @@
     "skipped": false,
     "skip_reason": "",
     "exit_code": 0,
-    "duration_ms": 72685,
+    "duration_ms": 52420,
     "findings": [],
-    "stdout_tail": ".                                                                        [100%]\n1 passed in 69.23s (0:01:09)",
+    "stdout_tail": ".                                                                        [100%]\n1 passed in 49.76s",
     "stderr_tail": ""
   },
   {
@@ -60,9 +60,9 @@
     "skipped": false,
     "skip_reason": "",
     "exit_code": 0,
-    "duration_ms": 15213,
+    "duration_ms": 11023,
     "findings": [],
-    "stdout_tail": ".                                                                        [100%]\n1 passed in 11.44s",
+    "stdout_tail": ".                                                                        [100%]\n1 passed in 8.50s",
     "stderr_tail": ""
   },
   {
@@ -71,9 +71,9 @@
     "skipped": false,
     "skip_reason": "",
     "exit_code": 0,
-    "duration_ms": 8741,
+    "duration_ms": 4253,
     "findings": [],
-    "stdout_tail": ".                                                                        [100%]\n1 passed in 2.80s",
+    "stdout_tail": ".                                                                        [100%]\n1 passed in 1.45s",
     "stderr_tail": ""
   },
   {
@@ -82,9 +82,9 @@
     "skipped": false,
     "skip_reason": "",
     "exit_code": 0,
-    "duration_ms": 6983,
+    "duration_ms": 4301,
     "findings": [],
-    "stdout_tail": ".                                                                        [100%]\n1 passed in 2.47s",
+    "stdout_tail": ".                                                                        [100%]\n1 passed in 1.57s",
     "stderr_tail": ""
   },
   {
@@ -93,9 +93,9 @@
     "skipped": false,
     "skip_reason": "",
     "exit_code": 0,
-    "duration_ms": 7236,
+    "duration_ms": 4380,
     "findings": [],
-    "stdout_tail": ".                                                                        [100%]\n1 passed in 2.31s",
+    "stdout_tail": ".                                                                        [100%]\n1 passed in 1.49s",
     "stderr_tail": ""
   },
   {
@@ -104,9 +104,9 @@
     "skipped": false,
     "skip_reason": "",
     "exit_code": 0,
-    "duration_ms": 3805,
+    "duration_ms": 2719,
     "findings": [],
-    "stdout_tail": ".                                                                        [100%]\n1 passed in 0.32s",
+    "stdout_tail": ".                                                                        [100%]\n1 passed in 0.18s",
     "stderr_tail": ""
   },
   {
@@ -115,7 +115,7 @@
     "skipped": false,
     "skip_reason": "",
     "exit_code": 0,
-    "duration_ms": 209,
+    "duration_ms": 174,
     "findings": [],
     "stdout_tail": "",
     "stderr_tail": ""
@@ -126,9 +126,9 @@
     "skipped": false,
     "skip_reason": "",
     "exit_code": 0,
-    "duration_ms": 3300,
+    "duration_ms": 2614,
     "findings": [],
-    "stdout_tail": ".                                                                        [100%]\n1 passed in 0.21s",
+    "stdout_tail": ".                                                                        [100%]\n1 passed in 0.18s",
     "stderr_tail": ""
   },
   {
@@ -137,9 +137,9 @@
     "skipped": false,
     "skip_reason": "",
     "exit_code": 0,
-    "duration_ms": 284735,
+    "duration_ms": 20361,
     "findings": [],
-    "stdout_tail": "............                                                             [100%]\n12 passed in 280.99s (0:04:40)",
+    "stdout_tail": "............                                                             [100%]\n12 passed in 17.55s",
     "stderr_tail": ""
   },
   {
@@ -148,9 +148,9 @@
     "skipped": false,
     "skip_reason": "",
     "exit_code": 0,
-    "duration_ms": 54737,
+    "duration_ms": 20143,
     "findings": [],
-    "stdout_tail": "............                                                             [100%]\n12 passed in 51.13s",
+    "stdout_tail": "............                                                             [100%]\n12 passed in 17.35s",
     "stderr_tail": ""
   },
   {
@@ -159,9 +159,9 @@
     "skipped": false,
     "skip_reason": "",
     "exit_code": 0,
-    "duration_ms": 52370,
+    "duration_ms": 19863,
     "findings": [],
-    "stdout_tail": "............                                                             [100%]\n12 passed in 49.11s",
+    "stdout_tail": "............                                                             [100%]\n12 passed in 16.59s",
     "stderr_tail": ""
   },
   {
@@ -170,9 +170,9 @@
     "skipped": false,
     "skip_reason": "",
     "exit_code": 0,
-    "duration_ms": 110404,
+    "duration_ms": 66172,
     "findings": [],
-    "stdout_tail": ".............                                                            [100%]\n13 passed in 105.06s (0:01:45)",
+    "stdout_tail": ".............                                                            [100%]\n13 passed in 62.57s (0:01:02)",
     "stderr_tail": ""
   },
   {
@@ -181,9 +181,9 @@
     "skipped": false,
     "skip_reason": "",
     "exit_code": 0,
-    "duration_ms": 9276,
+    "duration_ms": 6171,
     "findings": [],
-    "stdout_tail": "..........                                                               [100%]\n10 passed in 4.26s",
+    "stdout_tail": "..........                                                               [100%]\n10 passed in 2.76s",
     "stderr_tail": ""
   },
   {
@@ -192,9 +192,9 @@
     "skipped": false,
     "skip_reason": "",
     "exit_code": 0,
-    "duration_ms": 14667,
+    "duration_ms": 9031,
     "findings": [],
-    "stdout_tail": "...............                                                          [100%]\n15 passed in 10.39s",
+    "stdout_tail": "...............                                                          [100%]\n15 passed in 6.43s",
     "stderr_tail": ""
   },
   {
@@ -203,9 +203,9 @@
     "skipped": false,
     "skip_reason": "",
     "exit_code": 0,
-    "duration_ms": 3577,
+    "duration_ms": 2884,
     "findings": [],
-    "stdout_tail": "...                                                                      [100%]\n3 passed in 0.37s",
+    "stdout_tail": "...                                                                      [100%]\n3 passed in 0.27s",
     "stderr_tail": ""
   },
   {
@@ -214,9 +214,9 @@
     "skipped": false,
     "skip_reason": "",
     "exit_code": 0,
-    "duration_ms": 5354,
+    "duration_ms": 2779,
     "findings": [],
-    "stdout_tail": "...                                                                      [100%]\n3 passed in 0.40s",
+    "stdout_tail": "...                                                                      [100%]\n3 passed in 0.25s",
     "stderr_tail": ""
   },
   {
@@ -225,9 +225,9 @@
     "skipped": false,
     "skip_reason": "",
     "exit_code": 0,
-    "duration_ms": 4488,
+    "duration_ms": 3178,
     "findings": [],
-    "stdout_tail": "...                                                                      [100%]\n3 passed in 0.32s",
+    "stdout_tail": "...                                                                      [100%]\n3 passed in 0.25s",
     "stderr_tail": ""
   },
   {
@@ -236,9 +236,9 @@
     "skipped": false,
     "skip_reason": "",
     "exit_code": 0,
-    "duration_ms": 4259,
+    "duration_ms": 2808,
     "findings": [],
-    "stdout_tail": ".                                                                        [100%]\n1 passed in 0.31s",
+    "stdout_tail": ".                                                                        [100%]\n1 passed in 0.17s",
     "stderr_tail": ""
   },
   {
@@ -247,9 +247,9 @@
     "skipped": false,
     "skip_reason": "",
     "exit_code": 0,
-    "duration_ms": 4323,
+    "duration_ms": 2750,
     "findings": [],
-    "stdout_tail": ".                                                                        [100%]\n1 passed in 0.31s",
+    "stdout_tail": ".                                                                        [100%]\n1 passed in 0.18s",
     "stderr_tail": ""
   },
   {
@@ -258,9 +258,9 @@
     "skipped": false,
     "skip_reason": "",
     "exit_code": 0,
-    "duration_ms": 3678,
+    "duration_ms": 2864,
     "findings": [],
-    "stdout_tail": ".                                                                        [100%]\n1 passed in 0.25s",
+    "stdout_tail": ".                                                                        [100%]\n1 passed in 0.33s",
     "stderr_tail": ""
   },
   {
@@ -269,9 +269,9 @@
     "skipped": false,
     "skip_reason": "",
     "exit_code": 0,
-    "duration_ms": 10454,
+    "duration_ms": 46946,
     "findings": [],
-    "stdout_tail": "...............                                                          [100%]\n15 passed in 7.42s",
+    "stdout_tail": "...............                                                          [100%]\n15 passed in 43.91s",
     "stderr_tail": ""
   },
   {
@@ -280,9 +280,9 @@
     "skipped": false,
     "skip_reason": "",
     "exit_code": 0,
-    "duration_ms": 4674,
+    "duration_ms": 2824,
     "findings": [],
-    "stdout_tail": ".                                                                        [100%]\n1 passed in 0.30s",
+    "stdout_tail": ".                                                                        [100%]\n1 passed in 0.21s",
     "stderr_tail": ""
   },
   {
@@ -291,9 +291,9 @@
     "skipped": false,
     "skip_reason": "",
     "exit_code": 0,
-    "duration_ms": 11400,
+    "duration_ms": 7194,
     "findings": [],
-    "stdout_tail": ".                                                                        [100%]\n1 passed in 7.41s",
+    "stdout_tail": ".                                                                        [100%]\n1 passed in 4.67s",
     "stderr_tail": ""
   },
   {
@@ -302,9 +302,9 @@
     "skipped": false,
     "skip_reason": "",
     "exit_code": 0,
-    "duration_ms": 4663,
+    "duration_ms": 2820,
     "findings": [],
-    "stdout_tail": ".                                                                        [100%]\n1 passed in 0.51s",
+    "stdout_tail": ".                                                                        [100%]\n1 passed in 0.27s",
     "stderr_tail": ""
   },
   {
@@ -313,9 +313,9 @@
     "skipped": false,
     "skip_reason": "",
     "exit_code": 0,
-    "duration_ms": 4158,
+    "duration_ms": 2976,
     "findings": [],
-    "stdout_tail": ".                                                                        [100%]\n1 passed in 0.39s",
+    "stdout_tail": ".                                                                        [100%]\n1 passed in 0.26s",
     "stderr_tail": ""
   },
   {
@@ -324,7 +324,7 @@
     "skipped": false,
     "skip_reason": "",
     "exit_code": 0,
-    "duration_ms": 35769,
+    "duration_ms": 31079,
     "findings": [],
     "stdout_tail": ".                                                                        [100%]\n1 passed in 0.17s",
     "stderr_tail": ""
@@ -335,9 +335,9 @@
     "skipped": false,
     "skip_reason": "",
     "exit_code": 0,
-    "duration_ms": 116981,
+    "duration_ms": 16424,
     "findings": [],
-    "stdout_tail": ".............                                                            [100%]\n13 passed in 112.94s (0:01:52)",
+    "stdout_tail": ".............                                                            [100%]\n13 passed in 13.32s",
     "stderr_tail": ""
   },
   {
@@ -346,9 +346,9 @@
     "skipped": false,
     "skip_reason": "",
     "exit_code": 0,
-    "duration_ms": 22923,
+    "duration_ms": 17124,
     "findings": [],
-    "stdout_tail": ".............                                                            [100%]\n13 passed in 17.99s",
+    "stdout_tail": ".............                                                            [100%]\n13 passed in 14.31s",
     "stderr_tail": ""
   },
   {
@@ -357,9 +357,9 @@
     "skipped": false,
     "skip_reason": "",
     "exit_code": 0,
-    "duration_ms": 27190,
+    "duration_ms": 17443,
     "findings": [],
-    "stdout_tail": ".............                                                            [100%]\n13 passed in 22.88s",
+    "stdout_tail": ".............                                                            [100%]\n13 passed in 14.66s",
     "stderr_tail": ""
   },
   {
@@ -368,9 +368,9 @@
     "skipped": false,
     "skip_reason": "",
     "exit_code": 0,
-    "duration_ms": 6068,
+    "duration_ms": 5147,
     "findings": [],
-    "stdout_tail": "..............................                                           [100%]\n30 passed in 2.97s",
+    "stdout_tail": "..............................                                           [100%]\n30 passed in 2.14s",
     "stderr_tail": ""
   },
   {
@@ -379,9 +379,9 @@
     "skipped": false,
     "skip_reason": "",
     "exit_code": 0,
-    "duration_ms": 5278,
+    "duration_ms": 5535,
     "findings": [],
-    "stdout_tail": "..............................                                           [100%]\n30 passed in 2.26s",
+    "stdout_tail": "..............................                                           [100%]\n30 passed in 2.44s",
     "stderr_tail": ""
   },
   {
@@ -390,9 +390,9 @@
     "skipped": false,
     "skip_reason": "",
     "exit_code": 0,
-    "duration_ms": 5451,
+    "duration_ms": 5203,
     "findings": [],
-    "stdout_tail": "..............................                                           [100%]\n30 passed in 2.36s",
+    "stdout_tail": "..............................                                           [100%]\n30 passed in 2.27s",
     "stderr_tail": ""
   },
   {
@@ -401,7 +401,7 @@
     "skipped": false,
     "skip_reason": "",
     "exit_code": 0,
-    "duration_ms": 52650,
+    "duration_ms": 12790,
     "findings": [],
     "stdout_tail": "application production gates: OK",
     "stderr_tail": ""
@@ -412,7 +412,7 @@
     "skipped": false,
     "skip_reason": "",
     "exit_code": 0,
-    "duration_ms": 41273,
+    "duration_ms": 11542,
     "findings": [],
     "stdout_tail": "application production gates: OK",
     "stderr_tail": ""
@@ -423,9 +423,9 @@
     "skipped": false,
     "skip_reason": "",
     "exit_code": 0,
-    "duration_ms": 4827,
+    "duration_ms": 2654,
     "findings": [],
-    "stdout_tail": ".                                                                        [100%]\n1 passed in 0.32s",
+    "stdout_tail": ".                                                                        [100%]\n1 passed in 0.20s",
     "stderr_tail": ""
   },
   {
@@ -434,9 +434,9 @@
     "skipped": false,
     "skip_reason": "",
     "exit_code": 0,
-    "duration_ms": 3865,
+    "duration_ms": 2824,
     "findings": [],
-    "stdout_tail": ".                                                                        [100%]\n1 passed in 0.24s",
+    "stdout_tail": ".                                                                        [100%]\n1 passed in 0.20s",
     "stderr_tail": ""
   },
   {
@@ -445,9 +445,9 @@
     "skipped": false,
     "skip_reason": "",
     "exit_code": 0,
-    "duration_ms": 8392,
+    "duration_ms": 7394,
     "findings": [],
-    "stdout_tail": ".                                                                        [100%]\n1 passed in 4.38s",
+    "stdout_tail": ".                                                                        [100%]\n1 passed in 3.98s",
     "stderr_tail": ""
   },
   {
@@ -456,9 +456,9 @@
     "skipped": false,
     "skip_reason": "",
     "exit_code": 0,
-    "duration_ms": 10443,
+    "duration_ms": 7458,
     "findings": [],
-    "stdout_tail": ".                                                                        [100%]\n1 passed in 4.72s",
+    "stdout_tail": ".                                                                        [100%]\n1 passed in 3.93s",
     "stderr_tail": ""
   },
   {
@@ -467,9 +467,9 @@
     "skipped": false,
     "skip_reason": "",
     "exit_code": 0,
-    "duration_ms": 3433,
+    "duration_ms": 2818,
     "findings": [],
-    "stdout_tail": ".                                                                        [100%]\n1 passed in 0.23s",
+    "stdout_tail": ".                                                                        [100%]\n1 passed in 0.30s",
     "stderr_tail": ""
   },
   {
@@ -478,9 +478,9 @@
     "skipped": false,
     "skip_reason": "",
     "exit_code": 0,
-    "duration_ms": 122473,
+    "duration_ms": 32077,
     "findings": [],
-    "stdout_tail": "...............                                                          [100%]\n15 passed in 118.94s (0:01:58)",
+    "stdout_tail": "...............                                                          [100%]\n15 passed in 29.68s",
     "stderr_tail": ""
   },
   {
@@ -489,7 +489,7 @@
     "skipped": false,
     "skip_reason": "",
     "exit_code": 0,
-    "duration_ms": 39386,
+    "duration_ms": 9470,
     "findings": [],
     "stdout_tail": "application production gates: OK",
     "stderr_tail": ""
@@ -500,9 +500,9 @@
     "skipped": false,
     "skip_reason": "",
     "exit_code": 0,
-    "duration_ms": 5404,
+    "duration_ms": 4052,
     "findings": [],
-    "stdout_tail": ".                                                                        [100%]\n1 passed in 1.54s",
+    "stdout_tail": ".                                                                        [100%]\n1 passed in 0.99s",
     "stderr_tail": ""
   },
   {
@@ -511,9 +511,9 @@
     "skipped": false,
     "skip_reason": "",
     "exit_code": 0,
-    "duration_ms": 3701,
+    "duration_ms": 2850,
     "findings": [],
-    "stdout_tail": ".                                                                        [100%]\n1 passed in 0.25s",
+    "stdout_tail": ".                                                                        [100%]\n1 passed in 0.20s",
     "stderr_tail": ""
   },
   {
@@ -522,9 +522,9 @@
     "skipped": false,
     "skip_reason": "",
     "exit_code": 0,
-    "duration_ms": 4726,
+    "duration_ms": 2868,
     "findings": [],
-    "stdout_tail": ".                                                                        [100%]\n1 passed in 0.55s",
+    "stdout_tail": ".                                                                        [100%]\n1 passed in 0.20s",
     "stderr_tail": ""
   },
   {
@@ -533,7 +533,7 @@
     "skipped": false,
     "skip_reason": "",
     "exit_code": 0,
-    "duration_ms": 3202,
+    "duration_ms": 2681,
     "findings": [],
     "stdout_tail": "OK: immutable security audit trail (2 regions)",
     "stderr_tail": ""
@@ -544,7 +544,7 @@
     "skipped": false,
     "skip_reason": "",
     "exit_code": 0,
-    "duration_ms": 3039,
+    "duration_ms": 2565,
     "findings": [],
     "stdout_tail": "OK: immutable security audit trail (2 regions)",
     "stderr_tail": ""
@@ -555,9 +555,9 @@
     "skipped": false,
     "skip_reason": "",
     "exit_code": 0,
-    "duration_ms": 5263,
+    "duration_ms": 3982,
     "findings": [],
-    "stdout_tail": ".                                                                        [100%]\n1 passed in 1.17s",
+    "stdout_tail": ".                                                                        [100%]\n1 passed in 1.11s",
     "stderr_tail": ""
   },
   {
@@ -566,9 +566,9 @@
     "skipped": false,
     "skip_reason": "",
     "exit_code": 0,
-    "duration_ms": 3327,
+    "duration_ms": 2895,
     "findings": [],
-    "stdout_tail": ".                                                                        [100%]\n1 passed in 0.22s",
+    "stdout_tail": ".                                                                        [100%]\n1 passed in 0.19s",
     "stderr_tail": ""
   },
   {
@@ -577,9 +577,9 @@
     "skipped": false,
     "skip_reason": "",
     "exit_code": 0,
-    "duration_ms": 3379,
+    "duration_ms": 2896,
     "findings": [],
-    "stdout_tail": ".                                                                        [100%]\n1 passed in 0.22s",
+    "stdout_tail": ".                                                                        [100%]\n1 passed in 0.21s",
     "stderr_tail": ""
   },
   {
@@ -588,9 +588,9 @@
     "skipped": false,
     "skip_reason": "",
     "exit_code": 0,
-    "duration_ms": 9316,
+    "duration_ms": 7121,
     "findings": [],
-    "stdout_tail": "..                                                                       [100%]\n2 passed in 4.98s",
+    "stdout_tail": "..                                                                       [100%]\n2 passed in 3.65s",
     "stderr_tail": ""
   },
   {
@@ -599,9 +599,9 @@
     "skipped": false,
     "skip_reason": "",
     "exit_code": 0,
-    "duration_ms": 36804,
+    "duration_ms": 24459,
     "findings": [],
-    "stdout_tail": ".                                                                        [100%]\n1 passed in 33.10s",
+    "stdout_tail": ".                                                                        [100%]\n1 passed in 21.58s",
     "stderr_tail": ""
   },
   {
@@ -610,9 +610,9 @@
     "skipped": false,
     "skip_reason": "",
     "exit_code": 0,
-    "duration_ms": 21288,
+    "duration_ms": 12831,
     "findings": [],
-    "stdout_tail": ".                                                                        [100%]\n1 passed in 17.52s",
+    "stdout_tail": ".                                                                        [100%]\n1 passed in 10.30s",
     "stderr_tail": ""
   },
   {
@@ -621,9 +621,9 @@
     "skipped": false,
     "skip_reason": "",
     "exit_code": 0,
-    "duration_ms": 4122,
+    "duration_ms": 2671,
     "findings": [],
-    "stdout_tail": ".                                                                        [100%]\n1 passed in 0.53s",
+    "stdout_tail": ".                                                                        [100%]\n1 passed in 0.19s",
     "stderr_tail": ""
   },
   {
@@ -632,9 +632,9 @@
     "skipped": false,
     "skip_reason": "",
     "exit_code": 0,
-    "duration_ms": 8885,
+    "duration_ms": 6114,
     "findings": [],
-    "stdout_tail": ".................                                                        [100%]\n17 passed in 4.51s",
+    "stdout_tail": ".................                                                        [100%]\n17 passed in 3.31s",
     "stderr_tail": ""
   },
   {
@@ -643,9 +643,9 @@
     "skipped": false,
     "skip_reason": "",
     "exit_code": 0,
-    "duration_ms": 6897,
+    "duration_ms": 4031,
     "findings": [],
-    "stdout_tail": ".                                                                        [100%]\n1 passed in 2.66s",
+    "stdout_tail": ".                                                                        [100%]\n1 passed in 1.39s",
     "stderr_tail": ""
   },
   {
@@ -654,9 +654,9 @@
     "skipped": false,
     "skip_reason": "",
     "exit_code": 0,
-    "duration_ms": 6042,
+    "duration_ms": 4327,
     "findings": [],
-    "stdout_tail": ".                                                                        [100%]\n1 passed in 2.01s",
+    "stdout_tail": ".                                                                        [100%]\n1 passed in 1.47s",
     "stderr_tail": ""
   },
   {
@@ -665,9 +665,9 @@
     "skipped": false,
     "skip_reason": "",
     "exit_code": 0,
-    "duration_ms": 3026,
+    "duration_ms": 2794,
     "findings": [],
-    "stdout_tail": ".                                                                        [100%]\n1 passed in 0.21s",
+    "stdout_tail": ".                                                                        [100%]\n1 passed in 0.20s",
     "stderr_tail": ""
   },
   {
@@ -676,9 +676,9 @@
     "skipped": false,
     "skip_reason": "",
     "exit_code": 0,
-    "duration_ms": 10579,
+    "duration_ms": 11339,
     "findings": [],
-    "stdout_tail": ".                                                                        [100%]\n1 passed in 7.66s",
+    "stdout_tail": ".                                                                        [100%]\n1 passed in 8.50s",
     "stderr_tail": ""
   },
   {
@@ -687,9 +687,9 @@
     "skipped": false,
     "skip_reason": "",
     "exit_code": 0,
-    "duration_ms": 30408,
+    "duration_ms": 21286,
     "findings": [],
-    "stdout_tail": "..................                                                       [100%]\n18 passed in 27.13s",
+    "stdout_tail": "..................                                                       [100%]\n18 passed in 18.11s",
     "stderr_tail": ""
   },
   {
@@ -698,9 +698,9 @@
     "skipped": false,
     "skip_reason": "",
     "exit_code": 0,
-    "duration_ms": 5317,
+    "duration_ms": 3149,
     "findings": [],
-    "stdout_tail": ".                                                                        [100%]\n1 passed in 0.92s",
+    "stdout_tail": ".                                                                        [100%]\n1 passed in 0.51s",
     "stderr_tail": ""
   },
   {
@@ -709,9 +709,9 @@
     "skipped": false,
     "skip_reason": "",
     "exit_code": 0,
-    "duration_ms": 5257,
+    "duration_ms": 3171,
     "findings": [],
-    "stdout_tail": ".                                                                        [100%]\n1 passed in 0.95s",
+    "stdout_tail": ".                                                                        [100%]\n1 passed in 0.62s",
     "stderr_tail": ""
   },
   {
@@ -720,9 +720,9 @@
     "skipped": false,
     "skip_reason": "",
     "exit_code": 0,
-    "duration_ms": 33465,
+    "duration_ms": 15157,
     "findings": [],
-    "stdout_tail": "..................                                                       [100%]\n18 passed in 28.47s",
+    "stdout_tail": "..................                                                       [100%]\n18 passed in 12.23s",
     "stderr_tail": ""
   },
   {
@@ -731,9 +731,9 @@
     "skipped": false,
     "skip_reason": "",
     "exit_code": 0,
-    "duration_ms": 4911,
+    "duration_ms": 2922,
     "findings": [],
-    "stdout_tail": ".                                                                        [100%]\n1 passed in 0.30s",
+    "stdout_tail": ".                                                                        [100%]\n1 passed in 0.19s",
     "stderr_tail": ""
   },
   {
@@ -742,9 +742,9 @@
     "skipped": false,
     "skip_reason": "",
     "exit_code": 0,
-    "duration_ms": 5614,
+    "duration_ms": 3154,
     "findings": [],
-    "stdout_tail": ".                                                                        [100%]\n1 passed in 0.95s",
+    "stdout_tail": ".                                                                        [100%]\n1 passed in 0.49s",
     "stderr_tail": ""
   },
   {
@@ -753,9 +753,9 @@
     "skipped": false,
     "skip_reason": "",
     "exit_code": 0,
-    "duration_ms": 4976,
+    "duration_ms": 3047,
     "findings": [],
-    "stdout_tail": ".                                                                        [100%]\n1 passed in 0.89s",
+    "stdout_tail": ".                                                                        [100%]\n1 passed in 0.51s",
     "stderr_tail": ""
   },
   {
@@ -764,9 +764,9 @@
     "skipped": false,
     "skip_reason": "",
     "exit_code": 0,
-    "duration_ms": 20416,
+    "duration_ms": 12118,
     "findings": [],
-    "stdout_tail": ".                                                                        [100%]\n1 passed in 15.21s",
+    "stdout_tail": ".                                                                        [100%]\n1 passed in 9.53s",
     "stderr_tail": ""
   },
   {
@@ -775,9 +775,9 @@
     "skipped": false,
     "skip_reason": "",
     "exit_code": 0,
-    "duration_ms": 22041,
+    "duration_ms": 12691,
     "findings": [],
-    "stdout_tail": ".                                                                        [100%]\n1 passed in 16.54s",
+    "stdout_tail": ".                                                                        [100%]\n1 passed in 10.00s",
     "stderr_tail": ""
   },
   {
@@ -786,9 +786,9 @@
     "skipped": false,
     "skip_reason": "",
     "exit_code": 0,
-    "duration_ms": 21280,
+    "duration_ms": 12460,
     "findings": [],
-    "stdout_tail": ".                                                                        [100%]\n1 passed in 16.98s",
+    "stdout_tail": ".                                                                        [100%]\n1 passed in 9.83s",
     "stderr_tail": ""
   },
   {
@@ -797,9 +797,9 @@
     "skipped": false,
     "skip_reason": "",
     "exit_code": 0,
-    "duration_ms": 4049,
+    "duration_ms": 2707,
     "findings": [],
-    "stdout_tail": ".                                                                        [100%]\n1 passed in 0.26s",
+    "stdout_tail": ".                                                                        [100%]\n1 passed in 0.31s",
     "stderr_tail": ""
   },
   {
@@ -808,9 +808,9 @@
     "skipped": false,
     "skip_reason": "",
     "exit_code": 0,
-    "duration_ms": 5166,
+    "duration_ms": 3211,
     "findings": [],
-    "stdout_tail": ".                                                                        [100%]\n1 passed in 0.75s",
+    "stdout_tail": ".                                                                        [100%]\n1 passed in 0.63s",
     "stderr_tail": ""
   },
   {
@@ -819,9 +819,9 @@
     "skipped": false,
     "skip_reason": "",
     "exit_code": 0,
-    "duration_ms": 5591,
+    "duration_ms": 3099,
     "findings": [],
-    "stdout_tail": ".                                                                        [100%]\n1 passed in 0.81s",
+    "stdout_tail": ".                                                                        [100%]\n1 passed in 0.62s",
     "stderr_tail": ""
   },
   {
@@ -830,9 +830,9 @@
     "skipped": false,
     "skip_reason": "",
     "exit_code": 0,
-    "duration_ms": 39724,
+    "duration_ms": 21209,
     "findings": [],
-    "stdout_tail": ".                                                                        [100%]\n1 passed in 0.66s",
+    "stdout_tail": ".                                                                        [100%]\n1 passed in 0.15s",
     "stderr_tail": ""
   },
   {
@@ -841,9 +841,9 @@
     "skipped": false,
     "skip_reason": "",
     "exit_code": 0,
-    "duration_ms": 6517,
+    "duration_ms": 3660,
     "findings": [],
-    "stdout_tail": ".                                                                        [100%]\n1 passed in 2.13s",
+    "stdout_tail": ".                                                                        [100%]\n1 passed in 1.21s",
     "stderr_tail": ""
   },
   {
@@ -852,9 +852,9 @@
     "skipped": false,
     "skip_reason": "",
     "exit_code": 0,
-    "duration_ms": 14727,
+    "duration_ms": 8371,
     "findings": [],
-    "stdout_tail": ".                                                                        [100%]\n1 passed in 10.36s",
+    "stdout_tail": ".                                                                        [100%]\n1 passed in 5.81s",
     "stderr_tail": ""
   },
   {
@@ -863,9 +863,9 @@
     "skipped": false,
     "skip_reason": "",
     "exit_code": 0,
-    "duration_ms": 4368,
+    "duration_ms": 2845,
     "findings": [],
-    "stdout_tail": ".                                                                        [100%]\n1 passed in 0.33s",
+    "stdout_tail": ".                                                                        [100%]\n1 passed in 0.19s",
     "stderr_tail": ""
   },
   {
@@ -874,9 +874,9 @@
     "skipped": false,
     "skip_reason": "",
     "exit_code": 0,
-    "duration_ms": 5124,
+    "duration_ms": 3091,
     "findings": [],
-    "stdout_tail": ".                                                                        [100%]\n1 passed in 0.62s",
+    "stdout_tail": ".                                                                        [100%]\n1 passed in 0.27s",
     "stderr_tail": ""
   },
   {
@@ -885,9 +885,9 @@
     "skipped": false,
     "skip_reason": "",
     "exit_code": 0,
-    "duration_ms": 14782,
+    "duration_ms": 8987,
     "findings": [],
-    "stdout_tail": "........................................................................ [ 83%]\n..............                                                           [100%]\n86 passed in 10.51s",
+    "stdout_tail": "........................................................................ [ 83%]\n..............                                                           [100%]\n86 passed in 6.23s",
     "stderr_tail": ""
   },
   {
@@ -896,9 +896,9 @@
     "skipped": false,
     "skip_reason": "",
     "exit_code": 0,
-    "duration_ms": 5009,
+    "duration_ms": 2698,
     "findings": [],
-    "stdout_tail": "........                                                                 [100%]\n8 passed in 0.39s",
+    "stdout_tail": "........                                                                 [100%]\n8 passed in 0.19s",
     "stderr_tail": ""
   },
   {
@@ -907,9 +907,9 @@
     "skipped": false,
     "skip_reason": "",
     "exit_code": 0,
-    "duration_ms": 35018,
+    "duration_ms": 15086,
     "findings": [],
-    "stdout_tail": "..................                                                       [100%]\n18 passed in 29.72s",
+    "stdout_tail": "..................                                                       [100%]\n18 passed in 12.13s",
     "stderr_tail": ""
   },
   {
@@ -918,9 +918,9 @@
     "skipped": false,
     "skip_reason": "",
     "exit_code": 0,
-    "duration_ms": 4804,
+    "duration_ms": 2943,
     "findings": [],
-    "stdout_tail": "....                                                                     [100%]\n4 passed in 0.38s",
+    "stdout_tail": "....                                                                     [100%]\n4 passed in 0.24s",
     "stderr_tail": ""
   },
   {
@@ -929,9 +929,9 @@
     "skipped": false,
     "skip_reason": "",
     "exit_code": 0,
-    "duration_ms": 6161,
+    "duration_ms": 3362,
     "findings": [],
-    "stdout_tail": "............                                                             [100%]\n12 passed in 1.69s",
+    "stdout_tail": "............                                                             [100%]\n12 passed in 0.74s",
     "stderr_tail": ""
   }
 ]

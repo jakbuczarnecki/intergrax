@@ -2,15 +2,15 @@
   "artifacts": [
     {
       "path": "enterprise_audit_outcomes.json",
-      "sha256": "6767a5215c17adc279281c4827c122592e260452aa3dabff6bf98761ba37c7da"
+      "sha256": "9d9a2f7960b1db5657c0f0a9af33fb769d5b0fe9ee9a06e4f4906261e8f939ed"
     },
     {
       "path": "enterprise_audit_report.json",
-      "sha256": "bec85292e5b290b0edf1771a66a38bcba5d60d3d44f2a862be6692289cd5450b"
+      "sha256": "989123cc26f37c73b64b06c37d3e49a27953bee498f95bdaa3b51aa4e4d412f3"
     },
     {
       "path": "enterprise_audit_report.md",
-      "sha256": "1655c305c0592ce733974e8ad01b79fdf5cd6a1811eb145168e47403031cfe60"
+      "sha256": "3355d94f1a15dee20122c019cbc0c6d96ec2cd9c813f0baddf422905950752ed"
     },
     {
       "path": "frz_coverage.v1.json",
@@ -18,10 +18,10 @@
     },
     {
       "path": "vbn_domains.v1.json",
-      "sha256": "fbace9f6a291dc4015dcde52782e8fad91f7e4df8577a369425774fcea1501a1"
+      "sha256": "f69737d953cce4499f70316b8ace515248d9f7bdae793ad1010b5aabdbc89a66"
     }
   ],
-  "audit_execution_sha": "b5c2481d79f955fa5f483a9288aee8de4581f953",
+  "audit_execution_sha": "40b0b93bf8c9e3c042506618dc1f6969317dca4c",
   "certifying_run": true,
   "check_manifest_digest": "0fe966e43a10a561c38222b6cff30269e906633e61862d76aa29c1775e691b8b",
   "environment_fingerprint": {
@@ -30,6 +30,6 @@
     "python_version": "3.12.11"
   },
   "qualification_sha": "b5c2481d79f955fa5f483a9288aee8de4581f953",
-  "run_id": "l3-cli-full",
+  "run_id": "w4-01-freeze",
   "schema_version": 1
 }

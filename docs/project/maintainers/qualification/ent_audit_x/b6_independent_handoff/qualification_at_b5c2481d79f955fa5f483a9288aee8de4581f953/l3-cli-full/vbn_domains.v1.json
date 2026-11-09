@@ -284,7 +284,7 @@
   "domains_total": 31,
   "honest_disclaimer": "Rows derive from EBH-5 inventory @ HEAD; ENT FREEZE must replay g06 @ audit execution SHA.",
   "limitations": [],
-  "qualification_sha": "b5c2481d79f955fa5f483a9288aee8de4581f953",
-  "run_id": "1adc575e33b64881991e7951871bfa45",
+  "qualification_sha": "40b0b93bf8c9e3c042506618dc1f6969317dca4c",
+  "run_id": "57ffef4504a04d488c4627ac9ac77897",
   "schema_version": 1
 }

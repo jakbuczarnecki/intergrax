@@ -1,6 +1,6 @@
 {
-  "audit_mode": "FULL",
-  "baseline_sha": null,
+  "audit_mode": "FREEZE",
+  "baseline_sha": "480550d80b2515fc8cbd2a0ba6f79d1ee1c44541",
   "certifying_run": true,
   "coverage_matrix_summary": {
     "checks_planned": 85,
@@ -8,10 +8,10 @@
     "manifest_digest": "0fe966e43a10a561c38222b6cff30269e906633e61862d76aa29c1775e691b8b",
     "vbn_domains_accounted": 31
   },
-  "current_sha": "b5c2481d79f955fa5f483a9288aee8de4581f953",
+  "current_sha": "40b0b93bf8c9e3c042506618dc1f6969317dca4c",
   "execution_manifest": {
-    "audit_execution_sha": "b5c2481d79f955fa5f483a9288aee8de4581f953",
-    "audit_mode": "FULL",
+    "audit_execution_sha": "40b0b93bf8c9e3c042506618dc1f6969317dca4c",
+    "audit_mode": "FREEZE",
     "certifying_run": true,
     "check_manifest_digest": "0fe966e43a10a561c38222b6cff30269e906633e61862d76aa29c1775e691b8b",
     "checks_executed": 85,
