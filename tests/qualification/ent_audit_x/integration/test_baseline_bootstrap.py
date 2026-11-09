@@ -16,9 +16,17 @@ def _isolated_baseline_dir(root: Path) -> Path:
 
 def test_freeze_blocks_no_baseline(tmp_path: Path) -> None:
     root = Path(__file__).resolve().parents[4]
-    runner = EnterpriseAuditRunner(root, dry_run=True, require_clean_repo=False)
-    _, _, code = runner.run(AuditMode.FREEZE, output_dir=tmp_path / "freeze")
-    assert code is EnterpriseAuditExitCode.VIOLATION
+    qual = _isolated_baseline_dir(root)
+    try:
+        runner = EnterpriseAuditRunner(root, dry_run=True, require_clean_repo=False)
+        _, _, code = runner.run(
+            AuditMode.FREEZE,
+            output_dir=tmp_path / "freeze",
+            baseline_dir=qual,
+        )
+        assert code is EnterpriseAuditExitCode.VIOLATION
+    finally:
+        shutil.rmtree(qual, ignore_errors=True)
 
 
 def test_bootstrap_baseline_flag_allowed(tmp_path: Path) -> None:
