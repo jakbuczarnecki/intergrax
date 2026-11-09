@@ -243,7 +243,8 @@ def test_valid_delegate_record_promotes_baseline(tmp_path: Path, monkeypatch: py
     monkeypatch.setattr("intergrax.platform.enterprise_audit.validators.verify_closed_evidence_bundle", lambda _d: [])
     base = tmp_path / "baseline"
     save_candidate_baseline(
-        candidate_baseline_path(base), EnterpriseAuditBaseline(accepted_baseline_sha=ACCEPTED, findings={})
+        candidate_baseline_path(base),
+        EnterpriseAuditBaseline(accepted_baseline_sha=ACCEPTED, findings={}, check_manifest_digest="a" * 64),
     )
     out = promote_accepted_baseline(
         base, od_record_path=world.record_path, verify_closed_bundle_dir=bundle, repo_root=world.root
@@ -257,7 +258,8 @@ def _cli_world(tmp_path: Path, monkeypatch: pytest.MonkeyPatch, **opt: Any) -> t
     world = build_world(repo, **opt)
     baseline_dir = repo / "tests" / "qualification" / "ent_audit_x"
     save_candidate_baseline(
-        candidate_baseline_path(baseline_dir), EnterpriseAuditBaseline(accepted_baseline_sha=ACCEPTED, findings={})
+        candidate_baseline_path(baseline_dir),
+        EnterpriseAuditBaseline(accepted_baseline_sha=ACCEPTED, findings={}, check_manifest_digest="a" * 64),
     )
     bundle = tmp_path / "bundle"
     bundle.mkdir()

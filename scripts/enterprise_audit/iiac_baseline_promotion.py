@@ -388,6 +388,8 @@ def promote_accepted_baseline(
     accepted_sha = str(record["accepted_baseline_sha"])
     if candidate.accepted_baseline_sha != accepted_sha:
         raise ValueError("candidate_baseline_sha does not match OD-ENT-01 accepted_baseline_sha pin")
+    if not candidate.check_manifest_digest:
+        raise ValueError("candidate baseline missing check_manifest_digest")
     out = baseline_path(baseline_dir)
     save_baseline(
         out,
@@ -395,6 +397,7 @@ def promote_accepted_baseline(
             accepted_baseline_sha=accepted_sha,
             findings=dict(candidate.findings),
             schema_version=candidate.schema_version,
+            check_manifest_digest=candidate.check_manifest_digest,
         ),
     )
     return out
