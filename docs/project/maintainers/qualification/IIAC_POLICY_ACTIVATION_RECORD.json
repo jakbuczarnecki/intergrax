@@ -2,8 +2,8 @@
   "schema_version": "iiac-policy-activation.v1",
   "policy_version": "IIAC-2026-11-05.1",
   "status": "IN_FORCE",
-  "effective_from_sha": "",
-  "policy_activation_sha": "",
+  "effective_from_sha": "8045915a353bb04ea5a290f9ef8b6def33dee96d",
+  "policy_activation_sha": "8045915a353bb04ea5a290f9ef8b6def33dee96d",
   "governance_implementation_sha": "2ae1014116d353bc7742985e62f2bccc2bfac798",
   "corrective_implementation_sha": "3c91694c645ff0d97d104adf0c5a564b9a4c5b3c",
   "audit_execution_sha": "0946b11576d2ee617321fb099ed794f8b21bf5ba",
@@ -23,5 +23,5 @@
   "operator_decision_id": "IIAC-OD-HIST-P5-2026-11-09",
   "operator_activation_line": "Approved IIAC policy activation IIAC-2026-11-05.1: operator @ 2026-11-09T07:00:00+01:00",
   "operator_decision_class": "OD-HIST-P5",
-  "notes": "Phase 1 HIST P5 N-03 correction re-audit. corrective_implementation_sha binds HIST product merge 3c91694c6; auditor publication 0946b1157 has zero product write-surface vs audited. Restores IIAC-GOV-1 certification manifest bytes."
+  "notes": "Phase 2 HIST P5 N-03 correction. effective_from_sha references phase-1 commit 8045915a353bb04ea5a290f9ef8b6def33dee96d."
 }
