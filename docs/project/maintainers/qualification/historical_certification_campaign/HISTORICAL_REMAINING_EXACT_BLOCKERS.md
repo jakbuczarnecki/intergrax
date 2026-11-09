@@ -1,8 +1,10 @@
 # Historical remaining exact blockers
 
-> **Status update 2026-11-08 (after PR 416)** - see `HISTORICAL_CERTIFICATION_CAMPAIGN_ADDENDUM_2026-11-08.md`, which is the later statement. The seven Operator-decision rows below (OD-HIST04-A/B/C, OD-HIST02-A, OD-HIST03-A/B, OD-HIST01-B) now have an answer on record (certified by designated sessions in the Operator's name; process-enforced). HIST03-F-006 / F-016: the tests-only batch T-IGX-031-A is merged and PASS_SCOPED (F-016 resolved for the 27-path selection only; see addendum section 3). HIST03-F-015 has a confirmed root cause (Q-11) and a held ticket plan (T-IGX-032-A). HIST02-F-001 / FRZ-BND-03 has a held ticket plan (T-IGX-033-A). The implementation defects HIST02-F-013 and H01-F015 (T-IGX-030-B/C) stay HELD for the IIAC re-activation batch. HK-01 is closed. Open: the Operator's answers on the two product plans, the agreement with the ENT-AUDIT-X stream on one re-activation, and everything in the addendum section 5.
+> **Status update 2026-11-09 (final-closure batch @ `087bd1769`)** — see [`HISTORICAL_CAMPAIGN_FINAL_OPERATOR_CLOSURE.md`](HISTORICAL_CAMPAIGN_FINAL_OPERATOR_CLOSURE.md) and [`HISTORICAL_CAMPAIGN_BLOCKER_DOSSIER.md`](HISTORICAL_CAMPAIGN_BLOCKER_DOSSIER.md). Campaign verdict: **`HISTORICAL_CAMPAIGN_PARTIAL_EXACT_BLOCKERS`**. P1-SIGN, product batch, IIAC re-activation, POST_ACTIVATION P6, and P8 certifier are **done**. Executable HIST debt: **none**. Still blocking **global** `CLOSED_VERIFIED`: ENT consent, RPL-01..04, Population E, Path B live rows, plus tracked residuals **HIST-F-BND-03B** / **HIST-F-DUR-01** (not fixes in this campaign).
 
-Generated 2026-11-08T11:15:30Z. Overall result: PARTIAL / EXACT BLOCKERS. Nothing below is a "pending paperwork" item: each blocker prevents at least one of the 85 rows from reaching its acceptance rule, or prevents a closure the campaign cannot grant.
+---
+
+*Generated 2026-11-08T11:15:30Z — historical inventory below. Row semantics unchanged unless superseded by the 2026-11-09 dossier. Overall result: PARTIAL / EXACT BLOCKERS.*
 
 | id | kind | what | owner | next action / state |
 |---|---|---|---|---|

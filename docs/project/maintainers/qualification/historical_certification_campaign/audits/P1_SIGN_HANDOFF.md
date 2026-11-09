@@ -1,41 +1,31 @@
-# P1-SIGN — BLOCKED (designated signing session required)
+# P1-SIGN — TERMINAL (designated signing session complete)
 
 | Field | Value |
 |---|---|
-| Status | **BLOCKED** |
-| Date | 2026-11-08 |
-| Orchestrator | hist-cert Phase 1 slice (this session) |
-| Prerequisite reviews | All four `PLAN_REVIEW.md` verdicts **PASS** (030-B, 030-C, 032-A, 033-A) |
+| Status | **DONE** |
+| Date completed | 2026-11-08 |
+| Signer session | `hist-sign-plans` under [`delegations/DELEG-HIST-PRODUCT-PLANS-2026-11-08.md`](../delegations/DELEG-HIST-PRODUCT-PLANS-2026-11-08.md) |
+| Publication branch | `hist-cert/plan-approvals` (merged via product batch ancestry) |
+| Terminal batch record | `hist-cert/final-closure-batch` @ `087bd1769` (re-verified 2026-11-09) |
 
-## Why blocked
+## Outcome
 
-P1-SIGN requires a **new designated signing session** that is not the plan reviewers, not the implementer, and not this orchestrator. This session performed the four plan reviews (`process_enforced` assurance) but cannot fabricate `Approved:` delegate lines.
+Digest-bound `Approved:` delegate lines were written for all four HELD product tickets:
 
-No `Approved:` lines were written to:
+| Ticket | Verified |
+|---|---|
+| `governance/tickets/T-IGX-030-B.md` | `verify_plan_approval.py` exit **0** |
+| `governance/tickets/T-IGX-030-C.md` | `verify_plan_approval.py` exit **0** |
+| `governance/tickets/T-IGX-032-A.md` | `verify_plan_approval.py` exit **0** |
+| `governance/tickets/T-IGX-033-A.md` | `verify_plan_approval.py` exit **0** |
 
-- `governance/tickets/T-IGX-030-B.md`
-- `governance/tickets/T-IGX-030-C.md`
-- `governance/tickets/T-IGX-032-A.md`
-- `governance/tickets/T-IGX-033-A.md`
+Lines use the disclosed delegate form from the delegation record (`operator-delegate hist-sign-plans @ 2026-11-08T21:26:00+01:00`).
 
-## Required actions for the signer session
+## Gate impact (historical)
 
-1. Recompute each plan digest; refuse on mismatch (digests at `fe0937517` listed in ticket files and in `audits/plan-*/PLAN_REVIEW.md`).
-2. Publish a new delegation record under `historical_certification_campaign/delegations/` (Amendment 01 form), one commission or four scoped commissions as Operator policy requires.
-3. Write digest-bound lines, form:
+- **P3 product lanes** were unblocked per ticket after P1-SIGN (executed in P3–P5; not replayed in this batch).
+- This handoff file remains evidence that Phase 1 orchestration did **not** fabricate approvals; the signer session is separate.
 
-   `Approved: operator-delegate <session-id> @ <ISO-8601 tz> | Delegation: docs/project/maintainers/qualification/historical_certification_campaign/delegations/<file>.md@<40-hex commit sha>`
+## Superseded content
 
-4. Verify:
-
-   ```text
-   <venv>/python scripts/governance/verify_plan_approval.py --plan governance/tickets/plans/PLAN_T-IGX-030-B.md governance/tickets/T-IGX-030-B.md
-   ```
-
-   (repeat per ticket; see `verify_plan_approval.py --help`.)
-
-5. Target branch for publication: `hist-cert/plan-approvals` or extend `hist-cert/plan-reviews` per Operator merge policy.
-
-## Gate impact
-
-**Phase 3 product lanes (C1–C4) must not start** for a ticket until that ticket has a verified `Approved:` line (P1-SIGN terminal). P2-AGREE publication does not unblock signing.
+The 2026-11-08 **BLOCKED** section in the prior revision of this file is **historical only** (pre-`hist-sign-plans`).

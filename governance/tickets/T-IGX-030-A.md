@@ -44,8 +44,10 @@ Everything under `intergrax/`, `agents/`, `applications/`; `29c387879` and `98b4
 
 ## Lifecycle state
 
-ready_for_audit
+closed
+
+Operator note (2026-11-09, P1-031-LIFECYCLE): tests-only batch merged on `development`; independent audit **PASS_SCOPED** @ `683f95572` ([`aud-030a`](../../docs/project/maintainers/qualification/historical_certification_campaign/audits/aud-030a/AUDIT_REPORT.md)). Does **not** close TOOL-LIFE-X stage, FRZ rows, or T-IGX-030-B/C product work.
 
 ## Checkpoint
 
-Implementation commits: C1 `ec105a789`, C2 `683f95572` (both blob-equal to their source commits `0adb73380`, `10089121e`; zero files under `intergrax/`, `agents/`, `applications/`, `scripts/`). Implementer results on the mutable worktree (not exact-SHA evidence): side-effect module 37 passed; F3 module 5 passed x3; combined Batch B/C set 76 passed; ruff check and format --check clean; `verify_iiac_policy_activation --require-in-force` IN_FORCE (exit 0); governance tests 56 passed, 1 skipped. `igx_gov ticket` not run (it wraps the broad regression `fast` tier; needs Operator budget under C10/C15). No PASS is claimed; the independent audit is a separate session. Details: `handoffs/IMPL_TLX_AUDIT_HANDOFF.md` in the campaign directory.
+Implementation commits: C1 `ec105a789`, C2 `683f95572` (both blob-equal to their source commits `0adb73380`, `10089121e`; zero files under `intergrax/`, `agents/`, `applications/`, `scripts/`). Independent audit: side-effect module 37 passed; F3 module 5 passed x3; combined Batch B/C set 76 passed; ruff clean; ACT-N11 IN_FORCE; governance tests 56 passed, 1 skipped (`aud-030a` evidence table). Lifecycle advanced per [`DELEG-HIST-P1-031-LIFECYCLE-2026-11-09.md`](../../docs/project/maintainers/qualification/historical_certification_campaign/delegations/DELEG-HIST-P1-031-LIFECYCLE-2026-11-09.md).

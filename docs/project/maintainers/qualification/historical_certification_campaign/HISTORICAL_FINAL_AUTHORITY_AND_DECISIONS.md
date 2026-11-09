@@ -3,8 +3,9 @@
 | Field | Value |
 |---|---|
 | START_HEAD | `fe09375177bd0fa0d9ebb661b7f9bf64e2f1ed25` (`origin/development`, verified 2026-11-08) |
-| Worktree baseline | `D:/Projekty/_wt/intergrax/hist-base` @ above SHA |
-| Branch | `hist-cert/plan-reviews` |
+| POST_ACTIVATION (`development`) | `087bd17693db5b4b8a14cb618389ee1d6c2aaa3d` (final-closure batch, 2026-11-09) |
+| Worktree baseline | `D:/Projekty/_wt/intergrax/hist-final-batch` @ POST_ACTIVATION |
+| Branch | `hist-cert/final-closure-batch` |
 | Master plan (repo copy) | [`HISTORICAL_CERTIFICATION_FINAL_MASTER_PLAN.md`](HISTORICAL_CERTIFICATION_FINAL_MASTER_PLAN.md) |
 | Cursor approval source | `c:\Users\XPS\.cursor\plans\hist_closure_master_plan_6d5c72f5.plan.md` (Operator-approved plan mode artifact) |
 
@@ -44,11 +45,17 @@
 ## Explicit non-decisions (still OPEN)
 
 - ENT-AUDIT-X **shared re-activation consent** — still absent (Operator P2 supersession only; see agreement successor section).
-- **Operator IIAC activation** line — unsigned; agents must not set `IN_FORCE` on a new record by hand.
-- **T-IGX-021-B/C** — not started; no material-path edits authorized.
-- Residuals **HIST-F-*** (`BND-03B`, `DUR-01`, `OLLAMA`, `SECSTORE`, `REGISO`, `NOCI`, `HANG`, etc.) — tracked; no implementation authority in Phase 1.
-- **T-IGX-030-A / 031-A** lifecycle — remain `ready_for_audit` unless a certifier session advances per policy (optional P1-031-LIFECYCLE not executed here).
-- **P1-SIGN** — BLOCKED; see [`audits/P1_SIGN_HANDOFF.md`](audits/P1_SIGN_HANDOFF.md).
+- **T-IGX-021-B/C** — not started; no material-path edits authorized (ENT stream Q-12).
+- Residuals **HIST-F-BND-03B**, **HIST-F-DUR-01** — tracked in [`HISTORICAL_RESIDUAL_FINDINGS_REGISTER.md`](HISTORICAL_RESIDUAL_FINDINGS_REGISTER.md); not authorized for fix in this campaign.
+- Other **HIST-F-*** (`OLLAMA`, `SECSTORE`, `REGISO`, `NOCI`, `HANG`, etc.) — tracked; out of P1 scope.
+- **ARCH-FREEZE RPL / VBN** — not accepted by HIST (external).
+- **Path B live rows** — OPEN per register.
+
+## Phase 1 gates — terminal status (2026-11-09)
+
+- **P1-SIGN** — **DONE** (`hist-sign-plans`); see [`audits/P1_SIGN_HANDOFF.md`](audits/P1_SIGN_HANDOFF.md).
+- **P1-031-LIFECYCLE** — **DONE**; tickets `T-IGX-030-A`, `T-IGX-031-A` → `closed` with PASS_SCOPED audit citations (no FRZ promotion).
+- **IIAC** — **IN_FORCE** after P5 (`8045915a` activation publication); not a Phase 1 open item.
 
 ## Phase 1 review verdicts
 
@@ -63,9 +70,9 @@
 
 | Gate | State |
 |---|---|
-| P1-SIGN | BLOCKED — no ticket `Approved:` lines |
-| P3 product lanes | BLOCKED per ticket until respective P1-SIGN |
-| P2-WAIT (development merge) | **Operator supersession 2026-11-09** (`DELEG-HIST-IIAC-P2-SUPERSESSION-2026-11-09.md`); ENT consent still absent |
-| P5-SIGN-ACT | **BLOCKED** — literal Operator IIAC activation line |
-| P5-VERIFY | **BLOCKED** — ACT-N11 red on product merge tree |
-| Expected terminal campaign label | `HISTORICAL_CAMPAIGN_PARTIAL_EXACT_BLOCKERS` unless external gates clear |
+| P1-SIGN | **DONE** |
+| P3 product lanes | **DONE** (merged `3c91694c6`) |
+| P2-WAIT (development merge) | Cleared for HIST via Operator supersession 2026-11-09; ENT consent still absent |
+| P5-SIGN-ACT / P5-VERIFY | **DONE** — IIAC IN_FORCE |
+| P8 certifier | **DONE** — ACCEPT partial label |
+| Expected terminal campaign label | **`HISTORICAL_CAMPAIGN_PARTIAL_EXACT_BLOCKERS`** until §J external gates clear |

@@ -55,4 +55,6 @@ Everything under `intergrax/`, `agents/`, `applications/`, `scripts/`; the six I
 
 ## Lifecycle state
 
-ready_for_audit
+closed
+
+Operator note (2026-11-09, P1-031-LIFECYCLE): tests-only batch merged; independent audits **PASS_SCOPED** @ `b28398026` (`aud-tests`) and @ `47c29b4c3` (`aud-s12`, S12 lint path). F-016 resolved only for the 27-path selection evidence in those audits; R3 (clean 27-path on final S12 SHA) may remain open in plan residuals. Does **not** close HIST-03 stage or FRZ rows.

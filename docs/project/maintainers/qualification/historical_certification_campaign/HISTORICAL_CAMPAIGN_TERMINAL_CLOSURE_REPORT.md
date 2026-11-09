@@ -18,6 +18,8 @@
 | P8 final audit | [`audits/final-p8/AUDIT_REPORT.md`](audits/final-p8/AUDIT_REPORT.md) — **PASS** |
 | P8 certifier | [`audits/cert-p8/CERT_DECISION.md`](audits/cert-p8/CERT_DECISION.md) — **ACCEPT** `HISTORICAL_CAMPAIGN_PARTIAL_EXACT_BLOCKERS` |
 | P8-VERDICT | [`HISTORICAL_CAMPAIGN_P8_VERDICT.md`](HISTORICAL_CAMPAIGN_P8_VERDICT.md) |
+| Final operator closure | [`HISTORICAL_CAMPAIGN_FINAL_OPERATOR_CLOSURE.md`](HISTORICAL_CAMPAIGN_FINAL_OPERATOR_CLOSURE.md) |
+| Final HIST-scope audit | [`audits/final-hist-scope/AUDIT_REPORT.md`](audits/final-hist-scope/AUDIT_REPORT.md) |
 
 ## Phase status
 

@@ -14,6 +14,7 @@ Generated 2026-11-08T11:20:52Z. Claude session ids are transcript file names (th
 | cert-030a | 929ea8c8-4988-4fc1-bcc6-6e66b265b0ac | designated certifying session (plan approval only, IIAC Amendment 01) | Plan of T-IGX-030-A, digest c6d1dca6... | APPROVE (plan only) | audits/cert-030a/CERT_DECISION.md |
 | hist-p8-final-aud | a91e4f28-6c3d-4b8e-a0f5-2e7d9c1b4f63 | independent final campaign auditor (P8-AUD-FINAL) | Dossier at `b5c2481d7` / pin `878e2e384` lineage | PASS (dossier; not campaign CLOSED_VERIFIED) | audits/final-p8/AUDIT_REPORT.md |
 | hist-p8-cert | process_enforced | designated certifying session (P8-CERT) | Terminal label after P8-AUD-FINAL | ACCEPT `HISTORICAL_CAMPAIGN_PARTIAL_EXACT_BLOCKERS` | audits/cert-p8/CERT_DECISION.md |
+| hist-final-scope | `f7c2a8e1-4b9d-4e6f-9a3c-2d8e5f1a0b7c` | independent final HIST-scope auditor (post batch; not final-closure implementer) | Full HIST end state @ `087bd1769` lineage + final-closure batch docs | PASS (scope closure honest; not `CLOSED_VERIFIED`) | audits/final-hist-scope/AUDIT_REPORT.md |
 
 ## 2. Implementer / planner sessions (never auditors of their own work)
 | name | session id | role |
