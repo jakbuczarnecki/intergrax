@@ -197,13 +197,7 @@ RF_OWNER_DELTA: Final[dict[str, OwnerDeltaBinding]] = {
 
 ROLLUP_FAMILIES: Final[dict[str, str]] = {"VBN": "C3"}
 
-TIER_IMPORT_EXCEPTIONS: Final[tuple[TierImportException, ...]] = (
-    TierImportException(
-        path="intergrax/cli/external_work.py",
-        module_prefix="applications.governed_contractor_application.host.collaborative_work_local_fixture",
-        evidence_doc="docs/project/maintainers/audits/AGENT_PLATFORM_AC1_AC6_FINAL_ARCHITECTURE_AUDIT.md",
-    ),
-)
+TIER_IMPORT_EXCEPTIONS: Final[tuple[TierImportException, ...]] = ()
 
 C4_RULES: Final[tuple[C4Rule, ...]] = (
     C4Rule("docs/", (ChangeClass.DOCUMENTATION_ONLY,)),
