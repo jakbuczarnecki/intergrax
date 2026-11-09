@@ -43,7 +43,7 @@
 
 ## Explicit non-decisions (still OPEN)
 
-- ENT-AUDIT-X **shared re-activation consent** — absent (`HIST_IIAC_SHARED_REACTIVATION_AGREEMENT.md` = `PROPOSED_NO_CONSENT`).
+- ENT-AUDIT-X **shared re-activation consent** — still absent (Operator P2 supersession only; see agreement successor section).
 - **Operator IIAC activation** line — unsigned; agents must not set `IN_FORCE` on a new record by hand.
 - **T-IGX-021-B/C** — not started; no material-path edits authorized.
 - Residuals **HIST-F-*** (`BND-03B`, `DUR-01`, `OLLAMA`, `SECSTORE`, `REGISO`, `NOCI`, `HANG`, etc.) — tracked; no implementation authority in Phase 1.
@@ -65,5 +65,7 @@
 |---|---|
 | P1-SIGN | BLOCKED — no ticket `Approved:` lines |
 | P3 product lanes | BLOCKED per ticket until respective P1-SIGN |
-| P2-WAIT (development merge) | OPEN — no ENT/Operator supersession |
+| P2-WAIT (development merge) | **Operator supersession 2026-11-09** (`DELEG-HIST-IIAC-P2-SUPERSESSION-2026-11-09.md`); ENT consent still absent |
+| P5-SIGN-ACT | **BLOCKED** — literal Operator IIAC activation line |
+| P5-VERIFY | **BLOCKED** — ACT-N11 red on product merge tree |
 | Expected terminal campaign label | `HISTORICAL_CAMPAIGN_PARTIAL_EXACT_BLOCKERS` unless external gates clear |

@@ -2,7 +2,7 @@
 
 | Field | Value |
 |---|---|
-| Status | **PROPOSED_NO_CONSENT** |
+| Status | **PROPOSED_NO_CONSENT** (superseded for Operator P2-WAIT — see below) |
 | Policy version | `IIAC-2026-11-05.1` (`IN_FORCE`) |
 | Activation / effective SHA (current) | `f8c29fb8dfe5e14d9b06ff16659fd9cbe9ad326d` |
 | Audited SHA (current record) | `ae467c8c4dd9c87521c1c60a7e5e75224d3214a0` |
@@ -40,7 +40,7 @@ Isolated integration target branch: `hist-cert/product-batch` (lanes `hist-cert/
 
 Governance batch **excludes** T-IGX-021-B/C unless a later amendment says otherwise.
 
-Target integration SHA: **TBD until P3-INT**.
+Target integration SHA: **`427646f41de0df992cd54c0e157de8f36b560f39`** (`hist-cert/product-batch`; P3-INT + P4 audit ladder).
 
 ## ENT stream (reference only)
 
@@ -74,6 +74,19 @@ Revert HIST product merge commits on `development`; do not delete the prior acti
 |---|---|
 | HIST campaign | Proposes this request |
 | ENT-AUDIT-X owner | **No in-repo consent recorded** |
-| Operator | **No activation signature in this document** |
+| Operator | **P2-WAIT supersession recorded** (not IIAC activation) |
 
 To accept: add a dated section with ENT session id, exact SHA accepted, and scope; or publish an Operator supersession record.
+
+## Operator supersession (P2-WAIT)
+
+| Field | Value |
+|---|---|
+| Date | 2026-11-09 |
+| Effect | Clears **Operator** limb of P2-WAIT for HIST merge and ACT-N11 red window acceptance |
+| Chat consent | Operator message **«Udzielam zgody»** (2026-11-09) |
+| Transcription | [`delegations/DELEG-HIST-IIAC-P2-SUPERSESSION-2026-11-09.md`](delegations/DELEG-HIST-IIAC-P2-SUPERSESSION-2026-11-09.md) |
+| Supersedes | Top-level **`PROPOSED_NO_CONSENT`** for sequencing only (this section + delegation link) |
+| Does **not** grant | ENT counter-signature; IIAC `operator @` activation (P5-SIGN-ACT) |
+
+Prior status text remains in git history; do not delete the original request paragraph above.
