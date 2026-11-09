@@ -33,6 +33,8 @@ def _run_git(*args: str) -> subprocess.CompletedProcess[str]:
         check=False,
         capture_output=True,
         text=True,
+        encoding="utf-8",
+        errors="replace",
     )
 
 
@@ -118,7 +120,7 @@ def verify_range(rev_range: str, config: CommitRefConfig) -> list[str]:
         if not commit_touches_product(commit, config):
             continue
         msg = _run_git("log", "-1", "--format=%B", commit)
-        if msg.returncode != 0:
+        if msg.returncode != 0 or not msg.stdout:
             errors.append(f"{commit[:12]}: unable to read commit message")
             continue
         if not message_has_valid_ref(msg.stdout, config):
