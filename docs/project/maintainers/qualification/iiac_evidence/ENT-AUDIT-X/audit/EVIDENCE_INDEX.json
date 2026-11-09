@@ -1,0 +1,28 @@
+{
+  "schema_version": "iiac_evidence_index.v1",
+  "stage_id": "ENT-AUDIT-X",
+  "scope": "Session D round 3 independent audit evidence (W2-04 publication)",
+  "note": "sha256 over file bytes as written; EVIDENCE_INDEX.json excluded from itself",
+  "files": {
+    "IIAC_ENT_AUDIT_REPORT.md": {
+      "sha256": "123c1030ac30c974d7e0b12364e6c827ab93b6416022ac2bbb0fc737e5f5270c",
+      "bytes": 8110
+    },
+    "audit_scope.json": {
+      "sha256": "8cd968a7a5ae16f7a2fee3edfa144cdf8394ec9fc74e49500bde03fcee950300",
+      "bytes": 4536
+    },
+    "test_matrix.txt": {
+      "sha256": "53459b19bf8d87a4cd9f503c1aa0e3efc65d9c08686a15d055660b5f7f9b8848",
+      "bytes": 1608
+    },
+    "findings.json": {
+      "sha256": "a5d47109b6a1b8e23d03429e9dd04459a52f99897fc349ad150961739912292d",
+      "bytes": 27559
+    },
+    "ENT_AUDIT_X_IIAC_INDEPENDENT_AUDIT_PASS_RECORD.md": {
+      "sha256": "59dcc0f970a086150c91dc50bf89000fa9677f20c1cedc263ee7d9e5b6aafc5a",
+      "bytes": 3186
+    }
+  }
+}
