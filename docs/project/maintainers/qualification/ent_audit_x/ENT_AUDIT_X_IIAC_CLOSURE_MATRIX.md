@@ -9,7 +9,7 @@
 | Item | Value |
 |---|---|
 | Last-wins TEST_EXECUTION_SHA | `b5c2481d79f955fa5f483a9288aee8de4581f953` (R-FRESH certifying FULL 85/85 + FREEZE candidate @ `.tmp/session/ent-r-fresh/`; nightly run `42593448899`) |
-| Last-wins EVIDENCE_PUBLICATION_SHA | *pending R-PUB commit* (B5 tree `qualification_at_b5c2481d79f955fa5f483a9288aee8de4581f953`) |
+| Last-wins EVIDENCE_PUBLICATION_SHA | `63ff80819da5a7324257ea598e342810c1838199` (B5 tree `qualification_at_b5c2481d79f955fa5f483a9288aee8de4581f953`) |
 | Historical loop-1 TES / EVIDENCE | `62d1c615855a3eaf569777a10e342aacc889a128` / `163ef0c03b3cbead556499ee81cb99d640665dce` (preserved) |
 | IIAC round 1 audit | CONDITIONAL — historical annex under `iiac_evidence/ENT-AUDIT-X/historical/` (not B6 acceptance) |
 | IIAC round 2 audit | `INTERRUPTED_NO_VERDICT` (do not resume on `f9e3a932`) |

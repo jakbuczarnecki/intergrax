@@ -58,6 +58,7 @@
 | TEST_EXECUTION_SHA (historical — superseded by R-FRESH row below) | `62d1c615855a3eaf569777a10e342aacc889a128` | IIAC loop-1 corrective TES (F-01/F-02/F-09/F-10/F-11 + test repairs #409/#411/#412); certifying qual wave PASS 10/10 stages, clean tree; nightly FULL run 42491342540 success on this SHA; supersedes the 89c76eb7 row - T-IGX-024-A |
 | EVIDENCE_PUBLICATION_SHA (historical — superseded by R-FRESH row below) | `163ef0c03b3cbead556499ee81cb99d640665dce` | B5 `qualification_at_62d1c615855a3eaf569777a10e342aacc889a128` (strict `verify_b5_publication_tree`, byte-preserved via .gitattributes) - T-IGX-024-A |
 | TEST_EXECUTION_SHA | `b5c2481d79f955fa5f483a9288aee8de4581f953` | R-FRESH current-HEAD requal after HIST product merge (12 product paths vs `62d1c615`); certifying FULL 85/85 + FREEZE bootstrap-candidate; local qual_wave PASS; nightly `workflow_dispatch` run `42593448899` success on branch `ent-r-fresh-tes` @ this SHA; supersedes loop-1 TES — T-IGX-024-B |
+| EVIDENCE_PUBLICATION_SHA | `63ff80819da5a7324257ea598e342810c1838199` | B5 `qualification_at_b5c2481d79f955fa5f483a9288aee8de4581f953` (strict `verify_b5_publication_tree`) — T-IGX-024-B |
 
 ## Lineage rules
 
