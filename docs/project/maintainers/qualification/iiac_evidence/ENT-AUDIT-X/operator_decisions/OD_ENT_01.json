@@ -8,5 +8,7 @@
   "test_execution_sha": "b5c2481d79f955fa5f483a9288aee8de4581f953",
   "accepted_baseline_sha": "480550d80b2515fc8cbd2a0ba6f79d1ee1c44541",
   "iiac_manifest_path": "docs/project/maintainers/qualification/iiac_evidence/ENT-AUDIT-X/certification/iiac_audit_session_manifest.ENT-AUDIT-X.json",
-  "iiac_manifest_digest": "3807e72f884bbe63940e42b1f63796cbfa84d22c771ef2b443a079ad4d629f99"
+  "iiac_manifest_digest": "3807e72f884bbe63940e42b1f63796cbfa84d22c771ef2b443a079ad4d629f99",
+  "signature_line": "Approved OD-ENT-01: operator-delegate @ 2026-11-09T16:42:00+01:00",
+  "delegation_line": "Delegation: docs/project/maintainers/qualification/iiac_evidence/ENT-AUDIT-X/operator_decisions/DELEGATION_ENT_OD_ENT_01.md@59ff53f47dea06c6307f618a75cb666f90728ac9"
 }
