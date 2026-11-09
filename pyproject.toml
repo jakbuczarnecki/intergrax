@@ -180,7 +180,7 @@ vector-qdrant = [
   "qdrant-client>=1.9,<2",
 ]
 vector-pinecone = [
-  "pinecone>=3.0,<9",
+  "pinecone>=3.0,<11",
 ]
 parsing-web = [
   "beautifulsoup4>=4.12,<5",
