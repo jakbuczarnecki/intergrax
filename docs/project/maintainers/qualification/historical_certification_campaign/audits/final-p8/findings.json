@@ -1,0 +1,67 @@
+{
+  "auditor_role": "hist-p8-final-aud",
+  "session_id": "a91e4f28-6c3d-4b8e-a0f5-2e7d9c1b4f63",
+  "assurance": "process_enforced",
+  "pinned_sha": "b5c2481d79f955fa5f483a9288aee8de4581f953",
+  "origin_development_verified": true,
+  "worktree": "D:/Projekty/_wt/intergrax/hist-p8-final",
+  "log_dir": "D:/Projekty/_wt/intergrax/hist-p8-final/.tmp/session/hist-p8-final",
+  "campaign_terminal_label": "HISTORICAL_CAMPAIGN_PARTIAL_EXACT_BLOCKERS",
+  "p8_dossier_verdict": "PASS",
+  "claims_not_made": [
+    "HISTORICAL_CAMPAIGN_CLOSED_VERIFIED",
+    "IIAC_certifier_PASS",
+    "FRZ_promotion",
+    "ENT_formal_closure"
+  ],
+  "handoff_conditions": {
+    "01_frz_85_rows": "PASS",
+    "02_no_global_pass": "PASS",
+    "03_no_stale_sha": "PASS",
+    "04_successor_only_evidence": "PASS",
+    "05_path_b_not_upgraded": "PASS",
+    "06_ent_formal_untouched": "PASS",
+    "07_gates_not_weakened": "PASS",
+    "08_iiac_verifier": "PASS",
+    "09_remote_development": "PASS",
+    "10_certifier_gate": "OPEN",
+    "11_ent_consent_absent": "PASS",
+    "12_rpl_pop_e_unresolved": "PASS",
+    "13_process_enforced_disclosed": "PASS"
+  },
+  "commands": [
+    {
+      "id": "ls_remote_development",
+      "argv": "git ls-remote origin development",
+      "exit_code": 0,
+      "summary": "b5c2481d79f955fa5f483a9288aee8de4581f953",
+      "log": "ls_remote_development.log"
+    },
+    {
+      "id": "verify_iiac_require_in_force",
+      "argv": "uv run python -m scripts.governance.verify_iiac_policy_activation --require-in-force",
+      "exit_code": 0,
+      "summary": "IN_FORCE @ IIAC-2026-11-05.1 from 8045915a353bb04ea5a290f9ef8b6def33dee96d",
+      "log": "verify_iiac_require_in_force.log"
+    }
+  ],
+  "p4_reference": {
+    "integration_sha": "427646f41de0df992cd54c0e157de8f36b560f39",
+    "verdicts": {
+      "C1": "PASS",
+      "C2": "PASS",
+      "C3": "PASS",
+      "C4": "PASS_SCOPED"
+    }
+  },
+  "open_residuals": [
+    "HIST-F-BND-03B",
+    "HIST-F-DUR-01",
+    "ENT-REACTIVATION-CONSENT",
+    "RPL-01..04",
+    "REG_Population_E"
+  ],
+  "certifier_blockers": [
+    "P8-CERT_session_required"
+  ]
+}
