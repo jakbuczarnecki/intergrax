@@ -7,26 +7,30 @@
 | START_HEAD (plan) | `fe09375177bd0fa0d9ebb661b7f9bf64e2f1ed25` |
 | INTEGRATION_SHA | `427646f41de0df992cd54c0e157de8f36b560f39` |
 | P4 audit publication | `468b17576b50597ebec0aaabfd54b79989655086` @ `hist-cert/aud-product-report` |
-| P5 merge SHA (local branch) | `3c91694c645ff0d97d104adf0c5a564b9a4c5b3c` @ `hist-cert/p5-product-merge` |
-| P6 replay SHA | `427646f41` (label `PRE_ACTIVATION_DIAGNOSTIC`) |
-| PUBLICATION_SHA | **TBD** — `hist-cert/final-docs` not merged to `origin/development` |
+| P5 merge SHA | `3c91694c645ff0d97d104adf0c5a564b9a4c5b3c` (merged to `development`) |
+| P5 activation effective SHA | `8045915a353bb04ea5a290f9ef8b6def33dee96d` (`IIAC_POLICY_ACTIVATION_RECORD`, IN_FORCE) |
+| P6 replay SHA (authoritative) | `bf03550aa95ce239a63542916331c6a648617e33` — label **`POST_ACTIVATION`** |
+| P6 diagnostic (superseded) | `427646f41` — `PRE_ACTIVATION_DIAGNOSTIC` lineage only |
+| PUBLICATION_SHA | `b5c2481d79f955fa5f483a9288aee8de4581f953` (`merge: hist-cert/final-docs`) |
+| Remote `origin/development` | `b5c2481d79f955fa5f483a9288aee8de4581f953` (verified) |
 | Operator P2 consent | [`delegations/DELEG-HIST-IIAC-P2-SUPERSESSION-2026-11-09.md`](delegations/DELEG-HIST-IIAC-P2-SUPERSESSION-2026-11-09.md) |
+| P8 final audit | [`audits/final-p8/AUDIT_REPORT.md`](audits/final-p8/AUDIT_REPORT.md) — **PASS** |
 
 ## Phase status
 
 | Phase | Task | Status | Evidence |
 |---|---|---|---|
 | P5 | P5-RECHECK | N/A | No ENT activation covering C1–C4 |
-| P5 | P5-MERGE-PRODUCT | **DONE (local)** | Merge commit `3c91694c6`; remote `development` still `f9e3a932a` until push/PR |
-| P5 | P5-AUDIT-IIAC | **PASS_SCOPED** | `iiac_evidence/hist-p5-2026-11-09/` on `hist-cert/p5-product-merge` |
-| P5 | P5-SIGN-ACT | **BLOCKED** | Literal `operator @` activation required |
-| P5 | P5-VERIFY | **BLOCKED** | `verify_iiac_policy_activation` exit **1** (ACT-N11, 12 paths) |
-| P6 | P6-REPLAY | **DONE (diagnostic)** | 595 passed, exit 0 — [`HISTORICAL_FINAL_QUALIFICATION_EVIDENCE.md`](HISTORICAL_FINAL_QUALIFICATION_EVIDENCE.md) |
+| P5 | P5-MERGE-PRODUCT | **DONE** | Merge `3c91694c6` on `development` |
+| P5 | P5-AUDIT-IIAC | **PASS_SCOPED** (pre-activation package) | `iiac_evidence/HIST-P5-2026-11-09/` |
+| P5 | P5-SIGN-ACT | **DONE** | `IIAC_OD_ACTIVATION_IIAC-OD-HIST-P5-2026-11-09.md` + record `IN_FORCE` |
+| P5 | P5-VERIFY | **DONE** | `verify_iiac_policy_activation --require-in-force` exit **0** |
+| P6 | P6-REPLAY | **DONE** | POST_ACTIVATION 595 passed, exit 0 — [`HISTORICAL_FINAL_QUALIFICATION_EVIDENCE.md`](HISTORICAL_FINAL_QUALIFICATION_EVIDENCE.md) |
 | P7 | P7-RECALC | **DONE (draft)** | [`HISTORICAL_FRZ_85_FINAL_DISPOSITION_MATRIX.json`](HISTORICAL_FRZ_85_FINAL_DISPOSITION_MATRIX.json) |
-| P7 | P7-PUB checklist | **BLOCKED** | P5-VERIFY + P8 certifier |
-| P8 | P8-AUD-FINAL | **HANDOFF** | [`audits/final-p8/P8_FINAL_AUDIT_HANDOFF.md`](audits/final-p8/P8_FINAL_AUDIT_HANDOFF.md) |
+| P7 | P7-PUB checklist | **BLOCKED** | Awaits P8 certifier |
+| P8 | P8-AUD-FINAL | **PASS** | [`audits/final-p8/AUDIT_REPORT.md`](audits/final-p8/AUDIT_REPORT.md) |
 | P8 | P8-CERT | **BLOCKED** | Needs fresh certifier after audit |
-| P8 | P8-PUB merge | **BLOCKED** | Docs branch push only |
+| P8 | P8-PUB merge | **DONE** | `b5c2481d7` on `origin/development` |
 
 ## Product batch verdicts (P4, unchanged)
 
@@ -41,11 +45,8 @@
 
 | ID | Owner | Next action |
 |---|---|---|
-| IIAC-ACTIVATION | Operator | Publish new activation + `Approved IIAC policy activation IIAC-2026-11-05.1: operator @ <time>` |
 | ENT-REACTIVATION-CONSENT | ENT owner | Counter-sign agreement or accept shared sequencing |
-| REMOTE-MERGE | Operator / CI | Merge `hist-cert/p5-product-merge` to `development` with required CI green |
-| P8-AUDIT | Independent auditor | Execute handoff; verdict on dossier |
-| P8-CERT | Certifier | Accept terminal label after audit |
+| P8-CERT | Certifier | Accept terminal label after P8-AUD-FINAL |
 | RPL-01..04 | ARCH-FREEZE | External acceptance |
 | REG Pop E | ENT-AUDIT-X | Population E rollup |
 | HIST-F-BND-03B | Future ticket | Manifest registry edge |
@@ -53,7 +54,7 @@
 
 ## Predecessor readiness (ARCH-FREEZE)
 
-**Not satisfied** for full freeze. Scoped product corrective batch is audited and replay-diagnosed; IIAC and ENT gates block global promotion.
+**Not satisfied** for full freeze. Scoped product corrective batch is audited, IIAC is IN_FORCE, and Dimension A replay is POST_ACTIVATION green; ENT/RPL gates block global promotion.
 
 ## Path B
 

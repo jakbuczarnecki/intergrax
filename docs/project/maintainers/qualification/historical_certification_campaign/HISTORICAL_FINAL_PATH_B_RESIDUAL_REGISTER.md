@@ -2,7 +2,7 @@
 
 | Field | Value |
 |---|---|
-| Evidence SHA | `427646f41de0df992cd54c0e157de8f36b560f39` (product batch); P6 diagnostic same |
+| Evidence SHA | `427646f41de0df992cd54c0e157de8f36b560f39` (product batch); P6 authoritative `bf03550aa` (POST_ACTIVATION) |
 | Record date | 2026-11-09 |
 
 ## Rows held OPEN (never production-ready in this campaign)
@@ -15,7 +15,7 @@
 
 ## Architecture-scoped deferrals (W1-R1/R2)
 
-SEC/REL live halves remain **OPEN** with architecture evidence allowed only where prior records already scoped; no waiver and no checklist promotion in P7-PUB (blocked by P5-VERIFY).
+SEC/REL live halves remain **OPEN** with architecture evidence allowed only where prior records already scoped; no waiver and no checklist promotion in P7-PUB (blocked by P8 certifier).
 
 ## Authority
 
