@@ -38,8 +38,8 @@
 | POST_IC_CONSOLIDATION_PUBLICATION_SHA | `81829712acc19ebeadb4773467b9c5642ca975e3` | Pre-admission + IC consolidation handoff — [`ARCH_FREEZE_PRE_ADMISSION_READINESS_REPORT.md`](../ARCH_FREEZE_PRE_ADMISSION_READINESS_REPORT.md) |
 | FORMAL_CLOSURE_PUBLICATION_SHA | *unset* | OD-ENT-08 + roadmap §5 |
 | ACCEPTED_BASELINE_SHA | *unset* | Operator OD-ENT-01 after first green FREEZE |
-| EVIDENCE_PUBLICATION_SHA | `300859537f12a1de7bf3d75fd685bc3a5c727183` | W8 B6 corrective B5 `qualification_at_89c76eb7…` (strict `verify_b5_publication_tree`) |
-| TEST_EXECUTION_SHA | `89c76eb7b53a0a3ce6f75ab395cf4a2802638a91` | W8 B6 corrective certifying qual @ strict B5 verifier wave (supersedes R6/R7 canonical rows below) |
+| EVIDENCE_PUBLICATION_SHA (historical — superseded by the TES 62d1c615 row below) | `300859537f12a1de7bf3d75fd685bc3a5c727183` | W8 B6 corrective B5 `qualification_at_89c76eb7…` (strict `verify_b5_publication_tree`) |
+| TEST_EXECUTION_SHA (historical — superseded by the TES 62d1c615 row below) | `89c76eb7b53a0a3ce6f75ab395cf4a2802638a91` | W8 B6 corrective certifying qual @ strict B5 verifier wave (supersedes R6/R7 canonical rows below) |
 | EVIDENCE_PUBLICATION_SHA (pending row placeholder) | `d18f01f2291328a073dcbdfbe05489faf98013b7` | **Superseded** — see W8 row above |
 | TEST_EXECUTION_SHA (historical — R6/R7) | `87203c1b6ce9786dce0523cca29b556106b6bc8d` | Preserved; B5 @ `d18f01f22` fails `verify_b5_publication_tree()` |
 | EVIDENCE_PUBLICATION_SHA (historical — R7) | `d18f01f2291328a073dcbdfbe05489faf98013b7` | Preserved defect record; do not use for B6 evidence integrity |
@@ -55,6 +55,8 @@
 | ENT_FORMAL_CAMPAIGN_PLAN_BASELINE_SHA | `4d54dfa9e485329d81d0e0fa72436867458f3426` | Formal campaign F0 baseline (`plan_baseline_sha` in the closure status JSON) - historical |
 | ENT_FORMAL_MASTER_PLAN_PUBLICATION_SHA | `116fb6a2ae5a40605bb569ac7685b62eb0a42539` | Formal master plan publication (status JSON); Path A / human-auditor assumptions superseded by IIAC |
 | ENT_IIAC_CLOSURE_PLAN_BASELINE_SHA | `ba07ebaa34d04633bd60510f68c18346b1ef160d` | `development` tip at the start of the IIAC closure campaign (T-IGX-024-A, W0) |
+| TEST_EXECUTION_SHA | `62d1c615855a3eaf569777a10e342aacc889a128` | IIAC loop-1 corrective TES (F-01/F-02/F-09/F-10/F-11 + test repairs #409/#411/#412); certifying qual wave PASS 10/10 stages, clean tree; nightly FULL run 42491342540 success on this SHA; supersedes the 89c76eb7 row - T-IGX-024-A |
+| EVIDENCE_PUBLICATION_SHA | `163ef0c03b3cbead556499ee81cb99d640665dce` | B5 `qualification_at_62d1c615855a3eaf569777a10e342aacc889a128` (strict `verify_b5_publication_tree`, byte-preserved via .gitattributes) - T-IGX-024-A |
 
 ## Lineage rules
 
