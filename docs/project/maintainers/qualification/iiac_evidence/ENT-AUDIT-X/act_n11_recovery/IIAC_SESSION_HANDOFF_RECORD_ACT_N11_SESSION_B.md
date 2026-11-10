@@ -5,10 +5,10 @@
 | Policy version | `IIAC-2026-11-05.1` (claims `IN_FORCE`; product Δ unpinned) |
 | Operator decision | **`Approved: D-IIAC-01=a`** — shared full re-activation (2026-11-10) |
 | Implementation session | `T-IGX-024-B` / ACT-N11 recovery implementer (evidence only) |
-| Auditor session | **`PENDING`** — open **new** chat, role `independent-quality-auditor` |
-| Certifier session | **`PENDING`** — after auditor PASS; not implementer |
+| Auditor session | **`24eaa26b-34d7-451e-8acf-7e4949e5d348`** — `independent-quality-auditor` · verdict **`PASS_SCOPED`** |
+| Certifier session | **`PENDING`** — evidence publication; Operator activation follows |
 | Prior `audit_execution_sha` | `0946b11576d2ee617321fb099ed794f8b21bf5ba` |
-| Target `development` HEAD | `1563a9cdb4f70c917f6a6f76519c68e92a1c9282` |
+| Target `development` HEAD (audit replay) | `ebc2f8ba0f92599a1fdde80cde6ad48beab1934f` |
 | Product merge anchor | `03aa10959acf6ec3d81a7a0de8ac8224c8126973` (PR #434) |
 
 ## Handoff statement
@@ -17,7 +17,7 @@ Independent auditor session accepts the **seven-path** product delta enumerated 
 
 The implementer session published baseline qualification logs under this directory. It did **not** declare PASS, did **not** edit `IIAC_POLICY_ACTIVATION_RECORD.json`, and did **not** weaken `scripts/governance/iiac_activation_gate.py`.
 
-Assurance level: `process_enforced` until auditor session id and manifest are published.
+Assurance level: `process_enforced`. Published manifest: `iiac_audit_session_manifest.ENT-AUDIT-X.act_n11_session_b.json`. Implementation session id: `T-IGX-024-B-ACT-N11-RECOVERY-IMPLEMENTER`.
 
 ## Seven-path inventory (@ verify baseline)
 

@@ -1,0 +1,5 @@
+﻿verify_iiac_audit_manifest.py iiac_audit_session_manifest.ENT-AUDIT-X.act_n11_session_b.json --repo .
+EXIT=0 PASS
+
+verify_iiac_role_separation.py ... --strict-product-diff --repo .
+EXIT=0 PASS
