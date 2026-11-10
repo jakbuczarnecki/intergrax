@@ -1,7 +1,7 @@
 # PRE-ENT enterprise certification — campaign progress snapshot
 
 **Campaign:** `pre_ent_enterprise_certification`  
-**Evidence HEAD (`development`):** `03ce1d6f380f92bc86cfadac9a88fcd6473e5ec3` (`CERT_DOCS_HEAD`; Wave 4 handoff)  
+**Evidence HEAD (`development`):** `d00df592037404cd6c2b1bc95c00757544d551d8` (`CERT_DOCS_HEAD`; Wave 4 handoff)  
 **AUDIT_HEAD (product + Wave 3 replay):** `1e83ade3f5fb951a9eedd85d4dae89ead48955ee` — post-IIAC ACT-N11 activation (PR #437 merge)  
 **Product merge (PR #434):** `03aa10959acf6ec3d81a7a0de8ac8224c8126973`  
 **Date:** 2026-11-10  
@@ -29,8 +29,8 @@ Approved: D-PREENT-01=b; D-PREENT-02=defer; D-PREENT-03=b; D-PREENT-04=block; D-
 
 | Field | Value |
 | --- | --- |
-| **Published `development` HEAD** | `03ce1d6f380f92bc86cfadac9a88fcd6473e5ec3` (Wave 3 register + Wave 4 handoff; target for certifier doc reads) |
-| **Prior docs pin** | `bbf5e49991c30cd79f69a2c0651fd86d98c988f4` (PR #438) |
+| **Published `development` HEAD** | `d00df592037404cd6c2b1bc95c00757544d551d8` (Wave 3 register + Wave 4 handoff; target for certifier doc reads) |
+| **Prior docs pins** | `03ce1d6f3` (Wave 3 register), `bbf5e4999` (PR #438) |
 | **AUDIT_HEAD (checkout for Wave 3)** | `1e83ade3f5fb951a9eedd85d4dae89ead48955ee` — prior pins: `03aa10959`, `085be5ca9`, `11ac8ad85` (historia) |
 | **IIAC @ `AUDIT_HEAD`** | exit **0** — evidence [`PRE_ENT_POST_IIAC_GATE_EVIDENCE.md`](PRE_ENT_POST_IIAC_GATE_EVIDENCE.md) (`effective_from_sha` `661978df1…`) |
 | **governance-fast @ tree** | **SUCCESS** — PR #437 run `42814981916`; PR #438 run `42817447058` |
@@ -79,7 +79,7 @@ Approved: D-PREENT-01=b; D-PREENT-02=defer; D-PREENT-03=b; D-PREENT-04=block; D-
 
 | Field | Value |
 | --- | --- |
-| **CERT_DOCS_HEAD** | `03ce1d6f380f92bc86cfadac9a88fcd6473e5ec3` |
+| **CERT_DOCS_HEAD** | `d00df592037404cd6c2b1bc95c00757544d551d8` |
 | **Certifier queue** | [`PRE_ENT_WAVE4_CERTIFICATION_HANDOFF_QUEUE.md`](PRE_ENT_WAVE4_CERTIFICATION_HANDOFF_QUEUE.md) — 5× **READY** |
 | **Certifier briefs** | [`PRE_ENT_WAVE4_CERTIFIER_SESSION_BRIEFS.md`](PRE_ENT_WAVE4_CERTIFIER_SESSION_BRIEFS.md) |
 | **Blockers** | [`PRE_ENT_WAVE4_BLOCKER_MATRIX.md`](PRE_ENT_WAVE4_BLOCKER_MATRIX.md) |

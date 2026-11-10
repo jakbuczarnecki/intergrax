@@ -1,7 +1,7 @@
 # PRE-ENT Wave 4 — certifier handoff queue
 
 **Campaign:** `pre_ent_enterprise_certification`  
-**CERT_DOCS_HEAD (read handoff SSOT):** `03ce1d6f380f92bc86cfadac9a88fcd6473e5ec3`  
+**CERT_DOCS_HEAD (read handoff SSOT):** `d00df592037404cd6c2b1bc95c00757544d551d8`  
 **AUDIT_HEAD (product + pytest replay):** `1e83ade3f5fb951a9eedd85d4dae89ead48955ee`  
 **Branch:** `development`  
 **Date:** 2026-11-10  

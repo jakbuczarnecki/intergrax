@@ -6,7 +6,7 @@
 | Pin | SHA | Use |
 | --- | --- | --- |
 | **AUDIT_HEAD** (product + auditor replay) | `1e83ade3f5fb951a9eedd85d4dae89ead48955ee` | Checkout for blocking pytest and code review |
-| **CERT_DOCS_HEAD** (campaign handoff SSOT) | `03ce1d6f380f92bc86cfadac9a88fcd6473e5ec3` | Read Wave 3 reports, queue, blocker matrix, these briefs |
+| **CERT_DOCS_HEAD** (campaign handoff SSOT) | `d00df592037404cd6c2b1bc95c00757544d551d8` | Read Wave 3 reports, queue, blocker matrix, these briefs |
 | **IIAC @ AUDIT_HEAD** | exit **0** | [`PRE_ENT_POST_IIAC_GATE_EVIDENCE.md`](PRE_ENT_POST_IIAC_GATE_EVIDENCE.md) |
 
 **Queue SSOT:** [`PRE_ENT_WAVE4_CERTIFICATION_HANDOFF_QUEUE.md`](PRE_ENT_WAVE4_CERTIFICATION_HANDOFF_QUEUE.md)  
@@ -28,7 +28,7 @@ PRE-ENT Wave 4 certification — T-IGX-034-B (BND-03B manifest edge).
 Role: certification-governance-agent (new session; not the Wave 3 auditor or implementer).
 
 Product checkout @ AUDIT_HEAD: 1e83ade3f5fb951a9eedd85d4dae89ead48955ee
-Handoff docs @ CERT_DOCS_HEAD: 03ce1d6f380f92bc86cfadac9a88fcd6473e5ec3
+Handoff docs @ CERT_DOCS_HEAD: d00df592037404cd6c2b1bc95c00757544d551d8
 
 Ticket: governance/tickets/T-IGX-034-B.md
 Wave 3 auditor PASS: docs/project/maintainers/qualification/pre_ent_enterprise_certification/wave3_audits/WAVE3_AUDIT_T-IGX-034-B.md
@@ -55,7 +55,7 @@ PRE-ENT Wave 4 certification — T-IGX-034-E (ROADMAP-REPLAY-X mechanical exit g
 Role: certification-governance-agent (new session).
 
 Product @ AUDIT_HEAD: 1e83ade3f5fb951a9eedd85d4dae89ead48955ee
-Docs @ CERT_DOCS_HEAD: 03ce1d6f380f92bc86cfadac9a88fcd6473e5ec3
+Docs @ CERT_DOCS_HEAD: d00df592037404cd6c2b1bc95c00757544d551d8
 
 Ticket: governance/tickets/T-IGX-034-E.md
 Wave 3 auditor PASS: docs/project/maintainers/qualification/pre_ent_enterprise_certification/wave3_audits/WAVE3_AUDIT_T-IGX-034-E.md
@@ -82,7 +82,7 @@ PRE-ENT Wave 4 certification — T-IGX-030-B (RuntimeErrorCode contract home).
 Role: certification-governance-agent (new session).
 
 Product @ AUDIT_HEAD: 1e83ade3f5fb951a9eedd85d4dae89ead48955ee
-Docs @ CERT_DOCS_HEAD: 03ce1d6f380f92bc86cfadac9a88fcd6473e5ec3
+Docs @ CERT_DOCS_HEAD: d00df592037404cd6c2b1bc95c00757544d551d8
 
 Ticket: governance/tickets/T-IGX-030-B.md
 Wave 3 auditor PASS: docs/project/maintainers/qualification/pre_ent_enterprise_certification/wave3_audits/WAVE3_AUDIT_T-IGX-030-B.md
@@ -109,7 +109,7 @@ PRE-ENT Wave 4 certification — T-IGX-030-C (pool.submit terminalization, dep_b
 Role: certification-governance-agent (new session).
 
 Product @ AUDIT_HEAD: 1e83ade3f5fb951a9eedd85d4dae89ead48955ee
-Docs @ CERT_DOCS_HEAD: 03ce1d6f380f92bc86cfadac9a88fcd6473e5ec3
+Docs @ CERT_DOCS_HEAD: d00df592037404cd6c2b1bc95c00757544d551d8
 
 Ticket: governance/tickets/T-IGX-030-C.md
 Wave 3 auditor PASS: docs/project/maintainers/qualification/pre_ent_enterprise_certification/wave3_audits/WAVE3_AUDIT_T-IGX-030-C.md
@@ -136,7 +136,7 @@ PRE-ENT Wave 4 certification — T-IGX-032-A (KV authoritative pinning wiring).
 Role: certification-governance-agent (new session).
 
 Product @ AUDIT_HEAD: 1e83ade3f5fb951a9eedd85d4dae89ead48955ee
-Docs @ CERT_DOCS_HEAD: 03ce1d6f380f92bc86cfadac9a88fcd6473e5ec3
+Docs @ CERT_DOCS_HEAD: d00df592037404cd6c2b1bc95c00757544d551d8
 
 Ticket: governance/tickets/T-IGX-032-A.md
 Wave 3 auditor PASS: docs/project/maintainers/qualification/pre_ent_enterprise_certification/wave3_audits/WAVE3_AUDIT_T-IGX-032-A.md

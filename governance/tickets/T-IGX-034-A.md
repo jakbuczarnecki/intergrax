@@ -113,7 +113,7 @@ Date: 2026-11-10
 
 ### Wave 4 certifier handoff — ready, STOP (2026-11-10)
 
-- **CERT_DOCS_HEAD:** `03ce1d6f380f92bc86cfadac9a88fcd6473e5ec3` (docs SSOT for certifier reads).
+- **CERT_DOCS_HEAD:** `d00df592037404cd6c2b1bc95c00757544d551d8` (docs SSOT for certifier reads).
 - **Handoff:** [`PRE_ENT_WAVE4_CERTIFICATION_HANDOFF_QUEUE.md`](../../docs/project/maintainers/qualification/pre_ent_enterprise_certification/PRE_ENT_WAVE4_CERTIFICATION_HANDOFF_QUEUE.md), briefs [`PRE_ENT_WAVE4_CERTIFIER_SESSION_BRIEFS.md`](../../docs/project/maintainers/qualification/pre_ent_enterprise_certification/PRE_ENT_WAVE4_CERTIFIER_SESSION_BRIEFS.md).
 - **Blockers:** [`PRE_ENT_WAVE4_BLOCKER_MATRIX.md`](../../docs/project/maintainers/qualification/pre_ent_enterprise_certification/PRE_ENT_WAVE4_BLOCKER_MATRIX.md).
 - **Closure path:** [`PRE_ENT_WAVE4_TO_6_CLOSURE_PATH.md`](../../docs/project/maintainers/qualification/pre_ent_enterprise_certification/PRE_ENT_WAVE4_TO_6_CLOSURE_PATH.md).

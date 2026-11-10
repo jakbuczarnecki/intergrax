@@ -2,7 +2,7 @@
 
 **Campaign:** `pre_ent_enterprise_certification`  
 **Plan:** `pre-ent_certification_closure` — [`PRE_ENT_FORMAL_CLOSURE_CHECKPOINT.md`](PRE_ENT_FORMAL_CLOSURE_CHECKPOINT.md) §5  
-**CERT_DOCS_HEAD:** `03ce1d6f380f92bc86cfadac9a88fcd6473e5ec3`  
+**CERT_DOCS_HEAD:** `d00df592037404cd6c2b1bc95c00757544d551d8`  
 **AUDIT_HEAD (predecessor evidence):** `1e83ade3f5fb951a9eedd85d4dae89ead48955ee`  
 **Date:** 2026-11-10  
 

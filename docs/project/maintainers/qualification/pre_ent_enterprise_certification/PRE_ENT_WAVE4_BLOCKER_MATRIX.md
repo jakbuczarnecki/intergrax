@@ -1,7 +1,7 @@
 # PRE-ENT Wave 4 — blocker matrix
 
 **Campaign:** `pre_ent_enterprise_certification`  
-**Snapshot @ CERT_DOCS_HEAD:** `03ce1d6f380f92bc86cfadac9a88fcd6473e5ec3`  
+**Snapshot @ CERT_DOCS_HEAD:** `d00df592037404cd6c2b1bc95c00757544d551d8`  
 **Product evidence pin:** `1e83ade3f5fb951a9eedd85d4dae89ead48955ee` (`AUDIT_HEAD`)  
 **Date:** 2026-11-10  
 
