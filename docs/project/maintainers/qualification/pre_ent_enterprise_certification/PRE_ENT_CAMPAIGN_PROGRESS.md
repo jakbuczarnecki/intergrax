@@ -1,10 +1,10 @@
 # PRE-ENT enterprise certification — campaign progress snapshot
 
 **Campaign:** `pre_ent_enterprise_certification`  
-**Evidence HEAD:** `9fafaa28807741be76a238b6a12864019efbaae9`  
+**Evidence HEAD:** `085be5ca9b54a43a9a8929b1c3f2e955c7bfd6c0`  
 **Branch:** `development`  
 **Date:** 2026-11-10  
-**vs `origin/development`:** **ahead 10**, **behind 2** (local; **not pushed**)
+**vs `origin/development`:** **ahead 13**, **behind 0** (local; **not pushed**; merge `0ad6511ac` integrated)
 
 **Verdict ceiling:** no B6 PASS, no G6 PASS, no FRZ promotion, no stage `CLOSED` in this snapshot.
 
@@ -12,9 +12,10 @@
 
 | Field | Value |
 | --- | --- |
-| **HEAD** | `9fafaa28807741be76a238b6a12864019efbaae9` |
-| **Ahead of origin** | 10 |
-| **Behind origin** | 2 |
+| **HEAD** | `085be5ca9b54a43a9a8929b1c3f2e955c7bfd6c0` |
+| **Ahead of origin** | 13 |
+| **Behind origin** | 0 |
+| **Formal checkpoint** | [`PRE_ENT_FORMAL_CLOSURE_CHECKPOINT.md`](PRE_ENT_FORMAL_CLOSURE_CHECKPOINT.md) |
 
 ## Waves — done (factual @ HEAD)
 

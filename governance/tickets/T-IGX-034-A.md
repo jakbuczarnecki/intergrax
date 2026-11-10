@@ -61,6 +61,13 @@ Full matrix and Wave 1 actions: [`WAVE0_PRESENCE_RECONCILIATION.md`](../../docs/
 
 Wave 0 scope **complete** (2026-11-10). Predecessor tickets 030-B/C, 032-A, 033-A: code on HEAD, lifecycle files still `plan_approved` — advance only after Wave 2 qualification unless operator batches lifecycle hygiene.
 
+### Formal closure checkpoint (2026-11-10, post `origin/development` merge)
+
+- Merge `origin/development` @ `0ad6511ac` into local `development` — merge commit `085be5ca9`.
+- BND-03B gate smoke: 2 passed @ `085be5ca9`.
+- Operator §7 report: [`PRE_ENT_FORMAL_CLOSURE_CHECKPOINT.md`](../../docs/project/maintainers/qualification/pre_ent_enterprise_certification/PRE_ENT_FORMAL_CLOSURE_CHECKPOINT.md).
+- **No PASS**, **no closure**; Wave 3 auditor sessions not run in this session.
+
 ### Wave 1 parallel batches (routing only; not started)
 
 | Ticket | Slug / parallelism | Owner action |
