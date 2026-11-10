@@ -4,7 +4,7 @@
   "plan_baseline_sha": "4d54dfa9e485329d81d0e0fa72436867458f3426",
   "formal_master_plan_publication_sha": "116fb6a2ae5a40605bb569ac7685b62eb0a42539",
   "test_execution_sha": "32a9633440007eb4e8f00a825bbf2e399192b346",
-  "evidence_publication_sha": "63ff80819da5a7324257ea598e342810c1838199",
+  "evidence_publication_sha": "481b2cc2c10a407fd2b93cf9c69714e8894aeccf",
   "b4_mechanical_ci_sha": "162acea31833a6d40d3a5e8e79638db7e443ce3e",
   "b4_nightly_run_id": "42015310879",
   "internal_closure_status": "INTERNALLY_CLOSED_AUTOMATED_INTERNAL_AUDIT_ACCEPTED",
