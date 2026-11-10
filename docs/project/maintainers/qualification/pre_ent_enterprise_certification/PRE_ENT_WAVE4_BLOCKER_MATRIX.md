@@ -9,18 +9,18 @@
 
 Operator §7 baseline: [`PRE_ENT_FORMAL_CLOSURE_CHECKPOINT.md`](PRE_ENT_FORMAL_CLOSURE_CHECKPOINT.md) §4, [`PRE_ENT_CAMPAIGN_PROGRESS.md`](PRE_ENT_CAMPAIGN_PROGRESS.md).
 
-| ID | Blocker | Owner | Campaign state | Wave 4 certifier impact | Close criterion |
+| ID | Blocker | Owner | Campaign state | Wave 4 certifier impact | Wave 5 disposition (034-I) | Close criterion |
 | --- | --- | --- | --- | --- | --- |
-| **G-SKILL** | SKILL-X §3.0.4 (upgrade/disable/remove) beyond 032-A pinning | **Operator** | **BLOCKED** — D-PREENT-02=defer | 032-A certifier: **scoped** KV pinning only; no SKILL-X parent ACCEPT | **G-SKILL-A** or **G-SKILL-B** + signed `Approved` line |
-| **F10** | TES ladder pin `496016c0cf6cc5cf1f9a29d885677605dd0415d3`; 182 TREE_DRIFT / 0 SEMANTIC @ campaign tree | **Operator + EBH-7** | **BLOCKED** — D-PREENT-04=block | No 034-F certifier row; EBH-7 rollup blocked | Controlled TES advance or formal scoped N/A — [`WAVE1_F10_PINNED_REPLAY.md`](WAVE1_F10_PINNED_REPLAY.md), `T-IGX-034-F.md` |
-| **OD-HIST04-A** | EVOL-X formal ratification absent | **Operator** | **DEFER** — D-PREENT-06 | `FORMAL_AUTHORITY_INCOMPLETE`; 030-C scoped ACCEPT OK | Operator ratification record (no PRE-ENT material IIAC edits) |
-| **OD-HIST04-B** | Amendment 01 vs IIAC material paths | **Governance** | **OPEN** | Campaign does not edit 6 IIAC paths; certifier notes limitation | Governance decision; IIAC record `8045915a` |
-| **OD-HIST04-C** | TOOL-LIFE-X roadmap label vs open disposition | **Operator** | **DEFER** — D-PREENT-06 | 030-C certifier: ACCEPT **SCOPED**; no parent TOOL-LIFE-X stage CLOSED | Operator label alignment or scoped acceptance |
-| **Pop E** | ENT-AUDIT-X enterprise audit Population E | **ENT-AUDIT-X** | **OUT OF PRE-ENT** — D-PREENT-03=b | 034-G limited to Pop **B–D**; no Pop E cert in PRE-ENT | ENT owner rollup + FRZ-AUD disposition |
-| **034-C** | HIST-F-DUR-01 / durable pinning semantics | **Operator** | **DEFER** — D-PREENT-07 | Out of Wave 4 five-row queue; blocks matrix honesty for DUR family | Implement / accept residual / defer decision |
-| **034-D** | TOOL-LIFE invoker qual-only (030-C on HEAD) | **Campaign** | **NOT STARTED** | Optional qual batch before matrix | Qual log + auditor if material gap found |
-| **034-G** | QUAL-X Pop B–D pinned HEAD | **Campaign** | **NOT STARTED** | Required before Wave 5 matrix for qual populations | Serial pytest per `T-IGX-034-G.md` |
-| **034-H** | DIST-SCALE §3.0.6 vs §5 + Q-03 audit | **Campaign** | **NOT STARTED** | Matrix row BLOCKED until audit | Independent audit or scoped disposition |
+| **G-SKILL** | SKILL-X §3.0.4 (upgrade/disable/remove) beyond 032-A pinning | **Operator** | **BLOCKED** — D-PREENT-02=defer | 032-A certifier: **scoped** KV pinning only; no SKILL-X parent ACCEPT | **EXACT_BLOCKER** | **G-SKILL-A** or **G-SKILL-B** + signed `Approved` line |
+| **F10** | TES ladder pin `496016c0cf6cc5cf1f9a29d885677605dd0415d3`; 182 TREE_DRIFT / 0 SEMANTIC @ campaign tree | **Operator + EBH-7** | **BLOCKED** — D-PREENT-04=block | No 034-F certifier row; EBH-7 rollup blocked | **EXACT_BLOCKER** | Controlled TES advance or formal scoped N/A — [`WAVE1_F10_PINNED_REPLAY.md`](WAVE1_F10_PINNED_REPLAY.md), `T-IGX-034-F.md` |
+| **OD-HIST04-A** | EVOL-X formal ratification absent | **Operator** | **DEFER** — D-PREENT-06 | `FORMAL_AUTHORITY_INCOMPLETE`; 030-C scoped ACCEPT OK | **EXACT_BLOCKER** | Operator ratification record (no PRE-ENT material IIAC edits) |
+| **OD-HIST04-B** | Amendment 01 vs IIAC material paths | **Governance** | **OPEN** | Campaign does not edit 6 IIAC paths; certifier notes limitation | **EXACT_BLOCKER** | Governance decision; IIAC record `8045915a` |
+| **OD-HIST04-C** | TOOL-LIFE-X roadmap label vs open disposition | **Operator** | **DEFER** — D-PREENT-06 | 030-C certifier: ACCEPT **SCOPED**; no parent TOOL-LIFE-X stage CLOSED | **EXACT_BLOCKER** | Operator label alignment or scoped acceptance |
+| **Pop E** | ENT-AUDIT-X enterprise audit Population E | **ENT-AUDIT-X** | **OUT OF PRE-ENT** — D-PREENT-03=b | 034-G limited to Pop **B–D**; no Pop E cert in PRE-ENT | **N/A (PRE-ENT)** | ENT owner rollup + FRZ-AUD disposition |
+| **034-C** | HIST-F-DUR-01 / durable pinning semantics | **Operator** | **DEFER** — D-PREENT-07 | Out of Wave 4 five-row queue; blocks matrix honesty for DUR family | **EXACT_BLOCKER** | Implement / accept residual / defer decision |
+| **034-D** | TOOL-LIFE invoker qual-only (030-C on HEAD) | **Campaign** | **NOT STARTED** | Optional qual batch before matrix | **EXACT_BLOCKER** | Qual log + auditor if material gap found |
+| **034-G** | QUAL-X Pop B–D pinned HEAD | **Campaign** | **NOT STARTED** | Required before Wave 5 matrix for qual populations | **EXACT_BLOCKER** | Serial pytest per `T-IGX-034-G.md` |
+| **034-H** | DIST-SCALE §3.0.6 vs §5 + Q-03 audit | **Campaign** | **NOT STARTED** | Matrix row BLOCKED until audit | **EXACT_BLOCKER** | Independent audit or scoped disposition |
 
 ## Wave 3 → Wave 4 dependency
 
@@ -33,4 +33,5 @@ Operator §7 baseline: [`PRE_ENT_FORMAL_CLOSURE_CHECKPOINT.md`](PRE_ENT_FORMAL_C
 
 - Certifier queue: [`PRE_ENT_WAVE4_CERTIFICATION_HANDOFF_QUEUE.md`](PRE_ENT_WAVE4_CERTIFICATION_HANDOFF_QUEUE.md)  
 - Waves 5–6: [`PRE_ENT_WAVE4_TO_6_CLOSURE_PATH.md`](PRE_ENT_WAVE4_TO_6_CLOSURE_PATH.md)  
+- Wave 5 final matrix: [`PRE_ENT_ENTERPRISE_CERTIFICATION_FINAL_MATRIX.md`](PRE_ENT_ENTERPRISE_CERTIFICATION_FINAL_MATRIX.md)  
 - Wave 0 routing: [`WAVE0_PRESENCE_RECONCILIATION.md`](WAVE0_PRESENCE_RECONCILIATION.md)

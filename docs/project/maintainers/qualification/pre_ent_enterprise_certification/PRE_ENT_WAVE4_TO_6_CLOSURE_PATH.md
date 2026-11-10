@@ -28,17 +28,19 @@
 
 ---
 
-## Wave 5 — matrix publication (`T-IGX-034-I`)
+## Wave 5 — matrix publication (`T-IGX-034-I`) — **PUBLISHED**
 
-| Gate | Criterion | Owner |
-| --- | --- | --- |
-| **W5-G0** | Wave 4 certifier dispositions recorded for all **ready** predecessor tickets (or explicit CONDITIONAL with operator acceptance) | Certifier + operator |
-| **W5-G1** | Wave 1 open batches advanced or formally deferred in matrix: **034-C, 034-D, 034-G, 034-H**, **034-F** (F10 blocker) | Campaign / operator |
-| **W5-G2** | Blocker matrix rows **G-SKILL, F10, OD-HIST04, Pop E** = PASS, N/A-with-evidence, or **EXACT_BLOCKER** (no silent OPEN) | Operator |
-| **W5-G3** | Publish [`PRE_ENT_ENTERPRISE_CERTIFICATION_FINAL_MATRIX.md`](PRE_ENT_ENTERPRISE_CERTIFICATION_FINAL_MATRIX.md) (create @ Wave 5) + roadmap §5 ledger update per ticket **034-I** | Orchestrator after operator gate |
-| **W5-G4** | `verify_iiac --require-in-force` (or successor) green @ publication SHA | CI |
+| Gate | Criterion | SSOT | Status |
+| --- | --- | --- | --- |
+| **W5-G0** | Wave 4 certifier dispositions for five ready predecessors | [`wave4_certs/WAVE4_CERT_CONSOLIDATED_REGISTER.md`](wave4_certs/WAVE4_CERT_CONSOLIDATED_REGISTER.md) | **met** (5/5 **ACCEPT_SCOPED**) |
+| **W5-G1** | Wave 1 open rows honest in matrix (**034-C/D/G/H**, **034-F**) | [`PRE_ENT_ENTERPRISE_CERTIFICATION_FINAL_MATRIX.md`](PRE_ENT_ENTERPRISE_CERTIFICATION_FINAL_MATRIX.md) §3 | **met** (all **EXACT_BLOCKER** or routed defer — no silent OPEN) |
+| **W5-G2** | Global blockers **G-SKILL, F10, OD-HIST04, Pop E** = N/A-with-evidence or **EXACT_BLOCKER** | Same matrix §3 | **met** |
+| **W5-G3** | Final matrix + optional §5 ledger row | Final matrix + [`PLATFORM_ENTERPRISE_COMPLETION_ROADMAP.md`](../../plans/PLATFORM_ENTERPRISE_COMPLETION_ROADMAP.md) §5 | **PUBLISHED** (matrix SSOT; ledger row non-closing) |
+| **W5-G4** | `verify_iiac --require-in-force` @ publication tree | IIAC activation script | **pending** post-commit verification |
 
-**034-I ticket:** matrix/ledger pub — **blocked** until W5-G0..G2 honest.
+**034-I ticket:** `governance/tickets/T-IGX-034-I.md` — lifecycle `plan_pending` until operator `Approved:` line for push.
+
+**Wave 5 label:** **PUBLISHED** — **not** campaign **CLOSED**, **not** Wave 6, **not** FRZ promotion.
 
 ---
 

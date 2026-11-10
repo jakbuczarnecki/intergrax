@@ -88,22 +88,25 @@ Approved: D-PREENT-01=b; D-PREENT-02=defer; D-PREENT-03=b; D-PREENT-04=block; D-
 | **Closure path** | [`PRE_ENT_WAVE4_TO_6_CLOSURE_PATH.md`](PRE_ENT_WAVE4_TO_6_CLOSURE_PATH.md) — W4-G4 **PUBLISHED** |
 | **032-A P2-C qual** | Certifier **replayed** @ Wave 4 — 7 passed (`WAVE4_CERT_T-IGX-032-A.md`); **G-SKILL** parent **out of scope** |
 
-### Wave 5 — matrix publication (entry; **not** started)
+### Wave 5 — matrix publication (**PUBLISHED**)
 
-**Ticket routing:** **`T-IGX-034-I`** (matrix/ledger pub — referenced in `governance/tickets/T-IGX-034-A.md`; dedicated ticket file **not** present). Gates: [`PRE_ENT_WAVE4_TO_6_CLOSURE_PATH.md`](PRE_ENT_WAVE4_TO_6_CLOSURE_PATH.md) **W5-G0..G4**.
+**Status:** **PUBLISHED** on branch `pre-ent/wave5-matrix-034i` — honest matrix committed; campaign **NOT CLOSED**; **no** FRZ / **no** terminal label until Wave 6.
 
-**Readiness:** Wave 4 **PUBLISHED** satisfies **W5-G0** (cert dispositions on record). **W5-G1..G2** **blocked** — honest matrix **not** full PASS until rows below are PASS, N/A-with-evidence, or **EXACT_BLOCKER**:
-
-| Item | Status @ publication |
+| Field | Value |
 | --- | --- |
-| **G-SKILL** | **EXACT_BLOCKER** — SKILL-X §3.0.4; 032-A scoped only (D-PREENT-02=defer) |
-| **F10 TES** (`496016c0`) | **EXACT_BLOCKER** — D-PREENT-04=block; **T-IGX-034-F** |
-| **OD-HIST04-A/B/C** | **EXACT_BLOCKER** — 030-C **ACCEPT_SCOPED** only (D-PREENT-06/07=defer) |
-| **Population E** | **N/A (PRE-ENT)** — ENT-AUDIT-X owner (D-PREENT-03=b) |
-| **T-IGX-034-C** | **OPEN** (defer) |
-| **T-IGX-034-D** | **OPEN** (qual-only) |
-| **T-IGX-034-G** | **OPEN** — Pop B–D routed, not started |
-| **T-IGX-034-H** | **OPEN** — Wave 1 |
+| **Ticket** | `governance/tickets/T-IGX-034-I.md` (lifecycle `plan_pending` — operator `Approved:` not written by implementer) |
+| **Final matrix** | [`PRE_ENT_ENTERPRISE_CERTIFICATION_FINAL_MATRIX.md`](PRE_ENT_ENTERPRISE_CERTIFICATION_FINAL_MATRIX.md) |
+| **WAVE5_PUBLICATION_SHA** | *(batch 2 pin — see below after publication commit)* |
+| **Closure path** | [`PRE_ENT_WAVE4_TO_6_CLOSURE_PATH.md`](PRE_ENT_WAVE4_TO_6_CLOSURE_PATH.md) — W5-G0..G3 **met**; W5-G4 IIAC after publish |
+| **Ceiling** | **PRE_ENT_PREDECESSORS_EXACT_BLOCKERS** disposition documented — **not** assigned as campaign label until W6-G3 |
+
+| Item | Wave 5 disposition |
+| --- | --- |
+| **G-SKILL** | **EXACT_BLOCKER** |
+| **F10 TES** (`496016c0`) | **EXACT_BLOCKER** |
+| **OD-HIST04-A/B/C** | **EXACT_BLOCKER** |
+| **Population E** | **N/A (PRE-ENT)** |
+| **T-IGX-034-C/D/G/H** | **EXACT_BLOCKER** |
 
 ## Next (operator / new sessions)
 
@@ -113,7 +116,7 @@ Approved: D-PREENT-01=b; D-PREENT-02=defer; D-PREENT-03=b; D-PREENT-04=block; D-
 | **IIAC re-activation** | **Done** — D-IIAC-01=a + PR #437 |
 | **Wave 3 audits** | **Done** @ `AUDIT_HEAD` — register + reports published; **no** G6 **CLOSED** |
 | **Wave 4 certifier** | **PUBLISHED** — **5/5** ACCEPT_SCOPED @ `AUDIT_HEAD`; **no** auto FRZ / **no** G6 CLOSED |
-| **Wave 5** | **Entry** — **`T-IGX-034-I`** matrix pub; **W5-G1..G2** blocked (see Wave 5 section) |
+| **Wave 5** | **PUBLISHED** — final matrix + SSOT; **not** campaign **CLOSED** |
 | **Wave 6** | **Pending** — cross-audit per [`PRE_ENT_WAVE4_TO_6_CLOSURE_PATH.md`](PRE_ENT_WAVE4_TO_6_CLOSURE_PATH.md) (W6-G0..G4) |
 | **ENT Population E** | **Out of PRE-ENT** per D-PREENT-03=b |
 
@@ -130,4 +133,5 @@ Excluded from commit (policy): `tests/qualification/ent_audit_x/CANDIDATE_ENTERP
 - Wave 3 audit register: [`wave3_audits/WAVE3_AUDIT_CONSOLIDATED_REGISTER.md`](wave3_audits/WAVE3_AUDIT_CONSOLIDATED_REGISTER.md)  
 - Wave 4 certifier: [`PRE_ENT_WAVE4_CERTIFICATION_HANDOFF_QUEUE.md`](PRE_ENT_WAVE4_CERTIFICATION_HANDOFF_QUEUE.md)  
 - Wave 4 certifier register: [`wave4_certs/WAVE4_CERT_CONSOLIDATED_REGISTER.md`](wave4_certs/WAVE4_CERT_CONSOLIDATED_REGISTER.md)  
+- Wave 5 final matrix: [`PRE_ENT_ENTERPRISE_CERTIFICATION_FINAL_MATRIX.md`](PRE_ENT_ENTERPRISE_CERTIFICATION_FINAL_MATRIX.md)  
 - Parent ticket: `governance/tickets/T-IGX-034-A.md`

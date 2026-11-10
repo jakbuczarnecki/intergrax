@@ -119,3 +119,11 @@ Date: 2026-11-10
 - **Closure path:** [`PRE_ENT_WAVE4_TO_6_CLOSURE_PATH.md`](../../docs/project/maintainers/qualification/pre_ent_enterprise_certification/PRE_ENT_WAVE4_TO_6_CLOSURE_PATH.md).
 - **Note:** T-IGX-032-A Wave 3 did not run P2-C qual — certifier replay **optional** or **defer**.
 - **This publisher turn:** no certifier sessions, no B6/G6/FRZ promotion.
+
+### Wave 5 matrix publication — **PUBLISHED** (2026-11-10)
+
+- **Ticket:** [`T-IGX-034-I.md`](T-IGX-034-I.md) — plan digest recorded; lifecycle `plan_pending` (operator `Approved:` pending for push).
+- **SSOT:** [`PRE_ENT_ENTERPRISE_CERTIFICATION_FINAL_MATRIX.md`](../../docs/project/maintainers/qualification/pre_ent_enterprise_certification/PRE_ENT_ENTERPRISE_CERTIFICATION_FINAL_MATRIX.md).
+- **Dispositions:** all open rows **EXACT_BLOCKER** or **N/A (PRE-ENT)**; five Wave 4 predecessors remain **ACCEPT_SCOPED** only.
+- **WAVE5_PUBLICATION_SHA:** pinned in campaign progress (batch 2).
+- **STOP:** Wave 6 not started; no campaign **CLOSED**, no FRZ promotion, no merge authority in Wave 5 scope.
