@@ -34,3 +34,16 @@ Per [`WAVE0_PRESENCE_RECONCILIATION.md`](WAVE0_PRESENCE_RECONCILIATION.md), **HI
 
 - Local `development` vs `origin/development`: ahead/behind unchanged by this qual (no pull, no push).
 - BND-03B gate green @ `f2682d651` does not claim global FRZ-BND-03 PASS (see [`WAVE1_BND03B_STATUS.md`](WAVE1_BND03B_STATUS.md) CLI bootstrap residual).
+
+---
+
+## Post-IIAC spot replay @ `1e83ade3f` (2026-11-10)
+
+**Trigger:** docs-only delta `03aa10959..1e83ade3f` after ACT-N11 activation — G6 spot check per [`PRE_ENT_WAVE3_RESUME_AFTER_IIAC.md`](PRE_ENT_WAVE3_RESUME_AFTER_IIAC.md).
+
+| Path | Outcome |
+| --- | --- |
+| `tests/unit/architecture/test_bnd03b_product_manifest_registry_gate.py` | **pass** (2) |
+| `tests/qualification/roadmap_replay_x/test_roadmap_replay_x_mechanical_exit_gates.py` | **pass** (16) |
+
+**Aggregate:** 18 passed, exit 0. Full serial re-run **not** required (no product path change in Δ).

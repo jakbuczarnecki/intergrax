@@ -1,7 +1,7 @@
 # PRE-ENT Wave 3 — independent audit handoff queue
 
 **Campaign:** `pre_ent_enterprise_certification`  
-**AUDIT_HEAD (checkout for new sessions):** `03aa10959acf6ec3d81a7a0de8ac8224c8126973` (`development` po merge PR #434). **Gate:** `verify_iiac --require-in-force` **exit 0** na tym SHA **przed** startem sesji — obecnie **FAIL** (ACT-N11). Poprzedni pin: `085be5ca9`.  
+**AUDIT_HEAD (checkout for new sessions):** `1e83ade3f5fb951a9eedd85d4dae89ead48955ee` (`origin/development` post-IIAC PR #437). **Gate:** `verify_iiac --require-in-force` **exit 0** — **PASS** @ `1e83ade3f` ([`PRE_ENT_POST_IIAC_GATE_EVIDENCE.md`](PRE_ENT_POST_IIAC_GATE_EVIDENCE.md)). Poprzednie piny: `03aa10959`, `085be5ca9`, `11ac8ad85`.  
 **Branch:** `development`  
 **Date:** 2026-11-10  
 **Publisher:** T-IGX-034-A Wave 3 routing — **no PASS**, **no closure**, **no push**
