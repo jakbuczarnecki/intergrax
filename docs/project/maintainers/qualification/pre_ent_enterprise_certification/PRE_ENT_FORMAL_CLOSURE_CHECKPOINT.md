@@ -18,7 +18,7 @@
 | **Lokalny HEAD (po integracji)** | `085be5ca9b54a43a9a8929b1c3f2e955c7bfd6c0` |
 | **`origin/development`** | `0ad6511acaa29f18428c10dd8ad6a29262548aec` — ENT-AUDIT-X W4 loop-2 (#433) |
 | **`merge-base --is-ancestor 0ad6511ac HEAD`** | **tak** (exit 0) |
-| **Sync vs origin** | **ahead 13**, **behind 0** (po merge) |
+| **Sync vs origin** | **ahead 15**, **behind 0** (po merge + checkpoint commit) |
 | **Nieśledzone (poza commitem)** | `tests/qualification/ent_audit_x/CANDIDATE_ENTERPRISE_AUDIT_BASELINE.json` — pozostaje poza push |
 
 ### Rozbieżność (źródło)
@@ -90,7 +90,7 @@ Jeśli `gh` nie jest zalogowany: wykonaj push ręcznie i otwórz PR w UI GitHub;
 
 **Ta sesja (orchestrator) nie uruchamia audytów ani nie wystawia PASS.**
 
-**AUDIT_HEAD do nowych czatów audytora:** `085be5ca9b54a43a9a8929b1c3f2e955c7bfd6c0` (zastępuje wcześniejszy `2dad31b27…` po merge z origin). Szczegóły komend pytest: [`PRE_ENT_WAVE3_AUDIT_HANDOFF_QUEUE.md`](PRE_ENT_WAVE3_AUDIT_HANDOFF_QUEUE.md) — zaktualizuj pole AUDIT_HEAD w tym pliku przy commicie towarzyszącym.
+**AUDIT_HEAD do nowych czatów audytora:** `4e4481d35e54ff238e92d567c8f060f12bb031c5` (merge evidence @ `085be5ca9`; zastępuje `2dad31b27…`). Szczegóły pytest: [`PRE_ENT_WAVE3_AUDIT_HANDOFF_QUEUE.md`](PRE_ENT_WAVE3_AUDIT_HANDOFF_QUEUE.md).
 
 | # | Zakres | Ticket | Rola sesji | Minimalny pytest |
 | --- | --- | --- | --- | --- |
@@ -149,7 +149,7 @@ Kolejność zgodna z planem (Waves 4–6 + WBS):
 
 | ID | Decyzja | Opcje | Rekomendacja planu (nie wiążąca) | Termin / blocker dla |
 | --- | --- | --- | --- | --- |
-| **D-PREENT-01** | Publikacja lokalnej linii `development` (13 commitów) na `origin` | (a) push/PR teraz (b) review diff najpierw (c) wstrzymaj | (b) lub (a) po przeglądzie merge ENT W4 | Wave 3 AUDIT_HEAD na GitHub |
+| **D-PREENT-01** | Publikacja lokalnej linii `development` (15 commitów) na `origin` | (a) push/PR teraz (b) review diff najpierw (c) wstrzymaj | (b) lub (a) po przeglądzie merge ENT W4 | Wave 3 AUDIT_HEAD na GitHub |
 | **D-PREENT-02** | G-SKILL | **G-SKILL-A** / **G-SKILL-B** / defer | defer = SKILL-X pozostaje blokadą macierzy | SKILL-X wiersz macierzy |
 | **D-PREENT-03** | OD-HIST01-B Population E | (a) full qual (b) A–D pinned, E @ ENT | **(b)** przyjęte akceptacją planu PRE-ENT | T-IGX-034-G |
 | **D-PREENT-04** | F10 TES ladder | advance `496016c0` / scoped defer / block | brak advance bez polityki P03 | T-IGX-034-F, EBH-7 rollup |

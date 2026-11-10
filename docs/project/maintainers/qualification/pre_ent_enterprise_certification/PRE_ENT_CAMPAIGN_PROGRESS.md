@@ -1,10 +1,10 @@
 # PRE-ENT enterprise certification — campaign progress snapshot
 
 **Campaign:** `pre_ent_enterprise_certification`  
-**Evidence HEAD:** `085be5ca9b54a43a9a8929b1c3f2e955c7bfd6c0`  
+**Evidence HEAD:** `4e4481d35e54ff238e92d567c8f060f12bb031c5`  
 **Branch:** `development`  
 **Date:** 2026-11-10  
-**vs `origin/development`:** **ahead 13**, **behind 0** (local; **not pushed**; merge `0ad6511ac` integrated)
+**vs `origin/development`:** **ahead 15**, **behind 0** (local; **not pushed**; merge `0ad6511ac` integrated)
 
 **Verdict ceiling:** no B6 PASS, no G6 PASS, no FRZ promotion, no stage `CLOSED` in this snapshot.
 
@@ -12,8 +12,8 @@
 
 | Field | Value |
 | --- | --- |
-| **HEAD** | `085be5ca9b54a43a9a8929b1c3f2e955c7bfd6c0` |
-| **Ahead of origin** | 13 |
+| **HEAD** | `4e4481d35e54ff238e92d567c8f060f12bb031c5` |
+| **Ahead of origin** | 15 |
 | **Behind origin** | 0 |
 | **Formal checkpoint** | [`PRE_ENT_FORMAL_CLOSURE_CHECKPOINT.md`](PRE_ENT_FORMAL_CLOSURE_CHECKPOINT.md) |
 
