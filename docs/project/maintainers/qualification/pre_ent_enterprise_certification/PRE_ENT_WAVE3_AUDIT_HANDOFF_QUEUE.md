@@ -4,7 +4,9 @@
 **AUDIT_HEAD (checkout for new sessions):** `1e83ade3f5fb951a9eedd85d4dae89ead48955ee` (`origin/development` post-IIAC PR #437). **Gate:** `verify_iiac --require-in-force` **exit 0** @ `1e83ade3f` ([`PRE_ENT_POST_IIAC_GATE_EVIDENCE.md`](PRE_ENT_POST_IIAC_GATE_EVIDENCE.md)) — IIAC **IN_FORCE**; **no G6 audit PASS** from implementer. Poprzednie piny: `03aa10959`, `085be5ca9`, `11ac8ad85`.  
 **Branch:** `development`  
 **Date:** 2026-11-10  
-**Publisher:** T-IGX-034-A Wave 3 routing — **no PASS**, **no closure**, **no push**
+**Publisher:** T-IGX-034-A Wave 3 consolidation — ticket-scope auditor evidence published; **no G6 campaign CLOSED**, **no certifier PASS**, **no FRZ promotion**
+
+**Consolidated register:** [`wave3_audits/WAVE3_AUDIT_CONSOLIDATED_REGISTER.md`](wave3_audits/WAVE3_AUDIT_CONSOLIDATED_REGISTER.md)
 
 **Independence rule (all rows below):** Sessions that implemented or qualified these batches **must not** declare G6 PASS, IIAC PASS, FRZ promotion, stage `CLOSED`, or `ready_for_audit` self-promotion. Operator routes a **new chat** with role `independent-quality-auditor` per [`agent-env/rules/intergrax-independent-audit.md`](../../../../agent-env/rules/intergrax-independent-audit.md) and [`INDEPENDENT-REVIEW-HANDOFF.md`](../../../technical/devos/INDEPENDENT-REVIEW-HANDOFF.md).
 
@@ -16,15 +18,15 @@ uv run --extra dev-ci python -m pytest -p no:xdist <path> -q
 
 ---
 
-## Ready — schedule new independent auditor session @ AUDIT_HEAD
+## Executed — independent auditor sessions @ AUDIT_HEAD (2026-11-10)
 
-Each row is **engineering / qual complete enough** for read-only auditor replay on exact `AUDIT_HEAD`. Auditor captures exit codes and writes under `.tmp/session/pre-ent-wave3-audit/<slug>/`.
+Five parallel sessions @ `1e83ade3f` completed (D-PREENT-05). Per-ticket auditor **PASS** is **ticket-scope only** (not certifier / campaign closure). Session logs under `.tmp/session/pre-ent-wave3-audit/<slug>/` (local; not committed).
 
 ### 1 — T-IGX-034-B (BND-03B manifest edge)
 
 | Field | Value |
 | --- | --- |
-| **Status** | **Ready** @ `AUDIT_HEAD` |
+| **Status** | **Executed** — auditor **PASS** @ `AUDIT_HEAD` ([`WAVE3_AUDIT_CONSOLIDATED_REGISTER.md`](wave3_audits/WAVE3_AUDIT_CONSOLIDATED_REGISTER.md)) |
 | **Ticket Ref** | `governance/tickets/T-IGX-034-B.md` |
 | **Lifecycle** | `quality_gate` — **not** closed |
 | **Implementer must not PASS** | Yes — no FRZ-BND-03 global PASS, no `ready_for_audit` from implementer |
@@ -52,7 +54,7 @@ uv run --extra dev-ci python -m pytest -p no:xdist tests/unit/architecture/test_
 
 | Field | Value |
 | --- | --- |
-| **Status** | **Ready** @ `AUDIT_HEAD` |
+| **Status** | **Executed** — auditor **PASS** @ `AUDIT_HEAD` ([`WAVE3_AUDIT_CONSOLIDATED_REGISTER.md`](wave3_audits/WAVE3_AUDIT_CONSOLIDATED_REGISTER.md)) |
 | **Ticket Ref** | `governance/tickets/T-IGX-034-E.md` |
 | **Lifecycle** | `in_progress` — mechanical reconciliation only |
 | **Implementer must not PASS** | Yes — no FRZ row promotion, no roadmap §5 publication |
@@ -80,7 +82,7 @@ uv run --extra dev-ci python -m pytest -p no:xdist tests/qualification/roadmap_r
 
 | Field | Value |
 | --- | --- |
-| **Status** | **Ready** @ `AUDIT_HEAD` |
+| **Status** | **Executed** — auditor **PASS** @ `AUDIT_HEAD` ([`WAVE3_AUDIT_CONSOLIDATED_REGISTER.md`](wave3_audits/WAVE3_AUDIT_CONSOLIDATED_REGISTER.md)) |
 | **Ticket Ref** | `governance/tickets/T-IGX-030-B.md` |
 | **Lifecycle** | `plan_approved` (lags git) — **not** `closed` |
 | **Implementer must not PASS** | Yes — no TOOL-LIFE-X stage closure, no FRZ promotion |
@@ -108,7 +110,7 @@ uv run --extra dev-ci python -m pytest -p no:xdist tests/unit/architecture/test_
 
 | Field | Value |
 | --- | --- |
-| **Status** | **Ready** @ `AUDIT_HEAD` |
+| **Status** | **Executed** — auditor **PASS** @ `AUDIT_HEAD` ([`WAVE3_AUDIT_CONSOLIDATED_REGISTER.md`](wave3_audits/WAVE3_AUDIT_CONSOLIDATED_REGISTER.md)) |
 | **Ticket Ref** | `governance/tickets/T-IGX-030-C.md` |
 | **Lifecycle** | `plan_approved` — **not** `closed` |
 | **Implementer must not PASS** | Yes — independent TOOL-LIFE-X re-audit is separate campaign stream |
@@ -136,7 +138,7 @@ uv run --extra dev-ci python -m pytest -p no:xdist tests/unit/runtime/nexus/tool
 
 | Field | Value |
 | --- | --- |
-| **Status** | **Ready** @ `AUDIT_HEAD` |
+| **Status** | **Executed** — auditor **PASS** @ `AUDIT_HEAD` ([`WAVE3_AUDIT_CONSOLIDATED_REGISTER.md`](wave3_audits/WAVE3_AUDIT_CONSOLIDATED_REGISTER.md)) |
 | **Ticket Ref** | `governance/tickets/T-IGX-032-A.md` |
 | **Lifecycle** | `plan_approved` — **not** `closed` |
 | **Implementer must not PASS** | Yes — PROD-Q P2-C owner path; **HIST-F-DUR-01** remains out of scope (see 034-C) |
@@ -178,7 +180,7 @@ uv run --extra dev-ci python -m pytest -p no:xdist tests/qualification/prod_q/te
 | **OD-HIST04-C** | TOOL-LIFE-X label vs open operator decision | Wave 0 blocker table |
 | **F10 TES ladder (`496016c0`)** | In-tree F10 `TEST_EXECUTION_SHA` **`496016c0cf6cc5cf1f9a29d885677605dd0415d3`** ≠ governed execution pin; **4 identity paths**, **182 TREE_DRIFT / 0 SEMANTIC** — ladder advance blocked until policy allows controlled SHA | [`WAVE1_F10_PINNED_REPLAY.md`](WAVE1_F10_PINNED_REPLAY.md), [`WAVE1_F10_STATUS.md`](WAVE1_F10_STATUS.md), `governance/tickets/T-IGX-034-F.md` |
 | **ENT Population E** | Enterprise audit rollup not run; REG defer per historical dossier | [`PRE_ENT_CAMPAIGN_PROGRESS.md`](PRE_ENT_CAMPAIGN_PROGRESS.md) |
-| **Wave 3 sessions (this queue)** | Operator **D-PREENT-05** — five separate auditor chats; briefs @ [`PRE_ENT_WAVE3_AUDITOR_SESSION_BRIEFS.md`](PRE_ENT_WAVE3_AUDITOR_SESSION_BRIEFS.md) | Execution = new chats; orchestrator does not run audits |
+| **Wave 3 sessions (this queue)** | **Done** — 5/5 @ `AUDIT_HEAD`; register @ [`WAVE3_AUDIT_CONSOLIDATED_REGISTER.md`](wave3_audits/WAVE3_AUDIT_CONSOLIDATED_REGISTER.md) | Residual campaign blockers (G-SKILL, F10, ENT Pop E, …) unchanged |
 
 **Related open Wave 1 (not in ready queue):** T-IGX-034-C (DUR-01), T-IGX-034-D/G/H — implement or qual incomplete; no auditor routing here.
 

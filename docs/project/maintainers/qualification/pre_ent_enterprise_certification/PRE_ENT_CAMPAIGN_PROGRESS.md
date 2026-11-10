@@ -58,14 +58,16 @@ Approved: D-PREENT-01=b; D-PREENT-02=defer; D-PREENT-03=b; D-PREENT-04=block; D-
 
 ### Wave 3 — independent audits (D-PREENT-05)
 
-**Status:** **scheduled — not executed** (implementer/orchestrator sessions do not run audits or declare PASS).
+**Status:** **executed @ AUDIT_HEAD** — five parallel auditor sessions complete; **5/5 ticket-scope PASS**. **Not** certifier / G6 campaign closure (ceiling unchanged).
 
 | Field | Value |
 | --- | --- |
-| **Operator decision** | **D-PREENT-05** — five separate `independent-quality-auditor` chats |
+| **Operator decision** | **D-PREENT-05** — five separate `independent-quality-auditor` chats (worktrees `w3-bnd`, `w3-replay`, `w3-030b`, `w3-030c`, `w3-032a`) |
 | **AUDIT_HEAD** | `1e83ade3f5fb951a9eedd85d4dae89ead48955ee` |
 | **IIAC gate** | exit **0** @ `AUDIT_HEAD` — [`PRE_ENT_POST_IIAC_GATE_EVIDENCE.md`](PRE_ENT_POST_IIAC_GATE_EVIDENCE.md) |
-| **Queue** | [`PRE_ENT_WAVE3_AUDIT_HANDOFF_QUEUE.md`](PRE_ENT_WAVE3_AUDIT_HANDOFF_QUEUE.md) — **5× Ready** |
+| **Consolidated register** | [`wave3_audits/WAVE3_AUDIT_CONSOLIDATED_REGISTER.md`](wave3_audits/WAVE3_AUDIT_CONSOLIDATED_REGISTER.md) |
+| **Per-ticket reports** | [`wave3_audits/`](wave3_audits/) — `WAVE3_AUDIT_T-IGX-*.md` |
+| **Queue** | [`PRE_ENT_WAVE3_AUDIT_HANDOFF_QUEUE.md`](PRE_ENT_WAVE3_AUDIT_HANDOFF_QUEUE.md) — **5× executed** |
 | **Briefs** | [`PRE_ENT_WAVE3_AUDITOR_SESSION_BRIEFS.md`](PRE_ENT_WAVE3_AUDITOR_SESSION_BRIEFS.md) — published |
 
 ## Next (operator / new sessions)
@@ -74,7 +76,7 @@ Approved: D-PREENT-01=b; D-PREENT-02=defer; D-PREENT-03=b; D-PREENT-04=block; D-
 | --- | --- |
 | **PR #434 merge** | **Done** @ `03aa10959` |
 | **IIAC re-activation** | **Done** — D-IIAC-01=a + PR #437 |
-| **Wave 3 audits** | **Scheduled** — briefs + queue Ready @ `AUDIT_HEAD`; sessions **not executed** |
+| **Wave 3 audits** | **Done** @ `AUDIT_HEAD` — register + reports published; **no** G6 **CLOSED** |
 | **ENT Population E** | **Out of PRE-ENT** per D-PREENT-03=b |
 
 ## Uncommitted / out-of-commit artifacts (by policy)
@@ -85,4 +87,5 @@ Approved: D-PREENT-01=b; D-PREENT-02=defer; D-PREENT-03=b; D-PREENT-04=block; D-
 
 - Diff review: [`PRE_ENT_PR434_DIFF_REVIEW.md`](PRE_ENT_PR434_DIFF_REVIEW.md)  
 - Wave 3 queue: [`PRE_ENT_WAVE3_AUDIT_HANDOFF_QUEUE.md`](PRE_ENT_WAVE3_AUDIT_HANDOFF_QUEUE.md)  
+- Wave 3 audit register: [`wave3_audits/WAVE3_AUDIT_CONSOLIDATED_REGISTER.md`](wave3_audits/WAVE3_AUDIT_CONSOLIDATED_REGISTER.md)  
 - Parent ticket: `governance/tickets/T-IGX-034-A.md`
