@@ -1,7 +1,8 @@
 # PRE-ENT Wave 3 — copy-paste auditor session briefs (D-PREENT-05)
 
 **Operator:** five **separate** chats, each `independent-quality-auditor`.  
-**AUDIT_HEAD:** `085be5ca9b54a43a9a8929b1c3f2e955c7bfd6c0`  
+**AUDIT_HEAD:** `1e83ade3f5fb951a9eedd85d4dae89ead48955ee`  
+**IIAC gate:** exit 0 @ `AUDIT_HEAD` — evidence [`PRE_ENT_POST_IIAC_GATE_EVIDENCE.md`](PRE_ENT_POST_IIAC_GATE_EVIDENCE.md)  
 **Queue SSOT:** [`PRE_ENT_WAVE3_AUDIT_HANDOFF_QUEUE.md`](PRE_ENT_WAVE3_AUDIT_HANDOFF_QUEUE.md)  
 **Rules:** `@agent-env/rules/intergrax-independent-audit.md` — **no PASS** from implementer sessions.
 
@@ -16,7 +17,7 @@ PRE-ENT Wave 3 independent audit — T-IGX-034-B (BND-03B manifest edge).
 
 Role: independent-quality-auditor (new session; implementer must not PASS).
 
-Checkout @ AUDIT_HEAD: 085be5ca9b54a43a9a8929b1c3f2e955c7bfd6c0 (branch development or detached).
+Checkout @ AUDIT_HEAD: 1e83ade3f5fb951a9eedd85d4dae89ead48955ee (branch development or detached).
 
 Ticket: governance/tickets/T-IGX-034-B.md
 Evidence: docs/project/maintainers/qualification/pre_ent_enterprise_certification/WAVE1_BND03B_STATUS.md
@@ -39,7 +40,7 @@ PRE-ENT Wave 3 independent audit — T-IGX-034-E (ROADMAP-REPLAY-X mechanical ex
 
 Role: independent-quality-auditor (new session).
 
-Checkout @ AUDIT_HEAD: 085be5ca9b54a43a9a8929b1c3f2e955c7bfd6c0
+Checkout @ AUDIT_HEAD: 1e83ade3f5fb951a9eedd85d4dae89ead48955ee
 
 Ticket: governance/tickets/T-IGX-034-E.md
 Evidence: docs/project/maintainers/qualification/pre_ent_enterprise_certification/PRE_ENT_REPLAY_L3_PROD_DELTA.md
@@ -62,7 +63,7 @@ PRE-ENT Wave 3 independent audit — T-IGX-030-B (EBH-4 R1 contract home).
 
 Role: independent-quality-auditor (new session).
 
-Checkout @ AUDIT_HEAD: 085be5ca9b54a43a9a8929b1c3f2e955c7bfd6c0
+Checkout @ AUDIT_HEAD: 1e83ade3f5fb951a9eedd85d4dae89ead48955ee
 
 Ticket: governance/tickets/T-IGX-030-B.md
 Wave 2 qual: docs/project/maintainers/qualification/pre_ent_enterprise_certification/WAVE2_SERIAL_QUAL_LOG.md (#2)
@@ -85,7 +86,7 @@ PRE-ENT Wave 3 independent audit — T-IGX-030-C (pool.submit terminalization, d
 
 Role: independent-quality-auditor (new session).
 
-Checkout @ AUDIT_HEAD: 085be5ca9b54a43a9a8929b1c3f2e955c7bfd6c0
+Checkout @ AUDIT_HEAD: 1e83ade3f5fb951a9eedd85d4dae89ead48955ee
 
 Ticket: governance/tickets/T-IGX-030-C.md
 Wave 2: docs/project/maintainers/qualification/pre_ent_enterprise_certification/WAVE2_SERIAL_QUAL_LOG.md (#3)
@@ -107,7 +108,7 @@ PRE-ENT Wave 3 independent audit — T-IGX-032-A (KV authoritative pinning wirin
 
 Role: independent-quality-auditor (new session).
 
-Checkout @ AUDIT_HEAD: 085be5ca9b54a43a9a8929b1c3f2e955c7bfd6c0
+Checkout @ AUDIT_HEAD: 1e83ade3f5fb951a9eedd85d4dae89ead48955ee
 
 Ticket: governance/tickets/T-IGX-032-A.md
 Wave 2: docs/project/maintainers/qualification/pre_ent_enterprise_certification/WAVE2_SERIAL_QUAL_LOG.md (#4)

@@ -1,9 +1,10 @@
 # PRE-ENT enterprise certification — campaign progress snapshot
 
 **Campaign:** `pre_ent_enterprise_certification`  
-**Evidence HEAD (`development`):** `03aa10959acf6ec3d81a7a0de8ac8224c8126973` — merge PR [#434](https://github.com/jakbuczarnecki/intergrax/pull/434) (2026-11-10T10:45:29Z)  
+**Evidence HEAD (`development`):** `1e83ade3f5fb951a9eedd85d4dae89ead48955ee` — post-IIAC ACT-N11 activation (PR #437 merge)  
+**Product merge (PR #434):** `03aa10959acf6ec3d81a7a0de8ac8224c8126973`  
 **Date:** 2026-11-10  
-**Note:** Merge wykonany **przed** zielonym `governance-fast` / IIAC (odchylenie od litery **D-PREENT-08=a**; fakty dokumentowane, bez cofania merge).
+**Note:** PR #434 merged before IIAC green (documented); ACT-N11 **cleared** 2026-11-10 via D-IIAC-01=a + operator activation — [`PRE_ENT_POST_IIAC_GATE_EVIDENCE.md`](PRE_ENT_POST_IIAC_GATE_EVIDENCE.md).
 
 **Verdict ceiling:** no B6 PASS, no G6 PASS, no FRZ promotion, no stage `CLOSED` in this snapshot.
 
@@ -21,15 +22,16 @@ Approved: D-PREENT-01=b; D-PREENT-02=defer; D-PREENT-03=b; D-PREENT-04=block; D-
 | 04=block | F10 TES ladder advance blocked |
 | 05 | Wave 3: five auditor chats — [`PRE_ENT_WAVE3_AUDITOR_SESSION_BRIEFS.md`](PRE_ENT_WAVE3_AUDITOR_SESSION_BRIEFS.md) |
 | 06–07=defer | OD-HIST04-A/C, 034-C unchanged |
-| **08=a (autoryzowane)** | **WAIT-IIAC** — wykonanie = czekanie + handoff; merge #434 dopiero po zielonym `governance-fast` — [`PRE_ENT_IIAC_ENT_HANDOFF_ACT_N11.md`](PRE_ENT_IIAC_ENT_HANDOFF_ACT_N11.md) |
+| **08=a (autoryzowane)** | **IIAC CLEARED** — handoff [`PRE_ENT_IIAC_ENT_HANDOFF_ACT_N11.md`](PRE_ENT_IIAC_ENT_HANDOFF_ACT_N11.md); Wave 3 G7 pending Operator |
 
 ## Git
 
 | Field | Value |
 | --- | --- |
-| **Published `development` HEAD** | `03aa10959acf6ec3d81a7a0de8ac8224c8126973` |
-| **AUDIT_HEAD (checkout for Wave 3)** | `03aa10959` — **całe drzewo `development` po merge**; poprzedni pin replay `085be5ca9` zachowany jako historia |
-| **IIAC @ HEAD** | **FAIL** — 7× ACT-N11 (`verify_iiac --require-in-force` lokalnie @ `03aa10959`) |
+| **Published `development` HEAD** | `1e83ade3f5fb951a9eedd85d4dae89ead48955ee` |
+| **AUDIT_HEAD (checkout for Wave 3)** | `1e83ade3f5fb951a9eedd85d4dae89ead48955ee` — prior pins: `03aa10959`, `085be5ca9`, `11ac8ad85` (historia) |
+| **IIAC @ HEAD** | **PASS** — exit 0 (`effective_from_sha` `661978df1…`) |
+| **governance-fast @ tree** | **SUCCESS** — run `42814981916` job `129825667490` |
 | **Formal checkpoint** | [`PRE_ENT_FORMAL_CLOSURE_CHECKPOINT.md`](PRE_ENT_FORMAL_CLOSURE_CHECKPOINT.md) (§7 signed) |
 | **PR 434** | **MERGED** |
 | **IIAC recovery** | [`../ent_audit_x/IIAC_ACT_N11_RECOVERY_BATCH.md`](../ent_audit_x/IIAC_ACT_N11_RECOVERY_BATCH.md) — **D-IIAC-01**; Wave 3: [`PRE_ENT_WAVE3_RESUME_AFTER_IIAC.md`](PRE_ENT_WAVE3_RESUME_AFTER_IIAC.md) |
@@ -59,8 +61,8 @@ Approved: D-PREENT-01=b; D-PREENT-02=defer; D-PREENT-03=b; D-PREENT-04=block; D-
 | Item | Status |
 | --- | --- |
 | **PR #434 merge** | **Done** @ `03aa10959` |
-| **IIAC re-activation** | **Wymagane** — bez exit 0 verify **brak** Wave 3 (handoff §6) |
-| **Wave 3 audits** | **STOP** — briefy zaktualizować checkout → `03aa10959` po zielonym IIAC; **nie** na czerwonym ACT-N11 |
+| **IIAC re-activation** | **Done** — D-IIAC-01=a + PR #437 |
+| **Wave 3 audits** | **G7 READY** — briefy @ `1e83ade3f`; **nie uruchamiać** sesji audytora w tym turnie |
 | **ENT Population E** | **Out of PRE-ENT** per D-PREENT-03=b |
 
 ## Uncommitted / out-of-commit artifacts (by policy)
