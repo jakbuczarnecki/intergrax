@@ -60,10 +60,18 @@ uv run python -m scripts.governance.igx_gov ticket
 - Certifying FREEZE @ `8d43143c6`: **85/85/0 executed**, SHA fields equal, baseline pin `480550d8…`, digest `0fe966e4…` — **not CLEAN** (`VBN-REACHABILITY:FAIL`, CLI exit 1, no `evidence_manifest.v1.json`). **No** `freeze-normal` publication; dossier criterion not met.
 - Handoff: `.tmp/session/ent-audit-x-w4-corr/W4_CORRECTIVE_EVIDENCE_INDEX.md`, `W4_03_INDEPENDENT_AUDITOR_HANDOFF.md`.
 
+### W4 loop-2 (2026-11-10) — FREEZE CLEAN + evidence PR (no PASS)
+
+- Code on `development`: `0ad6511acaa29f18428c10dd8ad6a29262548aec` (PR #433 merged).
+- Certifying FREEZE @ same SHA: exit **0**, 85/85/0, `evidence_manifest.v1.json` present; baseline pin `480550d80…` (session `.tmp/session/ent-audit-x-w4-close/freeze-run/`).
+- Qual wave pre-qual: **FAIL** @ `semantic_matrix` (Windows exit `4294967295`); l1/l2/semantic_acceptance PASS.
+- Evidence branch: `fix/ent-audit-w4-freeze-normal` — tree `freeze_normal_at_0ad6511ac…/` + ladder execution row; **no** `accepted_baseline_sha` in status JSON.
+- Handoff: `.tmp/session/ent-audit-x-w4-close/W4_03_INDEPENDENT_AUDITOR_HANDOFF.md` — **STOP** before independent audit.
+
 ### Next (ticket scope)
 
-- **W4-02:** independent auditor session (`independent-quality-auditor`); FRZ-AUD-01..10, Matrix C, GAP-RC-OD-TRUST — implementer does not self-certify.
-- **W4-03:** blocked until CLEAN FREEZE + published `freeze-normal` tree; new auditor session only.
+- **W4-02:** independent auditor session (`independent-quality-auditor`) after evidence merge on `origin/development`.
+- **W4-03 / T7b:** ACT-N11 re-activation — operator / governance session; not implementer.
 
 ## Lifecycle state
 

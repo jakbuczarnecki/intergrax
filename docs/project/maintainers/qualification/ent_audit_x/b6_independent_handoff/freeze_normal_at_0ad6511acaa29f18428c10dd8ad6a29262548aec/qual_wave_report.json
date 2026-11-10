@@ -1,0 +1,40 @@
+{
+  "certifying": false,
+  "clean_tree": true,
+  "error": "stage semantic_matrix failed: pytest exit 4294967295 passed=0 skipped=0 failed=0",
+  "interruption_class": "",
+  "pinned_sha": null,
+  "profile": "pre-qual",
+  "qualification_sha": "0ad6511acaa29f18428c10dd8ad6a29262548aec",
+  "stages": [
+    {
+      "detail": "passed=246",
+      "duration_ms": 135868,
+      "exit_code": 0,
+      "name": "l1",
+      "skipped": false
+    },
+    {
+      "detail": "passed=42",
+      "duration_ms": 30480,
+      "exit_code": 0,
+      "name": "l2",
+      "skipped": false
+    },
+    {
+      "detail": "passed=63",
+      "duration_ms": 1615939,
+      "exit_code": 0,
+      "name": "semantic_acceptance",
+      "skipped": false
+    },
+    {
+      "detail": "pytest exit 4294967295 passed=0 skipped=0 failed=0",
+      "duration_ms": 580756,
+      "exit_code": 4294967295,
+      "name": "semantic_matrix",
+      "skipped": false
+    }
+  ],
+  "status": "FAIL"
+}

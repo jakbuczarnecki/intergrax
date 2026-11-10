@@ -1,0 +1,783 @@
+{
+  "row_count": 85,
+  "rows": [
+    {
+      "check_id": "ENT-A-BND-01",
+      "executable": true,
+      "frz_aud": "FRZ-BND-*",
+      "frz_mapping": [
+        "FRZ-BND-*"
+      ],
+      "pg_id": "PG-010"
+    },
+    {
+      "check_id": "ENT-A-BND-02",
+      "executable": true,
+      "frz_aud": "FRZ-BND-*",
+      "frz_mapping": [
+        "FRZ-BND-*"
+      ],
+      "pg_id": "PG-010"
+    },
+    {
+      "check_id": "ENT-A-BND-03",
+      "executable": true,
+      "frz_aud": "FRZ-BND-*",
+      "frz_mapping": [
+        "FRZ-BND-*"
+      ],
+      "pg_id": "PG-001"
+    },
+    {
+      "check_id": "ENT-A-OWN-01",
+      "executable": true,
+      "frz_aud": "FRZ-OWN-*",
+      "frz_mapping": [
+        "FRZ-OWN-*"
+      ],
+      "pg_id": "PG-003b"
+    },
+    {
+      "check_id": "ENT-A-OWN-02",
+      "executable": true,
+      "frz_aud": "FRZ-OWN-*",
+      "frz_mapping": [
+        "FRZ-OWN-*"
+      ],
+      "pg_id": "PG-003b"
+    },
+    {
+      "check_id": "ENT-A-OWN-03",
+      "executable": true,
+      "frz_aud": "FRZ-OWN-*",
+      "frz_mapping": [
+        "FRZ-OWN-*"
+      ],
+      "pg_id": "PG-003b"
+    },
+    {
+      "check_id": "ENT-A-CTR-01",
+      "executable": true,
+      "frz_aud": "FRZ-CTR-*",
+      "frz_mapping": [
+        "FRZ-CTR-*"
+      ],
+      "pg_id": "PG-011"
+    },
+    {
+      "check_id": "ENT-A-CTR-02",
+      "executable": true,
+      "frz_aud": "FRZ-CTR-*",
+      "frz_mapping": [
+        "FRZ-CTR-*"
+      ],
+      "pg_id": "PG-011"
+    },
+    {
+      "check_id": "ENT-A-CTR-03",
+      "executable": true,
+      "frz_aud": "FRZ-CTR-*",
+      "frz_mapping": [
+        "FRZ-CTR-*"
+      ],
+      "pg_id": "PG-011"
+    },
+    {
+      "check_id": "ENT-A-TYP-01",
+      "executable": true,
+      "frz_aud": "FRZ-TYP-*",
+      "frz_mapping": [
+        "FRZ-TYP-*"
+      ],
+      "pg_id": "PG-011b"
+    },
+    {
+      "check_id": "ENT-A-TYP-02",
+      "executable": true,
+      "frz_aud": "FRZ-TYP-*",
+      "frz_mapping": [
+        "FRZ-TYP-*"
+      ],
+      "pg_id": "PG-011"
+    },
+    {
+      "check_id": "ENT-A-TYP-03",
+      "executable": true,
+      "frz_aud": "FRZ-TYP-*",
+      "frz_mapping": [
+        "FRZ-TYP-*"
+      ],
+      "pg_id": "PG-011"
+    },
+    {
+      "check_id": "ENT-A-DUP-01",
+      "executable": true,
+      "frz_aud": "FRZ-AUD-03",
+      "frz_mapping": [
+        "FRZ-AUD-03"
+      ],
+      "pg_id": "PG-005"
+    },
+    {
+      "check_id": "ENT-A-DUP-02",
+      "executable": true,
+      "frz_aud": "FRZ-AUD-03",
+      "frz_mapping": [
+        "FRZ-AUD-03"
+      ],
+      "pg_id": "PG-005"
+    },
+    {
+      "check_id": "ENT-A-DUP-03",
+      "executable": true,
+      "frz_aud": "FRZ-AUD-03",
+      "frz_mapping": [
+        "FRZ-AUD-03"
+      ],
+      "pg_id": "PG-005"
+    },
+    {
+      "check_id": "ENT-A-PLG-01",
+      "executable": true,
+      "frz_aud": "FRZ-AUD-03",
+      "frz_mapping": [
+        "FRZ-AUD-03"
+      ],
+      "pg_id": "PG-016"
+    },
+    {
+      "check_id": "ENT-A-PLG-02",
+      "executable": true,
+      "frz_aud": "FRZ-AUD-03",
+      "frz_mapping": [
+        "FRZ-AUD-03"
+      ],
+      "pg_id": "PG-016"
+    },
+    {
+      "check_id": "ENT-A-PLG-03",
+      "executable": true,
+      "frz_aud": "FRZ-AUD-03",
+      "frz_mapping": [
+        "FRZ-AUD-03"
+      ],
+      "pg_id": "PG-016"
+    },
+    {
+      "check_id": "ENT-A-VBN-01",
+      "executable": true,
+      "frz_aud": "FRZ-RPL-*",
+      "frz_mapping": [
+        "FRZ-RPL-*",
+        "FRZ-CFG-*"
+      ],
+      "pg_id": "PG-003"
+    },
+    {
+      "check_id": "ENT-A-VBN-02",
+      "executable": true,
+      "frz_aud": "FRZ-RPL-*",
+      "frz_mapping": [
+        "FRZ-RPL-*",
+        "FRZ-CFG-*"
+      ],
+      "pg_id": "PG-004"
+    },
+    {
+      "check_id": "ENT-A-VBN-03",
+      "executable": true,
+      "frz_aud": "FRZ-RPL-*",
+      "frz_mapping": [
+        "FRZ-RPL-*",
+        "FRZ-CFG-*"
+      ],
+      "pg_id": "PG-007"
+    },
+    {
+      "check_id": "ENT-A-GOV-01",
+      "executable": true,
+      "frz_aud": "FRZ-AUD-03",
+      "frz_mapping": [
+        "FRZ-AUD-03"
+      ],
+      "pg_id": "PG-014"
+    },
+    {
+      "check_id": "ENT-A-GOV-02",
+      "executable": true,
+      "frz_aud": "FRZ-AUD-03",
+      "frz_mapping": [
+        "FRZ-AUD-03"
+      ],
+      "pg_id": "PG-014"
+    },
+    {
+      "check_id": "ENT-A-GOV-03",
+      "executable": true,
+      "frz_aud": "FRZ-AUD-03",
+      "frz_mapping": [
+        "FRZ-AUD-03"
+      ],
+      "pg_id": "PG-014"
+    },
+    {
+      "check_id": "ENT-A-EXE-01",
+      "executable": true,
+      "frz_aud": "FRZ-AUD-03",
+      "frz_mapping": [
+        "FRZ-AUD-03"
+      ],
+      "pg_id": "PG-012"
+    },
+    {
+      "check_id": "ENT-A-EXE-02",
+      "executable": true,
+      "frz_aud": "FRZ-AUD-03",
+      "frz_mapping": [
+        "FRZ-AUD-03"
+      ],
+      "pg_id": "PG-012"
+    },
+    {
+      "check_id": "ENT-A-EXE-03",
+      "executable": true,
+      "frz_aud": "FRZ-AUD-03",
+      "frz_mapping": [
+        "FRZ-AUD-03"
+      ],
+      "pg_id": "PG-012"
+    },
+    {
+      "check_id": "ENT-A-OBS-01",
+      "executable": true,
+      "frz_aud": "FRZ-AUD-03",
+      "frz_mapping": [
+        "FRZ-AUD-03"
+      ],
+      "pg_id": "PG-h01"
+    },
+    {
+      "check_id": "ENT-A-OBS-02",
+      "executable": true,
+      "frz_aud": "FRZ-AUD-03",
+      "frz_mapping": [
+        "FRZ-AUD-03"
+      ],
+      "pg_id": "PG-h01"
+    },
+    {
+      "check_id": "ENT-A-OBS-03",
+      "executable": true,
+      "frz_aud": "FRZ-AUD-03",
+      "frz_mapping": [
+        "FRZ-AUD-03"
+      ],
+      "pg_id": "PG-h01"
+    },
+    {
+      "check_id": "ENT-A-STA-01",
+      "executable": true,
+      "frz_aud": "FRZ-AUD-03",
+      "frz_mapping": [
+        "FRZ-AUD-03"
+      ],
+      "pg_id": "PG-015"
+    },
+    {
+      "check_id": "ENT-A-STA-02",
+      "executable": true,
+      "frz_aud": "FRZ-AUD-03",
+      "frz_mapping": [
+        "FRZ-AUD-03"
+      ],
+      "pg_id": "PG-015"
+    },
+    {
+      "check_id": "ENT-A-STA-03",
+      "executable": true,
+      "frz_aud": "FRZ-AUD-03",
+      "frz_mapping": [
+        "FRZ-AUD-03"
+      ],
+      "pg_id": "PG-015"
+    },
+    {
+      "check_id": "ENT-A-SEC-01",
+      "executable": true,
+      "frz_aud": "FRZ-AUD-03",
+      "frz_mapping": [
+        "FRZ-AUD-03"
+      ],
+      "pg_id": "PG-001b"
+    },
+    {
+      "check_id": "ENT-A-SEC-02",
+      "executable": true,
+      "frz_aud": "FRZ-AUD-03",
+      "frz_mapping": [
+        "FRZ-AUD-03"
+      ],
+      "pg_id": "PG-001b"
+    },
+    {
+      "check_id": "ENT-A-SEC-03",
+      "executable": true,
+      "frz_aud": "FRZ-AUD-03",
+      "frz_mapping": [
+        "FRZ-AUD-03"
+      ],
+      "pg_id": "PG-001"
+    },
+    {
+      "check_id": "ENT-A-REL-01",
+      "executable": true,
+      "frz_aud": "FRZ-AUD-03",
+      "frz_mapping": [
+        "FRZ-AUD-03"
+      ],
+      "pg_id": "PG-h01"
+    },
+    {
+      "check_id": "ENT-A-REL-02",
+      "executable": true,
+      "frz_aud": "FRZ-AUD-03",
+      "frz_mapping": [
+        "FRZ-AUD-03"
+      ],
+      "pg_id": "PG-h01"
+    },
+    {
+      "check_id": "ENT-A-REL-03",
+      "executable": true,
+      "frz_aud": "FRZ-AUD-03",
+      "frz_mapping": [
+        "FRZ-AUD-03"
+      ],
+      "pg_id": "PG-h01"
+    },
+    {
+      "check_id": "ENT-A-REC-01",
+      "executable": true,
+      "frz_aud": "FRZ-AUD-03",
+      "frz_mapping": [
+        "FRZ-AUD-03"
+      ],
+      "pg_id": "PG-015"
+    },
+    {
+      "check_id": "ENT-A-REC-02",
+      "executable": true,
+      "frz_aud": "FRZ-AUD-03",
+      "frz_mapping": [
+        "FRZ-AUD-03"
+      ],
+      "pg_id": "PG-015"
+    },
+    {
+      "check_id": "ENT-A-REC-03",
+      "executable": true,
+      "frz_aud": "FRZ-AUD-03",
+      "frz_mapping": [
+        "FRZ-AUD-03"
+      ],
+      "pg_id": "PG-015"
+    },
+    {
+      "check_id": "ENT-A-PRD-01",
+      "executable": true,
+      "frz_aud": "FRZ-PRD-*",
+      "frz_mapping": [
+        "FRZ-PRD-*"
+      ],
+      "pg_id": "PG-001"
+    },
+    {
+      "check_id": "ENT-A-PRD-02",
+      "executable": true,
+      "frz_aud": "FRZ-PRD-*",
+      "frz_mapping": [
+        "FRZ-PRD-*"
+      ],
+      "pg_id": "PG-001"
+    },
+    {
+      "check_id": "ENT-A-PRD-03",
+      "executable": true,
+      "frz_aud": "FRZ-PRD-*",
+      "frz_mapping": [
+        "FRZ-PRD-*"
+      ],
+      "pg_id": "PG-001"
+    },
+    {
+      "check_id": "ENT-A-CMP-01",
+      "executable": true,
+      "frz_aud": "FRZ-AUD-03",
+      "frz_mapping": [
+        "FRZ-AUD-03"
+      ],
+      "pg_id": "PG-019"
+    },
+    {
+      "check_id": "ENT-A-CMP-02",
+      "executable": true,
+      "frz_aud": "FRZ-AUD-03",
+      "frz_mapping": [
+        "FRZ-AUD-03"
+      ],
+      "pg_id": "PG-019"
+    },
+    {
+      "check_id": "ENT-A-CMP-03",
+      "executable": true,
+      "frz_aud": "FRZ-AUD-03",
+      "frz_mapping": [
+        "FRZ-AUD-03"
+      ],
+      "pg_id": "PG-019"
+    },
+    {
+      "check_id": "ENT-A-REG-01",
+      "executable": true,
+      "frz_aud": "FRZ-REG-*",
+      "frz_mapping": [
+        "FRZ-REG-*"
+      ],
+      "pg_id": "PG-006b"
+    },
+    {
+      "check_id": "ENT-A-REG-02",
+      "executable": true,
+      "frz_aud": "FRZ-REG-*",
+      "frz_mapping": [
+        "FRZ-REG-*"
+      ],
+      "pg_id": "PG-020"
+    },
+    {
+      "check_id": "ENT-A-REG-03",
+      "executable": true,
+      "frz_aud": "FRZ-REG-*",
+      "frz_mapping": [
+        "FRZ-REG-*"
+      ],
+      "pg_id": "PG-001"
+    },
+    {
+      "check_id": "ENT-A-DOC-01",
+      "executable": true,
+      "frz_aud": "FRZ-DOC-*",
+      "frz_mapping": [
+        "FRZ-DOC-*"
+      ],
+      "pg_id": "PG-006"
+    },
+    {
+      "check_id": "ENT-A-DOC-02",
+      "executable": true,
+      "frz_aud": "FRZ-DOC-*",
+      "frz_mapping": [
+        "FRZ-DOC-*"
+      ],
+      "pg_id": "PG-001"
+    },
+    {
+      "check_id": "ENT-A-DOC-03",
+      "executable": true,
+      "frz_aud": "FRZ-DOC-*",
+      "frz_mapping": [
+        "FRZ-DOC-*"
+      ],
+      "pg_id": "PG-006b"
+    },
+    {
+      "check_id": "ENT-A-TEN-01",
+      "executable": true,
+      "frz_aud": "FRZ-TEN-*",
+      "frz_mapping": [
+        "FRZ-TEN-*"
+      ],
+      "pg_id": "PG-009"
+    },
+    {
+      "check_id": "ENT-A-TEN-02",
+      "executable": true,
+      "frz_aud": "FRZ-TEN-*",
+      "frz_mapping": [
+        "FRZ-TEN-*"
+      ],
+      "pg_id": "PG-009"
+    },
+    {
+      "check_id": "ENT-A-TEN-03",
+      "executable": true,
+      "frz_aud": "FRZ-TEN-*",
+      "frz_mapping": [
+        "FRZ-TEN-*"
+      ],
+      "pg_id": "PG-009"
+    },
+    {
+      "check_id": "ENT-A-EVOL-01",
+      "executable": true,
+      "frz_aud": "FRZ-EVOL-*",
+      "frz_mapping": [
+        "FRZ-EVOL-*"
+      ],
+      "pg_id": "PG-008"
+    },
+    {
+      "check_id": "ENT-A-EVOL-02",
+      "executable": true,
+      "frz_aud": "FRZ-EVOL-*",
+      "frz_mapping": [
+        "FRZ-EVOL-*"
+      ],
+      "pg_id": "PG-008"
+    },
+    {
+      "check_id": "ENT-A-EVOL-03",
+      "executable": true,
+      "frz_aud": "FRZ-EVOL-*",
+      "frz_mapping": [
+        "FRZ-EVOL-*"
+      ],
+      "pg_id": "PG-020"
+    },
+    {
+      "check_id": "ENT-A-INV-01",
+      "executable": true,
+      "frz_aud": "FRZ-EVOL-*",
+      "frz_mapping": [
+        "FRZ-EVOL-*"
+      ],
+      "pg_id": "PG-020"
+    },
+    {
+      "check_id": "ENT-A-INV-02",
+      "executable": true,
+      "frz_aud": "FRZ-EVOL-*",
+      "frz_mapping": [
+        "FRZ-EVOL-*"
+      ],
+      "pg_id": "PG-001"
+    },
+    {
+      "check_id": "ENT-A-INV-03",
+      "executable": true,
+      "frz_aud": "FRZ-EVOL-*",
+      "frz_mapping": [
+        "FRZ-EVOL-*"
+      ],
+      "pg_id": "PG-001"
+    },
+    {
+      "check_id": "TEN-IDENTITY",
+      "executable": true,
+      "frz_aud": "FRZ-TEN-*",
+      "frz_mapping": [
+        "FRZ-TEN-*"
+      ],
+      "pg_id": "PG-009"
+    },
+    {
+      "check_id": "TEN-PROPAGATION",
+      "executable": true,
+      "frz_aud": "FRZ-TEN-*",
+      "frz_mapping": [
+        "FRZ-TEN-*"
+      ],
+      "pg_id": "PG-009"
+    },
+    {
+      "check_id": "TEN-AUTHORITY",
+      "executable": true,
+      "frz_aud": "FRZ-TEN-*",
+      "frz_mapping": [
+        "FRZ-TEN-*"
+      ],
+      "pg_id": "PG-009"
+    },
+    {
+      "check_id": "TEN-STATE",
+      "executable": true,
+      "frz_aud": "FRZ-TEN-*",
+      "frz_mapping": [
+        "FRZ-TEN-*"
+      ],
+      "pg_id": "PG-009"
+    },
+    {
+      "check_id": "TEN-PROVIDER",
+      "executable": true,
+      "frz_aud": "FRZ-TEN-*",
+      "frz_mapping": [
+        "FRZ-TEN-*"
+      ],
+      "pg_id": "PG-intcfg"
+    },
+    {
+      "check_id": "TEN-CONFIG",
+      "executable": true,
+      "frz_aud": "FRZ-TEN-*",
+      "frz_mapping": [
+        "FRZ-TEN-*"
+      ],
+      "pg_id": "PG-007"
+    },
+    {
+      "check_id": "TEN-CREDENTIALS",
+      "executable": true,
+      "frz_aud": "FRZ-TEN-*",
+      "frz_mapping": [
+        "FRZ-TEN-*"
+      ],
+      "pg_id": "PG-009"
+    },
+    {
+      "check_id": "TEN-EVIDENCE",
+      "executable": true,
+      "frz_aud": "FRZ-TEN-*",
+      "frz_mapping": [
+        "FRZ-TEN-*"
+      ],
+      "pg_id": "PG-009"
+    },
+    {
+      "check_id": "TEN-TRACE",
+      "executable": true,
+      "frz_aud": "FRZ-TEN-*",
+      "frz_mapping": [
+        "FRZ-TEN-*"
+      ],
+      "pg_id": "PG-trace"
+    },
+    {
+      "check_id": "TEN-RECOVERY",
+      "executable": true,
+      "frz_aud": "FRZ-TEN-*",
+      "frz_mapping": [
+        "FRZ-TEN-*"
+      ],
+      "pg_id": "PG-009"
+    },
+    {
+      "check_id": "TEN-ASYNC",
+      "executable": true,
+      "frz_aud": "FRZ-TEN-*",
+      "frz_mapping": [
+        "FRZ-TEN-*"
+      ],
+      "pg_id": "PG-009"
+    },
+    {
+      "check_id": "TEN-CROSS-TENANT",
+      "executable": true,
+      "frz_aud": "FRZ-TEN-*",
+      "frz_mapping": [
+        "FRZ-TEN-*"
+      ],
+      "pg_id": "PG-014"
+    },
+    {
+      "check_id": "TEN-FAIL-CLOSED",
+      "executable": true,
+      "frz_aud": "FRZ-TEN-*",
+      "frz_mapping": [
+        "FRZ-TEN-*"
+      ],
+      "pg_id": "PG-009"
+    },
+    {
+      "check_id": "VBN-INVENTORY-DRIFT",
+      "executable": true,
+      "frz_aud": "FRZ-RPL-*",
+      "frz_mapping": [
+        "FRZ-RPL-*",
+        "FRZ-CFG-*"
+      ],
+      "pg_id": "PG-003"
+    },
+    {
+      "check_id": "VBN-CORE-HARDCODING",
+      "executable": true,
+      "frz_aud": "FRZ-RPL-*",
+      "frz_mapping": [
+        "FRZ-RPL-*",
+        "FRZ-CFG-*"
+      ],
+      "pg_id": "PG-004"
+    },
+    {
+      "check_id": "VBN-SHADOW-SELECTION",
+      "executable": true,
+      "frz_aud": "FRZ-RPL-*",
+      "frz_mapping": [
+        "FRZ-RPL-*",
+        "FRZ-CFG-*"
+      ],
+      "pg_id": "PG-007"
+    },
+    {
+      "check_id": "VBN-SILENT-FALLBACK",
+      "executable": true,
+      "frz_aud": "FRZ-RPL-*",
+      "frz_mapping": [
+        "FRZ-RPL-*",
+        "FRZ-CFG-*"
+      ],
+      "pg_id": "PG-004b"
+    },
+    {
+      "check_id": "VBN-CONTRACT-LEAKAGE",
+      "executable": true,
+      "frz_aud": "FRZ-RPL-*",
+      "frz_mapping": [
+        "FRZ-RPL-*",
+        "FRZ-CFG-*"
+      ],
+      "pg_id": "PG-011"
+    },
+    {
+      "check_id": "VBN-SQLITE-EFFECTIVE",
+      "executable": true,
+      "frz_aud": "FRZ-RPL-*",
+      "frz_mapping": [
+        "FRZ-RPL-*",
+        "FRZ-CFG-*"
+      ],
+      "pg_id": "PG-015b"
+    },
+    {
+      "check_id": "VBN-OBS-OPS-COUPLING",
+      "executable": true,
+      "frz_aud": "FRZ-RPL-*",
+      "frz_mapping": [
+        "FRZ-RPL-*",
+        "FRZ-CFG-*"
+      ],
+      "pg_id": "PG-h01"
+    },
+    {
+      "check_id": "VBN-REPLACEABILITY-MATRIX",
+      "executable": true,
+      "frz_aud": "FRZ-RPL-*",
+      "frz_mapping": [
+        "FRZ-RPL-*",
+        "FRZ-CFG-*"
+      ],
+      "pg_id": "PG-017"
+    },
+    {
+      "check_id": "VBN-REACHABILITY",
+      "executable": true,
+      "frz_aud": "FRZ-RPL-*",
+      "frz_mapping": [
+        "FRZ-RPL-*",
+        "FRZ-CFG-*"
+      ],
+      "pg_id": "PG-018"
+    }
+  ],
+  "schema_version": 1
+}
