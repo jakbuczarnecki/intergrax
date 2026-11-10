@@ -194,6 +194,27 @@ Approved: D-PREENT-01=b; D-PREENT-02=defer; D-PREENT-03=b; D-PREENT-04=block; D-
 ---
 
 
+## 8. W6-G4 — campaign settlement (2026-11-10)
+
+| Field | Value |
+| --- | --- |
+| **Terminal label** | **`PRE_ENT_PREDECESSORS_EXACT_BLOCKERS`** (variant B) |
+| **Campaign SSOT** | **`CLOSED — EXACT_BLOCKERS`** — **not** Enterprise stage closure |
+| **Parent** | `T-IGX-034-A` lifecycle **`closed`** |
+| **Dossier merge** | PR #440 @ `7cd330ff19c328417a215cb55cdf6a7589a46e0e` |
+| **W6-G2** | 41 passed bounded; full parent regression **NOT RUN** — **not** PASS |
+| **Unchanged** | EXACT_BLOCKER matrix rows; five **ACCEPT_SCOPED** certs; §3; FRZ |
+
+Operator decision block (verbatim):
+
+```text
+Approved: D-W6-01=a; D-W6-02=a; D-W6-03=a; D-W6-04=b; D-W6-05=a; D-W6-06=b; D-W6-07=a
+```
+
+**STOP:** no predecessor implementation (034-C/D/G/H) without new ticket scope.
+
+---
+
 ## SSOT cross-links
 
 - Progress: [`PRE_ENT_CAMPAIGN_PROGRESS.md`](PRE_ENT_CAMPAIGN_PROGRESS.md)  

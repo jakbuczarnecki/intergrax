@@ -17,7 +17,18 @@ Plan digest: 025f3831744d99939b79cf6cc57f31e4554451bad53f170a64e7050353efc27d
 
 ## Approved
 
-(pending — operator acceptance of PRE-ENT campaign plan `pre-ent_certification_closure_0d7be74d`)
+Operator authorization (chat 2026-11-10 — recorded verbatim; implementer unsigned):
+
+```text
+Approved: D-W6-01=a; D-W6-02=a; D-W6-03=a; D-W6-04=b; D-W6-05=a; D-W6-06=b; D-W6-07=a
+Zatwierdzam terminalne rozliczenie kampanii PRE-ENT z wynikiem PRE_ENT_PREDECESSORS_EXACT_BLOCKERS.
+Autoryzuję formalne zamknięcie procesu rozliczenia PRE-ENT w wariancie B, pod warunkiem potwierdzenia zgodności z kanonicznym protokołem IIAC, governance i W6-G4.
+Akceptuję ograniczenie W6-G2: 41 testów PASS, pełna regresja rodziców NOT RUN. Nie jest to zgoda na oznaczenie niewykonanej regresji jako PASS.
+Wszystkie EXACT_BLOCKERS oraz pięć ograniczonych certyfikacji ACCEPT_SCOPED pozostają bez zmian.
+Nie autoryzuję pełnej certyfikacji wszystkich poprzedników, promocji FRZ, ARCH-FREEZE ani zmian §3 roadmapy.
+```
+
+Prior §7 decisions: D-PREENT-01..08 (2026-11-10). D-W6-PUB=merge — PR [#440](https://github.com/jakbuczarnecki/intergrax/pull/440) merged @ `7cd330ff19c328417a215cb55cdf6a7589a46e0e`.
 
 ## Test contract
 
@@ -38,7 +49,7 @@ Wave 1 implementation (T-IGX-034-B..I), independent audit sessions, roadmap §5 
 
 ## Lifecycle state
 
-quality_gate
+closed
 
 ## Checkpoint
 
@@ -138,4 +149,17 @@ Date: 2026-11-10
 - **W6-G3:** campaign terminal label **`PRE_ENT_PREDECESSORS_EXACT_BLOCKERS`** — **not** `ALL_PRE_ENT_PREDECESSORS_INDEPENDENTLY_CERTIFIED`, **not** full Enterprise certification
 - **W6-G4:** dossier eligible for evidence publication; **`T-IGX-034-A` lifecycle `closed`** requires **operator sign-off** — **not declared** in this checkpoint
 - **Evidence publication:** separate publisher batch; **STOP** before unauthorized formal **CLOSED**
-- **Related:** `T-IGX-034-I` remains `plan_pending` — missing `Approved:` line (mechanical gateway); **separate** from W6-G3 terminal label
+- **Related:** `T-IGX-034-I` — W6-G4 batch closes with matching operator `Approved:` (see ticket).
+
+### Wave 6-G4 — formal campaign settlement (**CLOSED — EXACT_BLOCKERS**) (2026-11-10)
+
+| ID | Effect |
+| --- | --- |
+| **D-W6-01** | Checkpoint records D-W6-PUB=merge (PR #440) + dossier pins |
+| **D-W6-02** | Official terminal label **`PRE_ENT_PREDECESSORS_EXACT_BLOCKERS`** — **not** full Enterprise certification |
+| **D-W6-03** | Parent ticket lifecycle **`closed`** (process settlement only) |
+| **D-W6-04** | Campaign SSOT **`CLOSED — EXACT_BLOCKERS`** — **not** `ALL_PRE_ENT_PREDECESSORS_INDEPENDENTLY_CERTIFIED` |
+| **D-W6-06** | W6-G2 bounded **41 passed**; **full** parent regression **NOT RUN** — **not** PASS |
+| **D-W6-07** | EXACT_BLOCKER rows unchanged; follow-on work **out of scope** |
+
+**Ceiling (unchanged):** EXACT_BLOCKERS, **ACCEPT_SCOPED** predecessors, §3, FRZ, ARCH-FREEZE — **no** promotion. **STOP** predecessor implementation (034-C/D/G/H) without new tickets.

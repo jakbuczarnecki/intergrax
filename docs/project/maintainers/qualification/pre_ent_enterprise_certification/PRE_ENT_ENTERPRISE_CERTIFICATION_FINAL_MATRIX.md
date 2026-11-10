@@ -4,7 +4,7 @@
 **Ticket:** `governance/tickets/T-IGX-034-I.md`  
 **Parent:** `governance/tickets/T-IGX-034-A.md`  
 **Date:** 2026-11-10  
-**Campaign status:** **NOT CLOSED** — terminal label **`PRE_ENT_PREDECESSORS_EXACT_BLOCKERS`** assigned @ W6-G3 (Wave 6 audit); **not** full Enterprise certification; `T-IGX-034-A` **not** CLOSED.
+**Campaign status:** **`CLOSED — EXACT_BLOCKERS`** — terminal label **`PRE_ENT_PREDECESSORS_EXACT_BLOCKERS`** @ W6-G3/W6-G4 (2026-11-10); **not** full Enterprise certification; open rows remain **EXACT_BLOCKER** or **N/A (PRE-ENT)**.
 
 **Ceiling (unchanged):** Five Wave 4 certifier rows are **ACCEPT_SCOPED** only — not full independent certification, not FRZ promotion, not `ALL_PRE_ENT_PREDECESSORS_INDEPENDENTLY_CERTIFIED`. Terminal campaign label belongs to Wave 6 (W6-G3).
 
@@ -96,7 +96,7 @@ Searched [`QUAL_X_ENTERPRISE_QUALIFICATION_BASELINE_AND_GATE_INVENTORY.md`](../Q
 | **W6-G1** | **PASS** — SHA ladder @ `f4ca1c864` |
 | **W6-G2** | **BOUNDED PASS only** — 41 passed blocking bundle; **full parent regression NOT RUN** |
 | **W6-G3** | **`PRE_ENT_PREDECESSORS_EXACT_BLOCKERS`** |
-| **W6-G4** | Operator sign-off pending — see [`PRE_ENT_WAVE6_CROSS_AUDIT_REPORT.md`](PRE_ENT_WAVE6_CROSS_AUDIT_REPORT.md) |
+| **W6-G4** | **met** — operator D-W6-03/04; parent `T-IGX-034-A` **closed**; campaign **`CLOSED — EXACT_BLOCKERS`** |
 
 **AUDITOR_SESSION_ID:** `W6-INDEP-AUDIT-2026-11-10-f4ca1c864`.
 
