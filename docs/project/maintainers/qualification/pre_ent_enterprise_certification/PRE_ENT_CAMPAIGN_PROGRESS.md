@@ -28,10 +28,10 @@ Approved: D-PREENT-01=b; D-PREENT-02=defer; D-PREENT-03=b; D-PREENT-04=block; D-
 
 | Field | Value |
 | --- | --- |
-| **Published `development` HEAD** | `1e83ade3f5fb951a9eedd85d4dae89ead48955ee` |
+| **Published `development` HEAD** | `bbf5e49991c30cd79f69a2c0651fd86d98c988f4` (PR #438 merge; docs atop IIAC) |
 | **AUDIT_HEAD (checkout for Wave 3)** | `1e83ade3f5fb951a9eedd85d4dae89ead48955ee` — prior pins: `03aa10959`, `085be5ca9`, `11ac8ad85` (historia) |
-| **IIAC @ HEAD** | **PASS** — exit 0 (`effective_from_sha` `661978df1…`) |
-| **governance-fast @ tree** | **SUCCESS** — run `42814981916` job `129825667490` |
+| **IIAC @ `AUDIT_HEAD`** | exit **0** — evidence [`PRE_ENT_POST_IIAC_GATE_EVIDENCE.md`](PRE_ENT_POST_IIAC_GATE_EVIDENCE.md) (`effective_from_sha` `661978df1…`) |
+| **governance-fast @ tree** | **SUCCESS** — PR #437 run `42814981916`; PR #438 run `42817447058` |
 | **Formal checkpoint** | [`PRE_ENT_FORMAL_CLOSURE_CHECKPOINT.md`](PRE_ENT_FORMAL_CLOSURE_CHECKPOINT.md) (§7 signed) |
 | **PR 434** | **MERGED** |
 | **IIAC recovery** | [`../ent_audit_x/IIAC_ACT_N11_RECOVERY_BATCH.md`](../ent_audit_x/IIAC_ACT_N11_RECOVERY_BATCH.md) — **D-IIAC-01**; Wave 3: [`PRE_ENT_WAVE3_RESUME_AFTER_IIAC.md`](PRE_ENT_WAVE3_RESUME_AFTER_IIAC.md) |
@@ -56,13 +56,25 @@ Approved: D-PREENT-01=b; D-PREENT-02=defer; D-PREENT-03=b; D-PREENT-04=block; D-
 
 - [`WAVE2_SERIAL_QUAL_LOG.md`](WAVE2_SERIAL_QUAL_LOG.md) @ `f2682d651`: 4/4 pytest files green. **Not** `ready_for_audit`.
 
+### Wave 3 — independent audits (D-PREENT-05)
+
+**Status:** **scheduled — not executed** (implementer/orchestrator sessions do not run audits or declare PASS).
+
+| Field | Value |
+| --- | --- |
+| **Operator decision** | **D-PREENT-05** — five separate `independent-quality-auditor` chats |
+| **AUDIT_HEAD** | `1e83ade3f5fb951a9eedd85d4dae89ead48955ee` |
+| **IIAC gate** | exit **0** @ `AUDIT_HEAD` — [`PRE_ENT_POST_IIAC_GATE_EVIDENCE.md`](PRE_ENT_POST_IIAC_GATE_EVIDENCE.md) |
+| **Queue** | [`PRE_ENT_WAVE3_AUDIT_HANDOFF_QUEUE.md`](PRE_ENT_WAVE3_AUDIT_HANDOFF_QUEUE.md) — **5× Ready** |
+| **Briefs** | [`PRE_ENT_WAVE3_AUDITOR_SESSION_BRIEFS.md`](PRE_ENT_WAVE3_AUDITOR_SESSION_BRIEFS.md) — published |
+
 ## Next (operator / new sessions)
 
 | Item | Status |
 | --- | --- |
 | **PR #434 merge** | **Done** @ `03aa10959` |
 | **IIAC re-activation** | **Done** — D-IIAC-01=a + PR #437 |
-| **Wave 3 audits** | **G7 READY** — briefy @ `1e83ade3f`; **nie uruchamiać** sesji audytora w tym turnie |
+| **Wave 3 audits** | **Scheduled** — briefs + queue Ready @ `AUDIT_HEAD`; sessions **not executed** |
 | **ENT Population E** | **Out of PRE-ENT** per D-PREENT-03=b |
 
 ## Uncommitted / out-of-commit artifacts (by policy)

@@ -1,7 +1,7 @@
 # PRE-ENT Wave 3 — independent audit handoff queue
 
 **Campaign:** `pre_ent_enterprise_certification`  
-**AUDIT_HEAD (checkout for new sessions):** `1e83ade3f5fb951a9eedd85d4dae89ead48955ee` (`origin/development` post-IIAC PR #437). **Gate:** `verify_iiac --require-in-force` **exit 0** — **PASS** @ `1e83ade3f` ([`PRE_ENT_POST_IIAC_GATE_EVIDENCE.md`](PRE_ENT_POST_IIAC_GATE_EVIDENCE.md)). Poprzednie piny: `03aa10959`, `085be5ca9`, `11ac8ad85`.  
+**AUDIT_HEAD (checkout for new sessions):** `1e83ade3f5fb951a9eedd85d4dae89ead48955ee` (`origin/development` post-IIAC PR #437). **Gate:** `verify_iiac --require-in-force` **exit 0** @ `1e83ade3f` ([`PRE_ENT_POST_IIAC_GATE_EVIDENCE.md`](PRE_ENT_POST_IIAC_GATE_EVIDENCE.md)) — IIAC **IN_FORCE**; **no G6 audit PASS** from implementer. Poprzednie piny: `03aa10959`, `085be5ca9`, `11ac8ad85`.  
 **Branch:** `development`  
 **Date:** 2026-11-10  
 **Publisher:** T-IGX-034-A Wave 3 routing — **no PASS**, **no closure**, **no push**
@@ -24,6 +24,7 @@ Each row is **engineering / qual complete enough** for read-only auditor replay 
 
 | Field | Value |
 | --- | --- |
+| **Status** | **Ready** @ `AUDIT_HEAD` |
 | **Ticket Ref** | `governance/tickets/T-IGX-034-B.md` |
 | **Lifecycle** | `quality_gate` — **not** closed |
 | **Implementer must not PASS** | Yes — no FRZ-BND-03 global PASS, no `ready_for_audit` from implementer |
@@ -51,6 +52,7 @@ uv run --extra dev-ci python -m pytest -p no:xdist tests/unit/architecture/test_
 
 | Field | Value |
 | --- | --- |
+| **Status** | **Ready** @ `AUDIT_HEAD` |
 | **Ticket Ref** | `governance/tickets/T-IGX-034-E.md` |
 | **Lifecycle** | `in_progress` — mechanical reconciliation only |
 | **Implementer must not PASS** | Yes — no FRZ row promotion, no roadmap §5 publication |
@@ -78,6 +80,7 @@ uv run --extra dev-ci python -m pytest -p no:xdist tests/qualification/roadmap_r
 
 | Field | Value |
 | --- | --- |
+| **Status** | **Ready** @ `AUDIT_HEAD` |
 | **Ticket Ref** | `governance/tickets/T-IGX-030-B.md` |
 | **Lifecycle** | `plan_approved` (lags git) — **not** `closed` |
 | **Implementer must not PASS** | Yes — no TOOL-LIFE-X stage closure, no FRZ promotion |
@@ -105,6 +108,7 @@ uv run --extra dev-ci python -m pytest -p no:xdist tests/unit/architecture/test_
 
 | Field | Value |
 | --- | --- |
+| **Status** | **Ready** @ `AUDIT_HEAD` |
 | **Ticket Ref** | `governance/tickets/T-IGX-030-C.md` |
 | **Lifecycle** | `plan_approved` — **not** `closed` |
 | **Implementer must not PASS** | Yes — independent TOOL-LIFE-X re-audit is separate campaign stream |
@@ -132,6 +136,7 @@ uv run --extra dev-ci python -m pytest -p no:xdist tests/unit/runtime/nexus/tool
 
 | Field | Value |
 | --- | --- |
+| **Status** | **Ready** @ `AUDIT_HEAD` |
 | **Ticket Ref** | `governance/tickets/T-IGX-032-A.md` |
 | **Lifecycle** | `plan_approved` — **not** `closed` |
 | **Implementer must not PASS** | Yes — PROD-Q P2-C owner path; **HIST-F-DUR-01** remains out of scope (see 034-C) |

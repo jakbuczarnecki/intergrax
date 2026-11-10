@@ -1,6 +1,7 @@
 # PRE-ENT — post-IIAC gate evidence @ `development`
 
 **Date:** 2026-11-10  
+**Verified replay:** `2026-11-10T15:32:00+01:00` (orchestrator `@ AUDIT_HEAD`, exit 0)  
 **Campaign:** `pre_ent_enterprise_certification`  
 **Ticket:** `governance/tickets/T-IGX-034-A.md`
 
@@ -24,17 +25,18 @@
 | --- | --- |
 | SHA | `1e83ade3f5fb951a9eedd85d4dae89ead48955ee` |
 | Exit | **0** |
-| Output | `IIAC policy activation: IN_FORCE @ IIAC-2026-11-05.1 from 661978df191d9356058a1312a712fcfa3c890e9e` |
+| Replay @ `2026-11-10T15:32:00+01:00` | **0** — `IIAC policy activation: IN_FORCE @ IIAC-2026-11-05.1 from 661978df191d9356058a1312a712fcfa3c890e9e` |
+| `origin` contains `AUDIT_HEAD` | **yes** — ancestor of `origin/development` @ `bbf5e4999` (PR #438) |
 
 ## G2 — `governance-fast`
 
 | Field | Value |
 | --- | --- |
-| Run | [42814981916](https://github.com/jakbuczarnecki/intergrax/actions/runs/42814981916) (PR #437) |
-| Job | `governance-fast` / `129825667490` |
+| Run (PR #437) | [42814981916](https://github.com/jakbuczarnecki/intergrax/actions/runs/42814981916) — job `governance-fast` / `129825667490` |
 | Head SHA | `4ffa14280761e1d4cd3c5d0a6d8147e7f90beaab` |
 | Tree | `ca8f89bae9136144b44291b745e9a07a47c1c974` (= merge commit `1e83ade3f` tree) |
 | Result | **SUCCESS** |
+| Run (PR #438, Wave 3 docs) | [42817447058](https://github.com/jakbuczarnecki/intergrax/actions/runs/42817447058) — job `governance-fast` / `129834024466` — **SUCCESS** |
 
 `workflow_dispatch` on `development` ([42817064079](https://github.com/jakbuczarnecki/intergrax/actions/runs/42817064079)) does **not** execute `governance-fast` (job `if` = PR \| push only; dispatch skipped).
 
