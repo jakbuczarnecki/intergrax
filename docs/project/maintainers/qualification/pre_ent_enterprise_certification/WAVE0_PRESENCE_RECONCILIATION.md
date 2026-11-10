@@ -52,7 +52,7 @@
 | Invoker 030-C / H01-F015 | T-IGX-034-D | **skip implement** — already on HEAD; qual-only |
 | REPLAY gates | T-IGX-034-E | Wave 1 per plan (not presence-checked in depth here) |
 | EBH-7 F10 clean SHA | T-IGX-034-F | Wave 1 |
-| QUAL-X B–D | T-IGX-034-G | Wave 1 |
+| QUAL-X B–D (Pop E @ ENT) | T-IGX-034-G | Wave 1 — **D-PREENT-03=b**; see `governance/tickets/T-IGX-034-G.md` |
 | DIST-SCALE Q-03 | T-IGX-034-H | Wave 1 + operator WL-7 note |
 | Matrix publication | T-IGX-034-I | Wave 4+ |
 

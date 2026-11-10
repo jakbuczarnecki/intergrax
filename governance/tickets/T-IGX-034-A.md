@@ -68,6 +68,22 @@ Wave 0 scope **complete** (2026-11-10). Predecessor tickets 030-B/C, 032-A, 033-
 - Operator §7 report: [`PRE_ENT_FORMAL_CLOSURE_CHECKPOINT.md`](../../docs/project/maintainers/qualification/pre_ent_enterprise_certification/PRE_ENT_FORMAL_CLOSURE_CHECKPOINT.md).
 - **No PASS**, **no closure**; Wave 3 auditor sessions not run in this session.
 
+### Operator §7 decisions (2026-11-10)
+
+```text
+Approved: D-PREENT-01=b; D-PREENT-02=defer; D-PREENT-03=b; D-PREENT-04=block; D-PREENT-05=<5 osobnych czatów>; D-PREENT-06=defer; D-PREENT-07=defer
+Date: 2026-11-10
+```
+
+| ID | Effect |
+|----|--------|
+| D-PREENT-01=b | PR [#434](https://github.com/jakbuczarnecki/intergrax/pull/434) diff review before merge when green (`PRE_ENT_PR434_DIFF_REVIEW.md`); orchestrator does not merge. |
+| D-PREENT-02=defer | G-SKILL blocked. |
+| D-PREENT-03=b | **T-IGX-034-G** Pop **B–D** only; Pop E → ENT-AUDIT-X (`T-IGX-034-G.md`). |
+| D-PREENT-04=block | F10 TES ladder advance blocked. |
+| D-PREENT-05 | Five independent auditor chats @ `AUDIT_HEAD` `085be5ca9` — `PRE_ENT_WAVE3_AUDITOR_SESSION_BRIEFS.md`. |
+| D-PREENT-06/07=defer | OD-HIST04-A/C and 034-C unchanged. |
+
 ### Wave 1 parallel batches (routing only; not started)
 
 | Ticket | Slug / parallelism | Owner action |
@@ -77,6 +93,6 @@ Wave 0 scope **complete** (2026-11-10). Predecessor tickets 030-B/C, 032-A, 033-
 | T-IGX-034-D | `tlx-inv` | **qual-only** (030-C already on HEAD) |
 | T-IGX-034-E | `replay` | REPLAY mechanical gates |
 | T-IGX-034-F | `f10` | EBH-7 F10 on clean SHA |
-| T-IGX-034-G | — (serial pytest) | QUAL-X Pop B–D |
+| T-IGX-034-G | — (serial pytest) | QUAL-X Pop **B–D** only (D-PREENT-03=b); Pop E @ ENT — see `T-IGX-034-G.md` |
 | T-IGX-034-H | — | DIST-SCALE §3.0.6 vs §5 + Q-03 audit |
 | T-IGX-034-I | — | Matrix/ledger pub (Wave 4+) |

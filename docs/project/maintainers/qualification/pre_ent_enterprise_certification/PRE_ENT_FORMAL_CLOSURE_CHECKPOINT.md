@@ -143,9 +143,9 @@ Kolejność zgodna z planem (Waves 4–6 + WBS):
 
 ---
 
-## 7. Decyzje wymagające udziału operatora — pakiet zbiorczy (szkic)
+## 7. Decyzje wymagające udziału operatora — pakiet zbiorczy
 
-**Brak podpisów poniżej — tylko pola do wypełnienia przez operatora.**
+**Status:** podpis operatora zapisany 2026-11-10 (orchestrator PRE-ENT; **brak PASS / certyfikacji**).
 
 | ID | Decyzja | Opcje | Rekomendacja planu (nie wiążąca) | Termin / blocker dla |
 | --- | --- | --- | --- | --- |
@@ -160,17 +160,30 @@ Kolejność zgodna z planem (Waves 4–6 + WBS):
 **Linia akceptacji (wzorzec):**
 
 ```text
-Approved: D-PREENT-01=<a|b|c>; D-PREENT-02=<A|B|defer>; …
-Operator: _____________________  Date: __________
+Approved: D-PREENT-01=b; D-PREENT-02=defer; D-PREENT-03=b; D-PREENT-04=block; D-PREENT-05=<5 osobnych czatów>; D-PREENT-06=defer; D-PREENT-07=defer
+Operator: (verbatim acceptance)  Date: 2026-11-10
 ```
 
-Bez wypełnionej linii `Approved` powyżej: **STOP** przed push, audytami certyfikującymi i publikacją macierzy końcowej.
+### Załącznik PL — skutki decyzji (krótko)
+
+| ID | Wybór | Skutek operacyjny |
+| --- | --- | --- |
+| **D-PREENT-01** | **b** | Najpierw przegląd diff PR [#434](https://github.com/jakbuczarnecki/intergrax/pull/434) (`PRE_ENT_PR434_DIFF_REVIEW.md`); merge na `development` dopiero gdy CI zielone i po review — orchestrator **nie merguje**. |
+| **D-PREENT-02** | **defer** | G-SKILL pozostaje blokadą macierzy; SKILL-X §3.0.4 bez nowego ID decyzji. |
+| **D-PREENT-03** | **b** | OD-HIST01-B: Pop **A–D** na pinowanym HEAD w PRE-ENT; Pop **E** @ **ENT-AUDIT-X**. Routing **T-IGX-034-G** = tylko Pop **B–D** (`governance/tickets/T-IGX-034-G.md`). |
+| **D-PREENT-04** | **block** | F10 TES ladder (`496016c0`) — **bez** advance `TEST_EXECUTION_SHA`; 034-F pozostaje BLOCKED TREE_DRIFT. |
+| **D-PREENT-05** | **5 osobnych czatów** | Wave 3: pięć sesji `independent-quality-auditor` @ `AUDIT_HEAD` `085be5ca9` — briefy: [`PRE_ENT_WAVE3_AUDITOR_SESSION_BRIEFS.md`](PRE_ENT_WAVE3_AUDITOR_SESSION_BRIEFS.md). |
+| **D-PREENT-06** | **defer** | OD-HIST04-A/C bez nowych linii; `FORMAL_AUTHORITY_INCOMPLETE` utrzymane do Wave 4+. |
+| **D-PREENT-07** | **defer** | T-IGX-034-C (DUR-01) — bez implementacji do osobnej decyzji po qual. |
 
 ---
 
 ## SSOT cross-links
 
 - Progress: [`PRE_ENT_CAMPAIGN_PROGRESS.md`](PRE_ENT_CAMPAIGN_PROGRESS.md)  
+- PR 434 review: [`PRE_ENT_PR434_DIFF_REVIEW.md`](PRE_ENT_PR434_DIFF_REVIEW.md)  
 - Wave 3 queue: [`PRE_ENT_WAVE3_AUDIT_HANDOFF_QUEUE.md`](PRE_ENT_WAVE3_AUDIT_HANDOFF_QUEUE.md)  
+- Wave 3 briefs: [`PRE_ENT_WAVE3_AUDITOR_SESSION_BRIEFS.md`](PRE_ENT_WAVE3_AUDITOR_SESSION_BRIEFS.md)  
+- T-IGX-034-G routing: `governance/tickets/T-IGX-034-G.md`  
 - Parent ticket: `governance/tickets/T-IGX-034-A.md`  
 - Plan: `c:\Users\XPS\.cursor\plans\pre-ent_certification_closure_0d7be74d.plan.md`

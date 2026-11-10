@@ -173,7 +173,7 @@ uv run --extra dev-ci python -m pytest -p no:xdist tests/qualification/prod_q/te
 | **OD-HIST04-C** | TOOL-LIFE-X label vs open operator decision | Wave 0 blocker table |
 | **F10 TES ladder (`496016c0`)** | In-tree F10 `TEST_EXECUTION_SHA` **`496016c0cf6cc5cf1f9a29d885677605dd0415d3`** ≠ governed execution pin; **4 identity paths**, **182 TREE_DRIFT / 0 SEMANTIC** — ladder advance blocked until policy allows controlled SHA | [`WAVE1_F10_PINNED_REPLAY.md`](WAVE1_F10_PINNED_REPLAY.md), [`WAVE1_F10_STATUS.md`](WAVE1_F10_STATUS.md), `governance/tickets/T-IGX-034-F.md` |
 | **ENT Population E** | Enterprise audit rollup not run; REG defer per historical dossier | [`PRE_ENT_CAMPAIGN_PROGRESS.md`](PRE_ENT_CAMPAIGN_PROGRESS.md) |
-| **Wave 3 sessions (this queue)** | Operator has **not** scheduled independent auditor chats for ready rows above | This document — ready queue only; scheduling is operator action |
+| **Wave 3 sessions (this queue)** | Operator **D-PREENT-05** — five separate auditor chats; briefs @ [`PRE_ENT_WAVE3_AUDITOR_SESSION_BRIEFS.md`](PRE_ENT_WAVE3_AUDITOR_SESSION_BRIEFS.md) | Execution = new chats; orchestrator does not run audits |
 
 **Related open Wave 1 (not in ready queue):** T-IGX-034-C (DUR-01), T-IGX-034-D/G/H — implement or qual incomplete; no auditor routing here.
 
