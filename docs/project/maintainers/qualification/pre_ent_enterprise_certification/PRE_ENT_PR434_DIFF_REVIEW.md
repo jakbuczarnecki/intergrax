@@ -54,6 +54,12 @@
 
 **Explicit:** This review is **not** G6 PASS, **not** certifier acceptance, **not** authorization to merge without green CI.
 
+### CI follow-up — `ci-smoke` root cause (2026-11-10)
+
+Run `42793468416` / job `129752532848`: `PluginValidationError` on `tests/unit/applications/conftest.py` — `pytest_configure(_config: …)` uses hook arg name `_config`, which does not match pytest hookspec (`config`). Introduced with **034-B** manifest registration in that conftest.
+
+**Remedy on PR branch:** rename parameter to `config` (no behavior change). Re-run PR checks after push.
+
 ---
 
 ## Minimal re-verification (post-merge suggestion)

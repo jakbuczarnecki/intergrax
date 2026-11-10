@@ -19,7 +19,7 @@ __all__ = ["configured_research_llm"]
 _REPO_ROOT = Path(__file__).resolve().parents[3]
 
 
-def pytest_configure(_config: pytest.Config) -> None:
+def pytest_configure(config: pytest.Config) -> None:
     """Register shipped product manifests before module-level parametrize collection."""
     for path in (_REPO_ROOT, _REPO_ROOT / "applications", _REPO_ROOT / "agents"):
         text = str(path)
