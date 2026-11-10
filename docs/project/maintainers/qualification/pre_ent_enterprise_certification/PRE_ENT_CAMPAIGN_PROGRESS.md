@@ -29,7 +29,7 @@ Approved: D-PREENT-01=b; D-PREENT-02=defer; D-PREENT-03=b; D-PREENT-04=block; D-
 
 | Field | Value |
 | --- | --- |
-| **Published `development` HEAD** | `dbc0fbbc8c8b0d6e7960fdb475cb2832f0d74882` — Wave 4 cert register **PUBLISHED** |
+| **Published `development` HEAD** | `c4a3b751bf7d6716bb0003bed23ae20b1e8f910f` — Wave 4 cert register **PUBLISHED** |
 | **Prior docs pins** | `03ce1d6f3` (Wave 3 register), `bbf5e4999` (PR #438) |
 | **AUDIT_HEAD (checkout for Wave 3)** | `1e83ade3f5fb951a9eedd85d4dae89ead48955ee` — prior pins: `03aa10959`, `085be5ca9`, `11ac8ad85` (historia) |
 | **IIAC @ `AUDIT_HEAD`** | exit **0** — evidence [`PRE_ENT_POST_IIAC_GATE_EVIDENCE.md`](PRE_ENT_POST_IIAC_GATE_EVIDENCE.md) (`effective_from_sha` `661978df1…`) |
@@ -80,7 +80,7 @@ Approved: D-PREENT-01=b; D-PREENT-02=defer; D-PREENT-03=b; D-PREENT-04=block; D-
 | --- | --- |
 | **AUDIT_HEAD (cert replay)** | `1e83ade3f5fb951a9eedd85d4dae89ead48955ee` |
 | **CERT_DOCS_HEAD (pre-pub handoff)** | `d00df592037404cd6c2b1bc95c00757544d551d8` |
-| **WAVE4_PUBLICATION_SHA** | `dbc0fbbc8c8b0d6e7960fdb475cb2832f0d74882` |
+| **WAVE4_PUBLICATION_SHA** | `c4a3b751bf7d6716bb0003bed23ae20b1e8f910f` |
 | **Consolidated register** | [`wave4_certs/WAVE4_CERT_CONSOLIDATED_REGISTER.md`](wave4_certs/WAVE4_CERT_CONSOLIDATED_REGISTER.md) — **5/5** + **PUBLISHED** |
 | **Certifier queue** | [`PRE_ENT_WAVE4_CERTIFICATION_HANDOFF_QUEUE.md`](PRE_ENT_WAVE4_CERTIFICATION_HANDOFF_QUEUE.md) — **PUBLISHED** |
 | **Certifier briefs** | [`PRE_ENT_WAVE4_CERTIFIER_SESSION_BRIEFS.md`](PRE_ENT_WAVE4_CERTIFIER_SESSION_BRIEFS.md) |
