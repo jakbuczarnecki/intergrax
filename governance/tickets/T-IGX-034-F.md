@@ -44,11 +44,20 @@ draft
 
 ## Checkpoint
 
+Execution @ `development` `9fafaa288` (2026-11-10). **Not closed.** **No B6 PASS.** Lifecycle remains `draft`.
+
 | Item | Status |
 |------|--------|
-| `WAVE1_F10_STATUS.md` | Published 2026-11-10 (dirty-tree classification + clean-checkout requirements) |
-| Render @ `4a932d0cf` | Complete (2× exit 0, ~8–10 min) |
-| Clean worktree replay @ `dc18e36d` | **Open** — required for semantic FAIL inventory |
-| Live `development` @ `f97d286b8+` | BND-03B merged after render; **re-run generator** when operator scopes F10 to current tip |
+| `WAVE1_F10_STATUS.md` | Published — dirty-tree @ `4a932d0cf` (639 identity paths; 182/182 TREE_DRIFT) + pinned replay rollup |
+| `WAVE1_F10_PINNED_REPLAY.md` | Published — detached `f10-pin` replay SSOT |
+| Render @ `4a932d0cf` (live tree) | Complete (2× exit 0); BLOCKED by PROFILE_BOUND drift |
+| **Pinned replay @ `dc18e36d`** | **Complete** — generator exit 0; matrix **not** merged to `development` |
+| In-tree F10 `TEST_EXECUTION_SHA` @ pin | **`496016c0`** (`MANIFEST.json` on tree @ `dc18e36d` — not weakened; differs from PRE-ENT campaign pin field on live `development`) |
+| Pin `identity_violations` | **4 paths only** (`496016c0` → `dc18e36d`, outside B5 allowlist) — see pinned replay doc |
+| Pin obligation FAIL attribution | **182 TREE_DRIFT** / **0 SEMANTIC** — C1–C5 **BLOCKED**; **not** independent B6 acceptance |
+| `EBH_7_B6_F10_ECAP_NORMATIVE_MATRIX.md` | Worktree/pinned render — **intentionally uncommitted** on `development` |
+| F10 manifest ladder advance | **Open** — operator policy after Wave 1+ batches; no gate weakening |
 
-Full gate table and routing: [`WAVE1_F10_STATUS.md`](../../docs/project/maintainers/qualification/pre_ent_enterprise_certification/WAVE1_F10_STATUS.md).
+**Pin violation paths (4):** `scripts/qualification/ebh7_junit_evidence.py`, `tests/qualification/ebh_7/_ebh7_skip_disposition_register.py`, `tests/qualification/ebh_7/_semantic_disposition_registry.py`, `tests/qualification/ebh_7/test_ebh_7_b6_junit_skip_disposition_gates.py`.
+
+Full gate table and routing: [`WAVE1_F10_STATUS.md`](../../docs/project/maintainers/qualification/pre_ent_enterprise_certification/WAVE1_F10_STATUS.md) · [`WAVE1_F10_PINNED_REPLAY.md`](../../docs/project/maintainers/qualification/pre_ent_enterprise_certification/WAVE1_F10_PINNED_REPLAY.md) · campaign rollup [`PRE_ENT_CAMPAIGN_PROGRESS.md`](../../docs/project/maintainers/qualification/pre_ent_enterprise_certification/PRE_ENT_CAMPAIGN_PROGRESS.md).
