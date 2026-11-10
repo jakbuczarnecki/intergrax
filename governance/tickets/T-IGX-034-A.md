@@ -1,0 +1,75 @@
+# T-IGX-034-A — PRE-ENT Wave 0: predecessor presence reconciliation on `development` (no implementation, no PASS)
+
+## Scope
+
+Read-only Wave 0 of the PRE-ENT predecessor certification campaign (`pre-ent_certification_closure` plan). Confirm on exact HEAD whether historical product batches **T-IGX-030-B**, **T-IGX-030-C**, **T-IGX-032-A**, **T-IGX-033-A**, residuals **HIST-F-BND-03B**, **HIST-F-DUR-01**, and **HIST03-F-015** (P2-C path) are present, reconcile ticket lifecycle fields with git reality (P8 integration `427646f41de0df992cd54c0e157de8f36b560f39` is ancestor of HEAD), and publish the presence matrix for Wave 1 routing.
+
+Deliverables:
+
+- `docs/project/maintainers/qualification/pre_ent_enterprise_certification/WAVE0_PRESENCE_RECONCILIATION.md` (SSOT for Wave 0 verdict inputs).
+- Lifecycle notes on predecessor tickets (this ticket records recommended next states; predecessor tickets are not edited in Wave 0 unless operator directs).
+
+No product-path edits in Wave 0. No Wave 1 worktrees. No G6 PASS, IIAC PASS, FRZ promotion, stage `CLOSED`, or certifier acceptance.
+
+## Plan digest
+
+Plan digest: 025f3831744d99939b79cf6cc57f31e4554451bad53f170a64e7050353efc27d
+
+## Approved
+
+(pending — operator acceptance of PRE-ENT campaign plan `pre-ent_certification_closure_0d7be74d`)
+
+## Test contract
+
+Wave 0 only — optional read-only spot checks (max one pytest per area, not blocking closeout):
+
+```text
+# 030-B (if uv available on machine)
+uv run --extra dev-ci pytest -p no:xdist tests/unit/architecture/test_ebh_4_r1_nexus_encapsulation_gate.py -q
+```
+
+Evidence of file presence and commit SHAs is primary; pytest is supplementary.
+
+Wave 0 spot check (executed @ HEAD `4a932d0cf`): `tests/unit/architecture/test_ebh_4_r1_nexus_encapsulation_gate.py` — **8 passed, exit 0**.
+
+## Out of scope
+
+Wave 1 implementation (T-IGX-034-B..I), independent audit sessions, roadmap §5 publication, FRZ row promotion, ENT-AUDIT-X, ARCH-FREEZE, Path B live scope, push/merge/PR unless operator requests commit of governance/docs only.
+
+## Lifecycle state
+
+quality_gate
+
+## Checkpoint
+
+Wave 0 execution @ HEAD `4a932d0cf5487b72e433805e372e3855fcd3d987` on branch `development` (2026-11-10).
+
+| Item | On HEAD? | Implementing commit (short) | Ticket lifecycle (file) | Wave 0 note |
+|------|----------|----------------------------|-------------------------|-------------|
+| T-IGX-030-B | Yes | `31a6c3fe1` | `plan_approved` | Code matches plan; lifecycle lags merge (hist product batch / P8). |
+| T-IGX-030-C | Yes | `30f67c94a` | `plan_approved` | `pool.submit` + `BaseException` → `mark_failed()` in `dep_boundary is None` branch present. |
+| T-IGX-032-A | Yes | `b6a056e7d` | `plan_approved` | KV authoritative when both backends supplied. |
+| T-IGX-033-A | Yes | `8bfee643f` | `plan_approved` | Tier-0 CLI upward edges removed per plan; BND-03B manifest edge out of ticket scope. |
+| T-IGX-031-A | Yes (tests) | `closed` in ticket | `closed` | Aligned. |
+| HIST-F-BND-03B | Partial | — | (no ticket) | `product_manifest_registry.py` dynamic Tier-0→Tier-3 `import_module` still on HEAD → Wave 1 **T-IGX-034-B**. |
+| HIST-F-DUR-01 | Open semantics | — | (plan residual R1 in 032-A) | `DocumentStoreSkillExecutionPinningStore.is_durable` literal `True`; validator delegates to store → verify in Wave 1 **T-IGX-034-C**. |
+| HIST03-F-015 / P2-C | Yes (code+tests) | via `032-A` | covered by 032-A | `tests/qualification/prod_q/test_prod_q_r1_r7_q_p2_c_http_execution_admission.py` exists; qual in Wave 2. |
+
+P8: `git merge-base --is-ancestor 427646f41… HEAD` → **true** (integration contained in current tree).
+
+Full matrix and Wave 1 actions: [`WAVE0_PRESENCE_RECONCILIATION.md`](../../docs/project/maintainers/qualification/pre_ent_enterprise_certification/WAVE0_PRESENCE_RECONCILIATION.md).
+
+Wave 0 scope **complete** (2026-11-10). Predecessor tickets 030-B/C, 032-A, 033-A: code on HEAD, lifecycle files still `plan_approved` — advance only after Wave 2 qualification unless operator batches lifecycle hygiene.
+
+### Wave 1 parallel batches (routing only; not started)
+
+| Ticket | Slug / parallelism | Owner action |
+|--------|-------------------|--------------|
+| T-IGX-034-B | `bnd-03b` | **implement** BND-03B manifest edge |
+| T-IGX-034-C | `skill-dur` (serial vs pinning qual) | **conditional implement** DUR-01 |
+| T-IGX-034-D | `tlx-inv` | **qual-only** (030-C already on HEAD) |
+| T-IGX-034-E | `replay` | REPLAY mechanical gates |
+| T-IGX-034-F | `f10` | EBH-7 F10 on clean SHA |
+| T-IGX-034-G | — (serial pytest) | QUAL-X Pop B–D |
+| T-IGX-034-H | — | DIST-SCALE §3.0.6 vs §5 + Q-03 audit |
+| T-IGX-034-I | — | Matrix/ledger pub (Wave 4+) |
