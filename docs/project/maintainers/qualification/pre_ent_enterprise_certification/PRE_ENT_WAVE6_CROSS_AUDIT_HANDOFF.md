@@ -5,7 +5,9 @@
 **`origin/development` HEAD:** `8d078cc9be92438c214ebf907f86cf3c3e208335` (merge PR [#439](https://github.com/jakbuczarnecki/intergrax/pull/439))  
 **Wave 5 ticket:** `governance/tickets/T-IGX-034-I.md` — lifecycle `plan_pending` (chat authorization recorded; no forged `Approved:` line)
 
-**STOP:** This document is **input only** for a **new** independent session. Do **not** execute Wave 6 in the Wave 5 publication orchestrator turn. Do **not** assign `ALL_PRE_ENT_PREDECESSORS_INDEPENDENTLY_CERTIFIED`. Do **not** promote **ACCEPT_SCOPED** to full certification.
+**Status (2026-11-10):** Independent cross-audit **complete** — republication [`PRE_ENT_WAVE6_CROSS_AUDIT_REPORT.md`](PRE_ENT_WAVE6_CROSS_AUDIT_REPORT.md) (`AUDITOR_SESSION_ID` `W6-INDEP-AUDIT-2026-11-10-f4ca1c864`). Evidence publication batch may follow; campaign **not** **CLOSED**.
+
+**Historical STOP (pre-audit):** Wave 5 orchestrator was barred from self-executing W6-G0..G3 or assigning `ALL_PRE_ENT_PREDECESSORS_INDEPENDENTLY_CERTIFIED`.
 
 ---
 

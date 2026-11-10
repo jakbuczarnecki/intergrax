@@ -127,3 +127,15 @@ Date: 2026-11-10
 - **Dispositions:** all open rows **EXACT_BLOCKER** or **N/A (PRE-ENT)**; five Wave 4 predecessors remain **ACCEPT_SCOPED** only.
 - **WAVE5_PUBLICATION_SHA:** pinned in campaign progress (batch 2).
 - **STOP:** Wave 6 not started; no campaign **CLOSED**, no FRZ promotion, no merge authority in Wave 5 scope.
+
+### Wave 6 independent cross-audit — **COMPLETE** (2026-11-10)
+
+- **AUDITOR_SESSION_ID:** `W6-INDEP-AUDIT-2026-11-10-f4ca1c864`
+- **Audit / development pin:** `f4ca1c864b14c917ea032aabcda1dc169654ace2`
+- **Report (republication):** [`PRE_ENT_WAVE6_CROSS_AUDIT_REPORT.md`](../../docs/project/maintainers/qualification/pre_ent_enterprise_certification/PRE_ENT_WAVE6_CROSS_AUDIT_REPORT.md)
+- **W6-G0 / W6-G1:** auditor **PASS**
+- **W6-G2:** **41 passed** bounded predecessor bundle; **full** parent regression **`NOT RUN`** — **not** full protocol PASS
+- **W6-G3:** campaign terminal label **`PRE_ENT_PREDECESSORS_EXACT_BLOCKERS`** — **not** `ALL_PRE_ENT_PREDECESSORS_INDEPENDENTLY_CERTIFIED`, **not** full Enterprise certification
+- **W6-G4:** dossier eligible for evidence publication; **`T-IGX-034-A` lifecycle `closed`** requires **operator sign-off** — **not declared** in this checkpoint
+- **Evidence publication:** separate publisher batch; **STOP** before unauthorized formal **CLOSED**
+- **Related:** `T-IGX-034-I` remains `plan_pending` — missing `Approved:` line (mechanical gateway); **separate** from W6-G3 terminal label
