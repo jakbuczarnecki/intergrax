@@ -1,7 +1,7 @@
 # PRE-ENT Wave 3 — independent audit handoff queue
 
 **Campaign:** `pre_ent_enterprise_certification`  
-**AUDIT_HEAD (checkout for new sessions):** `4e4481d35e54ff238e92d567c8f060f12bb031c5`  
+**AUDIT_HEAD (checkout for new sessions):** `085be5ca9b54a43a9a8929b1c3f2e955c7bfd6c0` (post-merge product tree; docs-only commits after this SHA do not change product paths)  
 **Branch:** `development`  
 **Date:** 2026-11-10  
 **Publisher:** T-IGX-034-A Wave 3 routing — **no PASS**, **no closure**, **no push**

@@ -90,7 +90,7 @@ Jeśli `gh` nie jest zalogowany: wykonaj push ręcznie i otwórz PR w UI GitHub;
 
 **Ta sesja (orchestrator) nie uruchamia audytów ani nie wystawia PASS.**
 
-**AUDIT_HEAD do nowych czatów audytora:** `4e4481d35e54ff238e92d567c8f060f12bb031c5` (merge evidence @ `085be5ca9`; zastępuje `2dad31b27…`). Szczegóły pytest: [`PRE_ENT_WAVE3_AUDIT_HANDOFF_QUEUE.md`](PRE_ENT_WAVE3_AUDIT_HANDOFF_QUEUE.md).
+**AUDIT_HEAD do nowych czatów audytora:** `085be5ca9b54a43a9a8929b1c3f2e955c7bfd6c0` (merge `origin` + PRE-ENT; zastępuje `2dad31b27…`). Dowód smoke BND-03B @ tym SHA. Szczegóły: [`PRE_ENT_WAVE3_AUDIT_HANDOFF_QUEUE.md`](PRE_ENT_WAVE3_AUDIT_HANDOFF_QUEUE.md).
 
 | # | Zakres | Ticket | Rola sesji | Minimalny pytest |
 | --- | --- | --- | --- | --- |
