@@ -24,9 +24,9 @@
     "LIM-gov-pytest: 2 expected IIAC in-force unit test failures at pre-activation HEAD",
     "LIM-BND-03B-CLI: doctor CLI importlib bootstrap of shipped_product_manifest_catalog (documented residual)",
     "LIM-no-closure: does not close ENT-AUDIT-X, PRE-ENT Wave 3, or W4-02 B6 audit",
-    "LIM-cert-pin: certification_publication_sha pinned in phase-2 publication commit (see SESSION_B_ACTIVATION_DOSSIER)"
+    "LIM-cert-pin: certification_publication_sha = phase-2 manifest pin commit (non-self-referential binding)"
   ],
-  "certification_publication_sha": "e2bb6e9c0dab0b603f98fb6ffa11ff463da19c0b",
+  "certification_publication_sha": "0be70e1506200f2ef074c1e180997d1727709713",
   "assurance_level": "process_enforced",
   "handoff_record_path": "docs/project/maintainers/qualification/iiac_evidence/ENT-AUDIT-X/act_n11_recovery/IIAC_SESSION_HANDOFF_RECORD_ACT_N11_SESSION_B.md",
   "audit_report_path": "docs/project/maintainers/qualification/iiac_evidence/ENT-AUDIT-X/act_n11_recovery/IIAC_ACT_N11_SESSION_B_INDEPENDENT_AUDIT_DOSSIER.md",
