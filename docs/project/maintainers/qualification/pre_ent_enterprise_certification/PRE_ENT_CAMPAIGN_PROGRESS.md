@@ -32,7 +32,7 @@ Approved: D-PREENT-01=b; D-PREENT-02=defer; D-PREENT-03=b; D-PREENT-04=block; D-
 | **IIAC @ HEAD** | **FAIL** — 7× ACT-N11 (`verify_iiac --require-in-force` lokalnie @ `03aa10959`) |
 | **Formal checkpoint** | [`PRE_ENT_FORMAL_CLOSURE_CHECKPOINT.md`](PRE_ENT_FORMAL_CLOSURE_CHECKPOINT.md) (§7 signed) |
 | **PR 434** | **MERGED** |
-| **IIAC handoff** | [`PRE_ENT_IIAC_ENT_HANDOFF_ACT_N11.md`](PRE_ENT_IIAC_ENT_HANDOFF_ACT_N11.md) — nadal otwarty |
+| **IIAC recovery** | [`../ent_audit_x/IIAC_ACT_N11_RECOVERY_BATCH.md`](../ent_audit_x/IIAC_ACT_N11_RECOVERY_BATCH.md) — **D-IIAC-01**; Wave 3: [`PRE_ENT_WAVE3_RESUME_AFTER_IIAC.md`](PRE_ENT_WAVE3_RESUME_AFTER_IIAC.md) |
 
 ## Waves — done (factual @ AUDIT_HEAD)
 

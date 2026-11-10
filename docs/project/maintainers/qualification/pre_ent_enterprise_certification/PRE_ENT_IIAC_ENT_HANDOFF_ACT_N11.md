@@ -109,6 +109,8 @@ All of:
 
 ## SSOT cross-links
 
+- **ENT recovery batch (supersedes wait-only routing):** [`../ent_audit_x/IIAC_ACT_N11_RECOVERY_BATCH.md`](../ent_audit_x/IIAC_ACT_N11_RECOVERY_BATCH.md) (`development` @ `8d757b6ad`) — **D-IIAC-01**  
+- Wave 3 resume checklist: [`PRE_ENT_WAVE3_RESUME_AFTER_IIAC.md`](PRE_ENT_WAVE3_RESUME_AFTER_IIAC.md)  
 - Merge wait state: [`PRE_ENT_PR434_MERGE_READINESS.md`](PRE_ENT_PR434_MERGE_READINESS.md)  
 - Checkpoint §7: [`PRE_ENT_FORMAL_CLOSURE_CHECKPOINT.md`](PRE_ENT_FORMAL_CLOSURE_CHECKPOINT.md)  
 - ENT handoff: [`ENT_AUDIT_X_HIST_CAMPAIGN_HANDOFF.md`](../historical_certification_campaign/ENT_AUDIT_X_HIST_CAMPAIGN_HANDOFF.md)  
