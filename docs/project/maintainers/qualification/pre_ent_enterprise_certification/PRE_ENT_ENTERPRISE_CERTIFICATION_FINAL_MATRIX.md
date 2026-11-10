@@ -18,7 +18,7 @@
 | **AUDIT_HEAD** | `1e83ade3f5fb951a9eedd85d4dae89ead48955ee` | Product + Wave 3 auditor replay |
 | **CERT_DOCS_HEAD** | `d00df592037404cd6c2b1bc95c00757544d551d8` | Wave 4 certifier handoff SSOT |
 | **WAVE4_PUBLICATION_SHA** | `c4a3b751bf7d6716bb0003bed23ae20b1e8f910f` | Wave 4 register publication |
-| **WAVE5_PUBLICATION_SHA** | *(pinned in batch 2 — see `PRE_ENT_CAMPAIGN_PROGRESS.md`)* | Wave 5 matrix + SSOT publication |
+| **WAVE5_PUBLICATION_SHA** | `0f3b4976726dcbd3046cd888aa91703214f27997` | Wave 5 matrix + SSOT publication |
 | **IIAC effective_from_sha** | `661978df191d9356058a1312a712fcfa3c890e9e` | IIAC `IN_FORCE` (record `8045915a` — not edited) |
 | **F10 TES pin** | `496016c0cf6cc5cf1f9a29d885677605dd0415d3` | D-PREENT-04=block replay |
 

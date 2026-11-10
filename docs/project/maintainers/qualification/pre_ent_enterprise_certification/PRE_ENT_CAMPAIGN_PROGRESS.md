@@ -96,7 +96,7 @@ Approved: D-PREENT-01=b; D-PREENT-02=defer; D-PREENT-03=b; D-PREENT-04=block; D-
 | --- | --- |
 | **Ticket** | `governance/tickets/T-IGX-034-I.md` (lifecycle `plan_pending` — operator `Approved:` not written by implementer) |
 | **Final matrix** | [`PRE_ENT_ENTERPRISE_CERTIFICATION_FINAL_MATRIX.md`](PRE_ENT_ENTERPRISE_CERTIFICATION_FINAL_MATRIX.md) |
-| **WAVE5_PUBLICATION_SHA** | *(batch 2 pin — see below after publication commit)* |
+| **WAVE5_PUBLICATION_SHA** | `0f3b4976726dcbd3046cd888aa91703214f27997` |
 | **Closure path** | [`PRE_ENT_WAVE4_TO_6_CLOSURE_PATH.md`](PRE_ENT_WAVE4_TO_6_CLOSURE_PATH.md) — W5-G0..G3 **met**; W5-G4 IIAC after publish |
 | **Ceiling** | **PRE_ENT_PREDECESSORS_EXACT_BLOCKERS** disposition documented — **not** assigned as campaign label until W6-G3 |
 
