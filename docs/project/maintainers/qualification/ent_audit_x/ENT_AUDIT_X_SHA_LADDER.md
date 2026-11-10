@@ -57,11 +57,14 @@
 | ENT_IIAC_CLOSURE_PLAN_BASELINE_SHA | `ba07ebaa34d04633bd60510f68c18346b1ef160d` | `development` tip at the start of the IIAC closure campaign (T-IGX-024-A, W0) |
 | TEST_EXECUTION_SHA (historical — superseded by R-FRESH row below) | `62d1c615855a3eaf569777a10e342aacc889a128` | IIAC loop-1 corrective TES (F-01/F-02/F-09/F-10/F-11 + test repairs #409/#411/#412); certifying qual wave PASS 10/10 stages, clean tree; nightly FULL run 42491342540 success on this SHA; supersedes the 89c76eb7 row - T-IGX-024-A |
 | EVIDENCE_PUBLICATION_SHA (historical — superseded by R-FRESH row below) | `163ef0c03b3cbead556499ee81cb99d640665dce` | B5 `qualification_at_62d1c615855a3eaf569777a10e342aacc889a128` (strict `verify_b5_publication_tree`, byte-preserved via .gitattributes) - T-IGX-024-A |
-| TEST_EXECUTION_SHA | `b5c2481d79f955fa5f483a9288aee8de4581f953` | R-FRESH current-HEAD requal after HIST product merge (12 product paths vs `62d1c615`); certifying FULL 85/85 + FREEZE bootstrap-candidate; local qual_wave PASS; nightly `workflow_dispatch` run `42593448899` success on branch `ent-r-fresh-tes` @ this SHA; supersedes loop-1 TES — T-IGX-024-B |
-| EVIDENCE_PUBLICATION_SHA | `63ff80819da5a7324257ea598e342810c1838199` | B5 `qualification_at_b5c2481d79f955fa5f483a9288aee8de4581f953` (strict `verify_b5_publication_tree`) — T-IGX-024-B |
+| TEST_EXECUTION_SHA (historical — superseded by W2 closure row below) | `b5c2481d79f955fa5f483a9288aee8de4581f953` | R-FRESH current-HEAD requal after HIST product merge (12 product paths vs `62d1c615`); certifying FULL 85/85 + FREEZE bootstrap-candidate; local qual_wave PASS; nightly `workflow_dispatch` run `42593448899` success on branch `ent-r-fresh-tes` @ this SHA; supersedes loop-1 TES — T-IGX-024-B |
+| EVIDENCE_PUBLICATION_SHA (historical — superseded by W2 closure row below) | `63ff80819da5a7324257ea598e342810c1838199` | B5 `qualification_at_b5c2481d79f955fa5f483a9288aee8de4581f953` (strict `verify_b5_publication_tree`) — T-IGX-024-B |
 | B6_ACCEPTANCE_PUBLICATION_SHA | `add6a6ce2015ebaa4bc38b7fadf3936f100a1522` | IIAC W2-04 phase-1: independent audit PASS_SCOPED evidence publication (manifest + pass record + certification record); pin set in W2-05 — T-IGX-024-B |
 | W4_NORMAL_FREEZE_EXECUTION_SHA | `0ad6511acaa29f18428c10dd8ad6a29262548aec` | W4 loop-2 certifying FREEZE (no bootstrap) @ `development` after PR #433; 85/85/0 exit 0; accepted baseline pin `480550d80…` — implementer evidence only (T-IGX-024-B) |
 | W4_NORMAL_FREEZE_EVIDENCE_PUBLICATION_SHA | `8b4d3c6fa82cf51f932571dcde102f2c4c2a7a03` | Tracked tree `b6_independent_handoff/freeze_normal_at_0ad6511ac…/` (bytes from runner @ execution SHA) |
+| TEST_EXECUTION_SHA | `32a9633440007eb4e8f00a825bbf2e399192b346` | W2 closure campaign @ `development` after PR #442 (W1 SSOT); pre-qual PRE_QUAL_PASS; certifying FULL 85/85/0 + normal FREEZE (no bootstrap) vs accepted baseline `480550d80…` — T-IGX-024-B |
+| W2_NORMAL_FREEZE_EXECUTION_SHA | `32a9633440007eb4e8f00a825bbf2e399192b346` | Normal FREEZE evidence @ `.tmp/session/ent-audit-x-close/freeze-run/` (session replay; B5 L3 bundle from certifying FULL) |
+| EVIDENCE_PUBLICATION_SHA | `481b2cc2c10a407fd2b93cf9c69714e8894aeccf` | B5 `qualification_at_32a9633440007eb4e8f00a825bbf2e399192b346` (strict `verify_b5_publication_tree`) — W2 closure T-IGX-024-B |
 
 ## Lineage rules
 
