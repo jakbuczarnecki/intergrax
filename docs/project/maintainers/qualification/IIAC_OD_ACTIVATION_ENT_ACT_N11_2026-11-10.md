@@ -39,5 +39,5 @@ Publisher and implementer **must not** substitute this line. Operator fills ISO-
 
 | Pin | SHA |
 |---|---|
-| `evidence_publication_sha` | *(see `SESSION_B_ACTIVATION_DOSSIER.md` §2 after merge)* |
-| `certification_publication_sha` | *(see `SESSION_B_ACTIVATION_DOSSIER.md` §2 after merge)* |
+| `evidence_publication_sha` | `e2bb6e9c0dab0b603f98fb6ffa11ff463da19c0b` |
+| `certification_publication_sha` | `e2bb6e9c0dab0b603f98fb6ffa11ff463da19c0b` (interim = evidence commit; phase-2 pin may advance) |

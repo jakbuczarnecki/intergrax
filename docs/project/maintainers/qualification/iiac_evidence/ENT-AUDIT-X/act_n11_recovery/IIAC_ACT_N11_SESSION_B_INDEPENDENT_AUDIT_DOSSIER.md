@@ -70,7 +70,7 @@ Auditor did **not**: edit `IIAC_POLICY_ACTIVATION_RECORD.json`, add `operator @`
 
 ## Handoff to publisher / Operator
 
-1. Authorized publisher commits manifest, dossier, findings, and auditor logs @ new `evidence_publication_sha`.
-2. Re-run `verify_iiac_audit_manifest.py` and `verify_iiac_role_separation.py --strict-product-diff`.
-3. Operator completes `SESSION_B_ACTIVATION_DOSSIER.md` §5 activation line in governing OD file.
+1. Evidence phase-1 commit: `e2bb6e9c0dab0b603f98fb6ffa11ff463da19c0b`.
+2. Publisher re-runs `verify_iiac_audit_manifest.py` and `verify_iiac_role_separation.py --strict-product-diff` @ published manifest bytes.
+3. Operator completes `SESSION_B_ACTIVATION_DOSSIER.md` §5 activation line in governing OD file (no publisher substitution).
 4. Post-activation: `verify_iiac_policy_activation --require-in-force` must exit **0**.

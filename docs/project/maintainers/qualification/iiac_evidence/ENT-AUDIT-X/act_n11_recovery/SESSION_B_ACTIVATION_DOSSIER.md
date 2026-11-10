@@ -27,8 +27,8 @@
 | Prior `audit_execution_sha` (ACT-N11) | `0946b11576d2ee617321fb099ed794f8b21bf5ba` |
 | `audited_implementation_sha` (product PR #434) | `03aa10959acf6ec3d81a7a0de8ac8224c8126973` |
 | Auditor `audit_execution_sha` / `test_execution_sha` | `ebc2f8ba0f92599a1fdde80cde6ad48beab1934f` |
-| `evidence_publication_sha` | *publisher phase-1 evidence commit — see publication handoff* |
-| `certification_publication_sha` | *publisher phase-2 manifest pin commit — see publication handoff* |
+| `evidence_publication_sha` | `e2bb6e9c0dab0b603f98fb6ffa11ff463da19c0b` (phase-1 evidence commit) |
+| `certification_publication_sha` | `e2bb6e9c0dab0b603f98fb6ffa11ff463da19c0b` (phase-1); phase-2 pin commit updates binding |
 | `development` tip (pre-activation) | `ebc2f8ba0f92599a1fdde80cde6ad48beab1934f` → post-evidence merge tip |
 
 Digest pins (manifest):
