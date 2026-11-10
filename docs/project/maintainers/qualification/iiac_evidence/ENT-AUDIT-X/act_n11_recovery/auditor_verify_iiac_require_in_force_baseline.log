@@ -1,0 +1,16 @@
+﻿.venv\Scripts\python.exe : IIAC policy activation: FAIL
+At line:1 char:29
++ ... intergrax"; .venv\Scripts\python.exe -m scripts.governance.verify_iia ...
++                 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    + CategoryInfo          : NotSpecified: (IIAC policy activation: FAIL:String) [], RemoteException
+    + FullyQualifiedErrorId : NativeCommandError
+ 
+  - ACT-N11 product path changed after the audited SHA: applications/shipped_product_manifest_catalog.py
+  - ACT-N11 product path changed after the audited SHA: intergrax/applications/_shared/product_manifest_registry.py
+  - ACT-N11 product path changed after the audited SHA: intergrax/cli/doctor_diff_app.py
+  - ACT-N11 product path changed after the audited SHA: intergrax/cli/doctor_health_app.py
+  - ACT-N11 product path changed after the audited SHA: intergrax/platform/enterprise_audit/baseline.py
+  - ACT-N11 product path changed after the audited SHA: intergrax/platform/enterprise_audit/data/changed_since_impact_m
+ap.v1.json
+  - ACT-N11 product path changed after the audited SHA: intergrax/platform/enterprise_audit/data/schemas/enterprise_aud
+it_report.v1.schema.json

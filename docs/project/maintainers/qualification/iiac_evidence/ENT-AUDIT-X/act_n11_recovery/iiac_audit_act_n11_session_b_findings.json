@@ -1,0 +1,52 @@
+{
+  "stage_id": "ENT-AUDIT-X",
+  "session_designation": "IIAC-ACT-N11-SESSION-B-2026-11-10",
+  "audit_execution_sha": "ebc2f8ba0f92599a1fdde80cde6ad48beab1934f",
+  "audited_implementation_sha": "03aa10959acf6ec3d81a7a0de8ac8224c8126973",
+  "audit_execution_sha_prior_act_n11": "0946b11576d2ee617321fb099ed794f8b21bf5ba",
+  "verdict_basis": "PASS_SCOPED",
+  "blocking_findings": [],
+  "limitations_carried": [
+    {
+      "id": "LIM-BND-03B-CLI-RESIDUAL",
+      "severity": "informational",
+      "summary": "doctor_diff_app / doctor_health_app load manifests via importlib.import_module('shipped_product_manifest_catalog') — intentional PRE-ENT handler bootstrap; Tier-0 registry no longer dynamic-imports Tier-3 (BND-03B gate green).",
+      "evidence": [
+        "tests/unit/architecture/test_bnd03b_product_manifest_registry_gate.py",
+        "docs/project/maintainers/qualification/pre_ent_enterprise_certification/PRE_ENT_PR434_DIFF_REVIEW.md"
+      ]
+    },
+    {
+      "id": "LIM-PRE-ACTIVATION-IIAC-GATE",
+      "severity": "informational",
+      "summary": "verify_iiac_policy_activation --require-in-force exit 1 (7× ACT-N11) until Operator personal activation pins new audit_execution_sha; not a product re-audit defect.",
+      "evidence": [
+        "docs/project/maintainers/qualification/iiac_evidence/ENT-AUDIT-X/act_n11_recovery/auditor_verify_iiac_require_in_force_baseline.log"
+      ]
+    },
+    {
+      "id": "LIM-GOV-PYTEST-RED-WHILE-ACT-N11",
+      "severity": "informational",
+      "summary": "test_n12_policy_is_in_force and test_canonical_policy_is_in_force_and_verifies fail at pinned HEAD while activation record audit_execution_sha lags product Δ.",
+      "evidence": [
+        "docs/project/maintainers/qualification/iiac_evidence/ENT-AUDIT-X/act_n11_recovery/auditor_governance_iiac_tests.log"
+      ]
+    },
+    {
+      "id": "LIM-GOV-SESSION-B-LINEAGE",
+      "severity": "informational",
+      "summary": "IIAC-GOV-1 governance certification (digest c405c65f…) remains authoritative for ACT-01 material paths; this session re-binds seven-path product Δ only.",
+      "evidence": [
+        "docs/project/maintainers/qualification/iiac_evidence/ENT-AUDIT-X/act_n11_recovery/audit_scope.json"
+      ]
+    },
+    {
+      "id": "LIM-EXCLUDED-WAVE3-W4",
+      "severity": "informational",
+      "summary": "PRE-ENT Wave 3 independent audits and W4-02 ENT B6 evidence audit are out of scope; do not start until post-activation verify green.",
+      "evidence": [
+        "docs/project/maintainers/qualification/iiac_evidence/ENT-AUDIT-X/act_n11_recovery/IIAC_SESSION_HANDOFF_RECORD_ACT_N11_SESSION_B.md"
+      ]
+    }
+  ]
+}
