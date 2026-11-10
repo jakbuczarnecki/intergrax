@@ -48,3 +48,5 @@ Implementation complete (2026-11-10). `igx_gov ticket`: PASS push-fast (5.2s). T
 | HIST-F-BND-03B dynamic `importlib` in registry | **removed** — Tier-3 catalog registers manifests |
 | BND-03 CLI gate | **unchanged** |
 | FRZ-BND-03 global PASS | **not claimed** (residual: doctor CLI still bootstraps catalog via dynamic import) |
+
+**Local `development` integration (2026-11-10):** fast-forward merge `t-igx-034-b` → `development` @ `01b3e1961f01e1ad578b84f3a20fbde7e16755f6`; no conflicts; not pushed. Post-merge pytest `test_bnd03b_product_manifest_registry_gate.py` — 2 passed, exit 0. Evidence: [`WAVE1_BND03B_STATUS.md`](../../docs/project/maintainers/qualification/pre_ent_enterprise_certification/WAVE1_BND03B_STATUS.md). Lifecycle remains `quality_gate` pending operator-directed audit routing (no `ready_for_audit` self-promotion).
