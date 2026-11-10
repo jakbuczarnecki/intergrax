@@ -84,6 +84,14 @@ Date: 2026-11-10
 | D-PREENT-05 | Five independent auditor chats @ `AUDIT_HEAD` `085be5ca9` — `PRE_ENT_WAVE3_AUDITOR_SESSION_BRIEFS.md`. |
 | D-PREENT-06/07=defer | OD-HIST04-A/C and 034-C unchanged. |
 
+### D-PREENT-08 (2026-11-10)
+
+Operator **recommends** `D-PREENT-08=a` — await ENT/IIAC re-activation before PR #434 merge; **not** yet a formal `Approved:` protocol line.
+
+- PR #434 @ `9ad4fbae4`: **no merge** while `governance-fast` red.
+- Handoff SSOT: [`PRE_ENT_IIAC_ENT_HANDOFF_ACT_N11.md`](../../docs/project/maintainers/qualification/pre_ent_enterprise_certification/PRE_ENT_IIAC_ENT_HANDOFF_ACT_N11.md).
+- Wave 3 **not started** until post-merge consistent baseline.
+
 ### Wave 1 parallel batches (routing only; not started)
 
 | Ticket | Slug / parallelism | Owner action |

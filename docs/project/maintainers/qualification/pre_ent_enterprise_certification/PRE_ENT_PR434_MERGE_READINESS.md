@@ -7,6 +7,8 @@
 **Date:** 2026-11-10  
 **Orchestrator:** T-IGX-034-A — **no merge**, **no Wave 3** until operator closes this gate.
 
+**Status:** **WAIT-IIAC** — operator **recommends D-PREENT-08=a**; formal `Approved:` pending. Handoff: [`PRE_ENT_IIAC_ENT_HANDOFF_ACT_N11.md`](PRE_ENT_IIAC_ENT_HANDOFF_ACT_N11.md).
+
 ---
 
 ## 1. CI (Regression + ENT audit)

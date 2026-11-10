@@ -1,7 +1,7 @@
 # PRE-ENT enterprise certification — campaign progress snapshot
 
 **Campaign:** `pre_ent_enterprise_certification`  
-**Evidence HEAD:** `ea8a2b2e9e7d4ebb7ea0d7fea4bf427b89a42eb6` (docs-only tip; **AUDIT_HEAD** product pin unchanged)  
+**Evidence HEAD (PR branch):** `9ad4fbae47b869edaeae1d19945a6390b37db76a`  
 **Branch:** `pre-ent/formal-closure-checkpoint-034a` → PR [#434](https://github.com/jakbuczarnecki/intergrax/pull/434)  
 **Date:** 2026-11-10  
 **vs `origin/development`:** PR branch ahead (PRE-ENT line + merge `0ad6511ac`)
@@ -22,6 +22,7 @@ Approved: D-PREENT-01=b; D-PREENT-02=defer; D-PREENT-03=b; D-PREENT-04=block; D-
 | 04=block | F10 TES ladder advance blocked |
 | 05 | Wave 3: five auditor chats — [`PRE_ENT_WAVE3_AUDITOR_SESSION_BRIEFS.md`](PRE_ENT_WAVE3_AUDITOR_SESSION_BRIEFS.md) |
 | 06–07=defer | OD-HIST04-A/C, 034-C unchanged |
+| **08=a (rekomendacja)** | **WAIT-IIAC** — brak merge #434 do zielonego `governance-fast`; handoff ENT/IIAC — [`PRE_ENT_IIAC_ENT_HANDOFF_ACT_N11.md`](PRE_ENT_IIAC_ENT_HANDOFF_ACT_N11.md) |
 
 ## Git
 
@@ -29,7 +30,8 @@ Approved: D-PREENT-01=b; D-PREENT-02=defer; D-PREENT-03=b; D-PREENT-04=block; D-
 | --- | --- |
 | **AUDIT_HEAD (product replay)** | `085be5ca9b54a43a9a8929b1c3f2e955c7bfd6c0` |
 | **Formal checkpoint** | [`PRE_ENT_FORMAL_CLOSURE_CHECKPOINT.md`](PRE_ENT_FORMAL_CLOSURE_CHECKPOINT.md) (§7 signed) |
-| **PR 434** | Open; ci-smoke **red** at last poll — see diff review |
+| **PR 434** | Open @ `9ad4fbae4`; **Regression gate red** (`governance-fast` ACT-N11); merge **STOP** |
+| **IIAC handoff** | [`PRE_ENT_IIAC_ENT_HANDOFF_ACT_N11.md`](PRE_ENT_IIAC_ENT_HANDOFF_ACT_N11.md) |
 
 ## Waves — done (factual @ AUDIT_HEAD)
 
@@ -56,7 +58,7 @@ Approved: D-PREENT-01=b; D-PREENT-02=defer; D-PREENT-03=b; D-PREENT-04=block; D-
 | Item | Status |
 | --- | --- |
 | **PR #434 merge** | After green CI + operator merge |
-| **Wave 3 audits** | Scheduled — 5 briefs ready; sessions not executed |
+| **Wave 3 audits** | **STOP** — briefs exist; start only after PR merge + IIAC-green baseline + new `AUDIT_HEAD` (handoff §6) |
 | **ENT Population E** | **Out of PRE-ENT** per D-PREENT-03=b |
 
 ## Uncommitted / out-of-commit artifacts (by policy)

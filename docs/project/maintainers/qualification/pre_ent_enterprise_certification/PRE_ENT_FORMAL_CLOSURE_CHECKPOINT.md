@@ -156,6 +156,7 @@ Kolejność zgodna z planem (Waves 4–6 + WBS):
 | **D-PREENT-05** | Harmonogram Wave 3 | 5 osobnych czatów audytora / batch / defer | 5 sesji @ AUDIT_HEAD §3 | Certyfikacja poprzedników |
 | **D-PREENT-06** | OD-HIST04-A/C | osobne linie decyzji vs defer do Wave 4 | defer utrzymuje `FORMAL_AUTHORITY_INCOMPLETE` | EVOL-X, TOOL-LIFE-X |
 | **D-PREENT-07** | T-IGX-034-C DUR-01 | implement / accept residual / defer | implement tylko jeśli qual potwierdza gap | SKILL-X / pinning family |
+| **D-PREENT-08** | `governance-fast` / ACT-N11 vs merge PR #434 | **(a)** czekaj na IIAC · **(b)** merge świadomy · **(c)** osobny batch PRE-ENT | **Operator rekomenduje (a)** — formalna linia `Approved:` **wymagana** | PR #434, Wave 3 baseline |
 
 **Linia akceptacji (wzorzec):**
 
@@ -175,13 +176,23 @@ Operator: (verbatim acceptance)  Date: 2026-11-10
 | **D-PREENT-05** | **5 osobnych czatów** | Wave 3: pięć sesji `independent-quality-auditor` @ `AUDIT_HEAD` `085be5ca9` — briefy: [`PRE_ENT_WAVE3_AUDITOR_SESSION_BRIEFS.md`](PRE_ENT_WAVE3_AUDITOR_SESSION_BRIEFS.md). |
 | **D-PREENT-06** | **defer** | OD-HIST04-A/C bez nowych linii; `FORMAL_AUTHORITY_INCOMPLETE` utrzymane do Wave 4+. |
 | **D-PREENT-07** | **defer** | T-IGX-034-C (DUR-01) — bez implementacji do osobnej decyzji po qual. |
+| **D-PREENT-08** | **(a) rekomendowane, nie podpisane** | **STOP merge** #434 do zielonego `governance-fast` po IIAC na `development`; handoff: [`PRE_ENT_IIAC_ENT_HANDOFF_ACT_N11.md`](PRE_ENT_IIAC_ENT_HANDOFF_ACT_N11.md). |
+
+**Rekomendowana linia (czeka na formalny protokół):**
+
+```text
+Approved: D-PREENT-08=a
+```
 
 ---
+
 
 ## SSOT cross-links
 
 - Progress: [`PRE_ENT_CAMPAIGN_PROGRESS.md`](PRE_ENT_CAMPAIGN_PROGRESS.md)  
 - PR 434 review: [`PRE_ENT_PR434_DIFF_REVIEW.md`](PRE_ENT_PR434_DIFF_REVIEW.md)  
+- PR merge / IIAC wait: [`PRE_ENT_PR434_MERGE_READINESS.md`](PRE_ENT_PR434_MERGE_READINESS.md)  
+- ENT/IIAC ACT-N11 handoff: [`PRE_ENT_IIAC_ENT_HANDOFF_ACT_N11.md`](PRE_ENT_IIAC_ENT_HANDOFF_ACT_N11.md)  
 - Wave 3 queue: [`PRE_ENT_WAVE3_AUDIT_HANDOFF_QUEUE.md`](PRE_ENT_WAVE3_AUDIT_HANDOFF_QUEUE.md)  
 - Wave 3 briefs: [`PRE_ENT_WAVE3_AUDITOR_SESSION_BRIEFS.md`](PRE_ENT_WAVE3_AUDITOR_SESSION_BRIEFS.md)  
 - T-IGX-034-G routing: `governance/tickets/T-IGX-034-G.md`  
