@@ -10,15 +10,17 @@
 
 ---
 
-## Wave 4 — certifier (current gate)
+## Wave 4 — certifier (**PUBLISHED**)
 
-| Gate | Criterion | SSOT |
-| --- | --- | --- |
-| **W4-G0** | Wave 3 register published; 5/5 auditor PASS @ `AUDIT_HEAD` | [`wave3_audits/WAVE3_AUDIT_CONSOLIDATED_REGISTER.md`](wave3_audits/WAVE3_AUDIT_CONSOLIDATED_REGISTER.md) |
-| **W4-G1** | Handoff queue + briefs @ `CERT_DOCS_HEAD` | [`PRE_ENT_WAVE4_CERTIFICATION_HANDOFF_QUEUE.md`](PRE_ENT_WAVE4_CERTIFICATION_HANDOFF_QUEUE.md), [`PRE_ENT_WAVE4_CERTIFIER_SESSION_BRIEFS.md`](PRE_ENT_WAVE4_CERTIFIER_SESSION_BRIEFS.md) |
-| **W4-G2** | Blocker matrix acknowledged | [`PRE_ENT_WAVE4_BLOCKER_MATRIX.md`](PRE_ENT_WAVE4_BLOCKER_MATRIX.md) |
-| **W4-G3** | Five **certifier** sessions executed (operator) | Per-brief pytest replay + scoped ACCEPT/CONDITIONAL records (local logs under `.tmp/session/pre-ent-wave4-cert/`) |
-| **W4-STOP** | **This orchestrator turn stops here** — no certifier chats until operator authorizes | Campaign progress STOP line |
+| Gate | Criterion | SSOT | Status |
+| --- | --- | --- | --- |
+| **W4-G0** | Wave 3 register published; 5/5 auditor PASS @ `AUDIT_HEAD` | [`wave3_audits/WAVE3_AUDIT_CONSOLIDATED_REGISTER.md`](wave3_audits/WAVE3_AUDIT_CONSOLIDATED_REGISTER.md) | **met** |
+| **W4-G1** | Handoff queue + briefs @ `CERT_DOCS_HEAD` | [`PRE_ENT_WAVE4_CERTIFICATION_HANDOFF_QUEUE.md`](PRE_ENT_WAVE4_CERTIFICATION_HANDOFF_QUEUE.md), [`PRE_ENT_WAVE4_CERTIFIER_SESSION_BRIEFS.md`](PRE_ENT_WAVE4_CERTIFIER_SESSION_BRIEFS.md) | **met** |
+| **W4-G2** | Blocker matrix acknowledged | [`PRE_ENT_WAVE4_BLOCKER_MATRIX.md`](PRE_ENT_WAVE4_BLOCKER_MATRIX.md) | **met** |
+| **W4-G3** | Five **certifier** sessions executed (operator) | Per-brief pytest replay + scoped **ACCEPT_SCOPED** @ `AUDIT_HEAD`; logs under `.tmp/session/pre-ent-wave4-cert/` | **met (5/5)** |
+| **W4-G4** | Certifier register + reports **published** on `development` | [`wave4_certs/WAVE4_CERT_CONSOLIDATED_REGISTER.md`](wave4_certs/WAVE4_CERT_CONSOLIDATED_REGISTER.md), `WAVE4_CERT_T-IGX-*.md` | **PUBLISHED** (publication batch; **not** re-cert) |
+
+**Wave 4 label:** **PUBLISHED** — **not** campaign **CLOSED**, **not** FRZ promotion, **not** `ALL_PRE_ENT_PREDECESSORS_INDEPENDENTLY_CERTIFIED`.
 
 **Not in Wave 4 scope:** FRZ promotion, roadmap §5 CLOSED, G6/IIAC campaign PASS, Population E, 034-C/D/G/H implementation.
 
