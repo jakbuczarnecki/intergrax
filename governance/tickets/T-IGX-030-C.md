@@ -41,3 +41,7 @@ Informational and expected RED by design (not to be fixed here): `verify_iiac_po
 ## Lifecycle state
 
 plan_approved
+
+## Checkpoint
+
+**operator-delegate pre-ent-wave2 (2026-11-10):** pytest pass @ HEAD `f2682d651f436c19f7000f940647be8fd134afa4` — still **NOT** `ready_for_audit`, no stage closure. Evidence: [`WAVE2_SERIAL_QUAL_LOG.md`](../../docs/project/maintainers/qualification/pre_ent_enterprise_certification/WAVE2_SERIAL_QUAL_LOG.md). Gate: `tests/unit/runtime/nexus/tools/test_tool_life_x_c0_no_boundary_submit_failure_terminal.py` — 6 passed, exit 0.
