@@ -140,6 +140,7 @@ Excluded from commit (policy): `tests/qualification/ent_audit_x/CANDIDATE_ENTERP
 | **W6-G2** | 41 passed (bounded); **full** parent regression **NOT RUN** |
 | **W6-G3** | **`PRE_ENT_PREDECESSORS_EXACT_BLOCKERS`** |
 | **WAVE6_EVIDENCE_PUBLICATION_SHA** | `2e0b708fffb419de7f5de07e5e903218dc96bb3f` |
+| **W6_G4_CLOSURE_PUBLICATION_SHA** | `ba7f1c111081c486f0ee3e646f57c3a2355208e6` |
 
 ## SSOT links
 
