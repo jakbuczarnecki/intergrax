@@ -1,159 +1,129 @@
 # PRE-ENT Wave 1 — EBH-7 B6-F10 status (T-IGX-034-F)
 
-**Campaign:** `pre_ent_enterprise_certification`  
+**Evidence HEAD (executed):** `4a932d0cf5487b72e433805e372e3855fcd3d987`  
+**Branch:** `development`  
 **Date:** 2026-11-10  
-**Executor:** T-IGX-034-F (orchestrator/implementer — **no B6 PASS**, no independent acceptance)
+**Executor:** T-IGX-034-F (orchestrator / implementer — **no B6 PASS**, no independent acceptance)
 
-## Evidence SHAs
+**P03 manifest `TEST_EXECUTION_SHA` (SSOT for F10 identity):** `dc18e36d971c93c8f631fbc86f73149d1b81b4d7`  
+(`docs/project/maintainers/qualification/ebh_7_p03_independent_replay/MANIFEST.json`)
 
-| Role | SHA | Note |
-|------|-----|------|
-| **Matrix render execution** | `4a932d0cf5487b72e433805e372e3855fcd3d987` | `development` @ double render of `render_ebh7_f10_normative_matrix.py` (~8–10 min each, exit 0) |
-| **`development` tip (live)** | `f97d286b89b90d2f58b3c6cd288d629e3237bdaf` | After BND-03B product batch (`01b3e1961`) + local integration note (`f97d286b8`); **not** the render HEAD unless re-run |
-| **EBH-7 P03 `TEST_EXECUTION_SHA`** | `dc18e36d971c93c8f631fbc86f73149d1b81b4d7` | SSOT in `docs/project/maintainers/qualification/ebh_7_p03_independent_replay/MANIFEST.json`; F10 PROFILE_BOUND attestation anchor |
-
-Re-run F10 generator on **`f97d286b8+`** after Wave 1 product merges if matrix publication must reflect live `development`.
-
-## Generator (usage)
+## Recompute command
 
 ```text
+# Preferred (repo standard)
 uv run python scripts/qualification/render_ebh7_f10_normative_matrix.py
-uv run python scripts/qualification/render_ebh7_f10_normative_matrix.py --check
+
+# Executed this session (uv absent on PATH; project venv equivalent)
+.venv\Scripts\python.exe scripts/qualification/render_ebh7_f10_normative_matrix.py
+.venv\Scripts\python.exe scripts/qualification/render_ebh7_f10_normative_matrix.py --check
 ```
 
-Writes / refreshes:
+**Render disposition @ HEAD (normative, identity-enforced):**
 
-- `docs/project/maintainers/qualification/EBH_7_B6_F10_ECAP_NORMATIVE_MATRIX.md`
-- F10 computed block inside `docs/project/maintainers/qualification/EBH_7_ECAP_EXECUTABLE_CHECKLIST.md` (C5 upstream slice excludes C5 from ECAP block)
+```text
+EBH-7 — B6-F10 BLOCKED / EXACT MISSING OBLIGATIONS
+C1 BLOCKED  n=32   failed=28
+C2 BLOCKED  n=43   failed=43
+C3 BLOCKED  n=105  failed=99
+C4 BLOCKED  n=9    failed=9
+C5 BLOCKED  n=3    failed=3
+```
 
-## Computed disposition @ render HEAD (`4a932d0cf`)
+Post-render `--check` → **`IN SYNC`** (matrix + ECAP §14 computed block agree with generator).
 
-**`EBH-7 — B6-F10 BLOCKED / EXACT MISSING OBLIGATIONS`** — not qualified, not B6 acceptance.
+Uncommitted artifact from this run: `docs/project/maintainers/qualification/EBH_7_B6_F10_ECAP_NORMATIVE_MATRIX.md` (drift-attested BLOCKED rows).
 
-| Gate | Verdict | Obligations | PASS | N/A WITH EVIDENCE | FAIL |
-|------|---------|-------------|------|-------------------|------|
-| **C1** | BLOCKED | 32 | 0 | 4 | 28 |
-| **C2** | BLOCKED | 43 | 0 | 0 | 43 |
-| **C3** | BLOCKED | 105 | 0 | 6 | 99 |
-| **C4** | BLOCKED | 9 | 0 | 0 | 9 |
-| **C5** | BLOCKED | 3 | 0 | 0 | 3 |
+---
 
-**Total obligation FAIL rows:** 182 (= 28+43+99+9+3).
+## Tree-drift vs semantic FAIL counts
 
-## TREE_DRIFT vs SEMANTIC classification
+F10 treats `git diff --name-only TEST_EXECUTION_SHA..HEAD` paths outside the P03 B5 identity allowlist as **`executed tree differs from TEST_EXECUTION_SHA`**. Attestations for bound pytest nodes then **FAIL**, which propagates to gate verdicts.
 
-### Executable tree identity (P03 / F10 PROFILE_BOUND)
+| Class | Count | Meaning |
+|-------|------:|---------|
+| **Identity violation paths** | **639** | Files changed between `dc18e36d` and `4a932d0cf` not on allowlist (includes `.claude/`, `.cursor/`, governance/tickets, PRE-ENT docs, P8 integration product paths, etc.) |
+| **Obligation FAIL rows (matrix)** | **182** | All classified **tree-drift** via reason prefix / attestation message |
+| **Semantic FAIL (same product tree, drift gate off)** | **0** on C1–C4; **1** publication-only probe on C5 | See below — **not** a license to weaken gates |
 
-On `development` @ `4a932d0cf`, `build_canonical_f10_inputs()` reported **`identity_violations` = 639** paths changed between `TEST_EXECUTION_SHA` `dc18e36d` and executed HEAD, **outside** the B5 allowlist. Leading buckets: **`.claude/**`, **`.cursor/**`, `agent-env/**`, governance/docs/tickets from post-B6 merges — not a single product-file defect list.
+### Obligation-level attribution (@ HEAD, identity enforced)
 
-### Obligation-level FAIL attribution @ render
+- **Tree-drift FAIL:** **182** / **182** obligation results with `ResultStatus.FAIL` (including C5-REPORT-PRESENT, C5-REPORT-COMPUTED, C5-NO-FALSE-PASS gate tests blocked by drift).
+- **Semantic FAIL @ HEAD:** **0** among C1–C4 normative obligations when drift messages are excluded from classification.
 
-| Class | Count | Basis |
-|-------|-------|--------|
-| **TREE_DRIFT** | **182** | Every obligation row with `| FAIL |` in the regenerated matrix cites `executed tree differs from TEST_EXECUTION_SHA` (or equivalent attestation) in **Missing / reasons** |
-| **SEMANTIC** | **0** | No obligation FAIL row on the regenerated matrix lacks the tree-drift attestation string (automated row scan @ `4a932d0cf`) |
+### Counterfactual probe (analysis only — **does not change gates**)
 
-**Interpretation:** On a **dirty / advanced** checkout, F10 correctly **BLOCKS** with PROFILE_BOUND failures. This is **not** evidence that all 182 obligations are semantically missing at `dc18e36d`; it is evidence that **current tree ≠ TEST_EXECUTION_SHA** for attestation purposes.
+Clearing `identity_violations` in-process while still evaluating **current tracked tree @ `4a932d0cf`** yields:
 
-### Clean checkout requirement (gates unchanged)
+| Gate | Verdict | failed |
+|------|---------|-------:|
+| C1 | PASS | 0 |
+| C2 | PASS | 0 |
+| C3 | PASS | 0 |
+| C4 | PASS | 0 |
+| C5 | BLOCKED | 1 (`C5-REPORT-COMPUTED` — on-disk §14 block still reflects drift-attested BLOCKED C1–C4, not counterfactual PASS) |
 
-- **Do not weaken** F10 gates, allowlists, or `TEST_EXECUTION_SHA` rules for PRE-ENT convenience.
-- **Authoritative semantic recompute** requires either:
-  1. **Detached clean worktree** at `TEST_EXECUTION_SHA` `dc18e36d` (or CI-identical tree), then `render_ebh7_f10_normative_matrix.py` + MANIFEST-profile replay; or
-  2. A **formal P03 SHA ladder advance** after PRE-ENT correctives (separate governed batch — not Wave 1 default).
-- Local agent adapter trees (`.claude/`, `.cursor/`) must be absent or unchanged on the execution tree used for attestation.
+**Interpretation:** PRE-ENT `development` HEAD is **ahead of** the published `TEST_EXECUTION_SHA`. Normative certification is **correctly BLOCKED** until either:
 
-### Predecessor-owned families (Wave 1 routing if semantic FAIL appears after clean replay)
+1. **Clean checkout replay** at `TEST_EXECUTION_SHA` (CI / independent auditor / operator worktree on exact SHA), or  
+2. **Controlled P03 advancement** — new B6 corrective `TEST_EXECUTION_SHA` after Wave 1+ batches land, full MANIFEST `pytest_profile` replay, then deliberate matrix render.
 
-After clean replay, any remaining **SEMANTIC** FAIL should route by family / gate ownership (from Wave 0 presence SSOT):
+**Do not** relax identity allowlist or skip attestations to “green” F10 on a dirty post-P8 tree.
 
-| Failure domain | Likely gate | Wave 1 owner ticket |
-|----------------|-------------|------------------------|
-| BND-03B manifest Tier-0→Tier-3 edge | C1 `FRZ-BND` / tier imports | **T-IGX-034-B** (implemented on `f97d286b8+`; re-validate on clean SHA ladder) |
-| DUR-01 / skill pinning durability | C3 concerns + C4 deltas | **T-IGX-034-C** |
-| Invoker 030-C / TOOL-LIFE terminalization | C1/C3 product gates | **T-IGX-034-D** (qual-only if already on HEAD) |
-| REPLAY / ROADMAP-REPLAY C4 path class | C4 | **T-IGX-034-E** |
-| QUAL-X Pop B–D | C1/C3 qualification surfaces | **T-IGX-034-G** |
-| DIST-SCALE Q-03 | C3/C2 surfaces | **T-IGX-034-H** |
+---
 
-**At dirty `4a932d0cf` render:** no semantic obligation IDs isolated — routing above is **conditional on clean replay**, not deduced from tree-drift BLOCKED counts.
+## C1–C5 gate verdict summary
 
-## C1–C5 gate verdict summary (operator)
+| Gate | @ HEAD (enforced identity) | Semantic note (drift excluded) |
+|------|----------------------------|----------------------------------|
+| **C1** | **BLOCKED** (28 / 32 obligations failing) | PASS — no family/tier semantic gaps on current tree |
+| **C2** | **BLOCKED** (43 / 43) | PASS — DUP-X / RF delta bindings attest clean in-process @ HEAD |
+| **C3** | **BLOCKED** (99 / 105) | PASS — concern inventory / prohibited surfaces |
+| **C4** | **BLOCKED** (9 / 9) | PASS — change-class regression map |
+| **C5** | **BLOCKED** (3 / 3) | Publication sync blocked until SHA + render pipeline aligned |
 
-| Gate | Verdict | Wave 1 read |
-|------|---------|-------------|
-| C1 | BLOCKED (28 FAIL, 4 N/A) | PROFILE_BOUND drift; 4 downstream FRZ deferrals unchanged |
-| C2 | BLOCKED (43/43 FAIL) | All DUP-X / RF delta rows fail attestation on dirty tree |
-| C3 | BLOCKED (99 FAIL, 6 N/A) | Inventory/concern rows fail attestation; 6 N/A dispositions preserved |
-| C4 | BLOCKED (9/9 FAIL) | Path-class regression bindings fail attestation |
-| C5 | BLOCKED (3/3 FAIL) | Publication/sync obligations fail under drift |
-| **B6-F10** | **BLOCKED** | **Not PASS** — independent B6 acceptance not claimed |
+**Campaign verdict:** F10 on `development @ 4a932d0cf` is **BLOCKED by tree-drift**, not by a broad semantic regression in ECAP C1–C4 on the current product tree.
+
+---
+
+## Predecessor-owned families — Wave 1 routing
+
+F10 **does not** emit separate semantic FAILs for **HIST-F-BND-03B**, **HIST-F-DUR-01**, **T-IGX-030-C**, or **032-A** paths at HEAD when drift is stripped (C1–C4 PASS). Wave 1 **implement** routing remains per Wave 0 presence SSOT, not overridden by this matrix:
+
+| Residual | Owner ticket | F10 semantic FAIL? | Wave 1 action |
+|----------|--------------|--------------------|---------------|
+| HIST-F-BND-03B (`product_manifest_registry` dynamic Tier-0→Tier-3) | **T-IGX-034-B** | No (at HEAD probe) | **implement** |
+| HIST-F-DUR-01 (pinning `is_durable` semantics) | **T-IGX-034-C** | No (at HEAD probe) | **conditional implement** |
+| T-IGX-030-C / invoker terminalization | **T-IGX-034-D** | No | **qual-only** |
+| REPLAY mechanical gates | **T-IGX-034-E** | Not isolated in this slice | per plan |
+| QUAL-X Pop B–D | **T-IGX-034-G** | — | serial qual |
+| DIST-SCALE Q-03 | **T-IGX-034-H** | — | audit |
+
+---
 
 ## Recommended next fix batch
 
-1. **T-IGX-034-F (this ticket):** clean worktree @ `dc18e36d` (or updated ladder SHA after operator decision); rerun generator; classify **SEMANTIC** FAIL set; refresh matrix only via generator — no manual PASS prose.
-2. **Re-render on `f97d286b8+`** once BND-03B and replay batches land, so C4 deltas and tier gates reflect current product tree (still subject to TEST_EXECUTION_SHA attestation rules).
-3. **Parallel Wave 1 product/qual:** **034-B** (BND — largely landed), **034-E** (REPLAY), **034-G/H** (QUAL-X / DIST-SCALE) — serial where plan demands; feed semantic failures back into F10 after SHA discipline.
-4. **Defer:** ECAP §14 / matrix **publication closure** (**034-I**) until F10 semantic block is understood on clean execution tree.
+1. **T-IGX-034-F (continuation)** — Operator: choose **replay @ `dc18e36d`** worktree *or* schedule **manifest SHA advance** after Wave 1 product batches; commit deliberate matrix render when policy allows (current matrix diff is drift-true, not semantic-PASS).  
+2. **Parallel implement** — **T-IGX-034-B** (BND-03B), **T-IGX-034-C** (DUR-01 if qual confirms); **034-D/E/G/H** qual batches per WBS.  
+3. **Do not** claim B6-F10 QUALIFIED / independent acceptance on `4a932d0cf` without P03 identity satisfied.
 
-## Artifacts touched by render @ `4a932d0cf`
+## Pinned replay — `f10-pin` @ `dc18e36d` (2026-11-10)
 
-- `docs/project/maintainers/qualification/EBH_7_B6_F10_ECAP_NORMATIVE_MATRIX.md` (regenerated; header states **Not B6 PASS**)
-- `EBH_7_ECAP_EXECUTABLE_CHECKLIST.md` F10 computed block (regenerated)
-
-## Clean execution tree replay — `f10-clean` @ `f97d286b8` (2026-11-10)
-
-**Worktree:** `D:/Projekty/_wt/intergrax/f10-clean` (branch `f10-clean`)  
-**Executed HEAD:** `f97d286b89b90d2f58b3c6cd288d629e3237bdaf` (`development` ladder after BND-03B + integration note)  
-**TEST_EXECUTION_SHA (unchanged pin):** `dc18e36d971c93c8f631fbc86f73149d1b81b4d7`  
-**Disposition:** `EBH-7 — B6-F10 BLOCKED / EXACT MISSING OBLIGATIONS` — **not B6 PASS**
-
-### Tree identity (B5 allowlist; `build_canonical_f10_inputs` / `_path_allowed`)
+Detached worktree `D:/Projekty/_wt/intergrax/f10-pin` @ `dc18e36d971c93c8f631fbc86f73149d1b81b4d7`. F10 reads in-tree `MANIFEST` `TEST_EXECUTION_SHA` **`496016c0`** at this commit (not the PRE-ENT pin field on live `development`). Generator exit **0**; matrix **not** merged to `development`.
 
 | Signal | Value |
 |--------|-------|
-| **`identity_violations`** | **662** (clean git worktree — not local adapter dirt) |
-| **`in_process_failures`** | **0** (IN_PROCESS validators pass on HEAD; PROFILE_BOUND still blocks via drift) |
-| **Tree identity satisfied?** | **No** — HEAD ≠ pin; diff outside B5 allowlist |
+| **`identity_violations`** | **4 only (not zero)** |
+| **TREE_DRIFT obligation FAILs** | **182** |
+| **SEMANTIC obligation FAILs** | **0** |
+| **Disposition** | C1–C5 **BLOCKED** — **not B6 PASS** |
 
-**Violation buckets (path counts outside allowlist vs `dc18e36d`):**
+Violation paths: `scripts/qualification/ebh7_junit_evidence.py`, `tests/qualification/ebh_7/_ebh7_skip_disposition_register.py`, `tests/qualification/ebh_7/_semantic_disposition_registry.py`, `tests/qualification/ebh_7/test_ebh_7_b6_junit_skip_disposition_gates.py`.
 
-| Bucket | Count |
-|--------|------:|
-| `tests/` | 293 |
-| `scripts/` | 89 |
-| `governance/` | 75 |
-| `other` | 94 |
-| `intergrax/` | 45 |
-| `agent-env/` | 25 |
-| `.cursor/` | 23 |
-| `.claude/` | 18 |
+Full record: [`WAVE1_F10_PINNED_REPLAY.md`](WAVE1_F10_PINNED_REPLAY.md).
 
-**Non-adapter product drift:** **588** paths outside `agent-env` + `.claude/` + `.cursor/` — **not** agent-env-only drift.
+## Cross-links
 
-### Computed disposition @ `f97d286b8` (generator exit 0)
-
-| Gate | Verdict | Obligations | FAIL |
-|------|---------|-------------|------|
-| **C1** | BLOCKED | 32 | 28 |
-| **C2** | BLOCKED | 43 | 43 |
-| **C3** | BLOCKED | 105 | 99 |
-| **C4** | BLOCKED | 9 | 9 |
-| **C5** | BLOCKED | 3 | 3 |
-
-**Total obligation FAIL rows:** 182 (= 28+43+99+9+3).
-
-### TREE_DRIFT vs SEMANTIC @ `f97d286b8`
-
-| Class | Count | Basis |
-|-------|------:|-------|
-| **TREE_DRIFT** | **182** | Every FAIL row cites `executed tree differs from TEST_EXECUTION_SHA` in Missing / reasons |
-| **SEMANTIC** | **0** | Automated row scan — no FAIL without tree-drift attestation string |
-
-**Read:** Semantic obligation gaps **cannot** be isolated on `f97d286b8+` until `identity_violations` = 0 (pinned replay @ `dc18e36d` or governed P03 ladder advance). Gates and B5 allowlist **unchanged**.
-
-## Related SSOT
-
-- Wave 0 presence: [`WAVE0_PRESENCE_RECONCILIATION.md`](WAVE0_PRESENCE_RECONCILIATION.md)
-- Pinned replay record: [`WAVE1_F10_PINNED_REPLAY.md`](WAVE1_F10_PINNED_REPLAY.md)
-- Ticket: `governance/tickets/T-IGX-034-F.md`
+- Wave 0 presence: [`WAVE0_PRESENCE_RECONCILIATION.md`](WAVE0_PRESENCE_RECONCILIATION.md)  
+- Generated matrix: [`../EBH_7_B6_F10_ECAP_NORMATIVE_MATRIX.md`](../EBH_7_B6_F10_ECAP_NORMATIVE_MATRIX.md)  
+- Ticket: [`governance/tickets/T-IGX-034-F.md`](../../../governance/tickets/T-IGX-034-F.md)

@@ -4,34 +4,38 @@
 **Date:** 2026-11-10  
 **Executor:** T-IGX-034-F — **no B6 PASS**, no independent acceptance
 
-## Execution context
+## Execution tree
 
-| Role | SHA | Note |
-|------|-----|------|
-| **Worktree** | `D:/Projekty/_wt/intergrax/f10-pin` | Detached HEAD |
-| **Executed HEAD** | `dc18e36d971c93c8f631fbc86f73149d1b81b4d7` | P03 / operator pin checkout (Wave 1 ladder reference on live `development`) |
-| **`MANIFEST.json` `TEST_EXECUTION_SHA` @ this commit** | `496016c0cf6cc5cf1f9a29d885677605dd0415d3` | F10 `build_canonical_f10_inputs()` reads this field — not the checkout SHA while ladder on `development` names `dc18e36d` |
-| **Generator** | `uv run python scripts/qualification/render_ebh7_f10_normative_matrix.py` | Exit 0 @ `dc18e36d`; matrix refreshed in worktree only (**not** merged to `development`) |
+| Field | Value |
+| --- | --- |
+| **Worktree** | `D:/Projekty/_wt/intergrax/f10-pin` (detached HEAD) |
+| **Executed HEAD** | `dc18e36d971c93c8f631fbc86f73149d1b81b4d7` |
+| **PRE-ENT ladder pin (development SSOT)** | `dc18e36d971c93c8f631fbc86f73149d1b81b4d7` (`MANIFEST.json` `TEST_EXECUTION_SHA` on current `development`) |
+| **F10 attestation `TEST_EXECUTION_SHA` @ execution** | `496016c0cf6cc5cf1f9a29d885677605dd0415d3` (in-tree `MANIFEST.json` at `dc18e36d` — not weakened) |
+| **Generator** | `uv run python scripts/qualification/render_ebh7_f10_normative_matrix.py` (exit 0) |
+| **Disposition** | `EBH-7 — B6-F10 BLOCKED / EXACT MISSING OBLIGATIONS` |
 
-Contrast: [`WAVE1_F10_STATUS.md`](WAVE1_F10_STATUS.md) **f10-clean** section @ `f97d286b8` uses live `development` `MANIFEST` pin `dc18e36d` → **662** identity violations.
+**Publication rule:** matrix and checklist outputs were regenerated **only inside the worktree** — **not** merged to `development`.
 
 ## Tree identity (B5 allowlist)
 
 | Signal | Value |
-|--------|------:|
-| **`identity_violations`** | **4** (`496016c0` → `dc18e36d` diff outside B5 allowlist) |
+| --- | --- |
+| **`identity_violations`** | **4 only (not zero)** — `496016c0` → `dc18e36d`, outside B5 allowlist |
 | **`in_process_failures`** | **0** |
-| **Paths** | `scripts/qualification/ebh7_junit_evidence.py`, `tests/qualification/ebh_7/_ebh7_skip_disposition_register.py`, `tests/qualification/ebh_7/_semantic_disposition_registry.py`, `tests/qualification/ebh_7/test_ebh_7_b6_junit_skip_disposition_gates.py` |
-| **Tree identity satisfied?** | **No** — four qualification paths between manifest TES and executed HEAD |
+| **Tree identity satisfied for F10?** | **No** — executed HEAD ≠ in-tree F10 `TEST_EXECUTION_SHA` |
 
-B5 allowlist **unchanged** (no weakening for PRE-ENT).
+**Violation paths (full list):**
 
-## Computed disposition @ pinned replay
+- `scripts/qualification/ebh7_junit_evidence.py`
+- `tests/qualification/ebh_7/_ebh7_skip_disposition_register.py`
+- `tests/qualification/ebh_7/_semantic_disposition_registry.py`
+- `tests/qualification/ebh_7/test_ebh_7_b6_junit_skip_disposition_gates.py`
 
-**`EBH-7 — B6-F10 BLOCKED / EXACT MISSING OBLIGATIONS`** — not qualified, not B6 acceptance.
+## C1–C5 @ pinned replay
 
 | Gate | Verdict | Obligations | PASS | N/A WITH EVIDENCE | FAIL |
-|------|---------|-------------|------|-------------------|------|
+| --- | --- | ---: | ---: | ---: | ---: |
 | **C1** | BLOCKED | 32 | 0 | 4 | 28 |
 | **C2** | BLOCKED | 43 | 0 | 0 | 43 |
 | **C3** | BLOCKED | 105 | 0 | 6 | 99 |
@@ -43,20 +47,20 @@ B5 allowlist **unchanged** (no weakening for PRE-ENT).
 ## TREE_DRIFT vs SEMANTIC
 
 | Class | Count | Basis |
-|-------|------:|-------|
-| **TREE_DRIFT** | **182** | Every FAIL row cites `executed tree differs from TEST_EXECUTION_SHA` (PROFILE_BOUND attestation) |
-| **SEMANTIC** | **0** | Row scan — no FAIL without tree-drift attestation string |
+| --- | ---: | --- |
+| **TREE_DRIFT** | **182** | Every FAIL row cites `executed tree differs from TEST_EXECUTION_SHA` (automated scan post-`certify_f10_for_render`) |
+| **SEMANTIC** | **0** | No FAIL row without tree-drift attestation string |
 
-**Read:** Even with only **four** identity paths between manifest TES and `dc18e36d` HEAD, F10 still attributes **all** obligation FAILs to tree drift. **Semantic** gaps are **not** isolated until `identity_violations` = 0 (e.g. detached replay @ `496016c0` with matching HEAD, or governed MANIFEST / ladder alignment). Gates unchanged.
+## Read vs ladder `f10-clean`
 
-## Operator summary
+| Replay | HEAD | Campaign `identity_violations` vs PRE-ENT pin `dc18e36d` | SEMANTIC |
+| --- | --- | ---: | ---: |
+| **`f10-clean`** (`f2682d651` / ladder) | Wave 1 product HEAD | 662 | 0 |
+| **`f10-pin`** (this record) | P03 replay checkout `dc18e36d` | 4 (F10 manifest pin `496016c0` vs HEAD) | 0 |
 
-| Gate | Verdict |
-|------|---------|
-| C1–C5 | BLOCKED (same FAIL counts as dirty / `f97d286b8` ladder render) |
-| **B6-F10** | **BLOCKED** — **not PASS** |
+Pinned replay **reduces** PROFILE_BOUND drift versus ladder HEAD but **does not** clear F10 attestation: in-tree manifest at `dc18e36d` still anchors F10 to `496016c0`, and four qualification paths differ. **Gates and B5 allowlist unchanged.**
 
 ## Related SSOT
 
-- Clean ladder replay: [`WAVE1_F10_STATUS.md`](WAVE1_F10_STATUS.md) (incl. `f10-clean` @ `f97d286b8`)
+- Status rollup: [`WAVE1_F10_STATUS.md`](WAVE1_F10_STATUS.md)
 - Ticket: `governance/tickets/T-IGX-034-F.md`
