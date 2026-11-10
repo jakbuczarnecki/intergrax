@@ -161,8 +161,8 @@ Kolejność zgodna z planem (Waves 4–6 + WBS):
 **Linia akceptacji (wzorzec):**
 
 ```text
-Approved: D-PREENT-01=b; D-PREENT-02=defer; D-PREENT-03=b; D-PREENT-04=block; D-PREENT-05=<5 osobnych czatów>; D-PREENT-06=defer; D-PREENT-07=defer
-Operator: (verbatim acceptance)  Date: 2026-11-10
+Approved: D-PREENT-01=b; D-PREENT-02=defer; D-PREENT-03=b; D-PREENT-04=block; D-PREENT-05=<5 osobnych czatów>; D-PREENT-06=defer; D-PREENT-07=defer; D-PREENT-08=a
+Operator: (chat authorization)  Date: 2026-11-10
 ```
 
 ### Załącznik PL — skutki decyzji (krótko)
@@ -176,12 +176,19 @@ Operator: (verbatim acceptance)  Date: 2026-11-10
 | **D-PREENT-05** | **5 osobnych czatów** | Wave 3: pięć sesji `independent-quality-auditor` @ `AUDIT_HEAD` `085be5ca9` — briefy: [`PRE_ENT_WAVE3_AUDITOR_SESSION_BRIEFS.md`](PRE_ENT_WAVE3_AUDITOR_SESSION_BRIEFS.md). |
 | **D-PREENT-06** | **defer** | OD-HIST04-A/C bez nowych linii; `FORMAL_AUTHORITY_INCOMPLETE` utrzymane do Wave 4+. |
 | **D-PREENT-07** | **defer** | T-IGX-034-C (DUR-01) — bez implementacji do osobnej decyzji po qual. |
-| **D-PREENT-08** | **(a) rekomendowane, nie podpisane** | **STOP merge** #434 do zielonego `governance-fast` po IIAC na `development`; handoff: [`PRE_ENT_IIAC_ENT_HANDOFF_ACT_N11.md`](PRE_ENT_IIAC_ENT_HANDOFF_ACT_N11.md). |
+| **D-PREENT-08** | **a (autoryzowane 2026-11-10)** | **STOP merge** #434 do zielonego `governance-fast` po IIAC na `development`; handoff: [`PRE_ENT_IIAC_ENT_HANDOFF_ACT_N11.md`](PRE_ENT_IIAC_ENT_HANDOFF_ACT_N11.md); PRE-ENT **wykonuje** wait + re-sync po IIAC, **nie** re-activation. |
 
-**Rekomendowana linia (czeka na formalny protokół):**
+**Linia akceptacji D-PREENT-08 (protokół 2026-11-10):**
 
 ```text
 Approved: D-PREENT-08=a
+Operator: (chat authorization — wykonaj)  Date: 2026-11-10
+```
+
+Pełna składana linia §7:
+
+```text
+Approved: D-PREENT-01=b; D-PREENT-02=defer; D-PREENT-03=b; D-PREENT-04=block; D-PREENT-05=<5 osobnych czatów>; D-PREENT-06=defer; D-PREENT-07=defer; D-PREENT-08=a
 ```
 
 ---

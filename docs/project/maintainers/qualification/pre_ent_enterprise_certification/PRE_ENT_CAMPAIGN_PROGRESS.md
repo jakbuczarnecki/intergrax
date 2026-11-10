@@ -11,7 +11,7 @@
 ## Operator §7 (2026-11-10)
 
 ```text
-Approved: D-PREENT-01=b; D-PREENT-02=defer; D-PREENT-03=b; D-PREENT-04=block; D-PREENT-05=<5 osobnych czatów>; D-PREENT-06=defer; D-PREENT-07=defer
+Approved: D-PREENT-01=b; D-PREENT-02=defer; D-PREENT-03=b; D-PREENT-04=block; D-PREENT-05=<5 osobnych czatów>; D-PREENT-06=defer; D-PREENT-07=defer; D-PREENT-08=a
 ```
 
 | Decision | Campaign effect |
@@ -22,7 +22,7 @@ Approved: D-PREENT-01=b; D-PREENT-02=defer; D-PREENT-03=b; D-PREENT-04=block; D-
 | 04=block | F10 TES ladder advance blocked |
 | 05 | Wave 3: five auditor chats — [`PRE_ENT_WAVE3_AUDITOR_SESSION_BRIEFS.md`](PRE_ENT_WAVE3_AUDITOR_SESSION_BRIEFS.md) |
 | 06–07=defer | OD-HIST04-A/C, 034-C unchanged |
-| **08=a (rekomendacja)** | **WAIT-IIAC** — brak merge #434 do zielonego `governance-fast`; handoff ENT/IIAC — [`PRE_ENT_IIAC_ENT_HANDOFF_ACT_N11.md`](PRE_ENT_IIAC_ENT_HANDOFF_ACT_N11.md) |
+| **08=a (autoryzowane)** | **WAIT-IIAC** — wykonanie = czekanie + handoff; merge #434 dopiero po zielonym `governance-fast` — [`PRE_ENT_IIAC_ENT_HANDOFF_ACT_N11.md`](PRE_ENT_IIAC_ENT_HANDOFF_ACT_N11.md) |
 
 ## Git
 

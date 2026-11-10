@@ -2,7 +2,7 @@
 
 **From:** T-IGX-034-A (PRE-ENT orchestrator)  
 **To:** ENT-AUDIT-X stream (`T-IGX-024-A` / `T-IGX-024-B`) + MASTER Q-12 alignment  
-**Disposition:** Operator **recommends** **D-PREENT-08=a** (await IIAC re-qualification before PR #434 merge). **Not** a formal `Approved:` line — protocol record pending.  
+**Disposition:** **D-PREENT-08=a** — operator **autoryzowane** 2026-11-10 (chat: „daję zgodę wykonaj”). Await IIAC re-qualification on `development` before PR #434 merge; PRE-ENT executes wait/sync only.  
 **Evidence HEAD (PR):** `9ad4fbae47b869edaeae1d19945a6390b37db76a`  
 **PR:** [#434](https://github.com/jakbuczarnecki/intergrax/pull/434) — frozen until `governance-fast` green after IIAC  
 **Date:** 2026-11-10  
