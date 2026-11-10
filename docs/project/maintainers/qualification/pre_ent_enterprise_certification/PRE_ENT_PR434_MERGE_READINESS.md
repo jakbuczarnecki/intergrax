@@ -7,7 +7,7 @@
 **Date:** 2026-11-10  
 **Orchestrator:** T-IGX-034-A — **no merge**, **no Wave 3** until operator closes this gate.
 
-**Status:** **WAIT-IIAC** — **D-PREENT-08=a autoryzowane** 2026-11-10. Handoff: [`PRE_ENT_IIAC_ENT_HANDOFF_ACT_N11.md`](PRE_ENT_IIAC_ENT_HANDOFF_ACT_N11.md). Następny krok kampanii PRE-ENT: **po** publikacji IIAC na `development` → re-sync PR + CI → przegląd merge.
+**Status:** **MERGED** (operator 2026-11-10) — merge commit `03aa10959acf6ec3d81a7a0de8ac8224c8126973`. **Uwaga:** merge nastąpił przy **czerwonym** `governance-fast` / ACT-N11 (odchylenie od **D-PREENT-08=a**). Handoff IIAC nadal aktywny: [`PRE_ENT_IIAC_ENT_HANDOFF_ACT_N11.md`](PRE_ENT_IIAC_ENT_HANDOFF_ACT_N11.md).
 
 ---
 
