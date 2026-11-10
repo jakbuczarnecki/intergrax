@@ -4,7 +4,7 @@
 **Ticket:** `governance/tickets/T-IGX-034-I.md`  
 **Parent:** `governance/tickets/T-IGX-034-A.md`  
 **Date:** 2026-11-10  
-**Campaign status:** **NOT CLOSED** — Wave 5 matrix **PUBLISHED**; Wave 6 **not started**.
+**Campaign status:** **NOT CLOSED** — terminal label **`PRE_ENT_PREDECESSORS_EXACT_BLOCKERS`** assigned @ W6-G3 (Wave 6 audit); **not** full Enterprise certification; `T-IGX-034-A` **not** CLOSED.
 
 **Ceiling (unchanged):** Five Wave 4 certifier rows are **ACCEPT_SCOPED** only — not full independent certification, not FRZ promotion, not `ALL_PRE_ENT_PREDECESSORS_INDEPENDENTLY_CERTIFIED`. Terminal campaign label belongs to Wave 6 (W6-G3).
 
@@ -88,17 +88,17 @@ Searched [`QUAL_X_ENTERPRISE_QUALIFICATION_BASELINE_AND_GATE_INVENTORY.md`](../Q
 
 ---
 
-## 7. Wave 6 handoff (STOP — do not execute in Wave 5)
+## 7. Wave 6 cross-audit (complete — republication)
 
-| Gate | Input SSOT |
+| Gate | Result |
 | --- | --- |
-| **W6-G0** | Wave 3 register, Wave 4 cert register, **this matrix**, §3/§5 citations — consistency audit |
-| **W6-G1** | SHA ladder (this doc + `PRE_ENT_CAMPAIGN_PROGRESS.md`) |
-| **W6-G2** | Parent regression per campaign plan |
-| **W6-G3** | Terminal label: `ALL_PRE_ENT_PREDECESSORS_INDEPENDENTLY_CERTIFIED` **or** `PRE_ENT_PREDECESSORS_EXACT_BLOCKERS` |
-| **W6-G4** | `T-IGX-034-A` lifecycle closure with operator sign-off |
+| **W6-G0** | **PASS** — consistency (Wave 3/4/5 vs §3 citations) |
+| **W6-G1** | **PASS** — SHA ladder @ `f4ca1c864` |
+| **W6-G2** | **BOUNDED PASS only** — 41 passed blocking bundle; **full parent regression NOT RUN** |
+| **W6-G3** | **`PRE_ENT_PREDECESSORS_EXACT_BLOCKERS`** |
+| **W6-G4** | Operator sign-off pending — see [`PRE_ENT_WAVE6_CROSS_AUDIT_REPORT.md`](PRE_ENT_WAVE6_CROSS_AUDIT_REPORT.md) |
 
-**Independence:** Wave 6 is a **new** auditor or certifier session — not the Wave 5 orchestrator. **STOP before Wave 6** in this ticket scope.
+**AUDITOR_SESSION_ID:** `W6-INDEP-AUDIT-2026-11-10-f4ca1c864`.
 
 ---
 

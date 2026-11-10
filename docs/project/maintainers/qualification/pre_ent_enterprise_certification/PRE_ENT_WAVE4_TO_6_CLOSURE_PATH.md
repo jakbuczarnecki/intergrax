@@ -36,7 +36,7 @@
 | **W5-G1** | Wave 1 open rows honest in matrix (**034-C/D/G/H**, **034-F**) | [`PRE_ENT_ENTERPRISE_CERTIFICATION_FINAL_MATRIX.md`](PRE_ENT_ENTERPRISE_CERTIFICATION_FINAL_MATRIX.md) §3 | **met** (all **EXACT_BLOCKER** or routed defer — no silent OPEN) |
 | **W5-G2** | Global blockers **G-SKILL, F10, OD-HIST04, Pop E** = N/A-with-evidence or **EXACT_BLOCKER** | Same matrix §3 | **met** |
 | **W5-G3** | Final matrix + optional §5 ledger row | Final matrix + [`PLATFORM_ENTERPRISE_COMPLETION_ROADMAP.md`](../../plans/PLATFORM_ENTERPRISE_COMPLETION_ROADMAP.md) §5 | **PUBLISHED** (matrix SSOT; ledger row non-closing) |
-| **W5-G4** | `verify_iiac --require-in-force` @ publication tree | IIAC activation script | **pending** post-commit verification |
+| **W5-G4** | `verify_iiac --require-in-force` @ publication tree | IIAC activation script | **met** @ `f4ca1c864` (exit **0**; Wave 6 audit + publisher replay) |
 
 **034-I ticket:** `governance/tickets/T-IGX-034-I.md` — lifecycle `plan_pending` until operator `Approved:` line for push.
 
@@ -44,17 +44,19 @@
 
 ---
 
-## Wave 6 — cross-audit and campaign label
+## Wave 6 — cross-audit and campaign label — **AUDIT COMPLETE** (publication pending)
 
-| Gate | Criterion |
-| --- | --- |
-| **W6-G0** | Cross-audit: consistency of Wave 3 auditor reports, Wave 4 certifier dispositions, Wave 5 matrix rows, and §3 / §5 roadmap citations (no contradictory CLOSED language) |
-| **W6-G1** | SHA ladder published: `AUDIT_HEAD`, certifier evidence SHAs, matrix publication SHA on `origin/development` |
-| **W6-G2** | Full parent regression per plan (where not waived by operator budget) |
-| **W6-G3** | Campaign terminal label per plan: `ALL_PRE_ENT_PREDECESSORS_INDEPENDENTLY_CERTIFIED` **or** `PRE_ENT_PREDECESSORS_EXACT_BLOCKERS` |
-| **W6-G4** | `T-IGX-034-A` lifecycle closure with operator sign-off — **not** before W6-G0..G3 |
+| Gate | Criterion | Status @ `f4ca1c864` |
+| --- | --- | --- |
+| **W6-G0** | Cross-audit: consistency of Wave 3 auditor reports, Wave 4 certifier dispositions, Wave 5 matrix rows, and §3 / §5 roadmap citations (no contradictory CLOSED language) | **met** — auditor **PASS** ([`PRE_ENT_WAVE6_CROSS_AUDIT_REPORT.md`](PRE_ENT_WAVE6_CROSS_AUDIT_REPORT.md) §2) |
+| **W6-G1** | SHA ladder published: `AUDIT_HEAD`, certifier evidence SHAs, matrix publication SHA on `origin/development` | **met** — auditor **PASS** (§3) |
+| **W6-G2** | Full parent regression per plan (where not waived by operator budget) | **partial** — **41 passed** bounded bundle; **full** `igx_gov` / L1–L3 **NOT RUN** (§4) — **not** full protocol PASS |
+| **W6-G3** | Campaign terminal label per plan: `ALL_PRE_ENT_PREDECESSORS_INDEPENDENTLY_CERTIFIED` **or** `PRE_ENT_PREDECESSORS_EXACT_BLOCKERS` | **met** — **`PRE_ENT_PREDECESSORS_EXACT_BLOCKERS`** (§5) — **not** full Enterprise certification |
+| **W6-G4** | `T-IGX-034-A` lifecycle closure with operator sign-off — **not** before W6-G0..G3 | **pending operator** — dossier ready; **no** unauthorized **CLOSED** |
 
-**Independence:** Wave 6 cross-audit is a **new** session (auditor or certifier per operator routing) — implementer/orchestrator that published Wave 4 handoff **must not** self-declare final campaign PASS.
+**AUDITOR_SESSION_ID:** `W6-INDEP-AUDIT-2026-11-10-f4ca1c864` @ `f4ca1c864b14c917ea032aabcda1dc169654ace2`.
+
+**Independence:** Cross-audit executed in isolated worktree — not the Wave 5 orchestrator.
 
 ---
 

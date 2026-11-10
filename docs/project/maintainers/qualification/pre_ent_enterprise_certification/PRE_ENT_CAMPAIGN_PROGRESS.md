@@ -1,11 +1,13 @@
 # PRE-ENT enterprise certification — campaign progress snapshot
 
 **Campaign:** `pre_ent_enterprise_certification`  
-**Evidence HEAD (`development`):** `d00df592037404cd6c2b1bc95c00757544d551d8` (`CERT_DOCS_HEAD`; Wave 4 handoff)  
+**Evidence HEAD (`development`):** `f4ca1c864b14c917ea032aabcda1dc169654ace2` (pre–Wave 6 publication batch; W6 audit pin)  
 **AUDIT_HEAD (product + Wave 3 replay):** `1e83ade3f5fb951a9eedd85d4dae89ead48955ee` — post-IIAC ACT-N11 activation (PR #437 merge)  
 **Product merge (PR #434):** `03aa10959acf6ec3d81a7a0de8ac8224c8126973`  
 **Date:** 2026-11-10  
 **Note:** PR #434 merged before IIAC green (documented); ACT-N11 **cleared** 2026-11-10 via D-IIAC-01=a + operator activation — [`PRE_ENT_POST_IIAC_GATE_EVIDENCE.md`](PRE_ENT_POST_IIAC_GATE_EVIDENCE.md).
+
+**Campaign terminal label (W6-G3):** **`PRE_ENT_PREDECESSORS_EXACT_BLOCKERS`** — **not** full Enterprise certification, **not** `ALL_PRE_ENT_PREDECESSORS_INDEPENDENTLY_CERTIFIED`, campaign lifecycle **NOT CLOSED** pending W6-G4 / operator.
 
 **Verdict ceiling:** no B6 PASS, no G6 PASS, no FRZ promotion, no stage `CLOSED` in this snapshot.
 
@@ -29,7 +31,7 @@ Approved: D-PREENT-01=b; D-PREENT-02=defer; D-PREENT-03=b; D-PREENT-04=block; D-
 
 | Field | Value |
 | --- | --- |
-| **Published `development` HEAD** | `c4a3b751bf7d6716bb0003bed23ae20b1e8f910f` — Wave 4 cert register **PUBLISHED** |
+| **Published `development` HEAD** | `f4ca1c864b14c917ea032aabcda1dc169654ace2` — Wave 5 merge + W6 handoff; W6 audit @ same pin |
 | **Prior docs pins** | `03ce1d6f3` (Wave 3 register), `bbf5e4999` (PR #438) |
 | **AUDIT_HEAD (checkout for Wave 3)** | `1e83ade3f5fb951a9eedd85d4dae89ead48955ee` — prior pins: `03aa10959`, `085be5ca9`, `11ac8ad85` (historia) |
 | **IIAC @ `AUDIT_HEAD`** | exit **0** — evidence [`PRE_ENT_POST_IIAC_GATE_EVIDENCE.md`](PRE_ENT_POST_IIAC_GATE_EVIDENCE.md) (`effective_from_sha` `661978df1…`) |
@@ -98,7 +100,7 @@ Approved: D-PREENT-01=b; D-PREENT-02=defer; D-PREENT-03=b; D-PREENT-04=block; D-
 | **Final matrix** | [`PRE_ENT_ENTERPRISE_CERTIFICATION_FINAL_MATRIX.md`](PRE_ENT_ENTERPRISE_CERTIFICATION_FINAL_MATRIX.md) |
 | **WAVE5_PUBLICATION_SHA** | `0f3b4976726dcbd3046cd888aa91703214f27997` |
 | **Closure path** | [`PRE_ENT_WAVE4_TO_6_CLOSURE_PATH.md`](PRE_ENT_WAVE4_TO_6_CLOSURE_PATH.md) — W5-G0..G3 **met**; W5-G4 IIAC after publish |
-| **Ceiling** | **PRE_ENT_PREDECESSORS_EXACT_BLOCKERS** disposition documented — **not** assigned as campaign label until W6-G3 |
+| **W6-G3 label** | **`PRE_ENT_PREDECESSORS_EXACT_BLOCKERS`** assigned (Wave 6 independent audit) |
 
 | Item | Wave 5 disposition |
 | --- | --- |
@@ -117,14 +119,27 @@ Approved: D-PREENT-01=b; D-PREENT-02=defer; D-PREENT-03=b; D-PREENT-04=block; D-
 | **Wave 3 audits** | **Done** @ `AUDIT_HEAD` — register + reports published; **no** G6 **CLOSED** |
 | **Wave 4 certifier** | **PUBLISHED** — **5/5** ACCEPT_SCOPED @ `AUDIT_HEAD`; **no** auto FRZ / **no** G6 CLOSED |
 | **Wave 5** | **PUBLISHED** — final matrix + SSOT; **not** campaign **CLOSED** |
-| **Wave 6** | **Pending** — cross-audit per [`PRE_ENT_WAVE4_TO_6_CLOSURE_PATH.md`](PRE_ENT_WAVE4_TO_6_CLOSURE_PATH.md) (W6-G0..G4) |
+| **Wave 6** | **AUDIT COMPLETE** — [`PRE_ENT_WAVE6_CROSS_AUDIT_REPORT.md`](PRE_ENT_WAVE6_CROSS_AUDIT_REPORT.md); `AUDITOR_SESSION_ID` `W6-INDEP-AUDIT-2026-11-10-f4ca1c864`; publication SHA pending evidence batch; W6-G4 / `T-IGX-034-A` **CLOSED** **operator pending** |
 | **ENT Population E** | **Out of PRE-ENT** per D-PREENT-03=b |
 
 ## Local session artifacts (not committed)
 
 - Certifier pytest logs: `.tmp/session/pre-ent-wave4-cert/<slug>/` (slugs `bnd-03b`, `replay`, `030-b`, `030-c`, `032-a`).
+- Wave 3 auditor logs: `.tmp/session/pre-ent-wave3-audit/<slug>/`.
+- Wave 6 audit scratch: `D:\Projekty\_wt\intergrax\_scratch\w6-cross-audit\` (IIAC, bounded pytest, `igx_gov` attempt — **not** published).
 
 Excluded from commit (policy): `tests/qualification/ent_audit_x/CANDIDATE_ENTERPRISE_AUDIT_BASELINE.json` — untracked.
+
+### Wave 6 — cross-audit (independent)
+
+| Field | Value |
+| --- | --- |
+| **AUDITOR_SESSION_ID** | `W6-INDEP-AUDIT-2026-11-10-f4ca1c864` |
+| **Audit HEAD** | `f4ca1c864b14c917ea032aabcda1dc169654ace2` |
+| **Report** | [`PRE_ENT_WAVE6_CROSS_AUDIT_REPORT.md`](PRE_ENT_WAVE6_CROSS_AUDIT_REPORT.md) |
+| **W6-G2** | 41 passed (bounded); **full** parent regression **NOT RUN** |
+| **W6-G3** | **`PRE_ENT_PREDECESSORS_EXACT_BLOCKERS`** |
+| **WAVE6_EVIDENCE_PUBLICATION_SHA** | `2e0b708fffb419de7f5de07e5e903218dc96bb3f` |
 
 ## SSOT links
 
