@@ -60,6 +60,8 @@
 | TEST_EXECUTION_SHA | `b5c2481d79f955fa5f483a9288aee8de4581f953` | R-FRESH current-HEAD requal after HIST product merge (12 product paths vs `62d1c615`); certifying FULL 85/85 + FREEZE bootstrap-candidate; local qual_wave PASS; nightly `workflow_dispatch` run `42593448899` success on branch `ent-r-fresh-tes` @ this SHA; supersedes loop-1 TES — T-IGX-024-B |
 | EVIDENCE_PUBLICATION_SHA | `63ff80819da5a7324257ea598e342810c1838199` | B5 `qualification_at_b5c2481d79f955fa5f483a9288aee8de4581f953` (strict `verify_b5_publication_tree`) — T-IGX-024-B |
 | B6_ACCEPTANCE_PUBLICATION_SHA | `add6a6ce2015ebaa4bc38b7fadf3936f100a1522` | IIAC W2-04 phase-1: independent audit PASS_SCOPED evidence publication (manifest + pass record + certification record); pin set in W2-05 — T-IGX-024-B |
+| W4_NORMAL_FREEZE_EXECUTION_SHA | `0ad6511acaa29f18428c10dd8ad6a29262548aec` | W4 loop-2 certifying FREEZE (no bootstrap) @ `development` after PR #433; 85/85/0 exit 0; accepted baseline pin `480550d80…` — implementer evidence only (T-IGX-024-B) |
+| W4_NORMAL_FREEZE_EVIDENCE_PUBLICATION_SHA | `8b4d3c6fa82cf51f932571dcde102f2c4c2a7a03` | Tracked tree `b6_independent_handoff/freeze_normal_at_0ad6511ac…/` (bytes from runner @ execution SHA) |
 
 ## Lineage rules
 
