@@ -63,7 +63,8 @@
 | W4_NORMAL_FREEZE_EXECUTION_SHA | `0ad6511acaa29f18428c10dd8ad6a29262548aec` | W4 loop-2 certifying FREEZE (no bootstrap) @ `development` after PR #433; 85/85/0 exit 0; accepted baseline pin `480550d80…` — implementer evidence only (T-IGX-024-B) |
 | W4_NORMAL_FREEZE_EVIDENCE_PUBLICATION_SHA | `8b4d3c6fa82cf51f932571dcde102f2c4c2a7a03` | Tracked tree `b6_independent_handoff/freeze_normal_at_0ad6511ac…/` (bytes from runner @ execution SHA) |
 | TEST_EXECUTION_SHA | `32a9633440007eb4e8f00a825bbf2e399192b346` | W2 closure campaign @ `development` after PR #442 (W1 SSOT); pre-qual PRE_QUAL_PASS; certifying FULL 85/85/0 + normal FREEZE (no bootstrap) vs accepted baseline `480550d80…` — T-IGX-024-B |
-| W2_NORMAL_FREEZE_EXECUTION_SHA | `32a9633440007eb4e8f00a825bbf2e399192b346` | Normal FREEZE evidence @ `.tmp/session/ent-audit-x-close/freeze-run/` (session replay; B5 L3 bundle from certifying FULL) |
+| W2_NORMAL_FREEZE_EXECUTION_SHA | `32a9633440007eb4e8f00a825bbf2e399192b346` | W2 certifying FREEZE (no bootstrap) @ execution SHA; 85/85/0 exit 0; accepted baseline pin `480550d80…` — implementer evidence only (T-IGX-024-B) |
+| W2_NORMAL_FREEZE_EVIDENCE_PUBLICATION_SHA | `bc4b5f61666a8fea638064f50809fff2089b1b8b` | Tracked tree `b6_independent_handoff/freeze_normal_at_32a963344…/` (bytes from runner @ execution SHA) |
 | EVIDENCE_PUBLICATION_SHA | `481b2cc2c10a407fd2b93cf9c69714e8894aeccf` | B5 `qualification_at_32a9633440007eb4e8f00a825bbf2e399192b346` (strict `verify_b5_publication_tree`) — W2 closure T-IGX-024-B |
 
 ## Lineage rules
