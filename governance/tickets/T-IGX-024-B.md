@@ -68,10 +68,16 @@ uv run python -m scripts.governance.igx_gov ticket
 - Evidence branch: `fix/ent-audit-w4-freeze-normal` — tree `freeze_normal_at_0ad6511ac…/` + ladder execution row; **no** `accepted_baseline_sha` in status JSON.
 - Handoff: `.tmp/session/ent-audit-x-w4-close/W4_03_INDEPENDENT_AUDITOR_HANDOFF.md` — **STOP** before independent audit.
 
+### W4-03 / ACT-N11 recovery package (2026-11-10)
+
+- `development` @ `b7856fd2a95c2368acfb1fdf4d73725f0cd6514c` (product merge `03aa10959`); `verify_iiac_policy_activation --require-in-force` **FAIL** — **7× ACT-N11** (path table + blame in recovery SSOT).
+- Operator decision **D-IIAC-01** (options a/b/c): [`docs/project/maintainers/qualification/ent_audit_x/IIAC_ACT_N11_RECOVERY_BATCH.md`](../../docs/project/maintainers/qualification/ent_audit_x/IIAC_ACT_N11_RECOVERY_BATCH.md).
+- PRE-ENT Wave 3 resume checklist (after green verify): [`docs/project/maintainers/qualification/pre_ent_enterprise_certification/PRE_ENT_WAVE3_RESUME_AFTER_IIAC.md`](../../docs/project/maintainers/qualification/pre_ent_enterprise_certification/PRE_ENT_WAVE3_RESUME_AFTER_IIAC.md).
+
 ### Next (ticket scope)
 
 - **W4-02:** independent auditor session (`independent-quality-auditor`) after evidence merge on `origin/development`.
-- **W4-03 / T7b:** ACT-N11 re-activation — operator / governance session; not implementer.
+- **W4-03 / T7b:** ACT-N11 re-activation — operator / governance session; not implementer — execute **D-IIAC-01=a** per recovery SSOT; no activation record edit without Operator `Approved:` line.
 
 ## Lifecycle state
 
