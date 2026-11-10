@@ -1,0 +1,18 @@
+ACT-N11 recovery — implementer qualification (no self-PASS)
+Date: 2026-11-10
+Ticket: T-IGX-024-B (D-IIAC-01=a)
+Branch: development @ 1563a9cdb4f70c917f6a6f76519c68e92a1c9282
+Audit base (ACT-N11): 0946b11576d2ee617321fb099ed794f8b21bf5ba
+
+verify_iiac_policy_activation --require-in-force: FAIL exit 1 (7× ACT-N11 — expected baseline)
+  log: verify_iiac_require_in_force_baseline.log
+
+Governance IIAC pytest inventory: 48 passed, 2 failed, 1 skipped (226s)
+  failures: test_n12_policy_is_in_force…, test_canonical_policy_is_in_force… (expected while ACT-N11 open)
+  log: governance_iiac_tests_inventory.log
+
+Seven-path product Δ vs audit base: 7 files, +60 −19
+  log: product_delta_seven_path_diff_stat.log
+  introducers: product_delta_introducer_commits.log
+
+Independent auditor session required before any PASS or activation record edit.

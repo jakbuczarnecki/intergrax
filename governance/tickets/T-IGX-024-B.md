@@ -70,8 +70,9 @@ uv run python -m scripts.governance.igx_gov ticket
 
 ### W4-03 / ACT-N11 recovery package (2026-11-10)
 
-- `development` @ `b7856fd2a95c2368acfb1fdf4d73725f0cd6514c` (product merge `03aa10959`); `verify_iiac_policy_activation --require-in-force` **FAIL** — **7× ACT-N11** (path table + blame in recovery SSOT).
+- `development` @ `1563a9cdb4f70c917f6a6f76519c68e92a1c9282` (docs atop product merge `03aa10959`); `verify_iiac_policy_activation --require-in-force` **FAIL** — **7× ACT-N11** (path table + blame in recovery SSOT).
 - Operator decision **D-IIAC-01** (options a/b/c): [`docs/project/maintainers/qualification/ent_audit_x/IIAC_ACT_N11_RECOVERY_BATCH.md`](../../docs/project/maintainers/qualification/ent_audit_x/IIAC_ACT_N11_RECOVERY_BATCH.md).
+- **`Approved: D-IIAC-01=a`** — shared full re-activation; implementer published Session B handoff + activation dossier template @ `iiac_evidence/ENT-AUDIT-X/act_n11_recovery/` — **STOP** before Operator personal `operator @` activation line.
 - PRE-ENT Wave 3 resume checklist (after green verify): [`docs/project/maintainers/qualification/pre_ent_enterprise_certification/PRE_ENT_WAVE3_RESUME_AFTER_IIAC.md`](../../docs/project/maintainers/qualification/pre_ent_enterprise_certification/PRE_ENT_WAVE3_RESUME_AFTER_IIAC.md).
 
 ### Next (ticket scope)

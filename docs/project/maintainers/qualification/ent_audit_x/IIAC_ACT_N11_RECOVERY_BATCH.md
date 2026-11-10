@@ -90,6 +90,16 @@ Single table — choose **one** option; record `Approved: D-IIAC-01=<a|b|c>` in 
 
 **Orchestrator recommendation:** **(a)** — aligns [`HIST_IIAC_SHARED_REACTIVATION_AGREEMENT.md`](../historical_certification_campaign/HIST_IIAC_SHARED_REACTIVATION_AGREEMENT.md), T-IGX-024-B W4-03, and PRE-ENT D-PREENT-08 intent (IIAC before Wave 3 audits).
 
+### Operator record (2026-11-10)
+
+**`Approved: D-IIAC-01=a`** — Operator chat (shared IIAC re-activation per this batch). Recorded in `governance/tickets/T-IGX-024-B.md` checkpoint below. **Wave 3 remains STOP** until post-activation `verify_iiac_policy_activation --require-in-force` exit 0.
+
+**Implementer evidence @ qualification HEAD `1563a9cdb4f70c917f6a6f76519c68e92a1c9282`:**
+
+- Session B auditor handoff: [`iiac_evidence/ENT-AUDIT-X/act_n11_recovery/IIAC_SESSION_HANDOFF_RECORD_ACT_N11_SESSION_B.md`](../iiac_evidence/ENT-AUDIT-X/act_n11_recovery/IIAC_SESSION_HANDOFF_RECORD_ACT_N11_SESSION_B.md)
+- Activation dossier template (empty `operator @`): [`SESSION_B_ACTIVATION_DOSSIER.md`](../iiac_evidence/ENT-AUDIT-X/act_n11_recovery/SESSION_B_ACTIVATION_DOSSIER.md)
+- Implementer qual logs: `iiac_evidence/ENT-AUDIT-X/act_n11_recovery/` (`verify_iiac` baseline **FAIL** 7× ACT-N11 — expected)
+
 ---
 
 ## 6. ENT stream deliverables (separate auditor sessions — not PRE-ENT)

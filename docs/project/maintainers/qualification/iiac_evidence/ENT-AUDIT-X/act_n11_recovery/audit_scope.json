@@ -1,0 +1,56 @@
+{
+  "stage_id": "ENT-AUDIT-X",
+  "session_designation": "IIAC-ACT-N11-SESSION-B-2026-11-10",
+  "certification_profile": "iiac-v1",
+  "policy_version": "IIAC-2026-11-05.1",
+  "campaign": "ACT-N11 shared re-activation (D-IIAC-01=a)",
+  "ticket_anchors": [
+    "governance/tickets/T-IGX-024-B.md",
+    "docs/project/maintainers/qualification/ent_audit_x/IIAC_ACT_N11_RECOVERY_BATCH.md"
+  ],
+  "audit_execution_sha_prior": "0946b11576d2ee617321fb099ed794f8b21bf5ba",
+  "audited_implementation_sha_target": "1563a9cdb4f70c917f6a6f76519c68e92a1c9282",
+  "product_audit_head_merge": "03aa10959acf6ec3d81a7a0de8ac8224c8126973",
+  "product_paths_in_scope": [
+    "applications/shipped_product_manifest_catalog.py",
+    "intergrax/applications/_shared/product_manifest_registry.py",
+    "intergrax/cli/doctor_diff_app.py",
+    "intergrax/cli/doctor_health_app.py",
+    "intergrax/platform/enterprise_audit/baseline.py",
+    "intergrax/platform/enterprise_audit/data/changed_since_impact_map.v1.json",
+    "intergrax/platform/enterprise_audit/data/schemas/enterprise_audit_report.v1.schema.json"
+  ],
+  "path_introducers": {
+    "01b3e1961f01e1ad578b84f3a20fbde7e16755f6": [
+      "applications/shipped_product_manifest_catalog.py",
+      "intergrax/applications/_shared/product_manifest_registry.py",
+      "intergrax/cli/doctor_diff_app.py",
+      "intergrax/cli/doctor_health_app.py"
+    ],
+    "786918b7ea921791b685726566b4ddbbe1bb1cd4": [
+      "intergrax/platform/enterprise_audit/baseline.py"
+    ],
+    "0e578ea8830642365a480f319ecf46665b26d09f": [
+      "intergrax/platform/enterprise_audit/data/changed_since_impact_map.v1.json"
+    ],
+    "8d43143c69ef116ff1c96270b76edf8f79f36086": [
+      "intergrax/platform/enterprise_audit/data/schemas/enterprise_audit_report.v1.schema.json"
+    ]
+  },
+  "governance_session_b_lineage": {
+    "stage_id": "IIAC-GOV-1",
+    "manifest_path": "docs/project/maintainers/qualification/iiac_evidence/IIAC-GOV-1/certification/iiac_audit_session_manifest.IIAC-GOV-1.json",
+    "report_digest": "c405c65faf53243a0511b0b9584a9f3abda4db08c09ee9b9266c86fe9f6b7a4e",
+    "verdict": "PASS",
+    "note": "Session B governance certification remains authoritative for ACT-01 material; this session re-binds product Δ only."
+  },
+  "exclusions": [
+    "HIST C1–C4 paths not in current seven-path ACT-N11 inventory",
+    "Q-12 material validator edits unless Operator batches T-IGX-021-B in same activation",
+    "IIAC_POLICY_ACTIVATION_RECORD.json edit by implementer",
+    "ACT-N11 gate weakening",
+    "PRE-ENT Wave 3 audits",
+    "Implementer PASS / self-audit"
+  ],
+  "role_separation_requirement": "Auditor audit_execution_sha publication must not span unauthorized product diff vs audited_implementation_sha (N-03); implementer must not equal auditor session."
+}
