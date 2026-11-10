@@ -19,7 +19,17 @@ Plan digest: c7822cbdd5da68e5a882d64b275a17357535f7b94fd34abc61927866d86fe227
 
 ## Approved
 
-(pending operator Approved line — implementer must not sign)
+(pending operator `Approved: <name> @ <ISO8601>` — **implementer did not sign** this line)
+
+### Operator chat authorization (2026-11-10)
+
+Formal publication authorization recorded from operator chat (§7 style; not a forged `Approved:` signature):
+
+```text
+Operator: (chat authorization — implementer unsigned)
+Zatwierdzam formalną publikację Wave 5 zgodnie z T-IGX-034-I, pod warunkiem zachowania wszystkich rzeczywistych ograniczeń i statusów EXACT_BLOCKER.
+D-W5-PUB=merge — intent: merge PR #439 → development after mandatory CI green (operator this turn; D-PREENT-01=b waived for Wave 5 publication batch only).
+```
 
 ## Test contract
 
@@ -44,4 +54,14 @@ plan_pending
 
 ## Checkpoint
 
-Scaffold + matrix publication batch (pending operator `Approved:` for push).
+Scaffold + matrix publication batch on branch `pre-ent/wave5-matrix-034i` (PR [#439](https://github.com/jakbuczarnecki/intergrax/pull/439)).
+
+**Mechanical plan gateway:** `verify_plan_approval.py` requires a line starting `Approved:` — **not satisfied** without operator ISO line; chat authorization recorded above; lifecycle remains `plan_pending` per `governance/tickets/README.md`.
+
+```text
+uv run python scripts/governance/verify_plan_approval.py governance/tickets/T-IGX-034-I.md --plan <wave_5_matrix_closure_ab84abea.plan.md>
+[ERROR] ticket missing Approved: line
+exit 1 (2026-11-10 — expected; no forgery)
+```
+
+**Post-merge verification (on `origin/development` HEAD):** `verify_iiac_policy_activation.py --require-in-force`; `igx_gov ticket` — record exit codes in parent session report.
