@@ -103,4 +103,19 @@ Date: 2026-11-10
 | T-IGX-034-F | `f10` | EBH-7 F10 on clean SHA |
 | T-IGX-034-G | — (serial pytest) | QUAL-X Pop **B–D** only (D-PREENT-03=b); Pop E @ ENT — see `T-IGX-034-G.md` |
 | T-IGX-034-H | — | DIST-SCALE §3.0.6 vs §5 + Q-03 audit |
-| T-IGX-034-I | — | Matrix/ledger pub (Wave 4+) |
+| T-IGX-034-I | — | Matrix/ledger pub (Wave 5 per [`PRE_ENT_WAVE4_TO_6_CLOSURE_PATH.md`](../../docs/project/maintainers/qualification/pre_ent_enterprise_certification/PRE_ENT_WAVE4_TO_6_CLOSURE_PATH.md)) |
+
+### Wave 3 independent audit — completed (2026-11-10)
+
+- **AUDIT_HEAD:** `1e83ade3f5fb951a9eedd85d4dae89ead48955ee` — IIAC exit 0 @ pin ([`PRE_ENT_POST_IIAC_GATE_EVIDENCE.md`](../../docs/project/maintainers/qualification/pre_ent_enterprise_certification/PRE_ENT_POST_IIAC_GATE_EVIDENCE.md)).
+- **Register:** [`wave3_audits/WAVE3_AUDIT_CONSOLIDATED_REGISTER.md`](../../docs/project/maintainers/qualification/pre_ent_enterprise_certification/wave3_audits/WAVE3_AUDIT_CONSOLIDATED_REGISTER.md) — **5/5** ticket-scope auditor PASS (034-B, 034-E, 030-B, 030-C, 032-A).
+- **Queue:** [`PRE_ENT_WAVE3_AUDIT_HANDOFF_QUEUE.md`](../../docs/project/maintainers/qualification/pre_ent_enterprise_certification/PRE_ENT_WAVE3_AUDIT_HANDOFF_QUEUE.md) — **completed**.
+
+### Wave 4 certifier handoff — ready, STOP (2026-11-10)
+
+- **CERT_DOCS_HEAD:** `03ce1d6f380f92bc86cfadac9a88fcd6473e5ec3` (docs SSOT for certifier reads).
+- **Handoff:** [`PRE_ENT_WAVE4_CERTIFICATION_HANDOFF_QUEUE.md`](../../docs/project/maintainers/qualification/pre_ent_enterprise_certification/PRE_ENT_WAVE4_CERTIFICATION_HANDOFF_QUEUE.md), briefs [`PRE_ENT_WAVE4_CERTIFIER_SESSION_BRIEFS.md`](../../docs/project/maintainers/qualification/pre_ent_enterprise_certification/PRE_ENT_WAVE4_CERTIFIER_SESSION_BRIEFS.md).
+- **Blockers:** [`PRE_ENT_WAVE4_BLOCKER_MATRIX.md`](../../docs/project/maintainers/qualification/pre_ent_enterprise_certification/PRE_ENT_WAVE4_BLOCKER_MATRIX.md).
+- **Closure path:** [`PRE_ENT_WAVE4_TO_6_CLOSURE_PATH.md`](../../docs/project/maintainers/qualification/pre_ent_enterprise_certification/PRE_ENT_WAVE4_TO_6_CLOSURE_PATH.md).
+- **Note:** T-IGX-032-A Wave 3 did not run P2-C qual — certifier replay **optional** or **defer**.
+- **This publisher turn:** no certifier sessions, no B6/G6/FRZ promotion.

@@ -4,7 +4,7 @@
 **AUDIT_HEAD (checkout for new sessions):** `1e83ade3f5fb951a9eedd85d4dae89ead48955ee` (`origin/development` post-IIAC PR #437). **Gate:** `verify_iiac --require-in-force` **exit 0** @ `1e83ade3f` ([`PRE_ENT_POST_IIAC_GATE_EVIDENCE.md`](PRE_ENT_POST_IIAC_GATE_EVIDENCE.md)) — IIAC **IN_FORCE**; **no G6 audit PASS** from implementer. Poprzednie piny: `03aa10959`, `085be5ca9`, `11ac8ad85`.  
 **Branch:** `development`  
 **Date:** 2026-11-10  
-**Publisher:** T-IGX-034-A Wave 3 consolidation — ticket-scope auditor evidence published; **no G6 campaign CLOSED**, **no certifier PASS**, **no FRZ promotion**
+**Publisher:** T-IGX-034-A Wave 3 consolidation — **queue completed** 2026-11-10; superseded for routing by [`PRE_ENT_WAVE4_CERTIFICATION_HANDOFF_QUEUE.md`](PRE_ENT_WAVE4_CERTIFICATION_HANDOFF_QUEUE.md). **No G6 campaign CLOSED**, **no certifier PASS**, **no FRZ promotion** in Wave 3 publisher turns.
 
 **Consolidated register:** [`wave3_audits/WAVE3_AUDIT_CONSOLIDATED_REGISTER.md`](wave3_audits/WAVE3_AUDIT_CONSOLIDATED_REGISTER.md)
 
@@ -170,7 +170,13 @@ uv run --extra dev-ci python -m pytest -p no:xdist tests/qualification/prod_q/te
 
 ---
 
-## BLOCKED — do not open independent audit session yet
+## Queue status — **COMPLETED**
+
+All five Wave 3 independent auditor sessions executed @ `AUDIT_HEAD` `1e83ade3f`. Consolidated register and per-ticket reports are SSOT. **Next:** Wave 4 certifier handoff — [`PRE_ENT_WAVE4_CERTIFICATION_HANDOFF_QUEUE.md`](PRE_ENT_WAVE4_CERTIFICATION_HANDOFF_QUEUE.md) · briefs [`PRE_ENT_WAVE4_CERTIFIER_SESSION_BRIEFS.md`](PRE_ENT_WAVE4_CERTIFIER_SESSION_BRIEFS.md). Orchestrator **STOP** before certifier chats.
+
+---
+
+## BLOCKED — campaign rows (unchanged; not Wave 3 queue)
 
 | Blocker | Why blocked | SSOT / next gate |
 | --- | --- | --- |
@@ -180,7 +186,7 @@ uv run --extra dev-ci python -m pytest -p no:xdist tests/qualification/prod_q/te
 | **OD-HIST04-C** | TOOL-LIFE-X label vs open operator decision | Wave 0 blocker table |
 | **F10 TES ladder (`496016c0`)** | In-tree F10 `TEST_EXECUTION_SHA` **`496016c0cf6cc5cf1f9a29d885677605dd0415d3`** ≠ governed execution pin; **4 identity paths**, **182 TREE_DRIFT / 0 SEMANTIC** — ladder advance blocked until policy allows controlled SHA | [`WAVE1_F10_PINNED_REPLAY.md`](WAVE1_F10_PINNED_REPLAY.md), [`WAVE1_F10_STATUS.md`](WAVE1_F10_STATUS.md), `governance/tickets/T-IGX-034-F.md` |
 | **ENT Population E** | Enterprise audit rollup not run; REG defer per historical dossier | [`PRE_ENT_CAMPAIGN_PROGRESS.md`](PRE_ENT_CAMPAIGN_PROGRESS.md) |
-| **Wave 3 sessions (this queue)** | **Done** — 5/5 @ `AUDIT_HEAD`; register @ [`WAVE3_AUDIT_CONSOLIDATED_REGISTER.md`](wave3_audits/WAVE3_AUDIT_CONSOLIDATED_REGISTER.md) | Residual campaign blockers (G-SKILL, F10, ENT Pop E, …) unchanged |
+| **Wave 3 sessions (this queue)** | **Completed** — handoff → Wave 4 | [`PRE_ENT_WAVE4_BLOCKER_MATRIX.md`](PRE_ENT_WAVE4_BLOCKER_MATRIX.md) |
 
 **Related open Wave 1 (not in ready queue):** T-IGX-034-C (DUR-01), T-IGX-034-D/G/H — implement or qual incomplete; no auditor routing here.
 

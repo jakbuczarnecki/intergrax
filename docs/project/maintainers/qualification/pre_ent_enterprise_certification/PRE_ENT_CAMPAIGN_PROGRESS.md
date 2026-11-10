@@ -1,7 +1,8 @@
 # PRE-ENT enterprise certification — campaign progress snapshot
 
 **Campaign:** `pre_ent_enterprise_certification`  
-**Evidence HEAD (`development`):** `1e83ade3f5fb951a9eedd85d4dae89ead48955ee` — post-IIAC ACT-N11 activation (PR #437 merge)  
+**Evidence HEAD (`development`):** `03ce1d6f380f92bc86cfadac9a88fcd6473e5ec3` (`CERT_DOCS_HEAD`; Wave 4 handoff)  
+**AUDIT_HEAD (product + Wave 3 replay):** `1e83ade3f5fb951a9eedd85d4dae89ead48955ee` — post-IIAC ACT-N11 activation (PR #437 merge)  
 **Product merge (PR #434):** `03aa10959acf6ec3d81a7a0de8ac8224c8126973`  
 **Date:** 2026-11-10  
 **Note:** PR #434 merged before IIAC green (documented); ACT-N11 **cleared** 2026-11-10 via D-IIAC-01=a + operator activation — [`PRE_ENT_POST_IIAC_GATE_EVIDENCE.md`](PRE_ENT_POST_IIAC_GATE_EVIDENCE.md).
@@ -28,7 +29,8 @@ Approved: D-PREENT-01=b; D-PREENT-02=defer; D-PREENT-03=b; D-PREENT-04=block; D-
 
 | Field | Value |
 | --- | --- |
-| **Published `development` HEAD** | `bbf5e49991c30cd79f69a2c0651fd86d98c988f4` (PR #438 merge; docs atop IIAC) |
+| **Published `development` HEAD** | `03ce1d6f380f92bc86cfadac9a88fcd6473e5ec3` (Wave 3 register + Wave 4 handoff; target for certifier doc reads) |
+| **Prior docs pin** | `bbf5e49991c30cd79f69a2c0651fd86d98c988f4` (PR #438) |
 | **AUDIT_HEAD (checkout for Wave 3)** | `1e83ade3f5fb951a9eedd85d4dae89ead48955ee` — prior pins: `03aa10959`, `085be5ca9`, `11ac8ad85` (historia) |
 | **IIAC @ `AUDIT_HEAD`** | exit **0** — evidence [`PRE_ENT_POST_IIAC_GATE_EVIDENCE.md`](PRE_ENT_POST_IIAC_GATE_EVIDENCE.md) (`effective_from_sha` `661978df1…`) |
 | **governance-fast @ tree** | **SUCCESS** — PR #437 run `42814981916`; PR #438 run `42817447058` |
@@ -58,7 +60,7 @@ Approved: D-PREENT-01=b; D-PREENT-02=defer; D-PREENT-03=b; D-PREENT-04=block; D-
 
 ### Wave 3 — independent audits (D-PREENT-05)
 
-**Status:** **executed @ AUDIT_HEAD** — five parallel auditor sessions complete; **5/5 ticket-scope PASS**. **Not** certifier / G6 campaign closure (ceiling unchanged).
+**Status:** **done @ AUDIT_HEAD** — five parallel auditor sessions complete; **5/5 ticket-scope PASS**. **Not** certifier / G6 campaign closure (ceiling unchanged).
 
 | Field | Value |
 | --- | --- |
@@ -69,6 +71,20 @@ Approved: D-PREENT-01=b; D-PREENT-02=defer; D-PREENT-03=b; D-PREENT-04=block; D-
 | **Per-ticket reports** | [`wave3_audits/`](wave3_audits/) — `WAVE3_AUDIT_T-IGX-*.md` |
 | **Queue** | [`PRE_ENT_WAVE3_AUDIT_HANDOFF_QUEUE.md`](PRE_ENT_WAVE3_AUDIT_HANDOFF_QUEUE.md) — **5× executed** |
 | **Briefs** | [`PRE_ENT_WAVE3_AUDITOR_SESSION_BRIEFS.md`](PRE_ENT_WAVE3_AUDITOR_SESSION_BRIEFS.md) — published |
+| **Queue closure** | [`PRE_ENT_WAVE3_AUDIT_HANDOFF_QUEUE.md`](PRE_ENT_WAVE3_AUDIT_HANDOFF_QUEUE.md) — **completed** → Wave 4 |
+
+### Wave 4 — certifier handoff (publisher only)
+
+**Status:** **ready** — five certifier briefs + queue + blocker matrix + Waves 5–6 path published @ `CERT_DOCS_HEAD`. **STOP before certifier chats** (no sessions in orchestrator turn).
+
+| Field | Value |
+| --- | --- |
+| **CERT_DOCS_HEAD** | `03ce1d6f380f92bc86cfadac9a88fcd6473e5ec3` |
+| **Certifier queue** | [`PRE_ENT_WAVE4_CERTIFICATION_HANDOFF_QUEUE.md`](PRE_ENT_WAVE4_CERTIFICATION_HANDOFF_QUEUE.md) — 5× **READY** |
+| **Certifier briefs** | [`PRE_ENT_WAVE4_CERTIFIER_SESSION_BRIEFS.md`](PRE_ENT_WAVE4_CERTIFIER_SESSION_BRIEFS.md) |
+| **Blockers** | [`PRE_ENT_WAVE4_BLOCKER_MATRIX.md`](PRE_ENT_WAVE4_BLOCKER_MATRIX.md) |
+| **Closure path** | [`PRE_ENT_WAVE4_TO_6_CLOSURE_PATH.md`](PRE_ENT_WAVE4_TO_6_CLOSURE_PATH.md) |
+| **032-A P2-C qual** | Not run @ Wave 3 — certifier **replay optional** or **defer** (Brief 5) |
 
 ## Next (operator / new sessions)
 
@@ -77,6 +93,7 @@ Approved: D-PREENT-01=b; D-PREENT-02=defer; D-PREENT-03=b; D-PREENT-04=block; D-
 | **PR #434 merge** | **Done** @ `03aa10959` |
 | **IIAC re-activation** | **Done** — D-IIAC-01=a + PR #437 |
 | **Wave 3 audits** | **Done** @ `AUDIT_HEAD` — register + reports published; **no** G6 **CLOSED** |
+| **Wave 4 certifier** | **Ready** — operator opens five chats; **no** auto FRZ / **no** G6 CLOSED |
 | **ENT Population E** | **Out of PRE-ENT** per D-PREENT-03=b |
 
 ## Uncommitted / out-of-commit artifacts (by policy)
@@ -86,6 +103,7 @@ Approved: D-PREENT-01=b; D-PREENT-02=defer; D-PREENT-03=b; D-PREENT-04=block; D-
 ## SSOT links
 
 - Diff review: [`PRE_ENT_PR434_DIFF_REVIEW.md`](PRE_ENT_PR434_DIFF_REVIEW.md)  
-- Wave 3 queue: [`PRE_ENT_WAVE3_AUDIT_HANDOFF_QUEUE.md`](PRE_ENT_WAVE3_AUDIT_HANDOFF_QUEUE.md)  
+- Wave 3 queue: [`PRE_ENT_WAVE3_AUDIT_HANDOFF_QUEUE.md`](PRE_ENT_WAVE3_AUDIT_HANDOFF_QUEUE.md) (completed)  
 - Wave 3 audit register: [`wave3_audits/WAVE3_AUDIT_CONSOLIDATED_REGISTER.md`](wave3_audits/WAVE3_AUDIT_CONSOLIDATED_REGISTER.md)  
+- Wave 4 certifier: [`PRE_ENT_WAVE4_CERTIFICATION_HANDOFF_QUEUE.md`](PRE_ENT_WAVE4_CERTIFICATION_HANDOFF_QUEUE.md)  
 - Parent ticket: `governance/tickets/T-IGX-034-A.md`
