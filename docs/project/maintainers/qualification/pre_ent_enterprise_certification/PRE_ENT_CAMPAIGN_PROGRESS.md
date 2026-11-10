@@ -1,7 +1,7 @@
 # PRE-ENT enterprise certification — campaign progress snapshot
 
 **Campaign:** `pre_ent_enterprise_certification`  
-**Evidence HEAD:** *(update on push — orchestrator commit pending)*  
+**Evidence HEAD:** `ea8a2b2e9e7d4ebb7ea0d7fea4bf427b89a42eb6` (docs-only tip; **AUDIT_HEAD** product pin unchanged)  
 **Branch:** `pre-ent/formal-closure-checkpoint-034a` → PR [#434](https://github.com/jakbuczarnecki/intergrax/pull/434)  
 **Date:** 2026-11-10  
 **vs `origin/development`:** PR branch ahead (PRE-ENT line + merge `0ad6511ac`)
