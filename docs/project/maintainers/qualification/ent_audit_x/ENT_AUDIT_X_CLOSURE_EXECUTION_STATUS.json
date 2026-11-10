@@ -18,7 +18,7 @@
   "matrix_c_qualified": 69,
   "matrix_c_not_qualified_operator": 6,
   "b6_acceptance_publication_sha": "add6a6ce2015ebaa4bc38b7fadf3936f100a1522",
-  "accepted_baseline_sha": null,
+  "accepted_baseline_sha": "480550d80b2515fc8cbd2a0ba6f79d1ee1c44541",
   "formal_closure_publication_sha": null,
   "ci_nightly_proof_run_ids": ["42593448899"],
   "ci_nightly_proof_head_sha": "b5c2481d79f955fa5f483a9288aee8de4581f953",

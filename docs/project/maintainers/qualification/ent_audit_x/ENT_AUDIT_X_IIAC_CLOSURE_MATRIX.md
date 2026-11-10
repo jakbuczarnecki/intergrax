@@ -2,7 +2,7 @@
 
 **Authority and scope.** This file is a **status overlay**, not a requirements document. It records the current *status* of ENT-AUDIT-X closure obligations under IIAC policy `IIAC-2026-11-05.1` (IN_FORCE, activation `f8c29fb8dfe5e14d9b06ff16659fd9cbe9ad326d`). It supersedes only the **status columns** of the plan-time matrices (Matrix A/B/D/F of the post-implementation master plan, Annex B/F/G/G2) and the closure-JSON prose. **Requirements stay in the canonical documents** referenced below; nothing here adds, weakens or waives a requirement. Machine state: `ENT_AUDIT_X_CLOSURE_EXECUTION_STATUS.json`. SHAs: `ENT_AUDIT_X_SHA_LADDER.md` (append-only). Campaign plan: `agent-env/plans/pasted-content-id-00e5-integrax-expressive-bubble.md`; ticket `governance/tickets/T-IGX-024-A.md`.
 
-**ENT-AUDIT-X is NOT closed.** Published status: `INTERNALLY_CLOSED_AUTOMATED_INTERNAL_AUDIT_ACCEPTED`. Formal B6 under IIAC: not executed. `ACCEPTED_BASELINE_SHA`, `B6_ACCEPTANCE_PUBLICATION_SHA`, `FORMAL_CLOSURE_PUBLICATION_SHA`: unset. FRZ-AUD-01..10: OPEN. This overlay promotes nothing.
+**ENT-AUDIT-X is NOT closed.** Published status: `INTERNALLY_CLOSED_AUTOMATED_INTERNAL_AUDIT_ACCEPTED`. Formal B6 phase-1 under IIAC: **ACCEPTED_VIA_IIAC** @ `add6a6ce2015ebaa4bc38b7fadf3936f100a1522` (evidence publication only; `stage_closure_status=NOT_CLOSED`). `ACCEPTED_BASELINE_SHA` = `480550d80b2515fc8cbd2a0ba6f79d1ee1c44541` (E-2 satisfied; OD-ENT-01 + on-disk baseline). `FORMAL_CLOSURE_PUBLICATION_SHA`: unset. E-3 **OPEN** until certifying FREEZE @ current HEAD (last clean FREEZE @ `0ad6511a…` is not HEAD-fresh). FRZ-AUD-01..10: **OPEN**. This overlay promotes nothing.
 
 ## 1. Snapshot (R-FRESH overlay facts, 2026-11-09)
 
@@ -55,12 +55,12 @@ Statuses: `QUALIFIED` · `CLOSED` · `OPEN` · `BLOCKED` · `UNVERIFIED`. `Aud` 
 |---|---|---|---|
 | E-1 | IIAC independent audit: session manifest, handoff record, report, findings, pass record | OPEN | W2 · Aud |
 | E-2 | Accepted-baseline manifest (OD-ENT-01) | **SATISFIED** | `ENTERPRISE_AUDIT_BASELINE.json` @ W3-02; independent replay W4 |
-| E-3 | Certifying FREEZE vs the accepted baseline | BLOCKED by E-2 | W4 · Aud |
+| E-3 | Certifying FREEZE vs the accepted baseline | OPEN (not HEAD-fresh; requal W2) | W2 · Aud |
 | E-4 | FRZ-AUD-01..10 per-row evidence and promotion | BLOCKED by E-3 | W4 · Aud |
 | E-5 | OD-ENT-02 compensating-control package refreshed and independently accepted | PARTIAL | OD recorded; **Aud** sufficiency W4-02 |
 | E-6 | OD-ENT-00 (accept EVOL formal status) | RECORDED | W3-01 done; BLK-ROADMAP-ENT-DEP satisfied at record |
 | E-7 | OD-ENT-08 (formal closure authorisation) | BLOCKED by E-1..E-5 | W5 · OD |
-| P-1 | `B6_ACCEPTANCE_PUBLICATION_SHA` | unset | W2 |
+| P-1 | `B6_ACCEPTANCE_PUBLICATION_SHA` | `add6a6ce2015ebaa4bc38b7fadf3936f100a1522` (phase-1 evidence publication) | W2 adds FRZ/current-SHA evidence |
 | P-2 | `ACCEPTED_BASELINE_SHA` | `480550d80…` | W3-02 — ladder pinned |
 | P-3 | `FORMAL_CLOSURE_PUBLICATION_SHA` | unset | W5 |
 | P-4 | Roadmap §5 headline, FRZ-FRZ-11, WBS rows, terminal dossier | not started | W5/W6 |
@@ -113,3 +113,4 @@ Superseded by this overlay (status columns only, not edited): master plan Matrix
 | 2026-11-08 | W0-04 / W0-05 | overlay created; ladder rows appended (IIAC activation, EVOL pins, campaign baseline); status-vocabulary corrections in roadmap L490/L561/L2065/L2066, CAAP L152/L154, FRZ checklist L47 — no status promoted; ticket `T-IGX-024-A` |
 | 2026-11-09 | W3 signing | O-1 transcription; OD-ENT-00/02 published; `od_ent_02_mode=compensating`; W3-02 baseline promotion blocked on validator; W5 OD-ENT-08 paused — session `ent-sign-w3-2026-11-09` |
 | 2026-11-09 | W3-02 | OD-ENT-01 delegated record + `iiac_baseline_promotion` ACCEPTED_BASELINE_SHA `480550d80…` |
+| 2026-11-10 | W1-01 | JSON `accepted_baseline_sha` aligned to ladder/on-disk baseline; overlay header §2.3 E-3/P-1 pins; roadmap §5 factual pin line (no CLOSED) — T-IGX-024-B |
