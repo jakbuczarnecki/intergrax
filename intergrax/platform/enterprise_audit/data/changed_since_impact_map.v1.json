@@ -40,6 +40,11 @@
     "intergrax/platform/enterprise_audit/report.py": [
       "C013"
     ],
+    "intergrax/platform/enterprise_audit/data/schemas/enterprise_audit_report.v1.schema.json": [
+      "C013",
+      "C026",
+      "C027"
+    ],
     "intergrax/platform/enterprise_audit/runner.py": [
       "C002",
       "C004",
