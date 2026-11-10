@@ -19,16 +19,18 @@ Plan digest: c7822cbdd5da68e5a882d64b275a17357535f7b94fd34abc61927866d86fe227
 
 ## Approved
 
-(pending operator `Approved: <name> @ <ISO8601>` — **implementer did not sign** this line)
-
-### Operator chat authorization (2026-11-10)
-
-Formal publication authorization recorded from operator chat (§7 style; not a forged `Approved:` signature):
+Operator authorization (chat 2026-11-10 — recorded verbatim; implementer unsigned):
 
 ```text
-Operator: (chat authorization — implementer unsigned)
+Approved: D-W6-01=a; D-W6-02=a; D-W6-03=a; D-W6-04=b; D-W6-05=a; D-W6-06=b; D-W6-07=a
+Zatwierdzam terminalne rozliczenie kampanii PRE-ENT z wynikiem PRE_ENT_PREDECESSORS_EXACT_BLOCKERS.
+```
+
+Wave 5 publication (prior chat — PR #439 merged):
+
+```text
 Zatwierdzam formalną publikację Wave 5 zgodnie z T-IGX-034-I, pod warunkiem zachowania wszystkich rzeczywistych ograniczeń i statusów EXACT_BLOCKER.
-D-W5-PUB=merge — intent: merge PR #439 → development after mandatory CI green (operator this turn; D-PREENT-01=b waived for Wave 5 publication batch only).
+D-W5-PUB=merge
 ```
 
 ## Test contract
@@ -50,7 +52,7 @@ Before push (if operator approval line present): `uv run python -m scripts.gover
 
 ## Lifecycle state
 
-plan_pending
+closed
 
 ## Checkpoint
 
@@ -65,3 +67,7 @@ exit 1 (2026-11-10 — expected; no forgery)
 ```
 
 **Post-merge verification (on `origin/development` HEAD):** `verify_iiac_policy_activation.py --require-in-force`; `igx_gov ticket` — record exit codes in parent session report.
+
+### W6-G4 closure (2026-11-10)
+
+Parent `T-IGX-034-A` **closed** — campaign **`CLOSED — EXACT_BLOCKERS`**. Mechanical `verify_plan_approval` satisfied via operator `Approved:` line above (D-W6-05=a). **No** FRZ / §3 / full cert promotion.

@@ -7,7 +7,7 @@
 **Date:** 2026-11-10  
 **Note:** PR #434 merged before IIAC green (documented); ACT-N11 **cleared** 2026-11-10 via D-IIAC-01=a + operator activation — [`PRE_ENT_POST_IIAC_GATE_EVIDENCE.md`](PRE_ENT_POST_IIAC_GATE_EVIDENCE.md).
 
-**Campaign terminal label (W6-G3):** **`PRE_ENT_PREDECESSORS_EXACT_BLOCKERS`** — **not** full Enterprise certification, **not** `ALL_PRE_ENT_PREDECESSORS_INDEPENDENTLY_CERTIFIED`, campaign lifecycle **NOT CLOSED** pending W6-G4 / operator.
+**Campaign status (W6-G4 @ 2026-11-10):** **`CLOSED — EXACT_BLOCKERS`** — terminal label **`PRE_ENT_PREDECESSORS_EXACT_BLOCKERS`**; **not** full Enterprise certification, **not** `ALL_PRE_ENT_PREDECESSORS_INDEPENDENTLY_CERTIFIED`. Parent `T-IGX-034-A` **closed** (process settlement). EXACT_BLOCKER rows **unchanged**.
 
 **Verdict ceiling:** no B6 PASS, no G6 PASS, no FRZ promotion, no stage `CLOSED` in this snapshot.
 
@@ -31,7 +31,7 @@ Approved: D-PREENT-01=b; D-PREENT-02=defer; D-PREENT-03=b; D-PREENT-04=block; D-
 
 | Field | Value |
 | --- | --- |
-| **Published `development` HEAD** | `f4ca1c864b14c917ea032aabcda1dc169654ace2` — Wave 5 merge + W6 handoff; W6 audit @ same pin |
+| **Published `development` HEAD** | `7cd330ff19c328417a215cb55cdf6a7589a46e0e` — merge PR #440 (W6 dossier); W6-G4 closure batch pending separate merge |
 | **Prior docs pins** | `03ce1d6f3` (Wave 3 register), `bbf5e4999` (PR #438) |
 | **AUDIT_HEAD (checkout for Wave 3)** | `1e83ade3f5fb951a9eedd85d4dae89ead48955ee` — prior pins: `03aa10959`, `085be5ca9`, `11ac8ad85` (historia) |
 | **IIAC @ `AUDIT_HEAD`** | exit **0** — evidence [`PRE_ENT_POST_IIAC_GATE_EVIDENCE.md`](PRE_ENT_POST_IIAC_GATE_EVIDENCE.md) (`effective_from_sha` `661978df1…`) |
@@ -119,7 +119,7 @@ Approved: D-PREENT-01=b; D-PREENT-02=defer; D-PREENT-03=b; D-PREENT-04=block; D-
 | **Wave 3 audits** | **Done** @ `AUDIT_HEAD` — register + reports published; **no** G6 **CLOSED** |
 | **Wave 4 certifier** | **PUBLISHED** — **5/5** ACCEPT_SCOPED @ `AUDIT_HEAD`; **no** auto FRZ / **no** G6 CLOSED |
 | **Wave 5** | **PUBLISHED** — final matrix + SSOT; **not** campaign **CLOSED** |
-| **Wave 6** | **AUDIT COMPLETE** — [`PRE_ENT_WAVE6_CROSS_AUDIT_REPORT.md`](PRE_ENT_WAVE6_CROSS_AUDIT_REPORT.md); `AUDITOR_SESSION_ID` `W6-INDEP-AUDIT-2026-11-10-f4ca1c864`; publication SHA pending evidence batch; W6-G4 / `T-IGX-034-A` **CLOSED** **operator pending** |
+| **Wave 6** | **COMPLETE** — audit + dossier PR #440; W6-G4 operator D-W6-* — **`CLOSED — EXACT_BLOCKERS`** |
 | **ENT Population E** | **Out of PRE-ENT** per D-PREENT-03=b |
 
 ## Local session artifacts (not committed)

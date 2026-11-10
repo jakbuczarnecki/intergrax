@@ -52,7 +52,7 @@
 | **W6-G1** | SHA ladder published: `AUDIT_HEAD`, certifier evidence SHAs, matrix publication SHA on `origin/development` | **met** — auditor **PASS** (§3) |
 | **W6-G2** | Full parent regression per plan (where not waived by operator budget) | **partial** — **41 passed** bounded bundle; **full** `igx_gov` / L1–L3 **NOT RUN** (§4) — **not** full protocol PASS |
 | **W6-G3** | Campaign terminal label per plan: `ALL_PRE_ENT_PREDECESSORS_INDEPENDENTLY_CERTIFIED` **or** `PRE_ENT_PREDECESSORS_EXACT_BLOCKERS` | **met** — **`PRE_ENT_PREDECESSORS_EXACT_BLOCKERS`** (§5) — **not** full Enterprise certification |
-| **W6-G4** | `T-IGX-034-A` lifecycle closure with operator sign-off — **not** before W6-G0..G3 | **pending operator** — dossier ready; **no** unauthorized **CLOSED** |
+| **W6-G4** | `T-IGX-034-A` lifecycle closure with operator sign-off — **not** before W6-G0..G3 | **met** (2026-11-10) — D-W6-03/04; campaign **`CLOSED — EXACT_BLOCKERS`**; **not** full cert / **not** FRZ |
 
 **AUDITOR_SESSION_ID:** `W6-INDEP-AUDIT-2026-11-10-f4ca1c864` @ `f4ca1c864b14c917ea032aabcda1dc169654ace2`.
 
