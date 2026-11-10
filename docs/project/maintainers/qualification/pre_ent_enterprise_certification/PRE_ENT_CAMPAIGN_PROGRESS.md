@@ -139,7 +139,7 @@ Excluded from commit (policy): `tests/qualification/ent_audit_x/CANDIDATE_ENTERP
 | **Report** | [`PRE_ENT_WAVE6_CROSS_AUDIT_REPORT.md`](PRE_ENT_WAVE6_CROSS_AUDIT_REPORT.md) |
 | **W6-G2** | 41 passed (bounded); **full** parent regression **NOT RUN** |
 | **W6-G3** | **`PRE_ENT_PREDECESSORS_EXACT_BLOCKERS`** |
-| **WAVE6_EVIDENCE_PUBLICATION_SHA** | *(set when evidence batch merges)* |
+| **WAVE6_EVIDENCE_PUBLICATION_SHA** | `2e0b708fffb419de7f5de07e5e903218dc96bb3f` |
 
 ## SSOT links
 

@@ -161,7 +161,7 @@ Publisher re-verified IIAC **IN_FORCE** exit **0** on main checkout @ publicatio
 | W6 igx_gov log | `…\igx_gov_ticket.log` | **No** |
 | Wave 3 auditor logs | `.tmp/session/pre-ent-wave3-audit/` | **No** |
 | Wave 4 certifier logs | `.tmp/session/pre-ent-wave4-cert/` | **No** |
-| Published SSOT | This file + registers + matrix (post-publication SHA) | **Yes** (after publisher batch) |
+| Published SSOT | This file + registers + matrix @ **WAVE6_EVIDENCE_PUBLICATION_SHA** `2e0b708fffb419de7f5de07e5e903218dc96bb3f` | **Yes** |
 
 ---
 
