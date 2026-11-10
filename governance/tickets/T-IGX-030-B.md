@@ -41,3 +41,7 @@ Editing/weakening/skipping/allow-listing the gate; the other failures in `replay
 ## Lifecycle state
 
 plan_approved
+
+## Checkpoint
+
+**operator-delegate pre-ent-wave2 (2026-11-10):** pytest pass @ HEAD `f2682d651f436c19f7000f940647be8fd134afa4` — still **NOT** `ready_for_audit`, no stage closure. Evidence: [`WAVE2_SERIAL_QUAL_LOG.md`](../../docs/project/maintainers/qualification/pre_ent_enterprise_certification/WAVE2_SERIAL_QUAL_LOG.md). Gate: `tests/unit/architecture/test_ebh_4_r1_nexus_encapsulation_gate.py` — 8 passed, exit 0.

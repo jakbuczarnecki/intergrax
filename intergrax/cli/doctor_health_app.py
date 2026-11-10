@@ -18,8 +18,11 @@ from intergrax.applications.contracts.manifest import ApplicationManifest
 
 
 def _load_product_manifest(app_id: str) -> tuple[str, ApplicationManifest]:
+    import importlib
+
     from intergrax.applications._shared.product_manifest_registry import iter_product_manifests
 
+    importlib.import_module("shipped_product_manifest_catalog")
     for product_id, manifest in iter_product_manifests():
         if product_id == app_id or manifest.app_id == app_id:
             return product_id, manifest
@@ -75,9 +78,7 @@ def run_doctor_health_app(args: argparse.Namespace) -> int:
             encoding="utf-8",
         )
 
-    threshold = (
-        PRODUCTION_READY_THRESHOLD if args.fail_below is None else float(args.fail_below)
-    )
+    threshold = PRODUCTION_READY_THRESHOLD if args.fail_below is None else float(args.fail_below)
     if env_score.overall < threshold or not rollup.production_ready:
         return 1
     return 0

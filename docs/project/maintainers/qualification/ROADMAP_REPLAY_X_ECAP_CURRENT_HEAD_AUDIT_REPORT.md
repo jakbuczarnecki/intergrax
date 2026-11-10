@@ -11,7 +11,7 @@
 
 ## C2 — Ownership / duplicate authority
 
-**Scoped production delta exists** (1 path: `intergrax/runtime/resilience/dependency_attempt_execution_boundary.py` — CTRL-X typing/format; disposition @ `_prod_delta_disposition.py` + `_scoped_regression_evidence.py`; regression test **`test_ctrl_x_semantic_boundary_pyright_zero_errors`** in L2 batch @ `22fbc0e` · `l2-ctrl_x.log`). **Unscoped** prod Δ since DUP-X **empty** — historical accepted evidence for unrelated paths **not** invalidated (`historical_evidence_invalidated_by_later_changes` **0**). DUP-X + EBH-6 SSOT reused; NPSC ten-module disposition recorded.
+**Scoped production delta exists** (84 paths since DUP-X @ PRE-ENT replay head `4a932d0c` — L2 CTRL-X `dependency_attempt_execution_boundary.py` + PRE-ENT predecessor batches T-IGX-030-B/C, 032-A, 033-A, provider bundles, enterprise_audit scaffolding; disposition @ `_prod_delta_disposition.py`, `_pre_ent_l3_prod_delta.py`, [`PRE_ENT_REPLAY_L3_PROD_DELTA.md`](pre_ent_enterprise_certification/PRE_ENT_REPLAY_L3_PROD_DELTA.md); CTRL-X regression **`test_ctrl_x_semantic_boundary_pyright_zero_errors`** @ `22fbc0e` · `l2-ctrl_x.log`). **Unscoped** prod Δ **empty** — `historical_evidence_invalidated_by_later_changes` **0**. DUP-X + EBH-6 SSOT reused; NPSC ten-module disposition recorded.
 
 ## C3 — VBN taxonomy (31 domains)
 

@@ -45,3 +45,7 @@ Editing, weakening, skipping or allow-listing any gate beyond the two named tole
 ## Lifecycle state
 
 plan_approved
+
+## Checkpoint
+
+**operator-delegate pre-ent-wave2 (2026-11-10):** pytest pass @ HEAD `f2682d651f436c19f7000f940647be8fd134afa4` — still **NOT** `ready_for_audit`, no stage closure. Evidence: [`WAVE2_SERIAL_QUAL_LOG.md`](../../docs/project/maintainers/qualification/pre_ent_enterprise_certification/WAVE2_SERIAL_QUAL_LOG.md). Primary BND-03 CLI gate **not** in Wave 2 serial slice #1–#4; re-run `test_bnd03_tier0_upward_edges_gate.py` before audit routing.

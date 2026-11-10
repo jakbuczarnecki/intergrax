@@ -14,11 +14,7 @@ for path in (REPO_ROOT, APPLICATIONS_ROOT, REPO_ROOT / "agents"):
     text = str(path)
     if text not in sys.path:
         sys.path.insert(0, text)
-
 from intergrax.applications._shared.environment_wiring import wire_application_environment  # noqa: E402
-from intergrax.applications._shared.strict_product_manifest_ci_gates import (  # noqa: E402
-    manifest_ci_contract_authority,
-)
 from intergrax.applications._shared.package_wiring import (  # noqa: E402
     build_application_package,
     load_application_package,
@@ -28,6 +24,11 @@ from intergrax.applications._shared.package_wiring import (  # noqa: E402
 from intergrax.applications._shared.product_manifest_registry import (  # noqa: E402
     iter_strict_product_manifests,
 )
+from intergrax.applications._shared.strict_product_manifest_ci_gates import (  # noqa: E402
+    manifest_ci_contract_authority,
+)
+
+import shipped_product_manifest_catalog  # noqa: E402, F401
 
 
 def check_strict_product_packages() -> list[str]:
