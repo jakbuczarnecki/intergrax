@@ -1,0 +1,36 @@
+{
+  "artifacts": [
+    {
+      "path": "docs/project/maintainers/qualification/ent_audit_x/b6_independent_handoff/qualification_at_32a9633440007eb4e8f00a825bbf2e399192b346/l3-cli-full/enterprise_audit_report.json",
+      "sha256": "670ad3449ccc1a7834493e0cee75c7049cc694f65524d22258086c211cbf6130"
+    },
+    {
+      "path": "docs/project/maintainers/qualification/ent_audit_x/b6_independent_handoff/qualification_at_32a9633440007eb4e8f00a825bbf2e399192b346/l3-cli-full/enterprise_audit_report.md",
+      "sha256": "b33806acca2251d35ad9706820d0781098c04920a61893b8a8cec63ca3164aae"
+    },
+    {
+      "path": "docs/project/maintainers/qualification/ent_audit_x/b6_independent_handoff/qualification_at_32a9633440007eb4e8f00a825bbf2e399192b346/l3-cli-full/enterprise_audit_outcomes.json",
+      "sha256": "ffa00194e919711d76118000f4cb61cd5bc44d6787298fc04e0a2ca3586372f6"
+    },
+    {
+      "path": "docs/project/maintainers/qualification/ent_audit_x/b6_independent_handoff/qualification_at_32a9633440007eb4e8f00a825bbf2e399192b346/l3-cli-full/vbn_domains.v1.json",
+      "sha256": "b63a117e5c9450aede6ca8a1a224fa85f7682afe7a941688cc2a3527034674c1"
+    },
+    {
+      "path": "docs/project/maintainers/qualification/ent_audit_x/b6_independent_handoff/qualification_at_32a9633440007eb4e8f00a825bbf2e399192b346/l3-cli-full/frz_coverage.v1.json",
+      "sha256": "ddef45a165fc8623146d83c23af44297f2cf37d60a20f6bae15b582c6f87dfe0"
+    },
+    {
+      "path": "docs/project/maintainers/qualification/ent_audit_x/b6_independent_handoff/qualification_at_32a9633440007eb4e8f00a825bbf2e399192b346/l3-cli-full/evidence_manifest.v1.json",
+      "sha256": "4ed166372945f2230eec5a0067b9f2411f7f4a04f3f4ad556fa6199d0baf6fc3"
+    }
+  ],
+  "l3_bundle_relpath": "docs/project/maintainers/qualification/ent_audit_x/b6_independent_handoff/qualification_at_32a9633440007eb4e8f00a825bbf2e399192b346/l3-cli-full",
+  "publication_role": "EVIDENCE_CANDIDATE_TREE",
+  "qual_wave_report": {
+    "path": "docs/project/maintainers/qualification/ent_audit_x/b6_independent_handoff/qualification_at_32a9633440007eb4e8f00a825bbf2e399192b346/qual_wave_report.json",
+    "sha256": "b30d83ac1a21677d598107fc159c653d3bb7717f6e308d9af310e0582a2d5bc7"
+  },
+  "qualification_sha": "32a9633440007eb4e8f00a825bbf2e399192b346",
+  "schema_version": 1
+}
