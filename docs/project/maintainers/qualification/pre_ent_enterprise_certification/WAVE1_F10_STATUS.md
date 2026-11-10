@@ -101,7 +101,59 @@ After clean replay, any remaining **SEMANTIC** FAIL should route by family / gat
 - `docs/project/maintainers/qualification/EBH_7_B6_F10_ECAP_NORMATIVE_MATRIX.md` (regenerated; header states **Not B6 PASS**)
 - `EBH_7_ECAP_EXECUTABLE_CHECKLIST.md` F10 computed block (regenerated)
 
+## Clean execution tree replay — `f10-clean` @ `f97d286b8` (2026-11-10)
+
+**Worktree:** `D:/Projekty/_wt/intergrax/f10-clean` (branch `f10-clean`)  
+**Executed HEAD:** `f97d286b89b90d2f58b3c6cd288d629e3237bdaf` (`development` ladder after BND-03B + integration note)  
+**TEST_EXECUTION_SHA (unchanged pin):** `dc18e36d971c93c8f631fbc86f73149d1b81b4d7`  
+**Disposition:** `EBH-7 — B6-F10 BLOCKED / EXACT MISSING OBLIGATIONS` — **not B6 PASS**
+
+### Tree identity (B5 allowlist; `build_canonical_f10_inputs` / `_path_allowed`)
+
+| Signal | Value |
+|--------|-------|
+| **`identity_violations`** | **662** (clean git worktree — not local adapter dirt) |
+| **`in_process_failures`** | **0** (IN_PROCESS validators pass on HEAD; PROFILE_BOUND still blocks via drift) |
+| **Tree identity satisfied?** | **No** — HEAD ≠ pin; diff outside B5 allowlist |
+
+**Violation buckets (path counts outside allowlist vs `dc18e36d`):**
+
+| Bucket | Count |
+|--------|------:|
+| `tests/` | 293 |
+| `scripts/` | 89 |
+| `governance/` | 75 |
+| `other` | 94 |
+| `intergrax/` | 45 |
+| `agent-env/` | 25 |
+| `.cursor/` | 23 |
+| `.claude/` | 18 |
+
+**Non-adapter product drift:** **588** paths outside `agent-env` + `.claude/` + `.cursor/` — **not** agent-env-only drift.
+
+### Computed disposition @ `f97d286b8` (generator exit 0)
+
+| Gate | Verdict | Obligations | FAIL |
+|------|---------|-------------|------|
+| **C1** | BLOCKED | 32 | 28 |
+| **C2** | BLOCKED | 43 | 43 |
+| **C3** | BLOCKED | 105 | 99 |
+| **C4** | BLOCKED | 9 | 9 |
+| **C5** | BLOCKED | 3 | 3 |
+
+**Total obligation FAIL rows:** 182 (= 28+43+99+9+3).
+
+### TREE_DRIFT vs SEMANTIC @ `f97d286b8`
+
+| Class | Count | Basis |
+|-------|------:|-------|
+| **TREE_DRIFT** | **182** | Every FAIL row cites `executed tree differs from TEST_EXECUTION_SHA` in Missing / reasons |
+| **SEMANTIC** | **0** | Automated row scan — no FAIL without tree-drift attestation string |
+
+**Read:** Semantic obligation gaps **cannot** be isolated on `f97d286b8+` until `identity_violations` = 0 (pinned replay @ `dc18e36d` or governed P03 ladder advance). Gates and B5 allowlist **unchanged**.
+
 ## Related SSOT
 
 - Wave 0 presence: [`WAVE0_PRESENCE_RECONCILIATION.md`](WAVE0_PRESENCE_RECONCILIATION.md)
+- Pinned replay record: [`WAVE1_F10_PINNED_REPLAY.md`](WAVE1_F10_PINNED_REPLAY.md)
 - Ticket: `governance/tickets/T-IGX-034-F.md`
