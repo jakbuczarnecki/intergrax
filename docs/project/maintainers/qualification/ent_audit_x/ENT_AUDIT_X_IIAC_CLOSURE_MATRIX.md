@@ -2,7 +2,7 @@
 
 **Authority and scope.** This file is a **status overlay**, not a requirements document. It records the current *status* of ENT-AUDIT-X closure obligations under IIAC policy `IIAC-2026-11-05.1` (IN_FORCE, activation `f8c29fb8dfe5e14d9b06ff16659fd9cbe9ad326d`). It supersedes only the **status columns** of the plan-time matrices (Matrix A/B/D/F of the post-implementation master plan, Annex B/F/G/G2) and the closure-JSON prose. **Requirements stay in the canonical documents** referenced below; nothing here adds, weakens or waives a requirement. Machine state: `ENT_AUDIT_X_CLOSURE_EXECUTION_STATUS.json`. SHAs: `ENT_AUDIT_X_SHA_LADDER.md` (append-only). Campaign plan: `agent-env/plans/pasted-content-id-00e5-integrax-expressive-bubble.md`; ticket `governance/tickets/T-IGX-024-A.md`.
 
-**ENT-AUDIT-X is NOT closed.** Formal B6: **ACCEPTED_VIA_IIAC_B6** (W3 pub `fd5728955…`, W4 cert `5f178174e…`). `ACCEPTED_BASELINE_SHA` = `480550d80…`. E-3 SATISFIED @ `freeze_normal_at_32a96334…`. FRZ-AUD-01..10 **promoted PASS_SCOPED** (W4-03); row 10 COMPENSATING + **OPEN-BP-01**. Matrix C **75/75**. `FORMAL_CLOSURE_PUBLICATION_SHA` unset; **OD-ENT-08** not recorded.
+**ENT-AUDIT-X formal closure: CLOSED (IIAC PASS_SCOPED).** Headline: `ENT-AUDIT-X — CLOSED — INDEPENDENTLY AUDITED (INTERNAL AGENT CERTIFICATION) — PUBLISHED`. **OD-ENT-08 RECORDED** · FRZ-FRZ-11 **PASS — SCOPED**. `FORMAL_CLOSURE_PUBLICATION_SHA` pinned W5 phase 2. **ARCH-FREEZE not CLOSED.** Limitations: OPEN-BP-01, F-W3-001, Path B FRZ-PRD OPEN.
 
 ## 1. Snapshot (W2 closure overlay facts, 2026-11-11)
 
@@ -60,11 +60,11 @@ Statuses: `QUALIFIED` · `CLOSED` · `OPEN` · `BLOCKED` · `UNVERIFIED`. `Aud` 
 | E-4 | FRZ-AUD-01..10 per-row evidence and promotion | **SATISFIED** (W4-03 promotion @ checklist; `frz_aud_status=PASS_SCOPED`) | W5 · OD |
 | E-5 | OD-ENT-02 compensating-control package refreshed and independently accepted | **SATISFIED (SCOPED)** | Certifier `SUFFICIENT_COMPENSATING_SCOPED` @ W4 pub `5f178174e…`; OPEN-BP-01 carried |
 | E-6 | OD-ENT-00 (accept EVOL formal status) | RECORDED | W3-01 done; BLK-ROADMAP-ENT-DEP satisfied at record |
-| E-7 | OD-ENT-08 (formal closure authorisation) | OPEN (Gate A prerequisite; operator only) | W5 · OD |
+| E-7 | OD-ENT-08 (formal closure authorisation) | **RECORDED** @ `2026-11-11T07:20:00Z` | W5 · OD |
 | P-1 | `B6_ACCEPTANCE_PUBLICATION_SHA` | `add6a6ce2015ebaa4bc38b7fadf3936f100a1522` (phase-1 evidence publication) | W2 adds FRZ/current-SHA evidence |
 | P-2 | `ACCEPTED_BASELINE_SHA` | `480550d80…` | W3-02 — ladder pinned |
 | P-3 | `FORMAL_CLOSURE_PUBLICATION_SHA` | unset | W5 |
-| P-4 | Roadmap §5 headline, FRZ-FRZ-11, WBS rows, terminal dossier | not started | W5/W6 |
+| P-4 | Roadmap §5 headline, FRZ-FRZ-11, WBS rows, terminal dossier | **PUBLISHED** (W5-01); pin W5-02 | W6 handoff |
 
 ### 2.4 Matrix C (75 records)
 
@@ -81,7 +81,7 @@ All ten: **promoted** in `PLATFORM_ENTERPRISE_FREEZE_ACCEPTANCE_CHECKLIST.md` @ 
 | OD-ENT-00 | **RECORDED** | `iiac_evidence/ENT-AUDIT-X/operator_decisions/ENT_AUDIT_X_OD_ENT_00_DECISION_RECORD.md` @ signing session `ent-sign-w3-2026-11-09` |
 | OD-ENT-01 | **RECORDED** | `iiac_evidence/ENT-AUDIT-X/operator_decisions/OD_ENT_01.json`; `iiac_baseline_promotion.py` promote @ TES′ B5 bundle |
 | OD-ENT-02 | **RECORDED** (compensating) | `od_ent_02_mode=compensating`; auditor sufficiency verdict still required (W4-02) |
-| OD-ENT-08 | OPEN | final publication; **paused** per plan W5 |
+| OD-ENT-08 | **RECORDED** | `ENT_AUDIT_X_OD_ENT_08_DECISION_RECORD.md` · session `ent-sign-w5-od-08-2026-11-11` |
 | OD-ENT-03 | SUPERSEDED | IIAC identifies sessions, not named auditors |
 | O-1 (delegation record for the signing session) | **TRANSCRIBED** | operator `@` lines published; `DELEGATION_ENT_OD_ENT_01.md` binds OD-ENT-01 |
 | OD-IC-01 | VALID, internal only | never satisfies a formal gate |
