@@ -1,6 +1,6 @@
 # MCP Server — architecture (multi-layer feature)
 
-**Status:** P2 definition + engine **implemented** (P3 transport next; stage not CLOSED)  
+**Status:** P2–P5 engine **scoped** @ development; **P6 DX in progress** (`T-IGX-035-G`) — stage not CLOSED  
 **Pair:** [plan/MCP_SERVER.md](../plan/MCP_SERVER.md)  
 **Stage:** `MCP-SERVER-X` — Platform MCP Server Exposure Engine Certification  
 **Dossier SSOT:** [`docs/project/maintainers/qualification/mcp_server_x/MCP_SERVER_X_INDEX.md`](../../maintainers/qualification/mcp_server_x/MCP_SERVER_X_INDEX.md)

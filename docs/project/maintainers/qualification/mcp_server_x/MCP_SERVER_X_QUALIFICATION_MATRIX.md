@@ -4,8 +4,8 @@ Evidence column intentionally empty until P7/P8. L2 ≠ L3.
 
 | MCP-ACC | Scenario | Level | Task | Evidence @ SHA |
 | --- | --- | --- | --- | --- |
-| MCP-ACC-01 | Reference qualification server | L3 | MCP-P6-02 | _pending_ |
-| MCP-ACC-02 | Typed server definition | L1 | MCP-P2-01 | _pending_ |
+| MCP-ACC-01 | Reference qualification server | L3 | MCP-P6-02 | P6 L3 @ candidate SHA (ticket `T-IGX-035-G`) |
+| MCP-ACC-02 | Typed server definition | L1 | MCP-P2-01 | P6 batch + `test_mcp_server_definition` |
 | MCP-ACC-03 | Composition | L2 | MCP-P2-04 | _pending_ |
 | MCP-ACC-04 | Exposure policy | L2 | MCP-P2-03 | _pending_ |
 | MCP-ACC-05 | Publication / transport | L3 | MCP-P3-02 | _pending_ |

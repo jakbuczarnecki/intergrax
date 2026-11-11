@@ -12,6 +12,7 @@
 | P2+ | Engine, qualification, IIAC | **Blocked** — OD-MCP-01..07 + gate report |
 
 **P1 handoff:** [`MCP_SERVER_X_P1_CONSOLIDATED_DOSSIER.md`](../../maintainers/qualification/mcp_server_x/MCP_SERVER_X_P1_CONSOLIDATED_DOSSIER.md).  
-**Migration guide body:** populated @ P6-04 after engine lands.
+**P6 developer guide:** [`MCP_SERVER_X_P6_DEVELOPER_GUIDE.md`](../../maintainers/qualification/mcp_server_x/MCP_SERVER_X_P6_DEVELOPER_GUIDE.md)  
+**P6 migration matrix:** [`MCP_SERVER_X_P6_MIGRATION_MATRIX.md`](../../maintainers/qualification/mcp_server_x/MCP_SERVER_X_P6_MIGRATION_MATRIX.md)
 
 Do not duplicate WBS here — edit dossier files only.
