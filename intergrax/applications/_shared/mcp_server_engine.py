@@ -5,6 +5,8 @@
 
 from __future__ import annotations
 
+import functools
+import inspect
 from collections.abc import Awaitable, Callable, Mapping, Sequence
 from dataclasses import dataclass
 from typing import Any
@@ -91,6 +93,49 @@ def _catalog_tool_ids_from_bindings(
 
 def _host_builtin_ids(bindings: Sequence[McpHostBuiltinBinding]) -> frozenset[McpHostBuiltinId]:
     return frozenset(binding.builtin for binding in bindings)
+
+
+def _exec_parameter_spec(param: inspect.Parameter) -> str:
+    if param.default is inspect.Parameter.empty:
+        return param.name
+    return f"{param.name}={param.default!r}"
+
+
+def _bind_custom_host_tool_for_fastmcp(
+    handler: Callable[..., Awaitable[dict[str, object]]],
+    *,
+    call_admission: McpEngineConcurrentCallAdmission | None,
+) -> Callable[..., Awaitable[dict[str, object]]]:
+    """Materialize a FastMCP tool wrapper that preserves the handler's public signature (no **kwargs)."""
+    from intergrax.contracts.mcp_server_definition import McpServerDefinitionErrorCode
+
+    sig = inspect.signature(handler)
+    for param in sig.parameters.values():
+        if param.kind in (inspect.Parameter.VAR_KEYWORD, inspect.Parameter.VAR_POSITIONAL):
+            raise McpServerDefinitionValidationError(
+                McpServerDefinitionErrorCode.MCP_DEF_INVALID,
+                "custom host tool handler must declare explicit parameters (no *args or **kwargs)",
+            )
+
+    if call_admission is None:
+        return handler
+
+    params_joined = ", ".join(_exec_parameter_spec(p) for p in sig.parameters.values())
+    call_joined = ", ".join(f"{name}={name}" for name in sig.parameters)
+    namespace: dict[str, object] = {
+        "_handler": handler,
+        "_optional_mcp_call_admission": optional_mcp_call_admission,
+        "_call_admission": call_admission,
+    }
+    source = (
+        f"async def _custom_host_mcp_tool({params_joined}):\n"
+        f"    async with _optional_mcp_call_admission(_call_admission):\n"
+        f"        return await _handler({call_joined})\n"
+    )
+    exec(source, namespace)  # noqa: S102 — bounded signature mirror for FastMCP ParsedFunction
+    bound = namespace["_custom_host_mcp_tool"]
+    functools.update_wrapper(bound, handler)
+    return bound
 
 
 def nexus_legacy_server_definition(
@@ -274,15 +319,8 @@ def compose_mcp_server_from_definition(
                     f"missing custom tool handler for {binding.tool_name!r}",
                 )
 
-            tool_handler = handler
-
-            @mcp.tool(name=binding.tool_name)
-            async def _custom_tool(
-                _handler: Callable[..., Awaitable[dict[str, object]]] = tool_handler,
-                **kwargs: Any,
-            ) -> dict[str, object]:
-                async with optional_mcp_call_admission(call_admission):
-                    return await _handler(**kwargs)
+            registered = _bind_custom_host_tool_for_fastmcp(handler, call_admission=call_admission)
+            mcp.tool(name=binding.tool_name)(registered)
 
     return mcp
 

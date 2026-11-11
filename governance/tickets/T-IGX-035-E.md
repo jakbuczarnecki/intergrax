@@ -45,7 +45,8 @@ plan_approved
 
 | Field | Value |
 | --- | --- |
-| Branch | `mcp-server-x-p4` |
+| Branch | `mcp-server-x-p4` (corrective follow-on PR vs `7562a069`; #454 merged) |
+| Corrective SHA | `c699889b0` (publication HEAD; product fix `27e19f1f`) |
 | P3_PUBLICATION_SHA | `7172f294f` |
 | Tasks | MCP-P4-01..05 targeted |
 | ACT-N11 | No documented product-path allowlist amend for `mcp_server_definition.py` / `mcp_server_engine.py` — expect governance-fast product Δ; operator merge per prior MCP batches |

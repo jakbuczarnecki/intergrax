@@ -17,6 +17,7 @@ from intergrax.contracts.mcp_server_definition import (
     McpExposurePolicy,
     McpHostBuiltinBinding,
     McpHostBuiltinId,
+    McpHostCustomBinding,
     build_mcp_server_definition,
     resolve_effective_bindings,
 )
@@ -204,3 +205,128 @@ def asyncio_run(coro):  # type: ignore[no-untyped-def]
     import asyncio
 
     return asyncio.run(coro)
+
+
+@pytest.mark.asyncio
+async def test_host_custom_tool_compose_discover_and_invoke() -> None:
+    registry = AgentRegistry()
+    nexus_loop = NexusLoop(registry)
+    host_execution = build_harness_host_task_execution(nexus_loop, orchestration_triggers=frozenset())
+    calls: list[tuple[str, str]] = []
+
+    async def alpha_tool(message: str, marker: str = "alpha") -> dict[str, object]:
+        calls.append((message, marker))
+        return {"tool": "alpha", "message": message, "marker": marker}
+
+    definition = build_mcp_server_definition(
+        server_id="srv",
+        display_name="Srv",
+        default_capability="cap",
+        bindings=(McpHostCustomBinding(binding_id="alpha", tool_name="alpha_tool"),),
+    )
+    deps = McpServerCompositionDeps(
+        host_execution=host_execution,
+        registry=registry,
+        custom_host_tools={"alpha_tool": alpha_tool},
+    )
+    mcp = compose_mcp_server_from_definition(definition, deps)
+    from fastmcp import Client
+
+    async with Client(mcp) as client:
+        tools = await client.list_tools()
+        names = {item.name for item in tools}
+        assert names == {"alpha_tool"}
+        schema = next(item for item in tools if item.name == "alpha_tool").inputSchema
+        assert set(schema.get("properties", {})) == {"message", "marker"}
+        assert "_handler" not in schema.get("properties", {})
+        result = await client.call_tool("alpha_tool", {"message": "hello"})
+        assert result.data == {"tool": "alpha", "message": "hello", "marker": "alpha"}
+    assert calls == [("hello", "alpha")]
+
+
+@pytest.mark.asyncio
+async def test_multiple_host_custom_tools_invoke_distinct_handlers() -> None:
+    registry = AgentRegistry()
+    nexus_loop = NexusLoop(registry)
+    host_execution = build_harness_host_task_execution(nexus_loop, orchestration_triggers=frozenset())
+
+    async def alpha_tool(message: str) -> dict[str, object]:
+        return {"which": "alpha", "message": message}
+
+    async def beta_tool(message: str) -> dict[str, object]:
+        return {"which": "beta", "message": message}
+
+    definition = build_mcp_server_definition(
+        server_id="srv",
+        display_name="Srv",
+        default_capability="cap",
+        bindings=(
+            McpHostCustomBinding(binding_id="alpha", tool_name="alpha_tool"),
+            McpHostCustomBinding(binding_id="beta", tool_name="beta_tool"),
+        ),
+    )
+    deps = McpServerCompositionDeps(
+        host_execution=host_execution,
+        registry=registry,
+        custom_host_tools={"alpha_tool": alpha_tool, "beta_tool": beta_tool},
+    )
+    mcp = compose_mcp_server_from_definition(definition, deps)
+    from fastmcp import Client
+
+    async with Client(mcp) as client:
+        alpha = await client.call_tool("alpha_tool", {"message": "a"})
+        beta = await client.call_tool("beta_tool", {"message": "b"})
+    assert alpha.data == {"which": "alpha", "message": "a"}
+    assert beta.data == {"which": "beta", "message": "b"}
+
+
+@pytest.mark.asyncio
+async def test_host_custom_tool_rejects_kwargs_handlers() -> None:
+    registry = AgentRegistry()
+    nexus_loop = NexusLoop(registry)
+    host_execution = build_harness_host_task_execution(nexus_loop, orchestration_triggers=frozenset())
+
+    async def bad_tool(**kwargs: object) -> dict[str, object]:
+        return {"kwargs": kwargs}
+
+    definition = build_mcp_server_definition(
+        server_id="srv",
+        display_name="Srv",
+        default_capability="cap",
+        bindings=(McpHostCustomBinding(binding_id="bad", tool_name="bad_tool"),),
+    )
+    deps = McpServerCompositionDeps(
+        host_execution=host_execution,
+        registry=registry,
+        custom_host_tools={"bad_tool": bad_tool},
+    )
+    with pytest.raises(ValueError, match="explicit parameters"):
+        compose_mcp_server_from_definition(definition, deps)
+
+
+@pytest.mark.asyncio
+async def test_host_custom_tool_rejects_missing_required_argument() -> None:
+    registry = AgentRegistry()
+    nexus_loop = NexusLoop(registry)
+    host_execution = build_harness_host_task_execution(nexus_loop, orchestration_triggers=frozenset())
+
+    async def alpha_tool(message: str) -> dict[str, object]:
+        return {"message": message}
+
+    definition = build_mcp_server_definition(
+        server_id="srv",
+        display_name="Srv",
+        default_capability="cap",
+        bindings=(McpHostCustomBinding(binding_id="alpha", tool_name="alpha_tool"),),
+    )
+    deps = McpServerCompositionDeps(
+        host_execution=host_execution,
+        registry=registry,
+        custom_host_tools={"alpha_tool": alpha_tool},
+    )
+    mcp = compose_mcp_server_from_definition(definition, deps)
+    from fastmcp import Client
+
+    async with Client(mcp) as client:
+        with pytest.raises(Exception):
+            await client.call_tool("alpha_tool", {})

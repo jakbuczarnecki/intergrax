@@ -1,0 +1,4 @@
+Ticket T-IGX-035-E local test contract @ 7c401fd98cf2b42b9b2fd5860485bac34a8c2df3
+Command: pytest tests/unit/contracts/test_mcp_server_definition.py tests/unit/applications/test_mcp_server_engine.py tests/unit/applications/test_mcp_server_p4_lifecycle.py tests/unit/applications/test_mcp_host_mount.py tests/unit/applications/test_reference_apps_mcp.py -q
+Result: 24 passed, 1 failed
+Failure: test_research_application_exposes_mcp_mount — MemoryProviderAdmissionError qualification_evidence_missing (pre-P4 baseline; same @ 7172f294f)

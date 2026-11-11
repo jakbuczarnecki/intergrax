@@ -1,0 +1,32 @@
+# MCP-SERVER-X ACT-N11 independent re-audit (P4 corrective) test matrix
+# test_execution_sha: b3d130d78e4b6799079568cde4af9787f9baab79
+# policy: IIAC-2026-11-05.1
+# prior partial verdict @ 7c401fd98 — preserved in historical manifest (not overwritten)
+
+T-IGX-035-E ticket contract (5 modules) + F-MCP-ACT-N11-001 regression:
+  tests/unit/contracts/test_mcp_server_definition.py
+  tests/unit/applications/test_mcp_server_engine.py
+  tests/unit/applications/test_mcp_server_p4_lifecycle.py
+  tests/unit/applications/test_mcp_host_mount.py
+  tests/unit/applications/test_reference_apps_mcp.py
+  tests/unit/applications/test_mcp_canonical_execution.py::test_research_mcp_pipeline_reaches_orchestration_strategy
+  exit=1 (29 pass, 1 fail — LIM-RESEARCH-MOUNT-MEMORY-ADMISSION only)
+
+Adversarial / qualification MCP slice:
+  tests/unit/applications/test_mcp_catalog_discovery_qualification.py
+  tests/unit/applications/test_mcp_trust_a_principal_binding.py
+  tests/unit/applications/test_mcp_canonical_execution.py
+  tests/unit/governance/test_iiac_negative_guards.py
+  tests/unit/applications/test_reference_apps_mcp.py
+  roll-up: 51 pass, 2 fail — memory mount + pre-activation n12 (expected red)
+
+Governance baseline (pre-activation expected red):
+  verify_iiac_policy_activation --require-in-force  exit=1 (16× ACT-N11)
+
+Scope inventory reconciliation:
+  product_paths_changed_between(11ac8ad85f…, b3d130d78…) == audit_scope 16 paths (exact match)
+  product_paths_changed_between(27e19f1f…, b3d130d78…) == [] (auditor N-03)
+
+Role separation:
+  verify_iiac_audit_manifest.py (reaudit manifest)
+  verify_iiac_role_separation.py --strict-product-diff (reaudit manifest)

@@ -1,0 +1,25 @@
+# MCP-SERVER-X ACT-N11 independent audit test matrix
+# test_execution_sha: 7c401fd98cf2b42b9b2fd5860485bac34a8c2df3
+# policy: IIAC-2026-11-05.1
+
+T-IGX-035-E ticket contract (5 modules):
+  tests/unit/contracts/test_mcp_server_definition.py
+  tests/unit/applications/test_mcp_server_engine.py
+  tests/unit/applications/test_mcp_server_p4_lifecycle.py
+  tests/unit/applications/test_mcp_host_mount.py
+  tests/unit/applications/test_reference_apps_mcp.py
+  exit=1 (24 pass, 1 fail — research mount memory admission)
+
+Adversarial / qualification MCP slice:
+  tests/unit/applications/test_mcp_catalog_discovery_qualification.py  (22 pass)
+  tests/unit/applications/test_mcp_trust_a_principal_binding.py       (included in roll-up)
+  tests/unit/applications/test_mcp_canonical_execution.py
+  tests/unit/governance/test_iiac_negative_guards.py
+  roll-up: 56 pass, 3 fail — see auditor_mcp_adversarial_tests.log
+
+Governance baseline (pre-activation expected red):
+  verify_iiac_policy_activation --require-in-force  exit=1 (16× ACT-N11)
+
+Scope inventory reconciliation:
+  product_paths_changed_between(11ac8ad85f…, 7c401fd98…) == audit_scope 16 paths (exact match)
+  product_paths_changed_between(a21a6629a…, 7c401fd98…) == [] (auditor N-03)
