@@ -1,6 +1,6 @@
 # MCP Server — architecture (multi-layer feature)
 
-**Status:** P0 stub — campaign not implemented  
+**Status:** P1 architecture prepared — engine **not** implemented (OD gate open)  
 **Pair:** [plan/MCP_SERVER.md](../plan/MCP_SERVER.md)  
 **Stage:** `MCP-SERVER-X` — Platform MCP Server Exposure Engine Certification  
 **Dossier SSOT:** [`docs/project/maintainers/qualification/mcp_server_x/MCP_SERVER_X_INDEX.md`](../../maintainers/qualification/mcp_server_x/MCP_SERVER_X_INDEX.md)
@@ -17,4 +17,10 @@ Single platform-owned MCP **exposure engine** over canonical Execution and Gover
 4. **Composition** — `_shared` engine composing definitions per application
 5. **Transport Adapter** — existing `fastapi_mcp.py` (streamable HTTP)
 
-Detail: campaign master plan WBS P2–P4; inventory @ [`MCP_SERVER_X_EXISTING_IMPLEMENTATION_INVENTORY.md`](../../maintainers/qualification/mcp_server_x/MCP_SERVER_X_EXISTING_IMPLEMENTATION_INVENTORY.md).
+**P1 SSOT:** [`MCP_SERVER_X_ARCHITECTURE_AND_OWNERSHIP.md`](../../maintainers/qualification/mcp_server_x/MCP_SERVER_X_ARCHITECTURE_AND_OWNERSHIP.md) · ADR-MCP-01..07 (**Proposed**) · [`MCP_SERVER_X_CONTRACT_AND_PROTOCOL_MATRIX.md`](../../maintainers/qualification/mcp_server_x/MCP_SERVER_X_CONTRACT_AND_PROTOCOL_MATRIX.md).
+
+Detail: WBS P2–P4 in dossier; inventory @ [`MCP_SERVER_X_EXISTING_IMPLEMENTATION_INVENTORY.md`](../../maintainers/qualification/mcp_server_x/MCP_SERVER_X_EXISTING_IMPLEMENTATION_INVENTORY.md).
+
+## Operator gate
+
+P2 blocked until OD-MCP-01..07 signed — see [`MCP_SERVER_X_P1_TO_P2_GATE_REPORT.md`](../../maintainers/qualification/mcp_server_x/MCP_SERVER_X_P1_TO_P2_GATE_REPORT.md).

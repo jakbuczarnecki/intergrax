@@ -8,7 +8,10 @@
 | Wave | Scope | Ticket |
 | --- | --- | --- |
 | P0 | Roadmap + dossier only | T-IGX-035-A |
-| P1 | ADR-MCP-01..07 Proposed; OD-MCP-01..07 templates | _next ticket after P0 merge + plan approval_ |
-| P2+ | Engine, qualification, IIAC | Blocked on operator OD decisions |
+| P1 | ADR-MCP-01..07 Proposed; OD-MCP-01..07 **PENDING** | **T-IGX-035-B** (`mcp-server-x-p1`) |
+| P2+ | Engine, qualification, IIAC | **Blocked** — OD-MCP-01..07 + gate report |
+
+**P1 handoff:** [`MCP_SERVER_X_P1_CONSOLIDATED_DOSSIER.md`](../../maintainers/qualification/mcp_server_x/MCP_SERVER_X_P1_CONSOLIDATED_DOSSIER.md).  
+**Migration guide body:** populated @ P6-04 after engine lands.
 
 Do not duplicate WBS here — edit dossier files only.
