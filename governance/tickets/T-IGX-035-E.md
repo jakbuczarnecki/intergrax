@@ -49,4 +49,6 @@ plan_approved
 | P3_PUBLICATION_SHA | `7172f294f` |
 | Tasks | MCP-P4-01..05 targeted |
 | ACT-N11 | No documented product-path allowlist amend for `mcp_server_definition.py` / `mcp_server_engine.py` — expect governance-fast product Δ; operator merge per prior MCP batches |
-| Gate | **P4 IMPLEMENTED** (scope) — P5 next |
+| Gate | **P4 IMPLEMENTED** (scope) — merge **BLOCKED** (`governance-fast` ACT-N11) |
+| ACT-N11 batch | [`IIAC_ACT_N11_MCP_RECOVERY_BATCH.md`](../../docs/project/maintainers/qualification/mcp_server_x/IIAC_ACT_N11_MCP_RECOVERY_BATCH.md) — OD **PREPARED**; auditor + operator activation **PENDING** |
+| CI @ `06be8bfd4` | `governance-fast` **FAIL** run `43010550205`; other mandatory PR gates **PASS** |

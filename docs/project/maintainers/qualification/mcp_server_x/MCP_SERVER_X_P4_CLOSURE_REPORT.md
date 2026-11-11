@@ -53,7 +53,7 @@
 
 ## CI / mandatory gates (steps 6–8)
 
-Last observed roll-up on PR #454 @ `a21a6629a` (pre-ticket push); pattern unchanged for ACT-N11:
+Last observed roll-up on PR #454 @ `06be8bfd4` (ACT-N11 corrective batch):
 
 | Gate | Result |
 | --- | --- |
@@ -62,7 +62,8 @@ Last observed roll-up on PR #454 @ `a21a6629a` (pre-ticket push); pattern unchan
 | `ent-audit-pr-gate` | **PASS** |
 | `evol-x-b4-preflight` | **PASS** |
 | `governance-policy-pin` | **PASS** |
-| **`governance-fast`** | **FAIL** — ACT-N11 product Δ |
+| **`governance-fast`** | **FAIL** — ACT-N11 product Δ (CI run `43010550205` / job `130488899947`, 15 failed) |
+| `ent-audit-fast` | **PASS** (post-roll-up) |
 
 **ACT-N11 investigation (step 7):**
 
@@ -70,7 +71,7 @@ Last observed roll-up on PR #454 @ `a21a6629a` (pre-ticket push); pattern unchan
 - `verify_iiac_policy_activation --require-in-force` **FAIL** on:
   - `origin/development` @ `7172f294f` — **7 paths** (MCP P2/P3 product: `mcp_server_definition.py`, `mcp_server_engine.py`, mount/import/concurrency, etc.).
   - `mcp-server-x-p4` @ `a21a6629a` — **16 paths** (above + eight `applications/*/mcp/server.py` + `mcp_application_server.py`).
-- **Not fixable inside P4:** ENT handoff (`IIAC_ACT_N11_RECOVERY_BATCH.md`, `audit_scope.json`) requires independent IIIC re-audit + operator personal activation; forbidden: implementer edit of activation record / ACT-N11 weakening / IIAC self-cert.
+- **Not fixable inside P4:** MCP cumulative Δ requires **separate** IIIC session — see [`IIAC_ACT_N11_MCP_RECOVERY_BATCH.md`](IIAC_ACT_N11_MCP_RECOVERY_BATCH.md) and prepared OD [`IIAC_OD_ACTIVATION_MCP_ACT_N11_2026-11-11.md`](../IIAC_OD_ACTIVATION_MCP_ACT_N11_2026-11-11.md) (**PREPARED**, unsigned). `origin/development` alone still **7× ACT-N11** (P2/P3). Forbidden: implementer activation record edit / gate weakening / self-cert.
 
 **Merge #454:** **NOT PERFORMED** — step 8 requires green `governance-fast`.
 
@@ -100,7 +101,7 @@ Not executed (no merge).
 
 ## Exact blockers (operator next actions)
 
-1. **B-P4-GOV-01:** `governance-fast` / ACT-N11 — schedule ENT-IIIC product re-bind for MCP tree (P2–P4 cumulative Δ vs `11ac8ad85f…`), then operator `Approved IIAC policy activation IIAC-2026-11-05.1: operator @ …` (personal line; not delegate-only).
+1. **B-P4-GOV-01:** Operator `Approved: D-MCP-IIIC-01=a` → independent MCP IIIC audit on [`audit_scope.json`](../iiac_evidence/MCP-SERVER-X/act_n11_mcp/audit_scope.json) → personal `Approved IIAC policy activation IIAC-2026-11-05.1: operator @ …` in OD file → certifier two-phase `IIAC_POLICY_ACTIVATION_RECORD.json` update.
 2. **B-P4-MERGE-01:** Merge PR #454 only after blocker 1 clears (or explicit operator policy superseding step 8 — not exercised in this batch).
 3. **B-P4-TEST-01 (TRACKED):** `test_research_application_exposes_mcp_mount` / memory provider qualification evidence — pre-existing @ P4 baseline; address in P5 qualification or memory campaign, not a P4 scope excuse.
 
