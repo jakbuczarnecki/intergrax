@@ -2,7 +2,7 @@
 
 **Authority and scope.** This file is a **status overlay**, not a requirements document. It records the current *status* of ENT-AUDIT-X closure obligations under IIAC policy `IIAC-2026-11-05.1` (IN_FORCE, activation `f8c29fb8dfe5e14d9b06ff16659fd9cbe9ad326d`). It supersedes only the **status columns** of the plan-time matrices (Matrix A/B/D/F of the post-implementation master plan, Annex B/F/G/G2) and the closure-JSON prose. **Requirements stay in the canonical documents** referenced below; nothing here adds, weakens or waives a requirement. Machine state: `ENT_AUDIT_X_CLOSURE_EXECUTION_STATUS.json`. SHAs: `ENT_AUDIT_X_SHA_LADDER.md` (append-only). Campaign plan: `agent-env/plans/pasted-content-id-00e5-integrax-expressive-bubble.md`; ticket `governance/tickets/T-IGX-024-A.md`.
 
-**ENT-AUDIT-X is NOT closed.** Published status: `INTERNALLY_CLOSED_AUTOMATED_INTERNAL_AUDIT_ACCEPTED`. Formal B6 phase-1 under IIAC: **ACCEPTED_VIA_IIAC** @ `add6a6ce2015ebaa4bc38b7fadf3936f100a1522` (evidence publication only; `stage_closure_status=NOT_CLOSED`). `ACCEPTED_BASELINE_SHA` = `480550d80b2515fc8cbd2a0ba6f79d1ee1c44541` (E-2 satisfied; OD-ENT-01 + on-disk baseline). `FORMAL_CLOSURE_PUBLICATION_SHA`: unset. E-3 **SATISFIED** @ TES `32a963344…` (certifying FREEZE normal 85/85/0 vs accepted baseline; W2 publication `bc4b5f61…`; independent W3 audit dossier `PASS_SCOPED` @ `dc778d12…` — publication pin pending Batch A). FRZ-AUD-01..10: **OPEN** (no certifier promotion). OD-ENT-08: **OPEN**. This overlay promotes nothing.
+**ENT-AUDIT-X is NOT closed.** Formal B6: **ACCEPTED_VIA_IIAC_B6** (W3 pub `fd5728955…`, W4 cert `5f178174e…`). `ACCEPTED_BASELINE_SHA` = `480550d80…`. E-3 SATISFIED @ `freeze_normal_at_32a96334…`. FRZ-AUD-01..10 **promoted PASS_SCOPED** (W4-03); row 10 COMPENSATING + **OPEN-BP-01**. Matrix C **75/75**. `FORMAL_CLOSURE_PUBLICATION_SHA` unset; **OD-ENT-08** not recorded.
 
 ## 1. Snapshot (W2 closure overlay facts, 2026-11-11)
 
@@ -57,10 +57,10 @@ Statuses: `QUALIFIED` · `CLOSED` · `OPEN` · `BLOCKED` · `UNVERIFIED`. `Aud` 
 | E-1 | IIAC independent audit: session manifest, handoff record, report, findings, pass record | **SATISFIED** (W3 pub `fd5728955…` @ `dc778d12…`; prior dossier `c8e4a91f…` adopted) | W4 certifier |
 | E-2 | Accepted-baseline manifest (OD-ENT-01) | **SATISFIED** | `ENTERPRISE_AUDIT_BASELINE.json` @ W3-02; independent replay W4 |
 | E-3 | Certifying FREEZE vs the accepted baseline | **SATISFIED** | `freeze_normal_at_32a963344…` + W3 independent audit Mode A/B @ TES′ |
-| E-4 | FRZ-AUD-01..10 per-row evidence and promotion | OPEN (evidence @ TES′; **promotion blocked** until W4 certifier) | W4 · Cert |
+| E-4 | FRZ-AUD-01..10 per-row evidence and promotion | **SATISFIED** (W4-03 promotion @ checklist; `frz_aud_status=PASS_SCOPED`) | W5 · OD |
 | E-5 | OD-ENT-02 compensating-control package refreshed and independently accepted | **SATISFIED (SCOPED)** | Certifier `SUFFICIENT_COMPENSATING_SCOPED` @ W4 pub `5f178174e…`; OPEN-BP-01 carried |
 | E-6 | OD-ENT-00 (accept EVOL formal status) | RECORDED | W3-01 done; BLK-ROADMAP-ENT-DEP satisfied at record |
-| E-7 | OD-ENT-08 (formal closure authorisation) | BLOCKED by E-1..E-5 | W5 · OD |
+| E-7 | OD-ENT-08 (formal closure authorisation) | OPEN (Gate A prerequisite; operator only) | W5 · OD |
 | P-1 | `B6_ACCEPTANCE_PUBLICATION_SHA` | `add6a6ce2015ebaa4bc38b7fadf3936f100a1522` (phase-1 evidence publication) | W2 adds FRZ/current-SHA evidence |
 | P-2 | `ACCEPTED_BASELINE_SHA` | `480550d80…` | W3-02 — ladder pinned |
 | P-3 | `FORMAL_CLOSURE_PUBLICATION_SHA` | unset | W5 |
@@ -68,11 +68,11 @@ Statuses: `QUALIFIED` · `CLOSED` · `OPEN` · `BLOCKED` · `UNVERIFIED`. `Aud` 
 
 ### 2.4 Matrix C (75 records)
 
-69 `QUALIFIED`; 6 operator-trust rows **QUALIFIED (auditor replay @ `dc778d12…`)**: **C001, C002, C003, C042, C057, C065** — `test_baseline_promotion_iiac.py` + `test_baseline_manifest_digest_promotion.py` 39/39 PASS (W3 dossier §5.1). Overlay SSOT reconcile pending W4 certifier Matrix C promotion. GAP-RC-OD-TRUST: evidence-closed @ TES′; formal promotion via FRZ-AUD/W4-03 only. Source rows: master plan "Matrix C — 75 TaskID" (the 85-check control matrix is Annex C, a different artifact).
+**75/75 `QUALIFIED`.** Six operator-trust rows **C001, C002, C003, C042, C057, C065** closed via IIAC baseline promotion replay (39/39 unit tests) + accepted baseline `480550d80…`. GAP-RC-OD-TRUST: **CLOSED_SCOPED** @ W4-03. Source rows: master plan "Matrix C — 75 TaskID".
 
 ### 2.5 FRZ-AUD-01..10
 
-All ten: `OPEN`. Requirements and test names: Annex B. PASS per row needs positive and negative test evidence at the evidence SHA, an auditor row verdict, and a certifier promotion in a dedicated commit. Row 06/07/09 additionally need E-2/E-3. Row 10 depends on OD-ENT-02: `PASS — LIVE` or `PASS — COMPENSATING (SCOPED)`; no equivalence claim between the two.
+All ten: **promoted** in `PLATFORM_ENTERPRISE_FREEZE_ACCEPTANCE_CHECKLIST.md` @ W4-03. Rows 01–09: `PASS`. Row 10: `PASS — COMPENSATING (SCOPED)`; **OPEN-BP-01** carried. Certifier publication SHA `5f178174e…`; promotion record pinned via ladder `W4_03_FRZ_PROMOTION_PUBLICATION_SHA`.
 
 ### 2.6 Operator decisions
 
@@ -117,3 +117,4 @@ Superseded by this overlay (status columns only, not edited): master plan Matrix
 | 2026-11-10 | W1-01 | JSON `accepted_baseline_sha` aligned to ladder/on-disk baseline; overlay header §2.3 E-3/P-1 pins; roadmap §5 factual pin line (no CLOSED) — T-IGX-024-B |
 | 2026-11-11 | W3→W4 reconcile | SSOT overlay: W2 TES/EVID pins, E-3 SATISFIED, CI run `42869847981` @ TES; F-W3-002/003; FRZ-AUD remains OPEN — T-IGX-024-B |
 | 2026-11-11 | W4 Batch D | Certifier `PASS_SCOPED` @ `5f178174e…`; W5 operator packet; **STOP** before OD-ENT-08 — T-IGX-024-B |
+| 2026-11-11 | W4-03 | FRZ-AUD-01..10 promoted; Matrix C 75/75; canonical IIAC manifest; Gate A green; od_ent_02_compensating.v1.json — T-IGX-024-B |

@@ -1,0 +1,37 @@
+{
+  "schema_version": "od_ent_02_compensating.v1",
+  "mode": "compensating",
+  "no_equivalence_claim": true,
+  "open_debt": ["OPEN-BP-01"],
+  "controls": [
+    {
+      "id": "C1-ruleset",
+      "description": "GitHub ruleset blocks deletion and non-fast-forward on development",
+      "kind": "ruleset",
+      "evidence_path": "docs/project/maintainers/qualification/ent_audit_x/OD_ENT_02_COMPENSATING_CONTROL_PACKAGE.md"
+    },
+    {
+      "id": "C2-ci-ent",
+      "description": "ENT enterprise-audit workflow jobs ent-audit-fast and ent-audit-pr-gate",
+      "kind": "ci",
+      "evidence_path": ".github/workflows/enterprise-audit.yml"
+    },
+    {
+      "id": "C3-preflight",
+      "description": "Formal closure preflight Gate A/B wiring",
+      "kind": "governance",
+      "evidence_path": "scripts/qualification/ent_audit_x_formal_closure_preflight.py"
+    },
+    {
+      "id": "C4-w3-audit",
+      "description": "W3 independent IIAC audit PASS_SCOPED evidence",
+      "kind": "iiac",
+      "evidence_path": "docs/project/maintainers/qualification/iiac_evidence/ENT-AUDIT-X/audit/w3_dc778d/ENT_AUDIT_X_W3_INDEPENDENT_AUDIT_PASS_RECORD.md"
+    }
+  ],
+  "auditor_acceptance": {
+    "verdict": "PASS_SCOPED",
+    "record_path": "docs/project/maintainers/qualification/ent_audit_x/ENT_AUDIT_X_IIAC_INDEPENDENT_AUDIT_PASS_RECORD.md",
+    "manifest_path": "docs/project/maintainers/qualification/iiac_evidence/ENT-AUDIT-X/certification/iiac_audit_session_manifest.ENT-AUDIT-X.json"
+  }
+}
