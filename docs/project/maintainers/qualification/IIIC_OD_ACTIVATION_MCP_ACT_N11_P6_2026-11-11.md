@@ -1,3 +1,5 @@
+> **SUPERSEDED — draft not gate-compliant.** This file cannot serve as the activation operator decision: the filename prefix must be `IIAC_OD_ACTIVATION_` (ACT-N06), the text lacks `Decision scope: IIAC policy activation` and the IIAC audit report digest (ACT-N07), and the draft line does not match the required `Approved IIAC policy activation IIAC-2026-11-05.1: operator @ <timestamp>` form. Use [`IIAC_OD_ACTIVATION_MCP_ACT_N11_P6_2026-11-11.md`](./IIAC_OD_ACTIVATION_MCP_ACT_N11_P6_2026-11-11.md). Content below kept unchanged for history; it was never signed.
+
 # IIIC operator decision — MCP ACT-N11 product re-bind (P6 cumulative)
 
 Decision ID: IIIC-OD-MCP-ACT-N11-P6-2026-11-11  
