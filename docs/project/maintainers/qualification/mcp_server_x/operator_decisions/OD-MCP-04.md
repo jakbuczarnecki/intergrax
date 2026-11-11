@@ -3,7 +3,7 @@
 | Field | Value |
 | --- | --- |
 | **Decision ID** | OD-MCP-04 |
-| **Status** | **PENDING** |
+| **Status** | **APPROVED — Option A** |
 | **ADR** | [`ADR_MCP_04_DECLARATIVE_DEFINITION_AND_EXPOSURE.md`](../../../architecture/ADR_MCP_04_DECLARATIVE_DEFINITION_AND_EXPOSURE.md) |
 
 ## Question
@@ -18,4 +18,6 @@ How are server definitions authored and how may exposure change at runtime?
 
 ## Operator record
 
-_Decision status: **PENDING**. Agent MUST NOT write `Approved`._
+Approved: operator @ 2026-11-11T11:24:00+01:00
+
+**Selected variant:** Option A — typed definition + thin programmatic builder; exposure via CONFIG-X recomposition; no shadow registry in engine. ADR-MCP-04 remains **Proposed**.

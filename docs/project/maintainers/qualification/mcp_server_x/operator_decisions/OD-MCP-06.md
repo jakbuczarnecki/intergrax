@@ -3,7 +3,7 @@
 | Field | Value |
 | --- | --- |
 | **Decision ID** | OD-MCP-06 |
-| **Status** | **PENDING** |
+| **Status** | **APPROVED — Option A** |
 | **ADR** | [`ADR_MCP_06_TRUST_BOUNDARY_HARNESS_PRINCIPAL.md`](../../../architecture/ADR_MCP_06_TRUST_BOUNDARY_HARNESS_PRINCIPAL.md) |
 
 ## Question
@@ -22,4 +22,6 @@ What identity plane governs MCP tool invocation?
 
 ## Operator record
 
-_Decision status: **PENDING**. Agent MUST NOT write `Approved`._
+Approved: operator @ 2026-11-11T11:24:00+01:00
+
+**Selected variant:** Option A — harness HTTP principal SSOT; MCP tenant/user fields are assertions; fail-closed when profile requires principal. ADR-MCP-06 remains **Proposed**.

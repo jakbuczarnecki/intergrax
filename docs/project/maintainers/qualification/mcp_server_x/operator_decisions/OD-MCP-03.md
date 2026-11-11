@@ -3,7 +3,7 @@
 | Field | Value |
 | --- | --- |
 | **Decision ID** | OD-MCP-03 |
-| **Status** | **PENDING** |
+| **Status** | **APPROVED — Option A** |
 | **ADR** | [`ADR_MCP_03_TRANSPORT_STREAMABLE_HTTP.md`](../../../architecture/ADR_MCP_03_TRANSPORT_STREAMABLE_HTTP.md) |
 
 ## Question
@@ -17,4 +17,6 @@ Which transports are in scope for qualification and production exposure?
 
 ## Operator record
 
-_Decision status: **PENDING**. Agent MUST NOT write `Approved`._
+Approved: operator @ 2026-11-11T11:24:00+01:00
+
+**Selected variant:** Option A — streamable HTTP via FastMCP `>=3.3.1,<4` and `fastapi_mcp.py` only; stdio/SSE out of scope. ADR-MCP-03 remains **Proposed**.

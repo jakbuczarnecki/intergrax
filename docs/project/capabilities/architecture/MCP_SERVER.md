@@ -1,6 +1,6 @@
 # MCP Server — architecture (multi-layer feature)
 
-**Status:** P1 architecture prepared — engine **not** implemented (OD gate open)  
+**Status:** P2 definition + engine **implemented** (P3 transport next; stage not CLOSED)  
 **Pair:** [plan/MCP_SERVER.md](../plan/MCP_SERVER.md)  
 **Stage:** `MCP-SERVER-X` — Platform MCP Server Exposure Engine Certification  
 **Dossier SSOT:** [`docs/project/maintainers/qualification/mcp_server_x/MCP_SERVER_X_INDEX.md`](../../maintainers/qualification/mcp_server_x/MCP_SERVER_X_INDEX.md)
@@ -23,4 +23,4 @@ Detail: WBS P2–P4 in dossier; inventory @ [`MCP_SERVER_X_EXISTING_IMPLEMENTATI
 
 ## Operator gate
 
-P2 blocked until OD-MCP-01..07 signed — see [`MCP_SERVER_X_P1_TO_P2_GATE_REPORT.md`](../../maintainers/qualification/mcp_server_x/MCP_SERVER_X_P1_TO_P2_GATE_REPORT.md).
+OD-MCP-01..07 **APPROVED — Option A** @ 2026-11-11 — records under `operator_decisions/`. P3+ continues on published engine; see [`MCP_SERVER_X_WBS.md`](../../maintainers/qualification/mcp_server_x/MCP_SERVER_X_WBS.md).
