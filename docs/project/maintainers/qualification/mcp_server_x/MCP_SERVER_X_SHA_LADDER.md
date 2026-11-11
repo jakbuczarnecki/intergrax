@@ -9,7 +9,9 @@
 | PLAN_DIGEST_SHA256 | `5dd3c72e497c72764ccc0c08d3df2dddfdbe19b3f36550ba5d87c4091f9833e7` | T-IGX-035-A plan digest |
 | P2_IMPLEMENTATION_SHA | `e21453caf1bba45f94e21781f4872fb1ac58f806` | P2 product commit (PR #452) |
 | P2_PUBLICATION_SHA | `d46d9a0de316fea7b77f76c847028c9c932a9f3f` | PR #452 merge @ `origin/development` |
-| IMPLEMENTATION_SHA | `e21453caf1bba45f94e21781f4872fb1ac58f806` | P2 engine contract (P3 transport/hosting in flight) |
+| P3_IMPLEMENTATION_SHA | `bee38a76b415cd4ca701fcc592e41b1f56e37f59` | P3 product commit (PR #453) |
+| P3_PUBLICATION_SHA | `4385c5e975492d0ee0d0049bd1c2af1ff785ea68` | PR #453 merge @ `origin/development` (`git ls-remote`, 2026-11-11) |
+| IMPLEMENTATION_SHA | `bee38a76b415cd4ca701fcc592e41b1f56e37f59` | P3 transport/hosting (P4 facade migration next) |
 | TEST_EXECUTION_SHA | _unset_ | P7 qualification |
 | AUDIT_SHA | _unset_ | P8 independent audit |
 | CERTIFICATION_SHA | _unset_ | P8 IIAC |

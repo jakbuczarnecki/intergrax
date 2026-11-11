@@ -40,12 +40,15 @@ P4 facade migration of eight apps; P5–P7 qualification execution; P8 independe
 
 ## Lifecycle state
 
-quality_gate
+closed
 
 ## Checkpoint
 
 | Field | Value |
 | --- | --- |
-| Branch | `mcp-server-x-p3` |
-| P2_PUBLICATION_SHA | `d46d9a0de316fea7b77f76c847028c9c932a9f3f` |
-| Tasks | MCP-P3-01..06 targeted |
+| Branch | `mcp-server-x-p3` (merged PR #453) |
+| P3_PUBLICATION_SHA | `4385c5e975492d0ee0d0049bd1c2af1ff785ea68` |
+| P3_IMPLEMENTATION_SHA | `bee38a76b415cd4ca701fcc592e41b1f56e37f59` |
+| P3 gate | P3 merge complete — P4 facade unblocked |
+| Tasks | MCP-P3-01..06 delivered |
+| IIAC note | `governance-fast` may be red on product Δ (ACT-N11); merge authorized by operator |
