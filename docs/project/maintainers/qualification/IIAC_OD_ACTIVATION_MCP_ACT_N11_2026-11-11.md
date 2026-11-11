@@ -3,7 +3,7 @@
 Decision ID: IIAC-OD-MCP-ACT-N11-2026-11-11  
 Policy version: IIAC-2026-11-05.1  
 Decision scope: IIAC policy activation (MCP product Δ vs `11ac8ad85f…`)  
-Decision status: **AUTHORIZED**  
+Decision status: AUTHORIZED  
 Audit report digest: c405c65faf53243a0511b0b9584a9f3abda4db08c09ee9b9266c86fe9f6b7a4e
 
 Product independent audit dossier digest (MCP ACT-N11 re-audit): d2fea1ee3d65a7a7b96ba0cc59c3b1fb2387ef74a6d58256d41b86e514a33cb7
