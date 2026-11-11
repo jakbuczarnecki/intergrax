@@ -11,7 +11,7 @@ Each row: requirement → owner → gap → risk → task → test level → FRZ
 | REQ-MCP-P-01 | Transport adapter | No platform contract pin for protocol revision FastMCP announces | False “full MCP” claim | MCP-P3-02 | L3 streamable HTTP only | FRZ-BND-06 (incremental) |
 | REQ-MCP-P-02 | SDK | Negotiation deferred to FastMCP single transport | Low | — | DEFERRED | — |
 | REQ-MCP-P-03 | Design | stdio/SSE not attached to host | By design v1 | — | OD-MCP-03 UNSUPPORTED | — |
-| REQ-MCP-P-04 | Execution + cancel | No single reference scenario on new engine | Medium | MCP-P5-06, MCP-P7-03 | L2/L3 | EXE/REL incremental |
+| REQ-MCP-P-04 | Execution + cancel | Reference cancel/disconnect/unknown on P5 batch | Medium — **scoped qualified P5** | MCP-P7-03 | L2/L3 | EXE/REL incremental |
 | REQ-MCP-P-05 | Definition contract | No shared error code catalog on definition contract | Medium | MCP-P2-05 | L1 | CMP incremental |
 
 ## Server definition & exposure
@@ -38,7 +38,7 @@ Each row: requirement → owner → gap → risk → task → test level → FRZ
 | REQ-ID | Owner | Gap | Risk | TASK | TEST | FRZ/ECAP |
 | --- | --- | --- | --- | --- | --- | --- |
 | REQ-MCP-C-01 | COMPAT exporter | Schema export exists; no surface version/fingerprint | High | MCP-P4-03 | L1 | FRZ-CMP-* incremental |
-| REQ-MCP-SEC-01 | Harness auth | Local bypass default tenant edge cases | High | MCP-P5-01/02 | L2/L3 neg | FRZ-SEC/TEN incremental |
+| REQ-MCP-SEC-01 | Harness auth | Dev bypass documented; prod fail-closed qualified P5 | High — **P5 qual @ c59892829** | maintain | L2/L3 neg | FRZ-SEC/TEN incremental |
 | REQ-MCP-SEC-02 | Principal resolver | Client `tenant_id` is assertion only | — | maintain | L2 | TEN incremental |
 | REQ-MCP-X-01 | Host execution | `run_agent` path exists | — | requal if signature changes | regresja | EXE |
 | REQ-MCP-X-02 | Catalog bridge | Child execution per ADR TL11 exists | — | EVOL-gated requal | L2 | EXE |

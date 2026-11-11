@@ -7,8 +7,8 @@ Full task detail: campaign master plan (digest `5dd3c72e497c72764ccc0c08d3df2ddd
 | P0 | MCP-P0-01..10 | Roadmap amended | **Complete** (`ROADMAP_AMENDMENT_SHA` `bd5d04d1…`) |
 | P1 | MCP-P1-01..04 | ADR Proposed + OD templates | **Complete** (OD unsigned — P2 blocked) |
 | P2–P4 | MCP-P2..P4 | OD-MCP-01,02,04,05 | **Complete** (publication @ `7930c256f` — P4 terminal on `origin/development`; historical rows below are not current status) |
-| P5 | MCP-P5-01..07 | Security + execution qual | **In progress** (`T-IGX-035-F`) |
-| P6 | MCP-P6-01..04 | DX / migration | **Blocked** (P5 gate) |
+| P5 | MCP-P5-01..07 | Security + execution qual | **Complete (scoped)** — G6 `ACCEPT_SCOPED_WITH_GOVERNANCE_FINDING` @ `c59892829`; ticket awaiting operator OD |
+| P6 | MCP-P6-01..04 | DX / migration | **Ready (technical)** — entry pending OD-MCP-P5-P6-01 |
 | P7 | MCP-P7-01..09 | Qual package | **Blocked** |
 | P8 | MCP-P8-01..10 | Independent audit + IIIC | **Blocked** — no self-cert |
 

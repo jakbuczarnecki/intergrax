@@ -2,7 +2,7 @@
 
 **Ticket:** `governance/tickets/T-IGX-035-F.md`  
 **Plan digest:** `5dd3c72e497c72764ccc0c08d3df2dddfdbe19b3f36550ba5d87c4091f9833e7`  
-**Disposition:** **P5 IMPLEMENTED → SECURITY QUALIFIED (scoped) → EXECUTION VERIFIED (tested) — INDEPENDENT REVIEW PENDING**
+**Disposition:** **P5 PUBLISHED (scoped) → SECURITY QUALIFIED (scoped) → G6 ACCEPT_SCOPED_WITH_GOVERNANCE_FINDING — operator OD pending**
 
 ## SHA ladder (this batch)
 
@@ -10,8 +10,15 @@
 | --- | --- |
 | BASELINE_SHA | `7930c256fdbe6bb878d9493670361d3cbe4b07bb` |
 | IMPLEMENTATION_SHA | `8b153422ec1e526c588b7144e934d268055a6df8` |
-| TEST_EXECUTION_SHA | `8b153422ec1e526c588b7144e934d268055a6df8` |
-| P4_PARENT_PUBLICATION | `7930c256f` (`origin/development` @ P5 cut) |
+| P5_PUBLICATION_SHA (product merge PR #456) | `c5989282937f5e592748cb606b2272d04837c601` |
+| TEST_EXECUTION_SHA (independent replay) | `c5989282937f5e592748cb606b2272d04837c601` |
+| G6_AUDIT_EXECUTION_SHA | `c5989282937f5e592748cb606b2272d04837c601` |
+| G6_EVIDENCE_PUBLICATION_SHA | See [`EVIDENCE_MANIFEST.txt`](../iiac_evidence/MCP-SERVER-X/p5_g6_closeout/EVIDENCE_MANIFEST.txt) |
+| P4_PARENT_PUBLICATION | `7930c256f` |
+
+## Merge sequencing (preserved fact)
+
+PR #456 merged @ `c59892829` **before** independent G6 was on record. Post-publication G6 @ same SHA — see F-MCP-P5-GOV-001 in [`mcp_p5_g6_findings.json`](../iiac_evidence/MCP-SERVER-X/p5_g6_closeout/mcp_p5_g6_findings.json). **No retroactive pre-merge approval.**
 
 ## PRODUCT_CHANGE_INVENTORY
 
@@ -25,56 +32,56 @@
 ## SECURITY_QUALIFICATION
 
 - Matrix: [`MCP_SERVER_X_P5_SECURITY_REQUIREMENT_MATRIX.md`](./MCP_SERVER_X_P5_SECURITY_REQUIREMENT_MATRIX.md) — mandatory mechanisms mapped (no unclassified mandatory rows).
-- Evidence: `test_mcp_trust_a_principal_binding.py`, catalog gate-b, discovery auth negatives.
+- Evidence: consolidated P5 batch @ `TEST_EXECUTION_SHA`.
 
 ## TENANT_ISOLATION_RESULT
 
-**PASS (scoped)** — cross-tenant deny, forged tenant pre-execution, concurrent principal isolation (L2 + streamable HTTP L3).
+**PASS (scoped)** @ independent replay.
 
 ## GOVERNANCE_RESULT
 
-**PASS (scoped)** — side-effect port, MSE deny, principal mismatch, admission-before-invoker (catalog qualification).
+**PASS (scoped)** — qualification evidence; **process finding** F-MCP-P5-GOV-001/002 reconciled in closeout batch.
 
 ## CANONICAL_EXECUTION_RESULT
 
-**PASS (scoped)** — `ExecutionFacade` path, host_custom via engine (no decorator bypass), research/gca strategy routing.
+**PASS (scoped)** — `ExecutionFacade` path; `host_custom` via engine.
 
 ## CANCELLATION_RESULT
 
-**PASS (scoped)** — transport governed cancel, disconnect L3, unknown outcome not certified success.
+**PASS (scoped)** — transport cancel, disconnect L3, unknown outcome.
 
 ## MEMORYPROVIDER_RESIDUAL_DISPOSITION
 
 | Item | Disposition |
 | --- | --- |
-| B-P4-TEST-01 | **RESOLVED (scoped)** for MCP ticket contract — research mount tested via `build_research_mcp_server` + engine mount helper |
-| `LIM-RESEARCH-STRICT-FACTORY-MEMORY` | **OPEN (cross-stage)** — full `create_research_backend_app` strict PRODUCT still needs vendor `sqlite.user_profile` qualification + revision-bound contract authority (PROD-Q / MEM campaign); test harness supplies runner evidence only for AC-3 projection wiring |
+| B-P4-TEST-01 | **RESOLVED (scoped)** |
+| `LIM-RESEARCH-STRICT-FACTORY-MEMORY` | **OPEN** — PROD-Q/MEM; OD-MCP-P5-MEM-01 **REQUESTED** |
 
 ## ADVERSARIAL_TEST_RESULTS
 
-**PASS** — consolidated P5 batch (trust-a, canonical execution, cancel-a, catalog gate-b/child/discovery, concurrency, P4 lifecycle, reference apps, definition contract).
+**PASS** @ `c59892829` — consolidated P5 batch.
 
 ## INDEPENDENT_AUDIT_RESULT
 
-**PENDING** — implementer cannot self-certify; separate G6 session required before publication close.
+**ACCEPT_SCOPED_WITH_GOVERNANCE_FINDING** — [`MCP_SERVER_X_P5_INDEPENDENT_AUDIT_DOSSIER.md`](./MCP_SERVER_X_P5_INDEPENDENT_AUDIT_DOSSIER.md); evidence pack [`p5_g6_closeout/`](../iiac_evidence/MCP-SERVER-X/p5_g6_closeout/).
 
 ## CI_STATUS
 
-**PENDING** — PR to `development` not opened in this batch until push.
+PR #456 post-merge CI rollup **SUCCESS** (including `governance-fast`, `ent-audit-fast` on merged tree).
 
 ## PUBLICATION_SHA
 
-_unset_ — merge pending independent review + CI.
+`c5989282937f5e592748cb606b2272d04837c601` (product)
 
 ## TICKET_LIFECYCLE
 
-`T-IGX-035-F` → `in_progress` / `quality_gate` after push; **not** `closed`.
+`T-IGX-035-F` → **`awaiting_operator_disposition`** (OD-MCP-P5-TICKET-01); technical acceptance complete.
 
 ## OPEN_BLOCKERS
 
-1. **B-P5-AUDIT-01** — mandatory independent technical review (scoped P5).
-2. **LIM-RESEARCH-STRICT-FACTORY-MEMORY** — strict full-factory integration (not MCP engine defect).
+1. **Operator OD** — OD-MCP-P5-GOV-01, OD-MCP-P5-TICKET-01, OD-MCP-P5-P6-01, OD-MCP-P5-MEM-01 **REQUESTED**
+2. **LIM-RESEARCH-STRICT-FACTORY-MEMORY** — cross-stage (non-blocking P5)
 
 ## P6_HANDOFF
 
-P5 qualification pack ready for P6 public API / reference qual server once audit + publication SHA recorded.
+**P6 READY (technical)** — operator OD-MCP-P5-P6-01 before sprint entry.

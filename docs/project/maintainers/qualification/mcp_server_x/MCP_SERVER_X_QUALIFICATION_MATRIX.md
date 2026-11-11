@@ -12,15 +12,15 @@ Evidence column intentionally empty until P7/P8. L2 ≠ L3.
 | MCP-ACC-06 | HTTP client | L3 | MCP-P7-03 | _pending_ |
 | MCP-ACC-07 | Discovery | L3 | MCP-P7-03 | _pending_ |
 | MCP-ACC-08 | Schema | L3 | MCP-P7-03 | _pending_ |
-| MCP-ACC-09 | Authorized invoke | L3 | MCP-P5-04 | _pending_ |
-| MCP-ACC-10 | Denied invoke | L2+L3 | MCP-P5-03 | _pending_ |
-| MCP-ACC-11 | Cross-tenant deny | L2+L3 | MCP-P5-02 | _pending_ |
-| MCP-ACC-12 | Principal binding | L2 | MCP-P5-01 | _pending_ |
-| MCP-ACC-13 | Cancel | L3 | MCP-P5-06 | _pending_ |
-| MCP-ACC-14 | Timeout | L2 (+L3 if transport carries deadline) | MCP-P5-06 | _pending_ |
-| MCP-ACC-15 | Disconnect | L3 | MCP-P5-06 | _pending_ |
+| MCP-ACC-09 | Authorized invoke | L3 | MCP-P5-04 | P5 batch @ `c59892829` (scoped — P7 exact package pending) |
+| MCP-ACC-10 | Denied invoke | L2+L3 | MCP-P5-03 | P5 batch @ `c59892829` (scoped) |
+| MCP-ACC-11 | Cross-tenant deny | L2+L3 | MCP-P5-02 | P5 batch @ `c59892829` (scoped) |
+| MCP-ACC-12 | Principal binding | L2 | MCP-P5-01 | P5 batch @ `c59892829` (scoped) |
+| MCP-ACC-13 | Cancel | L3 | MCP-P5-06 | P5 batch @ `c59892829` (scoped) |
+| MCP-ACC-14 | Timeout | L2 (+L3 if transport carries deadline) | MCP-P5-06 | P5 batch @ `c59892829` (scoped) |
+| MCP-ACC-15 | Disconnect | L3 | MCP-P5-06 | P5 batch @ `c59892829` (scoped) |
 | MCP-ACC-16 | Version / retire | L1+L2 | MCP-P4-02/03 | _pending_ |
-| MCP-ACC-17 | Trace correlation | L2 | MCP-P5-07 | _pending_ |
+| MCP-ACC-17 | Trace correlation | L2 | MCP-P5-07 | P5 discovery/adversarial pack @ `c59892829` (scoped — dedicated trace id gap remains in gap register) |
 | MCP-ACC-18 | Announced protocol subset | L3 | MCP-P7-04 | _pending_ |
 | MCP-ACC-19 | Regression suite | — | MCP-P7-06 | _pending_ |
 | MCP-ACC-20 | Exact-SHA proof package | — | MCP-P7-09 / P8 | _pending_ |

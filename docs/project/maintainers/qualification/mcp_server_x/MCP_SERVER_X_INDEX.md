@@ -36,4 +36,7 @@
 | --- | --- |
 | P0 | **Complete** |
 | P1 docs / ADR / OD templates | **Complete** (OD unsigned) |
-| P2+ engine | **Blocked** on OD-MCP-01..07 |
+| P2–P4 engine | **Complete (scoped)** @ P4 terminal `7930c256f` |
+| P5 security / execution qual | **Complete (scoped)** — G6 post-publication @ `c59892829`; [`P5 terminal dossier`](./MCP_SERVER_X_P5_TERMINAL_DOSSIER.md) |
+| P6 | **Ready (technical)** — OD-MCP-P5-P6-01 **REQUESTED** |
+| P7–P8 | **Blocked** (stage not CLOSED) |
