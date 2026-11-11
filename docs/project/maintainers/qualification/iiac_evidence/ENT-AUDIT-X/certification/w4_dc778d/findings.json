@@ -1,0 +1,35 @@
+[
+  {
+    "id": "F-W4-001",
+    "severity": "INFO",
+    "title": "Adopcja dowodu W3 bez osobistego Mode C replay",
+    "evidence": "Certifier opiera się na opublikowanym W3 + dossier c8e4a91f; brak nowego CLI FULL/FREEZE w sesji certifiera.",
+    "status": "CARRIED_SCOPED",
+    "owner": "certifier"
+  },
+  {
+    "id": "F-W4-002",
+    "severity": "LOW",
+    "title": "verify_od_ent_02_compensating_control: PASS (package draft)",
+    "evidence": "Skrypt raportuje draft scope, nie published compensating SHA binding.",
+    "status": "OPEN",
+    "owner": "implementer",
+    "recommendation": "Re-run at W5 Gate A publication SHA when preflight binds compensating mode."
+  },
+  {
+    "id": "F-W4-003",
+    "severity": "MEDIUM",
+    "title": "OPEN-BP-01 live branch protection",
+    "evidence": "Overlay §1.7; ruleset bez required checks; COMPENSATING route only.",
+    "status": "CARRIED_DEBT",
+    "owner": "repo admin / ARCH-FREEZE"
+  },
+  {
+    "id": "CARRIED",
+    "severity": "VARIES",
+    "title": "W3 findings F-W3-001..006",
+    "evidence": "see audit/w3_dc778d/findings.json",
+    "status": "CARRIED",
+    "owner": "per W3 disposition"
+  }
+]
