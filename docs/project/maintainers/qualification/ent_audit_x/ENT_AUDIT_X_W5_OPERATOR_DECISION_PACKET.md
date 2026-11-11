@@ -3,14 +3,16 @@
 **Status:** `W4-03 MERGED — GATE A PASS @ development HEAD — AWAITING OD-ENT-08`  
 **ENT-AUDIT-X is NOT closed.** `FORMAL_CLOSURE_PUBLICATION_SHA` unset. **No OD-ENT-08 on file.**  
 **Campaign:** `ENT-AUDIT-X-FORMAL-CERTIFICATION-AND-CLOSURE` · **Ticket:** `governance/tickets/T-IGX-024-B.md`  
-**Prepared:** 2026-11-11 (post PR #446 merge)
+**Prepared:** 2026-11-11 (post PR #447 merge; Gate A replay on `93f4b3278…`)  
+**Signing session:** `ent-sign-w5-od-08-2026-11-11` · [`ENT_AUDIT_X_OD_ENT_08_SIGNING_SESSION.md`](./ENT_AUDIT_X_OD_ENT_08_SIGNING_SESSION.md)
 
 ## 1. Authoritative HEAD and lineage
 
 | Role | SHA |
 | --- | --- |
-| **`origin/development` HEAD (post #445 + #446)** | `bd026181583a54b408c05206ec194879d56b5734` |
-| Merge PR #446 | `bd026181583a54b408c05206ec194879d56b5734` |
+| **`origin/development` HEAD (post #447)** | `93f4b32788d429ff1a935e59fdcae91b54503877` |
+| Merge PR #447 (W5 OD-ENT-08 packet) | `93f4b32788d429ff1a935e59fdcae91b54503877` |
+| Merge PR #446 (W4-03) | `bd026181583a54b408c05206ec194879d56b5734` |
 | TEST_EXECUTION_SHA | `32a9633440007eb4e8f00a825bbf2e399192b346` |
 | EVIDENCE_PUBLICATION_SHA (B5 FULL) | `481b2cc2c10a407fd2b93cf9c69714e8894aeccf` |
 | W2_NORMAL_FREEZE_EVIDENCE_PUBLICATION_SHA | `bc4b5f61666a8fea638064f50809fff2089b1b8b` |
@@ -42,13 +44,14 @@
 | Matrix C | **75/75 QUALIFIED** |
 | Population E | **PASS_SCOPED** (85 semantic oracles @ TES′ L3) |
 
-## 4. Gate A replay @ `bd026181583a54b408c05206ec194879d56b5734`
+## 4. Gate A replay @ `93f4b32788d429ff1a935e59fdcae91b54503877`
 
 | Check | Result |
 | --- | --- |
-| `ent_audit_x_formal_closure_preflight.py --gate A` | **PASS** |
+| `ent_audit_x_formal_closure_preflight.py --gate A` | **PASS** (2026-11-11, post #447 merge) |
 | IIAC policy | `IN_FORCE` @ `IIAC-2026-11-05.1` |
-| PR #446 CI (mandatory) | **PASS** — `ent-audit-pr-gate`, `ent-audit-fast`, `governance-fast`, `ci-smoke`, `evol-x-b4-preflight`, `governance-policy-pin` |
+| PR #447 CI (mandatory) | **PASS** — merged to `development` |
+| PR #446 CI (mandatory) | **PASS** (W4-03 + N-09 corrective) |
 
 ## 5. Scoped limitations (operator must accept with OD-ENT-08)
 
