@@ -3,7 +3,8 @@
 **Decision ID:** OD-ENT-08  
 **Stage:** ENT-AUDIT-X formal closure authorisation  
 **Policy:** IIAC-2026-11-05.1 (`IN_FORCE`)  
-**Gate A @ HEAD:** `bd026181583a54b408c05206ec194879d56b5734` — **PASS**  
+**Signing session:** `ent-sign-w5-od-08-2026-11-11` · [`ENT_AUDIT_X_OD_ENT_08_SIGNING_SESSION.md`](./ENT_AUDIT_X_OD_ENT_08_SIGNING_SESSION.md)  
+**Gate A @ HEAD:** `93f4b32788d429ff1a935e59fdcae91b54503877` — **PASS** (post PR #447)  
 **Prerequisite packet:** [`ENT_AUDIT_X_W5_OPERATOR_DECISION_PACKET.md`](./ENT_AUDIT_X_W5_OPERATOR_DECISION_PACKET.md)
 
 ---
@@ -14,7 +15,7 @@ By recording the line below, the operator authorises **W5/W6 formal closure publ
 
 ```
 Approved OD-ENT-08: operator-delegate @ <ISO-8601-UTC>
-Scope: ENT-AUDIT-X formal stage closure under IIAC PASS_SCOPED chain @ development HEAD bd026181583a54b408c05206ec194879d56b5734
+Scope: ENT-AUDIT-X formal stage closure under IIAC PASS_SCOPED chain @ development HEAD 93f4b32788d429ff1a935e59fdcae91b54503877
 Accepts: FRZ-AUD-01..09 PASS; FRZ-AUD-10 PASS — COMPENSATING (SCOPED); Matrix C 75/75; Population E PASS_SCOPED; W3/W4 independent PASS_SCOPED; OPEN-BP-01, F-W3-001, Path B FRZ-PRD OPEN, process_enforced assurance
 Authorises: W5 closure phase 1/2, roadmap §5 headline, FORMAL_CLOSURE_PUBLICATION_SHA pin, Gate B verification — not before this timestamp
 Target designation: ENT-AUDIT-X — CLOSED — INDEPENDENTLY ACCEPTED (SCOPED) — PUBLISHED
