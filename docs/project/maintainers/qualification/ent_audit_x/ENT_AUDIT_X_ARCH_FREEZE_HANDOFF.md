@@ -69,8 +69,12 @@
 - **Does not** claim LIVE branch protection  
 - FRZ-EVOL-07 qualification-layer limitation (from EVOL handoff) unchanged  
 
+## MCP-SERVER-X gate (2026-11-11)
+
+Formal **ARCH-FREEZE** stage closure now requires **`MCP-SERVER-X` = CLOSED** (IIAC) between ENT and ARCH-FREEZE per roadmap §3. ENT CLOSED remains valid; **Mode A** change-impact for the future MCP public contract is recorded in [`mcp_server_x/MCP_SERVER_X_INDEX.md`](../mcp_server_x/MCP_SERVER_X_INDEX.md) — ENT accepted baseline `480550d80b2515fc8cbd2a0ba6f79d1ee1c44541` is **not** invalidated by P0 documentation.
+
 ## ARCH-FREEZE entry (operator/architect)
 
-Prerequisites now satisfied for **ENT-AUDIT-X independently CLOSED** (FRZ-FRZ-11). Remaining ARCH-FREEZE obligations: full freeze checklist, T-B7-* WBS, independent admissions per plan — **execute only under ARCH-FREEZE campaign**, not in this handoff.
+Prerequisites now satisfied for **ENT-AUDIT-X independently CLOSED** (FRZ-FRZ-11). **MCP-SERVER-X** must close before ARCH-FREEZE stage closure. Remaining ARCH-FREEZE obligations: full freeze checklist, T-B7-* WBS, independent admissions per plan — **execute only under ARCH-FREEZE campaign**, not in this handoff.
 
 **Terminal report:** [`ENT_AUDIT_X_FORMAL_CLOSURE_CAMPAIGN_TERMINAL_REPORT.md`](./ENT_AUDIT_X_FORMAL_CLOSURE_CAMPAIGN_TERMINAL_REPORT.md)

@@ -21,6 +21,8 @@
 
 **Baseline inventory (recompute at every audit):** **225** `FRZ-*` criteria in **26** families at checklist HEAD synchronized with repository checkout.
 
+**MCP-SERVER-X (2026-11-11):** Formal stage closure for platform MCP exposure uses **incremental evidence** against existing FRZ families (e.g. BND, CMP, EXE, SEC, TEN) via campaign matrix MCP-ACC and dossier notes — **not** a new `FRZ-MCP-*` criterion family unless operator separately authorizes OD-MCP-07 path B. Checklist row **count remains 225**; no MCP stage PASS may promote checklist rows without certifier role.
+
 ---
 
 ## ECAP-§1 — Purpose, Scope and Authority
