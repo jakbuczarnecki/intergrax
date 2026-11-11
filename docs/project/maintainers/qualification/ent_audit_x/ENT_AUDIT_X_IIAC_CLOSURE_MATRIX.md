@@ -2,14 +2,15 @@
 
 **Authority and scope.** This file is a **status overlay**, not a requirements document. It records the current *status* of ENT-AUDIT-X closure obligations under IIAC policy `IIAC-2026-11-05.1` (IN_FORCE, activation `f8c29fb8dfe5e14d9b06ff16659fd9cbe9ad326d`). It supersedes only the **status columns** of the plan-time matrices (Matrix A/B/D/F of the post-implementation master plan, Annex B/F/G/G2) and the closure-JSON prose. **Requirements stay in the canonical documents** referenced below; nothing here adds, weakens or waives a requirement. Machine state: `ENT_AUDIT_X_CLOSURE_EXECUTION_STATUS.json`. SHAs: `ENT_AUDIT_X_SHA_LADDER.md` (append-only). Campaign plan: `agent-env/plans/pasted-content-id-00e5-integrax-expressive-bubble.md`; ticket `governance/tickets/T-IGX-024-A.md`.
 
-**ENT-AUDIT-X is NOT closed.** Published status: `INTERNALLY_CLOSED_AUTOMATED_INTERNAL_AUDIT_ACCEPTED`. Formal B6 phase-1 under IIAC: **ACCEPTED_VIA_IIAC** @ `add6a6ce2015ebaa4bc38b7fadf3936f100a1522` (evidence publication only; `stage_closure_status=NOT_CLOSED`). `ACCEPTED_BASELINE_SHA` = `480550d80b2515fc8cbd2a0ba6f79d1ee1c44541` (E-2 satisfied; OD-ENT-01 + on-disk baseline). `FORMAL_CLOSURE_PUBLICATION_SHA`: unset. E-3 **OPEN** until certifying FREEZE @ current HEAD (last clean FREEZE @ `0ad6511a…` is not HEAD-fresh). FRZ-AUD-01..10: **OPEN**. This overlay promotes nothing.
+**ENT-AUDIT-X is NOT closed.** Published status: `INTERNALLY_CLOSED_AUTOMATED_INTERNAL_AUDIT_ACCEPTED`. Formal B6 phase-1 under IIAC: **ACCEPTED_VIA_IIAC** @ `add6a6ce2015ebaa4bc38b7fadf3936f100a1522` (evidence publication only; `stage_closure_status=NOT_CLOSED`). `ACCEPTED_BASELINE_SHA` = `480550d80b2515fc8cbd2a0ba6f79d1ee1c44541` (E-2 satisfied; OD-ENT-01 + on-disk baseline). `FORMAL_CLOSURE_PUBLICATION_SHA`: unset. E-3 **SATISFIED** @ TES `32a963344…` (certifying FREEZE normal 85/85/0 vs accepted baseline; W2 publication `bc4b5f61…`; independent W3 audit dossier `PASS_SCOPED` @ `dc778d12…` — publication pin pending Batch A). FRZ-AUD-01..10: **OPEN** (no certifier promotion). OD-ENT-08: **OPEN**. This overlay promotes nothing.
 
-## 1. Snapshot (R-FRESH overlay facts, 2026-11-09)
+## 1. Snapshot (W2 closure overlay facts, 2026-11-11)
 
 | Item | Value |
 |---|---|
-| Last-wins TEST_EXECUTION_SHA | `b5c2481d79f955fa5f483a9288aee8de4581f953` (R-FRESH certifying FULL 85/85 + FREEZE candidate @ `.tmp/session/ent-r-fresh/`; nightly run `42593448899`) |
-| Last-wins EVIDENCE_PUBLICATION_SHA | `63ff80819da5a7324257ea598e342810c1838199` (B5 tree `qualification_at_b5c2481d79f955fa5f483a9288aee8de4581f953`) |
+| Last-wins TEST_EXECUTION_SHA | `32a9633440007eb4e8f00a825bbf2e399192b346` (W2 closure: certifying FULL 85/85/0 + normal FREEZE vs accepted baseline `480550d80…`; merge PR #442 CI run `42869847981` success) |
+| Last-wins EVIDENCE_PUBLICATION_SHA | `481b2cc2c10a407fd2b93cf9c69714e8894aeccf` (B5 `qualification_at_32a963344…`; W2 normal FREEZE tree pub `bc4b5f61666a8fea638064f50809fff2089b1b8b`) |
+| Historical R-FRESH TES / EVIDENCE | `b5c2481d79f955fa5f483a9288aee8de4581f953` / `63ff80819da5a7324257ea598e342810c1838199` (preserved) |
 | Historical loop-1 TES / EVIDENCE | `62d1c615855a3eaf569777a10e342aacc889a128` / `163ef0c03b3cbead556499ee81cb99d640665dce` (preserved) |
 | IIAC round 1 audit | CONDITIONAL — historical annex under `iiac_evidence/ENT-AUDIT-X/historical/` (not B6 acceptance) |
 | IIAC round 2 audit | `INTERRUPTED_NO_VERDICT` (do not resume on `f9e3a932`) |
@@ -53,11 +54,11 @@ Statuses: `QUALIFIED` · `CLOSED` · `OPEN` · `BLOCKED` · `UNVERIFIED`. `Aud` 
 
 | ID | Item | Status | Gate |
 |---|---|---|---|
-| E-1 | IIAC independent audit: session manifest, handoff record, report, findings, pass record | OPEN | W2 · Aud |
+| E-1 | IIAC independent audit: session manifest, handoff record, report, findings, pass record | **SATISFIED** (W3 pub `fd5728955…` @ `dc778d12…`; prior dossier `c8e4a91f…` adopted) | W4 certifier |
 | E-2 | Accepted-baseline manifest (OD-ENT-01) | **SATISFIED** | `ENTERPRISE_AUDIT_BASELINE.json` @ W3-02; independent replay W4 |
-| E-3 | Certifying FREEZE vs the accepted baseline | OPEN (not HEAD-fresh; requal W2) | W2 · Aud |
-| E-4 | FRZ-AUD-01..10 per-row evidence and promotion | BLOCKED by E-3 | W4 · Aud |
-| E-5 | OD-ENT-02 compensating-control package refreshed and independently accepted | PARTIAL | OD recorded; **Aud** sufficiency W4-02 |
+| E-3 | Certifying FREEZE vs the accepted baseline | **SATISFIED** | `freeze_normal_at_32a963344…` + W3 independent audit Mode A/B @ TES′ |
+| E-4 | FRZ-AUD-01..10 per-row evidence and promotion | OPEN (evidence @ TES′; **promotion blocked** until W4 certifier) | W4 · Cert |
+| E-5 | OD-ENT-02 compensating-control package refreshed and independently accepted | **SATISFIED (SCOPED)** | Certifier `SUFFICIENT_COMPENSATING_SCOPED` @ W4 pub `5f178174e…`; OPEN-BP-01 carried |
 | E-6 | OD-ENT-00 (accept EVOL formal status) | RECORDED | W3-01 done; BLK-ROADMAP-ENT-DEP satisfied at record |
 | E-7 | OD-ENT-08 (formal closure authorisation) | BLOCKED by E-1..E-5 | W5 · OD |
 | P-1 | `B6_ACCEPTANCE_PUBLICATION_SHA` | `add6a6ce2015ebaa4bc38b7fadf3936f100a1522` (phase-1 evidence publication) | W2 adds FRZ/current-SHA evidence |
@@ -67,7 +68,7 @@ Statuses: `QUALIFIED` · `CLOSED` · `OPEN` · `BLOCKED` · `UNVERIFIED`. `Aud` 
 
 ### 2.4 Matrix C (75 records)
 
-69 `QUALIFIED`; 6 `NOT_QUALIFIED` (operator trust path): **C001, C002, C003, C042, C057, C065**. They close only when D-2 is implemented, the accepted-baseline manifest exists and an independent audit replays it. GAP-RC-OD-TRUST stays OPEN until then. Source rows: master plan "Matrix C — 75 TaskID" (the 85-check control matrix is Annex C, a different artifact).
+69 `QUALIFIED`; 6 operator-trust rows **QUALIFIED (auditor replay @ `dc778d12…`)**: **C001, C002, C003, C042, C057, C065** — `test_baseline_promotion_iiac.py` + `test_baseline_manifest_digest_promotion.py` 39/39 PASS (W3 dossier §5.1). Overlay SSOT reconcile pending W4 certifier Matrix C promotion. GAP-RC-OD-TRUST: evidence-closed @ TES′; formal promotion via FRZ-AUD/W4-03 only. Source rows: master plan "Matrix C — 75 TaskID" (the 85-check control matrix is Annex C, a different artifact).
 
 ### 2.5 FRZ-AUD-01..10
 
@@ -114,3 +115,5 @@ Superseded by this overlay (status columns only, not edited): master plan Matrix
 | 2026-11-09 | W3 signing | O-1 transcription; OD-ENT-00/02 published; `od_ent_02_mode=compensating`; W3-02 baseline promotion blocked on validator; W5 OD-ENT-08 paused — session `ent-sign-w3-2026-11-09` |
 | 2026-11-09 | W3-02 | OD-ENT-01 delegated record + `iiac_baseline_promotion` ACCEPTED_BASELINE_SHA `480550d80…` |
 | 2026-11-10 | W1-01 | JSON `accepted_baseline_sha` aligned to ladder/on-disk baseline; overlay header §2.3 E-3/P-1 pins; roadmap §5 factual pin line (no CLOSED) — T-IGX-024-B |
+| 2026-11-11 | W3→W4 reconcile | SSOT overlay: W2 TES/EVID pins, E-3 SATISFIED, CI run `42869847981` @ TES; F-W3-002/003; FRZ-AUD remains OPEN — T-IGX-024-B |
+| 2026-11-11 | W4 Batch D | Certifier `PASS_SCOPED` @ `5f178174e…`; W5 operator packet; **STOP** before OD-ENT-08 — T-IGX-024-B |

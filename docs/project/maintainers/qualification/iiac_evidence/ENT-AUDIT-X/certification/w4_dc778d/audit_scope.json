@@ -1,0 +1,39 @@
+{
+  "stage_id": "ENT-AUDIT-X",
+  "session_designation": "W4-CERTIFICATION-DC778D-BATCH-D",
+  "certification_profile": "iiac-v1",
+  "policy_version": "IIAC-2026-11-05.1",
+  "certifier_role": "certification-governance-agent",
+  "assurance_level": "process_enforced",
+  "campaign": "ENT-AUDIT-X W4 certifier (Batch D)",
+  "ticket_anchors": [
+    "governance/tickets/T-IGX-024-B.md"
+  ],
+  "audited_implementation_sha": "32a9633440007eb4e8f00a825bbf2e399192b346",
+  "test_execution_sha": "32a9633440007eb4e8f00a825bbf2e399192b346",
+  "evidence_publication_sha": "481b2cc2c10a407fd2b93cf9c69714e8894aeccf",
+  "w2_normal_freeze_evidence_publication_sha": "bc4b5f61666a8fea638064f50809fff2089b1b8b",
+  "audit_execution_sha": "dc778d125fd7e7205edd30fbbf144ca12320b0ee",
+  "w3_audit_publication_sha": "fd5728955605ef2ec013d69ec9290736f0970419",
+  "accepted_baseline_sha": "480550d80b2515fc8cbd2a0ba6f79d1ee1c44541",
+  "w3_auditor_session_id": "7c58500c-17c9-42a8-acbc-4b0e05487751",
+  "w3_dossier_auditor_session_id": "c8e4a91f-2b6d-4f7e-a3c1-9d5e7f2b4a68",
+  "certifier_session_id": "4380025f-0a4e-43a2-bb90-ead2ce6d0bec",
+  "publication_worktree": "D:/Projekty/_wt/intergrax/w4-closure-dc778d",
+  "in_scope": [
+    "Adopcja opublikowanego pakietu W3 @ w3_dc778d",
+    "verify_iiac_policy_activation --require-in-force",
+    "verify_iiac_audit_manifest + verify_iiac_role_separation na manifeście W3",
+    "Concurrence FRZ-AUD-01..10 i Matrix C / Population E (bez promocji)",
+    "OD-ENT-02 sufficiency (compensating) — werdykt certifiera W4-02"
+  ],
+  "out_of_scope_by_authority": [
+    "Edycja manifestu W3 audytora",
+    "Promocja FRZ-AUD wierszy i ladder",
+    "OD-ENT-08 i CLOSED headline",
+    "Ponowny pełny L3 CLI @ TES w tej sesji",
+    "W4-03 promotion commits"
+  ],
+  "write_surface": "docs/project/maintainers/qualification/iiac_evidence/ENT-AUDIT-X/certification/w4_dc778d/ only",
+  "product_paths_changed_by_certifier": []
+}
