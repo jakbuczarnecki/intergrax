@@ -23,6 +23,8 @@
 
 **MCP-SERVER-X (2026-11-11):** Formal stage closure for platform MCP exposure uses **incremental evidence** against existing FRZ families (e.g. BND, CMP, EXE, SEC, TEN) via campaign matrix MCP-ACC and dossier notes — **not** a new `FRZ-MCP-*` criterion family unless operator separately authorizes OD-MCP-07 path B. Checklist row **count remains 225**; no MCP stage PASS may promote checklist rows without certifier role.
 
+**PDC-X (2026-11-11):** The eight-domain completeness stage (roadmap §3.2) uses Change Delta (§2.A) per batch, Parent Closure (§2.B) at stage closure and a Full Platform run (§2.C) at its global cross-audit, with **incremental evidence** against existing FRZ families — **no** new `FRZ-PDC-*` family; checklist count remains **225**. Whether ECAP needs dedicated domain sections for evaluation (D5) or artifacts (D8) under §16 is decided in PDC-P3.
+
 ---
 
 ## ECAP-§1 — Purpose, Scope and Authority
