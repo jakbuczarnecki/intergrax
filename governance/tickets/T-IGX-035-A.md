@@ -41,4 +41,4 @@ plan_approved
 | Branch | `mcp-server-x-p0` |
 | HEAD @ P0 start | `c228799785db8f35826f47ba0790d6a21d97fbe3` |
 | Worktree note | `development` checked out in `D:/Projekty/_wt/intergrax/ent-freeze-pub`; campaign branch cut from pin-equivalent HEAD in main checkout |
-| ROADMAP_AMENDMENT_SHA | _unset until PR merge_ |
+| ROADMAP_AMENDMENT_SHA | `bd5d04d1a3244ccb9c4464007b147dc54fc0cfd6` (PR #450 merge) |
