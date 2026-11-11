@@ -52,9 +52,10 @@ Supplementary single-suite (ticket parity with P4 contract):
 1. P5 selection batch **PASS** @ recorded `TEST_EXECUTION_SHA`
 2. Security matrix MCP-SERVER-X P5 — zero unclassified mandatory mechanisms
 3. B-P4-TEST-01: PASS with harness-backed evidence wiring OR documented cross-stage blocker
-4. Independent audit **ACCEPT_SCOPED** or **ACCEPT_SCOPED_WITH_GOVERNANCE_FINDING** (separate session)
+4. Independent audit **ACCEPT_SCOPED_WITH_GOVERNANCE_FINDING** (separate session; post-publication @ merge SHA)
 5. CI green on PR to `development`
 6. WBS / gap register / SHA ladder updated
+7. Operator OD-MCP-P5-GOV-01..MEM-01 **APPROVED** @ 2026-11-11T16:24:00+01:00
 
 ## Out of scope
 
@@ -62,11 +63,11 @@ P6 DX/migration, P7 MCP-ACC evidence @ SHA, P8 independent stage close, FRZ PASS
 
 ## Lifecycle state
 
-**awaiting_operator_disposition** — technical acceptance complete; formal `closed` requires **OD-MCP-P5-TICKET-01** (no fabricated signature).
+**closed** — scoped P5 acceptance; **F-MCP-P5-GOV-001 preserved** on record.
 
 ## Governance note (preserved)
 
-PR #456 merged @ `c59892829` **before** independent G6 was recorded. Post-publication G6 @ same SHA: **ACCEPT_SCOPED_WITH_GOVERNANCE_FINDING**. See [`GOVERNANCE_RECONCILIATION.md`](../../docs/project/maintainers/qualification/iiac_evidence/MCP-SERVER-X/p5_g6_closeout/GOVERNANCE_RECONCILIATION.md).
+PR #456 merged @ `c59892829` **before** independent G6 was recorded. Post-publication G6 @ same SHA: **ACCEPT_SCOPED_WITH_GOVERNANCE_FINDING**. Operator **OD-MCP-P5-GOV-01 option A** does **not** retroactively approve pre-merge organizational review. See [`GOVERNANCE_RECONCILIATION.md`](../../docs/project/maintainers/qualification/iiac_evidence/MCP-SERVER-X/p5_g6_closeout/GOVERNANCE_RECONCILIATION.md).
 
 ## Checkpoint
 
@@ -79,7 +80,8 @@ PR #456 merged @ `c59892829` **before** independent G6 was recorded. Post-public
 | TEST_EXECUTION_SHA | `c5989282937f5e592748cb606b2272d04837c601` |
 | G6_AUDIT_EXECUTION_SHA | `c5989282937f5e592748cb606b2272d04837c601` |
 | G6_EVIDENCE_PUBLICATION_SHA | `7fd899aaea873aac6ec9ae3fe6ce5e3ef9ec9c8c` |
+| G6_CLOSEOUT_PUBLICATION_SHA | `9ae3fdbe42831153c42846ca8231e4627973d3e3` (PR #457) |
 | INDEPENDENT_AUDIT | **ACCEPT_SCOPED_WITH_GOVERNANCE_FINDING** |
 | G6 dossier | [`MCP_SERVER_X_P5_INDEPENDENT_AUDIT_DOSSIER.md`](../../docs/project/maintainers/qualification/mcp_server_x/MCP_SERVER_X_P5_INDEPENDENT_AUDIT_DOSSIER.md) |
-| Operator OD | OD-MCP-P5-* **REQUESTED** |
-| P6 handoff | **READY (technical)** pending OD-MCP-P5-P6-01 |
+| Operator OD | **APPROVED** — OD-MCP-P5-GOV-01, TICKET-01, P6-01, MEM-01 @ 2026-11-11T16:24:00+01:00 |
+| P6 handoff | **AUTHORIZED** (OD-MCP-P5-P6-01) |

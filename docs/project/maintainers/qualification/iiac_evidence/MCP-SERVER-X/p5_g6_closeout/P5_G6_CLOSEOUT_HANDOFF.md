@@ -3,7 +3,7 @@
 ## Terminal state (this batch)
 
 ```text
-P5 G6 EVIDENCE PUBLISHED → GOVERNANCE FINDING RECONCILED → OPERATOR OD REQUESTED → P6 READY (technical)
+P5 G6 EVIDENCE PUBLISHED → GOVERNANCE RECONCILED → OPERATOR OD APPROVED → T-IGX-035-F CLOSED → P6 AUTHORIZED
 ```
 
 **Not claimed:** MCP-SERVER-X stage **CLOSED**, IIIC P8, FRZ promotion.
@@ -25,4 +25,8 @@ P5 G6 EVIDENCE PUBLISHED → GOVERNANCE FINDING RECONCILED → OPERATOR OD REQUE
 
 ## Ticket
 
-`T-IGX-035-F` → **`awaiting_operator_disposition`** until OD-MCP-P5-TICKET-01 authorized.
+`T-IGX-035-F` → **`closed`** @ operator **2026-11-11T16:24:00+01:00** (OD-MCP-P5-TICKET-01).
+
+## Closeout publication
+
+PR #457 merge: `9ae3fdbe42831153c42846ca8231e4627973d3e3`

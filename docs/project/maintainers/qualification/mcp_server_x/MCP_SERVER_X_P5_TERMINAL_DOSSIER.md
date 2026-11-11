@@ -2,7 +2,7 @@
 
 **Ticket:** `governance/tickets/T-IGX-035-F.md`  
 **Plan digest:** `5dd3c72e497c72764ccc0c08d3df2dddfdbe19b3f36550ba5d87c4091f9833e7`  
-**Disposition:** **P5 PUBLISHED (scoped) → SECURITY QUALIFIED (scoped) → G6 ACCEPT_SCOPED_WITH_GOVERNANCE_FINDING — operator OD pending**
+**Disposition:** **P5 CLOSED (scoped) → G6 ACCEPT_SCOPED_WITH_GOVERNANCE_FINDING — operator OD APPROVED @ 2026-11-11T16:24:00+01:00**
 
 ## SHA ladder (this batch)
 
@@ -14,6 +14,7 @@
 | TEST_EXECUTION_SHA (independent replay) | `c5989282937f5e592748cb606b2272d04837c601` |
 | G6_AUDIT_EXECUTION_SHA | `c5989282937f5e592748cb606b2272d04837c601` |
 | G6_EVIDENCE_PUBLICATION_SHA | `7fd899aaea873aac6ec9ae3fe6ce5e3ef9ec9c8c` |
+| G6_CLOSEOUT_PUBLICATION_SHA | `9ae3fdbe42831153c42846ca8231e4627973d3e3` (PR #457) |
 | P4_PARENT_PUBLICATION | `7930c256f` |
 
 ## Merge sequencing (preserved fact)
@@ -75,13 +76,12 @@ PR #456 post-merge CI rollup **SUCCESS** (including `governance-fast`, `ent-audi
 
 ## TICKET_LIFECYCLE
 
-`T-IGX-035-F` → **`awaiting_operator_disposition`** (OD-MCP-P5-TICKET-01); technical acceptance complete.
+`T-IGX-035-F` → **`closed`** (scoped) @ operator OD-MCP-P5-TICKET-01 **2026-11-11T16:24:00+01:00**.
 
 ## OPEN_BLOCKERS
 
-1. **Operator OD** — OD-MCP-P5-GOV-01, OD-MCP-P5-TICKET-01, OD-MCP-P5-P6-01, OD-MCP-P5-MEM-01 **REQUESTED**
-2. **LIM-RESEARCH-STRICT-FACTORY-MEMORY** — cross-stage (non-blocking P5)
+1. **LIM-RESEARCH-STRICT-FACTORY-MEMORY** — cross-stage (non-blocking P5/P6 MCP engine; OD-MCP-P5-MEM-01)
 
 ## P6_HANDOFF
 
-**P6 READY (technical)** — operator OD-MCP-P5-P6-01 before sprint entry.
+**P6 ENTERED (authorized)** — OD-MCP-P5-P6-01 on fresh `origin/development` after PR #457.

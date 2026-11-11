@@ -37,6 +37,6 @@
 | P0 | **Complete** |
 | P1 docs / ADR / OD templates | **Complete** (OD unsigned) |
 | P2–P4 engine | **Complete (scoped)** @ P4 terminal `7930c256f` |
-| P5 security / execution qual | **Complete (scoped)** — G6 post-publication @ `c59892829`; [`P5 terminal dossier`](./MCP_SERVER_X_P5_TERMINAL_DOSSIER.md) |
-| P6 | **Ready (technical)** — OD-MCP-P5-P6-01 **REQUESTED** |
+| P5 security / execution qual | **Closed (scoped)** — `T-IGX-035-F` closed; [`P5 terminal dossier`](./MCP_SERVER_X_P5_TERMINAL_DOSSIER.md) · [`operator closure`](./MCP_SERVER_X_P5_OPERATOR_CLOSURE_RECORD.md) |
+| P6 | **Entered** — OD-MCP-P5-P6-01 @ 2026-11-11T16:24:00+01:00 |
 | P7–P8 | **Blocked** (stage not CLOSED) |

@@ -46,9 +46,9 @@ Effective for **future MCP-SERVER-X and product-path merges** to `development`:
 
 | OD ID | Purpose | Status |
 | --- | --- | --- |
-| OD-MCP-P5-GOV-01 | Acknowledge F-MCP-P5-GOV-001/002 + adopt prospective merge gate | **REQUESTED** |
-| OD-MCP-P5-TICKET-01 | Authorize `T-IGX-035-F` `closed` with governance finding on record | **REQUESTED** |
-| OD-MCP-P5-P6-01 | Unblock P6 entry (technical gate satisfied) | **REQUESTED** |
-| OD-MCP-P5-MEM-01 | Accept `LIM-RESEARCH-STRICT-FACTORY-MEMORY` ownership (PROD-Q/MEM) | **REQUESTED** |
+| OD-MCP-P5-GOV-01 | Acknowledge F-MCP-P5-GOV-001/002 + adopt prospective merge gate | **APPROVED — Option A** @ 2026-11-11T16:24:00+01:00 |
+| OD-MCP-P5-TICKET-01 | Authorize `T-IGX-035-F` `closed` with governance finding on record | **APPROVED** @ 2026-11-11T16:24:00+01:00 |
+| OD-MCP-P5-P6-01 | Authorize P6 entry on `origin/development` | **APPROVED** @ 2026-11-11T16:24:00+01:00 |
+| OD-MCP-P5-MEM-01 | Accept `LIM-RESEARCH-STRICT-FACTORY-MEMORY` ownership (PROD-Q/MEM) | **APPROVED** @ 2026-11-11T16:24:00+01:00 |
 
 Templates: [`operator_decisions/OD-MCP-P5-GOV-01.md`](../../mcp_server_x/operator_decisions/OD-MCP-P5-GOV-01.md) (and sibling OD files).
