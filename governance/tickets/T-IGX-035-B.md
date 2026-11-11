@@ -37,13 +37,15 @@ MCP engine implementation (P2–P4), qualification execution (P5–P7), independ
 
 ## Lifecycle state
 
-plan_approved
+closed
 
 ## Checkpoint
 
 | Field | Value |
 | --- | --- |
-| Branch | `mcp-server-x-p1` |
+| Branch | `mcp-server-x-p1` (merged PR #451) |
 | HEAD @ P1 start | `dff940b204d8dc781003bb920290ce91fa8dbe2e` |
 | ROADMAP_AMENDMENT_SHA | `bd5d04d1a3244ccb9c4464007b147dc54fc0cfd6` |
+| P1_PUBLICATION_SHA | `fb7ccd7807b570e4afd75dfcbb4ca2a6188c61ad` |
+| ARCHITECTURE_PREP_PUBLICATION_SHA | `fb7ccd7807b570e4afd75dfcbb4ca2a6188c61ad` |
 | P2 gate | OD-MCP-01..07 **PENDING** |
