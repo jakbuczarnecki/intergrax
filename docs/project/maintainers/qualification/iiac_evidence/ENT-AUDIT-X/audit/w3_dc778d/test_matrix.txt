@@ -1,0 +1,17 @@
+ENT-AUDIT-X W3 Batch A — publication replay @ worktree D:\Projekty\_wt\intergrax\w4-closure-dc778d HEAD dc778d12
+Auditor publication session: 7c58500c-17c9-42a8-acbc-4b0e05487751
+Prior dossier session (adopted): c8e4a91f-2b6d-4f7e-a3c1-9d5e7f2b4a68
+Python: d:\Projekty\intergrax\.venv\Scripts\python.exe --repo D:\Projekty\_wt\intergrax\w4-closure-dc778d
+
+git rev-parse HEAD  -> dc778d125fd7e7205edd30fbbf144ca12320b0ee
+git diff --name-only 32a9633440007eb4e8f00a825bbf2e399192b346 dc778d125fd7e7205edd30fbbf144ca12320b0ee -- intergrax/ agents/ applications/  -> empty
+git merge-base --is-ancestor 32a9633440007eb4e8f00a825bbf2e399192b346 dc778d125fd7e7205edd30fbbf144ca12320b0ee
+git merge-base --is-ancestor 481b2cc2c10a407fd2b93cf9c69714e8894aeccf dc778d125fd7e7205edd30fbbf144ca12320b0ee
+git merge-base --is-ancestor bc4b5f61666a8fea638064f50809fff2089b1b8b dc778d125fd7e7205edd30fbbf144ca12320b0ee
+
+d:\Projekty\intergrax\.venv\Scripts\python.exe scripts/governance/verify_iiac_policy_activation.py --require-in-force
+d:\Projekty\intergrax\.venv\Scripts\python.exe -c "from pathlib import Path; from intergrax.platform.enterprise_audit.validators import verify_b5_publication_tree; root=Path('.').resolve(); q=root/'docs/project/maintainers/qualification/ent_audit_x/b6_independent_handoff/qualification_at_32a9633440007eb4e8f00a825bbf2e399192b346'; print('QUAL', verify_b5_publication_tree(root, q, expected_qualification_sha='32a9633440007eb4e8f00a825bbf2e399192b346'))"
+d:\Projekty\intergrax\.venv\Scripts\python.exe -c "from pathlib import Path; from intergrax.platform.enterprise_audit.validators import verify_b5_publication_tree; root=Path('.').resolve(); f=root/'docs/project/maintainers/qualification/ent_audit_x/b6_independent_handoff/freeze_normal_at_32a9633440007eb4e8f00a825bbf2e399192b346'; print('FREEZE', verify_b5_publication_tree(root, f, expected_qualification_sha='32a9633440007eb4e8f00a825bbf2e399192b346'))"
+
+d:\Projekty\intergrax\.venv\Scripts\python.exe scripts/governance/verify_iiac_audit_manifest.py docs/project/maintainers/qualification/iiac_evidence/ENT-AUDIT-X/audit/w3_dc778d/iiac_audit_session_manifest.ENT-AUDIT-X.w3_dc778d.json --require-handoff-template --repo D:\Projekty\_wt\intergrax\w4-closure-dc778d
+d:\Projekty\intergrax\.venv\Scripts\python.exe scripts/governance/verify_iiac_role_separation.py docs/project/maintainers/qualification/iiac_evidence/ENT-AUDIT-X/audit/w3_dc778d/iiac_audit_session_manifest.ENT-AUDIT-X.w3_dc778d.json --strict-product-diff --repo D:\Projekty\_wt\intergrax\w4-closure-dc778d

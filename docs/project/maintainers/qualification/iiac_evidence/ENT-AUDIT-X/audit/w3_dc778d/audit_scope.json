@@ -1,0 +1,62 @@
+{
+  "stage_id": "ENT-AUDIT-X",
+  "session_designation": "W3-INDEPENDENT-AUDIT-DC778D-BATCH-A",
+  "certification_profile": "iiac-v1",
+  "policy_version": "IIAC-2026-11-05.1",
+  "auditor_role": "independent-quality-auditor",
+  "assurance_level": "process_enforced",
+  "campaign": "ENT-AUDIT-X W3 independent audit (Session D)",
+  "ticket_anchors": [
+    "governance/tickets/T-IGX-024-B.md"
+  ],
+  "audited_implementation_sha": "32a9633440007eb4e8f00a825bbf2e399192b346",
+  "test_execution_sha": "32a9633440007eb4e8f00a825bbf2e399192b346",
+  "evidence_publication_sha": "481b2cc2c10a407fd2b93cf9c69714e8894aeccf",
+  "w2_normal_freeze_evidence_publication_sha": "bc4b5f61666a8fea638064f50809fff2089b1b8b",
+  "audit_execution_sha": "dc778d125fd7e7205edd30fbbf144ca12320b0ee",
+  "accepted_baseline_sha": "480550d80b2515fc8cbd2a0ba6f79d1ee1c44541",
+  "prior_dossier_session_id": "c8e4a91f-2b6d-4f7e-a3c1-9d5e7f2b4a68",
+  "prior_dossier_path": ".tmp/session/ent-w2-audit/ENT_AUDIT_X_W3_INDEPENDENT_AUDIT_DOSSIER.md",
+  "publication_worktree": "D:/Projekty/_wt/intergrax/w4-closure-dc778d",
+  "audit_worktree": "D:/Projekty/_wt/intergrax/w3-audit-dc778d",
+  "scope_lock": {
+    "product_delta_range": "32a9633440007eb4e8f00a825bbf2e399192b346...dc778d125fd7e7205edd30fbbf144ca12320b0ee",
+    "product_paths_intergrax_agents_applications": 0
+  },
+  "b5_trees": {
+    "full": "docs/project/maintainers/qualification/ent_audit_x/b6_independent_handoff/qualification_at_32a9633440007eb4e8f00a825bbf2e399192b346/",
+    "freeze_normal": "docs/project/maintainers/qualification/ent_audit_x/b6_independent_handoff/freeze_normal_at_32a9633440007eb4e8f00a825bbf2e399192b346/"
+  },
+  "ci_runs_cited": {
+    "merge_pr_442": {
+      "run_id": "42869847981",
+      "head_sha": "32a9633440007eb4e8f00a825bbf2e399192b346",
+      "conclusion": "success"
+    },
+    "merge_pr_443": {
+      "run_id": "42891971878",
+      "conclusion": "success"
+    },
+    "merge_pr_444": {
+      "run_id": "42900116078",
+      "conclusion": "success"
+    }
+  },
+  "in_scope": [
+    "Genealogia git i ancestry pinów W2 @ 32a96334…",
+    "B5 qualification_at_32a96334… i freeze_normal_at_32a96334…",
+    "L3 FULL/FREEZE certifying 85/85/0 opublikowane",
+    "IIAC IN_FORCE",
+    "Matrix C / Population E (dossier)",
+    "FRZ-AUD werdykty audytora bez promocji"
+  ],
+  "out_of_scope_by_authority": [
+    "W4 certifier publication i OD-ENT-02 sufficiency",
+    "B6_ACCEPTANCE_PUBLICATION_SHA / ACCEPTED_BASELINE_SHA pin",
+    "OD-ENT-08 CLOSED headline",
+    "Promocja FRZ-AUD-01..10",
+    "Pełny Mode C adversarial replay"
+  ],
+  "write_surface": "docs/project/maintainers/qualification/iiac_evidence/ENT-AUDIT-X/audit/w3_dc778d/ only",
+  "product_paths_changed_by_auditor": []
+}
