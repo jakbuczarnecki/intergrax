@@ -302,3 +302,31 @@ async def test_host_custom_tool_rejects_kwargs_handlers() -> None:
     )
     with pytest.raises(ValueError, match="explicit parameters"):
         compose_mcp_server_from_definition(definition, deps)
+
+
+@pytest.mark.asyncio
+async def test_host_custom_tool_rejects_missing_required_argument() -> None:
+    registry = AgentRegistry()
+    nexus_loop = NexusLoop(registry)
+    host_execution = build_harness_host_task_execution(nexus_loop, orchestration_triggers=frozenset())
+
+    async def alpha_tool(message: str) -> dict[str, object]:
+        return {"message": message}
+
+    definition = build_mcp_server_definition(
+        server_id="srv",
+        display_name="Srv",
+        default_capability="cap",
+        bindings=(McpHostCustomBinding(binding_id="alpha", tool_name="alpha_tool"),),
+    )
+    deps = McpServerCompositionDeps(
+        host_execution=host_execution,
+        registry=registry,
+        custom_host_tools={"alpha_tool": alpha_tool},
+    )
+    mcp = compose_mcp_server_from_definition(definition, deps)
+    from fastmcp import Client
+
+    async with Client(mcp) as client:
+        with pytest.raises(Exception):
+            await client.call_tool("alpha_tool", {})
