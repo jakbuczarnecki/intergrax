@@ -26,7 +26,7 @@
 
 Raw log: [`implementer_f_mcp_act_n11_001_corrective.log`](./implementer_f_mcp_act_n11_001_corrective.log)
 
-`corrective_candidate_sha` — recorded on push after commit (implementer; not auditor PASS).
+**`corrective_candidate_sha`:** `e03092849ce028db275fc6fd4e472babf6421fa4` (implementer; not auditor PASS).
 
 ## Residual (classified separately — not PASS)
 

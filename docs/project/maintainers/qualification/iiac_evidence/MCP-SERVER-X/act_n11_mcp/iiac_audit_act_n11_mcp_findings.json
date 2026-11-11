@@ -25,7 +25,8 @@
       "corrective_task": "Register custom host tools without **kwargs (explicit parameters or FastMCP-supported registration); re-run ticket + canonical execution tests to exit 0.",
       "auditor_verdict_at_audit_execution_sha": "OPEN_BLOCKING",
       "implementer_corrective_disposition": "CORRECTIVE_CANDIDATE_PUBLISHED",
-      "implementer_corrective_evidence": "docs/project/maintainers/qualification/iiac_evidence/MCP-SERVER-X/act_n11_mcp/F_MCP_ACT_N11_001_CORRECTIVE_HANDOFF.md"
+      "implementer_corrective_evidence": "docs/project/maintainers/qualification/iiac_evidence/MCP-SERVER-X/act_n11_mcp/F_MCP_ACT_N11_001_CORRECTIVE_HANDOFF.md",
+      "implementer_corrective_candidate_sha": "e03092849ce028db275fc6fd4e472babf6421fa4"
     }
   ],
   "limitations_carried": [
