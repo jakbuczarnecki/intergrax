@@ -25,7 +25,7 @@
     "LIM-no-closure: does not merge PR #459, promote FRZ, or declare MCP-SERVER-X CLOSED",
     "LIM-prior-audit: P4 PASS_SCOPED manifest under act_n11_mcp/ preserved"
   ],
-  "certification_publication_sha": "2d3eceb6cf7e93dccd4d96919319a6c969b4444b",
+  "certification_publication_sha": "276c64305799fa4d7f1a25018cc1cccf061fbafd",
   "assurance_level": "process_enforced",
   "handoff_record_path": "docs/project/maintainers/qualification/iiac_evidence/MCP-SERVER-X/act_n11_mcp_p6/IIIC_SESSION_HANDOFF_RECORD_ACT_N11_MCP_REAUDIT_P6.md",
   "audit_report_path": "docs/project/maintainers/qualification/iiac_evidence/MCP-SERVER-X/act_n11_mcp_p6/MCP_ACT_N11_INDEPENDENT_REAUDIT_DOSSIER_P6.md",
