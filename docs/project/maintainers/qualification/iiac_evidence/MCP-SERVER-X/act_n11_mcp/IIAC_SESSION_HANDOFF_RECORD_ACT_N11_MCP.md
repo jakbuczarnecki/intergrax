@@ -4,9 +4,10 @@
 |------|-----|
 | `independent-quality-auditor` | Operator · certifier · implementer |
 
-**Verdict:** `PARTIAL_EXACT_BLOCKERS`  
+**Prior verdict:** `PARTIAL_EXACT_BLOCKERS`  
 **Policy:** `IIAC-2026-11-05.1`  
-**Audit execution SHA:** `7c401fd98cf2b42b9b2fd5860485bac34a8c2df3`
+**Prior audit execution SHA:** `7c401fd98cf2b42b9b2fd5860485bac34a8c2df3`  
+**Re-audit target:** `origin/mcp-server-x-p4` HEAD — PR [#455](https://github.com/jakbuczarnecki/intergrax/pull/455) vs `development` @ `7562a069` (see [`CORRECTIVE_PUBLICATION_RECONCILIATION.md`](./CORRECTIVE_PUBLICATION_RECONCILIATION.md))
 
 ## Operator actions
 
@@ -15,8 +16,8 @@
 
 ## Implementer actions
 
-1. Fix custom host tool registration in `mcp_server_engine.py` (no `**kwargs` in FastMCP tool surface).
-2. Re-run ticket test contract + `test_mcp_canonical_execution` research pipeline test.
+1. ~~Fix custom host tool registration~~ **DONE** — `F-MCP-ACT-N11-001` corrective published on PR #455.
+2. Await **new** independent IIIC session; implementer must **not** self-PASS.
 
 ## Certifier actions (after PASS_SCOPED)
 
@@ -26,4 +27,4 @@
 
 ## Forbidden
 
-Implementer self-PASS · merge PR #454 before activation gate green · MCP-SERVER-X CLOSED headline
+Implementer self-PASS · merge PR #455 before activation gate green · re-merge PR #454 · MCP-SERVER-X CLOSED headline
