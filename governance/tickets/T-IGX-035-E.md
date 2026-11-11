@@ -16,7 +16,9 @@ Canonical plan: [`governance/tickets/plans/PLAN_T-IGX-035-A.md`](plans/PLAN_T-IG
 
 ## Approved
 
-_(awaiting operator approval — lifecycle remains `plan_pending` until `Approved:` line is recorded.)_
+Approved: operator-delegate @ 2026-11-11T12:04:00+01:00 | Delegation: MCP-SERVER-X P4 MERGE directive (operator chat 2026-11-11)
+
+Disposition: **ACCEPT_SCOPED** — P4 lifecycle, fingerprint, eight app facades; P5 qualification next.
 
 ## Test contract
 
@@ -37,7 +39,7 @@ P5–P8 qualification/IIAC/FRZ PASS; Resources/Prompts; stdio/SSE transport; sta
 
 ## Lifecycle state
 
-plan_pending
+plan_approved
 
 ## Checkpoint
 
