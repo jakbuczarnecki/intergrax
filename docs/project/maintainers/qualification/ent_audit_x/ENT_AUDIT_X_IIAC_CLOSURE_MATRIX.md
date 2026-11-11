@@ -54,7 +54,7 @@ Statuses: `QUALIFIED` · `CLOSED` · `OPEN` · `BLOCKED` · `UNVERIFIED`. `Aud` 
 
 | ID | Item | Status | Gate |
 |---|---|---|---|
-| E-1 | IIAC independent audit: session manifest, handoff record, report, findings, pass record | **PARTIAL** (W3 dossier `PASS_SCOPED` @ `c8e4a91f…`; tracked publication pending @ `dc778d12…`) | W3 pub · Aud |
+| E-1 | IIAC independent audit: session manifest, handoff record, report, findings, pass record | **SATISFIED** (W3 pub `fd5728955…` @ `dc778d12…`; prior dossier `c8e4a91f…` adopted) | W4 certifier |
 | E-2 | Accepted-baseline manifest (OD-ENT-01) | **SATISFIED** | `ENTERPRISE_AUDIT_BASELINE.json` @ W3-02; independent replay W4 |
 | E-3 | Certifying FREEZE vs the accepted baseline | **SATISFIED** | `freeze_normal_at_32a963344…` + W3 independent audit Mode A/B @ TES′ |
 | E-4 | FRZ-AUD-01..10 per-row evidence and promotion | OPEN (evidence @ TES′; **promotion blocked** until W4 certifier) | W4 · Cert |
