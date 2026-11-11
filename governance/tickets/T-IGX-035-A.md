@@ -10,13 +10,13 @@ Batch **MCP-P0** only: program SSOT amendment inserting **`MCP-SERVER-X`** betwe
 
 ## Plan digest
 
-Plan digest: `5dd3c72e497c72764ccc0c08d3df2dddfdbe19b3f36550ba5d87c4091f9833e7`
+Plan digest: 5dd3c72e497c72764ccc0c08d3df2dddfdbe19b3f36550ba5d87c4091f9833e7
 
-(Canonical plan: Cursor plan `mcp-server-x_master_12238199`; campaign terminal goal and WBS MCP-P0..P8.)
+Canonical plan: [`governance/tickets/plans/PLAN_T-IGX-035-A.md`](plans/PLAN_T-IGX-035-A.md) (operator-approved digest; Cursor source `mcp-server-x_master_12238199`).
 
 ## Approved
 
-_Awaiting operator approval line — implementer must not write `Approved:`._
+Approved: operator @ 2026-11-11T09:25:00+01:00
 
 ## Test contract
 
@@ -32,7 +32,7 @@ MCP engine/modules (P2–P4), qualification tests (P5–P7), independent audit/I
 
 ## Lifecycle state
 
-plan_pending
+plan_approved
 
 ## Checkpoint
 
