@@ -2,6 +2,8 @@
 
 Each row: requirement → owner → gap → risk → task → test level → FRZ/ECAP touch (incremental evidence only; **no new FRZ IDs** on default path).
 
+**P1 links:** architecture [`MCP_SERVER_X_ARCHITECTURE_AND_OWNERSHIP.md`](./MCP_SERVER_X_ARCHITECTURE_AND_OWNERSHIP.md); contract/protocol [`MCP_SERVER_X_CONTRACT_AND_PROTOCOL_MATRIX.md`](./MCP_SERVER_X_CONTRACT_AND_PROTOCOL_MATRIX.md); ADR-MCP-01..07 map gaps to decisions — closure remains P2–P7.
+
 ## Protocol / transport
 
 | REQ-ID | Owner | Gap | Risk | TASK | TEST | FRZ/ECAP |

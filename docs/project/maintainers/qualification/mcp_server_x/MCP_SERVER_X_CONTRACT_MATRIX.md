@@ -1,6 +1,6 @@
-# MCP-SERVER-X — contract matrix (planned)
+# MCP-SERVER-X — contract matrix (redirect)
 
-**Status:** scaffold — populated during P2/P4 after OD-MCP-05.
+**Status:** superseded @ P1 — use [`MCP_SERVER_X_CONTRACT_AND_PROTOCOL_MATRIX.md`](./MCP_SERVER_X_CONTRACT_AND_PROTOCOL_MATRIX.md).
 
 | Surface | Version | Owner module | Fingerprint | COMPAT inventory |
 | --- | --- | --- | --- | --- |
