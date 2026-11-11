@@ -1,0 +1,6 @@
+ACT-N11 MCP independent audit @ 2026-11-11
+Command: .venv/Scripts/python.exe -m scripts.governance.verify_iiac_policy_activation --require-in-force
+Repo: PR #454 / mcp-server-x-p4 @ 7c401fd98cf2b42b9b2fd5860485bac34a8c2df3
+Prior audit_execution_sha: 11ac8ad85f62a6925d25ea840c92d5c6a936cfe4
+Result: FAIL exit 1 — 16× ACT-N11 (MCP P2–P4 product paths)
+Expected until Operator IIIC activation + two-phase IIAC_POLICY_ACTIVATION_RECORD.json update.

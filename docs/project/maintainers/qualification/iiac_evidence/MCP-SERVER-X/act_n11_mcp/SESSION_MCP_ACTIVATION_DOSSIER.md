@@ -1,6 +1,6 @@
 # ACT-N11 MCP — Operator activation dossier
 
-**Status:** **F-MCP-ACT-N11-001 CORRECTIVE CANDIDATE ON PR #454** — prior audit **PARTIAL_EXACT_BLOCKERS** preserved; **new independent IIIC re-audit REQUIRED** (no self-PASS).  
+**Status:** **F-MCP-ACT-N11-001 corrective candidate** @ `27e19f1f` on follow-on PR to `development` — PR #454 **merged without fix**; prior audit **PARTIAL_EXACT_BLOCKERS** preserved; **new independent IIIC re-audit REQUIRED** (no self-PASS). See [`CORRECTIVE_PUBLICATION_RECONCILIATION.md`](./CORRECTIVE_PUBLICATION_RECONCILIATION.md).  
 **Policy:** `IIAC-2026-11-05.1`  
 **Decision (required):** `D-MCP-IIIC-01=a`  
 **Ticket:** `governance/tickets/T-IGX-035-E.md`  
@@ -25,7 +25,9 @@
 | --- | --- |
 | Prior `audit_execution_sha` | `11ac8ad85f62a6925d25ea840c92d5c6a936cfe4` |
 | `origin/development` (P2/P3 Δ only) | `7172f294fdd44fe35024ba60378fb9f4e0125963` |
-| PR #454 head (P2–P4 full Δ) | `7c401fd98cf2b42b9b2fd5860485bac34a8c2df3` |
+| `origin/development` post–PR #454 merge | `7562a0692d7f33ce4423baf76988ced008e870fa` |
+| Corrective candidate (F-MCP-ACT-N11-001) | `27e19f1feb31522c3103e6fce6f15a8c9395f380` |
+| PR #454 tip @ merge (no product fix) | `7c401fd98cf2b42b9b2fd5860485bac34a8c2df3` |
 | P4 product anchor | `a21a6629a6f8aa25519d4e25ac0004b38426669b` |
 
 Scope manifest: [`audit_scope.json`](./audit_scope.json)
@@ -54,4 +56,4 @@ Approved IIAC policy activation IIAC-2026-11-05.1: operator @ ________________
 .venv/Scripts/python.exe -m scripts.governance.verify_iiac_policy_activation --require-in-force
 ```
 
-Expected: exit **0** on merge target; `governance-fast` **SUCCESS** on PR #454.
+Expected: exit **0** on merge target **after** Operator activation; until then `governance-fast` ACT-N11 **FAIL** is expected on corrective PR (same as #454 rollup).

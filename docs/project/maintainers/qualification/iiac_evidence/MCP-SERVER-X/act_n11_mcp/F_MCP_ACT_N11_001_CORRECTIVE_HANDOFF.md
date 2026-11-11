@@ -5,7 +5,7 @@
 | Finding | `F-MCP-ACT-N11-001` |
 | Ticket | `governance/tickets/T-IGX-035-E.md` |
 | Branch | `mcp-server-x-p4` |
-| PR | `#454` |
+| PR | **New corrective PR** vs `origin/development` @ `7562a069` (PR #454 **merged** — see [`CORRECTIVE_PUBLICATION_RECONCILIATION.md`](./CORRECTIVE_PUBLICATION_RECONCILIATION.md)) |
 | Prior audit verdict | `PARTIAL_EXACT_BLOCKERS` @ `7c401fd98` |
 | Corrective scope | `intergrax/applications/_shared/mcp_server_engine.py` — `host_custom` FastMCP registration only |
 
@@ -26,7 +26,7 @@
 
 Raw log: [`implementer_f_mcp_act_n11_001_corrective.log`](./implementer_f_mcp_act_n11_001_corrective.log)
 
-**`corrective_candidate_sha`:** `e03092849ce028db275fc6fd4e472babf6421fa4` (implementer; not auditor PASS).
+**`corrective_candidate_sha`:** `27e19f1feb31522c3103e6fce6f15a8c9395f380` (implementer; not auditor PASS).
 
 ## Residual (classified separately — not PASS)
 

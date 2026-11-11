@@ -1,0 +1,16 @@
+MCP-SERVER-X / ACT-N11 MCP / IIIC evidence manifest (auditor publication)
+audit_execution_sha: 7c401fd98cf2b42b9b2fd5860485bac34a8c2df3
+publication_state: working_tree (awaiting publisher commit on mcp-server-x-p4)
+
+Files:
+  audit_scope.json
+  iiac_audit_session_manifest.MCP-SERVER-X.act_n11_mcp.json
+  MCP_ACT_N11_INDEPENDENT_AUDIT_DOSSIER.md
+  iiac_audit_act_n11_mcp_findings.json
+  test_matrix.txt
+  IIAC_SESSION_HANDOFF_RECORD_ACT_N11_MCP.md
+  auditor_verify_iiac_require_in_force_baseline.log
+  auditor_mcp_ticket_test_contract.log
+  auditor_mcp_adversarial_tests.log
+  implementer_verify_iiac_baseline.log (prior batch)
+  EVIDENCE_MANIFEST.txt
