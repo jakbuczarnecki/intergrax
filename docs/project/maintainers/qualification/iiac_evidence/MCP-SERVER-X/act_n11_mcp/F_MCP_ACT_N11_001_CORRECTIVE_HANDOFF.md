@@ -26,7 +26,7 @@
 
 Raw log: [`implementer_f_mcp_act_n11_001_corrective.log`](./implementer_f_mcp_act_n11_001_corrective.log)
 
-**`corrective_candidate_sha`:** `c699889b0` (publication HEAD; implementer; not auditor PASS).
+**`corrective_candidate_sha`:** `0320df94f00458b724445902051d7b51b610f57b` (publication HEAD; implementer; not auditor PASS).
 
 ## Residual (classified separately — not PASS)
 

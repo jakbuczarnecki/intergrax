@@ -8,7 +8,8 @@
 | PR #454 branch tip @ merge | `7c401fd98cf2b42b9b2fd5860485bac34a8c2df3` (ACT-N11 governance evidence only) |
 | `origin/development` HEAD | `7562a0692d7f33ce4423baf76988ced008e870fa` |
 | Corrective branch | `mcp-server-x-p4` |
-| **`corrective_candidate_sha`** | `c699889b0` (publication HEAD; product fix @ `27e19f1f`) |
+| **`corrective_candidate_sha`** | `0320df94f00458b724445902051d7b51b610f57b` (publication HEAD; product fix @ `27e19f1f`) |
+| Corrective PR | [#455](https://github.com/jakbuczarnecki/intergrax/pull/455) |
 
 ## What merged vs what did not
 
