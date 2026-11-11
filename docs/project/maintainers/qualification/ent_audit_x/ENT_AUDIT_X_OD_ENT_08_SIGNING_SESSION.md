@@ -6,7 +6,7 @@
 | Decision ID | **OD-ENT-08** |
 | Policy | `IIAC-2026-11-05.1` (`IN_FORCE`) |
 | Ticket | `governance/tickets/T-IGX-024-B.md` |
-| Status | **UNSIGNED** — dedicated session envelope only; **no** `Approved OD-ENT-08` on file |
+| Status | **RECORDED** — `ENT_AUDIT_X_OD_ENT_08_DECISION_RECORD.md` @ `2026-11-11T07:20:00Z` |
 | Assurance | `process_enforced` |
 
 ## 1. Session dedication

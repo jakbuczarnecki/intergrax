@@ -343,9 +343,13 @@ def _check_roadmap(repo: Path, gate: str, errors: list[str]) -> None:
 
 
 def _check_ordering(repo: Path, ladder_text: str, errors: list[str]) -> None:
-    """EBH-7: the pass record is published in an earlier commit than the first CLOSED headline."""
+    """EBH-7: the pass record is published in an earlier commit than the formal closure headline commit."""
     pass_commit = _oldest_commit(repo, "--diff-filter=A", "--", _PASS_RECORD.as_posix())
-    headline_commit = _oldest_commit(repo, f"-S{HEADLINE}", "--", _ROADMAP.as_posix())
+    # Use FORMAL_CLOSURE_PUBLICATION_SHA (closure phase 1), not the oldest -S match: roadmap may cite the
+    # IIAC target string as prose years before the status-column CLOSED publication (ENT Session A).
+    headline_commit = ladder_pin(ladder_text, "FORMAL_CLOSURE_PUBLICATION_SHA")
+    if headline_commit is None:
+        headline_commit = _oldest_commit(repo, f"-S{HEADLINE}", "--", _ROADMAP.as_posix())
     if pass_commit is None or headline_commit is None:
         errors.append("cannot order the IIAC pass record before the roadmap closure headline (history missing)")
         return

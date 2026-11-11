@@ -1,7 +1,7 @@
 # ENT-AUDIT-X — W5 operator decision packet (final, pre–OD-ENT-08)
 
-**Status:** `W4-03 MERGED — GATE A PASS @ development HEAD — AWAITING OD-ENT-08`  
-**ENT-AUDIT-X is NOT closed.** `FORMAL_CLOSURE_PUBLICATION_SHA` unset. **No OD-ENT-08 on file.**  
+**Status:** `OD-ENT-08 RECORDED — W5 closure phase 1 published`  
+**ENT-AUDIT-X formal closure:** IIAC PASS_SCOPED — roadmap headline published; `FORMAL_CLOSURE_PUBLICATION_SHA` pinned in W5 phase 2.  
 **Campaign:** `ENT-AUDIT-X-FORMAL-CERTIFICATION-AND-CLOSURE` · **Ticket:** `governance/tickets/T-IGX-024-B.md`  
 **Prepared:** 2026-11-11 (post PR #447 merge; Gate A replay on `93f4b3278…`)  
 **Signing session:** `ent-sign-w5-od-08-2026-11-11` · [`ENT_AUDIT_X_OD_ENT_08_SIGNING_SESSION.md`](./ENT_AUDIT_X_OD_ENT_08_SIGNING_SESSION.md)

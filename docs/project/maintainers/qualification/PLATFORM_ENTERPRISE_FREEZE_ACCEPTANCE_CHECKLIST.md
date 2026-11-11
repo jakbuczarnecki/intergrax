@@ -310,7 +310,7 @@ Criteria default to OPEN. Historical closure may be noted under **Evidence / his
 | FRZ-FRZ-08 | Freeze mechanics | composition manifest frozen | ARCH-FREEZE | OPEN | — |
 | FRZ-FRZ-09 | Freeze mechanics | non-blocking debt register frozen | ARCH-FREEZE | OPEN | — |
 | FRZ-FRZ-10 | Freeze mechanics | post-freeze change policy active | ARCH-FREEZE | OPEN | — |
-| FRZ-FRZ-11 | Freeze mechanics | ENT-AUDIT-X independently CLOSED | ARCH-FREEZE | OPEN | — |
+| FRZ-FRZ-11 | Freeze mechanics | ENT-AUDIT-X independently CLOSED | ARCH-FREEZE | PASS — SCOPED | OD-ENT-08 @ IIAC PASS_SCOPED; `FORMAL_CLOSURE_PUBLICATION_SHA` pinned W5-02 |
 | FRZ-FRZ-12 | Freeze mechanics | full enterprise audit green on exact freeze SHA | ARCH-FREEZE | OPEN | — |
 | FRZ-FRZ-13 | Freeze mechanics | canonical post-freeze audit baseline recorded | ARCH-FREEZE | OPEN | — |
 | FRZ-AUD-01 | Continuous enterprise audit | full-platform enterprise audit runner exists | ENT-AUDIT-X | PASS | W4-03 @ TES′ `32a96334…`; W3/W4 `PASS_SCOPED` |

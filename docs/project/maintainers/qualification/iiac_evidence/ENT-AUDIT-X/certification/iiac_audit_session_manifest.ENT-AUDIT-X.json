@@ -21,7 +21,7 @@
     "LIM-w3-w4-chain: canonical manifest binds W3 audit evidence @ w3_dc778d and W4 certifier @ w4_dc778d",
     "LIM-SCOPED: F-W3-001 FREEZE B5 directory prefix; OPEN-BP-01 live protection debt",
     "LIM-OD-ENT-02: compensating route SUFFICIENT_COMPENSATING_SCOPED; not LIVE equivalence",
-    "LIM-no-closure: no OD-ENT-08, no FORMAL_CLOSURE_PUBLICATION_SHA, no roadmap CLOSED headline",
+    "LIM-no-arch-freeze: OD-ENT-08 authorises ENT stage closure only; ARCH-FREEZE not CLOSED",
     "LIM-pass-scoped: FRZ-AUD-01..09 PASS; FRZ-AUD-10 PASS — COMPENSATING (SCOPED) per IIAC protocol"
   ],
   "certification_publication_sha": "5f178174e2462b038d544b61192a666d5b0ca79f",
