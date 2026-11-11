@@ -56,7 +56,7 @@ P7 MCP-ACC exact-SHA package @ publication, P8 IIIC stage close, FRZ PASS, stdio
 
 ## Lifecycle state
 
-**in_progress**
+**quality_gate**
 
 ## Checkpoint
 
@@ -66,4 +66,10 @@ P7 MCP-ACC exact-SHA package @ publication, P8 IIIC stage close, FRZ PASS, stdio
 | P6 entry OD | OD-MCP-P5-P6-01 APPROVED @ 2026-11-11T16:24:00+01:00 |
 | PARENT publication | P5 `c59892829` |
 | P6_BASELINE_SHA | `e48106740a4a243204cadccb6a85db9a8710d6af` |
-| LOCAL_TEST_EXECUTION | P6 batch **PASS** (consolidated pytest on branch; SHA unpublished until merge) |
+| P6_IMPLEMENTATION_SHA | `5ff8606b089828b334ebac133518ba47c9f6f7ce` |
+| PR | #459 → `development` |
+| LOCAL_TEST_EXECUTION | P6 batch **PASS** @ `5ff8606b0` |
+| `igx_gov ticket` | **PASS** @ `5ff8606b0` |
+| CI | `ci-smoke` **PASS**; `governance-fast` **FAIL** (ACT-N11 — `MCP_SERVER_X_P6_ACT_N11_TRIGGER.md`) |
+| G6 | **PENDING** — `MCP_SERVER_X_P6_G6_AUDIT_HANDOFF.md` |
+| ACT-N11 | **TRIGGERED** — IIIC P6 rebind required before merge |
