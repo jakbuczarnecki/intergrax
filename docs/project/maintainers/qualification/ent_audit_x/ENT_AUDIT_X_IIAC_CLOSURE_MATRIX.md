@@ -58,7 +58,7 @@ Statuses: `QUALIFIED` · `CLOSED` · `OPEN` · `BLOCKED` · `UNVERIFIED`. `Aud` 
 | E-2 | Accepted-baseline manifest (OD-ENT-01) | **SATISFIED** | `ENTERPRISE_AUDIT_BASELINE.json` @ W3-02; independent replay W4 |
 | E-3 | Certifying FREEZE vs the accepted baseline | **SATISFIED** | `freeze_normal_at_32a963344…` + W3 independent audit Mode A/B @ TES′ |
 | E-4 | FRZ-AUD-01..10 per-row evidence and promotion | OPEN (evidence @ TES′; **promotion blocked** until W4 certifier) | W4 · Cert |
-| E-5 | OD-ENT-02 compensating-control package refreshed and independently accepted | PARTIAL | OD recorded; **Aud** sufficiency W4-02 |
+| E-5 | OD-ENT-02 compensating-control package refreshed and independently accepted | **SATISFIED (SCOPED)** | Certifier `SUFFICIENT_COMPENSATING_SCOPED` @ W4 pub `5f178174e…`; OPEN-BP-01 carried |
 | E-6 | OD-ENT-00 (accept EVOL formal status) | RECORDED | W3-01 done; BLK-ROADMAP-ENT-DEP satisfied at record |
 | E-7 | OD-ENT-08 (formal closure authorisation) | BLOCKED by E-1..E-5 | W5 · OD |
 | P-1 | `B6_ACCEPTANCE_PUBLICATION_SHA` | `add6a6ce2015ebaa4bc38b7fadf3936f100a1522` (phase-1 evidence publication) | W2 adds FRZ/current-SHA evidence |
@@ -116,3 +116,4 @@ Superseded by this overlay (status columns only, not edited): master plan Matrix
 | 2026-11-09 | W3-02 | OD-ENT-01 delegated record + `iiac_baseline_promotion` ACCEPTED_BASELINE_SHA `480550d80…` |
 | 2026-11-10 | W1-01 | JSON `accepted_baseline_sha` aligned to ladder/on-disk baseline; overlay header §2.3 E-3/P-1 pins; roadmap §5 factual pin line (no CLOSED) — T-IGX-024-B |
 | 2026-11-11 | W3→W4 reconcile | SSOT overlay: W2 TES/EVID pins, E-3 SATISFIED, CI run `42869847981` @ TES; F-W3-002/003; FRZ-AUD remains OPEN — T-IGX-024-B |
+| 2026-11-11 | W4 Batch D | Certifier `PASS_SCOPED` @ `5f178174e…`; W5 operator packet; **STOP** before OD-ENT-08 — T-IGX-024-B |

@@ -68,6 +68,7 @@
 | EVIDENCE_PUBLICATION_SHA | `481b2cc2c10a407fd2b93cf9c69714e8894aeccf` | B5 `qualification_at_32a9633440007eb4e8f00a825bbf2e399192b346` (strict `verify_b5_publication_tree`) — W2 closure T-IGX-024-B |
 | W3_INDEPENDENT_AUDIT_EXECUTION_SHA | `dc778d125fd7e7205edd30fbbf144ca12320b0ee` | W3 Session D dossier `PASS_SCOPED` @ auditor `c8e4a91f-2b6d-4f7e-a3c1-9d5e7f2b4a68` |
 | W3_INDEPENDENT_AUDIT_PUBLICATION_SHA | `fd5728955605ef2ec013d69ec9290736f0970419` | IIAC manifest + pass record under `iiac_evidence/ENT-AUDIT-X/audit/w3_dc778d/` (Batch A) @ auditor `7c58500c…` |
+| W4_INDEPENDENT_CERTIFICATION_PUBLICATION_SHA | `5f178174e2462b038d544b61192a666d5b0ca79f` | W4 Batch D certifier `PASS_SCOPED` @ `certification/w4_dc778d/`; certifier `4380025f…` |
 
 ## Lineage rules
 
