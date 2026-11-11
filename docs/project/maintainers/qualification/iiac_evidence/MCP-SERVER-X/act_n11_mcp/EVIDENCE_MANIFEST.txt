@@ -1,9 +1,7 @@
-MCP-SERVER-X / ACT-N11 MCP / IIIC evidence manifest (auditor publication)
-audit_execution_sha: 7c401fd98cf2b42b9b2fd5860485bac34a8c2df3
-publication_state: working_tree (awaiting publisher commit on mcp-server-x-p4)
+MCP-SERVER-X / ACT-N11 MCP / IIIC evidence manifest
 
-Files:
-  audit_scope.json
+Historical partial audit (preserved — do not delete):
+  audit_execution_sha: 7c401fd98cf2b42b9b2fd5860485bac34a8c2df3
   iiac_audit_session_manifest.MCP-SERVER-X.act_n11_mcp.json
   MCP_ACT_N11_INDEPENDENT_AUDIT_DOSSIER.md
   iiac_audit_act_n11_mcp_findings.json
@@ -12,5 +10,23 @@ Files:
   auditor_verify_iiac_require_in_force_baseline.log
   auditor_mcp_ticket_test_contract.log
   auditor_mcp_adversarial_tests.log
-  implementer_verify_iiac_baseline.log (prior batch)
-  EVIDENCE_MANIFEST.txt
+
+P4 corrective re-audit (PASS_SCOPED — independent auditor f7c3b2a1-5d4e-4f8a-9c62-2b1e0d9f8a7c):
+  iiac_audit_session_manifest.MCP-SERVER-X.act_n11_mcp.reaudit_p4.json
+  MCP_ACT_N11_INDEPENDENT_REAUDIT_DOSSIER_P4.md
+  iiac_audit_act_n11_mcp_findings_reaudit_p4.json
+  test_matrix_reaudit_p4.txt
+  IIIC_SESSION_HANDOFF_RECORD_ACT_N11_MCP_REAUDIT_P4.md
+  auditor_mcp_reaudit_p4_ticket_test_contract.log
+  auditor_mcp_reaudit_adversarial_tests.log
+  auditor_reaudit_verify_iiac_require_in_force_baseline.log
+  auditor_reaudit_verify_iiac_audit_manifest.log
+  auditor_reaudit_verify_iiac_role_separation.log
+  MCP_ACT_N11_CERTIFIER_PREFLIGHT_REPORT_P4.md (certifier preflight)
+  certifier_reaudit_preflight_manifest.log
+  certifier_reaudit_preflight_role_separation.log
+
+Shared scope:
+  audit_scope.json
+
+publication_state: pending publisher commit
