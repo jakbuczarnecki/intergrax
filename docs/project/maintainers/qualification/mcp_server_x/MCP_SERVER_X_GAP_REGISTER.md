@@ -51,7 +51,7 @@ Each row: requirement → owner → gap → risk → task → test level → FRZ
 | REQ-MCP-O-01 | Lifespan | No separate MCP readiness probe | Low | DEFERRED unless host pattern exists | — | — |
 | REQ-MCP-O-02 | Engine bounds | Result bound partial; concurrent session cap missing | Medium | MCP-P3-06 | L2 | REL incremental |
 | REQ-MCP-OBS-01 | Trace | No single MCP invocation id on execution event | Medium | MCP-P5-07 | L2 | TRC incremental |
-| REQ-MCP-DX-01 | Public API | No “define server and publish” developer API | High | MCP-P6-01 | L1 import | DOC incremental |
+| REQ-MCP-DX-01 | Public API | Consolidated `mcp_developer_api` + guide @ P6 | High — **addressed in P6 batch** | MCP-P6-01 | L1 import | DOC incremental |
 
 ## Qualification
 

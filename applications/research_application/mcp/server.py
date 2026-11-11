@@ -7,9 +7,9 @@ from __future__ import annotations
 from fastmcp import FastMCP
 from intergrax.applications._shared.mcp_application_server import (
     compose_application_mcp_server,
+    execute_mcp_agent_task,
     research_pipeline_binding,
 )
-from intergrax.applications._shared.mcp_nexus_server import execute_mcp_agent_task
 from intergrax.runtime.execution.host_task import HostTaskExecutionPort
 from intergrax.runtime.registry.agent_registry_read import AgentRegistryRead
 

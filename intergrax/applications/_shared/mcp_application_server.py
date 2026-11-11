@@ -10,7 +10,10 @@ from collections.abc import Awaitable, Callable, Mapping, Sequence
 from fastmcp import FastMCP
 
 from intergrax.agents.tool_enablement import ToolEnablementProfile
-from intergrax.applications._shared.mcp_nexus_server import legacy_server_id_from_display_name
+from intergrax.applications._shared.mcp_nexus_server import (
+    execute_mcp_agent_task,
+    legacy_server_id_from_display_name,
+)
 from intergrax.applications._shared.mcp_server_engine import (
     McpServerCompositionDeps,
     compose_mcp_server_from_definition,
@@ -111,5 +114,6 @@ def research_pipeline_binding() -> McpHostCustomBinding:
 
 __all__ = [
     "compose_application_mcp_server",
+    "execute_mcp_agent_task",
     "research_pipeline_binding",
 ]
