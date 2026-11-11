@@ -3,8 +3,8 @@
 | Field | Value |
 | --- | --- |
 | **Decision ID** | OD-MCP-P5-P6-01 |
-| **Status** | **REQUESTED — awaiting operator authorization** |
-| **Depends on** | P5 technical acceptance @ `c59892829`; WBS P5 complete |
+| **Status** | **APPROVED** |
+| **Development pin** | `origin/development` @ post–PR #457 (`9ae3fdbe42831153c42846ca8231e4627973d3e3` or successor) |
 
 ## Question
 
@@ -13,6 +13,6 @@ Authorize **planning/entry** for MCP-P6-01..04 (DX / migration) on `development`
 ## Operator record
 
 ```text
-Authorized: __________ @ __________
-P6 entry: authorized / deferred
+Authorized: operator @ 2026-11-11T16:24:00+01:00
+P6 entry: authorized — fresh origin/development after P5 G6 closeout publication
 ```
