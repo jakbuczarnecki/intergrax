@@ -19,7 +19,7 @@
 | P4_PUBLICATION_SHA | `48181df7f99a0f9840e699dd774532672d4ffff3` | PR #455 merge @ `origin/development` |
 | P4_TERMINAL_PUBLICATION_SHA | `7930c256fdbe6bb878d9493670361d3cbe4b07bb` | P4 terminal report + ladder (`7930c256f`) |
 | P5_BASELINE_SHA | `7930c256fdbe6bb878d9493670361d3cbe4b07bb` | T-IGX-035-F cut @ `origin/development` |
-| P5_IMPLEMENTATION_SHA | _pending merge_ | T-IGX-035-F batch |
+| P5_IMPLEMENTATION_SHA | `8b153422ec1e526c588b7144e934d268055a6df8` | T-IGX-035-F batch (branch `mcp-server-x-p5`) |
 | FINAL_REMOTE_HEAD | `7930c256fdbe6bb878d9493670361d3cbe4b07bb` | Pre–P5 merge `origin/development` |
 | IMPLEMENTATION_SHA | `27e19f1feb31522c3103e6fce6f15a8c9395f380` | P4 + corrective product pin |
 | TEST_EXECUTION_SHA | _unset_ | P7 qualification |

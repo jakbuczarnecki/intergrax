@@ -9,8 +9,8 @@
 | Field | Value |
 | --- | --- |
 | BASELINE_SHA | `7930c256fdbe6bb878d9493670361d3cbe4b07bb` |
-| IMPLEMENTATION_SHA | _record at commit_ |
-| TEST_EXECUTION_SHA | _same as IMPLEMENTATION_SHA @ local qual run_ |
+| IMPLEMENTATION_SHA | `8b153422ec1e526c588b7144e934d268055a6df8` |
+| TEST_EXECUTION_SHA | `8b153422ec1e526c588b7144e934d268055a6df8` |
 | P4_PARENT_PUBLICATION | `7930c256f` (`origin/development` @ P5 cut) |
 
 ## PRODUCT_CHANGE_INVENTORY
