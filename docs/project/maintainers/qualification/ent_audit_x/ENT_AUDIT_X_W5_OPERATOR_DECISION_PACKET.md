@@ -17,7 +17,7 @@
 | W3_INDEPENDENT_AUDIT_PUBLICATION_SHA | `fd5728955605ef2ec013d69ec9290736f0970419` |
 | W4_INDEPENDENT_CERTIFICATION_PUBLICATION_SHA | `5f178174e2462b038d544b61192a666d5b0ca79f` |
 | B6_ACCEPTANCE_PUBLICATION_SHA (phase-1) | `add6a6ce2015ebaa4bc38b7fadf3936f100a1522` |
-| W4_03_FRZ_PROMOTION_PUBLICATION_SHA | pinned on W4-03 promotion commit |
+| W4_03_FRZ_PROMOTION_PUBLICATION_SHA | `24bc86834f25e6f5914017accf84158111ae0ac5` |
 | FORMAL_CLOSURE_PUBLICATION_SHA | *unset* |
 
 ## 2. Independent session identities
@@ -63,7 +63,7 @@
 
 ## 7. Operator actions required
 
-1. Run / confirm **Gate A** green on promoted HEAD (`ent_audit_x_formal_closure_preflight.py --gate A`).  
+1. Confirm **Gate A** green @ W4-03 pin `24bc86834…` (`ent_audit_x_formal_closure_preflight.py --gate A` → **PASS** on certifier replay).  
 2. Record **`Approved OD-ENT-08: …`** in a dedicated signing session (non-delegable closure authorisation per plan).  
 3. Only then authorize W5 closure phase 1/2 (roadmap, terminal dossier, Gate B).
 
