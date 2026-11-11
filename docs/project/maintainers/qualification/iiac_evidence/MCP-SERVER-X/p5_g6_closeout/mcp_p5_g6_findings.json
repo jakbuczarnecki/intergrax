@@ -1,0 +1,39 @@
+{
+  "stage_id": "MCP-SERVER-X",
+  "wave": "P5",
+  "ticket": "T-IGX-035-F",
+  "audit_execution_sha": "c5989282937f5e592748cb606b2272d04837c601",
+  "implementation_sha": "8b153422ec1e526c588b7144e934d268055a6df8",
+  "product_publication_sha": "c5989282937f5e592748cb606b2272d04837c601",
+  "independent_acceptance_timing": "post_merge",
+  "verdict": "ACCEPT_SCOPED_WITH_GOVERNANCE_FINDING",
+  "findings": [
+    {
+      "id": "F-MCP-P5-GOV-001",
+      "severity": "CRITICAL",
+      "domain": "governance",
+      "summary": "PR #456 merged before independent G6 acceptance was recorded on ticket/dossier.",
+      "remediation": "Post-publication G6 audit @ MERGE_SHA; prospective merge gate (OD-MCP-P5-GOV-01)."
+    },
+    {
+      "id": "F-MCP-P5-GOV-002",
+      "severity": "HIGH",
+      "domain": "governance",
+      "summary": "Terminal dossier and ticket checkpoint stale versus merge (CI/audit/publication fields).",
+      "remediation": "P5 G6 closeout SSOT reconciliation batch."
+    },
+    {
+      "id": "F-MCP-P5-MEM-001",
+      "severity": "LOW",
+      "domain": "cross_stage_residual",
+      "summary": "LIM-RESEARCH-STRICT-FACTORY-MEMORY remains OPEN (PROD-Q/MEM).",
+      "remediation": "OD-MCP-P5-MEM-01; does not block P5 scoped acceptance."
+    }
+  ],
+  "limitations": [
+    "LIM-post-merge-audit: organizational acceptance explicitly after merge c59892829",
+    "LIM-no-stage-close: MCP-SERVER-X campaign not CLOSED; P8 IIIC remains",
+    "LIM-no-frz: no FRZ promotion",
+    "LIM-research-factory: strict create_research_backend_app not qualified in P5"
+  ]
+}
