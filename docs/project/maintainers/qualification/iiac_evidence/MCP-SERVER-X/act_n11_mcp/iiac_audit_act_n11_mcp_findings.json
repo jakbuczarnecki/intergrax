@@ -1,0 +1,66 @@
+{
+  "stage_id": "MCP-SERVER-X",
+  "session_designation": "IIIC-ACT-N11-MCP-2026-11-11",
+  "audit_execution_sha": "7c401fd98cf2b42b9b2fd5860485bac34a8c2df3",
+  "audited_implementation_sha": "a21a6629a6f8aa25519d4e25ac0004b38426669b",
+  "audit_execution_sha_prior_act_n11": "11ac8ad85f62a6925d25ea840c92d5c6a936cfe4",
+  "verdict_basis": "PARTIAL_EXACT_BLOCKERS",
+  "operator_decision": {
+    "canonical_id": "D-MCP-IIAC-01",
+    "operator_alias_id": "D-MCP-IIIC-01",
+    "option": "a",
+    "authorization_text": "Approved: D-MCP-IIIC-01=a",
+    "source": "Operator chat — MCP ACT-N11 independent IIIC audit mandate (2026-11-11)"
+  },
+  "blocking_findings": [
+    {
+      "id": "F-MCP-ACT-N11-001",
+      "severity": "blocking",
+      "summary": "P4 host_custom binding registration uses **kwargs in FastMCP @mcp.tool wrapper; FastMCP rejects VAR_KEYWORD — research pipeline tool cannot mount.",
+      "evidence": [
+        "intergrax/applications/_shared/mcp_server_engine.py (compose_mcp_server_from_definition custom_bindings loop)",
+        "tests/unit/applications/test_mcp_canonical_execution.py::test_research_mcp_pipeline_reaches_orchestration_strategy",
+        "applications/research_application/mcp/server.py — MCP-P4-05 custom binding"
+      ],
+      "corrective_task": "Register custom host tools without **kwargs (explicit parameters or FastMCP-supported registration); re-run ticket + canonical execution tests to exit 0.",
+      "auditor_verdict_at_audit_execution_sha": "OPEN_BLOCKING",
+      "implementer_corrective_disposition": "CORRECTIVE_CANDIDATE_PUBLISHED",
+      "implementer_corrective_evidence": "docs/project/maintainers/qualification/iiac_evidence/MCP-SERVER-X/act_n11_mcp/F_MCP_ACT_N11_001_CORRECTIVE_HANDOFF.md"
+    }
+  ],
+  "limitations_carried": [
+    {
+      "id": "LIM-PRE-ACTIVATION-IIIC-GATE",
+      "severity": "informational",
+      "summary": "verify_iiac_policy_activation --require-in-force exit 1 (16× ACT-N11) until Operator personal activation and record update; not a scope inventory defect.",
+      "evidence": [
+        "docs/project/maintainers/qualification/iiac_evidence/MCP-SERVER-X/act_n11_mcp/auditor_verify_iiac_require_in_force_baseline.log"
+      ]
+    },
+    {
+      "id": "LIM-GOV-PYTEST-RED-WHILE-ACT-N11",
+      "severity": "informational",
+      "summary": "test_n12_policy_is_in_force_only_with_valid_activation_evidence fails while activation pin lags MCP product Δ (mirrors ENT Session B).",
+      "evidence": [
+        "docs/project/maintainers/qualification/iiac_evidence/MCP-SERVER-X/act_n11_mcp/auditor_mcp_adversarial_tests.log"
+      ]
+    },
+    {
+      "id": "LIM-RESEARCH-MOUNT-MEMORY-ADMISSION",
+      "severity": "informational",
+      "summary": "test_research_application_exposes_mcp_mount fails MemoryProviderAdmissionError at P4 head and @ 7172f294f — tracked pre-P4 harness wiring, not introduced by facade migration.",
+      "evidence": [
+        "docs/project/maintainers/qualification/mcp_server_x/MCP_SERVER_X_P4_CLOSURE_REPORT.md (B-P4-TEST-01)",
+        "docs/project/maintainers/qualification/iiac_evidence/MCP-SERVER-X/act_n11_mcp/auditor_mcp_ticket_test_contract.log"
+      ]
+    },
+    {
+      "id": "LIM-ENT-SESSION-B-LINEAGE",
+      "severity": "informational",
+      "summary": "ENT-AUDIT-X Session B seven-path activation @ 11ac8ad85f remains authoritative; this session re-binds MCP P2–P4 sixteen-path Δ only.",
+      "evidence": [
+        "docs/project/maintainers/qualification/iiac_evidence/ENT-AUDIT-X/act_n11_recovery/audit_scope.json"
+      ]
+    }
+  ]
+}
