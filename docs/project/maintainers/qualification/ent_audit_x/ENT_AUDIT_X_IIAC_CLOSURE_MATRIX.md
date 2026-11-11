@@ -63,7 +63,7 @@ Statuses: `QUALIFIED` · `CLOSED` · `OPEN` · `BLOCKED` · `UNVERIFIED`. `Aud` 
 | E-7 | OD-ENT-08 (formal closure authorisation) | **RECORDED** @ `2026-11-11T07:20:00Z` | W5 · OD |
 | P-1 | `B6_ACCEPTANCE_PUBLICATION_SHA` | `add6a6ce2015ebaa4bc38b7fadf3936f100a1522` (phase-1 evidence publication) | W2 adds FRZ/current-SHA evidence |
 | P-2 | `ACCEPTED_BASELINE_SHA` | `480550d80…` | W3-02 — ladder pinned |
-| P-3 | `FORMAL_CLOSURE_PUBLICATION_SHA` | unset | W5 |
+| P-3 | `FORMAL_CLOSURE_PUBLICATION_SHA` | `3726c1da3a37f3c457e93bf44f1513adaedbf57d` | W6 handoff |
 | P-4 | Roadmap §5 headline, FRZ-FRZ-11, WBS rows, terminal dossier | **PUBLISHED** (W5-01); pin W5-02 | W6 handoff |
 
 ### 2.4 Matrix C (75 records)

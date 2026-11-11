@@ -15,7 +15,7 @@
 | W3 audit pub | `fd5728955605ef2ec013d69ec9290736f0970419` |
 | W4 cert pub | `5f178174e2462b038d544b61192a666d5b0ca79f` |
 | OD-ENT-08 auth HEAD | `8fdbe7c037bb545f7cbfd7587589ac7f9ddd4d5a` |
-| FORMAL_CLOSURE_PUBLICATION_SHA | *set in W5 phase 2 pin commit* |
+| FORMAL_CLOSURE_PUBLICATION_SHA | `3726c1da3a37f3c457e93bf44f1513adaedbf57d` |
 
 ## Operator record
 
@@ -32,7 +32,7 @@ OPEN-BP-01 · F-W3-001 · Path B / FRZ-PRD OPEN · compensating branch protectio
 | Gate | Result |
 |------|--------|
 | Gate A (pre closure publication) | PASS @ `8fdbe7c0…` |
-| Gate B (post `FORMAL_CLOSURE_PUBLICATION_SHA`) | *verified at pin commit* |
+| Gate B (post `FORMAL_CLOSURE_PUBLICATION_SHA`) | PASS @ W5 phase 2 pin |
 
 ## Next mandatory program stage
 

@@ -1081,10 +1081,10 @@ def validate(*, strict_counts: bool = True) -> int:
     pass_n = sum(1 for s in statuses.values() if s == "PASS")
     open_n = sum(1 for s in statuses.values() if s == "OPEN")
     if strict_counts:
-        if pass_n != 95:
-            errors.append(f"PASS expected 95 got {pass_n}")
-        if open_n != 130:
-            errors.append(f"OPEN expected 130 got {open_n}")
+        if pass_n != 108:
+            errors.append(f"PASS expected 108 got {pass_n}")
+        if open_n != 109:
+            errors.append(f"OPEN expected 109 got {open_n}")
 
     wbs_rows = _parse_wbs()
     task_ids = {r["TASK_ID"] for r in wbs_rows}

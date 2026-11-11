@@ -36,7 +36,7 @@
 | INTERNAL_CERTIFICATION_STATUS | **INTERNALLY CERTIFIED — OPERATOR ACCEPTED (TECHNICAL SCOPE)** | OD-IC-01 (2026-11-04); technical re-audit recommendation **≠** formal attestation — [record](../EVOL_ENT_INTERNAL_CERTIFICATION_RECORD_2026_11_04.md) |
 | INTERNAL_CERTIFICATION_PUBLICATION_SHA | `5c08e5e6c44d21998c76bd27ad1efab172440f45` | OD-IC-01 consolidated record + roadmap §5 |
 | POST_IC_CONSOLIDATION_PUBLICATION_SHA | `81829712acc19ebeadb4773467b9c5642ca975e3` | Pre-admission + IC consolidation handoff — [`ARCH_FREEZE_PRE_ADMISSION_READINESS_REPORT.md`](../ARCH_FREEZE_PRE_ADMISSION_READINESS_REPORT.md) |
-| FORMAL_CLOSURE_PUBLICATION_SHA | *unset* | OD-ENT-08 + roadmap §5 |
+| FORMAL_CLOSURE_PUBLICATION_SHA | `3726c1da3a37f3c457e93bf44f1513adaedbf57d` | W5 phase 1 closure publication (roadmap headline + FRZ-FRZ-11 + terminal dossier) |
 | ACCEPTED_BASELINE_SHA | `480550d80b2515fc8cbd2a0ba6f79d1ee1c44541` | OD-ENT-01 delegated promote @ FREEZE bootstrap-candidate HEAD (W3-02) — T-IGX-024-A |
 | EVIDENCE_PUBLICATION_SHA (historical — superseded by the TES 62d1c615 row below) | `300859537f12a1de7bf3d75fd685bc3a5c727183` | W8 B6 corrective B5 `qualification_at_89c76eb7…` (strict `verify_b5_publication_tree`) |
 | TEST_EXECUTION_SHA (historical — superseded by the TES 62d1c615 row below) | `89c76eb7b53a0a3ce6f75ab395cf4a2802638a91` | W8 B6 corrective certifying qual @ strict B5 verifier wave (supersedes R6/R7 canonical rows below) |
