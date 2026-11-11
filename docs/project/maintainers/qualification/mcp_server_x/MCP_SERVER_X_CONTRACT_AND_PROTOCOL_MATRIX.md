@@ -1,6 +1,6 @@
 # MCP-SERVER-X — contract and protocol matrix
 
-**Status:** P1 populated (architecture); implementation evidence columns filled @ P2–P7  
+**Status:** P3 transport pin (streamable HTTP only @ implementation SHA); L3 evidence @ MCP-P3-02 / P7  
 **Supersedes scaffold:** [`MCP_SERVER_X_CONTRACT_MATRIX.md`](./MCP_SERVER_X_CONTRACT_MATRIX.md) (pointer only)
 
 ## Public contracts
@@ -9,13 +9,13 @@
 | --- | --- | --- | --- | --- |
 | `mcp-server-definition.v1` | v1 | `intergrax/contracts/mcp_server_definition.py` | _pending P4-03_ | _pending P4-05_ |
 | MCP tool schema export | existing | `intergrax/tools/exporters/mcp.py` | from `ToolContract` | historical |
-| Streamable HTTP host adapter | FastMCP pin | `intergrax/applications/_shared/fastapi_mcp.py` | lockfile @ SHA | host unit tests |
+| Streamable HTTP host adapter | FastMCP 3.x (`fastmcp>=3.3.1,<4`) | `fastapi_mcp.py` + `mcp_host_mount.py` | lockfile @ SHA | L2 `test_fastapi_mcp`; L3 streamable HTTP qual |
 
 ## Protocol / transport (v1 design)
 
 | REQ-ID | Declared support | Runtime owner | Evidence task |
 | --- | --- | --- | --- |
-| REQ-MCP-P-01 | Revision = FastMCP 3.x @ qual SHA | Transport adapter | MCP-P3-02 L3 |
+| REQ-MCP-P-01 | **Supported:** streamable HTTP via `FastMCP.http_app` only; revision = installed `fastmcp` @ qual SHA | `mcp_host_mount` + `fastapi_mcp` | MCP-P3-02 L3 (`test_mcp_catalog_f3_streamable_http_physical_l3`) |
 | REQ-MCP-P-02 | Negotiation via SDK | FastMCP | DEFERRED |
 | REQ-MCP-P-03 | stdio/SSE | — | **UNSUPPORTED_BY_DESIGN** (OD-MCP-03) |
 | REQ-MCP-P-04 | Cancel on disconnect | Execution + transport cancel | MCP-P5-06 |

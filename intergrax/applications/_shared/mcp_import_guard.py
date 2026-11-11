@@ -44,6 +44,14 @@ def load_mcp_coupling() -> Callable[..., Any]:
     return couple_fastapi_with_mcp
 
 
+def load_mcp_harness_mount() -> Callable[..., Any]:
+    """Import engine-owned harness mount helpers after verifying MCP dependencies."""
+    ensure_mcp_dependencies()
+    from intergrax.applications._shared.mcp_host_mount import couple_mcp_fastmcp_on_harness_host
+
+    return couple_mcp_fastmcp_on_harness_host
+
+
 def load_mcp_server_builder(import_path: str, *, symbol: str) -> Callable[..., Any]:
     """Import an application MCP server builder after verifying MCP dependencies."""
     ensure_mcp_dependencies()

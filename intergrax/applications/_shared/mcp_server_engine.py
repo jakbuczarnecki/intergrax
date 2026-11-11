@@ -16,6 +16,11 @@ from intergrax.applications._shared.mcp_catalog_invocation_bridge import (
     McpCatalogInvocationComposition,
 )
 from intergrax.applications._shared.mcp_catalog_tools import mount_catalog_tools_on_mcp
+from intergrax.applications._shared.mcp_engine_concurrency import (
+    DEFAULT_MCP_MAX_CONCURRENT_TOOL_CALLS,
+    McpEngineConcurrentCallAdmission,
+    optional_mcp_call_admission,
+)
 from intergrax.applications._shared.mcp_harness_principal import resolve_mcp_run_agent_identity
 from intergrax.contracts.execution_bound_catalog_tool_invocation import (
     ExecutionBoundCatalogToolInvoker,
@@ -63,6 +68,7 @@ class McpServerCompositionDeps:
     catalog_root_child_work_ingress: object | None = None
     enable_cross_loop_catalog_child: bool = False
     custom_host_tools: Mapping[str, Callable[..., Awaitable[dict[str, object]]]] | None = None
+    max_concurrent_tool_calls: int | None = DEFAULT_MCP_MAX_CONCURRENT_TOOL_CALLS
 
 
 def _filtered_catalog_registry(registry: ToolRegistry, allowed_tool_ids: frozenset[str]) -> ToolRegistry:
@@ -157,23 +163,27 @@ def compose_mcp_server_from_definition(
     builtin_ids = _host_builtin_ids(host_builtins)
 
     mcp = FastMCP(definition.display_name)
+    call_admission: McpEngineConcurrentCallAdmission | None = None
+    if deps.max_concurrent_tool_calls is not None:
+        call_admission = McpEngineConcurrentCallAdmission(deps.max_concurrent_tool_calls)
 
     if McpHostBuiltinId.LIST_AGENTS in builtin_ids:
 
         @mcp.tool
         async def list_agents() -> list[dict[str, Any]]:
             """List registered agents and capabilities (same roster as the HTTP agents endpoint)."""
-            agents: list[dict[str, Any]] = []
-            for agent_id in deps.registry.list_agent_ids():
-                contract = deps.registry.get(agent_id).get_contract()
-                agents.append(
-                    {
-                        "agent_id": contract.id,
-                        "name": contract.name,
-                        "capabilities": list(contract.capabilities),
-                    }
-                )
-            return emit_bounded_mcp_list(agents)
+            async with optional_mcp_call_admission(call_admission):
+                agents: list[dict[str, Any]] = []
+                for agent_id in deps.registry.list_agent_ids():
+                    contract = deps.registry.get(agent_id).get_contract()
+                    agents.append(
+                        {
+                            "agent_id": contract.id,
+                            "name": contract.name,
+                            "capabilities": list(contract.capabilities),
+                        }
+                    )
+                return emit_bounded_mcp_list(agents)
 
     if McpHostBuiltinId.RUN_AGENT in builtin_ids:
         from intergrax.applications._shared.mcp_nexus_server import execute_mcp_agent_task
@@ -194,24 +204,25 @@ def compose_mcp_server_from_definition(
             intent: str | None = None,
         ) -> dict[str, object]:
             """Run one agent task via canonical host task execution (same path as HTTP POST /run)."""
-            resolved = resolve_mcp_run_agent_identity(
-                harness_auth=None,
-                asserted_tenant_id=tenant_id,
-                asserted_user_id=user_id,
-                default_tenant_id=default_tenant_id,
-                default_user_id=default_user_id,
-            )
-            return await execute_mcp_agent_task(
-                host_execution,
-                message=message,
-                capability=capability,
-                tenant_id=resolved.tenant_id,
-                user_id=resolved.user_id,
-                session_id=session_id,
-                intent=intent,
-                caller_request_identity=resolved.request_identity,
-                task_control_mutation_boundary=task_control_mutation_boundary,
-            )
+            async with optional_mcp_call_admission(call_admission):
+                resolved = resolve_mcp_run_agent_identity(
+                    harness_auth=None,
+                    asserted_tenant_id=tenant_id,
+                    asserted_user_id=user_id,
+                    default_tenant_id=default_tenant_id,
+                    default_user_id=default_user_id,
+                )
+                return await execute_mcp_agent_task(
+                    host_execution,
+                    message=message,
+                    capability=capability,
+                    tenant_id=resolved.tenant_id,
+                    user_id=resolved.user_id,
+                    session_id=session_id,
+                    intent=intent,
+                    caller_request_identity=resolved.request_identity,
+                    task_control_mutation_boundary=task_control_mutation_boundary,
+                )
 
     catalog_surface = {
         McpHostBuiltinId.LIST_CATALOG_TOOLS,
@@ -263,16 +274,10 @@ def compose_mcp_server_from_definition(
                     f"missing custom tool handler for {binding.tool_name!r}",
                 )
 
-            def _make_tool(
-                name: str, fn: Callable[..., Awaitable[dict[str, object]]]
-            ) -> Callable[..., Awaitable[dict[str, object]]]:
-                @mcp.tool(name=name)
-                async def _custom_tool(**kwargs: Any) -> dict[str, object]:
-                    return await fn(**kwargs)
-
-                return _custom_tool
-
-            _make_tool(binding.tool_name, handler)
+            @mcp.tool(name=binding.tool_name)
+            async def _custom_tool(**kwargs: Any) -> dict[str, object]:
+                async with optional_mcp_call_admission(call_admission):
+                    return await handler(**kwargs)
 
     return mcp
 
