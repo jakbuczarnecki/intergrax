@@ -71,5 +71,8 @@ P7 MCP-ACC exact-SHA package @ publication, P8 IIIC stage close, FRZ PASS, stdio
 | LOCAL_TEST_EXECUTION | P6 batch **PASS** @ `5ff8606b0` |
 | `igx_gov ticket` | **PASS** @ `5ff8606b0` |
 | CI | `ci-smoke` **PASS**; `governance-fast` **FAIL** (ACT-N11 — `MCP_SERVER_X_P6_ACT_N11_TRIGGER.md`) |
-| G6 | **PENDING** — `MCP_SERVER_X_P6_G6_AUDIT_HANDOFF.md` |
-| ACT-N11 | **TRIGGERED** — IIIC P6 rebind required before merge |
+| G6 | **`ACCEPT_SCOPED`** — dossier + `p6_g6_closeout/` @ `2d3eceb6c` (post-merge) |
+| ACT-N11 IIIC | **`PASS_SCOPED`** published; **certifier PASS**; activation **PENDING** operator |
+| P6_PUBLICATION_SHA | `a695c9c835bb5b4b206e6e3e00bb2aee23ca7b6b` |
+| Governance recovery | F-MCP-P6-GOV-001; evidence PR `mcp-p6-gov-closeout` |
+| Ticket `closed` | **BLOCKED** — OD + `verify_iiac --require-in-force` + green CI |

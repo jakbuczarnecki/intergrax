@@ -5,11 +5,11 @@ Policy version: IIAC-2026-11-05.1
 Decision scope: IIIC policy re-bind (MCP P6 three-path Δ vs `8fff85e3b…`)  
 Decision status: **AUTHORIZATION_REQUESTED** (personal operator line **not** recorded in this commit)
 
-Product independent IIIC dossier digest: _pending certifier pin after evidence publication_
+Product independent IIIC dossier digest: `f4b339ab2695a1f162cf4085a8123ffe6c5e6c568990212111b4647548f21a66`
 
 **Scope:** MCP-SERVER-X P6 public API consolidation (3 paths) cumulative on P4 ACT-N11 inventory (19 paths).  
 Independent IIIC audit: **`PASS_SCOPED`** @ `act_n11_mcp_p6/`.  
-Certifier preflight: _pending publication replay_
+Certifier preflight: **`CERTIFIER_PREFLIGHT_PASS`**
 
 **Operator personal line (required before phase-2 activation):**
 

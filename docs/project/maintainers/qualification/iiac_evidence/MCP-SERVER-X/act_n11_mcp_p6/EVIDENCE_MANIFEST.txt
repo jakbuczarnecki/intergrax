@@ -1,21 +1,9 @@
 MCP-SERVER-X / ACT-N11 MCP P6 / IIIC evidence manifest
 
-P4 lineage (preserved — do not delete or overwrite):
-  prior audit_execution_sha: 8fff85e3bfc5190929ff464b00fbe759dadcb5f8
-  tree: docs/project/maintainers/qualification/iiac_evidence/MCP-SERVER-X/act_n11_mcp/
-
-P6 re-audit (PASS_SCOPED — independent auditor b8d2e7f4-1a3c-4f9e-8d62-5c1a0b9e7f3d):
-  iiac_audit_session_manifest.MCP-SERVER-X.act_n11_mcp.reaudit_p6.json
-  MCP_ACT_N11_INDEPENDENT_REAUDIT_DOSSIER_P6.md
-  iiac_audit_act_n11_mcp_findings_reaudit_p6.json
-  test_matrix_reaudit_p6.txt
-  IIIC_SESSION_HANDOFF_RECORD_ACT_N11_MCP_REAUDIT_P6.md
-  audit_scope.json
-  auditor_p6_qualification_batch.log
-  auditor_p6_adversarial_tests.log
-  auditor_p6_verify_iiac_require_in_force_baseline.log
-
 audited_implementation_sha: 5ff8606b089828b334ebac133518ba47c9f6f7ce
 test_execution_sha: 9b8c19d75d5df0f4b7c87d2707811f3715805102
-evidence_publication_sha: PENDING commit on PR #459
-publication_state: auditor_session_complete_pending_publisher_commit
+product_merge_sha: a695c9c835bb5b4b206e6e3e00bb2aee23ca7b6b
+evidence_publication_sha (phase 1): 2d3eceb6cf7e93dccd4d96919319a6c969b4444b
+certification_publication_sha: PENDING phase-2 certifier pin
+
+Prior ACT-N11 pin: 8fff85e3bfc5190929ff464b00fbe759dadcb5f8

@@ -12,7 +12,7 @@
 | PR HEAD verified (pre-merge) | `9b8c19d75d5df0f4b7c87d2707811f3715805102` |
 | `audited_implementation_sha` (P6 product) | `5ff8606b089828b334ebac133518ba47c9f6f7ce` |
 | `test_execution_sha` | `9b8c19d75d5df0f4b7c87d2707811f3715805102` |
-| `evidence_publication_sha` | **PENDING** — publish commit on PR #459 including `act_n11_mcp_p6/` |
+| `evidence_publication_sha` | `2d3eceb6cf7e93dccd4d96919319a6c969b4444b` (phase-1 evidence commit) |
 | Scoped verdict | **`PASS_SCOPED`** |
 
 ## Baseline verification
