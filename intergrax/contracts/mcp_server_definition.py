@@ -8,10 +8,13 @@ No FastMCP imports — composition lives in ``intergrax.applications._shared.mcp
 
 from __future__ import annotations
 
+import json
 from enum import StrEnum
 from typing import Annotated, Final, Literal
 
 from pydantic import BaseModel, ConfigDict, Field, field_validator, model_validator
+
+from intergrax.contracts.validation import compute_sha256_content_digest
 
 MCP_SERVER_DEFINITION_CONTRACT_VERSION: Final = "mcp-server-definition.v1"
 
@@ -163,6 +166,49 @@ def iter_definition_binding_ids(definition: McpServerDefinition) -> frozenset[st
     return frozenset(binding.binding_id for binding in definition.bindings)
 
 
+def compute_mcp_exposure_schema_fingerprint(definition: McpServerDefinition) -> str:
+    """Deterministic fingerprint of contract version + exposed binding shapes (REQ-MCP-C-01 / MCP-P4-03)."""
+    exposed = resolve_effective_bindings(definition)
+    payload = {
+        "contract_version": definition.contract_version,
+        "bindings": [binding.model_dump(mode="json") for binding in exposed],
+    }
+    canonical = json.dumps(payload, sort_keys=True, separators=(",", ":")).encode("utf-8")
+    return compute_sha256_content_digest(canonical)
+
+
+def resolve_binding_for_invocation(
+    definition: McpServerDefinition,
+    binding_id: str,
+) -> McpCapabilityBinding:
+    """Resolve a binding by id for invocation; fail closed on retired or non-exposed bindings."""
+    target = binding_id.strip()
+    if not target:
+        raise McpServerDefinitionValidationError(
+            McpServerDefinitionErrorCode.MCP_DEF_INVALID,
+            "binding_id is required",
+        )
+    binding_map = {binding.binding_id: binding for binding in definition.bindings}
+    binding = binding_map.get(target)
+    if binding is None:
+        raise McpServerDefinitionValidationError(
+            McpServerDefinitionErrorCode.MCP_BINDING_UNKNOWN,
+            f"unknown binding_id: {target}",
+        )
+    if binding.retired:
+        raise McpServerDefinitionValidationError(
+            McpServerDefinitionErrorCode.MCP_BINDING_RETIRED,
+            f"binding retired: {target}",
+        )
+    exposed_ids = frozenset(item.binding_id for item in resolve_effective_bindings(definition))
+    if target not in exposed_ids:
+        raise McpServerDefinitionValidationError(
+            McpServerDefinitionErrorCode.MCP_BINDING_UNKNOWN,
+            f"binding not exposed: {target}",
+        )
+    return binding
+
+
 def resolve_effective_bindings(definition: McpServerDefinition) -> tuple[McpCapabilityBinding, ...]:
     """Apply exposure policy allowlist and enabled flag (discovery visibility)."""
     if not definition.exposure_policy.enabled:
@@ -250,7 +296,9 @@ __all__ = [
     "McpServerDefinitionErrorCode",
     "McpServerDefinitionValidationError",
     "build_mcp_server_definition",
+    "compute_mcp_exposure_schema_fingerprint",
     "iter_definition_binding_ids",
+    "resolve_binding_for_invocation",
     "resolve_effective_bindings",
     "validate_mcp_server_definition",
 ]

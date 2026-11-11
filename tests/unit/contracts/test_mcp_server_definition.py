@@ -13,10 +13,12 @@ from intergrax.contracts.mcp_server_definition import (
     McpExposurePolicy,
     McpHostBuiltinBinding,
     McpHostBuiltinId,
+    McpHostCustomBinding,
     McpServerDefinition,
     McpServerDefinitionErrorCode,
     McpServerDefinitionValidationError,
     build_mcp_server_definition,
+    compute_mcp_exposure_schema_fingerprint,
     resolve_effective_bindings,
     validate_mcp_server_definition,
 )
@@ -99,3 +101,37 @@ def test_contract_version_constant() -> None:
         bindings=(),
     )
     assert definition.contract_version == MCP_SERVER_DEFINITION_CONTRACT_VERSION
+
+
+def test_exposure_schema_fingerprint_stable_and_sensitive_to_bindings() -> None:
+    base = build_mcp_server_definition(
+        server_id="srv",
+        display_name="Srv",
+        default_capability="cap.a",
+        bindings=(McpHostBuiltinBinding(binding_id="list_agents", builtin=McpHostBuiltinId.LIST_AGENTS),),
+    )
+    fp1 = compute_mcp_exposure_schema_fingerprint(base)
+    fp2 = compute_mcp_exposure_schema_fingerprint(base)
+    assert fp1 == fp2
+    assert fp1.startswith("sha256:")
+
+    extended = build_mcp_server_definition(
+        server_id="srv",
+        display_name="Srv",
+        default_capability="cap.a",
+        bindings=(
+            McpHostBuiltinBinding(binding_id="list_agents", builtin=McpHostBuiltinId.LIST_AGENTS),
+            McpHostCustomBinding(binding_id="custom", tool_name="extra_tool"),
+        ),
+    )
+    assert compute_mcp_exposure_schema_fingerprint(extended) != fp1
+
+
+def test_compat_inventory_includes_mcp_server_definition_version() -> None:
+    from tests.qualification.compat_x._compat_x_inventory import COMPAT_X_INVENTORY
+
+    matches = [
+        row for row in COMPAT_X_INVENTORY if row.owner_module_path == "intergrax/contracts/mcp_server_definition.py"
+    ]
+    assert matches
+    assert all(row.current_version == MCP_SERVER_DEFINITION_CONTRACT_VERSION for row in matches)

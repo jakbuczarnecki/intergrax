@@ -5,11 +5,11 @@
 from __future__ import annotations
 
 from fastmcp import FastMCP
-
-from intergrax.applications._shared.mcp_nexus_server import (
-    build_nexus_mcp_server,
-    execute_mcp_agent_task,
+from intergrax.applications._shared.mcp_application_server import (
+    compose_application_mcp_server,
+    research_pipeline_binding,
 )
+from intergrax.applications._shared.mcp_nexus_server import execute_mcp_agent_task
 from intergrax.runtime.execution.host_task import HostTaskExecutionPort
 from intergrax.runtime.registry.agent_registry_read import AgentRegistryRead
 
@@ -21,23 +21,12 @@ def build_research_mcp_server(
     route_prefix: str,
     tool_registry=None,
 ) -> FastMCP:
-    """MCP tools for research host — includes research pipeline tool."""
+    """MCP tools for research host — includes research pipeline tool as host custom binding."""
     _ = route_prefix
     from intergrax.tools.registry.runtime import ToolRegistry
 
-    kwargs: dict[str, object] = {
-        "name": "Intergrax Research MCP",
-        "host_execution": host_execution,
-        "registry": registry,
-        "default_capability": "research.pipeline",
-        "default_tenant_id": "research",
-        "default_user_id": "research-user",
-    }
-    if isinstance(tool_registry, ToolRegistry):
-        kwargs["tool_registry"] = tool_registry
-    mcp = build_nexus_mcp_server(**kwargs)
+    tool_reg = tool_registry if isinstance(tool_registry, ToolRegistry) else None
 
-    @mcp.tool
     async def run_research_pipeline(
         message: str,
         tenant_id: str = "research",
@@ -53,4 +42,14 @@ def build_research_mcp_server(
             intent="research_summarize",
         )
 
-    return mcp
+    return compose_application_mcp_server(
+        display_name="Intergrax Research MCP",
+        host_execution=host_execution,
+        registry=registry,
+        default_capability="research.pipeline",
+        default_tenant_id="research",
+        default_user_id="research-user",
+        tool_registry=tool_reg,
+        extra_bindings=(research_pipeline_binding(),),
+        custom_host_tools={"run_research_pipeline": run_research_pipeline},
+    )

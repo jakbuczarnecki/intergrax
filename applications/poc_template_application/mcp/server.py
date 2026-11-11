@@ -5,8 +5,7 @@
 from __future__ import annotations
 
 from fastmcp import FastMCP
-
-from intergrax.applications._shared.mcp_nexus_server import build_nexus_mcp_server
+from intergrax.applications._shared.mcp_application_server import compose_application_mcp_server
 from intergrax.runtime.execution.host_task import HostTaskExecutionPort
 from intergrax.runtime.registry.agent_registry_read import AgentRegistryRead
 
@@ -18,16 +17,15 @@ def build_poc_template_mcp_server(
     route_prefix: str,
     tool_registry=None,
 ) -> FastMCP:
-    """MCP tools mirror the poc template HTTP API (canonical host task execution)."""
+    """MCP tools mirror the PoC template HTTP API (canonical host task execution)."""
     _ = route_prefix
     from intergrax.tools.registry.runtime import ToolRegistry
 
-    kwargs: dict[str, object] = {
-        "name": "Poc Template MCP",
-        "host_execution": host_execution,
-        "registry": registry,
-        "default_capability": "echo.basic",
-    }
-    if isinstance(tool_registry, ToolRegistry):
-        kwargs["tool_registry"] = tool_registry
-    return build_nexus_mcp_server(**kwargs)
+    tool_reg = tool_registry if isinstance(tool_registry, ToolRegistry) else None
+    return compose_application_mcp_server(
+        display_name="Poc Template MCP",
+        host_execution=host_execution,
+        registry=registry,
+        default_capability="echo.basic",
+        tool_registry=tool_reg,
+    )

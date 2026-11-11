@@ -274,10 +274,15 @@ def compose_mcp_server_from_definition(
                     f"missing custom tool handler for {binding.tool_name!r}",
                 )
 
+            tool_handler = handler
+
             @mcp.tool(name=binding.tool_name)
-            async def _custom_tool(**kwargs: Any) -> dict[str, object]:
+            async def _custom_tool(
+                _handler: Callable[..., Awaitable[dict[str, object]]] = tool_handler,
+                **kwargs: Any,
+            ) -> dict[str, object]:
                 async with optional_mcp_call_admission(call_admission):
-                    return await handler(**kwargs)
+                    return await _handler(**kwargs)
 
     return mcp
 
