@@ -103,14 +103,25 @@ def _field_default(cls: type[IntergraxApplicationSettingsBase], name: str) -> Js
     return resolve_field_default(cls, name)
 
 
+def _resolve_mcp_mount_path_env(
+    env: EnvReader,
+    *,
+    include_mcp: bool,
+    default: str,
+) -> str:
+    raw = env.str("MCP_MOUNT_PATH", default=default)
+    if not include_mcp:
+        return raw
+    from intergrax.applications._shared.mcp_host_mount import resolve_mcp_mount_path_for_host
+
+    return resolve_mcp_mount_path_for_host(raw, enabled=True)
+
+
 def _load_platform_env(
     cls: type[IntergraxApplicationSettingsBase],
     env: EnvReader,
 ) -> dict[str, object]:
-    env_raw = (
-        env.optional_str("BACKEND_ENV")
-        or (os.environ.get("INTERGRAX_ENV") or "dev").strip().lower()
-    )
+    env_raw = env.optional_str("BACKEND_ENV") or (os.environ.get("INTERGRAX_ENV") or "dev").strip().lower()
     if env_raw == "staging":
         env_raw = "stage"
     try:
@@ -123,6 +134,7 @@ def _load_platform_env(
 
     poll_raw = (os.environ.get("INTERGRAX_SCHEDULER_POLL_SECONDS") or "").strip()
     scheduler_poll = float(poll_raw) if poll_raw else None
+    include_mcp = env.bool("INCLUDE_MCP", default=bool(_field_default(cls, "include_mcp")))
 
     return {
         "environment": environment,
@@ -150,9 +162,10 @@ def _load_platform_env(
             default=str(_field_default(cls, "interaction_surface")),
         ).lower()
         or "auto",
-        "include_mcp": env.bool("INCLUDE_MCP", default=bool(_field_default(cls, "include_mcp"))),
-        "mcp_mount_path": env.str(
-            "MCP_MOUNT_PATH",
+        "include_mcp": include_mcp,
+        "mcp_mount_path": _resolve_mcp_mount_path_env(
+            env,
+            include_mcp=include_mcp,
             default=str(_field_default(cls, "mcp_mount_path")),
         ),
         "include_task_control": env.bool(
@@ -170,7 +183,7 @@ def _load_platform_env(
     }
 
 
-def load_application_settings_from_env(cls: type[SettingsT]) -> SettingsT:
+def load_application_settings_from_env(cls: type[SettingsT]) -> SettingsT:  # noqa: UP047
     env = EnvReader(getattr(cls, "env_prefix", "APP_"))
     values: dict[str, object] = {}
     values.update(_load_platform_env(cls, env))

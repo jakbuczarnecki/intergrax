@@ -39,12 +39,15 @@ P3+ transport consolidation beyond P2 unit needs; P4 facade migration of eight a
 
 ## Lifecycle state
 
-in_progress
+closed
 
 ## Checkpoint
 
 | Field | Value |
 | --- | --- |
-| Branch | `mcp-server-x-p2` |
+| Branch | `mcp-server-x-p2` (merged PR #452) |
+| P2_PUBLICATION_SHA | `d46d9a0de316fea7b77f76c847028c9c932a9f3f` |
+| P2_IMPLEMENTATION_SHA | `e21453caf1bba45f94e21781f4872fb1ac58f806` |
 | P2 gate | OD-MCP-01..07 **APPROVED — Option A** |
-| Tasks | MCP-P2-01..06 targeted |
+| Tasks | MCP-P2-01..06 delivered |
+| IIAC note | `governance-fast` red on PR branch (expected ACT-N11 product Δ); merge authorized by operator |
