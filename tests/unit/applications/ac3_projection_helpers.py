@@ -11,7 +11,6 @@ from intergrax.agent_distribution.runtime_revision import (
     RuntimeRevision,
     RuntimeRevisionState,
 )
-from intergrax.utils import attribute_access
 from intergrax.applications._shared.registry_projection import (
     MaterializedRegistryProjection,
     RegistryProjectionInputBundle,
@@ -23,14 +22,15 @@ from intergrax.applications._shared.runtime_agent_factory_resolver import (
 )
 from intergrax.applications._shared.wiring import (
     BuilderMap,
-    factory_reference_for_roster_entry,
     _index_manifest_bindings,
     _resolve_manifest_binding_for_entry,
+    factory_reference_for_roster_entry,
 )
+from intergrax.applications.contracts.agent_ref import qualname_for_callable
 from intergrax.applications.contracts.build_context import ApplicationBuildContext
 from intergrax.applications.contracts.environment_profile import ApplicationEnvironmentProfile
-from intergrax.applications.contracts.manifest import ApplicationManifest, AgentBinding
-from intergrax.applications.contracts.agent_ref import qualname_for_callable
+from intergrax.applications.contracts.manifest import AgentBinding, ApplicationManifest
+from intergrax.utils import attribute_access
 
 _TEST_DIGEST = "sha256:" + ("a" * 64)
 _TEST_ROSTER_DIGEST = "sha256:" + ("e" * 64)
@@ -222,9 +222,7 @@ def build_test_registry_projection_bundle(
     bindings = enabled_bindings or tuple(manifest.enabled_agents())
     if enabled_contract_stems is not None:
         bindings = tuple(
-            binding
-            for binding in bindings
-            if (binding.contract_id or _binding_stem(binding)) in enabled_contract_stems
+            binding for binding in bindings if (binding.contract_id or _binding_stem(binding)) in enabled_contract_stems
         )
     entries = tuple(_roster_entry_from_binding(binding, package_digest=package_digest) for binding in bindings)
     roster = EffectiveRoster(
@@ -255,16 +253,26 @@ def build_test_registry_projection_bundle(
         from intergrax.applications._shared.roster_agent_contract_authority import (
             materialize_manifest_contract_authority_lab_compat,
         )
+        from testing_support.mcp_ac3_strict_product_memory_test_wiring import (
+            apply_strict_product_memory_test_patches,
+        )
 
         resolved_authority = agent_contract_authority
         if resolved_authority is None:
             resolved_authority = materialize_manifest_contract_authority_lab_compat(manifest)
-        ctx = wire_application_environment(
-            manifest,
-            environment,
-            settings=settings,
-            agent_contract_authority=resolved_authority,
-        ).build_context
+        import pytest
+
+        patcher = pytest.MonkeyPatch()
+        try:
+            apply_strict_product_memory_test_patches(patcher)
+            ctx = wire_application_environment(
+                manifest,
+                environment,
+                settings=settings,
+                agent_contract_authority=resolved_authority,
+            ).build_context
+        finally:
+            patcher.undo()
     return RegistryProjectionInputBundle(
         runtime_revision=revision,
         effective_roster=roster,

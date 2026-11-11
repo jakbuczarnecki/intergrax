@@ -17,7 +17,10 @@
 | IIAC_MCP_EVIDENCE_PUBLICATION_SHA | `8fff85e3bfc5190929ff464b00fbe759dadcb5f8` | Independent IIIC re-audit evidence |
 | IIAC_MCP_ACTIVATION_PHASE1_SHA | `ce4b9f5ce118693d780659b38c2e11f701add0a3` | Operator OD + activation record phase 1 |
 | P4_PUBLICATION_SHA | `48181df7f99a0f9840e699dd774532672d4ffff3` | PR #455 merge @ `origin/development` |
-| FINAL_REMOTE_HEAD | `48181df7f99a0f9840e699dd774532672d4ffff3` | Post–PR #455 `origin/development` |
+| P4_TERMINAL_PUBLICATION_SHA | `7930c256fdbe6bb878d9493670361d3cbe4b07bb` | P4 terminal report + ladder (`7930c256f`) |
+| P5_BASELINE_SHA | `7930c256fdbe6bb878d9493670361d3cbe4b07bb` | T-IGX-035-F cut @ `origin/development` |
+| P5_IMPLEMENTATION_SHA | _pending merge_ | T-IGX-035-F batch |
+| FINAL_REMOTE_HEAD | `7930c256fdbe6bb878d9493670361d3cbe4b07bb` | Pre–P5 merge `origin/development` |
 | IMPLEMENTATION_SHA | `27e19f1feb31522c3103e6fce6f15a8c9395f380` | P4 + corrective product pin |
 | TEST_EXECUTION_SHA | _unset_ | P7 qualification |
 | AUDIT_SHA | _unset_ | P8 independent audit |
