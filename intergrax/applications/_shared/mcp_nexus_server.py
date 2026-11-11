@@ -151,9 +151,13 @@ async def execute_mcp_agent_task(
     return bounded if isinstance(bounded, dict) else {"error": "mcp_payload_byte_limit_exceeded"}
 
 
-def _legacy_server_id_from_name(name: str) -> str:
+def legacy_server_id_from_display_name(name: str) -> str:
     slug = re.sub(r"[^a-z0-9]+", "-", name.casefold()).strip("-")
     return slug or "mcp-server"
+
+
+def _legacy_server_id_from_name(name: str) -> str:
+    return legacy_server_id_from_display_name(name)
 
 
 def build_nexus_mcp_server(

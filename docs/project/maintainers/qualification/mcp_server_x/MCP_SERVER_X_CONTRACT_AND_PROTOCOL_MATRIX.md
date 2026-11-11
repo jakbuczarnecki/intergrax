@@ -7,7 +7,7 @@
 
 | Surface | Version | Owner module (planned) | Fingerprint | COMPAT inventory |
 | --- | --- | --- | --- | --- |
-| `mcp-server-definition.v1` | v1 | `intergrax/contracts/mcp_server_definition.py` | _pending P4-03_ | _pending P4-05_ |
+| `mcp-server-definition.v1` | v1 | `intergrax/contracts/mcp_server_definition.py` | `compute_mcp_exposure_schema_fingerprint` | COMPAT mechanical inventory |
 | MCP tool schema export | existing | `intergrax/tools/exporters/mcp.py` | from `ToolContract` | historical |
 | Streamable HTTP host adapter | FastMCP 3.x (`fastmcp>=3.3.1,<4`) | `fastapi_mcp.py` + `mcp_host_mount.py` | lockfile @ SHA | L2 `test_fastapi_mcp`; L3 streamable HTTP qual |
 
