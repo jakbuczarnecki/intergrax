@@ -13,7 +13,7 @@
 | Operator plan approval | **OK** — `Approved: operator @ 2026-11-11T16:53:00+01:00` |
 | `verify_plan_approval.py` | **OK** |
 | PR open **before** merge | **YES** (#459) |
-| Independent G6 recorded **before** merge | **PENDING** — new auditor session required |
+| Independent G6 recorded **before** merge | **NO** — post-publication dossier @ `9b8c19d75` |
 | Mandatory CI green | **NO** — `governance-fast` ACT-N11 (see `MCP_SERVER_X_P6_ACT_N11_TRIGGER.md`) |
 
 ## Replay contract (auditor)
@@ -31,4 +31,4 @@ Local implementer replay @ `5ff8606b0`: **PASS** (≈120–175 s).
 
 ## Verdict slot
 
-`INDEPENDENT_AUDIT_RESULT:` **_PENDING_** — auditor session must record `ACCEPT_SCOPED` or `FAIL` in `MCP_SERVER_X_P6_INDEPENDENT_AUDIT_DOSSIER.md` (to be created by auditor).
+`INDEPENDENT_AUDIT_RESULT (G6 scoped):` **`ACCEPT_SCOPED`** — dossier [`MCP_SERVER_X_P6_INDEPENDENT_AUDIT_DOSSIER.md`](./MCP_SERVER_X_P6_INDEPENDENT_AUDIT_DOSSIER.md). IIIC ACT-N11 P6: [`MCP_ACT_N11_INDEPENDENT_REAUDIT_DOSSIER_P6.md`](../iiac_evidence/MCP-SERVER-X/act_n11_mcp_p6/MCP_ACT_N11_INDEPENDENT_REAUDIT_DOSSIER_P6.md). Merge @ `a695c9c83` **preceded** governance gates (F-MCP-P6-GOV-001).
