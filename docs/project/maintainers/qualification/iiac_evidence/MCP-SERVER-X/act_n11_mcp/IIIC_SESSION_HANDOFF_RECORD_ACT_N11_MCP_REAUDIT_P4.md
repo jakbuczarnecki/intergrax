@@ -7,7 +7,8 @@
 **Verdict:** `PASS_SCOPED`  
 **Policy:** `IIAC-2026-11-05.1`  
 **Prior partial audit execution SHA:** `7c401fd98cf2b42b9b2fd5860485bac34a8c2df3` (preserved — not overwritten)  
-**Re-audit execution SHA:** `b3d130d78e4b6799079568cde4af9787f9baab79`  
+**Re-audit test replay SHA:** `b3d130d78e4b6799079568cde4af9787f9baab79`  
+**Evidence publication SHA:** `8fff85e3bfc5190929ff464b00fbe759dadcb5f8`  
 **Corrective PR:** [#455](https://github.com/jakbuczarnecki/intergrax/pull/455) vs `development` @ `7562a069`
 
 ## Operator actions (activation gate — pending)

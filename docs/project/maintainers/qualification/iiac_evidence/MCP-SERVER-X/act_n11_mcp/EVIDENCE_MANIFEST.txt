@@ -29,4 +29,6 @@ P4 corrective re-audit (PASS_SCOPED — independent auditor f7c3b2a1-5d4e-4f8a-9
 Shared scope:
   audit_scope.json
 
-publication_state: pending publisher commit
+evidence_publication_sha: 8fff85e3bfc5190929ff464b00fbe759dadcb5f8
+test_execution_sha: b3d130d78e4b6799079568cde4af9787f9baab79
+publication_state: published (SHA pin commit pending)

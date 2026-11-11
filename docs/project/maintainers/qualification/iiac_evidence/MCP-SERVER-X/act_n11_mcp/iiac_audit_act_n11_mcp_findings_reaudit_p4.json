@@ -1,7 +1,9 @@
 {
   "stage_id": "MCP-SERVER-X",
   "session_designation": "IIIC-ACT-N11-MCP-REAUDIT-P4-2026-11-11",
-  "audit_execution_sha": "b3d130d78e4b6799079568cde4af9787f9baab79",
+  "audit_execution_sha": "8fff85e3bfc5190929ff464b00fbe759dadcb5f8",
+  "test_execution_sha": "b3d130d78e4b6799079568cde4af9787f9baab79",
+  "evidence_publication_sha": "8fff85e3bfc5190929ff464b00fbe759dadcb5f8",
   "audited_implementation_sha": "27e19f1feb31522c3103e6fce6f15a8c9395f380",
   "audit_execution_sha_prior_act_n11": "11ac8ad85f62a6925d25ea840c92d5c6a936cfe4",
   "verdict_basis": "PASS_SCOPED",

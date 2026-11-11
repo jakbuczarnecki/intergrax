@@ -13,8 +13,9 @@
 | PR #454 merge commit | `7562a0692d7f33ce4423baf76988ced008e870fa` |
 | Corrective PR | [#455](https://github.com/jakbuczarnecki/intergrax/pull/455) `mcp-server-x-p4` |
 | `audited_implementation_sha` (corrective product) | `27e19f1feb31522c3103e6fce6f15a8c9395f380` |
-| `audit_execution_sha` | `b3d130d78e4b6799079568cde4af9787f9baab79` |
-| `test_execution_sha` | `b3d130d78e4b6799079568cde4af9787f9baab79` |
+| `test_execution_sha` (replay) | `b3d130d78e4b6799079568cde4af9787f9baab79` |
+| `evidence_publication_sha` | `8fff85e3bfc5190929ff464b00fbe759dadcb5f8` |
+| `audit_execution_sha` | `8fff85e3bfc5190929ff464b00fbe759dadcb5f8` |
 | Scoped verdict | **`PASS_SCOPED`** |
 
 ## Baseline verification
