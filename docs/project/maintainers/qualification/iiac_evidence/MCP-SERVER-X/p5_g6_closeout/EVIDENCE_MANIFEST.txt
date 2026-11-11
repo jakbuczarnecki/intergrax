@@ -18,5 +18,5 @@ G6 independent audit:
   auditor_p5_qualification_batch.log
   auditor_p5_supplementary_ticket_contract.log
 
-g6_evidence_publication_sha: G6_EVIDENCE_PUBLICATION_SHA_TBD
-publication_state: pending_commit
+g6_evidence_publication_sha: 7fd899aaea873aac6ec9ae3fe6ce5e3ef9ec9c8c
+publication_state: published
