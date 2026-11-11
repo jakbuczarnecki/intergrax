@@ -38,3 +38,13 @@
 - Not FRZ PASS  
 - Not MCP-SERVER-X CLOSED  
 - Not IIAC certification  
+
+---
+
+## Addendum — P1 publication closure review (2026-11-11)
+
+**Session:** Independent scoped PR review (`process_enforced`) — review session **separate** from P1 dossier implementer batch; no self-approve on same-author PR.
+
+**Disposition:** **ACCEPT_SCOPED** — architecture preparation package satisfies P1 scope; ADR pack remains **Proposed**; OD-MCP-01..07 **PENDING** (operator P2 gate).
+
+**Operator plan approval:** Ticket `T-IGX-035-B` digest verified; `Approved: operator @ 2026-11-11T10:48:00+01:00`.

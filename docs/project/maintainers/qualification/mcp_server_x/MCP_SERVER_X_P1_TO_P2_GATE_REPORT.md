@@ -40,4 +40,4 @@ First implementation slice per master WBS: MCP-P2-01 typed definition (requires 
 
 ---
 
-P1 ARCHITECTURE PREPARED — OD-MCP-01..07 PENDING — P2 BLOCKED
+P1 ARCHITECTURE PREPARED — PUBLISHED — OD-MCP-01..07 PENDING — P2 BLOCKED

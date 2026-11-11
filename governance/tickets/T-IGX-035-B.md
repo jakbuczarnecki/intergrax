@@ -13,13 +13,15 @@ Batch **MCP-P1** only: universal MCP Server Engine **architecture preparation** 
 
 ## Plan digest
 
-Plan digest: `f127f72534458c2ebf42fc4b8a960363b34c8c98345a8d419b3257c9e42cb4b3`
+Plan digest: f127f72534458c2ebf42fc4b8a960363b34c8c98345a8d419b3257c9e42cb4b3
 
 Canonical plan: [`governance/tickets/plans/PLAN_T-IGX-035-B.md`](plans/PLAN_T-IGX-035-B.md).
 
 ## Approved
 
-_Awaiting operator review of P1 dossier and plan digest — agent MUST NOT write `Approved`._
+Approved: operator @ 2026-11-11T10:48:00+01:00
+
+Disposition: **ACCEPT_SCOPED** — architecture preparation package (P1 publication); OD-MCP-01..07 remain **PENDING**.
 
 ## Test contract
 
@@ -35,7 +37,7 @@ MCP engine implementation (P2–P4), qualification execution (P5–P7), independ
 
 ## Lifecycle state
 
-in_progress
+plan_approved
 
 ## Checkpoint
 
