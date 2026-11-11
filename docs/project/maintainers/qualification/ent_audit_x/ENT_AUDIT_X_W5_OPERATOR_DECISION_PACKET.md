@@ -1,26 +1,27 @@
-# ENT-AUDIT-X — W5 operator decision packet (consolidated)
+# ENT-AUDIT-X — W5 operator decision packet (final, pre–OD-ENT-08)
 
-**Status:** `W4-03 COMPLETE — GATE A TARGET — STOP before OD-ENT-08`  
-**ENT-AUDIT-X is NOT closed.** `FORMAL_CLOSURE_PUBLICATION_SHA` unset. **`OD-ENT-08` not recorded** — do not infer operator approval.  
+**Status:** `W4-03 MERGED — GATE A PASS @ development HEAD — AWAITING OD-ENT-08`  
+**ENT-AUDIT-X is NOT closed.** `FORMAL_CLOSURE_PUBLICATION_SHA` unset. **No OD-ENT-08 on file.**  
 **Campaign:** `ENT-AUDIT-X-FORMAL-CERTIFICATION-AND-CLOSURE` · **Ticket:** `governance/tickets/T-IGX-024-B.md`  
-**Prepared:** 2026-11-11 (certification publication lane, W4-03)
+**Prepared:** 2026-11-11 (post PR #446 merge)
 
-## 1. SHA ladder (authoritative pins)
+## 1. Authoritative HEAD and lineage
 
 | Role | SHA |
 | --- | --- |
-| Campaign baseline HEAD @ W4 | `dc778d125fd7e7205edd30fbbf144ca12320b0ee` |
+| **`origin/development` HEAD (post #445 + #446)** | `bd026181583a54b408c05206ec194879d56b5734` |
+| Merge PR #446 | `bd026181583a54b408c05206ec194879d56b5734` |
 | TEST_EXECUTION_SHA | `32a9633440007eb4e8f00a825bbf2e399192b346` |
 | EVIDENCE_PUBLICATION_SHA (B5 FULL) | `481b2cc2c10a407fd2b93cf9c69714e8894aeccf` |
 | W2_NORMAL_FREEZE_EVIDENCE_PUBLICATION_SHA | `bc4b5f61666a8fea638064f50809fff2089b1b8b` |
 | ACCEPTED_BASELINE_SHA | `480550d80b2515fc8cbd2a0ba6f79d1ee1c44541` |
 | W3_INDEPENDENT_AUDIT_PUBLICATION_SHA | `fd5728955605ef2ec013d69ec9290736f0970419` |
 | W4_INDEPENDENT_CERTIFICATION_PUBLICATION_SHA | `5f178174e2462b038d544b61192a666d5b0ca79f` |
-| B6_ACCEPTANCE_PUBLICATION_SHA (phase-1) | `add6a6ce2015ebaa4bc38b7fadf3936f100a1522` |
 | W4_03_FRZ_PROMOTION_PUBLICATION_SHA | `24bc86834f25e6f5914017accf84158111ae0ac5` |
+| N-09 corrective (in merge #446) | `dd204cf8df523cde64704950dd49009fb76c3523` |
 | FORMAL_CLOSURE_PUBLICATION_SHA | *unset* |
 
-## 2. Independent session identities
+## 2. Independent session identities (IIAC)
 
 | Role | Session ID |
 | --- | --- |
@@ -28,50 +29,48 @@
 | W3 publication auditor | `7c58500c-17c9-42a8-acbc-4b0e05487751` |
 | W4 certifier | `4380025f-0a4e-43a2-bb90-ead2ce6d0bec` |
 
-## 3. Verdicts and dispositions
+## 3. Accepted dispositions (unchanged SCOPED scope)
 
 | Item | Disposition |
 | --- | --- |
-| W3 independent audit | `PASS_SCOPED` |
-| W4 certification | `PASS_SCOPED` |
-| OD-ENT-02 sufficiency | `SUFFICIENT_COMPENSATING_SCOPED` |
-| `frz_aud_status` | `PASS_SCOPED` (W4-03 promoted) |
-| FRZ-AUD-01..09 | `PASS` |
-| FRZ-AUD-10 | `PASS — COMPENSATING (SCOPED)` |
+| W3 independent audit | **`PASS_SCOPED`** (not unscoped PASS) |
+| W4 certification | **`PASS_SCOPED`** |
+| OD-ENT-02 | **`SUFFICIENT_COMPENSATING_SCOPED`** · `od_ent_02_mode=compensating` |
+| `frz_aud_status` | **`PASS_SCOPED`** |
+| FRZ-AUD-01 … FRZ-AUD-09 | **`PASS`** |
+| FRZ-AUD-10 | **`PASS — COMPENSATING (SCOPED)`** |
 | Matrix C | **75/75 QUALIFIED** |
-| Population E | **PASS_SCOPED** (85/85 L3 @ TES′) |
+| Population E | **PASS_SCOPED** (85 semantic oracles @ TES′ L3) |
 
-## 4. Scoped limitations (preserved)
+## 4. Gate A replay @ `bd026181583a54b408c05206ec194879d56b5734`
 
-1. **OPEN-BP-01** — live `development` branch protection not equivalent to compensating package.  
-2. **F-W3-001** — `freeze_normal_at_<TES>` strict B5 directory naming (bytes OK).  
-3. **Path B** — FRZ-PRD live qualification dimension remains OPEN per L3 `limitations`.  
-4. **Assurance** — `process_enforced`; not cryptographic closure.
+| Check | Result |
+| --- | --- |
+| `ent_audit_x_formal_closure_preflight.py --gate A` | **PASS** |
+| IIAC policy | `IN_FORCE` @ `IIAC-2026-11-05.1` |
+| PR #446 CI (mandatory) | **PASS** — `ent-audit-pr-gate`, `ent-audit-fast`, `governance-fast`, `ci-smoke`, `evol-x-b4-preflight`, `governance-policy-pin` |
 
-## 5. Compensating controls (OD-ENT-02 summary)
+## 5. Scoped limitations (operator must accept with OD-ENT-08)
 
-- Ruleset `Protect development` (deletion + non-fast-forward only).  
-- ENT workflows: `ent-audit-pr-gate`, `ent-audit-fast`; CI run `42869847981` @ TES′.  
-- Gate A/B preflight wiring (`ent_audit_x_formal_closure_preflight.py`).  
-- `verify_od_ent_02_compensating_control.py` @ published=true when compensating.
+1. **OPEN-BP-01** — live branch protection on `development` remains unresolved; compensating controls are **not** equivalent to LIVE protection.  
+2. **F-W3-001** — `freeze_normal_at_<TES>` strict B5 directory naming mismatch (artifact bytes and indices OK).  
+3. **Path B / FRZ-PRD** — live qualification slice remains **OPEN** (carried in L3 report `limitations`).  
+4. **Assurance** — **`process_enforced`** only; no claim of cryptographic or unlimited enterprise closure.
 
-## 6. Formal closure scope (for OD-ENT-08 only — unsigned)
+## 6. Evidence index
 
-**Target designation (if operator authorizes):** `ENT-AUDIT-X — CLOSED — INDEPENDENTLY ACCEPTED (SCOPED) — PUBLISHED` per IIAC migration matrix **COMPENSATING** path — **not** claimed until OD-ENT-08 recorded and Gate B green.
+- W3 audit tree: `docs/project/maintainers/qualification/iiac_evidence/ENT-AUDIT-X/audit/w3_dc778d/`  
+- W4 certifier tree: `docs/project/maintainers/qualification/iiac_evidence/ENT-AUDIT-X/certification/w4_dc778d/`  
+- Canonical manifest: `docs/project/maintainers/qualification/iiac_evidence/ENT-AUDIT-X/certification/iiac_audit_session_manifest.ENT-AUDIT-X.json`  
+- Closure status: `docs/project/maintainers/qualification/ent_audit_x/ENT_AUDIT_X_CLOSURE_EXECUTION_STATUS.json`  
+- OD-ENT-02 sub-manifest: `docs/project/maintainers/qualification/ent_audit_x/od_ent_02_compensating.v1.json`
 
-**Includes:** roadmap §5 headline (Gate B), `FORMAL_CLOSURE_PUBLICATION_SHA`, ARCH-FREEZE handoff prep (W6; **not** ARCH-FREEZE CLOSED).
+## 7. Intended formal designation (only after OD-ENT-08 + Gate B)
 
-## 7. Operator actions required
+`ENT-AUDIT-X — CLOSED — INDEPENDENTLY ACCEPTED (SCOPED) — PUBLISHED`  
+Per IIAC COMPENSATING path — **not** in force until operator records OD-ENT-08 and W5/W6 closure publication completes with **Gate B PASS**.
 
-1. Confirm **Gate A** green @ W4-03 pin `24bc86834…` (`ent_audit_x_formal_closure_preflight.py --gate A` → **PASS** on certifier replay).  
-2. Record **`Approved OD-ENT-08: …`** in a dedicated signing session (non-delegable closure authorisation per plan).  
-3. Only then authorize W5 closure phase 1/2 (roadmap, terminal dossier, Gate B).
+## 8. OD-ENT-08 — operator signing block (template only)
 
-**STOP:** This packet is **not** an OD-ENT-08 decision and **does not** close ENT-AUDIT-X.
-
-## 8. Evidence index
-
-- W3: `iiac_evidence/ENT-AUDIT-X/audit/w3_dc778d/`  
-- W4: `iiac_evidence/ENT-AUDIT-X/certification/w4_dc778d/`  
-- Canonical manifest: `certification/iiac_audit_session_manifest.ENT-AUDIT-X.json`  
-- Handoff: `certification/w4_dc778d/W5_CERTIFIER_HANDOFF_RECORD.md`
+See companion file: [`ENT_AUDIT_X_OD_ENT_08_SIGNING_REQUEST.md`](./ENT_AUDIT_X_OD_ENT_08_SIGNING_REQUEST.md).  
+**This packet does not contain an approval line.**
