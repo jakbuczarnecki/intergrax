@@ -12,13 +12,14 @@
 
 | Flag | State |
 | --- | --- |
-| **P4 CLOSED** | **NO** — merge not executed |
-| **REVIEWED** | **YES** — independent disposition on PR #454 (reviewer ≠ implementer) |
-| **CI PASS** | **PARTIAL** — see mandatory gates below |
-| **PUBLISHED** | **NO** — no `P4_PUBLICATION_SHA` on `origin/development` |
-| **P5 READY** | **YES (product)** — P4 implementation on branch; blocked on merge + IIAC |
+| **P4 CLOSED (scoped)** | **YES** — PR #455 merged; see [`MCP_SERVER_X_P4_TERMINAL_PUBLICATION_REPORT.md`](./MCP_SERVER_X_P4_TERMINAL_PUBLICATION_REPORT.md) |
+| **REVIEWED** | **YES** — IIIC `PASS_SCOPED` + certifier preflight |
+| **CI PASS** | **YES** — `governance-fast`, `ent-audit-fast`, `evol-x-b4-preflight` @ `485d0b06f` |
+| **PUBLISHED** | **YES** — `P4_PUBLICATION_SHA` `48181df7f` on `origin/development` |
+| **P5 READY** | **YES** |
+| **MCP-SERVER-X stage CLOSED** | **NO** (explicit) |
 
-**Overall:** **PARTIAL_EXACT_BLOCKERS**
+**Overall:** **P4 FORMALLY CLOSED (scoped)** — MemoryProvider residual **B-P4-TEST-01** tracked for P5
 
 ---
 

@@ -39,17 +39,19 @@ P5–P8 qualification/IIAC/FRZ PASS; Resources/Prompts; stdio/SSE transport; sta
 
 ## Lifecycle state
 
-plan_approved
+closed
 
 ## Checkpoint
 
 | Field | Value |
 | --- | --- |
-| Branch | `mcp-server-x-p4` (corrective follow-on PR vs `7562a069`; #454 merged) |
-| Corrective SHA | `c699889b0` (publication HEAD; product fix `27e19f1f`) |
-| P3_PUBLICATION_SHA | `7172f294f` |
-| Tasks | MCP-P4-01..05 targeted |
-| ACT-N11 | No documented product-path allowlist amend for `mcp_server_definition.py` / `mcp_server_engine.py` — expect governance-fast product Δ; operator merge per prior MCP batches |
-| Gate | **P4 IMPLEMENTED** (scope) — merge **BLOCKED** (`governance-fast` ACT-N11) |
-| ACT-N11 batch | [`IIAC_ACT_N11_MCP_RECOVERY_BATCH.md`](../../docs/project/maintainers/qualification/mcp_server_x/IIAC_ACT_N11_MCP_RECOVERY_BATCH.md) — OD **PREPARED**; auditor + operator activation **PENDING** |
-| CI @ `06be8bfd4` | `governance-fast` **FAIL** run `43010550205`; other mandatory PR gates **PASS** |
+| P4_PUBLICATION_SHA | `48181df7f99a0f9840e699dd774532672d4ffff3` |
+| P4_CORRECTIVE_PRODUCT_SHA | `27e19f1feb31522c3103e6fce6f15a8c9395f380` |
+| P4_MERGE_SHA (PR #454) | `7562a0692d7f33ce4423baf76988ced008e870fa` |
+| IIIC evidence publication | `8fff85e3bfc5190929ff464b00fbe759dadcb5f8` |
+| IIAC MCP activation phase 1 | `ce4b9f5ce118693d780659b38c2e11f701add0a3` |
+| Operator activation | `IIAC-OD-MCP-ACT-N11-2026-11-11` @ `2026-11-11T13:43:00+01:00` |
+| PR #455 | **MERGED** |
+| ACT-N11 MCP rebind | **COMPLETE** — `verify_iiac_policy_activation --require-in-force` **0** @ publication |
+| Residual | **B-P4-TEST-01** MemoryProvider admission (tracked; P5) |
+| Disposition | **P4 CLOSED (scoped)** — P5 qualification next; stage MCP-SERVER-X **not** CLOSED |

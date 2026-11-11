@@ -11,7 +11,14 @@
 | P2_PUBLICATION_SHA | `d46d9a0de316fea7b77f76c847028c9c932a9f3f` | PR #452 merge @ `origin/development` |
 | P3_IMPLEMENTATION_SHA | `bee38a76b415cd4ca701fcc592e41b1f56e37f59` | P3 product commit (PR #453) |
 | P3_PUBLICATION_SHA | `4385c5e975492d0ee0d0049bd1c2af1ff785ea68` | PR #453 merge @ `origin/development` (`git ls-remote`, 2026-11-11) |
-| IMPLEMENTATION_SHA | `bee38a76b415cd4ca701fcc592e41b1f56e37f59` | P3 transport/hosting (P4 facade migration next) |
+| P4_IMPLEMENTATION_SHA | `a21a6629a6f8aa25519d4e25ac0004b38426669b` | P4 facades product anchor (PR #454) |
+| P4_MERGE_SHA | `7562a0692d7f33ce4423baf76988ced008e870fa` | PR #454 merge @ `origin/development` |
+| P4_CORRECTIVE_PRODUCT_SHA | `27e19f1feb31522c3103e6fce6f15a8c9395f380` | F-MCP-ACT-N11-001 `host_custom` FastMCP fix |
+| IIAC_MCP_EVIDENCE_PUBLICATION_SHA | `8fff85e3bfc5190929ff464b00fbe759dadcb5f8` | Independent IIIC re-audit evidence |
+| IIAC_MCP_ACTIVATION_PHASE1_SHA | `ce4b9f5ce118693d780659b38c2e11f701add0a3` | Operator OD + activation record phase 1 |
+| P4_PUBLICATION_SHA | `48181df7f99a0f9840e699dd774532672d4ffff3` | PR #455 merge @ `origin/development` |
+| FINAL_REMOTE_HEAD | `48181df7f99a0f9840e699dd774532672d4ffff3` | Post–PR #455 `origin/development` |
+| IMPLEMENTATION_SHA | `27e19f1feb31522c3103e6fce6f15a8c9395f380` | P4 + corrective product pin |
 | TEST_EXECUTION_SHA | _unset_ | P7 qualification |
 | AUDIT_SHA | _unset_ | P8 independent audit |
 | CERTIFICATION_SHA | _unset_ | P8 IIAC |
