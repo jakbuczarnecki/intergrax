@@ -45,6 +45,7 @@
     },
     "version": {
       "type": "integer",
+      "maximum": 9007199254740991,
       "minimum": 1,
       "description": "SFX logical version; one CW WorkArtifactVersion per value."
     },
@@ -108,14 +109,17 @@
       "properties": {
         "manual_minutes_per_case": {
           "type": "integer",
+          "maximum": 9007199254740991,
           "minimum": 0
         },
         "cases_per_month": {
           "type": "integer",
+          "maximum": 9007199254740991,
           "minimum": 0
         },
         "cost_per_hour_minor_units": {
           "type": "integer",
+          "maximum": 9007199254740991,
           "minimum": 0
         }
       }
@@ -135,6 +139,7 @@
         },
         "run_cost_per_case_minor_units": {
           "type": "integer",
+          "maximum": 9007199254740991,
           "minimum": 0
         }
       }
@@ -148,7 +153,9 @@
       ],
       "properties": {
         "savings_per_month_minor_units": {
-          "type": "integer"
+          "type": "integer",
+          "minimum": -9007199254740991,
+          "maximum": 9007199254740991
         },
         "payback_months": {
           "anyOf": [
@@ -235,6 +242,7 @@
         },
         "version": {
           "type": "integer",
+          "maximum": 9007199254740991,
           "minimum": 1
         },
         "canonical_digest": {

@@ -6,7 +6,7 @@
 | **Date** | 2026-11-12 |
 | **Deciders** | Operator (OD-SFX-02 stack choice; OD-SFX-05 Node toolchain; OD-SFX-06 acceptance) |
 | **Reference SHA** | `eadb1c2116fe` (`origin/development`); every `path:line` below is at this SHA |
-| **Related** | SFX master plan R1 §7.8, §10 W3/W5, §13, §16 (`governance/tickets/plans/SFX-MASTER-PLAN.md`; session draft `.tmp/session/sfx/SFX_MASTER_PLAN_R1.md`) · [`T-IGX-037-C`](../../../../../../governance/tickets/T-IGX-037-C.md) · [`ADR-SFX-001`](ADR-SFX-001.md) (placement, ME-1) · [`ADR-SFX-004`](ADR-SFX-004.md) (parity, CLI, MCP) · [`ADR-SEF-001`](../2026-11-05/ADR-SEF-001.md) |
+| **Related** | SFX master plan R1 §7.8, §10 W3/W5, §13, §16 (`governance/tickets/plans/SFX-MASTER-PLAN.md`) · [`T-IGX-037-C`](../../../../../../governance/tickets/T-IGX-037-C.md) · [`ADR-SFX-001`](ADR-SFX-001.md) (placement, ME-1) · [`ADR-SFX-004`](ADR-SFX-004.md) (parity, CLI, MCP) · [`ADR-SEF-001`](../2026-11-05/ADR-SEF-001.md) |
 
 ## Context
 

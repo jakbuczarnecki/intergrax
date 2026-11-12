@@ -121,7 +121,7 @@ ECAP-§16 requires a protocol update for, among other triggers, a "new platform 
 ### Negative
 
 - Tier-2 placement requires Tier-2 tests and boundary scans for a large product module. Tier-3 doors must stay thin, which needs a conformance check (no validation logic in doors).
-- SFX inherits the open qualification states of its owners: Collaborative Work is REQUALIFICATION_REQUIRED, MCP is not CLOSED, and the long-running PDC work is open. SFX claims cannot exceed them.
+- SFX inherits the open qualification states of its owners: Collaborative Work is REQUALIFICATION_REQUIRED, MCP-SERVER-X is CLOSED (scoped), so its scoped limitations carry over, and the long-running PDC work is open. SFX claims cannot exceed them.
 - New product paths under `agents/` and `applications/` trigger IIAC ACT-N11 re-binds for every product wave (C-IIAC-01).
 
 ## Compliance
