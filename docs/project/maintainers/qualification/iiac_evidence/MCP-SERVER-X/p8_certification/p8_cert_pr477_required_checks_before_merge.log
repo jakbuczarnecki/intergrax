@@ -1,0 +1,11 @@
+command: gh pr view 477 / gh api actions/runs/{43213081000,43213081028}/jobs (required checks of the P8 audit PR #477)
+git_head: a618a03a8b245ceefef6ab5a922213aaef46dcd1
+date_utc: 2026-11-12T12:22:57Z
+state=MERGED merge_commit=a618a03a8b245ceefef6ab5a922213aaef46dcd1 merged_at=2026-11-12T12:14:48Z pr_head=32a50991d1cef4eaf68b727f953d138890f1b461
+ent-audit-pr-gate success completed_at=2026-11-12T11:54:39Z
+ent-audit-fast success completed_at=2026-11-12T12:10:25Z
+evol-x-b4-preflight success completed_at=2026-11-12T11:58:57Z
+ci-smoke success completed_at=2026-11-12T11:55:38Z
+governance-fast success completed_at=2026-11-12T11:59:44Z
+conclusion: all five required checks (ci-smoke, governance-fast, evol-x-b4-preflight, ent-audit-fast, ent-audit-pr-gate) concluded success on PR head 32a50991d before the merge at 12:14:48Z
+exit_code: 0
