@@ -33,11 +33,11 @@ Give the user and the business owner one readable summary of the proposed scenar
    - **Status:** "Proposal (L1 draft). Not approved, not built, not tested, not certified." Lifecycle `DRAFT`.
    - **Problem and objective:** from the problem statement and the specification.
    - **What the scenario does:** actors, main flow, human approval points, deterministic rules versus LLM steps.
-   - **Reuse:** the proposed G-1 reuse ratio, resolved capabilities with their owner paths, unresolved requirements.
+   - **Reuse:** the proposed G-1 reuse ratio with the counts of all five `resolution` values (`NEW_REQUIRED` on its own line, so hosted scenario logic is not read as reuse), resolved capabilities with their owner paths, unresolved requirements with their `IQ` ids.
    - **Integrations:** each integration with its sandbox adapter kind, its `secret_ref` names, and its open PROD-Q obligations.
    - **Test plan:** case counts by kind, adversarial coverage, uncovered criteria. No results exist.
    - **Review:** critic finding counts by severity and every `BLOCKER` in one line each.
-   - **Open questions:** the blocking ones first, with who can answer them.
+   - **Open questions:** `blocking_for: draft` first, then `build` (every `UNRESOLVED` requirement and its `IQ` id), with who can answer them. A proposal with an open `build` blocker is not ready for Approve; say so in one line.
    - **Next decision:** a human approval of an exact blueprint version, outside SFX v0 (planned: API / MCP approval request, SFX-P10). Build, sandbox run, catalog and timeline need SFX-P5+ (STOP).
 4. With any `BLOCKER`, say so first and offer `sfx-blueprint` (Improve) or the owning step skill. Never present a blocked proposal as ready.
 5. Update `sfx_session_state.v1.json` (stage `PRESENT`, snapshot `DRAFT`) when `sfx-session` is not running.

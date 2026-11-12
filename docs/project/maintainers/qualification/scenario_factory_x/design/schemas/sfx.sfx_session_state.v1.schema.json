@@ -109,7 +109,8 @@
       "type": "array",
       "items": {
         "$ref": "#/$defs/id"
-      }
+      },
+      "description": "Every open Q-<nn> (user question) and IQ-<nn> (inventory or platform gap) id listed in open_questions.md, whatever its blocking_for (draft, build or none). Sorted ascending."
     },
     "resume_cursor": {
       "anyOf": [
@@ -119,7 +120,8 @@
         {
           "type": "null"
         }
-      ]
+      ],
+      "description": "Precedence: first open id with blocking_for draft; else the next step id that has a v0 skill (for example step:CONFIGURE); else the first open id with blocking_for build; else null."
     }
   },
   "$defs": {
