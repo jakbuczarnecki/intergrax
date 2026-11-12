@@ -38,7 +38,7 @@ uv run python -m scripts.governance.igx_gov ticket
 
 ## Lifecycle state
 
-quality_gate
+closed
 
 ## Checkpoint
 
@@ -52,3 +52,4 @@ quality_gate
 | Product paths | none changed (`git diff --name-only` has no `intergrax/`, `agents/` or `applications/` path) |
 | Writes outside the B-REG-T write set (delegate note 1) | `PDC_REG_DIAGNOSIS.md`, `scripts/qualification/pdc_x_requirements.py` and the regenerated matrix outputs. Documentation and scripts only, recording evidence |
 | Delegate note 2 | Forwarded to the P7 auditor IA-D3: check that every RPL-F N/A has a rationale and that PASS is limited to the active proof set |
+| Publication | PR #471 merged into `development` at `5836a5a5bafab1cf819c34666afaf1789825dd52` (merge commit); PR head `252f521eeb9fd88b067078cb37d705654acc0186` equals the checkpointed commit. Closed as merged. Product path ACT-N11 unaffected |
