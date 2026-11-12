@@ -21,27 +21,31 @@
 | REQ-MCP-P-04 | Cancel on disconnect | Execution + transport cancel | MCP-P5-06 |
 | REQ-MCP-P-05 | Contract error catalog | Server definition | MCP-P2-05 |
 
-## MCP methods vs stage claims (target @ P7)
+## MCP methods vs stage claims (observed @ P7, see MCP_SERVER_X_P7_QUALIFICATION_PACKAGE.md)
 
 | Method / feature | v1 claim | Owner |
 | --- | --- | --- |
 | `tools/list`, `tools/call` | **Supported** (tools only) | Engine + ToolContract |
-| Resources | **Not advertised** | OD-MCP-02 |
-| Prompts | **Not advertised** | OD-MCP-02 |
+| Resources | **Advertised by FastMCP 3.3.1 but always empty** (`UNSUPPORTED_BY_DESIGN`: `resources/list` returns `[]`, reading an unknown resource fails) | OD-MCP-02 |
+| Prompts | **Advertised by FastMCP 3.3.1 but always empty** (`UNSUPPORTED_BY_DESIGN`: `prompts/list` returns `[]`, getting an unknown prompt fails) | OD-MCP-02 |
 | Progress / cancel via transport | **Supported** (existing cancel path) | Execution |
+| `logging` (`logging/setLevel`) | **Advertised by FastMCP, not claimed by v1** | FastMCP |
+| UI extension `io.modelcontextprotocol/ui` | **Advertised by FastMCP, not claimed by v1** | FastMCP |
+| `tasks`, `completions` | **Not advertised** (method not found, -32601) | — |
 
-## Error codes (planned @ P2-05)
+## Error codes (observed @ P7; 7 members of `McpServerDefinitionErrorCode`)
 
 | Code class | Meaning | When |
 | --- | --- | --- |
 | `MCP_DEF_INVALID` | Definition failed validation | Pre-mount |
-| `MCP_BINDING_UNKNOWN` | Binding id not in policy allowlist | Discovery/invoke |
+| `MCP_BINDING_UNKNOWN` | Binding id not exposed: not defined, or not in the policy allowlist | Discovery/invoke |
+| `MCP_BINDING_UNKNOWN_TOOL` | Catalog binding names a `tool_id` that is not in the known catalog | Pre-mount validation |
 | `MCP_BINDING_RETIRED` | Retired capability invoked | Invoke |
 | `MCP_PRINCIPAL_REQUIRED` | Auth profile requires harness principal | Pre-execution |
 | `MCP_TENANT_ASSERTION_CONFLICT` | Client assertion vs principal | Pre-execution |
 | `MCP_RESULT_BOUND_EXCEEDED` | Payload over byte limit | Post-tool |
 
-Exact enum names finalized in implementation; matrix SSOT updated @ P2 merge.
+Enum names are final and verified by the P7 L1 tests (`test_acc_02_*`). `MCP_PRINCIPAL_REQUIRED`, `MCP_TENANT_ASSERTION_CONFLICT` and `MCP_RESULT_BOUND_EXCEEDED` are declared but not raised by the engine at P7 (residual R-P7-05); the wire errors actually observed for those situations are listed in the P7 qualification package.
 
 ## Binding types
 

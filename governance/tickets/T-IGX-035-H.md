@@ -55,4 +55,17 @@ P8 audit/certification/closure, any product-path change, FRZ promotion, MCP-SERV
 
 ## Lifecycle state
 
-**plan_approved**
+**quality_gate**
+
+## Checkpoint
+
+| Field | Value |
+| --- | --- |
+| Baseline | `ab22e11e8fd0bedbb41171746df14d63c309fcb5`; authorization pack merged @ `d5c1383fc15c005daafd131eaf03b3c49393b792` |
+| TEST_EXECUTION_SHA | `abbe1525450da77da6801b080619a600c20cd497` |
+| Product-path delta | none (AC-P7-08) |
+| New P7 tests | 164 passed (8 files), clean-checkout replay identical |
+| Consistency | 13 passed (+ ACC-20 package test after the record commit) |
+| Regression selection | 141 passed; 11 pre-existing failures excluded (R-P7-02) |
+| Records | `MCP_SERVER_X_P7_QUALIFICATION_PACKAGE.md`, `MCP_SERVER_X_P7_EVOL_ENT_DELTA_RECORD.md`, `iiac_evidence/MCP-SERVER-X/p7_qualification/` |
+| Findings | D-P7-01, D-P7-02 fixed; R-P7-01..R-P7-06 open (scoped); P7-PROC-01, P7-PROC-02 recorded |

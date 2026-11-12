@@ -69,3 +69,7 @@ Any P7 change under `intergrax/`, `agents/` or `applications/` triggers ACT-N11:
 ## P8 prerequisites
 
 Frozen `IMPLEMENTATION_SHA` (P8-01), independent stage audit, IIIC certification, B6 evidence publication, roadmap stage row, ARCH-FREEZE handoff. P7 makes no claim of stage CLOSED, FRZ promotion or IIIC terminal.
+
+## P7 outcome (added with the P7 publication)
+
+The P7 exact-SHA qualification package is published ([`MCP_SERVER_X_P7_QUALIFICATION_PACKAGE.md`](./MCP_SERVER_X_P7_QUALIFICATION_PACKAGE.md), `TEST_EXECUTION_SHA` `abbe1525450da77da6801b080619a600c20cd497`) together with the [EVOL/ENT delta record](./MCP_SERVER_X_P7_EVOL_ENT_DELTA_RECORD.md). Open items carried into P8 as limitations: R-P7-01..R-P7-06 and the pre-existing failures R-P7-02. P8 (`T-IGX-035-I`) must not be started by the P7 implementers or test authors.
