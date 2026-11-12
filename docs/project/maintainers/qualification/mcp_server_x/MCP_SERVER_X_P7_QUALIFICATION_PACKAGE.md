@@ -33,17 +33,17 @@ Commands (cwd = repository or worktree root, interpreter `.venv/Scripts/python.e
 | MCP-ACC-02 | Typed server definition | L1 | 17 / 0 / 0 | COVERED | Matrix documentation gap D-P7-02 fixed in this change |
 | MCP-ACC-03 | Composition | L2 | 0 / 10 / 0 | COVERED | |
 | MCP-ACC-04 | Exposure policy | L1 + L2 | 8 / 8 / 0 | COVERED | |
-| MCP-ACC-05 | Publication / transport | L3 | 0 / 0 / 3 | COVERED | Only streamable HTTP is published; absence of stdio/SSE shown by route inventory and 404 probes |
+| MCP-ACC-05 | Publication / transport | L3 | 0 / 0 / 3 | COVERED | Only streamable HTTP is published by the served ASGI app (SSE-style and stdio-named paths answer 404). stdio is a process transport: HTTP probes cannot prove its absence and nothing in the product enforces it, a caller can run the composed FastMCP object on stdio (F-P8-06) |
 | MCP-ACC-06 | HTTP client | L3 | 0 / 0 / 2 | COVERED | |
 | MCP-ACC-07 | Discovery | L3 | 0 / 0 / 4 | COVERED | |
 | MCP-ACC-08 | Schema | L3 | 0 / 0 / 5 | COVERED | |
 | MCP-ACC-09 | Authorized invoke | L3 | 0 / 0 / 3 | COVERED — scoped | `run_agent` path; catalog invoke with a live execution binding stays covered by the F3 regression files |
-| MCP-ACC-10 | Denied invoke | L2 + L3 | 0 / 10 / 5 | COVERED | |
-| MCP-ACC-11 | Cross-tenant deny | L2 + L3 | 0 / 5 / 3 | COVERED | |
-| MCP-ACC-12 | Principal binding | L2 | 0 / 8 / 0 | COVERED | Principal is resolved from the FastMCP request context only (R-P7-06) |
-| MCP-ACC-13 | Cancel | L3 | 0 / 4 / 2 | COVERED | Client cancel notification reaches a governed cancel; no cancel without it (see R-P7-04) |
-| MCP-ACC-14 | Timeout | L2 (+ L3 if the transport carries a deadline) | 0 / 3 / 3 | COVERED — scoped | The transport carries no server-side deadline; canonical-execution deadline is **N/A through MCP** (recorded by test); client-side deadline shown at L3 (R-P7-04) |
-| MCP-ACC-15 | Disconnect | L3 | 0 / 1 / 2 | COVERED | The L2 test is a supplement and is not a physical disconnect |
+| MCP-ACC-10 | Denied invoke | L2 + L3 | 0 / 10 / 5 | COVERED | Holds for hosts with a configured credential; a host without harness auth trusts the client assertion (R-P8-01). The 401 path is probed at `/mcp/` at L3 and at `/mcp` (redirect-following test client) at L2 only (F-P8-07) |
+| MCP-ACC-11 | Cross-tenant deny | L2 + L3 | 0 / 5 / 3 | COVERED | L3 covers identity-assertion conflicts and credential separation between hosts; `wrong_tenant` (execution owned by another tenant) and cross-tenant cancel are L2 only, the cancel one calls `governed_cancel_active_task` directly (F-P8-07). Same precondition as ACC-10 (R-P8-01) |
+| MCP-ACC-12 | Principal binding | L2 | 0 / 8 / 0 | COVERED | Principal is resolved from the FastMCP request context only (R-P7-06); with no harness auth the client-asserted tenant/user is trusted (R-P8-01) |
+| MCP-ACC-13 | Cancel | L3 | 0 / 4 / 2 | COVERED | Client cancel notification reaches a governed cancel; no cancel without it (see R-P7-04). Scope: L3 uses a cooperative host double; one in-flight request per cancel test (cancel isolation untested); drain-bound path patched to 0.25 s (production 30 s) and a host outliving the drain untested (F-P8-07) |
+| MCP-ACC-14 | Timeout | L2 (+ L3 if the transport carries a deadline) | 0 / 3 / 3 | COVERED — scoped | The transport carries no server-side deadline; canonical-execution deadline is **N/A through MCP** (recorded by test; the test inspects a test fixture and a source-text substring, not the production host composition, F-P8-08); client-side deadline shown at L3 (R-P7-04); the in-memory deadline test accepts `completed` or `cancelled` (F-P8-08) |
+| MCP-ACC-15 | Disconnect | L3 | 0 / 1 / 2 | COVERED | The L2 test is a supplement and is not a physical disconnect. L3 uses a cooperative host double; admission-slot release is tested after success and after cancel, not after a handler exception (F-P8-07) |
 | MCP-ACC-16 | Version / retire | L1 + L2 | 7 / 6 / 0 | COVERED | |
 | MCP-ACC-17 | Trace correlation | L2 | 0 / 4 / 0 | COVERED — scoped | Pins `task_id`, `run_id`, `execution_id`; **no dedicated MCP trace id** (R-P7-01, operator decision DR-1) |
 | MCP-ACC-18 | Announced protocol subset | L3 | 0 / 0 / 10 | COVERED — scoped | Resources/Prompts are advertised but empty; see the subset matrix below |
@@ -81,15 +81,17 @@ Terminal states shown, with no hang: cancel by notification (governed cancel), u
 | D-P7-01 | Documentation | Protocol matrix said Resources/Prompts are "Not advertised"; the runtime advertises them with empty lists (also `logging` and a UI extension) | Fixed: [`MCP_SERVER_X_CONTRACT_AND_PROTOCOL_MATRIX.md`](./MCP_SERVER_X_CONTRACT_AND_PROTOCOL_MATRIX.md) |
 | D-P7-02 | Documentation | Error-code table listed 6 of the 7 enum codes (`MCP_BINDING_UNKNOWN_TOOL` missing); `MCP_BINDING_UNKNOWN` was described too narrowly | Fixed in the same document; the L1 test now asserts the table lists every enum code |
 | R-P7-01 | Residual | `REQ-MCP-OBS-01`: no dedicated MCP invocation trace id | Open, operator decision DR-1 (no product change in P7); MCP-ACC-17 is scoped |
-| R-P7-02 | Residual (pre-existing) | 11 tests in `test_mcp_surface_opt_in.py`, `test_mcp_surface_opt_in_runtime.py`, `test_mcp_catalog_e2e_hung_server_qualification.py` fail on this machine at `c59892829`, at `d5c1383fc` and at the P7 head with the same set (no LLM provider configured, STRICT agent-contract authority, TL11 subprocess startup timeout) | Open, not introduced by P6/P7; excluded from the regression selection and **not counted as passing**; to be investigated outside P7 |
+| R-P7-02 | Residual (pre-existing) | 11 tests in `test_mcp_surface_opt_in.py`, `test_mcp_surface_opt_in_runtime.py`, `test_mcp_catalog_e2e_hung_server_qualification.py` fail on this machine at `c59892829`, at `d5c1383fc` and at the P7 head with the same core set of 11 (no LLM provider configured, STRICT agent-contract authority, TL11 subprocess startup timeout); the independent audit reproduced 13 failures at the freeze SHA and 12 at `c59892829`, the extra ones being further TL11 subprocess startup timeouts, so the failing set varies from run to run (observed 11-13, F-P8-03) | Open, not introduced by P6/P7; excluded from the regression selection and **not counted as passing**; to be investigated outside P7. The files are marked `gate` (one `no_ci`) and PR/push CI runs only the smoke profile, so green PR CI says nothing about them; one of them guards the MCP opt-in default (`test_scaffold_defaults_mcp_to_opt_in`) |
 | R-P7-03 | Residual | The result bound is not applied to custom tools (`qual_echo` returns an over-1-MiB result in full) | Open; documented, tested as a recorded gap |
 | R-P7-04 | Residual | A client deadline or a closed client wait does not stop server work (no server-side deadline; `run_agent` has no timeout; the Execution deadline authority is not wired into the host composition); a hanging call is cancelled only by an explicit cancel notification or by closing the connection | Open; MCP-ACC-14 scoped |
 | R-P7-05 | Residual | `MCP_PRINCIPAL_REQUIRED`, `MCP_TENANT_ASSERTION_CONFLICT`, `MCP_RESULT_BOUND_EXCEEDED` are declared but never raised in the engine | Open; documented in the matrix |
 | R-P7-06 | Residual | The engine passes `harness_auth=None` to `run_agent` and `invoke_catalog_tool`; the principal is resolved only from the request context | Open; informational |
+| R-P8-01 | Residual | A host that mounts MCP without harness auth (no `harness_auth`, or an empty `HarnessAuthState`) trusts the client-asserted tenant/user (fail-open identity). Existing, tested behaviour (`test_acc_12_local_dev_state_without_credentials_trusts_client_assertion`); not exercised at L3. MCP-ACC-10/11/12 `COVERED` holds only for hosts with a configured credential | Open; recorded by the P8 audit (F-P8-02). Making composition fail closed would be a product change and an operator decision (it would trigger ACT-N11), so it is outside the findings-only correction loop |
 | P7-PROC-01 | Process | One commit of lane L3 was made with hooks disabled (`core.hooksPath`); `ruff check` and `ruff format --check` were run by hand and the code goes through the full hooks and CI again in this change | Recorded |
 | P7-PROC-02 | Process | PR #470 (authorization pack) was merged while `ent-audit-fast` was still in progress; the run finished successfully afterwards | Recorded (earlier cases: F-MCP-P6-GOV-001/003, PR #464 and #468) |
+| P7-PROC-03 | Process | PR #474 (this package) was merged at 2026-11-12T10:42:10Z, before the pull-request runs of `governance-fast`, `evol-x-b4-preflight` (finished 10:48:31Z) and `ent-audit-fast` (finished 10:58:09Z) had finished; all runs ended `success` on attempt 1 (F-P8-01, HIGH, governance-process) | Recorded, not waived, no retroactive approval; see the P8 corrections record |
 
-Carried unchanged: `LIM-RESEARCH-STRICT-FACTORY-MEMORY` (PROD-Q, OPEN, non-blocking), OPEN-BP-01, F-MCP-P6-GOV-001/002/003.
+Carried unchanged: `LIM-RESEARCH-STRICT-FACTORY-MEMORY` (PROD-Q, OPEN, non-blocking), OPEN-BP-01, F-MCP-P6-GOV-001/002/003, and the P5 records F-MCP-P5-GOV-001/002, F-MCP-P5-MEM-001 and the prospective merge gate OD-MCP-P5-GOV-01 (F-P8-09).
 
 ## Independence
 
@@ -98,3 +100,7 @@ Test authoring lanes (L1, L2, L3, failure injection) and the orchestrator are P7
 ## ACC-20 check
 
 `test_acc_20_exact_sha_package_record_exists_and_pins_a_test_execution_sha` reads this file and runs after it is committed (documentation-only difference from `TEST_EXECUTION_SHA` `abbe1525450da77da6801b080619a600c20cd497`); its result is recorded in the PR for this change.
+
+## P8 audit corrections
+
+The independent P8 audit of this package (verdict `PASS_SCOPED` at `eadb1c2116feb0a2090b234a36fd4182bd6ace8d`) raised findings F-P8-01..F-P8-09. The corrections to this document (stdio wording, scope statements in the limitation cells, R-P7-02 wording, R-P8-01, P7-PROC-03, carried records) and the dispositions are in [`MCP_SERVER_X_P8_CORRECTIONS_RECORD.md`](./MCP_SERVER_X_P8_CORRECTIONS_RECORD.md). The `TEST_EXECUTION_SHA` and the test results above are unchanged by the corrections (documentation only).
