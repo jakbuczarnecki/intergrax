@@ -12,7 +12,8 @@ Canonical plan: [`governance/tickets/plans/PLAN_T-IGX-036-G.md`](plans/PLAN_T-IG
 
 ## Approved
 
-_Pending: delegate session per [`DELEGATION-PDC-WAVE-A.md`](../../docs/project/maintainers/qualification/platform_domain_completeness/operator_decisions/DELEGATION-PDC-WAVE-A.md). The implementer never writes this line._
+Approved: operator-delegate @ 2026-11-12T07:30:40+01:00
+Delegation: docs/project/maintainers/qualification/platform_domain_completeness/operator_decisions/DELEGATION-PDC-WAVE-A.md@b8cacd0d1ad3ef91d534e6468ec6797a0ceec9fb
 
 ## Test contract
 
@@ -29,4 +30,4 @@ Product code; P5 implementation; P5 ticket files; FRZ status changes; IIAC activ
 
 ## Lifecycle state
 
-plan_pending
+plan_approved
