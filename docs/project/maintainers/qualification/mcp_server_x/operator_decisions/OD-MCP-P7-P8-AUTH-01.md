@@ -3,7 +3,7 @@
 | Field | Value |
 | --- | --- |
 | **Decision ID** | OD-MCP-P7-P8-AUTH-01 |
-| **Status** | **REQUESTED** (unsigned) |
+| **Status** | **APPROVED** |
 | **Tickets** | `governance/tickets/T-IGX-035-H.md` (P7), `governance/tickets/T-IGX-035-I.md` (P8) |
 | **Valid** | from signature until the MCP-SERVER-X final closure PR is merged or the operator revokes it in chat; no numeric expiry stated by the operator |
 
@@ -32,10 +32,12 @@ Does the operator grant the standing authorizations below so that the orchestrat
 
 Product-path change (DR-4); audit BLOCKER/HIGH after the third round; red CI outside DR-5; a finding without an owner; SHA or role ambiguity; any request for a new FRZ family, FRZ promotion or ARCH-FREEZE action.
 
-## Operator line (required; not written by an agent)
+## Operator line
+
+**Provenance:** signed by an operator-designated signing session under the delegation record `docs/project/maintainers/qualification/IIAC_OD_DELEGATION_MCP_P7_P8_AUTH_2026-11-12.md@bddcbb293f53812bebb0134b2278d8f038a86825` (IIAC Amendment 01, commission given in chat 2026-11-12). The line below is in the plain form because it is written by that session; it is not claimed to be operator-written.
 
 ```text
-Approved: OD-MCP-P7-P8-AUTH-01 @ ________________
+Approved: OD-MCP-P7-P8-AUTH-01 @ 2026-11-12T09:07:52+01:00
 ```
 
 **Explicit non-actions:** does not close MCP-SERVER-X (see `OD-MCP-P8-CLOSE-01`), does not close ARCH-FREEZE, does not promote FRZ, does not authorize production configuration, Docker or new vendors, does not authorize any product-path change, and does not waive OPEN-BP-01.

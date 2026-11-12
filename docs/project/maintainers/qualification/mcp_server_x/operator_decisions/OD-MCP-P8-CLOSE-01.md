@@ -3,7 +3,7 @@
 | Field | Value |
 | --- | --- |
 | **Decision ID** | OD-MCP-P8-CLOSE-01 |
-| **Status** | **REQUESTED** (unsigned; conditional) |
+| **Status** | **APPROVED (conditional: void unless C1–C10 hold)** |
 | **Tickets** | `governance/tickets/T-IGX-035-H.md`, `governance/tickets/T-IGX-035-I.md` |
 | **Policy version** | IIAC-2026-11-05.1 |
 
@@ -28,10 +28,12 @@ Does the operator authorize the formal scoped closure of MCP-SERVER-X, **taking 
 
 The roadmap status of MCP-SERVER-X `CLOSED — INDEPENDENTLY AUDITED (INTERNAL AGENT CERTIFICATION) — PUBLISHED` with the scoped limitations stated in the text, the `FORMAL_CLOSURE_SHA` pin, the final closure report and the ARCH-FREEZE handoff. Limitations remain in force; the label is scoped, not an unscoped PASS.
 
-## Operator line (required; not written by an agent)
+## Operator line
+
+**Provenance:** signed by an operator-designated signing session under the delegation record `docs/project/maintainers/qualification/IIAC_OD_DELEGATION_MCP_P7_P8_AUTH_2026-11-12.md@bddcbb293f53812bebb0134b2278d8f038a86825` (IIAC Amendment 01, commission given in chat 2026-11-12). The line below is in the plain form because it is written by that session; it is not claimed to be operator-written. The decision takes effect only after an independent report with the verdict `P8_TERMINAL_VERIFIED` (C10); until then it authorizes nothing.
 
 ```text
-Approved: OD-MCP-P8-CLOSE-01 @ ________________
+Approved: OD-MCP-P8-CLOSE-01 @ 2026-11-12T09:07:52+01:00
 ```
 
 **Explicit non-actions:** does not close ARCH-FREEZE, does not promote any FRZ criterion, does not claim production readiness, does not touch PROD-Q Path B, does not waive any finding, and is void if any condition fails.

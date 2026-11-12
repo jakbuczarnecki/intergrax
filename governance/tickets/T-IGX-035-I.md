@@ -18,7 +18,8 @@ Canonical plan: [`governance/tickets/plans/PLAN_T-IGX-035-A.md`](plans/PLAN_T-IG
 
 ## Approved
 
-PENDING — the approval line is written only by the operator or by a session the operator commissioned (IIAC Amendment 01); an implementer never writes it.
+Approved: operator-delegate @ 2026-11-12T09:07:52+01:00
+Delegation: docs/project/maintainers/qualification/IIAC_OD_DELEGATION_MCP_P7_P8_AUTH_2026-11-12.md@bddcbb293f53812bebb0134b2278d8f038a86825
 
 ## Test contract
 
@@ -52,4 +53,4 @@ ARCH-FREEZE closure, FRZ PASS promotion, a new FRZ family, PROD-Q Path B readine
 
 ## Lifecycle state
 
-**plan_pending**
+**plan_approved**
