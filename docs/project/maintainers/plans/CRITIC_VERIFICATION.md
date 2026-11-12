@@ -7,6 +7,9 @@
 >
 > This plan hub remains for **CURRENT CVL implementation** and open Protocol v2 findings **migrated** to DS-* IDs in [`DECISION_SYSTEM.md`](DECISION_SYSTEM.md). **Physical DELETE** planned with runtime clean cut (§DS-MIG).
 
+> [!NOTE]
+> **PDC-X reconciliation (PDC-D5-R016, 2026-11-12):** this domain is **LEGACY / HISTORICAL** per the runtime hub [`intergrax_runtime_architecture.md`](../../architecture/intergrax_runtime_architecture.md) (primary-24 row #18). Canonical decision authority is [`DECISION_SYSTEM.md`](../../architecture/DECISION_SYSTEM.md). Open critic findings in this plan are **legacy lineage only**; their disposition is owned by PDC-X ([`PDC_DOMAIN_REQUIREMENTS_MATRIX.md`](../qualification/platform_domain_completeness/PDC_DOMAIN_REQUIREMENTS_MATRIX.md)). The historical findings below are retained, not deleted.
+
 **Architecture (1:1):** [`architecture/CRITIC_VERIFICATION.md`](../../architecture/CRITIC_VERIFICATION.md)
 **Hub:** [`intergrax_runtime_architecture.md`](../../architecture/intergrax_runtime_architecture.md)
 **Strategy:** [`guides/INTERGRAX_DEVELOPMENT_STRATEGY.md`](../../technical/guides/INTERGRAX_DEVELOPMENT_STRATEGY.md)
@@ -128,7 +131,7 @@ Foreign **Platform / ORCH / FLOW / FAUDIT** registers were removed from this hub
 
 - Runtime critic reads/evidence bound to canonical tenant/task/run/attempt identity - not optional context maps or `"default"` fallbacks.
 - Missing tenant authority for tenant-scoped trajectory read fails closed.
-- Cross-link [`IDENTITY_TRUST`](IDENTITY_TRUST.md) (`IDT-FIX-A`, `IDT-FIX-D`) and [`OBSERVABILITY`](OBSERVABILITY.md) (`OBS-JOURNAL-IDENTITY-INTEGRITY`) identity remediation where applicable.
+- Cross-link [`IDENTITY_TRUST` audit](../../audit_results/2026-08-18/IDENTITY_TRUST.md) (`IDT-FIX-A`, `IDT-FIX-D`) *(repointed from the missing `plans/IDENTITY_TRUST.md`; PDC-X reconciliation PDC-D6-R021, 2026-11-12)* and [`OBSERVABILITY`](OBSERVABILITY.md) (`OBS-JOURNAL-IDENTITY-INTEGRITY`) identity remediation where applicable.
 
 <a id="critic-contract-boundedness-integrity-2026-08-18"></a>
 

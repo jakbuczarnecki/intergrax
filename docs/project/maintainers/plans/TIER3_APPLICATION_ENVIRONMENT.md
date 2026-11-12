@@ -69,6 +69,9 @@ Recommended PR sequence - one APP ID per PR:
 5.  APP-CON-5       hook timeout / error handling
 6.  APP-CON-6       artifact bundle on ApplicationRunSummary
 7.  APP-CON-8       shadow/sandbox cleanup + APP-PROD-8 - **Done**
+                    (scope: lifecycle wiring/cleanup only; sandbox/shadow remain
+                    "not a universal production isolation guarantee" per the
+                    architecture - PDC-X reconciliation PDC-D4-R019, 2026-11-12)
 8.  APP-EVOL-1      EnvironmentSnapshot on intake - **Done**
 9.  APP-OPS-1       capability graph STRICT deploy gate - **Done**
 10. APP-OPS-2       application ownership on manifest - **Done**
@@ -124,7 +127,7 @@ Load **only** the satellite matching your task or cited gap ID.
 | Block | Status | Findings | Acceptance intent |
 |-------|--------|----------|-------------------|
 | **TL-FIX-C** | ACCEPTED / PLANNED | [`AUDIT-20260818-TIER_LAYER_BOUNDARIES-03`](../../audit_results/2026-08-18/TIER_LAYER_BOUNDARIES.md) | Generic deployment/profile contract contains no LKW-specific vocabulary; product-specific deployment configuration is application-owned or typed extension-owned; migrate consumers cleanly after revalidation |
-| **TL-FIX-D** | ACCEPTED / PLANNED | [`AUDIT-20260818-TIER_LAYER_BOUNDARIES-04`](../../audit_results/2026-08-18/TIER_LAYER_BOUNDARIES.md) | Public typed execution-adapter/run-service composition mechanism; Legal and Dispute Sim no longer assign `_execution_adapter` directly; focused tests prove inline + queued composition |
+| **TL-FIX-D** | **Done** *(PDC-X reconciliation PDC-D4-R016, 2026-11-12)* | [`AUDIT-20260818-TIER_LAYER_BOUNDARIES-04`](../../audit_results/2026-08-18/TIER_LAYER_BOUNDARIES.md) | Public typed execution-adapter/run-service composition mechanism; Legal and Dispute Sim no longer assign `_execution_adapter` directly; focused tests prove inline + queued composition · **Evidence:** public typed `DefaultRunService.bind_execution_adapter` in [`intergrax/fastapi_core/runs/default_service.py`](../../../../intergrax/fastapi_core/runs/default_service.py); the Legal and Dispute Sim host factories call it ([`legal_application/host/factory.py`](../../../../applications/legal_application/host/factory.py), [`dispute_sim_application/host/factory.py`](../../../../applications/dispute_sim_application/host/factory.py)) instead of assigning `_execution_adapter` directly |
 
 Finding 05 remains owned by **TL-FIX-A** in [`PLATFORM_FOUNDATION` plan](PLATFORM_FOUNDATION.md) - not duplicated here.
 
@@ -219,7 +222,7 @@ Finding 05 remains owned by **TL-FIX-A** in [`PLATFORM_FOUNDATION` plan](PLATFOR
 
 - Tier-3 reuses the canonical `RuntimeEventBus` from the runtime composition root; no silent local bus minting in canonical production wiring.
 - Task-scoped sandbox session materializes from canonical execution identity (tenant + TaskId / required scope); no synthetic `harness/bootstrap` runtime ownership in reusable production paths.
-- Cross-link [`OBSERVABILITY_EVIDENCE` plan](OBSERVABILITY_EVIDENCE.md) and [`IDENTITY_TRUST` plan](IDENTITY_TRUST.md) / **IDT-FIX-A** - do not create parallel event or identity subsystems.
+- Cross-link [`OBSERVABILITY_EVIDENCE` plan](OBSERVABILITY_EVIDENCE.md) and [`IDENTITY_TRUST` audit](../../audit_results/2026-08-18/IDENTITY_TRUST.md) *(repointed from the missing `plans/IDENTITY_TRUST.md`; PDC-X reconciliation PDC-D6-R021, 2026-11-12)* / **IDT-FIX-A** - do not create parallel event or identity subsystems.
 
 #### T3-SNAPSHOT-PROVENANCE-INTEGRITY - Task/Run ↔ EnvironmentSnapshot binding
 

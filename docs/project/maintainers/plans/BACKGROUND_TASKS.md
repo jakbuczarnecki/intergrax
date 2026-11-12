@@ -20,6 +20,22 @@
 
 This plan schedules platform implementation phases. **No production WorkerRuntime ships in the architecture-only milestone.**
 
+### A.1 Status reconciliation (PDC-X)
+
+*(PDC-X reconciliation PDC-D7-R023, 2026-11-12.)* The "Planned" track status above and the unmarked BG-TASKS-1..9 phases are historical and predate the code and certifications below. They are kept unchanged; this table records what exists now.
+
+| Phase / item | What exists in code | Certification |
+|--------------|---------------------|---------------|
+| BG-TASKS-1 TaskDefinition / TaskRegistry | [`definition.py`](../../../../intergrax/background_tasks/definition.py) (`TaskDefinition`), [`registry.py`](../../../../intergrax/background_tasks/registry.py) (`TaskRegistry`) | Not separately certified |
+| BG-TASKS-2 WorkerRuntime contract | [`worker_runtime.py`](../../../../intergrax/background_tasks/worker_runtime.py) (`WorkerRuntime`) | Not separately certified |
+| BG-TASKS-3 TaskEvent model | [`events.py`](../../../../intergrax/background_tasks/events.py) (`TaskEvent`, `TaskEventName`) | Not separately certified |
+| BG-TASKS-4 pull inspection (status/result) | [`state_store.py`](../../../../intergrax/background_tasks/state_store.py) (`TaskStateStore`, `TaskResultStore`) | Not separately certified |
+| Background execution identity, idempotent single invocation, redelivery and terminal safety | canonical background bootstrap + host task port | **BG-01 CLOSED** - [`HARNESS_W8_BG_01_CURRENT_HEAD_RECERTIFICATION.md`](../qualification/HARNESS_W8_BG_01_CURRENT_HEAD_RECERTIFICATION.md) |
+| One-shot delayed resume scheduling, two-scheduler claim/fence | `intergrax/runtime/long_running/` | **SCHED-01 CLOSED** - [`HARNESS_RESIDUAL_SCHED_01_CURRENT_HEAD_RECERTIFICATION.md`](../qualification/HARNESS_RESIDUAL_SCHED_01_CURRENT_HEAD_RECERTIFICATION.md) |
+| Recurrence (interval/cron/time zone/misfire), dead-letter (DLQ), identity on enqueue, multi-process fencing | Not implemented | **Open** - PDC-P5-D7, [`ADR_PDC_07_BACKGROUND_RECURRENCE_AND_DLQ.md`](../architecture/ADR_PDC_07_BACKGROUND_RECURRENCE_AND_DLQ.md) |
+
+BG-TASKS-5..9 are not reconciled by this note; their status stays as written in §B.
+
 ---
 
 ## B. Phases

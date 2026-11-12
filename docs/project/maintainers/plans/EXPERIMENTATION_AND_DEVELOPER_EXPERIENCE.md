@@ -77,7 +77,7 @@ Load **only** the satellite matching your task or cited gap ID.
 | **Priority** | P0 / P1 |
 | **Owns findings** | AUDIT-20260818-EXPERIMENTATION_AND_DEVELOPER_EXPERIENCE-01, AUDIT-20260818-EXPERIMENTATION_AND_DEVELOPER_EXPERIENCE-05 |
 | **Intent** | Experiment ownership and run linkage use canonical tenant and execution identity |
-| **Cross-links** | [`IDENTITY_TRUST.md`](../../architecture/IDENTITY_TRUST.md) - IDT-FIX-A, ITI-FIX-B |
+| **Cross-links** | [`EXECUTION_ENGINE_SECURITY_BOUNDARY_AND_THREAT_MODEL`](../architecture/EXECUTION_ENGINE_SECURITY_BOUNDARY_AND_THREAT_MODEL.md) *(repointed from the missing `architecture/IDENTITY_TRUST.md`; consolidated security satellite owned by PDC-P5-D6, [ADR-PDC-06](../architecture/ADR_PDC_06_RUNTIME_SECURITY_HARDENING.md) - PDC-X reconciliation PDC-D6-R021, 2026-11-12)* - IDT-FIX-A, ITI-FIX-B |
 | **Primary modules** | `intergrax/experiments/models.py`, `store.py`, `workflow.py` |
 | **Architecture ref** | [`architecture/EXPERIMENTATION_AND_DEVELOPER_EXPERIENCE.md`](../../architecture/EXPERIMENTATION_AND_DEVELOPER_EXPERIENCE.md) - [Protocol v2 experimentation and developer experience target invariants (2026-08-18)](../../architecture/EXPERIMENTATION_AND_DEVELOPER_EXPERIENCE.md#protocol-v2-experimentation-and-developer-experience-target-invariants-2026-08-18) §1, §5 |
 | **Status** | **ACCEPTED / PLANNED** |

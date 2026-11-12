@@ -129,6 +129,27 @@ Production harness wiring: `wire_harness_host_long_running_scheduler` → `wire_
 
 Aligned with [`UNIFIED_EXECUTION_ARCHITECTURE.md`](UNIFIED_EXECUTION_ARCHITECTURE.md) §11, §20, **UEA-INV-011**, **UEA-INV-021**.
 
+### B.2.2 Delivery semantics (at-least-once)
+
+*(PDC-X reconciliation PDC-D7-R011, 2026-11-12)*
+
+Queue delivery is **at-least-once**: a provider may deliver the same `TaskRequest` more than once (broker redelivery, visibility timeout, transport retry). Duplicates are therefore possible and are handled as follows:
+
+- `TaskRequest.idempotency_key` identifies the logical task; with an idempotency store, a duplicate delivery of the same logical task results in a **single handler invocation** (BG-Q5).
+- Transport retry is separate from execution attempts; redelivery does not reconcile or mint a new attempt (BG-Q6).
+- Redelivery after a terminal outcome resolves to a safe `TERMINAL_ALREADY_RECORDED` disposition with no fresh side effect (BG-Q7).
+- Certified by HARNESS-W8 / BG-01: [`HARNESS_W8_BG_01_CURRENT_HEAD_RECERTIFICATION.md`](../maintainers/qualification/HARNESS_W8_BG_01_CURRENT_HEAD_RECERTIFICATION.md).
+- **Handlers must be idempotent for external effects.** Platform dedup covers handler invocation, not effects a handler issues to external systems before a crash; see [`EXTERNAL_EFFECT_CONTRACTS.md`](EXTERNAL_EFFECT_CONTRACTS.md).
+
+### B.2.3 Horizontal scaling boundary
+
+*(PDC-X reconciliation PDC-D7-R021, 2026-11-12)*
+
+- Multi-node correctness **depends on the queue provider** (delivery, visibility and ack semantics) and on the `ScheduledResumePersistence` provider (atomic `claim_due` + fence); the platform does not claim universal distributed correctness.
+- Scheduler fencing is proven for **two scheduler instances over one SQLite store in one process** (SCHED-01, SCHED-Q5/Q6: [`HARNESS_RESIDUAL_SCHED_01_CURRENT_HEAD_RECERTIFICATION.md`](../maintainers/qualification/HARNESS_RESIDUAL_SCHED_01_CURRENT_HEAD_RECERTIFICATION.md)).
+- The certified scale envelope is the scoped DIST-SCALE-X envelope ([`DIST_SCALE_X_CAPACITY_ENVELOPE.md`](../maintainers/qualification/DIST_SCALE_X_CAPACITY_ENVELOPE.md), [`DIST_SCALE_X_INTERIM_SCOPED_QUALIFICATION_RECORD.md`](../maintainers/qualification/DIST_SCALE_X_INTERIM_SCOPED_QUALIFICATION_RECORD.md)); nothing outside it is qualified.
+- A multi-process fencing proof (duplicate-fire fencing across two processes) is **planned** in PDC-P5-D7 ([`ADR_PDC_07_BACKGROUND_RECURRENCE_AND_DLQ.md`](../maintainers/architecture/ADR_PDC_07_BACKGROUND_RECURRENCE_AND_DLQ.md)).
+
 ### Canonical background execution identity (BG-EXEC-1 / BG-EXEC-2)
 
 All supported background execution paths use the platform-owned canonical background execution bootstrap (`bootstrap_background_execution` / `resolve_background_execution` in `intergrax/runtime/background_execution/bootstrap.py`). Applications and scenarios do **not** mint or own runtime execution identity.
