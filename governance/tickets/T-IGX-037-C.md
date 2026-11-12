@@ -14,7 +14,8 @@ Canonical plan: [`governance/tickets/plans/PLAN_T-IGX-037-C.md`](plans/PLAN_T-IG
 
 ## Approved
 
-<!-- Awaiting re-approval after plan Amendment 1 (deliverable location, operator decision 2026-11-12). A commissioned delegate session writes `Approved: operator-delegate @ <ISO8601>` + `Delegation:` per DELEGATION-SFX-PRE-FREEZE. The implementer and the orchestrator must not write this line. -->
+Approved: operator-delegate @ 2026-11-12T15:06:03+01:00
+Delegation: docs/project/maintainers/qualification/scenario_factory_x/operator_decisions/DELEGATION-SFX-PRE-FREEZE.md@0465c7f7d253e230c7b25a9223278192a1b01bce
 
 Superseded approval (plan digest before Amendment 1): see commit `250d3aeeb`.
 
@@ -33,7 +34,7 @@ uv run python -m scripts.governance.igx_gov ticket
 
 ## Lifecycle state
 
-plan_pending
+plan_approved
 
 ## Lease holder
 
