@@ -5,6 +5,10 @@
 from __future__ import annotations
 
 from datetime import UTC, datetime
+
+from intergrax.applications._shared.security_runtime_bridge import (
+    SecurityWiringOptions,
+)
 from intergrax.applications.contracts.environment_profile import (
     ApplicationEnvironmentProfile,
     ApplicationSecurityProfile,
@@ -35,23 +39,24 @@ from intergrax.runtime.architecture.tool_security import (
     ToolInvocationRequest,
     evaluate_tool_invocation_security,
 )
-from intergrax.runtime.hooks.hook_context import HookAction, HookContext, HookResult
+from intergrax.runtime.hooks.hook_context import HookAction, HookResult
 from intergrax.runtime.hooks.hook_point import HookPoint
 from intergrax.runtime.middleware.base import RuntimeMiddleware
-from intergrax.applications._shared.security_runtime_bridge import (
-    SecurityWiringOptions,
-)
 from intergrax.runtime.security.defense_plugin import (
     PluginSecurityDefenseMiddleware,
     SecurityFailMode,
 )
+from intergrax.runtime.security.defense_registry import resolve_security_defense_plugins
+from intergrax.runtime.security.encryption_middleware import EncryptionEnforcementMiddleware
+from intergrax.runtime.security.json_security_projection import json_object_to_string_argument_map
 from intergrax.runtime.security.tenant_scope import (
     normalize_tenant_scope_id,
     tenant_scope_is_valid,
 )
-from intergrax.runtime.security.defense_registry import resolve_security_defense_plugins
-from intergrax.runtime.security.encryption_middleware import EncryptionEnforcementMiddleware
-from intergrax.runtime.security.json_security_projection import json_object_to_string_argument_map
+from intergrax.runtime.security.tool_injection_guard import (
+    ToolInjectionError,
+    assert_tool_input_safe,
+)
 
 
 def default_prompt_defense_profile() -> PromptDefenseProfile:
@@ -150,6 +155,15 @@ class ToolInjectionDefenseMiddleware(RuntimeMiddleware):
                 action=HookAction.BLOCK,
                 reason="; ".join(decision.reasons) or "tool invocation blocked",
             )
+        # PDC-D6-R013: the single tool-input injection guard runs on this canonical path.
+        for key, value in arguments.items():
+            try:
+                assert_tool_input_safe(value)
+            except ToolInjectionError as exc:
+                return HookResult(
+                    action=HookAction.BLOCK,
+                    reason=f"tool input blocked in argument {key!r}: {exc}",
+                )
         return HookResult()
 
     async def after(self, point: HookPoint, ctx: HostOrchestrationMiddlewareHookContext) -> HookResult:
@@ -176,9 +190,7 @@ class TenantSecurityMiddleware(RuntimeMiddleware):
             ctx.subject.resource_tenant_id,
             allow_unscoped=False,
         )
-        resource_tenant_id = (
-            normalize_tenant_scope_id(ctx.subject.resource_tenant_id) or request_tenant_id
-        )
+        resource_tenant_id = normalize_tenant_scope_id(ctx.subject.resource_tenant_id) or request_tenant_id
         actor_id = ctx.subject.user_id or "unknown"
         check = TenantIsolationCheck(
             request_tenant_id=request_tenant_id,
@@ -222,8 +234,7 @@ def _reject_non_fail_closed_defense_plugins(
         if plugin.fail_mode is not SecurityFailMode.FAIL_CLOSED:
             raise SecurityAssemblyError(
                 [
-                    "security defense plugin "
-                    f"{plugin.plugin_id!r} must use fail_mode=FAIL_CLOSED for host composition",
+                    f"security defense plugin {plugin.plugin_id!r} must use fail_mode=FAIL_CLOSED for host composition",
                 ],
             )
 

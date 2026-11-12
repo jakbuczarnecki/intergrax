@@ -7,8 +7,8 @@ from __future__ import annotations
 import base64
 import hashlib
 import uuid
-from datetime import datetime, timezone
-from typing import Callable
+from collections.abc import Callable
+from datetime import UTC, datetime
 
 from cryptography.hazmat.primitives.asymmetric.ed25519 import (
     Ed25519PrivateKey,
@@ -16,7 +16,10 @@ from cryptography.hazmat.primitives.asymmetric.ed25519 import (
 )
 
 from intergrax.contracts.execution_evidence.attestation import HostAttestation
-from intergrax.runtime.attestation.host_attestation import POC_ATTESTATION_DEMO_SIGNING_SEED
+from intergrax.core.security.security_configuration import (
+    DEMO_SEED_FORBIDDEN_IN_STRICT_PROFILE,
+    SecurityConfigurationError,
+)
 
 ALGORITHM_ED25519 = "Ed25519"
 
@@ -42,10 +45,8 @@ class Ed25519HostAttestor:
             raise ValueError("key_id must be non-empty")
         self._key_id = key_id.strip()
         self._private_key = private_key
-        self._clock = clock or (lambda: datetime.now(timezone.utc))
-        self._attestation_id_factory = attestation_id_factory or (
-            lambda: f"att-{uuid.uuid4().hex}"
-        )
+        self._clock = clock or (lambda: datetime.now(UTC))
+        self._attestation_id_factory = attestation_id_factory or (lambda: f"att-{uuid.uuid4().hex}")
 
     @property
     def key_id(self) -> str:
@@ -81,16 +82,38 @@ def stable_payload_hash_from_bytes(payload: bytes) -> str:
     return f"sha256:{hashlib.sha256(payload).hexdigest()}"
 
 
+def resolve_demo_attestation_seed(*, strict_profile: bool) -> bytes:
+    """Return the public PoC demo seed for lab and proof paths only (PDC-D6-R027).
+
+    The seed is imported lazily so that no product module holds it at import time. A strict
+    (product) profile can never resolve it: that raises a typed configuration error.
+    """
+    if strict_profile:
+        raise SecurityConfigurationError(
+            item="demo_attestation_seed",
+            reason_code=DEMO_SEED_FORBIDDEN_IN_STRICT_PROFILE,
+            message="the demo attestation signing seed is not available in a strict profile",
+        )
+    from intergrax.runtime.attestation.host_attestation import POC_ATTESTATION_DEMO_SIGNING_SEED
+
+    return POC_ATTESTATION_DEMO_SIGNING_SEED
+
+
 def build_deterministic_test_attestor(
     *,
     key_id: str = "governed-contractor-test-host-1",
     seed: bytes | None = None,
     clock: Callable[[], datetime] | None = None,
     attestation_id: str = "att-test-fixed",
+    strict_profile: bool = False,
 ) -> Ed25519HostAttestor:
-    """Deterministic local attestor for offline tests (PoC seed, not custody)."""
+    """Deterministic local attestor for offline lab and proof paths (PoC seed, not custody).
+
+    Calling this function is the named lab/proof opt-in. Pass ``strict_profile=True`` from any
+    path that runs under a strict profile: the default demo seed is then refused.
+    """
     private_key = Ed25519PrivateKey.from_private_bytes(
-        seed if seed is not None else POC_ATTESTATION_DEMO_SIGNING_SEED
+        seed if seed is not None else resolve_demo_attestation_seed(strict_profile=strict_profile)
     )
     return Ed25519HostAttestor(
         key_id=key_id,
