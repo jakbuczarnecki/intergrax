@@ -51,7 +51,11 @@ Each row: requirement → owner → gap → risk → task → test level → FRZ
 | REQ-MCP-O-01 | Lifespan | No separate MCP readiness probe | Low | DEFERRED unless host pattern exists | — | — |
 | REQ-MCP-O-02 | Engine bounds | Result bound partial; concurrent session cap missing | Medium | MCP-P3-06 | L2 | REL incremental |
 | REQ-MCP-OBS-01 | Trace | No single MCP invocation id on execution event | Medium | MCP-P5-07 | L2 | TRC incremental |
-| REQ-MCP-DX-01 | Public API | Consolidated `mcp_developer_api` + guide @ P6 | High — **addressed in P6 batch** | MCP-P6-01 | L1 import | DOC incremental |
+| REQ-MCP-DX-01 | Public API | Consolidated `mcp_developer_api` + guide @ P6 | High — **closed in P6 (scoped)**: `T-IGX-035-G` closed; P6 batch @ `5ff8606b0`, G6 `ACCEPT_SCOPED` @ `9b8c19d75`, IIIC `PASS_SCOPED`; requalification at the P7 exact SHA required | MCP-P6-01 | L1 import | DOC incremental |
+
+## P6 residuals (unchanged by P6 closure)
+
+REQ-MCP-DX-01 is the only row changed by P6 closure (scoped). All other rows above keep their status and risk. Open cross-stage items: `LIM-RESEARCH-STRICT-FACTORY-MEMORY` (PROD-Q, OPEN, non-blocking, no fabricated vendor qualification); OPEN-BP-01 (no required status checks on the `development` ruleset); REQ-MCP-OBS-01 dedicated trace id gap (P7). Findings F-MCP-P6-GOV-001/002/003 are preserved in the [P6 operator closure record](./MCP_SERVER_X_P6_OPERATOR_CLOSURE_RECORD.md).
 
 ## Qualification
 

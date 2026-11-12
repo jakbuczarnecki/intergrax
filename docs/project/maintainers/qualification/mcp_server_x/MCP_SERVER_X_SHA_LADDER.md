@@ -17,13 +17,21 @@
 | P5_BASELINE_SHA | `7930c256fdbe6bb878d9493670361d3cbe4b07bb` | T-IGX-035-F cut |
 | P6_BASELINE_SHA | `e48106740a4a243204cadccb6a85db9a8710d6af` | T-IGX-035-G cut |
 | P6_IMPLEMENTATION_SHA | `5ff8606b089828b334ebac133518ba47c9f6f7ce` | Product batch |
-| P6_PUBLICATION_SHA | `a695c9c835bb5b4b206e6e3e00bb2aee23ca7b6b` | PR #459 merge |
+| P6_MERGE_SHA | `a695c9c835bb5b4b206e6e3e00bb2aee23ca7b6b` | PR #459 product merge. Relabelled: this value was previously recorded as `P6_PUBLICATION_SHA` (conflated with the P4 convention `P4_MERGE_SHA` vs `P4_PUBLICATION_SHA`); value unchanged. |
+| P6_PUBLICATION_SHA | `66dcd1bfe260b33a41881c7b9911b2a2abb752f9` | Merge commit of the activation PR (branch `mcp-p6-gov-signing`); not PR #460 — see `P6_RECOVERY_EVIDENCE_PR460_MERGE_SHA` |
+| P6_RECOVERY_EVIDENCE_PR460_MERGE_SHA | `8ed2bdcee6d244c128f3c5d95be3d7817418433b` | PR #460 merge (recovery evidence; merged with failing `governance-fast`, F-MCP-P6-GOV-003) |
 | P6_TEST_EXECUTION_SHA | `9b8c19d75d5df0f4b7c87d2707811f3715805102` | IIIC replay |
 | P6_G6_AUDIT_EXECUTION_SHA | `9b8c19d75d5df0f4b7c87d2707811f3715805102` | G6 replay |
+| P6_G6_AUDIT_SHA | `9b8c19d75d5df0f4b7c87d2707811f3715805102` | G6 audit SHA (same value as `P6_G6_AUDIT_EXECUTION_SHA`; tree-identical to `P6_MERGE_SHA`) |
+| P6_IIIC_AUDIT_SHA | `2d3eceb6cf7e93dccd4d96919319a6c969b4444b` | ACT-N11 `audit_execution_sha` for the P6 re-bind; replay tree `9b8c19d75` (`P6_TEST_EXECUTION_SHA`) |
 | P6_G6_EVIDENCE_PUBLICATION_SHA | `2d3eceb6cf7e93dccd4d96919319a6c969b4444b` | G6 + IIIC evidence phase-1 |
 | P6_IIIC_EVIDENCE_PUBLICATION_SHA | `2d3eceb6cf7e93dccd4d96919319a6c969b4444b` | ACT-N11 P6 re-audit |
+| P6_EVIDENCE_PUBLICATION_SHA | `2d3eceb6cf7e93dccd4d96919319a6c969b4444b` | Combined G6 + IIIC evidence publication (same value as the two rows above) |
 | P6_IIIC_CERTIFICATION_PUBLICATION_SHA | `276c64305799fa4d7f1a25018cc1cccf061fbafd` | Certifier phase-2 pin |
-| P6_FORMAL_CLOSURE_SHA | _unset_ | After operator + IIIC activation |
+| P6_ACTIVATION_SHA | `92ad3555775649742299826e3680ec8ce703cc8a` | IIAC ACT-N11 re-bind, phase 1 |
+| P6_ACTIVATION_PHASE2_SHA | `19c617365cda85d88b474575e77b7d083739b529` | IIAC ACT-N11 re-bind, phase 2 |
+| P6_FORMAL_CLOSURE_SHA | _pending (pinned after merge)_ | Formal scoped closure commit (ticket `closed (scoped)`); pinned in a follow-up commit, not in itself |
+| P6_TERMINAL_CLOSURE_SHA | _pending (pinned after merge)_ | Merge commit of the closure PR; pinned after merge |
 | P5_IMPLEMENTATION_SHA | `8b153422ec1e526c588b7144e934d268055a6df8` | Qualification batch commit |
 | P5_PUBLICATION_SHA | `c5989282937f5e592748cb606b2272d04837c601` | PR #456 merge |
 | P5_TEST_EXECUTION_SHA | `c5989282937f5e592748cb606b2272d04837c601` | Independent G6 replay |
@@ -35,4 +43,4 @@
 | CERTIFICATION_SHA | _unset_ | P8 IIIC |
 | EVIDENCE_PUBLICATION_SHA | _unset_ | P8 B6 |
 | FORMAL_CLOSURE_SHA | _unset_ | MCP-SERVER-X stage CLOSED |
-| FINAL_REMOTE_HEAD | `a695c9c835bb5b4b206e6e3e00bb2aee23ca7b6b` | Post–P6 product merge (governance recovery PR pending) |
+| FINAL_REMOTE_HEAD | _pending (pinned after terminal verification)_ | Post–P6 terminal verification merge. History: previously `a695c9c835bb5b4b206e6e3e00bb2aee23ca7b6b` (post–P6 product merge, governance recovery pending) |
