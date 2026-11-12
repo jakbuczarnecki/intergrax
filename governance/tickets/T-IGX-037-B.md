@@ -8,14 +8,15 @@ Documentation and governance-declarative files only; authorized before ARCH-FREE
 
 ## Plan digest
 
-Plan digest: 4ad9bde5acad82dd3285f71b10e1f6f3763d2fa5ac2c625ce477386b8b646bce
+Plan digest: a8142bfebf5c48499b2ff11bc5542b7d67aaf8f50cb8bffd64a1e3ba0fbb2a99
 
 Canonical plan: [`governance/tickets/plans/PLAN_T-IGX-037-B.md`](plans/PLAN_T-IGX-037-B.md).
 
 ## Approved
 
-Approved: operator-delegate @ 2026-11-12T13:53:13+01:00
-Delegation: docs/project/maintainers/qualification/scenario_factory_x/operator_decisions/DELEGATION-SFX-PRE-FREEZE.md@0465c7f7d253e230c7b25a9223278192a1b01bce
+<!-- Awaiting re-approval after plan Amendment 1 (deliverable location, operator decision 2026-11-12). A commissioned delegate session writes `Approved: operator-delegate @ <ISO8601>` + `Delegation:` per DELEGATION-SFX-PRE-FREEZE. The implementer and the orchestrator must not write this line. -->
+
+Superseded approval (plan digest before Amendment 1): see commit `250d3aeeb`.
 
 ## Test contract
 
@@ -31,7 +32,7 @@ uv run python -m scripts.governance.igx_gov ticket
 
 ## Lifecycle state
 
-plan_approved
+plan_pending
 
 ## Lease holder
 

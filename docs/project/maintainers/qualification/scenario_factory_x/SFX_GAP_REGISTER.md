@@ -2,7 +2,7 @@
 
 **Source:** master plan R1 §6 (gaps), §3.4, §15.1 and §16 (conflicts) — [`SFX-MASTER-PLAN.md`](../../../../../governance/tickets/plans/SFX-MASTER-PLAN.md).  
 **Index:** [`SFX_INDEX.md`](./SFX_INDEX.md) · **Evidence pin:** `eadb1c2116feb0a2090b234a36fd4182bd6ace8d`  
-**Consolidation:** final dispositions are reconciled with the W1 research findings in `docs/project/capabilities/plan/satellites/scenario_factory/SFX_GAP_ANALYSIS.md` (T-IGX-037-C). Until then this register is authoritative.
+**Consolidation:** final dispositions are reconciled with the W1 research findings in `docs/project/maintainers/qualification/scenario_factory_x/SFX_GAP_ANALYSIS.md` (T-IGX-037-C). Until then this register is authoritative.
 
 Status vocabulary: `VERIFIED` (gap confirmed at the pin) · `MISSING_EVIDENCE` (not yet established; scheduled task). R1 changes: ▲ revised, ▼ new in R1.
 
