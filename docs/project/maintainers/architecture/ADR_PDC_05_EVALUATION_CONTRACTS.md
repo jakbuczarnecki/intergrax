@@ -33,4 +33,4 @@
 
 ## Status note
 
-Accepted by OD-PDC-ADR-01 (Operator, 2026-11-12, recorded under T-IGX-036-E). This authorizes PDC-P4 design. Product merges still follow OD-PDC-SEQ-01 (merge after MCP-SERVER-X P8), which is pending.
+Accepted by OD-PDC-ADR-01 (Operator, 2026-11-12, recorded under T-IGX-036-E). This authorizes PDC-P4 design. Product merges follow OD-PDC-SEQ-01, approved 2026-11-12: merge after MCP-SERVER-X P8.

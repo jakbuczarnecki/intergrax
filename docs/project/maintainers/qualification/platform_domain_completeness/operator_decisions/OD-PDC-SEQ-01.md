@@ -4,7 +4,7 @@
 | --- | --- |
 | **Decision ID** | OD-PDC-SEQ-01 |
 | **Stage** | PDC-X |
-| **Status** | **PENDING** |
+| **Status** | **APPROVED — Option A** |
 | **Related** | ACT-N11 (`scripts/governance/iiac_activation_gate.py`): any change under `intergrax/`, `agents/` or `applications/` after `audit_execution_sha` invalidates the active IIAC activation |
 
 ## Question
@@ -22,4 +22,8 @@ When may PDC-P5 product changes merge to `development`, given that MCP-SERVER-X 
 
 ## Operator record
 
-_Pending._ The Operator approved Option A as the planning default when accepting the master plan (2026-11-11). A formal signature is still required before P5.
+Approved: operator @ 2026-11-12T07:16:15+01:00
+
+**Selected variant:** Option A (recommended).
+
+Provenance: the Operator answered "Approve the three remaining ODs (FRZ-01, ARCHF-01, SEQ-01) as option A?" in chat with the words "Approve all A". Transcribed on the Operator's instruction under T-IGX-036-F.

@@ -31,7 +31,7 @@ PDC-X is **one** campaign with eight certification workstreams (`PDC-D1`..`PDC-D
 | `PDC_CLOSED_WORLD_INVENTORY` → [`PDC_CLOSED_WORLD_INVENTORY.md`](./PDC_CLOSED_WORLD_INVENTORY.md) + [`.json`](./PDC_CLOSED_WORLD_INVENTORY.json) | P1 | Published (T-IGX-036-B) |
 | `PDC_DOMAIN_REQUIREMENTS_MATRIX` → [`.md`](./PDC_DOMAIN_REQUIREMENTS_MATRIX.md) + [`.json`](./PDC_DOMAIN_REQUIREMENTS_MATRIX.json) | P2 | Published (T-IGX-036-C; 168 rows, generated) |
 | `PDC_GAP_REGISTER` → [`PDC_GAP_REGISTER.md`](./PDC_GAP_REGISTER.md) | P2 | Published (generated) |
-| `PDC_FRZ_COVERAGE_MATRIX` → [`PDC_FRZ_COVERAGE_MATRIX.md`](./PDC_FRZ_COVERAGE_MATRIX.md) | P2 | Published (generated; OD-PDC-FRZ-01 pending) |
+| `PDC_FRZ_COVERAGE_MATRIX` → [`PDC_FRZ_COVERAGE_MATRIX.md`](./PDC_FRZ_COVERAGE_MATRIX.md) | P2 | Published (generated; OD-PDC-FRZ-01 approved) |
 | `PDC_OWNERSHIP_MATRIX` → [`PDC_OWNERSHIP_MATRIX.md`](./PDC_OWNERSHIP_MATRIX.md) | P3 | Locked (OD-PDC-ADR-01 approved; T-IGX-036-E) |
 | `PDC_ARCHITECTURE_DECISIONS` → [`PDC_ARCHITECTURE_DECISIONS.md`](./PDC_ARCHITECTURE_DECISIONS.md) | P3 | Locked (ADR-PDC-01..08 Accepted) |
 | `PDC_IMPLEMENTATION_WBS` | P4 | Not started |

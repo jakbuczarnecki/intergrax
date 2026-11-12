@@ -161,9 +161,10 @@ REPLAY_FINDING_ROW: Final[dict[str, str]] = {
     "plug_03": "PDC-D1-R022",
 }
 
-# Operator decisions recorded under T-IGX-036-E (PDC-P3-08, 2026-11-12: "Accept all A").
+# Operator decisions recorded under T-IGX-036-E (PDC-P3-08, "Accept all A") and T-IGX-036-F ("Approve all A"), 2026-11-12.
 APPROVED_ODS: Final[frozenset[str]] = frozenset(
-    {f"OD-PDC-SCOPE-0{i}" for i in range(1, 8)} | {"OD-PDC-PATHB-01", "OD-PDC-ADR-01", "OD-PDC-IIAC-SCOPE"}
+    {f"OD-PDC-SCOPE-0{i}" for i in range(1, 8)}
+    | {"OD-PDC-PATHB-01", "OD-PDC-ADR-01", "OD-PDC-IIAC-SCOPE", "OD-PDC-FRZ-01", "OD-PDC-ARCHF-01", "OD-PDC-SEQ-01"}
 )
 # Row -> (class, corrective task) after the decision. The source rows keep their P2 classification.
 OD_RESOLUTIONS: Final[dict[str, tuple[str, str]]] = {
@@ -2541,7 +2542,7 @@ def render_frz(payload: dict[str, object]) -> str:
         "# PDC-X — FRZ coverage matrix (PDC-P2-10)",
         "",
         "**Generated** by `scripts/qualification/pdc_x_requirements.py`. Existing FRZ identifiers only "
-        "(OD-PDC-FRZ-01 Option A, pending signature). Checklist cardinality verified: "
+        "(OD-PDC-FRZ-01 Option A, approved 2026-11-12). Checklist cardinality verified: "
         f"**{EXPECTED_FRZ}** criteria in **{EXPECTED_FAMILIES}** families. No status is changed here; promotion happens "
         "only at PDC-P9 through the checklist update protocol.",
         "",

@@ -1,6 +1,6 @@
 # PDC-X — FRZ coverage matrix (PDC-P2-10)
 
-**Generated** by `scripts/qualification/pdc_x_requirements.py`. Existing FRZ identifiers only (OD-PDC-FRZ-01 Option A, pending signature). Checklist cardinality verified: **225** criteria in **26** families. No status is changed here; promotion happens only at PDC-P9 through the checklist update protocol.
+**Generated** by `scripts/qualification/pdc_x_requirements.py`. Existing FRZ identifiers only (OD-PDC-FRZ-01 Option A, approved 2026-11-12). Checklist cardinality verified: **225** criteria in **26** families. No status is changed here; promotion happens only at PDC-P9 through the checklist update protocol.
 
 ## Coverage by family
 
