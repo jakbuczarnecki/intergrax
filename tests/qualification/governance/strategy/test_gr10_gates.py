@@ -8,19 +8,12 @@ import ast
 from pathlib import Path
 
 import pytest
-
 from intergrax.contracts.root_execution_operation import RootExecutionOperation
+from intergrax.runtime.execution.request import ExecutionCapability, ExecutionRequest
 from intergrax.runtime.execution.root_execution_operation_mapping import (
     root_execution_operation_from_request,
 )
-from intergrax.runtime.execution.request import ExecutionCapability, ExecutionRequest
 from intergrax.runtime.execution.strategy import ExecutionStrategy, execution_strategy_from_capabilities
-from tests.qualification.governance.strategy.gr10_inference_current_doc_ssot import (
-    gr10_assert_current_docs_inference_ssot,
-    gr10_architecture_remaining_gaps_slice,
-    gr10_forbidden_inference_gap_hits,
-    gr10_maintainer_roadmap_slice,
-)
 from tests.qualification.governance.strategy.catalog import (
     GR10_AGENTIC_CAPABILITY_SEMANTICS,
     GR10_AGENTIC_GEP_SEMANTICS,
@@ -37,6 +30,12 @@ from tests.qualification.governance.strategy.catalog import (
     gr10_matrix_inference_status,
     gr10_matrix_orchestration_status,
 )
+from tests.qualification.governance.strategy.gr10_inference_current_doc_ssot import (
+    gr10_architecture_remaining_gaps_slice,
+    gr10_assert_current_docs_inference_ssot,
+    gr10_forbidden_inference_gap_hits,
+    gr10_maintainer_roadmap_slice,
+)
 
 pytestmark = [pytest.mark.unit, pytest.mark.gate]
 
@@ -44,13 +43,12 @@ _REPO_ROOT = Path(__file__).resolve().parents[4]
 _HOST_TASK = _REPO_ROOT / "intergrax" / "runtime" / "execution" / "host_task.py"
 _NEXUS_HOST = _REPO_ROOT / "intergrax" / "runtime" / "execution" / "nexus_host_execution.py"
 _HOST_WIRING = _REPO_ROOT / "intergrax" / "applications" / "_shared" / "host_task_execution_wiring.py"
-_ENV_HOST = (
-    _REPO_ROOT / "intergrax" / "runtime" / "execution" / "environment_host_task_execution.py"
-)
+_ENV_HOST = _REPO_ROOT / "intergrax" / "runtime" / "execution" / "environment_host_task_execution.py"
 _INFERENCE = _REPO_ROOT / "intergrax" / "runtime" / "execution" / "inference.py"
-_INFERENCE_EXEC = (
-    _REPO_ROOT / "tests" / "unit" / "runtime" / "execution" / "test_inference_executor.py"
+_PRE_MODEL_GATE_COMPOSITION = (
+    _REPO_ROOT / "intergrax" / "runtime" / "governance" / "structured_inference_pre_model_composition.py"
 )
+_INFERENCE_EXEC = _REPO_ROOT / "tests" / "unit" / "runtime" / "execution" / "test_inference_executor.py"
 
 _FORBIDDEN_SERVICE_LOCATOR_NAMES = frozenset(
     {
@@ -125,9 +123,7 @@ def test_gr10_nexus_host_execution_requires_root_admission_parameter() -> None:
     source = _NEXUS_HOST.read_text(encoding="utf-8-sig")
     tree = ast.parse(source, filename=str(_NEXUS_HOST))
     fn = next(
-        node
-        for node in tree.body
-        if isinstance(node, ast.FunctionDef) and node.name == "build_host_task_execution"
+        node for node in tree.body if isinstance(node, ast.FunctionDef) and node.name == "build_host_task_execution"
     )
     kwonly = [arg.arg for arg in fn.args.kwonlyargs]
     assert "root_authority_admission" in kwonly
@@ -160,19 +156,10 @@ def test_gr10_strategy_operation_mapping_for_all_strategies() -> None:
     )
     assert execution_strategy_from_capabilities(inference_req.capabilities) is ExecutionStrategy.INFERENCE
     assert execution_strategy_from_capabilities(agent_req.capabilities) is ExecutionStrategy.AGENTIC
-    assert (
-        execution_strategy_from_capabilities(orch_req.capabilities)
-        is ExecutionStrategy.ORCHESTRATION
-    )
-    assert (
-        root_execution_operation_from_request(inference_req)
-        is RootExecutionOperation.ROOT_INFERENCE
-    )
+    assert execution_strategy_from_capabilities(orch_req.capabilities) is ExecutionStrategy.ORCHESTRATION
+    assert root_execution_operation_from_request(inference_req) is RootExecutionOperation.ROOT_INFERENCE
     assert root_execution_operation_from_request(agent_req) is RootExecutionOperation.ROOT_AGENT
-    assert (
-        root_execution_operation_from_request(orch_req)
-        is RootExecutionOperation.ROOT_ORCHESTRATION
-    )
+    assert root_execution_operation_from_request(orch_req) is RootExecutionOperation.ROOT_ORCHESTRATION
 
 
 def test_gr10_inference_executor_requires_active_identity_no_direct_bypass_tokens() -> None:
@@ -238,9 +225,7 @@ def test_gr10_inference_inventory_and_matrix_semantics_are_consistent() -> None:
 
 def test_gr10_inventory_and_capability_matrix_are_consistent() -> None:
     """NOT_APPLICABLE in production inventory must not pair with GAP in the matrix."""
-    inference_inventory = next(
-        entry for entry in GR10_PRODUCTION_INVENTORY if entry.strategy == "INFERENCE"
-    )
+    inference_inventory = next(entry for entry in GR10_PRODUCTION_INVENTORY if entry.strategy == "INFERENCE")
     for label, path in (
         ("hitl", inference_inventory.hitl_path),
         ("reliability", inference_inventory.reliability_path),
@@ -260,55 +245,91 @@ def test_gr10_not_applicable_capabilities_are_not_enterprise_blockers() -> None:
             assert row.coverage is None
 
 
+def _is_self_pre_model_gate(node: ast.AST) -> bool:
+    return (
+        isinstance(node, ast.Attribute)
+        and node.attr == "_pre_model_gate"
+        and isinstance(node.value, ast.Name)
+        and node.value.id == "self"
+    )
+
+
+def _raises_pre_model_configuration_error_when_gate_missing(node: ast.stmt) -> bool:
+    if not isinstance(node, ast.If):
+        return False
+    test = node.test
+    if not (
+        isinstance(test, ast.Compare)
+        and _is_self_pre_model_gate(test.left)
+        and len(test.ops) == 1
+        and isinstance(test.ops[0], ast.Is)
+        and isinstance(test.comparators[0], ast.Constant)
+        and test.comparators[0].value is None
+    ):
+        return False
+    for stmt in node.body:
+        if not isinstance(stmt, ast.Raise) or not isinstance(stmt.exc, ast.Call):
+            continue
+        func = stmt.exc.func
+        if isinstance(func, ast.Name) and func.id == "PreModelPolicyConfigurationError":
+            return True
+    return False
+
+
 def test_gr10_inference_executor_enforces_pre_model_before_provider_ast() -> None:
+    # PDC-X B-REG-T (T-IGX-036-I): aligned with 6700ff756 (PRE_MODEL gate port composed outside execution).
     source = _INFERENCE.read_text(encoding="utf-8-sig")
     tree = ast.parse(source, filename=str(_INFERENCE))
     executor_class = next(
-        node
-        for node in tree.body
-        if isinstance(node, ast.ClassDef) and node.name == "InferenceExecutor"
+        node for node in tree.body if isinstance(node, ast.ClassDef) and node.name == "InferenceExecutor"
     )
     execute_fn = next(
         node
         for node in executor_class.body
         if isinstance(node, (ast.FunctionDef, ast.AsyncFunctionDef)) and node.name == "execute"
     )
+    missing_gate_index = None
     policy_index = None
     invoke_index = None
     for index, node in enumerate(execute_fn.body):
-        if isinstance(node, ast.Expr) and isinstance(node.value, ast.Call):
-            func = node.value.func
-            if isinstance(func, ast.Name) and func.id == "enforce_pre_model_before_structured_inference":
-                policy_index = index
+        if missing_gate_index is None and _raises_pre_model_configuration_error_when_gate_missing(node):
+            missing_gate_index = index
+        # Top-level expression statement: the gate call is unconditional within ``execute``.
+        if isinstance(node, ast.Expr) and isinstance(node.value, ast.Call) and _is_self_pre_model_gate(node.value.func):
+            policy_index = index
         if isinstance(node, ast.FunctionDef) and node.name == "_invoke":
             invoke_index = index
+    assert missing_gate_index is not None
     assert policy_index is not None
     assert invoke_index is not None
-    assert policy_index < invoke_index
+    assert missing_gate_index < policy_index < invoke_index
     assert "RuntimePolicyEngine" not in source
     assert "PolicyEngine()" not in source
 
+    composition_source = _PRE_MODEL_GATE_COMPOSITION.read_text(encoding="utf-8-sig")
+    composition_tree = ast.parse(composition_source, filename=str(_PRE_MODEL_GATE_COMPOSITION))
+    builder_fn = next(
+        node
+        for node in composition_tree.body
+        if isinstance(node, ast.FunctionDef) and node.name == "build_structured_inference_pre_model_gate"
+    )
+    assert any(
+        isinstance(node, ast.Call)
+        and isinstance(node.func, ast.Name)
+        and node.func.id == "enforce_pre_model_before_structured_inference"
+        for node in ast.walk(builder_fn)
+    )
+
 
 def test_gr10_inf_premodel_scenarios_reference_inference_executor() -> None:
-    allow = next(
-        entry for entry in GR10_SCENARIO_CATALOG if entry.scenario_id == "INF-PREMODEL-ALLOW"
-    )
-    deny = next(
-        entry for entry in GR10_SCENARIO_CATALOG if entry.scenario_id == "INF-PREMODEL-DENY"
-    )
+    allow = next(entry for entry in GR10_SCENARIO_CATALOG if entry.scenario_id == "INF-PREMODEL-ALLOW")
+    deny = next(entry for entry in GR10_SCENARIO_CATALOG if entry.scenario_id == "INF-PREMODEL-DENY")
     assert allow.expected_status is Gr10CoverageStatus.QUALIFIED
     assert deny.expected_status is Gr10CoverageStatus.QUALIFIED
     assert _INFERENCE_EXEC.name in allow.pytest_node_ids[0]
 
 
-_QUAL_DOC = (
-    _REPO_ROOT
-    / "docs"
-    / "project"
-    / "maintainers"
-    / "qualification"
-    / "GOVERNANCE_FINAL_E2E_QUALIFICATION.md"
-)
+_QUAL_DOC = _REPO_ROOT / "docs" / "project" / "maintainers" / "qualification" / "GOVERNANCE_FINAL_E2E_QUALIFICATION.md"
 
 
 def test_gr10_current_doc_status_gr8_closed_gr10_partial() -> None:

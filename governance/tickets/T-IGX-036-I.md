@@ -38,4 +38,17 @@ uv run python -m scripts.governance.igx_gov ticket
 
 ## Lifecycle state
 
-plan_approved
+quality_gate
+
+## Checkpoint
+
+| Field | Value |
+| --- | --- |
+| Branch | `pdc-x-reg-t` |
+| Implementers | Two implementer subagents (ebh_5; GR-10) and the PDC orchestrator (GR-12, integration, commit). None of them wrote the Approved line |
+| Test contract | `pytest tests/qualification/ebh_5 tests/qualification/governance tests/qualification/ebh_7`: 992 passed, 11 failed, 9 skipped. ebh_5 has 243 passed and 0 failed; governance has 403 passed and 0 failed. The 11 ebh_7 failures are the same set as before the change (pinned EBH-7 evidence; see `PDC_REG_DIAGNOSIS.md`, group B). Log: `.tmp/proof/pdc-x-reg-t/contract.{log,xml}` |
+| Non-weakening | GR-10: 13 source mutations, each rejected by the updated gates. GR-12: the requirement for revision-bound authority is kept; the lab-compat default is the same pattern the other STRICT host tests use. ebh_5: expectations are derived from the SSOT modules; every N/A requires a rationale |
+| Extra GR-12 fix | A fixture closes every PRODUCT host runtime. Before it, the process hung after the tests passed |
+| Product paths | none changed (`git diff --name-only` has no `intergrax/`, `agents/` or `applications/` path) |
+| Writes outside the B-REG-T write set (delegate note 1) | `PDC_REG_DIAGNOSIS.md`, `scripts/qualification/pdc_x_requirements.py` and the regenerated matrix outputs. Documentation and scripts only, recording evidence |
+| Delegate note 2 | Forwarded to the P7 auditor IA-D3: check that every RPL-F N/A has a rationale and that PASS is limited to the active proof set |

@@ -27,14 +27,20 @@ from tests.qualification.ebh_5._sqlite_touchpoint_registry import (
     SQLITE_TOUCHPOINT_COUNT,
     assert_closed_world_sqlite_accountability,
 )
+from tests.qualification.ebh_7._ebh7_terminal_operator_authorization import (
+    fixed_substrate_rpl_concern_ids,
+    internal_rpl_concern_ids,
+)
 
 pytestmark = [pytest.mark.unit, pytest.mark.gate, pytest.mark.qualification]
 
 
 def test_ebh5_proof_inventory_matrix_qualified_parity() -> None:
+    # PDC-X B-REG-T (T-IGX-036-I): aligned with EBH-7 terminal reclassification d4937889f
     from tests.qualification.ebh_5._vendor_backend_inventory import VENDOR_BACKEND_DEPENDENCY_INVENTORY
     from tests.qualification.ebh_5._vendor_backend_types import ExtensibilityClassification
 
+    expected_qualified_at_head = QUALIFIED_CONCERN_IDS - internal_rpl_concern_ids() - fixed_substrate_rpl_concern_ids()
     matrix_q = {
         row.concern_id
         for row in CROSS_LAYER_REPLACEABILITY_MATRIX
@@ -45,15 +51,17 @@ def test_ebh5_proof_inventory_matrix_qualified_parity() -> None:
         for row in VENDOR_BACKEND_DEPENDENCY_INVENTORY
         if row.extensibility_classification == ExtensibilityClassification.REPLACEABLE_QUALIFIED
     }
-    assert matrix_q == inv_q == QUALIFIED_CONCERN_IDS
+    assert matrix_q == inv_q == expected_qualified_at_head
 
 
 def test_ebh5_proof_all_qualified_rows_resolve() -> None:
     assert qualified_rows_with_invalid_proofs(CROSS_LAYER_REPLACEABILITY_MATRIX) == ()
 
 
-def test_ebh5_proof_registry_covers_five_qualified_concerns() -> None:
-    assert len(QUALIFIED_CONCERN_BEHAVIORAL_PROOF_NODE) == 5
+def test_ebh5_proof_registry_covers_every_matrix_concern() -> None:
+    # PDC-X B-REG-T (T-IGX-036-I): aligned with EBH-7 terminal reclassification d4937889f
+    assert len(QUALIFIED_CONCERN_BEHAVIORAL_PROOF_NODE) == len(CROSS_LAYER_REPLACEABILITY_MATRIX)
+    assert QUALIFIED_CONCERN_IDS == {row.concern_id for row in CROSS_LAYER_REPLACEABILITY_MATRIX}
 
 
 def test_ebh5_proof_audit_baseline_sha_resolves() -> None:

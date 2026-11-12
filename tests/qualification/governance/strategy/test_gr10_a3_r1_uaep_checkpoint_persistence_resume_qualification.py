@@ -4,10 +4,10 @@
 
 from __future__ import annotations
 
+import ast
 import inspect
 
 import pytest
-
 from intergrax.agents.persistence.checkpoint_store import InMemoryAgentCheckpointStore
 from intergrax.agents.persistence.session_persistence import (
     make_checkpoint_hook,
@@ -39,9 +39,7 @@ pytestmark = [pytest.mark.unit, pytest.mark.gate]
 
 
 def test_gr10_a3_r1_ssot_runtime_checkpoint_authority_for_uaep() -> None:
-    assert GR10_A2_CHECKPOINT_SESSION_COUPLING is (
-        Gr10CheckpointSessionCouplingStatus.DEPRECATED_MIGRATION_TARGET
-    )
+    assert GR10_A2_CHECKPOINT_SESSION_COUPLING is (Gr10CheckpointSessionCouplingStatus.DEPRECATED_MIGRATION_TARGET)
     host_source = inspect.getsource(host_task_module)
     assert "apply_runtime_checkpoint_to_task" in host_source
     assert "resume_checkpoint" in host_source
@@ -52,7 +50,74 @@ def test_gr10_a3_r1_ssot_runtime_checkpoint_authority_for_uaep() -> None:
     assert "AgentCheckpointStore" not in uaep_source
 
     engine_source = inspect.getsource(agent_engine_module)
-    assert "AgentCheckpointStore" not in engine_source
+    # PDC-X B-REG-T (T-IGX-036-I): aligned with 716ed746f (ACP checkpoint trust boundary).
+    consumers = _agent_engine_checkpoint_store_consumers(engine_source)
+    assert "run_acp_session" in consumers
+    assert consumers <= _ALLOWED_CHECKPOINT_STORE_CONSUMERS, consumers
+
+
+# ACP session is the only sink; ``_execute_agent_impl`` is the internal ACP/UAEP dispatcher
+# that forwards the store solely into ``run_acp_session`` (checked by the same AST walk).
+_ALLOWED_CHECKPOINT_STORE_CONSUMERS = frozenset({"run_acp_session", "_execute_agent_impl"})
+_CHECKPOINT_STORE_NAME = "agent_checkpoint_store"
+_CHECKPOINT_STORE_ATTR = "_agent_checkpoint_store"
+
+
+def _callee_name(call: ast.Call) -> str:
+    func = call.func
+    if isinstance(func, ast.Name):
+        return func.id
+    if isinstance(func, ast.Attribute):
+        return func.attr
+    return ast.dump(func)
+
+
+def _is_checkpoint_store_load(node: ast.AST) -> bool:
+    if isinstance(node, ast.Name):
+        return node.id == _CHECKPOINT_STORE_NAME and isinstance(node.ctx, ast.Load)
+    if isinstance(node, ast.Attribute):
+        return node.attr == _CHECKPOINT_STORE_ATTR and isinstance(node.ctx, ast.Load)
+    return False
+
+
+def _agent_engine_checkpoint_store_consumers(engine_source: str) -> set[str]:
+    """Return callee names receiving the ACP checkpoint store; fail on any other data flow.
+
+    Every load of ``agent_checkpoint_store`` / ``self._agent_checkpoint_store`` must be either
+    a direct call argument (positional or keyword) or the ``__init__`` assignment to
+    ``self._agent_checkpoint_store``. Aliasing, ``UAEPExecutor(...)`` construction or
+    ``uaep_executor.execute(...)`` receiving the store therefore fails the gate.
+    """
+    tree = ast.parse(engine_source)
+    parents: dict[ast.AST, ast.AST] = {}
+    for parent in ast.walk(tree):
+        for child in ast.iter_child_nodes(parent):
+            parents[child] = parent
+    consumers: set[str] = set()
+    for node in ast.walk(tree):
+        if not _is_checkpoint_store_load(node):
+            continue
+        parent = parents[node]
+        if isinstance(parent, ast.keyword):
+            call = parents[parent]
+            assert isinstance(call, ast.Call)
+            consumers.add(_callee_name(call))
+            continue
+        if isinstance(parent, ast.Call) and node in parent.args:
+            consumers.add(_callee_name(parent))
+            continue
+        if (
+            isinstance(parent, ast.Assign)
+            and parent.value is node
+            and len(parent.targets) == 1
+            and isinstance(parent.targets[0], ast.Attribute)
+            and parent.targets[0].attr == _CHECKPOINT_STORE_ATTR
+        ):
+            continue
+        raise AssertionError(
+            f"agent_engine.py line {node.lineno}: checkpoint store used outside ACP session wiring",
+        )
+    return consumers
 
 
 def test_gr10_a3_r1_reliability_enricher_does_not_require_agent_checkpoint_store() -> None:

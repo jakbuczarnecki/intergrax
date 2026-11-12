@@ -4,13 +4,13 @@
 
 from __future__ import annotations
 
+from collections.abc import Callable, Iterator
 from dataclasses import dataclass, field
 from pathlib import Path
 from unittest.mock import patch
 
 import pytest
 from fastapi import FastAPI
-
 from intergrax.applications._shared.control_plane_composition import (
     ControlPlaneCompositionError,
 )
@@ -19,6 +19,10 @@ from intergrax.applications._shared.harness_control_plane_governance_wiring impo
     build_harness_control_plane_governance,
     resolve_harness_task_control_mutation_boundary,
 )
+from intergrax.applications._shared.harness_host_runtime import (
+    HarnessHostRuntime,
+    close_harness_host_runtime,
+)
 from intergrax.applications._shared.production_capacity_governance_wiring import (
     ProductionCapacityGovernance,
     build_production_capacity_governance,
@@ -26,29 +30,29 @@ from intergrax.applications._shared.production_capacity_governance_wiring import
 from intergrax.applications._shared.production_capacity_wiring import (
     resolve_production_capacity_wiring,
 )
-from intergrax.applications._shared.task_control_wiring import wire_harness_task_control
 from intergrax.applications._shared.task_control_governance import (
     build_cancel_task_execution_mutation_request,
 )
+from intergrax.applications._shared.task_control_wiring import wire_harness_task_control
+from intergrax.applications.contracts.environment_profile import ApplicationEnvironmentProfile
 from intergrax.contracts.agent_run import RequestIdentity
 from intergrax.contracts.agent_run_enums import PrincipalType
-from intergrax.contracts.execution_identity import mint_run_id, mint_task_id
-from intergrax.runtime.task.task import TaskState
-from tests.unit.applications.task_control_product_host_test_support import (
-    build_task_control_product_harness_host_runtime,
-)
-from intergrax.applications.contracts.environment_profile import ApplicationEnvironmentProfile
 from intergrax.contracts.control_plane_mutation import ControlPlaneMutationRequest
+from intergrax.contracts.execution_identity import mint_run_id, mint_task_id
 from intergrax.contracts.runtime_policy import EnforcementLevel, PolicyAction, PolicyDecision
-from intergrax.runtime.governance.control_plane_mutation_authorization import (
-    ControlPlaneMutationAuthorizationBoundary,
-)
 from intergrax.runtime.governance.control_plane_mutation_approval import (
     ApprovalConsumingControlPlaneMutationEvaluator,
 )
+from intergrax.runtime.governance.control_plane_mutation_authorization import (
+    ControlPlaneMutationAuthorizationBoundary,
+)
+from intergrax.runtime.task.task import TaskState
 from tests.qualification.governance.gr12.catalog import (
     GR12_CONTROL_PLANE_SURFACES,
     Gr12CoverageStatus,
+)
+from tests.unit.applications.task_control_product_host_test_support import (
+    build_task_control_product_harness_host_runtime,
 )
 
 pytestmark = [pytest.mark.unit, pytest.mark.gate]
@@ -148,6 +152,19 @@ def test_gr12_a2_non_product_task_control_may_wire_without_composition_boundary(
 
 
 @pytest.fixture
+def _close_runtimes() -> Iterator[Callable[[HarnessHostRuntime], None]]:
+    """Close every PRODUCT host runtime a test builds.
+
+    STRICT PRODUCT composition starts background workers; an unclosed runtime keeps the
+    interpreter alive after the test. PDC-X B-REG-T (T-IGX-036-I).
+    """
+    runtimes: list[HarnessHostRuntime] = []
+    yield runtimes.append
+    for runtime in reversed(runtimes):
+        close_harness_host_runtime(runtime)
+
+
+@pytest.fixture
 def _stub_host_llm(monkeypatch: pytest.MonkeyPatch) -> None:
     from testing_support.builder import MeteringFakeLLMAdapter
 
@@ -174,8 +191,10 @@ def _stub_host_llm(monkeypatch: pytest.MonkeyPatch) -> None:
 def test_gr12_a2_r2_product_host_composition_exposes_cla04_boundary(
     tmp_path: Path,
     _stub_host_llm: None,
+    _close_runtimes: Callable[[HarnessHostRuntime], None],
 ) -> None:
     runtime = build_task_control_product_harness_host_runtime(tmp_path)
+    _close_runtimes(runtime)
     assert runtime.control_plane_governance is not None
     boundary = resolve_harness_task_control_mutation_boundary(
         runtime.control_plane_governance,
@@ -227,8 +246,10 @@ def test_gr12_a2_r2_product_task_control_fail_closed_when_canonical_boundary_unr
 def test_gr12_a2_r2_task_control_wiring_passes_host_runtime_boundary_to_routes(
     tmp_path: Path,
     _stub_host_llm: None,
+    _close_runtimes: Callable[[HarnessHostRuntime], None],
 ) -> None:
     runtime = build_task_control_product_harness_host_runtime(tmp_path)
+    _close_runtimes(runtime)
     host_boundary = resolve_harness_task_control_mutation_boundary(
         runtime.control_plane_governance,
     )
@@ -250,12 +271,14 @@ def test_gr12_a2_r2_task_control_wiring_passes_host_runtime_boundary_to_routes(
 def test_gr12_a2_r2_external_evaluator_wired_through_product_host_composition(
     tmp_path: Path,
     _stub_host_llm: None,
+    _close_runtimes: Callable[[HarnessHostRuntime], None],
 ) -> None:
     external = ControlPlaneMutationAuthorizationBoundary(evaluator=_RecordingEvaluator())
     runtime = build_task_control_product_harness_host_runtime(
         tmp_path,
         mutation_authorization_boundary=external,
     )
+    _close_runtimes(runtime)
     app = FastAPI()
     with patch(
         "intergrax.applications._shared.task_control_wiring.mount_canonical_harness_task_routes",
@@ -276,8 +299,10 @@ def test_gr12_a2_r2_external_evaluator_wired_through_product_host_composition(
 def test_gr12_a2_r2_task_control_wiring_consumes_host_boundary_without_rebuild(
     tmp_path: Path,
     _stub_host_llm: None,
+    _close_runtimes: Callable[[HarnessHostRuntime], None],
 ) -> None:
     runtime = build_task_control_product_harness_host_runtime(tmp_path)
+    _close_runtimes(runtime)
     host_boundary = resolve_harness_task_control_mutation_boundary(
         runtime.control_plane_governance,
     )
