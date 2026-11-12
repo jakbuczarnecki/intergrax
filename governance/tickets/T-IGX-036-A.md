@@ -49,7 +49,7 @@ Expected: exit **0**. FRZ criterion count stays **225** in **26** families. ARCH
 
 ## Lifecycle state
 
-quality_gate
+closed
 
 ## Checkpoint
 
@@ -58,7 +58,8 @@ quality_gate
 | Branch | `pdc-x-p0` |
 | Worktree | `<parent>/_wt/intergrax/pdc-x-p0` |
 | HEAD @ P0 start | `a695c9c835bb5b4b206e6e3e00bb2aee23ca7b6b` |
-| ROADMAP_AMENDMENT_SHA | unset until merge |
+| ROADMAP_AMENDMENT_SHA | `bc9ef52bd690738e71638a599eec64c76ac356c9` (PR #461 merge, 2026-11-12; P0 head `142190b31` verified as ancestor) |
+| Closure note | Merged by the Operator. Not a stage closure: `PDC-X` stays `PLANNED / MANDATORY / CURRENT`. |
 | P0 content commit | `e46ddcef1` |
 | `verify_arch_freeze_plan_traceability.py` | exit 0 — FRZ=225, families=26, PASS=108, OPEN=109, WBS=54, semantic_dag=OK |
 | Pinned pytest set (test contract) | 431 passed, 25 failed, 16 skipped. All 25 failures reproduce identically on the clean baseline `a695c9c8` (stash comparison); 0 introduced by this batch. Logs under `.tmp/session/pdc-x-p0/` |

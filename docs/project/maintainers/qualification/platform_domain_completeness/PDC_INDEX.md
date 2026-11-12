@@ -4,7 +4,7 @@
 **Roadmap status:** `PLANNED / MANDATORY / CURRENT` (roadmap §3, §3.2, §5)
 **Position:** `MCP-SERVER-X` → **`PDC-X`** → `ARCH-FREEZE`
 **Baseline pin:** `a695c9c835bb5b4b206e6e3e00bb2aee23ca7b6b`
-**ROADMAP_AMENDMENT_SHA:** unset until the P0 merge (see [`PDC_SHA_LADDER.md`](./PDC_SHA_LADDER.md))
+**ROADMAP_AMENDMENT_SHA:** `bc9ef52bd690738e71638a599eec64c76ac356c9` (PR #461 merge; see [`PDC_SHA_LADDER.md`](./PDC_SHA_LADDER.md))
 **Tickets:** P0 [`T-IGX-036-A.md`](../../../../governance/tickets/T-IGX-036-A.md)
 
 PDC-X is **one** campaign with eight certification workstreams (`PDC-D1`..`PDC-D8`). They are **not** separate roadmap stages.
