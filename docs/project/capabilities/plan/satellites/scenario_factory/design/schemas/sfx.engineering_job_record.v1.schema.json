@@ -1,0 +1,367 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "sfx.engineering_job_record.v1",
+  "title": "EngineeringJobRecord",
+  "description": "SFX-CON-15. SFX view of one engineering job. Scaffold jobs run as long-running tasks (TaskCheckpoint); agentic jobs stay in SEF-X and are held by reference only (HO-3). Not named FactoryExecutionRecord (CON-X-01). Envelope: canonical_digest = sha256(JCS(model_dump without canonical_digest)); see SFX_CANONICALIZATION.md. Persisted as a CW WorkArtifactVersion (ADR-SFX-002 §D5). Status: PROPOSED design draft (T-IGX-037-C); not code.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version",
+    "tenant_id",
+    "workspace_id",
+    "work_item_id",
+    "scenario_id",
+    "artifact_id",
+    "version",
+    "canonical_digest",
+    "created_at",
+    "created_by",
+    "handoff_request_ref",
+    "mode",
+    "job_state",
+    "assignment_id",
+    "execution_link_id",
+    "task_checkpoint_ref",
+    "sef_job_ref",
+    "attempt",
+    "max_attempts",
+    "output",
+    "failure"
+  ],
+  "properties": {
+    "schema_version": {
+      "const": "sfx.engineering_job_record.v1"
+    },
+    "tenant_id": {
+      "$ref": "#/$defs/id"
+    },
+    "workspace_id": {
+      "$ref": "#/$defs/id"
+    },
+    "work_item_id": {
+      "$ref": "#/$defs/id"
+    },
+    "scenario_id": {
+      "$ref": "#/$defs/id"
+    },
+    "artifact_id": {
+      "$ref": "#/$defs/id"
+    },
+    "version": {
+      "type": "integer",
+      "minimum": 1,
+      "description": "SFX logical version; one CW WorkArtifactVersion per value."
+    },
+    "canonical_digest": {
+      "$ref": "#/$defs/digest"
+    },
+    "created_at": {
+      "$ref": "#/$defs/timestamp"
+    },
+    "created_by": {
+      "$ref": "#/$defs/principal_ref"
+    },
+    "handoff_request_ref": {
+      "$ref": "#/$defs/artifact_version_ref"
+    },
+    "mode": {
+      "enum": [
+        "DETERMINISTIC_SCAFFOLD",
+        "AGENTIC_ENGINEERING"
+      ]
+    },
+    "job_state": {
+      "enum": [
+        "QUEUED",
+        "RUNNING",
+        "WAITING",
+        "SUCCEEDED",
+        "FAILED",
+        "DEAD_LETTERED"
+      ]
+    },
+    "assignment_id": {
+      "$ref": "#/$defs/id"
+    },
+    "execution_link_id": {
+      "anyOf": [
+        {
+          "$ref": "#/$defs/id"
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "task_checkpoint_ref": {
+      "anyOf": [
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "task_id",
+            "checkpoint_id",
+            "revision"
+          ],
+          "properties": {
+            "task_id": {
+              "$ref": "#/$defs/id"
+            },
+            "checkpoint_id": {
+              "$ref": "#/$defs/id"
+            },
+            "revision": {
+              "type": "integer",
+              "minimum": 0
+            }
+          }
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "sef_job_ref": {
+      "anyOf": [
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "job_id",
+            "intent_id",
+            "execution_record_digest"
+          ],
+          "properties": {
+            "job_id": {
+              "$ref": "#/$defs/id"
+            },
+            "intent_id": {
+              "$ref": "#/$defs/id"
+            },
+            "execution_record_digest": {
+              "anyOf": [
+                {
+                  "$ref": "#/$defs/digest"
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            }
+          },
+          "description": "Reference to SEF CON-N-02 EngineeringExecutionRecord; the SEF state machine is not copied."
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "attempt": {
+      "type": "integer",
+      "minimum": 1
+    },
+    "max_attempts": {
+      "type": "integer",
+      "minimum": 1
+    },
+    "output": {
+      "anyOf": [
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "package",
+            "generated_tree_digest",
+            "delivery_manifest_digest",
+            "evidence_bundle_digest"
+          ],
+          "properties": {
+            "package": {
+              "type": "object",
+              "additionalProperties": false,
+              "required": [
+                "package_id",
+                "package_version",
+                "package_checksum"
+              ],
+              "properties": {
+                "package_id": {
+                  "$ref": "#/$defs/id"
+                },
+                "package_version": {
+                  "type": "string",
+                  "pattern": "^[0-9]+\\.[0-9]+\\.[0-9]+(-[0-9A-Za-z.-]+)?(\\+[0-9A-Za-z.-]+)?$"
+                },
+                "package_checksum": {
+                  "$ref": "#/$defs/digest"
+                }
+              },
+              "description": "ApplicationPackage identity (intergrax/applications/contracts/application_package.py:56). The checksum must be non-empty, unlike the platform default (application_package.py:52)."
+            },
+            "generated_tree_digest": {
+              "$ref": "#/$defs/digest"
+            },
+            "delivery_manifest_digest": {
+              "anyOf": [
+                {
+                  "$ref": "#/$defs/digest"
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            },
+            "evidence_bundle_digest": {
+              "anyOf": [
+                {
+                  "$ref": "#/$defs/digest"
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "failure": {
+      "anyOf": [
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "code",
+            "message"
+          ],
+          "properties": {
+            "code": {
+              "type": "string",
+              "pattern": "^sfx\\.[a-z_.]+$"
+            },
+            "message": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 2000
+            }
+          }
+        },
+        {
+          "type": "null"
+        }
+      ]
+    }
+  },
+  "$defs": {
+    "id": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 256,
+      "pattern": "^[A-Za-z0-9][A-Za-z0-9._:/-]*$",
+      "description": "Opaque identifier. Never a secret and never a free-text value."
+    },
+    "digest": {
+      "type": "string",
+      "pattern": "^sha256:[0-9a-f]{64}$",
+      "description": "Platform content digest convention sha256:<64 lowercase hex> (intergrax/contracts/validation.py:13)."
+    },
+    "timestamp": {
+      "type": "string",
+      "pattern": "^[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}:[0-9]{2}:[0-9]{2}\\.[0-9]{6}Z$",
+      "description": "RFC 3339 UTC timestamp with exactly six fractional digits and a Z suffix (SFX_CANONICALIZATION.md, rule CF-5)."
+    },
+    "slug": {
+      "type": "string",
+      "pattern": "^[a-z][a-z0-9_]*$",
+      "maxLength": 64,
+      "description": "Same pattern as SCENARIO_SLUG_PATTERN (scripts/proof/create_scenario_proof.py:19)."
+    },
+    "principal_ref": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "principal_id",
+        "actor_kind"
+      ],
+      "properties": {
+        "principal_id": {
+          "$ref": "#/$defs/id"
+        },
+        "actor_kind": {
+          "enum": [
+            "HUMAN",
+            "AGENT",
+            "SYSTEM"
+          ],
+          "description": "Kind of actor. G-2 counts only HUMAN actors."
+        }
+      },
+      "description": "Harness principal reference."
+    },
+    "artifact_version_ref": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "schema_id",
+        "artifact_id",
+        "version",
+        "canonical_digest"
+      ],
+      "properties": {
+        "schema_id": {
+          "type": "string",
+          "pattern": "^sfx\\.[a-z_]+\\.v[0-9]+$"
+        },
+        "artifact_id": {
+          "$ref": "#/$defs/id"
+        },
+        "version": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "canonical_digest": {
+          "$ref": "#/$defs/digest"
+        }
+      },
+      "description": "Immutable reference to one SFX artifact version (CW WorkArtifactVersion)."
+    },
+    "secret_ref": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 512,
+      "pattern": "^[a-z][a-z0-9+.-]*:[^\\s]+$",
+      "description": "Reference resolved by the credential broker at run time. Never a secret value."
+    }
+  },
+  "allOf": [
+    {
+      "if": {
+        "properties": {
+          "mode": {
+            "const": "DETERMINISTIC_SCAFFOLD"
+          }
+        },
+        "required": [
+          "mode"
+        ]
+      },
+      "then": {
+        "properties": {
+          "sef_job_ref": {
+            "type": "null"
+          }
+        }
+      },
+      "else": {
+        "properties": {
+          "task_checkpoint_ref": {
+            "type": "null"
+          }
+        }
+      }
+    }
+  ]
+}
