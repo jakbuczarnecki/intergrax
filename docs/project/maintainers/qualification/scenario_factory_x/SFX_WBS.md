@@ -15,8 +15,8 @@
 - SFX-P0-01: `…/plans/` = `governance/tickets/plans/`; `…/scenario_factory_x/` = `docs/project/maintainers/qualification/scenario_factory_x/`.
 - SFX-P0-03: `qualification/scenario_factory_x/` = `docs/project/maintainers/qualification/scenario_factory_x/`.
 - SFX-P1-01: `…/` = `docs/project/capabilities/plan/`.
-- SFX-P1-02, P1-03, P3-*: `…/` = `docs/project/capabilities/plan/satellites/scenario_factory/`.
-- SFX-P2-02: `…/` = `docs/project/capabilities/plan/satellites/`; the schemas, `SFX_CANONICALIZATION.md` and `SFX_METRICS.md` all live in `docs/project/capabilities/plan/satellites/scenario_factory/design/`.
+- SFX-P1-02, P1-03, P3-*: `…/` = `docs/project/maintainers/qualification/scenario_factory_x/`.
+- SFX-P2-02: `…/` = `docs/project/capabilities/plan/satellites/`; the schemas, `SFX_CANONICALIZATION.md` and `SFX_METRICS.md` all live in `docs/project/maintainers/qualification/scenario_factory_x/design/`.
 - SFX-P5-02..05, P6-*, P7-*, P8-*, P9-01, P9-02 (second path), P9-03 (first path), P11-*: `…/` = `agents/scenario_factory/`.
 - SFX-P10-02, P10-04..07: `…/` = `applications/scenario_studio_application/`.
 - SFX-P5-04 tests: `tests/…/` = `tests/unit/agents/scenario_factory/`.
@@ -30,7 +30,7 @@
 | SFX-P0-01 | Ticket T-IGX-037-A, plan, digest, OD-SFX-01..04 records | `governance/tickets/T-IGX-037-A.md`, `…/plans/PLAN_T-IGX-037-A.md`, `…/scenario_factory_x/operator_decisions/OD-SFX-0{1..4}.md` | — | `verify_plan_approval` | ticket | Approved line by operator/delegate | architect · L · — | [T-IGX-037-A](../../../../../governance/tickets/T-IGX-037-A.md) |
 | SFX-P0-02 | Roadmap A1–A10 | roadmap | P0-01 | `roadmap_replay_x` | log | no new failures vs `eadb1c21` | architect · M · — | [T-IGX-037-A](../../../../../governance/tickets/T-IGX-037-A.md) |
 | SFX-P0-03 | SSOT plan + capability pair + dossier skeleton | `governance/tickets/plans/SFX-MASTER-PLAN.md`; `docs/project/capabilities/{architecture,plan}/SCENARIO_FACTORY.md`; `capabilities/README.md`; `qualification/scenario_factory_x/{SFX_INDEX,SFX_WBS,SFX_GAP_REGISTER,SFX_SHA_LADDER}.md`, `SFX_REQUIREMENTS_TRACEABILITY.json` | P0-01 | `tests/unit/governance` | log | links valid | architect · L · ∥P0-02 | [T-IGX-037-A](../../../../../governance/tickets/T-IGX-037-A.md) |
-| SFX-P1-01 | Competitive evidence matrix | `…/satellites/scenario_factory/SFX_COMPETITIVE_EVIDENCE_MATRIX.md` | W0 | citation check (each cell has URL+date or UNKNOWN) | matrix | 100% cited/UNKNOWN | research ×3 lanes · M | [T-IGX-037-B](../../../../../governance/tickets/T-IGX-037-B.md) |
+| SFX-P1-01 | Competitive evidence matrix | `…/SFX_COMPETITIVE_EVIDENCE_MATRIX.md` | W0 | citation check (each cell has URL+date or UNKNOWN) | matrix | 100% cited/UNKNOWN | research ×3 lanes · M | [T-IGX-037-B](../../../../../governance/tickets/T-IGX-037-B.md) |
 | SFX-P1-02 | IDE + MCP client facts | `…/SFX_IDE_TOOLING_FACTS.md` | W0 | — | cited | resolves GAP-07/ME | research · L · ∥ | [T-IGX-037-B](../../../../../governance/tickets/T-IGX-037-B.md) |
 | SFX-P1-03 | Inventory re-pin incl. CW qualification status | `…/SFX_CAPABILITY_INVENTORY.json` | W0 | JSON schema check | inventory | every CAP classified | architect · M · ∥ | [T-IGX-037-B](../../../../../governance/tickets/T-IGX-037-B.md) |
 | SFX-P2-01 | ADR-SFX-001..006 + ownership review (ToolRegistry, ECAP §16) | `docs/project/technical/adr/entries/<date>/ADR-SFX-00{1..6}.md` | P1 | `check_harness_adr.py` | ADRs | independent review (reviewer session) | architect · M | [T-IGX-037-C](../../../../../governance/tickets/T-IGX-037-C.md) |

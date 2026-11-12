@@ -3,7 +3,7 @@
 **Architecture pair:** [architecture/SCENARIO_FACTORY.md](../architecture/SCENARIO_FACTORY.md)  
 **SSOT:** [`SFX-MASTER-PLAN.md`](../../../../governance/tickets/plans/SFX-MASTER-PLAN.md) (R1, operator-approved 2026-11-12; approval scope W0–W2)  
 **Campaign dossier (authoritative WBS, gaps, SHA ladder, traceability):** [`SFX_INDEX.md`](../../maintainers/qualification/scenario_factory_x/SFX_INDEX.md)  
-**Satellites (on demand):** `satellites/scenario_factory/` — research, inventory, design drafts, UX, IDE walkthrough (created by T-IGX-037-B..E)
+**Workstream documents (on demand):** `../../maintainers/qualification/scenario_factory_x/` — research, inventory, design drafts, UX, IDE walkthrough (created by T-IGX-037-B..E; kept in the dossier, outside the PDC closed-world doc scan, per operator amendment 2026-11-12)
 
 Do not duplicate the WBS here — edit the dossier files only.
 
