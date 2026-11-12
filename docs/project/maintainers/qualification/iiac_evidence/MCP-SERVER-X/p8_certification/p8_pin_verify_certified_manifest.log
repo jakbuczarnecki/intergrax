@@ -1,0 +1,7 @@
+command: verify_iiac_audit_manifest + verify_iiac_role_separation on the certified manifest after pinning certification_publication_sha
+git_head: 42410a9856a77e8d422f1e7e53b113c5fa24324a (+ uncommitted pin edit)
+date_utc: 2026-11-12T12:45:18Z
+verify_iiac_audit_manifest: PASS
+exit=0
+verify_iiac_role_separation: PASS
+exit=0

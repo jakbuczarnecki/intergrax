@@ -1,0 +1,7 @@
+command: git diff --name-only 6e53fb36f39b4a57331e6c079f2fcbe6094e2786 eadb1c2116feb0a2090b234a36fd4182bd6ace8d -- intergrax agents applications scripts
+git_head: eadb1c2116feb0a2090b234a36fd4182bd6ace8d
+date_utc: 2026-11-12T11:24:14Z
+scripts/qualification/pdc_x_requirements.py
+exit_code: 0
+--- full diff name-only count:
+72
