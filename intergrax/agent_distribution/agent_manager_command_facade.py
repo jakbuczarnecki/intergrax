@@ -6,18 +6,22 @@
 from __future__ import annotations
 
 from intergrax.agent_distribution.admin_models import (
-    ActivationResultView,
     ActivateRuntimeRevisionRequest,
+    ActivationResultView,
     BindAgentRequest,
     BindingMutationResult,
     BuildApplicationRevisionRequest,
     BuildRevisionResult,
     InstallAgentRequest,
     InstallationMutationResult,
+    RetireAgentRequest,
+    RetireAgentResult,
     RollbackResultView,
     RollbackRuntimeRevisionRequest,
     SetAgentEnablementRequest,
     UpdateAgentBindingRequest,
+    UpgradeAgentRequest,
+    UpgradeAgentResult,
 )
 from intergrax.agent_distribution.admin_service import AgentPlatformAdminService
 from intergrax.contracts.agent_run import RequestIdentity
@@ -38,6 +42,36 @@ class AgentManagerCommandFacade:
         principal: RequestIdentity,
     ) -> InstallationMutationResult:
         return self._admin.install_agent(
+            application_id=application_id,
+            application_environment_id=application_environment_id,
+            request=request,
+            principal=principal,
+        )
+
+    def upgrade_agent(
+        self,
+        *,
+        application_id: str,
+        application_environment_id: str,
+        request: UpgradeAgentRequest,
+        principal: RequestIdentity,
+    ) -> UpgradeAgentResult:
+        return self._admin.upgrade_agent(
+            application_id=application_id,
+            application_environment_id=application_environment_id,
+            request=request,
+            principal=principal,
+        )
+
+    def retire_agent(
+        self,
+        *,
+        application_id: str,
+        application_environment_id: str,
+        request: RetireAgentRequest,
+        principal: RequestIdentity,
+    ) -> RetireAgentResult:
+        return self._admin.retire_agent(
             application_id=application_id,
             application_environment_id=application_environment_id,
             request=request,
