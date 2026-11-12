@@ -81,8 +81,8 @@ PR #459 merged @ `a695c9c83` **before** independent G6 publication, before the A
 | P6_ACTIVATION_SHA | `92ad3555775649742299826e3680ec8ce703cc8a` |
 | P6_ACTIVATION_PHASE2_SHA | `19c617365cda85d88b474575e77b7d083739b529` |
 | P6_PUBLICATION_SHA | `66dcd1bfe260b33a41881c7b9911b2a2abb752f9` (activation PR merge commit) |
-| P6_FORMAL_CLOSURE_SHA | `pending (pinned after merge)` |
-| P6_TERMINAL_CLOSURE_SHA | `pending (pinned after merge)` |
+| P6_FORMAL_CLOSURE_SHA | `b18a7afc41e25234ca7e2adc903cfea1e0bf63f0` |
+| P6_TERMINAL_CLOSURE_SHA | `6e53fb36f39b4a57331e6c079f2fcbe6094e2786` |
 | LOCAL_TEST_EXECUTION | P6 batch **PASS** @ `5ff8606b0` |
 | `igx_gov ticket` | **PASS** @ `5ff8606b0` (re-run on the closure commit per W6) |
 | CI | `governance-fast` was **FAIL** on #459/#460 (ACT-N11); required green on activation PR head and on the closure PR head before merge |
@@ -91,5 +91,5 @@ PR #459 merged @ `a695c9c83` **before** independent G6 publication, before the A
 | Operator ODs | IIAC activation OD AUTHORIZED @ 2026-11-12T06:35:45+01:00; OD-MCP-P6-GOV-01 APPROVED option A @ 2026-11-12T06:35:45+01:00; OD-MCP-P6-GOV-02 APPROVED option A @ 2026-11-12T06:46:49+01:00; OD-MCP-P6-TICKET-01 @ `2026-11-12T07:35:55+01:00`; OD-MCP-P6-P7-01 @ `2026-11-12T07:35:55+01:00` |
 | Findings | F-MCP-P6-GOV-001 (CRITICAL), F-MCP-P6-GOV-002 (HIGH), F-MCP-P6-GOV-003 (CRITICAL) — preserved, not waived |
 | Residuals | OPEN-BP-01 (no required status checks on `development`); `LIM-RESEARCH-STRICT-FACTORY-MEMORY` OPEN non-blocking; roadmap §MCP-SERVER-X description row stale ("Engine not started") — P8 roadmap close |
-| P6 terminal verification | pending (W7); P7 `READY` only after it is published |
+| P6 terminal verification | `P6_TERMINAL_VERIFIED` @ `6e53fb36f39b4a57331e6c079f2fcbe6094e2786` (W7); report `MCP_SERVER_X_P6_TERMINAL_VERIFICATION_REPORT.md` |
 | Ticket `closed` | **scoped** — AC-P6-01..08 per `OD-MCP-P6-TICKET-01` |

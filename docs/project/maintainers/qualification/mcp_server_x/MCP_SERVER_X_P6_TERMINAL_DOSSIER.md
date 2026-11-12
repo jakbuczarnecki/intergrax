@@ -2,7 +2,7 @@
 
 **Ticket:** `T-IGX-035-G` — **`closed` (scoped)**  
 **Plan digest:** `5dd3c72e497c72764ccc0c08d3df2dddfdbe19b3f36550ba5d87c4091f9833e7`  
-**Disposition:** **P6 CLOSED (scoped)** — G6 `ACCEPT_SCOPED`, IIIC ACT-N11 `PASS_SCOPED`, operator `OD-MCP-P6-TICKET-01` @ `2026-11-12T07:35:55+01:00`; F-MCP-P6-GOV-001/002/003 preserved. **MCP-SERVER-X stage not CLOSED. FRZ not promoted.** P7 `READY` only after the independent P6 terminal verification is published (`OD-MCP-P6-P7-01`).
+**Disposition:** **P6 CLOSED (scoped)** — G6 `ACCEPT_SCOPED`, IIIC ACT-N11 `PASS_SCOPED`, operator `OD-MCP-P6-TICKET-01` @ `2026-11-12T07:35:55+01:00`; F-MCP-P6-GOV-001/002/003 preserved. **MCP-SERVER-X stage not CLOSED. FRZ not promoted.** P7 `READY`: the independent P6 terminal verification (`P6_TERMINAL_VERIFIED`) is published with this document (`OD-MCP-P6-P7-01`).
 
 ## SHA ladder (this batch; canonical copy in [`MCP_SERVER_X_SHA_LADDER.md`](./MCP_SERVER_X_SHA_LADDER.md))
 
@@ -18,9 +18,9 @@
 | P6_ACTIVATION_SHA (phase 1) | `92ad3555775649742299826e3680ec8ce703cc8a` |
 | P6_ACTIVATION_PHASE2_SHA | `19c617365cda85d88b474575e77b7d083739b529` |
 | P6_PUBLICATION_SHA (activation PR merge) | `66dcd1bfe260b33a41881c7b9911b2a2abb752f9` |
-| P6_FORMAL_CLOSURE_SHA | `pending (pinned after merge)` |
-| P6_TERMINAL_CLOSURE_SHA (closure PR merge) | `pending (pinned after merge)` |
-| FINAL_REMOTE_HEAD | `pending (pinned after terminal verification)` |
+| P6_FORMAL_CLOSURE_SHA | `b18a7afc41e25234ca7e2adc903cfea1e0bf63f0` |
+| P6_TERMINAL_CLOSURE_SHA (closure PR merge) | `6e53fb36f39b4a57331e6c079f2fcbe6094e2786` |
+| FINAL_REMOTE_HEAD | `6e53fb36f39b4a57331e6c079f2fcbe6094e2786` (verified head; the merge of the PR publishing the report is resolved via `git log`, see the SHA ladder) |
 
 ## Gates
 
@@ -29,9 +29,9 @@
 | G6 independent audit | **`ACCEPT_SCOPED`** — dossier [`MCP_SERVER_X_P6_INDEPENDENT_AUDIT_DOSSIER.md`](./MCP_SERVER_X_P6_INDEPENDENT_AUDIT_DOSSIER.md), `p6_g6_closeout/` @ `2d3eceb6c`; operator disposition `ACCEPT_SCOPED_WITH_GOVERNANCE_FINDING` (`OD-MCP-P6-GOV-01` option A) |
 | IIIC ACT-N11 P6 | **`PASS_SCOPED`** @ `act_n11_mcp_p6/` |
 | Certifier | preflight **`CERTIFIER_PREFLIGHT_PASS`** @ `276c64305`; activation certifier PASS @ `19c617365cda85d88b474575e77b7d083739b529` |
-| IIAC `IN_FORCE` rebind | bound to `2d3eceb6c`; `verify_iiac_policy_activation --require-in-force` exit 0 on the activation PR merge `66dcd1bfe260b33a41881c7b9911b2a2abb752f9` and on `origin/development` `dcdb35601305a2ad9a3ee22894b26c29800a9640` (orchestrator re-run 2026-11-12); to be re-run on the closure merge in W7 |
-| `governance-fast` and mandatory CI | red on #459 and #460 (preserved, F-MCP-P6-GOV-001/003); green on activation PR #464 head `03b246990c0f359c6f91f026799cd5cf98475eb0` (6 passing, 0 failing) and on the `development` push run at `dcdb35601305a2ad9a3ee22894b26c29800a9640` (`ci-smoke`, `governance-fast`, `evol-x-b4-preflight`, `governance-policy-pin` success); closure PR checks and the closure merge are verified in W7 |
-| Terminal verification (W7) | pending — `P6_TERMINAL_VERIFIED` report not yet published; see [`MCP_SERVER_X_P7_HANDOFF.md`](./MCP_SERVER_X_P7_HANDOFF.md) |
+| IIAC `IN_FORCE` rebind | bound to `2d3eceb6c`; `verify_iiac_policy_activation --require-in-force` exit 0 on the activation PR merge `66dcd1bfe260b33a41881c7b9911b2a2abb752f9` and on `origin/development` `dcdb35601305a2ad9a3ee22894b26c29800a9640` (orchestrator re-run 2026-11-12); re-run in W7 (F-02): exit 0 on `6e53fb36f39b4a57331e6c079f2fcbe6094e2786` |
+| `governance-fast` and mandatory CI | red on #459 and #460 (preserved, F-MCP-P6-GOV-001/003); green on activation PR #464 head `03b246990c0f359c6f91f026799cd5cf98475eb0` (6 passing, 0 failing) and on the `development` push run at `dcdb35601305a2ad9a3ee22894b26c29800a9640` (`ci-smoke`, `governance-fast`, `evol-x-b4-preflight`, `governance-policy-pin` success); closure PR #468 head `b18a7afc41e25234ca7e2adc903cfea1e0bf63f0`: Regression gate and Enterprise audit success, verified in W7 (F-10; no push run exists for the merge commits, `paths-ignore`) |
+| Terminal verification (W7) | **`P6_TERMINAL_VERIFIED`** @ `6e53fb36f39b4a57331e6c079f2fcbe6094e2786` - [`MCP_SERVER_X_P6_TERMINAL_VERIFICATION_REPORT.md`](./MCP_SERVER_X_P6_TERMINAL_VERIFICATION_REPORT.md) (F-01..F-17 PASS, 5 non-blocking notes); see [`MCP_SERVER_X_P7_HANDOFF.md`](./MCP_SERVER_X_P7_HANDOFF.md) |
 
 ## Operator decisions
 
@@ -48,6 +48,7 @@
 - **F-MCP-P6-GOV-002** (HIGH): ticket stale at merge of PR #459.
 - **F-MCP-P6-GOV-003** (CRITICAL, governance, recorded 2026-11-12): recovery PR #460 was merged as merge commit `8ed2bdcee6d244c128f3c5d95be3d7817418433b` (2026-11-12T05:26:38Z, head `b0b415e92082f306d2ee7de698c5f2e25822f04f`) with `governance-fast` failing and before `IIAC_POLICY_ACTIVATION_RECORD.json` was rebound (still pin `8fff85e3b`). Effect: `origin/development` stayed red until the activation PR #464 landed (merge `66dcd1bfe260b33a41881c7b9911b2a2abb752f9`; push run at `dcdb35601305a2ad9a3ee22894b26c29800a9640` green); the evidence and unsigned drafts are published. No retroactive approval; activation continued on branch `mcp-p6-gov-signing` (base `bc9ef52bd690738e71638a599eec64c76ac356c9`). The signed `OD-MCP-P6-GOV-01` (option A, 2026-11-12T06:35:45+01:00) does not textually cover this finding; it is covered by the separate decision `OD-MCP-P6-GOV-02`.
 - No finding is waived, back-dated or retroactively approved.
+- **Process observations (terminal verification report):** PR #464 and PR #468 were merged while required checks were still in progress (all later finished success); no `development` push run exists for the merge commits of #464 and #468 (`paths-ignore`); the structural cause remains OPEN-BP-01. Details in the report.
 
 **MCP-SERVER-X stage:** not CLOSED. **FRZ:** not promoted.
 
