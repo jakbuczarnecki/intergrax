@@ -1,7 +1,7 @@
 # MCP-SERVER-X — campaign index (SSOT hub)
 
 **Stage ID:** `MCP-SERVER-X`  
-**Roadmap status:** `PLANNED / MANDATORY / CURRENT`  
+**Roadmap status:** `CLOSED — INDEPENDENTLY AUDITED (INTERNAL AGENT CERTIFICATION) — PUBLISHED (SCOPED)`  
 **Baseline pin:** `c228799785db8f35826f47ba0790d6a21d97fbe3`  
 **ROADMAP_AMENDMENT_SHA:** `bd5d04d1a3244ccb9c4464007b147dc54fc0cfd6`  
 **Tickets:** P0 [`T-IGX-035-A.md`](../../../../governance/tickets/T-IGX-035-A.md) · P1 [`T-IGX-035-B.md`](../../../../governance/tickets/T-IGX-035-B.md)
@@ -40,4 +40,4 @@
 | P5 security / execution qual | **Closed (scoped)** — `T-IGX-035-F` closed; [`P5 terminal dossier`](./MCP_SERVER_X_P5_TERMINAL_DOSSIER.md) · [`operator closure`](./MCP_SERVER_X_P5_OPERATOR_CLOSURE_RECORD.md) |
 | P6 | **Closed (scoped)** — `T-IGX-035-G` closed; guide [`MCP_SERVER_X_P6_DEVELOPER_GUIDE.md`](./MCP_SERVER_X_P6_DEVELOPER_GUIDE.md) · [`terminal dossier`](./MCP_SERVER_X_P6_TERMINAL_DOSSIER.md) · [`operator closure`](./MCP_SERVER_X_P6_OPERATOR_CLOSURE_RECORD.md); F-MCP-P6-GOV-001/002/003 preserved; stage **not CLOSED** |
 | P7 | **Qualification package produced (scoped)** — `T-IGX-035-H`; [package](./MCP_SERVER_X_P7_QUALIFICATION_PACKAGE.md) @ `abbe1525450da77da6801b080619a600c20cd497`; [EVOL/ENT delta](./MCP_SERVER_X_P7_EVOL_ENT_DELTA_RECORD.md) |
-| P8 | **Next** — `T-IGX-035-I` (plan approved); independent audit, IIAC certification, closure |
+| P8 | **Closed (scoped)** — audit `PASS_SCOPED`, IIAC `CERTIFIED_PASS_SCOPED`, `P8_TERMINAL_VERIFIED`; [final closure report](./MCP_SERVER_X_FINAL_CLOSURE_REPORT.md); [ARCH-FREEZE handoff](./MCP_SERVER_X_ARCH_FREEZE_HANDOFF.md) |

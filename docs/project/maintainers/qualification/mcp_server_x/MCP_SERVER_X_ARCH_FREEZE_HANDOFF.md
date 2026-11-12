@@ -1,6 +1,6 @@
 # MCP-SERVER-X — ARCH-FREEZE handoff (MCP-P8-10)
 
-**Status:** **HANDOFF PREPARED — PENDING CLOSURE.** This document states what the ARCH-FREEZE gate may accept from MCP-SERVER-X and what it must not assume. It describes the stage as `MCP-SERVER-X` **only after** the closure PR publishes the roadmap status; until that status is on `origin/development`, MCP-SERVER-X is **not** closed. **ARCH-FREEZE is not closed and is not started by this document.**
+**Status:** **HANDOFF READY (SCOPED)** — the formal scoped closure of MCP-SERVER-X is published by the closure pull request (roadmap status `CLOSED — INDEPENDENTLY AUDITED (INTERNAL AGENT CERTIFICATION) — PUBLISHED`, decision `OD-MCP-P8-CLOSE-01`, terminal verification `P8_TERMINAL_VERIFIED`, [final closure report](./MCP_SERVER_X_FINAL_CLOSURE_REPORT.md)). **ARCH-FREEZE is not closed and is not started by this document.**
 
 Sequence recorded by the roadmap: `ENT-AUDIT-X` → `MCP-SERVER-X` → `PDC-X` → `ARCH-FREEZE`. After MCP-SERVER-X the next program stage is therefore `PDC-X`; this handoff is the MCP input to the ARCH-FREEZE dependency record.
 

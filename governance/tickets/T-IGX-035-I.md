@@ -54,3 +54,7 @@ ARCH-FREEZE closure, FRZ PASS promotion, a new FRZ family, PROD-Q Path B readine
 ## Lifecycle state
 
 **plan_approved**
+
+## Closure note
+
+Stage-level closure of MCP-SERVER-X (scoped) is recorded by the roadmap status and the final closure report under the conditional decision `OD-MCP-P8-CLOSE-01` (terminal verification `P8_TERMINAL_VERIFIED`). The lifecycle state of this P8 ticket is NOT changed to `closed` here: that transition needs an explicit operator note, which `OD-MCP-P8-CLOSE-01` does not contain.

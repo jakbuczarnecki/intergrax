@@ -73,3 +73,7 @@ Frozen `IMPLEMENTATION_SHA` (P8-01), independent stage audit, IIIC certification
 ## P7 outcome (added with the P7 publication)
 
 The P7 exact-SHA qualification package is published ([`MCP_SERVER_X_P7_QUALIFICATION_PACKAGE.md`](./MCP_SERVER_X_P7_QUALIFICATION_PACKAGE.md), `TEST_EXECUTION_SHA` `abbe1525450da77da6801b080619a600c20cd497`) together with the [EVOL/ENT delta record](./MCP_SERVER_X_P7_EVOL_ENT_DELTA_RECORD.md). Open items carried into P8 as limitations: R-P7-01..R-P7-06 and the pre-existing failures R-P7-02. P8 (`T-IGX-035-I`) must not be started by the P7 implementers or test authors.
+
+## P8 outcome
+
+P8 closed the stage (scoped): independent audit `PASS_SCOPED`, IIAC `CERTIFIED_PASS_SCOPED`, `P8_TERMINAL_VERIFIED`; see the [final closure report](./MCP_SERVER_X_FINAL_CLOSURE_REPORT.md). The P7 limitations R-P7-01..06 and R-P7-02 are carried as stated limitations of that closure.
