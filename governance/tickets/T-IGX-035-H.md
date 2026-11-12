@@ -69,3 +69,7 @@ P8 audit/certification/closure, any product-path change, FRZ promotion, MCP-SERV
 | Regression selection | 141 passed; 11 pre-existing failures excluded (R-P7-02) |
 | Records | `MCP_SERVER_X_P7_QUALIFICATION_PACKAGE.md`, `MCP_SERVER_X_P7_EVOL_ENT_DELTA_RECORD.md`, `iiac_evidence/MCP-SERVER-X/p7_qualification/` |
 | Findings | D-P7-01, D-P7-02 fixed; R-P7-01..R-P7-06 open (scoped); P7-PROC-01, P7-PROC-02 recorded |
+
+## Closure note
+
+Stage-level closure of MCP-SERVER-X (scoped) is recorded by the roadmap status and the final closure report under the conditional decision `OD-MCP-P8-CLOSE-01` (terminal verification `P8_TERMINAL_VERIFIED`). The lifecycle state of this P7 ticket is NOT changed to `closed` here: that transition needs an explicit operator note, which `OD-MCP-P8-CLOSE-01` does not contain.
