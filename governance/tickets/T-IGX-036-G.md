@@ -30,4 +30,14 @@ Product code; P5 implementation; P5 ticket files; FRZ status changes; IIAC activ
 
 ## Lifecycle state
 
-plan_approved
+quality_gate
+
+## Checkpoint
+
+| Field | Value |
+| --- | --- |
+| Branch | `pdc-x-p4` |
+| `pdc_x_wbs.py --check` | `[OK] 107 rows assigned, 14 batches, no write conflicts` |
+| Unit tests | `test_pdc_x_wbs.py`, `test_pdc_x_requirements.py`, `test_pdc_x_inventory.py`: 25 passed |
+| Delegate notes addressed | Integration owner for shared hotspots stated and checked (one hotspot writer per wave). ECAP note placed in the ECAP baseline notes block. P5 ticket letters reserved in the WBS (I, J..S), as the plan specifies |
+| Red-gate diagnosis | `PDC_REG_DIAGNOSIS.md`: 12 stale gates (B-REG-T, tests only), 1 product regression (B-REG-P, gated) |

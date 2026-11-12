@@ -5,7 +5,7 @@
 **Position:** `MCP-SERVER-X` → **`PDC-X`** → `ARCH-FREEZE`
 **Baseline pin:** `a695c9c835bb5b4b206e6e3e00bb2aee23ca7b6b`
 **ROADMAP_AMENDMENT_SHA:** `bc9ef52bd690738e71638a599eec64c76ac356c9` (PR #461 merge; see [`PDC_SHA_LADDER.md`](./PDC_SHA_LADDER.md))
-**Tickets:** P0 [`T-IGX-036-A.md`](../../../../governance/tickets/T-IGX-036-A.md) · P1 [`T-IGX-036-B.md`](../../../../governance/tickets/T-IGX-036-B.md) · P2 [`T-IGX-036-C.md`](../../../../governance/tickets/T-IGX-036-C.md) · P3 [`T-IGX-036-D.md`](../../../../governance/tickets/T-IGX-036-D.md) · P3-08 lock [`T-IGX-036-E.md`](../../../../governance/tickets/T-IGX-036-E.md)
+**Tickets:** P0 [`T-IGX-036-A.md`](../../../../governance/tickets/T-IGX-036-A.md) · P1 [`T-IGX-036-B.md`](../../../../governance/tickets/T-IGX-036-B.md) · P2 [`T-IGX-036-C.md`](../../../../governance/tickets/T-IGX-036-C.md) · P3 [`T-IGX-036-D.md`](../../../../governance/tickets/T-IGX-036-D.md) · P3-08 lock [`T-IGX-036-E.md`](../../../../governance/tickets/T-IGX-036-E.md) · ODs [`T-IGX-036-F.md`](../../../../governance/tickets/T-IGX-036-F.md) · P4 [`T-IGX-036-G.md`](../../../../governance/tickets/T-IGX-036-G.md) · P5-DOC [`T-IGX-036-H.md`](../../../../governance/tickets/T-IGX-036-H.md)
 
 PDC-X is **one** campaign with eight certification workstreams (`PDC-D1`..`PDC-D8`). They are **not** separate roadmap stages.
 
@@ -34,9 +34,10 @@ PDC-X is **one** campaign with eight certification workstreams (`PDC-D1`..`PDC-D
 | `PDC_FRZ_COVERAGE_MATRIX` → [`PDC_FRZ_COVERAGE_MATRIX.md`](./PDC_FRZ_COVERAGE_MATRIX.md) | P2 | Published (generated; OD-PDC-FRZ-01 approved) |
 | `PDC_OWNERSHIP_MATRIX` → [`PDC_OWNERSHIP_MATRIX.md`](./PDC_OWNERSHIP_MATRIX.md) | P3 | Locked (OD-PDC-ADR-01 approved; T-IGX-036-E) |
 | `PDC_ARCHITECTURE_DECISIONS` → [`PDC_ARCHITECTURE_DECISIONS.md`](./PDC_ARCHITECTURE_DECISIONS.md) | P3 | Locked (ADR-PDC-01..08 Accepted) |
-| `PDC_IMPLEMENTATION_WBS` | P4 | Not started |
-| `PDC_DEPENDENCY_DAG` | P4 | Not started (outline in the master plan §I) |
-| `PDC_CROSS_DOMAIN_TEST_MATRIX` | P4 | Not started (outline in the master plan §H) |
+| `PDC_IMPLEMENTATION_WBS` → [`PDC_IMPLEMENTATION_WBS.md`](./PDC_IMPLEMENTATION_WBS.md) | P4 | Published (generated; T-IGX-036-G) |
+| `PDC_DEPENDENCY_DAG` → [`PDC_DEPENDENCY_DAG.md`](./PDC_DEPENDENCY_DAG.md) | P4 | Published (generated) |
+| `PDC_CROSS_DOMAIN_TEST_MATRIX` → [`PDC_CROSS_DOMAIN_TEST_MATRIX.md`](./PDC_CROSS_DOMAIN_TEST_MATRIX.md) | P4 | Published (generated) |
+| `PDC_REG_DIAGNOSIS` → [`PDC_REG_DIAGNOSIS.md`](./PDC_REG_DIAGNOSIS.md) | P4 / P5-REG | Published (12 stale gates, 1 product regression) |
 | `PDC_DOMAIN_CERTIFICATION_MATRIX` | P7 | Not started |
 | `PDC_INDEPENDENT_AUDIT` | P8 | Not started |
 | `PDC_FINAL_ACCEPTANCE_REPORT` | P9 | Not started |
