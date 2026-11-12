@@ -1,0 +1,42 @@
+{
+  "stage_id": "MCP-SERVER-X",
+  "session_designation": "MCP-P8-02-INDEPENDENT-TECHNICAL-AUDIT-2026-11-12",
+  "certification_profile": "iiac-v1",
+  "policy_version": "IIAC-2026-11-05.1",
+  "campaign": "MCP-SERVER-X P8 independent technical audit of the P7 exact-SHA qualification package (MCP-ACC-01..20)",
+  "ticket_anchors": [
+    "governance/tickets/T-IGX-035-I.md",
+    "governance/tickets/T-IGX-035-H.md",
+    "governance/tickets/plans/PLAN_T-IGX-035-A.md",
+    "docs/project/maintainers/qualification/mcp_server_x/MCP_SERVER_X_P7_QUALIFICATION_PACKAGE.md",
+    "docs/project/maintainers/qualification/mcp_server_x/MCP_SERVER_X_P7_EVOL_ENT_DELTA_RECORD.md"
+  ],
+  "audited_implementation_sha": "eadb1c2116feb0a2090b234a36fd4182bd6ace8d",
+  "audited_implementation_sha_note": "merge commit of PR #474 on origin/development (P7 publication); parent pr head 94b6f6d6b8ae9882568c778fd7180b8b958fc175",
+  "test_execution_sha": "abbe1525450da77da6801b080619a600c20cd497",
+  "audit_execution_sha": "eadb1c2116feb0a2090b234a36fd4182bd6ace8d",
+  "p6_terminal_head": "6e53fb36f39b4a57331e6c079f2fcbe6094e2786",
+  "auditor_worktree": "detached worktree at audit_execution_sha; evidence on branch mcp-p8-audit-evidence",
+  "replay_sets": {
+    "MCP_SERVER_X_P7_NEW_QUALIFICATION": 8,
+    "matrix_consistency": 1,
+    "MCP_SERVER_X_P7_REGRESSION_SELECTION": 19
+  },
+  "product_paths_delta_vs_p6_terminal_head": [],
+  "in_scope": [
+    "Replay of the P7 new qualification files, the consistency file and the regression selection",
+    "MCP-ACC-01..20 traceability to test functions and level (L1/L2/L3)",
+    "Adversarial read of the bodies of about 135 of the 145 P7 test functions (all functions of ACC-09..18 and test_p7_05 incl. the four COVERED-scoped rows 09, 14, 17, 18; ACC-01..08 read in full) and mutation-style thought checks",
+    "Protocol matrix and error-code table versus observed behaviour",
+    "R-P7-02 baseline reproduction at c59892829 and at the freeze SHA",
+    "Scope (no product delta), IIAC activation, FRZ counter, session independence, governance record"
+  ],
+  "exclusions": [
+    "Any edit of product code, tests, tickets, roadmap or existing documents",
+    "Certification (third session), FRZ promotion, MCP-SERVER-X stage closure",
+    "Broad diagnostic suites; Docker; new vendors; production configuration (C10/C15 freeze)",
+    "PRs #475 and #476 (PDC-X) - held and unrelated",
+    "Mutation execution against product code (thought checks only; read-only toward product)"
+  ],
+  "role_separation_requirement": "Auditor is neither implementer nor tester of P2-P7 (lanes L1, L2, L3, FI), nor the orchestrator, nor any P6 signing/certifier/verifier session; audit_execution_sha equals audited_implementation_sha so no product diff exists between them (N-03)."
+}
