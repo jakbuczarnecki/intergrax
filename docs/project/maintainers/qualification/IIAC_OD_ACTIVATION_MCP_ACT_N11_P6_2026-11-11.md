@@ -3,14 +3,14 @@
 Decision ID: IIAC-OD-MCP-ACT-N11-P6-2026-11-11
 Policy version: IIAC-2026-11-05.1
 Decision scope: IIAC policy activation (MCP P6 product delta vs `8fff85e3bfc5190929ff464b00fbe759dadcb5f8`)
-Decision status: PENDING
+Decision status: AUTHORIZED
 Audit report digest: c405c65faf53243a0511b0b9584a9f3abda4db08c09ee9b9266c86fe9f6b7a4e
 
 Product independent audit dossier digest (MCP ACT-N11 P6 re-audit): f4b339ab2695a1f162cf4085a8123ffe6c5e6c568990212111b4647548f21a66
 
-________________
+Approved IIAC policy activation IIAC-2026-11-05.1: operator @ 2026-11-12T06:35:45+01:00
 
-Drafting note: the date in the Decision ID is the drafting date, not a signing timestamp. The operator line above is intentionally unsigned; no agent writes or composes it.
+Provenance note: the date in the Decision ID is the drafting date, not a signing timestamp. The line above was written by an operator-designated signing session (IIAC Amendment 01, R-1..R-6) under the delegation record `docs/project/maintainers/qualification/IIAC_OD_DELEGATION_MCP_ACT_N11_P6_2026-11-12.md` (commit cd517b2e5), on the operator's chat commission of 2026-11-12. The line is in the plain form because the IIAC activation verifiers accept only that form; it is not claimed to be operator-written. The timestamp is the designated session's system clock at the moment of signing.
 
 Scope: three-path P6 delta vs the P4 pin (`applications/research_application/mcp/server.py`, `intergrax/applications/_shared/mcp_application_server.py`, `intergrax/applications/_shared/mcp_developer_api.py`), of which one path (`mcp_developer_api.py`) is new to the ACT-N11 inventory. Cumulative inventory: 17 paths. Erratum: earlier P6 drafts and dossiers say "19 paths" / "16 + 3"; the recomputed inventory (`11ac8ad85..a695c9c83`) is 17 and equals `audit_scope.json`. Auditor-authored files are not edited.
 
