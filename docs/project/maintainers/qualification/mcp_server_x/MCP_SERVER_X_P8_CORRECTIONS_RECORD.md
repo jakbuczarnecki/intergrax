@@ -21,3 +21,9 @@ Corrector: the orchestrator session acting as P8 implementer (documentation only
 - No finding is closed by weakening its statement. Findings that stay open are limitations of the closure (R-P7-01..06, R-P8-01, R-P7-02, OPEN-BP-01, `LIM-RESEARCH-STRICT-FACTORY-MEMORY`).
 - Round 1 of at most 3 (DR-2). The independent auditor reviews these dispositions before certification; the certifier is a separate session.
 - PDC-X pull requests #475 and #476 stay unmerged until P8 closes (their product paths would invalidate the audit pin).
+
+## Operator disposition of F-P8-01 (chat, 2026-11-12)
+
+The audit register keeps `RECORDED_PENDING_OPERATOR_DISPOSITION` for F-P8-01 (auditor-authored file, not edited). The operator answered in chat, given personally to the orchestrator session. Original (Polish) option label chosen: `A: przyjąć z findingiem (Recommended)`. English rendering by the orchestrator (not an operator-written line): "A: accept with the finding (recommended)". Offered alternative that was not chosen: B, close P8 only after required status checks are enabled on the `development` ruleset (OPEN-BP-01).
+
+Effect of option A: F-P8-01 stays on the record as a HIGH governance-process finding; the merge of PR #474 is **not** retroactively approved; the prospective rule is that every merge (by the orchestrator or by the operator) happens only after all required checks have finished green; OPEN-BP-01 remains the structural cause and a stated limitation of the closure. Assurance level: `process_enforced` (chat transcription, no signature).
