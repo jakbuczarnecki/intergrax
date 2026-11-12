@@ -6,14 +6,14 @@ Hard-trim fidelity, durable compaction (CE-02 closure), memory retention sweep, 
 
 ## Plan digest
 
-Plan digest: 1fe83c5a054e6198f1fee950b9ecd57ced65d126fa0ccd42e215609e5c528bee
+Plan digest: 3f7308438a3bd5b716b383e449cc18c01f368c4b3488000ef0e69da822c2ae6c
 
 Canonical plan: [`governance/tickets/plans/PLAN_T-IGX-036-N.md`](plans/PLAN_T-IGX-036-N.md).
 
 ## Approved
 
-Approved: operator-delegate @ 2026-11-12T16:34:04+01:00
-Delegation: docs/project/maintainers/qualification/platform_domain_completeness/operator_decisions/DELEGATION-PDC-WAVE-2.md@83767d9c3f79d38b4d75b56d7b1048f179967eb3
+Approved: operator-delegate @ 2026-11-12T17:09:00+01:00
+Delegation: docs/project/maintainers/qualification/platform_domain_completeness/operator_decisions/DELEGATION-PDC-WAVE-2.md@728bfa9fd95505f54886ef6f7ee0c72f71ae35dc
 
 ## Test contract
 

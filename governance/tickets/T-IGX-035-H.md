@@ -55,7 +55,7 @@ P8 audit/certification/closure, any product-path change, FRZ promotion, MCP-SERV
 
 ## Lifecycle state
 
-**quality_gate**
+**closed** — scoped P7 acceptance; MCP-SERVER-X stage closed (scoped) per `OD-MCP-P8-CLOSE-01` and `P8_TERMINAL_VERIFIED`; no FRZ promotion; not ARCH-FREEZE; residuals R-P7-01..06, R-P8-01, OPEN-BP-01 and all recorded findings/deviations remain on record, not waived.
 
 ## Checkpoint
 
@@ -72,4 +72,4 @@ P8 audit/certification/closure, any product-path change, FRZ promotion, MCP-SERV
 
 ## Closure note
 
-Stage-level closure of MCP-SERVER-X (scoped) is recorded by the roadmap status and the final closure report under the conditional decision `OD-MCP-P8-CLOSE-01` (terminal verification `P8_TERMINAL_VERIFIED`). The lifecycle state of this P7 ticket is NOT changed to `closed` here: that transition needs an explicit operator note, which `OD-MCP-P8-CLOSE-01` does not contain.
+Stage-level closure of MCP-SERVER-X (scoped) is recorded by the roadmap status and the final closure report under the conditional decision `OD-MCP-P8-CLOSE-01` (terminal verification `P8_TERMINAL_VERIFIED`). The lifecycle state of this P7 ticket was first left unchanged because `OD-MCP-P8-CLOSE-01` contains no operator note for it; it is now `closed` on the following operator note. Operator note (chat, 2026-11-12, Polish original: "Wykonaj po kolei wszystkie pięć kroków aż do zamknięcia."; English rendering: "Carry out all five steps in order through to closure."), given in answer to the orchestrator's open-items list whose item 3 named the closure of tickets T-IGX-035-H and T-IGX-035-I. It is recorded here as the operator note required by the ticket README for `closed`; it is not a signed `Authorized:` decision line and carries no agent-composed timestamp.

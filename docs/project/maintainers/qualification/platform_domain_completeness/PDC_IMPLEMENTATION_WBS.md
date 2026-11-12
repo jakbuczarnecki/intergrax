@@ -158,7 +158,7 @@ Rows classed `CURRENT_HEAD_REQUALIFICATION`, `ALREADY_CERTIFIED_REUSABLE`, `N/A_
 ## B-D2 — Context: trim fidelity, durable compaction (CE-02 closure), memory retention, RAG freshness, adversarial context
 
 - **Ticket:** T-IGX-036-N · **Wave:** W2 · **ADR:** ADR-PDC-02 · **Auditor:** IA-D2
-- **Write set:** `intergrax/context/`, `intergrax/runtime/nexus/context/`, `intergrax/runtime/token_optimization/`, `intergrax/runtime/context_lifecycle/`, `intergrax/memory/`, `intergrax/rag/governance/`, `tests/qualification/pdc_x/d2/`
+- **Write set:** `intergrax/context/`, `intergrax/runtime/nexus/context/`, `intergrax/runtime/token_optimization/`, `intergrax/runtime/context_lifecycle/`, `intergrax/memory/`, `intergrax/rag/governance/`, `intergrax/rag/retrieval/retrieval_result.py`, `intergrax/rag/retrieval/retrieval_service.py`, `intergrax/rag/ingest/ingest_pipeline.py`, `tests/qualification/pdc_x/d2/`
 - **Tests:** tests/qualification/pdc_x/d2/ + ce_02 replay
 - **Evidence (exact SHA):** implementation SHA and publication SHA recorded in `PDC_SHA_LADDER.md`; test log under `.tmp/proof/pdc-x-p5/B-D2/`; audited by IA-D2 at the PDC-P7 audited SHA.
 - **Merge gate:** OD-PDC-SEQ-01: implement in an isolated worktree; merge only after MCP-SERVER-X P8 publication; ACT-N11 re-activation at PDC-P7-00
