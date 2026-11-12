@@ -39,5 +39,5 @@
 | P2–P4 engine | **Complete (scoped)** @ P4 terminal `7930c256f` |
 | P5 security / execution qual | **Closed (scoped)** — `T-IGX-035-F` closed; [`P5 terminal dossier`](./MCP_SERVER_X_P5_TERMINAL_DOSSIER.md) · [`operator closure`](./MCP_SERVER_X_P5_OPERATOR_CLOSURE_RECORD.md) |
 | P6 | **Closed (scoped)** — `T-IGX-035-G` closed; guide [`MCP_SERVER_X_P6_DEVELOPER_GUIDE.md`](./MCP_SERVER_X_P6_DEVELOPER_GUIDE.md) · [`terminal dossier`](./MCP_SERVER_X_P6_TERMINAL_DOSSIER.md) · [`operator closure`](./MCP_SERVER_X_P6_OPERATOR_CLOSURE_RECORD.md); F-MCP-P6-GOV-001/002/003 preserved; stage **not CLOSED** |
-| P7 | **Ready after terminal verification** — entry `OD-MCP-P6-P7-01`; [`P7 handoff`](./MCP_SERVER_X_P7_HANDOFF.md); until the P6 terminal verification PASS is published: Blocked |
+| P7 | **Ready** — entry `OD-MCP-P6-P7-01`; [`P7 handoff`](./MCP_SERVER_X_P7_HANDOFF.md); P6 terminal verification `P6_TERMINAL_VERIFIED` published with this change |
 | P8 | **Blocked** (stage not CLOSED) |

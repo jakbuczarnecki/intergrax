@@ -30,8 +30,8 @@
 | P6_IIIC_CERTIFICATION_PUBLICATION_SHA | `276c64305799fa4d7f1a25018cc1cccf061fbafd` | Certifier phase-2 pin |
 | P6_ACTIVATION_SHA | `92ad3555775649742299826e3680ec8ce703cc8a` | IIAC ACT-N11 re-bind, phase 1 |
 | P6_ACTIVATION_PHASE2_SHA | `19c617365cda85d88b474575e77b7d083739b529` | IIAC ACT-N11 re-bind, phase 2 |
-| P6_FORMAL_CLOSURE_SHA | _pending (pinned after merge)_ | Formal scoped closure commit (ticket `closed (scoped)`); pinned in a follow-up commit, not in itself |
-| P6_TERMINAL_CLOSURE_SHA | _pending (pinned after merge)_ | Merge commit of the closure PR; pinned after merge |
+| P6_FORMAL_CLOSURE_SHA | `b18a7afc41e25234ca7e2adc903cfea1e0bf63f0` | Formal scoped closure commit (ticket `closed (scoped)`); pinned here in the W7 follow-up, not in itself |
+| P6_TERMINAL_CLOSURE_SHA | `6e53fb36f39b4a57331e6c079f2fcbe6094e2786` | Merge commit of the closure PR #468 |
 | P5_IMPLEMENTATION_SHA | `8b153422ec1e526c588b7144e934d268055a6df8` | Qualification batch commit |
 | P5_PUBLICATION_SHA | `c5989282937f5e592748cb606b2272d04837c601` | PR #456 merge |
 | P5_TEST_EXECUTION_SHA | `c5989282937f5e592748cb606b2272d04837c601` | Independent G6 replay |
@@ -43,4 +43,4 @@
 | CERTIFICATION_SHA | _unset_ | P8 IIIC |
 | EVIDENCE_PUBLICATION_SHA | _unset_ | P8 B6 |
 | FORMAL_CLOSURE_SHA | _unset_ | MCP-SERVER-X stage CLOSED |
-| FINAL_REMOTE_HEAD | _pending (pinned after terminal verification)_ | Post–P6 terminal verification merge. History: previously `a695c9c835bb5b4b206e6e3e00bb2aee23ca7b6b` (post–P6 product merge, governance recovery pending) |
+| FINAL_REMOTE_HEAD | `6e53fb36f39b4a57331e6c079f2fcbe6094e2786` | Head verified by the independent P6 terminal verification (`P6_TERMINAL_VERIFIED`). The merge commit of the PR that publishes the verification report cannot pin itself: resolve it with `git log --first-parent --diff-filter=A --format=%H -- docs/project/maintainers/qualification/mcp_server_x/MCP_SERVER_X_P6_TERMINAL_VERIFICATION_REPORT.md`. History: previously `a695c9c835bb5b4b206e6e3e00bb2aee23ca7b6b` (post–P6 product merge, governance recovery pending) |

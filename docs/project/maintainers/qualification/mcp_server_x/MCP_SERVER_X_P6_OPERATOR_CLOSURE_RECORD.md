@@ -2,7 +2,7 @@
 
 | Field | Value |
 | --- | --- |
-| **Ticket** | `T-IGX-035-G` — closure to **`closed` (scoped)** authorized by `OD-MCP-P6-TICKET-01`; the lifecycle flip is applied in the formal closure commit _pending (pinned after merge)_, not in the commit that creates this record |
+| **Ticket** | `T-IGX-035-G` — closure to **`closed` (scoped)** authorized by `OD-MCP-P6-TICKET-01`; the lifecycle flip is applied in the formal closure commit `b18a7afc41e25234ca7e2adc903cfea1e0bf63f0`, not in the commit that creates this record |
 | **Authorized (ticket closure)** | operator @ **2026-11-12T07:35:55+01:00** (`OD-MCP-P6-TICKET-01`) |
 | **G6 verdict** | `ACCEPT_SCOPED` (post-publication; dossier and `p6_g6_closeout/` evidence) |
 | **G6 operator disposition** | `ACCEPT_SCOPED_WITH_GOVERNANCE_FINDING` (`OD-MCP-P6-GOV-01` option A) |
@@ -15,8 +15,9 @@
 | **Recovery evidence merge (PR #460)** | `8ed2bdcee6d244c128f3c5d95be3d7817418433b` |
 | **Activation commits (two-phase)** | phase 1 `92ad3555775649742299826e3680ec8ce703cc8a`, phase 2 `19c617365cda85d88b474575e77b7d083739b529` |
 | **Activation PR merge** | `66dcd1bfe260b33a41881c7b9911b2a2abb752f9` |
-| **Formal closure commit** | _pending (pinned after merge)_ |
-| **Closure PR merge** | _pending (pinned after merge)_ |
+| **Formal closure commit** | `b18a7afc41e25234ca7e2adc903cfea1e0bf63f0` |
+| **Closure PR merge** | `6e53fb36f39b4a57331e6c079f2fcbe6094e2786` (PR #468) |
+| **Terminal verification** | `P6_TERMINAL_VERIFIED` @ `6e53fb36f39b4a57331e6c079f2fcbe6094e2786` - [`MCP_SERVER_X_P6_TERMINAL_VERIFICATION_REPORT.md`](./MCP_SERVER_X_P6_TERMINAL_VERIFICATION_REPORT.md) |
 
 SHA roles are defined once in [`MCP_SERVER_X_SHA_LADDER.md`](./MCP_SERVER_X_SHA_LADDER.md); this table does not redefine them.
 

@@ -1,7 +1,7 @@
-# MCP-SERVER-X P7 handoff (P6 closed scoped — **READY only after P6 terminal verification**)
+# MCP-SERVER-X P7 handoff (P6 closed scoped — **READY**)
 
-**Status:** `NOT READY` until the independent P6 terminal verification report (`P6_TERMINAL_VERIFIED`) is merged to `origin/development` (`pending (pinned after terminal verification)`); W7 then flips this header to `READY`.  
-**Entry:** operator decision `OD-MCP-P6-P7-01` (`2026-11-12T07:35:55+01:00`) — effective at the `origin/development` SHA where the P6 terminal verification PASS is published. Base for P7 = `origin/development` @ `pending (pinned after terminal verification)`.  
+**Status:** `READY` - the independent P6 terminal verification (`P6_TERMINAL_VERIFIED`, verified head `6e53fb36f39b4a57331e6c079f2fcbe6094e2786`) is published with this document; this status takes effect when the PR that publishes the report is merged.  
+**Entry:** operator decision `OD-MCP-P6-P7-01` (`2026-11-12T07:35:55+01:00`) — effective at the `origin/development` SHA where the P6 terminal verification PASS is published. Base for P7 = `origin/development` at the merge commit of the PR that publishes `MCP_SERVER_X_P6_TERMINAL_VERIFICATION_REPORT.md` (resolve with `git log --first-parent --diff-filter=A --format=%H -- docs/project/maintainers/qualification/mcp_server_x/MCP_SERVER_X_P6_TERMINAL_VERIFICATION_REPORT.md`).  
 **P7 ticket:** the next ticket (`T-IGX-035-H`) is scaffolded by P7 work, not by P6.  
 **Claims:** no stage CLOSED, no FRZ promotion, no IIIC terminal claim at any point in P7.
 
@@ -16,7 +16,8 @@
 | Terminal dossier | `MCP_SERVER_X_P6_TERMINAL_DOSSIER.md` |
 | Terminal verification report | `MCP_SERVER_X_P6_TERMINAL_VERIFICATION_REPORT.md` (W7) |
 | Operator closure record | `MCP_SERVER_X_P6_OPERATOR_CLOSURE_RECORD.md` |
-| SHA ladder | P6 rows @ `MCP_SERVER_X_SHA_LADDER.md` (`P6_MERGE_SHA` … `P6_TERMINAL_CLOSURE_SHA` `pending (pinned after merge)`, `FINAL_REMOTE_HEAD` `pending (pinned after terminal verification)`) |
+| SHA ladder | P6 rows @ `MCP_SERVER_X_SHA_LADDER.md` (`P6_MERGE_SHA` … `P6_TERMINAL_CLOSURE_SHA` `6e53fb36f39b4a57331e6c079f2fcbe6094e2786`, `FINAL_REMOTE_HEAD` see the ladder row) |
+| Terminal verification report | `MCP_SERVER_X_P6_TERMINAL_VERIFICATION_REPORT.md` (`P6_TERMINAL_VERIFIED`) |
 
 ## P7 backlog (MCP-P7-01..09; canonical: `PLAN_T-IGX-035-A.md` § MCP-P7)
 
