@@ -30,6 +30,7 @@ __all__ = [
     "SourceFreshnessStatus",
     "SourceFreshnessVerdict",
     "assess_retrieval_freshness",
+    "chunk_source_id",
     "evaluate_source_freshness",
     "observe_file_source",
     "stamp_source_freshness",
@@ -145,13 +146,23 @@ def _chunk_metadata(chunk: Any) -> Mapping[str, Any]:
     return metadata if isinstance(metadata, Mapping) else {}
 
 
-def _chunk_source_id(chunk: Any) -> str:
+def chunk_source_id(chunk: Any) -> str:
     metadata = _chunk_metadata(chunk)
     for key in _SOURCE_ID_METADATA_KEYS:
         value = _normalize_revision(metadata.get(key))
         if value is not None:
             return value
     return ""
+
+
+def _indexed_revision(chunk: Any) -> str | None:
+    """Canonical ``provenance.source_revision`` first, then the metadata stamp."""
+    provenance = attribute_access.optional(chunk, "provenance", None)
+    if isinstance(provenance, Mapping):
+        revision = _normalize_revision(provenance.get(SOURCE_REVISION_METADATA_KEY))
+        if revision is not None:
+            return revision
+    return _normalize_revision(_chunk_metadata(chunk).get(SOURCE_REVISION_METADATA_KEY))
 
 
 def evaluate_source_freshness(
@@ -161,7 +172,7 @@ def evaluate_source_freshness(
 ) -> SourceFreshnessVerdict:
     """Compare an indexed chunk's freshness stamp with the observed source state."""
     metadata = _chunk_metadata(chunk)
-    indexed_revision = _normalize_revision(metadata.get(SOURCE_REVISION_METADATA_KEY))
+    indexed_revision = _indexed_revision(chunk)
     indexed_at = _parse_timestamp(metadata.get(SOURCE_MODIFIED_AT_METADATA_KEY))
     current_revision = _normalize_revision(current.revision)
     current_at = _aware(current.modified_at)
@@ -210,7 +221,7 @@ def assess_retrieval_freshness(
     """
     by_source: dict[str, SourceFreshnessVerdict] = {}
     for chunk in chunks:
-        source_id = _chunk_source_id(chunk)
+        source_id = chunk_source_id(chunk)
         observation = observations.get(source_id) if source_id else None
         if observation is None:
             verdict = SourceFreshnessVerdict(
