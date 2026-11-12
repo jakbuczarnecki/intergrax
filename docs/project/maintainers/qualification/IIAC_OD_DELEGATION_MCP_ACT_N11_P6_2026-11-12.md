@@ -48,6 +48,24 @@ Out of scope: `OD-MCP-P6-TICKET-01`, `OD-MCP-P6-P7-01`, any merge, any edit of `
 
 Not required under Amendment 01 (S-1 struck) and not filled. This record carries no operator-written line.
 
+## Addendum 1 (2026-11-12): third delegated act, OD-MCP-P6-GOV-02
+
+Commit D2. This addendum extends the delegated acts above with one further decision. It does not alter rows 1 and 2, their signatures (commit `4bf5a62ec`) or the `Expires` value, which is unchanged.
+
+Relay chain. The commission extension below was relayed to the designated session by the orchestrator session `local_4dfbaa01-6b9e-4e2a-ab65-2d4c81e01bd8` (this id is verified: it is the sender identifier shown by the app on the cross-session message and in the designated session's own system context; the earlier statement of this record that the orchestrator id is unverified does not apply). The operator's answers below were relayed by the orchestrator session; their original Polish text is quoted verbatim as relayed, and the English renderings are by the orchestrator session and are not operator-written lines.
+
+- Operator answer, branch question (original, Polish, as relayed): `mcp-p6-gov-signing (Recommended)`. The operator also told the designated session directly in chat: `Zostaw gov-signing` (English rendering by the designated session: "Leave gov-signing"). Effect: `mcp-p6-gov-signing` is the canonical branch for the signatures; the branch `mcp-p6-activation` is unused.
+- Operator answer, F-MCP-P6-GOV-003 question (original, Polish, as relayed): `Osobny OD-MCP-P6-GOV-02 (Recommended)`. English rendering by the orchestrator session: "Separate OD-MCP-P6-GOV-02 (recommended)". The option offered to the operator was described as a separate short decision about F-MCP-P6-GOV-003 in the same pattern as OD-MCP-P6-GOV-01 (option A: accept with the finding), signed by the signing session under the operator's commission (valid until 2026-11-13).
+- Direct operator confirmation to the designated session in chat, after the designated session asked whether the operator personally confirms the signature of `OD-MCP-P6-GOV-02` option A (original, Polish): `Tak, podpisz`. English rendering by the designated session (not an operator-written line): "Yes, sign."
+
+History. The first attempt of this designated session stopped on the merged PR #460 and wrote no signature; the signatures of rows 1 and 2 were then written on the new branch. The same designated session (id above) signs row 3; it is not a new session and it is not a continuation of any implementation session. A later cross-session message that said the session had signed nothing yet was incorrect and was not acted on.
+
+| # | Decision ID | Record path (repo-relative) | SHA-256 of the unsigned text (file bytes at `2923b49df`) | Delegated act |
+|---|---|---|---|---|
+| 3 | `OD-MCP-P6-GOV-02` | `docs/project/maintainers/qualification/mcp_server_x/operator_decisions/OD-MCP-P6-GOV-02.md` | `12a6b6fcf581b627a5933b46d4d5ceaaf075e1b82e5c9bcd4ec929d76068a173` | option **A**: status `APPROVED — Option A` and the line `Approved: OD-MCP-P6-GOV-02 option A @ <timestamp>` |
+
+Single use for row 3: the extension covers only `OD-MCP-P6-GOV-02` and the digest above. The same out-of-scope list applies (no merge, no activation-record edit, no signature of `OD-MCP-P6-TICKET-01` or `OD-MCP-P6-P7-01`). The assurance level stays `process_enforced`.
+
 ## Non-actions
 
 This delegation and the signatures it authorizes do not retroactively approve PR #459, do not waive any governance control, do not promote FRZ, do not declare MCP-SERVER-X closed and do not authorize P7. Finding F-MCP-P6-GOV-001 / F-MCP-P6-GOV-002 wording is unchanged. Assurance level: `process_enforced` (operator attestation in chat plus the designated session's own statement; no cryptographic proof of operator identity or session novelty).
