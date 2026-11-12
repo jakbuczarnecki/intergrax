@@ -24,9 +24,9 @@ Items that exist only after this report is merged are written as literal text: `
 | Certification publication (merge of PR #479) | `919e34b8f9fbccfc62a16205d8647d6e6070ce45` | terminal report "Pins re-derived". The field `certification_publication_sha` of the certified manifest is still the documented 40-zero placeholder with `certification_publication_sha_status` = `PENDING_PUBLICATION_MERGE`; no file pins `919e34b8f` as that field yet |
 | Terminal verification report (commit on branch `mcp-p8-closure`) | `051178472067f06666a0a0d06bfe70a5aab2f524` | [`MCP_SERVER_X_P8_TERMINAL_VERIFICATION_REPORT.md`](./MCP_SERVER_X_P8_TERMINAL_VERIFICATION_REPORT.md) |
 | P8-PROC-01 recorded (commit on branch `mcp-p8-closure`; tip of the branch when this report was written) | `4366bce314cb2e147559d1508aedabe9b81fc3a8` | [`MCP_SERVER_X_P8_CORRECTIONS_RECORD.md`](./MCP_SERVER_X_P8_CORRECTIONS_RECORD.md) |
-| `FORMAL_CLOSURE_SHA` | `pinned after merge` | — |
-| Merge of the closure PR | `pinned after merge` | — |
-| `FINAL_REMOTE_HEAD` | `pinned after merge` | — |
+| `FORMAL_CLOSURE_SHA` | `8864cee842a2bc745d26f2a3501dc500e5f3e7df` | pinned by the orchestrator after the closure merge |
+| Merge of the closure PR (#480) | `c11184164af3072d0a48102a5e8d62adfec53695` | pinned by the orchestrator after the closure merge |
+| `FINAL_REMOTE_HEAD` | `c11184164af3072d0a48102a5e8d62adfec53695` | head at the closure merge; later pin-only merges are listed in the SHA ladder |
 
 ## Verdicts
 
@@ -91,3 +91,8 @@ Decision file: [`operator_decisions/OD-MCP-P8-CLOSE-01.md`](./operator_decisions
 - No production-readiness claim. PROD-Q Path B is untouched; `LIM-RESEARCH-STRICT-FACTORY-MEMORY` stays OPEN.
 - No unscoped PASS: every verdict above is the scoped one, and the limitations above are part of the result, not a footnote.
 - This report does not edit the roadmap, the SHA ladder, the freeze checklist, any ticket or any auditor, certifier or verifier artifact.
+
+## Orchestrator addendum after the closure merge (not part of the certifier's report)
+
+- **P8-PROC-02:** the closure PR #480 was merged at 2026-11-12T12:47:37Z, about 11 seconds after it was opened and before four of its five required checks had finished. They finished `success` afterwards (`governance-fast` 12:53:27Z, `evol-x-b4-preflight` 12:53:06Z, `ci-smoke` 12:48:33Z, `ent-audit-fast` 12:59:31Z; `ent-audit-pr-gate` 12:47:31Z before the merge). Recorded, not waived, no retroactive approval; same kind as F-P8-01 and P8-PROC-01; OPEN-BP-01 is the structural cause. Log: `iiac_evidence/MCP-SERVER-X/p8_closure/pr480_ci_after_merge.log`.
+- The roadmap status of MCP-SERVER-X therefore became effective on `development` (`c11184164af3072d0a48102a5e8d62adfec53695`) before its CI evidence existed; the evidence confirms it afterwards. No push run exists for the docs-only merge commits (`paths-ignore`).
