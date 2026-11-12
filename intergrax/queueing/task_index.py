@@ -8,14 +8,17 @@ from __future__ import annotations
 import json
 import time
 from dataclasses import dataclass
-from typing import List, Optional
 
 from intergrax.distributed.contracts.kv_store import DistributedKVStore
-from intergrax.queueing.contracts.task_queue import TaskStatus, TaskSummary
+from intergrax.queueing.contracts.task_queue import (
+    TERMINAL_TASK_STATUSES,
+    TaskStatus,
+    TaskSummary,
+)
 
 TASK_INDEX_KEY = "__intergrax_task_index_v1__"
 MAX_INDEX_ENTRIES = 5000
-_COMPLETED_STATUSES = frozenset({TaskStatus.SUCCEEDED, TaskStatus.FAILED})
+_COMPLETED_STATUSES = TERMINAL_TASK_STATUSES
 
 
 @dataclass(frozen=True)
@@ -35,7 +38,7 @@ def _result_key(task_id: str) -> str:
     return f"task:{task_id}:result"
 
 
-def load_task_index(kv_store: DistributedKVStore, tenant_id: str) -> List[TaskIndexRecord]:
+def load_task_index(kv_store: DistributedKVStore, tenant_id: str) -> list[TaskIndexRecord]:
     raw = kv_store.get(tenant_id, TASK_INDEX_KEY)
     if raw is None:
         return []
@@ -68,7 +71,7 @@ def load_task_index(kv_store: DistributedKVStore, tenant_id: str) -> List[TaskIn
 def save_task_index(
     kv_store: DistributedKVStore,
     tenant_id: str,
-    records: List[TaskIndexRecord],
+    records: list[TaskIndexRecord],
 ) -> None:
     trimmed = records[:MAX_INDEX_ENTRIES]
     payload = [
@@ -96,11 +99,7 @@ def record_task_index(
 ) -> None:
     now = updated_at_epoch if updated_at_epoch is not None else time.time()
     records = load_task_index(kv_store, tenant_id)
-    updated = [
-        row
-        for row in records
-        if not (row.task_id == task_id and row.provider == provider)
-    ]
+    updated = [row for row in records if not (row.task_id == task_id and row.provider == provider)]
     updated.insert(
         0,
         TaskIndexRecord(
@@ -160,8 +159,8 @@ def list_tasks_from_index(
     *,
     provider: str,
     limit: int = 50,
-    status_filter: Optional[TaskStatus] = None,
-) -> List[TaskSummary]:
+    status_filter: TaskStatus | None = None,
+) -> list[TaskSummary]:
     rows: list[TaskSummary] = []
     for record in load_task_index(kv_store, tenant_id):
         if record.provider != provider:
