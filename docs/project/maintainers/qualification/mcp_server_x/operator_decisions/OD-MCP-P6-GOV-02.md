@@ -3,7 +3,7 @@
 | Field | Value |
 | --- | --- |
 | **Decision ID** | OD-MCP-P6-GOV-02 |
-| **Status** | **REQUESTED** (unsigned) |
+| **Status** | **APPROVED — Option A** |
 | **Ticket** | `governance/tickets/T-IGX-035-G.md` |
 | **Finding** | F-MCP-P6-GOV-003 (CRITICAL) |
 | **PR** | #460 merged as `8ed2bdcee6d244c128f3c5d95be3d7817418433b` on 2026-11-12T05:26:38Z (head `b0b415e92082f306d2ee7de698c5f2e25822f04f`) |
@@ -24,10 +24,12 @@ Does the operator accept the continuation of the P6 recovery on branch `mcp-p6-g
 | **A (recommended)** | Accept with the governance finding. No retroactive approval of the merge of PR #460. Prospective discipline: the activation PR is merged (merge commit) only after every required check is green on its head. The mechanical gap (no required status checks on the `development` ruleset) stays cross-referenced to OPEN-BP-01. |
 | **B** | Do not accept the continuation: halt P6 closure until the operator gives a further directive. |
 
-## Operator line (required; not written by an agent)
+## Operator line (written by a designated signing session; see provenance note)
 
 ```text
-Approved: OD-MCP-P6-GOV-02 option __ @ ________________
+Approved: OD-MCP-P6-GOV-02 option A @ 2026-11-12T06:46:49+01:00
 ```
+
+Provenance note: the line above was written by an operator-designated signing session (IIAC Amendment 01, R-1..R-6) under the delegation record `docs/project/maintainers/qualification/IIAC_OD_DELEGATION_MCP_ACT_N11_P6_2026-11-12.md` (addendum 1, commit 94a858308), on the operator's chat commission of 2026-11-12 and the operator's direct confirmation in chat to the signing session (option A as answered by the operator in chat). It is not claimed to be operator-written. The timestamp is the designated session's system clock at the moment of signing.
 
 **Explicit non-actions (both options):** does not retroactively approve the merge of PR #459 or PR #460; does not waive any governance control; does not promote FRZ; does not declare MCP-SERVER-X CLOSED; does not authorize P7.
