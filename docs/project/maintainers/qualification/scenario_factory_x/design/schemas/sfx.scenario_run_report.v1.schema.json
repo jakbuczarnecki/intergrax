@@ -51,6 +51,7 @@
     },
     "version": {
       "type": "integer",
+      "maximum": 9007199254740991,
       "minimum": 1,
       "description": "SFX logical version; one CW WorkArtifactVersion per value."
     },
@@ -166,6 +167,7 @@
           "anyOf": [
             {
               "type": "integer",
+              "maximum": 9007199254740991,
               "minimum": 0
             },
             {
@@ -177,6 +179,7 @@
           "anyOf": [
             {
               "type": "integer",
+              "maximum": 9007199254740991,
               "minimum": 0
             },
             {
@@ -188,6 +191,7 @@
           "anyOf": [
             {
               "type": "integer",
+              "maximum": 9007199254740991,
               "minimum": 0
             },
             {
@@ -199,6 +203,7 @@
           "anyOf": [
             {
               "type": "integer",
+              "maximum": 9007199254740991,
               "minimum": 0
             },
             {
@@ -210,6 +215,7 @@
           "anyOf": [
             {
               "type": "integer",
+              "maximum": 9007199254740991,
               "minimum": 0
             },
             {
@@ -307,6 +313,7 @@
         },
         "version": {
           "type": "integer",
+          "maximum": 9007199254740991,
           "minimum": 1
         },
         "canonical_digest": {

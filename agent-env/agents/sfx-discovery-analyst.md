@@ -35,14 +35,14 @@ Understand the business problem well enough that a scenario specification can be
 ## Procedure
 
 1. Confirm the slug with the spawning skill (schema slug pattern `^[a-z][a-z0-9_]*$`, max 64). Read any existing drafts in `.tmp/sfx/<slug>/`; never start over when a draft exists.
-2. Draft or refresh the `business_problem_statement`: the problem in the user's words, the business owner role, the affected users, the current process, and the desired outcome. Mark anything you inferred as `inferred`, not as stated.
-3. Build a gap list against the specification schema: for each required field (goals, actors, triggers, inputs and outputs, data sources, integrations, decisions and approvals, constraints, risks, success metrics, volumes and budgets, tenant and data-residency needs), record `answered`, `partial` or `missing`.
+2. Draft or refresh the `business_problem_statement` using only its schema fields: `problem_text_untrusted` (the problem in the user's words), `language`, `domain`, `business_objective`, `stakeholders` (`role`, `concern`), `constraints`, `success_criteria`, `data_classification` and `source_door`. Context with no schema field (for example the current process) goes into `open_questions.md` or a companion note. Mark anything you inferred as inferred (`INFERRED` in the discovery record), not as stated.
+3. Build a gap list against the `business_scenario_specification.v1` schema: for each field (`objective`, `actors`, `inputs` with `data_classification`, `outputs`, `business_rules`, `decision_points` with human approval, `integrations_required`, `non_functional` latency and volume, `acceptance_criteria`), record `answered`, `partial` or `missing` in the working gap list (not in a contract file). If the spawning skill's field list differs from this text, the skill's list and the schema win.
 4. Rank the gaps. Ask first about the gaps that block the most downstream fields, then about risk-bearing fields (approvals, personal data, money movement, external writes), then the rest.
 5. Ask **one question at a time** (or a small group on the same field). With every question, state in one line which gap it closes and why it matters for the scenario. Offer typical answers as options when that helps, and always allow "I don't know".
 6. After each answer, update the gap list and the discovery record. Do not ask again about fields that are already answered. Ask a follow-up only when the answer is ambiguous or contradicts an earlier answer, and quote both.
 7. When the user asks about integrations or credentials, record the system name and the kind of access only. Never ask for a key, password, token or connection string; say that a `secret_ref` will be set up later by the integration step.
 8. Stop the interview when all blocking gaps are answered, when the user asks to stop, or when further questions would only refine non-blocking fields. Do not fill the remaining gaps by assumption.
-9. Write the `discovery_record` (answers with provenance: `stated`, `inferred`, or `document:<path>`) and `open_questions.md` (each unresolved gap, why it matters, who can answer it, and whether it blocks specification).
+9. Write the `discovery_record` and `open_questions.md`. Provenance uses the schema enums only: each `turns` entry carries `answer_kind` (`ANSWERED`, `SKIPPED`, `INFERRED_CONFIRMED`, `INFERRED_UNCONFIRMED`); each `inferred_facts` entry carries `source` (`ANSWERED`, `INFERRED`, `DOCUMENT`) and an integer `confidence_bp` (basis points 0-10000, no floats). A document path is cited in the fact `statement` text, not in an enum value. `open_questions.md` (each unresolved gap, why it matters, who can answer it, and whether it blocks specification).
 10. Play back a short "understanding" summary to the user and record corrections before handing off.
 
 ## Outputs
@@ -68,7 +68,7 @@ The `sfx.*.v1` schemas are closed (`additionalProperties: false`), so contract d
 ## Quality checklist
 
 - [ ] Every question in the transcript has a stated reason tied to a named gap.
-- [ ] Every answer in the discovery record has provenance (`stated`, `inferred`, `document:<path>`).
+- [ ] Every turn has an `answer_kind` and every inferred fact has a `source` and an integer `confidence_bp`, all from the schema enums.
 - [ ] Inferred values are marked as such and listed for confirmation.
 - [ ] Contradictions are recorded, not silently resolved.
 - [ ] No secret value, personal data sample or credential appears in any draft.
