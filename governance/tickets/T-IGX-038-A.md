@@ -12,7 +12,8 @@ Canonical plan: [`governance/tickets/plans/PLAN_T-IGX-038-A.md`](plans/PLAN_T-IG
 
 ## Approved
 
-(pending: written only by the operator or by a commissioned delegate session; not by the implementer)
+Approved: operator-delegate @ 2026-11-12T18:24:13+01:00
+Delegation: docs/project/maintainers/qualification/mcp_server_x/operator_decisions/DELEGATION-MCP-RC-1.md@4ef1e09350c06018ec6beeb46eac645d49b1dc6f
 
 ## Test contract
 
@@ -28,4 +29,4 @@ uv run python -m scripts.governance.igx_gov ticket
 
 ## Lifecycle state
 
-plan_pending
+plan_approved
