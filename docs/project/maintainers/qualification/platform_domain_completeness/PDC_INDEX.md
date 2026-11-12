@@ -28,7 +28,7 @@ PDC-X is **one** campaign with eight certification workstreams (`PDC-D1`..`PDC-D
 | `PDC_BASELINE_AND_SCOPE` → [`PDC_BASELINE_AND_SCOPE.md`](./PDC_BASELINE_AND_SCOPE.md) | P0 | Published |
 | `PDC_SHA_LADDER` → [`PDC_SHA_LADDER.md`](./PDC_SHA_LADDER.md) | P0 → P9 | Open |
 | `PDC_OPERATOR_DECISIONS` → [`PDC_OPERATOR_DECISIONS.md`](./PDC_OPERATOR_DECISIONS.md) | P0 → P9 | Open |
-| `PDC_CLOSED_WORLD_INVENTORY` | P1 | Not started |
+| `PDC_CLOSED_WORLD_INVENTORY` → [`PDC_CLOSED_WORLD_INVENTORY.md`](./PDC_CLOSED_WORLD_INVENTORY.md) + [`.json`](./PDC_CLOSED_WORLD_INVENTORY.json) | P1 | Published (T-IGX-036-B) |
 | `PDC_DOMAIN_REQUIREMENTS_MATRIX` | P2 | Not started (preliminary IDs in the master plan §C) |
 | `PDC_GAP_REGISTER` | P2 | Not started |
 | `PDC_FRZ_COVERAGE_MATRIX` | P2 | Not started |

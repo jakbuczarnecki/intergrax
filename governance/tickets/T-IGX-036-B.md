@@ -31,4 +31,14 @@ Product code under `intergrax/`, `agents/`, `applications/`; IIAC protocol/scrip
 
 ## Lifecycle state
 
-plan_approved
+quality_gate
+
+## Checkpoint
+
+| Field | Value |
+| --- | --- |
+| Branch | `pdc-x-p1p3` |
+| `pdc_x_inventory.py --check` | `[OK] pdc_x_inventory: 352 items, 0 UNMAPPED, anchors resolved` |
+| `test_pdc_x_inventory.py` | 8 passed |
+| `igx_gov ticket` | `[INFO] igx_gov ticket: OK` |
+| Tracked unknowns carried to P2 | 56 `UNINSPECTED` domain surfaces (see `PDC_CLOSED_WORLD_INVENTORY.json`) |
