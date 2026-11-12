@@ -8,8 +8,8 @@ Full task detail: campaign master plan (digest `5dd3c72e497c72764ccc0c08d3df2ddd
 | P1 | MCP-P1-01..04 | ADR Proposed + OD templates | **Complete** (OD unsigned — P2 blocked) |
 | P2–P4 | MCP-P2..P4 | OD-MCP-01,02,04,05 | **Complete** (publication @ `7930c256f` — P4 terminal on `origin/development`; historical rows below are not current status) |
 | P5 | MCP-P5-01..07 | Security + execution qual | **Closed (scoped)** — `T-IGX-035-F` closed; G6 @ `c59892829`; OD 2026-11-11T16:24:00+01:00 |
-| P6 | MCP-P6-01..04 | DX / migration | **Recovery** — product @ `a695c9c83`; G6/IIIC evidence published; activation pending |
-| P7 | MCP-P7-01..09 | Qual package | **Blocked** |
+| P6 | MCP-P6-01..04 | DX / migration | **Closed (scoped)** — `T-IGX-035-G` closed; product @ `a695c9c83`; G6 `ACCEPT_SCOPED` + IIIC `PASS_SCOPED`; ACT-N11 re-bound (`92ad3555775649742299826e3680ec8ce703cc8a` / `19c617365cda85d88b474575e77b7d083739b529`); F-MCP-P6-GOV-001/002/003 preserved; OD `2026-11-12T07:35:55+01:00`; [`operator closure`](./MCP_SERVER_X_P6_OPERATOR_CLOSURE_RECORD.md) · [`terminal dossier`](./MCP_SERVER_X_P6_TERMINAL_DOSSIER.md) |
+| P7 | MCP-P7-01..09 | Qual package | **Ready after terminal verification** — entry `OD-MCP-P6-P7-01` (`2026-11-12T07:35:55+01:00`), effective only at the `origin/development` SHA where the P6 terminal verification PASS is published; until then Blocked. See [`P7 handoff`](./MCP_SERVER_X_P7_HANDOFF.md) |
 | P8 | MCP-P8-01..10 | Independent audit + IIIC | **Blocked** — no self-cert |
 
 ## P1 tasks (T-IGX-035-B)
