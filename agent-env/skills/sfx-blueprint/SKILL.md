@@ -20,7 +20,7 @@ State how the scenario is assembled from existing platform capabilities: capabil
 
 - `.tmp/sfx/<slug>/business_scenario_specification.v1.json` and `capability_resolution_report.v1.json` (plus `resolution_notes.md`).
 - On Improve: the current `scenario_blueprint.v1.json`, the user's change request, and `critic_findings.md` if present.
-- Schema `docs/project/capabilities/plan/satellites/scenario_factory/design/schemas/sfx.scenario_blueprint.v1.schema.json`.
+- Schema `docs/project/maintainers/qualification/scenario_factory_x/design/schemas/sfx.scenario_blueprint.v1.schema.json`.
 
 ## Persona brief
 

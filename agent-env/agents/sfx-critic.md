@@ -31,8 +31,8 @@ Give an independent, read-only review of the SFX drafts. Find schema violations,
 ## Inputs
 
 - All drafts in `.tmp/sfx/<slug>/` (any subset of the contracts listed in the frontmatter, plus `open_questions.md` and `blueprint_diff.md`).
-- The SFX design schemas (`docs/project/capabilities/plan/satellites/scenario_factory/design/schemas/`, T-IGX-037-C). If absent, report that schema conformance could not be checked.
-- The capability inventory (`docs/project/capabilities/plan/satellites/scenario_factory/SFX_CAPABILITY_INVENTORY.json`) to verify cited rows and owner paths.
+- The SFX design schemas (`docs/project/maintainers/qualification/scenario_factory_x/design/schemas/`, T-IGX-037-C). If absent, report that schema conformance could not be checked.
+- The capability inventory (`docs/project/maintainers/qualification/scenario_factory_x/SFX_CAPABILITY_INVENTORY.json`) to verify cited rows and owner paths.
 - The SFX authority levels (master plan §7.10) and security controls (master plan §13).
 
 ## Procedure

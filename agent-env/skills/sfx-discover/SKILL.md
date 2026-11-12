@@ -20,7 +20,7 @@ Capture the business problem in the user's words and close the gaps a scenario s
 
 - The user's problem description, and any workspace document the user points to (read-only).
 - Existing drafts in `.tmp/sfx/<slug>/`: `business_problem_statement.v1.json`, `discovery_record.v1.json`, `open_questions.md`. Revise them; never start over.
-- Schemas in `docs/project/capabilities/plan/satellites/scenario_factory/design/schemas/`: `sfx.business_problem_statement.v1.schema.json`, `sfx.discovery_record.v1.schema.json`, and `sfx.business_scenario_specification.v1.schema.json` (to know which gaps matter).
+- Schemas in `docs/project/maintainers/qualification/scenario_factory_x/design/schemas/`: `sfx.business_problem_statement.v1.schema.json`, `sfx.discovery_record.v1.schema.json`, and `sfx.business_scenario_specification.v1.schema.json` (to know which gaps matter).
 
 ## Persona brief
 

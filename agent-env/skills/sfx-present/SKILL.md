@@ -19,7 +19,7 @@ Give the user and the business owner one readable summary of the proposed scenar
 ## Inputs
 
 - Every draft in `.tmp/sfx/<slug>/`: the seven contract drafts (`business_problem_statement`, `discovery_record`, `business_scenario_specification`, `capability_resolution_report`, `scenario_blueprint`, `integration_setup_plan`, `scenario_test_plan`, each `.v1.json`), the companion notes, `open_questions.md`, `blueprint_diff.md` if present, and `sfx_session_state.v1.json`.
-- The schemas in `docs/project/capabilities/plan/satellites/scenario_factory/design/schemas/` (for the critic).
+- The schemas in `docs/project/maintainers/qualification/scenario_factory_x/design/schemas/` (for the critic).
 
 ## Persona brief
 

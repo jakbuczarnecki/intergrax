@@ -21,7 +21,7 @@ Guide one user through the SFX lifecycle (Describe → Discover → Understand �
 
 - `.tmp/sfx/` folder listing (scenario home: one folder per slug).
 - `.tmp/sfx/<slug>/sfx_session_state.v1.json` if it exists, plus every draft it references.
-- Schema: `docs/project/capabilities/plan/satellites/scenario_factory/design/schemas/sfx.sfx_session_state.v1.schema.json`.
+- Schema: `docs/project/maintainers/qualification/scenario_factory_x/design/schemas/sfx.sfx_session_state.v1.schema.json`.
 
 ## Persona briefs
 

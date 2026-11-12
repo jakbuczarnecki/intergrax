@@ -26,7 +26,7 @@ For every need in the scenario specification, find the existing platform capabil
 ## Inputs
 
 - The `sfx.business_scenario_specification.v1` draft (and the `sfx.discovery_record.v1` draft for context) from `.tmp/sfx/<slug>/`.
-- **Capability inventory (primary source):** `docs/project/capabilities/plan/satellites/scenario_factory/SFX_CAPABILITY_INVENTORY.json`. Use its row ids, owner paths, REUSE classes and limitation notes exactly as written.
+- **Capability inventory (primary source):** `docs/project/maintainers/qualification/scenario_factory_x/SFX_CAPABILITY_INVENTORY.json`. Use its row ids, owner paths, REUSE classes and limitation notes exactly as written.
 - **Fallback, only if the inventory file is absent:** the capability inventory seed in the SFX master plan (§5), cited as "seed, not re-pinned". Record the fallback in the report.
 - **UCA gap vocabulary:** `DiscoveryCompletionOutcome` in `intergrax/contracts/capability_catalog/discovery_completion.py` (read-only).
 - Owner files named by inventory rows, opened read-only only to confirm that the cited path exists.

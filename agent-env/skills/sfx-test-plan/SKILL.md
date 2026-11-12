@@ -22,7 +22,7 @@ Design how the scenario will be proven in a later L2 sandbox: intended behaviour
 - `.tmp/sfx/<slug>/scenario_blueprint.v1.json` and `blueprint_notes.md` (steps, LLM steps, budgets).
 - `.tmp/sfx/<slug>/integration_setup_plan.v1.json` and `integration_notes.md` (stubs, emulated failure modes, `secret_ref` names).
 - `.tmp/sfx/<slug>/capability_resolution_report.v1.json` (evaluation and conformance capabilities with owner paths).
-- Schema `docs/project/capabilities/plan/satellites/scenario_factory/design/schemas/sfx.scenario_test_plan.v1.schema.json`.
+- Schema `docs/project/maintainers/qualification/scenario_factory_x/design/schemas/sfx.scenario_test_plan.v1.schema.json`.
 
 ## Persona brief
 

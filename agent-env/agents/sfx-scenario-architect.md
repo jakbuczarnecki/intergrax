@@ -31,7 +31,7 @@ Design the scenario on paper. First write a `business_scenario_specification` th
 
 - `sfx.business_problem_statement.v1` and `sfx.discovery_record.v1` drafts, plus `open_questions.md`, from `.tmp/sfx/<slug>/`.
 - For the blueprint phase: the `sfx.business_scenario_specification.v1` draft and the `sfx.capability_resolution_report.v1` draft.
-- The SFX design schemas (`docs/project/capabilities/plan/satellites/scenario_factory/design/schemas/`, T-IGX-037-C). If a schema file is absent, say so and follow the field list given by the spawning skill.
+- The SFX design schemas (`docs/project/maintainers/qualification/scenario_factory_x/design/schemas/`, T-IGX-037-C). If a schema file is absent, say so and follow the field list given by the spawning skill.
 
 ## Procedure
 

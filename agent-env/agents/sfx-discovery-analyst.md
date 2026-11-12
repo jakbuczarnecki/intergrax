@@ -30,7 +30,7 @@ Understand the business problem well enough that a scenario specification can be
 - The user's free-text problem description, and any document the user points to inside the workspace (read-only).
 - `sfx.business_problem_statement.v1` draft, if one exists in `.tmp/sfx/<slug>/`.
 - `sfx.discovery_record.v1` draft from an earlier pass, if one exists.
-- The SFX design schemas (`docs/project/capabilities/plan/satellites/scenario_factory/design/schemas/`, T-IGX-037-C) to know which fields the specification needs. If a schema file is absent, say so and use the field list given by the spawning skill.
+- The SFX design schemas (`docs/project/maintainers/qualification/scenario_factory_x/design/schemas/`, T-IGX-037-C) to know which fields the specification needs. If a schema file is absent, say so and use the field list given by the spawning skill.
 
 ## Procedure
 

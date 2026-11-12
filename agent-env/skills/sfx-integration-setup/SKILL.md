@@ -21,8 +21,8 @@ Plan how every external system in the blueprint will be configured for a later L
 - `.tmp/sfx/<slug>/scenario_blueprint.v1.json` and `blueprint_notes.md` (integration placeholders).
 - `.tmp/sfx/<slug>/capability_resolution_report.v1.json` (integration rows and owner paths).
 - `.tmp/sfx/<slug>/business_scenario_specification.v1.json` (`integrations_required`, data classes, volumes).
-- Integration, adapter and secret-store rows of the capability inventory `docs/project/capabilities/plan/satellites/scenario_factory/SFX_CAPABILITY_INVENTORY.json` (read-only).
-- Schema `docs/project/capabilities/plan/satellites/scenario_factory/design/schemas/sfx.integration_setup_plan.v1.schema.json`.
+- Integration, adapter and secret-store rows of the capability inventory `docs/project/maintainers/qualification/scenario_factory_x/SFX_CAPABILITY_INVENTORY.json` (read-only).
+- Schema `docs/project/maintainers/qualification/scenario_factory_x/design/schemas/sfx.integration_setup_plan.v1.schema.json`.
 
 ## Persona brief
 

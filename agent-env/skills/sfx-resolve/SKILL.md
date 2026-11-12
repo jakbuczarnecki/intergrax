@@ -19,9 +19,9 @@ For each requirement in the specification, find the existing platform capability
 ## Inputs
 
 - `.tmp/sfx/<slug>/business_scenario_specification.v1.json` and `discovery_record.v1.json`.
-- Capability inventory `docs/project/capabilities/plan/satellites/scenario_factory/SFX_CAPABILITY_INVENTORY.json` (read-only). Fallback only if it is absent: the master plan §5 seed, labelled "seed, not re-pinned".
+- Capability inventory `docs/project/maintainers/qualification/scenario_factory_x/SFX_CAPABILITY_INVENTORY.json` (read-only). Fallback only if it is absent: the master plan §5 seed, labelled "seed, not re-pinned".
 - UCA gap vocabulary: `DiscoveryCompletionOutcome` in `intergrax/contracts/capability_catalog/discovery_completion.py` (read-only).
-- Schema `docs/project/capabilities/plan/satellites/scenario_factory/design/schemas/sfx.capability_resolution_report.v1.schema.json`.
+- Schema `docs/project/maintainers/qualification/scenario_factory_x/design/schemas/sfx.capability_resolution_report.v1.schema.json`.
 
 ## Persona brief
 

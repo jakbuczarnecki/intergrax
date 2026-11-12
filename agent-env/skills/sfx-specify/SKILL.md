@@ -21,7 +21,7 @@ State what the scenario must do: actors, inputs, outputs, business rules, decisi
 
 - `.tmp/sfx/<slug>/business_problem_statement.v1.json`, `discovery_record.v1.json`, `open_questions.md`.
 - An existing `business_scenario_specification.v1.json`, if any.
-- Schema `docs/project/capabilities/plan/satellites/scenario_factory/design/schemas/sfx.business_scenario_specification.v1.schema.json`.
+- Schema `docs/project/maintainers/qualification/scenario_factory_x/design/schemas/sfx.business_scenario_specification.v1.schema.json`.
 
 ## Persona brief
 
