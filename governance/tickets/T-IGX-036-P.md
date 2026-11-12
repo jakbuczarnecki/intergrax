@@ -6,14 +6,14 @@ Fail-closed signing and poisoning defaults, single tool-input defense path, dura
 
 ## Plan digest
 
-Plan digest: 68f1eb209906a3e5b988f962617b36826b325339fed606792ad33069cdac5bbb
+Plan digest: cfc1bc4d3db9ce2a2d7185e0facd8d7a5e4f2b73a41702fe146bb25b378ee027
 
 Canonical plan: [`governance/tickets/plans/PLAN_T-IGX-036-P.md`](plans/PLAN_T-IGX-036-P.md).
 
 ## Approved
 
-Approved: operator-delegate @ 2026-11-12T17:33:46+01:00
-Delegation: docs/project/maintainers/qualification/platform_domain_completeness/operator_decisions/DELEGATION-PDC-WAVE-3A.md@e7e123b43772a8b43bb3d6c86e009a366a9621c1
+Approved: operator-delegate @ 2026-11-12T18:13:46+01:00
+Delegation: docs/project/maintainers/qualification/platform_domain_completeness/operator_decisions/DELEGATION-PDC-WAVE-3A.md@940cf1472f7304c6ba6b300e5f6918eb715edd04
 
 ## Test contract
 
