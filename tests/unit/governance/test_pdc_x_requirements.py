@@ -92,3 +92,25 @@ def test_validate_rejects_unknown_frz_and_missing_task(req: ModuleType, payload:
     errors = req.validate({**payload, "rows": rows})
     assert any(e.startswith("UNKNOWN_FRZ:") for e in errors)
     assert any(e.startswith("NO_CORRECTIVE_TASK:") for e in errors)
+
+
+def test_deferred_rows_cite_an_approved_operator_decision(req: ModuleType, payload: dict[str, object]) -> None:
+    deferred = [r for r in payload["rows"] if r["GAP_CLASS"] == "DEFERRED_OUTSIDE_FREEZE_SCOPE"]
+    assert deferred
+    for row in deferred:
+        assert set(req._OD_REF.findall(row["CORRECTIVE_TASK"])) & req.APPROVED_ODS, row["REQUIREMENT_ID"]
+        assert row["ARCH_FREEZE_BLOCKER"] == "NO"
+
+
+def test_validate_rejects_unauthorized_deferral_and_blocking_on_decided_od(
+    req: ModuleType, payload: dict[str, object]
+) -> None:
+    rows = [dict(r) for r in payload["rows"]]
+    deferred = next(r for r in rows if r["GAP_CLASS"] == "DEFERRED_OUTSIDE_FREEZE_SCOPE")
+    deferred["CORRECTIVE_TASK"] = "deferred by agent"
+    gap = next(r for r in rows if r["GAP_CLASS"] == "IMPLEMENTATION_COMPLETION")
+    gap["GAP_CLASS"] = "BLOCKED_EXACT_REASON"
+    gap["CORRECTIVE_TASK"] = "OD-PDC-SCOPE-05 pending"
+    errors = req.validate({**payload, "rows": rows})
+    assert any(e.startswith("DEFERRED_WITHOUT_APPROVED_OD:") for e in errors)
+    assert any(e.startswith("BLOCKED_ON_DECIDED_OD:") for e in errors)

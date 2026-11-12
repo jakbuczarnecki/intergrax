@@ -3,7 +3,7 @@
 | Field | Value |
 | --- | --- |
 | **Document ID** | ADR-PDC-05 |
-| **Status** | **Proposed** (pending OD-PDC-ADR-01) |
+| **Status** | **Accepted** (OD-PDC-ADR-01, 2026-11-12) |
 | **Campaign** | PDC-X P3 (T-IGX-036-D) |
 | **Domain** | PDC-D5 Evaluation |
 | **Requirements** | PDC-D5-R001..R007, R009..R014, R017, R018 — see [`PDC_DOMAIN_REQUIREMENTS_MATRIX.md`](../qualification/platform_domain_completeness/PDC_DOMAIN_REQUIREMENTS_MATRIX.md) |
@@ -33,4 +33,4 @@
 
 ## Status note
 
-Proposed only. No implementation before OD-PDC-ADR-01 accepts this ADR; product changes then follow OD-PDC-SEQ-01 (merge after MCP-SERVER-X P8).
+Accepted by OD-PDC-ADR-01 (Operator, 2026-11-12, recorded under T-IGX-036-E). This authorizes PDC-P4 design. Product merges follow OD-PDC-SEQ-01, approved 2026-11-12: merge after MCP-SERVER-X P8.

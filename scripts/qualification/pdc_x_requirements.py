@@ -161,6 +161,29 @@ REPLAY_FINDING_ROW: Final[dict[str, str]] = {
     "plug_03": "PDC-D1-R022",
 }
 
+# Operator decisions recorded under T-IGX-036-E (PDC-P3-08, "Accept all A") and T-IGX-036-F ("Approve all A"), 2026-11-12.
+APPROVED_ODS: Final[frozenset[str]] = frozenset(
+    {f"OD-PDC-SCOPE-0{i}" for i in range(1, 8)}
+    | {"OD-PDC-PATHB-01", "OD-PDC-ADR-01", "OD-PDC-IIAC-SCOPE", "OD-PDC-FRZ-01", "OD-PDC-ARCHF-01", "OD-PDC-SEQ-01"}
+)
+# Row -> (class, corrective task) after the decision. The source rows keep their P2 classification.
+OD_RESOLUTIONS: Final[dict[str, tuple[str, str]]] = {
+    "PDC-D1-R018": ("IMPLEMENTATION_COMPLETION", "PDC-P5-D1 (ADR-PDC-01; OD-PDC-SCOPE-01 A: implement)"),
+    "PDC-D1-R019": ("DEFERRED_OUTSIDE_FREEZE_SCOPE", "OD-PDC-SCOPE-03 A: authorized exclusion"),
+    "PDC-D2-R005": ("IMPLEMENTATION_COMPLETION", "PDC-P5-D2 (ADR-PDC-02; OD-PDC-SCOPE-06 A: implement)"),
+    "PDC-D3-R020": ("DEFERRED_OUTSIDE_FREEZE_SCOPE", "OD-PDC-SCOPE-03 A: authorized exclusion"),
+    "PDC-D4-R011": ("DEFERRED_OUTSIDE_FREEZE_SCOPE", "OD-PDC-SCOPE-02 A: authorized exclusion"),
+    "PDC-D4-R012": ("DEFERRED_OUTSIDE_FREEZE_SCOPE", "OD-PDC-SCOPE-02 A: authorized exclusion"),
+    "PDC-D4-R013": ("DEFERRED_OUTSIDE_FREEZE_SCOPE", "OD-PDC-SCOPE-02 A: authorized exclusion"),
+    "PDC-D6-R016": ("IMPLEMENTATION_COMPLETION", "PDC-P5-D6 (ADR-PDC-06; OD-PDC-SCOPE-07 A: implement)"),
+    "PDC-D7-R006": ("IMPLEMENTATION_COMPLETION", "PDC-P5-D7 (ADR-PDC-07; OD-PDC-SCOPE-05 A: implement)"),
+    "PDC-D7-R007": ("IMPLEMENTATION_COMPLETION", "PDC-P5-D7 (ADR-PDC-07; OD-PDC-SCOPE-05 A: implement)"),
+    "PDC-D7-R008": ("IMPLEMENTATION_COMPLETION", "PDC-P5-D7 (ADR-PDC-07; OD-PDC-SCOPE-05 A: implement)"),
+    "PDC-D8-R001": ("IMPLEMENTATION_COMPLETION", "PDC-P5-D8 (ADR-PDC-08 accepted)"),
+    "PDC-D8-R010": ("IMPLEMENTATION_COMPLETION", "PDC-P5-D8 (ADR-PDC-08; OD-PDC-SCOPE-04 A: implement)"),
+}
+_OD_REF = re.compile(r"OD-PDC-[A-Z0-9]+(?:-\d+)?")
+
 
 def _red_suites(cert: str | None) -> list[str]:
     return [s for s in CERT_SUITES.get(cert or "", ()) if REPLAY[s][1] > 0]
@@ -2337,6 +2360,9 @@ def expand(row: Row) -> dict[str, str]:
     domain = row.rid[:6]
     frz = [f.strip() for f in row.frz.split(",") if f.strip()]
     sha, delta = CERTS[row.cert] if row.cert else ("—", "— (no accepted certification)")
+    if row.rid in OD_RESOLUTIONS:
+        cls, task = OD_RESOLUTIONS[row.rid]
+        row = row._replace(cls=cls, task=task)
     red = _red_suites(row.cert)
     if row.cls == "ALREADY_CERTIFIED_REUSABLE" and red:
         # Reuse is forbidden while the certification's own qualification replay is red (PDC-P2-09).
@@ -2354,6 +2380,8 @@ def expand(row: Row) -> dict[str, str]:
         disposition = "N/A — evidence in TEST_CASE; confirm at PDC-P7"
     elif row.cls == "BLOCKED_EXACT_REASON":
         disposition = f"BLOCKED — {row.task}"
+    elif row.cls == "DEFERRED_OUTSIDE_FREEZE_SCOPE":
+        disposition = f"DEFERRED — {row.task}; evidence-backed exclusion (FRZ-DEBT-06)"
     else:
         disposition = f"OPEN — closure via {row.task}"
     return {
@@ -2476,6 +2504,11 @@ def validate(payload: dict[str, object]) -> list[str]:
             errors.append(f"REUSE_WITHOUT_SHA:{rid}")
         if r["GAP_CLASS"] == "ALREADY_CERTIFIED_REUSABLE" and _red_suites(r["EXISTING_CERTIFICATION"]):
             errors.append(f"REUSE_WITH_RED_REPLAY:{rid}")
+        cited = set(_OD_REF.findall(r["CORRECTIVE_TASK"]))
+        if r["GAP_CLASS"] == "DEFERRED_OUTSIDE_FREEZE_SCOPE" and not cited & APPROVED_ODS:
+            errors.append(f"DEFERRED_WITHOUT_APPROVED_OD:{rid}")
+        if r["GAP_CLASS"] == "BLOCKED_EXACT_REASON" and cited & APPROVED_ODS:
+            errors.append(f"BLOCKED_ON_DECIDED_OD:{rid}")
         if not rid.startswith(r["DOMAIN_ID"]):
             errors.append(f"DOMAIN_MISMATCH:{rid}")
     domains = {r["DOMAIN_ID"] for r in rows}
@@ -2509,7 +2542,7 @@ def render_frz(payload: dict[str, object]) -> str:
         "# PDC-X — FRZ coverage matrix (PDC-P2-10)",
         "",
         "**Generated** by `scripts/qualification/pdc_x_requirements.py`. Existing FRZ identifiers only "
-        "(OD-PDC-FRZ-01 Option A, pending signature). Checklist cardinality verified: "
+        "(OD-PDC-FRZ-01 Option A, approved 2026-11-12). Checklist cardinality verified: "
         f"**{EXPECTED_FRZ}** criteria in **{EXPECTED_FAMILIES}** families. No status is changed here; promotion happens "
         "only at PDC-P9 through the checklist update protocol.",
         "",

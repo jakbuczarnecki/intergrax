@@ -4,7 +4,7 @@
 | --- | --- |
 | **Decision ID** | OD-PDC-FRZ-01 |
 | **Stage** | PDC-X |
-| **Status** | **PENDING** |
+| **Status** | **APPROVED — Option A** |
 | **Precedent** | OD-MCP-07 — APPROVED Option A |
 
 ## Question
@@ -23,4 +23,8 @@ How does PDC-X relate to the FRZ checklist (225 criteria in 26 families)?
 
 ## Operator record
 
-_Pending._
+Approved: operator @ 2026-11-12T07:16:15+01:00
+
+**Selected variant:** Option A (recommended).
+
+Provenance: the Operator answered "Approve the three remaining ODs (FRZ-01, ARCHF-01, SEQ-01) as option A?" in chat with the words "Approve all A". Transcribed on the Operator's instruction under T-IGX-036-F.

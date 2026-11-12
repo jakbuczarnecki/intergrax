@@ -3,7 +3,7 @@
 | Field | Value |
 | --- | --- |
 | **Document ID** | ADR-PDC-04 |
-| **Status** | **Proposed** (pending OD-PDC-ADR-01) |
+| **Status** | **Accepted** (OD-PDC-ADR-01, 2026-11-12) |
 | **Campaign** | PDC-X P3 (T-IGX-036-D) |
 | **Domain** | PDC-D4 Host Runtime |
 | **Requirements** | PDC-D4-R003..R007, PDC-D4-R009, PDC-D4-R010, PDC-D4-R014 (APP-HOST-3D, 5D, 5E, 9F) — see [`PDC_DOMAIN_REQUIREMENTS_MATRIX.md`](../qualification/platform_domain_completeness/PDC_DOMAIN_REQUIREMENTS_MATRIX.md) |
@@ -22,6 +22,8 @@
 - Declare the stable public hosting API as a manifest covered by COMPAT-X version policy (APP-HOST-9F).
 - APP-HOST-6 (InteractionProfile), APP-HOST-7 (OS service adapters) and APP-HOST-9E (host plugins) are proposed as authorized post-freeze exclusions (OD-PDC-SCOPE-02): none is required for the declared supported lifecycle, and adding InteractionProfile now would compete with ApplicationEnvironmentProfile authority.
 
+- **OD-PDC-SCOPE-02 = A (authorized exclusion):** APP-HOST-6 (InteractionProfile), APP-HOST-7 (OS service adapters) and APP-HOST-9E (host plugins) are outside the freeze scope and recorded as FRZ-DEBT-06 evidence-backed exclusions.
+
 ## Alternatives rejected
 
 - A hosting-owned metrics store or a second composition root.
@@ -33,4 +35,4 @@
 
 ## Status note
 
-Proposed only. No implementation before OD-PDC-ADR-01 accepts this ADR; product changes then follow OD-PDC-SEQ-01 (merge after MCP-SERVER-X P8).
+Accepted by OD-PDC-ADR-01 (Operator, 2026-11-12, recorded under T-IGX-036-E). This authorizes PDC-P4 design. Product merges follow OD-PDC-SEQ-01, approved 2026-11-12: merge after MCP-SERVER-X P8.

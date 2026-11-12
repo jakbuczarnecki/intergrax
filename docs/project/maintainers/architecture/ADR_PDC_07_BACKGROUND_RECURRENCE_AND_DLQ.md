@@ -3,7 +3,7 @@
 | Field | Value |
 | --- | --- |
 | **Document ID** | ADR-PDC-07 |
-| **Status** | **Proposed** (pending OD-PDC-ADR-01) |
+| **Status** | **Accepted** (OD-PDC-ADR-01, 2026-11-12) |
 | **Campaign** | PDC-X P3 (T-IGX-036-D) |
 | **Domain** | PDC-D7 Background & Scheduling |
 | **Requirements** | PDC-D7-R006..R008 (subject to OD-PDC-SCOPE-05), PDC-D7-R013, PDC-D7-R016 — see [`PDC_DOMAIN_REQUIREMENTS_MATRIX.md`](../qualification/platform_domain_completeness/PDC_DOMAIN_REQUIREMENTS_MATRIX.md) |
@@ -21,6 +21,8 @@
 - Dead-letter is a terminal task state in the queue contract (`DEAD_LETTERED` with typed reason and attempt count) reached when the retry budget is exhausted; providers may map it to native DLQs.
 - The enqueue envelope carries canonical execution identity (attempt/execution id, principal, trace correlation) through `TaskRequest`.
 
+- **OD-PDC-SCOPE-05 = A (implement):** recurrence is implemented as specified above. The conditional wording ("If OD-PDC-SCOPE-05 selects implementation") is now satisfied.
+
 ## Alternatives rejected
 
 - Adopting a provider scheduler (Celery beat, etc.) as platform authority.
@@ -32,4 +34,4 @@
 
 ## Status note
 
-Proposed only. No implementation before OD-PDC-ADR-01 accepts this ADR; product changes then follow OD-PDC-SEQ-01 (merge after MCP-SERVER-X P8).
+Accepted by OD-PDC-ADR-01 (Operator, 2026-11-12, recorded under T-IGX-036-E). This authorizes PDC-P4 design. Product merges follow OD-PDC-SEQ-01, approved 2026-11-12: merge after MCP-SERVER-X P8.

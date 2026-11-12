@@ -8,14 +8,14 @@
 
 | Domain | ADVERSARIAL_COVERAGE_REQUIRED | ALREADY_CERTIFIED_REUSABLE | BLOCKED_EXACT_REASON | CURRENT_HEAD_REQUALIFICATION | DEFERRED_OUTSIDE_FREEZE_SCOPE | DOCUMENTATION_RECONCILIATION | IMPLEMENTATION_COMPLETION | INTEGRATION_CORRECTION | N/A_WITH_EVIDENCE |
 | --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: |
-| PDC-D1 | 6 | 0 | 2 | 8 | 0 | 2 | 2 | 2 | 0 |
-| PDC-D2 | 5 | 1 | 1 | 7 | 0 | 0 | 1 | 2 | 1 |
-| PDC-D3 | 4 | 2 | 1 | 12 | 0 | 0 | 1 | 3 | 1 |
-| PDC-D4 | 4 | 1 | 3 | 4 | 0 | 2 | 4 | 2 | 0 |
+| PDC-D1 | 6 | 0 | 0 | 8 | 1 | 2 | 3 | 2 | 0 |
+| PDC-D2 | 5 | 1 | 0 | 7 | 0 | 0 | 2 | 2 | 1 |
+| PDC-D3 | 4 | 2 | 0 | 12 | 1 | 0 | 1 | 3 | 1 |
+| PDC-D4 | 4 | 1 | 0 | 4 | 3 | 2 | 4 | 2 | 0 |
 | PDC-D5 | 0 | 0 | 0 | 1 | 0 | 2 | 9 | 6 | 0 |
-| PDC-D6 | 7 | 1 | 2 | 7 | 0 | 3 | 3 | 4 | 1 |
-| PDC-D7 | 3 | 7 | 3 | 3 | 0 | 4 | 1 | 1 | 1 |
-| PDC-D8 | 3 | 0 | 1 | 1 | 0 | 0 | 8 | 5 | 1 |
+| PDC-D6 | 7 | 1 | 1 | 7 | 0 | 3 | 4 | 4 | 1 |
+| PDC-D7 | 3 | 7 | 0 | 3 | 0 | 4 | 4 | 1 | 1 |
+| PDC-D8 | 3 | 0 | 0 | 1 | 0 | 0 | 9 | 5 | 1 |
 
 ## Requirements
 
@@ -38,15 +38,15 @@
 | PDC-D1-R015 | Cross-host agent reuse | PRESENT | CURRENT_HEAD_REQUALIFICATION | AC1-AC6-FINAL-AUDIT (34 files (agent_distribution, runtime/registry) @ 1ebd2ab4c2e6) | PDC-P7-D1 replay | FRZ-RPL-04 | NO |
 | PDC-D1-R016 | Activation continuity across restart | PRESENT | CURRENT_HEAD_REQUALIFICATION | STATE-X (3 files (long_running, persistence) @ 1ebd2ab4c2e6) | PDC-P7-D1 replay | FRZ-REC-02,FRZ-STA-06 | NO |
 | PDC-D1-R017 | Every lifecycle transition emits canonical evidence | PARTIAL | ADVERSARIAL_COVERAGE_REQUIRED | — | PDC-P5-D1 | FRZ-OBS-01,FRZ-TRC-08 | YES |
-| PDC-D1-R018 | Skill disable/remove/upgrade (SKILL-X F-04) kept separate from agent lifecycle | PARTIAL | BLOCKED_EXACT_REASON | SKILL-X (1 file (skills/skill_execution_pinning_wiring.py) @ 1ebd2ab4c2e6) | OD-PDC-SCOPE-01 (implement vs authorized exclusion) | FRZ-PLG-08,FRZ-DEBT-05 | YES |
-| PDC-D1-R019 | Runtime factory beyond VENV_BUNDLE (OCI/sidecar deferred) | PARTIAL | BLOCKED_EXACT_REASON | — | OD-PDC-SCOPE-03 (authorized exclusion proposed) | FRZ-DEBT-05,FRZ-DEBT-06 | YES |
+| PDC-D1-R018 | Skill disable/remove/upgrade (SKILL-X F-04) kept separate from agent lifecycle | PARTIAL | IMPLEMENTATION_COMPLETION | SKILL-X (1 file (skills/skill_execution_pinning_wiring.py) @ 1ebd2ab4c2e6) | PDC-P5-D1 (ADR-PDC-01; OD-PDC-SCOPE-01 A: implement) | FRZ-PLG-08,FRZ-DEBT-05 | YES |
+| PDC-D1-R019 | Runtime factory beyond VENV_BUNDLE (OCI/sidecar deferred) | PARTIAL | DEFERRED_OUTSIDE_FREEZE_SCOPE | — | OD-PDC-SCOPE-03 A: authorized exclusion | FRZ-DEBT-05,FRZ-DEBT-06 | NO |
 | PDC-D1-R020 | One owner for plugin discovery (core/plugins/discovery.py vs vendor_knowledge and rag entry-point loaders) | PARTIAL | INTEGRATION_CORRECTION | — | PDC-P3-01 ownership decision -> PDC-P5-D1 | FRZ-PLG-03,FRZ-OWN-05 | YES |
 | PDC-D1-R021 | plug_03/plug_04/plug_final suites have no owning roadmap stage | PRESENT | DOCUMENTATION_RECONCILIATION | — | PDC-P3-01 ownership record | FRZ-REG-05,FRZ-DOC-03 | YES |
 | PDC-D2-R001 | Source identity and context provenance | PRESENT | CURRENT_HEAD_REQUALIFICATION | HARNESS-RESIDUAL/CE-01 (2 files (context tracking, nexus context_manager) @ 1ebd2ab4c2e6) | PDC-P7-D2 replay | FRZ-TRC-05 | NO |
 | PDC-D2-R002 | Tenant/workspace/session isolation of memory, RAG and context | PRESENT | ALREADY_CERTIFIED_REUSABLE | TENANT-X (1 file in security scope (policy/side_effect_authorization_errors.py) @ 1ebd2ab4c2e6) | — | FRZ-TEN-04,FRZ-SEC-01 | NO |
 | PDC-D2-R003 | Memory lifecycle has one owner | PRESENT | CURRENT_HEAD_REQUALIFICATION | EBH-2H (13 files (intergrax/memory) @ 1ebd2ab4c2e6) | PDC-P7-D2 replay | FRZ-OWN-01,FRZ-STA-01 | NO |
 | PDC-D2-R004 | RAG retrieval correctness | PRESENT | CURRENT_HEAD_REQUALIFICATION | EBH-2G (53 files (intergrax/rag) @ 1ebd2ab4c2e6) | PDC-P7-D2 replay | FRZ-CTR-01,FRZ-TYP-01 | NO |
-| PDC-D2-R005 | Index consistency and source freshness (only an embedding-version warning + optional reindex hook) | PARTIAL | BLOCKED_EXACT_REASON | EBH-2G (53 files (intergrax/rag) @ 1ebd2ab4c2e6) | OD-PDC-SCOPE-06 (freshness policy contract vs authorized exclusion) | FRZ-STA-05,FRZ-DEBT-04 | YES |
+| PDC-D2-R005 | Index consistency and source freshness (only an embedding-version warning + optional reindex hook) | PARTIAL | IMPLEMENTATION_COMPLETION | EBH-2G (53 files (intergrax/rag) @ 1ebd2ab4c2e6) | PDC-P5-D2 (ADR-PDC-02; OD-PDC-SCOPE-06 A: implement) | FRZ-STA-05,FRZ-DEBT-04 | YES |
 | PDC-D2-R006 | Context assembly ownership | PRESENT | CURRENT_HEAD_REQUALIFICATION | HARNESS-RESIDUAL/CE-01 (2 files (context tracking, nexus context_manager) @ 1ebd2ab4c2e6) | PDC-P7-D2 replay | FRZ-OWN-01 | NO |
 | PDC-D2-R007 | Mandatory instructions survive compaction and degradation | PRESENT | ADVERSARIAL_COVERAGE_REQUIRED | — | PDC-P5-D2 | FRZ-CTR-01,FRZ-REG-03 | YES |
 | PDC-D2-R008 | Retrieval-poisoning filter consumed on both paths; RAG service fallback is fail-open (False when profile absent) | PARTIAL | INTEGRATION_CORRECTION | — | PDC-P5-D6 (shared with PDC-D6-R014) | FRZ-SEC-08,FRZ-CFG-02 | YES |
@@ -79,7 +79,7 @@
 | PDC-D3-R017 | Local/offline models and native Ollama | PRESENT | CURRENT_HEAD_REQUALIFICATION | EBH-2E (9 files (llm_adapters, runtime/llm) @ 1ebd2ab4c2e6) | PDC-P7-D3 replay; live parity = Path B | FRZ-RPL-02 | NO |
 | PDC-D3-R018 | Tenant-aware model configuration | PRESENT | ALREADY_CERTIFIED_REUSABLE | TENANT-X (1 file in security scope (policy/side_effect_authorization_errors.py) @ 1ebd2ab4c2e6) | — | FRZ-TEN-05 | NO |
 | PDC-D3-R019 | No vendor selection hidden in core (provider DEFAULT_MODEL constants, LLMProfile.lab, rag default embedding provider) | PRESENT | CURRENT_HEAD_REQUALIFICATION | EBH-5 (0 files (llm_adapters) @ 1ebd2ab4c2e6) | PDC-P7-D3 against VBN CORE_HARDCODING_FINDINGS_REGISTER | FRZ-CFG-08,FRZ-CTR-06 | NO |
-| PDC-D3-R020 | Provider plugin registration layer (LLM-PROVIDER-PLUGIN-1 Planned) | ABSENT | BLOCKED_EXACT_REASON | — | OD-PDC-SCOPE-03 (authorized exclusion proposed) | FRZ-PLG-02,FRZ-DEBT-05 | YES |
+| PDC-D3-R020 | Provider plugin registration layer (LLM-PROVIDER-PLUGIN-1 Planned) | ABSENT | DEFERRED_OUTSIDE_FREEZE_SCOPE | — | OD-PDC-SCOPE-03 A: authorized exclusion | FRZ-PLG-02,FRZ-DEBT-05 | NO |
 | PDC-D3-R021 | Live provider qualification | PRESENT | N/A_WITH_EVIDENCE | — | — | FRZ-PRD-01 | NO |
 | PDC-D3-R022 | Streaming capability flags misreport: six adapters stream but supports_streaming() returns False | PARTIAL | INTEGRATION_CORRECTION | — | PDC-P5-D3 (ADR-PDC-03) | FRZ-CTR-01,FRZ-REG-09 | YES |
 | PDC-D3-R023 | Context-window tables duplicated inside providers and ModelCatalog | PARTIAL | INTEGRATION_CORRECTION | — | PDC-P3-01 ownership decision -> PDC-P5-D3 | FRZ-OWN-05 | YES |
@@ -93,9 +93,9 @@
 | PDC-D4-R008 | Failure classification | PRESENT | CURRENT_HEAD_REQUALIFICATION | — | PDC-P7-D4 replay | FRZ-REL-06 | NO |
 | PDC-D4-R009 | Hosting lifecycle metrics through canonical observability (APP-HOST-3D; no metrics today) | ABSENT | IMPLEMENTATION_COMPLETION | — | PDC-P5-D4 (ADR-PDC-04) | FRZ-OBS-01,FRZ-OBS-05 | YES |
 | PDC-D4-R010 | Restart preserves configuration/profile digest generically (APP-HOST-5D) | PARTIAL | IMPLEMENTATION_COMPLETION | — | PDC-P5-D4 (ADR-PDC-04) | FRZ-REC-02,FRZ-TRC-11 | YES |
-| PDC-D4-R011 | InteractionProfile facade (APP-HOST-6; no class exists) | ABSENT | BLOCKED_EXACT_REASON | — | OD-PDC-SCOPE-02 (authorized exclusion proposed; ApplicationEnvironmentProfile authority PRESERVE) | FRZ-DEBT-05,FRZ-DEBT-06 | YES |
-| PDC-D4-R012 | OS service-manager adapters (APP-HOST-7) | ABSENT | BLOCKED_EXACT_REASON | — | OD-PDC-SCOPE-02 (authorized exclusion proposed) | FRZ-DEBT-05 | YES |
-| PDC-D4-R013 | Host plugins in HostedApplicationProfile (APP-HOST-9E) | PARTIAL | BLOCKED_EXACT_REASON | — | OD-PDC-SCOPE-02 (authorized exclusion proposed) | FRZ-PLG-01,FRZ-DEBT-05 | YES |
+| PDC-D4-R011 | InteractionProfile facade (APP-HOST-6; no class exists) | ABSENT | DEFERRED_OUTSIDE_FREEZE_SCOPE | — | OD-PDC-SCOPE-02 A: authorized exclusion | FRZ-DEBT-05,FRZ-DEBT-06 | NO |
+| PDC-D4-R012 | OS service-manager adapters (APP-HOST-7) | ABSENT | DEFERRED_OUTSIDE_FREEZE_SCOPE | — | OD-PDC-SCOPE-02 A: authorized exclusion | FRZ-DEBT-05 | NO |
+| PDC-D4-R013 | Host plugins in HostedApplicationProfile (APP-HOST-9E) | PARTIAL | DEFERRED_OUTSIDE_FREEZE_SCOPE | — | OD-PDC-SCOPE-02 A: authorized exclusion | FRZ-PLG-01,FRZ-DEBT-05 | NO |
 | PDC-D4-R014 | Stable public hosting API declaration (APP-HOST-9F) | ABSENT | IMPLEMENTATION_COMPLETION | — | PDC-P5-D4 (ADR-PDC-04) | FRZ-CTR-04,FRZ-DOC-05,FRZ-CMP-01 | YES |
 | PDC-D4-R015 | Generic HostDeploymentProfile carries LKW-specific fields (TL-FIX-C) | PARTIAL | INTEGRATION_CORRECTION | — | PDC-P5-D4 | FRZ-BND-04,FRZ-CTR-06 | YES |
 | PDC-D4-R016 | TL-FIX-D implemented in code (bind_execution_adapter) but plan row still ACCEPTED/PLANNED | PRESENT | DOCUMENTATION_RECONCILIATION | — | PDC-P5-DOC | FRZ-DOC-01 | YES |
@@ -135,7 +135,7 @@
 | PDC-D6-R013 | Tool-input injection guard assert_tool_input_safe has zero consumers | PARTIAL | INTEGRATION_CORRECTION | — | PDC-P5-D6 (ADR-PDC-06) | FRZ-OWN-05,FRZ-SEC-08 | YES |
 | PDC-D6-R014 | Retrieval-poisoning defense must fail closed when the profile is absent (SEC-BND-04) | PARTIAL | INTEGRATION_CORRECTION | — | PDC-P5-D6 (ADR-PDC-06) | FRZ-SEC-08,FRZ-CFG-02 | YES |
 | PDC-D6-R015 | Data exfiltration / propagation across provider boundaries | PARTIAL | ADVERSARIAL_COVERAGE_REQUIRED | — | PDC-P5-D6 | FRZ-SEC-08 | YES |
-| PDC-D6-R016 | Plugin entry-point admission is structural only (no signature/provenance); agent packages are attested | PARTIAL | BLOCKED_EXACT_REASON | — | OD-PDC-SCOPE-07 (plugin provenance enforcement vs authorized scope) | FRZ-SEC-06,FRZ-PLG-05 | YES |
+| PDC-D6-R016 | Plugin entry-point admission is structural only (no signature/provenance); agent packages are attested | PARTIAL | IMPLEMENTATION_COMPLETION | — | PDC-P5-D6 (ADR-PDC-06; OD-PDC-SCOPE-07 A: implement) | FRZ-SEC-06,FRZ-PLG-05 | YES |
 | PDC-D6-R017 | MCP exposure security | PRESENT | BLOCKED_EXACT_REASON | — | await MCP-SERVER-X P8 certification | FRZ-SEC-04,FRZ-TEN-11 | YES |
 | PDC-D6-R018 | Side-effect governance | PRESENT | CURRENT_HEAD_REQUALIFICATION | GOV-X2 (16 files (runtime/governance, runtime/policy, delegation) @ 1ebd2ab4c2e6) | PDC-P7-D6 replay | FRZ-GOV-05,FRZ-TRC-06 | NO |
 | PDC-D6-R019 | Cross-tenant negative tests across D1-D8 | ABSENT | ADVERSARIAL_COVERAGE_REQUIRED | TENANT-X (1 file in security scope (policy/side_effect_authorization_errors.py) @ 1ebd2ab4c2e6) | PDC-P6 (XD-02/06/10) | FRZ-TEN-12,FRZ-SEC-01 | YES |
@@ -152,9 +152,9 @@
 | PDC-D7-R003 | Durable dispatch | PRESENT | ALREADY_CERTIFIED_REUSABLE | HARNESS-W8/BG-01 (0 files (queueing, background_tasks, background_execution) @ 1ebd2ab4c2e6) | — | FRZ-REC-01 | NO |
 | PDC-D7-R004 | One-shot delayed execution | PRESENT | CURRENT_HEAD_REQUALIFICATION | HARNESS-RESIDUAL/SCHED-01 (9 files (runtime/long_running) @ 1ebd2ab4c2e6) | PDC-P7-D7 replay | FRZ-EXE-07 | NO |
 | PDC-D7-R005 | Queue-level delay/ETA (TaskRequest has none; delayed work owned by SchedulerLedger) | ABSENT | N/A_WITH_EVIDENCE | HARNESS-RESIDUAL/SCHED-01 (9 files (runtime/long_running) @ 1ebd2ab4c2e6) | — | FRZ-OWN-01 | NO |
-| PDC-D7-R006 | Recurrence (interval/cron) as occurrences on SchedulerLedger; no second engine | ABSENT | BLOCKED_EXACT_REASON | — | OD-PDC-SCOPE-05 (implement via ADR-PDC-07 vs authorized exclusion) | FRZ-EXE-07,FRZ-DEBT-05 | YES |
-| PDC-D7-R007 | Time-zone and DST semantics for recurrence | ABSENT | BLOCKED_EXACT_REASON | — | OD-PDC-SCOPE-05 | FRZ-DEBT-05 | YES |
-| PDC-D7-R008 | Recurrence misfire / catch-up policy | PARTIAL | BLOCKED_EXACT_REASON | — | OD-PDC-SCOPE-05 | FRZ-DEBT-05 | YES |
+| PDC-D7-R006 | Recurrence (interval/cron) as occurrences on SchedulerLedger; no second engine | ABSENT | IMPLEMENTATION_COMPLETION | — | PDC-P5-D7 (ADR-PDC-07; OD-PDC-SCOPE-05 A: implement) | FRZ-EXE-07,FRZ-DEBT-05 | YES |
+| PDC-D7-R007 | Time-zone and DST semantics for recurrence | ABSENT | IMPLEMENTATION_COMPLETION | — | PDC-P5-D7 (ADR-PDC-07; OD-PDC-SCOPE-05 A: implement) | FRZ-DEBT-05 | YES |
+| PDC-D7-R008 | Recurrence misfire / catch-up policy | PARTIAL | IMPLEMENTATION_COMPLETION | — | PDC-P5-D7 (ADR-PDC-07; OD-PDC-SCOPE-05 A: implement) | FRZ-DEBT-05 | YES |
 | PDC-D7-R009 | Aggregate retry budget | PRESENT | ADVERSARIAL_COVERAGE_REQUIRED | TOOL-LIFE-X (1 file (long_running/postgresql_task_checkpoint_store.py) @ 1ebd2ab4c2e6) | PDC-P5-D7 | FRZ-REL-02,FRZ-REL-07 | YES |
 | PDC-D7-R010 | Idempotency and duplicate handling | PRESENT | ALREADY_CERTIFIED_REUSABLE | HARNESS-W8/BG-01 (0 files (queueing, background_tasks, background_execution) @ 1ebd2ab4c2e6) | — | FRZ-REL-03 | NO |
 | PDC-D7-R011 | At-least-once delivery consequences documented | PARTIAL | DOCUMENTATION_RECONCILIATION | — | PDC-P5-DOC | FRZ-REL-03,FRZ-DOC-01 | YES |
@@ -170,7 +170,7 @@
 | PDC-D7-R021 | Horizontal scaling boundary documented (DIST-SCALE-X scoped) | PARTIAL | DOCUMENTATION_RECONCILIATION | — | PDC-P5-DOC | FRZ-REL-08 | YES |
 | PDC-D7-R022 | TaskRegistry/WorkerRuntime wraps TaskExecutionRegistry (layered, not duplicate); ownership unrecorded | PRESENT | DOCUMENTATION_RECONCILIATION | — | PDC-P3-01 ownership record | FRZ-OWN-01,FRZ-DOC-03 | YES |
 | PDC-D7-R023 | BACKGROUND_TASKS plan statuses stale; doc not registered in runtime hub (PDC-P1-F01) | PRESENT | DOCUMENTATION_RECONCILIATION | — | PDC-P5-DOC | FRZ-DOC-01,FRZ-DOC-03 | YES |
-| PDC-D8-R001 | Artifact taxonomy (business / execution evidence / context / temporary tool output) with one owner per class; no global storage engine | ABSENT | IMPLEMENTATION_COMPLETION | — | PDC-P3 ADR-PDC-08 -> PDC-P5-D8 | FRZ-OWN-01,FRZ-DOC-03 | YES |
+| PDC-D8-R001 | Artifact taxonomy (business / execution evidence / context / temporary tool output) with one owner per class; no global storage engine | ABSENT | IMPLEMENTATION_COMPLETION | — | PDC-P5-D8 (ADR-PDC-08 accepted) | FRZ-OWN-01,FRZ-DOC-03 | YES |
 | PDC-D8-R002 | Mandatory content digest on durable artifact refs (optional outside Collaborative Work) | PARTIAL | IMPLEMENTATION_COMPLETION | — | PDC-P5-D8 (ADR-PDC-08) | FRZ-REC-10,FRZ-AUD-05 | YES |
 | PDC-D8-R003 | Versioning (business artifacts certified; run artifacts unversioned) | PARTIAL | IMPLEMENTATION_COMPLETION | — | PDC-P5-D8 (ADR-PDC-08) | FRZ-CMP-03 | YES |
 | PDC-D8-R004 | Producer identity and execution lineage | PARTIAL | INTEGRATION_CORRECTION | — | PDC-P5-D8 | FRZ-TRC-01,FRZ-TRC-03 | YES |
@@ -179,7 +179,7 @@
 | PDC-D8-R007 | Durable execution artifact store (only InMemoryArtifactStore) | PARTIAL | IMPLEMENTATION_COMPLETION | — | PDC-P5-D8 (ADR-PDC-08) | FRZ-STA-07,FRZ-REC-01 | YES |
 | PDC-D8-R008 | Retention/TTL enforcement (ArtifactRetentionPolicy has zero consumers) | PARTIAL | IMPLEMENTATION_COMPLETION | — | PDC-P5-D8 (ADR-PDC-08) | FRZ-SEC-09 | YES |
 | PDC-D8-R009 | Deletion and legal hold; audit evidence non-deletable (Collaborative Work defers hard delete) | ABSENT | IMPLEMENTATION_COMPLETION | — | PDC-P5-D8 (ADR-PDC-08) | FRZ-SEC-09,FRZ-AUD-05 | YES |
-| PDC-D8-R010 | Governed secure download (only provider presigned_url) | PARTIAL | BLOCKED_EXACT_REASON | — | OD-PDC-SCOPE-04 (implement vs authorized exclusion) | FRZ-SEC-08,FRZ-DEBT-05 | YES |
+| PDC-D8-R010 | Governed secure download (only provider presigned_url) | PARTIAL | IMPLEMENTATION_COMPLETION | — | PDC-P5-D8 (ADR-PDC-08; OD-PDC-SCOPE-04 A: implement) | FRZ-SEC-08,FRZ-DEBT-05 | YES |
 | PDC-D8-R011 | Partial outputs are owned by PartialResultContract (task metadata), not by artifacts | PRESENT | N/A_WITH_EVIDENCE | — | — | FRZ-OWN-01 | NO |
 | PDC-D8-R012 | Large output / tool-result spill to artifact refs (none exists) | ABSENT | IMPLEMENTATION_COMPLETION | — | PDC-P5-D8 (ADR-PDC-08) | FRZ-REL-10 | YES |
 | PDC-D8-R013 | Durable context references to artifacts | PARTIAL | INTEGRATION_CORRECTION | — | PDC-P5-D8 | FRZ-REC-04 | YES |

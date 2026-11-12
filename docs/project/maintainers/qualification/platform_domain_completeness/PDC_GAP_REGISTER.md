@@ -5,23 +5,15 @@
 | Lane | Count |
 | --- | ---: |
 | MCP-SERVER-X | 1 |
-| OD-PDC-SCOPE-01 | 1 |
-| OD-PDC-SCOPE-02 | 3 |
-| OD-PDC-SCOPE-03 | 2 |
-| OD-PDC-SCOPE-04 | 1 |
-| OD-PDC-SCOPE-05 | 3 |
-| OD-PDC-SCOPE-06 | 1 |
-| OD-PDC-SCOPE-07 | 1 |
-| PDC-P3 ADR-PDC-08 | 1 |
 | PDC-P3-01 | 4 |
-| PDC-P5-D1 | 8 |
-| PDC-P5-D2 | 6 |
+| PDC-P5-D1 | 9 |
+| PDC-P5-D2 | 7 |
 | PDC-P5-D3 | 6 |
 | PDC-P5-D4 | 9 |
 | PDC-P5-D5 | 15 |
-| PDC-P5-D6 | 12 |
-| PDC-P5-D7 | 4 |
-| PDC-P5-D8 | 15 |
+| PDC-P5-D6 | 13 |
+| PDC-P5-D7 | 7 |
+| PDC-P5-D8 | 17 |
 | PDC-P5-DOC | 11 |
 | PDC-P5-REG | 4 |
 | PDC-P6 | 4 |
@@ -31,59 +23,6 @@
 | ID | Gap | Class | Test / evidence | Depends on |
 | --- | --- | --- | --- | --- |
 | PDC-D6-R017 | MCP exposure security | BLOCKED_EXACT_REASON | MCP-SERVER-X qualification package | MCP-SERVER-X |
-
-## OD-PDC-SCOPE-01
-
-| ID | Gap | Class | Test / evidence | Depends on |
-| --- | --- | --- | --- | --- |
-| PDC-D1-R018 | Skill disable/remove/upgrade (SKILL-X F-04) kept separate from agent lifecycle | BLOCKED_EXACT_REASON | tests/qualification/pdc_x/d1 skill disable/remove (if implemented) | — |
-
-## OD-PDC-SCOPE-02
-
-| ID | Gap | Class | Test / evidence | Depends on |
-| --- | --- | --- | --- | --- |
-| PDC-D4-R011 | InteractionProfile facade (APP-HOST-6; no class exists) | BLOCKED_EXACT_REASON | n/a if excluded | — |
-| PDC-D4-R012 | OS service-manager adapters (APP-HOST-7) | BLOCKED_EXACT_REASON | n/a if excluded | — |
-| PDC-D4-R013 | Host plugins in HostedApplicationProfile (APP-HOST-9E) | BLOCKED_EXACT_REASON | n/a if excluded | — |
-
-## OD-PDC-SCOPE-03
-
-| ID | Gap | Class | Test / evidence | Depends on |
-| --- | --- | --- | --- | --- |
-| PDC-D1-R019 | Runtime factory beyond VENV_BUNDLE (OCI/sidecar deferred) | BLOCKED_EXACT_REASON | n/a if excluded | — |
-| PDC-D3-R020 | Provider plugin registration layer (LLM-PROVIDER-PLUGIN-1 Planned) | BLOCKED_EXACT_REASON | n/a if excluded | — |
-
-## OD-PDC-SCOPE-04
-
-| ID | Gap | Class | Test / evidence | Depends on |
-| --- | --- | --- | --- | --- |
-| PDC-D8-R010 | Governed secure download (only provider presigned_url) | BLOCKED_EXACT_REASON | tests/qualification/pdc_x/d8 governed download (if in scope) | — |
-
-## OD-PDC-SCOPE-05
-
-| ID | Gap | Class | Test / evidence | Depends on |
-| --- | --- | --- | --- | --- |
-| PDC-D7-R006 | Recurrence (interval/cron) as occurrences on SchedulerLedger; no second engine | BLOCKED_EXACT_REASON | tests/qualification/pdc_x/d7 recurrence occurrences + DST | ADR-PDC-07 |
-| PDC-D7-R007 | Time-zone and DST semantics for recurrence | BLOCKED_EXACT_REASON | tests/qualification/pdc_x/d7 DST transition | PDC-D7-R006 |
-| PDC-D7-R008 | Recurrence misfire / catch-up policy | BLOCKED_EXACT_REASON | tests/qualification/pdc_x/d7 misfire policy | PDC-D7-R006 |
-
-## OD-PDC-SCOPE-06
-
-| ID | Gap | Class | Test / evidence | Depends on |
-| --- | --- | --- | --- | --- |
-| PDC-D2-R005 | Index consistency and source freshness (only an embedding-version warning + optional reindex hook) | BLOCKED_EXACT_REASON | tests/qualification/pdc_x/d2 stale source detected | — |
-
-## OD-PDC-SCOPE-07
-
-| ID | Gap | Class | Test / evidence | Depends on |
-| --- | --- | --- | --- | --- |
-| PDC-D6-R016 | Plugin entry-point admission is structural only (no signature/provenance); agent packages are attested | BLOCKED_EXACT_REASON | tests/qualification/pdc_x/d6 unsigned plugin rejected (if in scope) | — |
-
-## PDC-P3 ADR-PDC-08
-
-| ID | Gap | Class | Test / evidence | Depends on |
-| --- | --- | --- | --- | --- |
-| PDC-D8-R001 | Artifact taxonomy (business / execution evidence / context / temporary tool output) with one owner per class; no global storage engine | IMPLEMENTATION_COMPLETION | taxonomy + ownership gate | ADR-PDC-08 |
 
 ## PDC-P3-01
 
@@ -106,11 +45,13 @@
 | PDC-D1-R013 | Revocation and emergency revocation reach active executions | ADVERSARIAL_COVERAGE_REQUIRED | tests/qualification/pdc_x/d1 revoke during execution -> fail closed | — |
 | PDC-D1-R014 | RETIRE is an explicit operation (state exists, no operation) | IMPLEMENTATION_COMPLETION | tests/qualification/pdc_x/d1 retire removes routing + keeps evidence | ADR-PDC-01 |
 | PDC-D1-R017 | Every lifecycle transition emits canonical evidence | ADVERSARIAL_COVERAGE_REQUIRED | tests/qualification/pdc_x/d1 transition evidence completeness | — |
+| PDC-D1-R018 | Skill disable/remove/upgrade (SKILL-X F-04) kept separate from agent lifecycle | IMPLEMENTATION_COMPLETION | tests/qualification/pdc_x/d1 skill disable/remove (if implemented) | — |
 
 ## PDC-P5-D2
 
 | ID | Gap | Class | Test / evidence | Depends on |
 | --- | --- | --- | --- | --- |
+| PDC-D2-R005 | Index consistency and source freshness (only an embedding-version warning + optional reindex hook) | IMPLEMENTATION_COMPLETION | tests/qualification/pdc_x/d2 stale source detected | — |
 | PDC-D2-R007 | Mandatory instructions survive compaction and degradation | ADVERSARIAL_COVERAGE_REQUIRED | tests/qualification/pdc_x/d2 mandatory retention under pressure | — |
 | PDC-D2-R009 | Tool-output ingestion boundary | ADVERSARIAL_COVERAGE_REQUIRED | tests/qualification/pdc_x/d2 injected tool output not promoted to instruction | — |
 | PDC-D2-R011 | Degradation step TOKENIZER_HARD_TRIM drops entry_id/tool_calls/tool_call_id | INTEGRATION_CORRECTION | tests/qualification/pdc_x/d2 hard trim preserves tool-call linkage | ADR-PDC-02 |
@@ -176,6 +117,7 @@
 | PDC-D6-R013 | Tool-input injection guard assert_tool_input_safe has zero consumers | INTEGRATION_CORRECTION | tests/qualification/pdc_x/d6 single tool-input defense path | ADR-PDC-06 |
 | PDC-D6-R014 | Retrieval-poisoning defense must fail closed when the profile is absent (SEC-BND-04) | INTEGRATION_CORRECTION | tests/qualification/pdc_x/d6 missing profile -> filter enforced | ADR-PDC-06 |
 | PDC-D6-R015 | Data exfiltration / propagation across provider boundaries | ADVERSARIAL_COVERAGE_REQUIRED | tests/qualification/pdc_x/d6 tenant data not sent to unapproved provider | — |
+| PDC-D6-R016 | Plugin entry-point admission is structural only (no signature/provenance); agent packages are attested | IMPLEMENTATION_COMPLETION | tests/qualification/pdc_x/d6 unsigned plugin rejected (if in scope) | — |
 | PDC-D6-R020 | Security audit trail is in-memory only (SEC-BND-06) | IMPLEMENTATION_COMPLETION | tests/qualification/pdc_x/d6 audit trail survives restart | ADR-PDC-06 |
 | PDC-D6-R024 | Fail-closed security defaults | ADVERSARIAL_COVERAGE_REQUIRED | tests/qualification/pdc_x/d6 missing security config fails closed | — |
 | PDC-D6-R027 | Demo attestation signing seed reachable only in lab/proof paths | ADVERSARIAL_COVERAGE_REQUIRED | tests/qualification/pdc_x/d6 demo seed unreachable in strict profile | — |
@@ -184,6 +126,9 @@
 
 | ID | Gap | Class | Test / evidence | Depends on |
 | --- | --- | --- | --- | --- |
+| PDC-D7-R006 | Recurrence (interval/cron) as occurrences on SchedulerLedger; no second engine | IMPLEMENTATION_COMPLETION | tests/qualification/pdc_x/d7 recurrence occurrences + DST | ADR-PDC-07 |
+| PDC-D7-R007 | Time-zone and DST semantics for recurrence | IMPLEMENTATION_COMPLETION | tests/qualification/pdc_x/d7 DST transition | PDC-D7-R006 |
+| PDC-D7-R008 | Recurrence misfire / catch-up policy | IMPLEMENTATION_COMPLETION | tests/qualification/pdc_x/d7 misfire policy | PDC-D7-R006 |
 | PDC-D7-R009 | Aggregate retry budget | ADVERSARIAL_COVERAGE_REQUIRED | tests/qualification/pdc_x/d7 retry budget exhaustion terminal | — |
 | PDC-D7-R012 | Lease/fencing proven across processes (today: two schedulers in one process) | ADVERSARIAL_COVERAGE_REQUIRED | tests/qualification/pdc_x/d7 two-process fencing over SQLite | — |
 | PDC-D7-R013 | Dead-letter / terminal-failed semantics (no DLQ anywhere) | IMPLEMENTATION_COMPLETION | tests/qualification/pdc_x/d7 poison task reaches terminal dead-letter state | ADR-PDC-07 |
@@ -194,6 +139,7 @@
 | ID | Gap | Class | Test / evidence | Depends on |
 | --- | --- | --- | --- | --- |
 | PDC-D6-R022 | Retention/deletion/redaction responsibility explicit | IMPLEMENTATION_COMPLETION | tests/qualification/pdc_x/xd_10 TTL deletion honored | ADR-PDC-08 |
+| PDC-D8-R001 | Artifact taxonomy (business / execution evidence / context / temporary tool output) with one owner per class; no global storage engine | IMPLEMENTATION_COMPLETION | taxonomy + ownership gate | ADR-PDC-08 |
 | PDC-D8-R002 | Mandatory content digest on durable artifact refs (optional outside Collaborative Work) | IMPLEMENTATION_COMPLETION | tests/qualification/pdc_x/d8 digest mismatch rejected | ADR-PDC-08 |
 | PDC-D8-R003 | Versioning (business artifacts certified; run artifacts unversioned) | IMPLEMENTATION_COMPLETION | tests/qualification/pdc_x/d8 run artifact version append-only | ADR-PDC-08 |
 | PDC-D8-R004 | Producer identity and execution lineage | INTEGRATION_CORRECTION | tests/qualification/pdc_x/d8 artifact lineage reconstructable | — |
@@ -202,6 +148,7 @@
 | PDC-D8-R007 | Durable execution artifact store (only InMemoryArtifactStore) | IMPLEMENTATION_COMPLETION | tests/qualification/pdc_x/d8 artifacts survive restart | ADR-PDC-08 |
 | PDC-D8-R008 | Retention/TTL enforcement (ArtifactRetentionPolicy has zero consumers) | IMPLEMENTATION_COMPLETION | tests/qualification/pdc_x/d8 TTL expiry enforced | ADR-PDC-08 |
 | PDC-D8-R009 | Deletion and legal hold; audit evidence non-deletable (Collaborative Work defers hard delete) | IMPLEMENTATION_COMPLETION | tests/qualification/pdc_x/d8 evidence delete refused; legal hold respected | ADR-PDC-08 |
+| PDC-D8-R010 | Governed secure download (only provider presigned_url) | IMPLEMENTATION_COMPLETION | tests/qualification/pdc_x/d8 governed download (if in scope) | — |
 | PDC-D8-R012 | Large output / tool-result spill to artifact refs (none exists) | IMPLEMENTATION_COMPLETION | tests/qualification/pdc_x/xd_09 spill round-trip | ADR-PDC-08 |
 | PDC-D8-R013 | Durable context references to artifacts | INTEGRATION_CORRECTION | tests/qualification/pdc_x/xd_09 context ref resolves after compaction | — |
 | PDC-D8-R014 | Artifact recovery after restart | ADVERSARIAL_COVERAGE_REQUIRED | tests/qualification/pdc_x/d8 restart recovery | PDC-D8-R007 |

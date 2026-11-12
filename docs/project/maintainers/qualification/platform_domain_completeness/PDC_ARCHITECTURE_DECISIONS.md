@@ -1,6 +1,8 @@
 # PDC-X — architecture decisions (PDC-P3)
 
-**Ticket:** T-IGX-036-D · **Lock gate:** [OD-PDC-ADR-01](./operator_decisions/OD-PDC-ADR-01.md) (pending). Every ADR below has status **Proposed**. None is accepted, and no implementation starts before acceptance.
+**Tickets:** T-IGX-036-D (drafts) · T-IGX-036-E (lock record) · **Lock gate:** [OD-PDC-ADR-01](./operator_decisions/OD-PDC-ADR-01.md) **APPROVED — Option A** (Operator, 2026-11-12).
+
+**ARCHITECTURE LOCKED (PDC-P3-08).** ADR-PDC-01..08 are **Accepted** with the variants of OD-PDC-SCOPE-01..07. Implement: SCOPE-01, 04, 05, 06, 07. Authorized exclusion: SCOPE-02, 03. Path B is confirmed without expansion (OD-PDC-PATHB-01), and the IIAC session plan is approved (OD-PDC-IIAC-SCOPE). The lock authorizes PDC-P4 design. Product merges are gated by OD-PDC-SEQ-01 (approved: merge after MCP-SERVER-X P8).
 
 | ADR | Domain | Decision summary | Scope OD |
 | --- | --- | --- | --- |
@@ -25,6 +27,6 @@
 | PDC-P3-D04 | **ECAP §16 impact (PDC-P3-07):** ECAP needs no new domain sections. Evaluation (D5) is a behavioral mechanism already covered by the FRZ families it maps to. Artifacts (D8) are a feature coordinating existing owners. If OD-PDC-ADR-01 accepts the feature pair, a one-line ECAP traceability note for D8 is added in P4 | ECAP §16 triggers only for a new platform domain or a new FRZ criterion; PDC adds neither |
 | PDC-P3-D05 | Runtime hub registration of `BACKGROUND_TASKS` and `COLLABORATIVE_WORK` (PDC-P1-F01) goes to the PDC-P5-DOC lane | Hub rule "classified exactly once" |
 
-## Open Operator Decisions at this gate
+## Operator Decisions after the lock
 
-OD-PDC-SCOPE-01..07, OD-PDC-PATHB-01, OD-PDC-ADR-01, OD-PDC-IIAC-SCOPE, OD-PDC-FRZ-01, OD-PDC-ARCHF-01 and OD-PDC-SEQ-01: see [`PDC_OPERATOR_DECISIONS.md`](./PDC_OPERATOR_DECISIONS.md).
+OD-PDC-FRZ-01, OD-PDC-ARCHF-01 and OD-PDC-SEQ-01 are **APPROVED — Option A** (2026-11-12, T-IGX-036-F). The only open item is the IIAC protocol header sub-question. See [`PDC_OPERATOR_DECISIONS.md`](./PDC_OPERATOR_DECISIONS.md).

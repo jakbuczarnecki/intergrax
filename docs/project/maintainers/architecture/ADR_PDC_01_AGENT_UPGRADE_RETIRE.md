@@ -3,7 +3,7 @@
 | Field | Value |
 | --- | --- |
 | **Document ID** | ADR-PDC-01 |
-| **Status** | **Proposed** (pending OD-PDC-ADR-01) |
+| **Status** | **Accepted** (OD-PDC-ADR-01, 2026-11-12) |
 | **Campaign** | PDC-X P3 (T-IGX-036-D) |
 | **Domain** | PDC-D1 Agent Lifecycle |
 | **Requirements** | PDC-D1-R011, PDC-D1-R014 (and evidence for PDC-D1-R017) — see [`PDC_DOMAIN_REQUIREMENTS_MATRIX.md`](../qualification/platform_domain_completeness/PDC_DOMAIN_REQUIREMENTS_MATRIX.md) |
@@ -22,6 +22,8 @@
 - `retire_agent` = transition to `RETIRED`, remove routing eligibility, refuse new activations, keep installation and evidence records (no tombstone); existing executions finish under their pinned revision.
 - Every transition emits one canonical lifecycle event through the existing evidence path.
 
+- **OD-PDC-SCOPE-01 = A (implement):** add `disable_skill`, `remove_skill` and `upgrade_skill` to `SkillHostLifecycleService`, extending the Skills manifest model (GAP_AUDIT §16 PRESERVE/EXTEND). Agent upgrade/retire for skill-bearing agents depends on it.
+
 ## Alternatives rejected
 
 - A separate upgrade manager or lifecycle registry (shadow authority; FRZ-OWN-04).
@@ -33,4 +35,4 @@
 
 ## Status note
 
-Proposed only. No implementation before OD-PDC-ADR-01 accepts this ADR; product changes then follow OD-PDC-SEQ-01 (merge after MCP-SERVER-X P8).
+Accepted by OD-PDC-ADR-01 (Operator, 2026-11-12, recorded under T-IGX-036-E). This authorizes PDC-P4 design. Product merges follow OD-PDC-SEQ-01, approved 2026-11-12: merge after MCP-SERVER-X P8.

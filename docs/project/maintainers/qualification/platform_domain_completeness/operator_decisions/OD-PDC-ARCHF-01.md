@@ -4,7 +4,7 @@
 | --- | --- |
 | **Decision ID** | OD-PDC-ARCHF-01 |
 | **Stage** | PDC-X |
-| **Status** | **PENDING** |
+| **Status** | **APPROVED — Option A** |
 | **Precedent** | MCP-SERVER-X P0 (T-IGX-035-A): header gate note only, no WBS row |
 
 ## Question
@@ -23,4 +23,8 @@ How is PDC-X recorded as an ARCH-FREEZE predecessor in `ARCH_FREEZE_WBS_AND_DEPE
 
 ## Operator record
 
-_Pending._ Option A is applied in T-IGX-036-A, subject to this decision.
+Approved: operator @ 2026-11-12T07:16:15+01:00
+
+**Selected variant:** Option A (recommended).
+
+Provenance: the Operator answered "Approve the three remaining ODs (FRZ-01, ARCHF-01, SEQ-01) as option A?" in chat with the words "Approve all A". Transcribed on the Operator's instruction under T-IGX-036-F.
