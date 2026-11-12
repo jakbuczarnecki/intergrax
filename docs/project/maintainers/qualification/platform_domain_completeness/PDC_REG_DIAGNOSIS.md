@@ -25,3 +25,25 @@ The subagent also saw a separate circular-import `ImportError` in `runtime/integ
 ## Process note
 
 None of `tests/qualification/ebh_5`, `governance` or `plug_03` runs in a CI workflow. That is why these failures were not noticed. PDC-P6 should add them to a CI tier, or to the ENT-AUDIT check manifest.
+
+## Wave B results (T-IGX-036-I)
+
+| Suite | Before | After batch B-REG-T |
+| --- | --- | --- |
+| `tests/qualification/ebh_5` | 239 passed / 4 failed | **243 passed / 0 failed** |
+| `tests/qualification/governance` | 395 passed / 8 failed | **403 passed / 0 failed** |
+| `tests/qualification/ebh_7` (regression check) | 11 failed | 11 failed, the same set: no new failures (group B below) |
+
+The GR-12 repair needed one more fix besides supplying the authority. Once STRICT PRODUCT composition succeeded, the tests never closed the host runtime, and its background workers kept the pytest process alive after the tests passed. The four GR-12 tests now close every runtime they build through a fixture.
+
+## Other pre-existing red suites (read-only diagnosis, wave B)
+
+One bounded run at `origin/development` `f573e24e8`: `ebh_7`, `dist_scale_x`, `roadmap_replay_x` → 18 failed, 410 passed, 15 skipped. No fixes were made in this wave.
+
+| Group | Suite / tests | Verdict | Cause | Fix scope | Product path |
+| --- | --- | --- | --- | --- | --- |
+| A | none of these suites at this run (still visible in `tests/unit/runtime/integrations/test_contract_registry_v2.py` and `tests/unit/test_dep1_dependency_foundation.py`) | REGRESSION | Duplicate `ollama` catalog slug (`7aa9cfa18`). Earlier ebh_7 failures from it disappeared, most likely through test-order effects on the catalog (not proven) | Batch B-REG-P | **yes** |
+| B1 | `ebh_7` P03-B5 executable identity, B6-F10 normative check and its rendered matrix | PRODUCT_DELTA_GATE | By design it fails whenever paths outside the docs/CI allowlist change after the pinned TEST_EXECUTION_SHA `dc18e36d9` (`scripts/qualification/verify_ebh7_p03_immutable_evidence.py:152`, allowlist lines 20–37). First violating commit: `9f9cc8b57` | Operator policy: re-pin the replay SHA, or widen the allowlist, then re-render | no |
+| B2 | `ebh_7` P03 immutable digests; cascades into the closure evidence audit (4 tests), the F09 registry integrity check and the certification SSOT bundle | STALE_GATE | `ARTIFACT_DIGESTS.json` still pins `EBH_7_CLOSURE_EVIDENCE_AUDIT_MATRIX.md` at its `df498b7a8` digest, although `5a4e922ff` changed the matrix | Re-pin the digest under the same policy decision as B1 | no |
+| C | `roadmap_replay_x` (5 tests) | PRODUCT_DELTA_GATE | 17 MCP-SERVER-X product paths changed since `DUP_X_ACCEPTANCE_SHA` `a7d83925b` have no disposition row. Two mechanical counters (2 and 1) differ from the zeros recorded in ECAP | Disposition rows with regression evidence in `tests/qualification/roadmap_replay_x/_pre_ent_l3_prod_delta.py` (and the VBN counter if needed); natural owner MCP-SERVER-X P7 | no |
+| D | `dist_scale_x` P4 and P6 batches | ENVIRONMENT | PostgreSQL via Docker is unavailable on this machine (`docker info` fails); P4/P6 use `pytest.fail` where P3 uses `pytest.skip` | Requires Docker/PostgreSQL, which the C10/C15 restriction forbids; it stays blocked until the Operator lifts it | no |

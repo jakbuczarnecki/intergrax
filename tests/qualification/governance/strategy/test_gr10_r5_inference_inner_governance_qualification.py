@@ -9,7 +9,6 @@ from dataclasses import dataclass
 from pathlib import Path
 
 import pytest
-
 from tests.qualification.governance.strategy.catalog import (
     GR10_INFERENCE_CAPABILITY_SEMANTICS,
     GR10_PRODUCTION_INVENTORY,
@@ -84,9 +83,7 @@ _INFERENCE_INNER_OPERATIONS: tuple[_InferenceInnerOperation, ...] = (
 
 
 def test_gr10_r5_inference_inner_governance_semantics_not_applicable() -> None:
-    row = next(
-        entry for entry in GR10_INFERENCE_CAPABILITY_SEMANTICS if entry.capability == "Inner Governance"
-    )
+    row = next(entry for entry in GR10_INFERENCE_CAPABILITY_SEMANTICS if entry.capability == "Inner Governance")
     assert row.applicability is Gr10Applicability.NOT_APPLICABLE
     assert row.coverage is None
     assert gr10_matrix_inference_status("Inner Governance") is Gr10CoverageStatus.NOT_APPLICABLE
@@ -95,9 +92,7 @@ def test_gr10_r5_inference_inner_governance_semantics_not_applicable() -> None:
 
 
 def test_gr10_r5_policy_evaluation_remains_qualified_separate_row() -> None:
-    row = next(
-        entry for entry in GR10_INFERENCE_CAPABILITY_SEMANTICS if entry.capability == "Policy evaluation"
-    )
+    row = next(entry for entry in GR10_INFERENCE_CAPABILITY_SEMANTICS if entry.capability == "Policy evaluation")
     assert row.applicability is Gr10Applicability.APPLICABLE
     assert row.coverage is Gr10CoverageStatus.QUALIFIED
 
@@ -145,6 +140,18 @@ def _select_adapter_assignment_name(execute_fn: ast.AsyncFunctionDef | ast.Funct
     return None
 
 
+def _is_pre_model_enforcement_callee(func: ast.expr) -> bool:
+    # PDC-X B-REG-T (T-IGX-036-I): aligned with 6700ff756 (``self._pre_model_gate`` port).
+    if isinstance(func, ast.Name):
+        return func.id == "enforce_pre_model_before_structured_inference"
+    return (
+        isinstance(func, ast.Attribute)
+        and func.attr == "_pre_model_gate"
+        and isinstance(func.value, ast.Name)
+        and func.value.id == "self"
+    )
+
+
 def _enforce_pre_model_uses_adapter_name(
     execute_fn: ast.AsyncFunctionDef | ast.FunctionDef,
     adapter_name: str,
@@ -153,9 +160,7 @@ def _enforce_pre_model_uses_adapter_name(
         if not isinstance(node, ast.Expr) or not isinstance(node.value, ast.Call):
             continue
         call = node.value
-        if not isinstance(call.func, ast.Name):
-            continue
-        if call.func.id != "enforce_pre_model_before_structured_inference":
+        if not _is_pre_model_enforcement_callee(call.func):
             continue
         for keyword in call.keywords:
             if keyword.arg == "adapter" and isinstance(keyword.value, ast.Name):
@@ -196,9 +201,7 @@ def test_gr10_r5_inference_executor_same_local_adapter_ast_gate() -> None:
 
 def test_gr10_r5_inference_inner_operation_inventory_documented() -> None:
     assert len(_INFERENCE_INNER_OPERATIONS) >= 3
-    governed = [
-        row for row in _INFERENCE_INNER_OPERATIONS if row.governance_permission_required
-    ]
+    governed = [row for row in _INFERENCE_INNER_OPERATIONS if row.governance_permission_required]
     assert len(governed) == 1
     assert governed[0].action == "model/provider structured invocation"
     assert "PRE_MODEL" in governed[0].boundary

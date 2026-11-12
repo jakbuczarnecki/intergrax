@@ -182,6 +182,12 @@ OD_RESOLUTIONS: Final[dict[str, tuple[str, str]]] = {
     "PDC-D8-R001": ("IMPLEMENTATION_COMPLETION", "PDC-P5-D8 (ADR-PDC-08 accepted)"),
     "PDC-D8-R010": ("IMPLEMENTATION_COMPLETION", "PDC-P5-D8 (ADR-PDC-08; OD-PDC-SCOPE-04 A: implement)"),
 }
+# Implementation evidence from P5 batches (not certification: CERTIFICATION_STATUS stays NOT_CERTIFIED until PDC-P7).
+BATCH_EVIDENCE: Final[dict[str, str]] = {
+    "PDC-D3-R024": "B-REG-T fix (T-IGX-036-I): tests/qualification/ebh_5 243 passed / 0 failed",
+    "PDC-D4-R020": "B-REG-T fix (T-IGX-036-I): tests/qualification/governance 403 passed / 0 failed (GR-12 fixture authority + runtime close)",
+    "PDC-D6-R028": "B-REG-T fix (T-IGX-036-I): tests/qualification/governance 403 passed / 0 failed (GR-10 AST gates; 13 mutations rejected)",
+}
 _OD_REF = re.compile(r"OD-PDC-[A-Z0-9]+(?:-\d+)?")
 
 
@@ -2384,6 +2390,8 @@ def expand(row: Row) -> dict[str, str]:
         disposition = f"DEFERRED — {row.task}; evidence-backed exclusion (FRZ-DEBT-06)"
     else:
         disposition = f"OPEN — closure via {row.task}"
+    if row.rid in BATCH_EVIDENCE:
+        disposition = f"{disposition}; {BATCH_EVIDENCE[row.rid]}"
     return {
         "REQUIREMENT_ID": row.rid,
         "DOMAIN_ID": domain,

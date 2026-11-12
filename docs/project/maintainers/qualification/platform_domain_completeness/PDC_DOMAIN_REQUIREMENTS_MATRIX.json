@@ -4514,7 +4514,7 @@
       "AUDITED_SHA": "—",
       "EVIDENCE_PATH": ".tmp/proof/pdc-x-p2/replay.{log,xml}: ebh_5 239p/4f/0s",
       "ARCH_FREEZE_BLOCKER": "YES",
-      "FINAL_DISPOSITION": "OPEN — closure via PDC-P5-REG (root cause: stale matrix vs regression)",
+      "FINAL_DISPOSITION": "OPEN — closure via PDC-P5-REG (root cause: stale matrix vs regression); B-REG-T fix (T-IGX-036-I): tests/qualification/ebh_5 243 passed / 0 failed",
       "GAP_CLASS": "INTEGRATION_CORRECTION"
     },
     {
@@ -4540,7 +4540,7 @@
       "AUDITED_SHA": "—",
       "EVIDENCE_PATH": ".tmp/proof/pdc-x-p2/replay.{log,xml}: host_01 20p/0f/0s",
       "ARCH_FREEZE_BLOCKER": "YES",
-      "FINAL_DISPOSITION": "OPEN — closure via PDC-P5-REG (root cause: stale gate vs regression)",
+      "FINAL_DISPOSITION": "OPEN — closure via PDC-P5-REG (root cause: stale gate vs regression); B-REG-T fix (T-IGX-036-I): tests/qualification/governance 403 passed / 0 failed (GR-12 fixture authority + runtime close)",
       "GAP_CLASS": "INTEGRATION_CORRECTION"
     },
     {
@@ -4566,7 +4566,7 @@
       "AUDITED_SHA": "—",
       "EVIDENCE_PATH": ".tmp/proof/pdc-x-p2/replay.{log,xml}: tenant_x 194p/0f/0s; governance 395p/8f/0s; prod_q 445p/0f/2s",
       "ARCH_FREEZE_BLOCKER": "YES",
-      "FINAL_DISPOSITION": "OPEN — closure via PDC-P5-REG (root cause: stale gate vs regression)",
+      "FINAL_DISPOSITION": "OPEN — closure via PDC-P5-REG (root cause: stale gate vs regression); B-REG-T fix (T-IGX-036-I): tests/qualification/governance 403 passed / 0 failed (GR-10 AST gates; 13 mutations rejected)",
       "GAP_CLASS": "INTEGRATION_CORRECTION"
     }
   ]

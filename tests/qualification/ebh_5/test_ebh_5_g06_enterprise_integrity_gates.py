@@ -24,6 +24,10 @@ from tests.qualification.ebh_5._replaceability_matrix import CROSS_LAYER_REPLACE
 from tests.qualification.ebh_5._roadmap_domain_na_evidence import roadmap_domain_na_validation_errors
 from tests.qualification.ebh_5._vendor_backend_inventory import VENDOR_BACKEND_DEPENDENCY_INVENTORY
 from tests.qualification.ebh_5._vendor_backend_types import ExtensibilityClassification
+from tests.qualification.ebh_7._ebh7_terminal_operator_authorization import (
+    fixed_substrate_rpl_concern_ids,
+    internal_rpl_concern_ids,
+)
 
 pytestmark = [pytest.mark.unit, pytest.mark.gate, pytest.mark.qualification]
 
@@ -71,12 +75,16 @@ def test_ebh5_g06_02_fixed_substrate_ratification_status_explicit() -> None:
 
 
 def test_ebh5_g06_03_matrix_md_lists_qualified_at_head() -> None:
+    # PDC-X B-REG-T (T-IGX-036-I): aligned with EBH-7 terminal reclassification d4937889f
     text = _MATRIX_MD.read_text(encoding="utf-8")
     assert "integration.key_value_cache" in text
-    matrix_qualified = sum(
-        1 for row in CROSS_LAYER_REPLACEABILITY_MATRIX if row.rpl_h == ExtensibilityClassification.REPLACEABLE_QUALIFIED
-    )
-    assert matrix_qualified == len(QUALIFIED_CONCERN_IDS) == 56
+    expected_qualified_at_head = QUALIFIED_CONCERN_IDS - internal_rpl_concern_ids() - fixed_substrate_rpl_concern_ids()
+    matrix_qualified = {
+        row.concern_id
+        for row in CROSS_LAYER_REPLACEABILITY_MATRIX
+        if row.rpl_h == ExtensibilityClassification.REPLACEABLE_QUALIFIED
+    }
+    assert matrix_qualified == expected_qualified_at_head
 
 
 def test_ebh5_g06_04_evidence_manifest_head_matches_git() -> None:
