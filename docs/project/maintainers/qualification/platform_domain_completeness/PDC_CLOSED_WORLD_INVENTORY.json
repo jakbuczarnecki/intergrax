@@ -1,0 +1,2415 @@
+{
+  "schema_version": "pdc-x-inventory.v1",
+  "domains": {
+    "PDC-D1": "AGENT-LIFECYCLE",
+    "PDC-D2": "CONTEXT-KNOWLEDGE",
+    "PDC-D3": "MODEL-RUNTIME",
+    "PDC-D4": "HOST-RUNTIME",
+    "PDC-D5": "EVALUATION",
+    "PDC-D6": "RUNTIME-SECURITY",
+    "PDC-D7": "BACKGROUND-SCHED",
+    "PDC-D8": "ARTIFACT-LIFECYCLE"
+  },
+  "excluded_vendored_marker": "docker/runtime-context",
+  "summary": {
+    "CONSUMER": {
+      "INSPECTED": 0,
+      "INDEX_ONLY": 30,
+      "UNINSPECTED": 0
+    },
+    "PDC-D1": {
+      "INSPECTED": 11,
+      "INDEX_ONLY": 0,
+      "UNINSPECTED": 13
+    },
+    "PDC-D2": {
+      "INSPECTED": 18,
+      "INDEX_ONLY": 0,
+      "UNINSPECTED": 17
+    },
+    "PDC-D3": {
+      "INSPECTED": 8,
+      "INDEX_ONLY": 0,
+      "UNINSPECTED": 17
+    },
+    "PDC-D4": {
+      "INSPECTED": 8,
+      "INDEX_ONLY": 0,
+      "UNINSPECTED": 5
+    },
+    "PDC-D5": {
+      "INSPECTED": 9,
+      "INDEX_ONLY": 0,
+      "UNINSPECTED": 2
+    },
+    "PDC-D6": {
+      "INSPECTED": 4,
+      "INDEX_ONLY": 0,
+      "UNINSPECTED": 1
+    },
+    "PDC-D7": {
+      "INSPECTED": 9,
+      "INDEX_ONLY": 0,
+      "UNINSPECTED": 0
+    },
+    "PDC-D8": {
+      "INSPECTED": 2,
+      "INDEX_ONLY": 0,
+      "UNINSPECTED": 1
+    },
+    "PLATFORM-FOUNDATION": {
+      "INSPECTED": 2,
+      "INDEX_ONLY": 195,
+      "UNINSPECTED": 0
+    }
+  },
+  "domain_links": {
+    "PDC-D1": {
+      "architecture": [
+        "docs/project/architecture/AGENT_CONTRACTS_AND_ASSEMBLY.md",
+        "docs/project/architecture/AGENT_DISTRIBUTION.md",
+        "docs/project/architecture/SKILLS.md",
+        "docs/project/architecture/PLATFORM_PLUGINS.md"
+      ],
+      "plans": [
+        "docs/project/maintainers/plans/AGENT_CONTRACTS_AND_ASSEMBLY.md",
+        "docs/project/maintainers/plans/AGENT_DISTRIBUTION.md",
+        "docs/project/maintainers/plans/SKILLS.md",
+        "docs/project/maintainers/plans/PLATFORM_PLUGINS.md"
+      ],
+      "semantic_owners": [
+        "intergrax/contracts/agent_contract_meta.py",
+        "intergrax/contracts/agent_lifecycle_state.py",
+        "intergrax/runtime/registry/agent_registry.py",
+        "intergrax/agent_distribution/installation_service.py",
+        "intergrax/agent_distribution/activation.py",
+        "intergrax/agent_distribution/runtime_revision.py",
+        "intergrax/skills/host_lifecycle.py"
+      ],
+      "composition_owners": [
+        "intergrax/agent_distribution/admin_service.py"
+      ],
+      "qualification_suites": [
+        "tests/qualification/plug_03",
+        "tests/qualification/plug_final"
+      ],
+      "prior_certifications": {
+        "SKILL-X": "552e379845a9512c275f3ebe520ac51767c97cf8"
+      }
+    },
+    "PDC-D2": {
+      "architecture": [
+        "docs/project/architecture/MEMORY.md",
+        "docs/project/architecture/RAG.md",
+        "docs/project/architecture/CONTEXT_ENGINEERING.md",
+        "docs/project/architecture/UNIFIED_CONTEXT_LIFECYCLE.md",
+        "docs/project/capabilities/architecture/TOKEN_OPTIMIZATION.md"
+      ],
+      "plans": [
+        "docs/project/maintainers/plans/MEMORY.md",
+        "docs/project/maintainers/plans/RAG.md",
+        "docs/project/maintainers/plans/CONTEXT_ENGINEERING.md",
+        "docs/project/maintainers/plans/UNIFIED_CONTEXT_LIFECYCLE.md",
+        "docs/project/capabilities/plan/TOKEN_OPTIMIZATION.md"
+      ],
+      "semantic_owners": [
+        "intergrax/context/planner.py",
+        "intergrax/context/budget/resolver.py",
+        "intergrax/runtime/nexus/context/context_compiler.py",
+        "intergrax/memory/contracts/memory_control.py",
+        "intergrax/runtime/context_lifecycle/contracts.py"
+      ],
+      "composition_owners": [
+        "intergrax/memory/default_memory_control_plane.py"
+      ],
+      "qualification_suites": [
+        "tests/qualification/ce_01",
+        "tests/qualification/ce_02",
+        "tests/qualification/memory_behavior"
+      ],
+      "prior_certifications": {
+        "EBH-2G": "ba41ef7592c07df04d75a15cd2efc36fe86bd041",
+        "EBH-2H": "86fafaa24ccdfb47faba44ddcec1b6eaec5bf195",
+        "HARNESS-RESIDUAL/CE-01": "a8d47a6396c3e5e73a979be74429ed59a93e1551",
+        "TENANT-X": "5ccb72fccd4e3820ebdc9c18008afe6f7d59f558"
+      }
+    },
+    "PDC-D3": {
+      "architecture": [
+        "docs/project/architecture/LLM_ADAPTERS.md",
+        "docs/project/architecture/OLLAMA_PROVIDER_CLASSIFICATION.md"
+      ],
+      "plans": [
+        "docs/project/maintainers/plans/LLM_ADAPTERS.md"
+      ],
+      "semantic_owners": [
+        "intergrax/llm_adapters/contracts/llm_adapter.py",
+        "intergrax/llm_adapters/llm_provider_registry.py",
+        "intergrax/llm_adapters/registry/model_catalog.py",
+        "intergrax/llm_adapters/registry/model_router.py",
+        "intergrax/llm_adapters/registry/failover_adapter.py",
+        "intergrax/llm_adapters/tracking/llm_usage_track.py"
+      ],
+      "composition_owners": [
+        "intergrax/llm_adapters/routing/composition.py"
+      ],
+      "qualification_suites": [
+        "tests/qualification/ebh_5"
+      ],
+      "prior_certifications": {
+        "EBH-2E": "6fa75172468461dc084a2221a5fdff6f23c1fa1c",
+        "EBH-5": "33ecf19cc020b112d9e586c87b49e819202f5d6d"
+      }
+    },
+    "PDC-D4": {
+      "architecture": [
+        "docs/project/architecture/APPLICATION_HOSTING.md",
+        "docs/project/architecture/TIER3_APPLICATION_ENVIRONMENT.md"
+      ],
+      "plans": [
+        "docs/project/maintainers/plans/APPLICATION_HOSTING.md",
+        "docs/project/maintainers/plans/TIER3_APPLICATION_ENVIRONMENT.md"
+      ],
+      "semantic_owners": [
+        "intergrax/hosting/contracts/profile.py",
+        "intergrax/hosting/engine/engine.py",
+        "intergrax/hosting/engine/health.py",
+        "intergrax/hosting/shutdown.py",
+        "intergrax/hosting/supervisor/supervisor.py",
+        "intergrax/applications/contracts/environment_profile/root.py"
+      ],
+      "composition_owners": [
+        "intergrax/hosting/runner.py",
+        "intergrax/applications/_shared/environment_wiring.py"
+      ],
+      "qualification_suites": [
+        "tests/qualification/host_01"
+      ],
+      "prior_certifications": {
+        "HARNESS-W7/HOST-01": "5d5442dae7769671a7532a973428c8203b492ec6"
+      }
+    },
+    "PDC-D5": {
+      "architecture": [
+        "docs/project/architecture/EXPERIMENTATION_AND_DEVELOPER_EXPERIENCE.md",
+        "docs/project/architecture/DECISION_VERIFICATION.md"
+      ],
+      "plans": [
+        "docs/project/maintainers/plans/EXPERIMENTATION_AND_DEVELOPER_EXPERIENCE.md",
+        "docs/project/maintainers/plans/DECISION_VERIFICATION.md"
+      ],
+      "semantic_owners": [
+        "intergrax/eval/eval_result.py",
+        "intergrax/eval/eval_runner.py",
+        "intergrax/runtime/architecture/evaluation_assets.py",
+        "intergrax/runtime/architecture/agent_promotion.py",
+        "intergrax/runtime/evidence/eval_evidence_contracts.py"
+      ],
+      "composition_owners": [
+        "intergrax/applications/_shared/evaluation_wiring.py"
+      ],
+      "qualification_suites": [
+        "tests/qualification/control_planes"
+      ],
+      "prior_certifications": {
+        "CTRL-X": "318a4d835534ef5c48575f4649551c957dacd8ea"
+      }
+    },
+    "PDC-D6": {
+      "architecture": [
+        "docs/project/architecture/GOVERNED_EXECUTION.md",
+        "docs/project/maintainers/architecture/EXECUTION_ENGINE_SECURITY_BOUNDARY_AND_THREAT_MODEL.md"
+      ],
+      "plans": [
+        "docs/project/maintainers/plans/GOVERNED_EXECUTION.md"
+      ],
+      "semantic_owners": [
+        "intergrax/runtime/policy/policy_engine.py",
+        "intergrax/contracts/delegation_authority.py",
+        "intergrax/integrations/contracts/credential.py",
+        "intergrax/integrations/credentials/broker.py",
+        "intergrax/runtime/sandbox/isolation_gate.py",
+        "intergrax/runtime/security/defense_plugin.py"
+      ],
+      "composition_owners": [
+        "intergrax/applications/_shared/security_assembly_resolver.py",
+        "intergrax/applications/_shared/critical_action_signing_wiring.py"
+      ],
+      "qualification_suites": [
+        "tests/qualification/tenant_x",
+        "tests/qualification/governance",
+        "tests/qualification/prod_q"
+      ],
+      "prior_certifications": {
+        "TENANT-X": "5ccb72fccd4e3820ebdc9c18008afe6f7d59f558",
+        "CTRL-X": "318a4d835534ef5c48575f4649551c957dacd8ea"
+      }
+    },
+    "PDC-D7": {
+      "architecture": [
+        "docs/project/architecture/BACKGROUND_TASKS.md"
+      ],
+      "plans": [
+        "docs/project/maintainers/plans/BACKGROUND_TASKS.md"
+      ],
+      "semantic_owners": [
+        "intergrax/queueing/contracts/task_queue.py",
+        "intergrax/queueing/worker/registry.py",
+        "intergrax/background_tasks/registry.py",
+        "intergrax/runtime/background_execution/bootstrap.py",
+        "intergrax/runtime/long_running/scheduler.py",
+        "intergrax/runtime/long_running/scheduled_resume.py"
+      ],
+      "composition_owners": [
+        "intergrax/runtime/long_running/wiring.py",
+        "intergrax/queueing/registry.py"
+      ],
+      "qualification_suites": [
+        "tests/qualification/bg_01",
+        "tests/qualification/sched_01"
+      ],
+      "prior_certifications": {
+        "HARNESS-W8/BG-01": "3a9b58e6fa1e14ddc9786bd9a447a1d76552d196",
+        "HARNESS-RESIDUAL/SCHED-01": "433ff5fb97262c4bad84ea2a4173dc3711d7aa08",
+        "TOOL-LIFE-X": "1548640708c850b3fbfca3f2db0e5ecfee4274dd"
+      }
+    },
+    "PDC-D8": {
+      "architecture": [
+        "docs/project/architecture/COLLABORATIVE_WORK.md"
+      ],
+      "plans": [
+        "docs/project/maintainers/plans/COLLABORATIVE_WORK.md"
+      ],
+      "semantic_owners": [
+        "intergrax/contracts/collaborative_work.py",
+        "intergrax/collaborative_work/content_storage.py",
+        "intergrax/contracts/artifact_ref.py",
+        "intergrax/contracts/task_artifacts.py",
+        "intergrax/applications/contracts/application_artifacts.py",
+        "intergrax/runtime/nexus/artifacts/store_base.py",
+        "intergrax/runtime/context_lifecycle/repository.py"
+      ],
+      "composition_owners": [
+        "intergrax/runtime/execution/run_artifact_bundle_composition.py",
+        "intergrax/runtime/nexus/orchestration/run_artifact_bundle_builder.py"
+      ],
+      "qualification_suites": [],
+      "prior_certifications": {}
+    }
+  },
+  "items": [
+    {
+      "kind": "consumer",
+      "path": "agents/boundary_demo",
+      "category": "CONSUMER",
+      "status": "INDEX_ONLY"
+    },
+    {
+      "kind": "consumer",
+      "path": "agents/dispute_analyst",
+      "category": "CONSUMER",
+      "status": "INDEX_ONLY"
+    },
+    {
+      "kind": "consumer",
+      "path": "agents/dispute_intake",
+      "category": "CONSUMER",
+      "status": "INDEX_ONLY"
+    },
+    {
+      "kind": "consumer",
+      "path": "agents/dispute_scenario",
+      "category": "CONSUMER",
+      "status": "INDEX_ONLY"
+    },
+    {
+      "kind": "consumer",
+      "path": "agents/dispute_strategist",
+      "category": "CONSUMER",
+      "status": "INDEX_ONLY"
+    },
+    {
+      "kind": "consumer",
+      "path": "agents/echo",
+      "category": "CONSUMER",
+      "status": "INDEX_ONLY"
+    },
+    {
+      "kind": "consumer",
+      "path": "agents/external_contractor_adapter",
+      "category": "CONSUMER",
+      "status": "INDEX_ONLY"
+    },
+    {
+      "kind": "consumer",
+      "path": "agents/intergrax_assistant",
+      "category": "CONSUMER",
+      "status": "INDEX_ONLY"
+    },
+    {
+      "kind": "consumer",
+      "path": "agents/lab",
+      "category": "CONSUMER",
+      "status": "INDEX_ONLY"
+    },
+    {
+      "kind": "consumer",
+      "path": "agents/legal",
+      "category": "CONSUMER",
+      "status": "INDEX_ONLY"
+    },
+    {
+      "kind": "consumer",
+      "path": "agents/local_indexer",
+      "category": "CONSUMER",
+      "status": "INDEX_ONLY"
+    },
+    {
+      "kind": "consumer",
+      "path": "agents/local_search",
+      "category": "CONSUMER",
+      "status": "INDEX_ONLY"
+    },
+    {
+      "kind": "consumer",
+      "path": "agents/local_synthesizer",
+      "category": "CONSUMER",
+      "status": "INDEX_ONLY"
+    },
+    {
+      "kind": "consumer",
+      "path": "agents/model_routing_qualifier",
+      "category": "CONSUMER",
+      "status": "INDEX_ONLY"
+    },
+    {
+      "kind": "consumer",
+      "path": "agents/organization_worker",
+      "category": "CONSUMER",
+      "status": "INDEX_ONLY"
+    },
+    {
+      "kind": "consumer",
+      "path": "agents/problem_radar",
+      "category": "CONSUMER",
+      "status": "INDEX_ONLY"
+    },
+    {
+      "kind": "consumer",
+      "path": "agents/research",
+      "category": "CONSUMER",
+      "status": "INDEX_ONLY"
+    },
+    {
+      "kind": "consumer",
+      "path": "agents/signoff_probe",
+      "category": "CONSUMER",
+      "status": "INDEX_ONLY"
+    },
+    {
+      "kind": "consumer",
+      "path": "agents/tool_selection_qualifier",
+      "category": "CONSUMER",
+      "status": "INDEX_ONLY"
+    },
+    {
+      "kind": "consumer",
+      "path": "agents/vendor_discovery",
+      "category": "CONSUMER",
+      "status": "INDEX_ONLY"
+    },
+    {
+      "kind": "consumer",
+      "path": "agents/web_search_qualifier",
+      "category": "CONSUMER",
+      "status": "INDEX_ONLY"
+    },
+    {
+      "kind": "consumer",
+      "path": "applications/attestation_demo",
+      "category": "CONSUMER",
+      "status": "INDEX_ONLY"
+    },
+    {
+      "kind": "consumer",
+      "path": "applications/dispute_sim_application",
+      "category": "CONSUMER",
+      "status": "INDEX_ONLY"
+    },
+    {
+      "kind": "consumer",
+      "path": "applications/governed_contractor_application",
+      "category": "CONSUMER",
+      "status": "INDEX_ONLY"
+    },
+    {
+      "kind": "consumer",
+      "path": "applications/intergrax_assistant_application",
+      "category": "CONSUMER",
+      "status": "INDEX_ONLY"
+    },
+    {
+      "kind": "consumer",
+      "path": "applications/lab_application",
+      "category": "CONSUMER",
+      "status": "INDEX_ONLY"
+    },
+    {
+      "kind": "consumer",
+      "path": "applications/legal_application",
+      "category": "CONSUMER",
+      "status": "INDEX_ONLY"
+    },
+    {
+      "kind": "consumer",
+      "path": "applications/local_workspace_application",
+      "category": "CONSUMER",
+      "status": "INDEX_ONLY"
+    },
+    {
+      "kind": "consumer",
+      "path": "applications/poc_template_application",
+      "category": "CONSUMER",
+      "status": "INDEX_ONLY"
+    },
+    {
+      "kind": "consumer",
+      "path": "applications/research_application",
+      "category": "CONSUMER",
+      "status": "INDEX_ONLY"
+    },
+    {
+      "kind": "document",
+      "path": "docs/project/architecture/ADAPTIVE_HARNESS_INTELLIGENCE.md",
+      "category": "PLATFORM-FOUNDATION",
+      "status": "INDEX_ONLY"
+    },
+    {
+      "kind": "document",
+      "path": "docs/project/architecture/AGENT_CONTRACTS_AND_ASSEMBLY.md",
+      "category": "PDC-D1",
+      "status": "INSPECTED"
+    },
+    {
+      "kind": "document",
+      "path": "docs/project/architecture/AGENT_DISTRIBUTION.md",
+      "category": "PDC-D1",
+      "status": "INSPECTED"
+    },
+    {
+      "kind": "document",
+      "path": "docs/project/architecture/APPLICATION_DEPENDENCY_MODEL.md",
+      "category": "PDC-D4",
+      "status": "UNINSPECTED"
+    },
+    {
+      "kind": "document",
+      "path": "docs/project/architecture/APPLICATION_HOSTING.md",
+      "category": "PDC-D4",
+      "status": "INSPECTED"
+    },
+    {
+      "kind": "document",
+      "path": "docs/project/architecture/APPLICATION_RUNTIME_GRAPH_MODEL.md",
+      "category": "PDC-D4",
+      "status": "UNINSPECTED"
+    },
+    {
+      "kind": "document",
+      "path": "docs/project/architecture/ARCHITECTURE_OVERVIEW.md",
+      "category": "PLATFORM-FOUNDATION",
+      "status": "INDEX_ONLY"
+    },
+    {
+      "kind": "document",
+      "path": "docs/project/architecture/AUTONOMOUS_WORK.md",
+      "category": "PLATFORM-FOUNDATION",
+      "status": "INDEX_ONLY"
+    },
+    {
+      "kind": "document",
+      "path": "docs/project/architecture/BACKGROUND_TASKS.md",
+      "category": "PDC-D7",
+      "status": "INSPECTED"
+    },
+    {
+      "kind": "document",
+      "path": "docs/project/architecture/CAPABILITY_CATALOG_AND_DISCOVERY.md",
+      "category": "PLATFORM-FOUNDATION",
+      "status": "INDEX_ONLY"
+    },
+    {
+      "kind": "document",
+      "path": "docs/project/architecture/CAPABILITY_MARKETPLACE_ENGINE.md",
+      "category": "PLATFORM-FOUNDATION",
+      "status": "INDEX_ONLY"
+    },
+    {
+      "kind": "document",
+      "path": "docs/project/architecture/CODE_CRAFT.md",
+      "category": "PLATFORM-FOUNDATION",
+      "status": "INDEX_ONLY"
+    },
+    {
+      "kind": "document",
+      "path": "docs/project/architecture/COLLABORATIVE_WORK.md",
+      "category": "PDC-D8",
+      "status": "INSPECTED"
+    },
+    {
+      "kind": "document",
+      "path": "docs/project/architecture/CONTEXT_ENGINEERING.md",
+      "category": "PDC-D2",
+      "status": "INSPECTED"
+    },
+    {
+      "kind": "document",
+      "path": "docs/project/architecture/CONVERSATION_CHANNEL_CONTRACT.md",
+      "category": "PLATFORM-FOUNDATION",
+      "status": "INDEX_ONLY"
+    },
+    {
+      "kind": "document",
+      "path": "docs/project/architecture/DECISION_APPROVAL_GOVERNANCE.md",
+      "category": "PLATFORM-FOUNDATION",
+      "status": "INDEX_ONLY"
+    },
+    {
+      "kind": "document",
+      "path": "docs/project/architecture/DECISION_DELIBERATION.md",
+      "category": "PLATFORM-FOUNDATION",
+      "status": "INDEX_ONLY"
+    },
+    {
+      "kind": "document",
+      "path": "docs/project/architecture/DECISION_SYSTEM.md",
+      "category": "PLATFORM-FOUNDATION",
+      "status": "INDEX_ONLY"
+    },
+    {
+      "kind": "document",
+      "path": "docs/project/architecture/DECISION_SYSTEM_ARCHITECTURE.md",
+      "category": "PLATFORM-FOUNDATION",
+      "status": "INDEX_ONLY"
+    },
+    {
+      "kind": "document",
+      "path": "docs/project/architecture/DECISION_VERIFICATION.md",
+      "category": "PDC-D5",
+      "status": "INSPECTED"
+    },
+    {
+      "kind": "document",
+      "path": "docs/project/architecture/DEPENDENCY_OWNERSHIP.md",
+      "category": "PLATFORM-FOUNDATION",
+      "status": "INDEX_ONLY"
+    },
+    {
+      "kind": "document",
+      "path": "docs/project/architecture/DIAGNOSTICS.md",
+      "category": "PLATFORM-FOUNDATION",
+      "status": "INDEX_ONLY"
+    },
+    {
+      "kind": "document",
+      "path": "docs/project/architecture/E2E_SCENARIO_FRAMEWORK_AUDIT.md",
+      "category": "PDC-D5",
+      "status": "UNINSPECTED"
+    },
+    {
+      "kind": "document",
+      "path": "docs/project/architecture/ELASTIC_CAPACITY_AND_SCALING.md",
+      "category": "PLATFORM-FOUNDATION",
+      "status": "INDEX_ONLY"
+    },
+    {
+      "kind": "document",
+      "path": "docs/project/architecture/ENTERPRISE_RELIABILITY_LAYER.md",
+      "category": "PLATFORM-FOUNDATION",
+      "status": "INDEX_ONLY"
+    },
+    {
+      "kind": "document",
+      "path": "docs/project/architecture/ENTERPRISE_RUNTIME_INTELLIGENCE.md",
+      "category": "PLATFORM-FOUNDATION",
+      "status": "INDEX_ONLY"
+    },
+    {
+      "kind": "document",
+      "path": "docs/project/architecture/ERL_ADMISSION_BOUNDARY.md",
+      "category": "PLATFORM-FOUNDATION",
+      "status": "INDEX_ONLY"
+    },
+    {
+      "kind": "document",
+      "path": "docs/project/architecture/ERL_DIAG_001_EXTERNAL_EFFECT_RELIABILITY_OPERATOR_DIAGNOSTICS.md",
+      "category": "PLATFORM-FOUNDATION",
+      "status": "INDEX_ONLY"
+    },
+    {
+      "kind": "document",
+      "path": "docs/project/architecture/ERL_EVIDENCE_EVALUATION.md",
+      "category": "PLATFORM-FOUNDATION",
+      "status": "INDEX_ONLY"
+    },
+    {
+      "kind": "document",
+      "path": "docs/project/architecture/ERL_QUAL_004_DIAGNOSTICS_PLATFORM_GAP.md",
+      "category": "PLATFORM-FOUNDATION",
+      "status": "INDEX_ONLY"
+    },
+    {
+      "kind": "document",
+      "path": "docs/project/architecture/ERL_QUAL_004_PLATFORM_CAPABILITY_GAP_ANALYSIS.md",
+      "category": "PLATFORM-FOUNDATION",
+      "status": "INDEX_ONLY"
+    },
+    {
+      "kind": "document",
+      "path": "docs/project/architecture/ERL_QUAL_004_SCENARIO_QUALITY_GATE.md",
+      "category": "PLATFORM-FOUNDATION",
+      "status": "INDEX_ONLY"
+    },
+    {
+      "kind": "document",
+      "path": "docs/project/architecture/ERL_RECONCILIATION_PLUGIN_INTEGRATION.md",
+      "category": "PLATFORM-FOUNDATION",
+      "status": "INDEX_ONLY"
+    },
+    {
+      "kind": "document",
+      "path": "docs/project/architecture/EXPERIMENTATION_AND_DEVELOPER_EXPERIENCE.md",
+      "category": "PDC-D5",
+      "status": "INSPECTED"
+    },
+    {
+      "kind": "document",
+      "path": "docs/project/architecture/EXTERNAL_EFFECT_CONTRACTS.md",
+      "category": "PLATFORM-FOUNDATION",
+      "status": "INDEX_ONLY"
+    },
+    {
+      "kind": "document",
+      "path": "docs/project/architecture/GOVERNED_EXECUTION.md",
+      "category": "PLATFORM-FOUNDATION",
+      "status": "INDEX_ONLY"
+    },
+    {
+      "kind": "document",
+      "path": "docs/project/architecture/INTEGRATIONS.md",
+      "category": "PLATFORM-FOUNDATION",
+      "status": "INDEX_ONLY"
+    },
+    {
+      "kind": "document",
+      "path": "docs/project/architecture/INTERGRAX_ARCHITECTURE_PRINCIPLES.md",
+      "category": "PLATFORM-FOUNDATION",
+      "status": "INSPECTED"
+    },
+    {
+      "kind": "document",
+      "path": "docs/project/architecture/KNOWLEDGE_SOURCE_INTEGRATIONS.md",
+      "category": "PDC-D2",
+      "status": "UNINSPECTED"
+    },
+    {
+      "kind": "document",
+      "path": "docs/project/architecture/LLM_ADAPTERS.md",
+      "category": "PDC-D3",
+      "status": "INSPECTED"
+    },
+    {
+      "kind": "document",
+      "path": "docs/project/architecture/MEMORY.md",
+      "category": "PDC-D2",
+      "status": "INSPECTED"
+    },
+    {
+      "kind": "document",
+      "path": "docs/project/architecture/MEMORY_ARCHITECTURE.md",
+      "category": "PDC-D2",
+      "status": "UNINSPECTED"
+    },
+    {
+      "kind": "document",
+      "path": "docs/project/architecture/MEMORY_ARCHITECTURE_DIAGRAMS.md",
+      "category": "PDC-D2",
+      "status": "UNINSPECTED"
+    },
+    {
+      "kind": "document",
+      "path": "docs/project/architecture/MEMORY_PROJECTION_EXTENSION_GUIDE.md",
+      "category": "PDC-D2",
+      "status": "UNINSPECTED"
+    },
+    {
+      "kind": "document",
+      "path": "docs/project/architecture/MEMORY_PROVIDER_EXTENSION_GUIDE.md",
+      "category": "PDC-D2",
+      "status": "UNINSPECTED"
+    },
+    {
+      "kind": "document",
+      "path": "docs/project/architecture/MODALITY.md",
+      "category": "PDC-D3",
+      "status": "UNINSPECTED"
+    },
+    {
+      "kind": "document",
+      "path": "docs/project/architecture/NEXUS_EXECUTION_FLOW.md",
+      "category": "PLATFORM-FOUNDATION",
+      "status": "INDEX_ONLY"
+    },
+    {
+      "kind": "document",
+      "path": "docs/project/architecture/OBSERVABILITY.md",
+      "category": "PLATFORM-FOUNDATION",
+      "status": "INDEX_ONLY"
+    },
+    {
+      "kind": "document",
+      "path": "docs/project/architecture/OLLAMA_PROVIDER_CLASSIFICATION.md",
+      "category": "PDC-D3",
+      "status": "INSPECTED"
+    },
+    {
+      "kind": "document",
+      "path": "docs/project/architecture/ORCHESTRATION.md",
+      "category": "PLATFORM-FOUNDATION",
+      "status": "INDEX_ONLY"
+    },
+    {
+      "kind": "document",
+      "path": "docs/project/architecture/PLATFORM_FOUNDATION.md",
+      "category": "PLATFORM-FOUNDATION",
+      "status": "INDEX_ONLY"
+    },
+    {
+      "kind": "document",
+      "path": "docs/project/architecture/PLATFORM_PLUGINS.md",
+      "category": "PDC-D1",
+      "status": "UNINSPECTED"
+    },
+    {
+      "kind": "document",
+      "path": "docs/project/architecture/PROOF_RECEIPTS.md",
+      "category": "PLATFORM-FOUNDATION",
+      "status": "INDEX_ONLY"
+    },
+    {
+      "kind": "document",
+      "path": "docs/project/architecture/RAG.md",
+      "category": "PDC-D2",
+      "status": "INSPECTED"
+    },
+    {
+      "kind": "document",
+      "path": "docs/project/architecture/REASONING_AND_COGNITION.md",
+      "category": "PLATFORM-FOUNDATION",
+      "status": "INDEX_ONLY"
+    },
+    {
+      "kind": "document",
+      "path": "docs/project/architecture/RECONCILIATION.md",
+      "category": "PLATFORM-FOUNDATION",
+      "status": "INDEX_ONLY"
+    },
+    {
+      "kind": "document",
+      "path": "docs/project/architecture/RECOVERY_AND_COMPENSATION.md",
+      "category": "PLATFORM-FOUNDATION",
+      "status": "INDEX_ONLY"
+    },
+    {
+      "kind": "document",
+      "path": "docs/project/architecture/RELIABILITY_FAILURE_AND_HITL.md",
+      "category": "PLATFORM-FOUNDATION",
+      "status": "INDEX_ONLY"
+    },
+    {
+      "kind": "document",
+      "path": "docs/project/architecture/SCENARIO_1_P0_B_D1_AUTHORITATIVE_DECISION_RESULT_EXPOSURE.md",
+      "category": "PLATFORM-FOUNDATION",
+      "status": "INDEX_ONLY"
+    },
+    {
+      "kind": "document",
+      "path": "docs/project/architecture/SKILLS.md",
+      "category": "PDC-D1",
+      "status": "UNINSPECTED"
+    },
+    {
+      "kind": "document",
+      "path": "docs/project/architecture/TIER3_APPLICATION_ENVIRONMENT.md",
+      "category": "PDC-D4",
+      "status": "INSPECTED"
+    },
+    {
+      "kind": "document",
+      "path": "docs/project/architecture/TOOLS.md",
+      "category": "PLATFORM-FOUNDATION",
+      "status": "INDEX_ONLY"
+    },
+    {
+      "kind": "document",
+      "path": "docs/project/architecture/UNCERTAINTY_MANAGEMENT.md",
+      "category": "PLATFORM-FOUNDATION",
+      "status": "INDEX_ONLY"
+    },
+    {
+      "kind": "document",
+      "path": "docs/project/architecture/UNIFIED_CONTEXT_LIFECYCLE.md",
+      "category": "PDC-D2",
+      "status": "INSPECTED"
+    },
+    {
+      "kind": "document",
+      "path": "docs/project/architecture/UNIFIED_EXECUTION_ARCHITECTURE.md",
+      "category": "PLATFORM-FOUNDATION",
+      "status": "INDEX_ONLY"
+    },
+    {
+      "kind": "document",
+      "path": "docs/project/architecture/UNIFIED_EXECUTION_ARCHITECTURE_DIAGRAMS.md",
+      "category": "PLATFORM-FOUNDATION",
+      "status": "INDEX_ONLY"
+    },
+    {
+      "kind": "document",
+      "path": "docs/project/architecture/UNIFIED_EXECUTION_IMPLEMENTATION_MAP.md",
+      "category": "PLATFORM-FOUNDATION",
+      "status": "INDEX_ONLY"
+    },
+    {
+      "kind": "document",
+      "path": "docs/project/architecture/UNIFIED_EXECUTION_IMPLEMENTATION_READINESS.md",
+      "category": "PLATFORM-FOUNDATION",
+      "status": "INDEX_ONLY"
+    },
+    {
+      "kind": "document",
+      "path": "docs/project/architecture/UNIFIED_EXECUTION_RUNTIME.md",
+      "category": "PLATFORM-FOUNDATION",
+      "status": "INDEX_ONLY"
+    },
+    {
+      "kind": "document",
+      "path": "docs/project/architecture/VENDOR_KNOWLEDGE_LIVE_CAPABILITY_ROLLOUT.md",
+      "category": "PLATFORM-FOUNDATION",
+      "status": "INDEX_ONLY"
+    },
+    {
+      "kind": "document",
+      "path": "docs/project/architecture/VENDOR_KNOWLEDGE_PUBLICATION_PERMIT.md",
+      "category": "PLATFORM-FOUNDATION",
+      "status": "INDEX_ONLY"
+    },
+    {
+      "kind": "document",
+      "path": "docs/project/architecture/WEB_CONTENT_CAPTURE.md",
+      "category": "PLATFORM-FOUNDATION",
+      "status": "INDEX_ONLY"
+    },
+    {
+      "kind": "document",
+      "path": "docs/project/architecture/intergrax_runtime_architecture.md",
+      "category": "PLATFORM-FOUNDATION",
+      "status": "INSPECTED"
+    },
+    {
+      "kind": "document",
+      "path": "docs/project/capabilities/README.md",
+      "category": "PLATFORM-FOUNDATION",
+      "status": "INDEX_ONLY"
+    },
+    {
+      "kind": "document",
+      "path": "docs/project/capabilities/TOKEN_OPTIMIZATION_CLAIMS.md",
+      "category": "PDC-D2",
+      "status": "INSPECTED"
+    },
+    {
+      "kind": "document",
+      "path": "docs/project/capabilities/architecture/COMPAT_X_CONTRACT_SCHEMA_EVOLUTION.md",
+      "category": "PLATFORM-FOUNDATION",
+      "status": "INDEX_ONLY"
+    },
+    {
+      "kind": "document",
+      "path": "docs/project/capabilities/architecture/EVOL_X_CHANGE_SAFETY.md",
+      "category": "PLATFORM-FOUNDATION",
+      "status": "INDEX_ONLY"
+    },
+    {
+      "kind": "document",
+      "path": "docs/project/capabilities/architecture/LANGCHAIN_INDEPENDENCE.md",
+      "category": "PDC-D3",
+      "status": "UNINSPECTED"
+    },
+    {
+      "kind": "document",
+      "path": "docs/project/capabilities/architecture/MCP_SERVER.md",
+      "category": "PLATFORM-FOUNDATION",
+      "status": "INDEX_ONLY"
+    },
+    {
+      "kind": "document",
+      "path": "docs/project/capabilities/architecture/MULTIPLAYER_AI.md",
+      "category": "PLATFORM-FOUNDATION",
+      "status": "INDEX_ONLY"
+    },
+    {
+      "kind": "document",
+      "path": "docs/project/capabilities/architecture/PROOF_DATA_PACKAGE_DISTRIBUTION.md",
+      "category": "PLATFORM-FOUNDATION",
+      "status": "INDEX_ONLY"
+    },
+    {
+      "kind": "document",
+      "path": "docs/project/capabilities/architecture/TOKEN_OPTIMIZATION.md",
+      "category": "PDC-D2",
+      "status": "INSPECTED"
+    },
+    {
+      "kind": "document",
+      "path": "docs/project/capabilities/architecture/TOKEN_OPTIMIZATION_CACHE_PREFIX_STABILIZATION.md",
+      "category": "PDC-D2",
+      "status": "UNINSPECTED"
+    },
+    {
+      "kind": "document",
+      "path": "docs/project/capabilities/architecture/satellites/LANGCHAIN_COMPATIBILITY_INSTALLATION_GATE.md",
+      "category": "PDC-D3",
+      "status": "UNINSPECTED"
+    },
+    {
+      "kind": "document",
+      "path": "docs/project/capabilities/architecture/satellites/LANGCHAIN_COMPATIBILITY_STABILITY_FORENSICS.md",
+      "category": "PDC-D3",
+      "status": "UNINSPECTED"
+    },
+    {
+      "kind": "document",
+      "path": "docs/project/capabilities/architecture/satellites/LANGCHAIN_FREE_CORE_INSTALLATION_GATE.md",
+      "category": "PDC-D3",
+      "status": "UNINSPECTED"
+    },
+    {
+      "kind": "document",
+      "path": "docs/project/capabilities/architecture/satellites/LANGCHAIN_INDEPENDENCE_CLOSEOUT.md",
+      "category": "PDC-D3",
+      "status": "UNINSPECTED"
+    },
+    {
+      "kind": "document",
+      "path": "docs/project/capabilities/architecture/satellites/LANGCHAIN_INDEPENDENCE_FINAL_SYSTEM_GATE.md",
+      "category": "PDC-D3",
+      "status": "UNINSPECTED"
+    },
+    {
+      "kind": "document",
+      "path": "docs/project/capabilities/architecture/satellites/LANGCHAIN_INDEPENDENCE_PROGRAM_CLOSEOUT.md",
+      "category": "PDC-D3",
+      "status": "UNINSPECTED"
+    },
+    {
+      "kind": "document",
+      "path": "docs/project/capabilities/architecture/satellites/LANGCHAIN_INDEPENDENCE_dependency_inventory.md",
+      "category": "PDC-D3",
+      "status": "UNINSPECTED"
+    },
+    {
+      "kind": "document",
+      "path": "docs/project/capabilities/architecture/satellites/LANGCHAIN_INDEPENDENCE_native_document_contract.md",
+      "category": "PDC-D3",
+      "status": "UNINSPECTED"
+    },
+    {
+      "kind": "document",
+      "path": "docs/project/capabilities/architecture/satellites/LANGGRAPH_LEGACY_RETIREMENT_REVIEW.md",
+      "category": "PDC-D3",
+      "status": "UNINSPECTED"
+    },
+    {
+      "kind": "document",
+      "path": "docs/project/capabilities/architecture/satellites/NATIVE_OLLAMA_POST_CUTOVER_REGRESSION_CHECKPOINT.md",
+      "category": "PDC-D3",
+      "status": "INSPECTED"
+    },
+    {
+      "kind": "document",
+      "path": "docs/project/capabilities/architecture/satellites/OLLAMA_NATIVE_ADAPTER_LIVE_PARITY_EVIDENCE.md",
+      "category": "PDC-D3",
+      "status": "INSPECTED"
+    },
+    {
+      "kind": "document",
+      "path": "docs/project/capabilities/architecture/satellites/OLLAMA_NATIVE_ADAPTER_PARITY_MATRIX.md",
+      "category": "PDC-D3",
+      "status": "INSPECTED"
+    },
+    {
+      "kind": "document",
+      "path": "docs/project/capabilities/architecture/satellites/POST_LCI_FINAL_QUALITY_AND_DEPENDENCY_AUDIT.md",
+      "category": "PDC-D3",
+      "status": "UNINSPECTED"
+    },
+    {
+      "kind": "document",
+      "path": "docs/project/capabilities/architecture/satellites/RAG_POST_LCI_5B_REGRESSION_CHECKPOINT.md",
+      "category": "PDC-D2",
+      "status": "UNINSPECTED"
+    },
+    {
+      "kind": "document",
+      "path": "docs/project/capabilities/architecture/satellites/TOKEN_OPTIMIZATION_domain_architecture_cross_references.md",
+      "category": "PDC-D2",
+      "status": "UNINSPECTED"
+    },
+    {
+      "kind": "document",
+      "path": "docs/project/capabilities/plan/EVOL_X_CHANGE_SAFETY.md",
+      "category": "PLATFORM-FOUNDATION",
+      "status": "INDEX_ONLY"
+    },
+    {
+      "kind": "document",
+      "path": "docs/project/capabilities/plan/LANGCHAIN_INDEPENDENCE.md",
+      "category": "PDC-D3",
+      "status": "UNINSPECTED"
+    },
+    {
+      "kind": "document",
+      "path": "docs/project/capabilities/plan/MCP_SERVER.md",
+      "category": "PLATFORM-FOUNDATION",
+      "status": "INDEX_ONLY"
+    },
+    {
+      "kind": "document",
+      "path": "docs/project/capabilities/plan/MULTIPLAYER_AI.md",
+      "category": "PLATFORM-FOUNDATION",
+      "status": "INDEX_ONLY"
+    },
+    {
+      "kind": "document",
+      "path": "docs/project/capabilities/plan/TOKEN_OPTIMIZATION.md",
+      "category": "PDC-D2",
+      "status": "INSPECTED"
+    },
+    {
+      "kind": "document",
+      "path": "docs/project/capabilities/plan/satellites/LANGCHAIN_INDEPENDENCE_domain_plan_cross_references.md",
+      "category": "PDC-D3",
+      "status": "UNINSPECTED"
+    },
+    {
+      "kind": "document",
+      "path": "docs/project/capabilities/plan/satellites/TOKEN_OPTIMIZATION_domain_plan_cross_references.md",
+      "category": "PDC-D2",
+      "status": "UNINSPECTED"
+    },
+    {
+      "kind": "document",
+      "path": "docs/project/capabilities/token_optimization/README.md",
+      "category": "PLATFORM-FOUNDATION",
+      "status": "INDEX_ONLY"
+    },
+    {
+      "kind": "document",
+      "path": "docs/project/capabilities/token_optimization/proofs/VLLM_PREFIX_CACHE_LIVE_PROOF.md",
+      "category": "PDC-D2",
+      "status": "UNINSPECTED"
+    },
+    {
+      "kind": "document",
+      "path": "docs/project/maintainers/plans/ADAPTIVE_HARNESS_INTELLIGENCE.md",
+      "category": "PLATFORM-FOUNDATION",
+      "status": "INDEX_ONLY"
+    },
+    {
+      "kind": "document",
+      "path": "docs/project/maintainers/plans/ADAPTIVE_HARNESS_INTELLIGENCE_agent_design_search.md",
+      "category": "PLATFORM-FOUNDATION",
+      "status": "INDEX_ONLY"
+    },
+    {
+      "kind": "document",
+      "path": "docs/project/maintainers/plans/AGENT_CONTRACTS_AND_ASSEMBLY.md",
+      "category": "PDC-D1",
+      "status": "INSPECTED"
+    },
+    {
+      "kind": "document",
+      "path": "docs/project/maintainers/plans/AGENT_DISTRIBUTION.md",
+      "category": "PDC-D1",
+      "status": "INSPECTED"
+    },
+    {
+      "kind": "document",
+      "path": "docs/project/maintainers/plans/APPLICATION_DEPENDENCY_MODEL.md",
+      "category": "PDC-D4",
+      "status": "UNINSPECTED"
+    },
+    {
+      "kind": "document",
+      "path": "docs/project/maintainers/plans/APPLICATION_HOSTING.md",
+      "category": "PDC-D4",
+      "status": "INSPECTED"
+    },
+    {
+      "kind": "document",
+      "path": "docs/project/maintainers/plans/AUDIT_IDEAL_2026.md",
+      "category": "PLATFORM-FOUNDATION",
+      "status": "INDEX_ONLY"
+    },
+    {
+      "kind": "document",
+      "path": "docs/project/maintainers/plans/AUTONOMOUS_ORGANIZATION_CAPABILITY_MODEL.md",
+      "category": "PLATFORM-FOUNDATION",
+      "status": "INDEX_ONLY"
+    },
+    {
+      "kind": "document",
+      "path": "docs/project/maintainers/plans/AUTONOMOUS_ORGANIZATION_INITIATIVE.md",
+      "category": "PLATFORM-FOUNDATION",
+      "status": "INDEX_ONLY"
+    },
+    {
+      "kind": "document",
+      "path": "docs/project/maintainers/plans/AUTONOMOUS_ORGANIZATION_ROADMAP.md",
+      "category": "PLATFORM-FOUNDATION",
+      "status": "INDEX_ONLY"
+    },
+    {
+      "kind": "document",
+      "path": "docs/project/maintainers/plans/AUTONOMOUS_ORGANIZATION_SCENARIO_PORTFOLIO.md",
+      "category": "PLATFORM-FOUNDATION",
+      "status": "INDEX_ONLY"
+    },
+    {
+      "kind": "document",
+      "path": "docs/project/maintainers/plans/AUTONOMOUS_WORK.md",
+      "category": "PLATFORM-FOUNDATION",
+      "status": "INDEX_ONLY"
+    },
+    {
+      "kind": "document",
+      "path": "docs/project/maintainers/plans/BACKGROUND_TASKS.md",
+      "category": "PDC-D7",
+      "status": "INSPECTED"
+    },
+    {
+      "kind": "document",
+      "path": "docs/project/maintainers/plans/CAPABILITY_CATALOG_AND_DISCOVERY.md",
+      "category": "PLATFORM-FOUNDATION",
+      "status": "INDEX_ONLY"
+    },
+    {
+      "kind": "document",
+      "path": "docs/project/maintainers/plans/CODE_CRAFT.md",
+      "category": "PLATFORM-FOUNDATION",
+      "status": "INDEX_ONLY"
+    },
+    {
+      "kind": "document",
+      "path": "docs/project/maintainers/plans/COLLABORATIVE_WORK.md",
+      "category": "PDC-D8",
+      "status": "UNINSPECTED"
+    },
+    {
+      "kind": "document",
+      "path": "docs/project/maintainers/plans/CONTEXT_ENGINEERING.md",
+      "category": "PDC-D2",
+      "status": "INSPECTED"
+    },
+    {
+      "kind": "document",
+      "path": "docs/project/maintainers/plans/CRITIC_VERIFICATION.md",
+      "category": "PDC-D5",
+      "status": "INSPECTED"
+    },
+    {
+      "kind": "document",
+      "path": "docs/project/maintainers/plans/DECISION_APPROVAL_GOVERNANCE.md",
+      "category": "PLATFORM-FOUNDATION",
+      "status": "INDEX_ONLY"
+    },
+    {
+      "kind": "document",
+      "path": "docs/project/maintainers/plans/DECISION_DELIBERATION.md",
+      "category": "PLATFORM-FOUNDATION",
+      "status": "INDEX_ONLY"
+    },
+    {
+      "kind": "document",
+      "path": "docs/project/maintainers/plans/DECISION_SYSTEM.md",
+      "category": "PLATFORM-FOUNDATION",
+      "status": "INDEX_ONLY"
+    },
+    {
+      "kind": "document",
+      "path": "docs/project/maintainers/plans/DECISION_VERIFICATION.md",
+      "category": "PDC-D5",
+      "status": "INSPECTED"
+    },
+    {
+      "kind": "document",
+      "path": "docs/project/maintainers/plans/ELASTIC_CAPACITY_AND_SCALING.md",
+      "category": "PLATFORM-FOUNDATION",
+      "status": "INDEX_ONLY"
+    },
+    {
+      "kind": "document",
+      "path": "docs/project/maintainers/plans/ENTERPRISE_E2E_SCENARIO_CATALOG.md",
+      "category": "PDC-D5",
+      "status": "UNINSPECTED"
+    },
+    {
+      "kind": "document",
+      "path": "docs/project/maintainers/plans/ENTERPRISE_RELIABILITY_LAYER_IMPLEMENTATION_PLAN.md",
+      "category": "PLATFORM-FOUNDATION",
+      "status": "INDEX_ONLY"
+    },
+    {
+      "kind": "document",
+      "path": "docs/project/maintainers/plans/EXPERIMENTATION_AND_DEVELOPER_EXPERIENCE.md",
+      "category": "PDC-D5",
+      "status": "INSPECTED"
+    },
+    {
+      "kind": "document",
+      "path": "docs/project/maintainers/plans/GOVERNED_EXECUTION.md",
+      "category": "PLATFORM-FOUNDATION",
+      "status": "INDEX_ONLY"
+    },
+    {
+      "kind": "document",
+      "path": "docs/project/maintainers/plans/HARNESS_ARCHITECTURE_EVOLUTION_P0A_AS_BUILT_AUDIT.md",
+      "category": "PLATFORM-FOUNDATION",
+      "status": "INDEX_ONLY"
+    },
+    {
+      "kind": "document",
+      "path": "docs/project/maintainers/plans/HARNESS_ARCHITECTURE_EVOLUTION_P0A_CLOSURE.md",
+      "category": "PLATFORM-FOUNDATION",
+      "status": "INDEX_ONLY"
+    },
+    {
+      "kind": "document",
+      "path": "docs/project/maintainers/plans/HARNESS_EVIDENCE_PACK.md",
+      "category": "PLATFORM-FOUNDATION",
+      "status": "INDEX_ONLY"
+    },
+    {
+      "kind": "document",
+      "path": "docs/project/maintainers/plans/IDEAL_HARNESS_L3.md",
+      "category": "PLATFORM-FOUNDATION",
+      "status": "INDEX_ONLY"
+    },
+    {
+      "kind": "document",
+      "path": "docs/project/maintainers/plans/INTEGRATIONS.md",
+      "category": "PLATFORM-FOUNDATION",
+      "status": "INDEX_ONLY"
+    },
+    {
+      "kind": "document",
+      "path": "docs/project/maintainers/plans/KNOWLEDGE_SOURCE_INTEGRATIONS.md",
+      "category": "PDC-D2",
+      "status": "UNINSPECTED"
+    },
+    {
+      "kind": "document",
+      "path": "docs/project/maintainers/plans/LLM_ADAPTERS.md",
+      "category": "PDC-D3",
+      "status": "INSPECTED"
+    },
+    {
+      "kind": "document",
+      "path": "docs/project/maintainers/plans/MEMORY.md",
+      "category": "PDC-D2",
+      "status": "INSPECTED"
+    },
+    {
+      "kind": "document",
+      "path": "docs/project/maintainers/plans/MODALITY.md",
+      "category": "PDC-D3",
+      "status": "UNINSPECTED"
+    },
+    {
+      "kind": "document",
+      "path": "docs/project/maintainers/plans/MSGRAPH_KNOWLEDGE_LIVE_CAPABILITY_1C_TEAMS_CHANNEL.md",
+      "category": "PLATFORM-FOUNDATION",
+      "status": "INDEX_ONLY"
+    },
+    {
+      "kind": "document",
+      "path": "docs/project/maintainers/plans/NEXUS_EXECUTION_FLOW.md",
+      "category": "PLATFORM-FOUNDATION",
+      "status": "INDEX_ONLY"
+    },
+    {
+      "kind": "document",
+      "path": "docs/project/maintainers/plans/OBSERVABILITY.md",
+      "category": "PLATFORM-FOUNDATION",
+      "status": "INDEX_ONLY"
+    },
+    {
+      "kind": "document",
+      "path": "docs/project/maintainers/plans/ORCHESTRATION.md",
+      "category": "PLATFORM-FOUNDATION",
+      "status": "INDEX_ONLY"
+    },
+    {
+      "kind": "document",
+      "path": "docs/project/maintainers/plans/PLATFORM_ENTERPRISE_COMPLETION_ROADMAP.md",
+      "category": "PLATFORM-FOUNDATION",
+      "status": "INDEX_ONLY"
+    },
+    {
+      "kind": "document",
+      "path": "docs/project/maintainers/plans/PLATFORM_FOUNDATION.md",
+      "category": "PLATFORM-FOUNDATION",
+      "status": "INDEX_ONLY"
+    },
+    {
+      "kind": "document",
+      "path": "docs/project/maintainers/plans/PLATFORM_PLUGINS.md",
+      "category": "PDC-D1",
+      "status": "INSPECTED"
+    },
+    {
+      "kind": "document",
+      "path": "docs/project/maintainers/plans/PLATFORM_PLUGIN_1_EXTENSION_SURFACE_AUDIT.md",
+      "category": "PDC-D1",
+      "status": "UNINSPECTED"
+    },
+    {
+      "kind": "document",
+      "path": "docs/project/maintainers/plans/PLATFORM_PLUGIN_9_CLOSEOUT.md",
+      "category": "PDC-D1",
+      "status": "UNINSPECTED"
+    },
+    {
+      "kind": "document",
+      "path": "docs/project/maintainers/plans/PLATFORM_PLUGIN_DOCUMENTATION_AUDIT.md",
+      "category": "PDC-D1",
+      "status": "UNINSPECTED"
+    },
+    {
+      "kind": "document",
+      "path": "docs/project/maintainers/plans/PLATFORM_PLUGIN_DOCUMENTATION_CLOSEOUT.md",
+      "category": "PDC-D1",
+      "status": "UNINSPECTED"
+    },
+    {
+      "kind": "document",
+      "path": "docs/project/maintainers/plans/PLATFORM_PLUGIN_ENTERPRISE_ROADMAP.md",
+      "category": "PDC-D1",
+      "status": "UNINSPECTED"
+    },
+    {
+      "kind": "document",
+      "path": "docs/project/maintainers/plans/PLATFORM_PLUGIN_PRODUCTION_AUDIT.md",
+      "category": "PDC-D1",
+      "status": "UNINSPECTED"
+    },
+    {
+      "kind": "document",
+      "path": "docs/project/maintainers/plans/PRODUCT_FIRST_MVP.md",
+      "category": "PLATFORM-FOUNDATION",
+      "status": "INDEX_ONLY"
+    },
+    {
+      "kind": "document",
+      "path": "docs/project/maintainers/plans/PRODUCT_REUSE_PROOF.md",
+      "category": "PLATFORM-FOUNDATION",
+      "status": "INDEX_ONLY"
+    },
+    {
+      "kind": "document",
+      "path": "docs/project/maintainers/plans/PROOF_RECEIPTS.md",
+      "category": "PLATFORM-FOUNDATION",
+      "status": "INDEX_ONLY"
+    },
+    {
+      "kind": "document",
+      "path": "docs/project/maintainers/plans/PROVIDER_CATEGORY_CONTRACTS.md",
+      "category": "PLATFORM-FOUNDATION",
+      "status": "INDEX_ONLY"
+    },
+    {
+      "kind": "document",
+      "path": "docs/project/maintainers/plans/RAG.md",
+      "category": "PDC-D2",
+      "status": "INSPECTED"
+    },
+    {
+      "kind": "document",
+      "path": "docs/project/maintainers/plans/REASONING_AND_COGNITION.md",
+      "category": "PLATFORM-FOUNDATION",
+      "status": "INDEX_ONLY"
+    },
+    {
+      "kind": "document",
+      "path": "docs/project/maintainers/plans/RELIABILITY_FAILURE_AND_HITL.md",
+      "category": "PLATFORM-FOUNDATION",
+      "status": "INDEX_ONLY"
+    },
+    {
+      "kind": "document",
+      "path": "docs/project/maintainers/plans/SCENARIO_RUNTIME_BASELINE.md",
+      "category": "PLATFORM-FOUNDATION",
+      "status": "INDEX_ONLY"
+    },
+    {
+      "kind": "document",
+      "path": "docs/project/maintainers/plans/SKILLS.md",
+      "category": "PDC-D1",
+      "status": "UNINSPECTED"
+    },
+    {
+      "kind": "document",
+      "path": "docs/project/maintainers/plans/TIER3_APPLICATION_ENVIRONMENT.md",
+      "category": "PDC-D4",
+      "status": "INSPECTED"
+    },
+    {
+      "kind": "document",
+      "path": "docs/project/maintainers/plans/TOOLS.md",
+      "category": "PLATFORM-FOUNDATION",
+      "status": "INDEX_ONLY"
+    },
+    {
+      "kind": "document",
+      "path": "docs/project/maintainers/plans/UNIFIED_CONTEXT_LIFECYCLE.md",
+      "category": "PDC-D2",
+      "status": "INSPECTED"
+    },
+    {
+      "kind": "document",
+      "path": "docs/project/maintainers/plans/UNIFIED_EXECUTION_RUNTIME.md",
+      "category": "PLATFORM-FOUNDATION",
+      "status": "INDEX_ONLY"
+    },
+    {
+      "kind": "document",
+      "path": "docs/project/maintainers/plans/VENDOR_KNOWLEDGE_ADAPTER_FAMILY_AUDIT.md",
+      "category": "PLATFORM-FOUNDATION",
+      "status": "INDEX_ONLY"
+    },
+    {
+      "kind": "document",
+      "path": "docs/project/maintainers/plans/VENDOR_KNOWLEDGE_RECONCILIATION_FINALIZATION.md",
+      "category": "PLATFORM-FOUNDATION",
+      "status": "INDEX_ONLY"
+    },
+    {
+      "kind": "document",
+      "path": "docs/project/maintainers/plans/VENDOR_KNOWLEDGE_THREE_MODE_CAPABILITY_MATRIX.md",
+      "category": "PLATFORM-FOUNDATION",
+      "status": "INDEX_ONLY"
+    },
+    {
+      "kind": "package",
+      "path": "intergrax/agent_distribution",
+      "category": "PDC-D1",
+      "status": "INSPECTED"
+    },
+    {
+      "kind": "package",
+      "path": "intergrax/agent_kit",
+      "category": "PDC-D1",
+      "status": "INSPECTED"
+    },
+    {
+      "kind": "package",
+      "path": "intergrax/agents",
+      "category": "PDC-D1",
+      "status": "INSPECTED"
+    },
+    {
+      "kind": "package",
+      "path": "intergrax/applications",
+      "category": "PDC-D4",
+      "status": "INSPECTED"
+    },
+    {
+      "kind": "package",
+      "path": "intergrax/autonomous_work",
+      "category": "PLATFORM-FOUNDATION",
+      "status": "INDEX_ONLY"
+    },
+    {
+      "kind": "package",
+      "path": "intergrax/background_tasks",
+      "category": "PDC-D7",
+      "status": "INSPECTED"
+    },
+    {
+      "kind": "package",
+      "path": "intergrax/capability_acquisition",
+      "category": "PLATFORM-FOUNDATION",
+      "status": "INDEX_ONLY"
+    },
+    {
+      "kind": "package",
+      "path": "intergrax/capability_catalog",
+      "category": "PLATFORM-FOUNDATION",
+      "status": "INDEX_ONLY"
+    },
+    {
+      "kind": "package",
+      "path": "intergrax/capability_metering",
+      "category": "PLATFORM-FOUNDATION",
+      "status": "INDEX_ONLY"
+    },
+    {
+      "kind": "package",
+      "path": "intergrax/capability_qualification",
+      "category": "PLATFORM-FOUNDATION",
+      "status": "INDEX_ONLY"
+    },
+    {
+      "kind": "package",
+      "path": "intergrax/cli",
+      "category": "PLATFORM-FOUNDATION",
+      "status": "INDEX_ONLY"
+    },
+    {
+      "kind": "package",
+      "path": "intergrax/codecraft",
+      "category": "PLATFORM-FOUNDATION",
+      "status": "INDEX_ONLY"
+    },
+    {
+      "kind": "package",
+      "path": "intergrax/collaborative_work",
+      "category": "PDC-D8",
+      "status": "INSPECTED"
+    },
+    {
+      "kind": "package",
+      "path": "intergrax/compat",
+      "category": "PLATFORM-FOUNDATION",
+      "status": "INDEX_ONLY"
+    },
+    {
+      "kind": "package",
+      "path": "intergrax/context",
+      "category": "PDC-D2",
+      "status": "INSPECTED"
+    },
+    {
+      "kind": "package",
+      "path": "intergrax/contracts",
+      "category": "PLATFORM-FOUNDATION",
+      "status": "INDEX_ONLY"
+    },
+    {
+      "kind": "package",
+      "path": "intergrax/core",
+      "category": "PLATFORM-FOUNDATION",
+      "status": "INDEX_ONLY"
+    },
+    {
+      "kind": "package",
+      "path": "intergrax/debug",
+      "category": "PLATFORM-FOUNDATION",
+      "status": "INDEX_ONLY"
+    },
+    {
+      "kind": "package",
+      "path": "intergrax/decision_system",
+      "category": "PLATFORM-FOUNDATION",
+      "status": "INDEX_ONLY"
+    },
+    {
+      "kind": "package",
+      "path": "intergrax/dev_support",
+      "category": "PLATFORM-FOUNDATION",
+      "status": "INDEX_ONLY"
+    },
+    {
+      "kind": "package",
+      "path": "intergrax/distributed",
+      "category": "PLATFORM-FOUNDATION",
+      "status": "INDEX_ONLY"
+    },
+    {
+      "kind": "package",
+      "path": "intergrax/eval",
+      "category": "PDC-D5",
+      "status": "INSPECTED"
+    },
+    {
+      "kind": "package",
+      "path": "intergrax/experiments",
+      "category": "PDC-D5",
+      "status": "INSPECTED"
+    },
+    {
+      "kind": "package",
+      "path": "intergrax/fastapi_core",
+      "category": "PDC-D4",
+      "status": "UNINSPECTED"
+    },
+    {
+      "kind": "package",
+      "path": "intergrax/globals",
+      "category": "PLATFORM-FOUNDATION",
+      "status": "INDEX_ONLY"
+    },
+    {
+      "kind": "package",
+      "path": "intergrax/harness",
+      "category": "PDC-D4",
+      "status": "INSPECTED"
+    },
+    {
+      "kind": "package",
+      "path": "intergrax/hosting",
+      "category": "PDC-D4",
+      "status": "INSPECTED"
+    },
+    {
+      "kind": "package",
+      "path": "intergrax/integrations",
+      "category": "PLATFORM-FOUNDATION",
+      "status": "INDEX_ONLY"
+    },
+    {
+      "kind": "package",
+      "path": "intergrax/knowledge",
+      "category": "PDC-D2",
+      "status": "UNINSPECTED"
+    },
+    {
+      "kind": "package",
+      "path": "intergrax/lab",
+      "category": "PLATFORM-FOUNDATION",
+      "status": "INDEX_ONLY"
+    },
+    {
+      "kind": "package",
+      "path": "intergrax/legacy",
+      "category": "PLATFORM-FOUNDATION",
+      "status": "INDEX_ONLY"
+    },
+    {
+      "kind": "package",
+      "path": "intergrax/llm",
+      "category": "PDC-D3",
+      "status": "UNINSPECTED"
+    },
+    {
+      "kind": "package",
+      "path": "intergrax/llm_adapters",
+      "category": "PDC-D3",
+      "status": "INSPECTED"
+    },
+    {
+      "kind": "package",
+      "path": "intergrax/marketplace",
+      "category": "PLATFORM-FOUNDATION",
+      "status": "INDEX_ONLY"
+    },
+    {
+      "kind": "package",
+      "path": "intergrax/memory",
+      "category": "PDC-D2",
+      "status": "INSPECTED"
+    },
+    {
+      "kind": "package",
+      "path": "intergrax/model_inference",
+      "category": "PDC-D3",
+      "status": "UNINSPECTED"
+    },
+    {
+      "kind": "package",
+      "path": "intergrax/multimedia",
+      "category": "PLATFORM-FOUNDATION",
+      "status": "INDEX_ONLY"
+    },
+    {
+      "kind": "package",
+      "path": "intergrax/platform",
+      "category": "PLATFORM-FOUNDATION",
+      "status": "INDEX_ONLY"
+    },
+    {
+      "kind": "package",
+      "path": "intergrax/prompts",
+      "category": "PLATFORM-FOUNDATION",
+      "status": "INDEX_ONLY"
+    },
+    {
+      "kind": "package",
+      "path": "intergrax/proof_data",
+      "category": "PLATFORM-FOUNDATION",
+      "status": "INDEX_ONLY"
+    },
+    {
+      "kind": "package",
+      "path": "intergrax/proofs",
+      "category": "PLATFORM-FOUNDATION",
+      "status": "INDEX_ONLY"
+    },
+    {
+      "kind": "package",
+      "path": "intergrax/queueing",
+      "category": "PDC-D7",
+      "status": "INSPECTED"
+    },
+    {
+      "kind": "package",
+      "path": "intergrax/rag",
+      "category": "PDC-D2",
+      "status": "INSPECTED"
+    },
+    {
+      "kind": "package",
+      "path": "intergrax/runtime/adaptive",
+      "category": "PLATFORM-FOUNDATION",
+      "status": "INDEX_ONLY"
+    },
+    {
+      "kind": "package",
+      "path": "intergrax/runtime/agent_governance",
+      "category": "PDC-D1",
+      "status": "UNINSPECTED"
+    },
+    {
+      "kind": "package",
+      "path": "intergrax/runtime/architecture",
+      "category": "PLATFORM-FOUNDATION",
+      "status": "INDEX_ONLY"
+    },
+    {
+      "kind": "package",
+      "path": "intergrax/runtime/attestation",
+      "category": "PDC-D6",
+      "status": "UNINSPECTED"
+    },
+    {
+      "kind": "package",
+      "path": "intergrax/runtime/background_execution",
+      "category": "PDC-D7",
+      "status": "INSPECTED"
+    },
+    {
+      "kind": "package",
+      "path": "intergrax/runtime/cancellation",
+      "category": "PLATFORM-FOUNDATION",
+      "status": "INDEX_ONLY"
+    },
+    {
+      "kind": "package",
+      "path": "intergrax/runtime/capacity",
+      "category": "PLATFORM-FOUNDATION",
+      "status": "INDEX_ONLY"
+    },
+    {
+      "kind": "package",
+      "path": "intergrax/runtime/codecraft",
+      "category": "PLATFORM-FOUNDATION",
+      "status": "INDEX_ONLY"
+    },
+    {
+      "kind": "package",
+      "path": "intergrax/runtime/cognition",
+      "category": "PLATFORM-FOUNDATION",
+      "status": "INDEX_ONLY"
+    },
+    {
+      "kind": "package",
+      "path": "intergrax/runtime/config",
+      "category": "PLATFORM-FOUNDATION",
+      "status": "INDEX_ONLY"
+    },
+    {
+      "kind": "package",
+      "path": "intergrax/runtime/context",
+      "category": "PDC-D2",
+      "status": "UNINSPECTED"
+    },
+    {
+      "kind": "package",
+      "path": "intergrax/runtime/context_lifecycle",
+      "category": "PDC-D2",
+      "status": "INSPECTED"
+    },
+    {
+      "kind": "package",
+      "path": "intergrax/runtime/decision_verification_stages",
+      "category": "PDC-D5",
+      "status": "INSPECTED"
+    },
+    {
+      "kind": "package",
+      "path": "intergrax/runtime/diagnostics",
+      "category": "PLATFORM-FOUNDATION",
+      "status": "INDEX_ONLY"
+    },
+    {
+      "kind": "package",
+      "path": "intergrax/runtime/enterprise_reliability",
+      "category": "PLATFORM-FOUNDATION",
+      "status": "INDEX_ONLY"
+    },
+    {
+      "kind": "package",
+      "path": "intergrax/runtime/evaluation",
+      "category": "PDC-D5",
+      "status": "INSPECTED"
+    },
+    {
+      "kind": "package",
+      "path": "intergrax/runtime/events",
+      "category": "PLATFORM-FOUNDATION",
+      "status": "INDEX_ONLY"
+    },
+    {
+      "kind": "package",
+      "path": "intergrax/runtime/evidence",
+      "category": "PLATFORM-FOUNDATION",
+      "status": "INDEX_ONLY"
+    },
+    {
+      "kind": "package",
+      "path": "intergrax/runtime/execution",
+      "category": "PLATFORM-FOUNDATION",
+      "status": "INDEX_ONLY"
+    },
+    {
+      "kind": "package",
+      "path": "intergrax/runtime/execution_evidence",
+      "category": "PLATFORM-FOUNDATION",
+      "status": "INDEX_ONLY"
+    },
+    {
+      "kind": "package",
+      "path": "intergrax/runtime/external_operations",
+      "category": "PLATFORM-FOUNDATION",
+      "status": "INDEX_ONLY"
+    },
+    {
+      "kind": "package",
+      "path": "intergrax/runtime/governance",
+      "category": "PLATFORM-FOUNDATION",
+      "status": "INDEX_ONLY"
+    },
+    {
+      "kind": "package",
+      "path": "intergrax/runtime/hooks",
+      "category": "PLATFORM-FOUNDATION",
+      "status": "INDEX_ONLY"
+    },
+    {
+      "kind": "package",
+      "path": "intergrax/runtime/human",
+      "category": "PLATFORM-FOUNDATION",
+      "status": "INDEX_ONLY"
+    },
+    {
+      "kind": "package",
+      "path": "intergrax/runtime/integrations",
+      "category": "PLATFORM-FOUNDATION",
+      "status": "INDEX_ONLY"
+    },
+    {
+      "kind": "package",
+      "path": "intergrax/runtime/interactions",
+      "category": "PLATFORM-FOUNDATION",
+      "status": "INDEX_ONLY"
+    },
+    {
+      "kind": "package",
+      "path": "intergrax/runtime/interrupts",
+      "category": "PLATFORM-FOUNDATION",
+      "status": "INDEX_ONLY"
+    },
+    {
+      "kind": "package",
+      "path": "intergrax/runtime/invariants",
+      "category": "PLATFORM-FOUNDATION",
+      "status": "INDEX_ONLY"
+    },
+    {
+      "kind": "package",
+      "path": "intergrax/runtime/kernel",
+      "category": "PLATFORM-FOUNDATION",
+      "status": "INDEX_ONLY"
+    },
+    {
+      "kind": "package",
+      "path": "intergrax/runtime/llm",
+      "category": "PDC-D3",
+      "status": "INSPECTED"
+    },
+    {
+      "kind": "package",
+      "path": "intergrax/runtime/long_running",
+      "category": "PDC-D7",
+      "status": "INSPECTED"
+    },
+    {
+      "kind": "package",
+      "path": "intergrax/runtime/metrics",
+      "category": "PLATFORM-FOUNDATION",
+      "status": "INDEX_ONLY"
+    },
+    {
+      "kind": "package",
+      "path": "intergrax/runtime/middleware",
+      "category": "PLATFORM-FOUNDATION",
+      "status": "INDEX_ONLY"
+    },
+    {
+      "kind": "package",
+      "path": "intergrax/runtime/migration",
+      "category": "PLATFORM-FOUNDATION",
+      "status": "INDEX_ONLY"
+    },
+    {
+      "kind": "package",
+      "path": "intergrax/runtime/modality",
+      "category": "PLATFORM-FOUNDATION",
+      "status": "INDEX_ONLY"
+    },
+    {
+      "kind": "package",
+      "path": "intergrax/runtime/nexus",
+      "category": "PLATFORM-FOUNDATION",
+      "status": "INDEX_ONLY"
+    },
+    {
+      "kind": "package",
+      "path": "intergrax/runtime/notifications",
+      "category": "PLATFORM-FOUNDATION",
+      "status": "INDEX_ONLY"
+    },
+    {
+      "kind": "package",
+      "path": "intergrax/runtime/observability",
+      "category": "PLATFORM-FOUNDATION",
+      "status": "INDEX_ONLY"
+    },
+    {
+      "kind": "package",
+      "path": "intergrax/runtime/organization",
+      "category": "PLATFORM-FOUNDATION",
+      "status": "INDEX_ONLY"
+    },
+    {
+      "kind": "package",
+      "path": "intergrax/runtime/persistence",
+      "category": "PLATFORM-FOUNDATION",
+      "status": "INDEX_ONLY"
+    },
+    {
+      "kind": "package",
+      "path": "intergrax/runtime/plugins",
+      "category": "PDC-D1",
+      "status": "INSPECTED"
+    },
+    {
+      "kind": "package",
+      "path": "intergrax/runtime/policy",
+      "category": "PDC-D6",
+      "status": "INSPECTED"
+    },
+    {
+      "kind": "package",
+      "path": "intergrax/runtime/prediction",
+      "category": "PLATFORM-FOUNDATION",
+      "status": "INDEX_ONLY"
+    },
+    {
+      "kind": "package",
+      "path": "intergrax/runtime/prevention",
+      "category": "PLATFORM-FOUNDATION",
+      "status": "INDEX_ONLY"
+    },
+    {
+      "kind": "package",
+      "path": "intergrax/runtime/registry",
+      "category": "PDC-D1",
+      "status": "INSPECTED"
+    },
+    {
+      "kind": "package",
+      "path": "intergrax/runtime/reliability",
+      "category": "PLATFORM-FOUNDATION",
+      "status": "INDEX_ONLY"
+    },
+    {
+      "kind": "package",
+      "path": "intergrax/runtime/replay",
+      "category": "PLATFORM-FOUNDATION",
+      "status": "INDEX_ONLY"
+    },
+    {
+      "kind": "package",
+      "path": "intergrax/runtime/resilience",
+      "category": "PLATFORM-FOUNDATION",
+      "status": "INDEX_ONLY"
+    },
+    {
+      "kind": "package",
+      "path": "intergrax/runtime/runtime_inspection",
+      "category": "PLATFORM-FOUNDATION",
+      "status": "INDEX_ONLY"
+    },
+    {
+      "kind": "package",
+      "path": "intergrax/runtime/runtime_intelligence",
+      "category": "PLATFORM-FOUNDATION",
+      "status": "INDEX_ONLY"
+    },
+    {
+      "kind": "package",
+      "path": "intergrax/runtime/sandbox",
+      "category": "PDC-D6",
+      "status": "INSPECTED"
+    },
+    {
+      "kind": "package",
+      "path": "intergrax/runtime/schema",
+      "category": "PLATFORM-FOUNDATION",
+      "status": "INDEX_ONLY"
+    },
+    {
+      "kind": "package",
+      "path": "intergrax/runtime/security",
+      "category": "PDC-D6",
+      "status": "INSPECTED"
+    },
+    {
+      "kind": "package",
+      "path": "intergrax/runtime/self_healing",
+      "category": "PLATFORM-FOUNDATION",
+      "status": "INDEX_ONLY"
+    },
+    {
+      "kind": "package",
+      "path": "intergrax/runtime/task",
+      "category": "PDC-D7",
+      "status": "INSPECTED"
+    },
+    {
+      "kind": "package",
+      "path": "intergrax/runtime/task_memory",
+      "category": "PDC-D2",
+      "status": "UNINSPECTED"
+    },
+    {
+      "kind": "package",
+      "path": "intergrax/runtime/token_optimization",
+      "category": "PDC-D2",
+      "status": "INSPECTED"
+    },
+    {
+      "kind": "package",
+      "path": "intergrax/runtime/tools",
+      "category": "PLATFORM-FOUNDATION",
+      "status": "INDEX_ONLY"
+    },
+    {
+      "kind": "package",
+      "path": "intergrax/runtime/transport",
+      "category": "PLATFORM-FOUNDATION",
+      "status": "INDEX_ONLY"
+    },
+    {
+      "kind": "package",
+      "path": "intergrax/runtime/user_profile",
+      "category": "PLATFORM-FOUNDATION",
+      "status": "INDEX_ONLY"
+    },
+    {
+      "kind": "package",
+      "path": "intergrax/runtime/vendor_knowledge",
+      "category": "PLATFORM-FOUNDATION",
+      "status": "INDEX_ONLY"
+    },
+    {
+      "kind": "package",
+      "path": "intergrax/runtime/wiring",
+      "category": "PLATFORM-FOUNDATION",
+      "status": "INDEX_ONLY"
+    },
+    {
+      "kind": "package",
+      "path": "intergrax/runtime/workspace",
+      "category": "PLATFORM-FOUNDATION",
+      "status": "INDEX_ONLY"
+    },
+    {
+      "kind": "package",
+      "path": "intergrax/scaffold",
+      "category": "PLATFORM-FOUNDATION",
+      "status": "INDEX_ONLY"
+    },
+    {
+      "kind": "package",
+      "path": "intergrax/skills",
+      "category": "PDC-D1",
+      "status": "INSPECTED"
+    },
+    {
+      "kind": "package",
+      "path": "intergrax/speech_adapters",
+      "category": "PLATFORM-FOUNDATION",
+      "status": "INDEX_ONLY"
+    },
+    {
+      "kind": "package",
+      "path": "intergrax/supervisor",
+      "category": "PDC-D4",
+      "status": "UNINSPECTED"
+    },
+    {
+      "kind": "package",
+      "path": "intergrax/tokenizers",
+      "category": "PDC-D2",
+      "status": "UNINSPECTED"
+    },
+    {
+      "kind": "package",
+      "path": "intergrax/tools",
+      "category": "PLATFORM-FOUNDATION",
+      "status": "INDEX_ONLY"
+    },
+    {
+      "kind": "package",
+      "path": "intergrax/ucl",
+      "category": "PDC-D2",
+      "status": "UNINSPECTED"
+    },
+    {
+      "kind": "package",
+      "path": "intergrax/utils",
+      "category": "PLATFORM-FOUNDATION",
+      "status": "INDEX_ONLY"
+    },
+    {
+      "kind": "package",
+      "path": "intergrax/websearch",
+      "category": "PLATFORM-FOUNDATION",
+      "status": "INDEX_ONLY"
+    },
+    {
+      "kind": "qualification_suite",
+      "path": "tests/qualification/bg_01",
+      "category": "PDC-D7",
+      "status": "INSPECTED"
+    },
+    {
+      "kind": "qualification_suite",
+      "path": "tests/qualification/ce_01",
+      "category": "PDC-D2",
+      "status": "INSPECTED"
+    },
+    {
+      "kind": "qualification_suite",
+      "path": "tests/qualification/ce_02",
+      "category": "PDC-D2",
+      "status": "INSPECTED"
+    },
+    {
+      "kind": "qualification_suite",
+      "path": "tests/qualification/compat_x",
+      "category": "PLATFORM-FOUNDATION",
+      "status": "INDEX_ONLY"
+    },
+    {
+      "kind": "qualification_suite",
+      "path": "tests/qualification/config_x",
+      "category": "PLATFORM-FOUNDATION",
+      "status": "INDEX_ONLY"
+    },
+    {
+      "kind": "qualification_suite",
+      "path": "tests/qualification/control_planes",
+      "category": "PLATFORM-FOUNDATION",
+      "status": "INDEX_ONLY"
+    },
+    {
+      "kind": "qualification_suite",
+      "path": "tests/qualification/dist_scale_x",
+      "category": "PLATFORM-FOUNDATION",
+      "status": "INDEX_ONLY"
+    },
+    {
+      "kind": "qualification_suite",
+      "path": "tests/qualification/dup_x",
+      "category": "PLATFORM-FOUNDATION",
+      "status": "INDEX_ONLY"
+    },
+    {
+      "kind": "qualification_suite",
+      "path": "tests/qualification/ebh_5",
+      "category": "PLATFORM-FOUNDATION",
+      "status": "INDEX_ONLY"
+    },
+    {
+      "kind": "qualification_suite",
+      "path": "tests/qualification/ebh_6",
+      "category": "PLATFORM-FOUNDATION",
+      "status": "INDEX_ONLY"
+    },
+    {
+      "kind": "qualification_suite",
+      "path": "tests/qualification/ebh_7",
+      "category": "PLATFORM-FOUNDATION",
+      "status": "INDEX_ONLY"
+    },
+    {
+      "kind": "qualification_suite",
+      "path": "tests/qualification/ent_audit_x",
+      "category": "PLATFORM-FOUNDATION",
+      "status": "INDEX_ONLY"
+    },
+    {
+      "kind": "qualification_suite",
+      "path": "tests/qualification/evol_x",
+      "category": "PLATFORM-FOUNDATION",
+      "status": "INDEX_ONLY"
+    },
+    {
+      "kind": "qualification_suite",
+      "path": "tests/qualification/existing_capability_configuration",
+      "category": "PLATFORM-FOUNDATION",
+      "status": "INDEX_ONLY"
+    },
+    {
+      "kind": "qualification_suite",
+      "path": "tests/qualification/external_contract_compatibility",
+      "category": "PLATFORM-FOUNDATION",
+      "status": "INDEX_ONLY"
+    },
+    {
+      "kind": "qualification_suite",
+      "path": "tests/qualification/governance",
+      "category": "PLATFORM-FOUNDATION",
+      "status": "INDEX_ONLY"
+    },
+    {
+      "kind": "qualification_suite",
+      "path": "tests/qualification/harness_01",
+      "category": "PLATFORM-FOUNDATION",
+      "status": "INDEX_ONLY"
+    },
+    {
+      "kind": "qualification_suite",
+      "path": "tests/qualification/harness_02",
+      "category": "PLATFORM-FOUNDATION",
+      "status": "INDEX_ONLY"
+    },
+    {
+      "kind": "qualification_suite",
+      "path": "tests/qualification/host_01",
+      "category": "PDC-D4",
+      "status": "INSPECTED"
+    },
+    {
+      "kind": "qualification_suite",
+      "path": "tests/qualification/inspect_01",
+      "category": "PLATFORM-FOUNDATION",
+      "status": "INDEX_ONLY"
+    },
+    {
+      "kind": "qualification_suite",
+      "path": "tests/qualification/mcp_server_x",
+      "category": "PLATFORM-FOUNDATION",
+      "status": "INDEX_ONLY"
+    },
+    {
+      "kind": "qualification_suite",
+      "path": "tests/qualification/memory_behavior",
+      "category": "PDC-D2",
+      "status": "UNINSPECTED"
+    },
+    {
+      "kind": "qualification_suite",
+      "path": "tests/qualification/mp6",
+      "category": "PLATFORM-FOUNDATION",
+      "status": "INDEX_ONLY"
+    },
+    {
+      "kind": "qualification_suite",
+      "path": "tests/qualification/multiplayer",
+      "category": "PLATFORM-FOUNDATION",
+      "status": "INDEX_ONLY"
+    },
+    {
+      "kind": "qualification_suite",
+      "path": "tests/qualification/plug_03",
+      "category": "PDC-D1",
+      "status": "UNINSPECTED"
+    },
+    {
+      "kind": "qualification_suite",
+      "path": "tests/qualification/plug_04",
+      "category": "PDC-D1",
+      "status": "UNINSPECTED"
+    },
+    {
+      "kind": "qualification_suite",
+      "path": "tests/qualification/plug_final",
+      "category": "PDC-D1",
+      "status": "UNINSPECTED"
+    },
+    {
+      "kind": "qualification_suite",
+      "path": "tests/qualification/prod_q",
+      "category": "PLATFORM-FOUNDATION",
+      "status": "INDEX_ONLY"
+    },
+    {
+      "kind": "qualification_suite",
+      "path": "tests/qualification/qual_x",
+      "category": "PLATFORM-FOUNDATION",
+      "status": "INDEX_ONLY"
+    },
+    {
+      "kind": "qualification_suite",
+      "path": "tests/qualification/roadmap_replay_x",
+      "category": "PLATFORM-FOUNDATION",
+      "status": "INDEX_ONLY"
+    },
+    {
+      "kind": "qualification_suite",
+      "path": "tests/qualification/sched_01",
+      "category": "PDC-D7",
+      "status": "INSPECTED"
+    },
+    {
+      "kind": "qualification_suite",
+      "path": "tests/qualification/session_01",
+      "category": "PLATFORM-FOUNDATION",
+      "status": "INDEX_ONLY"
+    },
+    {
+      "kind": "qualification_suite",
+      "path": "tests/qualification/state_x",
+      "category": "PLATFORM-FOUNDATION",
+      "status": "INDEX_ONLY"
+    },
+    {
+      "kind": "qualification_suite",
+      "path": "tests/qualification/tenant_x",
+      "category": "PDC-D6",
+      "status": "INSPECTED"
+    },
+    {
+      "kind": "qualification_suite",
+      "path": "tests/qualification/trace_x",
+      "category": "PLATFORM-FOUNDATION",
+      "status": "INDEX_ONLY"
+    }
+  ]
+}

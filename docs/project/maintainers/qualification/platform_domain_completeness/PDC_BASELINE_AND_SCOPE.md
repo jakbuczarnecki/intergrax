@@ -30,7 +30,7 @@ Eight mandatory workstreams, each with a formal disposition. Preliminary require
 
 | Workstream | Preliminary requirements | Highest-risk preliminary gaps (code-confirmed at baseline) |
 | --- | --- | --- |
-| PDC-D1 Agent Lifecycle | 20 | No explicit UPGRADE or RETIRE operation. SKILL-X F-04 (skill disable/remove/upgrade unsupported). AC-4 phase 10 not independently audited. |
+| PDC-D1 Agent Lifecycle | 20 | No explicit UPGRADE or RETIRE operation. SKILL-X F-04 (skill disable/remove/upgrade unsupported). ~~AC-4 phase 10 not independently audited~~ — corrected in P2: AC-4 is CLOSED by `docs/project/maintainers/audits/AGENT_PLATFORM_AC1_AC6_FINAL_ARCHITECTURE_AUDIT.md` @ `67f57331`; only the architecture doc status is stale (PDC-D1-R009). |
 | PDC-D2 Context & Knowledge | 18 | CE-02 compaction/retention has no closure record. `TOKENIZER_HARD_TRIM` reconstruction fidelity. Retrieval-poisoning defense flag is not mounted. |
 | PDC-D3 Model Runtime | 21 | Streaming/tool-stream parity is Partial. Provider cancel is only "when supported". |
 | PDC-D4 Host Runtime | 19 | No qualification suite for the APP-HOST lifecycle (`host_01` covers the execution boundary only). APP-HOST-3D/5D/6/7/9E/9F are Planned. `InteractionProfile` does not exist. |
