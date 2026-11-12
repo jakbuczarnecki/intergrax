@@ -2,11 +2,11 @@
 
 ## Scope
 
-Fail-closed signing and poisoning defaults, single tool-input defense path, durable audit trail, secret gate, plugin provenance. Requirements: PDC-D2-R008, PDC-D6-R004, R006, R007, R008, R009, R013, R014, R015, R016, R020, R021, R023. Decision: ADR-PDC-06. Product code: yes; implemented in an isolated worktree, no merge before MCP-SERVER-X P8 (OD-PDC-SEQ-01). Plan: `PLAN_T-IGX-036-P.md`.
+Fail-closed signing and poisoning defaults, single tool-input defense path, durable audit trail, secret gate, plugin provenance. Requirements: PDC-D2-R008, PDC-D6-R004, R006, R007, R008, R009, R013, R014, R015, R016, R020, R021, R023, R024, R027. Decision: ADR-PDC-06. Product code: yes; implemented in an isolated worktree, no merge before MCP-SERVER-X P8 (OD-PDC-SEQ-01). Plan: `PLAN_T-IGX-036-P.md`.
 
 ## Plan digest
 
-Plan digest: 01336caab9ad200af25f9c1286d4254810baff9c9bf2e0f9132cc55e5697160e
+Plan digest: 68f1eb209906a3e5b988f962617b36826b325339fed606792ad33069cdac5bbb
 
 Canonical plan: [`governance/tickets/plans/PLAN_T-IGX-036-P.md`](plans/PLAN_T-IGX-036-P.md).
 
