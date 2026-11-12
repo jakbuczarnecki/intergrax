@@ -44,12 +44,10 @@ _LAB_PROOF_PATHS = frozenset(
 )
 _LAB_PROOF_PREFIXES = ("applications/attestation_demo/",)
 
-# OPEN ITEM (outside the B-D6 write set): this product wiring module calls
-# ``resolve_host_attestation_sealer_from_env``, which falls back to the demo seed when the host
-# signing key variable is unset. It is pinned here so that any NEW product-wiring reference is
-# caught; the strict assembly check below refuses that configuration until the fallback in
-# ``host_attestation.py`` is removed by the integration owner.
-_KNOWN_OPEN_PRODUCT_WIRING = frozenset({"intergrax/applications/_shared/attestation_runtime_bridge.py"})
+# The product wiring module that reaches host attestation. It never names the seed: since
+# Amendment 1 it fails closed in strict profiles and applies the named lab opt-in only on
+# non-strict profiles (see test_d6_amendment1_gap_closures.py).
+_KNOWN_PRODUCT_WIRING = frozenset({"intergrax/applications/_shared/attestation_runtime_bridge.py"})
 
 
 def _product_files() -> list[tuple[str, str]]:
@@ -87,14 +85,14 @@ def test_d6_r027_seed_and_lab_builder_are_referenced_only_from_lab_proof_paths()
     assert offenders == []
 
 
-def test_d6_r027_product_wiring_has_no_new_reference_to_the_seed() -> None:
+def test_d6_r027_product_wiring_reaches_host_attestation_only_through_the_bridge() -> None:
     offenders = {
         relative
         for relative, text in _product_files()
         if relative.startswith("intergrax/applications/_shared/")
         and (_SEED_CONSTANT in text or _BUILDER in text or _imports_host_attestation(text))
     }
-    assert offenders == set(_KNOWN_OPEN_PRODUCT_WIRING)
+    assert offenders == set(_KNOWN_PRODUCT_WIRING)
 
 
 def test_d6_r027_attestor_module_does_not_import_the_seed_at_module_level() -> None:

@@ -30,7 +30,7 @@ from intergrax.core.plugins.admission import (
     PluginProvenanceAdmission,
     PluginProvenanceAttestation,
 )
-from intergrax.core.plugins.discovery import EP_SECURITY_DEFENSES, EP_TOOLS, EntryPointLoadResult, EntryPointSpec
+from intergrax.core.plugins.discovery import EP_SECURITY_DEFENSES, EP_TOOLS, EntryPointSpec
 from intergrax.core.security.security_configuration import (
     PLUGIN_TRUST_POLICY_MISSING,
     SecurityConfigurationError,
@@ -209,20 +209,19 @@ def _patch_catalog_discovery(
     specs: tuple[EntryPointSpec, ...],
     loaded: list[str],
 ) -> None:
+    from intergrax.core.plugins import discovery
+
     monkeypatch.setattr(
-        catalog_bootstrap,
+        discovery,
         "iter_entry_point_specs",
         lambda group: specs if group == EP_TOOLS else (),
     )
 
-    def _load(selected, *, on_load_failure="fail_fast"):
-        results = []
-        for spec in selected:
-            loaded.append(spec.name)
-            results.append(EntryPointLoadResult(spec=spec, target=type("NotAPlugin", (), {})))
-        return results
+    def _load(value: str) -> object:
+        loaded.append(value)
+        return type("NotAPlugin", (), {})
 
-    monkeypatch.setattr(catalog_bootstrap, "load_entry_point_targets_for_specs", _load)
+    monkeypatch.setattr(discovery, "load_entry_point_value", _load)
 
 
 def test_d6_r016_bootstrap_rejects_unsigned_plugin_before_it_is_imported(
@@ -240,7 +239,7 @@ def test_d6_r016_bootstrap_rejects_unsigned_plugin_before_it_is_imported(
         require_plugin_provenance=True,
     )
     report = result.tool_plugin_load_report
-    assert loaded == ["signed"], "unsigned plugin target must never be loaded"
+    assert loaded == ["acme_plugin:Plugin"], "unsigned plugin target must never be loaded"
     rejected = {item.spec.name: item.reason_code for item in report.rejected}
     assert rejected["unsigned"] is PluginAdmissionReasonCode.PLUGIN_PROVENANCE_MISSING
     # the signed plugin passed provenance and reached registration (not a plugin class here)
@@ -261,7 +260,7 @@ def test_d6_r016_strict_discovery_without_a_trust_policy_fails_closed() -> None:
 def test_d6_r016_without_provenance_behaviour_is_unchanged(monkeypatch: pytest.MonkeyPatch) -> None:
     calls: list[str] = []
 
-    def _fake(group, register, *, discover_entry_points, on_conflict):
+    def _fake(group, register, **_kwargs):
         calls.append(group)
         return catalog_bootstrap.DomainPluginLoadReport.empty(group)
 

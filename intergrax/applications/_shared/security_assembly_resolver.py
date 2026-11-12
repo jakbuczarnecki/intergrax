@@ -256,9 +256,8 @@ def validate_strict_security_configuration(
                 )
             )
 
-    # PDC-D6-R027: host attestation signing falls back to the public PoC demo seed when this
-    # variable is unset (runtime/attestation/host_attestation.py). A strict profile must
-    # therefore supply the key explicitly; the assembly refuses the configuration otherwise.
+    # PDC-D6-R027: host attestation signing needs an explicit key on a strict profile; the demo
+    # seed is reachable only through the lab opt-in (see attestation_runtime_bridge).
     export_profile = env.execution_boundary_export_profile
     if export_profile is not None and export_profile.enabled and export_profile.host_signing_enabled:
         host_key = source.get(HOST_ATTESTATION_SIGNING_KEY_ENV)
