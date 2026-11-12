@@ -6,7 +6,7 @@ Documentation only. The clickable prototype is a claude.ai Artifact; no prototyp
 
 ## Deliverables
 
-1. **`docs/project/capabilities/plan/satellites/scenario_factory/SFX_UX_DESIGN.md`** (SFX-P3-01) contains:
+1. **`docs/project/maintainers/qualification/scenario_factory_x/SFX_UX_DESIGN.md`** (SFX-P3-01) contains:
    - personas: business user, engineer, approver;
    - journeys across the full lifecycle: Describe → Discover → Understand → Design → Configure → Approve → Build → Test → Run → Present → Improve;
    - the information architecture and a screen inventory;
@@ -53,3 +53,11 @@ uv run python -m scripts.governance.igx_gov ticket
 - Implementing the Studio frontend (SFX-P10).
 - Revealing the GEN set content.
 - Product code, FRZ changes and merges.
+
+## Amendment 1 (2026-11-12): deliverable location
+
+Operator decision in the planning chat, 2026-11-12. English rendering: "Move [the SFX workstream documents] to the dossier."
+
+The SFX workstream documents are kept in the SFX qualification dossier `docs/project/maintainers/qualification/scenario_factory_x/` instead of `docs/project/capabilities/plan/satellites/scenario_factory/`. The reason is that the PDC-X closed-world scanner (`scripts/qualification/pdc_x_inventory.py`, `DOC_GLOBS` includes `docs/project/capabilities/**/*.md`) cannot classify `SFX_*.md` stems, which turns `test_pdc_x_inventory` red. Moving the files keeps `scripts/` unchanged (OD-SFX-04, OD-SFX-15).
+
+Only the location changes. Content, acceptance criteria and test contract are unchanged. This amendment supersedes the earlier approval line; the ticket must be re-approved against the new digest.

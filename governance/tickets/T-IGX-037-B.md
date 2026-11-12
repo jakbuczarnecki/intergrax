@@ -8,14 +8,16 @@ Documentation and governance-declarative files only; authorized before ARCH-FREE
 
 ## Plan digest
 
-Plan digest: 4ad9bde5acad82dd3285f71b10e1f6f3763d2fa5ac2c625ce477386b8b646bce
+Plan digest: a8142bfebf5c48499b2ff11bc5542b7d67aaf8f50cb8bffd64a1e3ba0fbb2a99
 
 Canonical plan: [`governance/tickets/plans/PLAN_T-IGX-037-B.md`](plans/PLAN_T-IGX-037-B.md).
 
 ## Approved
 
-Approved: operator-delegate @ 2026-11-12T13:53:13+01:00
+Approved: operator-delegate @ 2026-11-12T15:06:03+01:00
 Delegation: docs/project/maintainers/qualification/scenario_factory_x/operator_decisions/DELEGATION-SFX-PRE-FREEZE.md@0465c7f7d253e230c7b25a9223278192a1b01bce
+
+Superseded approval (plan digest before Amendment 1): see commit `250d3aeeb`.
 
 ## Test contract
 
@@ -31,8 +33,19 @@ uv run python -m scripts.governance.igx_gov ticket
 
 ## Lifecycle state
 
-plan_approved
+quality_gate
 
 ## Lease holder
 
 Worktree `_wt/intergrax/sfx-w1-research`, branch `sfx-w1-research` (stacked on `sfx-p0-registration`).
+
+## Checkpoint
+
+| Field | Value |
+| --- | --- |
+| Branch | `sfx-w1-research` (upstream `origin/development`), contains `origin/development` @ `0140bc6b5` and the W0 follow-up corrections |
+| Implementers | Orchestrator session and implementer/research subagents. None of them wrote an `Approved:` line. Approval: delegate re-approval after plan Amendment 1 (`85ab15622`) |
+| Test contract | `tests/unit/governance`: 164 passed, 1 skipped, 8 failed. All 8 failures are in `test_evol_x_real_repo_fresh_clone.py` with `Filename too long` (Windows MAX_PATH: the 174-character evidence path under the 16-character worktree name `sfx-w1-research`). The same file passes 15/15 in the shorter worktree `sfx-p0`. The file is unchanged by SFX and the long path exists on `development`; this is environmental. Log: `.tmp/session/sfx-w1/contract.log` |
+| Gates | `igx_gov ticket` OK (push-fast PASS); `pdc_x_inventory.py --check` OK (354 items, 0 UNMAPPED); pre-commit `check_docs_domain_pairs` OK |
+| Acceptance | Matrix: 15 products covered across 3 lanes, every cell cited or scored from vendor primary sources; 32 design-implication items. Inventory JSON: 37 rows x 10 fields. IDE/MCP facts: SFX-GAP-07 resolved at documentation level. Evidence-quality caveats are stated in the matrix header (partial page reads, inferred zeros, beta features) |
+| Product paths | none (`intergrax/`, `agents/`, `applications/`, `scripts/`, `agent-env/` unchanged); IIAC ACT-N11 unaffected |

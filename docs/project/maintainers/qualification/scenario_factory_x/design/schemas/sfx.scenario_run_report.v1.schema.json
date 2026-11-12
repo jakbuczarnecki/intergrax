@@ -1,0 +1,326 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "sfx.scenario_run_report.v1",
+  "title": "ScenarioRunReport",
+  "description": "SFX-CON-09. Report of one L2 sandbox run of a generated package. Run facts stay in the evidence plane and are referenced, not copied. Envelope: canonical_digest = sha256(JCS(model_dump without canonical_digest)); see SFX_CANONICALIZATION.md. Persisted as a CW WorkArtifactVersion (ADR-SFX-002 §D5). Status: PROPOSED design draft (T-IGX-037-C); not code.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version",
+    "tenant_id",
+    "workspace_id",
+    "work_item_id",
+    "scenario_id",
+    "artifact_id",
+    "version",
+    "canonical_digest",
+    "created_at",
+    "created_by",
+    "blueprint_ref",
+    "package",
+    "run_id",
+    "measurement_sha",
+    "authority_level",
+    "environment_profile",
+    "started_at",
+    "finished_at",
+    "outcome",
+    "test_results",
+    "measurements",
+    "evidence_refs",
+    "proof_artifact_path"
+  ],
+  "properties": {
+    "schema_version": {
+      "const": "sfx.scenario_run_report.v1"
+    },
+    "tenant_id": {
+      "$ref": "#/$defs/id"
+    },
+    "workspace_id": {
+      "$ref": "#/$defs/id"
+    },
+    "work_item_id": {
+      "$ref": "#/$defs/id"
+    },
+    "scenario_id": {
+      "$ref": "#/$defs/id"
+    },
+    "artifact_id": {
+      "$ref": "#/$defs/id"
+    },
+    "version": {
+      "type": "integer",
+      "minimum": 1,
+      "description": "SFX logical version; one CW WorkArtifactVersion per value."
+    },
+    "canonical_digest": {
+      "$ref": "#/$defs/digest"
+    },
+    "created_at": {
+      "$ref": "#/$defs/timestamp"
+    },
+    "created_by": {
+      "$ref": "#/$defs/principal_ref"
+    },
+    "blueprint_ref": {
+      "$ref": "#/$defs/artifact_version_ref"
+    },
+    "package": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "package_id",
+        "package_version",
+        "package_checksum"
+      ],
+      "properties": {
+        "package_id": {
+          "$ref": "#/$defs/id"
+        },
+        "package_version": {
+          "type": "string",
+          "pattern": "^[0-9]+\\.[0-9]+\\.[0-9]+(-[0-9A-Za-z.-]+)?(\\+[0-9A-Za-z.-]+)?$"
+        },
+        "package_checksum": {
+          "$ref": "#/$defs/digest"
+        }
+      },
+      "description": "ApplicationPackage identity (intergrax/applications/contracts/application_package.py:56). The checksum must be non-empty, unlike the platform default (application_package.py:52)."
+    },
+    "run_id": {
+      "$ref": "#/$defs/id"
+    },
+    "measurement_sha": {
+      "type": "string",
+      "pattern": "^[0-9a-f]{40}$"
+    },
+    "authority_level": {
+      "const": "L2"
+    },
+    "environment_profile": {
+      "const": "LAB"
+    },
+    "started_at": {
+      "$ref": "#/$defs/timestamp"
+    },
+    "finished_at": {
+      "$ref": "#/$defs/timestamp"
+    },
+    "outcome": {
+      "enum": [
+        "SUCCEEDED",
+        "FAILED",
+        "PARTIAL",
+        "ABORTED"
+      ]
+    },
+    "test_results": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "test_id",
+          "status",
+          "evidence_ref"
+        ],
+        "properties": {
+          "test_id": {
+            "$ref": "#/$defs/id"
+          },
+          "status": {
+            "enum": [
+              "PASS",
+              "FAIL",
+              "SKIPPED",
+              "ERROR"
+            ]
+          },
+          "evidence_ref": {
+            "anyOf": [
+              {
+                "$ref": "#/$defs/id"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        }
+      }
+    },
+    "measurements": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "latency_p50_ms",
+        "latency_p95_ms",
+        "throughput_per_minute",
+        "tokens_total",
+        "cost_minor_units",
+        "currency"
+      ],
+      "properties": {
+        "latency_p50_ms": {
+          "anyOf": [
+            {
+              "type": "integer",
+              "minimum": 0
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "latency_p95_ms": {
+          "anyOf": [
+            {
+              "type": "integer",
+              "minimum": 0
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "throughput_per_minute": {
+          "anyOf": [
+            {
+              "type": "integer",
+              "minimum": 0
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "tokens_total": {
+          "anyOf": [
+            {
+              "type": "integer",
+              "minimum": 0
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "cost_minor_units": {
+          "anyOf": [
+            {
+              "type": "integer",
+              "minimum": 0
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "currency": {
+          "anyOf": [
+            {
+              "type": "string",
+              "pattern": "^[A-Z]{3}$"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        }
+      }
+    },
+    "evidence_refs": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/id"
+      },
+      "description": "Evidence plane run and event references (EvidencePersistencePort)."
+    },
+    "proof_artifact_path": {
+      "type": "string",
+      "pattern": "^\\.tmp/proof/sfx/[A-Za-z0-9._-]+/$"
+    }
+  },
+  "$defs": {
+    "id": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 256,
+      "pattern": "^[A-Za-z0-9][A-Za-z0-9._:/-]*$",
+      "description": "Opaque identifier. Never a secret and never a free-text value."
+    },
+    "digest": {
+      "type": "string",
+      "pattern": "^sha256:[0-9a-f]{64}$",
+      "description": "Platform content digest convention sha256:<64 lowercase hex> (intergrax/contracts/validation.py:13)."
+    },
+    "timestamp": {
+      "type": "string",
+      "pattern": "^[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}:[0-9]{2}:[0-9]{2}\\.[0-9]{6}Z$",
+      "description": "RFC 3339 UTC timestamp with exactly six fractional digits and a Z suffix (SFX_CANONICALIZATION.md, rule CF-5)."
+    },
+    "slug": {
+      "type": "string",
+      "pattern": "^[a-z][a-z0-9_]*$",
+      "maxLength": 64,
+      "description": "Same pattern as SCENARIO_SLUG_PATTERN (scripts/proof/create_scenario_proof.py:19)."
+    },
+    "principal_ref": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "principal_id",
+        "actor_kind"
+      ],
+      "properties": {
+        "principal_id": {
+          "$ref": "#/$defs/id"
+        },
+        "actor_kind": {
+          "enum": [
+            "HUMAN",
+            "AGENT",
+            "SYSTEM"
+          ],
+          "description": "Kind of actor. G-2 counts only HUMAN actors."
+        }
+      },
+      "description": "Harness principal reference."
+    },
+    "artifact_version_ref": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "schema_id",
+        "artifact_id",
+        "version",
+        "canonical_digest"
+      ],
+      "properties": {
+        "schema_id": {
+          "type": "string",
+          "pattern": "^sfx\\.[a-z_]+\\.v[0-9]+$"
+        },
+        "artifact_id": {
+          "$ref": "#/$defs/id"
+        },
+        "version": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "canonical_digest": {
+          "$ref": "#/$defs/digest"
+        }
+      },
+      "description": "Immutable reference to one SFX artifact version (CW WorkArtifactVersion)."
+    },
+    "secret_ref": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 512,
+      "pattern": "^[a-z][a-z0-9+.-]*:[^\\s]+$",
+      "description": "Reference resolved by the credential broker at run time. Never a secret value."
+    }
+  }
+}
