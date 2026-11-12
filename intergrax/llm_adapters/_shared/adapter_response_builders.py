@@ -5,7 +5,7 @@
 from __future__ import annotations
 
 from intergrax.llm_adapters.contracts.adapter_response import LLMAdapterResponse
-from intergrax.llm_adapters.contracts.finish_reason import LLMFinishReason
+from intergrax.llm_adapters.contracts.finish_reason import LLMFinishReason, normalize_refusal
 from intergrax.llm_adapters.contracts.provider_extensions import LLMProviderExtensions
 from intergrax.llm_adapters.contracts.stream_event import LLMStreamEvent, LLMStreamEventKind
 from intergrax.llm_adapters.contracts.token_usage import LLMTokenUsage
@@ -24,6 +24,7 @@ def build_adapter_response(
     tool_calls: tuple[LLMToolCall, ...] = (),
     provider_extensions: LLMProviderExtensions | None = None,
 ) -> LLMAdapterResponse:
+    finish_reason, refusal = normalize_refusal(finish_reason, refusal)
     return LLMAdapterResponse(
         content=content or "",
         finish_reason=finish_reason,

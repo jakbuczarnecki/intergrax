@@ -3,19 +3,25 @@
 
 from __future__ import annotations
 
-from typing import Union
-
+from intergrax.contracts.external_operation_termination import ExternalOperationCapabilities
 from intergrax.llm_adapters.base.base_llm_adapter import BaseLLMAdapter
+from intergrax.llm_adapters.contracts.capabilities import (
+    CancelCapability,
+    LLMDeclaredCapabilities,
+    LLMFeature,
+    cancel_capability_from_external_operation,
+    declared_capabilities_of,
+    require_declared_features,
+)
 from intergrax.llm_adapters.contracts.llm_adapter import LLMAdapter
 from intergrax.llm_adapters.contracts.llm_provider import LLMProvider, llm_provider_slug
-from intergrax.contracts.external_operation_termination import ExternalOperationCapabilities
 from intergrax.llm_adapters.registry.registration_contract import (
     LLMAdapterDependencyError,
-    LLMProviderNotConfiguredError,
     LLMAdapterFactory,
     LLMAdapterRegistrationError,
     LLMAdapterRegistrationSpec,
     LLMAdapterRegistrationTarget,
+    LLMProviderNotConfiguredError,
     OptionalDependencyRequirement,
     ProviderExternalOperationSeam,
     ProviderExternalOperationSeamFactory,
@@ -57,7 +63,7 @@ class LLMAdapterRegistry:
     _external_operation_capabilities: dict[str, ExternalOperationCapabilities] = {}
 
     @staticmethod
-    def _normalize_provider(provider: Union[str, LLMProvider]) -> str:
+    def _normalize_provider(provider: str | LLMProvider) -> str:
         return llm_provider_slug(provider)
 
     @classmethod
@@ -131,7 +137,7 @@ class LLMAdapterRegistry:
     @classmethod
     def register(
         cls,
-        provider: Union[str, LLMProvider, LLMAdapterRegistrationSpec],
+        provider: str | LLMProvider | LLMAdapterRegistrationSpec,
         factory: LLMAdapterFactory | None = None,
         *,
         override: bool = False,
@@ -140,9 +146,7 @@ class LLMAdapterRegistry:
             cls.register_from_spec(provider, override=override)
             return
         if factory is None:
-            raise TypeError(
-                "factory is required when provider is not LLMAdapterRegistrationSpec"
-            )
+            raise TypeError("factory is required when provider is not LLMAdapterRegistrationSpec")
         key = cls._normalize_provider(provider)
         cls.register_from_spec(
             LLMAdapterRegistrationSpec(provider_id=key, factory=factory),
@@ -150,7 +154,7 @@ class LLMAdapterRegistry:
         )
 
     @classmethod
-    def create(cls, provider: Union[str, LLMProvider], **kwargs: object) -> LLMAdapter:
+    def create(cls, provider: str | LLMProvider, **kwargs: object) -> LLMAdapter:
         key = cls._normalize_provider(provider)
         cls.ensure_builtin_registrations_installed()
 
@@ -161,8 +165,7 @@ class LLMAdapterRegistry:
 
         if not isinstance(adapter, LLMAdapter):
             raise TypeError(
-                f"Factory for provider='{key}' returned invalid type "
-                f"{type(adapter)!r}, expected LLMAdapter"
+                f"Factory for provider='{key}' returned invalid type {type(adapter)!r}, expected LLMAdapter"
             )
 
         from intergrax.llm_adapters.registry.catalog_capabilities import (
@@ -203,6 +206,27 @@ class LLMAdapterRegistry:
         return unregistered_external_operation_capabilities()
 
     @classmethod
+    def cancel_capability_for(cls, provider_slug: str | LLMProvider) -> CancelCapability:
+        """Typed cancel outcome declared for a provider registration (ADR-PDC-03)."""
+        return cancel_capability_from_external_operation(
+            cls.external_operation_capabilities_for(cls._normalize_provider(provider_slug))
+        )
+
+    @classmethod
+    def declared_capabilities_for(cls, adapter: LLMAdapter) -> LLMDeclaredCapabilities:
+        """Adapter ``supports_*`` flags plus the provider's declared cancel capability."""
+        return declared_capabilities_of(adapter, cancel_for=cls.cancel_capability_for)
+
+    @classmethod
+    def require_capabilities(cls, adapter: LLMAdapter, *features: LLMFeature) -> None:
+        """Deny a call before dispatch when a requested feature is not declared.
+
+        Raises ``LLMCapabilityMismatchError``; never downgrades (for example streamed tool
+        calls to buffered output).
+        """
+        require_declared_features(adapter, *features)
+
+    @classmethod
     def resolve_external_operation_seam(cls, provider_slug: str) -> ProviderExternalOperationSeam:
         cls.ensure_builtin_registrations_installed()
         key = cls._normalize_provider(provider_slug)
@@ -226,9 +250,7 @@ def _validate_registered_adapter(adapter: LLMAdapter) -> None:
     if isinstance(provider, LLMProvider):
         provider = provider.value
     if not isinstance(provider, str) or not provider.strip():
-        raise ValueError(
-            f"{type(adapter).__name__}.provider must be a non-empty string"
-        )
+        raise ValueError(f"{type(adapter).__name__}.provider must be a non-empty string")
 
 
 def _resolve_adapter_model_id(adapter: LLMAdapter, kwargs: dict[str, object]) -> str | None:

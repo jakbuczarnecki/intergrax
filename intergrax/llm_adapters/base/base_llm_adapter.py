@@ -3,28 +3,33 @@
 # Use, modification, or distribution without written permission is prohibited.
 
 from __future__ import annotations
-from abc import ABC, abstractmethod
 
-from intergrax.llm_adapters.base.usage_log import LLMAdapterUsageLog, LLMRunStatsReader
-from contextlib import contextmanager
-from collections.abc import Iterable, Iterator, Mapping, Sequence
-from typing import TYPE_CHECKING, Callable, Optional, Any, Dict, Union, List, TypeVar
 import json
 import re
 import uuid
-import time
+from abc import ABC, abstractmethod
+from collections.abc import Callable, Iterable, Iterator, Sequence
+from contextlib import contextmanager
+from datetime import UTC
+from typing import TYPE_CHECKING, Any, TypeVar
+
 import tiktoken
+
 from intergrax.llm.messages import ChatMessage
 from intergrax.llm_adapters._shared.call_config import LLMCallConfig, parse_call_config
 from intergrax.llm_adapters._shared.resilience import execute_with_resilience
 from intergrax.llm_adapters._shared.retry import call_with_retry
+from intergrax.llm_adapters.base.usage_log import LLMAdapterUsageLog, LLMRunStatsReader
 from intergrax.llm_adapters.contracts.adapter_response import LLMAdapterResponse
-from intergrax.llm_adapters.contracts.structured_result import LLMStructuredResult
-from intergrax.llm_adapters.contracts.stream_event import LLMStreamEvent
+from intergrax.llm_adapters.contracts.capabilities import (
+    LLMCapabilityMismatchError,
+    LLMFeature,
+)
 from intergrax.llm_adapters.contracts.llm_provider import LLMProvider, llm_provider_slug
 from intergrax.llm_adapters.contracts.native_tool_choice import NativeToolChoice
+from intergrax.llm_adapters.contracts.stream_event import LLMStreamEvent
 from intergrax.llm_adapters.contracts.strict_tool_arguments import CanonicalFunctionToolDefinition
-from intergrax.llm_adapters.contracts.structured_result import TStructured
+from intergrax.llm_adapters.contracts.structured_result import LLMStructuredResult, TStructured
 
 if TYPE_CHECKING:
     from intergrax.contracts.dependency_concurrency_admission import (
@@ -38,22 +43,22 @@ if TYPE_CHECKING:
         ExternalOperationCapabilities,
         ExternalOperationTerminationPort,
     )
+    from intergrax.contracts.external_operations.attempt import ExternalOperationAttempt
     from intergrax.llm_adapters._shared.provider_stream_transport_registry import (
         ProviderStreamTransportRegistry,
-    )
-    from intergrax.runtime.external_operations.external_operation_state_store import (
-        ExternalOperationStateStore,
-    )
-    from intergrax.runtime.external_operations.external_operation_ownership import (
-        ProcessLocalExternalOperationOwner,
-    )
-    from intergrax.runtime.resilience.dependency_attempt_execution_boundary import (
-        DependencyAttemptExecutionBoundary,
     )
     from intergrax.runtime.external_operations.admission.execution_gate import (
         ExternalOperationExecutionGate,
     )
-    from intergrax.contracts.external_operations.attempt import ExternalOperationAttempt
+    from intergrax.runtime.external_operations.external_operation_ownership import (
+        ProcessLocalExternalOperationOwner,
+    )
+    from intergrax.runtime.external_operations.external_operation_state_store import (
+        ExternalOperationStateStore,
+    )
+    from intergrax.runtime.resilience.dependency_attempt_execution_boundary import (
+        DependencyAttemptExecutionBoundary,
+    )
 
 T = TypeVar("T")
 
@@ -61,6 +66,7 @@ T = TypeVar("T")
 # ============================================================
 # Universal interface (ABC)
 # ============================================================
+
 
 class BaseLLMAdapter(ABC):
     """
@@ -76,33 +82,21 @@ class BaseLLMAdapter(ABC):
     usage: LLMRunStatsReader
 
     # Hint used by the generic token estimator (e.g. OpenAI model name).
-    model_name_for_token_estimation: Optional[str] = None
+    model_name_for_token_estimation: str | None = None
 
     def __init__(self) -> None:
         self.id = uuid.uuid4().hex
         self.usage = LLMAdapterUsageLog()
         self.call_config = LLMCallConfig()
-        self._provider_dependency_boundary: DependencyAttemptExecutionBoundary | None = (
-            None
-        )
+        self._provider_dependency_boundary: DependencyAttemptExecutionBoundary | None = None
         self._external_operation_store: ExternalOperationStateStore | None = None
         self._external_operation_owner: ProcessLocalExternalOperationOwner | None = None
-        self._external_operation_cancellation_port: (
-            ExternalOperationCancellationPort | None
-        ) = None
+        self._external_operation_cancellation_port: ExternalOperationCancellationPort | None = None
         self._external_operation_status_port: ExternalOperationStatusPort | None = None
-        self._external_operation_termination_port: (
-            ExternalOperationTerminationPort | None
-        ) = None
-        self._external_operation_stream_registry: (
-            ProviderStreamTransportRegistry | None
-        ) = None
-        self._external_operation_capabilities: ExternalOperationCapabilities | None = (
-            None
-        )
-        self._external_operation_execution_gate: ExternalOperationExecutionGate | None = (
-            None
-        )
+        self._external_operation_termination_port: ExternalOperationTerminationPort | None = None
+        self._external_operation_stream_registry: ProviderStreamTransportRegistry | None = None
+        self._external_operation_capabilities: ExternalOperationCapabilities | None = None
+        self._external_operation_execution_gate: ExternalOperationExecutionGate | None = None
 
     def bind_external_operation_admission_gate(
         self,
@@ -145,9 +139,7 @@ class BaseLLMAdapter(ABC):
                 external_operation_capabilities_for_provider,
             )
 
-            self._external_operation_capabilities = (
-                external_operation_capabilities_for_provider(self._provider_slug())
-            )
+            self._external_operation_capabilities = external_operation_capabilities_for_provider(self._provider_slug())
 
     def bind_provider_dependency_boundary(
         self,
@@ -158,15 +150,11 @@ class BaseLLMAdapter(ABC):
             DependencyAttemptExecutionBoundary,
         )
 
-        if boundary is not None and not isinstance(
-            boundary, DependencyAttemptExecutionBoundary
-        ):
-            raise TypeError(
-                "boundary must be DependencyAttemptExecutionBoundary or None"
-            )
+        if boundary is not None and not isinstance(boundary, DependencyAttemptExecutionBoundary):
+            raise TypeError("boundary must be DependencyAttemptExecutionBoundary or None")
         self._provider_dependency_boundary = boundary
 
-    def _apply_defaults_call_config(self, defaults: Dict[str, Any]) -> None:
+    def _apply_defaults_call_config(self, defaults: dict[str, Any]) -> None:
         """Merge ``LLMCallConfig`` fields from adapter constructor kwargs."""
         self.call_config = parse_call_config(defaults)
 
@@ -198,7 +186,7 @@ class BaseLLMAdapter(ABC):
         gate = self._external_operation_execution_gate
         if gate is None:
             return None
-        from datetime import datetime, timezone
+        from datetime import datetime
 
         from intergrax.contracts.execution_identity import mint_task_id
         from intergrax.contracts.external_operations.admission import (
@@ -220,7 +208,7 @@ class BaseLLMAdapter(ABC):
             target_resource=f"{self._provider_slug()}:{self.model}:{call_scope}",
             requested_by="llm_adapter",
             justification="llm provider inference call",
-            created_at=datetime.now(timezone.utc),
+            created_at=datetime.now(UTC),
         )
         return gate.admit_intent(
             intent,
@@ -287,13 +275,13 @@ class BaseLLMAdapter(ABC):
         from intergrax.contracts.execution_deadline.admission import (
             ExecutionProtectedWorkAdmissionResult,
         )
+        from intergrax.llm_adapters.governance.quota import check_llm_tenant_quota
+        from intergrax.llm_adapters.tracking.context import get_llm_tenant_id
         from intergrax.runtime.execution.deadline_provider_guard import (
             ExecutionProtectedWorkDeniedError,
             assert_protected_provider_call_allowed,
             resolve_active_provider_timeout_seconds,
         )
-        from intergrax.llm_adapters.governance.quota import check_llm_tenant_quota
-        from intergrax.llm_adapters.tracking.context import get_llm_tenant_id
 
         assert_protected_provider_call_allowed()
         effective_timeout = resolve_active_provider_timeout_seconds(self.call_config.timeout_sec)
@@ -324,16 +312,16 @@ class BaseLLMAdapter(ABC):
         from intergrax.contracts.execution_deadline.admission import (
             ExecutionProtectedWorkAdmissionResult,
         )
+        from intergrax.llm_adapters._shared.provider_stream_admission import (
+            stream_factory_with_admission,
+            stream_with_external_operation_lifecycle,
+        )
+        from intergrax.llm_adapters.governance.quota import check_llm_tenant_quota
+        from intergrax.llm_adapters.tracking.context import get_llm_tenant_id
         from intergrax.runtime.execution.deadline_provider_guard import (
             ExecutionProtectedWorkDeniedError,
             assert_protected_provider_call_allowed,
             resolve_active_provider_timeout_seconds,
-        )
-        from intergrax.llm_adapters.governance.quota import check_llm_tenant_quota
-        from intergrax.llm_adapters.tracking.context import get_llm_tenant_id
-        from intergrax.llm_adapters._shared.provider_stream_admission import (
-            stream_factory_with_admission,
-            stream_with_external_operation_lifecycle,
         )
         from intergrax.runtime.external_operations.llm_external_operation_attempt import (
             LlmExternalOperationAttempt,
@@ -415,19 +403,32 @@ class BaseLLMAdapter(ABC):
             boundary.complete_direct(handle)
             raise
         boundary.complete_direct(handle)
-    
-    
+
     def validate(self) -> None:
         provider = self.provider
         if isinstance(provider, LLMProvider):
             provider = provider.value
         if not isinstance(provider, str) or not provider.strip():
-            raise ValueError(
-                f"{self.__class__.__name__}.provider must be a non-empty string"
-            )
+            raise ValueError(f"{self.__class__.__name__}.provider must be a non-empty string")
+
+    def _capability_mismatch(self, feature: LLMFeature, detail: str) -> LLMCapabilityMismatchError:
+        try:
+            provider = self._provider_slug()
+        except (AttributeError, TypeError, ValueError):
+            provider = ""
+        return LLMCapabilityMismatchError(
+            feature,
+            provider=provider,
+            model=str(getattr(self, "model", "") or ""),
+            detail=detail,
+        )
 
     def supports_streaming(self) -> bool:
         """Whether stream_messages is implemented for this adapter."""
+        return False
+
+    def supports_tool_streaming(self) -> bool:
+        """Whether stream_with_tools is implemented (declared, never inferred; ADR-PDC-03)."""
         return False
 
     def supports_structured_output(self) -> bool:
@@ -451,23 +452,21 @@ class BaseLLMAdapter(ABC):
         self,
         messages: Sequence[ChatMessage],
         *,
-        temperature: Optional[float] = None,
-        max_tokens: Optional[int] = None,
-        run_id: Optional[str] = None,
+        temperature: float | None = None,
+        max_tokens: int | None = None,
+        run_id: str | None = None,
     ) -> LLMAdapterResponse:
         raise NotImplementedError
-
 
     def stream_messages(
         self,
         messages: Sequence[ChatMessage],
         *,
-        temperature: Optional[float] = None,
-        max_tokens: Optional[int] = None,
-        run_id: Optional[str] = None,
+        temperature: float | None = None,
+        max_tokens: int | None = None,
+        run_id: str | None = None,
     ) -> Iterable[LLMStreamEvent]:
-        raise NotImplementedError("Streaming is not supported by this adapter.")
-
+        raise self._capability_mismatch(LLMFeature.STREAMING, "Streaming is not supported by this adapter.")
 
     # ---- Tools (optional) ----
     def supports_tools(self) -> bool:
@@ -482,24 +481,24 @@ class BaseLLMAdapter(ABC):
         messages: Sequence[ChatMessage],
         tools: Sequence[CanonicalFunctionToolDefinition],
         *,
-        temperature: Optional[float] = None,
-        max_tokens: Optional[int] = None,
+        temperature: float | None = None,
+        max_tokens: int | None = None,
         tool_choice: NativeToolChoice | None = None,
-        run_id: Optional[str] = None,
+        run_id: str | None = None,
     ) -> LLMAdapterResponse:
-        raise NotImplementedError("Tools are not supported by this adapter.")
+        raise self._capability_mismatch(LLMFeature.TOOLS, "Tools are not supported by this adapter.")
 
     def stream_with_tools(
         self,
         messages: Sequence[ChatMessage],
         tools: Sequence[CanonicalFunctionToolDefinition],
         *,
-        temperature: Optional[float] = None,
-        max_tokens: Optional[int] = None,
+        temperature: float | None = None,
+        max_tokens: int | None = None,
         tool_choice: NativeToolChoice | None = None,
-        run_id: Optional[str] = None,
+        run_id: str | None = None,
     ) -> Iterable[LLMStreamEvent]:
-        raise NotImplementedError("Tools streaming is not supported by this adapter.")
+        raise self._capability_mismatch(LLMFeature.TOOL_STREAMING, "Tools streaming is not supported by this adapter.")
 
     # ---- Structured output (optional) ----
     def generate_structured(
@@ -507,11 +506,13 @@ class BaseLLMAdapter(ABC):
         messages: Sequence[ChatMessage],
         output_model: type[TStructured],
         *,
-        temperature: Optional[float] = None,
-        max_tokens: Optional[int] = None,
-        run_id: Optional[str] = None,
+        temperature: float | None = None,
+        max_tokens: int | None = None,
+        run_id: str | None = None,
     ) -> LLMStructuredResult[TStructured]:
-        raise NotImplementedError("Structured output is not supported by this adapter.")
+        raise self._capability_mismatch(
+            LLMFeature.STRUCTURED_OUTPUT, "Structured output is not supported by this adapter."
+        )
 
     # ---- Token counting (base impl; moved from the removed LLMAdapter) ----
     def count_messages_tokens(self, messages: Sequence[ChatMessage]) -> int:
@@ -524,8 +525,7 @@ class BaseLLMAdapter(ABC):
     @abstractmethod
     def context_window_tokens(self) -> int:
         raise NotImplementedError
-    
-    
+
     def _strip_code_fences(self, text: str) -> str:
         """
         Remove wrappers like ```json ... ``` or ``` ... ``` if present.
@@ -536,7 +536,6 @@ class BaseLLMAdapter(ABC):
         fence_re = r"^\s*```(?:json|JSON)?\s*(.*?)\s*```\s*$"
         m = re.match(fence_re, text, flags=re.DOTALL)
         return m.group(1) if m else text
-
 
     def _extract_json_object(self, text: str) -> str:
         """
@@ -562,8 +561,7 @@ class BaseLLMAdapter(ABC):
                     return text[start : i + 1]
         return ""
 
-
-    def _model_json_schema(self, model_cls: type) -> Dict[str, Any]:
+    def _model_json_schema(self, model_cls: type) -> dict[str, Any]:
         """
         Return JSON Schema for the model class (Pydantic v2/v1).
         If unavailable, return a minimal object schema.
@@ -584,7 +582,6 @@ class BaseLLMAdapter(ABC):
 
         # fallback
         return {"type": "object"}
-
 
     def _validate_with_model(self, model_cls: type, json_str: str):
         """
@@ -632,11 +629,10 @@ class BaseLLMAdapter(ABC):
         except Exception as e:
             raise ValueError(f"Cannot validate structured output with {model_cls}: {e}")
 
-
     def estimate_tokens_for_messages(
         self,
         messages: Sequence[ChatMessage],
-        model_hint: Optional[str] = None,
+        model_hint: str | None = None,
     ) -> int:
         """
         Estimate token count for a list of ChatMessage objects.
@@ -652,7 +648,7 @@ class BaseLLMAdapter(ABC):
         for budgeting and trimming, not for billing accuracy.
         """
         # Aggregate all message contents into a single string.
-        parts: List[str] = []
+        parts: list[str] = []
         for m in messages:
             content = m.content
             if not isinstance(content, str):
@@ -671,11 +667,10 @@ class BaseLLMAdapter(ABC):
         except Exception:
             return max(1, len(joined) // 4)
 
-
     def estimate_tokens_for_text(
         self,
         text: str,
-        model_hint: Optional[str] = None,
+        model_hint: str | None = None,
     ) -> int:
         """
         Estimate token count for a plain text string.

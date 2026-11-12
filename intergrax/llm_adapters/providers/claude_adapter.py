@@ -3,11 +3,11 @@
 # Use, modification, or distribution without written permission is prohibited.
 
 from __future__ import annotations
-from intergrax.utils import attribute_access
 
 import json
 import os
-from typing import Any, Dict, Iterable, List, Optional, Sequence, Union
+from collections.abc import Iterable, Sequence
+from typing import Any
 
 from anthropic import Anthropic
 
@@ -23,19 +23,19 @@ from intergrax.llm_adapters._shared.anthropic_messages import (
     map_anthropic_messages,
 )
 from intergrax.llm_adapters._shared.messages import split_system_messages
+from intergrax.llm_adapters._shared.openai_tool_call_interop import tool_calls_from_openai_dicts
 from intergrax.llm_adapters._shared.tool_schema import openai_tools_to_anthropic
+from intergrax.llm_adapters.base.base_llm_adapter import BaseLLMAdapter
 from intergrax.llm_adapters.contracts.adapter_response import LLMAdapterResponse
 from intergrax.llm_adapters.contracts.finish_reason import LLMFinishReason, parse_finish_reason
-from intergrax.llm_adapters.contracts.llm_adapter import LLMAdapter
-from intergrax.llm_adapters.base.base_llm_adapter import BaseLLMAdapter
 from intergrax.llm_adapters.contracts.llm_provider import LLMProvider
-from intergrax.llm_adapters.registry.context_window import init_adapter_context_window_tokens
-from intergrax.llm_adapters.contracts.provider_extensions import LLMProviderExtensions
-from intergrax.llm_adapters.contracts.structured_result import LLMStructuredResult, TStructured
-from intergrax.llm_adapters.contracts.stream_event import LLMStreamEvent
-from intergrax.llm_adapters.contracts.token_usage import LLMTokenUsage
-from intergrax.llm_adapters._shared.openai_tool_call_interop import tool_calls_from_openai_dicts
 from intergrax.llm_adapters.contracts.native_tool_choice import NativeToolChoice
+from intergrax.llm_adapters.contracts.provider_extensions import LLMProviderExtensions
+from intergrax.llm_adapters.contracts.stream_event import LLMStreamEvent
+from intergrax.llm_adapters.contracts.structured_result import LLMStructuredResult, TStructured
+from intergrax.llm_adapters.contracts.token_usage import LLMTokenUsage
+from intergrax.llm_adapters.registry.context_window import init_adapter_context_window_tokens
+from intergrax.utils import attribute_access
 
 
 class ClaudeChatAdapter(BaseLLMAdapter):
@@ -50,7 +50,7 @@ class ClaudeChatAdapter(BaseLLMAdapter):
     Supports native tools (Anthropic tool_use) and streaming.
     """
 
-    _CLAUDE_CONTEXT_WINDOWS: Dict[str, int] = {
+    _CLAUDE_CONTEXT_WINDOWS: dict[str, int] = {
         "claude-3-5-sonnet-latest": 200_000,
         "claude-3-5-haiku-latest": 200_000,
     }
@@ -60,8 +60,8 @@ class ClaudeChatAdapter(BaseLLMAdapter):
 
     def __init__(
         self,
-        client: Optional[Anthropic] = None,
-        model: Optional[str] = None,
+        client: Anthropic | None = None,
+        model: str | None = None,
         **defaults,
     ):
         super().__init__()
@@ -73,9 +73,7 @@ class ClaudeChatAdapter(BaseLLMAdapter):
 
         if client is None:
             if not api_key:
-                raise RuntimeError(
-                    "ANTHROPIC_API_KEY not found in environment variables."
-                )
+                raise RuntimeError("ANTHROPIC_API_KEY not found in environment variables.")
             client = Anthropic(api_key=api_key)
 
         self.client: Anthropic = client
@@ -102,7 +100,7 @@ class ClaudeChatAdapter(BaseLLMAdapter):
         resp: Any,
         *,
         content: str,
-        tool_calls_raw: List[Dict[str, Any]] | None = None,
+        tool_calls_raw: list[dict[str, Any]] | None = None,
         in_tok: int = 0,
         out_tok: int = 0,
     ) -> LLMAdapterResponse:
@@ -125,9 +123,9 @@ class ClaudeChatAdapter(BaseLLMAdapter):
         self,
         messages: Sequence[ChatMessage],
         *,
-        temperature: Optional[float] = None,
-        max_tokens: Optional[int] = None,
-        run_id: Optional[str] = None,
+        temperature: float | None = None,
+        max_tokens: int | None = None,
+        run_id: str | None = None,
     ) -> LLMAdapterResponse:
         call = self.usage.begin_call(run_id=run_id, adapter=self)
         response: LLMAdapterResponse | None = None
@@ -183,16 +181,16 @@ class ClaudeChatAdapter(BaseLLMAdapter):
         self,
         messages: Sequence[ChatMessage],
         *,
-        temperature: Optional[float] = None,
-        max_tokens: Optional[int] = None,
-        run_id: Optional[str] = None,
+        temperature: float | None = None,
+        max_tokens: int | None = None,
+        run_id: str | None = None,
     ) -> Iterable[LLMStreamEvent]:
         call = self.usage.begin_call(run_id=run_id, adapter=self)
         success = False
         err_type = None
         in_tok = 0
         out_tok = 0
-        buf: List[str] = []
+        buf: list[str] = []
 
         try:
             in_tok = int(self.estimate_tokens_for_messages(messages, model_hint=self.model_name_for_token_estimation))
@@ -248,6 +246,12 @@ class ClaudeChatAdapter(BaseLLMAdapter):
                 error_type=err_type,
             )
 
+    def supports_streaming(self) -> bool:
+        return True
+
+    def supports_tool_streaming(self) -> bool:
+        return True
+
     def supports_tools(self) -> bool:
         return True
 
@@ -257,12 +261,12 @@ class ClaudeChatAdapter(BaseLLMAdapter):
     def generate_with_tools(
         self,
         messages: Sequence[ChatMessage],
-        tools_schema: List[Dict[str, Any]],
+        tools_schema: list[dict[str, Any]],
         *,
-        temperature: Optional[float] = None,
-        max_tokens: Optional[int] = None,
+        temperature: float | None = None,
+        max_tokens: int | None = None,
         tool_choice: NativeToolChoice | None = None,
-        run_id: Optional[str] = None,
+        run_id: str | None = None,
     ) -> LLMAdapterResponse:
         call = self.usage.begin_call(run_id=run_id, adapter=self)
         response: LLMAdapterResponse | None = None
@@ -278,7 +282,7 @@ class ClaudeChatAdapter(BaseLLMAdapter):
             temp = temperature if temperature is not None else self.defaults.get("temperature")
             out_tokens = max_tokens if max_tokens is not None else self.defaults.get("max_tokens", 1024)
 
-            kwargs: Dict[str, Any] = dict(
+            kwargs: dict[str, Any] = dict(
                 model=self.model,
                 system=system_text or None,
                 messages=map_anthropic_messages(convo),
@@ -315,19 +319,19 @@ class ClaudeChatAdapter(BaseLLMAdapter):
     def stream_with_tools(
         self,
         messages: Sequence[ChatMessage],
-        tools_schema: List[Dict[str, Any]],
+        tools_schema: list[dict[str, Any]],
         *,
-        temperature: Optional[float] = None,
-        max_tokens: Optional[int] = None,
+        temperature: float | None = None,
+        max_tokens: int | None = None,
         tool_choice: NativeToolChoice | None = None,
-        run_id: Optional[str] = None,
+        run_id: str | None = None,
     ) -> Iterable[LLMStreamEvent]:
         call = self.usage.begin_call(run_id=run_id, adapter=self)
         success = False
         err_type = None
         in_tok = 0
         out_tok = 0
-        buf: List[str] = []
+        buf: list[str] = []
 
         try:
             in_tok = int(self.estimate_tokens_for_messages(messages, model_hint=self.model_name_for_token_estimation))
@@ -336,7 +340,7 @@ class ClaudeChatAdapter(BaseLLMAdapter):
             temp = temperature if temperature is not None else self.defaults.get("temperature")
             out_tokens = max_tokens if max_tokens is not None else self.defaults.get("max_tokens", 1024)
 
-            kwargs: Dict[str, Any] = dict(
+            kwargs: dict[str, Any] = dict(
                 model=self.model,
                 system=system_text or None,
                 messages=map_anthropic_messages(convo),
@@ -405,16 +409,15 @@ class ClaudeChatAdapter(BaseLLMAdapter):
         messages: Sequence[ChatMessage],
         output_model: type[TStructured],
         *,
-        temperature: Optional[float] = None,
-        max_tokens: Optional[int] = None,
-        run_id: Optional[str] = None,
+        temperature: float | None = None,
+        max_tokens: int | None = None,
+        run_id: str | None = None,
     ) -> LLMStructuredResult[TStructured]:
         schema = self._model_json_schema(output_model)
         schema_msg = ChatMessage(
             role="user",
             content=(
-                "Return ONLY a single JSON object matching this JSON Schema:\n"
-                + json.dumps(schema, ensure_ascii=False)
+                "Return ONLY a single JSON object matching this JSON Schema:\n" + json.dumps(schema, ensure_ascii=False)
             ),
         )
         extended = list(messages) + [schema_msg]
