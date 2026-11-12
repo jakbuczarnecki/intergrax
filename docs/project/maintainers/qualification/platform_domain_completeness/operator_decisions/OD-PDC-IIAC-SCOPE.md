@@ -27,6 +27,17 @@ Which internal independent certification process applies to PDC-X and its eight 
 
 - A separate certification process with equivalent separation of roles. This needs its own protocol ticket and validator coverage.
 
+## Session plan (refined in PDC-P3-04)
+
+| Session | Role | Scope | Separation |
+| --- | --- | --- | --- |
+| IA-D1 … IA-D8 | Independent auditor (one per domain) | Requirement rows of that domain in `PDC_DOMAIN_REQUIREMENTS_MATRIX.json`, at `Dn_AUDITED_SHA` | New clean session; never an implementer of that domain's P5 batch; at most 3 concurrent sessions (test process budget) |
+| CERT-PDC | Certification / governance agent | Consolidates D1–D8 verdicts into `PDC_DOMAIN_CERTIFICATION_MATRIX`; checks manifests and role separation | Not an auditor and not an implementer |
+| IA-GLOBAL | Independent global auditor (PDC-P8) | Cross-domain matrix, FRZ mapping, SHA ladder, ECAP §2.C run | New session; not used in D1–D8 audits |
+| Signing delegate(s) | Operator delegate (Amendment 01) | OD signatures only where the Operator commissions them | Never implementer, auditor or certifier of the same item |
+
+Audit manifests follow `schemas/iiac_audit_session_manifest.v1.schema.json`. Evidence goes under `iiac_evidence/PDC-X/<D1..D8|global>/`. ACT-N11 activation is bound at `INTEGRATED_BASELINE_SHA` (PDC-P7-00) and rebound at the global audit SHA (PDC-P8-04).
+
 ## Open sub-question
 
 - Should the IIAC protocol header wording (`NOT_IN_FORCE` at lines 4 and 91, finding PDC-BL-F01) be corrected inside the next MCP-SERVER-X or PDC activation batch? Either way the correction needs a rebind, because the file is a material governance path.

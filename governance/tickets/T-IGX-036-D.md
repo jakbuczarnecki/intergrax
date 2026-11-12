@@ -31,4 +31,20 @@ Product code under `intergrax/`, `agents/`, `applications/`; IIAC protocol/scrip
 
 ## Lifecycle state
 
-plan_approved
+quality_gate
+
+## Checkpoint
+
+| Field | Value |
+| --- | --- |
+| Branch | `pdc-x-p1p3` |
+| ADRs (Proposed) | ADR-PDC-01..08 in `docs/project/maintainers/architecture/` |
+| OD drafts (PENDING) | OD-PDC-SCOPE-01..07, OD-PDC-PATHB-01, OD-PDC-ADR-01; OD-PDC-IIAC-SCOPE refined with session plan |
+| `check_docs_domain_pairs.py` | OK (23 domain pairs; 3 feature pairs) |
+| `pdc_x_requirements.py --check` | OK |
+| `igx_gov ticket` | `[INFO] igx_gov ticket: OK` |
+
+**Scope notes:**
+- ADR-PDC-02 (D2) is added beyond the ADR list in `PLAN_T-IGX-036-D.md`. Master plan §F made it conditional on P2 proving a D2 contract gap, and P2 proved gaps in R011, R012 and R015.
+- OD-PDC-SCOPE-06 (RAG freshness) and OD-PDC-SCOPE-07 (plugin provenance) were added for the same reason.
+- No ADR is accepted, no OD is signed, and no new doc pair is created. The architecture lock (PDC-P3-08) remains an Operator gate.
