@@ -3,7 +3,7 @@
 | Field | Value |
 | --- | --- |
 | **Document ID** | ADR-PDC-08 |
-| **Status** | **Proposed** (pending OD-PDC-ADR-01) |
+| **Status** | **Accepted** (OD-PDC-ADR-01, 2026-11-12) |
 | **Campaign** | PDC-X P3 (T-IGX-036-D) |
 | **Domain** | PDC-D8 Artifact Lifecycle |
 | **Requirements** | PDC-D8-R001..R009, R012, R013, R016..R018 (and PDC-D6-R022) — see [`PDC_DOMAIN_REQUIREMENTS_MATRIX.md`](../qualification/platform_domain_completeness/PDC_DOMAIN_REQUIREMENTS_MATRIX.md) |
@@ -24,6 +24,8 @@
 - Feature doc pair `docs/project/capabilities/{architecture,plan}/ARTIFACT_LIFECYCLE.md`, registered in the runtime hub and `capabilities/README.md`, created **after** OD-PDC-ADR-01 acceptance (PDC-P3-06).
 - Governed secure download is decided by OD-PDC-SCOPE-04.
 
+- **OD-PDC-SCOPE-04 = A (implement):** governed secure download = governed read port + short-lived provider URL; no presigned URL is issued outside the governed port.
+
 ## Alternatives rejected
 
 - One global artifact storage engine (merges semantics for elegance; forbidden by the campaign mandate).
@@ -35,4 +37,4 @@
 
 ## Status note
 
-Proposed only. No implementation before OD-PDC-ADR-01 accepts this ADR; product changes then follow OD-PDC-SEQ-01 (merge after MCP-SERVER-X P8).
+Accepted by OD-PDC-ADR-01 (Operator, 2026-11-12, recorded under T-IGX-036-E). This authorizes PDC-P4 design. Product merges still follow OD-PDC-SEQ-01 (merge after MCP-SERVER-X P8), which is pending.

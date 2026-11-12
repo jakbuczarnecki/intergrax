@@ -5,7 +5,7 @@
 **Position:** `MCP-SERVER-X` → **`PDC-X`** → `ARCH-FREEZE`
 **Baseline pin:** `a695c9c835bb5b4b206e6e3e00bb2aee23ca7b6b`
 **ROADMAP_AMENDMENT_SHA:** `bc9ef52bd690738e71638a599eec64c76ac356c9` (PR #461 merge; see [`PDC_SHA_LADDER.md`](./PDC_SHA_LADDER.md))
-**Tickets:** P0 [`T-IGX-036-A.md`](../../../../governance/tickets/T-IGX-036-A.md) · P1 [`T-IGX-036-B.md`](../../../../governance/tickets/T-IGX-036-B.md) · P2 [`T-IGX-036-C.md`](../../../../governance/tickets/T-IGX-036-C.md) · P3 [`T-IGX-036-D.md`](../../../../governance/tickets/T-IGX-036-D.md)
+**Tickets:** P0 [`T-IGX-036-A.md`](../../../../governance/tickets/T-IGX-036-A.md) · P1 [`T-IGX-036-B.md`](../../../../governance/tickets/T-IGX-036-B.md) · P2 [`T-IGX-036-C.md`](../../../../governance/tickets/T-IGX-036-C.md) · P3 [`T-IGX-036-D.md`](../../../../governance/tickets/T-IGX-036-D.md) · P3-08 lock [`T-IGX-036-E.md`](../../../../governance/tickets/T-IGX-036-E.md)
 
 PDC-X is **one** campaign with eight certification workstreams (`PDC-D1`..`PDC-D8`). They are **not** separate roadmap stages.
 
@@ -32,8 +32,8 @@ PDC-X is **one** campaign with eight certification workstreams (`PDC-D1`..`PDC-D
 | `PDC_DOMAIN_REQUIREMENTS_MATRIX` → [`.md`](./PDC_DOMAIN_REQUIREMENTS_MATRIX.md) + [`.json`](./PDC_DOMAIN_REQUIREMENTS_MATRIX.json) | P2 | Published (T-IGX-036-C; 168 rows, generated) |
 | `PDC_GAP_REGISTER` → [`PDC_GAP_REGISTER.md`](./PDC_GAP_REGISTER.md) | P2 | Published (generated) |
 | `PDC_FRZ_COVERAGE_MATRIX` → [`PDC_FRZ_COVERAGE_MATRIX.md`](./PDC_FRZ_COVERAGE_MATRIX.md) | P2 | Published (generated; OD-PDC-FRZ-01 pending) |
-| `PDC_OWNERSHIP_MATRIX` → [`PDC_OWNERSHIP_MATRIX.md`](./PDC_OWNERSHIP_MATRIX.md) | P3 | Draft (lock pending OD-PDC-ADR-01) |
-| `PDC_ARCHITECTURE_DECISIONS` → [`PDC_ARCHITECTURE_DECISIONS.md`](./PDC_ARCHITECTURE_DECISIONS.md) | P3 | Draft (ADR-PDC-01..08 Proposed) |
+| `PDC_OWNERSHIP_MATRIX` → [`PDC_OWNERSHIP_MATRIX.md`](./PDC_OWNERSHIP_MATRIX.md) | P3 | Locked (OD-PDC-ADR-01 approved; T-IGX-036-E) |
+| `PDC_ARCHITECTURE_DECISIONS` → [`PDC_ARCHITECTURE_DECISIONS.md`](./PDC_ARCHITECTURE_DECISIONS.md) | P3 | Locked (ADR-PDC-01..08 Accepted) |
 | `PDC_IMPLEMENTATION_WBS` | P4 | Not started |
 | `PDC_DEPENDENCY_DAG` | P4 | Not started (outline in the master plan §I) |
 | `PDC_CROSS_DOMAIN_TEST_MATRIX` | P4 | Not started (outline in the master plan §H) |

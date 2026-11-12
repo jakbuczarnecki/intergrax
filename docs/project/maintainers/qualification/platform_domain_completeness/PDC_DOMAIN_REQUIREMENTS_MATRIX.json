@@ -31,26 +31,25 @@
   "totals_by_domain": {
     "PDC-D1": {
       "ADVERSARIAL_COVERAGE_REQUIRED": 6,
-      "BLOCKED_EXACT_REASON": 2,
       "CURRENT_HEAD_REQUALIFICATION": 8,
+      "DEFERRED_OUTSIDE_FREEZE_SCOPE": 1,
       "DOCUMENTATION_RECONCILIATION": 2,
-      "IMPLEMENTATION_COMPLETION": 2,
+      "IMPLEMENTATION_COMPLETION": 3,
       "INTEGRATION_CORRECTION": 2
     },
     "PDC-D2": {
       "ADVERSARIAL_COVERAGE_REQUIRED": 5,
       "ALREADY_CERTIFIED_REUSABLE": 1,
-      "BLOCKED_EXACT_REASON": 1,
       "CURRENT_HEAD_REQUALIFICATION": 7,
-      "IMPLEMENTATION_COMPLETION": 1,
+      "IMPLEMENTATION_COMPLETION": 2,
       "INTEGRATION_CORRECTION": 2,
       "N/A_WITH_EVIDENCE": 1
     },
     "PDC-D3": {
       "ADVERSARIAL_COVERAGE_REQUIRED": 4,
       "ALREADY_CERTIFIED_REUSABLE": 2,
-      "BLOCKED_EXACT_REASON": 1,
       "CURRENT_HEAD_REQUALIFICATION": 12,
+      "DEFERRED_OUTSIDE_FREEZE_SCOPE": 1,
       "IMPLEMENTATION_COMPLETION": 1,
       "INTEGRATION_CORRECTION": 3,
       "N/A_WITH_EVIDENCE": 1
@@ -58,8 +57,8 @@
     "PDC-D4": {
       "ADVERSARIAL_COVERAGE_REQUIRED": 4,
       "ALREADY_CERTIFIED_REUSABLE": 1,
-      "BLOCKED_EXACT_REASON": 3,
       "CURRENT_HEAD_REQUALIFICATION": 4,
+      "DEFERRED_OUTSIDE_FREEZE_SCOPE": 3,
       "DOCUMENTATION_RECONCILIATION": 2,
       "IMPLEMENTATION_COMPLETION": 4,
       "INTEGRATION_CORRECTION": 2
@@ -73,28 +72,26 @@
     "PDC-D6": {
       "ADVERSARIAL_COVERAGE_REQUIRED": 7,
       "ALREADY_CERTIFIED_REUSABLE": 1,
-      "BLOCKED_EXACT_REASON": 2,
+      "BLOCKED_EXACT_REASON": 1,
       "CURRENT_HEAD_REQUALIFICATION": 7,
       "DOCUMENTATION_RECONCILIATION": 3,
-      "IMPLEMENTATION_COMPLETION": 3,
+      "IMPLEMENTATION_COMPLETION": 4,
       "INTEGRATION_CORRECTION": 4,
       "N/A_WITH_EVIDENCE": 1
     },
     "PDC-D7": {
       "ADVERSARIAL_COVERAGE_REQUIRED": 3,
       "ALREADY_CERTIFIED_REUSABLE": 7,
-      "BLOCKED_EXACT_REASON": 3,
       "CURRENT_HEAD_REQUALIFICATION": 3,
       "DOCUMENTATION_RECONCILIATION": 4,
-      "IMPLEMENTATION_COMPLETION": 1,
+      "IMPLEMENTATION_COMPLETION": 4,
       "INTEGRATION_CORRECTION": 1,
       "N/A_WITH_EVIDENCE": 1
     },
     "PDC-D8": {
       "ADVERSARIAL_COVERAGE_REQUIRED": 3,
-      "BLOCKED_EXACT_REASON": 1,
       "CURRENT_HEAD_REQUALIFICATION": 1,
-      "IMPLEMENTATION_COMPLETION": 8,
+      "IMPLEMENTATION_COMPLETION": 9,
       "INTEGRATION_CORRECTION": 5,
       "N/A_WITH_EVIDENCE": 1
     }
@@ -554,7 +551,7 @@
       "EXISTING_ACCEPTANCE_SHA": "552e379845a9512c275f3ebe520ac51767c97cf8",
       "CURRENT_HEAD_DELTA": "1 file (skills/skill_execution_pinning_wiring.py) @ 1ebd2ab4c2e6",
       "MANDATORY_GAP": "YES",
-      "CORRECTIVE_TASK": "OD-PDC-SCOPE-01 (implement vs authorized exclusion)",
+      "CORRECTIVE_TASK": "PDC-P5-D1 (ADR-PDC-01; OD-PDC-SCOPE-01 A: implement)",
       "TEST_CASE": "tests/qualification/pdc_x/d1 skill disable/remove (if implemented)",
       "FRZ_IDS": "FRZ-PLG-08,FRZ-DEBT-05",
       "SECURITY_IMPACT": "LOW",
@@ -565,8 +562,8 @@
       "AUDITED_SHA": "—",
       "EVIDENCE_PATH": ".tmp/proof/pdc-x-p2/replay.{log,xml}: plug_03 17p/1f/0s; plug_04 4p/0f/0s; plug_final 5p/0f/0s",
       "ARCH_FREEZE_BLOCKER": "YES",
-      "FINAL_DISPOSITION": "BLOCKED — OD-PDC-SCOPE-01 (implement vs authorized exclusion)",
-      "GAP_CLASS": "BLOCKED_EXACT_REASON"
+      "FINAL_DISPOSITION": "OPEN — closure via PDC-P5-D1 (ADR-PDC-01; OD-PDC-SCOPE-01 A: implement)",
+      "GAP_CLASS": "IMPLEMENTATION_COMPLETION"
     },
     {
       "REQUIREMENT_ID": "PDC-D1-R019",
@@ -579,8 +576,8 @@
       "EXISTING_CERTIFICATION": "NONE",
       "EXISTING_ACCEPTANCE_SHA": "—",
       "CURRENT_HEAD_DELTA": "— (no accepted certification)",
-      "MANDATORY_GAP": "YES",
-      "CORRECTIVE_TASK": "OD-PDC-SCOPE-03 (authorized exclusion proposed)",
+      "MANDATORY_GAP": "NO",
+      "CORRECTIVE_TASK": "OD-PDC-SCOPE-03 A: authorized exclusion",
       "TEST_CASE": "n/a if excluded",
       "FRZ_IDS": "FRZ-DEBT-05,FRZ-DEBT-06",
       "SECURITY_IMPACT": "LOW",
@@ -590,9 +587,9 @@
       "AUDITOR_ID": "—",
       "AUDITED_SHA": "—",
       "EVIDENCE_PATH": ".tmp/proof/pdc-x-p2/replay.{log,xml}: plug_03 17p/1f/0s; plug_04 4p/0f/0s; plug_final 5p/0f/0s",
-      "ARCH_FREEZE_BLOCKER": "YES",
-      "FINAL_DISPOSITION": "BLOCKED — OD-PDC-SCOPE-03 (authorized exclusion proposed)",
-      "GAP_CLASS": "BLOCKED_EXACT_REASON"
+      "ARCH_FREEZE_BLOCKER": "NO",
+      "FINAL_DISPOSITION": "DEFERRED — OD-PDC-SCOPE-03 A: authorized exclusion; evidence-backed exclusion (FRZ-DEBT-06)",
+      "GAP_CLASS": "DEFERRED_OUTSIDE_FREEZE_SCOPE"
     },
     {
       "REQUIREMENT_ID": "PDC-D1-R020",
@@ -762,7 +759,7 @@
       "EXISTING_ACCEPTANCE_SHA": "ba41ef7592c07df04d75a15cd2efc36fe86bd041",
       "CURRENT_HEAD_DELTA": "53 files (intergrax/rag) @ 1ebd2ab4c2e6",
       "MANDATORY_GAP": "YES",
-      "CORRECTIVE_TASK": "OD-PDC-SCOPE-06 (freshness policy contract vs authorized exclusion)",
+      "CORRECTIVE_TASK": "PDC-P5-D2 (ADR-PDC-02; OD-PDC-SCOPE-06 A: implement)",
       "TEST_CASE": "tests/qualification/pdc_x/d2 stale source detected",
       "FRZ_IDS": "FRZ-STA-05,FRZ-DEBT-04",
       "SECURITY_IMPACT": "LOW",
@@ -773,8 +770,8 @@
       "AUDITED_SHA": "—",
       "EVIDENCE_PATH": ".tmp/proof/pdc-x-p2/replay.{log,xml}: ce_01 15p/0f/0s; ce_02 21p/0f/0s; memory_behavior 47p/0f/0s",
       "ARCH_FREEZE_BLOCKER": "YES",
-      "FINAL_DISPOSITION": "BLOCKED — OD-PDC-SCOPE-06 (freshness policy contract vs authorized exclusion)",
-      "GAP_CLASS": "BLOCKED_EXACT_REASON"
+      "FINAL_DISPOSITION": "OPEN — closure via PDC-P5-D2 (ADR-PDC-02; OD-PDC-SCOPE-06 A: implement)",
+      "GAP_CLASS": "IMPLEMENTATION_COMPLETION"
     },
     {
       "REQUIREMENT_ID": "PDC-D2-R006",
@@ -1619,8 +1616,8 @@
       "EXISTING_CERTIFICATION": "NONE",
       "EXISTING_ACCEPTANCE_SHA": "—",
       "CURRENT_HEAD_DELTA": "— (no accepted certification)",
-      "MANDATORY_GAP": "YES",
-      "CORRECTIVE_TASK": "OD-PDC-SCOPE-03 (authorized exclusion proposed)",
+      "MANDATORY_GAP": "NO",
+      "CORRECTIVE_TASK": "OD-PDC-SCOPE-03 A: authorized exclusion",
       "TEST_CASE": "n/a if excluded",
       "FRZ_IDS": "FRZ-PLG-02,FRZ-DEBT-05",
       "SECURITY_IMPACT": "LOW",
@@ -1630,9 +1627,9 @@
       "AUDITOR_ID": "—",
       "AUDITED_SHA": "—",
       "EVIDENCE_PATH": ".tmp/proof/pdc-x-p2/replay.{log,xml}: ebh_5 239p/4f/0s",
-      "ARCH_FREEZE_BLOCKER": "YES",
-      "FINAL_DISPOSITION": "BLOCKED — OD-PDC-SCOPE-03 (authorized exclusion proposed)",
-      "GAP_CLASS": "BLOCKED_EXACT_REASON"
+      "ARCH_FREEZE_BLOCKER": "NO",
+      "FINAL_DISPOSITION": "DEFERRED — OD-PDC-SCOPE-03 A: authorized exclusion; evidence-backed exclusion (FRZ-DEBT-06)",
+      "GAP_CLASS": "DEFERRED_OUTSIDE_FREEZE_SCOPE"
     },
     {
       "REQUIREMENT_ID": "PDC-D3-R021",
@@ -1983,8 +1980,8 @@
       "EXISTING_CERTIFICATION": "NONE",
       "EXISTING_ACCEPTANCE_SHA": "—",
       "CURRENT_HEAD_DELTA": "— (no accepted certification)",
-      "MANDATORY_GAP": "YES",
-      "CORRECTIVE_TASK": "OD-PDC-SCOPE-02 (authorized exclusion proposed; ApplicationEnvironmentProfile authority PRESERVE)",
+      "MANDATORY_GAP": "NO",
+      "CORRECTIVE_TASK": "OD-PDC-SCOPE-02 A: authorized exclusion",
       "TEST_CASE": "n/a if excluded",
       "FRZ_IDS": "FRZ-DEBT-05,FRZ-DEBT-06",
       "SECURITY_IMPACT": "LOW",
@@ -1994,9 +1991,9 @@
       "AUDITOR_ID": "—",
       "AUDITED_SHA": "—",
       "EVIDENCE_PATH": ".tmp/proof/pdc-x-p2/replay.{log,xml}: host_01 20p/0f/0s",
-      "ARCH_FREEZE_BLOCKER": "YES",
-      "FINAL_DISPOSITION": "BLOCKED — OD-PDC-SCOPE-02 (authorized exclusion proposed; ApplicationEnvironmentProfile authority PRESERVE)",
-      "GAP_CLASS": "BLOCKED_EXACT_REASON"
+      "ARCH_FREEZE_BLOCKER": "NO",
+      "FINAL_DISPOSITION": "DEFERRED — OD-PDC-SCOPE-02 A: authorized exclusion; evidence-backed exclusion (FRZ-DEBT-06)",
+      "GAP_CLASS": "DEFERRED_OUTSIDE_FREEZE_SCOPE"
     },
     {
       "REQUIREMENT_ID": "PDC-D4-R012",
@@ -2009,8 +2006,8 @@
       "EXISTING_CERTIFICATION": "NONE",
       "EXISTING_ACCEPTANCE_SHA": "—",
       "CURRENT_HEAD_DELTA": "— (no accepted certification)",
-      "MANDATORY_GAP": "YES",
-      "CORRECTIVE_TASK": "OD-PDC-SCOPE-02 (authorized exclusion proposed)",
+      "MANDATORY_GAP": "NO",
+      "CORRECTIVE_TASK": "OD-PDC-SCOPE-02 A: authorized exclusion",
       "TEST_CASE": "n/a if excluded",
       "FRZ_IDS": "FRZ-DEBT-05",
       "SECURITY_IMPACT": "LOW",
@@ -2020,9 +2017,9 @@
       "AUDITOR_ID": "—",
       "AUDITED_SHA": "—",
       "EVIDENCE_PATH": ".tmp/proof/pdc-x-p2/replay.{log,xml}: host_01 20p/0f/0s",
-      "ARCH_FREEZE_BLOCKER": "YES",
-      "FINAL_DISPOSITION": "BLOCKED — OD-PDC-SCOPE-02 (authorized exclusion proposed)",
-      "GAP_CLASS": "BLOCKED_EXACT_REASON"
+      "ARCH_FREEZE_BLOCKER": "NO",
+      "FINAL_DISPOSITION": "DEFERRED — OD-PDC-SCOPE-02 A: authorized exclusion; evidence-backed exclusion (FRZ-DEBT-06)",
+      "GAP_CLASS": "DEFERRED_OUTSIDE_FREEZE_SCOPE"
     },
     {
       "REQUIREMENT_ID": "PDC-D4-R013",
@@ -2035,8 +2032,8 @@
       "EXISTING_CERTIFICATION": "NONE",
       "EXISTING_ACCEPTANCE_SHA": "—",
       "CURRENT_HEAD_DELTA": "— (no accepted certification)",
-      "MANDATORY_GAP": "YES",
-      "CORRECTIVE_TASK": "OD-PDC-SCOPE-02 (authorized exclusion proposed)",
+      "MANDATORY_GAP": "NO",
+      "CORRECTIVE_TASK": "OD-PDC-SCOPE-02 A: authorized exclusion",
       "TEST_CASE": "n/a if excluded",
       "FRZ_IDS": "FRZ-PLG-01,FRZ-DEBT-05",
       "SECURITY_IMPACT": "LOW",
@@ -2046,9 +2043,9 @@
       "AUDITOR_ID": "—",
       "AUDITED_SHA": "—",
       "EVIDENCE_PATH": ".tmp/proof/pdc-x-p2/replay.{log,xml}: host_01 20p/0f/0s",
-      "ARCH_FREEZE_BLOCKER": "YES",
-      "FINAL_DISPOSITION": "BLOCKED — OD-PDC-SCOPE-02 (authorized exclusion proposed)",
-      "GAP_CLASS": "BLOCKED_EXACT_REASON"
+      "ARCH_FREEZE_BLOCKER": "NO",
+      "FINAL_DISPOSITION": "DEFERRED — OD-PDC-SCOPE-02 A: authorized exclusion; evidence-backed exclusion (FRZ-DEBT-06)",
+      "GAP_CLASS": "DEFERRED_OUTSIDE_FREEZE_SCOPE"
     },
     {
       "REQUIREMENT_ID": "PDC-D4-R014",
@@ -3076,7 +3073,7 @@
       "EXISTING_ACCEPTANCE_SHA": "—",
       "CURRENT_HEAD_DELTA": "— (no accepted certification)",
       "MANDATORY_GAP": "YES",
-      "CORRECTIVE_TASK": "OD-PDC-SCOPE-07 (plugin provenance enforcement vs authorized scope)",
+      "CORRECTIVE_TASK": "PDC-P5-D6 (ADR-PDC-06; OD-PDC-SCOPE-07 A: implement)",
       "TEST_CASE": "tests/qualification/pdc_x/d6 unsigned plugin rejected (if in scope)",
       "FRZ_IDS": "FRZ-SEC-06,FRZ-PLG-05",
       "SECURITY_IMPACT": "HIGH",
@@ -3087,8 +3084,8 @@
       "AUDITED_SHA": "—",
       "EVIDENCE_PATH": ".tmp/proof/pdc-x-p2/replay.{log,xml}: tenant_x 194p/0f/0s; governance 395p/8f/0s; prod_q 445p/0f/2s",
       "ARCH_FREEZE_BLOCKER": "YES",
-      "FINAL_DISPOSITION": "BLOCKED — OD-PDC-SCOPE-07 (plugin provenance enforcement vs authorized scope)",
-      "GAP_CLASS": "BLOCKED_EXACT_REASON"
+      "FINAL_DISPOSITION": "OPEN — closure via PDC-P5-D6 (ADR-PDC-06; OD-PDC-SCOPE-07 A: implement)",
+      "GAP_CLASS": "IMPLEMENTATION_COMPLETION"
     },
     {
       "REQUIREMENT_ID": "PDC-D6-R017",
@@ -3518,7 +3515,7 @@
       "EXISTING_ACCEPTANCE_SHA": "—",
       "CURRENT_HEAD_DELTA": "— (no accepted certification)",
       "MANDATORY_GAP": "YES",
-      "CORRECTIVE_TASK": "OD-PDC-SCOPE-05 (implement via ADR-PDC-07 vs authorized exclusion)",
+      "CORRECTIVE_TASK": "PDC-P5-D7 (ADR-PDC-07; OD-PDC-SCOPE-05 A: implement)",
       "TEST_CASE": "tests/qualification/pdc_x/d7 recurrence occurrences + DST",
       "FRZ_IDS": "FRZ-EXE-07,FRZ-DEBT-05",
       "SECURITY_IMPACT": "LOW",
@@ -3529,8 +3526,8 @@
       "AUDITED_SHA": "—",
       "EVIDENCE_PATH": ".tmp/proof/pdc-x-p2/replay.{log,xml}: bg_01 22p/0f/0s; sched_01 14p/0f/0s",
       "ARCH_FREEZE_BLOCKER": "YES",
-      "FINAL_DISPOSITION": "BLOCKED — OD-PDC-SCOPE-05 (implement via ADR-PDC-07 vs authorized exclusion)",
-      "GAP_CLASS": "BLOCKED_EXACT_REASON"
+      "FINAL_DISPOSITION": "OPEN — closure via PDC-P5-D7 (ADR-PDC-07; OD-PDC-SCOPE-05 A: implement)",
+      "GAP_CLASS": "IMPLEMENTATION_COMPLETION"
     },
     {
       "REQUIREMENT_ID": "PDC-D7-R007",
@@ -3544,7 +3541,7 @@
       "EXISTING_ACCEPTANCE_SHA": "—",
       "CURRENT_HEAD_DELTA": "— (no accepted certification)",
       "MANDATORY_GAP": "YES",
-      "CORRECTIVE_TASK": "OD-PDC-SCOPE-05",
+      "CORRECTIVE_TASK": "PDC-P5-D7 (ADR-PDC-07; OD-PDC-SCOPE-05 A: implement)",
       "TEST_CASE": "tests/qualification/pdc_x/d7 DST transition",
       "FRZ_IDS": "FRZ-DEBT-05",
       "SECURITY_IMPACT": "LOW",
@@ -3555,8 +3552,8 @@
       "AUDITED_SHA": "—",
       "EVIDENCE_PATH": ".tmp/proof/pdc-x-p2/replay.{log,xml}: bg_01 22p/0f/0s; sched_01 14p/0f/0s",
       "ARCH_FREEZE_BLOCKER": "YES",
-      "FINAL_DISPOSITION": "BLOCKED — OD-PDC-SCOPE-05",
-      "GAP_CLASS": "BLOCKED_EXACT_REASON"
+      "FINAL_DISPOSITION": "OPEN — closure via PDC-P5-D7 (ADR-PDC-07; OD-PDC-SCOPE-05 A: implement)",
+      "GAP_CLASS": "IMPLEMENTATION_COMPLETION"
     },
     {
       "REQUIREMENT_ID": "PDC-D7-R008",
@@ -3570,7 +3567,7 @@
       "EXISTING_ACCEPTANCE_SHA": "—",
       "CURRENT_HEAD_DELTA": "— (no accepted certification)",
       "MANDATORY_GAP": "YES",
-      "CORRECTIVE_TASK": "OD-PDC-SCOPE-05",
+      "CORRECTIVE_TASK": "PDC-P5-D7 (ADR-PDC-07; OD-PDC-SCOPE-05 A: implement)",
       "TEST_CASE": "tests/qualification/pdc_x/d7 misfire policy",
       "FRZ_IDS": "FRZ-DEBT-05",
       "SECURITY_IMPACT": "LOW",
@@ -3581,8 +3578,8 @@
       "AUDITED_SHA": "—",
       "EVIDENCE_PATH": ".tmp/proof/pdc-x-p2/replay.{log,xml}: bg_01 22p/0f/0s; sched_01 14p/0f/0s",
       "ARCH_FREEZE_BLOCKER": "YES",
-      "FINAL_DISPOSITION": "BLOCKED — OD-PDC-SCOPE-05",
-      "GAP_CLASS": "BLOCKED_EXACT_REASON"
+      "FINAL_DISPOSITION": "OPEN — closure via PDC-P5-D7 (ADR-PDC-07; OD-PDC-SCOPE-05 A: implement)",
+      "GAP_CLASS": "IMPLEMENTATION_COMPLETION"
     },
     {
       "REQUIREMENT_ID": "PDC-D7-R009",
@@ -3986,7 +3983,7 @@
       "EXISTING_ACCEPTANCE_SHA": "—",
       "CURRENT_HEAD_DELTA": "— (no accepted certification)",
       "MANDATORY_GAP": "YES",
-      "CORRECTIVE_TASK": "PDC-P3 ADR-PDC-08 -> PDC-P5-D8",
+      "CORRECTIVE_TASK": "PDC-P5-D8 (ADR-PDC-08 accepted)",
       "TEST_CASE": "taxonomy + ownership gate",
       "FRZ_IDS": "FRZ-OWN-01,FRZ-DOC-03",
       "SECURITY_IMPACT": "LOW",
@@ -3997,7 +3994,7 @@
       "AUDITED_SHA": "—",
       "EVIDENCE_PATH": "no qualification suite exists (PDC_CLOSED_WORLD_INVENTORY.md)",
       "ARCH_FREEZE_BLOCKER": "YES",
-      "FINAL_DISPOSITION": "OPEN — closure via PDC-P3 ADR-PDC-08 -> PDC-P5-D8",
+      "FINAL_DISPOSITION": "OPEN — closure via PDC-P5-D8 (ADR-PDC-08 accepted)",
       "GAP_CLASS": "IMPLEMENTATION_COMPLETION"
     },
     {
@@ -4220,7 +4217,7 @@
       "EXISTING_ACCEPTANCE_SHA": "—",
       "CURRENT_HEAD_DELTA": "— (no accepted certification)",
       "MANDATORY_GAP": "YES",
-      "CORRECTIVE_TASK": "OD-PDC-SCOPE-04 (implement vs authorized exclusion)",
+      "CORRECTIVE_TASK": "PDC-P5-D8 (ADR-PDC-08; OD-PDC-SCOPE-04 A: implement)",
       "TEST_CASE": "tests/qualification/pdc_x/d8 governed download (if in scope)",
       "FRZ_IDS": "FRZ-SEC-08,FRZ-DEBT-05",
       "SECURITY_IMPACT": "HIGH",
@@ -4231,8 +4228,8 @@
       "AUDITED_SHA": "—",
       "EVIDENCE_PATH": "no qualification suite exists (PDC_CLOSED_WORLD_INVENTORY.md)",
       "ARCH_FREEZE_BLOCKER": "YES",
-      "FINAL_DISPOSITION": "BLOCKED — OD-PDC-SCOPE-04 (implement vs authorized exclusion)",
-      "GAP_CLASS": "BLOCKED_EXACT_REASON"
+      "FINAL_DISPOSITION": "OPEN — closure via PDC-P5-D8 (ADR-PDC-08; OD-PDC-SCOPE-04 A: implement)",
+      "GAP_CLASS": "IMPLEMENTATION_COMPLETION"
     },
     {
       "REQUIREMENT_ID": "PDC-D8-R011",

@@ -3,7 +3,7 @@
 | Field | Value |
 | --- | --- |
 | **Document ID** | ADR-PDC-02 |
-| **Status** | **Proposed** (pending OD-PDC-ADR-01) |
+| **Status** | **Accepted** (OD-PDC-ADR-01, 2026-11-12) |
 | **Campaign** | PDC-X P3 (T-IGX-036-D) |
 | **Domain** | PDC-D2 Context & Knowledge |
 | **Requirements** | PDC-D2-R011, PDC-D2-R012, PDC-D2-R015 (and PDC-D6-R022 for memory) — see [`PDC_DOMAIN_REQUIREMENTS_MATRIX.md`](../qualification/platform_domain_completeness/PDC_DOMAIN_REQUIREMENTS_MATRIX.md) |
@@ -22,6 +22,8 @@
 - PDC closes CE-02 by requalifying `tests/qualification/ce_02` at the PDC audit SHA plus adversarial durable-compaction round-trip tests; no new context engine.
 - Memory retention enforcement runs through `MemoryControlPlane` (`forget` / `delete` paths already exist) driven by a typed retention sweep that also tombstones vector-index entries; the sweep is a background task admitted through canonical execution (no new scheduler).
 
+- **OD-PDC-SCOPE-06 = A (implement):** minimal RAG freshness contract. Indexed documents carry a source revision/timestamp, retrieval returns a typed staleness verdict, and reindexing is admitted as background work through the existing embedding-version reindex hook. No new retrieval engine.
+
 ## Alternatives rejected
 
 - A second context assembly or compaction engine.
@@ -33,4 +35,4 @@
 
 ## Status note
 
-Proposed only. No implementation before OD-PDC-ADR-01 accepts this ADR; product changes then follow OD-PDC-SEQ-01 (merge after MCP-SERVER-X P8).
+Accepted by OD-PDC-ADR-01 (Operator, 2026-11-12, recorded under T-IGX-036-E). This authorizes PDC-P4 design. Product merges still follow OD-PDC-SEQ-01 (merge after MCP-SERVER-X P8), which is pending.

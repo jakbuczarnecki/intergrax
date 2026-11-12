@@ -3,7 +3,7 @@
 | Field | Value |
 | --- | --- |
 | **Document ID** | ADR-PDC-03 |
-| **Status** | **Proposed** (pending OD-PDC-ADR-01) |
+| **Status** | **Accepted** (OD-PDC-ADR-01, 2026-11-12) |
 | **Campaign** | PDC-X P3 (T-IGX-036-D) |
 | **Domain** | PDC-D3 Model Runtime |
 | **Requirements** | PDC-D3-R006, PDC-D3-R022, PDC-D3-R015 (and PDC-D3-R011) — see [`PDC_DOMAIN_REQUIREMENTS_MATRIX.md`](../qualification/platform_domain_completeness/PDC_DOMAIN_REQUIREMENTS_MATRIX.md) |
@@ -22,6 +22,8 @@
 - The runtime checks requested features against declared capabilities before the call and fails closed with a typed error; it never silently downgrades from streamed tool calls to buffered output.
 - The ModelCatalog stays the single source for context-window data; provider-local tables become fallbacks resolved through the catalog (PDC-D3-R023 ownership via P3-01).
 
+- **OD-PDC-SCOPE-03 = A (authorized exclusion):** the LLM provider plugin registration layer (LLM-PROVIDER-PLUGIN-1) is outside the freeze scope; replaceability stays on `LLMAdapterRegistry` registrations (EBH-5).
+
 ## Alternatives rejected
 
 - Forcing full streaming parity in every provider before freeze (not required for provider-neutral architecture; Path B).
@@ -33,4 +35,4 @@
 
 ## Status note
 
-Proposed only. No implementation before OD-PDC-ADR-01 accepts this ADR; product changes then follow OD-PDC-SEQ-01 (merge after MCP-SERVER-X P8).
+Accepted by OD-PDC-ADR-01 (Operator, 2026-11-12, recorded under T-IGX-036-E). This authorizes PDC-P4 design. Product merges still follow OD-PDC-SEQ-01 (merge after MCP-SERVER-X P8), which is pending.

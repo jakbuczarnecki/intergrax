@@ -3,7 +3,7 @@
 | Field | Value |
 | --- | --- |
 | **Document ID** | ADR-PDC-06 |
-| **Status** | **Proposed** (pending OD-PDC-ADR-01) |
+| **Status** | **Accepted** (OD-PDC-ADR-01, 2026-11-12) |
 | **Campaign** | PDC-X P3 (T-IGX-036-D) |
 | **Domain** | PDC-D6 Runtime Security |
 | **Requirements** | PDC-D6-R007, R008, R013, R014, R020, R021, R023 (SEC-BND-04/05/06) — see [`PDC_DOMAIN_REQUIREMENTS_MATRIX.md`](../qualification/platform_domain_completeness/PDC_DOMAIN_REQUIREMENTS_MATRIX.md) |
@@ -24,6 +24,8 @@
 - Add a static raw-secret gate plus a caplog/trace secret-leak test.
 - Publish a consolidated security architecture satellite and responsibility matrix (encryption/residency) referencing GOVERNED_EXECUTION, INTEGRATIONS credentials, sandbox and the EE-B3 threat model — a satellite, not a new policy authority.
 
+- **OD-PDC-SCOPE-07 = A (implement):** plugin entry-point admission enforces provenance by reusing the agent package trust mechanism (`AgentPackageTrustPolicy`, Ed25519 verifier). Unsigned plugins are rejected in strict profiles.
+
 ## Alternatives rejected
 
 - A new policy engine or identity authority.
@@ -35,4 +37,4 @@
 
 ## Status note
 
-Proposed only. No implementation before OD-PDC-ADR-01 accepts this ADR; product changes then follow OD-PDC-SEQ-01 (merge after MCP-SERVER-X P8).
+Accepted by OD-PDC-ADR-01 (Operator, 2026-11-12, recorded under T-IGX-036-E). This authorizes PDC-P4 design. Product merges still follow OD-PDC-SEQ-01 (merge after MCP-SERVER-X P8), which is pending.
