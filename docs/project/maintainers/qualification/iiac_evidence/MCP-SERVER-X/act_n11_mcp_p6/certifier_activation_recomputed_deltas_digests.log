@@ -1,0 +1,35 @@
+# certifier recomputed deltas and digests (certification-governance-agent, session local_7c8553da-3398-4f9b-8fae-c794a63d6cb5)
+# HEAD: d7451dff01d478bc1deba0a81823cb557519a5ef
+# UTC: 2026-11-12T05:57:25Z
+# command: python <inline script: iiac_common.product_paths_changed_between x4 + sha256 of record-referenced digest artifacts>
+
+product_paths_changed_between(8fff85e3b..a695c9c83) count=3
+  applications/research_application/mcp/server.py
+  intergrax/applications/_shared/mcp_application_server.py
+  intergrax/applications/_shared/mcp_developer_api.py
+product_paths_changed_between(11ac8ad85..a695c9c83) count=17
+  applications/dispute_sim_application/mcp/server.py
+  applications/governed_contractor_application/mcp/server.py
+  applications/intergrax_assistant_application/mcp/server.py
+  applications/lab_application/mcp/server.py
+  applications/legal_application/mcp/server.py
+  applications/local_workspace_application/mcp/server.py
+  applications/poc_template_application/mcp/server.py
+  applications/research_application/mcp/server.py
+  intergrax/applications/_shared/mcp_application_server.py
+  intergrax/applications/_shared/mcp_developer_api.py
+  intergrax/applications/_shared/mcp_engine_concurrency.py
+  intergrax/applications/_shared/mcp_host_mount.py
+  intergrax/applications/_shared/mcp_import_guard.py
+  intergrax/applications/_shared/mcp_nexus_server.py
+  intergrax/applications/_shared/mcp_server_engine.py
+  intergrax/applications/_shared/settings_loader.py
+  intergrax/contracts/mcp_server_definition.py
+audit_scope.json product_paths_cumulative_post_rebind count=17 equal_to_recomputed=True
+product_paths_changed_between(2d3eceb6c..HEAD) = []
+sha256 c405c65faf53243a0511b0b9584a9f3abda4db08c09ee9b9266c86fe9f6b7a4e audit_report_path docs/project/maintainers/qualification/iiac_evidence/IIAC-GOV-1/certification/IIAC_ACT01_INDEPENDENT_REAUDIT_DOSSIER.md (expect prefix c405c65f) OK
+sha256 e06ce433ac1c260390885e19cc60b0687be9d8908d78bd38ae4fb5f1102fe56f audit_scope_path docs/project/maintainers/qualification/iiac_evidence/ENT-AUDIT-X/act_n11_recovery/audit_scope.json (expect prefix e06ce433) OK
+sha256 d5028f194bb7917d07e8df5264075952dcf8757503975042988caba6e89a240b test_matrix_path docs/project/maintainers/qualification/iiac_evidence/ENT-AUDIT-X/act_n11_recovery/test_matrix.txt (expect prefix d5028f19) OK
+sha256 df3648f926dad3199ff40c7c83c7fae4ed7a26bd1c67701a355bc7130073f831 findings_path docs/project/maintainers/qualification/iiac_evidence/HIST-P5-2026-11-09/HIST_P5_REACTIVATION_FINDINGS.json (expect prefix df3648f9) OK
+ALL_EXPECTATIONS_MET=True
+exit=0
