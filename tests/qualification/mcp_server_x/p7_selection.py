@@ -25,14 +25,23 @@ MCP_SERVER_X_P7_NEW_QUALIFICATION: tuple[str, ...] = (
 MCP_SERVER_X_P7_REGRESSION_EXTRA: tuple[str, ...] = (
     f"{_UA}/test_mcp_public_api_surface.py",
     f"{_UA}/test_fastapi_mcp.py",
-    f"{_UA}/test_mcp_surface_opt_in.py",
-    f"{_UA}/test_mcp_surface_opt_in_runtime.py",
     f"{_UA}/test_mcp_server_engine_architecture_gates.py",
     f"{_UA}/test_mcp_catalog_cross_loop_ingress_qualification.py",
     f"{_UA}/test_mcp_catalog_f3_streamable_http_physical_l3.py",
     f"{_UA}/test_mcp_catalog_f3_cross_loop_cancel_c_physical_l3.py",
-    f"{_UA}/test_mcp_catalog_e2e_hung_server_qualification.py",
     f"{_QM}/test_mcp_server_x_p6_reference_l3_qualification.py",
+)
+
+# Pre-existing failures on this machine, NOT introduced by P6/P7 and NOT part of any earlier qualified
+# selection: the same 11 tests fail identically at c59892829 (P5 publication) and d5c1383fc (P7 cut)
+# and at the P7 head (logs: .tmp/session/mcp-p7p8-run/baseline_p7-base-*.log). Causes seen in the logs:
+# "LLM provider not explicitly configured", STRICT agent contract needs revision-bound authority, and the
+# TL11 catalog subprocess startup timeout. They are recorded as residual R-P7-02 and are excluded from the
+# P7 regression selection; they must be investigated outside P7 (do not treat them as passing).
+MCP_SERVER_X_P7_KNOWN_BASELINE_RED: tuple[str, ...] = (
+    f"{_UA}/test_mcp_surface_opt_in.py",
+    f"{_UA}/test_mcp_surface_opt_in_runtime.py",
+    f"{_UA}/test_mcp_catalog_e2e_hung_server_qualification.py",
 )
 
 MCP_SERVER_X_P7_REGRESSION_SELECTION: tuple[str, ...] = tuple(

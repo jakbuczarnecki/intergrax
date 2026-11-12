@@ -89,3 +89,12 @@ def test_acc_20_exact_sha_package_record_exists_and_pins_a_test_execution_sha() 
     assert re.search(r"TEST_EXECUTION_SHA[^`\n]*`[0-9a-f]{40}`", text), "package must pin a 40-hex TEST_EXECUTION_SHA"
     for n in range(1, 21):
         assert f"MCP-ACC-{n:02d}" in text, f"package record has no row for MCP-ACC-{n:02d}"
+
+
+def test_acc_19_known_baseline_red_files_exist_and_are_excluded_from_the_regression_selection() -> None:
+    from tests.qualification.mcp_server_x.p7_selection import MCP_SERVER_X_P7_KNOWN_BASELINE_RED
+
+    assert len(MCP_SERVER_X_P7_KNOWN_BASELINE_RED) == 3
+    for rel in MCP_SERVER_X_P7_KNOWN_BASELINE_RED:
+        assert (_REPO_ROOT / rel).is_file(), rel
+        assert rel not in MCP_SERVER_X_P7_REGRESSION_SELECTION, rel
