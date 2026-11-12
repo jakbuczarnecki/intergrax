@@ -95,6 +95,8 @@ Every canonical architecture artifact is classified **exactly once**. Do not pro
 | `PROOF_RECEIPTS` | [`PROOF_RECEIPTS.md`](PROOF_RECEIPTS.md) | [`../maintainers/plans/PROOF_RECEIPTS.md`](../maintainers/plans/PROOF_RECEIPTS.md) |
 | `AUTONOMOUS_WORK` | [`AUTONOMOUS_WORK.md`](AUTONOMOUS_WORK.md) | [`../maintainers/plans/AUTONOMOUS_WORK.md`](../maintainers/plans/AUTONOMOUS_WORK.md) |
 | `CAPABILITY_CATALOG_AND_DISCOVERY` | [`CAPABILITY_CATALOG_AND_DISCOVERY.md`](CAPABILITY_CATALOG_AND_DISCOVERY.md) | [`../maintainers/plans/CAPABILITY_CATALOG_AND_DISCOVERY.md`](../maintainers/plans/CAPABILITY_CATALOG_AND_DISCOVERY.md) |
+| `BACKGROUND_TASKS` *(PDC-X reconciliation PDC-P1-F01, 2026-11-12)* | [`BACKGROUND_TASKS.md`](BACKGROUND_TASKS.md) | [`../maintainers/plans/BACKGROUND_TASKS.md`](../maintainers/plans/BACKGROUND_TASKS.md) |
+| `COLLABORATIVE_WORK` *(PDC-X reconciliation PDC-P1-F01, 2026-11-12)* | [`COLLABORATIVE_WORK.md`](COLLABORATIVE_WORK.md) | [`../maintainers/plans/COLLABORATIVE_WORK.md`](../maintainers/plans/COLLABORATIVE_WORK.md) |
 | ENTERPRISE_RELIABILITY_LAYER | [ENTERPRISE_RELIABILITY_LAYER.md](ENTERPRISE_RELIABILITY_LAYER.md) | *Implementation plan — NEXT (roadmap step 5; architecture canon only)* |
 
 **Enterprise Reliability Layer subordinate architecture hubs** (subordinate to [ENTERPRISE_RELIABILITY_LAYER.md](ENTERPRISE_RELIABILITY_LAYER.md)):

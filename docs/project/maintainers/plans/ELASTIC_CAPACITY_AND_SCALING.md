@@ -195,7 +195,7 @@ Deliverables (planned):
 | **Priority** | P0 |
 | **Owns findings** | AUDIT-20260818-ELASTIC_CAPACITY_AND_SCALING-03, AUDIT-20260818-ELASTIC_CAPACITY_AND_SCALING-04 |
 | **Intent** | Capacity mutation and HITL use canonical Governed Execution / approval evidence; fail-closed where production policy requires authority |
-| **Cross-links** | [`GOVERNED_EXECUTION.md`](GOVERNED_EXECUTION.md) - PG-FIX-C; [`IDENTITY_TRUST`](../../architecture/IDENTITY_TRUST.md) - IDT-FIX-C |
+| **Cross-links** | [`GOVERNED_EXECUTION.md`](GOVERNED_EXECUTION.md) - PG-FIX-C; [`EXECUTION_ENGINE_SECURITY_BOUNDARY_AND_THREAT_MODEL`](../architecture/EXECUTION_ENGINE_SECURITY_BOUNDARY_AND_THREAT_MODEL.md) *(repointed from the missing `architecture/IDENTITY_TRUST.md`; consolidated security satellite owned by PDC-P5-D6, [ADR-PDC-06](../architecture/ADR_PDC_06_RUNTIME_SECURITY_HARDENING.md) - PDC-X reconciliation PDC-D6-R021, 2026-11-12)* - IDT-FIX-C |
 | **Primary modules** | `capacity/action_gate.py`, `capacity/approval_queue.py`, `applications/_shared/scaling_wiring.py` |
 | **Architecture ref** | same Protocol v2 section §3–§4 |
 | **Status** | **ACCEPTED / PLANNED** |

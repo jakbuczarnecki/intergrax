@@ -29,4 +29,16 @@ Product code; scripts; tests; ADR-bound documents; FRZ changes; rewriting histor
 
 ## Lifecycle state
 
-plan_approved
+quality_gate
+
+## Checkpoint
+
+| Field | Value |
+| --- | --- |
+| Branch | `pdc-x-p5-doc` (worktree `<parent>/_wt/intergrax/pdc-doc`) |
+| Implementer | Implementer subagent under the PDC orchestrator session; final edits, the commit and the remaining link fixes by the orchestrator. Neither wrote the Approved line |
+| Deliverables | 1–9 done, each citing its requirement ID. Deliverable 8 covered six broken links: three to `architecture/IDENTITY_TRUST.md`, repointed to the EE-B3 threat model, and three to `plans/IDENTITY_TRUST.md`, repointed to the existing `docs/audit_results/2026-08-18/IDENTITY_TRUST.md` |
+| Files | `docs/` only (13 files) |
+| `check_docs_domain_pairs.py` | OK (23 domain pairs; 3 feature pairs) |
+| `pdc_x_inventory.py --check` | OK |
+| Not covered | The TL-FIX-D "focused tests" claim cites code evidence only; no direct test references `bind_execution_adapter`. Follow-up for the D4 lane. The pre-existing dead link to `audit_results/2026-08-18/TIER_LAYER_BOUNDARIES.md` is untouched |

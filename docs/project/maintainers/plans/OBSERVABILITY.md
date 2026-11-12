@@ -247,7 +247,7 @@ Detailed delivery for later trace phases may live in other canonical plans. OBSE
 **Outcome (planning only):**
 
 - Full-run Unified Run Journal proves completeness, exposes pagination/continuation, or fails/marks truncated - reuse `load_positioned_run_journal_through()` completeness machinery; do not build another journal authority.
-- One tenant truth on append: persistence routing tenant and event tenant cannot diverge - coordinate [`IDENTITY_TRUST`](IDENTITY_TRUST.md) remediation where applicable.
+- One tenant truth on append: persistence routing tenant and event tenant cannot diverge - coordinate [`IDENTITY_TRUST` audit](../../audit_results/2026-08-18/IDENTITY_TRUST.md) *(repointed from the missing `plans/IDENTITY_TRUST.md`; PDC-X reconciliation PDC-D6-R021, 2026-11-12)* remediation where applicable.
 - Explicit task ordering contract: do not use run-local `ExecutionEventPosition` as task-global coordinate - group runs, define task-level order, or document weaker semantics.
 
 ---
