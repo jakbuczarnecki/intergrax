@@ -34,8 +34,19 @@ uv run python -m scripts.governance.igx_gov ticket
 
 ## Lifecycle state
 
-plan_approved
+quality_gate
 
 ## Lease holder
 
 Worktree `_wt/intergrax/sfx-w1-arch`, branch `sfx-w1-arch` (stacked on `sfx-p0-registration`).
+
+## Checkpoint
+
+| Field | Value |
+| --- | --- |
+| Branch | `sfx-w1-research` (upstream `origin/development`), contains `origin/development` @ `0140bc6b5` and the W0 follow-up corrections |
+| Implementers | Orchestrator session and implementer/research subagents. None of them wrote an `Approved:` line. Approval: delegate re-approval after plan Amendment 1 (`85ab15622`) |
+| Test contract | `tests/unit/governance`: 164 passed, 1 skipped, 8 failed. All 8 failures are in `test_evol_x_real_repo_fresh_clone.py` with `Filename too long` (Windows MAX_PATH: the 174-character evidence path under the 16-character worktree name `sfx-w1-research`). The same file passes 15/15 in the shorter worktree `sfx-p0`. The file is unchanged by SFX and the long path exists on `development`; this is environmental. Log: `.tmp/session/sfx-w1/contract.log` |
+| Gates | `igx_gov ticket` OK (push-fast PASS); `pdc_x_inventory.py --check` OK (354 items, 0 UNMAPPED); pre-commit `check_docs_domain_pairs` OK |
+| Acceptance | `check_harness_adr.py` exits 1 with 24 findings, all pre-existing ADR index gaps; none concerns ADR-SFX-001..006 (the six ADRs are indexed in `docs/project/technical/adr/README.md`). The same 24 are the set accepted for SEF P1 by OD-SEF-P1-EXCEPTION. 17 schemas valid JSON with `$schema` and `$id` equal to the file name and `additionalProperties:false`. All six ADRs are `Proposed`; none claims `Accepted` |
+| Product paths | none (`intergrax/`, `agents/`, `applications/`, `scripts/`, `agent-env/` unchanged); IIAC ACT-N11 unaffected |
