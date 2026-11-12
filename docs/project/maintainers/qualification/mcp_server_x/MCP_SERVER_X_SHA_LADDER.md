@@ -38,7 +38,7 @@
 | P5_G6_AUDIT_EXECUTION_SHA | `c5989282937f5e592748cb606b2272d04837c601` | Post-publication audit |
 | P5_G6_EVIDENCE_PUBLICATION_SHA | `7fd899aaea873aac6ec9ae3fe6ce5e3ef9ec9c8c` | G6 closeout docs (amend pin) |
 | PLAN_DIGEST_SHA256 | `5dd3c72e497c72764ccc0c08d3df2dddfdbe19b3f36550ba5d87c4091f9833e7` | T-IGX-035-A |
-| TEST_EXECUTION_SHA | _unset_ | P7 qualification package |
+| TEST_EXECUTION_SHA | `abbe1525450da77da6801b080619a600c20cd497` | P7 qualification package (branch `mcp-p7-qualification`; clean-checkout replay at the same SHA) |
 | AUDIT_SHA | _unset_ | P8 stage IIIC |
 | CERTIFICATION_SHA | _unset_ | P8 IIIC |
 | EVIDENCE_PUBLICATION_SHA | _unset_ | P8 B6 |

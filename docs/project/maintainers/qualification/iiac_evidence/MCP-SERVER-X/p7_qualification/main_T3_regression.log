@@ -1,0 +1,26 @@
+command: pytest tests/unit/applications/test_mcp_trust_a_principal_binding.py tests/unit/applications/test_mcp_canonical_execution.py tests/unit/applications/test_mcp_cancel_a_transport_governed_cancel.py tests/unit/applications/test_mcp_catalog_gate_b_cancel_c_qualification.py tests/unit/applications/test_mcp_catalog_child_execution_qualification.py tests/unit/applications/test_mcp_catalog_discovery_qualification.py tests/unit/applications/test_mcp_engine_concurrency.py tests/unit/applications/test_mcp_host_mount.py tests/unit/applications/test_mcp_server_engine.py tests/unit/applications/test_mcp_server_p4_lifecycle.py tests/unit/applications/test_reference_apps_mcp.py tests/unit/contracts/test_mcp_server_definition.py tests/unit/applications/test_mcp_public_api_surface.py tests/unit/applications/test_fastapi_mcp.py tests/unit/applications/test_mcp_server_engine_architecture_gates.py tests/unit/applications/test_mcp_catalog_cross_loop_ingress_qualification.py tests/unit/applications/test_mcp_catalog_f3_streamable_http_physical_l3.py tests/unit/applications/test_mcp_catalog_f3_cross_loop_cancel_c_physical_l3.py tests/qualification/mcp_server_x/test_mcp_server_x_p6_reference_l3_qualification.py -q
+cwd: /d/Projekty/intergrax
+git_head: abbe1525450da77da6801b080619a600c20cd497
+date_utc: 2026-11-12T10:32:38Z
+........................................................................ [ 51%]
+.....................................................................    [100%]
+============================== warnings summary ===============================
+tests/unit/applications/test_mcp_trust_a_principal_binding.py::test_mcp_streamable_http_run_agent_binds_verified_tenant
+  D:\Projekty\intergrax\.venv\Lib\site-packages\websockets\legacy\__init__.py:6: DeprecationWarning: websockets.legacy is deprecated; see https://websockets.readthedocs.io/en/stable/howto/upgrade.html for upgrade instructions
+    warnings.warn(  # deprecated in 14.0 - 2024-11-09
+
+tests/unit/applications/test_mcp_trust_a_principal_binding.py::test_mcp_streamable_http_run_agent_binds_verified_tenant
+  D:\Projekty\intergrax\.venv\Lib\site-packages\uvicorn\protocols\websockets\websockets_impl.py:17: DeprecationWarning: websockets.server.WebSocketServerProtocol is deprecated
+    from websockets.server import WebSocketServerProtocol
+
+tests/unit/applications/test_mcp_trust_a_principal_binding.py: 4 warnings
+tests/unit/applications/test_mcp_cancel_a_transport_governed_cancel.py: 3 warnings
+tests/unit/applications/test_mcp_catalog_f3_streamable_http_physical_l3.py: 6 warnings
+tests/qualification/mcp_server_x/test_mcp_server_x_p6_reference_l3_qualification.py: 3 warnings
+  C:\Users\XPS\AppData\Roaming\uv\python\cpython-3.12.11-windows-x86_64-none\Lib\contextlib.py:105: DeprecationWarning: Use `streamable_http_client` instead.
+    self.gen = func(*args, **kwds)
+
+-- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html
+141 passed, 18 warnings in 65.67s (0:01:05)
+exit_code: 0
+date_end_utc: 2026-11-12T10:33:53Z

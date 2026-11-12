@@ -39,5 +39,5 @@
 | P2–P4 engine | **Complete (scoped)** @ P4 terminal `7930c256f` |
 | P5 security / execution qual | **Closed (scoped)** — `T-IGX-035-F` closed; [`P5 terminal dossier`](./MCP_SERVER_X_P5_TERMINAL_DOSSIER.md) · [`operator closure`](./MCP_SERVER_X_P5_OPERATOR_CLOSURE_RECORD.md) |
 | P6 | **Closed (scoped)** — `T-IGX-035-G` closed; guide [`MCP_SERVER_X_P6_DEVELOPER_GUIDE.md`](./MCP_SERVER_X_P6_DEVELOPER_GUIDE.md) · [`terminal dossier`](./MCP_SERVER_X_P6_TERMINAL_DOSSIER.md) · [`operator closure`](./MCP_SERVER_X_P6_OPERATOR_CLOSURE_RECORD.md); F-MCP-P6-GOV-001/002/003 preserved; stage **not CLOSED** |
-| P7 | **Ready** — entry `OD-MCP-P6-P7-01`; [`P7 handoff`](./MCP_SERVER_X_P7_HANDOFF.md); P6 terminal verification `P6_TERMINAL_VERIFIED` published with this change |
-| P8 | **Blocked** (stage not CLOSED) |
+| P7 | **Qualification package produced (scoped)** — `T-IGX-035-H`; [package](./MCP_SERVER_X_P7_QUALIFICATION_PACKAGE.md) @ `abbe1525450da77da6801b080619a600c20cd497`; [EVOL/ENT delta](./MCP_SERVER_X_P7_EVOL_ENT_DELTA_RECORD.md) |
+| P8 | **Next** — `T-IGX-035-I` (plan approved); independent audit, IIAC certification, closure |
