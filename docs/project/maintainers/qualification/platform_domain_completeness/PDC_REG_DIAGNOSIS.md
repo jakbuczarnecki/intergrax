@@ -47,3 +47,13 @@ One bounded run at `origin/development` `f573e24e8`: `ebh_7`, `dist_scale_x`, `r
 | B2 | `ebh_7` P03 immutable digests; cascades into the closure evidence audit (4 tests), the F09 registry integrity check and the certification SSOT bundle | STALE_GATE | `ARTIFACT_DIGESTS.json` still pins `EBH_7_CLOSURE_EVIDENCE_AUDIT_MATRIX.md` at its `df498b7a8` digest, although `5a4e922ff` changed the matrix | Re-pin the digest under the same policy decision as B1 | no |
 | C | `roadmap_replay_x` (5 tests) | PRODUCT_DELTA_GATE | 17 MCP-SERVER-X product paths changed since `DUP_X_ACCEPTANCE_SHA` `a7d83925b` have no disposition row. Two mechanical counters (2 and 1) differ from the zeros recorded in ECAP | Disposition rows with regression evidence in `tests/qualification/roadmap_replay_x/_pre_ent_l3_prod_delta.py` (and the VBN counter if needed); natural owner MCP-SERVER-X P7 | no |
 | D | `dist_scale_x` P4 and P6 batches | ENVIRONMENT | PostgreSQL via Docker is unavailable on this machine (`docker info` fails); P4/P6 use `pytest.fail` where P3 uses `pytest.skip` | Requires Docker/PostgreSQL, which the C10/C15 restriction forbids; it stays blocked until the Operator lifts it | no |
+
+## Operator decisions on the remaining reds (2026-11-12)
+
+Chat decisions of the Operator, transcribed in English.
+
+- **Group A / batch B-REG-P (`ollama` slug):** wait for MCP-SERVER-X P8. The fix changes `intergrax/` and would invalidate the IIAC activation (ACT-N11) that MCP P7/P8 rely on, so it merges with the other P5 product batches.
+- **Groups B1 and B2 (`ebh_7`):** re-pin once, after PDC-X P6 at `INTEGRATED_BASELINE_SHA`. The pin `dc18e36d9` sits in the signed EBH-7 certification documents, `MANIFEST.json` and CI defaults, so a re-pin is a fresh L3 replay with a new manifest, acceptance record and re-rendered `ARTIFACT_DIGESTS.json`, not a text substitution. Until then the 11 failures are a known state.
+- **Group C and D:** unchanged (MCP P7 owns the disposition rows; Docker stays forbidden by C10/C15).
+- **Publication:** wave B (ticket T-IGX-036-I) merged as PR #471 at `5836a5a5b`.
+
