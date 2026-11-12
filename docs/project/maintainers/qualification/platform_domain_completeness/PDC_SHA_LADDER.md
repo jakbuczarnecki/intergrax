@@ -3,7 +3,7 @@
 | Role | SHA | Notes |
 | --- | --- | --- |
 | BASELINE_SHA | `a695c9c835bb5b4b206e6e3e00bb2aee23ca7b6b` | `origin/development` at PDC-P0 start (PR #459 merge) |
-| ROADMAP_AMENDMENT_SHA | — | P0 merge (T-IGX-036-A); must descend from BASELINE_SHA |
+| ROADMAP_AMENDMENT_SHA | `bc9ef52bd690738e71638a599eec64c76ac356c9` | PR #461 merge on `development` (T-IGX-036-A); descends from BASELINE_SHA; contains P0 head `142190b313d304bdc6c6362a1d7484b88a802920` |
 | P1_PUBLICATION_SHA | — | Closed-world inventory |
 | P2_PUBLICATION_SHA | — | Requirements matrix, gap register, FRZ crosswalk |
 | P3_PUBLICATION_SHA | — | Ownership matrix, ADRs, ODs (architecture lock) |
