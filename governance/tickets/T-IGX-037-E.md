@@ -8,14 +8,16 @@ Documentation and governance-declarative files only; authorized before ARCH-FREE
 
 ## Plan digest
 
-Plan digest: e733052cf4da700aae879e3edb0d610da983f2a08368a74693debf824cb45c01
+Plan digest: a78b5572bea2286ef452657e76180701414ccf1fdd5b44a9cc1fa5b19ace34b7
 
 Canonical plan: [`governance/tickets/plans/PLAN_T-IGX-037-E.md`](plans/PLAN_T-IGX-037-E.md).
 
 ## Approved
 
-Approved: operator-delegate @ 2026-11-12T13:53:13+01:00
+Approved: operator-delegate @ 2026-11-12T15:06:03+01:00
 Delegation: docs/project/maintainers/qualification/scenario_factory_x/operator_decisions/DELEGATION-SFX-PRE-FREEZE.md@0465c7f7d253e230c7b25a9223278192a1b01bce
+
+Superseded approval (plan digest before Amendment 1): see commit `250d3aeeb`.
 
 ## Test contract
 

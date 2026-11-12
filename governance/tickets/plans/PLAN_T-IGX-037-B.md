@@ -6,7 +6,7 @@ This plan changes documentation only. It touches no path under `intergrax/`, `ag
 
 ## Deliverables
 
-All deliverables go under `docs/project/capabilities/plan/satellites/scenario_factory/`.
+All deliverables go under `docs/project/maintainers/qualification/scenario_factory_x/`.
 
 1. **`SFX_COMPETITIVE_EVIDENCE_MATRIX.md`** (SFX-P1-01)
    - Cover these products: n8n, Zapier, Make, Microsoft Copilot Studio, Retool, OpenAI Agent Builder / AgentKit, Google Vertex AI Agent Builder, AWS Bedrock Agents, Dify, Flowise, Langflow, Relevance AI, Vellum, Gumloop and StackAI.
@@ -47,3 +47,11 @@ uv run python -m scripts.governance.igx_gov ticket
 - UX work (T-IGX-037-D).
 - The IDE toolkit (T-IGX-037-E).
 - Product code, FRZ changes and merges.
+
+## Amendment 1 (2026-11-12): deliverable location
+
+Operator decision in the planning chat, 2026-11-12. English rendering: "Move [the SFX workstream documents] to the dossier."
+
+The SFX workstream documents are kept in the SFX qualification dossier `docs/project/maintainers/qualification/scenario_factory_x/` instead of `docs/project/capabilities/plan/satellites/scenario_factory/`. The reason is that the PDC-X closed-world scanner (`scripts/qualification/pdc_x_inventory.py`, `DOC_GLOBS` includes `docs/project/capabilities/**/*.md`) cannot classify `SFX_*.md` stems, which turns `test_pdc_x_inventory` red. Moving the files keeps `scripts/` unchanged (OD-SFX-04, OD-SFX-15).
+
+Only the location changes. Content, acceptance criteria and test contract are unchanged. This amendment supersedes the earlier approval line; the ticket must be re-approved against the new digest.
