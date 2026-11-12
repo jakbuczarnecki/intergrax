@@ -59,7 +59,7 @@
     },
     "PLATFORM-FOUNDATION": {
       "INSPECTED": 2,
-      "INDEX_ONLY": 195,
+      "INDEX_ONLY": 197,
       "UNINSPECTED": 0
     }
   },
@@ -967,6 +967,12 @@
     },
     {
       "kind": "document",
+      "path": "docs/project/capabilities/architecture/SCENARIO_FACTORY.md",
+      "category": "PLATFORM-FOUNDATION",
+      "status": "INDEX_ONLY"
+    },
+    {
+      "kind": "document",
       "path": "docs/project/capabilities/architecture/TOKEN_OPTIMIZATION.md",
       "category": "PDC-D2",
       "status": "INSPECTED"
@@ -1088,6 +1094,12 @@
     {
       "kind": "document",
       "path": "docs/project/capabilities/plan/MULTIPLAYER_AI.md",
+      "category": "PLATFORM-FOUNDATION",
+      "status": "INDEX_ONLY"
+    },
+    {
+      "kind": "document",
+      "path": "docs/project/capabilities/plan/SCENARIO_FACTORY.md",
       "category": "PLATFORM-FOUNDATION",
       "status": "INDEX_ONLY"
     },

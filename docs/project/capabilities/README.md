@@ -75,6 +75,7 @@ This is analogous to `MULTIPLAYER_AI`: Multiplayer is a cross-layer feature, whi
 | `TOKEN_OPTIMIZATION` | [`token_optimization/README.md`](token_optimization/README.md) | [`architecture/TOKEN_OPTIMIZATION.md`](architecture/TOKEN_OPTIMIZATION.md) | [`plan/TOKEN_OPTIMIZATION.md`](plan/TOKEN_OPTIMIZATION.md) | Implemented foundation; TOKEN-10 cache-aware runtime and proof planned |
 | `LANGCHAIN_INDEPENDENCE` | - | [`architecture/LANGCHAIN_INDEPENDENCE.md`](architecture/LANGCHAIN_INDEPENDENCE.md) | [`plan/LANGCHAIN_INDEPENDENCE.md`](plan/LANGCHAIN_INDEPENDENCE.md) | Architecture and migration roadmap awaiting review; implementation not started |
 | `MULTIPLAYER_AI` | - | [`architecture/MULTIPLAYER_AI.md`](architecture/MULTIPLAYER_AI.md) | [`plan/MULTIPLAYER_AI.md`](plan/MULTIPLAYER_AI.md) | **MP-0** - canonical architecture and roadmap (documentation only); MP-1…MP-9 planned, not started |
+| `SCENARIO_FACTORY` | [`SFX-MASTER-PLAN.md`](../../../governance/tickets/plans/SFX-MASTER-PLAN.md) | [`architecture/SCENARIO_FACTORY.md`](architecture/SCENARIO_FACTORY.md) | [`plan/SCENARIO_FACTORY.md`](plan/SCENARIO_FACTORY.md) | **Proposed** - SCENARIO-FACTORY-X (SFX) post-freeze product stage; pre-freeze docs/research/design SFX-P0..P4 open; SFX-P5+ gated by ARCH-FREEZE CLOSED and GATE-SFX-ENTRY |
 
 **Reserved future product/cross-layer concept:** `VIRTUAL_WORKFORCE` — no feature pair exists yet; canonical worker semantics belong to [`../architecture/AUTONOMOUS_WORK.md`](../architecture/AUTONOMOUS_WORK.md).
 
