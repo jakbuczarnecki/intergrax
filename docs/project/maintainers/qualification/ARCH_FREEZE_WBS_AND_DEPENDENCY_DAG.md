@@ -5,6 +5,8 @@
 
 **Program gate (2026-11-11):** Roadmap mandates **`MCP-SERVER-X` = CLOSED** before formal **ARCH-FREEZE** stage closure (`T-B8-ROADMAP` / §5). Historical Wave 1 tasks below remain **COMPLETE** as predecessor planning evidence; do not treat them as substituting for MCP-SERVER-X qualification. See [`mcp_server_x/MCP_SERVER_X_INDEX.md`](./mcp_server_x/MCP_SERVER_X_INDEX.md).
 
+**Program gate (PDC-X, 2026-11-11):** Roadmap §3.2 mandates **`PDC-X` = CLOSED** (after **`MCP-SERVER-X` = CLOSED**) before formal **ARCH-FREEZE** stage closure (`T-B8-ROADMAP` / §5). Note-only amendment: task count remains **54**; PDC-X does not perform `T-B7-*` freeze-SHA or VBN acceptance work. See [`platform_domain_completeness/PDC_INDEX.md`](./platform_domain_completeness/PDC_INDEX.md).
+
 **Wave 1 (T-IGX-010-B):** **B0–B4** = **INDEPENDENTLY ACCEPTED (SCOPED)** @ G6 AUDIT `3d96691f1b02b393a4de189139a6e1347db99382` / closure doc `950097ea4bcfd5bba828f663bcd993b8bd1e1d63`; B1 `6bdf78c626bfcb347ad3ad9e3e18b65222f1b169`; B2–B4 `f7ce9daebad35537da974de0dda3962126c6030e`; L3 FULL 85/85; B1 digest `0ffa2676…`. **R0** = **COMPLETE** @ `950097ea4bcfd5bba828f663bcd993b8bd1e1d63` (see the R0 task rows); **R1–R6** = **PLANNED** (`T-IGX-010-C`). Handoff: [`ARCH_FREEZE_EXECUTION_WAVE1_INDEPENDENT_AUDIT_HANDOFF.md`](./ARCH_FREEZE_EXECUTION_WAVE1_INDEPENDENT_AUDIT_HANDOFF.md).
 
 | TASK_ID | BATCH | REQUIREMENT_IDS | FINDING_IDS | OWNER | FILES | DEPENDENCIES | IMPLEMENTATION_ACTION | TESTS | EVIDENCE | ACCEPTANCE | RISK | PARALLELISM | STATUS |

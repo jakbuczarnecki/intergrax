@@ -75,6 +75,6 @@ Formal **ARCH-FREEZE** stage closure now requires **`MCP-SERVER-X` = CLOSED** (I
 
 ## ARCH-FREEZE entry (operator/architect)
 
-Prerequisites now satisfied for **ENT-AUDIT-X independently CLOSED** (FRZ-FRZ-11). **MCP-SERVER-X** must close before ARCH-FREEZE stage closure. Remaining ARCH-FREEZE obligations: full freeze checklist, T-B7-* WBS, independent admissions per plan — **execute only under ARCH-FREEZE campaign**, not in this handoff.
+Prerequisites now satisfied for **ENT-AUDIT-X independently CLOSED** (FRZ-FRZ-11). **MCP-SERVER-X** and then **PDC-X** (roadmap §3.2) must close before ARCH-FREEZE stage closure. Remaining ARCH-FREEZE obligations: full freeze checklist, T-B7-* WBS, independent admissions per plan — **execute only under ARCH-FREEZE campaign**, not in this handoff.
 
 **Terminal report:** [`ENT_AUDIT_X_FORMAL_CLOSURE_CAMPAIGN_TERMINAL_REPORT.md`](./ENT_AUDIT_X_FORMAL_CLOSURE_CAMPAIGN_TERMINAL_REPORT.md)
