@@ -1,0 +1,27 @@
+# MCP-SERVER-X ACT-N11 independent re-audit (P6) test matrix
+# test_execution_sha: 9b8c19d75d5df0f4b7c87d2707811f3715805102
+# policy: IIAC-2026-11-05.1
+# prior activation pin: 8fff85e3bfc5190929ff464b00fbe759dadcb5f8 (P4 MCP rebind — preserved lineage)
+
+P6 consolidated qualification batch (MCP-P6-01..04 + P5 regression subset):
+  tests/qualification/mcp_server_x/test_mcp_server_x_p6_qualification_batch.py
+  exit=0 (~129s)
+
+Adversarial / P5 security slice (unchanged controls vs P5 audit matrix):
+  tests/unit/applications/test_mcp_catalog_discovery_qualification.py
+  tests/unit/applications/test_mcp_trust_a_principal_binding.py
+  tests/unit/applications/test_mcp_canonical_execution.py
+  tests/unit/governance/test_iiac_negative_guards.py
+  tests/unit/applications/test_reference_apps_mcp.py
+  roll-up: 52 pass, 1 fail — test_n12 pre-activation only (expected red while pin lags product)
+
+Governance baseline (pre-rebind expected red):
+  verify_iiac_policy_activation --require-in-force  exit=1 (3× ACT-N11 product paths)
+
+Scope inventory reconciliation:
+  product_paths_changed_between(8fff85e3…, 9b8c19d7…) == 3 paths (exact match to trigger)
+  product_paths_changed_between(5ff8606b0…, 9b8c19d7…) == [] (auditor N-03 clear)
+
+Role separation:
+  verify_iiac_audit_manifest.py (P6 reaudit manifest) — post-publication
+  verify_iiac_role_separation.py --strict-product-diff — certifier phase

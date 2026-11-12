@@ -1,0 +1,73 @@
+{
+  "stage_id": "MCP-SERVER-X",
+  "session_designation": "IIIC-ACT-N11-MCP-P6-2026-11-11",
+  "audit_execution_sha_prior_act_n11": "8fff85e3bfc5190929ff464b00fbe759dadcb5f8",
+  "audited_implementation_sha": "5ff8606b089828b334ebac133518ba47c9f6f7ce",
+  "test_execution_sha": "9b8c19d75d5df0f4b7c87d2707811f3715805102",
+  "evidence_publication_sha": "2d3eceb6cf7e93dccd4d96919319a6c969b4444b",
+  "verdict_basis": "PASS_SCOPED",
+  "operator_decision": {
+    "canonical_id": "D-MCP-IIIC-P6-ACT-N11",
+    "authorization_text": "INDEPENDENT IIIC AUDITOR mandate — MCP ACT-N11 P6 rebind (chat 2026-11-11)",
+    "prerequisite_p4_lineage": "IIAC-OD-MCP-ACT-N11-2026-11-11 AUTHORIZED @ 8fff85e3b"
+  },
+  "resolved_findings": [
+    {
+      "id": "AC-P6-PUBLIC-API",
+      "severity": "informational",
+      "summary": "mcp_developer_api consolidates supported Tier-3 surface; import-policy tests green.",
+      "auditor_verdict_at_reaudit": "ACCEPTED",
+      "evidence": [
+        "intergrax/applications/_shared/mcp_developer_api.py",
+        "tests/unit/applications/test_mcp_public_api_surface.py",
+        "docs/project/maintainers/qualification/iiac_evidence/MCP-SERVER-X/act_n11_mcp_p6/auditor_p6_qualification_batch.log"
+      ]
+    },
+    {
+      "id": "AC-P6-EXECUTE-REEXPORT",
+      "severity": "informational",
+      "summary": "execute_mcp_agent_task re-export via mcp_application_server; research facade import consolidation only — no Execution binding regression.",
+      "auditor_verdict_at_reaudit": "ACCEPTED",
+      "evidence": [
+        "intergrax/applications/_shared/mcp_application_server.py",
+        "applications/research_application/mcp/server.py",
+        "tests/unit/applications/test_mcp_canonical_execution.py"
+      ]
+    }
+  ],
+  "blocking_findings": [],
+  "limitations_carried": [
+    {
+      "id": "LIM-PRE-ACTIVATION-IIIC-GATE",
+      "severity": "informational",
+      "summary": "verify_iiac_policy_activation --require-in-force exit 1 (3× ACT-N11) until Operator IIIC rebind and record update.",
+      "evidence": [
+        "docs/project/maintainers/qualification/iiac_evidence/MCP-SERVER-X/act_n11_mcp_p6/auditor_p6_verify_iiac_require_in_force_baseline.log"
+      ]
+    },
+    {
+      "id": "LIM-GOV-PYTEST-RED-WHILE-ACT-N11",
+      "severity": "informational",
+      "summary": "test_n12_policy_is_in_force_only_with_valid_activation_evidence fails while activation pin lags P6 product Δ.",
+      "evidence": [
+        "docs/project/maintainers/qualification/iiac_evidence/MCP-SERVER-X/act_n11_mcp_p6/auditor_p6_adversarial_tests.log"
+      ]
+    },
+    {
+      "id": "LIM-P4-LINEAGE",
+      "severity": "informational",
+      "summary": "P4 ACT-N11 re-audit artifacts under act_n11_mcp/ preserved; P6 session adds sibling tree act_n11_mcp_p6/ only.",
+      "evidence": [
+        "docs/project/maintainers/qualification/iiac_evidence/MCP-SERVER-X/act_n11_mcp/MCP_ACT_N11_INDEPENDENT_REAUDIT_DOSSIER_P4.md"
+      ]
+    },
+    {
+      "id": "LIM-EVIDENCE-PUBLICATION",
+      "severity": "informational",
+      "summary": "Auditor evidence bytes require commit on PR #459 branch; certifier re-digests and pins evidence_publication_sha.",
+      "evidence": [
+        "docs/project/maintainers/qualification/iiac_evidence/MCP-SERVER-X/act_n11_mcp_p6/EVIDENCE_MANIFEST.txt"
+      ]
+    }
+  ]
+}
