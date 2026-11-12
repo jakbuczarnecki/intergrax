@@ -66,6 +66,37 @@ History. The first attempt of this designated session stopped on the merged PR #
 
 Single use for row 3: the extension covers only `OD-MCP-P6-GOV-02` and the digest above. The same out-of-scope list applies (no merge, no activation-record edit, no signature of `OD-MCP-P6-TICKET-01` or `OD-MCP-P6-P7-01`). The assurance level stays `process_enforced`.
 
+## Addendum 2 (2026-11-12): fourth and fifth delegated acts, OD-MCP-P6-TICKET-01 and OD-MCP-P6-P7-01
+
+Commit D3. This addendum extends the delegated acts with two further decisions. It does not alter rows 1-3, their signatures (commits `4bf5a62ec`, `d7451dff0`) or the `Expires` value, which is unchanged (not earlier than `2026-11-13T00:00:00+01:00`; the signing timestamps are on 2026-11-12).
+
+Branch. The activation PR #464 is merged (`66dcd1bfe260b33a41881c7b9911b2a2abb752f9`); the branch `mcp-p6-gov-signing` is merged and obsolete. The signatures of rows 4 and 5 are written on `mcp-p6-closure` (cut from `origin/development` @ `dcdb35601305a2ad9a3ee22894b26c29800a9640`, drafts at `73d71c5dc31ec72a891d481d83ced1dfa93b77da`). The designated session works in its own detached worktree at that branch.
+
+Relay chain. The commission extension was relayed by the orchestrator session `local_4dfbaa01-6b9e-4e2a-ab65-2d4c81e01bd8` (id verified as in addendum 1). Original Polish operator answers as relayed, with English renderings by the orchestrator session (not operator-written lines):
+
+- Question "Kto podpisze OD-MCP-P6-TICKET-01 i OD-MCP-P6-P7-01?" -> `Sesja podpisująca (Recommended)` ("Signing session (recommended)").
+- Question about creating the branch -> `Tak, mcp-p6-closure (Recommended)` ("Yes, mcp-p6-closure").
+- Instruction `Najpierw podpis, potem kolejne rzeczy.` ("First the signature, then the next things.").
+
+Direct operator confirmation to the designated session in chat, after the designated session reported its read-only condition checks and asked whether the operator personally commissions both signatures (original, Polish): `Tak, podpisz oba`. English rendering by the designated session (not an operator-written line): "Yes, sign both."
+
+Same designated session. Rows 4 and 5 are signed by the same designated session as rows 1-3 (id above); it is not a new session and not a continuation of any implementation session.
+
+Conditions of `OD-MCP-P6-TICKET-01`, verified by the designated session before signing (read-only):
+
+1. G6 `ACCEPT_SCOPED` / IIIC `PASS_SCOPED` evidence is published on `origin/development` (evidence published at `2d3eceb6c`, in `origin/development` history; this session did not re-audit it).
+2. `verify_iiac_policy_activation --require-in-force` exits 0 on this tree: `IN_FORCE @ IIAC-2026-11-05.1 from 92ad3555775649742299826e3680ec8ce703cc8a`; the activation record binds `audit_execution_sha` `2d3eceb6c`.
+3. The `Regression gate` push run on `origin/development` @ `dcdb35601` (run `43167849565`) concluded `success`. The earlier publication merge of PR #460 was red; this is F-MCP-P6-GOV-003, preserved and covered by `OD-MCP-P6-GOV-02`, not waived.
+4. The activation OD, `OD-MCP-P6-GOV-01` and `OD-MCP-P6-GOV-02` are signed (option A) on `origin/development`/this branch.
+5. PR #464 is merged as `66dcd1bfe260b33a41881c7b9911b2a2abb752f9`; the same run shows `governance-fast`, `ci-smoke` and `evol-x-b4-preflight` each `completed/success`.
+
+| # | Decision ID | Record path (repo-relative) | SHA-256 of the unsigned text (file bytes at `73d71c5dc`) | Delegated act |
+|---|---|---|---|---|
+| 4 | `OD-MCP-P6-TICKET-01` | `docs/project/maintainers/qualification/mcp_server_x/operator_decisions/OD-MCP-P6-TICKET-01.md` | `6a10bc6bdc6e071b3a0bda3101de09e238de92b5a1c15aa8a21d72c9a666b051` | status `APPROVED` and the line `Authorized: operator @ <timestamp>` (second line of the block unchanged) |
+| 5 | `OD-MCP-P6-P7-01` | `docs/project/maintainers/qualification/mcp_server_x/operator_decisions/OD-MCP-P6-P7-01.md` | `a61dca4d9611c6d9dd8f55e657e72af97fac4b5d00d4e43923cc9153f154ebde` | status `APPROVED` and the line `Authorized: operator @ <timestamp>` (second line of the block unchanged) |
+
+Single use for rows 4 and 5: the extension covers only these two Decision IDs and the digests above. Still out of scope: any merge, any edit of `IIAC_POLICY_ACTIVATION_RECORD.json`, any edit of the ticket file itself (the lifecycle transition the TICKET-01 decision authorizes is performed by a separate step, not by the signing session), any other decision. The effect of each decision is only what its own text states; `OD-MCP-P6-P7-01` takes effect only at the origin/development SHA where the P6 terminal verification PASS is published. The "Non-actions" section below applies to rows 1-3 and does not restate or widen the effect of rows 4 and 5.
+
 ## Non-actions
 
 This delegation and the signatures it authorizes do not retroactively approve PR #459, do not waive any governance control, do not promote FRZ, do not declare MCP-SERVER-X closed and do not authorize P7. Finding F-MCP-P6-GOV-001 / F-MCP-P6-GOV-002 wording is unchanged. Assurance level: `process_enforced` (operator attestation in chat plus the designated session's own statement; no cryptographic proof of operator identity or session novelty).
