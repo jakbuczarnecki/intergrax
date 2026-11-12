@@ -9,20 +9,21 @@
 
 ## Question
 
-Authorize lifecycle transition **`T-IGX-035-G` → `closed` (scoped)** with AC-P6-01..08 satisfied @ the documented SHAs and F-MCP-P6-GOV-001 / F-MCP-P6-GOV-002 on record (not waived)?
+Authorize lifecycle transition **`T-IGX-035-G` → `closed` (scoped)** with AC-P6-01..08 satisfied @ the documented SHAs and F-MCP-P6-GOV-001, F-MCP-P6-GOV-002 and F-MCP-P6-GOV-003 on record (not waived)?
 
 ## Conditions (all must be true at signing)
 
 1. G6 `ACCEPT_SCOPED` and IIIC `PASS_SCOPED` evidence published on `origin/development`.
 2. `IIAC_POLICY_ACTIVATION_RECORD.json` bound to the P6 audit pin with `verify_iiac_policy_activation --require-in-force` exit 0 on `origin/development`.
 3. Required CI checks green on the publication merge and on `development`.
-4. Activation OD (`IIAC_OD_ACTIVATION_MCP_ACT_N11_P6_2026-11-11.md`) and OD-MCP-P6-GOV-01 signed.
+4. Activation OD (`IIAC_OD_ACTIVATION_MCP_ACT_N11_P6_2026-11-11.md`), OD-MCP-P6-GOV-01 and OD-MCP-P6-GOV-02 signed (option A).
+5. The activation PR #464 is merged as a merge commit (`66dcd1bfe260b33a41881c7b9911b2a2abb752f9`) and the `Regression gate` push run on `origin/development` at or after `dcdb35601305a2ad9a3ee22894b26c29800a9640` shows `governance-fast`, `ci-smoke` and `evol-x-b4-preflight` successful.
 
 ## Operator line (required; not written by an agent)
 
 ```text
 Authorized: operator @ ________________
-Ticket closed: T-IGX-035-G — scoped P6; F-MCP-P6-GOV-001/002 preserved; post-publication independent G6 and IIIC records retained
+Ticket closed: T-IGX-035-G — scoped P6; F-MCP-P6-GOV-001/002/003 preserved; post-publication independent G6 and IIIC records retained
 ```
 
-**Explicit non-actions:** no retroactive pre-merge approval for PR #459; no FRZ promotion; no MCP-SERVER-X stage CLOSED; no P7 start.
+**Explicit non-actions:** no retroactive pre-merge approval for PR #459 or PR #460; no FRZ promotion; no MCP-SERVER-X stage CLOSED; no P7 start.
