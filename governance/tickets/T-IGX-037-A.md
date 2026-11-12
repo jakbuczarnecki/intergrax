@@ -41,8 +41,20 @@ uv run python -m scripts.governance.igx_gov ticket
 
 ## Lifecycle state
 
-plan_approved
+quality_gate
 
 ## Lease holder
 
 Worktree `_wt/intergrax/sfx-p0`, branch `sfx-p0-registration` (base `eadb1c2116feb0a2090b234a36fd4182bd6ace8d`).
+
+## Checkpoint
+
+| Field | Value |
+| --- | --- |
+| Branch | `sfx-p0-registration` (upstream `origin/development`), merged with `origin/development` at `0c241d655` (MCP-SERVER-X closure landed meanwhile; no conflict) |
+| Implementers | Orchestrator session plus two implementer subagents (roadmap amendment; SSOT/capability pair/dossier). None of them wrote an `Approved:` line or an OD signature |
+| Approvals | Tickets T-IGX-037-A..E: delegate session under DELEGATION-SFX-PRE-FREEZE (`250d3aeeb`). OD-SFX-01..04, 15, 16: signing session under DELEGATION-SFX-OD-SIGNING (`4758c4051`) |
+| Test contract | `pytest tests/qualification/roadmap_replay_x tests/unit/governance`: 198 passed, 6 failed, 1 skipped before the inventory fix. The 5 `roadmap_replay_x` failures are pre-existing (same 5 tests fail on an unchanged roadmap; PDC_REG_DIAGNOSIS group C). The 6th (`test_pdc_x_inventory`) was caused by the two new capability docs and fixed by regenerating `PDC_CLOSED_WORLD_INVENTORY.json` (`pdc_x_inventory.py --write`, +2 items). After the merge: `roadmap_replay_x` + `test_pdc_x_inventory` 35 passed, the same 5 pre-existing failures. Logs: `.tmp/session/sfx-p0/` |
+| Gates | `sync_agent_env.py --check` OK; `igx_gov ticket` OK (push-fast PASS); pre-commit `check_docs_domain_pairs` OK (4 feature pairs) |
+| Writes outside the plan's file list | `PDC_CLOSED_WORLD_INVENTORY.json` (mechanical regeneration only) |
+| Product paths | none (`intergrax/`, `agents/`, `applications/`, `scripts/` unchanged); IIAC ACT-N11 unaffected |
