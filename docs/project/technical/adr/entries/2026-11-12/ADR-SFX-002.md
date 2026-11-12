@@ -6,7 +6,7 @@
 | **Date** | 2026-11-12 |
 | **Deciders** | Operator (OD-SFX-06 acceptance; open questions OQ-002-1..OQ-002-6 below) |
 | **Reference SHA** | `eadb1c2116fe` (`origin/development`); every `path:line` citation below is at this SHA |
-| **Related** | [`governance/tickets/T-IGX-037-C.md`](../../../../../../governance/tickets/T-IGX-037-C.md) · [`ADR-SEF-001`](../2026-11-05/ADR-SEF-001.md) · [`governance/tickets/plans/ASF-SEF-MASTER-PLAN.md`](../../../../../../governance/tickets/plans/ASF-SEF-MASTER-PLAN.md) (Deliverable 6) · [`COMPAT_X_CONTRACT_SCHEMA_EVOLUTION.md`](../../../../capabilities/architecture/COMPAT_X_CONTRACT_SCHEMA_EVOLUTION.md) · [`ADR_PDC_02`](../../../../maintainers/architecture/ADR_PDC_02_CONTEXT_TRIM_FIDELITY_AND_MEMORY_RETENTION.md) · [`ADR_PDC_07`](../../../../maintainers/architecture/ADR_PDC_07_BACKGROUND_RECURRENCE_AND_DLQ.md) · [`ADR_PDC_08`](../../../../maintainers/architecture/ADR_PDC_08_ARTIFACT_LIFECYCLE_TAXONOMY.md) · design drafts: [`schemas/`](../../../../capabilities/plan/satellites/scenario_factory/design/schemas/), [`SFX_CANONICALIZATION.md`](../../../../capabilities/plan/satellites/scenario_factory/design/SFX_CANONICALIZATION.md), [`SFX_METRICS.md`](../../../../capabilities/plan/satellites/scenario_factory/design/SFX_METRICS.md) |
+| **Related** | [`governance/tickets/T-IGX-037-C.md`](../../../../../../governance/tickets/T-IGX-037-C.md) · [`ADR-SEF-001`](../2026-11-05/ADR-SEF-001.md) · [`governance/tickets/plans/ASF-SEF-MASTER-PLAN.md`](../../../../../../governance/tickets/plans/ASF-SEF-MASTER-PLAN.md) (Deliverable 6) · [`COMPAT_X_CONTRACT_SCHEMA_EVOLUTION.md`](../../../../capabilities/architecture/COMPAT_X_CONTRACT_SCHEMA_EVOLUTION.md) · [`ADR_PDC_02`](../../../../maintainers/architecture/ADR_PDC_02_CONTEXT_TRIM_FIDELITY_AND_MEMORY_RETENTION.md) · [`ADR_PDC_07`](../../../../maintainers/architecture/ADR_PDC_07_BACKGROUND_RECURRENCE_AND_DLQ.md) · [`ADR_PDC_08`](../../../../maintainers/architecture/ADR_PDC_08_ARTIFACT_LIFECYCLE_TAXONOMY.md) · design drafts: [`schemas/`](../../../../maintainers/qualification/scenario_factory_x/design/schemas/), [`SFX_CANONICALIZATION.md`](../../../../maintainers/qualification/scenario_factory_x/design/SFX_CANONICALIZATION.md), [`SFX_METRICS.md`](../../../../maintainers/qualification/scenario_factory_x/design/SFX_METRICS.md) |
 
 ## Context
 
@@ -40,7 +40,7 @@ Facts at the reference SHA that constrain the design:
 
 ### D1. Contract inventory (all PROPOSED; Tier-2 owner `agents/scenario_factory/`)
 
-The design drafts are in `docs/project/capabilities/plan/satellites/scenario_factory/design/schemas/sfx.<name>.v1.schema.json`. At SFX-P5 they are replaced by schemas generated from the Tier-2 pydantic models (PC-1).
+The design drafts are in `docs/project/maintainers/qualification/scenario_factory_x/design/schemas/sfx.<name>.v1.schema.json`. At SFX-P5 they are replaced by schemas generated from the Tier-2 pydantic models (PC-1).
 
 | ID | Contract | `$id` | Persisted as | Notes |
 |----|----------|-------|--------------|-------|

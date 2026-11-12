@@ -6,7 +6,7 @@
 | **Date** | 2026-11-12 |
 | **Deciders** | Operator (OD-SFX-03 IDE model; OD-SFX-04 pre-freeze scope; OD-SFX-06 acceptance) |
 | **Reference SHA** | `eadb1c2116fe` (`origin/development`); every repository `path:line` below is at this SHA unless marked as a facts-file line |
-| **Related** | SFX master plan R1 §7.7, §7.10, §10 W2/W3/W5, §13 (`governance/tickets/plans/SFX-MASTER-PLAN.md`; session draft `.tmp/session/sfx/SFX_MASTER_PLAN_R1.md`) · [`SFX_IDE_TOOLING_FACTS.md`](../../../../capabilities/plan/satellites/scenario_factory/SFX_IDE_TOOLING_FACTS.md) (SFX-P1-02, T-IGX-037-B; cited as `FACTS §n` / `FACTS:line`) · [`ADR-SFX-003`](ADR-SFX-003.md) (Studio stack and auth) · [`ADR_MCP_03_TRANSPORT_STREAMABLE_HTTP.md`](../../../../maintainers/architecture/ADR_MCP_03_TRANSPORT_STREAMABLE_HTTP.md) · [`T-IGX-037-C`](../../../../../../governance/tickets/T-IGX-037-C.md) · [`PLAN_T-IGX-037-E`](../../../../../../governance/tickets/plans/PLAN_T-IGX-037-E.md) |
+| **Related** | SFX master plan R1 §7.7, §7.10, §10 W2/W3/W5, §13 (`governance/tickets/plans/SFX-MASTER-PLAN.md`; session draft `.tmp/session/sfx/SFX_MASTER_PLAN_R1.md`) · [`SFX_IDE_TOOLING_FACTS.md`](../../../../maintainers/qualification/scenario_factory_x/SFX_IDE_TOOLING_FACTS.md) (SFX-P1-02, T-IGX-037-B; cited as `FACTS §n` / `FACTS:line`) · [`ADR-SFX-003`](ADR-SFX-003.md) (Studio stack and auth) · [`ADR_MCP_03_TRANSPORT_STREAMABLE_HTTP.md`](../../../../maintainers/architecture/ADR_MCP_03_TRANSPORT_STREAMABLE_HTTP.md) · [`T-IGX-037-C`](../../../../../../governance/tickets/T-IGX-037-C.md) · [`PLAN_T-IGX-037-E`](../../../../../../governance/tickets/plans/PLAN_T-IGX-037-E.md) |
 
 ## Context
 
