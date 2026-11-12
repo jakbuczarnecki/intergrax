@@ -39,8 +39,9 @@
 | P5_G6_EVIDENCE_PUBLICATION_SHA | `7fd899aaea873aac6ec9ae3fe6ce5e3ef9ec9c8c` | G6 closeout docs (amend pin) |
 | PLAN_DIGEST_SHA256 | `5dd3c72e497c72764ccc0c08d3df2dddfdbe19b3f36550ba5d87c4091f9833e7` | T-IGX-035-A |
 | TEST_EXECUTION_SHA | `abbe1525450da77da6801b080619a600c20cd497` | P7 qualification package (branch `mcp-p7-qualification`; clean-checkout replay at the same SHA) |
-| AUDIT_SHA | _unset_ | P8 stage IIIC |
-| CERTIFICATION_SHA | _unset_ | P8 IIIC |
-| EVIDENCE_PUBLICATION_SHA | _unset_ | P8 B6 |
-| FORMAL_CLOSURE_SHA | _unset_ | MCP-SERVER-X stage CLOSED |
+| P8_IMPLEMENTATION_SHA | `eadb1c2116feb0a2090b234a36fd4182bd6ace8d` | Frozen candidate = P7 publication merge (PR #474) |
+| AUDIT_SHA | `eadb1c2116feb0a2090b234a36fd4182bd6ace8d` | P8 independent audit `audit_execution_sha` (`PASS_SCOPED`); evidence publication = PR #477 merge `a618a03a8b245ceefef6ab5a922213aaef46dcd1` |
+| CERTIFICATION_SHA | `919e34b8f9fbccfc62a16205d8647d6e6070ce45` | P8 IIAC certification publication (PR #479 merge, `CERTIFIED_PASS_SCOPED`) |
+| EVIDENCE_PUBLICATION_SHA | `919e34b8f9fbccfc62a16205d8647d6e6070ce45` | P8 B6 evidence complete on `origin/development` (audit `a618a03a8` + certification `919e34b8f`); terminal verification report published in the closure PR |
+| FORMAL_CLOSURE_SHA | _pending (pinned in the follow-up commit)_ | Closure commit of the MCP-SERVER-X scoped formal closure (roadmap status); not self-pinnable |
 | FINAL_REMOTE_HEAD | `6e53fb36f39b4a57331e6c079f2fcbe6094e2786` | Head verified by the independent P6 terminal verification (`P6_TERMINAL_VERIFIED`). The merge commit of the PR that publishes the verification report cannot pin itself: resolve it with `git log --first-parent --diff-filter=A --format=%H -- docs/project/maintainers/qualification/mcp_server_x/MCP_SERVER_X_P6_TERMINAL_VERIFICATION_REPORT.md`. History: previously `a695c9c835bb5b4b206e6e3e00bb2aee23ca7b6b` (post–P6 product merge, governance recovery pending) |

@@ -36,9 +36,9 @@
     "LIM-certifier-not-replayed: the certifier did not re-run the P7 replay or any pytest; it validated the manifest, role separation, digests, scope, dispositions and FRZ counter only. Test results rest on the auditor's replay logs (164 + 14 + 141 passed at eadb1c211)",
     "LIM-not-verified-by-audit: dynamic FastMCP progress behaviour, the post-merge development push CI run, Windows-only behaviour on other machines, lane-report content beyond the numbers cross-checked",
     "LIM-certification-scope: internal-agent certification at process_enforced assurance; no cryptographic session proof. Not ARCH-FREEZE, no FRZ promotion (counter 225, PASS=108, OPEN=109 unchanged), no production readiness, PROD-Q Path B untouched; MCP-SERVER-X is not closed by this manifest (OD-MCP-P8-CLOSE-01 stays conditional on C1-C10 incl. an independent P8_TERMINAL_VERIFIED report)",
-    "LIM-pending-publication: certification_publication_sha is a placeholder (see certification_publication_sha_status); pinned later by the orchestrator in a dedicated publication commit"
+    "LIM-pending-publication (resolved): certification_publication_sha was a placeholder and is pinned to the merge of PR #479 (919e34b8f) by the orchestrator in the closure PR"
   ],
-  "certification_publication_sha": "0000000000000000000000000000000000000000",
+  "certification_publication_sha": "919e34b8f9fbccfc62a16205d8647d6e6070ce45",
   "assurance_level": "process_enforced",
   "handoff_record_path": "docs/project/maintainers/qualification/iiac_evidence/MCP-SERVER-X/p8_audit/IIAC_SESSION_HANDOFF_RECORD_MCP_P8_AUDIT.md",
   "audit_report_path": "docs/project/maintainers/qualification/mcp_server_x/MCP_SERVER_X_P8_INDEPENDENT_AUDIT_DOSSIER.md",
@@ -48,8 +48,8 @@
   "ticket": "governance/tickets/T-IGX-035-I.md",
   "reaudit_execution_sha": "c50547012c353463e86525411a5a065f43e5bab8",
   "reaudit_result": "4 RESOLVED, 4 ACCEPTED_SCOPED_LIMITATION, 1 RECORDED_PENDING_OPERATOR_DISPOSITION (F-P8-01), 0 STILL_OPEN; verdict unchanged",
-  "certification_publication_sha_status": "PENDING_PUBLICATION_MERGE",
-  "certification_publication_sha_note": "Placeholder of 40 zeros because the schema and verifiers require 40-hex; the real SHA is pinned by the orchestrator in a later publication commit, not by the certifier.",
+  "certification_publication_sha_status": "PINNED_BY_ORCHESTRATOR_AFTER_PUBLICATION_MERGE_PR_479",
+  "certification_publication_sha_note": "Formerly a 40-zero placeholder because the schema and verifiers require 40-hex; pinned by the orchestrator (not the certifier) after the publication merge of PR #479.",
   "certification_verdict": "CERTIFIED_PASS_SCOPED",
   "certification_record_path": "docs/project/maintainers/qualification/mcp_server_x/MCP_SERVER_X_P8_IIAC_CERTIFICATION_RECORD.md",
   "auditor_manifest_path": "docs/project/maintainers/qualification/iiac_evidence/MCP-SERVER-X/p8_audit/iiac_audit_session_manifest.MCP-SERVER-X.p8_audit.json",
