@@ -1,0 +1,5 @@
+command: python -c product_paths_changed_between(6e53fb36f..., eadb1c211...)
+git_head: eadb1c2116feb0a2090b234a36fd4182bd6ace8d
+date_utc: 2026-11-12T11:24:21Z
+result: []
+exit_code: 0
