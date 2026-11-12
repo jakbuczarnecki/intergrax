@@ -51,3 +51,12 @@ Worktree `_wt/intergrax/sfx-w1-research`, branch `sfx-w1-research`.
 | Acceptance | `check_harness_adr.py` exits 1 with 24 findings, all pre-existing ADR index gaps; the acceptance criterion is "no finding about ADR-SFX-*", which holds (the six ADRs are indexed in `docs/project/technical/adr/README.md`); a fully clean run is not attainable until the 24 pre-existing gaps are fixed. The same 24 are the set accepted for SEF P1 by OD-SEF-P1-EXCEPTION. 17 schemas valid JSON, each with `$schema` (JSON Schema 2020-12) and a `$id` equal to the file name without the `.schema.json` suffix (for example `sfx.discovery_record.v1` for `sfx.discovery_record.v1.schema.json`), and `additionalProperties:false`. All six ADRs are `Proposed`; none claims `Accepted` |
 | Product paths | none (`intergrax/`, `agents/`, `applications/`, `scripts/`, `agent-env/` unchanged); IIAC ACT-N11 unaffected |
 | Review corrections | R-W1-01..11 handled in the follow-up commit; see the PR |
+
+## Follow-up PR checkpoint (post-merge review corrections)
+
+| Field | Value |
+| --- | --- |
+| Branch | `sfx-fix-w1w2` (upstream `origin/development`), cut from `development` @ `9d2f8bfc2` after PRs 486 and 487 were merged at 16:01, before their independent reviews finished |
+| Test contract | Short-path worktree `sfx-fix`: `tests/unit/governance` + `tests/qualification/roadmap_replay_x`: 199 passed, 1 skipped, 5 failed. The 5 failures are the pre-existing `roadmap_replay_x` group C tests (identical on an unchanged roadmap; PDC_REG_DIAGNOSIS). The 8 `Filename too long` failures of the long-named worktree do not occur here (closes R-W1-10). `pdc_x_inventory --check`, `sync_agent_env --check`, `check_cursor_token_setup` and `igx_gov ticket` pass; `check_harness_adr.py` reports 24 pre-existing index gaps and none about ADR-SFX. Log: `.tmp/session/sfx-fix/contract.log` |
+| Line endings | Roadmap and ADR index were LF at the base and had become CRLF (whole-file diffs); 21 SFX files converted back to LF. Roadmap diff against the pre-SFX base is again 88 added / 13 removed lines; all five plan digests are unchanged (the digest normalises line endings) |
+| Approvals | No `Approved:` line or plan changed; plan files are untouched, so no re-approval is needed |

@@ -63,3 +63,12 @@ PR 487 was merged (`c323dbd41`) before its independent review finished. The revi
 | R-W2-08 | SFX documents normalised to LF |
 | R-W2-09 | GEN seal states the real protection (unencrypted shared scratch folder), the residual risk and the move to a restricted location before the P12 reveal |
 | R-W2-10..12 | Informational; the CI of the PR remains the confirmation of the test results |
+
+## Follow-up PR checkpoint (post-merge review corrections)
+
+| Field | Value |
+| --- | --- |
+| Branch | `sfx-fix-w1w2` (upstream `origin/development`), cut from `development` @ `9d2f8bfc2` after PRs 486 and 487 were merged at 16:01, before their independent reviews finished |
+| Test contract | Short-path worktree `sfx-fix`: `tests/unit/governance` + `tests/qualification/roadmap_replay_x`: 199 passed, 1 skipped, 5 failed. The 5 failures are the pre-existing `roadmap_replay_x` group C tests (identical on an unchanged roadmap; PDC_REG_DIAGNOSIS). The 8 `Filename too long` failures of the long-named worktree do not occur here (closes R-W1-10). `pdc_x_inventory --check`, `sync_agent_env --check`, `check_cursor_token_setup` and `igx_gov ticket` pass; `check_harness_adr.py` reports 24 pre-existing index gaps and none about ADR-SFX. Log: `.tmp/session/sfx-fix/contract.log` |
+| Line endings | Roadmap and ADR index were LF at the base and had become CRLF (whole-file diffs); 21 SFX files converted back to LF. Roadmap diff against the pre-SFX base is again 88 added / 13 removed lines; all five plan digests are unchanged (the digest normalises line endings) |
+| Approvals | No `Approved:` line or plan changed; plan files are untouched, so no re-approval is needed |
