@@ -18,7 +18,8 @@ Canonical plan: [`governance/tickets/plans/PLAN_T-IGX-036-I.md`](plans/PLAN_T-IG
 
 ## Approved
 
-_Pending: delegate session per [`DELEGATION-PDC-WAVE-B.md`](../../docs/project/maintainers/qualification/platform_domain_completeness/operator_decisions/DELEGATION-PDC-WAVE-B.md). The implementer never writes this line._
+Approved: operator-delegate @ 2026-11-12T07:46:15+01:00
+Delegation: docs/project/maintainers/qualification/platform_domain_completeness/operator_decisions/DELEGATION-PDC-WAVE-B.md@1b49c58cdaa0776e519901aec02e66fb714cc28a
 
 ## Test contract
 
@@ -37,4 +38,4 @@ uv run python -m scripts.governance.igx_gov ticket
 
 ## Lifecycle state
 
-plan_pending
+plan_approved
