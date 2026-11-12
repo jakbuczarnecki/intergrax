@@ -8,8 +8,8 @@ MCP client plus a raw JSON-RPC-over-HTTP session). No in-process checks.
 MCP-ACC-18: record what the reference server **checks** (tools) versus what it does **not announce**
 (tasks, completions, resource subscriptions, stdio/SSE), and keep UNSUPPORTED as UNSUPPORTED.
 
-Known documentation contradiction (reported, not edited here): ``MCP_SERVER_X_CONTRACT_AND_PROTOCOL_MATRIX.md``
-says Resources and Prompts are "Not advertised" (OD-MCP-02), but FastMCP 3.3.1 *does* advertise the
+Documentation contradiction D-P7-01 (corrected in the matrix at P7): ``MCP_SERVER_X_CONTRACT_AND_PROTOCOL_MATRIX.md``
+said Resources and Prompts are "Not advertised" (OD-MCP-02), but FastMCP 3.3.1 *does* advertise the
 ``resources`` and ``prompts`` capabilities in the initialize result. They are always empty
 (``resources/list``, ``resources/templates/list``, ``prompts/list`` return empty lists; reading or
 getting an unknown item fails). ``test_acc_18_resources_prompts_capability_is_advertised_but_empty``

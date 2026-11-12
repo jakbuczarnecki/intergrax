@@ -124,17 +124,10 @@ def test_acc_02_matrix_error_codes_are_all_defined_in_enum() -> None:
     assert documented <= enum_values, f"matrix codes missing in enum: {sorted(documented - enum_values)}"
 
 
-def test_acc_02_enum_codes_not_in_matrix_are_exactly_the_known_documentation_gap() -> None:
-    """Pins a documented gap instead of hiding it.
-
-    The enum has 7 codes; the contract and protocol matrix lists 6 and omits
-    ``MCP_BINDING_UNKNOWN_TOOL`` (raised by ``validate_mcp_server_definition`` for a catalog
-    binding whose ``tool_id`` is not in the known catalog). Reported as a documentation
-    finding in the lane L1 report; the matrix must not be edited by a test lane. When the
-    matrix is corrected this test fails on purpose and must be changed to ``== set()``.
-    """
+def test_acc_02_matrix_error_codes_table_lists_every_enum_code() -> None:
+    """The matrix Error codes table lists all 7 enum codes (D-P7-02 fixed in the matrix at P7)."""
     enum_values = {member.value for member in McpServerDefinitionErrorCode}
-    assert enum_values - _matrix_error_codes() == {"MCP_BINDING_UNKNOWN_TOOL"}
+    assert enum_values - _matrix_error_codes() == set()
 
 
 def test_acc_02_matrix_pins_definition_contract_version() -> None:
