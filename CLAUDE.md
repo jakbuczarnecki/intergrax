@@ -26,6 +26,7 @@ This file holds what is specific to Claude Code sessions. Rules, skills and plan
 | `/intergrax-independent-audit` | operator or model | Independent G6 audit — implementer must not PASS; separate session only |
 | `/intergrax-iteration` | operator only | Intergrax Harness AI - iteration workflow, session protocol (F3) |
 | `/intergrax-micro-implement` | operator only | Micro implementation - strict scoped changes for small bounded tasks |
+| `/intergrax-scenario-factory` | operator or model | SCENARIO-FACTORY-X (SFX) invariants for the sfx skills and personas - proposal-only drafts under .tmp/sfx/<slug>/ that follow the sfx.*.v1 schemas, secret_ref only, no runtime, no approval or admission claims |
 
 <!-- END agent-env:generated -->
 
