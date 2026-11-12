@@ -14,7 +14,8 @@ Canonical plan: [`governance/tickets/plans/PLAN_T-IGX-036-C.md`](plans/PLAN_T-IG
 
 ## Approved
 
-_Pending: delegate session per [`DELEGATION-PDC-P1-P3.md`](../../docs/project/maintainers/qualification/platform_domain_completeness/operator_decisions/DELEGATION-PDC-P1-P3.md). The implementer never writes this line._
+Approved: operator-delegate @ 2026-11-12T06:36:29+01:00
+Delegation: docs/project/maintainers/qualification/platform_domain_completeness/operator_decisions/DELEGATION-PDC-P1-P3.md@94d20d9b110d0b03a87553d51fe86ab80da667d0
 
 ## Test contract
 
@@ -30,4 +31,4 @@ Product code under `intergrax/`, `agents/`, `applications/`; IIAC protocol/scrip
 
 ## Lifecycle state
 
-plan_pending
+plan_approved
