@@ -12,7 +12,8 @@ Canonical plan: [`governance/tickets/plans/PLAN_T-IGX-036-P.md`](plans/PLAN_T-IG
 
 ## Approved
 
-_Pending: delegate re-signing per Amendment 1 of [`DELEGATION-PDC-WAVE-3A.md`](../../docs/project/maintainers/qualification/platform_domain_completeness/operator_decisions/DELEGATION-PDC-WAVE-3A.md). The implementer never writes this line._
+Approved: operator-delegate @ 2026-11-12T18:13:46+01:00
+Delegation: docs/project/maintainers/qualification/platform_domain_completeness/operator_decisions/DELEGATION-PDC-WAVE-3A.md@940cf1472f7304c6ba6b300e5f6918eb715edd04
 
 ## Test contract
 
@@ -29,4 +30,4 @@ uv run python -m scripts.governance.igx_gov ticket
 
 ## Lifecycle state
 
-plan_pending
+plan_approved
