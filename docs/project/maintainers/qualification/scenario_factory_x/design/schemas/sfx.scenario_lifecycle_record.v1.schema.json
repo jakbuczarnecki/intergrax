@@ -51,6 +51,7 @@
     },
     "version": {
       "type": "integer",
+      "maximum": 9007199254740991,
       "minimum": 1,
       "description": "SFX logical version; one CW WorkArtifactVersion per value."
     },
@@ -71,6 +72,7 @@
     },
     "sequence": {
       "type": "integer",
+      "maximum": 9007199254740991,
       "minimum": 1,
       "description": "Equals version; gap-free."
     },
@@ -262,6 +264,7 @@
         },
         "version": {
           "type": "integer",
+          "maximum": 9007199254740991,
           "minimum": 1
         },
         "canonical_digest": {

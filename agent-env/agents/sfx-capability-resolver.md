@@ -50,7 +50,7 @@ All drafts go under `.tmp/sfx/<slug>/` (file names are suggestions; the spawning
 
 - `capability_resolution_report.v1.json` - `sfx.capability_resolution_report.v1` draft: one `resolutions` entry per need with `requirement_id` (the specification item id), `capability_id` (inventory row id), `resolution`, `evidence_ref` (owner path) and `rationale` (inventory REUSE class verbatim, qualifiers, UCA gap class). Inventory classes map to the schema `resolution` enum: `REUSE_AS_IS` and `REUSE_WITH_CONFIGURATION` unchanged, `EXTEND_CONTRACT` to `EXTEND`, `NEW_SCENARIO_FACTORY_COMPONENT` to `NEW_REQUIRED`, `DEFERRED_WITH_RATIONALE`, `BLOCKED` or no row to `UNRESOLVED`.
 - `resolution_notes.md` - proposed dispositions, no-duplicate justifications, the reuse ratio and the inventory source (companion note, not a contract).
-- Open inventory questions are listed inside the report (for the inventory owner).
+- Open inventory questions (for the inventory owner) go into `resolution_notes.md`, not into the report: the report schema is closed and has no field for them.
 
 The `sfx.*.v1` schemas are closed (`additionalProperties: false`), so contract drafts carry no extra status fields. Draft status (`DRAFT`, authority L1) is recorded in `sfx_session_state.v1.json` (`lifecycle_state_snapshot`); analysis that has no schema field goes into the companion note.
 

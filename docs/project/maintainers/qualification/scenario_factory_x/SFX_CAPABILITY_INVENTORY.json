@@ -1,5 +1,6 @@
 {
   "schema_version": "sfx-capability-inventory.v1",
+  "inventory_version": "sfx-capability-inventory.v1+r1",
   "base_sha": "eadb1c2116feb0a2090b234a36fd4182bd6ace8d",
   "rows": [
     {
@@ -54,12 +55,12 @@
       "capability_id": "SFX-CAP-05",
       "owner": "UCA - Governed Capability Fulfillment",
       "contract": "GCF invariants (GCF-INV-*), canonical UCA flow",
-      "code_path": "docs/project/maintainers/architecture/GOVERNED_CAPABILITY_FULFILLMENT.md:10 (Status = FROZEN, UCA-6C-R6-FREEZE). Implementing code symbols: MISSING_EVIDENCE (the seed names only the architecture record; no symbol verified).",
+      "code_path": "docs/project/maintainers/architecture/GOVERNED_CAPABILITY_FULFILLMENT.md:10 (Status = FROZEN, UCA-6C-R6-FREEZE). Implementing code (worker obstacle recovery only, SFX-GAP-21; verified at base): intergrax/autonomous_work/capability_acquisition_service.py:100 WorkerCapabilityAcquisitionDecisionService; intergrax/contracts/autonomous_work/capability_acquisition.py:181 WorkerCapabilityNeed; intergrax/autonomous_work/worker_capability_fulfillment_composition.py:24 build_worker_capability_fulfillment_coordinator.",
       "configuration": "None by SFX; SFX submits gaps to the UCA flow",
       "maturity": "PRESENT (no PDC row; FROZEN architecture record)",
       "qualification": "UCA-6C-R6-CERT-RERUN-3 @ a38f70bc878a4e61807ce93cb0bfa600fdaca168 (CERTIFIED_UCA_CODE_BASELINE; evidence commit 09f37f2c6b21a65803410c67847545ad50523c4a)",
       "reuse_class": "REUSE_AS_IS",
-      "limitations": "Code entry point for SFX gap -> acquisition still to be named and verified (SFX-P2). Not in the roadmap section 5 rows read.",
+      "limitations": "The named UCA symbols cover worker obstacle recovery only; they are not an SFX-facing entry point. The SFX entry point for design-time capability-gap classes stays MISSING_EVIDENCE (SFX-GAP-21, to be named in SFX-P2/P8). Not in the roadmap section 5 rows read.",
       "evidence_sha": "code=eadb1c2116feb0a2090b234a36fd4182bd6ace8d; cert=a38f70bc878a4e61807ce93cb0bfa600fdaca168"
     },
     {
@@ -94,8 +95,8 @@
       "configuration": "Backend selection (SQLite / PostgreSQL) through the Collaborative Work repository bundle in host composition; tenant_id is a parameter (persistence_contract.py:34)",
       "maturity": "PRESENT (no PDC row; code verified for all three backends)",
       "qualification": "NOT_CERTIFIED for binding semantics: MP-4 FORMALLY CLOSED per docs/project/capabilities/plan/MULTIPLAYER_AI.md:213, SHA MISSING_EVIDENCE; MP-6G @ 5ff90667569bf23c88a4db98d489966e309f4ab7 covers decisions only as an activity source (run_mp6g_decision_source_coverage)",
-      "reuse_class": "REUSE_WITH_CONFIGURATION",
-      "limitations": "ApprovalStorePort (intergrax/contracts/agent_runtime_governance.py:366) / InMemoryApprovalStore (intergrax/runtime/agent_governance/approval_boundary.py:18) are not used: in-memory only, no tenant (SFX-GAP-08).",
+      "reuse_class": "REQUALIFICATION_REQUIRED",
+      "limitations": "Collaborative Work qualification state is REQUALIFICATION_REQUIRED (master plan section 7.5): the decision-binding semantics have no SHA-pinned qualification (MP-4 closure SHA MISSING_EVIDENCE). Target class after requalification: REUSE_WITH_CONFIGURATION. ApprovalStorePort (intergrax/contracts/agent_runtime_governance.py:366) / InMemoryApprovalStore (intergrax/runtime/agent_governance/approval_boundary.py:18) are not used: in-memory only, no tenant (SFX-GAP-08).",
       "evidence_sha": "code=eadb1c2116feb0a2090b234a36fd4182bd6ace8d; cert=5ff90667569bf23c88a4db98d489966e309f4ab7 (activity scope only)"
     },
     {
@@ -225,9 +226,9 @@
       "code_path": "intergrax/applications/_shared/mcp_application_server.py:45 def compose_application_mcp_server (re-exported by intergrax/applications/_shared/mcp_developer_api.py:14/65); intergrax/contracts/mcp_server_definition.py:91 class McpExposurePolicy (re-exported mcp_developer_api.py:37). The seed points both symbols at mcp_developer_api.py, which only re-exports them.",
       "configuration": "Explicit McpExposurePolicy.allowed_binding_ids allowlist per SFX server",
       "maturity": "PRESENT (PDC-D6-R017; GAP_CLASS BLOCKED_EXACT_REASON)",
-      "qualification": "REQUALIFICATION_REQUIRED: MCP-SERVER-X is IN PROGRESS / MANDATORY / CURRENT at base (section 5 ledger; baseline pin c228799785db8f35826f47ba0790d6a21d97fbe3; P6 closed scoped; not stage CLOSED)",
-      "reuse_class": "REQUALIFICATION_REQUIRED",
-      "limitations": "Target class after MCP-SERVER-X closure: REUSE_WITH_CONFIGURATION. SFX-GAP-17: extra bindings widen allowed_binding_ids (mcp_application_server.py:83-91, verified). Client compatibility MISSING_EVIDENCE (SFX-GAP-07).",
+      "qualification": "MCP-SERVER-X CLOSED - INDEPENDENTLY AUDITED (INTERNAL AGENT CERTIFICATION) - PUBLISHED (SCOPED, P0-P8), per the roadmap section 5 ledger and MCP_SERVER_X_INDEX.md: P7 package TEST_EXECUTION_SHA abbe1525450da77da6801b080619a600c20cd497; P8 audit PASS_SCOPED @ eadb1c211; IIAC CERTIFIED_PASS_SCOPED (919e34b8f); P8_TERMINAL_VERIFIED; decision OD-MCP-P8-CLOSE-01; baseline pin c228799785db8f35826f47ba0790d6a21d97fbe3. PDC-D6-R017 remains BLOCKED_EXACT_REASON",
+      "reuse_class": "REUSE_WITH_CONFIGURATION",
+      "limitations": "The scoped closure keeps its limitations in force (R-P7-01..06, R-P8-01, OPEN-BP-01, LIM-RESEARCH-STRICT-FACTORY-MEMORY; F-P8-01 HIGH recorded, not waived). The closure records no requalification at current HEAD, so the former REQUALIFICATION_REQUIRED class no longer applies. SFX-GAP-17: extra bindings widen allowed_binding_ids (mcp_application_server.py:83-91, verified). Client compatibility MISSING_EVIDENCE (SFX-GAP-07).",
       "evidence_sha": "code=eadb1c2116feb0a2090b234a36fd4182bd6ace8d"
     },
     {
@@ -370,8 +371,8 @@
       "configuration": "Collaborative Work repository bundle (SQLite / PostgreSQL) in host composition",
       "maturity": "PRESENT (no PDC row; code verified)",
       "qualification": "MP-2 CLOSED (COLLAB-WORK-2F/2G; repository suite 3.0.0, SQLite QUALIFIED, PostgreSQL PRODUCTION_QUALIFIED; COLLABORATIVE_WORK.md:355-372), SHA MISSING_EVIDENCE; MP-6G @ 5ff90667569bf23c88a4db98d489966e309f4ab7 exercises work-item create/replay/transition and cross-tenant/workspace isolation (tests/qualification/mp6/mp6g_e2e_contract.py:160-295); not in PDC or the roadmap ledger",
-      "reuse_class": "REUSE_WITH_CONFIGURATION",
-      "limitations": "Covered only by historical domain closures; a current-HEAD replay of the repository qualification suite is needed before the freeze pin. MP-2 PostgreSQL live rerun was unavailable at 2G.",
+      "reuse_class": "REQUALIFICATION_REQUIRED",
+      "limitations": "Collaborative Work qualification state is REQUALIFICATION_REQUIRED (master plan section 7.5): MP-2 has no recorded SHA and MP-6G covers the repositories at activity scope only. Target class after requalification: REUSE_WITH_CONFIGURATION. Covered only by historical domain closures; a current-HEAD replay of the repository qualification suite is needed before the freeze pin. MP-2 PostgreSQL live rerun was unavailable at 2G.",
       "evidence_sha": "code=eadb1c2116feb0a2090b234a36fd4182bd6ace8d; cert=5ff90667569bf23c88a4db98d489966e309f4ab7 (activity scope)"
     },
     {
@@ -394,8 +395,8 @@
       "configuration": "Checkpoint store backend (SQLite / PostgreSQL) in host composition",
       "maturity": "PARTIAL (PDC-D7-R015 crash recovery PRESENT; PDC-D7-R013 dead-letter ABSENT, 'no DLQ anywhere')",
       "qualification": "STATE-X @ bd54941d933069b8bfb2819bb819c1cbdbe71576 (PDC-D7-R015)",
-      "reuse_class": "REUSE_AS_IS",
-      "limitations": "Checkpoints, retries and the ledger are reusable now; DLQ semantics depend on PDC-X D7 delivery (ADR-PDC-07).",
+      "reuse_class": "REUSE_WITH_CONFIGURATION",
+      "limitations": "Checkpoints, retries and the scheduler ledger are reusable now. DEAD_LETTERED is absent from code (PDC-D7-R013 ABSENT, SFX-GAP-20), so the dead-letter part is not reusable as is: it depends on PDC-X D7 delivery (ADR-PDC-07), and the interim SFX behavior is failure.code = sfx.job.retry_budget_exhausted (ADR-SFX-002 OQ-002-5, PROPOSED). Class corrected from REUSE_AS_IS at inventory_version r1.",
       "evidence_sha": "code=eadb1c2116feb0a2090b234a36fd4182bd6ace8d; cert=bd54941d933069b8bfb2819bb819c1cbdbe71576"
     },
     {
