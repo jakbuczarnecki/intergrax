@@ -20,7 +20,9 @@
       ],
       "impact": "Process repeat of F-MCP-P5-GOV-001 / F-MCP-P6-GOV-001/003 / P7-PROC-02 on the audited SHA. No product path changed, and all checks later succeeded, so the technical evidence is not invalidated; the delegation condition and the prospective gate were not met at merge time. The P7 package records P7-PROC-02 for PR #470 only.",
       "proposed_owner": "orchestrator + operator",
-      "disposition_suggestion": "Record as a new governance finding (P7-PROC-03 / F-MCP-P7-GOV-001) preserved, not waived; operator decision on the record; merge only on completed green rollup from now on (the branch is not protected, so the gate is procedural)."
+      "disposition_suggestion": "Record as a new governance finding (P7-PROC-03 / F-MCP-P7-GOV-001) preserved, not waived; operator decision on the record; merge only on completed green rollup from now on (the branch is not protected, so the gate is procedural).",
+      "reaudit_disposition": "RECORDED_PENDING_OPERATOR_DISPOSITION",
+      "reaudit_reason": "Recorded as P7-PROC-03 in the P7 package with the correct merge time and the run times; not waived, no retroactive approval; the prospective discipline is restated. A documentation correction cannot resolve a HIGH governance finding: it stays open until the operator records a decision (as for F-MCP-P5/P6-GOV). Nit: the package gives 10:48:31Z for evol-x-b4-preflight; that is the end of the Regression gate run, the job itself finished 10:44:50Z (after the merge either way)."
     },
     {
       "id": "F-P8-02",
@@ -35,7 +37,9 @@
       ],
       "impact": "A host that mounts MCP without harness auth accepts any tenant/user from the client. This is existing, tested behaviour and not a regression, but it is an unrecorded residual of the exposure engine.",
       "proposed_owner": "P8 corrector (documentation) / operator (product decision)",
-      "disposition_suggestion": "Add a residual (R-P8-01) to the package and the matrix stating the behaviour and its precondition; the product question (fail closed at composition) is an operator decision and a product change would trigger ACT-N11, so it is out of the findings-only correction loop unless the operator rules otherwise."
+      "disposition_suggestion": "Add a residual (R-P8-01) to the package and the matrix stating the behaviour and its precondition; the product question (fail closed at composition) is an operator decision and a product change would trigger ACT-N11, so it is out of the findings-only correction loop unless the operator rules otherwise.",
+      "reaudit_disposition": "ACCEPTED_SCOPED_LIMITATION",
+      "reaudit_reason": "R-P8-01 added to the package (row, ACC-10/11/12 cells) and the gap register with the precondition and with the product decision left to the operator (ACT-N11). Statement not weakened. Non-blocking: the protocol matrix does not carry R-P8-01."
     },
     {
       "id": "F-P8-03",
@@ -51,7 +55,9 @@
       ],
       "impact": "Not a blocker for the P7 claims (no MCP-ACC row depends on these files and they are not counted as passing). It is an open limitation: an MCP opt-in guard and the TL11 physical catalog E2E are red or non-deterministic on this machine and unproven in CI.",
       "proposed_owner": "orchestrator (test debt owner) / operator",
-      "disposition_suggestion": "Keep R-P7-02 open as a stated limitation of the closure (not a blocker); correct the wording from `same set` to `core set of 11 plus a variable number of TL11 subprocess startup timeouts (observed 11-13)`; open a tracked item to fix or retire the stale gate tests (explicit LLM provider and revision-bound authority fixtures) or to prove them green in the full CI gate."
+      "disposition_suggestion": "Keep R-P7-02 open as a stated limitation of the closure (not a blocker); correct the wording from `same set` to `core set of 11 plus a variable number of TL11 subprocess startup timeouts (observed 11-13)`; open a tracked item to fix or retire the stale gate tests (explicit LLM provider and revision-bound authority fixtures) or to prove them green in the full CI gate.",
+      "reaudit_disposition": "ACCEPTED_SCOPED_LIMITATION",
+      "reaudit_reason": "R-P7-02 wording now says core set of 11, observed 11-13, gate/no_ci markers, smoke-only PR CI and the opt-in guard; stays open and not counted as passing; gap register aligned. The test-debt item is named in the corrections record only (owner orchestrator/operator); it is not yet a tracked ticket or WBS item - the certifier should carry it as a stated limitation."
     },
     {
       "id": "F-P8-04",
@@ -64,7 +70,9 @@
       ],
       "impact": "Overstated v1 claim in the document that the package names as the source of the protocol matrix. Dynamic progress behaviour of FastMCP was not probed by the auditor.",
       "proposed_owner": "P8 corrector (documentation)",
-      "disposition_suggestion": "Split the row: `Cancel via transport: Supported` and `Progress notifications: not claimed / not evidenced` (or add a test if the operator wants progress claimed)."
+      "disposition_suggestion": "Split the row: `Cancel via transport: Supported` and `Progress notifications: not claimed / not evidenced` (or add a test if the operator wants progress claimed).",
+      "reaudit_disposition": "RESOLVED",
+      "reaudit_reason": "Matrix row split into `Cancel via transport: Supported` and `Progress notifications: Not claimed; not evidenced at P7`. Re-checked: no progress hit in the mcp_* engine modules or in tests/qualification/mcp_server_x."
     },
     {
       "id": "F-P8-05",
@@ -78,7 +86,9 @@
       ],
       "impact": "A cross-reference that points at nothing; documentation completeness against REQ-MCP-P-05.",
       "proposed_owner": "P8 corrector (documentation)",
-      "disposition_suggestion": "Add a `wire errors observed at P7` table to the matrix (code string, situation, test), and correct the `When` column for MCP_BINDING_UNKNOWN and MCP_DEF_INVALID."
+      "disposition_suggestion": "Add a `wire errors observed at P7` table to the matrix (code string, situation, test), and correct the `When` column for MCP_BINDING_UNKNOWN and MCP_DEF_INVALID.",
+      "reaudit_disposition": "RESOLVED",
+      "reaudit_reason": "`Wire errors observed at P7` table added and the closing sentence points to it; the `When` columns of MCP_DEF_INVALID and MCP_BINDING_UNKNOWN match the L1 and composition tests. Every wire string and situation in the table was checked against the P7 assertions and the product source (unauthorized:/forbidden:/identity_conflict: come from _tool_error_from_http; `Unknown tool: '<name>'` is FastMCP's `{name!r}`). Non-blocking omissions: the typed payload `unknown_tool:<id>` (describe_catalog_tool, asserted in ACC-04/08/16 tests), protocol-level errors (-32601, `Unknown resource`/`Unknown prompt`, SDK 408), the 401 body text; `identity_conflict:` is also asserted at L3 under ACC-10 (table lists 11, 12)."
     },
     {
       "id": "F-P8-06",
@@ -91,7 +101,9 @@
       ],
       "impact": "Wording only; no behaviour claim of stdio support is made.",
       "proposed_owner": "P8 corrector (documentation)",
-      "disposition_suggestion": "Reword: `the host mount publishes streamable HTTP only; SSE paths return 404; stdio is not published by any composition path and is not enforced`."
+      "disposition_suggestion": "Reword: `the host mount publishes streamable HTTP only; SSE paths return 404; stdio is not published by any composition path and is not enforced`.",
+      "reaudit_disposition": "RESOLVED",
+      "reaudit_reason": "ACC-05 cell now says SSE-style and stdio-named paths answer 404, that HTTP probes cannot prove the absence of a process transport and that the product does not enforce it. Not weakened; the claim is narrower and accurate."
     },
     {
       "id": "F-P8-07",
@@ -106,7 +118,9 @@
       ],
       "impact": "Claims are not wrong (the package says `COVERED`, the module docstrings state double scope); they are narrower than a reader of the package table would assume.",
       "proposed_owner": "P8 corrector (documentation; tests only if the operator wants the gaps closed)",
-      "disposition_suggestion": "Add the scope statements to the limitation cells; optionally add a non-cooperative-host drain test and a cancel-isolation test (two in-flight requests) in a separate hardening item."
+      "disposition_suggestion": "Add the scope statements to the limitation cells; optionally add a non-cooperative-host drain test and a cancel-isolation test (two in-flight requests) in a separate hardening item.",
+      "reaudit_disposition": "ACCEPTED_SCOPED_LIMITATION",
+      "reaudit_reason": "Scope statements added to the ACC-10, 11, 13 and 15 cells and cover items (a) cooperative host double, (b) drain bound 0.25 s vs 30 s, (c) cancel isolation, (d) slot release after exception, (e) L3 versus L2 cross-tenant, (g) /mcp versus /mcp/. Item (f) (result bound tested only with over-ceiling payloads) is not stated anywhere - non-blocking. Optional hardening tests are explicitly left out of P7/P8 closure."
     },
     {
       "id": "F-P8-08",
@@ -120,7 +134,9 @@
       ],
       "impact": "None of these makes a row false; they limit what the consistency tests prove.",
       "proposed_owner": "P8 corrector (tests) - optional",
-      "disposition_suggestion": "Tighten (a), (d), (e) when the file is next touched; record (b), (c), (f) as known limits of the consistency checks."
+      "disposition_suggestion": "Tighten (a), (d), (e) when the file is next touched; record (b), (c), (f) as known limits of the consistency checks.",
+      "reaudit_disposition": "ACCEPTED_SCOPED_LIMITATION",
+      "reaudit_reason": "Items (a) and (b) are stated in the ACC-14 cell. The corrections record says all are stated in the ACC-14 cell, which holds only for (a),(b); items (c) self-referential ACC-18 matrix test, (d) vacuous level check, (e) weak ACC-20 test and (f) name-based traceability stay documented in this findings register and the dossier only. Tests unchanged, so TEST_EXECUTION_SHA results stay valid. Non-blocking for LOW."
     },
     {
       "id": "F-P8-09",
@@ -134,7 +150,9 @@
       ],
       "impact": "Records preserved; list incomplete.",
       "proposed_owner": "P8 corrector (documentation)",
-      "disposition_suggestion": "Add the P5 findings and the prospective gate to the carried-forward list in the closure report."
+      "disposition_suggestion": "Add the P5 findings and the prospective gate to the carried-forward list in the closure report.",
+      "reaudit_disposition": "RESOLVED",
+      "reaudit_reason": "`Carried unchanged` now lists F-MCP-P5-GOV-001/002, F-MCP-P5-MEM-001 and OD-MCP-P5-GOV-01 besides the P6 items; the underlying records were already unchanged."
     }
   ],
   "informational": [
@@ -152,5 +170,17 @@
     "OPEN-BP-01 - not re-examined",
     "R-P7-01 (REQ-MCP-OBS-01, no MCP trace id) - confirmed accurate: no test asserts or denies a dedicated id; ACC-17 pins task_id, run_id, execution_id only",
     "R-P7-03, R-P7-04, R-P7-05, R-P7-06 - confirmed accurate against the tests and the engine source (see dossier)"
-  ]
+  ],
+  "reaudit": {
+    "reaudit_execution_sha": "c50547012c353463e86525411a5a065f43e5bab8",
+    "corrections_commit_parent": "69a2333cc67071656f1e573a35339ade9a8b5b7b",
+    "scope": "documentation corrections of MCP-P8-03 round 1; docs-only diff against eadb1c211, product_paths_changed_between == []",
+    "result": "no finding is STILL_OPEN; F-P8-01 is recorded and pending an operator disposition; verdict stays PASS_SCOPED",
+    "counts": {
+      "RESOLVED": 4,
+      "ACCEPTED_SCOPED_LIMITATION": 4,
+      "RECORDED_PENDING_OPERATOR_DISPOSITION": 1,
+      "STILL_OPEN": 0
+    }
+  }
 }

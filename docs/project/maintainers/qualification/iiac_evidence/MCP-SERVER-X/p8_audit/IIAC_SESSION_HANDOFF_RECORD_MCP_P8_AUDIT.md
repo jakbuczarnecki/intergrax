@@ -42,3 +42,7 @@
 ## Operator signature line
 
 `Approved handoff: operator @ ________________`
+
+## Re-review of the corrections (MCP-P8-03 round 1)
+
+Re-review SHA `c50547012c353463e86525411a5a065f43e5bab8` (documentation only). Result: 4 findings RESOLVED, 4 ACCEPTED_SCOPED_LIMITATION, 1 (F-P8-01, HIGH governance) RECORDED_PENDING_OPERATOR_DISPOSITION, 0 STILL_OPEN; verdict stays `PASS_SCOPED`. The certifier must carry F-P8-01, R-P7-02 (with the untracked test debt), R-P8-01 and the F-P8-07/08 limits as stated limitations. Details: dossier section "Re-review of the P8 corrections" and `reaudit_disposition` in `iiac_audit_findings_p8.json`. The placeholders listed above are unchanged.

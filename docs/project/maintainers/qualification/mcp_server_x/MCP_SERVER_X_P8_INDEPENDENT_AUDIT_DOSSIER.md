@@ -112,3 +112,21 @@ The P7 lanes carry the label `T-IGX-035-H-MCP-P7-IMPLEMENTERS`; the P6 manifests
 2. R-P7-02 stays open (F-P8-03). R-P7-03..06 stay open as the package states.
 3. F-P8-01 (HIGH) needs an operator disposition before closure; it is preserved here, not waived.
 4. The auditor did not certify and did not edit any product, test, ticket, roadmap or existing document.
+
+## Re-review of the P8 corrections (MCP-P8-03, round 1)
+
+**Re-review SHA:** `c50547012c353463e86525411a5a065f43e5bab8` (orchestrator corrections on top of the audit evidence commit `69a2333cc`). **Result: no finding is still open; verdict stays `PASS_SCOPED`.** The diff against `eadb1c211` is documentation only (`product_paths_changed_between` is `[]` for both pins, no test, script, governance or workflow file changed), so the P7 `TEST_EXECUTION_SHA` results are untouched. One pytest process ran under the shared lock: `test_mcp_server_x_p7_l1_contract.py` plus `test_mcp_server_x_p7_matrix_consistency.py` read the corrected matrix and package and gave **55 passed** (`reaudit/p8_reaudit_replay_l1_consistency.log`). `verify_iiac_policy_activation --require-in-force` exit 0; FRZ counter unchanged (`FRZ=225 PASS=108 OPEN=109`).
+
+| Finding | Re-review disposition | Reason (short; full text in `iiac_audit_findings_p8.json`, field `reaudit_reason`) |
+| --- | --- | --- |
+| F-P8-01 HIGH | `RECORDED_PENDING_OPERATOR_DISPOSITION` | Recorded as P7-PROC-03, not waived, no retroactive approval. A documentation fix cannot resolve a HIGH governance finding; it needs an operator decision. Nit: `evol-x-b4-preflight` finished 10:44:50Z, 10:48:31Z is the end of its run. |
+| F-P8-02 MEDIUM | `ACCEPTED_SCOPED_LIMITATION` | R-P8-01 in the package (row and ACC-10/11/12 cells) and the gap register; product decision left to the operator. |
+| F-P8-03 MEDIUM | `ACCEPTED_SCOPED_LIMITATION` | R-P7-02 reworded to core 11, observed 11-13, markers and CI scope; still open, not counted as passing. The test-debt item is not yet tracked outside the corrections record. |
+| F-P8-04 MEDIUM | `RESOLVED` | Matrix row split: Cancel supported, Progress not claimed and not evidenced. |
+| F-P8-05 MEDIUM | `RESOLVED` | `Wire errors observed at P7` table checked string by string against the P7 assertions and the source; `When` columns match. Non-blocking omissions: `unknown_tool:<id>` payload, protocol-level errors, 401 body text; `identity_conflict:` also under ACC-10. |
+| F-P8-06 LOW | `RESOLVED` | ACC-05 wording is narrower and accurate (SSE-style and stdio-named paths 404; stdio not enforced). |
+| F-P8-07 LOW | `ACCEPTED_SCOPED_LIMITATION` | Items (a)-(e), (g) stated in the ACC-10/11/13/15 cells; (f) not stated, non-blocking. |
+| F-P8-08 LOW | `ACCEPTED_SCOPED_LIMITATION` | (a), (b) in the ACC-14 cell; (c)-(f) only in this register and dossier, although the record says all are in the ACC-14 cell. |
+| F-P8-09 LOW | `RESOLVED` | P5 findings and OD-MCP-P5-GOV-01 added to the carried list. |
+
+Nothing was weakened to keep `PASS_SCOPED`: every correction either narrows a claim, adds a limitation or records a process finding. What the certifier must carry as stated limitations: F-P8-01 (until an operator decision exists), R-P7-02 (with the untracked test debt), R-P8-01, and the F-P8-07/08 limits. Not verified in the re-review: the content of the PR or CI for the corrections commit, and the runtime of any test other than the 55 above.
