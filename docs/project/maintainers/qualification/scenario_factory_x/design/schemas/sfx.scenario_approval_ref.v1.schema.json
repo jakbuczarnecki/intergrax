@@ -1,0 +1,190 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "sfx.scenario_approval_ref.v1",
+  "title": "ScenarioApprovalRef",
+  "description": "SFX-CON-13. SFX view of one CollaborativeDecisionBinding (intergrax/contracts/collaborative_decision_binding.py:65) that binds an exact artifact version to a decision proposal. It wraps the binding; it never becomes an approval authority. canonical_digest = sha256(JCS(model_dump without canonical_digest)). Status: PROPOSED design draft (T-IGX-037-C); not code.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version",
+    "tenant_id",
+    "workspace_id",
+    "work_item_id",
+    "binding_id",
+    "approval_kind",
+    "work_artifact_version_ref",
+    "approved_artifact_digest",
+    "decision_proposal_ref",
+    "approver",
+    "canonical_digest",
+    "created_at"
+  ],
+  "properties": {
+    "schema_version": {
+      "const": "sfx.scenario_approval_ref.v1"
+    },
+    "tenant_id": {
+      "$ref": "#/$defs/id"
+    },
+    "workspace_id": {
+      "$ref": "#/$defs/id"
+    },
+    "work_item_id": {
+      "$ref": "#/$defs/id"
+    },
+    "binding_id": {
+      "$ref": "#/$defs/id"
+    },
+    "approval_kind": {
+      "enum": [
+        "BLUEPRINT_APPROVAL",
+        "SANDBOX_CERTIFICATION",
+        "DOSSIER_EXPORT"
+      ]
+    },
+    "work_artifact_version_ref": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "work_artifact_id",
+        "work_artifact_version_id"
+      ],
+      "properties": {
+        "work_artifact_id": {
+          "$ref": "#/$defs/id"
+        },
+        "work_artifact_version_id": {
+          "$ref": "#/$defs/id"
+        }
+      },
+      "description": "Mirrors WorkArtifactVersionRef (intergrax/contracts/collaborative_work.py:1355)."
+    },
+    "approved_artifact_digest": {
+      "$ref": "#/$defs/digest"
+    },
+    "decision_proposal_ref": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "decision_id",
+        "lineage_version",
+        "branch_id"
+      ],
+      "properties": {
+        "decision_id": {
+          "$ref": "#/$defs/id"
+        },
+        "lineage_version": {
+          "$ref": "#/$defs/id"
+        },
+        "branch_id": {
+          "$ref": "#/$defs/id"
+        }
+      },
+      "description": "Serialized locator of DecisionProposalRef (intergrax/contracts/decision_record.py:223)."
+    },
+    "approver": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "principal_id",
+        "actor_kind"
+      ],
+      "properties": {
+        "principal_id": {
+          "$ref": "#/$defs/id"
+        },
+        "actor_kind": {
+          "const": "HUMAN"
+        }
+      }
+    },
+    "canonical_digest": {
+      "$ref": "#/$defs/digest"
+    },
+    "created_at": {
+      "$ref": "#/$defs/timestamp"
+    }
+  },
+  "$defs": {
+    "id": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 256,
+      "pattern": "^[A-Za-z0-9][A-Za-z0-9._:/-]*$",
+      "description": "Opaque identifier. Never a secret and never a free-text value."
+    },
+    "digest": {
+      "type": "string",
+      "pattern": "^sha256:[0-9a-f]{64}$",
+      "description": "Platform content digest convention sha256:<64 lowercase hex> (intergrax/contracts/validation.py:13)."
+    },
+    "timestamp": {
+      "type": "string",
+      "pattern": "^[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}:[0-9]{2}:[0-9]{2}\\.[0-9]{6}Z$",
+      "description": "RFC 3339 UTC timestamp with exactly six fractional digits and a Z suffix (SFX_CANONICALIZATION.md, rule CF-5)."
+    },
+    "slug": {
+      "type": "string",
+      "pattern": "^[a-z][a-z0-9_]*$",
+      "maxLength": 64,
+      "description": "Same pattern as SCENARIO_SLUG_PATTERN (scripts/proof/create_scenario_proof.py:19)."
+    },
+    "principal_ref": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "principal_id",
+        "actor_kind"
+      ],
+      "properties": {
+        "principal_id": {
+          "$ref": "#/$defs/id"
+        },
+        "actor_kind": {
+          "enum": [
+            "HUMAN",
+            "AGENT",
+            "SYSTEM"
+          ],
+          "description": "Kind of actor. G-2 counts only HUMAN actors."
+        }
+      },
+      "description": "Harness principal reference."
+    },
+    "artifact_version_ref": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "schema_id",
+        "artifact_id",
+        "version",
+        "canonical_digest"
+      ],
+      "properties": {
+        "schema_id": {
+          "type": "string",
+          "pattern": "^sfx\\.[a-z_]+\\.v[0-9]+$"
+        },
+        "artifact_id": {
+          "$ref": "#/$defs/id"
+        },
+        "version": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "canonical_digest": {
+          "$ref": "#/$defs/digest"
+        }
+      },
+      "description": "Immutable reference to one SFX artifact version (CW WorkArtifactVersion)."
+    },
+    "secret_ref": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 512,
+      "pattern": "^[a-z][a-z0-9+.-]*:[^\\s]+$",
+      "description": "Reference resolved by the credential broker at run time. Never a secret value."
+    }
+  }
+}
