@@ -31,7 +31,7 @@ Product code under `intergrax/`, `agents/`, `applications/`; IIAC protocol/scrip
 
 ## Lifecycle state
 
-quality_gate
+closed
 
 ## Checkpoint
 
@@ -42,3 +42,5 @@ quality_gate
 | `test_pdc_x_inventory.py` | 8 passed |
 | `igx_gov ticket` | `[INFO] igx_gov ticket: OK` |
 | Tracked unknowns carried to P2 | 56 `UNINSPECTED` domain surfaces (see `PDC_CLOSED_WORLD_INVENTORY.json`) |
+
+**Closure:** merged by the Operator in PR #463 (`dd2055e19c64`), 2026-11-12. Not a stage closure.

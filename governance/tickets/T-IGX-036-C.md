@@ -31,7 +31,7 @@ Product code under `intergrax/`, `agents/`, `applications/`; IIAC protocol/scrip
 
 ## Lifecycle state
 
-quality_gate
+closed
 
 ## Checkpoint
 
@@ -45,3 +45,5 @@ quality_gate
 | `igx_gov ticket` | `[INFO] igx_gov ticket: OK` |
 
 **Scope note:** the replay findings are routed to a regression-repair lane `PDC-P5-REG` (root cause first: stale gate vs real regression). That lane is not in the master-plan WBS; P4 places it, and any product fix in it is gated by OD-PDC-SEQ-01.
+
+**Closure:** merged by the Operator in PR #463 (`dd2055e19c64`), 2026-11-12. Not a stage closure.

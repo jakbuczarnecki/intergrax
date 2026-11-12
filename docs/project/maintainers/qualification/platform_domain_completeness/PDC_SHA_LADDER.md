@@ -4,9 +4,10 @@
 | --- | --- | --- |
 | BASELINE_SHA | `a695c9c835bb5b4b206e6e3e00bb2aee23ca7b6b` | `origin/development` at PDC-P0 start (PR #459 merge) |
 | ROADMAP_AMENDMENT_SHA | `bc9ef52bd690738e71638a599eec64c76ac356c9` | PR #461 merge on `development` (T-IGX-036-A); descends from BASELINE_SHA; contains P0 head `142190b313d304bdc6c6362a1d7484b88a802920` |
-| P1_PUBLICATION_SHA | — | Closed-world inventory |
-| P2_PUBLICATION_SHA | — | Requirements matrix, gap register, FRZ crosswalk |
-| P3_PUBLICATION_SHA | — | Ownership matrix, ADRs, ODs; architecture lock recorded under T-IGX-036-E (OD-PDC-ADR-01 approved 2026-11-12); set at the PR #463 merge |
+| P1_PUBLICATION_SHA | `dd2055e19c64ef35fd80dde770f3de924ddb39d1` | Closed-world inventory (PR #463 merge, T-IGX-036-B) |
+| P2_PUBLICATION_SHA | `dd2055e19c64ef35fd80dde770f3de924ddb39d1` | Requirements matrix, gap register, FRZ crosswalk (PR #463 merge, T-IGX-036-C) |
+| P3_PUBLICATION_SHA | `dd2055e19c64ef35fd80dde770f3de924ddb39d1` | Ownership matrix, ADR and OD drafts (PR #463 merge, T-IGX-036-D) |
+| P3_LOCK_PUBLICATION_SHA | — | Architecture lock record (T-IGX-036-E, PR #465); set at merge |
 | P4_PUBLICATION_SHA | — | Implementation WBS, dependency DAG, cross-domain test matrix |
 | Dn_IMPLEMENTATION_SHA / Dn_PUBLICATION_SHA | — | One pair per P5 lane (D1..D8); publication = merge commit on `development` |
 | INTEGRATED_BASELINE_SHA | — | P6; must descend from every Dn publication |

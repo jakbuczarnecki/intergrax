@@ -31,7 +31,7 @@ Product code under `intergrax/`, `agents/`, `applications/`; IIAC protocol/scrip
 
 ## Lifecycle state
 
-quality_gate
+closed
 
 ## Checkpoint
 
@@ -48,3 +48,5 @@ quality_gate
 - ADR-PDC-02 (D2) is added beyond the ADR list in `PLAN_T-IGX-036-D.md`. Master plan §F made it conditional on P2 proving a D2 contract gap, and P2 proved gaps in R011, R012 and R015.
 - OD-PDC-SCOPE-06 (RAG freshness) and OD-PDC-SCOPE-07 (plugin provenance) were added for the same reason.
 - No ADR is accepted, no OD is signed, and no new doc pair is created. The architecture lock (PDC-P3-08) remains an Operator gate.
+
+**Closure:** merged by the Operator in PR #463 (`dd2055e19c64`), 2026-11-12. Not a stage closure.
