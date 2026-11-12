@@ -6,7 +6,7 @@ MRC-1 identity and tenant admission (fail-closed MCP identity). Findings: R-P8-0
 
 ## Plan digest
 
-Plan digest: 2acc9340f0529dd94eac42862e611f78aa0945c6a82c7bf5fe7f66e4e0937042
+Plan digest: 94b40ae23a5be9f8e9e496dcc4cb5242e65cd3d063da5e53625c1881af60f843
 
 Canonical plan: [`governance/tickets/plans/PLAN_T-IGX-038-A.md`](plans/PLAN_T-IGX-038-A.md).
 
