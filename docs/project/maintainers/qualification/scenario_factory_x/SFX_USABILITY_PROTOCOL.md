@@ -175,6 +175,8 @@ Rounds R1..R3 include at least one participant who uses keyboard-only navigation
 
 ## 9. Results templates
 
+> **OD-SFX-21 scope note (2026-11-13).** Human sessions, recruitment and measured TTFS are removed from the pre-freeze documentation campaign ([`OD-SFX-21`](operator_decisions/OD-SFX-21.md)). Every result field below stays `NOT_RUN`, and no agent records `PASS` for it. The wording of rounds R1–R3 (SFX-P12-05) and of the OD-SFX-07 targets is unchanged.
+
 ### 9.1 Round summary
 
 | Round | SHA / prototype version | Date | Participants | UM-01 TTFS BU | UM-02 TTFS ENG | UM-03 Task success | UM-04 SUS | UM-07 Secrets exposed | Critical | Major | Minor | Cosmetic |

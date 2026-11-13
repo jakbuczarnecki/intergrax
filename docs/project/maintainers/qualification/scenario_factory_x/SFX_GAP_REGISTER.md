@@ -2,6 +2,7 @@
 
 **Source:** master plan R1 §6 (gaps), §3.4, §15.1 and §16 (conflicts) — [`SFX-MASTER-PLAN.md`](../../../../../governance/tickets/plans/SFX-MASTER-PLAN.md).  
 **Index:** [`SFX_INDEX.md`](./SFX_INDEX.md) · **Evidence pin:** `eadb1c2116feb0a2090b234a36fd4182bd6ace8d`  
+**Closeout reconciliation (T-IGX-037-F):** rows SFX-GAP-07, SFX-GAP-11 and C-ECAP-01 were updated to the evidence already on `development`. No other row changed. Where this register and `SFX_GAP_ANALYSIS.md` differ in detail, the gap analysis carries the full disposition.  
 **Consolidation:** final dispositions are reconciled with the W1 research findings in `docs/project/maintainers/qualification/scenario_factory_x/SFX_GAP_ANALYSIS.md` (T-IGX-037-C). Until then this register is authoritative.
 
 Status vocabulary: `VERIFIED` (gap confirmed at the pin) · `MISSING_EVIDENCE` (not yet established; scheduled task). R1 changes: ▲ revised, ▼ new in R1.
@@ -16,11 +17,11 @@ Status vocabulary: `VERIFIED` (gap confirmed at the pin) · `MISSING_EVIDENCE` (
 | SFX-GAP-04 | ROI component absent | VERIFIED | SFX-P11-02 | SFX |
 | SFX-GAP-05 | SEF contracts PROPOSED_ONLY | VERIFIED | GATE-SEF-CONSUME (§3.3) | SEF-X track |
 | SFX-GAP-06 | `sync_agent_env.py` generates no agents | VERIFIED | SFX-P4-B01 (post-freeze by default; §15.1) | SFX (W3) |
-| SFX-GAP-07 | MCP client compatibility | MISSING_EVIDENCE | SFX-P1-02, SFX-P10-02 | SFX |
+| SFX-GAP-07 | MCP client compatibility | VERIFIED (doc level) | Resolved by `SFX_IDE_TOOLING_FACTS.md` §5.5 (streamable HTTP and header auth in both clients). Live residuals R-01..R-04 stay `MISSING_EVIDENCE` and go to SFX-P10-02 (see `SFX_GAP_ANALYSIS.md`) | SFX |
 | SFX-GAP-08 ▲ | `ApprovalStorePort` is in-memory with no tenant | VERIFIED | Avoided by using decision bindings (SFX-CAP-08) | SFX (avoidance) |
 | SFX-GAP-09 | Dual `ToolRegistry` | MISSING_EVIDENCE | SFX-P2-01 ownership review | Platform (review in SFX-P2-01) |
 | SFX-GAP-10 | Business-scenario workspace location | VERIFIED | ADR-SFX-002 | SFX |
-| SFX-GAP-11 | Research facts | MISSING_EVIDENCE | SFX-P1 (T-IGX-037-B) | SFX |
+| SFX-GAP-11 | Research facts | VERIFIED | RESOLVED. Evidence on `development`: `SFX_COMPETITIVE_EVIDENCE_MATRIX.md` (15 products, 3 research lanes), `SFX_IDE_TOOLING_FACTS.md`, `SFX_CAPABILITY_INVENTORY.md` (37 rows). Review findings R-W1-03..05 on cell-level sources were corrected in PR #493 | SFX |
 | SFX-GAP-12 | No SFX qualification suite | VERIFIED | SFX-P9, SFX-P13 | SFX |
 | SFX-GAP-13 ▼ | No PR-level SAST or dependency audit; ruff has no `S` rules; no pip-audit or npm audit | VERIFIED | SFX-P9-03; OD-SFX-14 | SFX + operator |
 | SFX-GAP-14 ▼ | No conformance rule forbids generated code from mutating environment profile, policy mode, governance or certification records, contract lifecycle, or exposure policy | VERIFIED | SFX-P9-02 | SFX |
@@ -44,7 +45,7 @@ Reported conflicts; none is resolved unilaterally by SFX.
 | C-RDY-01 | SFX must not define Delivery Kit templates; REF-2 must not duplicate the READINESS settlement reference. | §16 | OPEN (standing constraint) | READINESS-X owns the kit; enforced in P8-01 and P12-02 scope |
 | C-AF-01 | `scripts/` changes interact with the ARCH-FREEZE inventory and SHA lock. | §15.1 | OPEN (standing constraint) | P4-B01 moved to W3; optional OD-SFX-12 only before `T-B7-LOCK-FREEZE-SHA` |
 | C-IIAC-01 | Every post-freeze product wave needs an ACT-N11 audited re-bind. | §16 | OPEN (standing constraint) | REBIND-Wn at the end of W3..W8; OD-SFX-09 |
-| C-ECAP-01 | Applicability of ECAP §16 ("update ECAP when a new domain is added") to a Tier-2 product module. | §16 | OPEN | Decided in the ADR-SFX-001 review (T-IGX-037-C) |
+| C-ECAP-01 | Applicability of ECAP §16 ("update ECAP when a new domain is added") to a Tier-2 product module. | §16 | OPEN — resolution PROPOSED | ADR-SFX-001 proposes that §16 does not apply under Option B and that no ECAP revision is needed. It stays open until the operator confirms it in the OD-SFX-06 review. ADR-SFX-001 is `Proposed` |
 
 ### C-OD-02 — "Scenario Registry" in OD-SFX-01 (interpretation, recorded after review R-W0-05)
 
