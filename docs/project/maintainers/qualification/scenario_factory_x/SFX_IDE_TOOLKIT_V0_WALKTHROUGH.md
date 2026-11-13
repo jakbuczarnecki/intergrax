@@ -155,6 +155,7 @@ Does each MAJOR fix leave the example valid (by reading and the node check)?
 ### Open after fix round 1
 
 - WT-12 NOT FIXED (above). The v0 UCA gap-class table (WT-13) and the `INT-LLM` naming convention are toolkit conventions, not platform definitions; they need the design owner's confirmation.
+- Review follow-up (independent review of PR #496, MINOR 1 and 2): `sfx-resolve` now says `INT-LLM` matches only a model-gateway row and is otherwise `UNRESOLVED` with its own `IQ`; `sfx-session` `resume_cursor` precedence (2) excludes `IMPROVE`.
 - Other design documents that restate the report or problem statement contracts (outside this edit scope) may need the same three schema changes.
 - The `.claude/` and `.cursor/` adapters were not regenerated (outside scope; the orchestrator does it).
 - sha256 of the regenerated files (LF): problem statement `74ed967f26b2f17b3b66075dc9baa8a91f878e50883275909737b7fee4cdb2c9`, specification `20c8611cd61efd8667c06204f3254fef9ff926f80c87de97dda85af81007bcc3`, report `c1082aac7d516926c081b8fb691f516be4a3320d1c9cd4b41fb729b9c5da8399`, blueprint `b4c38425ab5fbf9969f8be8990bdf2edbb639199392f3f3dc031026918e98511`, integration plan `d38a789125818790653ebe2fbb961b328c8c90584b32a24ed78027dbcda3e436`, test plan `071090c2be2f0beb6ce1a29a691788a2f93924f341bf28006a1f944fdf384de9`, session state `17deed0e5bd63119c26efb6c8ad236696329bfaaa00eb450d64676a2fcd9908a`. The table in section 2 keeps the first-pass hashes.
