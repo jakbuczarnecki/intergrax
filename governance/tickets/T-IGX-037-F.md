@@ -41,7 +41,7 @@ Worktree `_wt/intergrax/t-igx-037-f` (detached at `364b3892544535e0969c28cfdcc0d
 | --- | --- |
 | Baseline | `origin/development` @ `364b3892544535e0969c28cfdcc0d308d565af3f` (PR #502). The plan assumed `dbc6102be`; the only change since is a PDC-X documentation merge. Stage states are unchanged. |
 | Deviation from the closeout plan | The scope record is `OD-SFX-21`, not `OD-SFX-17`, because OD-SFX-17..20 are PROPOSED in `SFX_GAP_ANALYSIS.md`. |
-| Visual check | Round 1 failed (see "Visual check result"). Round 2 on package v2: V-2 and V-9 open, see "Visual check, round 2". |
+| Visual check | Round 1 and 2 failed (V-2, V-9). Round 3 on the final package: all V-items closed, independent audit PASS_WITH_FINDINGS, see "Visual check, round 3". |
 
 ## Visual check result (C4, implementer pre-check)
 
@@ -127,4 +127,10 @@ The six PNG files were extracted into an empty scratch folder, their SHA-256 val
 | V-3..V-8 | Closed | Status badge and footer in all six; neutral labels; "Checked scenario"; no edge artifacts. |
 | V-9 | **Closed** | The tagline "ENTERPRISE AI PLATFORM" is gone from all six. |
 | V-10 | Notes only | Large empty areas in hero boxes; step "Capability" is short for "Capability Resolution"; ownership image says "READINESS-owned patterns" (internal track name); the ownership connector arrowhead is slightly skewed. Optional for the image author. |
+
+### Independent audit, round 3 (commit `a95c87faa`)
+
+Verdict: **PASS_WITH_FINDINGS**, no BLOCKER and no HIGH. The committed PNG blobs match the package checksums. V-1..V-9 pass on the committed pixels; V-10 stays optional notes (L1: "READINESS-owned patterns", short step label, empty hero areas; L2: skewed connector arrowhead, accent bars slightly past rounded corners, background arcs crossing the footer divider, tight step numbers). The two LOW findings on this ticket (stale checkpoint row, missing state line) are fixed here. The visuals may be published.
+
+Campaign state: text, governance and visuals are audited. **Still required, and not done by the implementer:** an `Approved:` line for this ticket from the operator or a commissioned delegate (no delegation covers T-IGX-037-F), then a PR to `development`, merge by the operator, the pin commit (C6) and the closure record. `SFX_PRE_FREEZE_DOCS_CLOSED` is not reached. `SFX_PRE_IMPLEMENTATION_READY` is not granted. STOP before SFX-P4-B, SFX-P5 and ARCH-FREEZE.
 
