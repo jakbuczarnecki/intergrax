@@ -10,7 +10,8 @@ in ``CollaborativeWorkArtifactService``.
 from __future__ import annotations
 
 import re
-from typing import Final, Literal, Mapping, Protocol, runtime_checkable
+from collections.abc import Mapping
+from typing import Final, Literal, Protocol, runtime_checkable
 
 from pydantic import BaseModel, ConfigDict, Field, field_validator
 
@@ -53,9 +54,7 @@ class StoreArtifactContentRequest(BaseModel):
 
     model_config = ConfigDict(extra="forbid", frozen=True)
 
-    schema_version: Literal["store_artifact_content_request.v1"] = (
-        SCHEMA_STORE_ARTIFACT_CONTENT_REQUEST_V1
-    )
+    schema_version: Literal["store_artifact_content_request.v1"] = SCHEMA_STORE_ARTIFACT_CONTENT_REQUEST_V1
     tenant_id: str = _NON_EMPTY
     workspace_id: str = _NON_EMPTY
     body: bytes
@@ -75,9 +74,7 @@ class GetArtifactContentRequest(BaseModel):
 
     model_config = ConfigDict(extra="forbid", frozen=True)
 
-    schema_version: Literal["get_artifact_content_request.v1"] = (
-        SCHEMA_GET_ARTIFACT_CONTENT_REQUEST_V1
-    )
+    schema_version: Literal["get_artifact_content_request.v1"] = SCHEMA_GET_ARTIFACT_CONTENT_REQUEST_V1
     tenant_id: str = _NON_EMPTY
     workspace_id: str = _NON_EMPTY
     content_ref: ArtifactContentRef
@@ -113,7 +110,7 @@ class ArtifactContentStore(Protocol):
 
 
 def _scope_digest(tenant_id: str, workspace_id: str) -> str:
-    scope_bytes = f"{tenant_id}\0{workspace_id}".encode("utf-8")
+    scope_bytes = f"{tenant_id}\0{workspace_id}".encode()
     return compute_sha256_content_digest(scope_bytes).removeprefix("sha256:")
 
 
@@ -173,6 +170,20 @@ def _verify_body_matches_descriptor(body: bytes, content_ref: ArtifactContentRef
         raise ArtifactContentIntegrityError("stored body digest does not match content descriptor")
     if content_ref.size_bytes is not None and len(body) != content_ref.size_bytes:
         raise ArtifactContentIntegrityError("stored body size does not match content descriptor")
+
+
+def artifact_content_object_key(
+    tenant_id: str,
+    workspace_id: str,
+    content_ref: ArtifactContentRef,
+) -> str:
+    """Physical object key of scoped artifact content (read-only helper for the governed port).
+
+    The governed access port needs the key to issue a short-lived provider URL after its own
+    authorization. This helper only derives the key; it grants nothing and calls no provider.
+    """
+    digest_hex = _verify_reference_digest_consistency(content_ref)
+    return _physical_object_key(tenant_id, workspace_id, digest_hex)
 
 
 class ObjectStorageArtifactContentStore:
