@@ -2,9 +2,9 @@
 # Intergrax framework – proprietary and confidential.
 # Use, modification, or distribution without written permission is prohibited.
 
-from __future__ import annotations
+from __future__ import annotations  # noqa: I001
 from dataclasses import dataclass, field
-from typing import Any, List, Optional
+from typing import Any, List, Optional  # noqa: F401, UP035
 from typing import TYPE_CHECKING
 
 from intergrax.context.contracts import IterativeToolOutputBlock
@@ -24,17 +24,23 @@ from intergrax.runtime.nexus.engine.contracts.llm_usage_run_record import LLMUsa
 from intergrax.runtime.nexus.engine.contracts.runtime_state_contract import RuntimeStateContract
 
 if TYPE_CHECKING:
-    from intergrax.runtime.nexus.artifacts.models import ArtifactRef
+    from intergrax.runtime.nexus.artifacts.models import TraceArtifactRef
     from intergrax.runtime.observability.emitter import ObservabilityEmitter
 
-from intergrax.runtime.nexus.context.context_builder import BuiltContext
+from intergrax.runtime.nexus.context.context_builder import BuiltContext  # noqa: I001
 from intergrax.runtime.nexus.engine.runtime_context import RuntimeContext
 from intergrax.runtime.nexus.ingestion.ingestion_service import IngestionResult
 from intergrax.runtime.nexus.responses.response_schema import RuntimeAnswer, RuntimeRequest
 from intergrax.runtime.nexus.session.chat_session import ChatSession
 from intergrax.runtime.nexus.tracing.adapters.llm_usage_finalize import LLMUsageFinalizeDiag
 from intergrax.runtime.nexus.tracing.adapters.llm_usage_snapshot import LLMUsageSnapshotDiag
-from intergrax.runtime.nexus.tracing.trace_models import DiagnosticPayload, ToolCallTrace, TraceComponent, TraceEvent, TraceLevel
+from intergrax.runtime.nexus.tracing.trace_models import (
+    DiagnosticPayload,
+    ToolCallTrace,
+    TraceComponent,
+    TraceEvent,
+    TraceLevel,
+)  # noqa: E501
 from intergrax.utils.time_provider import SystemTimeProvider
 
 
@@ -65,48 +71,41 @@ class RuntimeState(RuntimeStateContract):
     declarative_hitl_grant: DeclarativeHitlApprovalGrant | None = None
 
     # Verified Agent Governance human approval (transport only; minted by grant verifier).
-    verified_agent_governance_human_approval: (
-        VerifiedAgentGovernanceHumanApproval | None
-    ) = None
+    verified_agent_governance_human_approval: VerifiedAgentGovernanceHumanApproval | None = None
 
     # Per-invocation grant consumption (re-entry resume only; transport to governance boundary).
-    agent_governance_approval_consumption: (
-        AgentGovernanceApprovalConsumptionPort | None
-    ) = None
+    agent_governance_approval_consumption: AgentGovernanceApprovalConsumptionPort | None = None
 
     # Utc
-    started_at_utc: str = field(
-        default_factory=lambda: SystemTimeProvider.utc_now().isoformat()
-    )
+    started_at_utc: str = field(default_factory=lambda: SystemTimeProvider.utc_now().isoformat())
 
     # --- Agent domain state (Tier-2) ---
-    agent_state: Optional[AgentState] = None
+    agent_state: AgentState | None = None
 
-    llm_usage_tracker: Optional[LLMUsageAggregator] = None
+    llm_usage_tracker: LLMUsageAggregator | None = None
 
     # Session and ingestion
-    session: Optional[ChatSession] = None
-    ingestion_results: List[IngestionResult] = field(default_factory=list)
+    session: ChatSession | None = None
+    ingestion_results: list[IngestionResult] = field(default_factory=list)
     used_attachments_context: bool = False
     attachments_chunks_count: int = 0
 
     # Conversation / context
-    base_history: List[ChatMessage] = field(default_factory=list)
-    messages_for_llm: List[ChatMessage] = field(default_factory=list)
-    tools_context_parts: List[str] = field(default_factory=list)
-    built_history_messages: List[ChatMessage] = field(default_factory=list)
+    base_history: list[ChatMessage] = field(default_factory=list)
+    messages_for_llm: list[ChatMessage] = field(default_factory=list)
+    tools_context_parts: list[str] = field(default_factory=list)
+    built_history_messages: list[ChatMessage] = field(default_factory=list)
     history_includes_current_user: bool = False
 
     # ContextBuilder intermediate result (history + retrieved chunks)
-    context_builder_result: Optional[BuiltContext] = None
+    context_builder_result: BuiltContext | None = None
 
     # Long-term memory retrieval intermediate result (retrieved entries + context messages)
-    user_longterm_memory_result: Optional[Any] = None
+    user_longterm_memory_result: Any | None = None
 
     # Profile-based instruction fragments prepared by the memory layer
-    profile_user_instructions: Optional[str] = None
-    profile_org_instructions: Optional[str] = None
-
+    profile_user_instructions: str | None = None
+    profile_org_instructions: str | None = None
 
     # Usage flags
     used_rag: bool = False
@@ -116,12 +115,12 @@ class RuntimeState(RuntimeStateContract):
     used_user_longterm_memory: bool = False
 
     # Tools
-    tool_planner_answer: Optional[str] = None
-    tool_planner_allowed_tool_ids: Optional[tuple[str, ...]] = None
+    tool_planner_answer: str | None = None
+    tool_planner_allowed_tool_ids: tuple[str, ...] | None = None
     iterative_tool_output_blocks: list[IterativeToolOutputBlock] = field(default_factory=list)
 
     # Typed tool call traces (production runtime artifact).
-    tool_traces: List[ToolCallTrace] = field(default_factory=list)
+    tool_traces: list[ToolCallTrace] = field(default_factory=list)
     high_risk_tool_approvals: frozenset[str] = field(default_factory=frozenset)
 
     # RunBudget mid-run enforcement (RagStep / WebsearchStep entry counts).
@@ -131,17 +130,15 @@ class RuntimeState(RuntimeStateContract):
     replan_count: int = 0
 
     # --- Execution Artifacts (runtime infra output) ---
-    artifacts: List["ArtifactRef"] = field(default_factory=list)
+    artifacts: list[TraceArtifactRef] = field(default_factory=list)
 
     # Production trace (append-only structured events)
-    trace_events: List[TraceEvent] = field(default_factory=list)
+    trace_events: list[TraceEvent] = field(default_factory=list)
     _trace_seq: int = field(default=0, init=False, repr=False)
-    _observability_emitter: Optional["ObservabilityEmitter"] = field(
-        default=None, init=False, repr=False
-    )
+    _observability_emitter: ObservabilityEmitter | None = field(default=None, init=False, repr=False)
 
     # Token accounting (filled in _step_build_base_history)
-    history_token_count: Optional[int] = None
+    history_token_count: int | None = None
 
     # Reasoning flags
     cap_rag_available: bool = False
@@ -150,23 +147,20 @@ class RuntimeState(RuntimeStateContract):
     cap_websearch_available: bool = False
     cap_tools_available: bool = False
 
-
     # --- Core output (pipeline contract) ---
     # Filled by CoreLLM step
-    raw_answer: Optional[str] = None
-    last_llm_adapter_response: Optional[LLMAdapterResponse] = None
+    raw_answer: str | None = None
+    last_llm_adapter_response: LLMAdapterResponse | None = None
 
     # Filled by Persist step (final runtime output)
-    runtime_answer: Optional[RuntimeAnswer] = None
+    runtime_answer: RuntimeAnswer | None = None
 
     # Tenant
     @property
     def tenant_id(self) -> str:
         tenant = self.request.tenant_id
         if not tenant:
-            raise RuntimeError(
-                "tenant_id must be set in RuntimeRequest before RuntimeState is used."
-            )
+            raise RuntimeError("tenant_id must be set in RuntimeRequest before RuntimeState is used.")
         return tenant
 
     @property
@@ -176,7 +170,6 @@ class RuntimeState(RuntimeStateContract):
         if typed is not None and str(typed).strip():
             return str(typed)
         raise RuntimeError("RuntimeRequest.task_id must be set before RuntimeState is used.")
-
 
     def _next_trace_seq(self) -> int:
         self._trace_seq += 1
@@ -218,8 +211,8 @@ class RuntimeState(RuntimeStateContract):
         step: str,
         message: str,
         level: TraceLevel = TraceLevel.INFO,
-        payload: Optional[DiagnosticPayload] = None,
-        artifact_refs: Optional[List["ArtifactRef"]] = None,
+        payload: DiagnosticPayload | None = None,
+        artifact_refs: list[TraceArtifactRef] | None = None,
     ) -> None:
         self._get_observability_emitter().emit_diagnostic(
             component=component,
@@ -229,7 +222,6 @@ class RuntimeState(RuntimeStateContract):
             payload=payload,
             artifact_refs=artifact_refs,
         )
-
 
     def configure_llm_tracker(self) -> None:
         from intergrax.runtime.wiring.llm_usage_tracker_composition import (
@@ -246,7 +238,7 @@ class RuntimeState(RuntimeStateContract):
 
         core_adapter = self.context.config.llm_adapter
         if core_adapter is not None:
-            from intergrax.runtime.wiring.llm_resolver import consume_routing_evaluation
+            from intergrax.runtime.wiring.llm_resolver import consume_routing_evaluation  # noqa: I001
             from intergrax.llm_adapters.contracts.llm_adapter import LLMAdapter
             from intergrax.llm_adapters.routing.evaluating_hooks import wire_routing_evaluating_hooks
             from intergrax.llm_adapters.routing.metering import resolve_metering_adapter
@@ -318,17 +310,13 @@ class RuntimeState(RuntimeStateContract):
             if websearch_config.llm.rerank_adapter is not None:
                 self.llm_usage_tracker.register_adapter(websearch_config.llm.rerank_adapter, label="web_rerank_adapter")
 
-    
-
-    def add_artifact(self, artifact: "ArtifactRef") -> None:
+    def add_artifact(self, artifact: TraceArtifactRef) -> None:
         """
         Register execution artifact reference in runtime state.
 
         RuntimeState stores only references, never payloads.
         """
         self.artifacts.append(artifact)
-
-
 
     async def finalize_llm_tracker(
         self,
@@ -398,6 +386,4 @@ class RuntimeState(RuntimeStateContract):
                     user_id=request.user_id,
                     report=runtime_answer.llm_usage_report,
                 )
-                self.context.llm_usage_runs.append(rec)                
-
-
+                self.context.llm_usage_runs.append(rec)

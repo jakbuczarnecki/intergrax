@@ -56,12 +56,13 @@ def resolve_lkw_hybrid_daemon_wiring(
     if not deployment.lkw_hybrid_daemon_enabled:
         return LkwHybridDaemonWiring(enabled=False, spec=None, launcher_path=None)
 
-    launcher = repo_root / "scripts" / "lkw-host.py"
-    if not launcher.is_file():
-        return LkwHybridDaemonWiring(enabled=False, spec=None, launcher_path=None)
-
     spec = build_lkw_hybrid_daemon_spec(
         bind_host=deployment.lkw_daemon_bind_host,
         port=deployment.lkw_daemon_port,
     )
+    # The launcher location is declared once, by the spec (``scripts/maintenance/lkw-host.py``).
+    launcher = repo_root / spec.launcher_script
+    if not launcher.is_file():
+        return LkwHybridDaemonWiring(enabled=False, spec=None, launcher_path=None)
+
     return LkwHybridDaemonWiring(enabled=True, spec=spec, launcher_path=launcher)
