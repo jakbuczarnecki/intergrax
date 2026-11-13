@@ -17,7 +17,7 @@
 
 Scenario Factory is a **planned** product layer for Intergrax. Its purpose: a business need becomes a **designed and checked scenario** that runs on the governed platform, instead of every scenario being hand-built from scratch.
 
-It is a design that is being documented before the platform architecture freeze. No Scenario Factory product code exists. Nothing on this page can be run, installed or tried.
+It is a design that is being documented. No Scenario Factory product code exists. Nothing on this page can be run, installed or tried.
 
 ## The planned journey
 
