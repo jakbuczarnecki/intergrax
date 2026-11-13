@@ -4,15 +4,16 @@
 """Load Tier-0 catalog plugins from setuptools entry points."""
 
 from __future__ import annotations
-from intergrax.utils import attribute_access
 
 import logging
 import threading
+from collections.abc import Callable, Sequence
 from dataclasses import dataclass
-from typing import TYPE_CHECKING, Callable, Literal, Sequence, TypeVar
+from typing import TYPE_CHECKING, Literal, TypeVar
 
 from intergrax.core.plugins.errors import PluginConflictError, PluginLoadError
 from intergrax.core.plugins.platform_semantics import PlatformPluginConflictKind
+from intergrax.utils import attribute_access
 
 logger = logging.getLogger(__name__)
 
@@ -80,8 +81,14 @@ class EntryPointLoadResult:
     error: BaseException | None = None
 
 
-def _scan_entry_point_specs(group: str) -> tuple[EntryPointSpec, ...]:
-    """Enumerate entry points for ``group`` without caching (internal)."""
+def select_entry_points(group: str) -> tuple[object, ...]:
+    """Enumerate raw setuptools entry points for ``group`` (single discovery owner).
+
+    This is the only place in ``intergrax`` that calls ``importlib.metadata.entry_points``
+    (PDC-D1-R020). Domain-owned catalogs (for example Vendor Knowledge) enumerate
+    through this function instead of scanning on their own; the result is not cached
+    and is sorted by ``(name, value)`` for deterministic composition.
+    """
     try:
         from importlib.metadata import entry_points
     except ImportError as exc:  # pragma: no cover
@@ -92,8 +99,21 @@ def _scan_entry_point_specs(group: str) -> tuple[EntryPointSpec, ...]:
         selected = eps.select(group=group)
     else:
         selected = eps.get(group, [])  # type: ignore[union-attr]
+    return tuple(
+        sorted(
+            selected,
+            key=lambda item: (
+                str(attribute_access.optional(item, "name", "")),
+                str(attribute_access.optional(item, "value", "")),
+            ),
+        )
+    )
+
+
+def _scan_entry_point_specs(group: str) -> tuple[EntryPointSpec, ...]:
+    """Enumerate entry points for ``group`` without caching (internal)."""
     specs: list[EntryPointSpec] = []
-    for ep in selected:
+    for ep in select_entry_points(group):
         name = str(attribute_access.optional(ep, "name", ""))
         value = str(attribute_access.optional(ep, "value", ""))
         if not name or not value:
@@ -186,9 +206,7 @@ def load_entry_point_targets_for_specs(
             if on_load_failure == "isolate":
                 loaded.append(EntryPointLoadResult(spec=spec, error=exc))
                 continue
-            raise PluginLoadError(
-                f"Failed to load {spec.group}:{spec.name} ({spec.value}): {exc}"
-            ) from exc
+            raise PluginLoadError(f"Failed to load {spec.group}:{spec.name} ({spec.value}): {exc}") from exc
         loaded.append(EntryPointLoadResult(spec=spec, target=target))
     return loaded
 
@@ -228,9 +246,7 @@ def load_entry_point_targets(
             if on_load_failure == "isolate":
                 loaded.append(EntryPointLoadResult(spec=spec, error=exc))
                 continue
-            raise PluginLoadError(
-                f"Failed to load {group}:{spec.name} ({spec.value}): {exc}"
-            ) from exc
+            raise PluginLoadError(f"Failed to load {group}:{spec.name} ({spec.value}): {exc}") from exc
         loaded.append(EntryPointLoadResult(spec=spec, target=target))
     return loaded
 
@@ -321,14 +337,11 @@ def register_plugins_with_report(
     discover_entry_points: bool = False,
     on_conflict: ConflictPolicy = "error",
     on_load_failure: LoadIsolation = "isolate",
-) -> "DomainPluginLoadReport":
+) -> DomainPluginLoadReport:
     """Discover entry-point plugins and build immutable bootstrap evidence."""
     from intergrax.core.plugins.admission import DomainPluginLoadReport
 
-    _callback_contract_error = (
-        "registration callback must return exactly one outcome: "
-        "registered=True or a rejection"
-    )
+    _callback_contract_error = "registration callback must return exactly one outcome: registered=True or a rejection"
 
     if not discover_entry_points:
         return DomainPluginLoadReport.empty(group)
@@ -378,9 +391,7 @@ def register_plugins_with_report(
     return DomainPluginLoadReport(
         group=group,
         accepted=tuple(sorted(accepted, key=lambda spec: (spec.name, spec.value))),
-        rejected=tuple(
-            sorted(rejected, key=lambda item: (item.spec.name, item.spec.value))
-        ),
+        rejected=tuple(sorted(rejected, key=lambda item: (item.spec.name, item.spec.value))),
         failed=tuple(sorted(failed, key=lambda item: (item.spec.name, item.spec.value))),
         registered_count=registered_count,
     )
