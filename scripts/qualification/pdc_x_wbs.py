@@ -360,7 +360,7 @@ BATCHES: Final[tuple[Batch, ...]] = (
         "ALL",
         "Integration repairs found by the P5 lanes and the XD runs (tzdata, capability flags, freshness, launcher path, circular import, trace alias callers, feature-doc registration)",
         "T-IGX-036-T",
-        "W4",
+        "W5",
         (
             "pyproject.toml",
             "uv.lock",
@@ -390,13 +390,38 @@ BATCHES: Final[tuple[Batch, ...]] = (
             "intergrax/platform/enterprise_audit/data/changed_since_impact_map.v1.json",
             "intergrax/platform/enterprise_audit/data/enterprise_audit_check_manifest.v1.json",
             "tests/qualification/ebh_5/_sqlite_touchpoint_registry.py",
+            "tests/qualification/pdc_x/xd/test_xd_02_agent_context.py",
+            "tests/qualification/pdc_x/xd/test_xd_03_agent_governance.py",
+            "tests/qualification/pdc_x/xd/test_xd_09_artifacts_context.py",
+            "tests/qualification/pdc_x/xd/test_xd_10_artifacts_security.py",
+            "tests/qualification/pdc_x/xd/test_xd_12_evol_ent_audit.py",
             "tests/qualification/pdc_x/p6_repair/",
         ),
         "—",
-        ("B-D1", "B-D2", "B-D3", "B-D4", "B-D5", "B-D6", "B-D7", "B-D8", "B-REG-P", "B-REG-T"),
+        ("B-D1", "B-D2", "B-D3", "B-D4", "B-D5", "B-D6", "B-D7", "B-D8", "B-REG-P", "B-REG-T", "B-P6"),
         GATE_PRODUCT,
         "IA-GLOBAL (P8)",
         "tests/qualification/pdc_x/p6_repair/",
+    ),
+    Batch(
+        "B-P6-M",
+        "ALL",
+        "Model binding found by XD-01: activated revision pins the LLM profile digest; required model features of an agent are checked when the adapter is bound",
+        "T-IGX-036-U",
+        "W6",
+        (
+            "intergrax/agent_distribution/runtime_revision.py",
+            "intergrax/agent_distribution/admin_service.py",
+            "intergrax/contracts/agent_contract_meta.py",
+            "intergrax/applications/_shared/llm_resolver.py",
+            "tests/qualification/pdc_x/xd/test_xd_01_agent_model.py",
+            "tests/qualification/pdc_x/p6_model/",
+        ),
+        "—",
+        ("B-P6-R",),
+        GATE_PRODUCT,
+        "IA-GLOBAL (P8)",
+        "tests/qualification/pdc_x/p6_model/",
     ),
 )
 
@@ -684,6 +709,8 @@ def render_dag() -> str:
         "W3b": ("after B-D6", "after MCP-SERVER-X P8"),
         "W3c": ("after B-D7 and B-D8", "after MCP-SERVER-X P8"),
         "W4": ("after all P5 batches", "after MCP-SERVER-X P8"),
+        "W5": ("after B-P6 (XD runs)", "after MCP-SERVER-X P8"),
+        "W6": ("after B-P6-R", "after MCP-SERVER-X P8"),
     }
     for wave, bids in waves.items():
         start, merge = starts.get(wave, ("?", "?"))
