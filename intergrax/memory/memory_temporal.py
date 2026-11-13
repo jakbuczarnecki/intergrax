@@ -4,14 +4,13 @@
 
 from __future__ import annotations
 
-from datetime import datetime, timezone
-from typing import Optional
+from datetime import UTC, datetime
 
 from intergrax.memory.user_profile_memory import UserProfileMemoryEntry
 from intergrax.utils.time_provider import SystemTimeProvider
 
 
-def _parse_iso_timestamp(value: str) -> Optional[datetime]:
+def _parse_iso_timestamp(value: str) -> datetime | None:
     text = (value or "").strip()
     if not text:
         return None
@@ -20,8 +19,23 @@ def _parse_iso_timestamp(value: str) -> Optional[datetime]:
     except ValueError:
         return None
     if parsed.tzinfo is None:
-        return parsed.replace(tzinfo=timezone.utc)
+        return parsed.replace(tzinfo=UTC)
     return parsed
+
+
+def is_memory_entry_expired(
+    entry: UserProfileMemoryEntry,
+    *,
+    as_of: datetime | None = None,
+) -> bool:
+    """Return True when the entry is not deleted and its ``valid_until`` has passed (PDC-D2-R015)."""
+    if entry.deleted:
+        return False
+    now = as_of or SystemTimeProvider.utc_now()
+    if now.tzinfo is None:
+        now = now.replace(tzinfo=UTC)
+    valid_until = _parse_iso_timestamp(entry.valid_until or "")
+    return valid_until is not None and now >= valid_until
 
 
 def is_memory_entry_active(
@@ -34,7 +48,7 @@ def is_memory_entry_active(
         return False
     now = as_of or SystemTimeProvider.utc_now()
     if now.tzinfo is None:
-        now = now.replace(tzinfo=timezone.utc)
+        now = now.replace(tzinfo=UTC)
 
     valid_from = _parse_iso_timestamp(entry.valid_from or "")
     if valid_from is not None and now < valid_from:

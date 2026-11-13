@@ -26,11 +26,11 @@ from intergrax.context.errors import (
     RequiredContextSourceUnavailableError,
 )
 from intergrax.context.policy.authority import enforce_provider_authority
+from intergrax.context.protocols import ContextSourceProvider
 from intergrax.context.provider_descriptor import (
     compute_provider_set_fingerprint,
     resolve_provider_descriptor,
 )
-from intergrax.context.protocols import ContextSourceProvider
 from intergrax.context.registry import ContextPluginRegistry
 from intergrax.contracts.execution_identity import ExecutionId, peek_active_execution_id
 
@@ -210,22 +210,14 @@ def fulfilled_sources_from_fragments(
 
 def _reason_code_for_unsatisfied_required_source(
     source: ContextFragmentSource,
-    provider_outcomes: tuple[ContextProviderCollectionOutcome, ...]
-    | list[ContextProviderCollectionOutcome],
+    provider_outcomes: tuple[ContextProviderCollectionOutcome, ...] | list[ContextProviderCollectionOutcome],
 ) -> str:
-    relevant = [
-        outcome
-        for outcome in provider_outcomes
-        if source in outcome.descriptor.supported_sources
-    ]
+    relevant = [outcome for outcome in provider_outcomes if source in outcome.descriptor.supported_sources]
     if not relevant:
         return "required_source.no_provider"
     if all(outcome.status == "failed" for outcome in relevant):
         return "required_source.provider_failed"
-    if all(
-        outcome.status == "success" and outcome.fragment_count == 0
-        for outcome in relevant
-    ):
+    if all(outcome.status == "success" and outcome.fragment_count == 0 for outcome in relevant):
         return "required_source.no_fragments"
     return "required_source.unsatisfied"
 
@@ -286,10 +278,7 @@ def canonicalize_fragment(
     provenance = ContextProviderProvenance.from_descriptor(descriptor)
     if fragment.provider_provenance is not None:
         forged = fragment.provider_provenance
-        if (
-            forged.provider_id != provenance.provider_id
-            or forged.provider_version != provenance.provider_version
-        ):
+        if forged.provider_id != provenance.provider_id or forged.provider_version != provenance.provider_version:
             raise ContextProviderContractViolationError(
                 descriptor=descriptor,
                 reason_code="provider.contract_violation",
@@ -301,6 +290,16 @@ def canonicalize_fragment(
             reason_code="provider.contract_violation",
             detail=f"unsupported source {fragment.source.value}",
         )
+    if fragment.source is ContextFragmentSource.TOOL_OUTPUT:
+        # Tool output is observation data. Without a typed tool_call_id it cannot be rendered as a
+        # ``tool`` message and would fall back to an instruction-bearing system block (PDC-D2-R009).
+        tool_call_id = fragment.metadata.get("tool_call_id")
+        if not isinstance(tool_call_id, str) or not tool_call_id.strip():
+            raise ContextProviderContractViolationError(
+                descriptor=descriptor,
+                reason_code="provider.contract_violation",
+                detail="tool_output fragment requires a tool_call_id",
+            )
     if not fragment.fragment_id.strip():
         raise ContextProviderContractViolationError(
             descriptor=descriptor,

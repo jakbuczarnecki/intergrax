@@ -8,12 +8,12 @@ from __future__ import annotations
 from collections.abc import Callable, Sequence
 from dataclasses import dataclass, field
 from pathlib import Path
-from intergrax.utils import attribute_access
+from typing import Any
 
 from intergrax.distributed.source_operation import (
+    SOURCE_PUBLICATION_GENERATION_METADATA_KEY,
     InProcessSourceOperationCoordinator,
     RagSourceOperationKey,
-    SOURCE_PUBLICATION_GENERATION_METADATA_KEY,
     SourceOperationCoordinator,
     SourceOperationLease,
 )
@@ -36,6 +36,12 @@ from intergrax.rag.embedding.contracts.base_embedding_manager import (
 )
 from intergrax.rag.governance.embedding_version_policy import (
     evaluate_ingest_embedding_version,
+)
+from intergrax.rag.governance.source_freshness import (
+    SOURCE_MODIFIED_AT_METADATA_KEY,
+    SOURCE_REVISION_METADATA_KEY,
+    observe_file_source,
+    stamp_source_freshness,
 )
 from intergrax.rag.graph.contracts.graph_store import GraphScope, GraphStore
 from intergrax.rag.graph.indexer.graph_indexer_factory import resolve_graph_indexer
@@ -61,6 +67,48 @@ from intergrax.rag.vectorstore.contracts.native_vectorstore import (
     VectorStoreRecord,
     VectorStoreScope,
 )
+from intergrax.utils import attribute_access
+
+
+def _source_freshness_stamp(path: Path, base_metadata: dict[str, Any]) -> dict[str, Any]:
+    """Source timestamp and path the document is indexed from (PDC-D2-R005); caller values win.
+
+    The revision itself is canonical ``provenance.source_revision`` (``source_revision`` is a
+    reserved metadata key), see :func:`_stamp_source_revision`.
+    """
+    observed = observe_file_source(path)
+    stamp = stamp_source_freshness({}, modified_at=observed.modified_at)
+    if base_metadata.get(SOURCE_MODIFIED_AT_METADATA_KEY):
+        stamp.pop(SOURCE_MODIFIED_AT_METADATA_KEY, None)
+    if not base_metadata.get("source_path"):
+        stamp["source_path"] = str(path)
+    return stamp
+
+
+def _stamp_source_revision(
+    documents: list[KnowledgeDocument],
+    *,
+    path: Path,
+    base_metadata: dict[str, Any],
+) -> list[KnowledgeDocument]:
+    """Fill ``provenance.source_revision`` when the loader left it empty (PDC-D2-R005)."""
+    caller_revision = base_metadata.get(SOURCE_REVISION_METADATA_KEY)
+    revision = (
+        caller_revision.strip()
+        if isinstance(caller_revision, str) and caller_revision.strip()
+        else observe_file_source(path).revision
+    )
+    if not revision:
+        return documents
+    stamped: list[KnowledgeDocument] = []
+    for document in documents:
+        if document.provenance.source_revision is not None:
+            stamped.append(document)
+            continue
+        payload = document.model_dump(mode="python")
+        payload["provenance"]["source_revision"] = revision
+        stamped.append(copy_parser_runtime_state(document, KnowledgeDocument.model_validate(payload)))
+    return stamped
 
 
 @dataclass(frozen=True)
@@ -94,12 +142,7 @@ def _restore_managed_workspace_identity(
     materialization_scope = base_metadata.get("materialization_scope")
     document_id = base_metadata.get("document_id")
     source_id = base_metadata.get("source_id")
-    if not (
-        isinstance(document_id, str)
-        and document_id.strip()
-        and isinstance(source_id, str)
-        and source_id.strip()
-    ):
+    if not (isinstance(document_id, str) and document_id.strip() and isinstance(source_id, str) and source_id.strip()):
         return documents
     if len(documents) != 1:
         return documents
@@ -137,11 +180,7 @@ class _RecordingVectorstore:
         scope: VectorStoreScope | None = None,
     ) -> Sequence[str] | None:
         stored_ids = self._delegate.add_records(records, scope=scope)
-        ids = (
-            list(stored_ids)
-            if stored_ids is not None
-            else [record.vector_id for record in records]
-        )
+        ids = list(stored_ids) if stored_ids is not None else [record.vector_id for record in records]
         self.persisted_ids.update(ids)
         return stored_ids
 
@@ -181,9 +220,7 @@ class IngestPipeline:
             None,
         )
         self._source_coordinator = (
-            source_coordinator
-            or existing_source_coordinator
-            or InProcessSourceOperationCoordinator()
+            source_coordinator or existing_source_coordinator or InProcessSourceOperationCoordinator()
         )
         for publication_store in (self._vectorstore, self._toc_vectorstore):
             configure = attribute_access.optional(
@@ -207,16 +244,13 @@ class IngestPipeline:
             "rag.ingest",
             attributes={
                 "rag.ingest.source": str(path),
-                "rag.ingest.chunking_strategy": request.chunking_strategy_id
-                or self._profile.chunking_strategy_id,
+                "rag.ingest.chunking_strategy": request.chunking_strategy_id or self._profile.chunking_strategy_id,
             },
         ):
             if not path.exists():
                 return IngestResult(used=False, reason="source_not_found")
 
-            allowed, size_reason, file_size = sync_ingest_allowed(
-                path=path, profile=self._profile
-            )
+            allowed, size_reason, file_size = sync_ingest_allowed(path=path, profile=self._profile)
             if not allowed:
                 return IngestResult(
                     used=False,
@@ -231,31 +265,25 @@ class IngestPipeline:
                 return IngestResult(used=False, reason="missing_tenant_id")
 
             namespace = base_metadata.get("namespace")
-            loader_namespace = (
-                namespace if isinstance(namespace, str) and namespace.strip() else None
-            )
+            loader_namespace = namespace if isinstance(namespace, str) and namespace.strip() else None
 
             version_policy = evaluate_ingest_embedding_version(
                 profile=self._profile,
                 base_metadata=base_metadata,
                 source_path=str(path),
-                indexed_version_hint=base_metadata.get(
-                    "indexed_embedding_model_version"
-                ),
+                indexed_version_hint=base_metadata.get("indexed_embedding_model_version"),
             )
             if self._profile.embedding_model_version:
-                base_metadata["embedding_model_version"] = (
-                    self._profile.embedding_model_version
-                )
+                base_metadata["embedding_model_version"] = self._profile.embedding_model_version
+
+            freshness_stamp = _source_freshness_stamp(path, base_metadata)
 
             def _cb(doc: Any, source: str) -> dict[str, Any]:
                 if self._metadata_callback is not None:
-                    return filter_native_metadata(self._metadata_callback(doc, source))
-                return filter_native_metadata(base_metadata)
+                    return filter_native_metadata({**freshness_stamp, **self._metadata_callback(doc, source)})
+                return filter_native_metadata({**base_metadata, **freshness_stamp})
 
-            with rag_span(
-                "rag.ingest.load", attributes={"rag.ingest.source": str(path)}
-            ):
+            with rag_span("rag.ingest.load", attributes={"rag.ingest.source": str(path)}):
                 native_docs = self._loader.load_document(
                     str(path),
                     tenant_id=tenant_id,
@@ -283,12 +311,11 @@ class IngestPipeline:
                 native_docs,
                 base_metadata=base_metadata,
             )
+            native_docs = _stamp_source_revision(native_docs, path=path, base_metadata=base_metadata)
             if not native_docs:
                 return IngestResult(used=False, reason="no_documents_loaded")
 
-            source_id, source_scope, ownership_error = self._source_ownership(
-                native_docs
-            )
+            source_id, source_scope, ownership_error = self._source_ownership(native_docs)
             if ownership_error is not None:
                 return IngestResult(used=False, reason=ownership_error)
             assert source_id is not None
@@ -301,8 +328,7 @@ class IngestPipeline:
                 base_metadata=base_metadata,
                 file_size=file_size,
                 version_policy=version_policy,
-                strategy_id=request.chunking_strategy_id
-                or self._profile.chunking_strategy_id,
+                strategy_id=request.chunking_strategy_id or self._profile.chunking_strategy_id,
             )
 
     def _run_source_replacement(
@@ -369,9 +395,7 @@ class IngestPipeline:
             first_meta = dict(native_docs[0].metadata)
             if TRACE_METADATA_KEY in first_meta:
                 parser_trace = dict(first_meta.get(TRACE_METADATA_KEY) or {})
-                parser_id = parser_trace.get("parser_id") or first_meta.get(
-                    "integration_parser_id"
-                )
+                parser_id = parser_trace.get("parser_id") or first_meta.get("integration_parser_id")
 
             with rag_span(
                 "rag.ingest.chunk",
@@ -394,26 +418,17 @@ class IngestPipeline:
                     native_docs,
                     native_chunks,
                 )
-            native_chunks = [
-                add_native_metadata(chunk, base_metadata) for chunk in native_chunks
-            ]
-            publication_generation = self._source_coordinator.publication_generation(
-                lease=lease
-            )
+            native_chunks = [add_native_metadata(chunk, base_metadata) for chunk in native_chunks]
+            publication_generation = self._source_coordinator.publication_generation(lease=lease)
             native_chunks = [
                 add_native_metadata(
                     chunk,
-                    {
-                        SOURCE_PUBLICATION_GENERATION_METADATA_KEY: (
-                            publication_generation
-                        )
-                    },
+                    {SOURCE_PUBLICATION_GENERATION_METADATA_KEY: (publication_generation)},
                 )
                 for chunk in native_chunks
             ]
             if any(
-                VectorStoreScope.from_document(chunk) != source_scope
-                or str(chunk.provenance.source_id) != source_id
+                VectorStoreScope.from_document(chunk) != source_scope or str(chunk.provenance.source_id) != source_id
                 for chunk in native_chunks
             ):
                 return IngestResult(
@@ -461,9 +476,7 @@ class IngestPipeline:
                     else:
                         vector_ids = list(stored_ids)
                         if len(vector_ids) != len(records):
-                            raise ValueError(
-                                "vectorstore returned an unexpected number of vector IDs"
-                            )
+                            raise ValueError("vectorstore returned an unexpected number of vector IDs")
 
             self._ensure_source_lease(lease)
             if self._uses_dual_index():
@@ -497,9 +510,7 @@ class IngestPipeline:
                         )
                         indexer.index_documents(native_chunks, chunk_ids=vector_ids)
                     except Exception as exc:
-                        raise RuntimeError(
-                            "source_reingest_graph_publish_failed"
-                        ) from exc
+                        raise RuntimeError("source_reingest_graph_publish_failed") from exc
 
                 self._ensure_source_lease(lease)
                 stale_graph_ids = old_main_ids - new_main_ids
@@ -511,9 +522,7 @@ class IngestPipeline:
                             scope=GraphScope.from_object(source_scope),
                         )
                     except Exception as exc:
-                        raise RuntimeError(
-                            "source_reingest_graph_stale_unlink_failed"
-                        ) from exc
+                        raise RuntimeError("source_reingest_graph_stale_unlink_failed") from exc
 
             if not self._source_coordinator.promote_publication(lease=lease):
                 raise RuntimeError("source_ingest_conflict")
@@ -539,9 +548,7 @@ class IngestPipeline:
                         scope=source_scope,
                     )
                 except Exception as exc:
-                    raise RuntimeError(
-                        "source_reingest_toc_stale_delete_failed"
-                    ) from exc
+                    raise RuntimeError("source_reingest_toc_stale_delete_failed") from exc
 
             self._ensure_source_lease(lease)
             return IngestResult(
@@ -639,7 +646,4 @@ class IngestPipeline:
         return collected
 
     def _uses_dual_index(self) -> bool:
-        return (
-            self._profile.uses_hierarchical_index()
-            and self._toc_vectorstore is not None
-        )
+        return self._profile.uses_hierarchical_index() and self._toc_vectorstore is not None

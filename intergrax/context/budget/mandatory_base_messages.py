@@ -55,6 +55,33 @@ def _tool_call_group_complete(
     return set(received.keys()) == expected
 
 
+def complete_tool_call_group_spans(
+    messages: Sequence[ChatMessage],
+) -> tuple[tuple[int, int], ...]:
+    """Half-open ``(start, end)`` spans of complete assistant tool-call groups (PDC-D2-R011).
+
+    A complete group is an assistant message with ``tool_calls`` followed by exactly the
+    ``tool`` results answering every call. Such a group is the atomic unit of degradation:
+    dropping only one side would orphan a tool call or a tool result.
+    """
+    spans: list[tuple[int, int]] = []
+    index = 0
+    while index < len(messages):
+        message = messages[index]
+        if message.role == "assistant" and message.tool_calls:
+            start = index
+            index += 1
+            tool_messages: list[ChatMessage] = []
+            while index < len(messages) and messages[index].role == "tool":
+                tool_messages.append(messages[index])
+                index += 1
+            if _tool_call_group_complete(message, tool_messages):
+                spans.append((start, index))
+            continue
+        index += 1
+    return tuple(spans)
+
+
 def mandatory_base_message_indices(
     messages: Sequence[ChatMessage],
     *,

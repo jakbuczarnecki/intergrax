@@ -9,13 +9,20 @@ from dataclasses import dataclass, field
 from typing import Any
 
 from intergrax.contracts.agent_run import RequestIdentity
+from intergrax.memory.contracts.enterprise_memory_record import (
+    MemoryProvenance,
+    MemoryRecordGovernance,
+    MemoryRecordSourceType,
+    MemoryRecordTrust,
+    MemoryTrustClass,
+)
 from intergrax.memory.contracts.memory_control import (
     EpisodicMemoryCapability,
     MemoryControlAccessDenied,
-    MemoryControlGovernanceDenied,
     MemoryControlBackendError,
     MemoryControlForgetRequest,
     MemoryControlForgetResult,
+    MemoryControlGovernanceDenied,
     MemoryControlNotFound,
     MemoryControlPartialLifecycleError,
     MemoryControlPlaneScope,
@@ -29,6 +36,7 @@ from intergrax.memory.contracts.memory_control import (
     MemoryControlScopeRef,
     MemoryControlSupersessionApplyResult,
     MemoryControlUnsupportedScope,
+    MemoryRetentionCandidateReader,
     TaskMemoryCapability,
     UserMemoryForgetCapabilityResult,
     UserMemoryRecallCapabilityResult,
@@ -39,15 +47,33 @@ from intergrax.memory.contracts.memory_lifecycle import (
     MemoryReconciliationDisposition,
     MemoryReconciliationOutcome,
 )
-from intergrax.memory.memory_temporal import is_memory_entry_active
-from intergrax.memory.contracts.enterprise_memory_record import (
-    MemoryProvenance,
-    MemoryRecordGovernance,
-    MemoryRecordSourceType,
-    MemoryRecordTrust,
-    MemoryTrustClass,
+from intergrax.memory.contracts.memory_observability import (
+    MemoryDiagnosticFailureClass,
+    MemoryDiagnosticOperation,
+    MemoryDiagnosticOutcome,
 )
-from intergrax.memory.user_profile_memory import UserProfileMemoryEntry
+from intergrax.memory.contracts.memory_recall import MemoryRecallReasonCode, MemorySupersessionIntent
+from intergrax.memory.contracts.memory_security_governance import (
+    MemoryGovernanceEvaluationRequest,
+    MemoryGovernanceOperation,
+    MemoryGovernanceRecordSnapshot,
+    MemoryGovernanceTarget,
+    MemorySecurityContext,
+)
+from intergrax.memory.memory_diagnostic_emitter import (
+    MemoryDiagnosticEmitter,
+    MemoryOperationTimer,
+    default_memory_diagnostic_emitter,
+)
+from intergrax.memory.memory_observability_support import emit_control_plane_terminal
+from intergrax.memory.memory_scope_authority import (
+    assert_memory_scope_authorized,
+    governance_service_or_default,
+)
+from intergrax.memory.memory_security_governance_service import (
+    MemorySecurityGovernanceService,
+)
+from intergrax.memory.memory_temporal import is_memory_entry_active
 from intergrax.memory.recall.pipeline import run_recall_decision_pipeline
 from intergrax.memory.recall.retrieval import (
     UserMemoryRecallRetrievalConfig,
@@ -60,35 +86,9 @@ from intergrax.memory.recall_strategy_bundle import (
     build_default_memory_recall_strategies,
 )
 from intergrax.memory.strategies.errors import MemoryStrategyError
-from intergrax.memory.contracts.memory_recall import MemoryRecallReasonCode, MemorySupersessionIntent
 from intergrax.memory.user_profile_manager import UserProfileManager
+from intergrax.memory.user_profile_memory import UserProfileMemoryEntry
 from intergrax.memory.user_profile_memory_lifecycle import UserProfileMemoryLifecyclePartialError
-from intergrax.memory.contracts.memory_security_governance import (
-    MemoryGovernanceEvaluationRequest,
-    MemoryGovernanceOperation,
-    MemoryGovernanceRecordSnapshot,
-    MemoryGovernanceTarget,
-    MemorySecurityContext,
-)
-from intergrax.memory.memory_security_governance_service import (
-    MemorySecurityGovernanceService,
-    build_default_memory_security_governance_service,
-)
-from intergrax.memory.contracts.memory_observability import (
-    MemoryDiagnosticFailureClass,
-    MemoryDiagnosticOperation,
-    MemoryDiagnosticOutcome,
-)
-from intergrax.memory.memory_diagnostic_emitter import (
-    MemoryDiagnosticEmitter,
-    MemoryOperationTimer,
-    default_memory_diagnostic_emitter,
-)
-from intergrax.memory.memory_observability_support import emit_control_plane_terminal
-from intergrax.memory.memory_scope_authority import (
-    assert_memory_scope_authorized,
-    governance_service_or_default,
-)
 from intergrax.utils.time_provider import SystemTimeProvider, TimeProvider
 
 __all__ = ["DefaultMemoryControlPlane", "UserProfileManagerMemoryCapability"]
@@ -217,9 +217,7 @@ class UserProfileManagerMemoryCapability:
     ) -> UserMemoryRememberCapabilityResult:
         user_id = identity.user_id or ""
         try:
-            mutation = await self._manager.add_memory_entry_with_lifecycle(
-                identity, user_id, entry
-            )
+            mutation = await self._manager.add_memory_entry_with_lifecycle(identity, user_id, entry)
         except Exception as exc:
             raise _map_capability_mutation_error(exc) from exc
         if mutation.entry is None:
@@ -238,9 +236,7 @@ class UserProfileManagerMemoryCapability:
     ) -> UserMemoryForgetCapabilityResult:
         user_id = identity.user_id or ""
         try:
-            mutation = await self._manager.remove_memory_entry_with_lifecycle(
-                identity, user_id, entry_id
-            )
+            mutation = await self._manager.remove_memory_entry_with_lifecycle(identity, user_id, entry_id)
         except Exception as exc:
             raise _map_capability_mutation_error(exc) from exc
         if not mutation.lifecycle.primary_applied:
@@ -257,9 +253,14 @@ class UserProfileManagerMemoryCapability:
         user_id: str,
     ) -> tuple[UserProfileMemoryEntry, ...]:
         profile = await self._manager.get_profile(user_id)
-        return tuple(
-            entry for entry in profile.memory_entries if is_memory_entry_active(entry)
-        )
+        return tuple(entry for entry in profile.memory_entries if is_memory_entry_active(entry))
+
+    async def list_retention_candidates(
+        self,
+        user_id: str,
+    ) -> tuple[UserProfileMemoryEntry, ...]:
+        profile = await self._manager.get_profile(user_id)
+        return tuple(entry for entry in profile.memory_entries if not entry.deleted)
 
     def is_longterm_rag_enabled(self) -> bool:
         return self._manager.is_longterm_rag_enabled()
@@ -368,9 +369,7 @@ class DefaultMemoryControlPlane:
     recall_retrieval_config: UserMemoryRecallRetrievalConfig | None = None
     time_provider: type[TimeProvider] = SystemTimeProvider
     security_governance: MemorySecurityGovernanceService | None = None
-    diagnostic_emitter: MemoryDiagnosticEmitter = field(
-        default_factory=default_memory_diagnostic_emitter
-    )
+    diagnostic_emitter: MemoryDiagnosticEmitter = field(default_factory=default_memory_diagnostic_emitter)
 
     async def remember(
         self,
@@ -406,9 +405,7 @@ class DefaultMemoryControlPlane:
     ) -> MemoryControlSupersessionApplyResult:
         _assert_scope_authorized(identity, scope)
         if scope.kind is not MemoryControlPlaneScope.USER:
-            raise MemoryControlUnsupportedScope(
-                f"unsupported scope for supersession apply: {scope.kind.value}"
-            )
+            raise MemoryControlUnsupportedScope(f"unsupported scope for supersession apply: {scope.kind.value}")
         if self.user_profile is None:
             raise MemoryControlUnsupportedScope("user profile memory capability not configured")
         user_id = scope.user_id or ""
@@ -420,13 +417,9 @@ class DefaultMemoryControlPlane:
             _enforce_governance(
                 self.security_governance,
                 MemoryGovernanceEvaluationRequest(
-                    context=_security_context(
-                        identity, scope, MemoryGovernanceOperation.SUPERSEDE
-                    ),
+                    context=_security_context(identity, scope, MemoryGovernanceOperation.SUPERSEDE),
                     target=MemoryGovernanceTarget(memory_id=intent.superseded_memory_id),
-                    existing_record=MemoryGovernanceRecordSnapshot.from_user_profile_entry(
-                        superseded
-                    ),
+                    existing_record=MemoryGovernanceRecordSnapshot.from_user_profile_entry(superseded),
                     proposed_record=(
                         MemoryGovernanceRecordSnapshot.from_user_profile_entry(superseding)
                         if superseding is not None
@@ -464,12 +457,9 @@ class DefaultMemoryControlPlane:
     ) -> MemoryControlReconcileResult:
         _assert_scope_authorized(identity, scope)
         if scope.kind is not MemoryControlPlaneScope.USER:
-            raise MemoryControlUnsupportedScope(
-                f"reconcile supported only for USER scope, got {scope.kind.value}"
-            )
+            raise MemoryControlUnsupportedScope(f"reconcile supported only for USER scope, got {scope.kind.value}")
         if self.user_profile is None:
             raise MemoryControlUnsupportedScope("user profile memory capability not configured")
-        user_id = scope.user_id or ""
         timer = MemoryOperationTimer()
         try:
             outcome = await self.user_profile.reconcile_memory_projections(identity)
@@ -522,7 +512,6 @@ class DefaultMemoryControlPlane:
         timer = MemoryOperationTimer()
         if self.user_profile is None:
             raise MemoryControlUnsupportedScope("user profile memory capability not configured")
-        user_id = scope.user_id or ""
         if request.entry is not None:
             entry = request.entry
         else:
@@ -746,7 +735,12 @@ class DefaultMemoryControlPlane:
         if not entry_id:
             raise ValueError("forget requires entry_id for USER scope")
         user_id = scope.user_id or ""
-        active_entries = await self.user_profile.list_active_memory_entries(user_id)
+        lister = self.user_profile.list_active_memory_entries
+        if request.include_expired:
+            if not isinstance(self.user_profile, MemoryRetentionCandidateReader):
+                raise MemoryControlUnsupportedScope("user profile memory capability cannot list retention candidates")
+            lister = self.user_profile.list_retention_candidates
+        active_entries = await lister(user_id)
         active_ids = {entry.entry_id for entry in active_entries}
         if entry_id not in active_ids:
             raise MemoryControlNotFound(f"memory entry not active: {entry_id}")
@@ -811,7 +805,7 @@ class DefaultMemoryControlPlane:
                 duration_seconds=timer.elapsed_seconds(),
             )
             raise MemoryControlBackendError(str(exc)) from exc
-        entries_after = await self.user_profile.list_active_memory_entries(user_id)
+        entries_after = await lister(user_id)
         for entry in entries_after:
             if entry.entry_id == entry_id:
                 raise MemoryControlBackendError("forget left entry active in primary store")
