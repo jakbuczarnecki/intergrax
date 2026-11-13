@@ -30,7 +30,7 @@ uv run python -m scripts.governance.igx_gov ticket
 
 ## Lifecycle state
 
-plan_approved
+quality_gate
 
 ## Lease holder
 
@@ -133,6 +133,6 @@ The six PNG files were extracted into an empty scratch folder, their SHA-256 val
 
 Verdict: **PASS_WITH_FINDINGS**, no BLOCKER and no HIGH. The committed PNG blobs match the package checksums. V-1..V-9 pass on the committed pixels; V-10 stays optional notes (L1: "READINESS-owned patterns", short step label, empty hero areas; L2: skewed connector arrowhead, accent bars slightly past rounded corners, background arcs crossing the footer divider, tight step numbers). The two LOW findings on this ticket (stale checkpoint row, missing state line) are fixed here. The visuals may be published.
 
-Campaign state: text, governance and visuals are audited. **Still required, and not done by the implementer:** an `Approved:` line for this ticket from the operator or a commissioned delegate (no delegation covers T-IGX-037-F), then a PR to `development`, merge by the operator, the pin commit (C6) and the closure record. `SFX_PRE_FREEZE_DOCS_CLOSED` is not reached. `SFX_PRE_IMPLEMENTATION_READY` is not granted. STOP before SFX-P4-B, SFX-P5 and ARCH-FREEZE.
+Campaign state: text, governance and visuals are audited. The `Approved:` line was written by a delegate session under `DELEGATION-SFX-CLOSEOUT.md` (commit `e8e8c25b9`); the implementer did not write it. **Still to do:** PR to `development`, merge by the operator, the pin commit (C6) and the closure record. `SFX_PRE_FREEZE_DOCS_CLOSED` is not reached. `SFX_PRE_IMPLEMENTATION_READY` is not granted. STOP before SFX-P4-B, SFX-P5 and ARCH-FREEZE.
 
 Plan note: the plan text was clarified before approval (roadmap fact and the README test root were added to its scope); the digest above is the current one.
