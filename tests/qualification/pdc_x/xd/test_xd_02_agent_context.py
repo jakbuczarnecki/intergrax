@@ -169,18 +169,6 @@ async def test_xd02_memory_recall_never_returns_another_tenants_entries() -> Non
     assert "BRAVO-SECRET" in recalled_b and "ALPHA-SECRET" not in recalled_b
 
 
-@pytest.mark.xfail(
-    strict=True,
-    reason=(
-        "FINDING-6 (D6-R019, D2 memory): a tenant-bound memory plane serves a foreign-tenant identity. "
-        "DefaultMemoryControlPlane (intergrax/memory/default_memory_control_plane.py) only checks that the "
-        "identity matches the requested scope, never that the identity's tenant is the tenant the plane's "
-        "UserProfileManager is bound to, and the profile store is keyed by user_id alone, so a tenant B "
-        "identity with a colliding user_id recalls tenant A memory through tenant A's plane. Smallest repair: "
-        "in remember/recall/forget compare identity.tenant_id with the capability manager's tenant and raise "
-        "MemoryControlAccessDenied on mismatch."
-    ),
-)
 async def test_xd02_a_foreign_tenant_identity_on_a_tenant_bound_plane_recalls_nothing() -> None:
     memory_a = _memory_for(TENANT_A)
     await memory_a.remember("tenant-a private preference ALPHA-SECRET")
