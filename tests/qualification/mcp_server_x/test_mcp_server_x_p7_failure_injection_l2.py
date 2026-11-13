@@ -457,12 +457,12 @@ async def test_p7_05_limit_exceeded_result_bound_on_list_agents_is_a_typed_error
 
     mcp = _reference_server(AsyncMock(spec=HostTaskExecutionPort), registry=_BigRegistry())
     async with Client(mcp) as client:
-        with pytest.raises(ToolError, match="mcp_payload_byte_limit_exceeded"):
+        with pytest.raises(ToolError, match="MCP_RESULT_BOUND_EXCEEDED"):
             await asyncio.wait_for(client.call_tool("list_agents", {}), timeout=_DEADLINE_S)
 
 
-async def test_p7_05_limit_exceeded_result_bound_on_run_agent_is_a_typed_error_payload() -> None:
-    """An over-large ``run_agent`` answer is replaced by a typed error payload (terminal, bounded)."""
+async def test_p7_05_limit_exceeded_result_bound_on_run_agent_is_a_typed_tool_error() -> None:
+    """An over-large ``run_agent`` answer is a typed tool error (``isError=true``), never a normal result."""
     port = AsyncMock(spec=HostTaskExecutionPort)
 
     async def _huge(task: Task, **_kwargs: object) -> TaskResult:
@@ -473,23 +473,17 @@ async def test_p7_05_limit_exceeded_result_bound_on_run_agent_is_a_typed_error_p
     port.execute = AsyncMock(side_effect=_huge)
     mcp = _reference_server(port)
     async with Client(mcp) as client:
-        result = await asyncio.wait_for(client.call_tool("run_agent", {"message": "big"}), timeout=_DEADLINE_S)
-    assert result.data == {"error": "mcp_payload_byte_limit_exceeded"}
+        with pytest.raises(ToolError, match="MCP_RESULT_BOUND_EXCEEDED"):
+            await asyncio.wait_for(client.call_tool("run_agent", {"message": "big"}), timeout=_DEADLINE_S)
 
 
-async def test_p7_05_limit_exceeded_result_bound_is_not_applied_to_the_custom_tool_qual_echo() -> None:
-    """RECORDED GAP (not a pass of a bound): the custom-tool wrapper applies concurrency admission only.
-
-    An over-large ``qual_echo`` result is returned in full instead of a typed ``mcp_payload_byte_limit_exceeded``
-    error, unlike ``list_agents`` / ``run_agent``. This pins current behaviour so the gap stays visible; if the
-    engine later bounds custom tool results, this test must be updated to assert the typed error.
-    """
+async def test_p7_05_limit_exceeded_result_bound_is_applied_to_the_custom_tool_qual_echo() -> None:
+    """R-P7-03 closed in MCP-RC: the custom-tool wrapper bounds its result like every other tool path."""
     oversize = DEFAULT_MCP_MAX_SERIALIZED_BYTES + 1024
     mcp = _reference_server(AsyncMock(spec=HostTaskExecutionPort))
     async with Client(mcp) as client:
-        result = await asyncio.wait_for(client.call_tool("qual_echo", {"message": "z" * oversize}), timeout=_DEADLINE_S)
-    assert len(result.data["echo"]) == oversize
-    assert "error" not in result.data
+        with pytest.raises(ToolError, match="MCP_RESULT_BOUND_EXCEEDED"):
+            await asyncio.wait_for(client.call_tool("qual_echo", {"message": "z" * oversize}), timeout=_DEADLINE_S)
 
 
 # --------------------------------------------------------------------------- AC-P7-04: unknown tool

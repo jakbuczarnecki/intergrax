@@ -478,7 +478,7 @@ async def test_f3_streamable_http_parent_cancel_before_admission_is_fail_closed(
     assert not invoker.results, "catalog child must never run after the root unwound"
     error_text = _is_error_text(catalog)
     if error_text is not None:
-        assert error_text.startswith("missing_execution_binding"), error_text
+        assert error_text.startswith("MCP_EXECUTION_BINDING_INVALID: missing_execution_binding"), error_text
     else:
         assert _tool_payload(catalog).get("error") == "execution_cancelled", _tool_payload(catalog)
 
@@ -502,7 +502,7 @@ async def test_f3_streamable_http_unknown_task_id_is_missing_execution_binding()
     assert not invoker.results
     error_text = _is_error_text(catalog)
     assert error_text is not None, _tool_payload(catalog)
-    assert error_text.startswith("missing_execution_binding"), error_text
+    assert error_text.startswith("MCP_EXECUTION_BINDING_INVALID: missing_execution_binding"), error_text
 
 
 @pytest.mark.asyncio

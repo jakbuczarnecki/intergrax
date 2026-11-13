@@ -5,6 +5,7 @@
 
 from __future__ import annotations
 
+import asyncio
 import functools
 import inspect
 import logging
@@ -13,6 +14,7 @@ from dataclasses import dataclass
 from typing import Any
 
 from fastmcp import FastMCP
+from fastmcp.exceptions import ToolError
 
 from intergrax.agents.tool_enablement import ToolEnablementProfile
 from intergrax.applications._shared.mcp_catalog_invocation_bridge import (
@@ -26,6 +28,7 @@ from intergrax.applications._shared.mcp_engine_concurrency import (
 )
 from intergrax.applications._shared.mcp_harness_principal import require_mcp_caller_principal
 from intergrax.applications._shared.mcp_identity_mode import McpIdentityMode, coerce_mcp_identity_mode
+from intergrax.applications._shared.mcp_wire_errors import bound_mcp_result_or_raise, mcp_tool_error
 from intergrax.contracts.execution_bound_catalog_tool_invocation import (
     ExecutionBoundCatalogToolInvoker,
 )
@@ -36,6 +39,7 @@ from intergrax.contracts.mcp_server_definition import (
     McpHostBuiltinId,
     McpHostCustomBinding,
     McpServerDefinition,
+    McpServerDefinitionErrorCode,
     McpServerDefinitionValidationError,
     build_mcp_server_definition,
     resolve_effective_bindings,
@@ -52,7 +56,6 @@ from intergrax.runtime.governance.control_plane_mutation_authorization import (
     ControlPlaneMutationAuthorizationBoundary,
 )
 from intergrax.runtime.registry.agent_registry_read import AgentRegistryRead
-from intergrax.tools.mcp_result_bounds import emit_bounded_mcp_list
 from intergrax.tools.registry.runtime import ToolRegistry
 
 _LOG = logging.getLogger(__name__)
@@ -107,6 +110,24 @@ def _exec_parameter_spec(param: inspect.Parameter) -> str:
     return f"{param.name}={param.default!r}"
 
 
+async def _run_custom_host_tool_bounded(
+    handler: Callable[..., Awaitable[dict[str, object]]],
+    kwargs: Mapping[str, object],
+) -> dict[str, object]:
+    """Run a host-supplied custom tool: bound its result and never echo raw exception text on the wire."""
+    try:
+        result = await handler(**kwargs)
+    except (ToolError, asyncio.CancelledError):
+        raise
+    except Exception as exc:
+        _LOG.exception("custom MCP host tool %s failed", getattr(handler, "__name__", "?"))
+        raise mcp_tool_error(
+            McpServerDefinitionErrorCode.MCP_INTERNAL_ERROR,
+            f"tool execution failed ({type(exc).__name__})",
+        ) from exc
+    return bound_mcp_result_or_raise(result)
+
+
 def _bind_custom_host_tool_for_fastmcp(
     handler: Callable[..., Awaitable[dict[str, object]]],
     *,
@@ -123,20 +144,18 @@ def _bind_custom_host_tool_for_fastmcp(
                 "custom host tool handler must declare explicit parameters (no *args or **kwargs)",
             )
 
-    if call_admission is None:
-        return handler
-
     params_joined = ", ".join(_exec_parameter_spec(p) for p in sig.parameters.values())
-    call_joined = ", ".join(f"{name}={name}" for name in sig.parameters)
+    kwargs_joined = ", ".join(f"{name!r}: {name}" for name in sig.parameters)
     namespace: dict[str, object] = {
         "_handler": handler,
         "_optional_mcp_call_admission": optional_mcp_call_admission,
         "_call_admission": call_admission,
+        "_run_bounded": _run_custom_host_tool_bounded,
     }
     source = (
         f"async def _custom_host_mcp_tool({params_joined}):\n"
         f"    async with _optional_mcp_call_admission(_call_admission):\n"
-        f"        return await _handler({call_joined})\n"
+        f"        return await _run_bounded(_handler, {{{kwargs_joined}}})\n"
     )
     exec(source, namespace)  # noqa: S102 — bounded signature mirror for FastMCP ParsedFunction
     bound = namespace["_custom_host_mcp_tool"]
@@ -242,7 +261,7 @@ def compose_mcp_server_from_definition(
                             "capabilities": list(contract.capabilities),
                         }
                     )
-                return emit_bounded_mcp_list(agents)
+                return bound_mcp_result_or_raise(agents)
 
     if McpHostBuiltinId.RUN_AGENT in builtin_ids:
         from intergrax.applications._shared.mcp_nexus_server import (

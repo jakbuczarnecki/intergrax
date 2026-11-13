@@ -17,6 +17,12 @@ from intergrax.applications._shared.catalog_tool_child_mse_admission_hook import
 )
 from intergrax.applications._shared.mcp_harness_principal import resolve_mcp_run_agent_identity
 from intergrax.applications._shared.mcp_identity_mode import McpIdentityMode
+from intergrax.applications._shared.mcp_wire_errors import (
+    bound_cross_loop_catalog_payload,
+    bound_mcp_result_or_raise,
+    mcp_code_for_legacy,
+    mcp_tool_error,
+)
 from intergrax.contracts.agent_run import RequestIdentity, canonical_principal_id_from_request_identity
 from intergrax.contracts.execution_bound_catalog_tool_invocation import (
     ExecutionBoundCatalogToolInvoker,
@@ -58,7 +64,6 @@ from intergrax.runtime.governance.governance_identity_projection import (
 from intergrax.runtime.task.active_task_registry import ActiveTaskBinding, ActiveTaskRegistry
 from intergrax.runtime.task.task import Task
 from intergrax.runtime.task.task_state import task_state_requires_authoritative_exposure
-from intergrax.tools.mcp_result_bounds import bound_mcp_structured_result
 from intergrax.tools.registry.runtime import ToolRegistry
 
 _METADATA_STEP_ID = "mcp_catalog_invoke_step_id"
@@ -83,16 +88,13 @@ class McpCatalogInvocationComposition:
 
 
 def _tool_error(code: str, detail: str) -> ToolError:
-    return ToolError(f"{code}: {detail}")
+    return mcp_tool_error(mcp_code_for_legacy(code), f"{code}: {detail}")
 
 
 def _bound_error_payload(code: str, detail: str, **extra: object) -> dict[str, object]:
-    payload: dict[str, object] = {"error": code, "detail": detail}
+    payload: dict[str, object] = {"error": code, "mcp_code": mcp_code_for_legacy(code).value, "detail": detail}
     payload.update(extra)
-    bounded, truncated = bound_mcp_structured_result(payload)
-    if truncated or not isinstance(bounded, dict):
-        return {"error": "mcp_payload_byte_limit_exceeded"}
-    return bounded
+    return bound_mcp_result_or_raise(payload)
 
 
 async def resolve_mcp_catalog_execution_binding(
@@ -290,10 +292,7 @@ def _serialize_tool_result(result: object) -> dict[str, object]:
         err = result.error
         payload["error_code"] = err.error_code if err is not None else "tool_failed"
         payload["error_message"] = err.error_message if err is not None else "tool_failed"
-    bounded, truncated = bound_mcp_structured_result(payload)
-    if truncated or not isinstance(bounded, dict):
-        return {"error": "mcp_payload_byte_limit_exceeded"}
-    return bounded
+    return bound_mcp_result_or_raise(payload)
 
 
 async def execute_mcp_catalog_tool_invocation(
@@ -404,13 +403,13 @@ async def execute_mcp_catalog_tool_invocation(
             wait_timeout_s=120.0,
         )
         if not terminal.success:
-            return terminal.payload
+            return bound_cross_loop_catalog_payload(terminal.payload)
         if CancellationCoordinator.is_requested(dict(work.governed_task.metadata)):
             return _bound_error_payload(
                 "execution_cancelled",
                 "active execution cooperative cancellation observed after catalog invoke",
             )
-        return terminal.payload
+        return bound_cross_loop_catalog_payload(terminal.payload)
 
     try:
         tool_result = await child_port.execute(

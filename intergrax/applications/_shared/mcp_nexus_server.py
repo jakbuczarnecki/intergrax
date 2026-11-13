@@ -28,6 +28,7 @@ from intergrax.applications._shared.mcp_server_engine import (
 from intergrax.applications._shared.mcp_transport_detachment_supervision_coupling import (
     resolve_transport_detachment_supervision_from_request,
 )
+from intergrax.applications._shared.mcp_wire_errors import bound_mcp_result_or_raise
 from intergrax.applications._shared.strict_production_serving_http_execution_principal import (
     bind_strict_serving_http_caller_principal,
 )
@@ -47,7 +48,6 @@ from intergrax.runtime.governance.control_plane_mutation_authorization import (
 )
 from intergrax.runtime.registry.agent_registry_read import AgentRegistryRead
 from intergrax.runtime.task.task import Task, TaskContext, TaskResult
-from intergrax.tools.mcp_result_bounds import bound_mcp_structured_result
 from intergrax.tools.registry.runtime import ToolRegistry
 
 MCP_IDENTITY_ASSERTION_METADATA_KEY = "mcp_identity_assertion"
@@ -159,8 +159,7 @@ async def execute_mcp_agent_task(
         "agent_id": result.agent_id,
         "metadata": dict(result.metadata),
     }
-    bounded, _ = bound_mcp_structured_result(payload)
-    return bounded if isinstance(bounded, dict) else {"error": "mcp_payload_byte_limit_exceeded"}
+    return bound_mcp_result_or_raise(payload)
 
 
 async def execute_mcp_agent_task_with_resolved_identity(

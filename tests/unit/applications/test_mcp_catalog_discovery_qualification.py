@@ -5,9 +5,8 @@
 from __future__ import annotations
 
 import asyncio
-from unittest.mock import AsyncMock, patch
+from unittest.mock import AsyncMock
 
-import intergrax.applications._shared.mcp_catalog_tools as mcp_catalog_tools_module
 import pytest
 from fastapi import FastAPI
 from fastapi.testclient import TestClient
@@ -25,7 +24,6 @@ from intergrax.runtime.task.task_result_authoritative_exposure_defaults import (
     terminal_task_result_exposure_no_decision_gate,
 )
 from intergrax.tools.core.contracts import ToolContract, ToolRiskLevel
-from intergrax.tools.mcp_result_bounds import emit_bounded_mcp_list
 from intergrax.tools.registry.runtime import ToolRegistry
 from intergrax.tools.tool_executor import ToolHandler
 from pydantic import BaseModel
@@ -148,31 +146,26 @@ async def test_discovery_invalid_empty_tool_id() -> None:
 @pytest.mark.asyncio
 async def test_discovery_oversized_catalog_raises() -> None:
     registry = ToolRegistry()
-    for index in range(50):
+    for index in range(8):
         registry.register(
-            _contract(f"qual.big.{index}", description="z" * 200),
+            _contract(f"qual.big.{index}", description="z" * 200_000),
             _noop_handler(),
         )
     mcp = _build_mcp(registry)
 
-    def _tight_list(payload: list[object]) -> list[object]:
-        return emit_bounded_mcp_list(payload, max_bytes=256)
-
-    with patch.object(mcp_catalog_tools_module, "emit_bounded_mcp_list", _tight_list):
-        async with Client(mcp) as client:
-            with pytest.raises(ToolError, match="mcp_payload_byte_limit_exceeded"):
-                await client.call_tool("list_catalog_tools", {})
+    async with Client(mcp) as client:
+        with pytest.raises(ToolError, match="MCP_RESULT_BOUND_EXCEEDED"):
+            await client.call_tool("list_catalog_tools", {})
 
 
 @pytest.mark.asyncio
-async def test_discovery_oversized_description_returns_byte_limit_error() -> None:
+async def test_discovery_oversized_description_is_a_typed_byte_limit_tool_error() -> None:
     registry = ToolRegistry()
     registry.register(_contract("qual.huge", description="ż" * 2_000_000), _noop_handler())
     mcp = _build_mcp(registry)
     async with Client(mcp) as client:
-        result = await client.call_tool("describe_catalog_tool", {"tool_id": "qual.huge"})
-    assert result.data["error"] == "mcp_payload_byte_limit_exceeded"
-    assert result.data["tool_id"] == "qual.huge"
+        with pytest.raises(ToolError, match="MCP_RESULT_BOUND_EXCEEDED"):
+            await client.call_tool("describe_catalog_tool", {"tool_id": "qual.huge"})
 
 
 @pytest.mark.asyncio

@@ -15,9 +15,19 @@ from intergrax.applications._shared.mcp_catalog_invocation_bridge import (
 )
 from intergrax.applications._shared.mcp_harness_principal import require_mcp_caller_principal
 from intergrax.applications._shared.mcp_identity_mode import McpIdentityMode
+from intergrax.applications._shared.mcp_wire_errors import bound_mcp_result_or_raise
 from intergrax.tools.exporters.mcp import to_mcp_tools
-from intergrax.tools.mcp_result_bounds import bound_mcp_structured_result, emit_bounded_mcp_list
 from intergrax.tools.registry.runtime import ToolRegistry
+
+_MAX_ECHOED_TOOL_ID_CHARS = 128
+
+
+def _unknown_tool_payload(tool_id: str) -> dict[str, Any]:
+    """Unknown-tool result that never echoes unbounded caller input."""
+    return {
+        "error": f"unknown_tool:{tool_id[:_MAX_ECHOED_TOOL_ID_CHARS]}",
+        "mcp_code": "MCP_CATALOG_TOOL_REFUSED",
+    }
 
 
 def mount_catalog_tools_on_mcp(
@@ -45,25 +55,18 @@ def mount_catalog_tools_on_mcp(
             """List enabled catalog tools (tool_id, description, input schema)."""
             require_mcp_caller_principal(identity_mode=identity_mode)
             payload = to_mcp_tools(registry)
-            return emit_bounded_mcp_list(payload)
+            return bound_mcp_result_or_raise(payload)
 
         @mcp.tool
         async def describe_catalog_tool(tool_id: str) -> dict[str, Any]:
             """Return MCP schema for one catalog tool_id."""
             require_mcp_caller_principal(identity_mode=identity_mode)
             if not registry.has(tool_id):
-                payload = {"error": f"unknown_tool:{tool_id}"}
-                bounded, truncated = bound_mcp_structured_result(payload)
-                if truncated:
-                    return {"error": "mcp_payload_byte_limit_exceeded", "tool_id": tool_id}
-                return bounded if isinstance(bounded, dict) else {"error": "mcp_payload_byte_limit_exceeded"}
+                return _unknown_tool_payload(tool_id)
             registered = registry.get(tool_id)
             items = to_mcp_tools([registered.contract])
-            payload = items[0] if items else {"error": f"unknown_tool:{tool_id}"}
-            bounded, truncated = bound_mcp_structured_result(payload)
-            if truncated:
-                return {"error": "mcp_payload_byte_limit_exceeded", "tool_id": tool_id}
-            return bounded if isinstance(bounded, dict) else {"error": "mcp_payload_byte_limit_exceeded"}
+            payload = items[0] if items else _unknown_tool_payload(tool_id)
+            return bound_mcp_result_or_raise(payload)
 
         if catalog_invocation is not None:
 

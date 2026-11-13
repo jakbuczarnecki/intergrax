@@ -60,7 +60,7 @@ _MATRIX_PATH = (
     / "MCP_SERVER_X_CONTRACT_AND_PROTOCOL_MATRIX.md"
 )
 
-_EXPECTED_ERROR_CODES = frozenset(
+_V1_ERROR_CODES = frozenset(
     {
         "MCP_DEF_INVALID",
         "MCP_BINDING_UNKNOWN",
@@ -71,6 +71,22 @@ _EXPECTED_ERROR_CODES = frozenset(
         "MCP_RESULT_BOUND_EXCEEDED",
     }
 )
+# MCP-RC contract v1.1 (OD-MCP-RC-01 D-4): documented in MCP_SERVER_X_RC_CONTRACT_MATRIX.md.
+_V1_1_ADDED_ERROR_CODES = frozenset(
+    {
+        "MCP_EXECUTION_BINDING_INVALID",
+        "MCP_CALLER_NOT_AUTHORIZED",
+        "MCP_CATALOG_TOOL_REFUSED",
+        "MCP_TOOL_INPUT_INVALID",
+        "MCP_EXECUTION_REFUSED",
+        "MCP_INTERNAL_ERROR",
+        "MCP_DEADLINE_EXCEEDED",
+        "MCP_CONCURRENT_CALL_LIMIT_EXCEEDED",
+    }
+)
+_EXPECTED_ERROR_CODES = _V1_ERROR_CODES | _V1_1_ADDED_ERROR_CODES
+
+_RC_MATRIX_PATH = _MATRIX_PATH.with_name("MCP_SERVER_X_RC_CONTRACT_MATRIX.md")
 
 
 def _list_agents(binding_id: str = "list_agents", **kwargs: object) -> McpHostBuiltinBinding:
@@ -100,18 +116,20 @@ def _matrix_text() -> str:
 
 def _matrix_error_codes() -> set[str]:
     """Codes listed in the ``## Error codes`` table of the contract and protocol matrix."""
-    text = _matrix_text()
-    section = text.split("## Error codes", 1)[1].split("\n## ", 1)[0]
-    return set(re.findall(r"^\|\s*`(MCP_[A-Z_]+)`\s*\|", section, flags=re.MULTILINE))
+    codes: set[str] = set()
+    for text in (_matrix_text(), _RC_MATRIX_PATH.read_text(encoding="utf-8")):
+        section = text.split("## Error codes", 1)[1].split("\n## ", 1)[0]
+        codes |= set(re.findall(r"^\|\s*`(MCP_[A-Z_]+)`\s*\|", section, flags=re.MULTILINE))
+    return codes
 
 
 # --------------------------------------------------------------------------- MCP-ACC-02
 
 
-def test_acc_02_error_code_enum_has_exactly_seven_stable_codes() -> None:
+def test_acc_02_error_code_enum_has_exactly_the_v1_and_v1_1_stable_codes() -> None:
     values = {member.value for member in McpServerDefinitionErrorCode}
     assert values == _EXPECTED_ERROR_CODES
-    assert len(list(McpServerDefinitionErrorCode)) == 7
+    assert len(list(McpServerDefinitionErrorCode)) == 15
     for member in McpServerDefinitionErrorCode:
         assert member.name == member.value
         assert str(member) == member.value
@@ -125,7 +143,7 @@ def test_acc_02_matrix_error_codes_are_all_defined_in_enum() -> None:
 
 
 def test_acc_02_matrix_error_codes_table_lists_every_enum_code() -> None:
-    """The matrix Error codes table lists all 7 enum codes (D-P7-02 fixed in the matrix at P7)."""
+    """The P7 matrix and the RC v1.1 matrix together list every enum code."""
     enum_values = {member.value for member in McpServerDefinitionErrorCode}
     assert enum_values - _matrix_error_codes() == set()
 
