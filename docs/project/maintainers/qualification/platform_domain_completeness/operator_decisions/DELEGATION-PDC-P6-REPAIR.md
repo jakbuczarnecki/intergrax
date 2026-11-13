@@ -34,3 +34,12 @@ The implementer session and its implementer subagents never write `Approved:` li
 - **Effect on the signature:** the plan digest of T-IGX-036-T changed, so the earlier `Approved:` line no longer applies. The ticket returns to `plan_pending`.
 - **Delegation:** the delegate session may re-sign **T-IGX-036-T only**, under the same checks as above, additionally confirming that the plan's write set equals the amended WBS write set and that the plan adds no new registry, scheduler, engine, trust, policy or audit authority and weakens no gate.
 - **Not delegated** stays as listed above.
+
+## Amendment 2 — XD stand-in cases and wave of B-P6-R (T-IGX-036-T)
+
+- **Basis:** the standing Operator authorization 4 in `DELEGATION-PDC-STANDING.md` and the delegation scope above. The Operator decision "A separate ticket" (chat, original wording in Polish: "Osobny ticket") split XD findings 9 and 10 out of this batch into T-IGX-036-U; see `DELEGATION-PDC-P6-MODEL.md`.
+- **Extension** (five test files, none under a hotspot): `tests/qualification/pdc_x/xd/test_xd_02_agent_context.py`, `test_xd_03_agent_governance.py`, `test_xd_09_artifacts_context.py`, `test_xd_10_artifacts_security.py`, `test_xd_12_evol_ent_audit.py`. They hold the strict `xfail` cases of XD findings 1-8, which would fail the suite once the repairs land; only the marker is removed.
+- **WBS:** B-P6-R moves from wave W4 to W5 and depends on B-P6, because it now writes files under the write set of B-P6 (T-IGX-036-S, already merged). No other batch changes.
+- **Effect on the signature:** the plan digest of T-IGX-036-T changed, so the earlier `Approved:` line no longer applies. The ticket returns to `plan_pending`.
+- **Delegation:** the delegate session may re-sign **T-IGX-036-T only**, under the same checks as above, additionally confirming that the added paths are tests only and that no assertion is weakened.
+- **Not delegated** stays as listed above.

@@ -6,13 +6,13 @@ Small integration repairs that the P5 lanes could not fix inside their write set
 
 ## Plan digest
 
-Plan digest: ed325cc82ccb1bab2477d146a32a84f4cccbd4b1b89a02a1470cf72efefec040
+Plan digest: 5cdfbe6ecb8a40549275f275b877cb9d94afc822979621e4decce370c3b1afbc
 
 Canonical plan: [`governance/tickets/plans/PLAN_T-IGX-036-T.md`](plans/PLAN_T-IGX-036-T.md).
 
 ## Approved
 
-_Pending: delegate re-signing per Amendment 1 of [`DELEGATION-PDC-P6-REPAIR.md`](../../docs/project/maintainers/qualification/platform_domain_completeness/operator_decisions/DELEGATION-PDC-P6-REPAIR.md). The implementer never writes this line._
+_Pending: delegate re-signing per Amendment 2 of [`DELEGATION-PDC-P6-REPAIR.md`](../../docs/project/maintainers/qualification/platform_domain_completeness/operator_decisions/DELEGATION-PDC-P6-REPAIR.md). The implementer never writes this line._
 
 ## Test contract
 
