@@ -1,0 +1,19 @@
+command: gh pr view <n> --json createdAt,mergedAt,headRefOid,mergeCommit,statusCheckRollup (PRs 483 and 485), read after all checks finished
+date_utc_of_read: 2026-11-12T16:06:52Z
+
+PR 483
+  created 2026-11-12T15:30:10Z  merged 2026-11-12T15:35:48Z  head 98dfba9bad8c5046eefba4825d95f315fbee34b7  merge_commit e36c6543799de6f0005924e5eb64d6e35887c811
+  ent-audit-fast=COMPLETED:SUCCESS completed 2026-11-12T15:41:12Z
+  ci-smoke=COMPLETED:SUCCESS completed 2026-11-12T15:31:55Z
+  ent-audit-pr-gate=COMPLETED:SUCCESS completed 2026-11-12T15:30:55Z
+  governance-fast=COMPLETED:SUCCESS completed 2026-11-12T15:37:08Z
+  evol-x-b4-preflight=COMPLETED:SUCCESS completed 2026-11-12T15:34:20Z
+
+PR 485
+  created 2026-11-12T15:47:17Z  merged 2026-11-12T15:49:54Z  head bcdd94f704251dbf064f3d14f09abe11aa3a0311  merge_commit dc307e457227bbcb77b61f05cd1c96487d59895b
+  ent-audit-fast=COMPLETED:SUCCESS completed 2026-11-12T15:59:33Z
+  ci-smoke=COMPLETED:SUCCESS completed 2026-11-12T15:48:32Z
+  ent-audit-pr-gate=COMPLETED:SUCCESS completed 2026-11-12T15:47:52Z
+  governance-fast=COMPLETED:SUCCESS completed 2026-11-12T15:55:45Z
+  evol-x-b4-preflight=COMPLETED:SUCCESS completed 2026-11-12T15:52:39Z
+

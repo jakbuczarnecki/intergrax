@@ -1,0 +1,11 @@
+command: verifier pair on a scratch copy of the certification manifest with certification_publication_sha = PENDING_PUBLICATION_MERGE (literal text, not committed)
+git_head: a618a03a8b245ceefef6ab5a922213aaef46dcd1
+date_utc: 2026-11-12T12:22:07Z
+verify_iiac_audit_manifest: FAIL
+  - jsonschema: 'PENDING_PUBLICATION_MERGE' does not match '^[0-9a-f]{40}$'
+  - certification_publication_sha must be 40-char lowercase hex SHA
+exit_code(manifest): 1
+verify_iiac_role_separation: FAIL
+  - certification_publication_sha must be 40-char lowercase hex SHA
+exit_code(role): 1
+conclusion: the literal text cannot pass the schema/verifiers (40-hex pattern); the committed manifest uses a 40-zero placeholder plus certification_publication_sha_status=PENDING_PUBLICATION_MERGE

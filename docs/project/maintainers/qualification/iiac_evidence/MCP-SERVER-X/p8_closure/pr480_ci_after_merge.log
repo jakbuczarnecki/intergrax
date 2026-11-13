@@ -1,0 +1,18 @@
+command: .tmp/session/mcp-p7p8-run/wait_pr480.sh (one-off wait + gh pr view 480 / gh run list --branch development)
+merged_head: 8864cee842a2bc745d26f2a3501dc500e5f3e7df
+merge_commit: c11184164af3072d0a48102a5e8d62adfec53695
+date_utc_of_read: 2026-11-12T12:59:41Z
+finished_wait_utc: 2026-11-12T12:59:41Z
+merged: 2026-11-12T12:47:37Z
+ent-audit-fast=COMPLETED:SUCCESS completed 2026-11-12T12:59:31Z
+ci-smoke=COMPLETED:SUCCESS completed 2026-11-12T12:48:33Z
+ent-audit-pr-gate=COMPLETED:SUCCESS completed 2026-11-12T12:47:31Z
+governance-fast=COMPLETED:SUCCESS completed 2026-11-12T12:53:27Z
+evol-x-b4-preflight=COMPLETED:SUCCESS completed 2026-11-12T12:53:06Z
+governance-policy-pin=COMPLETED:SUCCESS completed 2026-11-12T12:47:21Z
+push-run eadb1c211 Regression gate completed success
+push-run af7c72ac5 Enterprise audit nightly (ENT-AUDIT-X) completed success
+push-run 5836a5a5b Regression gate completed success
+push-run f573e24e8 Regression gate completed success
+push-run dcdb35601 Regression gate completed success
+push-run dd2055e19 Regression gate completed failure
