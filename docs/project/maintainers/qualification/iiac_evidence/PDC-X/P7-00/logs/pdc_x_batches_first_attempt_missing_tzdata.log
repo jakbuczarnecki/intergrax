@@ -1,0 +1,60 @@
+2026-11-13T15:42:51Z
+fa6ff1c9616a6df28c11b087eb3f1b0dc4097b5f
+files: 95 missing: []
+
+=================================== ERRORS ====================================
+_____ ERROR collecting tests/qualification/pdc_x/d7/test_d7_recurrence.py _____
+C:\Users\XPS\AppData\Roaming\uv\python\cpython-3.12.11-windows-x86_64-none\Lib\zoneinfo\_common.py:12: in load_tzdata
+    return resources.files(package_name).joinpath(resource_name).open("rb")
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+C:\Users\XPS\AppData\Roaming\uv\python\cpython-3.12.11-windows-x86_64-none\Lib\importlib\resources\_common.py:46: in wrapper
+    return func(anchor)
+           ^^^^^^^^^^^^
+C:\Users\XPS\AppData\Roaming\uv\python\cpython-3.12.11-windows-x86_64-none\Lib\importlib\resources\_common.py:56: in files
+    return from_package(resolve(anchor))
+                        ^^^^^^^^^^^^^^^
+C:\Users\XPS\AppData\Roaming\uv\python\cpython-3.12.11-windows-x86_64-none\Lib\functools.py:912: in wrapper
+    return dispatch(args[0].__class__)(*args, **kw)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+C:\Users\XPS\AppData\Roaming\uv\python\cpython-3.12.11-windows-x86_64-none\Lib\importlib\resources\_common.py:82: in _
+    return importlib.import_module(cand)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+C:\Users\XPS\AppData\Roaming\uv\python\cpython-3.12.11-windows-x86_64-none\Lib\importlib\__init__.py:90: in import_module
+    return _bootstrap._gcd_import(name[level:], package, level)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+<frozen importlib._bootstrap>:1387: in _gcd_import
+    ???
+<frozen importlib._bootstrap>:1360: in _find_and_load
+    ???
+<frozen importlib._bootstrap>:1310: in _find_and_load_unlocked
+    ???
+<frozen importlib._bootstrap>:488: in _call_with_frames_removed
+    ???
+<frozen importlib._bootstrap>:1387: in _gcd_import
+    ???
+<frozen importlib._bootstrap>:1360: in _find_and_load
+    ???
+<frozen importlib._bootstrap>:1310: in _find_and_load_unlocked
+    ???
+<frozen importlib._bootstrap>:488: in _call_with_frames_removed
+    ???
+<frozen importlib._bootstrap>:1387: in _gcd_import
+    ???
+<frozen importlib._bootstrap>:1360: in _find_and_load
+    ???
+<frozen importlib._bootstrap>:1324: in _find_and_load_unlocked
+    ???
+E   ModuleNotFoundError: No module named 'tzdata'
+
+During handling of the above exception, another exception occurred:
+tests\qualification\pdc_x\d7\test_d7_recurrence.py:37: in <module>
+    _WARSAW = ZoneInfo("Europe/Warsaw")
+              ^^^^^^^^^^^^^^^^^^^^^^^^^
+C:\Users\XPS\AppData\Roaming\uv\python\cpython-3.12.11-windows-x86_64-none\Lib\zoneinfo\_common.py:24: in load_tzdata
+    raise ZoneInfoNotFoundError(f"No time zone found with key {key}")
+E   zoneinfo._common.ZoneInfoNotFoundError: 'No time zone found with key Europe/Warsaw'
+=========================== short test summary info ===========================
+ERROR tests/qualification/pdc_x/d7/test_d7_recurrence.py - zoneinfo._common.Z...
+!!!!!!!!!!!!!!!!!!! Interrupted: 1 error during collection !!!!!!!!!!!!!!!!!!!!
+1 skipped, 1 error in 45.80s
+exit=2 elapsed=56.5s

@@ -1,0 +1,25 @@
+.......F                                                                 [100%]
+================================== FAILURES ===================================
+______________ test_built_bundle_carries_digests_and_the_run_id _______________
+C:\Users\XPS\AppData\Roaming\uv\python\cpython-3.12.11-windows-x86_64-none\Lib\pathlib.py:1311: in mkdir
+    os.mkdir(self, mode)
+E   FileNotFoundError: [WinError 206] Nazwa pliku lub jej rozszerzenie są za długie: 'C:\\Users\\XPS\\AppData\\Local\\Temp\\claude\\1fa23f5617d9789c\\d4f91791-b817-4ac2-8e4b-b547b4885240\\scratchpad\\mut_checkout\\build\\pytest\\35556-4fa5262b\\test_built_bundle_carries_dige0\\shadow\\tenant-a\\task_79cc1f50a75c486c9d52bb2a56e10848\\shadow_0e1b3727127843d5'
+
+During handling of the above exception, another exception occurred:
+tests\qualification\pdc_x\d8\test_d8_collaborative_work_and_bundle.py:200: in test_built_bundle_carries_digests_and_the_run_id
+    workspace = shadow.open_or_create(tenant_id=task.tenant_id, task_id=task.task_id)
+                ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+intergrax\runtime\workspace\manager.py:44: in open_or_create
+    workspace = ShadowWorkspace.create(
+intergrax\runtime\workspace\shadow_workspace.py:77: in create
+    return cls(
+intergrax\runtime\workspace\shadow_workspace.py:64: in __init__
+    self.root.mkdir(parents=True, exist_ok=True)
+C:\Users\XPS\AppData\Roaming\uv\python\cpython-3.12.11-windows-x86_64-none\Lib\pathlib.py:1316: in mkdir
+    self.mkdir(mode, parents=False, exist_ok=exist_ok)
+C:\Users\XPS\AppData\Roaming\uv\python\cpython-3.12.11-windows-x86_64-none\Lib\pathlib.py:1311: in mkdir
+    os.mkdir(self, mode)
+E   FileNotFoundError: [WinError 206] Nazwa pliku lub jej rozszerzenie są za długie: 'C:\\Users\\XPS\\AppData\\Local\\Temp\\claude\\1fa23f5617d9789c\\d4f91791-b817-4ac2-8e4b-b547b4885240\\scratchpad\\mut_checkout\\build\\pytest\\35556-4fa5262b\\test_built_bundle_carries_dige0\\shadow\\tenant-a\\task_79cc1f50a75c486c9d52bb2a56e10848\\shadow_0e1b3727127843d5'
+=========================== short test summary info ===========================
+FAILED tests/qualification/pdc_x/d8/test_d8_collaborative_work_and_bundle.py::test_built_bundle_carries_digests_and_the_run_id
+1 failed, 7 passed in 3.22s
