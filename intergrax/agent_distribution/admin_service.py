@@ -7,6 +7,7 @@ from __future__ import annotations
 
 from collections.abc import Callable
 from datetime import UTC, datetime
+from typing import TYPE_CHECKING
 
 from intergrax.agent_distribution.activation import ActivationService, RollbackResult
 from intergrax.agent_distribution.admin_models import (
@@ -154,6 +155,7 @@ from intergrax.agent_distribution.runtime_materialization_record import (
 from intergrax.agent_distribution.runtime_revision import (
     RuntimeRevision,
     RuntimeRevisionState,
+    build_llm_profile_digest,
 )
 from intergrax.agent_distribution.runtime_revision_service import RuntimeRevisionService
 from intergrax.agent_distribution.stores import (
@@ -185,6 +187,9 @@ from intergrax.contracts.runtime_policy import PolicyAction
 from intergrax.runtime.governance.control_plane_mutation_authorization import (
     ControlPlaneMutationAuthorizationBoundary,
 )
+
+if TYPE_CHECKING:
+    from intergrax.llm_adapters.contracts.llm_profile import LLMProfile
 
 
 def _event_types(*results: TransitionResult[object]) -> tuple[str, ...]:
@@ -279,7 +284,9 @@ class AgentPlatformAdminService:
         package_trust_policy_source: Callable[[], AgentPackageTrustPolicy] | None = None,
         package_trust_evaluation_time_source: Callable[[], datetime] | None = None,
         emergency_revocation_service: AgentEmergencyRevocationService | None = None,
+        llm_profile_source: Callable[[str, str], LLMProfile | None] | None = None,
     ) -> None:
+        self._llm_profile_source = llm_profile_source
         self._installation_store = installation_store
         self._binding_store = binding_store
         self._revision_store = revision_store
@@ -1316,6 +1323,7 @@ class AgentPlatformAdminService:
             runtime_graph_digest=graph.runtime_graph_digest,
             materialization_topology=request.materialization_topology,
             build_input_digest=build_input_digest_value,
+            llm_profile_digest=self._current_llm_profile_digest(application_id, application_environment_id),
             revision_state=RuntimeRevisionState.CANDIDATE,
         )
         persisted = self._revision_service.persist_candidate_revision(candidate)
@@ -1389,7 +1397,7 @@ class AgentPlatformAdminService:
         request: ActivateRuntimeRevisionRequest,
         principal: RequestIdentity,
     ) -> ActivationResultView:
-        self._require_revision_scope(
+        revision = self._require_revision_scope(
             runtime_revision_id=request.runtime_revision_id,
             application_id=application_id,
             application_environment_id=application_environment_id,
@@ -1410,6 +1418,11 @@ class AgentPlatformAdminService:
             current_traffic_revision_id=current_traffic_revision_id,
             current_serving_pointer_revision=current_pointer_revision,
             target_runtime_revision_id=request.runtime_revision_id,
+        )
+        self._require_pinned_llm_profile(
+            revision,
+            application_id=application_id,
+            application_environment_id=application_environment_id,
         )
         prepared = self._activation_service.prepare_candidate(
             application_id=application_id,
@@ -1751,6 +1764,33 @@ class AgentPlatformAdminService:
         )
         if not any(binding.installation_slot_id == record.installation_slot_id for binding in bindings):
             raise AgentDistributionNotFoundError(f"installation {record.installation_id} was not found")
+
+    def _current_llm_profile_digest(
+        self,
+        application_id: str,
+        application_environment_id: str,
+    ) -> str | None:
+        if self._llm_profile_source is None:
+            return None
+        profile = self._llm_profile_source(application_id, application_environment_id)
+        return None if profile is None else build_llm_profile_digest(profile)
+
+    def _require_pinned_llm_profile(
+        self,
+        revision: RuntimeRevision,
+        *,
+        application_id: str,
+        application_environment_id: str,
+    ) -> None:
+        """Fail closed when the profile resolved now differs from the one the revision pinned at build."""
+        if revision.llm_profile_digest is None:
+            return
+        current = self._current_llm_profile_digest(application_id, application_environment_id)
+        if current != revision.llm_profile_digest:
+            raise RuntimeActivationConflict(
+                f"runtime revision {revision.runtime_revision_id} pins an LLM profile that does not match "
+                "the profile resolved at activation"
+            )
 
     def _require_revision_scope(
         self,
