@@ -1,0 +1,35 @@
+# guardrail checks (read-only git), certifier session
+HEAD 1b5f26f249beaafe007ffff2f1e396ae393a07dc
+## git diff --name-only b0e19bf61 1b5f26f24 -- intergrax applications agents (expect empty)
+(count: 0)
+## git diff --name-status 6a6279a49 1b5f26f24 counts (A/M/D/R)
+     41 A
+     40 M
+## paths in the campaign diff matching activation record / FRZ / P8 / ruleset / .github / scripts/governance / role_registry (expect none)
+(none above = pass)
+## product paths changed 6a6279a49..1b5f26f24 (intergrax applications agents)
+applications/dispute_sim_application/mcp/server.py
+applications/governed_contractor_application/mcp/server.py
+applications/intergrax_assistant_application/mcp/server.py
+applications/lab_application/mcp/server.py
+applications/legal_application/mcp/server.py
+applications/local_workspace_application/mcp/server.py
+applications/poc_template_application/mcp/server.py
+applications/research_application/mcp/server.py
+intergrax/applications/_shared/fastapi_mcp.py
+intergrax/applications/_shared/mcp_application_server.py
+intergrax/applications/_shared/mcp_catalog_invocation_bridge.py
+intergrax/applications/_shared/mcp_catalog_tools.py
+intergrax/applications/_shared/mcp_developer_api.py
+intergrax/applications/_shared/mcp_engine_concurrency.py
+intergrax/applications/_shared/mcp_harness_principal.py
+intergrax/applications/_shared/mcp_host_execution_transport_cancel.py
+intergrax/applications/_shared/mcp_identity_mode.py
+intergrax/applications/_shared/mcp_invocation_id.py
+intergrax/applications/_shared/mcp_nexus_server.py
+intergrax/applications/_shared/mcp_server_engine.py
+intergrax/applications/_shared/mcp_wire_errors.py
+intergrax/contracts/mcp_server_definition.py
+intergrax/tools/mcp_result_bounds.py
+## commits without Ref T-IGX-038 trailer (non-merge)
+(count of commits: 22)

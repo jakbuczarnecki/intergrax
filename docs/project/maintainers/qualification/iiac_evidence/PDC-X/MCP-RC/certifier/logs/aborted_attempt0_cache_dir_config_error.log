@@ -1,0 +1,14 @@
+# certifier contract re-run
+# command: python .tmp/session/mcp-rc-cert/run_contract.py  (pytest.main(list(SELECTION)+['-q']))
+# checkout: D:\Projekty\intergrax\.claude\worktrees\mcp-rc-certifier-fe2eb3
+# HEAD: 1b5f26f249beaafe007ffff2f1e396ae393a07dc
+# PYTHONPATH: D:/Projekty/intergrax/.claude/worktrees/mcp-rc-certifier-fe2eb3
+# intergrax from: D:\Projekty\intergrax\.claude\worktrees\mcp-rc-certifier-fe2eb3\intergrax\__init__.py
+# files in selection: 39
+ERROR: Unknown config option: cache_dir
+
+
+
+no tests ran in 9.40s
+# pytest exit code: 4
+# elapsed_s: 76.37
