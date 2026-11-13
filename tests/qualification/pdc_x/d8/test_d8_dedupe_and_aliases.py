@@ -85,25 +85,36 @@ def test_bundle_sandbox_refs_never_carry_an_empty_digest(tmp_path: Path) -> None
 # ------------------------------------------------------------------ R018
 
 
-#: Same-named classes that live outside the B-D8 write set and are reported to the orchestrator.
-#: ``intergrax/runtime/replay/models.py`` defines its own ``@dataclass ArtifactRef`` used by
-#: ``replay_engine.py``. The set may only shrink: a new same-named class fails the first test.
-KNOWN_OUT_OF_SCOPE_ARTIFACT_REF_CLASSES = {"intergrax/runtime/replay/models.py"}
-
-
-def test_no_new_class_named_artifact_ref_appears() -> None:
-    found = set(_class_definitions()["ArtifactRef"])
-    assert "intergrax/contracts/artifact_ref.py" in found
-    assert found - {"intergrax/contracts/artifact_ref.py"} <= KNOWN_OUT_OF_SCOPE_ARTIFACT_REF_CLASSES
-
-
-@pytest.mark.xfail(
-    strict=True,
-    reason="PDC-D8-R018 residual: runtime/replay/models.py ArtifactRef is outside the B-D8 write set; "
-    "XPASS (and a failing run) once the orchestrator renames it, which forces removal of this marker",
-)
 def test_only_one_class_named_artifact_ref_exists() -> None:
     assert _class_definitions()["ArtifactRef"] == ["intergrax/contracts/artifact_ref.py"]
+
+
+def test_replay_artifact_type_is_renamed_and_the_old_import_path_still_works() -> None:
+    """The replay plane keeps its own type under a clear name; ``ArtifactRef`` stays importable (COMPAT-X shim)."""
+    import dataclasses
+    import warnings
+
+    from intergrax.runtime.replay import models
+
+    assert dataclasses.is_dataclass(models.ReplayArtifactRef)
+    assert models.ReplayArtifactRef.__name__ == "ReplayArtifactRef"
+    with warnings.catch_warnings():
+        warnings.simplefilter("error")  # no DeprecationWarning shim: it would be an unclassified R5 site
+        legacy = models.ArtifactRef
+        namespace: dict[str, object] = {}
+        exec("from intergrax.runtime.replay.models import ArtifactRef", namespace)  # old import statement
+    assert legacy is models.ReplayArtifactRef
+    assert namespace["ArtifactRef"] is models.ReplayArtifactRef
+    assert "ArtifactRef" not in models.__dict__
+    with pytest.raises(AttributeError):
+        models.NoSuchName  # noqa: B018
+
+
+def test_replay_engine_uses_the_renamed_type() -> None:
+    text = (REPO_ROOT / "intergrax/runtime/replay/replay_engine.py").read_text(encoding="utf-8")
+    tree = ast.parse(text)
+    names = {n.id for n in ast.walk(tree) if isinstance(n, ast.Name)}
+    assert "ReplayArtifactRef" in names and "ArtifactRef" not in names
 
 
 def test_no_module_binds_an_alias_named_artifact_ref() -> None:

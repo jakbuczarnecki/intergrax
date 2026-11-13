@@ -49,7 +49,7 @@ Stores contain no security logic. The port adds no policy engine, no registry an
 
 ## Governed secure download (OD-PDC-SCOPE-04 = A)
 
-`issue_download_url` is the governed read port plus a short-lived provider URL: authorization, tenant check and audit first, then one `presigned_url(..., method="GET")` with a TTL clamped to the port maximum. No presigned URL is issued outside this port in the artifact lifecycle; a gate scans product code and a known legacy caller outside this batch's write set is reported in the plan.
+`issue_download_url` is the governed read port plus a short-lived provider URL: authorization, tenant check and audit first, then one `presigned_url(..., method="GET")` with a TTL clamped to the port maximum. No presigned URL is issued outside this port in the artifact lifecycle; a gate scans product code, and the agent-callable `storage.presigned_url` tool fails closed instead of signing.
 
 ## Spill and context references
 
@@ -57,7 +57,7 @@ Stores contain no security logic. The port adds no policy engine, no registry an
 
 ## Dedupe
 
-`intergrax/contracts/task_artifacts.py` is the single definition of the task artifact contracts; `intergrax/applications/contracts/application_artifacts.py` is a COMPAT-X shim that re-exports them. The trace alias `ArtifactRef = TraceArtifactRef` is no longer bound; `TraceArtifactRef` is the only name, and the old import still resolves through a module-level `__getattr__` (COMPAT-X shim).
+`intergrax/contracts/task_artifacts.py` is the single definition of the task artifact contracts; `intergrax/applications/contracts/application_artifacts.py` is a COMPAT-X shim that re-exports them. The trace alias `ArtifactRef = TraceArtifactRef` is no longer bound; `TraceArtifactRef` is the only name (the replay plane's own type is `ReplayArtifactRef`), and the old import still resolves through a module-level `__getattr__` (COMPAT-X shim).
 
 ## Boundaries
 

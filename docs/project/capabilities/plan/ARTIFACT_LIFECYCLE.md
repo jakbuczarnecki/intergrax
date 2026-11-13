@@ -36,10 +36,9 @@
 
 ## Open items outside the B-D8 write set
 
-Reported to the orchestrator, not edited here:
+Reported to the orchestrator, not edited here (hub registration, wiring, alias callers); the rest is closed:
 
 - **Hub registration:** `docs/project/capabilities/README.md` (feature index) and the runtime hub do not list this pair yet.
 - **Wiring:** the tool runtime must call `ToolOutputSpiller` for oversized tool results; the composition root must build the governed port, bind the audit recorder and register `register_retention_sweep` on the worker registry; `sqlite_opens.py` and `sqlite_composition.py` need an artifact store opener.
 - **Callers of the renamed trace alias** (still working through the COMPAT-X shim; they should import `TraceArtifactRef` from `intergrax.contracts.tracing`): `intergrax/runtime/execution/agent_runtime_context.py`, `intergrax/runtime/execution/trace_persistence_models_bridge.py`, `intergrax/runtime/nexus/context/context_manager.py`, `intergrax/runtime/nexus/context/shared_task_context.py`, `intergrax/runtime/nexus/engine/runtime_state.py`, `intergrax/runtime/nexus/engine/contracts/runtime_state_contract.py`, `intergrax/runtime/nexus/tracing/persistence_models.py`.
-- **R010 residual:** `intergrax/tools/providers/storage/service.py` (`storage_presigned_url`) signs any key with no tenant scope and no authorization.
-- **R018 residual:** `intergrax/runtime/replay/models.py` defines a separate `ArtifactRef` dataclass used by `replay_engine.py`.
+- **Closed by Amendment 1:** the STATE-X classification entry for `sqlite_artifact_store.py`; `storage.presigned_url` now fails closed (`GovernedPresignRequiredError`) so presigned URLs come only from the governed port; the replay type is `ReplayArtifactRef` and `intergrax.runtime.replay.models.ArtifactRef` still resolves through a COMPAT-X shim.

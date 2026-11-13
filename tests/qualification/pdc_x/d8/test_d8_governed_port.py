@@ -250,12 +250,6 @@ def test_non_positive_download_ttl_is_rejected(ttl: int) -> None:
         port.issue_download_url(make_context(), _request(), ttl_seconds=ttl)
 
 
-#: Legacy callers outside the B-D8 write set (reported to the orchestrator). The set may only shrink.
-#: ``storage_presigned_url`` is an agent-callable tool that signs any key with no tenant scope and
-#: no authorization; it must be routed through the governed port or retired.
-KNOWN_OUT_OF_SCOPE_PRESIGN_CALLERS = {"intergrax/tools/providers/storage/service.py"}
-
-
 def _presign_callers() -> set[str]:
     allowed_prefix = "intergrax/integrations/providers/"
     allowed_files = {"intergrax/runtime/nexus/artifacts/governed_access.py"}
@@ -275,18 +269,29 @@ def _presign_callers() -> set[str]:
     return offenders
 
 
-def test_no_new_presigned_url_caller_outside_the_governed_port() -> None:
-    """AST gate: ``.presigned_url(...)`` is called only by providers, the port and known legacy callers."""
-    assert _presign_callers() <= KNOWN_OUT_OF_SCOPE_PRESIGN_CALLERS
-
-
-@pytest.mark.xfail(
-    strict=True,
-    reason="PDC-D8-R010 residual: intergrax/tools/providers/storage/service.py issues presigned URLs "
-    "outside the governed port and is outside the B-D8 write set; XPASS once the orchestrator fixes it",
-)
 def test_no_presigned_url_is_issued_outside_the_governed_port() -> None:
+    """AST gate: ``.presigned_url(...)`` is called only by providers (delegation) and by the port."""
     assert _presign_callers() == set()
+
+
+def test_storage_presigned_url_tool_fails_closed_and_signs_nothing() -> None:
+    """The agent-callable storage tool must not sign an arbitrary key for an arbitrary caller."""
+    from intergrax.tools.providers.storage.contracts import StoragePresignedUrlInput
+    from intergrax.tools.providers.storage.service import (
+        GovernedPresignRequiredError,
+        storage_presigned_url,
+    )
+    from intergrax.tools.registry.wiring import ToolWiringContext
+
+    objects = FakeObjectStorage()
+    ctx = ToolWiringContext(object_storage=objects)
+    for method in ("GET", "PUT"):
+        with pytest.raises(GovernedPresignRequiredError):
+            storage_presigned_url(ctx, StoragePresignedUrlInput(key="tenant-b/secret.bin", method=method))
+    assert objects.presign_calls == []
+    # With no storage configured the failure is the same fail-closed error, not a provider call.
+    with pytest.raises(GovernedPresignRequiredError):
+        storage_presigned_url(ToolWiringContext(), StoragePresignedUrlInput(key="x"))
 
 
 def test_stores_contain_no_security_logic() -> None:
