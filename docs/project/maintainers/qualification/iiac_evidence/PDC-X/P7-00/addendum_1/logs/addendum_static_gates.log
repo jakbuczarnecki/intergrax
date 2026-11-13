@@ -1,0 +1,30 @@
+== ruff check on the 6 delta paths
+All checks passed!
+== ruff check on delta tests/scripts
+All checks passed!
+== added-line import scan (agents/applications imports from intergrax/, process/network/dynamic surfaces)
+9:+            llm_profile_digest=self._current_llm_profile_digest(application_id, application_environment_id),
+14:+            application_environment_id=application_environment_id,
+19:+        application_environment_id: str,
+23:+        profile = self._llm_profile_source(application_id, application_environment_id)
+31:+        application_environment_id: str,
+36:+        current = self._current_llm_profile_digest(application_id, application_environment_id)
+== check_intergrax_no_applications_imports
+exit=1
+61159eb9c5e10de4b70f9a7ba4625be9 *-
+== check_agents_no_tier3_imports
+exit=0
+8ceb8ea6c1415bbc4ba77fdeea6849f0 *-
+== check_context_tier0_import_boundary
+exit=0
+32f73cb6eb3538f8c9774845e32adbda *-
+== check_llm_routing_tier_boundary
+exit=0
+0c4e6300ca3bd58d8e2180309378d9d9 *-
+== check_agents_no_vendor_sdk_imports
+exit=0
+3fdda70cbee4121c42ff38a172fab772 *-
+== uv lock --check
+Using CPython 3.12.11
+Resolved 404 packages in 7ms
+exit=0

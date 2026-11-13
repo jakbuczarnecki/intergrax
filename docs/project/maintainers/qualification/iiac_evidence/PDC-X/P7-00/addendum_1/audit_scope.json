@@ -1,0 +1,60 @@
+{
+  "stage_id": "PDC-X/P7-00/addendum_1",
+  "parent_audit": "docs/project/maintainers/qualification/platform_domain_completeness/PDC_P7_00_ACT_N11_BASELINE_AUDIT_DOSSIER.md",
+  "certification_profile": "iiac-v1",
+  "policy_version": "IIAC-2026-11-05.1",
+  "base_sha": "fa6ff1c9616a6df28c11b087eb3f1b0dc4097b5f",
+  "audited_implementation_sha": "19d552beeb6f0677a8bdc3b4ce65da15dd637c7b",
+  "audit_execution_sha": "19d552beeb6f0677a8bdc3b4ce65da15dd637c7b",
+  "activation_pin_audit_execution_sha": "2d3eceb6cf7e93dccd4d96919319a6c969b4444b",
+  "re_pinned_development_head": "3dd991336233cea1662518df8b35e5e1ea901e00",
+  "auditor_branch": "p7-00-baseline-audit",
+  "auditor_branch_merge_of_origin_mcp_rc": "2bbcca89c (product tree identical to 19d552bee: git diff 19d552bee HEAD -- intergrax agents applications is empty)",
+  "delta_act_n11_paths_count": 6,
+  "delta_act_n11_paths": [
+    "intergrax/agent_distribution/admin_service.py",
+    "intergrax/agent_distribution/runtime_revision.py",
+    "intergrax/applications/_shared/llm_resolver.py",
+    "intergrax/contracts/agent_contract_meta.py",
+    "intergrax/memory/default_memory_control_plane.py",
+    "intergrax/runtime/agent_governance/pipeline.py"
+  ],
+  "delta_numstat": [
+    "41\t1\tintergrax/agent_distribution/admin_service.py",
+    "14\t6\tintergrax/agent_distribution/runtime_revision.py",
+    "32\t15\tintergrax/applications/_shared/llm_resolver.py",
+    "16\t1\tintergrax/contracts/agent_contract_meta.py",
+    "19\t0\tintergrax/memory/default_memory_control_plane.py",
+    "2\t2\tintergrax/runtime/agent_governance/pipeline.py"
+  ],
+  "source_prs": {
+    "#523": "T-IGX-036-T item 11 tenant-bound memory plane and SQLite touchpoint count (commit 25aaa1bfd)",
+    "#524": "T-IGX-036-U B-P6-M model binding / revision LLM pin (commit 4dbe68452)"
+  },
+  "mcp_rc_paths_count": 23,
+  "mcp_rc_byte_identical_to_b0e19bf61": true,
+  "changed_governance_gate_activation_or_iiac_evidence_paths": [],
+  "other_changed_paths_outside_scope_note": "governance/tickets/T-IGX-036-T.md, T-IGX-036-V.md and their plans changed (claims only); tests/scripts changes listed in the addendum dossier",
+  "combined_coverage": {
+    "act_n11_paths_vs_pin_combined_unique": 156,
+    "audited_head": "19d552beeb6f0677a8bdc3b4ce65da15dd637c7b",
+    "pin": "2d3eceb6cf7e93dccd4d96919319a6c969b4444b",
+    "statement": "first audit: 153 paths at fa6ff1c96; addendum 1: the 6 paths changed between fa6ff1c96 and 19d552bee (3 already in the 153, 3 new) => 156 unique ACT-N11 paths against pin 2d3eceb6c, audited head 19d552bee (23 MCP-RC paths still byte-identical to b0e19bf61)"
+  },
+  "out_of_scope": [
+    "eight per-domain audits IA-D1..IA-D8",
+    "CI contexts",
+    "P8 and FRZ (counter 225)",
+    "G-DOC-01..12"
+  ],
+  "delta_paths_already_in_the_first_153": [
+    "intergrax/agent_distribution/admin_service.py",
+    "intergrax/memory/default_memory_control_plane.py",
+    "intergrax/runtime/agent_governance/pipeline.py"
+  ],
+  "delta_paths_new_to_the_set": [
+    "intergrax/agent_distribution/runtime_revision.py",
+    "intergrax/applications/_shared/llm_resolver.py",
+    "intergrax/contracts/agent_contract_meta.py"
+  ]
+}
