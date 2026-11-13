@@ -2,9 +2,9 @@
 
 """Deterministic governance pipeline: capability → policy → risk → decision."""
 
-from __future__ import annotations
+from __future__ import annotations  # noqa: I001
 
-from datetime import datetime, timedelta, timezone
+from datetime import datetime, timedelta, timezone, UTC  # noqa: F401
 
 from intergrax.contracts.agent_runtime_governance import (
     CapabilityGrantResolverPort,
@@ -18,6 +18,7 @@ from intergrax.contracts.agent_runtime_policy_evaluation_context import (
 from intergrax.runtime.agent_governance.approval_boundary import AgentRuntimeApprovalBoundary
 from intergrax.runtime.agent_governance.audit import GovernanceAuditRecorder
 from intergrax.runtime.agent_governance.capability_resolver import require_capability_granted
+from intergrax.runtime.agent_governance.errors import CapabilityNotGrantedError
 from intergrax.runtime.agent_governance.policy_engine import AgentRuntimePolicyEngine
 
 
@@ -50,18 +51,29 @@ class AgentRuntimeGovernancePipeline:
         policy_context: AgentRuntimePolicyEvaluationContext | None = None,
     ) -> ToolAuthorizationDecision:
         grant = self._capability_resolver.resolve_grant(request.agent)
-        require_capability_granted(
-            grant=grant,
-            capability=request.capability,
-            run_id=str(request.run_id),
-            agent_id=request.agent.agent_id,
-            tool_id=request.tool_id,
-        )
+        try:
+            require_capability_granted(
+                grant=grant,
+                capability=request.capability,
+                run_id=str(request.run_id),
+                agent_id=request.agent.agent_id,
+                tool_id=request.tool_id,
+            )
+        except CapabilityNotGrantedError:
+            # The most basic denial must reach the audit sink too, not only the run trace (PDC-D6-R007).
+            self._audit_recorder.record_decision(
+                request,
+                ToolAuthorizationDecision(
+                    decision=ToolAuthorizationDecisionState.DENY,
+                    reason="capability_not_granted",
+                ),
+            )
+            raise
 
         decision = self._policy_engine.evaluate(request, policy_context)
 
         if decision.requires_approval and self._approval_boundary is not None:
-            expires_at = datetime.now(timezone.utc) + self._approval_ttl
+            expires_at = datetime.now(UTC) + self._approval_ttl
             approval = self._approval_boundary.create_approval_request(
                 request,
                 expires_at=expires_at,

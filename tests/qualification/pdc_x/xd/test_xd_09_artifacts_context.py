@@ -192,18 +192,6 @@ async def _assemble_under_pressure(*tokens: ArtifactReferenceToken, linked: bool
 # ----------------------------------------------------------------------- R012 / R013 through the engine
 
 
-@pytest.mark.xfail(
-    strict=True,
-    reason=(
-        "FINDING-4 (D2 x D8): the artifact reference fragment never reaches the model-facing context through the "
-        "real engine. reference_fragment() (intergrax/runtime/nexus/artifacts/context_reference.py) builds a "
-        "TOOL_OUTPUT fragment without a tool_call_id; canonicalize_fragment() "
-        "(intergrax/context/provider_lifecycle.py, D2 R009 hardening) rejects it with provider.contract_violation "
-        "and the whole providing source fails, so the mandatory reference is lost before the model call. "
-        "Smallest repair: give reference_fragment a tool_call_id/tool_name of the originating call (the linked shape "
-        "is proven to survive compaction in the next test) and compose an authority-declared reference provider."
-    ),
-)
 async def test_xd09_reference_as_shipped_reaches_the_engine_output(tmp_path: Path) -> None:
     store = sqlite_store(tmp_path)
     token = _spill(_spiller(store, MutableClock()))
@@ -444,30 +432,11 @@ def _referenced_names(names: set[str]) -> dict[str, tuple[str, ...]]:
     return {name: references[name] for name in names}
 
 
-@pytest.mark.xfail(
-    strict=True,
-    reason=(
-        "FINDING-1 (D8): ToolOutputSpiller is not wired into the tool runtime. Nothing outside "
-        "intergrax/runtime/nexus/artifacts references it, so tool results are never spilled in a real run. "
-        "Smallest repair: call ToolOutputSpiller.spill_if_large from the tool-result path in "
-        "intergrax/runtime/nexus/tools/ (tool_runtime / plan_context_invocation) and inject the store at the root."
-    ),
-)
 def test_xd09_canonical_tool_runtime_spills_large_output() -> None:
     used = _referenced_names({"ToolOutputSpiller"})
     assert used["ToolOutputSpiller"], "no production module outside the artifacts package uses ToolOutputSpiller"
 
 
-@pytest.mark.xfail(
-    strict=True,
-    reason=(
-        "FINDING-2 (D8): neither GovernedArtifactReadPort nor the retention sweep "
-        "(register_retention_sweep / make_retention_sweep_handler / ArtifactRetentionSweeper) is registered by any "
-        "composition root; TTL deletion and governed reads exist only in tests. Smallest repair: construct the port "
-        "and register the sweep handler on the TaskExecutionRegistry in the platform worker bootstrap "
-        "(intergrax/runtime/task/worker_bootstrap.py) behind the runtime config."
-    ),
-)
 def test_xd09_governed_port_and_retention_sweep_are_composed_by_a_root() -> None:
     used = _referenced_names(
         {
@@ -481,16 +450,6 @@ def test_xd09_governed_port_and_retention_sweep_are_composed_by_a_root() -> None
     assert missing == [], f"not composed by any production module: {missing}"
 
 
-@pytest.mark.xfail(
-    strict=True,
-    reason=(
-        "FINDING-3 (D8): the canonical SQLite persistence root has no artifact store. "
-        "SQLiteRuntimePersistenceBundle (intergrax/runtime/persistence/sqlite_composition.py) exposes no "
-        "ArtifactStore and sqlite_opens.py has no open_artifact_store_at, so SQLiteArtifactStore is only built "
-        "directly. Smallest repair: add open_artifact_store_at to sqlite_opens.py, an artifact path to "
-        "SqliteStorePaths and an artifact_store field to the bundle."
-    ),
-)
 def test_xd09_sqlite_persistence_root_composes_the_artifact_store(tmp_path: Path) -> None:
     bundle = create_sqlite_runtime_persistence(data_dir=tmp_path / "sqlite")
     stores = [f.name for f in fields(bundle) if isinstance(getattr(bundle, f.name), ArtifactStore)]

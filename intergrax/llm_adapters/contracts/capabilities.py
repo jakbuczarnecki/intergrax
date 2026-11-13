@@ -101,15 +101,56 @@ class LLMDeclaredCapabilities:
     cancel: CancelCapability = CancelCapability.NOT_SUPPORTED
 
     def supports(self, feature: LLMFeature) -> bool:
-        return bool(getattr(self, feature.value))
+        match feature:
+            case LLMFeature.STREAMING:
+                return self.streaming
+            case LLMFeature.TOOLS:
+                return self.tools
+            case LLMFeature.TOOL_STREAMING:
+                return self.tool_streaming
+            case LLMFeature.STRUCTURED_OUTPUT:
+                return self.structured_output
+            case LLMFeature.VISION:
+                return self.vision
+            case LLMFeature.AUDIO_INPUT:
+                return self.audio_input
+            case LLMFeature.AUDIO_OUTPUT:
+                return self.audio_output
+            case LLMFeature.STRICT_TOOL_ARGUMENTS:
+                return self.strict_tool_arguments
 
     def missing(self, features: tuple[LLMFeature, ...]) -> tuple[LLMFeature, ...]:
         return tuple(feature for feature in features if not self.supports(feature))
 
 
+def _declared_probe(adapter: object, feature: LLMFeature) -> object:
+    """The adapter's ``supports_*`` attribute for ``feature``, or ``None`` when it declares none."""
+    match feature:
+        case LLMFeature.STREAMING:
+            return getattr(adapter, "supports_streaming", None)
+        case LLMFeature.TOOLS:
+            return getattr(adapter, "supports_tools", None)
+        case LLMFeature.TOOL_STREAMING:
+            return getattr(adapter, "supports_tool_streaming", None)
+        case LLMFeature.STRUCTURED_OUTPUT:
+            return getattr(adapter, "supports_structured_output", None)
+        case LLMFeature.VISION:
+            return getattr(adapter, "supports_vision", None)
+        case LLMFeature.AUDIO_INPUT:
+            return getattr(adapter, "supports_audio_input", None)
+        case LLMFeature.AUDIO_OUTPUT:
+            return getattr(adapter, "supports_audio_output", None)
+        case LLMFeature.STRICT_TOOL_ARGUMENTS:
+            return getattr(adapter, "supports_strict_tool_argument_conformance", None)
+
+
 def read_feature_flag(adapter: object, feature: LLMFeature) -> bool:
-    """Read one declared flag; an undeclared or non-``True`` value means *not supported*."""
-    probe = getattr(adapter, FEATURE_FLAG_METHODS[feature], None)
+    """Read one declared flag; an undeclared or non-``True`` value means *not supported*.
+
+    ``FEATURE_FLAG_METHODS`` names the probed methods; each is read here by its literal name, so no
+    attribute name is computed at runtime.
+    """
+    probe = _declared_probe(adapter, feature)
     if not callable(probe):
         return False
     return probe() is True

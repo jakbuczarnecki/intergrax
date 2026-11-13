@@ -3,9 +3,10 @@
 
 """Low-level SQLite store openers — runtime/platform composition only."""
 
-from __future__ import annotations
+from __future__ import annotations  # noqa: I001
 
 from pathlib import Path
+from typing import TYPE_CHECKING
 
 from intergrax.contracts.run_trace_store import RunTraceStore
 from intergrax.experiments.store import SQLiteExperimentStore
@@ -28,6 +29,10 @@ from intergrax.runtime.enterprise_reliability.sqlite_provider_invocation_store i
     open_provider_invocation_store_at as _open_provider_invocation_store_at,
 )
 from intergrax.runtime.tools.sqlite_idempotency_store import SQLiteIdempotencyStore
+
+
+if TYPE_CHECKING:
+    from intergrax.runtime.execution.agent_runtime_context import ArtifactStore
 
 
 def _ensure_parent(path: Path) -> Path:
@@ -77,6 +82,12 @@ def open_user_profile_store_at(path: Path) -> SQLiteUserProfileStore:
 
 def open_provider_invocation_store_at(path: Path) -> SQLiteProviderInvocationStore:
     return _open_provider_invocation_store_at(_ensure_parent(path))
+
+
+def open_artifact_store_at(path: Path) -> ArtifactStore:
+    from intergrax.runtime.execution.agent_runtime_context import open_sqlite_artifact_store
+
+    return open_sqlite_artifact_store(str(_ensure_parent(path)))
 
 
 def open_delivery_ledger_at(path: Path):

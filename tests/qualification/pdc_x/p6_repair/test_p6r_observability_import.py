@@ -14,25 +14,20 @@ pytestmark = pytest.mark.unit
 
 REPO_ROOT = Path(__file__).resolve().parents[4]
 
-_REGISTRY_FIRST_BLOCKED = (
-    "B-P6-R write-set amendment pending: the registry-first cycle "
-    "(plugin_register -> runtime.integrations -> observability_otlp -> observability.export_boundary -> "
-    "runtime.events.store -> sqlite.register -> plugin_register) is broken only by dropping the redundant "
-    "module-level RuntimeEvent/JournalRef imports in intergrax/runtime/observability/export_boundary.py, "
-    "which is outside the T-IGX-036-T write set"
-)
-
 _FIRST_IMPORTS = [
     pytest.param(
         "from intergrax.integrations.registry.bootstrap import register_default_integrations",
-        marks=pytest.mark.xfail(strict=True, reason=_REGISTRY_FIRST_BLOCKED),
         id="registry-first",
     ),
     pytest.param(
         "from intergrax.integrations.registry.bootstrap import register_default_integrations; "
         "register_default_integrations(preset='core')",
-        marks=pytest.mark.xfail(strict=True, reason=_REGISTRY_FIRST_BLOCKED),
         id="registry-first-core-preset",
+    ),
+    pytest.param(
+        "from intergrax.integrations.registry.bootstrap import register_default_integrations; "
+        "register_default_integrations(preset='full')",
+        id="registry-first-full-preset",
     ),
     pytest.param(
         "from intergrax.runtime.integrations.observability import ObservabilityVendorIntegrationContract",

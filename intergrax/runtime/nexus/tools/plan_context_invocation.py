@@ -7,6 +7,8 @@ from __future__ import annotations
 from collections.abc import Sequence
 from dataclasses import replace
 
+from intergrax.llm.messages import ChatMessage
+from intergrax.runtime.nexus.artifacts.spill import ToolOutputSpiller
 from intergrax.runtime.nexus.budget.budget_ticks import (
     record_rag_invocation_and_enforce,
     record_websearch_invocation_and_enforce,
@@ -52,6 +54,38 @@ def _selection_candidates(
     if isinstance(strategy, SemanticToolIndexSelectionStrategy) and strategy.last_ranks:
         return [ToolSelectionCandidateDiagV1(tool_id=tool_id, score=score) for tool_id, score in strategy.last_ranks]
     return [ToolSelectionCandidateDiagV1(tool_id=tool_id) for tool_id in candidate_ids]
+
+
+def _spill_large_tool_output(state: RuntimeState, text: str, *, tool_id: str) -> str:
+    """Replace a large tool output by a preview plus an artifact reference (PDC-D8-R012).
+
+    Only active when the runtime context carries an artifact store; without one, or for output
+    below the spill threshold, the text is returned unchanged.
+    """
+    store = state.context.artifact_store
+    if store is None:
+        return text
+    spill = ToolOutputSpiller(store).spill_if_large(
+        tenant_id=state.tenant_id,
+        run_id=state.run_id,
+        tool_id=tool_id,
+        agent_id=state.request.agent_id or "",
+        content=text,
+    )
+    if spill.reference is None:
+        return text
+    return f"{spill.preview}\n[output truncated; full output stored as {spill.reference.to_marker()}]"
+
+
+def _spill_tool_feedback_messages(state: RuntimeState, messages: Sequence[ChatMessage]) -> list[ChatMessage]:
+    spilled: list[ChatMessage] = []
+    for message in messages:
+        if message.role == "tool" and isinstance(message.content, str):
+            content = _spill_large_tool_output(state, message.content, tool_id=message.name or "tool")
+            if content is not message.content:
+                message = replace(message, content=content)
+        spilled.append(message)
+    return spilled
 
 
 async def run_rag_context(state: RuntimeState) -> None:
@@ -422,12 +456,13 @@ async def run_tools_context(state: RuntimeState) -> None:
             state.tool_traces = list(loop_result.tool_traces)
 
         if loop_result.appended_messages and loop_result.used_ce_tool_feedback:
-            state.messages_for_llm.extend(loop_result.appended_messages)
+            state.messages_for_llm.extend(_spill_tool_feedback_messages(state, loop_result.appended_messages))
         elif state.tool_traces:
             aggregate = loop_result.aggregate or ToolInvocationAggregate.from_traces(state.tool_traces)
             combined = aggregate.combined_context.strip()
             if combined:
-                state.tools_context_parts.append(combined)
+                tool_ids = ",".join(sorted({t.tool_name for t in state.tool_traces if t.tool_name})) or "tools"
+                state.tools_context_parts.append(_spill_large_tool_output(state, combined, tool_id=tool_ids))
     except Exception as exc:
         from intergrax.runtime.nexus.tools.declarative_policy_hitl_bridge import (
             DeclarativePolicyHitlPauseRequired,
