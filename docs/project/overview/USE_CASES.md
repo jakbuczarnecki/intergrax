@@ -155,6 +155,8 @@ Bounded technical fits require product-specific validation; the adopting team ow
 
 The stable outcome **“combine indexed knowledge with authorized live evidence”** is **NOT YET PROVEN**. This is an evidence boundary, not a judgment that the problem is meaningless - see [PROOFS](../proofs/PROOFS.md).
 
+The **[Scenario Factory](SCENARIO_FACTORY.md)** is a **planned** product layer for turning a business need into a designed and checked scenario. It is **not yet implemented** and is not a use case you can adopt today. It is also not a Scenario Proof: no evidence for it exists beyond design documents.
+
 ## When another approach is better
 
 Another approach may fit better if the team only needs:

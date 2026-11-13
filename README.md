@@ -157,6 +157,20 @@ Initial production signals make workload overload plausible - but evidence is co
 
 **[Scenario design document](platform_proofs/scenarios/ai_incident_investigation/README.md)** · **[Proof Library](docs/project/proofs/PROOF_LIBRARY.md)**
 
+### Planned product: Scenario Factory
+
+**Status:** `Planned` - `Not yet implemented`. Scenario Factory is a planned product layer that is designed to turn a business need into a designed and checked scenario on the governed Intergrax platform. It is **not** a Scenario Proof, it is **not** available today, and it is not a call to action: the action on this page stays **Try LKW**.
+
+<a href="docs/project/assets/public/scenario-factory/fullsize/scenario-factory-hero.md">
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="docs/project/assets/public/scenario-factory/scenario-factory-hero-dark.png">
+  <source media="(prefers-color-scheme: light)" srcset="docs/project/assets/public/scenario-factory/scenario-factory-hero-light.png">
+  <img src="docs/project/assets/public/scenario-factory/scenario-factory-hero-light.png" alt="Planned architecture, not yet implemented: a business need enters the planned Scenario Factory and leaves as a validated scenario, all on top of the governed Intergrax platform (governance and security, runtime and execution, capabilities and tools, observability and evaluation).">
+</picture>
+</a>
+
+[View full-size diagram](docs/project/assets/public/scenario-factory/fullsize/scenario-factory-hero.md) · **[Scenario Factory overview](docs/project/overview/SCENARIO_FACTORY.md)**
+
 ---
 
 ## Local Knowledge Workspace (LKW)
@@ -423,6 +437,7 @@ lack established runtime proof:
 | **Platform Extensibility** | Governed extension/package model across domain-owned contracts | **Canonical architecture frozen** - multiple extension-platform slices implemented; core program closed. Residual Protocol v2 work remains planned; complete third-party install-to-runtime E2E proof **not yet established** | [Platform Plugins](docs/project/architecture/PLATFORM_PLUGINS.md) |
 | **Agent Marketplace** | Future ecosystem layer - discovery and distribution over governed Agent Distribution / Platform Extensibility | **FUTURE PRODUCT - NOT SHIPPED TODAY** | [Agent Marketplace concept](docs/project/overview/AGENT_MARKETPLACE.md) |
 | **Capability Catalog & Discovery** | Governed federated discovery of Agent, Skill, and Tool candidates for dynamic capability selection and autonomous work | **Architecture frozen — implementation planned** | [Capability Catalog & Discovery architecture](docs/project/architecture/CAPABILITY_CATALOG_AND_DISCOVERY.md) |
+| **Scenario Factory** | Planned product layer: from a business need to a designed and checked scenario on the governed platform. Proposal-only IDE toolkit; not a Scenario Proof | **PLANNED - NOT YET IMPLEMENTED** - no product code, no Scenario Studio | [Scenario Factory overview](docs/project/overview/SCENARIO_FACTORY.md) |
 | **Autonomous Organization** | North Star program — mission-driven emergence of capabilities, responsibilities, and structure under governance | **Strategic Initiative — not an implemented organizational runtime** | [Autonomous Organization](docs/project/overview/AUTONOMOUS_ORGANIZATION.md) |
 
 ### North Star: Autonomous Organization
