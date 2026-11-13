@@ -10,13 +10,13 @@ from datetime import UTC, datetime
 
 from intergrax.agent_distribution.activation import ActivationService, RollbackResult
 from intergrax.agent_distribution.admin_models import (
+    ActivateRuntimeRevisionRequest,
     ActivationResultView,
     ActivationStatusView,
-    ActivateRuntimeRevisionRequest,
     AgentPlatformAdminBlockedError,
     AgentPlatformAdminGovernanceBlockedError,
-    ControlPlaneTenantScopeDenial,
     AgentStatusView,
+    AgentUpgradeOutcome,
     BindAgentRequest,
     BindingListResult,
     BindingMutationResult,
@@ -25,6 +25,7 @@ from intergrax.agent_distribution.admin_models import (
     BuildRevisionResult,
     CatalogListResult,
     CompleteRevisionDrainRequest,
+    ControlPlaneTenantScopeDenial,
     DrainCompletionResultView,
     EffectiveRosterView,
     HandlePostCutoverFailureRequest,
@@ -33,6 +34,8 @@ from intergrax.agent_distribution.admin_models import (
     InstallationMutationResult,
     InstallationView,
     PostCutoverFailureResultView,
+    RetireAgentRequest,
+    RetireAgentResult,
     RevisionHistoryView,
     RollbackResultView,
     RollbackRuntimeRevisionRequest,
@@ -41,6 +44,9 @@ from intergrax.agent_distribution.admin_models import (
     ServingStateView,
     SetAgentEnablementRequest,
     UpdateAgentBindingRequest,
+    UpgradeAgentRequest,
+    UpgradeAgentResult,
+    UpgradeViolationView,
 )
 from intergrax.agent_distribution.agent_contract_authority import (
     AgentPackageContractAuthorityService,
@@ -54,6 +60,10 @@ from intergrax.agent_distribution.agent_project_metadata import (
 )
 from intergrax.agent_distribution.binding import ApplicationAgentBinding
 from intergrax.agent_distribution.binding_service import BindingService
+from intergrax.agent_distribution.catalog import (
+    CatalogEntryFilters,
+    CatalogSourceProvider,
+)
 from intergrax.agent_distribution.control_plane_governance import (
     ApplicationEnvironmentTenantResolver,
     authorize_scoped_control_plane_mutation,
@@ -67,16 +77,14 @@ from intergrax.agent_distribution.control_plane_governance import (
     build_input_digest,
     build_install_agent_mutation_request,
     build_mark_post_cutover_failure_mutation_request,
+    build_retire_agent_mutation_request,
+    build_rollback_mutation_request,
     build_runtime_revision_identity_digest,
     build_runtime_revision_mutation_request,
-    build_rollback_mutation_request,
     build_update_binding_config_mutation_request,
+    build_upgrade_agent_mutation_request,
     installation_absent_token,
     installation_state_token,
-)
-from intergrax.agent_distribution.catalog import (
-    CatalogEntryFilters,
-    CatalogSourceProvider,
 )
 from intergrax.agent_distribution.dependency import (
     DependencyResolverInput,
@@ -116,10 +124,10 @@ from intergrax.agent_distribution.events import TransitionResult
 from intergrax.agent_distribution.identity import AgentPackageIdentity
 from intergrax.agent_distribution.installation import (
     AgentInstallationRecord,
+    InstallationState,
     installation_state_is_installed,
 )
 from intergrax.agent_distribution.installation_service import InstallationService
-from intergrax.agent_distribution.package_trust import AgentPackageTrustCoordinator
 from intergrax.agent_distribution.materialization import (
     ApplicationBuildContext,
     MaterializationInput,
@@ -128,6 +136,7 @@ from intergrax.agent_distribution.materialization import (
 from intergrax.agent_distribution.materialization_service import (
     RuntimeMaterializationService,
 )
+from intergrax.agent_distribution.package_trust import AgentPackageTrustCoordinator
 from intergrax.agent_distribution.resolver import DependencyResolver
 from intergrax.agent_distribution.roster import (
     EffectiveRoster,
@@ -147,10 +156,6 @@ from intergrax.agent_distribution.runtime_revision import (
     RuntimeRevisionState,
 )
 from intergrax.agent_distribution.runtime_revision_service import RuntimeRevisionService
-from intergrax.agent_distribution.trust import (
-    AgentPackageTrustPolicy,
-    AgentPackageTrustRevocationState,
-)
 from intergrax.agent_distribution.stores import (
     AgentArtifactMetadata,
     AgentArtifactMetadataStore,
@@ -163,6 +168,14 @@ from intergrax.agent_distribution.stores import (
     RuntimeMaterializationStore,
     RuntimeRevisionStore,
 )
+from intergrax.agent_distribution.trust import (
+    AgentPackageTrustPolicy,
+    AgentPackageTrustRevocationState,
+)
+from intergrax.agent_distribution.upgrade_admission import (
+    evaluate_agent_upgrade_admission,
+)
+from intergrax.contracts.agent_contract_meta import AgentContract
 from intergrax.contracts.agent_run import RequestIdentity
 from intergrax.contracts.control_plane_mutation import (
     ControlPlaneMutationAuthorizationResult,
@@ -259,14 +272,10 @@ class AgentPlatformAdminService:
         catalog_provider: CatalogSourceProvider | None = None,
         dependency_resolver: DependencyResolver | None = None,
         manifest_defaults: tuple[ManifestDefaultAgentDeclaration, ...] = (),
-        mutation_authorization_boundary: ControlPlaneMutationAuthorizationBoundary
-        | None = None,
+        mutation_authorization_boundary: ControlPlaneMutationAuthorizationBoundary | None = None,
         environment_tenant_resolver: ApplicationEnvironmentTenantResolver | None = None,
         package_trust_coordinator: AgentPackageTrustCoordinator | None = None,
-        package_trust_revocation_state_source: Callable[
-            [], AgentPackageTrustRevocationState
-        ]
-        | None = None,
+        package_trust_revocation_state_source: Callable[[], AgentPackageTrustRevocationState] | None = None,
         package_trust_policy_source: Callable[[], AgentPackageTrustPolicy] | None = None,
         package_trust_evaluation_time_source: Callable[[], datetime] | None = None,
         emergency_revocation_service: AgentEmergencyRevocationService | None = None,
@@ -281,9 +290,7 @@ class AgentPlatformAdminService:
         self._effective_roster_snapshot_store = effective_roster_snapshot_store
         self._effective_roster_authority = effective_roster_authority
         self._artifact_metadata_store = artifact_metadata_store
-        self._package_contract_authority_service = AgentPackageContractAuthorityService(
-            artifact_metadata_store
-        )
+        self._package_contract_authority_service = AgentPackageContractAuthorityService(artifact_metadata_store)
         self._installation_service = installation_service
         self._binding_service = binding_service
         self._revision_service = revision_service
@@ -304,29 +311,19 @@ class AgentPlatformAdminService:
         self._manifest_defaults = manifest_defaults
         self._mutation_authorization_boundary = mutation_authorization_boundary
         self._environment_tenant_resolver = environment_tenant_resolver
-        self._package_trust_coordinator = (
-            package_trust_coordinator or AgentPackageTrustCoordinator()
+        self._package_trust_coordinator = package_trust_coordinator or AgentPackageTrustCoordinator()
+        self._package_trust_revocation_state_source = package_trust_revocation_state_source or (
+            lambda: AgentPackageTrustRevocationState()
         )
-        self._package_trust_revocation_state_source = (
-            package_trust_revocation_state_source
-            or (lambda: AgentPackageTrustRevocationState())
-        )
-        self._package_trust_policy_source = (
-            package_trust_policy_source or (lambda: AgentPackageTrustPolicy())
-        )
-        self._package_trust_evaluation_time_source = (
-            package_trust_evaluation_time_source or (lambda: datetime.now(UTC))
-        )
-        self._emergency_revocation_service = (
-            emergency_revocation_service
-            or AgentEmergencyRevocationService(
-                serving_store=serving_store,
-                revision_store=revision_store,
-                effective_roster_authority=effective_roster_authority,
-                installation_store=installation_store,
-                package_trust_coordinator=self._package_trust_coordinator,
-                activation_service=activation_service,
-            )
+        self._package_trust_policy_source = package_trust_policy_source or (lambda: AgentPackageTrustPolicy())
+        self._package_trust_evaluation_time_source = package_trust_evaluation_time_source or (lambda: datetime.now(UTC))
+        self._emergency_revocation_service = emergency_revocation_service or AgentEmergencyRevocationService(
+            serving_store=serving_store,
+            revision_store=revision_store,
+            effective_roster_authority=effective_roster_authority,
+            installation_store=installation_store,
+            package_trust_coordinator=self._package_trust_coordinator,
+            activation_service=activation_service,
         )
 
     def list_catalog(
@@ -348,12 +345,8 @@ class AgentPlatformAdminService:
         application_environment_id: str,
     ) -> InstallationListResult:
         del application_id
-        records = self._installation_store.list_installations_for_environment(
-            application_environment_id
-        )
-        return InstallationListResult(
-            installations=tuple(_installation_view(record) for record in records)
-        )
+        records = self._installation_store.list_installations_for_environment(application_environment_id)
+        return InstallationListResult(installations=tuple(_installation_view(record) for record in records))
 
     def inspect_installation(
         self,
@@ -364,9 +357,7 @@ class AgentPlatformAdminService:
     ) -> InstallationView:
         record = self._installation_store.get_installation(installation_id)
         if record is None or record.environment_id != application_environment_id:
-            raise AgentDistributionNotFoundError(
-                f"installation {installation_id} was not found"
-            )
+            raise AgentDistributionNotFoundError(f"installation {installation_id} was not found")
         self._assert_installation_application_scope(
             application_id=application_id,
             application_environment_id=application_environment_id,
@@ -384,9 +375,7 @@ class AgentPlatformAdminService:
             application_id,
             application_environment_id,
         )
-        return BindingListResult(
-            bindings=tuple(_binding_view(item) for item in bindings)
-        )
+        return BindingListResult(bindings=tuple(_binding_view(item) for item in bindings))
 
     def inspect_effective_roster(
         self,
@@ -436,15 +425,9 @@ class AgentPlatformAdminService:
         return ServingStateView(
             application_id=application_id,
             application_environment_id=application_environment_id,
-            traffic_serving_revision_id=(
-                serving.traffic_serving_revision_id if serving is not None else None
-            ),
-            prior_traffic_revision_id=(
-                serving.prior_traffic_revision_id if serving is not None else None
-            ),
-            serving_pointer_revision=(
-                serving.serving_pointer_revision if serving is not None else 0
-            ),
+            traffic_serving_revision_id=(serving.traffic_serving_revision_id if serving is not None else None),
+            prior_traffic_revision_id=(serving.prior_traffic_revision_id if serving is not None else None),
+            serving_pointer_revision=(serving.serving_pointer_revision if serving is not None else 0),
             active_revision=_revision_view(active) if active is not None else None,
         )
 
@@ -461,9 +444,7 @@ class AgentPlatformAdminService:
             or revision.application_id != application_id
             or revision.application_environment_id != application_environment_id
         ):
-            raise AgentDistributionNotFoundError(
-                f"runtime revision {runtime_revision_id} was not found"
-            )
+            raise AgentDistributionNotFoundError(f"runtime revision {runtime_revision_id} was not found")
         return _revision_view(revision)
 
     def inspect_revision_history(
@@ -543,14 +524,10 @@ class AgentPlatformAdminService:
                 application_environment_id,
                 binding.installation_slot_id,
             )
-            installed = active is not None and installation_state_is_installed(
-                active.installation_state
-            )
+            installed = active is not None and installation_state_is_installed(active.installation_state)
             if active is not None:
                 package_digest = active.package_identity.package_digest
-                distribution_package_id = (
-                    active.package_identity.distribution_package_id
-                )
+                distribution_package_id = active.package_identity.distribution_package_id
         serving = self.inspect_serving(
             application_id=application_id,
             application_environment_id=application_environment_id,
@@ -571,16 +548,14 @@ class AgentPlatformAdminService:
         available: bool | None = None
         if self._catalog_provider is not None and distribution_package_id is not None:
             available = any(
-                entry.package_id_line == distribution_package_id
-                for entry in self._catalog_provider.list_entries()
+                entry.package_id_line == distribution_package_id for entry in self._catalog_provider.list_entries()
             )
         roster = self._build_roster(
             application_id=application_id,
             application_environment_id=application_environment_id,
         )
         enabled = any(
-            entry.logical_agent_id == logical_agent_id and entry.effective_enablement
-            for entry in roster.entries
+            entry.logical_agent_id == logical_agent_id and entry.effective_enablement for entry in roster.entries
         )
         return AgentStatusView(
             logical_agent_id=logical_agent_id,
@@ -590,9 +565,7 @@ class AgentPlatformAdminService:
             enabled_in_desired_state=enabled,
             included_in_active_revision=included,
             traffic_serving_revision_id=serving.traffic_serving_revision_id,
-            pending_candidate_revision_id=(
-                pending.runtime_revision_id if pending is not None else None
-            ),
+            pending_candidate_revision_id=(pending.runtime_revision_id if pending is not None else None),
         )
 
     def install_agent(
@@ -627,9 +600,7 @@ class AgentPlatformAdminService:
                     installation=_installation_view(existing),
                     audit_event_types=(),
                 )
-            raise InstallationSlotConflict(
-                "installation id already used with different identity"
-            )
+            raise InstallationSlotConflict("installation id already used with different identity")
 
         active_for_slot = self._installation_service.resolve_active_for_slot(
             application_environment_id,
@@ -696,9 +667,7 @@ class AgentPlatformAdminService:
             artifact_store_ref=request.artifact_store_ref,
             trust_record=request.trust_record,
         )
-        promoted = self._installation_service.promote_verified_to_active(
-            request.installation_id
-        )
+        promoted = self._installation_service.promote_verified_to_active(request.installation_id)
         return InstallationMutationResult(
             installation=_installation_view(promoted.value),
             audit_event_types=_event_types(created, verified, promoted),
@@ -713,13 +682,10 @@ class AgentPlatformAdminService:
                 "AP-11_BLOCKED_BY_MISSING_METADATA_PROVIDER",
                 "install_agent requires AgentProjectMetadataProvider",
             )
-        metadata = self._metadata_provider.get_metadata(
-            request.agent_project_metadata_ref
-        )
+        metadata = self._metadata_provider.get_metadata(request.agent_project_metadata_ref)
         if metadata is None:
             raise PackageAgentContractAuthorityError(
-                f"unresolved agent project metadata ref "
-                f"{request.agent_project_metadata_ref!r}"
+                f"unresolved agent project metadata ref {request.agent_project_metadata_ref!r}"
             )
         return metadata
 
@@ -773,9 +739,291 @@ class AgentPlatformAdminService:
             )
             if stored is None:
                 raise PackageAgentContractAuthorityError(
-                    f"missing persisted package contract authority for "
-                    f"{descriptor.contract_id!r}"
+                    f"missing persisted package contract authority for {descriptor.contract_id!r}"
                 )
+
+    def upgrade_agent(
+        self,
+        *,
+        application_id: str,
+        application_environment_id: str,
+        request: UpgradeAgentRequest,
+        principal: RequestIdentity,
+    ) -> UpgradeAgentResult:
+        """Governed UPGRADE of one slot (ADR-PDC-01, PDC-D1-R011).
+
+        install candidate into the existing slot -> mark_verified (trust + attestation)
+        -> compatibility check against the bound configuration -> promote. A failed check
+        leaves the previous revision ``installed_active`` and records a typed rejection
+        (candidate ``failed_candidate`` plus ``installation.failed_candidate`` evidence).
+        """
+        self._require_environment_tenant_scope(
+            principal=principal,
+            application_id=application_id,
+            application_environment_id=application_environment_id,
+            operation="upgrade_agent",
+        )
+        identity = self._resolve_install_identity(request)
+        active = self._installation_service.resolve_active_for_slot(
+            application_environment_id,
+            request.installation_slot_id,
+        )
+        existing = self._installation_store.get_installation(request.installation_id)
+        if existing is not None:
+            if (
+                existing.installation_slot_id == request.installation_slot_id
+                and existing.environment_id == application_environment_id
+                and existing.package_identity == identity
+                and existing.installation_state is InstallationState.INSTALLED_ACTIVE
+                and existing.previous_installation_ref == request.expected_active_installation_id
+            ):
+                return UpgradeAgentResult(
+                    outcome=AgentUpgradeOutcome.ALREADY_UPGRADED,
+                    installation=_installation_view(existing),
+                    active_installation=_installation_view(existing),
+                    previous_installation_id=request.expected_active_installation_id,
+                )
+            raise InstallationSlotConflict("installation id already used with different identity or state")
+        if active is None:
+            raise AgentDistributionNotFoundError(f"no active installation for slot {request.installation_slot_id}")
+        if active.installation_id != request.expected_active_installation_id:
+            raise InstallationSlotConflict("active installation does not match expected_active_installation_id")
+        self._authorize_desired_state_mutation(
+            build_upgrade_agent_mutation_request(
+                principal=principal,
+                application_id=application_id,
+                application_environment_id=application_environment_id,
+                mutation_id=request.mutation_id,
+                installation_slot_id=request.installation_slot_id,
+                installation_id=request.installation_id,
+                package_digest=identity.package_digest,
+                current_revision=installation_state_token(
+                    installation_slot_id=active.installation_slot_id,
+                    installation_id=active.installation_id,
+                    installation_state=active.installation_state.value,
+                    package_digest=active.package_identity.package_digest,
+                ),
+            ),
+            operation="upgrade_agent",
+        )
+        self._package_trust_coordinator.assert_install_admission(
+            trust_record=request.trust_record,
+            package_identity=identity,
+            revocation_state=self._package_trust_revocation_state_source(),
+            policy=self._package_trust_policy_source(),
+            evaluated_at=self._package_trust_evaluation_time_source(),
+        )
+        metadata = self._require_install_project_metadata(request)
+        authority_records = self._validated_install_contract_authority(
+            request=request,
+            identity=identity,
+            metadata=metadata,
+        )
+        self._artifact_metadata_store.persist_metadata(
+            AgentArtifactMetadata(
+                package_digest=identity.package_digest,
+                artifact_store_ref=request.artifact_store_ref,
+                distribution_package_id=identity.distribution_package_id,
+                agent_project_metadata_ref=request.agent_project_metadata_ref,
+            )
+        )
+        for record in authority_records:
+            self._package_contract_authority_service.persist_authority_record(record)
+
+        created = self._installation_service.create_candidate_installation(
+            installation_id=request.installation_id,
+            installation_slot_id=request.installation_slot_id,
+            environment_id=application_environment_id,
+            package_identity=identity,
+        )
+        try:
+            verified = self._installation_service.mark_verified(
+                request.installation_id,
+                artifact_store_ref=request.artifact_store_ref,
+                trust_record=request.trust_record,
+            )
+        except Exception:
+            self._installation_service.mark_failed_candidate(
+                request.installation_id,
+                reason_code="trust_verification_failed",
+            )
+            raise
+
+        bindings = [
+            binding
+            for binding in self._binding_service.list_bindings_for_environment(
+                application_id,
+                application_environment_id,
+            )
+            if binding.installation_slot_id == request.installation_slot_id and not binding.tombstone
+        ]
+        report = evaluate_agent_upgrade_admission(
+            prior_identity=active.package_identity,
+            candidate_identity=identity,
+            prior_contracts=self._resolve_package_contracts(active),
+            candidate_contracts={record.contract_id: record.contract for record in authority_records},
+            bindings=bindings,
+        )
+        if not report.admitted:
+            reason = report.primary_reason
+            failed = self._installation_service.mark_failed_candidate(
+                request.installation_id,
+                reason_code=reason.value if reason is not None else None,
+            )
+            return UpgradeAgentResult(
+                outcome=AgentUpgradeOutcome.REJECTED,
+                installation=_installation_view(failed.value),
+                active_installation=_installation_view(active),
+                previous_installation_id=active.installation_id,
+                rejection_reason=reason,
+                violations=tuple(
+                    UpgradeViolationView(
+                        reason=item.reason,
+                        subject=item.subject,
+                        detail=item.detail,
+                    )
+                    for item in report.violations
+                ),
+                audit_event_types=_event_types(created, verified, failed),
+            )
+
+        try:
+            promoted = self._installation_service.promote_verified_to_active(
+                request.installation_id,
+                expected_active_installation_id=active.installation_id,
+            )
+        except Exception:
+            self._installation_service.mark_failed_candidate(
+                request.installation_id,
+                reason_code="promotion_failed",
+            )
+            raise
+        refreshed = self._binding_service.refresh_active_installation_for_slot(
+            request.installation_slot_id,
+            prior_active_installation_id=active.installation_id,
+            next_active_installation_id=request.installation_id,
+        )
+        return UpgradeAgentResult(
+            outcome=AgentUpgradeOutcome.UPGRADED,
+            installation=_installation_view(promoted.value),
+            active_installation=_installation_view(promoted.value),
+            previous_installation_id=active.installation_id,
+            refreshed_binding_ids=tuple(item.value.application_binding_id for item in refreshed),
+            audit_event_types=_event_types(created, verified, promoted, *refreshed),
+        )
+
+    def retire_agent(
+        self,
+        *,
+        application_id: str,
+        application_environment_id: str,
+        request: RetireAgentRequest,
+        principal: RequestIdentity,
+    ) -> RetireAgentResult:
+        """Governed RETIRE of one slot (ADR-PDC-01, PDC-D1-R014).
+
+        Bindings of the slot are disabled first (fail-safe order), then the active
+        installation leaves service: it drops out of every new effective roster, new
+        installs/activations on the slot are refused, installation and trust evidence
+        stay in the store, and serving revisions that pin the package keep running
+        until superseded (no tombstone, no step-loop involvement).
+        """
+        self._require_environment_tenant_scope(
+            principal=principal,
+            application_id=application_id,
+            application_environment_id=application_environment_id,
+            operation="retire_agent",
+        )
+        active = self._installation_service.resolve_active_for_slot(
+            application_environment_id,
+            request.installation_slot_id,
+        )
+        if active is None:
+            replay = self._installation_service.find_completed_retirement(
+                application_environment_id,
+                request.installation_slot_id,
+                request.expected_active_installation_id,
+            )
+            if replay is not None:
+                return RetireAgentResult(
+                    installation=_installation_view(replay),
+                    already_done=True,
+                )
+            raise AgentDistributionNotFoundError(f"no active installation for slot {request.installation_slot_id}")
+        if active.installation_id != request.expected_active_installation_id:
+            raise InstallationSlotConflict("active installation does not match expected_active_installation_id")
+        self._assert_installation_application_scope(
+            application_id=application_id,
+            application_environment_id=application_environment_id,
+            record=active,
+        )
+        self._authorize_desired_state_mutation(
+            build_retire_agent_mutation_request(
+                principal=principal,
+                application_id=application_id,
+                application_environment_id=application_environment_id,
+                mutation_id=request.mutation_id,
+                installation_slot_id=request.installation_slot_id,
+                installation_id=active.installation_id,
+                package_digest=active.package_identity.package_digest,
+                current_revision=installation_state_token(
+                    installation_slot_id=active.installation_slot_id,
+                    installation_id=active.installation_id,
+                    installation_state=active.installation_state.value,
+                    package_digest=active.package_identity.package_digest,
+                ),
+            ),
+            operation="retire_agent",
+        )
+        slot_bindings = [
+            binding
+            for binding in self._binding_service.list_bindings_for_environment(
+                application_id,
+                application_environment_id,
+            )
+            if binding.installation_slot_id == request.installation_slot_id and not binding.tombstone
+        ]
+        disabled: list[TransitionResult[ApplicationAgentBinding]] = []
+        for binding in slot_bindings:
+            if binding.enablement:
+                disabled.append(
+                    self._binding_service.disable(
+                        binding.application_binding_id,
+                        expected_revision=binding.binding_revision,
+                    )
+                )
+        outcome = self._installation_service.retire_installation(
+            active.installation_id,
+            expected_active_installation_id=request.expected_active_installation_id,
+            reason=request.reason,
+        )
+        return RetireAgentResult(
+            installation=_installation_view(outcome.value),
+            disabled_binding_ids=tuple(item.value.application_binding_id for item in disabled),
+            affected_logical_agent_ids=tuple(sorted({binding.logical_agent_id for binding in slot_bindings})),
+            audit_event_types=_event_types(*disabled, outcome),
+        )
+
+    def _resolve_package_contracts(
+        self,
+        installation: AgentInstallationRecord,
+    ) -> dict[str, AgentContract | None]:
+        """Stored contract authority of an installed package; unresolved entries are None."""
+        digest = installation.package_identity.package_digest
+        artifact = self._artifact_metadata_store.get_by_digest(digest)
+        if artifact is None or self._metadata_provider is None:
+            return {f"metadata:{digest}": None}
+        metadata = self._metadata_provider.get_metadata(artifact.agent_project_metadata_ref)
+        if metadata is None:
+            return {f"metadata:{artifact.agent_project_metadata_ref}": None}
+        contracts: dict[str, AgentContract | None] = {}
+        for declaration in metadata.declared_contracts:
+            record = self._artifact_metadata_store.get_package_contract_authority(
+                digest,
+                declaration.contract_id,
+            )
+            contracts[declaration.contract_id] = record.contract if record is not None else None
+        return contracts
 
     def bind_agent(
         self,
@@ -851,7 +1099,7 @@ class AgentPlatformAdminService:
             application_environment_id=application_environment_id,
             operation="update_binding_config",
         )
-        binding = self._require_binding_scope(
+        self._require_binding_scope(
             application_binding_id,
             application_id=application_id,
             application_environment_id=application_environment_id,
@@ -1029,9 +1277,7 @@ class AgentPlatformAdminService:
             request=request,
         )
         if canonical_roster.effective_roster_revision_id is None:
-            raise AgentDistributionNotFoundError(
-                "effective roster lacks revision identity"
-            )
+            raise AgentDistributionNotFoundError("effective roster lacks revision identity")
         build_input_digest_value = self._compute_build_input_digest(request)
         identity_digest = build_runtime_revision_identity_digest(
             runtime_revision_id=request.runtime_revision_id,
@@ -1055,11 +1301,7 @@ class AgentPlatformAdminService:
 
         persisted_lock = self._lock_store.persist_lock(lock)
         enabled_digests = tuple(
-            sorted(
-                entry.package_digest
-                for entry in canonical_roster.entries
-                if entry.effective_enablement
-            )
+            sorted(entry.package_digest for entry in canonical_roster.entries if entry.effective_enablement)
         )
         candidate = RuntimeRevision(
             runtime_revision_id=request.runtime_revision_id,
@@ -1123,10 +1365,7 @@ class AgentPlatformAdminService:
             application_id,
             application_environment_id,
         )
-        if (
-            serving is not None
-            and serving.traffic_serving_revision_id == marked.value.runtime_revision_id
-        ):
+        if serving is not None and serving.traffic_serving_revision_id == marked.value.runtime_revision_id:
             raise RuntimeActivationConflict("build must not activate serving traffic")
         return BuildRevisionResult(
             runtime_revision_id=marked.value.runtime_revision_id,
@@ -1155,22 +1394,14 @@ class AgentPlatformAdminService:
             application_id=application_id,
             application_environment_id=application_environment_id,
         )
-        prepared = self._activation_service.prepare_candidate(
-            application_id=application_id,
-            application_environment_id=application_environment_id,
-            runtime_revision_id=request.runtime_revision_id,
-            artifact_locator=request.artifact_locator,
-        )
         serving = self._serving_store.get_serving_record(
             application_id,
             application_environment_id,
         )
-        current_traffic_revision_id = (
-            serving.traffic_serving_revision_id if serving is not None else None
-        )
-        current_pointer_revision = (
-            serving.serving_pointer_revision if serving is not None else 0
-        )
+        current_traffic_revision_id = serving.traffic_serving_revision_id if serving is not None else None
+        current_pointer_revision = serving.serving_pointer_revision if serving is not None else 0
+        # Authorize (tenant scope + policy) BEFORE any side-effecting candidate
+        # preparation: a denied principal must not trigger deployment work (PDC-D1-R007).
         authorization = self._authorize_activation(
             principal=principal,
             application_id=application_id,
@@ -1179,6 +1410,12 @@ class AgentPlatformAdminService:
             current_traffic_revision_id=current_traffic_revision_id,
             current_serving_pointer_revision=current_pointer_revision,
             target_runtime_revision_id=request.runtime_revision_id,
+        )
+        prepared = self._activation_service.prepare_candidate(
+            application_id=application_id,
+            application_environment_id=application_environment_id,
+            runtime_revision_id=request.runtime_revision_id,
+            artifact_locator=request.artifact_locator,
         )
         committed = self._activation_service.commit_activation(
             application_id=application_id,
@@ -1208,21 +1445,24 @@ class AgentPlatformAdminService:
         request: RollbackRuntimeRevisionRequest,
         principal: RequestIdentity,
     ) -> RollbackResultView:
+        # Tenant authority first: a foreign principal must not learn rollback-target state.
+        self._require_environment_tenant_scope(
+            principal=principal,
+            application_id=application_id,
+            application_environment_id=application_environment_id,
+            operation="rollback_revision",
+        )
         serving = self._serving_store.get_serving_record(
             application_id,
             application_environment_id,
         )
         if serving is None or serving.prior_traffic_revision_id is None:
-            raise RuntimeRollbackError(
-                "no prior traffic revision available for rollback"
-            )
+            raise RuntimeRollbackError("no prior traffic revision available for rollback")
         if (
             request.target_runtime_revision_id is not None
             and request.target_runtime_revision_id != serving.prior_traffic_revision_id
         ):
-            raise RuntimeActivationConflict(
-                "rollback target does not match immutable prior traffic revision"
-            )
+            raise RuntimeActivationConflict("rollback target does not match immutable prior traffic revision")
         if serving.traffic_serving_revision_id is None:
             raise RuntimeRollbackError("no current serving revision to rollback from")
         target_revision_id = serving.prior_traffic_revision_id
@@ -1271,12 +1511,8 @@ class AgentPlatformAdminService:
             effective_request.application_id != application_id
             or effective_request.application_environment_id != application_environment_id
         ):
-            raise RuntimeActivationConflict(
-                "emergency revocation request environment scope mismatch"
-            )
-        return self._emergency_revocation_service.respond_to_current_revocation(
-            effective_request
-        )
+            raise RuntimeActivationConflict("emergency revocation request environment scope mismatch")
+        return self._emergency_revocation_service.respond_to_current_revocation(effective_request)
 
     def complete_revision_drain(
         self,
@@ -1308,9 +1544,7 @@ class AgentPlatformAdminService:
         if instance is None:
             raise AgentDistributionNotFoundError("deployment instance was not found")
         if instance.instance_state is not DeploymentInstanceState.DRAINING:
-            raise RuntimeDrainError(
-                "complete_revision_drain requires draining instance"
-            )
+            raise RuntimeDrainError("complete_revision_drain requires draining instance")
         if instance.record_revision != request.expected_record_revision:
             raise RuntimeActivationConflict("drain record revision mismatch")
         if instance.serving_unit_ref is None:
@@ -1359,22 +1593,15 @@ class AgentPlatformAdminService:
             application_id,
             application_environment_id,
         )
-        if (
-            serving is None
-            or serving.traffic_serving_revision_id != request.runtime_revision_id
-        ):
-            raise RuntimeActivationError(
-                "post-cutover failure requires current serving revision"
-            )
+        if serving is None or serving.traffic_serving_revision_id != request.runtime_revision_id:
+            raise RuntimeActivationError("post-cutover failure requires current serving revision")
 
         instance = self._deployment_instance_store.get_instance(
             application_id,
             application_environment_id,
             request.runtime_revision_id,
         )
-        failure_mark_authorization: ControlPlaneMutationAuthorizationResult | None = (
-            None
-        )
+        failure_mark_authorization: ControlPlaneMutationAuthorizationResult | None = None
         instance_state: DeploymentInstanceState | None = None
         audit_events: list[str] = []
 
@@ -1443,9 +1670,7 @@ class AgentPlatformAdminService:
             runtime_revision_id=request.runtime_revision_id,
             instance_state=instance_state,
             failure_mark_authorization_evidence=(
-                failure_mark_authorization.evidence
-                if failure_mark_authorization is not None
-                else None
+                failure_mark_authorization.evidence if failure_mark_authorization is not None else None
             ),
             rollback_result=rollback_view,
             audit_event_types=tuple(audit_events),
@@ -1466,9 +1691,7 @@ class AgentPlatformAdminService:
                 continue
             if entry.active_installation_id is None:
                 continue
-            installation = self._installation_store.get_installation(
-                entry.active_installation_id
-            )
+            installation = self._installation_store.get_installation(entry.active_installation_id)
             if installation is None or installation.trust_record is None:
                 continue
             self._package_trust_coordinator.assert_install_admission(
@@ -1479,9 +1702,7 @@ class AgentPlatformAdminService:
                 evaluated_at=evaluated_at,
             )
 
-    def _resolve_install_identity(
-        self, request: InstallAgentRequest
-    ) -> AgentPackageIdentity:
+    def _resolve_install_identity(self, request: InstallAgentRequest) -> AgentPackageIdentity:
         if request.catalog_entry_id is None:
             return request.package_identity
         provider = self._catalog_provider
@@ -1496,9 +1717,7 @@ class AgentPlatformAdminService:
                 continue
             resolution = provider.resolve_package(entry, version_selector=selector)
             return resolution.package_candidate.to_digest_pinned()
-        raise AgentDistributionNotFoundError(
-            f"catalog entry {request.catalog_entry_id} was not found"
-        )
+        raise AgentDistributionNotFoundError(f"catalog entry {request.catalog_entry_id} was not found")
 
     def _build_roster(
         self,
@@ -1530,13 +1749,8 @@ class AgentPlatformAdminService:
             application_id,
             application_environment_id,
         )
-        if not any(
-            binding.installation_slot_id == record.installation_slot_id
-            for binding in bindings
-        ):
-            raise AgentDistributionNotFoundError(
-                f"installation {record.installation_id} was not found"
-            )
+        if not any(binding.installation_slot_id == record.installation_slot_id for binding in bindings):
+            raise AgentDistributionNotFoundError(f"installation {record.installation_id} was not found")
 
     def _require_revision_scope(
         self,
@@ -1551,9 +1765,7 @@ class AgentPlatformAdminService:
             or revision.application_id != application_id
             or revision.application_environment_id != application_environment_id
         ):
-            raise AgentDistributionNotFoundError(
-                f"runtime revision {runtime_revision_id} was not found"
-            )
+            raise AgentDistributionNotFoundError(f"runtime revision {runtime_revision_id} was not found")
         return revision
 
     def _require_binding_scope(
@@ -1569,9 +1781,7 @@ class AgentPlatformAdminService:
             or binding.application_id != application_id
             or binding.application_environment_id != application_environment_id
         ):
-            raise AgentDistributionNotFoundError(
-                f"binding {application_binding_id} was not found"
-            )
+            raise AgentDistributionNotFoundError(f"binding {application_binding_id} was not found")
         return binding
 
     def _pending_candidate(
@@ -1742,9 +1952,7 @@ class AgentPlatformAdminService:
             request=request,
             build_input_digest_value=build_input_digest_value,
         ):
-            raise RuntimeRevisionConflict(
-                "runtime_revision_id conflicts with requested build identity"
-            )
+            raise RuntimeRevisionConflict("runtime_revision_id conflicts with requested build identity")
         self._require_canonical_lock_authority(existing)
         return self._replay_existing_build(existing)
 
@@ -1858,18 +2066,14 @@ class AgentPlatformAdminService:
             ) from exc
 
     def _replay_existing_build(self, existing: RuntimeRevision) -> BuildRevisionResult:
-        materialization = self._materialization_store.get_by_revision(
-            existing.runtime_revision_id
-        )
+        materialization = self._materialization_store.get_by_revision(existing.runtime_revision_id)
         if existing.revision_state is RuntimeRevisionState.VALIDATED:
             if materialization is None:
                 raise AgentPlatformAdminBlockedError(
                     "AP-11_BLOCKED_BY_MISSING_MATERIALIZATION_AUTHORITY",
                     "validated revision lacks canonical materialization authority",
                 )
-            self._validate_materialization_record_matches_revision(
-                existing, materialization
-            )
+            self._validate_materialization_record_matches_revision(existing, materialization)
             return self._build_revision_result_from_existing(existing, materialization)
         if existing.revision_state is RuntimeRevisionState.CANDIDATE:
             if materialization is None:
@@ -1877,21 +2081,15 @@ class AgentPlatformAdminService:
                     "AP-11_BLOCKED_BY_INCOMPLETE_BUILD_REPLAY",
                     "candidate revision build cannot replay without canonical materialization authority",
                 )
-            self._validate_materialization_record_matches_revision(
-                existing, materialization
-            )
+            self._validate_materialization_record_matches_revision(existing, materialization)
             validated = existing.model_copy(
                 update={
                     "revision_state": RuntimeRevisionState.VALIDATED,
-                    "materialization_artifact_digest": (
-                        materialization.materialization_artifact_digest
-                    ),
+                    "materialization_artifact_digest": (materialization.materialization_artifact_digest),
                     "materialization_topology": materialization.materialization_topology,
                 }
             )
-            canonical_materialization = self._materialization_store.persist(
-                materialization
-            )
+            canonical_materialization = self._materialization_store.persist(materialization)
             marked = self._revision_service.mark_validated(
                 existing.runtime_revision_id,
                 validated_revision=validated,
@@ -1900,9 +2098,7 @@ class AgentPlatformAdminService:
                 marked.value,
                 canonical_materialization,
             )
-        raise RuntimeRevisionConflict(
-            "runtime revision state does not support build replay"
-        )
+        raise RuntimeRevisionConflict("runtime revision state does not support build replay")
 
     @staticmethod
     def _validate_materialization_output_consistency(
@@ -1912,19 +2108,12 @@ class AgentPlatformAdminService:
     ) -> None:
         if output.topology != validated.materialization_topology:
             raise MaterializationInputConflict("materialization topology mismatch")
-        if (
-            output.materialization_artifact_digest
-            != validated.materialization_artifact_digest
-        ):
-            raise MaterializationInputConflict(
-                "materialization artifact digest mismatch"
-            )
+        if output.materialization_artifact_digest != validated.materialization_artifact_digest:
+            raise MaterializationInputConflict("materialization artifact digest mismatch")
         if validated.materialized_runtime_lock_id != persisted_lock.lock_id:
             raise MaterializationInputConflict("materialized runtime lock id mismatch")
         if validated.materialized_runtime_lock_digest != persisted_lock.lock_digest:
-            raise MaterializationInputConflict(
-                "materialized runtime lock digest mismatch"
-            )
+            raise MaterializationInputConflict("materialized runtime lock digest mismatch")
 
     @staticmethod
     def _build_runtime_materialization_record(
@@ -1933,21 +2122,13 @@ class AgentPlatformAdminService:
         artifact_locator: str,
     ) -> RuntimeMaterializationRecord:
         if validated.materialization_topology is None:
-            raise MaterializationInputConflict(
-                "validated revision requires materialization_topology"
-            )
+            raise MaterializationInputConflict("validated revision requires materialization_topology")
         if validated.materialization_artifact_digest is None:
-            raise MaterializationInputConflict(
-                "validated revision requires materialization_artifact_digest"
-            )
+            raise MaterializationInputConflict("validated revision requires materialization_artifact_digest")
         if validated.materialized_runtime_lock_id is None:
-            raise MaterializationInputConflict(
-                "validated revision requires materialized_runtime_lock_id"
-            )
+            raise MaterializationInputConflict("validated revision requires materialized_runtime_lock_id")
         if validated.materialized_runtime_lock_digest is None:
-            raise MaterializationInputConflict(
-                "validated revision requires materialized_runtime_lock_digest"
-            )
+            raise MaterializationInputConflict("validated revision requires materialized_runtime_lock_digest")
         return RuntimeMaterializationRecord(
             runtime_revision_id=validated.runtime_revision_id,
             application_id=validated.application_id,
@@ -1965,46 +2146,23 @@ class AgentPlatformAdminService:
         record: RuntimeMaterializationRecord,
     ) -> None:
         if record.runtime_revision_id != revision.runtime_revision_id:
-            raise RuntimeMaterializationConflict(
-                "runtime materialization revision id mismatch"
-            )
+            raise RuntimeMaterializationConflict("runtime materialization revision id mismatch")
         if record.application_id != revision.application_id:
-            raise RuntimeMaterializationConflict(
-                "runtime materialization application id mismatch"
-            )
+            raise RuntimeMaterializationConflict("runtime materialization application id mismatch")
         if record.application_environment_id != revision.application_environment_id:
-            raise RuntimeMaterializationConflict(
-                "runtime materialization application environment id mismatch"
-            )
+            raise RuntimeMaterializationConflict("runtime materialization application environment id mismatch")
         if revision.materialization_topology is not None:
             if record.materialization_topology != revision.materialization_topology:
-                raise RuntimeMaterializationConflict(
-                    "runtime materialization topology mismatch"
-                )
+                raise RuntimeMaterializationConflict("runtime materialization topology mismatch")
         if revision.materialization_artifact_digest is not None:
-            if (
-                record.materialization_artifact_digest
-                != revision.materialization_artifact_digest
-            ):
-                raise RuntimeMaterializationConflict(
-                    "runtime materialization artifact digest mismatch"
-                )
+            if record.materialization_artifact_digest != revision.materialization_artifact_digest:
+                raise RuntimeMaterializationConflict("runtime materialization artifact digest mismatch")
         if revision.materialized_runtime_lock_id is not None:
-            if (
-                record.materialized_runtime_lock_id
-                != revision.materialized_runtime_lock_id
-            ):
-                raise RuntimeMaterializationConflict(
-                    "runtime materialization lock id mismatch"
-                )
+            if record.materialized_runtime_lock_id != revision.materialized_runtime_lock_id:
+                raise RuntimeMaterializationConflict("runtime materialization lock id mismatch")
         if revision.materialized_runtime_lock_digest is not None:
-            if (
-                record.materialized_runtime_lock_digest
-                != revision.materialized_runtime_lock_digest
-            ):
-                raise RuntimeMaterializationConflict(
-                    "runtime materialization lock digest mismatch"
-                )
+            if record.materialized_runtime_lock_digest != revision.materialized_runtime_lock_digest:
+                raise RuntimeMaterializationConflict("runtime materialization lock digest mismatch")
 
     @staticmethod
     def _build_revision_result_from_existing(
@@ -2134,9 +2292,7 @@ class AgentPlatformAdminService:
         target_runtime_revision_id: str,
         expected_current_traffic_revision_id: str,
         expected_serving_pointer_revision: int,
-    ) -> tuple[
-        ControlPlaneMutationAuthorizationResult, TransitionResult[RollbackResult]
-    ]:
+    ) -> tuple[ControlPlaneMutationAuthorizationResult, TransitionResult[RollbackResult]]:
         authorization = self._authorize_rollback(
             principal=principal,
             application_id=application_id,

@@ -10,20 +10,20 @@ from dataclasses import dataclass
 from typing import Protocol
 
 from intergrax.agent_distribution._digest import content_digest_for_model
-from intergrax.agent_distribution.deployment import DrainPolicy
 from intergrax.agent_distribution._immutable_json import (
     DistributionJsonValue,
     distribution_json_to_plain,
 )
 from intergrax.agent_distribution.dependency import RepositoryDependencyDeclaration
+from intergrax.agent_distribution.deployment import DrainPolicy
 from intergrax.contracts.agent_run import RequestIdentity
-from intergrax.contracts.evaluated_policy_decision import request_digest_for_payload
 from intergrax.contracts.control_plane_mutation import (
     ControlPlaneMutationAuthorizationResult,
     ControlPlaneMutationPolicyEvaluator,
     ControlPlaneMutationRequest,
     ControlPlaneMutationRisk,
 )
+from intergrax.contracts.evaluated_policy_decision import request_digest_for_payload
 from intergrax.contracts.runtime_policy import PolicyAction, PolicyDecision
 from intergrax.runtime.governance.control_plane_mutation_authorization import (
     ControlPlaneMutationAuthorizationBoundary,
@@ -40,9 +40,9 @@ MUTATION_TYPE_DISABLE_BINDING = "agent_distribution.disable_binding"
 MUTATION_TYPE_BUILD_RUNTIME_REVISION = "agent_distribution.build_runtime_revision"
 MUTATION_TYPE_ADMIT_RUNTIME_REVISION = "agent_distribution.admit_runtime_revision"
 MUTATION_TYPE_COMPLETE_DRAIN = "agent_distribution.complete_drain"
-MUTATION_TYPE_MARK_POST_CUTOVER_FAILURE = (
-    "agent_distribution.mark_post_cutover_failure"
-)
+MUTATION_TYPE_UPGRADE_AGENT = "agent_distribution.upgrade_agent"
+MUTATION_TYPE_RETIRE_AGENT = "agent_distribution.retire_agent"
+MUTATION_TYPE_MARK_POST_CUTOVER_FAILURE = "agent_distribution.mark_post_cutover_failure"
 
 _INSTALL_ABSENT_TOKEN = "inst:__absent__"
 _BINDING_ABSENT_TOKEN = "binding:__absent__"
@@ -89,10 +89,7 @@ def application_environment_resource_scope(
     application_id: str,
     application_environment_id: str,
 ) -> str:
-    return (
-        f"agent_distribution.application:{application_id}"
-        f".environment:{application_environment_id}"
-    )
+    return f"agent_distribution.application:{application_id}.environment:{application_environment_id}"
 
 
 def binding_config_digest(config: Mapping[str, DistributionJsonValue]) -> str:
@@ -112,10 +109,7 @@ def installation_state_token(
     installation_state: str,
     package_digest: str,
 ) -> str:
-    return (
-        f"slot:{installation_slot_id}|inst:{installation_id}"
-        f"|state:{installation_state}|digest:{package_digest}"
-    )
+    return f"slot:{installation_slot_id}|inst:{installation_id}|state:{installation_state}|digest:{package_digest}"
 
 
 def installation_target_token(
@@ -124,10 +118,7 @@ def installation_target_token(
     installation_id: str,
     package_digest: str,
 ) -> str:
-    return (
-        f"slot:{installation_slot_id}|inst:{installation_id}"
-        f"|digest:{package_digest}|state:installed_active"
-    )
+    return f"slot:{installation_slot_id}|inst:{installation_id}|digest:{package_digest}|state:installed_active"
 
 
 def binding_absent_token() -> str:
@@ -153,8 +144,7 @@ def binding_create_target_token(
 ) -> str:
     enabled = "true" if enablement else "false"
     return (
-        f"binding:{application_binding_id}|agent:{logical_agent_id}"
-        f"|slot:{installation_slot_id}|rev:0|enabled:{enabled}"
+        f"binding:{application_binding_id}|agent:{logical_agent_id}|slot:{installation_slot_id}|rev:0|enabled:{enabled}"
     )
 
 
@@ -164,10 +154,7 @@ def binding_config_target_token(
     next_revision: int,
     config_digest_value: str,
 ) -> str:
-    return (
-        f"binding:{application_binding_id}|rev:{next_revision}"
-        f"|config:{config_digest_value}"
-    )
+    return f"binding:{application_binding_id}|rev:{next_revision}|config:{config_digest_value}"
 
 
 def binding_enablement_target_token(
@@ -177,9 +164,7 @@ def binding_enablement_target_token(
     enablement: bool,
 ) -> str:
     enabled = "true" if enablement else "false"
-    return (
-        f"binding:{application_binding_id}|rev:{next_revision}|enabled:{enabled}"
-    )
+    return f"binding:{application_binding_id}|rev:{next_revision}|enabled:{enabled}"
 
 
 def runtime_revision_absent_token(runtime_revision_id: str) -> str:
@@ -387,6 +372,70 @@ def build_install_agent_mutation_request(
     )
 
 
+def build_upgrade_agent_mutation_request(
+    *,
+    principal: RequestIdentity,
+    application_id: str,
+    application_environment_id: str,
+    mutation_id: str,
+    installation_slot_id: str,
+    installation_id: str,
+    package_digest: str,
+    current_revision: str,
+) -> ControlPlaneMutationRequest:
+    return ControlPlaneMutationRequest(
+        mutation_id=mutation_id,
+        mutation_type=MUTATION_TYPE_UPGRADE_AGENT,
+        principal=principal,
+        resource_scope=application_environment_resource_scope(
+            application_id=application_id,
+            application_environment_id=application_environment_id,
+        ),
+        resource_type=AGENT_DISTRIBUTION_RESOURCE_TYPE,
+        resource_id=application_environment_resource_id(
+            application_id=application_id,
+            application_environment_id=application_environment_id,
+        ),
+        current_revision=current_revision,
+        target_revision=installation_target_token(
+            installation_slot_id=installation_slot_id,
+            installation_id=installation_id,
+            package_digest=package_digest,
+        ),
+        risk_classification=ControlPlaneMutationRisk.HIGH,
+    )
+
+
+def build_retire_agent_mutation_request(
+    *,
+    principal: RequestIdentity,
+    application_id: str,
+    application_environment_id: str,
+    mutation_id: str,
+    installation_slot_id: str,
+    installation_id: str,
+    package_digest: str,
+    current_revision: str,
+) -> ControlPlaneMutationRequest:
+    return ControlPlaneMutationRequest(
+        mutation_id=mutation_id,
+        mutation_type=MUTATION_TYPE_RETIRE_AGENT,
+        principal=principal,
+        resource_scope=application_environment_resource_scope(
+            application_id=application_id,
+            application_environment_id=application_environment_id,
+        ),
+        resource_type=AGENT_DISTRIBUTION_RESOURCE_TYPE,
+        resource_id=application_environment_resource_id(
+            application_id=application_id,
+            application_environment_id=application_environment_id,
+        ),
+        current_revision=current_revision,
+        target_revision=(f"slot:{installation_slot_id}|inst:{installation_id}|digest:{package_digest}|state:retired"),
+        risk_classification=ControlPlaneMutationRisk.HIGH,
+    )
+
+
 def build_bind_agent_mutation_request(
     *,
     principal: RequestIdentity,
@@ -560,6 +609,7 @@ def build_runtime_revision_mutation_request(
         risk_classification=ControlPlaneMutationRisk.HIGH,
     )
 
+
 def drain_policy_digest(policy: DrainPolicy) -> str:
     """Deterministic digest for drain policy governance identity."""
     payload = {
@@ -575,10 +625,7 @@ def deployment_instance_state_token(
     record_revision: int,
     instance_state: str,
 ) -> str:
-    return (
-        f"deployment_instance:{runtime_revision_id}"
-        f"|rev:{record_revision}|state:{instance_state}"
-    )
+    return f"deployment_instance:{runtime_revision_id}|rev:{record_revision}|state:{instance_state}"
 
 
 def deployment_instance_draining_token(

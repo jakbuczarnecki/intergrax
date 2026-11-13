@@ -2,11 +2,11 @@
 
 from __future__ import annotations
 
-import importlib.metadata
 from collections.abc import Callable, Iterable, Mapping
 from dataclasses import replace
 from typing import Final
 
+from intergrax.core.plugins.discovery import select_entry_points
 from intergrax.integrations.contracts.base import IntegrationCategory
 from intergrax.runtime.vendor_knowledge.contribution import (
     VendorKnowledgeConnectionFactoryContribution,
@@ -25,9 +25,7 @@ from intergrax.runtime.vendor_knowledge.tenant_connection_factory_registry impor
 )
 from intergrax.utils import attribute_access
 
-VENDOR_KNOWLEDGE_PROVIDER_ENTRY_POINT_GROUP: Final = (
-    "intergrax.vendor_knowledge.providers"
-)
+VENDOR_KNOWLEDGE_PROVIDER_ENTRY_POINT_GROUP: Final = "intergrax.vendor_knowledge.providers"
 VendorKnowledgeContributionFactory = Callable[[], VendorKnowledgeProviderContribution]
 VendorKnowledgeProviderKey = tuple[str, IntegrationCategory]
 
@@ -41,23 +39,12 @@ class VendorKnowledgePluginConflict(ValueError):
 
 
 def _entry_points(group: str) -> tuple[object, ...]:
+    # Enumeration is owned by core/plugins/discovery.py (PDC-D1-R020); this catalog
+    # keeps only its domain-specific load, conflict and type checks.
     try:
-        discovered = importlib.metadata.entry_points()
+        return select_entry_points(group)
     except Exception:
         raise VendorKnowledgePluginLoadError("entry_point_discovery_failed") from None
-    if hasattr(discovered, "select"):
-        selected = discovered.select(group=group)
-    else:
-        selected = discovered.get(group, ())
-    return tuple(
-        sorted(
-            selected,
-            key=lambda item: (
-                str(attribute_access.optional(item, "name", "")),
-                str(attribute_access.optional(item, "value", "")),
-            ),
-        )
-    )
 
 
 def discover_vendor_knowledge_contributions() -> tuple[VendorKnowledgeProviderContribution, ...]:
@@ -151,12 +138,8 @@ class VendorKnowledgeContributionCatalog:
                 updated.append(contribution)
                 continue
             if override.key != contribution.provider_key:
-                raise VendorKnowledgePluginConflict(
-                    "connection_factory_identity_mismatch"
-                )
-            updated.append(
-                replace(contribution, connection_factories=(override,))
-            )
+                raise VendorKnowledgePluginConflict("connection_factory_identity_mismatch")
+            updated.append(replace(contribution, connection_factories=(override,)))
         return VendorKnowledgeContributionCatalog(updated)
 
     def _validate_components(
@@ -203,6 +186,9 @@ class VendorKnowledgeContributionCatalog:
 
 
 def _default_builtin_builders() -> tuple[VendorKnowledgeContributionFactory, ...]:
+    from intergrax.runtime.vendor_knowledge.change_approval_contribution import (
+        build_change_approval_vendor_knowledge_contribution,
+    )
     from intergrax.runtime.vendor_knowledge.confluence_contribution import (
         build_confluence_vendor_knowledge_contribution,
     )
@@ -212,17 +198,14 @@ def _default_builtin_builders() -> tuple[VendorKnowledgeContributionFactory, ...
     from intergrax.runtime.vendor_knowledge.google_workspace_contribution import (
         build_google_workspace_vendor_knowledge_contribution,
     )
+    from intergrax.runtime.vendor_knowledge.governance_approval_contribution import (
+        build_governance_approval_vendor_knowledge_contribution,
+    )
     from intergrax.runtime.vendor_knowledge.jira_contribution import (
         build_jira_vendor_knowledge_contribution,
     )
     from intergrax.runtime.vendor_knowledge.msgraph_contribution import (
         build_msgraph_vendor_knowledge_contribution,
-    )
-    from intergrax.runtime.vendor_knowledge.change_approval_contribution import (
-        build_change_approval_vendor_knowledge_contribution,
-    )
-    from intergrax.runtime.vendor_knowledge.governance_approval_contribution import (
-        build_governance_approval_vendor_knowledge_contribution,
     )
     from intergrax.runtime.vendor_knowledge.project_status_contribution import (
         build_project_status_vendor_knowledge_contribution,
@@ -254,11 +237,7 @@ def build_default_vendor_knowledge_contribution_catalog(
     built_in_builders: Iterable[VendorKnowledgeContributionFactory] | None = None,
 ) -> VendorKnowledgeContributionCatalog:
     """Build built-ins plus optional explicitly enabled external contributions."""
-    builders = (
-        tuple(built_in_builders)
-        if built_in_builders is not None
-        else _default_builtin_builders()
-    )
+    builders = tuple(built_in_builders) if built_in_builders is not None else _default_builtin_builders()
     contributions: list[VendorKnowledgeProviderContribution] = []
     for builder in builders:
         try:
@@ -320,9 +299,7 @@ def build_vendor_knowledge_live_registration_registry(
         plugin_registry=plugin_registry,
     )
     bundles = tuple(
-        bundle
-        for contribution in catalog.list_contributions()
-        for bundle in contribution.live_contributions
+        bundle for contribution in catalog.list_contributions() for bundle in contribution.live_contributions
     )
     registry.register(bundles)
     return registry

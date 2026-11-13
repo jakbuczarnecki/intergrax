@@ -11,7 +11,13 @@ from intergrax.agent_distribution.errors import (
     AgentDistributionNotFoundError,
     RuntimeRevisionLifecycleError,
 )
-from intergrax.agent_distribution.events import TransitionResult, distribution_event
+from intergrax.agent_distribution.events import (
+    EVENT_RUNTIME_REVISION_ACTIVATED,
+    EVENT_RUNTIME_REVISION_CREATED,
+    EVENT_RUNTIME_REVISION_VALIDATED,
+    TransitionResult,
+    distribution_event,
+)
 from intergrax.agent_distribution.runtime_revision import (
     RUNTIME_REVISION_IMMUTABLE_IDENTITY_FIELDS,
     RUNTIME_REVISION_VALIDATION_TRANSITION_FIELDS,
@@ -19,7 +25,6 @@ from intergrax.agent_distribution.runtime_revision import (
     RuntimeRevisionState,
 )
 from intergrax.agent_distribution.stores import RuntimeRevisionStore
-
 
 _ALLOWED_TRANSITIONS: dict[RuntimeRevisionState, frozenset[RuntimeRevisionState]] = {
     RuntimeRevisionState.CANDIDATE: frozenset({RuntimeRevisionState.VALIDATED, RuntimeRevisionState.FAILED}),
@@ -41,7 +46,16 @@ class RuntimeRevisionService:
         if revision.revision_state is not RuntimeRevisionState.CANDIDATE:
             raise RuntimeRevisionLifecycleError("persist_candidate_revision requires candidate state")
         persisted = self._store.persist_candidate_revision(revision)
-        return TransitionResult(value=persisted)
+        return TransitionResult(
+            value=persisted,
+            events=(
+                distribution_event(
+                    EVENT_RUNTIME_REVISION_CREATED,
+                    persisted.runtime_revision_id,
+                    application_environment_id=persisted.application_environment_id,
+                ),
+            ),
+        )
 
     def mark_validated(
         self,
@@ -60,7 +74,16 @@ class RuntimeRevisionService:
             validated_revision,
             expected_revision_state=RuntimeRevisionState.CANDIDATE,
         )
-        return TransitionResult(value=persisted)
+        return TransitionResult(
+            value=persisted,
+            events=(
+                distribution_event(
+                    EVENT_RUNTIME_REVISION_VALIDATED,
+                    persisted.runtime_revision_id,
+                    application_environment_id=persisted.application_environment_id,
+                ),
+            ),
+        )
 
     def activate_revision(
         self,
@@ -82,9 +105,7 @@ class RuntimeRevisionService:
         rollback_target = prior_active.runtime_revision_id if prior_active is not None else None
 
         if prior_active is not None:
-            demoted_prior = prior_active.model_copy(
-                update={"revision_state": RuntimeRevisionState.SUPERSEDED}
-            )
+            demoted_prior = prior_active.model_copy(update={"revision_state": RuntimeRevisionState.SUPERSEDED})
 
         promoted = revision.model_copy(
             update={
@@ -107,9 +128,10 @@ class RuntimeRevisionService:
             value=persisted,
             events=(
                 distribution_event(
-                    "runtime_revision.activated",
+                    EVENT_RUNTIME_REVISION_ACTIVATED,
                     runtime_revision_id,
                     application_environment_id=revision.application_environment_id,
+                    supersedes_revision_id=(prior_active.runtime_revision_id if prior_active is not None else ""),
                 ),
             ),
         )
@@ -124,9 +146,7 @@ class RuntimeRevisionService:
     def _require_revision(self, runtime_revision_id: str) -> RuntimeRevision:
         revision = self._store.get_revision(runtime_revision_id)
         if revision is None:
-            raise AgentDistributionNotFoundError(
-                f"runtime revision {runtime_revision_id} was not found"
-            )
+            raise AgentDistributionNotFoundError(f"runtime revision {runtime_revision_id} was not found")
         return revision
 
     @staticmethod
