@@ -6,7 +6,7 @@ MRC-3 server-side deadline, cancellation, admission and resilience. Findings: R-
 
 ## Plan digest
 
-Plan digest: 8db9e51a16f5037beda3a0971858e68c384240242c3a813bf0bbe723b7898910
+Plan digest: fa0f444041e0e40a08d7a8ccbd77bc046dbc021b8d8fac399c818e0382f442c9
 
 Canonical plan: [`governance/tickets/plans/PLAN_T-IGX-038-C.md`](plans/PLAN_T-IGX-038-C.md).
 
