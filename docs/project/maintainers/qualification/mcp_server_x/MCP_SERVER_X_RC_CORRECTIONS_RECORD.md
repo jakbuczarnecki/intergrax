@@ -21,7 +21,7 @@ Disposition vocabulary: `CLOSED_IN_CODE` (fixed + tests), `ACCEPTED_SCOPED` (doc
 | G-ID-03 | code review | CLOSED_IN_CODE (behavioural) | five facades without harness auth now reject by default; every facade takes `identity_mode`; `test_every_facade_defaults_to_fail_closed_*` (8 facades). Wiring auth into those hosts remains a host decision (migration note) |
 | G-ID-04 | code review | CLOSED_IN_CODE | `run_research_pipeline` uses `execute_mcp_agent_task_with_resolved_identity`; two research tests |
 | G-ID-05 | code review | ACCEPTED_SCOPED / TRANSFERRED | `apply_harness_auth_middleware` silent no-op is a harness-host defect (shared security module, PDC-X B-D6 neighbourhood); MCP per-call gate fails closed regardless |
-| G-ID-06 / R-P7-06 | R-P7-06 | CLOSED_IN_CODE | meaning of `harness_auth=None` = request-time resolution, now documented and gated for every tool |
+| G-ID-06 / R-P7-06 | R-P7-06 | CLOSED_IN_CODE (after audit AF-03) | meaning of `harness_auth=None` = request-time resolution; every tool incl. custom host tools sits behind the principal gate by default, with an explicit `public_custom_tool_names` opt-out; `test_mcp_rc_audit_corrections.py` |
 | G-ID-07 | code review | CLOSED_IN_CODE | invoke composition uses the allowlist-filtered registry; `test_invoke_catalog_composition_receives_the_allowlist_filtered_registry` |
 | G-ERR-01 / R-P7-05 | R-P7-05 | CLOSED_IN_CODE | the three declared codes are now raised by runtime paths (identity tests, bound tests); 8 codes added in v1.1 |
 | G-ERR-02 | code review | CLOSED_IN_CODE | `LEGACY_WIRE_CODE_MAP` + `mcp_code_for_legacy`; bridge payloads carry `mcp_code` |
@@ -29,8 +29,8 @@ Disposition vocabulary: `CLOSED_IN_CODE` (fixed + tests), `ACCEPTED_SCOPED` (doc
 | G-RB-01 / R-P7-03 | R-P7-03 | CLOSED_IN_CODE | custom tools bounded; `test_custom_host_tool_*`, `test_p7_05_*_applied_to_the_custom_tool_qual_echo` (the former "recorded gap" test is inverted) |
 | G-RB-02 | code review | CLOSED_IN_CODE | cross-loop payload bounded at the MCP boundary (`bound_cross_loop_catalog_payload`); the runtime ingress is unchanged (host-owned) |
 | G-RB-03 | code review | CLOSED_IN_CODE | incremental `mcp_serialized_size_exceeds`; `test_size_check_aborts_without_materializing_the_whole_value` |
-| G-RB-04 | code review | CLOSED_IN_CODE | internal error detail replaced; unknown-tool echo capped at 128 chars; custom-tool exception text not echoed |
-| G-DL-01 / R-P7-04 | R-P7-04 | CLOSED_IN_CODE | `max_call_seconds` governed-cancel trigger, `MCP_DEADLINE_EXCEEDED` with explicit outcome, never success; `OD-MCP-RC-02`; `test_mcp_deadline_and_resilience.py` |
+| G-RB-04 | code review | CLOSED_IN_CODE (after audit AF-01, AF-10) | every tool body runs under `sanitized_tool_errors`: raw exception text never reaches the wire on `run_agent`, discovery, invoke and custom tools; unknown-tool echo capped at 128 chars; unserializable (circular/deep) results are typed |
+| G-DL-01 / R-P7-04 | R-P7-04 | CLOSED_IN_CODE (after audit AF-02) | `max_call_seconds` governed-cancel trigger, `MCP_DEADLINE_EXCEEDED` with explicit outcome (`cancelled`, `failed`, `outcome_unknown`), never success; `OD-MCP-RC-02`; `test_mcp_deadline_and_resilience.py`, `test_mcp_rc_audit_corrections.py`. Effective wall time is `max_call_seconds` plus the bounded drain (30 s default), see "Audit follow-up" |
 | G-DL-02 | code review | ACCEPTED_SCOPED | catalog invoke bounded (`invoke_timeout_s`, outcome unknown); a non-cooperative synchronous thread cannot be terminated in-process |
 | G-DL-03 | code review | ACCEPTED_SCOPED | the cap bounds MCP handler occupancy; supervised detached executions are bounded by the transport-detachment supervisor; catalog invoke now passes admission |
 | G-DL-04 | code review | ACCEPTED_SCOPED | disconnect probe failure is indistinguishable from "connected"; the `CancelledError` path still cancels; physical disconnect proof stays in the F3 L3 files |
@@ -78,6 +78,25 @@ ACC-14 (no `inspect.getsource`; asserts the host deadline authority is untouched
 6. No operator ruling is recorded for closure conditions C5 and C8.
 7. The gap register is mostly a P1 snapshot; `MCP_SERVER_X_INDEX.md` still says OD-MCP-01..07 PENDING; the auditor register still reads `RECORDED_PENDING_OPERATOR_DISPOSITION`.
 These need an operator or roadmap-sync owner to correct the P8 originals; this record does not edit them.
+
+## Audit follow-up (independent audit G6, verdict PARTIAL at `93a089d3c`; implementer's response)
+
+The audit dossier is `MCP_SERVER_X_RC_INDEPENDENT_AUDIT_DOSSIER.md` (branch `mcp-rc-audit`). Product or test changes after the audit void it for the changed paths; a delta re-audit is required before certification.
+
+| Finding | Response |
+| --- | --- |
+| AF-01 raw host exception text from `run_agent` | **Fixed in code**: `sanitized_tool_errors` around every tool body; tests for `run_agent`, `list_agents`, catalog list/describe |
+| AF-02 no `MCP_DEADLINE_EXCEEDED` when the host ends cancelled or failed after the bound | **Fixed in code**: outcomes `cancelled` / `failed`; two parametrized tests |
+| AF-03 custom host tools outside the principal gate | **Fixed in code** (product option chosen): default gate, explicit `public_custom_tool_names` opt-out; HTTP tests (refused without principal and handler never runs; allowed with a key and with the opt-out) |
+| AF-04 five surviving auditor mutants (A3, A3b, A11, A12, A13) | **Tests added** (`test_mcp_rc_audit_corrections.py`); eight matching mutants M9-M16 added to the harness |
+| AF-05 no real factory composition test; vehicle replaced | **ACCEPTED_SCOPED**: real product-factory composition (strict local-workspace app) stays unverified for MCP opt-in; restoration is owned by the strict-product test-support/scaffold owner together with the transferred `[product]` xfail. Not closed by this campaign |
+| AF-06 wall time is `max_call_seconds` + drain (31.2 s for 1.0 s at the default 30 s drain) | **Documented**: the effective bound is `max_call_seconds` plus the host drain; the deadline tests shorten the drain to 0.25 s. Not changed (the drain is the existing transport constant) |
+| AF-07 "only a governed-cancel trigger" is not literally true for LOCAL_DEV `run_agent` and catalog invoke | **Wording amended**: with a protected cancel context the bound requests the governed cancel; without one (LOCAL_DEV) and for catalog invoke it cancels the awaited call (`asyncio.wait_for`). It never creates a deadline authority, never reports success, and never changes the canonical run budget |
+| AF-08 loopback guard trusts `request.client.host` | **Documented**: do not use `LOCAL_DEV_EXPLICIT` behind a same-host proxy; the guard is a development convenience, not an access control |
+| AF-09 `execute_mcp_agent_task` is public with caller-asserted identity; the `unverified` label is not enforced anywhere | **Documented**: the label is evidence for audit and governance, not a gate; `execute_mcp_agent_task` is a low-level entry for hosts that already resolved identity; prefer `execute_mcp_agent_task_with_resolved_identity` |
+| AF-10 deep/circular results give uncoded errors | **Fixed in code** with AF-01 |
+| AF-11..AF-14 | **Accepted as declared** (reference server defaults to LOCAL_DEV in fixtures; factories expose no `identity_mode` by design; `max_call_seconds` is a composition parameter not yet threaded through facades; `initialize`/`tools/list` unauthenticated on API-key hosts is pre-existing protocol behaviour) |
+| AF-15 / AF-16 | INFO, accepted; the `[product]` xfail owner/ticket must be named by the operator before certification |
 
 ## Deviations from the approved plan (implementer-disclosed)
 

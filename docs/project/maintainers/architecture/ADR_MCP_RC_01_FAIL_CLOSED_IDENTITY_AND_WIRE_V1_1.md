@@ -16,8 +16,9 @@ At the MCP-SERVER-X P8 closure a host mounted without effective Harness Auth tru
 2. **Local development is an explicit code opt-in.** `LOCAL_DEV_EXPLICIT` is chosen only by a composition parameter, never by an environment variable or a configuration default. It is admitted only for in-process calls and loopback clients, never for catalog invoke, never downgrades configured auth, labels tasks `mcp_identity_assertion=unverified`, and logs a warning when composed.
 3. **Request-time auth resolution.** Coupling installs a resolver, so identity wired on the host after MCP coupling (the order used by three factories) is honoured; no one-shot copy.
 4. **One bounded-result choke point and one wire-error contract** (`mcp_wire_errors`, `mcp_result_bounds`): every result-producing path is size-checked incrementally; overflow is always `MCP_RESULT_BOUND_EXCEEDED` with `isError=true`; legacy lowercase strings map to declared `MCP_*` codes and stay in the detail.
-5. **The MCP call bound is a transport trigger, not a deadline authority** (`OD-MCP-RC-02`): `max_call_seconds` requests the existing governed cancel; the canonical Execution deadline remains with the host (`ExecutionDeadlineAuthorityResolver`, run budget).
-6. **Correlation, not authority:** `mcp_invocation_id` correlates one MCP call with `task_id`, `run_id` and `execution_id`.
+5. **The MCP call bound is a transport trigger, not a deadline authority** (`OD-MCP-RC-02`): with a protected cancel context `max_call_seconds` requests the existing governed cancel and applies the bounded drain; without one (`LOCAL_DEV_EXPLICIT`) and for catalog invoke it cancels the awaited call. It never reports success, never creates a deadline authority and never changes the host's run budget (`ExecutionDeadlineAuthorityResolver` stays host-owned). The effective wall time is `max_call_seconds` plus the host drain.
+6. **Every tool is behind the principal gate by default** (custom host tools included; explicit `public_custom_tool_names` opt-out) and runs under `sanitized_tool_errors`: raw exception text never reaches the wire.
+7. **Correlation, not authority:** `mcp_invocation_id` correlates one MCP call with `task_id`, `run_id` and `execution_id`.
 
 ## Consequences
 
@@ -36,4 +37,6 @@ At the MCP-SERVER-X P8 closure a host mounted without effective Harness Auth tru
 - A non-cooperative synchronous catalog tool thread cannot be terminated in-process; MCP guarantees a bounded wait and `MCP_DEADLINE_EXCEEDED` with an unknown outcome, never success.
 - The concurrency cap bounds MCP handler occupancy; executions handed to the transport-detachment supervisor are bounded by that supervisor.
 - A failing disconnect probe is indistinguishable from a connected client; cancellation through the `CancelledError` path still applies.
+- `LOCAL_DEV_EXPLICIT` trusts `request.client.host`; behind a same-host proxy the loopback guard is defeated, so the mode must not be used behind a proxy (a development convenience, not an access control).
+- `execute_mcp_agent_task` remains a public low-level entry that accepts caller-asserted tenant and user for hosts that already resolved identity; the `unverified` task label is evidence, not a gate.
 - `apply_harness_auth_middleware` still attaches nothing when `require_api_key` is set without a key or provider; the MCP per-call gate fails closed regardless (owner: the harness host, not MCP).
