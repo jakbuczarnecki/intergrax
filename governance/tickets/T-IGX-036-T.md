@@ -6,14 +6,13 @@ Small integration repairs that the P5 lanes could not fix inside their write set
 
 ## Plan digest
 
-Plan digest: 5cdfbe6ecb8a40549275f275b877cb9d94afc822979621e4decce370c3b1afbc
+Plan digest: cc38152872df5d31815d3804832da35b8e987c5ae6e10e5efc628bb93eeabccd
 
 Canonical plan: [`governance/tickets/plans/PLAN_T-IGX-036-T.md`](plans/PLAN_T-IGX-036-T.md).
 
 ## Approved
 
-Approved: operator-delegate @ 2026-11-13T13:50:56+01:00
-Delegation: docs/project/maintainers/qualification/platform_domain_completeness/operator_decisions/DELEGATION-PDC-P6-REPAIR.md@a2bc003fd01820135f2b2e3b78ba9217c82eb825
+_Pending: delegate re-signing per Amendment 3 of [`DELEGATION-PDC-P6-REPAIR.md`](../../docs/project/maintainers/qualification/platform_domain_completeness/operator_decisions/DELEGATION-PDC-P6-REPAIR.md). The implementer never writes this line._
 
 ## Test contract
 
@@ -30,4 +29,4 @@ uv run python -m scripts.governance.igx_gov ticket
 
 ## Lifecycle state
 
-plan_approved
+plan_pending

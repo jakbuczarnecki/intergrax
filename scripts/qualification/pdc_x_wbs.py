@@ -390,6 +390,8 @@ BATCHES: Final[tuple[Batch, ...]] = (
             "intergrax/platform/enterprise_audit/data/changed_since_impact_map.v1.json",
             "intergrax/platform/enterprise_audit/data/enterprise_audit_check_manifest.v1.json",
             "tests/qualification/ebh_5/_sqlite_touchpoint_registry.py",
+            "intergrax/runtime/observability/export_boundary.py",
+            "tests/qualification/pdc_x/d4/test_d4_no_product_vocabulary.py",
             "tests/qualification/pdc_x/xd/test_xd_02_agent_context.py",
             "tests/qualification/pdc_x/xd/test_xd_03_agent_governance.py",
             "tests/qualification/pdc_x/xd/test_xd_09_artifacts_context.py",
