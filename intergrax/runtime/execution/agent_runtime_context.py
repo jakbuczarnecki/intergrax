@@ -37,6 +37,11 @@ from intergrax.tools.registry.wiring import ToolWiringContext
 from intergrax.tools.registry.read import ToolRegistryRead
 
 if TYPE_CHECKING:
+    from intergrax.contracts.agent_runtime_governance import AgentRuntimeGovernancePort  # noqa: F401, I001
+    from intergrax.queueing.worker.registry import BackgroundTaskHandler, TaskExecutionRegistry  # noqa: F401
+    from intergrax.runtime.agent_governance.audit import GovernanceAuditRecorder  # noqa: F401
+    from intergrax.runtime.nexus.artifacts.governed_access import GovernedArtifactReadPort  # noqa: F401
+    from intergrax.runtime.nexus.artifacts.retention import ArtifactRetentionSweeper  # noqa: F401
     from intergrax.runtime.nexus.engine.runtime_state import RuntimeState  # noqa: I001
     from intergrax.runtime.nexus.config import RuntimeConfig
     from intergrax.runtime.governance.governance_evidence_recorder import (
@@ -445,3 +450,69 @@ class RuntimeContext:
             governance_evidence_recorder=governance_evidence_recorder,
             trace_writer=trace_writer,
         )
+
+
+# --------------------------------------------------------------------------- D8 composition helpers
+#
+# ``runtime/execution`` is an execution-engine zone: the EBH-4 gate allows ``runtime.nexus`` imports only
+# here and under ``runtime/nexus``. The persistence and worker composition roots therefore reach the
+# D8 artifact components through these helpers instead of importing ``runtime.nexus`` themselves.
+
+
+def open_sqlite_artifact_store(db_path: str) -> ArtifactStore:
+    """Open the durable SQLite artifact store (PDC-D8-R003)."""
+    from intergrax.runtime.nexus.artifacts.sqlite_artifact_store import SQLiteArtifactStore
+
+    return SQLiteArtifactStore(db_path)
+
+
+@dataclass(frozen=True)
+class WorkerArtifactServices:
+    """What a worker root composed for D8: the sweep owner, its handler and, when governed, the read port."""
+
+    sweeper: "ArtifactRetentionSweeper"
+    sweep_handler: "BackgroundTaskHandler"
+    read_port: Optional["GovernedArtifactReadPort"]
+
+
+def compose_worker_artifact_services(
+    worker_registry: "TaskExecutionRegistry",
+    *,
+    artifact_store: ArtifactStore,
+    governance: Optional["AgentRuntimeGovernancePort"] = None,
+    audit: Optional["GovernanceAuditRecorder"] = None,
+) -> WorkerArtifactServices:
+    """Register the artifact retention sweep and build the governed read port (PDC-D8-R008, R014).
+
+    Wiring of existing D8 components only: the sweep is a handler on the given
+    ``TaskExecutionRegistry`` and the port reads through ``ExecutionArtifactSource``. The read
+    port needs the governance boundary and its audit recorder together; without them no read
+    surface is created.
+    """
+    from intergrax.contracts.artifact_ref import ArtifactClass
+    from intergrax.runtime.nexus.artifacts.governed_access import GovernedArtifactReadPort
+    from intergrax.runtime.nexus.artifacts.retention import (
+        ArtifactRetentionSweeper,
+        make_retention_sweep_handler,
+        register_retention_sweep,
+    )
+    from intergrax.runtime.nexus.artifacts.sources import ExecutionArtifactSource
+
+    if governance is not None and audit is None:
+        raise ValueError("a governed artifact read port needs the governance audit recorder as well")
+    sweeper = ArtifactRetentionSweeper(artifact_store, audit=audit)
+    register_retention_sweep(worker_registry, sweeper)
+    read_port: GovernedArtifactReadPort | None = None
+    if governance is not None and audit is not None:
+        source = ExecutionArtifactSource(artifact_store)
+        read_port = GovernedArtifactReadPort(
+            governance=governance,
+            audit=audit,
+            sources={ArtifactClass.EXECUTION_EVIDENCE: source, ArtifactClass.TOOL_OUTPUT: source},
+        )
+    # The same handler the registry now holds, for an in-process host that runs the sweep directly.
+    return WorkerArtifactServices(
+        sweeper=sweeper,
+        sweep_handler=make_retention_sweep_handler(sweeper),
+        read_port=read_port,
+    )

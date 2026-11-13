@@ -89,10 +89,10 @@ def test_r015_lkw_keys_live_on_the_product_side() -> None:
 def test_r015_legacy_flat_keys_still_construct_and_resolve_through_the_product_wiring(
     tmp_path: Path,
 ) -> None:
-    # The wiring probes <repo_root>/scripts/lkw-host.py; use a stub root so the assertion does
+    # The wiring probes <repo_root>/scripts/maintenance/lkw-host.py; use a stub root so the assertion does
     # not depend on the launcher location in the checkout.
-    (tmp_path / "scripts").mkdir()
-    (tmp_path / "scripts" / "lkw-host.py").write_text("# stub launcher", encoding="utf-8")
+    (tmp_path / "scripts" / "maintenance").mkdir(parents=True)
+    (tmp_path / "scripts" / "maintenance" / "lkw-host.py").write_text("# stub launcher", encoding="utf-8")
     legacy = _deployment(
         lkw_hybrid_daemon_enabled=True,
         lkw_daemon_bind_host="127.0.0.1",

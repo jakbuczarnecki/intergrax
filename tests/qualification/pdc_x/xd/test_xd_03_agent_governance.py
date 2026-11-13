@@ -195,17 +195,6 @@ def test_xd03_a_tool_call_without_a_governance_permit_is_denied_and_never_execut
     assert "agent_runtime_governance_capability_not_granted" in steps
 
 
-@pytest.mark.xfail(
-    strict=True,
-    reason=(
-        "FINDING-7 (D6 x governance evidence): a call refused for a missing capability grant is not recorded in "
-        "the governance audit sink. AgentRuntimeGovernancePipeline.evaluate "
-        "(intergrax/runtime/agent_governance/pipeline.py) calls require_capability_granted, which raises, before "
-        "audit_recorder.record_decision runs, so only policy-stage decisions reach the audit sink; the most basic "
-        "denial (no permit) leaves audit evidence only as a run trace event. Smallest repair: record a DENY "
-        "decision (reason capability_not_granted) in the pipeline before re-raising CapabilityNotGrantedError."
-    ),
-)
 def test_xd03_a_missing_permit_denial_reaches_the_governance_audit_sink() -> None:
     executor = _CountingExecutor()
     invoker, harness = _invoker(executor, {}, scope={TOOL})

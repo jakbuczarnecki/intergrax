@@ -22,6 +22,7 @@ from intergrax.contracts.artifact_ref import (
     ArtifactProvenance,
     ArtifactRetentionClass,
 )
+from intergrax.core.security.raw_secret_gate import _CREDENTIAL_FORMATS
 from intergrax.runtime.nexus.artifacts.context_reference import ArtifactReferenceToken
 from intergrax.runtime.nexus.artifacts.models import Artifact
 from intergrax.runtime.nexus.artifacts.retention import ArtifactRetentionSchedule, resolve_expiry
@@ -30,6 +31,20 @@ from intergrax.utils.time_provider import SystemTimeProvider
 
 DEFAULT_SPILL_THRESHOLD_BYTES = 16 * 1024
 DEFAULT_PREVIEW_CHARS = 512
+SCRUBBED_PLACEHOLDER = "[REDACTED]"
+
+
+def scrub_credential_literals(body: bytes) -> bytes:
+    """Replace credential-format literals (the raw-secret gate's patterns) before anything is persisted.
+
+    The scan runs over a lossless ``latin-1`` view, so bytes outside a match, including non-UTF-8
+    binary content, are preserved exactly; a body without a match is returned unchanged.
+    """
+    text = body.decode("latin-1")
+    scrubbed = text
+    for pattern in _CREDENTIAL_FORMATS:
+        scrubbed = pattern.sub(SCRUBBED_PLACEHOLDER, scrubbed)
+    return body if scrubbed == text else scrubbed.encode("latin-1")
 
 
 @dataclass(frozen=True)
@@ -78,6 +93,7 @@ class ToolOutputSpiller:
             text = content if isinstance(content, str) else content.decode("utf-8", errors="replace")
             return ToolOutputSpill(inline=text, reference=None)
 
+        body = scrub_credential_literals(body)
         created_at = self._clock()
         stored = self._store.put(
             Artifact(

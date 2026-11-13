@@ -322,16 +322,6 @@ def test_xd10_credential_used_by_a_tool_never_lands_in_artifacts_or_evidence(tmp
         assert secret.encode() not in surface
 
 
-@pytest.mark.xfail(
-    strict=True,
-    reason=(
-        "FINDING-5 (D8 x D6): ToolOutputSpiller persists tool output verbatim. A tool result that echoes a "
-        "credential-format literal is written to the durable artifact store (and later served by the governed "
-        "port) with no redaction or refusal. intergrax/runtime/nexus/artifacts/spill.py has no secret scan hook. "
-        "Smallest repair: scrub or refuse credential-format literals (reuse the patterns in "
-        "intergrax/core/security/raw_secret_gate.py) before store.put in ToolOutputSpiller.spill_if_large."
-    ),
-)
 def test_xd10_tool_output_echoing_a_credential_is_not_persisted_raw(tmp_path: Path) -> None:
     alphabet = string.ascii_uppercase + string.digits
     literal = "AK" + "IA" + "".join(random.SystemRandom().choice(alphabet) for _ in range(16))  # AWS key format

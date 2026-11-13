@@ -39,6 +39,7 @@ _MARKER_RE: Final = re.compile(
     r"artifact://(?P<tenant>[^/@#\s]+)/(?P<cls>[a-z_]+)/(?P<id>[^/@#\s]+)@(?P<ver>\d+)#(?P<digest>sha256:[0-9a-f]{64})"
 )
 REFERENCE_FRAGMENT_PREFIX: Final = "[artifact reference] "
+REFERENCE_TOOL_NAME: Final = "artifact.reference"
 
 
 class ArtifactReferenceToken(BaseModel):
@@ -97,8 +98,19 @@ class ArtifactReferenceToken(BaseModel):
         )
 
 
-def reference_fragment(token: ArtifactReferenceToken, *, fragment_id: str) -> ContextFragment:
-    """A mandatory context fragment that carries the reference (never compacted away)."""
+def reference_fragment(
+    token: ArtifactReferenceToken,
+    *,
+    fragment_id: str,
+    tool_call_id: str | None = None,
+    tool_name: str = REFERENCE_TOOL_NAME,
+) -> ContextFragment:
+    """A mandatory context fragment that carries the reference (never compacted away).
+
+    The fragment is a tool observation, so it names the originating call (``tool_call_id`` and
+    ``tool_name`` metadata): provider canonicalization rejects an unlinked tool output. Without an
+    explicit call id the link is the stable per-artifact id ``artifact-ref:<artifact_id>``.
+    """
     content = f"{REFERENCE_FRAGMENT_PREFIX}{token.to_marker()}"
     return ContextFragment(
         fragment_id=fragment_id,
@@ -110,7 +122,11 @@ def reference_fragment(token: ArtifactReferenceToken, *, fragment_id: str) -> Co
         freshness_score=1.0,
         confidence_score=1.0,
         mandatory=True,
-        metadata={"artifact_ref": token.model_dump(mode="json")},
+        metadata={
+            "artifact_ref": token.model_dump(mode="json"),
+            "tool_call_id": tool_call_id or f"artifact-ref:{token.artifact_id}",
+            "tool_name": tool_name,
+        },
         authority_class=ContextAuthorityClass.TOOL_OBSERVATION,
         scope_ref=ContextFragmentScopeRef(tenant_id=token.tenant_id),
     )
