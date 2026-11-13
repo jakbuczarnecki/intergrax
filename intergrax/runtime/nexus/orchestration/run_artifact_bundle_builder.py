@@ -4,8 +4,8 @@
 
 from __future__ import annotations
 
+import hashlib
 from pathlib import Path
-from typing import Any
 
 from intergrax.contracts.agent_execution_result import AgentExecutionResult
 from intergrax.contracts.task_artifacts import (
@@ -35,7 +35,12 @@ def _owner_app_id(task: Task) -> str:
     return "unknown"
 
 
-def _staged_application_artifacts(task: Task, *, owner_app_id: str) -> list[ApplicationArtifactRef]:
+def _staged_application_artifacts(
+    task: Task,
+    *,
+    owner_app_id: str,
+    run_id: str | None = None,
+) -> list[ApplicationArtifactRef]:
     raw = task.metadata.get(APPLICATION_ARTIFACTS_STAGING_KEY, [])
     if not isinstance(raw, list):
         return []
@@ -47,6 +52,8 @@ def _staged_application_artifacts(task: Task, *, owner_app_id: str) -> list[Appl
         payload.setdefault("task_id", task.task_id)
         payload.setdefault("tenant_id", task.tenant_id)
         payload.setdefault("owner_app_id", owner_app_id)
+        if run_id:
+            payload.setdefault("run_id", run_id)
         refs.append(ApplicationArtifactRef.model_validate(payload))
     return refs
 
@@ -119,7 +126,7 @@ def _sandbox_artifact_refs(
                 relative_path=rel,
                 uri=path.resolve().as_uri(),
                 size_bytes=len(data),
-                sha256="",
+                sha256=hashlib.sha256(data).hexdigest(),
                 task_id=task.task_id,
                 tenant_id=task.tenant_id,
             )
@@ -137,10 +144,12 @@ def build_run_artifact_bundle(
 ) -> RunArtifactBundle:
     """Materialize artifact rollup from staged metadata and active isolation sessions."""
     owner_app_id = _owner_app_id(task)
+    run_id = executions[-1].run_id if executions else None
     return RunArtifactBundle(
         task_id=task.task_id,
         graph_id=graph_id,
-        application=_staged_application_artifacts(task, owner_app_id=owner_app_id),
+        run_id=run_id,
+        application=_staged_application_artifacts(task, owner_app_id=owner_app_id, run_id=run_id),
         workspace=_workspace_artifact_refs(
             task,
             executions,
