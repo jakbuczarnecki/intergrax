@@ -1,0 +1,37 @@
+{
+  "repo_head": "f3078b293ecee402583b3d6ad9ef5aaeff0b2d1d",
+  "results": [
+    {
+      "mutant_id": "A3-cross-loop-payload-bound-removed",
+      "invariant": "cross-loop catalog payload is bounded at the MCP boundary",
+      "path": "intergrax/applications/_shared/mcp_catalog_invocation_bridge.py",
+      "old": "            return bound_cross_loop_catalog_payload(terminal.payload)\n",
+      "new": "            return terminal.payload\n",
+      "tests": [
+        "tests/unit/applications/test_mcp_result_bounds_and_error_contract.py",
+        "tests/unit/applications/test_mcp_catalog_cross_loop_ingress_qualification.py",
+        "tests/unit/applications/test_mcp_catalog_f3_cross_loop_cancel_c_physical_l3.py"
+      ],
+      "status": "survived",
+      "exit_code": 0,
+      "seconds": 57.3,
+      "tail": "...........................................                              [100%]\n43 passed in 6.22s"
+    },
+    {
+      "mutant_id": "A3b-cross-loop-success-payload-bound-removed",
+      "invariant": "cross-loop success payload is bounded",
+      "path": "intergrax/applications/_shared/mcp_catalog_invocation_bridge.py",
+      "old": "            **bound_cross_loop_catalog_payload(terminal.payload),\n",
+      "new": "            **terminal.payload,\n",
+      "tests": [
+        "tests/unit/applications/test_mcp_result_bounds_and_error_contract.py",
+        "tests/unit/applications/test_mcp_catalog_cross_loop_ingress_qualification.py",
+        "tests/unit/applications/test_mcp_catalog_f3_cross_loop_cancel_c_physical_l3.py"
+      ],
+      "status": "survived",
+      "exit_code": 0,
+      "seconds": 16.1,
+      "tail": "...........................................                              [100%]\n43 passed in 5.03s"
+    }
+  ]
+}

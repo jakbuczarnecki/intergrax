@@ -1,0 +1,1 @@
+UNAUTH tools/list -> ['list_agents', 'run_agent']
