@@ -146,7 +146,7 @@ BATCHES: Final[tuple[Batch, ...]] = (
         "Regression: duplicate `ollama` catalog slug breaks full integration bootstrap (7aa9cfa18)",
         "T-IGX-036-M",
         "W1",
-        ("intergrax/integrations/providers/embedding_provider/",),
+        ("intergrax/integrations/providers/embedding_provider/", "tests/qualification/pdc_x/reg_p/"),
         "—",
         (),
         GATE_PRODUCT,
