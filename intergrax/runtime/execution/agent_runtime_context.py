@@ -37,7 +37,7 @@ from intergrax.tools.registry.wiring import ToolWiringContext
 from intergrax.tools.registry.read import ToolRegistryRead
 
 if TYPE_CHECKING:
-    from intergrax.contracts.agent_runtime_governance import AgentRuntimeGovernancePort  # noqa: F401, I001
+    from intergrax.runtime.agent_governance.ports import AgentRuntimeGovernancePort  # noqa: F401, I001
     from intergrax.queueing.worker.registry import BackgroundTaskHandler, TaskExecutionRegistry  # noqa: F401
     from intergrax.runtime.agent_governance.audit import GovernanceAuditRecorder  # noqa: F401
     from intergrax.runtime.nexus.artifacts.governed_access import GovernedArtifactReadPort  # noqa: F401
