@@ -7,9 +7,16 @@ from __future__ import annotations
 import logging
 from typing import TYPE_CHECKING
 
+from intergrax.context.assembly_runtime import (
+    validate_context_assembly_event_recorder,
+    validate_context_assembly_ucl_runtime,
+)
+from intergrax.context.budget import global_allocatable_tokens, resolve_authoritative_model_budget
+from intergrax.context.budget.assembly_strategies import snapshot_context_assembly_strategies
+from intergrax.context.budget.compaction_apply import apply_fragment_compaction
+from intergrax.context.budget.mandatory_reserve import estimate_mandatory_reserve_tokens
 from intergrax.context.contracts import (
     AssembledContext,
-    ContextAssemblyProvenance,
     ContextAssemblyRequest,
     ContextFragment,
     ContextProviderContext,
@@ -19,6 +26,25 @@ from intergrax.context.errors import (
     ContextProviderContractViolationError,
     RequiredContextSourceUnavailableError,
 )
+from intergrax.context.formatter import (
+    DefaultContextFormatter,
+    merge_fragment_messages,
+    merge_iterative_tool_feedback_messages,
+)
+from intergrax.context.planner import ContextPlanner
+from intergrax.context.policy.authority import filter_fragments_by_authority_contract
+from intergrax.context.policy.egress import filter_fragments_by_provider_egress
+from intergrax.context.policy.hard_stages import run_hard_policy_pre_stages
+from intergrax.context.policy.invariants import (
+    build_fragment_invariant_snapshots,
+    validate_policy_pipeline_result,
+)
+from intergrax.context.policy.pipeline import (
+    ContextPolicyStrategies,
+    default_context_policy_strategies,
+)
+from intergrax.context.policy.scope_isolation import isolate_assembly_scope
+from intergrax.context.protocols import ContextPolicyPipeline
 from intergrax.context.provider_lifecycle import (
     assembly_provenance_for_fragment,
     canonicalize_fragment,
@@ -29,52 +55,23 @@ from intergrax.context.provider_lifecycle import (
     validate_required_sources_fulfilled,
     validate_required_sources_have_eligible_providers,
 )
-from intergrax.context.budget import global_allocatable_tokens, resolve_authoritative_model_budget
-from intergrax.context.budget.assembly_strategies import snapshot_context_assembly_strategies
-from intergrax.context.budget.compaction_apply import apply_fragment_compaction
-from intergrax.context.budget.mandatory_reserve import estimate_mandatory_reserve_tokens
-from intergrax.context.planner import ContextPlanner
+from intergrax.context.ranker import DefaultContextRanker
+from intergrax.context.registry import ContextPluginRegistry
 from intergrax.context.session_history import (
     HandleSessionHistoryProvider,
     SessionHistorySnapshot,
 )
-from intergrax.context.policy.pipeline import (
-    ContextPolicyStrategies,
-    default_context_policy_strategies,
-)
-from intergrax.context.policy.authority import filter_fragments_by_authority_contract
-from intergrax.context.policy.hard_stages import run_hard_policy_pre_stages
-from intergrax.context.policy.invariants import (
-    build_fragment_invariant_snapshots,
-    validate_policy_pipeline_result,
-)
-from intergrax.context.policy.scope_isolation import isolate_assembly_scope
-from intergrax.context.protocols import ContextPolicyPipeline
-from intergrax.context.formatter import (
-    DefaultContextFormatter,
-    merge_fragment_messages,
-    merge_iterative_tool_feedback_messages,
-)
-from intergrax.context.ranker import DefaultContextRanker
-from intergrax.context.registry import ContextPluginRegistry
 from intergrax.context.tracking.context_spans import context_span
 from intergrax.llm.messages import compute_model_facing_messages_hash
-from intergrax.context.assembly_runtime import (
-    validate_context_assembly_event_recorder,
-    validate_context_assembly_ucl_runtime,
-)
-from intergrax.runtime.observability.context_counters import get_context_counters
-from intergrax.runtime.policy.context_assembly_policy import run_pre_context_policy_gate
+from intergrax.runtime.nexus.context.assembly_runtime_deps import ContextAssemblyRuntimeDependencies
 from intergrax.runtime.nexus.context.compile_service import compile_chat_messages
 from intergrax.runtime.nexus.context.context_compiler import ContextCompiler
-from intergrax.runtime.nexus.context.model_capability import snapshot_model_capability
 from intergrax.runtime.nexus.context.context_compiler_models import (
     DegradationStepKind,
 )
 from intergrax.runtime.nexus.context.context_preflight import verify_context_preflight
 from intergrax.runtime.nexus.context.context_validator import DefaultContextValidator
-from intergrax.runtime.wiring.context_runtime_bridge import resolve_context_optimization_policy
-from intergrax.runtime.nexus.context.assembly_runtime_deps import ContextAssemblyRuntimeDependencies
+from intergrax.runtime.nexus.context.model_capability import snapshot_model_capability
 from intergrax.runtime.nexus.context.ucl_artifact_ownership_composition import (
     resolve_ucl_artifact_ownership_scope,
 )
@@ -83,10 +80,14 @@ from intergrax.runtime.nexus.context.ucl_orchestration import (
     NexusUCLExecutionReason,
     resolve_ucl_context_plan,
 )
+from intergrax.runtime.observability.context_counters import get_context_counters
+from intergrax.runtime.policy.context_assembly_policy import run_pre_context_policy_gate
+from intergrax.runtime.wiring.context_runtime_bridge import resolve_context_optimization_policy
+
 if TYPE_CHECKING:
+    from intergrax.contracts.runtime_event_recording import RuntimeEventRecorderPort
     from intergrax.llm.messages import ChatMessage
     from intergrax.runtime.context_lifecycle.contracts import ContextOptimizationPolicy
-    from intergrax.runtime.nexus.config import RuntimeConfig
 
 logger = logging.getLogger("intergrax.context.engine")
 
@@ -323,11 +324,14 @@ class DefaultNexusContextEngine:
             request=request,
         )
 
-        descriptors_by_id = {
-            bound.descriptor.provider_id: bound.descriptor for bound in bound_set.providers
-        }
+        descriptors_by_id = {bound.descriptor.provider_id: bound.descriptor for bound in bound_set.providers}
         collected_fragments, scope_excluded = isolate_assembly_scope(collected_fragments, request)
         fragments_excluded.extend(scope_excluded)
+
+        collected_fragments, egress_excluded = filter_fragments_by_provider_egress(
+            collected_fragments,
+        )
+        fragments_excluded.extend(egress_excluded)
 
         collected_fragments, hard_excluded, hard_decisions = run_hard_policy_pre_stages(
             collected_fragments,
@@ -443,11 +447,7 @@ class DefaultNexusContextEngine:
             session_history=session_history,
             resolved_global_budget_tokens=resolved_budget,
             optimization_policy=optimization_policy,
-            model_family=(
-                runtime_config.llm_adapter.model
-                if runtime_config.llm_adapter is not None
-                else None
-            ),
+            model_family=(runtime_config.llm_adapter.model if runtime_config.llm_adapter is not None else None),
             degradation_policy=strategy_snapshot.degradation_policy,
             prefer_longterm_memory=decision_profile.prefer_longterm_memory,
             prefer_rag_when_enabled=decision_profile.prefer_rag_when_enabled,
@@ -481,9 +481,7 @@ class DefaultNexusContextEngine:
 
         canonical_messages = list(ucl_resolution.messages)
         canonical_degradation_steps = (
-            context_plan.degradation_steps
-            if context_plan.degradation_steps
-            else (DegradationStepKind.FULL.value,)
+            context_plan.degradation_steps if context_plan.degradation_steps else (DegradationStepKind.FULL.value,)
         )
 
         planned_hash = compute_model_facing_messages_hash(canonical_messages)
@@ -513,10 +511,7 @@ class DefaultNexusContextEngine:
         messages = tuple(compile_result.messages)
         fragments_included = ucl_resolution.fragments_included
         fragments_excluded = tuple(fragments_excluded) + ucl_resolution.fragments_excluded
-        provenance = tuple(
-            assembly_provenance_for_fragment(fragment)
-            for fragment in fragments_included
-        )
+        provenance = tuple(assembly_provenance_for_fragment(fragment) for fragment in fragments_included)
 
         assembled = AssembledContext(
             messages=messages,

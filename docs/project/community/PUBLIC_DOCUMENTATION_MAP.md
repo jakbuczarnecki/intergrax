@@ -83,6 +83,7 @@ with Try LKW as the repository’s primary product action.
 | Explore Virtual Workforce / Virtual Workers | [Virtual Workforce](../overview/VIRTUAL_WORKFORCE.md) → [Autonomous Work](../architecture/AUTONOMOUS_WORK.md) |
 | Explore dynamic capability discovery, Agent/Skill/Tool ecosystem, or future marketplace architecture | [Capability Catalog & Discovery](../architecture/CAPABILITY_CATALOG_AND_DISCOVERY.md) — frozen architecture for governed federated Agent/Skill/Tool discovery; implementation planned |
 | Explore strategic future directions | [Multiplayer AI](../capabilities/architecture/MULTIPLAYER_AI.md) (enterprise core shipped in certified scopes; MP-8/MP-9 future) · [Virtual Workforce](../overview/VIRTUAL_WORKFORCE.md) · [Autonomous Organization](../overview/AUTONOMOUS_ORGANIZATION.md) · [Platform Extensibility / Plugins](../architecture/PLATFORM_PLUGINS.md) · [Agent Marketplace](../overview/AGENT_MARKETPLACE.md) · [Capability Catalog & Discovery](../architecture/CAPABILITY_CATALOG_AND_DISCOVERY.md) - see [Strategic directions](#strategic-directions) below |
+| Read about the planned Scenario Factory | [Scenario Factory](../overview/SCENARIO_FACTORY.md) - planned, not yet implemented; not a Scenario Proof - see [Strategic directions](#strategic-directions) below |
 | Check current proof status | [docs/project/proofs/PROOFS.md](../proofs/PROOFS.md) |
 | Explore Scenario Proofs (problem-first) | [Proof Library](../proofs/PROOF_LIBRARY.md) |
 | Compare Intergrax with common approaches | [Where Intergrax fits](../overview/WHY_INTERGRAX.md#where-intergrax-fits) |
@@ -220,6 +221,14 @@ and Nexus capability routing. It is **not** a shipped public marketplace,
 publisher portal, or commercial catalog today.
 
 [Open the Agent Marketplace concept and reference architecture](../overview/AGENT_MARKETPLACE.md)
+
+### Scenario Factory
+
+**Planned product layer - architecture and design only; not yet implemented**
+
+A planned layer for turning a business need into a designed and checked scenario on the governed platform, with a proposal-only IDE toolkit. It is not a Scenario Proof and not a call to action.
+
+[Open the Scenario Factory overview](../overview/SCENARIO_FACTORY.md)
 
 ---
 

@@ -59,7 +59,7 @@
     },
     "PLATFORM-FOUNDATION": {
       "INSPECTED": 2,
-      "INDEX_ONLY": 197,
+      "INDEX_ONLY": 198,
       "UNINSPECTED": 0
     }
   },
@@ -2354,6 +2354,12 @@
     {
       "kind": "qualification_suite",
       "path": "tests/qualification/multiplayer",
+      "category": "PLATFORM-FOUNDATION",
+      "status": "INDEX_ONLY"
+    },
+    {
+      "kind": "qualification_suite",
+      "path": "tests/qualification/pdc_x",
       "category": "PLATFORM-FOUNDATION",
       "status": "INDEX_ONLY"
     },
