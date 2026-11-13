@@ -6,22 +6,22 @@
 from __future__ import annotations
 
 import os
-from typing import Any, Dict, Iterable, List, Optional, Sequence, Union
+from collections.abc import Iterable, Sequence
+from typing import Any
 
 from openai import OpenAI
 
 from intergrax.llm.messages import ChatMessage
 from intergrax.llm_adapters.contracts.adapter_response import LLMAdapterResponse
-from intergrax.llm_adapters.contracts.llm_adapter import LLMAdapter
 from intergrax.llm_adapters.contracts.llm_provider import LLMProvider
-from intergrax.llm_adapters.contracts.structured_result import LLMStructuredResult, TStructured
-from intergrax.llm_adapters.contracts.stream_event import LLMStreamEvent
 from intergrax.llm_adapters.contracts.native_tool_choice import NativeToolChoice
+from intergrax.llm_adapters.contracts.stream_event import LLMStreamEvent
+from intergrax.llm_adapters.contracts.structured_result import LLMStructuredResult, TStructured
+from intergrax.llm_adapters.providers.openai_chat_completions_adapter import OpenAIChatCompletionsAdapter
 from intergrax.llm_adapters.providers.openai_compat_factory import (
     OpenAICompatProviderConfig,
     create_openai_compat_adapter,
 )
-from intergrax.llm_adapters.providers.openai_chat_completions_adapter import OpenAIChatCompletionsAdapter
 
 
 class _CompatAdapterBase(OpenAIChatCompletionsAdapter):
@@ -29,10 +29,10 @@ class _CompatAdapterBase(OpenAIChatCompletionsAdapter):
 
     def __init__(
         self,
-        client: Optional[OpenAI] = None,
-        model: Optional[str] = None,
-        base_url: Optional[str] = None,
-        api_key: Optional[str] = None,
+        client: OpenAI | None = None,
+        model: str | None = None,
+        base_url: str | None = None,
+        api_key: str | None = None,
         **defaults: Any,
     ) -> None:
         self._delegate = create_openai_compat_adapter(
@@ -52,9 +52,9 @@ class _CompatAdapterBase(OpenAIChatCompletionsAdapter):
         self,
         messages: Sequence[ChatMessage],
         *,
-        temperature: Optional[float] = None,
-        max_tokens: Optional[int] = None,
-        run_id: Optional[str] = None,
+        temperature: float | None = None,
+        max_tokens: int | None = None,
+        run_id: str | None = None,
     ) -> LLMAdapterResponse:
         return self._delegate.generate_messages(
             messages,
@@ -67,9 +67,9 @@ class _CompatAdapterBase(OpenAIChatCompletionsAdapter):
         self,
         messages: Sequence[ChatMessage],
         *,
-        temperature: Optional[float] = None,
-        max_tokens: Optional[int] = None,
-        run_id: Optional[str] = None,
+        temperature: float | None = None,
+        max_tokens: int | None = None,
+        run_id: str | None = None,
     ) -> Iterable[LLMStreamEvent]:
         return self._delegate.stream_messages(
             messages,
@@ -81,12 +81,12 @@ class _CompatAdapterBase(OpenAIChatCompletionsAdapter):
     def generate_with_tools(
         self,
         messages: Sequence[ChatMessage],
-        tools_schema: List[Dict[str, Any]],
+        tools_schema: list[dict[str, Any]],
         *,
-        temperature: Optional[float] = None,
-        max_tokens: Optional[int] = None,
+        temperature: float | None = None,
+        max_tokens: int | None = None,
         tool_choice: NativeToolChoice | None = None,
-        run_id: Optional[str] = None,
+        run_id: str | None = None,
     ) -> LLMAdapterResponse:
         return self._delegate.generate_with_tools(
             messages,
@@ -100,12 +100,12 @@ class _CompatAdapterBase(OpenAIChatCompletionsAdapter):
     def stream_with_tools(
         self,
         messages: Sequence[ChatMessage],
-        tools_schema: List[Dict[str, Any]],
+        tools_schema: list[dict[str, Any]],
         *,
-        temperature: Optional[float] = None,
-        max_tokens: Optional[int] = None,
+        temperature: float | None = None,
+        max_tokens: int | None = None,
         tool_choice: NativeToolChoice | None = None,
-        run_id: Optional[str] = None,
+        run_id: str | None = None,
     ) -> Iterable[LLMStreamEvent]:
         return self._delegate.stream_with_tools(
             messages,
@@ -121,9 +121,9 @@ class _CompatAdapterBase(OpenAIChatCompletionsAdapter):
         messages: Sequence[ChatMessage],
         output_model: type[TStructured],
         *,
-        temperature: Optional[float] = None,
-        max_tokens: Optional[int] = None,
-        run_id: Optional[str] = None,
+        temperature: float | None = None,
+        max_tokens: int | None = None,
+        run_id: str | None = None,
     ) -> LLMStructuredResult[TStructured]:
         return self._delegate.generate_structured(
             messages,
@@ -135,6 +135,9 @@ class _CompatAdapterBase(OpenAIChatCompletionsAdapter):
 
     def supports_streaming(self) -> bool:
         return self._delegate.supports_streaming()
+
+    def supports_tool_streaming(self) -> bool:
+        return self._delegate.supports_tool_streaming()
 
     def supports_tools(self) -> bool:
         return self._delegate.supports_tools()
@@ -291,15 +294,13 @@ class AzureAiInferenceChatAdapter(_CompatAdapterBase):
 
     def __init__(
         self,
-        client: Optional[OpenAI] = None,
-        model: Optional[str] = None,
-        base_url: Optional[str] = None,
-        api_key: Optional[str] = None,
+        client: OpenAI | None = None,
+        model: str | None = None,
+        base_url: str | None = None,
+        api_key: str | None = None,
         **defaults: Any,
     ) -> None:
-        resolved_base = (
-            base_url or os.getenv(self._CONFIG.base_url_env) or self._CONFIG.default_base_url
-        ).strip()
+        resolved_base = (base_url or os.getenv(self._CONFIG.base_url_env) or self._CONFIG.default_base_url).strip()
         if not resolved_base and client is None:
             raise RuntimeError(
                 "INTERGRAX_DEFAULT_AZURE_AI_INFERENCE_BASE_URL must be set "

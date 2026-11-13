@@ -3,9 +3,10 @@
 # Use, modification, or distribution without written permission is prohibited.
 
 from __future__ import annotations
+
 import json
-from collections.abc import Mapping
-from typing import Any, Dict, Iterable, List, Optional, Sequence, Union
+from collections.abc import Iterable, Sequence
+from typing import Any
 
 from intergrax.llm.messages import ChatMessage
 from intergrax.llm_adapters._shared.adapter_response_builders import (
@@ -13,40 +14,42 @@ from intergrax.llm_adapters._shared.adapter_response_builders import (
     final_stream_event,
     partial_stream_event,
 )
-from intergrax.llm_adapters.contracts.adapter_response import LLMAdapterResponse
-from intergrax.llm_adapters.contracts.finish_reason import LLMFinishReason
-from intergrax.llm_adapters.contracts.llm_adapter import LLMAdapter
-from intergrax.llm_adapters.base.base_llm_adapter import BaseLLMAdapter
-from intergrax.llm_adapters.contracts.llm_provider import LLMProvider
-from intergrax.llm_adapters.contracts.provider_extensions import LLMProviderExtensions
-from intergrax.llm_adapters.contracts.structured_result import LLMStructuredResult, TStructured
-from intergrax.llm_adapters.contracts.stream_event import LLMStreamEvent
-from intergrax.llm_adapters.contracts.token_usage import LLMTokenUsage
-from intergrax.llm_adapters.contracts.strict_tool_arguments import (
-    CanonicalFunctionToolDefinition,
-)
-from intergrax.llm_adapters.contracts.tool_call import LLMToolCall
-from intergrax.llm_adapters.contracts.native_tool_choice import (
-    NativeForcedFunctionChoice,
-    NativeToolChoice,
-)
-from intergrax.llm_adapters.providers._ollama_tool_choice_projection import (
-    project_ollama_native_tool_choice,
-)
 from intergrax.llm_adapters._shared.strict_tool_enforcement import (
     enforce_strict_tool_call_conformance,
     resolve_canonical_tool_definitions,
     wire_schemas_from_definitions,
 )
+from intergrax.llm_adapters.base.base_llm_adapter import BaseLLMAdapter
+from intergrax.llm_adapters.contracts.adapter_response import LLMAdapterResponse
+from intergrax.llm_adapters.contracts.finish_reason import LLMFinishReason
+from intergrax.llm_adapters.contracts.llm_provider import LLMProvider
+from intergrax.llm_adapters.contracts.native_tool_choice import (
+    NativeForcedFunctionChoice,
+    NativeToolChoice,
+)
+from intergrax.llm_adapters.contracts.provider_extensions import LLMProviderExtensions
+from intergrax.llm_adapters.contracts.stream_event import LLMStreamEvent
+from intergrax.llm_adapters.contracts.strict_tool_arguments import (
+    CanonicalFunctionToolDefinition,
+)
+from intergrax.llm_adapters.contracts.structured_result import LLMStructuredResult, TStructured
+from intergrax.llm_adapters.contracts.token_usage import LLMTokenUsage
+from intergrax.llm_adapters.contracts.tool_call import LLMToolCall
 from intergrax.llm_adapters.providers._langchain_compat import (
     tool_calls_from_langchain_message,
 )
 from intergrax.llm_adapters.providers._ollama_schema import prepare_ollama_generation_schema
+from intergrax.llm_adapters.providers._ollama_tool_choice_projection import (
+    project_ollama_native_tool_choice,
+)
 from intergrax.llm_adapters.providers.ollama_capabilities import (
     OllamaModelCapabilities,
     OllamaModelCapabilityResolver,
 )
-from intergrax.llm_adapters.registry.context_window import init_adapter_context_window_tokens
+from intergrax.llm_adapters.registry.context_window import (
+    init_adapter_context_window_tokens,
+    resolve_context_window_tokens,
+)
 from intergrax.utils import attribute_access
 
 
@@ -73,42 +76,35 @@ class LangChainOllamaAdapter(BaseLLMAdapter):
     Tool streaming is not implemented. Model-level tool capability may vary by model.
     """
 
-
     # Conservative context window estimates for common Ollama models.
     # Extend this mapping with the models you actually use.
-    _OLLAMA_CONTEXT_WINDOWS: Dict[str, int] = {
+    _OLLAMA_CONTEXT_WINDOWS: dict[str, int] = {
         # LLaMA 3 / LLaMA 3.1
         "llama3:8b": 8_192,
         "llama3:70b": 8_192,
         "llama3.1:8b": 16_384,
         "llama3.1:70b": 16_384,
-
         # Qwen 2 / Qwen 2.5
         "qwen2:7b": 32_768,
         "qwen2:72b": 32_768,
         "qwen2.5:1.5b": 32_768,
         "qwen2.5:7b": 32_768,
         "qwen2.5:14b": 32_768,
-
         # Phi-3 / Phi-3.5
         "phi3:mini": 4_096,
         "phi3:medium": 8_192,
         "phi3.5:mini": 128_000,
         "phi3.5:moe": 128_000,
-
         # Mistral / Mixtral
         "mistral:7b": 8_192,
         "mixtral:8x7b": 32_768,
-
         # StarCoder2
         "starcoder2:7b": 8_192,
         "starcoder2:15b": 8_192,
-
         # Gemma 2
         "gemma2:2b": 8_192,
         "gemma2:9b": 8_192,
         "gemma2:27b": 8_192,
-
         # openAI
         "gpt-oss:20b": 128_000,
         "gpt-oss:120b": 128_000,
@@ -116,36 +112,34 @@ class LangChainOllamaAdapter(BaseLLMAdapter):
 
     DEFAULT_MODEL = "llama3.1:latest"
 
-
     def _estimate_ollama_context_window_from_model(self, model: str) -> int:
         """
         Best-effort context window estimation for an Ollama model based on
         its name. This is computed once in the adapter __init__.
         """
-        name = (model or "").strip()
-        base = name.split(":", 1)[0]  # remove possible tags like ":latest"
-
-        if base in self._OLLAMA_CONTEXT_WINDOWS:
-            return self._OLLAMA_CONTEXT_WINDOWS[base]
-
-        # Conservative fallback if the model is unknown.
-        return 8_192
+        # Same single resolution path as ``__init__``: ModelCatalog first, the local table is
+        # only a catalog-resolved fallback.
+        return resolve_context_window_tokens(
+            LLMProvider.OLLAMA,
+            (model or "").strip(),
+            legacy_windows=self._OLLAMA_CONTEXT_WINDOWS,
+        )
 
     def __init__(
         self,
-        chat: Optional[Any] = None,
-        model: Optional[str] = None,
-        context_window_tokens: Optional[int] = None,
+        chat: Any | None = None,
+        model: str | None = None,
+        context_window_tokens: int | None = None,
         *,
         capability_resolver: OllamaModelCapabilityResolver | None = None,
-        base_url: Optional[str] = None,
+        base_url: str | None = None,
         **defaults,
     ):
         super().__init__()
         self._apply_defaults_call_config(defaults)
 
         resolved_model = model or self.DEFAULT_MODEL
-        chat_kwargs: Dict[str, Any] = {"model": resolved_model}
+        chat_kwargs: dict[str, Any] = {"model": resolved_model}
         if base_url is not None:
             chat_kwargs["base_url"] = base_url
         chat_type = _load_chat_ollama()
@@ -172,7 +166,6 @@ class LangChainOllamaAdapter(BaseLLMAdapter):
         self.provider = LLMProvider.OLLAMA
         self.model = self.chat.model
 
-
     @property
     def context_window_tokens(self) -> int:
         """
@@ -180,7 +173,6 @@ class LangChainOllamaAdapter(BaseLLMAdapter):
         configured Ollama model. Computed once in __init__.
         """
         return self._context_window_tokens
-    
 
     # --------------------------------------------------------
     # Internal helpers
@@ -262,8 +254,7 @@ class LangChainOllamaAdapter(BaseLLMAdapter):
         if isinstance(tool_choice, str) and tool_choice in {"auto", "required"}:
             return
         raise ValueError(
-            "Ollama native tool calling supports only tool_choice=None, 'auto', 'required', "
-            "or a forced function choice"
+            "Ollama native tool calling supports only tool_choice=None, 'auto', 'required', or a forced function choice"
         )
 
     @staticmethod
@@ -288,29 +279,25 @@ class LangChainOllamaAdapter(BaseLLMAdapter):
                 out.append(HumanMessage(content=m.content))
             elif m.role == "assistant":
                 if m.tool_calls:
-                    lc_tool_calls = [
-                        self._internal_tool_call_to_langchain(tc) for tc in m.tool_calls
-                    ]
+                    lc_tool_calls = [self._internal_tool_call_to_langchain(tc) for tc in m.tool_calls]
                     out.append(AIMessage(content=m.content, tool_calls=lc_tool_calls))
                 else:
                     out.append(AIMessage(content=m.content))
             elif m.role == "tool":
                 if not m.tool_call_id or not str(m.tool_call_id).strip():
                     raise ValueError("tool message requires tool_call_id")
-                out.append(
-                    ToolMessage(content=m.content, tool_call_id=str(m.tool_call_id))
-                )
+                out.append(ToolMessage(content=m.content, tool_call_id=str(m.tool_call_id)))
             else:
                 out.append(SystemMessage(content=f"[{m.role.upper()}]\n{m.content}"))
         return out
 
     @staticmethod
     def _with_ollama_options(
-        base_kwargs: Dict[str, Any],
+        base_kwargs: dict[str, Any],
         *,
-        temperature: Optional[float] = None,
-        max_tokens: Optional[int] = None,
-    ) -> Dict[str, Any]:
+        temperature: float | None = None,
+        max_tokens: int | None = None,
+    ) -> dict[str, Any]:
         """
         Ollama (via langchain_ollama) expects generation parameters inside
         the `options` dictionary.
@@ -338,9 +325,9 @@ class LangChainOllamaAdapter(BaseLLMAdapter):
         self,
         messages: Sequence[ChatMessage],
         *,
-        temperature: Optional[float] = None,
-        max_tokens: Optional[int] = None,
-        run_id: Optional[str] = None,
+        temperature: float | None = None,
+        max_tokens: int | None = None,
+        run_id: str | None = None,
     ) -> LLMAdapterResponse:
         call = self.usage.begin_call(run_id=run_id, adapter=self)
         response: LLMAdapterResponse | None = None
@@ -380,15 +367,13 @@ class LangChainOllamaAdapter(BaseLLMAdapter):
                 error_type=err_type,
             )
 
-
-
     def stream_messages(
         self,
         messages: Sequence[ChatMessage],
         *,
-        temperature: Optional[float] = None,
-        max_tokens: Optional[int] = None,
-        run_id: Optional[str] = None,
+        temperature: float | None = None,
+        max_tokens: int | None = None,
+        run_id: str | None = None,
     ) -> Iterable[LLMStreamEvent]:
         call = self.usage.begin_call(run_id=run_id, adapter=self)
         success = False
@@ -400,7 +385,7 @@ class LangChainOllamaAdapter(BaseLLMAdapter):
             in_tok = int(self.estimate_tokens_for_messages(messages, model_hint=self.model_name_for_token_estimation))
             lc_msgs = self._to_lc_messages(messages)
             kwargs = self._with_ollama_options(self.defaults, temperature=temperature, max_tokens=max_tokens)
-            buf: List[str] = []
+            buf: list[str] = []
 
             try:
                 with self._provider_dependency_attempt():
@@ -410,7 +395,9 @@ class LangChainOllamaAdapter(BaseLLMAdapter):
                             buf.append(c)
                             yield partial_stream_event(delta_content=c)
 
-                out_tok = int(self.estimate_tokens_for_text("".join(buf), model_hint=self.model_name_for_token_estimation))
+                out_tok = int(
+                    self.estimate_tokens_for_text("".join(buf), model_hint=self.model_name_for_token_estimation)
+                )
                 success = True
                 yield final_stream_event(
                     response=build_adapter_response(
@@ -454,8 +441,6 @@ class LangChainOllamaAdapter(BaseLLMAdapter):
                 error_type=err_type,
             )
 
-
-
     @property
     def model_capabilities(self) -> OllamaModelCapabilities:
         if self._model_capabilities is None:
@@ -465,6 +450,9 @@ class LangChainOllamaAdapter(BaseLLMAdapter):
     def refresh_model_capabilities(self) -> OllamaModelCapabilities:
         self._model_capabilities = self._capability_resolver.resolve(self.model)
         return self._model_capabilities
+
+    def supports_streaming(self) -> bool:
+        return True
 
     def supports_tools(self) -> bool:
         """Native non-streaming tool calling when the installed model declares tools."""
@@ -481,15 +469,13 @@ class LangChainOllamaAdapter(BaseLLMAdapter):
         messages: Sequence[ChatMessage],
         tools: Sequence[CanonicalFunctionToolDefinition],
         *,
-        temperature: Optional[float] = None,
-        max_tokens: Optional[int] = None,
+        temperature: float | None = None,
+        max_tokens: int | None = None,
         tool_choice: NativeToolChoice | None = None,
-        run_id: Optional[str] = None,
+        run_id: str | None = None,
     ) -> LLMAdapterResponse:
         if not self.supports_tools():
-            raise ValueError(
-                f"Ollama model does not declare native tool support: {self.model}"
-            )
+            raise ValueError(f"Ollama model does not declare native tool support: {self.model}")
         self._validate_ollama_tool_choice(tool_choice)
         tool_definitions = resolve_canonical_tool_definitions(tools)
         provider_tools = wire_schemas_from_definitions(tool_definitions)
@@ -513,7 +499,7 @@ class LangChainOllamaAdapter(BaseLLMAdapter):
                 temperature=temperature,
                 max_tokens=max_tokens,
             )
-            bind_kwargs: Dict[str, Any] = {}
+            bind_kwargs: dict[str, Any] = {}
             projected_choice = project_ollama_native_tool_choice(tool_choice)
             if projected_choice is not None:
                 bind_kwargs["tool_choice"] = projected_choice
@@ -528,9 +514,7 @@ class LangChainOllamaAdapter(BaseLLMAdapter):
             if tool_calls:
                 enforce_strict_tool_call_conformance(tool_calls, tool_definitions)
             content = self._coerce_ai_message_content(result)
-            finish = (
-                LLMFinishReason.TOOL_CALLS if tool_calls else LLMFinishReason.COMPLETED
-            )
+            finish = LLMFinishReason.TOOL_CALLS if tool_calls else LLMFinishReason.COMPLETED
             out_text = self._estimate_tool_output_text(content, tool_calls)
             out_tok = int(
                 self.estimate_tokens_for_text(
@@ -564,7 +548,6 @@ class LangChainOllamaAdapter(BaseLLMAdapter):
                 error_type=err_type,
             )
 
-
     @staticmethod
     def _coerce_parsed_structured_output(output_model: type[TStructured], parsed: Any) -> Any:
         if isinstance(parsed, output_model):
@@ -588,9 +571,9 @@ class LangChainOllamaAdapter(BaseLLMAdapter):
         messages: Sequence[ChatMessage],
         output_model: type[TStructured],
         *,
-        temperature: Optional[float] = None,
-        max_tokens: Optional[int] = None,
-        run_id: Optional[str] = None,
+        temperature: float | None = None,
+        max_tokens: int | None = None,
+        run_id: str | None = None,
     ) -> LLMStructuredResult[TStructured]:
         call = self.usage.begin_call(run_id=run_id, adapter=self)
         response: LLMAdapterResponse | None = None
@@ -651,6 +634,3 @@ class LangChainOllamaAdapter(BaseLLMAdapter):
                 success=success,
                 error_type=err_type,
             )
-
-    
-
