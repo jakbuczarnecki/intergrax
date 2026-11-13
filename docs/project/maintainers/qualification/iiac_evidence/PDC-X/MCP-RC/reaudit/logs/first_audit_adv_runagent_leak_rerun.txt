@@ -1,0 +1,2 @@
+run_agent host failure -> MCP_INTERNAL_ERROR: tool execution failed (RuntimeError)
+run_agent host failure -> MCP_INTERNAL_ERROR: tool execution failed (ValueError)

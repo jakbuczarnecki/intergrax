@@ -1,0 +1,3 @@
+PASS over-cap refused: MCP_CONCURRENT_CALL_LIMIT_EXCEEDED: mcp_concurrent_call_limit_exceeded
+PASS server-side CancelledError propagated unchanged (not converted to MCP_INTERNAL_ERROR)
+PASS slot released after cancellation (third call admitted)

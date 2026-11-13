@@ -1,0 +1,3 @@
+RESULT no auth configured isError= True executions= 0 | MCP_PRINCIPAL_REQUIRED: authenticated harness principal required for MCP calls
+RESULT key isError= False executions= 1 | {"task_id":"task_3faa859ce70849f4aa50492ff8cf0db4","run_id":"run_473650058f314915a48ae8a228487dab","state":"co
+RESULT key + forged tenant isError= True executions= 0 | MCP_TENANT_ASSERTION_CONFLICT: identity_conflict: tenant_id in request body conflicts with authenticated princ
