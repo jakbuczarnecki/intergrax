@@ -2,7 +2,7 @@
 
 **Source:** master plan R1 §6 (gaps), §3.4, §15.1 and §16 (conflicts) — [`SFX-MASTER-PLAN.md`](../../../../../governance/tickets/plans/SFX-MASTER-PLAN.md).  
 **Index:** [`SFX_INDEX.md`](./SFX_INDEX.md) · **Evidence pin:** `eadb1c2116feb0a2090b234a36fd4182bd6ace8d`  
-**Consolidation:** final dispositions are reconciled with the W1 research findings in `docs/project/capabilities/plan/satellites/scenario_factory/SFX_GAP_ANALYSIS.md` (T-IGX-037-C). Until then this register is authoritative.
+**Consolidation:** final dispositions are reconciled with the W1 research findings in `docs/project/maintainers/qualification/scenario_factory_x/SFX_GAP_ANALYSIS.md` (T-IGX-037-C). Until then this register is authoritative.
 
 Status vocabulary: `VERIFIED` (gap confirmed at the pin) · `MISSING_EVIDENCE` (not yet established; scheduled task). R1 changes: ▲ revised, ▼ new in R1.
 
@@ -45,3 +45,8 @@ Reported conflicts; none is resolved unilaterally by SFX.
 | C-AF-01 | `scripts/` changes interact with the ARCH-FREEZE inventory and SHA lock. | §15.1 | OPEN (standing constraint) | P4-B01 moved to W3; optional OD-SFX-12 only before `T-B7-LOCK-FREEZE-SHA` |
 | C-IIAC-01 | Every post-freeze product wave needs an ACT-N11 audited re-bind. | §16 | OPEN (standing constraint) | REBIND-Wn at the end of W3..W8; OD-SFX-09 |
 | C-ECAP-01 | Applicability of ECAP §16 ("update ECAP when a new domain is added") to a Tier-2 product module. | §16 | OPEN | Decided in the ADR-SFX-001 review (T-IGX-037-C) |
+
+### C-OD-02 — "Scenario Registry" in OD-SFX-01 (interpretation, recorded after review R-W0-05)
+
+OD-SFX-01 lists "Scenario Registry" among the SFX product components. The master plan implements it as a **catalog metadata sidecar** (`sfx.scenario_catalog_entry.v1`, ADR-SFX-005), not as a new registry. The reason is that the same OD forbids parallel mechanisms, and `ApplicationManifest` stays unchanged. This is an interpretation of the OD, not a change to it. It is confirmed or overruled when the operator accepts ADR-SFX-005 (OD-SFX-06).
+

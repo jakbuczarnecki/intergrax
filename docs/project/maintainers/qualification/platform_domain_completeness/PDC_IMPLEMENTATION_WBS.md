@@ -89,7 +89,7 @@ Rows classed `CURRENT_HEAD_REQUALIFICATION`, `ALREADY_CERTIFIED_REUSABLE`, `N/A_
 ## B-REG-P — Regression: duplicate `ollama` catalog slug breaks full integration bootstrap (7aa9cfa18)
 
 - **Ticket:** T-IGX-036-M · **Wave:** W1 · **ADR:** — · **Auditor:** IA-D1 (plug_03 replay)
-- **Write set:** `intergrax/integrations/providers/embedding_provider/`
+- **Write set:** `intergrax/integrations/providers/embedding_provider/`, `tests/qualification/pdc_x/reg_p/`
 - **Tests:** tests/unit/rag/test_rag_plugin_discovery.py + tests/qualification/plug_03 green
 - **Evidence (exact SHA):** implementation SHA and publication SHA recorded in `PDC_SHA_LADDER.md`; test log under `.tmp/proof/pdc-x-p5/B-REG-P/`; audited by IA-D1 (plug_03 replay) at the PDC-P7 audited SHA.
 - **Merge gate:** OD-PDC-SEQ-01: implement in an isolated worktree; merge only after MCP-SERVER-X P8 publication; ACT-N11 re-activation at PDC-P7-00
@@ -158,7 +158,7 @@ Rows classed `CURRENT_HEAD_REQUALIFICATION`, `ALREADY_CERTIFIED_REUSABLE`, `N/A_
 ## B-D2 — Context: trim fidelity, durable compaction (CE-02 closure), memory retention, RAG freshness, adversarial context
 
 - **Ticket:** T-IGX-036-N · **Wave:** W2 · **ADR:** ADR-PDC-02 · **Auditor:** IA-D2
-- **Write set:** `intergrax/context/`, `intergrax/runtime/nexus/context/`, `intergrax/runtime/token_optimization/`, `intergrax/runtime/context_lifecycle/`, `intergrax/memory/`, `intergrax/rag/governance/`, `tests/qualification/pdc_x/d2/`
+- **Write set:** `intergrax/context/`, `intergrax/runtime/nexus/context/`, `intergrax/runtime/token_optimization/`, `intergrax/runtime/context_lifecycle/`, `intergrax/memory/`, `intergrax/rag/governance/`, `intergrax/rag/retrieval/retrieval_result.py`, `intergrax/rag/retrieval/retrieval_service.py`, `intergrax/rag/ingest/ingest_pipeline.py`, `tests/qualification/pdc_x/d2/`
 - **Tests:** tests/qualification/pdc_x/d2/ + ce_02 replay
 - **Evidence (exact SHA):** implementation SHA and publication SHA recorded in `PDC_SHA_LADDER.md`; test log under `.tmp/proof/pdc-x-p5/B-D2/`; audited by IA-D2 at the PDC-P7 audited SHA.
 - **Merge gate:** OD-PDC-SEQ-01: implement in an isolated worktree; merge only after MCP-SERVER-X P8 publication; ACT-N11 re-activation at PDC-P7-00
@@ -203,7 +203,7 @@ Rows classed `CURRENT_HEAD_REQUALIFICATION`, `ALREADY_CERTIFIED_REUSABLE`, `N/A_
 ## B-D6 — Security: fail-closed signing/poisoning defaults, single tool-input defense, durable audit trail, secret gate, plugin provenance
 
 - **Ticket:** T-IGX-036-P · **Wave:** W3a · **ADR:** ADR-PDC-06 · **Auditor:** IA-D6
-- **Write set:** `intergrax/runtime/security/`, `intergrax/core/security/`, `intergrax/core/catalog_bootstrap.py`, `intergrax/core/plugins/admission.py`, `intergrax/runtime/execution_evidence/attestor.py`, `intergrax/tools/providers/rag/service.py`, `intergrax/applications/_shared/critical_action_signing_wiring.py`, `intergrax/applications/_shared/security_assembly_resolver.py`, `intergrax/applications/_shared/security_audit_trail_wiring.py`, `intergrax/applications/_shared/application_security_wiring.py`, `docs/project/maintainers/architecture/satellites/`, `tests/qualification/pdc_x/d6/`
+- **Write set:** `intergrax/runtime/security/`, `intergrax/core/security/`, `intergrax/core/catalog_bootstrap.py`, `intergrax/core/plugins/admission.py`, `intergrax/runtime/execution_evidence/attestor.py`, `intergrax/tools/providers/rag/service.py`, `intergrax/applications/_shared/critical_action_signing_wiring.py`, `intergrax/applications/_shared/security_assembly_resolver.py`, `intergrax/applications/_shared/security_audit_trail_wiring.py`, `intergrax/applications/_shared/application_security_wiring.py`, `docs/project/maintainers/architecture/satellites/`, `intergrax/runtime/attestation/host_attestation.py`, `intergrax/runtime/attestation/__init__.py`, `intergrax/applications/_shared/attestation_runtime_bridge.py`, `intergrax/core/plugins/discovery.py`, `intergrax/runtime/nexus/tools/plan_context_invocation.py`, `scripts/maintenance/check_critical_action_signing.py`, `scripts/maintenance/check_immutable_security_audit_trail.py`, `tests/unit/runtime/architecture/test_audit_ideal_depth_gate.py`, `tests/qualification/pdc_x/d6/`
 - **Tests:** tests/qualification/pdc_x/d6/
 - **Evidence (exact SHA):** implementation SHA and publication SHA recorded in `PDC_SHA_LADDER.md`; test log under `.tmp/proof/pdc-x-p5/B-D6/`; audited by IA-D6 at the PDC-P7 audited SHA.
 - **Merge gate:** OD-PDC-SEQ-01: implement in an isolated worktree; merge only after MCP-SERVER-X P8 publication; ACT-N11 re-activation at PDC-P7-00
@@ -229,7 +229,7 @@ Rows classed `CURRENT_HEAD_REQUALIFICATION`, `ALREADY_CERTIFIED_REUSABLE`, `N/A_
 ## B-D8 — Artifacts: taxonomy, mandatory digest, governed read/download port, durable store, retention, spill, dedupe
 
 - **Ticket:** T-IGX-036-Q · **Wave:** W3b · **ADR:** ADR-PDC-08 · **Auditor:** IA-D8
-- **Write set:** `intergrax/contracts/artifact_ref.py`, `intergrax/contracts/task_artifacts.py`, `intergrax/applications/contracts/application_artifacts.py`, `intergrax/runtime/nexus/artifacts/`, `intergrax/runtime/nexus/tracing/trace_models.py`, `intergrax/collaborative_work/`, `intergrax/runtime/execution/run_artifact_bundle_composition.py`, `intergrax/runtime/nexus/orchestration/run_artifact_bundle_builder.py`, `intergrax/applications/_shared/run_artifact_bundle_builder.py`, `docs/project/capabilities/architecture/ARTIFACT_LIFECYCLE.md`, `docs/project/capabilities/plan/ARTIFACT_LIFECYCLE.md`, `tests/qualification/pdc_x/d8/`
+- **Write set:** `intergrax/contracts/artifact_ref.py`, `intergrax/contracts/task_artifacts.py`, `intergrax/applications/contracts/application_artifacts.py`, `intergrax/runtime/nexus/artifacts/`, `intergrax/runtime/nexus/tracing/trace_models.py`, `intergrax/collaborative_work/`, `intergrax/runtime/execution/run_artifact_bundle_composition.py`, `intergrax/runtime/nexus/orchestration/run_artifact_bundle_builder.py`, `intergrax/applications/_shared/run_artifact_bundle_builder.py`, `docs/project/capabilities/architecture/ARTIFACT_LIFECYCLE.md`, `docs/project/capabilities/plan/ARTIFACT_LIFECYCLE.md`, `tests/qualification/state_x/_state_x_explicit_mechanism_classifications.py`, `intergrax/tools/providers/storage/service.py`, `intergrax/runtime/replay/models.py`, `intergrax/runtime/replay/replay_engine.py`, `tests/qualification/pdc_x/d8/`
 - **Tests:** tests/qualification/pdc_x/d8/
 - **Evidence (exact SHA):** implementation SHA and publication SHA recorded in `PDC_SHA_LADDER.md`; test log under `.tmp/proof/pdc-x-p5/B-D8/`; audited by IA-D8 at the PDC-P7 audited SHA.
 - **Merge gate:** OD-PDC-SEQ-01: implement in an isolated worktree; merge only after MCP-SERVER-X P8 publication; ACT-N11 re-activation at PDC-P7-00

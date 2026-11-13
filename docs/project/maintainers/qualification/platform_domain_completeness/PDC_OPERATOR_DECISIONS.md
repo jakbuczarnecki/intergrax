@@ -17,3 +17,4 @@
 | [OD-PDC-PATHB-01](./operator_decisions/OD-PDC-PATHB-01.md) | Path B exclusions (recommended: confirm; no expansion) | P3 | **APPROVED — Option A** (2026-11-12, T-IGX-036-E) |
 | [OD-PDC-ADR-01](./operator_decisions/OD-PDC-ADR-01.md) | Acceptance of ADR-PDC-01..08 (architecture lock, PDC-P3-08) | P3 | **APPROVED — Option A** (2026-11-12, T-IGX-036-E) |
 | [DELEGATION-PDC-P1-P3](./operator_decisions/DELEGATION-PDC-P1-P3.md) | Commission for delegate plan-approval signing (T-IGX-036-B/C/D) | P1 | RECORDED (Operator, 2026-11-12) |
+| [DELEGATION-PDC-STANDING](./operator_decisions/DELEGATION-PDC-STANDING.md) | Standing authorizations for the remainder of PDC-X (docs merges, product merges after MCP P8, delegate signing limits, IIAC activation delegate, auditors, GitHub Actions replay) | P5-P9 | RECORDED (Operator, 2026-11-13) |

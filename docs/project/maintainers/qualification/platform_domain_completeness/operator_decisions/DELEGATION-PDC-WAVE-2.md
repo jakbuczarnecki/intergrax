@@ -34,3 +34,11 @@
 
 - The implementer session and its implementer subagents never write these lines.
 - The delegate session does not implement either ticket.
+
+## Amendment 1 — write set of B-D2 (T-IGX-036-N)
+
+- **Operator decision** (chat, English rendering of the Polish original "Tak, rozszerz"): **"Yes, extend"**, in answer to the question whether the write set of B-D2 may be extended to wire RAG source freshness (PDC-D2-R005) end to end. The implementer had delivered the contract in `intergrax/rag/governance/` only, because retrieval and ingest were outside the write set.
+- **Extension** (exactly three files, additive and optional): `intergrax/rag/ingest/ingest_pipeline.py`, `intergrax/rag/retrieval/retrieval_result.py`, `intergrax/rag/retrieval/retrieval_service.py`. No other batch writes these paths (`pdc_x_wbs.py --check`: no write conflicts).
+- **Effect on the signature:** the plan digest of T-IGX-036-N changed, so the earlier `Approved:` line no longer applies. The ticket returns to `plan_pending`.
+- **Delegation:** the delegate session may re-sign **T-IGX-036-N only**, under the same checks as above, additionally confirming that the plan's write set equals the amended WBS write set. T-IGX-036-O is unchanged and keeps its approval.
+- **Not delegated** stays as listed above.

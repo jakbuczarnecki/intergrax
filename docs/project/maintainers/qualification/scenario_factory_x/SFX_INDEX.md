@@ -19,7 +19,7 @@
 | SHA ladder | [`SFX_SHA_LADDER.md`](./SFX_SHA_LADDER.md) |
 | Operator decisions | [`operator_decisions/`](./operator_decisions/) |
 | Capability pair (hub pointers) | [`architecture/SCENARIO_FACTORY.md`](../../../capabilities/architecture/SCENARIO_FACTORY.md) · [`plan/SCENARIO_FACTORY.md`](../../../capabilities/plan/SCENARIO_FACTORY.md) |
-| Research, inventory, design, UX, IDE walkthrough (W1–W2) | `docs/project/capabilities/plan/satellites/scenario_factory/` (_created by T-IGX-037-B..E_) |
+| Research, inventory, design, UX, IDE walkthrough (W1–W2) | `docs/project/maintainers/qualification/scenario_factory_x/` (_created by T-IGX-037-B..E_) |
 | ADR-SFX-001..006 | `docs/project/technical/adr/entries/<date>/ADR-SFX-00N.md` (_T-IGX-037-C; Proposed_) |
 | SEF-X dependency (GATE-SEF-CONSUME) | [`ASF-SEF-MASTER-PLAN.md`](../../../../../governance/tickets/plans/ASF-SEF-MASTER-PLAN.md) |
 

@@ -9,7 +9,7 @@ This batch also publishes:
 - the approved master plan (`SFX-MASTER-PLAN.md`),
 - the capability doc pair,
 - the qualification dossier skeleton,
-- the operator decision records OD-SFX-01..04, which are pending signature.
+- the operator decision records OD-SFX-01..04, 15 and 16 (signed by a dedicated signing session in `4758c4051`).
 
 Documentation and governance records only. Plan: `PLAN_T-IGX-037-A.md`.
 
@@ -58,3 +58,18 @@ Worktree `_wt/intergrax/sfx-p0`, branch `sfx-p0-registration` (base `eadb1c2116f
 | Gates | `sync_agent_env.py --check` OK; `igx_gov ticket` OK (push-fast PASS); pre-commit `check_docs_domain_pairs` OK (4 feature pairs) |
 | Writes outside the plan's file list | `PDC_CLOSED_WORLD_INVENTORY.json` (mechanical regeneration only) |
 | Product paths | none (`intergrax/`, `agents/`, `applications/`, `scripts/` unchanged); IIAC ACT-N11 unaffected |
+
+## Post-merge review corrections
+
+PR #482 was merged at `0140bc6b5` (head `bd5ed3ceb`) before the independent review finished. The review (`sfx-w0-independent-review`, verdict `REVIEW_PASS_WITH_FINDINGS`, no BLOCKER or HIGH) found these issues; they are fixed in the follow-up PR that also carries plan Amendment 1 for T-IGX-037-B..E:
+
+| Finding | Severity | Correction |
+| --- | --- | --- |
+| R-W0-01 | MEDIUM | Explicit "`SCENARIO-FACTORY-X` excepted" carve-out in the roadmap header "Scenario gate" sentence and in the SCENARIO-GATE row "all mandatory rows above" rule |
+| R-W0-02 | MEDIUM | All 11 roadmap citations of OD-SFX-10 now read "OD-SFX-10 pending" (no record yet) |
+| R-W0-03 | LOW | §5 SEF-X ledger row wording aligned to "P1-B1 docs only" |
+| R-W0-04 | LOW | Scope sentence above updated (OD-SFX-01..04, 15, 16 signed) |
+| R-W0-05 | INFO | Interpretation "Scenario Registry → catalog sidecar" recorded as C-OD-02 in `SFX_GAP_REGISTER.md` |
+| R-W0-06 | INFO | MCP-SERVER-X "not CLOSED" facts are pinned to the base revision; refreshed at the SFX-P1-03 re-pin, no change here |
+| R-W0-07 | INFO | Amendment 1 and the delegate re-approval travel in the follow-up PR with their own review |
+| R-W0-08 | INFO | Signer separation is process_enforced (same git author); evidence is in the session transcripts |

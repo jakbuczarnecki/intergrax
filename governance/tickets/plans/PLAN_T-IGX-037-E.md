@@ -24,7 +24,7 @@ The units below stay **in W3**, after ARCH-FREEZE CLOSED and GATE-SFX-ENTRY:
    - Skills use these files as subagent briefs.
    - `sync_agent_env.py` does not glob this directory, so the files are not synced in v0.
 4. **Regenerated adapters** produced by running `uv run python scripts/governance/sync_agent_env.py` (generator unchanged): `.claude/skills/sfx-*/SKILL.md`, `.claude/skills/intergrax-scenario-factory/SKILL.md`, `.cursor/rules/intergrax-scenario-factory.mdc`, `.cursor/skills/sfx-*/SKILL.md`.
-5. **Walkthrough record** `docs/project/capabilities/plan/satellites/scenario_factory/SFX_IDE_TOOLKIT_V0_WALKTHROUGH.md`.
+5. **Walkthrough record** `docs/project/maintainers/qualification/scenario_factory_x/SFX_IDE_TOOLKIT_V0_WALKTHROUGH.md`.
    - A dry run of `/sfx-session` on the REF-1 problem statement.
    - The produced drafts stay in `.tmp/`, which is gitignored. The record keeps their file list and digests only.
 
@@ -49,3 +49,11 @@ uv run python -m scripts.governance.igx_gov ticket
 - SFX-P4-B01/B02 (W3).
 - The CLI and MCP backed toolkit v1 (SFX-P10-08).
 - Product code, FRZ changes and merges.
+
+## Amendment 1 (2026-11-12): deliverable location
+
+Operator decision in the planning chat, 2026-11-12. English rendering: "Move [the SFX workstream documents] to the dossier."
+
+The SFX workstream documents are kept in the SFX qualification dossier `docs/project/maintainers/qualification/scenario_factory_x/` instead of `docs/project/capabilities/plan/satellites/scenario_factory/`. The reason is that the PDC-X closed-world scanner (`scripts/qualification/pdc_x_inventory.py`, `DOC_GLOBS` includes `docs/project/capabilities/**/*.md`) cannot classify `SFX_*.md` stems, which turns `test_pdc_x_inventory` red. Moving the files keeps `scripts/` unchanged (OD-SFX-04, OD-SFX-15).
+
+Only the location changes. Content, acceptance criteria and test contract are unchanged. This amendment supersedes the earlier approval line; the ticket must be re-approved against the new digest.

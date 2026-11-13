@@ -18,11 +18,11 @@ Documentation only. No path under `intergrax/`, `agents/`, `applications/`, `scr
      - the separation between product certification and scenario admission;
      - the semantic gate assessment (master plan §3, §14).
    - Each ADR follows the layout of `ADR-SEF-001.md`: status table, Context, Alternatives, Decision, Consequences, Related. It cites code paths at the reference SHA.
-2. **Contract design drafts** in `docs/project/capabilities/plan/satellites/scenario_factory/design/`:
+2. **Contract design drafts** in `docs/project/maintainers/qualification/scenario_factory_x/design/`:
    - `schemas/*.schema.json`: JSON Schema draft 2020-12, one file per SFX-CON-01..17. These are design documents, not code.
    - `SFX_CANONICALIZATION.md`: RFC 8785 canonical form, digest rules, and the determinism scope.
    - `SFX_METRICS.md`: definitions of G-1..G-5 and M-1..M-9 (master plan §8, §13), with data sources. Target values are left for OD-SFX-07.
-3. **Gap analysis consolidation** `docs/project/capabilities/plan/satellites/scenario_factory/SFX_GAP_ANALYSIS.md`:
+3. **Gap analysis consolidation** `docs/project/maintainers/qualification/scenario_factory_x/SFX_GAP_ANALYSIS.md`:
    - Reconcile SFX-GAP-01..17 with the T-IGX-037-B findings (inventory, IDE facts).
    - Record each gap's final disposition and task mapping.
    - Finalize this file only after T-IGX-037-B lands. The drafting may run in parallel.
@@ -47,3 +47,11 @@ uv run python -m scripts.governance.igx_gov ticket
 - ADR acceptance (OD-SFX-06).
 - Implementing any schema as code (SFX-P5+).
 - Product code, FRZ changes and merges.
+
+## Amendment 1 (2026-11-12): deliverable location
+
+Operator decision in the planning chat, 2026-11-12. English rendering: "Move [the SFX workstream documents] to the dossier."
+
+The SFX workstream documents are kept in the SFX qualification dossier `docs/project/maintainers/qualification/scenario_factory_x/` instead of `docs/project/capabilities/plan/satellites/scenario_factory/`. The reason is that the PDC-X closed-world scanner (`scripts/qualification/pdc_x_inventory.py`, `DOC_GLOBS` includes `docs/project/capabilities/**/*.md`) cannot classify `SFX_*.md` stems, which turns `test_pdc_x_inventory` red. Moving the files keeps `scripts/` unchanged (OD-SFX-04, OD-SFX-15).
+
+Only the location changes. Content, acceptance criteria and test contract are unchanged. This amendment supersedes the earlier approval line; the ticket must be re-approved against the new digest.
