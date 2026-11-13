@@ -1,0 +1,28 @@
+file                                                                                            tests(b>h) assert(b>h) raises(b>h) skip(b>h) xfail(b>h) deselect(b>h)
+tests/fixtures/tool_life_x_mcp_subprocess_qualification.py                                             0>0        1>1        0>0        1>1        0>0        0>0
+tests/fixtures/tool_life_x_tl11_catalog_subprocess_qualification.py                                    0>0        1>1        0>0        1>1        0>0        0>0
+tests/fixtures/tool_life_x_tl11_nexus_catalog_qualification_server.py                                  0>0        0>0        0>0        0>0        0>0        0>0
+ADDED tests/qualification/mcp_server_x/rc_selection.py
+tests/qualification/mcp_server_x/reference_app/build.py                                                0>0        0>0        0>0        0>0        0>0        0>0
+tests/qualification/mcp_server_x/test_mcp_server_x_p7_failure_injection_l2.py                        14>14     40>36*       8>10        0>0        0>0        0>0
+tests/qualification/mcp_server_x/test_mcp_server_x_p7_l1_contract.py                                 32>32      56>56      14>14        0>0        0>0        0>0
+tests/qualification/mcp_server_x/test_mcp_server_x_p7_l2_composition_exposure.py                     24>24      39>41      10>10        0>0        0>0        0>0
+tests/qualification/mcp_server_x/test_mcp_server_x_p7_l2_security_trace.py                           27>28      51>52      15>16        0>0        0>0        0>0
+tests/qualification/mcp_server_x/test_mcp_server_x_p7_l3_invoke_security.py                          11>11      37>37        0>0        0>0        0>0        0>0
+tests/qualification/mcp_server_x/test_mcp_server_x_p7_l3_publication_discovery.py                    17>17      45>46        0>0        0>0        0>0        0>0
+tests/unit/applications/test_mcp_canonical_execution.py                                                6>6        9>9        0>0        0>0        0>0        0>0
+tests/unit/applications/test_mcp_catalog_discovery_qualification.py                                  17>17     24>22*        1>2        0>0        0>0        0>0
+tests/unit/applications/test_mcp_catalog_e2e_hung_server_qualification.py                            16>16      34>36      10>8*        0>0        0>0        0>0
+tests/unit/applications/test_mcp_catalog_f3_streamable_http_physical_l3.py                             5>5      27>27        0>0        0>0        0>0        0>0
+ADDED tests/unit/applications/test_mcp_deadline_and_resilience.py
+ADDED tests/unit/applications/test_mcp_identity_mode_fail_closed.py
+ADDED tests/unit/applications/test_mcp_invocation_id.py
+ADDED tests/unit/applications/test_mcp_rc_audit_corrections.py
+ADDED tests/unit/applications/test_mcp_result_bounds_and_error_contract.py
+tests/unit/applications/test_mcp_server_engine.py                                                      9>9      15>15        2>2        0>0        0>0        0>0
+tests/unit/applications/test_mcp_server_engine_architecture_gates.py                                   2>3        3>4        0>0        0>0        0>0        0>0
+tests/unit/applications/test_mcp_surface_opt_in.py                                                     6>6       6>4*        2>2        0>0        0>1        0>0
+tests/unit/applications/test_mcp_surface_opt_in_runtime.py                                             1>2        2>3        0>0        0>0        0>0        0>0
+tests/unit/applications/test_mcp_trust_a_principal_binding.py                                        11>11      14>14        4>4        0>0        0>0        0>0
+tests/unit/tools/providers/test_tool_life_x_l3_r2_mcp_host_lifecycle_qualification.py                13>13      27>27        8>8        0>0        0>0        0>0
+TOTAL(M files): {'tests': (211, 214), 'assert': (431, 431), 'raises': (74, 76), 'skip': (2, 2), 'xfail': (0, 1), 'deselect': (0, 0)}

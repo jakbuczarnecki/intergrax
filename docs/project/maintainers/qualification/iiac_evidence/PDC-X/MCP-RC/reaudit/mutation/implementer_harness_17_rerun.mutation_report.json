@@ -1,0 +1,243 @@
+{
+  "repo_head": "f1dde5a3e19924b82e902be18f11a21b64b822ba",
+  "results": [
+    {
+      "mutant_id": "M1-tenant-admission-bypass",
+      "invariant": "No verified principal means MCP_PRINCIPAL_REQUIRED in the default mode",
+      "path": "intergrax/applications/_shared/mcp_harness_principal.py",
+      "old": "    if mode is McpIdentityMode.HARNESS_BOUND:\n        detail =",
+      "new": "    if False:\n        detail =",
+      "tests": [
+        "tests/unit/applications/test_mcp_identity_mode_fail_closed.py"
+      ],
+      "status": "killed",
+      "exit_code": 1,
+      "seconds": 59.7,
+      "tail": "================================== FAILURES ===================================\nD:\\Projekty\\_wt\\intergrax\\_scratch\\mcp-rc-reaudit-mut\\tests\\unit\\applications\\test_mcp_identity_mode_fail_closed.py:135: Failed: DID NOT RAISE <class 'fastmcp.exceptions.ToolError'>\n=========================== short test summary info ===========================\nFAILED tests/unit/applications/test_mcp_identity_mode_fail_closed.py::test_default_mode_rejects_in_process_run_agent_without_principal\n!!!!!!!!!!!!!!!!!!!!!!!!!! stopping after 1 failures !!!!!!!!!!!!!!!!!!!!!!!!!!\n1 failed, 8 passed in 2.60s"
+    },
+    {
+      "mutant_id": "M2-principal-mismatch-ignored",
+      "invariant": "An asserted tenant/user that differs from the verified principal is a conflict",
+      "path": "intergrax/applications/_shared/mcp_harness_principal.py",
+      "old": "            reject_identity_assertion_conflicts(\n",
+      "new": "            (lambda **_kw: None)(\n",
+      "tests": [
+        "tests/unit/applications/test_mcp_identity_mode_fail_closed.py"
+      ],
+      "status": "killed",
+      "exit_code": 1,
+      "seconds": 12.9,
+      "tail": "\n-- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html\n=========================== short test summary info ===========================\nFAILED tests/unit/applications/test_mcp_identity_mode_fail_closed.py::test_forged_identity_maps_to_tenant_assertion_conflict[tenant]\n!!!!!!!!!!!!!!!!!!!!!!!!!! stopping after 1 failures !!!!!!!!!!!!!!!!!!!!!!!!!!\n1 failed, 16 passed, 3 warnings in 2.17s"
+    },
+    {
+      "mutant_id": "M3-result-bound-missing-on-custom-tools",
+      "invariant": "Custom host tool results are bounded like every other result",
+      "path": "intergrax/applications/_shared/mcp_server_engine.py",
+      "old": "    return bound_mcp_result_or_raise(result)\n\n\ndef _bind_custom_host_tool_for_fastmcp(",
+      "new": "    return result\n\n\ndef _bind_custom_host_tool_for_fastmcp(",
+      "tests": [
+        "tests/unit/applications/test_mcp_result_bounds_and_error_contract.py"
+      ],
+      "status": "killed",
+      "exit_code": 1,
+      "seconds": 9.9,
+      "tail": "================================== FAILURES ===================================\nD:\\Projekty\\_wt\\intergrax\\_scratch\\mcp-rc-reaudit-mut\\tests\\unit\\applications\\test_mcp_result_bounds_and_error_contract.py:113: Failed: DID NOT RAISE <class 'fastmcp.exceptions.ToolError'>\n=========================== short test summary info ===========================\nFAILED tests/unit/applications/test_mcp_result_bounds_and_error_contract.py::test_custom_host_tool_result_over_the_bound_is_a_typed_error\n!!!!!!!!!!!!!!!!!!!!!!!!!! stopping after 1 failures !!!!!!!!!!!!!!!!!!!!!!!!!!\n1 failed, 3 passed in 1.72s"
+    },
+    {
+      "mutant_id": "M4-deadline-propagation-dropped",
+      "invariant": "max_call_seconds reaches the transport cancel context",
+      "path": "intergrax/applications/_shared/mcp_host_execution_transport_cancel.py",
+      "old": "    max_call_seconds = cancel_ctx.max_call_seconds\n",
+      "new": "    max_call_seconds = None\n",
+      "tests": [
+        "tests/unit/applications/test_mcp_deadline_and_resilience.py"
+      ],
+      "status": "killed",
+      "exit_code": 1,
+      "seconds": 27.0,
+      "tail": "  File \"D:\\Projekty\\_wt\\intergrax\\_scratch\\mcp-rc-reaudit-mut\\intergrax\\applications\\_shared\\strict_production_serving_http_execution_principal.py\", line 36, in bind_strict_serving_http_caller_principal\nValueError: <Token var=<ContextVar name='strict_serving_http_caller_principal' default=None at 0x000002417C31D580> at 0x000002417A060CC0> was created in a different Context\nException ignored in: <coroutine object HostRootExecutionTransportDetachmentSupervisor._observe_supervised_work at 0x000002417C50B340>\nTraceback (most recent call last):\n  File \"D:\\Projekty\\_wt\\intergrax\\_scratch\\mcp-rc-reaudit-mut\\intergrax\\runtime\\execution\\root_execution_transport_detachment_supervision.py\", line 382, in _observe_supervised_work\nRuntimeError: no running event loop"
+    },
+    {
+      "mutant_id": "M5-deadline-does-not-request-governed-cancel",
+      "invariant": "The call bound requests the governed cancel (cancellation reaches the canonical coordinator)",
+      "path": "intergrax/applications/_shared/mcp_host_execution_transport_cancel.py",
+      "old": "                    deadline_hit.set()\n                    transport_cancel_observed = True\n",
+      "new": "                    deadline_hit.set()\n",
+      "tests": [
+        "tests/unit/applications/test_mcp_deadline_and_resilience.py"
+      ],
+      "status": "killed",
+      "exit_code": 1,
+      "seconds": 10.2,
+      "tail": "  File \"D:\\Projekty\\_wt\\intergrax\\_scratch\\mcp-rc-reaudit-mut\\intergrax\\applications\\_shared\\strict_production_serving_http_execution_principal.py\", line 36, in bind_strict_serving_http_caller_principal\nValueError: <Token var=<ContextVar name='strict_serving_http_caller_principal' default=None at 0x000001CC9475D580> at 0x000001CC92497400> was created in a different Context\nException ignored in: <coroutine object HostRootExecutionTransportDetachmentSupervisor._observe_supervised_work at 0x000001CC9494F450>\nTraceback (most recent call last):\n  File \"D:\\Projekty\\_wt\\intergrax\\_scratch\\mcp-rc-reaudit-mut\\intergrax\\runtime\\execution\\root_execution_transport_detachment_supervision.py\", line 382, in _observe_supervised_work\nRuntimeError: no running event loop"
+    },
+    {
+      "mutant_id": "M6-admission-slot-release-lost",
+      "invariant": "An admission slot is released when the handler ends",
+      "path": "intergrax/applications/_shared/mcp_engine_concurrency.py",
+      "old": "            self._inflight -= 1",
+      "new": "            pass",
+      "tests": [
+        "tests/unit/applications/test_mcp_deadline_and_resilience.py"
+      ],
+      "status": "killed",
+      "exit_code": 1,
+      "seconds": 11.1,
+      "tail": "================================== FAILURES ===================================\nD:\\Projekty\\intergrax\\.venv\\Lib\\site-packages\\fastmcp\\client\\mixins\\tools.py:425: fastmcp.exceptions.ToolError: Error calling tool 'qual_echo': MCP_CONCURRENT_CALL_LIMIT_EXCEEDED: mcp_concurrent_call_limit_exceeded\n=========================== short test summary info ===========================\nFAILED tests/unit/applications/test_mcp_deadline_and_resilience.py::test_call_bound_requests_governed_cancel_and_reports_deadline_exceeded\n!!!!!!!!!!!!!!!!!!!!!!!!!! stopping after 1 failures !!!!!!!!!!!!!!!!!!!!!!!!!!\n1 failed in 2.80s"
+    },
+    {
+      "mutant_id": "M7-error-code-mapping-swapped",
+      "invariant": "Legacy identity_conflict maps to MCP_TENANT_ASSERTION_CONFLICT",
+      "path": "intergrax/applications/_shared/mcp_wire_errors.py",
+      "old": "    \"identity_conflict\": _C.MCP_TENANT_ASSERTION_CONFLICT,",
+      "new": "    \"identity_conflict\": _C.MCP_PRINCIPAL_REQUIRED,",
+      "tests": [
+        "tests/unit/applications/test_mcp_result_bounds_and_error_contract.py"
+      ],
+      "status": "killed",
+      "exit_code": 1,
+      "seconds": 12.4,
+      "tail": "================================== FAILURES ===================================\nD:\\Projekty\\_wt\\intergrax\\_scratch\\mcp-rc-reaudit-mut\\tests\\unit\\applications\\test_mcp_result_bounds_and_error_contract.py:261: AssertionError: assert <McpServerDefinitionErrorCode.MCP_PRINCIPAL_REQUIRED: 'MCP_PRINCIPAL_REQUIRED'> is <McpServerDefinitionErrorCode.MCP_TENANT_ASSERTION_CONFLICT: 'MCP_TENANT_ASSERTION_CONFLICT'>\n=========================== short test summary info ===========================\nFAILED tests/unit/applications/test_mcp_result_bounds_and_error_contract.py::test_legacy_codes_map_to_declared_codes[identity_conflict-MCP_TENANT_ASSERTION_CONFLICT]\n!!!!!!!!!!!!!!!!!!!!!!!!!! stopping after 1 failures !!!!!!!!!!!!!!!!!!!!!!!!!!\n1 failed, 15 passed in 2.31s"
+    },
+    {
+      "mutant_id": "M8-unauthorized-execution-path",
+      "invariant": "Every tool that starts an agent task resolves identity in the caller's mode (no forced local-dev path)",
+      "path": "intergrax/applications/_shared/mcp_nexus_server.py",
+      "old": "        identity_mode=coerce_mcp_identity_mode(identity_mode),\n    )\n    return await execute_mcp_agent_task(",
+      "new": "        identity_mode=McpIdentityMode.LOCAL_DEV_EXPLICIT,\n    )\n    return await execute_mcp_agent_task(",
+      "tests": [
+        "tests/unit/applications/test_mcp_identity_mode_fail_closed.py"
+      ],
+      "status": "killed",
+      "exit_code": 1,
+      "seconds": 12.1,
+      "tail": "================================== FAILURES ===================================\nD:\\Projekty\\_wt\\intergrax\\_scratch\\mcp-rc-reaudit-mut\\tests\\unit\\applications\\test_mcp_identity_mode_fail_closed.py:135: Failed: DID NOT RAISE <class 'fastmcp.exceptions.ToolError'>\n=========================== short test summary info ===========================\nFAILED tests/unit/applications/test_mcp_identity_mode_fail_closed.py::test_default_mode_rejects_in_process_run_agent_without_principal\n!!!!!!!!!!!!!!!!!!!!!!!!!! stopping after 1 failures !!!!!!!!!!!!!!!!!!!!!!!!!!\n1 failed, 8 passed in 2.31s"
+    },
+    {
+      "mutant_id": "M9-cross-loop-failure-payload-bound-removed",
+      "invariant": "Cross-loop failure payloads are bounded and sanitized at the MCP boundary",
+      "path": "intergrax/applications/_shared/mcp_catalog_invocation_bridge.py",
+      "old": "            return bound_cross_loop_catalog_payload(terminal.payload)\n",
+      "new": "            return terminal.payload\n",
+      "tests": [
+        "tests/unit/applications/test_mcp_rc_audit_corrections.py"
+      ],
+      "status": "killed",
+      "exit_code": 1,
+      "seconds": 19.5,
+      "tail": "\n-- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html\n=========================== short test summary info ===========================\nFAILED tests/unit/applications/test_mcp_rc_audit_corrections.py::test_cross_loop_failure_payload_is_bounded_and_does_not_leak_exception_text\n!!!!!!!!!!!!!!!!!!!!!!!!!! stopping after 1 failures !!!!!!!!!!!!!!!!!!!!!!!!!!\n1 failed, 14 passed, 5 warnings in 7.52s"
+    },
+    {
+      "mutant_id": "M10-cross-loop-success-payload-bound-removed",
+      "invariant": "Cross-loop success payloads are bounded",
+      "path": "intergrax/applications/_shared/mcp_catalog_invocation_bridge.py",
+      "old": "            **bound_cross_loop_catalog_payload(terminal.payload),\n",
+      "new": "            **terminal.payload,\n",
+      "tests": [
+        "tests/unit/applications/test_mcp_rc_audit_corrections.py"
+      ],
+      "status": "killed",
+      "exit_code": 1,
+      "seconds": 21.1,
+      "tail": "\n-- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html\n=========================== short test summary info ===========================\nFAILED tests/unit/applications/test_mcp_rc_audit_corrections.py::test_cross_loop_success_payload_over_the_bound_is_a_typed_tool_error\n!!!!!!!!!!!!!!!!!!!!!!!!!! stopping after 1 failures !!!!!!!!!!!!!!!!!!!!!!!!!!\n1 failed, 13 passed, 5 warnings in 9.58s"
+    },
+    {
+      "mutant_id": "M11-local-dev-downgrades-configured-auth",
+      "invariant": "LOCAL_DEV never downgrades configured auth for in-process callers",
+      "path": "intergrax/applications/_shared/mcp_harness_principal.py",
+      "old": "    if _harness_auth_requires_principal(effective_harness_auth) and not _local_dev_harness_bypass(\n        effective_harness_auth,\n    ):",
+      "new": "    if False and not _local_dev_harness_bypass(\n        effective_harness_auth,\n    ):",
+      "tests": [
+        "tests/unit/applications/test_mcp_rc_audit_corrections.py"
+      ],
+      "status": "killed",
+      "exit_code": 1,
+      "seconds": 13.3,
+      "tail": "\n-- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html\n=========================== short test summary info ===========================\nFAILED tests/unit/applications/test_mcp_rc_audit_corrections.py::test_local_dev_mode_never_downgrades_configured_auth_for_in_process_callers\n!!!!!!!!!!!!!!!!!!!!!!!!!! stopping after 1 failures !!!!!!!!!!!!!!!!!!!!!!!!!!\n1 failed, 12 passed, 5 warnings in 4.48s"
+    },
+    {
+      "mutant_id": "M12-list-catalog-tools-principal-gate-removed",
+      "invariant": "list_catalog_tools requires a principal in the default mode",
+      "path": "intergrax/applications/_shared/mcp_catalog_tools.py",
+      "old": "            async with sanitized_tool_errors(\"list_catalog_tools\"):\n                require_mcp_caller_principal(identity_mode=identity_mode)\n",
+      "new": "            async with sanitized_tool_errors(\"list_catalog_tools\"):\n",
+      "tests": [
+        "tests/unit/applications/test_mcp_rc_audit_corrections.py"
+      ],
+      "status": "killed",
+      "exit_code": 1,
+      "seconds": 14.6,
+      "tail": "\n-- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html\n=========================== short test summary info ===========================\nFAILED tests/unit/applications/test_mcp_rc_audit_corrections.py::test_catalog_discovery_tools_refuse_without_a_principal_in_the_default_mode\n!!!!!!!!!!!!!!!!!!!!!!!!!! stopping after 1 failures !!!!!!!!!!!!!!!!!!!!!!!!!!\n1 failed, 11 passed, 5 warnings in 5.11s"
+    },
+    {
+      "mutant_id": "M13-describe-catalog-tool-principal-gate-removed",
+      "invariant": "describe_catalog_tool requires a principal in the default mode",
+      "path": "intergrax/applications/_shared/mcp_catalog_tools.py",
+      "old": "            async with sanitized_tool_errors(\"describe_catalog_tool\"):\n                require_mcp_caller_principal(identity_mode=identity_mode)\n",
+      "new": "            async with sanitized_tool_errors(\"describe_catalog_tool\"):\n",
+      "tests": [
+        "tests/unit/applications/test_mcp_rc_audit_corrections.py"
+      ],
+      "status": "killed",
+      "exit_code": 1,
+      "seconds": 21.2,
+      "tail": "\n-- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html\n=========================== short test summary info ===========================\nFAILED tests/unit/applications/test_mcp_rc_audit_corrections.py::test_catalog_discovery_tools_refuse_without_a_principal_in_the_default_mode\n!!!!!!!!!!!!!!!!!!!!!!!!!! stopping after 1 failures !!!!!!!!!!!!!!!!!!!!!!!!!!\n1 failed, 11 passed, 5 warnings in 9.93s"
+    },
+    {
+      "mutant_id": "M14-raw-exception-text-echoed-by-tools",
+      "invariant": "No tool path echoes raw exception text",
+      "path": "intergrax/applications/_shared/mcp_wire_errors.py",
+      "old": "_C.MCP_INTERNAL_ERROR, f\"tool execution failed ({type(exc).__name__})\")",
+      "new": "_C.MCP_INTERNAL_ERROR, f\"tool execution failed ({exc})\")",
+      "tests": [
+        "tests/unit/applications/test_mcp_rc_audit_corrections.py"
+      ],
+      "status": "killed",
+      "exit_code": 1,
+      "seconds": 12.0,
+      "tail": "================================== FAILURES ===================================\nD:\\Projekty\\_wt\\intergrax\\_scratch\\mcp-rc-reaudit-mut\\tests\\unit\\applications\\test_mcp_rc_audit_corrections.py:96: AssertionError: assert ('MCP_INTERNAL_ERROR' in 'MCP_INTERNAL_ERROR: tool execution failed (SECRET-HOST-FAILURE-hunter2 /srv/app/db.py:42)' and 'RuntimeError' in 'MCP_INTERNAL_ERROR: tool execution failed (SECRET-HOST-FAILURE-hunter2 /srv/app/db.py:42)')\n=========================== short test summary info ===========================\nFAILED tests/unit/applications/test_mcp_rc_audit_corrections.py::test_run_agent_host_exception_text_is_not_echoed\n!!!!!!!!!!!!!!!!!!!!!!!!!! stopping after 1 failures !!!!!!!!!!!!!!!!!!!!!!!!!!\n1 failed in 2.00s"
+    },
+    {
+      "mutant_id": "M15-custom-tool-principal-gate-removed",
+      "invariant": "Custom host tools are behind the principal gate by default",
+      "path": "intergrax/applications/_shared/mcp_server_engine.py",
+      "old": "        if gate is not None:\n            gate()\n",
+      "new": "        if False:\n            gate()\n",
+      "tests": [
+        "tests/unit/applications/test_mcp_rc_audit_corrections.py"
+      ],
+      "status": "killed",
+      "exit_code": 1,
+      "seconds": 14.3,
+      "tail": "\n-- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html\n=========================== short test summary info ===========================\nFAILED tests/unit/applications/test_mcp_rc_audit_corrections.py::test_custom_tool_is_refused_without_a_principal_in_the_default_mode_and_never_runs\n!!!!!!!!!!!!!!!!!!!!!!!!!! stopping after 1 failures !!!!!!!!!!!!!!!!!!!!!!!!!!\n1 failed, 9 passed, 3 warnings in 3.42s"
+    },
+    {
+      "mutant_id": "M16-failed-host-after-bound-not-deadline-exceeded",
+      "invariant": "A host that fails after the call bound is reported as MCP_DEADLINE_EXCEEDED",
+      "path": "intergrax/applications/_shared/mcp_host_execution_transport_cancel.py",
+      "old": "            raise McpHostExecutionDeadlineExceeded(\"failed\", max_call_seconds) from exc\n",
+      "new": "            raise\n",
+      "tests": [
+        "tests/unit/applications/test_mcp_rc_audit_corrections.py"
+      ],
+      "status": "killed",
+      "exit_code": 1,
+      "seconds": 10.4,
+      "tail": "================================== FAILURES ===================================\nD:\\Projekty\\_wt\\intergrax\\_scratch\\mcp-rc-reaudit-mut\\tests\\unit\\applications\\test_mcp_rc_audit_corrections.py:251: AssertionError: Regex pattern did not match.\n=========================== short test summary info ===========================\nFAILED tests/unit/applications/test_mcp_rc_audit_corrections.py::test_host_ending_cancelled_or_failed_after_the_bound_is_deadline_exceeded[failed-outcome=failed-0.0]\n!!!!!!!!!!!!!!!!!!!!!!!!!! stopping after 1 failures !!!!!!!!!!!!!!!!!!!!!!!!!!\n1 failed, 6 passed in 2.43s"
+    },
+    {
+      "mutant_id": "M17-host-failure-during-drain-window-reraised",
+      "invariant": "Observing the host inside the bounded drain never re-raises the host's own exception",
+      "path": "intergrax/applications/_shared/mcp_host_execution_transport_cancel.py",
+      "old": "    except Exception:  # noqa: BLE001 - host outcome is retrieved separately\n        pass\n",
+      "new": "",
+      "tests": [
+        "tests/unit/applications/test_mcp_rc_audit_corrections.py"
+      ],
+      "status": "killed",
+      "exit_code": 1,
+      "seconds": 10.2,
+      "tail": "================================== FAILURES ===================================\nD:\\Projekty\\_wt\\intergrax\\_scratch\\mcp-rc-reaudit-mut\\tests\\unit\\applications\\test_mcp_rc_audit_corrections.py:251: AssertionError: Regex pattern did not match.\n=========================== short test summary info ===========================\nFAILED tests/unit/applications/test_mcp_rc_audit_corrections.py::test_host_ending_cancelled_or_failed_after_the_bound_is_deadline_exceeded[failed-outcome=failed-0.1]\n!!!!!!!!!!!!!!!!!!!!!!!!!! stopping after 1 failures !!!!!!!!!!!!!!!!!!!!!!!!!!\n1 failed, 7 passed in 2.49s"
+    }
+  ]
+}

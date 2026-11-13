@@ -1,0 +1,51 @@
+{
+  "stage_id": "PDC-X/MCP-RC",
+  "role": "certifier (preflight)",
+  "certifier_session_id": "MCP-RC-CERTIFIER-PREFLIGHT-2026-11-13",
+  "certifier_agent_id": "certification-governance-agent",
+  "policy_version": "IIAC-2026-11-05.1",
+  "verdict": "CERTIFIER_PREFLIGHT_PASS_SCOPED",
+  "is_activation_certification": false,
+  "is_rebind": false,
+  "is_stage_closure": false,
+  "is_production_readiness_claim": false,
+  "frz_counter": 225,
+  "frz_status_changed": false,
+  "pins": {
+    "base": "6a6279a49a9aa5a33936a1c6a577c7194b4bcebb",
+    "first_audit_audited_sha": "93a089d3cca941592f1ad4f65435333c86da82e5",
+    "first_audit_execution_base": "f3078b293ecee402583b3d6ad9ef5aaeff0b2d1d",
+    "first_audit_branch_head": "4a459ed0be798ca13e292920ba081874244ee58e",
+    "last_product_change": "b0e19bf61b346e6941b2e190b703c6922e708b34",
+    "reaudit_execution_base": "f1dde5a3e19924b82e902be18f11a21b64b822ba",
+    "reaudit_branch_head": "efa74c54536567d138b27a2d96dbb15b35f103c2",
+    "tests_and_harness_after_audit": "b98dc77196cee10a9f06323bd47c4b69d0f1baa6",
+    "record_head_certified": "1b5f26f249beaafe007ffff2f1e396ae393a07dc"
+  },
+  "own_runs": {
+    "contract": {"head": "1b5f26f249beaafe007ffff2f1e396ae393a07dc", "files": 39, "passed": 481, "xfailed": 1, "failed": 0, "exit_code": 0, "seconds": 665.16, "single_process": true, "log": "logs/rc_contract_certifier_at_1b5f26f24.log"},
+    "mutation_harness": {"head": "1b5f26f249beaafe007ffff2f1e396ae393a07dc", "mutants": 18, "killed": 18, "survived": 0, "report": "mutation/certifier_mutation_report_18_at_1b5f26f24.json"},
+    "verify_iiac_audit_manifest": {"audit1": "PASS", "reaudit": "PASS"},
+    "verify_iiac_role_separation_strict_product_diff": {"audit1": "PASS", "reaudit": "PASS"},
+    "verify_iiac_policy_activation_require_in_force": {"exit_code": 1, "act_n11_paths": 23, "expected": true, "note": "ACT-N11 trigger by design until the PDC-P7-00 two-phase rebind"}
+  },
+  "checks": [
+    {"id": 1, "name": "pin chain derived from git", "result": "PASS"},
+    {"id": 2, "name": "no product diff b0e19bf61..1b5f26f24", "result": "PASS"},
+    {"id": 3, "name": "audit execution bases docs-only and audit_scope.json consistent", "result": "PASS"},
+    {"id": 4, "name": "auditor/implementer/certifier session ids distinct", "result": "PASS"},
+    {"id": 5, "name": "Ref trailers on all implementer commits", "result": "PASS"},
+    {"id": 6, "name": "six plan digests match plan_digest.py", "result": "PASS"},
+    {"id": 7, "name": "delegate approvals within DELEGATION-MCP-RC-1", "result": "PASS"},
+    {"id": 8, "name": "mandatory contract re-run 481 passed / 1 strict xfail", "result": "PASS"},
+    {"id": 9, "name": "mutation harness 18 mutants, reports match harness", "result": "PASS"},
+    {"id": 10, "name": "audit manifest digests match published files", "result": "PASS"},
+    {"id": 11, "name": "findings AF-01..AF-16 and RA-01..RA-07 have recorded dispositions", "result": "PASS_SCOPED"},
+    {"id": 12, "name": "no FRZ / activation record / P8 / ruleset / governance script change", "result": "PASS"},
+    {"id": 13, "name": "no new MCP protocol capability", "result": "PASS"},
+    {"id": 14, "name": "no deleted, skipped or loosened test used to obtain PASS", "result": "PASS"},
+    {"id": 15, "name": "pin-only edits", "result": "NONE_MADE"},
+    {"id": 16, "name": "ACT-N11 gate state recorded", "result": "EXPECTED_FAIL"}
+  ],
+  "pin_only_edits": []
+}

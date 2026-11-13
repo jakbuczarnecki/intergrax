@@ -1,0 +1,4 @@
+cancelled -> ToolError: MCP_DEADLINE_EXCEEDED: call exceeded 0.3s; outcome=cancelled
+cancelled elapsed 0.38
+failed -> ToolError: MCP_DEADLINE_EXCEEDED: call exceeded 0.3s; outcome=failed
+failed elapsed 0.39

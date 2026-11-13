@@ -1,0 +1,77 @@
+[
+ {
+  "case": "P1 run_agent host exception over real HTTP with key",
+  "outcome": "PASS",
+  "detail": "MCP_INTERNAL_ERROR: tool execution failed (RuntimeError)"
+ },
+ {
+  "case": "P3a custom tool, default mode, no auth, Tier-3 facade",
+  "outcome": "PASS",
+  "detail": "MCP_PRINCIPAL_REQUIRED: authenticated harness principal required for MCP calls"
+ },
+ {
+  "case": "P3b custom tool with valid key",
+  "outcome": "PASS",
+  "detail": "{\"d\":\"SECRET-ok\"}"
+ },
+ {
+  "case": "P3c custom tool bad creds {'X-Api-Key': 'bad'}",
+  "outcome": "PASS",
+  "detail": "refused at HTTP layer (401)"
+ },
+ {
+  "case": "P3c custom tool bad creds {'X-Api-Key': ''}",
+  "outcome": "PASS",
+  "detail": "refused at HTTP layer (401)"
+ },
+ {
+  "case": "P3c custom tool bad creds {}",
+  "outcome": "PASS",
+  "detail": "refused at HTTP layer (401)"
+ },
+ {
+  "case": "P3d compose_application_mcp_server exposes public_custom_tool_names",
+  "outcome": "GAP",
+  "detail": "opt-out unreachable via the Tier-3 facade"
+ },
+ {
+  "case": "P4 te_tool",
+  "outcome": "NOTE",
+  "detail": "UPSTREAM-SECRET tenant=victim token=abc"
+ },
+ {
+  "case": "P4 g_tool",
+  "outcome": "PASS",
+  "detail": "MCP_INTERNAL_ERROR: tool execution failed (ExceptionGroup)"
+ },
+ {
+  "case": "P4 c_tool",
+  "outcome": "PASS",
+  "detail": "MCP_INTERNAL_ERROR: tool execution failed (Boom_tenant_victim)"
+ },
+ {
+  "case": "P5 host TimeoutError (no bound expiry) in LOCAL_DEV with max_call_seconds",
+  "outcome": "NOTE",
+  "detail": "MCP_DEADLINE_EXCEEDED: call exceeded 30.0s; outcome=cancelled after 0.00s"
+ },
+ {
+  "case": "P6 list_agents latency while list_catalog_tools blocks 1.5 s",
+  "outcome": "PASS",
+  "detail": "list_agents 0.00s, list_catalog 1.52s"
+ },
+ {
+  "case": "P7 run_agent deep metadata",
+  "outcome": "PASS",
+  "detail": "MCP_INTERNAL_ERROR: tool execution failed (RecursionError)"
+ },
+ {
+  "case": "P8a second call over cap 1",
+  "outcome": "PASS",
+  "detail": "Error calling tool 'qual_echo': MCP_CONCURRENT_CALL_LIMIT_EXCEEDED: mcp_concurrent_call_limit_exceeded"
+ },
+ {
+  "case": "P8b slot after in-memory client cancel (probe limitation: the in-memory Client does not propagate cancel to the server task; see reaudit_probe_cancel.py for the server-side check)",
+  "outcome": "NOTE",
+  "detail": "refused while the first handler (30 s sleep) still holds the slot"
+ }
+]

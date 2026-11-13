@@ -1,0 +1,173 @@
+{
+  "repo_head": "f3078b293ecee402583b3d6ad9ef5aaeff0b2d1d",
+  "results": [
+    {
+      "mutant_id": "A1-local-dev-loopback-guard-removed",
+      "invariant": "LOCAL_DEV refuses non-loopback clients",
+      "path": "intergrax/applications/_shared/mcp_harness_principal.py",
+      "old": "    if not is_loopback_client(request):\n        raise mcp_tool_error(",
+      "new": "    if False:\n        raise mcp_tool_error(",
+      "tests": [
+        "tests/unit/applications/test_mcp_identity_mode_fail_closed.py"
+      ],
+      "status": "killed",
+      "exit_code": 1,
+      "seconds": 58.8,
+      "tail": "\n-- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html\n=========================== short test summary info ===========================\nFAILED tests/unit/applications/test_mcp_identity_mode_fail_closed.py::test_local_dev_explicit_admits_loopback_empty_state_but_refuses_remote_client\n!!!!!!!!!!!!!!!!!!!!!!!!!! stopping after 1 failures !!!!!!!!!!!!!!!!!!!!!!!!!!\n1 failed, 14 passed, 3 warnings in 4.14s"
+    },
+    {
+      "mutant_id": "A2-catalog-invoke-unfiltered-registry",
+      "invariant": "catalog invoke composes the allowlist-filtered registry",
+      "path": "intergrax/applications/_shared/mcp_server_engine.py",
+      "old": "                registry=registry_view,\n                tool_enablement=deps.tool_enablement,",
+      "new": "                registry=deps.tool_registry,\n                tool_enablement=deps.tool_enablement,",
+      "tests": [
+        "tests/unit/applications/test_mcp_identity_mode_fail_closed.py"
+      ],
+      "status": "killed",
+      "exit_code": 1,
+      "seconds": 14.2,
+      "tail": "\n-- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html\n=========================== short test summary info ===========================\nFAILED tests/unit/applications/test_mcp_identity_mode_fail_closed.py::test_invoke_catalog_composition_receives_the_allowlist_filtered_registry\n!!!!!!!!!!!!!!!!!!!!!!!!!! stopping after 1 failures !!!!!!!!!!!!!!!!!!!!!!!!!!\n1 failed, 33 passed, 8 warnings in 4.51s"
+    },
+    {
+      "mutant_id": "A3-cross-loop-payload-bound-removed",
+      "invariant": "cross-loop catalog payload is bounded at the MCP boundary",
+      "path": "intergrax/applications/_shared/mcp_catalog_invocation_bridge.py",
+      "old": "            return bound_cross_loop_catalog_payload(terminal.payload)\n",
+      "new": "            return terminal.payload\n",
+      "tests": [
+        "tests/unit/applications/test_mcp_result_bounds_and_error_contract.py"
+      ],
+      "status": "survived",
+      "exit_code": 0,
+      "seconds": 11.8,
+      "tail": "...................................                                      [100%]\n35 passed in 2.10s"
+    },
+    {
+      "mutant_id": "A3b-cross-loop-success-payload-bound-removed",
+      "invariant": "cross-loop success payload is bounded",
+      "path": "intergrax/applications/_shared/mcp_catalog_invocation_bridge.py",
+      "old": "            **bound_cross_loop_catalog_payload(terminal.payload),\n",
+      "new": "            **terminal.payload,\n",
+      "tests": [
+        "tests/unit/applications/test_mcp_result_bounds_and_error_contract.py"
+      ],
+      "status": "survived",
+      "exit_code": 0,
+      "seconds": 13.9,
+      "tail": "...................................                                      [100%]\n35 passed in 2.72s"
+    },
+    {
+      "mutant_id": "A4-cancelled-outcome-returned-as-success",
+      "invariant": "a non-completed outcome after the call bound is never success",
+      "path": "intergrax/applications/_shared/mcp_host_execution_transport_cancel.py",
+      "old": "        if isinstance(outcome, TaskResult) and outcome.state is TaskState.COMPLETED:\n",
+      "new": "        if True:\n",
+      "tests": [
+        "tests/unit/applications/test_mcp_deadline_and_resilience.py"
+      ],
+      "status": "killed",
+      "exit_code": 1,
+      "seconds": 13.3,
+      "tail": "================================== FAILURES ===================================\nD:\\Projekty\\intergrax\\.claude\\worktrees\\_wt\\_scratch\\mcp-rc-audit-mut2\\tests\\unit\\applications\\test_mcp_deadline_and_resilience.py:101: Failed: DID NOT RAISE <class 'fastmcp.exceptions.ToolError'>\n=========================== short test summary info ===========================\nFAILED tests/unit/applications/test_mcp_deadline_and_resilience.py::test_call_bound_requests_governed_cancel_and_reports_deadline_exceeded\n!!!!!!!!!!!!!!!!!!!!!!!!!! stopping after 1 failures !!!!!!!!!!!!!!!!!!!!!!!!!!\n1 failed in 2.53s"
+    },
+    {
+      "mutant_id": "A5-list-agents-principal-gate-removed",
+      "invariant": "list_agents requires a principal in the default mode",
+      "path": "intergrax/applications/_shared/mcp_server_engine.py",
+      "old": "            async with optional_mcp_call_admission(call_admission):\n                require_mcp_caller_principal(identity_mode=identity_mode)\n                agents:",
+      "new": "            async with optional_mcp_call_admission(call_admission):\n                agents:",
+      "tests": [
+        "tests/unit/applications/test_mcp_identity_mode_fail_closed.py"
+      ],
+      "status": "killed",
+      "exit_code": 1,
+      "seconds": 16.5,
+      "tail": "\n-- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html\n=========================== short test summary info ===========================\nFAILED tests/unit/applications/test_mcp_identity_mode_fail_closed.py::test_list_agents_requires_principal_by_default_and_opens_only_in_local_dev\n!!!!!!!!!!!!!!!!!!!!!!!!!! stopping after 1 failures !!!!!!!!!!!!!!!!!!!!!!!!!!\n1 failed, 20 passed, 3 warnings in 3.52s"
+    },
+    {
+      "mutant_id": "A6-request-time-auth-resolver-disabled",
+      "invariant": "identity wired after coupling still reaches MCP",
+      "path": "intergrax/applications/_shared/fastapi_mcp.py",
+      "old": "    mcp_app.state.harness_auth_resolver = lambda: resolve_harness_auth_state_from_app(wrapper) or inner_auth",
+      "new": "    mcp_app.state.harness_auth_resolver = lambda: None",
+      "tests": [
+        "tests/unit/applications/test_mcp_identity_mode_fail_closed.py"
+      ],
+      "status": "killed",
+      "exit_code": 1,
+      "seconds": 17.3,
+      "tail": "\n-- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html\n=========================== short test summary info ===========================\nFAILED tests/unit/applications/test_mcp_identity_mode_fail_closed.py::test_identity_wired_after_coupling_still_binds_and_conflicts\n!!!!!!!!!!!!!!!!!!!!!!!!!! stopping after 1 failures !!!!!!!!!!!!!!!!!!!!!!!!!!\n1 failed, 22 passed, 6 warnings in 4.91s"
+    },
+    {
+      "mutant_id": "A7-custom-tool-exception-text-echoed",
+      "invariant": "custom tool exception text is never echoed",
+      "path": "intergrax/applications/_shared/mcp_server_engine.py",
+      "old": "f\"tool execution failed ({type(exc).__name__})\"",
+      "new": "f\"tool execution failed ({exc})\"",
+      "tests": [
+        "tests/unit/applications/test_mcp_result_bounds_and_error_contract.py"
+      ],
+      "status": "killed",
+      "exit_code": 1,
+      "seconds": 15.0,
+      "tail": "================================== FAILURES ===================================\nD:\\Projekty\\intergrax\\.claude\\worktrees\\_wt\\_scratch\\mcp-rc-audit-mut2\\tests\\unit\\applications\\test_mcp_result_bounds_and_error_contract.py:168: AssertionError: assert 'secret-path' not in 'MCP_INTERNA...zzzzzzzzzzz)'\n=========================== short test summary info ===========================\nFAILED tests/unit/applications/test_mcp_result_bounds_and_error_contract.py::test_custom_tool_exception_text_is_not_echoed_unbounded_on_the_wire\n!!!!!!!!!!!!!!!!!!!!!!!!!! stopping after 1 failures !!!!!!!!!!!!!!!!!!!!!!!!!!\n1 failed, 8 passed in 2.92s"
+    },
+    {
+      "mutant_id": "A8-unknown-tool-echo-uncapped",
+      "invariant": "unknown-tool echo is capped",
+      "path": "intergrax/applications/_shared/mcp_catalog_tools.py",
+      "old": "f\"unknown_tool:{tool_id[:_MAX_ECHOED_TOOL_ID_CHARS]}\"",
+      "new": "f\"unknown_tool:{tool_id}\"",
+      "tests": [
+        "tests/unit/applications/test_mcp_result_bounds_and_error_contract.py"
+      ],
+      "status": "killed",
+      "exit_code": 1,
+      "seconds": 14.7,
+      "tail": "================================== FAILURES ===================================\nD:\\Projekty\\intergrax\\.claude\\worktrees\\_wt\\_scratch\\mcp-rc-audit-mut2\\tests\\unit\\applications\\test_mcp_result_bounds_and_error_contract.py:228: assert 100066 < 4096\n=========================== short test summary info ===========================\nFAILED tests/unit/applications/test_mcp_result_bounds_and_error_contract.py::test_unknown_tool_error_does_not_echo_unbounded_caller_input\n!!!!!!!!!!!!!!!!!!!!!!!!!! stopping after 1 failures !!!!!!!!!!!!!!!!!!!!!!!!!!\n1 failed, 11 passed in 2.77s"
+    },
+    {
+      "mutant_id": "A9-invocation-id-constant",
+      "invariant": "mcp_invocation_id is unique per call",
+      "path": "intergrax/applications/_shared/mcp_invocation_id.py",
+      "old": "return f\"{_PREFIX}{uuid.uuid4().hex}\"",
+      "new": "return f\"{_PREFIX}{'0' * 32}\"",
+      "tests": [
+        "tests/unit/applications/test_mcp_invocation_id.py"
+      ],
+      "status": "killed",
+      "exit_code": 1,
+      "seconds": 13.5,
+      "tail": "================================== FAILURES ===================================\nD:\\Projekty\\intergrax\\.claude\\worktrees\\_wt\\_scratch\\mcp-rc-audit-mut2\\tests\\unit\\applications\\test_mcp_invocation_id.py:67: AssertionError: assert 1 == 40\n=========================== short test summary info ===========================\nFAILED tests/unit/applications/test_mcp_invocation_id.py::test_invocation_id_is_unique_per_call_including_concurrent_calls\n!!!!!!!!!!!!!!!!!!!!!!!!!! stopping after 1 failures !!!!!!!!!!!!!!!!!!!!!!!!!!\n1 failed, 1 passed in 2.49s"
+    },
+    {
+      "mutant_id": "A10-unverified-label-dropped",
+      "invariant": "assertion-only identity is labelled unverified",
+      "path": "intergrax/applications/_shared/mcp_nexus_server.py",
+      "old": "    if not identity_verified:\n",
+      "new": "    if False:\n",
+      "tests": [
+        "tests/unit/applications/test_mcp_identity_mode_fail_closed.py"
+      ],
+      "status": "killed",
+      "exit_code": 1,
+      "seconds": 13.1,
+      "tail": "================================== FAILURES ===================================\nD:\\Projekty\\intergrax\\.claude\\worktrees\\_wt\\_scratch\\mcp-rc-audit-mut2\\tests\\unit\\applications\\test_mcp_identity_mode_fail_closed.py:154: AssertionError: assert None == 'unverified'\n=========================== short test summary info ===========================\nFAILED tests/unit/applications/test_mcp_identity_mode_fail_closed.py::test_asserted_local_dev_identity_is_labelled_unverified_on_the_task\n!!!!!!!!!!!!!!!!!!!!!!!!!! stopping after 1 failures !!!!!!!!!!!!!!!!!!!!!!!!!!\n1 failed, 10 passed in 2.35s"
+    },
+    {
+      "mutant_id": "A11-local-dev-allowed-with-configured-auth",
+      "invariant": "LOCAL_DEV never downgrades configured auth",
+      "path": "intergrax/applications/_shared/mcp_harness_principal.py",
+      "old": "    if _harness_auth_requires_principal(effective_harness_auth) and not _local_dev_harness_bypass(\n        effective_harness_auth,\n    ):",
+      "new": "    if False and not _local_dev_harness_bypass(\n        effective_harness_auth,\n    ):",
+      "tests": [
+        "tests/unit/applications/test_mcp_identity_mode_fail_closed.py"
+      ],
+      "status": "survived",
+      "exit_code": 0,
+      "seconds": 18.1,
+      "tail": "tests/unit/applications/test_mcp_identity_mode_fail_closed.py::test_research_pipeline_over_http_forged_tenant_conflicts_with_principal\n  C:\\Users\\XPS\\AppData\\Roaming\\uv\\python\\cpython-3.12.11-windows-x86_64-none\\Lib\\contextlib.py:105: DeprecationWarning: Use `streamable_http_client` instead.\n    self.gen = func(*args, **kwds)\n\n-- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html\n34 passed, 8 warnings in 6.53s"
+    }
+  ]
+}

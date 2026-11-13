@@ -1,0 +1,178 @@
+{
+  "stage_id": "PDC-X/MCP-RC",
+  "audited_implementation_sha": "b0e19bf61b346e6941b2e190b703c6922e708b34",
+  "base_sha": "6a6279a49a9aa5a33936a1c6a577c7194b4bcebb",
+  "first_audit_implementation_sha": "93a089d3cca941592f1ad4f65435333c86da82e5",
+  "dossier_verdict_delta": "PASS_SCOPED",
+  "dossier_verdict_combined": "PASS_SCOPED",
+  "counts_new": {
+    "HIGH": 0,
+    "MEDIUM": 0,
+    "LOW": 4,
+    "INFO": 3,
+    "total": 7
+  },
+  "product_change_required": [],
+  "test_or_evidence_recommended": [
+    "RA-01"
+  ],
+  "open_conditions": [
+    "named owner or ticket for AF-05 and AF-16"
+  ],
+  "first_audit_findings_closure": [
+    {
+      "id": "AF-01",
+      "severity": "MEDIUM",
+      "judgement": "CLOSED",
+      "basis": "sanitized_tool_errors; adv_runagent_leak re-run and real-HTTP probe P1 show MCP_INTERNAL_ERROR with class name only; mutants R1,R9,R10,R11,R14,R15 killed. Residuals RA-01, RA-02"
+    },
+    {
+      "id": "AF-02",
+      "severity": "MEDIUM",
+      "judgement": "CLOSED",
+      "basis": "adv_deadline_cancelled re-run: MCP_DEADLINE_EXCEEDED outcome=cancelled|failed in 0.38 s; mutants R3,R6,R13,M16,M17 killed; all call sites of _bounded_observe_host_task reviewed"
+    },
+    {
+      "id": "AF-03",
+      "severity": "MEDIUM",
+      "judgement": "CLOSED_IN_CODE",
+      "basis": "custom tools refused without a principal over real HTTP, handler never runs; research tool verified; mutants R2,R4,R7,R12,M15 killed. Residual RA-03"
+    },
+    {
+      "id": "AF-04",
+      "severity": "MEDIUM",
+      "judgement": "CLOSED",
+      "basis": "M9..M13 (equal to A3,A3b,A11,A12,A13) killed by test_mcp_rc_audit_corrections.py in the re-run"
+    },
+    {
+      "id": "AF-05",
+      "severity": "MEDIUM",
+      "judgement": "ACCEPT_SCOPED",
+      "basis": "real factory composition unverified; condition open: named owner/ticket"
+    },
+    {
+      "id": "AF-06",
+      "severity": "LOW",
+      "judgement": "ACCEPT",
+      "basis": "ADR decision 5 states bound plus host drain"
+    },
+    {
+      "id": "AF-07",
+      "severity": "LOW",
+      "judgement": "ACCEPT",
+      "basis": "ADR decision 5 amended; see RA-04"
+    },
+    {
+      "id": "AF-08",
+      "severity": "LOW",
+      "judgement": "ACCEPT",
+      "basis": "ADR consequence"
+    },
+    {
+      "id": "AF-09",
+      "severity": "LOW",
+      "judgement": "ACCEPT",
+      "basis": "ADR consequence"
+    },
+    {
+      "id": "AF-10",
+      "severity": "LOW",
+      "judgement": "CLOSED",
+      "basis": "custom and run_agent deep/circular results typed; probe P7"
+    },
+    {
+      "id": "AF-11",
+      "severity": "LOW",
+      "judgement": "ACCEPT",
+      "basis": "fixtures only"
+    },
+    {
+      "id": "AF-12",
+      "severity": "LOW",
+      "judgement": "ACCEPT",
+      "basis": "declared"
+    },
+    {
+      "id": "AF-13",
+      "severity": "LOW",
+      "judgement": "ACCEPT",
+      "basis": "declared in corrections record"
+    },
+    {
+      "id": "AF-14",
+      "severity": "LOW",
+      "judgement": "ACCEPT",
+      "basis": "pre-existing protocol behaviour"
+    },
+    {
+      "id": "AF-15",
+      "severity": "INFO",
+      "judgement": "ACCEPT",
+      "basis": "declared"
+    },
+    {
+      "id": "AF-16",
+      "severity": "INFO",
+      "judgement": "ACCEPT_SCOPED",
+      "basis": "TRANSFERRED; condition open: named owner/ticket"
+    }
+  ],
+  "new_findings": [
+    {
+      "id": "RA-01",
+      "severity": "LOW",
+      "area": "test-evidence",
+      "title": "sanitized_tool_errors wiring of invoke_catalog_tool is not pinned by any test",
+      "evidence": "own mutant R8 survives the RC file, identity/bounds/deadline suites and 7 catalog suites (134 tests, PYTHONPATH = scratch checkout); code reviewed correct",
+      "recommended_disposition": "add one test (invoker or ingress raising a secret-bearing exception -> MCP_INTERNAL_ERROR); no product change"
+    },
+    {
+      "id": "RA-02",
+      "severity": "LOW",
+      "area": "error-shape",
+      "title": "sanitized_tool_errors passes every ToolError through, including host-authored text",
+      "evidence": "probe P4 reaudit_probes.py: ToolError('UPSTREAM-SECRET ...') reaches the client verbatim; ADR decision 6 says raw exception text never reaches the wire",
+      "recommended_disposition": "document the exception or pass through only MCP_-coded messages"
+    },
+    {
+      "id": "RA-03",
+      "severity": "LOW",
+      "area": "compat",
+      "title": "public_custom_tool_names not reachable through compose_application_mcp_server (Tier-3 facade)",
+      "evidence": "probe P3d signature check; mcp_application_server.py builds deps without the field",
+      "recommended_disposition": "document in the migration note or thread the parameter; fail-closed direction, no security impact"
+    },
+    {
+      "id": "RA-04",
+      "severity": "LOW",
+      "area": "deadline",
+      "title": "Host-raised TimeoutError reported as MCP_DEADLINE_EXCEEDED outcome=cancelled (LOCAL_DEV path and catalog bridge)",
+      "evidence": "probe P5 (0.00 s, max_call_seconds=30); pre-existing code, unchanged by the delta; no success claimed",
+      "recommended_disposition": "optional hardening or accept as documented imprecision"
+    },
+    {
+      "id": "RA-05",
+      "severity": "INFO",
+      "area": "deadline",
+      "title": "Outcome label cancelled covers any non-COMPLETED terminal TaskResult; observe helper swallows cancellation of its calling task (pre-existing)",
+      "evidence": "code review",
+      "recommended_disposition": "accept"
+    },
+    {
+      "id": "RA-06",
+      "severity": "INFO",
+      "area": "hygiene",
+      "title": "Orphan attribute docstrings in McpServerCompositionDeps; unreachable McpConcurrentToolCallLimitExceeded pass-through; two identity verifications per research-tool call",
+      "evidence": "review; research-tool probe",
+      "recommended_disposition": "accept"
+    },
+    {
+      "id": "RA-07",
+      "severity": "INFO",
+      "area": "test-process",
+      "title": "Start budget 15 s to 60 s: L3-R2 never-ready test now waits 60 s; budget can mask up to ~4x slow start",
+      "evidence": "fixture diff; startup_timing.results.txt (L3-R1 1.9-3.5 s, TL11 6.5-8.2 s); implementer's 8-21 s not reproduced",
+      "recommended_disposition": "accept; optionally override the budget to 3 s in the L3-R2 never-ready test"
+    }
+  ]
+}

@@ -1,0 +1,14 @@
+........F.FFF.F                                                          [100%]
+================================== FAILURES ===================================
+D:\Projekty\intergrax\.claude\worktrees\compassionate-banach-4b0679\intergrax\applications\_shared\llm_resolver.py:319: intergrax.llm_adapters.registry.registration_contract.LLMProviderNotConfiguredError: LLM provider not explicitly configured: set ApplicationEnvironmentProfile.llm_profile or INTERGRAX_LLM_PROVIDER before materializing an adapter.
+D:\Projekty\intergrax\.claude\worktrees\compassionate-banach-4b0679\intergrax\applications\_shared\llm_resolver.py:319: intergrax.llm_adapters.registry.registration_contract.LLMProviderNotConfiguredError: LLM provider not explicitly configured: set ApplicationEnvironmentProfile.llm_profile or INTERGRAX_LLM_PROVIDER before materializing an adapter.
+D:\Projekty\intergrax\.claude\worktrees\compassionate-banach-4b0679\intergrax\applications\_shared\roster_agent_contract_authority.py:121: intergrax.applications._shared.roster_agent_contract_authority.StrictAgentContractAuthorityError: STRICT agent contract resolution requires revision-bound authority
+D:\Projekty\intergrax\.claude\worktrees\compassionate-banach-4b0679\intergrax\applications\_shared\llm_resolver.py:319: intergrax.llm_adapters.registry.registration_contract.LLMProviderNotConfiguredError: LLM provider not explicitly configured: set ApplicationEnvironmentProfile.llm_profile or INTERGRAX_LLM_PROVIDER before materializing an adapter.
+D:\Projekty\intergrax\.claude\worktrees\compassionate-banach-4b0679\intergrax\applications\_shared\roster_agent_contract_authority.py:121: intergrax.applications._shared.roster_agent_contract_authority.StrictAgentContractAuthorityError: STRICT agent contract resolution requires revision-bound authority
+=========================== short test summary info ===========================
+FAILED tests/unit/applications/test_zz_audit_old_opt_in.py::test_http_only_factory_does_not_import_fastmcp
+FAILED tests/unit/applications/test_zz_audit_old_opt_in.py::test_mcp_enabled_factory_raises_when_fastmcp_missing
+FAILED tests/unit/applications/test_zz_audit_old_opt_in.py::test_scaffold_defaults_mcp_to_opt_in
+FAILED tests/unit/applications/test_zz_audit_old_opt_in_runtime.py::test_mcp_enabled_factory_mounts_mcp_route_when_available
+FAILED tests/unit/applications/test_mcp_surface_opt_in.py::test_scaffold_defaults_mcp_to_opt_in[product]
+5 failed, 10 passed in 25.79s
