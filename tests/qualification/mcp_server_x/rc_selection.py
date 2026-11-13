@@ -26,6 +26,13 @@ MCP_SERVER_X_RC_NEW_SUITES: tuple[str, ...] = (
     f"{_UA}/test_mcp_invocation_id.py",
 )
 
+# Existing suites outside the P7 selections that build MCP servers or call MCP tools (found by the RC impact sweep).
+MCP_SERVER_X_RC_EXTRA_REGRESSION: tuple[str, ...] = (
+    "tests/unit/tools/providers/test_tool_life_x_l3_r2_mcp_host_lifecycle_qualification.py",
+    "tests/unit/runtime/external_operations/test_tool_life_x_r4_b2_mcp_class_c_fail_closed.py",
+    "tests/qualification/host_01/test_host_01_gates.py",
+)
+
 MCP_SERVER_X_RC_SELECTION: tuple[str, ...] = tuple(
     dict.fromkeys(
         (
@@ -34,8 +41,9 @@ MCP_SERVER_X_RC_SELECTION: tuple[str, ...] = tuple(
             *MCP_SERVER_X_P7_REGRESSION_SELECTION,
             *MCP_SERVER_X_P7_KNOWN_BASELINE_RED,
             *MCP_SERVER_X_RC_NEW_SUITES,
+            *MCP_SERVER_X_RC_EXTRA_REGRESSION,
         )
     )
 )
 
-__all__ = ["MCP_SERVER_X_RC_NEW_SUITES", "MCP_SERVER_X_RC_SELECTION"]
+__all__ = ["MCP_SERVER_X_RC_EXTRA_REGRESSION", "MCP_SERVER_X_RC_NEW_SUITES", "MCP_SERVER_X_RC_SELECTION"]

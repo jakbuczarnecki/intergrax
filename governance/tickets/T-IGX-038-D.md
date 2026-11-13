@@ -29,4 +29,4 @@ uv run python -m scripts.governance.igx_gov ticket
 
 ## Lifecycle state
 
-plan_approved
+quality_gate
