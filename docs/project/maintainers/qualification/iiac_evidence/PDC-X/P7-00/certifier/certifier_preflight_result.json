@@ -1,0 +1,39 @@
+{
+  "stage_id": "PDC-X/P7-00",
+  "role": "certifier (preflight)",
+  "certifier_session_id": "PDC-P7-00-CERTIFIER-PREFLIGHT-2026-11-13",
+  "certifier_agent_id": "certification-governance-agent",
+  "policy_version": "IIAC-2026-11-05.1",
+  "verdict": "CERTIFIER_PREFLIGHT_PASS_SCOPED",
+  "is_activation_certification": false,
+  "is_rebind": false,
+  "is_stage_closure": false,
+  "is_production_readiness_claim": false,
+  "frz_counter": 225,
+  "frz_status_changed": false,
+  "pins": {
+    "activation_pin_audit_execution_sha": "2d3eceb6cf7e93dccd4d96919319a6c969b4444b",
+    "mcp_rc_last_product_change": "b0e19bf61b346e6941b2e190b703c6922e708b34",
+    "first_audit_integrated_product_tree": "962c1d6706042675a7a2add6f4a89eb4d9deedb3",
+    "first_audited_sha": "fa6ff1c9616a6df28c11b087eb3f1b0dc4097b5f",
+    "re_pinned_development": "3dd991336233cea1662518df8b35e5e1ea901e00",
+    "addendum_audited_sha": "19d552beeb6f0677a8bdc3b4ce65da15dd637c7b",
+    "evidence_publication_commit": "6b195980d20067449ade0d2c2fd2280781c5a25d",
+    "pin_only_edit_commit_and_record": "ae5623efbdfd69ddf4ba67f82861ccad130c9b33",
+    "record_head_certified": "ae5623efbdfd69ddf4ba67f82861ccad130c9b33"
+  },
+  "act_n11": {"paths_at_fa6ff1c96": 153, "paths_at_19d552bee": 156, "paths_at_head": 156, "mcp_rc": 23, "pdc_x_first": 130, "delta_total": 6, "delta_already_counted": 3, "delta_new": 3, "non_mcp_total": 133},
+  "own_runs": {
+    "mcp_rc_contract": {"head": "ae5623efbdfd69ddf4ba67f82861ccad130c9b33", "files": 39, "passed": 481, "xfailed": 1, "failed": 0, "exit_code": 0, "seconds": 352.43, "log": "logs/rc_contract_certifier_at_ae5623efb.log"},
+    "gate_files": {"files": ["3 EBH-5 gate files", "tests/unit/governance/test_pdc_x_inventory.py", "2 COMPAT-X event-evolution gate files"], "passed": 97, "failed": 19, "ebh_5_failed": 0, "inventory_failed": 2, "compat_x_failed": 17, "log": "logs/gates_certifier_at_ae5623efb.log"},
+    "compat_x_at_activation_pin": {"failed": 7, "passed": 79, "log": "logs/compat_x_at_pin_2d3eceb6c.log"},
+    "verify_iiac_audit_manifest": {"first": "PASS", "addendum_1": "PASS"},
+    "verify_iiac_role_separation_strict_product_diff": {"first": "PASS", "addendum_1": "PASS"},
+    "verify_iiac_policy_activation_require_in_force": {"exit_code": 1, "errors": 156, "all_act_n11_product_path": true, "expected": true},
+    "mutation_harness": "not re-run: 23 product paths, RC tests and harness byte-identical to 1b5f26f24 where the earlier certifier run killed 18 of 18"
+  },
+  "red_tests_on_baseline": {"since_pdc_x": 12, "red_at_pin_too": 7, "ebh_5_gates": "green (F-06 resolved)", "f07_status": "OPEN", "f35_status": "OPEN", "f09_status": "not exercised here"},
+  "findings": {"total": 40, "all_have_disposition": true, "blocking_open": 0, "severity": {"HIGH": 0, "MEDIUM": 7, "LOW": 25, "INFO": 8}, "act_n15_findings_array": {"first_audit": "ok", "addendum_1": "ok"}},
+  "pin_only_edits_by_this_certifier": [],
+  "pin_only_edits_by_integration_session": "six field edits in two manifests (certifier_session_id, evidence_publication_sha, certification_publication_sha), verified equal to the diff"
+}

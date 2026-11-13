@@ -83,19 +83,6 @@ def test_xd12_changed_since_over_the_pdc_range_never_fails_closed_and_keeps_the_
     assert unmapped_fail_closed_paths(pdc_changed, prefixes=prefixes, entrypoint_covered=covered) == frozenset()
 
 
-@pytest.mark.xfail(
-    strict=True,
-    reason=(
-        "FINDING-8 (ENT-AUDIT impact-map completeness): the shipped CHANGED-SINCE impact map and manifest "
-        "entrypoints map none of the PDC-touched product modules to a check. Every module the PDC campaign "
-        "changed (hosting, agent_distribution, llm_adapters, runtime/nexus/artifacts, runtime/security, ...) falls "
-        "through to the invariant floor only, so a change to them selects no domain-specific check. "
-        "intergrax/platform/enterprise_audit/data/changed_since_impact_map.v1.json has no prefixes for these "
-        "areas and the manifest has no entrypoint on the pdc_x suites. Smallest repair: add the PDC domain "
-        "prefixes and the tests/qualification/pdc_x entrypoint to the check manifest and regenerate the map with "
-        "scripts/enterprise_audit/build_impact_map.py --write (ticket T item: ENT-AUDIT impact map)."
-    ),
-)
 def test_xd12_every_pdc_touched_product_module_maps_to_a_domain_check(
     checks,
     pdc_changed: frozenset[str],  # type: ignore[no-untyped-def]
