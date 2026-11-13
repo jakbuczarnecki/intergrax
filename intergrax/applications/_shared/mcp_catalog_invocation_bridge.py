@@ -18,6 +18,10 @@ from intergrax.applications._shared.catalog_tool_child_mse_admission_hook import
 )
 from intergrax.applications._shared.mcp_harness_principal import resolve_mcp_run_agent_identity
 from intergrax.applications._shared.mcp_identity_mode import McpIdentityMode
+from intergrax.applications._shared.mcp_invocation_id import (
+    MCP_INVOCATION_ID_METADATA_KEY,
+    mint_mcp_invocation_id,
+)
 from intergrax.applications._shared.mcp_wire_errors import (
     bound_cross_loop_catalog_payload,
     bound_mcp_result_or_raise,
@@ -324,6 +328,7 @@ async def execute_mcp_catalog_tool_invocation(
     Execution identity (tenant, run, step, agent) is taken from the active task binding
     and bound metadata — not synthesized from untrusted MCP fields alone.
     """
+    invocation_id = mint_mcp_invocation_id()
     identity = resolve_mcp_run_agent_identity(
         harness_auth=None,
         asserted_tenant_id=asserted_tenant_id,
@@ -428,7 +433,10 @@ async def execute_mcp_catalog_tool_invocation(
                 "execution_cancelled",
                 "active execution cooperative cancellation observed after catalog invoke",
             )
-        return bound_cross_loop_catalog_payload(terminal.payload)
+        return {
+            **bound_cross_loop_catalog_payload(terminal.payload),
+            MCP_INVOCATION_ID_METADATA_KEY: invocation_id,
+        }
 
     try:
         execution = child_port.execute(work=work, admission_hooks=(mse_hook,))
@@ -448,7 +456,7 @@ async def execute_mcp_catalog_tool_invocation(
     serialized = _serialize_tool_result(tool_result)
     if isinstance(serialized.get("tool_id"), type(None)):
         serialized = {**serialized, "tool_id": tool_id}
-    return serialized
+    return {**serialized, MCP_INVOCATION_ID_METADATA_KEY: invocation_id}
 
 
 __all__ = [

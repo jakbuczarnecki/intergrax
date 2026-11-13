@@ -22,6 +22,10 @@ from intergrax.applications._shared.mcp_host_execution_transport_cancel import (
     run_host_execution_with_mcp_transport_cancel,
 )
 from intergrax.applications._shared.mcp_identity_mode import McpIdentityMode, coerce_mcp_identity_mode
+from intergrax.applications._shared.mcp_invocation_id import (
+    MCP_INVOCATION_ID_METADATA_KEY,
+    mint_mcp_invocation_id,
+)
 from intergrax.applications._shared.mcp_server_engine import (
     McpServerCompositionDeps,
     compose_mcp_server_from_definition,
@@ -65,6 +69,7 @@ def task_from_mcp_agent_intake(
     session_id: str | None = None,
     intent: str | None = None,
     identity_verified: bool = True,
+    mcp_invocation_id: str | None = None,
 ) -> Task:
     """Map MCP agent intake fields to canonical platform Task.
 
@@ -72,7 +77,11 @@ def task_from_mcp_agent_intake(
     governance can tell asserted tenant/user from a verified principal.
     """
     context = TaskContext(capability=capability, intent=intent) if intent else TaskContext(capability=capability)
-    metadata = {} if identity_verified else {MCP_IDENTITY_ASSERTION_METADATA_KEY: "unverified"}
+    metadata: dict[str, object] = {}
+    if not identity_verified:
+        metadata[MCP_IDENTITY_ASSERTION_METADATA_KEY] = "unverified"
+    if mcp_invocation_id is not None:
+        metadata[MCP_INVOCATION_ID_METADATA_KEY] = mcp_invocation_id
     return Task(
         tenant_id=tenant_id,
         user_id=user_id,
@@ -96,12 +105,14 @@ async def execute_mcp_agent_task(
     task_control_mutation_boundary: ControlPlaneMutationAuthorizationBoundary | None = None,
     transport_detachment_supervision: (RootExecutionTransportDetachmentSupervisionPort | None) = None,
     max_call_seconds: float | None = None,
+    mcp_invocation_id: str | None = None,
 ) -> dict[str, object]:
     """Run one MCP agent task through canonical host task execution.
 
     ``max_call_seconds`` (optional) is the MCP transport call bound (OD-MCP-RC-02): on expiry the existing
     governed cancel is requested and the call ends with ``MCP_DEADLINE_EXCEEDED``; it never reports success.
     """
+    invocation_id = mcp_invocation_id or mint_mcp_invocation_id()
     task = task_from_mcp_agent_intake(
         message=message,
         capability=capability,
@@ -110,6 +121,7 @@ async def execute_mcp_agent_task(
         session_id=session_id,
         intent=intent,
         identity_verified=caller_request_identity is not None,
+        mcp_invocation_id=invocation_id,
     )
     boundary = task_control_mutation_boundary
     if boundary is None:
@@ -183,6 +195,7 @@ async def execute_mcp_agent_task(
         "answer": result.answer,
         "agent_id": result.agent_id,
         "metadata": dict(result.metadata),
+        MCP_INVOCATION_ID_METADATA_KEY: invocation_id,
     }
     return bound_mcp_result_or_raise(payload)
 

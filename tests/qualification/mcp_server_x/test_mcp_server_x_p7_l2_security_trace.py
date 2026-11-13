@@ -776,7 +776,16 @@ async def test_acc_17_run_agent_payload_carries_valid_task_and_run_ids() -> None
     async with Client(mcp) as client:
         result = await client.call_tool("run_agent", {"message": "corr"})
     payload = result.data
-    assert set(payload) == {"task_id", "run_id", "state", "answer", "agent_id", "metadata"}
+    assert set(payload) == {
+        "task_id",
+        "run_id",
+        "state",
+        "answer",
+        "agent_id",
+        "metadata",
+        "mcp_invocation_id",
+    }
+    assert payload["mcp_invocation_id"].startswith("mcpi-")
     assert validate_task_id(payload["task_id"]) == expected.task_id
     assert validate_run_id(payload["run_id"]) == expected.run_id
     assert payload["state"] == TaskState.COMPLETED.value
