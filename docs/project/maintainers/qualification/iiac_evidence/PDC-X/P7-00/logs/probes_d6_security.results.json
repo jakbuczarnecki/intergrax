@@ -1,0 +1,97 @@
+{
+  "A1_evidence_plane_audit_list_truncates_at_1000": {
+    "appended": 1005,
+    "first_appended_listed": true,
+    "last_appended_listed": false,
+    "listed": 1000
+  },
+  "A2_audit_metadata_secret_value_under_benign_key": {
+    "nested_secret_key_name": "rejected:SecretSafetyValidationError",
+    "secret_key_name": "rejected:SecretSafetyValidationError",
+    "secret_value_benign_key": "accepted"
+  },
+  "A3_audit_tenant_whitespace_normalisation_and_cross_tenant_list": {
+    "a": [
+      "a"
+    ],
+    "a_as_b": [],
+    "b": [
+      "b"
+    ]
+  },
+  "C1_host_deployment_profile_accepts_unknown_keys": {
+    "lkw_bind_host_wide_accepted": "0.0.0.0",
+    "lkw_port_70000": "rejected:ValidationError",
+    "nested_value": "rejected:ValidationError",
+    "typed_flag_value": false,
+    "typo_key_accepted": true
+  },
+  "C2_task_artifact_sha256_validation": {
+    "empty": "accepted",
+    "lower": "accepted",
+    "prefixed": "rejected",
+    "short": "rejected",
+    "upper": "rejected"
+  },
+  "C3_run_artifact_bundle_empty_digest_durable_ref": "ArtifactDigestRequiredError",
+  "G1_raw_secret_gate_evasion_matrix": {
+    "attr_assignment": [
+      "secret_named_literal"
+    ],
+    "bytes_literal": [],
+    "concat_literal": [],
+    "dataclass_default": [
+      "secret_named_literal"
+    ],
+    "dict_literal_key": [],
+    "direct_env_fallback": [
+      "env_secret_literal_fallback"
+    ],
+    "env_default_kw": [
+      "env_secret_literal_fallback"
+    ],
+    "fstring_literal": [],
+    "getenv_fallback": [
+      "env_secret_literal_fallback"
+    ],
+    "plain_named_literal": [
+      "secret_named_literal"
+    ],
+    "sk_token_full": [
+      "credential_format_literal"
+    ],
+    "sk_token_split": [],
+    "subscript_default_or": []
+  },
+  "PV1_attestation_for_other_distribution_vouches_for_spec": {
+    "rejection": null
+  },
+  "PV2_digest_of_installed_files_is_never_consulted": {
+    "installed_check": true,
+    "mentions_hash_or_files": false
+  },
+  "S1_signing_uses_os_environ_when_environ_none": {
+    "enabled_default": true,
+    "missing": "signing_secret_missing",
+    "secret_env_name": "INTERGRAX_CRITICAL_ACTION_SIGNING_KEY",
+    "short_secret_accepted": true
+  },
+  "S2_signing_disabled_flag_silently_disables_on_product": {
+    "enabled": false
+  },
+  "S3_strict_config_validator_collects_all_issues": [
+    "signing_secret_missing",
+    "audit_sink_missing"
+  ],
+  "S4_poisoning_default_matrix": {
+    "''": true,
+    "'false'": true,
+    "0": true,
+    "False": false,
+    "None": true,
+    "True": true,
+    "[]": true,
+    "absent_profile": true,
+    "no_attr": true
+  }
+}

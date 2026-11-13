@@ -1,0 +1,24 @@
+{
+ "main_run_failures": 53,
+ "head_short_path_failures": 52,
+ "fa6_failures": 52,
+ "pin_failures": 40,
+ "head_equals_fa6": true,
+ "fail_at_head_not_at_pin": [
+  "tests/qualification/compat_x/test_compat_x_event_evolution_r3_p0_gates.py::test_cx_r3_p0_closed_world_inventory_gate",
+  "tests/qualification/compat_x/test_compat_x_event_evolution_r3_p0_gates.py::test_cx_r3_p0_combined_gate_passes",
+  "tests/qualification/compat_x/test_compat_x_event_evolution_r3_p0_gates.py::test_cx_r3_p0_mechanical_persistence_discovery_classified",
+  "tests/qualification/compat_x/test_compat_x_event_evolution_r3_p0_gates.py::test_cx_r3_p0_probe_k_unknown_persistence_append",
+  "tests/qualification/compat_x/test_compat_x_event_evolution_r3_r1_gates.py::test_cx_r3_r1_constructor_evidence_rule_integrity_on_current_head",
+  "tests/qualification/compat_x/test_compat_x_event_evolution_r3_r1_gates.py::test_cx_r3_r1_constructor_sites_closed_world_evidence_backed",
+  "tests/qualification/compat_x/test_compat_x_event_evolution_r3_r1_gates.py::test_cx_r3_r1_probe_h_p0_bypass_regression",
+  "tests/qualification/compat_x/test_compat_x_event_evolution_r3_r1_gates.py::test_cx_r3_r1_q13_p0_combined_gate_passes",
+  "tests/qualification/compat_x/test_compat_x_event_evolution_r3_r1_gates.py::test_cx_r3_r1_q14_production_persistence_bypass_zero",
+  "tests/qualification/compat_x/test_compat_x_event_evolution_r3_r1_gates.py::test_cx_r3_r1_reader_sites_closed_world_classified",
+  "tests/unit/governance/test_pdc_x_inventory.py::test_committed_inventory_is_current_and_closed_world",
+  "tests/unit/governance/test_pdc_x_inventory.py::test_every_item_has_exactly_one_known_category_and_status"
+ ],
+ "env_only_main_run": [
+  "tests/qualification/compat_x/test_compat_x_event_evolution_r3_p0_gates.py::test_cx_r3_p0_q2_inventory_schema_ids_match_registry"
+ ]
+}

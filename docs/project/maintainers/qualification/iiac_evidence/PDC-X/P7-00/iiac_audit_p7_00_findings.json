@@ -1,0 +1,271 @@
+{
+  "stage_id": "PDC-X/P7-00",
+  "audited_implementation_sha": "fa6ff1c9616a6df28c11b087eb3f1b0dc4097b5f",
+  "activation_pin_audit_execution_sha": "2d3eceb6cf7e93dccd4d96919319a6c969b4444b",
+  "scope": "ACT-N11 delta: 153 product paths (23 MCP-RC, 130 PDC-X)",
+  "dossier_verdict": "PASS_SCOPED",
+  "iiac_manifest_verdict": "CONDITIONAL",
+  "counts": { "HIGH": 0, "MEDIUM": 6, "LOW": 22, "INFO": 6, "total": 34 },
+  "product_change_required_for_activation": [],
+  "test_only_change_required_before_merge_or_ci": ["F-06"],
+  "routed_to_domain_audits": {
+    "IA-D1": ["F-11", "F-12", "F-21", "F-26"],
+    "IA-D2": ["F-15", "F-17", "F-18", "F-19", "F-28"],
+    "IA-D3": ["F-05"],
+    "IA-D4": ["F-13", "F-16", "F-22"],
+    "IA-D5": ["F-24", "F-25"],
+    "IA-D6": ["F-04", "F-10", "F-20", "F-23", "F-30"],
+    "IA-D7": ["F-03", "F-14"],
+    "IA-D8": ["F-01", "F-02", "F-27", "F-28", "F-29"]
+  },
+  "verification_legend": {
+    "PROBE_CONFIRMED": "reproduced by an auditor-owned throw-away probe (logs/probes_*.json)",
+    "CODE_READ_BY_AUDITOR": "the auditor read the cited lines at the audited SHA; not reproduced by a run",
+    "TEST_RUN": "observed in an auditor test run",
+    "SUBAGENT_READ_NOT_REPRODUCED": "reported by a read-only review helper; the auditor did not re-read or reproduce it; treat as a lead for the domain audit"
+  },
+  "findings": [
+    {
+      "id": "F-01", "severity": "MEDIUM", "area": "D8 artifact governed read", "verification": "PROBE_CONFIRMED",
+      "title": "Workspace scoping of a governed artifact read is optional",
+      "evidence": "intergrax/runtime/nexus/artifacts/governed_access.py:283 checks the stored workspace only when request.workspace_id is not None; ExecutionArtifactSource.read never requires it; authorization is the tenant-level capability artifact.read. Probe X1: artifact stored with workspace 'ws-1' is READ_OK with no workspace_id, READ_OK with 'ws-1', denied only with a wrong workspace_id (logs/probes_cross_batch.results.json).",
+      "impact": "any holder of artifact.read in a tenant can read any execution-evidence or tool-output artifact of that tenant (any run, any workspace) by id without naming the workspace; ids appear in context markers.",
+      "disposition": "ROUTE_TO_IA-D8; recommend making workspace_id (or a principal/run binding) mandatory in the request or deriving it from the context; no activation blocker (new capability, no previous behaviour regressed)"
+    },
+    {
+      "id": "F-02", "severity": "MEDIUM", "area": "D8 retention sweep", "verification": "PROBE_CONFIRMED",
+      "title": "TTL deletions can run without any audit record, and delete_artifact removes versions written after the expiry selection",
+      "evidence": "ArtifactRetentionSweeper(audit=None) deletes and records nothing (retention.py:_record returns when no auditor); worker_bootstrap.py:128-136 passes artifact_audit=None / artifact_governance=None through compose_worker_artifact_services (agent_runtime_context.py:501-503). Probe X3: sweep without audit deleted 'art-1' with no evidence; list_expired selected v1, a new non-expiring v2 was put, delete_artifact then left 0 versions (in-memory store; SQLite shares the semantics per the review helper).",
+      "impact": "destructive background deletion with optional evidence; a non-expiring new version can be destroyed by a sweep that selected the older expired version.",
+      "disposition": "ROUTE_TO_IA-D8; recommend refusing to build the sweeper without an audit recorder on product profiles and re-checking expiry per version inside the delete"
+    },
+    {
+      "id": "F-03", "severity": "MEDIUM", "area": "D7 recurrence", "verification": "CODE_READ_BY_AUDITOR + PROBE_CONFIRMED (signature)",
+      "title": "Recurrence occurrence identity has no tenant component; a conflict is swallowed",
+      "evidence": "recurrence.py:occurrence_schedule_id(rule_id, occurrence) has no tenant parameter (probe X6: params ['rule_id','occurrence'], id 'rec_daily-report_20261201T090000Z'); the id is the scheduled_resumes PRIMARY KEY (store.py:120); recurrence.py:~477 catches ScheduledResumeScheduleConflictError and returns None.",
+      "impact": "two tenants (or two tasks) using the same rule_id and instant collide; the second occurrence is silently not scheduled and the chain ends; a tenant can pre-claim another tenant's rule_id.",
+      "disposition": "ROUTE_TO_IA-D7; recommend tenant-qualified schedule ids and surfacing the conflict instead of returning None"
+    },
+    {
+      "id": "F-04", "severity": "MEDIUM", "area": "cross-cutting / claim scope", "verification": "CODE_READ_BY_AUDITOR",
+      "title": "Several PDC-X hardening capabilities have no production caller; fail-closed behaviour exists only when a host opts in",
+      "evidence": "git grep at the audited SHA finds no non-test caller of resolve_critical_action_signing_wiring, resolve_security_audit_trail_wiring, assert_strict_security_configuration / validate_strict_security_configuration (only scripts/maintenance checks); bootstrap_catalogs callers do not pass require_plugin_provenance; wire_application_evaluation(env) callers do not pass tenant_id (legacy unscoped registry); SkillHostLifecycleService.upgrade_skill/disable_skill/remove_skill and SKILL_EVENT_* have no caller outside tests (also true at the pin for the signing and audit-trail wiring).",
+      "impact": "the ticket-level statements 'fail-closed signing / durable audit trail / plugin provenance / tenant-scoped evaluation' hold for the functions, not for a composed product host; no regression versus the pin, but no closure of the host-level behaviour either.",
+      "disposition": "ROUTE_TO_IA-D6 (and D1/D5); orchestrator to decide whether host composition wiring is a PDC-X claim; activation not blocked"
+    },
+    {
+      "id": "F-05", "severity": "MEDIUM", "area": "declared open gaps", "verification": "TEST_RUN",
+      "title": "The baseline carries six declared-open gaps pinned as strict xfail, including a tenant-isolation gap in the memory plane",
+      "evidence": "logs/pdc_x_run.stdout.txt: XFAIL xd_02 FINDING-6 (DefaultMemoryControlPlane serves a foreign-tenant identity on a tenant-bound plane), p6_repair item 11 (two tests, repair held for a write-set amendment), xd_01 FINDING-9 (activated revision does not pin the model profile) and FINDING-10 (model capabilities not checked at composition), xd_12 FINDING-8 (ENT-AUDIT impact map maps none of the PDC-touched modules).",
+      "impact": "known, honestly declared, unrepaired gaps; FINDING-6 is a tenant-isolation weakness (same user_id across tenants) in a path the delta touches; FINDING-8 means the change-since audit selects no domain check for the PDC-touched modules.",
+      "disposition": "ROUTE_TO_IA-D2/D3; keep the xfails strict (they are); orchestrator to track the held write-set amendment"
+    },
+    {
+      "id": "F-06", "severity": "MEDIUM", "area": "test regression", "verification": "TEST_RUN",
+      "title": "A previously green EBH-5 gate is red on the baseline (hard-coded SQLite touchpoint count)",
+      "evidence": "tests/qualification/ebh_5/test_ebh_5_proof_integrity_gates.py::test_ebh5_proof_sqlite_closed_world_accountability fails with 'assert 39 == 38'; B-D8 added the sqlite_artifact_store touchpoint to _sqlite_touchpoint_registry.py but the literal 38 in the test was not updated. The test passes at the pin (it is not among the 13 pin failures in logs/pin_cmp.stdout.txt).",
+      "impact": "CI context for EBH-5 would be red after merge/activation; test-only repair.",
+      "disposition": "TEST_ONLY_FIX (implementer/orchestrator); not an ACT-N11 product-path change"
+    },
+    {
+      "id": "F-07", "severity": "LOW", "area": "test status", "verification": "TEST_RUN",
+      "title": "The new PDC-X inventory tests are red on the baseline (documents added on development are unmapped)",
+      "evidence": "tests/unit/governance/test_pdc_x_inventory.py: test_committed_inventory_is_current_and_closed_world and test_every_item_has_exactly_one_known_category_and_status fail ('UNMAPPED:docs/project/capabilities/architecture/ARTIFACT_LIFECYCLE.md' and two more items).",
+      "impact": "documentation inventory drift; no product effect.",
+      "disposition": "regenerate the inventory (scripts/qualification/pdc_x_inventory.py --write) by the owner"
+    },
+    {
+      "id": "F-08", "severity": "INFO", "area": "test status", "verification": "TEST_RUN",
+      "title": "Seven existing failures are not caused by the delta: five README contract tests and two audit-ideal depth gates are red at the pin and on the baseline",
+      "evidence": "pin run (13 failed): test_public_readme_contract x5, test_audit_ideal_depth_gate x6, ebh_5 proof x2; baseline: the same 5 README tests and 29_1_live_vision_profile / 30_4_production_capacity still red (the delta repaired 4 audit-ideal tests and the 2 EBH-5 parity tests). 30_4 fails with the same 'production capacity wiring requires ControlPlaneMutationAuthorizationBoundary' at both SHAs.",
+      "impact": "pre-existing red; counted so the orchestrator does not attribute it to PDC-X.",
+      "disposition": "ACCEPT_AS_PRE_EXISTING"
+    },
+    {
+      "id": "F-09", "severity": "LOW", "area": "test hygiene", "verification": "TEST_RUN",
+      "title": "pytest does not exit after its final summary when test_xd_03_agent_governance.py runs",
+      "evidence": "full run and per-directory bisect (logs/bisect_exit_hang*.stdout.txt): all test groups exit; tests/qualification/pdc_x/xd/test_xd_03_agent_governance.py prints '9 passed' and the process stays alive (killed after the grace period). Not root-caused (RuntimeToolInvoker owns a ThreadPoolExecutor; every test calls invoker.close()).",
+      "impact": "a CI job running the suite can hang to its timeout.",
+      "disposition": "RECOMMEND_FIX (test owner)"
+    },
+    {
+      "id": "F-10", "severity": "LOW", "area": "D8 governed read", "verification": "PROBE_CONFIRMED",
+      "title": "GovernedArtifactReadPort._guard ignores the authorization decision value",
+      "evidence": "governed_access.py:_guard calls self._governance.authorize_tool(...) and discards the result; it is fail-closed only because the real boundary raises on deny/approval. Probe X2: a governance port that returns a DENY decision without raising -> READ_OK_DESPITE_DENY_DECISION.",
+      "impact": "any alternative AgentRuntimeGovernancePort implementation that returns instead of raising grants access.",
+      "disposition": "RECOMMEND_FIX: check decision.is_allowed in _guard"
+    },
+    {
+      "id": "F-11", "severity": "LOW", "area": "D1 skill lifecycle", "verification": "PROBE_CONFIRMED",
+      "title": "upgrade_skill restores the previous release only for Exception, not for BaseException",
+      "evidence": "host_lifecycle.py upgrade_skill: unregister(skill_id) then try/except Exception around materialize, no finally. Probe X4: a BaseException subclass raised by the materializer leaves registered_after_BaseException=False (control with RuntimeError: restored).",
+      "impact": "a cancelled or aborted upgrade silently uninstalls the skill; the method is unwired (F-04).",
+      "disposition": "ROUTE_TO_IA-D1"
+    },
+    {
+      "id": "F-12", "severity": "LOW", "area": "D1 skill lifecycle", "verification": "PROBE_CONFIRMED",
+      "title": "Skill upgrade ordering ignores pre-release and build tags",
+      "evidence": "Probe X5: _upgrade_denial('1.2.3','1.2.4-rc.1') -> None (admitted); '1.2.3' -> '1.2.3-rc.1' and '+evil' are denied as 'not newer'.",
+      "impact": "a release candidate can replace a release in place.",
+      "disposition": "ROUTE_TO_IA-D1"
+    },
+    {
+      "id": "F-13", "severity": "LOW", "area": "D4 queue recovery", "verification": "CODE_READ_BY_AUDITOR",
+      "title": "With a RetryPolicy, crash-interrupted RUNNING tasks are redelivered while the worker still passes idempotency_store=None",
+      "evidence": "colocated_worker.py:~85 recover_interrupted_running(max_retries=recovery_budget) and :~141 idempotency_store=None; document_store_task_queue.py: with max_retries set the interrupted task is settled against the budget (requeued) instead of FAILED. Default (no policy) keeps FAILED.",
+      "impact": "opt-in at-least-once redelivery without an idempotency ledger can double-run side effects; _on_interrupted is still called for requeued tasks.",
+      "disposition": "ROUTE_TO_IA-D4"
+    },
+    {
+      "id": "F-14", "severity": "LOW", "area": "D7 scheduler", "verification": "CODE_READ_BY_AUDITOR",
+      "title": "Recurrence materialization runs in a finally for dead tasks and a materialization failure only logs",
+      "evidence": "scheduler.py:~176 _materialize_next_occurrence in finally even when the checkpoint is missing or not resumable; :~217-223 except Exception logs and the chain is not retried.",
+      "impact": "rules without end_utc keep creating rows for a terminal task; a transient store error ends a chain silently.",
+      "disposition": "ROUTE_TO_IA-D7"
+    },
+    {
+      "id": "F-15", "severity": "LOW", "area": "D2 memory retention", "verification": "CODE_READ_BY_AUDITOR",
+      "title": "Retention sweep task trusts producer-controlled as_of and joins a helper thread without timeout",
+      "evidence": "retention_sweep.py:~337 as_of from the payload sets the evaluation instant; :~330 getattr(execution_identity,'tenant_id',tenant_id) falls back to the payload tenant when execution_identity is None; :~274-290 thread.join() without timeout. The forget itself still passes the control plane scope and governance checks.",
+      "impact": "a far-future as_of expires every entry with valid_until; cancellation/deadline cannot interrupt the blocking join.",
+      "disposition": "ROUTE_TO_IA-D2"
+    },
+    {
+      "id": "F-16", "severity": "LOW", "area": "D4 hosting", "verification": "CODE_READ_BY_AUDITOR",
+      "title": "Lifecycle metric publishes await the exporter without a bound in the shutdown path",
+      "evidence": "hosting/engine/engine.py:_publish_metric awaits self._event_dispatcher.publish directly (lines ~364, 454, 636, 849, 856) and catches Exception only.",
+      "impact": "a hanging exporter can overrun the shutdown budget.",
+      "disposition": "ROUTE_TO_IA-D4 (not probed)"
+    },
+    {
+      "id": "F-17", "severity": "LOW", "area": "D2 RAG freshness", "verification": "PROBE_CONFIRMED (structure) + CODE_READ_BY_AUDITOR",
+      "title": "A raising reindex hook turns a successful retrieval into an exception",
+      "evidence": "embedding_version_policy._notify_reindex_needed iterates the hooks without try/except (probe X7: hook_loop_has_try=false); retrieval_service._assess_freshness wraps only the observer call; assess_retrieval_freshness defaults request_reindex=True.",
+      "impact": "operator-registered hook failures break retrieval on stale sources; hooks run on the hot path.",
+      "disposition": "ROUTE_TO_IA-D2"
+    },
+    {
+      "id": "F-18", "severity": "LOW", "area": "D2 RAG freshness", "verification": "SUBAGENT_READ_NOT_REPRODUCED",
+      "title": "Freshness identity comes from mutable chunk metadata without tenant; ingest stamps an absolute server path",
+      "evidence": "review helper: source_freshness.chunk_source_id keys on source_path/source/source_id metadata; ingest_pipeline._source_freshness_stamp sets source_path=str(path); a file-stat observer would stat caller-controlled paths.",
+      "impact": "possible cross-tenant verdict collapse, path disclosure and a stat oracle if an observer uses observe_file_source.",
+      "disposition": "ROUTE_TO_IA-D2 (verify)"
+    },
+    {
+      "id": "F-19", "severity": "LOW", "area": "D2 context", "verification": "CODE_READ_BY_AUDITOR",
+      "title": "Provider egress filtering runs after required-source validation",
+      "evidence": "context_engine.py:~321-334: validate_required_sources_fulfilled(...) -> isolate_assembly_scope -> filter_fragments_by_provider_egress; excluded fragments are recorded in fragments_excluded.",
+      "impact": "a required source whose fragments are all above the egress ceiling passes validation and is then withheld without a RequiredContextSourceUnavailableError.",
+      "disposition": "ROUTE_TO_IA-D2"
+    },
+    {
+      "id": "F-20", "severity": "LOW", "area": "D6 audit trail", "verification": "PROBE_CONFIRMED",
+      "title": "Evidence-plane security audit trail: list_entries returns the oldest 1000 entries, secret values under benign keys are accepted, regions are bookkeeping only",
+      "evidence": "Probe A1: 1005 appended, 1000 listed, the newest entry is not listed. Probe A2: metadata {'note': 'sk-...'} accepted (only secret-like key names are rejected). multi_region_audit_trail.py appends the same entry id to in-memory per-region lists in lockstep; verify_replication compares those lists.",
+      "impact": "newest audit entries invisible to list_entries beyond 1000 per tenant; 'multi-region replication' evidence is not independent replication.",
+      "disposition": "ROUTE_TO_IA-D6"
+    },
+    {
+      "id": "F-21", "severity": "LOW", "area": "D6 plugin provenance", "verification": "PROBE_CONFIRMED",
+      "title": "Plugin provenance: attestation lookup is bound to the operator mapping key, not to attestation.distribution; installed file digest is never checked",
+      "evidence": "Probe PV1: attestations={'victim-plugin': <valid attestation of 'other-signed-plugin'>} admits the 'victim-plugin' entry point (rejection=null). Probe PV2: PluginProvenanceAdmission.evaluate consults only the installed version (docstring: does not re-hash).",
+      "impact": "a mis-keyed mapping vouches for another distribution; a tampered install with the attested version string passes.",
+      "disposition": "ROUTE_TO_IA-D6; recommend asserting normalize(attestation.distribution) == normalize(spec.distribution)"
+    },
+    {
+      "id": "F-22", "severity": "LOW", "area": "D4 contracts", "verification": "PROBE_CONFIRMED",
+      "title": "HostDeploymentProfile changed from extra='forbid' to extra='allow'; unknown keys and a wide bind host are accepted",
+      "evidence": "Probe C1: business_agents_deploy_enabld (typo) accepted into model_extra while the typed flag stays False; lkw_daemon_bind_host='0.0.0.0' accepted by LkwHybridDaemonDeployment; port 70000 and nested values are rejected.",
+      "impact": "misspelled deployment keys are silently ignored; non-loopback bind is not constrained (default stays 127.0.0.1).",
+      "disposition": "ROUTE_TO_IA-D4"
+    },
+    {
+      "id": "F-23", "severity": "LOW", "area": "D6 attestation", "verification": "PROBE_CONFIRMED",
+      "title": "Non-strict profiles sign boundary events with the public demo seed when no key is set",
+      "evidence": "attestation_runtime_bridge.py:54 lab_demo_seed_opt_in=not strict; probe X8: lab_defaults builds a sealer with an empty environment, product_defaults is refused (demo_seed_forbidden_in_strict_profile). The seed constant remains in host_attestation.py.",
+      "impact": "host-signed evidence of any non-PRODUCT, non-STRICT profile is forgeable by anyone who reads the source; by design for lab, but the opt-in is implicit.",
+      "disposition": "ROUTE_TO_IA-D6"
+    },
+    {
+      "id": "F-24", "severity": "LOW", "area": "D5 evaluation evidence", "verification": "SUBAGENT_READ_NOT_REPRODUCED",
+      "title": "Evaluation evidence digests are verified against digests stored with the payload; promotion comparisons are caller-supplied",
+      "evidence": "review helper: eval_evidence_contracts.read_eval_*_evidence compare payload to a digest in the same metadata; agent_promotion.evaluate_agent_promotion accepts evaluation_comparisons without tenant or digest check; evaluation can only block, never authorize.",
+      "impact": "a block can be bypassed by omission or forgery; authorization is unaffected.",
+      "disposition": "ROUTE_TO_IA-D5 (verify)"
+    },
+    {
+      "id": "F-25", "severity": "LOW", "area": "D5 evaluation registry", "verification": "SUBAGENT_READ_NOT_REPRODUCED",
+      "title": "Online evaluation registry: cross-tenant observation id existence oracle and lock-file removal after the stale timeout",
+      "evidence": "review helper: get_observation returns the first match across tenants (denied vs KeyError); _exclusive unlinks the lock in finally so a holder longer than stale_lock_seconds loses it; unscoped list_observations still returns all tenants.",
+      "impact": "id existence leak; lost updates under long holders.",
+      "disposition": "ROUTE_TO_IA-D5 (verify)"
+    },
+    {
+      "id": "F-26", "severity": "LOW", "area": "D1 upgrade admission", "verification": "SUBAGENT_READ_NOT_REPRODUCED",
+      "title": "Agent upgrade admission: 0.x compatibility rule, pre-release ordering, replay paths before authorization, candidate left VERIFIED on an unguarded exception",
+      "evidence": "review helper: semver_compat accepts 0.1.0->0.9.0; upgrade_admission._semver_key drops pre-release; admin_service.upgrade_agent/retire_agent return replay views before _authorize_desired_state_mutation; an exception between create_candidate_installation and the guarded blocks leaves the candidate VERIFIED.",
+      "impact": "weaker upgrade gate than documented; authorization skipped on replay (mirrors install_agent replay).",
+      "disposition": "ROUTE_TO_IA-D1 (verify)"
+    },
+    {
+      "id": "F-27", "severity": "LOW", "area": "D8 bundle builder", "verification": "SUBAGENT_READ_NOT_REPRODUCED",
+      "title": "Run artifact bundle builder follows file symlinks under the sandbox root and now publishes a content digest",
+      "evidence": "review helper: run_artifact_bundle_builder rglob('*') + is_file() + read_bytes()/resolve().as_uri(); sha256 computed from the read bytes; staged application artifacts may name another tenant_id.",
+      "impact": "hash oracle for a file outside the sandbox; the read itself pre-dates the pin.",
+      "disposition": "ROUTE_TO_IA-D8 (verify)"
+    },
+    {
+      "id": "F-28", "severity": "LOW", "area": "D2/D8 stores", "verification": "SUBAGENT_READ_NOT_REPRODUCED",
+      "title": "Retention and artifact store edge cases: naive/aware datetime TypeError kills the sweep, one tampered row fails every tenant listing, unaudited store errors after authorization, legal-hold overwrite without ownership, negative sweep limit",
+      "evidence": "review helper: InMemoryArtifactStore.list_expired compares datetimes without normalization; SQLite _to_artifact raises ArtifactDigestMismatchError for list calls; _guard audits only a fixed exception list; place_legal_hold uses INSERT OR REPLACE; make_retention_sweep_handler does not range-check limit.",
+      "impact": "availability and evidence-completeness edge cases.",
+      "disposition": "ROUTE_TO_IA-D8 (verify)"
+    },
+    {
+      "id": "F-29", "severity": "LOW", "area": "test strength", "verification": "TEST_RUN",
+      "title": "Mutation sample: two redundant tenant checks are not pinned by any PDC-X test",
+      "evidence": "12 mutants on D1/D5/D6/D8 paths: 10 killed; P6 (EvidencePlaneSecurityAuditTrail.list_entries event.tenant_id re-check) and P9 (GovernedArtifactReadPort stored-tenant re-check) survive the wide PDC-X suites (logs/mutation_sample_pass2_wide.stdout.txt). Both checks are redundant with tenant-keyed stores today, so the mutants are likely equivalent; no test uses a hostile source or port.",
+      "impact": "the defence-in-depth checks could be removed without a test failing.",
+      "disposition": "ROUTE_TO_IA-D6/D8: add a hostile-source test"
+    },
+    {
+      "id": "F-30", "severity": "INFO", "area": "D6 secret gate", "verification": "PROBE_CONFIRMED",
+      "title": "raw_secret_gate is a heuristic AST scan with known evasions",
+      "evidence": "Probe G1: detected: direct os.environ.get/getenv fallback, default= keyword, plain/attribute/dataclass named literals, a full sk- token literal. Not detected: string concatenation, f-string, bytes literal, dict-literal key, split sk- token, 'os.environ.get(...) or \"literal\"'.",
+      "impact": "the gate is not a proof of absence of literals; the module docstring says so.",
+      "disposition": "ACCEPT"
+    },
+    {
+      "id": "F-31", "severity": "INFO", "area": "contracts", "verification": "PROBE_CONFIRMED",
+      "title": "Behaviour changes that can break callers: sha256 fields now accept only empty or 64 lowercase hex; storage_presigned_url always raises",
+      "evidence": "Probe C2: uppercase and 'sha256:'-prefixed values rejected, empty accepted, RunArtifactBundle.durable_refs raises ArtifactDigestRequiredError for an empty digest (C3). Review helper: storage_presigned_url raises GovernedPresignRequiredError and never calls the provider.",
+      "impact": "stricter, fail-closed; callers expecting the old behaviour break loudly.",
+      "disposition": "ACCEPT"
+    },
+    {
+      "id": "F-32", "severity": "INFO", "area": "test changes", "verification": "CODE_READ_BY_AUDITOR",
+      "title": "Existing tests were retargeted rather than removed; two claims in the gate script are not met",
+      "evidence": "ebh_5 tests replace the literal '== 56' by a derived set; gr10 AST gates were retargeted to development commits 6700ff756 and 716ed746f; test_public_readme_contract allows the scenario-factory asset root. No skip, no importorskip, no new xfail outside the declared PDC gaps was added. scripts/gates/check_mvp_promotion_gates.py: the docstring says G0 and G2 check that modules define the required symbols, but their required-symbol tuples are empty (only G1 defines one).",
+      "impact": "no weakened product-path test found; G0/G2 remain existence checks.",
+      "disposition": "ACCEPT; correct the docstring or add symbols"
+    },
+    {
+      "id": "F-33", "severity": "INFO", "area": "import boundary", "verification": "TEST_RUN",
+      "title": "The import-boundary gate is red on both the pin and the baseline for 12 files the delta did not touch",
+      "evidence": "scripts/maintenance/check_intergrax_no_applications_imports.py lists 12 intergrax/runtime/** files importing applications packages (output identical at the pin and at the audited SHA; none is in the 153 changed paths). Auditor scan of the added lines of all 130 PDC-X diffs, and all three review helpers, found no new import of agents or applications from intergrax/ and none of applications from agents/. scripts/maintenance/check_architecture_boundary_chaos.py fails on a wrong script path (scripts/check_intergrax_no_applications_imports.py) and spawns uv run.",
+      "impact": "the delta adds no boundary violation; the pre-existing ones are outside this audit.",
+      "disposition": "ACCEPT_AS_PRE_EXISTING; report to the orchestrator"
+    },
+    {
+      "id": "F-34", "severity": "INFO", "area": "environment", "verification": "TEST_RUN",
+      "title": "The shared .venv lacks tzdata that the baseline pyproject now declares",
+      "evidence": "pyproject.toml adds tzdata for win32 and uv.lock changed; pytest collection of tests/qualification/pdc_x/d7/test_d7_recurrence.py fails with ZoneInfoNotFoundError in the unsynced venv (logs/pdc_x_batches_first_attempt_missing_tzdata.log); uv lock --check passes.",
+      "impact": "operators must sync the environment before running the suite on Windows.",
+      "disposition": "ACCEPT; note in the activation record"
+    }
+  ],
+  "mcp_rc_paths": {
+    "result": "no findings",
+    "basis": "23 paths byte-identical to b0e19bf61 (git diff empty); RC mandatory contract 481 passed, 1 strict xfail (TRANSFERRED), exit 0, 975.51 s at fa6ff1c96; existing delta re-audit PASS_SCOPED not re-opened"
+  }
+}
