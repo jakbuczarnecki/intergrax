@@ -5,6 +5,7 @@
 
 from __future__ import annotations
 
+import asyncio
 from typing import Any
 
 from fastmcp import FastMCP
@@ -59,19 +60,23 @@ def mount_catalog_tools_on_mcp(
         async def list_catalog_tools() -> list[dict[str, Any]]:
             """List enabled catalog tools (tool_id, description, input schema)."""
             require_mcp_caller_principal(identity_mode=identity_mode)
-            payload = to_mcp_tools(registry)
+            # registry reads may block (host-provided registries): keep them off the server event loop
+            payload = await asyncio.to_thread(to_mcp_tools, registry)
             return bound_mcp_result_or_raise(payload)
 
         @mcp.tool
         async def describe_catalog_tool(tool_id: str) -> dict[str, Any]:
             """Return MCP schema for one catalog tool_id."""
             require_mcp_caller_principal(identity_mode=identity_mode)
-            if not registry.has(tool_id):
-                return _unknown_tool_payload(tool_id)
-            registered = registry.get(tool_id)
-            items = to_mcp_tools([registered.contract])
-            payload = items[0] if items else _unknown_tool_payload(tool_id)
-            return bound_mcp_result_or_raise(payload)
+
+            def _describe() -> dict[str, Any]:
+                if not registry.has(tool_id):
+                    return _unknown_tool_payload(tool_id)
+                registered = registry.get(tool_id)
+                items = to_mcp_tools([registered.contract])
+                return items[0] if items else _unknown_tool_payload(tool_id)
+
+            return bound_mcp_result_or_raise(await asyncio.to_thread(_describe))
 
         if catalog_invocation is not None:
 

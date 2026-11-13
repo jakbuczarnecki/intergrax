@@ -309,3 +309,67 @@ async def test_catalog_invoke_exceeding_the_bound_is_outcome_unknown_not_success
                 timeout=_T,
             )
     assert _AGENT  # imported fixture constant used by the shared helpers
+
+
+# --- a slow host-provided registry must not stall the server event loop --------------------------------
+
+
+async def test_slow_catalog_registry_read_does_not_block_other_calls() -> None:
+    import time
+
+    from intergrax.tools.core.contracts import ToolContract, ToolRiskLevel
+    from intergrax.tools.registry.runtime import ToolRegistry
+    from pydantic import BaseModel
+    from tests.qualification.mcp_server_x.reference_app.build import (
+        build_mcp_server_x_reference_qualification_server,
+    )
+
+    class _In(BaseModel):
+        query: str = "x"
+
+    class _Out(BaseModel):
+        value: str = "ok"
+
+    async def _handler(_input: _In, _ctx: object) -> _Out:
+        return _Out()
+
+    registry = ToolRegistry()
+    registry.register(
+        ToolContract(
+            tool_id="rc.slow",
+            name="rc.slow",
+            description="slow registry read",
+            input_schema=_In,
+            output_schema=_Out,
+            error_mapping={},
+            side_effects=False,
+            risk_level=ToolRiskLevel.LOW,
+            category="rc",
+        ),
+        _handler,
+    )
+    original_list = ToolRegistry.list
+
+    def _slow_list(self: ToolRegistry):  # type: ignore[no-untyped-def]
+        if getattr(self, "_rc_slow", False):
+            time.sleep(1.0)
+        return original_list(self)
+
+    mcp = build_mcp_server_x_reference_qualification_server(
+        host_execution=AsyncMock(spec=HostTaskExecutionPort),
+        registry=__import__("intergrax.runtime.registry.agent_registry", fromlist=["AgentRegistry"]).AgentRegistry(),
+        tool_registry=registry,
+    )
+    with patch.object(ToolRegistry, "list", _slow_list):
+        view_registries = [r for r in [registry] if r is not None]
+        for reg in view_registries:
+            reg._rc_slow = True  # type: ignore[attr-defined]
+        async with Client(mcp) as client:
+            started = time.monotonic()
+            slow_call = asyncio.create_task(client.call_tool("list_catalog_tools", {}))
+            await asyncio.sleep(0.1)
+            echoed = await asyncio.wait_for(client.call_tool("qual_echo", {"message": "free"}), timeout=_T)
+            quick = time.monotonic() - started  # client and server share this loop: a blocked loop delays this
+            await slow_call
+    assert echoed.data["echo"] == "free"
+    assert quick < 0.8, f"another call was stalled for {quick:.2f}s by a slow registry read"
