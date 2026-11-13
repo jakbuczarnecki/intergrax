@@ -34,7 +34,6 @@ from unittest.mock import AsyncMock, patch
 import pytest
 from fastmcp import Client
 from fastmcp.exceptions import ToolError
-from intergrax.applications._shared import mcp_host_execution_transport_cancel as transport_cancel_module
 from intergrax.applications._shared.harness_control_plane_policy_wiring import (
     build_harness_control_plane_mutation_boundary,
 )
@@ -345,32 +344,32 @@ async def test_acc_14_client_deadline_through_in_memory_client_ends_terminal_and
     async with Client(mcp) as client:
         with pytest.raises(asyncio.TimeoutError):
             await asyncio.wait_for(client.call_tool("qual_slow", {"delay_s": 1.0}), timeout=0.3)
-        # terminal handler state is "completed" (the in-memory client does not cancel the server) or
-        # "cancelled"; either way it ends within a bound and never hangs
+        # a client timing out is not proof the server stopped: the handler ends exactly once, either
+        # "completed" (the in-memory client does not cancel the server) or "cancelled", within a bound
         await asyncio.wait_for(slow.done.wait(), timeout=_DEADLINE_S)
-        assert slow.outcomes[0] in {"completed", "cancelled"}
+        assert slow.outcomes in (["completed"], ["cancelled"])
         echoed = await asyncio.wait_for(client.call_tool("qual_echo", {"message": "still-up"}), timeout=_DEADLINE_S)
     assert echoed.data["echo"] == "still-up"
 
 
 async def test_acc_14_canonical_execution_deadline_is_not_reachable_from_run_agent() -> None:
-    """N/A record: no per-request canonical-execution deadline can be set through MCP ``run_agent``.
+    """OD-MCP-RC-02: the canonical deadline stays with the host; MCP adds only a transport trigger.
 
-    Facts pinned (each failing would mean the N/A reasoning changed and this record must be revisited):
-    ``run_agent`` takes no timeout/deadline argument; the reference host composition carries no
-    ``ExecutionDeadlineAuthorityResolver``; the MCP transport module declares it is not the deadline
-    authority; the owning API exists in Execution.
+    Behavioural facts (each failing means the ownership split changed and the record must be revisited):
+    ``run_agent`` takes no per-request timeout argument; composing an MCP server with a call bound neither
+    installs nor changes the host's deadline authority; the owning API still exists in Execution.
     """
-    mcp = _reference_server(AsyncMock(spec=HostTaskExecutionPort))
+    host_port = AsyncMock(spec=HostTaskExecutionPort)
+    mcp = _reference_server(host_port, max_call_seconds=5.0)
     async with Client(mcp) as client:
         tools = {tool.name: tool for tool in await client.list_tools()}
     properties = tools["run_agent"].inputSchema["properties"]
     assert not [name for name in properties if "timeout" in name.lower() or "deadline" in name.lower()], properties
 
     host = build_harness_host_task_execution(NexusLoop(AgentRegistry()), orchestration_triggers=frozenset())
-    assert host._deadline_authority_resolver is None
-
-    assert "not root Execution deadline authority" in inspect.getsource(transport_cancel_module)
+    before = host._deadline_authority_resolver
+    _reference_server(host, max_call_seconds=5.0)  # composing with a call bound must not touch the host
+    assert host._deadline_authority_resolver is before is None
     assert inspect.isclass(deadline_authority.ExecutionDeadlineAuthorityResolver)
 
 

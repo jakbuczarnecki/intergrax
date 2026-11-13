@@ -41,6 +41,20 @@ def test_engine_module_has_no_shadow_tool_handler_map() -> None:
 
 
 def test_engine_delegates_catalog_mount_to_existing_bridge() -> None:
-    source = ENGINE.read_text(encoding="utf-8")
-    assert "mount_catalog_tools_on_mcp" in source
-    assert "execute_mcp_catalog_tool_invocation" not in source or "mount_catalog_tools_on_mcp" in source
+    """The engine mounts catalog tools only through the bridge and never calls the invocation function itself."""
+    tree = ast.parse(ENGINE.read_text(encoding="utf-8"))
+    called = {node.func.id for node in ast.walk(tree) if isinstance(node, ast.Call) and isinstance(node.func, ast.Name)}
+    assert "mount_catalog_tools_on_mcp" in called
+    assert "execute_mcp_catalog_tool_invocation" not in called
+
+
+def test_engine_has_no_second_identity_or_deadline_authority() -> None:
+    """MCP-RC: the engine resolves identity through the single helper and defines no own authenticator/deadline."""
+    tree = ast.parse(ENGINE.read_text(encoding="utf-8"))
+    defined = {node.name for node in ast.walk(tree) if isinstance(node, (ast.FunctionDef, ast.AsyncFunctionDef))}
+    forbidden = {
+        name
+        for name in defined
+        if any(part in name.lower() for part in ("authenticate", "verify_token", "deadline_authority"))
+    }
+    assert not forbidden, sorted(forbidden)

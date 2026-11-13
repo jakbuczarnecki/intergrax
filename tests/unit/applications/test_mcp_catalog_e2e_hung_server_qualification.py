@@ -8,7 +8,6 @@ import asyncio
 import time
 
 import pytest
-
 from tests.fixtures.tool_life_x_tl11_catalog_subprocess_qualification import (
     mcp_call_catalog_tool,
     tl11_catalog_qualification_subprocess,
@@ -22,9 +21,7 @@ _QUAL_API_KEY = "tl11-qual-secret"
 def test_tl11_e2e_catalog_normal_list_and_describe_subprocess() -> None:
     with tl11_catalog_qualification_subprocess("ok") as (base, proc):
         assert base is not None
-        listed = asyncio.run(
-            mcp_call_catalog_tool(base, "list_catalog_tools", {}, timeout_s=8.0)
-        )
+        listed = asyncio.run(mcp_call_catalog_tool(base, "list_catalog_tools", {}, timeout_s=8.0))
         described = asyncio.run(
             mcp_call_catalog_tool(
                 base,
@@ -43,9 +40,7 @@ def test_tl11_e2e_hung_list_catalog_client_timeout_not_definite_failure() -> Non
     with tl11_catalog_qualification_subprocess("hang_list") as (base, proc):
         assert base is not None
         with pytest.raises(asyncio.TimeoutError):
-            asyncio.run(
-                mcp_call_catalog_tool(base, "list_catalog_tools", {}, timeout_s=0.6)
-            )
+            asyncio.run(mcp_call_catalog_tool(base, "list_catalog_tools", {}, timeout_s=0.6))
         proc.terminate()
         proc.wait(timeout=5.0)
 
@@ -69,9 +64,7 @@ def test_tl11_e2e_hung_describe_catalog_client_timeout() -> None:
 def test_tl11_e2e_slow_list_within_deadline() -> None:
     with tl11_catalog_qualification_subprocess("slow_list") as (base, _proc):
         assert base is not None
-        result = asyncio.run(
-            mcp_call_catalog_tool(base, "list_catalog_tools", {}, timeout_s=8.0)
-        )
+        result = asyncio.run(mcp_call_catalog_tool(base, "list_catalog_tools", {}, timeout_s=8.0))
     assert "tl11.qual.one" in str(result)
 
 
@@ -79,9 +72,7 @@ def test_tl11_e2e_server_crash_mid_catalog_list() -> None:
     with tl11_catalog_qualification_subprocess("crash_list") as (base, proc):
         assert base is not None
         with pytest.raises(Exception):
-            asyncio.run(
-                mcp_call_catalog_tool(base, "list_catalog_tools", {}, timeout_s=5.0)
-            )
+            asyncio.run(mcp_call_catalog_tool(base, "list_catalog_tools", {}, timeout_s=5.0))
         time.sleep(0.4)
         assert proc.poll() is not None
 
@@ -106,9 +97,7 @@ def test_tl11_e2e_client_cancel_during_hung_catalog_list() -> None:
     async def _cancelled() -> None:
         with tl11_catalog_qualification_subprocess("hang_list") as (base, proc):
             assert base is not None
-            task = asyncio.create_task(
-                mcp_call_catalog_tool(base, "list_catalog_tools", {}, timeout_s=30.0)
-            )
+            task = asyncio.create_task(mcp_call_catalog_tool(base, "list_catalog_tools", {}, timeout_s=30.0))
             await asyncio.sleep(0.25)
             task.cancel()
             with pytest.raises(asyncio.CancelledError):
@@ -122,16 +111,12 @@ def test_tl11_e2e_reconnect_after_catalog_timeout_fresh_session() -> None:
     with tl11_catalog_qualification_subprocess("slow_list") as (base, proc):
         assert base is not None
         with pytest.raises(asyncio.TimeoutError):
-            asyncio.run(
-                mcp_call_catalog_tool(base, "list_catalog_tools", {}, timeout_s=0.5)
-            )
+            asyncio.run(mcp_call_catalog_tool(base, "list_catalog_tools", {}, timeout_s=0.5))
         proc.terminate()
         proc.wait(timeout=5.0)
     with tl11_catalog_qualification_subprocess("ok") as (base2, _proc2):
         assert base2 is not None
-        result = asyncio.run(
-            mcp_call_catalog_tool(base2, "list_catalog_tools", {}, timeout_s=8.0)
-        )
+        result = asyncio.run(mcp_call_catalog_tool(base2, "list_catalog_tools", {}, timeout_s=8.0))
     assert "tl11.qual.one" in str(result)
 
 
@@ -139,9 +124,7 @@ def test_tl11_e2e_subprocess_cleanup_after_hung_catalog() -> None:
     with tl11_catalog_qualification_subprocess("hang_list") as (base, proc):
         assert base is not None
         with pytest.raises(asyncio.TimeoutError):
-            asyncio.run(
-                mcp_call_catalog_tool(base, "list_catalog_tools", {}, timeout_s=0.5)
-            )
+            asyncio.run(mcp_call_catalog_tool(base, "list_catalog_tools", {}, timeout_s=0.5))
     time.sleep(0.2)
     assert proc.poll() is not None
 
@@ -173,29 +156,30 @@ def test_tl11_e2e_unknown_tool_id_bounded_error() -> None:
     assert "unknown_tool:tl11.missing.tool" in str(result)
 
 
+def _post_status(base: str, headers: dict[str, str] | None = None) -> int:
+    import httpx
+
+    request_headers = {"Accept": "application/json, text/event-stream", **(headers or {})}
+    response = httpx.post(
+        base,
+        json={"jsonrpc": "2.0", "id": 1, "method": "tools/list"},
+        headers=request_headers,
+        timeout=5.0,
+    )
+    return response.status_code
+
+
 def test_tl11_e2e_http_ingress_rejects_missing_api_key() -> None:
     with tl11_catalog_qualification_subprocess("ok", require_auth=True) as (base, proc):
         assert base is not None
-        with pytest.raises(Exception):
-            asyncio.run(
-                mcp_call_catalog_tool(base, "list_catalog_tools", {}, timeout_s=5.0)
-            )
+        assert _post_status(base) == 401
         assert proc.poll() is None
 
 
 def test_tl11_e2e_http_ingress_rejects_invalid_api_key() -> None:
     with tl11_catalog_qualification_subprocess("ok", require_auth=True) as (base, proc):
         assert base is not None
-        with pytest.raises(Exception):
-            asyncio.run(
-                mcp_call_catalog_tool(
-                    base,
-                    "list_catalog_tools",
-                    {},
-                    timeout_s=5.0,
-                    api_key="not-the-qual-secret",
-                )
-            )
+        assert _post_status(base, {"X-Api-Key": "not-the-qual-secret"}) == 401
         assert proc.poll() is None
 
 
