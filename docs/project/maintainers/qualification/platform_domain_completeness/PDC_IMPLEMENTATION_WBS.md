@@ -27,6 +27,7 @@ Rows classed `CURRENT_HEAD_REQUALIFICATION`, `ALREADY_CERTIFIED_REUSABLE`, `N/A_
 | B-D8 | D8 | W3b | T-IGX-036-Q | 17 | ADR-PDC-08 | B-D6 | YES | OD-PDC-SEQ-01: implement in an isolated worktree; merge only after MCP-SERVER-X P8 publication; ACT-N11 re-activation at PDC-P7-00 | IA-D8 |
 | B-D4 | D4 | W3c | T-IGX-036-R | 9 | ADR-PDC-04 | B-D7, B-D8 | YES | OD-PDC-SEQ-01: implement in an isolated worktree; merge only after MCP-SERVER-X P8 publication; ACT-N11 re-activation at PDC-P7-00 | IA-D4 |
 | B-P6 | ALL | W4 | T-IGX-036-S | 4 | — | B-D1, B-D2, B-D3, B-D4, B-D5, B-D6, B-D7, B-D8, B-REG-P, B-REG-T | no | OD-PDC-SEQ-01: implement in an isolated worktree; merge only after MCP-SERVER-X P8 publication; ACT-N11 re-activation at PDC-P7-00 | IA-GLOBAL (P8) and each IA-Dn for its XD rows |
+| B-P6-R | ALL | W4 | T-IGX-036-T | 0 | — | B-D1, B-D2, B-D3, B-D4, B-D5, B-D6, B-D7, B-D8, B-REG-P, B-REG-T | YES | OD-PDC-SEQ-01: implement in an isolated worktree; merge only after MCP-SERVER-X P8 publication; ACT-N11 re-activation at PDC-P7-00 | IA-GLOBAL (P8) |
 
 ## B-P3 — Ownership records closed in P3
 
@@ -288,3 +289,15 @@ Rows classed `CURRENT_HEAD_REQUALIFICATION`, `ALREADY_CERTIFIED_REUSABLE`, `N/A_
 | PDC-D6-R019 | ADVERSARIAL_COVERAGE_REQUIRED | tests/qualification/pdc_x/xd_02, xd_06, xd_10 |
 | PDC-D7-R014 | ADVERSARIAL_COVERAGE_REQUIRED | tests/qualification/pdc_x/xd_05 drain + lease release |
 | PDC-D8-R019 | ADVERSARIAL_COVERAGE_REQUIRED | tests/qualification/pdc_x/xd_09 |
+
+## B-P6-R — Integration repairs found by the P5 lanes and the XD runs (tzdata, capability flags, freshness, launcher path, circular import, trace alias callers, feature-doc registration)
+
+- **Ticket:** T-IGX-036-T · **Wave:** W4 · **ADR:** — · **Auditor:** IA-GLOBAL (P8)
+- **Write set:** `pyproject.toml`, `uv.lock`, `intergrax/runtime/llm/model_call_runtime_evidence_adapter.py`, `intergrax/rag/retrieval/agentic_loop.py`, `intergrax/applications/_shared/lkw_hybrid_daemon_wiring.py`, `intergrax/runtime/integrations/observability.py`, `intergrax/runtime/execution/agent_runtime_context.py`, `intergrax/runtime/execution/trace_persistence_models_bridge.py`, `intergrax/runtime/nexus/context/context_manager.py`, `intergrax/runtime/nexus/context/shared_task_context.py`, `intergrax/runtime/nexus/engine/runtime_state.py`, `intergrax/runtime/nexus/engine/contracts/runtime_state_contract.py`, `intergrax/runtime/nexus/tracing/persistence_models.py`, `docs/project/capabilities/README.md`, `docs/project/architecture/intergrax_runtime_architecture.md`, `tests/qualification/pdc_x/p6_repair/`
+- **Tests:** tests/qualification/pdc_x/p6_repair/
+- **Evidence (exact SHA):** implementation SHA and publication SHA recorded in `PDC_SHA_LADDER.md`; test log under `.tmp/proof/pdc-x-p5/B-P6-R/`; audited by IA-GLOBAL (P8) at the PDC-P7 audited SHA.
+- **Merge gate:** OD-PDC-SEQ-01: implement in an isolated worktree; merge only after MCP-SERVER-X P8 publication; ACT-N11 re-activation at PDC-P7-00
+
+| Requirement | Class | Test case |
+| --- | --- | --- |
+| — | — | — |
