@@ -3,7 +3,7 @@
 
 """Hosted application engine orchestration (APP-HOST-2F)."""
 
-from __future__ import annotations
+from __future__ import annotations  # noqa: I001
 
 import asyncio
 import math
@@ -28,6 +28,8 @@ from intergrax.hosting.contracts.lifecycle import (
 from intergrax.hosting.engine.components import ComponentCoordinator
 from intergrax.hosting.engine.definition import HostedApplicationDefinition
 from intergrax.hosting.engine.diagnostics import (
+    HOSTED_APPLICATION_CRITICAL_CLEANUP_PHASES,
+    HOSTED_APPLICATION_STARTUP_FAILURE_PHASES,
     DiagnosticsRecorder,
     HostedApplicationDiagnosticSnapshot,
     HostedApplicationEngineTerminalResult,
@@ -43,6 +45,7 @@ from intergrax.hosting.engine.health import (
 from intergrax.hosting.engine.hooks import HookCoordinator
 from intergrax.hosting.engine.lifecycle import HostedApplicationLifecycleController
 from intergrax.hosting.engine.observer_tasks import ObserverTaskRegistry
+from intergrax.hosting.metrics import HostedApplicationLifecycleMetric, lifecycle_metric_event
 from intergrax.hosting.engine.ports import (
     HostedApplicationInstanceGuardPort,
     HostedApplicationInstanceLeasePort,
@@ -113,9 +116,7 @@ class HostedApplicationEngine:
 
     def __post_init__(self) -> None:
         if not math.isfinite(self.health_poll_interval_seconds) or self.health_poll_interval_seconds <= 0:
-            raise HostedApplicationEngineError(
-                "health_poll_interval_seconds must be finite and positive"
-            )
+            raise HostedApplicationEngineError("health_poll_interval_seconds must be finite and positive")
         self._lifecycle = HostedApplicationLifecycleController(self.clock)
         self._monotonic_clock = self.monotonic_clock or SystemMonotonicClock()
         self._services = HostedApplicationServiceRegistry()
@@ -131,8 +132,7 @@ class HostedApplicationEngine:
                 for point, hooks in self.definition.hook_registrations.items()
             },
             event_subscription_ids=tuple(
-                resolved.subscription.subscription_id
-                for resolved in self.definition.event_subscriptions
+                resolved.subscription.subscription_id for resolved in self.definition.event_subscriptions
             ),
             failure_id_generator=self.failure_id_generator,  # type: ignore[arg-type]
         )
@@ -168,6 +168,14 @@ class HostedApplicationEngine:
         self._lease: HostedApplicationInstanceLeasePort | None = None
         self._lease_released = False
         self._context_closed = False
+        self._startup_began_at = self._monotonic_clock.monotonic()
+        self._reported_degraded_ids: frozenset[str] = frozenset()
+        self._exit_class_reported = False
+
+    @property
+    def exit_class_reported(self) -> bool:
+        """True once this engine published its exit-class metric (APP-HOST-3D)."""
+        return self._exit_class_reported
 
     @property
     def context(self) -> HostedApplicationContext:
@@ -200,20 +208,17 @@ class HostedApplicationEngine:
     async def start(self) -> None:
         async with self._operation_lock:
             if self._reuse_blocked:
-                raise HostedApplicationStartupError(
-                    "hosted application engine reuse is blocked after fatal failure"
-                )
+                raise HostedApplicationStartupError("hosted application engine reuse is blocked after fatal failure")
             state = self._lifecycle.state
             if state is not HostedApplicationLifecycleState.CREATED:
                 if self._lifecycle.is_terminal:
-                    raise HostedApplicationStartupError(
-                        "cannot start hosted application engine from terminal state"
-                    )
-                raise HostedApplicationStartupError(
-                    "hosted application engine has already started"
-                )
+                    raise HostedApplicationStartupError("cannot start hosted application engine from terminal state")
+                raise HostedApplicationStartupError("hosted application engine has already started")
             self._startup_aborted = False
             self._instance_acquire_failed = False
+            self._startup_began_at = self._monotonic_clock.monotonic()
+            self._reported_degraded_ids = frozenset()
+            self._exit_class_reported = False
             self._diagnostics.clear_current_failure()
             self._diagnostics.clear_primary_exception()
             self._diagnostics.reset_attempt_local_state()
@@ -274,9 +279,7 @@ class HostedApplicationEngine:
         async with self._operation_lock:
             state = self._lifecycle.state
             if state is HostedApplicationLifecycleState.CREATED:
-                raise HostedApplicationShutdownError(
-                    "cannot stop hosted application engine before start"
-                )
+                raise HostedApplicationShutdownError("cannot stop hosted application engine before start")
             if state is HostedApplicationLifecycleState.STOPPED:
                 return self._terminal_result(reason_code)
             if state is HostedApplicationLifecycleState.FAILED:
@@ -358,6 +361,7 @@ class HostedApplicationEngine:
         self._diagnostics.mark_lease_acquired()
         self._lifecycle.transition_to(HostedApplicationLifecycleState.STARTING, reason_code="starting")
         await self._publish_lifecycle_event(HostedApplicationEventType.APPLICATION_STARTING)
+        await self._publish_metric(HostedApplicationLifecycleMetric.START, 1)
         await self._hooks.execute_blocking(HostedApplicationHookPoint.BEFORE_START, self._context)
         if self._should_abort_startup():
             await self._abort_startup_to_stopping("startup_aborted")
@@ -447,6 +451,11 @@ class HostedApplicationEngine:
             )
             raise HostedApplicationStartupError("post-ready aggregate evaluation failed") from exc
         await self._publish_lifecycle_event(HostedApplicationEventType.APPLICATION_READY)
+        await self._publish_metric(
+            HostedApplicationLifecycleMetric.READY,
+            max(0.0, self._monotonic_clock.monotonic() - self._startup_began_at),
+        )
+        await self._publish_degraded_metric_if_changed()
         self._hooks.schedule_observers(HostedApplicationHookPoint.AFTER_READY, self._context)
         await self._health.start_polling(self._refresh_health)
         self._diagnostics.set_operation_phase(HostedApplicationOperationPhase.IDLE)
@@ -499,6 +508,7 @@ class HostedApplicationEngine:
                 mark_not_ready_failed=self._components.mark_not_ready_component_ids,
                 degraded_component_ids=self._components.degraded_component_ids,
             )
+            await self._publish_degraded_metric_if_changed()
         except Exception as exc:
             self._handle_health_poll_failure(exc)
 
@@ -574,9 +584,7 @@ class HostedApplicationEngine:
         )
         recorder = ShutdownPhaseRecorder(clock=self.clock)
         active_before = (
-            self.active_work_controller.active_work_count()
-            if self.active_work_controller is not None
-            else 0
+            self.active_work_controller.active_work_count() if self.active_work_controller is not None else 0
         )
         context = self._context
         assert context is not None
@@ -605,6 +613,7 @@ class HostedApplicationEngine:
             active_work_controller=self.active_work_controller,
             flush_services=self.flush_services,
         )
+        drain_began_at = self._monotonic_clock.monotonic()
         try:
             await shutdown_executor.execute(
                 request=effective_request,
@@ -624,6 +633,10 @@ class HostedApplicationEngine:
                 exc=exc,
                 reason_code="shutdown_execution_failed",
             )
+        await self._publish_metric(
+            HostedApplicationLifecycleMetric.DRAIN_DURATION,
+            max(0.0, self._monotonic_clock.monotonic() - drain_began_at),
+        )
 
         health_started = self.clock.now()
         health_outcome = await run_bounded_phase(
@@ -639,27 +652,14 @@ class HostedApplicationEngine:
             started_at=health_started,
         )
 
-        component_started = self.clock.now()
-        component_outcome = await run_bounded_phase(
+        # Reverse of start order: post-runtime components, the runtime, then the
+        # pre-runtime components the runtime depends on.
+        await self._stop_components_phase(
             budget,
-            policy.default_blocking_hook_timeout_seconds,
-            lambda: self._components.stop_started(context),
+            recorder,
+            context,
+            self._post_runtime_component_ids(),
         )
-        if component_outcome is HostedApplicationShutdownPhaseOutcome.SKIPPED and budget.exhausted():
-            recorder.timed_out = True
-        recorder.record(
-            phase=HostedApplicationShutdownPhase.COMPONENT_STOP,
-            outcome=component_outcome,
-            started_at=component_started,
-        )
-        if component_outcome is HostedApplicationShutdownPhaseOutcome.FAILED:
-            self._diagnostics.record_secondary_failure(
-                phase=HostedApplicationFailurePhase.COMPONENT_STOP,
-                source_kind="components",
-                source_id="stop",
-                exc=RuntimeError("component_stop_failed"),
-                reason_code="component_stop_failed",
-            )
 
         if self._runtime is not None:
             runtime_started = self.clock.now()
@@ -675,6 +675,14 @@ class HostedApplicationEngine:
                 outcome=runtime_outcome,
                 started_at=runtime_started,
             )
+
+        await self._stop_components_phase(
+            budget,
+            recorder,
+            context,
+            self._pre_runtime_component_ids(),
+            only_if_started=True,
+        )
 
         observer_started = self.clock.now()
         self._hooks.schedule_observers(HostedApplicationHookPoint.AFTER_STOP, context)
@@ -730,6 +738,13 @@ class HostedApplicationEngine:
             )
         self._health.refresh_once()
 
+        await self._publish_exit_class_metric(
+            self._exit_class_label(
+                recorder,
+                failed=False,
+                restart_requested=effective_request is not None and effective_request.intent == "restart",
+            )
+        )
         stopped_publish_outcome = await run_bounded_phase(
             budget,
             policy.default_observer_hook_timeout_seconds,
@@ -758,11 +773,7 @@ class HostedApplicationEngine:
         )
         self._observer_tasks.cancel_remaining()
 
-        active_after = (
-            self.active_work_controller.active_work_count()
-            if self.active_work_controller is not None
-            else 0
-        )
+        active_after = self.active_work_controller.active_work_count() if self.active_work_controller is not None else 0
         shutdown_snapshot = build_shutdown_execution_snapshot(
             shutdown_policy=self.definition.shutdown_policy,
             request=effective_request,
@@ -775,6 +786,121 @@ class HostedApplicationEngine:
         self._diagnostics.set_observer_task_count(self._observer_tasks.task_count)
         self._diagnostics.set_operation_phase(HostedApplicationOperationPhase.IDLE)
         return self._terminal_result(reason_code)
+
+    async def _publish_metric(
+        self,
+        metric: HostedApplicationLifecycleMetric,
+        value: float,
+        *,
+        label: str = "",
+    ) -> None:
+        """Emit one lifecycle metric as a hosting event on the canonical event port."""
+        if self._context is None:
+            return
+        try:
+            await self._event_dispatcher.publish(
+                lifecycle_metric_event(
+                    metric,
+                    application_id=self._context.application_id,
+                    instance_id=self._context.instance_id,
+                    lifecycle_state=self._lifecycle.state,
+                    value=value,
+                    label=label,
+                    occurred_at=self.clock.now(),
+                )
+            )
+        except Exception as exc:
+            self._diagnostics.record_secondary_failure(
+                phase=HostedApplicationFailurePhase.EVENT_PUBLISH,
+                source_kind="event_publisher",
+                source_id=HostedApplicationEventType.LIFECYCLE_METRIC.value,
+                exc=exc,
+                reason_code="metric_publish_failed",
+            )
+
+    def _exit_class_label(
+        self,
+        recorder: ShutdownPhaseRecorder,
+        *,
+        failed: bool,
+        restart_requested: bool = False,
+    ) -> str:
+        """Exit class of this engine run, using the supervisor classifier's vocabulary and rules.
+
+        Parity with ``HostedApplicationExitClassifier`` is asserted by the D4 metrics qualification.
+        """
+        critical_cleanup_failed = any(
+            record.phase in HOSTED_APPLICATION_CRITICAL_CLEANUP_PHASES
+            and record.outcome is HostedApplicationShutdownPhaseOutcome.FAILED
+            for record in recorder.records
+        )
+        if recorder.timed_out or recorder.forced or critical_cleanup_failed:
+            return "forced_termination"
+        if failed:
+            failure = self._diagnostics.current_failure
+            phase = failure.phase if failure is not None else None
+            if phase in HOSTED_APPLICATION_STARTUP_FAILURE_PHASES:
+                return "startup_failure"
+            return "runtime_failure"
+        return "restart_requested" if restart_requested else "clean_stop"
+
+    async def _publish_exit_class_metric(self, label: str) -> None:
+        self._exit_class_reported = True
+        await self._publish_metric(HostedApplicationLifecycleMetric.EXIT_CLASS, 1, label=label)
+
+    async def _publish_degraded_metric_if_changed(self) -> None:
+        degraded = self._components.degraded_component_ids
+        if degraded == self._reported_degraded_ids:
+            return
+        self._reported_degraded_ids = degraded
+        await self._publish_metric(
+            HostedApplicationLifecycleMetric.DEGRADED,
+            len(degraded),
+            label=",".join(sorted(degraded)),
+        )
+
+    def _post_runtime_component_ids(self) -> tuple[str, ...]:
+        return self.definition.post_runtime_component_ids
+
+    def _pre_runtime_component_ids(self) -> tuple[str, ...]:
+        return self.definition.pre_runtime_component_ids
+
+    async def _stop_components_phase(
+        self,
+        budget: HostedApplicationGlobalShutdownBudget,
+        recorder: ShutdownPhaseRecorder,
+        context: HostedApplicationContext,
+        component_ids: tuple[str, ...],
+        *,
+        only_if_started: bool = False,
+    ) -> None:
+        """Stop the started members of ``component_ids`` as one bounded COMPONENT_STOP phase."""
+        if only_if_started and not any(
+            component_id in self._components.started_component_ids for component_id in component_ids
+        ):
+            return
+        policy = self.definition.lifecycle_policy
+        component_started = self.clock.now()
+        component_outcome = await run_bounded_phase(
+            budget,
+            policy.default_blocking_hook_timeout_seconds,
+            lambda: self._components.stop_started(context, component_ids),
+        )
+        if component_outcome is HostedApplicationShutdownPhaseOutcome.SKIPPED and budget.exhausted():
+            recorder.timed_out = True
+        recorder.record(
+            phase=HostedApplicationShutdownPhase.COMPONENT_STOP,
+            outcome=component_outcome,
+            started_at=component_started,
+        )
+        if component_outcome is HostedApplicationShutdownPhaseOutcome.FAILED:
+            self._diagnostics.record_secondary_failure(
+                phase=HostedApplicationFailurePhase.COMPONENT_STOP,
+                source_kind="components",
+                source_id="stop",
+                exc=RuntimeError("component_stop_failed"),
+                reason_code="component_stop_failed",
+            )
 
     async def _failed_terminal_cleanup(self, reason_code: str) -> HostedApplicationEngineTerminalResult:
         await self._execute_bounded_terminal_cleanup(
@@ -822,28 +948,14 @@ class HostedApplicationEngine:
             started_at=health_started,
         )
 
-        if context is not None and self._components.started_component_ids:
-            component_started = self.clock.now()
-            component_outcome = await run_bounded_phase(
+        if context is not None:
+            await self._stop_components_phase(
                 budget,
-                policy.default_blocking_hook_timeout_seconds,
-                lambda: self._components.stop_started(context),
+                recorder,
+                context,
+                self._post_runtime_component_ids(),
+                only_if_started=True,
             )
-            if component_outcome is HostedApplicationShutdownPhaseOutcome.SKIPPED and budget.exhausted():
-                recorder.timed_out = True
-            recorder.record(
-                phase=HostedApplicationShutdownPhase.COMPONENT_STOP,
-                outcome=component_outcome,
-                started_at=component_started,
-            )
-            if component_outcome is HostedApplicationShutdownPhaseOutcome.FAILED:
-                self._diagnostics.record_secondary_failure(
-                    phase=HostedApplicationFailurePhase.COMPONENT_STOP,
-                    source_kind="components",
-                    source_id="stop",
-                    exc=RuntimeError("component_stop_failed"),
-                    reason_code="component_stop_failed",
-                )
 
         if context is not None and self._runtime is not None:
             runtime_started = self.clock.now()
@@ -868,15 +980,22 @@ class HostedApplicationEngine:
                     reason_code="runtime_stop_failed",
                 )
 
+        if context is not None:
+            await self._stop_components_phase(
+                budget,
+                recorder,
+                context,
+                self._pre_runtime_component_ids(),
+                only_if_started=True,
+            )
+
         lease_started = self.clock.now()
         lease_outcome = await run_bounded_phase(
             budget,
             policy.default_observer_hook_timeout_seconds,
             self._bounded_release_lease,
         )
-        lease_released = (
-            lease_outcome is HostedApplicationShutdownPhaseOutcome.COMPLETED and self._lease_released
-        )
+        lease_released = lease_outcome is HostedApplicationShutdownPhaseOutcome.COMPLETED and self._lease_released
         if lease_outcome is HostedApplicationShutdownPhaseOutcome.TIMED_OUT:
             recorder.timed_out = True
         elif lease_outcome is HostedApplicationShutdownPhaseOutcome.SKIPPED and budget.exhausted():
@@ -898,10 +1017,7 @@ class HostedApplicationEngine:
             )
             if instance_release_outcome is HostedApplicationShutdownPhaseOutcome.TIMED_OUT:
                 recorder.timed_out = True
-            elif (
-                instance_release_outcome is HostedApplicationShutdownPhaseOutcome.SKIPPED
-                and budget.exhausted()
-            ):
+            elif instance_release_outcome is HostedApplicationShutdownPhaseOutcome.SKIPPED and budget.exhausted():
                 recorder.timed_out = True
 
         self._close_context()
@@ -923,6 +1039,7 @@ class HostedApplicationEngine:
                 policy.default_observer_hook_timeout_seconds,
                 lambda: self._observer_tasks.drain(policy.default_observer_hook_timeout_seconds),
             )
+            await self._publish_exit_class_metric(self._exit_class_label(recorder, failed=True))
             failed_publish_outcome = await run_bounded_phase(
                 budget,
                 policy.default_observer_hook_timeout_seconds,
@@ -930,10 +1047,7 @@ class HostedApplicationEngine:
             )
             if failed_publish_outcome is HostedApplicationShutdownPhaseOutcome.TIMED_OUT:
                 recorder.timed_out = True
-            elif (
-                failed_publish_outcome is HostedApplicationShutdownPhaseOutcome.SKIPPED
-                and budget.exhausted()
-            ):
+            elif failed_publish_outcome is HostedApplicationShutdownPhaseOutcome.SKIPPED and budget.exhausted():
                 recorder.timed_out = True
 
         self._observer_tasks.close_to_new_tasks()
@@ -955,15 +1069,9 @@ class HostedApplicationEngine:
         self._observer_tasks.cancel_remaining()
 
         active_before = (
-            self.active_work_controller.active_work_count()
-            if self.active_work_controller is not None
-            else 0
+            self.active_work_controller.active_work_count() if self.active_work_controller is not None else 0
         )
-        active_after = (
-            self.active_work_controller.active_work_count()
-            if self.active_work_controller is not None
-            else 0
-        )
+        active_after = self.active_work_controller.active_work_count() if self.active_work_controller is not None else 0
         shutdown_snapshot = build_shutdown_execution_snapshot(
             shutdown_policy=self.definition.shutdown_policy,
             request=None,
@@ -1116,10 +1224,7 @@ class HostedApplicationEngine:
             severity = EventSeverity.ERROR
             current_failure = self._diagnostics.current_failure
             if current_failure is not None:
-                payload = {
-                    key: value
-                    for key, value in hosted_failure_event_payload(current_failure).items()
-                }
+                payload = {key: value for key, value in hosted_failure_event_payload(current_failure).items()}
         await self._event_dispatcher.publish(
             HostedApplicationEvent(
                 event_type=event_type,
