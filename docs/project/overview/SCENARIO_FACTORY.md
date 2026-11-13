@@ -7,7 +7,7 @@
 <picture>
   <source media="(prefers-color-scheme: dark)" srcset="../assets/public/scenario-factory/scenario-factory-hero-dark.png">
   <source media="(prefers-color-scheme: light)" srcset="../assets/public/scenario-factory/scenario-factory-hero-light.png">
-  <img src="../assets/public/scenario-factory/scenario-factory-hero-light.png" alt="Planned architecture, not yet implemented: a business need enters the planned Scenario Factory and leaves as a validated scenario, all on top of the governed Intergrax platform (governance and security, runtime and execution, capabilities and tools, observability and evaluation).">
+  <img src="../assets/public/scenario-factory/scenario-factory-hero-light.png" alt="Planned architecture, not yet implemented: a business need enters the planned Scenario Factory (discovery, specification, blueprint, design, composition and test planning) and leaves as a checked scenario with reviewable evidence, on top of the governed Intergrax platform (existing runtime, policy, capabilities and evidence).">
 </picture>
 </a>
 

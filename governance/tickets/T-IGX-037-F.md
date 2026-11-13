@@ -97,7 +97,22 @@ The six PNG files were extracted into an empty scratch folder and copied over th
 | V-9 (new, MEDIUM) | **OPEN** | All six show the tagline "ENTERPRISE AI PLATFORM" under the logo. The public positioning contract defines the category descriptor as "a reusable foundation for governed AI applications" and does not use "Enterprise AI Platform". Remove the tagline or use the contract wording. |
 | V-10 (LOW) | Note | Hero boxes have large empty areas. The journey step "Capability" is a shortened "Capability Resolution". The overview already says the picture compresses the journey. No change required. |
 
-Light and dark sets are complete (six files). Alt texts and captions in README, overview and the three full-size pages are unchanged and consistent with the new images. Local links of README and the overview were checked by the link-integrity tests.
+Light and dark sets are complete (six files). The hero alt text in README, the overview and the full-size page said "validated scenario" and listed content the image does not show; the independent audit of `54f0de279` found this (M2) and it was corrected in the next commit. Journey and ownership alt texts match their images. Local links of README and the overview were checked by the link-integrity tests.
 
 Campaign state: images are committed on the candidate branch so the candidate is self-consistent, but **publication stays blocked** on V-2 and V-9. No PR is opened. The ticket still has no `Approved:` line (no delegation covers T-IGX-037-F); an operator or a commissioned delegate must write it before a PR.
+
+## Independent audit, round 2 (commit `54f0de279`)
+
+Verdict: **FAIL as a publishable candidate**; text, governance and scope content PASS_WITH_FINDINGS. The round-1 BLOCKER (PNG files missing from the commit) is fixed.
+
+| Finding | Disposition |
+| --- | --- |
+| H1 = V-2: the X mark is not the canonical mark (confirmed independently; the repo has no official logo file, so the canonical reference is the lockup in `readme/intergrax-three-entry-points-*.png`) | **Open.** Needs the canonical artwork from the image author, or the operator's explicit written acceptance of the approximation. No agent edits pixels. |
+| M1 = V-9: tagline "ENTERPRISE AI PLATFORM" conflicts with the positioning contract (category descriptor; "enterprise" needs qualification) | **Open.** Remove the tagline or use the contract wording, or an operator waiver. |
+| M2: stale hero alt text in three places | Fixed (text only). |
+| L1: ownership image says "READINESS-owned patterns" (internal track name) | Note for the image author, optional. |
+| L2: minor rendering (skewed connector arrowhead on ownership, tight step numbers on journey, accent bars slightly past rounded corners on hero light) | Note for the image author, optional. |
+| L3, L4 | Unchanged notes. |
+
+Publication path: V-2 and V-9 resolved (new package or written operator decision) -> short re-check -> `Approved:` line for this ticket by the operator or a commissioned delegate -> PR -> merge by the operator -> pin commit (C6) -> closure record. None of these steps ran.
 
