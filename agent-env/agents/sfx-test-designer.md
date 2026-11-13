@@ -35,7 +35,7 @@ Design how the scenario will be proven in the L2 sandbox later. Write a test pla
 ## Procedure
 
 1. Derive a requirement list from the specification: each rule, approval point, output and success metric gets an id.
-2. Write **positive** cases: the main flow and each meaningful variant, with input, expected output and the specification items covered.
+2. Write **positive** cases: the main flow and each meaningful variant, with input, expected output and the specification items covered. A case whose subject depends on an `UNRESOLVED` requirement starts its expected outcome with `CONDITIONAL on IQ-<nn>[, IQ-<nn>]:` and is `runner: unresolved`; never plan it as runnable.
 3. Write **negative** cases: invalid or missing input, rule violations, rejected approvals, integration stub errors (timeouts, rate limits, schema drift, partial failure), and expected fail-closed behaviour for each.
 4. Write **adversarial** cases, at least one per class:
    - prompt injection, direct (user input) and indirect (content from documents, retrieved data or integration responses);
@@ -70,7 +70,8 @@ The `sfx.*.v1` schemas are closed (`additionalProperties: false`), so contract d
 
 ## Quality checklist
 
-- [ ] Every requirement id has at least one positive and one negative case, or is listed as uncovered.
+- [ ] Every requirement id has at least one positive and one negative case (a `SECURITY` case counts as negative), or is listed as uncovered.
+- [ ] Every case that depends on an `UNRESOLVED` requirement is marked `CONDITIONAL on IQ-<nn>:`.
 - [ ] Each adversarial class (prompt injection, tenant crossover, secret leakage, budget, retry) has at least one case.
 - [ ] Every case has a stated oracle; LLM-judged oracles have a rubric.
 - [ ] Every runner is cited with an owner path or marked `runner: unresolved`.

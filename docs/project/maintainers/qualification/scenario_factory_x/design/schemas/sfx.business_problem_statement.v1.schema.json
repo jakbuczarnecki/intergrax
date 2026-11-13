@@ -141,8 +141,10 @@
       "enum": [
         "STUDIO",
         "CLI",
-        "MCP"
-      ]
+        "MCP",
+        "IDE"
+      ],
+      "description": "Door the problem arrived through. IDE is the SFX IDE toolkit (skills in agent-env/skills)."
     }
   },
   "$defs": {

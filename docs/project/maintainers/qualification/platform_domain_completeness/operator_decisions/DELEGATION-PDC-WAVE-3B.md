@@ -33,3 +33,12 @@
 
 - The implementer session and its implementer subagents never write these lines.
 - The delegate session does not implement T-IGX-036-Q.
+
+## Amendment 1 — write set of B-D8 (T-IGX-036-Q)
+
+- **Operator decision** (chat, English rendering of the Polish original "Tak, rozszerz"): **"Yes, extend"**, in answer to the question whether the write set of B-D8 may be extended by the closed-world gate classification and the two residuals found by the first implementation (draft PR #501).
+- **Extension** (four additional paths): `tests/qualification/state_x/_state_x_explicit_mechanism_classifications.py` (one added entry for `sqlite_artifact_store.py`, no weakening), `intergrax/tools/providers/storage/service.py` (presigned URLs only through the governed read port), `intergrax/runtime/replay/models.py` and `intergrax/runtime/replay/replay_engine.py` (single `ArtifactRef`, old path kept through the COMPAT-X shim policy).
+- **Hotspots:** none of the four paths is under `intergrax/contracts/` or `intergrax/applications/_shared/`, so the earlier hotspot check is unchanged. No other batch writes these paths (`pdc_x_wbs.py --check`: no write conflicts).
+- **Effect on the signature:** the plan digest of T-IGX-036-Q changed, so the earlier `Approved:` line no longer applies. The ticket returns to `plan_pending`.
+- **Delegation:** the delegate session may re-sign **T-IGX-036-Q only**, under the same checks, additionally confirming that the plan's write set equals the amended WBS write set.
+- **Not delegated** stays as listed above.
