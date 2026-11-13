@@ -1,14 +1,14 @@
 # © Artur Czarnecki. All rights reserved.
 # Intergrax framework – proprietary and confidential.
 
-from __future__ import annotations
+from __future__ import annotations  # noqa: I001
 
-from typing import TYPE_CHECKING, Any, Dict, List, Optional
+from typing import TYPE_CHECKING, Any, Dict, List, Optional  # noqa: F401, UP035
 
 from pydantic import BaseModel, ConfigDict, Field
 
 from intergrax.contracts.agent_execution_result import AgentExecutionResult
-from intergrax.runtime.nexus.artifacts.models import ArtifactRef
+from intergrax.runtime.nexus.artifacts.models import TraceArtifactRef
 from intergrax.runtime.nexus.context.context_assembler import (
     bridge_shared_context_reads,
     collect_dependency_records,
@@ -74,13 +74,13 @@ class AgentContextBundle(BaseModel):
     model_config = ConfigDict(arbitrary_types_allowed=True)
 
     message: str
-    prior_outputs: Dict[str, Any] = Field(default_factory=dict)
-    evidence: List[str] = Field(default_factory=list)
-    metadata: Dict[str, Any] = Field(default_factory=dict)
-    shared_context: Optional[SharedTaskContext] = None
-    shared_reads: Dict[str, Any] = Field(default_factory=dict)
-    prior_records: List[PriorOutputRecord] = Field(default_factory=list)
-    provenance: List[ContextProvenance] = Field(default_factory=list)
+    prior_outputs: dict[str, Any] = Field(default_factory=dict)
+    evidence: list[str] = Field(default_factory=list)
+    metadata: dict[str, Any] = Field(default_factory=dict)
+    shared_context: SharedTaskContext | None = None
+    shared_reads: dict[str, Any] = Field(default_factory=dict)
+    prior_records: list[PriorOutputRecord] = Field(default_factory=list)
+    provenance: list[ContextProvenance] = Field(default_factory=list)
     summary_tier: ContextSummaryTier = ContextSummaryTier.FULL
     schema_version: str = "agent_context_bundle.v2"
     model_input_messages: tuple[ChatMessage, ...] = Field(
@@ -101,13 +101,13 @@ class ContextManager:
         self,
         *,
         max_prior_chars: int = 4000,
-        default_policy: Optional[TaskContextAssemblyOptions] = None,
-        budget_policy: Optional[ContextBudgetPolicy] = None,
-        event_bus: Optional[RuntimeEventBus] = None,
-        context_engine: Optional["ContextEngine"] = None,
-        context_orchestrator: Optional["ContextOrchestrator"] = None,
-        llm_adapter: Optional["LLMAdapter"] = None,
-        middleware: Optional["MiddlewarePipeline"] = None,
+        default_policy: TaskContextAssemblyOptions | None = None,
+        budget_policy: ContextBudgetPolicy | None = None,
+        event_bus: RuntimeEventBus | None = None,
+        context_engine: ContextEngine | None = None,
+        context_orchestrator: ContextOrchestrator | None = None,
+        llm_adapter: LLMAdapter | None = None,
+        middleware: MiddlewarePipeline | None = None,
         execution_identity: ActiveExecutionIdentity | None = None,
     ) -> None:
         self._default_policy = default_policy or TaskContextAssemblyOptions(
@@ -127,7 +127,7 @@ class ContextManager:
         run_id, _ = self._execution_identity.require()
         return run_id
 
-    def bind_middleware(self, middleware: "MiddlewarePipeline") -> None:
+    def bind_middleware(self, middleware: MiddlewarePipeline) -> None:
         """Attach hook pipeline for graph context assembly (CE-HOOKS-GRAPH)."""
         self._middleware = middleware
 
@@ -136,14 +136,14 @@ class ContextManager:
         self._execution_identity = execution_identity
 
     @property
-    def context_engine(self) -> Optional["ContextEngine"]:
+    def context_engine(self) -> ContextEngine | None:
         return self._context_engine
 
     @property
-    def llm_adapter(self) -> Optional["LLMAdapter"]:
+    def llm_adapter(self) -> LLMAdapter | None:
         return self._llm_adapter
 
-    def get_shared_context(self, task: Task) -> Optional[SharedTaskContext]:
+    def get_shared_context(self, task: Task) -> SharedTaskContext | None:
         return load_shared_task_context(task)
 
     def ensure_shared_context(self, task: Task) -> SharedTaskContext:
@@ -165,17 +165,13 @@ class ContextManager:
         self,
         task: Task,
         node: ExecutionNode,
-        prior_outputs: Dict[str, AgentExecutionResult],
+        prior_outputs: dict[str, AgentExecutionResult],
         *,
-        policy: Optional[TaskContextAssemblyOptions] = None,
+        policy: TaskContextAssemblyOptions | None = None,
     ) -> AgentContextBundle:
         """Graph context assembly — uses ``ContextEngine.assemble`` when wired (CE-3.7)."""
         engine = self._context_engine
-        if (
-            engine is not None
-            and node.delegation is not None
-            and engine.engine_id != "explore_child"
-        ):
+        if engine is not None and node.delegation is not None and engine.engine_id != "explore_child":
             from intergrax.runtime.nexus.context.preset_engines import ExploreChildContextEngine
 
             engine = ExploreChildContextEngine(registry=engine.registry)
@@ -236,6 +232,10 @@ class ContextManager:
             policy=resolved_policy,
             budget_policy=self._budget_policy,
         )
+        # Non-strict development assembly: the adapter is passed through unwrapped.
+        # TRACE-X P4 pins this site by line number
+        # (tests/qualification/trace_x/_trace_x_p4_production_composition_registry.py);
+        # keep the statement below at line 239, or update that registry together with it.
         runtime_config = RuntimeConfig(llm_adapter=self._llm_adapter, production_mode=False)
         runtime, handles, sources = build_graph_provider_context_bundle(
             task,
@@ -315,9 +315,9 @@ class ContextManager:
         self,
         task: Task,
         node: ExecutionNode,
-        prior_outputs: Dict[str, AgentExecutionResult],
+        prior_outputs: dict[str, AgentExecutionResult],
         *,
-        policy: Optional[TaskContextAssemblyOptions] = None,
+        policy: TaskContextAssemblyOptions | None = None,
     ) -> AgentContextBundle:
         """Sync graph context assembly (legacy trim path when engine is not wired)."""
         return self._build_agent_context_core(task, node, prior_outputs, policy=policy)
@@ -326,9 +326,9 @@ class ContextManager:
         self,
         task: Task,
         node: ExecutionNode,
-        prior_outputs: Dict[str, AgentExecutionResult],
+        prior_outputs: dict[str, AgentExecutionResult],
         *,
-        policy: Optional[TaskContextAssemblyOptions] = None,
+        policy: TaskContextAssemblyOptions | None = None,
         emit_events: bool = True,
     ) -> AgentContextBundle:
         shared = self.ensure_shared_context(task)
@@ -341,9 +341,7 @@ class ContextManager:
             shared_version=shared.version,
         )
         shared_reads = bridge_shared_context_reads(shared, node, resolved_policy)
-        provenance.extend(
-            provenance_for_shared_reads(shared_reads, shared_version=shared.version)
-        )
+        provenance.extend(provenance_for_shared_reads(shared_reads, shared_version=shared.version))
 
         if task.message.strip():
             provenance.insert(
@@ -418,9 +416,7 @@ class ContextManager:
             **task.metadata,
             AgentContextMetadataKey.AGENT_CONTEXT: bundle.metadata,
             AgentContextMetadataKey.AGENT_CONTEXT_BUNDLE: bundle.model_dump(mode="json"),
-            AgentContextMetadataKey.CONTEXT_PROVENANCE: [
-                entry.model_dump(mode="json") for entry in bundle.provenance
-            ],
+            AgentContextMetadataKey.CONTEXT_PROVENANCE: [entry.model_dump(mode="json") for entry in bundle.provenance],
             ContextAssemblyMetadataKey.SUMMARY_TIER: bundle.summary_tier.value,
             AgentContextMetadataKey.SHARED_CONTEXT_READS: dict(bundle.shared_reads),
             AgentContextMetadataKey.PRIOR_AGENT_OUTPUTS: bundle.prior_outputs,
@@ -468,8 +464,8 @@ class ContextManager:
         task: Task,
         *,
         key: str,
-        payload: Dict[str, Any],
-        expected_version: Optional[int] = None,
+        payload: dict[str, Any],
+        expected_version: int | None = None,
     ) -> SharedTaskContext:
         """Explicit shared-context write (Tier-1 API for orchestrators / handoff)."""
         shared = self.ensure_shared_context(task)
@@ -487,8 +483,8 @@ class ContextManager:
         task: Task,
         *,
         label: str,
-        artifact: ArtifactRef,
-        expected_version: Optional[int] = None,
+        artifact: TraceArtifactRef,
+        expected_version: int | None = None,
     ) -> SharedTaskContext:
         shared = self.ensure_shared_context(task)
         if expected_version is not None and shared.version != expected_version:

@@ -3,12 +3,13 @@
 
 """LLMAdapter wrapper binding model-input hash before outbound provider calls (TRACE-X-P4)."""
 
-from __future__ import annotations
+from __future__ import annotations  # noqa: I001
 
 from collections.abc import Iterable, Sequence
-from typing import Optional
+from typing import Optional  # noqa: F401
 
 from intergrax.llm.messages import ChatMessage
+from intergrax.llm_adapters.contracts.capabilities import LLMFeature, read_feature_flag
 from intergrax.llm_adapters.contracts.adapter_response import LLMAdapterResponse
 from intergrax.llm_adapters.contracts.llm_adapter import LLMAdapter
 from intergrax.llm_adapters.contracts.native_tool_choice import NativeToolChoice
@@ -54,13 +55,28 @@ class ModelCallRuntimeEvidenceAdapter:
     def supports_structured_output(self) -> bool:
         return self._inner.supports_structured_output()
 
+    # Capability flags outside the ``LLMAdapter`` protocol are read through the D3 flag reader, so a
+    # wrapped adapter that does not declare one is reported as not supporting it (never as supporting it).
+
+    def supports_tool_streaming(self) -> bool:
+        return read_feature_flag(self._inner, LLMFeature.TOOL_STREAMING)
+
+    def supports_vision(self) -> bool:
+        return read_feature_flag(self._inner, LLMFeature.VISION)
+
+    def supports_audio_input(self) -> bool:
+        return read_feature_flag(self._inner, LLMFeature.AUDIO_INPUT)
+
+    def supports_audio_output(self) -> bool:
+        return read_feature_flag(self._inner, LLMFeature.AUDIO_OUTPUT)
+
     def generate_messages(
         self,
         messages: Sequence[ChatMessage],
         *,
-        temperature: Optional[float] = None,
-        max_tokens: Optional[int] = None,
-        run_id: Optional[str] = None,
+        temperature: float | None = None,
+        max_tokens: int | None = None,
+        run_id: str | None = None,
     ) -> LLMAdapterResponse:
         with model_call_attribution_scope(messages=messages):
             return self._inner.generate_messages(
@@ -74,9 +90,9 @@ class ModelCallRuntimeEvidenceAdapter:
         self,
         messages: Sequence[ChatMessage],
         *,
-        temperature: Optional[float] = None,
-        max_tokens: Optional[int] = None,
-        run_id: Optional[str] = None,
+        temperature: float | None = None,
+        max_tokens: int | None = None,
+        run_id: str | None = None,
     ) -> Iterable[LLMStreamEvent]:
         with model_call_attribution_scope(messages=messages):
             yield from self._inner.stream_messages(
@@ -91,10 +107,10 @@ class ModelCallRuntimeEvidenceAdapter:
         messages: Sequence[ChatMessage],
         tools: Sequence[CanonicalFunctionToolDefinition],
         *,
-        temperature: Optional[float] = None,
-        max_tokens: Optional[int] = None,
+        temperature: float | None = None,
+        max_tokens: int | None = None,
         tool_choice: NativeToolChoice | None = None,
-        run_id: Optional[str] = None,
+        run_id: str | None = None,
     ) -> LLMAdapterResponse:
         with model_call_attribution_scope(messages=messages):
             return self._inner.generate_with_tools(
@@ -111,10 +127,10 @@ class ModelCallRuntimeEvidenceAdapter:
         messages: Sequence[ChatMessage],
         tools: Sequence[CanonicalFunctionToolDefinition],
         *,
-        temperature: Optional[float] = None,
-        max_tokens: Optional[int] = None,
+        temperature: float | None = None,
+        max_tokens: int | None = None,
         tool_choice: NativeToolChoice | None = None,
-        run_id: Optional[str] = None,
+        run_id: str | None = None,
     ) -> Iterable[LLMStreamEvent]:
         with model_call_attribution_scope(messages=messages):
             yield from self._inner.stream_with_tools(
@@ -131,9 +147,9 @@ class ModelCallRuntimeEvidenceAdapter:
         messages: Sequence[ChatMessage],
         output_model: type[TStructured],
         *,
-        temperature: Optional[float] = None,
-        max_tokens: Optional[int] = None,
-        run_id: Optional[str] = None,
+        temperature: float | None = None,
+        max_tokens: int | None = None,
+        run_id: str | None = None,
     ) -> LLMStructuredResult[TStructured]:
         with model_call_attribution_scope(messages=messages):
             return self._inner.generate_structured(

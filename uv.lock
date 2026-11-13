@@ -1833,6 +1833,7 @@ dependencies = [
     { name = "starlette" },
     { name = "tiktoken" },
     { name = "tqdm" },
+    { name = "tzdata", marker = "sys_platform == 'win32'" },
     { name = "uvicorn" },
 ]
 
@@ -2234,6 +2235,7 @@ requires-dist = [
     { name = "trafilatura", marker = "extra == 'parsing-web'", specifier = ">=1.8,<3" },
     { name = "transformers", marker = "extra == 'dev-unit-cert'", specifier = ">=4.41,<5" },
     { name = "transformers", marker = "extra == 'rag-local-embeddings'", specifier = ">=4.41,<5" },
+    { name = "tzdata", marker = "sys_platform == 'win32'" },
     { name = "unstructured", marker = "extra == 'dev'", specifier = ">=0.12" },
     { name = "uvicorn", specifier = ">=0.30,<1" },
     { name = "uvicorn", marker = "extra == 'harness-author'", specifier = ">=0.30,<1" },
