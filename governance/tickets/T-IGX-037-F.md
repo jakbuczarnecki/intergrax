@@ -133,6 +133,15 @@ The six PNG files were extracted into an empty scratch folder, their SHA-256 val
 
 Verdict: **PASS_WITH_FINDINGS**, no BLOCKER and no HIGH. The committed PNG blobs match the package checksums. V-1..V-9 pass on the committed pixels; V-10 stays optional notes (L1: "READINESS-owned patterns", short step label, empty hero areas; L2: skewed connector arrowhead, accent bars slightly past rounded corners, background arcs crossing the footer divider, tight step numbers). The two LOW findings on this ticket (stale checkpoint row, missing state line) are fixed here. The visuals may be published.
 
-Campaign state: text, governance and visuals are audited. The `Approved:` line was written by a delegate session under `DELEGATION-SFX-CLOSEOUT.md` (commit `e8e8c25b9`); the implementer did not write it. **Still to do:** PR to `development`, merge by the operator, the pin commit (C6) and the closure record. `SFX_PRE_FREEZE_DOCS_CLOSED` is not reached. `SFX_PRE_IMPLEMENTATION_READY` is not granted. STOP before SFX-P4-B, SFX-P5 and ARCH-FREEZE.
+Campaign state: text, governance and visuals are audited. The `Approved:` line was written by a delegate session under `DELEGATION-SFX-CLOSEOUT.md` (commit `e8e8c25b9`); the implementer did not write it. The PR was merged by the operator (see the closure record below). Superseded by that record. `SFX_PRE_IMPLEMENTATION_READY` is not granted. STOP before SFX-P4-B, SFX-P5 and ARCH-FREEZE.
 
 Plan note: the plan text was clarified before approval (roadmap fact and the README test root were added to its scope); the digest above is the current one.
+
+## Closure record (C6, C7)
+
+- Closeout PR #507: merge `7d1d89415eb234531b6f6592160c1bcbd236b859` on `development`; PR head `cb51ed02153957bd0331995bb5182b326e3449f3` is an ancestor of `development` (checked with `git merge-base --is-ancestor`); CI: 6 pass, 0 fail, 11 skipped. Merged by the operator.
+- Pin commit (this change): `SFX_SHA_LADDER.md` rungs set to full 40-character SHAs, each verified as an ancestor of `origin/development`: `ROADMAP_AMENDMENT_SHA` and `P0_REGISTRATION_SHA` `0140bc6b5f622eb2a44abcaa257dbd27f20a201d` (PR #482); `P1_PUBLICATION_SHA` and `P2_PUBLICATION_SHA` `9a1dee2807a57983b6d6b299bd1e9848bc884d05` (PR #486); `P3_PUBLICATION_SHA` and `P4_PUBLICATION_SHA` `c323dbd41df20324c0b1b994e41924619dc9a545` (PR #487); `GEN_SEAL_SHA` `49438d633be8b29762fad03b1f8efc14d1088ae3`.
+- Still `_unset_`: `PRE_IMPLEMENTATION_READY_SHA`, all `FREEZE_*` and entry rungs, `ADR_ACCEPTANCE_SHA`, `GATE_SFX_ENTRY_SHA` and every post-freeze rung.
+- Independent review: text audit and image rounds 1 to 3; final verdict `PASS_WITH_FINDINGS`, no BLOCKER and no HIGH. Optional image notes (V-10, L1, L2) stay with the image author.
+- Status: `SFX_PRE_FREEZE_DOCS_CLOSED — INDEPENDENTLY REVIEWED — PUBLIC DOCUMENTATION PUBLISHED — STOP BEFORE ARCH-FREEZE`, effective when the pin PR that carries this record is merged.
+- STOP brief (C7): `SFX_PRE_IMPLEMENTATION_READY` is not granted and is a separate operator decision. Open: OD-SFX-05..14 signatures, operator walkthrough of IDE toolkit v0, GEN content confidentiality, the 5 known `roadmap_replay_x` group C failures, ADR acceptance (OD-SFX-06), inventory re-pin, PDC-X and ARCH-FREEZE, `GATE-SFX-ENTRY` (not met). SFX-P4-B, SFX-W3 and SFX-P5 stay blocked.

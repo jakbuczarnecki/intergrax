@@ -76,7 +76,7 @@ Scheduled decisions OD-SFX-05..14 have no record yet (master plan §16). OD-SFX-
 
 | Status | State |
 | --- | --- |
-| `SFX_PRE_FREEZE_DOCS_CLOSED` | Target of the closeout campaign. Not claimed until the closeout PR is merged, the SHA pin is published and the independent review has no open BLOCKER or HIGH finding. |
+| `SFX_PRE_FREEZE_DOCS_CLOSED` | **Reached on the merge of the pin PR that carries this line.** Closeout PR #507 merged as `7d1d89415eb234531b6f6592160c1bcbd236b859` (head `cb51ed02153957bd0331995bb5182b326e3449f3`, CI 6 pass, 0 fail). Independent review: text audit and three image rounds, final verdict `PASS_WITH_FINDINGS`, no open BLOCKER or HIGH. SHA ladder rungs P0, P1, P2, P3, P4 and `GEN_SEAL_SHA` are pinned in [`SFX_SHA_LADDER.md`](./SFX_SHA_LADDER.md). This pin PR cannot record its own merge SHA. Closure line: `SFX_PRE_FREEZE_DOCS_CLOSED — INDEPENDENTLY REVIEWED — PUBLIC DOCUMENTATION PUBLISHED — STOP BEFORE ARCH-FREEZE`. |
 | `SFX_PRE_IMPLEMENTATION_READY` | **Not granted.** A separate, later operator decision. `PRE_IMPLEMENTATION_READY_SHA` stays `_unset_`. |
 
 Open on the ready path, outside the closeout: the operator walkthrough of IDE toolkit v0 after the REF-1 text, GEN content confidentiality before `SFX-P12-04`, the five known `roadmap_replay_x` group C failures, ADR acceptance (OD-SFX-06), OD-SFX-05/09/14 and ARCH-FREEZE.

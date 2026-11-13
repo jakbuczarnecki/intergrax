@@ -13,13 +13,13 @@ Rules:
 | Role | SHA | Notes |
 | --- | --- | --- |
 | BASE_SHA | `eadb1c2116feb0a2090b234a36fd4182bd6ace8d` | `origin/development` at campaign start; worktree `sfx-p0` cut |
-| ROADMAP_AMENDMENT_SHA | _unset_ | Merge of the W0 PR carrying roadmap A1–A10 (T-IGX-037-A) |
-| P0_REGISTRATION_SHA | _unset_ | Merge of the W0 PR (T-IGX-037-A); same value as `ROADMAP_AMENDMENT_SHA` when both land in one PR |
-| P1_PUBLICATION_SHA | _unset_ | Merge of T-IGX-037-B (research, inventory re-pin) |
-| P2_PUBLICATION_SHA | _unset_ | Merge of T-IGX-037-C (ADR-SFX-001..006 Proposed, contract drafts) |
-| P3_PUBLICATION_SHA | _unset_ | Merge of T-IGX-037-D (UX, usability round 0) |
-| GEN_SEAL_SHA | _unset_ | Commit that publishes the GEN set digest (SFX-P3-02); must precede W3 |
-| P4_PUBLICATION_SHA | _unset_ | Merge of T-IGX-037-E (IDE toolkit v0, SFX-P4-A01/A02) |
+| ROADMAP_AMENDMENT_SHA | `0140bc6b5f622eb2a44abcaa257dbd27f20a201d` | Merge of the W0 PR carrying roadmap A1–A10 (T-IGX-037-A). Pinned: PR #482 |
+| P0_REGISTRATION_SHA | `0140bc6b5f622eb2a44abcaa257dbd27f20a201d` | Merge of the W0 PR (T-IGX-037-A); same value as `ROADMAP_AMENDMENT_SHA` when both land in one PR. Pinned: PR #482 |
+| P1_PUBLICATION_SHA | `9a1dee2807a57983b6d6b299bd1e9848bc884d05` | Merge of T-IGX-037-B (research, inventory re-pin). Pinned: PR #486, shared with P2 |
+| P2_PUBLICATION_SHA | `9a1dee2807a57983b6d6b299bd1e9848bc884d05` | Merge of T-IGX-037-C (ADR-SFX-001..006 Proposed, contract drafts). Pinned: PR #486, shared with P1 |
+| P3_PUBLICATION_SHA | `c323dbd41df20324c0b1b994e41924619dc9a545` | Merge of T-IGX-037-D (UX, usability round 0). Pinned: PR #487, shared with P4. Corrections #493, #500 came later; #500 and the closeout PR #507 (`7d1d89415eb234531b6f6592160c1bcbd236b859`) are not part of this rung |
+| GEN_SEAL_SHA | `49438d633be8b29762fad03b1f8efc14d1088ae3` | Commit that publishes the GEN set digest (SFX-P3-02); must precede W3. Pinned: the SFX-P3 commit that carries the seal (integrity, not confidentiality) |
+| P4_PUBLICATION_SHA | `c323dbd41df20324c0b1b994e41924619dc9a545` | Merge of T-IGX-037-E (IDE toolkit v0, SFX-P4-A01/A02). Pinned: PR #487, shared with P3. Corrections #493, #496, #498 came later and are not part of this rung |
 | PRE_IMPLEMENTATION_READY_SHA | _unset_ | `origin/development` when all of P0–P4-A are published (OD-SFX-15 target) |
 
 ## Entry (external pins and gate)
