@@ -116,3 +116,15 @@ Verdict: **FAIL as a publishable candidate**; text, governance and scope content
 
 Publication path: V-2 and V-9 resolved (new package or written operator decision) -> short re-check -> `Approved:` line for this ticket by the operator or a commissioned delegate -> PR -> merge by the operator -> pin commit (C6) -> closure record. None of these steps ran.
 
+## Visual check, round 3 (package `scenario_factory_assets_final.zip`)
+
+The six PNG files were extracted into an empty scratch folder, their SHA-256 values matched the list in the package's `ASSET_INTEGRATION.md`, and they replaced the previous files under the same names. Pixels were not edited. No text in README, the overview or the full-size pages needed a change; the corrected hero alt text already matches the images.
+
+| # | Result | Evidence |
+| --- | --- | --- |
+| V-1 | Closed | "INTERGRAX" / "Intergrax" in all six. |
+| V-2 | **Closed by removal** | The non-canonical X mark is gone from all six. The top-left lockup is the word "INTERGRAX" as plain bold text. It is not a reproduction of the canonical logo and no image claims to be the logo. |
+| V-3..V-8 | Closed | Status badge and footer in all six; neutral labels; "Checked scenario"; no edge artifacts. |
+| V-9 | **Closed** | The tagline "ENTERPRISE AI PLATFORM" is gone from all six. |
+| V-10 | Notes only | Large empty areas in hero boxes; step "Capability" is short for "Capability Resolution"; ownership image says "READINESS-owned patterns" (internal track name); the ownership connector arrowhead is slightly skewed. Optional for the image author. |
+
