@@ -12,6 +12,7 @@ This file holds what is specific to Claude Code sessions. Rules, skills and plan
 
 @agent-env/rules/intergrax-env-vendor-qualification.md
 @agent-env/rules/intergrax-git-branch-safety.md
+@agent-env/rules/intergrax-no-ai-attribution.md
 @agent-env/rules/intergrax-session-artifacts.md
 @agent-env/rules/intergrax-test-process-budget.md
 @agent-env/rules/intergrax-token-budget.md
