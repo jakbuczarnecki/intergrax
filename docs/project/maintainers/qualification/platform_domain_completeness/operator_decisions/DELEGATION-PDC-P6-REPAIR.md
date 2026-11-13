@@ -24,3 +24,13 @@ OD signatures; FRZ promotion and the PDC-X roadmap closure; IIAC activation line
 ## Separation
 
 The implementer session and its implementer subagents never write `Approved:` lines. A delegate session does not implement the ticket it signs.
+
+## Amendment 1 — write set of B-P6-R (T-IGX-036-T) from the XD and ECAP findings
+
+- **Basis:** the standing Operator authorization 4 in `DELEGATION-PDC-STANDING.md` (write-set amendments that close findings of the same batch) and the delegation scope above. No new Operator decision is claimed.
+- **Findings source:** the B-P6 report of T-IGX-036-S (PR 514, merged as `fbad6a8de`): XD findings 1-8, ECAP-F1 and ECAP-F2.
+- **Extension** (thirteen paths, none under `intergrax/contracts/` or `intergrax/applications/_shared/`): `intergrax/runtime/nexus/tools/tool_runtime.py`, `intergrax/runtime/nexus/tools/plan_context_invocation.py`, `intergrax/runtime/task/worker_bootstrap.py`, `intergrax/runtime/persistence/sqlite_opens.py`, `intergrax/runtime/persistence/sqlite_composition.py`, `intergrax/runtime/nexus/artifacts/context_reference.py`, `intergrax/runtime/nexus/artifacts/spill.py`, `intergrax/memory/default_memory_control_plane.py`, `intergrax/runtime/agent_governance/pipeline.py`, `intergrax/llm_adapters/contracts/capabilities.py`, `intergrax/platform/enterprise_audit/data/changed_since_impact_map.v1.json`, `intergrax/platform/enterprise_audit/data/enterprise_audit_check_manifest.v1.json`, `tests/qualification/ebh_5/_sqlite_touchpoint_registry.py`.
+- **Not extended, returned to the Operator:** XD finding 9 and 10 (new functional scope; finding 10 also lies under `intergrax/contracts/`).
+- **Effect on the signature:** the plan digest of T-IGX-036-T changed, so the earlier `Approved:` line no longer applies. The ticket returns to `plan_pending`.
+- **Delegation:** the delegate session may re-sign **T-IGX-036-T only**, under the same checks as above, additionally confirming that the plan's write set equals the amended WBS write set and that the plan adds no new registry, scheduler, engine, trust, policy or audit authority and weakens no gate.
+- **Not delegated** stays as listed above.
