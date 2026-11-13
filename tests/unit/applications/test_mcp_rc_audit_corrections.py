@@ -167,6 +167,30 @@ async def test_catalog_tools_registry_exception_text_is_not_echoed() -> None:
         assert "MCP_INTERNAL_ERROR" in str(err.value) and "SECRET" not in str(err.value)
 
 
+async def test_invoke_catalog_tool_unexpected_exception_text_is_not_echoed() -> None:
+    """RA-01: pins the sanitizer wiring of ``invoke_catalog_tool`` (mutant R8 of the delta re-audit)."""
+    from fastmcp import FastMCP
+    from intergrax.applications._shared.mcp_catalog_tools import mount_catalog_tools_on_mcp
+
+    mcp = FastMCP("ra01")
+    mount_catalog_tools_on_mcp(
+        mcp,
+        ToolRegistry(),
+        catalog_invocation=object(),  # type: ignore[arg-type]  # only forwarded to the patched bridge call
+        identity_mode=_LOCAL,
+    )
+    with patch(
+        "intergrax.applications._shared.mcp_catalog_tools.execute_mcp_catalog_tool_invocation",
+        new=AsyncMock(side_effect=RuntimeError(_SECRET)),
+    ):
+        async with Client(mcp) as client:
+            with pytest.raises(ToolError) as excinfo:
+                await client.call_tool("invoke_catalog_tool", {"tool_id": "af.tool", "task_id": "t-1"})
+    text = str(excinfo.value)
+    assert "MCP_INTERNAL_ERROR" in text and "RuntimeError" in text
+    assert "SECRET" not in text and "hunter2" not in text and "db.py" not in text
+
+
 @pytest.mark.parametrize("shape", ["circular", "deep"])
 async def test_unserializable_custom_tool_results_are_typed_not_raw(shape: str) -> None:
     async def _bad(message: str = "") -> dict[str, object]:

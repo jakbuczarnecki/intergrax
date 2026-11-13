@@ -182,6 +182,14 @@ MUTANTS: tuple[Mutant, ...] = (
         "",
         (_RC_TEST,),
     ),
+    Mutant(
+        "M18-invoke-catalog-tool-unsanitized",
+        "invoke_catalog_tool keeps its sanitized_tool_errors wrapper (RA-01 of the delta re-audit)",
+        f"{_SHARED}/mcp_catalog_tools.py",
+        'async with optional_mcp_call_admission(call_admission), sanitized_tool_errors("invoke_catalog_tool"):',
+        "async with optional_mcp_call_admission(call_admission):",
+        (_RC_TEST,),
+    ),
 )
 
 
