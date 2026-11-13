@@ -297,6 +297,7 @@ QUALIFICATION_FOUNDATION: Final[frozenset[str]] = frozenset(
         "mcp_server_x",
         "mp6",
         "multiplayer",
+        "pdc_x",
         "prod_q",
         "qual_x",
         "roadmap_replay_x",
