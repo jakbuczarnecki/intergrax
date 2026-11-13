@@ -2,7 +2,7 @@
 
 Decision ID: IIAC-OD-MCP-RC-ACT-N11-2026-11-13
 Policy version: IIAC-2026-11-05.1
-Decision scope: IIAC policy activation (MCP-RC product delta vs `2d3eceb6cf7e93dccd4d96919319a6c969b4444b`)
+Decision scope: IIAC policy activation (MCP-RC product delta, and the product delta of the merged `development` tree, both vs `2d3eceb6cf7e93dccd4d96919319a6c969b4444b`; see "Widened scope")
 Decision status: DRAFT
 Audit report digest: c405c65faf53243a0511b0b9584a9f3abda4db08c09ee9b9266c86fe9f6b7a4e
 
@@ -46,7 +46,18 @@ Drafting note: the date in the Decision ID is the drafting date (2026-11-13), no
 
 Last product change on the audited line: `b0e19bf61b346e6941b2e190b703c6922e708b34`. Every later commit on `mcp-rc` up to the drafting head `c3f962636b104ceccce07d4252f7e60b16bf53f4` changes docs, tests, harness scripts or governance tickets only (certifier preflight check 2; `EVIDENCE_INTEGRATION_RECORD.md`).
 
-Scope limit (fact, verified at drafting): `origin/development` @ `30c267dbe5a4901d526403d16e0a19034beeb7c0` differs from the same pin in 125 other product paths (none of them among the 23, none with `mcp` in its name). This decision covers only the 23 MCP-RC paths. It does not audit, accept or rebind those 125 paths, and it does not say how the PDC-P7-00 rebind treats them; see the open items below.
+## Widened scope (operator answer of 2026-11-13)
+
+Fact, verified at drafting: `origin/development` @ `30c267dbe5a4901d526403d16e0a19034beeb7c0` differs from the same pin in 125 other product paths (none of them among the 23, none with `mcp` in its name; by top-level directory: `intergrax/runtime` 44, `intergrax/llm_adapters` 20, `intergrax/agent_distribution` 10, `intergrax/hosting` 9, `intergrax/applications` 9, `intergrax/rag` 5, `intergrax/core` 5, `intergrax/queueing` 4, the rest in smaller directories). The count moves with every merge to `development`.
+
+Operator instructions, relayed in the chat with the drafting session on 2026-11-13 (original, Polish, as typed): the order is `Rebind po merge'u`, and to the question whether to widen the scope of this unsigned decision before the delegate signs: `Tak, rozszerz`. English renderings by the drafting session (not operator-written lines): "Rebind after the merge"; "Yes, widen it". Because the rebind is made after `development` is merged into `mcp-rc`, ACT-N11 will measure the merged tree against the pin, so the scope of this decision is widened as follows:
+
+1. **MCP-RC paths:** the 23 paths in the table above. Independently audited (`PASS_SCOPED`) and preflighted; evidence as cited in this record.
+2. **Merged `development` paths:** every other product path under `intergrax/`, `agents/` and `applications/` that differs from the pin `2d3eceb6c` at the integrated baseline SHA bound by the rebind. The MCP-RC audits do **not** cover them, and this record does not claim any audit of them.
+
+Before this record is signed, a revision of this draft adds the facts that make scope item 2 sound, each taken from published evidence and none invented here: the integrated baseline SHA; the exact path count and a pointer to the audit-scope file that lists the paths; the independent audit dossier (verdict and SHA-256) and the certifier preflight that cover them; their auditor and certifier session ids. Until that revision exists, scope item 2 is **not covered** and the draft is not signable. The delegation record must then be updated to the new digest of the revised text, because the delegation covers only the digest it names.
+
+This record still does not say how the PDC-P7-00 domain batches are audited; it only cites the evidence once it exists.
 
 ## Independent audit and preflight
 
@@ -89,13 +100,13 @@ The P6-style separation applies: the MCP-RC implementer (`T-IGX-038-A-F-MCP-RC-I
 2. **RA-02, RA-03, RA-04.** The re-audit's LOW findings are recorded by the implementer as "open, accepted as declared" (`MCP_SERVER_X_RC_CORRECTIONS_RECORD.md`); no operator acceptance is recorded. RA-05..RA-07 (INFO) likewise.
 3. **AF-05** (real factory composition unverified for MCP opt-in): the auditor's judgement is `ACCEPT_SCOPED`; operator acceptance is not recorded.
 4. **AF-06..AF-09 and AF-11..AF-15** (auditor judgement `ACCEPT`) and **AF-16 / G-DOC items** (auditor judgement `ACCEPT_SCOPED`) are carried as declared limits; no operator disposition is recorded.
-5. **The 125 non-MCP product paths** noted under "Scope limit" and the way the PDC-P7-00 rebind at the integrated baseline treats them.
+5. **Coverage of the merged `development` paths** (125 at drafting, see "Widened scope"): the independent audit and preflight evidence, the integrated baseline SHA and the path list are not yet available to this record.
 
 Signing the activation line does not record the operator's acceptance of any item above. They remain open until the operator answers them separately.
 
 ## Non-claims
 
-This decision authorizes only the IIAC activation named in its scope, for the 23 audited paths. It does not bypass governance checks, does not close the MCP-SERVER-X stage, does not promote any FRZ status (counter stays 225), does not claim production readiness, does not authorize a merge, a pull request, a ticket approval or P8 changes, and does not edit `IIAC_POLICY_ACTIVATION_RECORD.json`. The two-phase rebind of that record is a separate step by a separate activation-certifier session inside the PDC-P7-00 window.
+This decision authorizes only the IIAC activation named in its scope: the 23 audited MCP-RC paths and, once the revision described under "Widened scope" cites its evidence, the merged `development` paths that evidence covers. It does not bypass governance checks, does not close the MCP-SERVER-X stage, does not promote any FRZ status (counter stays 225), does not claim production readiness, does not authorize a merge, a pull request, a ticket approval or P8 changes, and does not edit `IIAC_POLICY_ACTIVATION_RECORD.json`. The two-phase rebind of that record is a separate step by a separate activation-certifier session inside the PDC-P7-00 window.
 
 ## Provenance
 
