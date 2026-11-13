@@ -6,7 +6,7 @@ Reconcile the SFX dossier with the published pre-freeze work (PR #482 to #500), 
 
 ## Plan digest
 
-Plan digest: 717327c60f28af837165c25d2803e28d1bab4e8ec3c580bd1bcfc961436164a1
+Plan digest: 2432783743996d1bb753e61fcfb00bdc4c319f87eb788d79934087889282b2d3
 
 Canonical plan: [`governance/tickets/plans/PLAN_T-IGX-037-F.md`](plans/PLAN_T-IGX-037-F.md).
 
@@ -134,3 +134,4 @@ Verdict: **PASS_WITH_FINDINGS**, no BLOCKER and no HIGH. The committed PNG blobs
 
 Campaign state: text, governance and visuals are audited. **Still required, and not done by the implementer:** an `Approved:` line for this ticket from the operator or a commissioned delegate (no delegation covers T-IGX-037-F), then a PR to `development`, merge by the operator, the pin commit (C6) and the closure record. `SFX_PRE_FREEZE_DOCS_CLOSED` is not reached. `SFX_PRE_IMPLEMENTATION_READY` is not granted. STOP before SFX-P4-B, SFX-P5 and ARCH-FREEZE.
 
+Plan note: the plan text was clarified before approval (roadmap fact and the README test root were added to its scope); the digest above is the current one.

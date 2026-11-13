@@ -12,11 +12,12 @@ Starting state: `origin/development` at `364b3892544535e0969c28cfdcc0d308d565af3
 
 ## Scope
 
-1. Reconcile the SFX index, gap register and SHA ladder text with the published merges of PR #482 to #500. Rungs are set only in a pin commit after the merge. `PRE_IMPLEMENTATION_READY_SHA`, `FREEZE_*`, `ADR_ACCEPTANCE_SHA` and `GATE_SFX_ENTRY_SHA` stay `_unset_`.
+1. Reconcile the SFX index, gap register and SHA ladder text with the published merges of PR #482 to #500, and add a descriptive publication fact to roadmap section 3.0.7b (no status or checkbox change). Rungs are set only in a pin commit after the merge. `PRE_IMPLEMENTATION_READY_SHA`, `FREEZE_*`, `ADR_ACCEPTANCE_SHA` and `GATE_SFX_ENTRY_SHA` stay `_unset_`.
 2. Record OD-SFX-21 and annotate the pre-freeze criterion of unit SFX-P3-01 (human round 0 and TTFS leave the documentation closure). `NOT_RUN` results stay `NOT_RUN`. SFX-P12 and the OD-SFX-07 requirements are not changed.
 3. Public documentation: new `docs/project/overview/SCENARIO_FACTORY.md`, a README subsection and strategic-directions row, and one-line routes in the documentation map, project README, use cases, Autonomous Organization overview, proofs, positioning contract and the capability architecture page. The first-screen action stays Try LKW.
-4. Integrate the six operator-supplied PNG files (`scenario-factory-{hero,journey,ownership}-{light,dark}.png`) with `<picture>` blocks and full-size wrapper pages. No image is generated, redrawn or edited by an agent.
-5. One independent review of the candidate before merge.
+4. Allow the new asset folder as a README visual root in `tests/unit/docs/test_public_readme_contract.py` (the file is also `ruff format`-clean because the pre-commit gate requires it). No other test or product path changes.
+5. Integrate the six operator-supplied PNG files (`scenario-factory-{hero,journey,ownership}-{light,dark}.png`) with `<picture>` blocks and full-size wrapper pages. No image is generated, redrawn or edited by an agent.
+6. Independent review of the candidate before merge (audits of the text and of the final images).
 
 ## Out of scope
 
