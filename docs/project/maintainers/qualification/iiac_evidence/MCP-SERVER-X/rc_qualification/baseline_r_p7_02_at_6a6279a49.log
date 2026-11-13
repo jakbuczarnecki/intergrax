@@ -1,0 +1,183 @@
+# cmd: python -m pytest <3 R-P7-02 files> -q --tb=line
+# git head: 6a6279a49a9aa5a33936a1c6a577c7194b4bcebb
+# date utc: 2026-11-12T17:13:55Z
+........F.FFF.FF.FFFFF.......                                            [100%]
+================================== FAILURES ===================================
+_______________ test_http_only_factory_does_not_import_fastmcp ________________
+tests\unit\applications\test_mcp_surface_opt_in.py:88: in test_http_only_factory_does_not_import_fastmcp
+    registry_projection=build_lkw_test_registry_projection(settings),
+                        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+applications\local_workspace_application\tests\lkw_ac3_projection.py:38: in build_lkw_test_registry_projection
+    return build_test_registry_projection(
+tests\unit\applications\ac3_projection_helpers.py:202: in build_test_registry_projection
+    return build_registry_projection(bundle)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+intergrax\applications\_shared\registry_projection.py:478: in build_registry_projection
+    registry = build_application_registry(
+intergrax\applications\_shared\wiring.py:566: in build_application_registry
+    _register_binding(
+intergrax\applications\_shared\wiring.py:414: in _register_binding
+    agent = invoke_canonical_agent_factory(
+intergrax\applications\_shared\wiring.py:140: in invoke_canonical_agent_factory
+    result = factory(ctx, binding)
+             ^^^^^^^^^^^^^^^^^^^^^
+applications\local_workspace_application\host\agent_factories.py:61: in build_local_workspace_tool_selection_qualifier_from_context
+    adapter = resolve_llm_adapter(ctx.environment)
+              ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+intergrax\applications\_shared\llm_resolver.py:319: in resolve_llm_adapter
+    raise LLMProviderNotConfiguredError(_LLM_PROVIDER_NOT_CONFIGURED_MESSAGE)
+E   intergrax.llm_adapters.registry.registration_contract.LLMProviderNotConfiguredError: LLM provider not explicitly configured: set ApplicationEnvironmentProfile.llm_profile or INTERGRAX_LLM_PROVIDER before materializing an adapter.
+____________ test_mcp_enabled_factory_raises_when_fastmcp_missing _____________
+tests\unit\applications\test_mcp_surface_opt_in.py:126: in test_mcp_enabled_factory_raises_when_fastmcp_missing
+    create_local_workspace_backend_app(registry_projection=build_lkw_test_registry_projection(settings), settings=settings)
+                                                           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+applications\local_workspace_application\tests\lkw_ac3_projection.py:38: in build_lkw_test_registry_projection
+    return build_test_registry_projection(
+tests\unit\applications\ac3_projection_helpers.py:202: in build_test_registry_projection
+    return build_registry_projection(bundle)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+intergrax\applications\_shared\registry_projection.py:478: in build_registry_projection
+    registry = build_application_registry(
+intergrax\applications\_shared\wiring.py:566: in build_application_registry
+    _register_binding(
+intergrax\applications\_shared\wiring.py:414: in _register_binding
+    agent = invoke_canonical_agent_factory(
+intergrax\applications\_shared\wiring.py:140: in invoke_canonical_agent_factory
+    result = factory(ctx, binding)
+             ^^^^^^^^^^^^^^^^^^^^^
+applications\local_workspace_application\host\agent_factories.py:61: in build_local_workspace_tool_selection_qualifier_from_context
+    adapter = resolve_llm_adapter(ctx.environment)
+              ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+intergrax\applications\_shared\llm_resolver.py:319: in resolve_llm_adapter
+    raise LLMProviderNotConfiguredError(_LLM_PROVIDER_NOT_CONFIGURED_MESSAGE)
+E   intergrax.llm_adapters.registry.registration_contract.LLMProviderNotConfiguredError: LLM provider not explicitly configured: set ApplicationEnvironmentProfile.llm_profile or INTERGRAX_LLM_PROVIDER before materializing an adapter.
+____________________ test_scaffold_defaults_mcp_to_opt_in _____________________
+tests\unit\applications\test_mcp_surface_opt_in.py:136: in test_scaffold_defaults_mcp_to_opt_in
+    target, pkg, short = prepare_scaffold_package(
+tests\unit\applications\scaffold_runtime_helper.py:36: in prepare_scaffold_package
+    target = create_application(
+intergrax\scaffold\new_application.py:1255: in create_application
+    _create_product_application(
+intergrax\scaffold\new_application.py:1213: in _create_product_application
+    write_scaffold_package_json(target, names, specs, profile, force=force)
+intergrax\scaffold\package_emit.py:116: in write_scaffold_package_json
+    package = build_scaffold_application_package(
+intergrax\applications\_shared\package_wiring.py:347: in build_scaffold_application_package
+    return build_application_package(
+intergrax\applications\_shared\package_wiring.py:199: in build_application_package
+    dependencies = collect_application_dependencies(
+intergrax\applications\_shared\package_wiring.py:114: in collect_application_dependencies
+    contract = resolve_roster_agent_contract(
+intergrax\applications\_shared\roster_agent_contract_authority.py:121: in resolve_roster_agent_contract
+    raise StrictAgentContractAuthorityError(
+E   intergrax.applications._shared.roster_agent_contract_authority.StrictAgentContractAuthorityError: STRICT agent contract resolution requires revision-bound authority
+__________ test_mcp_enabled_factory_mounts_mcp_route_when_available ___________
+tests\unit\applications\test_mcp_surface_opt_in_runtime.py:33: in test_mcp_enabled_factory_mounts_mcp_route_when_available
+    registry_projection=build_lkw_test_registry_projection(settings),
+                        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+applications\local_workspace_application\tests\lkw_ac3_projection.py:38: in build_lkw_test_registry_projection
+    return build_test_registry_projection(
+tests\unit\applications\ac3_projection_helpers.py:202: in build_test_registry_projection
+    return build_registry_projection(bundle)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+intergrax\applications\_shared\registry_projection.py:478: in build_registry_projection
+    registry = build_application_registry(
+intergrax\applications\_shared\wiring.py:566: in build_application_registry
+    _register_binding(
+intergrax\applications\_shared\wiring.py:414: in _register_binding
+    agent = invoke_canonical_agent_factory(
+intergrax\applications\_shared\wiring.py:140: in invoke_canonical_agent_factory
+    result = factory(ctx, binding)
+             ^^^^^^^^^^^^^^^^^^^^^
+applications\local_workspace_application\host\agent_factories.py:61: in build_local_workspace_tool_selection_qualifier_from_context
+    adapter = resolve_llm_adapter(ctx.environment)
+              ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+intergrax\applications\_shared\llm_resolver.py:319: in resolve_llm_adapter
+    raise LLMProviderNotConfiguredError(_LLM_PROVIDER_NOT_CONFIGURED_MESSAGE)
+E   intergrax.llm_adapters.registry.registration_contract.LLMProviderNotConfiguredError: LLM provider not explicitly configured: set ApplicationEnvironmentProfile.llm_profile or INTERGRAX_LLM_PROVIDER before materializing an adapter.
+_____ test_tl11_e2e_hung_list_catalog_client_timeout_not_definite_failure _____
+tests\unit\applications\test_mcp_catalog_e2e_hung_server_qualification.py:43: in test_tl11_e2e_hung_list_catalog_client_timeout_not_definite_failure
+    with tl11_catalog_qualification_subprocess("hang_list") as (base, proc):
+         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+C:\Users\XPS\AppData\Roaming\uv\python\cpython-3.12.11-windows-x86_64-none\Lib\contextlib.py:137: in __enter__
+    return next(self.gen)
+           ^^^^^^^^^^^^^^
+tests\fixtures\tool_life_x_tl11_catalog_subprocess_qualification.py:59: in tl11_catalog_qualification_subprocess
+    raise TimeoutError("tl11_catalog_qualification_subprocess_startup_timeout") from None
+E   TimeoutError: tl11_catalog_qualification_subprocess_startup_timeout
+_____________ test_tl11_e2e_hung_describe_catalog_client_timeout ______________
+tests\unit\applications\test_mcp_catalog_e2e_hung_server_qualification.py:56: in test_tl11_e2e_hung_describe_catalog_client_timeout
+    with pytest.raises(asyncio.TimeoutError):
+         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E   Failed: DID NOT RAISE <class 'TimeoutError'>
+_________________ test_tl11_e2e_server_crash_mid_catalog_list _________________
+tests\unit\applications\test_mcp_catalog_e2e_hung_server_qualification.py:79: in test_tl11_e2e_server_crash_mid_catalog_list
+    with tl11_catalog_qualification_subprocess("crash_list") as (base, proc):
+         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+C:\Users\XPS\AppData\Roaming\uv\python\cpython-3.12.11-windows-x86_64-none\Lib\contextlib.py:137: in __enter__
+    return next(self.gen)
+           ^^^^^^^^^^^^^^
+tests\fixtures\tool_life_x_tl11_catalog_subprocess_qualification.py:63: in tl11_catalog_qualification_subprocess
+    raise RuntimeError(f"tl11_catalog_qualification_subprocess_no_port_line stderr={err!r}")
+E   RuntimeError: tl11_catalog_qualification_subprocess_no_port_line stderr=''
+_______________ test_tl11_e2e_server_crash_mid_catalog_describe _______________
+tests\unit\applications\test_mcp_catalog_e2e_hung_server_qualification.py:92: in test_tl11_e2e_server_crash_mid_catalog_describe
+    with pytest.raises(Exception):
+         ^^^^^^^^^^^^^^^^^^^^^^^^
+E   Failed: DID NOT RAISE <class 'Exception'>
+____________ test_tl11_e2e_client_cancel_during_hung_catalog_list _____________
+tests\unit\applications\test_mcp_catalog_e2e_hung_server_qualification.py:118: in test_tl11_e2e_client_cancel_during_hung_catalog_list
+    asyncio.run(_cancelled())
+C:\Users\XPS\AppData\Roaming\uv\python\cpython-3.12.11-windows-x86_64-none\Lib\asyncio\runners.py:195: in run
+    return runner.run(main)
+           ^^^^^^^^^^^^^^^^
+C:\Users\XPS\AppData\Roaming\uv\python\cpython-3.12.11-windows-x86_64-none\Lib\asyncio\runners.py:118: in run
+    return self._loop.run_until_complete(task)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+C:\Users\XPS\AppData\Roaming\uv\python\cpython-3.12.11-windows-x86_64-none\Lib\asyncio\base_events.py:691: in run_until_complete
+    return future.result()
+           ^^^^^^^^^^^^^^^
+tests\unit\applications\test_mcp_catalog_e2e_hung_server_qualification.py:107: in _cancelled
+    with tl11_catalog_qualification_subprocess("hang_list") as (base, proc):
+         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+C:\Users\XPS\AppData\Roaming\uv\python\cpython-3.12.11-windows-x86_64-none\Lib\contextlib.py:137: in __enter__
+    return next(self.gen)
+           ^^^^^^^^^^^^^^
+tests\fixtures\tool_life_x_tl11_catalog_subprocess_qualification.py:59: in tl11_catalog_qualification_subprocess
+    raise TimeoutError("tl11_catalog_qualification_subprocess_startup_timeout") from None
+E   TimeoutError: tl11_catalog_qualification_subprocess_startup_timeout
+_________ test_tl11_e2e_reconnect_after_catalog_timeout_fresh_session _________
+tests\unit\applications\test_mcp_catalog_e2e_hung_server_qualification.py:124: in test_tl11_e2e_reconnect_after_catalog_timeout_fresh_session
+    with pytest.raises(asyncio.TimeoutError):
+         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E   Failed: DID NOT RAISE <class 'TimeoutError'>
+_____________ test_tl11_e2e_subprocess_cleanup_after_hung_catalog _____________
+tests\unit\applications\test_mcp_catalog_e2e_hung_server_qualification.py:139: in test_tl11_e2e_subprocess_cleanup_after_hung_catalog
+    with tl11_catalog_qualification_subprocess("hang_list") as (base, proc):
+         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+C:\Users\XPS\AppData\Roaming\uv\python\cpython-3.12.11-windows-x86_64-none\Lib\contextlib.py:137: in __enter__
+    return next(self.gen)
+           ^^^^^^^^^^^^^^
+tests\fixtures\tool_life_x_tl11_catalog_subprocess_qualification.py:59: in tl11_catalog_qualification_subprocess
+    raise TimeoutError("tl11_catalog_qualification_subprocess_startup_timeout") from None
+E   TimeoutError: tl11_catalog_qualification_subprocess_startup_timeout
+============================== warnings summary ===============================
+tests/unit/applications/test_mcp_catalog_e2e_hung_server_qualification.py: 10 warnings
+  C:\Users\XPS\AppData\Roaming\uv\python\cpython-3.12.11-windows-x86_64-none\Lib\contextlib.py:105: DeprecationWarning: Use `streamable_http_client` instead.
+    self.gen = func(*args, **kwds)
+
+-- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html
+=========================== short test summary info ===========================
+FAILED tests/unit/applications/test_mcp_surface_opt_in.py::test_http_only_factory_does_not_import_fastmcp
+FAILED tests/unit/applications/test_mcp_surface_opt_in.py::test_mcp_enabled_factory_raises_when_fastmcp_missing
+FAILED tests/unit/applications/test_mcp_surface_opt_in.py::test_scaffold_defaults_mcp_to_opt_in
+FAILED tests/unit/applications/test_mcp_surface_opt_in_runtime.py::test_mcp_enabled_factory_mounts_mcp_route_when_available
+FAILED tests/unit/applications/test_mcp_catalog_e2e_hung_server_qualification.py::test_tl11_e2e_hung_list_catalog_client_timeout_not_definite_failure
+FAILED tests/unit/applications/test_mcp_catalog_e2e_hung_server_qualification.py::test_tl11_e2e_hung_describe_catalog_client_timeout
+FAILED tests/unit/applications/test_mcp_catalog_e2e_hung_server_qualification.py::test_tl11_e2e_server_crash_mid_catalog_list
+FAILED tests/unit/applications/test_mcp_catalog_e2e_hung_server_qualification.py::test_tl11_e2e_server_crash_mid_catalog_describe
+FAILED tests/unit/applications/test_mcp_catalog_e2e_hung_server_qualification.py::test_tl11_e2e_client_cancel_during_hung_catalog_list
+FAILED tests/unit/applications/test_mcp_catalog_e2e_hung_server_qualification.py::test_tl11_e2e_reconnect_after_catalog_timeout_fresh_session
+FAILED tests/unit/applications/test_mcp_catalog_e2e_hung_server_qualification.py::test_tl11_e2e_subprocess_cleanup_after_hung_catalog
+11 failed, 18 passed, 10 warnings in 183.47s (0:03:03)
+exit=1
