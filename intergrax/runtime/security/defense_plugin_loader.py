@@ -12,14 +12,16 @@ from intergrax.core.plugins.admission import (
     DomainPluginLoadReport,
     PluginAdmissionReasonCode,
     PluginAdmissionRejection,
+    PluginProvenanceAdmission,
 )
 from intergrax.core.plugins.discovery import (
-    ConflictPolicy,
     EP_SECURITY_DEFENSES,
+    ConflictPolicy,
     EntryPointLoadResult,
     EntryPointSpec,
     LoadIsolation,
     instantiate_entry_point_target,
+    iter_entry_point_specs,
     load_entry_point_targets,
 )
 from intergrax.runtime.security.defense_plugin import SecurityDefensePlugin
@@ -36,12 +38,18 @@ ShippedIdOverride = Literal["error", "warn_override", "allow"]
 
 @dataclass(frozen=True, slots=True)
 class SecurityDefenseAdmissionPolicy:
-    """Security-owned EP admission. Qualification enforcement is a deferred host seam."""
+    """Security-owned EP admission.
+
+    ``provenance`` (PDC-D6-R016) enforces publisher attestation per entry point before the
+    target is imported, reusing the agent package trust mechanism. ``None`` keeps the
+    structural-only admission (lab); strict hosts pass a ``PluginProvenanceAdmission``.
+    """
 
     ep_name_conflict: ConflictPolicy = "error"
     plugin_id_conflict: ConflictPolicy = "error"
     shipped_id_override: ShippedIdOverride = "error"
     on_load_failure: LoadIsolation = "isolate"
+    provenance: PluginProvenanceAdmission | None = None
 
 
 # OAD-002: production default is fail-closed ``error``. Explicit opt-in restores
@@ -69,10 +77,17 @@ def load_security_defense_plugin_report(
     failed: list[EntryPointLoadResult] = []
     shipped_ids = frozenset(list_shipped_defense_bundle_ids())
 
+    skip_names: frozenset[str] = frozenset()
+    if policy.provenance is not None:
+        _admitted, provenance_rejections = policy.provenance.partition(iter_entry_point_specs(EP_SECURITY_DEFENSES))
+        rejected.extend(provenance_rejections)
+        skip_names = frozenset(item.spec.name for item in provenance_rejections)
+
     for result in load_entry_point_targets(
         EP_SECURITY_DEFENSES,
         on_conflict=policy.ep_name_conflict,
         on_load_failure=policy.on_load_failure,
+        skip_names=skip_names,
     ):
         if result.error is not None:
             failed.append(result)
@@ -85,10 +100,7 @@ def load_security_defense_plugin_report(
             failed.append(EntryPointLoadResult(spec=result.spec, error=exc))
             continue
         if not isinstance(plugin, SecurityDefensePlugin):
-            message = (
-                f"Security defense entry point {result.spec.name!r} "
-                "must return SecurityDefensePlugin"
-            )
+            message = f"Security defense entry point {result.spec.name!r} must return SecurityDefensePlugin"
             if policy.on_load_failure == "fail_fast":
                 raise TypeError(message)
             rejected.append(
@@ -121,18 +133,12 @@ def load_security_defense_plugin_report(
         )
         accepted_by_id[plugin.plugin_id] = result.spec
 
-    accepted = tuple(
-        sorted(accepted_by_id.values(), key=lambda spec: (spec.name, spec.value))
-    )
+    accepted = tuple(sorted(accepted_by_id.values(), key=lambda spec: (spec.name, spec.value)))
     return DomainPluginLoadReport(
         group=EP_SECURITY_DEFENSES,
         accepted=accepted,
-        rejected=tuple(
-            sorted(rejected, key=lambda item: (item.spec.name, item.spec.value))
-        ),
-        failed=tuple(
-            sorted(failed, key=lambda item: (item.spec.name, item.spec.value))
-        ),
+        rejected=tuple(sorted(rejected, key=lambda item: (item.spec.name, item.spec.value))),
+        failed=tuple(sorted(failed, key=lambda item: (item.spec.name, item.spec.value))),
         registered_count=len(accepted),
     )
 
@@ -193,10 +199,7 @@ def _shipped_id_decision(
             spec.name,
         )
         return None
-    reason = (
-        f"Security defense entry point {spec.name!r} collides with shipped "
-        f"plugin_id {plugin_id!r}"
-    )
+    reason = f"Security defense entry point {spec.name!r} collides with shipped plugin_id {plugin_id!r}"
     logger.warning(reason)
     return PluginAdmissionRejection(
         spec=spec,
@@ -226,16 +229,10 @@ def _plugin_id_conflict_decision(
         return None
     if occupation == "registered":
         reason_code = PluginAdmissionReasonCode.ALREADY_REGISTERED
-        reason = (
-            f"Security defense entry point {spec.name!r} collides with already "
-            f"registered plugin_id {plugin_id!r}"
-        )
+        reason = f"Security defense entry point {spec.name!r} collides with already registered plugin_id {plugin_id!r}"
     else:
         reason_code = PluginAdmissionReasonCode.PLUGIN_ID_COLLISION
-        reason = (
-            f"Security defense entry point {spec.name!r} collides with another "
-            f"entry point plugin_id {plugin_id!r}"
-        )
+        reason = f"Security defense entry point {spec.name!r} collides with another entry point plugin_id {plugin_id!r}"
     if mode == "skip":
         logger.warning("Skipping %s", reason)
         return PluginAdmissionRejection(

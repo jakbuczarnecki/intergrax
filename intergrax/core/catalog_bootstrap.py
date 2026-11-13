@@ -5,8 +5,8 @@
 
 from __future__ import annotations
 
+from collections.abc import Sequence
 from dataclasses import dataclass
-from typing import Sequence
 
 from intergrax.core.catalog_conflict import (
     catalog_registration_override,
@@ -17,6 +17,7 @@ from intergrax.core.plugins.admission import (
     DomainPluginLoadReport,
     PluginAdmissionReasonCode,
     PluginAdmissionRejection,
+    PluginProvenanceAdmission,
 )
 from intergrax.core.plugins.discovery import (
     EP_INTEGRATIONS,
@@ -25,6 +26,10 @@ from intergrax.core.plugins.discovery import (
     ConflictPolicy,
     EntryPointSpec,
     register_plugins_with_report,
+)
+from intergrax.core.security.security_configuration import (
+    PLUGIN_TRUST_POLICY_MISSING,
+    SecurityConfigurationError,
 )
 from intergrax.integrations.core.plugin import (
     IntegrationPlugin,
@@ -74,6 +79,8 @@ def bootstrap_catalogs(
     tool_plugins: Sequence[type] = (),
     skill_plugins: Sequence[type] = (),
     on_conflict: ConflictPolicy = "error",
+    plugin_provenance: PluginProvenanceAdmission | None = None,
+    require_plugin_provenance: bool = False,
 ) -> CatalogBootstrapResult:
     """
     Register Tier-0 catalogs for a Tier-3 application host.
@@ -82,6 +89,11 @@ def bootstrap_catalogs(
 
     Shipped registration is idempotent per process. Use ``integration_preset="core"``,
     or ``tool_bundle_ids`` / ``skill_bundle_ids``, for lazy catalog registration.
+
+    ``plugin_provenance`` enforces publisher attestation on entry-point plugins before they
+    are imported (PDC-D6-R016, reusing the agent package trust mechanism). Strict hosts set
+    ``require_plugin_provenance=True``: entry-point discovery without a provenance policy
+    then raises :class:`SecurityConfigurationError` instead of admitting unsigned plugins.
     """
     global _tier0_shipped_done
     if register_shipped:
@@ -108,16 +120,18 @@ def bootstrap_catalogs(
         _tier0_shipped_done = True
 
     ep_policy = entry_point_conflict_policy(on_conflict)
-    discover_tools = (
-        discover_tool_entry_points
-        if discover_tool_entry_points is not None
-        else discover_entry_points
-    )
-    discover_skills = (
-        discover_skill_entry_points
-        if discover_skill_entry_points is not None
-        else discover_entry_points
-    )
+    if (
+        require_plugin_provenance
+        and plugin_provenance is None
+        and (discover_entry_points or bool(discover_tool_entry_points) or bool(discover_skill_entry_points))
+    ):
+        raise SecurityConfigurationError(
+            item="plugin_provenance",
+            reason_code=PLUGIN_TRUST_POLICY_MISSING,
+            message="entry-point discovery on a strict host requires a PluginProvenanceAdmission",
+        )
+    discover_tools = discover_tool_entry_points if discover_tool_entry_points is not None else discover_entry_points
+    discover_skills = discover_skill_entry_points if discover_skill_entry_points is not None else discover_entry_points
 
     def _register_integration_entry_point(
         plugin_type: type,
@@ -134,9 +148,7 @@ def bootstrap_catalogs(
         try:
             manifest = integration_manifest_for_plugin(plugin_type)
         except (TypeError, AttributeError) as exc:
-            message = (
-                f"Integration entry point {spec.name!r} does not implement IntegrationPlugin: {exc}"
-            )
+            message = f"Integration entry point {spec.name!r} does not implement IntegrationPlugin: {exc}"
             return False, PluginAdmissionRejection(
                 spec=spec,
                 reason_code=PluginAdmissionReasonCode.INVALID_TARGET_TYPE,
@@ -228,9 +240,7 @@ def bootstrap_catalogs(
         try:
             manifest = tool_bundle_manifest_for_plugin(plugin_type)
         except (TypeError, AttributeError) as exc:
-            message = (
-                f"Tool entry point {spec.name!r} does not implement ToolPlugin: {exc}"
-            )
+            message = f"Tool entry point {spec.name!r} does not implement ToolPlugin: {exc}"
             return False, PluginAdmissionRejection(
                 spec=spec,
                 reason_code=PluginAdmissionReasonCode.INVALID_TARGET_TYPE,
@@ -297,9 +307,7 @@ def bootstrap_catalogs(
         try:
             manifest = skill_bundle_manifest_for_plugin(plugin_type)
         except (TypeError, AttributeError) as exc:
-            message = (
-                f"Skill entry point {spec.name!r} does not implement SkillPlugin: {exc}"
-            )
+            message = f"Skill entry point {spec.name!r} does not implement SkillPlugin: {exc}"
             return False, PluginAdmissionRejection(
                 spec=spec,
                 reason_code=PluginAdmissionReasonCode.INVALID_TARGET_TYPE,
@@ -344,6 +352,8 @@ def bootstrap_catalogs(
         _register_integration_entry_point,
         discover_entry_points=discover_entry_points,
         on_conflict=ep_policy,
+        provenance=plugin_provenance,
+        require_provenance=require_plugin_provenance,
     )
     integration_count = integration_explicit_count + integration_report.registered_count
     tool_explicit_count = 0
@@ -355,6 +365,8 @@ def bootstrap_catalogs(
         _register_tool_entry_point,
         discover_entry_points=discover_tools,
         on_conflict=ep_policy,
+        provenance=plugin_provenance,
+        require_provenance=require_plugin_provenance,
     )
     tool_count = tool_explicit_count + tool_report.registered_count
     skill_explicit_count = 0
@@ -366,6 +378,8 @@ def bootstrap_catalogs(
         _register_skill_entry_point,
         discover_entry_points=discover_skills,
         on_conflict=ep_policy,
+        provenance=plugin_provenance,
+        require_provenance=require_plugin_provenance,
     )
     skill_count = skill_explicit_count + skill_report.registered_count
     return CatalogBootstrapResult(

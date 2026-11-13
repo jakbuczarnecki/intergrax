@@ -6,6 +6,7 @@ from __future__ import annotations
 
 import base64
 import os
+from collections.abc import Mapping
 from dataclasses import dataclass
 from typing import Any, Literal
 
@@ -26,11 +27,20 @@ HOST_ATTESTATION_CONTEXT = "boundaryattest.host-attestation.v1"
 HOST_ATTESTATION_ENVELOPE_SCHEMA = "host_attestation_envelope.v1"
 BOUNDARY_EVENT_SCHEMA_ID = "execution_boundary_event.v1"
 SIGNATURE_ALGORITHM = "Ed25519"
+HOST_SIGNING_KEY_ENV = "INTERGRAX_EBE_HOST_SIGNING_KEY"
 
-# PoC/demo seed — pinned in partner_handoff/ebe9_golden_vector.v1.json (dev fallback only).
-POC_ATTESTATION_DEMO_SIGNING_SEED = bytes.fromhex(
-    "7d4b6e2f9a1c8053e6f2a4d8b0c7e9153f8a2d6c4b9e0175a3d8f2c6b4e190ab"
-)
+_POC_ATTESTATION_DEMO_SEED_HEX = "7d4b6e2f9a1c8053e6f2a4d8b0c7e9153f8a2d6c4b9e0175a3d8f2c6b4e190ab"
+
+
+def __getattr__(name: str) -> bytes:
+    """Lazy PoC/demo seed (pinned in partner_handoff/ebe9_golden_vector.v1.json).
+
+    ``POC_ATTESTATION_DEMO_SIGNING_SEED`` is not a module global: it is materialised only when a
+    lab or proof path asks for it, never at import time (PDC-D6-R027).
+    """
+    if name == "POC_ATTESTATION_DEMO_SIGNING_SEED":
+        return bytes.fromhex(_POC_ATTESTATION_DEMO_SEED_HEX)
+    raise AttributeError(f"module {__name__!r} has no attribute {name!r}")
 
 
 class HostAttestationEnvelopeV1(BaseModel):
@@ -146,11 +156,7 @@ def verify_host_attestation(
         raise ValueError("public_key_id mismatch in host-attestation statement")
 
     signature = base64.b64decode(envelope.signature.encode("ascii"))
-    key = (
-        public_key
-        if isinstance(public_key, Ed25519PublicKey)
-        else Ed25519PublicKey.from_public_bytes(public_key)
-    )
+    key = public_key if isinstance(public_key, Ed25519PublicKey) else Ed25519PublicKey.from_public_bytes(public_key)
     key.verify(signature, canonical_json_bytes(statement))
 
 
@@ -189,17 +195,36 @@ def resolve_host_attestation_sealer_from_env(
     *,
     enabled: bool,
     public_key_id: str,
+    environ: Mapping[str, str] | None = None,
+    lab_demo_seed_opt_in: bool = False,
 ) -> HostAttestationSealer | None:
+    """Resolve the host sealer from ``INTERGRAX_EBE_HOST_SIGNING_KEY``.
+
+    There is no implicit fallback: with the key unset the demo seed is used only when the
+    caller passes the named ``lab_demo_seed_opt_in=True`` (lab and proof paths); otherwise a
+    typed :class:`SecurityConfigurationError` is raised (PDC-D6-R027).
+    """
     if not enabled:
         return None
-    raw_key = (os.getenv("INTERGRAX_EBE_HOST_SIGNING_KEY") or "").strip()
+    source = environ if environ is not None else os.environ
+    raw_key = (source.get(HOST_SIGNING_KEY_ENV) or "").strip()
     if raw_key:
         return build_host_attestation_sealer(
             public_key_id=public_key_id,
             private_key_material=raw_key,
         )
-    # PoC/lab default — documented in partner_handoff/ebe9_golden_vector.v1.json
+    if not lab_demo_seed_opt_in:
+        from intergrax.core.security.security_configuration import (
+            DEMO_SEED_FORBIDDEN_IN_STRICT_PROFILE,
+            SecurityConfigurationError,
+        )
+
+        raise SecurityConfigurationError(
+            item="host_attestation",
+            reason_code=DEMO_SEED_FORBIDDEN_IN_STRICT_PROFILE,
+            message=f"host signing is enabled but {HOST_SIGNING_KEY_ENV} is not set and no lab opt-in was given",
+        )
     return build_host_attestation_sealer(
         public_key_id=public_key_id,
-        private_key_material=POC_ATTESTATION_DEMO_SIGNING_SEED,
+        private_key_material=__getattr__("POC_ATTESTATION_DEMO_SIGNING_SEED"),
     )
