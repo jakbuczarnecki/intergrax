@@ -9,8 +9,8 @@ Full task detail: campaign master plan (digest `5dd3c72e497c72764ccc0c08d3df2ddd
 | P2–P4 | MCP-P2..P4 | OD-MCP-01,02,04,05 | **Complete** (publication @ `7930c256f` — P4 terminal on `origin/development`; historical rows below are not current status) |
 | P5 | MCP-P5-01..07 | Security + execution qual | **Closed (scoped)** — `T-IGX-035-F` closed; G6 @ `c59892829`; OD 2026-11-11T16:24:00+01:00 |
 | P6 | MCP-P6-01..04 | DX / migration | **Closed (scoped)** — `T-IGX-035-G` closed; product @ `a695c9c83`; G6 `ACCEPT_SCOPED` + IIIC `PASS_SCOPED`; ACT-N11 re-bound (`92ad3555775649742299826e3680ec8ce703cc8a` / `19c617365cda85d88b474575e77b7d083739b529`); F-MCP-P6-GOV-001/002/003 preserved; OD `2026-11-12T07:35:55+01:00`; [`operator closure`](./MCP_SERVER_X_P6_OPERATOR_CLOSURE_RECORD.md) · [`terminal dossier`](./MCP_SERVER_X_P6_TERMINAL_DOSSIER.md) |
-| P7 | MCP-P7-01..09 | Qual package | **Ready** — entry `OD-MCP-P6-P7-01` (`2026-11-12T07:35:55+01:00`), effective at the `origin/development` SHA where the P6 terminal verification PASS (`P6_TERMINAL_VERIFIED`) is published (the PR that adds the report). See [`P7 handoff`](./MCP_SERVER_X_P7_HANDOFF.md) |
-| P8 | MCP-P8-01..10 | Independent audit + IIIC | **Blocked** — no self-cert |
+| P7 | MCP-P7-01..09 | Qual package | **Qualification package produced (scoped)** — `T-IGX-035-H`; `TEST_EXECUTION_SHA` `abbe1525450da77da6801b080619a600c20cd497`; MCP-ACC-01..20 evidence in the [package](./MCP_SERVER_X_P7_QUALIFICATION_PACKAGE.md); independent P8 audit pending |
+| P8 | MCP-P8-01..10 | Independent audit + IIIC | **Closed (scoped)** — audit `PASS_SCOPED` @ `eadb1c211`, IIAC `CERTIFIED_PASS_SCOPED` (`919e34b8f`), `P8_TERMINAL_VERIFIED`; decision `OD-MCP-P8-CLOSE-01`; [final closure report](./MCP_SERVER_X_FINAL_CLOSURE_REPORT.md) |
 
 ## P1 tasks (T-IGX-035-B)
 

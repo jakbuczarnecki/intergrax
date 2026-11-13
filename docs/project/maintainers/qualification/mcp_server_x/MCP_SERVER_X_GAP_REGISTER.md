@@ -60,3 +60,9 @@ REQ-MCP-DX-01 is the only row changed by P6 closure (scoped). All other rows abo
 ## Qualification
 
 Historical TOOL-LIFE-X / host MCP tests are **not** MCP-SERVER-X stage closure. Matrix **MCP-ACC-01..20** is mandatory (@ [`MCP_SERVER_X_QUALIFICATION_MATRIX.md`](./MCP_SERVER_X_QUALIFICATION_MATRIX.md)).
+
+## P7 residuals and findings
+
+Source: [P7 qualification package](./MCP_SERVER_X_P7_QUALIFICATION_PACKAGE.md) @ `abbe1525450da77da6801b080619a600c20cd497`. R-P7-01 = REQ-MCP-OBS-01 (dedicated trace id, operator decision DR-1, no product change in P7); R-P7-02 = 11 pre-existing failures in `test_mcp_surface_opt_in.py`, `test_mcp_surface_opt_in_runtime.py` and `test_mcp_catalog_e2e_hung_server_qualification.py` (core set of 11 at `c59892829`, `d5c1383fc` and the P7 head, observed 11-13 because TL11 subprocess startup timeouts vary; excluded, not counted as passing; marked `gate`/`no_ci`, so green PR CI says nothing about them); R-P7-03 = no result bound on custom tools; R-P7-04 = no server-side deadline / client deadline does not stop server work; R-P7-05 = three error-code enum members declared but not raised; R-P7-06 = `harness_auth=None` in composition; R-P8-01 = a host mounted without harness auth trusts the client-asserted tenant/user (fail-open identity, existing tested behaviour; product decision for the operator, outside the findings-only loop). Documentation findings D-P7-01 and D-P7-02 are fixed in the contract and protocol matrix.
+
+Disposition after the scoped closure ([OD-MCP-P8-RESIDUAL-01](./operator_decisions/OD-MCP-P8-RESIDUAL-01.md)): R-P8-01 stays an open scoped residual; its fail-closed composition fix is bundled into the PDC-X ACT-N11 activation at PDC-P7-00 (one independent delta audit and one two-phase rebind, own ticketed batch). OPEN-BP-01 is DEFERRED by the operator (`development` is not the critical branch; `main` is protected) and stays an accepted limitation; no ruleset change was made.
