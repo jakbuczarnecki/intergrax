@@ -6,14 +6,14 @@ Artifact taxonomy, mandatory digest, governed read and download port, durable st
 
 ## Plan digest
 
-Plan digest: f98b68477734ebe0aa89646231a1d95e0fcfe2fb743aacb6daab15bd9886f254
+Plan digest: 77b8b7c378185d4d38cb11ffe5eeb3904d5bfdf2d88557e2991b3c9982d5925e
 
 Canonical plan: [`governance/tickets/plans/PLAN_T-IGX-036-Q.md`](plans/PLAN_T-IGX-036-Q.md).
 
 ## Approved
 
-Approved: operator-delegate @ 2026-11-13T06:26:23+01:00
-Delegation: docs/project/maintainers/qualification/platform_domain_completeness/operator_decisions/DELEGATION-PDC-WAVE-3B.md@55d4bf8fe369ad6f5ac25821e854be01c8fe331d
+Approved: operator-delegate @ 2026-11-13T07:40:36+01:00
+Delegation: docs/project/maintainers/qualification/platform_domain_completeness/operator_decisions/DELEGATION-PDC-WAVE-3B.md@da923598b4b2f9fd1fe72ea6b38233868b343dd8
 
 ## Test contract
 
