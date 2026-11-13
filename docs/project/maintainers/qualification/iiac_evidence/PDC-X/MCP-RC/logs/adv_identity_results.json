@@ -1,0 +1,137 @@
+[
+ {
+  "case": "H1 default/no-auth run_agent",
+  "outcome": "PASS",
+  "detail": "MCP_PRINCIPAL_REQUIRED: authenticated harness principal required for MCP calls"
+ },
+ {
+  "case": "H1 default/no-auth list_agents",
+  "outcome": "PASS",
+  "detail": "MCP_PRINCIPAL_REQUIRED: authenticated harness principal required for MCP calls"
+ },
+ {
+  "case": "H1 default/no-auth list_catalog_tools",
+  "outcome": "FAIL",
+  "detail": "Unknown tool: 'list_catalog_tools'"
+ },
+ {
+  "case": "H1 default/no-auth describe_catalog_tool",
+  "outcome": "FAIL",
+  "detail": "Unknown tool: 'describe_catalog_tool'"
+ },
+ {
+  "case": "H1 no execute",
+  "outcome": "PASS",
+  "detail": "0"
+ },
+ {
+  "case": "H1b spoof headers + empty key",
+  "outcome": "PASS",
+  "detail": "MCP_PRINCIPAL_REQUIRED: authenticated harness principal required for MCP calls"
+ },
+ {
+  "case": "H2 after-coupling no key",
+  "outcome": "PASS",
+  "detail": "isError=True ran=False tenant=None user=None :: MCP_PRINCIPAL_REQUIRED: unauthorized: Invalid or missing harness credentials"
+ },
+ {
+  "case": "H2 after-coupling wrong key",
+  "outcome": "PASS",
+  "detail": "isError=True ran=False tenant=None user=None :: MCP_PRINCIPAL_REQUIRED: unauthorized: Invalid or missing harness credentials"
+ },
+ {
+  "case": "H2 after-coupling empty key",
+  "outcome": "PASS",
+  "detail": "isError=True ran=False tenant=None user=None :: MCP_PRINCIPAL_REQUIRED: unauthorized: Invalid or missing harness credentials"
+ },
+ {
+  "case": "H2 after-coupling bearer empty",
+  "outcome": "PASS",
+  "detail": "isError=True ran=False tenant=None user=None :: TRANSPORT:ExceptionGroup:unhandled errors in a TaskGroup (1 sub-exception)"
+ },
+ {
+  "case": "H2 after-coupling bearer wrong",
+  "outcome": "PASS",
+  "detail": "isError=True ran=False tenant=None user=None :: MCP_PRINCIPAL_REQUIRED: unauthorized: Invalid or missing harness credentials"
+ },
+ {
+  "case": "H2 after-coupling key + forged tenant",
+  "outcome": "PASS",
+  "detail": "isError=True ran=False tenant=None user=None :: MCP_TENANT_ASSERTION_CONFLICT: identity_conflict: tenant_id in request body conflicts with authenticated principal."
+ },
+ {
+  "case": "H2 after-coupling key + forged user (tenant matches)",
+  "outcome": "PASS",
+  "detail": "isError=True ran=False tenant=None user=None :: MCP_TENANT_ASSERTION_CONFLICT: identity_conflict: user_id in request body conflicts with authenticated principal."
+ },
+ {
+  "case": "H2 after-coupling key + matching tenant",
+  "outcome": "PASS",
+  "detail": "isError=False ran=True tenant=T1 user=harness-api-key :: {\"task_id\":\"task_fd73cccd1c04440ea07a02a5ed4c4e70\",\"run_id\":\"run_d1927ac3f79a498e98d6d6dfc87c9a22\",\"state\":\"completed\",\""
+ },
+ {
+  "case": "H2 after-coupling key + tenant padded variant",
+  "outcome": "PASS",
+  "detail": "isError=True ran=False tenant=None user=None :: MCP_TENANT_ASSERTION_CONFLICT: identity_conflict: tenant_id in request body conflicts with authenticated principal."
+ },
+ {
+  "case": "H2 after-coupling key + tenant case variant",
+  "outcome": "PASS",
+  "detail": "isError=True ran=False tenant=None user=None :: MCP_TENANT_ASSERTION_CONFLICT: identity_conflict: tenant_id in request body conflicts with authenticated principal."
+ },
+ {
+  "case": "H2 after-coupling key only",
+  "outcome": "PASS",
+  "detail": "isError=False ran=True tenant=T1 user=harness-api-key :: {\"task_id\":\"task_fd73cccd1c04440ea07a02a5ed4c4e70\",\"run_id\":\"run_d1927ac3f79a498e98d6d6dfc87c9a22\",\"state\":\"completed\",\""
+ },
+ {
+  "case": "H2b list_agents with key",
+  "outcome": "PASS",
+  "detail": ""
+ },
+ {
+  "case": "H2b list_agents no key",
+  "outcome": "PASS",
+  "detail": "MCP_PRINCIPAL_REQUIRED: unauthorized: Invalid or missing harness credentials"
+ },
+ {
+  "case": "H3 lan ip",
+  "outcome": "INFO",
+  "detail": "192.168.0.51"
+ },
+ {
+  "case": "H3 local_dev loopback admitted",
+  "outcome": "PASS",
+  "detail": "{\"task_id\":\"task_9fcf11cf5a7148f29b41581a4fd603d2\",\"run_id\":\"run_ee2f044416284882852893dc705ec8bd\",\"state\":\"completed\",\"answer\":\"ok\",\"agent_id\":null,\"metadata\":{},\"mcp_invocation_id\":\"mcpi-94861ca03afb47ec9ff3b6d8957e3a68\"}"
+ },
+ {
+  "case": "H3 local_dev via LAN ip refused",
+  "outcome": "PASS",
+  "detail": "MCP_PRINCIPAL_REQUIRED: local development identity mode refuses non-loopback clients"
+ },
+ {
+  "case": "H3 local_dev list_agents via LAN refused",
+  "outcome": "PASS",
+  "detail": "MCP_PRINCIPAL_REQUIRED: local development identity mode refuses non-loopback clients"
+ },
+ {
+  "case": "H3 local_dev via LAN + XFF spoof refused",
+  "outcome": "PASS",
+  "detail": "MCP_PRINCIPAL_REQUIRED: local development identity mode refuses non-loopback clients"
+ },
+ {
+  "case": "H3b local_dev + configured auth, no key (no downgrade)",
+  "outcome": "PASS",
+  "detail": "MCP_PRINCIPAL_REQUIRED: unauthorized: Invalid or missing harness credentials"
+ },
+ {
+  "case": "H3b local_dev + auth + key + forged tenant -> conflict",
+  "outcome": "PASS",
+  "detail": "MCP_TENANT_ASSERTION_CONFLICT: identity_conflict: tenant_id in request body conflicts with authenticated principal."
+ },
+ {
+  "case": "H4 custom host tool reachable w/o principal in HARNESS_BOUND (GAP if reachable)",
+  "outcome": "GAP",
+  "detail": "{\"tenant_data\":\"SECRET-1\"}"
+ }
+]

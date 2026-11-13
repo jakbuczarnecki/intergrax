@@ -1,0 +1,3 @@
+PASS   P3 default/no-auth list_catalog_tools :: MCP_PRINCIPAL_REQUIRED: authenticated harness principal required for MCP calls
+PASS   P3 default/no-auth describe_catalog_tool :: MCP_PRINCIPAL_REQUIRED: authenticated harness principal required for MCP calls
+INFO   P3 raw initialize {} :: status=200 body='event: message\r\ndata: {"jsonrpc":"2.0","id":1,"result":{"protocolVersion":"2025-03-26","capabilities":{"experimental":{},"logging":{},"prompts":{"listChanged":t'
