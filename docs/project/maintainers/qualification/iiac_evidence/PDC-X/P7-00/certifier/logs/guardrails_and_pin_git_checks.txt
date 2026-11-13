@@ -1,0 +1,30 @@
+# guardrail and pin checks (read-only git), PDC-P7-00 certifier preflight
+HEAD ae5623efbdfd69ddf4ba67f82861ccad130c9b33
+## product diff 19d552bee..ae5623efb (expect 0): 0
+## non-docs diff 19d552bee..ae5623efb (expect none):
+(end)
+## 23 MCP-RC paths byte-identical to b0e19bf61 at head:
+yes
+## RC tests + mutation harness byte-identical 1b5f26f24..ae5623efb:
+yes
+## product diff fa6ff1c96 vs its audited product tree 962c1d670 (expect 0): 0
+## sensitive paths changed by mcp-rc on top of merged development 3dd991336 (expect none):
+(end)
+## sensitive paths changed by development between base 6a6279a49 and 3dd991336 (expect none):
+(end)
+## activation record vs base 6a6279a49 (expect empty):
+## deleted or renamed paths pin..head (expect none):
+(end)
+## material governance paths changed audit-exec..head (expect none):
+(end)
+## origin/development drift
+development a156cbbd5ff521dc7e99dd02ab6bebd4ca234a73
+ahead of pinned baseline 3dd991336: 2
+product paths changed 3dd991336..development:
+intergrax/platform/enterprise_audit/data/changed_since_impact_map.v1.json
+intergrax/platform/enterprise_audit/impact_map.py
+tests changed:
+tests/qualification/pdc_x/p6_impact/__init__.py
+tests/qualification/pdc_x/p6_impact/test_p6_impact_map_coverage.py
+tests/qualification/pdc_x/xd/test_xd_12_evol_ent_audit.py
+## ACT-N11 union count at head: 156 (see data/act_n11_union.json)
