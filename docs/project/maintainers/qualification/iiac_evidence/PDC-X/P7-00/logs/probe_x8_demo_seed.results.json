@@ -1,0 +1,12 @@
+{
+  "lab_defaults": {
+    "application_profile": "ApplicationProfile.LAB",
+    "execution_mode": "ExecutionMode.BALANCED",
+    "buffer_with_sealer": true
+  },
+  "product_defaults": {
+    "application_profile": "ApplicationProfile.PRODUCT",
+    "execution_mode": "ExecutionMode.STRICT",
+    "refused": "demo_seed_forbidden_in_strict_profile"
+  }
+}

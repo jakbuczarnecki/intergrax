@@ -1,0 +1,31 @@
+.........................F....FF...F.F...................F.............. [ 58%]
+...........F..........FF..F.....F......F.F.........                      [100%]
+================================== FAILURES ===================================
+C:\Users\XPS\AppData\Local\Temp\claude\1fa23f5617d9789c\d4f91791-b817-4ac2-8e4b-b547b4885240\scratchpad\pin_checkout\tests\unit\docs\test_public_readme_contract.py:723: ValueError: README visual outside approved ownership roots: 'docs/project/assets/public/autonomous-organization/autonomous-organization-hero-light.png' (allowed: 'docs/project/assets/public/readme/', 'applications/local_workspace_application/docs/assets/')
+C:\Users\XPS\AppData\Local\Temp\claude\1fa23f5617d9789c\d4f91791-b817-4ac2-8e4b-b547b4885240\scratchpad\pin_checkout\tests\unit\docs\test_public_readme_contract.py:1042: AssertionError: Missing maturity boundary phrase: source-available
+C:\Users\XPS\AppData\Local\Temp\claude\1fa23f5617d9789c\d4f91791-b817-4ac2-8e4b-b547b4885240\scratchpad\pin_checkout\tests\unit\docs\test_public_readme_contract.py:1049: AssertionError: assert 'IMPLEMENTED CORE — coverage / qualification ongoing' in '# Intergrax\n\nIntergrax helps teams build specialized AI applications where policy, authority,\nand evidence can det...equire **separate explicit written\npermission**. [LICENSE](LICENSE) is the controlling text for Licensor materials.\n'
+C:\Users\XPS\AppData\Local\Temp\claude\1fa23f5617d9789c\d4f91791-b817-4ac2-8e4b-b547b4885240\scratchpad\pin_checkout\tests\unit\docs\test_public_readme_contract.py:1122: AssertionError: Broken relative link target: docs/project/architecture/CRITIC_VERIFICATION.md
+C:\Users\XPS\AppData\Local\Temp\claude\1fa23f5617d9789c\d4f91791-b817-4ac2-8e4b-b547b4885240\scratchpad\pin_checkout\tests\unit\docs\test_public_readme_contract.py:1134: AssertionError: README has 462 lines (max 450)
+C:\Users\XPS\AppData\Local\Temp\claude\1fa23f5617d9789c\d4f91791-b817-4ac2-8e4b-b547b4885240\scratchpad\pin_checkout\tests\unit\runtime\architecture\test_audit_ideal_depth_gate.py:250: NameError: name 'create_adapter' is not defined
+C:\Users\XPS\AppData\Local\Temp\claude\1fa23f5617d9789c\d4f91791-b817-4ac2-8e4b-b547b4885240\scratchpad\pin_checkout\intergrax\integrations\registry\catalog.py:104: ValueError: Integration slug 'ollama' is already registered.
+C:\Users\XPS\AppData\Local\Temp\claude\1fa23f5617d9789c\d4f91791-b817-4ac2-8e4b-b547b4885240\scratchpad\pin_checkout\intergrax\integrations\registry\catalog.py:104: ValueError: Integration slug 'redis' is already registered.
+C:\Users\XPS\AppData\Local\Temp\claude\1fa23f5617d9789c\d4f91791-b817-4ac2-8e4b-b547b4885240\scratchpad\pin_checkout\intergrax\applications\_shared\control_plane_composition.py:50: intergrax.applications._shared.control_plane_composition.ControlPlaneCompositionError: production capacity wiring requires ControlPlaneMutationAuthorizationBoundary
+C:\Users\XPS\AppData\Local\Temp\claude\1fa23f5617d9789c\d4f91791-b817-4ac2-8e4b-b547b4885240\scratchpad\pin_checkout\intergrax\integrations\registry\catalog.py:104: ValueError: Integration slug 'redis' is already registered.
+C:\Users\XPS\AppData\Local\Temp\claude\1fa23f5617d9789c\d4f91791-b817-4ac2-8e4b-b547b4885240\scratchpad\pin_checkout\tests\unit\runtime\architecture\test_audit_ideal_depth_gate.py:863: assert False is True
+C:\Users\XPS\AppData\Local\Temp\claude\1fa23f5617d9789c\d4f91791-b817-4ac2-8e4b-b547b4885240\scratchpad\pin_checkout\tests\qualification\ebh_5\test_ebh_5_proof_integrity_gates.py:48: AssertionError: assert {'agent.effec...omation', ...} == frozenset({'a...isting', ...})
+C:\Users\XPS\AppData\Local\Temp\claude\1fa23f5617d9789c\d4f91791-b817-4ac2-8e4b-b547b4885240\scratchpad\pin_checkout\tests\qualification\ebh_5\test_ebh_5_proof_integrity_gates.py:56: AssertionError: assert 56 == 5
+=========================== short test summary info ===========================
+FAILED tests/unit/docs/test_public_readme_contract.py::test_readme_controlled_multi_visual_contract
+FAILED tests/unit/docs/test_public_readme_contract.py::test_public_maturity_boundary
+FAILED tests/unit/docs/test_public_readme_contract.py::test_governed_execution_claim_boundary
+FAILED tests/unit/docs/test_public_readme_contract.py::test_relative_links - ...
+FAILED tests/unit/docs/test_public_readme_contract.py::test_brevity - Asserti...
+FAILED tests/unit/runtime/architecture/test_audit_ideal_depth_gate.py::test_audit_ideal_29_1_live_vision_profile
+FAILED tests/unit/runtime/architecture/test_audit_ideal_depth_gate.py::test_audit_ideal_20_2_policy_change_impact_cli
+FAILED tests/unit/runtime/architecture/test_audit_ideal_depth_gate.py::test_audit_ideal_1_2_architecture_health
+FAILED tests/unit/runtime/architecture/test_audit_ideal_depth_gate.py::test_audit_ideal_30_4_production_capacity
+FAILED tests/unit/runtime/architecture/test_audit_ideal_depth_gate.py::test_audit_ideal_13_1_integration_marketplace
+FAILED tests/unit/runtime/architecture/test_audit_ideal_depth_gate.py::test_audit_ideal_28_3_lkw_hybrid_daemon
+FAILED tests/qualification/ebh_5/test_ebh_5_proof_integrity_gates.py::test_ebh5_proof_inventory_matrix_qualified_parity
+FAILED tests/qualification/ebh_5/test_ebh_5_proof_integrity_gates.py::test_ebh5_proof_registry_covers_five_qualified_concerns
+13 failed, 110 passed in 105.19s (0:01:45)
