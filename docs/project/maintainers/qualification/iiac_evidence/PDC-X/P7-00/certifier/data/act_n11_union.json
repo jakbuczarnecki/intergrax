@@ -1,0 +1,43 @@
+{
+ "prefixes": [
+  "intergrax/",
+  "agents/",
+  "applications/"
+ ],
+ "gate_paths_at_fa6ff1c96": 153,
+ "gate_paths_at_19d552bee": 156,
+ "gate_paths_at_head_ae5623efb": 156,
+ "union_fa6_and_19d": 156,
+ "head_equals_19d": true,
+ "delta_fa6_to_19d": [
+  "intergrax/agent_distribution/admin_service.py",
+  "intergrax/agent_distribution/runtime_revision.py",
+  "intergrax/applications/_shared/llm_resolver.py",
+  "intergrax/contracts/agent_contract_meta.py",
+  "intergrax/memory/default_memory_control_plane.py",
+  "intergrax/runtime/agent_governance/pipeline.py"
+ ],
+ "delta_count": 6,
+ "delta_already_in_153": [
+  "intergrax/agent_distribution/admin_service.py",
+  "intergrax/memory/default_memory_control_plane.py",
+  "intergrax/runtime/agent_governance/pipeline.py"
+ ],
+ "delta_new": [
+  "intergrax/agent_distribution/runtime_revision.py",
+  "intergrax/applications/_shared/llm_resolver.py",
+  "intergrax/contracts/agent_contract_meta.py"
+ ],
+ "scope1_equals_gate_at_fa6": true,
+ "scope1_count": 153,
+ "mcp_rc_paths_gate_count": 23,
+ "mcp_rc_subset_of_153": true,
+ "pdc_x_equals_153_minus_mcp_rc": true,
+ "pdc_x_count": 130,
+ "scope2_delta_equals_git": true,
+ "scope2_delta_new_equals": true,
+ "mcp_rc_byte_identical_b0e_vs_19d": true,
+ "mcp_rc_byte_identical_b0e_vs_head": true,
+ "product_diff_19d_vs_head": 0,
+ "product_diff_fa6_vs_962": 0
+}
