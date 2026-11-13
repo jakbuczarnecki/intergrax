@@ -48,6 +48,15 @@ The author confirmed that re-parsing the file and re-canonicalizing it gives ide
 
 `GEN_SET.json` is the only sealed artefact. `GEN_SET.md` is a convenience copy; if the two differ, the JSON wins.
 
+**Actual protection (stated honestly):** the files are outside the repository, in a shared scratch folder on the operator's machine. They are not encrypted and are readable by any session or process running on that machine, including implementer sessions. The seal therefore proves integrity (through the digest), not confidentiality.
+
+**Residual risk:** an implementer, architect or orchestrator session could read the problem text before `SFX-P12-04` by accident or by search. The no-tuning rule below is a process control, not a technical one; any exposure must be recorded as described there.
+
+**Requirements:**
+
+- The reveal procedure must verify the SHA-256 of `GEN_SET.json` against the digest above before any use of the content (the same check as in the reveal rule), and must stop on a mismatch.
+- Before the `SFX-P12-04` reveal, the files must be moved to an access-restricted location chosen by the operator (a folder no implementer session uses), and the new location recorded; the digest must be re-verified after the move.
+
 ## Reveal rule
 
 - The GEN set content stays outside the repository and is revealed only at unit **`SFX-P12-04`**.

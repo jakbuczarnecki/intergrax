@@ -17,7 +17,7 @@ Use, modification, or distribution without written permission is prohibited.
 
 | Round | When | Subject | Scenario | Participants | Purpose |
 |---|---|---|---|---|---|
-| R0 | P3 (SFX-P3-01), before W3 | Static prototype Artifact (link pending, lane L3b) | REF-1 text walk-through | 5 | Validate journeys and IA; record TTFS **proxy** baseline; find critical concept defects before any Studio code |
+| R0 | P3 (SFX-P3-01), before W3 | Static prototype Artifact (see SFX_UX_DESIGN §10 (prototype Artifact)) | REF-1 text walk-through | 5 | Validate journeys and IA; record TTFS **proxy** baseline; find critical concept defects before any Studio code |
 | R1 | P12 (SFX-P12-05) | Studio MVP + IDE toolkit v1 at a recorded SHA | REF-1 Invoice automation | 5 | First end-to-end measurement |
 | R2 | P12, after R1 fixes | Same, new SHA | REF-2 API-to-API workflow | 5 | Engineer-heavy flows, drift and retries |
 | R3 | P12, after R2 fixes | Same, new SHA | REF-3 RAG decision support + HITL | 5 | Approval and evidence flows |

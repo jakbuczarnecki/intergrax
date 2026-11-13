@@ -32,16 +32,16 @@ Capture the business problem in the user's words and close the gaps a scenario s
 2. **Describe.** Draft `business_problem_statement.v1.json`:
    - `problem_text_untrusted`: the user's text verbatim (NFC only);
    - `language` (BCP 47, for example `en` or `pl`), `domain`, `business_objective`, `data_classification` (`PUBLIC` | `INTERNAL` | `CONFIDENTIAL` | `RESTRICTED`), `stakeholders`, `constraints`, `success_criteria`;
-   - `source_door`: the schema has no `IDE` value; use `CLI` (the offline local-file door, PC-3) and note this under "Schema deviations" in `open_questions.md`.
-3. Build a gap list against the specification schema's required fields (actors, inputs, outputs, business rules, decision points, integrations, non-functional targets, acceptance criteria). Mark each `answered`, `partial` or `missing`.
+   - `source_door`: `IDE` (the IDE toolkit door).
+3. Build a gap list over the 8 groups of the specification schema: actors, inputs, outputs, business rules, decision points, integrations, non-functional targets, acceptance criteria. Mark each `answered`, `partial` or `missing`. When any business rule needs an LLM, note that a model-provider integration is also needed (`sfx-specify` adds it).
 4. Rank the gaps: blocking first, then risk-bearing (approvals, personal data, money movement, external writes), then the rest.
 5. Ask **one question at a time**. With each question, say in one line which gap it closes and why it matters. Offer typical answers when useful and always allow "I don't know".
-6. Record each exchange as a `turns` entry: `turn_index` (0, 1, 2 ...; ordered array), `question_id`, `question_text`, `answer_text_untrusted` (verbatim), `answered_by` (the human principal placeholder), `answer_kind` (`ANSWERED` | `SKIPPED` | `INFERRED_CONFIRMED` | `INFERRED_UNCONFIRMED`).
-7. Record facts in `inferred_facts` (`fact_id`, `statement`, `source` `ANSWERED` | `INFERRED` | `DOCUMENT`, `confidence_bp` as an integer 0..10000). Sort by `fact_id`. Ask the user to confirm every `INFERRED` fact.
+6. Record each exchange as a `turns` entry: `turn_index` (0, 1, 2 ...; ordered array), `question_id`, `question_text` (the question, then a final sentence `Why: <gap closed and why it matters>`; the schema has no separate field for the reason), `answer_text_untrusted` (verbatim), `answered_by` (the human principal placeholder), `answer_kind` (`ANSWERED` | `SKIPPED` | `INFERRED_CONFIRMED` | `INFERRED_UNCONFIRMED`). `SKIPPED` means the user declined or did not know: `answer_text_untrusted` is the user's words verbatim (for example "I don't know") or `null` if there was no reply, and `answered_by` is the human principal if the user replied, else `null`.
+7. Record facts in `inferred_facts` (`fact_id`, `statement`, `source` `ANSWERED` | `INFERRED` | `DOCUMENT`, `confidence_bp` as an integer 0..10000). Sort by `fact_id`. Confidence values: `ANSWERED` and confirmed facts 10000; `DOCUMENT` 9000; `INFERRED` (not yet confirmed) a value from 1 to 9999 that you state in the statement's basis, default 5000. Ask the user to confirm every `INFERRED` fact; once confirmed, record a turn with `answer_kind` `INFERRED_CONFIRMED` and set the fact to `source` `ANSWERED` and `confidence_bp` 10000.
 8. For integrations, record the system name and kind of access only. If the user offers a credential, refuse it and say that a `secret_ref` is set up in the Configure step.
-9. Stop when every blocking gap is answered or recorded, or when the user asks to stop.
-10. Write `discovery_record.v1.json`: `problem_statement_ref` (reference to the problem statement draft), `turns`, `inferred_facts`, `open_questions` (one string per question, starting with its id, for example `Q-01: ...`), `completeness_bp` (answered required fields / all required fields × 10000, rounded down), `turn_recording_ref` `null` (v0 does not record LLM turns for replay).
-11. Write `open_questions.md`: per question, id `Q-<nn>`, the gap, why it matters, who can answer it, and `blocking: yes|no`. Add a "Schema deviations" section.
+9. Stop when every `draft`-blocking gap is answered or recorded, or when the user asks to stop.
+10. Write `discovery_record.v1.json`: `problem_statement_ref` (reference to the problem statement draft), `turns`, `inferred_facts`, `open_questions` (one string per question, starting with its id, for example `Q-01: ...`), `completeness_bp` (`floor(10000 * answered_groups / 8)` over the 8 gap groups of step 3; only `answered` counts, `partial` counts 0), `turn_recording_ref` `null` (v0 does not record LLM turns for replay).
+11. Write `open_questions.md`: per question, id `Q-<nn>`, the gap, why it matters, who can answer it, and `blocking_for: draft|build|none` (rule, Blocking). Add a "Schema deviations" section.
 12. Play back a summary of the understanding in five lines or fewer and record corrections as new turns.
 
 ## Outputs
@@ -58,7 +58,7 @@ Read both schemas and check each draft: `required` fields, no extra field, `sche
 
 ## Handoff
 
-- No blocking open question: `sfx-specify`.
+- No open question with `blocking_for: draft`: `sfx-specify`.
 - Blocking questions remain: back to the user (through `sfx-session` if it is running).
 - Optional review: `sfx-critic` as a separate subagent.
 

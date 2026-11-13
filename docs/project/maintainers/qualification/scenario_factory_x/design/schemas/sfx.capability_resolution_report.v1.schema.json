@@ -42,6 +42,7 @@
     },
     "version": {
       "type": "integer",
+      "maximum": 9007199254740991,
       "minimum": 1,
       "description": "SFX logical version; one CW WorkArtifactVersion per value."
     },
@@ -66,10 +67,15 @@
       ],
       "properties": {
         "inventory_version": {
-          "$ref": "#/$defs/id"
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 256,
+          "pattern": "^[A-Za-z0-9][A-Za-z0-9._:+/-]*$",
+          "description": "Value of the top-level inventory_version string of the capability inventory file, copied verbatim (for example sfx-capability-inventory.v1+r1). Same as the opaque id pattern plus the + character."
         },
         "inventory_digest": {
-          "$ref": "#/$defs/digest"
+          "$ref": "#/$defs/digest",
+          "description": "sha256: followed by 64 zeros until SFX tooling computes the inventory digest."
         }
       },
       "description": "Closed-world inventory (reuse of CON-R-07 ClosedWorldInventory)."
@@ -98,7 +104,8 @@
               {
                 "type": "null"
               }
-            ]
+            ],
+            "description": "Inventory row id (SFX-CAP-nn). For NEW_REQUIRED hosted scenario logic: the hosting row. Null when no row matches."
           },
           "resolution": {
             "enum": [
@@ -122,7 +129,8 @@
               {
                 "type": "null"
               }
-            ]
+            ],
+            "description": "Owner path with :line suffix, extracted from the inventory row code_path by the sfx-resolve rule. Null only when capability_id is null or the row has no owner path; a matched but UNRESOLVED row keeps its owner path."
           }
         }
       },
@@ -130,6 +138,7 @@
     },
     "unresolved_count": {
       "type": "integer",
+      "maximum": 9007199254740991,
       "minimum": 0
     }
   },
@@ -198,6 +207,7 @@
         },
         "version": {
           "type": "integer",
+          "maximum": 9007199254740991,
           "minimum": 1
         },
         "canonical_digest": {

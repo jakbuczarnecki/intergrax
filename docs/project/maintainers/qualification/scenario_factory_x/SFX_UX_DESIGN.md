@@ -350,7 +350,9 @@ This section defines no component library, layout engine or architecture. The de
 
 ## 10. Prototype
 
-Prototype Artifact (private claude.ai artifact, static clickable prototype, example data only, version 1 published 2026-11-12): https://claude.ai/artifact/R5fc5PLDQ768fSTcNbwZYJ. Source kept outside the product paths in the gitignored `.tmp/session/sfx-w2/prototype/`; prototype-only controls (persona switch, jump-to-state) are labelled in the page.
+Prototype Artifact (private claude.ai artifact, static clickable prototype, example data only, version 1 published 2026-11-12, republished as version 2 with figures relabelled as illustrative example values): https://claude.ai/artifact/R5fc5PLDQ768fSTcNbwZYJ. Source kept outside the product paths in the gitignored `.tmp/session/sfx-w2/prototype/`; prototype-only controls (persona switch, jump-to-state) are labelled in the page.
+
+All figures shown in the prototype (accuracy, decision counts, cost, latency, ROI inputs) are illustrative example values, labelled as such on the Run and Present screens; they are not measured results and must not be quoted as such.
 
 The prototype is a static mock-up outside repository product paths (SFX-P3-01). It is the subject of usability round 0 (see [`SFX_USABILITY_PROTOCOL.md`](SFX_USABILITY_PROTOCOL.md)).
 

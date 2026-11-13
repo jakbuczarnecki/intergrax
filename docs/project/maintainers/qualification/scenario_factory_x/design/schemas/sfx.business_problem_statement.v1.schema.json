@@ -44,6 +44,7 @@
     },
     "version": {
       "type": "integer",
+      "maximum": 9007199254740991,
       "minimum": 1,
       "description": "SFX logical version; one CW WorkArtifactVersion per value."
     },
@@ -140,8 +141,10 @@
       "enum": [
         "STUDIO",
         "CLI",
-        "MCP"
-      ]
+        "MCP",
+        "IDE"
+      ],
+      "description": "Door the problem arrived through. IDE is the SFX IDE toolkit (skills in agent-env/skills)."
     }
   },
   "$defs": {
@@ -209,6 +212,7 @@
         },
         "version": {
           "type": "integer",
+          "maximum": 9007199254740991,
           "minimum": 1
         },
         "canonical_digest": {

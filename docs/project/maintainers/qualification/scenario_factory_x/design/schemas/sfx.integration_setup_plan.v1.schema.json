@@ -40,6 +40,7 @@
     },
     "version": {
       "type": "integer",
+      "maximum": 9007199254740991,
       "minimum": 1,
       "description": "SFX logical version; one CW WorkArtifactVersion per value."
     },
@@ -100,7 +101,9 @@
                 "string",
                 "integer",
                 "boolean"
-              ]
+              ],
+              "minimum": -9007199254740991,
+              "maximum": 9007199254740991
             }
           },
           "secret_refs": {
@@ -220,6 +223,7 @@
         },
         "version": {
           "type": "integer",
+          "maximum": 9007199254740991,
           "minimum": 1
         },
         "canonical_digest": {
