@@ -31,13 +31,13 @@ Design how the scenario will be proven in a later L2 sandbox: intended behaviour
 ## Procedure
 
 1. Envelope per the rule's draft conventions. `blueprint_ref` references the current blueprint draft. `authority_level`: `L2` (the level the cases will need later) or `L1`; never higher.
-2. Use the specification's `criterion_id` values as requirement ids. Every criterion gets at least one `POSITIVE` and one `NEGATIVE` case, or is listed as uncovered in the notes.
+2. Use the specification's `criterion_id` values as requirement ids. Every criterion gets at least one `POSITIVE` and one negative case (a `NEGATIVE` case or a `SECURITY` case; both count as negative coverage), or is listed as uncovered in the notes. **Unresolved needs:** a case whose subject (the behaviour it checks) depends on an `UNRESOLVED` requirement (resolution report, `IQ` id) is allowed only if its `expected_outcome` starts `CONDITIONAL on IQ-<nn>[, IQ-<nn>]:` and the notes mark it `runner: unresolved`; it is never planned as runnable. A dependency that every case shares (for example the input format) is stated once in the notes instead. Do not write a case that assumes a capability the report does not resolve without that marker.
 3. Write `test_cases`, each with `test_id`, `kind`, `description`, `fixture_ref` (a dataset id from the notes, or `null`), `expected_outcome` and `acceptance_criterion_ids`:
    - `POSITIVE`: the main flow and each meaningful variant;
    - `NEGATIVE`: invalid or missing input, rule violations, rejected approvals, stub errors (timeouts, rate limits, schema drift, partial failure), each with its fail-closed outcome;
    - `SECURITY`: at least one case per adversarial class, with the class first in `description`: prompt injection (direct and indirect), tenant crossover, secret leakage (canary `secret_ref` names, never real values), budget exhaustion (tokens, cost, time, steps on every LLM step), retry (idempotent writes, bounded retries, dead-lettering, no duplicate side effects);
    - `PERFORMANCE`: the latency and volume targets from `non_functional`;
-   - `EVAL`: LLM-judged quality, only with a rubric in the notes.
+   - `EVAL`: quality measured over a labelled dataset: deterministic scoring against labels (for example field accuracy against a truth set), or LLM-judged scoring only with a rubric in the notes. Targets are not fixed here.
 4. `eval_suites`: `suite_id`, `metric` (an id), `target_ref` matching `^OD-SFX-07(:...)?$`. Targets are not fixed here; they reference OD-SFX-07.
 5. Write `test_plan_notes.md` (companion note): per case the oracle (deterministic where possible; LLM-judged only with rubric and reason) and the runner capability with its owner path from the resolution report, or `runner: unresolved`; dataset needs per `fixture_ref` (shape, size, synthetic generation method, provenance, labels; no real personal data, no production extracts); coverage (criteria without a case, adversarial classes without a case); "Schema deviations".
 6. Tell the user the coverage and the gaps. State that no test has run and no result exists.

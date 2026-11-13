@@ -37,15 +37,15 @@ Design the scenario on paper. First write a `business_scenario_specification` th
 
 **Specification phase**
 
-1. Read the discovery record and open questions. If a blocking open question remains, stop and hand back; do not design around it by assumption.
-2. Write the specification using only the `business_scenario_specification.v1` fields: `title`, `objective`, `actors` (`kind` `HUMAN` | `SYSTEM` | `AGENT`), `inputs` (with `data_classification`), `outputs`, `business_rules` (with `deterministic`), `decision_points` (with `requires_human_approval`), `integrations_required` (`direction`), `non_functional` (`latency_p95_target_ms`, `volume_per_day`), `acceptance_criteria` (with `measured_by`), `field_provenance` (per top-level field: `ANSWERED`, `INFERRED`, `DEFAULT`, `MANUAL_EDIT`) and `authority_level_requested`. The schema is closed and has no fields for triggers, risks, budgets, residency or success metrics: success metrics become `acceptance_criteria`, and triggers, risks and other analysis go into a companion note, not into the contract. Every item traces to the discovery record entry it comes from. If the spawning skill's field list differs from this text, the skill's list and the schema win.
+1. Read the discovery record and open questions. If an open question with `blocking_for: draft` remains, stop and hand back; do not design around it by assumption.
+2. Write the specification (field-level rules, including `INT-LLM`, null targets and `field_provenance`, are in `agent-env/skills/sfx-specify/SKILL.md`) using only the `business_scenario_specification.v1` fields: `title`, `objective`, `actors` (`kind` `HUMAN` | `SYSTEM` | `AGENT`), `inputs` (with `data_classification`), `outputs`, `business_rules` (with `deterministic`), `decision_points` (with `requires_human_approval`), `integrations_required` (`direction`), `non_functional` (`latency_p95_target_ms`, `volume_per_day`), `acceptance_criteria` (with `measured_by`), `field_provenance` (per top-level field: `ANSWERED`, `INFERRED`, `DEFAULT`, `MANUAL_EDIT`) and `authority_level_requested`. The schema is closed and has no fields for triggers, risks, budgets, residency or success metrics: success metrics become `acceptance_criteria`, and triggers, risks and other analysis go into a companion note, not into the contract. Every item traces to the discovery record entry it comes from. If the spawning skill's field list differs from this text, the skill's list and the schema win.
 3. Split each business rule into **deterministic** (expressible as validation, lookup, threshold, routing or state transition) or **needs LLM** (classification of free text, extraction, summarization, drafting). Default to deterministic; a rule is "needs LLM" only with a one-line justification.
-4. Mark every human approval point explicitly. These become decision bindings at run time; the specification only names them.
+4. Mark every human approval point explicitly. These become decision bindings at run time; the specification only names them. When any rule is "needs LLM", add the model-provider integration `INT-LLM` to `integrations_required`.
 5. Write the specification draft and hand off to `sfx-capability-resolver`.
 
 **Blueprint phase**
 
-6. Read the specification and the capability resolution report. Use only capabilities the report resolved, with their owner paths and REUSE classes. Do not add a capability the report does not contain; send any new need back to the resolver.
+6. Read the specification and the capability resolution report. Use only capabilities the report resolved, with their owner paths and REUSE classes. Do not add a capability the report does not contain; send any new need back to the resolver. An `UNRESOLVED` requirement gets no binding, step, tool or agent; list it in the notes with its `IQ` id.
 7. Compose the blueprint: steps, the capability binding of each step, deterministic steps first, LLM steps with their prompt purpose and guardrails, approval steps, data flow, tenant scope, the integration placeholders (`secret_ref` only), and the budgets each LLM step may consume.
 8. Set the intended execution profile to L2 sandbox (LAB, fixture adapters, egress deny) as a proposal. Never propose an L3 or production profile.
 9. Check the blueprint against the no-duplicate rule: no new engine, registry, store, state machine, approval store or governance authority; no change to `ApplicationManifest` (use the catalog sidecar pattern instead).
@@ -79,6 +79,8 @@ The `sfx.*.v1` schemas are closed (`additionalProperties: false`), so contract d
 - [ ] Every LLM step has a one-line justification, a budget and a guardrail note; every other rule is deterministic.
 - [ ] Every approval point is named and placed in the blueprint.
 - [ ] Every blueprint binding cites a capability from the resolution report, with owner path and REUSE class.
+- [ ] No binding, tool or step exists for an `UNRESOLVED` requirement; each is listed with its `IQ` id.
+- [ ] The model provider appears in the integration placeholders whenever an agent or LLM step exists.
 - [ ] Execution profile is L2 sandbox at most; no production profile, no live endpoints.
 - [ ] Integrations carry `secret_ref` placeholders only.
 - [ ] No duplicate mechanism and no manifest change.
