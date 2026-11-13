@@ -11,8 +11,8 @@ compaction helper), the store is the durable SQLite artifact store, the read pat
 port over the real governance pipeline, and TTL deletion runs as real ``WorkerRuntime`` background
 work. Fakes: the LLM adapter (external provider) only.
 
-The canonical composition-root checks at the end are strict xfails that pin the open D8 wiring
-findings (see the FINDING reasons).
+The canonical composition-root checks at the end pin the D8 wiring (spill in the tool path, governed port and
+retention sweep at the worker root, artifact store on the SQLite persistence root).
 """
 
 from __future__ import annotations

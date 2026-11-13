@@ -76,7 +76,7 @@ def test_ebh5_proof_execution_sha_is_valid_at_run_time() -> None:
 
 
 def test_ebh5_proof_sqlite_closed_world_accountability() -> None:
-    assert SQLITE_TOUCHPOINT_COUNT == 38
+    assert SQLITE_TOUCHPOINT_COUNT == 39
     assert_closed_world_sqlite_accountability()
 
 

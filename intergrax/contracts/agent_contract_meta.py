@@ -1,12 +1,13 @@
 # © Artur Czarnecki. All rights reserved.
 # Intergrax framework – proprietary and confidential.
+# ruff: noqa: I001, UP006, UP035, UP042, UP045  (legacy style in this hotspot; pre-commit lints whole files)
 
 from __future__ import annotations
 
 from enum import Enum
 from typing import Any, Dict, List, Optional
 
-from pydantic import BaseModel, ConfigDict, Field
+from pydantic import BaseModel, ConfigDict, Field, field_validator
 
 from intergrax.contracts.agent_run_enums import CognitivePattern
 from intergrax.contracts.memory_scope import MemoryScope
@@ -63,6 +64,10 @@ class AgentContract(BaseModel):
         description="Resolved tool allow-list (skills + extra_tools); set by AgentRegistry.register.",
     )
     required_adapters: List[str] = Field(default_factory=list)
+    required_llm_features: list[str] = Field(
+        default_factory=list,
+        description="Model features the agent needs; checked when the LLM adapter is bound (fail closed).",
+    )
     execution_mode: AgentExecutionMode = AgentExecutionMode.ASYNC
     max_steps: Optional[int] = 10
     max_duration_seconds: Optional[float] = None
@@ -119,3 +124,13 @@ class AgentContract(BaseModel):
         default=None,
         description="Optional CE required/excluded sources and step_kind (CE-5.1).",
     )
+
+    @field_validator("required_llm_features")
+    @classmethod
+    def _normalize_required_llm_features(cls, value: list[str]) -> list[str]:
+        # Lazy import: ``intergrax.llm_adapters`` imports back into ``intergrax.contracts`` at package init.
+        if not value:
+            return value
+        from intergrax.llm_adapters.contracts.capabilities import LLMFeature
+
+        return [LLMFeature(item) for item in value]

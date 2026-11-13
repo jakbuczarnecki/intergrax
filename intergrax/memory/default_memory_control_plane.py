@@ -210,6 +210,11 @@ class UserProfileManagerMemoryCapability:
 
     _manager: UserProfileManager
 
+    @property
+    def bound_tenant_id(self) -> str:
+        """The tenant the wrapped ``UserProfileManager`` (and its profile store) is bound to."""
+        return self._manager._tenant_id
+
     async def add_memory_entry(
         self,
         identity: RequestIdentity,
@@ -371,6 +376,15 @@ class DefaultMemoryControlPlane:
     security_governance: MemorySecurityGovernanceService | None = None
     diagnostic_emitter: MemoryDiagnosticEmitter = field(default_factory=default_memory_diagnostic_emitter)
 
+    def _assert_identity_tenant_is_bound_tenant(self, identity: RequestIdentity) -> None:
+        """A tenant-bound user-profile plane serves only identities of that tenant (PDC-D6-R019)."""
+        capability = self.user_profile
+        if (
+            isinstance(capability, UserProfileManagerMemoryCapability)
+            and identity.tenant_id != capability.bound_tenant_id
+        ):
+            raise MemoryControlAccessDenied("identity tenant_id differs from the tenant this memory plane is bound to")
+
     async def remember(
         self,
         identity: RequestIdentity,
@@ -379,6 +393,7 @@ class DefaultMemoryControlPlane:
     ) -> MemoryControlRememberResult:
         _assert_scope_authorized(identity, scope)
         if scope.kind is MemoryControlPlaneScope.USER:
+            self._assert_identity_tenant_is_bound_tenant(identity)
             return await self._remember_user(identity, scope, request)
         if scope.kind is MemoryControlPlaneScope.TASK:
             return await self._remember_task(scope, request)
@@ -392,6 +407,7 @@ class DefaultMemoryControlPlane:
     ) -> MemoryControlRecallResult:
         _assert_scope_authorized(identity, scope)
         if scope.kind is MemoryControlPlaneScope.USER:
+            self._assert_identity_tenant_is_bound_tenant(identity)
             return await self._recall_user(identity, scope, request)
         if scope.kind is MemoryControlPlaneScope.SESSION:
             return await self._recall_session(scope, request)
@@ -406,6 +422,7 @@ class DefaultMemoryControlPlane:
         _assert_scope_authorized(identity, scope)
         if scope.kind is not MemoryControlPlaneScope.USER:
             raise MemoryControlUnsupportedScope(f"unsupported scope for supersession apply: {scope.kind.value}")
+        self._assert_identity_tenant_is_bound_tenant(identity)
         if self.user_profile is None:
             raise MemoryControlUnsupportedScope("user profile memory capability not configured")
         user_id = scope.user_id or ""
@@ -444,6 +461,7 @@ class DefaultMemoryControlPlane:
     ) -> MemoryControlForgetResult:
         _assert_scope_authorized(identity, scope)
         if scope.kind is MemoryControlPlaneScope.USER:
+            self._assert_identity_tenant_is_bound_tenant(identity)
             return await self._forget_user(identity, scope, request)
         if scope.kind is MemoryControlPlaneScope.TASK:
             return await self._forget_task(scope, request)
@@ -458,6 +476,7 @@ class DefaultMemoryControlPlane:
         _assert_scope_authorized(identity, scope)
         if scope.kind is not MemoryControlPlaneScope.USER:
             raise MemoryControlUnsupportedScope(f"reconcile supported only for USER scope, got {scope.kind.value}")
+        self._assert_identity_tenant_is_bound_tenant(identity)
         if self.user_profile is None:
             raise MemoryControlUnsupportedScope("user profile memory capability not configured")
         timer = MemoryOperationTimer()

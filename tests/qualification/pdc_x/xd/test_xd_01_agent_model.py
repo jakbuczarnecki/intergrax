@@ -7,9 +7,9 @@ stores (install, bind, enable, build and activate a revision); the model side is
 resolution path (``RuntimeEnvironmentProfile.llm_profile`` -> ``resolve_llm_adapter`` -> the real
 ``LLMAdapterRegistry``). The providers are the only fakes (no network, deterministic).
 
-Two clauses of the scenario have no product implementation yet and are pinned as strict xfail
-findings (FINDING-9, FINDING-10): the activated revision does not pin the profile/model, and no
-composition step checks the agent's model needs before the first call.
+Two clauses of the scenario were recorded as strict xfail findings (FINDING-9, FINDING-10) and are
+closed by B-P6-M (T-IGX-036-U): the activated revision pins the profile/model, and the adapter
+resolver checks the agent's model needs before the first call.
 """
 
 from __future__ import annotations
@@ -180,18 +180,6 @@ def test_xd01_capability_mismatch_fails_closed_before_any_provider_call() -> Non
     assert [e.is_final for e in rich.stream_with_tools(USER, _TOOLS)] == [True]
 
 
-@pytest.mark.xfail(
-    strict=True,
-    reason=(
-        "FINDING-9 (D1 x D3): an activated agent revision does not pin the model profile. RuntimeRevision "
-        "(intergrax/agent_distribution/runtime_revision.py) and the activation request carry package digests, "
-        "a graph digest and a lock digest but no LLM profile/model reference or digest, so the model an agent "
-        "runs on is whatever RuntimeEnvironmentProfile.llm_profile says at call time and a config edit changes "
-        "behavior without changing the revision identity. Smallest repair: add an llm_profile_digest to "
-        "RuntimeRevision (set at build_application_revision from the environment profile) and have activation "
-        "verify it against the resolved profile."
-    ),
-)
 def test_xd01_the_activated_revision_pins_the_model_profile() -> None:
     pinned = [
         name
@@ -201,17 +189,6 @@ def test_xd01_the_activated_revision_pins_the_model_profile() -> None:
     assert pinned, "RuntimeRevision has no model/profile pin field"
 
 
-@pytest.mark.xfail(
-    strict=True,
-    reason=(
-        "FINDING-10 (D1 x D3): an agent's model needs are never checked at composition time. "
-        "LLMAdapterRegistry.require_capabilities has no production caller and AgentContract "
-        "(intergrax/contracts/agent_contract_meta.py) has no field for required model features, so a capability "
-        "mismatch from a provider swap surfaces only when the unsupported call is attempted, not when the model "
-        "is resolved for the agent. Smallest repair: add required_llm_features to AgentContract and call "
-        "LLMAdapterRegistry.require_capabilities in the resolver that binds an adapter to an agent."
-    ),
-)
 def test_xd01_required_model_capabilities_are_checked_at_composition_time() -> None:
     callers: list[str] = []
     for root in ("intergrax", "agents", "applications"):
