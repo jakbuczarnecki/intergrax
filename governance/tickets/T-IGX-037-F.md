@@ -41,7 +41,7 @@ Worktree `_wt/intergrax/t-igx-037-f` (detached at `364b3892544535e0969c28cfdcc0d
 | --- | --- |
 | Baseline | `origin/development` @ `364b3892544535e0969c28cfdcc0d308d565af3f` (PR #502). The plan assumed `dbc6102be`; the only change since is a PDC-X documentation merge. Stage states are unchanged. |
 | Deviation from the closeout plan | The scope record is `OD-SFX-21`, not `OD-SFX-17`, because OD-SFX-17..20 are PROPOSED in `SFX_GAP_ANALYSIS.md`. |
-| Visual check | See "Visual check result" below. Failed: visual publication blocked. |
+| Visual check | Round 1 failed (see "Visual check result"). Round 2 on package v2: V-2 and V-9 open, see "Visual check, round 2". |
 
 ## Visual check result (C4, implementer pre-check)
 
@@ -79,4 +79,25 @@ Reviewer: a separate read-only agent session on commit `8a937642f`. Verdict: **F
 | LOW: "before the platform architecture freeze" wording | Removed from the overview. |
 
 Campaign state: `SFX_PRE_FREEZE_DOCS_CLOSED` is **not reached**. C6 (SHA pin, closure record) did not run because nothing is merged. `SFX_PRE_IMPLEMENTATION_READY` is not granted and `PRE_IMPLEMENTATION_READY_SHA` stays `_unset_`.
+
+## Visual check, round 2 (package `scenario_factory_assets_v2.zip`)
+
+The six PNG files were extracted into an empty scratch folder and copied over the old ones under the same names (`docs/project/assets/public/scenario-factory/`). Their pixels were not edited. All six (light and dark, 1600 x 750) were viewed. The canonical mark was compared at 4x with `readme/intergrax-three-entry-points-light.png`.
+
+| # | Result | Evidence |
+| --- | --- | --- |
+| V-1 | **Closed** | The wordmark reads "INTERGRAX" and the platform labels read "Intergrax" in all six images. |
+| V-2 | **OPEN - finding, not approved** | The canonical mark is an outlined, interlocking X-lattice of rounded strokes in a blue to purple gradient, with a light-weight, letter-spaced wordmark. The v2 mark is a flat, solid, faceted chevron X in teal and navy (dark: cyan and blue) with a bold wordmark. It is a different shape and palette. The package notes call it a geometric approximation, not the canonical artwork. The files stay unapproved until the canonical artwork is substituted by the image author. |
+| V-3 | Closed | Journey carries the badge "Planned architecture - not yet implemented". |
+| V-4 | Closed | Hero badge no longer names the freeze. |
+| V-5 | Closed | The factory box reads "Discovery / Specification / Composition / Handoff / Test planning" (ownership) and "Design / Composition / Test planning" (hero). |
+| V-6 | Closed | Hero output reads "Checked scenario"; the journey step reads "Check evidence". |
+| V-7 | Closed | All six carry "Planned architecture - not yet implemented" and the footer "CONCEPT - NOT A SHIPPED PRODUCT". |
+| V-8 | Closed | No edge artifact or stripe is visible. |
+| V-9 (new, MEDIUM) | **OPEN** | All six show the tagline "ENTERPRISE AI PLATFORM" under the logo. The public positioning contract defines the category descriptor as "a reusable foundation for governed AI applications" and does not use "Enterprise AI Platform". Remove the tagline or use the contract wording. |
+| V-10 (LOW) | Note | Hero boxes have large empty areas. The journey step "Capability" is a shortened "Capability Resolution". The overview already says the picture compresses the journey. No change required. |
+
+Light and dark sets are complete (six files). Alt texts and captions in README, overview and the three full-size pages are unchanged and consistent with the new images. Local links of README and the overview were checked by the link-integrity tests.
+
+Campaign state: images are committed on the candidate branch so the candidate is self-consistent, but **publication stays blocked** on V-2 and V-9. No PR is opened. The ticket still has no `Approved:` line (no delegation covers T-IGX-037-F); an operator or a commissioned delegate must write it before a PR.
 
