@@ -51,3 +51,12 @@ The implementer session and its implementer subagents never write `Approved:` li
 - **Effect on the signature:** the plan digest of T-IGX-036-T changed, so the earlier `Approved:` line no longer applies. The ticket returns to `plan_pending`.
 - **Delegation:** the delegate session may re-sign **T-IGX-036-T only**, under the same checks as above, additionally confirming that the two added paths are the only change and that no assertion is weakened.
 - **Not delegated** stays as listed above.
+
+## Amendment 4 — two test fixtures, item 15 moved to T-IGX-036-V
+
+- **Basis:** the standing Operator authorization 4 in `DELEGATION-PDC-STANDING.md` and the delegation scope above; the implementer report for items 8-17 (PR 520, merged as `87f4d4f41`). The Operator separately decided, in chat, in English rendering: **"Yes, a separate ticket"** (original wording in Polish: "Tak, osobny ticket") for the ENT-AUDIT impact map (XD finding 8), which therefore leaves this batch.
+- **Extension** (two test paths, neither under a hotspot): `tests/unit/memory/test_mem_ent10_memory_security_governance.py` (the fixture `_plane()` is aligned with the tenant under which the tests act, `tenant_id=_TENANT`, so the repair of XD finding 6 can land; no assertion is changed) and `tests/qualification/ebh_5/test_ebh_5_proof_integrity_gates.py` (the pinned touchpoint count 38 becomes 39 after the one registry entry of item 14).
+- **Removal:** `intergrax/platform/enterprise_audit/data/changed_since_impact_map.v1.json`, `intergrax/platform/enterprise_audit/data/enterprise_audit_check_manifest.v1.json` and `tests/qualification/pdc_x/xd/test_xd_12_evol_ent_audit.py` leave the write set of this batch; they move to T-IGX-036-V under `DELEGATION-PDC-P6-IMPACT.md`. The manifest JSON is no longer written at all.
+- **Effect on the signature:** the plan digest of T-IGX-036-T changed, so the earlier `Approved:` line no longer applies. The ticket returns to `plan_pending`.
+- **Delegation:** the delegate session may re-sign **T-IGX-036-T only**, under the same checks as above, additionally confirming that the two added paths are the only additions, that the removed paths are written by no other batch except T-IGX-036-V, and that no assertion is weakened.
+- **Not delegated** stays as listed above.
