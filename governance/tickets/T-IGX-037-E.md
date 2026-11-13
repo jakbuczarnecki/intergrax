@@ -74,3 +74,16 @@ PR 487 was merged (`c323dbd41`) before its independent review finished. The revi
 | Test contract | Short-path worktree `sfx-fix`: `tests/unit/governance` + `tests/qualification/roadmap_replay_x`: 199 passed, 1 skipped, 5 failed. The 5 failures are the pre-existing `roadmap_replay_x` group C tests (identical on an unchanged roadmap; PDC_REG_DIAGNOSIS). The 8 `Filename too long` failures of the long-named worktree do not occur here (closes R-W1-10). `pdc_x_inventory --check`, `sync_agent_env --check`, `check_cursor_token_setup` and `igx_gov ticket` pass; `check_harness_adr.py` reports 24 pre-existing index gaps and none about ADR-SFX. Log: `.tmp/session/sfx-fix/contract.log` |
 | Line endings | Roadmap and ADR index were LF at the base and had become CRLF (whole-file diffs); 21 SFX files converted back to LF. Roadmap diff against the pre-SFX base is again 88 added / 13 removed lines; all five plan digests are unchanged (the digest normalises line endings) |
 | Approvals | No `Approved:` line or plan changed; plan files are untouched, so no re-approval is needed |
+
+## Toolkit fix round 1 (follow-up PR)
+
+The REF-1 dry run (`SFX_IDE_TOOLKIT_V0_WALKTHROUGH.md`) produced 26 findings against the skills and schemas. This follow-up fixes the 6 MAJOR findings (WT-01, 02, 03, 04, 22, 23) and 14 of 15 MINOR findings. The 5 INFO findings are unchanged and WT-12 is documented as a v0 workaround in the rule.
+
+| Item | State |
+| --- | --- |
+| Scope | `agent-env/` rule, skills and persona briefs, four schema drafts, and the walkthrough record. The generator, role registry, plan files and the inventory shape are untouched, so no re-approval is needed |
+| Schema changes | `IDE` added to `source_door`; the report schema `inventory_version` pattern now allows `+` (the only loosening, because the verbatim inventory string `sfx-capability-inventory.v1+r1` failed the old pattern); I-JSON bounds added to the integration-plan `settings` integers. Flagged for the design owner |
+| Verification | By reading plus a JSON check: 17 schemas valid, `$id` equals file name, `additionalProperties:false`, all integers bounded. **Not** a new dry run and **not** the operator walkthrough, which is still pending |
+| Effect on the example | REF-1 reuse ratio changes from 8275 to 4482 bp, partly because the r1 inventory now classes Collaborative Work dependants as REQUALIFICATION_REQUIRED, not only because of the WT-04 rule |
+| Open | Conventions needing design-owner confirmation: the UCA gap-class table and the `INT-LLM` naming. The skills and ADR-SFX-002 remain proposals |
+

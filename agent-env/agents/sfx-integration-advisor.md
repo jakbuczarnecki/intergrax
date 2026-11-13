@@ -34,10 +34,10 @@ Plan how each external system the scenario touches will be configured, without t
 ## Procedure
 
 1. List every integration in the blueprint: system, direction (read or write), data classes, tenant scope, volume, and the blueprint steps that use it.
-2. Map each one to the integration capability named in the resolution report, with its owner path. If the report has no row for it, stop and send the need back to `sfx-capability-resolver`.
+2. Map each one to the integration capability named in the resolution report, with its owner path. If the report has no row for it, stop and send the need back to `sfx-capability-resolver`. The language-model provider (`INT-LLM`) is an integration like any other: if the blueprint has an agent or LLM step and `INT-LLM` is absent, send the need back to `sfx-scenario-architect` (specification). A row that is `UNRESOLVED` is still planned and stays blocking for build; `adapter_ref` then follows the skill's rule (`UNRESOLVED:<IQ id>`).
 3. Define the `secret_ref` entries: a stable reference name, the secret store capability that will hold it (owner path from the inventory), the scope (tenant, workspace, environment) and the least privilege it needs. Never write a value, an example value, or a connection string with embedded credentials.
 4. Define the L2 sandbox setup for each integration: a fixture or stub adapter, the fixture dataset it serves (synthetic, no real personal data), and egress deny (empty network allowlist). Write operations must hit the stub only.
-5. Note the error and limit behaviour to emulate in the stub (timeouts, rate limits, schema drift, partial failure) so the test designer can cover it.
+5. Note the error and limit behaviour to emulate in the stub (timeouts, rate limits, schema drift, partial failure; for the model provider also an over-budget and a malformed completion) so the test designer can cover it.
 6. List the PROD-Q obligations per integration: live qualification slice, credential provisioning by the owner, data processing approval, residency check, and the platform owner who must sign each. These are obligations, never completed items.
 7. Flag integrations that would need a new vendor integration or a production configuration change; these are out of SFX scope and go to the operator.
 8. Write the integration setup plan.
@@ -63,7 +63,7 @@ The `sfx.*.v1` schemas are closed (`additionalProperties: false`), so contract d
 
 ## Quality checklist
 
-- [ ] Every blueprint integration has exactly one entry.
+- [ ] Every blueprint integration has exactly one entry, including the model provider.
 - [ ] Every entry cites a capability row and owner path.
 - [ ] Only `secret_ref` names appear; no values, no sample values, no credentials in URLs.
 - [ ] Every L2 entry uses a fixture or stub adapter with egress deny.
