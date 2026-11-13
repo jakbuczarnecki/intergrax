@@ -5,10 +5,11 @@
 from __future__ import annotations
 
 import json
+import os
+from collections.abc import Iterable, Sequence
 from dataclasses import dataclass
 from enum import Enum
-import os
-from typing import Any, Dict, Iterable, List, Optional, Protocol, Sequence, Union
+from typing import Any, Protocol
 
 import boto3
 
@@ -24,46 +25,46 @@ from intergrax.llm_adapters._shared.bedrock_converse import (
     converse_stream_supported,
     converse_supported,
     extract_converse_text,
+    extract_converse_tool_calls,
     iter_converse_stream_text,
     parse_converse_stream_tool_event,
 )
 from intergrax.llm_adapters._shared.messages import split_system_messages
-from intergrax.llm_adapters._shared.bedrock_converse import extract_converse_tool_calls
+from intergrax.llm_adapters._shared.openai_tool_call_interop import tool_calls_from_openai_dicts
 from intergrax.llm_adapters._shared.tool_schema import (
     openai_tools_to_anthropic,
     openai_tools_to_bedrock_converse,
 )
-from intergrax.llm_adapters.contracts.adapter_response import LLMAdapterResponse
-from intergrax.llm_adapters.contracts.finish_reason import LLMFinishReason
-from intergrax.llm_adapters.contracts.llm_adapter import LLMAdapter
 from intergrax.llm_adapters.base.base_llm_adapter import BaseLLMAdapter
+from intergrax.llm_adapters.contracts.adapter_response import LLMAdapterResponse
+from intergrax.llm_adapters.contracts.capabilities import LLMFeature
+from intergrax.llm_adapters.contracts.finish_reason import LLMFinishReason
 from intergrax.llm_adapters.contracts.llm_provider import LLMProvider
+from intergrax.llm_adapters.contracts.native_tool_choice import NativeToolChoice
 from intergrax.llm_adapters.contracts.provider_extensions import LLMProviderExtensions
 from intergrax.llm_adapters.contracts.stream_event import LLMStreamEvent
 from intergrax.llm_adapters.contracts.token_usage import LLMTokenUsage
-from intergrax.llm_adapters._shared.openai_tool_call_interop import tool_calls_from_openai_dicts
-from intergrax.llm_adapters.contracts.native_tool_choice import NativeToolChoice
-from intergrax.llm_adapters.registry.context_window import init_adapter_context_window_tokens
+from intergrax.llm_adapters.registry.context_window import (
+    init_adapter_context_window_tokens,
+    resolve_context_window_tokens,
+)
 
 
 class BedrockRuntimeClient(Protocol):
     """Minimal Bedrock Runtime client surface used by this adapter."""
 
-    def invoke_model(self, **kwargs: Any) -> Any:
-        ...
+    def invoke_model(self, **kwargs: Any) -> Any: ...
 
-    def invoke_model_with_response_stream(self, **kwargs: Any) -> Any:
-        ...
+    def invoke_model_with_response_stream(self, **kwargs: Any) -> Any: ...
 
-    def converse(self, **kwargs: Any) -> Any:
-        ...
+    def converse(self, **kwargs: Any) -> Any: ...
 
-    def converse_stream(self, **kwargs: Any) -> Any:
-        ...
+    def converse_stream(self, **kwargs: Any) -> Any: ...
 
 
-class BedrockModelFamily(str, Enum):
+class BedrockModelFamily(str, Enum):  # noqa: UP042 - str-mixin kept for compatibility
     """Model family inferred from Bedrock modelId prefix."""
+
     ANTHROPIC = "anthropic"
     META = "meta"
     MISTRAL = "mistral"
@@ -86,9 +87,9 @@ class BedrockNativeCodec(Protocol):
         *,
         system_text: str,
         convo: Sequence[ChatMessage],
-        temperature: Optional[float],
-        max_tokens: Optional[int],
-        defaults: Dict,
+        temperature: float | None,
+        max_tokens: int | None,
+        defaults: dict,
         model_id: str,
     ) -> dict: ...
 
@@ -101,6 +102,7 @@ class BedrockNativeCodec(Protocol):
 # Codecs (official formats)
 # -----------------------------
 
+
 class AnthropicClaudeCodec:
     """
     Anthropic Claude Messages API format on Bedrock InvokeModel.
@@ -111,11 +113,11 @@ class AnthropicClaudeCodec:
         *,
         system_text: str,
         convo: Sequence[ChatMessage],
-        temperature: Optional[float],
-        max_tokens: Optional[int],
-        defaults: Dict,
+        temperature: float | None,
+        max_tokens: int | None,
+        defaults: dict,
         model_id: str,
-        tools: Optional[List[Dict[str, Any]]] = None,
+        tools: list[dict[str, Any]] | None = None,
         tool_choice: NativeToolChoice | None = None,
     ) -> dict:
         temp = temperature if temperature is not None else defaults.get("temperature")
@@ -137,8 +139,8 @@ class AnthropicClaudeCodec:
 
         return body
 
-    def extract_tool_calls(self, parsed: dict) -> List[Dict[str, Any]]:
-        out: List[Dict[str, Any]] = []
+    def extract_tool_calls(self, parsed: dict) -> list[dict[str, Any]]:
+        out: list[dict[str, Any]] = []
         for block in parsed.get("content") or []:
             if not isinstance(block, dict) or block.get("type") != "tool_use":
                 continue
@@ -159,7 +161,7 @@ class AnthropicClaudeCodec:
         content = parsed.get("content")
         if not isinstance(content, list):
             return ""
-        parts: List[str] = []
+        parts: list[str] = []
         for block in content:
             if isinstance(block, dict) and block.get("type") == "text":
                 txt = block.get("text")
@@ -198,9 +200,9 @@ class MetaLlamaCodec:
         *,
         system_text: str,
         convo: Sequence[ChatMessage],
-        temperature: Optional[float],
-        max_tokens: Optional[int],
-        defaults: Dict,
+        temperature: float | None,
+        max_tokens: int | None,
+        defaults: dict,
         model_id: str,
     ) -> dict:
         # Llama uses "max_gen_len" instead of max_tokens.
@@ -227,7 +229,7 @@ class MetaLlamaCodec:
 
     def _format_llama_prompt(self, *, system_text: str, convo: Sequence[ChatMessage]) -> str:
         # Official prompt template uses special tokens and headers. :contentReference[oaicite:5]{index=5}
-        parts: List[str] = ["<|begin_of_text|>"]
+        parts: list[str] = ["<|begin_of_text|>"]
         if system_text:
             parts.append("<|start_header_id|>system<|end_header_id|>\n")
             parts.append(system_text.strip())
@@ -257,9 +259,9 @@ class MistralCodec:
         *,
         system_text: str,
         convo: Sequence[ChatMessage],
-        temperature: Optional[float],
-        max_tokens: Optional[int],
-        defaults: Dict,
+        temperature: float | None,
+        max_tokens: int | None,
+        defaults: dict,
         model_id: str,
     ) -> dict:
         temp = temperature if temperature is not None else defaults.get("temperature", 0.5)
@@ -286,7 +288,7 @@ class MistralCodec:
     def _format_mistral_inst(self, *, system_text: str, convo: Sequence[ChatMessage]) -> str:
         # AWS example uses "<s>[INST] ... [/INST]" wrapper. :contentReference[oaicite:8]{index=8}
         # Keep it deterministic: flatten to a single instruction block.
-        lines: List[str] = []
+        lines: list[str] = []
         if system_text:
             lines.append(system_text.strip())
 
@@ -317,9 +319,9 @@ class AmazonTitanTextCodec:
         *,
         system_text: str,
         convo: Sequence[ChatMessage],
-        temperature: Optional[float],
-        max_tokens: Optional[int],
-        defaults: Dict,
+        temperature: float | None,
+        max_tokens: int | None,
+        defaults: dict,
         model_id: str,
     ) -> dict:
         temp = temperature if temperature is not None else defaults.get("temperature", 0.7)
@@ -350,13 +352,13 @@ class AmazonTitanTextCodec:
         return out if isinstance(out, str) else ""
 
     def extract_stream_text(self, payload: dict) -> str:
-        # For Titan streaming chunks, docs show "outputText" in the decoded bytes. :contentReference[oaicite:11]{index=11}
+        # For Titan streaming chunks, docs show "outputText" in the decoded bytes.
         out = payload.get("outputText")
         return out if isinstance(out, str) else ""
 
     def _format_titan(self, *, system_text: str, convo: Sequence[ChatMessage]) -> str:
         # Minimal deterministic transcript.
-        lines: List[str] = []
+        lines: list[str] = []
         if system_text:
             lines.append(f"System: {system_text.strip()}")
 
@@ -378,9 +380,11 @@ class AmazonTitanTextCodec:
 # Adapter
 # -----------------------------
 
+
 @dataclass(frozen=True)
 class BedrockAdapterConfig:
     """Small config object to keep adapter initialization explicit."""
+
     region: str
     model_id: str
     family: BedrockModelFamily
@@ -392,12 +396,12 @@ class BedrockChatAdapter(BaseLLMAdapter):
     Supports multiple model families by dispatching to native codecs.
 
     Contract:
-      - __init__(client: Optional[BedrockRuntimeClient] = None, model_id: Optional[str] = None, region: Optional[str] = None, family: Optional[BedrockModelFamily] = None, **defaults)
+      - __init__(client=None, model_id=None, region=None, family=None, **defaults)
       - generate_messages(...) -> str
       - stream_messages(...)   -> Iterable[str]
     """
 
-    _CODECS: Dict[BedrockModelFamily, BedrockNativeCodec] = {
+    _CODECS: dict[BedrockModelFamily, BedrockNativeCodec] = {
         BedrockModelFamily.ANTHROPIC: AnthropicClaudeCodec(),
         BedrockModelFamily.META: MetaLlamaCodec(),
         BedrockModelFamily.MISTRAL: MistralCodec(),
@@ -406,11 +410,11 @@ class BedrockChatAdapter(BaseLLMAdapter):
 
     def __init__(
         self,
-        client: Optional[BedrockRuntimeClient] = None,
-        model_id: Optional[str] = None,
-        model: Optional[str] = None,
-        region: Optional[str] = None,
-        family: Optional[BedrockModelFamily] = None,
+        client: BedrockRuntimeClient | None = None,
+        model_id: str | None = None,
+        model: str | None = None,
+        region: str | None = None,
+        family: BedrockModelFamily | None = None,
         **defaults,
     ):
         super().__init__()
@@ -420,9 +424,7 @@ class BedrockChatAdapter(BaseLLMAdapter):
         resolved_model_id = (model_id or model or "").strip()
 
         if not resolved_region:
-            raise RuntimeError(
-                "INTERGRAX_DEFAULT_AWS_REGION must be configured for Bedrock adapter."
-            )
+            raise RuntimeError("INTERGRAX_DEFAULT_AWS_REGION must be configured for Bedrock adapter.")
 
         if not resolved_model_id:
             raise RuntimeError(
@@ -486,9 +488,9 @@ class BedrockChatAdapter(BaseLLMAdapter):
         self,
         messages: Sequence[ChatMessage],
         *,
-        temperature: Optional[float] = None,
-        max_tokens: Optional[int] = None,
-        run_id: Optional[str] = None,
+        temperature: float | None = None,
+        max_tokens: int | None = None,
+        run_id: str | None = None,
     ) -> LLMAdapterResponse:
         call = self.usage.begin_call(run_id=run_id, adapter=self)
         response: LLMAdapterResponse | None = None
@@ -507,9 +509,7 @@ class BedrockChatAdapter(BaseLLMAdapter):
                     max_tokens=max_tokens,
                     temperature=temp,
                 )
-                resp = self._execute(
-                    lambda: self.client.converse(modelId=self.config.model_id, **req)
-                )
+                resp = self._execute(lambda: self.client.converse(modelId=self.config.model_id, **req))
                 text = extract_converse_text(resp)
                 out_tok = int(self.estimate_tokens_for_text(text, model_hint=self.model_name_for_token_estimation))
                 response = build_adapter_response(
@@ -572,21 +572,20 @@ class BedrockChatAdapter(BaseLLMAdapter):
                 error_type=err_type,
             )
 
-
     def stream_messages(
         self,
         messages: Sequence[ChatMessage],
         *,
-        temperature: Optional[float] = None,
-        max_tokens: Optional[int] = None,
-        run_id: Optional[str] = None,
+        temperature: float | None = None,
+        max_tokens: int | None = None,
+        run_id: str | None = None,
     ) -> Iterable[LLMStreamEvent]:
         call = self.usage.begin_call(run_id=run_id, adapter=self)
         success = False
         err_type = None
         in_tok = 0
         out_tok = 0
-        buf: List[str] = []
+        buf: list[str] = []
 
         try:
             in_tok = int(self.estimate_tokens_for_messages(messages, model_hint=self.model_name_for_token_estimation))
@@ -598,6 +597,7 @@ class BedrockChatAdapter(BaseLLMAdapter):
                     max_tokens=max_tokens,
                     temperature=temp,
                 )
+
                 def _converse_body_stream() -> Iterable[object]:
                     resp = self.client.converse_stream(modelId=self.config.model_id, **req)
                     stream = resp.get("stream") if isinstance(resp, dict) else resp
@@ -607,9 +607,7 @@ class BedrockChatAdapter(BaseLLMAdapter):
                     buf.append(text)
                     yield partial_stream_event(delta_content=text)
                 out_tok = int(
-                    self.estimate_tokens_for_text(
-                        "".join(buf), model_hint=self.model_name_for_token_estimation
-                    )
+                    self.estimate_tokens_for_text("".join(buf), model_hint=self.model_name_for_token_estimation)
                 )
                 success = True
                 yield final_stream_event(
@@ -683,7 +681,12 @@ class BedrockChatAdapter(BaseLLMAdapter):
                 error_type=err_type,
             )
 
+    def supports_streaming(self) -> bool:
+        return True
 
+    def supports_tool_streaming(self) -> bool:
+        """``stream_with_tools`` requires the same Converse/Anthropic route as ``supports_tools``."""
+        return self.supports_tools()
 
     def supports_tools(self) -> bool:
         if self._use_converse and converse_supported(self.client):
@@ -693,16 +696,17 @@ class BedrockChatAdapter(BaseLLMAdapter):
     def generate_with_tools(
         self,
         messages: Sequence[ChatMessage],
-        tools_schema: List[Dict[str, Any]],
+        tools_schema: list[dict[str, Any]],
         *,
-        temperature: Optional[float] = None,
-        max_tokens: Optional[int] = None,
+        temperature: float | None = None,
+        max_tokens: int | None = None,
         tool_choice: NativeToolChoice | None = None,
-        run_id: Optional[str] = None,
+        run_id: str | None = None,
     ) -> LLMAdapterResponse:
         if not self.supports_tools():
-            raise NotImplementedError(
-                "Tools require Bedrock Converse API or an Anthropic model on InvokeModel."
+            raise self._capability_mismatch(
+                LLMFeature.TOOLS,
+                "Tools require Bedrock Converse API or an Anthropic model on InvokeModel.",
             )
 
         call = self.usage.begin_call(run_id=run_id, adapter=self)
@@ -723,9 +727,7 @@ class BedrockChatAdapter(BaseLLMAdapter):
                     temperature=temp,
                     tools=openai_tools_to_bedrock_converse(tools_schema),
                 )
-                resp = self._execute(
-                    lambda: self.client.converse(modelId=self.config.model_id, **req)
-                )
+                resp = self._execute(lambda: self.client.converse(modelId=self.config.model_id, **req))
                 text = extract_converse_text(resp)
                 tool_calls = tool_calls_from_openai_dicts(extract_converse_tool_calls(resp))
                 out_tok = int(self.estimate_tokens_for_text(text, model_hint=self.model_name_for_token_estimation))
@@ -797,30 +799,29 @@ class BedrockChatAdapter(BaseLLMAdapter):
     def stream_with_tools(
         self,
         messages: Sequence[ChatMessage],
-        tools_schema: List[Dict[str, Any]],
+        tools_schema: list[dict[str, Any]],
         *,
-        temperature: Optional[float] = None,
-        max_tokens: Optional[int] = None,
+        temperature: float | None = None,
+        max_tokens: int | None = None,
         tool_choice: NativeToolChoice | None = None,
-        run_id: Optional[str] = None,
+        run_id: str | None = None,
     ) -> Iterable[LLMStreamEvent]:
         if not self.supports_tools():
-            raise NotImplementedError("Tools are not supported for this Bedrock configuration.")
+            raise self._capability_mismatch(
+                LLMFeature.TOOL_STREAMING,
+                "Tools are not supported for this Bedrock configuration.",
+            )
 
         call = self.usage.begin_call(run_id=run_id, adapter=self)
         success = False
         err_type = None
         in_tok = 0
         out_tok = 0
-        buf: List[str] = []
-        tool_calls: List[Dict[str, Any]] = []
+        buf: list[str] = []
+        tool_calls: list[dict[str, Any]] = []
 
         try:
-            in_tok = int(
-                self.estimate_tokens_for_messages(
-                    messages, model_hint=self.model_name_for_token_estimation
-                )
-            )
+            in_tok = int(self.estimate_tokens_for_messages(messages, model_hint=self.model_name_for_token_estimation))
 
             if self._use_converse and converse_stream_supported(self.client):
                 temp = temperature if temperature is not None else self.defaults.get("temperature")
@@ -830,12 +831,13 @@ class BedrockChatAdapter(BaseLLMAdapter):
                     temperature=temp,
                     tools=openai_tools_to_bedrock_converse(tools_schema),
                 )
+
                 def _converse_tool_stream() -> Iterable[object]:
                     resp = self.client.converse_stream(modelId=self.config.model_id, **req)
                     stream = resp.get("stream") if isinstance(resp, dict) else resp
                     return stream
 
-                active_tools: Dict[str, Dict[str, Any]] = {}
+                active_tools: dict[str, dict[str, Any]] = {}
                 for event in self._execute_streaming(_converse_tool_stream):
                     for text in iter_converse_stream_text([event]):
                         buf.append(text)
@@ -850,9 +852,7 @@ class BedrockChatAdapter(BaseLLMAdapter):
                 typed_calls = tool_calls_from_openai_dicts(tool_calls)
                 finish = LLMFinishReason.TOOL_CALLS if typed_calls else LLMFinishReason.COMPLETED
                 out_tok = int(
-                    self.estimate_tokens_for_text(
-                        "".join(buf), model_hint=self.model_name_for_token_estimation
-                    )
+                    self.estimate_tokens_for_text("".join(buf), model_hint=self.model_name_for_token_estimation)
                 )
                 success = True
                 yield final_stream_event(
@@ -926,17 +926,12 @@ class BedrockChatAdapter(BaseLLMAdapter):
     }
 
     def _estimate_context_window(self, model_id: str) -> int:
-        if model_id in self._CONTEXT_WINDOWS:
-            return self._CONTEXT_WINDOWS[model_id]
-        for prefix, tokens in (
-            ("anthropic.claude-3-5", 200_000),
-            ("anthropic.claude-3", 200_000),
-            ("meta.llama3", 128_000),
-            ("mistral.", 128_000),
-        ):
-            if model_id.startswith(prefix):
-                return tokens
-        return 32_000
+        """Resolve through the ModelCatalog; the local table is only a catalog-resolved fallback."""
+        return resolve_context_window_tokens(
+            LLMProvider.AWS_BEDROCK,
+            model_id,
+            legacy_windows=self._CONTEXT_WINDOWS,
+        )
 
     def _infer_family_from_model_id(self, model_id: str) -> BedrockModelFamily:
         # Bedrock model ids are usually prefixed as "<provider>.<model...>".

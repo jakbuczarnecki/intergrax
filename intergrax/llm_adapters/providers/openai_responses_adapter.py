@@ -4,12 +4,13 @@
 
 
 from __future__ import annotations
-from intergrax.utils import attribute_access
+
 import hashlib
 import json
 import os
 import re
-from typing import Any, Dict, Iterable, List, Mapping, Optional, Sequence, Union
+from collections.abc import Iterable, Mapping, Sequence
+from typing import Any
 
 from openai import Client
 from openai.types.responses import Response
@@ -20,25 +21,17 @@ from intergrax.llm_adapters._shared.adapter_response_builders import (
     final_stream_event,
     partial_stream_event,
 )
-from intergrax.llm_adapters._shared.responses_input import messages_to_responses_input
 from intergrax.llm_adapters._shared.openai_completion_mapping import adapter_response_from_openai_responses
-from intergrax.llm_adapters.contracts.adapter_response import LLMAdapterResponse
-from intergrax.llm_adapters.contracts.llm_adapter import LLMAdapter
-from intergrax.llm_adapters.base.base_llm_adapter import BaseLLMAdapter
-from intergrax.llm_adapters.contracts.llm_provider import LLMProvider
-from intergrax.llm_adapters.contracts.structured_result import LLMStructuredResult, TStructured
-from intergrax.llm_adapters.contracts.stream_event import LLMStreamEvent
-from intergrax.llm_adapters.contracts.token_usage import LLMTokenUsage
 from intergrax.llm_adapters._shared.openai_tool_call_interop import tool_calls_from_openai_dicts
 from intergrax.llm_adapters._shared.openai_tool_choice_projection import (
     project_openai_compatible_tool_choice,
 )
-from intergrax.llm_adapters.providers._openai_schema import (
-    prepare_openai_strict_generation_schema,
-    project_atomic_planner_round_parameters_for_openai_strict,
-    project_json_schema_for_openai_strict_tool_parameters,
-)
+from intergrax.llm_adapters._shared.responses_input import messages_to_responses_input
+from intergrax.llm_adapters.base.base_llm_adapter import BaseLLMAdapter
+from intergrax.llm_adapters.contracts.adapter_response import LLMAdapterResponse
+from intergrax.llm_adapters.contracts.llm_provider import LLMProvider
 from intergrax.llm_adapters.contracts.native_tool_choice import NativeToolChoice
+from intergrax.llm_adapters.contracts.stream_event import LLMStreamEvent
 from intergrax.llm_adapters.contracts.strict_tool_arguments import (
     CanonicalFunctionToolDefinition,
     StrictToolArgumentConformanceError,
@@ -46,11 +39,22 @@ from intergrax.llm_adapters.contracts.strict_tool_arguments import (
     ToolDispatchRequirements,
     coerce_canonical_tool_definitions,
 )
+from intergrax.llm_adapters.contracts.structured_result import LLMStructuredResult, TStructured
+from intergrax.llm_adapters.contracts.token_usage import LLMTokenUsage
+from intergrax.llm_adapters.providers._openai_schema import (
+    prepare_openai_strict_generation_schema,
+    project_atomic_planner_round_parameters_for_openai_strict,
+    project_json_schema_for_openai_strict_tool_parameters,
+)
+from intergrax.llm_adapters.registry.context_window import (
+    init_adapter_context_window_tokens,
+    resolve_context_window_tokens,
+)
 from intergrax.runtime.execution.atomic_planner_round_bridge import (
     AtomicPlannerRoundProjectionError,
     decode_atomic_planner_round_arguments_json_envelope,
 )
-from intergrax.llm_adapters.registry.context_window import init_adapter_context_window_tokens
+from intergrax.utils import attribute_access
 
 # OpenAI SDK Client(...) kwargs — must never reach responses.create/stream.
 _OPENAI_CLIENT_CONSTRUCTOR_KEYS: frozenset[str] = frozenset(
@@ -114,10 +118,7 @@ class _OpenAIToolNameMapping:
         used_provider_names: set[str] = set()
 
         for canonical in canonical_names:
-            if (
-                _is_openai_tool_name_valid(canonical)
-                and canonical not in used_provider_names
-            ):
+            if _is_openai_tool_name_valid(canonical) and canonical not in used_provider_names:
                 self._assign(canonical, canonical, used_provider_names)
 
         for canonical in canonical_names:
@@ -136,15 +137,11 @@ class _OpenAIToolNameMapping:
             max_base_len = _OPENAI_TOOL_NAME_MAX_LEN - len(suffix)
             if max_base_len < 1:
                 raise ValueError(
-                    "OpenAI Responses adapter: "
-                    f"unable to derive provider-safe tool name for {canonical!r}"
+                    f"OpenAI Responses adapter: unable to derive provider-safe tool name for {canonical!r}"
                 )
             provider_name = f"{base[:max_base_len]}{suffix}"
             if provider_name in used_provider_names:
-                raise ValueError(
-                    "OpenAI Responses adapter: "
-                    f"tool name collision for {canonical!r} after hash suffix"
-                )
+                raise ValueError(f"OpenAI Responses adapter: tool name collision for {canonical!r} after hash suffix")
             self._assign(canonical, provider_name, used_provider_names)
 
     def _assign(
@@ -168,8 +165,7 @@ class _OpenAIToolNameMapping:
             return self.canonical_to_provider[canonical]
         except KeyError as exc:
             raise ValueError(
-                "OpenAI Responses adapter: "
-                f"unknown canonical tool name {canonical!r} for provider mapping"
+                f"OpenAI Responses adapter: unknown canonical tool name {canonical!r} for provider mapping"
             ) from exc
 
     def to_canonical(self, provider: str) -> str:
@@ -177,13 +173,12 @@ class _OpenAIToolNameMapping:
             return self.provider_to_canonical[provider]
         except KeyError as exc:
             raise ValueError(
-                "OpenAI Responses adapter: "
-                f"unknown provider tool name {provider!r}; refusing to dispatch"
+                f"OpenAI Responses adapter: unknown provider tool name {provider!r}; refusing to dispatch"
             ) from exc
 
 
-def _extract_canonical_tool_names(tools_schema: Sequence[Dict[str, Any]]) -> List[str]:
-    names: List[str] = []
+def _extract_canonical_tool_names(tools_schema: Sequence[dict[str, Any]]) -> list[str]:
+    names: list[str] = []
     for index, tool in enumerate(tools_schema):
         if not isinstance(tool, dict):
             continue
@@ -196,19 +191,16 @@ def _extract_canonical_tool_names(tools_schema: Sequence[Dict[str, Any]]) -> Lis
         if isinstance(fn, dict) and isinstance(fn.get("name"), str) and fn["name"]:
             names.append(fn["name"])
             continue
-        raise ValueError(
-            "OpenAI Responses adapter: "
-            f"tools_schema[{index}] function tool requires a non-empty name"
-        )
+        raise ValueError(f"OpenAI Responses adapter: tools_schema[{index}] function tool requires a non-empty name")
     return names
 
 
 def _extract_canonical_tool_names_from_responses_input(
-    input_items: Sequence[Dict[str, Any]],
-) -> List[str]:
+    input_items: Sequence[dict[str, Any]],
+) -> list[str]:
     """Deterministic first-seen canonical names from function_call input items."""
     seen: set[str] = set()
-    names: List[str] = []
+    names: list[str] = []
     for item in input_items:
         if (
             isinstance(item, dict)
@@ -232,12 +224,12 @@ def _extract_tool_choice_canonical_name(
 
 
 def _build_request_canonical_tool_names(
-    tools_schema: Sequence[Dict[str, Any]],
-    input_items: Sequence[Dict[str, Any]],
+    tools_schema: Sequence[dict[str, Any]],
+    input_items: Sequence[dict[str, Any]],
     tool_choice: NativeToolChoice | None = None,
-) -> List[str]:
+) -> list[str]:
     """Union of current callable, historical function_call, and forced-choice names."""
-    names: List[str] = []
+    names: list[str] = []
     seen: set[str] = set()
 
     for name in _extract_canonical_tool_names(tools_schema):
@@ -258,10 +250,10 @@ def _build_request_canonical_tool_names(
 
 
 def _apply_tool_name_mapping_to_responses_tools(
-    mapped_tools: Sequence[Dict[str, Any]],
+    mapped_tools: Sequence[dict[str, Any]],
     name_mapping: _OpenAIToolNameMapping,
-) -> List[Dict[str, Any]]:
-    provider_tools: List[Dict[str, Any]] = []
+) -> list[dict[str, Any]]:
+    provider_tools: list[dict[str, Any]] = []
     for tool in mapped_tools:
         if (
             isinstance(tool, dict)
@@ -280,7 +272,7 @@ def _apply_tool_name_mapping_to_responses_tools(
 def _map_tool_choice_to_provider(
     tool_choice: NativeToolChoice,
     name_mapping: _OpenAIToolNameMapping,
-) -> Union[str, Dict[str, Any]]:
+) -> str | dict[str, Any]:
     projected = project_openai_compatible_tool_choice(tool_choice)
     if projected is None:
         return "auto"
@@ -293,11 +285,11 @@ def _map_tool_choice_to_provider(
 
 
 def _apply_tool_name_mapping_to_responses_input(
-    input_items: Sequence[Dict[str, Any]],
+    input_items: Sequence[dict[str, Any]],
     name_mapping: _OpenAIToolNameMapping,
-) -> List[Dict[str, Any]]:
+) -> list[dict[str, Any]]:
     """Map canonical function_call names in Responses API input history."""
-    mapped: List[Dict[str, Any]] = []
+    mapped: list[dict[str, Any]] = []
     for item in input_items:
         if (
             isinstance(item, dict)
@@ -316,9 +308,9 @@ def _apply_tool_name_mapping_to_responses_input(
 def _prepare_responses_tools_and_mapping(
     tool_definitions: Sequence[CanonicalFunctionToolDefinition],
     *,
-    input_items: Sequence[Dict[str, Any]] | None = None,
+    input_items: Sequence[dict[str, Any]] | None = None,
     tool_choice: NativeToolChoice | None = None,
-) -> tuple[List[Dict[str, Any]], _OpenAIToolNameMapping]:
+) -> tuple[list[dict[str, Any]], _OpenAIToolNameMapping]:
     mapped_tools = _map_tools_to_responses_api(tool_definitions)
     tools_schema = [dict(definition.wire_schema) for definition in tool_definitions]
     canonical_names = _build_request_canonical_tool_names(
@@ -352,10 +344,7 @@ def _canonical_function_tool_name(
     index: int,
 ) -> str:
     if tool.get("type") != "function":
-        raise ValueError(
-            "OpenAI Responses adapter: "
-            f"tools_schema[{index}] is not a function tool"
-        )
+        raise ValueError(f"OpenAI Responses adapter: tools_schema[{index}] is not a function tool")
     fn = tool.get("function")
     if isinstance(fn, Mapping):
         name = fn.get("name")
@@ -364,10 +353,7 @@ def _canonical_function_tool_name(
     top_level_name = tool.get("name")
     if isinstance(top_level_name, str) and top_level_name:
         return top_level_name
-    raise ValueError(
-        "OpenAI Responses adapter: "
-        f"tools_schema[{index}] function tool missing canonical name"
-    )
+    raise ValueError(f"OpenAI Responses adapter: tools_schema[{index}] function tool missing canonical name")
 
 
 def _dispatch_requirements_by_canonical_name(
@@ -375,9 +361,7 @@ def _dispatch_requirements_by_canonical_name(
 ) -> dict[str, ToolDispatchRequirements]:
     by_name: dict[str, ToolDispatchRequirements] = {}
     for index, definition in enumerate(tool_definitions):
-        by_name[_canonical_function_tool_name(definition.wire_schema, index)] = (
-            definition.dispatch_requirements
-        )
+        by_name[_canonical_function_tool_name(definition.wire_schema, index)] = definition.dispatch_requirements
     return by_name
 
 
@@ -395,9 +379,7 @@ def _project_strict_tool_parameters(
                 argument_guidance_description=argument_guidance_description,
             )
         except AtomicPlannerRoundProjectionError as exc:
-            raise StrictToolArgumentConformanceError(
-                "atomic planner round strict wire projection failed"
-            ) from exc
+            raise StrictToolArgumentConformanceError("atomic planner round strict wire projection failed") from exc
     return project_json_schema_for_openai_strict_tool_parameters(parameters)
 
 
@@ -421,9 +403,9 @@ def _normalize_strict_tool_call_arguments(
 
 def _map_tools_to_responses_api(
     tool_definitions: Sequence[CanonicalFunctionToolDefinition],
-) -> List[Dict[str, Any]]:
+) -> list[dict[str, Any]]:
     """Map canonical tool bindings to Responses API shape."""
-    mapped: List[Dict[str, Any]] = []
+    mapped: list[dict[str, Any]] = []
     for index, definition in enumerate(tool_definitions):
         tool = definition.wire_schema
         if not isinstance(tool, dict):
@@ -458,11 +440,10 @@ def _map_tools_to_responses_api(
         name = fn.get("name")
         if not isinstance(name, str) or not name:
             raise ValueError(
-                "OpenAI Responses adapter: "
-                f"tool_definitions[{index}].function.name must be a non-empty string"
+                f"OpenAI Responses adapter: tool_definitions[{index}].function.name must be a non-empty string"
             )
 
-        out: Dict[str, Any] = {"type": "function", "name": name}
+        out: dict[str, Any] = {"type": "function", "name": name}
         if "description" in fn:
             out["description"] = fn["description"]
         requires_strict = definition.requires_strict_argument_conformance
@@ -498,19 +479,18 @@ class OpenAIChatResponsesAdapter(BaseLLMAdapter):
 
     # Conservative context window estimates for common OpenAI models.
     # For unknown models we fall back to a small, safe default.
-    _OPENAI_CONTEXT_WINDOWS: Dict[str, int] = {
+    _OPENAI_CONTEXT_WINDOWS: dict[str, int] = {
         "gpt-4o": 128_000,
         "gpt-4o-mini": 128_000,
         "gpt-4o-2024-08-06": 128_000,
         "gpt-3.5-turbo": 16_385,
         "gpt-3.5-turbo-0301": 16_385,
-        "gpt-4.1": 1_000_000,
-        "gpt-4.1-mini": 1_000_000,
-        "gpt-4.1-nano": 1_000_000,
+        "gpt-4.1": 1_047_576,
+        "gpt-4.1-mini": 1_047_576,
+        "gpt-4.1-nano": 1_047_576,
         "gpt-5": 400_000,
         "gpt-5-mini": 400_000,
     }
-
 
     def _estimate_openai_context_window(self, model: str) -> int:
         """
@@ -519,19 +499,17 @@ class OpenAIChatResponsesAdapter(BaseLLMAdapter):
         The result is used once at adapter construction time and then cached
         in a private attribute.
         """
-        name = (model or "").strip()
-        base = name.split(":", 1)[0]  # strip possible snapshot suffixes
+        # ModelCatalog first; the local table is only a catalog-resolved fallback.
+        return resolve_context_window_tokens(
+            LLMProvider.OPENAI,
+            (model or "").strip(),
+            legacy_windows=self._OPENAI_CONTEXT_WINDOWS,
+        )
 
-        if base in self._OPENAI_CONTEXT_WINDOWS:
-            return self._OPENAI_CONTEXT_WINDOWS[base]
-
-        # Conservative fallback for unknown models.
-        return 128_000
-    
     DEFAULT_MODEL = "gpt-5-mini"
     ENV_API_KEY = "OPENAI_API_KEY"
 
-    def __init__(self, client: Optional[Client] = None, model: Optional[str] = None, **defaults):
+    def __init__(self, client: Client | None = None, model: str | None = None, **defaults):
         super().__init__()
         defaults.pop("model", None)
         defaults.pop("client", None)
@@ -544,9 +522,7 @@ class OpenAIChatResponsesAdapter(BaseLLMAdapter):
         if client is None:
             api_key = client_kwargs.pop("api_key", None) or os.getenv(self.ENV_API_KEY)
             if not api_key:
-                raise RuntimeError(
-                    "OPENAI_API_KEY not found in environment variables."
-                )
+                raise RuntimeError("OPENAI_API_KEY not found in environment variables.")
             client = Client(api_key=api_key, **client_kwargs)
 
         self.client: Client = client
@@ -562,7 +538,6 @@ class OpenAIChatResponsesAdapter(BaseLLMAdapter):
 
         self.provider = LLMProvider.OPENAI
 
-
     @property
     def context_window_tokens(self) -> int:
         """
@@ -575,7 +550,7 @@ class OpenAIChatResponsesAdapter(BaseLLMAdapter):
     # INTERNAL HELPERS (PRIVATE METHODS)
     # ---------------------------------------------------------------------
 
-    def _messages_to_responses_input(self, mapped_messages: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
+    def _messages_to_responses_input(self, mapped_messages: list[dict[str, Any]]) -> list[dict[str, Any]]:
         return messages_to_responses_input(mapped_messages)
 
     def supports_streaming(self) -> bool:
@@ -594,15 +569,14 @@ class OpenAIChatResponsesAdapter(BaseLLMAdapter):
         txt = response.output_text
         if txt:
             return txt
-        
-        chunks: List[str] = []
+
+        chunks: list[str] = []
         for item in response.output or []:
             if item.type == "message":
                 for c in item.content or []:
                     if c.type == "output_text":
                         chunks.append(c.text or "")
         return "".join(chunks)
-        
 
     # ---------------------------------------------------------------------
     # PUBLIC: Plain chat
@@ -612,9 +586,9 @@ class OpenAIChatResponsesAdapter(BaseLLMAdapter):
         self,
         messages: Sequence[ChatMessage],
         *,
-        temperature: Optional[float] = None,
-        max_tokens: Optional[int] = None,
-        run_id: Optional[str] = None,
+        temperature: float | None = None,
+        max_tokens: int | None = None,
+        run_id: str | None = None,
     ) -> LLMAdapterResponse:
         """
         Single-shot completion (non-streaming) using Responses API.
@@ -628,7 +602,7 @@ class OpenAIChatResponsesAdapter(BaseLLMAdapter):
             mapped = self._map_messages_to_openai(messages)
             input_items = self._messages_to_responses_input(mapped)
 
-            payload: Dict[str, Any] = dict(
+            payload: dict[str, Any] = dict(
                 model=self.model,
                 input=input_items,
             )
@@ -662,14 +636,13 @@ class OpenAIChatResponsesAdapter(BaseLLMAdapter):
                 error_type=err_type,
             )
 
-
     def stream_messages(
         self,
         messages: Sequence[ChatMessage],
         *,
-        temperature: Optional[float] = None,
-        max_tokens: Optional[int] = None,
-        run_id: Optional[str] = None,
+        temperature: float | None = None,
+        max_tokens: int | None = None,
+        run_id: str | None = None,
     ) -> Iterable[LLMStreamEvent]:
         """
         Streaming completion using Responses API.
@@ -685,13 +658,13 @@ class OpenAIChatResponsesAdapter(BaseLLMAdapter):
         except Exception:
             in_tok = 0
 
-        buf: List[str] = []
+        buf: list[str] = []
 
         try:
             mapped = self._map_messages_to_openai(messages)
             input_items = self._messages_to_responses_input(mapped)
 
-            payload: Dict[str, Any] = dict(
+            payload: dict[str, Any] = dict(
                 model=self.model,
                 input=input_items,
                 stream=True,
@@ -734,10 +707,12 @@ class OpenAIChatResponsesAdapter(BaseLLMAdapter):
                 error_type=err_type,
             )
 
-
     # ---------------------------------------------------------------------
     # PUBLIC: Tools
     # ---------------------------------------------------------------------
+
+    def supports_tool_streaming(self) -> bool:
+        return True
 
     def supports_tools(self) -> bool:
         """
@@ -756,10 +731,10 @@ class OpenAIChatResponsesAdapter(BaseLLMAdapter):
         messages: Sequence[ChatMessage],
         tools: Sequence[CanonicalFunctionToolDefinition],
         *,
-        temperature: Optional[float] = None,
-        max_tokens: Optional[int] = None,
+        temperature: float | None = None,
+        max_tokens: int | None = None,
         tool_choice: NativeToolChoice | None = None,
-        run_id: Optional[str] = None,
+        run_id: str | None = None,
     ) -> Iterable[LLMStreamEvent]:
         """
         Stream assistant text deltas, then yield the final typed response.
@@ -770,7 +745,7 @@ class OpenAIChatResponsesAdapter(BaseLLMAdapter):
         err_type = None
         in_tok = 0
         out_tok = 0
-        buf: List[str] = []
+        buf: list[str] = []
 
         try:
             try:
@@ -789,16 +764,14 @@ class OpenAIChatResponsesAdapter(BaseLLMAdapter):
                 input_items_raw,
                 tool_name_mapping,
             )
-            payload: Dict[str, Any] = dict(
+            payload: dict[str, Any] = dict(
                 model=self.model,
                 input=input_items,
                 tools=responses_tools,
                 stream=True,
             )
             if tool_choice is not None:
-                payload["tool_choice"] = _map_tool_choice_to_provider(
-                    tool_choice, tool_name_mapping
-                )
+                payload["tool_choice"] = _map_tool_choice_to_provider(tool_choice, tool_name_mapping)
             if max_tokens is not None:
                 payload["max_output_tokens"] = max_tokens
 
@@ -859,11 +832,11 @@ class OpenAIChatResponsesAdapter(BaseLLMAdapter):
         tool_name_mapping: _OpenAIToolNameMapping,
         *,
         tool_definitions: Sequence[CanonicalFunctionToolDefinition] | None = None,
-    ) -> List[Dict[str, Any]]:
+    ) -> list[dict[str, Any]]:
         requirements_by_name: dict[str, ToolDispatchRequirements] = {}
         if tool_definitions is not None:
             requirements_by_name = _dispatch_requirements_by_canonical_name(tool_definitions)
-        native_tool_calls: List[Dict[str, Any]] = []
+        native_tool_calls: list[dict[str, Any]] = []
         for item in response.output or []:
             if item.type != "function_call":
                 continue
@@ -895,9 +868,9 @@ class OpenAIChatResponsesAdapter(BaseLLMAdapter):
         messages: Sequence[ChatMessage],
         output_model: type[TStructured],
         *,
-        temperature: Optional[float] = None,
-        max_tokens: Optional[int] = None,
-        run_id: Optional[str] = None,
+        temperature: float | None = None,
+        max_tokens: int | None = None,
+        run_id: str | None = None,
     ) -> LLMStructuredResult[TStructured]:
         call = self.usage.begin_call(run_id=run_id, adapter=self)
         response: LLMAdapterResponse | None = None
@@ -908,7 +881,7 @@ class OpenAIChatResponsesAdapter(BaseLLMAdapter):
             mapped = self._map_messages_to_openai(messages)
             input_items = self._messages_to_responses_input(mapped)
             schema = prepare_openai_strict_generation_schema(output_model)
-            payload: Dict[str, Any] = dict(
+            payload: dict[str, Any] = dict(
                 model=self.model,
                 input=input_items,
                 text={
@@ -956,10 +929,10 @@ class OpenAIChatResponsesAdapter(BaseLLMAdapter):
         messages: Sequence[ChatMessage],
         tools: Sequence[CanonicalFunctionToolDefinition],
         *,
-        temperature: Optional[float] = None,
-        max_tokens: Optional[int] = None,
+        temperature: float | None = None,
+        max_tokens: int | None = None,
         tool_choice: NativeToolChoice | None = None,
-        run_id: Optional[str] = None,
+        run_id: str | None = None,
     ) -> LLMAdapterResponse:
         """
         Generate a response with potential function/tool calls.
@@ -983,16 +956,14 @@ class OpenAIChatResponsesAdapter(BaseLLMAdapter):
                 tool_name_mapping,
             )
 
-            payload: Dict[str, Any] = dict(
+            payload: dict[str, Any] = dict(
                 model=self.model,
                 input=input_items,
                 tools=responses_tools,
             )
 
             if tool_choice is not None:
-                payload["tool_choice"] = _map_tool_choice_to_provider(
-                    tool_choice, tool_name_mapping
-                )
+                payload["tool_choice"] = _map_tool_choice_to_provider(tool_choice, tool_name_mapping)
 
             if max_tokens is not None:
                 payload["max_output_tokens"] = max_tokens
@@ -1031,9 +1002,7 @@ class OpenAIChatResponsesAdapter(BaseLLMAdapter):
                 error_type=err_type,
             )
 
-    
-
-    def _map_messages_to_openai(self, msgs: Sequence[ChatMessage]) -> List[Dict[str, Any]]:
+    def _map_messages_to_openai(self, msgs: Sequence[ChatMessage]) -> list[dict[str, Any]]:
         """
         Map internal ChatMessage objects to OpenAI-compatible message dicts.
 
@@ -1042,9 +1011,9 @@ class OpenAIChatResponsesAdapter(BaseLLMAdapter):
         - tool messages with tool_call_id/name
         - assistant messages with tool_calls[]
         """
-        out: List[Dict[str, Any]] = []
+        out: list[dict[str, Any]] = []
         for m in msgs:
-            d: Dict[str, Any] = {"role": m.role, "content": m.content}
+            d: dict[str, Any] = {"role": m.role, "content": m.content}
 
             if m.role == "tool":
                 if attribute_access.optional(m, "tool_call_id", None) is not None:

@@ -3,7 +3,7 @@
 
 """Safe hosting diagnostics and failure records (APP-HOST-3C)."""
 
-from __future__ import annotations
+from __future__ import annotations  # noqa: I001
 
 from collections.abc import Callable
 from dataclasses import dataclass, field
@@ -20,12 +20,12 @@ from intergrax.hosting.contracts.lifecycle import (
 from intergrax.hosting.contracts.public_data import validate_bounded_identifier
 from intergrax.hosting.errors import HostedApplicationDiagnosticError
 from intergrax.hosting.engine.health import HostedApplicationHealthSnapshot
-from intergrax.hosting.shutdown import HostedApplicationShutdownExecutionSnapshot
+from intergrax.hosting.shutdown import HostedApplicationShutdownExecutionSnapshot, HostedApplicationShutdownPhase
 
 FailureIdGenerator = Callable[[], str]
 
 
-class HostedApplicationFailurePhase(str, Enum):
+class HostedApplicationFailurePhase(str, Enum):  # noqa: UP042
     DEFINITION = "definition"
     INSTANCE_ACQUIRE = "instance_acquire"
     INSTANCE_RELEASE = "instance_release"
@@ -46,7 +46,33 @@ class HostedApplicationFailurePhase(str, Enum):
     ROLLBACK = "rollback"
 
 
-class HostedApplicationOperationPhase(str, Enum):
+# Exit-class rules used by the engine exit-class metric. They mirror the supervisor exit
+# classifier (supervisor/classification.py); the D4 metrics qualification asserts parity.
+# Failure phases that classify a failed attempt as a startup failure.
+HOSTED_APPLICATION_STARTUP_FAILURE_PHASES = frozenset(
+    {
+        HostedApplicationFailurePhase.INSTANCE_ACQUIRE,
+        HostedApplicationFailurePhase.BEFORE_START_HOOK,
+        HostedApplicationFailurePhase.COMPONENT_START,
+        HostedApplicationFailurePhase.RUNTIME_FACTORY,
+        HostedApplicationFailurePhase.RUNTIME_START,
+        HostedApplicationFailurePhase.BEFORE_READY_HOOK,
+        HostedApplicationFailurePhase.HEALTH_EVALUATION,
+    }
+)
+
+
+# Shutdown phases whose failure makes an exit a forced termination.
+HOSTED_APPLICATION_CRITICAL_CLEANUP_PHASES = frozenset(
+    {
+        HostedApplicationShutdownPhase.COMPONENT_STOP,
+        HostedApplicationShutdownPhase.RUNTIME_STOP,
+        HostedApplicationShutdownPhase.LEASE_RELEASE,
+    }
+)
+
+
+class HostedApplicationOperationPhase(str, Enum):  # noqa: UP042
     """Explicit active engine operation phase for diagnostics."""
 
     IDLE = "idle"
@@ -302,9 +328,7 @@ class DiagnosticsRecorder:
 
     def _validate_diagnostic_timestamp(self, occurred_at: datetime) -> datetime:
         if occurred_at.tzinfo is None:
-            raise HostedApplicationDiagnosticError(
-                "diagnostic clock produced naive timestamp"
-            )
+            raise HostedApplicationDiagnosticError("diagnostic clock produced naive timestamp")
         return occurred_at
 
     def _bounded_identifier_or_diagnostic(self, value: str, *, field_name: str) -> str:
@@ -332,9 +356,7 @@ class DiagnosticsRecorder:
             failure_id=self.next_failure_id(),
             reason_code=safe_reason,
             phase=phase,
-            source_kind=self._bounded_identifier_or_diagnostic(
-                source_kind, field_name="source_kind"
-            ),
+            source_kind=self._bounded_identifier_or_diagnostic(source_kind, field_name="source_kind"),
             source_id=self._bounded_identifier_or_diagnostic(source_id, field_name="source_id"),
             exception_type=type(exc).__name__,
             occurred_at=occurred_at,

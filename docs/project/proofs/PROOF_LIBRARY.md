@@ -276,3 +276,4 @@ Use [PROOFS.md](PROOFS.md) for implementation status, bounded verification, part
 | [LKW Quick Start](../../../applications/local_workspace_application/docs/product/QUICKSTART.md) | Runnable product evaluation path |
 | [Architecture Overview](../architecture/ARCHITECTURE_OVERVIEW.md) | Platform architecture mental model |
 | [Platform Proof Library (maintainers)](../../../platform_proofs/README.md) | Technical proof infrastructure and authoring |
+| [Scenario Factory (planned)](../overview/SCENARIO_FACTORY.md) | A planned product layer, **not yet implemented**. It is not a Scenario Proof and is not part of this catalog |

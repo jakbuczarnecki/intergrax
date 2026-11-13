@@ -7,7 +7,10 @@ from __future__ import annotations
 from dataclasses import dataclass
 
 from intergrax.contracts.agent_contract_meta import AgentContract
-from intergrax.contracts.agent_lifecycle_state import AgentLifecycleState
+from intergrax.contracts.agent_lifecycle_state import (
+    AgentLifecycleState,
+    agent_lifecycle_state_is_routable,
+)
 
 
 @dataclass(frozen=True, slots=True)
@@ -22,10 +25,7 @@ def evaluate_agent_routing(
     production_mode: bool,
 ) -> AgentRoutingDecision:
     """Return whether an agent may participate in Nexus selection."""
-    if contract.lifecycle_state in {
-        AgentLifecycleState.DEPRECATED,
-        AgentLifecycleState.RETIRED,
-    }:
+    if not agent_lifecycle_state_is_routable(contract.lifecycle_state):
         return AgentRoutingDecision(
             routable=False,
             reason=f"agent lifecycle state is {contract.lifecycle_state.value}",
@@ -41,8 +41,7 @@ def evaluate_agent_routing(
         return AgentRoutingDecision(
             routable=False,
             reason=(
-                "production_mode requires lifecycle state production or staging; "
-                f"got {contract.lifecycle_state.value}"
+                f"production_mode requires lifecycle state production or staging; got {contract.lifecycle_state.value}"
             ),
         )
 

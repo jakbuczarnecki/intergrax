@@ -44,6 +44,7 @@ class InstallationState(StrEnum):
     FAILED_CANDIDATE = "failed_candidate"
     REVOKED = "revoked"
     REMOVED_TOMBSTONE = "removed_tombstone"
+    RETIRED = "retired"
 
 
 def installation_state_is_installed(state: InstallationState) -> bool:
@@ -70,6 +71,7 @@ class AgentInstallationRecord(BaseModel):
     created_at: datetime | None = None
     superseded_at: datetime | None = None
     tombstoned_at: datetime | None = None
+    retired_at: datetime | None = None
 
     @field_validator(
         "installation_id",
@@ -96,11 +98,20 @@ class AgentInstallationRecord(BaseModel):
                 raise ValueError("removed_tombstone requires tombstoned_at")
             if self.active_for_slot:
                 raise ValueError("removed_tombstone records cannot be active_for_slot")
-        if self.installation_state in {
-            InstallationState.CANDIDATE,
-            InstallationState.VERIFIED,
-            InstallationState.FAILED_CANDIDATE,
-        } and self.active_for_slot:
+        if self.installation_state is InstallationState.RETIRED:
+            if self.retired_at is None:
+                raise ValueError("retired records require retired_at")
+            if self.active_for_slot:
+                raise ValueError("retired records cannot be active_for_slot")
+        if (
+            self.installation_state
+            in {
+                InstallationState.CANDIDATE,
+                InstallationState.VERIFIED,
+                InstallationState.FAILED_CANDIDATE,
+            }
+            and self.active_for_slot
+        ):
             raise ValueError("non-installed states cannot be active_for_slot")
         if (
             self.installation_state in {InstallationState.INSTALLED_ACTIVE, InstallationState.INSTALLED_PREVIOUS}

@@ -82,8 +82,14 @@ class EntryPointLoadResult:
     error: BaseException | None = None
 
 
-def _scan_entry_point_specs(group: str) -> tuple[EntryPointSpec, ...]:
-    """Enumerate entry points for ``group`` without caching (internal)."""
+def select_entry_points(group: str) -> tuple[object, ...]:
+    """Enumerate raw setuptools entry points for ``group`` (single discovery owner).
+
+    This is the only place in ``intergrax`` that calls ``importlib.metadata.entry_points``
+    (PDC-D1-R020). Domain-owned catalogs (for example Vendor Knowledge) enumerate
+    through this function instead of scanning on their own; the result is not cached
+    and is sorted by ``(name, value)`` for deterministic composition.
+    """
     try:
         from importlib.metadata import entry_points
     except ImportError as exc:  # pragma: no cover
@@ -94,8 +100,21 @@ def _scan_entry_point_specs(group: str) -> tuple[EntryPointSpec, ...]:
         selected = eps.select(group=group)
     else:
         selected = eps.get(group, [])  # type: ignore[union-attr]
+    return tuple(
+        sorted(
+            selected,
+            key=lambda item: (
+                str(attribute_access.optional(item, "name", "")),
+                str(attribute_access.optional(item, "value", "")),
+            ),
+        )
+    )
+
+
+def _scan_entry_point_specs(group: str) -> tuple[EntryPointSpec, ...]:
+    """Enumerate entry points for ``group`` without caching (internal)."""
     specs: list[EntryPointSpec] = []
-    for ep in selected:
+    for ep in select_entry_points(group):
         name = str(attribute_access.optional(ep, "name", ""))
         value = str(attribute_access.optional(ep, "value", ""))
         if not name or not value:

@@ -11,6 +11,7 @@ what you want to understand, try, inspect, build, or review.
   explains the product-facing concept; [Autonomous Work](architecture/AUTONOMOUS_WORK.md)
   is the canonical technical domain and [its implementation plan](maintainers/plans/AUTONOMOUS_WORK.md)
   tracks delivery. This is a strategic architecture direction, **not a shipped production claim**.
+- **Explore the planned Scenario Factory** - [Scenario Factory](overview/SCENARIO_FACTORY.md) describes a planned product layer for turning a business need into a designed and checked scenario. **Planned, not yet implemented; not a Scenario Proof and not a call to action.**
 - **Try LKW** - [LKW Product Tour](../../applications/local_workspace_application/docs/product/LKW_PRODUCT_TOUR.md) →
   [LKW Quick Start](../../applications/local_workspace_application/docs/product/QUICKSTART.md). This is the primary product action.
 - **Review proof** - [Proofs](proofs/PROOFS.md) shows evidence status; [LKW Platform
