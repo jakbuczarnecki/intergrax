@@ -1,0 +1,5 @@
+command: python scripts/governance/verify_iiac_role_separation.py docs/project/maintainers/qualification/iiac_evidence/MCP-SERVER-X/p8_audit/iiac_audit_session_manifest.MCP-SERVER-X.p8_audit.json --strict-product-diff --repo .
+git_head: c50547012c353463e86525411a5a065f43e5bab8
+date_utc: 2026-11-12T11:48:58Z
+verify_iiac_role_separation: PASS
+exit_code: 0

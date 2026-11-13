@@ -1,0 +1,39 @@
+command: D:/Projekty/intergrax/.venv/Scripts/python.exe <digest/disposition check script; logic: sha256 of the 4 artifacts named in the auditor manifest vs manifest values; findings dispositions; session inequality> + git checks listed below
+git_head: a618a03a8b245ceefef6ab5a922213aaef46dcd1
+date_utc: 2026-11-12T12:21:32Z
+audit_report_digest: manifest=8c1015d1abfd3f9f9eff7064a1e0331e805b98475b224914a00d6db5a390c2af recomputed=8c1015d1abfd3f9f9eff7064a1e0331e805b98475b224914a00d6db5a390c2af MATCH  (docs/project/maintainers/qualification/mcp_server_x/MCP_SERVER_X_P8_INDEPENDENT_AUDIT_DOSSIER.md)
+audit_scope_manifest_digest: manifest=e6b0733f5f27b34e2eff6fa8e67209ea9a3ed99ecfb75569e1b31e5fb65f6724 recomputed=e6b0733f5f27b34e2eff6fa8e67209ea9a3ed99ecfb75569e1b31e5fb65f6724 MATCH  (docs/project/maintainers/qualification/iiac_evidence/MCP-SERVER-X/p8_audit/audit_scope.json)
+test_matrix_digest: manifest=79bf1fbfc0da1acd2383bfbc9868543887c7e54769441a892b0f73c852e70b62 recomputed=79bf1fbfc0da1acd2383bfbc9868543887c7e54769441a892b0f73c852e70b62 MATCH  (docs/project/maintainers/qualification/iiac_evidence/MCP-SERVER-X/p8_audit/test_matrix_p8.txt)
+findings_digest: manifest=16dfa52922811f896fe24573df141d6b39d7d85f5b6e7801232258b5d75cbeb4 recomputed=16dfa52922811f896fe24573df141d6b39d7d85f5b6e7801232258b5d75cbeb4 MATCH  (docs/project/maintainers/qualification/iiac_evidence/MCP-SERVER-X/p8_audit/iiac_audit_findings_p8.json)
+verdict_basis: PASS_SCOPED | blocking_findings: []
+  F-P8-01 HIGH -> RECORDED_PENDING_OPERATOR_DISPOSITION
+  F-P8-02 MEDIUM -> ACCEPTED_SCOPED_LIMITATION
+  F-P8-03 MEDIUM -> ACCEPTED_SCOPED_LIMITATION
+  F-P8-04 MEDIUM -> RESOLVED
+  F-P8-05 MEDIUM -> RESOLVED
+  F-P8-06 LOW -> RESOLVED
+  F-P8-07 LOW -> ACCEPTED_SCOPED_LIMITATION
+  F-P8-08 LOW -> ACCEPTED_SCOPED_LIMITATION
+  F-P8-09 LOW -> RESOLVED
+STILL_OPEN count: 0
+findings without any reaudit_disposition: []
+implementer: T-IGX-035-H-MCP-P7-IMPLEMENTERS | auditor: e96831ad-2c06-4753-b8e9-e6aca67c2f5b | distinct: True
+RESULT: DIGESTS_OK
+exit_code: 0
+
+--- git diff --stat 0c69c2065 HEAD -- <auditor evidence folder + dossier>
+(empty above = auditor artifacts unchanged since the re-review commit)
+--- 0c69c2065 is ancestor of HEAD:
+yes
+--- first-parent head of origin/development at check time:
+a618a03a8b245ceefef6ab5a922213aaef46dcd1
+--- files changed eadb1c211..HEAD outside docs/project/maintainers/qualification/ :
+(empty above = none)
+--- product_paths_changed_between:
+6e53fb36f..HEAD = []
+eadb1c211..HEAD = []
+--- FRZ checklist / acceptance matrix vs 6e53fb36f (git diff --stat; empty = byte-identical):
+(end)
+--- operator disposition of F-P8-01 in corrections record:
+25:## Operator disposition of F-P8-01 (chat, 2026-11-12)
+27:The audit register keeps `RECORDED_PENDING_OPERATOR_DISPOSITION` for F-P8-01 (auditor-authored file, not edited). The operator answered in chat, given person
