@@ -4,22 +4,28 @@
 
 from __future__ import annotations
 
-from collections.abc import Callable, Mapping
+from collections.abc import Callable, Mapping, Sequence
 from typing import Any
 
-from intergrax.applications.contracts.environment_profile import ApplicationEnvironmentProfile
-from intergrax.llm_adapters.contracts.llm_adapter import LLMAdapter
-from intergrax.llm_adapters.registry.model_router import ModelRouter, ModelRoutingDecision
-from intergrax.llm_adapters.registry.profile import LLMProfile, create_adapter, create_adapter_with_failover, llm_profile_from_env
-from intergrax.llm_adapters.registry.registration_contract import LLMProviderNotConfiguredError
-from intergrax.llm_adapters.contracts.routing_evaluator import RoutingEvaluator
-from intergrax.llm_adapters.routing import RoutingContext, RoutingEvaluation
-from intergrax.llm_adapters.routing.composition import resolve_routing_evaluator
-from intergrax.llm_adapters.routing.context_bridge import build_routing_context_from_runtime
 from intergrax.applications._shared.routing_evaluating_adapter import (
     RoutingContextProvider,
     wrap_routing_evaluating_adapter,
 )
+from intergrax.applications.contracts.environment_profile import ApplicationEnvironmentProfile
+from intergrax.llm_adapters.contracts.capabilities import LLMFeature
+from intergrax.llm_adapters.contracts.llm_adapter import LLMAdapter
+from intergrax.llm_adapters.contracts.routing_evaluator import RoutingEvaluator
+from intergrax.llm_adapters.registry.model_router import ModelRouter, ModelRoutingDecision
+from intergrax.llm_adapters.registry.profile import (
+    LLMProfile,
+    create_adapter,
+    create_adapter_with_failover,
+    llm_profile_from_env,
+)
+from intergrax.llm_adapters.registry.registration_contract import LLMProviderNotConfiguredError
+from intergrax.llm_adapters.routing import RoutingContext, RoutingEvaluation
+from intergrax.llm_adapters.routing.composition import resolve_routing_evaluator
+from intergrax.llm_adapters.routing.context_bridge import build_routing_context_from_runtime
 from intergrax.llm_adapters.routing.contracts import AllowlistViolationError
 
 _last_routing_evaluation: RoutingEvaluation | None = None
@@ -122,9 +128,7 @@ def create_adapter_for_routing_evaluation(
         return create_adapter_with_failover(
             profile,
             policy_route_hint=hint,
-            routing_authorisation=routing_authorisation_context(
-                env.llm_routing_profile if env is not None else None
-            ),
+            routing_authorisation=routing_authorisation_context(env.llm_routing_profile if env is not None else None),
         )
     return create_adapter(profile)
 
@@ -199,9 +203,7 @@ def _create_base_llm_adapter(
         return create_adapter_with_failover(
             profile,
             policy_route_hint=hint,
-            routing_authorisation=routing_authorisation_context(
-                env.llm_routing_profile if env is not None else None
-            ),
+            routing_authorisation=routing_authorisation_context(env.llm_routing_profile if env is not None else None),
         )
     return create_adapter(profile)
 
@@ -290,6 +292,15 @@ def resolve_optional_llm_adapter(
     )
 
 
+def _require_llm_features(adapter: LLMAdapter, features: Sequence[LLMFeature | str]) -> LLMAdapter:
+    """Fail closed at composition when the bound adapter does not declare a feature the agent needs."""
+    if features:
+        from intergrax.llm_adapters.llm_provider_registry import LLMAdapterRegistry
+
+        LLMAdapterRegistry.require_capabilities(adapter, *(LLMFeature(item) for item in features))
+    return adapter
+
+
 def resolve_llm_adapter(
     env: ApplicationEnvironmentProfile | None,
     agent_override: LLMAdapter | None = None,
@@ -301,6 +312,7 @@ def resolve_llm_adapter(
     agent_id: str | None = None,
     context_provider: RoutingContextProvider | None = None,
     routing_evaluator: RoutingEvaluator | None = None,
+    required_llm_features: Sequence[LLMFeature | str] = (),
 ) -> LLMAdapter:
     """
     Resolve LLM adapter with explicit precedence.
@@ -312,12 +324,16 @@ def resolve_llm_adapter(
     When ``llm_routing_profile`` is set, evaluates via injected/default ``RoutingEvaluator``
     before adapter creation. Live AHI routing may override hints on product hosts.
     When ``context_provider`` is set, wraps with ``RoutingEvaluatingLLMAdapter`` (M-LLM-X.11).
+
+    When ``required_llm_features`` is non-empty (``AgentContract.required_llm_features``), the
+    adapter is checked with ``LLMAdapterRegistry.require_capabilities`` before it is returned
+    and ``LLMCapabilityMismatchError`` is raised on a mismatch. Empty means unchanged behavior.
     """
     if agent_override is not None:
-        return agent_override
+        return _require_llm_features(agent_override, required_llm_features)
     if resolve_optional_llm_profile(env) is None:
         raise LLMProviderNotConfiguredError(_LLM_PROVIDER_NOT_CONFIGURED_MESSAGE)
-    return _resolve_llm_adapter_impl(
+    adapter = _resolve_llm_adapter_impl(
         env,
         policy_route_hint=policy_route_hint,
         routing_context=routing_context,
@@ -327,6 +343,7 @@ def resolve_llm_adapter(
         context_provider=context_provider,
         routing_evaluator=routing_evaluator,
     )
+    return _require_llm_features(adapter, required_llm_features)
 
 
 def resolve_optional_environment_llm_adapter(

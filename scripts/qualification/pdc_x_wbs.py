@@ -387,8 +387,6 @@ BATCHES: Final[tuple[Batch, ...]] = (
             "intergrax/memory/default_memory_control_plane.py",
             "intergrax/runtime/agent_governance/pipeline.py",
             "intergrax/llm_adapters/contracts/capabilities.py",
-            "intergrax/platform/enterprise_audit/data/changed_since_impact_map.v1.json",
-            "intergrax/platform/enterprise_audit/data/enterprise_audit_check_manifest.v1.json",
             "tests/qualification/ebh_5/_sqlite_touchpoint_registry.py",
             "intergrax/runtime/observability/export_boundary.py",
             "tests/qualification/pdc_x/d4/test_d4_no_product_vocabulary.py",
@@ -396,7 +394,8 @@ BATCHES: Final[tuple[Batch, ...]] = (
             "tests/qualification/pdc_x/xd/test_xd_03_agent_governance.py",
             "tests/qualification/pdc_x/xd/test_xd_09_artifacts_context.py",
             "tests/qualification/pdc_x/xd/test_xd_10_artifacts_security.py",
-            "tests/qualification/pdc_x/xd/test_xd_12_evol_ent_audit.py",
+            "tests/unit/memory/test_mem_ent10_memory_security_governance.py",
+            "tests/qualification/ebh_5/test_ebh_5_proof_integrity_gates.py",
             "tests/qualification/pdc_x/p6_repair/",
         ),
         "—",
@@ -424,6 +423,25 @@ BATCHES: Final[tuple[Batch, ...]] = (
         GATE_PRODUCT,
         "IA-GLOBAL (P8)",
         "tests/qualification/pdc_x/p6_model/",
+    ),
+    Batch(
+        "B-P6-G",
+        "ALL",
+        "ENT-AUDIT impact-map coverage of the PDC-touched product modules (XD finding 8)",
+        "T-IGX-036-V",
+        "W7",
+        (
+            "intergrax/platform/enterprise_audit/impact_map.py",
+            "intergrax/platform/enterprise_audit/data/changed_since_impact_map.v1.json",
+            "tests/qualification/ent_audit_x/unit/test_changed_since_impact_map.py",
+            "tests/qualification/pdc_x/xd/test_xd_12_evol_ent_audit.py",
+            "tests/qualification/pdc_x/p6_impact/",
+        ),
+        "—",
+        ("B-P6-R", "B-P6-M"),
+        GATE_PRODUCT,
+        "IA-GLOBAL (P8)",
+        "tests/qualification/pdc_x/p6_impact/",
     ),
 )
 
@@ -713,6 +731,7 @@ def render_dag() -> str:
         "W4": ("after all P5 batches", "after MCP-SERVER-X P8"),
         "W5": ("after B-P6 (XD runs)", "after MCP-SERVER-X P8"),
         "W6": ("after B-P6-R", "after MCP-SERVER-X P8"),
+        "W7": ("after B-P6-R and B-P6-M", "after MCP-SERVER-X P8"),
     }
     for wave, bids in waves.items():
         start, merge = starts.get(wave, ("?", "?"))

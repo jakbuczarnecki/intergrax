@@ -29,15 +29,6 @@ pytestmark = pytest.mark.unit
 # ----------------------------------------------------------------------- item 11
 
 
-_ITEM_11_BLOCKED = (
-    "B-P6-R item 11 held for a write-set amendment: a plane that rejects a foreign-tenant identity "
-    "breaks six existing tests in tests/unit/memory/test_mem_ent10_memory_security_governance.py whose fixture "
-    "binds UserProfileManager to 'tenant-test' (line 79) but acts as identity tenant 'tenant-10'; that fixture "
-    "must bind _TENANT first"
-)
-
-
-@pytest.mark.xfail(strict=True, reason=_ITEM_11_BLOCKED)
 @pytest.mark.asyncio
 async def test_a_foreign_tenant_identity_is_refused_on_every_user_scope_operation() -> None:
     memory_a = _memory_for(TENANT_A)
@@ -55,7 +46,6 @@ async def test_a_foreign_tenant_identity_is_refused_on_every_user_scope_operatio
         await memory_a.plane.forget(foreign, scope, MemoryControlForgetRequest(entry_id=entry_id))
 
 
-@pytest.mark.xfail(strict=True, reason=_ITEM_11_BLOCKED)
 @pytest.mark.asyncio
 async def test_the_bound_tenant_keeps_working_after_a_foreign_attempt() -> None:
     memory_a = _memory_for(TENANT_A)

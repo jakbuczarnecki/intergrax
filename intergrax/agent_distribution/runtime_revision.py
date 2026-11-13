@@ -7,12 +7,15 @@ from __future__ import annotations
 
 from datetime import datetime
 from enum import StrEnum
-from typing import Final
+from typing import TYPE_CHECKING, Final
 
 from pydantic import BaseModel, ConfigDict, Field, field_validator, model_validator
 
+from intergrax.agent_distribution._digest import content_digest_for_model, normalize_package_digest
 from intergrax.agent_distribution.trust import AgentTrustEvidenceRef
-from intergrax.agent_distribution._digest import normalize_package_digest
+
+if TYPE_CHECKING:
+    from intergrax.llm_adapters.contracts.llm_profile import LLMProfile
 
 _NON_EMPTY = Field(min_length=1)
 
@@ -24,6 +27,11 @@ def _strip_required(value: str) -> str:
     if not normalized:
         raise ValueError("must be non-empty")
     return normalized
+
+
+def build_llm_profile_digest(profile: LLMProfile) -> str:
+    """Content digest of the declarative LLM profile a runtime revision is pinned to."""
+    return content_digest_for_model(profile)
 
 
 class RuntimeRevisionState(StrEnum):
@@ -65,6 +73,7 @@ RUNTIME_REVISION_IMMUTABLE_IDENTITY_FIELDS: Final = (
     "runtime_graph_digest",
     "materialization_topology",
     "build_input_digest",
+    "llm_profile_digest",
 )
 
 RUNTIME_REVISION_VALIDATION_TRANSITION_FIELDS: Final = frozenset(
@@ -95,6 +104,7 @@ class RuntimeRevision(BaseModel):
     materialization_artifact_digest: str | None = None
     materialization_topology: MaterializationTopology | None = None
     build_input_digest: str | None = None
+    llm_profile_digest: str | None = None
     policy_certification_evidence_refs: tuple[AgentTrustEvidenceRef, ...] = ()
     revision_state: RuntimeRevisionState
     supersedes_revision_id: str | None = None
@@ -113,6 +123,7 @@ class RuntimeRevision(BaseModel):
         "runtime_graph_digest",
         "materialization_artifact_digest",
         "build_input_digest",
+        "llm_profile_digest",
         "supersedes_revision_id",
         "rollback_target_revision_id",
     )
@@ -142,10 +153,7 @@ class RuntimeRevision(BaseModel):
             if self.materialization_topology is None:
                 missing.append("materialization_topology")
             if missing:
-                raise ValueError(
-                    f"{self.revision_state.value} runtime revision requires: "
-                    + ", ".join(missing)
-                )
+                raise ValueError(f"{self.revision_state.value} runtime revision requires: " + ", ".join(missing))
         if self.revision_state is RuntimeRevisionState.ACTIVE and self.activated_at is None:
             raise ValueError("active runtime revision requires activated_at")
         return self
