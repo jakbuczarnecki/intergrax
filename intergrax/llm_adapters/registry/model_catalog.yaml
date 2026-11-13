@@ -80,6 +80,21 @@ models:
     context_window_tokens: 1047576
     supports_structured_output: true
     provider_hints: [openai]
+  - model_id: gpt-4.1-nano
+    context_window_tokens: 1047576
+    supports_structured_output: true
+    provider_hints: [openai]
+  - model_id: gpt-5
+    context_window_tokens: 400000
+    supports_structured_output: true
+    provider_hints: [openai]
+  - model_id: gpt-5-mini
+    context_window_tokens: 400000
+    supports_structured_output: true
+    provider_hints: [openai]
+  - model_id: gpt-3.5-turbo-0301
+    context_window_tokens: 16385
+    provider_hints: [openai]
   - model_id: gpt-4-turbo
     context_window_tokens: 128000
     supports_structured_output: true

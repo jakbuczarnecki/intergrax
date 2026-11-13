@@ -4,19 +4,25 @@
 
 from __future__ import annotations
 
-from collections.abc import Callable, Iterable, Mapping, Sequence
-from intergrax.llm_adapters.contracts.llm_provider import llm_provider_slug
+from collections.abc import Callable, Iterable, Sequence
 
 from intergrax.llm.messages import ChatMessage
-from intergrax.llm_adapters.contracts.adapter_response import LLMAdapterResponse
-from intergrax.llm_adapters.contracts.llm_adapter import LLMAdapter
 from intergrax.llm_adapters.base.base_llm_adapter import BaseLLMAdapter
+from intergrax.llm_adapters.contracts.adapter_response import LLMAdapterResponse
+from intergrax.llm_adapters.contracts.capabilities import (
+    LLMFeature,
+    read_feature_flag,
+    require_declared_features,
+)
+from intergrax.llm_adapters.contracts.llm_adapter import LLMAdapter
+from intergrax.llm_adapters.contracts.llm_provider import llm_provider_slug
+from intergrax.llm_adapters.contracts.native_tool_choice import NativeToolChoice
+from intergrax.llm_adapters.contracts.routing_evaluator import RoutingEvaluator
+from intergrax.llm_adapters.contracts.stream_event import LLMStreamEvent
 from intergrax.llm_adapters.contracts.strict_tool_arguments import (
     CanonicalFunctionToolDefinition,
 )
 from intergrax.llm_adapters.contracts.structured_result import LLMStructuredResult, TStructured
-from intergrax.llm_adapters.contracts.stream_event import LLMStreamEvent
-from intergrax.llm_adapters.contracts.native_tool_choice import NativeToolChoice
 from intergrax.llm_adapters.routing.contracts import (
     AllowlistViolationError,
     RoutingContext,
@@ -27,7 +33,6 @@ from intergrax.llm_adapters.routing.evaluating_hooks import (
     InnerSwappedObserver,
     RoutingEvaluationObserver,
 )
-from intergrax.llm_adapters.contracts.routing_evaluator import RoutingEvaluator
 from intergrax.llm_adapters.routing.evaluator import routing_evaluation_identity
 from intergrax.llm_adapters.routing.profile_source import RoutingProfileSource
 
@@ -82,9 +87,7 @@ class RoutingEvaluatingLLMAdapter(BaseLLMAdapter):
     def set_on_evaluated(self, observer: RoutingEvaluationObserver | None) -> None:
         self._on_evaluated = observer
 
-    def set_on_allowlist_violation(
-        self, observer: AllowlistViolationObserver | None
-    ) -> None:
+    def set_on_allowlist_violation(self, observer: AllowlistViolationObserver | None) -> None:
         self._on_allowlist_violation = observer
 
     def set_on_inner_swapped(self, observer: InnerSwappedObserver | None) -> None:
@@ -107,13 +110,11 @@ class RoutingEvaluatingLLMAdapter(BaseLLMAdapter):
     def _inner_matches_evaluation(self, evaluation: RoutingEvaluation) -> bool:
         profile = evaluation.selected_profile
 
-        return llm_provider_slug(profile.provider) == llm_provider_slug(
-            self._inner.provider
-        ) and (profile.model or "") == (self._inner.model or "")
+        return llm_provider_slug(profile.provider) == llm_provider_slug(self._inner.provider) and (
+            profile.model or ""
+        ) == (self._inner.model or "")
 
-    def _swap_inner(
-        self, evaluation: RoutingEvaluation, context: RoutingContext
-    ) -> None:
+    def _swap_inner(self, evaluation: RoutingEvaluation, context: RoutingContext) -> None:
         self._inner = self._adapter_factory(evaluation, context)
         self._cached_identity = self._evaluation_cache_key(evaluation)
         self._sync_identity_from_inner()
@@ -195,6 +196,27 @@ class RoutingEvaluatingLLMAdapter(BaseLLMAdapter):
             run_id=run_id,
         )
 
+    def stream_with_tools(
+        self,
+        messages: Sequence[ChatMessage],
+        tools: Sequence[CanonicalFunctionToolDefinition],
+        *,
+        temperature: float | None = None,
+        max_tokens: int | None = None,
+        tool_choice: NativeToolChoice | None = None,
+        run_id: str | None = None,
+    ) -> Iterable[LLMStreamEvent]:
+        self._refresh_inner_adapter()
+        require_declared_features(self._inner, LLMFeature.TOOL_STREAMING)
+        return self._inner.stream_with_tools(
+            messages,
+            tools,
+            temperature=temperature,
+            max_tokens=max_tokens,
+            tool_choice=tool_choice,
+            run_id=run_id,
+        )
+
     def generate_structured(
         self,
         messages: Sequence[ChatMessage],
@@ -221,6 +243,9 @@ class RoutingEvaluatingLLMAdapter(BaseLLMAdapter):
 
     def supports_tools(self) -> bool:
         return self._inner.supports_tools()
+
+    def supports_tool_streaming(self) -> bool:
+        return read_feature_flag(self._inner, LLMFeature.TOOL_STREAMING)
 
     def supports_vision(self) -> bool:
         return self._inner.supports_vision()

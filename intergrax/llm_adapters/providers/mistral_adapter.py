@@ -3,11 +3,11 @@
 # Use, modification, or distribution without written permission is prohibited.
 
 from __future__ import annotations
-from intergrax.utils import attribute_access
 
 import json
 import os
-from typing import Any, Dict, Iterable, List, Optional, Protocol, Sequence, Union
+from collections.abc import Iterable, Sequence
+from typing import Any, Protocol
 
 from mistralai import Mistral
 from mistralai.models import ChatCompletionResponse
@@ -22,27 +22,30 @@ from intergrax.llm_adapters._shared.messages import map_chat_completion_messages
 from intergrax.llm_adapters._shared.openai_completion_mapping import (
     adapter_response_from_openai_chat_completion,
 )
-from intergrax.llm_adapters.contracts.adapter_response import LLMAdapterResponse
-from intergrax.llm_adapters.contracts.finish_reason import LLMFinishReason
-from intergrax.llm_adapters.contracts.llm_adapter import LLMAdapter
-from intergrax.llm_adapters.base.base_llm_adapter import BaseLLMAdapter
-from intergrax.llm_adapters.contracts.llm_provider import LLMProvider
-from intergrax.llm_adapters.contracts.structured_result import LLMStructuredResult, TStructured
-from intergrax.llm_adapters.contracts.stream_event import LLMStreamEvent
-from intergrax.llm_adapters.contracts.token_usage import LLMTokenUsage
 from intergrax.llm_adapters._shared.openai_tool_call_interop import tool_calls_from_openai_dicts
 from intergrax.llm_adapters._shared.openai_tool_choice_projection import (
     project_openai_compatible_tool_choice,
 )
+from intergrax.llm_adapters.base.base_llm_adapter import BaseLLMAdapter
+from intergrax.llm_adapters.contracts.adapter_response import LLMAdapterResponse
+from intergrax.llm_adapters.contracts.finish_reason import LLMFinishReason
+from intergrax.llm_adapters.contracts.llm_provider import LLMProvider
 from intergrax.llm_adapters.contracts.native_tool_choice import NativeToolChoice
-from intergrax.llm_adapters.registry.context_window import init_adapter_context_window_tokens
+from intergrax.llm_adapters.contracts.stream_event import LLMStreamEvent
+from intergrax.llm_adapters.contracts.structured_result import LLMStructuredResult, TStructured
+from intergrax.llm_adapters.contracts.token_usage import LLMTokenUsage
+from intergrax.llm_adapters.registry.context_window import (
+    init_adapter_context_window_tokens,
+    resolve_context_window_tokens,
+)
+from intergrax.utils import attribute_access
 
 
 # -----------------------------
 # Typed streaming contracts
 # -----------------------------
 class _MistralDelta(Protocol):
-    content: Optional[str]
+    content: str | None
 
 
 class _MistralStreamChoice(Protocol):
@@ -50,7 +53,7 @@ class _MistralStreamChoice(Protocol):
 
 
 class _MistralStreamChunk(Protocol):
-    choices: List[_MistralStreamChoice]
+    choices: list[_MistralStreamChoice]
 
 
 class MistralChatAdapter(BaseLLMAdapter):
@@ -64,10 +67,10 @@ class MistralChatAdapter(BaseLLMAdapter):
     - Native tools via Mistral Chat Completions API.
     """
 
-    _MISTRAL_CONTEXT_WINDOWS: Dict[str, int] = {
+    _MISTRAL_CONTEXT_WINDOWS: dict[str, int] = {
         "mistral-small-latest": 32_000,
         "mistral-medium-latest": 32_000,
-        "mistral-large-latest": 32_000,
+        "mistral-large-latest": 128_000,
         "codestral-latest": 32_000,
     }
 
@@ -76,8 +79,8 @@ class MistralChatAdapter(BaseLLMAdapter):
 
     def __init__(
         self,
-        client: Optional[Mistral] = None,
-        model: Optional[str] = None,
+        client: Mistral | None = None,
+        model: str | None = None,
         **defaults,
     ):
         super().__init__()
@@ -88,11 +91,8 @@ class MistralChatAdapter(BaseLLMAdapter):
         resolved_model = model or self.DEFAULT_MODEL
 
         if client is None:
-
             if not api_key:
-                raise RuntimeError(
-                    "MISTRAL_API_KEY not found in environment variables."
-                )
+                raise RuntimeError("MISTRAL_API_KEY not found in environment variables.")
 
             client = Mistral(api_key=api_key)
 
@@ -126,9 +126,9 @@ class MistralChatAdapter(BaseLLMAdapter):
         self,
         messages: Sequence[ChatMessage],
         *,
-        temperature: Optional[float] = None,
-        max_tokens: Optional[int] = None,
-        run_id: Optional[str] = None,
+        temperature: float | None = None,
+        max_tokens: int | None = None,
+        run_id: str | None = None,
     ) -> LLMAdapterResponse:
         call = self.usage.begin_call(run_id=run_id, adapter=self)
         response: LLMAdapterResponse | None = None
@@ -136,7 +136,7 @@ class MistralChatAdapter(BaseLLMAdapter):
         err_type = None
 
         try:
-            in_tok = int(self.estimate_tokens_for_messages(messages, model_hint=self.model_name_for_token_estimation))
+            in_tok = int(self.estimate_tokens_for_messages(messages, model_hint=self.model_name_for_token_estimation))  # noqa: F841
 
             system_text, convo = split_system_messages(messages)
 
@@ -148,9 +148,7 @@ class MistralChatAdapter(BaseLLMAdapter):
                 stream=False,
             )
 
-            res: ChatCompletionResponse = self._execute(
-                lambda: self.client.chat.complete(**payload)
-            )
+            res: ChatCompletionResponse = self._execute(lambda: self.client.chat.complete(**payload))
 
             response = adapter_response_from_openai_chat_completion(
                 res,
@@ -174,15 +172,13 @@ class MistralChatAdapter(BaseLLMAdapter):
                 error_type=err_type,
             )
 
-
-
     def stream_messages(
         self,
         messages: Sequence[ChatMessage],
         *,
-        temperature: Optional[float] = None,
-        max_tokens: Optional[int] = None,
-        run_id: Optional[str] = None,
+        temperature: float | None = None,
+        max_tokens: int | None = None,
+        run_id: str | None = None,
     ) -> Iterable[LLMStreamEvent]:
         call = self.usage.begin_call(run_id=run_id, adapter=self)
         success = False
@@ -203,11 +199,9 @@ class MistralChatAdapter(BaseLLMAdapter):
                 stream=True,
             )
 
-            buf: List[str] = []
+            buf: list[str] = []
 
-            for chunk in self._execute_streaming(
-                lambda: self.client.chat.complete(**payload)
-            ):
+            for chunk in self._execute_streaming(lambda: self.client.chat.complete(**payload)):
                 if not chunk.choices:
                     continue
                 delta = chunk.choices[0].delta
@@ -239,14 +233,22 @@ class MistralChatAdapter(BaseLLMAdapter):
                 error_type=err_type,
             )
 
-
-
     # ------------------------------------------------------------------
     # Internals
     # ------------------------------------------------------------------
 
     def _estimate_mistral_context_window(self, model: str) -> int:
-        return self._MISTRAL_CONTEXT_WINDOWS.get(model, 32_000)
+        return resolve_context_window_tokens(
+            LLMProvider.MISTRAL,
+            model,
+            legacy_windows=self._MISTRAL_CONTEXT_WINDOWS,
+        )
+
+    def supports_streaming(self) -> bool:
+        return True
+
+    def supports_tool_streaming(self) -> bool:
+        return True
 
     def supports_tools(self) -> bool:
         return True
@@ -257,12 +259,12 @@ class MistralChatAdapter(BaseLLMAdapter):
     def generate_with_tools(
         self,
         messages: Sequence[ChatMessage],
-        tools_schema: List[Dict[str, Any]],
+        tools_schema: list[dict[str, Any]],
         *,
-        temperature: Optional[float] = None,
-        max_tokens: Optional[int] = None,
+        temperature: float | None = None,
+        max_tokens: int | None = None,
         tool_choice: NativeToolChoice | None = None,
-        run_id: Optional[str] = None,
+        run_id: str | None = None,
     ) -> LLMAdapterResponse:
         call = self.usage.begin_call(run_id=run_id, adapter=self)
         response: LLMAdapterResponse | None = None
@@ -280,9 +282,7 @@ class MistralChatAdapter(BaseLLMAdapter):
                 tools=tools_schema,
                 tool_choice=tool_choice,
             )
-            res: ChatCompletionResponse = self._execute(
-                lambda: self.client.chat.complete(**payload)
-            )
+            res: ChatCompletionResponse = self._execute(lambda: self.client.chat.complete(**payload))
             response = adapter_response_from_openai_chat_completion(
                 res,
                 model=self.model,
@@ -306,20 +306,20 @@ class MistralChatAdapter(BaseLLMAdapter):
     def stream_with_tools(
         self,
         messages: Sequence[ChatMessage],
-        tools_schema: List[Dict[str, Any]],
+        tools_schema: list[dict[str, Any]],
         *,
-        temperature: Optional[float] = None,
-        max_tokens: Optional[int] = None,
+        temperature: float | None = None,
+        max_tokens: int | None = None,
         tool_choice: NativeToolChoice | None = None,
-        run_id: Optional[str] = None,
+        run_id: str | None = None,
     ) -> Iterable[LLMStreamEvent]:
         call = self.usage.begin_call(run_id=run_id, adapter=self)
         success = False
         err_type = None
         in_tok = 0
         out_tok = 0
-        buf: List[str] = []
-        tool_calls_acc: List[Dict[str, Any]] = []
+        buf: list[str] = []
+        tool_calls_acc: list[dict[str, Any]] = []
 
         try:
             in_tok = int(self.estimate_tokens_for_messages(messages, model_hint=self.model_name_for_token_estimation))
@@ -333,9 +333,7 @@ class MistralChatAdapter(BaseLLMAdapter):
                 tools=tools_schema,
                 tool_choice=tool_choice,
             )
-            for chunk in self._execute_streaming(
-                lambda: self.client.chat.complete(**payload)
-            ):
+            for chunk in self._execute_streaming(lambda: self.client.chat.complete(**payload)):
                 if not chunk.choices:
                     continue
                 delta = chunk.choices[0].delta
@@ -390,16 +388,15 @@ class MistralChatAdapter(BaseLLMAdapter):
         messages: Sequence[ChatMessage],
         output_model: type[TStructured],
         *,
-        temperature: Optional[float] = None,
-        max_tokens: Optional[int] = None,
-        run_id: Optional[str] = None,
+        temperature: float | None = None,
+        max_tokens: int | None = None,
+        run_id: str | None = None,
     ) -> LLMStructuredResult[TStructured]:
         schema = self._model_json_schema(output_model)
         schema_msg = ChatMessage(
             role="user",
             content=(
-                "Return ONLY a single JSON object matching this JSON Schema:\n"
-                + json.dumps(schema, ensure_ascii=False)
+                "Return ONLY a single JSON object matching this JSON Schema:\n" + json.dumps(schema, ensure_ascii=False)
             ),
         )
         adapter_response = self.generate_messages(
@@ -418,10 +415,10 @@ class MistralChatAdapter(BaseLLMAdapter):
         *,
         system_text: str,
         convo: Sequence[ChatMessage],
-        temperature: Optional[float],
-        max_tokens: Optional[int],
+        temperature: float | None,
+        max_tokens: int | None,
         stream: bool,
-        tools: Optional[List[Dict[str, Any]]] = None,
+        tools: list[dict[str, Any]] | None = None,
         tool_choice: NativeToolChoice | None = None,
     ) -> dict:
         """
@@ -456,5 +453,5 @@ class MistralChatAdapter(BaseLLMAdapter):
 
         return payload
 
-    def _map_messages(self, *, system_text: str, convo: Sequence[ChatMessage]) -> List[dict]:
+    def _map_messages(self, *, system_text: str, convo: Sequence[ChatMessage]) -> list[dict]:
         return map_chat_completion_messages(system_text=system_text, convo=convo)

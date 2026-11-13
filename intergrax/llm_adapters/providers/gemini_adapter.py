@@ -3,11 +3,11 @@
 # Use, modification, or distribution without written permission is prohibited.
 
 from __future__ import annotations
-from intergrax.utils import attribute_access
 
 import json
 import os
-from typing import Any, Dict, Iterable, List, Optional, Sequence, Union
+from collections.abc import Iterable, Sequence
+from typing import Any
 
 from google import genai
 from google.genai import types
@@ -19,20 +19,23 @@ from intergrax.llm_adapters._shared.adapter_response_builders import (
     partial_stream_event,
 )
 from intergrax.llm_adapters._shared.messages import split_system_messages
+from intergrax.llm_adapters._shared.openai_tool_call_interop import tool_calls_from_openai_dicts
 from intergrax.llm_adapters._shared.tool_schema import openai_tools_to_gemini
+from intergrax.llm_adapters.base.base_llm_adapter import BaseLLMAdapter
 from intergrax.llm_adapters.contracts.adapter_response import LLMAdapterResponse
 from intergrax.llm_adapters.contracts.finish_reason import LLMFinishReason
-from intergrax.llm_adapters.contracts.llm_adapter import LLMAdapter
-from intergrax.llm_adapters.base.base_llm_adapter import BaseLLMAdapter
 from intergrax.llm_adapters.contracts.llm_provider import LLMProvider
-from intergrax.llm_adapters.contracts.provider_extensions import LLMProviderExtensions
-from intergrax.llm_adapters.contracts.structured_result import LLMStructuredResult, TStructured
-from intergrax.llm_adapters.contracts.stream_event import LLMStreamEvent
-from intergrax.llm_adapters.contracts.token_usage import LLMTokenUsage
-from intergrax.llm_adapters._shared.openai_tool_call_interop import tool_calls_from_openai_dicts
-from intergrax.llm_adapters.contracts.tool_call import LLMToolCall
 from intergrax.llm_adapters.contracts.native_tool_choice import NativeToolChoice
-from intergrax.llm_adapters.registry.context_window import init_adapter_context_window_tokens
+from intergrax.llm_adapters.contracts.provider_extensions import LLMProviderExtensions
+from intergrax.llm_adapters.contracts.stream_event import LLMStreamEvent
+from intergrax.llm_adapters.contracts.structured_result import LLMStructuredResult, TStructured
+from intergrax.llm_adapters.contracts.token_usage import LLMTokenUsage
+from intergrax.llm_adapters.contracts.tool_call import LLMToolCall
+from intergrax.llm_adapters.registry.context_window import (
+    init_adapter_context_window_tokens,
+    resolve_context_window_tokens,
+)
+from intergrax.utils import attribute_access
 
 
 class GeminiChatAdapter(BaseLLMAdapter):
@@ -48,11 +51,11 @@ class GeminiChatAdapter(BaseLLMAdapter):
 
     # Conservative context window estimates (input + output).
     # Keep this small/safe unless you add a real token counter for Gemini.
-    _GEMINI_CONTEXT_WINDOWS: Dict[str, int] = {
+    _GEMINI_CONTEXT_WINDOWS: dict[str, int] = {
         "gemini-2.5-pro": 1_000_000,
-        "gemini-2.5-flash": 1_000_000,
+        "gemini-2.5-flash": 1_048_576,
         "gemini-2.0-pro": 1_000_000,
-        "gemini-2.0-flash": 1_000_000,
+        "gemini-2.0-flash": 1_048_576,
     }
 
     DEFAULT_MODEL = "gemini-2.5-flash"
@@ -60,8 +63,8 @@ class GeminiChatAdapter(BaseLLMAdapter):
 
     def __init__(
         self,
-        client: Optional[genai.Client] = None,
-        model: Optional[str] = None,
+        client: genai.Client | None = None,
+        model: str | None = None,
         **defaults,
     ):
         super().__init__()
@@ -72,11 +75,8 @@ class GeminiChatAdapter(BaseLLMAdapter):
         resolved_model = model or self.DEFAULT_MODEL
 
         if client is None:
-
             if not api_key:
-                raise RuntimeError(
-                    "GOOGLE_API_KEY not found in environment variables."
-                )
+                raise RuntimeError("GOOGLE_API_KEY not found in environment variables.")
 
             client = genai.Client(api_key=api_key)
 
@@ -110,9 +110,9 @@ class GeminiChatAdapter(BaseLLMAdapter):
         self,
         messages: Sequence[ChatMessage],
         *,
-        temperature: Optional[float] = None,
-        max_tokens: Optional[int] = None,
-        run_id: Optional[str] = None,
+        temperature: float | None = None,
+        max_tokens: int | None = None,
+        run_id: str | None = None,
     ) -> LLMAdapterResponse:
         call = self.usage.begin_call(run_id=run_id, adapter=self)
         response: LLMAdapterResponse | None = None
@@ -179,22 +179,20 @@ class GeminiChatAdapter(BaseLLMAdapter):
                 error_type=err_type,
             )
 
-
-
     def stream_messages(
         self,
         messages: Sequence[ChatMessage],
         *,
-        temperature: Optional[float] = None,
-        max_tokens: Optional[int] = None,
-        run_id: Optional[str] = None,
+        temperature: float | None = None,
+        max_tokens: int | None = None,
+        run_id: str | None = None,
     ) -> Iterable[LLMStreamEvent]:
         call = self.usage.begin_call(run_id=run_id, adapter=self)
         success = False
         err_type = None
         in_tok = 0
         out_tok = 0
-        buf: List[str] = []
+        buf: list[str] = []
 
         try:
             in_tok = int(self.estimate_tokens_for_messages(messages, model_hint=self.model_name_for_token_estimation))
@@ -258,9 +256,7 @@ class GeminiChatAdapter(BaseLLMAdapter):
                         buf.append(txt)
                         yield partial_stream_event(delta_content=txt)
 
-            out_tok = int(
-                self.estimate_tokens_for_text("".join(buf), model_hint=self.model_name_for_token_estimation)
-            )
+            out_tok = int(self.estimate_tokens_for_text("".join(buf), model_hint=self.model_name_for_token_estimation))
             success = True
             yield final_stream_event(
                 response=build_adapter_response(
@@ -286,15 +282,23 @@ class GeminiChatAdapter(BaseLLMAdapter):
                 error_type=err_type,
             )
 
-
-
     # ------------------------------------------------------------------
     # Internals
     # ------------------------------------------------------------------
 
     def _estimate_gemini_context_window(self, model: str) -> int:
         # Safe fallback (small) if unknown.
-        return self._GEMINI_CONTEXT_WINDOWS.get(model, 32_000)
+        return resolve_context_window_tokens(
+            LLMProvider.GEMINI,
+            model,
+            legacy_windows=self._GEMINI_CONTEXT_WINDOWS,
+        )
+
+    def supports_streaming(self) -> bool:
+        return True
+
+    def supports_tool_streaming(self) -> bool:
+        return True
 
     def supports_tools(self) -> bool:
         return True
@@ -308,12 +312,12 @@ class GeminiChatAdapter(BaseLLMAdapter):
     def generate_with_tools(
         self,
         messages: Sequence[ChatMessage],
-        tools_schema: List[Dict[str, Any]],
+        tools_schema: list[dict[str, Any]],
         *,
-        temperature: Optional[float] = None,
-        max_tokens: Optional[int] = None,
+        temperature: float | None = None,
+        max_tokens: int | None = None,
         tool_choice: NativeToolChoice | None = None,
-        run_id: Optional[str] = None,
+        run_id: str | None = None,
     ) -> LLMAdapterResponse:
         call = self.usage.begin_call(run_id=run_id, adapter=self)
         response: LLMAdapterResponse | None = None
@@ -367,19 +371,19 @@ class GeminiChatAdapter(BaseLLMAdapter):
     def stream_with_tools(
         self,
         messages: Sequence[ChatMessage],
-        tools_schema: List[Dict[str, Any]],
+        tools_schema: list[dict[str, Any]],
         *,
-        temperature: Optional[float] = None,
-        max_tokens: Optional[int] = None,
+        temperature: float | None = None,
+        max_tokens: int | None = None,
         tool_choice: NativeToolChoice | None = None,
-        run_id: Optional[str] = None,
+        run_id: str | None = None,
     ) -> Iterable[LLMStreamEvent]:
         call = self.usage.begin_call(run_id=run_id, adapter=self)
         success = False
         err_type = None
         in_tok = 0
         out_tok = 0
-        buf: List[str] = []
+        buf: list[str] = []
 
         try:
             in_tok = int(self.estimate_tokens_for_messages(messages, model_hint=self.model_name_for_token_estimation))
@@ -446,16 +450,15 @@ class GeminiChatAdapter(BaseLLMAdapter):
         messages: Sequence[ChatMessage],
         output_model: type[TStructured],
         *,
-        temperature: Optional[float] = None,
-        max_tokens: Optional[int] = None,
-        run_id: Optional[str] = None,
+        temperature: float | None = None,
+        max_tokens: int | None = None,
+        run_id: str | None = None,
     ) -> LLMStructuredResult[TStructured]:
         schema = self._model_json_schema(output_model)
         schema_msg = ChatMessage(
             role="user",
             content=(
-                "Return ONLY a single JSON object matching this JSON Schema:\n"
-                + json.dumps(schema, ensure_ascii=False)
+                "Return ONLY a single JSON object matching this JSON Schema:\n" + json.dumps(schema, ensure_ascii=False)
             ),
         )
         adapter_response = self.generate_messages(
@@ -470,8 +473,8 @@ class GeminiChatAdapter(BaseLLMAdapter):
         return LLMStructuredResult(parsed=parsed, response=adapter_response)
 
     def _parse_gemini_response(self, response: Any) -> tuple[str, tuple[LLMToolCall, ...]]:
-        text_parts: List[str] = []
-        tool_calls_raw: List[Dict[str, Any]] = []
+        text_parts: list[str] = []
+        tool_calls_raw: list[dict[str, Any]] = []
         candidates = attribute_access.optional(response, "candidates", None) or []
         for cand in candidates:
             content = attribute_access.optional(cand, "content", None)
@@ -500,9 +503,9 @@ class GeminiChatAdapter(BaseLLMAdapter):
         self,
         *,
         system_text: str,
-        temperature: Optional[float],
-        max_tokens: Optional[int],
-        tools: Optional[List[Any]] = None,
+        temperature: float | None,
+        max_tokens: int | None,
+        tools: list[Any] | None = None,
     ) -> types.GenerateContentConfig:
         # Merge defaults (adapter-level) with call-level overrides.
         # Keep it explicit: only pass supported fields.
@@ -522,23 +525,23 @@ class GeminiChatAdapter(BaseLLMAdapter):
 
         return types.GenerateContentConfig(**kwargs)
 
-    def _map_history(self, msgs: Sequence[ChatMessage]) -> List[types.Content]:
+    def _map_history(self, msgs: Sequence[ChatMessage]) -> list[types.Content]:
         """
         Map prior messages (excluding the last user prompt) into chat history.
         Uses official typed Content classes.
         """
-        out: List[types.Content] = []
+        out: list[types.Content] = []
         for m in msgs:
             if not m.content:
                 continue
             out.append(self._to_content(m))
         return out
 
-    def _map_contents(self, msgs: Sequence[ChatMessage]) -> List[types.Content]:
+    def _map_contents(self, msgs: Sequence[ChatMessage]) -> list[types.Content]:
         """
         Map full conversation into contents list (for generate_content fallback).
         """
-        out: List[types.Content] = []
+        out: list[types.Content] = []
         for m in msgs:
             if not m.content:
                 continue
@@ -555,7 +558,7 @@ class GeminiChatAdapter(BaseLLMAdapter):
             return types.UserContent(parts=[fr])
 
         if m.role == "assistant" and m.tool_calls:
-            parts: List[Any] = []
+            parts: list[Any] = []
             if m.content:
                 parts.append(types.Part(text=m.content))
             for tc in m.tool_calls:
