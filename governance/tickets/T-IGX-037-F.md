@@ -12,7 +12,8 @@ Canonical plan: [`governance/tickets/plans/PLAN_T-IGX-037-F.md`](plans/PLAN_T-IG
 
 ## Approved
 
-_Not approved._ No `Approved:` line has been written. The implementer does not write one for its own ticket. The ticket waits for an operator or a commissioned delegate (see `governance/tickets/README.md`).
+Approved: operator-delegate @ 2026-11-13T08:54:39+01:00
+Delegation: docs/project/maintainers/qualification/scenario_factory_x/operator_decisions/DELEGATION-SFX-CLOSEOUT.md@7d504964a14ca47713d3067b8de0987d99d0a2c3
 
 ## Test contract
 
@@ -29,7 +30,7 @@ uv run python -m scripts.governance.igx_gov ticket
 
 ## Lifecycle state
 
-plan_pending
+plan_approved
 
 ## Lease holder
 
