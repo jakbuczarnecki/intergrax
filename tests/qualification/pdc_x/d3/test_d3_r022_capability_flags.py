@@ -71,6 +71,7 @@ def test_streaming_only_adapter_declares_no_tool_streaming() -> None:
 
 
 def _claude() -> Any:
+    pytest.importorskip("anthropic", reason="optional extra llm-anthropic; the source gate covers the Claude adapter")
     from intergrax.llm_adapters.providers.claude_adapter import ClaudeChatAdapter
 
     return ClaudeChatAdapter(client=MagicMock(), model="claude-3-5-sonnet-latest")
