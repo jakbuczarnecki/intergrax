@@ -62,7 +62,7 @@ This skill loads no persona itself. Each step skill names its brief in `agent-en
    - `current_stage` the stage just reached; `lifecycle_state_snapshot` always `DRAFT`;
    - `active_artifact_refs` one `artifact_version_ref` per current contract draft (`schema_id`, `artifact_id`, `version`, placeholder digest), sorted by `schema_id`;
    - `pending_question_ids` every open `Q-<nn>` and `IQ-<nn>` id from `open_questions.md` (any `blocking_for`), sorted ascending;
-   - `resume_cursor`, by this precedence: (1) the first open id with `blocking_for: draft`; else (2) the next step id that has a v0 skill (for example `step:CONFIGURE`); else (3) the first open id with `blocking_for: build`; else `null` when the session is complete.
+   - `resume_cursor`, by this precedence: (1) the first open id with `blocking_for: draft`; else (2) the next step id that has a v0 skill, except `IMPROVE` (user-triggered, never a cursor; for example `step:CONFIGURE`); else (3) the first open id with `blocking_for: build`; else `null` when the session is complete.
 7. **Close.** At the end, or when the user stops, give the draft folder path, the file list, the open questions, and the next available step. State plainly that the drafts are proposals and that nothing was approved, built, run or certified.
 
 ## Outputs
