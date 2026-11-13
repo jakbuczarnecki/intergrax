@@ -43,3 +43,11 @@ The implementer session and its implementer subagents never write `Approved:` li
 - **Effect on the signature:** the plan digest of T-IGX-036-T changed, so the earlier `Approved:` line no longer applies. The ticket returns to `plan_pending`.
 - **Delegation:** the delegate session may re-sign **T-IGX-036-T only**, under the same checks as above, additionally confirming that the added paths are tests only and that no assertion is weakened.
 - **Not delegated** stays as listed above.
+
+## Amendment 3 — import cycle and launcher stub (T-IGX-036-T)
+
+- **Basis:** the standing Operator authorization 4 in `DELEGATION-PDC-STANDING.md` and the delegation scope above; each added path closes a finding of the implementer report for items 1-7 of the same batch (PR 517).
+- **Extension** (two paths, neither under a hotspot): `intergrax/runtime/observability/export_boundary.py` (remove two redundant module-level imports that are already imported under `TYPE_CHECKING`, closing the second import cycle of item 5) and `tests/qualification/pdc_x/d4/test_d4_no_product_vocabulary.py` (stub path of the launcher follows item 4; no assertion weakened).
+- **Effect on the signature:** the plan digest of T-IGX-036-T changed, so the earlier `Approved:` line no longer applies. The ticket returns to `plan_pending`.
+- **Delegation:** the delegate session may re-sign **T-IGX-036-T only**, under the same checks as above, additionally confirming that the two added paths are the only change and that no assertion is weakened.
+- **Not delegated** stays as listed above.
