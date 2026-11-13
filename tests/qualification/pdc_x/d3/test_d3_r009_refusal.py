@@ -143,6 +143,7 @@ def test_openai_responses_without_refusal_part_is_unchanged() -> None:
 
 
 def test_claude_refusal_stop_reason_is_normalized() -> None:
+    pytest.importorskip("anthropic", reason="optional extra llm-anthropic; the source gate covers the Claude adapter")
     from intergrax.llm_adapters.providers.claude_adapter import ClaudeChatAdapter
 
     adapter = ClaudeChatAdapter(client=MagicMock(), model="claude-3-5-sonnet-latest")
@@ -152,6 +153,7 @@ def test_claude_refusal_stop_reason_is_normalized() -> None:
 
 
 def test_claude_end_turn_is_not_a_refusal() -> None:
+    pytest.importorskip("anthropic", reason="optional extra llm-anthropic; the source gate covers the Claude adapter")
     from intergrax.llm_adapters.providers.claude_adapter import ClaudeChatAdapter
 
     adapter = ClaudeChatAdapter(client=MagicMock(), model="claude-3-5-sonnet-latest")
