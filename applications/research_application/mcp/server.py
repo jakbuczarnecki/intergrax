@@ -6,8 +6,9 @@ from __future__ import annotations
 
 from fastmcp import FastMCP
 from intergrax.applications._shared.mcp_application_server import (
+    McpIdentityMode,
     compose_application_mcp_server,
-    execute_mcp_agent_task,
+    execute_mcp_agent_task_with_resolved_identity,
     research_pipeline_binding,
 )
 from intergrax.runtime.execution.host_task import HostTaskExecutionPort
@@ -20,6 +21,7 @@ def build_research_mcp_server(
     registry: AgentRegistryRead,
     route_prefix: str,
     tool_registry=None,
+    identity_mode: McpIdentityMode = McpIdentityMode.HARNESS_BOUND,
 ) -> FastMCP:
     """MCP tools for research host — includes research pipeline tool as host custom binding."""
     _ = route_prefix
@@ -29,16 +31,19 @@ def build_research_mcp_server(
 
     async def run_research_pipeline(
         message: str,
-        tenant_id: str = "research",
-        user_id: str = "research-user",
+        tenant_id: str | None = None,
+        user_id: str | None = None,
     ) -> dict[str, object]:
         """Run research → summarize pipeline (same as POST .../run)."""
-        return await execute_mcp_agent_task(
+        return await execute_mcp_agent_task_with_resolved_identity(
             host_execution,
             message=message,
             capability="research.pipeline",
-            tenant_id=tenant_id,
-            user_id=user_id,
+            asserted_tenant_id=tenant_id,
+            asserted_user_id=user_id,
+            default_tenant_id="research",
+            default_user_id="research-user",
+            identity_mode=identity_mode,
             intent="research_summarize",
         )
 
@@ -50,6 +55,7 @@ def build_research_mcp_server(
         default_tenant_id="research",
         default_user_id="research-user",
         tool_registry=tool_reg,
+        identity_mode=identity_mode,
         extra_bindings=(research_pipeline_binding(),),
         custom_host_tools={"run_research_pipeline": run_research_pipeline},
     )

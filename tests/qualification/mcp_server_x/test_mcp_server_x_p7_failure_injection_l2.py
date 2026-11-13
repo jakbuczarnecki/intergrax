@@ -206,7 +206,7 @@ async def test_acc_13_cancel_of_in_flight_run_agent_reaches_governed_cancel() ->
     supervision = build_host_root_execution_transport_detachment_supervisor()
     mcp = _reference_server(host.port, task_control_mutation_boundary=_boundary())
     with (
-        patch(f"{_ENGINE}.resolve_mcp_run_agent_identity", return_value=_identity_resolution()),
+        patch(f"{_NEXUS_SERVER}.resolve_mcp_run_agent_identity", return_value=_identity_resolution()),
         patch(f"{_NEXUS_SERVER}.resolve_transport_detachment_supervision_from_request", return_value=supervision),
     ):
         call = asyncio.create_task(mcp.call_tool("run_agent", {"message": "hang"}))
@@ -281,7 +281,7 @@ async def test_acc_13_cancel_by_another_tenant_principal_is_not_applied() -> Non
     supervision = build_host_root_execution_transport_detachment_supervisor()
     mcp = _reference_server(host.port, task_control_mutation_boundary=_boundary())
     with (
-        patch(f"{_ENGINE}.resolve_mcp_run_agent_identity", return_value=_identity_resolution()),
+        patch(f"{_NEXUS_SERVER}.resolve_mcp_run_agent_identity", return_value=_identity_resolution()),
         patch(f"{_NEXUS_SERVER}.resolve_transport_detachment_supervision_from_request", return_value=supervision),
     ):
         call = asyncio.create_task(mcp.call_tool("run_agent", {"message": "hang"}))
@@ -392,7 +392,7 @@ async def test_acc_15_disconnect_observation_admits_governed_cancel_in_process()
 
     mcp = _reference_server(host.port, task_control_mutation_boundary=_boundary())
     with (
-        patch(f"{_ENGINE}.resolve_mcp_run_agent_identity", return_value=_identity_resolution()),
+        patch(f"{_NEXUS_SERVER}.resolve_mcp_run_agent_identity", return_value=_identity_resolution()),
         patch(f"{_NEXUS_SERVER}.resolve_transport_detachment_supervision_from_request", return_value=supervision),
         patch(f"{_TRANSPORT}._client_disconnected", side_effect=_probe),
     ):

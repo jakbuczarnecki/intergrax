@@ -24,10 +24,10 @@ from intergrax.applications._shared.mcp_transport_detachment_supervision_couplin
     build_transport_detachment_supervision_shutdown_lifespan,
     resolve_mcp_coupling_transport_detachment_supervision,
 )
+from intergrax.applications.contracts.environment_profile import ApplicationEnvironmentProfile
 from intergrax.contracts.root_execution_transport_detachment_supervision import (
     RootExecutionTransportDetachmentSupervisionPort,
 )
-from intergrax.applications.contracts.environment_profile import ApplicationEnvironmentProfile
 
 if TYPE_CHECKING:
     from intergrax.applications._shared.harness_host_runtime import HarnessHostRuntime
@@ -38,6 +38,8 @@ from intergrax.applications._shared.harness_auth import (
 from intergrax.runtime.governance.control_plane_mutation_authorization import (
     ControlPlaneMutationAuthorizationBoundary,
 )
+
+
 def _normalize_mount_path(mount_path: str) -> str:
     path = (mount_path or "/mcp").strip()
     if not path.startswith("/"):
@@ -77,12 +79,12 @@ def couple_fastapi_with_mcp(
     )
     if inner_auth is not None:
         mcp_app.state.harness_auth = inner_auth
+    # Request-time resolver: identity wired on the host after coupling (factory ordering) still reaches MCP.
+    mcp_app.state.harness_auth_resolver = lambda: resolve_harness_auth_state_from_app(wrapper) or inner_auth
     if task_control_mutation_boundary is not None:
         mcp_app.state.task_control_mutation_boundary = task_control_mutation_boundary
     if transport_detachment_supervision is not None:
-        mcp_app.state.root_execution_transport_detachment_supervision = (
-            transport_detachment_supervision
-        )
+        mcp_app.state.root_execution_transport_detachment_supervision = transport_detachment_supervision
     wrapper.mount(mcp_mount, mcp_app)
     wrapper.mount("/", fastapi_app)
     require_auth = inner_auth.require_api_key if inner_auth is not None else False

@@ -25,6 +25,7 @@ from intergrax.applications._shared.mcp_developer_api import (
     McpServerCompositionDeps,
     compose_mcp_server_from_definition,
 )
+from intergrax.applications._shared.mcp_identity_mode import McpIdentityMode
 from intergrax.contracts.execution_identity import mint_run_id, mint_task_id
 from intergrax.contracts.mcp_server_definition import (
     McpBindingVisibility,
@@ -123,6 +124,7 @@ def _deps(
         registry=agent_registry,
         tool_registry=tool_registry,
         custom_host_tools=custom,
+        identity_mode=McpIdentityMode.LOCAL_DEV_EXPLICIT,
     )
 
 

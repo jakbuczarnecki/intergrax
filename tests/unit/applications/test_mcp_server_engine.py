@@ -5,6 +5,7 @@ from __future__ import annotations
 from unittest.mock import AsyncMock, patch
 
 import pytest
+from intergrax.applications._shared.mcp_identity_mode import McpIdentityMode
 from intergrax.applications._shared.mcp_nexus_server import build_nexus_mcp_server
 from intergrax.applications._shared.mcp_server_engine import (
     McpServerCompositionDeps,
@@ -76,7 +77,11 @@ def test_compose_minimal_host_tools() -> None:
             McpHostBuiltinBinding(binding_id="run_agent", builtin=McpHostBuiltinId.RUN_AGENT),
         ),
     )
-    deps = McpServerCompositionDeps(host_execution=host_execution, registry=registry)
+    deps = McpServerCompositionDeps(
+        host_execution=host_execution,
+        registry=registry,
+        identity_mode=McpIdentityMode.LOCAL_DEV_EXPLICIT,
+    )
     compose_mcp_server_from_definition(definition, deps)
     assert "list_agents" in exposed_builtin_tool_names(definition)
     assert "run_agent" in exposed_builtin_tool_names(definition)
@@ -88,6 +93,7 @@ async def test_build_nexus_facade_still_exposes_core_tools() -> None:
     nexus_loop = NexusLoop(registry)
     host_execution = build_harness_host_task_execution(nexus_loop, orchestration_triggers=frozenset())
     mcp = build_nexus_mcp_server(
+        identity_mode=McpIdentityMode.LOCAL_DEV_EXPLICIT,
         name="Facade",
         host_execution=host_execution,
         registry=registry,
@@ -184,6 +190,7 @@ def test_compose_with_catalog_registry_filters_allowlist() -> None:
         ),
     )
     deps = McpServerCompositionDeps(
+        identity_mode=McpIdentityMode.LOCAL_DEV_EXPLICIT,
         host_execution=host_execution,
         registry=registry,
         tool_registry=tool_registry,
@@ -225,6 +232,7 @@ async def test_host_custom_tool_compose_discover_and_invoke() -> None:
         bindings=(McpHostCustomBinding(binding_id="alpha", tool_name="alpha_tool"),),
     )
     deps = McpServerCompositionDeps(
+        identity_mode=McpIdentityMode.LOCAL_DEV_EXPLICIT,
         host_execution=host_execution,
         registry=registry,
         custom_host_tools={"alpha_tool": alpha_tool},
@@ -266,6 +274,7 @@ async def test_multiple_host_custom_tools_invoke_distinct_handlers() -> None:
         ),
     )
     deps = McpServerCompositionDeps(
+        identity_mode=McpIdentityMode.LOCAL_DEV_EXPLICIT,
         host_execution=host_execution,
         registry=registry,
         custom_host_tools={"alpha_tool": alpha_tool, "beta_tool": beta_tool},
@@ -296,6 +305,7 @@ async def test_host_custom_tool_rejects_kwargs_handlers() -> None:
         bindings=(McpHostCustomBinding(binding_id="bad", tool_name="bad_tool"),),
     )
     deps = McpServerCompositionDeps(
+        identity_mode=McpIdentityMode.LOCAL_DEV_EXPLICIT,
         host_execution=host_execution,
         registry=registry,
         custom_host_tools={"bad_tool": bad_tool},
@@ -320,6 +330,7 @@ async def test_host_custom_tool_rejects_missing_required_argument() -> None:
         bindings=(McpHostCustomBinding(binding_id="alpha", tool_name="alpha_tool"),),
     )
     deps = McpServerCompositionDeps(
+        identity_mode=McpIdentityMode.LOCAL_DEV_EXPLICIT,
         host_execution=host_execution,
         registry=registry,
         custom_host_tools={"alpha_tool": alpha_tool},

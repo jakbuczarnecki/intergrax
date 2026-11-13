@@ -45,6 +45,7 @@ from intergrax.applications._shared.mcp_developer_api import (
     McpServerCompositionDeps,
     compose_mcp_server_from_definition,
 )
+from intergrax.applications._shared.mcp_identity_mode import McpIdentityMode
 from intergrax.applications._shared.strict_production_serving_http_execution_principal import (
     get_strict_serving_http_caller_principal,
 )
@@ -205,10 +206,11 @@ def _recording_host() -> AsyncMock:
     return port
 
 
-def _reference_server(host: object):  # type: ignore[no-untyped-def]
+def _reference_server(host: object, **kwargs: object):  # type: ignore[no-untyped-def]
     return build_mcp_server_x_reference_qualification_server(
         host_execution=host,  # type: ignore[arg-type]
         registry=AgentRegistry(),
+        **kwargs,  # type: ignore[arg-type]
     )
 
 
@@ -317,6 +319,7 @@ def _catalog_server(
         bindings=tuple(bindings),
     )
     deps = McpServerCompositionDeps(
+        identity_mode=McpIdentityMode.LOCAL_DEV_EXPLICIT,
         host_execution=_recording_host(),
         registry=AgentRegistry(),
         tool_registry=tool_registry,
@@ -738,14 +741,25 @@ async def test_acc_12_tenant_required_without_principal_tenant_is_forbidden() ->
 
 
 @pytest.mark.asyncio
-async def test_acc_12_local_dev_state_without_credentials_trusts_client_assertion() -> None:
-    """Explicit local-dev profile (no key, no provider): assertions are accepted, no principal."""
+async def test_acc_12_explicit_local_dev_mode_trusts_client_assertion_for_loopback_only() -> None:
+    """``LOCAL_DEV_EXPLICIT`` (code opt-in) with the empty local-dev state admits assertions from loopback."""
     host = _recording_host()
-    mcp = _reference_server(host)
+    mcp = _reference_server(host, identity_mode=McpIdentityMode.LOCAL_DEV_EXPLICIT)
     with _mcp_http_request(_auth_app(HarnessAuthState())):
         await _call(mcp, "run_agent", {"message": "m", "tenant_id": "lab-tenant", "user_id": "lab-user"})
     task = host.execute.await_args.args[0]
     assert (task.tenant_id, task.user_id) == ("lab-tenant", "lab-user")
+
+
+@pytest.mark.asyncio
+async def test_acc_12_default_mode_refuses_local_dev_state_without_credentials() -> None:
+    """R-P8-01: the fail-closed default never lets client assertions establish tenant or user identity."""
+    host = _recording_host()
+    mcp = _reference_server(host, identity_mode=McpIdentityMode.HARNESS_BOUND)
+    with _mcp_http_request(_auth_app(HarnessAuthState())):
+        with pytest.raises(ToolError, match="MCP_PRINCIPAL_REQUIRED"):
+            await _call(mcp, "run_agent", {"message": "m", "tenant_id": "victim", "user_id": "victim-user"})
+    host.execute.assert_not_awaited()
 
 
 # --------------------------------------------------------------------------------------

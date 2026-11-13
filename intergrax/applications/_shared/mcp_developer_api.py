@@ -11,7 +11,9 @@ invocation bridge, or other engine internals.
 from __future__ import annotations
 
 from intergrax.applications._shared.mcp_application_server import (
+    McpIdentityMode,
     compose_application_mcp_server,
+    execute_mcp_agent_task_with_resolved_identity,
     research_pipeline_binding,
 )
 from intergrax.applications._shared.mcp_host_mount import (
@@ -56,6 +58,7 @@ __all__ = [
     "McpHostBuiltinBinding",
     "McpHostBuiltinId",
     "McpHostCustomBinding",
+    "McpIdentityMode",
     "McpServerCompositionDeps",
     "McpServerDefinition",
     "McpServerDefinitionErrorCode",
@@ -68,6 +71,7 @@ __all__ = [
     "compute_mcp_exposure_schema_fingerprint",
     "couple_mcp_fastmcp_on_harness_host",
     "execute_mcp_agent_task",
+    "execute_mcp_agent_task_with_resolved_identity",
     "normalize_mcp_mount_path",
     "nexus_legacy_server_definition",
     "research_pipeline_binding",

@@ -8,15 +8,14 @@ import asyncio
 from unittest.mock import AsyncMock, patch
 
 import intergrax.applications._shared.mcp_catalog_tools as mcp_catalog_tools_module
-
 import pytest
 from fastapi import FastAPI
 from fastapi.testclient import TestClient
 from fastmcp import Client
-from pydantic import BaseModel
-
+from fastmcp.exceptions import ToolError
 from intergrax.applications._shared.fastapi_mcp import couple_fastapi_with_mcp
 from intergrax.applications._shared.harness_auth import HarnessAuthState
+from intergrax.applications._shared.mcp_identity_mode import McpIdentityMode
 from intergrax.applications._shared.mcp_nexus_server import build_nexus_mcp_server
 from intergrax.contracts.execution_identity import mint_run_id, mint_task_id
 from intergrax.runtime.execution.host_task import HostTaskExecutionPort
@@ -27,9 +26,9 @@ from intergrax.runtime.task.task_result_authoritative_exposure_defaults import (
 )
 from intergrax.tools.core.contracts import ToolContract, ToolRiskLevel
 from intergrax.tools.mcp_result_bounds import emit_bounded_mcp_list
-from fastmcp.exceptions import ToolError
 from intergrax.tools.registry.runtime import ToolRegistry
 from intergrax.tools.tool_executor import ToolHandler
+from pydantic import BaseModel
 
 pytestmark = [pytest.mark.unit, pytest.mark.gate]
 
@@ -76,6 +75,7 @@ def _build_mcp(
 ) -> object:
     port = host or AsyncMock(spec=HostTaskExecutionPort)
     return build_nexus_mcp_server(
+        identity_mode=McpIdentityMode.LOCAL_DEV_EXPLICIT,
         name="tl11-discovery-qual",
         host_execution=port,
         registry=AgentRegistry(),

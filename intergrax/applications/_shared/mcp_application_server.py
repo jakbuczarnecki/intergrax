@@ -10,8 +10,10 @@ from collections.abc import Awaitable, Callable, Mapping, Sequence
 from fastmcp import FastMCP
 
 from intergrax.agents.tool_enablement import ToolEnablementProfile
+from intergrax.applications._shared.mcp_identity_mode import McpIdentityMode, coerce_mcp_identity_mode
 from intergrax.applications._shared.mcp_nexus_server import (
     execute_mcp_agent_task,
+    execute_mcp_agent_task_with_resolved_identity,
     legacy_server_id_from_display_name,
 )
 from intergrax.applications._shared.mcp_server_engine import (
@@ -61,6 +63,7 @@ def compose_application_mcp_server(
     auto_wire_catalog_transport_supervision: bool = True,
     catalog_root_child_work_ingress: object | None = None,
     enable_cross_loop_catalog_child: bool = False,
+    identity_mode: McpIdentityMode | str | None = None,
 ) -> FastMCP:
     """Compose FastMCP from ``McpServerDefinition`` — preferred Tier-3 entry over ad-hoc decorators."""
     catalog_tool_ids: list[str] = []
@@ -104,6 +107,7 @@ def compose_application_mcp_server(
         catalog_root_child_work_ingress=catalog_root_child_work_ingress,
         enable_cross_loop_catalog_child=enable_cross_loop_catalog_child,
         custom_host_tools=custom_host_tools,
+        identity_mode=coerce_mcp_identity_mode(identity_mode),
     )
     return compose_mcp_server_from_definition(definition, deps)
 
@@ -113,7 +117,9 @@ def research_pipeline_binding() -> McpHostCustomBinding:
 
 
 __all__ = [
+    "McpIdentityMode",
     "compose_application_mcp_server",
     "execute_mcp_agent_task",
+    "execute_mcp_agent_task_with_resolved_identity",
     "research_pipeline_binding",
 ]

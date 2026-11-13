@@ -20,6 +20,7 @@ from intergrax.applications._shared.mcp_developer_api import (
     McpHostBuiltinBinding,
     McpHostBuiltinId,
     McpHostCustomBinding,
+    McpIdentityMode,
     McpServerCompositionDeps,
     McpServerDefinition,
     build_mcp_server_definition,
@@ -147,6 +148,7 @@ def build_mcp_server_x_reference_qualification_server(
     task_control_mutation_boundary: ControlPlaneMutationAuthorizationBoundary | None = None,
     meaningful_side_effect_authorization: MeaningfulSideEffectAuthorizationPort | None = None,
     extra_custom_handlers: Mapping[str, CustomHandler] | None = None,
+    identity_mode: McpIdentityMode = McpIdentityMode.LOCAL_DEV_EXPLICIT,
 ) -> FastMCP:
     """Reference server: host builtins + optional catalog surface + qual echo custom binding.
 
@@ -154,6 +156,8 @@ def build_mcp_server_x_reference_qualification_server(
     ``max_concurrent_tool_calls`` left at its ``...`` sentinel keeps the engine default.
     ``definition`` replaces the derived definition wholesale (the other definition
     keywords are then ignored).
+    ``identity_mode`` defaults to ``LOCAL_DEV_EXPLICIT`` here because this is a qualification fixture driven
+    in-process or over loopback; tests of the fail-closed production default pass ``HARNESS_BOUND``.
     """
     catalog_tool_ids: list[str] = []
     if tool_registry is not None:
@@ -190,6 +194,7 @@ def build_mcp_server_x_reference_qualification_server(
         task_control_mutation_boundary=task_control_mutation_boundary,
         meaningful_side_effect_authorization=meaningful_side_effect_authorization,
         custom_host_tools=handlers,
+        identity_mode=identity_mode,
         **deps_kwargs,
     )
     return compose_mcp_server_from_definition(definition, deps)

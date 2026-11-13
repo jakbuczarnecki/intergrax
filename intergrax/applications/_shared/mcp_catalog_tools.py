@@ -13,6 +13,8 @@ from intergrax.applications._shared.mcp_catalog_invocation_bridge import (
     McpCatalogInvocationComposition,
     execute_mcp_catalog_tool_invocation,
 )
+from intergrax.applications._shared.mcp_harness_principal import require_mcp_caller_principal
+from intergrax.applications._shared.mcp_identity_mode import McpIdentityMode
 from intergrax.tools.exporters.mcp import to_mcp_tools
 from intergrax.tools.mcp_result_bounds import bound_mcp_structured_result, emit_bounded_mcp_list
 from intergrax.tools.registry.runtime import ToolRegistry
@@ -24,6 +26,7 @@ def mount_catalog_tools_on_mcp(
     *,
     include_invoke_stub: bool = True,
     catalog_invocation: McpCatalogInvocationComposition | None = None,
+    identity_mode: McpIdentityMode = McpIdentityMode.HARNESS_BOUND,
 ) -> None:
     """
     Register catalog tool schemas on an MCP server.
@@ -32,19 +35,22 @@ def mount_catalog_tools_on_mcp(
     ``describe_catalog_tool`` introspection helpers.
 
     When ``catalog_invocation`` is set, adds ``invoke_catalog_tool`` routed through
-    the host-injected :class:`~intergrax.contracts.execution_bound_catalog_tool_invocation.ExecutionBoundCatalogToolInvoker`.
+    the host-injected
+    :class:`~intergrax.contracts.execution_bound_catalog_tool_invocation.ExecutionBoundCatalogToolInvoker`.
     """
     if include_invoke_stub:
 
         @mcp.tool
-        def list_catalog_tools() -> list[dict[str, Any]]:
+        async def list_catalog_tools() -> list[dict[str, Any]]:
             """List enabled catalog tools (tool_id, description, input schema)."""
+            require_mcp_caller_principal(identity_mode=identity_mode)
             payload = to_mcp_tools(registry)
             return emit_bounded_mcp_list(payload)
 
         @mcp.tool
-        def describe_catalog_tool(tool_id: str) -> dict[str, Any]:
+        async def describe_catalog_tool(tool_id: str) -> dict[str, Any]:
             """Return MCP schema for one catalog tool_id."""
+            require_mcp_caller_principal(identity_mode=identity_mode)
             if not registry.has(tool_id):
                 payload = {"error": f"unknown_tool:{tool_id}"}
                 bounded, truncated = bound_mcp_structured_result(payload)

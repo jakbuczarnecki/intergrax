@@ -5,7 +5,7 @@
 from __future__ import annotations
 
 from fastmcp import FastMCP
-from intergrax.applications._shared.mcp_application_server import compose_application_mcp_server
+from intergrax.applications._shared.mcp_application_server import McpIdentityMode, compose_application_mcp_server
 from intergrax.runtime.execution.host_task import HostTaskExecutionPort
 from intergrax.runtime.registry.agent_registry_read import AgentRegistryRead
 
@@ -17,6 +17,7 @@ def build_lab_mcp_server(
     route_prefix: str,
     default_capability: str = "echo.basic",
     tool_registry=None,
+    identity_mode: McpIdentityMode = McpIdentityMode.HARNESS_BOUND,
 ) -> FastMCP:
     """MCP tools mirror ``GET {route_prefix}/agents`` and ``POST {route_prefix}/run``."""
     _ = route_prefix
@@ -31,4 +32,5 @@ def build_lab_mcp_server(
         default_tenant_id="lab",
         default_user_id="lab-user",
         tool_registry=tool_reg,
+        identity_mode=identity_mode,
     )

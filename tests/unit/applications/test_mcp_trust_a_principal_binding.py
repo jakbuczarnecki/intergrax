@@ -8,8 +8,8 @@ import asyncio
 import socket
 import threading
 import time
+from collections.abc import Iterator
 from contextlib import contextmanager
-from typing import Iterator
 from unittest.mock import AsyncMock
 
 import pytest
@@ -19,11 +19,10 @@ from fastapi.testclient import TestClient
 from fastmcp import Client
 from fastmcp.exceptions import ToolError
 from fastmcp.server.context import RequestContext, request_ctx
-from starlette.requests import Request
-
 from intergrax.applications._shared.fastapi_mcp import couple_fastapi_with_mcp
 from intergrax.applications._shared.harness_auth import HarnessAuthState
 from intergrax.applications._shared.mcp_harness_principal import resolve_mcp_run_agent_identity
+from intergrax.applications._shared.mcp_identity_mode import McpIdentityMode
 from intergrax.applications._shared.mcp_nexus_server import build_nexus_mcp_server
 from intergrax.contracts.execution_identity import mint_run_id, mint_task_id
 from intergrax.runtime.execution.host_task import HostTaskExecutionPort
@@ -32,6 +31,7 @@ from intergrax.runtime.task.task import TaskResult, TaskState
 from intergrax.runtime.task.task_result_authoritative_exposure_defaults import (
     terminal_task_result_exposure_no_decision_gate,
 )
+from starlette.requests import Request
 
 pytestmark = [pytest.mark.unit, pytest.mark.gate]
 
@@ -224,7 +224,8 @@ def test_resolve_mcp_identity_fail_closed_without_credentials() -> None:
 
 
 @pytest.mark.asyncio
-async def test_mcp_lab_inprocess_without_auth_preserves_client_tenant() -> None:
+async def test_mcp_lab_inprocess_explicit_local_dev_preserves_client_tenant() -> None:
+    """Only the explicit ``LOCAL_DEV_EXPLICIT`` opt-in keeps assertion-only identity (default fails closed)."""
     port = AsyncMock(spec=HostTaskExecutionPort)
     port.execute = AsyncMock(return_value=_completed())
     mcp = build_nexus_mcp_server(
@@ -232,6 +233,7 @@ async def test_mcp_lab_inprocess_without_auth_preserves_client_tenant() -> None:
         host_execution=port,
         registry=AgentRegistry(),
         default_capability="demo.cap",
+        identity_mode=McpIdentityMode.LOCAL_DEV_EXPLICIT,
     )
     async with Client(mcp) as client:
         await client.call_tool(

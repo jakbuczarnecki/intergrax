@@ -12,16 +12,22 @@ from fastmcp.exceptions import ToolError
 from pydantic import BaseModel, ValidationError
 
 from intergrax.agents.tool_enablement import ToolEnablementProfile
-from intergrax.applications._shared.mcp_harness_principal import resolve_mcp_run_agent_identity
 from intergrax.applications._shared.catalog_tool_child_mse_admission_hook import (
     CatalogToolChildMeaningfulSideEffectAdmissionHook,
 )
+from intergrax.applications._shared.mcp_harness_principal import resolve_mcp_run_agent_identity
+from intergrax.applications._shared.mcp_identity_mode import McpIdentityMode
 from intergrax.contracts.agent_run import RequestIdentity, canonical_principal_id_from_request_identity
-from intergrax.runtime.execution.catalog_tool_child_work_port import CatalogToolChildInvokeWork
+from intergrax.contracts.execution_bound_catalog_tool_invocation import (
+    ExecutionBoundCatalogToolInvoker,
+    ExecutionBoundCatalogToolInvokeRequest,
+)
 from intergrax.contracts.execution_identity import (
     peek_active_execution_id,
     peek_active_execution_identity,
     peek_active_execution_task_id,
+    validate_run_id,
+    validate_task_id,
 )
 from intergrax.contracts.meaningful_side_effect_authorization import (
     MeaningfulSideEffectAuthorizationPort,
@@ -29,8 +35,10 @@ from intergrax.contracts.meaningful_side_effect_authorization import (
 from intergrax.contracts.root_execution_child_work_ingress import (
     RootExecutionChildWorkIngressPort,
 )
+from intergrax.runtime.cancellation.coordinator import CancellationCoordinator
 from intergrax.runtime.execution.catalog_tool_child_work_port import (
     CatalogToolChildExecutionPort,
+    CatalogToolChildInvokeWork,
 )
 from intergrax.runtime.execution.root_execution_child_work_ingress import (
     RootCatalogChildWorkTicket,
@@ -41,17 +49,11 @@ from intergrax.runtime.governance.active_execution_authority import (
 from intergrax.runtime.governance.active_execution_governance_identity import (
     peek_active_execution_governance_identity,
 )
-from intergrax.runtime.governance.governance_identity_projection import (
-    validate_governance_identity_projection,
-)
-from intergrax.contracts.execution_bound_catalog_tool_invocation import (
-    ExecutionBoundCatalogToolInvokeRequest,
-    ExecutionBoundCatalogToolInvoker,
-)
-from intergrax.contracts.execution_identity import validate_run_id, validate_task_id
-from intergrax.runtime.cancellation.coordinator import CancellationCoordinator
 from intergrax.runtime.governance.control_plane_mutation_authorization import (
     ControlPlaneMutationAuthorizationBoundary,
+)
+from intergrax.runtime.governance.governance_identity_projection import (
+    validate_governance_identity_projection,
 )
 from intergrax.runtime.task.active_task_registry import ActiveTaskBinding, ActiveTaskRegistry
 from intergrax.runtime.task.task import Task
@@ -61,6 +63,8 @@ from intergrax.tools.registry.runtime import ToolRegistry
 
 _METADATA_STEP_ID = "mcp_catalog_invoke_step_id"
 _METADATA_AGENT_ID = "mcp_catalog_invoke_agent_id"
+
+
 @dataclass(frozen=True, slots=True)
 class McpCatalogInvocationComposition:
     """Sanctioned host composition inputs for MCP catalog Tool invoke (no new authority)."""
@@ -75,6 +79,7 @@ class McpCatalogInvocationComposition:
     enable_cross_loop_catalog_child: bool = False
     default_tenant_id: str = "mcp"
     default_user_id: str = "mcp-user"
+    identity_mode: McpIdentityMode = McpIdentityMode.HARNESS_BOUND
 
 
 def _tool_error(code: str, detail: str) -> ToolError:
@@ -313,6 +318,7 @@ async def execute_mcp_catalog_tool_invocation(
         asserted_user_id=None,
         default_tenant_id=composition.default_tenant_id,
         default_user_id=composition.default_user_id,
+        identity_mode=composition.identity_mode,
     )
     if identity.request_identity is None:
         raise _tool_error(
@@ -341,10 +347,7 @@ async def execute_mcp_catalog_tool_invocation(
 
     cross_loop_ingress = composition.root_child_work_ingress
     if not _in_process_parent_matches_binding(binding, identity.request_identity):
-        if not (
-            composition.enable_cross_loop_catalog_child
-            and cross_loop_ingress is not None
-        ):
+        if not (composition.enable_cross_loop_catalog_child and cross_loop_ingress is not None):
             return _bound_error_payload(
                 "execution_admission_denied",
                 "catalog tool invoke requires in-process parent execution child admission; "

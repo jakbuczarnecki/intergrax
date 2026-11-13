@@ -5,7 +5,7 @@
 from __future__ import annotations
 
 from fastmcp import FastMCP
-from intergrax.applications._shared.mcp_application_server import compose_application_mcp_server
+from intergrax.applications._shared.mcp_application_server import McpIdentityMode, compose_application_mcp_server
 from intergrax.runtime.execution.host_task import HostTaskExecutionPort
 from intergrax.runtime.registry.agent_registry_read import AgentRegistryRead
 
@@ -16,6 +16,7 @@ def build_intergrax_assistant_mcp_server(
     registry: AgentRegistryRead,
     route_prefix: str,
     tool_registry: object | None = None,
+    identity_mode: McpIdentityMode = McpIdentityMode.HARNESS_BOUND,
 ) -> FastMCP:
     """MCP tools mirror the assistant HTTP API (canonical host task execution)."""
     _ = route_prefix
@@ -28,4 +29,5 @@ def build_intergrax_assistant_mcp_server(
         registry=registry,
         default_capability="platform.assist",
         tool_registry=tool_reg,
+        identity_mode=identity_mode,
     )
