@@ -6,17 +6,17 @@ from __future__ import annotations
 
 from collections.abc import Sequence
 from dataclasses import replace
-from typing import Optional
 
 from intergrax.runtime.nexus.budget.budget_ticks import (
     record_rag_invocation_and_enforce,
     record_websearch_invocation_and_enforce,
 )
 from intergrax.runtime.nexus.context.provider_handles import WEBSEARCH_BLOCKS_METADATA_KEY
-from intergrax.runtime.nexus.engine.runtime_state import RuntimeState
 from intergrax.runtime.nexus.context.runtime_state_handle_bridge import (
     merge_provider_metadata_into_request,
 )
+from intergrax.runtime.nexus.engine.runtime_state import RuntimeState
+from intergrax.runtime.nexus.tools.adaptive_tool_mode_resolver import recommend_tool_modes
 from intergrax.runtime.nexus.tools.catalog_context import (
     build_rag_retrieve_input,
     build_websearch_query_input,
@@ -26,7 +26,6 @@ from intergrax.runtime.nexus.tools.catalog_dispatch import resolve_tool_registry
 from intergrax.runtime.nexus.tools.tool_invocation_aggregate import ToolInvocationAggregate
 from intergrax.runtime.nexus.tools.tool_loop import run_bounded_tool_loop_async
 from intergrax.runtime.nexus.tools.tool_planner_input import resolve_tool_planner_input
-from intergrax.runtime.nexus.tools.adaptive_tool_mode_resolver import recommend_tool_modes
 from intergrax.runtime.nexus.tools.tool_selection import (
     SemanticToolIndexSelectionStrategy,
     ToolSelectionContext,
@@ -51,10 +50,7 @@ def _selection_candidates(
     candidate_ids: Sequence[str],
 ) -> list[ToolSelectionCandidateDiagV1]:
     if isinstance(strategy, SemanticToolIndexSelectionStrategy) and strategy.last_ranks:
-        return [
-            ToolSelectionCandidateDiagV1(tool_id=tool_id, score=score)
-            for tool_id, score in strategy.last_ranks
-        ]
+        return [ToolSelectionCandidateDiagV1(tool_id=tool_id, score=score) for tool_id, score in strategy.last_ranks]
     return [ToolSelectionCandidateDiagV1(tool_id=tool_id) for tool_id in candidate_ids]
 
 
@@ -118,7 +114,19 @@ async def run_rag_context(state: RuntimeState) -> None:
 
     retrieved_chunks = built.retrieved_chunks or []
     security_profile = ctx.config.security_profile
-    if security_profile is not None and security_profile.retrieval_poisoning_defense_enabled:
+    if ctx.config.production_mode:
+        # PDC-D6-R014 (Amendment 1): strict profiles fail closed - an absent security profile
+        # keeps the retrieval-poisoning defense on; only an explicit False disables it.
+        from intergrax.core.security.security_configuration import (
+            retrieval_poisoning_defense_enabled_or_default,
+        )
+
+        poisoning_defense_enabled = retrieval_poisoning_defense_enabled_or_default(security_profile)
+    else:
+        poisoning_defense_enabled = (
+            security_profile is not None and security_profile.retrieval_poisoning_defense_enabled
+        )
+    if poisoning_defense_enabled:
         from intergrax.runtime.architecture.retrieval_security_wiring import (
             filter_retrieved_chunks_for_poisoning,
         )
@@ -173,17 +181,14 @@ async def run_websearch_context(state: RuntimeState) -> None:
     state.used_websearch = False
     cfg = state.context.config
     enabled = bool(cfg.enable_websearch)
-    configured = (
-        state.context.websearch_executor is not None
-        and state.context.websearch_prompt_builder is not None
-    )
+    configured = state.context.websearch_executor is not None and state.context.websearch_prompt_builder is not None
 
     used_websearch = False
     results_count = 0
     context_blocks_count = 0
     no_evidence = False
-    error_type: Optional[str] = None
-    error_message: Optional[str] = None
+    error_type: str | None = None
+    error_message: str | None = None
     context_preview = ""
     context_preview_chars = 0
     preview_limit = 300
@@ -330,11 +335,11 @@ async def run_tools_context(state: RuntimeState) -> None:
     if invoker is None or tool_planner is None or tools_mode == "off":
         return
 
-    warning: Optional[str] = None
-    error_type: Optional[str] = None
-    error_message: Optional[str] = None
-    loop_pattern_id: Optional[str] = None
-    loop_stop_reason: Optional[str] = None
+    warning: str | None = None
+    error_type: str | None = None
+    error_message: str | None = None
+    loop_pattern_id: str | None = None
+    loop_stop_reason: str | None = None
     pending_failure: Exception | None = None
     tool_selection_mode = state.context.config.tool_selection_mode
     tool_invocation_mode = state.context.config.tool_invocation_mode
@@ -358,9 +363,7 @@ async def run_tools_context(state: RuntimeState) -> None:
                 skill_profile=state.context.config.skill_profile,
                 skill_registry=state.context.config.skill_registry,
                 skill_pinning_store=state.context.config.skill_pinning_store,
-                skill_execution_recovery_required=(
-                    state.context.config.skill_execution_recovery_required
-                ),
+                skill_execution_recovery_required=(state.context.config.skill_execution_recovery_required),
                 tenant_id=state.context.config.tenant_id,
                 plan_allowed_tool_ids=state.tool_planner_allowed_tool_ids,
                 top_k=state.context.config.tool_selection_top_k,
@@ -421,9 +424,7 @@ async def run_tools_context(state: RuntimeState) -> None:
         if loop_result.appended_messages and loop_result.used_ce_tool_feedback:
             state.messages_for_llm.extend(loop_result.appended_messages)
         elif state.tool_traces:
-            aggregate = loop_result.aggregate or ToolInvocationAggregate.from_traces(
-                state.tool_traces
-            )
+            aggregate = loop_result.aggregate or ToolInvocationAggregate.from_traces(state.tool_traces)
             combined = aggregate.combined_context.strip()
             if combined:
                 state.tools_context_parts.append(combined)

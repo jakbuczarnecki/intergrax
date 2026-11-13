@@ -4,9 +4,12 @@
 
 from __future__ import annotations
 
+from intergrax.runtime.security.security_audit_trail import (
+    SecurityAuditEntry,
+    SecurityAuditSink,
+    SecurityAuditTrail,
+)
 from pydantic import BaseModel, Field
-
-from intergrax.runtime.security.security_audit_trail import SecurityAuditEntry, SecurityAuditTrail
 
 
 class AuditRegionReplica(BaseModel):
@@ -25,11 +28,18 @@ class MultiRegionAuditTrailReport(BaseModel):
 class MultiRegionSecurityAuditTrail:
     """Append-only audit trail replicated across configured regions."""
 
-    def __init__(self, *, regions: tuple[str, ...]) -> None:
+    def __init__(
+        self,
+        *,
+        regions: tuple[str, ...],
+        primary: SecurityAuditSink | None = None,
+    ) -> None:
         if len(regions) < 2:
             raise ValueError("multi-region audit trail requires at least two regions")
         self._regions = regions
-        self._primary = SecurityAuditTrail()
+        # ``primary`` is the durable evidence-plane trail on product hosts (PDC-D6-R020);
+        # the in-memory default is for tests and lab hosts only.
+        self._primary: SecurityAuditSink = primary if primary is not None else SecurityAuditTrail()
         self._region_entry_ids: dict[str, list[str]] = {region: [] for region in regions}
         self._sealed_prefix: dict[str, tuple[str, ...]] = {region: () for region in regions}
 
@@ -53,14 +63,15 @@ class MultiRegionSecurityAuditTrail:
             self._region_entry_ids[region].append(entry.entry_id)
         return entry
 
+    def list_entries(self, *, tenant_id: str | None = None) -> tuple[SecurityAuditEntry, ...]:
+        return self._primary.list_entries(tenant_id=tenant_id)
+
     def verify_replication(self) -> MultiRegionAuditTrailReport:
         replicas = [
             AuditRegionReplica(
                 region_id=region,
                 entry_count=len(self._region_entry_ids[region]),
-                head_entry_id=self._region_entry_ids[region][-1]
-                if self._region_entry_ids[region]
-                else None,
+                head_entry_id=self._region_entry_ids[region][-1] if self._region_entry_ids[region] else None,
             )
             for region in self._regions
         ]
@@ -68,8 +79,7 @@ class MultiRegionSecurityAuditTrail:
         heads = {replica.head_entry_id for replica in replicas if replica.head_entry_id is not None}
         replicated = len(counts) == 1 and (not heads or len(heads) == 1)
         immutable = replicated and all(
-            tuple(self._region_entry_ids[region][: len(self._sealed_prefix[region])])
-            == self._sealed_prefix[region]
+            tuple(self._region_entry_ids[region][: len(self._sealed_prefix[region])]) == self._sealed_prefix[region]
             for region in self._regions
         )
         return MultiRegionAuditTrailReport(

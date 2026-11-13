@@ -46,6 +46,7 @@ if TYPE_CHECKING:
     from intergrax.core.plugins.admission import (
         DomainPluginLoadReport,
         PluginAdmissionRejection,
+        PluginProvenanceAdmission,
     )
 
 _EP_SPECS_CACHE: dict[str, tuple[EntryPointSpec, ...]] = {}
@@ -337,8 +338,16 @@ def register_plugins_with_report(
     discover_entry_points: bool = False,
     on_conflict: ConflictPolicy = "error",
     on_load_failure: LoadIsolation = "isolate",
+    provenance: PluginProvenanceAdmission | None = None,
+    require_provenance: bool = False,
 ) -> DomainPluginLoadReport:
-    """Discover entry-point plugins and build immutable bootstrap evidence."""
+    """Discover entry-point plugins and build immutable bootstrap evidence.
+
+    ``provenance`` (PDC-D6-R016) is checked per entry-point spec *before* any target is
+    imported; rejected specs are never loaded and appear as fail-closed rejections.
+    ``require_provenance=True`` (strict profiles) raises ``SecurityConfigurationError`` when
+    discovery is on and no ``provenance`` is supplied. Defaults keep the old behavior.
+    """
     from intergrax.core.plugins.admission import DomainPluginLoadReport
 
     _callback_contract_error = "registration callback must return exactly one outcome: registered=True or a rejection"
@@ -346,16 +355,34 @@ def register_plugins_with_report(
     if not discover_entry_points:
         return DomainPluginLoadReport.empty(group)
 
+    if require_provenance and provenance is None:
+        from intergrax.core.security.security_configuration import (
+            PLUGIN_TRUST_POLICY_MISSING,
+            SecurityConfigurationError,
+        )
+
+        raise SecurityConfigurationError(
+            item="plugin_provenance",
+            reason_code=PLUGIN_TRUST_POLICY_MISSING,
+            message=f"entry-point discovery for {group!r} requires a PluginProvenanceAdmission",
+        )
+
     ep_policy = _entry_point_conflict_policy(on_conflict)
     accepted: list[EntryPointSpec] = []
     rejected = []
     failed: list[EntryPointLoadResult] = []
     registered_count = 0
+    skip_names: frozenset[str] = frozenset()
+    if provenance is not None:
+        _admitted, provenance_rejections = provenance.partition(iter_entry_point_specs(group))
+        rejected.extend(provenance_rejections)
+        skip_names = frozenset(item.spec.name for item in provenance_rejections)
 
     for result in load_entry_point_targets(
         group,
         on_conflict=ep_policy,
         on_load_failure=on_load_failure,
+        skip_names=skip_names,
     ):
         if result.error is not None:
             failed.append(result)
