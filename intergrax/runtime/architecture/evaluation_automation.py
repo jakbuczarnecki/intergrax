@@ -12,7 +12,7 @@ from pydantic import BaseModel, Field
 from intergrax.runtime.architecture.evaluation_modes import EvaluationModeResult
 
 
-class EvaluatorType(str, Enum):
+class EvaluatorType(str, Enum):  # noqa: UP042 - str mixin kept: str() output is part of the public contract
     RULE_BASED = "rule_based"
     LLM_JUDGE = "llm_judge"
 
@@ -37,7 +37,19 @@ class AutomatedEvaluationRecord(BaseModel):
     generated_at: datetime = Field(default_factory=lambda: datetime.now(UTC))
     rule_result: AutomatedEvaluatorResult
     llm_judge_result: AutomatedEvaluatorResult
+    # Legacy conjunction kept for compatibility. It mixes rule and judge verdicts, so new
+    # consumers (promotion inputs, comparisons) must read rule_passed / judge_passed apart.
     final_passed: bool
+
+    @property
+    def rule_passed(self) -> bool:
+        """Rule-based verdict alone (deterministic evidence)."""
+        return self.rule_result.passed
+
+    @property
+    def judge_passed(self) -> bool:
+        """Model-assisted judge verdict alone (advisory, isolated from rule results)."""
+        return self.llm_judge_result.passed
 
 
 class AutomatedEvaluationReport(BaseModel):
@@ -80,11 +92,7 @@ def _evaluate_rule_signals(signals: list[EvaluationSignal]) -> AutomatedEvaluato
         )
     passed_signals = [signal for signal in signals if signal.value >= signal.threshold]
     score = float(len(passed_signals)) / float(len(signals))
-    reasons = [
-        f"Signal below threshold: {signal.signal_id}"
-        for signal in signals
-        if signal.value < signal.threshold
-    ]
+    reasons = [f"Signal below threshold: {signal.signal_id}" for signal in signals if signal.value < signal.threshold]
     return AutomatedEvaluatorResult(
         evaluator_type=EvaluatorType.RULE_BASED,
         passed=score >= 0.8,
