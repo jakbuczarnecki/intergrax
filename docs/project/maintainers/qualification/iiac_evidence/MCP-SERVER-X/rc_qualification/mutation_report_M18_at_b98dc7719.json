@@ -1,0 +1,19 @@
+{
+  "repo_head": "b98dc77196cee10a9f06323bd47c4b69d0f1baa6",
+  "results": [
+    {
+      "mutant_id": "M18-invoke-catalog-tool-unsanitized",
+      "invariant": "invoke_catalog_tool keeps its sanitized_tool_errors wrapper (RA-01 of the delta re-audit)",
+      "path": "intergrax/applications/_shared/mcp_catalog_tools.py",
+      "old": "async with optional_mcp_call_admission(call_admission), sanitized_tool_errors(\"invoke_catalog_tool\"):",
+      "new": "async with optional_mcp_call_admission(call_admission):",
+      "tests": [
+        "tests/unit/applications/test_mcp_rc_audit_corrections.py"
+      ],
+      "status": "killed",
+      "exit_code": 1,
+      "seconds": 51.0,
+      "tail": "================================== FAILURES ===================================\nD:\\Projekty\\_wt\\intergrax\\_scratch\\mrc-m18\\tests\\unit\\applications\\test_mcp_rc_audit_corrections.py:190: assert ('MCP_INTERNAL_ERROR' in \"Error calling tool 'invoke_catalog_tool': SECRET-HOST-FAILURE-hunter2 /srv/app/db.py:42\")\n=========================== short test summary info ===========================\nFAILED tests/unit/applications/test_mcp_rc_audit_corrections.py::test_invoke_catalog_tool_unexpected_exception_text_is_not_echoed\n!!!!!!!!!!!!!!!!!!!!!!!!!! stopping after 1 failures !!!!!!!!!!!!!!!!!!!!!!!!!!\n1 failed, 3 passed in 3.64s"
+    }
+  ]
+}

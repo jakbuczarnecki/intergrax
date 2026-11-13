@@ -98,6 +98,18 @@ The audit dossier is `MCP_SERVER_X_RC_INDEPENDENT_AUDIT_DOSSIER.md` (branch `mcp
 | AF-11..AF-14 | **Accepted as declared** (reference server defaults to LOCAL_DEV in fixtures; factories expose no `identity_mode` by design; `max_call_seconds` is a composition parameter not yet threaded through facades; `initialize`/`tools/list` unauthenticated on API-key hosts is pre-existing protocol behaviour) |
 | AF-15 / AF-16 | INFO, accepted; the `[product]` xfail owner/ticket must be named by the operator before certification |
 
+## Delta re-audit follow-up (independent delta re-audit G6, verdict PASS_SCOPED at `b0e19bf61`; implementer's response)
+
+The re-audit dossier is `MCP_SERVER_X_RC_INDEPENDENT_REAUDIT_DOSSIER.md` (branch `mcp-rc-reaudit`, commit `efa74c545`). It required no product change.
+
+| Finding | Response |
+| --- | --- |
+| RA-01 no test pins the `sanitized_tool_errors` wrapper of `invoke_catalog_tool` (auditor mutant R8 survived) | **Closed by a test** (`test_invoke_catalog_tool_unexpected_exception_text_is_not_echoed`, commit `b98dc7719`, test and mutation harness only). Red on the mutant: the harness mutant `M18` is killed (`iiac_evidence/MCP-SERVER-X/rc_qualification/mutation_report_M18_at_b98dc7719.*`); green on the product code. Exact-SHA contract at `b98dc7719`: 481 passed, 1 xfailed, exit 0 (`rc_contract_at_b98dc7719.log`) |
+| RA-02 a `ToolError` authored by host code keeps its host text | **Open, accepted as declared** (a host-authored `ToolError` is the host's own wire contract; no product change made) |
+| RA-03 the Tier-3 facade `compose_application_mcp_server` has no `public_custom_tool_names` parameter | **Open, accepted as declared** (the opt-out is a composition parameter of the engine; no in-repo host needs it) |
+| RA-04 pre-existing `TimeoutError` mapping in the `LOCAL_DEV` path gives the label `outcome=cancelled` | **Open, accepted as declared** (wrong label only; no success is ever claimed) |
+| RA-05..RA-07 (INFO) | Accepted as declared |
+
 ## Deviations from the approved plan (implementer-disclosed)
 
 - `LOCAL_DEV_EXPLICIT` guards: in-process or loopback only, no fabricated principal under strict-production serving (existing binding still raises), task label `unverified`, startup warning; no environment variable (delegate review of plan A).

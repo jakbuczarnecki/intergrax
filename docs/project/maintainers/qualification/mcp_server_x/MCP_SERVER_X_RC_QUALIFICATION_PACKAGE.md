@@ -4,7 +4,8 @@
 | --- | --- |
 | **Status** | **IMPLEMENTER EVIDENCE ONLY. Not an audit, not a certification, not a verdict.** The independent audit (G6), certification and terminal verification are separate sessions and have not happened when this file is written |
 | **BASE** | `6a6279a49a9aa5a33936a1c6a577c7194b4bcebb` (`origin/development` at campaign start; product delta to the IIAC pin `2d3eceb6c` was empty) |
-| **IMPLEMENTATION_SHA = TEST_EXECUTION_SHA (current)** | `b0e19bf61b346e6941b2e190b703c6922e708b34` on branch `mcp-rc` (clean tree, 0 changes): the head after the corrective loop that answers the independent audit |
+| **Product SHA** | `b0e19bf61b346e6941b2e190b703c6922e708b34` (delta re-audit verdict PASS_SCOPED; `b98dc7719` changes tests and the mutation harness only) |
+| **IMPLEMENTATION_SHA = TEST_EXECUTION_SHA (previous)** | `b0e19bf61b346e6941b2e190b703c6922e708b34` on branch `mcp-rc` (clean tree, 0 changes): the head after the corrective loop that answers the independent audit |
 | **Audited SHA (superseded)** | `93a089d3cca941592f1ad4f65435333c86da82e5`: the independent audit (verdict PARTIAL, branch `mcp-rc-audit`, commit `4a459ed0b`) covers this SHA only. Product and test files changed after it, so the audit is **void for the changed paths** until a delta re-audit |
 | **Later commits** | documentation and evidence only (this file, `iiac_evidence/MCP-SERVER-X/rc_qualification/`); any product or test change after an accepted audit voids it and needs requalification |
 | **Delta since the audited SHA** | `git diff --stat 93a089d3c b0e19bf61 -- intergrax applications` (product): `mcp_wire_errors.py`, `mcp_server_engine.py`, `mcp_catalog_tools.py`, `mcp_host_execution_transport_cancel.py`; tests/fixtures/scripts: new `test_mcp_rc_audit_corrections.py`, fixture wait budgets, mutation harness (17 mutants), selection |
@@ -19,7 +20,9 @@ Contract: `MCP_SERVER_X_RC_SELECTION` in `tests/qualification/mcp_server_x/rc_se
 
 | Run | Result | Log |
 | --- | --- | --- |
-| Exact SHA `b0e19bf61` (current) | **480 passed, 1 xfailed, exit 0**, 487.3 s, 39 files, one pytest process | `iiac_evidence/MCP-SERVER-X/rc_qualification/rc_contract_at_b0e19bf61.log` |
+| Exact SHA `b98dc7719` (current; adds the RA-01 test and mutant M18, no product change after `b0e19bf61`) | **481 passed, 1 xfailed, exit 0**, 691.7 s, 39 files, one pytest process | `iiac_evidence/MCP-SERVER-X/rc_qualification/rc_contract_at_b98dc7719.log` |
+| Mutant M18 at `b98dc7719` | killed (the 17 earlier mutants were last run at `b0e19bf61`; the product files are unchanged since) | `mutation_report_M18_at_b98dc7719.json` / `.md` |
+| Exact SHA `b0e19bf61` (previous) | **480 passed, 1 xfailed, exit 0**, 487.3 s, 39 files, one pytest process | `iiac_evidence/MCP-SERVER-X/rc_qualification/rc_contract_at_b0e19bf61.log` |
 | Mutation harness at `b0e19bf61` | **17 of 17 mutants killed** (8 original + 8 from the audit findings + 1 found while fixing the deadline race) | `mutation_report_17_at_b0e19bf61.json` / `.md` |
 | Previously audited SHA `93a089d3c` | 464 passed, 1 xfailed, exit 0 (the implementer's run; the auditor reproduced 464 passed / 1 xfailed) | `rc_contract_at_93a089d3c.log`; the auditor's log is on branch `mcp-rc-audit` |
 | R-P7-02 baseline `6a6279a49` (3 files) | 11 failed, 18 passed, exit 1 (matches the recorded P7 baseline) | `baseline_r_p7_02_at_6a6279a49.log` |
