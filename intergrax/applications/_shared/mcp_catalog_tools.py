@@ -20,7 +20,7 @@ from intergrax.applications._shared.mcp_engine_concurrency import (
 )
 from intergrax.applications._shared.mcp_harness_principal import require_mcp_caller_principal
 from intergrax.applications._shared.mcp_identity_mode import McpIdentityMode
-from intergrax.applications._shared.mcp_wire_errors import bound_mcp_result_or_raise
+from intergrax.applications._shared.mcp_wire_errors import bound_mcp_result_or_raise, sanitized_tool_errors
 from intergrax.tools.exporters.mcp import to_mcp_tools
 from intergrax.tools.registry.runtime import ToolRegistry
 
@@ -59,24 +59,26 @@ def mount_catalog_tools_on_mcp(
         @mcp.tool
         async def list_catalog_tools() -> list[dict[str, Any]]:
             """List enabled catalog tools (tool_id, description, input schema)."""
-            require_mcp_caller_principal(identity_mode=identity_mode)
-            # registry reads may block (host-provided registries): keep them off the server event loop
-            payload = await asyncio.to_thread(to_mcp_tools, registry)
-            return bound_mcp_result_or_raise(payload)
+            async with sanitized_tool_errors("list_catalog_tools"):
+                require_mcp_caller_principal(identity_mode=identity_mode)
+                # registry reads may block (host-provided registries): keep them off the server event loop
+                payload = await asyncio.to_thread(to_mcp_tools, registry)
+                return bound_mcp_result_or_raise(payload)
 
         @mcp.tool
         async def describe_catalog_tool(tool_id: str) -> dict[str, Any]:
             """Return MCP schema for one catalog tool_id."""
-            require_mcp_caller_principal(identity_mode=identity_mode)
+            async with sanitized_tool_errors("describe_catalog_tool"):
+                require_mcp_caller_principal(identity_mode=identity_mode)
 
-            def _describe() -> dict[str, Any]:
-                if not registry.has(tool_id):
-                    return _unknown_tool_payload(tool_id)
-                registered = registry.get(tool_id)
-                items = to_mcp_tools([registered.contract])
-                return items[0] if items else _unknown_tool_payload(tool_id)
+                def _describe() -> dict[str, Any]:
+                    if not registry.has(tool_id):
+                        return _unknown_tool_payload(tool_id)
+                    registered = registry.get(tool_id)
+                    items = to_mcp_tools([registered.contract])
+                    return items[0] if items else _unknown_tool_payload(tool_id)
 
-            return bound_mcp_result_or_raise(await asyncio.to_thread(_describe))
+                return bound_mcp_result_or_raise(await asyncio.to_thread(_describe))
 
         if catalog_invocation is not None:
 
@@ -90,7 +92,7 @@ def mount_catalog_tools_on_mcp(
                 tenant_id: str | None = None,
             ) -> dict[str, Any]:
                 """Invoke one catalog Tool under an active execution binding (canonical ToolRuntime)."""
-                async with optional_mcp_call_admission(call_admission):
+                async with optional_mcp_call_admission(call_admission), sanitized_tool_errors("invoke_catalog_tool"):
                     return await execute_mcp_catalog_tool_invocation(
                         catalog_invocation,
                         tool_id=tool_id,

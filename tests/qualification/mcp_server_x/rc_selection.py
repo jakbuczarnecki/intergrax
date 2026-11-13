@@ -24,6 +24,7 @@ MCP_SERVER_X_RC_NEW_SUITES: tuple[str, ...] = (
     f"{_UA}/test_mcp_result_bounds_and_error_contract.py",
     f"{_UA}/test_mcp_deadline_and_resilience.py",
     f"{_UA}/test_mcp_invocation_id.py",
+    f"{_UA}/test_mcp_rc_audit_corrections.py",
 )
 
 # Existing suites outside the P7 selections that build MCP servers or call MCP tools (found by the RC impact sweep).

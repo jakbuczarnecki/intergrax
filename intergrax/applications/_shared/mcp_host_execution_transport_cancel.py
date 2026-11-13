@@ -234,7 +234,12 @@ async def _await_host_or_deadline(
     if not host_coro.done():
         await _bounded_observe_host_task(host_coro, timeout_s=_HOST_DRAIN_AFTER_TRANSPORT_CANCEL_S)
     if host_coro.done():
-        outcome = host_coro.result()
+        try:
+            outcome = host_coro.result()
+        except asyncio.CancelledError:
+            raise McpHostExecutionDeadlineExceeded("cancelled", max_call_seconds) from None
+        except Exception as exc:
+            raise McpHostExecutionDeadlineExceeded("failed", max_call_seconds) from exc
         if isinstance(outcome, TaskResult) and outcome.state is TaskState.COMPLETED:
             return outcome
         raise McpHostExecutionDeadlineExceeded("cancelled", max_call_seconds)

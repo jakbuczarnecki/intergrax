@@ -27,6 +27,7 @@ from dataclasses import asdict, dataclass
 from pathlib import Path
 
 _SHARED = "intergrax/applications/_shared"
+_RC_TEST = "tests/unit/applications/test_mcp_rc_audit_corrections.py"
 
 
 @dataclass(frozen=True)
@@ -104,6 +105,74 @@ MUTANTS: tuple[Mutant, ...] = (
         "    )\n    return await execute_mcp_agent_task(",
         "        identity_mode=McpIdentityMode.LOCAL_DEV_EXPLICIT,\n    )\n    return await execute_mcp_agent_task(",
         ("tests/unit/applications/test_mcp_identity_mode_fail_closed.py",),
+    ),
+    # --- mutants added after the independent audit (AF-01..AF-04); killed by test_mcp_rc_audit_corrections.py ---
+    Mutant(
+        "M9-cross-loop-failure-payload-bound-removed",
+        "Cross-loop failure payloads are bounded and sanitized at the MCP boundary",
+        f"{_SHARED}/mcp_catalog_invocation_bridge.py",
+        "            return bound_cross_loop_catalog_payload(terminal.payload)\n",
+        "            return terminal.payload\n",
+        (_RC_TEST,),
+    ),
+    Mutant(
+        "M10-cross-loop-success-payload-bound-removed",
+        "Cross-loop success payloads are bounded",
+        f"{_SHARED}/mcp_catalog_invocation_bridge.py",
+        "            **bound_cross_loop_catalog_payload(terminal.payload),\n",
+        "            **terminal.payload,\n",
+        (_RC_TEST,),
+    ),
+    Mutant(
+        "M11-local-dev-downgrades-configured-auth",
+        "LOCAL_DEV never downgrades configured auth for in-process callers",
+        f"{_SHARED}/mcp_harness_principal.py",
+        "    if _harness_auth_requires_principal(effective_harness_auth) and not _local_dev_harness_bypass(\n"
+        "        effective_harness_auth,\n    ):",
+        "    if False and not _local_dev_harness_bypass(\n        effective_harness_auth,\n    ):",
+        (_RC_TEST,),
+    ),
+    Mutant(
+        "M12-list-catalog-tools-principal-gate-removed",
+        "list_catalog_tools requires a principal in the default mode",
+        f"{_SHARED}/mcp_catalog_tools.py",
+        '            async with sanitized_tool_errors("list_catalog_tools"):\n'
+        "                require_mcp_caller_principal(identity_mode=identity_mode)\n",
+        '            async with sanitized_tool_errors("list_catalog_tools"):\n',
+        (_RC_TEST,),
+    ),
+    Mutant(
+        "M13-describe-catalog-tool-principal-gate-removed",
+        "describe_catalog_tool requires a principal in the default mode",
+        f"{_SHARED}/mcp_catalog_tools.py",
+        '            async with sanitized_tool_errors("describe_catalog_tool"):\n'
+        "                require_mcp_caller_principal(identity_mode=identity_mode)\n",
+        '            async with sanitized_tool_errors("describe_catalog_tool"):\n',
+        (_RC_TEST,),
+    ),
+    Mutant(
+        "M14-raw-exception-text-echoed-by-tools",
+        "No tool path echoes raw exception text",
+        f"{_SHARED}/mcp_wire_errors.py",
+        '_C.MCP_INTERNAL_ERROR, f"tool execution failed ({type(exc).__name__})")',
+        '_C.MCP_INTERNAL_ERROR, f"tool execution failed ({exc})")',
+        (_RC_TEST,),
+    ),
+    Mutant(
+        "M15-custom-tool-principal-gate-removed",
+        "Custom host tools are behind the principal gate by default",
+        f"{_SHARED}/mcp_server_engine.py",
+        "        if gate is not None:\n            gate()\n",
+        "        if False:\n            gate()\n",
+        (_RC_TEST,),
+    ),
+    Mutant(
+        "M16-failed-host-after-bound-not-deadline-exceeded",
+        "A host that fails after the call bound is reported as MCP_DEADLINE_EXCEEDED",
+        f"{_SHARED}/mcp_host_execution_transport_cancel.py",
+        '            raise McpHostExecutionDeadlineExceeded("failed", max_call_seconds) from exc\n',
+        "            raise\n",
+        (_RC_TEST,),
     ),
 )
 

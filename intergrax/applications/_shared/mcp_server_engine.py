@@ -5,7 +5,6 @@
 
 from __future__ import annotations
 
-import asyncio
 import functools
 import inspect
 import logging
@@ -14,7 +13,6 @@ from dataclasses import dataclass
 from typing import Any
 
 from fastmcp import FastMCP
-from fastmcp.exceptions import ToolError
 
 from intergrax.agents.tool_enablement import ToolEnablementProfile
 from intergrax.applications._shared.mcp_catalog_invocation_bridge import (
@@ -28,7 +26,7 @@ from intergrax.applications._shared.mcp_engine_concurrency import (
 )
 from intergrax.applications._shared.mcp_harness_principal import require_mcp_caller_principal
 from intergrax.applications._shared.mcp_identity_mode import McpIdentityMode, coerce_mcp_identity_mode
-from intergrax.applications._shared.mcp_wire_errors import bound_mcp_result_or_raise, mcp_tool_error
+from intergrax.applications._shared.mcp_wire_errors import bound_mcp_result_or_raise, sanitized_tool_errors
 from intergrax.contracts.execution_bound_catalog_tool_invocation import (
     ExecutionBoundCatalogToolInvoker,
 )
@@ -81,6 +79,8 @@ class McpServerCompositionDeps:
     max_concurrent_tool_calls: int | None = DEFAULT_MCP_MAX_CONCURRENT_TOOL_CALLS
     identity_mode: McpIdentityMode = McpIdentityMode.HARNESS_BOUND
     max_call_seconds: float | None = None
+    public_custom_tool_names: frozenset[str] = frozenset()
+    """Custom host tool names exempt from the principal gate (explicit opt-out; default: every custom tool is gated)."""
     """Optional MCP call bound (OD-MCP-RC-02): a transport trigger of the governed cancel, not a deadline."""
     """Fail-closed ``HARNESS_BOUND`` by default; ``LOCAL_DEV_EXPLICIT`` only by explicit composition opt-in."""
 
@@ -116,28 +116,23 @@ def _exec_parameter_spec(param: inspect.Parameter) -> str:
 async def _run_custom_host_tool_bounded(
     handler: Callable[..., Awaitable[dict[str, object]]],
     kwargs: Mapping[str, object],
+    gate: Callable[[], None] | None = None,
 ) -> dict[str, object]:
-    """Run a host-supplied custom tool: bound its result and never echo raw exception text on the wire."""
-    try:
+    """Run a host-supplied custom tool behind the principal gate; bound its result, never echo raw errors."""
+    async with sanitized_tool_errors(getattr(handler, "__name__", "custom_tool")):
+        if gate is not None:
+            gate()
         result = await handler(**kwargs)
-    except (ToolError, asyncio.CancelledError):
-        raise
-    except Exception as exc:
-        _LOG.exception("custom MCP host tool %s failed", getattr(handler, "__name__", "?"))
-        raise mcp_tool_error(
-            McpServerDefinitionErrorCode.MCP_INTERNAL_ERROR,
-            f"tool execution failed ({type(exc).__name__})",
-        ) from exc
-    return bound_mcp_result_or_raise(result)
+        return bound_mcp_result_or_raise(result)
 
 
 def _bind_custom_host_tool_for_fastmcp(
     handler: Callable[..., Awaitable[dict[str, object]]],
     *,
     call_admission: McpEngineConcurrentCallAdmission | None,
+    gate: Callable[[], None] | None = None,
 ) -> Callable[..., Awaitable[dict[str, object]]]:
     """Materialize a FastMCP tool wrapper that preserves the handler's public signature (no **kwargs)."""
-    from intergrax.contracts.mcp_server_definition import McpServerDefinitionErrorCode
 
     sig = inspect.signature(handler)
     for param in sig.parameters.values():
@@ -154,11 +149,12 @@ def _bind_custom_host_tool_for_fastmcp(
         "_optional_mcp_call_admission": optional_mcp_call_admission,
         "_call_admission": call_admission,
         "_run_bounded": _run_custom_host_tool_bounded,
+        "_gate": gate,
     }
     source = (
         f"async def _custom_host_mcp_tool({params_joined}):\n"
         f"    async with _optional_mcp_call_admission(_call_admission):\n"
-        f"        return await _run_bounded(_handler, {{{kwargs_joined}}})\n"
+        f"        return await _run_bounded(_handler, {{{kwargs_joined}}}, _gate)\n"
     )
     exec(source, namespace)  # noqa: S102 — bounded signature mirror for FastMCP ParsedFunction
     bound = namespace["_custom_host_mcp_tool"]
@@ -252,7 +248,7 @@ def compose_mcp_server_from_definition(
         @mcp.tool
         async def list_agents() -> list[dict[str, Any]]:
             """List registered agents and capabilities (same roster as the HTTP agents endpoint)."""
-            async with optional_mcp_call_admission(call_admission):
+            async with optional_mcp_call_admission(call_admission), sanitized_tool_errors("list_agents"):
                 require_mcp_caller_principal(identity_mode=identity_mode)
                 agents: list[dict[str, Any]] = []
                 for agent_id in deps.registry.list_agent_ids():
@@ -287,7 +283,7 @@ def compose_mcp_server_from_definition(
             intent: str | None = None,
         ) -> dict[str, object]:
             """Run one agent task via canonical host task execution (same path as HTTP POST /run)."""
-            async with optional_mcp_call_admission(call_admission):
+            async with optional_mcp_call_admission(call_admission), sanitized_tool_errors("run_agent"):
                 return await execute_mcp_agent_task_with_resolved_identity(
                     host_execution,
                     message=message,
@@ -357,7 +353,12 @@ def compose_mcp_server_from_definition(
                     f"missing custom tool handler for {binding.tool_name!r}",
                 )
 
-            registered = _bind_custom_host_tool_for_fastmcp(handler, call_admission=call_admission)
+            custom_gate = (
+                None
+                if binding.tool_name in deps.public_custom_tool_names
+                else lambda: require_mcp_caller_principal(identity_mode=identity_mode)
+            )
+            registered = _bind_custom_host_tool_for_fastmcp(handler, call_admission=call_admission, gate=custom_gate)
             mcp.tool(name=binding.tool_name)(registered)
 
     return mcp

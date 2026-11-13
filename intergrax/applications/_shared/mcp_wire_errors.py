@@ -10,11 +10,15 @@ detail (contract v1.1, OD-MCP-RC-01 D-4).
 
 from __future__ import annotations
 
-from collections.abc import Mapping
+import asyncio
+import logging
+from collections.abc import AsyncIterator, Mapping
+from contextlib import asynccontextmanager
 from typing import Any
 
 from fastmcp.exceptions import ToolError
 
+from intergrax.applications._shared.mcp_engine_concurrency import McpConcurrentToolCallLimitExceeded
 from intergrax.contracts.mcp_server_definition import McpServerDefinitionErrorCode
 from intergrax.tools.mcp_result_bounds import (
     DEFAULT_MCP_MAX_SERIALIZED_BYTES,
@@ -22,6 +26,7 @@ from intergrax.tools.mcp_result_bounds import (
 )
 
 _C = McpServerDefinitionErrorCode
+_LOG = logging.getLogger(__name__)
 
 LEGACY_WIRE_CODE_MAP: Mapping[str, McpServerDefinitionErrorCode] = {
     "unauthorized": _C.MCP_PRINCIPAL_REQUIRED,
@@ -59,6 +64,23 @@ def mcp_tool_error(code: McpServerDefinitionErrorCode | str, detail: str = "") -
     return ToolError(f"{code_text}: {detail}" if detail else code_text)
 
 
+@asynccontextmanager
+async def sanitized_tool_errors(tool_name: str) -> AsyncIterator[None]:
+    """Run a tool body so that raw exception text never reaches the wire (MCP-RC AF-01, AF-10).
+
+    Wire errors (``ToolError``), cancellation and the declared concurrency-limit error pass through unchanged;
+    any other exception becomes ``MCP_INTERNAL_ERROR`` carrying only the exception class name, and the full
+    exception is logged server-side.
+    """
+    try:
+        yield
+    except (ToolError, asyncio.CancelledError, McpConcurrentToolCallLimitExceeded):
+        raise
+    except Exception as exc:
+        _LOG.exception("MCP tool %s failed", tool_name)
+        raise mcp_tool_error(_C.MCP_INTERNAL_ERROR, f"tool execution failed ({type(exc).__name__})") from exc
+
+
 def bound_mcp_result_or_raise(
     value: Any,
     *,
@@ -93,4 +115,5 @@ __all__ = [
     "bound_mcp_result_or_raise",
     "mcp_code_for_legacy",
     "mcp_tool_error",
+    "sanitized_tool_errors",
 ]

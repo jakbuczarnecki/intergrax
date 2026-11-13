@@ -150,6 +150,7 @@ def build_mcp_server_x_reference_qualification_server(
     extra_custom_handlers: Mapping[str, CustomHandler] | None = None,
     identity_mode: McpIdentityMode = McpIdentityMode.LOCAL_DEV_EXPLICIT,
     max_call_seconds: float | None = None,
+    public_custom_tool_names: frozenset[str] = frozenset(),
 ) -> FastMCP:
     """Reference server: host builtins + optional catalog surface + qual echo custom binding.
 
@@ -197,6 +198,7 @@ def build_mcp_server_x_reference_qualification_server(
         custom_host_tools=handlers,
         identity_mode=identity_mode,
         max_call_seconds=max_call_seconds,
+        public_custom_tool_names=public_custom_tool_names,
         **deps_kwargs,
     )
     return compose_mcp_server_from_definition(definition, deps)
