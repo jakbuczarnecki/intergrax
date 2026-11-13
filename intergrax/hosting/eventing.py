@@ -37,12 +37,38 @@ class HostingObservabilityAttributes(ApplicationObservabilityAttributes):
     severity: str
     occurred_at: str
     causation_id: str = ""
+    # Populated only for ``hosting.lifecycle.metric`` events (APP-HOST-3D).
+    metric_name: str | None = None
+    metric_value: float | None = None
+    metric_unit: str | None = None
+    metric_label: str | None = None
+
+
+def _metric_attribute_fields(event: HostedApplicationEvent) -> dict[str, object]:
+    payload = event.payload
+    name = payload.get("metric")
+    value = payload.get("value")
+    unit = payload.get("unit")
+    label = payload.get("label")
+    fields: dict[str, object] = {}
+    if isinstance(name, str):
+        fields["metric_name"] = name
+    if isinstance(value, (int, float)) and not isinstance(value, bool):
+        fields["metric_value"] = float(value)
+    if isinstance(unit, str):
+        fields["metric_unit"] = unit
+    if isinstance(label, str) and label:
+        fields["metric_label"] = label
+    return fields
 
 
 def hosted_event_to_platform_export_source(
     event: HostedApplicationEvent,
 ) -> PlatformObservabilityExportSource:
     """Project a hosting authoring envelope to a typed non-execution export source."""
+    metric_fields: dict[str, object] = {}
+    if event.event_type is HostedApplicationEventType.LIFECYCLE_METRIC:
+        metric_fields = _metric_attribute_fields(event)
     attributes = HostingObservabilityAttributes(
         application_id=event.application_id,
         instance_id=event.instance_id,
@@ -50,6 +76,7 @@ def hosted_event_to_platform_export_source(
         severity=event.severity.value,
         occurred_at=event.occurred_at.isoformat(),
         causation_id=event.causation_id,
+        **metric_fields,  # type: ignore[arg-type]
     )
     return PlatformObservabilityExportSource(
         event_id=event.event_id,
@@ -142,11 +169,7 @@ class HostingEventDispatcher:
         self,
         event_type: HostedApplicationEventType,
     ) -> tuple[ResolvedEventSubscription, ...]:
-        return tuple(
-            resolved
-            for resolved in self._subscriptions
-            if event_type in resolved.subscription.event_types
-        )
+        return tuple(resolved for resolved in self._subscriptions if event_type in resolved.subscription.event_types)
 
     async def _invoke_subscription(
         self,
