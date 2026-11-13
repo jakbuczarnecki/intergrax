@@ -30,9 +30,9 @@ Recording of the operator's direct confirmation to the designated signing sessio
 
 Stage: MCP-RC ACT-N11 activation decision (ticket `governance/tickets/T-IGX-038-F.md`).
 
-| # | Decision ID | Record path (repo-relative) | SHA-256 of the unsigned text (file bytes at `e52d1f15edfcf6c98053fe493b9318d0d359d287`) | Delegated act |
+| # | Decision ID | Record path (repo-relative) | SHA-256 of the unsigned text (file bytes at `83e587553e163c2e401e21a1947f8615368ea316`) | Delegated act |
 |---|---|---|---|---|
-| 1 | `IIAC-OD-MCP-RC-ACT-N11-2026-11-13` | `docs/project/maintainers/qualification/IIAC_OD_ACTIVATION_MCP_RC_2026-11-13.md` | `9edf21ed4e22a4a4a66d722a4c5399b0072c2a6705d55ce2fcdbbfcb754818dd` | (a) replace the standalone placeholder line `________________` by the plain line `Approved IIAC policy activation IIAC-2026-11-05.1: operator @ <timestamp>` (plain form, because the IIAC activation gate accepts only that form; it is not claimed to be operator-written); (b) change `Decision status: DRAFT` to `Decision status: AUTHORIZED`; (c) replace the `Drafting note` paragraph by a `Provenance note` paragraph in the P6 wording (the line was written by an operator-designated signing session under this record and the operator's chat commission of 2026-11-13; the plain form is not claimed to be operator-written; the timestamp is the designated session's system clock at signing; this record named with its commit SHA, read from `git log`). Nothing else. |
+| 1 | `IIAC-OD-MCP-RC-ACT-N11-2026-11-13` | `docs/project/maintainers/qualification/IIAC_OD_ACTIVATION_MCP_RC_2026-11-13.md` | `f5116d96e030d93ca5122f5e481d04718e90e2a1f949f1e916533733c7650873` | (a) replace the standalone placeholder line `________________` by the plain line `Approved IIAC policy activation IIAC-2026-11-05.1: operator @ <timestamp>` (plain form, because the IIAC activation gate accepts only that form; it is not claimed to be operator-written); (b) change `Decision status: DRAFT` to `Decision status: AUTHORIZED`; (c) replace the `Drafting note` paragraph by a `Provenance note` paragraph in the P6 wording (the line was written by an operator-designated signing session under this record and the operator's chat commission of 2026-11-13; the plain form is not claimed to be operator-written; the timestamp is the designated session's system clock at signing; this record named with its commit SHA, read from `git log`). Nothing else. |
 
 The digest is computed over the committed (LF, `core.autocrlf=false`) blob of the unsigned draft at the commit named in the column heading. It was recomputed from that commit by the drafting session. The signed text necessarily differs (signature line, status, provenance note); scope text, digests and SHAs inside the record are not changed by the signing. The timestamp is ISO-8601 with offset, taken from the designated session's own system clock at the moment of signing (R-5: act immediately); it is never composed in advance and never copied from another record.
 
@@ -44,6 +44,8 @@ The operator's conditions are: the delta re-audit is PASS and the certifier pref
 2. Certifier preflight verdict `CERTIFIER_PREFLIGHT_PASS_SCOPED` (`iiac_evidence/PDC-X/MCP-RC/certifier/certifier_preflight_result.json`, field `verdict`).
 3. The unsigned draft at the checkout it signs in hashes to the digest in the table above, and the digests and SHAs quoted inside that draft match the files and git (spot-check at least the dossier, findings, scope and matrix digests of both audits and the evidence publication SHA `78d4c496071141ca4092b926b838fb80016f1b91`).
 4. The draft still contains no `Approved IIAC policy activation` line, and nothing in `docs/project/maintainers/qualification/IIAC_POLICY_ACTIVATION_RECORD.json` has changed.
+
+5. **Widened scope.** The draft's section "Widened scope" must no longer say that scope item 2 is not covered: a revision of the draft must already cite, from published evidence, the integrated baseline SHA, the path count and audit-scope file, and the independent audit dossier and certifier preflight covering the merged `development` paths. That revision changes the digest; its new digest and commit must be recorded in an addendum to this record (Addendum 1, written by the orchestrator or drafting session, not by the designated session) before it signs. Until then the designated session must not sign.
 
 If any of these fails, the designated session writes nothing and reports to the orchestrator session.
 
@@ -72,6 +74,10 @@ Out of scope (the designated session does none of these): any IIAC rebind or edi
 
 - Expires: 24 hours after the operator's commission answer (precedent: P6 delegation). The exact commission time is not in the drafting brief and is not invented here. The commission is dated 2026-11-13, so `Expires` is not earlier than `2026-11-14T00:00:00+01:00`. The designated session signs on 2026-11-13 if it can, and in any case before `2026-11-14T00:00:00+01:00`; if it is later than that, it stops and asks the orchestrator session to obtain a renewed commission.
 - Single use: the delegation covers only the Decision ID, the record path and the SHA-256 above. If the unsigned draft is edited after the digest was recorded, this delegation does not cover the edited text; a new digest and a renewed commission are needed. `[ ] confirmed by the designated session at signing` (left unticked here).
+
+## Addendum 1 (2026-11-13): widened scope of the decision
+
+Operator answers relayed in the chat with the drafting session on 2026-11-13 (original, Polish, as typed; English renderings by the drafting session, not operator-written lines): order `Rebind po merge'u` ("Rebind after the merge"); and, to the question whether to widen the scope of the unsigned decision before the delegate signs, `Tak, rozszerz` ("Yes, widen it"). The decision text was widened accordingly (commit `83e587553e163c2e401e21a1947f8615368ea316`; digest in the table above is of that text). The widened text is not signable yet (check 5). The delegated act, the single-use limit and the out-of-scope list are unchanged; only the digest and the precondition list changed. The 24 h expiry runs from the original commission and may lapse before the revision exists; if it does, a renewed commission is needed (see Limits).
 
 ## Operator signature line
 
