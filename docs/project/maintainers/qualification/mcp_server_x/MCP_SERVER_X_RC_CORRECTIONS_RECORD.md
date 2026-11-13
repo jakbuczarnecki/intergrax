@@ -3,7 +3,7 @@
 | Field | Value |
 | --- | --- |
 | **Stage** | MCP-SERVER-X corrective campaign (MCP-RC); additive to the closed P7/P8 records, which are unchanged |
-| **Status** | **IMPLEMENTED, NOT AUDITED, NOT CERTIFIED.** Every disposition below is the implementer's claim with evidence; none is an independent finding. `CLOSED_IN_CODE` means "fixed and covered by tests on the implementation SHA", not "closed" in the P8 sense |
+| **Status** | **IMPLEMENTED; independently audited (first audit PARTIAL at `93a089d3c`; delta re-audit PASS_SCOPED at `b0e19bf61`); certifier preflight `CERTIFIER_PREFLIGHT_PASS_SCOPED` (branch `mcp-rc-certifier`, `66a782254`); NOT activation-certified.** The dispositions below were written by the implementer; the audit and preflight verdicts are independent and are recorded in their own dossiers. Status text amended additively after the delta re-audit and the preflight; the original wording was "IMPLEMENTED, NOT AUDITED, NOT CERTIFIED". `CLOSED_IN_CODE` means "fixed and covered by tests on the implementation SHA", not "closed" in the P8 sense |
 | **Decisions** | `OD-MCP-RC-01` (D-1..D-8), `OD-MCP-RC-02`; delegation `DELEGATION-MCP-RC-1` (tickets `T-IGX-038-A..F`) |
 | **Plan** | `agent-env/plans/pasted-content-id-703a-integrax-prancy-fiddle.md` (sections B, C, E, I) |
 | **Branch** | `mcp-rc` (not merged; merge to `development` only together with the PDC-P7-00 rebind) |
@@ -29,7 +29,7 @@ Disposition vocabulary: `CLOSED_IN_CODE` (fixed + tests), `ACCEPTED_SCOPED` (doc
 | G-RB-01 / R-P7-03 | R-P7-03 | CLOSED_IN_CODE | custom tools bounded; `test_custom_host_tool_*`, `test_p7_05_*_applied_to_the_custom_tool_qual_echo` (the former "recorded gap" test is inverted) |
 | G-RB-02 | code review | CLOSED_IN_CODE | cross-loop payload bounded at the MCP boundary (`bound_cross_loop_catalog_payload`); the runtime ingress is unchanged (host-owned) |
 | G-RB-03 | code review | CLOSED_IN_CODE | incremental `mcp_serialized_size_exceeds`; `test_size_check_aborts_without_materializing_the_whole_value` |
-| G-RB-04 | code review | CLOSED_IN_CODE (after audit AF-01, AF-10) | every tool body runs under `sanitized_tool_errors`: raw exception text never reaches the wire on `run_agent`, discovery, invoke and custom tools; unknown-tool echo capped at 128 chars; unserializable (circular/deep) results are typed |
+| G-RB-04 | code review | CLOSED_IN_CODE (after audit AF-01, AF-10) | every tool body runs under `sanitized_tool_errors`: raw exception text of unexpected exceptions never reaches the wire (a `ToolError` authored by host code keeps its host text, see RA-02) on `run_agent`, discovery, invoke and custom tools; unknown-tool echo capped at 128 chars; unserializable (circular/deep) results are typed |
 | G-DL-01 / R-P7-04 | R-P7-04 | CLOSED_IN_CODE (after audit AF-02) | `max_call_seconds` governed-cancel trigger, `MCP_DEADLINE_EXCEEDED` with explicit outcome (`cancelled`, `failed`, `outcome_unknown`), never success; `OD-MCP-RC-02`; `test_mcp_deadline_and_resilience.py`, `test_mcp_rc_audit_corrections.py`. Effective wall time is `max_call_seconds` plus the bounded drain (30 s default), see "Audit follow-up" |
 | G-DL-02 | code review | ACCEPTED_SCOPED | catalog invoke bounded (`invoke_timeout_s`, outcome unknown); a non-cooperative synchronous thread cannot be terminated in-process |
 | G-DL-03 | code review | ACCEPTED_SCOPED | the cap bounds MCP handler occupancy; supervised detached executions are bounded by the transport-detachment supervisor; catalog invoke now passes admission |

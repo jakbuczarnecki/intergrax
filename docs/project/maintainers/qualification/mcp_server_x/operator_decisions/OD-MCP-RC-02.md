@@ -3,7 +3,7 @@
 | Field | Value |
 | --- | --- |
 | **Decision ID** | OD-MCP-RC-02 |
-| **Status** | **RECORDED (operator chat answer; not a signed `Authorized:` line)** |
+| **Status** | **AUTHORIZED (operator chat answer, recorded as an `Authorized:` line at the operator's explicit request on 2026-11-13; see the end of this file)** |
 | **Related** | R-P7-04, `OD-MCP-RC-01`, master plan sections D.3 and E (row MRC-3.1), `T-IGX-038-C` |
 
 ## Question
@@ -24,3 +24,9 @@ Operator chat, 2026-11-13, answer selected from two options (Polish option label
 ## Explicit non-actions
 
 No product change, no signature, no ticket approval. The `Approved:` line of `T-IGX-038-C` is written only by a commissioned delegate session after it re-verifies the plan against this record.
+
+## Authorization record
+
+On 2026-11-13 the operator answered an explicit chat question whether this decision may be recorded as a signed `Authorized:` line quoting their earlier answer. English rendering of the operator's answer (Polish option label: "Tak, zapisz z cytatem (Recommended)"): "Yes, record it with the quotation." The quoted earlier answer is the one in the section "Operator record" above ("Wyzwalacz transportowy MCP (Recommended)"). The line below is written by the orchestrator session on that instruction, not by the operator's own hand; it signs nothing beyond this decision (no ticket approval, no IIAC activation, no product change).
+
+Authorized: operator @ 2026-11-13T14:09:10+01:00
