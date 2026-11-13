@@ -89,7 +89,7 @@ Rows classed `CURRENT_HEAD_REQUALIFICATION`, `ALREADY_CERTIFIED_REUSABLE`, `N/A_
 ## B-REG-P — Regression: duplicate `ollama` catalog slug breaks full integration bootstrap (7aa9cfa18)
 
 - **Ticket:** T-IGX-036-M · **Wave:** W1 · **ADR:** — · **Auditor:** IA-D1 (plug_03 replay)
-- **Write set:** `intergrax/integrations/providers/embedding_provider/`
+- **Write set:** `intergrax/integrations/providers/embedding_provider/`, `tests/qualification/pdc_x/reg_p/`
 - **Tests:** tests/unit/rag/test_rag_plugin_discovery.py + tests/qualification/plug_03 green
 - **Evidence (exact SHA):** implementation SHA and publication SHA recorded in `PDC_SHA_LADDER.md`; test log under `.tmp/proof/pdc-x-p5/B-REG-P/`; audited by IA-D1 (plug_03 replay) at the PDC-P7 audited SHA.
 - **Merge gate:** OD-PDC-SEQ-01: implement in an isolated worktree; merge only after MCP-SERVER-X P8 publication; ACT-N11 re-activation at PDC-P7-00
@@ -229,7 +229,7 @@ Rows classed `CURRENT_HEAD_REQUALIFICATION`, `ALREADY_CERTIFIED_REUSABLE`, `N/A_
 ## B-D8 — Artifacts: taxonomy, mandatory digest, governed read/download port, durable store, retention, spill, dedupe
 
 - **Ticket:** T-IGX-036-Q · **Wave:** W3b · **ADR:** ADR-PDC-08 · **Auditor:** IA-D8
-- **Write set:** `intergrax/contracts/artifact_ref.py`, `intergrax/contracts/task_artifacts.py`, `intergrax/applications/contracts/application_artifacts.py`, `intergrax/runtime/nexus/artifacts/`, `intergrax/runtime/nexus/tracing/trace_models.py`, `intergrax/collaborative_work/`, `intergrax/runtime/execution/run_artifact_bundle_composition.py`, `intergrax/runtime/nexus/orchestration/run_artifact_bundle_builder.py`, `intergrax/applications/_shared/run_artifact_bundle_builder.py`, `docs/project/capabilities/architecture/ARTIFACT_LIFECYCLE.md`, `docs/project/capabilities/plan/ARTIFACT_LIFECYCLE.md`, `tests/qualification/pdc_x/d8/`
+- **Write set:** `intergrax/contracts/artifact_ref.py`, `intergrax/contracts/task_artifacts.py`, `intergrax/applications/contracts/application_artifacts.py`, `intergrax/runtime/nexus/artifacts/`, `intergrax/runtime/nexus/tracing/trace_models.py`, `intergrax/collaborative_work/`, `intergrax/runtime/execution/run_artifact_bundle_composition.py`, `intergrax/runtime/nexus/orchestration/run_artifact_bundle_builder.py`, `intergrax/applications/_shared/run_artifact_bundle_builder.py`, `docs/project/capabilities/architecture/ARTIFACT_LIFECYCLE.md`, `docs/project/capabilities/plan/ARTIFACT_LIFECYCLE.md`, `tests/qualification/state_x/_state_x_explicit_mechanism_classifications.py`, `intergrax/tools/providers/storage/service.py`, `intergrax/runtime/replay/models.py`, `intergrax/runtime/replay/replay_engine.py`, `tests/qualification/pdc_x/d8/`
 - **Tests:** tests/qualification/pdc_x/d8/
 - **Evidence (exact SHA):** implementation SHA and publication SHA recorded in `PDC_SHA_LADDER.md`; test log under `.tmp/proof/pdc-x-p5/B-D8/`; audited by IA-D8 at the PDC-P7 audited SHA.
 - **Merge gate:** OD-PDC-SEQ-01: implement in an isolated worktree; merge only after MCP-SERVER-X P8 publication; ACT-N11 re-activation at PDC-P7-00
