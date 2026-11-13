@@ -1,0 +1,175 @@
+MCP tool run_agent failed
+Traceback (most recent call last):
+  File "D:\Projekty\intergrax\.claude\worktrees\objective-allen-16ab76\intergrax\applications\_shared\mcp_wire_errors.py", line 76, in sanitized_tool_errors
+    yield
+  File "D:\Projekty\intergrax\.claude\worktrees\objective-allen-16ab76\intergrax\applications\_shared\mcp_server_engine.py", line 287, in run_agent
+    return await execute_mcp_agent_task_with_resolved_identity(
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "D:\Projekty\intergrax\.claude\worktrees\objective-allen-16ab76\intergrax\applications\_shared\mcp_nexus_server.py", line 232, in execute_mcp_agent_task_with_resolved_identity
+    return await execute_mcp_agent_task(
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "D:\Projekty\intergrax\.claude\worktrees\objective-allen-16ab76\intergrax\applications\_shared\mcp_nexus_server.py", line 145, in execute_mcp_agent_task
+    execution_result = await _run_execute()
+                       ^^^^^^^^^^^^^^^^^^^^
+  File "D:\Projekty\intergrax\.claude\worktrees\objective-allen-16ab76\intergrax\applications\_shared\mcp_nexus_server.py", line 140, in _run_execute
+    return await host_execution.execute(task)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\XPS\AppData\Roaming\uv\python\cpython-3.12.11-windows-x86_64-none\Lib\unittest\mock.py", line 2291, in _execute_mock_call
+    raise effect
+RuntimeError: SECRET-HOST-FAILURE-hunter2 /srv/app/db.py:42
+[11/13/26 12:33:39] Error calling tool 'run_agent'                             
+PASS   P1 run_agent host exception over real HTTP with key :: MCP_INTERNAL_ERROR: tool execution failed (RuntimeError)
+[11/13/26 12:33:40] Error calling tool 'secret_tool'                           
+PASS   P3a custom tool, default mode, no auth, Tier-3 facade :: MCP_PRINCIPAL_REQUIRED: authenticated harness principal required for MCP calls
+PASS   P3b custom tool with valid key :: {"d":"SECRET-ok"}
+PASS   P3c custom tool bad creds {'X-Api-Key': 'bad'} :: refused at HTTP layer (401)
+PASS   P3c custom tool bad creds {'X-Api-Key': ''} :: refused at HTTP layer (401)
+PASS   P3c custom tool bad creds {} :: refused at HTTP layer (401)
+GAP    P3d compose_application_mcp_server exposes public_custom_tool_names :: opt-out unreachable via the Tier-3 facade
+MCP server 'p4' composed in LOCAL_DEV_EXPLICIT identity mode: client-asserted tenant/user are trusted for in-process and loopback callers only
+[11/13/26 12:33:42] Error calling tool 'te_tool'                               
+NOTE   P4 te_tool :: UPSTREAM-SECRET tenant=victim token=abc
+MCP tool grp failed
+  + Exception Group Traceback (most recent call last):
+  |   File "D:\Projekty\intergrax\.claude\worktrees\objective-allen-16ab76\intergrax\applications\_shared\mcp_wire_errors.py", line 76, in sanitized_tool_errors
+  |     yield
+  |   File "D:\Projekty\intergrax\.claude\worktrees\objective-allen-16ab76\intergrax\applications\_shared\mcp_server_engine.py", line 125, in _run_custom_host_tool_bounded
+  |     result = await handler(**kwargs)
+  |              ^^^^^^^^^^^^^^^^^^^^^^^
+  |   File "D:\Projekty\intergrax\.claude\worktrees\objective-allen-16ab76\.tmp\session\mcp-rc-reaudit\adv\reaudit_probes.py", line 133, in grp
+  |     raise ExceptionGroup("g", [ValueError("EG-SECRET")])
+  | ExceptionGroup: g (1 sub-exception)
+  +-+---------------- 1 ----------------
+    | ValueError: EG-SECRET
+    +------------------------------------
+                    Error calling tool 'g_tool'                                
+PASS   P4 g_tool :: MCP_INTERNAL_ERROR: tool execution failed (ExceptionGroup)
+MCP tool cls failed
+Traceback (most recent call last):
+  File "D:\Projekty\intergrax\.claude\worktrees\objective-allen-16ab76\intergrax\applications\_shared\mcp_wire_errors.py", line 76, in sanitized_tool_errors
+    yield
+  File "D:\Projekty\intergrax\.claude\worktrees\objective-allen-16ab76\intergrax\applications\_shared\mcp_server_engine.py", line 125, in _run_custom_host_tool_bounded
+    result = await handler(**kwargs)
+             ^^^^^^^^^^^^^^^^^^^^^^^
+  File "D:\Projekty\intergrax\.claude\worktrees\objective-allen-16ab76\.tmp\session\mcp-rc-reaudit\adv\reaudit_probes.py", line 136, in cls
+    raise Boom_tenant_victim("m")
+main.<locals>.Boom_tenant_victim: m
+                    Error calling tool 'c_tool'                                
+PASS   P4 c_tool :: MCP_INTERNAL_ERROR: tool execution failed (Boom_tenant_victim)
+MCP server 'p5' composed in LOCAL_DEV_EXPLICIT identity mode: client-asserted tenant/user are trusted for in-process and loopback callers only
+                    Error calling tool 'run_agent'                             
+NOTE   P5 host TimeoutError (no bound expiry) in LOCAL_DEV with max_call_seconds :: MCP_DEADLINE_EXCEEDED: call exceeded 30.0s; outcome=cancelled after 0.00s
+MCP server 'p6' composed in LOCAL_DEV_EXPLICIT identity mode: client-asserted tenant/user are trusted for in-process and loopback callers only
+PASS   P6 list_agents latency while list_catalog_tools blocks 1.5 s :: list_agents 0.00s, list_catalog 1.52s
+MCP server 'p7' composed in LOCAL_DEV_EXPLICIT identity mode: client-asserted tenant/user are trusted for in-process and loopback callers only
+MCP tool run_agent failed
+Traceback (most recent call last):
+  File "D:\Projekty\intergrax\.claude\worktrees\objective-allen-16ab76\intergrax\applications\_shared\mcp_wire_errors.py", line 76, in sanitized_tool_errors
+    yield
+  File "D:\Projekty\intergrax\.claude\worktrees\objective-allen-16ab76\intergrax\applications\_shared\mcp_server_engine.py", line 287, in run_agent
+    return await execute_mcp_agent_task_with_resolved_identity(
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "D:\Projekty\intergrax\.claude\worktrees\objective-allen-16ab76\intergrax\applications\_shared\mcp_nexus_server.py", line 232, in execute_mcp_agent_task_with_resolved_identity
+    return await execute_mcp_agent_task(
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "D:\Projekty\intergrax\.claude\worktrees\objective-allen-16ab76\intergrax\applications\_shared\mcp_nexus_server.py", line 200, in execute_mcp_agent_task
+    return bound_mcp_result_or_raise(payload)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "D:\Projekty\intergrax\.claude\worktrees\objective-allen-16ab76\intergrax\applications\_shared\mcp_wire_errors.py", line 90, in bound_mcp_result_or_raise
+    if mcp_serialized_size_exceeds(value, max_bytes=max_bytes):
+       ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "D:\Projekty\intergrax\.claude\worktrees\objective-allen-16ab76\intergrax\tools\mcp_result_bounds.py", line 47, in mcp_serialized_size_exceeds
+    for chunk in _BOUND_ENCODER.iterencode(value):
+                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\XPS\AppData\Roaming\uv\python\cpython-3.12.11-windows-x86_64-none\Lib\json\encoder.py", line 432, in _iterencode
+    yield from _iterencode_dict(o, _current_indent_level)
+  File "C:\Users\XPS\AppData\Roaming\uv\python\cpython-3.12.11-windows-x86_64-none\Lib\json\encoder.py", line 406, in _iterencode_dict
+    yield from chunks
+  File "C:\Users\XPS\AppData\Roaming\uv\python\cpython-3.12.11-windows-x86_64-none\Lib\json\encoder.py", line 406, in _iterencode_dict
+    yield from chunks
+  File "C:\Users\XPS\AppData\Roaming\uv\python\cpython-3.12.11-windows-x86_64-none\Lib\json\encoder.py", line 406, in _iterencode_dict
+    yield from chunks
+  [Previous line repeated 969 more times]
+  File "C:\Users\XPS\AppData\Roaming\uv\python\cpython-3.12.11-windows-x86_64-none\Lib\json\encoder.py", line 403, in _iterencode_dict
+    chunks = _iterencode_dict(value, _current_indent_level)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+RecursionError: maximum recursion depth exceeded
+[11/13/26 12:33:43] Error calling tool 'run_agent'                             
+PASS   P7 run_agent deep metadata :: MCP_INTERNAL_ERROR: tool execution failed (RecursionError)
+MCP server 'mcp-server-x-p6-reference' composed in LOCAL_DEV_EXPLICIT identity mode: client-asserted tenant/user are trusted for in-process and loopback callers only
+[11/13/26 12:33:44] Error calling tool 'qual_echo'                             
+                    +----------- Traceback (most recent call last) -----------+
+                    | D:\Projekty\intergrax\.venv\Lib\site-packages\fastmcp\s |
+                    | erver\server.py:1274 in call_tool                       |
+                    |                                                         |
+                    | D:\Projekty\intergrax\.venv\Lib\site-packages\fastmcp\t |
+                    | ools\base.py:379 in _run                                |
+                    |                                                         |
+                    |                 ... 3 frames hidden ...                 |
+                    |                                                         |
+                    | D:\Projekty\intergrax\.claude\worktrees\objective-allen |
+                    | -16ab76\intergrax\applications\_shared\mcp_engine_concu |
+                    | rrency.py:30 in optional_mcp_call_admission             |
+                    |                                                         |
+                    |   27     if admission is None:                          |
+                    |   28         yield                                      |
+                    |   29         return                                     |
+                    | > 30     async with admission:                          |
+                    |   31         yield                                      |
+                    |   32                                                    |
+                    |   33                                                    |
+                    |                                                         |
+                    | D:\Projekty\intergrax\.claude\worktrees\objective-allen |
+                    | -16ab76\intergrax\applications\_shared\mcp_engine_concu |
+                    | rrency.py:72 in __aenter__                              |
+                    |                                                         |
+                    |   69     async def __aenter__(self) -> None:            |
+                    |   70         with self._lock:                           |
+                    |   71             if self._inflight >= self._max:        |
+                    | > 72                 raise McpConcurrentToolCallLimitEx |
+                    |   73             self._inflight += 1                    |
+                    |   74                                                    |
+                    |   75     async def __aexit__(self, *exc: object) -> Non |
+                    +---------------------------------------------------------+
+                    McpConcurrentToolCallLimitExceeded:                        
+                    MCP_CONCURRENT_CALL_LIMIT_EXCEEDED:                        
+                    mcp_concurrent_call_limit_exceeded                         
+PASS   P8a second call over cap 1 :: Error calling tool 'qual_echo': MCP_CONCURRENT_CALL_LIMIT_EXCEEDED: mcp_concurrent_call_limit_exceeded
+                    Error calling tool 'qual_echo'                             
+                    +----------- Traceback (most recent call last) -----------+
+                    | D:\Projekty\intergrax\.venv\Lib\site-packages\fastmcp\s |
+                    | erver\server.py:1274 in call_tool                       |
+                    |                                                         |
+                    | D:\Projekty\intergrax\.venv\Lib\site-packages\fastmcp\t |
+                    | ools\base.py:379 in _run                                |
+                    |                                                         |
+                    |                 ... 3 frames hidden ...                 |
+                    |                                                         |
+                    | D:\Projekty\intergrax\.claude\worktrees\objective-allen |
+                    | -16ab76\intergrax\applications\_shared\mcp_engine_concu |
+                    | rrency.py:30 in optional_mcp_call_admission             |
+                    |                                                         |
+                    |   27     if admission is None:                          |
+                    |   28         yield                                      |
+                    |   29         return                                     |
+                    | > 30     async with admission:                          |
+                    |   31         yield                                      |
+                    |   32                                                    |
+                    |   33                                                    |
+                    |                                                         |
+                    | D:\Projekty\intergrax\.claude\worktrees\objective-allen |
+                    | -16ab76\intergrax\applications\_shared\mcp_engine_concu |
+                    | rrency.py:72 in __aenter__                              |
+                    |                                                         |
+                    |   69     async def __aenter__(self) -> None:            |
+                    |   70         with self._lock:                           |
+                    |   71             if self._inflight >= self._max:        |
+                    | > 72                 raise McpConcurrentToolCallLimitEx |
+                    |   73             self._inflight += 1                    |
+                    |   74                                                    |
+                    |   75     async def __aexit__(self, *exc: object) -> Non |
+                    +---------------------------------------------------------+
+                    McpConcurrentToolCallLimitExceeded:                        
+                    MCP_CONCURRENT_CALL_LIMIT_EXCEEDED:                        
+                    mcp_concurrent_call_limit_exceeded                         
+NOTE   P8b slot after in-memory client cancel (probe limitation: the in-memory Client does not propagate cancel to the server task; see reaudit_probe_cancel.py for the server-side check) :: refused while the first handler (30 s sleep) still holds the slot

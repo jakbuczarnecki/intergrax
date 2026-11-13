@@ -1,0 +1,28 @@
+{
+  "repo_head": "f1dde5a3e19924b82e902be18f11a21b64b822ba",
+  "results": [
+    {
+      "mutant_id": "R8w-invoke-catalog-tool-unsanitized-wide",
+      "invariant": "invoke_catalog_tool never echoes raw exception text (all catalog suites)",
+      "path": "intergrax/applications/_shared/mcp_catalog_tools.py",
+      "old": "async with optional_mcp_call_admission(call_admission), sanitized_tool_errors(\"invoke_catalog_tool\"):",
+      "new": "async with optional_mcp_call_admission(call_admission):",
+      "tests": [
+        "tests/unit/applications/test_mcp_catalog_child_execution_qualification.py",
+        "tests/unit/applications/test_mcp_catalog_cross_loop_ingress_qualification.py",
+        "tests/unit/applications/test_mcp_catalog_discovery_qualification.py",
+        "tests/unit/applications/test_mcp_catalog_e2e_hung_server_qualification.py",
+        "tests/unit/applications/test_mcp_catalog_f3_cross_loop_cancel_c_physical_l3.py",
+        "tests/unit/applications/test_mcp_catalog_f3_streamable_http_physical_l3.py",
+        "tests/unit/applications/test_mcp_catalog_gate_b_cancel_c_qualification.py",
+        "tests/qualification/mcp_server_x/test_mcp_server_x_p7_l3_invoke_security.py",
+        "tests/qualification/mcp_server_x/test_mcp_server_x_p7_l2_security_trace.py",
+        "tests/unit/applications/test_mcp_rc_audit_corrections.py"
+      ],
+      "status": "survived",
+      "exit_code": 0,
+      "seconds": 250.9,
+      "tail": "tests/unit/applications/test_mcp_catalog_f3_streamable_http_physical_l3.py::test_f3_streamable_http_catalog_child_under_canonical_root\n  D:\\Projekty\\intergrax\\.venv\\Lib\\site-packages\\uvicorn\\protocols\\websockets\\websockets_impl.py:17: DeprecationWarning: websockets.server.WebSocketServerProtocol is deprecated\n    from websockets.server import WebSocketServerProtocol\n\n-- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html\n134 passed, 39 warnings in 189.03s (0:03:09)"
+    }
+  ]
+}
