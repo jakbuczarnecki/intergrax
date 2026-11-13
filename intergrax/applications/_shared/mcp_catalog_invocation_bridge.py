@@ -5,6 +5,7 @@
 
 from __future__ import annotations
 
+import asyncio
 from dataclasses import dataclass
 from typing import Any
 
@@ -35,6 +36,7 @@ from intergrax.contracts.execution_identity import (
     validate_run_id,
     validate_task_id,
 )
+from intergrax.contracts.mcp_server_definition import McpServerDefinitionErrorCode
 from intergrax.contracts.meaningful_side_effect_authorization import (
     MeaningfulSideEffectAuthorizationPort,
 )
@@ -85,10 +87,21 @@ class McpCatalogInvocationComposition:
     default_tenant_id: str = "mcp"
     default_user_id: str = "mcp-user"
     identity_mode: McpIdentityMode = McpIdentityMode.HARNESS_BOUND
+    invoke_timeout_s: float | None = None
+    """Optional bound for one catalog invoke (OD-MCP-RC-02); a synchronous tool thread cannot be killed."""
+    cross_loop_wait_timeout_s: float = 120.0
 
 
 def _tool_error(code: str, detail: str) -> ToolError:
     return mcp_tool_error(mcp_code_for_legacy(code), f"{code}: {detail}")
+
+
+def _deadline_error(seconds: float) -> ToolError:
+    return mcp_tool_error(
+        McpServerDefinitionErrorCode.MCP_DEADLINE_EXCEEDED,
+        f"catalog tool call exceeded {seconds}s; outcome=outcome_unknown "
+        "(a non-cooperative tool thread may still be running)",
+    )
 
 
 def _bound_error_payload(code: str, detail: str, **extra: object) -> dict[str, object]:
@@ -398,10 +411,16 @@ async def execute_mcp_catalog_tool_invocation(
             work=work,
             admission_hooks=(mse_hook,),
         )
-        terminal = await cross_loop_ingress.submit_catalog_child_work(
-            ticket,
-            wait_timeout_s=120.0,
-        )
+        cross_loop_wait_s = composition.cross_loop_wait_timeout_s
+        if composition.invoke_timeout_s is not None:
+            cross_loop_wait_s = min(cross_loop_wait_s, composition.invoke_timeout_s)
+        try:
+            terminal = await cross_loop_ingress.submit_catalog_child_work(
+                ticket,
+                wait_timeout_s=cross_loop_wait_s,
+            )
+        except TimeoutError as exc:
+            raise _deadline_error(cross_loop_wait_s) from exc
         if not terminal.success:
             return bound_cross_loop_catalog_payload(terminal.payload)
         if CancellationCoordinator.is_requested(dict(work.governed_task.metadata)):
@@ -412,10 +431,13 @@ async def execute_mcp_catalog_tool_invocation(
         return bound_cross_loop_catalog_payload(terminal.payload)
 
     try:
-        tool_result = await child_port.execute(
-            work=work,
-            admission_hooks=(mse_hook,),
-        )
+        execution = child_port.execute(work=work, admission_hooks=(mse_hook,))
+        if composition.invoke_timeout_s is None:
+            tool_result = await execution
+        else:
+            tool_result = await asyncio.wait_for(execution, timeout=composition.invoke_timeout_s)
+    except TimeoutError as exc:
+        raise _deadline_error(composition.invoke_timeout_s or 0.0) from exc
     except ToolError:
         raise
     if CancellationCoordinator.is_requested(dict(binding.task.metadata)):

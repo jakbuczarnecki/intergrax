@@ -74,11 +74,14 @@ class McpServerCompositionDeps:
     meaningful_side_effect_authorization: MeaningfulSideEffectAuthorizationPort | None = None
     transport_detachment_supervision: RootExecutionTransportDetachmentSupervisionPort | None = None
     auto_wire_catalog_transport_supervision: bool = True
+    """Reserved: no consumer in the engine (documented no-op since MCP-RC); supervision comes from the coupling."""
     catalog_root_child_work_ingress: object | None = None
     enable_cross_loop_catalog_child: bool = False
     custom_host_tools: Mapping[str, Callable[..., Awaitable[dict[str, object]]]] | None = None
     max_concurrent_tool_calls: int | None = DEFAULT_MCP_MAX_CONCURRENT_TOOL_CALLS
     identity_mode: McpIdentityMode = McpIdentityMode.HARNESS_BOUND
+    max_call_seconds: float | None = None
+    """Optional MCP call bound (OD-MCP-RC-02): a transport trigger of the governed cancel, not a deadline."""
     """Fail-closed ``HARNESS_BOUND`` by default; ``LOCAL_DEV_EXPLICIT`` only by explicit composition opt-in."""
 
 
@@ -298,6 +301,7 @@ def compose_mcp_server_from_definition(
                     intent=intent,
                     task_control_mutation_boundary=task_control_mutation_boundary,
                     transport_detachment_supervision=deps.transport_detachment_supervision,
+                    max_call_seconds=deps.max_call_seconds,
                 )
 
     catalog_surface = {
@@ -331,12 +335,14 @@ def compose_mcp_server_from_definition(
                 default_tenant_id=definition.default_tenant_id,
                 default_user_id=definition.default_user_id,
                 identity_mode=identity_mode,
+                invoke_timeout_s=deps.max_call_seconds,
             )
         mount_catalog_tools_on_mcp(
             mcp,
             registry_view,
             catalog_invocation=catalog_invocation,
             identity_mode=identity_mode,
+            call_admission=call_admission,
         )
 
     if custom_bindings:

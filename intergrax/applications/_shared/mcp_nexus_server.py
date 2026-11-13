@@ -5,6 +5,7 @@
 
 from __future__ import annotations
 
+import asyncio
 import re
 
 from fastmcp import FastMCP
@@ -12,6 +13,7 @@ from fastmcp import FastMCP
 from intergrax.agents.tool_enablement import ToolEnablementProfile
 from intergrax.applications._shared.mcp_harness_principal import resolve_mcp_run_agent_identity
 from intergrax.applications._shared.mcp_host_execution_transport_cancel import (
+    McpHostExecutionDeadlineExceeded,
     McpHostExecutionTransportCancelContext,
     McpProtectedHostExecutionAdmissionError,
     admit_protected_mcp_root_execution_supervision,
@@ -28,7 +30,7 @@ from intergrax.applications._shared.mcp_server_engine import (
 from intergrax.applications._shared.mcp_transport_detachment_supervision_coupling import (
     resolve_transport_detachment_supervision_from_request,
 )
-from intergrax.applications._shared.mcp_wire_errors import bound_mcp_result_or_raise
+from intergrax.applications._shared.mcp_wire_errors import bound_mcp_result_or_raise, mcp_tool_error
 from intergrax.applications._shared.strict_production_serving_http_execution_principal import (
     bind_strict_serving_http_caller_principal,
 )
@@ -36,6 +38,7 @@ from intergrax.contracts.agent_run import RequestIdentity
 from intergrax.contracts.execution_bound_catalog_tool_invocation import (
     ExecutionBoundCatalogToolInvoker,
 )
+from intergrax.contracts.mcp_server_definition import McpServerDefinitionErrorCode
 from intergrax.contracts.meaningful_side_effect_authorization import (
     MeaningfulSideEffectAuthorizationPort,
 )
@@ -92,8 +95,13 @@ async def execute_mcp_agent_task(
     caller_request_identity: RequestIdentity | None = None,
     task_control_mutation_boundary: ControlPlaneMutationAuthorizationBoundary | None = None,
     transport_detachment_supervision: (RootExecutionTransportDetachmentSupervisionPort | None) = None,
+    max_call_seconds: float | None = None,
 ) -> dict[str, object]:
-    """Run one MCP agent task through canonical host task execution."""
+    """Run one MCP agent task through canonical host task execution.
+
+    ``max_call_seconds`` (optional) is the MCP transport call bound (OD-MCP-RC-02): on expiry the existing
+    governed cancel is requested and the call ends with ``MCP_DEADLINE_EXCEEDED``; it never reports success.
+    """
     task = task_from_mcp_agent_intake(
         message=message,
         capability=capability,
@@ -111,6 +119,7 @@ async def execute_mcp_agent_task(
         cancel_ctx = McpHostExecutionTransportCancelContext(
             mutation_boundary=boundary,
             caller_request_identity=caller_request_identity,
+            max_call_seconds=max_call_seconds,
         )
 
     async def _run_execute() -> object:
@@ -120,7 +129,17 @@ async def execute_mcp_agent_task(
         return await host_execution.execute(task)
 
     if cancel_ctx is None:
-        execution_result = await _run_execute()
+        if max_call_seconds is None:
+            execution_result = await _run_execute()
+        else:
+            # No protected cancel context (local development identity): the bound cancels the awaited call.
+            try:
+                execution_result = await asyncio.wait_for(_run_execute(), timeout=max_call_seconds)
+            except TimeoutError as exc:
+                raise mcp_tool_error(
+                    McpServerDefinitionErrorCode.MCP_DEADLINE_EXCEEDED,
+                    f"call exceeded {max_call_seconds}s; outcome=cancelled",
+                ) from exc
     else:
         supervision = transport_detachment_supervision
         if supervision is None:
@@ -141,13 +160,19 @@ async def execute_mcp_agent_task(
             launch=launch,
             transport_waiter_will_continue=False,
         )
-        execution_result = await run_host_execution_with_mcp_transport_cancel(
-            launch.host_task,
-            task=task,
-            cancel_ctx=cancel_ctx,
-            transport_detachment_supervision=supervision,
-            execution_start_gate=launch.execution_start_gate,
-        )
+        try:
+            execution_result = await run_host_execution_with_mcp_transport_cancel(
+                launch.host_task,
+                task=task,
+                cancel_ctx=cancel_ctx,
+                transport_detachment_supervision=supervision,
+                execution_start_gate=launch.execution_start_gate,
+            )
+        except McpHostExecutionDeadlineExceeded as exc:
+            raise mcp_tool_error(
+                McpServerDefinitionErrorCode.MCP_DEADLINE_EXCEEDED,
+                f"call exceeded {exc.max_call_seconds}s; outcome={exc.outcome}",
+            ) from exc
     result = (
         execution_result if isinstance(execution_result, TaskResult) else TaskResult.model_validate(execution_result)
     )
@@ -176,6 +201,7 @@ async def execute_mcp_agent_task_with_resolved_identity(
     intent: str | None = None,
     task_control_mutation_boundary: ControlPlaneMutationAuthorizationBoundary | None = None,
     transport_detachment_supervision: (RootExecutionTransportDetachmentSupervisionPort | None) = None,
+    max_call_seconds: float | None = None,
 ) -> dict[str, object]:
     """Resolve the MCP caller identity (fail-closed by default) and run one agent task.
 
@@ -201,6 +227,7 @@ async def execute_mcp_agent_task_with_resolved_identity(
         caller_request_identity=resolved.request_identity,
         task_control_mutation_boundary=task_control_mutation_boundary,
         transport_detachment_supervision=transport_detachment_supervision,
+        max_call_seconds=max_call_seconds,
     )
 
 
@@ -231,6 +258,7 @@ def build_nexus_mcp_server(
     catalog_root_child_work_ingress: object | None = None,
     enable_cross_loop_catalog_child: bool = False,
     identity_mode: McpIdentityMode | str | None = None,
+    max_call_seconds: float | None = None,
 ) -> FastMCP:
     """
     Register ``list_agents`` and ``run_agent`` on a FastMCP instance.
@@ -263,5 +291,6 @@ def build_nexus_mcp_server(
         catalog_root_child_work_ingress=catalog_root_child_work_ingress,
         enable_cross_loop_catalog_child=enable_cross_loop_catalog_child,
         identity_mode=coerce_mcp_identity_mode(identity_mode),
+        max_call_seconds=max_call_seconds,
     )
     return compose_mcp_server_from_definition(definition, deps)

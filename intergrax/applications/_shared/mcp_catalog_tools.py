@@ -13,6 +13,10 @@ from intergrax.applications._shared.mcp_catalog_invocation_bridge import (
     McpCatalogInvocationComposition,
     execute_mcp_catalog_tool_invocation,
 )
+from intergrax.applications._shared.mcp_engine_concurrency import (
+    McpEngineConcurrentCallAdmission,
+    optional_mcp_call_admission,
+)
 from intergrax.applications._shared.mcp_harness_principal import require_mcp_caller_principal
 from intergrax.applications._shared.mcp_identity_mode import McpIdentityMode
 from intergrax.applications._shared.mcp_wire_errors import bound_mcp_result_or_raise
@@ -37,6 +41,7 @@ def mount_catalog_tools_on_mcp(
     include_invoke_stub: bool = True,
     catalog_invocation: McpCatalogInvocationComposition | None = None,
     identity_mode: McpIdentityMode = McpIdentityMode.HARNESS_BOUND,
+    call_admission: McpEngineConcurrentCallAdmission | None = None,
 ) -> None:
     """
     Register catalog tool schemas on an MCP server.
@@ -80,12 +85,13 @@ def mount_catalog_tools_on_mcp(
                 tenant_id: str | None = None,
             ) -> dict[str, Any]:
                 """Invoke one catalog Tool under an active execution binding (canonical ToolRuntime)."""
-                return await execute_mcp_catalog_tool_invocation(
-                    catalog_invocation,
-                    tool_id=tool_id,
-                    input_payload=input,
-                    task_id=task_id,
-                    run_id=run_id,
-                    step_id=step_id,
-                    asserted_tenant_id=tenant_id,
-                )
+                async with optional_mcp_call_admission(call_admission):
+                    return await execute_mcp_catalog_tool_invocation(
+                        catalog_invocation,
+                        tool_id=tool_id,
+                        input_payload=input,
+                        task_id=task_id,
+                        run_id=run_id,
+                        step_id=step_id,
+                        asserted_tenant_id=tenant_id,
+                    )

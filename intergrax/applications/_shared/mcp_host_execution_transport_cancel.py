@@ -28,7 +28,7 @@ from intergrax.runtime.governance.control_plane_mutation_authorization import (
     ControlPlaneMutationAuthorizationBoundary,
 )
 from intergrax.runtime.task.active_task_registry import ActiveTaskRegistry
-from intergrax.runtime.task.task import Task
+from intergrax.runtime.task.task import Task, TaskResult, TaskState
 
 if TYPE_CHECKING:
     from starlette.requests import Request
@@ -43,6 +43,7 @@ class McpHostExecutionTransportOwnershipInvariantError(RuntimeError):
 
 class McpProtectedHostExecutionAdmissionError(RuntimeError):
     """Protected MCP HTTP execution rejected before host Execution starts."""
+
 
 _REFUSED_ADMISSION_HOST_TERMINATE_S = 1.0
 
@@ -103,18 +104,14 @@ async def _finalize_protected_mcp_root_execution_admission_caller_abort(
         is RootExecutionTransportPreStartFinalizationDisposition.SUPERVISED_CONTINUATION_GATE_OPENED
     ):
         return
-    if (
-        finalization.disposition
-        is RootExecutionTransportPreStartFinalizationDisposition.TERMINATED_UNDER_SUPERVISION
-    ):
+    if finalization.disposition is RootExecutionTransportPreStartFinalizationDisposition.TERMINATED_UNDER_SUPERVISION:
         return
     if (
         finalization.disposition
         is RootExecutionTransportPreStartFinalizationDisposition.HOST_NOT_TERMINAL_UNDER_SUPERVISION
     ):
         raise McpProtectedHostExecutionAdmissionError(
-            "protected MCP root execution host task did not terminate under supervision "
-            "after admission caller abort"
+            "protected MCP root execution host task did not terminate under supervision after admission caller abort"
         )
     await _terminate_gated_host_task_after_refused_admission(launch.host_task)
 
@@ -129,8 +126,7 @@ async def _terminate_gated_host_task_after_refused_admission(
     await _retrieve_host_task_outcome(host_task)
     if not completed:
         raise McpProtectedHostExecutionAdmissionError(
-            "protected MCP root execution host task did not terminate after refused "
-            "supervision admission"
+            "protected MCP root execution host task did not terminate after refused supervision admission"
         )
 
 
@@ -162,10 +158,7 @@ async def admit_protected_mcp_root_execution_supervision(
                 host_asyncio_task=launch.host_task,
             )
         )
-        if (
-            admission.disposition
-            is RootExecutionTransportDetachmentHandoffDisposition.ACCEPTED
-        ):
+        if admission.disposition is RootExecutionTransportDetachmentHandoffDisposition.ACCEPTED:
             launch.execution_start_gate.set()
             gate_opened = True
             return
@@ -203,10 +196,49 @@ _HOST_DRAIN_AFTER_TRANSPORT_CANCEL_S = 30.0
 
 @dataclass(frozen=True, slots=True)
 class McpHostExecutionTransportCancelContext:
-    """Sanctioned admission inputs for one MCP ``run_agent`` transport cancel request."""
+    """Sanctioned admission inputs for one MCP ``run_agent`` transport cancel request.
+
+    ``max_call_seconds`` (OD-MCP-RC-02) is an optional transport observer trigger: on expiry it requests the
+    same governed cancel as a client disconnect. It is not a deadline authority; the canonical Execution
+    deadline stays with the host (``ExecutionDeadlineAuthorityResolver`` / run budget).
+    """
 
     mutation_boundary: ControlPlaneMutationAuthorizationBoundary
     caller_request_identity: RequestIdentity
+    max_call_seconds: float | None = None
+
+
+class McpHostExecutionDeadlineExceeded(RuntimeError):
+    """The MCP call bound elapsed. ``outcome`` is ``cancelled`` or ``outcome_unknown``; never a success."""
+
+    def __init__(self, outcome: str, max_call_seconds: float) -> None:
+        self.outcome = outcome
+        self.max_call_seconds = max_call_seconds
+        super().__init__(f"call exceeded {max_call_seconds}s; outcome={outcome}")
+
+
+async def _await_host_or_deadline(
+    host_coro: asyncio.Task[object],
+    deadline_hit: asyncio.Event,
+    *,
+    max_call_seconds: float,
+) -> object:
+    """Await the host task; when the call bound fires, grant the cooperative cancel one bounded drain."""
+    hit_waiter = asyncio.ensure_future(deadline_hit.wait())
+    try:
+        await asyncio.wait({host_coro, hit_waiter}, return_when=asyncio.FIRST_COMPLETED)
+    finally:
+        hit_waiter.cancel()
+    if host_coro.done() and not deadline_hit.is_set():
+        return host_coro.result()
+    if not host_coro.done():
+        await _bounded_observe_host_task(host_coro, timeout_s=_HOST_DRAIN_AFTER_TRANSPORT_CANCEL_S)
+    if host_coro.done():
+        outcome = host_coro.result()
+        if isinstance(outcome, TaskResult) and outcome.state is TaskState.COMPLETED:
+            return outcome
+        raise McpHostExecutionDeadlineExceeded("cancelled", max_call_seconds)
+    raise McpHostExecutionDeadlineExceeded("outcome_unknown", max_call_seconds)
 
 
 def resolve_mcp_task_control_mutation_boundary_from_request(
@@ -299,7 +331,7 @@ async def _bounded_observe_host_task(
         return host_coro.done()
     try:
         await asyncio.wait_for(asyncio.shield(host_coro), timeout=timeout_s)
-    except (asyncio.TimeoutError, asyncio.CancelledError):
+    except (TimeoutError, asyncio.CancelledError):
         pass
     return host_coro.done()
 
@@ -480,9 +512,7 @@ async def run_host_execution_with_mcp_transport_cancel(
     *,
     task: Task,
     cancel_ctx: McpHostExecutionTransportCancelContext,
-    transport_detachment_supervision: (
-        RootExecutionTransportDetachmentSupervisionPort | None
-    ) = None,
+    transport_detachment_supervision: (RootExecutionTransportDetachmentSupervisionPort | None) = None,
     execution_start_gate: asyncio.Event | None = None,
 ) -> object:
     """
@@ -493,6 +523,9 @@ async def run_host_execution_with_mcp_transport_cancel(
     cancel_admission_accepted: list[bool] = [False]
     cancel_lock = asyncio.Lock()
     transport_cancel_observed = False
+    max_call_seconds = cancel_ctx.max_call_seconds
+    deadline_hit = asyncio.Event()
+    call_started_at = asyncio.get_running_loop().time()
     request = _starlette_request_from_fastmcp()
     supervision_port = transport_detachment_supervision
     if supervision_port is None:
@@ -504,8 +537,7 @@ async def run_host_execution_with_mcp_transport_cancel(
     ):
         if execution_start_gate is None:
             raise McpProtectedHostExecutionAdmissionError(
-                "protected MCP transport execution requires execution_start_gate for "
-                "atomic supervision admission"
+                "protected MCP transport execution requires execution_start_gate for atomic supervision admission"
             )
         await admit_protected_mcp_root_execution_supervision(
             supervision_port=supervision_port,
@@ -522,6 +554,13 @@ async def run_host_execution_with_mcp_transport_cancel(
         nonlocal transport_cancel_observed
         try:
             while not host_coro.done():
+                if (
+                    max_call_seconds is not None
+                    and not deadline_hit.is_set()
+                    and asyncio.get_running_loop().time() - call_started_at >= max_call_seconds
+                ):
+                    deadline_hit.set()
+                    transport_cancel_observed = True
                 if not transport_cancel_observed and await _client_disconnected(request):
                     transport_cancel_observed = True
                 if transport_cancel_observed:
@@ -548,7 +587,9 @@ async def run_host_execution_with_mcp_transport_cancel(
     transport_waiter_lost = False
     host_result_after_waiter_lost: object | None = None
     try:
-        return await asyncio.shield(host_coro)
+        if max_call_seconds is None:
+            return await asyncio.shield(host_coro)
+        return await _await_host_or_deadline(host_coro, deadline_hit, max_call_seconds=max_call_seconds)
     except asyncio.CancelledError:
         transport_waiter_lost = True
         transport_cancel_observed = True
@@ -597,6 +638,7 @@ __all__ = [
     "McpHostExecutionTransportOwnershipInvariantError",
     "McpProtectedHostExecutionAdmissionError",
     "McpProtectedHostExecutionLaunch",
+    "McpHostExecutionDeadlineExceeded",
     "McpHostExecutionTransportCancelContext",
     "admit_protected_mcp_root_execution_supervision",
     "create_mcp_protected_host_execution_launch",

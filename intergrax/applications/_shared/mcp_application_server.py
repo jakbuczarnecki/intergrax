@@ -64,6 +64,7 @@ def compose_application_mcp_server(
     catalog_root_child_work_ingress: object | None = None,
     enable_cross_loop_catalog_child: bool = False,
     identity_mode: McpIdentityMode | str | None = None,
+    max_call_seconds: float | None = None,
 ) -> FastMCP:
     """Compose FastMCP from ``McpServerDefinition`` — preferred Tier-3 entry over ad-hoc decorators."""
     catalog_tool_ids: list[str] = []
@@ -108,6 +109,7 @@ def compose_application_mcp_server(
         enable_cross_loop_catalog_child=enable_cross_loop_catalog_child,
         custom_host_tools=custom_host_tools,
         identity_mode=coerce_mcp_identity_mode(identity_mode),
+        max_call_seconds=max_call_seconds,
     )
     return compose_mcp_server_from_definition(definition, deps)
 
