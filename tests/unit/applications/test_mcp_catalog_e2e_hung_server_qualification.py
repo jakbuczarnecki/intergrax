@@ -129,7 +129,10 @@ def test_tl11_e2e_subprocess_cleanup_after_hung_catalog() -> None:
     assert proc.poll() is not None
 
 
-def test_tl11_e2e_no_indefinite_wait_on_never_ready_startup() -> None:
+def test_tl11_e2e_no_indefinite_wait_on_never_ready_startup(monkeypatch: pytest.MonkeyPatch) -> None:
+    import tests.fixtures.tool_life_x_tl11_catalog_subprocess_qualification as tl11_helper
+
+    monkeypatch.setattr(tl11_helper, "_STARTUP_READ_TIMEOUT_S", 3.0)
     with pytest.raises(TimeoutError, match="startup_timeout"):
         with tl11_catalog_qualification_subprocess("never_ready"):
             pass
