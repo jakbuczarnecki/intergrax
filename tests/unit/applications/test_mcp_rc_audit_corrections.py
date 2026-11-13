@@ -197,8 +197,9 @@ async def test_unserializable_custom_tool_results_are_typed_not_raw(shape: str) 
 class _ExplodingHost:
     """Registers a binding, waits for the governed cancel, then ends with ``outcome`` instead of a result."""
 
-    def __init__(self, outcome: str) -> None:
+    def __init__(self, outcome: str, delay_after_cancel_s: float = 0.0) -> None:
         self.outcome = outcome
+        self.delay_after_cancel_s = delay_after_cancel_s
         self.started = asyncio.Event()
         self.tasks: list[Task] = []
         self.port = AsyncMock(spec=HostTaskExecutionPort)
@@ -218,17 +219,28 @@ class _ExplodingHost:
                 await asyncio.sleep(0.02)
         finally:
             await ActiveTaskRegistry.unregister(task.task_id, run_id)
+        if self.delay_after_cancel_s:
+            await asyncio.sleep(self.delay_after_cancel_s)  # ends inside the bounded drain window
         if self.outcome == "cancelled":
             raise asyncio.CancelledError
         raise RuntimeError(_SECRET)
         return _terminal_result(task, str(run_id), None)  # pragma: no cover
 
 
-@pytest.mark.parametrize(("outcome", "expected"), [("cancelled", "outcome=cancelled"), ("failed", "outcome=failed")])
+@pytest.mark.parametrize(
+    ("outcome", "expected", "delay_s"),
+    [
+        ("cancelled", "outcome=cancelled", 0.0),
+        ("failed", "outcome=failed", 0.0),
+        # the host ends while the transport is observing it inside the bounded drain (a race under load)
+        ("failed", "outcome=failed", 0.1),
+        ("cancelled", "outcome=cancelled", 0.1),
+    ],
+)
 async def test_host_ending_cancelled_or_failed_after_the_bound_is_deadline_exceeded(
-    outcome: str, expected: str
+    outcome: str, expected: str, delay_s: float
 ) -> None:
-    host = _ExplodingHost(outcome)
+    host = _ExplodingHost(outcome, delay_after_cancel_s=delay_s)
     supervision = build_host_root_execution_transport_detachment_supervisor()
     mcp = _reference_server(host.port, task_control_mutation_boundary=_boundary(), max_call_seconds=0.2)
     with (

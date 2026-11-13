@@ -174,6 +174,14 @@ MUTANTS: tuple[Mutant, ...] = (
         "            raise\n",
         (_RC_TEST,),
     ),
+    Mutant(
+        "M17-host-failure-during-drain-window-reraised",
+        "Observing the host inside the bounded drain never re-raises the host's own exception",
+        f"{_SHARED}/mcp_host_execution_transport_cancel.py",
+        "    except Exception:  # noqa: BLE001 - host outcome is retrieved separately\n        pass\n",
+        "",
+        (_RC_TEST,),
+    ),
 )
 
 

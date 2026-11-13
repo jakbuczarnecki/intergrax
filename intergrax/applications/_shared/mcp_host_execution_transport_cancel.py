@@ -338,6 +338,8 @@ async def _bounded_observe_host_task(
         await asyncio.wait_for(asyncio.shield(host_coro), timeout=timeout_s)
     except (TimeoutError, asyncio.CancelledError):
         pass
+    except Exception:  # noqa: BLE001 - host outcome is retrieved separately
+        pass
     return host_coro.done()
 
 
