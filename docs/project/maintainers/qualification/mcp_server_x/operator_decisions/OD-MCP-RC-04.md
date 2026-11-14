@@ -26,6 +26,10 @@ Question: all four auditor manifests carry `CONDITIONAL` and the activation gate
 
 Question: `DELEGATION-MCP-RC-2` expires 24 hours after the commission; renew it for 24 hours from the start of the signing session with the same scope (activation line only, no rebind, no merge). Answer: "Tak, odnawiam (Recommended)" ("Yes, I renew"). Effect: the renewal applies from the start of the signing session and is transcribed into `DELEGATION-MCP-RC-2.md` by the signing session. Scope unchanged.
 
+## 5. Impact map rule for the MCP-RC facades (audit addendum 2, finding F-41)
+
+Question: the eight `applications/*/mcp/server.py` modules changed by MCP-RC fall into the PDC-touched range on the integrated baseline and map to no check in the new ENT-AUDIT impact map (PR #525, `intergrax/platform/enterprise_audit/impact_map.py` and `changed_since_impact_map.v1.json`), so `test_xd12_every_pdc_touched_product_module_maps_to_a_domain_check` and `tests/qualification/pdc_x/p6_impact/test_p6_impact_map_coverage.py` are red on `mcp-rc` and green on `development` alone. Answer: "PDC-X dodaje regułę na development (Recommended)" ("PDC-X adds the rule on development"). Effect: the PDC-X / ENT-AUDIT owner adds a rule for the `applications/*` roots (at least the eight `applications/<app>/mcp/server.py` modules) to the impact map on `development`, as a one-time exception to the freeze in section 1, without narrowing either test; `mcp-rc` then merges `development` again, the independent auditor adds addendum 3 for the changed map files and the certifier adds a short preflight addendum. MCP-RC does not edit `intergrax/platform/enterprise_audit/` (outside its approved ticket write sets). Evidence integration of addendum 2 waits and is done together with addendum 3.
+
 ## Explicit non-actions
 
 No signature, no activation line, no rebind, no merge, no product change, no FRZ change (counter stays 225).
