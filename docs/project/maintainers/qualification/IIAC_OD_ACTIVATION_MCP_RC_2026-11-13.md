@@ -3,7 +3,7 @@
 Decision ID: IIAC-OD-MCP-RC-ACT-N11-2026-11-13
 Policy version: IIAC-2026-11-05.1
 Decision scope: IIAC policy activation (integrated baseline: MCP-RC and PDC-X product delta, 158 ACT-N11 paths vs `2d3eceb6cf7e93dccd4d96919319a6c969b4444b`, audited tree `324d9dba37cb54e1b74a79a05148d2dcc05e6d09`)
-Decision status: DRAFT
+Decision status: AUTHORIZED
 Audit report digest: c405c65faf53243a0511b0b9584a9f3abda4db08c09ee9b9266c86fe9f6b7a4e
 
 Independent audit dossier digest (MCP-RC first audit, dossier verdict PARTIAL): 30e002c28af0c51070b5236dd674fb0465d439f976bb550c39927e23703eccf1
@@ -16,9 +16,9 @@ Independent audit dossier digest (PDC-P7-00 addendum 1, dossier verdict PASS_SCO
 
 Independent audit dossier digest (PDC-P7-00 addendum 2, dossier verdict PASS_SCOPED): fe7e03c7c036ae15de182d4d5dd51f91fe4f6d2df556ffbbafe612e1d5019301
 
-________________
+Approved IIAC policy activation IIAC-2026-11-05.1: operator @ 2026-11-14T08:21:13+01:00
 
-Drafting note: the date in the Decision ID is the drafting date of the first draft (2026-11-13), not a signing timestamp; this text was rewritten on 2026-11-14 for the integrated baseline. This record is an unsigned draft written by the activation-package drafting session; it carries no activation line and no agent composes one. The line above is intentionally left blank. It is written only by an operator-designated signing session under `docs/project/maintainers/qualification/mcp_server_x/operator_decisions/DELEGATION-MCP-RC-2.md` (renewed by `OD-MCP-RC-04` section 4), and only in the plain form that the IIAC activation verifiers accept.
+Provenance note: the date in the Decision ID is the drafting date of the first draft (2026-11-13), not a signing timestamp; this text was rewritten on 2026-11-14 for the integrated baseline. The line above was written by an operator-designated signing session (IIAC Amendment 01, R-1..R-6) under the delegation record `docs/project/maintainers/qualification/mcp_server_x/operator_decisions/DELEGATION-MCP-RC-2.md` (commit 2e4ef79d5, renewed by `OD-MCP-RC-04` section 4), on the operator's chat commission of 2026-11-13 and the operator's direct confirmation to that session in chat on 2026-11-14. The line is in the plain form because the IIAC activation verifiers accept only that form; it is not claimed to be operator-written. The timestamp is the designated session's system clock at the moment of signing.
 
 ## What a signature on this record means (bound verdict)
 
