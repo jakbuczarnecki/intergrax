@@ -12,7 +12,18 @@ Canonical plan: [`governance/tickets/plans/PLAN_T-IGX-040-A.md`](plans/PLAN_T-IG
 
 ## Approved
 
-(pending; the plan is signed by the Operator or by a delegate session whose commission covers a request that originates in the MCP-RC campaign; the signer also states which merge gate governs, see the plan, Protocol item 5; the implementer never writes the approval line)
+Approved: operator-delegate @ 2026-11-14T11:10:18+01:00
+Delegation: docs/project/maintainers/qualification/platform_domain_completeness/operator_decisions/DELEGATION-PDC-RC-HANDOFF.md@23575650a9e8072cfc5296d505cc90fef80ea84b
+
+Delegate checks (commission of `DELEGATION-PDC-RC-HANDOFF.md`, all passed before this line was written):
+
+- The plan digest recomputed with `scripts/governance/plan_digest.py` equals the digest above.
+- The plan write set equals the write set of batch B-P6-J in `PDC_IMPLEMENTATION_WBS.md` (five paths, identical). No write path lies under `intergrax/contracts/`, `intergrax/applications/_shared/`, `intergrax/integrations/registry/`, `scripts/governance/` or `.github/`, and none of the 23 MCP-RC paths of the handoff (`MCP_SERVER_X_RC_PDC_X_HANDOFF_F49_F41.md` at `c2fa6ebb9`, read without checking out `mcp-rc`) is in it.
+- The plan keeps `test_xd_12_evol_ent_audit.py` and `test_p6_impact_map_coverage.py` unedited (new files only; the Tier-3 root rule goes into a second typed table), narrows no gate, keeps one catalog row per slug, adds no registry, scheduler, engine, trust, policy or audit authority, and excludes certification (Protocol item 7, Out of scope); it is a repair plan, not a certification verdict.
+
+Merge gate: `OD-PDC-SEQ-01` (Option A, product merges wait for the MCP-SERVER-X P8 publication) governs, and it is satisfied. Evidence: the roadmap on `development` shows MCP-SERVER-X as `CLOSED - INDEPENDENTLY AUDITED (INTERNAL AGENT CERTIFICATION) - PUBLISHED (SCOPED)`; its final closure report is merged (PR 480, merge `c11184164af3072d0a48102a5e8d62adfec53695`, an ancestor of `development`); P8 audit `PASS_SCOPED`, certification `CERTIFIED_PASS_SCOPED`, terminal verification `P8_TERMINAL_VERIFIED`. That is the condition of authorization 3 of `DELEGATION-PDC-STANDING.md`, under which the implementer merges this batch pull request (green CI, only the known IIAC activation red class, head equals the verified SHA, normal merge for conflicts) and decision 8 of `DELEGATION-PDC-WAVE2.md`. Earlier product merges of PDC-X (for example PR 537) are consistent with this but are not the basis. `OD-MCP-RC-05` is recorded on `mcp-rc` only; it is a scheduling request of the MCP-RC campaign (merge before its rebind, both repairs in one pull request, then product paths frozen again) and adds no gate and no authority. Write-set amendments are not delegated and return to the Operator.
+
+Merge order note: the F-41 root rule for `applications/` is also what T-IGX-036-Z needs for `applications/local_workspace_application/tests/test_run_artifact_metadata.py`, so the orchestrator merges B-P6-J before B-P6-I (the WBS lists J after I).
 
 ## Test contract
 
@@ -32,4 +43,4 @@ Plus the generator run and the throwaway MCP-RC tree check described in the plan
 
 ## Lifecycle state
 
-plan_pending
+plan_approved
