@@ -30,6 +30,7 @@ Rows classed `CURRENT_HEAD_REQUALIFICATION`, `ALREADY_CERTIFIED_REUSABLE`, `N/A_
 | B-P6-R | ALL | W5 | T-IGX-036-T | 0 | — | B-D1, B-D2, B-D3, B-D4, B-D5, B-D6, B-D7, B-D8, B-REG-P, B-REG-T, B-P6 | YES | OD-PDC-SEQ-01: implement in an isolated worktree; merge only after MCP-SERVER-X P8 publication; ACT-N11 re-activation at PDC-P7-00 | IA-GLOBAL (P8) |
 | B-P6-M | ALL | W6 | T-IGX-036-U | 0 | — | B-P6-R | YES | OD-PDC-SEQ-01: implement in an isolated worktree; merge only after MCP-SERVER-X P8 publication; ACT-N11 re-activation at PDC-P7-00 | IA-GLOBAL (P8) |
 | B-P6-G | ALL | W7 | T-IGX-036-V | 0 | — | B-P6-R, B-P6-M | YES | OD-PDC-SEQ-01: implement in an isolated worktree; merge only after MCP-SERVER-X P8 publication; ACT-N11 re-activation at PDC-P7-00 | IA-GLOBAL (P8) |
+| B-P6-E | ALL | W8 | T-IGX-036-W | 0 | — | B-P6-G | no | No product path: may merge before MCP-SERVER-X P8 | IA-GLOBAL (P8) |
 
 ## B-P3 — Ownership records closed in P3
 
@@ -323,6 +324,18 @@ Rows classed `CURRENT_HEAD_REQUALIFICATION`, `ALREADY_CERTIFIED_REUSABLE`, `N/A_
 - **Tests:** tests/qualification/pdc_x/p6_impact/
 - **Evidence (exact SHA):** implementation SHA and publication SHA recorded in `PDC_SHA_LADDER.md`; test log under `.tmp/proof/pdc-x-p5/B-P6-G/`; audited by IA-GLOBAL (P8) at the PDC-P7 audited SHA.
 - **Merge gate:** OD-PDC-SEQ-01: implement in an isolated worktree; merge only after MCP-SERVER-X P8 publication; ACT-N11 re-activation at PDC-P7-00
+
+| Requirement | Class | Test case |
+| --- | --- | --- |
+| — | — | — |
+
+## B-P6-E — P6 acceptance record and EBH-7 re-pin (fresh L3 replay at the integrated baseline)
+
+- **Ticket:** T-IGX-036-W · **Wave:** W8 · **ADR:** — · **Auditor:** IA-GLOBAL (P8)
+- **Write set:** `docs/project/maintainers/qualification/ebh_7_p03_independent_replay/`, `docs/project/maintainers/qualification/EBH_7_SHA_LADDER.md`, `docs/project/maintainers/qualification/EBH_7_B6_F10_ECAP_NORMATIVE_MATRIX.md`, `docs/project/maintainers/qualification/platform_domain_completeness/PDC_P6_ACCEPTANCE_RECORD.md`, `docs/project/maintainers/qualification/platform_domain_completeness/PDC_SHA_LADDER.md`, `docs/project/maintainers/qualification/platform_domain_completeness/PDC_REG_DIAGNOSIS.md`, `.github/workflows/unit-tests.yml`, `tests/qualification/ebh_7/_constants.py`
+- **Tests:** PDC_P6_ACCEPTANCE_RECORD.md; tests/qualification/ebh_7 green at the new pin
+- **Evidence (exact SHA):** implementation SHA and publication SHA recorded in `PDC_SHA_LADDER.md`; test log under `.tmp/proof/pdc-x-p5/B-P6-E/`; audited by IA-GLOBAL (P8) at the PDC-P7 audited SHA.
+- **Merge gate:** No product path: may merge before MCP-SERVER-X P8
 
 | Requirement | Class | Test case |
 | --- | --- | --- |
