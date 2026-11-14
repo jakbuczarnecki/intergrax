@@ -1,0 +1,9 @@
+== check_agents_no_tier3_imports exit=0 md5=8ceb8ea6c1415bbc4ba77fdeea6849f0 lines=1
+== check_agents_no_vendor_sdk_imports exit=0 md5=3fdda70cbee4121c42ff38a172fab772 lines=1
+== check_context_tier0_import_boundary exit=0 md5=32f73cb6eb3538f8c9774845e32adbda lines=1
+== check_immutable_security_audit_trail exit=0 md5=7f7ad1638e634a4ca29d96cde53bde09 lines=1
+== check_intergrax_no_applications_imports exit=1 md5=61159eb9c5e10de4b70f9a7ba4625be9 lines=13
+== check_llm_routing_tier_boundary exit=0 md5=0c4e6300ca3bd58d8e2180309378d9d9 lines=1
+== uv lock --check
+Resolved 404 packages in 5ms
+exit=0
