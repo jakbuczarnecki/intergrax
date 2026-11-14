@@ -485,6 +485,66 @@ BATCHES: Final[tuple[Batch, ...]] = (
         "IA-GLOBAL (P8)",
         "PDC_P6_ACCEPTANCE_RECORD.md; tests/qualification/ebh_7 green at the new pin",
     ),
+    Batch(
+        "B-P6-H",
+        "ALL",
+        "EBH-7 B6-F10 computed certification at the P6 pin: closed-stage family evidence (FRZ-AUD, FRZ-EVOL), C4 path classification, replay-profile coverage",
+        "T-IGX-036-Y",
+        "W10",
+        (
+            "tests/qualification/ebh_7/_ebh7_f10_canonical_inputs.py",
+            "tests/qualification/ebh_7/_ebh7_f10_ecap_normative_matrix.py",
+            "tests/qualification/ebh_7/test_ebh_7_b6_f10_c1_c4_closure_gates.py",
+            "docs/project/maintainers/qualification/ebh_7_p03_independent_replay/MANIFEST.json",
+            "docs/project/maintainers/qualification/ebh_7_p03_independent_replay/ARTIFACT_DIGESTS.json",
+        ),
+        "—",
+        ("B-P6-E",),
+        GATE_FREE,
+        "IA-GLOBAL (P8)",
+        "tests/qualification/ebh_7/test_ebh_7_b6_f10_c1_c4_closure_gates.py; the real F10 gate and five cascade tests stay red until the final re-pin",
+    ),
+    Batch(
+        "B-P6-I",
+        "ALL",
+        "Omnibus repair of the cheap P6 debt: pdc_x process exit (R-05), stale baseline-red test fixtures, unused embedding_provider/ollama manifest",
+        "T-IGX-036-Z",
+        "W11",
+        (
+            "intergrax/integrations/providers/embedding_provider/ollama/manifest.py",
+            "applications/local_workspace_application/tests/test_run_artifact_metadata.py",
+            "tests/integration/runtime/nexus/tracing/test_sqlite_run_trace_store.py",
+            "tests/unit/integrations/providers/test_p5_m6_p4_providers.py",
+            "tests/unit/rag/embedding/test_hf_embedding_provider_execution.py",
+            "tests/qualification/pdc_x/conftest.py",
+            "tests/qualification/pdc_x/xd/test_xd_03_agent_governance.py",
+            "tests/qualification/pdc_x/p6_debt/",
+        ),
+        "—",
+        ("B-P6-F",),
+        GATE_PRODUCT,
+        "IA-GLOBAL (P8)",
+        "tests/qualification/pdc_x/p6_debt/; the pdc_x pytest process exits after its summary line",
+    ),
+    Batch(
+        "B-P6-J",
+        "ALL",
+        "MCP-RC handoff repairs: the single openai catalog row dispatches on integration_category (F-49, F-50 pins); ENT-AUDIT impact rule for the Tier-3 applications/ root (F-41)",
+        "T-IGX-040-A",
+        "W12",
+        (
+            "intergrax/integrations/providers/embedding_provider/openai/register.py",
+            "intergrax/platform/enterprise_audit/impact_map.py",
+            "intergrax/platform/enterprise_audit/data/changed_since_impact_map.v1.json",
+            "tests/qualification/pdc_x/p6_ecapfix/",
+            "tests/qualification/pdc_x/p6_impact/",
+        ),
+        "—",
+        ("B-P6-I",),
+        GATE_PRODUCT,
+        "IA-GLOBAL (P8)",
+        "tests/qualification/pdc_x/p6_ecapfix/ and p6_impact/; xd_12 and p6_impact coverage tests green on development and on a tree that contains the MCP-RC change",
+    ),
 )
 
 # Requirement -> batch overrides where the corrective-task text alone is ambiguous.
@@ -776,6 +836,15 @@ def render_dag() -> str:
         "W7": ("after B-P6-R and B-P6-M", "after MCP-SERVER-X P8"),
         "W8": ("after B-P6-G and the signature of T-IGX-036-X", "any time (no product path)"),
         "W9": ("after B-P6-F and the signature of T-IGX-036-W", "any time (no product path)"),
+        "W10": ("after B-P6-E and the signature of T-IGX-036-Y", "any time (no product path)"),
+        "W11": (
+            "after B-P6-F and the signature of T-IGX-036-Z",
+            "under DELEGATION-PDC-STANDING authorization 3 (one product path: deletion of an unused manifest)",
+        ),
+        "W12": (
+            "after B-P6-I and the signature of T-IGX-040-A",
+            "after the signature of T-IGX-040-A (one-time exception OD-MCP-RC-05; both repairs in one PR, then product paths freeze again)",
+        ),
     }
     for wave, bids in waves.items():
         start, merge = starts.get(wave, ("?", "?"))

@@ -200,6 +200,28 @@ PDC_DOMAIN_IMPACT_RULES: tuple[tuple[str, tuple[str, ...]], ...] = (
 )
 
 
+# Tier-3 root ``applications/`` prefix -> existing manifest check ids (B-P6-J, T-IGX-040-A). Kept apart from
+# ``PDC_DOMAIN_IMPACT_RULES`` because that table holds ``intergrax/`` prefixes only. The root ``applications`` is
+# not ``intergrax/applications``: longest prefix wins, so this rule matches paths under ``applications/`` only. It
+# repeats the ids of the ``intergrax/applications`` rule (ebh_2i contract surface purity, ebh_2a public contract
+# boundary, hardening_3 layer boundary gate, immutable security audit trail script); every id exists in the manifest.
+PDC_TIER3_ROOT_IMPACT_RULES: tuple[tuple[str, tuple[str, ...]], ...] = (
+    (
+        "applications",
+        (
+            "ENT-A-BND-01",
+            "ENT-A-CTR-01",
+            "ENT-A-CTR-02",
+            "ENT-A-CTR-03",
+            "ENT-A-TYP-01",
+            "ENT-A-SEC-01",
+            "ENT-A-SEC-02",
+            "VBN-CONTRACT-LEAKAGE",
+        ),
+    ),
+)
+
+
 def fail_closed_prefixes() -> tuple[str, ...]:
     return _FAIL_CLOSED_PREFIXES
 
@@ -270,7 +292,7 @@ def build_impact_map_from_manifest(checks: tuple[ManifestCheck, ...]) -> dict[st
         for cid in ids:
             add(path, cid)
 
-    for prefix, ids in PDC_DOMAIN_IMPACT_RULES:
+    for prefix, ids in (*PDC_DOMAIN_IMPACT_RULES, *PDC_TIER3_ROOT_IMPACT_RULES):
         for cid in ids:
             add(prefix, cid)
 

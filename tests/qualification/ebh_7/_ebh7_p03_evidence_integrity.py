@@ -80,7 +80,11 @@ def assert_ebh7_p03_manifest_role_integrity() -> None:
     assert _git_is_ancestor(closure_sha, head), "Formal closure publication must be ancestor of HEAD"
     baseline = manifest.get("INDEPENDENT_ACCEPTANCE_BASELINE_SHA", "")
     assert isinstance(baseline, str) and len(baseline) == 40, "INDEPENDENT_ACCEPTANCE_BASELINE_SHA must be pinned"
-    assert baseline == test_sha, "INDEPENDENT_ACCEPTANCE_BASELINE_SHA must equal TEST_EXECUTION_SHA for EBH-7 P03"
+    # The independently accepted baseline (signed PASS record) is fixed at the accepted tree. After a re-pin
+    # (PDC-X P6) TEST_EXECUTION_SHA descends from it and the fresh replay is not accepted until re-audited.
+    assert baseline == test_sha or _git_is_ancestor(baseline, test_sha), (
+        "INDEPENDENT_ACCEPTANCE_BASELINE_SHA must equal or be an ancestor of TEST_EXECUTION_SHA for EBH-7 P03"
+    )
 
 
 def _resolve_replay_git_path(rel: str) -> str:
@@ -148,9 +152,20 @@ def assert_ebh7_p03_consistency_matrix_matches_ssot() -> None:
     assert baseline in pass_text, "Pass record must cite INDEPENDENT_ACCEPTANCE_BASELINE_SHA"
     assert "PASS (SCOPED)" in text, "Matrix must record independent B6 PASS (scoped)"
     assert "NOT ISSUED" not in text, "Matrix must not retain pre-B6 NOT ISSUED banner"
-    last = manifest["pytest_profile"]["last_replay"]
-    passed = last["passed"]
-    assert str(passed) in text, "Matrix must record L3 passed count from MANIFEST"
+    profile = manifest["pytest_profile"]
+    last = profile["last_replay"]
+    if last.get("status") == "PENDING":
+        # Re-pinned TEST_EXECUTION_SHA, replay not yet recorded: no counts may be invented, the matrix must say so
+        # and keep the previously recorded (historical) replay visible.
+        assert "passed" not in last and "github_run_id" not in last, "PENDING last_replay must carry no replay results"
+        assert last["test_execution_sha"] == test_sha, "PENDING last_replay must name the current TEST_EXECUTION_SHA"
+        assert "PENDING" in text, "Matrix must state that the re-pin replay result is PENDING"
+        previous = [r for r in profile["historical_replays"] if r.get("github_run_id") == "41238620036"]
+        assert previous, "MANIFEST historical_replays must keep the previous final reconciliation replay"
+        assert str(previous[0]["passed"]) in text, "Matrix must keep the previous replay passed count as history"
+    else:
+        passed = last["passed"]
+        assert str(passed) in text, "Matrix must record L3 passed count from MANIFEST"
     assert re.search(r"TEN-E2E.*26.*EXACT.*0.*OPEN", text, re.I | re.S), "Matrix TEN row"
     assert re.search(r"XDM.*34.*EXACT.*0.*OPEN", text, re.I | re.S), "Matrix XDM row"
 

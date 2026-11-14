@@ -12,6 +12,7 @@ pytestmark = [pytest.mark.unit, pytest.mark.external_provider]
 
 
 def test_hf_execution_snapshot_reports_configured_state() -> None:
+    pytest.importorskip("sentence_transformers", reason="optional extra rag-local-embeddings")
     from intergrax.rag.embedding.providers.hf_embedding_provider import HFEmbeddingProvider
 
     provider = HFEmbeddingProvider(
