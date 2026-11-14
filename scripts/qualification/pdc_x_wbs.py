@@ -486,11 +486,30 @@ BATCHES: Final[tuple[Batch, ...]] = (
         "PDC_P6_ACCEPTANCE_RECORD.md; tests/qualification/ebh_7 green at the new pin",
     ),
     Batch(
+        "B-P6-H",
+        "ALL",
+        "EBH-7 B6-F10 computed certification at the P6 pin: closed-stage family evidence (FRZ-AUD, FRZ-EVOL), C4 path classification, replay-profile coverage",
+        "T-IGX-036-Y",
+        "W10",
+        (
+            "tests/qualification/ebh_7/_ebh7_f10_canonical_inputs.py",
+            "tests/qualification/ebh_7/_ebh7_f10_ecap_normative_matrix.py",
+            "tests/qualification/ebh_7/test_ebh_7_b6_f10_c1_c4_closure_gates.py",
+            "docs/project/maintainers/qualification/ebh_7_p03_independent_replay/MANIFEST.json",
+            "docs/project/maintainers/qualification/ebh_7_p03_independent_replay/ARTIFACT_DIGESTS.json",
+        ),
+        "—",
+        ("B-P6-E",),
+        GATE_FREE,
+        "IA-GLOBAL (P8)",
+        "tests/qualification/ebh_7/test_ebh_7_b6_f10_c1_c4_closure_gates.py; the real F10 gate and five cascade tests stay red until the final re-pin",
+    ),
+    Batch(
         "B-P6-I",
         "ALL",
         "Omnibus repair of the cheap P6 debt: pdc_x process exit (R-05), stale baseline-red test fixtures, unused embedding_provider/ollama manifest",
         "T-IGX-036-Z",
-        "W10",
+        "W11",
         (
             "intergrax/integrations/providers/embedding_provider/ollama/manifest.py",
             "applications/local_workspace_application/tests/test_run_artifact_metadata.py",
@@ -798,7 +817,8 @@ def render_dag() -> str:
         "W7": ("after B-P6-R and B-P6-M", "after MCP-SERVER-X P8"),
         "W8": ("after B-P6-G and the signature of T-IGX-036-X", "any time (no product path)"),
         "W9": ("after B-P6-F and the signature of T-IGX-036-W", "any time (no product path)"),
-        "W10": (
+        "W10": ("after B-P6-E and the signature of T-IGX-036-Y", "any time (no product path)"),
+        "W11": (
             "after B-P6-F and the signature of T-IGX-036-Z",
             "under DELEGATION-PDC-STANDING authorization 3 (one product path: deletion of an unused manifest)",
         ),

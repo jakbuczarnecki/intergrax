@@ -47,6 +47,7 @@ graph LR
   B-P6-G --> B-P6-F
   B-P6-G --> B-P6-E
   B-P6-F --> B-P6-E
+  B-P6-E --> B-P6-H
   B-P6-F --> B-P6-I
   P4 --> B-D1 & B-D3 & B-D7 & B-REG-P
   GATE -. merges .-> B-D1 & B-D3 & B-D7 & B-REG-P & B-D2 & B-D5 & B-D6 & B-D8 & B-D4
@@ -80,7 +81,8 @@ Wave 3 sets the length of the path. Its three batches run in sequence because th
 | W7 | B-P6-G | after B-P6-R and B-P6-M | after MCP-SERVER-X P8 |
 | W8 | B-P6-F | after B-P6-G and the signature of T-IGX-036-X | any time (no product path) |
 | W9 | B-P6-E | after B-P6-F and the signature of T-IGX-036-W | any time (no product path) |
-| W10 | B-P6-I | after B-P6-F and the signature of T-IGX-036-Z | under DELEGATION-PDC-STANDING authorization 3 (one product path: deletion of an unused manifest) |
+| W10 | B-P6-H | after B-P6-E and the signature of T-IGX-036-Y | any time (no product path) |
+| W11 | B-P6-I | after B-P6-F and the signature of T-IGX-036-Z | under DELEGATION-PDC-STANDING authorization 3 (one product path: deletion of an unused manifest) |
 
 ## Operator gates
 
