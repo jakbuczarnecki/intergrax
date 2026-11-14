@@ -233,6 +233,12 @@ _SQLITE_TOUCHPOINTS: Final[tuple[SqliteTouchpointRecord, ...]] = (
         "Nexus session storage",
     ),
     SqliteTouchpointRecord(
+        "intergrax/runtime/nexus/artifacts/sqlite_artifact_store.py",
+        SqliteTouchpointClassification.FIXED_SUBSTRATE,
+        None,
+        "Execution artifact store SQLite impl (PDC-D8)",
+    ),
+    SqliteTouchpointRecord(
         "intergrax/runtime/notifications/deliveries/sqlite_delivery_ledger.py",
         SqliteTouchpointClassification.FIXED_SUBSTRATE,
         None,

@@ -1,7 +1,7 @@
 # © Artur Czarnecki. All rights reserved.
 # Intergrax framework – proprietary and confidential.
 
-from intergrax.hosting.contracts import (
+from intergrax.hosting.contracts import (  # noqa: I001
     HOSTED_APPLICATION_PROFILE_SPEC_VERSION,
     ComponentFailurePolicy,
     HookFailurePolicy,
@@ -96,6 +96,7 @@ from intergrax.hosting.process_bootstrap import (
     hosted_process_bootstrap_failure_payload,
     run_guarded_hosted_process_bootstrap,
 )
+from intergrax.hosting.metrics import HostedApplicationLifecycleMetric
 from intergrax.hosting.services import HostedApplicationServiceRegistry
 from intergrax.hosting.control import (
     HostedApplicationControlCoordinator,
@@ -203,6 +204,7 @@ __all__ = [
     "HostedApplicationHooks",
     "HostedApplicationIdentity",
     "HostedApplicationLifecycleSnapshot",
+    "HostedApplicationLifecycleMetric",
     "HostedApplicationLifecycleSnapshotProvider",
     "HostedApplicationLifecycleState",
     "HostedApplicationLogger",

@@ -4,7 +4,7 @@
 
 from __future__ import annotations
 
-from typing import Dict, Iterable, List
+from collections.abc import Iterable
 
 from intergrax.runtime.replay.contracts.artifact_store import ReplayArtifactStore
 from intergrax.runtime.replay.contracts.run_record_dto import RunRecordDTO
@@ -12,11 +12,11 @@ from intergrax.runtime.replay.contracts.run_record_store import RunRecordStore
 from intergrax.runtime.replay.contracts.trace_event_dto import TraceEventDTO
 from intergrax.runtime.replay.contracts.trace_event_store import TraceEventStore
 from intergrax.runtime.replay.models import (
+    LLMCallInfo,
     ReconstructedRun,
     ReconstructedStep,
-    ArtifactRef,
+    ReplayArtifactRef,
     ToolCallInfo,
-    LLMCallInfo,
 )
 
 
@@ -71,15 +71,15 @@ class ReplayEngine:
 
     def _load_run_record(self, tenant_id: str, run_id: str) -> RunRecordDTO:
         return self._run_store.get(tenant_id, run_id)
-    
-    def _load_trace(self, tenant_id: str, run_id: str)-> List[TraceEventDTO]:
+
+    def _load_trace(self, tenant_id: str, run_id: str) -> list[TraceEventDTO]:
         return list(self._trace_store.get_events(tenant_id, run_id))
 
-    def _load_artifacts(self, tenant_id: str, run_id: str) -> List[ArtifactRef]:
+    def _load_artifacts(self, tenant_id: str, run_id: str) -> list[ReplayArtifactRef]:
         artifacts = self._artifact_store.list_for_run(tenant_id, run_id)
 
         return [
-            ArtifactRef(
+            ReplayArtifactRef(
                 artifact_id=a.artifact_id,
                 name=a.name,
                 type=a.type,
@@ -93,37 +93,31 @@ class ReplayEngine:
     # RECONSTRUCTION STAGES
     # -------------------------------------------------
 
-
-    def _collect_tool_calls(
-        self, steps: List[ReconstructedStep]
-    ) -> List[ToolCallInfo]:
-        calls: List[ToolCallInfo] = []
+    def _collect_tool_calls(self, steps: list[ReconstructedStep]) -> list[ToolCallInfo]:
+        calls: list[ToolCallInfo] = []
         for s in steps:
             calls.extend(s.tool_calls)
         return calls
 
-    def _collect_llm_calls(
-        self, steps: List[ReconstructedStep]
-    ) -> List[LLMCallInfo]:
-        calls: List[LLMCallInfo] = []
+    def _collect_llm_calls(self, steps: list[ReconstructedStep]) -> list[LLMCallInfo]:
+        calls: list[LLMCallInfo] = []
         for s in steps:
             calls.extend(s.llm_calls)
         return calls
 
     def _extract_final_answer(self, run_record: RunRecordDTO) -> str | None:
-        return run_record.final_answer      
-    
+        return run_record.final_answer
 
     def _reconstruct_steps(
         self,
         trace_events: Iterable[TraceEventDTO],
-        artifacts: List[ArtifactRef],
-    ) -> List[ReconstructedStep]:
+        artifacts: list[ReplayArtifactRef],
+    ) -> list[ReconstructedStep]:
 
-        steps: Dict[str, ReconstructedStep] = {}
+        steps: dict[str, ReconstructedStep] = {}
 
         # Map artifact → step
-        artifacts_by_step: Dict[str, List[ArtifactRef]] = {}
+        artifacts_by_step: dict[str, list[ReplayArtifactRef]] = {}
         for a in artifacts:
             artifacts_by_step.setdefault(a.produced_by_step, []).append(a)
 
@@ -187,4 +181,3 @@ class ReplayEngine:
         ordered = sorted(steps.values(), key=lambda s: s.started_at)
 
         return ordered
-

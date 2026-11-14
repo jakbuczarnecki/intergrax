@@ -1,0 +1,44 @@
+{
+  "X1_artifact_read_without_workspace_id_crosses_workspace": {
+    "no_workspace": "READ_OK",
+    "right_workspace": "READ_OK",
+    "wrong_workspace": "denied:workspace_mismatch"
+  },
+  "X2_governance_port_returning_deny_without_raising_is_treated_as_allow": "READ_OK_DESPITE_DENY_DECISION",
+  "X3_retention_sweep_without_audit_deletes_silently_and_delete_race_destroys_new_version": {
+    "race": {
+      "selected_as_expired": 1,
+      "versions_after_delete": 0
+    },
+    "sweep_without_audit": {
+      "audit_recorder_configured": false,
+      "deleted": [
+        "art-1"
+      ]
+    }
+  },
+  "X4_skill_upgrade_baseexception_leaves_skill_unregistered": {
+    "registered_after_BaseException": false,
+    "registered_after_Exception_control": true,
+    "registered_before": true
+  },
+  "X5_skill_upgrade_prerelease_and_build_tag_ordering": {
+    "1.2.3->1.2.3+evil": "candidate skill version is not newer than the installed version",
+    "1.2.3->1.2.3-rc.1": "candidate skill version is not newer than the installed version",
+    "1.2.3->1.2.4-rc.1": null
+  },
+  "X6_recurrence_schedule_id_has_no_tenant_component": {
+    "id": "rec_daily-report_20261201T090000Z",
+    "params": [
+      "rule_id",
+      "occurrence"
+    ]
+  },
+  "X7_reindex_hook_exception_propagates_from_freshness_assessment": {
+    "hook_loop_has_try": false
+  },
+  "X8_lab_profile_signs_boundary_events_without_key": {
+    "execution_mode": "ExecutionMode.BALANCED",
+    "export_profile_present": false
+  }
+}

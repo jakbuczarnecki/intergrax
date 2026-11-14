@@ -1,5 +1,89 @@
 {
   "path_prefix_to_check_ids": {
+    "intergrax/agent_distribution": [
+      "ENT-A-BND-01",
+      "ENT-A-OWN-01",
+      "ENT-A-OWN-02",
+      "ENT-A-OWN-03",
+      "ENT-A-PLG-01",
+      "ENT-A-PLG-02",
+      "ENT-A-PLG-03"
+    ],
+    "intergrax/applications": [
+      "ENT-A-BND-01",
+      "ENT-A-CTR-01",
+      "ENT-A-CTR-02",
+      "ENT-A-CTR-03",
+      "ENT-A-SEC-01",
+      "ENT-A-SEC-02",
+      "ENT-A-TYP-01",
+      "VBN-CONTRACT-LEAKAGE"
+    ],
+    "intergrax/collaborative_work": [
+      "ENT-A-OWN-01",
+      "ENT-A-STA-01",
+      "ENT-A-STA-02"
+    ],
+    "intergrax/context": [
+      "ENT-A-BND-01",
+      "TEN-ASYNC",
+      "TEN-CROSS-TENANT",
+      "TEN-STATE"
+    ],
+    "intergrax/contracts": [
+      "ENT-A-BND-01",
+      "ENT-A-BND-02",
+      "ENT-A-CTR-01",
+      "ENT-A-CTR-02",
+      "ENT-A-CTR-03",
+      "ENT-A-TYP-01"
+    ],
+    "intergrax/core": [
+      "ENT-A-PLG-01",
+      "ENT-A-PLG-02",
+      "ENT-A-PLG-03",
+      "ENT-A-SEC-01",
+      "ENT-A-SEC-02",
+      "TEN-CONFIG",
+      "TEN-CREDENTIALS",
+      "VBN-CORE-HARDCODING"
+    ],
+    "intergrax/eval": [
+      "ENT-A-CTR-01",
+      "ENT-A-OWN-01",
+      "ENT-A-TYP-01"
+    ],
+    "intergrax/hosting": [
+      "ENT-A-BND-01",
+      "ENT-A-EXE-01",
+      "ENT-A-EXE-02",
+      "ENT-A-EXE-03",
+      "ENT-A-OBS-01",
+      "ENT-A-OBS-02",
+      "ENT-A-OWN-01"
+    ],
+    "intergrax/integrations": [
+      "ENT-A-PLG-01",
+      "TEN-PROVIDER",
+      "VBN-REPLACEABILITY-MATRIX",
+      "VBN-SILENT-FALLBACK"
+    ],
+    "intergrax/llm_adapters": [
+      "ENT-A-CTR-01",
+      "ENT-A-PLG-01",
+      "ENT-A-TYP-01",
+      "TEN-PROVIDER",
+      "VBN-CONTRACT-LEAKAGE",
+      "VBN-REPLACEABILITY-MATRIX",
+      "VBN-SHADOW-SELECTION",
+      "VBN-SILENT-FALLBACK"
+    ],
+    "intergrax/memory": [
+      "ENT-A-STA-01",
+      "ENT-A-STA-02",
+      "ENT-A-STA-03",
+      "TEN-STATE"
+    ],
     "intergrax/platform/enterprise_audit/baseline.py": [
       "C022",
       "C023",
@@ -13,13 +97,19 @@
       "C072"
     ],
     "intergrax/platform/enterprise_audit/data/changed_since_impact_map.v1.json": [
-      "C024",
-      "C029"
+      "ENT-A-EVOL-01",
+      "ENT-A-EVOL-02",
+      "ENT-A-EVOL-03"
     ],
     "intergrax/platform/enterprise_audit/data/enterprise_audit_check_manifest.v1.json": [
       "C019",
       "C021",
       "C030"
+    ],
+    "intergrax/platform/enterprise_audit/data/schemas/enterprise_audit_report.v1.schema.json": [
+      "C013",
+      "C026",
+      "C027"
     ],
     "intergrax/platform/enterprise_audit/evidence.py": [
       "C006",
@@ -28,9 +118,9 @@
       "C073"
     ],
     "intergrax/platform/enterprise_audit/impact_map.py": [
-      "C024",
-      "C029",
-      "C072"
+      "ENT-A-EVOL-01",
+      "ENT-A-EVOL-02",
+      "ENT-A-EVOL-03"
     ],
     "intergrax/platform/enterprise_audit/modes.py": [
       "C011",
@@ -39,11 +129,6 @@
     ],
     "intergrax/platform/enterprise_audit/report.py": [
       "C013"
-    ],
-    "intergrax/platform/enterprise_audit/data/schemas/enterprise_audit_report.v1.schema.json": [
-      "C013",
-      "C026",
-      "C027"
     ],
     "intergrax/platform/enterprise_audit/runner.py": [
       "C002",
@@ -60,6 +145,175 @@
       "C026",
       "C027",
       "C069"
+    ],
+    "intergrax/queueing": [
+      "ENT-A-REC-01",
+      "ENT-A-REC-02",
+      "ENT-A-REC-03",
+      "ENT-A-STA-03",
+      "TEN-ASYNC",
+      "TEN-RECOVERY"
+    ],
+    "intergrax/rag": [
+      "ENT-A-CTR-01",
+      "TEN-CROSS-TENANT",
+      "TEN-STATE",
+      "VBN-CONTRACT-LEAKAGE"
+    ],
+    "intergrax/runtime/agent_governance": [
+      "ENT-A-GOV-01",
+      "ENT-A-GOV-02",
+      "ENT-A-GOV-03",
+      "ENT-A-OWN-01"
+    ],
+    "intergrax/runtime/architecture": [
+      "ENT-A-BND-01",
+      "ENT-A-BND-02",
+      "ENT-A-EXE-01",
+      "ENT-A-EXE-02",
+      "ENT-A-EXE-03",
+      "ENT-A-GOV-01",
+      "ENT-A-OWN-01",
+      "ENT-A-OWN-02",
+      "ENT-A-OWN-03"
+    ],
+    "intergrax/runtime/attestation": [
+      "ENT-A-SEC-01",
+      "ENT-A-SEC-02",
+      "TEN-EVIDENCE"
+    ],
+    "intergrax/runtime/evidence": [
+      "ENT-A-CTR-01",
+      "TEN-EVIDENCE"
+    ],
+    "intergrax/runtime/execution": [
+      "ENT-A-EXE-01",
+      "ENT-A-EXE-02",
+      "ENT-A-EXE-03",
+      "ENT-A-OBS-03",
+      "ENT-A-REL-01",
+      "TEN-TRACE"
+    ],
+    "intergrax/runtime/execution_evidence": [
+      "ENT-A-SEC-01",
+      "ENT-A-SEC-02",
+      "TEN-EVIDENCE"
+    ],
+    "intergrax/runtime/integrations": [
+      "ENT-A-OBS-01",
+      "ENT-A-OBS-02",
+      "VBN-OBS-OPS-COUPLING"
+    ],
+    "intergrax/runtime/llm": [
+      "ENT-A-EXE-01",
+      "ENT-A-EXE-02",
+      "ENT-A-REL-01",
+      "TEN-PROVIDER",
+      "TEN-TRACE"
+    ],
+    "intergrax/runtime/long_running": [
+      "ENT-A-EXE-01",
+      "ENT-A-REC-02",
+      "ENT-A-REL-01",
+      "TEN-ASYNC",
+      "TEN-AUTHORITY",
+      "TEN-RECOVERY"
+    ],
+    "intergrax/runtime/nexus/artifacts": [
+      "ENT-A-REC-03",
+      "ENT-A-STA-01",
+      "ENT-A-STA-02",
+      "ENT-A-STA-03",
+      "TEN-EVIDENCE",
+      "TEN-STATE"
+    ],
+    "intergrax/runtime/nexus/context": [
+      "ENT-A-BND-01",
+      "TEN-ASYNC",
+      "TEN-CROSS-TENANT",
+      "TEN-STATE"
+    ],
+    "intergrax/runtime/nexus/engine": [
+      "ENT-A-EXE-01",
+      "ENT-A-EXE-02",
+      "ENT-A-EXE-03",
+      "ENT-A-STA-02"
+    ],
+    "intergrax/runtime/nexus/orchestration": [
+      "ENT-A-EXE-01",
+      "ENT-A-EXE-02",
+      "ENT-A-EXE-03",
+      "ENT-A-REL-02"
+    ],
+    "intergrax/runtime/nexus/tools": [
+      "ENT-A-REL-01",
+      "ENT-A-REL-02",
+      "ENT-A-REL-03"
+    ],
+    "intergrax/runtime/nexus/tracing": [
+      "ENT-A-OBS-01",
+      "ENT-A-OBS-02",
+      "ENT-A-OBS-03",
+      "TEN-TRACE"
+    ],
+    "intergrax/runtime/observability": [
+      "ENT-A-OBS-01",
+      "ENT-A-OBS-02",
+      "ENT-A-OBS-03",
+      "TEN-TRACE",
+      "VBN-OBS-OPS-COUPLING"
+    ],
+    "intergrax/runtime/persistence": [
+      "ENT-A-REC-01",
+      "ENT-A-REC-03",
+      "ENT-A-STA-01",
+      "ENT-A-STA-03",
+      "TEN-STATE",
+      "VBN-SQLITE-EFFECTIVE"
+    ],
+    "intergrax/runtime/registry": [
+      "ENT-A-OWN-01",
+      "ENT-A-OWN-02",
+      "ENT-A-OWN-03",
+      "ENT-A-PLG-01",
+      "VBN-SHADOW-SELECTION"
+    ],
+    "intergrax/runtime/replay": [
+      "ENT-A-OBS-03",
+      "ENT-A-REC-02",
+      "ENT-A-STA-01",
+      "TEN-TRACE"
+    ],
+    "intergrax/runtime/security": [
+      "ENT-A-SEC-01",
+      "ENT-A-SEC-02",
+      "ENT-A-SEC-03",
+      "TEN-AUTHORITY",
+      "TEN-CREDENTIALS"
+    ],
+    "intergrax/runtime/task": [
+      "ENT-A-EXE-01",
+      "ENT-A-EXE-02",
+      "TEN-ASYNC",
+      "TEN-AUTHORITY"
+    ],
+    "intergrax/runtime/vendor_knowledge": [
+      "VBN-INVENTORY-DRIFT",
+      "VBN-REACHABILITY",
+      "VBN-REPLACEABILITY-MATRIX"
+    ],
+    "intergrax/skills": [
+      "ENT-A-OWN-01",
+      "ENT-A-PLG-01",
+      "ENT-A-PLG-02",
+      "ENT-A-PLG-03"
+    ],
+    "intergrax/tools": [
+      "ENT-A-REL-01",
+      "ENT-A-REL-02",
+      "ENT-A-REL-03",
+      "TEN-CROSS-TENANT",
+      "VBN-REPLACEABILITY-MATRIX"
     ],
     "scripts/enterprise_audit": [
       "ENT-A-DOC-02"

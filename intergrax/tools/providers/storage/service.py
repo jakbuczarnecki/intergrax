@@ -5,7 +5,7 @@ from __future__ import annotations
 
 import base64
 
-from intergrax.integrations.contracts.object_storage import ObjectStorage, PresignedUrlMethod
+from intergrax.integrations.contracts.object_storage import ObjectStorage
 from intergrax.tools.providers.storage.contracts import (
     StorageDeleteInput,
     StorageDeleteOutput,
@@ -57,18 +57,20 @@ def storage_put(ctx: ToolWiringContext, params: StoragePutInput) -> StoragePutOu
     return StoragePutOutput(key=params.key.strip(), stored=True, size_bytes=len(body))
 
 
+class GovernedPresignRequiredError(RuntimeError):
+    """Presigned URLs are issued only through the governed artifact read port."""
+
+
 def storage_presigned_url(ctx: ToolWiringContext, params: StoragePresignedUrlInput) -> StoragePresignedUrlOutput:
-    method: PresignedUrlMethod = "PUT" if params.method == "PUT" else "GET"
-    url = _require_storage(ctx).presigned_url(
-        params.key.strip(),
-        expires_in_seconds=params.expires_in_seconds,
-        method=method,
-    )
-    return StoragePresignedUrlOutput(
-        key=params.key.strip(),
-        url=url,
-        method=params.method,
-        expires_in_seconds=params.expires_in_seconds,
+    """Fail closed (PDC-D8-R010, OD-PDC-SCOPE-04 = A).
+
+    This tool used to sign any key for any caller, with no tenant scope, authorization or audit.
+    A presigned URL is now issued only by ``GovernedArtifactReadPort.issue_download_url``
+    (tenant check, authorization, audit event, short-lived GET). The tool stays registered so
+    catalogs and manifests keep resolving, but it never calls the storage provider.
+    """
+    raise GovernedPresignRequiredError(
+        "storage.presigned_url is disabled: request a download through the governed artifact read port"
     )
 
 

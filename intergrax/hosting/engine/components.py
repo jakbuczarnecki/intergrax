@@ -6,6 +6,7 @@
 from __future__ import annotations
 
 import asyncio
+from collections.abc import Collection
 from dataclasses import dataclass, field
 from enum import Enum
 
@@ -25,7 +26,7 @@ from intergrax.hosting.engine.diagnostics import DiagnosticsRecorder, HostedAppl
 from intergrax.hosting.errors import HostedApplicationComponentError
 
 
-class ComponentStartOutcome(str, Enum):
+class ComponentStartOutcome(str, Enum):  # noqa: UP042
     STARTED = "started"
     SKIPPED_DEPENDENCY = "skipped_dependency"
     FAILED = "failed"
@@ -43,14 +44,13 @@ class ComponentCoordinator:
     _health: dict[str, HostedApplicationComponentHealth] = field(default_factory=dict)
     _mark_not_ready_failed: set[str] = field(default_factory=set)
     _degraded: set[str] = field(default_factory=set)
+    _runtime_degraded: set[str] = field(default_factory=set)
     _startup_fatal: BaseException | None = field(default=None, repr=False)
 
     @property
     def started_component_ids(self) -> tuple[str, ...]:
         return tuple(
-            component_id
-            for component_id in self.definition.component_start_order
-            if component_id in self._started
+            component_id for component_id in self.definition.component_start_order if component_id in self._started
         )
 
     @property
@@ -77,11 +77,21 @@ class ComponentCoordinator:
             if self._startup_fatal is not None:
                 raise self._startup_fatal
 
-    async def stop_started(self, context: HostedApplicationContext) -> None:
+    async def stop_started(
+        self,
+        context: HostedApplicationContext,
+        component_ids: Collection[str] | None = None,
+    ) -> None:
+        """Stop started components in reverse dependency order.
+
+        ``component_ids`` restricts the stop to a subset (the engine uses it to stop
+        post-runtime components, then the runtime, then pre-runtime components).
+        """
+        scope = None if component_ids is None else set(component_ids)
         stop_ids = [
             component_id
             for component_id in self.definition.component_stop_order
-            if component_id in self._started
+            if component_id in self._started and (scope is None or component_id in scope)
         ]
         if not stop_ids:
             return
@@ -95,10 +105,7 @@ class ComponentCoordinator:
         level: tuple[str, ...],
     ) -> None:
         semaphore = asyncio.Semaphore(self.lifecycle_policy.component_startup_concurrency)
-        tasks = [
-            asyncio.create_task(self._start_one(context, component_id, semaphore))
-            for component_id in level
-        ]
+        tasks = [asyncio.create_task(self._start_one(context, component_id, semaphore)) for component_id in level]
         results = await asyncio.gather(*tasks, return_exceptions=True)
         for result in results:
             if isinstance(result, HostedApplicationComponentError):
@@ -245,9 +252,7 @@ class ComponentCoordinator:
             exc=exc,
             reason_code="component_start_failed",
         )
-        error = HostedApplicationComponentError(
-            f"required component failed to start: {component_id}"
-        )
+        error = HostedApplicationComponentError(f"required component failed to start: {component_id}")
         self._startup_fatal = error
         raise error from exc
 
@@ -264,10 +269,7 @@ class ComponentCoordinator:
     ) -> None:
         semaphore = asyncio.Semaphore(self.lifecycle_policy.component_startup_concurrency)
         await asyncio.gather(
-            *(
-                self._stop_one(context, component_id, semaphore)
-                for component_id in level
-            ),
+            *(self._stop_one(context, component_id, semaphore) for component_id in level),
             return_exceptions=True,
         )
 
@@ -330,6 +332,7 @@ class ComponentCoordinator:
             previous = self._health.get(component_id)
             self._health[component_id] = health
             updated[component_id] = health
+            self._track_runtime_degradation(resolved, health)
             if previous is not None and _health_meaningfully_changed(previous, health):
                 await self._publish_component_event(
                     context,
@@ -345,7 +348,26 @@ class ComponentCoordinator:
 
     @property
     def degraded_component_ids(self) -> frozenset[str]:
-        return frozenset(self._degraded)
+        return frozenset(self._degraded | self._runtime_degraded)
+
+    def _track_runtime_degradation(
+        self,
+        resolved: ResolvedComponentRegistration,
+        health: HostedApplicationComponentHealth,
+    ) -> None:
+        """Report a started optional component that is unhealthy as degraded (APP-HOST-3C).
+
+        Required components block readiness instead of degrading it, so they are excluded.
+        The mark is cleared as soon as the component reports healthy again.
+        """
+        component_id = resolved.registration.component_id or ""
+        if resolved.registration.required:
+            self._runtime_degraded.discard(component_id)
+            return
+        if not health.healthy or health.state is HostedApplicationComponentState.DEGRADED:
+            self._runtime_degraded.add(component_id)
+        else:
+            self._runtime_degraded.discard(component_id)
 
     async def _collect_health(
         self,

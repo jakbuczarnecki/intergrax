@@ -14,17 +14,22 @@ import base64
 import threading
 import time
 import uuid
-from typing import List, Optional
 
 from intergrax.integrations.contracts.document_store import DocumentRecord, DocumentStore
 from intergrax.queueing.contracts.task_queue import (
+    DeadLetterReason,
+    DeadLetterRecord,
+    TaskExecutionIdentity,
     TaskHandle,
     TaskQueue,
     TaskRequest,
     TaskResult,
     TaskStatus,
     TaskSummary,
+    is_terminal_task_status,
 )
+from intergrax.queueing.worker.retry_backoff import calculate_retry_countdown
+from intergrax.queueing.worker.retry_policy import RetryPolicy
 
 DOCUMENT_STORE_TASK_QUEUE_PROVIDER = "document_store"
 _PARTITION_PREFIX = "intergrax.task_queue.v1"
@@ -79,8 +84,11 @@ class DocumentStoreTaskQueue(TaskQueue):
                 "attempts": 0,
                 "created_at_epoch": now,
                 "updated_at_epoch": now,
+                "available_at_epoch": now,
                 "error_message": None,
                 "output_base64": None,
+                "identity": (request.identity.to_dict() if request.identity is not None else None),
+                "dead_letter": None,
             }
             self._store.put(
                 DocumentRecord(
@@ -122,23 +130,28 @@ class DocumentStoreTaskQueue(TaskQueue):
             return None
         return TaskStatus(str(record["status"]))
 
-    def get_result(self, handle: TaskHandle) -> Optional[TaskResult]:
+    def get_result(self, handle: TaskHandle) -> TaskResult | None:
         record = self._load(handle)
         if record is None:
             return None
         status = TaskStatus(str(record["status"]))
-        if status not in {TaskStatus.SUCCEEDED, TaskStatus.FAILED}:
+        if not is_terminal_task_status(status):
             return None
-        output: Optional[bytes] = None
+        output: bytes | None = None
         encoded = record.get("output_base64")
         if isinstance(encoded, str) and encoded:
             output = base64.b64decode(encoded.encode("ascii"))
         error = record.get("error_message")
+        dead_letter: DeadLetterRecord | None = None
+        raw_dead_letter = record.get("dead_letter")
+        if status is TaskStatus.DEAD_LETTERED and isinstance(raw_dead_letter, dict):
+            dead_letter = DeadLetterRecord.from_dict(raw_dead_letter)
         return TaskResult(
             status=status,
             output=output,
             error_message=str(error) if error else None,
             attempts=int(record.get("attempts") or 0),
+            dead_letter=dead_letter,
         )
 
     def list_tasks(
@@ -146,8 +159,8 @@ class DocumentStoreTaskQueue(TaskQueue):
         tenant_id: str,
         *,
         limit: int = 100,
-        status_filter: Optional[TaskStatus] = None,
-    ) -> List[TaskSummary]:
+        status_filter: TaskStatus | None = None,
+    ) -> list[TaskSummary]:
         rows = self._list_task_rows(tenant_id=tenant_id, limit=max(limit * 2, 100))
         summaries: list[TaskSummary] = []
         for row in rows:
@@ -198,10 +211,14 @@ class DocumentStoreTaskQueue(TaskQueue):
                     continue
                 if tenant_id is not None and tid != tenant_id:
                     continue
-                row = self._load(TaskHandle(task_id=task_id, provider=DOCUMENT_STORE_TASK_QUEUE_PROVIDER, tenant_id=tid))
+                row = self._load(
+                    TaskHandle(task_id=task_id, provider=DOCUMENT_STORE_TASK_QUEUE_PROVIDER, tenant_id=tid)
+                )
                 if row is None or TaskStatus(str(row["status"])) is not TaskStatus.PENDING:
                     self._store.delete(_PENDING_INDEX_PARTITION, _index_row(tid, task_id))
                     continue
+                if float(row.get("available_at_epoch") or 0.0) > time.time():
+                    continue  # retry back-off not elapsed; stays PENDING in the index
                 row["status"] = TaskStatus.RUNNING.value
                 row["attempts"] = int(row.get("attempts") or 0) + 1
                 row["updated_at_epoch"] = time.time()
@@ -219,17 +236,7 @@ class DocumentStoreTaskQueue(TaskQueue):
                     provider=DOCUMENT_STORE_TASK_QUEUE_PROVIDER,
                     tenant_id=tid,
                 )
-                payload = base64.b64decode(str(row["payload_base64"]).encode("ascii"))
-                request = TaskRequest(
-                    tenant_id=tid,
-                    run_id=str(row["run_id"]),
-                    task_name=str(row["task_name"]),
-                    payload=payload,
-                    idempotency_key=(
-                        str(row["idempotency_key"]) if row.get("idempotency_key") else None
-                    ),
-                )
-                claimed.append((handle, request))
+                claimed.append((handle, self._request_from_row(tid, row)))
                 if len(claimed) >= limit:
                     break
             return claimed
@@ -245,9 +252,7 @@ class DocumentStoreTaskQueue(TaskQueue):
             if record is None:
                 return
             record["status"] = TaskStatus.SUCCEEDED.value
-            record["output_base64"] = (
-                base64.b64encode(output).decode("ascii") if output else None
-            )
+            record["output_base64"] = base64.b64encode(output).decode("ascii") if output else None
             record["error_message"] = None
             record["updated_at_epoch"] = time.time()
             self._put(handle.tenant_id or "", record)
@@ -264,14 +269,126 @@ class DocumentStoreTaskQueue(TaskQueue):
             self._put(handle.tenant_id or "", record)
             self._drop_indexes(handle.tenant_id or "", handle.task_id)
 
+    def mark_dead_lettered(
+        self,
+        handle: TaskHandle,
+        *,
+        reason: DeadLetterReason,
+        error_message: str,
+    ) -> None:
+        """Move a task to the terminal ``DEAD_LETTERED`` state with a typed reason."""
+        with self._lock:
+            record = self._load(handle)
+            if record is None:
+                return
+            self._dead_letter_row(
+                handle.tenant_id or "",
+                record,
+                reason=reason,
+                error_message=error_message,
+            )
+
+    def retry_or_dead_letter(
+        self,
+        handle: TaskHandle,
+        *,
+        error_message: str,
+        retry_policy: RetryPolicy,
+    ) -> TaskStatus:
+        """Settle a failed delivery against the retry budget.
+
+        ``attempts`` counts deliveries (incremented at claim). While
+        ``attempts <= max_retries`` the task returns to ``PENDING`` after the policy
+        back-off; once the budget is spent it becomes terminal ``DEAD_LETTERED``.
+        """
+        with self._lock:
+            record = self._load(handle)
+            if record is None:
+                return TaskStatus.PENDING
+            return self._settle_against_budget(
+                handle.tenant_id or "",
+                record,
+                error_message=error_message,
+                max_retries=retry_policy.max_retries,
+                retry_policy=retry_policy,
+            )
+
+    def _settle_against_budget(
+        self,
+        tenant_id: str,
+        record: dict[str, object],
+        *,
+        error_message: str,
+        max_retries: int,
+        retry_policy: RetryPolicy | None,
+    ) -> TaskStatus:
+        attempts = int(record.get("attempts") or 0)
+        task_id = str(record["task_id"])
+        if attempts > max_retries:
+            self._dead_letter_row(
+                tenant_id,
+                record,
+                reason=DeadLetterReason.RETRY_BUDGET_EXHAUSTED,
+                error_message=error_message,
+            )
+            return TaskStatus.DEAD_LETTERED
+        countdown = (
+            calculate_retry_countdown(
+                policy=retry_policy,
+                current_retries=max(attempts - 1, 0),
+            )
+            if retry_policy is not None
+            else 0.0
+        )
+        now = time.time()
+        record["status"] = TaskStatus.PENDING.value
+        record["error_message"] = error_message[:500]
+        record["updated_at_epoch"] = now
+        record["available_at_epoch"] = now + countdown
+        self._put(tenant_id, record)
+        self._store.delete(_RUNNING_INDEX_PARTITION, _index_row(tenant_id, task_id))
+        self._store.put(
+            DocumentRecord(
+                partition_key=_PENDING_INDEX_PARTITION,
+                row_key=_index_row(tenant_id, task_id),
+                data={"tenant_id": tenant_id, "task_id": task_id},
+            )
+        )
+        return TaskStatus.PENDING
+
+    def _dead_letter_row(
+        self,
+        tenant_id: str,
+        record: dict[str, object],
+        *,
+        reason: DeadLetterReason,
+        error_message: str,
+    ) -> None:
+        message = error_message[:500]
+        record["status"] = TaskStatus.DEAD_LETTERED.value
+        record["error_message"] = message
+        record["dead_letter"] = DeadLetterRecord(
+            reason=reason,
+            attempts=int(record.get("attempts") or 0),
+            last_error=message,
+        ).to_dict()
+        record["updated_at_epoch"] = time.time()
+        self._put(tenant_id, record)
+        self._drop_indexes(tenant_id, str(record["task_id"]))
+
     def recover_interrupted_running(
         self,
         *,
         error_message: str = "interrupted_by_host_restart",
+        max_retries: int | None = None,
     ) -> list[tuple[TaskHandle, TaskRequest]]:
         """Fail-closed recovery: RUNNING messages cannot remain permanently running.
 
         Returns the interrupted requests so product workers can update domain state.
+
+        With ``max_retries=None`` (default) interrupted tasks become ``FAILED``. With a
+        budget, a crash-looping (poison) task is redelivered until the budget is spent
+        and then dead-lettered instead of being retried forever.
         """
         with self._lock:
             interrupted: list[tuple[TaskHandle, TaskRequest]] = []
@@ -288,23 +405,35 @@ class DocumentStoreTaskQueue(TaskQueue):
                 )
                 row = self._load(handle)
                 if row is not None and TaskStatus(str(row["status"])) is TaskStatus.RUNNING:
-                    payload = base64.b64decode(str(row["payload_base64"]).encode("ascii"))
-                    request = TaskRequest(
-                        tenant_id=tid,
-                        run_id=str(row["run_id"]),
-                        task_name=str(row["task_name"]),
-                        payload=payload,
-                        idempotency_key=(
-                            str(row["idempotency_key"]) if row.get("idempotency_key") else None
-                        ),
-                    )
-                    interrupted.append((handle, request))
-                    row["status"] = TaskStatus.FAILED.value
-                    row["error_message"] = error_message
-                    row["updated_at_epoch"] = time.time()
-                    self._put(tid, row)
+                    interrupted.append((handle, self._request_from_row(tid, row)))
+                    if max_retries is not None:
+                        self._settle_against_budget(
+                            tid,
+                            row,
+                            error_message=error_message,
+                            max_retries=max_retries,
+                            retry_policy=None,
+                        )
+                    else:
+                        row["status"] = TaskStatus.FAILED.value
+                        row["error_message"] = error_message
+                        row["updated_at_epoch"] = time.time()
+                        self._put(tid, row)
                 self._store.delete(_RUNNING_INDEX_PARTITION, _index_row(tid, task_id))
             return interrupted
+
+    @staticmethod
+    def _request_from_row(tenant_id: str, row: dict[str, object]) -> TaskRequest:
+        payload = base64.b64decode(str(row["payload_base64"]).encode("ascii"))
+        raw_identity = row.get("identity")
+        return TaskRequest(
+            tenant_id=tenant_id,
+            run_id=str(row["run_id"]),
+            task_name=str(row["task_name"]),
+            payload=payload,
+            idempotency_key=(str(row["idempotency_key"]) if row.get("idempotency_key") else None),
+            identity=(TaskExecutionIdentity.from_dict(raw_identity) if isinstance(raw_identity, dict) else None),
+        )
 
     def _drop_indexes(self, tenant_id: str, task_id: str) -> None:
         self._store.delete(_PENDING_INDEX_PARTITION, _index_row(tenant_id, task_id))

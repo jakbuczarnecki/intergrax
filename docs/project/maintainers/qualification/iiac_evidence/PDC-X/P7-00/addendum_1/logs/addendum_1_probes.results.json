@@ -1,0 +1,28 @@
+{
+  "Q1_memory_tenant_guard_is_a_noop_for_a_non_UserProfileManager_capability": {
+    "bound_plane_foreign_identity": "denied",
+    "duck_capability_foreign_identity": "NO_RAISE",
+    "whitespace_variant": "denied"
+  },
+  "Q2_required_features_on_an_adapter_without_any_declaration": "refused:LLMCapabilityMismatchError",
+  "Q3_agent_contract_required_features_edge_cases": {
+    "duplicates_kept": [
+      "tools",
+      "tools",
+      "vision"
+    ],
+    "json_roundtrip_equal": true,
+    "upper_case_name": "rejected:ValidationError"
+  },
+  "Q4_llm_profile_digest_sensitivity": {
+    "fallback_change": true,
+    "model_change": true,
+    "options_change": true,
+    "routing_hint_change": true,
+    "same_profile_same_digest": true
+  },
+  "Q5_production_callers_of_the_new_parameters": {
+    "llm_profile_source_callers": [],
+    "required_llm_features_callers": []
+  }
+}

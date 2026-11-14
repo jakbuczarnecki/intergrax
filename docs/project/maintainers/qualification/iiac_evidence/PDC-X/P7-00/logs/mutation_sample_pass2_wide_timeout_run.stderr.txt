@@ -1,0 +1,13 @@
+Traceback (most recent call last):
+  File "D:\Projekty\intergrax\.claude\worktrees\magical-germain-65dac8\docs\project\maintainers\qualification\iiac_evidence\PDC-X\P7-00\adversarial_scripts\p7_00_mutation_sample.py", line 73, in <module>
+    proc = subprocess.run(
+           ^^^^^^^^^^^^^^^
+  File "C:\Users\XPS\AppData\Roaming\uv\python\cpython-3.12.11-windows-x86_64-none\Lib\subprocess.py", line 550, in run
+    stdout, stderr = process.communicate(input, timeout=timeout)
+                     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\XPS\AppData\Roaming\uv\python\cpython-3.12.11-windows-x86_64-none\Lib\subprocess.py", line 1209, in communicate
+    stdout, stderr = self._communicate(input, endtime, timeout)
+                     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\XPS\AppData\Roaming\uv\python\cpython-3.12.11-windows-x86_64-none\Lib\subprocess.py", line 1630, in _communicate
+    raise TimeoutExpired(self.args, orig_timeout)
+subprocess.TimeoutExpired: Command '['D:\\Projekty\\intergrax\\.venv\\Scripts\\python.exe', '-m', 'pytest', 'tests/qualification/pdc_x/d6', 'tests/qualification/pdc_x/p6_repair', 'tests/qualification/pdc_x/xd', 'tests/qualification/pdc_x/d8', '-q', '-x', '--tb=line']' timed out after 900 seconds

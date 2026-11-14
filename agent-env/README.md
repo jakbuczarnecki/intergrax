@@ -12,7 +12,7 @@ CLAUDE.md                  Claude-only rules + generated import block
 .cursor/rules/<id>.mdc     GENERATED  Cursor rule  -> @agent-env/rules/<id>.md
 .cursor/skills/<id>/       GENERATED  Cursor skill -> agent-env/skills/<id>/SKILL.md
 .claude/skills/<id>/       GENERATED  Claude skill -> agent-env/skills/<id>/SKILL.md (+ one per non-always-on rule)
-.claude/settings.json      Claude shared settings (plansDirectory, ask/deny permissions)
+.claude/settings.json      Claude shared settings (plansDirectory, attribution off, ask/deny permissions)
 .cursorignore, .cursorindexingignore   Cursor-only settings; must stay at the repo root
 ```
 
@@ -28,7 +28,7 @@ CLAUDE.md                  Claude-only rules + generated import block
 
 | Rule | `loading` |
 |------|-----------|
-| `intergrax-token-budget`, `intergrax-test-process-budget`, `intergrax-session-artifacts`, `intergrax-git-branch-safety`, `intergrax-env-vendor-qualification` | always |
+| `intergrax-token-budget`, `intergrax-test-process-budget`, `intergrax-session-artifacts`, `intergrax-git-branch-safety`, `intergrax-env-vendor-qualification`, `intergrax-no-ai-attribution` | always |
 | `intergrax-iteration`, `intergrax-hep-step`, `intergrax-ci-hotfix`, `intergrax-micro-implement` | explicit |
 | `intergrax-agent-roles`, `intergrax-independent-audit` | auto |
 

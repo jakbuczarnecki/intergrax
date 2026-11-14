@@ -4,21 +4,21 @@
 """Retrieval logic for ``rag.retrieve`` — uses Tier-0 :class:`RetrievalService`."""
 
 from __future__ import annotations
-from intergrax.utils import attribute_access
 
-from typing import Any, List, Sequence
+from collections.abc import Sequence
+from typing import Any
 
-from intergrax.rag.profiles.rag_profile import RagProfile
 from intergrax.knowledge.contracts.validation import knowledge_metadata_to_plain
+from intergrax.rag.profiles.rag_profile import RagProfile
+from intergrax.rag.retrieval.citation import Citation
 from intergrax.rag.retrieval.resolve import resolve_retrieval_service
 from intergrax.rag.retrieval.retrieval_request import RetrievalRequest
 from intergrax.rag.retrieval.retrieval_result import RetrievalChunk
-from intergrax.rag.vectorstore.contracts.vector_store import MetadataFilter
 from intergrax.rag.vectorstore.contracts.native_vectorstore import (
     MetadataMembershipCondition,
     VectorStoreScope,
 )
-from intergrax.rag.retrieval.citation import Citation
+from intergrax.rag.vectorstore.contracts.vector_store import MetadataFilter
 from intergrax.tools.providers.rag.contracts import (
     RagChunkResult,
     RagCitationResult,
@@ -35,6 +35,7 @@ from intergrax.tools.providers.rag.source_scope_transport import (
     current_rag_retrieval_source_scope,
 )
 from intergrax.tools.registry.wiring import ToolWiringContext
+from intergrax.utils import attribute_access
 
 RAG_TOOL_ID = "rag.retrieve"
 
@@ -85,10 +86,7 @@ def perform_rag_retrieve(ctx: ToolWiringContext, params: RagRetrieveInput) -> Ra
     if configured_scope is not None and tenant_id is None:
         tenant_id = configured_scope.tenant_id
         if configured_scope.workspace_id is not None:
-            if (
-                workspace_id is not None
-                and workspace_id != configured_scope.workspace_id
-            ):
+            if workspace_id is not None and workspace_id != configured_scope.workspace_id:
                 return RagRetrieveOutput(used=False, reason="workspace_scope_conflict")
             workspace_id = configured_scope.workspace_id
 
@@ -193,8 +191,7 @@ def perform_rag_retrieve(ctx: ToolWiringContext, params: RagRetrieveInput) -> Ra
         diagnostics["embedding_version_warnings"] = list(result.trace.embedding_version_warnings)
     if result.trace.channel_contributions:
         diagnostics["channel_contributions"] = {
-            channel: list(chunk_ids)
-            for channel, chunk_ids in result.trace.channel_contributions.items()
+            channel: list(chunk_ids) for channel, chunk_ids in result.trace.channel_contributions.items()
         }
     if result.trace.graph_provenance_records:
         diagnostics["graph_provenance_records"] = list(result.trace.graph_provenance_records)
@@ -217,16 +214,20 @@ def _retrieval_poisoning_defense_enabled(ctx: ToolWiringContext) -> bool:
     if profile is None:
         raw = ctx.extras.get("security_profile")
         profile = raw if raw is not None else None
-    if profile is None:
-        return False
-    return bool(attribute_access.optional(profile, "retrieval_poisoning_defense_enabled", False))
+    # PDC-D6-R014: absent profile or absent toggle -> defense ON; only an explicit
+    # ``False`` profile value disables it.
+    from intergrax.core.security.security_configuration import (
+        retrieval_poisoning_defense_enabled_or_default,
+    )
+
+    return retrieval_poisoning_defense_enabled_or_default(profile)
 
 
 def _apply_retrieval_poisoning_filter(
     ctx: ToolWiringContext,
-    chunks: List[RagChunkResult],
-    citations: List[RagCitationResult],
-) -> tuple[List[RagChunkResult], List[RagCitationResult], str, List[str]]:
+    chunks: list[RagChunkResult],
+    citations: list[RagCitationResult],
+) -> tuple[list[RagChunkResult], list[RagCitationResult], str, list[str]]:
     if not chunks or not _retrieval_poisoning_defense_enabled(ctx):
         return chunks, citations, "", []
 
@@ -321,12 +322,12 @@ def format_rag_context_text(
     max_chars: int = 4000,
 ) -> str:
     """Compact, LLM-friendly preview of retrieved chunks."""
-    lines: List[str] = []
+    lines: list[str] = []
     total = 0
 
     for idx, chunk in enumerate(chunks, start=1):
         meta = chunk.metadata or {}
-        header_parts: List[str] = [f"[{idx}]"]
+        header_parts: list[str] = [f"[{idx}]"]
         src = meta.get("source") or meta.get("url") or meta.get("doc_id") or meta.get("file")
         if src:
             header_parts.append(str(src))

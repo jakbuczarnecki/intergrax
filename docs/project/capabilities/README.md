@@ -76,6 +76,7 @@ This is analogous to `MULTIPLAYER_AI`: Multiplayer is a cross-layer feature, whi
 | `LANGCHAIN_INDEPENDENCE` | - | [`architecture/LANGCHAIN_INDEPENDENCE.md`](architecture/LANGCHAIN_INDEPENDENCE.md) | [`plan/LANGCHAIN_INDEPENDENCE.md`](plan/LANGCHAIN_INDEPENDENCE.md) | Architecture and migration roadmap awaiting review; implementation not started |
 | `MULTIPLAYER_AI` | - | [`architecture/MULTIPLAYER_AI.md`](architecture/MULTIPLAYER_AI.md) | [`plan/MULTIPLAYER_AI.md`](plan/MULTIPLAYER_AI.md) | **MP-0** - canonical architecture and roadmap (documentation only); MP-1…MP-9 planned, not started |
 | `SCENARIO_FACTORY` | [`SFX-MASTER-PLAN.md`](../../../governance/tickets/plans/SFX-MASTER-PLAN.md) | [`architecture/SCENARIO_FACTORY.md`](architecture/SCENARIO_FACTORY.md) | [`plan/SCENARIO_FACTORY.md`](plan/SCENARIO_FACTORY.md) | **Proposed** - SCENARIO-FACTORY-X (SFX) post-freeze product stage; pre-freeze docs/research/design SFX-P0..P4 open; SFX-P5+ gated by ARCH-FREEZE CLOSED and GATE-SFX-ENTRY |
+| `ARTIFACT_LIFECYCLE` | - | [`architecture/ARTIFACT_LIFECYCLE.md`](architecture/ARTIFACT_LIFECYCLE.md) | [`plan/ARTIFACT_LIFECYCLE.md`](plan/ARTIFACT_LIFECYCLE.md) | Implemented by PDC-X B-D8 (ADR-PDC-08; four artifact classes, domain-owned); registered here by B-P6-R; no certification claimed |
 
 **Reserved future product/cross-layer concept:** `VIRTUAL_WORKFORCE` — no feature pair exists yet; canonical worker semantics belong to [`../architecture/AUTONOMOUS_WORK.md`](../architecture/AUTONOMOUS_WORK.md).
 

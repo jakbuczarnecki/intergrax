@@ -5,30 +5,37 @@
 
 from __future__ import annotations
 
-from dataclasses import replace
+import logging
 import time
-from collections.abc import Sequence
-from typing import List, Optional
+from collections.abc import Callable, Sequence
+from dataclasses import replace
 
 from intergrax.llm_adapters.contracts.llm_adapter import LLMAdapter
-
-from intergrax.rag.profiles.rag_profile import RagProfile
 from intergrax.rag.governance.embedding_version_policy import filter_chunks_by_embedding_version
+from intergrax.rag.governance.source_freshness import (
+    RetrievalFreshnessAssessment,
+    SourceFreshnessObservation,
+    assess_retrieval_freshness,
+    chunk_source_id,
+)
+from intergrax.rag.profiles.rag_profile import RagProfile
+from intergrax.rag.rerankers.contracts.base_reranker_manager import BaseRerankerManager
+from intergrax.rag.rerankers.contracts.reranker_types import RerankerCandidate
 from intergrax.rag.retrieval.citation import citations_from_chunks
+from intergrax.rag.retrieval.hit_chunk_adapter import retrieval_hit_to_chunk
 from intergrax.rag.retrieval.retrieval_errors import RetrievalError
 from intergrax.rag.retrieval.retrieval_request import RetrievalRequest
 from intergrax.rag.retrieval.retrieval_result import RetrievalChunk, RetrievalResult, RetrievalTrace
-from intergrax.rag.retrieval.hit_chunk_adapter import retrieval_hit_to_chunk
 from intergrax.rag.retrievers.contracts.base_retriever import RetrievalHit
 from intergrax.rag.retrievers.contracts.base_retriever_manager import BaseRetrieverManager
-from intergrax.rag.rerankers.contracts.base_reranker_manager import BaseRerankerManager
-from intergrax.rag.rerankers.contracts.reranker_types import RerankerCandidate
 from intergrax.rag.routing.query_router import QueryRouter
 from intergrax.rag.tracking.metrics import record_retrieval
 from intergrax.rag.tracking.rag_spans import SpanAttributeValue, rag_span
 
+logger = logging.getLogger(__name__)
 
-def _tenant_id_for_observability(request: RetrievalRequest) -> Optional[str]:
+
+def _tenant_id_for_observability(request: RetrievalRequest) -> str | None:
     if request.scope is None:
         return None
     return request.scope.tenant_id
@@ -53,11 +60,12 @@ class RetrievalService:
         self,
         *,
         retriever_manager: BaseRetrieverManager,
-        reranker_manager: Optional[BaseRerankerManager] = None,
-        profile: Optional[RagProfile] = None,
-        query_router: Optional[QueryRouter] = None,
-        llm_for_agentic: Optional[LLMAdapter] = None,
-        llm_for_routing: Optional[LLMAdapter] = None,
+        reranker_manager: BaseRerankerManager | None = None,
+        profile: RagProfile | None = None,
+        query_router: QueryRouter | None = None,
+        llm_for_agentic: LLMAdapter | None = None,
+        llm_for_routing: LLMAdapter | None = None,
+        source_observer: Callable[[str], SourceFreshnessObservation | None] | None = None,
     ) -> None:
         self._retriever_manager = retriever_manager
         self._reranker_manager = reranker_manager
@@ -65,6 +73,7 @@ class RetrievalService:
         router_llm = llm_for_routing or llm_for_agentic
         self._router = query_router or QueryRouter(self._profile, llm=router_llm)
         self._llm_for_agentic = llm_for_agentic
+        self._source_observer = source_observer
 
     @property
     def profile(self) -> RagProfile:
@@ -93,7 +102,7 @@ class RetrievalService:
         self,
         request: RetrievalRequest,
         *,
-        route_tier: Optional[str] = None,
+        route_tier: str | None = None,
     ) -> RetrievalResult:
         query = (request.query or "").strip()
         with rag_span(
@@ -159,15 +168,10 @@ class RetrievalService:
             if use_rerank and self._reranker_manager is not None:
                 reranker_id = self._profile.reranker_id
                 trace.reranker_id = reranker_id
-                rerank_candidates = tuple(
-                    RerankerCandidate.from_retrieval_hit(candidate)
-                    for candidate in candidates
-                )
+                rerank_candidates = tuple(RerankerCandidate.from_retrieval_hit(candidate) for candidate in candidates)
                 candidate_to_hit = {
                     id(rerank_candidate): candidate
-                    for rerank_candidate, candidate in zip(
-                        rerank_candidates, candidates
-                    )
+                    for rerank_candidate, candidate in zip(rerank_candidates, candidates)
                 }
                 t1 = time.perf_counter()
                 reranked = self._reranker_manager.rerank(
@@ -182,9 +186,7 @@ class RetrievalService:
                     source = candidate_to_hit.get(id(result.candidate))
                     if source is None:
                         raise ValueError("reranker returned an unknown candidate")
-                    reranked_hits.append(
-                        replace(source, score=float(result.rerank_score), rank=result.rank)
-                    )
+                    reranked_hits.append(replace(source, score=float(result.rerank_score), rank=result.rank))
                 chunks = [retrieval_hit_to_chunk(hit) for hit in reranked_hits]
                 trace.candidates_after_rerank = len(chunks)
             else:
@@ -221,6 +223,7 @@ class RetrievalService:
                 reason="ok",
                 trace=trace,
                 citations=citations_from_chunks(chunks),
+                freshness=self._assess_freshness(chunks),
             )
             _record_retrieval_metrics(
                 request=request,
@@ -229,6 +232,25 @@ class RetrievalService:
                 tenant_id=_tenant_id_for_observability(request),
             )
             return result
+
+    def _assess_freshness(self, chunks: Sequence[RetrievalChunk]) -> RetrievalFreshnessAssessment | None:
+        """Typed staleness verdicts (PDC-D2-R005); None when no source observer is configured."""
+        observer = self._source_observer
+        if observer is None:
+            return None
+        observations: dict[str, SourceFreshnessObservation] = {}
+        for chunk in chunks:
+            source_id = chunk_source_id(chunk)
+            if not source_id or source_id in observations:
+                continue
+            try:
+                observation = observer(source_id)
+            except Exception:  # noqa: BLE001 - an unobservable source is UNKNOWN, never fresh
+                logger.warning("source freshness observer failed for %s", source_id, exc_info=True)
+                continue
+            if observation is not None:
+                observations[source_id] = observation
+        return assess_retrieval_freshness(chunks, observations=observations)
 
 
 def _apply_retriever_execution_trace(
@@ -241,10 +263,7 @@ def _apply_retriever_execution_trace(
     trace.retriever_id = execution.used_retriever_id
     trace.attempted_retriever_ids = list(execution.attempted_retriever_ids)
     trace.fallback_applied = execution.fallback_applied
-    trace.hybrid_used = (
-        execution.used_retriever_id in ("hybrid", "graph_rag")
-        or trace.hybrid_used
-    )
+    trace.hybrid_used = execution.used_retriever_id in ("hybrid", "graph_rag") or trace.hybrid_used
     if execution.channel_contributions:
         trace.channel_contributions = dict(execution.channel_contributions)
     if execution.graph_expanded_node_ids:
@@ -260,7 +279,7 @@ def _record_retrieval_metrics(
     request: RetrievalRequest,
     trace: RetrievalTrace,
     hits: int,
-    tenant_id: Optional[str] = None,
+    tenant_id: str | None = None,
 ) -> None:
     record_retrieval(
         tenant_id=tenant_id or "_platform",

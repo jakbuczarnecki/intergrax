@@ -1,0 +1,100 @@
+files: 95 missing: []
+........................................................................ [  6%]
+........................................................................ [ 13%]
+........................................................................ [ 19%]
+.........................s.............................................. [ 26%]
+........................................................................ [ 33%]
+........................................................................ [ 39%]
+........................................................................ [ 46%]
+........................................................................ [ 53%]
+........................................................................ [ 59%]
+.............................................................xx......... [ 66%]
+..................................................................xx..x. [ 73%]
+......................................................................x. [ 79%]
+F.F..................................F.................................. [ 86%]
+......................................................F....FF...F.F..... [ 93%]
+...................F.....................................F.............. [ 99%]
+.                                                                        [100%]
+================================== FAILURES ===================================
+____________ test_committed_inventory_is_current_and_closed_world _____________
+tests\unit\governance\test_pdc_x_inventory.py:37: in test_committed_inventory_is_current_and_closed_world
+    assert inv.check(inv.build()) == []
+E   AssertionError: assert ['UNMAPPED:do...ith --write)'] == []
+E     
+E     Left contains 3 more items, first extra item: 'UNMAPPED:docs/project/capabilities/architecture/ARTIFACT_LIFECYCLE.md'
+E     Use -v to get more diff
+__________ test_every_item_has_exactly_one_known_category_and_status __________
+tests\unit\governance\test_pdc_x_inventory.py:47: in test_every_item_has_exactly_one_known_category_and_status
+    assert item["category"] in allowed, item
+E   AssertionError: {'category': 'UNMAPPED', 'kind': 'document', 'path': 'docs/project/capabilities/architecture/ARTIFACT_LIFECYCLE.md', 'status': 'INDEX_ONLY'}
+E   assert 'UNMAPPED' in {'CONSUMER', 'PDC-D1', 'PDC-D2', 'PDC-D3', 'PDC-D4', 'PDC-D5', ...}
+_____________ test_ebh5_proof_sqlite_closed_world_accountability ______________
+tests\qualification\ebh_5\test_ebh_5_proof_integrity_gates.py:79: in test_ebh5_proof_sqlite_closed_world_accountability
+    assert SQLITE_TOUCHPOINT_COUNT == 38
+E   assert 39 == 38
+________________ test_readme_controlled_multi_visual_contract _________________
+tests\unit\docs\test_public_readme_contract.py:892: in test_readme_controlled_multi_visual_contract
+    resolved = _resolve_approved_readme_visual(normalized)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+tests\unit\docs\test_public_readme_contract.py:694: in _resolve_approved_readme_visual
+    raise ValueError(
+E   ValueError: README visual outside approved ownership roots: 'docs/project/assets/public/autonomous-organization/autonomous-organization-hero-light.png' (allowed: 'docs/project/assets/public/readme/', 'docs/project/assets/public/scenario-factory/', 'applications/local_workspace_application/docs/assets/')
+________________________ test_public_maturity_boundary ________________________
+tests\unit\docs\test_public_readme_contract.py:1001: in test_public_maturity_boundary
+    assert phrase in normalized, f"Missing maturity boundary phrase: {phrase}"
+E   AssertionError: Missing maturity boundary phrase: source-available
+E   assert 'source-available' in '# intergrax\n\nintergrax helps teams build specialized ai applications where policy, authority,\nand evidence can det...on require separate explicit written\npermission. [license](license) is the controlling text for licensor materials.\n'
+___________________ test_governed_execution_claim_boundary ____________________
+tests\unit\docs\test_public_readme_contract.py:1008: in test_governed_execution_claim_boundary
+    assert "IMPLEMENTED CORE — coverage / qualification ongoing" in readme_text
+E   AssertionError: assert 'IMPLEMENTED CORE — coverage / qualification ongoing' in '# Intergrax\n\nIntergrax helps teams build specialized AI applications where policy, authority,\nand evidence can det...equire **separate explicit written\npermission**. [LICENSE](LICENSE) is the controlling text for Licensor materials.\n'
+_____________________________ test_relative_links _____________________________
+tests\unit\docs\test_public_readme_contract.py:1074: in test_relative_links
+    assert resolved.exists(), f"Broken relative link target: {target}"
+E   AssertionError: Broken relative link target: docs/project/architecture/CRITIC_VERIFICATION.md
+E   assert False
+E    +  where False = exists()
+E    +    where exists = WindowsPath('D:/Projekty/intergrax/.claude/worktrees/magical-germain-65dac8/docs/project/architecture/CRITIC_VERIFICATION.md').exists
+________________________________ test_brevity _________________________________
+tests\unit\docs\test_public_readme_contract.py:1086: in test_brevity
+    assert line_count <= 450, f"README has {line_count} lines (max 450)"
+E   AssertionError: README has 477 lines (max 450)
+E   assert 477 <= 450
+__________________ test_audit_ideal_29_1_live_vision_profile __________________
+tests\unit\runtime\architecture\test_audit_ideal_depth_gate.py:238: in test_audit_ideal_29_1_live_vision_profile
+    assert create_adapter(profile).slug
+           ^^^^^^^^^^^^^^^^^^^^^^^
+intergrax\llm_adapters\registry\profile.py:42: in create_adapter
+    if profile.model:
+       ^^^^^^^^^^^^^
+..\..\..\.venv\Lib\site-packages\pydantic\main.py:1026: in __getattr__
+    raise AttributeError(f'{type(self).__name__!r} object has no attribute {item!r}')
+E   AttributeError: 'VisionProfile' object has no attribute 'model'
+__________________ test_audit_ideal_30_4_production_capacity __________________
+tests\unit\runtime\architecture\test_audit_ideal_depth_gate.py:690: in test_audit_ideal_30_4_production_capacity
+    wiring = resolve_production_capacity_wiring(env, governance=governance)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+intergrax\applications\_shared\production_capacity_wiring.py:48: in resolve_production_capacity_wiring
+    require_control_plane_mutation_boundary(
+intergrax\applications\_shared\control_plane_composition.py:50: in require_control_plane_mutation_boundary
+    raise ControlPlaneCompositionError(blocker_code, message)
+E   intergrax.applications._shared.control_plane_composition.ControlPlaneCompositionError: production capacity wiring requires ControlPlaneMutationAuthorizationBoundary
+=========================== short test summary info ===========================
+FAILED tests/unit/governance/test_pdc_x_inventory.py::test_committed_inventory_is_current_and_closed_world
+FAILED tests/unit/governance/test_pdc_x_inventory.py::test_every_item_has_exactly_one_known_category_and_status
+FAILED tests/qualification/ebh_5/test_ebh_5_proof_integrity_gates.py::test_ebh5_proof_sqlite_closed_world_accountability
+FAILED tests/unit/docs/test_public_readme_contract.py::test_readme_controlled_multi_visual_contract
+FAILED tests/unit/docs/test_public_readme_contract.py::test_public_maturity_boundary
+FAILED tests/unit/docs/test_public_readme_contract.py::test_governed_execution_claim_boundary
+FAILED tests/unit/docs/test_public_readme_contract.py::test_relative_links - ...
+FAILED tests/unit/docs/test_public_readme_contract.py::test_brevity - Asserti...
+FAILED tests/unit/runtime/architecture/test_audit_ideal_depth_gate.py::test_audit_ideal_29_1_live_vision_profile
+FAILED tests/unit/runtime/architecture/test_audit_ideal_depth_gate.py::test_audit_ideal_30_4_production_capacity
+XFAIL tests/qualification/pdc_x/p6_repair/test_p6r_d6_tenant_and_audit.py::test_a_foreign_tenant_identity_is_refused_on_every_user_scope_operation - B-P6-R item 11 held for a write-set amendment: a plane that rejects a foreign-tenant identity breaks six existing tests in tests/unit/memory/test_mem_ent10_memory_security_governance.py whose fixture binds UserProfileManager to 'tenant-test' (line 79) but acts as identity tenant 'tenant-10'; that fixture must bind _TENANT first
+XFAIL tests/qualification/pdc_x/p6_repair/test_p6r_d6_tenant_and_audit.py::test_the_bound_tenant_keeps_working_after_a_foreign_attempt - B-P6-R item 11 held for a write-set amendment: a plane that rejects a foreign-tenant identity breaks six existing tests in tests/unit/memory/test_mem_ent10_memory_security_governance.py whose fixture binds UserProfileManager to 'tenant-test' (line 79) but acts as identity tenant 'tenant-10'; that fixture must bind _TENANT first
+XFAIL tests/qualification/pdc_x/xd/test_xd_01_agent_model.py::test_xd01_the_activated_revision_pins_the_model_profile - FINDING-9 (D1 x D3): an activated agent revision does not pin the model profile. RuntimeRevision (intergrax/agent_distribution/runtime_revision.py) and the activation request carry package digests, a graph digest and a lock digest but no LLM profile/model reference or digest, so the model an agent runs on is whatever RuntimeEnvironmentProfile.llm_profile says at call time and a config edit changes behavior without changing the revision identity. Smallest repair: add an llm_profile_digest to RuntimeRevision (set at build_application_revision from the environment profile) and have activation verify it against the resolved profile.
+XFAIL tests/qualification/pdc_x/xd/test_xd_01_agent_model.py::test_xd01_required_model_capabilities_are_checked_at_composition_time - FINDING-10 (D1 x D3): an agent's model needs are never checked at composition time. LLMAdapterRegistry.require_capabilities has no production caller and AgentContract (intergrax/contracts/agent_contract_meta.py) has no field for required model features, so a capability mismatch from a provider swap surfaces only when the unsupported call is attempted, not when the model is resolved for the agent. Smallest repair: add required_llm_features to AgentContract and call LLMAdapterRegistry.require_capabilities in the resolver that binds an adapter to an agent.
+XFAIL tests/qualification/pdc_x/xd/test_xd_02_agent_context.py::test_xd02_a_foreign_tenant_identity_on_a_tenant_bound_plane_recalls_nothing - FINDING-6 (D6-R019, D2 memory): a tenant-bound memory plane serves a foreign-tenant identity. DefaultMemoryControlPlane (intergrax/memory/default_memory_control_plane.py) only checks that the identity matches the requested scope, never that the identity's tenant is the tenant the plane's UserProfileManager is bound to, and the profile store is keyed by user_id alone, so a tenant B identity with a colliding user_id recalls tenant A memory through tenant A's plane. Smallest repair: in remember/recall/forget compare identity.tenant_id with the capability manager's tenant and raise MemoryControlAccessDenied on mismatch.
+XFAIL tests/qualification/pdc_x/xd/test_xd_12_evol_ent_audit.py::test_xd12_every_pdc_touched_product_module_maps_to_a_domain_check - FINDING-8 (ENT-AUDIT impact-map completeness): the shipped CHANGED-SINCE impact map and manifest entrypoints map none of the PDC-touched product modules to a check. Every module the PDC campaign changed (hosting, agent_distribution, llm_adapters, runtime/nexus/artifacts, runtime/security, ...) falls through to the invariant floor only, so a change to them selects no domain-specific check. intergrax/platform/enterprise_audit/data/changed_since_impact_map.v1.json has no prefixes for these areas and the manifest has no entrypoint on the pdc_x suites. Smallest repair: add the PDC domain prefixes and the tests/qualification/pdc_x entrypoint to the check manifest and regenerate the map with scripts/enterprise_audit/build_impact_map.py --write (ticket T item: ENT-AUDIT impact map).
+10 failed, 1064 passed, 2 skipped, 6 xfailed in 251.15s (0:04:11)
+exit=4294967295 elapsed=619.1s

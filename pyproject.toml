@@ -74,6 +74,11 @@ dependencies = [
   # -----------------
   "chardet>=5.2,<6",
   "jsonschema>=4.23,<5",
+  # -----------------
+  # Time zones
+  # -----------------
+  # Windows has no system IANA zone database; ``zoneinfo`` (long-running recurrence) needs this.
+  "tzdata; sys_platform == 'win32'",
 ]
 
 [dependency-groups]

@@ -1,6 +1,10 @@
 {
   "$schema": "https://json.schemastore.org/claude-code-settings.json",
   "plansDirectory": "agent-env/plans",
+  "attribution": {
+    "commit": "",
+    "pr": ""
+  },
   "permissions": {
     "ask": [
       "Bash(git checkout -b *)",

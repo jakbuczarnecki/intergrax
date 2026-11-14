@@ -10,11 +10,23 @@ from dataclasses import dataclass
 from typing import TypeVar
 
 from intergrax.llm.messages import ChatMessage
-from intergrax.llm_adapters.contracts.call_config import LLMCallConfig
-from intergrax.llm_adapters.contracts.llm_provider import llm_provider_slug
-from intergrax.llm_adapters.contracts.adapter_response import LLMAdapterResponse
-from intergrax.llm_adapters.contracts.llm_adapter import LLMAdapter
 from intergrax.llm_adapters.base.base_llm_adapter import BaseLLMAdapter
+from intergrax.llm_adapters.contracts.adapter_response import LLMAdapterResponse
+from intergrax.llm_adapters.contracts.call_config import LLMCallConfig
+from intergrax.llm_adapters.contracts.capabilities import (
+    LLMCapabilityMismatchError,
+    LLMFeature,
+    read_feature_flag,
+)
+from intergrax.llm_adapters.contracts.failover_policy import (
+    FailoverDecision,
+    FailoverPolicy,
+    FailoverProgressionContext,
+)
+from intergrax.llm_adapters.contracts.llm_adapter import LLMAdapter
+from intergrax.llm_adapters.contracts.llm_provider import llm_provider_slug
+from intergrax.llm_adapters.contracts.native_tool_choice import NativeToolChoice
+from intergrax.llm_adapters.contracts.stream_event import LLMStreamEvent
 from intergrax.llm_adapters.contracts.strict_tool_arguments import (
     CanonicalFunctionToolDefinition,
     StrictToolArgumentConformanceError,
@@ -22,13 +34,7 @@ from intergrax.llm_adapters.contracts.strict_tool_arguments import (
     tool_definitions_require_strict_argument_conformance,
 )
 from intergrax.llm_adapters.contracts.structured_result import LLMStructuredResult
-from intergrax.llm_adapters.contracts.stream_event import LLMStreamEvent
-from intergrax.llm_adapters.contracts.native_tool_choice import NativeToolChoice
-from intergrax.llm_adapters.contracts.failover_policy import (
-    FailoverDecision,
-    FailoverPolicy,
-    FailoverProgressionContext,
-)
+
 T = TypeVar("T")
 
 
@@ -79,17 +85,13 @@ class FailoverLLMAdapter(BaseLLMAdapter):
         if not adapters:
             raise ValueError("FailoverLLMAdapter requires at least one adapter")
         resolved_profile_ids = (
-            tuple(profile_ids)
-            if profile_ids is not None
-            else tuple(str(index) for index in range(len(adapters)))
+            tuple(profile_ids) if profile_ids is not None else tuple(str(index) for index in range(len(adapters)))
         )
         if len(resolved_profile_ids) != len(adapters):
             raise ValueError("profile_ids length must match adapters length")
         if adapter_failover_retry_configs is not None:
             if len(adapter_failover_retry_configs) != len(adapters):
-                raise ValueError(
-                    "adapter_failover_retry_configs length must match adapters length"
-                )
+                raise ValueError("adapter_failover_retry_configs length must match adapters length")
             resolved_retry_configs = tuple(adapter_failover_retry_configs)
         else:
             resolved_retry_configs = tuple(self.call_config for _ in adapters)
@@ -99,9 +101,7 @@ class FailoverLLMAdapter(BaseLLMAdapter):
                 profile_id=profile_id,
                 failover_retry_config=retry_config,
             )
-            for adapter, profile_id, retry_config in zip(
-                adapters, resolved_profile_ids, resolved_retry_configs
-            )
+            for adapter, profile_id, retry_config in zip(adapters, resolved_profile_ids, resolved_retry_configs)
         )
         primary = adapters[0]
         self.provider = primary.provider
@@ -133,11 +133,7 @@ class FailoverLLMAdapter(BaseLLMAdapter):
                 "tools schema requires provider-enforced strict argument conformance but "
                 f"{primary.__class__.__name__} does not support it"
             )
-        return tuple(
-            entry
-            for entry in self._chain
-            if entry.adapter.supports_strict_tool_argument_conformance()
-        )
+        return tuple(entry for entry in self._chain if entry.adapter.supports_strict_tool_argument_conformance())
 
     def _execute_with_failover(
         self,
@@ -230,7 +226,7 @@ class FailoverLLMAdapter(BaseLLMAdapter):
         run_id: str | None = None,
     ) -> Iterable[LLMStreamEvent]:
         adapters = tuple(entry.adapter for entry in self._chain)
-        adapter = self._select_streaming_adapter_from(adapters)
+        adapter = self._select_declared_adapter_from(adapters, LLMFeature.STREAMING)
         return adapter.stream_messages(
             messages,
             temperature=temperature,
@@ -250,7 +246,7 @@ class FailoverLLMAdapter(BaseLLMAdapter):
     ) -> Iterable[LLMStreamEvent]:
         chain = self._eligible_adapter_chain(tools)
         adapters = tuple(entry.adapter for entry in chain)
-        adapter = self._select_streaming_adapter_from(adapters)
+        adapter = self._select_declared_adapter_from(adapters, LLMFeature.TOOL_STREAMING)
         return adapter.stream_with_tools(
             messages,
             tools,
@@ -279,14 +275,31 @@ class FailoverLLMAdapter(BaseLLMAdapter):
             )
         )
 
-    def _select_streaming_adapter_from(self, adapters: Sequence[LLMAdapter]) -> LLMAdapter:
+    def _select_declared_adapter_from(self, adapters: Sequence[LLMAdapter], feature: LLMFeature) -> LLMAdapter:
+        """First chain member that *declares* ``feature``; fail closed, never fall back.
+
+        Selecting ``adapters[0]`` when nobody declares streaming (the former behaviour) would
+        let an undeclared adapter run, or hide a streamed-to-buffered downgrade.
+        """
         for adapter in adapters:
-            if adapter.supports_streaming():
+            if read_feature_flag(adapter, feature):
                 return adapter
-        return adapters[0]
+        primary = self._chain[0].adapter
+        raise LLMCapabilityMismatchError(
+            feature,
+            provider=llm_provider_slug(primary.provider),
+            model=str(primary.model or ""),
+            detail=(f"capability mismatch: no failover chain member declares {feature.value}"),
+        )
 
     def supports_streaming(self) -> bool:
         return any(entry.adapter.supports_streaming() for entry in self._chain)
+
+    def supports_tools(self) -> bool:
+        return any(entry.adapter.supports_tools() for entry in self._chain)
+
+    def supports_tool_streaming(self) -> bool:
+        return any(read_feature_flag(entry.adapter, LLMFeature.TOOL_STREAMING) for entry in self._chain)
 
     def supports_structured_output(self) -> bool:
         return any(entry.adapter.supports_structured_output() for entry in self._chain)

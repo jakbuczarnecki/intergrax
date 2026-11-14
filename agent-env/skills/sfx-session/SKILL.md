@@ -45,7 +45,7 @@ This skill loads no persona itself. Each step skill names its brief in `agent-en
    | `PRESENT` | `sfx-present` (runs `sfx-critic`) | `presentation.md`, `critic_findings.md` |
    | `IMPROVE` | `sfx-blueprint` (new version) | `scenario_blueprint.v1.json`, `versions/...`, `blueprint_diff.md` |
 
-4. **Between steps.** Ask one question at a time. After each step, show a short summary of what was drafted and the blocking open questions, then ask whether to continue to the next step. Stop and ask when a blocking open question remains; never design around it.
+4. **Between steps.** Ask one question at a time. After each step, show a short summary of what was drafted and the open questions with `blocking_for` `draft` or `build` (rule, Blocking), then ask whether to continue to the next step. Stop and ask when a question with `blocking_for: draft` remains; never design around it. A `build` blocker (for example any `UNRESOLVED` requirement, listed as an `IQ` id) does not stop drafting, but repeat it in every summary and in Present; the drafts are not ready for Approve while it is open.
 5. **Steps without a v0 skill.** Explain the step in two or three lines, name the planned operation, and move on to the next available step. Operation names are not final; they come from the PC-6 operation map (ADR-SFX-004, UX design §7.1).
 
    | Step | Why not in v0 | Planned door | Plan unit |
@@ -57,12 +57,12 @@ This skill loads no persona itself. Each step skill names its brief in `agent-en
    | Timeline | Lifecycle record stream (`sfx.scenario_lifecycle_record.v1`) | MCP lifecycle record read | SFX-P5-05, SFX-P6-03 |
 
    All of these need the SFX-P5+ service, CLI and MCP, after ARCH-FREEZE CLOSED and GATE-SFX-ENTRY. **STOP** there: do not emulate them, do not write their contracts, and do not hand-write an approval, run report, qualification record or dossier.
-6. **Save state** after every step and every answered question. Rewrite `sfx_session_state.v1.json` in place with `version` + 1:
+6. **Save state** once after every completed step and once when the user stops (not after every question; answered questions are already in the drafts and in `open_questions.md`). Rewrite `sfx_session_state.v1.json` in place with `version` + 1. `version` counts saves (no history is kept) and `created_at` is the time of the latest save:
    - `schema_version` `sfx.sfx_session_state.v1`; `door` `IDE`; `chat_session_id` `ide-local` unless the tool exposes a session id;
    - `current_stage` the stage just reached; `lifecycle_state_snapshot` always `DRAFT`;
    - `active_artifact_refs` one `artifact_version_ref` per current contract draft (`schema_id`, `artifact_id`, `version`, placeholder digest), sorted by `schema_id`;
-   - `pending_question_ids` the open `Q-<nn>` ids from `open_questions.md`;
-   - `resume_cursor` the next pending question id, or the next step id (for example `step:UNDERSTAND`), or `null` when the session is complete.
+   - `pending_question_ids` every open `Q-<nn>` and `IQ-<nn>` id from `open_questions.md` (any `blocking_for`), sorted ascending;
+   - `resume_cursor`, by this precedence: (1) the first open id with `blocking_for: draft`; else (2) the next step id that has a v0 skill, except `IMPROVE` (user-triggered, never a cursor; for example `step:CONFIGURE`); else (3) the first open id with `blocking_for: build`; else `null` when the session is complete.
 7. **Close.** At the end, or when the user stops, give the draft folder path, the file list, the open questions, and the next available step. State plainly that the drafts are proposals and that nothing was approved, built, run or certified.
 
 ## Outputs

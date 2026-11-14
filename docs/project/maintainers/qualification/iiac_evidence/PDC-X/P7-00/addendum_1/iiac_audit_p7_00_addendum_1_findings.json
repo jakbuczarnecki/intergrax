@@ -1,0 +1,64 @@
+{
+  "stage_id": "PDC-X/P7-00/addendum_1",
+  "base_sha": "fa6ff1c9616a6df28c11b087eb3f1b0dc4097b5f",
+  "audited_implementation_sha": "19d552beeb6f0677a8bdc3b4ce65da15dd637c7b",
+  "activation_pin_audit_execution_sha": "2d3eceb6cf7e93dccd4d96919319a6c969b4444b",
+  "dossier_verdict_addendum": "PASS_SCOPED",
+  "iiac_manifest_verdict": "CONDITIONAL",
+  "combined_verdict": "PASS_SCOPED",
+  "counts_new": { "HIGH": 0, "MEDIUM": 1, "LOW": 3, "INFO": 2, "total": 6 },
+  "product_change_required_for_activation": [],
+  "test_only_change_required_before_merge_or_ci": ["F-35", "F-07"],
+  "status_of_first_audit_findings": [
+    { "id": "F-06", "status": "RESOLVED", "evidence": "tests/qualification/ebh_5/test_ebh_5_proof_integrity_gates.py now asserts SQLITE_TOUCHPOINT_COUNT == 39; the three EBH-5 gate files pass in logs/addendum_regression_run.stdout.txt" },
+    { "id": "F-07", "status": "OPEN", "evidence": "tests/unit/governance/test_pdc_x_inventory.py: both tests still fail at 19d552bee (same two nodes as at fa6ff1c96)" },
+    { "id": "F-05", "status": "PARTLY_RESOLVED", "evidence": "xfails for p6_repair item 11 (2), xd_01 FINDING-9 and FINDING-10, xd_02 FINDING-6 are gone and their tests pass; the only remaining declared-open gap is FINDING-8 (xd_12), deferred to the new batch B-P6-G / T-IGX-036-V 'after MCP-SERVER-X P8'; 2 xfailed in the run (that one and the MCP-RC TRANSFERRED xfail)" },
+    { "id": "F-09", "status": "OPEN", "evidence": "the combined run again printed its summary and did not exit; the runner killed it 30 s after the summary (RUNNER status=KILLED_AFTER_SUMMARY)" },
+    { "id": "F-04", "status": "OPEN_EXTENDED", "evidence": "see F-37: the two new mechanisms are also opt-in without a production caller" },
+    { "id": "F-01..F-03, F-08, F-10..F-34 except the above", "status": "UNCHANGED", "evidence": "the six delta paths do not touch the files cited by those findings, except pipeline.py (format/import only) and the three first-audit paths named in audit_scope.json" }
+  ],
+  "findings": [
+    {
+      "id": "F-35", "severity": "MEDIUM", "area": "COMPAT-X / test regression", "verification": "TEST_RUN",
+      "title": "Ten COMPAT-X event-evolution gates are red since PDC-X; they are green at the activation pin",
+      "evidence": "Re-running the 53 failures of the regression run in short-path detached checkouts: 52 fail at 19d552bee, the same 52 at fa6ff1c96, 40 at the pin (logs/failing_nodes_at_{head,fa6,pin}.log, attribution_of_regression_failures.json). The 12 that are red only since PDC-X are the 10 gates tests/qualification/compat_x/test_compat_x_event_evolution_r3_p0_gates.py x4 and ..._r3_r1_gates.py x6 plus the 2 inventory tests of F-07. The compat_x messages: 'unclassified persistence append intergrax/runtime/security/security_audit_trail.py:213 self._evidence.append', 'unclassified runtime event reader intergrax/runtime/security/security_audit_trail.py:198 append RuntimeEvent(...)', 'canonical production persistence bypass count 1 (expected 0)', 'probe K: production gate must pass before unknown injection'.",
+      "impact": "the new evidence-plane security audit trail (PDC-D6-R020) appends canonical RuntimeEvents from a site the COMPAT-X persistence classification does not know; the COMPAT-X closed-world gates are red on the baseline. The first audit did not run tests/qualification/compat_x, tests/unit/agent_distribution or tests/unit/memory, so this was missed there (coverage correction, not a delta effect: identical at fa6ff1c96).",
+      "disposition": "TEST_ONLY_FIX / classification by the COMPAT-X owner (add the site to the persistence classification registries); not a product change; to be read together with F-06/F-07 as 'CI contexts red after merge'"
+    },
+    {
+      "id": "F-36", "severity": "LOW", "area": "memory plane tenant binding (PR #523)", "verification": "PROBE_CONFIRMED",
+      "title": "The tenant-bound memory guard applies only to the shipped UserProfileManagerMemoryCapability",
+      "evidence": "default_memory_control_plane.py:_assert_identity_tenant_is_bound_tenant is guarded by isinstance(capability, UserProfileManagerMemoryCapability) and reads the private manager._tenant_id through bound_tenant_id. Probe Q1 (logs/addendum_1_probes.results.json): shipped wrapper bound to tenant-A refuses tenant-B ('denied'), also a whitespace variant 'tenant-A ' ('denied'); a duck-typed capability object (not the shipped wrapper) accepts a foreign-tenant identity (NO_RAISE). The guard covers remember, recall, apply_memory_supersession, forget and reconcile for USER scope; TASK and SESSION scopes are not part of it.",
+      "impact": "closes FINDING-6 for the shipped composition; an alternative capability implementation (the Protocol allows one) is not protected by the plane.",
+      "disposition": "ROUTE_TO_IA-D2; recommend a protocol-level tenant property instead of the isinstance gate"
+    },
+    {
+      "id": "F-37", "severity": "LOW", "area": "model binding (PR #524)", "verification": "PROBE_CONFIRMED",
+      "title": "The LLM profile pin and the required-feature check are opt-in; no production caller uses either",
+      "evidence": "Probe Q5: git grep at 19d552bee finds no non-test caller passing required_llm_features= to resolve_llm_adapter and none passing llm_profile_source= to AgentPlatformAdminService. admin_service: without a source, _current_llm_profile_digest returns None, the built revision is unpinned and _require_pinned_llm_profile returns immediately for a revision with llm_profile_digest None; with a pinned revision and no source composed, activation raises RuntimeActivationConflict (fail closed, tested). resolve_optional_llm_adapter / create_adapter_for_routing_evaluation take no required features. Positive probes: Q2 an adapter without any declaration is refused (LLMCapabilityMismatchError); Q4 the profile digest changes with model, options, fallback profiles and routing hint; Q3 unknown or upper-case feature names are rejected, JSON round-trip is stable, duplicates are kept.",
+      "impact": "FINDING-9 and FINDING-10 are closed at the component level; they hold for a host only if the host composes llm_profile_source and passes AgentContract.required_llm_features (same pattern as F-04).",
+      "disposition": "ROUTE_TO_IA-D1/D3; orchestrator to decide whether host composition is a PDC-X claim"
+    },
+    {
+      "id": "F-38", "severity": "LOW", "area": "test isolation", "verification": "TEST_RUN",
+      "title": "A COMPAT-X schema-id gate fails in the long combined run but passes in isolation",
+      "evidence": "tests/qualification/compat_x/test_compat_x_event_evolution_r3_p0_gates.py::test_cx_r3_p0_q2_inventory_schema_ids_match_registry failed in the combined 268-file run ('inventory/registry schema_id mismatch: [platform.security.defense_blocked.v1, platform.security.encryption_denied...') and passed when its file was run with the other failing files in a fresh process (not in the 52 failures at 19d552bee). Cause not isolated; the global payload-schema registry is extended at import time by several test and product modules (security_audit_trail registers security.audit_entry.v1 with extension=True).",
+      "impact": "order-dependent result of a global-registry gate; the suite result depends on collection order.",
+      "disposition": "ROUTE_TO_COMPAT-X owner"
+    },
+    {
+      "id": "F-39", "severity": "INFO", "area": "regression selection", "verification": "TEST_RUN",
+      "title": "Combined regression run: 53 failures, 40 of which are red at the activation pin",
+      "evidence": "logs/addendum_regression_run.stdout.txt: 268 files, 53 failed, 3384 passed, 3 skipped, 2 xfailed in 2832.94 s. At the pin the same nodes (51 present there) give 40 failed: tests/unit/agent_distribution/test_agent_distribution_materialization_adapter.py x23, test_agent_distribution_materialization.py x4, test_ac6_architecture_gates.py, test_agent_distribution_build_remediation.py, test_agent_distribution_activation_remediation.py, compat_x event_evolution_r3_r1 x7, versioning r1_r3, versioning r1_r5, deprecation r5_p0. Their cause was not investigated.",
+      "impact": "pre-existing red; counted so it is not attributed to the delta or to PDC-X.",
+      "disposition": "ACCEPT_AS_PRE_EXISTING"
+    },
+    {
+      "id": "F-40", "severity": "INFO", "area": "delta review", "verification": "CODE_READ_BY_AUDITOR",
+      "title": "The six delta paths contain no new import of agents/applications from intergrax/, no credential, endpoint, process, network or dynamic-code surface, and no weakened guard",
+      "evidence": "full diff read (fa6ff1c96..19d552bee, 6 paths, +124/-25); pipeline.py: only `timezone` import dropped (name not used elsewhere in the file) and noqa markers removed; admin_service/runtime_revision: optional llm_profile_digest field in RUNTIME_REVISION_IMMUTABLE_IDENTITY_FIELDS, activation check fails closed on mismatch; llm_resolver: _require_llm_features after resolution and for agent overrides; agent_contract_meta: required_llm_features validated against LLMFeature (lazy import avoids a circular import, tested in a fresh interpreter); memory plane: see F-36. ruff clean on the 6 paths and the delta tests; boundary gate output identical to the first audit (the same 12 pre-existing files); tier gates exit 0; uv lock --check exit 0. The 23 MCP-RC paths are still byte-identical to b0e19bf61 and no path under scripts/governance, the activation record or iiac_evidence changed in fa6ff1c96..19d552bee.",
+      "impact": "no ACT-N11 invariant weakened by the delta.",
+      "disposition": "ACCEPT"
+    }
+  ]
+}

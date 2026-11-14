@@ -210,6 +210,7 @@ DOC_DOMAIN_RULES: Final[tuple[tuple[str, str], ...]] = (
     ("E2E_SCENARIO", "PDC-D5"),
     ("BACKGROUND_TASKS", "PDC-D7"),
     ("COLLABORATIVE_WORK", "PDC-D8"),
+    ("ARTIFACT_LIFECYCLE", "PDC-D8"),
 )
 DOC_FOUNDATION_PREFIXES: Final[tuple[str, ...]] = (
     "ADAPTIVE_HARNESS",
@@ -297,6 +298,7 @@ QUALIFICATION_FOUNDATION: Final[frozenset[str]] = frozenset(
         "mcp_server_x",
         "mp6",
         "multiplayer",
+        "pdc_x",
         "prod_q",
         "qual_x",
         "roadmap_replay_x",
@@ -567,8 +569,14 @@ DOMAIN_LINKS: Final[dict[str, dict[str, object]]] = {
         },
     },
     "PDC-D8": {
-        "architecture": ["docs/project/architecture/COLLABORATIVE_WORK.md"],
-        "plans": ["docs/project/maintainers/plans/COLLABORATIVE_WORK.md"],
+        "architecture": [
+            "docs/project/architecture/COLLABORATIVE_WORK.md",
+            "docs/project/capabilities/architecture/ARTIFACT_LIFECYCLE.md",
+        ],
+        "plans": [
+            "docs/project/maintainers/plans/COLLABORATIVE_WORK.md",
+            "docs/project/capabilities/plan/ARTIFACT_LIFECYCLE.md",
+        ],
         "semantic_owners": [
             "intergrax/contracts/collaborative_work.py",
             "intergrax/collaborative_work/content_storage.py",

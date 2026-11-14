@@ -8,20 +8,20 @@ from __future__ import annotations
 import asyncio
 import logging
 from collections.abc import Callable
-from datetime import datetime, timezone
-from typing import Optional, Protocol, runtime_checkable
+from datetime import UTC, datetime
+from typing import Protocol, runtime_checkable
 from uuid import uuid4
 
 from intergrax.runtime.cancellation.resume_admission import is_checkpoint_resumable
-from intergrax.runtime.long_running.checkpoint_resume_validation import (
-    CheckpointResumeValidationError,
-    assert_checkpoint_resume_materialization_eligible,
-)
 from intergrax.runtime.execution.execution_terminal.service import (
     ExecutionTerminalService,
 )
 from intergrax.runtime.execution.host_task import HostTaskExecutionPort
 from intergrax.runtime.human.request_contract import HumanTimeoutCoordinator
+from intergrax.runtime.long_running.checkpoint_resume_validation import (
+    CheckpointResumeValidationError,
+    assert_checkpoint_resume_materialization_eligible,
+)
 from intergrax.runtime.long_running.coordinator import LongRunningCoordinator
 from intergrax.runtime.long_running.models import TaskCheckpoint
 from intergrax.runtime.long_running.notification import NotificationAdapter
@@ -29,19 +29,20 @@ from intergrax.runtime.long_running.persistence_contract import (
     SchedulerLedger,
     TaskCheckpointPersistence,
 )
+from intergrax.runtime.long_running.recurrence import RecurrenceMaterializer
 from intergrax.runtime.long_running.resume_planner import (
     build_scheduled_resume_task,
     build_timeout_resume_task,
     execution_identity_from_checkpoint,
     timeout_action_to_verdict,
 )
-from intergrax.runtime.long_running.scheduler_claim import (
-    ScheduledResumeClaim,
-    SchedulerActionClaim,
-)
 from intergrax.runtime.long_running.scheduled_resume import (
     ScheduledResume,
     ScheduledResumePersistence,
+)
+from intergrax.runtime.long_running.scheduler_claim import (
+    ScheduledResumeClaim,
+    SchedulerActionClaim,
 )
 from intergrax.runtime.task.task import Task, TaskResult
 from intergrax.utils.time_provider import SystemTimeProvider
@@ -58,9 +59,7 @@ TIMEOUT_LEDGER_PREFIX = "timeout:"
 class TaskResumeExecutor(Protocol):
     """Resume paused tasks through the unified execution entry (§41)."""
 
-    async def resume_task(
-        self, task: Task, *, checkpoint: TaskCheckpoint
-    ) -> TaskResult: ...
+    async def resume_task(self, task: Task, *, checkpoint: TaskCheckpoint) -> TaskResult: ...
 
 
 class LongRunningScheduler:
@@ -76,14 +75,16 @@ class LongRunningScheduler:
         checkpoint_store: TaskCheckpointPersistence,
         resume_executor: TaskResumeExecutor,
         *,
-        schedule_store: Optional[ScheduledResumePersistence] = None,
-        ledger: Optional[SchedulerLedger] = None,
-        notification_adapter: Optional[NotificationAdapter] = None,
+        schedule_store: ScheduledResumePersistence | None = None,
+        ledger: SchedulerLedger | None = None,
+        notification_adapter: NotificationAdapter | None = None,
         poll_interval_seconds: float = DEFAULT_SCHEDULER_POLL_SECONDS,
         lease_seconds: float = DEFAULT_SCHEDULER_LEASE_SECONDS,
-        owner_id: Optional[str] = None,
+        owner_id: str | None = None,
         execution_terminal: ExecutionTerminalService | None = None,
+        recurrence: RecurrenceMaterializer | None = None,
     ) -> None:
+        self._recurrence = recurrence
         self._checkpoint_store = checkpoint_store
         self._resume_executor = resume_executor
         self._schedule_store = schedule_store
@@ -94,7 +95,7 @@ class LongRunningScheduler:
         self._lease_seconds = int(lease_seconds)
         self._owner_id = owner_id or f"scheduler-{uuid4().hex[:12]}"
         self._running = False
-        self._loop_task: Optional[asyncio.Task] = None
+        self._loop_task: asyncio.Task | None = None
 
     @property
     def poll_interval_seconds(self) -> float:
@@ -120,7 +121,7 @@ class LongRunningScheduler:
                 pass
             self._loop_task = None
 
-    async def tick(self, *, now: Optional[datetime] = None) -> int:
+    async def tick(self, *, now: datetime | None = None) -> int:
         """Process one scheduler cycle; returns number of resumes triggered."""
         current = _ensure_utc(now or SystemTimeProvider.utc_now())
         processed = 0
@@ -135,12 +136,10 @@ class LongRunningScheduler:
         tenant_id: str,
         resume_token: str,
         run_at_utc: str,
-        resume_metadata: Optional[dict] = None,
+        resume_metadata: dict | None = None,
     ) -> ScheduledResume:
         if self._schedule_store is None:
-            raise RuntimeError(
-                "schedule_store is not configured on LongRunningScheduler"
-            )
+            raise RuntimeError("schedule_store is not configured on LongRunningScheduler")
         entry = ScheduledResume(
             task_id=task_id,
             tenant_id=tenant_id,
@@ -169,43 +168,59 @@ class LongRunningScheduler:
             lease_seconds=self._lease_seconds,
         )
         for claim in claims:
-            entry = claim.entry
-            checkpoint = self._checkpoint_store.get_by_token(
-                entry.task_id,
-                entry.tenant_id,
-                entry.resume_token,
-            )
-            if checkpoint is None:
-                self._schedule_store.complete_claim(claim)
-                continue
-            if not self._can_materialize_checkpoint(
-                checkpoint,
-                target_task_id=entry.task_id,
-                target_tenant_id=entry.tenant_id,
-            ):
-                self._schedule_store.complete_claim(claim)
-                continue
-            if not self._can_resume_checkpoint(checkpoint):
-                self._schedule_store.complete_claim(claim)
-                continue
-
-            latest = self._checkpoint_store.get_latest(entry.task_id, entry.tenant_id)
-            task = build_scheduled_resume_task(
-                checkpoint,
-                entry,
-                latest_checkpoint=latest,
-                execution_terminal=self._execution_terminal,
-            )
-            await self._execute_resume(
-                task,
-                checkpoint,
-                subject="Scheduled task resume",
-                body=f"Delayed resume triggered for task {entry.task_id}",
-                ledger_action="scheduled_resume",
-                schedule_claim=claim,
-            )
-            processed += 1
+            try:
+                processed += await self._process_claimed_schedule(claim)
+            finally:
+                # Recurrence chains must continue even when this occurrence was skipped
+                # or its execution raised; the next one-shot has a different schedule_id.
+                self._materialize_next_occurrence(claim.entry, now)
         return processed
+
+    async def _process_claimed_schedule(self, claim: ScheduledResumeClaim) -> int:
+        entry = claim.entry
+        checkpoint = self._checkpoint_store.get_by_token(
+            entry.task_id,
+            entry.tenant_id,
+            entry.resume_token,
+        )
+        if checkpoint is None:
+            self._schedule_store.complete_claim(claim)
+            return 0
+        if not self._can_materialize_checkpoint(
+            checkpoint,
+            target_task_id=entry.task_id,
+            target_tenant_id=entry.tenant_id,
+        ):
+            self._schedule_store.complete_claim(claim)
+            return 0
+        if not self._can_resume_checkpoint(checkpoint):
+            self._schedule_store.complete_claim(claim)
+            return 0
+
+        latest = self._checkpoint_store.get_latest(entry.task_id, entry.tenant_id)
+        task = build_scheduled_resume_task(
+            checkpoint,
+            entry,
+            latest_checkpoint=latest,
+            execution_terminal=self._execution_terminal,
+        )
+        await self._execute_resume(
+            task,
+            checkpoint,
+            subject="Scheduled task resume",
+            body=f"Delayed resume triggered for task {entry.task_id}",
+            ledger_action="scheduled_resume",
+            schedule_claim=claim,
+        )
+        return 1
+
+    def _materialize_next_occurrence(self, entry: ScheduledResume, now: datetime) -> None:
+        if self._recurrence is None:
+            return
+        try:
+            self._recurrence.materialize_next(entry, now=now)
+        except Exception:
+            logger.exception("recurrence materialization failed for schedule_id=%s", entry.schedule_id)
 
     async def _process_expired_human_timeouts(self, now: datetime) -> int:
         processed = 0
@@ -229,8 +244,7 @@ class LongRunningScheduler:
 
             if self._ledger is None:
                 logger.warning(
-                    "Skipping expired human timeout for checkpoint %s: "
-                    "scheduler ledger is not configured",
+                    "Skipping expired human timeout for checkpoint %s: scheduler ledger is not configured",
                     checkpoint.checkpoint_id,
                 )
                 continue
@@ -262,10 +276,7 @@ class LongRunningScheduler:
                 resume_task,
                 checkpoint,
                 subject="Human approval timeout",
-                body=(
-                    f"Auto-resume after timeout with action={action.value} "
-                    f"for task {checkpoint.task_id}"
-                ),
+                body=(f"Auto-resume after timeout with action={action.value} for task {checkpoint.task_id}"),
                 ledger_action="human_timeout",
                 action_claim=action_claim,
             )
@@ -297,9 +308,7 @@ class LongRunningScheduler:
         return True
 
     def _can_resume_checkpoint(self, checkpoint: TaskCheckpoint) -> bool:
-        if not is_checkpoint_resumable(
-            checkpoint, execution_terminal=self._execution_terminal
-        ):
+        if not is_checkpoint_resumable(checkpoint, execution_terminal=self._execution_terminal):
             logger.info(
                 "Skipping scheduler resume for task %s: checkpoint is not resumable",
                 checkpoint.task_id,
@@ -315,8 +324,8 @@ class LongRunningScheduler:
         subject: str,
         body: str,
         ledger_action: str,
-        schedule_claim: Optional[ScheduledResumeClaim] = None,
-        action_claim: Optional[SchedulerActionClaim] = None,
+        schedule_claim: ScheduledResumeClaim | None = None,
+        action_claim: SchedulerActionClaim | None = None,
     ) -> TaskResult:
         await LongRunningCoordinator.notify_progress(
             task,
@@ -349,9 +358,7 @@ class HostTaskResumeExecutor:
         self._host_execution = host_execution
         self._task_enricher = task_enricher
 
-    async def resume_task(
-        self, task: Task, *, checkpoint: TaskCheckpoint
-    ) -> TaskResult:
+    async def resume_task(self, task: Task, *, checkpoint: TaskCheckpoint) -> TaskResult:
         if self._task_enricher is not None:
             task = self._task_enricher(task)
         run_id, attempt_id = execution_identity_from_checkpoint(checkpoint)
@@ -369,9 +376,7 @@ class UnifiedTaskResumeExecutor:
     def __init__(self, task_runner) -> None:
         self._task_runner = task_runner
 
-    async def resume_task(
-        self, task: Task, *, checkpoint: TaskCheckpoint
-    ) -> TaskResult:
+    async def resume_task(self, task: Task, *, checkpoint: TaskCheckpoint) -> TaskResult:
         run_id, attempt_id = execution_identity_from_checkpoint(checkpoint)
         return await self._task_runner.run_task(
             task,
@@ -383,5 +388,5 @@ class UnifiedTaskResumeExecutor:
 
 def _ensure_utc(value: datetime) -> datetime:
     if value.tzinfo is None:
-        return value.replace(tzinfo=timezone.utc)
+        return value.replace(tzinfo=UTC)
     return value

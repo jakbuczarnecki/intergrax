@@ -3,24 +3,22 @@
 
 from __future__ import annotations
 
-from typing import Dict, List, Optional
-
 from intergrax.agents.harness_reference_agent import assert_uaep_reference_agent
+from intergrax.contracts.agent_contract_meta import AgentContract
+from intergrax.contracts.agent_lifecycle_state import AgentLifecycleState
 from intergrax.contracts.routable_tier2_agent import RoutableTier2Agent
 from intergrax.contracts.task_envelope import TaskEnvelope
 from intergrax.contracts.tier2_agent import Tier2Agent
-from intergrax.agents.uaep_protocol import UAEPAgent
-from intergrax.contracts.agent_contract_meta import AgentContract
+from intergrax.runtime.events.event_bus import RuntimeEventBus
 from intergrax.runtime.registry.agent_assembly_resolver import assert_agent_assembly_valid
 from intergrax.runtime.registry.agent_routing_policy import evaluate_agent_routing
 from intergrax.runtime.registry.capability_routing import select_best_matched_routable_agent
-from intergrax.runtime.events.event_bus import RuntimeEventBus
 from intergrax.skills.integration.contract_resolution import resolve_contract_tools
+from intergrax.skills.registry.bootstrap import register_default_skills
+from intergrax.skills.registry.factory import build_registry_from_profile
+from intergrax.skills.registry.profile import SkillProfile
 from intergrax.skills.registry.runtime import SkillRegistry
 from intergrax.skills.resolver import ResolvedSkillPack, SkillResolver
-from intergrax.skills.registry.profile import SkillProfile
-from intergrax.skills.registry.factory import build_registry_from_profile
-from intergrax.skills.registry.bootstrap import register_default_skills
 from intergrax.tools.registry.profile import ToolProfile
 from intergrax.tools.registry.runtime import ToolRegistry
 
@@ -44,20 +42,20 @@ class AgentRegistry:
     """
 
     def __init__(self) -> None:
-        self._agents: Dict[str, Tier2Agent] = {}
-        self._contracts: Dict[str, AgentContract] = {}
-        self._resolved_skill_packs: Dict[str, ResolvedSkillPack] = {}
+        self._agents: dict[str, Tier2Agent] = {}
+        self._contracts: dict[str, AgentContract] = {}
+        self._resolved_skill_packs: dict[str, ResolvedSkillPack] = {}
 
     def register(
         self,
         agent: Tier2Agent,
         *,
-        contract: Optional[AgentContract] = None,
-        skill_registry: Optional[SkillRegistry] = None,
-        skill_profile: Optional[SkillProfile] = None,
-        tool_registry: Optional[ToolRegistry] = None,
-        tool_profile: Optional[ToolProfile] = None,
-        event_bus: Optional[RuntimeEventBus] = None,
+        contract: AgentContract | None = None,
+        skill_registry: SkillRegistry | None = None,
+        skill_profile: SkillProfile | None = None,
+        tool_registry: ToolRegistry | None = None,
+        tool_profile: ToolProfile | None = None,
+        event_bus: RuntimeEventBus | None = None,
         requires_uaep: bool = False,
     ) -> None:
         if requires_uaep:
@@ -90,6 +88,21 @@ class AgentRegistry:
         if resolved_pack is not None:
             self._resolved_skill_packs[meta.id] = resolved_pack
 
+    def mark_retired(self, agent_id: str) -> AgentContract:
+        """Project a distribution-level retirement into this registry (PDC-D1-R014).
+
+        The distribution plane owns the retire decision (``AgentPlatformAdminService.retire_agent``);
+        this projection only flips the registered contract copy to ``RETIRED`` so
+        ``evaluate_agent_routing`` removes the agent from selection. The agent and its
+        contract stay registered (evidence and in-flight runs keep resolving them).
+        Idempotent; not an install API.
+        """
+        contract = self.get_contract(agent_id)
+        if contract.lifecycle_state is not AgentLifecycleState.RETIRED:
+            contract = contract.model_copy(update={"lifecycle_state": AgentLifecycleState.RETIRED})
+            self._contracts[agent_id] = contract
+        return contract
+
     def get(self, agent_id: str) -> Tier2Agent:
         try:
             return self._agents[agent_id]
@@ -109,17 +122,17 @@ class AgentRegistry:
     def has(self, agent_id: str) -> bool:
         return agent_id in self._agents
 
-    def list_agent_ids(self) -> List[str]:
+    def list_agent_ids(self) -> list[str]:
         return sorted(self._agents.keys())
 
-    def list_contracts(self) -> List[AgentContract]:
+    def list_contracts(self) -> list[AgentContract]:
         return [self._contracts[aid] for aid in self.list_agent_ids()]
 
     def is_routable(self, agent_id: str, *, production_mode: bool = False) -> bool:
         contract = self.get_contract(agent_id)
         return evaluate_agent_routing(contract, production_mode=production_mode).routable
 
-    def list_routable_agent_ids(self, *, production_mode: bool = False) -> List[str]:
+    def list_routable_agent_ids(self, *, production_mode: bool = False) -> list[str]:
         return [
             agent_id
             for agent_id in self.list_agent_ids()
@@ -131,8 +144,8 @@ class AgentRegistry:
         capability: str,
         *,
         production_mode: bool = False,
-    ) -> List[Tier2Agent]:
-        matched: List[Tier2Agent] = []
+    ) -> list[Tier2Agent]:
+        matched: list[Tier2Agent] = []
         for agent_id, contract in self._contracts.items():
             if capability not in contract.capabilities:
                 continue
@@ -146,7 +159,7 @@ class AgentRegistry:
         task_context: TaskEnvelope,
         *,
         production_mode: bool = False,
-    ) -> Optional[RoutableTier2Agent]:
+    ) -> RoutableTier2Agent | None:
         eligible: list[Tier2Agent] = []
         for agent_id, agent in self._agents.items():
             if not self.is_routable(agent_id, production_mode=production_mode):
@@ -156,4 +169,3 @@ class AgentRegistry:
             envelope=task_context,
             candidates=eligible,
         )
-
