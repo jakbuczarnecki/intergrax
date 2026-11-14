@@ -106,3 +106,50 @@ verify_iiac_role_separation: PASS           exit=0
 ```
 
 No test suite, mutation harness or activation gate was run; the audit's own results stay as published by the auditor.
+
+# Round 4: addendum 3 (branch `mcp-rc-evidence-4`)
+
+Additive section; rounds 1 to 3 above are unchanged. Same role limits as above: evidence integration only, no verdict, no certification, no rebind, no FRZ change (counter stays 225), no `Approved:` line.
+
+## Commit ladder
+
+| Step | SHA | Content |
+|------|-----|---------|
+| Base (`origin/mcp-rc`) | `0fc8badd8` | merge of `development` `146e7acf1` (B-P6 finished, development frozen on product paths); tip of `origin/mcp-rc` at integration time, equal to the audited head of addendum 3 |
+| Evidence publication commit | `d5c51df0ef2ae63730129e673b426937867c1568` | 44 files imported byte-for-byte, no content change |
+| Pin-only edit + this section | the commit that adds this section (its own SHA cannot be stored in it; read it from `git log`) | three pin-only field edits below, this section |
+
+Product delta of the base over the previously audited tree `324d9dba3`: exactly one path under `intergrax/ agents/ applications/`, `intergrax/integrations/providers/embedding_provider/ollama/register.py`.
+
+## Imported evidence
+
+Source: `origin/p7-00-baseline-audit` at `793cce5c8`. It contains merges of `mcp-rc`, so it was not merged. The import is the set of files it adds relative to `0fc8badd8`, the last `mcp-rc` commit it merged (second parent of `a5c1fd514`): 44 paths, all additions, none outside `docs/`, none present on `origin/mcp-rc`, blob identity with the source branch verified for all 44. The set equals the files the branch adds relative to `origin/mcp-rc` itself. It consists of the addendum 3 dossier (`platform_domain_completeness/PDC_P7_00_ACT_N11_BASELINE_AUDIT_ADDENDUM_3.md`, delta `324d9dba3..0fc8badd8`, dossier verdict `PASS_SCOPED`) and the `iiac_evidence/PDC-X/P7-00/addendum_3/` folder (6 top-level files, 9 adversarial scripts, 28 logs).
+
+## Pin-only edits
+
+Only these three field values changed; every other byte of the manifest is untouched. The manifest is not an input of any digest it records; the four digests (dossier, scope file, test matrix, findings file) were re-computed with `sha256sum` before the edit and match.
+
+| File | Field | Old | New |
+|------|-------|-----|-----|
+| `iiac_evidence/PDC-X/P7-00/addendum_3/iiac_audit_session_manifest.PDC-X.p7_00.addendum_3.json` | `certifier_session_id` | `PENDING-CERTIFIER-PDC-P7-00` | `PDC-P7-00-CERTIFIER-PREFLIGHT-2026-11-13` |
+| same | `evidence_publication_sha` | `0000000000000000000000000000000000000000` | `d5c51df0ef2ae63730129e673b426937867c1568` |
+| same | `certification_publication_sha` | `0000000000000000000000000000000000000000` | `d5c51df0ef2ae63730129e673b426937867c1568` |
+
+(Path relative to `docs/project/maintainers/qualification/`.)
+
+Choices are the same as in rounds 1 to 3: `evidence_publication_sha` is this round's evidence publication commit; `certification_publication_sha` cannot name the commit that edits it and carries the same SHA; `certifier_session_id` keeps the reserved designation `PDC-P7-00-CERTIFIER-PREFLIGHT-2026-11-13`, which is not an attested session (no certifier preflight of addendum 3 has been performed here). The designation differs from the implementation and auditor session ids of the manifest.
+
+Residue left on purpose: the manifest's `LIM-publication-pending` still describes the placeholders and is now historical; `LIM-pre-activation` stays true (`verify_iiac --require-in-force` was not run here). Note that in this manifest `audited_implementation_sha` equals `audit_execution_sha`, so the `--strict-product-diff` check compares an identical pair and is trivially satisfied; the product delta over `324d9dba3` is covered by the auditor's own dossier, not by this verifier.
+
+## Verifier run
+
+Run from the worktree root, one process at a time (log: `.tmp/session/mcp-rc-evidence-4/verify_iiac_manifests_after_pin.log`, not committed).
+
+```text
+## addendum_3 verify_iiac_audit_manifest
+verify_iiac_audit_manifest: PASS            exit=0
+## addendum_3 verify_iiac_role_separation --strict-product-diff
+verify_iiac_role_separation: PASS           exit=0
+```
+
+No test suite, mutation harness or activation gate was run; the audit's own results stay as published by the auditor.
