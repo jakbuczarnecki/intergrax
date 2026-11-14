@@ -1,0 +1,11 @@
+{
+ "checkout": "D:\\Projekty\\_wt\\_scratch\\p7a3-prev",
+ "bootstrap_full": "OK",
+ "ollama_categories": [
+  "model_serving_runtime",
+  "embedding_provider"
+ ],
+ "ollama_row_count": 1,
+ "resolve_embedding_provider": "OllamaEmbeddingProviderIntegration",
+ "resolve_model_serving_runtime": "OllamaModelServingRuntimeIntegration"
+}

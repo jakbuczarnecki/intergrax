@@ -1,0 +1,8 @@
+IIAC policy activation: FAIL
+  - ACT-N11 product path changed after the audited SHA: intergrax/applications/_shared/mcp_engine_concurrency.py
+  - ACT-N11 product path changed after the audited SHA: intergrax/applications/_shared/mcp_host_mount.py
+  - ACT-N11 product path changed after the audited SHA: intergrax/applications/_shared/mcp_import_guard.py
+  - ACT-N11 product path changed after the audited SHA: intergrax/applications/_shared/mcp_nexus_server.py
+  - ACT-N11 product path changed after the audited SHA: intergrax/applications/_shared/mcp_server_engine.py
+  - ACT-N11 product path changed after the audited SHA: intergrax/applications/_shared/settings_loader.py
+  - ACT-N11 product path changed after the audited SHA: intergrax/contracts/mcp_server_definition.py
