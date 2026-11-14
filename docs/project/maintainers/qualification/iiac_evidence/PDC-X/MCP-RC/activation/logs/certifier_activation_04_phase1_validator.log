@@ -1,0 +1,10 @@
+# phase-1 validator (activation certifier local_8974948e-d8d3-45e3-96ca-fb61dfd5f249)
+# HEAD (CP1): 92d7308213bd46e76ce0b545cd94b36bc65d8e0e
+# UTC: 2026-11-14T07:38:52Z
+# command: python -m scripts.governance.verify_iiac_policy_activation --require-in-force
+IIAC policy activation: FAIL
+  - missing activation field: effective_from_sha
+  - missing activation field: policy_activation_sha
+  - effective_from_sha must be a 40-char lowercase git SHA
+  - policy_activation_sha must be a 40-char lowercase git SHA
+exit=1

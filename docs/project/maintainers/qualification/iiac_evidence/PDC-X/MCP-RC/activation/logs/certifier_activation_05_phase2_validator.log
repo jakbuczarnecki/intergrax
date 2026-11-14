@@ -1,0 +1,6 @@
+# phase-2 validator (activation certifier local_8974948e-d8d3-45e3-96ca-fb61dfd5f249)
+# HEAD (CP2): 9949fe2c3dd64064f3b2002565b31c3c80b8cad6; phase 1 at 92d7308213bd46e76ce0b545cd94b36bc65d8e0e
+# UTC: 2026-11-14T07:39:01Z
+# command: python -m scripts.governance.verify_iiac_policy_activation --require-in-force
+IIAC policy activation: IN_FORCE @ IIAC-2026-11-05.1 from 92d7308213bd46e76ce0b545cd94b36bc65d8e0e
+exit=0
