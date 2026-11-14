@@ -202,3 +202,38 @@ verify_iiac_role_separation: PASS           exit=0
 ```
 
 No test suite, mutation harness or activation gate was run; the audit's own results stay as published by the auditor.
+
+# Round 6: certifier preflight addendum 3 (branch `mcp-rc-evidence-6`)
+
+Additive section; rounds 1 to 5 above are unchanged. Same role limits as above: evidence integration only, no verdict, no certification, no rebind, no FRZ change (counter stays 225), no `Approved:` line.
+
+## Commit ladder
+
+| Step | SHA | Content |
+|------|-----|---------|
+| Base (`origin/mcp-rc`) | `fbe400f06cd9b77f0fb548ec0d2b2aaeafe10dac` | head of round 5 (addendum 4 evidence and its pin-only edit) |
+| Evidence publication commit | `dc1e66fa140d81b28c2658e88b4e1aa16eb29ad2` | 17 files imported byte-for-byte, no content change |
+| Record commit | the commit that adds this section (its own SHA cannot be stored in it; read it from `git log`) | this section only |
+
+## Imported evidence
+
+Source: `origin/p7-00-certifier` at `e9d2e2b19e17bd8762d0b30416e017a7d591a4f7` (two commits on `d02c39950`: `3bf093c89` certifier preflight addendum 3, `e9d2e2b19` its round 5 check). The branch is linear and does not contain `fbe400f06`, so it was not merged; the import is the set of files it adds relative to `d02c39950`: 17 paths, all additions, none outside `docs/`, none present on `origin/mcp-rc`, blob identity with the source branch verified for all 17. It consists of the report `platform_domain_completeness/PDC_P7_00_CERTIFIER_PREFLIGHT_ADDENDUM_3.md` and the folder `iiac_evidence/PDC-X/P7-00/certifier/addendum_3/` (result JSON `certifier_preflight_addendum_3_result.json`, `data/`, 9 logs, 5 scripts). Certifier verdict as authored: `CERTIFIER_PREFLIGHT_PASS_SCOPED`; it covers audit addendum 4 (delta `0fc8badd8..d02c39950`) and is not an activation certification, rebind or stage closure.
+
+## Pin-only edits
+
+None. The imported files are certifier records, not audit session manifests; the certifier uses the designation `PDC-P7-00-CERTIFIER-PREFLIGHT-2026-11-13` as authored. The strings `PENDING-CERTIFIER-PDC-P7-00` and the 40-zero SHA that occur in `data/addendum4_checks.json` and `logs/round5_checks_at_fbe400f06.log` are the certifier's recorded observations of the auditor's unpinned addendum 4 manifest at the time of its check, not placeholders awaiting a value; rewriting them would falsify the record, so they are left byte-identical. The addendum 4 manifest itself keeps its round 5 pin-only values.
+
+Observation: the certifier's section 9 states that it checked the round 5 pin-only edit directly on git (publication commit 40 of 40 blob-identical, pin-only edit changes exactly the three fields, 12 of 12 digests match, both verifiers PASS) and did not read the round 5 section of this record line by line.
+
+## Verifier run
+
+No new audit manifest is imported in this round, so the two manifest verifiers have no new input. They were run once each on the pinned addendum 4 manifest at the base state as a regression check, one process at a time (log: `.tmp/session/mcp-rc-evidence-6/verify_iiac_manifests.log`, not committed). No pytest was run.
+
+```text
+## addendum_4 (pinned, round 5) verify_iiac_audit_manifest
+verify_iiac_audit_manifest: PASS            exit=0
+## addendum_4 (pinned, round 5) verify_iiac_role_separation --strict-product-diff
+verify_iiac_role_separation: PASS           exit=0
+```
+
+Not run here: contract suite, mutation harness, `verify_iiac --require-in-force` (the certifier recorded it as failing by design at the base: 7 lines, 6 product paths, one stale protocol governance file).
