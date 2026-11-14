@@ -1,0 +1,44 @@
+PDC-P7-00 addendum 2 - test matrix (auditor runs, Windows, one pytest/python process at a time)
+base 19d552beeb6f0677a8bdc3b4ce65da15dd637c7b -> audited head 324d9dba37cb54e1b74a79a05148d2dcc05e6d09 (mcp-rc, merge of development a156cbbd5, PR #525 / T-IGX-036-V); activation pin 2d3eceb6cf7e93dccd4d96919319a6c969b4444b
+auditor branch p7-00-baseline-audit = origin/mcp-rc merged (bbe54afbb); product tree identical to 324d9dba3
+interpreter: D:\Projekty\intergrax\.venv (Python 3.12.11), environment deviation as in the first audit (tzdata via PYTHONPATH overlay, nothing installed); duckdb is not installed there
+
+0. Scope from git (audit_scope.json)
+   git diff --name-only 19d552bee 324d9dba3 -- intergrax agents applications = 2 paths (exactly as announced): enterprise_audit/impact_map.py and enterprise_audit/data/changed_since_impact_map.v1.json (+459 / -12)
+   git diff b0e19bf61 324d9dba3 -- <23 MCP-RC paths> = empty; no path under scripts/, governance/, .github/, no IIAC activation record, no G0 matrix changed; iiac_evidence changed only by docs evidence (RC contract log, evidence integration of the first audit and addendum 1, certifier preflight)
+   tests changed: tests/qualification/pdc_x/p6_impact (new, 2 files), tests/qualification/pdc_x/xd/test_xd_12_evol_ent_audit.py (-13 lines, the strict xfail decorator only)
+   git diff --name-only 2d3eceb6c 324d9dba3 -- intergrax agents applications = 158 paths  => 156 + 2
+
+1. Impact-map probes (read-only) [adversarial_scripts/addendum_2_impact_map_probes.py, logs/addendum_2_impact_map_probes.results.json]
+   P1 semantic diff of the SSOT: 77 -> 114 keys, 37 added, none removed, only the two own-file keys changed ids
+   P2 ids that are not manifest ids: 30 before, the same 30 after (F-43)
+   P3 per-file selection old vs new over 19319 tracked files: 5780 files change their impact ids, only 2 files lose ids (the own files; lost ids C024/C029/C072 are not manifest ids)
+   P4 52 distinct ids used by the new rules, all in the 85-check manifest, all entrypoint files exist     P5 SSOT equals generator: true
+   P6/P7 coverage of sensitive areas and of intergrax/*: see F-44
+   P8 own-file selection old vs new
+
+2. Regression run, ONE pytest process, 274 entries, 1022 s [adversarial_scripts/run_addendum2_tests.py, logs/addendum2_regression_run.stdout.txt]
+   contents: MCP-RC mandatory contract (39 files, list from Python) + tests/qualification/ent_audit_x + evol_x + roadmap_replay_x + pdc_x/p6_impact + xd_12 + EBH-5 gate files (3) + test_pdc_x_{inventory,requirements,wbs}
+             + the pytest entrypoints of every manifest check the new domain rules select
+   result: 84 failed, 1359 passed, 176 skipped, 1 xfailed; pytest exited by itself (xd_03 not in the selection)
+   MCP-RC part: no MCP failure; the single xfail is the strict TRANSFERRED case; EBH-5 gate files pass (F-06 still resolved)
+   2a. attribution [adversarial_scripts/run_failing_nodes_at_checkout.py, attribution_of_regression_failures.json]
+       324d9dba3 (short-path checkout): 15 failed, 69 passed        19d552bee: 13 failed, 1 xfailed (15 ids)        pin: 9 failed, 2 passed (11 ids exist)
+       new in this range: F-41 (2 tests). red since PDC-X, already at 19d552bee: F-42 (2), F-07 (2). red at the pin as well: roadmap_replay_x 5, evol_x 1, duckdb 3. order/path dependent: 69 (F-46)
+   2b. aborted: all 84 ids at 19d552bee and the pin hung after 30 tests; logs kept (..._first_attempt_all84_hung_after_30_tests.log)
+
+3. Mutation sample on the map, scratch detached checkout D:/Projekty/_wt/_scratch/p7a2-mut [adversarial_scripts/addendum_2_mutation_sample.py, logs/mutation_sample.stdout.txt]
+   targeted tests: pdc_x/p6_impact + xd_12 + ent_audit_x unit test_changed_since_impact_map; control already red (the two F-41 tests), so verdicts count only new failures
+   7 mutants: KILLED M1 delete runtime/security rule, M5 own files back to legacy ids, M6 unknown id; SURVIVED M2 reroute security, M3 reroute agent_governance, M4 shrink applications, M7 weak catch-all runtime prefix  (F-44)
+   first run (logs/mutation_sample_first_run_verdict_confounded_by_red_control.stdout.txt) used 'any failure' as the verdict and reported all as killed; kept, superseded by the control-relative run
+
+4. Static gates [logs/addendum_2_static_gates.log, logs/ruff_repo_files.log]
+   ruff check + format --check on impact_map.py and the three test files: clean (the first combined ruff call also linted my throw-away scripts, style findings only, kept in the log)
+   check_agents_no_tier3_imports, check_context_tier0_import_boundary, check_llm_routing_tier_boundary, check_agents_no_vendor_sdk_imports, check_immutable_security_audit_trail -> exit 0
+   check_intergrax_no_applications_imports -> exit 1, output hash identical to the first audit and addendum 1 (12 pre-existing untouched files)
+   uv lock --check -> exit 0     verify_iiac_g0_inventory_completeness -> PASS (17510 paths)
+   added-line scan of impact_map.py: no import, subprocess, socket, eval/exec, pickle, http, environment or file access
+
+5. Not run: GitHub Actions contexts, full tests/unit, compat_x / agent_distribution / memory suites (unchanged by this delta), the pdc_x suites other than xd_12 and p6_impact, igx_gov ticket, the eight domain replays, network tests, mutation on anything but the impact map.
+
+6. verify_iiac_audit_manifest.py and verify_iiac_role_separation.py --strict-product-diff: logs/verify_iiac_audit_manifest.log, logs/verify_iiac_role_separation.log
