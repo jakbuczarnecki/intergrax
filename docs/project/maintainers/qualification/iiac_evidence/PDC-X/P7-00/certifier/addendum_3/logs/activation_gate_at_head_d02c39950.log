@@ -1,0 +1,10 @@
+## head: d02c399508c40b4a06d846410334d677f226c18d
+IIAC policy activation: FAIL
+  - ACT-N11 stale audit after material governance change: docs/project/maintainers/qualification/INTEGRAX_INTERNAL_INDEPENDENT_AGENT_CERTIFICATION_PROTOCOL.md
+  - ACT-N11 product path changed after the audited SHA: applications/local_workspace_application/tests/test_run_artifact_metadata.py
+  - ACT-N11 product path changed after the audited SHA: intergrax/integrations/providers/embedding_provider/ollama/manifest.py
+  - ACT-N11 product path changed after the audited SHA: intergrax/integrations/providers/embedding_provider/ollama/register.py
+  - ACT-N11 product path changed after the audited SHA: intergrax/integrations/providers/embedding_provider/openai/register.py
+  - ACT-N11 product path changed after the audited SHA: intergrax/platform/enterprise_audit/data/changed_since_impact_map.v1.json
+  - ACT-N11 product path changed after the audited SHA: intergrax/platform/enterprise_audit/impact_map.py
+exit=1

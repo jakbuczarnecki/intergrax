@@ -1,0 +1,276 @@
+{
+ "head": "d02c399508c40b4a06d846410334d677f226c18d",
+ "auditor_branch": "0d4758ca1a185f150c7e0c37ea5dbc1a6eea03cb",
+ "union": {
+  "pin_to_0fc8badd8": 158,
+  "pin_to_d02c39950": 161,
+  "pin_to_head": 161,
+  "head_equals_d02c39950": true,
+  "new_vs_0fc8badd8": [
+   "applications/local_workspace_application/tests/test_run_artifact_metadata.py",
+   "intergrax/integrations/providers/embedding_provider/ollama/manifest.py",
+   "intergrax/integrations/providers/embedding_provider/openai/register.py"
+  ],
+  "removed_vs_0fc8badd8": [],
+  "mcp_rc": 23,
+  "mcp_rc_subset": true,
+  "non_mcp": 138,
+  "delta_0fc8badd8_to_head": [
+   "applications/local_workspace_application/tests/test_run_artifact_metadata.py",
+   "intergrax/integrations/providers/embedding_provider/ollama/manifest.py",
+   "intergrax/integrations/providers/embedding_provider/openai/register.py",
+   "intergrax/platform/enterprise_audit/data/changed_since_impact_map.v1.json",
+   "intergrax/platform/enterprise_audit/impact_map.py"
+  ],
+  "delta_equals_scope_claim": true,
+  "vs_324d9dba3": [
+   "applications/local_workspace_application/tests/test_run_artifact_metadata.py",
+   "intergrax/integrations/providers/embedding_provider/ollama/manifest.py",
+   "intergrax/integrations/providers/embedding_provider/ollama/register.py",
+   "intergrax/integrations/providers/embedding_provider/openai/register.py",
+   "intergrax/platform/enterprise_audit/data/changed_since_impact_map.v1.json",
+   "intergrax/platform/enterprise_audit/impact_map.py"
+  ],
+  "vs_324d9dba3_equals_scope_claim": true,
+  "vs_29d66ae3f_record_pin": [
+   "applications/local_workspace_application/tests/test_run_artifact_metadata.py",
+   "intergrax/integrations/providers/embedding_provider/ollama/manifest.py",
+   "intergrax/integrations/providers/embedding_provider/ollama/register.py",
+   "intergrax/integrations/providers/embedding_provider/openai/register.py",
+   "intergrax/platform/enterprise_audit/data/changed_since_impact_map.v1.json",
+   "intergrax/platform/enterprise_audit/impact_map.py"
+  ],
+  "ollama_register_unchanged_since_0fc8badd8": true,
+  "product_diff_0cb5dd011_to_head": [],
+  "product_diff_d02c39950_to_head": [],
+  "mcp_rc_byte_identical_b0e_head": true,
+  "ancestors": {
+   "0fc8badd8_anc_d02c39950": true,
+   "0cb5dd011_anc_d02c39950": true,
+   "d02c39950_anc_head": true,
+   "auditor_head_contains_d02c39950": true
+  }
+ },
+ "non_docs_changes_0fc8badd8_to_head": [
+  ".github/workflows/unit-tests.yml",
+  "applications/local_workspace_application/tests/test_run_artifact_metadata.py",
+  "governance/tickets/T-IGX-036-Y.md",
+  "governance/tickets/T-IGX-036-Z.md",
+  "governance/tickets/T-IGX-040-A.md",
+  "governance/tickets/T-IGX-040-B.md",
+  "governance/tickets/plans/PLAN_T-IGX-036-Y.md",
+  "governance/tickets/plans/PLAN_T-IGX-036-Z.md",
+  "governance/tickets/plans/PLAN_T-IGX-040-A.md",
+  "governance/tickets/plans/PLAN_T-IGX-040-B.md",
+  "intergrax/integrations/providers/embedding_provider/ollama/manifest.py",
+  "intergrax/integrations/providers/embedding_provider/openai/register.py",
+  "intergrax/platform/enterprise_audit/data/changed_since_impact_map.v1.json",
+  "intergrax/platform/enterprise_audit/impact_map.py",
+  "scripts/qualification/pdc_x_wbs.py",
+  "tests/integration/runtime/nexus/tracing/test_sqlite_run_trace_store.py",
+  "tests/qualification/ebh_7/_constants.py",
+  "tests/qualification/ebh_7/_ebh7_f10_canonical_inputs.py",
+  "tests/qualification/ebh_7/_ebh7_f10_ecap_normative_matrix.py",
+  "tests/qualification/ebh_7/_ebh7_p03_evidence_integrity.py",
+  "tests/qualification/ebh_7/test_ebh_7_b6_f10_c1_c4_closure_gates.py",
+  "tests/qualification/ebh_7/test_ebh_7_b6_f10_f11_corrective_gates.py",
+  "tests/qualification/pdc_x/conftest.py",
+  "tests/qualification/pdc_x/p6_debt/__init__.py",
+  "tests/qualification/pdc_x/p6_debt/test_p6debt_ollama_single_manifest.py",
+  "tests/qualification/pdc_x/p6_debt/test_p6debt_thread_exit.py",
+  "tests/qualification/pdc_x/p6_ecapfix/_wrapper_support.py",
+  "tests/qualification/pdc_x/p6_ecapfix/conftest.py",
+  "tests/qualification/pdc_x/p6_ecapfix/test_p6_ecapfix_ollama_wrapper_pins.py",
+  "tests/qualification/pdc_x/p6_ecapfix/test_p6_ecapfix_openai_embedding_resolve.py",
+  "tests/qualification/pdc_x/p6_impact/test_p6_impact_tier3_root_rule.py",
+  "tests/qualification/pdc_x/xd/test_xd_03_agent_governance.py",
+  "tests/unit/integrations/providers/test_p5_m6_p4_providers.py",
+  "tests/unit/rag/embedding/test_hf_embedding_provider_execution.py"
+ ],
+ "non_docs_changes_0cb5dd011_to_head": [
+  "governance/tickets/T-IGX-040-B.md"
+ ],
+ "material_governance_changes": {
+  "29d66ae3fcc7a06a919d7e07541740841e8abfe8": [
+   "docs/project/maintainers/qualification/INTEGRAX_INTERNAL_INDEPENDENT_AGENT_CERTIFICATION_PROTOCOL.md"
+  ],
+  "0fc8badd81c4c3e46a3d0ce262c08e8efba41898": [
+   "docs/project/maintainers/qualification/INTEGRAX_INTERNAL_INDEPENDENT_AGENT_CERTIFICATION_PROTOCOL.md"
+  ],
+  "0cb5dd011f363a7318246e907a1d307ad968db38": [
+   "docs/project/maintainers/qualification/INTEGRAX_INTERNAL_INDEPENDENT_AGENT_CERTIFICATION_PROTOCOL.md"
+  ],
+  "d02c399508c40b4a06d846410334d677f226c18d": []
+ },
+ "protocol": {
+  "numstat_0cb5dd011_to_head": "2\t2\tdocs/project/maintainers/qualification/INTEGRAX_INTERNAL_INDEPENDENT_AGENT_CERTIFICATION_PROTOCOL.md",
+  "changed_lines_removed": [
+   "-**Activation:** [`IIAC_POLICY_ACTIVATION_RECORD.json`](./IIAC_POLICY_ACTIVATION_RECORD.json) \u2014 **`NOT_IN_FORCE`**. Session B re-audit PASS is preserved evidence. `IN_FORCE` requires the fail-closed gate (`--require-in-force`) and a separate operator activation record.",
+   "-Status remains **`NOT_IN_FORCE`** until a certification session after the ACT-01 gate correction. Session B `PASS` and the historical `PARTIAL` record are evidence, not activation."
+  ],
+  "changed_lines_added": [
+   "+**Activation:** [`IIAC_POLICY_ACTIVATION_RECORD.json`](./IIAC_POLICY_ACTIVATION_RECORD.json) is the single source of truth for the activation status of this policy; this document does not restate it. Session B re-audit PASS is preserved evidence. `IN_FORCE` requires the fail-closed gate (`--require-in-force`) and a separate operator activation record.",
+   "+The activation status is recorded only in `IIAC_POLICY_ACTIVATION_RECORD.json` (single source of truth); this document does not restate it. Before `IN_FORCE`, a certification session after the ACT-01 gate correction is required. Session B `PASS` and the historical `PARTIAL` record are evidence, not activation."
+  ],
+  "is_material_path": true,
+  "kept_sentences_present": {
+   "`IN_FORCE` requires the fail-closed gate (`--require-in-force`) and a separate operator activation record.": true,
+   "a certification session after the ACT-01 gate correction is required.": true,
+   "All required before `IN_FORCE`:": true
+  }
+ },
+ "gate_scripts_changed_since_pin": [
+  ".github/workflows/unit-tests.yml"
+ ],
+ "gate_scripts_changed_0fc8badd8_to_head": [],
+ "test_diff_scan": {
+  "files_changed": 20,
+  "removed_assert_or_xfail_lines": [
+   "tests/integration/runtime/nexus/tracing/test_sqlite_run_trace_store.py: -    assert persisted.events[0][\"run_id\"] == \"run-1\"",
+   "tests/qualification/ebh_7/_ebh7_p03_evidence_integrity.py: -    assert baseline == test_sha, \"INDEPENDENT_ACCEPTANCE_BASELINE_SHA must equal TEST_EXECUTION_SHA for EBH-7 P03\"",
+   "tests/qualification/ebh_7/_ebh7_p03_evidence_integrity.py: -    assert str(passed) in text, \"Matrix must record L3 passed count from MANIFEST\"",
+   "tests/qualification/ebh_7/test_ebh_7_b6_f10_f11_corrective_gates.py: -    assert EBH7_TEST_EXECUTION_SHA in dossier",
+   "tests/qualification/ebh_7/test_ebh_7_b6_f10_f11_corrective_gates.py: -    assert EBH7_TEST_EXECUTION_SHA in text",
+   "tests/qualification/pdc_x/xd/test_xd_03_agent_governance.py: -    with pytest.raises(ProductionRuntimeToolInvokerCompositionError):"
+  ],
+  "added_skip_xfail_importorskip_lines": [
+   "tests/unit/rag/embedding/test_hf_embedding_provider_execution.py: +    pytest.importorskip(\"sentence_transformers\", reason=\"optional extra rag-local-embeddings\")"
+  ]
+ },
+ "f41_test_files_unchanged_0fc8badd8_to_head": true,
+ "digests_on_auditor_branch": {
+  "audit_report_digest": {
+   "claimed": "53cec6285e16d3ab393acf6f75d2e9b9e0d8ab50be437533e1cceffca0f1814d",
+   "on_auditor_branch": true
+  },
+  "audit_scope_manifest_digest": {
+   "claimed": "356b63483b6112aca62ed089525cb33059bff975110f05b324b76a202af069ae",
+   "on_auditor_branch": true
+  },
+  "test_matrix_digest": {
+   "claimed": "35f9acde2e5b751bf00144cdc8712dde18cb19a046e43708ccea8115ac7e688e",
+   "on_auditor_branch": true
+  },
+  "findings_digest": {
+   "claimed": "41ea555b7f6a51308d22e1587d29f3c7a4001e35560a4849bec32c84d7eb0c8d",
+   "on_auditor_branch": true
+  }
+ },
+ "manifest_fields": {
+  "audited_implementation_sha": "d02c399508c40b4a06d846410334d677f226c18d",
+  "test_execution_sha": "0cb5dd011f363a7318246e907a1d307ad968db38",
+  "audit_execution_sha": "d02c399508c40b4a06d846410334d677f226c18d",
+  "evidence_publication_sha": "0000000000000000000000000000000000000000",
+  "certification_publication_sha": "0000000000000000000000000000000000000000",
+  "certifier_session_id": "PENDING-CERTIFIER-PDC-P7-00",
+  "verdict": "CONDITIONAL",
+  "dossier_verdict": "PASS_SCOPED"
+ },
+ "sessions": {
+  "implementation": "T-IGX-036-J-V-PDC-X-IMPLEMENTERS+T-IGX-038-A-F-MCP-RC-IMPLEMENTER",
+  "auditor": "PDC-P7-00-ACT-N11-G6-BASELINE-AUDITOR-85fb061a-028f-4648-a3d6-284a392f4e27-ADDENDUM-4",
+  "auditor_is_p7_auditor_plus_suffix": true,
+  "auditor_equals_mcp_rc_auditors": [],
+  "impl_contains_mcp_rc_implementer": true,
+  "impl_label_equals_addendum_2_and_3": true
+ },
+ "findings": {
+  "ids": [
+   "F-56",
+   "F-57",
+   "F-58",
+   "F-59",
+   "F-60",
+   "F-61"
+  ],
+  "counts_claimed": {
+   "HIGH": 0,
+   "MEDIUM": 1,
+   "LOW": 0,
+   "INFO": 5,
+   "total": 6
+  },
+  "counts_recomputed": {
+   "HIGH": 0,
+   "MEDIUM": 1,
+   "LOW": 0,
+   "INFO": 5
+  },
+  "blocking_open": []
+ },
+ "addendum_4_evidence_on_mcp_rc_head": false,
+ "auditor_branch_adds_vs_head": {
+  "count": 40,
+  "all_under_docs": true,
+  "outside_addendum_4_and_dossier": []
+ },
+ "repin_simulation_at_head_evidence_placeholder_HEAD": {
+  "E_corr_d02c39950_audx_d02c39950": {
+   "corr_anc_audx": true,
+   "audx_anc_evp": true,
+   "evp_anc_head": true,
+   "cert_anc_head": true,
+   "gov_anc_corr": true,
+   "audx_to_head_product_paths": [],
+   "audx_to_head_material_paths": [],
+   "strict_product_diff_corr_vs_audx": []
+  },
+  "F_corr_d02c39950_audx_HEAD_evidence_HEAD": {
+   "corr_anc_audx": true,
+   "audx_anc_evp": true,
+   "evp_anc_head": true,
+   "cert_anc_head": true,
+   "gov_anc_corr": true,
+   "audx_to_head_product_paths": [],
+   "audx_to_head_material_paths": [],
+   "strict_product_diff_corr_vs_audx": []
+  },
+  "G_corr_0fc8badd8_audx_d02c39950_(strict product diff)": {
+   "corr_anc_audx": true,
+   "audx_anc_evp": true,
+   "evp_anc_head": true,
+   "cert_anc_head": true,
+   "gov_anc_corr": true,
+   "audx_to_head_product_paths": [],
+   "audx_to_head_material_paths": [],
+   "strict_product_diff_corr_vs_audx": [
+    "applications/local_workspace_application/tests/test_run_artifact_metadata.py",
+    "intergrax/integrations/providers/embedding_provider/ollama/manifest.py",
+    "intergrax/integrations/providers/embedding_provider/openai/register.py",
+    "intergrax/platform/enterprise_audit/data/changed_since_impact_map.v1.json",
+    "intergrax/platform/enterprise_audit/impact_map.py"
+   ]
+  },
+  "H_corr_d02c39950_audx_0cb5dd011_(before the protocol edit)": {
+   "corr_anc_audx": false,
+   "audx_anc_evp": true,
+   "evp_anc_head": true,
+   "cert_anc_head": true,
+   "gov_anc_corr": true,
+   "audx_to_head_product_paths": [],
+   "audx_to_head_material_paths": [
+    "docs/project/maintainers/qualification/INTEGRAX_INTERNAL_INDEPENDENT_AGENT_CERTIFICATION_PROTOCOL.md"
+   ],
+   "strict_product_diff_corr_vs_audx": []
+  },
+  "I_current_record_values": {
+   "corr_anc_audx": true,
+   "audx_anc_evp": true,
+   "evp_anc_head": true,
+   "cert_anc_head": true,
+   "gov_anc_corr": true,
+   "audx_to_head_product_paths": [
+    "applications/local_workspace_application/tests/test_run_artifact_metadata.py",
+    "intergrax/integrations/providers/embedding_provider/ollama/manifest.py",
+    "intergrax/integrations/providers/embedding_provider/ollama/register.py",
+    "intergrax/integrations/providers/embedding_provider/openai/register.py",
+    "intergrax/platform/enterprise_audit/data/changed_since_impact_map.v1.json",
+    "intergrax/platform/enterprise_audit/impact_map.py"
+   ],
+   "audx_to_head_material_paths": [
+    "docs/project/maintainers/qualification/INTEGRAX_INTERNAL_INDEPENDENT_AGENT_CERTIFICATION_PROTOCOL.md"
+   ],
+   "strict_product_diff_corr_vs_audx": []
+  }
+ }
+}

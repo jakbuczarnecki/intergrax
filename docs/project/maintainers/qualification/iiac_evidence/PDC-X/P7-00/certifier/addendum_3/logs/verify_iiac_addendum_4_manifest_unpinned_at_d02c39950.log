@@ -1,0 +1,7 @@
+## head: d02c399508c40b4a06d846410334d677f226c18d; manifest as published by the auditor (pre pin-only edit; copied from 0d4758ca1a185f150c7e0c37ea5dbc1a6eea03cb into the worktree for the run only, removed afterwards)
+## verify_iiac_audit_manifest
+verify_iiac_audit_manifest: PASS
+exit=0
+## verify_iiac_role_separation --strict-product-diff
+verify_iiac_role_separation: PASS
+exit=0
