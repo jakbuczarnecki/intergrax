@@ -1,0 +1,41 @@
+{
+ "first_full": {
+  "categories": [
+   "model_serving_runtime",
+   "embedding_provider"
+  ],
+  "rows": 1,
+  "resolve": {
+   "embedding_provider": "TypeError: Integration factory for slug 'ollama' (category 'embedding_provider') returned OllamaModel",
+   "model_serving_runtime": "OllamaModelServingRuntimeIntegration"
+  },
+  "generation": 201,
+  "factory": "create_ollama_model_serving_runtime"
+ },
+ "second_full_no_override_is_noop": {
+  "categories": [
+   "model_serving_runtime",
+   "embedding_provider"
+  ],
+  "rows": 1,
+  "resolve": {
+   "embedding_provider": "TypeError: Integration factory for slug 'ollama' (category 'embedding_provider') returned OllamaModel",
+   "model_serving_runtime": "OllamaModelServingRuntimeIntegration"
+  },
+  "generation": 201,
+  "factory": "create_ollama_model_serving_runtime"
+ },
+ "third_full_override": {
+  "categories": [
+   "model_serving_runtime",
+   "embedding_provider"
+  ],
+  "rows": 1,
+  "resolve": {
+   "embedding_provider": "TypeError: Integration factory for slug 'ollama' (category 'embedding_provider') returned OllamaModel",
+   "model_serving_runtime": "OllamaModelServingRuntimeIntegration"
+  },
+  "generation": 205,
+  "factory": "create_ollama_model_serving_runtime"
+ }
+}

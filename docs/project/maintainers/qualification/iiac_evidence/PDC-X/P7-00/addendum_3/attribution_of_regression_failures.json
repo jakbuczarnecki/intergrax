@@ -1,0 +1,61 @@
+{
+  "stage_id": "PDC-X/P7-00/addendum_3",
+  "method": "the failures of the one-process regression run (run from the short-path checkout of 0fc8badd8) were re-run by node id in three short-path detached checkouts (head, 324d9dba3, pin 2d3eceb6c), one pytest process each; the pin checkout has 229 of the 231 ids",
+  "long_combined_run": {
+    "entries": 86,
+    "failed": 231,
+    "passed": 5176,
+    "xfailed": 1,
+    "seconds": 1230,
+    "pytest_exit": "by itself (xd_03 not in the selection)"
+  },
+  "isolated": {
+    "head_0fc8badd8": {
+      "failed": 222,
+      "passed": 9
+    },
+    "base_324d9dba3": {
+      "failed": 222,
+      "passed": 9,
+      "same_set_as_head": true
+    },
+    "pin_2d3eceb6c": {
+      "failed": 218,
+      "passed": 11
+    }
+  },
+  "classes": [
+    {
+      "class": "new since the pin, attributable to the integrated baseline",
+      "count": 12,
+      "ids": "compat_x event_evolution r3_p0 (4) and r3_r1 (6) = F-35 (10, unchanged); xd_12 and p6_impact coverage = F-41 (2)",
+      "finding": "F-35 / F-41 (open, unchanged by this delta)"
+    },
+    {
+      "class": "red at the pin as well",
+      "count": 210,
+      "ids": "test_provider_runtime_cutover (92), test_provider_category_contract_migration (67), agent_distribution (30), rag entry point and others; 3 ebh_5 and 1 ebh_7 tests need duckdb (not installed in the shared .venv)",
+      "finding": "F-53"
+    },
+    {
+      "class": "pass at head and base in isolation, fail at the pin",
+      "count": 8,
+      "ids": "test_harness_lab_health (3), test_rag_entry_point_load (5)",
+      "finding": "F-53 (order dependent)"
+    },
+    {
+      "class": "fail only inside the long run (order dependent)",
+      "count": 9,
+      "ids": "pass in isolation at head and base",
+      "finding": "F-53"
+    }
+  ],
+  "delta_tests": "tests/qualification/pdc_x/p6_ecapfix (7), reg_p, test_ebh_5_behavioral_package_c_v2.py embedding cases (3 passed), test_pdc_x_inventory/requirements/wbs: no failure in the long run",
+  "pollution_check": "test_harness_lab_health + test_rag_entry_point_load run alone, after p6_ecapfix, after reg_p: the same single failure (m6_p5 probes) in all three, so the new tests do not pollute catalog state (logs/pollution_check_*.log)",
+  "logs": [
+    "logs/addendum3_regression_run.stdout.txt",
+    "logs/failing_nodes_at_head_0fc8badd8.log",
+    "logs/failing_nodes_at_base_324d9dba3.log",
+    "logs/failing_nodes_at_pin_2d3eceb6c.log"
+  ]
+}

@@ -1,0 +1,4 @@
+  File "D:\Projekty\intergrax\.claude\worktrees\magical-germain-65dac8\docs\project\maintainers\qualification\iiac_evidence\PDC-X\P7-00\addendum_3\adversarial_scripts\addendum_3_mutation_sample.py", line 72
+    return subprocess.CompletedProcess(a.args, max(a.returncode, b.returncode), a.stdout + "
+                                                                                           ^
+SyntaxError: unterminated string literal (detected at line 72)
