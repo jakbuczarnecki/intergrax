@@ -5,10 +5,10 @@
 
 from __future__ import annotations
 
-from typing import Any, Generator, Optional
+from collections.abc import Generator
+from typing import Any
 
 import pytest
-
 from intergrax.integrations._shared.conformance import (
     assert_ci_cd_backend,
     assert_cloud_platform,
@@ -27,7 +27,13 @@ from intergrax.integrations.contracts.base import (
 )
 from intergrax.integrations.contracts.ci_cd import CheckSuiteRecord, WorkflowRunRecord
 from intergrax.integrations.contracts.feature_flag import FeatureFlagEvaluation
-from intergrax.integrations.contracts.observability_backend import MetricQueryResult, MetricPoint, MetricSeries, TraceQueryResult, TraceRecord
+from intergrax.integrations.contracts.observability_backend import (
+    MetricPoint,
+    MetricQueryResult,
+    MetricSeries,
+    TraceQueryResult,
+    TraceRecord,
+)
 from intergrax.integrations.registry.bootstrap import register_default_integrations, reset_default_integrations_state
 from intergrax.integrations.registry.catalog import catalog_snapshot, clear_catalog
 from intergrax.integrations.registry.profile import IntegrationProfile
@@ -78,7 +84,7 @@ def _clean_catalog() -> Generator[None, None, None]:
 
 
 class _FakeObsClient:
-    def query_instant(self, promql: str, *, eval_time: Optional[float] = None) -> MetricQueryResult:
+    def query_instant(self, promql: str, *, eval_time: float | None = None) -> MetricQueryResult:
         return MetricQueryResult(
             result_type="vector",
             series=[MetricSeries(metric={}, points=[MetricPoint(timestamp=1.0, value=3.0)])],
@@ -87,7 +93,7 @@ class _FakeObsClient:
     def query_range(self, promql: str, *, start: float, end: float, step: str) -> list[dict[str, float]]:
         return [{"timestamp": start, "value": 3.0}]
 
-    def query_traces(self, *, limit: int = 20, name: Optional[str] = None) -> TraceQueryResult:
+    def query_traces(self, *, limit: int = 20, name: str | None = None) -> TraceQueryResult:
         return TraceQueryResult(traces=[TraceRecord(trace_id="tr-1", name=name or "span")])
 
 
@@ -104,7 +110,7 @@ class _FakeSqlConnection:
 
 
 class _FakeSecretsClient:
-    def read_secret(self, path: str, *, version: Optional[str] = None) -> str:
+    def read_secret(self, path: str, *, version: str | None = None) -> str:
         del version
         return f"secret:{path}"
 
@@ -116,7 +122,7 @@ class _FakeSecretsClient:
 
 
 class _FakeCloudSecretsClient:
-    def read_secret(self, mount: str, path: str, *, version: Optional[str] = None) -> str:
+    def read_secret(self, mount: str, path: str, *, version: str | None = None) -> str:
         del version
         return f"{mount}:{path}"
 
@@ -147,7 +153,7 @@ class _FakeGraphClient:
         del statement, parameters
         return [{"n": {"id": "1"}}]
 
-    def get_node(self, node_id: str) -> Optional[dict[str, Any]]:
+    def get_node(self, node_id: str) -> dict[str, Any] | None:
         return {"id": node_id, "labels": ["Entity"], "properties": {"name": "node"}}
 
 
@@ -161,7 +167,7 @@ class _FakeIssueClient:
     def search_issues(self, jql: str, *, limit: int) -> Any:
         return {"issues": [{"key": "1", "summary": jql, "status": "open"}], "total": 1}
 
-    def create_issue(self, *, title: str, description: str = "", labels: Optional[list[str]] = None) -> Any:
+    def create_issue(self, *, title: str, description: str = "", labels: list[str] | None = None) -> Any:
         del description, labels
         return {"key": "99", "summary": title, "status": "open"}
 
@@ -216,10 +222,19 @@ def test_m6_p4_slugs_registered(slug: str) -> None:
     assert slug in catalog_snapshot()
 
 
-def test_pgvector_vector_store() -> None:
+def test_pgvector_vector_store(monkeypatch: pytest.MonkeyPatch) -> None:
     from intergrax.integrations.providers.vector_store.pgvector.bundle import create_pgvector_vector_store
 
+    monkeypatch.setenv("INTERGRAX_PGVECTOR_TENANT_ID", "tenant-test")
     with pytest.raises(IntegrationConfigurationError, match="DSN"):
+        create_pgvector_vector_store()
+
+
+def test_pgvector_vector_store_requires_tenant_id_fail_closed(monkeypatch: pytest.MonkeyPatch) -> None:
+    from intergrax.integrations.providers.vector_store.pgvector.bundle import create_pgvector_vector_store
+
+    monkeypatch.delenv("INTERGRAX_PGVECTOR_TENANT_ID", raising=False)
+    with pytest.raises(IntegrationConfigurationError, match="INTERGRAX_PGVECTOR_TENANT_ID"):
         create_pgvector_vector_store()
 
 
@@ -233,8 +248,12 @@ def test_duckdb_relational_store() -> None:
 
 
 def test_observability_stack() -> None:
-    from intergrax.integrations.providers.observability_backend.grafana.bundle import create_grafana_observability_backend
-    from intergrax.integrations.providers.observability_backend.influxdb.bundle import create_influxdb_observability_backend
+    from intergrax.integrations.providers.observability_backend.grafana.bundle import (
+        create_grafana_observability_backend,
+    )
+    from intergrax.integrations.providers.observability_backend.influxdb.bundle import (
+        create_influxdb_observability_backend,
+    )
     from intergrax.integrations.providers.observability_backend.loki.bundle import create_loki_observability_backend
     from intergrax.integrations.providers.observability_backend.mlflow.bundle import create_mlflow_observability_backend
     from intergrax.integrations.providers.observability_backend.tempo.bundle import create_tempo_observability_backend
@@ -253,10 +272,16 @@ def test_observability_stack() -> None:
 
 
 def test_secrets_stores() -> None:
-    from intergrax.integrations.providers.secrets_store.aws_secrets_manager.bundle import create_aws_secrets_manager_secrets_store
-    from intergrax.integrations.providers.secrets_store.azure_key_vault.bundle import create_azure_key_vault_secrets_store
+    from intergrax.integrations.providers.secrets_store.aws_secrets_manager.bundle import (
+        create_aws_secrets_manager_secrets_store,
+    )
+    from intergrax.integrations.providers.secrets_store.azure_key_vault.bundle import (
+        create_azure_key_vault_secrets_store,
+    )
     from intergrax.integrations.providers.secrets_store.doppler.bundle import create_doppler_secrets_store
-    from intergrax.integrations.providers.secrets_store.gcp_secret_manager.bundle import create_gcp_secret_manager_secrets_store
+    from intergrax.integrations.providers.secrets_store.gcp_secret_manager.bundle import (
+        create_gcp_secret_manager_secrets_store,
+    )
 
     aws = create_aws_secrets_manager_secrets_store(client=_FakeCloudSecretsClient())
     azure = create_azure_key_vault_secrets_store(client=_FakeCloudSecretsClient())
@@ -319,8 +344,12 @@ def test_graph_stores() -> None:
 @pytest.mark.asyncio
 async def test_incident_io_and_sendgrid() -> None:
     from intergrax.integrations._shared.p3.clients import HttpNotificationChannel
-    from intergrax.integrations.providers.notification_channel.incident_io.bundle import create_incident_io_notification_channel
-    from intergrax.integrations.providers.notification_channel.sendgrid.bundle import create_sendgrid_notification_channel
+    from intergrax.integrations.providers.notification_channel.incident_io.bundle import (
+        create_incident_io_notification_channel,
+    )
+    from intergrax.integrations.providers.notification_channel.sendgrid.bundle import (
+        create_sendgrid_notification_channel,
+    )
 
     sent: list[Any] = []
 
@@ -386,7 +415,9 @@ def test_mailgun_and_ollama_providers() -> None:
 
 
 def test_huggingface_hub_object_storage() -> None:
-    from intergrax.integrations.providers.object_storage.huggingface_hub.bundle import create_huggingface_hub_object_storage
+    from intergrax.integrations.providers.object_storage.huggingface_hub.bundle import (
+        create_huggingface_hub_object_storage,
+    )
 
     storage = create_huggingface_hub_object_storage(client=_FakeObjectClient())
     assert_object_storage(storage)
@@ -414,27 +445,44 @@ def _p4_shell_probe_targets() -> dict[str, object]:
     from intergrax.integrations.providers.feature_flag.unleash.bundle import create_unleash_feature_flag
     from intergrax.integrations.providers.graph_store.falkordb.bundle import create_falkordb_graph_store
     from intergrax.integrations.providers.graph_store.memgraph.bundle import create_memgraph_graph_store
-    from intergrax.integrations.providers.notification_channel.mailgun.bundle import create_mailgun_notification_channel
-    from intergrax.integrations.providers.model_serving_runtime.ollama.bundle import create_ollama_model_serving_runtime
     from intergrax.integrations.providers.issue_tracker.asana.bundle import create_asana_issue_tracker
     from intergrax.integrations.providers.issue_tracker.bitbucket.bundle import create_bitbucket_issue_tracker
     from intergrax.integrations.providers.issue_tracker.servicenow.bundle import create_servicenow_issue_tracker
     from intergrax.integrations.providers.message_bus.redpanda.bundle import create_redpanda_message_bus
-    from intergrax.integrations.providers.notification_channel.incident_io.bundle import create_incident_io_notification_channel
-    from intergrax.integrations.providers.notification_channel.sendgrid.bundle import create_sendgrid_notification_channel
+    from intergrax.integrations.providers.model_serving_runtime.ollama.bundle import create_ollama_model_serving_runtime
+    from intergrax.integrations.providers.notification_channel.incident_io.bundle import (
+        create_incident_io_notification_channel,
+    )
+    from intergrax.integrations.providers.notification_channel.mailgun.bundle import create_mailgun_notification_channel
+    from intergrax.integrations.providers.notification_channel.sendgrid.bundle import (
+        create_sendgrid_notification_channel,
+    )
     from intergrax.integrations.providers.object_storage.cloudflare_r2.bundle import create_cloudflare_r2_object_storage
-    from intergrax.integrations.providers.object_storage.huggingface_hub.bundle import create_huggingface_hub_object_storage
-    from intergrax.integrations.providers.observability_backend.grafana.bundle import create_grafana_observability_backend
-    from intergrax.integrations.providers.observability_backend.influxdb.bundle import create_influxdb_observability_backend
+    from intergrax.integrations.providers.object_storage.huggingface_hub.bundle import (
+        create_huggingface_hub_object_storage,
+    )
+    from intergrax.integrations.providers.observability_backend.grafana.bundle import (
+        create_grafana_observability_backend,
+    )
+    from intergrax.integrations.providers.observability_backend.influxdb.bundle import (
+        create_influxdb_observability_backend,
+    )
     from intergrax.integrations.providers.observability_backend.loki.bundle import create_loki_observability_backend
     from intergrax.integrations.providers.observability_backend.mlflow.bundle import create_mlflow_observability_backend
     from intergrax.integrations.providers.observability_backend.tempo.bundle import create_tempo_observability_backend
     from intergrax.integrations.providers.relational_store.duckdb.bundle import create_duckdb_relational_store
     from intergrax.integrations.providers.relational_store.timescaledb.bundle import create_timescaledb_relational_store
-    from intergrax.integrations.providers.secrets_store.aws_secrets_manager.bundle import create_aws_secrets_manager_secrets_store
-    from intergrax.integrations.providers.secrets_store.azure_key_vault.bundle import create_azure_key_vault_secrets_store
+    from intergrax.integrations.providers.secrets_store.aws_secrets_manager.bundle import (
+        create_aws_secrets_manager_secrets_store,
+    )
+    from intergrax.integrations.providers.secrets_store.azure_key_vault.bundle import (
+        create_azure_key_vault_secrets_store,
+    )
     from intergrax.integrations.providers.secrets_store.doppler.bundle import create_doppler_secrets_store
-    from intergrax.integrations.providers.secrets_store.gcp_secret_manager.bundle import create_gcp_secret_manager_secrets_store
+    from intergrax.integrations.providers.secrets_store.gcp_secret_manager.bundle import (
+        create_gcp_secret_manager_secrets_store,
+    )
+
     class _K8s:
         def health(self) -> bool:
             return True
