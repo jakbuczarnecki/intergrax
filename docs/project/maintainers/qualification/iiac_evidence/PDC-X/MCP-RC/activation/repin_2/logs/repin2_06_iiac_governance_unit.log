@@ -1,0 +1,7 @@
+# activation certifier re-pin 2: IIAC governance unit tests, one pytest process
+# HEAD: eb3b400f36b70e7a7103bbfd379abab1111d5eb4
+# checkout: D:\Projekty\intergrax\.claude\worktrees\awesome-albattani-9ea2ff | PYTHONPATH: D:/Projekty/intergrax/.claude/worktrees/awesome-albattani-9ea2ff | intergrax from: D:\Projekty\intergrax\.claude\worktrees\awesome-albattani-9ea2ff\intergrax\__init__.py
+.................s.................................                      [100%]
+50 passed, 1 skipped in 322.01s (0:05:22)
+# pytest exit code: 0
+# elapsed_s: 325.69

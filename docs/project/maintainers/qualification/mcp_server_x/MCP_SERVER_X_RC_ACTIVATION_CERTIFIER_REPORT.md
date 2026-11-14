@@ -78,3 +78,64 @@ The substance of the audits: the dossier verdicts (`PARTIAL` superseded, four `P
 ## Not done, not claimed
 
 This is **not stage closure**: MCP-SERVER-X is not closed. It is **not FRZ promotion**: the counter stays 225 and no FRZ file was touched. It is **not production readiness**. No pull request was opened, nothing was merged, no ruleset changed, no `Approved:` line was written, no product, test, ticket, gate-script, `MATERIAL_GOVERNANCE_PATHS`, P8 or auditor file was edited. The merge is a separate operator act (runbook section (d)); the terminal verification is a separate session (section (e)).
+
+---
+
+# Re-pin 2 (final MCP-RC + PDC-X integrated tree), 2026-11-14
+
+Additive section; everything above is the first binding and stays as written. Same role (activation certifier session `local_8974948e-d8d3-45e3-96ca-fb61dfd5f249`, re-engaged by the orchestrator session; neither implementer nor auditor). Starting tip `origin/mcp-rc` @ `e76785ea26ef1729d392892d97941b0863f89022` (fast-forwarded; nothing moved during the work).
+
+## Verdict
+
+**Mechanical result: the activation gate passes with zero ACT-N11 lines.** `verify_iiac_policy_activation --require-in-force` at the phase-2 commit prints `IIAC policy activation: IN_FORCE @ IIAC-2026-11-05.1 from 88fd679e63188303e0590e4033abc81a3c30805b`, exit 0. Before the re-pin it printed exactly the seven lines the orchestrator named (the protocol as stale audit after a material governance change, and the six product paths against `324d9dba3`; `repin2_00_gate_before.log`). **Certifier verdict on the new binding manifest: `PASS`, scoped**, with the same meaning and limits as the first binding (certifier-authored from `PASS_SCOPED` audits, `OD-MCP-RC-04` section 3). The drift finding of the first section (`f209febbe`, `ollama/register.py`) is now covered: that commit is inside development `83d939095`, which `mcp-rc` merged, and audit addendum 4 and certifier preflight addendum 3 cover it.
+
+## SHAs
+
+| Item | SHA |
+| --- | --- |
+| Starting tip | `e76785ea26ef1729d392892d97941b0863f89022` |
+| Binding manifest + handoff + pre-checks commit | `32dc342d00349f004083e7660338c1060acdac26` |
+| Phase 1 (only the record) | `88fd679e63188303e0590e4033abc81a3c30805b` |
+| Phase 2 (two lines) | `eb3b400f36b70e7a7103bbfd379abab1111d5eb4` |
+| `corrective_implementation_sha` = manifest `audited_implementation_sha`, `test_execution_sha` | `d02c399508c40b4a06d846410334d677f226c18d` |
+| `audit_execution_sha` = `evidence_publication_sha` | `a1b3053b49c28124a0abde679d733f21a597797f` (addendum 4 evidence publication) |
+| `certification_publication_sha` | `dc1e66fa140d81b28c2658e88b4e1aa16eb29ad2` (certifier preflight addendum 3 evidence publication) |
+| `effective_from_sha` = `policy_activation_sha` | `88fd679e63188303e0590e4033abc81a3c30805b` |
+
+Why these pins: `audit_execution_sha` must be at or after the commit that edited the protocol (`7b1c0a4b7`, a material governance path, T-IGX-040-B); `a1b3053b4` is a descendant of `d02c39950`, which contains that commit, so the stale-audit rule is satisfied; the strict product diff between the audited tree and `audit_execution_sha` is empty; the bytes of the bound `IIAC-GOV-1` report equal the bytes at `a1b3053b4` (checked). I chose the evidence publication commit over the pin-only commit `fbe400f06` to stay with the first-binding pattern. `certification_publication_sha` is the preflight addendum 3 evidence publication, not the corrective SHA, and a descendant of the audit evidence. All three evidence SHAs are ancestors of the phase-1 commit.
+
+## Digests (SHA-256 of working-tree bytes)
+
+| Artifact | SHA-256 |
+| --- | --- |
+| Binding manifest `iiac_evidence/PDC-X/MCP-RC/activation/repin_2/iiac_audit_session_manifest.IIAC-ACT-N11-MCP-RC-ACTIVATION-REPIN-2.json` | `43de27f17e3df5efa25175e315e9335ff1c1a8750dbffb7795596c19fe1c0ada` |
+| Handoff `.../repin_2/IIAC_SESSION_HANDOFF_RECORD_PDC_X_MCP_RC_ACTIVATION_REPIN_2.md` (CRLF) | `e4553dfd38aaf501a5437741bf5c723afc7e2fefeeae846d8efaccfb86b73053` |
+| Bound `IIAC-GOV-1` report, scope, matrix, findings | unchanged from the first binding (`c405c65f...`, `e06ce433...`, `d5028f19...`, `df3648f9...`) |
+| Signed decision `IIAC_OD_ACTIVATION_MCP_RC_2026-11-13.md` | `0e0aed5816ff76c631d8aefb897e83399d26aa6d9692f3b0c2fe6b1fd8d25147`, unchanged since its signing commit `afdf27e62` (checked by digest and by `git diff`); not edited, not re-signed |
+
+## What I verified myself (logs in `.../activation/repin_2/logs/`, scripts in `.../repin_2/scripts/`)
+
+1. `repin2_01_precheck.log`: ancestry chain (`2ae101411 -> 324d9dba3 -> d02c39950 -> a1b3053b4 -> fbe400f06` and `dc1e66fa1`, all ancestors of HEAD; `2d3eceb6c -> d02c39950`); the gate's own `product_paths_changed_between` gives **161** paths from the pin to the audited tree, to `a1b3053b4` and to HEAD (identical sets), **23 MCP-RC + 138 non-MCP**, the 23 byte-identical to `b0e19bf61`; **6** paths against `324d9dba3` (`applications/local_workspace_application/tests/test_run_artifact_metadata.py`, `ollama/manifest.py`, `ollama/register.py`, `openai/register.py`, `impact_map.py`, `changed_since_impact_map.v1.json`), exactly the six lines the gate printed before; product diffs audited tree to HEAD, audited tree to `a1b3053b4` and `a1b3053b4` to HEAD empty; no non-`docs/` difference between the audited tree and HEAD; no `MATERIAL_GOVERNANCE_PATHS` change after the audited tree (the protocol changed only in `7b1c0a4b7`, an ancestor of the new `audit_execution_sha`); signed line, decision-text rules and ACT-N18 clean; bound-artifact digests and bytes at `a1b3053b4` equal; findings register passes ACT-N15.
+2. `repin2_02_rc_contract.log`: MCP-RC contract, list from Python, one pytest process, `PYTHONPATH` = this checkout, at HEAD `e76785ea2`: **481 passed, 1 xfailed (strict), exit 0, 574.23 s**.
+3. `repin2_03_binding_manifest_validators.log`: `verify_iiac_audit_manifest ... --require-handoff-template` PASS; `verify_iiac_role_separation ... --strict-product-diff` PASS.
+4. `repin2_04_phase1_validator.log`: at phase 1 exactly the four empty-field errors, exit 1, no ACT-N11 line, no digest error.
+5. `repin2_05_phase2_validator.log`: `IN_FORCE`, exit 0, no ACT-N11 line.
+6. `repin2_06_iiac_governance_unit.log`: `test_iiac_activation_gate.py`, `test_iiac_g0_inventory.py` and `test_iiac_negative_guards.py`, one pytest process at the phase-2 head: **50 passed, 1 skipped (a symlink or threat-model skip, not one of the two), 0 failed, exit 0, 322 s**. `test_canonical_policy_is_in_force_and_verifies` and `test_n12_policy_is_in_force_only_with_valid_activation_evidence`, which failed by design in audit addendum 4 and preflight addendum 3, are green.
+7. Merge check: `83d939095` (`origin/development` at my last fetch) is an ancestor of HEAD, so merging HEAD into `development` is a fast-forward and the merged tree is HEAD's tree; `git merge-tree --write-tree origin/development HEAD` is clean. The gate result on that merge is therefore the gate result at HEAD (the gate itself was not run on a separate merge checkout).
+
+## What I took from the audits and preflights
+
+As in the first section, plus: the dispositions of F-41, F-42, F-49, F-50, F-09, F-07, F-06 as resolved at test level (audit addendum 4, preflight addendum 3 section 3), the F-56 reproduction, the 227-failure attribution (F-53) and the test-diff scan. I did not re-audit, re-run the PDC-X directory (975 passed in the preflight) or run any CI context.
+
+## Open conditions after re-pin 2 (none resolved or accepted here)
+
+1. **F-56 (MEDIUM, open, decision):** `test_b6_03_scoped_disposition_valid_at_head` is red at the audited tree (the frozen PRE-ENT list names the deleted `ollama/manifest.py`). By the preflight's reading it is in none of the five CI contexts; not run by me.
+2. **F-35 (17 red COMPAT-X gates), F-52/F-51 (extended to `openai`), F-53, F-43, F-44, F-38, F-04/F-37, F-05, F-10** stay open as the dossiers state; the `duckdb` extra is missing in the shared venv; two relaxed EBH-7 assertions (T-IGX-036-W) are not audited.
+3. **CI contexts** `ci-smoke`, `governance-fast`, `evol-x-b4-preflight`, `ent-audit-fast`, `ent-audit-pr-gate`: not run by me, not verified green. The W4-F01 tamper tests in `tests/unit/governance/test_evol_x_real_repo_fresh_clone.py` (fresh-clone fixtures, long Windows paths) were not run; the handoff is CRLF in a `-text` path (verified by `file` and blob digest).
+4. **The signed decision text is stale** (158 paths, tree `324d9dba3`, F-41 and F-42 and drift called open, no protocol edit). The gate compares none of that; the operator confirmed the signature stands (`OD-MCP-RC-05` section 1). Not edited.
+5. **Route tension** (preflight addendum 3 section 6): `DELEGATION-PDC-P7-ACT` item (c) speaks of a `PASS` audit manifest, while the MCP-RC route (`OD-MCP-RC-04` section 3) has the certifier author the `PASS`. I followed the MCP-RC route as instructed; the orchestrator or operator should name the route in the PR record.
+6. **Drift:** any product commit on `development` after `83d939095` voids this pin; the freeze is a declaration. IA-D1..IA-D8, the unreproduced leads and the MCP-RC carry-overs (xfail owner, RA-02..RA-04, AF-05) are as in the first section.
+
+## Not done, not claimed
+
+Not stage closure, not FRZ promotion (counter 225), not production readiness. No pull request, no merge, no ruleset change, no `Approved:` line; no product, test, script, ticket, `.github`, decision, delegation or auditor-file edit.

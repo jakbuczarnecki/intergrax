@@ -1,0 +1,6 @@
+# re-pin 2 phase-2 validator (local_8974948e-d8d3-45e3-96ca-fb61dfd5f249)
+# HEAD (CP2): eb3b400f36b70e7a7103bbfd379abab1111d5eb4; phase 1 at 88fd679e63188303e0590e4033abc81a3c30805b
+# UTC: 2026-11-14T18:06:55Z
+# command: python -m scripts.governance.verify_iiac_policy_activation --require-in-force
+IIAC policy activation: IN_FORCE @ IIAC-2026-11-05.1 from 88fd679e63188303e0590e4033abc81a3c30805b
+exit=0
