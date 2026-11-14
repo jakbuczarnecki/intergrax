@@ -108,3 +108,14 @@ Unknown reds (test failures outside the known classes): none beyond R-04, which 
 Windows 11 Home, Intel Core i9-13900H (20 logical processors), 63.7 GB RAM; the machine was shared with other sessions during the runs, so durations are indicative only. `D:` had about 114 GB free before the runs. No Docker. All started processes were stopped; none is left running.
 
 This record carries no PASS verdict.
+
+## Addendum: after the T-IGX-036-X product fix (W1 prep, 2026-11-14)
+
+Facts only; this addendum carries no PASS verdict.
+
+- **Product change after the acceptance run.** T-IGX-036-X (PR #537, merge `146e7acf1434fffdf74ef6a2e91fffc10fd7b1ec`) changed a product path: `intergrax/integrations/providers/embedding_provider/ollama/register.py` (product fix) and `tests/qualification/ebh_5/_package_c_v2_primitives.py` (harness order fix). The product tree therefore no longer equals `a156cbbd5`; `INTEGRATED_BASELINE_SHA` moved to `146e7acf1` (see `PDC_SHA_LADDER.md`).
+- **R-04 re-check, gate file only.** The ECAP gate module `tests/qualification/ebh_5/test_ebh_5_behavioral_package_c_v2.py` was re-run once on `146e7acf1`: **86 passed in 13.66 s**. Log: `.tmp/proof/pdc-x-p6/acceptance/04_ecap_gate_rerun.log` in worktree `D:/Projekty/_wt/intergrax/pdc-acc` (gitignored, not committed).
+- **Not repeated after #537.** ECAP FULL, the `pdc_x` suite and the DUP-X / EBH-4 gate run were **not** repeated on `146e7acf1`. R-04 is therefore resolved only for that one gate file; the counts of runs 1-3 above belong to `884c177ad` / `a156cbbd5`.
+- **Known debt observed (not repaired here).**
+  - `tests/unit/integrations/providers/test_p5_m6_p4_providers.py::test_pgvector_vector_store` is red on `development` without the ollama change (missing `INTERGRAX_PGVECTOR_TENANT_ID`).
+  - R-05 still stands: the `pdc_x` pytest process does not exit after its summary line.

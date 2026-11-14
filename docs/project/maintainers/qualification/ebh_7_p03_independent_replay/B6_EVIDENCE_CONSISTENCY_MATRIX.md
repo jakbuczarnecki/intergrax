@@ -9,11 +9,12 @@
 | --- | --- |
 | EBH7_CLOSURE_IMPLEMENTATION_SHA (pre-B6 terminal closure) | `d4937889fc0b07515649dbdddf602df2a4415489` |
 | EBH7_B6_CORRECTIVE_IMPLEMENTATION_SHA | `8afff322cb2525f0106c2bbccf2d44f682d3e0df` |
-| TEST_EXECUTION_SHA (= replay tree) | `dc18e36d971c93c8f631fbc86f73149d1b81b4d7` |
+| TEST_EXECUTION_SHA (= replay tree; PDC-X P6 re-pin, T-IGX-036-W) | `146e7acf1434fffdf74ef6a2e91fffc10fd7b1ec` |
+| Previous TEST_EXECUTION_SHA (historical, run `41238620036`) | `dc18e36d971c93c8f631fbc86f73149d1b81b4d7` |
 | EBH7_B6_F10_TEST_EXECUTION_SHA (historical, run `41231430749`) | `496016c0cf6cc5cf1f9a29d885677605dd0415d3` |
 | EBH7_B5_TEST_EXECUTION_SHA (historical) | `4eb7eb1a89f82215d5356aa7d000198e432777b0` |
 | EVIDENCE_PUBLICATION_SHA | see `MANIFEST.json` |
-| INDEPENDENT_ACCEPTANCE_BASELINE_SHA | `dc18e36d971c93c8f631fbc86f73149d1b81b4d7` |
+| INDEPENDENT_ACCEPTANCE_BASELINE_SHA (independently accepted tree; not re-accepted at the re-pinned TEST) | `dc18e36d971c93c8f631fbc86f73149d1b81b4d7` |
 | B6 acceptance publication | see pass record + `MANIFEST.json` → `B6_ACCEPTANCE_PUBLICATION_SHA` |
 
 ## Normative outcomes (effective)
@@ -28,17 +29,19 @@
 
 ## L3 replay (MANIFEST `pytest_profile.last_replay`)
 
-Authoritative replay: final reconciliation GitHub Actions run `41238620036` @ `73965c2ea…` (TEST `dc18e36d9…`; JUnit 634 tests; recorded in `EBH_7_P03_GITHUB_ACTIONS_REPLAY_RECORD.md`). Historical (superseded): B6-F10 run `41231430749` @ `e6ff57b13…` (TEST `496016c0c…`, JUnit 590 tests: 581 passed / 9 skipped). Skipped tests: nine individual dispositions in [`EBH_7_SKIP_DISPOSITION_REGISTER.md`](EBH_7_SKIP_DISPOSITION_REGISTER.md). The historical B5 run (`4eb7eb1a…`, 195 passed) shadowed the `ebh_7` directory (F10-P03-PROFILE-SHADOW).
+**Re-pin replay: PENDING.** TEST_EXECUTION_SHA was re-pinned to `146e7acf1434fffdf74ef6a2e91fffc10fd7b1ec` (PDC-X P6, T-IGX-036-W) and the fresh L3 replay at this pin has not run yet; `last_replay` carries no counts. Counts, run ID and artifact digests are recorded after the replay (W2). This record is not a B6 PASS for the re-pinned tree; the independent acceptance (scoped) stays bound to `INDEPENDENT_ACCEPTANCE_BASELINE_SHA` `dc18e36d9…`.
 
-| Field | Value |
-| --- | --- |
-| JUnit tests | **634** |
-| Passed | **625** |
-| Skipped | **9** (nine individual `ACCEPTED_NA` dispositions; 0 unregistered / 0 stale) |
-| Failed / errors | **0 / 0** |
-| Xfailed | **0** |
-| Profile | `MANIFEST.json` → `pytest_profile.command` |
-| Log | GHA run `41238620036` artifact `ebh7-p03-l3-dc18e36d971c93c8f631fbc86f73149d1b81b4d7` (pytest.log, junit.xml, meta.txt, junit-summary.json, skip-disposition.json, f10-attestation.json) |
+Previous authoritative replay (historical, kept in `MANIFEST.json` → `pytest_profile.historical_replays`): final reconciliation GitHub Actions run `41238620036` @ `73965c2ea…` (TEST `dc18e36d9…`; JUnit 634 tests; recorded in `EBH_7_P03_GITHUB_ACTIONS_REPLAY_RECORD.md`). Older historical (superseded): B6-F10 run `41231430749` @ `e6ff57b13…` (TEST `496016c0c…`, JUnit 590 tests: 581 passed / 9 skipped). Skipped tests: nine individual dispositions in [`EBH_7_SKIP_DISPOSITION_REGISTER.md`](EBH_7_SKIP_DISPOSITION_REGISTER.md). The historical B5 run (`4eb7eb1a…`, 195 passed) shadowed the `ebh_7` directory (F10-P03-PROFILE-SHADOW).
+
+| Field | Previous replay `41238620036` (historical, TEST `dc18e36d9`) | Re-pin replay (TEST `146e7acf1`) |
+| --- | --- | --- |
+| JUnit tests | **634** | PENDING |
+| Passed | **625** | PENDING |
+| Skipped | **9** (nine individual `ACCEPTED_NA` dispositions; 0 unregistered / 0 stale) | PENDING |
+| Failed / errors | **0 / 0** | PENDING |
+| Xfailed | **0** | PENDING |
+| Profile | `MANIFEST.json` → `pytest_profile.command` | same profile |
+| Log | GHA run `41238620036` artifact `ebh7-p03-l3-dc18e36d971c93c8f631fbc86f73149d1b81b4d7` (pytest.log, junit.xml, meta.txt, junit-summary.json, skip-disposition.json, f10-attestation.json) | PENDING |
 
 ## INT2E / ECAP
 

@@ -32,6 +32,9 @@ Rows classed `CURRENT_HEAD_REQUALIFICATION`, `ALREADY_CERTIFIED_REUSABLE`, `N/A_
 | B-P6-G | ALL | W7 | T-IGX-036-V | 0 | — | B-P6-R, B-P6-M | YES | OD-PDC-SEQ-01: implement in an isolated worktree; merge only after MCP-SERVER-X P8 publication; ACT-N11 re-activation at PDC-P7-00 | IA-GLOBAL (P8) |
 | B-P6-F | ALL | W8 | T-IGX-036-X | 0 | — | B-P6-G | YES | OD-PDC-SEQ-01: implement in an isolated worktree; merge only after MCP-SERVER-X P8 publication; ACT-N11 re-activation at PDC-P7-00 | IA-GLOBAL (P8) |
 | B-P6-E | ALL | W9 | T-IGX-036-W | 0 | — | B-P6-G, B-P6-F | no | No product path: may merge before MCP-SERVER-X P8 | IA-GLOBAL (P8) |
+| B-P6-H | ALL | W10 | T-IGX-036-Y | 0 | — | B-P6-E | no | No product path: may merge before MCP-SERVER-X P8 | IA-GLOBAL (P8) |
+| B-P6-I | ALL | W11 | T-IGX-036-Z | 0 | — | B-P6-F | YES | OD-PDC-SEQ-01: implement in an isolated worktree; merge only after MCP-SERVER-X P8 publication; ACT-N11 re-activation at PDC-P7-00 | IA-GLOBAL (P8) |
+| B-P6-J | ALL | W12 | T-IGX-040-A | 0 | — | B-P6-I | YES | OD-PDC-SEQ-01: implement in an isolated worktree; merge only after MCP-SERVER-X P8 publication; ACT-N11 re-activation at PDC-P7-00 | IA-GLOBAL (P8) |
 
 ## B-P3 — Ownership records closed in P3
 
@@ -349,6 +352,42 @@ Rows classed `CURRENT_HEAD_REQUALIFICATION`, `ALREADY_CERTIFIED_REUSABLE`, `N/A_
 - **Tests:** PDC_P6_ACCEPTANCE_RECORD.md; tests/qualification/ebh_7 green at the new pin
 - **Evidence (exact SHA):** implementation SHA and publication SHA recorded in `PDC_SHA_LADDER.md`; test log under `.tmp/proof/pdc-x-p5/B-P6-E/`; audited by IA-GLOBAL (P8) at the PDC-P7 audited SHA.
 - **Merge gate:** No product path: may merge before MCP-SERVER-X P8
+
+| Requirement | Class | Test case |
+| --- | --- | --- |
+| — | — | — |
+
+## B-P6-H — EBH-7 B6-F10 computed certification at the P6 pin: closed-stage family evidence (FRZ-AUD, FRZ-EVOL), C4 path classification, replay-profile coverage
+
+- **Ticket:** T-IGX-036-Y · **Wave:** W10 · **ADR:** — · **Auditor:** IA-GLOBAL (P8)
+- **Write set:** `tests/qualification/ebh_7/_ebh7_f10_canonical_inputs.py`, `tests/qualification/ebh_7/_ebh7_f10_ecap_normative_matrix.py`, `tests/qualification/ebh_7/test_ebh_7_b6_f10_c1_c4_closure_gates.py`, `docs/project/maintainers/qualification/ebh_7_p03_independent_replay/MANIFEST.json`, `docs/project/maintainers/qualification/ebh_7_p03_independent_replay/ARTIFACT_DIGESTS.json`
+- **Tests:** tests/qualification/ebh_7/test_ebh_7_b6_f10_c1_c4_closure_gates.py; the real F10 gate and five cascade tests stay red until the final re-pin
+- **Evidence (exact SHA):** implementation SHA and publication SHA recorded in `PDC_SHA_LADDER.md`; test log under `.tmp/proof/pdc-x-p5/B-P6-H/`; audited by IA-GLOBAL (P8) at the PDC-P7 audited SHA.
+- **Merge gate:** No product path: may merge before MCP-SERVER-X P8
+
+| Requirement | Class | Test case |
+| --- | --- | --- |
+| — | — | — |
+
+## B-P6-I — Omnibus repair of the cheap P6 debt: pdc_x process exit (R-05), stale baseline-red test fixtures, unused embedding_provider/ollama manifest
+
+- **Ticket:** T-IGX-036-Z · **Wave:** W11 · **ADR:** — · **Auditor:** IA-GLOBAL (P8)
+- **Write set:** `intergrax/integrations/providers/embedding_provider/ollama/manifest.py`, `applications/local_workspace_application/tests/test_run_artifact_metadata.py`, `tests/integration/runtime/nexus/tracing/test_sqlite_run_trace_store.py`, `tests/unit/integrations/providers/test_p5_m6_p4_providers.py`, `tests/unit/rag/embedding/test_hf_embedding_provider_execution.py`, `tests/qualification/pdc_x/conftest.py`, `tests/qualification/pdc_x/xd/test_xd_03_agent_governance.py`, `tests/qualification/pdc_x/p6_debt/`
+- **Tests:** tests/qualification/pdc_x/p6_debt/; the pdc_x pytest process exits after its summary line
+- **Evidence (exact SHA):** implementation SHA and publication SHA recorded in `PDC_SHA_LADDER.md`; test log under `.tmp/proof/pdc-x-p5/B-P6-I/`; audited by IA-GLOBAL (P8) at the PDC-P7 audited SHA.
+- **Merge gate:** OD-PDC-SEQ-01: implement in an isolated worktree; merge only after MCP-SERVER-X P8 publication; ACT-N11 re-activation at PDC-P7-00
+
+| Requirement | Class | Test case |
+| --- | --- | --- |
+| — | — | — |
+
+## B-P6-J — MCP-RC handoff repairs: the single openai catalog row dispatches on integration_category (F-49, F-50 pins); ENT-AUDIT impact rule for the Tier-3 applications/ root (F-41)
+
+- **Ticket:** T-IGX-040-A · **Wave:** W12 · **ADR:** — · **Auditor:** IA-GLOBAL (P8)
+- **Write set:** `intergrax/integrations/providers/embedding_provider/openai/register.py`, `intergrax/platform/enterprise_audit/impact_map.py`, `intergrax/platform/enterprise_audit/data/changed_since_impact_map.v1.json`, `tests/qualification/pdc_x/p6_ecapfix/`, `tests/qualification/pdc_x/p6_impact/`
+- **Tests:** tests/qualification/pdc_x/p6_ecapfix/ and p6_impact/; xd_12 and p6_impact coverage tests green on development and on a tree that contains the MCP-RC change
+- **Evidence (exact SHA):** implementation SHA and publication SHA recorded in `PDC_SHA_LADDER.md`; test log under `.tmp/proof/pdc-x-p5/B-P6-J/`; audited by IA-GLOBAL (P8) at the PDC-P7 audited SHA.
+- **Merge gate:** OD-PDC-SEQ-01: implement in an isolated worktree; merge only after MCP-SERVER-X P8 publication; ACT-N11 re-activation at PDC-P7-00
 
 | Requirement | Class | Test case |
 | --- | --- | --- |

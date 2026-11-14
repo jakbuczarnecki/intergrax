@@ -10,6 +10,7 @@ import pytest
 from tests.qualification.ebh_7._constants import (
     EBH7_B5_GHA_RUN_ID,
     EBH7_B5_REPLAY_HEAD_SHA,
+    EBH7_INDEPENDENT_ACCEPTANCE_BASELINE_SHA,
     EBH7_TEST_EXECUTION_SHA,
 )
 from tests.qualification.ebh_7._ebh7_f10_canonical_inputs import F10_MATRIX_REL, cached_canonical_f10_inputs
@@ -42,7 +43,8 @@ def test_b6_f11_dossier_replay_profile_current() -> None:
         encoding="utf-8"
     )
     manifest = _MANIFEST.read_text(encoding="utf-8")
-    assert EBH7_TEST_EXECUTION_SHA in dossier
+    # Signed dossier cites the independently accepted tree; the re-pinned TEST pin is recorded in the MANIFEST.
+    assert EBH7_INDEPENDENT_ACCEPTANCE_BASELINE_SHA in dossier
     assert EBH7_B5_GHA_RUN_ID in dossier
     assert EBH7_B5_REPLAY_HEAD_SHA in dossier
     assert "test_ebh_5_dual_slug_rpl_e_operational_gates.py" in dossier
@@ -57,7 +59,7 @@ def test_b6_f11_traceability_effective_sha_roles() -> None:
     text = (_REPO / "docs/project/maintainers/qualification/EBH_7_FINAL_CLOSURE_TRACEABILITY.md").read_text(
         encoding="utf-8"
     )
-    assert EBH7_TEST_EXECUTION_SHA in text
+    assert EBH7_INDEPENDENT_ACCEPTANCE_BASELINE_SHA in text
     assert EBH7_B5_GHA_RUN_ID in text
     assert "EBH_7_PROTOCOL_03_INDEPENDENT_AUDIT_PASS_RECORD.md" in text
     assert "8afff322cb2525f0106c2bbccf2d44f682d3e0df" in text  # historical B6 corrective preserved

@@ -57,3 +57,6 @@ Chat decisions of the Operator, transcribed in English.
 - **Group C and D:** unchanged (MCP P7 owns the disposition rows; Docker stays forbidden by C10/C15).
 - **Publication:** wave B (ticket T-IGX-036-I) merged as PR #471 at `5836a5a5b`.
 
+## Status of groups B1/B2 (T-IGX-036-W, 2026-11-14)
+
+Groups B1 and B2 are being re-pinned under T-IGX-036-W (TEST_EXECUTION_SHA `146e7acf1`); the fresh L3 replay result is pending, so B1/B2 are not resolved by this line. After the re-pin the B6-F10 computed certification (C1 closed downstream stages, C4 unclassified paths, C4-CLASS-contract) is still BLOCKED independently of the pin; by Operator decision it stays red and is not repaired in W1.
