@@ -1,5 +1,15 @@
 {
   "path_prefix_to_check_ids": {
+    "applications": [
+      "ENT-A-BND-01",
+      "ENT-A-CTR-01",
+      "ENT-A-CTR-02",
+      "ENT-A-CTR-03",
+      "ENT-A-SEC-01",
+      "ENT-A-SEC-02",
+      "ENT-A-TYP-01",
+      "VBN-CONTRACT-LEAKAGE"
+    ],
     "intergrax/agent_distribution": [
       "ENT-A-BND-01",
       "ENT-A-OWN-01",
