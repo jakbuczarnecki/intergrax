@@ -1,0 +1,7 @@
+## head: bb78a7432f7da4b38d3f25ada42310306df0f36c
+## verify_iiac_audit_manifest (addendum 3)
+verify_iiac_audit_manifest: PASS
+exit=0
+## verify_iiac_role_separation --strict-product-diff (addendum 3)
+verify_iiac_role_separation: PASS
+exit=0

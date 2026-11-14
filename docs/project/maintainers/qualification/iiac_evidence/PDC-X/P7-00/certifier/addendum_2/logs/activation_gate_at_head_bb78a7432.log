@@ -1,0 +1,4 @@
+## head: bb78a7432f7da4b38d3f25ada42310306df0f36c
+IIAC policy activation: FAIL
+  - ACT-N11 product path changed after the audited SHA: intergrax/integrations/providers/embedding_provider/ollama/register.py
+exit=1

@@ -1,0 +1,17 @@
+# bound IIAC-GOV-1 artifacts: SHA-256 at d5c51df0e vs at HEAD bb78a7432f7da4b38d3f25ada42310306df0f36c vs record/manifest digests
+iiac_evidence/IIAC-GOV-1/certification/IIAC_ACT01_INDEPENDENT_REAUDIT_DOSSIER.md
+  at d5c51df0e: c405c65faf53243a0511b0b9584a9f3abda4db08c09ee9b9266c86fe9f6b7a4e
+  at HEAD     : c405c65faf53243a0511b0b9584a9f3abda4db08c09ee9b9266c86fe9f6b7a4e
+iiac_evidence/ENT-AUDIT-X/act_n11_recovery/audit_scope.json
+  at d5c51df0e: e06ce433ac1c260390885e19cc60b0687be9d8908d78bd38ae4fb5f1102fe56f
+  at HEAD     : e06ce433ac1c260390885e19cc60b0687be9d8908d78bd38ae4fb5f1102fe56f
+iiac_evidence/ENT-AUDIT-X/act_n11_recovery/test_matrix.txt
+  at d5c51df0e: d5028f194bb7917d07e8df5264075952dcf8757503975042988caba6e89a240b
+  at HEAD     : d5028f194bb7917d07e8df5264075952dcf8757503975042988caba6e89a240b
+iiac_evidence/HIST-P5-2026-11-09/HIST_P5_REACTIVATION_FINDINGS.json
+  at d5c51df0e: df3648f926dad3199ff40c7c83c7fae4ed7a26bd1c67701a355bc7130073f831
+  at HEAD     : df3648f926dad3199ff40c7c83c7fae4ed7a26bd1c67701a355bc7130073f831
+# record digest fields at HEAD
+c405c65faf53243a0511b0b9584a9f3abda4db08c09ee9b9266c86fe9f6b7a4e
+# is origin/development head in mcp-rc:
+no (8d90d345b)

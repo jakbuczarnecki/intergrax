@@ -1,0 +1,30 @@
+# guardrail and pin git checks at bb78a7432f7da4b38d3f25ada42310306df0f36c (certifier preflight addendum 2)
+## scripts/governance, .github, ruleset: changes 7801dcb12..HEAD
+(end)
+## scripts/governance and .github changes 2d3eceb6c..HEAD
+(end)
+## MATERIAL_GOVERNANCE_PATHS changes 2d3eceb6c..HEAD
+(end)
+## activation record: commits since 6a6279a49
+9949fe2c3 gov(mcp-rc): phase-2 pin effective_from_sha for the ACT-N11 MCP-RC integrated-baseline activation
+92d730821 gov(mcp-rc): phase-1 IIAC activation record for the ACT-N11 MCP-RC integrated-baseline rebind
+## activation record diff 9949fe2c3..HEAD
+(empty = unchanged since phase 2)
+## signed decision file: commits
+afdf27e62 docs(mcp): sign the MCP-RC ACT-N11 activation decision under DELEGATION-MCP-RC-2 (T-IGX-038-F)
+16938dae8 docs(mcp): rewrite the unsigned MCP-RC activation decision for the integrated baseline (T-IGX-038-F)
+83e587553 docs(mcp): widen the unsigned MCP-RC activation decision to the merged development tree (T-IGX-038-F)
+e52d1f15e docs(mcp): draft the unsigned IIAC activation decision for MCP-RC (T-IGX-038-F)
+## FRZ / P8 / ticket Approved lines changed since 7801dcb12
+(end)
+21:+Approved: operator-delegate @ 2026-11-14T08:07:57+01:00
+(no Approved: line change above this)
+## auditor files edited by integration/other sessions since 7801dcb12 (outside addendum_3 and round-4 record)
+(end)
+## AI attribution trailers in commits 7801dcb12..HEAD
+0
+## Ref trailers on product-path commits: 7801dcb12..HEAD (commits touching scripts/ intergrax/ agents/ applications/)
+0fc8badd8 1
+f209febbe 1
+3b97c5350 1
+ece78ade7 1
