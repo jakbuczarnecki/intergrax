@@ -25,3 +25,11 @@ OD signatures; FRZ promotion and the PDC-X roadmap closure; IIAC activation line
 ## Separation
 
 The implementer session and its implementer subagents never write `Approved:` lines. A delegate session does not implement the ticket it signs.
+
+## Amendment 1 — product fix added to T-IGX-036-X (Operator decision)
+
+- **Basis:** a new Operator decision, not the standing delegation. The implementer of T-IGX-036-X stopped because the test-only fix is not sufficient: with the owning row registered first, `resolve` for the embedding category fails with `TypeError` because the factory of the single `ollama` row (`create_ollama_model_serving_runtime`) ignores `integration_category`. The orchestrator asked the Operator in chat whether to extend the ticket with the product fix. The Operator answered in English rendering: **"Yes, extend with the product fix"** (original wording in Polish: "Tak, rozszerz o produkt").
+- **Extension** (four product paths, none under `intergrax/contracts/` or `intergrax/applications/_shared/`): `intergrax/integrations/providers/model_serving_runtime/ollama/bundle.py`, `intergrax/integrations/providers/model_serving_runtime/ollama/register.py`, `intergrax/integrations/providers/embedding_provider/ollama/bundle.py`, `intergrax/integrations/providers/embedding_provider/ollama/register.py`. The catalog, the registry package and the shared factories stay out of the write set.
+- **Effect on the signature:** the plan digest of T-IGX-036-X changed, so the earlier `Approved:` line no longer applies. The ticket returns to `plan_pending`.
+- **Delegation:** a delegate session may re-sign **T-IGX-036-X only**, under the same checks as above, with check 4 of the earlier delegation read as: the write set contains exactly the four named product paths plus the two test paths and nothing under `intergrax/contracts/`, `intergrax/applications/_shared/`, `intergrax/integrations/registry/` or `intergrax/integrations/_shared/`; and additionally confirming that the plan keeps one catalog row per slug and adds no new authority.
+- **Not delegated:** further write-set amendments of T-IGX-036-X return to the Operator.
