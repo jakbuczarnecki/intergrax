@@ -6,13 +6,13 @@ P6 acceptance record (XD-01..12, DUP-X/EBH-4 gates, ECAP FULL on the integrated 
 
 ## Plan digest
 
-Plan digest: ba4a76668177182af9e4a3d5df0624e9fbe527c9da68508468222fca171ce45d
+Plan digest: ff9bcd9fb91fe6d4653741c3dc1baf375455ccb0c43cef4e0543d2d1ce110b00
 
 Canonical plan: [`governance/tickets/plans/PLAN_T-IGX-036-W.md`](plans/PLAN_T-IGX-036-W.md).
 
 ## Approved
 
-_Pending: Operator approval. No delegation record covers this ticket; the plan asks the Operator two decisions at signing. The implementer never writes this line._
+_Pending: delegate signing per [`DELEGATION-PDC-P6-REPIN.md`](../../docs/project/maintainers/qualification/platform_domain_completeness/operator_decisions/DELEGATION-PDC-P6-REPIN.md). The implementer never writes this line._
 
 ## Test contract
 

@@ -27,12 +27,13 @@ Design constraints: no change under `intergrax/`, `agents/`, `applications/`; no
 ## Ordering and risks (from the dossier)
 
 - After the new pin, a change to any path outside the identity allowlist (including `governance/tickets/`, `uv.lock`, `pyproject.toml`, `scripts/` other than the verifier and the renderer, `tests/` other than the listed ebh_7 gate files) fails the gate again. So this ticket's own plan, signature and WBS records merge before the pin tip is taken; no ticket record edit follows, and the pin is taken right before W1 with no dependency-bot merge in between.
-- Product repairs triggered by P7 or P8 findings change product paths and need another re-pin. The Operator is told this before signing (see Operator decisions below).
+- Product repairs triggered by P7 or P8 findings change product paths and need another re-pin. The Operator accepted this (Operator decision 1 below).
 
-## Operator decisions (asked at signing)
+## Operator decisions (answered 2026-11-14, see `DELEGATION-PDC-P6-REPIN.md`)
 
-1. Accept a second re-pin if P7 or P8 findings change product paths, or defer W Part B until after P8.
-2. Pause dependency-bot merges (`uv.lock`) between the pin and the end of the replay.
+1. Re-pin now; a further re-pin is accepted if P7 or P8 findings change product paths.
+2. Dependency-bot merges (`uv.lock`) are held from the cut of W1 to the recording of the replay in W2.
+3. The plan is signed by a delegate session under that record.
 
 ## Write set
 
