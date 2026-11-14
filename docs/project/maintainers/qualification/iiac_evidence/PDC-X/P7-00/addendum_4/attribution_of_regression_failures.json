@@ -1,0 +1,103 @@
+{
+  "stage_id": "PDC-X/P7-00/addendum_4",
+  "method": "failures of the one-process regression run (tree 0cb5dd011, short-path checkout) re-run by node id in three short-path checkouts, one pytest process each",
+  "long_combined_run": {
+    "entries": 92,
+    "failed": 236,
+    "passed": 5833,
+    "skipped": 176,
+    "xfailed": 1,
+    "seconds": 3190,
+    "pytest_exit": "by itself"
+  },
+  "first_attempt": "a run with ebh_7 and p6_debt inside the same process was aborted after 50 minutes at 24 percent (logs/addendum4_regression_run_first_attempt_aborted_too_slow.stdout.txt); ebh_7 and the whole pdc_x directory were run separately",
+  "isolated": {
+    "head_0cb5dd011": {
+      "failed": 227,
+      "passed": 9
+    },
+    "prev_0fc8badd8": {
+      "failed": 226,
+      "passed": 10
+    },
+    "pin_2d3eceb6c": {
+      "failed": 224,
+      "passed": 12
+    }
+  },
+  "classes": [
+    {
+      "class": "new since 0fc8badd8 (introduced by this delta)",
+      "count": 1,
+      "ids": "roadmap_replay_x/test_roadmap_replay_x_closure_counter_integrity.py::test_b6_03_scoped_disposition_valid_at_head (scoped_path_not_in_prod_diff for the deleted ollama manifest)",
+      "finding": "F-56"
+    },
+    {
+      "class": "new since the pin 2d3eceb6c, not caused by this delta",
+      "count": 10,
+      "ids": "COMPAT-X event-evolution gates r3_p0 x4, r3_r1 x6",
+      "finding": "F-35 (unchanged)"
+    },
+    {
+      "class": "red at the pin as well",
+      "count": 216,
+      "ids": "provider cutover and category migration tests, agent_distribution, roadmap_replay_x (5), duckdb-dependent ebh_5 tests (3), evol_x p03 (1), ent_audit_x launcher (1), hf embedding test (environment)",
+      "finding": "F-53 (unchanged)"
+    },
+    {
+      "class": "fail only inside the long run (order dependent)",
+      "count": 9,
+      "ids": "pass in isolation",
+      "finding": "F-53"
+    }
+  ],
+  "tests_that_pass_unnarrowed": [
+    "tests/qualification/pdc_x/xd/test_xd_12_evol_ent_audit.py::test_xd12_every_pdc_touched_product_module_maps_to_a_domain_check",
+    "tests/qualification/pdc_x/p6_impact/test_p6_impact_map_coverage.py::test_every_pdc_touched_product_module_maps_to_at_least_one_check",
+    "tests/qualification/pdc_x/p6_ecapfix (both wrappers)",
+    "p6_impact tier-3 rule tests",
+    "applications/local_workspace_application/tests/test_run_artifact_metadata.py",
+    "test_sqlite_run_trace_store.py",
+    "test_p5_m6_p4_providers.py::test_pgvector_vector_store*"
+  ],
+  "ebh_7_directory": {
+    "head_0cb5dd011": {
+      "failed": 14,
+      "passed": 365,
+      "skipped": 9
+    },
+    "prev_0fc8badd8": {
+      "failed": 16,
+      "passed": 341,
+      "skipped": 9
+    },
+    "head_only_failures": [],
+    "fixed_since_prev": 2
+  },
+  "pdc_x_whole_directory": {
+    "passed": 975,
+    "skipped": 2,
+    "seconds": 147,
+    "pytest_exit": "by itself, exit 0 (F-09 exit proof)"
+  },
+  "iiac_governance_unit_tests_at_d02c39950": {
+    "failed": 2,
+    "passed": 73,
+    "skipped": 1,
+    "failed_ids": [
+      "test_iiac_activation_gate.py::test_canonical_policy_is_in_force_and_verifies",
+      "test_iiac_negative_guards.py::test_n12_policy_is_in_force_only_with_valid_activation_evidence"
+    ],
+    "note": "both assert that --require-in-force passes; red by design until the rebind (ACT-N11), same class as before"
+  },
+  "logs": [
+    "logs/addendum4_regression_run.stdout.txt",
+    "logs/failing_nodes_at_head.log",
+    "logs/failing_nodes_at_prev.log",
+    "logs/failing_nodes_at_pin.log",
+    "logs/ebh7_dir_run.log",
+    "logs/ebh7_dir_run_at_0fc8badd8.log",
+    "logs/pdc_x_whole_dir_exit_proof_at_0cb5dd011.log",
+    "logs/iiac_governance_tests_at_d02c39950.log"
+  ]
+}

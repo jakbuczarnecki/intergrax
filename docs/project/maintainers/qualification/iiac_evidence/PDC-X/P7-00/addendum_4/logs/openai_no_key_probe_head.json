@@ -1,0 +1,4 @@
+{
+ "embedding_provider": "OK OpenaiEmbeddingProviderIntegration",
+ "managed_retrieval": "IntegrationConfigurationError: OpenAI managed retrieval requires OPENAI_API_KEY or explicit api_key"
+}

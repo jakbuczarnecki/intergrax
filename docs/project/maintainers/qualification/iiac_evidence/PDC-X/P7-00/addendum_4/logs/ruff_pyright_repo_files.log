@@ -1,0 +1,10 @@
+== ruff check
+All checks passed!
+exit=0
+== ruff format --check
+22 files already formatted
+exit=0
+== pyright openai register + impact_map
+Please install the new version or set PYRIGHT_PYTHON_FORCE_VERSION to `latest`
+
+0 errors, 0 warnings, 0 informations

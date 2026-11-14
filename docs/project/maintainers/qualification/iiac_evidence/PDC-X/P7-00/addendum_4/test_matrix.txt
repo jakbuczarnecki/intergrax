@@ -1,0 +1,49 @@
+PDC-P7-00 addendum 4 - test matrix (auditor runs, Windows, one pytest/python process at a time)
+base 0fc8badd81c4c3e46a3d0ce262c08e8efba41898 -> audited head d02c399508c40b4a06d846410334d677f226c18d (mcp-rc; development 4835bae8e merged as 0cb5dd011f363a7318246e907a1d307ad968db38, then development 83d939095); tests executed on the product-identical tree 0cb5dd011 (IIAC governance unit tests at d02c39950)
+previous activation pin 2d3eceb6cf7e93dccd4d96919319a6c969b4444b; current record audited tree 324d9dba37cb54e1b74a79a05148d2dcc05e6d09
+auditor branch p7-00-baseline-audit = origin/mcp-rc merged twice (0cb5dd011, then d02c39950); product tree identical to d02c39950
+interpreter: D:\Projekty\intergrax\.venv (Python 3.12.11), tzdata through a PYTHONPATH overlay, nothing installed; duckdb is not installed there. Runs in short-path detached checkouts under D:\Projekty\_wt\_scratch (p7a4-head, -prev, -pin, -d02, -mut)
+Environment note: a MSYS-form PYTHONPATH makes Windows python import the main checkout; every command used a Windows-form path
+
+0. Scope from git (audit_scope.json)
+   git diff --name-only 0fc8badd8 0cb5dd011 -- intergrax agents applications = 5 paths: openai/register.py (+30/-3), impact_map.py (+23/-1), changed_since_impact_map.v1.json (+10), ollama/manifest.py (deleted, -17), applications/local_workspace_application/tests/test_run_artifact_metadata.py (+8/-1)
+   ollama/register.py is NOT in that diff (unchanged since 0fc8badd8, covered by addendum 3)
+   git diff --name-only 324d9dba3 0cb5dd011 -- intergrax agents applications = 6 paths (the five above + ollama/register.py)
+   git diff 0cb5dd011 d02c39950 -- intergrax agents applications = empty; non-docs delta: governance/tickets/T-IGX-040-B.md only; protocol numstat 2/2 (lines 4 and 91); DELEGATION-PDC-P7-ACT.md new
+   git diff b0e19bf61 0cb5dd011 -- <23 MCP-RC paths> = empty
+   no path under scripts/governance, scripts/maintenance, scripts/enterprise_audit, agent-env, the activation record, the G0 matrix, pyproject.toml, uv.lock changed; .github/workflows/unit-tests.yml (EBH-7 pins) and scripts/qualification/pdc_x_wbs.py did (F-57)
+   verify_iiac_policy_activation at the merged head (logs/governance_gates_at_d02c39950.log): exit 1; lines: 1 x ACT-N11 stale audit after material governance change (the protocol) and exactly 6 x ACT-N11 product path changed after the audited SHA (the six paths)
+   combined unique ACT-N11 paths vs 2d3eceb6c: 161 (158 + openai/register.py + ollama/manifest.py + the local_workspace test)
+
+1. Dispatch probes, both shared-slug rows (read-only, in-process) [adversarial_scripts/addendum_4_dispatch_probes.py, logs/dispatch_probes_head.json vs dispatch_probes_prev.json]
+   P1 201 (slug, category) pairs: exactly 1 differs, openai|embedding_provider; hf, vllm, llama_cpp each own a single-category row (own manifest and slug) and resolve unchanged; multi-category rows: ollama, openai only
+   P2 factory called directly (10 shapes per row)  P3 wrapper vs spy owning factory  P4 revision generation / ordering / idempotency / fail-closed without owning row  P5 isolated registration sink
+   P6 window between the two catalog writes (open for both rows, F-52)  P7 200-round concurrent soak: 0 wrong at head  P8 first / second / override full bootstrap: one row each, same generation
+   openai no-key probe (logs/openai_no_key_probe_head.json): embedding category resolves, managed_retrieval fails closed
+   added-line surface scan (logs/added_line_surface_scan.log): imports only
+   impact map probes [adversarial_scripts/addendum_4_impact_map_probes.py, logs/impact_map_probes.results.json]: 1 key added (applications), none removed/changed; 0 of 19472 tracked files lose impact ids, 1016 gain; SSOT equals generator; 52 ids of the first table exist with entrypoints; tier-3 ids are the 8 ids of the intergrax/applications rule
+   impact selection probe from addendum 3 not repeated; the eight applications/*/mcp/server.py modules are covered by the root rule (tests below)
+
+2. Regression run, ONE pytest process, 92 entries, 3190 s [adversarial_scripts/run_addendum4_tests.py, logs/addendum4_regression_run.stdout.txt]
+   contents: MCP-RC contract (39 files, list from Python), p6_ecapfix (both wrappers), reg_p, p6_impact (coverage + tier-3 rule), XD-12, ent_audit_x, evol_x, roadmap_replay_x, EBH-5 package C v2 + three gate files, integration catalog / registry / contracts / managed_retrieval / provider unit tests, rag bootstrap, dep1, test_iiac_g0_inventory, test_pdc_x_*, local_workspace test, sqlite trace test, hf embedding test, status files of F-35
+   result: 236 failed, 5833 passed, 176 skipped, 1 xfailed (known TRANSFERRED case), exited by itself; no MCP test failed; XD-12, p6_impact and p6_ecapfix all pass
+   first attempt (ebh_7 and p6_debt inside the process) aborted after 50 minutes at 24 percent: logs/addendum4_regression_run_first_attempt_aborted_too_slow.stdout.txt
+   2a. attribution [adversarial_scripts/run_failing_nodes_at_checkout.py, attribution_of_regression_failures.json]: head 227 failed / 9 passed; 0fc8badd8 226 / 10; pin 2d3eceb6c 224 / 12
+       new vs 0fc8badd8: 1 (F-56); new vs the pin: 11 (F-35 x10 + F-56); red at the pin: 216; order dependent: 9
+   2b. ebh_7 directory alone [adversarial_scripts/addendum_4_guarded_pytest.py]: head 14 failed / 365 passed / 9 skipped; 0fc8badd8 16 / 341 / 9; none head-only
+   2c. whole tests/qualification/pdc_x directory: 975 passed, 2 skipped, exited by itself (exit 0) 147 s after start (F-09 exit proof)
+   2d. IIAC governance unit tests at d02c39950 (tests/unit/governance/test_iiac_*.py + test_pdc_x_*): 73 passed, 2 failed (activation red class), 1 skipped
+
+3. Mutation samples, scratch detached checkout D:/Projekty/_wt/_scratch/p7a4-mut at 0cb5dd011
+   wrappers [addendum_4_mutation_sample.py, logs/mutation_sample_wrappers.stdout.txt]: 11 mutants per row x 2 rows (ollama, openai); control green (527 + 3); 20 KILLED, 2 SURVIVED = the equivalent string-comparison mutant of each row
+   tier-3 rule [addendum_4_map_mutation_sample.py, logs/mutation_sample_map.stdout.txt]: 8 mutants; control green (69); 7 KILLED (drop table, reroute to doc check, shrink to one id, trailing slash, unknown id, narrow to one MCP app, rename the tier-0 rule), 1 SURVIVED = weak catch-all intergrax/runtime prefix (known F-44, outside the delta)
+
+4. Static gates [logs/ruff_pyright_repo_files.log, logs/addendum_4_static_gates.log]
+   ruff check + format --check on 22 files of the delta and its tests: clean; pyright on openai/register.py and impact_map.py: 0 errors
+   check_agents_no_tier3_imports, check_agents_no_vendor_sdk_imports, check_context_tier0_import_boundary, check_immutable_security_audit_trail, check_llm_routing_tier_boundary: exit 0
+   check_intergrax_no_applications_imports: exit 1, stdout md5 61159eb9c5e10de4b70f9a7ba4625be9 identical to all earlier audits   uv lock --check: exit 0
+   verify_iiac_g0_inventory_completeness: PASS (17510 paths @ afe9e8abe, its own pinned commit; it does not see the deletion)
+
+5. Not run: GitHub Actions contexts, full tests/unit, tests/e2e/rag, network and live-provider tests, igx_gov ticket, the eight domain replays, the F-35 gates were re-run only as status.
+
+6. verify_iiac_audit_manifest.py and verify_iiac_role_separation.py --strict-product-diff: logs/verify_iiac_audit_manifest.log, logs/verify_iiac_role_separation.log

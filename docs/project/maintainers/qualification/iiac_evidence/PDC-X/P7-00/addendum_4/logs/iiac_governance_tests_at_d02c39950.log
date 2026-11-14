@@ -1,0 +1,10 @@
+.F...............s...............................F...................... [ 94%]
+....                                                                     [100%]
+================================== FAILURES ===================================
+D:\Projekty\_wt\_scratch\p7a4-d02\tests\unit\governance\test_iiac_activation_gate.py:256: AssertionError: IIAC policy activation: FAIL
+D:\Projekty\_wt\_scratch\p7a4-d02\tests\unit\governance\test_iiac_negative_guards.py:281: AssertionError: assert 1 == 0
+=========================== short test summary info ===========================
+FAILED tests/unit/governance/test_iiac_activation_gate.py::test_canonical_policy_is_in_force_and_verifies
+FAILED tests/unit/governance/test_iiac_negative_guards.py::test_n12_policy_is_in_force_only_with_valid_activation_evidence
+2 failed, 73 passed, 1 skipped in 433.61s (0:07:13)
+RUNNER status=EXITED_BY_ITSELF exit=1 seconds_to_summary=454.6 total=455.2
