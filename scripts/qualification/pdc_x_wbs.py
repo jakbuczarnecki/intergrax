@@ -485,6 +485,28 @@ BATCHES: Final[tuple[Batch, ...]] = (
         "IA-GLOBAL (P8)",
         "PDC_P6_ACCEPTANCE_RECORD.md; tests/qualification/ebh_7 green at the new pin",
     ),
+    Batch(
+        "B-P6-I",
+        "ALL",
+        "Omnibus repair of the cheap P6 debt: pdc_x process exit (R-05), stale baseline-red test fixtures, unused embedding_provider/ollama manifest",
+        "T-IGX-036-Z",
+        "W10",
+        (
+            "intergrax/integrations/providers/embedding_provider/ollama/manifest.py",
+            "applications/local_workspace_application/tests/test_run_artifact_metadata.py",
+            "tests/integration/runtime/nexus/tracing/test_sqlite_run_trace_store.py",
+            "tests/unit/integrations/providers/test_p5_m6_p4_providers.py",
+            "tests/unit/rag/embedding/test_hf_embedding_provider_execution.py",
+            "tests/qualification/pdc_x/conftest.py",
+            "tests/qualification/pdc_x/xd/test_xd_03_agent_governance.py",
+            "tests/qualification/pdc_x/p6_debt/",
+        ),
+        "—",
+        ("B-P6-F",),
+        GATE_PRODUCT,
+        "IA-GLOBAL (P8)",
+        "tests/qualification/pdc_x/p6_debt/; the pdc_x pytest process exits after its summary line",
+    ),
 )
 
 # Requirement -> batch overrides where the corrective-task text alone is ambiguous.
@@ -776,6 +798,10 @@ def render_dag() -> str:
         "W7": ("after B-P6-R and B-P6-M", "after MCP-SERVER-X P8"),
         "W8": ("after B-P6-G and the signature of T-IGX-036-X", "any time (no product path)"),
         "W9": ("after B-P6-F and the signature of T-IGX-036-W", "any time (no product path)"),
+        "W10": (
+            "after B-P6-F and the signature of T-IGX-036-Z",
+            "under DELEGATION-PDC-STANDING authorization 3 (one product path: deletion of an unused manifest)",
+        ),
     }
     for wave, bids in waves.items():
         start, merge = starts.get(wave, ("?", "?"))
