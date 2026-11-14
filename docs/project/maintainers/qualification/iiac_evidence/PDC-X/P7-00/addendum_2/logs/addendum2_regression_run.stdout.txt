@@ -1,0 +1,986 @@
+entries: 274
+........................................................................ [  4%]
+........................................................................ [  8%]
+........................................................................ [ 13%]
+........................................................................ [ 17%]
+..............................................x......................... [ 22%]
+........................................................................ [ 26%]
+.....................................................sssssssssssssssssss [ 31%]
+ssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssss...... [ 35%]
+............................s.........................ssssssssssssssssss [ 40%]
+sssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssss..... [ 44%]
+..sss.s......s............................FF.FFF..FF..FF.FFFFFFF..F..FFF [ 48%]
+FFF..................................................................... [ 53%]
+........................................................................ [ 57%]
+........................................................................ [ 62%]
+........................................................................ [ 66%]
+......................................................................F. [ 71%]
+...FFFFF.FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF...................... [ 75%]
+...............................................FF....................... [ 80%]
+.F..FF.............................................F....F............... [ 84%]
+........F.F............................................................. [ 88%]
+........................................................................ [ 93%]
+......................F.F.............F................................. [ 97%]
+........F.............F.............                                     [100%]
+================================== FAILURES ===================================
+_____________________ test_valid_delegate_record_verifies _____________________
+tests\qualification\ent_audit_x\unit\test_baseline_promotion_iiac.py:220: in test_valid_delegate_record_verifies
+    record = _verify(world)
+             ^^^^^^^^^^^^^^
+tests\qualification\ent_audit_x\unit\test_baseline_promotion_iiac.py:215: in _verify
+    return verify_record(world.record_path, for_promotion=True, repo_root=world.root)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+scripts\enterprise_audit\iiac_baseline_promotion.py:350: in verify_record
+    return verify_delegated_record(path, for_promotion=for_promotion, repo_root=repo_root, blob_reader=blob_reader)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+scripts\enterprise_audit\iiac_baseline_promotion.py:326: in verify_delegated_record
+    _verify_delegation(raw, record_path=path, repo_root=repo_root, blob_reader=blob_reader)
+scripts\enterprise_audit\iiac_baseline_promotion.py:215: in _verify_delegation
+    raise ValueError(f"delegate record: delegation record not found at {rel.as_posix()}@{sha}")
+E   ValueError: delegate record: delegation record not found at docs/project/maintainers/qualification/iiac_evidence/ENT-AUDIT-X/operator_decisions/DELEGATION_ENT_01.md@fca141d0be013b5921afed38e45473da1f46dc9a
+_______________ test_signature_on_the_expiry_day_is_still_valid _______________
+tests\qualification\ent_audit_x\unit\test_baseline_promotion_iiac.py:228: in test_signature_on_the_expiry_day_is_still_valid
+    assert _verify(world)["record_origin"] == "operator-delegate"
+           ^^^^^^^^^^^^^^
+tests\qualification\ent_audit_x\unit\test_baseline_promotion_iiac.py:215: in _verify
+    return verify_record(world.record_path, for_promotion=True, repo_root=world.root)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+scripts\enterprise_audit\iiac_baseline_promotion.py:350: in verify_record
+    return verify_delegated_record(path, for_promotion=for_promotion, repo_root=repo_root, blob_reader=blob_reader)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+scripts\enterprise_audit\iiac_baseline_promotion.py:326: in verify_delegated_record
+    _verify_delegation(raw, record_path=path, repo_root=repo_root, blob_reader=blob_reader)
+scripts\enterprise_audit\iiac_baseline_promotion.py:215: in _verify_delegation
+    raise ValueError(f"delegate record: delegation record not found at {rel.as_posix()}@{sha}")
+E   ValueError: delegate record: delegation record not found at docs/project/maintainers/qualification/iiac_evidence/ENT-AUDIT-X/operator_decisions/DELEGATION_ENT_01.md@d36adaa426c1eb98fbbdd868c5a85b854f487692
+________________ test_valid_delegate_record_promotes_baseline _________________
+tests\qualification\ent_audit_x\unit\test_baseline_promotion_iiac.py:249: in test_valid_delegate_record_promotes_baseline
+    out = promote_accepted_baseline(
+scripts\enterprise_audit\iiac_baseline_promotion.py:374: in promote_accepted_baseline
+    record = verify_delegated_record(od_record_path, for_promotion=True, repo_root=root, blob_reader=blob_reader)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+scripts\enterprise_audit\iiac_baseline_promotion.py:326: in verify_delegated_record
+    _verify_delegation(raw, record_path=path, repo_root=repo_root, blob_reader=blob_reader)
+scripts\enterprise_audit\iiac_baseline_promotion.py:215: in _verify_delegation
+    raise ValueError(f"delegate record: delegation record not found at {rel.as_posix()}@{sha}")
+E   ValueError: delegate record: delegation record not found at docs/project/maintainers/qualification/iiac_evidence/ENT-AUDIT-X/operator_decisions/DELEGATION_ENT_01.md@0ef4f897eb53a7c693ef81c5f0264d2234a45098
+____________________ test_cli_promotes_a_delegated_record _____________________
+tests\qualification\ent_audit_x\unit\test_baseline_promotion_iiac.py:279: in test_cli_promotes_a_delegated_record
+    assert _cli(world, bundle) == 0
+E   AssertionError: assert 1 == 0
+E    +  where 1 = _cli(World(root=WindowsPath('D:/Projekty/intergrax/.claude/worktrees/magical-germain-65dac8/build/pytest/50960-38a8247a/tes...roject/maintainers/qualification/iiac_evidence/ENT-AUDIT-X/certification/iiac_audit_session_manifest.ENT-AUDIT-X.json'), WindowsPath('D:/Projekty/intergrax/.claude/worktrees/magical-germain-65dac8/build/pytest/50960-38a8247a/test_cli_promotes_a_delegated_0/bundle'))
+---------------------------- Captured stderr call -----------------------------
+delegate record: delegation record not found at docs/project/maintainers/qualification/iiac_evidence/ENT-AUDIT-X/operator_decisions/DELEGATION_ENT_01.md@72c70e7de4fa25699a30997c9b5021d18aa99df5
+____ test_cli_rejects_a_record_changed_after_delegation_and_writes_nothing ____
+tests\qualification\ent_audit_x\unit\test_baseline_promotion_iiac.py:288: in test_cli_rejects_a_record_changed_after_delegation_and_writes_nothing
+    assert "SHA-256" in capsys.readouterr().err
+E   AssertionError: assert 'SHA-256' in 'delegate record: delegation record not found at docs/project/maintainers/qualification/iiac_evidence/ENT-AUDIT-X/operator_decisions/DELEGATION_ENT_01.md@a3037c6e02556cf1ff364d232ab469eec1f6ffa6\n'
+E    +  where 'delegate record: delegation record not found at docs/project/maintainers/qualification/iiac_evidence/ENT-AUDIT-X/operator_decisions/DELEGATION_ENT_01.md@a3037c6e02556cf1ff364d232ab469eec1f6ffa6\n' = CaptureResult(out='', err='delegate record: delegation record not found at docs/project/maintainers/qualification/iiac_evidence/ENT-AUDIT-X/operator_decisions/DELEGATION_ENT_01.md@a3037c6e02556cf1ff364d232ab469eec1f6ffa6\n').err
+E    +    where CaptureResult(out='', err='delegate record: delegation record not found at docs/project/maintainers/qualification/iiac_evidence/ENT-AUDIT-X/operator_decisions/DELEGATION_ENT_01.md@a3037c6e02556cf1ff364d232ab469eec1f6ffa6\n') = readouterr()
+E    +      where readouterr = <_pytest.capture.CaptureFixture object at 0x000001607C5FBC80>.readouterr
+_____ test_delegate_record_rejected[no_operator_signature_in_delegation] ______
+tests\qualification\ent_audit_x\unit\test_baseline_promotion_iiac.py:342: in test_delegate_record_rejected
+    _verify(world)
+tests\qualification\ent_audit_x\unit\test_baseline_promotion_iiac.py:215: in _verify
+    return verify_record(world.record_path, for_promotion=True, repo_root=world.root)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+scripts\enterprise_audit\iiac_baseline_promotion.py:350: in verify_record
+    return verify_delegated_record(path, for_promotion=for_promotion, repo_root=repo_root, blob_reader=blob_reader)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+scripts\enterprise_audit\iiac_baseline_promotion.py:326: in verify_delegated_record
+    _verify_delegation(raw, record_path=path, repo_root=repo_root, blob_reader=blob_reader)
+scripts\enterprise_audit\iiac_baseline_promotion.py:215: in _verify_delegation
+    raise ValueError(f"delegate record: delegation record not found at {rel.as_posix()}@{sha}")
+E   ValueError: delegate record: delegation record not found at docs/project/maintainers/qualification/iiac_evidence/ENT-AUDIT-X/operator_decisions/DELEGATION_ENT_01.md@6d509ab8c83700423676888588b83807ff084881
+
+During handling of the above exception, another exception occurred:
+tests\qualification\ent_audit_x\unit\test_baseline_promotion_iiac.py:341: in test_delegate_record_rejected
+    with pytest.raises(ValueError, match=match):
+         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E   AssertionError: Regex pattern did not match.
+E    Regex: 'no operator signature line'
+E    Input: 'delegate record: delegation record not found at docs/project/maintainers/qualification/iiac_evidence/ENT-AUDIT-X/operator_decisions/DELEGATION_ENT_01.md@6d509ab8c83700423676888588b83807ff084881'
+___________ test_delegate_record_rejected[template_blank_signature] ___________
+tests\qualification\ent_audit_x\unit\test_baseline_promotion_iiac.py:342: in test_delegate_record_rejected
+    _verify(world)
+tests\qualification\ent_audit_x\unit\test_baseline_promotion_iiac.py:215: in _verify
+    return verify_record(world.record_path, for_promotion=True, repo_root=world.root)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+scripts\enterprise_audit\iiac_baseline_promotion.py:350: in verify_record
+    return verify_delegated_record(path, for_promotion=for_promotion, repo_root=repo_root, blob_reader=blob_reader)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+scripts\enterprise_audit\iiac_baseline_promotion.py:326: in verify_delegated_record
+    _verify_delegation(raw, record_path=path, repo_root=repo_root, blob_reader=blob_reader)
+scripts\enterprise_audit\iiac_baseline_promotion.py:215: in _verify_delegation
+    raise ValueError(f"delegate record: delegation record not found at {rel.as_posix()}@{sha}")
+E   ValueError: delegate record: delegation record not found at docs/project/maintainers/qualification/iiac_evidence/ENT-AUDIT-X/operator_decisions/DELEGATION_ENT_01.md@e154981f0685f873e8c3d1ead810e0df8bdf03df
+
+During handling of the above exception, another exception occurred:
+tests\qualification\ent_audit_x\unit\test_baseline_promotion_iiac.py:341: in test_delegate_record_rejected
+    with pytest.raises(ValueError, match=match):
+         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E   AssertionError: Regex pattern did not match.
+E    Regex: 'no operator signature line'
+E    Input: 'delegate record: delegation record not found at docs/project/maintainers/qualification/iiac_evidence/ENT-AUDIT-X/operator_decisions/DELEGATION_ENT_01.md@e154981f0685f873e8c3d1ead810e0df8bdf03df'
+________ test_delegate_record_rejected[delegation_for_other_decision] _________
+tests\qualification\ent_audit_x\unit\test_baseline_promotion_iiac.py:342: in test_delegate_record_rejected
+    _verify(world)
+tests\qualification\ent_audit_x\unit\test_baseline_promotion_iiac.py:215: in _verify
+    return verify_record(world.record_path, for_promotion=True, repo_root=world.root)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+scripts\enterprise_audit\iiac_baseline_promotion.py:350: in verify_record
+    return verify_delegated_record(path, for_promotion=for_promotion, repo_root=repo_root, blob_reader=blob_reader)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+scripts\enterprise_audit\iiac_baseline_promotion.py:326: in verify_delegated_record
+    _verify_delegation(raw, record_path=path, repo_root=repo_root, blob_reader=blob_reader)
+scripts\enterprise_audit\iiac_baseline_promotion.py:215: in _verify_delegation
+    raise ValueError(f"delegate record: delegation record not found at {rel.as_posix()}@{sha}")
+E   ValueError: delegate record: delegation record not found at docs/project/maintainers/qualification/iiac_evidence/ENT-AUDIT-X/operator_decisions/DELEGATION_ENT_01.md@961bca3af1a2e39361eb91846ac76bd26d6ce450
+
+During handling of the above exception, another exception occurred:
+tests\qualification\ent_audit_x\unit\test_baseline_promotion_iiac.py:341: in test_delegate_record_rejected
+    with pytest.raises(ValueError, match=match):
+         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E   AssertionError: Regex pattern did not match.
+E    Regex: 'covers decision'
+E    Input: 'delegate record: delegation record not found at docs/project/maintainers/qualification/iiac_evidence/ENT-AUDIT-X/operator_decisions/DELEGATION_ENT_01.md@961bca3af1a2e39361eb91846ac76bd26d6ce450'
+________ test_delegate_record_rejected[policy_mismatch_in_delegation] _________
+tests\qualification\ent_audit_x\unit\test_baseline_promotion_iiac.py:342: in test_delegate_record_rejected
+    _verify(world)
+tests\qualification\ent_audit_x\unit\test_baseline_promotion_iiac.py:215: in _verify
+    return verify_record(world.record_path, for_promotion=True, repo_root=world.root)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+scripts\enterprise_audit\iiac_baseline_promotion.py:350: in verify_record
+    return verify_delegated_record(path, for_promotion=for_promotion, repo_root=repo_root, blob_reader=blob_reader)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+scripts\enterprise_audit\iiac_baseline_promotion.py:326: in verify_delegated_record
+    _verify_delegation(raw, record_path=path, repo_root=repo_root, blob_reader=blob_reader)
+scripts\enterprise_audit\iiac_baseline_promotion.py:215: in _verify_delegation
+    raise ValueError(f"delegate record: delegation record not found at {rel.as_posix()}@{sha}")
+E   ValueError: delegate record: delegation record not found at docs/project/maintainers/qualification/iiac_evidence/ENT-AUDIT-X/operator_decisions/DELEGATION_ENT_01.md@fa37ee057f847fb2e5d2e914c82cdb2ded4c505d
+
+During handling of the above exception, another exception occurred:
+tests\qualification\ent_audit_x\unit\test_baseline_promotion_iiac.py:341: in test_delegate_record_rejected
+    with pytest.raises(ValueError, match=match):
+         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E   AssertionError: Regex pattern did not match.
+E    Regex: 'policy version'
+E    Input: 'delegate record: delegation record not found at docs/project/maintainers/qualification/iiac_evidence/ENT-AUDIT-X/operator_decisions/DELEGATION_ENT_01.md@fa37ee057f847fb2e5d2e914c82cdb2ded4c505d'
+_______________ test_delegate_record_rejected[digest_mismatch] ________________
+tests\qualification\ent_audit_x\unit\test_baseline_promotion_iiac.py:342: in test_delegate_record_rejected
+    _verify(world)
+tests\qualification\ent_audit_x\unit\test_baseline_promotion_iiac.py:215: in _verify
+    return verify_record(world.record_path, for_promotion=True, repo_root=world.root)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+scripts\enterprise_audit\iiac_baseline_promotion.py:350: in verify_record
+    return verify_delegated_record(path, for_promotion=for_promotion, repo_root=repo_root, blob_reader=blob_reader)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+scripts\enterprise_audit\iiac_baseline_promotion.py:326: in verify_delegated_record
+    _verify_delegation(raw, record_path=path, repo_root=repo_root, blob_reader=blob_reader)
+scripts\enterprise_audit\iiac_baseline_promotion.py:215: in _verify_delegation
+    raise ValueError(f"delegate record: delegation record not found at {rel.as_posix()}@{sha}")
+E   ValueError: delegate record: delegation record not found at docs/project/maintainers/qualification/iiac_evidence/ENT-AUDIT-X/operator_decisions/DELEGATION_ENT_01.md@ef08a38ae4877af74faff917efe1aad67d18fc82
+
+During handling of the above exception, another exception occurred:
+tests\qualification\ent_audit_x\unit\test_baseline_promotion_iiac.py:341: in test_delegate_record_rejected
+    with pytest.raises(ValueError, match=match):
+         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E   AssertionError: Regex pattern did not match.
+E    Regex: 'SHA-256'
+E    Input: 'delegate record: delegation record not found at docs/project/maintainers/qualification/iiac_evidence/ENT-AUDIT-X/operator_decisions/DELEGATION_ENT_01.md@ef08a38ae4877af74faff917efe1aad67d18fc82'
+_______ test_delegate_record_rejected[record_changed_after_delegation] ________
+tests\qualification\ent_audit_x\unit\test_baseline_promotion_iiac.py:342: in test_delegate_record_rejected
+    _verify(world)
+tests\qualification\ent_audit_x\unit\test_baseline_promotion_iiac.py:215: in _verify
+    return verify_record(world.record_path, for_promotion=True, repo_root=world.root)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+scripts\enterprise_audit\iiac_baseline_promotion.py:350: in verify_record
+    return verify_delegated_record(path, for_promotion=for_promotion, repo_root=repo_root, blob_reader=blob_reader)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+scripts\enterprise_audit\iiac_baseline_promotion.py:326: in verify_delegated_record
+    _verify_delegation(raw, record_path=path, repo_root=repo_root, blob_reader=blob_reader)
+scripts\enterprise_audit\iiac_baseline_promotion.py:215: in _verify_delegation
+    raise ValueError(f"delegate record: delegation record not found at {rel.as_posix()}@{sha}")
+E   ValueError: delegate record: delegation record not found at docs/project/maintainers/qualification/iiac_evidence/ENT-AUDIT-X/operator_decisions/DELEGATION_ENT_01.md@780a599b61a6af39e5e4c4d745e94fa13058a60f
+
+During handling of the above exception, another exception occurred:
+tests\qualification\ent_audit_x\unit\test_baseline_promotion_iiac.py:341: in test_delegate_record_rejected
+    with pytest.raises(ValueError, match=match):
+         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E   AssertionError: Regex pattern did not match.
+E    Regex: 'SHA-256'
+E    Input: 'delegate record: delegation record not found at docs/project/maintainers/qualification/iiac_evidence/ENT-AUDIT-X/operator_decisions/DELEGATION_ENT_01.md@780a599b61a6af39e5e4c4d745e94fa13058a60f'
+______________ test_delegate_record_rejected[expired_delegation] ______________
+tests\qualification\ent_audit_x\unit\test_baseline_promotion_iiac.py:342: in test_delegate_record_rejected
+    _verify(world)
+tests\qualification\ent_audit_x\unit\test_baseline_promotion_iiac.py:215: in _verify
+    return verify_record(world.record_path, for_promotion=True, repo_root=world.root)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+scripts\enterprise_audit\iiac_baseline_promotion.py:350: in verify_record
+    return verify_delegated_record(path, for_promotion=for_promotion, repo_root=repo_root, blob_reader=blob_reader)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+scripts\enterprise_audit\iiac_baseline_promotion.py:326: in verify_delegated_record
+    _verify_delegation(raw, record_path=path, repo_root=repo_root, blob_reader=blob_reader)
+scripts\enterprise_audit\iiac_baseline_promotion.py:215: in _verify_delegation
+    raise ValueError(f"delegate record: delegation record not found at {rel.as_posix()}@{sha}")
+E   ValueError: delegate record: delegation record not found at docs/project/maintainers/qualification/iiac_evidence/ENT-AUDIT-X/operator_decisions/DELEGATION_ENT_01.md@eba2344b266c6660f10e377a8418a93aed0131e7
+
+During handling of the above exception, another exception occurred:
+tests\qualification\ent_audit_x\unit\test_baseline_promotion_iiac.py:341: in test_delegate_record_rejected
+    with pytest.raises(ValueError, match=match):
+         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E   AssertionError: Regex pattern did not match.
+E    Regex: 'validity window'
+E    Input: 'delegate record: delegation record not found at docs/project/maintainers/qualification/iiac_evidence/ENT-AUDIT-X/operator_decisions/DELEGATION_ENT_01.md@eba2344b266c6660f10e377a8418a93aed0131e7'
+____________ test_delegate_record_rejected[signed_before_operator] ____________
+tests\qualification\ent_audit_x\unit\test_baseline_promotion_iiac.py:342: in test_delegate_record_rejected
+    _verify(world)
+tests\qualification\ent_audit_x\unit\test_baseline_promotion_iiac.py:215: in _verify
+    return verify_record(world.record_path, for_promotion=True, repo_root=world.root)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+scripts\enterprise_audit\iiac_baseline_promotion.py:350: in verify_record
+    return verify_delegated_record(path, for_promotion=for_promotion, repo_root=repo_root, blob_reader=blob_reader)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+scripts\enterprise_audit\iiac_baseline_promotion.py:326: in verify_delegated_record
+    _verify_delegation(raw, record_path=path, repo_root=repo_root, blob_reader=blob_reader)
+scripts\enterprise_audit\iiac_baseline_promotion.py:215: in _verify_delegation
+    raise ValueError(f"delegate record: delegation record not found at {rel.as_posix()}@{sha}")
+E   ValueError: delegate record: delegation record not found at docs/project/maintainers/qualification/iiac_evidence/ENT-AUDIT-X/operator_decisions/DELEGATION_ENT_01.md@3c5480ff6c1d1a57ae6340a782e8b23011b8acba
+
+During handling of the above exception, another exception occurred:
+tests\qualification\ent_audit_x\unit\test_baseline_promotion_iiac.py:341: in test_delegate_record_rejected
+    with pytest.raises(ValueError, match=match):
+         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E   AssertionError: Regex pattern did not match.
+E    Regex: 'validity window'
+E    Input: 'delegate record: delegation record not found at docs/project/maintainers/qualification/iiac_evidence/ENT-AUDIT-X/operator_decisions/DELEGATION_ENT_01.md@3c5480ff6c1d1a57ae6340a782e8b23011b8acba'
+__________ test_delegate_record_rejected[designated_is_implementer] ___________
+tests\qualification\ent_audit_x\unit\test_baseline_promotion_iiac.py:342: in test_delegate_record_rejected
+    _verify(world)
+tests\qualification\ent_audit_x\unit\test_baseline_promotion_iiac.py:215: in _verify
+    return verify_record(world.record_path, for_promotion=True, repo_root=world.root)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+scripts\enterprise_audit\iiac_baseline_promotion.py:350: in verify_record
+    return verify_delegated_record(path, for_promotion=for_promotion, repo_root=repo_root, blob_reader=blob_reader)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+scripts\enterprise_audit\iiac_baseline_promotion.py:326: in verify_delegated_record
+    _verify_delegation(raw, record_path=path, repo_root=repo_root, blob_reader=blob_reader)
+scripts\enterprise_audit\iiac_baseline_promotion.py:215: in _verify_delegation
+    raise ValueError(f"delegate record: delegation record not found at {rel.as_posix()}@{sha}")
+E   ValueError: delegate record: delegation record not found at docs/project/maintainers/qualification/iiac_evidence/ENT-AUDIT-X/operator_decisions/DELEGATION_ENT_01.md@8f70d0a3865a9dac70230ffaac417508e6585de4
+
+During handling of the above exception, another exception occurred:
+tests\qualification\ent_audit_x\unit\test_baseline_promotion_iiac.py:341: in test_delegate_record_rejected
+    with pytest.raises(ValueError, match=match):
+         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E   AssertionError: Regex pattern did not match.
+E    Regex: 'implementer'
+E    Input: 'delegate record: delegation record not found at docs/project/maintainers/qualification/iiac_evidence/ENT-AUDIT-X/operator_decisions/DELEGATION_ENT_01.md@8f70d0a3865a9dac70230ffaac417508e6585de4'
+_____________ test_delegate_record_rejected[designated_mismatch] ______________
+tests\qualification\ent_audit_x\unit\test_baseline_promotion_iiac.py:342: in test_delegate_record_rejected
+    _verify(world)
+tests\qualification\ent_audit_x\unit\test_baseline_promotion_iiac.py:215: in _verify
+    return verify_record(world.record_path, for_promotion=True, repo_root=world.root)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+scripts\enterprise_audit\iiac_baseline_promotion.py:350: in verify_record
+    return verify_delegated_record(path, for_promotion=for_promotion, repo_root=repo_root, blob_reader=blob_reader)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+scripts\enterprise_audit\iiac_baseline_promotion.py:326: in verify_delegated_record
+    _verify_delegation(raw, record_path=path, repo_root=repo_root, blob_reader=blob_reader)
+scripts\enterprise_audit\iiac_baseline_promotion.py:215: in _verify_delegation
+    raise ValueError(f"delegate record: delegation record not found at {rel.as_posix()}@{sha}")
+E   ValueError: delegate record: delegation record not found at docs/project/maintainers/qualification/iiac_evidence/ENT-AUDIT-X/operator_decisions/DELEGATION_ENT_01.md@f67f9110da9199e8328ffc851be48b3546d64503
+
+During handling of the above exception, another exception occurred:
+tests\qualification\ent_audit_x\unit\test_baseline_promotion_iiac.py:341: in test_delegate_record_rejected
+    with pytest.raises(ValueError, match=match):
+         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E   AssertionError: Regex pattern did not match.
+E    Regex: 'designated_session_id'
+E    Input: 'delegate record: delegation record not found at docs/project/maintainers/qualification/iiac_evidence/ENT-AUDIT-X/operator_decisions/DELEGATION_ENT_01.md@f67f9110da9199e8328ffc851be48b3546d64503'
+____________ test_delegate_record_rejected[blank_delegation_field] ____________
+tests\qualification\ent_audit_x\unit\test_baseline_promotion_iiac.py:342: in test_delegate_record_rejected
+    _verify(world)
+tests\qualification\ent_audit_x\unit\test_baseline_promotion_iiac.py:215: in _verify
+    return verify_record(world.record_path, for_promotion=True, repo_root=world.root)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+scripts\enterprise_audit\iiac_baseline_promotion.py:350: in verify_record
+    return verify_delegated_record(path, for_promotion=for_promotion, repo_root=repo_root, blob_reader=blob_reader)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+scripts\enterprise_audit\iiac_baseline_promotion.py:326: in verify_delegated_record
+    _verify_delegation(raw, record_path=path, repo_root=repo_root, blob_reader=blob_reader)
+scripts\enterprise_audit\iiac_baseline_promotion.py:215: in _verify_delegation
+    raise ValueError(f"delegate record: delegation record not found at {rel.as_posix()}@{sha}")
+E   ValueError: delegate record: delegation record not found at docs/project/maintainers/qualification/iiac_evidence/ENT-AUDIT-X/operator_decisions/DELEGATION_ENT_01.md@87170b4c0e594ded025db965edf6d8f5f7c19b88
+
+During handling of the above exception, another exception occurred:
+tests\qualification\ent_audit_x\unit\test_baseline_promotion_iiac.py:341: in test_delegate_record_rejected
+    with pytest.raises(ValueError, match=match):
+         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E   AssertionError: Regex pattern did not match.
+E    Regex: 'blank or missing'
+E    Input: 'delegate record: delegation record not found at docs/project/maintainers/qualification/iiac_evidence/ENT-AUDIT-X/operator_decisions/DELEGATION_ENT_01.md@87170b4c0e594ded025db965edf6d8f5f7c19b88'
+______ test_delegate_record_rejected[delegation_binds_other_record_path] ______
+tests\qualification\ent_audit_x\unit\test_baseline_promotion_iiac.py:342: in test_delegate_record_rejected
+    _verify(world)
+tests\qualification\ent_audit_x\unit\test_baseline_promotion_iiac.py:215: in _verify
+    return verify_record(world.record_path, for_promotion=True, repo_root=world.root)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+scripts\enterprise_audit\iiac_baseline_promotion.py:350: in verify_record
+    return verify_delegated_record(path, for_promotion=for_promotion, repo_root=repo_root, blob_reader=blob_reader)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+scripts\enterprise_audit\iiac_baseline_promotion.py:326: in verify_delegated_record
+    _verify_delegation(raw, record_path=path, repo_root=repo_root, blob_reader=blob_reader)
+scripts\enterprise_audit\iiac_baseline_promotion.py:215: in _verify_delegation
+    raise ValueError(f"delegate record: delegation record not found at {rel.as_posix()}@{sha}")
+E   ValueError: delegate record: delegation record not found at docs/project/maintainers/qualification/iiac_evidence/ENT-AUDIT-X/operator_decisions/DELEGATION_ENT_01.md@016e7201a84e98403230e0cc0177717ccc24565b
+
+During handling of the above exception, another exception occurred:
+tests\qualification\ent_audit_x\unit\test_baseline_promotion_iiac.py:341: in test_delegate_record_rejected
+    with pytest.raises(ValueError, match=match):
+         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E   AssertionError: Regex pattern did not match.
+E    Regex: 'binds record path'
+E    Input: 'delegate record: delegation record not found at docs/project/maintainers/qualification/iiac_evidence/ENT-AUDIT-X/operator_decisions/DELEGATION_ENT_01.md@016e7201a84e98403230e0cc0177717ccc24565b'
+____________ test_delegate_record_rejected[manifest_verdict_fail] _____________
+tests\qualification\ent_audit_x\unit\test_baseline_promotion_iiac.py:342: in test_delegate_record_rejected
+    _verify(world)
+tests\qualification\ent_audit_x\unit\test_baseline_promotion_iiac.py:215: in _verify
+    return verify_record(world.record_path, for_promotion=True, repo_root=world.root)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+scripts\enterprise_audit\iiac_baseline_promotion.py:350: in verify_record
+    return verify_delegated_record(path, for_promotion=for_promotion, repo_root=repo_root, blob_reader=blob_reader)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+scripts\enterprise_audit\iiac_baseline_promotion.py:326: in verify_delegated_record
+    _verify_delegation(raw, record_path=path, repo_root=repo_root, blob_reader=blob_reader)
+scripts\enterprise_audit\iiac_baseline_promotion.py:215: in _verify_delegation
+    raise ValueError(f"delegate record: delegation record not found at {rel.as_posix()}@{sha}")
+E   ValueError: delegate record: delegation record not found at docs/project/maintainers/qualification/iiac_evidence/ENT-AUDIT-X/operator_decisions/DELEGATION_ENT_01.md@db76f312e02a1db434caf8d0589b79b441035b89
+
+During handling of the above exception, another exception occurred:
+tests\qualification\ent_audit_x\unit\test_baseline_promotion_iiac.py:341: in test_delegate_record_rejected
+    with pytest.raises(ValueError, match=match):
+         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E   AssertionError: Regex pattern did not match.
+E    Regex: 'verdict'
+E    Input: 'delegate record: delegation record not found at docs/project/maintainers/qualification/iiac_evidence/ENT-AUDIT-X/operator_decisions/DELEGATION_ENT_01.md@db76f312e02a1db434caf8d0589b79b441035b89'
+_____________ test_delegate_record_rejected[manifest_wrong_stage] _____________
+tests\qualification\ent_audit_x\unit\test_baseline_promotion_iiac.py:342: in test_delegate_record_rejected
+    _verify(world)
+tests\qualification\ent_audit_x\unit\test_baseline_promotion_iiac.py:215: in _verify
+    return verify_record(world.record_path, for_promotion=True, repo_root=world.root)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+scripts\enterprise_audit\iiac_baseline_promotion.py:350: in verify_record
+    return verify_delegated_record(path, for_promotion=for_promotion, repo_root=repo_root, blob_reader=blob_reader)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+scripts\enterprise_audit\iiac_baseline_promotion.py:326: in verify_delegated_record
+    _verify_delegation(raw, record_path=path, repo_root=repo_root, blob_reader=blob_reader)
+scripts\enterprise_audit\iiac_baseline_promotion.py:215: in _verify_delegation
+    raise ValueError(f"delegate record: delegation record not found at {rel.as_posix()}@{sha}")
+E   ValueError: delegate record: delegation record not found at docs/project/maintainers/qualification/iiac_evidence/ENT-AUDIT-X/operator_decisions/DELEGATION_ENT_01.md@49b0b9cb9a8a39bed584b114c1233b1ddb43ae43
+
+During handling of the above exception, another exception occurred:
+tests\qualification\ent_audit_x\unit\test_baseline_promotion_iiac.py:341: in test_delegate_record_rejected
+    with pytest.raises(ValueError, match=match):
+         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E   AssertionError: Regex pattern did not match.
+E    Regex: 'stage_id'
+E    Input: 'delegate record: delegation record not found at docs/project/maintainers/qualification/iiac_evidence/ENT-AUDIT-X/operator_decisions/DELEGATION_ENT_01.md@49b0b9cb9a8a39bed584b114c1233b1ddb43ae43'
+____________ test_delegate_record_rejected[manifest_tes_mismatch] _____________
+tests\qualification\ent_audit_x\unit\test_baseline_promotion_iiac.py:342: in test_delegate_record_rejected
+    _verify(world)
+tests\qualification\ent_audit_x\unit\test_baseline_promotion_iiac.py:215: in _verify
+    return verify_record(world.record_path, for_promotion=True, repo_root=world.root)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+scripts\enterprise_audit\iiac_baseline_promotion.py:350: in verify_record
+    return verify_delegated_record(path, for_promotion=for_promotion, repo_root=repo_root, blob_reader=blob_reader)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+scripts\enterprise_audit\iiac_baseline_promotion.py:326: in verify_delegated_record
+    _verify_delegation(raw, record_path=path, repo_root=repo_root, blob_reader=blob_reader)
+scripts\enterprise_audit\iiac_baseline_promotion.py:215: in _verify_delegation
+    raise ValueError(f"delegate record: delegation record not found at {rel.as_posix()}@{sha}")
+E   ValueError: delegate record: delegation record not found at docs/project/maintainers/qualification/iiac_evidence/ENT-AUDIT-X/operator_decisions/DELEGATION_ENT_01.md@f8e7155dac06398a65ef3ab25b7439fe488e7e76
+
+During handling of the above exception, another exception occurred:
+tests\qualification\ent_audit_x\unit\test_baseline_promotion_iiac.py:341: in test_delegate_record_rejected
+    with pytest.raises(ValueError, match=match):
+         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E   AssertionError: Regex pattern did not match.
+E    Regex: 'test_execution_sha'
+E    Input: 'delegate record: delegation record not found at docs/project/maintainers/qualification/iiac_evidence/ENT-AUDIT-X/operator_decisions/DELEGATION_ENT_01.md@f8e7155dac06398a65ef3ab25b7439fe488e7e76'
+________ test_delegate_record_rejected[manifest_sessions_not_distinct] ________
+tests\qualification\ent_audit_x\unit\test_baseline_promotion_iiac.py:342: in test_delegate_record_rejected
+    _verify(world)
+tests\qualification\ent_audit_x\unit\test_baseline_promotion_iiac.py:215: in _verify
+    return verify_record(world.record_path, for_promotion=True, repo_root=world.root)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+scripts\enterprise_audit\iiac_baseline_promotion.py:350: in verify_record
+    return verify_delegated_record(path, for_promotion=for_promotion, repo_root=repo_root, blob_reader=blob_reader)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+scripts\enterprise_audit\iiac_baseline_promotion.py:326: in verify_delegated_record
+    _verify_delegation(raw, record_path=path, repo_root=repo_root, blob_reader=blob_reader)
+scripts\enterprise_audit\iiac_baseline_promotion.py:215: in _verify_delegation
+    raise ValueError(f"delegate record: delegation record not found at {rel.as_posix()}@{sha}")
+E   ValueError: delegate record: delegation record not found at docs/project/maintainers/qualification/iiac_evidence/ENT-AUDIT-X/operator_decisions/DELEGATION_ENT_01.md@e445133fbb7483a93bf3dff3118015848a2de686
+
+During handling of the above exception, another exception occurred:
+tests\qualification\ent_audit_x\unit\test_baseline_promotion_iiac.py:341: in test_delegate_record_rejected
+    with pytest.raises(ValueError, match=match):
+         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E   AssertionError: Regex pattern did not match.
+E    Regex: 'pairwise distinct'
+E    Input: 'delegate record: delegation record not found at docs/project/maintainers/qualification/iiac_evidence/ENT-AUDIT-X/operator_decisions/DELEGATION_ENT_01.md@e445133fbb7483a93bf3dff3118015848a2de686'
+___________ test_delegate_record_rejected[manifest_digest_mismatch] ___________
+tests\qualification\ent_audit_x\unit\test_baseline_promotion_iiac.py:342: in test_delegate_record_rejected
+    _verify(world)
+tests\qualification\ent_audit_x\unit\test_baseline_promotion_iiac.py:215: in _verify
+    return verify_record(world.record_path, for_promotion=True, repo_root=world.root)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+scripts\enterprise_audit\iiac_baseline_promotion.py:350: in verify_record
+    return verify_delegated_record(path, for_promotion=for_promotion, repo_root=repo_root, blob_reader=blob_reader)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+scripts\enterprise_audit\iiac_baseline_promotion.py:326: in verify_delegated_record
+    _verify_delegation(raw, record_path=path, repo_root=repo_root, blob_reader=blob_reader)
+scripts\enterprise_audit\iiac_baseline_promotion.py:215: in _verify_delegation
+    raise ValueError(f"delegate record: delegation record not found at {rel.as_posix()}@{sha}")
+E   ValueError: delegate record: delegation record not found at docs/project/maintainers/qualification/iiac_evidence/ENT-AUDIT-X/operator_decisions/DELEGATION_ENT_01.md@4ffef1ce35e954ab840808f8dd74ebd0092e4117
+
+During handling of the above exception, another exception occurred:
+tests\qualification\ent_audit_x\unit\test_baseline_promotion_iiac.py:341: in test_delegate_record_rejected
+    with pytest.raises(ValueError, match=match):
+         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E   AssertionError: Regex pattern did not match.
+E    Regex: 'iiac_manifest_digest'
+E    Input: 'delegate record: delegation record not found at docs/project/maintainers/qualification/iiac_evidence/ENT-AUDIT-X/operator_decisions/DELEGATION_ENT_01.md@4ffef1ce35e954ab840808f8dd74ebd0092e4117'
+____________ test_delegate_record_rejected[designated_is_auditor] _____________
+tests\qualification\ent_audit_x\unit\test_baseline_promotion_iiac.py:342: in test_delegate_record_rejected
+    _verify(world)
+tests\qualification\ent_audit_x\unit\test_baseline_promotion_iiac.py:215: in _verify
+    return verify_record(world.record_path, for_promotion=True, repo_root=world.root)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+scripts\enterprise_audit\iiac_baseline_promotion.py:350: in verify_record
+    return verify_delegated_record(path, for_promotion=for_promotion, repo_root=repo_root, blob_reader=blob_reader)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+scripts\enterprise_audit\iiac_baseline_promotion.py:326: in verify_delegated_record
+    _verify_delegation(raw, record_path=path, repo_root=repo_root, blob_reader=blob_reader)
+scripts\enterprise_audit\iiac_baseline_promotion.py:215: in _verify_delegation
+    raise ValueError(f"delegate record: delegation record not found at {rel.as_posix()}@{sha}")
+E   ValueError: delegate record: delegation record not found at docs/project/maintainers/qualification/iiac_evidence/ENT-AUDIT-X/operator_decisions/DELEGATION_ENT_01.md@fc516e87f637a1a6138275da3b53213acf0525a3
+
+During handling of the above exception, another exception occurred:
+tests\qualification\ent_audit_x\unit\test_baseline_promotion_iiac.py:341: in test_delegate_record_rejected
+    with pytest.raises(ValueError, match=match):
+         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E   AssertionError: Regex pattern did not match.
+E    Regex: 'auditor session'
+E    Input: 'delegate record: delegation record not found at docs/project/maintainers/qualification/iiac_evidence/ENT-AUDIT-X/operator_decisions/DELEGATION_ENT_01.md@fc516e87f637a1a6138275da3b53213acf0525a3'
+_________________ test_valid_bundle_passes_mode_a_and_mode_b __________________
+tests\qualification\evol_x\gates\test_evol_x_p03_integrity.py:356: in test_valid_bundle_passes_mode_a_and_mode_b
+    assert p03.verify_mode_a(repo.path, technical=True) == []
+E   AssertionError: assert ['missing art...v1.json', ...] == []
+E     
+E     Left contains 22 more items, first extra item: 'missing artifact @ 3962c8f71: docs/project/maintainers/qualification/evol_x/evol_x_p03_independent_replay/ARTIFACT_DIGESTS.json'
+E     Use -v to get more diff
+______________ test_swapped_canonical_junit_outcome_is_rejected _______________
+tests\qualification\evol_x\gates\test_evol_x_p03_integrity.py:393: in test_swapped_canonical_junit_outcome_is_rejected
+    assert any("non-passed outcome" in p for p in p03.verify_mode_a(repo.path))
+E   assert False
+E    +  where False = any(<generator object test_swapped_canonical_junit_outcome_is_rejected.<locals>.<genexpr> at 0x000001607AE35560>)
+________ test_missing_manifest_node_in_canonical_outcomes_is_rejected _________
+tests\qualification\evol_x\gates\test_evol_x_p03_integrity.py:403: in test_missing_manifest_node_in_canonical_outcomes_is_rejected
+    assert any("missing manifest node" in p for p in p03.verify_mode_a(repo.path))
+E   assert False
+E    +  where False = any(<generator object test_missing_manifest_node_in_canonical_outcomes_is_rejected.<locals>.<genexpr> at 0x0000016004BDB6B0>)
+____________ test_stale_source_commit_sha_in_inventory_is_rejected ____________
+tests\qualification\evol_x\gates\test_evol_x_p03_integrity.py:411: in test_stale_source_commit_sha_in_inventory_is_rejected
+    assert any("stale source_commit_sha" in p for p in p03.verify_mode_a(repo.path))
+E   assert False
+E    +  where False = any(<generator object test_stale_source_commit_sha_in_inventory_is_rejected.<locals>.<genexpr> at 0x000001600539CAD0>)
+_______________ test_tampered_artifact_digest_entry_is_rejected _______________
+tests\qualification\evol_x\gates\test_evol_x_p03_integrity.py:416: in test_tampered_artifact_digest_entry_is_rejected
+    assert any("tampered ARTIFACT_DIGESTS entry" in p for p in p03.verify_mode_a(repo.path))
+E   assert False
+E    +  where False = any(<generator object test_tampered_artifact_digest_entry_is_rejected.<locals>.<genexpr> at 0x000001600763F1D0>)
+____________ test_failing_metric_or_experiment_or_frz_is_rejected _____________
+tests\qualification\evol_x\gates\test_evol_x_p03_integrity.py:427: in test_failing_metric_or_experiment_or_frz_is_rejected
+    assert "metric not passing" in joined and "FRZ behavioral test not passed" in joined
+E   AssertionError: assert ('metric not passing' in 'missing artifact @ f847f2506: docs/project/maintainers/qualification/evol_x/evol_x_p03_independent_replay/ARTIFACT_DI... @ f847f2506: docs/project/maintainers/qualification/evol_x/evol_x_p03_independent_replay/experiments/S7_positive.json')
+_______________ test_mode_a_final_requires_m09h_and_human_drill _______________
+tests\qualification\evol_x\gates\test_evol_x_p03_integrity.py:440: in test_mode_a_final_requires_m09h_and_human_drill
+    assert any("EVOL-M-09H" in p for p in p03.verify_mode_a(repo.path))
+E   assert False
+E    +  where False = any(<generator object test_mode_a_final_requires_m09h_and_human_drill.<locals>.<genexpr> at 0x000001607D040860>)
+__________________ test_mode_a_final_valid_m09_bundle_passes __________________
+tests\qualification\evol_x\gates\test_evol_x_p03_integrity.py:445: in test_mode_a_final_valid_m09_bundle_passes
+    assert p03.verify_mode_a(repo.path) == []
+E   AssertionError: assert ['missing art...v1.json', ...] == []
+E     
+E     Left contains 23 more items, first extra item: 'missing artifact @ 2c41695a7: docs/project/maintainers/qualification/evol_x/evol_x_p03_independent_replay/ARTIFACT_DIGESTS.json'
+E     Use -v to get more diff
+______________ test_mode_a_automation_first_scoped_final_passes _______________
+tests\qualification\evol_x\gates\test_evol_x_p03_integrity.py:450: in test_mode_a_automation_first_scoped_final_passes
+    assert p03.verify_mode_a(repo.path) == []
+E   AssertionError: assert ['missing art...v1.json', ...] == []
+E     
+E     Left contains 23 more items, first extra item: 'missing artifact @ 5d161f291: docs/project/maintainers/qualification/evol_x/evol_x_p03_independent_replay/ARTIFACT_DIGESTS.json'
+E     Use -v to get more diff
+________________ test_m09_human_drill_negative_cases[N-M09-01] ________________
+tests\qualification\evol_x\gates\test_evol_x_p03_integrity.py:659: in test_m09_human_drill_negative_cases
+    assert needle in joined
+E   AssertionError: assert 'invalid' in 'missing artifact @ 55f21c73f: docs/project/maintainers/qualification/evol_x/evol_x_p03_independent_replay/ARTIFACT_DI... @ 55f21c73f: docs/project/maintainers/qualification/evol_x/evol_x_p03_independent_replay/experiments/S7_positive.json'
+________________ test_m09_human_drill_negative_cases[N-M09-02] ________________
+tests\qualification\evol_x\gates\test_evol_x_p03_integrity.py:659: in test_m09_human_drill_negative_cases
+    assert needle in joined
+E   AssertionError: assert 'stale source_commit_sha' in 'missing artifact @ 8aba11e11: docs/project/maintainers/qualification/evol_x/evol_x_p03_independent_replay/ARTIFACT_DI... @ 8aba11e11: docs/project/maintainers/qualification/evol_x/evol_x_p03_independent_replay/experiments/S7_positive.json'
+________________ test_m09_human_drill_negative_cases[N-M09-03] ________________
+tests\qualification\evol_x\gates\test_evol_x_p03_integrity.py:659: in test_m09_human_drill_negative_cases
+    assert needle in joined
+E   AssertionError: assert 'test_execution_sha' in 'missing artifact @ f7fc66a96: docs/project/maintainers/qualification/evol_x/evol_x_p03_independent_replay/ARTIFACT_DI... @ f7fc66a96: docs/project/maintainers/qualification/evol_x/evol_x_p03_independent_replay/experiments/S7_positive.json'
+________________ test_m09_human_drill_negative_cases[N-M09-04] ________________
+tests\qualification\evol_x\gates\test_evol_x_p03_integrity.py:659: in test_m09_human_drill_negative_cases
+    assert needle in joined
+E   AssertionError: assert 'registry_digest' in 'missing artifact @ e07fa7efe: docs/project/maintainers/qualification/evol_x/evol_x_p03_independent_replay/ARTIFACT_DI... @ e07fa7efe: docs/project/maintainers/qualification/evol_x/evol_x_p03_independent_replay/experiments/S7_positive.json'
+________________ test_m09_human_drill_negative_cases[N-M09-05] ________________
+tests\qualification\evol_x\gates\test_evol_x_p03_integrity.py:659: in test_m09_human_drill_negative_cases
+    assert needle in joined
+E   AssertionError: assert 'bound_test_execution_sha' in 'missing artifact @ 22d890e98: docs/project/maintainers/qualification/evol_x/evol_x_p03_independent_replay/ARTIFACT_DI... @ 22d890e98: docs/project/maintainers/qualification/evol_x/evol_x_p03_independent_replay/experiments/S7_positive.json'
+________________ test_m09_human_drill_negative_cases[N-M09-06] ________________
+tests\qualification\evol_x\gates\test_evol_x_p03_integrity.py:659: in test_m09_human_drill_negative_cases
+    assert needle in joined
+E   AssertionError: assert 'input_digest mismatch' in 'missing artifact @ 01c4ccddc: docs/project/maintainers/qualification/evol_x/evol_x_p03_independent_replay/ARTIFACT_DI... @ 01c4ccddc: docs/project/maintainers/qualification/evol_x/evol_x_p03_independent_replay/experiments/S7_positive.json'
+________________ test_m09_human_drill_negative_cases[N-M09-07] ________________
+tests\qualification\evol_x\gates\test_evol_x_p03_integrity.py:659: in test_m09_human_drill_negative_cases
+    assert needle in joined
+E   AssertionError: assert 'not marked correct' in 'missing artifact @ 021dcbaa9: docs/project/maintainers/qualification/evol_x/evol_x_p03_independent_replay/ARTIFACT_DI... @ 021dcbaa9: docs/project/maintainers/qualification/evol_x/evol_x_p03_independent_replay/experiments/S7_positive.json'
+________________ test_m09_human_drill_negative_cases[N-M09-08] ________________
+tests\qualification\evol_x\gates\test_evol_x_p03_integrity.py:659: in test_m09_human_drill_negative_cases
+    assert needle in joined
+E   AssertionError: assert 'tool_seconds>120' in 'missing artifact @ cb0f28777: docs/project/maintainers/qualification/evol_x/evol_x_p03_independent_replay/ARTIFACT_DI... @ cb0f28777: docs/project/maintainers/qualification/evol_x/evol_x_p03_independent_replay/experiments/S7_positive.json'
+________________ test_m09_human_drill_negative_cases[N-M09-09] ________________
+tests\qualification\evol_x\gates\test_evol_x_p03_integrity.py:659: in test_m09_human_drill_negative_cases
+    assert needle in joined
+E   AssertionError: assert 'exactly 3 cases' in 'missing artifact @ 5c2c144bb: docs/project/maintainers/qualification/evol_x/evol_x_p03_independent_replay/ARTIFACT_DI... @ 5c2c144bb: docs/project/maintainers/qualification/evol_x/evol_x_p03_independent_replay/experiments/S7_positive.json'
+________________ test_m09_human_drill_negative_cases[N-M09-10] ________________
+tests\qualification\evol_x\gates\test_evol_x_p03_integrity.py:659: in test_m09_human_drill_negative_cases
+    assert needle in joined
+E   AssertionError: assert 'median_tool_seconds disagrees' in 'missing artifact @ 520362eb3: docs/project/maintainers/qualification/evol_x/evol_x_p03_independent_replay/ARTIFACT_DI... @ 520362eb3: docs/project/maintainers/qualification/evol_x/evol_x_p03_independent_replay/experiments/S7_positive.json'
+________________ test_m09_human_drill_negative_cases[N-M09-11] ________________
+tests\qualification\evol_x\gates\test_evol_x_p03_integrity.py:659: in test_m09_human_drill_negative_cases
+    assert needle in joined
+E   AssertionError: assert 'adversarial_control_passed' in 'missing artifact @ 7543a737b: docs/project/maintainers/qualification/evol_x/evol_x_p03_independent_replay/ARTIFACT_DI... @ 7543a737b: docs/project/maintainers/qualification/evol_x/evol_x_p03_independent_replay/experiments/S7_positive.json'
+________________ test_m09_human_drill_negative_cases[N-M09-12] ________________
+tests\qualification\evol_x\gates\test_evol_x_p03_integrity.py:659: in test_m09_human_drill_negative_cases
+    assert needle in joined
+E   AssertionError: assert 'drill_completed_at_utc precedes' in 'missing artifact @ 2eb557270: docs/project/maintainers/qualification/evol_x/evol_x_p03_independent_replay/ARTIFACT_DI... @ 2eb557270: docs/project/maintainers/qualification/evol_x/evol_x_p03_independent_replay/experiments/S7_positive.json'
+________________ test_m09_human_drill_negative_cases[N-M09-13] ________________
+tests\qualification\evol_x\gates\test_evol_x_p03_integrity.py:659: in test_m09_human_drill_negative_cases
+    assert needle in joined
+E   AssertionError: assert 'String should have at least 1 character' in 'missing artifact @ 793110dfe: docs/project/maintainers/qualification/evol_x/evol_x_p03_independent_replay/ARTIFACT_DI... @ 793110dfe: docs/project/maintainers/qualification/evol_x/evol_x_p03_independent_replay/experiments/S7_positive.json'
+________________ test_m09_human_drill_negative_cases[N-M09-14] ________________
+tests\qualification\evol_x\gates\test_evol_x_p03_integrity.py:659: in test_m09_human_drill_negative_cases
+    assert needle in joined
+E   AssertionError: assert '3/3 MEASURED PASS' in 'missing artifact @ 760da2a50: docs/project/maintainers/qualification/evol_x/evol_x_p03_independent_replay/ARTIFACT_DI... @ 760da2a50: docs/project/maintainers/qualification/evol_x/evol_x_p03_independent_replay/experiments/S7_positive.json'
+________________ test_m09_human_drill_negative_cases[N-M09-15] ________________
+tests\qualification\evol_x\gates\test_evol_x_p03_integrity.py:659: in test_m09_human_drill_negative_cases
+    assert needle in joined
+E   AssertionError: assert 'population_digest inconsistent' in 'missing artifact @ 3a54ef0c5: docs/project/maintainers/qualification/evol_x/evol_x_p03_independent_replay/ARTIFACT_DI... @ 3a54ef0c5: docs/project/maintainers/qualification/evol_x/evol_x_p03_independent_replay/experiments/S7_positive.json'
+________________ test_m09_human_drill_negative_cases[N-M09-16] ________________
+tests\qualification\evol_x\gates\test_evol_x_p03_integrity.py:659: in test_m09_human_drill_negative_cases
+    assert needle in joined
+E   AssertionError: assert 'attributed causes mismatch' in 'missing artifact @ 3a93b80eb: docs/project/maintainers/qualification/evol_x/evol_x_p03_independent_replay/ARTIFACT_DI... @ 3a93b80eb: docs/project/maintainers/qualification/evol_x/evol_x_p03_independent_replay/experiments/S7_positive.json'
+________________ test_m09_human_drill_negative_cases[N-M09-17] ________________
+tests\qualification\evol_x\gates\test_evol_x_p03_integrity.py:659: in test_m09_human_drill_negative_cases
+    assert needle in joined
+E   AssertionError: assert 'median attribution_seconds>900' in 'missing artifact @ be4c0fd9c: docs/project/maintainers/qualification/evol_x/evol_x_p03_independent_replay/ARTIFACT_DI... @ be4c0fd9c: docs/project/maintainers/qualification/evol_x/evol_x_p03_independent_replay/experiments/S7_positive.json'
+________________ test_m09_human_drill_negative_cases[N-M09-18] ________________
+tests\qualification\evol_x\gates\test_evol_x_p03_integrity.py:659: in test_m09_human_drill_negative_cases
+    assert needle in joined
+E   AssertionError: assert 'tool_seconds>120' in 'missing artifact @ f8fd4f4da: docs/project/maintainers/qualification/evol_x/evol_x_p03_independent_replay/ARTIFACT_DI... @ f8fd4f4da: docs/project/maintainers/qualification/evol_x/evol_x_p03_independent_replay/experiments/S7_positive.json'
+________________ test_m09_human_drill_negative_cases[N-M09-19] ________________
+tests\qualification\evol_x\gates\test_evol_x_p03_integrity.py:659: in test_m09_human_drill_negative_cases
+    assert needle in joined
+E   AssertionError: assert 'invalid' in 'missing artifact @ 5ef9c3901: docs/project/maintainers/qualification/evol_x/evol_x_p03_independent_replay/ARTIFACT_DI... @ 5ef9c3901: docs/project/maintainers/qualification/evol_x/evol_x_p03_independent_replay/experiments/S7_positive.json'
+___________ test_m09_human_drill_negative_cases[N-M09-20-negative] ____________
+tests\qualification\evol_x\gates\test_evol_x_p03_integrity.py:659: in test_m09_human_drill_negative_cases
+    assert needle in joined
+E   AssertionError: assert 'finite and >= 0' in 'missing artifact @ f479b60b8: docs/project/maintainers/qualification/evol_x/evol_x_p03_independent_replay/ARTIFACT_DI... @ f479b60b8: docs/project/maintainers/qualification/evol_x/evol_x_p03_independent_replay/experiments/S7_positive.json'
+______________ test_m09_human_drill_negative_cases[N-M09-20-nan] ______________
+tests\qualification\evol_x\gates\test_evol_x_p03_integrity.py:659: in test_m09_human_drill_negative_cases
+    assert needle in joined
+E   AssertionError: assert 'finite and >= 0' in 'missing artifact @ 85862c868: docs/project/maintainers/qualification/evol_x/evol_x_p03_independent_replay/ARTIFACT_DI... @ 85862c868: docs/project/maintainers/qualification/evol_x/evol_x_p03_independent_replay/experiments/S7_positive.json'
+______________ test_m09_human_drill_negative_cases[N-M09-20-inf] ______________
+tests\qualification\evol_x\gates\test_evol_x_p03_integrity.py:659: in test_m09_human_drill_negative_cases
+    assert needle in joined
+E   AssertionError: assert 'finite and >= 0' in 'missing artifact @ 8c2541342: docs/project/maintainers/qualification/evol_x/evol_x_p03_independent_replay/ARTIFACT_DI... @ 8c2541342: docs/project/maintainers/qualification/evol_x/evol_x_p03_independent_replay/experiments/S7_positive.json'
+_____________ test_m09_human_drill_negative_cases[N-M09-21-swap] ______________
+tests\qualification\evol_x\gates\test_evol_x_p03_integrity.py:659: in test_m09_human_drill_negative_cases
+    assert needle in joined
+E   AssertionError: assert 'tool_seconds>120' in 'missing artifact @ 8f6fda82c: docs/project/maintainers/qualification/evol_x/evol_x_p03_independent_replay/ARTIFACT_DI... @ 8f6fda82c: docs/project/maintainers/qualification/evol_x/evol_x_p03_independent_replay/experiments/S7_positive.json'
+________________ test_m09_human_drill_negative_cases[N-M09-22] ________________
+tests\qualification\evol_x\gates\test_evol_x_p03_integrity.py:659: in test_m09_human_drill_negative_cases
+    assert needle in joined
+E   AssertionError: assert 'median_attribution_seconds disagrees' in 'missing artifact @ 1f75c41ae: docs/project/maintainers/qualification/evol_x/evol_x_p03_independent_replay/ARTIFACT_DI... @ 1f75c41ae: docs/project/maintainers/qualification/evol_x/evol_x_p03_independent_replay/experiments/S7_positive.json'
+_____________ test_m09_human_drill_negative_cases[N-M09-23-FAIL] ______________
+tests\qualification\evol_x\gates\test_evol_x_p03_integrity.py:659: in test_m09_human_drill_negative_cases
+    assert needle in joined
+E   AssertionError: assert 'median attribution_seconds>900' in 'missing artifact @ 26e869053: docs/project/maintainers/qualification/evol_x/evol_x_p03_independent_replay/ARTIFACT_DI... @ 26e869053: docs/project/maintainers/qualification/evol_x/evol_x_p03_independent_replay/experiments/S7_positive.json'
+________________ test_m09_human_drill_negative_cases[N-M09-24] ________________
+tests\qualification\evol_x\gates\test_evol_x_p03_integrity.py:659: in test_m09_human_drill_negative_cases
+    assert needle in joined
+E   AssertionError: assert 'median attribution_seconds>900' in 'missing artifact @ 512fa794b: docs/project/maintainers/qualification/evol_x/evol_x_p03_independent_replay/ARTIFACT_DI... @ 512fa794b: docs/project/maintainers/qualification/evol_x/evol_x_p03_independent_replay/experiments/S7_positive.json'
+________________ test_m09_human_drill_negative_cases[N-M09-25] ________________
+tests\qualification\evol_x\gates\test_evol_x_p03_integrity.py:659: in test_m09_human_drill_negative_cases
+    assert needle in joined
+E   AssertionError: assert 'schema_version must be exactly evol_m09_human_drill.v2' in 'missing artifact @ 6483245bf: docs/project/maintainers/qualification/evol_x/evol_x_p03_independent_replay/ARTIFACT_DI... @ 6483245bf: docs/project/maintainers/qualification/evol_x/evol_x_p03_independent_replay/experiments/S7_positive.json'
+________ test_m09_human_drill_negative_cases[N-M09-25b-policy-missing] ________
+tests\qualification\evol_x\gates\test_evol_x_p03_integrity.py:659: in test_m09_human_drill_negative_cases
+    assert needle in joined
+E   AssertionError: assert 'measurement_policy_id must be exactly OD-EVOL-08-M1' in 'missing artifact @ e8bc7f33e: docs/project/maintainers/qualification/evol_x/evol_x_p03_independent_replay/ARTIFACT_DI... @ e8bc7f33e: docs/project/maintainers/qualification/evol_x/evol_x_p03_independent_replay/experiments/S7_positive.json'
+_________ test_m09_human_drill_negative_cases[N-M09-25c-policy-wrong] _________
+tests\qualification\evol_x\gates\test_evol_x_p03_integrity.py:659: in test_m09_human_drill_negative_cases
+    assert needle in joined
+E   AssertionError: assert 'measurement_policy_id must be exactly OD-EVOL-08-M1' in 'missing artifact @ 65c3d206f: docs/project/maintainers/qualification/evol_x/evol_x_p03_independent_replay/ARTIFACT_DI... @ 65c3d206f: docs/project/maintainers/qualification/evol_x/evol_x_p03_independent_replay/experiments/S7_positive.json'
+________________ test_m09_human_drill_negative_cases[N-M09-27] ________________
+tests\qualification\evol_x\gates\test_evol_x_p03_integrity.py:659: in test_m09_human_drill_negative_cases
+    assert needle in joined
+E   AssertionError: assert 'worksheet_digest mismatch' in 'missing artifact @ 43b9d33ed: docs/project/maintainers/qualification/evol_x/evol_x_p03_independent_replay/ARTIFACT_DI... @ 43b9d33ed: docs/project/maintainers/qualification/evol_x/evol_x_p03_independent_replay/experiments/S7_positive.json'
+________________ test_m09_human_drill_negative_cases[N-M09-28] ________________
+tests\qualification\evol_x\gates\test_evol_x_p03_integrity.py:659: in test_m09_human_drill_negative_cases
+    assert needle in joined
+E   AssertionError: assert 'schema_version must be exactly evol_m09_human_drill.v2' in 'missing artifact @ 2a40e5936: docs/project/maintainers/qualification/evol_x/evol_x_p03_independent_replay/ARTIFACT_DI... @ 2a40e5936: docs/project/maintainers/qualification/evol_x/evol_x_p03_independent_replay/experiments/S7_positive.json'
+________________ test_m09_human_drill_negative_cases[N-M09-29] ________________
+tests\qualification\evol_x\gates\test_evol_x_p03_integrity.py:659: in test_m09_human_drill_negative_cases
+    assert needle in joined
+E   AssertionError: assert 'expected_cause_identities mismatch' in 'missing artifact @ 93aaf9e0e: docs/project/maintainers/qualification/evol_x/evol_x_p03_independent_replay/ARTIFACT_DI... @ 93aaf9e0e: docs/project/maintainers/qualification/evol_x/evol_x_p03_independent_replay/experiments/S7_positive.json'
+__________ test_m09_human_drill_positive_cases[N-M09-23-PASS-spike] ___________
+tests\qualification\evol_x\gates\test_evol_x_p03_integrity.py:666: in test_m09_human_drill_positive_cases
+    assert p03.verify_mode_a(repo.path) == []
+E   AssertionError: assert ['missing art...v1.json', ...] == []
+E     
+E     Left contains 23 more items, first extra item: 'missing artifact @ d8aaecd9c: docs/project/maintainers/qualification/evol_x/evol_x_p03_independent_replay/ARTIFACT_DIGESTS.json'
+E     Use -v to get more diff
+_________ test_m09_human_drill_positive_cases[N-M09-26-PASS-boundary] _________
+tests\qualification\evol_x\gates\test_evol_x_p03_integrity.py:666: in test_m09_human_drill_positive_cases
+    assert p03.verify_mode_a(repo.path) == []
+E   AssertionError: assert ['missing art...v1.json', ...] == []
+E     
+E     Left contains 23 more items, first extra item: 'missing artifact @ 9a2a41eb9: docs/project/maintainers/qualification/evol_x/evol_x_p03_independent_replay/ARTIFACT_DIGESTS.json'
+E     Use -v to get more diff
+__________ test_m09_human_drill_positive_cases[N-M09-26b-PASS-mixed] __________
+tests\qualification\evol_x\gates\test_evol_x_p03_integrity.py:666: in test_m09_human_drill_positive_cases
+    assert p03.verify_mode_a(repo.path) == []
+E   AssertionError: assert ['missing art...v1.json', ...] == []
+E     
+E     Left contains 23 more items, first extra item: 'missing artifact @ 9c5d54042: docs/project/maintainers/qualification/evol_x/evol_x_p03_independent_replay/ARTIFACT_DIGESTS.json'
+E     Use -v to get more diff
+______ test_m09_human_drill_positive_cases[N-M09-18b-PASS-tool-boundary] ______
+tests\qualification\evol_x\gates\test_evol_x_p03_integrity.py:666: in test_m09_human_drill_positive_cases
+    assert p03.verify_mode_a(repo.path) == []
+E   AssertionError: assert ['missing art...v1.json', ...] == []
+E     
+E     Left contains 23 more items, first extra item: 'missing artifact @ 94f25e890: docs/project/maintainers/qualification/evol_x/evol_x_p03_independent_replay/ARTIFACT_DIGESTS.json'
+E     Use -v to get more diff
+______________ test_composite_m09_pass_without_m09h_is_rejected _______________
+tests\qualification\evol_x\gates\test_evol_x_p03_integrity.py:682: in test_composite_m09_pass_without_m09h_is_rejected
+    assert any("composite EVOL-M-09" in p for p in p03.verify_mode_a(repo.path, technical=True))
+E   assert False
+E    +  where False = any(<generator object test_composite_m09_pass_without_m09h_is_rejected.<locals>.<genexpr> at 0x0000016004BDAE90>)
+___________ test_cli_exits_2_on_integrity_failure_and_0_on_success ____________
+tests\qualification\evol_x\gates\test_evol_x_p03_integrity.py:701: in test_cli_exits_2_on_integrity_failure_and_0_on_success
+    assert ok.returncode == 0, ok.stderr
+E   AssertionError: EVIDENCE_INTEGRITY_FAIL: missing artifact @ 8431c6aa2: docs/project/maintainers/qualification/evol_x/evol_x_p03_independent_replay/ARTIFACT_DIGESTS.json
+E     EVIDENCE_INTEGRITY_FAIL: missing artifact @ 8431c6aa2: docs/project/maintainers/qualification/evol_x/evol_x_p03_independent_replay/evol_junit_outcomes.v1.json
+E     EVIDENCE_INTEGRITY_FAIL: missing artifact @ 8431c6aa2: docs/project/maintainers/qualification/evol_x/evol_x_p03_independent_replay/evol_test_execution_manifest.v1.json
+E     EVIDENCE_INTEGRITY_FAIL: missing artifact @ 8431c6aa2: docs/project/maintainers/qualification/evol_x/evol_x_p03_independent_replay/evol_metrics.v1.json
+E     EVIDENCE_INTEGRITY_FAIL: missing artifact @ 8431c6aa2: docs/project/maintainers/qualification/evol_x/evol_x_p03_independent_replay/inventory_binding.v1.json
+E     EVIDENCE_INTEGRITY_FAIL: missing artifact @ 8431c6aa2: docs/project/maintainers/qualification/evol_x/evol_x_p03_independent_replay/evol_frz_evidence.v1.json
+E     EVIDENCE_INTEGRITY_FAIL: missing artifact @ 8431c6aa2: docs/project/maintainers/qualification/evol_x/evol_x_p03_independent_replay/experiments/S0_negative.json
+E     EVIDENCE_INTEGRITY_FAIL: missing artifact @ 8431c6aa2: docs/project/maintainers/qualification/evol_x/evol_x_p03_independent_replay/experiments/S0_positive.json
+E     EVIDENCE_INTEGRITY_FAIL: missing artifact @ 8431c6aa2: docs/project/maintainers/qualification/evol_x/evol_x_p03_independent_replay/experiments/S1_negative.json
+E     EVIDENCE_INTEGRITY_FAIL: missing artifact @ 8431c6aa2: docs/project/maintainers/qualification/evol_x/evol_x_p03_independent_replay/experiments/S1_positive.json
+E     EVIDENCE_INTEGRITY_FAIL: missing artifact @ 8431c6aa2: docs/project/maintainers/qualification/evol_x/evol_x_p03_independent_replay/experiments/S2_negative.json
+E     EVIDENCE_INTEGRITY_FAIL: missing artifact @ 8431c6aa2: docs/project/maintainers/qualification/evol_x/evol_x_p03_independent_replay/experiments/S2_positive.json
+E     EVIDENCE_INTEGRITY_FAIL: missing artifact @ 8431c6aa2: docs/project/maintainers/qualification/evol_x/evol_x_p03_independent_replay/experiments/S3_negative.json
+E     EVIDENCE_INTEGRITY_FAIL: missing artifact @ 8431c6aa2: docs/project/maintainers/qualification/evol_x/evol_x_p03_independent_replay/experiments/S3_positive.json
+E     EVIDENCE_INTEGRITY_FAIL: missing artifact @ 8431c6aa2: docs/project/maintainers/qualification/evol_x/evol_x_p03_independent_replay/experiments/S4_negative.json
+E     EVIDENCE_INTEGRITY_FAIL: missing artifact @ 8431c6aa2: docs/project/maintainers/qualification/evol_x/evol_x_p03_independent_replay/experiments/S4_positive.json
+E     EVIDENCE_INTEGRITY_FAIL: missing artifact @ 8431c6aa2: docs/project/maintainers/qualification/evol_x/evol_x_p03_independent_replay/experiments/S5_negative.json
+E     EVIDENCE_INTEGRITY_FAIL: missing artifact @ 8431c6aa2: docs/project/maintainers/qualification/evol_x/evol_x_p03_independent_replay/experiments/S5_positive.json
+E     EVIDENCE_INTEGRITY_FAIL: missing artifact @ 8431c6aa2: docs/project/maintainers/qualification/evol_x/evol_x_p03_independent_replay/experiments/S6_negative.json
+E     EVIDENCE_INTEGRITY_FAIL: missing artifact @ 8431c6aa2: docs/project/maintainers/qualification/evol_x/evol_x_p03_independent_replay/experiments/S6_positive.json
+E     EVIDENCE_INTEGRITY_FAIL: missing artifact @ 8431c6aa2: docs/project/maintainers/qualification/evol_x/evol_x_p03_independent_replay/experiments/S7_negative.json
+E     EVIDENCE_INTEGRITY_FAIL: missing artifact @ 8431c6aa2: docs/project/maintainers/qualification/evol_x/evol_x_p03_independent_replay/experiments/S7_positive.json
+E     
+E   assert 2 == 0
+E    +  where 2 = CompletedProcess(args=['D:\\Projekty\\intergrax\\.venv\\Scripts\\python.exe', 'D:\\Projekty\\intergrax\\.claude\\workt...8431c6aa2: docs/project/maintainers/qualification/evol_x/evol_x_p03_independent_replay/experiments/S7_positive.json\n').returncode
+____________________ test_r2_reconciliation_clean_at_head _____________________
+tests\qualification\roadmap_replay_x\test_roadmap_replay_x_b6_r2_reconciliation.py:30: in test_r2_reconciliation_clean_at_head
+    assert replay_r2_reconciliation_violations() == ()
+E   AssertionError: assert ('ecap_counte...ailures:0!=1') == ()
+E     
+E     Left contains 2 more items, first extra item: 'ecap_counter_vs_mechanical:historical_evidence_invalidated_by_later_changes:0!=2'
+E     Use -v to get more diff
+______________ test_r2_ecap_counter_matches_mechanical_counters _______________
+tests\qualification\roadmap_replay_x\test_roadmap_replay_x_b6_r2_reconciliation.py:34: in test_r2_ecap_counter_matches_mechanical_counters
+    assert ecap_counter_bidirectional_violations() == ()
+E   AssertionError: assert ('ecap_counte...ailures:0!=1') == ()
+E     
+E     Left contains 2 more items, first extra item: 'ecap_counter_vs_mechanical:historical_evidence_invalidated_by_later_changes:0!=2'
+E     Use -v to get more diff
+_________________ test_replay_x_prod_delta_empty_since_dup_x __________________
+tests\qualification\roadmap_replay_x\test_roadmap_replay_x_mechanical_exit_gates.py:110: in test_replay_x_prod_delta_empty_since_dup_x
+    assert unscoped == [], f"{path}: {unscoped}"
+E   AssertionError: intergrax: ['intergrax/agent_distribution/__init__.py', 'intergrax/agent_distribution/admin_models.py', 'intergrax/agent_distribution/admin_service.py', 'intergrax/agent_distribution/agent_manager_command_facade.py', 'intergrax/agent_distribution/control_plane_governance.py', 'intergrax/agent_distribution/events.py', 'intergrax/agent_distribution/installation.py', 'intergrax/agent_distribution/installation_service.py', 'intergrax/agent_distribution/runtime_revision.py', 'intergrax/agent_distribution/runtime_revision_service.py', 'intergrax/agent_distribution/upgrade_admission.py', 'intergrax/applications/_shared/application_security_wiring.py', 'intergrax/applications/_shared/attestation_runtime_bridge.py', 'intergrax/applications/_shared/critical_action_signing_wiring.py', 'intergrax/applications/_shared/evaluation_wiring.py', 'intergrax/applications/_shared/fastapi_mcp.py', 'intergrax/applications/_shared/lkw_hybrid_daemon_wiring.py', 'intergrax/applications/_shared/llm_resolver.py', 'intergrax/applications/_shared/mcp_application_server.py', 'intergrax/applications/_shared/mcp_catalog_invocation_bridge.py', 'intergrax/applications/_shared/mcp_catalog_tools.py', 'intergrax/applications/_shared/mcp_developer_api.py', 'intergrax/applications/_shared/mcp_engine_concurrency.py', 'intergrax/applications/_shared/mcp_harness_principal.py', 'intergrax/applications/_shared/mcp_host_execution_transport_cancel.py', 'intergrax/applications/_shared/mcp_host_mount.py', 'intergrax/applications/_shared/mcp_identity_mode.py', 'intergrax/applications/_shared/mcp_import_guard.py', 'intergrax/applications/_shared/mcp_invocation_id.py', 'intergrax/applications/_shared/mcp_nexus_server.py', 'intergrax/applications/_shared/mcp_server_engine.py', 'intergrax/applications/_shared/mcp_wire_errors.py', 'intergrax/applications/_shared/security_assembly_resolver.py', 'intergrax/applications/_shared/security_audit_trail_wiring.py', 'intergrax/applications/_shared/settings_loader.py', 'intergrax/applications/contracts/application_artifacts.py', 'intergrax/applications/contracts/environment_profile/sub_profiles.py', 'intergrax/collaborative_work/content_storage.py', 'intergrax/context/budget/mandatory_base_messages.py', 'intergrax/context/policy/egress.py', 'intergrax/context/provider_lifecycle.py', 'intergrax/contracts/agent_contract_meta.py', 'intergrax/contracts/agent_lifecycle_state.py', 'intergrax/contracts/artifact_ref.py', 'intergrax/contracts/evaluation_contracts.py', 'intergrax/contracts/mcp_server_definition.py', 'intergrax/contracts/task_artifacts.py', 'intergrax/core/catalog_bootstrap.py', 'intergrax/core/plugins/admission.py', 'intergrax/core/plugins/discovery.py', 'intergrax/core/security/raw_secret_gate.py', 'intergrax/core/security/security_configuration.py', 'intergrax/eval/eval_comparison.py', 'intergrax/eval/evaluators.py', 'intergrax/eval/typed_run.py', 'intergrax/hosting/__init__.py', 'intergrax/hosting/contracts/events.py', 'intergrax/hosting/engine/components.py', 'intergrax/hosting/engine/diagnostics.py', 'intergrax/hosting/engine/engine.py', 'intergrax/hosting/eventing.py', 'intergrax/hosting/metrics.py', 'intergrax/hosting/public_api.py', 'intergrax/hosting/supervisor/supervisor.py', 'intergrax/llm_adapters/_shared/adapter_response_builders.py', 'intergrax/llm_adapters/_shared/conformance.py', 'intergrax/llm_adapters/_shared/openai_completion_mapping.py', 'intergrax/llm_adapters/base/base_llm_adapter.py', 'intergrax/llm_adapters/contracts/capabilities.py', 'intergrax/llm_adapters/contracts/finish_reason.py', 'intergrax/llm_adapters/llm_provider_registry.py', 'intergrax/llm_adapters/providers/aws_bedrock_adapter.py', 'intergrax/llm_adapters/providers/claude_adapter.py', 'intergrax/llm_adapters/providers/cohere_native_adapter.py', 'intergrax/llm_adapters/providers/gemini_adapter.py', 'intergrax/llm_adapters/providers/mistral_adapter.py', 'intergrax/llm_adapters/providers/ollama_adapter.py', 'intergrax/llm_adapters/providers/openai_chat_completions_adapter.py', 'intergrax/llm_adapters/providers/openai_compat_providers.py', 'intergrax/llm_adapters/providers/openai_responses_adapter.py', 'intergrax/llm_adapters/registry/catalog_capabilities.py', 'intergrax/llm_adapters/registry/failover_adapter.py', 'intergrax/llm_adapters/registry/model_catalog.yaml', 'intergrax/llm_adapters/routing/evaluating_adapter.py', 'intergrax/memory/contracts/memory_control.py', 'intergrax/memory/default_memory_control_plane.py', 'intergrax/memory/memory_temporal.py', 'intergrax/memory/retention_sweep.py', 'intergrax/queueing/contracts/task_queue.py', 'intergrax/queueing/providers/document_store/colocated_worker.py', 'intergrax/queueing/providers/document_store/document_store_task_queue.py', 'intergrax/queueing/task_index.py', 'intergrax/rag/governance/__init__.py', 'intergrax/rag/governance/source_freshness.py', 'intergrax/rag/ingest/ingest_pipeline.py', 'intergrax/rag/retrieval/retrieval_result.py', 'intergrax/rag/retrieval/retrieval_service.py', 'intergrax/runtime/agent_governance/pipeline.py', 'intergrax/runtime/architecture/agent_promotion.py', 'intergrax/runtime/architecture/evaluation_assets.py', 'intergrax/runtime/architecture/evaluation_automation.py', 'intergrax/runtime/architecture/evaluation_registry_trends.py', 'intergrax/runtime/architecture/evaluation_scenario_loader.py', 'intergrax/runtime/architecture/online_evaluation_registry.py', 'intergrax/runtime/attestation/host_attestation.py', 'intergrax/runtime/evidence/eval_evidence_contracts.py', 'intergrax/runtime/execution/agent_runtime_context.py', 'intergrax/runtime/execution/trace_persistence_models_bridge.py', 'intergrax/runtime/execution_evidence/attestor.py', 'intergrax/runtime/integrations/observability.py', 'intergrax/runtime/llm/model_call_runtime_evidence_adapter.py', 'intergrax/runtime/long_running/recurrence.py', 'intergrax/runtime/long_running/scheduler.py', 'intergrax/runtime/nexus/artifacts/context_reference.py', 'intergrax/runtime/nexus/artifacts/governed_access.py', 'intergrax/runtime/nexus/artifacts/in_memory_artifact_store.py', 'intergrax/runtime/nexus/artifacts/models.py', 'intergrax/runtime/nexus/artifacts/retention.py', 'intergrax/runtime/nexus/artifacts/sources.py', 'intergrax/runtime/nexus/artifacts/spill.py', 'intergrax/runtime/nexus/artifacts/sqlite_artifact_store.py', 'intergrax/runtime/nexus/artifacts/store_base.py', 'intergrax/runtime/nexus/artifacts/taxonomy.py', 'intergrax/runtime/nexus/context/context_compiler.py', 'intergrax/runtime/nexus/context/context_engine.py', 'intergrax/runtime/nexus/context/context_manager.py', 'intergrax/runtime/nexus/context/degradation_ladder.py', 'intergrax/runtime/nexus/context/shared_task_context.py', 'intergrax/runtime/nexus/engine/contracts/runtime_state_contract.py', 'intergrax/runtime/nexus/engine/runtime_state.py', 'intergrax/runtime/nexus/orchestration/run_artifact_bundle_builder.py', 'intergrax/runtime/nexus/tools/plan_context_invocation.py', 'intergrax/runtime/nexus/tracing/persistence_models.py', 'intergrax/runtime/nexus/tracing/trace_models.py', 'intergrax/runtime/observability/export_boundary.py', 'intergrax/runtime/persistence/sqlite_composition.py', 'intergrax/runtime/persistence/sqlite_opens.py', 'intergrax/runtime/registry/agent_registry.py', 'intergrax/runtime/registry/agent_routing_policy.py', 'intergrax/runtime/replay/models.py', 'intergrax/runtime/replay/replay_engine.py', 'intergrax/runtime/security/defense_plugin_loader.py', 'intergrax/runtime/security/multi_region_audit_trail.py', 'intergrax/runtime/security/security_audit_trail.py', 'intergrax/runtime/task/worker_bootstrap.py', 'intergrax/runtime/vendor_knowledge/contribution_catalog.py', 'intergrax/skills/host_lifecycle.py', 'intergrax/tools/mcp_result_bounds.py', 'intergrax/tools/providers/rag/service.py', 'intergrax/tools/providers/storage/service.py']
+E   assert ['intergrax/a...ents.py', ...] == []
+E     
+E     Left contains 150 more items, first extra item: 'intergrax/agent_distribution/__init__.py'
+E     Use -v to get more diff
+___________________ test_replay_x_closure_counters_computed ___________________
+tests\qualification\roadmap_replay_x\test_roadmap_replay_x_mechanical_exit_gates.py:148: in test_replay_x_closure_counters_computed
+    assert by_name["historical_evidence_invalidated_by_later_changes"].value == 0
+E   AssertionError: assert 2 == 0
+E    +  where 2 = CounterResult(name='historical_evidence_invalidated_by_later_changes', value=2, denominator='prod paths since DUP-X ac...oadmap_replay_x/_prod_delta_disposition.py', failure_mode='non-zero unscoped prod delta or invalid scoped disposition').value
+___________________ test_replay_x_b6_r2_reconciliation_zero ___________________
+tests\qualification\roadmap_replay_x\test_roadmap_replay_x_mechanical_exit_gates.py:160: in test_replay_x_b6_r2_reconciliation_zero
+    assert replay_r2_reconciliation_violations() == ()
+E   AssertionError: assert ('ecap_counte...ailures:0!=1') == ()
+E     
+E     Left contains 2 more items, first extra item: 'ecap_counter_vs_mechanical:historical_evidence_invalidated_by_later_changes:0!=2'
+E     Use -v to get more diff
+______ test_every_pdc_touched_product_module_maps_to_at_least_one_check _______
+tests\qualification\pdc_x\p6_impact\test_p6_impact_map_coverage.py:154: in test_every_pdc_touched_product_module_maps_to_at_least_one_check
+    assert unmapped == [], f"{len(unmapped)} PDC-touched product modules map to no check, e.g. {unmapped[:5]}"
+E   AssertionError: 8 PDC-touched product modules map to no check, e.g. ['applications/dispute_sim_application/mcp/server.py', 'applications/governed_contractor_application/mcp/server.py', 'applications/intergrax_assistant_application/mcp/server.py', 'applications/lab_application/mcp/server.py', 'applications/legal_application/mcp/server.py']
+E   assert ['application...rver.py', ...] == []
+E     
+E     Left contains 8 more items, first extra item: 'applications/dispute_sim_application/mcp/server.py'
+E     Use -v to get more diff
+______ test_xd12_every_pdc_touched_product_module_maps_to_a_domain_check ______
+tests\qualification\pdc_x\xd\test_xd_12_evol_ent_audit.py:97: in test_xd12_every_pdc_touched_product_module_maps_to_a_domain_check
+    assert unmapped == [], f"{len(unmapped)} PDC-touched product modules map to no check, e.g. {unmapped[:5]}"
+E   AssertionError: 8 PDC-touched product modules map to no check, e.g. ['applications/dispute_sim_application/mcp/server.py', 'applications/governed_contractor_application/mcp/server.py', 'applications/intergrax_assistant_application/mcp/server.py', 'applications/lab_application/mcp/server.py', 'applications/legal_application/mcp/server.py']
+E   assert ['application...rver.py', ...] == []
+E     
+E     Left contains 8 more items, first extra item: 'applications/dispute_sim_application/mcp/server.py'
+E     Use -v to get more diff
+____________ test_committed_inventory_is_current_and_closed_world _____________
+tests\unit\governance\test_pdc_x_inventory.py:37: in test_committed_inventory_is_current_and_closed_world
+    assert inv.check(inv.build()) == []
+E   AssertionError: assert ['UNMAPPED:do...ith --write)'] == []
+E     
+E     Left contains 3 more items, first extra item: 'UNMAPPED:docs/project/capabilities/architecture/ARTIFACT_LIFECYCLE.md'
+E     Use -v to get more diff
+__________ test_every_item_has_exactly_one_known_category_and_status __________
+tests\unit\governance\test_pdc_x_inventory.py:47: in test_every_item_has_exactly_one_known_category_and_status
+    assert item["category"] in allowed, item
+E   AssertionError: {'category': 'UNMAPPED', 'kind': 'document', 'path': 'docs/project/capabilities/architecture/ARTIFACT_LIFECYCLE.md', 'status': 'INDEX_ONLY'}
+E   assert 'UNMAPPED' in {'CONSUMER', 'PDC-D1', 'PDC-D2', 'PDC-D3', 'PDC-D4', 'PDC-D5', ...}
+____________ test_ebh5_pkgc_v2_relational_sqlite_duckdb_dual_slug _____________
+tests\qualification\ebh_5\_package_c_v2_primitives.py:25: in require_python_module
+    importlib.import_module(module_name)
+C:\Users\XPS\AppData\Roaming\uv\python\cpython-3.12.11-windows-x86_64-none\Lib\importlib\__init__.py:90: in import_module
+    return _bootstrap._gcd_import(name[level:], package, level)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E   ModuleNotFoundError: No module named 'duckdb'
+
+The above exception was the direct cause of the following exception:
+tests\qualification\ebh_5\test_ebh_5_behavioral_package_c_v2.py:23: in test_ebh5_pkgc_v2_relational_sqlite_duckdb_dual_slug
+    run_package_c_v2_relational_sqlite_duckdb_dual_slug(tmp_path)
+tests\qualification\ebh_5\_package_c_v2_proof_helpers.py:19: in run_package_c_v2_relational_sqlite_duckdb_dual_slug
+    require_python_module("duckdb", qualification_context="integration.relational_store")
+tests\qualification\ebh_5\_package_c_v2_primitives.py:27: in require_python_module
+    raise RuntimeError(
+E   RuntimeError: integration.relational_store: mandatory dependency 'duckdb' missing — sync environment with sanctioned dev-ci / integration extras
+____ test_ebh5_pkgc_v2_dual_slug_integration[integration.relational_store] ____
+tests\qualification\ebh_5\_package_c_v2_primitives.py:25: in require_python_module
+    importlib.import_module(module_name)
+C:\Users\XPS\AppData\Roaming\uv\python\cpython-3.12.11-windows-x86_64-none\Lib\importlib\__init__.py:90: in import_module
+    return _bootstrap._gcd_import(name[level:], package, level)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E   ModuleNotFoundError: No module named 'duckdb'
+
+The above exception was the direct cause of the following exception:
+tests\qualification\ebh_5\test_ebh_5_behavioral_package_c_v2.py:39: in test_ebh5_pkgc_v2_dual_slug_integration
+    run_package_c_v2_dual_slug_for_entry(entry, tmp_path=tmp_path)
+tests\qualification\ebh_5\_package_c_v2_proof_helpers.py:40: in run_package_c_v2_dual_slug_for_entry
+    require_python_module("duckdb", qualification_context=entry.concern_id)
+tests\qualification\ebh_5\_package_c_v2_primitives.py:27: in require_python_module
+    raise RuntimeError(
+E   RuntimeError: integration.relational_store: mandatory dependency 'duckdb' missing — sync environment with sanctioned dev-ci / integration extras
+___ test_ebh5_pkgc_v2_dual_slug_integration[integration.embedding_provider] ___
+intergrax\integrations\registry\catalog.py:134: in get_entry
+    return _CATALOG[normalized]
+           ^^^^^^^^^^^^^^^^^^^^
+E   KeyError: 'ollama'
+
+The above exception was the direct cause of the following exception:
+tests\qualification\ebh_5\test_ebh_5_behavioral_package_c_v2.py:39: in test_ebh5_pkgc_v2_dual_slug_integration
+    run_package_c_v2_dual_slug_for_entry(entry, tmp_path=tmp_path)
+tests\qualification\ebh_5\_package_c_v2_proof_helpers.py:45: in run_package_c_v2_dual_slug_for_entry
+    run_dual_slug_resolve_from_profile(
+tests\qualification\ebh_5\_package_c_v2_primitives.py:100: in run_dual_slug_resolve_from_profile
+    register_catalog_slug(category=category, slug=slug_a)
+tests\qualification\ebh_5\_package_c_v2_primitives.py:51: in register_catalog_slug
+    register_fn()
+intergrax\integrations\providers\embedding_provider\ollama\register.py:20: in register_ollama_embedding_provider_integration
+    augment_integration_contract_specs(
+intergrax\integrations\registry\catalog.py:176: in augment_integration_contract_specs
+    entry = get_entry(normalized_slug)
+            ^^^^^^^^^^^^^^^^^^^^^^^^^^
+intergrax\integrations\registry\catalog.py:136: in get_entry
+    raise UnknownIntegrationError(normalized) from exc
+E   intergrax.integrations.contracts.base.UnknownIntegrationError: Integration slug 'ollama' is not registered in the catalog.
+_ test_ebh5_pkgc_v2_dual_slug_rpl_cde_equivalence[integration.relational_store] _
+tests\qualification\ebh_5\_package_c_v2_primitives.py:25: in require_python_module
+    importlib.import_module(module_name)
+C:\Users\XPS\AppData\Roaming\uv\python\cpython-3.12.11-windows-x86_64-none\Lib\importlib\__init__.py:90: in import_module
+    return _bootstrap._gcd_import(name[level:], package, level)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E   ModuleNotFoundError: No module named 'duckdb'
+
+The above exception was the direct cause of the following exception:
+tests\qualification\ebh_5\test_ebh_5_behavioral_package_c_v2.py:63: in test_ebh5_pkgc_v2_dual_slug_rpl_cde_equivalence
+    run_package_c_v2_dual_slug_rpl_cde_equivalence(entry, tmp_path=tmp_path)
+tests\qualification\ebh_5\_package_c_v2_rpl_cde.py:58: in run_package_c_v2_dual_slug_rpl_cde_equivalence
+    inst_a, inst_b = run_dual_slug_resolve_from_profile(
+tests\qualification\ebh_5\_package_c_v2_primitives.py:98: in run_dual_slug_resolve_from_profile
+    require_python_module("duckdb", qualification_context="integration.relational_store")
+tests\qualification\ebh_5\_package_c_v2_primitives.py:27: in require_python_module
+    raise RuntimeError(
+E   RuntimeError: integration.relational_store: mandatory dependency 'duckdb' missing — sync environment with sanctioned dev-ci / integration extras
+_ test_ebh5_pkgc_v2_dual_slug_rpl_cde_equivalence[integration.embedding_provider] _
+intergrax\integrations\registry\catalog.py:134: in get_entry
+    return _CATALOG[normalized]
+           ^^^^^^^^^^^^^^^^^^^^
+E   KeyError: 'ollama'
+
+The above exception was the direct cause of the following exception:
+tests\qualification\ebh_5\test_ebh_5_behavioral_package_c_v2.py:63: in test_ebh5_pkgc_v2_dual_slug_rpl_cde_equivalence
+    run_package_c_v2_dual_slug_rpl_cde_equivalence(entry, tmp_path=tmp_path)
+tests\qualification\ebh_5\_package_c_v2_rpl_cde.py:58: in run_package_c_v2_dual_slug_rpl_cde_equivalence
+    inst_a, inst_b = run_dual_slug_resolve_from_profile(
+tests\qualification\ebh_5\_package_c_v2_primitives.py:100: in run_dual_slug_resolve_from_profile
+    register_catalog_slug(category=category, slug=slug_a)
+tests\qualification\ebh_5\_package_c_v2_primitives.py:51: in register_catalog_slug
+    register_fn()
+intergrax\integrations\providers\embedding_provider\ollama\register.py:20: in register_ollama_embedding_provider_integration
+    augment_integration_contract_specs(
+intergrax\integrations\registry\catalog.py:176: in augment_integration_contract_specs
+    entry = get_entry(normalized_slug)
+            ^^^^^^^^^^^^^^^^^^^^^^^^^^
+intergrax\integrations\registry\catalog.py:136: in get_entry
+    raise UnknownIntegrationError(normalized) from exc
+E   intergrax.integrations.contracts.base.UnknownIntegrationError: Integration slug 'ollama' is not registered in the catalog.
+============================== warnings summary ===============================
+tests/qualification/mcp_server_x/test_mcp_server_x_p7_l3_publication_discovery.py::test_acc_01_reference_server_exact_tool_set_over_http
+  D:\Projekty\intergrax\.venv\Lib\site-packages\websockets\legacy\__init__.py:6: DeprecationWarning: websockets.legacy is deprecated; see https://websockets.readthedocs.io/en/stable/howto/upgrade.html for upgrade instructions
+    warnings.warn(  # deprecated in 14.0 - 2024-11-09
+
+tests/qualification/mcp_server_x/test_mcp_server_x_p7_l3_publication_discovery.py::test_acc_01_reference_server_exact_tool_set_over_http
+  D:\Projekty\intergrax\.venv\Lib\site-packages\uvicorn\protocols\websockets\websockets_impl.py:17: DeprecationWarning: websockets.server.WebSocketServerProtocol is deprecated
+    from websockets.server import WebSocketServerProtocol
+
+tests/qualification/mcp_server_x/test_mcp_server_x_p7_l3_publication_discovery.py: 18 warnings
+tests/qualification/mcp_server_x/test_mcp_server_x_p7_l3_invoke_security.py: 16 warnings
+tests/qualification/mcp_server_x/test_mcp_server_x_p7_l3_protocol_subset.py: 5 warnings
+tests/qualification/mcp_server_x/test_mcp_server_x_p7_failure_injection_l3.py: 18 warnings
+tests/unit/applications/test_mcp_trust_a_principal_binding.py: 4 warnings
+tests/unit/applications/test_mcp_cancel_a_transport_governed_cancel.py: 3 warnings
+tests/unit/applications/test_mcp_catalog_f3_streamable_http_physical_l3.py: 6 warnings
+tests/qualification/mcp_server_x/test_mcp_server_x_p6_reference_l3_qualification.py: 3 warnings
+tests/unit/applications/test_mcp_catalog_e2e_hung_server_qualification.py: 12 warnings
+tests/unit/applications/test_mcp_identity_mode_fail_closed.py: 6 warnings
+tests/unit/applications/test_mcp_rc_audit_corrections.py: 3 warnings
+tests/unit/tools/providers/test_tool_life_x_l3_r2_mcp_host_lifecycle_qualification.py: 7 warnings
+  C:\Users\XPS\AppData\Roaming\uv\python\cpython-3.12.11-windows-x86_64-none\Lib\contextlib.py:105: DeprecationWarning: Use `streamable_http_client` instead.
+    self.gen = func(*args, **kwds)
+
+-- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html
+=========================== short test summary info ===========================
+FAILED tests/qualification/ent_audit_x/unit/test_baseline_promotion_iiac.py::test_valid_delegate_record_verifies
+FAILED tests/qualification/ent_audit_x/unit/test_baseline_promotion_iiac.py::test_signature_on_the_expiry_day_is_still_valid
+FAILED tests/qualification/ent_audit_x/unit/test_baseline_promotion_iiac.py::test_valid_delegate_record_promotes_baseline
+FAILED tests/qualification/ent_audit_x/unit/test_baseline_promotion_iiac.py::test_cli_promotes_a_delegated_record
+FAILED tests/qualification/ent_audit_x/unit/test_baseline_promotion_iiac.py::test_cli_rejects_a_record_changed_after_delegation_and_writes_nothing
+FAILED tests/qualification/ent_audit_x/unit/test_baseline_promotion_iiac.py::test_delegate_record_rejected[no_operator_signature_in_delegation]
+FAILED tests/qualification/ent_audit_x/unit/test_baseline_promotion_iiac.py::test_delegate_record_rejected[template_blank_signature]
+FAILED tests/qualification/ent_audit_x/unit/test_baseline_promotion_iiac.py::test_delegate_record_rejected[delegation_for_other_decision]
+FAILED tests/qualification/ent_audit_x/unit/test_baseline_promotion_iiac.py::test_delegate_record_rejected[policy_mismatch_in_delegation]
+FAILED tests/qualification/ent_audit_x/unit/test_baseline_promotion_iiac.py::test_delegate_record_rejected[digest_mismatch]
+FAILED tests/qualification/ent_audit_x/unit/test_baseline_promotion_iiac.py::test_delegate_record_rejected[record_changed_after_delegation]
+FAILED tests/qualification/ent_audit_x/unit/test_baseline_promotion_iiac.py::test_delegate_record_rejected[expired_delegation]
+FAILED tests/qualification/ent_audit_x/unit/test_baseline_promotion_iiac.py::test_delegate_record_rejected[signed_before_operator]
+FAILED tests/qualification/ent_audit_x/unit/test_baseline_promotion_iiac.py::test_delegate_record_rejected[designated_is_implementer]
+FAILED tests/qualification/ent_audit_x/unit/test_baseline_promotion_iiac.py::test_delegate_record_rejected[designated_mismatch]
+FAILED tests/qualification/ent_audit_x/unit/test_baseline_promotion_iiac.py::test_delegate_record_rejected[blank_delegation_field]
+FAILED tests/qualification/ent_audit_x/unit/test_baseline_promotion_iiac.py::test_delegate_record_rejected[delegation_binds_other_record_path]
+FAILED tests/qualification/ent_audit_x/unit/test_baseline_promotion_iiac.py::test_delegate_record_rejected[manifest_verdict_fail]
+FAILED tests/qualification/ent_audit_x/unit/test_baseline_promotion_iiac.py::test_delegate_record_rejected[manifest_wrong_stage]
+FAILED tests/qualification/ent_audit_x/unit/test_baseline_promotion_iiac.py::test_delegate_record_rejected[manifest_tes_mismatch]
+FAILED tests/qualification/ent_audit_x/unit/test_baseline_promotion_iiac.py::test_delegate_record_rejected[manifest_sessions_not_distinct]
+FAILED tests/qualification/ent_audit_x/unit/test_baseline_promotion_iiac.py::test_delegate_record_rejected[manifest_digest_mismatch]
+FAILED tests/qualification/ent_audit_x/unit/test_baseline_promotion_iiac.py::test_delegate_record_rejected[designated_is_auditor]
+FAILED tests/qualification/evol_x/gates/test_evol_x_p03_integrity.py::test_valid_bundle_passes_mode_a_and_mode_b
+FAILED tests/qualification/evol_x/gates/test_evol_x_p03_integrity.py::test_swapped_canonical_junit_outcome_is_rejected
+FAILED tests/qualification/evol_x/gates/test_evol_x_p03_integrity.py::test_missing_manifest_node_in_canonical_outcomes_is_rejected
+FAILED tests/qualification/evol_x/gates/test_evol_x_p03_integrity.py::test_stale_source_commit_sha_in_inventory_is_rejected
+FAILED tests/qualification/evol_x/gates/test_evol_x_p03_integrity.py::test_tampered_artifact_digest_entry_is_rejected
+FAILED tests/qualification/evol_x/gates/test_evol_x_p03_integrity.py::test_failing_metric_or_experiment_or_frz_is_rejected
+FAILED tests/qualification/evol_x/gates/test_evol_x_p03_integrity.py::test_mode_a_final_requires_m09h_and_human_drill
+FAILED tests/qualification/evol_x/gates/test_evol_x_p03_integrity.py::test_mode_a_final_valid_m09_bundle_passes
+FAILED tests/qualification/evol_x/gates/test_evol_x_p03_integrity.py::test_mode_a_automation_first_scoped_final_passes
+FAILED tests/qualification/evol_x/gates/test_evol_x_p03_integrity.py::test_m09_human_drill_negative_cases[N-M09-01]
+FAILED tests/qualification/evol_x/gates/test_evol_x_p03_integrity.py::test_m09_human_drill_negative_cases[N-M09-02]
+FAILED tests/qualification/evol_x/gates/test_evol_x_p03_integrity.py::test_m09_human_drill_negative_cases[N-M09-03]
+FAILED tests/qualification/evol_x/gates/test_evol_x_p03_integrity.py::test_m09_human_drill_negative_cases[N-M09-04]
+FAILED tests/qualification/evol_x/gates/test_evol_x_p03_integrity.py::test_m09_human_drill_negative_cases[N-M09-05]
+FAILED tests/qualification/evol_x/gates/test_evol_x_p03_integrity.py::test_m09_human_drill_negative_cases[N-M09-06]
+FAILED tests/qualification/evol_x/gates/test_evol_x_p03_integrity.py::test_m09_human_drill_negative_cases[N-M09-07]
+FAILED tests/qualification/evol_x/gates/test_evol_x_p03_integrity.py::test_m09_human_drill_negative_cases[N-M09-08]
+FAILED tests/qualification/evol_x/gates/test_evol_x_p03_integrity.py::test_m09_human_drill_negative_cases[N-M09-09]
+FAILED tests/qualification/evol_x/gates/test_evol_x_p03_integrity.py::test_m09_human_drill_negative_cases[N-M09-10]
+FAILED tests/qualification/evol_x/gates/test_evol_x_p03_integrity.py::test_m09_human_drill_negative_cases[N-M09-11]
+FAILED tests/qualification/evol_x/gates/test_evol_x_p03_integrity.py::test_m09_human_drill_negative_cases[N-M09-12]
+FAILED tests/qualification/evol_x/gates/test_evol_x_p03_integrity.py::test_m09_human_drill_negative_cases[N-M09-13]
+FAILED tests/qualification/evol_x/gates/test_evol_x_p03_integrity.py::test_m09_human_drill_negative_cases[N-M09-14]
+FAILED tests/qualification/evol_x/gates/test_evol_x_p03_integrity.py::test_m09_human_drill_negative_cases[N-M09-15]
+FAILED tests/qualification/evol_x/gates/test_evol_x_p03_integrity.py::test_m09_human_drill_negative_cases[N-M09-16]
+FAILED tests/qualification/evol_x/gates/test_evol_x_p03_integrity.py::test_m09_human_drill_negative_cases[N-M09-17]
+FAILED tests/qualification/evol_x/gates/test_evol_x_p03_integrity.py::test_m09_human_drill_negative_cases[N-M09-18]
+FAILED tests/qualification/evol_x/gates/test_evol_x_p03_integrity.py::test_m09_human_drill_negative_cases[N-M09-19]
+FAILED tests/qualification/evol_x/gates/test_evol_x_p03_integrity.py::test_m09_human_drill_negative_cases[N-M09-20-negative]
+FAILED tests/qualification/evol_x/gates/test_evol_x_p03_integrity.py::test_m09_human_drill_negative_cases[N-M09-20-nan]
+FAILED tests/qualification/evol_x/gates/test_evol_x_p03_integrity.py::test_m09_human_drill_negative_cases[N-M09-20-inf]
+FAILED tests/qualification/evol_x/gates/test_evol_x_p03_integrity.py::test_m09_human_drill_negative_cases[N-M09-21-swap]
+FAILED tests/qualification/evol_x/gates/test_evol_x_p03_integrity.py::test_m09_human_drill_negative_cases[N-M09-22]
+FAILED tests/qualification/evol_x/gates/test_evol_x_p03_integrity.py::test_m09_human_drill_negative_cases[N-M09-23-FAIL]
+FAILED tests/qualification/evol_x/gates/test_evol_x_p03_integrity.py::test_m09_human_drill_negative_cases[N-M09-24]
+FAILED tests/qualification/evol_x/gates/test_evol_x_p03_integrity.py::test_m09_human_drill_negative_cases[N-M09-25]
+FAILED tests/qualification/evol_x/gates/test_evol_x_p03_integrity.py::test_m09_human_drill_negative_cases[N-M09-25b-policy-missing]
+FAILED tests/qualification/evol_x/gates/test_evol_x_p03_integrity.py::test_m09_human_drill_negative_cases[N-M09-25c-policy-wrong]
+FAILED tests/qualification/evol_x/gates/test_evol_x_p03_integrity.py::test_m09_human_drill_negative_cases[N-M09-27]
+FAILED tests/qualification/evol_x/gates/test_evol_x_p03_integrity.py::test_m09_human_drill_negative_cases[N-M09-28]
+FAILED tests/qualification/evol_x/gates/test_evol_x_p03_integrity.py::test_m09_human_drill_negative_cases[N-M09-29]
+FAILED tests/qualification/evol_x/gates/test_evol_x_p03_integrity.py::test_m09_human_drill_positive_cases[N-M09-23-PASS-spike]
+FAILED tests/qualification/evol_x/gates/test_evol_x_p03_integrity.py::test_m09_human_drill_positive_cases[N-M09-26-PASS-boundary]
+FAILED tests/qualification/evol_x/gates/test_evol_x_p03_integrity.py::test_m09_human_drill_positive_cases[N-M09-26b-PASS-mixed]
+FAILED tests/qualification/evol_x/gates/test_evol_x_p03_integrity.py::test_m09_human_drill_positive_cases[N-M09-18b-PASS-tool-boundary]
+FAILED tests/qualification/evol_x/gates/test_evol_x_p03_integrity.py::test_composite_m09_pass_without_m09h_is_rejected
+FAILED tests/qualification/evol_x/gates/test_evol_x_p03_integrity.py::test_cli_exits_2_on_integrity_failure_and_0_on_success
+FAILED tests/qualification/roadmap_replay_x/test_roadmap_replay_x_b6_r2_reconciliation.py::test_r2_reconciliation_clean_at_head
+FAILED tests/qualification/roadmap_replay_x/test_roadmap_replay_x_b6_r2_reconciliation.py::test_r2_ecap_counter_matches_mechanical_counters
+FAILED tests/qualification/roadmap_replay_x/test_roadmap_replay_x_mechanical_exit_gates.py::test_replay_x_prod_delta_empty_since_dup_x
+FAILED tests/qualification/roadmap_replay_x/test_roadmap_replay_x_mechanical_exit_gates.py::test_replay_x_closure_counters_computed
+FAILED tests/qualification/roadmap_replay_x/test_roadmap_replay_x_mechanical_exit_gates.py::test_replay_x_b6_r2_reconciliation_zero
+FAILED tests/qualification/pdc_x/p6_impact/test_p6_impact_map_coverage.py::test_every_pdc_touched_product_module_maps_to_at_least_one_check
+FAILED tests/qualification/pdc_x/xd/test_xd_12_evol_ent_audit.py::test_xd12_every_pdc_touched_product_module_maps_to_a_domain_check
+FAILED tests/unit/governance/test_pdc_x_inventory.py::test_committed_inventory_is_current_and_closed_world
+FAILED tests/unit/governance/test_pdc_x_inventory.py::test_every_item_has_exactly_one_known_category_and_status
+FAILED tests/qualification/ebh_5/test_ebh_5_behavioral_package_c_v2.py::test_ebh5_pkgc_v2_relational_sqlite_duckdb_dual_slug
+FAILED tests/qualification/ebh_5/test_ebh_5_behavioral_package_c_v2.py::test_ebh5_pkgc_v2_dual_slug_integration[integration.relational_store]
+FAILED tests/qualification/ebh_5/test_ebh_5_behavioral_package_c_v2.py::test_ebh5_pkgc_v2_dual_slug_integration[integration.embedding_provider]
+FAILED tests/qualification/ebh_5/test_ebh_5_behavioral_package_c_v2.py::test_ebh5_pkgc_v2_dual_slug_rpl_cde_equivalence[integration.relational_store]
+FAILED tests/qualification/ebh_5/test_ebh_5_behavioral_package_c_v2.py::test_ebh5_pkgc_v2_dual_slug_rpl_cde_equivalence[integration.embedding_provider]
+XFAIL tests/unit/applications/test_mcp_surface_opt_in.py::test_scaffold_defaults_mcp_to_opt_in[product] - TRANSFERRED (MCP-RC R-P7-02, not MCP-owned): the product scaffold fails STRICT agent-contract authority resolution in package emission; strict=True forces removal once that is fixed
+84 failed, 1359 passed, 176 skipped, 1 xfailed, 103 warnings in 1022.12s (0:17:02)
+RUNNER status=EXITED exit=1 elapsed=1056.4s
