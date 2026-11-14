@@ -1,0 +1,124 @@
+{
+ "head": "fde55618379ff99779172e40214b5879d9d0810d",
+ "union": {
+  "fa6": 153,
+  "19d": 156,
+  "324d9dba3": 158,
+  "head": 158,
+  "head_equals_324": true,
+  "delta_19d_324": [
+   "intergrax/platform/enterprise_audit/data/changed_since_impact_map.v1.json",
+   "intergrax/platform/enterprise_audit/impact_map.py"
+  ],
+  "delta_new": [
+   "intergrax/platform/enterprise_audit/data/changed_since_impact_map.v1.json",
+   "intergrax/platform/enterprise_audit/impact_map.py"
+  ],
+  "mcp_rc": 23,
+  "mcp_rc_subset": true,
+  "non_mcp": 135,
+  "product_diff_324_vs_head": 0,
+  "product_diff_19d_vs_324": 2,
+  "ancestors": {
+   "324_anc_head": true,
+   "19d_anc_324": true,
+   "pin_anc_head": true,
+   "a156cbbd5_anc_324": true,
+   "884c177ad_anc_head": true
+  },
+  "mcp_rc_byte_identical_b0e_head": true,
+  "scope_delta_act_n11_paths_equals_git": true
+ },
+ "scope_keys": {
+  "stage_id": "PDC-X/P7-00/addendum_2",
+  "parent_audits": "list(2)",
+  "certification_profile": "iiac-v1",
+  "policy_version": "IIAC-2026-11-05.1",
+  "base_sha": "19d552beeb6f0677a8bdc3b4ce65da15dd637c7b",
+  "audited_implementation_sha": "324d9dba37cb54e1b74a79a05148d2dcc05e6d09",
+  "audit_execution_sha": "324d9dba37cb54e1b74a79a05148d2dcc05e6d09",
+  "activation_pin_audit_execution_sha": "2d3eceb6cf7e93dccd4d96919319a6c969b4444b",
+  "re_pinned_development_head": "a156cbbd5ff521dc7e99dd02ab6bebd4ca234a73",
+  "auditor_branch": "p7-00-baseline-audit",
+  "auditor_branch_merge_of_origin_mcp_rc": "bbe54afbb (product tree identical to 324d9dba3: git diff 324d9dba3 HEAD -- intergrax agents applications tests is empty at the merge; the two auditor manifests were resolved to the pin-only versions of mcp-rc)",
+  "delta_act_n11_paths_count": 2,
+  "delta_act_n11_paths": "list(2)",
+  "delta_numstat": "list(2)",
+  "source_prs": "dict(1)",
+  "delta_tests_changed": "list(3)",
+  "mcp_rc_paths_count": 23,
+  "mcp_rc_byte_identical_to_b0e19bf61": true,
+  "changed_governance_gate_activation_or_iiac_evidence_paths": "list(0)",
+  "other_changed_paths_outside_scope_note": "in 19d552bee..324d9dba3 only docs changed besides the two product paths and the three test files: the RC contract log (iiac_evidence/MCP-SERVER-X/rc_qualification), the evidence integration of my first audit and addendum 1 (iiac_evidence/PDC-X/P7-00, pin-only manifest edits, EVIDENCE_INTEGRATION_RECORD.md) and the certifier preflight PDC_P7_00_CERTIFIER_PREFLIGHT.md; no path under scripts/, governance/, .github/ and not IIAC_GLOBAL_AUTHORITY_IMPACT_MATRIX.json",
+  "combined_coverage": "dict(4)",
+  "out_of_scope": "list(4)",
+  "delta_paths_already_in_the_previous_156": "list(0)",
+  "delta_paths_new_to_the_set": "list(2)"
+ },
+ "auditor_branch": "3fd4d9160aabfd7290e94af26d687e02ef604492",
+ "digests": {
+  "audit_report_digest": {
+   "claimed": "fe7e03c7c036ae15de182d4d5dd51f91fe4f6d2df556ffbbafe612e1d5019301",
+   "at_head": true,
+   "at_evidence_commit": true,
+   "on_auditor_branch": true
+  },
+  "audit_scope_manifest_digest": {
+   "claimed": "9a5ca90b3691056464f0a5b26962b905e02dc901b619a8f1b05430568884b9e6",
+   "at_head": true,
+   "at_evidence_commit": true,
+   "on_auditor_branch": true
+  },
+  "test_matrix_digest": {
+   "claimed": "0904860856f54ed513955f365d8d872d772132fca89a30b16e6ae4977f7f0b9d",
+   "at_head": true,
+   "at_evidence_commit": true,
+   "on_auditor_branch": true
+  },
+  "findings_digest": {
+   "claimed": "f6f641f2a4bfe774ebc05fff98c878dd6c3df67665d6d4cc7fa4ec8820936f32",
+   "at_head": true,
+   "at_evidence_commit": true,
+   "on_auditor_branch": true
+  }
+ },
+ "pin_only_diff_evidence_to_head": {
+  "certification_publication_sha": [
+   "0000000000000000000000000000000000000000",
+   "29d66ae3fcc7a06a919d7e07541740841e8abfe8"
+  ],
+  "certifier_session_id": [
+   "PENDING-CERTIFIER-PDC-P7-00",
+   "PDC-P7-00-CERTIFIER-PREFLIGHT-2026-11-13"
+  ],
+  "evidence_publication_sha": [
+   "0000000000000000000000000000000000000000",
+   "29d66ae3fcc7a06a919d7e07541740841e8abfe8"
+  ]
+ },
+ "pin_only_fields_vs_auditor_branch": [
+  "certification_publication_sha",
+  "certifier_session_id",
+  "evidence_publication_sha"
+ ],
+ "blob_identity": {
+  "files_in_publication_commit": 27,
+  "differ_from_auditor_branch": [],
+  "all_under_docs": true
+ },
+ "changed_evidence_to_head": [],
+ "changed_evidence_to_head_docs_only_list": [
+  "docs/project/maintainers/qualification/iiac_evidence/PDC-X/P7-00/EVIDENCE_INTEGRATION_RECORD.md",
+  "docs/project/maintainers/qualification/iiac_evidence/PDC-X/P7-00/addendum_2/iiac_audit_session_manifest.PDC-X.p7_00.addendum_2.json"
+ ],
+ "earlier_manifests_unchanged_since_5c25d4d8f": true,
+ "sessions": {
+  "implementation": "T-IGX-036-J-V-PDC-X-IMPLEMENTERS+T-IGX-038-A-F-MCP-RC-IMPLEMENTER",
+  "auditor": "PDC-P7-00-ACT-N11-G6-BASELINE-AUDITOR-85fb061a-028f-4648-a3d6-284a392f4e27-ADDENDUM-2",
+  "certifier": "PDC-P7-00-CERTIFIER-PREFLIGHT-2026-11-13",
+  "auditor_is_p7_auditor_plus_suffix": true,
+  "auditor_equals_mcp_rc_auditors": [],
+  "impl_contains_mcp_rc_implementer": true,
+  "all_distinct": true
+ }
+}
