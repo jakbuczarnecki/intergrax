@@ -47,6 +47,7 @@ graph LR
   B-P6-G --> B-P6-F
   B-P6-G --> B-P6-E
   B-P6-F --> B-P6-E
+  B-P6-E --> B-P6-H
   P4 --> B-D1 & B-D3 & B-D7 & B-REG-P
   GATE -. merges .-> B-D1 & B-D3 & B-D7 & B-REG-P & B-D2 & B-D5 & B-D6 & B-D8 & B-D4
   B-P6 --> ACT{{PDC-P7-00 ACT-N11 activation}} --> P7[PDC-P7: 8 domain audits]
@@ -79,6 +80,7 @@ Wave 3 sets the length of the path. Its three batches run in sequence because th
 | W7 | B-P6-G | after B-P6-R and B-P6-M | after MCP-SERVER-X P8 |
 | W8 | B-P6-F | after B-P6-G and the signature of T-IGX-036-X | any time (no product path) |
 | W9 | B-P6-E | after B-P6-F and the signature of T-IGX-036-W | any time (no product path) |
+| W10 | B-P6-H | after B-P6-E and the signature of T-IGX-036-Y | any time (no product path) |
 
 ## Operator gates
 
