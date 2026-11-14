@@ -1,0 +1,26 @@
+# guardrail and pin checks (read-only git), PDC-P7-00 certifier preflight addendum 1
+HEAD fde55618379ff99779172e40214b5879d9d0810d
+## product diff 324d9dba3..HEAD (expect 0): 0
+## non-docs paths changed 324d9dba3..HEAD (expect none):
+governance/tickets/T-IGX-036-W.md
+governance/tickets/plans/PLAN_T-IGX-036-W.md
+scripts/qualification/pdc_x_inventory.py
+scripts/qualification/pdc_x_wbs.py
+uv.lock
+(end)
+## 23 MCP-RC paths byte-identical to b0e19bf61 at HEAD:
+yes
+## RC tests + harness byte-identical 1b5f26f24..HEAD:
+yes
+## sensitive paths changed 5c25d4d8f..HEAD (activation record, .github, scripts/governance, P8, FREEZE):
+(end)
+## activation record vs base 6a6279a49 (expect empty):
+## material governance paths changed 324d9dba3..HEAD (expect none):
+(end)
+## development at fetch: 3a7694cb717cfe49713518d899e1f05855224761
+development vs 884c177ad product paths (expect none):
+(end)
+development non-docs paths since 884c177ad:
+governance/tickets/T-IGX-036-X.md
+governance/tickets/plans/PLAN_T-IGX-036-X.md
+scripts/qualification/pdc_x_wbs.py

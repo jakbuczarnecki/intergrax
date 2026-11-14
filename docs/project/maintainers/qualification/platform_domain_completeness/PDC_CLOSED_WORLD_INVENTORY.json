@@ -55,7 +55,7 @@
     "PDC-D8": {
       "INSPECTED": 2,
       "INDEX_ONLY": 0,
-      "UNINSPECTED": 1
+      "UNINSPECTED": 3
     },
     "PLATFORM-FOUNDATION": {
       "INSPECTED": 2,
@@ -276,10 +276,12 @@
     },
     "PDC-D8": {
       "architecture": [
-        "docs/project/architecture/COLLABORATIVE_WORK.md"
+        "docs/project/architecture/COLLABORATIVE_WORK.md",
+        "docs/project/capabilities/architecture/ARTIFACT_LIFECYCLE.md"
       ],
       "plans": [
-        "docs/project/maintainers/plans/COLLABORATIVE_WORK.md"
+        "docs/project/maintainers/plans/COLLABORATIVE_WORK.md",
+        "docs/project/capabilities/plan/ARTIFACT_LIFECYCLE.md"
       ],
       "semantic_owners": [
         "intergrax/contracts/collaborative_work.py",
@@ -931,6 +933,12 @@
     },
     {
       "kind": "document",
+      "path": "docs/project/capabilities/architecture/ARTIFACT_LIFECYCLE.md",
+      "category": "PDC-D8",
+      "status": "UNINSPECTED"
+    },
+    {
+      "kind": "document",
       "path": "docs/project/capabilities/architecture/COMPAT_X_CONTRACT_SCHEMA_EVOLUTION.md",
       "category": "PLATFORM-FOUNDATION",
       "status": "INDEX_ONLY"
@@ -1071,6 +1079,12 @@
       "kind": "document",
       "path": "docs/project/capabilities/architecture/satellites/TOKEN_OPTIMIZATION_domain_architecture_cross_references.md",
       "category": "PDC-D2",
+      "status": "UNINSPECTED"
+    },
+    {
+      "kind": "document",
+      "path": "docs/project/capabilities/plan/ARTIFACT_LIFECYCLE.md",
+      "category": "PDC-D8",
       "status": "UNINSPECTED"
     },
     {

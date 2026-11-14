@@ -1,0 +1,16 @@
+# HEAD 434249534efbd9bfb8f0a710384a01de35b6472b (origin/development alone), PYTHONPATH=D:/Projekty/_wt/intergrax/_scratch/devalone
+# intergrax from D:\Projekty\_wt\intergrax\_scratch\devalone\intergrax\__init__.py
+..........................................................F............. [ 75%]
+..............F...FF...                                                  [100%]
+================================== FAILURES ===================================
+D:\Projekty\_wt\intergrax\_scratch\devalone\tests\qualification\compat_x\test_compat_x_event_evolution_r3_p0_gates.py:63: AssertionError: assert ('unclassifie...ion bypasses') == ()
+D:\Projekty\_wt\intergrax\_scratch\devalone\tests\qualification\compat_x\test_compat_x_event_evolution_r3_p0_gates.py:299: AssertionError: assert ('unclassifie...ence.append',) == ()
+D:\Projekty\_wt\intergrax\_scratch\devalone\tests\qualification\compat_x\test_compat_x_event_evolution_r3_p0_gates.py:345: AssertionError: ('unclassified persistence append intergrax/runtime/security/security_audit_trail.py:213 self._evidence.append', 'inve...nce discovery includes UNCLASSIFIED append call sites', 'canonical production persistence bypass count 1 (expected 0)')
+D:\Projekty\_wt\intergrax\_scratch\devalone\tests\qualification\compat_x\test_compat_x_event_evolution_r3_p0_gates.py:351: AssertionError: assert ('probe K: pr...n injection',) == ()
+=========================== short test summary info ===========================
+FAILED tests/qualification/compat_x/test_compat_x_event_evolution_r3_p0_gates.py::test_cx_r3_p0_closed_world_inventory_gate
+FAILED tests/qualification/compat_x/test_compat_x_event_evolution_r3_p0_gates.py::test_cx_r3_p0_mechanical_persistence_discovery_classified
+FAILED tests/qualification/compat_x/test_compat_x_event_evolution_r3_p0_gates.py::test_cx_r3_p0_combined_gate_passes
+FAILED tests/qualification/compat_x/test_compat_x_event_evolution_r3_p0_gates.py::test_cx_r3_p0_probe_k_unknown_persistence_append
+4 failed, 91 passed in 110.33s (0:01:50)
+# exit 1

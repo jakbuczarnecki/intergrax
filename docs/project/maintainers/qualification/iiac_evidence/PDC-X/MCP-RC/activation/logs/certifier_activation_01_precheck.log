@@ -1,0 +1,56 @@
+# activation certifier independent pre-checks (script outside repo)
+# HEAD: afdf27e622369c3c635aeb1301c9d90d962d8371
+# UTC: 2026-11-14T07:29:59Z
+HEAD afdf27e622369c3c635aeb1301c9d90d962d8371
+origin/mcp-rc afdf27e622369c3c635aeb1301c9d90d962d8371
+[OK ] ancestor 2ae101411 -> 324d9dba3 
+[OK ] ancestor 324d9dba3 -> 29d66ae3f 
+[OK ] ancestor 29d66ae3f -> afdf27e62 
+[OK ] ancestor 7801dcb12 -> afdf27e62 
+[OK ] ancestor 2d3eceb6c -> 324d9dba3 
+[OK ] ancestor 324d9dba3 -> afdf27e62 
+[OK ] ancestor 29d66ae3f -> 7801dcb12 
+[OK ] 2ae101411 resolves to itself 
+[OK ] 324d9dba3 resolves to itself 
+[OK ] 29d66ae3f resolves to itself 
+[OK ] 7801dcb12 resolves to itself 
+[OK ] 2d3eceb6c resolves to itself 
+[OK ] ACT-N11 union pin..audited tree count=158
+[OK ] union pin..HEAD equals pin..audited count=158
+[OK ] union pin..evidence equals count=158
+[OK ] product diff audited..HEAD empty n=0
+[OK ] product diff audited..evidence_publication empty n=0
+[OK ] product diff evidence..HEAD empty n=0
+[OK ] 23 MCP-RC paths equal audit_scope product_paths_delta_vs_base n=23
+[OK ] 23 MCP-RC paths byte-identical to b0e19bf61 at HEAD diff=[]
+non-MCP: 135
+[OK ] no MATERIAL_GOVERNANCE_PATHS change 29d66ae3f..HEAD []
+[OK ] no MATERIAL_GOVERNANCE_PATHS change 2d3eceb6c..HEAD []
+non-docs diff audited..HEAD: 61 files total
+['governance/tickets/T-IGX-036-W.md', 'governance/tickets/plans/PLAN_T-IGX-036-W.md', 'scripts/qualification/pdc_x_inventory.py', 'scripts/qualification/pdc_x_wbs.py', 'uv.lock']
+[OK ] exactly one signature line ['Approved IIAC policy activation IIAC-2026-11-05.1: operator @ 2026-11-14T08:21:13+01:00']
+[OK ] signature regex fullmatch 2026-11-14T08:21:13+01:00
+line bytes: b'Approved IIAC policy activation IIAC-2026-11-05.1: operator @ 2026-11-14T08:21:13+01:00'
+[OK ] no trailing space/CR on the line in the file bytes 
+[OK ] gate _operator_errors empty []
+[OK ] ACT-N18 closure_conflicts empty (record+text) []
+[OK ] forbidden string absent: '________________' 
+[OK ] forbidden string absent: 'NOT SIGNED' 
+[OK ] forbidden string absent: 'Decision status: PENDING' 
+[OK ] file name rule 
+[OK ] 'Approved:' line absent (repo-forbidden for me) 
+[OK ] audit_report_path worktree sha256 == expected c405c65faf53243a0511b0b9584a9f3abda4db08c09ee9b9266c86fe9f6b7a4e
+[OK ] audit_report_path bytes == bytes at evidence_publication_sha 
+[OK ] audit_report_path under iiac_evidence 
+[OK ] audit_scope_path worktree sha256 == expected e06ce433ac1c260390885e19cc60b0687be9d8908d78bd38ae4fb5f1102fe56f
+[OK ] audit_scope_path bytes == bytes at evidence_publication_sha 
+[OK ] audit_scope_path under iiac_evidence 
+[OK ] test_matrix_path worktree sha256 == expected d5028f194bb7917d07e8df5264075952dcf8757503975042988caba6e89a240b
+[OK ] test_matrix_path bytes == bytes at evidence_publication_sha 
+[OK ] test_matrix_path under iiac_evidence 
+[OK ] findings_path worktree sha256 == expected df3648f926dad3199ff40c7c83c7fae4ed7a26bd1c67701a355bc7130073f831
+[OK ] findings_path bytes == bytes at evidence_publication_sha 
+[OK ] findings_path under iiac_evidence 
+[OK ] ACT-N15 findings register passes [] n=4
+ALL_PRECHECKS_OK = True
+exit=0

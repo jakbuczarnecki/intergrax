@@ -15,14 +15,15 @@
 | D1_IMPLEMENTATION_SHA | `bc7739c0700502afdf998301a2b87c393b3ce821` | Branch `pdc-x-d1` (T-IGX-036-J). Draft PR #478 closed by the Operator; branch intact. Pre-integration head, not merged |
 | D2_IMPLEMENTATION_SHA | `bf9bad971900449ce77d6f88aed06f6f4f21a7af` | Branch `pdc-x-d2` (T-IGX-036-N), draft PR #489. Pre-integration head, not merged |
 | D3_IMPLEMENTATION_SHA | `ff469148d6b7f7976be88c74ee85f03bc0cba6da` | Branch `pdc-x-d3` (T-IGX-036-K). Draft PR #476 closed by the Operator; branch intact. Pre-integration head, not merged |
-| D4_IMPLEMENTATION_SHA | — | Branch `pdc-x-d4` (T-IGX-036-R); implementation in progress |
+| D4_IMPLEMENTATION_SHA | `becdd16cf4eeb9ec1864a36d1be01f42b5ed8039` | Branch `pdc-x-d4` (T-IGX-036-R), PR #508. Pre-integration head |
 | D5_IMPLEMENTATION_SHA | `85a8c441d8e3f37e3f2d09451686dcd2f556d490` | Branch `pdc-x-d5` (T-IGX-036-O), draft PR #488. Pre-integration head, not merged |
 | D6_IMPLEMENTATION_SHA | `453cc10ced15fc5b2d2d308aa172a83602570b85` | Branch `pdc-x-d6` (T-IGX-036-P), draft PR #494. Pre-integration head, not merged |
 | D7_IMPLEMENTATION_SHA | `52f35a41fcd32e552edb68401aefb2ec3f565daf` | Branch `pdc-x-d7` (T-IGX-036-L). Draft PR #475 closed by the Operator; branch intact. Pre-integration head, not merged |
 | D8_IMPLEMENTATION_SHA | `9c7d59f88036b86407dc61373ce64513679d8934` | Branch `pdc-x-d8` (T-IGX-036-Q), draft PR #501. Pre-integration head, not merged |
 | B_REG_P_IMPLEMENTATION_SHA | `c3d5b7005cee1b93c9e2a98211f977d77da752a6` | Branch `pdc-x-regp` (T-IGX-036-M), draft PR #505. Pre-integration head, not merged |
-| Dn_PUBLICATION_SHA | — | One per P5 lane (D1..D8) and B-REG-P; publication = merge commit on `development`, set after MCP-SERVER-X P8 |
-| INTEGRATED_BASELINE_SHA | — | P6; must descend from every Dn publication |
+| Dn_PUBLICATION_SHA | see Notes | One per P5 lane; publication = merge commit on `development`. D1 `aaa93faecf7482eb23407318c05a148de609ce30` (PR #478); D2 `7bdd304493c405ddab82855d9a446ad63fecd81e` (PR #489); D3 `b5dd083938f266c2d223f9a3924173a8c0d01fe7` (PR #476); D4 `214092e87e8a55c18468ab52dd09a8290b092c4a` (PR #508); D5 `0d86fd4797cecdec6bbbf168534a3266810879c9` (PR #488); D6 `1f6dc3c4f93f76c32ad2838ac3b2e0df962a5853` (PR #494); D7 `2665dafc41dc3f647935964dd11365f6cf1f53e8` (PR #475); D8 `ffcf055a4267b3d8cdea2a58e20c2e5ce6b291da` (PR #501); B-REG-P `e8368a4344f7a1f1347e62d1b5cf9e88a797085a` (PR #505); RAG fix `b26668ca6d49d81e56d334839e8f3e3882a092e5` (PR #510) |
+| P6_REPAIR_PUBLICATION_SHAS | see Notes | Integration repairs from the B-P6 report: S (XD scenarios, ECAP) `fbad6a8dea2087d0a3122101f405d40f875fdc03` (PR #514); T `fa6d4dedcbc386aa1de17ee37f76ca9f540c044f` (PR #517), `87f4d4f417050fec40c32e4051bf76fb1124d58b` (PR #520), `9d8e1ee0e54985f0028fd330802e00e548021113` (PR #523); U `3dd991336233cea1662518df8b35e5e1ea901e00` (PR #524); V `a156cbbd5ff521dc7e99dd02ab6bebd4ca234a73` (PR #525) |
+| INTEGRATED_BASELINE_SHA | `a156cbbd5ff521dc7e99dd02ab6bebd4ca234a73` | P6 product tree: PR #525 merge, the last product-path change of the repair batches; descends from every Dn publication and every P6 repair publication (checked with `git merge-base --is-ancestor`). The P6 acceptance run (XD-01..12, ECAP) and the EBH-7 replay at this SHA are still pending; this row fixes the SHA, it records no PASS. Docs-only descendants do not change it |
 | TEST_EXECUTION_SHA | — | Must equal the audited SHA of each audit |
 | Dn_AUDITED_SHA | — | P7 per domain; INTEGRATED_BASELINE_SHA or a corrected descendant |
 | AUDIT_EXECUTION_SHA | — | IIAC `audit_execution_sha`; no product delta to HEAD at activation (ACT-N11) |

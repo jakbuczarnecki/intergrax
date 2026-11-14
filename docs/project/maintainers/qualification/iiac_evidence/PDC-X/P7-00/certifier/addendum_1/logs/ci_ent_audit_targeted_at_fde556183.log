@@ -1,0 +1,138 @@
+# ent-audit targeted probe: pr-gate files + VBN-REACHABILITY entrypoint file + roadmap_replay_x mechanical gates (FAST manifest nodes)
+# HEAD: fde55618379ff99779172e40214b5879d9d0810d
+# intergrax from: D:\Projekty\intergrax\.claude\worktrees\mcp-rc-certifier-fe2eb3\intergrax\__init__.py
+============================= test session starts =============================
+platform win32 -- Python 3.12.11, pytest-8.4.2, pluggy-1.6.0 -- D:\Projekty\intergrax\.venv\Scripts\python.exe
+cachedir: build\pytest\64380-7a0f0f46\pytest-cache
+rootdir: D:\Projekty\intergrax\.claude\worktrees\mcp-rc-certifier-fe2eb3
+configfile: pyproject.toml
+plugins: anyio-4.12.1, Intergrax-ai-0.1.0, langsmith-0.6.4, asyncio-0.23.8
+asyncio: mode=Mode.AUTO
+collecting ... collected 104 items
+
+tests/qualification/ent_audit_x/unit/test_task_id_registry.py::test_seventy_five_unique_task_ids_and_canonical_c055_c057_c058 PASSED [  0%]
+tests/qualification/ent_audit_x/unit/test_task_id_registry.py::test_closure_master_plan_exists PASSED [  1%]
+tests/qualification/ebh_5/test_ebh_5_behavioral_package_c_v2.py::test_ebh5_pkgc_v2_relational_sqlite_duckdb_dual_slug FAILED [  2%]
+tests/qualification/ebh_5/test_ebh_5_behavioral_package_c_v2.py::test_ebh5_pkgc_v2_relational_unregistered_fail_closed PASSED [  3%]
+tests/qualification/ebh_5/test_ebh_5_behavioral_package_c_v2.py::test_ebh5_pkgc_v2_dual_slug_integration[integration.relational_store] FAILED [  4%]
+tests/qualification/ebh_5/test_ebh_5_behavioral_package_c_v2.py::test_ebh5_pkgc_v2_dual_slug_integration[integration.document_store] PASSED [  5%]
+tests/qualification/ebh_5/test_ebh_5_behavioral_package_c_v2.py::test_ebh5_pkgc_v2_dual_slug_integration[integration.message_bus] PASSED [  6%]
+tests/qualification/ebh_5/test_ebh_5_behavioral_package_c_v2.py::test_ebh5_pkgc_v2_dual_slug_integration[integration.object_storage] PASSED [  7%]
+tests/qualification/ebh_5/test_ebh_5_behavioral_package_c_v2.py::test_ebh5_pkgc_v2_dual_slug_integration[integration.graph_store] PASSED [  8%]
+tests/qualification/ebh_5/test_ebh_5_behavioral_package_c_v2.py::test_ebh5_pkgc_v2_dual_slug_integration[integration.notification_channel] PASSED [  9%]
+tests/qualification/ebh_5/test_ebh_5_behavioral_package_c_v2.py::test_ebh5_pkgc_v2_dual_slug_integration[integration.collaboration_suite] PASSED [ 10%]
+tests/qualification/ebh_5/test_ebh_5_behavioral_package_c_v2.py::test_ebh5_pkgc_v2_dual_slug_integration[integration.issue_tracker] PASSED [ 11%]
+tests/qualification/ebh_5/test_ebh_5_behavioral_package_c_v2.py::test_ebh5_pkgc_v2_dual_slug_integration[integration.wiki_knowledge] PASSED [ 12%]
+tests/qualification/ebh_5/test_ebh_5_behavioral_package_c_v2.py::test_ebh5_pkgc_v2_dual_slug_integration[integration.browser_automation] PASSED [ 13%]
+tests/qualification/ebh_5/test_ebh_5_behavioral_package_c_v2.py::test_ebh5_pkgc_v2_dual_slug_integration[integration.cloud_platform] PASSED [ 14%]
+tests/qualification/ebh_5/test_ebh_5_behavioral_package_c_v2.py::test_ebh5_pkgc_v2_dual_slug_integration[integration.secrets_store] PASSED [ 15%]
+tests/qualification/ebh_5/test_ebh_5_behavioral_package_c_v2.py::test_ebh5_pkgc_v2_dual_slug_integration[integration.sandbox_host] PASSED [ 16%]
+tests/qualification/ebh_5/test_ebh_5_behavioral_package_c_v2.py::test_ebh5_pkgc_v2_dual_slug_integration[integration.speech_provider] PASSED [ 17%]
+tests/qualification/ebh_5/test_ebh_5_behavioral_package_c_v2.py::test_ebh5_pkgc_v2_dual_slug_integration[integration.embedding_provider] FAILED [ 18%]
+tests/qualification/ebh_5/test_ebh_5_behavioral_package_c_v2.py::test_ebh5_pkgc_v2_dual_slug_integration[integration.vector_store] PASSED [ 19%]
+tests/qualification/ebh_5/test_ebh_5_behavioral_package_c_v2.py::test_ebh5_pkgc_v2_dual_slug_integration[integration.conversation_channel] PASSED [ 20%]
+tests/qualification/ebh_5/test_ebh_5_behavioral_package_c_v2.py::test_ebh5_pkgc_v2_dual_slug_integration[integration.workflow_orchestrator] PASSED [ 21%]
+tests/qualification/ebh_5/test_ebh_5_behavioral_package_c_v2.py::test_ebh5_pkgc_v2_dual_slug_integration[integration.ci_cd] PASSED [ 22%]
+tests/qualification/ebh_5/test_ebh_5_behavioral_package_c_v2.py::test_ebh5_pkgc_v2_dual_slug_integration[integration.feature_flag] PASSED [ 23%]
+tests/qualification/ebh_5/test_ebh_5_behavioral_package_c_v2.py::test_ebh5_pkgc_v2_dual_slug_integration[integration.crm] PASSED [ 24%]
+tests/qualification/ebh_5/test_ebh_5_behavioral_package_c_v2.py::test_ebh5_pkgc_v2_dual_slug_integration[integration.observability_backend] PASSED [ 25%]
+tests/qualification/ebh_5/test_ebh_5_behavioral_package_c_v2.py::test_ebh5_pkgc_v2_dual_slug_integration[integration.security_scanner] PASSED [ 25%]
+tests/qualification/ebh_5/test_ebh_5_behavioral_package_c_v2.py::test_ebh5_pkgc_v2_dual_slug_integration[integration.identity_provider] PASSED [ 26%]
+tests/qualification/ebh_5/test_ebh_5_behavioral_package_c_v2.py::test_ebh5_pkgc_v2_dual_slug_integration[integration.document_parser] PASSED [ 27%]
+tests/qualification/ebh_5/test_ebh_5_behavioral_package_c_v2.py::test_ebh5_pkgc_v2_dual_slug_integration[integration.rerank_provider] PASSED [ 28%]
+tests/qualification/ebh_5/test_ebh_5_behavioral_package_c_v2.py::test_ebh5_pkgc_v2_dual_slug_integration[integration.search_provider] PASSED [ 29%]
+tests/qualification/ebh_5/test_ebh_5_behavioral_package_c_v2.py::test_ebh5_pkgc_v2_dual_slug_integration[integration.llm_guardrail] PASSED [ 30%]
+tests/qualification/ebh_5/test_ebh_5_behavioral_package_c_v2.py::test_ebh5_pkgc_v2_dual_slug_unregistered[integration.relational_store] PASSED [ 31%]
+tests/qualification/ebh_5/test_ebh_5_behavioral_package_c_v2.py::test_ebh5_pkgc_v2_dual_slug_unregistered[integration.document_store] PASSED [ 32%]
+tests/qualification/ebh_5/test_ebh_5_behavioral_package_c_v2.py::test_ebh5_pkgc_v2_dual_slug_unregistered[integration.message_bus] PASSED [ 33%]
+tests/qualification/ebh_5/test_ebh_5_behavioral_package_c_v2.py::test_ebh5_pkgc_v2_dual_slug_unregistered[integration.object_storage] PASSED [ 34%]
+tests/qualification/ebh_5/test_ebh_5_behavioral_package_c_v2.py::test_ebh5_pkgc_v2_dual_slug_unregistered[integration.graph_store] PASSED [ 35%]
+tests/qualification/ebh_5/test_ebh_5_behavioral_package_c_v2.py::test_ebh5_pkgc_v2_dual_slug_unregistered[integration.notification_channel] PASSED [ 36%]
+tests/qualification/ebh_5/test_ebh_5_behavioral_package_c_v2.py::test_ebh5_pkgc_v2_dual_slug_unregistered[integration.collaboration_suite] PASSED [ 37%]
+tests/qualification/ebh_5/test_ebh_5_behavioral_package_c_v2.py::test_ebh5_pkgc_v2_dual_slug_unregistered[integration.issue_tracker] PASSED [ 38%]
+tests/qualification/ebh_5/test_ebh_5_behavioral_package_c_v2.py::test_ebh5_pkgc_v2_dual_slug_unregistered[integration.wiki_knowledge] PASSED [ 39%]
+tests/qualification/ebh_5/test_ebh_5_behavioral_package_c_v2.py::test_ebh5_pkgc_v2_dual_slug_unregistered[integration.browser_automation] PASSED [ 40%]
+tests/qualification/ebh_5/test_ebh_5_behavioral_package_c_v2.py::test_ebh5_pkgc_v2_dual_slug_unregistered[integration.cloud_platform] PASSED [ 41%]
+tests/qualification/ebh_5/test_ebh_5_behavioral_package_c_v2.py::test_ebh5_pkgc_v2_dual_slug_unregistered[integration.secrets_store] PASSED [ 42%]
+tests/qualification/ebh_5/test_ebh_5_behavioral_package_c_v2.py::test_ebh5_pkgc_v2_dual_slug_unregistered[integration.sandbox_host] PASSED [ 43%]
+tests/qualification/ebh_5/test_ebh_5_behavioral_package_c_v2.py::test_ebh5_pkgc_v2_dual_slug_unregistered[integration.speech_provider] PASSED [ 44%]
+tests/qualification/ebh_5/test_ebh_5_behavioral_package_c_v2.py::test_ebh5_pkgc_v2_dual_slug_unregistered[integration.embedding_provider] PASSED [ 45%]
+tests/qualification/ebh_5/test_ebh_5_behavioral_package_c_v2.py::test_ebh5_pkgc_v2_dual_slug_unregistered[integration.vector_store] PASSED [ 46%]
+tests/qualification/ebh_5/test_ebh_5_behavioral_package_c_v2.py::test_ebh5_pkgc_v2_dual_slug_unregistered[integration.conversation_channel] PASSED [ 47%]
+tests/qualification/ebh_5/test_ebh_5_behavioral_package_c_v2.py::test_ebh5_pkgc_v2_dual_slug_unregistered[integration.workflow_orchestrator] PASSED [ 48%]
+tests/qualification/ebh_5/test_ebh_5_behavioral_package_c_v2.py::test_ebh5_pkgc_v2_dual_slug_unregistered[integration.ci_cd] PASSED [ 49%]
+tests/qualification/ebh_5/test_ebh_5_behavioral_package_c_v2.py::test_ebh5_pkgc_v2_dual_slug_unregistered[integration.feature_flag] PASSED [ 50%]
+tests/qualification/ebh_5/test_ebh_5_behavioral_package_c_v2.py::test_ebh5_pkgc_v2_dual_slug_unregistered[integration.crm] PASSED [ 50%]
+tests/qualification/ebh_5/test_ebh_5_behavioral_package_c_v2.py::test_ebh5_pkgc_v2_dual_slug_unregistered[integration.observability_backend] PASSED [ 51%]
+tests/qualification/ebh_5/test_ebh_5_behavioral_package_c_v2.py::test_ebh5_pkgc_v2_dual_slug_unregistered[integration.security_scanner] PASSED [ 52%]
+tests/qualification/ebh_5/test_ebh_5_behavioral_package_c_v2.py::test_ebh5_pkgc_v2_dual_slug_unregistered[integration.identity_provider] PASSED [ 53%]
+tests/qualification/ebh_5/test_ebh_5_behavioral_package_c_v2.py::test_ebh5_pkgc_v2_dual_slug_unregistered[integration.document_parser] PASSED [ 54%]
+tests/qualification/ebh_5/test_ebh_5_behavioral_package_c_v2.py::test_ebh5_pkgc_v2_dual_slug_unregistered[integration.rerank_provider] PASSED [ 55%]
+tests/qualification/ebh_5/test_ebh_5_behavioral_package_c_v2.py::test_ebh5_pkgc_v2_dual_slug_unregistered[integration.search_provider] PASSED [ 56%]
+tests/qualification/ebh_5/test_ebh_5_behavioral_package_c_v2.py::test_ebh5_pkgc_v2_dual_slug_unregistered[integration.llm_guardrail] PASSED [ 57%]
+tests/qualification/ebh_5/test_ebh_5_behavioral_package_c_v2.py::test_ebh5_pkgc_v2_dual_slug_rpl_cde_equivalence[integration.relational_store] FAILED [ 58%]
+tests/qualification/ebh_5/test_ebh_5_behavioral_package_c_v2.py::test_ebh5_pkgc_v2_dual_slug_rpl_cde_equivalence[integration.document_store] PASSED [ 59%]
+tests/qualification/ebh_5/test_ebh_5_behavioral_package_c_v2.py::test_ebh5_pkgc_v2_dual_slug_rpl_cde_equivalence[integration.message_bus] PASSED [ 60%]
+tests/qualification/ebh_5/test_ebh_5_behavioral_package_c_v2.py::test_ebh5_pkgc_v2_dual_slug_rpl_cde_equivalence[integration.object_storage] PASSED [ 61%]
+tests/qualification/ebh_5/test_ebh_5_behavioral_package_c_v2.py::test_ebh5_pkgc_v2_dual_slug_rpl_cde_equivalence[integration.graph_store] PASSED [ 62%]
+tests/qualification/ebh_5/test_ebh_5_behavioral_package_c_v2.py::test_ebh5_pkgc_v2_dual_slug_rpl_cde_equivalence[integration.notification_channel] PASSED [ 63%]
+tests/qualification/ebh_5/test_ebh_5_behavioral_package_c_v2.py::test_ebh5_pkgc_v2_dual_slug_rpl_cde_equivalence[integration.collaboration_suite] PASSED [ 64%]
+tests/qualification/ebh_5/test_ebh_5_behavioral_package_c_v2.py::test_ebh5_pkgc_v2_dual_slug_rpl_cde_equivalence[integration.issue_tracker] PASSED [ 65%]
+tests/qualification/ebh_5/test_ebh_5_behavioral_package_c_v2.py::test_ebh5_pkgc_v2_dual_slug_rpl_cde_equivalence[integration.wiki_knowledge] PASSED [ 66%]
+tests/qualification/ebh_5/test_ebh_5_behavioral_package_c_v2.py::test_ebh5_pkgc_v2_dual_slug_rpl_cde_equivalence[integration.browser_automation] PASSED [ 67%]
+tests/qualification/ebh_5/test_ebh_5_behavioral_package_c_v2.py::test_ebh5_pkgc_v2_dual_slug_rpl_cde_equivalence[integration.cloud_platform] PASSED [ 68%]
+tests/qualification/ebh_5/test_ebh_5_behavioral_package_c_v2.py::test_ebh5_pkgc_v2_dual_slug_rpl_cde_equivalence[integration.secrets_store] PASSED [ 69%]
+tests/qualification/ebh_5/test_ebh_5_behavioral_package_c_v2.py::test_ebh5_pkgc_v2_dual_slug_rpl_cde_equivalence[integration.sandbox_host] PASSED [ 70%]
+tests/qualification/ebh_5/test_ebh_5_behavioral_package_c_v2.py::test_ebh5_pkgc_v2_dual_slug_rpl_cde_equivalence[integration.speech_provider] PASSED [ 71%]
+tests/qualification/ebh_5/test_ebh_5_behavioral_package_c_v2.py::test_ebh5_pkgc_v2_dual_slug_rpl_cde_equivalence[integration.embedding_provider] FAILED [ 72%]
+tests/qualification/ebh_5/test_ebh_5_behavioral_package_c_v2.py::test_ebh5_pkgc_v2_dual_slug_rpl_cde_equivalence[integration.vector_store] PASSED [ 73%]
+tests/qualification/ebh_5/test_ebh_5_behavioral_package_c_v2.py::test_ebh5_pkgc_v2_dual_slug_rpl_cde_equivalence[integration.conversation_channel] PASSED [ 74%]
+tests/qualification/ebh_5/test_ebh_5_behavioral_package_c_v2.py::test_ebh5_pkgc_v2_dual_slug_rpl_cde_equivalence[integration.workflow_orchestrator] PASSED [ 75%]
+tests/qualification/ebh_5/test_ebh_5_behavioral_package_c_v2.py::test_ebh5_pkgc_v2_dual_slug_rpl_cde_equivalence[integration.ci_cd] PASSED [ 75%]
+tests/qualification/ebh_5/test_ebh_5_behavioral_package_c_v2.py::test_ebh5_pkgc_v2_dual_slug_rpl_cde_equivalence[integration.feature_flag] PASSED [ 76%]
+tests/qualification/ebh_5/test_ebh_5_behavioral_package_c_v2.py::test_ebh5_pkgc_v2_dual_slug_rpl_cde_equivalence[integration.crm] PASSED [ 77%]
+tests/qualification/ebh_5/test_ebh_5_behavioral_package_c_v2.py::test_ebh5_pkgc_v2_dual_slug_rpl_cde_equivalence[integration.observability_backend] PASSED [ 78%]
+tests/qualification/ebh_5/test_ebh_5_behavioral_package_c_v2.py::test_ebh5_pkgc_v2_dual_slug_rpl_cde_equivalence[integration.security_scanner] PASSED [ 79%]
+tests/qualification/ebh_5/test_ebh_5_behavioral_package_c_v2.py::test_ebh5_pkgc_v2_dual_slug_rpl_cde_equivalence[integration.identity_provider] PASSED [ 80%]
+tests/qualification/ebh_5/test_ebh_5_behavioral_package_c_v2.py::test_ebh5_pkgc_v2_dual_slug_rpl_cde_equivalence[integration.document_parser] PASSED [ 81%]
+tests/qualification/ebh_5/test_ebh_5_behavioral_package_c_v2.py::test_ebh5_pkgc_v2_dual_slug_rpl_cde_equivalence[integration.rerank_provider] PASSED [ 82%]
+tests/qualification/ebh_5/test_ebh_5_behavioral_package_c_v2.py::test_ebh5_pkgc_v2_dual_slug_rpl_cde_equivalence[integration.search_provider] PASSED [ 83%]
+tests/qualification/ebh_5/test_ebh_5_behavioral_package_c_v2.py::test_ebh5_pkgc_v2_dual_slug_rpl_cde_equivalence[integration.llm_guardrail] PASSED [ 84%]
+tests/qualification/roadmap_replay_x/test_roadmap_replay_x_mechanical_exit_gates.py::test_replay_x_frz_row_count PASSED [ 85%]
+tests/qualification/roadmap_replay_x/test_roadmap_replay_x_mechanical_exit_gates.py::test_replay_x_frz_pass_open_split PASSED [ 86%]
+tests/qualification/roadmap_replay_x/test_roadmap_replay_x_mechanical_exit_gates.py::test_replay_x_frz_unique_ids PASSED [ 87%]
+tests/qualification/roadmap_replay_x/test_roadmap_replay_x_mechanical_exit_gates.py::test_replay_x_historical_ledger_row_count PASSED [ 88%]
+tests/qualification/roadmap_replay_x/test_roadmap_replay_x_mechanical_exit_gates.py::test_replay_x_historical_unique_stage_labels PASSED [ 89%]
+tests/qualification/roadmap_replay_x/test_roadmap_replay_x_mechanical_exit_gates.py::test_replay_x_c0_roadmap_drift_zero PASSED [ 90%]
+tests/qualification/roadmap_replay_x/test_roadmap_replay_x_mechanical_exit_gates.py::test_replay_x_mandatory_docs_present PASSED [ 91%]
+tests/qualification/roadmap_replay_x/test_roadmap_replay_x_mechanical_exit_gates.py::test_replay_x_audited_head_in_sha_ladder PASSED [ 92%]
+tests/qualification/roadmap_replay_x/test_roadmap_replay_x_mechanical_exit_gates.py::test_replay_x_closed_in_roadmap PASSED [ 93%]
+tests/qualification/roadmap_replay_x/test_roadmap_replay_x_mechanical_exit_gates.py::test_replay_x_npsc_module_paths_exist PASSED [ 94%]
+tests/qualification/roadmap_replay_x/test_roadmap_replay_x_mechanical_exit_gates.py::test_replay_x_prod_delta_empty_since_dup_x FAILED [ 95%]
+tests/qualification/roadmap_replay_x/test_roadmap_replay_x_mechanical_exit_gates.py::test_replay_x_operator_closure_recorded PASSED [ 96%]
+tests/qualification/roadmap_replay_x/test_roadmap_replay_x_mechanical_exit_gates.py::test_replay_x_protocol_03_b6_closed_scoped PASSED [ 97%]
+tests/qualification/roadmap_replay_x/test_roadmap_replay_x_mechanical_exit_gates.py::test_replay_x_closure_counters_computed FAILED [ 98%]
+tests/qualification/roadmap_replay_x/test_roadmap_replay_x_mechanical_exit_gates.py::test_replay_x_b6_r2_reconciliation_zero FAILED [ 99%]
+tests/qualification/roadmap_replay_x/test_roadmap_replay_x_mechanical_exit_gates.py::test_replay_x_vbn_seven_artifacts_present PASSED [100%]
+
+================================== FAILURES ===================================
+D:\Projekty\intergrax\.claude\worktrees\mcp-rc-certifier-fe2eb3\tests\qualification\ebh_5\_package_c_v2_primitives.py:27: RuntimeError: integration.relational_store: mandatory dependency 'duckdb' missing — sync environment with sanctioned dev-ci / integration extras
+D:\Projekty\intergrax\.claude\worktrees\mcp-rc-certifier-fe2eb3\tests\qualification\ebh_5\_package_c_v2_primitives.py:27: RuntimeError: integration.relational_store: mandatory dependency 'duckdb' missing — sync environment with sanctioned dev-ci / integration extras
+D:\Projekty\intergrax\.claude\worktrees\mcp-rc-certifier-fe2eb3\intergrax\integrations\registry\catalog.py:136: intergrax.integrations.contracts.base.UnknownIntegrationError: Integration slug 'ollama' is not registered in the catalog.
+D:\Projekty\intergrax\.claude\worktrees\mcp-rc-certifier-fe2eb3\tests\qualification\ebh_5\_package_c_v2_primitives.py:27: RuntimeError: integration.relational_store: mandatory dependency 'duckdb' missing — sync environment with sanctioned dev-ci / integration extras
+D:\Projekty\intergrax\.claude\worktrees\mcp-rc-certifier-fe2eb3\intergrax\integrations\registry\catalog.py:136: intergrax.integrations.contracts.base.UnknownIntegrationError: Integration slug 'ollama' is not registered in the catalog.
+D:\Projekty\intergrax\.claude\worktrees\mcp-rc-certifier-fe2eb3\tests\qualification\roadmap_replay_x\test_roadmap_replay_x_mechanical_exit_gates.py:110: AssertionError: intergrax: ['intergrax/agent_distribution/__init__.py', 'intergrax/agent_distribution/admin_models.py', 'intergrax/agent_distribution/admin_service.py', 'intergrax/agent_distribution/agent_manager_command_facade.py', 'intergrax/agent_distribution/control_plane_governance.py', 'intergrax/agent_distribution/events.py', 'intergrax/agent_distribution/installation.py', 'intergrax/agent_distribution/installation_service.py', 'intergrax/agent_distribution/runtime_revision.py', 'intergrax/agent_distribution/runtime_revision_service.py', 'intergrax/agent_distribution/upgrade_admission.py', 'intergrax/applications/_shared/application_security_wiring.py', 'intergrax/applications/_shared/attestation_runtime_bridge.py', 'intergrax/applications/_shared/critical_action_signing_wiring.py', 'intergrax/applications/_shared/evaluation_wiring.py', 'intergrax/applications/_shared/fastapi_mcp.py', 'intergrax/applications/_shared/lkw_hybrid_daemon_wiring.py', 'intergrax/applications/_shared/llm_resolver.py', 'intergrax/applications/_shared/mcp_application_server.py', 'intergrax/applications/_shared/mcp_catalog_invocation_bridge.py', 'intergrax/applications/_shared/mcp_catalog_tools.py', 'intergrax/applications/_shared/mcp_developer_api.py', 'intergrax/applications/_shared/mcp_engine_concurrency.py', 'intergrax/applications/_shared/mcp_harness_principal.py', 'intergrax/applications/_shared/mcp_host_execution_transport_cancel.py', 'intergrax/applications/_shared/mcp_host_mount.py', 'intergrax/applications/_shared/mcp_identity_mode.py', 'intergrax/applications/_shared/mcp_import_guard.py', 'intergrax/applications/_shared/mcp_invocation_id.py', 'intergrax/applications/_shared/mcp_nexus_server.py', 'intergrax/applications/_shared/mcp_server_engine.py', 'intergrax/applications/_shared/mcp_wire_errors.py', 'intergrax/applications/_shared/security_assembly_resolver.py', 'intergrax/applications/_shared/security_audit_trail_wiring.py', 'intergrax/applications/_shared/settings_loader.py', 'intergrax/applications/contracts/application_artifacts.py', 'intergrax/applications/contracts/environment_profile/sub_profiles.py', 'intergrax/collaborative_work/content_storage.py', 'intergrax/context/budget/mandatory_base_messages.py', 'intergrax/context/policy/egress.py', 'intergrax/context/provider_lifecycle.py', 'intergrax/contracts/agent_contract_meta.py', 'intergrax/contracts/agent_lifecycle_state.py', 'intergrax/contracts/artifact_ref.py', 'intergrax/contracts/evaluation_contracts.py', 'intergrax/contracts/mcp_server_definition.py', 'intergrax/contracts/task_artifacts.py', 'intergrax/core/catalog_bootstrap.py', 'intergrax/core/plugins/admission.py', 'intergrax/core/plugins/discovery.py', 'intergrax/core/security/raw_secret_gate.py', 'intergrax/core/security/security_configuration.py', 'intergrax/eval/eval_comparison.py', 'intergrax/eval/evaluators.py', 'intergrax/eval/typed_run.py', 'intergrax/hosting/__init__.py', 'intergrax/hosting/contracts/events.py', 'intergrax/hosting/engine/components.py', 'intergrax/hosting/engine/diagnostics.py', 'intergrax/hosting/engine/engine.py', 'intergrax/hosting/eventing.py', 'intergrax/hosting/metrics.py', 'intergrax/hosting/public_api.py', 'intergrax/hosting/supervisor/supervisor.py', 'intergrax/llm_adapters/_shared/adapter_response_builders.py', 'intergrax/llm_adapters/_shared/conformance.py', 'intergrax/llm_adapters/_shared/openai_completion_mapping.py', 'intergrax/llm_adapters/base/base_llm_adapter.py', 'intergrax/llm_adapters/contracts/capabilities.py', 'intergrax/llm_adapters/contracts/finish_reason.py', 'intergrax/llm_adapters/llm_provider_registry.py', 'intergrax/llm_adapters/providers/aws_bedrock_adapter.py', 'intergrax/llm_adapters/providers/claude_adapter.py', 'intergrax/llm_adapters/providers/cohere_native_adapter.py', 'intergrax/llm_adapters/providers/gemini_adapter.py', 'intergrax/llm_adapters/providers/mistral_adapter.py', 'intergrax/llm_adapters/providers/ollama_adapter.py', 'intergrax/llm_adapters/providers/openai_chat_completions_adapter.py', 'intergrax/llm_adapters/providers/openai_compat_providers.py', 'intergrax/llm_adapters/providers/openai_responses_adapter.py', 'intergrax/llm_adapters/registry/catalog_capabilities.py', 'intergrax/llm_adapters/registry/failover_adapter.py', 'intergrax/llm_adapters/registry/model_catalog.yaml', 'intergrax/llm_adapters/routing/evaluating_adapter.py', 'intergrax/memory/contracts/memory_control.py', 'intergrax/memory/default_memory_control_plane.py', 'intergrax/memory/memory_temporal.py', 'intergrax/memory/retention_sweep.py', 'intergrax/queueing/contracts/task_queue.py', 'intergrax/queueing/providers/document_store/colocated_worker.py', 'intergrax/queueing/providers/document_store/document_store_task_queue.py', 'intergrax/queueing/task_index.py', 'intergrax/rag/governance/__init__.py', 'intergrax/rag/governance/source_freshness.py', 'intergrax/rag/ingest/ingest_pipeline.py', 'intergrax/rag/retrieval/retrieval_result.py', 'intergrax/rag/retrieval/retrieval_service.py', 'intergrax/runtime/agent_governance/pipeline.py', 'intergrax/runtime/architecture/agent_promotion.py', 'intergrax/runtime/architecture/evaluation_assets.py', 'intergrax/runtime/architecture/evaluation_automation.py', 'intergrax/runtime/architecture/evaluation_registry_trends.py', 'intergrax/runtime/architecture/evaluation_scenario_loader.py', 'intergrax/runtime/architecture/online_evaluation_registry.py', 'intergrax/runtime/attestation/host_attestation.py', 'intergrax/runtime/evidence/eval_evidence_contracts.py', 'intergrax/runtime/execution/agent_runtime_context.py', 'intergrax/runtime/execution/trace_persistence_models_bridge.py', 'intergrax/runtime/execution_evidence/attestor.py', 'intergrax/runtime/integrations/observability.py', 'intergrax/runtime/llm/model_call_runtime_evidence_adapter.py', 'intergrax/runtime/long_running/recurrence.py', 'intergrax/runtime/long_running/scheduler.py', 'intergrax/runtime/nexus/artifacts/context_reference.py', 'intergrax/runtime/nexus/artifacts/governed_access.py', 'intergrax/runtime/nexus/artifacts/in_memory_artifact_store.py', 'intergrax/runtime/nexus/artifacts/models.py', 'intergrax/runtime/nexus/artifacts/retention.py', 'intergrax/runtime/nexus/artifacts/sources.py', 'intergrax/runtime/nexus/artifacts/spill.py', 'intergrax/runtime/nexus/artifacts/sqlite_artifact_store.py', 'intergrax/runtime/nexus/artifacts/store_base.py', 'intergrax/runtime/nexus/artifacts/taxonomy.py', 'intergrax/runtime/nexus/context/context_compiler.py', 'intergrax/runtime/nexus/context/context_engine.py', 'intergrax/runtime/nexus/context/context_manager.py', 'intergrax/runtime/nexus/context/degradation_ladder.py', 'intergrax/runtime/nexus/context/shared_task_context.py', 'intergrax/runtime/nexus/engine/contracts/runtime_state_contract.py', 'intergrax/runtime/nexus/engine/runtime_state.py', 'intergrax/runtime/nexus/orchestration/run_artifact_bundle_builder.py', 'intergrax/runtime/nexus/tools/plan_context_invocation.py', 'intergrax/runtime/nexus/tracing/persistence_models.py', 'intergrax/runtime/nexus/tracing/trace_models.py', 'intergrax/runtime/observability/export_boundary.py', 'intergrax/runtime/persistence/sqlite_composition.py', 'intergrax/runtime/persistence/sqlite_opens.py', 'intergrax/runtime/registry/agent_registry.py', 'intergrax/runtime/registry/agent_routing_policy.py', 'intergrax/runtime/replay/models.py', 'intergrax/runtime/replay/replay_engine.py', 'intergrax/runtime/security/defense_plugin_loader.py', 'intergrax/runtime/security/multi_region_audit_trail.py', 'intergrax/runtime/security/security_audit_trail.py', 'intergrax/runtime/task/worker_bootstrap.py', 'intergrax/runtime/vendor_knowledge/contribution_catalog.py', 'intergrax/skills/host_lifecycle.py', 'intergrax/tools/mcp_result_bounds.py', 'intergrax/tools/providers/rag/service.py', 'intergrax/tools/providers/storage/service.py']
+D:\Projekty\intergrax\.claude\worktrees\mcp-rc-certifier-fe2eb3\tests\qualification\roadmap_replay_x\test_roadmap_replay_x_mechanical_exit_gates.py:148: AssertionError: assert 2 == 0
+D:\Projekty\intergrax\.claude\worktrees\mcp-rc-certifier-fe2eb3\tests\qualification\roadmap_replay_x\test_roadmap_replay_x_mechanical_exit_gates.py:160: AssertionError: assert ('ecap_counte...ailures:0!=1') == ()
+=========================== short test summary info ===========================
+FAILED tests/qualification/ebh_5/test_ebh_5_behavioral_package_c_v2.py::test_ebh5_pkgc_v2_relational_sqlite_duckdb_dual_slug
+FAILED tests/qualification/ebh_5/test_ebh_5_behavioral_package_c_v2.py::test_ebh5_pkgc_v2_dual_slug_integration[integration.relational_store]
+FAILED tests/qualification/ebh_5/test_ebh_5_behavioral_package_c_v2.py::test_ebh5_pkgc_v2_dual_slug_integration[integration.embedding_provider]
+FAILED tests/qualification/ebh_5/test_ebh_5_behavioral_package_c_v2.py::test_ebh5_pkgc_v2_dual_slug_rpl_cde_equivalence[integration.relational_store]
+FAILED tests/qualification/ebh_5/test_ebh_5_behavioral_package_c_v2.py::test_ebh5_pkgc_v2_dual_slug_rpl_cde_equivalence[integration.embedding_provider]
+FAILED tests/qualification/roadmap_replay_x/test_roadmap_replay_x_mechanical_exit_gates.py::test_replay_x_prod_delta_empty_since_dup_x
+FAILED tests/qualification/roadmap_replay_x/test_roadmap_replay_x_mechanical_exit_gates.py::test_replay_x_closure_counters_computed
+FAILED tests/qualification/roadmap_replay_x/test_roadmap_replay_x_mechanical_exit_gates.py::test_replay_x_b6_r2_reconciliation_zero
+======================== 8 failed, 96 passed in 18.22s ========================
+# pytest exit code: 1
+# elapsed_s: 21.53

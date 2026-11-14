@@ -15,6 +15,7 @@ from intergrax.integrations.contracts.base import (
     IntegrationConfigurationError,
     UnknownIntegrationError,
 )
+from intergrax.integrations.providers.model_serving_runtime.ollama.register import register_ollama_integration
 from intergrax.integrations.registry.catalog import clear_catalog
 from intergrax.integrations.registry.factory import resolve_from_profile
 from intergrax.integrations.registry.profile import IntegrationProfile
@@ -37,6 +38,10 @@ def assert_unregistered_fail_closed(*, category: IntegrationCategory) -> None:
 
 
 def register_catalog_slug(*, category: IntegrationCategory, slug: str) -> None:
+    if category is IntegrationCategory.EMBEDDING_PROVIDER and slug == "ollama":
+        # The embedding provider augments the model-serving row (one catalog row per slug),
+        # so the owning row registers first, as in register_default_integrations(preset="full").
+        register_ollama_integration()
     module_path = f"intergrax.integrations.providers.{category.value}.{slug}.register"
     module = importlib.import_module(module_path)
     candidate_names = (
