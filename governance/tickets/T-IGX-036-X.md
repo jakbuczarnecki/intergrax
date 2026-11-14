@@ -12,7 +12,8 @@ Canonical plan: [`governance/tickets/plans/PLAN_T-IGX-036-X.md`](plans/PLAN_T-IG
 
 ## Approved
 
-_Pending: delegate signing per [`DELEGATION-PDC-P6-ECAPFIX.md`](../../docs/project/maintainers/qualification/platform_domain_completeness/operator_decisions/DELEGATION-PDC-P6-ECAPFIX.md). The implementer never writes this line._
+Approved: operator-delegate @ 2026-11-14T07:57:44+01:00
+Delegation: docs/project/maintainers/qualification/platform_domain_completeness/operator_decisions/DELEGATION-PDC-P6-ECAPFIX.md@ece78ade7cf4f67d5a6ec85509e0948e5d6a6cee
 
 ## Test contract
 
@@ -29,4 +30,4 @@ uv run python -m scripts.governance.igx_gov ticket
 
 ## Lifecycle state
 
-plan_pending
+plan_approved
