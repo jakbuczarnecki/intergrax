@@ -61,3 +61,48 @@ verify_iiac_role_separation: PASS           exit=0
 ```
 
 No test suite, mutation harness or activation gate was run; the audits' own results stay as published by the auditor.
+
+# Round 3: addendum 2 (branch `mcp-rc-evidence-3`)
+
+Additive section; rounds 1 and 2 above are unchanged. Same role limits as above: evidence integration only, no verdict, no certification, no rebind, no FRZ change (counter stays 225), no `Approved:` line.
+
+## Commit ladder
+
+| Step | SHA | Content |
+|------|-----|---------|
+| Base (`origin/mcp-rc`) | `14e1322df` | product tree identical to the audited head `324d9dba3` (`git diff --name-only 324d9dba3 14e1322df -- intergrax agents applications` is empty; `324d9dba3` is an ancestor of `14e1322df`) |
+| Evidence publication commit | `29d66ae3fcc7a06a919d7e07541740841e8abfe8` | 27 files imported byte-for-byte, no content change |
+| Pin-only edit + this section | the commit that adds this section (its own SHA cannot be stored in it; read it from `git log`) | three pin-only field edits below, this section |
+
+## Imported evidence
+
+Source: `origin/p7-00-baseline-audit` at `3fd4d9160`. It contains merges of `mcp-rc`, so it was not merged. The import is the set of files it adds relative to `324d9dba3`, the last `mcp-rc` commit it merged (second parent of `bbe54afbb`): 27 paths, all additions, none outside `docs/`, none present on `origin/mcp-rc`, blob identity with the source branch verified for all 27. The set equals the files the branch adds relative to `origin/mcp-rc` itself. It consists of the addendum 2 dossier (`platform_domain_completeness/PDC_P7_00_ACT_N11_BASELINE_AUDIT_ADDENDUM_2.md`, delta `19d552bee..324d9dba3`, dossier verdict `PASS_SCOPED`, manifest verdict as authored) and the `iiac_evidence/PDC-X/P7-00/addendum_2/` folder. The first-audit and addendum 1 manifests on the auditor branch and on `mcp-rc` are byte-identical (the pin-only versions of round 2), so nothing of rounds 1 and 2 was re-imported.
+
+## Pin-only edits
+
+Only these three field values changed; every other byte of the manifest is untouched. The manifest is not an input of any digest it records; the four digests (dossier, scope file, test matrix, findings file) were re-computed with `sha256sum` before the edit and match.
+
+| File | Field | Old | New |
+|------|-------|-----|-----|
+| `iiac_evidence/PDC-X/P7-00/addendum_2/iiac_audit_session_manifest.PDC-X.p7_00.addendum_2.json` | `certifier_session_id` | `PENDING-CERTIFIER-PDC-P7-00` | `PDC-P7-00-CERTIFIER-PREFLIGHT-2026-11-13` |
+| same | `evidence_publication_sha` | `0000000000000000000000000000000000000000` | `29d66ae3fcc7a06a919d7e07541740841e8abfe8` |
+| same | `certification_publication_sha` | `0000000000000000000000000000000000000000` | `29d66ae3fcc7a06a919d7e07541740841e8abfe8` |
+
+(Path relative to `docs/project/maintainers/qualification/`.)
+
+Choices are the same as in rounds 1 and 2: `evidence_publication_sha` is this round's evidence publication commit; `certification_publication_sha` cannot name the commit that edits it and carries the same SHA; `certifier_session_id` keeps the designation `PDC-P7-00-CERTIFIER-PREFLIGHT-2026-11-13`, which is a reserved designation and not an attested session (no certifier preflight of addendum 2 has been performed here; the certifier is expected to add its own and to adopt this id or replace it by its own pin-only edit). The designation differs from the implementation and auditor session ids of the manifest.
+
+Residue left on purpose: the manifest's `LIM-publication-pending` still describes the placeholders and is now historical; `LIM-pre-activation` stays true (`verify_iiac --require-in-force` was not run here).
+
+## Verifier run
+
+Run from the worktree root, one process at a time (log: `.tmp/session/mcp-rc-evidence-3/verify_iiac_manifests_after_pin.log`, not committed).
+
+```text
+## addendum_2 verify_iiac_audit_manifest
+verify_iiac_audit_manifest: PASS            exit=0
+## addendum_2 verify_iiac_role_separation --strict-product-diff
+verify_iiac_role_separation: PASS           exit=0
+```
+
+No test suite, mutation harness or activation gate was run; the audit's own results stay as published by the auditor.
