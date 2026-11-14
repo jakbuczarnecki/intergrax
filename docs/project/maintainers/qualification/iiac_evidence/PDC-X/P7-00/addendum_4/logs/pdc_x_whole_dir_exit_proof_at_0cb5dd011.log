@@ -1,0 +1,25 @@
+........................................................................ [  7%]
+........................................................................ [ 14%]
+........................................................................ [ 22%]
+.........................s.............................................. [ 29%]
+........................................................................ [ 36%]
+........................................................................ [ 44%]
+........................................................................ [ 51%]
+........................................................................ [ 59%]
+........................................................................ [ 66%]
+........................................................................ [ 73%]
+........................................................................ [ 81%]
+........................................................................ [ 88%]
+........................................................................ [ 95%]
+........................................                                 [100%]
+============================= slowest 8 durations =============================
+11.05s call     tests/qualification/pdc_x/d6/test_d6_secrets.py::test_d6_r007_product_source_has_no_raw_secret_findings
+9.64s call     tests/qualification/pdc_x/d7/test_d7_fencing_two_process.py::test_crash_after_claim_is_never_refired_and_stale_completion_is_rejected
+8.85s call     tests/qualification/pdc_x/p6_repair/test_p6r_trace_alias_callers.py::test_classified_leftovers_still_exist
+8.10s call     tests/qualification/pdc_x/p6_repair/test_p6r_trace_alias_callers.py::test_no_in_repo_module_reintroduces_the_alias
+7.42s call     tests/qualification/pdc_x/p6_debt/test_p6debt_thread_exit.py::test_xd03_pytest_process_exits_by_itself_with_code_zero
+6.94s call     tests/qualification/pdc_x/d8/test_d8_taxonomy_gate.py::test_no_global_artifact_storage_engine_is_defined
+6.48s call     tests/qualification/pdc_x/d8/test_d8_dedupe_and_aliases.py::test_no_module_binds_an_alias_named_artifact_ref
+6.23s call     tests/qualification/pdc_x/d8/test_d8_governed_port.py::test_no_presigned_url_is_issued_outside_the_governed_port
+975 passed, 2 skipped in 140.83s (0:02:20)
+RUNNER status=EXITED_BY_ITSELF exit=0 seconds_to_summary=145.0 total=147.1

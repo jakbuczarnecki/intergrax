@@ -1,0 +1,152 @@
+{
+  "CONTROL_unmutated": {
+    "exit": 0,
+    "failed_tests": [],
+    "tail": [
+      ".....................................................................    [100%]",
+      "69 passed in 7.60s"
+    ]
+  },
+  "N1_drop_tier3_table_from_generator": {
+    "generator_exit": 0,
+    "pytest_exit": 1,
+    "verdict": "KILLED",
+    "new_failures_vs_control": [
+      "tests/qualification/pdc_x/p6_impact/test_p6_impact_map_coverage.py::test_every_pdc_touched_product_module_maps_to_at_least_one_check",
+      "tests/qualification/pdc_x/p6_impact/test_p6_impact_tier3_root_rule.py::test_every_tracked_applications_python_file_maps_to_at_least_one_check",
+      "tests/qualification/pdc_x/p6_impact/test_p6_impact_tier3_root_rule.py::test_generator_output_contains_the_tier3_root_rule",
+      "tests/qualification/pdc_x/p6_impact/test_p6_impact_tier3_root_rule.py::test_named_mcp_server_module_maps_to_a_manifest_check[applications/dispute_sim_application/mcp/server.py]",
+      "tests/qualification/pdc_x/p6_impact/test_p6_impact_tier3_root_rule.py::test_named_mcp_server_module_maps_to_a_manifest_check[applications/governed_contractor_application/mcp/server.py]",
+      "tests/qualification/pdc_x/p6_impact/test_p6_impact_tier3_root_rule.py::test_named_mcp_server_module_maps_to_a_manifest_check[applications/intergrax_assistant_application/mcp/server.py]",
+      "tests/qualification/pdc_x/p6_impact/test_p6_impact_tier3_root_rule.py::test_named_mcp_server_module_maps_to_a_manifest_check[applications/lab_application/mcp/server.py]",
+      "tests/qualification/pdc_x/p6_impact/test_p6_impact_tier3_root_rule.py::test_named_mcp_server_module_maps_to_a_manifest_check[applications/legal_application/mcp/server.py]",
+      "tests/qualification/pdc_x/p6_impact/test_p6_impact_tier3_root_rule.py::test_named_mcp_server_module_maps_to_a_manifest_check[applications/local_workspace_application/mcp/server.py]",
+      "tests/qualification/pdc_x/p6_impact/test_p6_impact_tier3_root_rule.py::test_named_mcp_server_module_maps_to_a_manifest_check[applications/poc_template_application/mcp/server.py]",
+      "tests/qualification/pdc_x/p6_impact/test_p6_impact_tier3_root_rule.py::test_named_mcp_server_module_maps_to_a_manifest_check[applications/research_application/mcp/server.py]",
+      "tests/qualification/pdc_x/p6_impact/test_p6_impact_tier3_root_rule.py::test_shipped_ssot_contains_the_tier3_root_key",
+      "tests/qualification/pdc_x/p6_impact/test_p6_impact_tier3_root_rule.py::test_synthetic_mcp_rc_range_leaves_no_pdc_touched_product_module_unmapped",
+      "tests/qualification/pdc_x/xd/test_xd_12_evol_ent_audit.py::test_xd12_every_pdc_touched_product_module_maps_to_a_domain_check"
+    ],
+    "tail": [
+      "FAILED tests/qualification/pdc_x/xd/test_xd_12_evol_ent_audit.py::test_xd12_every_pdc_touched_product_module_maps_to_a_domain_check",
+      "14 failed, 55 passed in 7.91s"
+    ]
+  },
+  "N2_reroute_tier3_root_to_doc_check": {
+    "generator_exit": 0,
+    "pytest_exit": 1,
+    "verdict": "KILLED",
+    "new_failures_vs_control": [
+      "tests/qualification/pdc_x/p6_impact/test_p6_impact_tier3_root_rule.py::test_generator_output_contains_the_tier3_root_rule",
+      "tests/qualification/pdc_x/p6_impact/test_p6_impact_tier3_root_rule.py::test_shipped_ssot_contains_the_tier3_root_key",
+      "tests/qualification/pdc_x/p6_impact/test_p6_impact_tier3_root_rule.py::test_tier3_root_rule_names_the_eight_ids_of_the_intergrax_applications_rule"
+    ],
+    "tail": [
+      "FAILED tests/qualification/pdc_x/p6_impact/test_p6_impact_tier3_root_rule.py::test_shipped_ssot_contains_the_tier3_root_key",
+      "3 failed, 66 passed in 9.11s"
+    ]
+  },
+  "N3_shrink_tier3_root_to_one_id": {
+    "generator_exit": 0,
+    "pytest_exit": 1,
+    "verdict": "KILLED",
+    "new_failures_vs_control": [
+      "tests/qualification/pdc_x/p6_impact/test_p6_impact_tier3_root_rule.py::test_generator_output_contains_the_tier3_root_rule",
+      "tests/qualification/pdc_x/p6_impact/test_p6_impact_tier3_root_rule.py::test_shipped_ssot_contains_the_tier3_root_key",
+      "tests/qualification/pdc_x/p6_impact/test_p6_impact_tier3_root_rule.py::test_tier3_root_rule_names_the_eight_ids_of_the_intergrax_applications_rule"
+    ],
+    "tail": [
+      "FAILED tests/qualification/pdc_x/p6_impact/test_p6_impact_tier3_root_rule.py::test_shipped_ssot_contains_the_tier3_root_key",
+      "3 failed, 66 passed in 10.95s"
+    ]
+  },
+  "N4_tier3_prefix_with_trailing_slash": {
+    "generator_exit": 0,
+    "pytest_exit": 1,
+    "verdict": "KILLED",
+    "new_failures_vs_control": [
+      "tests/qualification/pdc_x/p6_impact/test_p6_impact_tier3_root_rule.py::test_tier3_root_rule_names_the_eight_ids_of_the_intergrax_applications_rule",
+      "tests/qualification/pdc_x/p6_impact/test_p6_impact_tier3_root_rule.py::test_tier3_root_rule_table_is_a_single_normalized_root_prefix_with_existing_ids"
+    ],
+    "tail": [
+      "FAILED tests/qualification/pdc_x/p6_impact/test_p6_impact_tier3_root_rule.py::test_tier3_root_rule_names_the_eight_ids_of_the_intergrax_applications_rule",
+      "2 failed, 67 passed in 16.31s"
+    ]
+  },
+  "N5_unknown_id_in_tier3_root": {
+    "generator_exit": 0,
+    "pytest_exit": 1,
+    "verdict": "KILLED",
+    "new_failures_vs_control": [
+      "tests/qualification/pdc_x/p6_impact/test_p6_impact_tier3_root_rule.py::test_generator_output_contains_the_tier3_root_rule",
+      "tests/qualification/pdc_x/p6_impact/test_p6_impact_tier3_root_rule.py::test_named_mcp_server_module_maps_to_a_manifest_check[applications/dispute_sim_application/mcp/server.py]",
+      "tests/qualification/pdc_x/p6_impact/test_p6_impact_tier3_root_rule.py::test_named_mcp_server_module_maps_to_a_manifest_check[applications/governed_contractor_application/mcp/server.py]",
+      "tests/qualification/pdc_x/p6_impact/test_p6_impact_tier3_root_rule.py::test_named_mcp_server_module_maps_to_a_manifest_check[applications/intergrax_assistant_application/mcp/server.py]",
+      "tests/qualification/pdc_x/p6_impact/test_p6_impact_tier3_root_rule.py::test_named_mcp_server_module_maps_to_a_manifest_check[applications/lab_application/mcp/server.py]",
+      "tests/qualification/pdc_x/p6_impact/test_p6_impact_tier3_root_rule.py::test_named_mcp_server_module_maps_to_a_manifest_check[applications/legal_application/mcp/server.py]",
+      "tests/qualification/pdc_x/p6_impact/test_p6_impact_tier3_root_rule.py::test_named_mcp_server_module_maps_to_a_manifest_check[applications/local_workspace_application/mcp/server.py]",
+      "tests/qualification/pdc_x/p6_impact/test_p6_impact_tier3_root_rule.py::test_named_mcp_server_module_maps_to_a_manifest_check[applications/poc_template_application/mcp/server.py]",
+      "tests/qualification/pdc_x/p6_impact/test_p6_impact_tier3_root_rule.py::test_named_mcp_server_module_maps_to_a_manifest_check[applications/research_application/mcp/server.py]",
+      "tests/qualification/pdc_x/p6_impact/test_p6_impact_tier3_root_rule.py::test_shipped_ssot_contains_the_tier3_root_key",
+      "tests/qualification/pdc_x/p6_impact/test_p6_impact_tier3_root_rule.py::test_tier3_root_rule_names_the_eight_ids_of_the_intergrax_applications_rule",
+      "tests/qualification/pdc_x/p6_impact/test_p6_impact_tier3_root_rule.py::test_tier3_root_rule_table_is_a_single_normalized_root_prefix_with_existing_ids",
+      "tests/qualification/pdc_x/xd/test_xd_12_evol_ent_audit.py::test_xd12_changed_since_over_the_pdc_range_never_fails_closed_and_keeps_the_invariant_floor"
+    ],
+    "tail": [
+      "FAILED tests/qualification/pdc_x/xd/test_xd_12_evol_ent_audit.py::test_xd12_changed_since_over_the_pdc_range_never_fails_closed_and_keeps_the_invariant_floor",
+      "13 failed, 56 passed in 12.02s"
+    ]
+  },
+  "N6_weak_catch_all_runtime_prefix": {
+    "generator_exit": 0,
+    "pytest_exit": 0,
+    "verdict": "SURVIVED",
+    "new_failures_vs_control": [],
+    "tail": [
+      ".....................................................................    [100%]",
+      "69 passed in 10.56s"
+    ]
+  },
+  "N7_tier3_root_narrowed_to_one_mcp_app": {
+    "generator_exit": 0,
+    "pytest_exit": 1,
+    "verdict": "KILLED",
+    "new_failures_vs_control": [
+      "tests/qualification/pdc_x/p6_impact/test_p6_impact_map_coverage.py::test_every_pdc_touched_product_module_maps_to_at_least_one_check",
+      "tests/qualification/pdc_x/p6_impact/test_p6_impact_tier3_root_rule.py::test_every_tracked_applications_python_file_maps_to_at_least_one_check",
+      "tests/qualification/pdc_x/p6_impact/test_p6_impact_tier3_root_rule.py::test_generator_output_contains_the_tier3_root_rule",
+      "tests/qualification/pdc_x/p6_impact/test_p6_impact_tier3_root_rule.py::test_named_mcp_server_module_maps_to_a_manifest_check[applications/dispute_sim_application/mcp/server.py]",
+      "tests/qualification/pdc_x/p6_impact/test_p6_impact_tier3_root_rule.py::test_named_mcp_server_module_maps_to_a_manifest_check[applications/governed_contractor_application/mcp/server.py]",
+      "tests/qualification/pdc_x/p6_impact/test_p6_impact_tier3_root_rule.py::test_named_mcp_server_module_maps_to_a_manifest_check[applications/intergrax_assistant_application/mcp/server.py]",
+      "tests/qualification/pdc_x/p6_impact/test_p6_impact_tier3_root_rule.py::test_named_mcp_server_module_maps_to_a_manifest_check[applications/legal_application/mcp/server.py]",
+      "tests/qualification/pdc_x/p6_impact/test_p6_impact_tier3_root_rule.py::test_named_mcp_server_module_maps_to_a_manifest_check[applications/local_workspace_application/mcp/server.py]",
+      "tests/qualification/pdc_x/p6_impact/test_p6_impact_tier3_root_rule.py::test_named_mcp_server_module_maps_to_a_manifest_check[applications/poc_template_application/mcp/server.py]",
+      "tests/qualification/pdc_x/p6_impact/test_p6_impact_tier3_root_rule.py::test_named_mcp_server_module_maps_to_a_manifest_check[applications/research_application/mcp/server.py]",
+      "tests/qualification/pdc_x/p6_impact/test_p6_impact_tier3_root_rule.py::test_shipped_ssot_contains_the_tier3_root_key",
+      "tests/qualification/pdc_x/p6_impact/test_p6_impact_tier3_root_rule.py::test_synthetic_mcp_rc_range_leaves_no_pdc_touched_product_module_unmapped",
+      "tests/qualification/pdc_x/p6_impact/test_p6_impact_tier3_root_rule.py::test_tier3_root_rule_names_the_eight_ids_of_the_intergrax_applications_rule",
+      "tests/qualification/pdc_x/p6_impact/test_p6_impact_tier3_root_rule.py::test_tier3_root_rule_table_is_a_single_normalized_root_prefix_with_existing_ids",
+      "tests/qualification/pdc_x/xd/test_xd_12_evol_ent_audit.py::test_xd12_every_pdc_touched_product_module_maps_to_a_domain_check"
+    ],
+    "tail": [
+      "FAILED tests/qualification/pdc_x/xd/test_xd_12_evol_ent_audit.py::test_xd12_every_pdc_touched_product_module_maps_to_a_domain_check",
+      "15 failed, 54 passed in 9.45s"
+    ]
+  },
+  "N8_reroute_existing_tier0_applications_rule": {
+    "generator_exit": 0,
+    "pytest_exit": 1,
+    "verdict": "KILLED",
+    "new_failures_vs_control": [
+      "tests/qualification/pdc_x/p6_impact/test_p6_impact_map_coverage.py::test_every_pdc_touched_product_module_maps_to_at_least_one_check",
+      "tests/qualification/pdc_x/p6_impact/test_p6_impact_map_coverage.py::test_representative_pdc_module_maps_to_a_manifest_check[intergrax/applications/_shared/security_audit_trail_wiring.py]",
+      "tests/qualification/pdc_x/p6_impact/test_p6_impact_tier3_root_rule.py::test_synthetic_mcp_rc_range_leaves_no_pdc_touched_product_module_unmapped",
+      "tests/qualification/pdc_x/p6_impact/test_p6_impact_tier3_root_rule.py::test_tier3_root_rule_names_the_eight_ids_of_the_intergrax_applications_rule",
+      "tests/qualification/pdc_x/xd/test_xd_12_evol_ent_audit.py::test_xd12_every_pdc_touched_product_module_maps_to_a_domain_check"
+    ],
+    "tail": [
+      "FAILED tests/qualification/pdc_x/xd/test_xd_12_evol_ent_audit.py::test_xd12_every_pdc_touched_product_module_maps_to_a_domain_check",
+      "5 failed, 64 passed in 7.09s"
+    ]
+  }
+}
