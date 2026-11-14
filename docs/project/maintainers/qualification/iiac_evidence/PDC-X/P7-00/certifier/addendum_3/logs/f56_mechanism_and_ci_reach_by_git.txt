@@ -1,0 +1,20 @@
+# F-56 mechanism by git (tests/qualification/roadmap_replay_x/_prod_delta_disposition.py: _DUP_X_PIN..HEAD must contain every path of the frozen scoped list)
+HEAD=d02c399508c40b4a06d846410334d677f226c18d
+_DUP_X_PIN=_DUP_X_PIN = "a7d83925b375b5f08eb0f175ced2c17fa026bba9"
+frozen list names the path:
+57:        "intergrax/integrations/providers/embedding_provider/ollama/manifest.py",
+paths named M in git diff --name-only a7d83925b..2d3eceb6c (pin): 1
+paths named M in git diff --name-only a7d83925b..0fc8badd8: 1
+paths named M in git diff --name-only a7d83925b..0cb5dd011: 0
+paths named M in git diff --name-only a7d83925b..HEAD: 0
+file exists at a7d83925b: no; at 2d3eceb6c: yes; at 0fc8badd8: yes; at HEAD: no
+importers of the module in code, tests, scripts at HEAD:
+scripts/qualification/pdc_x_wbs.py:510:        "Omnibus repair of the cheap P6 debt: pdc_x process exit (R-05), stale baseline-red test fixtures, unused embedding_provide
+scripts/qualification/pdc_x_wbs.py:514:            "intergrax/integrations/providers/embedding_provider/ollama/manifest.py",
+tests/qualification/roadmap_replay_x/_pre_ent_l3_prod_delta.py:57:        "intergrax/integrations/providers/embedding_provider/ollama/manifest.py",
+(end)
+CI selections that name roadmap_replay_x or test_b6_03:
+(end)
+manifest entrypoints under roadmap_replay_x:
+"entrypoint": "tests/qualification/roadmap_replay_x/test_roadmap_replay_x_mechanical_exit_gates.py::test_replay_x_frz_row_count"
+"entrypoint": "tests/qualification/roadmap_replay_x/test_roadmap_replay_x_mechanical_exit_gates.py::test_replay_x_mandatory_docs_present"
