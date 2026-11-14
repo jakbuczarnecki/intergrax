@@ -6,7 +6,7 @@ Repair of the B6-F10 computed ECAP certification that fails at the P6 re-pin (`1
 
 ## Plan digest
 
-Plan digest: 27ac91d72c25403d31703fe3d782e6b56a72fb48d37adfc2dfc64b5d0d5e3519
+Plan digest: 0c0a54b73c534fd9276e2d7afbb5cb4213c16caadb2d3f51674b552f4dd2610c
 
 Canonical plan: [`governance/tickets/plans/PLAN_T-IGX-036-Y.md`](plans/PLAN_T-IGX-036-Y.md).
 
