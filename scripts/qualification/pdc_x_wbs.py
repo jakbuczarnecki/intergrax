@@ -526,6 +526,25 @@ BATCHES: Final[tuple[Batch, ...]] = (
         "IA-GLOBAL (P8)",
         "tests/qualification/pdc_x/p6_debt/; the pdc_x pytest process exits after its summary line",
     ),
+    Batch(
+        "B-P6-J",
+        "ALL",
+        "MCP-RC handoff repairs: the single openai catalog row dispatches on integration_category (F-49, F-50 pins); ENT-AUDIT impact rule for the Tier-3 applications/ root (F-41)",
+        "T-IGX-040-A",
+        "W12",
+        (
+            "intergrax/integrations/providers/embedding_provider/openai/register.py",
+            "intergrax/platform/enterprise_audit/impact_map.py",
+            "intergrax/platform/enterprise_audit/data/changed_since_impact_map.v1.json",
+            "tests/qualification/pdc_x/p6_ecapfix/",
+            "tests/qualification/pdc_x/p6_impact/",
+        ),
+        "—",
+        ("B-P6-I",),
+        GATE_PRODUCT,
+        "IA-GLOBAL (P8)",
+        "tests/qualification/pdc_x/p6_ecapfix/ and p6_impact/; xd_12 and p6_impact coverage tests green on development and on a tree that contains the MCP-RC change",
+    ),
 )
 
 # Requirement -> batch overrides where the corrective-task text alone is ambiguous.
@@ -821,6 +840,10 @@ def render_dag() -> str:
         "W11": (
             "after B-P6-F and the signature of T-IGX-036-Z",
             "under DELEGATION-PDC-STANDING authorization 3 (one product path: deletion of an unused manifest)",
+        ),
+        "W12": (
+            "after B-P6-I and the signature of T-IGX-040-A",
+            "after the signature of T-IGX-040-A (one-time exception OD-MCP-RC-05; both repairs in one PR, then product paths freeze again)",
         ),
     }
     for wave, bids in waves.items():
