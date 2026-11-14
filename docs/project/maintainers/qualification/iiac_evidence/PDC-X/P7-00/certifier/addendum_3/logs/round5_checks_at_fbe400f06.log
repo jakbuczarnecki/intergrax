@@ -1,0 +1,41 @@
+## files copied from origin/mcp-rc fbe400f06cd9b77f0fb548ec0d2b2aaeafe10dac for this run only, removed afterwards; my branch has not merged round 5
+## verify_iiac_audit_manifest (pinned manifest)
+verify_iiac_audit_manifest: PASS
+exit=0
+## verify_iiac_role_separation --strict-product-diff
+verify_iiac_role_separation: PASS
+exit=0
+pin-only commit: fbe400f06cd9b77f0fb548ec0d2b2aaeafe10dac | publication commit: a1b3053b49c28124a0abde679d733f21a597797f
+## digests: claimed == bytes in the working copy (from the pin-only commit) | at the publication commit | on the auditor branch
+  audit_report_digest True True True
+  audit_scope_manifest_digest True True True
+  test_matrix_digest True True True
+  findings_digest True True True
+## pin-only diff, publication commit -> pin-only commit:
+  {
+ "certification_publication_sha": [
+  "0000000000000000000000000000000000000000",
+  "a1b3053b49c28124a0abde679d733f21a597797f"
+ ],
+ "certifier_session_id": [
+  "PENDING-CERTIFIER-PDC-P7-00",
+  "PDC-P7-00-CERTIFIER-PREFLIGHT-2026-11-13"
+ ],
+ "evidence_publication_sha": [
+  "0000000000000000000000000000000000000000",
+  "a1b3053b49c28124a0abde679d733f21a597797f"
+ ]
+}
+## fields that differ from the auditor branch's manifest: ['certification_publication_sha', 'certifier_session_id', 'evidence_publication_sha']
+## manifest SHA fields: {
+ "audited_implementation_sha": "d02c399508c40b4a06d846410334d677f226c18d",
+ "test_execution_sha": "0cb5dd011f363a7318246e907a1d307ad968db38",
+ "audit_execution_sha": "d02c399508c40b4a06d846410334d677f226c18d",
+ "evidence_publication_sha": "a1b3053b49c28124a0abde679d733f21a597797f",
+ "certification_publication_sha": "a1b3053b49c28124a0abde679d733f21a597797f",
+ "certifier_session_id": "PDC-P7-00-CERTIFIER-PREFLIGHT-2026-11-13"
+}
+## publication commit: files=40 differing from the auditor branch=0 outside docs/=0
+## pin-only commit touches: ['docs/project/maintainers/qualification/iiac_evidence/PDC-X/P7-00/EVIDENCE_INTEGRATION_RECORD.md', 'docs/project/maintainers/qualification/iiac_evidence/PDC-X/P7-00/addendum_4/iiac_audit_session_manifest.PDC-X.p7_00.addendum_4.json']
+## product / material governance / scripts diff d02c39950 .. fbe400f06 : []
+## earlier P7-00 evidence changed d02c39950 .. fbe400f06 (outside addendum_4, the record, certifier): []

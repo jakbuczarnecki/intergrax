@@ -1,0 +1,3 @@
+## head d02c399508c40b4a06d846410334d677f226c18d
+verify_iiac_g0_inventory_completeness: PASS (17510 paths @ afe9e8abeabdbab410bf562ebed6f4a309a91057)
+exit=0
