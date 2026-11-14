@@ -1,0 +1,163 @@
+{
+  "CONTROL_unmutated": {
+    "exit": 0,
+    "failed_tests": [],
+    "tail": [
+      "508 passed in 9.37s",
+      "3 passed, 83 deselected in 0.55s"
+    ]
+  },
+  "M1_invert_dispatch_condition": {
+    "file": "intergrax/integrations/providers/embedding_provider/ollama/register.py",
+    "pytest_exit": 1,
+    "verdict": "KILLED",
+    "new_failures_vs_control": [
+      "tests/qualification/ebh_5/test_ebh_5_behavioral_package_c_v2.py::test_ebh5_pkgc_v2_dual_slug_integration[integration.embedding_provider]",
+      "tests/qualification/ebh_5/test_ebh_5_behavioral_package_c_v2.py::test_ebh5_pkgc_v2_dual_slug_rpl_cde_equivalence[integration.embedding_provider]",
+      "tests/qualification/pdc_x/p6_ecapfix/test_p6_ecapfix_register_catalog_slug.py::test_resolve_embedding_category_returns_embedding_provider_integration",
+      "tests/qualification/pdc_x/p6_ecapfix/test_p6_ecapfix_register_catalog_slug.py::test_resolve_model_serving_category_is_unchanged"
+    ],
+    "tail": [
+      "2 failed, 506 passed in 9.74s",
+      "2 failed, 1 passed, 83 deselected in 1.44s"
+    ]
+  },
+  "M2_always_owning_factory_revert_fix": {
+    "file": "intergrax/integrations/providers/embedding_provider/ollama/register.py",
+    "pytest_exit": 1,
+    "verdict": "KILLED",
+    "new_failures_vs_control": [
+      "tests/qualification/ebh_5/test_ebh_5_behavioral_package_c_v2.py::test_ebh5_pkgc_v2_dual_slug_integration[integration.embedding_provider]",
+      "tests/qualification/ebh_5/test_ebh_5_behavioral_package_c_v2.py::test_ebh5_pkgc_v2_dual_slug_rpl_cde_equivalence[integration.embedding_provider]",
+      "tests/qualification/pdc_x/p6_ecapfix/test_p6_ecapfix_register_catalog_slug.py::test_resolve_embedding_category_returns_embedding_provider_integration"
+    ],
+    "tail": [
+      "1 failed, 507 passed in 11.41s",
+      "2 failed, 1 passed, 83 deselected in 1.27s"
+    ]
+  },
+  "M3_always_embedding_branch": {
+    "file": "intergrax/integrations/providers/embedding_provider/ollama/register.py",
+    "pytest_exit": 1,
+    "verdict": "KILLED",
+    "new_failures_vs_control": [
+      "tests/qualification/pdc_x/p6_ecapfix/test_p6_ecapfix_register_catalog_slug.py::test_resolve_model_serving_category_is_unchanged"
+    ],
+    "tail": [
+      "1 failed, 507 passed in 12.75s",
+      "3 passed, 83 deselected in 0.67s"
+    ]
+  },
+  "M4_embedding_enabled_hard_true": {
+    "file": "intergrax/integrations/providers/embedding_provider/ollama/register.py",
+    "pytest_exit": 0,
+    "verdict": "SURVIVED",
+    "new_failures_vs_control": [],
+    "tail": [
+      "508 passed in 15.01s",
+      "3 passed, 83 deselected in 0.52s"
+    ]
+  },
+  "M5_embedding_enabled_default_true": {
+    "file": "intergrax/integrations/providers/embedding_provider/ollama/register.py",
+    "pytest_exit": 0,
+    "verdict": "SURVIVED",
+    "new_failures_vs_control": [],
+    "tail": [
+      "508 passed in 14.37s",
+      "3 passed, 83 deselected in 0.75s"
+    ]
+  },
+  "M6_embedding_ignores_enabled": {
+    "file": "intergrax/integrations/providers/embedding_provider/ollama/register.py",
+    "pytest_exit": 0,
+    "verdict": "SURVIVED",
+    "new_failures_vs_control": [],
+    "tail": [
+      "508 passed in 17.41s",
+      "3 passed, 83 deselected in 0.74s"
+    ]
+  },
+  "M7_drop_wrapper_registration": {
+    "file": "intergrax/integrations/providers/embedding_provider/ollama/register.py",
+    "pytest_exit": 1,
+    "verdict": "KILLED",
+    "new_failures_vs_control": [
+      "tests/qualification/ebh_5/test_ebh_5_behavioral_package_c_v2.py::test_ebh5_pkgc_v2_dual_slug_integration[integration.embedding_provider]",
+      "tests/qualification/ebh_5/test_ebh_5_behavioral_package_c_v2.py::test_ebh5_pkgc_v2_dual_slug_rpl_cde_equivalence[integration.embedding_provider]",
+      "tests/qualification/pdc_x/p6_ecapfix/test_p6_ecapfix_register_catalog_slug.py::test_resolve_embedding_category_returns_embedding_provider_integration"
+    ],
+    "tail": [
+      "1 failed, 507 passed in 16.71s",
+      "2 failed, 1 passed, 83 deselected in 2.16s"
+    ]
+  },
+  "M8_wrapper_registration_without_override": {
+    "file": "intergrax/integrations/providers/embedding_provider/ollama/register.py",
+    "pytest_exit": 1,
+    "verdict": "KILLED",
+    "new_failures_vs_control": [
+      "tests/qualification/ebh_5/test_ebh_5_behavioral_package_c_v2.py::test_ebh5_pkgc_v2_dual_slug_integration[integration.embedding_provider]",
+      "tests/qualification/ebh_5/test_ebh_5_behavioral_package_c_v2.py::test_ebh5_pkgc_v2_dual_slug_rpl_cde_equivalence[integration.embedding_provider]",
+      "tests/qualification/pdc_x/p6_ecapfix/test_p6_ecapfix_register_catalog_slug.py::test_harness_leaves_one_ollama_row_with_both_contributions",
+      "tests/qualification/pdc_x/p6_ecapfix/test_p6_ecapfix_register_catalog_slug.py::test_harness_registers_ollama_and_hf_embedding_providers_on_cleared_catalog",
+      "tests/qualification/pdc_x/p6_ecapfix/test_p6_ecapfix_register_catalog_slug.py::test_resolve_embedding_category_returns_embedding_provider_integration",
+      "tests/qualification/pdc_x/p6_ecapfix/test_p6_ecapfix_register_catalog_slug.py::test_resolve_model_serving_category_is_unchanged",
+      "tests/qualification/pdc_x/p6_ecapfix/test_p6_ecapfix_register_catalog_slug.py::test_single_ollama_row_carries_both_categories_and_contract_specs",
+      "tests/qualification/pdc_x/reg_p/test_reg_p_ollama_single_row.py::test_default_embedding_manager_builds_on_fresh_catalog",
+      "tests/qualification/pdc_x/reg_p/test_reg_p_ollama_single_row.py::test_full_preset_registers_on_fresh_catalog_without_duplicate_slug",
+      "tests/qualification/pdc_x/reg_p/test_reg_p_ollama_single_row.py::test_single_ollama_row_carries_model_serving_and_embedding_contribution"
+    ],
+    "tail": [
+      "8 failed, 476 passed, 24 errors in 16.66s",
+      "2 failed, 1 passed, 83 deselected in 1.06s"
+    ]
+  },
+  "M9_owning_factory_called_without_kwargs": {
+    "file": "intergrax/integrations/providers/embedding_provider/ollama/register.py",
+    "pytest_exit": 0,
+    "verdict": "SURVIVED",
+    "new_failures_vs_control": [],
+    "tail": [
+      "508 passed in 13.18s",
+      "3 passed, 83 deselected in 0.69s"
+    ]
+  },
+  "M10_dispatch_also_routes_model_serving": {
+    "file": "intergrax/integrations/providers/embedding_provider/ollama/register.py",
+    "pytest_exit": 1,
+    "verdict": "KILLED",
+    "new_failures_vs_control": [
+      "tests/qualification/pdc_x/p6_ecapfix/test_p6_ecapfix_register_catalog_slug.py::test_resolve_model_serving_category_is_unchanged"
+    ],
+    "tail": [
+      "1 failed, 507 passed in 10.92s",
+      "3 passed, 83 deselected in 0.57s"
+    ]
+  },
+  "M11_equivalent_str_comparison": {
+    "file": "intergrax/integrations/providers/embedding_provider/ollama/register.py",
+    "pytest_exit": 0,
+    "verdict": "SURVIVED",
+    "new_failures_vs_control": [],
+    "tail": [
+      "508 passed in 10.13s",
+      "3 passed, 83 deselected in 0.54s"
+    ]
+  },
+  "M12_harness_drops_owning_row_registration": {
+    "file": "tests/qualification/ebh_5/_package_c_v2_primitives.py",
+    "pytest_exit": 1,
+    "verdict": "KILLED",
+    "new_failures_vs_control": [
+      "tests/qualification/ebh_5/test_ebh_5_behavioral_package_c_v2.py::test_ebh5_pkgc_v2_dual_slug_integration[integration.embedding_provider]",
+      "tests/qualification/ebh_5/test_ebh_5_behavioral_package_c_v2.py::test_ebh5_pkgc_v2_dual_slug_rpl_cde_equivalence[integration.embedding_provider]",
+      "tests/qualification/pdc_x/p6_ecapfix/test_p6_ecapfix_register_catalog_slug.py::test_harness_leaves_one_ollama_row_with_both_contributions",
+      "tests/qualification/pdc_x/p6_ecapfix/test_p6_ecapfix_register_catalog_slug.py::test_harness_registers_ollama_and_hf_embedding_providers_on_cleared_catalog"
+    ],
+    "tail": [
+      "2 failed, 506 passed in 11.59s",
+      "2 failed, 1 passed, 83 deselected in 1.69s"
+    ]
+  }
+}

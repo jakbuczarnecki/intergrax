@@ -1,0 +1,452 @@
+FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF [ 31%]
+FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF [ 62%]
+FFFFFFFFFFFFFFFFFFFFFFFFFFF..F......FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF [ 93%]
+FFFFFFFF.FFFFFF                                                          [100%]
+================================== FAILURES ===================================
+D:\Projekty\_wt\_scratch\p7a3-head\tests\qualification\pdc_x\p6_impact\test_p6_impact_map_coverage.py:154: AssertionError: 8 PDC-touched product modules map to no check, e.g. ['applications/dispute_sim_application/mcp/server.py', 'applications/governed_contractor_application/mcp/server.py', 'applications/intergrax_assistant_application/mcp/server.py', 'applications/lab_application/mcp/server.py', 'applications/legal_application/mcp/server.py']
+D:\Projekty\_wt\_scratch\p7a3-head\tests\qualification\pdc_x\xd\test_xd_12_evol_ent_audit.py:97: AssertionError: 8 PDC-touched product modules map to no check, e.g. ['applications/dispute_sim_application/mcp/server.py', 'applications/governed_contractor_application/mcp/server.py', 'applications/intergrax_assistant_application/mcp/server.py', 'applications/lab_application/mcp/server.py', 'applications/legal_application/mcp/server.py']
+D:\Projekty\_wt\_scratch\p7a3-head\tests\qualification\ebh_5\_package_c_v2_primitives.py:28: RuntimeError: integration.relational_store: mandatory dependency 'duckdb' missing — sync environment with sanctioned dev-ci / integration extras
+D:\Projekty\_wt\_scratch\p7a3-head\tests\qualification\ebh_5\_package_c_v2_primitives.py:28: RuntimeError: integration.relational_store: mandatory dependency 'duckdb' missing — sync environment with sanctioned dev-ci / integration extras
+D:\Projekty\_wt\_scratch\p7a3-head\tests\qualification\ebh_5\_package_c_v2_primitives.py:28: RuntimeError: integration.relational_store: mandatory dependency 'duckdb' missing — sync environment with sanctioned dev-ci / integration extras
+D:\Projekty\_wt\_scratch\p7a3-head\tests\qualification\ebh_5\_package_c_v2_primitives.py:28: RuntimeError: integration.relational_store: mandatory dependency 'duckdb' missing — sync environment with sanctioned dev-ci / integration extras
+D:\Projekty\_wt\_scratch\p7a3-head\tests\unit\integrations\providers\test_p5_m6_p4_providers.py:222: AssertionError: Regex pattern did not match.
+D:\Projekty\intergrax\.venv\Lib\site-packages\pydantic\_internal\_model_construction.py:289: AttributeError: from_client
+D:\Projekty\intergrax\.venv\Lib\site-packages\pydantic\_internal\_model_construction.py:289: AttributeError: from_client
+D:\Projekty\intergrax\.venv\Lib\site-packages\pydantic\_internal\_model_construction.py:289: AttributeError: from_client
+D:\Projekty\intergrax\.venv\Lib\site-packages\pydantic\_internal\_model_construction.py:289: AttributeError: from_client
+D:\Projekty\_wt\_scratch\p7a3-head\tests\unit\integrations\providers\test_provider_category_contract_migration.py:108: AttributeError: module 'intergrax.integrations.providers.managed_retrieval.openai.integration' has no attribute 'OpenaiManagedRetrievalIntegration'. Did you mean: 'OpenAIManagedRetrievalIntegration'?
+D:\Projekty\intergrax\.venv\Lib\site-packages\pydantic\_internal\_model_construction.py:289: AttributeError: from_client
+D:\Projekty\intergrax\.venv\Lib\site-packages\pydantic\_internal\_model_construction.py:289: AttributeError: from_client
+D:\Projekty\intergrax\.venv\Lib\site-packages\pydantic\_internal\_model_construction.py:289: AttributeError: from_client
+D:\Projekty\intergrax\.venv\Lib\site-packages\pydantic\_internal\_model_construction.py:289: AttributeError: from_client
+D:\Projekty\intergrax\.venv\Lib\site-packages\pydantic\_internal\_model_construction.py:289: AttributeError: from_client
+D:\Projekty\intergrax\.venv\Lib\site-packages\pydantic\_internal\_model_construction.py:289: AttributeError: from_client
+D:\Projekty\_wt\_scratch\p7a3-head\tests\unit\integrations\providers\test_provider_category_contract_migration.py:108: AttributeError: module 'intergrax.integrations.providers.managed_retrieval.openai.integration' has no attribute 'OpenaiManagedRetrievalIntegration'. Did you mean: 'OpenAIManagedRetrievalIntegration'?
+D:\Projekty\intergrax\.venv\Lib\site-packages\pydantic\_internal\_model_construction.py:289: AttributeError: from_client
+D:\Projekty\intergrax\.venv\Lib\site-packages\pydantic\_internal\_model_construction.py:289: AttributeError: from_client
+D:\Projekty\intergrax\.venv\Lib\site-packages\pydantic\_internal\_model_construction.py:289: AttributeError: from_client
+D:\Projekty\intergrax\.venv\Lib\site-packages\pydantic\_internal\_model_construction.py:289: AttributeError: from_client
+D:\Projekty\intergrax\.venv\Lib\site-packages\pydantic\_internal\_model_construction.py:289: AttributeError: from_client
+D:\Projekty\intergrax\.venv\Lib\site-packages\pydantic\_internal\_model_construction.py:289: AttributeError: from_client
+D:\Projekty\_wt\_scratch\p7a3-head\tests\unit\integrations\providers\test_provider_category_contract_migration.py:108: AttributeError: module 'intergrax.integrations.providers.managed_retrieval.openai.integration' has no attribute 'OpenaiManagedRetrievalIntegration'. Did you mean: 'OpenAIManagedRetrievalIntegration'?
+D:\Projekty\intergrax\.venv\Lib\site-packages\pydantic\_internal\_model_construction.py:289: AttributeError: from_client
+D:\Projekty\intergrax\.venv\Lib\site-packages\pydantic\_internal\_model_construction.py:289: AttributeError: from_client
+D:\Projekty\_wt\_scratch\p7a3-head\tests\unit\integrations\providers\test_provider_category_contract_migration.py:144: AssertionError: google_chat: legacy factory not found
+D:\Projekty\_wt\_scratch\p7a3-head\tests\unit\integrations\providers\test_provider_category_contract_migration.py:117: AttributeError: module 'intergrax.integrations.providers.embedding_provider.hf.register' has no attribute 'register_hf_integration'
+D:\Projekty\_wt\_scratch\p7a3-head\tests\unit\integrations\providers\test_provider_category_contract_migration.py:117: AttributeError: module 'intergrax.integrations.providers.embedding_provider.llama_cpp.register' has no attribute 'register_llama_cpp_integration'
+D:\Projekty\_wt\_scratch\p7a3-head\tests\unit\integrations\providers\test_provider_category_contract_migration.py:144: AssertionError: mattermost: legacy factory not found
+D:\Projekty\_wt\_scratch\p7a3-head\tests\unit\integrations\providers\test_provider_category_contract_migration.py:117: AttributeError: module 'intergrax.integrations.providers.managed_retrieval.openai.register' has no attribute 'register_openai_integration'
+D:\Projekty\_wt\_scratch\p7a3-head\tests\unit\integrations\providers\test_provider_category_contract_migration.py:144: AssertionError: rocket_chat: legacy factory not found
+D:\Projekty\_wt\_scratch\p7a3-head\tests\unit\integrations\providers\test_provider_category_contract_migration.py:117: AttributeError: module 'intergrax.integrations.providers.embedding_provider.vllm.register' has no attribute 'register_vllm_integration'
+D:\Projekty\_wt\_scratch\p7a3-head\tests\unit\integrations\providers\test_provider_category_contract_migration.py:144: AssertionError: google_chat: legacy factory not found
+D:\Projekty\_wt\_scratch\p7a3-head\tests\unit\integrations\providers\test_provider_category_contract_migration.py:233: AttributeError: module 'intergrax.integrations.providers.embedding_provider.hf.register' has no attribute 'register_hf_integration'
+D:\Projekty\_wt\_scratch\p7a3-head\tests\unit\integrations\providers\test_provider_category_contract_migration.py:233: AttributeError: module 'intergrax.integrations.providers.embedding_provider.llama_cpp.register' has no attribute 'register_llama_cpp_integration'
+D:\Projekty\_wt\_scratch\p7a3-head\tests\unit\integrations\providers\test_provider_category_contract_migration.py:144: AssertionError: mattermost: legacy factory not found
+D:\Projekty\_wt\_scratch\p7a3-head\tests\unit\integrations\providers\test_provider_category_contract_migration.py:233: AttributeError: module 'intergrax.integrations.providers.managed_retrieval.openai.register' has no attribute 'register_openai_integration'
+D:\Projekty\_wt\_scratch\p7a3-head\tests\unit\integrations\providers\test_provider_category_contract_migration.py:144: AssertionError: rocket_chat: legacy factory not found
+D:\Projekty\_wt\_scratch\p7a3-head\tests\unit\integrations\providers\test_provider_category_contract_migration.py:233: AttributeError: module 'intergrax.integrations.providers.embedding_provider.vllm.register' has no attribute 'register_vllm_integration'
+D:\Projekty\_wt\_scratch\p7a3-head\tests\unit\integrations\providers\test_provider_category_contract_migration.py:249: AssertionError: assert 'DynamoDBDocu...reIntegration' == 'DynamodbDocu...reIntegration'
+D:\Projekty\_wt\_scratch\p7a3-head\intergrax\integrations\providers\conversation_channel\google_chat\__init__.py:42: AttributeError: module 'intergrax.integrations.providers.conversation_channel.google_chat' has no attribute 'GoogleChatConversationChannelClient'
+D:\Projekty\_wt\_scratch\p7a3-head\intergrax\integrations\providers\collaboration_suite\google_workspace\__init__.py:343: AttributeError: module 'intergrax.integrations.providers.collaboration_suite.google_workspace' has no attribute 'GoogleWorkspaceCollaborationSuiteClient'
+D:\Projekty\_wt\_scratch\p7a3-head\tests\unit\integrations\providers\test_provider_category_contract_migration.py:248: AttributeError: module 'intergrax.integrations.providers.embedding_provider.hf' has no attribute 'HF_EMBEDDING_PROVIDER_PROVIDER_ID'
+D:\Projekty\_wt\_scratch\p7a3-head\tests\unit\integrations\providers\test_provider_category_contract_migration.py:248: AttributeError: module 'intergrax.integrations.providers.embedding_provider.llama_cpp' has no attribute 'LLAMA_CPP_EMBEDDING_PROVIDER_PROVIDER_ID'
+D:\Projekty\_wt\_scratch\p7a3-head\intergrax\integrations\providers\conversation_channel\mattermost\__init__.py:42: AttributeError: module 'intergrax.integrations.providers.conversation_channel.mattermost' has no attribute 'MattermostConversationChannelClient'
+D:\Projekty\_wt\_scratch\p7a3-head\tests\unit\integrations\providers\test_provider_category_contract_migration.py:249: AssertionError: assert 'MongoDBDocum...reIntegration' == 'MongodbDocum...reIntegration'
+D:\Projekty\_wt\_scratch\p7a3-head\tests\unit\integrations\providers\test_provider_category_contract_migration.py:248: AttributeError: module 'intergrax.integrations.providers.managed_retrieval.openai' has no attribute 'OPENAI_MANAGED_RETRIEVAL_PROVIDER_ID'
+D:\Projekty\_wt\_scratch\p7a3-head\intergrax\integrations\providers\conversation_channel\rocket_chat\__init__.py:42: AttributeError: module 'intergrax.integrations.providers.conversation_channel.rocket_chat' has no attribute 'RocketChatConversationChannelClient'
+D:\Projekty\_wt\_scratch\p7a3-head\intergrax\integrations\providers\notification_channel\telegram\__init__.py:60: AttributeError: module 'intergrax.integrations.providers.notification_channel.telegram' has no attribute 'create_telegram_notification_channel'
+D:\Projekty\_wt\_scratch\p7a3-head\tests\unit\integrations\providers\test_provider_category_contract_migration.py:248: AttributeError: module 'intergrax.integrations.providers.embedding_provider.vllm' has no attribute 'VLLM_EMBEDDING_PROVIDER_PROVIDER_ID'
+D:\Projekty\_wt\_scratch\p7a3-head\tests\unit\integrations\providers\test_provider_category_contract_migration.py:278: AssertionError: unexpected import root 'threading' in google_workspace
+D:\Projekty\_wt\_scratch\p7a3-head\tests\unit\integrations\providers\test_provider_category_contract_migration.py:275: AssertionError: unexpected import root 'pathlib' in openai
+D:\Projekty\_wt\_scratch\p7a3-head\tests\unit\integrations\providers\test_provider_category_contract_migration.py:275: AssertionError: unexpected import root 'pathlib' in sqlite
+D:\Projekty\_wt\_scratch\p7a3-head\tests\unit\integrations\providers\test_provider_category_contract_migration.py:284: TypeError: create_google_chat_conversation_channel_integration() got an unexpected keyword argument 'client'
+D:\Projekty\_wt\_scratch\p7a3-head\tests\unit\integrations\providers\test_provider_category_contract_migration.py:284: TypeError: create_hf_embedding_provider_integration() got an unexpected keyword argument 'client'
+D:\Projekty\_wt\_scratch\p7a3-head\tests\unit\integrations\providers\test_provider_category_contract_migration.py:284: TypeError: create_llama_cpp_embedding_provider_integration() got an unexpected keyword argument 'client'
+D:\Projekty\_wt\_scratch\p7a3-head\tests\unit\integrations\providers\test_provider_category_contract_migration.py:284: TypeError: create_mattermost_conversation_channel_integration() got an unexpected keyword argument 'client'
+D:\Projekty\_wt\_scratch\p7a3-head\tests\unit\integrations\providers\test_provider_category_contract_migration.py:284: TypeError: create_rocket_chat_conversation_channel_integration() got an unexpected keyword argument 'client'
+D:\Projekty\_wt\_scratch\p7a3-head\tests\unit\integrations\providers\test_provider_category_contract_migration.py:284: TypeError: create_vllm_embedding_provider_integration() got an unexpected keyword argument 'client'
+D:\Projekty\_wt\_scratch\p7a3-head\tests\unit\integrations\providers\test_provider_category_contract_migration.py:293: TypeError: create_google_chat_conversation_channel_integration() got an unexpected keyword argument 'client'
+D:\Projekty\_wt\_scratch\p7a3-head\tests\unit\integrations\providers\test_provider_category_contract_migration.py:293: TypeError: create_hf_embedding_provider_integration() got an unexpected keyword argument 'client'
+D:\Projekty\_wt\_scratch\p7a3-head\tests\unit\integrations\providers\test_provider_category_contract_migration.py:293: TypeError: create_llama_cpp_embedding_provider_integration() got an unexpected keyword argument 'client'
+D:\Projekty\_wt\_scratch\p7a3-head\tests\unit\integrations\providers\test_provider_category_contract_migration.py:293: TypeError: create_mattermost_conversation_channel_integration() got an unexpected keyword argument 'client'
+D:\Projekty\_wt\_scratch\p7a3-head\tests\unit\integrations\providers\test_provider_category_contract_migration.py:293: TypeError: create_rocket_chat_conversation_channel_integration() got an unexpected keyword argument 'client'
+D:\Projekty\_wt\_scratch\p7a3-head\tests\unit\integrations\providers\test_provider_category_contract_migration.py:293: TypeError: create_vllm_embedding_provider_integration() got an unexpected keyword argument 'client'
+D:\Projekty\_wt\_scratch\p7a3-head\tests\unit\integrations\providers\test_provider_category_contract_migration.py:300: TypeError: create_google_chat_conversation_channel_integration() got an unexpected keyword argument 'client'
+D:\Projekty\_wt\_scratch\p7a3-head\tests\unit\integrations\providers\test_provider_category_contract_migration.py:300: TypeError: create_hf_embedding_provider_integration() got an unexpected keyword argument 'client'
+D:\Projekty\_wt\_scratch\p7a3-head\tests\unit\integrations\providers\test_provider_category_contract_migration.py:300: TypeError: create_llama_cpp_embedding_provider_integration() got an unexpected keyword argument 'client'
+D:\Projekty\_wt\_scratch\p7a3-head\tests\unit\integrations\providers\test_provider_category_contract_migration.py:300: TypeError: create_mattermost_conversation_channel_integration() got an unexpected keyword argument 'client'
+D:\Projekty\_wt\_scratch\p7a3-head\tests\unit\integrations\providers\test_provider_category_contract_migration.py:300: TypeError: create_rocket_chat_conversation_channel_integration() got an unexpected keyword argument 'client'
+D:\Projekty\_wt\_scratch\p7a3-head\tests\unit\integrations\providers\test_provider_category_contract_migration.py:300: TypeError: create_vllm_embedding_provider_integration() got an unexpected keyword argument 'client'
+D:\Projekty\_wt\_scratch\p7a3-head\tests\unit\integrations\providers\test_provider_runtime_cutover.py:604: AssertionError: openai: bundle must import OpenaiManagedRetrievalIntegration from integration.py
+D:\Projekty\_wt\_scratch\p7a3-head\tests\unit\integrations\providers\test_provider_runtime_cutover.py:612: AttributeError: module 'intergrax.integrations.providers.llm_guardrail.azure_content_safety' has no attribute 'AzureContentSafetyLlmGuardrailIntegration'
+D:\Projekty\_wt\_scratch\p7a3-head\tests\unit\integrations\providers\test_provider_runtime_cutover.py:612: AttributeError: module 'intergrax.integrations.providers.llm_guardrail.bedrock_guardrails' has no attribute 'BedrockGuardrailsLlmGuardrailIntegration'
+D:\Projekty\_wt\_scratch\p7a3-head\tests\unit\integrations\providers\test_provider_runtime_cutover.py:612: AttributeError: module 'intergrax.integrations.providers.llm_guardrail.guardrails_ai' has no attribute 'GuardrailsAiLlmGuardrailIntegration'
+D:\Projekty\_wt\_scratch\p7a3-head\tests\unit\integrations\providers\test_provider_runtime_cutover.py:612: AttributeError: module 'intergrax.integrations.providers.embedding_provider.hf' has no attribute 'HfEmbeddingProviderIntegration'
+D:\Projekty\_wt\_scratch\p7a3-head\tests\unit\integrations\providers\test_provider_runtime_cutover.py:612: AttributeError: module 'intergrax.integrations.providers.llm_guardrail.lakera' has no attribute 'LakeraLlmGuardrailIntegration'
+D:\Projekty\_wt\_scratch\p7a3-head\tests\unit\integrations\providers\test_provider_runtime_cutover.py:612: AttributeError: module 'intergrax.integrations.providers.embedding_provider.llama_cpp' has no attribute 'LlamaCppEmbeddingProviderIntegration'
+D:\Projekty\_wt\_scratch\p7a3-head\tests\unit\integrations\providers\test_provider_runtime_cutover.py:612: AttributeError: module 'intergrax.integrations.providers.llm_guardrail.llama_guard' has no attribute 'LlamaGuardLlmGuardrailIntegration'
+D:\Projekty\_wt\_scratch\p7a3-head\tests\unit\integrations\providers\test_provider_runtime_cutover.py:612: AttributeError: module 'intergrax.integrations.providers.llm_guardrail.llm_guard' has no attribute 'LlmGuardLlmGuardrailIntegration'
+D:\Projekty\_wt\_scratch\p7a3-head\tests\unit\integrations\providers\test_provider_runtime_cutover.py:612: AttributeError: module 'intergrax.integrations.providers.llm_guardrail.nemo_guardrails' has no attribute 'NemoGuardrailsLlmGuardrailIntegration'
+D:\Projekty\_wt\_scratch\p7a3-head\tests\unit\integrations\providers\test_provider_runtime_cutover.py:612: AttributeError: module 'intergrax.integrations.providers.managed_retrieval.openai' has no attribute 'OpenaiManagedRetrievalIntegration'
+D:\Projekty\_wt\_scratch\p7a3-head\tests\unit\integrations\providers\test_provider_runtime_cutover.py:612: AttributeError: module 'intergrax.integrations.providers.llm_guardrail.openguardrails' has no attribute 'OpenguardrailsLlmGuardrailIntegration'
+D:\Projekty\_wt\_scratch\p7a3-head\tests\unit\integrations\providers\test_provider_runtime_cutover.py:612: AttributeError: module 'intergrax.integrations.providers.llm_guardrail.presidio' has no attribute 'PresidioLlmGuardrailIntegration'
+D:\Projekty\_wt\_scratch\p7a3-head\tests\unit\integrations\providers\test_provider_runtime_cutover.py:612: AttributeError: module 'intergrax.integrations.providers.embedding_provider.vllm' has no attribute 'VllmEmbeddingProviderIntegration'
+D:\Projekty\_wt\_scratch\p7a3-head\tests\unit\integrations\providers\test_provider_runtime_cutover.py:633: AssertionError: assert (False or False or False)
+D:\Projekty\_wt\_scratch\p7a3-head\tests\unit\integrations\providers\test_provider_runtime_cutover.py:633: AssertionError: assert (False or False or False)
+D:\Projekty\_wt\_scratch\p7a3-head\tests\unit\integrations\providers\test_provider_runtime_cutover.py:133: AssertionError: google_chat: legacy factory not found
+D:\Projekty\_wt\_scratch\p7a3-head\tests\unit\integrations\providers\test_provider_runtime_cutover.py:633: AssertionError: assert (False or False or False)
+D:\Projekty\_wt\_scratch\p7a3-head\tests\unit\integrations\providers\test_provider_runtime_cutover.py:633: AssertionError: assert (False or False or False)
+D:\Projekty\_wt\_scratch\p7a3-head\tests\unit\integrations\providers\test_provider_runtime_cutover.py:633: AssertionError: assert (False or False or False)
+D:\Projekty\_wt\_scratch\p7a3-head\tests\unit\integrations\providers\test_provider_runtime_cutover.py:633: AssertionError: assert (False or False or False)
+D:\Projekty\_wt\_scratch\p7a3-head\tests\unit\integrations\providers\test_provider_runtime_cutover.py:633: AssertionError: assert (False or False or False)
+D:\Projekty\_wt\_scratch\p7a3-head\tests\unit\integrations\providers\test_provider_runtime_cutover.py:633: AssertionError: assert (False or False or False)
+D:\Projekty\_wt\_scratch\p7a3-head\tests\unit\integrations\providers\test_provider_runtime_cutover.py:133: AssertionError: mattermost: legacy factory not found
+D:\Projekty\_wt\_scratch\p7a3-head\tests\unit\integrations\providers\test_provider_runtime_cutover.py:633: AssertionError: assert (False or False or False)
+D:\Projekty\_wt\_scratch\p7a3-head\tests\unit\integrations\providers\test_provider_runtime_cutover.py:627: AttributeError: module 'intergrax.integrations.providers.managed_retrieval.openai.integration' has no attribute 'OpenaiManagedRetrievalIntegration'. Did you mean: 'OpenAIManagedRetrievalIntegration'?
+D:\Projekty\_wt\_scratch\p7a3-head\tests\unit\integrations\providers\test_provider_runtime_cutover.py:633: AssertionError: assert (False or False or False)
+D:\Projekty\_wt\_scratch\p7a3-head\tests\unit\integrations\providers\test_provider_runtime_cutover.py:633: AssertionError: assert (False or False or False)
+D:\Projekty\_wt\_scratch\p7a3-head\tests\unit\integrations\providers\test_provider_runtime_cutover.py:133: AssertionError: rocket_chat: legacy factory not found
+D:\Projekty\_wt\_scratch\p7a3-head\intergrax\integrations\providers\vector_store\vespa\config.py:59: intergrax.integrations.contracts.base.IntegrationConfigurationError: Vespa integration requires INTERGRAX_VESPA_URL
+D:\Projekty\_wt\_scratch\p7a3-head\tests\unit\integrations\providers\test_provider_runtime_cutover.py:633: AssertionError: assert (False or False or False)
+D:\Projekty\_wt\_scratch\p7a3-head\intergrax\integrations\providers\document_store\mongodb\opens.py:57: intergrax.integrations.contracts.base.IntegrationConfigurationError: MongoDB document store requires unique compound index uq_intergrax_document_key on (partition_key, row_key); index creation failed
+D:\Projekty\_wt\_scratch\p7a3-head\intergrax\integrations\providers\relational_store\postgresql\session.py:48: intergrax.integrations.contracts.base.IntegrationConfigurationError: PostgreSQL integration requires psycopg. Install with: uv sync --extra integrations-postgresql
+D:\Projekty\_wt\_scratch\p7a3-head\intergrax\integrations\providers\key_value_cache\redis\client.py:10: ModuleNotFoundError: No module named 'redis'
+D:\Projekty\_wt\_scratch\p7a3-head\intergrax\integrations\providers\document_store\mongodb\bundle.py:78: AssertionError
+D:\Projekty\_wt\_scratch\p7a3-head\intergrax\integrations\providers\key_value_cache\redis\client.py:10: ModuleNotFoundError: No module named 'redis'
+D:\Projekty\_wt\_scratch\p7a3-head\intergrax\integrations\providers\document_store\mongodb\opens.py:57: intergrax.integrations.contracts.base.IntegrationConfigurationError: MongoDB document store requires unique compound index uq_intergrax_document_key on (partition_key, row_key); index creation failed
+D:\Projekty\_wt\_scratch\p7a3-head\intergrax\integrations\providers\relational_store\postgresql\session.py:48: intergrax.integrations.contracts.base.IntegrationConfigurationError: PostgreSQL integration requires psycopg. Install with: uv sync --extra integrations-postgresql
+D:\Projekty\_wt\_scratch\p7a3-head\intergrax\integrations\providers\key_value_cache\redis\client.py:10: ModuleNotFoundError: No module named 'redis'
+D:\Projekty\_wt\_scratch\p7a3-head\intergrax\integrations\providers\vector_store\vespa\config.py:59: intergrax.integrations.contracts.base.IntegrationConfigurationError: Vespa integration requires INTERGRAX_VESPA_URL
+D:\Projekty\_wt\_scratch\p7a3-head\tests\unit\integrations\providers\test_provider_runtime_cutover.py:736: TypeError: create_azure_content_safety_llm_guardrail_integration() got an unexpected keyword argument 'client'
+D:\Projekty\_wt\_scratch\p7a3-head\tests\unit\integrations\providers\test_provider_runtime_cutover.py:736: TypeError: create_bedrock_guardrails_llm_guardrail_integration() got an unexpected keyword argument 'client'
+D:\Projekty\_wt\_scratch\p7a3-head\tests\unit\integrations\providers\test_provider_runtime_cutover.py:736: TypeError: create_google_chat_conversation_channel_integration() got an unexpected keyword argument 'client'
+D:\Projekty\_wt\_scratch\p7a3-head\tests\unit\integrations\providers\test_provider_runtime_cutover.py:736: TypeError: create_guardrails_ai_llm_guardrail_integration() got an unexpected keyword argument 'client'
+D:\Projekty\_wt\_scratch\p7a3-head\tests\unit\integrations\providers\test_provider_runtime_cutover.py:736: TypeError: create_hf_embedding_provider_integration() got an unexpected keyword argument 'client'
+D:\Projekty\_wt\_scratch\p7a3-head\tests\unit\integrations\providers\test_provider_runtime_cutover.py:736: TypeError: create_lakera_llm_guardrail_integration() got an unexpected keyword argument 'client'
+D:\Projekty\_wt\_scratch\p7a3-head\tests\unit\integrations\providers\test_provider_runtime_cutover.py:736: TypeError: create_llama_cpp_embedding_provider_integration() got an unexpected keyword argument 'client'
+D:\Projekty\_wt\_scratch\p7a3-head\tests\unit\integrations\providers\test_provider_runtime_cutover.py:736: TypeError: create_llama_guard_llm_guardrail_integration() got an unexpected keyword argument 'client'
+D:\Projekty\_wt\_scratch\p7a3-head\tests\unit\integrations\providers\test_provider_runtime_cutover.py:736: TypeError: create_llm_guard_llm_guardrail_integration() got an unexpected keyword argument 'client'
+D:\Projekty\_wt\_scratch\p7a3-head\tests\unit\integrations\providers\test_provider_runtime_cutover.py:736: TypeError: create_mattermost_conversation_channel_integration() got an unexpected keyword argument 'client'
+D:\Projekty\_wt\_scratch\p7a3-head\tests\unit\integrations\providers\test_provider_runtime_cutover.py:736: TypeError: create_nemo_guardrails_llm_guardrail_integration() got an unexpected keyword argument 'client'
+D:\Projekty\_wt\_scratch\p7a3-head\tests\unit\integrations\providers\test_provider_runtime_cutover.py:736: TypeError: create_openguardrails_llm_guardrail_integration() got an unexpected keyword argument 'client'
+D:\Projekty\_wt\_scratch\p7a3-head\tests\unit\integrations\providers\test_provider_runtime_cutover.py:736: TypeError: create_presidio_llm_guardrail_integration() got an unexpected keyword argument 'client'
+D:\Projekty\_wt\_scratch\p7a3-head\tests\unit\integrations\providers\test_provider_runtime_cutover.py:736: TypeError: create_rocket_chat_conversation_channel_integration() got an unexpected keyword argument 'client'
+D:\Projekty\_wt\_scratch\p7a3-head\tests\unit\integrations\providers\test_provider_runtime_cutover.py:736: TypeError: create_vllm_embedding_provider_integration() got an unexpected keyword argument 'client'
+D:\Projekty\_wt\_scratch\p7a3-head\tests\unit\integrations\providers\test_provider_runtime_cutover.py:752: TypeError: create_azure_content_safety_llm_guardrail_integration() got an unexpected keyword argument 'client'
+D:\Projekty\_wt\_scratch\p7a3-head\tests\unit\integrations\providers\test_provider_runtime_cutover.py:752: TypeError: create_bedrock_guardrails_llm_guardrail_integration() got an unexpected keyword argument 'client'
+D:\Projekty\_wt\_scratch\p7a3-head\tests\unit\integrations\providers\test_provider_runtime_cutover.py:752: TypeError: create_google_chat_conversation_channel_integration() got an unexpected keyword argument 'client'
+D:\Projekty\_wt\_scratch\p7a3-head\tests\unit\integrations\providers\test_provider_runtime_cutover.py:752: TypeError: create_guardrails_ai_llm_guardrail_integration() got an unexpected keyword argument 'client'
+D:\Projekty\_wt\_scratch\p7a3-head\tests\unit\integrations\providers\test_provider_runtime_cutover.py:752: TypeError: create_hf_embedding_provider_integration() got an unexpected keyword argument 'client'
+D:\Projekty\_wt\_scratch\p7a3-head\tests\unit\integrations\providers\test_provider_runtime_cutover.py:752: TypeError: create_lakera_llm_guardrail_integration() got an unexpected keyword argument 'client'
+D:\Projekty\_wt\_scratch\p7a3-head\tests\unit\integrations\providers\test_provider_runtime_cutover.py:752: TypeError: create_llama_cpp_embedding_provider_integration() got an unexpected keyword argument 'client'
+D:\Projekty\_wt\_scratch\p7a3-head\tests\unit\integrations\providers\test_provider_runtime_cutover.py:752: TypeError: create_llama_guard_llm_guardrail_integration() got an unexpected keyword argument 'client'
+D:\Projekty\_wt\_scratch\p7a3-head\tests\unit\integrations\providers\test_provider_runtime_cutover.py:752: TypeError: create_llm_guard_llm_guardrail_integration() got an unexpected keyword argument 'client'
+D:\Projekty\_wt\_scratch\p7a3-head\tests\unit\integrations\providers\test_provider_runtime_cutover.py:752: TypeError: create_mattermost_conversation_channel_integration() got an unexpected keyword argument 'client'
+D:\Projekty\_wt\_scratch\p7a3-head\tests\unit\integrations\providers\test_provider_runtime_cutover.py:752: TypeError: create_nemo_guardrails_llm_guardrail_integration() got an unexpected keyword argument 'client'
+D:\Projekty\_wt\_scratch\p7a3-head\tests\unit\integrations\providers\test_provider_runtime_cutover.py:752: TypeError: create_openguardrails_llm_guardrail_integration() got an unexpected keyword argument 'client'
+D:\Projekty\_wt\_scratch\p7a3-head\tests\unit\integrations\providers\test_provider_runtime_cutover.py:752: TypeError: create_presidio_llm_guardrail_integration() got an unexpected keyword argument 'client'
+D:\Projekty\_wt\_scratch\p7a3-head\tests\unit\integrations\providers\test_provider_runtime_cutover.py:752: TypeError: create_rocket_chat_conversation_channel_integration() got an unexpected keyword argument 'client'
+D:\Projekty\_wt\_scratch\p7a3-head\tests\unit\integrations\providers\test_provider_runtime_cutover.py:752: TypeError: create_vllm_embedding_provider_integration() got an unexpected keyword argument 'client'
+D:\Projekty\_wt\_scratch\p7a3-head\tests\unit\integrations\providers\test_provider_runtime_cutover.py:765: TypeError: create_azure_content_safety_llm_guardrail_integration() got an unexpected keyword argument 'client'
+D:\Projekty\_wt\_scratch\p7a3-head\tests\unit\integrations\providers\test_provider_runtime_cutover.py:765: TypeError: create_bedrock_guardrails_llm_guardrail_integration() got an unexpected keyword argument 'client'
+D:\Projekty\_wt\_scratch\p7a3-head\tests\unit\integrations\providers\test_provider_runtime_cutover.py:765: TypeError: create_google_chat_conversation_channel_integration() got an unexpected keyword argument 'client'
+D:\Projekty\_wt\_scratch\p7a3-head\tests\unit\integrations\providers\test_provider_runtime_cutover.py:765: TypeError: create_guardrails_ai_llm_guardrail_integration() got an unexpected keyword argument 'client'
+D:\Projekty\_wt\_scratch\p7a3-head\tests\unit\integrations\providers\test_provider_runtime_cutover.py:765: TypeError: create_hf_embedding_provider_integration() got an unexpected keyword argument 'client'
+D:\Projekty\_wt\_scratch\p7a3-head\tests\unit\integrations\providers\test_provider_runtime_cutover.py:765: TypeError: create_lakera_llm_guardrail_integration() got an unexpected keyword argument 'client'
+D:\Projekty\_wt\_scratch\p7a3-head\tests\unit\integrations\providers\test_provider_runtime_cutover.py:765: TypeError: create_llama_cpp_embedding_provider_integration() got an unexpected keyword argument 'client'
+D:\Projekty\_wt\_scratch\p7a3-head\tests\unit\integrations\providers\test_provider_runtime_cutover.py:765: TypeError: create_llama_guard_llm_guardrail_integration() got an unexpected keyword argument 'client'
+D:\Projekty\_wt\_scratch\p7a3-head\tests\unit\integrations\providers\test_provider_runtime_cutover.py:765: TypeError: create_llm_guard_llm_guardrail_integration() got an unexpected keyword argument 'client'
+D:\Projekty\_wt\_scratch\p7a3-head\tests\unit\integrations\providers\test_provider_runtime_cutover.py:765: TypeError: create_mattermost_conversation_channel_integration() got an unexpected keyword argument 'client'
+D:\Projekty\_wt\_scratch\p7a3-head\tests\unit\integrations\providers\test_provider_runtime_cutover.py:765: TypeError: create_nemo_guardrails_llm_guardrail_integration() got an unexpected keyword argument 'client'
+D:\Projekty\_wt\_scratch\p7a3-head\tests\unit\integrations\providers\test_provider_runtime_cutover.py:765: TypeError: create_openguardrails_llm_guardrail_integration() got an unexpected keyword argument 'client'
+D:\Projekty\_wt\_scratch\p7a3-head\tests\unit\integrations\providers\test_provider_runtime_cutover.py:765: TypeError: create_presidio_llm_guardrail_integration() got an unexpected keyword argument 'client'
+D:\Projekty\_wt\_scratch\p7a3-head\tests\unit\integrations\providers\test_provider_runtime_cutover.py:765: TypeError: create_rocket_chat_conversation_channel_integration() got an unexpected keyword argument 'client'
+D:\Projekty\_wt\_scratch\p7a3-head\tests\unit\integrations\providers\test_provider_runtime_cutover.py:765: TypeError: create_vllm_embedding_provider_integration() got an unexpected keyword argument 'client'
+D:\Projekty\_wt\_scratch\p7a3-head\tests\unit\integrations\providers\test_provider_runtime_cutover.py:787: AttributeError: module 'intergrax.integrations.providers.embedding_provider.hf.register' has no attribute 'register_hf_integration'
+D:\Projekty\_wt\_scratch\p7a3-head\tests\unit\integrations\providers\test_provider_runtime_cutover.py:787: AttributeError: module 'intergrax.integrations.providers.embedding_provider.llama_cpp.register' has no attribute 'register_llama_cpp_integration'
+D:\Projekty\_wt\_scratch\p7a3-head\tests\unit\integrations\providers\test_provider_runtime_cutover.py:787: AttributeError: module 'intergrax.integrations.providers.managed_retrieval.openai.register' has no attribute 'register_openai_integration'
+D:\Projekty\_wt\_scratch\p7a3-head\tests\unit\integrations\providers\test_provider_runtime_cutover.py:787: AttributeError: module 'intergrax.integrations.providers.embedding_provider.vllm.register' has no attribute 'register_vllm_integration'
+D:\Projekty\_wt\_scratch\p7a3-head\tests\unit\integrations\providers\test_provider_runtime_cutover.py:804: AssertionError: unexpected import root 'threading' in google_workspace
+D:\Projekty\_wt\_scratch\p7a3-head\tests\unit\integrations\providers\test_provider_runtime_cutover.py:801: AssertionError: unexpected import root 'pathlib' in openai
+D:\Projekty\_wt\_scratch\p7a3-head\tests\unit\integrations\providers\test_provider_runtime_cutover.py:801: AssertionError: unexpected import root 'pathlib' in sqlite
+D:\Projekty\_wt\_scratch\p7a3-head\tests\unit\integrations\test_p2_003_c_final_cutover.py:86: AssertionError: assert 205 == 200
+D:\Projekty\_wt\_scratch\p7a3-head\intergrax\integrations\registry\factory.py:98: TypeError: Integration factory for slug 'selected_sql' (category 'relational_store') returned dict, expected PlatformIntegrationContract.
+D:\Projekty\_wt\_scratch\p7a3-head\intergrax\integrations\registry\factory.py:98: TypeError: Integration factory for slug 'selected_graph' (category 'graph_store') returned dict, expected PlatformIntegrationContract.
+D:\Projekty\_wt\_scratch\p7a3-head\intergrax\integrations\registry\factory.py:98: TypeError: Integration factory for slug 'selected_sql' (category 'relational_store') returned dict, expected PlatformIntegrationContract.
+D:\Projekty\_wt\_scratch\p7a3-head\intergrax\queueing\providers\celery\celery_task_queue.py:10: ModuleNotFoundError: No module named 'celery'
+D:\Projekty\_wt\_scratch\p7a3-head\intergrax\integrations\providers\notification_channel\pagerduty\integration.py:57: intergrax.integrations.contracts.base.IntegrationConfigurationError: PagerdutyNotificationChannelIntegration requires a catalog client for operations
+C:\Users\XPS\AppData\Roaming\uv\python\cpython-3.12.11-windows-x86_64-none\Lib\pathlib.py:1013: FileNotFoundError: [Errno 2] No such file or directory: 'D:\\Projekty\\_wt\\_scratch\\p7a3-head\\build\\pytest\\53120-981276f8\\test_test_adapter_stages_graph0\\output\\candidate-rev-ap8-1\\.intergrax-artifacts\\sha256-151c449b2e54dfbe6919e07e3c7e2c51a1d142c5b13b5d19a082bb1266df9fac\\intergrax_local_search_agent-1.0.0-py3-none-any.whl'
+C:\Users\XPS\AppData\Roaming\uv\python\cpython-3.12.11-windows-x86_64-none\Lib\pathlib.py:1013: FileNotFoundError: [Errno 2] No such file or directory: 'D:\\Projekty\\_wt\\_scratch\\p7a3-head\\build\\pytest\\53120-981276f8\\test_lock_reference_embedded_i0\\output\\candidate-rev-ap8-1\\.intergrax-artifacts\\sha256-151c449b2e54dfbe6919e07e3c7e2c51a1d142c5b13b5d19a082bb1266df9fac\\intergrax_local_search_agent-1.0.0-py3-none-any.whl'
+C:\Users\XPS\AppData\Roaming\uv\python\cpython-3.12.11-windows-x86_64-none\Lib\pathlib.py:1013: FileNotFoundError: [Errno 2] No such file or directory: 'D:\\Projekty\\_wt\\_scratch\\p7a3-head\\build\\pytest\\53120-981276f8\\test_oci_adapter_uses_injected0\\output\\candidate-rev-ap8-1\\.intergrax-artifacts\\sha256-151c449b2e54dfbe6919e07e3c7e2c51a1d142c5b13b5d19a082bb1266df9fac\\intergrax_local_search_agent-1.0.0-py3-none-any.whl'
+C:\Users\XPS\AppData\Roaming\uv\python\cpython-3.12.11-windows-x86_64-none\Lib\pathlib.py:1013: FileNotFoundError: [Errno 2] No such file or directory: 'D:\\Projekty\\_wt\\_scratch\\p7a3-head\\build\\pytest\\53120-981276f8\\test_oci_build_failure_fail_cl0\\output\\candidate-rev-ap8-1\\.intergrax-artifacts\\sha256-151c449b2e54dfbe6919e07e3c7e2c51a1d142c5b13b5d19a082bb1266df9fac\\intergrax_local_search_agent-1.0.0-py3-none-any.whl'
+C:\Users\XPS\AppData\Roaming\uv\python\cpython-3.12.11-windows-x86_64-none\Lib\pathlib.py:1013: FileNotFoundError: [Errno 2] No such file or directory: 'D:\\Projekty\\_wt\\_scratch\\p7a3-head\\build\\pytest\\53120-981276f8\\test_manifest_contains_enabled0\\output\\candidate-rev-ap8-1\\.intergrax-artifacts\\sha256-151c449b2e54dfbe6919e07e3c7e2c51a1d142c5b13b5d19a082bb1266df9fac\\intergrax_local_search_agent-1.0.0-py3-none-any.whl'
+C:\Users\XPS\AppData\Roaming\uv\python\cpython-3.12.11-windows-x86_64-none\Lib\pathlib.py:1013: FileNotFoundError: [Errno 2] No such file or directory: 'D:\\Projekty\\_wt\\_scratch\\p7a3-head\\build\\pytest\\53120-981276f8\\test_oci_dockerfile_does_not_u0\\output\\candidate-rev-ap8-1\\.intergrax-artifacts\\sha256-151c449b2e54dfbe6919e07e3c7e2c51a1d142c5b13b5d19a082bb1266df9fac\\intergrax_local_search_agent-1.0.0-py3-none-any.whl'
+C:\Users\XPS\AppData\Roaming\uv\python\cpython-3.12.11-windows-x86_64-none\Lib\pathlib.py:1013: FileNotFoundError: [Errno 2] No such file or directory: 'D:\\Projekty\\_wt\\_scratch\\p7a3-head\\build\\pytest\\53120-981276f8\\test_install_manifest_derived_0\\output\\candidate-rev-ap8-1\\.intergrax-artifacts\\sha256-151c449b2e54dfbe6919e07e3c7e2c51a1d142c5b13b5d19a082bb1266df9fac\\intergrax_local_search_agent-1.0.0-py3-none-any.whl'
+C:\Users\XPS\AppData\Roaming\uv\python\cpython-3.12.11-windows-x86_64-none\Lib\pathlib.py:1013: FileNotFoundError: [Errno 2] No such file or directory: 'D:\\Projekty\\_wt\\_scratch\\p7a3-head\\build\\pytest\\53120-981276f8\\test_lock_package_absent_from_0\\output\\candidate-rev-ap8-1\\.intergrax-artifacts\\sha256-151c449b2e54dfbe6919e07e3c7e2c51a1d142c5b13b5d19a082bb1266df9fac\\intergrax_local_search_agent-1.0.0-py3-none-any.whl'
+C:\Users\XPS\AppData\Roaming\uv\python\cpython-3.12.11-windows-x86_64-none\Lib\pathlib.py:1013: FileNotFoundError: [Errno 2] No such file or directory: 'D:\\Projekty\\_wt\\_scratch\\p7a3-head\\build\\pytest\\53120-981276f8\\test_package_absent_from_lock_0\\output\\candidate-rev-ap8-1\\.intergrax-artifacts\\sha256-151c449b2e54dfbe6919e07e3c7e2c51a1d142c5b13b5d19a082bb1266df9fac\\intergrax_local_search_agent-1.0.0-py3-none-any.whl'
+C:\Users\XPS\AppData\Roaming\uv\python\cpython-3.12.11-windows-x86_64-none\Lib\pathlib.py:1013: FileNotFoundError: [Errno 2] No such file or directory: 'D:\\Projekty\\_wt\\_scratch\\p7a3-head\\build\\pytest\\53120-981276f8\\test_exact_lock_version_preser0\\output\\candidate-rev-ap8-1\\.intergrax-artifacts\\sha256-151c449b2e54dfbe6919e07e3c7e2c51a1d142c5b13b5d19a082bb1266df9fac\\intergrax_local_search_agent-1.0.0-py3-none-any.whl'
+C:\Users\XPS\AppData\Roaming\uv\python\cpython-3.12.11-windows-x86_64-none\Lib\pathlib.py:1013: FileNotFoundError: [Errno 2] No such file or directory: 'D:\\Projekty\\_wt\\_scratch\\p7a3-head\\build\\pytest\\53120-981276f8\\test_lock_digest_preserved_whe0\\output\\candidate-rev-ap8-1\\.intergrax-artifacts\\sha256-151c449b2e54dfbe6919e07e3c7e2c51a1d142c5b13b5d19a082bb1266df9fac\\intergrax_local_search_agent-1.0.0-py3-none-any.whl'
+C:\Users\XPS\AppData\Roaming\uv\python\cpython-3.12.11-windows-x86_64-none\Lib\pathlib.py:1013: FileNotFoundError: [Errno 2] No such file or directory: 'D:\\Projekty\\_wt\\_scratch\\p7a3-head\\build\\pytest\\53120-981276f8\\test_graph_direct_agent_in_phy0\\output\\candidate-rev-ap8-1\\.intergrax-artifacts\\sha256-151c449b2e54dfbe6919e07e3c7e2c51a1d142c5b13b5d19a082bb1266df9fac\\intergrax_local_search_agent-1.0.0-py3-none-any.whl'
+C:\Users\XPS\AppData\Roaming\uv\python\cpython-3.12.11-windows-x86_64-none\Lib\pathlib.py:1013: FileNotFoundError: [Errno 2] No such file or directory: 'D:\\Projekty\\_wt\\_scratch\\p7a3-head\\build\\pytest\\53120-981276f8\\test_transitive_lock_package_i0\\output\\candidate-rev-ap8-1\\.intergrax-artifacts\\sha256-151c449b2e54dfbe6919e07e3c7e2c51a1d142c5b13b5d19a082bb1266df9fac\\intergrax_local_search_agent-1.0.0-py3-none-any.whl'
+C:\Users\XPS\AppData\Roaming\uv\python\cpython-3.12.11-windows-x86_64-none\Lib\pathlib.py:1013: FileNotFoundError: [Errno 2] No such file or directory: 'D:\\Projekty\\_wt\\_scratch\\p7a3-head\\build\\pytest\\53120-981276f8\\test_repository_uv_lock_change0\\output\\candidate-rev-ap8-1\\.intergrax-artifacts\\sha256-151c449b2e54dfbe6919e07e3c7e2c51a1d142c5b13b5d19a082bb1266df9fac\\intergrax_local_search_agent-1.0.0-py3-none-any.whl'
+C:\Users\XPS\AppData\Roaming\uv\python\cpython-3.12.11-windows-x86_64-none\Lib\pathlib.py:1013: FileNotFoundError: [Errno 2] No such file or directory: 'D:\\Projekty\\_wt\\_scratch\\p7a3-head\\build\\pytest\\53120-981276f8\\test_missing_artifact_location0\\output\\candidate-rev-ap8-1\\.intergrax-artifacts\\sha256-151c449b2e54dfbe6919e07e3c7e2c51a1d142c5b13b5d19a082bb1266df9fac\\intergrax_local_search_agent-1.0.0-py3-none-any.whl'
+C:\Users\XPS\AppData\Roaming\uv\python\cpython-3.12.11-windows-x86_64-none\Lib\pathlib.py:1013: FileNotFoundError: [Errno 2] No such file or directory: 'D:\\Projekty\\_wt\\_scratch\\p7a3-head\\build\\pytest\\53120-981276f8\\test_artifact_digest_not_calle0\\output\\candidate-rev-ap8-1\\.intergrax-artifacts\\sha256-151c449b2e54dfbe6919e07e3c7e2c51a1d142c5b13b5d19a082bb1266df9fac\\intergrax_local_search_agent-1.0.0-py3-none-any.whl'
+C:\Users\XPS\AppData\Roaming\uv\python\cpython-3.12.11-windows-x86_64-none\Lib\pathlib.py:1013: FileNotFoundError: [Errno 2] No such file or directory: 'D:\\Projekty\\_wt\\_scratch\\p7a3-head\\build\\pytest\\53120-981276f8\\test_lock_digest_with_matching0\\output\\candidate-rev-ap8-1\\.intergrax-artifacts\\sha256-151c449b2e54dfbe6919e07e3c7e2c51a1d142c5b13b5d19a082bb1266df9fac\\intergrax_local_search_agent-1.0.0-py3-none-any.whl'
+C:\Users\XPS\AppData\Roaming\uv\python\cpython-3.12.11-windows-x86_64-none\Lib\pathlib.py:1013: FileNotFoundError: [Errno 2] No such file or directory: 'D:\\Projekty\\_wt\\_scratch\\p7a3-head\\build\\pytest\\53120-981276f8\\test_artifact_provider_used_no0\\output\\candidate-rev-ap8-1\\.intergrax-artifacts\\sha256-151c449b2e54dfbe6919e07e3c7e2c51a1d142c5b13b5d19a082bb1266df9fac\\intergrax_local_search_agent-1.0.0-py3-none-any.whl'
+C:\Users\XPS\AppData\Roaming\uv\python\cpython-3.12.11-windows-x86_64-none\Lib\pathlib.py:1013: FileNotFoundError: [Errno 2] No such file or directory: 'D:\\Projekty\\_wt\\_scratch\\p7a3-head\\build\\pytest\\53120-981276f8\\test_staged_artifact_layout_is0\\output\\candidate-rev-ap8-1\\.intergrax-artifacts\\sha256-151c449b2e54dfbe6919e07e3c7e2c51a1d142c5b13b5d19a082bb1266df9fac\\intergrax_local_search_agent-1.0.0-py3-none-any.whl'
+C:\Users\XPS\AppData\Roaming\uv\python\cpython-3.12.11-windows-x86_64-none\Lib\pathlib.py:1013: FileNotFoundError: [Errno 2] No such file or directory: 'D:\\Projekty\\_wt\\_scratch\\p7a3-head\\build\\pytest\\53120-981276f8\\test_third_party_without_packa0\\output\\candidate-rev-ap8-1\\.intergrax-artifacts\\sha256-151c449b2e54dfbe6919e07e3c7e2c51a1d142c5b13b5d19a082bb1266df9fac\\intergrax_local_search_agent-1.0.0-py3-none-any.whl'
+C:\Users\XPS\AppData\Roaming\uv\python\cpython-3.12.11-windows-x86_64-none\Lib\pathlib.py:1013: FileNotFoundError: [Errno 2] No such file or directory: 'D:\\Projekty\\_wt\\_scratch\\p7a3-head\\build\\pytest\\53120-981276f8\\test_unrelated_workspace_sourc0\\output\\candidate-rev-ap8-1\\.intergrax-artifacts\\sha256-151c449b2e54dfbe6919e07e3c7e2c51a1d142c5b13b5d19a082bb1266df9fac\\intergrax_local_search_agent-1.0.0-py3-none-any.whl'
+C:\Users\XPS\AppData\Roaming\uv\python\cpython-3.12.11-windows-x86_64-none\Lib\pathlib.py:1013: FileNotFoundError: [Errno 2] No such file or directory: 'D:\\Projekty\\_wt\\_scratch\\p7a3-head\\build\\pytest\\53120-981276f8\\test_builtin_agent_not_install0\\output\\candidate-rev-ap8-1\\.intergrax-artifacts\\sha256-151c449b2e54dfbe6919e07e3c7e2c51a1d142c5b13b5d19a082bb1266df9fac\\intergrax_local_search_agent-1.0.0-py3-none-any.whl'
+C:\Users\XPS\AppData\Roaming\uv\python\cpython-3.12.11-windows-x86_64-none\Lib\pathlib.py:1013: FileNotFoundError: [Errno 2] No such file or directory: 'D:\\Projekty\\_wt\\_scratch\\p7a3-head\\build\\pytest\\53120-981276f8\\test_post_release_installed_ag0\\output\\candidate-rev-ap8-1\\.intergrax-artifacts\\sha256-151c449b2e54dfbe6919e07e3c7e2c51a1d142c5b13b5d19a082bb1266df9fac\\intergrax_local_search_agent-1.0.0-py3-none-any.whl'
+D:\Projekty\_wt\_scratch\p7a3-head\intergrax\agent_distribution\materialization_service.py:58: intergrax.agent_distribution.errors.MaterializationError: [Errno 2] No such file or directory: 'D:\\Projekty\\_wt\\_scratch\\p7a3-head\\build\\pytest\\53120-981276f8\\test_materialization_does_not_0\\output\\candidate-rev-ap8-1\\.intergrax-artifacts\\sha256-151c449b2e54dfbe6919e07e3c7e2c51a1d142c5b13b5d19a082bb1266df9fac\\intergrax_local_search_agent-1.0.0-py3-none-any.whl'
+D:\Projekty\_wt\_scratch\p7a3-head\intergrax\agent_distribution\materialization_service.py:58: intergrax.agent_distribution.errors.MaterializationError: [Errno 2] No such file or directory: 'D:\\Projekty\\_wt\\_scratch\\p7a3-head\\build\\pytest\\53120-981276f8\\test_fake_adapter_digest_is_de0\\output\\candidate-rev-ap8-1\\.intergrax-artifacts\\sha256-151c449b2e54dfbe6919e07e3c7e2c51a1d142c5b13b5d19a082bb1266df9fac\\intergrax_local_search_agent-1.0.0-py3-none-any.whl'
+D:\Projekty\_wt\_scratch\p7a3-head\intergrax\agent_distribution\materialization_service.py:58: intergrax.agent_distribution.errors.MaterializationError: [Errno 2] No such file or directory: 'D:\\Projekty\\_wt\\_scratch\\p7a3-head\\build\\pytest\\53120-981276f8\\test_different_graph_changes_f0\\output\\candidate-rev-ap8-1\\.intergrax-artifacts\\sha256-151c449b2e54dfbe6919e07e3c7e2c51a1d142c5b13b5d19a082bb1266df9fac\\intergrax_local_search_agent-1.0.0-py3-none-any.whl'
+D:\Projekty\_wt\_scratch\p7a3-head\intergrax\agent_distribution\materialization_service.py:58: intergrax.agent_distribution.errors.MaterializationError: [Errno 2] No such file or directory: 'D:\\Projekty\\_wt\\_scratch\\p7a3-head\\build\\pytest\\53120-981276f8\\test_manifest_references_graph0\\output\\candidate-rev-ap8-1\\.intergrax-artifacts\\sha256-151c449b2e54dfbe6919e07e3c7e2c51a1d142c5b13b5d19a082bb1266df9fac\\intergrax_local_search_agent-1.0.0-py3-none-any.whl'
+D:\Projekty\_wt\_scratch\p7a3-head\tests\unit\agent_distribution\test_ac6_architecture_gates.py:172: AssertionError: testing_support must not import tests; violations:
+D:\Projekty\_wt\_scratch\p7a3-head\tests\unit\agent_distribution\test_agent_distribution_build_remediation.py:897: AssertionError: unclassified revision-write surface: intergrax/applications/_shared/deploy_activate_pipeline.py
+D:\Projekty\_wt\_scratch\p7a3-head\tests\unit\agent_distribution\test_agent_distribution_activation_remediation.py:498: AssertionError: assert ['intergrax/a..._pipeline.py'] == []
+D:\Projekty\_wt\_scratch\p7a3-head\tests\qualification\compat_x\test_compat_x_event_evolution_r3_r1_gates.py:206: AssertionError: ('unclassified persistence append intergrax/runtime/security/security_audit_trail.py:213 self._evidence.append', 'inve...nce discovery includes UNCLASSIFIED append call sites', 'canonical production persistence bypass count 1 (expected 0)')
+D:\Projekty\_wt\_scratch\p7a3-head\tests\qualification\compat_x\test_compat_x_event_evolution_r3_r1_gates.py:211: AssertionError: assert ('unclassifie...ence.append',) == ()
+D:\Projekty\_wt\_scratch\p7a3-head\tests\qualification\compat_x\test_compat_x_event_evolution_r3_r1_gates.py:223: AssertionError: ('unclassified runtime event reader intergrax/runtime/security/security_audit_trail.py:198 append RuntimeEvent(...)', ...dit_trail.py:213 self._evidence.append', 'inventory persistence call sites include canonical production bypasses', ...)
+D:\Projekty\_wt\_scratch\p7a3-head\tests\qualification\compat_x\test_compat_x_event_evolution_r3_r1_gates.py:299: AssertionError: assert ('probe K: pr...n injection',) == ()
+D:\Projekty\_wt\_scratch\p7a3-head\tests\qualification\compat_x\test_compat_x_event_evolution_r3_r1_gates.py:328: assert False
+D:\Projekty\_wt\_scratch\p7a3-head\tests\qualification\compat_x\test_compat_x_event_evolution_r3_r1_gates.py:341: assert False
+D:\Projekty\_wt\_scratch\p7a3-head\tests\qualification\compat_x\test_compat_x_event_evolution_r3_r1_gates.py:373: AssertionError: ('unclassified runtime event reader intergrax/runtime/security/security_audit_trail.py:198 append RuntimeEvent(...)', ...dit_trail.py:213 self._evidence.append', 'inventory persistence call sites include canonical production bypasses', ...)
+D:\Projekty\_wt\_scratch\p7a3-head\tests\qualification\compat_x\test_compat_x_event_evolution_r3_r1_gates.py:379: assert ("production ...ppend:198']",) == ()
+D:\Projekty\_wt\_scratch\p7a3-head\tests\qualification\compat_x\_compat_x_semantic_identity_reconciliation.py:546: AssertionError: raw_candidates 7411 != accepted current-head 7356; current-minus-R3 raw count 7410 != replay accepted remainder 7355; current-minus-R3 stable inventory fingerprint 014a74b6e61bd10537cbbe96051f333f82aa191451b856c3cfbee126ea40424d != replay accepted 9dfd146f3b50bd56a8b997664569ac538396d322ceb21eb6682aa75a862716fa (lineage 05549f9acb9ecedf910c7470d442bba5d0a27337)
+D:\Projekty\_wt\_scratch\p7a3-head\tests\qualification\compat_x\_compat_x_semantic_identity_reconciliation.py:546: AssertionError: raw_candidates 7411 != accepted current-head 7356; current-minus-R3 raw count 7410 != replay accepted remainder 7355; current-minus-R3 stable inventory fingerprint 014a74b6e61bd10537cbbe96051f333f82aa191451b856c3cfbee126ea40424d != replay accepted 9dfd146f3b50bd56a8b997664569ac538396d322ceb21eb6682aa75a862716fa (lineage 05549f9acb9ecedf910c7470d442bba5d0a27337)
+D:\Projekty\_wt\_scratch\p7a3-head\tests\qualification\compat_x\test_compat_x_event_evolution_r3_r1_gates.py:421: AssertionError: assert 7411 == 7356
+D:\Projekty\_wt\_scratch\p7a3-head\tests\qualification\compat_x\test_compat_x_event_evolution_r3_r1_gates.py:429: AssertionError: assert 7410 == 7355
+D:\Projekty\_wt\_scratch\p7a3-head\tests\qualification\compat_x\test_compat_x_event_evolution_r3_r1_gates.py:436: AssertionError: assert 7411 == 7356
+D:\Projekty\_wt\_scratch\p7a3-head\tests\qualification\compat_x\test_compat_x_event_evolution_r3_p0_gates.py:63: AssertionError: assert ('unclassifie...ion bypasses') == ()
+D:\Projekty\_wt\_scratch\p7a3-head\tests\qualification\compat_x\test_compat_x_event_evolution_r3_p0_gates.py:299: AssertionError: assert ('unclassifie...ence.append',) == ()
+D:\Projekty\_wt\_scratch\p7a3-head\tests\qualification\compat_x\test_compat_x_event_evolution_r3_p0_gates.py:345: AssertionError: ('unclassified persistence append intergrax/runtime/security/security_audit_trail.py:213 self._evidence.append', 'inve...nce discovery includes UNCLASSIFIED append call sites', 'canonical production persistence bypass count 1 (expected 0)')
+D:\Projekty\_wt\_scratch\p7a3-head\tests\qualification\compat_x\test_compat_x_event_evolution_r3_p0_gates.py:351: AssertionError: assert ('probe K: pr...n injection',) == ()
+D:\Projekty\_wt\_scratch\p7a3-head\tests\qualification\compat_x\test_compat_x_versioning_r1_r3_identity_gates.py:115: AssertionError: assert 7411 == 7356
+D:\Projekty\_wt\_scratch\p7a3-head\tests\qualification\compat_x\test_compat_x_versioning_r1_r5_semantic_identity_reconciliation_gates.py:44: AssertionError: assert 7411 == 7356
+D:\Projekty\_wt\_scratch\p7a3-head\tests\qualification\compat_x\test_compat_x_deprecation_r5_p0_gates.py:77: AssertionError: ('shim reconciliation: unexpected added shim paths: intergrax/agent_distribution/admin_service.py, intergrax/agent_distribution/runtime_revision.py, intergrax/applications/_shared/mcp_host_mount.py',)
+=========================== short test summary info ===========================
+FAILED tests/qualification/pdc_x/p6_impact/test_p6_impact_map_coverage.py::test_every_pdc_touched_product_module_maps_to_at_least_one_check
+FAILED tests/qualification/pdc_x/xd/test_xd_12_evol_ent_audit.py::test_xd12_every_pdc_touched_product_module_maps_to_a_domain_check
+FAILED tests/qualification/ebh_5/test_ebh_5_behavioral_package_c_v2.py::test_ebh5_pkgc_v2_relational_sqlite_duckdb_dual_slug
+FAILED tests/qualification/ebh_5/test_ebh_5_behavioral_package_c_v2.py::test_ebh5_pkgc_v2_dual_slug_integration[integration.relational_store]
+FAILED tests/qualification/ebh_5/test_ebh_5_behavioral_package_c_v2.py::test_ebh5_pkgc_v2_dual_slug_rpl_cde_equivalence[integration.relational_store]
+FAILED tests/qualification/ebh_7/test_ebh_7_int2e_bundle_regression.py::test_ebh7_int2e_sqlite_relational_resolve_from_profile
+FAILED tests/unit/integrations/providers/test_p5_m6_p4_providers.py::test_pgvector_vector_store
+FAILED tests/unit/integrations/providers/test_provider_category_contract_migration.py::test_integration_derives_from_category_contract[google_chat]
+FAILED tests/unit/integrations/providers/test_provider_category_contract_migration.py::test_integration_derives_from_category_contract[hf]
+FAILED tests/unit/integrations/providers/test_provider_category_contract_migration.py::test_integration_derives_from_category_contract[llama_cpp]
+FAILED tests/unit/integrations/providers/test_provider_category_contract_migration.py::test_integration_derives_from_category_contract[mattermost]
+FAILED tests/unit/integrations/providers/test_provider_category_contract_migration.py::test_integration_derives_from_category_contract[openai]
+FAILED tests/unit/integrations/providers/test_provider_category_contract_migration.py::test_integration_derives_from_category_contract[rocket_chat]
+FAILED tests/unit/integrations/providers/test_provider_category_contract_migration.py::test_integration_derives_from_category_contract[vllm]
+FAILED tests/unit/integrations/providers/test_provider_category_contract_migration.py::test_provider_id_matches_slug[google_chat]
+FAILED tests/unit/integrations/providers/test_provider_category_contract_migration.py::test_provider_id_matches_slug[hf]
+FAILED tests/unit/integrations/providers/test_provider_category_contract_migration.py::test_provider_id_matches_slug[llama_cpp]
+FAILED tests/unit/integrations/providers/test_provider_category_contract_migration.py::test_provider_id_matches_slug[mattermost]
+FAILED tests/unit/integrations/providers/test_provider_category_contract_migration.py::test_provider_id_matches_slug[openai]
+FAILED tests/unit/integrations/providers/test_provider_category_contract_migration.py::test_provider_id_matches_slug[rocket_chat]
+FAILED tests/unit/integrations/providers/test_provider_category_contract_migration.py::test_provider_id_matches_slug[vllm]
+FAILED tests/unit/integrations/providers/test_provider_category_contract_migration.py::test_integration_kind_matches_category[google_chat]
+FAILED tests/unit/integrations/providers/test_provider_category_contract_migration.py::test_integration_kind_matches_category[hf]
+FAILED tests/unit/integrations/providers/test_provider_category_contract_migration.py::test_integration_kind_matches_category[llama_cpp]
+FAILED tests/unit/integrations/providers/test_provider_category_contract_migration.py::test_integration_kind_matches_category[mattermost]
+FAILED tests/unit/integrations/providers/test_provider_category_contract_migration.py::test_integration_kind_matches_category[openai]
+FAILED tests/unit/integrations/providers/test_provider_category_contract_migration.py::test_integration_kind_matches_category[rocket_chat]
+FAILED tests/unit/integrations/providers/test_provider_category_contract_migration.py::test_integration_kind_matches_category[vllm]
+FAILED tests/unit/integrations/providers/test_provider_category_contract_migration.py::test_legacy_factory_importable[google_chat]
+FAILED tests/unit/integrations/providers/test_provider_category_contract_migration.py::test_legacy_factory_importable[hf]
+FAILED tests/unit/integrations/providers/test_provider_category_contract_migration.py::test_legacy_factory_importable[llama_cpp]
+FAILED tests/unit/integrations/providers/test_provider_category_contract_migration.py::test_legacy_factory_importable[mattermost]
+FAILED tests/unit/integrations/providers/test_provider_category_contract_migration.py::test_legacy_factory_importable[openai]
+FAILED tests/unit/integrations/providers/test_provider_category_contract_migration.py::test_legacy_factory_importable[rocket_chat]
+FAILED tests/unit/integrations/providers/test_provider_category_contract_migration.py::test_legacy_factory_importable[vllm]
+FAILED tests/unit/integrations/providers/test_provider_category_contract_migration.py::test_register_remains_legacy_compatible[google_chat]
+FAILED tests/unit/integrations/providers/test_provider_category_contract_migration.py::test_register_remains_legacy_compatible[hf]
+FAILED tests/unit/integrations/providers/test_provider_category_contract_migration.py::test_register_remains_legacy_compatible[llama_cpp]
+FAILED tests/unit/integrations/providers/test_provider_category_contract_migration.py::test_register_remains_legacy_compatible[mattermost]
+FAILED tests/unit/integrations/providers/test_provider_category_contract_migration.py::test_register_remains_legacy_compatible[openai]
+FAILED tests/unit/integrations/providers/test_provider_category_contract_migration.py::test_register_remains_legacy_compatible[rocket_chat]
+FAILED tests/unit/integrations/providers/test_provider_category_contract_migration.py::test_register_remains_legacy_compatible[vllm]
+FAILED tests/unit/integrations/providers/test_provider_category_contract_migration.py::test_init_lazy_api_exports_contract_symbols[dynamodb]
+FAILED tests/unit/integrations/providers/test_provider_category_contract_migration.py::test_init_lazy_api_exports_contract_symbols[google_chat]
+FAILED tests/unit/integrations/providers/test_provider_category_contract_migration.py::test_init_lazy_api_exports_contract_symbols[google_workspace]
+FAILED tests/unit/integrations/providers/test_provider_category_contract_migration.py::test_init_lazy_api_exports_contract_symbols[hf]
+FAILED tests/unit/integrations/providers/test_provider_category_contract_migration.py::test_init_lazy_api_exports_contract_symbols[llama_cpp]
+FAILED tests/unit/integrations/providers/test_provider_category_contract_migration.py::test_init_lazy_api_exports_contract_symbols[mattermost]
+FAILED tests/unit/integrations/providers/test_provider_category_contract_migration.py::test_init_lazy_api_exports_contract_symbols[mongodb]
+FAILED tests/unit/integrations/providers/test_provider_category_contract_migration.py::test_init_lazy_api_exports_contract_symbols[openai]
+FAILED tests/unit/integrations/providers/test_provider_category_contract_migration.py::test_init_lazy_api_exports_contract_symbols[rocket_chat]
+FAILED tests/unit/integrations/providers/test_provider_category_contract_migration.py::test_init_lazy_api_exports_contract_symbols[telegram]
+FAILED tests/unit/integrations/providers/test_provider_category_contract_migration.py::test_init_lazy_api_exports_contract_symbols[vllm]
+FAILED tests/unit/integrations/providers/test_provider_category_contract_migration.py::test_integration_module_has_no_vendor_sdk_imports[google_workspace]
+FAILED tests/unit/integrations/providers/test_provider_category_contract_migration.py::test_integration_module_has_no_vendor_sdk_imports[openai]
+FAILED tests/unit/integrations/providers/test_provider_category_contract_migration.py::test_integration_module_has_no_vendor_sdk_imports[sqlite]
+FAILED tests/unit/integrations/providers/test_provider_category_contract_migration.py::test_disabled_integration_without_client[google_chat]
+FAILED tests/unit/integrations/providers/test_provider_category_contract_migration.py::test_disabled_integration_without_client[hf]
+FAILED tests/unit/integrations/providers/test_provider_category_contract_migration.py::test_disabled_integration_without_client[llama_cpp]
+FAILED tests/unit/integrations/providers/test_provider_category_contract_migration.py::test_disabled_integration_without_client[mattermost]
+FAILED tests/unit/integrations/providers/test_provider_category_contract_migration.py::test_disabled_integration_without_client[rocket_chat]
+FAILED tests/unit/integrations/providers/test_provider_category_contract_migration.py::test_disabled_integration_without_client[vllm]
+FAILED tests/unit/integrations/providers/test_provider_category_contract_migration.py::test_enabled_integration_without_client_raises[google_chat]
+FAILED tests/unit/integrations/providers/test_provider_category_contract_migration.py::test_enabled_integration_without_client_raises[hf]
+FAILED tests/unit/integrations/providers/test_provider_category_contract_migration.py::test_enabled_integration_without_client_raises[llama_cpp]
+FAILED tests/unit/integrations/providers/test_provider_category_contract_migration.py::test_enabled_integration_without_client_raises[mattermost]
+FAILED tests/unit/integrations/providers/test_provider_category_contract_migration.py::test_enabled_integration_without_client_raises[rocket_chat]
+FAILED tests/unit/integrations/providers/test_provider_category_contract_migration.py::test_enabled_integration_without_client_raises[vllm]
+FAILED tests/unit/integrations/providers/test_provider_category_contract_migration.py::test_enabled_integration_with_fake_client[google_chat]
+FAILED tests/unit/integrations/providers/test_provider_category_contract_migration.py::test_enabled_integration_with_fake_client[hf]
+FAILED tests/unit/integrations/providers/test_provider_category_contract_migration.py::test_enabled_integration_with_fake_client[llama_cpp]
+FAILED tests/unit/integrations/providers/test_provider_category_contract_migration.py::test_enabled_integration_with_fake_client[mattermost]
+FAILED tests/unit/integrations/providers/test_provider_category_contract_migration.py::test_enabled_integration_with_fake_client[rocket_chat]
+FAILED tests/unit/integrations/providers/test_provider_category_contract_migration.py::test_enabled_integration_with_fake_client[vllm]
+FAILED tests/unit/integrations/providers/test_provider_runtime_cutover.py::test_bundle_does_not_shadow_integration_class_name[openai]
+FAILED tests/unit/integrations/providers/test_provider_runtime_cutover.py::test_no_public_legacy_adapter_export[azure_content_safety]
+FAILED tests/unit/integrations/providers/test_provider_runtime_cutover.py::test_no_public_legacy_adapter_export[bedrock_guardrails]
+FAILED tests/unit/integrations/providers/test_provider_runtime_cutover.py::test_no_public_legacy_adapter_export[guardrails_ai]
+FAILED tests/unit/integrations/providers/test_provider_runtime_cutover.py::test_no_public_legacy_adapter_export[hf]
+FAILED tests/unit/integrations/providers/test_provider_runtime_cutover.py::test_no_public_legacy_adapter_export[lakera]
+FAILED tests/unit/integrations/providers/test_provider_runtime_cutover.py::test_no_public_legacy_adapter_export[llama_cpp]
+FAILED tests/unit/integrations/providers/test_provider_runtime_cutover.py::test_no_public_legacy_adapter_export[llama_guard]
+FAILED tests/unit/integrations/providers/test_provider_runtime_cutover.py::test_no_public_legacy_adapter_export[llm_guard]
+FAILED tests/unit/integrations/providers/test_provider_runtime_cutover.py::test_no_public_legacy_adapter_export[nemo_guardrails]
+FAILED tests/unit/integrations/providers/test_provider_runtime_cutover.py::test_no_public_legacy_adapter_export[openai]
+FAILED tests/unit/integrations/providers/test_provider_runtime_cutover.py::test_no_public_legacy_adapter_export[openguardrails]
+FAILED tests/unit/integrations/providers/test_provider_runtime_cutover.py::test_no_public_legacy_adapter_export[presidio]
+FAILED tests/unit/integrations/providers/test_provider_runtime_cutover.py::test_no_public_legacy_adapter_export[vllm]
+FAILED tests/unit/integrations/providers/test_provider_runtime_cutover.py::test_legacy_factory_delegates_to_integration_model[azure_content_safety]
+FAILED tests/unit/integrations/providers/test_provider_runtime_cutover.py::test_legacy_factory_delegates_to_integration_model[bedrock_guardrails]
+FAILED tests/unit/integrations/providers/test_provider_runtime_cutover.py::test_legacy_factory_delegates_to_integration_model[google_chat]
+FAILED tests/unit/integrations/providers/test_provider_runtime_cutover.py::test_legacy_factory_delegates_to_integration_model[guardrails_ai]
+FAILED tests/unit/integrations/providers/test_provider_runtime_cutover.py::test_legacy_factory_delegates_to_integration_model[hf]
+FAILED tests/unit/integrations/providers/test_provider_runtime_cutover.py::test_legacy_factory_delegates_to_integration_model[lakera]
+FAILED tests/unit/integrations/providers/test_provider_runtime_cutover.py::test_legacy_factory_delegates_to_integration_model[llama_cpp]
+FAILED tests/unit/integrations/providers/test_provider_runtime_cutover.py::test_legacy_factory_delegates_to_integration_model[llama_guard]
+FAILED tests/unit/integrations/providers/test_provider_runtime_cutover.py::test_legacy_factory_delegates_to_integration_model[llm_guard]
+FAILED tests/unit/integrations/providers/test_provider_runtime_cutover.py::test_legacy_factory_delegates_to_integration_model[mattermost]
+FAILED tests/unit/integrations/providers/test_provider_runtime_cutover.py::test_legacy_factory_delegates_to_integration_model[nemo_guardrails]
+FAILED tests/unit/integrations/providers/test_provider_runtime_cutover.py::test_legacy_factory_delegates_to_integration_model[openai]
+FAILED tests/unit/integrations/providers/test_provider_runtime_cutover.py::test_legacy_factory_delegates_to_integration_model[openguardrails]
+FAILED tests/unit/integrations/providers/test_provider_runtime_cutover.py::test_legacy_factory_delegates_to_integration_model[presidio]
+FAILED tests/unit/integrations/providers/test_provider_runtime_cutover.py::test_legacy_factory_delegates_to_integration_model[rocket_chat]
+FAILED tests/unit/integrations/providers/test_provider_runtime_cutover.py::test_legacy_factory_delegates_to_integration_model[vespa]
+FAILED tests/unit/integrations/providers/test_provider_runtime_cutover.py::test_legacy_factory_delegates_to_integration_model[vllm]
+FAILED tests/unit/integrations/providers/test_provider_runtime_cutover.py::test_legacy_factory_non_vector_default_returns_integration[mongodb]
+FAILED tests/unit/integrations/providers/test_provider_runtime_cutover.py::test_legacy_factory_non_vector_default_returns_integration[postgresql]
+FAILED tests/unit/integrations/providers/test_provider_runtime_cutover.py::test_legacy_factory_non_vector_default_returns_integration[redis]
+FAILED tests/unit/integrations/providers/test_provider_runtime_cutover.py::test_legacy_factory_non_vector_custom_returns_integration[mongodb]
+FAILED tests/unit/integrations/providers/test_provider_runtime_cutover.py::test_legacy_factory_non_vector_custom_returns_integration[redis]
+FAILED tests/unit/integrations/providers/test_provider_runtime_cutover.py::test_legacy_factory_non_vector_runtime_operations[mongodb]
+FAILED tests/unit/integrations/providers/test_provider_runtime_cutover.py::test_legacy_factory_non_vector_runtime_operations[postgresql]
+FAILED tests/unit/integrations/providers/test_provider_runtime_cutover.py::test_legacy_factory_non_vector_runtime_operations[redis]
+FAILED tests/unit/integrations/providers/test_provider_runtime_cutover.py::test_legacy_factory_vector_store_operations[vespa]
+FAILED tests/unit/integrations/providers/test_provider_runtime_cutover.py::test_contract_factory_disabled_without_client[azure_content_safety]
+FAILED tests/unit/integrations/providers/test_provider_runtime_cutover.py::test_contract_factory_disabled_without_client[bedrock_guardrails]
+FAILED tests/unit/integrations/providers/test_provider_runtime_cutover.py::test_contract_factory_disabled_without_client[google_chat]
+FAILED tests/unit/integrations/providers/test_provider_runtime_cutover.py::test_contract_factory_disabled_without_client[guardrails_ai]
+FAILED tests/unit/integrations/providers/test_provider_runtime_cutover.py::test_contract_factory_disabled_without_client[hf]
+FAILED tests/unit/integrations/providers/test_provider_runtime_cutover.py::test_contract_factory_disabled_without_client[lakera]
+FAILED tests/unit/integrations/providers/test_provider_runtime_cutover.py::test_contract_factory_disabled_without_client[llama_cpp]
+FAILED tests/unit/integrations/providers/test_provider_runtime_cutover.py::test_contract_factory_disabled_without_client[llama_guard]
+FAILED tests/unit/integrations/providers/test_provider_runtime_cutover.py::test_contract_factory_disabled_without_client[llm_guard]
+FAILED tests/unit/integrations/providers/test_provider_runtime_cutover.py::test_contract_factory_disabled_without_client[mattermost]
+FAILED tests/unit/integrations/providers/test_provider_runtime_cutover.py::test_contract_factory_disabled_without_client[nemo_guardrails]
+FAILED tests/unit/integrations/providers/test_provider_runtime_cutover.py::test_contract_factory_disabled_without_client[openguardrails]
+FAILED tests/unit/integrations/providers/test_provider_runtime_cutover.py::test_contract_factory_disabled_without_client[presidio]
+FAILED tests/unit/integrations/providers/test_provider_runtime_cutover.py::test_contract_factory_disabled_without_client[rocket_chat]
+FAILED tests/unit/integrations/providers/test_provider_runtime_cutover.py::test_contract_factory_disabled_without_client[vllm]
+FAILED tests/unit/integrations/providers/test_provider_runtime_cutover.py::test_contract_factory_enabled_without_client_raises[azure_content_safety]
+FAILED tests/unit/integrations/providers/test_provider_runtime_cutover.py::test_contract_factory_enabled_without_client_raises[bedrock_guardrails]
+FAILED tests/unit/integrations/providers/test_provider_runtime_cutover.py::test_contract_factory_enabled_without_client_raises[google_chat]
+FAILED tests/unit/integrations/providers/test_provider_runtime_cutover.py::test_contract_factory_enabled_without_client_raises[guardrails_ai]
+FAILED tests/unit/integrations/providers/test_provider_runtime_cutover.py::test_contract_factory_enabled_without_client_raises[hf]
+FAILED tests/unit/integrations/providers/test_provider_runtime_cutover.py::test_contract_factory_enabled_without_client_raises[lakera]
+FAILED tests/unit/integrations/providers/test_provider_runtime_cutover.py::test_contract_factory_enabled_without_client_raises[llama_cpp]
+FAILED tests/unit/integrations/providers/test_provider_runtime_cutover.py::test_contract_factory_enabled_without_client_raises[llama_guard]
+FAILED tests/unit/integrations/providers/test_provider_runtime_cutover.py::test_contract_factory_enabled_without_client_raises[llm_guard]
+FAILED tests/unit/integrations/providers/test_provider_runtime_cutover.py::test_contract_factory_enabled_without_client_raises[mattermost]
+FAILED tests/unit/integrations/providers/test_provider_runtime_cutover.py::test_contract_factory_enabled_without_client_raises[nemo_guardrails]
+FAILED tests/unit/integrations/providers/test_provider_runtime_cutover.py::test_contract_factory_enabled_without_client_raises[openguardrails]
+FAILED tests/unit/integrations/providers/test_provider_runtime_cutover.py::test_contract_factory_enabled_without_client_raises[presidio]
+FAILED tests/unit/integrations/providers/test_provider_runtime_cutover.py::test_contract_factory_enabled_without_client_raises[rocket_chat]
+FAILED tests/unit/integrations/providers/test_provider_runtime_cutover.py::test_contract_factory_enabled_without_client_raises[vllm]
+FAILED tests/unit/integrations/providers/test_provider_runtime_cutover.py::test_contract_factory_enabled_with_fake_client[azure_content_safety]
+FAILED tests/unit/integrations/providers/test_provider_runtime_cutover.py::test_contract_factory_enabled_with_fake_client[bedrock_guardrails]
+FAILED tests/unit/integrations/providers/test_provider_runtime_cutover.py::test_contract_factory_enabled_with_fake_client[google_chat]
+FAILED tests/unit/integrations/providers/test_provider_runtime_cutover.py::test_contract_factory_enabled_with_fake_client[guardrails_ai]
+FAILED tests/unit/integrations/providers/test_provider_runtime_cutover.py::test_contract_factory_enabled_with_fake_client[hf]
+FAILED tests/unit/integrations/providers/test_provider_runtime_cutover.py::test_contract_factory_enabled_with_fake_client[lakera]
+FAILED tests/unit/integrations/providers/test_provider_runtime_cutover.py::test_contract_factory_enabled_with_fake_client[llama_cpp]
+FAILED tests/unit/integrations/providers/test_provider_runtime_cutover.py::test_contract_factory_enabled_with_fake_client[llama_guard]
+FAILED tests/unit/integrations/providers/test_provider_runtime_cutover.py::test_contract_factory_enabled_with_fake_client[llm_guard]
+FAILED tests/unit/integrations/providers/test_provider_runtime_cutover.py::test_contract_factory_enabled_with_fake_client[mattermost]
+FAILED tests/unit/integrations/providers/test_provider_runtime_cutover.py::test_contract_factory_enabled_with_fake_client[nemo_guardrails]
+FAILED tests/unit/integrations/providers/test_provider_runtime_cutover.py::test_contract_factory_enabled_with_fake_client[openguardrails]
+FAILED tests/unit/integrations/providers/test_provider_runtime_cutover.py::test_contract_factory_enabled_with_fake_client[presidio]
+FAILED tests/unit/integrations/providers/test_provider_runtime_cutover.py::test_contract_factory_enabled_with_fake_client[rocket_chat]
+FAILED tests/unit/integrations/providers/test_provider_runtime_cutover.py::test_contract_factory_enabled_with_fake_client[vllm]
+FAILED tests/unit/integrations/providers/test_provider_runtime_cutover.py::test_register_remains_compatible[hf]
+FAILED tests/unit/integrations/providers/test_provider_runtime_cutover.py::test_register_remains_compatible[llama_cpp]
+FAILED tests/unit/integrations/providers/test_provider_runtime_cutover.py::test_register_remains_compatible[openai]
+FAILED tests/unit/integrations/providers/test_provider_runtime_cutover.py::test_register_remains_compatible[vllm]
+FAILED tests/unit/integrations/providers/test_provider_runtime_cutover.py::test_integration_module_has_no_vendor_sdk_imports[google_workspace]
+FAILED tests/unit/integrations/providers/test_provider_runtime_cutover.py::test_integration_module_has_no_vendor_sdk_imports[openai]
+FAILED tests/unit/integrations/providers/test_provider_runtime_cutover.py::test_integration_module_has_no_vendor_sdk_imports[sqlite]
+FAILED tests/unit/integrations/test_p2_003_c_final_cutover.py::test_final_inventory_all_canonical_keys_explicit
+FAILED tests/unit/integrations/test_profile_selected_provider_materialization.py::test_unselected_provider_factory_not_called
+FAILED tests/unit/integrations/test_profile_selected_provider_materialization.py::test_selected_provider_materializes
+FAILED tests/unit/integrations/test_profile_selected_provider_materialization.py::test_catalog_addition_is_non_behavioral_for_unrelated_profile
+FAILED tests/unit/integrations/test_contract_conformance.py::test_queueing_task_queue_is_message_bus
+FAILED tests/unit/integrations/test_harness_lab_health.py::test_health_check_harness_m6_p5_probes_covers_catalog_slugs
+FAILED tests/unit/agent_distribution/test_agent_distribution_materialization_adapter.py::test_test_adapter_stages_graph_authorized_closure
+FAILED tests/unit/agent_distribution/test_agent_distribution_materialization_adapter.py::test_lock_reference_embedded_in_staged_artifact
+FAILED tests/unit/agent_distribution/test_agent_distribution_materialization_adapter.py::test_oci_adapter_uses_injected_docker_runner
+FAILED tests/unit/agent_distribution/test_agent_distribution_materialization_adapter.py::test_oci_build_failure_fail_closed
+FAILED tests/unit/agent_distribution/test_agent_distribution_materialization_adapter.py::test_manifest_contains_enabled_agent_digests_without_secrets
+FAILED tests/unit/agent_distribution/test_agent_distribution_materialization_adapter.py::test_oci_dockerfile_does_not_use_repository_uv_lock_authority
+FAILED tests/unit/agent_distribution/test_agent_distribution_materialization_adapter.py::test_install_manifest_derived_from_materialized_runtime_lock
+FAILED tests/unit/agent_distribution/test_agent_distribution_materialization_adapter.py::test_lock_package_absent_from_repo_deps_in_install_plan
+FAILED tests/unit/agent_distribution/test_agent_distribution_materialization_adapter.py::test_package_absent_from_lock_not_in_install_plan
+FAILED tests/unit/agent_distribution/test_agent_distribution_materialization_adapter.py::test_exact_lock_version_preserved_in_install_plan
+FAILED tests/unit/agent_distribution/test_agent_distribution_materialization_adapter.py::test_lock_digest_preserved_when_supported
+FAILED tests/unit/agent_distribution/test_agent_distribution_materialization_adapter.py::test_graph_direct_agent_in_physical_install_plan
+FAILED tests/unit/agent_distribution/test_agent_distribution_materialization_adapter.py::test_transitive_lock_package_in_install_plan
+FAILED tests/unit/agent_distribution/test_agent_distribution_materialization_adapter.py::test_repository_uv_lock_change_does_not_alter_install_plan
+FAILED tests/unit/agent_distribution/test_agent_distribution_materialization_adapter.py::test_missing_artifact_location_fail_closed
+FAILED tests/unit/agent_distribution/test_agent_distribution_materialization_adapter.py::test_artifact_digest_not_caller_supplied_on_oci_path
+FAILED tests/unit/agent_distribution/test_agent_distribution_materialization_adapter.py::test_lock_digest_with_matching_artifact_bytes_accepted
+FAILED tests/unit/agent_distribution/test_agent_distribution_materialization_adapter.py::test_artifact_provider_used_not_mutable_workspace_directory
+FAILED tests/unit/agent_distribution/test_agent_distribution_materialization_adapter.py::test_staged_artifact_layout_is_digest_keyed_and_deterministic
+FAILED tests/unit/agent_distribution/test_agent_distribution_materialization_adapter.py::test_third_party_without_package_digest_fail_closed
+FAILED tests/unit/agent_distribution/test_agent_distribution_materialization_adapter.py::test_unrelated_workspace_source_does_not_alter_install_manifest
+FAILED tests/unit/agent_distribution/test_agent_distribution_materialization_adapter.py::test_builtin_agent_not_installed_from_mutable_source_directory
+FAILED tests/unit/agent_distribution/test_agent_distribution_materialization_adapter.py::test_post_release_installed_agent_uses_exact_artifact_digest
+FAILED tests/unit/agent_distribution/test_agent_distribution_materialization.py::test_materialization_does_not_activate_revision
+FAILED tests/unit/agent_distribution/test_agent_distribution_materialization.py::test_fake_adapter_digest_is_deterministic
+FAILED tests/unit/agent_distribution/test_agent_distribution_materialization.py::test_different_graph_changes_fake_digest
+FAILED tests/unit/agent_distribution/test_agent_distribution_materialization.py::test_manifest_references_graph_digest_and_lock_id
+FAILED tests/unit/agent_distribution/test_ac6_architecture_gates.py::test_testing_support_does_not_import_tests
+FAILED tests/unit/agent_distribution/test_agent_distribution_build_remediation.py::test_adb22_production_revision_write_bypass_inventory
+FAILED tests/unit/agent_distribution/test_agent_distribution_activation_remediation.py::test_adr16_static_production_bypass_inventory
+FAILED tests/qualification/compat_x/test_compat_x_event_evolution_r3_r1_gates.py::test_cx_r3_r1_q13_p0_combined_gate_passes
+FAILED tests/qualification/compat_x/test_compat_x_event_evolution_r3_r1_gates.py::test_cx_r3_r1_q14_production_persistence_bypass_zero
+FAILED tests/qualification/compat_x/test_compat_x_event_evolution_r3_r1_gates.py::test_cx_r3_r1_combined_gate_passes_on_current_head
+FAILED tests/qualification/compat_x/test_compat_x_event_evolution_r3_r1_gates.py::test_cx_r3_r1_probe_h_p0_bypass_regression
+FAILED tests/qualification/compat_x/test_compat_x_event_evolution_r3_r1_gates.py::test_cx_r3_r1_reader_sites_closed_world_classified
+FAILED tests/qualification/compat_x/test_compat_x_event_evolution_r3_r1_gates.py::test_cx_r3_r1_constructor_sites_closed_world_evidence_backed
+FAILED tests/qualification/compat_x/test_compat_x_event_evolution_r3_r1_gates.py::test_cx_r3_r1_probe_m_sanctioned_constructor_passes_classification
+FAILED tests/qualification/compat_x/test_compat_x_event_evolution_r3_r1_gates.py::test_cx_r3_r1_constructor_evidence_rule_integrity_on_current_head
+FAILED tests/qualification/compat_x/test_compat_x_event_evolution_r3_r1_gates.py::test_cx_r3_r1_compat_current_head_inventory_reconciled
+FAILED tests/qualification/compat_x/test_compat_x_event_evolution_r3_r1_gates.py::test_cx_r3_r1_r3_candidate_semantic_identity_and_version_literal
+FAILED tests/qualification/compat_x/test_compat_x_event_evolution_r3_r1_gates.py::test_cx_r3_r1_probe_q_equal_count_substitution_fails_inventory
+FAILED tests/qualification/compat_x/test_compat_x_event_evolution_r3_r1_gates.py::test_cx_r3_r1_probe_r_hidden_removal_fails_inventory
+FAILED tests/qualification/compat_x/test_compat_x_event_evolution_r3_r1_gates.py::test_cx_r3_r1_probe_s_balanced_add_remove_fails_inventory
+FAILED tests/qualification/compat_x/test_compat_x_event_evolution_r3_p0_gates.py::test_cx_r3_p0_closed_world_inventory_gate
+FAILED tests/qualification/compat_x/test_compat_x_event_evolution_r3_p0_gates.py::test_cx_r3_p0_mechanical_persistence_discovery_classified
+FAILED tests/qualification/compat_x/test_compat_x_event_evolution_r3_p0_gates.py::test_cx_r3_p0_combined_gate_passes
+FAILED tests/qualification/compat_x/test_compat_x_event_evolution_r3_p0_gates.py::test_cx_r3_p0_probe_k_unknown_persistence_append
+FAILED tests/qualification/compat_x/test_compat_x_versioning_r1_r3_identity_gates.py::test_cx_r1_r3_p0_inventory_reconciliation
+FAILED tests/qualification/compat_x/test_compat_x_versioning_r1_r5_semantic_identity_reconciliation_gates.py::test_cx_r1_r5_closure_mechanical_inventory_and_delta
+FAILED tests/qualification/compat_x/test_compat_x_deprecation_r5_p0_gates.py::test_r5_p0_closed_world_gate_passes_on_current_head
+222 failed, 9 passed in 90.72s (0:01:30)
+RUNNER files=231 elapsed=97.0s

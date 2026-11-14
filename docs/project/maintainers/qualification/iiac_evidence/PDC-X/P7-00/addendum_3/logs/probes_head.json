@@ -1,0 +1,805 @@
+{
+  "P1_multi_category_rows": {
+    "ollama": [
+      "model_serving_runtime",
+      "embedding_provider"
+    ],
+    "openai": [
+      "managed_retrieval",
+      "embedding_provider"
+    ]
+  },
+  "P1_ollama_row": {
+    "categories": [
+      "model_serving_runtime",
+      "embedding_provider"
+    ],
+    "factory": "_dispatching_factory.<locals>._factory",
+    "spec_categories": [
+      "embedding_provider",
+      "model_serving_runtime"
+    ]
+  },
+  "P1_resolve_matrix": {
+    "airbyte|workflow_orchestrator": {
+      "ok": "intergrax.integrations.providers.workflow_orchestrator.airbyte.integration.AirbyteWorkflowOrchestratorIntegration"
+    },
+    "airflow|workflow_orchestrator": {
+      "ok": "intergrax.integrations.providers.workflow_orchestrator.airflow.integration.AirflowWorkflowOrchestratorIntegration"
+    },
+    "algolia|search_provider": {
+      "ok": "intergrax.integrations.providers.search_provider.algolia.integration.AlgoliaSearchProviderIntegration"
+    },
+    "apify|browser_automation": {
+      "ok": "intergrax.integrations.providers.browser_automation.apify.integration.ApifyBrowserAutomationIntegration"
+    },
+    "arangodb|graph_store": {
+      "ok": "intergrax.integrations.providers.graph_store.arangodb.integration.ArangoDbGraphStoreIntegration"
+    },
+    "argocd|ci_cd": {
+      "ok": "intergrax.integrations.providers.ci_cd.argocd.integration.ArgocdCiCdIntegration"
+    },
+    "arize|observability_backend": {
+      "ok": "intergrax.integrations.providers.observability_backend.arize.integration.ArizeObservabilityIntegration"
+    },
+    "arxiv|search_provider": {
+      "ok": "intergrax.integrations.providers.search_provider.arxiv.integration.ArxivSearchProviderIntegration"
+    },
+    "asana|issue_tracker": {
+      "ok": "intergrax.integrations.providers.issue_tracker.asana.integration.AsanaIssueTrackerIntegration"
+    },
+    "auth0|identity_provider": {
+      "ok": "intergrax.integrations.providers.identity_provider.auth0.integration.Auth0IdentityProviderIntegration"
+    },
+    "aws_secrets_manager|secrets_store": {
+      "ok": "intergrax.integrations.providers.secrets_store.aws_secrets_manager.integration.AwsSecretsManagerSecretsStoreIntegration"
+    },
+    "aws|cloud_platform": {
+      "ok": "intergrax.integrations.providers.cloud_platform.aws.integration.AwsCloudPlatformIntegration"
+    },
+    "azure_blob|object_storage": {
+      "error": "IntegrationConfigurationError: Azure Blob integration requires azure-storage-blob. Install with: uv pip install azure-storage-blob"
+    },
+    "azure_content_safety|llm_guardrail": {
+      "ok": "intergrax.integrations.providers.llm_guardrail.azure_content_safety.integration.AzureContentSafetyLlmGuardrailIntegration"
+    },
+    "azure_devops|issue_tracker": {
+      "ok": "intergrax.integrations.providers.issue_tracker.azure_devops.integration.AzureDevopsIssueTrackerIntegration"
+    },
+    "azure_key_vault|secrets_store": {
+      "ok": "intergrax.integrations.providers.secrets_store.azure_key_vault.integration.AzureKeyVaultSecretsStoreIntegration"
+    },
+    "azure_pipelines|ci_cd": {
+      "ok": "intergrax.integrations.providers.ci_cd.azure_pipelines.integration.AzurePipelinesCiCdIntegration"
+    },
+    "azure_sql|relational_store": {
+      "error": "IntegrationConfigurationError: SQL integration requires DSN or connection_string"
+    },
+    "azure|cloud_platform": {
+      "error": "IntegrationConfigurationError: Azure integration requires azure-identity. Install with: uv sync --extra dev  (includes azure-identity)"
+    },
+    "backblaze_b2|object_storage": {
+      "ok": "intergrax.integrations.providers.object_storage.backblaze_b2.integration.BackblazeB2ObjectStorageIntegration"
+    },
+    "bedrock_guardrails|llm_guardrail": {
+      "ok": "intergrax.integrations.providers.llm_guardrail.bedrock_guardrails.integration.BedrockGuardrailsLlmGuardrailIntegration"
+    },
+    "bigquery|relational_store": {
+      "ok": "intergrax.integrations.providers.relational_store.bigquery.integration.BigqueryRelationalStoreIntegration"
+    },
+    "bing|search_provider": {
+      "error": "ValueError: BingWebProvider: missing API key (BING_SEARCH_V7_API_KEY)."
+    },
+    "bitbucket|issue_tracker": {
+      "ok": "intergrax.integrations.providers.issue_tracker.bitbucket.integration.BitbucketIssueTrackerIntegration"
+    },
+    "braintrust|observability_backend": {
+      "error": "IntegrationConfigurationError: Braintrust api_key is required (INTERGRAX_BRAINTRUST_API_KEY)"
+    },
+    "brave|search_provider": {
+      "ok": "intergrax.integrations.providers.search_provider.brave.integration.BraveSearchProviderIntegration"
+    },
+    "browserbase|browser_automation": {
+      "ok": "intergrax.integrations.providers.browser_automation.browserbase.integration.BrowserbaseBrowserAutomationIntegration"
+    },
+    "buildkite|ci_cd": {
+      "ok": "intergrax.integrations.providers.ci_cd.buildkite.integration.BuildkiteCiCdIntegration"
+    },
+    "cassandra|document_store": {
+      "ok": "intergrax.integrations.providers.document_store.cassandra.integration.CassandraDocumentStoreIntegration"
+    },
+    "celery|message_bus": {
+      "ok": "intergrax.integrations.providers.message_bus.celery.integration.CeleryMessageBusIntegration"
+    },
+    "chroma|vector_store": {
+      "ok": "intergrax.integrations.providers.vector_store.chroma.integration.ChromaVectorStoreIntegration"
+    },
+    "circleci|ci_cd": {
+      "ok": "intergrax.integrations.providers.ci_cd.circleci.integration.CircleciCiCdIntegration"
+    },
+    "clerk|identity_provider": {
+      "ok": "intergrax.integrations.providers.identity_provider.clerk.integration.ClerkIdentityProviderIntegration"
+    },
+    "clickhouse|observability_backend": {
+      "ok": "intergrax.integrations.providers.observability_backend.clickhouse.integration.ClickhouseObservabilityIntegration"
+    },
+    "cloud_sql|relational_store": {
+      "error": "IntegrationConfigurationError: SQL integration requires DSN or connection_string"
+    },
+    "cloudflare_r2|object_storage": {
+      "ok": "intergrax.integrations.providers.object_storage.cloudflare_r2.integration.CloudflareR2ObjectStorageIntegration"
+    },
+    "codecov|ci_cd": {
+      "ok": "intergrax.integrations.providers.ci_cd.codecov.integration.CodecovCiCdIntegration"
+    },
+    "cohere_rerank|rerank_provider": {
+      "ok": "intergrax.integrations.providers.rerank_provider.cohere_rerank.integration.CohereRerankRerankProviderIntegration"
+    },
+    "confluence|wiki_knowledge": {
+      "ok": "intergrax.integrations.providers.wiki_knowledge.confluence.integration.ConfluenceWikiKnowledgeIntegration"
+    },
+    "confluent|message_bus": {
+      "ok": "intergrax.integrations.providers.message_bus.confluent.integration.ConfluentMessageBusIntegration"
+    },
+    "databricks|relational_store": {
+      "error": "IntegrationConfigurationError: Databricks integration requires databricks-sql-connector. Install with: uv sync --extra dev  (includes databricks-sql-connector)"
+    },
+    "datadog|observability_backend": {
+      "ok": "intergrax.integrations.providers.observability_backend.datadog.integration.DatadogObservabilityIntegration"
+    },
+    "daytona|sandbox_host": {
+      "ok": "intergrax.integrations.providers.sandbox_host.daytona.integration.DaytonaSandboxHostIntegration"
+    },
+    "deepgram|speech_provider": {
+      "ok": "intergrax.integrations.providers.speech_provider.deepgram.integration.DeepgramSpeechProviderIntegration"
+    },
+    "discord|notification_channel": {
+      "ok": "intergrax.integrations.providers.notification_channel.discord.integration.DiscordNotificationChannelIntegration"
+    },
+    "docling|document_parser": {
+      "ok": "intergrax.integrations.providers.document_parser.docling.integration.DoclingDocumentParserIntegration"
+    },
+    "doppler|secrets_store": {
+      "ok": "intergrax.integrations.providers.secrets_store.doppler.integration.DopplerSecretsStoreIntegration"
+    },
+    "duckdb|relational_store": {
+      "error": "ModuleNotFoundError: No module named 'duckdb'"
+    },
+    "dynamodb|document_store": {
+      "ok": "intergrax.integrations.providers.document_store.dynamodb.integration.DynamoDBDocumentStoreIntegration"
+    },
+    "e2b|sandbox_host": {
+      "error": "IntegrationConfigurationError: E2B sandbox host requires the optional e2b SDK. Install with: uv sync --extra integrations-e2b"
+    },
+    "elasticache|key_value_cache": {
+      "error": "IntegrationConfigurationError: Memcached requires pymemcache"
+    },
+    "elasticsearch|observability_backend": {
+      "ok": "intergrax.integrations.providers.observability_backend.elasticsearch.integration.ElasticsearchObservabilityIntegration"
+    },
+    "elevenlabs|speech_provider": {
+      "ok": "intergrax.integrations.providers.speech_provider.elevenlabs.integration.ElevenlabsSpeechProviderIntegration"
+    },
+    "email_smtp|notification_channel": {
+      "error": "IntegrationConfigurationError: SMTP requires INTERGRAX_EMAIL_SMTP_HOST"
+    },
+    "exa|search_provider": {
+      "ok": "intergrax.integrations.providers.search_provider.exa.integration.ExaSearchProviderIntegration"
+    },
+    "falkordb|graph_store": {
+      "ok": "intergrax.integrations.providers.graph_store.falkordb.integration.FalkordbGraphStoreIntegration"
+    },
+    "filesystem|object_storage": {
+      "ok": "intergrax.integrations.providers.object_storage.filesystem.integration.FilesystemObjectStorageIntegration"
+    },
+    "firecrawl|browser_automation": {
+      "ok": "intergrax.integrations.providers.browser_automation.firecrawl.integration.FirecrawlBrowserAutomationIntegration"
+    },
+    "gcp_secret_manager|secrets_store": {
+      "ok": "intergrax.integrations.providers.secrets_store.gcp_secret_manager.integration.GcpSecretManagerSecretsStoreIntegration"
+    },
+    "gcp|cloud_platform": {
+      "ok": "intergrax.integrations.providers.cloud_platform.gcp.integration.GcpCloudPlatformIntegration"
+    },
+    "gcs|object_storage": {
+      "error": "IntegrationConfigurationError: GCS integration requires google-cloud-storage. Install with: uv pip install google-cloud-storage"
+    },
+    "github_actions|ci_cd": {
+      "ok": "intergrax.integrations.providers.ci_cd.github_actions.integration.GithubActionsCiCdIntegration"
+    },
+    "github|issue_tracker": {
+      "ok": "intergrax.integrations.providers.issue_tracker.github.integration.GithubIssueTrackerIntegration"
+    },
+    "gitlab_ci|ci_cd": {
+      "ok": "intergrax.integrations.providers.ci_cd.gitlab_ci.integration.GitlabCiCiCdIntegration"
+    },
+    "gitlab|issue_tracker": {
+      "ok": "intergrax.integrations.providers.issue_tracker.gitlab.integration.GitlabIssueTrackerIntegration"
+    },
+    "google_cse|search_provider": {
+      "error": "ValueError: GoogleCSEProvider: missing API key (GOOGLE_CSE_API_KEY)."
+    },
+    "google_drive|object_storage": {
+      "ok": "intergrax.integrations.providers.object_storage.google_drive.integration.GoogleDriveObjectStorageIntegration"
+    },
+    "google_places|search_provider": {
+      "error": "ValueError: GooglePlacesProvider: missing API key (GOOGLE_PLACES_API_KEY)."
+    },
+    "google_workspace|collaboration_suite": {
+      "ok": "intergrax.integrations.providers.collaboration_suite.google_workspace.integration.GoogleWorkspaceCollaborationSuiteIntegration"
+    },
+    "grafana_oncall|notification_channel": {
+      "ok": "intergrax.integrations.providers.notification_channel.grafana_oncall.integration.GrafanaOncallNotificationChannelIntegration"
+    },
+    "grafana|observability_backend": {
+      "ok": "intergrax.integrations.providers.observability_backend.grafana.integration.GrafanaObservabilityIntegration"
+    },
+    "guardrails_ai|llm_guardrail": {
+      "ok": "intergrax.integrations.providers.llm_guardrail.guardrails_ai.integration.GuardrailsAiLlmGuardrailIntegration"
+    },
+    "helicone|observability_backend": {
+      "ok": "intergrax.integrations.providers.observability_backend.helicone.integration.HeliconeObservabilityIntegration"
+    },
+    "hf|embedding_provider": {
+      "ok": "intergrax.integrations.providers.embedding_provider.hf.integration.HfEmbeddingProviderIntegration"
+    },
+    "honeycomb|observability_backend": {
+      "ok": "intergrax.integrations.providers.observability_backend.honeycomb.integration.HoneycombObservabilityIntegration"
+    },
+    "hubspot|crm": {
+      "ok": "intergrax.integrations.providers.crm.hubspot.integration.HubspotCrmIntegration"
+    },
+    "huggingface_hub|object_storage": {
+      "ok": "intergrax.integrations.providers.object_storage.huggingface_hub.integration.HuggingfaceHubObjectStorageIntegration"
+    },
+    "incident_io|notification_channel": {
+      "ok": "intergrax.integrations.providers.notification_channel.incident_io.integration.IncidentIoNotificationChannelIntegration"
+    },
+    "infisical|secrets_store": {
+      "ok": "intergrax.integrations.providers.secrets_store.infisical.integration.InfisicalSecretsStoreIntegration"
+    },
+    "influxdb|observability_backend": {
+      "ok": "intergrax.integrations.providers.observability_backend.influxdb.integration.InfluxdbObservabilityIntegration"
+    },
+    "inmemory|vector_store": {
+      "ok": "intergrax.integrations.providers.vector_store.inmemory.integration.InmemoryVectorStoreIntegration"
+    },
+    "jenkins|ci_cd": {
+      "ok": "intergrax.integrations.providers.ci_cd.jenkins.integration.JenkinsCiCdIntegration"
+    },
+    "jina_rerank|rerank_provider": {
+      "ok": "intergrax.integrations.providers.rerank_provider.jina_rerank.integration.JinaRerankRerankProviderIntegration"
+    },
+    "jira|issue_tracker": {
+      "ok": "intergrax.integrations.providers.issue_tracker.jira.integration.JiraIssueTrackerIntegration"
+    },
+    "kafka|message_bus": {
+      "ok": "intergrax.integrations.providers.message_bus.kafka.integration.KafkaMessageBusIntegration"
+    },
+    "keycloak|identity_provider": {
+      "ok": "intergrax.integrations.providers.identity_provider.keycloak.integration.KeycloakIdentityProviderIntegration"
+    },
+    "kubernetes|cloud_platform": {
+      "ok": "intergrax.integrations.providers.cloud_platform.kubernetes.integration.KubernetesCloudPlatformIntegration"
+    },
+    "lakera|llm_guardrail": {
+      "ok": "intergrax.integrations.providers.llm_guardrail.lakera.integration.LakeraLlmGuardrailIntegration"
+    },
+    "lancedb|vector_store": {
+      "ok": "intergrax.integrations.providers.vector_store.lancedb.integration.LancedbVectorStoreIntegration"
+    },
+    "langfuse|observability_backend": {
+      "ok": "intergrax.integrations.providers.observability_backend.langfuse.integration.LangfuseObservabilityIntegration"
+    },
+    "langsmith|observability_backend": {
+      "error": "IntegrationConfigurationError: LangSmith api_key is required (INTERGRAX_LANGSMITH_API_KEY)"
+    },
+    "launchdarkly|feature_flag": {
+      "ok": "intergrax.integrations.providers.feature_flag.launchdarkly.integration.LaunchdarklyFeatureFlagIntegration"
+    },
+    "linear|issue_tracker": {
+      "ok": "intergrax.integrations.providers.issue_tracker.linear.integration.LinearIssueTrackerIntegration"
+    },
+    "llama_cpp|embedding_provider": {
+      "ok": "intergrax.integrations.providers.embedding_provider.llama_cpp.integration.LlamaCppEmbeddingProviderIntegration"
+    },
+    "llama_guard|llm_guardrail": {
+      "ok": "intergrax.integrations.providers.llm_guardrail.llama_guard.integration.LlamaGuardLlmGuardrailIntegration"
+    },
+    "llamaparse|document_parser": {
+      "ok": "intergrax.integrations.providers.document_parser.llamaparse.integration.LlamaparseDocumentParserIntegration"
+    },
+    "llm_guard|llm_guardrail": {
+      "ok": "intergrax.integrations.providers.llm_guardrail.llm_guard.integration.LlmGuardLlmGuardrailIntegration"
+    },
+    "localstack|cloud_platform": {
+      "ok": "intergrax.integrations.providers.cloud_platform.localstack.integration.LocalstackCloudPlatformIntegration"
+    },
+    "log|notification_channel": {
+      "ok": "intergrax.integrations.providers.notification_channel.log.integration.LogNotificationChannelIntegration"
+    },
+    "loki|observability_backend": {
+      "ok": "intergrax.integrations.providers.observability_backend.loki.integration.LokiObservabilityIntegration"
+    },
+    "mailgun|notification_channel": {
+      "ok": "intergrax.integrations.providers.notification_channel.mailgun.integration.MailgunNotificationChannelIntegration"
+    },
+    "mailpit|notification_channel": {
+      "ok": "intergrax.integrations.providers.notification_channel.mailpit.integration.MailpitNotificationChannelIntegration"
+    },
+    "memcached|key_value_cache": {
+      "error": "IntegrationConfigurationError: Memcached requires pymemcache"
+    },
+    "memgraph|graph_store": {
+      "ok": "intergrax.integrations.providers.graph_store.memgraph.integration.MemgraphGraphStoreIntegration"
+    },
+    "milvus|vector_store": {
+      "error": "IntegrationConfigurationError: Milvus requires pymilvus"
+    },
+    "minio|object_storage": {
+      "error": "ValueError: Invalid endpoint: "
+    },
+    "mlflow|observability_backend": {
+      "ok": "intergrax.integrations.providers.observability_backend.mlflow.integration.MlflowObservabilityIntegration"
+    },
+    "modal|sandbox_host": {
+      "ok": "intergrax.integrations.providers.sandbox_host.modal.integration.ModalSandboxHostIntegration"
+    },
+    "mongodb|document_store": {
+      "error": "IntegrationConfigurationError: MongoDB integration requires pymongo. Install with: uv sync --extra dev  (includes pymongo)"
+    },
+    "motherduck|relational_store": {
+      "error": "ModuleNotFoundError: No module named 'duckdb'"
+    },
+    "ms365_graph|collaboration_suite": {
+      "ok": "intergrax.integrations.providers.collaboration_suite.ms365_graph.integration.Ms365GraphCollaborationSuiteIntegration"
+    },
+    "mssql|relational_store": {
+      "error": "IntegrationConfigurationError: SQL integration requires DSN or connection_string"
+    },
+    "mysql|relational_store": {
+      "error": "IntegrationConfigurationError: MySQL integration requires pymysql. Install with: uv sync --extra dev  (includes pymysql)"
+    },
+    "n8n|workflow_orchestrator": {
+      "ok": "intergrax.integrations.providers.workflow_orchestrator.n8n.integration.N8nWorkflowOrchestratorIntegration"
+    },
+    "nats|message_bus": {
+      "ok": "intergrax.integrations.providers.message_bus.nats.integration.NatsMessageBusIntegration"
+    },
+    "nemo_guardrails|llm_guardrail": {
+      "ok": "intergrax.integrations.providers.llm_guardrail.nemo_guardrails.integration.NemoGuardrailsLlmGuardrailIntegration"
+    },
+    "neo4j|graph_store": {
+      "ok": "intergrax.integrations.providers.graph_store.neo4j.integration.Neo4jGraphStoreIntegration"
+    },
+    "neon|relational_store": {
+      "error": "IntegrationConfigurationError: SQL integration requires DSN or connection_string"
+    },
+    "neptune|graph_store": {
+      "ok": "intergrax.integrations.providers.graph_store.neptune.integration.NeptuneGraphStoreIntegration"
+    },
+    "newrelic|observability_backend": {
+      "ok": "intergrax.integrations.providers.observability_backend.newrelic.integration.NewRelicObservabilityIntegration"
+    },
+    "notion|wiki_knowledge": {
+      "ok": "intergrax.integrations.providers.wiki_knowledge.notion.integration.NotionWikiKnowledgeIntegration"
+    },
+    "okta|identity_provider": {
+      "ok": "intergrax.integrations.providers.identity_provider.okta.integration.OktaIdentityProviderIntegration"
+    },
+    "ollama|embedding_provider": {
+      "ok": "intergrax.integrations.providers.embedding_provider.ollama.integration.OllamaEmbeddingProviderIntegration"
+    },
+    "ollama|model_serving_runtime": {
+      "ok": "intergrax.integrations.providers.model_serving_runtime.ollama.integration.OllamaModelServingRuntimeIntegration"
+    },
+    "openai|embedding_provider": {
+      "error": "IntegrationConfigurationError: OpenAI managed retrieval requires OPENAI_API_KEY or explicit api_key"
+    },
+    "openai|managed_retrieval": {
+      "error": "IntegrationConfigurationError: OpenAI managed retrieval requires OPENAI_API_KEY or explicit api_key"
+    },
+    "openguardrails|llm_guardrail": {
+      "ok": "intergrax.integrations.providers.llm_guardrail.openguardrails.integration.OpenguardrailsLlmGuardrailIntegration"
+    },
+    "openpyxl|document_parser": {
+      "ok": "intergrax.integrations.providers.document_parser.openpyxl.integration.OpenpyxlDocumentParserIntegration"
+    },
+    "opensearch|observability_backend": {
+      "ok": "intergrax.integrations.providers.observability_backend.opensearch.integration.OpensearchObservabilityIntegration"
+    },
+    "opentelemetry_collector|observability_backend": {
+      "ok": "intergrax.integrations.providers.observability_backend.opentelemetry_collector.integration.OpenTelemetryCollectorObservabilityIntegration"
+    },
+    "opsgenie|notification_channel": {
+      "ok": "intergrax.integrations.providers.notification_channel.opsgenie.integration.OpsgenieNotificationChannelIntegration"
+    },
+    "oracle|relational_store": {
+      "error": "IntegrationConfigurationError: SQL integration requires DSN or connection_string"
+    },
+    "orientdb|graph_store": {
+      "ok": "intergrax.integrations.providers.graph_store.orientdb.integration.OrientDbGraphStoreIntegration"
+    },
+    "otel|observability_backend": {
+      "ok": "intergrax.integrations.providers.observability_backend.otel.integration.OtelObservabilityIntegration"
+    },
+    "pagerduty|notification_channel": {
+      "ok": "intergrax.integrations.providers.notification_channel.pagerduty.integration.PagerdutyNotificationChannelIntegration"
+    },
+    "perplexity|search_provider": {
+      "ok": "intergrax.integrations.providers.search_provider.perplexity.integration.PerplexitySearchProviderIntegration"
+    },
+    "pgvector|vector_store": {
+      "error": "IntegrationConfigurationError: Vector integration requires INTERGRAX_PGVECTOR_TENANT_ID"
+    },
+    "phoenix|observability_backend": {
+      "ok": "intergrax.integrations.providers.observability_backend.phoenix.integration.PhoenixObservabilityIntegration"
+    },
+    "pinecone|vector_store": {
+      "error": "IntegrationConfigurationError: Pinecone integration requires INTERGRAX_PINECONE_TENANT_ID"
+    },
+    "playwright|browser_automation": {
+      "error": "IntegrationConfigurationError: Playwright requires playwright package"
+    },
+    "postgresql|relational_store": {
+      "error": "IntegrationConfigurationError: PostgreSQL integration requires psycopg. Install with: uv sync --extra integrations-postgresql"
+    },
+    "posthog|observability_backend": {
+      "ok": "intergrax.integrations.providers.observability_backend.posthog.integration.PosthogObservabilityIntegration"
+    },
+    "prefect|workflow_orchestrator": {
+      "ok": "intergrax.integrations.providers.workflow_orchestrator.prefect.integration.PrefectWorkflowOrchestratorIntegration"
+    },
+    "presidio|llm_guardrail": {
+      "ok": "intergrax.integrations.providers.llm_guardrail.presidio.integration.PresidioLlmGuardrailIntegration"
+    },
+    "prometheus|observability_backend": {
+      "ok": "intergrax.integrations.providers.observability_backend.prometheus.integration.PrometheusObservabilityIntegration"
+    },
+    "pubsub|message_bus": {
+      "error": "IntegrationConfigurationError: Pub/Sub requires google-cloud-pubsub"
+    },
+    "pulsar|message_bus": {
+      "ok": "intergrax.integrations.providers.message_bus.pulsar.integration.PulsarMessageBusIntegration"
+    },
+    "pymupdf|document_parser": {
+      "ok": "intergrax.integrations.providers.document_parser.pymupdf.integration.PymupdfDocumentParserIntegration"
+    },
+    "python_docx|document_parser": {
+      "ok": "intergrax.integrations.providers.document_parser.python_docx.integration.PythonDocxDocumentParserIntegration"
+    },
+    "qdrant|vector_store": {
+      "error": "IntegrationConfigurationError: Qdrant integration requires INTERGRAX_QDRANT_TENANT_ID"
+    },
+    "rabbitmq|message_bus": {
+      "ok": "intergrax.integrations.providers.message_bus.rabbitmq.integration.RabbitmqMessageBusIntegration"
+    },
+    "reddit|search_provider": {
+      "error": "ValueError: RedditAPIProvider: missing client_id (REDDIT_CLIENT_ID)."
+    },
+    "redis|key_value_cache": {
+      "error": "ModuleNotFoundError: No module named 'redis'"
+    },
+    "redpanda|message_bus": {
+      "ok": "intergrax.integrations.providers.message_bus.redpanda.integration.RedpandaMessageBusIntegration"
+    },
+    "replicate|ml_inference_host": {
+      "ok": "intergrax.integrations.providers.ml_inference_host.replicate.integration.ReplicateMlInferenceHostIntegration"
+    },
+    "s3|object_storage": {
+      "error": "IntegrationConfigurationError: S3 integration requires bucket (INTERGRAX_S3_BUCKET or bucket=...)"
+    },
+    "salesforce|crm": {
+      "ok": "intergrax.integrations.providers.crm.salesforce.integration.SalesforceCrmIntegration"
+    },
+    "selenium|browser_automation": {
+      "error": "IntegrationConfigurationError: Selenium requires selenium package"
+    },
+    "semantic_scholar|search_provider": {
+      "ok": "intergrax.integrations.providers.search_provider.semantic_scholar.integration.SemanticScholarSearchProviderIntegration"
+    },
+    "semgrep|security_scanner": {
+      "ok": "intergrax.integrations.providers.security_scanner.semgrep.integration.SemgrepSecurityScannerIntegration"
+    },
+    "sendgrid|notification_channel": {
+      "ok": "intergrax.integrations.providers.notification_channel.sendgrid.integration.SendgridNotificationChannelIntegration"
+    },
+    "sentry|observability_backend": {
+      "ok": "intergrax.integrations.providers.observability_backend.sentry.integration.SentryObservabilityIntegration"
+    },
+    "serpapi|search_provider": {
+      "ok": "intergrax.integrations.providers.search_provider.serpapi.integration.SerpapiSearchProviderIntegration"
+    },
+    "service_bus|message_bus": {
+      "error": "IntegrationConfigurationError: Service Bus requires INTERGRAX_SERVICE_BUS_CONNECTION_STRING"
+    },
+    "servicenow|issue_tracker": {
+      "ok": "intergrax.integrations.providers.issue_tracker.servicenow.integration.ServicenowIssueTrackerIntegration"
+    },
+    "sharepoint|wiki_knowledge": {
+      "ok": "intergrax.integrations.providers.wiki_knowledge.sharepoint.integration.SharepointWikiKnowledgeIntegration"
+    },
+    "signoz|observability_backend": {
+      "ok": "intergrax.integrations.providers.observability_backend.signoz.integration.SignozObservabilityIntegration"
+    },
+    "slack|notification_channel": {
+      "ok": "intergrax.integrations.providers.notification_channel.slack.integration.SlackNotificationChannelIntegration"
+    },
+    "snowflake|relational_store": {
+      "error": "IntegrationConfigurationError: Supabase/Snowflake SQL path requires psycopg"
+    },
+    "snyk|security_scanner": {
+      "ok": "intergrax.integrations.providers.security_scanner.snyk.integration.SnykSecurityScannerIntegration"
+    },
+    "splunk|observability_backend": {
+      "ok": "intergrax.integrations.providers.observability_backend.splunk.integration.SplunkObservabilityIntegration"
+    },
+    "sqlite|relational_store": {
+      "ok": "intergrax.integrations.providers.relational_store.sqlite.integration.SqliteRelationalStoreIntegration"
+    },
+    "sqs|message_bus": {
+      "ok": "intergrax.integrations.providers.message_bus.sqs.integration.SqsMessageBusIntegration"
+    },
+    "statsig|feature_flag": {
+      "ok": "intergrax.integrations.providers.feature_flag.statsig.integration.StatsigFeatureFlagIntegration"
+    },
+    "stripe|billing_meter": {
+      "ok": "intergrax.integrations.providers.billing_meter.stripe.integration.StripeBillingMeterIntegration"
+    },
+    "supabase|relational_store": {
+      "error": "IntegrationConfigurationError: Supabase/Snowflake SQL path requires psycopg"
+    },
+    "tavily|search_provider": {
+      "ok": "intergrax.integrations.providers.search_provider.tavily.integration.TavilySearchProviderIntegration"
+    },
+    "teams|notification_channel": {
+      "ok": "intergrax.integrations.providers.notification_channel.teams.integration.TeamsNotificationChannelIntegration"
+    },
+    "telegram|notification_channel": {
+      "ok": "intergrax.integrations.providers.notification_channel.telegram.integration.TelegramNotificationChannelIntegration"
+    },
+    "temporal|message_bus": {
+      "error": "IntegrationConfigurationError: Temporal requires INTERGRAX_TEMPORAL_CONNECTION_STRING"
+    },
+    "tempo|observability_backend": {
+      "ok": "intergrax.integrations.providers.observability_backend.tempo.integration.TempoObservabilityIntegration"
+    },
+    "timescaledb|relational_store": {
+      "error": "IntegrationConfigurationError: SQL integration requires DSN or connection_string"
+    },
+    "triton|vision_serving": {
+      "ok": "intergrax.integrations.providers.vision_serving.triton.integration.TritonVisionServingIntegration"
+    },
+    "trivy|security_scanner": {
+      "ok": "intergrax.integrations.providers.security_scanner.trivy.integration.TrivySecurityScannerIntegration"
+    },
+    "twilio|notification_channel": {
+      "ok": "intergrax.integrations.providers.notification_channel.twilio.integration.TwilioNotificationChannelIntegration"
+    },
+    "typesense|vector_store": {
+      "error": "IntegrationConfigurationError: Vector integration requires INTERGRAX_TYPESENSE_TENANT_ID"
+    },
+    "unleash|feature_flag": {
+      "ok": "intergrax.integrations.providers.feature_flag.unleash.integration.UnleashFeatureFlagIntegration"
+    },
+    "unstructured|document_parser": {
+      "ok": "intergrax.integrations.providers.document_parser.unstructured.integration.UnstructuredDocumentParserIntegration"
+    },
+    "upstash_qstash|message_bus": {
+      "ok": "intergrax.integrations.providers.message_bus.upstash_qstash.integration.UpstashQstashMessageBusIntegration"
+    },
+    "upstash_redis|key_value_cache": {
+      "ok": "intergrax.integrations.providers.key_value_cache.upstash_redis.integration.UpstashRedisKeyValueCacheIntegration"
+    },
+    "vault|secrets_store": {
+      "error": "IntegrationConfigurationError: Vault requires hvac"
+    },
+    "vespa|vector_store": {
+      "error": "IntegrationConfigurationError: Vespa integration requires INTERGRAX_VESPA_TENANT"
+    },
+    "vllm|embedding_provider": {
+      "ok": "intergrax.integrations.providers.embedding_provider.vllm.integration.VllmEmbeddingProviderIntegration"
+    },
+    "wandb|observability_backend": {
+      "ok": "intergrax.integrations.providers.observability_backend.wandb.integration.WandbObservabilityIntegration"
+    },
+    "weaviate|vector_store": {
+      "error": "IntegrationConfigurationError: Weaviate requires weaviate-client"
+    },
+    "webhook|notification_channel": {
+      "ok": "intergrax.integrations.providers.notification_channel.webhook.integration.WebhookNotificationChannelIntegration"
+    },
+    "whisper|document_parser": {
+      "ok": "intergrax.integrations.providers.document_parser.whisper.integration.WhisperDocumentParserIntegration"
+    },
+    "wikipedia|wiki_knowledge": {
+      "ok": "intergrax.integrations.providers.wiki_knowledge.wikipedia.integration.WikipediaWikiKnowledgeIntegration"
+    },
+    "workos|identity_provider": {
+      "ok": "intergrax.integrations.providers.identity_provider.workos.integration.WorkosIdentityProviderIntegration"
+    },
+    "yt_dlp|document_parser": {
+      "ok": "intergrax.integrations.providers.document_parser.yt_dlp.integration.YtDlpDocumentParserIntegration"
+    },
+    "zendesk|issue_tracker": {
+      "ok": "intergrax.integrations.providers.issue_tracker.zendesk.integration.ZendeskIssueTrackerIntegration"
+    }
+  },
+  "P2_factory_direct": {
+    "embedding_enabled_str_false": {
+      "config_base_url": null,
+      "enabled": true,
+      "ok": "intergrax.integrations.providers.embedding_provider.ollama.integration.OllamaEmbeddingProviderIntegration",
+      "provider_id": "ollama"
+    },
+    "embedding_enabled_true": {
+      "config_base_url": null,
+      "enabled": true,
+      "ok": "intergrax.integrations.providers.embedding_provider.ollama.integration.OllamaEmbeddingProviderIntegration",
+      "provider_id": "ollama"
+    },
+    "embedding_enabled_zero": {
+      "config_base_url": null,
+      "enabled": false,
+      "ok": "intergrax.integrations.providers.embedding_provider.ollama.integration.OllamaEmbeddingProviderIntegration",
+      "provider_id": "ollama"
+    },
+    "embedding_extra_keys": {
+      "config_base_url": null,
+      "enabled": false,
+      "ok": "intergrax.integrations.providers.embedding_provider.ollama.integration.OllamaEmbeddingProviderIntegration",
+      "provider_id": "ollama"
+    },
+    "enum_embedding": {
+      "config_base_url": null,
+      "enabled": false,
+      "ok": "intergrax.integrations.providers.embedding_provider.ollama.integration.OllamaEmbeddingProviderIntegration",
+      "provider_id": "ollama"
+    },
+    "enum_model_serving": {
+      "config_base_url": "n/a",
+      "enabled": false,
+      "ok": "intergrax.integrations.providers.model_serving_runtime.ollama.integration.OllamaModelServingRuntimeIntegration",
+      "provider_id": "ollama"
+    },
+    "no_category": {
+      "config_base_url": "n/a",
+      "enabled": false,
+      "ok": "intergrax.integrations.providers.model_serving_runtime.ollama.integration.OllamaModelServingRuntimeIntegration",
+      "provider_id": "ollama"
+    },
+    "none_category": {
+      "config_base_url": "n/a",
+      "enabled": false,
+      "ok": "intergrax.integrations.providers.model_serving_runtime.ollama.integration.OllamaModelServingRuntimeIntegration",
+      "provider_id": "ollama"
+    },
+    "str_embedding": {
+      "config_base_url": null,
+      "enabled": false,
+      "ok": "intergrax.integrations.providers.embedding_provider.ollama.integration.OllamaEmbeddingProviderIntegration",
+      "provider_id": "ollama"
+    },
+    "str_model_serving": {
+      "config_base_url": "n/a",
+      "enabled": false,
+      "ok": "intergrax.integrations.providers.model_serving_runtime.ollama.integration.OllamaModelServingRuntimeIntegration",
+      "provider_id": "ollama"
+    },
+    "unknown_category_str": {
+      "config_base_url": "n/a",
+      "enabled": false,
+      "ok": "intergrax.integrations.providers.model_serving_runtime.ollama.integration.OllamaModelServingRuntimeIntegration",
+      "provider_id": "ollama"
+    }
+  },
+  "P3_wrapper_forwarding": {
+    "embedding_enabled_str_false": {
+      "ok": "intergrax.integrations.providers.embedding_provider.ollama.integration.OllamaEmbeddingProviderIntegration",
+      "spy_called": false,
+      "spy_kwargs": []
+    },
+    "embedding_enabled_true": {
+      "ok": "intergrax.integrations.providers.embedding_provider.ollama.integration.OllamaEmbeddingProviderIntegration",
+      "spy_called": false,
+      "spy_kwargs": []
+    },
+    "embedding_enabled_zero": {
+      "ok": "intergrax.integrations.providers.embedding_provider.ollama.integration.OllamaEmbeddingProviderIntegration",
+      "spy_called": false,
+      "spy_kwargs": []
+    },
+    "embedding_extra_keys": {
+      "ok": "intergrax.integrations.providers.embedding_provider.ollama.integration.OllamaEmbeddingProviderIntegration",
+      "spy_called": false,
+      "spy_kwargs": []
+    },
+    "enum_embedding": {
+      "ok": "intergrax.integrations.providers.embedding_provider.ollama.integration.OllamaEmbeddingProviderIntegration",
+      "spy_called": false,
+      "spy_kwargs": []
+    },
+    "enum_model_serving": {
+      "ok": "builtins.object",
+      "spy_called": true,
+      "spy_kwargs": [
+        "integration_category"
+      ]
+    },
+    "no_category": {
+      "ok": "builtins.object",
+      "spy_called": true,
+      "spy_kwargs": []
+    },
+    "none_category": {
+      "ok": "builtins.object",
+      "spy_called": true,
+      "spy_kwargs": [
+        "integration_category"
+      ]
+    },
+    "str_embedding": {
+      "ok": "intergrax.integrations.providers.embedding_provider.ollama.integration.OllamaEmbeddingProviderIntegration",
+      "spy_called": false,
+      "spy_kwargs": []
+    },
+    "str_model_serving": {
+      "ok": "builtins.object",
+      "spy_called": true,
+      "spy_kwargs": [
+        "integration_category"
+      ]
+    },
+    "unknown_category_str": {
+      "ok": "builtins.object",
+      "spy_called": true,
+      "spy_kwargs": [
+        "integration_category"
+      ]
+    }
+  },
+  "P4_catalog_after_failed_embedding": [],
+  "P4_embedding_without_owning_row": {
+    "error": "UnknownIntegrationError: Integration slug 'ollama' is not registered in the catalog."
+  },
+  "P4_owning_override_after_embedding": {
+    "categories": [
+      "model_serving_runtime"
+    ],
+    "resolve_embedding": {
+      "error": "IntegrationCategoryMismatchError: Integration 'ollama' is not registered for category 'embedding_provider'."
+    }
+  },
+  "P4_revision": {
+    "digest_changed_by_embedding": true,
+    "gen_after_embedding": 2,
+    "gen_after_owning": 1,
+    "gen_before": 0
+  },
+  "P4_second_embedding_registration": {
+    "error": "ValueError: Integration 'ollama': contract spec category 'embedding_provider' is already registered"
+  },
+  "P5_sink": {
+    "global_unchanged": true,
+    "sink_slugs": [
+      "ollama"
+    ]
+  },
+  "P6_transient_window": {
+    "categories_visible_before_wrapper": [
+      "model_serving_runtime",
+      "embedding_provider"
+    ],
+    "resolve_embedding_after": {
+      "ok": "intergrax.integrations.providers.embedding_provider.ollama.integration.OllamaEmbeddingProviderIntegration"
+    },
+    "resolve_embedding_in_window": {
+      "error": "TypeError: Integration factory for slug 'ollama' (category 'embedding_provider') returned OllamaModelServingRuntimeIntegration, expected EmbeddingProviderIntegrationContra"
+    }
+  },
+  "P7_concurrent_resolve": {
+    "rounds": 200,
+    "rounds_with_wrong_or_error_result": 0
+  },
+  "root": "D:\\Projekty\\_wt\\_scratch\\p7a3-head"
+}
