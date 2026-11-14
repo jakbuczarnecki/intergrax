@@ -5,7 +5,7 @@
 | **Parent** | `PDC_P7_00_CERTIFIER_PREFLIGHT.md`, `..._ADDENDUM_1.md`, `..._ADDENDUM_2.md` (all `CERTIFIER_PREFLIGHT_PASS_SCOPED`), unchanged |
 | **Role** | Certifier, preflight addendum. IMPLEMENTER != AUDITOR != CERTIFIER; same certifier designation as the parent: `PDC-P7-00-CERTIFIER-PREFLIGHT-2026-11-13` |
 | **Branch** | `p7-00-certifier`, fast-forwarded to `origin/mcp-rc` @ `d02c399508c40b4a06d846410334d677f226c18d` before this commit; my addendum 2 `0c79c9f65` is on it |
-| **Audit under review** | Addendum 4 on `origin/p7-00-baseline-audit` @ `0d4758ca1a185f150c7e0c37ea5dbc1a6eea03cb` (read from that branch: its evidence is **not yet integrated into `mcp-rc`**) |
+| **Audit under review** | Addendum 4 on `origin/p7-00-baseline-audit` @ `0d4758ca1a185f150c7e0c37ea5dbc1a6eea03cb` (read from that branch at my base; its evidence was integrated into `mcp-rc` later, section 9) |
 | **Date** | 2026-11-14 |
 | **Verdict** | **`CERTIFIER_PREFLIGHT_PASS_SCOPED`** (scope limits in section 7) |
 | **Machine-readable** | `iiac_evidence/PDC-X/P7-00/certifier/addendum_3/certifier_preflight_addendum_3_result.json`; logs, data, scripts in the same folder |
@@ -34,8 +34,8 @@ The protocol is one of the six `MATERIAL_GOVERNANCE_PATHS`; it changed in `7b1c0
 | --- | --- | --- | --- |
 | 1 | Pin chain, 161-path union, five delta paths, six against the audited tree, empty product diff to the head | PASS | section 1 |
 | 2 | Gate at the head lists exactly the six paths and the protocol | PASS | `logs/activation_gate_at_head_d02c39950.log` |
-| 3 | Addendum 4 manifest (as published by the auditor): both verifiers | PASS | `verify_iiac_audit_manifest` and `verify_iiac_role_separation --strict-product-diff` exit 0 (`logs/verify_iiac_addendum_4_manifest_unpinned_at_d02c39950.log`); the manifest has the placeholders `PENDING-CERTIFIER-PDC-P7-00` and 40 zeros; the evidence is not on `mcp-rc` yet (round 5 not done) |
-| 4 | Digests equal the published files | PASS | 4 of 4 equal the blobs on the auditor branch; "before and after the pin-only edit" cannot be checked, because no pin-only edit exists yet |
+| 3 | Addendum 4 manifest (as published by the auditor): both verifiers | PASS | `verify_iiac_audit_manifest` and `verify_iiac_role_separation --strict-product-diff` exit 0 (`logs/verify_iiac_addendum_4_manifest_unpinned_at_d02c39950.log`); the manifest has the placeholders `PENDING-CERTIFIER-PDC-P7-00` and 40 zeros; the evidence was not on `mcp-rc` at my base (round 5 landed later, section 9) |
+| 4 | Digests equal the published files | PASS | 4 of 4 equal the blobs on the auditor branch; before and after the pin-only edit: section 9 |
 | 5 | Session ids distinct | PASS_SCOPED | implementation `T-IGX-036-J-V-PDC-X-IMPLEMENTERS+T-IGX-038-A-F-MCP-RC-IMPLEMENTER` (the addendum 2 and 3 label, kept although the delta is `T-IGX-036-Y/-Z`, `T-IGX-040-A/-B`: a label, not an attested session); auditor `PDC-P7-00-ACT-N11-G6-BASELINE-AUDITOR-85fb061a-...-ADDENDUM-4` (the same auditor session plus the suffix; equals none of the MCP-RC auditors); certifier placeholder. `process_enforced` |
 | 6 | MCP-RC contract, one pytest process, list from Python, `PYTHONPATH` = my checkout | PASS | **481 passed, 1 xfailed (strict `[product]`), 0 failed, exit 0**, 637.56 s (`logs/rc_contract_certifier_at_d02c39950.log`); equals your number |
 | 7 | "Resolved" claims F-49, F-50, F-41, F-09 | PASS | section 3 |
@@ -99,13 +99,27 @@ Dispositions are the auditor's (`iiac_audit_p7_00_addendum_4_findings.json`, rea
 ## 7. What this addendum does not cover
 
 1. **Not an audit.** I audited no product path; I reproduced the gate output, the union and the F-56 mechanism and ran the tests above.
-2. **The addendum 4 evidence is not on `mcp-rc`.** My checks of the manifest and digests are against the auditor branch `0d4758ca1`; the pin-only edit and its round 5 record, and the integration claims, can only be checked after round 5.
+2. **Round 5 landed after my base.** Sections 1 to 8 were checked against `d02c39950` and the auditor branch `0d4758ca1`; section 9 checks the integration at `fbe400f06`.
 3. **CI contexts.** `ci-smoke`, `governance-fast`, `evol-x-b4-preflight`, `ent-audit-fast` and `ent-audit-pr-gate` were not run by me; no claim that any is green. `governance-fast` runs `tests/unit/governance`, where the two activation-gate tests fail by design until the re-pin.
 4. **Not re-run:** the auditor's regression attribution (F-53), mutation samples, probes, the ebh_7 directory, F-35's pin comparison; `test_b6_03` at the older SHAs.
 5. **The gate after the re-pin is predicted from the gate's rules, not run.**
 6. **Freeze and drift:** the freeze is a declaration; `origin/development` is `83d939095` and `mcp-rc` has merged it; I did not check for later development commits beyond this fetch.
 7. **Independence** is a `process_enforced` attestation (one git identity signs all commits); implementer and certifier ids are labels.
 
+## 9. Round 5 (landed on `origin/mcp-rc` after my base; checked in a second commit)
+
+While I was working, `mcp-rc` received the evidence integration of addendum 4: publication commit `a1b3053b49c28124a0abde679d733f21a597797f` and pin-only commit `fbe400f06cd9b77f0fb548ec0d2b2aaeafe10dac` (head of `mcp-rc` at my last fetch). My branch has not merged them (it would only add a merge commit); I checked them from `origin/mcp-rc` blobs, copying the manifest and its bound files into the worktree for the verifier run and removing them afterwards (`scripts/check_round5.py`, `logs/round5_checks_at_fbe400f06.log`). This closes the item of check 4 that section 2 could not do.
+
+| Check | Result |
+| --- | --- |
+| Publication commit | 40 files, all under `docs/`, **40 of 40 blob-identical** to `origin/p7-00-baseline-audit` @ `0d4758ca1` |
+| Pin-only edit | changes exactly `certifier_session_id` (`PENDING-CERTIFIER-PDC-P7-00` → `PDC-P7-00-CERTIFIER-PREFLIGHT-2026-11-13`), `evidence_publication_sha` and `certification_publication_sha` (zeros → `a1b3053b4`); the only fields that differ from the auditor branch's manifest are the same three; the commit touches only that manifest and `EVIDENCE_INTEGRATION_RECORD.md` |
+| Digests | report, scope, test matrix, findings: claimed value equals the bytes at the head of `mcp-rc`, at the publication commit and on the auditor branch (12 of 12) |
+| Verifiers on the pinned manifest | `verify_iiac_audit_manifest` PASS and `verify_iiac_role_separation --strict-product-diff` PASS (exit 0) |
+| Other changes `d02c39950..fbe400f06` | none under `intergrax/ agents/ applications/ scripts/`, none to the protocol, none to earlier P7-00 evidence |
+
+I did not read the round 5 section of `EVIDENCE_INTEGRATION_RECORD.md` line by line; the checks above are made directly on git. The manifest keeps `audit_execution_sha` = `audited_implementation_sha` = `d02c39950` (so `--strict-product-diff` again compares an identical pair; my own diff in section 1 covers the delta), `test_execution_sha` = `0cb5dd011` (product-identical), and `certification_publication_sha` = the publication commit, not a preflight commit. The activation gate at `fbe400f06` was not re-run by me; the product and governance diff from `d02c39950` is empty, so section 1 applies unchanged. The evidence publication SHA for the re-pin is `a1b3053b4` (or the pin-only commit `fbe400f06` as a docs-only descendant, the activation certifier's choice).
+
 ## 8. Remaining steps (not mine)
 
-Round 5 evidence integration of addendum 4 → operator decision on F-56 (and owners for F-35, F-52/F-51 extension, the MCP-RC carry-overs) and on the signature question → route decision (the tension in section 6) → activation certifier: new binding manifest and handoff, both verifiers, contract run, phase 1, phase 2 → PR → five CI contexts on the pinned head → merge (operator) → terminal verification.
+Round 5 evidence integration of addendum 4 (done, section 9) → operator decision on F-56 (and owners for F-35, F-52/F-51 extension, the MCP-RC carry-overs) and on the signature question → route decision (the tension in section 6) → activation certifier: new binding manifest and handoff, both verifiers, contract run, phase 1, phase 2 → PR → five CI contexts on the pinned head → merge (operator) → terminal verification.
