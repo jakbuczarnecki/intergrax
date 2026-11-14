@@ -1,0 +1,43 @@
+{
+  "stage_id": "IIAC-GOV-1",
+  "certification_profile": "iiac-v1",
+  "policy_version": "IIAC-2026-11-05.1",
+  "implementation_session_id": "T-IGX-036-J-V-PDC-X-IMPLEMENTERS+T-IGX-038-A-F-MCP-RC-IMPLEMENTER",
+  "implementation_agent_id": "implementer",
+  "auditor_session_id": "PDC-P7-00-ACT-N11-G6-BASELINE-AUDITOR-85fb061a-028f-4648-a3d6-284a392f4e27-ADDENDUM-2",
+  "auditor_agent_id": "independent-quality-auditor",
+  "certifier_session_id": "local_8974948e-d8d3-45e3-96ca-fb61dfd5f249",
+  "certifier_agent_id": "certification-governance-agent",
+  "audited_implementation_sha": "324d9dba37cb54e1b74a79a05148d2dcc05e6d09",
+  "test_execution_sha": "324d9dba37cb54e1b74a79a05148d2dcc05e6d09",
+  "evidence_publication_sha": "29d66ae3fcc7a06a919d7e07541740841e8abfe8",
+  "audit_execution_sha": "29d66ae3fcc7a06a919d7e07541740841e8abfe8",
+  "audit_report_digest": "c405c65faf53243a0511b0b9584a9f3abda4db08c09ee9b9266c86fe9f6b7a4e",
+  "audit_scope_manifest_digest": "e06ce433ac1c260390885e19cc60b0687be9d8908d78bd38ae4fb5f1102fe56f",
+  "test_matrix_digest": "d5028f194bb7917d07e8df5264075952dcf8757503975042988caba6e89a240b",
+  "findings_digest": "df3648f926dad3199ff40c7c83c7fae4ed7a26bd1c67701a355bc7130073f831",
+  "verdict": "PASS",
+  "limitations": [
+    "Scope: ACT-N11 product re-bind of the integrated baseline; 158 product paths under intergrax/, agents/ and applications/ differ from the previous pin 2d3eceb6cf7e93dccd4d96919319a6c969b4444b (23 MCP-RC paths + 135 non-MCP PDC-X paths), derived with the gate's own product_paths_changed_between; audited tree 324d9dba37cb54e1b74a79a05148d2dcc05e6d09",
+    "Origin of the PASS: this verdict is the activation certifier's own, authored in the P6 pattern (OD-MCP-RC-04 section 3) from independent audits whose dossier verdicts are PASS_SCOPED (the first MCP-RC audit PARTIAL, superseded by its delta re-audit) and whose manifests carry the field value CONDITIONAL; the gate accepts only PASS (ACT-N05), so none could be bound as authored; the auditors' files are not rewritten and PASS here is not an auditor verdict",
+    "Bound IIAC-GOV-1 report set (audit report, scope, test matrix, findings) is the set the previous activation already referenced (unchanged bytes, all under iiac_evidence/); it is the gate's mechanical anchor, not the audit of the 158 paths; the audits of the 158 paths are the MCP-RC and PDC-P7-00 dossiers listed in the handoff record",
+    "Open findings not resolved or accepted by this manifest: F-41 (ENT-AUDIT impact-map rule for applications/*/mcp/server.py not on development; the two impact-map paths inside this audit change when it lands and addendum 2 is then void for them), F-42 (embedding_provider catalog registration, unowned), F-35 and F-09 (COMPAT-X event-evolution gates and a pytest exit hang), F-07 (passes at the integrated head, not confirmed by an auditor), F-43, F-44, F-38, F-04, F-37, F-05, F-10",
+    "CI contexts ci-smoke, governance-fast, evol-x-b4-preflight, ent-audit-fast and ent-audit-pr-gate are not verified green on any head by any session; no claim is made that they are",
+    "Audit coverage limits inherited from the dossiers: per-domain audits IA-D1..IA-D8 not done (27 routed findings); 130 first-audit PDC-X paths reviewed by diff scan, selective reading, probes and mutants only; F-18 and F-24..F-28 unreproduced leads; 40 regression failures attributed to the pin and not diagnosed; full tests/unit, network and live-provider paths, G-DOC-01..12 and P8 not covered",
+    "MCP-RC carry-overs: owner of the strict xfail test_scaffold_defaults_mcp_to_opt_in[product] (AF-05, AF-16) not named; operator acceptance of RA-02, RA-03, RA-04 and AF-05 not recorded",
+    "assurance_level process_enforced: independence of implementer, auditors and certifier is an attestation (one git identity signs all commits), not cryptographic proof; session ids of implementers and preflight certifiers are designations, not verified application ids",
+    "Drift: any product commit on development after a156cbbd5ff521dc7e99dd02ab6bebd4ca234a73 voids the pin until a further audit addendum and re-pin; the freeze on product paths is a declaration, not an enforced control",
+    "Does not close MCP-SERVER-X, does not promote any FRZ status (counter stays 225), does not claim production readiness, does not authorize a pull request or a merge"
+  ],
+  "certification_publication_sha": "7801dcb1293e31ee0c483184efd59c01a2dc606b",
+  "assurance_level": "process_enforced",
+  "handoff_record_path": "docs/project/maintainers/qualification/iiac_evidence/PDC-X/MCP-RC/activation/IIAC_SESSION_HANDOFF_RECORD_PDC_X_MCP_RC_ACTIVATION.md",
+  "activation_audit_report_path": "docs/project/maintainers/qualification/iiac_evidence/IIAC-GOV-1/certification/IIAC_ACT01_INDEPENDENT_REAUDIT_DOSSIER.md",
+  "product_session_manifest_paths": [
+    "docs/project/maintainers/qualification/iiac_evidence/PDC-X/MCP-RC/iiac_audit_session_manifest.PDC-X.mcp_rc.json",
+    "docs/project/maintainers/qualification/iiac_evidence/PDC-X/MCP-RC/reaudit/iiac_audit_session_manifest.PDC-X.mcp_rc_reaudit.json",
+    "docs/project/maintainers/qualification/iiac_evidence/PDC-X/P7-00/iiac_audit_session_manifest.PDC-X.p7_00.json",
+    "docs/project/maintainers/qualification/iiac_evidence/PDC-X/P7-00/addendum_1/iiac_audit_session_manifest.PDC-X.p7_00.addendum_1.json",
+    "docs/project/maintainers/qualification/iiac_evidence/PDC-X/P7-00/addendum_2/iiac_audit_session_manifest.PDC-X.p7_00.addendum_2.json"
+  ]
+}
