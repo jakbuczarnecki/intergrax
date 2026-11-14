@@ -1,7 +1,7 @@
 # INTEGRAX Internal Independent Agent Certification (IIAC) Protocol
 
 **Policy version (document):** `IIAC-2026-11-05.1`  
-**Activation:** [`IIAC_POLICY_ACTIVATION_RECORD.json`](./IIAC_POLICY_ACTIVATION_RECORD.json) — **`NOT_IN_FORCE`**. Session B re-audit PASS is preserved evidence. `IN_FORCE` requires the fail-closed gate (`--require-in-force`) and a separate operator activation record.
+**Activation:** [`IIAC_POLICY_ACTIVATION_RECORD.json`](./IIAC_POLICY_ACTIVATION_RECORD.json) is the single source of truth for the activation status of this policy; this document does not restate it. Session B re-audit PASS is preserved evidence. `IN_FORCE` requires the fail-closed gate (`--require-in-force`) and a separate operator activation record.
 
 ## Purpose
 
@@ -88,7 +88,7 @@ Ticket handoff may also live under [`governance/tickets/`](../../../../governanc
 
 ## Policy activation
 
-Status remains **`NOT_IN_FORCE`** until a certification session after the ACT-01 gate correction. Session B `PASS` and the historical `PARTIAL` record are evidence, not activation.
+The activation status is recorded only in `IIAC_POLICY_ACTIVATION_RECORD.json` (single source of truth); this document does not restate it. Before `IN_FORCE`, a certification session after the ACT-01 gate correction is required. Session B `PASS` and the historical `PARTIAL` record are evidence, not activation.
 
 All required before `IN_FORCE`:
 
