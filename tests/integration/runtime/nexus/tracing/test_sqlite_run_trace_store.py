@@ -1,20 +1,18 @@
-
 import pytest
-from intergrax.runtime.nexus.tracing.sqlite_run_trace_store import (
-    SQLiteRunTraceStore,
-)
-from intergrax.runtime.nexus.tracing.trace_models import TraceEvent, TraceLevel
 from intergrax.runtime.nexus.tracing.persistence_models import (
     RunMetadata,
     RunStats,
 )
-from intergrax.runtime.nexus.tracing.trace_models import TraceComponent
+from intergrax.runtime.nexus.tracing.sqlite_run_trace_store import (
+    SQLiteRunTraceStore,
+)
+from intergrax.runtime.nexus.tracing.trace_models import TraceComponent, TraceEvent, TraceLevel
 from testing_support.builder import prepare_sqlite_db
 
 pytestmark = pytest.mark.integration
 
 
-def test_sqlite_run_trace_store_persist_and_read():    
+def test_sqlite_run_trace_store_persist_and_read():
 
     db_path = prepare_sqlite_db("sqlite_trace.db")
 
@@ -64,4 +62,4 @@ def test_sqlite_run_trace_store_persist_and_read():
     assert persisted.metadata.stats.duration_ms == 10
 
     assert len(persisted.events) == 1
-    assert persisted.events[0]["run_id"] == "run-1"
+    assert persisted.events[0].run_id == "run-1"

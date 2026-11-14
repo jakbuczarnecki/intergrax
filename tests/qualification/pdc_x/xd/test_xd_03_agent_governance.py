@@ -102,21 +102,39 @@ def _registry() -> ToolRegistry:
     return registry
 
 
+_BUILT_INVOKERS: list[RuntimeToolInvoker] = []  # every invoker built here; closed by the autouse fixture below
+
+
+@pytest.fixture(autouse=True)
+def _close_built_invokers() -> Iterator[None]:
+    """The admission boundary runs a non-daemon thread; close every invoker even when an assertion fails."""
+    try:
+        yield
+    finally:
+        while _BUILT_INVOKERS:
+            _BUILT_INVOKERS.pop().close()
+
+
 def _invoker(executor: _CountingExecutor, granted, *, scope: set[str]) -> tuple[RuntimeToolInvoker, object]:  # type: ignore[no-untyped-def]
     harness = make_governance(granted=granted)
     config = tool_dependency_concurrency_admission_configuration(TOOL, max_concurrent_calls=2)
     boundary = materialize_tool_dependency_attempt_boundary(config, production_mode=True)
     assert boundary is not None
-    invoker = build_production_runtime_tool_invoker(
-        registry=_registry(),
-        executor=executor,
-        dependency_attempt_boundary=boundary,
-        production_mode=True,
-        agent_runtime_governance=harness.boundary,
-        meaningful_side_effect_authorization=_RecordingMseBoundary(allow=True),
-        inner_execution_guard=_AllowingTestGuard(),
-        scope_policy=StaticToolScopePolicy(allowed_tools=scope),
-    )
+    try:
+        invoker = build_production_runtime_tool_invoker(
+            registry=_registry(),
+            executor=executor,
+            dependency_attempt_boundary=boundary,
+            production_mode=True,
+            agent_runtime_governance=harness.boundary,
+            meaningful_side_effect_authorization=_RecordingMseBoundary(allow=True),
+            inner_execution_guard=_AllowingTestGuard(),
+            scope_policy=StaticToolScopePolicy(allowed_tools=scope),
+        )
+    except BaseException:
+        boundary.close()
+        raise
+    _BUILT_INVOKERS.append(invoker)
     return invoker, harness
 
 
@@ -248,17 +266,22 @@ def test_xd03_strict_composition_refuses_to_build_without_governance() -> None:
 
     config = tool_dependency_concurrency_admission_configuration(TOOL, max_concurrent_calls=2)
     boundary = materialize_tool_dependency_attempt_boundary(config, production_mode=True)
-    with pytest.raises(ProductionRuntimeToolInvokerCompositionError):
-        build_production_runtime_tool_invoker(
-            registry=_registry(),
-            executor=_CountingExecutor(),
-            dependency_attempt_boundary=boundary,
-            production_mode=True,
-            agent_runtime_governance=None,
-            meaningful_side_effect_authorization=_RecordingMseBoundary(allow=True),
-            inner_execution_guard=_AllowingTestGuard(),
-            scope_policy=StaticToolScopePolicy(allowed_tools={TOOL}),
-        )
+    try:
+        with pytest.raises(ProductionRuntimeToolInvokerCompositionError):
+            build_production_runtime_tool_invoker(
+                registry=_registry(),
+                executor=_CountingExecutor(),
+                dependency_attempt_boundary=boundary,
+                production_mode=True,
+                agent_runtime_governance=None,
+                meaningful_side_effect_authorization=_RecordingMseBoundary(allow=True),
+                inner_execution_guard=_AllowingTestGuard(),
+                scope_policy=StaticToolScopePolicy(allowed_tools={TOOL}),
+            )
+    finally:
+        # The refused composition never handed the boundary to an invoker: its owner here is the test.
+        if boundary is not None:
+            boundary.close()
 
 
 def _python_files(*roots: str) -> list[Path]:
