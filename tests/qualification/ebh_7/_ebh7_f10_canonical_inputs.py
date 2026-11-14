@@ -114,6 +114,7 @@ class DomainNaDisposition:
 class C4Rule:
     prefix: str
     classes: tuple[ChangeClass, ...]
+    reason: str
 
 
 @dataclass(frozen=True, slots=True)
@@ -159,6 +160,8 @@ class F10Inputs:
     report_text: str
     matrix_disk_text: str
     existing_paths: frozenset[str] = field(default_factory=frozenset)
+    # Executable evidence of families whose ECAP closing stage is already CLOSED (family id -> whole-file nodes)
+    c1_closed_stage_family_evidence: dict[str, tuple[str, ...]] = field(default_factory=dict)
 
 
 # --- C2 normative surfaces (ECAP §2.C C2 / roadmap §3.1 duplication coverage) ---------------------------------
@@ -199,26 +202,407 @@ ROLLUP_FAMILIES: Final[dict[str, str]] = {"VBN": "C3"}
 
 TIER_IMPORT_EXCEPTIONS: Final[tuple[TierImportException, ...]] = ()
 
+_ENT_AUDIT_UNIT = "tests/qualification/ent_audit_x/unit"
+_EVOL_FRZ = "tests/qualification/evol_x/frz"
+C1_CLOSED_STAGE_FAMILY_EVIDENCE: Final[dict[str, tuple[str, ...]]] = {
+    "AUD": (
+        f"{_ENT_AUDIT_UNIT}/test_frz_coverage_matrix_complete.py",
+        f"{_ENT_AUDIT_UNIT}/test_frz_aud_03_unmapped_neg.py",
+        f"{_ENT_AUDIT_UNIT}/test_frz_aud_w402_neg.py",
+    ),
+    "EVOL": (
+        f"{_EVOL_FRZ}/test_evol_x_frz_01_semantic_impact.py",
+        f"{_EVOL_FRZ}/test_evol_x_frz_02_graph_coverage.py",
+        f"{_EVOL_FRZ}/test_evol_x_frz_03_blast_radius.py",
+        f"{_EVOL_FRZ}/test_evol_x_frz_04_contract_consumers.py",
+        f"{_EVOL_FRZ}/test_evol_x_frz_05_workflow_evolution.py",
+        f"{_EVOL_FRZ}/test_evol_x_frz_06_regression_selection.py",
+        f"{_EVOL_FRZ}/test_evol_x_frz_07_deploy_rollback.py",
+        f"{_EVOL_FRZ}/test_evol_x_frz_08_change_diagnostics.py",
+        f"{_EVOL_FRZ}/test_evol_x_frz_09_extensibility.py",
+        f"{_EVOL_FRZ}/test_evol_x_frz_10_requalification.py",
+    ),
+}
+
+_APP_HOST: Final[str] = (
+    "Tier-3 application host (same class as the intergrax/applications/ rule); "
+    "enumerated per application so a new application stays unknown"
+)
+_AGENT_DOC: Final[str] = (
+    "agent instruction artifacts (markdown); read by agent tooling only, "
+    "not imported by intergrax/, agents/, applications/"
+)
+
 C4_RULES: Final[tuple[C4Rule, ...]] = (
-    C4Rule("docs/", (ChangeClass.DOCUMENTATION_ONLY,)),
-    C4Rule("tests/", (ChangeClass.QUALIFICATION_INFRASTRUCTURE,)),
-    C4Rule("scripts/qualification/", (ChangeClass.QUALIFICATION_INFRASTRUCTURE,)),
-    C4Rule("scripts/ci/", (ChangeClass.QUALIFICATION_INFRASTRUCTURE,)),
-    C4Rule(".github/", (ChangeClass.QUALIFICATION_INFRASTRUCTURE,)),
-    C4Rule("pyproject.toml", (ChangeClass.COMPOSITION_CONFIGURATION,)),
-    C4Rule("uv.lock", (ChangeClass.COMPOSITION_CONFIGURATION,)),
-    C4Rule("intergrax/applications/", (ChangeClass.COMPOSITION_CONFIGURATION,)),
-    C4Rule("intergrax/contracts/", (ChangeClass.CONTRACT,)),
-    C4Rule("intergrax/integrations/registry/", (ChangeClass.OWNER_AUTHORITY,)),
-    C4Rule("intergrax/integrations/providers/", (ChangeClass.VENDOR_BACKEND,)),
-    C4Rule("intergrax/memory/stores/", (ChangeClass.STATE_RECOVERY,)),
-    C4Rule("intergrax/runtime/security/", (ChangeClass.SECURITY_GOVERNANCE_TENANT,)),
-    C4Rule("intergrax/runtime/governance/", (ChangeClass.SECURITY_GOVERNANCE_TENANT,)),
+    C4Rule(
+        "docs/",
+        (ChangeClass.DOCUMENTATION_ONLY,),
+        "documentation tree; markdown and diagrams only",
+    ),
+    C4Rule(
+        "tests/",
+        (ChangeClass.QUALIFICATION_INFRASTRUCTURE,),
+        "test code and fixtures; executed only by the qualification and unit suites",
+    ),
+    C4Rule(
+        "scripts/qualification/",
+        (ChangeClass.QUALIFICATION_INFRASTRUCTURE,),
+        "qualification verifiers and renderers; not imported by shipped code",
+    ),
+    C4Rule(
+        "scripts/ci/",
+        (ChangeClass.QUALIFICATION_INFRASTRUCTURE,),
+        "CI helper scripts; run by workflows only",
+    ),
+    C4Rule(
+        ".github/",
+        (ChangeClass.QUALIFICATION_INFRASTRUCTURE,),
+        "workflows and repository automation; no effect on shipped code",
+    ),
+    C4Rule(
+        "pyproject.toml",
+        (ChangeClass.COMPOSITION_CONFIGURATION,),
+        "packaging and dependency composition of the shipped distribution (exact path)",
+    ),
+    C4Rule(
+        "uv.lock",
+        (ChangeClass.COMPOSITION_CONFIGURATION,),
+        "locked dependency composition of the shipped distribution (exact path)",
+    ),
+    C4Rule(
+        "intergrax/applications/",
+        (ChangeClass.COMPOSITION_CONFIGURATION,),
+        "application composition helpers and hosts",
+    ),
+    C4Rule(
+        "intergrax/contracts/",
+        (ChangeClass.CONTRACT,),
+        "public contract modules of the platform",
+    ),
+    C4Rule(
+        "intergrax/integrations/registry/",
+        (ChangeClass.OWNER_AUTHORITY,),
+        "integration registry; owner of provider authority",
+    ),
+    C4Rule(
+        "intergrax/integrations/providers/",
+        (ChangeClass.VENDOR_BACKEND,),
+        "vendor and backend provider integrations",
+    ),
+    C4Rule(
+        "intergrax/memory/stores/",
+        (ChangeClass.STATE_RECOVERY,),
+        "durable memory store implementations",
+    ),
+    C4Rule(
+        "intergrax/runtime/security/",
+        (ChangeClass.SECURITY_GOVERNANCE_TENANT,),
+        "runtime security and tenant scope enforcement",
+    ),
+    C4Rule(
+        "intergrax/runtime/governance/",
+        (ChangeClass.SECURITY_GOVERNANCE_TENANT,),
+        "runtime governance plane",
+    ),
     C4Rule(
         "intergrax/runtime/nexus/tools/invoker.py",
-        (ChangeClass.RUNTIME_BEHAVIOR, ChangeClass.SECURITY_GOVERNANCE_TENANT),
+        (
+            ChangeClass.RUNTIME_BEHAVIOR,
+            ChangeClass.SECURITY_GOVERNANCE_TENANT,
+        ),
+        "tool invoker: runtime execution path with tenant and policy enforcement (exact path)",
     ),
-    C4Rule("intergrax/runtime/", (ChangeClass.RUNTIME_BEHAVIOR,)),
+    C4Rule(
+        "intergrax/runtime/",
+        (ChangeClass.RUNTIME_BEHAVIOR,),
+        "Tier-1 runtime code executed at run time",
+    ),
+    C4Rule(
+        "governance/tickets/",
+        (ChangeClass.DOCUMENTATION_ONLY,),
+        "markdown ticket and plan records only (no code, no import)",
+    ),
+    C4Rule(
+        ".claude/skills/",
+        (ChangeClass.DOCUMENTATION_ONLY,),
+        _AGENT_DOC,
+    ),
+    C4Rule(
+        ".cursor/skills/",
+        (ChangeClass.DOCUMENTATION_ONLY,),
+        _AGENT_DOC,
+    ),
+    C4Rule(
+        ".cursor/rules/",
+        (ChangeClass.DOCUMENTATION_ONLY,),
+        "agent rule artifacts (markdown/mdc); read by agent tooling only, "
+        "not imported by intergrax/, agents/, applications/",
+    ),
+    C4Rule(
+        "agent-env/",
+        (ChangeClass.DOCUMENTATION_ONLY,),
+        "shared agent environment (rules, skills, plans, personas as markdown); "
+        "not imported by intergrax/, agents/, applications/",
+    ),
+    C4Rule(
+        "AGENTS.md",
+        (ChangeClass.DOCUMENTATION_ONLY,),
+        "root documentation (exact path)",
+    ),
+    C4Rule(
+        "CLAUDE.md",
+        (ChangeClass.DOCUMENTATION_ONLY,),
+        "root documentation (exact path)",
+    ),
+    C4Rule(
+        "CONTRIBUTING.md",
+        (ChangeClass.DOCUMENTATION_ONLY,),
+        "root documentation (exact path)",
+    ),
+    C4Rule(
+        "README.md",
+        (ChangeClass.DOCUMENTATION_ONLY,),
+        "root documentation (exact path)",
+    ),
+    C4Rule(
+        "CITATION.cff",
+        (ChangeClass.DOCUMENTATION_ONLY,),
+        "root citation metadata (exact path)",
+    ),
+    C4Rule(
+        "LICENSE",
+        (ChangeClass.DOCUMENTATION_ONLY,),
+        "root license text (exact path)",
+    ),
+    C4Rule(
+        "governance/",
+        (ChangeClass.QUALIFICATION_INFRASTRUCTURE,),
+        "delivery-gate configuration (policy registry, trusted pin, agent-control-plane, rollout, workflows) "
+        "consumed by scripts/governance and CI only; the more specific governance/tickets/ rule "
+        "keeps the records documentation-only",
+    ),
+    C4Rule(
+        ".claude/settings.json",
+        (ChangeClass.QUALIFICATION_INFRASTRUCTURE,),
+        "agent-tooling configuration with no effect on shipped code (exact path)",
+    ),
+    C4Rule(
+        ".gitattributes",
+        (ChangeClass.QUALIFICATION_INFRASTRUCTURE,),
+        "repository configuration with no effect on shipped code (exact path)",
+    ),
+    C4Rule(
+        ".gitignore",
+        (ChangeClass.QUALIFICATION_INFRASTRUCTURE,),
+        "repository configuration with no effect on shipped code (exact path)",
+    ),
+    C4Rule(
+        "testing_support/",
+        (ChangeClass.QUALIFICATION_INFRASTRUCTURE,),
+        "test-support library imported only by tests and */tests/ packages "
+        "(git grep: no import from shipped modules; scaffold templates only emit it as generated text)",
+    ),
+    C4Rule(
+        "scripts/governance/",
+        (ChangeClass.QUALIFICATION_INFRASTRUCTURE,),
+        "developer and delivery-gate tooling; git grep finds no import from intergrax/, agents/ or applications/",
+    ),
+    C4Rule(
+        "scripts/enterprise_audit/",
+        (ChangeClass.QUALIFICATION_INFRASTRUCTURE,),
+        "audit tooling; git grep finds no import from intergrax/, agents/ or applications/ "
+        "(the impact map names its paths as data only)",
+    ),
+    C4Rule(
+        "scripts/maintenance/",
+        (
+            ChangeClass.QUALIFICATION_INFRASTRUCTURE,
+            ChangeClass.RUNTIME_BEHAVIOR,
+        ),
+        "maintenance gates; stronger pair because shipped code launches scripts/maintenance/lkw-host.py "
+        "(lkw_hybrid_daemon) and runs scripts/maintenance/check_eval_scenario_library.py "
+        "(eval_evidence_runner) at run time",
+    ),
+    C4Rule(
+        "scripts/dev/",
+        (ChangeClass.QUALIFICATION_INFRASTRUCTURE,),
+        "developer tooling; git grep finds no reference from intergrax/, agents/ or applications/",
+    ),
+    C4Rule(
+        "scripts/__init__.py",
+        (
+            ChangeClass.QUALIFICATION_INFRASTRUCTURE,
+            ChangeClass.RUNTIME_BEHAVIOR,
+        ),
+        "package marker of scripts; stronger pair because shipped code imports scripts.gates "
+        "and scripts.proof through it (exact path)",
+    ),
+    C4Rule(
+        "scripts/gates/",
+        (
+            ChangeClass.QUALIFICATION_INFRASTRUCTURE,
+            ChangeClass.RUNTIME_BEHAVIOR,
+        ),
+        "gate scripts; stronger pair because intergrax/runtime/architecture/obs_diag_x3_ast_gates.py "
+        "imports them lazily",
+    ),
+    C4Rule(
+        "applications/dispute_sim_application/",
+        (ChangeClass.COMPOSITION_CONFIGURATION,),
+        _APP_HOST,
+    ),
+    C4Rule(
+        "applications/governed_contractor_application/",
+        (ChangeClass.COMPOSITION_CONFIGURATION,),
+        _APP_HOST,
+    ),
+    C4Rule(
+        "applications/intergrax_assistant_application/",
+        (ChangeClass.COMPOSITION_CONFIGURATION,),
+        _APP_HOST,
+    ),
+    C4Rule(
+        "applications/lab_application/",
+        (ChangeClass.COMPOSITION_CONFIGURATION,),
+        _APP_HOST,
+    ),
+    C4Rule(
+        "applications/legal_application/",
+        (ChangeClass.COMPOSITION_CONFIGURATION,),
+        _APP_HOST,
+    ),
+    C4Rule(
+        "applications/local_workspace_application/",
+        (ChangeClass.COMPOSITION_CONFIGURATION,),
+        _APP_HOST,
+    ),
+    C4Rule(
+        "applications/poc_template_application/",
+        (ChangeClass.COMPOSITION_CONFIGURATION,),
+        _APP_HOST,
+    ),
+    C4Rule(
+        "applications/research_application/",
+        (ChangeClass.COMPOSITION_CONFIGURATION,),
+        _APP_HOST,
+    ),
+    C4Rule(
+        "applications/shipped_product_manifest_catalog.py",
+        (ChangeClass.COMPOSITION_CONFIGURATION,),
+        "Tier-3 shipped product manifest catalog (exact path)",
+    ),
+    C4Rule(
+        "intergrax/cli/",
+        (ChangeClass.COMPOSITION_CONFIGURATION,),
+        "command hosts and launchers that compose runtime services",
+    ),
+    C4Rule(
+        "intergrax/core/catalog_bootstrap.py",
+        (ChangeClass.COMPOSITION_CONFIGURATION,),
+        "catalog bootstrap composition (exact path)",
+    ),
+    C4Rule(
+        "intergrax/core/plugins/",
+        (ChangeClass.RUNTIME_BEHAVIOR,),
+        "plugin admission and revision activation executed at run time",
+    ),
+    C4Rule(
+        "intergrax/agent_distribution/",
+        (ChangeClass.RUNTIME_BEHAVIOR,),
+        "agent distribution, installation and runtime revision activation executed at run time",
+    ),
+    C4Rule(
+        "intergrax/collaborative_work/",
+        (ChangeClass.RUNTIME_BEHAVIOR,),
+        "collaborative work content handling executed at run time",
+    ),
+    C4Rule(
+        "intergrax/context/",
+        (ChangeClass.RUNTIME_BEHAVIOR,),
+        "context assembly and budgeting executed at run time",
+    ),
+    C4Rule(
+        "intergrax/eval/",
+        (ChangeClass.RUNTIME_BEHAVIOR,),
+        "evaluation runs executed at run time",
+    ),
+    C4Rule(
+        "intergrax/hosting/",
+        (ChangeClass.RUNTIME_BEHAVIOR,),
+        "hosting engine and supervisor executed at run time",
+    ),
+    C4Rule(
+        "intergrax/rag/",
+        (ChangeClass.RUNTIME_BEHAVIOR,),
+        "retrieval and ingest executed at run time",
+    ),
+    C4Rule(
+        "intergrax/skills/",
+        (ChangeClass.RUNTIME_BEHAVIOR,),
+        "skill lifecycle and execution pinning executed at run time",
+    ),
+    C4Rule(
+        "intergrax/tools/",
+        (ChangeClass.RUNTIME_BEHAVIOR,),
+        "tool providers executed at run time",
+    ),
+    C4Rule(
+        "intergrax/platform/",
+        (ChangeClass.RUNTIME_BEHAVIOR,),
+        "platform package root executed at run time",
+    ),
+    C4Rule(
+        "intergrax/context/policy/",
+        (
+            ChangeClass.RUNTIME_BEHAVIOR,
+            ChangeClass.SECURITY_GOVERNANCE_TENANT,
+        ),
+        "egress policy of the context layer",
+    ),
+    C4Rule(
+        "intergrax/core/security/",
+        (ChangeClass.SECURITY_GOVERNANCE_TENANT,),
+        "raw-secret gate and security configuration",
+    ),
+    C4Rule(
+        "intergrax/platform/enterprise_audit/",
+        (
+            ChangeClass.QUALIFICATION_INFRASTRUCTURE,
+            ChangeClass.RUNTIME_BEHAVIOR,
+        ),
+        "continuous audit runner, check manifest and impact map ship inside intergrax/ and execute at run time",
+    ),
+    C4Rule(
+        "intergrax/llm_adapters/",
+        (ChangeClass.VENDOR_BACKEND,),
+        "LLM vendor adapters, routing and model catalog (same regression as intergrax/integrations/providers/)",
+    ),
+    C4Rule(
+        "intergrax/memory/",
+        (ChangeClass.STATE_RECOVERY,),
+        "durable memory state (intergrax/memory/stores/ is more specific and keeps its rule)",
+    ),
+    C4Rule(
+        "intergrax/queueing/",
+        (ChangeClass.STATE_RECOVERY,),
+        "durable task-queue state",
+    ),
+    C4Rule(
+        "intergrax/memory/contracts/",
+        (
+            ChangeClass.CONTRACT,
+            ChangeClass.STATE_RECOVERY,
+        ),
+        "public contract modules of the memory state owner",
+    ),
+    C4Rule(
+        "intergrax/queueing/contracts/",
+        (
+            ChangeClass.CONTRACT,
+            ChangeClass.STATE_RECOVERY,
+        ),
+        "public contract modules of the queue state owner",
+    ),
 )
 
 _TOOLS = "tests/unit/runtime/nexus/tools"
@@ -610,4 +994,5 @@ def build_canonical_f10_inputs() -> F10Inputs:
         report_text=_read(ECAP_REPORT_REL),
         matrix_disk_text=_read(F10_MATRIX_REL),
         existing_paths=_referenced_paths(candidate_paths),
+        c1_closed_stage_family_evidence=dict(C1_CLOSED_STAGE_FAMILY_EVIDENCE),
     )
