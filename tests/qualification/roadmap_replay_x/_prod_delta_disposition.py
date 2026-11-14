@@ -76,6 +76,20 @@ def _prod_diff_paths(repo: Path, *roots: str) -> frozenset[str]:
     return frozenset(n.strip().replace("\\", "/") for n in names if n.strip())
 
 
+def _path_in_tree(repo: Path, rev: str, path: str) -> bool:
+    listed = subprocess.check_output(
+        ["git", "ls-tree", "--name-only", rev, "--", path],
+        cwd=repo,
+        text=True,
+    )
+    return bool(listed.strip())
+
+
+def _is_net_zero_absent(repo: Path, path: str) -> bool:
+    """True only for a path that exists neither at HEAD nor at the DUP-X pin (add + delete, net zero)."""
+    return not _path_in_tree(repo, "HEAD", path) and not _path_in_tree(repo, _DUP_X_PIN, path)
+
+
 def scoped_prod_delta_disposition_violations(repo: Path) -> tuple[str, ...]:
     violations: list[str] = list(scoped_regression_evidence_violations(repo))
     prod_diff = _prod_diff_paths(repo, "intergrax", "agents", "applications")
@@ -85,7 +99,7 @@ def scoped_prod_delta_disposition_violations(repo: Path) -> tuple[str, ...]:
                 violations.append(f"wrong_qualification_head:{row.path}")
             if not row.disposition.strip():
                 violations.append(f"missing_disposition:{row.path}")
-        elif row.path in REPLAY_X_L2_SCOPED_PROD_DELTA_PATHS:
+        elif row.path in REPLAY_X_L2_SCOPED_PROD_DELTA_PATHS and not _is_net_zero_absent(repo, row.path):
             violations.append(f"scoped_path_not_in_prod_diff:{row.path}")
     return tuple(violations)
 
