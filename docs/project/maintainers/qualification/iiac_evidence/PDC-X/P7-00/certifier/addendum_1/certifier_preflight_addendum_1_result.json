@@ -1,0 +1,32 @@
+{
+  "stage_id": "PDC-X/P7-00/addendum_2",
+  "role": "certifier (preflight addendum)",
+  "certifier_session_id": "PDC-P7-00-CERTIFIER-PREFLIGHT-2026-11-13",
+  "verdict": "CERTIFIER_PREFLIGHT_PASS_SCOPED",
+  "is_activation_certification": false,
+  "is_rebind": false,
+  "frz_counter": 225,
+  "pins": {
+    "activation_pin_audit_execution_sha": "2d3eceb6cf7e93dccd4d96919319a6c969b4444b",
+    "previous_audited_sha_addendum_1": "19d552beeb6f0677a8bdc3b4ce65da15dd637c7b",
+    "development_merged_second_re_pin": "a156cbbd5ff521dc7e99dd02ab6bebd4ca234a73",
+    "addendum_2_audited_sha": "324d9dba37cb54e1b74a79a05148d2dcc05e6d09",
+    "development_docs_scripts_lock_only_merge": "884c177adc366004929641d029bba8d129b0ecc8",
+    "merge_of_884c177ad": "14e1322df",
+    "addendum_2_evidence_publication_commit": "29d66ae3fcc7a06a919d7e07541740841e8abfe8",
+    "addendum_2_pin_only_commit_and_record": "fde55618379ff99779172e40214b5879d9d0810d",
+    "record_head_certified": "fde55618379ff99779172e40214b5879d9d0810d"
+  },
+  "act_n11": {"paths_at_324d9dba3": 158, "paths_at_head": 158, "mcp_rc": 23, "non_mcp": 135, "delta_19d552bee_to_324d9dba3": 2, "product_diff_324d9dba3_to_head": 0},
+  "own_runs": {
+    "mcp_rc_contract": {"head": "fde55618379ff99779172e40214b5879d9d0810d", "files": 39, "passed": 481, "xfailed": 1, "failed": 0, "exit_code": 0, "seconds": 503.48},
+    "verify_iiac_audit_manifest_addendum_2": "PASS",
+    "verify_iiac_role_separation_strict_product_diff_addendum_2": "PASS",
+    "finding_status_run": {"tests": 166, "passed": 147, "failed": 19, "failed_f41": 2, "failed_compat_x": 17, "inventory_f07": "passes", "ebh_5_gates": "pass"},
+    "on_development_alone_434249534": {"tests": 95, "passed": 91, "failed": 4, "failed_nodes": "compat_x r3_p0 (F-35)", "xd_12_and_p6_impact": "pass", "inventory": "pass"},
+    "governance_fast_selection": {"passed": 155, "failed": 2, "errors": 15, "skipped": 1, "failed_tests": "activation gate (ACT-N11, expected before rebind)", "error_cause": "fresh-clone fixtures, Windows path length, not determinable here"},
+    "ent_audit_targeted": {"passed": 96, "failed": 8, "failed_f42": 2, "failed_duckdb_env": 3, "failed_roadmap_replay_x_red_at_pin": 3}
+  },
+  "findings_f41_f48": {"total": 8, "severity": {"MEDIUM": 2, "LOW": 2, "INFO": 4}, "all_have_disposition": true, "blocking_open": 0},
+  "pin_only_edits_by_this_certifier": []
+}

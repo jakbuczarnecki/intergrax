@@ -443,6 +443,48 @@ BATCHES: Final[tuple[Batch, ...]] = (
         "IA-GLOBAL (P8)",
         "tests/qualification/pdc_x/p6_impact/",
     ),
+    Batch(
+        "B-P6-F",
+        "ALL",
+        "ECAP VBN-REACHABILITY: the single ollama catalog row resolves the embedding category; ebh_5 harness registers the owning row first",
+        "T-IGX-036-X",
+        "W8",
+        (
+            "intergrax/integrations/providers/model_serving_runtime/ollama/bundle.py",
+            "intergrax/integrations/providers/model_serving_runtime/ollama/register.py",
+            "intergrax/integrations/providers/embedding_provider/ollama/bundle.py",
+            "intergrax/integrations/providers/embedding_provider/ollama/register.py",
+            "tests/qualification/ebh_5/_package_c_v2_primitives.py",
+            "tests/qualification/pdc_x/p6_ecapfix/",
+        ),
+        "—",
+        ("B-P6-G",),
+        GATE_PRODUCT,
+        "IA-GLOBAL (P8)",
+        "tests/qualification/pdc_x/p6_ecapfix/; test_ebh_5_behavioral_package_c_v2.py green",
+    ),
+    Batch(
+        "B-P6-E",
+        "ALL",
+        "P6 acceptance record and EBH-7 re-pin (fresh L3 replay at the integrated baseline)",
+        "T-IGX-036-W",
+        "W9",
+        (
+            "docs/project/maintainers/qualification/ebh_7_p03_independent_replay/",
+            "docs/project/maintainers/qualification/EBH_7_SHA_LADDER.md",
+            "docs/project/maintainers/qualification/EBH_7_B6_F10_ECAP_NORMATIVE_MATRIX.md",
+            "docs/project/maintainers/qualification/platform_domain_completeness/PDC_P6_ACCEPTANCE_RECORD.md",
+            "docs/project/maintainers/qualification/platform_domain_completeness/PDC_SHA_LADDER.md",
+            "docs/project/maintainers/qualification/platform_domain_completeness/PDC_REG_DIAGNOSIS.md",
+            ".github/workflows/unit-tests.yml",
+            "tests/qualification/ebh_7/_constants.py",
+        ),
+        "—",
+        ("B-P6-G", "B-P6-F"),
+        GATE_FREE,
+        "IA-GLOBAL (P8)",
+        "PDC_P6_ACCEPTANCE_RECORD.md; tests/qualification/ebh_7 green at the new pin",
+    ),
 )
 
 # Requirement -> batch overrides where the corrective-task text alone is ambiguous.
@@ -732,6 +774,8 @@ def render_dag() -> str:
         "W5": ("after B-P6 (XD runs)", "after MCP-SERVER-X P8"),
         "W6": ("after B-P6-R", "after MCP-SERVER-X P8"),
         "W7": ("after B-P6-R and B-P6-M", "after MCP-SERVER-X P8"),
+        "W8": ("after B-P6-G and the signature of T-IGX-036-X", "any time (no product path)"),
+        "W9": ("after B-P6-F and the signature of T-IGX-036-W", "any time (no product path)"),
     }
     for wave, bids in waves.items():
         start, merge = starts.get(wave, ("?", "?"))

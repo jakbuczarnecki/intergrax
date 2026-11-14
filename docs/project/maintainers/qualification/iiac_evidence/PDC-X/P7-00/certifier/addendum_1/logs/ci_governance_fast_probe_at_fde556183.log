@@ -1,0 +1,48 @@
+# governance-fast probe: validate_policy_registry.py, then pytest tests/unit/governance/ -q --tb=line (workflow steps of unit-tests.yml)
+# HEAD: fde55618379ff99779172e40214b5879d9d0810d
+# PYTHONPATH: D:/Projekty/intergrax/.claude/worktrees/mcp-rc-certifier-fe2eb3
+# intergrax from: D:\Projekty\intergrax\.claude\worktrees\mcp-rc-certifier-fe2eb3\intergrax\__init__.py
+# validate_policy_registry exit: 0 [INFO] validate_policy_registry: OK
+........................................................................ [ 41%]
+.........EEEEEEEEEEEEEEE.F...............s.............................. [ 83%]
+.F...........................                                            [100%]
+=================================== ERRORS ====================================
+_ ERROR at setup of test_real_activation_verifies_in_a_fresh_autocrlf_true_clone _
+E   RuntimeError: git -c user.email=w4f07@example.com -c user.name=w4f07 checkout -q --detach FETCH_HEAD failed: fatal: cannot create directory at 'docs/project/maintainers/qualification/ent_audit_x/b6_independent_handoff/freeze_normal_at_0ad6511acaa29f18428c10dd8ad6a29262548aec/l3-cli-full': Filename too long
+_ ERROR at setup of test_real_activation_verifies_in_a_fresh_autocrlf_false_clone _
+E   RuntimeError: git -c user.email=w4f07@example.com -c user.name=w4f07 checkout -q --detach FETCH_HEAD failed: fatal: cannot create directory at 'docs/project/maintainers/qualification/ent_audit_x/b6_independent_handoff/freeze_normal_at_0ad6511acaa29f18428c10dd8ad6a29262548aec/l3-cli-full': Filename too long
+_ ERROR at setup of test_real_activation_verifies_in_a_fresh_autocrlf_input_clone _
+E   RuntimeError: git -c user.email=w4f07@example.com -c user.name=w4f07 checkout -q --detach FETCH_HEAD failed: fatal: cannot create directory at 'docs/project/maintainers/qualification/ent_audit_x/b6_independent_handoff/freeze_normal_at_0ad6511acaa29f18428c10dd8ad6a29262548aec/l3-cli-full': Filename too long
+_ ERROR at setup of test_w4_f01_handoff_bytes_are_crlf_in_every_checkout_mode _
+E   RuntimeError: git -c user.email=w4f07@example.com -c user.name=w4f07 checkout -q --detach FETCH_HEAD failed: fatal: cannot create directory at 'docs/project/maintainers/qualification/ent_audit_x/b6_independent_handoff/freeze_normal_at_0ad6511acaa29f18428c10dd8ad6a29262548aec/l3-cli-full': Filename too long
+_ ERROR at setup of test_w4_f01_a_tampered_handoff_still_fails_act_n08_in_every_checkout_mode _
+E   RuntimeError: git -c user.email=w4f07@example.com -c user.name=w4f07 checkout -q --detach FETCH_HEAD failed: fatal: cannot create directory at 'docs/project/maintainers/qualification/ent_audit_x/b6_independent_handoff/freeze_normal_at_0ad6511acaa29f18428c10dd8ad6a29262548aec/l3-cli-full': Filename too long
+_ ERROR at setup of test_real_preflight_in_a_fresh_autocrlf_true_clone_reports_only_certifier_blockers _
+E   RuntimeError: git -c user.email=w4f07@example.com -c user.name=w4f07 checkout -q --detach FETCH_HEAD failed: fatal: cannot create directory at 'docs/project/maintainers/qualification/ent_audit_x/b6_independent_handoff/freeze_normal_at_0ad6511acaa29f18428c10dd8ad6a29262548aec/l3-cli-full': Filename too long
+_ ERROR at setup of test_real_preflight_in_a_fresh_autocrlf_false_clone_matches_the_crlf_clone _
+E   RuntimeError: git -c user.email=w4f07@example.com -c user.name=w4f07 checkout -q --detach FETCH_HEAD failed: fatal: cannot create directory at 'docs/project/maintainers/qualification/ent_audit_x/b6_independent_handoff/freeze_normal_at_0ad6511acaa29f18428c10dd8ad6a29262548aec/l3-cli-full': Filename too long
+_ ERROR at setup of test_real_preflight_flags_tampered_evidence_in_a_fresh_clone _
+E   RuntimeError: git -c user.email=w4f07@example.com -c user.name=w4f07 checkout -q --detach FETCH_HEAD failed: fatal: cannot create directory at 'docs/project/maintainers/qualification/ent_audit_x/b6_independent_handoff/freeze_normal_at_0ad6511acaa29f18428c10dd8ad6a29262548aec/l3-cli-full': Filename too long
+_ ERROR at setup of test_real_preflight_rejects_a_widened_certified_scope_in_a_fresh_clone _
+E   RuntimeError: git -c user.email=w4f07@example.com -c user.name=w4f07 checkout -q --detach FETCH_HEAD failed: fatal: cannot create directory at 'docs/project/maintainers/qualification/ent_audit_x/b6_independent_handoff/freeze_normal_at_0ad6511acaa29f18428c10dd8ad6a29262548aec/l3-cli-full': Filename too long
+_ ERROR at setup of test_da01_real_repoint_of_the_p2_sha_to_head_is_rejected_in_a_fresh_clone _
+E   RuntimeError: git -c user.email=w4f07@example.com -c user.name=w4f07 checkout -q --detach FETCH_HEAD failed: fatal: cannot create directory at 'docs/project/maintainers/qualification/ent_audit_x/b6_independent_handoff/freeze_normal_at_0ad6511acaa29f18428c10dd8ad6a29262548aec/l3-cli-full': Filename too long
+_ ERROR at setup of test_da01_real_repoint_is_rejected_when_the_preflight_runs_against_another_repository _
+E   RuntimeError: git -c user.email=w4f07@example.com -c user.name=w4f07 checkout -q --detach FETCH_HEAD failed: fatal: cannot create directory at 'docs/project/maintainers/qualification/ent_audit_x/b6_independent_handoff/freeze_normal_at_0ad6511acaa29f18428c10dd8ad6a29262548aec/l3-cli-full': Filename too long
+_ ERROR at setup of test_da02_real_sealed_record_keys_and_p2_evidence_files_cannot_be_changed[notes-evidence-only-removed] _
+E   RuntimeError: git -c user.email=w4f07@example.com -c user.name=w4f07 checkout -q --detach FETCH_HEAD failed: fatal: cannot create directory at 'docs/project/maintainers/qualification/ent_audit_x/b6_independent_handoff/freeze_normal_at_0ad6511acaa29f18428c10dd8ad6a29262548aec/l3-cli-full': Filename too long
+_ ERROR at setup of test_da02_real_sealed_record_keys_and_p2_evidence_files_cannot_be_changed[stage-id] _
+E   RuntimeError: git -c user.email=w4f07@example.com -c user.name=w4f07 checkout -q --detach FETCH_HEAD failed: fatal: cannot create directory at 'docs/project/maintainers/qualification/ent_audit_x/b6_independent_handoff/freeze_normal_at_0ad6511acaa29f18428c10dd8ad6a29262548aec/l3-cli-full': Filename too long
+_ ERROR at setup of test_da02_real_sealed_record_keys_and_p2_evidence_files_cannot_be_changed[assessment-edited-and-reindexed] _
+E   RuntimeError: git -c user.email=w4f07@example.com -c user.name=w4f07 checkout -q --detach FETCH_HEAD failed: fatal: cannot create directory at 'docs/project/maintainers/qualification/ent_audit_x/b6_independent_handoff/freeze_normal_at_0ad6511acaa29f18428c10dd8ad6a29262548aec/l3-cli-full': Filename too long
+_ ERROR at setup of test_da02_real_sealed_record_keys_and_p2_evidence_files_cannot_be_changed[assessment-deleted] _
+E   RuntimeError: git -c user.email=w4f07@example.com -c user.name=w4f07 checkout -q --detach FETCH_HEAD failed: fatal: cannot create directory at 'docs/project/maintainers/qualification/ent_audit_x/b6_independent_handoff/freeze_normal_at_0ad6511acaa29f18428c10dd8ad6a29262548aec/l3-cli-full': Filename too long
+================================== FAILURES ===================================
+D:\Projekty\intergrax\.claude\worktrees\mcp-rc-certifier-fe2eb3\tests\unit\governance\test_iiac_activation_gate.py:256: AssertionError: IIAC policy activation: FAIL
+D:\Projekty\intergrax\.claude\worktrees\mcp-rc-certifier-fe2eb3\tests\unit\governance\test_iiac_negative_guards.py:281: AssertionError: assert 1 == 0
+=========================== short test summary info ===========================
+FAILED tests/unit/governance/test_iiac_activation_gate.py::test_canonical_policy_is_in_force_and_verifies
+FAILED tests/unit/governance/test_iiac_negative_guards.py::test_n12_policy_is_in_force_only_with_valid_activation_evidence
+2 failed, 155 passed, 1 skipped, 15 errors in 462.16s (0:07:42)
+# pytest exit code: 1
+# elapsed_s: 466.52
