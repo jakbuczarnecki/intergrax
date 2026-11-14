@@ -1,0 +1,80 @@
+{
+  "stage_id": "PDC-X/P7-00/addendum_2",
+  "base_sha": "19d552beeb6f0677a8bdc3b4ce65da15dd637c7b",
+  "audited_implementation_sha": "324d9dba37cb54e1b74a79a05148d2dcc05e6d09",
+  "activation_pin_audit_execution_sha": "2d3eceb6cf7e93dccd4d96919319a6c969b4444b",
+  "dossier_verdict_addendum": "PASS_SCOPED",
+  "iiac_manifest_verdict": "CONDITIONAL",
+  "combined_verdict": "PASS_SCOPED",
+  "counts_new": { "HIGH": 0, "MEDIUM": 2, "LOW": 2, "INFO": 4, "total": 8 },
+  "product_change_required_for_activation": [],
+  "orchestrator_or_operator_decision_required": ["F-41"],
+  "test_only_change_required_before_merge_or_ci": ["F-41 (test scope) or product map rule (decision)", "F-42", "F-07", "F-35"],
+  "status_of_earlier_findings": [
+    { "id": "F-05", "status": "CLOSED_AT_TEST_LEVEL_BUT_RED_ON_INTEGRATED_TREE", "evidence": "the last declared-open gap FINDING-8 (xd_12) no longer carries an xfail; the repaired test and the new p6_impact coverage test FAIL on the integrated tree 324d9dba3 for 8 applications/*/mcp/server.py modules (F-41); the xfail text of the second repair half (pdc_x entrypoint in the manifest) is gone and nothing records it as open (F-45)" },
+    { "id": "F-06", "status": "RESOLVED", "evidence": "the three EBH-5 gate files pass in logs/addendum2_regression_run.stdout.txt (unchanged since addendum 1)" },
+    { "id": "F-07", "status": "OPEN", "evidence": "tests/unit/governance/test_pdc_x_inventory.py: the same two tests fail at 324d9dba3 (logs/failing_nodes_at_head.log); absent at the pin, red at 19d552bee" },
+    { "id": "F-09", "status": "NOT_REPRODUCED_IN_THIS_RUN", "evidence": "the run contained no tests/qualification/pdc_x/xd/test_xd_03_agent_governance.py; the pytest process exited by itself (RUNNER status=EXITED); the hang itself is not shown to be fixed" },
+    { "id": "F-35", "status": "NOT_RE_RUN_UNCHANGED", "evidence": "tests/qualification/compat_x was not part of this run; the delta touches neither security_audit_trail.py nor compat_x files" },
+    { "id": "F-38", "status": "EXTENDED", "evidence": "see F-46: 69 of 84 failures of the long combined run pass in isolation in a short-path checkout" },
+    { "id": "F-01..F-04, F-08, F-10..F-34, F-36, F-37, F-39, F-40", "status": "UNCHANGED", "evidence": "the two delta paths do not touch their files" }
+  ],
+  "findings": [
+    {
+      "id": "F-41", "severity": "MEDIUM", "area": "ENT-AUDIT impact map / integrated baseline", "verification": "TEST_RUN",
+      "title": "The repaired XD-12 case and the new p6_impact coverage test are red on the integrated baseline: 8 applications/*/mcp/server.py modules map to no check",
+      "evidence": "Regression run (logs/addendum2_regression_run.stdout.txt) and the isolated re-run of its failures in a short-path detached checkout of 324d9dba3 (logs/failing_nodes_at_head.log): tests/qualification/pdc_x/xd/test_xd_12_evol_ent_audit.py::test_xd12_every_pdc_touched_product_module_maps_to_a_domain_check and tests/qualification/pdc_x/p6_impact/test_p6_impact_map_coverage.py::test_every_pdc_touched_product_module_maps_to_at_least_one_check fail with '8 PDC-touched product modules map to no check, e.g. applications/dispute_sim_application/mcp/server.py ...' (the eight MCP-RC server modules of dispute_sim, governed_contractor, intergrax_assistant, lab, legal, local_workspace, poc_template and research applications). Cause: both tests take git diff BASELINE_SHA..HEAD, which on mcp-rc includes the MCP-RC product changes; the new domain rules (PDC_DOMAIN_IMPACT_RULES) are all intergrax/* prefixes and no manifest entrypoint covers applications/*. At 19d552bee the XD-12 case was a strict xfail (so not red) and the p6_impact test did not exist (logs/failing15_nodes_at_prev.log). Whether the same two tests pass on development alone was not run here.",
+      "impact": "the ticket acceptance 'XD-12 finding 8 runs as a plain passing test' holds on development but not on the integrated mcp-rc baseline: the removal of the xfail turns a declared gap into a red test there (a gap is exposed, not hidden). A CHANGED-SINCE run over a range that contains the eight MCP servers selects only the invariant floor for them.",
+      "disposition": "ORCHESTRATOR_AND_OPERATOR_DECISION: either add rules for the applications/* roots to impact_map.py (a product path: voids ACT-N11 for it, needs another re-pin) or accept the red class on the integrated baseline until after the rebind; do not narrow the test (that would weaken a gate)"
+    },
+    {
+      "id": "F-42", "severity": "MEDIUM", "area": "EBH-5 reachability floor check / regression selection", "verification": "TEST_RUN",
+      "title": "Two EBH-5 package C v2 dual-slug tests (embedding_provider) are red since PDC-X; the file is the entrypoint of the floor check VBN-REACHABILITY",
+      "evidence": "tests/qualification/ebh_5/test_ebh_5_behavioral_package_c_v2.py::test_ebh5_pkgc_v2_dual_slug_integration[integration.embedding_provider] and ::test_ebh5_pkgc_v2_dual_slug_rpl_cde_equivalence[integration.embedding_provider] fail with UnknownIntegrationError \"Integration slug 'ollama' is not registered in the catalog\" (intergrax/integrations/providers/embedding_provider/ollama/register.py:20 -> catalog.augment_integration_contract_specs). They fail in isolation at 324d9dba3 and at 19d552bee and pass at the pin (logs/failing_nodes_at_head.log, failing15_nodes_at_prev.log, failing15_nodes_at_pin.log). Candidate origin: commit c3d5b7005 'B-REG-P single ollama catalog row for the embedding provider' (T-IGX-036-M), not diagnosed. The three further tests of the file (relational_sqlite_duckdb_dual_slug, ...[integration.relational_store] x2) fail with ModuleNotFoundError duckdb and are red at the pin too (environment of the shared .venv). The manifest check VBN-REACHABILITY has this file as its entrypoint and VBN-* checks belong to the invariant floor of every CHANGED-SINCE run (changed_since.invariant_floor).",
+      "impact": "a floor check of the CHANGED-SINCE selection is red on the baseline; coverage correction (identical at 19d552bee, so not an effect of this delta; neither the first audit nor addendum 1 ran this file).",
+      "disposition": "TEST_ONLY_FIX or catalog registration by the ebh_5 / integrations owner; route to the domain audit that covers LLM adapters / integrations (IA-D3)"
+    },
+    {
+      "id": "F-43", "severity": "LOW", "area": "impact map: legacy check ids", "verification": "PROBE_CONFIRMED",
+      "title": "Thirty legacy C0xx ids in the platform rules (12 paths) are not manifest ids; the delta fixes only the map's own two files",
+      "evidence": "Probe P2 (logs/addendum_2_impact_map_probes.results.json): the shipped map names 30 ids that the 85-check manifest does not have (C002, C004, ..., C074), identical before and after the delta. The delta replaces C024/C029/C072 by ENT-A-EVOL-01..03 for impact_map.py and changed_since_impact_map.v1.json only (the code comment says so). changed_since.py (the selection logic itself), runner.py, validators.py, evidence.py, baseline.py, modes.py, sandbox.py, report.py, the report schema, the manifest JSON, build_impact_map.py and run_qual_wave.py still map to those phantom ids. Mutation M5 (logs/mutation_sample.stdout.txt) shows the consequence: a map file selecting legacy ids is caught by xd_12 (selected <= manifest_ids) and by p6_impact, so a change to any of the 12 other paths inside the PDC range makes the first XD-12 case red. tests/qualification/ent_audit_x/unit/test_changed_since_impact_map.py still asserts C024/C029 for changed_since.py.",
+      "impact": "a change to the CHANGED-SINCE selection logic or to the enterprise-audit runner selects no real domain check (only the floor); latent red in XD-12 when such a path next changes. Pre-existing weakness, not introduced by the delta.",
+      "disposition": "ROUTE_TO_ENT-AUDIT owner; separate ticket (a product path)"
+    },
+    {
+      "id": "F-44", "severity": "LOW", "area": "impact map: adequacy of the mapping is not tested", "verification": "PROBE_CONFIRMED",
+      "title": "The tests prove that every touched module has some existing check id, not that it has a relevant one; mutations that reroute or shrink a rule survive",
+      "evidence": "Mutation sample on a scratch detached checkout (logs/mutation_sample.stdout.txt; control already red with the two F-41 tests, so a mutant counts as killed only by a new failure): M1 delete the runtime/security rule KILLED (representative-module test); M5 own files back to legacy ids KILLED; M6 unknown id KILLED; M2 reroute runtime/security to ENT-A-DOC-01 SURVIVED; M3 reroute runtime/agent_governance to ENT-A-DOC-01 SURVIVED; M4 shrink applications to one id SURVIVED; M7 weak catch-all prefix intergrax/runtime -> ENT-A-DOC-01 SURVIVED. Probe P3: for 19319 tracked files the selection by the new map never loses an id compared to the previous map except for the two own files (whose lost ids are not manifest ids), so the delta drops or reroutes nothing; the new rules only add (5780 files gain impact ids). Probes P6/P7: coverage stays partial: of 7046 intergrax python files 1676 have no impact id (previous map: 7037); of 259 governance/identity/authority/policy/tenant/auth python files 146 have none (fastapi_core/auth, runtime/governance, runtime/policy, runtime/human, ...); of 37 files with 'mcp' in the path 16 have none; the manifest has no MCP-specific check, so MCP modules (intergrax/applications/_shared/mcp_*) only receive the generic applications/contracts gates (ENT-A-BND-01, CTR-*, TYP-01, SEC-*, VBN-CONTRACT-LEAKAGE).",
+      "impact": "the map does not weaken any selection and gives MCP, identity and governance modules more checks than before, but a wrong or thinner mapping would not be detected by the tests; large parts of the governance and identity code remain at the invariant floor.",
+      "disposition": "ROUTE_TO_ENT-AUDIT owner and to IA-D6 (runtime security) / IA-D1; accept for the rebind"
+    },
+    {
+      "id": "F-45", "severity": "INFO", "area": "ticket scope vs removed xfail text", "verification": "CODE_READ_BY_AUDITOR",
+      "title": "Only the first half of the repair proposed in the removed xfail reason was delivered; the second half is no longer recorded as open",
+      "evidence": "The removed xfail reason named two repairs: add PDC prefixes to the impact map AND add the tests/qualification/pdc_x entrypoint to the check manifest. T-IGX-036-V / PLAN_T-IGX-036-V.md explicitly keep the manifest at exactly 85 checks and out of scope, so no manifest check runs the pdc_x suites; a change to a PDC product module selects generic gates, never the pdc_x tests of its own domain.",
+      "impact": "documented and approved scoping, but after the xfail removal no test or record carries the residual.",
+      "disposition": "ACCEPT; record as an explicit residual in the domain audits"
+    },
+    {
+      "id": "F-46", "severity": "INFO", "area": "regression run attribution", "verification": "TEST_RUN",
+      "title": "84 failures in the long combined run; 69 pass in isolation, 15 persist; 9 of the 15 are red at the pin",
+      "evidence": "logs/addendum2_regression_run.stdout.txt: 274 entries, 84 failed, 1359 passed, 176 skipped, 1 xfailed, 1022 s, pytest exited by itself. The 84 node ids re-run in a short-path detached checkout of 324d9dba3 (logs/failing_nodes_at_head.log): 15 failed, 69 passed (all 23 test_baseline_promotion_iiac and 46 of 47 evol_x p03 integrity cases pass there; in the long run they failed with 'delegation record not found ... @<sha>', probably the long worktree path / MAX_PATH of the audit worktree, not isolated). The 15: F-41 x2, F-07 x2, F-42 x2, duckdb-missing x3, roadmap_replay_x x5 (red at the pin), evol_x test_mode_a_automation_first_scoped_final_passes x1 (red at the pin). The 15 at 19d552bee: 13 failed + 1 xfailed (xd_12); at the pin: 9 failed, 2 passed (logs/failing15_nodes_at_{prev,pin}.log). First attempts with all 84 ids at the older checkouts hung after 30 tests and were abandoned (logs/failing_nodes_at_{prev,pin}_first_attempt_all84_hung_after_30_tests.log). No MCP-RC test failed; the one strict xfail is the known TRANSFERRED case.",
+      "impact": "only F-41 is a result of PDC-X/this range that is not already known; the rest is pre-existing, environment or order dependent.",
+      "disposition": "ACCEPT_AS_ATTRIBUTED; the order dependence extends F-38"
+    },
+    {
+      "id": "F-47", "severity": "INFO", "area": "test change review", "verification": "CODE_READ_BY_AUDITOR",
+      "title": "The 13-line removal in test_xd_12_evol_ent_audit.py is exactly the strict xfail decorator; no assertion is weakened",
+      "evidence": "git diff 19d552bee 324d9dba3 -- tests/qualification/pdc_x/xd/test_xd_12_evol_ent_audit.py removes only the @pytest.mark.xfail(strict=True, reason=...) block above test_xd12_every_pdc_touched_product_module_maps_to_a_domain_check; the body (prefixes = load_default_impact_map(); unmapped = [... not check_ids_for_changed_path(...) and not any(_check_touched(...))]; assert unmapped == []) and the other XD-12 cases are byte-identical. The new tests/qualification/pdc_x/p6_impact tests assert: manifest still 85 checks; every rule id exists in the manifest; rule prefixes unique, normalized, not under the fail-closed prefixes; generator output contains every rule; the shipped SSOT equals the generator output byte for byte; 39 representative modules map to existing ids; every PDC-touched module maps; the two own files select only manifest ids. The gate is strictly stronger than before, and it is red where it should be red (F-41), not hidden. tests/qualification/ent_audit_x/unit/test_changed_since_impact_map.py is unchanged and passes.",
+      "impact": "no gate weakened, no gap hidden.",
+      "disposition": "ACCEPT"
+    },
+    {
+      "id": "F-48", "severity": "INFO", "area": "delta review", "verification": "CODE_READ_BY_AUDITOR",
+      "title": "The two delta paths add no import, credential, endpoint, process/network/dynamic-code surface and no authority; selection only gains checks",
+      "evidence": "full diff read (+459/-12 over the two paths): impact_map.py gains the constant PDC_DOMAIN_IMPACT_RULES (52 distinct manifest ids, 37 prefixes, one-line justification per rule), a merge loop in build_impact_map_from_manifest, a re-pointed pair of own-file rules and one existing schema-path rule; selection functions (check_ids_for_changed_path longest prefix first match, unmapped_fail_closed_paths, the fail-closed prefixes) are unchanged; the JSON is the generator output (probe P5 true, p6_impact test). Probe P4: every id used by the new rules exists in the 85-check manifest and every entrypoint file exists. Added-line scan: no import, subprocess, socket, eval/exec, pickle, http, environment or file access. ruff check and ruff format --check clean on impact_map.py and the three test files; tier gates exit 0 except check_intergrax_no_applications_imports (exit 1, output hash identical to the first audit and addendum 1: the same 12 untouched pre-existing files); check_immutable_security_audit_trail exit 0; uv lock --check exit 0; verify_iiac_g0_inventory_completeness PASS (17510 paths). The 23 MCP-RC paths remain byte-identical to b0e19bf61 (git diff empty); no path under scripts/, governance/ or .github/ and not the G0 matrix changed in 19d552bee..324d9dba3; the only non-evidence docs added are the three PDC_P7_00 dossiers/preflight and the MCP RC contract log.",
+      "impact": "no ACT-N11 invariant weakened.",
+      "disposition": "ACCEPT"
+    }
+  ]
+}

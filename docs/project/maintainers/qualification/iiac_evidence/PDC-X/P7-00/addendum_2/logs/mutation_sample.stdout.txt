@@ -1,0 +1,127 @@
+{
+  "CONTROL_unmutated": {
+    "exit": 1,
+    "failed_tests": [
+      "tests/qualification/pdc_x/p6_impact/test_p6_impact_map_coverage.py::test_every_pdc_touched_product_module_maps_to_at_least_one_check",
+      "tests/qualification/pdc_x/xd/test_xd_12_evol_ent_audit.py::test_xd12_every_pdc_touched_product_module_maps_to_a_domain_check"
+    ],
+    "tail": [
+      "FAILED tests/qualification/pdc_x/p6_impact/test_p6_impact_map_coverage.py::test_every_pdc_touched_product_module_maps_to_at_least_one_check",
+      "FAILED tests/qualification/pdc_x/xd/test_xd_12_evol_ent_audit.py::test_xd12_every_pdc_touched_product_module_maps_to_a_domain_check",
+      "2 failed, 51 passed in 1.14s"
+    ]
+  },
+  "M1_drop_security_rule": {
+    "generator_exit": 0,
+    "pytest_exit": 1,
+    "verdict": "KILLED",
+    "new_failures_vs_control": [
+      "tests/qualification/pdc_x/p6_impact/test_p6_impact_map_coverage.py::test_representative_pdc_module_maps_to_a_manifest_check[intergrax/runtime/security/security_audit_trail.py]"
+    ],
+    "failed_tests": [
+      "tests/qualification/pdc_x/p6_impact/test_p6_impact_map_coverage.py::test_representative_pdc_module_maps_to_a_manifest_check[intergrax/runtime/security/security_audit_trail.py]",
+      "tests/qualification/pdc_x/p6_impact/test_p6_impact_map_coverage.py::test_every_pdc_touched_product_module_maps_to_at_least_one_check",
+      "tests/qualification/pdc_x/xd/test_xd_12_evol_ent_audit.py::test_xd12_every_pdc_touched_product_module_maps_to_a_domain_check"
+    ],
+    "tail": [
+      "FAILED tests/qualification/pdc_x/xd/test_xd_12_evol_ent_audit.py::test_xd12_every_pdc_touched_product_module_maps_to_a_domain_check",
+      "3 failed, 50 passed in 1.17s"
+    ]
+  },
+  "M2_reroute_security_to_doc_check": {
+    "generator_exit": 0,
+    "pytest_exit": 1,
+    "verdict": "SURVIVED",
+    "new_failures_vs_control": [],
+    "failed_tests": [
+      "tests/qualification/pdc_x/p6_impact/test_p6_impact_map_coverage.py::test_every_pdc_touched_product_module_maps_to_at_least_one_check",
+      "tests/qualification/pdc_x/xd/test_xd_12_evol_ent_audit.py::test_xd12_every_pdc_touched_product_module_maps_to_a_domain_check"
+    ],
+    "tail": [
+      "FAILED tests/qualification/pdc_x/xd/test_xd_12_evol_ent_audit.py::test_xd12_every_pdc_touched_product_module_maps_to_a_domain_check",
+      "2 failed, 51 passed in 1.12s"
+    ]
+  },
+  "M3_reroute_agent_governance_to_doc_check": {
+    "generator_exit": 0,
+    "pytest_exit": 1,
+    "verdict": "SURVIVED",
+    "new_failures_vs_control": [],
+    "failed_tests": [
+      "tests/qualification/pdc_x/p6_impact/test_p6_impact_map_coverage.py::test_every_pdc_touched_product_module_maps_to_at_least_one_check",
+      "tests/qualification/pdc_x/xd/test_xd_12_evol_ent_audit.py::test_xd12_every_pdc_touched_product_module_maps_to_a_domain_check"
+    ],
+    "tail": [
+      "FAILED tests/qualification/pdc_x/xd/test_xd_12_evol_ent_audit.py::test_xd12_every_pdc_touched_product_module_maps_to_a_domain_check",
+      "2 failed, 51 passed in 1.17s"
+    ]
+  },
+  "M4_shrink_applications_to_one_id": {
+    "generator_exit": 0,
+    "pytest_exit": 1,
+    "verdict": "SURVIVED",
+    "new_failures_vs_control": [],
+    "failed_tests": [
+      "tests/qualification/pdc_x/p6_impact/test_p6_impact_map_coverage.py::test_every_pdc_touched_product_module_maps_to_at_least_one_check",
+      "tests/qualification/pdc_x/xd/test_xd_12_evol_ent_audit.py::test_xd12_every_pdc_touched_product_module_maps_to_a_domain_check"
+    ],
+    "tail": [
+      "FAILED tests/qualification/pdc_x/xd/test_xd_12_evol_ent_audit.py::test_xd12_every_pdc_touched_product_module_maps_to_a_domain_check",
+      "2 failed, 51 passed in 1.21s"
+    ]
+  },
+  "M5_own_files_back_to_legacy_ids": {
+    "generator_exit": 0,
+    "pytest_exit": 1,
+    "verdict": "KILLED",
+    "new_failures_vs_control": [
+      "tests/qualification/pdc_x/p6_impact/test_p6_impact_map_coverage.py::test_impact_map_own_files_select_only_existing_manifest_check_ids[intergrax/platform/enterprise_audit/impact_map.py]",
+      "tests/qualification/pdc_x/xd/test_xd_12_evol_ent_audit.py::test_xd12_changed_since_over_the_pdc_range_never_fails_closed_and_keeps_the_invariant_floor"
+    ],
+    "failed_tests": [
+      "tests/qualification/pdc_x/p6_impact/test_p6_impact_map_coverage.py::test_every_pdc_touched_product_module_maps_to_at_least_one_check",
+      "tests/qualification/pdc_x/p6_impact/test_p6_impact_map_coverage.py::test_impact_map_own_files_select_only_existing_manifest_check_ids[intergrax/platform/enterprise_audit/impact_map.py]",
+      "tests/qualification/pdc_x/xd/test_xd_12_evol_ent_audit.py::test_xd12_changed_since_over_the_pdc_range_never_fails_closed_and_keeps_the_invariant_floor",
+      "tests/qualification/pdc_x/xd/test_xd_12_evol_ent_audit.py::test_xd12_every_pdc_touched_product_module_maps_to_a_domain_check"
+    ],
+    "tail": [
+      "FAILED tests/qualification/pdc_x/xd/test_xd_12_evol_ent_audit.py::test_xd12_every_pdc_touched_product_module_maps_to_a_domain_check",
+      "4 failed, 49 passed in 1.15s"
+    ]
+  },
+  "M6_unknown_id_in_domain_rule": {
+    "generator_exit": 0,
+    "pytest_exit": 1,
+    "verdict": "KILLED",
+    "new_failures_vs_control": [
+      "tests/qualification/pdc_x/p6_impact/test_p6_impact_map_coverage.py::test_every_pdc_domain_rule_names_only_existing_manifest_check_ids",
+      "tests/qualification/pdc_x/p6_impact/test_p6_impact_map_coverage.py::test_representative_pdc_module_maps_to_a_manifest_check[intergrax/skills/host_lifecycle.py]",
+      "tests/qualification/pdc_x/xd/test_xd_12_evol_ent_audit.py::test_xd12_changed_since_over_the_pdc_range_never_fails_closed_and_keeps_the_invariant_floor"
+    ],
+    "failed_tests": [
+      "tests/qualification/pdc_x/p6_impact/test_p6_impact_map_coverage.py::test_every_pdc_domain_rule_names_only_existing_manifest_check_ids",
+      "tests/qualification/pdc_x/p6_impact/test_p6_impact_map_coverage.py::test_representative_pdc_module_maps_to_a_manifest_check[intergrax/skills/host_lifecycle.py]",
+      "tests/qualification/pdc_x/p6_impact/test_p6_impact_map_coverage.py::test_every_pdc_touched_product_module_maps_to_at_least_one_check",
+      "tests/qualification/pdc_x/xd/test_xd_12_evol_ent_audit.py::test_xd12_changed_since_over_the_pdc_range_never_fails_closed_and_keeps_the_invariant_floor",
+      "tests/qualification/pdc_x/xd/test_xd_12_evol_ent_audit.py::test_xd12_every_pdc_touched_product_module_maps_to_a_domain_check"
+    ],
+    "tail": [
+      "FAILED tests/qualification/pdc_x/xd/test_xd_12_evol_ent_audit.py::test_xd12_every_pdc_touched_product_module_maps_to_a_domain_check",
+      "5 failed, 48 passed in 1.12s"
+    ]
+  },
+  "M7_weak_catch_all_runtime_prefix": {
+    "generator_exit": 0,
+    "pytest_exit": 1,
+    "verdict": "SURVIVED",
+    "new_failures_vs_control": [],
+    "failed_tests": [
+      "tests/qualification/pdc_x/p6_impact/test_p6_impact_map_coverage.py::test_every_pdc_touched_product_module_maps_to_at_least_one_check",
+      "tests/qualification/pdc_x/xd/test_xd_12_evol_ent_audit.py::test_xd12_every_pdc_touched_product_module_maps_to_a_domain_check"
+    ],
+    "tail": [
+      "FAILED tests/qualification/pdc_x/xd/test_xd_12_evol_ent_audit.py::test_xd12_every_pdc_touched_product_module_maps_to_a_domain_check",
+      "2 failed, 51 passed in 1.16s"
+    ]
+  }
+}

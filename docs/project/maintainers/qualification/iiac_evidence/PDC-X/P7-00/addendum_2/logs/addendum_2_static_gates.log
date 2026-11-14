@@ -1,0 +1,238 @@
+== ruff check: the 2 product paths + 3 test files + addendum 2 scripts
+E501 Line too long (123 > 120)
+ --> docs\project\maintainers\qualification\iiac_evidence\PDC-X\P7-00\addendum_2\adversarial_scripts\addendum_2_mutation_sample.py:4:121
+  |
+3 | usage: python addendum_2_mutation_sample.py <scratch-checkout>
+4 | For each mutant: edit impact_map.py, regenerate the SSOT JSON with scripts/enterprise_audit/build_impact_map.py --emit-ssot
+  |                                                                                                                         ^^^
+5 | (so the shipped-JSON-equals-generator test is not the only killer), run the targeted tests once, restore the files with git.
+6 | The targeted tests are the ones of the T-IGX-036-V test contract that concern the map: pdc_x/p6_impact, xd_12 and the
+  |
+
+E501 Line too long (124 > 120)
+ --> docs\project\maintainers\qualification\iiac_evidence\PDC-X\P7-00\addendum_2\adversarial_scripts\addendum_2_mutation_sample.py:5:121
+  |
+3 | usage: python addendum_2_mutation_sample.py <scratch-checkout>
+4 | For each mutant: edit impact_map.py, regenerate the SSOT JSON with scripts/enterprise_audit/build_impact_map.py --emit-ssot
+5 | (so the shipped-JSON-equals-generator test is not the only killer), run the targeted tests once, restore the files with git.
+  |                                                                                                                         ^^^^
+6 | The targeted tests are the ones of the T-IGX-036-V test contract that concern the map: pdc_x/p6_impact, xd_12 and the
+7 | ent_audit_x unit test of the impact map. One pytest process at a time.
+  |
+
+E501 Line too long (192 > 120)
+  --> docs\project\maintainers\qualification\iiac_evidence\PDC-X\P7-00\addendum_2\adversarial_scripts\addendum_2_mutation_sample.py:52:121
+   |
+51 | …
+52 | …script \+ report redaction test.*?\n    \(\n        "intergrax/runtime/security",.*?\n    \),\n', ""),
+   |                                ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+53 | …e/security"), r'\1"ENT-A-DOC-01",\2'),
+54 | …e/agent_governance", \()[^)]*(\)\),)', r'\1"ENT-A-DOC-01",\2'),
+   |
+
+E501 Line too long (128 > 120)
+  --> docs\project\maintainers\qualification\iiac_evidence\PDC-X\P7-00\addendum_2\adversarial_scripts\addendum_2_mutation_sample.py:53:121
+   |
+51 | MUTANTS = {
+52 |     "M1_drop_security_rule": lambda t: sub_once(t, r'    # immutable security audit trail script \+ report redaction test.*?\n    \(\n…
+53 |     "M2_reroute_security_to_doc_check": lambda t: sub_once(t, rule_block("intergrax/runtime/security"), r'\1"ENT-A-DOC-01",\2'),
+   |                                                                                                                         ^^^^^^^^
+54 |     "M3_reroute_agent_governance_to_doc_check": lambda t: sub_once(t, r'("intergrax/runtime/agent_governance", \()[^)]*(\)\),)', r'\1"…
+55 |     "M4_shrink_applications_to_one_id": lambda t: sub_once(t, rule_block("intergrax/applications"), r'\1"ENT-A-BND-01",\2'),
+   |
+
+E501 Line too long (153 > 120)
+  --> docs\project\maintainers\qualification\iiac_evidence\PDC-X\P7-00\addendum_2\adversarial_scripts\addendum_2_mutation_sample.py:54:121
+   |
+52 | …ecurity audit trail script \+ report redaction test.*?\n    \(\n        "intergrax/runtime/security",.*?\n    \),\n', ""),
+53 | …ck("intergrax/runtime/security"), r'\1"ENT-A-DOC-01",\2'),
+54 | …r'("intergrax/runtime/agent_governance", \()[^)]*(\)\),)', r'\1"ENT-A-DOC-01",\2'),
+   |                                                    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+55 | …ck("intergrax/applications"), r'\1"ENT-A-BND-01",\2'),
+56 | …rgrax/platform/enterprise_audit/impact_map.py", \("ENT-A-EVOL-01", "ENT-A-EVOL-02", "ENT-A-EVOL-03"\)\)', '("intergrax/platform/enter…
+   |
+
+E501 Line too long (124 > 120)
+  --> docs\project\maintainers\qualification\iiac_evidence\PDC-X\P7-00\addendum_2\adversarial_scripts\addendum_2_mutation_sample.py:55:121
+   |
+53 |     "M2_reroute_security_to_doc_check": lambda t: sub_once(t, rule_block("intergrax/runtime/security"), r'\1"ENT-A-DOC-01",\2'),
+54 |     "M3_reroute_agent_governance_to_doc_check": lambda t: sub_once(t, r'("intergrax/runtime/agent_governance", \()[^)]*(\)\),)', r'\1"…
+55 |     "M4_shrink_applications_to_one_id": lambda t: sub_once(t, rule_block("intergrax/applications"), r'\1"ENT-A-BND-01",\2'),
+   |                                                                                                                         ^^^^
+56 |     "M5_own_files_back_to_legacy_ids": lambda t: sub_once(t, r'\("intergrax/platform/enterprise_audit/impact_map.py", \("ENT-A-EVOL-01…
+57 |     "M6_unknown_id_in_domain_rule": lambda t: sub_once(t, r'("intergrax/skills", \()', r'\1"ENT-A-ZZZ-99", '),
+   |
+
+E501 Line too long (259 > 120)
+  --> docs\project\maintainers\qualification\iiac_evidence\PDC-X\P7-00\addendum_2\adversarial_scripts\addendum_2_mutation_sample.py:56:121
+   |
+54 | …^)]*(\)\),)', r'\1"ENT-A-DOC-01",\2'),
+55 | …01",\2'),
+56 | …", \("ENT-A-EVOL-01", "ENT-A-EVOL-02", "ENT-A-EVOL-03"\)\)', '("intergrax/platform/enterprise_audit/impact_map.py", ("C024", "C029", "C072"))'),
+   |       ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+57 | …
+58 | …str, \.\.\.\]\], \.\.\.\] = \(\n", 'PDC_DOMAIN_IMPACT_RULES: tuple[tuple[str, tuple[str, ...]], ...] = (\n    ("intergrax/runtime", ("ENT-A-DOC-01",)…
+   |
+
+E501 Line too long (271 > 120)
+  --> docs\project\maintainers\qualification\iiac_evidence\PDC-X\P7-00\addendum_2\adversarial_scripts\addendum_2_mutation_sample.py:58:121
+   |
+56 | …", \("ENT-A-EVOL-01", "ENT-A-EVOL-02", "ENT-A-EVOL-03"\)\)', '("intergrax/platform/enterprise_audit/impact_map.py", ("C024", "C029", "C072"))'),
+57 | …
+58 | …str, \.\.\.\]\], \.\.\.\] = \(\n", 'PDC_DOMAIN_IMPACT_RULES: tuple[tuple[str, tuple[str, ...]], ...] = (\n    ("intergrax/runtime", ("ENT-A-DOC-01",)),\n'),
+   |       ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+59 | …
+   |
+
+E501 Line too long (151 > 120)
+  --> docs\project\maintainers\qualification\iiac_evidence\PDC-X\P7-00\addendum_2\adversarial_scripts\addendum_2_mutation_sample.py:64:121
+   |
+62 | …eader", "-p", "no:randomly"])
+63 | …ags=re.M))
+64 | …tests": sorted(control_failed), "tail": baseline.stdout.strip().splitlines()[-3:]}
+   |                                                     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+65 | …
+66 | …
+   |
+
+E501 Line too long (125 > 120)
+ --> docs\project\maintainers\qualification\iiac_evidence\PDC-X\P7-00\addendum_2\adversarial_scripts\run_addendum2_tests.py:4:121
+  |
+3 | Contents: MCP-RC mandatory contract (list from Python), the tests that touch the CHANGED-SINCE impact map
+4 | (tests/qualification/ent_audit_x, evol_x, roadmap_replay_x, pdc_x/p6_impact, pdc_x xd_12, test_pdc_x_*), the EBH-5 gate files
+  |                                                                                                                         ^^^^^
+5 | (F-06 follow-up) and the pytest entrypoints of every manifest check that the new PDC domain rules select (so that a
+6 | CHANGED-SINCE run triggered by the new rules is itself runnable). The process is killed GRACE seconds after pytest printed
+  |
+
+E501 Line too long (122 > 120)
+ --> docs\project\maintainers\qualification\iiac_evidence\PDC-X\P7-00\addendum_2\adversarial_scripts\run_addendum2_tests.py:6:121
+  |
+4 | (tests/qualification/ent_audit_x, evol_x, roadmap_replay_x, pdc_x/p6_impact, pdc_x xd_12, test_pdc_x_*), the EBH-5 gate files
+5 | (F-06 follow-up) and the pytest entrypoints of every manifest check that the new PDC domain rules select (so that a
+6 | CHANGED-SINCE run triggered by the new rules is itself runnable). The process is killed GRACE seconds after pytest printed
+  |                                                                                                                         ^^
+7 | its final summary line (known pytest exit hang, finding F-09 of the first audit).
+8 | """
+  |
+
+E401 [*] Multiple imports on one line
+ --> docs\project\maintainers\qualification\iiac_evidence\PDC-X\P7-00\addendum_2\adversarial_scripts\run_failing_nodes_at_checkout.py:6:1
+  |
+4 | One pytest process; killed 30 s after the final summary line (exit-hang guard).
+5 | """
+6 | import os, re, subprocess, sys, threading, time
+  | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+7 | from pathlib import Path
+  |
+help: Split imports
+
+I001 [*] Import block is un-sorted or un-formatted
+ --> docs\project\maintainers\qualification\iiac_evidence\PDC-X\P7-00\addendum_2\adversarial_scripts\run_failing_nodes_at_checkout.py:6:1
+  |
+4 |   One pytest process; killed 30 s after the final summary line (exit-hang guard).
+5 |   """
+6 | / import os, re, subprocess, sys, threading, time
+7 | | from pathlib import Path
+  | |________________________^
+8 |
+9 |   root = Path(sys.argv[1]).resolve()
+  |
+help: Organize imports
+
+E702 Multiple statements on one line (semicolon)
+  --> docs\project\maintainers\qualification\iiac_evidence\PDC-X\P7-00\addendum_2\adversarial_scripts\run_failing_nodes_at_checkout.py:37:24
+   |
+35 | def pump():
+36 |     for line in proc.stdout:
+37 |         out.write(line); out.flush()
+   |                        ^
+38 |         if S.search(line): st["t"] = time.time()
+39 | th = threading.Thread(target=pump, daemon=True); th.start()
+   |
+
+E701 Multiple statements on one line (colon)
+  --> docs\project\maintainers\qualification\iiac_evidence\PDC-X\P7-00\addendum_2\adversarial_scripts\run_failing_nodes_at_checkout.py:38:26
+   |
+36 |     for line in proc.stdout:
+37 |         out.write(line); out.flush()
+38 |         if S.search(line): st["t"] = time.time()
+   |                          ^
+39 | th = threading.Thread(target=pump, daemon=True); th.start()
+40 | t0 = time.time()
+   |
+
+E702 Multiple statements on one line (semicolon)
+  --> docs\project\maintainers\qualification\iiac_evidence\PDC-X\P7-00\addendum_2\adversarial_scripts\run_failing_nodes_at_checkout.py:39:48
+   |
+37 |         out.write(line); out.flush()
+38 |         if S.search(line): st["t"] = time.time()
+39 | th = threading.Thread(target=pump, daemon=True); th.start()
+   |                                                ^
+40 | t0 = time.time()
+41 | while proc.poll() is None:
+   |
+
+E701 Multiple statements on one line (colon)
+  --> docs\project\maintainers\qualification\iiac_evidence\PDC-X\P7-00\addendum_2\adversarial_scripts\run_failing_nodes_at_checkout.py:42:46
+   |
+40 | t0 = time.time()
+41 | while proc.poll() is None:
+42 |     if st["t"] and time.time() - st["t"] > 30: break
+   |                                              ^
+43 |     if time.time() - t0 > 1500: break
+44 |     time.sleep(1)
+   |
+
+E701 Multiple statements on one line (colon)
+  --> docs\project\maintainers\qualification\iiac_evidence\PDC-X\P7-00\addendum_2\adversarial_scripts\run_failing_nodes_at_checkout.py:43:31
+   |
+41 | while proc.poll() is None:
+42 |     if st["t"] and time.time() - st["t"] > 30: break
+43 |     if time.time() - t0 > 1500: break
+   |                               ^
+44 |     time.sleep(1)
+45 | if proc.poll() is None:
+   |
+
+E702 Multiple statements on one line (semicolon)
+  --> docs\project\maintainers\qualification\iiac_evidence\PDC-X\P7-00\addendum_2\adversarial_scripts\run_failing_nodes_at_checkout.py:48:72
+   |
+46 |     subprocess.run(["taskkill", "/F", "/T", "/PID", str(proc.pid)], capture_output=True)
+47 | th.join(timeout=10)
+48 | out.write(f"RUNNER files={len(files)} elapsed={time.time()-t0:.1f}s\n"); out.close()
+   |                                                                        ^
+   |
+
+Found 19 errors.
+[*] 2 fixable with the `--fix` option.
+exit=1
+== ruff format --check (2 product .py + tests)
+4 files already formatted
+exit=0
+== added-line scan impact_map.py (imports, process/network/dynamic surface)
+scan_done
+== check_intergrax_no_applications_imports
+exit=1
+61159eb9c5e10de4b70f9a7ba4625be9 *-
+== check_agents_no_tier3_imports
+exit=0
+8ceb8ea6c1415bbc4ba77fdeea6849f0 *-
+== check_context_tier0_import_boundary
+exit=0
+32f73cb6eb3538f8c9774845e32adbda *-
+== check_llm_routing_tier_boundary
+exit=0
+0c4e6300ca3bd58d8e2180309378d9d9 *-
+== check_agents_no_vendor_sdk_imports
+exit=0
+3fdda70cbee4121c42ff38a172fab772 *-
+== check_immutable_security_audit_trail
+exit=0
+7f7ad1638e634a4ca29d96cde53bde09 *-
+== uv lock --check
+Resolved 404 packages in 5ms
+exit=0
+== verify_iiac_g0_inventory_completeness (expect-head HEAD)
+verify_iiac_g0_inventory_completeness: PASS (17510 paths @ afe9e8abeabdbab410bf562ebed6f4a309a91057)
+exit=0
