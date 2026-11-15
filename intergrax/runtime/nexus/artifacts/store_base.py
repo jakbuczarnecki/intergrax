@@ -26,6 +26,19 @@ class ArtifactDeletionRefused(RuntimeError):
         self.reason = reason
 
 
+class ArtifactVersionChanged(RuntimeError):
+    """A conditional deletion found a different latest version than the caller observed."""
+
+    def __init__(self, artifact_id: str, expected_version: int, actual_version: int) -> None:
+        super().__init__(
+            f"deletion of artifact {artifact_id!r} skipped: expected latest version {expected_version}, "
+            f"found {actual_version}"
+        )
+        self.artifact_id = artifact_id
+        self.expected_version = expected_version
+        self.actual_version = actual_version
+
+
 class ArtifactVersionNotFound(KeyError):
     """The artifact exists (or not) but the requested version does not."""
 
@@ -99,8 +112,14 @@ class ArtifactStore(ABC):
         """Latest versions whose ``expires_at_utc`` is at or before ``now`` (candidates only)."""
 
     @abstractmethod
-    def delete_artifact(self, tenant_id: str, artifact_id: str) -> None:
-        """Delete every version; ``ArtifactDeletionRefused`` for evidence or legal hold."""
+    def delete_artifact(self, tenant_id: str, artifact_id: str, *, expected_version: int | None = None) -> None:
+        """Delete every version; ``ArtifactDeletionRefused`` for evidence or legal hold.
+
+        With ``expected_version`` the deletion happens only if the latest version still equals it,
+        decided atomically with the protection check; otherwise ``ArtifactVersionChanged`` is
+        raised and nothing is deleted (a version written after the caller selected the artifact
+        is never destroyed by a decision taken on an older one).
+        """
 
     @abstractmethod
     def delete_for_run(self, tenant_id: str, run_id: str) -> None:
