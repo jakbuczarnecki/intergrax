@@ -187,11 +187,11 @@ DX does **not** reduce evidence to one synthetic score. Dimensions include corre
 
 | Gate | What it proves (current) | Enforcement |
 | ---- | ------------------------ | ----------- |
-| **G0** | Runnable baseline artifacts exist (scaffold CLI, doctor, run, lab host factory) | Script exit code 1 on missing files |
+| **G0** | Runnable baseline artifacts exist and define their entry symbols (scaffold CLI, doctor, run, lab host factory) | Script exit code 1 on missing files or missing definitions |
 | **G1** | Evaluation control-plane modules exist (`evaluation_automation`, `online_evaluation_registry`, harness eval wiring checker) | Script exit code 1 on missing files |
-| **G2** | Policy modules exist (`resilience_policy`, `autonomy_level`, `autonomy_resolver`, resilience policy checker) | Script exit code 1 on missing files |
+| **G2** | Policy modules exist and define their contract symbols (`resilience_policy`, `autonomy_level`, `autonomy_resolver`, resilience policy checker) | Script exit code 1 on missing files or missing definitions |
 
-Optional `--with-doctor` runs `intergrax.cli.doctor` smoke after G0–G2 pass.
+Optional `--with-doctor` runs `intergrax.cli.doctor` smoke after G0–G2 pass. Authorization is never derived from G0–G2: the script reports `GRANTED` only for a governance ticket whose `## Approved` section carries the `Approved:` line (and the `Delegation:` line for a delegated approval). Which ticket may authorize which promotion is not decided by the script.
 
 **Enforcement state:** script returns non-zero on failure; registered in `scripts/ci/script_paths.py`. **Not** found wired into GitHub workflow definitions at audit time - treat as **operator/manual or certification-catalog** invocation unless your pipeline explicitly calls it. G4/G5 promotion/evidence gates are **future** - owned by Phase V / W-OPS / OECP per plan, not DX G0–G2.
 
@@ -212,8 +212,24 @@ Application Hosting / deployment → makes candidate active
 ### User satisfaction (MVP-EVOL.5)
 
 - **Schema:** `UserSatisfactionEvent` - `thumbs_up`, `thumbs_down`, `csat`, `nps` signals with score and comment
-- **Bridge:** `record_user_satisfaction` → `OnlineEvaluationObservation` in `OnlineEvaluationRegistry`
+- **Bridge:** `record_user_satisfaction` → tenant-stamped `OnlineEvaluationObservation` (the event's `tenant_id`; a blank tenant fails closed) in `OnlineEvaluationRegistry`
 - **Boundary:** user satisfaction signal **≠** HITL approval - feedback is evidence, not governance authorization
+
+## Evaluation boundary and declared exceptions (PDC-D5)
+
+**Boundary (ADR-PDC-05).** Evaluation is **advisory**. The typed contracts `EvalDataset`, `EvalScenario`, `EvalRun` and `EvalComparison` (`intergrax/contracts/evaluation_contracts.py`) record what was measured; `EvalComparison.advisory` is constant `True`. An evaluation result can **block** a promotion (regression, threshold breach, missing coverage, pending human review) but can never **authorize** one: `evaluate_agent_promotion` computes `governance_authorized` from governance inputs only (an allowed stage path, a certification that belongs to the promoted agent and version, a rollback plan reference and a change ticket reference) and `approved` implies it. Promotion itself stays governance-owned; `check_mvp_promotion_gates.py` can only deny.
+
+**Online feedback is tenant-scoped evidence.** Online and shadow observations (`OnlineEvaluationObservation`, user satisfaction events) are evidence, never authorization. A tenant-stamped observation is reachable only through the tenant surface of the registry or a `TenantScopedOnlineEvaluationRegistry`; the legacy surface of `FileOnlineEvaluationRegistry` (`append`, `list_observations`, `clear`) works on the untenanted namespace only. Hosts that hold a tenant bind it when they wire evaluation (`wire_application_evaluation(..., tenant_id=...)`); a host without a tenant works in the untenanted namespace, which never exposes tenant rows. The base `OnlineEvaluationObservation` model itself carries no `tenant_id` (the stored subtype `TenantOnlineEvaluationObservation` does).
+
+**Declared exceptions (what this document does not claim).** Recorded at PDC-P7 (audit IA-D5, repair ticket T-IGX-041-E); each stays open until its reopen condition holds:
+
+| Exception | State | Reopen condition |
+| --------- | ----- | ---------------- |
+| The typed pipeline (`execute_eval_run`, `compare_eval_runs`, `build_eval_run_evidence_report`, `read_eval_run_evidence`, `scenario_library_to_eval_dataset`) has no production caller | **Library only**; `EvalRunner`, `NexusEvalRunner` and `EvalResult` do not use it, so a typed run is never written to the evaluation evidence export | a ticket that routes a real runner through `execute_eval_run` |
+| No groundedness evaluator exists | task-success, tool-use, citation and golden-retrieval evaluators exist; a groundedness evaluator appears only as a test judge | an Operator decision to add it behind the `Evaluator` contract |
+| The evaluator registry (`register_existing_evaluators`) is composed only in tests | not wired into any host | the same runner-wiring ticket |
+| `evaluate_agent_promotion` is not wired into a promotion path; its free-text references and comparisons are not bound to the promoted agent | decision function and gate script only | a Governance ticket and an Operator decision on the comparison contract |
+| Evidence integrity is self-attested; digest hygiene gaps; the human review queue is in-process and tenant-less | known limits of the contracts | follow-up D5 tickets (debt register) |
 
 ## CLI and lab HTTP
 

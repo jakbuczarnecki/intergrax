@@ -16,11 +16,12 @@ from intergrax.runtime.architecture.online_evaluation_models import (
 )
 from intergrax.runtime.architecture.online_evaluation_registry import (
     FileOnlineEvaluationRegistry,
+    TenantOnlineEvaluationObservation,
     default_online_evaluation_registry,
 )
 
 
-class SatisfactionSignal(str, Enum):
+class SatisfactionSignal(str, Enum):  # noqa: UP042 - str mixin kept: str() output is part of the public contract
     THUMBS_UP = "thumbs_up"
     THUMBS_DOWN = "thumbs_down"
     CSAT = "csat"
@@ -40,9 +41,15 @@ class UserSatisfactionEvent(BaseModel):
 
 
 def satisfaction_to_online_observation(event: UserSatisfactionEvent) -> OnlineEvaluationObservation:
+    """Map an event to a tenant-stamped observation (a blank tenant fails closed)."""
     passed = event.signal is SatisfactionSignal.THUMBS_UP or event.score >= 7.0
-    normalized = event.score / 10.0 if event.signal in {SatisfactionSignal.CSAT, SatisfactionSignal.NPS} else (1.0 if passed else 0.0)
-    return OnlineEvaluationObservation(
+    normalized = (
+        event.score / 10.0
+        if event.signal in {SatisfactionSignal.CSAT, SatisfactionSignal.NPS}
+        else (1.0 if passed else 0.0)
+    )
+    return TenantOnlineEvaluationObservation(
+        tenant_id=event.tenant_id,
         observation_id=event.event_id,
         run_id=event.run_id,
         agent_id=event.agent_id or "unknown",

@@ -239,11 +239,21 @@ def _typed_basis() -> list[EvalEvidenceBasis]:
 
 
 def _run_status(run: EvalRun) -> EvalEvidenceStatus:
-    """Evidence status from rule outcomes only; judge outcomes never decide it."""
+    """Evidence status from rule outcomes and executor errors; judge outcomes never decide it.
+
+    ``PASSED`` needs rule outcomes for every executed scenario, no executor error and no
+    pending human review (FRZ-GOV-06); missing evidence is ``UNAVAILABLE``, never green.
+    """
     rule = run.rule_outcomes
     if any(item.status is EvaluatorOutcomeStatus.FAILED for item in rule):
         return EvalEvidenceStatus.FAILED
-    if rule and all(item.status is EvaluatorOutcomeStatus.PASSED for item in rule):
+    if any(item.error for item in run.telemetry):
+        return EvalEvidenceStatus.FAILED
+    covered = {item.scenario_id for item in rule}
+    executed = {item.scenario_id for item in run.telemetry}
+    complete = bool(rule) and executed <= covered
+    pending = any(item.status is EvaluatorOutcomeStatus.PENDING for item in run.outcomes)
+    if complete and not pending and all(item.status is EvaluatorOutcomeStatus.PASSED for item in rule):
         return EvalEvidenceStatus.PASSED
     return EvalEvidenceStatus.UNAVAILABLE
 
