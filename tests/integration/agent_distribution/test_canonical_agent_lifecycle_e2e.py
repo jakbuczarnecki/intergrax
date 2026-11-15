@@ -8,13 +8,16 @@ import asyncio
 from pathlib import Path
 
 import pytest
-
 from intergrax.agent_distribution.admin_models import (
     BindAgentRequest,
     InstallAgentRequest,
     SetAgentEnablementRequest,
 )
 from intergrax.agent_distribution.agent_manager_models import AgentManagerDerivedStatus
+from intergrax.agent_distribution.agent_project_metadata import (
+    AgentPackageContractDeclaration,
+    AgentProjectMetadata,
+)
 from intergrax.agent_distribution.binding import AgentBindingFactoryReference
 from intergrax.agent_distribution.catalog import CatalogProviderKind
 from intergrax.agent_distribution.identity import AgentPackageIdentity
@@ -26,18 +29,34 @@ from intergrax.agent_distribution.trust import (
 from intergrax.applications._shared.harness_host_runtime import (
     build_harness_host_runtime,
 )
+from intergrax.applications._shared.harness_registry_authority import RegistryAssemblyMode
+from intergrax.collaborative_work.persistence import open_sqlite_collaborative_work_repositories
 from intergrax.core.qualification import QualificationStatus
 from intergrax.integrations._shared.in_memory_document_store import (
     InMemoryDocumentStore,
 )
+from intergrax.runtime.execution.continuation.persistence import (
+    ExecutionContinuationDurableBacking,
+    execution_continuation_state_store_from_durable_export,
+    export_durable_continuation_state,
+)
+from intergrax.runtime.governance.orchestration_decision_bound_effect_composition import (
+    lab_orchestration_decision_requirement_policy,
+)
 from intergrax.runtime.registry.agent_registry_read import AgentRegistryRead
 from intergrax.runtime.task.task import Task, TaskContext
+from testing_support.agent_distribution.install_contract_authority_fixtures import (
+    package_contract_authority_record,
+)
+from testing_support.agent_platform_admin_harness import (
+    admin_test_principal,
+    lifecycle_proof_durable_profile_stores,
+)
 from testing_support.canonical_agent_lifecycle_composition import (
     CanonicalAgentLifecycleProofStack,
     default_stage15_proof_config,
 )
-from testing_support.canonical_lifecycle_ping_agent import CANONICAL_PING_CAPABILITY
-from testing_support.agent_platform_admin_harness import admin_test_principal
+from testing_support.canonical_lifecycle_ping_agent import CANONICAL_PING_CAPABILITY, CanonicalPingAgent
 
 pytestmark = [pytest.mark.integration, pytest.mark.gate]
 
@@ -79,6 +98,21 @@ _SECONDARY_FACTORY = AgentBindingFactoryReference(
 
 def _install_secondary_desired_state(stack: CanonicalAgentLifecycleProofStack) -> None:
     principal = admin_test_principal()
+    # install admission resolves the project metadata and the contract authority of every package
+    # (T-IGX-041-A, F-D1-11): the secondary package declares one contract and installs its authority
+    secondary_contract = CanonicalPingAgent().get_contract().model_copy(update={"id": _SECONDARY_LOGICAL_ID})
+    stack.admin._metadata_provider._records[_SECONDARY_META] = AgentProjectMetadata(  # type: ignore[union-attr]
+        distribution_package_id="intergrax-canonical-shadow-agent",
+        package_version="1.0.0",
+        declared_contracts=(
+            AgentPackageContractDeclaration(
+                contract_id=_SECONDARY_LOGICAL_ID,
+                contract_version=secondary_contract.version,
+                capabilities=tuple(secondary_contract.capabilities),
+                skill_ids=tuple(skill.skill_id for skill in secondary_contract.skills),
+            ),
+        ),
+    )
     stack.admin.install_agent(
         application_id=stack.config.application_id,
         application_environment_id=stack.config.environment_id,
@@ -105,6 +139,15 @@ def _install_secondary_desired_state(stack: CanonicalAgentLifecycleProofStack) -
                 ),
             ),
             agent_project_metadata_ref=_SECONDARY_META,
+            package_contract_authority=(
+                package_contract_authority_record(
+                    contract=secondary_contract,
+                    package_digest=stack.config.package_digest,
+                    distribution_package_id="intergrax-canonical-shadow-agent",
+                    artifact_store_ref=f"store://artifacts/{_SECONDARY_INSTALLATION}",
+                    agent_project_metadata_ref=_SECONDARY_META,
+                ),
+            ),
         ),
         principal=principal,
     )
@@ -236,11 +279,35 @@ def test_serving_runtime_cannot_execute_agent_outside_serving_projection(
     assert not registry.has(_SECONDARY_LOGICAL_ID)
 
     projection = stack.resolve_serving_projection()
+    # production host assembly is revision-bound and needs the strict contract authority of the
+    # serving revision (T-IGX-041-A, F-D1-11): resolve it the way the stack's own execution does
+    authority = stack.composition.agent_platform_runtime.registry_projection_authority
+    contract_authority = authority.roster_contract_authority_for(
+        resolved=authority.require_for_revision(
+            application_id=stack.config.application_id,
+            application_environment_id=stack.config.environment_id,
+            runtime_revision_id=projection.evidence.runtime_revision_id,
+        ),
+        manifest=stack.manifest,
+    )
+    profile_stores = lifecycle_proof_durable_profile_stores(tmp_path)
     host_runtime = build_harness_host_runtime(
         stack.manifest,
         stack.environment,
         tenant_id="tenant-test",
         registry_projection=projection,
+        registry_assembly_mode=RegistryAssemblyMode.REVISION_BOUND,
+        agent_contract_authority=contract_authority,
+        collaborative_work_repositories=open_sqlite_collaborative_work_repositories(
+            str(tmp_path / "secondary-collaborative-work.sqlite"),
+        ),
+        orchestration_decision_requirement_policy=lab_orchestration_decision_requirement_policy(),
+        execution_continuation_state_store=execution_continuation_state_store_from_durable_export(
+            export_durable_continuation_state(ExecutionContinuationDurableBacking()),
+        ),
+        revision_store=profile_stores.revision_store,
+        pinning_store=profile_stores.pinning_store,
+        active_store=profile_stores.active_store,
         trace_db_path=tmp_path / "secondary-trace.db",
         runtime_events_db_path=tmp_path / "secondary-runtime_events.db",
         document_store=InMemoryDocumentStore(),
@@ -265,9 +332,7 @@ def test_historical_revision_is_not_rewritten_by_later_desired_state(
     built = stack.build_revision()
     stack.register_projection_and_activate(built)
 
-    historical_projection = stack.resolve_projection_for_revision(
-        built.runtime_revision_id
-    )
+    historical_projection = stack.resolve_projection_for_revision(built.runtime_revision_id)
     historical_entry = next(iter(historical_projection.agent_registry.list_agent_ids()))
     assert historical_entry == stack.config.logical_agent_id
 
@@ -291,9 +356,7 @@ def test_historical_revision_is_not_rewritten_by_later_desired_state(
         application_environment_id=stack.config.environment_id,
     )
     current_entry = next(
-        item
-        for item in current_roster.entries
-        if item.logical_agent_id == stack.config.logical_agent_id
+        item for item in current_roster.entries if item.logical_agent_id == stack.config.logical_agent_id
     )
     assert current_entry.effective_enablement is False
 
