@@ -5,6 +5,8 @@
 
 from __future__ import annotations
 
+import asyncio
+
 from intergrax.hosting.contracts.context import HostedApplicationEventPublisher
 from intergrax.hosting.contracts.events import (
     HostedApplicationEvent,
@@ -132,8 +134,11 @@ class HostingEventDispatcher:
         subscriptions: tuple[ResolvedEventSubscription, ...],
         diagnostics: DiagnosticsRecorder,
         observer_tasks: ObserverTaskRegistry,
+        *,
+        publish_timeout_seconds: float | None = None,
     ) -> None:
         self._downstream = downstream
+        self._publish_timeout_seconds = publish_timeout_seconds
         self._subscriptions = tuple(
             sorted(
                 subscriptions,
@@ -149,7 +154,19 @@ class HostingEventDispatcher:
 
     async def publish(self, event: HostedApplicationEvent) -> None:
         try:
-            await self._downstream.publish(event)
+            if self._publish_timeout_seconds is None:
+                await self._downstream.publish(event)
+            else:
+                # A hanging exporter must not block startup, shutdown or restart (F-D4-12).
+                await asyncio.wait_for(self._downstream.publish(event), timeout=self._publish_timeout_seconds)
+        except TimeoutError as exc:
+            self._diagnostics.record_secondary_failure(
+                phase=HostedApplicationFailurePhase.EVENT_PUBLISH,
+                source_kind="event_publisher",
+                source_id="downstream",
+                exc=exc,
+                reason_code="event_publish_timed_out",
+            )
         except Exception as exc:
             self._diagnostics.record_secondary_failure(
                 phase=HostedApplicationFailurePhase.EVENT_PUBLISH,

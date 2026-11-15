@@ -34,6 +34,7 @@ from intergrax.runtime.nexus.artifacts.governed_access import (
 from intergrax.runtime.nexus.artifacts.store_base import (
     ArtifactDeletionRefused,
     ArtifactStore,
+    ArtifactVersionChanged,
     protection_reason,
 )
 from intergrax.utils.time_provider import SystemTimeProvider
@@ -87,12 +88,18 @@ def resolve_expiry(
     return None if ttl is None else created_at + timedelta(seconds=ttl)
 
 
+class ArtifactSweepAuditRequired(RuntimeError):
+    """A sweep deletes data; without an audit recorder it is refused unless explicitly allowed."""
+
+
 @dataclass(frozen=True)
 class RetentionSweepReport:
     tenant_id: str
     examined: int
     deleted_ids: tuple[str, ...]
     protected_ids: tuple[str, ...]
+    #: Selected as expired but changed (a newer version appeared) before deletion; left untouched.
+    changed_ids: tuple[str, ...] = ()
 
 
 class ArtifactRetentionSweeper:
@@ -104,10 +111,12 @@ class ArtifactRetentionSweeper:
         *,
         clock: Callable[[], datetime] | None = None,
         audit: GovernanceAuditRecorder | None = None,
+        allow_unaudited_deletion: bool = False,
     ) -> None:
         self._store = store
         self._clock = clock or SystemTimeProvider.utc_now
         self._auditor = ArtifactOperationAuditor(audit) if audit is not None else None
+        self._allow_unaudited = allow_unaudited_deletion
 
     def sweep(
         self,
@@ -116,6 +125,13 @@ class ArtifactRetentionSweeper:
         context: ArtifactAccessContext | None = None,
         limit: int = DEFAULT_SWEEP_LIMIT,
     ) -> RetentionSweepReport:
+        if limit < 1:
+            raise ValueError("sweep limit must be at least 1")
+        if self._auditor is None and not self._allow_unaudited:
+            raise ArtifactSweepAuditRequired(
+                "an artifact retention sweep deletes data and needs an audit recorder "
+                "(or allow_unaudited_deletion=True)"
+            )
         if context is not None and context.tenant_id != tenant_id:
             raise ValueError("sweep context tenant differs from the swept tenant")
         if self._auditor is not None and context is None:
@@ -124,6 +140,7 @@ class ArtifactRetentionSweeper:
         candidates = self._store.list_expired(tenant_id, now, limit=limit)
         deleted: list[str] = []
         protected: list[str] = []
+        changed: list[str] = []
         for artifact in candidates:
             history_classes = [a.retention_class for a in self._store.list_versions(tenant_id, artifact.artifact_id)]
             reason = protection_reason(
@@ -132,9 +149,20 @@ class ArtifactRetentionSweeper:
             )
             if reason is None:
                 try:
-                    self._store.delete_artifact(tenant_id, artifact.artifact_id)
+                    self._store.delete_artifact(tenant_id, artifact.artifact_id, expected_version=artifact.version)
                 except ArtifactDeletionRefused as exc:  # raced with a hold or evidence marking
                     reason = exc.reason
+                except ArtifactVersionChanged:  # a newer version was written after the selection
+                    changed.append(artifact.artifact_id)
+                    self._record(
+                        context,
+                        artifact.artifact_id,
+                        ToolAuthorizationDecisionState.DENY,
+                        "version_changed",
+                        "newer_version_written_after_selection;ttl_deletion_skipped",
+                        now,
+                    )
+                    continue
                 except KeyError:
                     continue  # already gone
             if reason is None:
@@ -162,6 +190,7 @@ class ArtifactRetentionSweeper:
             examined=len(candidates),
             deleted_ids=tuple(deleted),
             protected_ids=tuple(protected),
+            changed_ids=tuple(changed),
         )
 
     def _record(self, context, artifact_id, decision, check, detail, at) -> None:
@@ -203,7 +232,12 @@ def make_retention_sweep_handler(sweeper: ArtifactRetentionSweeper) -> Backgroun
             except (ValueError, AttributeError, UnicodeDecodeError):
                 return ToolExecutionResult.fail("invalid_payload", "sweep payload must be JSON with an int limit")
         context = ArtifactAccessContext.for_background_execution(agent_id=SWEEP_ACTOR_ID, identity=execution_identity)
-        report = sweeper.sweep(execution_identity.tenant_id, context=context, limit=limit)
+        try:
+            report = sweeper.sweep(execution_identity.tenant_id, context=context, limit=limit)
+        except ArtifactSweepAuditRequired:
+            return ToolExecutionResult.fail(
+                "audit_recorder_required", "the retention sweep needs an audit recorder and was not run"
+            )
         return ToolExecutionResult.ok(
             ArtifactRetentionSweepOutput(
                 tenant_id=report.tenant_id,

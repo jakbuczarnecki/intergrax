@@ -7,21 +7,18 @@ from __future__ import annotations
 from intergrax.agents.agent_contract import Agent
 from intergrax.contracts.agent_contract_meta import AgentContract
 from intergrax.contracts.agent_decision import AgentDecision, AgentDecisionType
+from intergrax.contracts.agent_run import AgentRunError, AgentRunRequest, AgentRunResult
+from intergrax.contracts.agent_run_enums import AgentRunErrorCode, AgentRunStatus, TerminalReason
 from intergrax.contracts.agent_step import AgentStep, StepOutput
-from intergrax.contracts.evidence_claims import ClaimResolution
 from intergrax.contracts.capability import CapabilityMatchResult
+from intergrax.contracts.evidence_claims import ClaimResolution
 from intergrax.contracts.runtime_execution_context import RuntimeExecutionContext
 from intergrax.runtime.diagnostics.investigation_contracts import IncidentInvestigationInput
 from intergrax.runtime.nexus.context.metadata_keys import PRIOR_AGENT_OUTPUTS_KEY
 from intergrax.runtime.nexus.engine.runtime_context import RuntimeContext
 from intergrax.runtime.nexus.engine.runtime_state import RuntimeState
 from intergrax.runtime.nexus.responses.response_schema import RuntimeRequest
-from platform_proofs.scenarios.ai_incident_investigation.application.evidence_gathering import (
-    gather_incident_evidence,
-)
-from platform_proofs.scenarios.ai_incident_investigation.application.evidence_phase_context import (
-    derive_evidence_phase_context,
-)
+from intergrax.runtime.nexus.tracing.trace_models import TraceComponent, TraceLevel
 from platform_proofs.scenarios.ai_incident_investigation.application.completion_alignment import (
     CompletionAlignmentState,
     CompletionAlignmentStatus,
@@ -38,32 +35,36 @@ from platform_proofs.scenarios.ai_incident_investigation.application.completion_
     CompletionAlignmentRevisionContext,
     build_completion_alignment_revision_context,
 )
+from platform_proofs.scenarios.ai_incident_investigation.application.evidence_gathering import (
+    gather_incident_evidence,
+)
+from platform_proofs.scenarios.ai_incident_investigation.application.evidence_phase_context import (
+    derive_evidence_phase_context,
+)
 from platform_proofs.scenarios.ai_incident_investigation.application.incident_reasoning import (
     PriorInvestigationState,
     build_investigation_summary,
     completion_mode_from_intent,
     completion_mode_from_proposal,
     convert_proposal_to_pending_claims,
+    emit_reasoning_observability,
     extract_prior_investigation_state,
     propose_incident_reasoning,
-    emit_reasoning_observability,
+)
+from platform_proofs.scenarios.ai_incident_investigation.application.incident_scope import IncidentScope
+from platform_proofs.scenarios.ai_incident_investigation.application.investigator_contract import (
+    INVESTIGATOR_AGENT_ID,
+    INVESTIGATOR_CAPABILITY,
+    incident_investigator_contract,
 )
 from platform_proofs.scenarios.ai_incident_investigation.application.observability import (
     IncidentCompletionAlignmentDiagV1,
 )
-from platform_proofs.scenarios.ai_incident_investigation.application.validation import (
-    apply_critic_claim_resolutions,
-    authoritative_supported_diagnosis_present,
-)
-from intergrax.runtime.nexus.tracing.trace_models import TraceComponent, TraceLevel
-from platform_proofs.scenarios.ai_incident_investigation.application.incident_scope import IncidentScope
 from platform_proofs.scenarios.ai_incident_investigation.application.runtime_composition import (
     INVESTIGATOR_NODE_ID,
     ScenarioRuntimeComposition,
     build_agent_runtime_context,
 )
-
-_COMPLETION_ALIGNMENT_CORRECTION_BUDGET = 1
 from platform_proofs.scenarios.ai_incident_investigation.application.scenario_contract import (  # noqa: F401
     COMPARISON_EVIDENCE_ID,
     COMPLETION_SUPPORTED_DIAGNOSIS,
@@ -81,12 +82,12 @@ from platform_proofs.scenarios.ai_incident_investigation.application.scenario_co
     WORKLOAD_EVIDENCE_ID,
 )
 from platform_proofs.scenarios.ai_incident_investigation.application.tools import SCENARIO_TOOL_IDS
-
-from platform_proofs.scenarios.ai_incident_investigation.application.investigator_contract import (
-    INVESTIGATOR_AGENT_ID,
-    INVESTIGATOR_CAPABILITY,
-    incident_investigator_contract,
+from platform_proofs.scenarios.ai_incident_investigation.application.validation import (
+    apply_critic_claim_resolutions,
+    authoritative_supported_diagnosis_present,
 )
+
+_COMPLETION_ALIGNMENT_CORRECTION_BUDGET = 1
 
 
 def _extract_critic_feedback(ctx: RuntimeExecutionContext, is_revision: bool) -> list[str]:
@@ -140,9 +141,7 @@ def _build_alignment_revision_context_from_prior(
         domain_payload,
         bindings=prior_state.claim_hypothesis_bindings,
     )
-    has_supported_diagnosis = any(
-        claim.resolution is ClaimResolution.SUPPORTED for claim in resolved_claim_set.claims
-    )
+    has_supported_diagnosis = any(claim.resolution is ClaimResolution.SUPPORTED for claim in resolved_claim_set.claims)
     semantic_decision = correction_decision_for_domain_alignment(
         completion_mode=prior_completion_mode,
         has_supported_diagnosis=has_supported_diagnosis,
@@ -182,10 +181,27 @@ class IncidentInvestigatorAgent(Agent):
         self._station_id = station_id
         self._runtime_composition = runtime_composition
         self._incident_scope = incident_scope
-        self._evidence_store = (
-            evidence_store if isinstance(evidence_store, ScenarioEvidenceStore) else None
-        )
+        self._evidence_store = evidence_store if isinstance(evidence_store, ScenarioEvidenceStore) else None
         self._investigation_input = investigation_input
+
+    async def run(self, request: AgentRunRequest) -> AgentRunResult:
+        """Typed public run contract: this scenario agent executes through ``run_step`` only.
+
+        The abstract ``Agent.run`` must exist for the class to be instantiable. The investigation is a
+        graph step that needs a bound runtime state, so a direct ``run`` fails closed instead of
+        pretending to investigate.
+        """
+        _ = request
+        return AgentRunResult(
+            status=AgentRunStatus.FAILED,
+            errors=[
+                AgentRunError(
+                    code=AgentRunErrorCode.INTERNAL_ERROR,
+                    message="incident_investigator_executes_through_run_step",
+                )
+            ],
+            terminal_reason=TerminalReason.ERROR,
+        )
 
     def get_contract(self) -> AgentContract:
         return incident_investigator_contract()
@@ -269,9 +285,7 @@ class IncidentInvestigatorAgent(Agent):
         completion_mode = completion_mode_from_proposal(proposal)
         preview_domain_payload = {
             "claim_set": pending_claim_set.model_dump(mode="json"),
-            "claim_hypothesis_bindings": [
-                binding.model_dump(mode="json") for binding in claim_bindings
-            ],
+            "claim_hypothesis_bindings": [binding.model_dump(mode="json") for binding in claim_bindings],
             "evidence_nodes": evidence_nodes,
             "completion_mode": completion_mode,
         }
@@ -333,11 +347,7 @@ class IncidentInvestigatorAgent(Agent):
                 completion_mode=completion_mode,
                 has_supported_diagnosis=has_supported_diagnosis,
                 alignment_status=alignment.status.value,
-                mismatch_reason=(
-                    alignment.mismatch_reason.value
-                    if alignment.mismatch_reason is not None
-                    else None
-                ),
+                mismatch_reason=(alignment.mismatch_reason.value if alignment.mismatch_reason is not None else None),
                 revision_pass=is_revision,
                 revision_authoritative_context_present=alignment_revision_context is not None,
                 supported_hypothesis_id=(
@@ -354,9 +364,7 @@ class IncidentInvestigatorAgent(Agent):
                 ),
                 alignment_mismatch_detected=correction_decision.alignment_mismatch_detected,
                 alignment_direction=(
-                    correction_decision.direction.value
-                    if correction_decision.direction is not None
-                    else None
+                    correction_decision.direction.value if correction_decision.direction is not None else None
                 ),
                 alignment_correctable=semantic_correction_decision.alignment_correctable,
                 alignment_correction_attempted=is_revision
@@ -382,9 +390,7 @@ class IncidentInvestigatorAgent(Agent):
         summary = build_investigation_summary(proposal, is_revision=is_revision)
         domain_payload = {
             "claim_set": pending_claim_set.model_dump(mode="json"),
-            "claim_hypothesis_bindings": [
-                binding.model_dump(mode="json") for binding in claim_bindings
-            ],
+            "claim_hypothesis_bindings": [binding.model_dump(mode="json") for binding in claim_bindings],
             "evidence_nodes": evidence_nodes,
             "reasoning_proposal": proposal.model_dump(mode="json"),
             "active_hypothesis": proposal.preferred_hypothesis_id,

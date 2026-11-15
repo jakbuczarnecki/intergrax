@@ -26,6 +26,7 @@ from intergrax.runtime.nexus.artifacts.governed_access import (
 )
 from intergrax.runtime.nexus.artifacts.in_memory_artifact_store import InMemoryArtifactStore
 from intergrax.runtime.nexus.artifacts.store_base import ArtifactDeletionRefused
+from tests.qualification.pdc_x.d8_repair._support import make_clocked_port as make_port
 
 from ._d8_support import (
     TENANT_A,
@@ -35,7 +36,6 @@ from ._d8_support import (
     make_artifact,
     make_context,
     make_governance,
-    make_port,
     reader_grants,
 )
 
@@ -49,7 +49,7 @@ def _request(artifact_id: str = "art-1", tenant_id: str = TENANT_A, **kw) -> Art
         artifact_class=ArtifactClass.EXECUTION_EVIDENCE,
         tenant_id=tenant_id,
         artifact_id=artifact_id,
-        **kw,
+        **{"workspace_id": "ws-1", **kw},
     )
 
 

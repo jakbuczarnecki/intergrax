@@ -21,7 +21,7 @@ import ast
 import dataclasses
 import functools
 import json
-from dataclasses import fields
+from dataclasses import fields, replace
 from datetime import timedelta
 from pathlib import Path
 
@@ -80,10 +80,10 @@ from tests.qualification.pdc_x.d8._d8_support import (
     make_artifact,
     make_context,
     make_governance,
-    make_port,
     reader_grants,
     sqlite_store,
 )
+from tests.qualification.pdc_x.d8_repair._support import make_clocked_port as make_port
 from tests.unit.runtime.background_execution.reentry_admission_doubles import admission_kwargs
 
 pytestmark = [pytest.mark.integration]
@@ -115,11 +115,14 @@ def _spill(spiller: ToolOutputSpiller) -> ArtifactReferenceToken:
 
 def _evidence_token(store: ArtifactStore) -> ArtifactReferenceToken:
     stored = store.put(
-        make_artifact(
-            artifact_id="evidence-1",
-            data=EVIDENCE,
-            retention_class=ArtifactRetentionClass.AUDIT_EVIDENCE,
-            expires_at_utc=T0 + timedelta(minutes=1),  # even an explicit expiry must not delete evidence
+        replace(  # a reference token names no workspace, so this evidence artifact is stored without one
+            make_artifact(
+                artifact_id="evidence-1",
+                data=EVIDENCE,
+                retention_class=ArtifactRetentionClass.AUDIT_EVIDENCE,
+                expires_at_utc=T0 + timedelta(minutes=1),  # even an explicit expiry must not delete evidence
+            ),
+            workspace_id=None,
         )
     )
     return ArtifactReferenceToken(

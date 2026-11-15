@@ -2,11 +2,10 @@
 
 from __future__ import annotations
 
-from typing import Any, Dict, List, Optional, Sequence
+from collections.abc import Sequence
 from unittest.mock import MagicMock, patch
 
 import pytest
-
 from intergrax.llm.messages import ChatMessage
 from intergrax.llm_adapters._shared.adapter_response_builders import (
     build_adapter_response,
@@ -19,9 +18,14 @@ from intergrax.llm_adapters._shared.conformance import (
     assert_supports_tools_contract,
     assert_usage_tracking,
 )
-from intergrax.llm_adapters.contracts.adapter_response import LLMAdapterResponse
-from intergrax.llm_adapters.contracts.llm_adapter import LLMAdapter
 from intergrax.llm_adapters.base.base_llm_adapter import BaseLLMAdapter
+from intergrax.llm_adapters.contracts.adapter_response import LLMAdapterResponse
+
+# The two adapters import their vendor SDKs at module level: skip, instead of a collection error,
+# when the optional extras are not installed (``llm-anthropic`` / ``llm-openai``).
+pytest.importorskip("anthropic", reason="requires the llm-anthropic extra")
+pytest.importorskip("openai", reason="requires the llm-openai extra")
+
 from intergrax.llm_adapters.providers.claude_adapter import ClaudeChatAdapter
 from intergrax.llm_adapters.providers.openai_responses_adapter import OpenAIChatResponsesAdapter
 
@@ -43,9 +47,9 @@ class _StubAdapter(BaseLLMAdapter):
         self,
         messages: Sequence[ChatMessage],
         *,
-        temperature: Optional[float] = None,
-        max_tokens: Optional[int] = None,
-        run_id: Optional[str] = None,
+        temperature: float | None = None,
+        max_tokens: int | None = None,
+        run_id: str | None = None,
     ) -> LLMAdapterResponse:
         call = self.usage.begin_call(run_id=run_id)
         self.usage.end_call(call, input_tokens=1, output_tokens=1, success=True)
