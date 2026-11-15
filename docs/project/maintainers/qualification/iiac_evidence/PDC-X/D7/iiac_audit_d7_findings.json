@@ -1,0 +1,387 @@
+{
+  "stage_id": "PDC-X/D7",
+  "auditor": "IA-D7",
+  "audited_implementation_sha": "c08efe46a74a20595468d8d8bf06eab2dca5f573",
+  "overall_verdict": "PARTIAL",
+  "iiac_manifest_verdict": "CONDITIONAL",
+  "counts": {
+    "HIGH": 3,
+    "MEDIUM": 10,
+    "LOW": 7,
+    "INFO": 3
+  },
+  "row_verdicts": {
+    "R001": "PASS",
+    "R002": "PASS",
+    "R003": "PASS",
+    "R004": "PARTIAL",
+    "R005": "PASS",
+    "R006": "PARTIAL",
+    "R007": "PASS",
+    "R008": "PARTIAL",
+    "R009": "PARTIAL",
+    "R010": "PARTIAL",
+    "R011": "PASS",
+    "R012": "PASS_SCOPED",
+    "R013": "PARTIAL",
+    "R014": "FAIL",
+    "R015": "PARTIAL",
+    "R016": "PARTIAL",
+    "R017": "PASS",
+    "R018": "PASS",
+    "R019": "PASS",
+    "R020": "PASS",
+    "R021": "PARTIAL",
+    "R022": "PARTIAL",
+    "R023": "PARTIAL"
+  },
+  "findings": [
+    {
+      "id": "F-D7-01",
+      "severity": "HIGH",
+      "rows": [
+        "R004",
+        "R006",
+        "R012",
+        "R015"
+      ],
+      "title": "One failing resume aborts the whole claimed batch; the sibling schedules are stranded and then lost",
+      "evidence": "scheduler.py:_process_due_schedules (try/finally per claim, no except) lets any exception from _process_claimed_schedule/_execute_resume (resume_executor raising, StaleClaimError from complete_claim after lease expiry) escape the for-loop. The remaining claims of the same claim_due batch stay RUNNING; the next claim_due converts them to UNCERTAIN (store.py claim_due), which nothing ever re-claims. The loop and the finally were present for the one-shot path before B-D7 (pre-existing SCHED-01 shape); B-D7 added the finally but not an except.",
+      "reproduction": "probe_batch.py: 3 due recurring schedules of one tenant, the first resume raises. tick() raises, the other two occurrences end 'uncertain' without ever calling the executor and their chains have no pending row (logs/probe_batch.out). The batch is not tenant-scoped (claim_due ranks by run_at only), so one tenant's failing resume strands another tenant's due schedules.",
+      "impact": "Silent, permanent loss of independent due schedules (up to 100 per batch) and of their recurrence chains; cross-tenant blast radius for a failure of one tenant's task. Not covered by any d7/bg_01/sched_01 test.",
+      "suggested_repair": "Isolate each claim (catch per claim, release or fail the claim explicitly, continue the batch); decide and test the StaleClaimError path; add a negative test with a raising executor and a multi-claim batch.",
+      "owner_path": "intergrax/runtime/long_running/scheduler.py",
+      "verification": "PROBE_CONFIRMED + CODE_READ"
+    },
+    {
+      "id": "F-D7-02",
+      "severity": "HIGH",
+      "rows": [
+        "R006",
+        "R008",
+        "R015"
+      ],
+      "title": "The recurrence chain ends silently on a crash, on lease expiry, on a transient store error or after UNCERTAIN",
+      "evidence": "Occurrence N+1 is materialized inline AFTER occurrence N finished (scheduler.py _materialize_next_occurrence in a finally; recurrence.py materialize_next). (a) Crash/kill while N is RUNNING: the lease expires, N becomes UNCERTAIN (store.py claim_due), nobody materializes N+1 and there is no reconciler for UNCERTAIN rows or for rules. (b) A crash between complete_claim and materialize_next, or any exception in materialize_next (logged only, scheduler.py:~222), ends the chain with no retry. (c) The finally also runs for dead tasks (checkpoint missing / not resumable): rules without end_utc keep creating rows for a terminal task (dossier F-14, confirmed).",
+      "reproduction": "probe_sched.py P2: claim by a dying owner, survivor ticks later -> only the 'uncertain' row exists, no pending successor. P2b: schedule() raises once during materialization -> two completed rows, no pending successor (logs/probe_sched.out). The d7 crash test (test_d7_fencing_two_process.py) covers a one-shot only.",
+      "impact": "A recurring schedule dies permanently and silently after any restart or deploy that overlaps an occurrence (the window is the whole resume execution). This contradicts the crash-recovery claim of R015 for recurrence.",
+      "suggested_repair": "Materialize the successor before or atomically with the claim (or in the same transaction as the occurrence state), or run a reconciler that restores a pending successor for every live rule; surface materialization failures (retry/alert) instead of logging; stop materializing for terminal tasks; add chain-crash tests.",
+      "owner_path": "intergrax/runtime/long_running/scheduler.py, recurrence.py",
+      "verification": "PROBE_CONFIRMED"
+    },
+    {
+      "id": "F-D7-03",
+      "severity": "HIGH",
+      "rows": [
+        "R014"
+      ],
+      "title": "Graceful worker shutdown with host drain has no product implementation; the closure proof uses a test-side adapter",
+      "evidence": "intergrax/hosting/shutdown.py defines the HostedApplicationActiveWorkController port; no class in intergrax/, agents/ or applications/ implements stop_intake/active_work_count/wait_for_idle/cancel_active_work (grep). WorkerRuntime (the semantic owner) has no stop/drain API. DocumentStoreTaskWorker.stop() joins with a timeout, does not wait for or requeue in-flight tasks, and sets _thread=None even when the join timed out (code-read: a later start() then runs recover_interrupted_running over the still-running old thread's task and starts a second consumer). tests/qualification/pdc_x/xd/test_xd_05_host_background.py states the gap in its own docstring ('the product ships the port but no implementation over WorkerRuntime').",
+      "reproduction": "grep for the four port methods; run test_xd_05 (passes, 9 passed with xd_06) - it passes only through the _WorkerActiveWork class defined inside the test.",
+      "impact": "The row's requirement (worker drains in-flight work, leases released/fenced on shutdown) is not delivered by the platform; hosts must write their own controller and no worker releases its RUNNING tasks.",
+      "suggested_repair": "Ship a worker-side HostedApplicationActiveWorkController (WorkerRuntime and DocumentStoreTaskWorker), make stop() drain or requeue RUNNING tasks within a bound, and re-point XD-05 at the product class.",
+      "owner_path": "intergrax/background_tasks/worker_runtime.py, intergrax/queueing/providers/document_store/colocated_worker.py",
+      "verification": "CODE_READ + GREP + TEST_RUN"
+    },
+    {
+      "id": "F-D7-04",
+      "severity": "MEDIUM",
+      "rows": [
+        "R006"
+      ],
+      "title": "Occurrence identity has no tenant component; a collision silently drops the other tenant's chain (dossier F-03, confirmed)",
+      "evidence": "recurrence.py occurrence_schedule_id(rule_id, occurrence) -> 'rec_<rule_id>_<UTC stamp>' is the global scheduled_resumes PRIMARY KEY; _materialize swallows ScheduledResumeScheduleConflictError and returns None; RecurrenceMaterializer.start() returns None for 'exists', 'no occurrence' and 'conflict' alike.",
+      "reproduction": "probe_sched.py P1: two tenants with rule_id 'daily-report' and the same start: tenant-a gets the row, tenant-b start() returns None and has no row.",
+      "impact": "A tenant can pre-claim or collide with another tenant's rule_id/instant (availability, existence oracle); the second chain never starts and nothing reports it.",
+      "suggested_repair": "Qualify the id by tenant (and task), return a typed result/raise on conflict that is not the same rule, add a cross-tenant negative test.",
+      "owner_path": "intergrax/runtime/long_running/recurrence.py",
+      "verification": "PROBE_CONFIRMED"
+    },
+    {
+      "id": "F-D7-05",
+      "severity": "MEDIUM",
+      "rows": [
+        "R006",
+        "R007",
+        "R008",
+        "R009",
+        "R013"
+      ],
+      "title": "Recurrence, the retry budget and dead-lettering are not reachable from any production composition",
+      "evidence": "wire_long_running_scheduler_with_host_execution (wiring.py) has no recurrence parameter and RecurrenceRule/RecurrenceMaterializer are not exported from intergrax.runtime.long_running; the three DocumentStoreTaskWorker construction sites (vendor_knowledge/sync_runtime.py, local_workspace_application/workspaces/sync_runtime.py x2) pass no retry_policy, so production workers never retry, never consume a budget and never dead-letter (recover_interrupted_running(max_retries=None) -> FAILED).",
+      "reproduction": "grep 'recurrence=' and 'retry_policy=' over intergrax/agents/applications outside tests.",
+      "impact": "The D7 capabilities exist only as library code exercised by tests; a host using the sanctioned wiring cannot enable them. The ownership matrix names wiring.py as composition root of 'Delayed / recurring execution'.",
+      "suggested_repair": "Expose recurrence (and a rule-registration API) through the composition root, wire a RetryPolicy into the DocumentStoreTaskWorker composition, add a host-level test; or record an explicit scope decision.",
+      "owner_path": "intergrax/runtime/long_running/wiring.py, intergrax/queueing/providers/document_store/colocated_worker.py composition sites",
+      "verification": "GREP + CODE_READ"
+    },
+    {
+      "id": "F-D7-06",
+      "severity": "MEDIUM",
+      "rows": [
+        "R013",
+        "R009"
+      ],
+      "title": "Terminal queue states are not sticky: a late completion overwrites DEAD_LETTERED and a late retry re-opens SUCCEEDED",
+      "evidence": "document_store_task_queue.py mark_succeeded/mark_failed/mark_dead_lettered/retry_or_dead_letter/_settle_against_budget load the record and write without checking the current status or attempt token.",
+      "reproduction": "probe_queue.py P5: DEAD_LETTERED -> mark_succeeded -> SUCCEEDED (stale 'dead_letter' field remains in the row); P5b: SUCCEEDED -> retry_or_dead_letter -> PENDING.",
+      "impact": "A stale or duplicate worker flips a terminal outcome (including a dead-letter) and can re-run finished work; the contract calls DEAD_LETTERED terminal.",
+      "suggested_repair": "Guard every transition on the expected status (and delivery attempt), reject transitions out of a terminal status, add negative tests.",
+      "owner_path": "intergrax/queueing/providers/document_store/document_store_task_queue.py",
+      "verification": "PROBE_CONFIRMED"
+    },
+    {
+      "id": "F-D7-07",
+      "severity": "MEDIUM",
+      "rows": [
+        "R003",
+        "R010",
+        "R021"
+      ],
+      "title": "DocumentStoreTaskQueue exclusion is a per-instance threading.RLock; two queue instances (or processes) over one store double-claim and race on idempotent enqueue",
+      "evidence": "claim_pending and enqueue read-modify-write the DocumentStore under self._lock only; the ConditionalDocumentStore (compare-and-set) contract is not used. sync_runtime.py builds more than one DocumentStoreTaskQueue over the same store (placeholder worker queue and message-bus queue).",
+      "reproduction": "probe_queue_race.py: 2 queue instances over one in-memory store claim 40 tasks, 37 are claimed by both (logs/probe_queue_race.out). Enqueue idempotency lookup + put is the same TOCTOU.",
+      "impact": "Duplicate handler invocation across instances or hosts sharing a store; the scaling-boundary doc does not state this limit of the durable local provider.",
+      "suggested_repair": "Use conditional writes (CAS) for claim/enqueue or document and enforce single-instance ownership; add a two-instance test; state the limit in BACKGROUND_TASKS.md B.2.3.",
+      "owner_path": "intergrax/queueing/providers/document_store/document_store_task_queue.py",
+      "verification": "PROBE_CONFIRMED"
+    },
+    {
+      "id": "F-D7-08",
+      "severity": "MEDIUM",
+      "rows": [
+        "R003",
+        "R009"
+      ],
+      "title": "Retry back-off rows block fresh work: claim_pending inspects only the first max(4*limit, 32) pending-index rows",
+      "evidence": "claim_pending queries the pending index with limit=max(limit*4,32) and skips rows whose available_at is in the future; they stay in the index, so 32+ backed-off rows hide every later ready task.",
+      "reproduction": "probe_queue.py P9: 40 tasks failed with a 1 h back-off, then a fresh task: claim_pending(limit=4) returns [].",
+      "impact": "Liveness loss for a tenant-wide or global queue for the duration of the back-off.",
+      "suggested_repair": "Index by available_at or move backed-off rows out of the scan window; add a head-of-line test.",
+      "owner_path": "intergrax/queueing/providers/document_store/document_store_task_queue.py",
+      "verification": "PROBE_CONFIRMED"
+    },
+    {
+      "id": "F-D7-09",
+      "severity": "MEDIUM",
+      "rows": [
+        "R016"
+      ],
+      "title": "Execution identity on the enqueue envelope is carried but not adopted: no producer sets it, principal and trace are never consumed, partial identity is ignored",
+      "evidence": "No production TaskRequest(...) site passes identity=; QueuedHostTaskExecutionAdapter, message_bus service, retention_sweep, vendor sync_jobs and the LKW handler all enqueue without it. The worker only seeds the TaskId/RunId/AttemptId/ExecutionId quadruple (colocated_worker._seed_carried_identity); principal_id and trace_id are validated and stored but read nowhere; a partial identity returns silently; only the DocumentStore provider persists identity (Celery/broker enqueue drop it - declared debt).",
+      "reproduction": "grep 'identity=' / 'principal_id' / 'trace_id' in intergrax/queueing, background_tasks, background_execution; test_d7_enqueue_identity.py exercises only the quadruple through the DocumentStore path.",
+      "impact": "The documented ADOPTION GAP (full identity on enqueue) is not closed in practice: ADR text names principal and trace correlation (FRZ-TRC-12) that reach neither execution nor evidence.",
+      "suggested_repair": "Populate identity from the canonical authority at the real enqueue sites, carry principal/trace into the execution identity or causal evidence, reject partial identity, add an end-to-end test from a real producer.",
+      "owner_path": "intergrax/queueing/contracts/task_queue.py, intergrax/queueing/providers/document_store/colocated_worker.py, intergrax/runtime/task/queued_host_task_execution_adapter.py",
+      "verification": "GREP + CODE_READ"
+    },
+    {
+      "id": "F-D7-10",
+      "severity": "MEDIUM",
+      "rows": [
+        "R004",
+        "R007"
+      ],
+      "title": "ScheduledResume.run_at_utc is not validated or normalized; the store compares ISO strings lexicographically",
+      "evidence": "ScheduledResume (scheduled_resume.py) has no validator for run_at_utc; store.py/PG claim_due and list_due use 'run_at_utc <= ?' on text, and tick() does not convert a non-UTC aware 'now' (_ensure_utc).",
+      "reproduction": "probe_sched.py P3 at 08:30Z: '2026-12-01T05:00:00-05:00' (=10:00Z) fires 90 min EARLY, '2026-12-01T10:00:00+02:00' (=08:00Z) does not fire, '' fires at once, 'not-a-time' never fires.",
+      "impact": "Delayed work can run hours early or never, with no error, from a field named *_utc.",
+      "suggested_repair": "Validate and normalize to UTC at ScheduledResume construction/persistence; reject non-ISO; convert 'now' to UTC in tick; add tests.",
+      "owner_path": "intergrax/runtime/long_running/scheduled_resume.py, store.py, postgresql_task_checkpoint_store.py",
+      "verification": "PROBE_CONFIRMED"
+    },
+    {
+      "id": "F-D7-11",
+      "severity": "MEDIUM",
+      "rows": [
+        "R006",
+        "R008"
+      ],
+      "title": "Recurrence is unbounded and can be minted through plain resume_metadata; catch-up drain is super-linear",
+      "evidence": "validate_scheduled_resume_metadata does not forbid 'recurrence_rule'/'recurrence_occurrence_utc', so any caller of LongRunningScheduler.schedule_resume can start a chain without RecurrenceMaterializer.start; RecurrenceRule accepts interval_seconds=1 and catch_up(n) with no upper bound (only MAX_MISFIRE_SCAN=10000 bounds the scan); every fired occurrence re-scans the missed range.",
+      "reproduction": "probe_meta.py: a recurrence rule smuggled via resume_metadata, interval 1 s, catch_up(5000): 50 s late -> 2.0 s, 100 s -> 6.2 s, 200 s -> 14.9 s for the drain (a 3600 s backlog did not finish in 6 min and was stopped).",
+      "impact": "Unbounded resume storms and CPU cost after downtime; an authority-bearing key (it mints future executions) bypasses the SX-F13 metadata gate.",
+      "suggested_repair": "Add the keys to the forbidden set or gate creation on the materializer, set a minimum interval and a catch_up cap, plan the missed range once per tick.",
+      "owner_path": "intergrax/runtime/long_running/scheduled_resume_metadata.py, recurrence.py",
+      "verification": "PROBE_CONFIRMED"
+    },
+    {
+      "id": "F-D7-12",
+      "severity": "MEDIUM",
+      "rows": [
+        "R011",
+        "R021",
+        "R023"
+      ],
+      "title": "Architecture and plan documents still state that recurrence, DLQ, identity on enqueue and multi-process fencing are not implemented or planned",
+      "evidence": "docs/project/architecture/BACKGROUND_TASKS.md B.2.1 ('not cron/interval/calendar in core', DST 'NOT APPLICABLE'), B.2.3 ('multi-process fencing proof is planned'), 'ADOPTION GAP' and docs/project/maintainers/plans/BACKGROUND_TASKS.md A.1 ('Not implemented ... Open - PDC-P5-D7') were written by P5-DOC before B-D7 (commit 0e92fd812 at 07:38, B-D7 52f35a41f at 11:58) and not updated; the text also omits the F-D7-07 limit of the durable local provider and the fact that no host composes the new capabilities.",
+      "reproduction": "git log --format='%h %ad' -- the two files vs 52f35a41f; read the cited sections.",
+      "impact": "Operators reading the canonical docs get the opposite of the code state (FRZ-DOC-01 drift).",
+      "suggested_repair": "Reconcile both documents with the delivered state and its limits (including F-D7-05/07), after the repairs.",
+      "owner_path": "docs/project/architecture/BACKGROUND_TASKS.md, docs/project/maintainers/plans/BACKGROUND_TASKS.md",
+      "verification": "CODE_READ + GIT_LOG"
+    },
+    {
+      "id": "F-D7-13",
+      "severity": "MEDIUM",
+      "rows": [
+        "R006"
+      ],
+      "title": "Occurrences become silent completed no-ops once the target checkpoint is no longer the resumable latest",
+      "evidence": "Each occurrence resumes one (task_id, resume_token). _process_claimed_schedule completes the claim without executing when the token's checkpoint is not the latest / not resumable (complete_claim then continue). The d7 fixture paused_checkpoint() is engineered to 'stay resumable across repeated resumes' and the executor is a counting stub; no test drives a real resume.",
+      "reproduction": "probe_repause.py: after the first fire a newer checkpoint is saved (what a re-pause does): occurrences 2 and 3 fire 0 times and end 'completed' while the chain keeps materializing rows. A real execution engine run was NOT performed (limitation).",
+      "impact": "A recurring job executes at most once for a normal task while the ledger shows completed occurrences.",
+      "suggested_repair": "Define and test the recurrence target semantics end to end (what is resumed by occurrence 2..n), and record a skipped occurrence as skipped, not completed.",
+      "owner_path": "intergrax/runtime/long_running/scheduler.py, tests/qualification/pdc_x/d7/_support.py",
+      "verification": "PROBE_CONFIRMED (skip path)"
+    },
+    {
+      "id": "F-D7-14",
+      "severity": "LOW",
+      "rows": [
+        "R001",
+        "R002"
+      ],
+      "title": "Consumers of the queue status do not treat DEAD_LETTERED uniformly; a terminal duplicate is acknowledged as SUCCEEDED",
+      "evidence": "applications/local_workspace_application/serving/background_task_proof_routes.py:195 computes 'completed' from {SUCCEEDED, FAILED}; colocated_worker.drain_once and WorkerRuntime ack TERMINAL_ALREADY_RECORDED as SUCCEEDED without looking at the recorded terminal outcome.",
+      "reproduction": "code-read.",
+      "impact": "Polling clients never see a dead-lettered task complete; a failed/cancelled terminal can show as SUCCEEDED in the queue.",
+      "suggested_repair": "Use is_terminal_task_status in consumers; map the recorded terminal outcome.",
+      "owner_path": "applications/local_workspace_application/serving/background_task_proof_routes.py, colocated_worker.py, worker_runtime.py",
+      "verification": "CODE_READ"
+    },
+    {
+      "id": "F-D7-15",
+      "severity": "LOW",
+      "rows": [
+        "R009"
+      ],
+      "title": "RetryPolicy.max_retry_window_seconds raises TypeError for max_backoff_seconds=None, which validate() accepts",
+      "evidence": "retry_policy.py min(backoff, self.max_backoff_seconds); used by queueing/worker_bootstrap.py:55 and runtime/task/worker_bootstrap.py:174.",
+      "reproduction": "probe_queue.py P6: TypeError: '<' not supported between 'NoneType' and 'float'.",
+      "impact": "Worker bootstrap crashes with an uninformative error for a valid policy (fail-closed but unclear).",
+      "suggested_repair": "Treat None as unbounded or reject it in validate(); test it.",
+      "owner_path": "intergrax/queueing/worker/retry_policy.py",
+      "verification": "PROBE_CONFIRMED"
+    },
+    {
+      "id": "F-D7-16",
+      "severity": "LOW",
+      "rows": [
+        "R022"
+      ],
+      "title": "Ownership record names the wrong composition root for task handler registration; the two registries diverge on duplicates",
+      "evidence": "PDC_OWNERSHIP_MATRIX.md D7 row: composition root 'queueing/registry.py' is TaskQueueProviderRegistry (queue provider registry). Handler binding happens in applications/local_workspace_application/host/background_worker_factory.py via TaskRegistry.bind_execution_registry. TaskRegistry.register overwrites a duplicate name, TaskExecutionRegistry.register raises.",
+      "reproduction": "read intergrax/queueing/registry.py and background_tasks/registry.py.",
+      "impact": "The recorded ownership is inaccurate in one of two cells; duplicate-name behaviour differs between the layers.",
+      "suggested_repair": "Correct the matrix cell; make TaskRegistry.register reject duplicates.",
+      "owner_path": "docs/.../PDC_OWNERSHIP_MATRIX.md, intergrax/background_tasks/registry.py",
+      "verification": "CODE_READ"
+    },
+    {
+      "id": "F-D7-17",
+      "severity": "LOW",
+      "rows": [
+        "R013",
+        "R019",
+        "R020"
+      ],
+      "title": "Retry and dead-letter transitions are silent, an idempotency key pins a dead-lettered task, and the DocumentStore queue cannot purge",
+      "evidence": "DocumentStoreTaskWorker emits no TaskEvent/log/metric for retry or dead-letter (TaskEventName has no dead-lettered member though the architecture doc lists task.dead_lettered); enqueue returns the dead-lettered handle for the same idempotency key (probe P10) with no redrive; DocumentStoreTaskQueue does not override purge_completed (default 0, indistinguishable from 'nothing to purge') so terminal and idempotency rows grow.",
+      "reproduction": "probe_queue.py P10, P13; grep of document_store provider for logger/emit.",
+      "impact": "No operator signal or lifecycle for poison tasks.",
+      "suggested_repair": "Emit a typed dead-letter event, add redrive/purge and a documented idempotency-key policy.",
+      "owner_path": "intergrax/queueing/providers/document_store/, intergrax/background_tasks/events.py",
+      "verification": "PROBE_CONFIRMED + CODE_READ"
+    },
+    {
+      "id": "F-D7-18",
+      "severity": "LOW",
+      "rows": [
+        "R006",
+        "R007"
+      ],
+      "title": "Unsatisfiable cron and overflowing intervals are accepted; errors escape as OverflowError",
+      "evidence": "RecurrenceRule validation accepts '0 0 30 2 *' (first_occurrence None, start() returns None silently) and interval_seconds=10**15 (next_after raises OverflowError, not RecurrenceError).",
+      "reproduction": "probe_sched.py P4.",
+      "impact": "Silent never-firing rule; the scheduler only logs the OverflowError.",
+      "suggested_repair": "Reject unsatisfiable rules and cap interval/horizon at validation.",
+      "owner_path": "intergrax/runtime/long_running/recurrence.py",
+      "verification": "PROBE_CONFIRMED"
+    },
+    {
+      "id": "F-D7-19",
+      "severity": "LOW",
+      "rows": [
+        "R020"
+      ],
+      "title": "ScheduledResumePersistence.cancel(schedule_id) is not tenant-scoped, and recurrence has no list/cancel surface",
+      "evidence": "store.py/PG cancel(schedule_id) takes only the id; recurrence ids are deterministic and guessable (rec_<rule>_<stamp>); cancelling the pending occurrence is the only way to stop a chain.",
+      "reproduction": "code-read.",
+      "impact": "A caller holding the port can cancel another tenant's pending occurrence; no tenant-scoped control.",
+      "suggested_repair": "Add tenant to cancel/list and a rule-level cancel.",
+      "owner_path": "intergrax/runtime/long_running/scheduled_resume.py, store.py",
+      "verification": "CODE_READ"
+    },
+    {
+      "id": "F-D7-20",
+      "severity": "LOW",
+      "rows": [
+        "R014"
+      ],
+      "title": "DocumentStoreTaskWorker.stop() abandons a still-running thread and a later start() can run two consumers",
+      "evidence": "colocated_worker.py stop(): join(timeout) then self._thread = None regardless of is_alive().",
+      "reproduction": "code-read (not reproduced).",
+      "impact": "Double consumption after a slow shutdown/restart in one process.",
+      "suggested_repair": "Keep the thread handle until it exits or fail stop() when the join times out.",
+      "owner_path": "intergrax/queueing/providers/document_store/colocated_worker.py",
+      "verification": "CODE_READ"
+    },
+    {
+      "id": "F-D7-21",
+      "severity": "INFO",
+      "rows": [
+        "R007"
+      ],
+      "title": "DST gap semantics: the docstring says 'first valid instant after the gap', the code shifts by the gap length",
+      "evidence": "recurrence.py module docstring vs _day_instants: '30 2 * * *' in America/New_York on 2026-03-08 fires at 03:30 EDT (not 03:00); '0 2' fires at 03:00. Fall-back fixed hour fires once at the first pass; wildcard hours follow elapsed time.",
+      "reproduction": "probe_sched.py P7.",
+      "impact": "Documentation precision only; behaviour is deterministic and tested.",
+      "suggested_repair": "Reword the docstring/ADR to 'wall time + gap length'.",
+      "owner_path": "intergrax/runtime/long_running/recurrence.py",
+      "verification": "PROBE_CONFIRMED"
+    },
+    {
+      "id": "F-D7-22",
+      "severity": "INFO",
+      "rows": [
+        "R006",
+        "R012",
+        "R013",
+        "R016"
+      ],
+      "title": "Test-quality notes: weak or missing negative tests",
+      "evidence": "test_queue_side_mints_no_identity_of_its_own greps source for 'mint_'; the crash-after-claim test covers a one-shot only; no test for tenant collision, batch abort, terminal stickiness, head-of-line, non-UTC run_at, production composition, principal/trace, or a real resume across occurrences; XD-05/XD-06 use test-side adapters (their own docstrings report the missing product pieces).",
+      "reproduction": "read tests/qualification/pdc_x/d7 and xd_05/xd_06.",
+      "impact": "Defects F-D7-01..13 pass all 52 tests.",
+      "suggested_repair": "Add the negative tests listed in F-D7-01..13 with the repairs.",
+      "owner_path": "tests/qualification/pdc_x/d7/",
+      "verification": "CODE_READ"
+    },
+    {
+      "id": "F-D7-23",
+      "severity": "INFO",
+      "rows": [
+        "R009",
+        "R010"
+      ],
+      "title": "Re-verification of routed items and nearby observations",
+      "evidence": "Dossier F-03 and F-14 confirmed (F-D7-04, F-D7-02). F-13 (D4): colocated_worker passes idempotency_store=None, so budgeted redelivery re-invokes handlers (documented in BACKGROUND_TASKS.md B.2.2: handlers must be idempotent); not re-audited as a D4 row. XD-06 reports that no composition wires the credential broker into the worker path (D6). The pdc_x pytest process exited normally for d7 and xd_05/xd_06 (debt R-05 not observed there; xd_03 not run). No import from agents/ or applications/ in the D7 intergrax/ paths (scan).",
+      "reproduction": "logs/*.log; grep.",
+      "impact": "None.",
+      "suggested_repair": "None.",
+      "owner_path": "-",
+      "verification": "TEST_RUN + GREP"
+    }
+  ]
+}
