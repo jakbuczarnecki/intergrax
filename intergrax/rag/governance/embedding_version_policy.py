@@ -4,13 +4,14 @@
 """Embedding model version mismatch policy for ingest and retrieve (M-RAG.31)."""
 
 from __future__ import annotations
-from intergrax.utils import attribute_access
 
 import logging
+from collections.abc import Callable, Mapping, Sequence
 from dataclasses import dataclass, field
-from typing import Any, Callable, List, Mapping, Optional, Sequence, TypeVar
+from typing import Any, TypeVar
 
 from intergrax.rag.profiles.rag_profile import RagProfile
+from intergrax.utils import attribute_access
 
 TChunk = TypeVar("TChunk")
 
@@ -26,14 +27,14 @@ _reindex_queue_hooks: list[ReindexQueueHook] = []
 @dataclass(frozen=True)
 class ReindexQueueRequest:
     source_path: str
-    current_version: Optional[str]
+    current_version: str | None
     target_version: str
     reason: str
 
 
 @dataclass
 class EmbeddingVersionPolicyResult:
-    warnings: List[str] = field(default_factory=list)
+    warnings: list[str] = field(default_factory=list)
     reindex_enqueued: bool = False
 
 
@@ -46,7 +47,7 @@ def clear_reindex_queue_hooks() -> None:
     _reindex_queue_hooks.clear()
 
 
-def normalize_embedding_model_version(value: Any) -> Optional[str]:
+def normalize_embedding_model_version(value: Any) -> str | None:
     if value is None:
         return None
     text = str(value).strip()
@@ -58,7 +59,7 @@ def evaluate_ingest_embedding_version(
     profile: RagProfile,
     base_metadata: Mapping[str, Any],
     source_path: str,
-    indexed_version_hint: Optional[str] = None,
+    indexed_version_hint: str | None = None,
 ) -> EmbeddingVersionPolicyResult:
     """
     Warn when ingest metadata or indexed corpus version disagrees with profile.
@@ -73,27 +74,31 @@ def evaluate_ingest_embedding_version(
     if target is None:
         return result
 
-    incoming = normalize_embedding_model_version(
-        base_metadata.get(EMBEDDING_MODEL_VERSION_METADATA_KEY)
-    )
+    incoming = normalize_embedding_model_version(base_metadata.get(EMBEDDING_MODEL_VERSION_METADATA_KEY))
     if incoming is not None and incoming != target:
         result.warnings.append(f"incoming_metadata_version_mismatch:{incoming}!={target}")
-        result.reindex_enqueued = _notify_reindex_needed(
-            source_path=source_path,
-            current_version=incoming,
-            target_version=target,
-            reason="incoming_metadata_version_mismatch",
-        ) or result.reindex_enqueued
+        result.reindex_enqueued = (
+            _notify_reindex_needed(
+                source_path=source_path,
+                current_version=incoming,
+                target_version=target,
+                reason="incoming_metadata_version_mismatch",
+            )
+            or result.reindex_enqueued
+        )
 
     indexed = normalize_embedding_model_version(indexed_version_hint)
     if indexed is not None and indexed != target:
         result.warnings.append(f"indexed_version_mismatch:{indexed}!={target}")
-        result.reindex_enqueued = _notify_reindex_needed(
-            source_path=source_path,
-            current_version=indexed,
-            target_version=target,
-            reason="indexed_version_mismatch",
-        ) or result.reindex_enqueued
+        result.reindex_enqueued = (
+            _notify_reindex_needed(
+                source_path=source_path,
+                current_version=indexed,
+                target_version=target,
+                reason="indexed_version_mismatch",
+            )
+            or result.reindex_enqueued
+        )
 
     for warning in result.warnings:
         logger.warning(
@@ -104,7 +109,7 @@ def evaluate_ingest_embedding_version(
     return result
 
 
-def filter_chunks_by_embedding_version(
+def filter_chunks_by_embedding_version[TChunk](
     chunks: Sequence[TChunk],
     *,
     profile: RagProfile,
@@ -125,9 +130,7 @@ def filter_chunks_by_embedding_version(
     filtered_count = 0
     for chunk in chunks:
         metadata = attribute_access.optional(chunk, "metadata", None) or {}
-        chunk_version = normalize_embedding_model_version(
-            metadata.get(EMBEDDING_MODEL_VERSION_METADATA_KEY)
-        )
+        chunk_version = normalize_embedding_model_version(metadata.get(EMBEDDING_MODEL_VERSION_METADATA_KEY))
         if chunk_version is not None and chunk_version != target:
             filtered_count += 1
             continue
@@ -142,7 +145,7 @@ def filter_chunks_by_embedding_version(
 def _notify_reindex_needed(
     *,
     source_path: str,
-    current_version: Optional[str],
+    current_version: str | None,
     target_version: str,
     reason: str,
 ) -> bool:
@@ -154,6 +157,19 @@ def _notify_reindex_needed(
         target_version=target_version,
         reason=reason,
     )
-    for hook in _reindex_queue_hooks:
-        hook(request)
-    return True
+    accepted = False
+    # A failing operator hook must neither break retrieval or ingest nor starve the other hooks
+    # (PDC-D2-R005): each hook runs isolated; the failure is logged and the request is not "enqueued".
+    for hook in list(_reindex_queue_hooks):
+        try:
+            hook(request)
+        except Exception:  # noqa: BLE001 - hook failures are isolated by design
+            logger.warning(
+                "reindex queue hook failed for source=%s reason=%s",
+                source_path,
+                reason,
+                exc_info=True,
+            )
+            continue
+        accepted = True
+    return accepted
