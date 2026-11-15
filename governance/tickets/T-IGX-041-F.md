@@ -6,7 +6,7 @@ Product and test repair after the independent audit IA-D6 (`PDC_P7_D6_AUDIT_REPO
 
 ## Plan digest
 
-Plan digest: 04802036e612f4df028d5db521fdf100607811871d55da58cd0f2a656056d8b2
+Plan digest: b02c13ba62dee88b32aa13dae11007673b3085bb64d410e7cad66c2f30a63a17
 
 Canonical plan: [`governance/tickets/plans/PLAN_T-IGX-041-F.md`](plans/PLAN_T-IGX-041-F.md).
 
