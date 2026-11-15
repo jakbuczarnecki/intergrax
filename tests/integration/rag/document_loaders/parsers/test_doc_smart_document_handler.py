@@ -5,6 +5,9 @@
 from __future__ import annotations
 
 import pytest
+
+pytest.importorskip("docx", reason="requires the 'parsing-office' extra (python-docx)")
+
 from pathlib import Path
 
 import docx

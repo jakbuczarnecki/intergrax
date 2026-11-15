@@ -1,7 +1,8 @@
 # © Artur Czarnecki. All rights reserved.
 
-import pytest
+from collections.abc import Callable
 
+import pytest
 from intergrax.agents.authoring.base import IntergraxAgent
 from intergrax.agents.authoring.step_outcome import StepOutcome
 from intergrax.contracts.acp_metadata_keys import AcpMetadataKey
@@ -46,7 +47,8 @@ class _LlmTraceAgent(IntergraxAgent):
 
 @pytest.mark.unit
 @pytest.mark.gate
-async def test_acp_run_populates_llm_calls_in_trace() -> None:
+async def test_acp_run_populates_llm_calls_in_trace(bound_governance_identity: Callable[..., None]) -> None:
+    bound_governance_identity(tenant_id="tenant-1", principal_id="user-1")
     agent = _LlmTraceAgent()
     request = AgentRunRequest(
         input="wave3",

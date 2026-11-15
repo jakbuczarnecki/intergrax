@@ -3,10 +3,9 @@
 # Use, modification, or distribution without written permission is prohibited.
 
 from pathlib import Path
+
 import pytest
-
 from intergrax.rag.document_loaders.bootstrap.default_loader import create_default_documents_loader
-
 
 pytestmark = pytest.mark.integration
 
@@ -28,6 +27,7 @@ def test_docx_ingestion():
 
 
 def test_html_ingestion():
+    pytest.importorskip("unstructured", reason="requires the 'rag-langchain-loaders' extra (unstructured)")
 
     DATASET = Path("tests/fixtures/documents/html")
 
@@ -44,6 +44,7 @@ def test_html_ingestion():
 
 
 def test_xlsx_ingestion():
+    pytest.importorskip("pandas", reason="requires the 'parsing-office' extra (pandas)")
 
     DATASET = Path("tests/fixtures/documents/xlsx")
 

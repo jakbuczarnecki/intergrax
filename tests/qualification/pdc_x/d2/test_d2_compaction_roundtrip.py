@@ -150,10 +150,8 @@ def test_lossy_summary_that_drops_a_protected_region_is_never_activatable(
     # Adversarial summary: keeps the URL but silently drops path, command and hash.
     builder = _builder_with_summary(repository, f"user ran something against {fx._URL}")
     try:
-        try:
-            built = builder.build(request)
-        except ValueError:
-            return  # rejected while building: nothing durable can be activated
+        # The build itself succeeds; it is the validation that must refuse the lossy summary.
+        built = builder.build(request)
         outcome = _compile(repository, request, built)
         assert outcome.status is not DurableCompactionValidationStatus.PASSED
         assert outcome.activation_requirements is None
@@ -206,10 +204,8 @@ def test_corrupted_durable_payload_is_never_served_as_a_valid_artifact(tmp_path:
 
     reopened = _repository(db_path)
     try:
-        try:
-            resolved = reopened.resolve(reference)
-        except Exception:
-            return  # fail-closed with an error is acceptable
-        assert resolved is None or b"forged instruction" not in resolved.payload
+        # Fail closed with the specific integrity error: the forged payload is never returned.
+        with pytest.raises(ValueError, match="payload SHA-256 must equal metadata.artifact_content_hash"):
+            reopened.resolve(reference)
     finally:
         reopened.close()

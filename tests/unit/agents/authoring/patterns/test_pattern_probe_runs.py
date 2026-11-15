@@ -4,8 +4,9 @@
 
 from __future__ import annotations
 
-import pytest
+from collections.abc import Callable
 
+import pytest
 from intergrax.agents.authoring.patterns.reference import (
     PatternDecompositionProbe,
     PatternPlanExecuteProbe,
@@ -37,7 +38,9 @@ async def test_pattern_probe_typed_run_succeeds(
     expected_pattern: CognitivePattern,
     min_steps: int,
     pattern_run_request: AgentRunRequest,
+    bound_governance_identity: Callable[..., None],
 ) -> None:
+    bound_governance_identity(tenant_id="t-pattern", principal_id="u-pattern")
     agent = probe_cls()
     contract = agent.get_contract()
     assert contract.cognitive_pattern == expected_pattern

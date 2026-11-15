@@ -40,12 +40,12 @@ class SecretsStoreCredentialResolver:
             ) from None
         except CredentialScopeMismatchError:
             raise
-        except Exception as exc:
+        except Exception:
             raise CredentialProviderUnavailableError(
                 sanitize_credential_error_message(
                     f"credential provider unavailable for provider_id={ref.provider_id}",
                 ),
-            ) from exc
+            ) from None
         if not isinstance(value, str) or not value.strip():
             raise CredentialNotFoundError(
                 sanitize_credential_error_message(

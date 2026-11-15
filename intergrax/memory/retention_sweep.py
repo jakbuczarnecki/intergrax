@@ -14,11 +14,12 @@ registers a ``TaskDefinition`` that the existing ``WorkerRuntime`` admits, ident
 from __future__ import annotations
 
 import asyncio
+import contextlib
 import json
 import threading
 from collections.abc import Callable
 from dataclasses import dataclass, field
-from datetime import UTC, datetime
+from datetime import UTC, datetime, timedelta
 from typing import Any
 
 from pydantic import BaseModel, Field
@@ -271,23 +272,50 @@ def memory_retention_sweep_task_request(
     )
 
 
-def _run_coroutine_blocking(coroutine: Any) -> Any:
-    """Run ``coroutine`` to completion from a synchronous worker handler."""
+DEFAULT_SWEEP_DEADLINE_SECONDS: float = 300.0
+"""Upper bound of one sweep run inside the background task (cancellation point: the next await)."""
+
+MAX_AS_OF_SKEW: timedelta = timedelta(minutes=5)
+"""A payload ``as_of_iso`` may run ahead of the injected clock by at most this much (PDC-D2-R015)."""
+
+_DEADLINE_JOIN_SLACK_SECONDS: float = 5.0
+
+
+class _SweepDeadlineExceeded(Exception):
+    """The sweep did not finish inside its deadline (distinct from a TimeoutError raised by the sweep)."""
+
+
+async def _run_with_deadline(coroutine: Any, deadline_seconds: float) -> Any:
+    task = asyncio.ensure_future(coroutine)
+    done, _pending = await asyncio.wait({task}, timeout=deadline_seconds)
+    if not done:
+        task.cancel()
+        with contextlib.suppress(asyncio.CancelledError, Exception):
+            await task
+        raise _SweepDeadlineExceeded
+    return task.result()
+
+
+def _run_coroutine_blocking(coroutine: Any, *, deadline_seconds: float) -> Any:
+    """Run ``coroutine`` to completion (or its deadline) from a synchronous worker handler."""
+    bounded = _run_with_deadline(coroutine, deadline_seconds)
     try:
         asyncio.get_running_loop()
     except RuntimeError:
-        return asyncio.run(coroutine)
+        return asyncio.run(bounded)
     box: dict[str, Any] = {}
 
     def _target() -> None:
         try:
-            box["value"] = asyncio.run(coroutine)
+            box["value"] = asyncio.run(bounded)
         except BaseException as exc:  # noqa: BLE001 - re-raised in the caller thread
             box["error"] = exc
 
-    thread = threading.Thread(target=_target, name="memory-retention-sweep")
+    thread = threading.Thread(target=_target, name="memory-retention-sweep", daemon=True)
     thread.start()
-    thread.join()
+    thread.join(deadline_seconds + _DEADLINE_JOIN_SLACK_SECONDS)
+    if thread.is_alive():
+        raise _SweepDeadlineExceeded
     if "error" in box:
         raise box["error"]
     return box["value"]
@@ -299,6 +327,7 @@ def register_memory_retention_sweep_task(
     sweep: MemoryRetentionSweep,
     identity_resolver: Callable[[str, str], RequestIdentity],
     clock: Callable[[], datetime] | None = None,
+    deadline_seconds: float = DEFAULT_SWEEP_DEADLINE_SECONDS,
 ) -> TaskDefinition:
     """Register the sweep with the platform task registry (no scheduler is introduced).
 
@@ -335,15 +364,32 @@ def register_memory_retention_sweep_task(
                 "resolved identity does not match the retention sweep payload",
             )
         as_of = _parse_iso_timestamp(body.as_of_iso) if body.as_of_iso else (clock() if clock is not None else None)
-        report = _run_coroutine_blocking(
-            sweep.run(
-                MemoryRetentionSweepRequest(
-                    identity=identity,
-                    as_of=as_of,
-                    batch_limit=body.batch_limit,
+        if body.as_of_iso and as_of is not None:
+            # Forget is irreversible: a producer-supplied instant must not run ahead of the clock.
+            now = clock() if clock is not None else SystemTimeProvider.utc_now()
+            if now.tzinfo is None:
+                now = now.replace(tzinfo=UTC)
+            if as_of > now + MAX_AS_OF_SKEW:
+                return ToolExecutionResult.fail(
+                    "memory_retention_sweep.as_of_out_of_range",
+                    "retention sweep as_of is ahead of the worker clock",
                 )
+        try:
+            report = _run_coroutine_blocking(
+                sweep.run(
+                    MemoryRetentionSweepRequest(
+                        identity=identity,
+                        as_of=as_of,
+                        batch_limit=body.batch_limit,
+                    )
+                ),
+                deadline_seconds=deadline_seconds,
             )
-        )
+        except _SweepDeadlineExceeded:
+            return ToolExecutionResult.fail(
+                "memory_retention_sweep.timeout",
+                "retention sweep exceeded its deadline and was cancelled",
+            )
         return ToolExecutionResult.ok(
             MemoryRetentionSweepOutput(
                 tenant_id=report.tenant_id,

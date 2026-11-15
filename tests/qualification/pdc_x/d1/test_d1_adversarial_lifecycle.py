@@ -634,7 +634,9 @@ def test_r013_revocation_while_serving_rolls_back_and_closes_admission_on_the_re
     assert _admit(stack, "rev-2") is not None  # executing under the soon-revoked release
 
     stack.revocation.state = AgentPackageTrustRevocationState(revoked_package_digests=frozenset({h.DIGESTS[_V11]}))
-    response = stack.service.respond_to_emergency_revocation(application_id=h.APP, application_environment_id=h.ENV)
+    response = stack.service.respond_to_emergency_revocation(
+        application_id=h.APP, application_environment_id=h.ENV, principal=h.principal()
+    )
 
     assert response.action is EmergencyTrustResponseAction.ROLLBACK
     assert response.response_reason_code is EmergencyTrustResponseReasonCode.SAFE_ROLLBACK_COMPLETED
@@ -654,7 +656,9 @@ def test_r013_revocation_without_a_trusted_rollback_target_is_blocked_explicitly
         revoked_package_digests=frozenset({h.DIGESTS[_V1], h.DIGESTS[_V11]})
     )
 
-    response = stack.service.respond_to_emergency_revocation(application_id=h.APP, application_environment_id=h.ENV)
+    response = stack.service.respond_to_emergency_revocation(
+        application_id=h.APP, application_environment_id=h.ENV, principal=h.principal()
+    )
 
     assert response.action is EmergencyTrustResponseAction.BLOCKED_NO_SAFE_TARGET
     assert response.response_reason_code is EmergencyTrustResponseReasonCode.ROLLBACK_TARGET_UNTRUSTED
@@ -680,7 +684,9 @@ def test_r013_revoking_a_non_serving_installation_takes_no_action() -> None:
     stack.revocation.state = AgentPackageTrustRevocationState(
         revoked_package_digests=frozenset({"sha256:" + ("9" * 64)})
     )
-    response = stack.service.respond_to_emergency_revocation(application_id=h.APP, application_environment_id=h.ENV)
+    response = stack.service.respond_to_emergency_revocation(
+        application_id=h.APP, application_environment_id=h.ENV, principal=h.principal()
+    )
     assert response.action is EmergencyTrustResponseAction.NO_ACTION
     serving = stack.service.inspect_serving(application_id=h.APP, application_environment_id=h.ENV)
     assert serving.traffic_serving_revision_id == "rev-2"

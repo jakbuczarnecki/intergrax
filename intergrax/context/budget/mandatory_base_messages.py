@@ -6,6 +6,7 @@ from __future__ import annotations
 
 from collections.abc import Callable, Mapping, Sequence
 
+from intergrax.context.budget.message_token_cost import message_token_cost
 from intergrax.llm.messages import ChatMessage
 
 
@@ -169,7 +170,7 @@ def estimate_mandatory_provider_message_tokens(
     )
     total = 0
     for index in sorted(indices):
-        total += max(0, count_text(messages[index].content or ""))
+        total += message_token_cost(messages[index], count_text)
     return total
 
 
@@ -188,7 +189,7 @@ def estimate_mandatory_protected_message_tokens(
     )
     total = 0
     for index in sorted(indices):
-        total += max(0, count_text(messages[index].content or ""))
+        total += message_token_cost(messages[index], count_text)
     return total
 
 
@@ -205,5 +206,5 @@ def estimate_mandatory_base_message_tokens(
     )
     total = 0
     for index in sorted(indices):
-        total += max(0, count_text(messages[index].content or ""))
+        total += message_token_cost(messages[index], count_text)
     return total

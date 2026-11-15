@@ -2,14 +2,18 @@
 
 from __future__ import annotations
 
-import numpy as np
 import pytest
-from langchain_core.documents import Document
 
+pytest.importorskip(
+    "langchain_core", reason="requires the 'dev-ci-rag' extra (langchain-core); executed by the rag-guard CI profile"
+)
+
+import numpy as np
 from intergrax.rag.embedding.embedding_manager import EmbeddingManager
 from intergrax.rag.embedding.engine.embedding_engine import EmbeddingEngine
 from intergrax.rag.embedding.pipeline.embedding_pipeline import EmbeddingPipeline
 from intergrax.rag.embedding.providers.vllm_embedding_provider import VllmEmbeddingProvider
+from langchain_core.documents import Document
 from testing_support.builder import require_vllm_embed_reachable
 
 pytestmark = pytest.mark.integration

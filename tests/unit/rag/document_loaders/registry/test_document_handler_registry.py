@@ -5,12 +5,11 @@
 from __future__ import annotations
 
 import pytest
-
-from intergrax.rag.document_loaders.registry.document_handler_registry import (
-    DocumentHandlerRegistry,
-)
 from intergrax.rag.document_loaders.contracts.base_document_handler import (
     BaseDocumentHandler,
+)
+from intergrax.rag.document_loaders.registry.document_handler_registry import (
+    DocumentHandlerRegistry,
 )
 
 pytestmark = pytest.mark.unit
@@ -22,7 +21,7 @@ class _DummyHandler(BaseDocumentHandler):
 
     NOTE:
     Registry tests only use supports() and confidence().
-    build_parsers() is implemented only to satisfy the ABC contract.
+    build_parsers() and load() are implemented only to satisfy the ABC contract.
     """
 
     def __init__(self, supported_suffix: str, score: float) -> None:
@@ -36,6 +35,9 @@ class _DummyHandler(BaseDocumentHandler):
         return self.score
 
     def build_parsers(self):
+        return []
+
+    def load(self, source, *, scope):
         return []
 
 

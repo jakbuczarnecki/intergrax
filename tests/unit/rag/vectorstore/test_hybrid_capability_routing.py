@@ -1,10 +1,9 @@
 from __future__ import annotations
 
+from collections.abc import Sequence
 from dataclasses import dataclass
-from typing import Sequence
 
 import pytest
-
 from intergrax.integrations.contracts.base import IntegrationConfigurationError
 from intergrax.integrations.providers.vector_store.qdrant.integration import (
     QdrantVectorStoreIntegration,
@@ -198,6 +197,9 @@ def test_dense_only_provider_uses_generic_hybrid_rerank() -> None:
 
 
 def test_qdrant_integration_wrapper_preserves_sparse_native_capability() -> None:
+    pytest.importorskip(
+        "qdrant_client", reason="requires the 'dev-ci-rag' extra (qdrant-client); executed by the rag-guard CI profile"
+    )
     inner = QdrantVectorStore(
         QdrantConfig(
             collection_name="proof",
@@ -215,6 +217,9 @@ def test_qdrant_integration_wrapper_preserves_sparse_native_capability() -> None
 
 
 def test_qdrant_integration_without_sparse_does_not_claim_native_hybrid() -> None:
+    pytest.importorskip(
+        "qdrant_client", reason="requires the 'dev-ci-rag' extra (qdrant-client); executed by the rag-guard CI profile"
+    )
     inner = QdrantVectorStore(
         QdrantConfig(
             collection_name="proof",
@@ -311,16 +316,14 @@ def test_cold_start_generic_hybrid_ordering_is_stable_without_lexical_cache() ->
     before_restart = retriever.retrieve(_retriever_query())
     after_restart = retriever.retrieve(_retriever_query())
 
-    assert [hit.vector_id for hit in before_restart] == [
-        hit.vector_id for hit in after_restart
-    ]
+    assert [hit.vector_id for hit in before_restart] == [hit.vector_id for hit in after_restart]
     assert before_restart[0].vector_id == "fresh-source"
 
 
 def test_inprocess_empty_coordinator_hides_generation_managed_records() -> None:
     from intergrax.distributed.source_operation import (
-        InProcessSourceOperationCoordinator,
         SOURCE_PUBLICATION_GENERATION_METADATA_KEY,
+        InProcessSourceOperationCoordinator,
     )
 
     coordinator = InProcessSourceOperationCoordinator()

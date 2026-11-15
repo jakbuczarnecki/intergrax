@@ -23,6 +23,7 @@ from intergrax.context.budget.mandatory_base_messages import (
     mandatory_base_message_indices,
     mandatory_protected_message_indices,
 )
+from intergrax.context.budget.message_token_cost import message_token_cost
 from intergrax.context.contracts import ProviderFragmentIdentityMap
 from intergrax.runtime.nexus.context.context_compiler_models import (
     ContextCandidate,
@@ -66,8 +67,7 @@ def classify_candidates(
     candidates: list[ContextCandidate] = []
 
     for index, message in enumerate(messages):
-        content = message.content or ""
-        token_estimate = count_tokens(content)
+        token_estimate = message_token_cost(message, count_tokens)
         provider_entry = (
             provider_fragment_identity.lookup(message.entry_id) if provider_fragment_identity is not None else None
         )
@@ -280,7 +280,7 @@ class ContextCompiler:
         )
 
         def total(msgs: list[ChatMessage]) -> int:
-            return sum(self._count_tokens(message.content or "") for message in msgs)
+            return sum(message_token_cost(message, self._count_tokens) for message in msgs)
 
         if total(messages) <= budget_tokens:
             return messages
@@ -292,7 +292,7 @@ class ContextCompiler:
         mandatory_provider_entry_ids = (
             provider_fragment_identity.mandatory_entry_ids() if provider_fragment_identity is not None else frozenset()
         )
-        last_user_tokens = self._count_tokens(messages[last_user].content or "")
+        last_user_tokens = message_token_cost(messages[last_user], self._count_tokens)
         if last_user_tokens > budget_tokens:
             raise ContextBudgetUnsatisfiableError(
                 detail="mandatory_user_turn_exceeds_budget",
@@ -342,7 +342,8 @@ class ContextCompiler:
             )
             drop_indices: set[int] | None = None
             group_spans = complete_tool_call_group_spans(working)
-            for index in range(len(working) - 1, -1, -1):
+            # Oldest first: the freshest context is the last to go (the ladder drops oldest history first).
+            for index in range(len(working)):
                 if index in mandatory_now:
                     continue
                 # A tool call and its results leave together or not at all.

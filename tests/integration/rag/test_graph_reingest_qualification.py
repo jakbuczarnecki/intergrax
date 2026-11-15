@@ -6,7 +6,6 @@ from pathlib import Path
 
 import numpy as np
 import pytest
-
 from intergrax.integrations.providers.vector_store.inmemory.rag_store import (
     InMemoryVectorStore,
 )
@@ -123,9 +122,7 @@ class _MarkerEmbeddingManager(BaseEmbeddingManager):
         native_documents = tuple(documents)
         return EmbeddingResult(
             documents=native_documents,
-            embeddings=self.embed_texts(
-                [document.content for document in native_documents]
-            ),
+            embeddings=self.embed_texts([document.content for document in native_documents]),
         )
 
 
@@ -163,7 +160,6 @@ def _build() -> tuple[
         fast_retriever_id="graph_rag",
         deep_retriever_id="graph_rag",
         graph_rag_enabled=True,
-        graph_store_backend="inmemory",
         enable_rerank=False,
         route_mode="off",
         native_hybrid_enabled=False,
@@ -240,14 +236,11 @@ def test_graphrag_source_reingest_replaces_vectors_and_graph_safely(
 
     _write(
         source_a,
-        "A-old Old Alpha supports Old Beta|"
-        "A-old Old Alpha supports Shared Entity|"
-        "A-old Shared One connects Shared Two",
+        "A-old Old Alpha supports Old Beta|A-old Old Alpha supports Shared Entity|A-old Shared One connects Shared Two",
     )
     _write(
         source_b,
-        "B-stable Shared Entity supports Shared One|"
-        "B-stable Shared Two supports B Stable",
+        "B-stable Shared Entity supports Shared One|B-stable Shared Two supports B Stable",
     )
     a_v1 = set(_ingest(pipeline, source_a))
     b_v1 = set(_ingest(pipeline, source_b))
@@ -297,9 +290,7 @@ def test_graphrag_source_reingest_replaces_vectors_and_graph_safely(
     assert graph.node_ids_for_chunks(a_v1) == set()
     assert graph.find_nodes(label_contains="Old", limit=10) == []
     assert graph.node_ids_for_chunks(b_v1) == b_graph_nodes
-    assert "ent:shared_two" not in {
-        node.id for node in graph.neighbors("ent:shared_one")
-    }
+    assert "ent:shared_two" not in {node.id for node in graph.neighbors("ent:shared_one")}
 
     _write(source_a, "A-new New Alpha remains")
     graph.fail_unlink = True

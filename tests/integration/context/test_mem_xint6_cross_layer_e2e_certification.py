@@ -11,15 +11,10 @@ from pathlib import Path
 from unittest.mock import AsyncMock
 
 import pytest
-
-from intergrax.context.bootstrap import materialize_context_plugin_registry
 from intergrax.context.contracts import (
-    IterativeToolOutputBlock,
     ContextAssemblyRequest,
     ContextAuthorityClass,
-    ContextBudgetSnapshot,
     ContextConflictAction,
-    ContextDecisionSnapshot,
     ContextFragment,
     ContextFragmentScopeRef,
     ContextFragmentSource,
@@ -42,9 +37,9 @@ from intergrax.context.policy.pipeline import (
 from intergrax.context.policy.scope_isolation import isolate_assembly_scope
 from intergrax.context.provider_descriptor import build_provider_descriptor
 from intergrax.context.ranker import DefaultContextRanker
+from intergrax.context.source_inputs import ContextProviderSourceInputs
 from intergrax.contracts.agent_run import RequestIdentity
 from intergrax.contracts.agent_run_enums import PrincipalType
-from intergrax.contracts.context_assembly import TaskContextAssemblyOptions
 from intergrax.contracts.data_classification import DataClassification
 from intergrax.contracts.execution_identity import (
     mint_run_id,
@@ -58,7 +53,6 @@ from intergrax.memory.contracts.memory_control import (
     MemoryControlRecallResult,
     MemoryControlRememberRequest,
     MemoryControlScopeRef,
-    user_memory_scope,
 )
 from intergrax.memory.contracts.memory_models import MemoryKind
 from intergrax.memory.user_profile_memory import UserProfileMemoryEntry
@@ -70,7 +64,6 @@ from intergrax.runtime.nexus.context.canonical_context_composition import (
 from intergrax.runtime.nexus.context.context_engine import DefaultNexusContextEngine
 from intergrax.runtime.nexus.context.iterative_tool_context_assembly import run_ce_bounded_tool_loop
 from intergrax.runtime.nexus.context.memory_context_invocation import run_longterm_memory_context
-from intergrax.context.source_inputs import ContextProviderSourceInputs
 from intergrax.runtime.nexus.context.provider_handles import LTM_ENTRIES_METADATA_KEY
 from intergrax.runtime.nexus.context.provider_source_adapters import (
     memory_inputs_from_rows,
@@ -92,8 +85,8 @@ from testing_support.builder import (
     canonical_run_id_for_tests,
 )
 from testing_support.mem_xint6_cross_layer_certification import (
-    authority_for_source,
     assert_included_fragments_have_provenance,
+    authority_for_source,
     build_certification_engine,
     build_certification_provider_context,
     build_provider_source_inputs,
@@ -106,9 +99,9 @@ from tests.integration.memory.e2e.harness import build_in_memory_memory_harness
 from tests.unit.runtime.nexus.context.test_context_engine import _SmallWindowAdapter
 from tests.unit.runtime.nexus.context.test_mem_xint4r_react_context_authority import (
     RecordingContextEngine,
-    _TwoToolRoundPlanner,
     _bind_identity,
     _invoker,
+    _TwoToolRoundPlanner,
 )
 
 pytestmark = [pytest.mark.integration, pytest.mark.gate]
@@ -304,9 +297,7 @@ async def test_session_episodic_and_canonical_memory_distinct_in_ce() -> None:
         episodic_fact=episodic,
     )
     sources = build_provider_source_inputs(
-        ltm_entries=memory_inputs_from_rows(
-            [{"entry_id": "e1", "content": _LTM_SNIPPET, "kind": "user_fact"}]
-        ),
+        ltm_entries=memory_inputs_from_rows([{"entry_id": "e1", "content": _LTM_SNIPPET, "kind": "user_fact"}]),
         session_snapshot=snapshot,
     )
     assembled = await _assemble_with_sources(runtime_config=runtime_config, sources=sources)
@@ -350,7 +341,10 @@ def test_rag_and_tool_duplicate_is_suppressed_before_budget() -> None:
     result = pipeline.execute([rag, tool], certification_assembly_request())
     assert result.semantic_dedup_decisions
     included_contents = {f.content for f in result.fragments}
-    assert len(included_contents) < 2 or result.semantic_dedup_decisions[0].reason_code is ContextPolicyReasonCode.SEMANTIC_DUPLICATE
+    assert (
+        len(included_contents) < 2
+        or result.semantic_dedup_decisions[0].reason_code is ContextPolicyReasonCode.SEMANTIC_DUPLICATE
+    )
 
 
 @pytest.mark.asyncio
@@ -359,13 +353,9 @@ async def test_mixed_source_full_pipeline_stages_and_provenance_walkthrough() ->
     adapter = _SmallWindowAdapter()
     runtime_config = RuntimeConfig(llm_adapter=adapter, production_mode=False)
     sources = build_provider_source_inputs(
-        ltm_entries=memory_inputs_from_rows(
-            [{"entry_id": "e1", "content": _LTM_SNIPPET, "kind": "user_fact"}]
-        ),
+        ltm_entries=memory_inputs_from_rows([{"entry_id": "e1", "content": _LTM_SNIPPET, "kind": "user_fact"}]),
         rag_chunks=rag_inputs_from_rows([{"id": "c1", "text": "rag-mixed", "score": 0.7}]),
-        tool_blocks=tool_inputs_from_rows(
-            [{"content": "tool-obs", "tool_call_id": "tc-1", "tool_name": "probe"}]
-        ),
+        tool_blocks=tool_inputs_from_rows([{"content": "tool-obs", "tool_call_id": "tc-1", "tool_name": "probe"}]),
         web_blocks=web_inputs_from_rows(["web-hit"]),
         session_snapshot=session_snapshot_for_cert(
             tenant_id=_TENANT,
@@ -504,9 +494,7 @@ async def test_deterministic_assembly_two_runs_match() -> None:
     adapter = _SmallWindowAdapter()
     runtime_config = RuntimeConfig(llm_adapter=adapter, production_mode=False)
     sources = build_provider_source_inputs(
-        ltm_entries=memory_inputs_from_rows(
-            [{"entry_id": "e1", "content": _LTM_SNIPPET, "kind": "user_fact"}]
-        ),
+        ltm_entries=memory_inputs_from_rows([{"entry_id": "e1", "content": _LTM_SNIPPET, "kind": "user_fact"}]),
         rag_chunks=rag_inputs_from_rows([{"id": "c1", "text": "rag-d", "score": 0.5}]),
     )
     request = certification_assembly_request()
@@ -556,13 +544,16 @@ def test_mem_xint6_maintenance_bypass_guard_script() -> None:
 
 
 def test_typed_sources_documented_on_provider_context() -> None:
-    contracts_path = _REPO / "intergrax" / "context" / "contracts.py"
-    source_inputs_path = _REPO / "intergrax" / "context" / "source_inputs.py"
-    contracts_source = contracts_path.read_text(encoding="utf-8")
-    inputs_source = source_inputs_path.read_text(encoding="utf-8")
-    assert "sources:" in contracts_source
-    assert "class ContextProviderSourceInputs" in inputs_source
-    assert "payloads may be introduced through handles" in contracts_source
+    import dataclasses
+
+    from intergrax.context.source_inputs import ContextProviderSourceInputs
+
+    # Typed check (PDC-D2-R006): canonical semantic inputs live in the typed ``sources`` field, while
+    # ``handles`` stays the legacy auxiliary bag; no docstring phrase is asserted.
+    fields = {f.name: f for f in dataclasses.fields(ContextProviderContext)}
+    assert {"sources", "runtime", "handles"} <= set(fields)
+    assert dataclasses.is_dataclass(ContextProviderSourceInputs)
+    assert ContextProviderContext().sources.__class__ is ContextProviderSourceInputs
 
 
 @pytest.mark.asyncio

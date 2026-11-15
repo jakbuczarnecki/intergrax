@@ -4,11 +4,10 @@
 
 from __future__ import annotations
 
-import pytest
 from pathlib import Path
 
+import pytest
 from intergrax.knowledge.contracts import KnowledgeDocument, KnowledgeDocumentScope
-
 from intergrax.rag.document_loaders.config.document_loader_config import GLOBAL_DOCUMENT_LOADER_CONFIG
 from intergrax.rag.document_loaders.handlers.html_document_handler import (
     HtmlSmartDocumentHandler,
@@ -60,6 +59,7 @@ def test_html_handler_builds_parser():
 
 
 def test_html_handler_loads_html(tmp_path: Path):
+    pytest.importorskip("unstructured", reason="requires the 'rag-langchain-loaders' extra (unstructured)")
 
     html_path = tmp_path / "sample.html"
 

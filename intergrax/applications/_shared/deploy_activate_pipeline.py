@@ -4,11 +4,11 @@
 
 from __future__ import annotations
 
+from collections.abc import Callable
 from dataclasses import dataclass
 from typing import TYPE_CHECKING
 
 from intergrax.agent_distribution.admin_models import ActivateRuntimeRevisionRequest
-from intergrax.applications._shared.registry_projection import MaterializedRegistryProjection
 from intergrax.agent_distribution.control_plane_governance import (
     ApplicationEnvironmentTenantResolver,
     authorize_scoped_control_plane_mutation,
@@ -16,23 +16,26 @@ from intergrax.agent_distribution.control_plane_governance import (
     build_admit_runtime_revision_mutation_request,
     runtime_revision_admission_identity_digest,
 )
-from intergrax.agent_distribution.runtime_revision import RuntimeRevisionState
+from intergrax.agent_distribution.runtime_revision import RuntimeRevision, RuntimeRevisionState
 from intergrax.applications._shared.production_host_composition import (
     bootstrap_production_registry_projection,
 )
 from intergrax.applications._shared.production_process_composition import (
     ProductionProcessComposition,
 )
-from intergrax.applications._shared.registry_projection import RegistryProjectionInputBundle
-from intergrax.contracts.control_plane_mutation import (
-    ControlPlaneMutationAuthorizationEvidence,
-    ControlPlaneMutationAuthorizationScope,
+from intergrax.applications._shared.registry_projection import (
+    MaterializedRegistryProjection,
+    RegistryProjectionInputBundle,
 )
 from intergrax.applications._shared.registry_projection_descriptor import (
     build_runtime_registry_projection_descriptor,
 )
 from intergrax.contracts.agent_run import RequestIdentity
-from intergrax.contracts.control_plane_mutation import ControlPlaneMutationAuthorizationResult
+from intergrax.contracts.control_plane_mutation import (
+    ControlPlaneMutationAuthorizationEvidence,
+    ControlPlaneMutationAuthorizationResult,
+    ControlPlaneMutationAuthorizationScope,
+)
 from intergrax.contracts.runtime_policy import PolicyAction
 from intergrax.runtime.governance.control_plane_mutation_authorization import (
     ControlPlaneMutationAuthorizationBoundary,
@@ -84,6 +87,10 @@ class DeployActivatePipelineContext:
     services: ReferenceProductionLifecycleServices
     mutation_authorization_boundary: ControlPlaneMutationAuthorizationBoundary
     environment_tenant_resolver: ApplicationEnvironmentTenantResolver
+    # Optional trust re-check of the revision about to be activated (T-IGX-041-A, F-D1-02), e.g.
+    # ``AgentPlatformAdminService.assert_revision_trust_admissible``. It must raise to refuse.
+    # ``None`` keeps the previous behaviour; the production launchers do not pass it yet.
+    revision_trust_admission: Callable[[RuntimeRevision], None] | None = None
 
 
 def run_deploy_and_activate(
@@ -181,9 +188,7 @@ def run_deploy_and_activate(
     )
     serving_store = ctx.composition.agent_platform_runtime.stores.serving_store
     serving = serving_store.get_serving_record(application_id, application_environment_id)
-    current_traffic_revision_id = (
-        serving.traffic_serving_revision_id if serving is not None else None
-    )
+    current_traffic_revision_id = serving.traffic_serving_revision_id if serving is not None else None
     current_pointer_revision = serving.serving_pointer_revision if serving is not None else 0
     _authorize_activation(
         ctx=ctx,
@@ -195,9 +200,9 @@ def run_deploy_and_activate(
         current_serving_pointer_revision=current_pointer_revision,
         target_runtime_revision_id=runtime_revision_id,
     )
-    materialization_store = (
-        ctx.composition.agent_platform_runtime.stores.materialization_store
-    )
+    if ctx.revision_trust_admission is not None:
+        ctx.revision_trust_admission(validated)
+    materialization_store = ctx.composition.agent_platform_runtime.stores.materialization_store
     materialization = materialization_store.get_by_revision(runtime_revision_id)
     if materialization is None:
         raise ReferenceProductionLifecycleError(

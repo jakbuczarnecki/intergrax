@@ -6,7 +6,6 @@ from unittest.mock import MagicMock
 
 import numpy as np
 import pytest
-
 from intergrax.knowledge.contracts import KnowledgeDocument
 from intergrax.rag.document_loaders.compat.legacy_runtime_document import (
     attach_parser_native_handle,
@@ -26,7 +25,6 @@ from intergrax.rag.document_splitters.strategies.recursive_chunking_strategy imp
 from intergrax.rag.document_splitters.strategies.semantic_chunking_strategy import (
     SemanticChunkingStrategy,
 )
-
 
 pytestmark = pytest.mark.unit
 
@@ -71,11 +69,7 @@ def _reconstruct_chunks(
     for chunk in chunks[1:]:
         maximum_overlap = min(chunk_overlap, len(reconstructed), len(chunk.content))
         overlap = next(
-            (
-                length
-                for length in range(maximum_overlap, 0, -1)
-                if reconstructed[-length:] == chunk.content[:length]
-            ),
+            (length for length in range(maximum_overlap, 0, -1) if reconstructed[-length:] == chunk.content[:length]),
             0,
         )
         reconstructed += chunk.content[overlap:]
@@ -182,10 +176,7 @@ def test_recursive_strategy_overlap_preserves_bounded_context_and_progress() -> 
 
     assert len(chunks) > 1
     assert all(0 < len(chunk.content) <= 20 for chunk in chunks)
-    assert all(
-        previous.content[-5:] == current.content[:5]
-        for previous, current in zip(chunks, chunks[1:])
-    )
+    assert all(previous.content[-5:] == current.content[:5] for previous, current in zip(chunks, chunks[1:]))
     assert all(previous.content != current.content for previous, current in zip(chunks, chunks[1:]))
 
 
@@ -263,12 +254,7 @@ def test_recursive_strategy_preserves_metadata_and_provenance() -> None:
 
 
 def test_recursive_strategy_content_integrity_with_overlap() -> None:
-    content = (
-        "section-00 alpha\n\n"
-        "section-01 beta\n\n"
-        "section-02 gamma\n\n"
-        "section-03 delta"
-    )
+    content = "section-00 alpha\n\nsection-01 beta\n\nsection-02 gamma\n\nsection-03 delta"
     source = _source("doc-integrity", content)
 
     chunks = RecursiveChunkingStrategy(chunk_size=28, chunk_overlap=7).chunk([source])
@@ -357,6 +343,7 @@ def test_langchain_recursive_strategy_native_contract(monkeypatch: pytest.Monkey
 
 
 def test_docling_strategy_uses_private_handle_and_skips_empty_items(monkeypatch: pytest.MonkeyPatch) -> None:
+    pytest.importorskip("docling_core", reason="requires the docling extra (docling-core)")
     import docling_core.types.doc as doc_mod
 
     class FakeSectionHeader:

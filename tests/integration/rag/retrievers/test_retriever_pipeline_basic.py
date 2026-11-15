@@ -1,21 +1,24 @@
 # © Artur Czarnecki. All rights reserved.
 # Intergrax framework – proprietary and confidential.
 
-import sys
 
-from langchain_core.documents import Document
 import pytest
 
+pytest.importorskip(
+    "langchain_core", reason="requires the 'dev-ci-rag' extra (langchain-core); executed by the rag-guard CI profile"
+)
+import sys
+
+from intergrax.integrations.providers.vector_store.chroma.bundle import create_chroma_vector_store
 from intergrax.rag.embedding.embedding_manager import EmbeddingManager
-from intergrax.rag.embedding.pipeline.embedding_pipeline import EmbeddingPipeline
 from intergrax.rag.embedding.engine.embedding_engine import EmbeddingEngine
+from intergrax.rag.embedding.pipeline.embedding_pipeline import EmbeddingPipeline
 from intergrax.rag.embedding.providers.hf_embedding_provider import HFEmbeddingProvider
 from intergrax.rag.retrievers.bootstrap.retriever_bootstrap import create_default_retriever_pipeline
 from intergrax.rag.retrievers.contracts.base_retriever import RetrieverQuery
 from intergrax.rag.retrievers.providers.vector_similarity_retriever import VectorSimilarityRetriever
-from intergrax.integrations.providers.vector_store.chroma.bundle import create_chroma_vector_store
 from intergrax.rag.vectorstore.vectorstore_manager import VectorstoreManager
-
+from langchain_core.documents import Document
 
 pytestmark = [
     pytest.mark.integration,

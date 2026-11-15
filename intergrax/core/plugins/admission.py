@@ -235,6 +235,10 @@ class PluginProvenanceAdmission:
     verifiable attestation; ``False`` is the explicit lab policy that admits unsigned plugins
     while still rejecting plugins whose attestation is present but invalid.
 
+    The attestation is found by the operator's mapping key and must be for the entry point's own
+    distribution: ``attestation.distribution`` has to equal ``spec.distribution`` after name
+    normalization, otherwise the entry point is rejected.
+
     The attested digest is bound to the publisher by the signature; this admission does not
     re-hash the installed files, it checks the installed distribution version instead.
     """
@@ -293,6 +297,14 @@ class PluginProvenanceAdmission:
                     f"entry point has no verifiable publisher attestation (distribution={spec.distribution!r})",
                 )
             return None
+
+        attested = _normalized_or_none(attestation.distribution)
+        if attested is None or attested != _normalized_or_none(spec.distribution or ""):
+            return self._reject(
+                spec,
+                PluginAdmissionReasonCode.PLUGIN_PROVENANCE_INVALID,
+                "attestation is not for the distribution of this entry point",
+            )
 
         installed = self.installed_version_resolver(attestation.distribution)
         if installed is None or installed != attestation.package_version:

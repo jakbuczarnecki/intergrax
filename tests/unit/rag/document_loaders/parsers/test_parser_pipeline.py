@@ -4,11 +4,10 @@
 
 from __future__ import annotations
 
+from collections.abc import Sequence
 from pathlib import Path
 
 import pytest
-from typing import Sequence
-
 from intergrax.integrations.contracts.document_parser import ParsedDocumentFragment
 from intergrax.knowledge.contracts import (
     KnowledgeDocument,
@@ -18,22 +17,21 @@ from intergrax.knowledge.contracts.document import dump_knowledge_document
 from intergrax.rag.document_loaders.compat.legacy_runtime_document import (
     get_parser_native_handle,
 )
-from intergrax.rag.document_loaders.contracts.base_document_handler import BaseDocumentHandler
-from intergrax.rag.document_loaders.pipeline.document_handler_loading import (
-    _fragment_to_knowledge_document,
-    _resolve_source_kind,
-)
 from intergrax.rag.document_loaders.contracts.base_document_parser import BaseDocumentParser
 from intergrax.rag.document_loaders.contracts.document_metadata_key import DocumentMetadataKey
 from intergrax.rag.document_loaders.contracts.metadata_contract import build_loader_metadata
 from intergrax.rag.document_loaders.handlers.text_smart_document_handler import (
     TextSmartDocumentHandler,
 )
+from intergrax.rag.document_loaders.pipeline.document_handler_loading import (
+    PipelineDocumentHandler,
+    _fragment_to_knowledge_document,
+    _resolve_source_kind,
+)
 from intergrax.rag.document_loaders.pipeline.parser_pipeline import (
     TRACE_METADATA_KEY,
     ParserPipeline,
 )
-
 
 pytestmark = pytest.mark.unit
 
@@ -45,7 +43,6 @@ _SCOPE = KnowledgeDocumentScope(
 
 
 class _DummyParser(BaseDocumentParser):
-
     _ID = "tests.dummy"
 
     def __init__(
@@ -174,7 +171,7 @@ def test_pipeline_preserves_native_handle_in_trace_enrichment():
     assert fragments[0].native_handle is handle
 
 
-class _BridgeHandler(BaseDocumentHandler):
+class _BridgeHandler(PipelineDocumentHandler):
     def __init__(self, parsers: list[BaseDocumentParser]) -> None:
         self._parsers = parsers
 
@@ -208,9 +205,7 @@ def test_handler_returns_knowledge_document():
     assert docs[0].metadata["parser"] == "tests.dummy"
     assert docs[0].identity.root_document_id == docs[0].identity.document_id
     assert docs[0].identity.parent_document_id is None
-    expected_id = build_loader_metadata(
-        source="C:\\docs\\a.pdf", parser="tests.dummy", position=0
-    )["document_id"]
+    expected_id = build_loader_metadata(source="C:\\docs\\a.pdf", parser="tests.dummy", position=0)["document_id"]
     assert docs[0].identity.document_id == expected_id
 
 

@@ -9,7 +9,6 @@ from dataclasses import dataclass
 from pathlib import Path
 
 import pytest
-
 from intergrax.agent_distribution.admin_models import (
     AgentPlatformAdminBlockedError,
     AgentPlatformAdminGovernanceBlockedError,
@@ -23,11 +22,6 @@ from intergrax.agent_distribution.errors import RuntimeActivationConflict
 from intergrax.applications._shared.production_process_composition import (
     create_reference_production_process_composition,
 )
-from intergrax.applications._shared.registry_projection_input_bundle import (
-    build_reference_activation_request,
-    build_reference_registry_projection_input_bundle,
-    reference_admission_mutation_id,
-)
 from intergrax.applications._shared.reference_production_governance_wiring import (
     build_reference_production_control_plane_governance,
     wire_governed_reference_production_launcher,
@@ -39,6 +33,11 @@ from intergrax.applications._shared.reference_production_lifecycle import (
 from intergrax.applications._shared.reference_runtime_materialization import (
     prepare_reference_runtime_materialization,
 )
+from intergrax.applications._shared.registry_projection_input_bundle import (
+    build_reference_activation_request,
+    build_reference_registry_projection_input_bundle,
+    reference_admission_mutation_id,
+)
 from intergrax.contracts.agent_run import RequestIdentity
 from intergrax.contracts.agent_run_enums import PrincipalType
 from intergrax.contracts.control_plane_mutation import (
@@ -49,9 +48,11 @@ from intergrax.contracts.runtime_policy import PolicyAction, PolicyDecision
 from intergrax.runtime.governance.control_plane_mutation_authorization import (
     ControlPlaneMutationAuthorizationBoundary,
 )
-from research_application.host.settings import ResearchBackendSettings
-from research_application.host.wiring import build_research_environment_profile
-from research_application.manifest import RESEARCH_APPLICATION_MANIFEST
+from tests.unit.agent_distribution.test_agent_distribution_control_plane_governance import (
+    _RecordingEvaluator,
+    _seed_validated_revision,
+    _stack_with_evaluator,
+)
 from tests.unit.agent_distribution.test_agent_platform_admin_service import (
     _APP,
     _ARTIFACT,
@@ -61,11 +62,10 @@ from tests.unit.agent_distribution.test_agent_platform_admin_service import (
     allow_mutation_boundary,
     build_admin_stack,
 )
-from tests.unit.agent_distribution.test_agent_distribution_control_plane_governance import (
-    _RecordingEvaluator,
-    _seed_validated_revision,
-    _stack_with_evaluator,
-)
+
+from research_application.host.settings import ResearchBackendSettings
+from research_application.host.wiring import build_research_environment_profile
+from research_application.manifest import RESEARCH_APPLICATION_MANIFEST
 
 pytestmark = [pytest.mark.unit, pytest.mark.gate]
 
@@ -81,9 +81,7 @@ _CONTROL_PLANE_GOVERNANCE_SLICE_FILES = (
     "intergrax/applications/_shared/agent_platform_admin_routes.py",
 )
 
-_FORBIDDEN_DYNAMIC_PATTERNS = re.compile(
-    r"getattr\s*\(|setattr\s*\(|hasattr\s*\(|__dict__|eval\s*\(|exec\s*\("
-)
+_FORBIDDEN_DYNAMIC_PATTERNS = re.compile(r"getattr\s*\(|setattr\s*\(|hasattr\s*\(|__dict__|eval\s*\(|exec\s*\(")
 
 
 @dataclass
@@ -128,9 +126,7 @@ def _reference_deploy_and_activate(
         projection_input,
         activation_request,
         principal=principal,
-        admission_mutation_id=reference_admission_mutation_id(
-            projection_input.runtime_revision.runtime_revision_id
-        ),
+        admission_mutation_id=reference_admission_mutation_id(projection_input.runtime_revision.runtime_revision_id),
     )
 
 
@@ -210,9 +206,7 @@ def test_adr5_policy_deny_zero_commits() -> None:
     built = _seed_validated_revision(stack, "rev-adr5")
     stack.service._mutation_authorization_boundary = (  # type: ignore[attr-defined]
         ControlPlaneMutationAuthorizationBoundary(
-            evaluator=_RecordingEvaluator(
-                decision=PolicyDecision(action=PolicyAction.DENY, reason="deny")
-            )
+            evaluator=_RecordingEvaluator(decision=PolicyDecision(action=PolicyAction.DENY, reason="deny"))
         )
     )
     with pytest.raises(AgentPlatformAdminGovernanceBlockedError):
@@ -236,9 +230,7 @@ def test_adr6_require_human_zero_commits_preserves_scope() -> None:
     built = _seed_validated_revision(stack, "rev-adr6")
     stack.service._mutation_authorization_boundary = (  # type: ignore[attr-defined]
         ControlPlaneMutationAuthorizationBoundary(
-            evaluator=_RecordingEvaluator(
-                decision=PolicyDecision(action=PolicyAction.REQUIRE_HUMAN, reason="hitl")
-            )
+            evaluator=_RecordingEvaluator(decision=PolicyDecision(action=PolicyAction.REQUIRE_HUMAN, reason="hitl"))
         )
     )
     with pytest.raises(AgentPlatformAdminGovernanceBlockedError) as exc:
@@ -261,7 +253,6 @@ def test_adr6_require_human_zero_commits_preserves_scope() -> None:
 def test_adr7_reference_production_allow_commits(configured_research_llm: None) -> None:
     composition = create_reference_production_process_composition()
     projection_input, activation_request, env = _research_reference_input("rev-adr7")
-    manifest = RESEARCH_APPLICATION_MANIFEST
     launcher, governance = wire_governed_reference_production_launcher(composition, env)
     result = _reference_deploy_and_activate(
         launcher,
@@ -278,14 +269,10 @@ def test_adr8_reference_production_deny_zero_commit(configured_research_llm: Non
     projection_input, activation_request, env = _research_reference_input("rev-adr8")
     manifest = RESEARCH_APPLICATION_MANIFEST
     governance = build_reference_production_control_plane_governance(env)
-    deny_evaluator = _RecordingEvaluator(
-        decision=PolicyDecision(action=PolicyAction.DENY, reason="deny")
-    )
+    deny_evaluator = _RecordingEvaluator(decision=PolicyDecision(action=PolicyAction.DENY, reason="deny"))
     launcher = ReferenceProductionLifecycleLauncher(
         composition,
-        mutation_authorization_boundary=ControlPlaneMutationAuthorizationBoundary(
-            evaluator=deny_evaluator
-        ),
+        mutation_authorization_boundary=ControlPlaneMutationAuthorizationBoundary(evaluator=deny_evaluator),
         environment_tenant_resolver=governance.environment_tenant_resolver,
     )
     with pytest.raises(ReferenceProductionLifecycleGovernanceBlockedError):
@@ -308,7 +295,6 @@ def test_adr9_reference_production_missing_boundary_fails_closed(
 ) -> None:
     composition = create_reference_production_process_composition()
     projection_input, activation_request, env = _research_reference_input("rev-adr9")
-    manifest = RESEARCH_APPLICATION_MANIFEST
     governance = build_reference_production_control_plane_governance(env)
     launcher = ReferenceProductionLifecycleLauncher(
         composition,
@@ -328,7 +314,6 @@ def test_adr10_reference_production_wrong_tenant_zero_commit(
 ) -> None:
     composition = create_reference_production_process_composition()
     projection_input, activation_request, env = _research_reference_input("rev-adr10")
-    manifest = RESEARCH_APPLICATION_MANIFEST
     launcher, governance = wire_governed_reference_production_launcher(composition, env)
     wrong_principal = RequestIdentity(
         tenant_id="wrong-tenant",
@@ -350,14 +335,11 @@ def test_adr11_reference_production_require_human_zero_commit(
 ) -> None:
     composition = create_reference_production_process_composition()
     projection_input, activation_request, env = _research_reference_input("rev-adr11")
-    manifest = RESEARCH_APPLICATION_MANIFEST
     governance = build_reference_production_control_plane_governance(env)
     launcher = ReferenceProductionLifecycleLauncher(
         composition,
         mutation_authorization_boundary=ControlPlaneMutationAuthorizationBoundary(
-            evaluator=_RecordingEvaluator(
-                decision=PolicyDecision(action=PolicyAction.REQUIRE_HUMAN, reason="hitl")
-            )
+            evaluator=_RecordingEvaluator(decision=PolicyDecision(action=PolicyAction.REQUIRE_HUMAN, reason="hitl"))
         ),
         environment_tenant_resolver=governance.environment_tenant_resolver,
     )
@@ -378,7 +360,6 @@ def test_adr12_reference_path_uses_distinct_admission_and_activation_mutation_id
     composition = create_reference_production_process_composition()
     projection_input, activation_request, env = _research_reference_input("rev-adr12")
     activation_request = activation_request.model_copy(update={"mutation_id": "mut-adr12-exact"})
-    manifest = RESEARCH_APPLICATION_MANIFEST
     governance = build_reference_production_control_plane_governance(env)
     recording = _RecordingEvaluator()
     launcher = ReferenceProductionLifecycleLauncher(
@@ -399,9 +380,7 @@ def test_adr12_reference_path_uses_distinct_admission_and_activation_mutation_id
     )
     assert len(recording.calls) == 2
     activation_calls = [
-        call
-        for call in recording.calls
-        if call.mutation_type == "agent_distribution.activate_runtime_revision"
+        call for call in recording.calls if call.mutation_type == "agent_distribution.activate_runtime_revision"
     ]
     assert len(activation_calls) == 1
     assert activation_calls[0].mutation_id == "mut-adr12-exact"
@@ -476,6 +455,9 @@ def test_adr16_static_production_bypass_inventory() -> None:
     allowed_relative = {
         "intergrax/agent_distribution/admin_service.py",
         "intergrax/applications/_shared/reference_production_lifecycle.py",
+        # shared deploy/activate orchestration of both launchers (T-IGX-041-A, F-D1-11): classified,
+        # and pinned below to authorize before it commits
+        "intergrax/applications/_shared/deploy_activate_pipeline.py",
         "intergrax/agent_distribution/activation.py",
     }
     production_roots = (_REPO_ROOT / "intergrax", _REPO_ROOT / "applications")
@@ -496,7 +478,12 @@ def test_adr16_static_production_bypass_inventory() -> None:
             hits.append(relative)
     unexpected = sorted(path for path in hits if path not in allowed_relative)
     assert unexpected == []
-    assert "intergrax/applications/_shared/reference_production_lifecycle.py" in hits
+    # the reference launcher delegates its commit to the shared pipeline since R7-D2-R1 (2f9483d26),
+    # so the pipeline is the production surface that must be present in the scan
+    assert "intergrax/applications/_shared/reference_production_lifecycle.py" not in hits
+    pipeline = (_REPO_ROOT / "intergrax/applications/_shared/deploy_activate_pipeline.py").read_text(encoding="utf-8")
+    assert "intergrax/applications/_shared/deploy_activate_pipeline.py" in hits
+    assert pipeline.index("_authorize_activation(") < pipeline.index(".commit_activation(")
 
 
 def test_adr17_foundation_boundary_still_fail_closed_on_missing_principal() -> None:
@@ -530,9 +517,7 @@ def test_r2_control_plane_slice_zero_dynamic_access() -> None:
 
 
 def test_r2_tenant_scoped_evaluator_delegates_via_typed_protocol() -> None:
-    inner = _RecordingEvaluator(
-        decision=PolicyDecision(action=PolicyAction.ALLOW, reason="ok")
-    )
+    inner = _RecordingEvaluator(decision=PolicyDecision(action=PolicyAction.ALLOW, reason="ok"))
     evaluator = TenantScopedControlPlaneMutationEvaluator(
         tenant_resolver=StaticApplicationEnvironmentTenantResolver("tenant-test"),
         inner=inner,
@@ -563,9 +548,7 @@ def test_r2_evaluator_failure_preserves_real_evidence() -> None:
         target_runtime_revision_id="rev-r2-evidence",
     )
     expected_digest = control_plane_mutation_request_digest(request)
-    boundary = ControlPlaneMutationAuthorizationBoundary(
-        evaluator=_RecordingEvaluator(raise_error=True)
-    )
+    boundary = ControlPlaneMutationAuthorizationBoundary(evaluator=_RecordingEvaluator(raise_error=True))
     result = boundary.authorize(request)
     assert result.permitted is False
     assert result.decision.action is PolicyAction.DENY

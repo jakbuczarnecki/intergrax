@@ -5,15 +5,14 @@
 from __future__ import annotations
 
 import pytest
-
 from intergrax.context.budget.contracts import ContextBudgetUnsatisfiableError
 from intergrax.context.budget.mandatory_base_messages import mandatory_base_message_indices
+from intergrax.context.budget.message_token_cost import message_token_cost
 from intergrax.llm.messages import ChatMessage
+from intergrax.llm_adapters.base.base_llm_adapter import BaseLLMAdapter
+from intergrax.llm_adapters.contracts.adapter_response import LLMAdapterResponse
 from intergrax.runtime.nexus.config import RuntimeConfig
 from intergrax.runtime.nexus.context.context_compiler import ContextCompiler
-from intergrax.llm_adapters.contracts.adapter_response import LLMAdapterResponse
-from intergrax.llm_adapters.contracts.llm_adapter import LLMAdapter
-from intergrax.llm_adapters.base.base_llm_adapter import BaseLLMAdapter
 
 pytestmark = [pytest.mark.unit, pytest.mark.gate]
 
@@ -89,8 +88,8 @@ def test_hard_budget_fail_closed_when_mandatory_exceeds_budget() -> None:
         compiler._enforce_hard_budget(messages, budget_tokens=49)
 
 
-def test_hard_budget_preserves_incomplete_tool_group() -> None:
-    messages = [
+def _incomplete_tool_group_messages() -> list[ChatMessage]:
+    return [
         ChatMessage(role="system", content="s" * 5, entry_id="sys"),
         ChatMessage(
             role="assistant",
@@ -101,15 +100,27 @@ def test_hard_budget_preserves_incomplete_tool_group() -> None:
         ChatMessage(role="assistant", content="o" * 40, entry_id="optional-hist"),
         ChatMessage(role="user", content="u" * 5, entry_id="final-user"),
     ]
+
+
+def test_hard_budget_preserves_incomplete_tool_group() -> None:
+    messages = _incomplete_tool_group_messages()
     compiler = ContextCompiler(count_tokens=_count_chars)
-    result = compiler._enforce_hard_budget(messages, budget_tokens=30)
+    # The protected assistant message costs its content plus its serialized tool_calls (PDC-D2-R010):
+    # 5 + (6 + 70) + 5 = 86 mandatory tokens, so 96 leaves room for the mandatory messages only.
+    result = compiler._enforce_hard_budget(messages, budget_tokens=96)
     _assert_mandatory_byte_for_byte(messages, result)
-    assert sum(_count_chars(m.content or "") for m in result) <= 30
+    assert sum(message_token_cost(m, _count_chars) for m in result) <= 96
     assert "o" * 40 not in {m.content for m in result}
 
 
-def test_hard_budget_preserves_standalone_tool_message() -> None:
-    messages = [
+def test_hard_budget_fails_closed_when_the_incomplete_tool_group_cannot_fit() -> None:
+    compiler = ContextCompiler(count_tokens=_count_chars)
+    with pytest.raises(ContextBudgetUnsatisfiableError):
+        compiler._enforce_hard_budget(_incomplete_tool_group_messages(), budget_tokens=85)
+
+
+def _standalone_tool_messages() -> list[ChatMessage]:
+    return [
         ChatMessage(role="system", content="s" * 5, entry_id="sys"),
         ChatMessage(
             role="tool",
@@ -120,10 +131,22 @@ def test_hard_budget_preserves_standalone_tool_message() -> None:
         ChatMessage(role="assistant", content="h" * 30, entry_id="hist"),
         ChatMessage(role="user", content="q" * 5, entry_id="final"),
     ]
+
+
+def test_hard_budget_preserves_standalone_tool_message() -> None:
+    messages = _standalone_tool_messages()
     compiler = ContextCompiler(count_tokens=_count_chars)
-    result = compiler._enforce_hard_budget(messages, budget_tokens=40)
+    # The tool_call_id counts against the window (PDC-D2-R010): 5 + (27 + 11) + 5 = 48 mandatory tokens.
+    result = compiler._enforce_hard_budget(messages, budget_tokens=60)
     _assert_mandatory_byte_for_byte(messages, result)
+    assert sum(message_token_cost(m, _count_chars) for m in result) <= 60
     assert any(m.role == "tool" and m.tool_call_id == "call-orphan" for m in result)
+
+
+def test_hard_budget_fails_closed_when_the_standalone_tool_message_cannot_fit() -> None:
+    compiler = ContextCompiler(count_tokens=_count_chars)
+    with pytest.raises(ContextBudgetUnsatisfiableError):
+        compiler._enforce_hard_budget(_standalone_tool_messages(), budget_tokens=47)
 
 
 def test_compile_hard_budget_path_preserves_dual_system_instructions() -> None:
