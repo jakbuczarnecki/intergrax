@@ -19,6 +19,7 @@ from intergrax.runtime.nexus.artifacts.governed_access import (
     ArtifactReadRequest,
 )
 from intergrax.runtime.nexus.artifacts.retention import ArtifactRetentionSweeper
+from tests.qualification.pdc_x.d8_repair._support import make_clocked_port as make_port
 
 from ._d8_support import (
     T0,
@@ -28,7 +29,6 @@ from ._d8_support import (
     make_artifact,
     make_context,
     make_governance,
-    make_port,
     reader_grants,
     sqlite_store,
 )
@@ -41,6 +41,7 @@ def _req(tenant_id: str, artifact_id: str = "art-1") -> ArtifactReadRequest:
         artifact_class=ArtifactClass.EXECUTION_EVIDENCE,
         tenant_id=tenant_id,
         artifact_id=artifact_id,
+        workspace_id="ws-1",
     )
 
 

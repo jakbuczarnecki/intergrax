@@ -14,6 +14,7 @@ from intergrax.llm_adapters._shared.openai_tool_call_interop import (
     tool_calls_from_openai_dicts,
     tool_calls_from_openai_message,
 )
+from intergrax.llm_adapters._shared.stream_finish_signal import finish_reason_from_raw
 from intergrax.llm_adapters.contracts.adapter_response import LLMAdapterResponse
 from intergrax.llm_adapters.contracts.finish_reason import (
     LLMFinishReason,
@@ -27,6 +28,7 @@ from intergrax.llm_adapters.contracts.provider_extensions import (
 )
 from intergrax.llm_adapters.contracts.token_usage import LLMTokenUsage, LLMTokenUsageValidationError
 from intergrax.llm_adapters.contracts.tool_call import LLMToolCall
+from intergrax.utils import attribute_access
 
 
 def usage_from_openai_chat_completion(usage: CompletionUsage | None) -> LLMTokenUsage:
@@ -107,6 +109,22 @@ def _refusal_from_openai_responses_output(response: Any) -> str | None:
     return None
 
 
+def responses_stop_signal(response: Any) -> object:
+    """Stop signal of a Responses API result: the incomplete reason when ``status == "incomplete"``."""
+    status = attribute_access.optional(response, "status", None)
+    if status == "incomplete":
+        details = attribute_access.optional(response, "incomplete_details", None)
+        reason = attribute_access.optional(details, "reason", None)
+        if isinstance(reason, str) and reason.strip():
+            return reason
+    return status
+
+
+def responses_refusal(response: Any) -> str | None:
+    """Refusal text of a Responses API result, if any."""
+    return _refusal_from_openai_responses_output(response)
+
+
 def adapter_response_from_openai_responses(
     response: Any,
     *,
@@ -117,7 +135,7 @@ def adapter_response_from_openai_responses(
 ) -> LLMAdapterResponse:
     usage = usage_from_openai_responses(response.usage)
     response_id = str(response.id or "") or None
-    finish = parse_finish_reason(response.status)
+    finish = finish_reason_from_raw(responses_stop_signal(response))
     typed_calls: tuple[LLMToolCall, ...]
     if tool_calls and isinstance(tool_calls[0], LLMToolCall):
         typed_calls = tuple(tool_calls)  # type: ignore[return-value]

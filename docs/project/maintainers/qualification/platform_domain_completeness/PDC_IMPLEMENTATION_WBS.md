@@ -38,6 +38,8 @@ Rows classed `CURRENT_HEAD_REQUALIFICATION`, `ALREADY_CERTIFIED_REUSABLE`, `N/A_
 | B-P7-D5 | D5 | W13 | T-IGX-041-E | 0 | — | B-P6-J | YES | OD-PDC-SEQ-01: implement in an isolated worktree; merge only after MCP-SERVER-X P8 publication; ACT-N11 re-activation at PDC-P7-00 | IA-D5 (P7 re-audit) |
 | B-P7-D7 | D7 | W13 | T-IGX-041-G | 0 | — | B-P6-J | YES | OD-PDC-SEQ-01: implement in an isolated worktree; merge only after MCP-SERVER-X P8 publication; ACT-N11 re-activation at PDC-P7-00 | IA-D7 (P7 re-audit) |
 | B-P7-D4 | D4 | W13 | T-IGX-041-D | 0 | ADR-PDC-04 | B-P6-J | YES | OD-PDC-SEQ-01: implement in an isolated worktree; merge only after MCP-SERVER-X P8 publication; ACT-N11 re-activation at PDC-P7-00 | IA-D4 (re-audit, loop 1 of 2) |
+| B-P7-D3 | D3 | W13 | T-IGX-041-C | 0 | ADR-PDC-03 | B-P6-J | YES | OD-PDC-SEQ-01: implement in an isolated worktree; merge only after MCP-SERVER-X P8 publication; ACT-N11 re-activation at PDC-P7-00 | IA-D3 (re-audit, loop 1 of 2) |
+| B-P7-D8 | D8 | W13 | T-IGX-041-H | 0 | ADR-PDC-08 | B-P6-J | YES | OD-PDC-SEQ-01: implement in an isolated worktree; merge only after MCP-SERVER-X P8 publication; ACT-N11 re-activation at PDC-P7-00 | IA-D8 (P7 re-audit) |
 | B-P7-D6 | D6 | W13 | T-IGX-041-F | 0 | ADR-PDC-06 | B-P6-J | YES | OD-PDC-SEQ-01: implement in an isolated worktree; merge only after MCP-SERVER-X P8 publication; ACT-N11 re-activation at PDC-P7-00 | IA-D6 (re-audit, loop 1 of 2) |
 
 ## B-P3 — Ownership records closed in P3
@@ -427,6 +429,30 @@ Rows classed `CURRENT_HEAD_REQUALIFICATION`, `ALREADY_CERTIFIED_REUSABLE`, `N/A_
 - **Write set:** `intergrax/hosting/engine/engine.py`, `intergrax/hosting/eventing.py`, `intergrax/hosting/supervisor/supervisor.py`, `intergrax/hosting/public_api.py`, `tests/qualification/pdc_x/d4_repair/`, `tests/qualification/pdc_x/d4/test_d4_crash_restart_subprocess.py`, `tests/unit/hosting/instance/test_file_guard.py`, `tests/unit/hosting/instance/test_w3_file_guard_regression.py`, `docs/project/architecture/TIER3_APPLICATION_ENVIRONMENT.md`, `docs/project/maintainers/plans/TIER3_APPLICATION_ENVIRONMENT.md`, `docs/project/maintainers/plans/satellites/TIER3_APPLICATION_ENVIRONMENT_embedded_detail.md`, `docs/project/architecture/APPLICATION_HOSTING.md`
 - **Tests:** tests/qualification/pdc_x/d4_repair/ plus the D4-cited suites of the ticket test contract (pdc_x/d4, host_01, tests/unit/hosting)
 - **Evidence (exact SHA):** implementation SHA and publication SHA recorded in `PDC_SHA_LADDER.md`; test log under `.tmp/proof/pdc-x-p5/B-P7-D4/`; audited by IA-D4 (re-audit, loop 1 of 2) at the PDC-P7 audited SHA.
+- **Merge gate:** OD-PDC-SEQ-01: implement in an isolated worktree; merge only after MCP-SERVER-X P8 publication; ACT-N11 re-activation at PDC-P7-00
+
+| Requirement | Class | Test case |
+| --- | --- | --- |
+| — | — | — |
+
+## B-P7-D3 — P7 repair of the independent D3 audit (loop 1): streaming guard, quota and cancel registration on the default OpenAI, Gemini/Vertex and LangChain Ollama stream paths (F-D3-01); refusal and content-filter normalization on every stream and buffered path (F-D3-02); word-boundary retry classification (F-D3-07 defect part); tool_calls in the token estimator (F-D2-01 estimator half); stale llm_adapters unit suites (F-D3-05); timeout_sec doc honesty (F-D3-03 doc part)
+
+- **Ticket:** T-IGX-041-C · **Wave:** W13 · **ADR:** ADR-PDC-03 · **Auditor:** IA-D3 (re-audit, loop 1 of 2)
+- **Write set:** `intergrax/llm_adapters/base/base_llm_adapter.py`, `intergrax/llm_adapters/contracts/call_config.py`, `intergrax/llm_adapters/_shared/retry.py`, `intergrax/llm_adapters/_shared/openai_completion_mapping.py`, `intergrax/llm_adapters/_shared/stream_finish_signal.py`, `intergrax/llm_adapters/providers/openai_responses_adapter.py`, `intergrax/llm_adapters/providers/openai_chat_completions_adapter.py`, `intergrax/llm_adapters/providers/gemini_adapter.py`, `intergrax/llm_adapters/providers/ollama_adapter.py`, `intergrax/llm_adapters/providers/native_ollama_adapter.py`, `intergrax/llm_adapters/providers/mistral_adapter.py`, `intergrax/llm_adapters/providers/claude_adapter.py`, `intergrax/llm_adapters/providers/cohere_native_adapter.py`, `intergrax/llm_adapters/providers/aws_bedrock_adapter.py`, `platform_proofs/scenarios/ai_incident_investigation/application/investigator_agent.py`, `tests/qualification/pdc_x/d3/`, `tests/unit/llm_adapters/test_estimate_tokens_tool_calls.py`, `tests/unit/llm_adapters/test_ollama_tool_calling.py`, `tests/unit/llm_adapters/test_registry_model_contract.py`, `tests/unit/llm_adapters/test_llm_provider_registry.py`, `tests/unit/llm_adapters/test_p2_002_c_provider_registration.py`, `tests/unit/llm_adapters/registry_state_test_support.py`, `tests/unit/llm_adapters/test_adapter_conformance.py`, `tests/unit/llm_adapters/test_structured_output_flags.py`
+- **Tests:** tests/unit/llm_adapters, ce_02 and pdc_x/d3 green in the combined run with the llm extras; new pinned tests red on the unchanged code; mutants M03 and M12 killed
+- **Evidence (exact SHA):** implementation SHA and publication SHA recorded in `PDC_SHA_LADDER.md`; test log under `.tmp/proof/pdc-x-p5/B-P7-D3/`; audited by IA-D3 (re-audit, loop 1 of 2) at the PDC-P7 audited SHA.
+- **Merge gate:** OD-PDC-SEQ-01: implement in an isolated worktree; merge only after MCP-SERVER-X P8 publication; ACT-N11 re-activation at PDC-P7-00
+
+| Requirement | Class | Test case |
+| --- | --- | --- |
+| — | — | — |
+
+## B-P7-D8 — P7 repair of the independent D8 audit (loop 1): RuntimeContext.create_artifact tenant, producer and lineage (F-D8-07), version-safe and audited retention sweep (F-D8-05), expiry enforced at read (F-D8-06), stored workspace required on read and lifecycle operations (F-D8-04 partial), raw storage tools refuse the Collaborative Work content key space (F-D8-03 bounded), governed port honours a returned decision and audits backend failures (F-D8-08, F-D8-12), documentation of library-only parts (F-D8-17); F-D8-01 and F-D8-02 are declared exceptions
+
+- **Ticket:** T-IGX-041-H · **Wave:** W13 · **ADR:** ADR-PDC-08 · **Auditor:** IA-D8 (P7 re-audit)
+- **Write set:** `intergrax/runtime/execution/agent_runtime_context.py`, `intergrax/runtime/nexus/artifacts/store_base.py`, `intergrax/runtime/nexus/artifacts/sqlite_artifact_store.py`, `intergrax/runtime/nexus/artifacts/in_memory_artifact_store.py`, `intergrax/runtime/nexus/artifacts/retention.py`, `intergrax/runtime/nexus/artifacts/sources.py`, `intergrax/runtime/nexus/artifacts/governed_access.py`, `intergrax/tools/providers/storage/service.py`, `tests/qualification/pdc_x/d8_repair/`, `tests/qualification/pdc_x/d8/test_d8_governed_port.py`, `tests/qualification/pdc_x/d8/test_xd09_spill_and_context_reference.py`, `tests/qualification/pdc_x/d8/test_xd10_tenant_and_ttl.py`, `tests/qualification/pdc_x/xd/test_xd_02_agent_context.py`, `tests/qualification/pdc_x/xd/test_xd_09_artifacts_context.py`, `tests/qualification/pdc_x/xd/test_xd_10_artifacts_security.py`, `tests/qualification/pdc_x/xd/test_xd_11_observability.py`, `docs/project/capabilities/architecture/ARTIFACT_LIFECYCLE.md`, `docs/project/capabilities/plan/ARTIFACT_LIFECYCLE.md`
+- **Tests:** tests/qualification/pdc_x/d8_repair/ plus the cited d8, xd_02, xd_09, xd_10, xd_11 and storage tool suites green; every in-scope finding pinned red-then-green with negative tests
+- **Evidence (exact SHA):** implementation SHA and publication SHA recorded in `PDC_SHA_LADDER.md`; test log under `.tmp/proof/pdc-x-p5/B-P7-D8/`; audited by IA-D8 (P7 re-audit) at the PDC-P7 audited SHA.
 - **Merge gate:** OD-PDC-SEQ-01: implement in an isolated worktree; merge only after MCP-SERVER-X P8 publication; ACT-N11 re-activation at PDC-P7-00
 
 | Requirement | Class | Test case |

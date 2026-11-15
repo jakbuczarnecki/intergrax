@@ -3,8 +3,8 @@
 
 from __future__ import annotations
 
+import re
 from collections.abc import Callable, Mapping
-from typing import TypeVar
 
 from intergrax.contracts.provider_rate_limit import (
     ProviderRateLimitExceededError,
@@ -20,8 +20,6 @@ from intergrax.runtime.cancellation.coordinator import (
     cooperative_delay_seconds,
 )
 from intergrax.utils import attribute_access
-
-T = TypeVar("T")
 
 
 def is_retriable_provider_error(exc: BaseException, config: LLMCallConfig) -> bool:
@@ -78,6 +76,20 @@ def compute_provider_retry_delay(
     return float(config.retry_backoff_sec) * (2**attempt_index)
 
 
+_NAME_WORD = re.compile(r"[A-Z]+(?![a-z])|[A-Z]?[a-z]+|[0-9]+")
+_TRANSIENT_NAME_WORDS = frozenset({"timeout", "connection", "overloaded", "rate", "ratelimit"})
+
+
+def _has_transient_name(class_name: str) -> bool:
+    """True when a CamelCase / snake_case class name contains a transient-error word.
+
+    Whole words only: ``RateLimitError`` and ``APITimeoutError`` match, ``GenerateContentError``
+    ("gene-rate") and ``SeparateTenantError`` ("sepa-rate") do not.
+    """
+    words = {word.lower() for word in _NAME_WORD.findall(class_name)}
+    return not words.isdisjoint(_TRANSIENT_NAME_WORDS)
+
+
 def _is_retryable(exc: BaseException, config: LLMCallConfig) -> bool:
     if is_non_retriable_dependency_admission_failure(exc):
         return False
@@ -95,11 +107,10 @@ def _is_retryable(exc: BaseException, config: LLMCallConfig) -> bool:
     status = _http_status_code(exc)
     if status is not None and status in config.retry_on_status:
         return True
-    name = type(exc).__name__.lower()
-    return any(token in name for token in ("timeout", "connection", "rate", "overloaded"))
+    return _has_transient_name(type(exc).__name__)
 
 
-def call_with_retry(
+def call_with_retry[T](
     fn: Callable[[], T],
     *,
     config: LLMCallConfig,

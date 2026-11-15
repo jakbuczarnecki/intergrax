@@ -26,9 +26,9 @@ from intergrax.llm_adapters._shared.openai_tool_call_interop import tool_calls_f
 from intergrax.llm_adapters._shared.openai_tool_choice_projection import (
     project_openai_compatible_tool_choice,
 )
+from intergrax.llm_adapters._shared.stream_finish_signal import StreamFinishSignal
 from intergrax.llm_adapters.base.base_llm_adapter import BaseLLMAdapter
 from intergrax.llm_adapters.contracts.adapter_response import LLMAdapterResponse
-from intergrax.llm_adapters.contracts.finish_reason import LLMFinishReason
 from intergrax.llm_adapters.contracts.llm_provider import LLMProvider
 from intergrax.llm_adapters.contracts.native_tool_choice import NativeToolChoice
 from intergrax.llm_adapters.contracts.stream_event import LLMStreamEvent
@@ -200,10 +200,12 @@ class MistralChatAdapter(BaseLLMAdapter):
             )
 
             buf: list[str] = []
+            signal = StreamFinishSignal()
 
             for chunk in self._execute_streaming(lambda: self.client.chat.complete(**payload)):
                 if not chunk.choices:
                     continue
+                signal.observe_finish(attribute_access.optional(chunk.choices[0], "finish_reason", None))
                 delta = chunk.choices[0].delta
                 if delta.content:
                     buf.append(delta.content)
@@ -211,9 +213,12 @@ class MistralChatAdapter(BaseLLMAdapter):
 
             out_tok = int(self.estimate_tokens_for_text("".join(buf), model_hint=self.model_name_for_token_estimation))
             success = True
+            finish, refusal = signal.resolve()
             yield final_stream_event(
                 response=build_adapter_response(
                     content="".join(buf),
+                    finish_reason=finish,
+                    refusal=refusal,
                     usage=LLMTokenUsage.from_counts(input_tokens=in_tok, output_tokens=out_tok),
                     model=self.model,
                     provider=self._provider_slug(),
@@ -319,6 +324,7 @@ class MistralChatAdapter(BaseLLMAdapter):
         in_tok = 0
         out_tok = 0
         buf: list[str] = []
+        signal = StreamFinishSignal()
         tool_calls_acc: list[dict[str, Any]] = []
 
         try:
@@ -336,6 +342,7 @@ class MistralChatAdapter(BaseLLMAdapter):
             for chunk in self._execute_streaming(lambda: self.client.chat.complete(**payload)):
                 if not chunk.choices:
                     continue
+                signal.observe_finish(attribute_access.optional(chunk.choices[0], "finish_reason", None))
                 delta = chunk.choices[0].delta
                 if delta.content:
                     buf.append(delta.content)
@@ -358,13 +365,14 @@ class MistralChatAdapter(BaseLLMAdapter):
                                 }
                             )
             tool_calls = tool_calls_from_openai_dicts(tool_calls_acc)
-            finish = LLMFinishReason.TOOL_CALLS if tool_calls else LLMFinishReason.COMPLETED
+            finish, refusal = signal.resolve(has_tool_calls=bool(tool_calls))
             out_tok = int(self.estimate_tokens_for_text("".join(buf), model_hint=self.model_name_for_token_estimation))
             success = True
             yield final_stream_event(
                 response=build_adapter_response(
                     content="".join(buf),
                     finish_reason=finish,
+                    refusal=refusal,
                     usage=LLMTokenUsage.from_counts(input_tokens=in_tok, output_tokens=out_tok),
                     model=self.model,
                     provider=self._provider_slug(),

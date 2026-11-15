@@ -6,6 +6,11 @@ from unittest.mock import MagicMock
 
 import pytest
 
+# The two adapters import their vendor SDKs at module level: skip, instead of a collection error,
+# when the optional extras are not installed (``llm-anthropic`` / ``llm-openai``).
+pytest.importorskip("anthropic", reason="requires the llm-anthropic extra")
+pytest.importorskip("openai", reason="requires the llm-openai extra")
+
 from intergrax.llm_adapters.providers.claude_adapter import ClaudeChatAdapter
 from intergrax.llm_adapters.providers.openai_responses_adapter import OpenAIChatResponsesAdapter
 

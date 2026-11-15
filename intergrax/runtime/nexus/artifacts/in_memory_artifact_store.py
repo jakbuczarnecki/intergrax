@@ -13,6 +13,7 @@ from intergrax.runtime.nexus.artifacts.models import Artifact
 from intergrax.runtime.nexus.artifacts.store_base import (
     ArtifactDeletionRefused,
     ArtifactStore,
+    ArtifactVersionChanged,
     ArtifactVersionNotFound,
     protection_reason,
     require_owned_class,
@@ -84,7 +85,7 @@ class InMemoryArtifactStore(ArtifactStore):
             legal_hold=(tenant_id, artifact_id) in self._holds,
         )
 
-    def delete_artifact(self, tenant_id: str, artifact_id: str) -> None:
+    def delete_artifact(self, tenant_id: str, artifact_id: str, *, expected_version: int | None = None) -> None:
         key = (tenant_id, artifact_id)
         with self._lock:
             if key not in self._versions:
@@ -92,6 +93,9 @@ class InMemoryArtifactStore(ArtifactStore):
             reason = self._refusal(tenant_id, artifact_id)
             if reason is not None:
                 raise ArtifactDeletionRefused(artifact_id, reason)
+            latest = self._versions[key][-1].version
+            if expected_version is not None and latest != expected_version:
+                raise ArtifactVersionChanged(artifact_id, expected_version, latest)
             del self._versions[key]
 
     def delete_for_run(self, tenant_id: str, run_id: str) -> None:

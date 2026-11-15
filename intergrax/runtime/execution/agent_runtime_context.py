@@ -12,6 +12,7 @@ from intergrax.distributed.contracts.execution_semaphore import (
     DistributedExecutionSemaphore,
 )
 from intergrax.prompts.registry.yaml_registry import YamlPromptRegistry
+from intergrax.contracts.artifact_ref import ArtifactLineage, ArtifactProvenance
 from intergrax.runtime.nexus.artifacts.models import Artifact, TraceArtifactRef
 from intergrax.runtime.nexus.artifacts.store_base import ArtifactStore
 from intergrax.runtime.nexus.engine.contracts.llm_usage_run_record import (
@@ -233,6 +234,7 @@ class RuntimeContext:
         artifact_id = uuid.uuid4().hex
 
         artifact = Artifact(
+            tenant_id=state.tenant_id,
             artifact_id=artifact_id,
             run_id=state.run_id,
             step_id=step_id,
@@ -241,6 +243,8 @@ class RuntimeContext:
             created_at_utc=SystemTimeProvider.utc_now(),
             data=data,
             size_bytes=len(data),
+            producer=ArtifactProvenance(created_by_agent_id=state.request.agent_id or ""),
+            lineage=ArtifactLineage(run_id=state.run_id),
         )
 
         self.artifact_store.put(artifact)

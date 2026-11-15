@@ -57,10 +57,10 @@ from tests.qualification.pdc_x.d8._d8_support import (
     make_artifact,
     make_context,
     make_governance,
-    make_port,
     reader_grants,
     sqlite_store,
 )
+from tests.qualification.pdc_x.d8_repair._support import make_clocked_port as make_port
 from tests.qualification.pdc_x.xd._support import build_sqlite_worker
 
 pytestmark = [pytest.mark.integration]
@@ -69,7 +69,7 @@ BIG_PREFIX = "row,value,notes\n"
 
 
 def _req(tenant_id: str, artifact_id: str = "art-1", *, cls: ArtifactClass = ArtifactClass.EXECUTION_EVIDENCE):
-    return ArtifactReadRequest(artifact_class=cls, tenant_id=tenant_id, artifact_id=artifact_id)
+    return ArtifactReadRequest(artifact_class=cls, tenant_id=tenant_id, artifact_id=artifact_id, workspace_id="ws-1")
 
 
 def _two_tenant_stack(tmp_path: Path):  # type: ignore[no-untyped-def]
