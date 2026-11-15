@@ -46,6 +46,24 @@ Plus the mutation run for M03 and M12 described in the plan (Protocol item 4).
 - `intergrax/applications/_shared/`, `intergrax/contracts/`, `intergrax/runtime/`, `scripts/governance/`, `.github/`, the failover registry, the model catalog, the quota module, FRZ files, P8 originals.
 - IIAC activation and rebind, the EBH-7 re-pin, OD signatures, certification and the re-audit.
 
+## Implementation checkpoint
+
+Implementation head: see the pull request (`claude/pdc-x-041c`). Logs under `.tmp/proof/pdc-x-041c/` (not committed).
+
+- Red baseline: the new pinned tests against the pre-change product code: 60 failed, 77 passed (controls and regressions).
+- Mutants M03 and M12: both killed by `tests/qualification/pdc_x/d3`.
+- Test contract (one pytest, llm extras and `integrations-duckdb`): 1546 passed, 17 skipped, 103 failed; every failure is in the AI incident scenario family (below). `igx_gov ticket`, `pdc_x_wbs.py --check`, `pdc_x_requirements.py --check`: OK. ruff clean on touched files.
+- Pinned as "no provider signal": none; every (adapter, path) of the refusal matrix has a provider stop signal. SDK shapes are modelled by fakes only (Path B). No adapter needed a `_declares_true` allowlist entry.
+- Pyright: touched adapter files carry about 204 pre-existing errors; net +2 on two added Mistral lines (the existing `chunk.choices` SDK typing problem).
+
+### Deviations from the signed plan (narrowing only, no widening)
+
+Operator-orchestrator decision of this batch, option (b): the write set is not widened.
+
+- **F-D3-05, part narrowed.** The 4 cases of `tests/unit/llm_adapters/test_fixture_strict_adapter_parity.py` (and about 99 tests of `tests/unit/platform_proofs/scenarios/ai_incident_investigation/` that build the same scenario bundle) stay red and are neither skipped nor xfailed. `IncidentInvestigatorAgent.run` (layer 1, abstract `Agent.run`) is fixed. Layer 2, not repaired: the scenario manifest uses `AgentBinding.reference` (contract-id only) and `build_scenario_runtime_from_environment` / `wire_application_environment` pass no contract authority, so `assert_manifest_package_closure` falls back to the compat resolver, which raises "AgentBinding requires agent_type or import_path". This is a composition gap of the F-04 family.
+- **Reopen condition:** pass a `ManifestAgentContractAuthority` in the scenario composition (`platform_proofs/scenarios/ai_incident_investigation/application/runtime_composition.py` or the hotspot wiring `intergrax/applications/_shared/scenario_runtime_baseline.py` / `environment_wiring.py`) in a later ticket.
+- Other deviations: pre-existing lint in touched legacy files was fixed because the pre-commit gate requires clean touched files; `retry.py` uses a PEP 695 type parameter for the same reason.
+
 ## Lifecycle state
 
 plan_approved
