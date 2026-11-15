@@ -22,12 +22,17 @@ from intergrax.llm_adapters._shared.adapter_response_builders import (
     final_stream_event,
     partial_stream_event,
 )
-from intergrax.llm_adapters._shared.openai_completion_mapping import adapter_response_from_openai_responses
+from intergrax.llm_adapters._shared.openai_completion_mapping import (
+    adapter_response_from_openai_responses,
+    responses_refusal,
+    responses_stop_signal,
+)
 from intergrax.llm_adapters._shared.openai_tool_call_interop import tool_calls_from_openai_dicts
 from intergrax.llm_adapters._shared.openai_tool_choice_projection import (
     project_openai_compatible_tool_choice,
 )
 from intergrax.llm_adapters._shared.responses_input import messages_to_responses_input
+from intergrax.llm_adapters._shared.stream_finish_signal import StreamFinishSignal
 from intergrax.llm_adapters.base.base_llm_adapter import BaseLLMAdapter
 from intergrax.llm_adapters.contracts.adapter_response import LLMAdapterResponse
 from intergrax.llm_adapters.contracts.llm_provider import LLMProvider
@@ -696,23 +701,35 @@ class OpenAIChatResponsesAdapter(BaseLLMAdapter):
                 payload["max_output_tokens"] = max_tokens
 
             stack = ExitStack()
+            opened: list[Any] = []
+            signal = StreamFinishSignal()
             try:
-                open_stream = self._responses_stream_opener(stack, payload)
+                open_stream = self._responses_stream_opener(stack, payload, opened)
                 for ev in self._execute_streaming(open_stream):
                     if ev.type == "response.output_text.delta":
                         delta = ev.delta
                         if delta:
                             buf.append(delta)
                             yield partial_stream_event(delta_content=delta)
+                    elif ev.type == "response.refusal.delta":
+                        signal.observe_refusal(attribute_access.optional(ev, "delta", None))
+                    elif ev.type in ("response.completed", "response.incomplete", "response.failed"):
+                        terminal = attribute_access.optional(ev, "response", None)
+                        if terminal is not None:
+                            signal.observe_finish(responses_stop_signal(terminal))
+                            signal.observe_refusal(responses_refusal(terminal))
             finally:
                 stack.close()
 
             full_text = "".join(buf)
             out_tok = int(self.estimate_tokens_for_text(full_text))
             success = True
+            finish, refusal = signal.resolve()
             yield final_stream_event(
                 response=build_adapter_response(
                     content=full_text,
+                    finish_reason=finish,
+                    refusal=refusal,
                     usage=LLMTokenUsage.from_counts(input_tokens=in_tok, output_tokens=out_tok),
                     model=self.model,
                     provider=self._provider_slug(),

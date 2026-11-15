@@ -20,6 +20,7 @@ from intergrax.llm_adapters._shared.adapter_response_builders import (
 )
 from intergrax.llm_adapters._shared.messages import split_system_messages
 from intergrax.llm_adapters._shared.openai_tool_call_interop import tool_calls_from_openai_dicts
+from intergrax.llm_adapters._shared.stream_finish_signal import StreamFinishSignal, finish_reason_from_raw
 from intergrax.llm_adapters.base.base_llm_adapter import BaseLLMAdapter
 from intergrax.llm_adapters.contracts.adapter_response import LLMAdapterResponse
 from intergrax.llm_adapters.contracts.finish_reason import LLMFinishReason
@@ -132,6 +133,7 @@ class CohereNativeChatAdapter(BaseLLMAdapter):
             out_tok = int(self.estimate_tokens_for_text(text, model_hint=self.model))
             response = build_adapter_response(
                 content=text,
+                finish_reason=finish_reason_from_raw(attribute_access.optional(resp, "finish_reason", None)),
                 usage=LLMTokenUsage.from_counts(input_tokens=in_tok, output_tokens=out_tok),
                 model=self.model,
                 provider=self._provider_slug(),
@@ -166,6 +168,7 @@ class CohereNativeChatAdapter(BaseLLMAdapter):
         in_tok = 0
         out_tok = 0
         buf: list[str] = []
+        signal = StreamFinishSignal()
         try:
             in_tok = int(self.estimate_tokens_for_messages(messages, model_hint=self.model))
             kwargs: dict[str, Any] = {
@@ -183,11 +186,17 @@ class CohereNativeChatAdapter(BaseLLMAdapter):
                     if txt:
                         buf.append(txt)
                         yield partial_stream_event(delta_content=txt)
+                elif attribute_access.optional(event, "type", None) == "message-end":
+                    end_delta = attribute_access.optional(event, "delta", None)
+                    signal.observe_finish(attribute_access.optional(end_delta, "finish_reason", None))
             out_tok = int(self.estimate_tokens_for_text("".join(buf), model_hint=self.model))
             success = True
+            finish, refusal = signal.resolve()
             yield final_stream_event(
                 response=build_adapter_response(
                     content="".join(buf),
+                    finish_reason=finish,
+                    refusal=refusal,
                     usage=LLMTokenUsage.from_counts(input_tokens=in_tok, output_tokens=out_tok),
                     model=self.model,
                     provider=self._provider_slug(),
@@ -249,7 +258,9 @@ class CohereNativeChatAdapter(BaseLLMAdapter):
             if resp.message and resp.message.content:
                 text, tool_calls = self._parse_tool_blocks(resp.message.content)
             out_tok = int(self.estimate_tokens_for_text(text, model_hint=self.model))
-            finish = LLMFinishReason.TOOL_CALLS if tool_calls else LLMFinishReason.COMPLETED
+            finish = finish_reason_from_raw(
+                attribute_access.optional(resp, "finish_reason", None), has_tool_calls=bool(tool_calls)
+            )
             response = build_adapter_response(
                 content=text,
                 finish_reason=finish,
@@ -305,6 +316,7 @@ class CohereNativeChatAdapter(BaseLLMAdapter):
         in_tok = 0
         out_tok = 0
         buf: list[str] = []
+        signal = StreamFinishSignal()
         tool_calls: tuple[LLMToolCall, ...] = ()
 
         try:
@@ -327,11 +339,14 @@ class CohereNativeChatAdapter(BaseLLMAdapter):
                         buf.append(txt)
                         yield partial_stream_event(delta_content=txt)
                 if attribute_access.optional(event, "type", None) == "message-end":
+                    end_delta = attribute_access.optional(event, "delta", None)
+                    signal.observe_finish(attribute_access.optional(end_delta, "finish_reason", None))
                     msg = attribute_access.optional(event, "message", None)
                     if msg and attribute_access.optional(msg, "content", None):
                         _, tool_calls = self._parse_tool_blocks(msg.content)
 
-            if not buf and not tool_calls:
+            finish, refusal = signal.resolve(has_tool_calls=bool(tool_calls))
+            if not buf and not tool_calls and finish is LLMFinishReason.COMPLETED:
                 result = self.generate_with_tools(
                     messages,
                     tools_schema,
@@ -344,12 +359,12 @@ class CohereNativeChatAdapter(BaseLLMAdapter):
                 return
 
             out_tok = int(self.estimate_tokens_for_text("".join(buf), model_hint=self.model))
-            finish = LLMFinishReason.TOOL_CALLS if tool_calls else LLMFinishReason.COMPLETED
             success = True
             yield final_stream_event(
                 response=build_adapter_response(
                     content="".join(buf),
                     finish_reason=finish,
+                    refusal=refusal,
                     usage=LLMTokenUsage.from_counts(input_tokens=in_tok, output_tokens=out_tok),
                     model=self.model,
                     provider=self._provider_slug(),

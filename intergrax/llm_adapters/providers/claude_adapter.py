@@ -24,6 +24,7 @@ from intergrax.llm_adapters._shared.anthropic_messages import (
 )
 from intergrax.llm_adapters._shared.messages import split_system_messages
 from intergrax.llm_adapters._shared.openai_tool_call_interop import tool_calls_from_openai_dicts
+from intergrax.llm_adapters._shared.stream_finish_signal import StreamFinishSignal
 from intergrax.llm_adapters._shared.tool_schema import openai_tools_to_anthropic
 from intergrax.llm_adapters.base.base_llm_adapter import BaseLLMAdapter
 from intergrax.llm_adapters.contracts.adapter_response import LLMAdapterResponse
@@ -191,6 +192,7 @@ class ClaudeChatAdapter(BaseLLMAdapter):
         in_tok = 0
         out_tok = 0
         buf: list[str] = []
+        signal = StreamFinishSignal()
 
         try:
             in_tok = int(self.estimate_tokens_for_messages(messages, model_hint=self.model_name_for_token_estimation))
@@ -211,6 +213,11 @@ class ClaudeChatAdapter(BaseLLMAdapter):
                     stream=True,
                 )
             ):
+                if event.type == "message_delta":
+                    signal.observe_finish(
+                        attribute_access.optional(attribute_access.optional(event, "delta", None), "stop_reason", None)
+                    )
+                    continue
                 if event.type != "content_block_delta":
                     continue
                 delta = event.delta
@@ -223,9 +230,12 @@ class ClaudeChatAdapter(BaseLLMAdapter):
 
             out_tok = int(self.estimate_tokens_for_text("".join(buf), model_hint=self.model_name_for_token_estimation))
             success = True
+            finish, refusal = signal.resolve()
             yield final_stream_event(
                 response=build_adapter_response(
                     content="".join(buf),
+                    finish_reason=finish,
+                    refusal=refusal,
                     usage=LLMTokenUsage.from_counts(input_tokens=in_tok, output_tokens=out_tok),
                     model=self.model,
                     provider=self._provider_slug(),

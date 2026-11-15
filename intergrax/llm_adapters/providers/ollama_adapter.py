@@ -14,6 +14,11 @@ from intergrax.llm_adapters._shared.adapter_response_builders import (
     final_stream_event,
     partial_stream_event,
 )
+from intergrax.llm_adapters._shared.stream_finish_signal import (
+    StreamFinishSignal,
+    finish_reason_from_raw,
+    langchain_done_reason,
+)
 from intergrax.llm_adapters._shared.strict_tool_enforcement import (
     enforce_strict_tool_call_conformance,
     resolve_canonical_tool_definitions,
@@ -21,7 +26,6 @@ from intergrax.llm_adapters._shared.strict_tool_enforcement import (
 )
 from intergrax.llm_adapters.base.base_llm_adapter import BaseLLMAdapter
 from intergrax.llm_adapters.contracts.adapter_response import LLMAdapterResponse
-from intergrax.llm_adapters.contracts.finish_reason import LLMFinishReason
 from intergrax.llm_adapters.contracts.llm_provider import LLMProvider
 from intergrax.llm_adapters.contracts.native_tool_choice import (
     NativeForcedFunctionChoice,
@@ -347,6 +351,7 @@ class LangChainOllamaAdapter(BaseLLMAdapter):
             out_tok = int(self.estimate_tokens_for_text(text, model_hint=self.model_name_for_token_estimation))
             response = build_adapter_response(
                 content=text,
+                finish_reason=finish_reason_from_raw(langchain_done_reason(res)),
                 usage=LLMTokenUsage.from_counts(input_tokens=in_tok, output_tokens=out_tok),
                 model=self.model,
                 provider=self._provider_slug(),
@@ -388,9 +393,11 @@ class LangChainOllamaAdapter(BaseLLMAdapter):
             lc_msgs = self._to_lc_messages(messages)
             kwargs = self._with_ollama_options(self.defaults, temperature=temperature, max_tokens=max_tokens)
             buf: list[str] = []
+            signal = StreamFinishSignal()
 
             try:
                 for chunk in self._execute_streaming(lambda: self.chat.stream(lc_msgs, **kwargs)):
+                    signal.observe_finish(langchain_done_reason(chunk))
                     c = chunk.content
                     if c:
                         buf.append(c)
@@ -400,9 +407,12 @@ class LangChainOllamaAdapter(BaseLLMAdapter):
                     self.estimate_tokens_for_text("".join(buf), model_hint=self.model_name_for_token_estimation)
                 )
                 success = True
+                finish, refusal = signal.resolve()
                 yield final_stream_event(
                     response=build_adapter_response(
                         content="".join(buf),
+                        finish_reason=finish,
+                        refusal=refusal,
                         usage=LLMTokenUsage.from_counts(input_tokens=in_tok, output_tokens=out_tok),
                         model=self.model,
                         provider=self._provider_slug(),
@@ -426,6 +436,7 @@ class LangChainOllamaAdapter(BaseLLMAdapter):
                 yield final_stream_event(
                     response=build_adapter_response(
                         content=text,
+                        finish_reason=finish_reason_from_raw(langchain_done_reason(res)),
                         usage=LLMTokenUsage.from_counts(input_tokens=in_tok, output_tokens=out_tok),
                         model=self.model,
                         provider=self._provider_slug(),
@@ -520,7 +531,7 @@ class LangChainOllamaAdapter(BaseLLMAdapter):
             if tool_calls:
                 enforce_strict_tool_call_conformance(tool_calls, tool_definitions)
             content = self._coerce_ai_message_content(result)
-            finish = LLMFinishReason.TOOL_CALLS if tool_calls else LLMFinishReason.COMPLETED
+            finish = finish_reason_from_raw(langchain_done_reason(result), has_tool_calls=bool(tool_calls))
             out_text = self._estimate_tool_output_text(content, tool_calls)
             out_tok = int(
                 self.estimate_tokens_for_text(

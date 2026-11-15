@@ -29,6 +29,7 @@ from intergrax.llm_adapters._shared.openai_tool_call_interop import tool_calls_f
 from intergrax.llm_adapters._shared.openai_tool_choice_projection import (
     project_openai_compatible_tool_choice,
 )
+from intergrax.llm_adapters._shared.stream_finish_signal import StreamFinishSignal
 from intergrax.llm_adapters._shared.strict_tool_enforcement import (
     enforce_strict_tool_call_conformance,
     resolve_canonical_tool_definitions,
@@ -36,7 +37,6 @@ from intergrax.llm_adapters._shared.strict_tool_enforcement import (
 )
 from intergrax.llm_adapters.base.base_llm_adapter import BaseLLMAdapter
 from intergrax.llm_adapters.contracts.adapter_response import LLMAdapterResponse
-from intergrax.llm_adapters.contracts.finish_reason import LLMFinishReason
 from intergrax.llm_adapters.contracts.llm_provider import LLMProvider
 from intergrax.llm_adapters.contracts.native_tool_choice import NativeToolChoice
 from intergrax.llm_adapters.contracts.stream_event import LLMStreamEvent
@@ -137,6 +137,7 @@ class OpenAIChatCompletionsAdapter(BaseLLMAdapter):
         success = False
         err_type = None
         buf: list[str] = []
+        signal = StreamFinishSignal()
         in_tok = 0
         out_tok = 0
         try:
@@ -153,15 +154,21 @@ class OpenAIChatCompletionsAdapter(BaseLLMAdapter):
                 c: ChatCompletionChunk = chunk
                 if not c.choices:
                     continue
+                signal.observe_finish(c.choices[0].finish_reason)
                 delta = c.choices[0].delta
+                if delta:
+                    signal.observe_refusal(attribute_access.optional(delta, "refusal", None))
                 if delta and delta.content:
                     buf.append(delta.content)
                     yield partial_stream_event(delta_content=delta.content)
             out_tok = int(self.estimate_tokens_for_text("".join(buf), model_hint=self.model_name_for_token_estimation))
             success = True
+            finish, refusal = signal.resolve()
             yield final_stream_event(
                 response=build_adapter_response(
                     content="".join(buf),
+                    finish_reason=finish,
+                    refusal=refusal,
                     usage=LLMTokenUsage.from_counts(input_tokens=in_tok, output_tokens=out_tok),
                     model=self.model,
                     provider=self._provider_slug(),
@@ -267,6 +274,7 @@ class OpenAIChatCompletionsAdapter(BaseLLMAdapter):
         success = False
         err_type = None
         buf: list[str] = []
+        signal = StreamFinishSignal()
         tool_calls_acc: list[dict[str, Any]] = []
         in_tok = 0
         out_tok = 0
@@ -285,7 +293,10 @@ class OpenAIChatCompletionsAdapter(BaseLLMAdapter):
             for chunk in self._execute_streaming(lambda: self.client.chat.completions.create(**payload)):
                 if not chunk.choices:
                     continue
+                signal.observe_finish(chunk.choices[0].finish_reason)
                 delta = chunk.choices[0].delta
+                if delta:
+                    signal.observe_refusal(attribute_access.optional(delta, "refusal", None))
                 if delta and delta.content:
                     buf.append(delta.content)
                     yield partial_stream_event(delta_content=delta.content)
@@ -307,13 +318,14 @@ class OpenAIChatCompletionsAdapter(BaseLLMAdapter):
             tool_calls = tool_calls_from_openai_dicts(tool_calls_acc)
             if tool_calls:
                 enforce_strict_tool_call_conformance(tool_calls, tool_definitions)
-            finish = LLMFinishReason.TOOL_CALLS if tool_calls else LLMFinishReason.COMPLETED
+            finish, refusal = signal.resolve(has_tool_calls=bool(tool_calls))
             out_tok = int(self.estimate_tokens_for_text("".join(buf), model_hint=self.model_name_for_token_estimation))
             success = True
             yield final_stream_event(
                 response=build_adapter_response(
                     content="".join(buf),
                     finish_reason=finish,
+                    refusal=refusal,
                     usage=LLMTokenUsage.from_counts(input_tokens=in_tok, output_tokens=out_tok),
                     model=self.model,
                     provider=self._provider_slug(),
