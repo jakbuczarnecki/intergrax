@@ -598,13 +598,7 @@ class PostgreSQLTaskCheckpointStore(TaskCheckpointPersistence):
                 """,
                 (ScheduledResumeStatus.PENDING.value, before_utc_iso, limit),
             ).fetchall()
-        due: list[ScheduledResume] = []
-        for row in rows:
-            try:
-                due.append(self._row_to_scheduled_resume(row))
-            except ScheduledResumeMetadataValidationError:
-                logger.exception("scheduled resume %s is malformed; omitted from the due list", row["schedule_id"])
-        return due
+        return [self._row_to_scheduled_resume(row) for row in rows]
 
     def cancel(self, schedule_id: str) -> None:
         with self._provider.transaction() as session:

@@ -45,9 +45,10 @@ async def test_failing_first_resume_does_not_strand_sibling_claims_of_other_tena
         ids[tenant] = entry.schedule_id
     executor.fail_for = frozenset({ids["tenant-a"]})  # the earliest claim of the batch fails
 
-    fired = await scheduler.tick(now=NOW)  # must not raise
+    # The failure is still reported to the caller, but only after the whole batch was processed.
+    with pytest.raises(RuntimeError, match="resume failed"):
+        await scheduler.tick(now=NOW)
 
-    assert fired == 2
     assert sorted(executor.fired) == sorted([ids["tenant-b"], ids["tenant-c"]])
     status = ledger_status(tmp_path / "s1.db")
     assert status[ids["tenant-b"]] == "completed"

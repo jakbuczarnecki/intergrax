@@ -130,8 +130,16 @@ class LongRunningScheduler:
         """Process one scheduler cycle; returns number of resumes triggered."""
         current = _ensure_utc(now or SystemTimeProvider.utc_now())
         processed = 0
-        processed += await self._process_due_schedules(current)
-        processed += await self._process_expired_human_timeouts(current)
+        failures: list[Exception] = []
+        # Both phases always run; a failure of one never skips the other. The first failure is
+        # re-raised afterwards so callers (and the poll loop) still see that the tick failed.
+        for phase in (self._process_due_schedules, self._process_expired_human_timeouts):
+            try:
+                processed += await phase(current)
+            except Exception as exc:
+                failures.append(exc)
+        if failures:
+            raise failures[0]
         return processed
 
     def schedule_resume(
@@ -174,9 +182,11 @@ class LongRunningScheduler:
             owner_id=self._owner_id,
             lease_seconds=self._lease_seconds,
         )
+        failures: list[Exception] = []
         for claim in claims:
             # Each claim is isolated: one failing resume must not strand its siblings, which
             # would otherwise stay RUNNING until their lease expires and are then lost (F-D7-01).
+            # The first failure is re-raised after the whole batch was processed.
             try:
                 processed += await self._process_claimed_schedule(claim, now)
             except StaleClaimError:
@@ -184,11 +194,14 @@ class LongRunningScheduler:
                     "scheduled resume %s lost its lease before completion; the new owner decides the outcome",
                     claim.schedule_id,
                 )
-            except Exception:
+            except Exception as exc:
                 logger.exception(
                     "scheduled resume %s failed; its claim is left to the lease (at-most-once)",
                     claim.schedule_id,
                 )
+                failures.append(exc)
+        if failures:
+            raise failures[0]
         return processed
 
     async def _process_claimed_schedule(self, claim: ScheduledResumeClaim, now: datetime) -> int:
@@ -291,6 +304,7 @@ class LongRunningScheduler:
 
     async def _process_expired_human_timeouts(self, now: datetime) -> int:
         processed = 0
+        failures: list[Exception] = []
         for checkpoint in self._checkpoint_store.list_paused():
             # Same isolation as the schedule batch: one failing timeout resume must not stop the rest.
             try:
@@ -300,11 +314,14 @@ class LongRunningScheduler:
                     "human timeout for checkpoint %s lost its lease before completion",
                     checkpoint.checkpoint_id,
                 )
-            except Exception:
+            except Exception as exc:
                 logger.exception(
                     "human timeout resume for checkpoint %s failed; its action claim is left to the lease",
                     checkpoint.checkpoint_id,
                 )
+                failures.append(exc)
+        if failures:
+            raise failures[0]
         return processed
 
     async def _process_expired_timeout(self, checkpoint: TaskCheckpoint, now: datetime) -> int:

@@ -145,7 +145,8 @@ async def test_failing_resume_does_not_end_the_chain(tmp_path) -> None:
     first = RecurrenceMaterializer(store).start(_rule(checkpoint))
     assert first is not None
     scheduler = _build(RecordingExecutor(fail_for=frozenset({first.schedule_id})), store)
-    await scheduler.tick(now=T0 + timedelta(seconds=1))
+    with pytest.raises(RuntimeError, match="resume failed"):
+        await scheduler.tick(now=T0 + timedelta(seconds=1))
     assert _pending(store) == [(T0 + timedelta(seconds=60)).isoformat()]
 
 
