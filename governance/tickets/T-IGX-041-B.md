@@ -10,6 +10,24 @@ Plan digest: aa79a9399af62217c564e68216c8918e4feed906ab3fe637e28b99131bcf22da
 
 Canonical plan: [`governance/tickets/plans/PLAN_T-IGX-041-B.md`](plans/PLAN_T-IGX-041-B.md).
 
+## Approved
+
+Approved: operator-delegate @ 2026-11-15T09:21:00+01:00
+Delegation: docs/project/maintainers/qualification/platform_domain_completeness/operator_decisions/DELEGATION-PDC-P7-REPAIR.md@8f4b139c1f5352c9861872f0b5077996b8f0f891
+
+Delegate checks (scope of `DELEGATION-PDC-P7-REPAIR.md`, all passed before this line was written; read at the batch branch after fast-forward to `b98bdbc81`, base `f87df3b2a`; delegation file read from `origin/development`, last changed by `8f4b139c1`). A first pass at `6dcb534e4` was refused for a write-set difference and two wrong line references; the planner amended the plan in `b98bdbc81` and every check below was redone from scratch:
+
+- The plan digest recomputed with `scripts/governance/plan_digest.py` equals the digest above (`aa79a9399af62217c564e68216c8918e4feed906ab3fe637e28b99131bcf22da`).
+- Write set: the 57 lines of the plan's Write set block equal, in content and order, the `writes` tuple of `B-P7-D2` in `scripts/qualification/pdc_x_wbs.py` and the `Write set` of the `B-P7-D2` section in `PDC_IMPLEMENTATION_WBS.md` (compared by script; no directory wildcards, only the new test directory `tests/qualification/pdc_x/d2_repair/`). `pdc_x_wbs.py --check`: OK.
+- Hotspots and forbidden paths: no path under `intergrax/applications/_shared/`, `intergrax/contracts/`, `intergrax/llm_adapters/`, `scripts/governance/`, `.github/`, `pyproject.toml` or `uv.lock` in the write set (the plan names the hotspot files only under "Not edited"). The product files of the write set are not hotspots.
+- Dependency on D3 is stated truthfully: PR 569 (`claude/pdc-x-041c`, `b2303e608`) is OPEN; its diff of `base_llm_adapter.py` appends `json.dumps(m.tool_calls, sort_keys=True, default=str)` (fallback `str()` on `TypeError`/`ValueError`), `m.name` and `m.tool_call_id`, as the plan says; the plan orders the merge D3 first, holds the PR otherwise and forbids skipping the parity test. The D3 plan limits itself to the estimator and names no compiler path.
+- Findings: in scope F-D2-01 (compiler, ladder, reserve, preflight), 02, 08, 09, 10, 11 (isolation), 13 (clock and join), 14 (bounded), 17, 18; excluded with reason and reopen condition F-D2-03 (to T-IGX-041-I), 04, 05, 06, 07, 12, 15, 16, 19, 20, the tenant/payload-user/strict-profile halves and the planning ledger half of F-D2-01. Exclusions are of the allowed kinds (F-D2-03 to the single re-pin, F-D2-05 and F-D2-07 missing feature versus claim, F-D2-06 no production composition); F-D2-04, 12, 15, 16 are design decisions with a stated reason.
+- File:line references re-read against the code (about 60 spot reads, no discrepancy): the content-only cost sites (`context_compiler.py:68-70, 282-283, 295, 345`; `degradation_ladder.py:86, 265`; `mandatory_base_messages.py:172, 191, 208`; `token_counter.py:35`; `context_preflight.py:27, 28-32`; `context_engine.py:347-351, 548-553`); the memory plane (`default_memory_control_plane.py:213-217, 379-386, 394/399, 462/467, 554, 767, 846-887`; `memory_control.py:295`; `memory_control_wiring.py:35, 56`; `memory_wiring.py:619-622`, and no `task_memory=` caller); the hook loop (`embedding_version_policy.py:142-159`, `source_freshness.py:241-251`, `retrieval_service.py:226, 246-250, 253`); the sweep (`retention_sweep.py:288-290, 337`); RAG (`ingest_pipeline.py:273, 279-284, 585, 596`, `vectorstore_manager.py:401`, the stale double at `test_ingest_lci2b_loader_boundary.py:54`, `rag-guard.yml:36`); the gate (`pre_context_policy_audit.py:19`, `intergrax/agents/uaep.py` absent, commits `42cbe7e1a`, `ae14377c9` older than `9dd2a233a` verified; the `IndentationError` at line 613 of the Neo4j test reproduces with `ast.parse`; the docstring phrase asserted by `test_typed_sources_documented_on_provider_context` is absent from `contracts.py`); the exclusion citations (`contracts.py:39-55, 286-287`, `egress.py:23`, `context_engine.py:331-333`, `provider_lifecycle.py:325`, 12 test modules containing `[context:`, no producer of `sensitivity=`).
+- No gate is weakened or deleted: the plan strengthens (a syntax gate, a report of every failing script, a gate that keeps failing closed for a missing root) and states that deletion of a test needs the removal commit named. Edits of existing tests are limited to the listed hygiene files and the five conditional files, each reported with old and new expectation.
+- No registry, scheduler, engine, trust, policy or audit authority is added (a pure cost function, an additive protocol, hook isolation, bounds); nothing under `scripts/governance/` or `.github/`; the plan states it is not a certification verdict and certifies nothing. The implementer (planner lane) and this delegate session are different sessions; the delegate edited nothing except this approval block and the lifecycle state.
+- Concern for the Operator, not a blocker: the amendment `b98bdbc81` changed the write set of the plan before any signature (added `intergrax/context/budget/token_counter.py`, `intergrax/runtime/nexus/context/context_preflight.py`; moved the new `message_token_cost.py` to `intergrax/context/budget/`; removed `retrieval_service.py`; wrote the conditional and hygiene files out individually). The delegate treats this as the unsigned plan being corrected, not as an amendment of a signed ticket; the Operator may disagree, and any later change of the write set is not delegated.
+- Merge gate (as the delegation requires): product pull requests of this ticket merge under authorizations 1 and 3 of `DELEGATION-PDC-STANDING.md` and decision 8 of `DELEGATION-PDC-WAVE2.md`: green CI, only the known red classes (IIAC activation until the P8-04 rebind, EBH-7 identity until the final re-pin), `headRefOid` equal to the verified SHA, and after the merge of PR 569.
+
 ## Test contract
 
 ```text
@@ -28,4 +46,4 @@ Plus the runtime mutation run (a)-(d) of plan Protocol item 4.
 
 ## Lifecycle state
 
-plan_pending
+plan_approved
