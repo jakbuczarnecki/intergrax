@@ -35,6 +35,7 @@ Rows classed `CURRENT_HEAD_REQUALIFICATION`, `ALREADY_CERTIFIED_REUSABLE`, `N/A_
 | B-P6-H | ALL | W10 | T-IGX-036-Y | 0 | — | B-P6-E | no | No product path: may merge before MCP-SERVER-X P8 | IA-GLOBAL (P8) |
 | B-P6-I | ALL | W11 | T-IGX-036-Z | 0 | — | B-P6-F | YES | OD-PDC-SEQ-01: implement in an isolated worktree; merge only after MCP-SERVER-X P8 publication; ACT-N11 re-activation at PDC-P7-00 | IA-GLOBAL (P8) |
 | B-P6-J | ALL | W12 | T-IGX-040-A | 0 | — | B-P6-I | YES | OD-PDC-SEQ-01: implement in an isolated worktree; merge only after MCP-SERVER-X P8 publication; ACT-N11 re-activation at PDC-P7-00 | IA-GLOBAL (P8) |
+| B-P7-D2 | D2 | W13 | T-IGX-041-B | 0 | ADR-PDC-02 | B-P6-J | YES | OD-PDC-SEQ-01: implement in an isolated worktree; merge only after MCP-SERVER-X P8 publication; ACT-N11 re-activation at PDC-P7-00 | IA-D2 (re-audit, loop 1 of 2) |
 
 ## B-P3 — Ownership records closed in P3
 
@@ -387,6 +388,18 @@ Rows classed `CURRENT_HEAD_REQUALIFICATION`, `ALREADY_CERTIFIED_REUSABLE`, `N/A_
 - **Write set:** `intergrax/integrations/providers/embedding_provider/openai/register.py`, `intergrax/platform/enterprise_audit/impact_map.py`, `intergrax/platform/enterprise_audit/data/changed_since_impact_map.v1.json`, `tests/qualification/pdc_x/p6_ecapfix/`, `tests/qualification/pdc_x/p6_impact/`
 - **Tests:** tests/qualification/pdc_x/p6_ecapfix/ and p6_impact/; xd_12 and p6_impact coverage tests green on development and on a tree that contains the MCP-RC change
 - **Evidence (exact SHA):** implementation SHA and publication SHA recorded in `PDC_SHA_LADDER.md`; test log under `.tmp/proof/pdc-x-p5/B-P6-J/`; audited by IA-GLOBAL (P8) at the PDC-P7 audited SHA.
+- **Merge gate:** OD-PDC-SEQ-01: implement in an isolated worktree; merge only after MCP-SERVER-X P8 publication; ACT-N11 re-activation at PDC-P7-00
+
+| Requirement | Class | Test case |
+| --- | --- | --- |
+| — | — | — |
+
+## B-P7-D2 — D2 repair after the P7 independent audit (IA-D2): tool-call payloads counted by the hard context budget and oldest-first last-resort drop (F-D2-01 compiler half, F-D2-17), tenant-qualified and governed TASK memory scope (F-D2-02, F-D2-14), isolated reindex hooks (F-D2-11), bounded retention-sweep clock and deadline (F-D2-13), 35 red D2-cited RAG and context test files root-caused (F-D2-08, F-D2-09, F-D2-10, F-D2-18); F-D2-03..07, 12, 15, 16, 19 are declared exceptions
+
+- **Ticket:** T-IGX-041-B · **Wave:** W13 · **ADR:** ADR-PDC-02 · **Auditor:** IA-D2 (re-audit, loop 1 of 2)
+- **Write set:** `intergrax/runtime/nexus/context/context_compiler.py`, `intergrax/runtime/nexus/context/degradation_ladder.py`, `intergrax/runtime/nexus/context/message_token_cost.py`, `intergrax/context/budget/mandatory_base_messages.py`, `intergrax/memory/default_memory_control_plane.py`, `intergrax/memory/contracts/memory_control.py`, `intergrax/memory/retention_sweep.py`, `intergrax/rag/governance/embedding_version_policy.py`, `intergrax/rag/retrieval/retrieval_service.py`, `intergrax/runtime/policy/pre_context_policy_audit.py`, `scripts/maintenance/check_pre_context_policy_wiring.py`, `tests/qualification/pdc_x/d2_repair/`, `tests/qualification/pdc_x/d2/test_d2_compaction_roundtrip.py`, `tests/qualification/pdc_x/d2/test_d2_context_fidelity.py`, `tests/qualification/memory_behavior/fixtures.py`, `tests/qualification/memory_behavior/scenarios/task.py`, `tests/unit/rag/`, `tests/integration/rag/`, `tests/integration/context/test_mem_xint6_cross_layer_e2e_certification.py`, `tests/unit/runtime/architecture/test_ideal_harness_l3_w2_depth_gate.py`
+- **Tests:** tests/qualification/pdc_x/d2_repair/ plus the D2-cited suites of the ticket test contract; the 35 red files of IA-D2 run 5 green or classified; D3 estimator change (T-IGX-041-C) merged first
+- **Evidence (exact SHA):** implementation SHA and publication SHA recorded in `PDC_SHA_LADDER.md`; test log under `.tmp/proof/pdc-x-p5/B-P7-D2/`; audited by IA-D2 (re-audit, loop 1 of 2) at the PDC-P7 audited SHA.
 - **Merge gate:** OD-PDC-SEQ-01: implement in an isolated worktree; merge only after MCP-SERVER-X P8 publication; ACT-N11 re-activation at PDC-P7-00
 
 | Requirement | Class | Test case |

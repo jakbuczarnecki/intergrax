@@ -545,6 +545,40 @@ BATCHES: Final[tuple[Batch, ...]] = (
         "IA-GLOBAL (P8)",
         "tests/qualification/pdc_x/p6_ecapfix/ and p6_impact/; xd_12 and p6_impact coverage tests green on development and on a tree that contains the MCP-RC change",
     ),
+    Batch(
+        "B-P7-D2",
+        "D2",
+        "D2 repair after the P7 independent audit (IA-D2): tool-call payloads counted by the hard context budget and oldest-first last-resort drop (F-D2-01 compiler half, F-D2-17), tenant-qualified and governed TASK memory scope (F-D2-02, F-D2-14), isolated reindex hooks (F-D2-11), bounded retention-sweep clock and deadline (F-D2-13), 35 red D2-cited RAG and context test files root-caused (F-D2-08, F-D2-09, F-D2-10, F-D2-18); F-D2-03..07, 12, 15, 16, 19 are declared exceptions",
+        "T-IGX-041-B",
+        "W13",
+        (
+            "intergrax/runtime/nexus/context/context_compiler.py",
+            "intergrax/runtime/nexus/context/degradation_ladder.py",
+            "intergrax/runtime/nexus/context/message_token_cost.py",
+            "intergrax/context/budget/mandatory_base_messages.py",
+            "intergrax/memory/default_memory_control_plane.py",
+            "intergrax/memory/contracts/memory_control.py",
+            "intergrax/memory/retention_sweep.py",
+            "intergrax/rag/governance/embedding_version_policy.py",
+            "intergrax/rag/retrieval/retrieval_service.py",
+            "intergrax/runtime/policy/pre_context_policy_audit.py",
+            "scripts/maintenance/check_pre_context_policy_wiring.py",
+            "tests/qualification/pdc_x/d2_repair/",
+            "tests/qualification/pdc_x/d2/test_d2_compaction_roundtrip.py",
+            "tests/qualification/pdc_x/d2/test_d2_context_fidelity.py",
+            "tests/qualification/memory_behavior/fixtures.py",
+            "tests/qualification/memory_behavior/scenarios/task.py",
+            "tests/unit/rag/",
+            "tests/integration/rag/",
+            "tests/integration/context/test_mem_xint6_cross_layer_e2e_certification.py",
+            "tests/unit/runtime/architecture/test_ideal_harness_l3_w2_depth_gate.py",
+        ),
+        "ADR-PDC-02",
+        ("B-P6-J",),
+        GATE_PRODUCT,
+        "IA-D2 (re-audit, loop 1 of 2)",
+        "tests/qualification/pdc_x/d2_repair/ plus the D2-cited suites of the ticket test contract; the 35 red files of IA-D2 run 5 green or classified; D3 estimator change (T-IGX-041-C) merged first",
+    ),
 )
 
 # Requirement -> batch overrides where the corrective-task text alone is ambiguous.
@@ -844,6 +878,10 @@ def render_dag() -> str:
         "W12": (
             "after B-P6-I and the signature of T-IGX-040-A",
             "after the signature of T-IGX-040-A (one-time exception OD-MCP-RC-05; both repairs in one PR, then product paths freeze again)",
+        ),
+        "W13": (
+            "after B-P6-J and the signature of T-IGX-041-B",
+            "under DELEGATION-PDC-P7-REPAIR (product paths of the D2 repair; D3 estimator change T-IGX-041-C merges first; IIAC activation stays stale until the P8-04 rebind)",
         ),
     }
     for wave, bids in waves.items():
