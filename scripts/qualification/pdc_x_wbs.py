@@ -698,6 +698,26 @@ BATCHES: Final[tuple[Batch, ...]] = (
         "IA-D8 (P7 re-audit)",
         "tests/qualification/pdc_x/d8_repair/ plus the cited d8, xd_02, xd_09, xd_10, xd_11 and storage tool suites green; every in-scope finding pinned red-then-green with negative tests",
     ),
+    Batch(
+        "B-P7-D6",
+        "D6",
+        "D6 repair after the P7 independent audit (IA-D6), loop 1: evidence-plane security audit trail writes only through a validating port (F-D6-01), overstating immutable/replicated wording relabeled (F-D6-02), plugin provenance bound to the attested distribution (F-D6-05), stale sandbox governance-deny test root-caused (F-D6-07), provider text kept out of the credential error chain (F-D6-12)",
+        "T-IGX-041-F",
+        "W13",
+        (
+            "intergrax/runtime/security/security_audit_trail.py",
+            "intergrax/runtime/security/multi_region_audit_trail.py",
+            "intergrax/core/plugins/admission.py",
+            "intergrax/integrations/credentials/secrets_store_resolver.py",
+            "tests/qualification/pdc_x/d6_repair/",
+            "tests/unit/runtime/sandbox/test_cap_c1c_sandbox_evidence_and_contract_purity.py",
+        ),
+        "ADR-PDC-06",
+        ("B-P6-J",),
+        GATE_PRODUCT,
+        "IA-D6 (re-audit, loop 1 of 2)",
+        "tests/qualification/pdc_x/d6_repair/ red on unchanged code and green after; d6, xd_02/06/10, compat_x F-35 and event-evolution gates, sandbox unit suite and credential tests green except the known reds named in the ticket",
+    ),
 )
 
 # Requirement -> batch overrides where the corrective-task text alone is ambiguous.
