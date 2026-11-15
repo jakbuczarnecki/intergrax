@@ -821,6 +821,22 @@ BATCHES: Final[tuple[Batch, ...]] = (
         "IA-D6 (re-audit, loop 1 of 2)",
         "tests/qualification/pdc_x/d6_repair/ red on unchanged code and green after; d6, xd_02/06/10, compat_x F-35 and event-evolution gates, sandbox unit suite and credential tests green except the known reds named in the ticket",
     ),
+    Batch(
+        "B-P7-TX",
+        "TX",
+        "P7 re-pin of the TENANT-X class-field carrier-count gate (F-D2-03, F-D3-06, F-D6-06): classify the carriers added and removed since the pin, re-pin the total once after the last domain repair, strengthen the classification check; test-only",
+        "T-IGX-041-I",
+        "W13",
+        (
+            "tests/qualification/tenant_x/_replay_x_carrier_reconciliation.py",
+            "tests/qualification/tenant_x/test_tenant_x_replay_carrier_reclassification.py",
+        ),
+        "—",
+        ("B-P6-J",),
+        GATE_FREE,
+        "IA-GLOBAL (P8)",
+        "tests/qualification/tenant_x green at the final head; negative tests prove an unclassified, swapped or unreasoned carrier still fails; PHASE 2 runs only after the D1, D2 and D6 repair PRs are merged",
+    ),
 )
 
 # Requirement -> batch overrides where the corrective-task text alone is ambiguous.

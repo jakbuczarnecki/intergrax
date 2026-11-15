@@ -43,6 +43,7 @@ Rows classed `CURRENT_HEAD_REQUALIFICATION`, `ALREADY_CERTIFIED_REUSABLE`, `N/A_
 | B-P7-D3 | D3 | W13 | T-IGX-041-C | 0 | ADR-PDC-03 | B-P6-J | YES | OD-PDC-SEQ-01: implement in an isolated worktree; merge only after MCP-SERVER-X P8 publication; ACT-N11 re-activation at PDC-P7-00 | IA-D3 (re-audit, loop 1 of 2) |
 | B-P7-D8 | D8 | W13 | T-IGX-041-H | 0 | ADR-PDC-08 | B-P6-J | YES | OD-PDC-SEQ-01: implement in an isolated worktree; merge only after MCP-SERVER-X P8 publication; ACT-N11 re-activation at PDC-P7-00 | IA-D8 (P7 re-audit) |
 | B-P7-D6 | D6 | W13 | T-IGX-041-F | 0 | ADR-PDC-06 | B-P6-J | YES | OD-PDC-SEQ-01: implement in an isolated worktree; merge only after MCP-SERVER-X P8 publication; ACT-N11 re-activation at PDC-P7-00 | IA-D6 (re-audit, loop 1 of 2) |
+| B-P7-TX | TX | W13 | T-IGX-041-I | 0 | — | B-P6-J | no | No product path: may merge before MCP-SERVER-X P8 | IA-GLOBAL (P8) |
 
 ## B-P3 — Ownership records closed in P3
 
@@ -492,6 +493,18 @@ Rows classed `CURRENT_HEAD_REQUALIFICATION`, `ALREADY_CERTIFIED_REUSABLE`, `N/A_
 - **Tests:** tests/qualification/pdc_x/d6_repair/ red on unchanged code and green after; d6, xd_02/06/10, compat_x F-35 and event-evolution gates, sandbox unit suite and credential tests green except the known reds named in the ticket
 - **Evidence (exact SHA):** implementation SHA and publication SHA recorded in `PDC_SHA_LADDER.md`; test log under `.tmp/proof/pdc-x-p5/B-P7-D6/`; audited by IA-D6 (re-audit, loop 1 of 2) at the PDC-P7 audited SHA.
 - **Merge gate:** OD-PDC-SEQ-01: implement in an isolated worktree; merge only after MCP-SERVER-X P8 publication; ACT-N11 re-activation at PDC-P7-00
+
+| Requirement | Class | Test case |
+| --- | --- | --- |
+| — | — | — |
+
+## B-P7-TX — P7 re-pin of the TENANT-X class-field carrier-count gate (F-D2-03, F-D3-06, F-D6-06): classify the carriers added and removed since the pin, re-pin the total once after the last domain repair, strengthen the classification check; test-only
+
+- **Ticket:** T-IGX-041-I · **Wave:** W13 · **ADR:** — · **Auditor:** IA-GLOBAL (P8)
+- **Write set:** `tests/qualification/tenant_x/_replay_x_carrier_reconciliation.py`, `tests/qualification/tenant_x/test_tenant_x_replay_carrier_reclassification.py`
+- **Tests:** tests/qualification/tenant_x green at the final head; negative tests prove an unclassified, swapped or unreasoned carrier still fails; PHASE 2 runs only after the D1, D2 and D6 repair PRs are merged
+- **Evidence (exact SHA):** implementation SHA and publication SHA recorded in `PDC_SHA_LADDER.md`; test log under `.tmp/proof/pdc-x-p5/B-P7-TX/`; audited by IA-GLOBAL (P8) at the PDC-P7 audited SHA.
+- **Merge gate:** No product path: may merge before MCP-SERVER-X P8
 
 | Requirement | Class | Test case |
 | --- | --- | --- |
