@@ -2,21 +2,27 @@
   "stage_id": "PDC-X/global",
   "auditor": "IA-GLOBAL",
   "audited_implementation_sha": "cba32d2479cd134911d2fdf4fb1db4587c8a94d8",
-  "final_audit_sha": "cba32d2479cd134911d2fdf4fb1db4587c8a94d8",
+  "final_audit_sha": "d39a520dda965981a38f8e1a90ec5135ea5d508e",
   "overall_verdict": "PARTIAL",
+  "residual_blockers_at_final_sha": [
+    "G-23 MEDIUM unowned product defect",
+    "G-05 residual: 77 incident scenario reds, 59 get_steps, beyond decision 1, needs Operator",
+    "product MEDIUMs excluded by T-IGX-041-M E1..E11 without Operator authorization",
+    "trace_bridge.v1 payload mismatch (G-10 residual) unowned"
+  ],
   "iiac_manifest_verdict": "CONDITIONAL",
   "repaired_finding_verdicts": {
-    "VERIFIED_FIXED": 62,
-    "PARTIALLY_FIXED": 14,
+    "VERIFIED_FIXED": 63,
+    "PARTIALLY_FIXED": 13,
     "NOT_FIXED": 0
   },
-  "new_finding_counts": {
+  "new_finding_counts_at_start_sha": {
     "HIGH": 1,
     "MEDIUM": 11,
     "LOW": 9,
     "INFO": 1
   },
-  "new_findings": [
+  "new_findings_at_start_sha": [
     {
       "id": "G-01",
       "severity": "HIGH",
@@ -170,6 +176,65 @@
       "title": "Process and documentation: the P7 certification matrix (`PDC_DOMAIN_CERTIFICATION_MATRIX`) was not produced; `PDC_INDEX.md` still says 168 requirement rows (script: 172) and lists P8/P9 artifacts as not started; the SHA ladder says implementation heads are \"not merged\" although they are ancestors; the B-D6 commits before the audited SHA carry an AI co-author trailer (history, not rewritten); no AI",
       "confirmation": "CODE",
       "scope": "P9 package"
+    }
+  ],
+  "status_at_final_sha": {
+    "closed_verified_fixed": [
+      "G-01",
+      "G-02",
+      "G-03",
+      "G-06",
+      "F-D6-12"
+    ],
+    "partially_fixed": [
+      "G-04",
+      "G-05",
+      "G-10"
+    ],
+    "excluded_by_T-IGX-041-M_open": [
+      "G-07",
+      "G-08",
+      "G-09",
+      "G-11",
+      "G-12",
+      "F-D3-02"
+    ]
+  },
+  "new_findings_at_final_sha": [
+    {
+      "id": "G-23",
+      "severity": "MEDIUM",
+      "title": "graph-side active publication generation resolved without publication_scope_id; graph evidence invisible after re-ingest; unowned (N says owner M, M excludes as E11)",
+      "confirmation": "REPRODUCED",
+      "scope": "intergrax/rag/graph/generation_visibility.py:82-87; intergrax/rag/graph/providers/inmemory_graph_store.py:343-348"
+    },
+    {
+      "id": "G-24",
+      "severity": "LOW",
+      "title": "order-dependent reds: 14 COMPAT-X tests, audit_ideal_13_1 and test_harness_evaluation_wiring fail in one combined process and pass alone (global registry leak)",
+      "confirmation": "REPRODUCED",
+      "scope": "test isolation"
+    },
+    {
+      "id": "G-25",
+      "severity": "INFO",
+      "title": "three RAG reds labelled product defects are stale tests (tenant_id, scoped load)",
+      "confirmation": "REPRODUCED",
+      "scope": "tests/integration/rag/document_loaders"
+    },
+    {
+      "id": "G-26",
+      "severity": "INFO",
+      "title": "two impact-map entries map modules to checks that do not execute them",
+      "confirmation": "CODE",
+      "scope": "intergrax/platform/enterprise_audit/impact_map.py"
+    },
+    {
+      "id": "G-27",
+      "severity": "LOW",
+      "title": "one-shot schedule with unavailable terminal authority is completed as not resumable",
+      "confirmation": "CODE",
+      "scope": "intergrax/runtime/long_running/scheduler.py"
     }
   ],
   "known_reds_classified_not_reported": [

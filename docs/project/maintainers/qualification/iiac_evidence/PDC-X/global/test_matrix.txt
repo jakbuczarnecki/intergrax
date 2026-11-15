@@ -17,3 +17,10 @@ cmd: contract of T-IGX-041-H (D8)                                               
 cmd: pytest tests/qualification/tenant_x                                         result: 213 passed                      log: logs/05_tenant_x.log
 cmd: pytest ebh_7 roadmap_replay_x dist_scale_x IIAC activation tests compat_x   result: 28 failed (all known classes), 799 passed, 16 skipped  log: logs/06_known_reds.log
 cmd: python -I adversarial_scripts/probe_n03_default_document_loader.py           result: ImportError (G-01 reproduced)   log: logs/probe_n03.out
+
+Final audit SHA d39a520dda965981a38f8e1a90ec5135ea5d508e (one process at a time; logs in logs_final/)
+
+cmd: one bounded pytest: contract paths A..H + pdc_x + tenant_x + dup_x + ebh_7 + roadmap_replay_x + dist_scale_x + compat_x + iiac tests + scenarios tree  result: 118 failed, 7691 passed, 91 skipped, 3 errors in 970 s (classified in report 13.3; killed after summary)  log: logs_final/final_pytest.log, cmd.txt
+cmd: pytest tests/qualification/compat_x + test_audit_ideal_13_1_integration_marketplace                       result: 354 passed in 1064 s                    log: logs_final/rerun_compat_audit.log
+cmd: pytest d2r syntax gate + 6 residual RAG/applications tests (standalone)                                    result: 6 failed (G-23 x2, trace_bridge, stale x3), 10 passed, 2 skipped  log: logs_final/rerun_residual.log
+cmd: python -I adversarial_scripts/probe_n03_default_document_loader.py                                          result: "loader built" (G-01 closed)            log: logs_final/probe_n03.out

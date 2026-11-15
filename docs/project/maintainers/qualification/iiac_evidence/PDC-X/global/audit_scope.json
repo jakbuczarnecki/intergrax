@@ -8,7 +8,7 @@
     "governance/tickets/T-IGX-036-A.md"
   ],
   "audited_implementation_sha": "cba32d2479cd134911d2fdf4fb1db4587c8a94d8",
-  "final_audit_sha": "cba32d2479cd134911d2fdf4fb1db4587c8a94d8",
+  "final_audit_sha": "d39a520dda965981a38f8e1a90ec5135ea5d508e",
   "repair_pull_requests": {
     "D1": 574,
     "D2": 575,
