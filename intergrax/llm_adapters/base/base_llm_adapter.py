@@ -647,13 +647,24 @@ class BaseLLMAdapter(ABC):
         This is a generic, model-agnostic estimator designed to be "good enough"
         for budgeting and trimming, not for billing accuracy.
         """
-        # Aggregate all message contents into a single string.
+        # Aggregate all message contents into a single string. Assistant ``tool_calls`` (id, function
+        # name, arguments), ``name`` and ``tool_call_id`` occupy the context window too and are counted;
+        # a message without them contributes exactly its content, as before.
         parts: list[str] = []
         for m in messages:
             content = m.content
             if not isinstance(content, str):
                 content = str(content)
             parts.append(content)
+            if m.tool_calls:
+                try:
+                    parts.append(json.dumps(m.tool_calls, sort_keys=True, default=str))
+                except (TypeError, ValueError):
+                    parts.append(str(m.tool_calls))
+            if m.name:
+                parts.append(m.name)
+            if m.tool_call_id:
+                parts.append(m.tool_call_id)
         joined = "\n".join(parts)
         if not joined:
             return 0
