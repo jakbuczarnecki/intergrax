@@ -51,12 +51,14 @@ __all__ = [
     "MemoryControlUnsupportedScope",
     "MemoryRetentionCandidateReader",
     "TaskMemoryCapability",
+    "TenantBoundMemoryCapability",
     "UserMemoryForgetCapabilityResult",
     "UserMemoryRecallCapabilityResult",
     "UserMemoryRememberCapabilityResult",
     "UserProfileMemoryCapability",
     "ProcedureMemoryCapability",
     "MemoryControlSupersessionApplyResult",
+    "task_namespace_for_tenant",
     "user_memory_scope",
 ]
 
@@ -303,6 +305,27 @@ class TaskMemoryCapability(Protocol):
     async def read(self, namespace: str, key: str) -> dict[str, object] | None: ...
 
     async def delete(self, namespace: str, key: str) -> bool: ...
+
+
+@runtime_checkable
+class TenantBoundMemoryCapability(Protocol):
+    """A memory capability that is bound to exactly one tenant (PDC-D2-R002).
+
+    The control plane refuses an identity of another tenant before it calls such a capability.
+    """
+
+    @property
+    def bound_tenant_id(self) -> str: ...
+
+
+def task_namespace_for_tenant(tenant_id: str, namespace: str) -> str:
+    """Tenant-qualified TASK namespace passed to ``TaskMemoryCapability`` by the control plane.
+
+    ``TaskMemoryCapability`` has no tenant parameter, so tenant isolation of a shared capability
+    is carried by the namespace. The length prefix makes the encoding injective: no tenant id or
+    namespace, whatever separators it contains, can collide with another ``(tenant, namespace)``.
+    """
+    return f"{len(tenant_id)}:{tenant_id}/{namespace}"
 
 
 @runtime_checkable

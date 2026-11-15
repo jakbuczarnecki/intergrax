@@ -11,6 +11,7 @@ from intergrax.context.budget.contracts import (
     ContextBudgetUnsatisfiableError,
     DegradationStepKind,
 )
+from intergrax.context.budget.message_token_cost import message_token_cost
 from intergrax.context.contracts import (
     ContextFragment,
     ContextFragmentSource,
@@ -87,8 +88,10 @@ def _hard_trim(messages: list[ChatMessage], budget: int):  # type: ignore[no-unt
 
 
 def test_hard_trim_preserves_tool_call_linkage_and_identity() -> None:
+    # The assistant tool_calls payload and the tool name / id count against the window (F-D2-01):
+    # the budget leaves room for them, so only the long tool *content* is truncated.
     messages = _conversation()
-    result = _hard_trim(messages, budget=100)
+    result = _hard_trim(messages, budget=200)
     assert result is not None
     trimmed = result.messages
 
@@ -100,7 +103,7 @@ def test_hard_trim_preserves_tool_call_linkage_and_identity() -> None:
     assert by_id["asst-1"].tool_calls == [_tool_call("call-1")]
     assert len(by_id["tool-1"].content) < 400
     assert by_id["tool-1"].content == "T" * len(by_id["tool-1"].content)
-    assert sum(_count(m.content) for m in trimmed) <= 100
+    assert sum(message_token_cost(m, _count) for m in trimmed) <= 200
     # content-only truncation: untouched messages are byte-for-byte identical
     assert by_id["sys-1"].content == "SYS-RULES"
     assert by_id["user-final"].content == "final"
@@ -271,13 +274,10 @@ def test_mandatory_instruction_exceeding_budget_fails_closed_never_truncated() -
     ]
     config = RuntimeConfig(llm_adapter=FakeAdapter(window=4096), production_mode=False)
     compiler = ContextCompiler(count_tokens=_count)
-    try:
-        result = compiler.compile(list(messages), config, max_output_tokens=64, input_budget_tokens=300)
-    except ContextBudgetUnsatisfiableError:
-        return
-    # If the compile succeeds, the instruction must be intact (never silently truncated).
-    system = [m for m in result.messages if m.entry_id == "sys-big"]
-    assert system and system[0].content == instruction
+    # The mandatory instruction alone (720 chars) exceeds the 300-token budget: fail closed with the
+    # typed error, never a silently truncated instruction.
+    with pytest.raises(ContextBudgetUnsatisfiableError, match="mandatory_system_instructions_exceed_budget"):
+        compiler.compile(list(messages), config, max_output_tokens=64, input_budget_tokens=300)
 
 
 # --------------------------------------------------------------------------- R009

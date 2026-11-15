@@ -9,13 +9,12 @@ import sys
 from pathlib import Path
 
 import pytest
-
+from intergrax.contracts.partial_result_contract import PartialResultContract
 from intergrax.contracts.subtask_contract import SubtaskContract
 from intergrax.contracts.task_envelope_stream import (
     TaskEnvelopeChunk,
     assemble_envelope_from_chunks,
 )
-from intergrax.contracts.partial_result_contract import PartialResultContract
 from intergrax.runtime.architecture.evaluation_scenario_loader import (
     load_scenario_library,
 )
@@ -37,14 +36,10 @@ from intergrax.runtime.nexus.subagents.delegation_decision import (
 from intergrax.runtime.registry.semver_compat import is_compatible_runtime
 from intergrax.runtime.reliability.step_retry_budget import StepRetryBudget
 from intergrax.runtime.security.pii_redaction import redact_pii
-from intergrax.runtime.security.tool_injection_guard import (
-    ToolInjectionError,
-    assert_tool_input_safe,
-)
+from intergrax.runtime.task.task import TaskResult, TaskState
 from intergrax.runtime.task.task_result_authoritative_exposure_defaults import (
     terminal_task_result_exposure_no_decision_gate,
 )
-from intergrax.runtime.task.task import TaskResult, TaskState
 
 pytestmark = [pytest.mark.gate, pytest.mark.no_ci]
 
@@ -75,9 +70,7 @@ def test_ideal_w2_semver_compat() -> None:
 
 def test_ideal_w2_delegation_decision_record() -> None:
     contract = SubtaskContract(child_agent_id="echo", objective="delegate search")
-    record = decision_record_for_delegation(
-        contract.to_delegation_spec(), parent_agent_id="parent"
-    )
+    record = decision_record_for_delegation(contract.to_delegation_spec(), parent_agent_id="parent")
     assert record.delegation_target == "echo"
     assert record.delegation_rationale == "delegate search"
 
@@ -93,9 +86,7 @@ def test_ideal_w2_partial_result_contract_on_task_result() -> None:
     result = TaskResult(
         task_id="t1",
         state=TaskState.PARTIALLY_COMPLETED,
-        partial=PartialResultContract(
-            completed_steps=("s1",), partial_answer="partial"
-        ),
+        partial=PartialResultContract(completed_steps=("s1",), partial_answer="partial"),
         authoritative_decision_exposure=terminal_task_result_exposure_no_decision_gate(),
     )
     assert result.partial is not None
@@ -105,10 +96,7 @@ def test_ideal_w2_partial_result_contract_on_task_result() -> None:
 def test_ideal_w2_quota_hard_stop() -> None:
     with pytest.raises(QuotaExceededError):
         assert_quota_allows(spent_usd=10.0, quota=TenantQuota(max_cost_usd=5.0))
-    assert (
-        assert_quota_allows(spent_usd=3.0, quota=TenantQuota(max_cost_usd=5.0))
-        is QuotaAction.ALLOW
-    )
+    assert assert_quota_allows(spent_usd=3.0, quota=TenantQuota(max_cost_usd=5.0)) is QuotaAction.ALLOW
 
 
 def test_ideal_w2_pii_redaction() -> None:
@@ -145,6 +133,7 @@ def test_ideal_w2_w2_script_gates() -> None:
         "check_tool_injection_defense.py",
         "check_architecture_debt_register.py",
     ]
+    failures: list[str] = []
     for script in scripts:
         completed = subprocess.run(
             [sys.executable, str(resolve_script(script))],
@@ -153,4 +142,7 @@ def test_ideal_w2_w2_script_gates() -> None:
             capture_output=True,
             text=True,
         )
-        assert completed.returncode == 0, f"{script}: {completed.stderr}"
+        if completed.returncode != 0:
+            failures.append(f"{script}: {completed.stderr or completed.stdout}")
+    # Report every failing script, not only the first one (PDC-D2-R006).
+    assert failures == []
