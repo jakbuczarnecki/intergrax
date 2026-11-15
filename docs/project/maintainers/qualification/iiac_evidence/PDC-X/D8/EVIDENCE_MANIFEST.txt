@@ -1,0 +1,33 @@
+PDC-X / D8 independent audit IA-D8 (ARTIFACT-LIFECYCLE) evidence manifest
+
+audited_implementation_sha: c08efe46a74a20595468d8d8bf06eab2dca5f573
+audit_execution_sha:        3b371ef9ddee209eb707f184337708303a956023 (= test_execution_sha; docs-only descendant)
+auditor branch:             claude/pdc-x-ia-d8-04b4f7   (docs and evidence only; no product, test, script, ticket or activation-record edit)
+domain verdict:             PARTIAL  (IIAC manifest verdict value: CONDITIONAL)
+findings:                   1 HIGH, 6 MEDIUM, 9 LOW, 4 INFO
+
+Report:    docs/project/maintainers/qualification/platform_domain_completeness/PDC_P7_D8_AUDIT_REPORT.md
+Records:   audit_scope.json, iiac_audit_session_manifest.PDC-X.d8.json, iiac_audit_d8_findings.json, test_matrix.txt
+Logs:      logs/ (pytest runs, requirement check, probe output, verifier outputs)
+Scripts:   adversarial_scripts/ (probes run with PYTHONPATH=. uv run python <script> from the repo root)
+
+sha256 of every file listed (this manifest excluded):
+
+a7417ad9dd94ddb2fbe3ea84ae733ea29a83112c2b89f6ae464adc102477ac04 *docs/project/maintainers/qualification/iiac_evidence/PDC-X/D8/adversarial_scripts/ia_d8_probe_create_artifact.py
+081ebeee4432ab914eb789de9a20e088b7507a550f749ca218266b145e96da4c *docs/project/maintainers/qualification/iiac_evidence/PDC-X/D8/adversarial_scripts/ia_d8_probe_hostile_source.py
+f40c994518e316ad7d4271688433721d62264b39ceb95876efd9abc92026d39c *docs/project/maintainers/qualification/iiac_evidence/PDC-X/D8/adversarial_scripts/ia_d8_probes_1.py
+a7fa042499b026496494a6598ad9bf032444ddd1c362ebb3011e5801cb7982ae *docs/project/maintainers/qualification/iiac_evidence/PDC-X/D8/adversarial_scripts/ia_d8_probes_2.py
+91d8b3f9a608cea9ebdab1e8ad5f329c1a4b90e3c462eb29e8acdb9cdcd2d8a7 *docs/project/maintainers/qualification/iiac_evidence/PDC-X/D8/audit_scope.json
+c51ac556b90fa0ed365f182c382fe3303250a572e20948e602d439e03e899828 *docs/project/maintainers/qualification/iiac_evidence/PDC-X/D8/iiac_audit_d8_findings.json
+594258195e0087449c92217c3ece5039c7d29435aad5a6efac99615df28d0a4b *docs/project/maintainers/qualification/iiac_evidence/PDC-X/D8/iiac_audit_session_manifest.PDC-X.d8.json
+d488684155c8a5c2c434a629133545cb02e5a9c4a403cff9a39f408549c3d590 *docs/project/maintainers/qualification/iiac_evidence/PDC-X/D8/logs/pdc_x_requirements_check.log
+6934cd2794e8a115aad682c1a2e49aa57f53970638770fc9017dd0e62eb51d65 *docs/project/maintainers/qualification/iiac_evidence/PDC-X/D8/logs/probe_create_artifact.log
+644e09a0ffd3b2dfda0ff07bd8b792c92278a2cf82740e191ec923ce36b78e31 *docs/project/maintainers/qualification/iiac_evidence/PDC-X/D8/logs/probe_hostile_source.log
+68f151b895994658ad0f7295ae4788148954982cb7e2c1aebb29daf285f9948d *docs/project/maintainers/qualification/iiac_evidence/PDC-X/D8/logs/probes_1.log
+02acc31f8451c0f31f616b86701a26b439f2943521ea9b4263f89d1d4f09262a *docs/project/maintainers/qualification/iiac_evidence/PDC-X/D8/logs/probes_2.log
+a087038a66fceb11b5099a8580864254e6e6629091708ae6fc8b5b80afbab08d *docs/project/maintainers/qualification/iiac_evidence/PDC-X/D8/logs/pytest_d8_xd09_xd10.log
+0d8d844890027194b445d45a83ff6baf93aaa191e2d81bb8f881b314d553c5a7 *docs/project/maintainers/qualification/iiac_evidence/PDC-X/D8/logs/pytest_r011_partial_results_adjacent.log
+6cd826f5e049aff41bf9746473759eea8c3a09ea5f8573eb79abc7e95b372835 *docs/project/maintainers/qualification/iiac_evidence/PDC-X/D8/logs/pytest_r015_cw_content_storage.log
+db60f53d7f2fe304903f62c5e3290a7e3ab7e7e38f3fb2be09a8f1025dacd855 *docs/project/maintainers/qualification/iiac_evidence/PDC-X/D8/logs/verify_iiac_audit_manifest.log
+a2e9f98d26771dd08a211a02e2eb2e519aef4cb5df4347c2bd758e25dba43aaa *docs/project/maintainers/qualification/iiac_evidence/PDC-X/D8/logs/verify_iiac_role_separation.log
+5213e10d274be9a40143c0e4e1645e70ae2e57f828c8772f7ec2f1e33d16048d *docs/project/maintainers/qualification/iiac_evidence/PDC-X/D8/test_matrix.txt

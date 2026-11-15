@@ -1,0 +1,11 @@
+memory versions left: 0
+sqlite versions left: 0
+[F02_toctou_new_nonexpiring_version_deleted] -> see above
+[F02_sweep_without_audit_deletes_silently] -> ('art-1',)
+[F10_permissive_governance_returning_deny] -> READ_OK_DESPITE_DENY (7 bytes)
+[F28_naive_vs_aware_datetime_sweep] -> sweep killed: TypeError: can't compare offset-naive and offset-aware datetimes
+[F28_negative_limit] -> {'memory_examined_with_limit_-1': 2, 'sqlite_examined_with_limit_-1': 3}
+[F27_symlink_in_sandbox] -> symlink creation unavailable on this host: [WinError 1314] Klient nie ma wymaganych uprawnieñ: 'C:\\Users\\XPS\\AppData\\Local\\Temp\\tmpek_6of6p\\outside.txt' -> 'C:\\Users\\XPS\\AppData\\Local\\Temp\\tmpek_6of6p\\root\\link.txt'; code reads path.read_bytes() after is_file(): True
+[download_after_expiry_and_hold] -> n/a
+[P_expired_download_missing_object_still_issued] -> n/a
+DONE

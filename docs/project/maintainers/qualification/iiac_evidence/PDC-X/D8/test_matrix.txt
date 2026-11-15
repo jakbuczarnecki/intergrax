@@ -1,0 +1,19 @@
+PDC-P7 IA-D8 test matrix (auditor runs, Windows, one pytest or python process at a time)
+audited_implementation_sha = c08efe46a74a20595468d8d8bf06eab2dca5f573
+test_execution_sha = audit_execution_sha = 3b371ef9ddee209eb707f184337708303a956023 (product, test and script tree identical to the audited SHA; delta is docs and governance/tickets only)
+interpreter: worktree .venv (CPython 3.12.11) created by uv at first run; nothing installed manually
+
+1. uv run pytest tests/qualification/pdc_x/d8 tests/qualification/pdc_x/xd/test_xd_09_artifacts_context.py tests/qualification/pdc_x/xd/test_xd_10_artifacts_security.py -q
+   result: 134 passed in 132.90s, process exited by itself (exit 0)            [logs/pytest_d8_xd09_xd10.log]
+2. uv run pytest tests/unit/collaborative_work/test_artifact_content_storage.py tests/unit/collaborative_work/test_artifact_content_storage_architecture_gates.py tests/unit/collaborative_work/test_artifact_execution_lineage_architecture_gates.py -q
+   result: 52 passed in 0.80s                                                   [logs/pytest_r015_cw_content_storage.log]
+3. uv run pytest tests/unit/runtime/long_running/test_partial_results.py -q
+   result: 1 failed, 1 passed (adjacent to R011, not D8 evidence; F-D8-19)      [logs/pytest_r011_partial_results_adjacent.log]
+4. uv run python scripts/qualification/pdc_x_requirements.py --check
+   result: OK, 172 rows, schema valid, FRZ 225/26                               [logs/pdc_x_requirements_check.log]
+5. PYTHONPATH=. uv run python adversarial_scripts/ia_d8_probes_1.py              [logs/probes_1.log]   (P1 import error, superseded by 7)
+6. PYTHONPATH=. uv run python adversarial_scripts/ia_d8_probes_2.py              [logs/probes_2.log]
+7. PYTHONPATH=. uv run python adversarial_scripts/ia_d8_probe_create_artifact.py [logs/probe_create_artifact.log]
+8. PYTHONPATH=. uv run python adversarial_scripts/ia_d8_probe_hostile_source.py  [logs/probe_hostile_source.log]
+First launch of run 1 (extra flag -p no:cacheprovider) aborted with exit 4 (unknown config option) and was repeated without the flag.
+Not run: EBH-7 identity, roadmap_replay_x, dist_scale_x/Docker (C10/C15 freeze), xd_03 and other XD files, tests/unit tree, CI contexts, igx_gov ticket.

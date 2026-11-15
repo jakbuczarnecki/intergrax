@@ -1,0 +1,48 @@
+.F                                                                       [100%]
+================================== FAILURES ===================================
+____________ test_build_task_progress_view_aggregates_checkpoints _____________
+
+    def test_build_task_progress_view_aggregates_checkpoints() -> None:
+        checkpoint = TaskCheckpoint(
+            task_id="task_j5",
+            tenant_id="t1",
+            resume_token="rt_j5",
+            task_state=TaskState.WAITING_FOR_HUMAN,
+            progress_message="awaiting human input",
+            task_snapshot={
+                "task_id": "task_j5",
+                "tenant_id": "t1",
+                "user_id": "u1",
+                "message": "hello",
+                "context": {"capability": "hitl.basic"},
+                "options": {
+                    "isolation": {},
+                    "human": {},
+                    "governance": {},
+                    "long_running": {"enabled": True},
+                    "context": {},
+                },
+                "runtime": {
+                    "orchestration": {},
+                    "governance": {"human_request_expires_at": "2026-05-27T12:00:00+00:00"},
+                    "classification": {},
+                    "isolation": {},
+                },
+                "metadata": {},
+                "state": "waiting_for_human",
+            },
+        )
+        view = build_task_progress_view(
+            task_id="task_j5",
+            tenant_id="t1",
+            checkpoints=[checkpoint],
+        )
+        assert view["is_paused"] is True
+        assert view["progress_message"] == "awaiting human input"
+>       assert view["human_request_expires_at"] == "2026-05-27T12:00:00+00:00"
+E       AssertionError: assert None == '2026-05-27T12:00:00+00:00'
+
+tests\unit\runtime\long_running\test_partial_results.py:98: AssertionError
+=========================== short test summary info ===========================
+FAILED tests/unit/runtime/long_running/test_partial_results.py::test_build_task_progress_view_aggregates_checkpoints
+1 failed, 1 passed in 0.48s
