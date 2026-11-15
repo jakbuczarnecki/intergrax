@@ -1,0 +1,14 @@
+...F...F..............FFF.                                               [100%]
+================================== FAILURES ===================================
+D:\Projekty\_wt\intergrax\iag-base\intergrax\runtime\resilience\dependency_attempt_boundary_composition.py:36: intergrax.runtime.resilience.dependency_attempt_boundary_composition.ToolDependencyAttemptBoundaryMaterializationError: strict production requires reliability_profile.dependency_concurrency_admission
+D:\Projekty\_wt\intergrax\iag-base\intergrax\applications\_shared\application_owned_tool_wiring.py:28: intergrax.applications.contracts.errors.ApplicationManifestConformanceError: application tool registry provided without manifest application_owned_tools declarations
+D:\Projekty\_wt\intergrax\iag-base\intergrax\runtime\events\schema_guard.py:37: intergrax.runtime.events.schema_guard.RuntimeEventSchemaError: payload_schema_id mismatch for step_started: expected 'graph_node.v1', got 'trace_bridge.v1'
+C:\Users\XPS\AppData\Roaming\uv\python\cpython-3.12-windows-x86_64-none\Lib\unittest\mock.py:1437: AttributeError: <module 'intergrax.applications._shared.host_orchestration_backend_spec_builder' from 'D:\\Projekty\\_wt\\intergrax\\iag-base\\intergrax\\applications\\_shared\\host_orchestration_backend_spec_builder.py'> does not have the attribute 'resolve_environment_llm_adapter'
+D:\Projekty\_wt\intergrax\iag-base\intergrax\applications\_shared\host_execution_capacity_policy.py:44: intergrax.applications._shared.host_execution_capacity_policy.HostExecutionCapacityPolicyError: execution_mode=strict requires orchestration_profile.max_parallel_nodes (process-local batch parallelism cap; not cluster-wide); execution_mode=strict requires orchestration_profile.max_inflight_nodes (process-local inflight cap; not cluster-wide)
+=========================== short test summary info ===========================
+FAILED tests/unit/applications/test_scenario_runtime_baseline.py::test_build_scenario_runtime_strict_with_explicit_manifest
+FAILED tests/unit/applications/test_scenario_runtime_baseline.py::test_rewire_scenario_decision_wiring_reapplies_validation_engine
+FAILED tests/unit/applications/test_scenario_runtime_baseline.py::test_execute_scenario_task_persists_finalized_trace_for_orchestration
+FAILED tests/unit/applications/test_harness_host_runtime_llm.py::test_build_harness_host_runtime_does_not_invoke_llm_resolution_without_requirement
+FAILED tests/unit/applications/test_harness_host_runtime_llm.py::test_engine_planner_without_provider_raises_at_orchestration_composition
+5 failed, 21 passed in 35.41s

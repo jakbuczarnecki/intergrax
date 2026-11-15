@@ -1,0 +1,597 @@
+........................................................................ [  4%]
+........................................................................ [  8%]
+........................................................................ [ 12%]
+........................................................................ [ 16%]
+........................................................................ [ 21%]
+........................................................................ [ 25%]
+........................................................................ [ 29%]
+..........FFF.......F.....FFFFFFFFFFFFFFF.....FF..FFFF.F.F.............. [ 33%]
+........................................................................ [ 38%]
+........................................................................ [ 42%]
+........................................................................ [ 46%]
+........................................................................ [ 50%]
+........................................................................ [ 55%]
+........................................................................ [ 59%]
+........................................................................ [ 63%]
+........................................................................ [ 67%]
+........................................................................ [ 71%]
+........................................................................ [ 76%]
+........................................................................ [ 80%]
+........................................................................ [ 84%]
+........................................................................ [ 88%]
+........................................................................ [ 93%]
+........................................................................ [ 97%]
+.............................................                            [100%]
+================================== FAILURES ===================================
+_______________ test_materialization_does_not_activate_revision _______________
+intergrax\agent_distribution\materialization_service.py:52: in materialize
+    raw_output = adapter.materialize(materialization_input)
+                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+intergrax\agent_distribution\materialization_adapters.py:156: in materialize
+    stage_graph_authorized_context(
+intergrax\agent_distribution\runtime_context_staging.py:597: in stage_graph_authorized_context
+    staged_artifacts = stage_lock_authorized_package_artifacts(
+intergrax\agent_distribution\runtime_context_staging.py:352: in stage_lock_authorized_package_artifacts
+    rel_path = stage_verified_package_artifact(
+intergrax\agent_distribution\runtime_context_staging.py:330: in stage_verified_package_artifact
+    dest.write_bytes(artifact.local_source_path.read_bytes())
+C:\Users\XPS\AppData\Roaming\uv\python\cpython-3.12-windows-x86_64-none\Lib\pathlib.py:1036: in write_bytes
+    with self.open(mode='wb') as f:
+         ^^^^^^^^^^^^^^^^^^^^
+C:\Users\XPS\AppData\Roaming\uv\python\cpython-3.12-windows-x86_64-none\Lib\pathlib.py:1013: in open
+    return io.open(self, mode, buffering, encoding, errors, newline)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E   FileNotFoundError: [Errno 2] No such file or directory: 'D:\\Projekty\\intergrax\\.claude\\worktrees\\pdc-x-ia-global-cdaa97\\build\\pytest\\56516-f5d27a89\\test_materialization_does_not_0\\output\\candidate-rev-ap8-1\\.intergrax-artifacts\\sha256-151c449b2e54dfbe6919e07e3c7e2c51a1d142c5b13b5d19a082bb1266df9fac\\intergrax_local_search_agent-1.0.0-py3-none-any.whl'
+
+The above exception was the direct cause of the following exception:
+tests\unit\agent_distribution\test_agent_distribution_materialization.py:384: in test_materialization_does_not_activate_revision
+    service.materialize(materialization_input)
+intergrax\agent_distribution\materialization_service.py:58: in materialize
+    raise MaterializationError(str(exc)) from exc
+E   intergrax.agent_distribution.errors.MaterializationError: [Errno 2] No such file or directory: 'D:\\Projekty\\intergrax\\.claude\\worktrees\\pdc-x-ia-global-cdaa97\\build\\pytest\\56516-f5d27a89\\test_materialization_does_not_0\\output\\candidate-rev-ap8-1\\.intergrax-artifacts\\sha256-151c449b2e54dfbe6919e07e3c7e2c51a1d142c5b13b5d19a082bb1266df9fac\\intergrax_local_search_agent-1.0.0-py3-none-any.whl'
+__________________ test_fake_adapter_digest_is_deterministic __________________
+intergrax\agent_distribution\materialization_service.py:52: in materialize
+    raw_output = adapter.materialize(materialization_input)
+                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+intergrax\agent_distribution\materialization_adapters.py:156: in materialize
+    stage_graph_authorized_context(
+intergrax\agent_distribution\runtime_context_staging.py:597: in stage_graph_authorized_context
+    staged_artifacts = stage_lock_authorized_package_artifacts(
+intergrax\agent_distribution\runtime_context_staging.py:352: in stage_lock_authorized_package_artifacts
+    rel_path = stage_verified_package_artifact(
+intergrax\agent_distribution\runtime_context_staging.py:330: in stage_verified_package_artifact
+    dest.write_bytes(artifact.local_source_path.read_bytes())
+C:\Users\XPS\AppData\Roaming\uv\python\cpython-3.12-windows-x86_64-none\Lib\pathlib.py:1036: in write_bytes
+    with self.open(mode='wb') as f:
+         ^^^^^^^^^^^^^^^^^^^^
+C:\Users\XPS\AppData\Roaming\uv\python\cpython-3.12-windows-x86_64-none\Lib\pathlib.py:1013: in open
+    return io.open(self, mode, buffering, encoding, errors, newline)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E   FileNotFoundError: [Errno 2] No such file or directory: 'D:\\Projekty\\intergrax\\.claude\\worktrees\\pdc-x-ia-global-cdaa97\\build\\pytest\\56516-f5d27a89\\test_fake_adapter_digest_is_de0\\output\\candidate-rev-ap8-1\\.intergrax-artifacts\\sha256-151c449b2e54dfbe6919e07e3c7e2c51a1d142c5b13b5d19a082bb1266df9fac\\intergrax_local_search_agent-1.0.0-py3-none-any.whl'
+
+The above exception was the direct cause of the following exception:
+tests\unit\agent_distribution\test_agent_distribution_materialization.py:397: in test_fake_adapter_digest_is_deterministic
+    first = service.materialize(materialization_input)
+            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+intergrax\agent_distribution\materialization_service.py:58: in materialize
+    raise MaterializationError(str(exc)) from exc
+E   intergrax.agent_distribution.errors.MaterializationError: [Errno 2] No such file or directory: 'D:\\Projekty\\intergrax\\.claude\\worktrees\\pdc-x-ia-global-cdaa97\\build\\pytest\\56516-f5d27a89\\test_fake_adapter_digest_is_de0\\output\\candidate-rev-ap8-1\\.intergrax-artifacts\\sha256-151c449b2e54dfbe6919e07e3c7e2c51a1d142c5b13b5d19a082bb1266df9fac\\intergrax_local_search_agent-1.0.0-py3-none-any.whl'
+__________________ test_different_graph_changes_fake_digest ___________________
+intergrax\agent_distribution\materialization_service.py:52: in materialize
+    raw_output = adapter.materialize(materialization_input)
+                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+intergrax\agent_distribution\materialization_adapters.py:156: in materialize
+    stage_graph_authorized_context(
+intergrax\agent_distribution\runtime_context_staging.py:597: in stage_graph_authorized_context
+    staged_artifacts = stage_lock_authorized_package_artifacts(
+intergrax\agent_distribution\runtime_context_staging.py:352: in stage_lock_authorized_package_artifacts
+    rel_path = stage_verified_package_artifact(
+intergrax\agent_distribution\runtime_context_staging.py:330: in stage_verified_package_artifact
+    dest.write_bytes(artifact.local_source_path.read_bytes())
+C:\Users\XPS\AppData\Roaming\uv\python\cpython-3.12-windows-x86_64-none\Lib\pathlib.py:1036: in write_bytes
+    with self.open(mode='wb') as f:
+         ^^^^^^^^^^^^^^^^^^^^
+C:\Users\XPS\AppData\Roaming\uv\python\cpython-3.12-windows-x86_64-none\Lib\pathlib.py:1013: in open
+    return io.open(self, mode, buffering, encoding, errors, newline)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E   FileNotFoundError: [Errno 2] No such file or directory: 'D:\\Projekty\\intergrax\\.claude\\worktrees\\pdc-x-ia-global-cdaa97\\build\\pytest\\56516-f5d27a89\\test_different_graph_changes_f0\\output\\candidate-rev-ap8-1\\.intergrax-artifacts\\sha256-151c449b2e54dfbe6919e07e3c7e2c51a1d142c5b13b5d19a082bb1266df9fac\\intergrax_local_search_agent-1.0.0-py3-none-any.whl'
+
+The above exception was the direct cause of the following exception:
+tests\unit\agent_distribution\test_agent_distribution_materialization.py:411: in test_different_graph_changes_fake_digest
+    baseline = service.materialize(materialization_input)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+intergrax\agent_distribution\materialization_service.py:58: in materialize
+    raise MaterializationError(str(exc)) from exc
+E   intergrax.agent_distribution.errors.MaterializationError: [Errno 2] No such file or directory: 'D:\\Projekty\\intergrax\\.claude\\worktrees\\pdc-x-ia-global-cdaa97\\build\\pytest\\56516-f5d27a89\\test_different_graph_changes_f0\\output\\candidate-rev-ap8-1\\.intergrax-artifacts\\sha256-151c449b2e54dfbe6919e07e3c7e2c51a1d142c5b13b5d19a082bb1266df9fac\\intergrax_local_search_agent-1.0.0-py3-none-any.whl'
+______________ test_manifest_references_graph_digest_and_lock_id ______________
+intergrax\agent_distribution\materialization_service.py:52: in materialize
+    raw_output = adapter.materialize(materialization_input)
+                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+intergrax\agent_distribution\materialization_adapters.py:156: in materialize
+    stage_graph_authorized_context(
+intergrax\agent_distribution\runtime_context_staging.py:597: in stage_graph_authorized_context
+    staged_artifacts = stage_lock_authorized_package_artifacts(
+intergrax\agent_distribution\runtime_context_staging.py:352: in stage_lock_authorized_package_artifacts
+    rel_path = stage_verified_package_artifact(
+intergrax\agent_distribution\runtime_context_staging.py:330: in stage_verified_package_artifact
+    dest.write_bytes(artifact.local_source_path.read_bytes())
+C:\Users\XPS\AppData\Roaming\uv\python\cpython-3.12-windows-x86_64-none\Lib\pathlib.py:1036: in write_bytes
+    with self.open(mode='wb') as f:
+         ^^^^^^^^^^^^^^^^^^^^
+C:\Users\XPS\AppData\Roaming\uv\python\cpython-3.12-windows-x86_64-none\Lib\pathlib.py:1013: in open
+    return io.open(self, mode, buffering, encoding, errors, newline)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E   FileNotFoundError: [Errno 2] No such file or directory: 'D:\\Projekty\\intergrax\\.claude\\worktrees\\pdc-x-ia-global-cdaa97\\build\\pytest\\56516-f5d27a89\\test_manifest_references_graph0\\output\\candidate-rev-ap8-1\\.intergrax-artifacts\\sha256-151c449b2e54dfbe6919e07e3c7e2c51a1d142c5b13b5d19a082bb1266df9fac\\intergrax_local_search_agent-1.0.0-py3-none-any.whl'
+
+The above exception was the direct cause of the following exception:
+tests\unit\agent_distribution\test_agent_distribution_materialization.py:494: in test_manifest_references_graph_digest_and_lock_id
+    service.materialize(materialization_input)
+intergrax\agent_distribution\materialization_service.py:58: in materialize
+    raise MaterializationError(str(exc)) from exc
+E   intergrax.agent_distribution.errors.MaterializationError: [Errno 2] No such file or directory: 'D:\\Projekty\\intergrax\\.claude\\worktrees\\pdc-x-ia-global-cdaa97\\build\\pytest\\56516-f5d27a89\\test_manifest_references_graph0\\output\\candidate-rev-ap8-1\\.intergrax-artifacts\\sha256-151c449b2e54dfbe6919e07e3c7e2c51a1d142c5b13b5d19a082bb1266df9fac\\intergrax_local_search_agent-1.0.0-py3-none-any.whl'
+______________ test_test_adapter_stages_graph_authorized_closure ______________
+tests\unit\agent_distribution\test_agent_distribution_materialization_adapter.py:105: in test_test_adapter_stages_graph_authorized_closure
+    output = adapter.materialize(materialization_input)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+intergrax\agent_distribution\materialization_adapters.py:156: in materialize
+    stage_graph_authorized_context(
+intergrax\agent_distribution\runtime_context_staging.py:597: in stage_graph_authorized_context
+    staged_artifacts = stage_lock_authorized_package_artifacts(
+intergrax\agent_distribution\runtime_context_staging.py:352: in stage_lock_authorized_package_artifacts
+    rel_path = stage_verified_package_artifact(
+intergrax\agent_distribution\runtime_context_staging.py:330: in stage_verified_package_artifact
+    dest.write_bytes(artifact.local_source_path.read_bytes())
+C:\Users\XPS\AppData\Roaming\uv\python\cpython-3.12-windows-x86_64-none\Lib\pathlib.py:1036: in write_bytes
+    with self.open(mode='wb') as f:
+         ^^^^^^^^^^^^^^^^^^^^
+C:\Users\XPS\AppData\Roaming\uv\python\cpython-3.12-windows-x86_64-none\Lib\pathlib.py:1013: in open
+    return io.open(self, mode, buffering, encoding, errors, newline)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E   FileNotFoundError: [Errno 2] No such file or directory: 'D:\\Projekty\\intergrax\\.claude\\worktrees\\pdc-x-ia-global-cdaa97\\build\\pytest\\56516-f5d27a89\\test_test_adapter_stages_graph0\\output\\candidate-rev-ap8-1\\.intergrax-artifacts\\sha256-151c449b2e54dfbe6919e07e3c7e2c51a1d142c5b13b5d19a082bb1266df9fac\\intergrax_local_search_agent-1.0.0-py3-none-any.whl'
+_______________ test_lock_reference_embedded_in_staged_artifact _______________
+tests\unit\agent_distribution\test_agent_distribution_materialization_adapter.py:123: in test_lock_reference_embedded_in_staged_artifact
+    ).materialize(materialization_input)
+      ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+intergrax\agent_distribution\materialization_adapters.py:156: in materialize
+    stage_graph_authorized_context(
+intergrax\agent_distribution\runtime_context_staging.py:597: in stage_graph_authorized_context
+    staged_artifacts = stage_lock_authorized_package_artifacts(
+intergrax\agent_distribution\runtime_context_staging.py:352: in stage_lock_authorized_package_artifacts
+    rel_path = stage_verified_package_artifact(
+intergrax\agent_distribution\runtime_context_staging.py:330: in stage_verified_package_artifact
+    dest.write_bytes(artifact.local_source_path.read_bytes())
+C:\Users\XPS\AppData\Roaming\uv\python\cpython-3.12-windows-x86_64-none\Lib\pathlib.py:1036: in write_bytes
+    with self.open(mode='wb') as f:
+         ^^^^^^^^^^^^^^^^^^^^
+C:\Users\XPS\AppData\Roaming\uv\python\cpython-3.12-windows-x86_64-none\Lib\pathlib.py:1013: in open
+    return io.open(self, mode, buffering, encoding, errors, newline)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E   FileNotFoundError: [Errno 2] No such file or directory: 'D:\\Projekty\\intergrax\\.claude\\worktrees\\pdc-x-ia-global-cdaa97\\build\\pytest\\56516-f5d27a89\\test_lock_reference_embedded_i0\\output\\candidate-rev-ap8-1\\.intergrax-artifacts\\sha256-151c449b2e54dfbe6919e07e3c7e2c51a1d142c5b13b5d19a082bb1266df9fac\\intergrax_local_search_agent-1.0.0-py3-none-any.whl'
+________________ test_oci_adapter_uses_injected_docker_runner _________________
+tests\unit\agent_distribution\test_agent_distribution_materialization_adapter.py:143: in test_oci_adapter_uses_injected_docker_runner
+    output = adapter.materialize(materialization_input)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+intergrax\agent_distribution\materialization_adapters.py:201: in materialize
+    stage_graph_authorized_context(
+intergrax\agent_distribution\runtime_context_staging.py:597: in stage_graph_authorized_context
+    staged_artifacts = stage_lock_authorized_package_artifacts(
+intergrax\agent_distribution\runtime_context_staging.py:352: in stage_lock_authorized_package_artifacts
+    rel_path = stage_verified_package_artifact(
+intergrax\agent_distribution\runtime_context_staging.py:330: in stage_verified_package_artifact
+    dest.write_bytes(artifact.local_source_path.read_bytes())
+C:\Users\XPS\AppData\Roaming\uv\python\cpython-3.12-windows-x86_64-none\Lib\pathlib.py:1036: in write_bytes
+    with self.open(mode='wb') as f:
+         ^^^^^^^^^^^^^^^^^^^^
+C:\Users\XPS\AppData\Roaming\uv\python\cpython-3.12-windows-x86_64-none\Lib\pathlib.py:1013: in open
+    return io.open(self, mode, buffering, encoding, errors, newline)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E   FileNotFoundError: [Errno 2] No such file or directory: 'D:\\Projekty\\intergrax\\.claude\\worktrees\\pdc-x-ia-global-cdaa97\\build\\pytest\\56516-f5d27a89\\test_oci_adapter_uses_injected0\\output\\candidate-rev-ap8-1\\.intergrax-artifacts\\sha256-151c449b2e54dfbe6919e07e3c7e2c51a1d142c5b13b5d19a082bb1266df9fac\\intergrax_local_search_agent-1.0.0-py3-none-any.whl'
+_____________________ test_oci_build_failure_fail_closed ______________________
+tests\unit\agent_distribution\test_agent_distribution_materialization_adapter.py:165: in test_oci_build_failure_fail_closed
+    adapter.materialize(materialization_input)
+intergrax\agent_distribution\materialization_adapters.py:201: in materialize
+    stage_graph_authorized_context(
+intergrax\agent_distribution\runtime_context_staging.py:597: in stage_graph_authorized_context
+    staged_artifacts = stage_lock_authorized_package_artifacts(
+intergrax\agent_distribution\runtime_context_staging.py:352: in stage_lock_authorized_package_artifacts
+    rel_path = stage_verified_package_artifact(
+intergrax\agent_distribution\runtime_context_staging.py:330: in stage_verified_package_artifact
+    dest.write_bytes(artifact.local_source_path.read_bytes())
+C:\Users\XPS\AppData\Roaming\uv\python\cpython-3.12-windows-x86_64-none\Lib\pathlib.py:1036: in write_bytes
+    with self.open(mode='wb') as f:
+         ^^^^^^^^^^^^^^^^^^^^
+C:\Users\XPS\AppData\Roaming\uv\python\cpython-3.12-windows-x86_64-none\Lib\pathlib.py:1013: in open
+    return io.open(self, mode, buffering, encoding, errors, newline)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E   FileNotFoundError: [Errno 2] No such file or directory: 'D:\\Projekty\\intergrax\\.claude\\worktrees\\pdc-x-ia-global-cdaa97\\build\\pytest\\56516-f5d27a89\\test_oci_build_failure_fail_cl0\\output\\candidate-rev-ap8-1\\.intergrax-artifacts\\sha256-151c449b2e54dfbe6919e07e3c7e2c51a1d142c5b13b5d19a082bb1266df9fac\\intergrax_local_search_agent-1.0.0-py3-none-any.whl'
+________ test_manifest_contains_enabled_agent_digests_without_secrets _________
+tests\unit\agent_distribution\test_agent_distribution_materialization_adapter.py:172: in test_manifest_contains_enabled_agent_digests_without_secrets
+    ).materialize(materialization_input)
+      ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+intergrax\agent_distribution\materialization_adapters.py:156: in materialize
+    stage_graph_authorized_context(
+intergrax\agent_distribution\runtime_context_staging.py:597: in stage_graph_authorized_context
+    staged_artifacts = stage_lock_authorized_package_artifacts(
+intergrax\agent_distribution\runtime_context_staging.py:352: in stage_lock_authorized_package_artifacts
+    rel_path = stage_verified_package_artifact(
+intergrax\agent_distribution\runtime_context_staging.py:330: in stage_verified_package_artifact
+    dest.write_bytes(artifact.local_source_path.read_bytes())
+C:\Users\XPS\AppData\Roaming\uv\python\cpython-3.12-windows-x86_64-none\Lib\pathlib.py:1036: in write_bytes
+    with self.open(mode='wb') as f:
+         ^^^^^^^^^^^^^^^^^^^^
+C:\Users\XPS\AppData\Roaming\uv\python\cpython-3.12-windows-x86_64-none\Lib\pathlib.py:1013: in open
+    return io.open(self, mode, buffering, encoding, errors, newline)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E   FileNotFoundError: [Errno 2] No such file or directory: 'D:\\Projekty\\intergrax\\.claude\\worktrees\\pdc-x-ia-global-cdaa97\\build\\pytest\\56516-f5d27a89\\test_manifest_contains_enabled0\\output\\candidate-rev-ap8-1\\.intergrax-artifacts\\sha256-151c449b2e54dfbe6919e07e3c7e2c51a1d142c5b13b5d19a082bb1266df9fac\\intergrax_local_search_agent-1.0.0-py3-none-any.whl'
+________ test_oci_dockerfile_does_not_use_repository_uv_lock_authority ________
+tests\unit\agent_distribution\test_agent_distribution_materialization_adapter.py:238: in test_oci_dockerfile_does_not_use_repository_uv_lock_authority
+    ).materialize(materialization_input)
+      ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+intergrax\agent_distribution\materialization_adapters.py:201: in materialize
+    stage_graph_authorized_context(
+intergrax\agent_distribution\runtime_context_staging.py:597: in stage_graph_authorized_context
+    staged_artifacts = stage_lock_authorized_package_artifacts(
+intergrax\agent_distribution\runtime_context_staging.py:352: in stage_lock_authorized_package_artifacts
+    rel_path = stage_verified_package_artifact(
+intergrax\agent_distribution\runtime_context_staging.py:330: in stage_verified_package_artifact
+    dest.write_bytes(artifact.local_source_path.read_bytes())
+C:\Users\XPS\AppData\Roaming\uv\python\cpython-3.12-windows-x86_64-none\Lib\pathlib.py:1036: in write_bytes
+    with self.open(mode='wb') as f:
+         ^^^^^^^^^^^^^^^^^^^^
+C:\Users\XPS\AppData\Roaming\uv\python\cpython-3.12-windows-x86_64-none\Lib\pathlib.py:1013: in open
+    return io.open(self, mode, buffering, encoding, errors, newline)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E   FileNotFoundError: [Errno 2] No such file or directory: 'D:\\Projekty\\intergrax\\.claude\\worktrees\\pdc-x-ia-global-cdaa97\\build\\pytest\\56516-f5d27a89\\test_oci_dockerfile_does_not_u0\\output\\candidate-rev-ap8-1\\.intergrax-artifacts\\sha256-151c449b2e54dfbe6919e07e3c7e2c51a1d142c5b13b5d19a082bb1266df9fac\\intergrax_local_search_agent-1.0.0-py3-none-any.whl'
+________ test_install_manifest_derived_from_materialized_runtime_lock _________
+tests\unit\agent_distribution\test_agent_distribution_materialization_adapter.py:253: in test_install_manifest_derived_from_materialized_runtime_lock
+    _stage_fixture_context(tmp_path)
+tests\unit\agent_distribution\test_agent_distribution_materialization_adapter.py:206: in _stage_fixture_context
+    staged = stage_graph_authorized_context(
+intergrax\agent_distribution\runtime_context_staging.py:597: in stage_graph_authorized_context
+    staged_artifacts = stage_lock_authorized_package_artifacts(
+intergrax\agent_distribution\runtime_context_staging.py:352: in stage_lock_authorized_package_artifacts
+    rel_path = stage_verified_package_artifact(
+intergrax\agent_distribution\runtime_context_staging.py:330: in stage_verified_package_artifact
+    dest.write_bytes(artifact.local_source_path.read_bytes())
+C:\Users\XPS\AppData\Roaming\uv\python\cpython-3.12-windows-x86_64-none\Lib\pathlib.py:1036: in write_bytes
+    with self.open(mode='wb') as f:
+         ^^^^^^^^^^^^^^^^^^^^
+C:\Users\XPS\AppData\Roaming\uv\python\cpython-3.12-windows-x86_64-none\Lib\pathlib.py:1013: in open
+    return io.open(self, mode, buffering, encoding, errors, newline)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E   FileNotFoundError: [Errno 2] No such file or directory: 'D:\\Projekty\\intergrax\\.claude\\worktrees\\pdc-x-ia-global-cdaa97\\build\\pytest\\56516-f5d27a89\\test_install_manifest_derived_0\\output\\candidate-rev-ap8-1\\.intergrax-artifacts\\sha256-151c449b2e54dfbe6919e07e3c7e2c51a1d142c5b13b5d19a082bb1266df9fac\\intergrax_local_search_agent-1.0.0-py3-none-any.whl'
+___________ test_lock_package_absent_from_repo_deps_in_install_plan ___________
+tests\unit\agent_distribution\test_agent_distribution_materialization_adapter.py:269: in test_lock_package_absent_from_repo_deps_in_install_plan
+    materialization_input, build_context, _, _, staged_artifacts, _ = _stage_fixture_context(
+tests\unit\agent_distribution\test_agent_distribution_materialization_adapter.py:206: in _stage_fixture_context
+    staged = stage_graph_authorized_context(
+intergrax\agent_distribution\runtime_context_staging.py:597: in stage_graph_authorized_context
+    staged_artifacts = stage_lock_authorized_package_artifacts(
+intergrax\agent_distribution\runtime_context_staging.py:352: in stage_lock_authorized_package_artifacts
+    rel_path = stage_verified_package_artifact(
+intergrax\agent_distribution\runtime_context_staging.py:330: in stage_verified_package_artifact
+    dest.write_bytes(artifact.local_source_path.read_bytes())
+C:\Users\XPS\AppData\Roaming\uv\python\cpython-3.12-windows-x86_64-none\Lib\pathlib.py:1036: in write_bytes
+    with self.open(mode='wb') as f:
+         ^^^^^^^^^^^^^^^^^^^^
+C:\Users\XPS\AppData\Roaming\uv\python\cpython-3.12-windows-x86_64-none\Lib\pathlib.py:1013: in open
+    return io.open(self, mode, buffering, encoding, errors, newline)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E   FileNotFoundError: [Errno 2] No such file or directory: 'D:\\Projekty\\intergrax\\.claude\\worktrees\\pdc-x-ia-global-cdaa97\\build\\pytest\\56516-f5d27a89\\test_lock_package_absent_from_0\\output\\candidate-rev-ap8-1\\.intergrax-artifacts\\sha256-151c449b2e54dfbe6919e07e3c7e2c51a1d142c5b13b5d19a082bb1266df9fac\\intergrax_local_search_agent-1.0.0-py3-none-any.whl'
+______________ test_package_absent_from_lock_not_in_install_plan ______________
+tests\unit\agent_distribution\test_agent_distribution_materialization_adapter.py:296: in test_package_absent_from_lock_not_in_install_plan
+    materialization_input, build_context, staged, _, staged_artifacts, _ = _stage_fixture_context(
+tests\unit\agent_distribution\test_agent_distribution_materialization_adapter.py:206: in _stage_fixture_context
+    staged = stage_graph_authorized_context(
+intergrax\agent_distribution\runtime_context_staging.py:597: in stage_graph_authorized_context
+    staged_artifacts = stage_lock_authorized_package_artifacts(
+intergrax\agent_distribution\runtime_context_staging.py:352: in stage_lock_authorized_package_artifacts
+    rel_path = stage_verified_package_artifact(
+intergrax\agent_distribution\runtime_context_staging.py:330: in stage_verified_package_artifact
+    dest.write_bytes(artifact.local_source_path.read_bytes())
+C:\Users\XPS\AppData\Roaming\uv\python\cpython-3.12-windows-x86_64-none\Lib\pathlib.py:1036: in write_bytes
+    with self.open(mode='wb') as f:
+         ^^^^^^^^^^^^^^^^^^^^
+C:\Users\XPS\AppData\Roaming\uv\python\cpython-3.12-windows-x86_64-none\Lib\pathlib.py:1013: in open
+    return io.open(self, mode, buffering, encoding, errors, newline)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E   FileNotFoundError: [Errno 2] No such file or directory: 'D:\\Projekty\\intergrax\\.claude\\worktrees\\pdc-x-ia-global-cdaa97\\build\\pytest\\56516-f5d27a89\\test_package_absent_from_lock_0\\output\\candidate-rev-ap8-1\\.intergrax-artifacts\\sha256-151c449b2e54dfbe6919e07e3c7e2c51a1d142c5b13b5d19a082bb1266df9fac\\intergrax_local_search_agent-1.0.0-py3-none-any.whl'
+______________ test_exact_lock_version_preserved_in_install_plan ______________
+tests\unit\agent_distribution\test_agent_distribution_materialization_adapter.py:311: in test_exact_lock_version_preserved_in_install_plan
+    materialization_input, build_context, staged, _, staged_artifacts, _ = _stage_fixture_context(
+tests\unit\agent_distribution\test_agent_distribution_materialization_adapter.py:206: in _stage_fixture_context
+    staged = stage_graph_authorized_context(
+intergrax\agent_distribution\runtime_context_staging.py:597: in stage_graph_authorized_context
+    staged_artifacts = stage_lock_authorized_package_artifacts(
+intergrax\agent_distribution\runtime_context_staging.py:352: in stage_lock_authorized_package_artifacts
+    rel_path = stage_verified_package_artifact(
+intergrax\agent_distribution\runtime_context_staging.py:330: in stage_verified_package_artifact
+    dest.write_bytes(artifact.local_source_path.read_bytes())
+C:\Users\XPS\AppData\Roaming\uv\python\cpython-3.12-windows-x86_64-none\Lib\pathlib.py:1036: in write_bytes
+    with self.open(mode='wb') as f:
+         ^^^^^^^^^^^^^^^^^^^^
+C:\Users\XPS\AppData\Roaming\uv\python\cpython-3.12-windows-x86_64-none\Lib\pathlib.py:1013: in open
+    return io.open(self, mode, buffering, encoding, errors, newline)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E   FileNotFoundError: [Errno 2] No such file or directory: 'D:\\Projekty\\intergrax\\.claude\\worktrees\\pdc-x-ia-global-cdaa97\\build\\pytest\\56516-f5d27a89\\test_exact_lock_version_preser0\\output\\candidate-rev-ap8-1\\.intergrax-artifacts\\sha256-151c449b2e54dfbe6919e07e3c7e2c51a1d142c5b13b5d19a082bb1266df9fac\\intergrax_local_search_agent-1.0.0-py3-none-any.whl'
+__________________ test_lock_digest_preserved_when_supported __________________
+tests\unit\agent_distribution\test_agent_distribution_materialization_adapter.py:326: in test_lock_digest_preserved_when_supported
+    materialization_input, build_context, staged, _, staged_artifacts, _ = _stage_fixture_context(
+tests\unit\agent_distribution\test_agent_distribution_materialization_adapter.py:206: in _stage_fixture_context
+    staged = stage_graph_authorized_context(
+intergrax\agent_distribution\runtime_context_staging.py:597: in stage_graph_authorized_context
+    staged_artifacts = stage_lock_authorized_package_artifacts(
+intergrax\agent_distribution\runtime_context_staging.py:352: in stage_lock_authorized_package_artifacts
+    rel_path = stage_verified_package_artifact(
+intergrax\agent_distribution\runtime_context_staging.py:330: in stage_verified_package_artifact
+    dest.write_bytes(artifact.local_source_path.read_bytes())
+C:\Users\XPS\AppData\Roaming\uv\python\cpython-3.12-windows-x86_64-none\Lib\pathlib.py:1036: in write_bytes
+    with self.open(mode='wb') as f:
+         ^^^^^^^^^^^^^^^^^^^^
+C:\Users\XPS\AppData\Roaming\uv\python\cpython-3.12-windows-x86_64-none\Lib\pathlib.py:1013: in open
+    return io.open(self, mode, buffering, encoding, errors, newline)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E   FileNotFoundError: [Errno 2] No such file or directory: 'D:\\Projekty\\intergrax\\.claude\\worktrees\\pdc-x-ia-global-cdaa97\\build\\pytest\\56516-f5d27a89\\test_lock_digest_preserved_whe0\\output\\candidate-rev-ap8-1\\.intergrax-artifacts\\sha256-151c449b2e54dfbe6919e07e3c7e2c51a1d142c5b13b5d19a082bb1266df9fac\\intergrax_local_search_agent-1.0.0-py3-none-any.whl'
+______________ test_graph_direct_agent_in_physical_install_plan _______________
+tests\unit\agent_distribution\test_agent_distribution_materialization_adapter.py:356: in test_graph_direct_agent_in_physical_install_plan
+    materialization_input, build_context, staged, _, staged_artifacts, _ = _stage_fixture_context(
+tests\unit\agent_distribution\test_agent_distribution_materialization_adapter.py:206: in _stage_fixture_context
+    staged = stage_graph_authorized_context(
+intergrax\agent_distribution\runtime_context_staging.py:597: in stage_graph_authorized_context
+    staged_artifacts = stage_lock_authorized_package_artifacts(
+intergrax\agent_distribution\runtime_context_staging.py:352: in stage_lock_authorized_package_artifacts
+    rel_path = stage_verified_package_artifact(
+intergrax\agent_distribution\runtime_context_staging.py:330: in stage_verified_package_artifact
+    dest.write_bytes(artifact.local_source_path.read_bytes())
+C:\Users\XPS\AppData\Roaming\uv\python\cpython-3.12-windows-x86_64-none\Lib\pathlib.py:1036: in write_bytes
+    with self.open(mode='wb') as f:
+         ^^^^^^^^^^^^^^^^^^^^
+C:\Users\XPS\AppData\Roaming\uv\python\cpython-3.12-windows-x86_64-none\Lib\pathlib.py:1013: in open
+    return io.open(self, mode, buffering, encoding, errors, newline)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E   FileNotFoundError: [Errno 2] No such file or directory: 'D:\\Projekty\\intergrax\\.claude\\worktrees\\pdc-x-ia-global-cdaa97\\build\\pytest\\56516-f5d27a89\\test_graph_direct_agent_in_phy0\\output\\candidate-rev-ap8-1\\.intergrax-artifacts\\sha256-151c449b2e54dfbe6919e07e3c7e2c51a1d142c5b13b5d19a082bb1266df9fac\\intergrax_local_search_agent-1.0.0-py3-none-any.whl'
+________________ test_transitive_lock_package_in_install_plan _________________
+tests\unit\agent_distribution\test_agent_distribution_materialization_adapter.py:372: in test_transitive_lock_package_in_install_plan
+    materialization_input, build_context, staged, _, staged_artifacts, _ = _stage_fixture_context(
+tests\unit\agent_distribution\test_agent_distribution_materialization_adapter.py:206: in _stage_fixture_context
+    staged = stage_graph_authorized_context(
+intergrax\agent_distribution\runtime_context_staging.py:597: in stage_graph_authorized_context
+    staged_artifacts = stage_lock_authorized_package_artifacts(
+intergrax\agent_distribution\runtime_context_staging.py:352: in stage_lock_authorized_package_artifacts
+    rel_path = stage_verified_package_artifact(
+intergrax\agent_distribution\runtime_context_staging.py:330: in stage_verified_package_artifact
+    dest.write_bytes(artifact.local_source_path.read_bytes())
+C:\Users\XPS\AppData\Roaming\uv\python\cpython-3.12-windows-x86_64-none\Lib\pathlib.py:1036: in write_bytes
+    with self.open(mode='wb') as f:
+         ^^^^^^^^^^^^^^^^^^^^
+C:\Users\XPS\AppData\Roaming\uv\python\cpython-3.12-windows-x86_64-none\Lib\pathlib.py:1013: in open
+    return io.open(self, mode, buffering, encoding, errors, newline)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E   FileNotFoundError: [Errno 2] No such file or directory: 'D:\\Projekty\\intergrax\\.claude\\worktrees\\pdc-x-ia-global-cdaa97\\build\\pytest\\56516-f5d27a89\\test_transitive_lock_package_i0\\output\\candidate-rev-ap8-1\\.intergrax-artifacts\\sha256-151c449b2e54dfbe6919e07e3c7e2c51a1d142c5b13b5d19a082bb1266df9fac\\intergrax_local_search_agent-1.0.0-py3-none-any.whl'
+_________ test_repository_uv_lock_change_does_not_alter_install_plan __________
+tests\unit\agent_distribution\test_agent_distribution_materialization_adapter.py:385: in test_repository_uv_lock_change_does_not_alter_install_plan
+    materialization_input, build_context, staged, _, staged_artifacts, _ = _stage_fixture_context(
+tests\unit\agent_distribution\test_agent_distribution_materialization_adapter.py:206: in _stage_fixture_context
+    staged = stage_graph_authorized_context(
+intergrax\agent_distribution\runtime_context_staging.py:597: in stage_graph_authorized_context
+    staged_artifacts = stage_lock_authorized_package_artifacts(
+intergrax\agent_distribution\runtime_context_staging.py:352: in stage_lock_authorized_package_artifacts
+    rel_path = stage_verified_package_artifact(
+intergrax\agent_distribution\runtime_context_staging.py:330: in stage_verified_package_artifact
+    dest.write_bytes(artifact.local_source_path.read_bytes())
+C:\Users\XPS\AppData\Roaming\uv\python\cpython-3.12-windows-x86_64-none\Lib\pathlib.py:1036: in write_bytes
+    with self.open(mode='wb') as f:
+         ^^^^^^^^^^^^^^^^^^^^
+C:\Users\XPS\AppData\Roaming\uv\python\cpython-3.12-windows-x86_64-none\Lib\pathlib.py:1013: in open
+    return io.open(self, mode, buffering, encoding, errors, newline)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E   FileNotFoundError: [Errno 2] No such file or directory: 'D:\\Projekty\\intergrax\\.claude\\worktrees\\pdc-x-ia-global-cdaa97\\build\\pytest\\56516-f5d27a89\\test_repository_uv_lock_change0\\output\\candidate-rev-ap8-1\\.intergrax-artifacts\\sha256-151c449b2e54dfbe6919e07e3c7e2c51a1d142c5b13b5d19a082bb1266df9fac\\intergrax_local_search_agent-1.0.0-py3-none-any.whl'
+_________________ test_missing_artifact_location_fail_closed __________________
+tests\unit\agent_distribution\test_agent_distribution_materialization_adapter.py:406: in test_missing_artifact_location_fail_closed
+    materialization_input, build_context, _, _, staged_artifacts, _ = _stage_fixture_context(
+tests\unit\agent_distribution\test_agent_distribution_materialization_adapter.py:206: in _stage_fixture_context
+    staged = stage_graph_authorized_context(
+intergrax\agent_distribution\runtime_context_staging.py:597: in stage_graph_authorized_context
+    staged_artifacts = stage_lock_authorized_package_artifacts(
+intergrax\agent_distribution\runtime_context_staging.py:352: in stage_lock_authorized_package_artifacts
+    rel_path = stage_verified_package_artifact(
+intergrax\agent_distribution\runtime_context_staging.py:330: in stage_verified_package_artifact
+    dest.write_bytes(artifact.local_source_path.read_bytes())
+C:\Users\XPS\AppData\Roaming\uv\python\cpython-3.12-windows-x86_64-none\Lib\pathlib.py:1036: in write_bytes
+    with self.open(mode='wb') as f:
+         ^^^^^^^^^^^^^^^^^^^^
+C:\Users\XPS\AppData\Roaming\uv\python\cpython-3.12-windows-x86_64-none\Lib\pathlib.py:1013: in open
+    return io.open(self, mode, buffering, encoding, errors, newline)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E   FileNotFoundError: [Errno 2] No such file or directory: 'D:\\Projekty\\intergrax\\.claude\\worktrees\\pdc-x-ia-global-cdaa97\\build\\pytest\\56516-f5d27a89\\test_missing_artifact_location0\\output\\candidate-rev-ap8-1\\.intergrax-artifacts\\sha256-151c449b2e54dfbe6919e07e3c7e2c51a1d142c5b13b5d19a082bb1266df9fac\\intergrax_local_search_agent-1.0.0-py3-none-any.whl'
+____________ test_artifact_digest_not_caller_supplied_on_oci_path _____________
+tests\unit\agent_distribution\test_agent_distribution_materialization_adapter.py:523: in test_artifact_digest_not_caller_supplied_on_oci_path
+    ).materialize(materialization_input)
+      ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+intergrax\agent_distribution\materialization_adapters.py:201: in materialize
+    stage_graph_authorized_context(
+intergrax\agent_distribution\runtime_context_staging.py:597: in stage_graph_authorized_context
+    staged_artifacts = stage_lock_authorized_package_artifacts(
+intergrax\agent_distribution\runtime_context_staging.py:352: in stage_lock_authorized_package_artifacts
+    rel_path = stage_verified_package_artifact(
+intergrax\agent_distribution\runtime_context_staging.py:330: in stage_verified_package_artifact
+    dest.write_bytes(artifact.local_source_path.read_bytes())
+C:\Users\XPS\AppData\Roaming\uv\python\cpython-3.12-windows-x86_64-none\Lib\pathlib.py:1036: in write_bytes
+    with self.open(mode='wb') as f:
+         ^^^^^^^^^^^^^^^^^^^^
+C:\Users\XPS\AppData\Roaming\uv\python\cpython-3.12-windows-x86_64-none\Lib\pathlib.py:1013: in open
+    return io.open(self, mode, buffering, encoding, errors, newline)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E   FileNotFoundError: [Errno 2] No such file or directory: 'D:\\Projekty\\intergrax\\.claude\\worktrees\\pdc-x-ia-global-cdaa97\\build\\pytest\\56516-f5d27a89\\test_artifact_digest_not_calle0\\output\\candidate-rev-ap8-1\\.intergrax-artifacts\\sha256-151c449b2e54dfbe6919e07e3c7e2c51a1d142c5b13b5d19a082bb1266df9fac\\intergrax_local_search_agent-1.0.0-py3-none-any.whl'
+___________ test_lock_digest_with_matching_artifact_bytes_accepted ____________
+tests\unit\agent_distribution\test_agent_distribution_materialization_adapter.py:533: in test_lock_digest_with_matching_artifact_bytes_accepted
+    ).materialize(materialization_input)
+      ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+intergrax\agent_distribution\materialization_adapters.py:156: in materialize
+    stage_graph_authorized_context(
+intergrax\agent_distribution\runtime_context_staging.py:597: in stage_graph_authorized_context
+    staged_artifacts = stage_lock_authorized_package_artifacts(
+intergrax\agent_distribution\runtime_context_staging.py:352: in stage_lock_authorized_package_artifacts
+    rel_path = stage_verified_package_artifact(
+intergrax\agent_distribution\runtime_context_staging.py:330: in stage_verified_package_artifact
+    dest.write_bytes(artifact.local_source_path.read_bytes())
+C:\Users\XPS\AppData\Roaming\uv\python\cpython-3.12-windows-x86_64-none\Lib\pathlib.py:1036: in write_bytes
+    with self.open(mode='wb') as f:
+         ^^^^^^^^^^^^^^^^^^^^
+C:\Users\XPS\AppData\Roaming\uv\python\cpython-3.12-windows-x86_64-none\Lib\pathlib.py:1013: in open
+    return io.open(self, mode, buffering, encoding, errors, newline)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E   FileNotFoundError: [Errno 2] No such file or directory: 'D:\\Projekty\\intergrax\\.claude\\worktrees\\pdc-x-ia-global-cdaa97\\build\\pytest\\56516-f5d27a89\\test_lock_digest_with_matching0\\output\\candidate-rev-ap8-1\\.intergrax-artifacts\\sha256-151c449b2e54dfbe6919e07e3c7e2c51a1d142c5b13b5d19a082bb1266df9fac\\intergrax_local_search_agent-1.0.0-py3-none-any.whl'
+_________ test_artifact_provider_used_not_mutable_workspace_directory _________
+tests\unit\agent_distribution\test_agent_distribution_materialization_adapter.py:588: in test_artifact_provider_used_not_mutable_workspace_directory
+    ).materialize(materialization_input)
+      ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+intergrax\agent_distribution\materialization_adapters.py:156: in materialize
+    stage_graph_authorized_context(
+intergrax\agent_distribution\runtime_context_staging.py:597: in stage_graph_authorized_context
+    staged_artifacts = stage_lock_authorized_package_artifacts(
+intergrax\agent_distribution\runtime_context_staging.py:352: in stage_lock_authorized_package_artifacts
+    rel_path = stage_verified_package_artifact(
+intergrax\agent_distribution\runtime_context_staging.py:330: in stage_verified_package_artifact
+    dest.write_bytes(artifact.local_source_path.read_bytes())
+C:\Users\XPS\AppData\Roaming\uv\python\cpython-3.12-windows-x86_64-none\Lib\pathlib.py:1036: in write_bytes
+    with self.open(mode='wb') as f:
+         ^^^^^^^^^^^^^^^^^^^^
+C:\Users\XPS\AppData\Roaming\uv\python\cpython-3.12-windows-x86_64-none\Lib\pathlib.py:1013: in open
+    return io.open(self, mode, buffering, encoding, errors, newline)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E   FileNotFoundError: [Errno 2] No such file or directory: 'D:\\Projekty\\intergrax\\.claude\\worktrees\\pdc-x-ia-global-cdaa97\\build\\pytest\\56516-f5d27a89\\test_artifact_provider_used_no0\\output\\candidate-rev-ap8-1\\.intergrax-artifacts\\sha256-151c449b2e54dfbe6919e07e3c7e2c51a1d142c5b13b5d19a082bb1266df9fac\\intergrax_local_search_agent-1.0.0-py3-none-any.whl'
+________ test_staged_artifact_layout_is_digest_keyed_and_deterministic ________
+tests\unit\agent_distribution\test_agent_distribution_materialization_adapter.py:600: in test_staged_artifact_layout_is_digest_keyed_and_deterministic
+    ).materialize(materialization_input)
+      ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+intergrax\agent_distribution\materialization_adapters.py:156: in materialize
+    stage_graph_authorized_context(
+intergrax\agent_distribution\runtime_context_staging.py:597: in stage_graph_authorized_context
+    staged_artifacts = stage_lock_authorized_package_artifacts(
+intergrax\agent_distribution\runtime_context_staging.py:352: in stage_lock_authorized_package_artifacts
+    rel_path = stage_verified_package_artifact(
+intergrax\agent_distribution\runtime_context_staging.py:330: in stage_verified_package_artifact
+    dest.write_bytes(artifact.local_source_path.read_bytes())
+C:\Users\XPS\AppData\Roaming\uv\python\cpython-3.12-windows-x86_64-none\Lib\pathlib.py:1036: in write_bytes
+    with self.open(mode='wb') as f:
+         ^^^^^^^^^^^^^^^^^^^^
+C:\Users\XPS\AppData\Roaming\uv\python\cpython-3.12-windows-x86_64-none\Lib\pathlib.py:1013: in open
+    return io.open(self, mode, buffering, encoding, errors, newline)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E   FileNotFoundError: [Errno 2] No such file or directory: 'D:\\Projekty\\intergrax\\.claude\\worktrees\\pdc-x-ia-global-cdaa97\\build\\pytest\\56516-f5d27a89\\test_staged_artifact_layout_is0\\output\\candidate-rev-ap8-1\\.intergrax-artifacts\\sha256-151c449b2e54dfbe6919e07e3c7e2c51a1d142c5b13b5d19a082bb1266df9fac\\intergrax_local_search_agent-1.0.0-py3-none-any.whl'
+_____________ test_third_party_without_package_digest_fail_closed _____________
+tests\unit\agent_distribution\test_agent_distribution_materialization_adapter.py:611: in test_third_party_without_package_digest_fail_closed
+    materialization_input, build_context, staged, _, staged_artifacts, _ = _stage_fixture_context(
+tests\unit\agent_distribution\test_agent_distribution_materialization_adapter.py:206: in _stage_fixture_context
+    staged = stage_graph_authorized_context(
+intergrax\agent_distribution\runtime_context_staging.py:597: in stage_graph_authorized_context
+    staged_artifacts = stage_lock_authorized_package_artifacts(
+intergrax\agent_distribution\runtime_context_staging.py:352: in stage_lock_authorized_package_artifacts
+    rel_path = stage_verified_package_artifact(
+intergrax\agent_distribution\runtime_context_staging.py:330: in stage_verified_package_artifact
+    dest.write_bytes(artifact.local_source_path.read_bytes())
+C:\Users\XPS\AppData\Roaming\uv\python\cpython-3.12-windows-x86_64-none\Lib\pathlib.py:1036: in write_bytes
+    with self.open(mode='wb') as f:
+         ^^^^^^^^^^^^^^^^^^^^
+C:\Users\XPS\AppData\Roaming\uv\python\cpython-3.12-windows-x86_64-none\Lib\pathlib.py:1013: in open
+    return io.open(self, mode, buffering, encoding, errors, newline)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E   FileNotFoundError: [Errno 2] No such file or directory: 'D:\\Projekty\\intergrax\\.claude\\worktrees\\pdc-x-ia-global-cdaa97\\build\\pytest\\56516-f5d27a89\\test_third_party_without_packa0\\output\\candidate-rev-ap8-1\\.intergrax-artifacts\\sha256-151c449b2e54dfbe6919e07e3c7e2c51a1d142c5b13b5d19a082bb1266df9fac\\intergrax_local_search_agent-1.0.0-py3-none-any.whl'
+_______ test_unrelated_workspace_source_does_not_alter_install_manifest _______
+tests\unit\agent_distribution\test_agent_distribution_materialization_adapter.py:636: in test_unrelated_workspace_source_does_not_alter_install_manifest
+    materialization_input, build_context, staged, _, staged_artifacts, _ = _stage_fixture_context(
+tests\unit\agent_distribution\test_agent_distribution_materialization_adapter.py:206: in _stage_fixture_context
+    staged = stage_graph_authorized_context(
+intergrax\agent_distribution\runtime_context_staging.py:597: in stage_graph_authorized_context
+    staged_artifacts = stage_lock_authorized_package_artifacts(
+intergrax\agent_distribution\runtime_context_staging.py:352: in stage_lock_authorized_package_artifacts
+    rel_path = stage_verified_package_artifact(
+intergrax\agent_distribution\runtime_context_staging.py:330: in stage_verified_package_artifact
+    dest.write_bytes(artifact.local_source_path.read_bytes())
+C:\Users\XPS\AppData\Roaming\uv\python\cpython-3.12-windows-x86_64-none\Lib\pathlib.py:1036: in write_bytes
+    with self.open(mode='wb') as f:
+         ^^^^^^^^^^^^^^^^^^^^
+C:\Users\XPS\AppData\Roaming\uv\python\cpython-3.12-windows-x86_64-none\Lib\pathlib.py:1013: in open
+    return io.open(self, mode, buffering, encoding, errors, newline)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E   FileNotFoundError: [Errno 2] No such file or directory: 'D:\\Projekty\\intergrax\\.claude\\worktrees\\pdc-x-ia-global-cdaa97\\build\\pytest\\56516-f5d27a89\\test_unrelated_workspace_sourc0\\output\\candidate-rev-ap8-1\\.intergrax-artifacts\\sha256-151c449b2e54dfbe6919e07e3c7e2c51a1d142c5b13b5d19a082bb1266df9fac\\intergrax_local_search_agent-1.0.0-py3-none-any.whl'
+_______ test_builtin_agent_not_installed_from_mutable_source_directory ________
+tests\unit\agent_distribution\test_agent_distribution_materialization_adapter.py:690: in test_builtin_agent_not_installed_from_mutable_source_directory
+    _stage_fixture_context(tmp_path)
+tests\unit\agent_distribution\test_agent_distribution_materialization_adapter.py:206: in _stage_fixture_context
+    staged = stage_graph_authorized_context(
+intergrax\agent_distribution\runtime_context_staging.py:597: in stage_graph_authorized_context
+    staged_artifacts = stage_lock_authorized_package_artifacts(
+intergrax\agent_distribution\runtime_context_staging.py:352: in stage_lock_authorized_package_artifacts
+    rel_path = stage_verified_package_artifact(
+intergrax\agent_distribution\runtime_context_staging.py:330: in stage_verified_package_artifact
+    dest.write_bytes(artifact.local_source_path.read_bytes())
+C:\Users\XPS\AppData\Roaming\uv\python\cpython-3.12-windows-x86_64-none\Lib\pathlib.py:1036: in write_bytes
+    with self.open(mode='wb') as f:
+         ^^^^^^^^^^^^^^^^^^^^
+C:\Users\XPS\AppData\Roaming\uv\python\cpython-3.12-windows-x86_64-none\Lib\pathlib.py:1013: in open
+    return io.open(self, mode, buffering, encoding, errors, newline)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E   FileNotFoundError: [Errno 2] No such file or directory: 'D:\\Projekty\\intergrax\\.claude\\worktrees\\pdc-x-ia-global-cdaa97\\build\\pytest\\56516-f5d27a89\\test_builtin_agent_not_install0\\output\\candidate-rev-ap8-1\\.intergrax-artifacts\\sha256-151c449b2e54dfbe6919e07e3c7e2c51a1d142c5b13b5d19a082bb1266df9fac\\intergrax_local_search_agent-1.0.0-py3-none-any.whl'
+________ test_post_release_installed_agent_uses_exact_artifact_digest _________
+tests\unit\agent_distribution\test_agent_distribution_materialization_adapter.py:733: in test_post_release_installed_agent_uses_exact_artifact_digest
+    ).materialize(materialization_input)
+      ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+intergrax\agent_distribution\materialization_adapters.py:156: in materialize
+    stage_graph_authorized_context(
+intergrax\agent_distribution\runtime_context_staging.py:597: in stage_graph_authorized_context
+    staged_artifacts = stage_lock_authorized_package_artifacts(
+intergrax\agent_distribution\runtime_context_staging.py:352: in stage_lock_authorized_package_artifacts
+    rel_path = stage_verified_package_artifact(
+intergrax\agent_distribution\runtime_context_staging.py:330: in stage_verified_package_artifact
+    dest.write_bytes(artifact.local_source_path.read_bytes())
+C:\Users\XPS\AppData\Roaming\uv\python\cpython-3.12-windows-x86_64-none\Lib\pathlib.py:1036: in write_bytes
+    with self.open(mode='wb') as f:
+         ^^^^^^^^^^^^^^^^^^^^
+C:\Users\XPS\AppData\Roaming\uv\python\cpython-3.12-windows-x86_64-none\Lib\pathlib.py:1013: in open
+    return io.open(self, mode, buffering, encoding, errors, newline)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E   FileNotFoundError: [Errno 2] No such file or directory: 'D:\\Projekty\\intergrax\\.claude\\worktrees\\pdc-x-ia-global-cdaa97\\build\\pytest\\56516-f5d27a89\\test_post_release_installed_ag0\\output\\candidate-rev-ap8-1\\.intergrax-artifacts\\sha256-151c449b2e54dfbe6919e07e3c7e2c51a1d142c5b13b5d19a082bb1266df9fac\\intergrax_local_search_agent-1.0.0-py3-none-any.whl'
+============================== warnings summary ===============================
+tests/unit/agents/authoring/test_decisions.py::test_to_step_outcome_reexports_bridge
+  D:\Projekty\intergrax\.claude\worktrees\pdc-x-ia-global-cdaa97\tests\unit\agents\authoring\test_decisions.py:75: DeprecationWarning: continue_to() — UAEP AgentDecision helpers are deprecated; use StepOutcome factories (continue_with, finish, fail_step, pause_for_human, request_replan, delegate_handoff) in on_next_step — see architecture §32.0.4.
+    decision = continue_to("step_two", reason="next")
+
+tests/unit/agent_distribution/test_agent_distribution_runtime_lock.py::test_store_cannot_persist_forged_identity
+  D:\Projekty\intergrax\.claude\worktrees\pdc-x-ia-global-cdaa97\.venv\Lib\site-packages\pydantic\main.py:464: UserWarning: Pydantic serializer warnings:
+    PydanticSerializationUnexpectedValue(Expected `MaterializedLockPackage` - serialized value may not be as expected [field_name='packages', input_value={'distribution_name': 'in..., 'dependency_of': None}, input_type=dict])
+    PydanticSerializationUnexpectedValue(Expected `MaterializedLockPackage` - serialized value may not be as expected [field_name='packages', input_value={'distribution_name': 're...rax-local-search-agent'}, input_type=dict])
+    PydanticSerializationUnexpectedValue(Expected `MaterializedAgentClosureEntry` - serialized value may not be as expected [field_name='agent_closure', input_value={'distribution_package_id...eRole.DIRECT: 'direct'>}, input_type=dict])
+    return self.__pydantic_serializer__.to_python(
+
+-- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html
+=========================== short test summary info ===========================
+FAILED tests/unit/agent_distribution/test_agent_distribution_materialization.py::test_materialization_does_not_activate_revision
+FAILED tests/unit/agent_distribution/test_agent_distribution_materialization.py::test_fake_adapter_digest_is_deterministic
+FAILED tests/unit/agent_distribution/test_agent_distribution_materialization.py::test_different_graph_changes_fake_digest
+FAILED tests/unit/agent_distribution/test_agent_distribution_materialization.py::test_manifest_references_graph_digest_and_lock_id
+FAILED tests/unit/agent_distribution/test_agent_distribution_materialization_adapter.py::test_test_adapter_stages_graph_authorized_closure
+FAILED tests/unit/agent_distribution/test_agent_distribution_materialization_adapter.py::test_lock_reference_embedded_in_staged_artifact
+FAILED tests/unit/agent_distribution/test_agent_distribution_materialization_adapter.py::test_oci_adapter_uses_injected_docker_runner
+FAILED tests/unit/agent_distribution/test_agent_distribution_materialization_adapter.py::test_oci_build_failure_fail_closed
+FAILED tests/unit/agent_distribution/test_agent_distribution_materialization_adapter.py::test_manifest_contains_enabled_agent_digests_without_secrets
+FAILED tests/unit/agent_distribution/test_agent_distribution_materialization_adapter.py::test_oci_dockerfile_does_not_use_repository_uv_lock_authority
+FAILED tests/unit/agent_distribution/test_agent_distribution_materialization_adapter.py::test_install_manifest_derived_from_materialized_runtime_lock
+FAILED tests/unit/agent_distribution/test_agent_distribution_materialization_adapter.py::test_lock_package_absent_from_repo_deps_in_install_plan
+FAILED tests/unit/agent_distribution/test_agent_distribution_materialization_adapter.py::test_package_absent_from_lock_not_in_install_plan
+FAILED tests/unit/agent_distribution/test_agent_distribution_materialization_adapter.py::test_exact_lock_version_preserved_in_install_plan
+FAILED tests/unit/agent_distribution/test_agent_distribution_materialization_adapter.py::test_lock_digest_preserved_when_supported
+FAILED tests/unit/agent_distribution/test_agent_distribution_materialization_adapter.py::test_graph_direct_agent_in_physical_install_plan
+FAILED tests/unit/agent_distribution/test_agent_distribution_materialization_adapter.py::test_transitive_lock_package_in_install_plan
+FAILED tests/unit/agent_distribution/test_agent_distribution_materialization_adapter.py::test_repository_uv_lock_change_does_not_alter_install_plan
+FAILED tests/unit/agent_distribution/test_agent_distribution_materialization_adapter.py::test_missing_artifact_location_fail_closed
+FAILED tests/unit/agent_distribution/test_agent_distribution_materialization_adapter.py::test_artifact_digest_not_caller_supplied_on_oci_path
+FAILED tests/unit/agent_distribution/test_agent_distribution_materialization_adapter.py::test_lock_digest_with_matching_artifact_bytes_accepted
+FAILED tests/unit/agent_distribution/test_agent_distribution_materialization_adapter.py::test_artifact_provider_used_not_mutable_workspace_directory
+FAILED tests/unit/agent_distribution/test_agent_distribution_materialization_adapter.py::test_staged_artifact_layout_is_digest_keyed_and_deterministic
+FAILED tests/unit/agent_distribution/test_agent_distribution_materialization_adapter.py::test_third_party_without_package_digest_fail_closed
+FAILED tests/unit/agent_distribution/test_agent_distribution_materialization_adapter.py::test_unrelated_workspace_source_does_not_alter_install_manifest
+FAILED tests/unit/agent_distribution/test_agent_distribution_materialization_adapter.py::test_builtin_agent_not_installed_from_mutable_source_directory
+FAILED tests/unit/agent_distribution/test_agent_distribution_materialization_adapter.py::test_post_release_installed_agent_uses_exact_artifact_digest
+27 failed, 1674 passed, 2 warnings in 48.77s
