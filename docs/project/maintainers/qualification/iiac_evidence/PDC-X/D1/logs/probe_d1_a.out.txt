@@ -1,0 +1,16 @@
+PROBE P1-upgrade: app-b upgraded app-a slot outcome=upgraded active_now=('inst-1.1.0', 'installed_active')
+PROBE P2-upgrade: denied AgentPlatformAdminGovernanceBlockedError; active=('inst-1.0.0', 'installed_active'); installs=['inst-1.0.0']
+PROBE P2-retire: denied AgentPlatformAdminGovernanceBlockedError; active=('inst-1.0.0', 'installed_active'); installs=['inst-1.0.0']
+PROBE P3: 1.2.3 -> 1.2.4-rc.1: admitted=False reason=version_unparseable
+PROBE P3: 1.2.3-rc.1 -> 1.2.3: admitted=False reason=version_unparseable
+PROBE P3: 1.2.3 -> 1.2.3+build9: admitted=False reason=not_an_upgrade
+PROBE P3: 0.1.0 -> 0.9.0: admitted=True reason=None
+PROBE P3: 1.0.0 -> 1.1.0: admitted=True reason=None
+PROBE P4: exc=RuntimeError; candidate_state=verified; active=('inst-1.0.0', 'installed_active')
+PROBE P5: exc=RuntimeError; candidate_state=failed_candidate; evidence_returned_to_caller=NONE(exception carries no audit_event_types: False)
+PROBE P6-response: action=blocked_no_safe_target reason=rollback_target_untrusted
+PROBE P6-serving: traffic_serving_revision_id=rev-2
+PROBE P6-admission: NEW EXECUTION ADMISSION STILL OPEN on revoked revision rev-2 -> ServingExecutionEligibilityEvidence
+PROBE P7-upgrade-replay: policy-DENY principal still got outcome=already_upgraded (view of slot state)
+PROBE P7-retire-replay: policy-DENY principal still got already_done=True
+PROBE P8: install with caller-asserted SIGNATURE_VERIFICATION ref and no verifier call -> state=installed_active

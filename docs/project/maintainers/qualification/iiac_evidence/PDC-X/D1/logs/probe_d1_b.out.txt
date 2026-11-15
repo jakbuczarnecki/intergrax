@@ -1,0 +1,9 @@
+PROBE P9: operator rollback restored REVOKED package revision: traffic=rev-1
+PROBE P11: 'direct import': gate detects=True
+PROBE P11: 'metadata.entry_points': gate detects=True
+PROBE P11: 'alias md': gate detects=False
+PROBE P11: 'from importlib import metadata as md': gate detects=False
+PROBE P11: 'importlib_metadata backport': gate detects=True
+PROBE P11: 'distributions scan': gate detects=False
+PROBE P11: 'pkg_resources': gate detects=False
+PROBE P11: 'getattr indirection': gate detects=False

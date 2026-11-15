@@ -1,0 +1,31 @@
+IA-D1 test matrix - PDC-X/P7-D1 - audited SHA c08efe46a74a20595468d8d8bf06eab2dca5f573
+Interpreter: shared D:/Projekty/intergrax/.venv python 3.12 (resolves `intergrax` from the audited worktree; verified), pytest 8.4.2, Windows. One pytest process at a time.
+Scratch (--basetemp) under D:/Projekty/_wt/intergrax/_scratch (outside the repository).
+
+T1  python -m pytest tests/qualification/pdc_x/d1 -q
+    -> 65 passed in 93.98s, process exited          (logs/d1_run.log)
+T2  python -m pytest tests/unit/agent_distribution tests/integration/agent_distribution tests/unit/runtime/registry tests/unit/agents/authoring tests/unit/skills tests/qualification/pdc_x/xd/test_xd_04_agent_host.py -q --tb=line -rfE
+    -> 18 failed, 1581 passed in 43.25s; summary printed, process did NOT exit (stopped after ~10 min)   (logs/wide_run2.log, logs/failed_ids.txt)
+    (a first attempt with a non-existing --basetemp parent gave 174 setup errors; discarded, auditor error, not evidence)
+T3  the 18 node ids of T2 at the activation pin 2d3eceb6c (detached throwaway worktree)
+    -> 18 failed in 84.26s                           (logs/pin_18.log)  => all 18 pre-existing
+T4  python -m pytest tests/qualification/plug_03 tests/qualification/plug_04 tests/qualification/plug_final -q
+    -> 27 passed in 107.82s, process exited          (logs/plug_run.log)
+T5  python -m pytest tests/qualification/pdc_x/xd/test_xd_04_agent_host.py -q
+    -> 3 passed in 2.48s, process exited (bisect of the T2 non-exit: xd_04 alone is not the cause)
+T6  python adversarial_scripts/probe_d1_a.py | probe_d1_b.py | probe_d1_c.py (no pytest; in-memory stacks, public APIs)
+    -> logs/probe_d1_a.out.txt, probe_d1_b.out.txt, probe_d1_c.out.txt (31 PROBE lines, 0 probe errors)
+T7  adversarial_scripts/run_mutants.py on a throwaway checkout of the audited SHA (10 mutants; pytest on
+    tests/qualification/pdc_x/d1/test_d1_adversarial_lifecycle.py + test_d1_upgrade_retire.py, -x per mutant)
+    -> 7 KILLED, 3 SURVIVED (M2, M7, M10)            (logs/mutation_summary.txt, logs/M*.log)
+
+Static checks (grep over intergrax/ applications/ agents/, audited SHA):
+  - non-test callers of AgentRegistry.mark_retired: none
+  - non-test callers of upgrade_agent/retire_agent outside agent_distribution: none (facade only)
+  - non-test callers of respond_to_emergency_revocation / AgentEmergencyRevocationService outside admin_service: none
+  - non-test callers of SkillHostLifecycleService.upgrade_skill/disable_skill/remove_skill: none
+  - consumers of AgentDistributionEvent / audit_event_types outside agent_distribution: none (dynamic_acquisition reads emptiness only)
+  - non-test, non-plugin users of Ed25519/AgentPackageAttestationVerifier: none (core/plugins/admission.py only)
+  - imports of top-level agents/ or applications/ from the audited intergrax paths: none (intergrax.applications._shared is a package inside intergrax/)
+
+Not run by the auditor (classified elsewhere or out of scope): EBH-7 identity gate, tests/qualification/roadmap_replay_x, dist_scale_x/Docker, igx_gov ticket, full tests/unit.
