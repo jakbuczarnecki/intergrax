@@ -4,20 +4,16 @@
 
 from __future__ import annotations
 
+from collections.abc import Callable
 from dataclasses import dataclass, replace
 from pathlib import Path
-from typing import TYPE_CHECKING, Any, Callable
+from typing import TYPE_CHECKING, Any
 
 if TYPE_CHECKING:
     from intergrax.contracts.execution_continuation_state_store import (
         ExecutionContinuationStateStore,
     )
     from intergrax.harness.application_host import ApplicationHost
-
-from intergrax.applications._shared.strict_production_serving_execution_tenant_authority import (
-    StrictProductionServingExecutionTenantBinding,
-)
-from intergrax.contracts.agent_run import RequestIdentity
 
 from intergrax.agents.persistence.checkpoint_store import AgentCheckpointStore
 from intergrax.agents.persistence.compensation_queue_store import CompensationQueueStore
@@ -48,12 +44,6 @@ from intergrax.applications._shared.decision_wiring import (
 from intergrax.applications._shared.declarative_tool_wiring import (
     build_declarative_invoker_for_application_host,
 )
-from intergrax.applications._shared.roster_agent_contract_authority import (
-    ContractAuthority,
-)
-from intergrax.applications._shared.skill_host_execution_wiring import (
-    build_host_skill_catalog_wiring_from_environment,
-)
 from intergrax.applications._shared.diagnostic_assembly_resolver import DiagnosticWiring
 from intergrax.applications._shared.diagnostic_composition import (
     DiagnosticCompositionOverrides,
@@ -67,7 +57,6 @@ from intergrax.applications._shared.environment_wiring import (
     ApplicationEnvironmentWiring,
     wire_application_environment,
 )
-from intergrax.llm_adapters.contracts.llm_adapter import LLMAdapter
 from intergrax.applications._shared.evaluation_assembly_resolver import (
     assert_evaluation_assembly_valid,
 )
@@ -82,91 +71,10 @@ from intergrax.applications._shared.guardrail_wiring import (
     ApplicationGuardrailWiring,
     wire_application_guardrail,
 )
-from intergrax.applications._shared.host_orchestration_backend_spec_builder import (
-    build_host_orchestration_loop_init_spec_from_environment,
-)
-from intergrax.runtime.execution.environment_orchestration_materialization import (
-    materialize_host_orchestration_backend,
-)
-from intergrax.runtime.execution.harness_host_internal_composition import (
-    build_harness_host_internal_composition_from_materialization,
-)
-from intergrax.runtime.execution.harness_host_orchestration_wiring import (
-    orchestration_application_wiring_target_from_materialization,
-)
-from intergrax.applications._shared.observability_assembly_resolver import (
-    assert_observability_assembly_valid,
-)
-from intergrax.applications._shared.observability_wiring import (
-    wire_application_observability,
-)
-from intergrax.applications._shared.reliability_assembly_resolver import (
-    assert_reliability_assembly_valid,
-)
-from intergrax.applications._shared.reliability_wiring import (
-    ApplicationReliabilityWiring,
-    wire_application_reliability,
-)
-from intergrax.applications._shared.tool_life_execution_recovery_wiring import (
-    ApplicationToolLifeExecutionRecoveryWiring,
-)
-from intergrax.applications._shared.tool_life_host_bootstrap_wiring import (
-    ToolLifeHostBootstrapWiringResolution,
-)
-from intergrax.applications._shared.security_assembly_resolver import (
-    assert_security_assembly_valid,
-)
-from intergrax.applications._shared.security_wiring import (
-    ApplicationSecurityWiring,
-    wire_application_security,
-)
-from intergrax.applications._shared.task_memory_wiring import (
-    wire_task_memory_from_profile,
-)
 from intergrax.applications._shared.harness_control_plane_governance_wiring import (
     HarnessControlPlaneGovernance,
     build_harness_control_plane_governance,
 )
-from intergrax.collaborative_work.persistence import (
-    CollaborativeWorkMaterializedRepositories,
-)
-from intergrax.applications._shared.harness_meaningful_side_effect_authorization_wiring import (
-    resolve_harness_host_meaningful_side_effect_authorization_wiring,
-)
-from intergrax.contracts.active_execution_task_scope import ActiveExecutionTaskScopePort
-from intergrax.contracts.decision_requirement_policy import DecisionRequirementPolicy
-from intergrax.contracts.meaningful_side_effect_policy import (
-    MeaningfulSideEffectPolicyEvaluator,
-)
-from intergrax.contracts.meaningful_side_effect_authorization import (
-    MeaningfulSideEffectAuthorizationPort,
-)
-from intergrax.contracts.provider_invocation_store import ProviderInvocationStore
-from intergrax.applications._shared.harness_registry_authority import (
-    RegistryAssemblyMode,
-    resolve_harness_host_registry,
-    resolve_registry_assembly_mode,
-)
-from intergrax.runtime.execution.root_execution_transport_detachment_supervision import (
-    HostRootExecutionTransportDetachmentSupervisor,
-    build_host_root_execution_transport_detachment_supervisor,
-)
-from intergrax.runtime.governance.control_plane_mutation_authorization import (
-    ControlPlaneMutationAuthorizationBoundary,
-)
-from intergrax.runtime.governance.orchestration_governance_evidence_composition import (
-    build_orchestration_governance_evidence_recorder,
-    require_strict_orchestration_governance_evidence_persistence,
-)
-from intergrax.applications._shared.registry_projection import (
-    MaterializedRegistryProjection,
-    RegistryProjectionEvidence,
-)
-from intergrax.applications.contracts.environment_profile import (
-    ApplicationEnvironmentProfile,
-)
-from intergrax.applications.contracts.manifest import ApplicationManifest
-from intergrax.runtime.attestation.buffer import BoundaryEventBuffer
 from intergrax.applications._shared.harness_host_composition import (
     HarnessHostInternalComposition,
 )
@@ -179,8 +87,22 @@ from intergrax.applications._shared.harness_host_task_execution_wiring import (
     build_harness_host_task_execution_governance,
     resolve_harness_effective_profile_revision_admission,
 )
-from intergrax.runtime.execution.environment_host_task_execution import (
-    build_environment_host_task_execution,
+from intergrax.applications._shared.harness_meaningful_side_effect_authorization_wiring import (
+    resolve_harness_host_meaningful_side_effect_authorization_wiring,
+)
+from intergrax.applications._shared.harness_registry_authority import (
+    RegistryAssemblyMode,
+    resolve_harness_host_registry,
+    resolve_registry_assembly_mode,
+)
+from intergrax.applications._shared.host_orchestration_backend_spec_builder import (
+    build_host_orchestration_loop_init_spec_from_environment,
+)
+from intergrax.applications._shared.observability_assembly_resolver import (
+    assert_observability_assembly_valid,
+)
+from intergrax.applications._shared.observability_wiring import (
+    wire_application_observability,
 )
 from intergrax.applications._shared.profile_resolution import (
     materialize_effective_profile_revision,
@@ -196,6 +118,46 @@ from intergrax.applications._shared.profile_resolution.execution_admission impor
 from intergrax.applications._shared.profile_resolution.wiring import (
     resolve_effective_profile_persistence_wiring,
 )
+from intergrax.applications._shared.registry_projection import (
+    MaterializedRegistryProjection,
+    RegistryProjectionEvidence,
+)
+from intergrax.applications._shared.reliability_assembly_resolver import (
+    assert_reliability_assembly_valid,
+)
+from intergrax.applications._shared.reliability_wiring import (
+    ApplicationReliabilityWiring,
+    wire_application_reliability,
+)
+from intergrax.applications._shared.roster_agent_contract_authority import (
+    ContractAuthority,
+)
+from intergrax.applications._shared.security_assembly_resolver import (
+    assert_security_assembly_valid,
+)
+from intergrax.applications._shared.security_wiring import (
+    ApplicationSecurityWiring,
+    wire_application_security,
+)
+from intergrax.applications._shared.skill_host_execution_wiring import (
+    build_host_skill_catalog_wiring_from_environment,
+)
+from intergrax.applications._shared.strict_production_serving_execution_tenant_authority import (
+    StrictProductionServingExecutionTenantBinding,
+)
+from intergrax.applications._shared.task_memory_wiring import (
+    wire_task_memory_from_profile,
+)
+from intergrax.applications._shared.tool_life_execution_recovery_wiring import (
+    ApplicationToolLifeExecutionRecoveryWiring,
+)
+from intergrax.applications._shared.tool_life_host_bootstrap_wiring import (
+    ToolLifeHostBootstrapWiringResolution,
+)
+from intergrax.applications.contracts.environment_profile import (
+    ApplicationEnvironmentProfile,
+)
+from intergrax.applications.contracts.manifest import ApplicationManifest
 from intergrax.applications.contracts.profile_resolution import (
     EffectiveProfileRevision,
     EffectiveProfileRevisionScope,
@@ -207,30 +169,66 @@ from intergrax.applications.contracts.profile_resolution.activation import (
     ActiveEffectiveProfileRevisionBinding,
     ActiveEffectiveProfileRevisionStore,
 )
-from intergrax.skills.execution_binding import SkillExecutionPinningStore
-from intergrax.skills.registry.runtime import SkillRegistry
 from intergrax.applications.contracts.profile_resolution.execution_binding import (
     EffectiveProfileExecutionPinningStore,
 )
 from intergrax.applications.contracts.profile_resolution.store import (
     EffectiveProfileRevisionStore,
 )
+from intergrax.collaborative_work.persistence import (
+    CollaborativeWorkMaterializedRepositories,
+)
+from intergrax.contracts.active_execution_task_scope import ActiveExecutionTaskScopePort
+from intergrax.contracts.decision_requirement_policy import DecisionRequirementPolicy
+from intergrax.contracts.host_observability_stores import HostObservabilityStores
+from intergrax.contracts.meaningful_side_effect_authorization import (
+    MeaningfulSideEffectAuthorizationPort,
+)
+from intergrax.contracts.meaningful_side_effect_policy import (
+    MeaningfulSideEffectPolicyEvaluator,
+)
+from intergrax.contracts.provider_invocation_store import ProviderInvocationStore
 from intergrax.distributed.contracts.kv_store import DistributedKVStore
 from intergrax.integrations.contracts.document_store import DocumentStore
 from intergrax.integrations.registry.profile import IntegrationProfile
+from intergrax.llm_adapters.contracts.llm_adapter import LLMAdapter
+from intergrax.runtime.attestation.buffer import BoundaryEventBuffer
 from intergrax.runtime.execution.application_declarative_tool_composition import (
     CatalogDeclarativeToolInvoker,
 )
+from intergrax.runtime.execution.environment_host_task_execution import (
+    build_environment_host_task_execution,
+)
+from intergrax.runtime.execution.environment_orchestration_materialization import (
+    materialize_host_orchestration_backend,
+)
+from intergrax.runtime.execution.harness_host_internal_composition import (
+    build_harness_host_internal_composition_from_materialization,
+)
+from intergrax.runtime.execution.harness_host_orchestration_wiring import (
+    orchestration_application_wiring_target_from_materialization,
+)
 from intergrax.runtime.execution.host_task import HostTaskExecution
+from intergrax.runtime.execution.root_execution_transport_detachment_supervision import (
+    HostRootExecutionTransportDetachmentSupervisor,
+    build_host_root_execution_transport_detachment_supervisor,
+)
+from intergrax.runtime.governance.control_plane_mutation_authorization import (
+    ControlPlaneMutationAuthorizationBoundary,
+)
+from intergrax.runtime.governance.orchestration_governance_evidence_composition import (
+    build_orchestration_governance_evidence_recorder,
+    require_strict_orchestration_governance_evidence_persistence,
+)
 from intergrax.runtime.long_running.persistence_contract import (
     TaskCheckpointPersistence,
 )
-from intergrax.contracts.host_observability_stores import HostObservabilityStores
 from intergrax.runtime.notifications.adapter_contract import NotificationAdapter
 from intergrax.runtime.registry.agent_registry import AgentRegistry
 from intergrax.runtime.registry.agent_registry_read import AgentRegistryRead
+from intergrax.skills.execution_binding import SkillExecutionPinningStore
+from intergrax.skills.registry.runtime import SkillRegistry
 from intergrax.tools.registry.runtime import ToolRegistry
-
 
 __all__ = [
     "HarnessHostRuntime",
@@ -276,9 +274,7 @@ class HarnessHostRuntime:
     effective_profile_pinning_store: EffectiveProfileExecutionPinningStore | None = None
     effective_profile_active_store: ActiveEffectiveProfileRevisionStore | None = None
     skill_pinning_store: SkillExecutionPinningStore | None = None
-    _owned_collaborative_work_persistence: (
-        CollaborativeWorkMaterializedRepositories | None
-    ) = None
+    _owned_collaborative_work_persistence: CollaborativeWorkMaterializedRepositories | None = None
     _host_diagnostic_dependencies: HostDiagnosticReadDependencies | None = None
     orchestration_topology: HarnessHostOrchestrationTopologyWiring | None = None
     _owned_declarative_tool_invoker: CatalogDeclarativeToolInvoker | None = None
@@ -307,8 +303,7 @@ def build_harness_host_runtime(
     idempotency_db_path: Path | None = None,
     use_in_memory_trace: bool = False,
     builders: dict[type, Any] | None = None,
-    compose_builders: Callable[[ApplicationCompositionContext], dict[type, Any]]
-    | None = None,
+    compose_builders: Callable[[ApplicationCompositionContext], dict[type, Any]] | None = None,
     registry: AgentRegistry | None = None,
     registry_projection: MaterializedRegistryProjection | None = None,
     registry_assembly_mode: RegistryAssemblyMode | None = None,
@@ -319,8 +314,7 @@ def build_harness_host_runtime(
     document_store: Any | None = None,
     key_value_cache: Any | None = None,
     boundary_event_buffer: Any | None = None,
-    mutation_authorization_boundary: ControlPlaneMutationAuthorizationBoundary
-    | None = None,
+    mutation_authorization_boundary: ControlPlaneMutationAuthorizationBoundary | None = None,
     profile_layers: tuple[ProfileLayerInput, ...] = (),
     revision_store: EffectiveProfileRevisionStore | None = None,
     pinning_store: EffectiveProfileExecutionPinningStore | None = None,
@@ -328,13 +322,11 @@ def build_harness_host_runtime(
     llm_adapter: LLMAdapter | None = None,
     application_tool_registry: ToolRegistry | None = None,
     application_skill_registry: SkillRegistry | None = None,
-    meaningful_side_effect_authorization: MeaningfulSideEffectAuthorizationPort
-    | None = None,
+    meaningful_side_effect_authorization: MeaningfulSideEffectAuthorizationPort | None = None,
     runtime_policy_evaluator: MeaningfulSideEffectPolicyEvaluator | None = None,
     active_execution_task_scope: ActiveExecutionTaskScopePort | None = None,
     orchestration_decision_requirement_policy: DecisionRequirementPolicy | None = None,
-    collaborative_work_repositories: CollaborativeWorkMaterializedRepositories
-    | None = None,
+    collaborative_work_repositories: CollaborativeWorkMaterializedRepositories | None = None,
     collaborative_work_integration_profile: IntegrationProfile | None = None,
     execution_continuation_state_store: ExecutionContinuationStateStore | None = None,
     diagnostic_composition_overrides: DiagnosticCompositionOverrides | None = None,
@@ -344,9 +336,7 @@ def build_harness_host_runtime(
         StrictOrchestrationTopologySubmissionPortBuilder | None
     ) = None,
     agent_contract_authority: ContractAuthority | None = None,
-    strict_production_serving_execution_tenant_binding: (
-        StrictProductionServingExecutionTenantBinding | None
-    ) = None,
+    strict_production_serving_execution_tenant_binding: (StrictProductionServingExecutionTenantBinding | None) = None,
     tool_life_durable_db_path: Path | None = None,
 ) -> HarnessHostRuntime:
     """
@@ -362,9 +352,7 @@ def build_harness_host_runtime(
     profile_resolution = resolve_profile(environment, layers=profile_layers)
     effective_environment = profile_resolution.effective_profile
     production_mode = effective_environment.execution_mode.value == "strict"
-    kv_store = (
-        key_value_cache if isinstance(key_value_cache, DistributedKVStore) else None
-    )
+    kv_store = key_value_cache if isinstance(key_value_cache, DistributedKVStore) else None
     doc_store = document_store if isinstance(document_store, DocumentStore) else None
     profile_persistence = resolve_effective_profile_persistence_wiring(
         production_mode=production_mode,
@@ -383,9 +371,7 @@ def build_harness_host_runtime(
         profile_persistence.active_store.get_active(revision_scope)
     )
     activation_baseline_revision_id = (
-        activation_baseline_binding.revision_id
-        if activation_baseline_binding is not None
-        else None
+        activation_baseline_binding.revision_id if activation_baseline_binding is not None else None
     )
     effective_profile_revision = materialize_effective_profile_revision(
         profile_resolution,
@@ -443,39 +429,29 @@ def build_harness_host_runtime(
         resolve_pinning_store_integration_configuration_provenance_reader,
     )
 
-    integration_provenance_reader = (
-        resolve_pinning_store_integration_configuration_provenance_reader(
-            kv_store=kv_store,
-            document_store=doc_store,
-        )
+    integration_provenance_reader = resolve_pinning_store_integration_configuration_provenance_reader(
+        kv_store=kv_store,
+        document_store=doc_store,
     )
     merged_diagnostic_overrides = diagnostic_composition_overrides
     if merged_diagnostic_overrides is None:
         merged_diagnostic_overrides = DiagnosticCompositionOverrides(
             execution_effective_profile_provenance_reader=profile_provenance_reader,
-            execution_integration_configuration_provenance_reader=(
-                integration_provenance_reader
-            ),
+            execution_integration_configuration_provenance_reader=(integration_provenance_reader),
         )
     else:
-        if (
-            merged_diagnostic_overrides.execution_effective_profile_provenance_reader
-            is None
-        ):
+        if merged_diagnostic_overrides.execution_effective_profile_provenance_reader is None:
             merged_diagnostic_overrides = replace(
                 merged_diagnostic_overrides,
                 execution_effective_profile_provenance_reader=profile_provenance_reader,
             )
         if (
-            merged_diagnostic_overrides.execution_integration_configuration_provenance_reader
-            is None
+            merged_diagnostic_overrides.execution_integration_configuration_provenance_reader is None
             and integration_provenance_reader is not None
         ):
             merged_diagnostic_overrides = replace(
                 merged_diagnostic_overrides,
-                execution_integration_configuration_provenance_reader=(
-                    integration_provenance_reader
-                ),
+                execution_integration_configuration_provenance_reader=(integration_provenance_reader),
             )
     env_wiring = replace(
         env_wiring,
@@ -539,16 +515,15 @@ def build_harness_host_runtime(
     guardrail_wiring = wire_application_guardrail(effective_environment)
     cost_wiring = wire_application_cost(effective_environment)
     assert_cost_assembly_valid(cost_wiring, effective_environment)
-    evaluation_wiring = wire_application_evaluation(effective_environment)
-    assert_evaluation_assembly_valid(evaluation_wiring, effective_environment)
-    decision_spec = application_decision_wiring_spec_from_environment(
-        effective_environment
+    evaluation_wiring = wire_application_evaluation(
+        effective_environment,
+        tenant_id=(tenant_id or "").strip() or None,
     )
+    assert_evaluation_assembly_valid(evaluation_wiring, effective_environment)
+    decision_spec = application_decision_wiring_spec_from_environment(effective_environment)
     decision_wiring = wire_application_decision(
         registry=resolved_registry,
-        agent_id=resolve_application_decision_agent_id(
-            resolved_registry, effective_environment
-        ),
+        agent_id=resolve_application_decision_agent_id(resolved_registry, effective_environment),
         spec=decision_spec,
         environment=effective_environment,
     )
@@ -581,9 +556,7 @@ def build_harness_host_runtime(
         governance_evidence_persistence=strict_governance_evidence_persistence,
         runtime_event_persistence=observability.runtime_event_store,
     )
-    resolved_meaningful_side_effect_authorization = (
-        meaningful_side_effect_wiring.authorization_port
-    )
+    resolved_meaningful_side_effect_authorization = meaningful_side_effect_wiring.authorization_port
     from intergrax.applications._shared.tool_life_host_bootstrap_wiring import (
         resolve_tool_life_host_bootstrap_wiring,
     )
@@ -614,11 +587,9 @@ def build_harness_host_runtime(
         build_profile_resolution_child_context_inheritance_adapter,
     )
 
-    profile_child_context_inheritance = (
-        build_profile_resolution_child_context_inheritance_adapter(
-            tenant_id=revision_scope.tenant_id,
-            pinning_store=profile_persistence.pinning_store,
-        )
+    profile_child_context_inheritance = build_profile_resolution_child_context_inheritance_adapter(
+        tenant_id=revision_scope.tenant_id,
+        pinning_store=profile_persistence.pinning_store,
     )
     orchestration_spec = build_host_orchestration_loop_init_spec_from_environment(
         resolved_registry,
@@ -654,12 +625,8 @@ def build_harness_host_runtime(
     orchestration_host = orchestration_application_wiring_target_from_materialization(
         orchestration,
     )
-    assert_security_assembly_valid(
-        security_wiring, effective_environment, orchestration_host=orchestration_host
-    )
-    assert_guardrail_assembly_valid(
-        guardrail_wiring, effective_environment, orchestration_host=orchestration_host
-    )
+    assert_security_assembly_valid(security_wiring, effective_environment, orchestration_host=orchestration_host)
+    assert_guardrail_assembly_valid(guardrail_wiring, effective_environment, orchestration_host=orchestration_host)
     from intergrax.applications._shared.capability_alias_intake_wiring import (
         apply_capability_alias_wiring,
     )
@@ -731,19 +698,14 @@ def build_harness_host_runtime(
             expected_active_revision_id=activation_baseline_revision_id,
         ),
     )
-    if (
-        production_mode
-        and strict_production_serving_execution_tenant_binding is not None
-    ):
+    if production_mode and strict_production_serving_execution_tenant_binding is not None:
         from intergrax.applications._shared.strict_production_host_task_execution_wiring import (
             build_strict_production_serving_host_task_execution_governance,
         )
 
-        harness_execution_governance = (
-            build_strict_production_serving_host_task_execution_governance(
-                binding=strict_production_serving_execution_tenant_binding,
-                governance_evidence_recorder=orchestration_governance_evidence_recorder,
-            )
+        harness_execution_governance = build_strict_production_serving_host_task_execution_governance(
+            binding=strict_production_serving_execution_tenant_binding,
+            governance_evidence_recorder=orchestration_governance_evidence_recorder,
         )
     else:
         harness_execution_governance = build_harness_host_task_execution_governance(
@@ -805,9 +767,7 @@ def build_harness_host_runtime(
         effective_profile_pinning_store=profile_persistence.pinning_store,
         effective_profile_active_store=profile_persistence.active_store,
         skill_pinning_store=env_wiring.composition.skill_pinning_store,
-        _owned_collaborative_work_persistence=(
-            meaningful_side_effect_wiring.owned_collaborative_work_persistence
-        ),
+        _owned_collaborative_work_persistence=(meaningful_side_effect_wiring.owned_collaborative_work_persistence),
         _host_diagnostic_dependencies=host_diagnostic_dependencies,
         _owned_declarative_tool_invoker=declarative_tool_invoker,
         tool_life_execution_recovery=tool_life_bootstrap.wiring,
@@ -850,9 +810,7 @@ def close_harness_host_runtime(runtime: HarnessHostRuntime) -> None:
     host_diagnostic_dependencies = runtime.host_diagnostic_dependencies
     if host_diagnostic_dependencies is not None:
         try:
-            close_host_owned_diagnostic_persistence(
-                host_diagnostic_dependencies.persistence
-            )
+            close_host_owned_diagnostic_persistence(host_diagnostic_dependencies.persistence)
         except BaseException as exc:
             cleanup_errors.append(exc)
 

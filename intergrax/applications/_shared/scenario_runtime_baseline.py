@@ -9,8 +9,10 @@ from pathlib import Path
 from typing import TYPE_CHECKING, Any
 
 if TYPE_CHECKING:
+    from intergrax.contracts.execution_identity import RunId, TaskId
     from intergrax.runtime.execution.host_validation_composition import NexusValidationEngine
 
+from intergrax.agents.agent_contract import Agent
 from intergrax.applications._shared.cost_assembly_resolver import assert_cost_assembly_valid
 from intergrax.applications._shared.cost_wiring import wire_application_cost
 from intergrax.applications._shared.decision_wiring import (
@@ -21,16 +23,12 @@ from intergrax.applications._shared.decision_wiring import (
 from intergrax.applications._shared.declarative_tool_wiring import (
     build_declarative_invoker_for_application_host,
 )
-from intergrax.applications._shared.harness_meaningful_side_effect_authorization_wiring import (
-    resolve_harness_host_meaningful_side_effect_authorization_wiring,
-)
-from intergrax.collaborative_work.persistence import (
-    CollaborativeWorkMaterializedRepositories,
-    open_sqlite_collaborative_work_repositories,
-)
 from intergrax.applications._shared.diagnostic_assembly_resolver import (
     DiagnosticAssemblyError,
     DiagnosticWiring,
+)
+from intergrax.applications._shared.diagnostic_composition import (
+    DiagnosticCompositionOverrides,
 )
 from intergrax.applications._shared.environment_wiring import (
     ApplicationEnvironmentWiring,
@@ -44,35 +42,40 @@ from intergrax.applications._shared.guardrail_wiring import (
     ApplicationGuardrailWiring,
     wire_application_guardrail,
 )
-from intergrax.applications._shared.llm_resolver import resolve_environment_llm_adapter
+from intergrax.applications._shared.harness_host_task_execution_wiring import (
+    build_harness_host_task_execution_governance,
+)
+from intergrax.applications._shared.harness_meaningful_side_effect_authorization_wiring import (
+    resolve_harness_host_meaningful_side_effect_authorization_wiring,
+)
 from intergrax.applications._shared.host_orchestration_backend_spec_builder import (
     build_host_orchestration_loop_init_spec_from_environment,
 )
-from intergrax.runtime.execution.application_host_orchestration_composition import (
-    compose_application_host_orchestration_session,
+from intergrax.applications._shared.integrations.integration_configuration_provenance_reader import (
+    resolve_pinning_store_integration_configuration_provenance_reader,
 )
-from intergrax.runtime.execution.application_host_orchestration_session import (
-    ApplicationHostOrchestrationSession,
-)
-from intergrax.runtime.execution.host_orchestration_assembly_validation import (
-    apply_host_orchestration_application_runtime_wiring,
-    assert_host_orchestration_application_assembly,
-)
-from intergrax.runtime.execution.scenario_host_diagnostic_wiring import (
-    wire_scenario_terminal_execution_diagnostics,
-)
-from intergrax.runtime.execution.host_task import HostTaskExecutionPort
+from intergrax.applications._shared.llm_resolver import resolve_environment_llm_adapter
 from intergrax.applications._shared.observability_assembly_resolver import (
     assert_observability_assembly_valid,
 )
 from intergrax.applications._shared.observability_wiring import (
     wire_application_observability,
 )
+from intergrax.applications._shared.profile_resolution.execution_effective_profile_provenance_reader import (
+    PinningStoreExecutionEffectiveProfileProvenanceReader,
+)
+from intergrax.applications._shared.profile_resolution.host_effective_profile_execution_wiring import (
+    wire_host_effective_profile_execution,
+)
 from intergrax.applications._shared.reliability_assembly_resolver import (
     assert_reliability_assembly_valid,
 )
 from intergrax.applications._shared.reliability_wiring import (
     wire_application_reliability,
+)
+from intergrax.applications._shared.scenario_runtime_profiles import (
+    ScenarioRuntimeMode,
+    ScenarioRuntimeWorkspace,
 )
 from intergrax.applications._shared.security_assembly_resolver import (
     assert_security_assembly_valid,
@@ -81,48 +84,44 @@ from intergrax.applications._shared.security_wiring import (
     ApplicationSecurityWiring,
     wire_application_security,
 )
-from intergrax.applications.contracts.application_host import ApplicationProfile
 from intergrax.applications._shared.task_memory_wiring import wire_task_memory_from_profile
+from intergrax.applications.contracts.application_host import ApplicationProfile
 from intergrax.applications.contracts.environment_profile import ApplicationEnvironmentProfile
 from intergrax.applications.contracts.execution_mode import ExecutionMode
 from intergrax.applications.contracts.manifest import ApplicationManifest
-from intergrax.agents.agent_contract import Agent
+from intergrax.collaborative_work.persistence import (
+    CollaborativeWorkMaterializedRepositories,
+    open_sqlite_collaborative_work_repositories,
+)
 from intergrax.contracts.agent_contract_meta import AgentContract
 from intergrax.contracts.agent_execution_result import AgentExecutionResult
-from intergrax.runtime.decision_flow import DecisionFlowGate
-from intergrax.applications._shared.diagnostic_composition import (
-    DiagnosticCompositionOverrides,
-)
-from intergrax.applications._shared.harness_host_task_execution_wiring import (
-    build_harness_host_task_execution_governance,
-)
-from intergrax.applications._shared.integrations.integration_configuration_provenance_reader import (
-    resolve_pinning_store_integration_configuration_provenance_reader,
-)
-from intergrax.applications._shared.profile_resolution.execution_effective_profile_provenance_reader import (
-    PinningStoreExecutionEffectiveProfileProvenanceReader,
-)
-from intergrax.applications._shared.profile_resolution.host_effective_profile_execution_wiring import (
-    wire_host_effective_profile_execution,
-)
+from intergrax.contracts.host_observability_stores import HostObservabilityStores
 from intergrax.integrations.contracts.document_store import DocumentStore
+from intergrax.runtime.decision_flow import DecisionFlowGate
+from intergrax.runtime.execution.application_host_orchestration_composition import (
+    compose_application_host_orchestration_session,
+)
+from intergrax.runtime.execution.application_host_orchestration_session import (
+    ApplicationHostOrchestrationSession,
+)
+from intergrax.runtime.execution.host_observability_composition import wire_host_observability
+from intergrax.runtime.execution.host_orchestration_assembly_validation import (
+    apply_host_orchestration_application_runtime_wiring,
+    assert_host_orchestration_application_assembly,
+)
+from intergrax.runtime.execution.host_task import HostTaskExecutionPort
+from intergrax.runtime.execution.scenario_host_diagnostic_wiring import (
+    wire_scenario_terminal_execution_diagnostics,
+)
 from intergrax.runtime.governance.decision_requirement_policy import (
     PermissiveDecisionRequirementPolicy,
 )
 from intergrax.runtime.observability.qualification_runtime_trace import (
     DeferredPersistedTraceFinalize,
 )
-from intergrax.contracts.host_observability_stores import HostObservabilityStores
-from intergrax.runtime.execution.host_observability_composition import wire_host_observability
-from intergrax.tools.registry import ToolRegistry
 from intergrax.runtime.registry.agent_registry import AgentRegistry
 from intergrax.runtime.task.task import Task, TaskContext, TaskResult
-
-from intergrax.applications._shared.scenario_runtime_profiles import (
-    ScenarioRuntimeMode,
-    ScenarioRuntimeWorkspace,
-)
-
+from intergrax.tools.registry import ToolRegistry
 
 __all__ = [
     "ScenarioExecutionRequest",
@@ -255,8 +254,7 @@ def _resolve_scenario_manifest(
         resolved = _scenario_lab_manifest(environment)
     else:
         raise ScenarioRuntimeBuildError(
-            "explicit ApplicationManifest is required for strict or production-attached "
-            "scenario environments"
+            "explicit ApplicationManifest is required for strict or production-attached scenario environments"
         )
     if resolved.environment is None:
         resolved = resolved.model_copy(update={"environment": environment})
@@ -419,11 +417,9 @@ def build_scenario_runtime_from_environment(
     profile_provenance_reader = PinningStoreExecutionEffectiveProfileProvenanceReader(
         host_profile.persistence.pinning_store,
     )
-    integration_provenance_reader = (
-        resolve_pinning_store_integration_configuration_provenance_reader(
-            kv_store=None,
-            document_store=document_store,
-        )
+    integration_provenance_reader = resolve_pinning_store_integration_configuration_provenance_reader(
+        kv_store=None,
+        document_store=document_store,
     )
     env_wiring = replace(
         env_wiring,
@@ -431,9 +427,7 @@ def build_scenario_runtime_from_environment(
             env_wiring.composition,
             diagnostic_composition_overrides=DiagnosticCompositionOverrides(
                 execution_effective_profile_provenance_reader=profile_provenance_reader,
-                execution_integration_configuration_provenance_reader=(
-                    integration_provenance_reader
-                ),
+                execution_integration_configuration_provenance_reader=(integration_provenance_reader),
             ),
         ),
     )
@@ -456,7 +450,10 @@ def build_scenario_runtime_from_environment(
     security_wiring = wire_application_security(effective_environment)
     assert_security_assembly_valid(security_wiring, effective_environment)
     guardrail_wiring = wire_application_guardrail(effective_environment)
-    evaluation_wiring = wire_application_evaluation(effective_environment)
+    evaluation_wiring = wire_application_evaluation(
+        effective_environment,
+        tenant_id=resolved_tenant_id,
+    )
     assert_evaluation_assembly_valid(evaluation_wiring, effective_environment)
     decision_spec = application_decision_wiring_spec_from_environment(effective_environment)
     decision_wiring = wire_application_decision(
@@ -470,13 +467,11 @@ def build_scenario_runtime_from_environment(
         effective_environment,
         runtime_events_db_path=runtime_events_db_path,
     )
-    meaningful_side_effect_wiring = (
-        resolve_harness_host_meaningful_side_effect_authorization_wiring(
-            effective_environment,
-            collaborative_work_repositories=scenario_collaborative_work,
-            decision_requirement_policy=PermissiveDecisionRequirementPolicy(),
-            runtime_event_persistence=observability.runtime_event_store,
-        )
+    meaningful_side_effect_wiring = resolve_harness_host_meaningful_side_effect_authorization_wiring(
+        effective_environment,
+        collaborative_work_repositories=scenario_collaborative_work,
+        decision_requirement_policy=PermissiveDecisionRequirementPolicy(),
+        runtime_event_persistence=observability.runtime_event_store,
     )
     declarative_tool_invoker = build_declarative_invoker_for_application_host(
         env_wiring.tool_wiring,
@@ -485,9 +480,7 @@ def build_scenario_runtime_from_environment(
         agent_registry=registry,
         tenant_id=resolved_tenant_id,
         idempotency_store=reliability_wiring.idempotency_store,
-        meaningful_side_effect_authorization=(
-            meaningful_side_effect_wiring.authorization_port
-        ),
+        meaningful_side_effect_authorization=(meaningful_side_effect_wiring.authorization_port),
     )
 
     orchestration_spec = build_host_orchestration_loop_init_spec_from_environment(
@@ -593,9 +586,7 @@ async def execute_scenario_task(
         task_result = await composition.host_execution.execute(task)
     finally:
         composition.orchestration_session.trace_lifecycle.set_hold_persisted_trace_finalize(False)
-    deferred_finalize = (
-        composition.orchestration_session.trace_lifecycle.take_deferred_persisted_trace_finalize()
-    )
+    deferred_finalize = composition.orchestration_session.trace_lifecycle.take_deferred_persisted_trace_finalize()
     return ScenarioRuntimeExecutionResult(
         task_result=task_result,
         task_id=task.task_id,

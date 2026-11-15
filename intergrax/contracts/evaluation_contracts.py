@@ -28,8 +28,8 @@ from intergrax.contracts.canonical_payload_hash import stable_payload_hash
 
 EVAL_CONTRACT_SCHEMA_VERSION = "eval_contracts.v1"
 
-_CODE_SHA_PATTERN = re.compile(r"^[0-9a-f]{7,64}$")
-_DIGEST_PATTERN = re.compile(r"^sha256:[0-9a-f]{64}$")
+_CODE_SHA_PATTERN = re.compile(r"[0-9a-f]{7,64}")
+_DIGEST_PATTERN = re.compile(r"sha256:[0-9a-f]{64}")
 
 
 class EvalContractError(ValueError):
@@ -328,14 +328,14 @@ class EvalRun(BaseModel):
     @field_validator("code_sha")
     @classmethod
     def _code_sha(cls, value: str) -> str:
-        if not _CODE_SHA_PATTERN.match(value):
+        if not _CODE_SHA_PATTERN.fullmatch(value):
             raise ValueError("code_sha must be a lowercase hex git SHA (7-64 chars)")
         return value
 
     @field_validator("dataset_digest")
     @classmethod
     def _dataset_digest(cls, value: str) -> str:
-        if not _DIGEST_PATTERN.match(value):
+        if not _DIGEST_PATTERN.fullmatch(value):
             raise ValueError("dataset_digest must be sha256:<64 hex>")
         return value
 
