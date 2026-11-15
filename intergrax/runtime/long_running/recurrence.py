@@ -15,8 +15,9 @@ Semantics (all instants are stored and compared in UTC):
 
 * ``interval_seconds`` is elapsed time anchored at ``start_utc`` and is DST-immune.
 * ``cron`` is evaluated on the wall clock of ``timezone``:
-  - a fixed-hour rule whose local time falls in a spring-forward gap fires ONCE at the
-    first valid instant after the gap (never skipped, never doubled);
+  - a fixed-hour rule whose local time falls in a spring-forward gap fires ONCE, shifted
+    by the gap: wall time plus gap length (``30 2`` in a one-hour gap fires at 03:30,
+    ``0 2`` at 03:00); never skipped, never doubled;
   - a fixed-hour rule whose local time is repeated by a fall-back fires ONCE, at the
     first occurrence of that wall time;
   - a wildcard-hour rule (``*`` or ``*/n`` in the hour field) follows elapsed time:
@@ -25,14 +26,23 @@ Semantics (all instants are stored and compared in UTC):
   rule: ``skip`` drops them, ``fire_once`` runs the latest missed one, ``catch_up(n)``
   runs the most recent ``n`` missed ones. Scans are bounded by ``MAX_MISFIRE_SCAN``;
   beyond it the policy degrades to ``skip`` (fail-safe).
+* Rules are bounded: ``MIN_INTERVAL_SECONDS`` .. ``MAX_INTERVAL_SECONDS``, at most
+  ``MAX_CATCH_UP`` catch-up occurrences, and a cron rule must have an occurrence.
 
-Occurrence identity is deterministic (``rule_id`` + occurrence instant), so two
-processes materializing the same occurrence converge on one row: the ledger rejects
-the duplicate ``schedule_id``.
+Occurrence identity is deterministic (tenant + task + ``rule_id`` + occurrence instant,
+tenant and task as fixed-length digests), so two processes materializing the same
+occurrence converge on one row (the ledger rejects the duplicate ``schedule_id``) while
+two tenants can never collide on one id.
+
+The successor is materialized BEFORE its predecessor executes (see ``LongRunningScheduler``),
+so a crash or lease expiry while an occurrence runs cannot end the chain. A rule targets
+exactly one ``(task_id, resume_token)``; once that checkpoint can no longer be resumed the
+occurrence is ``SKIPPED`` and the chain ends explicitly.
 """
 
 from __future__ import annotations
 
+import hashlib
 import logging
 import re
 from collections.abc import Iterator, Mapping
@@ -50,6 +60,9 @@ from intergrax.runtime.long_running.scheduled_resume import (
     ScheduledResumePersistence,
 )
 from intergrax.runtime.long_running.scheduled_resume_metadata import (
+    RECURRENCE_OCCURRENCE_KEY,
+    RECURRENCE_RULE_KEY,
+    reject_recurrence_metadata,
     validate_scheduled_resume_metadata,
 )
 from intergrax.runtime.long_running.scheduler_claim import (
@@ -57,7 +70,10 @@ from intergrax.runtime.long_running.scheduler_claim import (
 )
 
 __all__ = [
+    "MAX_CATCH_UP",
+    "MAX_INTERVAL_SECONDS",
     "MAX_MISFIRE_SCAN",
+    "MIN_INTERVAL_SECONDS",
     "RECURRENCE_OCCURRENCE_METADATA_KEY",
     "RECURRENCE_RULE_METADATA_KEY",
     "MisfirePolicy",
@@ -65,15 +81,20 @@ __all__ = [
     "RecurrenceError",
     "RecurrenceMaterializer",
     "RecurrenceRule",
+    "RecurrenceStartResult",
     "occurrence_schedule_id",
     "plan_next_occurrences",
+    "validate_occurrence_entry",
 ]
 
 logger = logging.getLogger(__name__)
 
 MAX_MISFIRE_SCAN = 10_000
-RECURRENCE_RULE_METADATA_KEY = "recurrence_rule"
-RECURRENCE_OCCURRENCE_METADATA_KEY = "recurrence_occurrence_utc"
+MIN_INTERVAL_SECONDS = 1
+MAX_INTERVAL_SECONDS = 10 * 366 * 86_400  # ten years; larger values overflow datetime arithmetic eventually
+MAX_CATCH_UP = 100  # bounds the per-chain drain after downtime (each fire re-plans the missed range)
+RECURRENCE_RULE_METADATA_KEY = RECURRENCE_RULE_KEY
+RECURRENCE_OCCURRENCE_METADATA_KEY = RECURRENCE_OCCURRENCE_KEY
 
 _MAX_IDLE_SCAN_DAYS = 366 * 9  # longest legitimate gap between occurrences (leap-day rules)
 _RULE_ID_PATTERN = re.compile(r"^[A-Za-z0-9][A-Za-z0-9_.:-]{0,127}$")
@@ -218,8 +239,8 @@ class MisfirePolicy(BaseModel):
     @model_validator(mode="after")
     def _check_shape(self) -> Self:
         if self.kind is MisfirePolicyKind.CATCH_UP:
-            if self.max_catch_up < 1:
-                raise ValueError("catch_up requires max_catch_up >= 1")
+            if not 1 <= self.max_catch_up <= MAX_CATCH_UP:
+                raise ValueError(f"catch_up requires 1 <= max_catch_up <= {MAX_CATCH_UP}")
         elif self.max_catch_up != 0:
             raise ValueError(f"{self.kind.value} does not take max_catch_up")
         return self
@@ -263,15 +284,20 @@ class RecurrenceRule(BaseModel):
             raise ValueError("rule_id must match [A-Za-z0-9][A-Za-z0-9_.:-]{0,127}")
         if (self.interval_seconds is None) == (self.cron is None):
             raise ValueError("exactly one of interval_seconds or cron is required")
-        if self.interval_seconds is not None and self.interval_seconds < 1:
-            raise ValueError("interval_seconds must be >= 1")
+        if self.interval_seconds is not None and not (
+            MIN_INTERVAL_SECONDS <= self.interval_seconds <= MAX_INTERVAL_SECONDS
+        ):
+            raise ValueError(f"interval_seconds must be within {MIN_INTERVAL_SECONDS}..{MAX_INTERVAL_SECONDS}")
         if self.cron is not None:
             _compile_cron(self.cron)
         _load_zone(self.timezone)
         start = _parse_utc_iso(self.start_utc, "start_utc")
         if self.end_utc is not None and _parse_utc_iso(self.end_utc, "end_utc") < start:
             raise ValueError("end_utc must not precede start_utc")
+        if self.cron is not None and next(self._iter_cron(start - timedelta(microseconds=1)), None) is None:
+            raise ValueError("cron expression has no occurrence (unsatisfiable)")
         validate_scheduled_resume_metadata(self.resume_metadata)
+        reject_recurrence_metadata(self.resume_metadata)
         return self
 
     # -- derived views
@@ -324,7 +350,11 @@ class RecurrenceRule(BaseModel):
         start = self.start
         first_index = 0 if floor < start else (floor - start) // step + 1
         for index in count(first_index):
-            yield start + index * step
+            try:
+                when = start + index * step
+            except OverflowError:  # past the representable calendar: the rule simply ends
+                return
+            yield when
 
     def _iter_cron(self, floor: datetime) -> Iterator[datetime]:
         if self.cron is None:
@@ -379,10 +409,47 @@ class RecurrenceRule(BaseModel):
 # --------------------------------------------------------------------------- planning
 
 
-def occurrence_schedule_id(rule_id: str, occurrence: datetime) -> str:
-    """Deterministic global identity of one occurrence (rule + UTC instant)."""
+def _digest(*parts: str) -> str:
+    return hashlib.sha256("\x00".join(parts).encode("utf-8")).hexdigest()[:16]
+
+
+def occurrence_schedule_id(rule_id: str, occurrence: datetime, *, tenant_id: str, task_id: str) -> str:
+    """Deterministic global identity of one occurrence (tenant + task + rule + UTC instant).
+
+    ``scheduled_resumes.schedule_id`` is a global primary key, so the id is qualified by
+    fixed-length digests of tenant and task: no tenant can collide with, pre-empt or probe
+    another tenant's chain, and neither tenant nor task text appears in the id.
+    """
     stamp = _as_utc(occurrence, "occurrence").strftime("%Y%m%dT%H%M%SZ")
-    return f"rec_{rule_id}_{stamp}"
+    return f"rec_{_digest('tenant', tenant_id)}_{_digest('task', tenant_id, task_id)}_{rule_id}_{stamp}"
+
+
+def validate_occurrence_entry(entry: ScheduledResume) -> None:
+    """Accept recurrence metadata only on a self-consistent occurrence row (fail closed).
+
+    The row must carry both keys, a valid rule whose tenant, task and token equal the row,
+    an occurrence instant that is a real occurrence of that rule, ``run_at_utc`` equal to
+    that instant and the canonical ``schedule_id``. A caller cannot mint a chain by
+    hand-building such a row without producing exactly what the materializer writes.
+    """
+    metadata = entry.resume_metadata
+    raw_rule = metadata.get(RECURRENCE_RULE_METADATA_KEY)
+    raw_occurrence = metadata.get(RECURRENCE_OCCURRENCE_METADATA_KEY)
+    if raw_rule is None or raw_occurrence is None:
+        raise RecurrenceError("recurrence metadata requires both the rule and the occurrence instant")
+    if not isinstance(raw_rule, dict):
+        raise RecurrenceError("persisted recurrence rule is not an object")
+    rule = RecurrenceRule.model_validate(raw_rule)
+    if rule.tenant_id != entry.tenant_id or rule.task_id != entry.task_id or rule.resume_token != entry.resume_token:
+        raise RecurrenceError("recurrence rule does not match its occurrence row")
+    occurrence = _parse_utc_iso(str(raw_occurrence), "recurrence occurrence")
+    if rule.next_after(occurrence - timedelta(microseconds=1)) != occurrence:
+        raise RecurrenceError("recurrence occurrence is not an occurrence of its rule")
+    if entry.run_at_utc != _iso(occurrence):
+        raise RecurrenceError("recurrence occurrence does not match run_at_utc")
+    expected = occurrence_schedule_id(rule.rule_id, occurrence, tenant_id=rule.tenant_id, task_id=rule.task_id)
+    if entry.schedule_id != expected:
+        raise RecurrenceError("recurrence occurrence has a non-canonical schedule_id")
 
 
 def plan_next_occurrences(rule: RecurrenceRule, after: datetime, now: datetime) -> list[datetime]:
@@ -414,6 +481,14 @@ def plan_next_occurrences(rule: RecurrenceRule, after: datetime, now: datetime) 
 # --------------------------------------------------------------------------- materializer
 
 
+class RecurrenceStartResult(StrEnum):
+    """Typed outcome of ``RecurrenceMaterializer.start_checked``."""
+
+    STARTED = "started"
+    ALREADY_EXISTS = "already_exists"
+    NO_OCCURRENCE = "no_occurrence"
+
+
 class RecurrenceMaterializer:
     """Persists recurrence occurrences as one-shot resumes on the existing ledger."""
 
@@ -426,6 +501,15 @@ class RecurrenceMaterializer:
         if first is None:
             return None
         return self._materialize(rule, first)
+
+    def start_checked(self, rule: RecurrenceRule) -> RecurrenceStartResult:
+        """Like ``start`` but distinguishes a started chain, an existing one and an empty rule."""
+        first = rule.first_occurrence()
+        if first is None:
+            return RecurrenceStartResult.NO_OCCURRENCE
+        if self._materialize(rule, first) is None:
+            return RecurrenceStartResult.ALREADY_EXISTS
+        return RecurrenceStartResult.STARTED
 
     def materialize_next(self, entry: ScheduledResume, *, now: datetime) -> list[ScheduledResume]:
         """Materialize the occurrence(s) that follow a fired recurring ``entry``.
@@ -465,7 +549,12 @@ class RecurrenceMaterializer:
         metadata[RECURRENCE_RULE_METADATA_KEY] = rule.model_dump(mode="json")
         metadata[RECURRENCE_OCCURRENCE_METADATA_KEY] = when
         entry = ScheduledResume(
-            schedule_id=occurrence_schedule_id(rule.rule_id, occurrence),
+            schedule_id=occurrence_schedule_id(
+                rule.rule_id,
+                occurrence,
+                tenant_id=rule.tenant_id,
+                task_id=rule.task_id,
+            ),
             task_id=rule.task_id,
             tenant_id=rule.tenant_id,
             resume_token=rule.resume_token,
