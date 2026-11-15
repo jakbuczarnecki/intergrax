@@ -545,6 +545,26 @@ BATCHES: Final[tuple[Batch, ...]] = (
         "IA-GLOBAL (P8)",
         "tests/qualification/pdc_x/p6_ecapfix/ and p6_impact/; xd_12 and p6_impact coverage tests green on development and on a tree that contains the MCP-RC change",
     ),
+    Batch(
+        "B-P7-D6",
+        "D6",
+        "D6 repair after the P7 independent audit (IA-D6), loop 1: evidence-plane security audit trail writes only through a validating port (F-D6-01), overstating immutable/replicated wording relabeled (F-D6-02), plugin provenance bound to the attested distribution (F-D6-05), stale sandbox governance-deny test root-caused (F-D6-07), provider text kept out of the credential error chain (F-D6-12)",
+        "T-IGX-041-F",
+        "W13",
+        (
+            "intergrax/runtime/security/security_audit_trail.py",
+            "intergrax/runtime/security/multi_region_audit_trail.py",
+            "intergrax/core/plugins/admission.py",
+            "intergrax/integrations/credentials/secrets_store_resolver.py",
+            "tests/qualification/pdc_x/d6_repair/",
+            "tests/unit/runtime/sandbox/test_cap_c1c_sandbox_evidence_and_contract_purity.py",
+        ),
+        "ADR-PDC-06",
+        ("B-P6-J",),
+        GATE_PRODUCT,
+        "IA-D6 (re-audit, loop 1 of 2)",
+        "tests/qualification/pdc_x/d6_repair/ red on unchanged code and green after; d6, xd_02/06/10, compat_x F-35 and event-evolution gates, sandbox unit suite and credential tests green except the known reds named in the ticket",
+    ),
 )
 
 # Requirement -> batch overrides where the corrective-task text alone is ambiguous.
@@ -844,6 +864,10 @@ def render_dag() -> str:
         "W12": (
             "after B-P6-I and the signature of T-IGX-040-A",
             "after the signature of T-IGX-040-A (one-time exception OD-MCP-RC-05; both repairs in one PR, then product paths freeze again)",
+        ),
+        "W13": (
+            "after B-P6-J and the signature of T-IGX-041-F",
+            "under DELEGATION-PDC-P7-REPAIR (option B repair of the P7 audit findings); product merge gate OD-PDC-SEQ-01",
         ),
     }
     for wave, bids in waves.items():

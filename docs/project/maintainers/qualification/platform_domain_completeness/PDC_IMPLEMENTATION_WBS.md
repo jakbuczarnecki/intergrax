@@ -35,6 +35,7 @@ Rows classed `CURRENT_HEAD_REQUALIFICATION`, `ALREADY_CERTIFIED_REUSABLE`, `N/A_
 | B-P6-H | ALL | W10 | T-IGX-036-Y | 0 | — | B-P6-E | no | No product path: may merge before MCP-SERVER-X P8 | IA-GLOBAL (P8) |
 | B-P6-I | ALL | W11 | T-IGX-036-Z | 0 | — | B-P6-F | YES | OD-PDC-SEQ-01: implement in an isolated worktree; merge only after MCP-SERVER-X P8 publication; ACT-N11 re-activation at PDC-P7-00 | IA-GLOBAL (P8) |
 | B-P6-J | ALL | W12 | T-IGX-040-A | 0 | — | B-P6-I | YES | OD-PDC-SEQ-01: implement in an isolated worktree; merge only after MCP-SERVER-X P8 publication; ACT-N11 re-activation at PDC-P7-00 | IA-GLOBAL (P8) |
+| B-P7-D6 | D6 | W13 | T-IGX-041-F | 0 | ADR-PDC-06 | B-P6-J | YES | OD-PDC-SEQ-01: implement in an isolated worktree; merge only after MCP-SERVER-X P8 publication; ACT-N11 re-activation at PDC-P7-00 | IA-D6 (re-audit, loop 1 of 2) |
 
 ## B-P3 — Ownership records closed in P3
 
@@ -387,6 +388,18 @@ Rows classed `CURRENT_HEAD_REQUALIFICATION`, `ALREADY_CERTIFIED_REUSABLE`, `N/A_
 - **Write set:** `intergrax/integrations/providers/embedding_provider/openai/register.py`, `intergrax/platform/enterprise_audit/impact_map.py`, `intergrax/platform/enterprise_audit/data/changed_since_impact_map.v1.json`, `tests/qualification/pdc_x/p6_ecapfix/`, `tests/qualification/pdc_x/p6_impact/`
 - **Tests:** tests/qualification/pdc_x/p6_ecapfix/ and p6_impact/; xd_12 and p6_impact coverage tests green on development and on a tree that contains the MCP-RC change
 - **Evidence (exact SHA):** implementation SHA and publication SHA recorded in `PDC_SHA_LADDER.md`; test log under `.tmp/proof/pdc-x-p5/B-P6-J/`; audited by IA-GLOBAL (P8) at the PDC-P7 audited SHA.
+- **Merge gate:** OD-PDC-SEQ-01: implement in an isolated worktree; merge only after MCP-SERVER-X P8 publication; ACT-N11 re-activation at PDC-P7-00
+
+| Requirement | Class | Test case |
+| --- | --- | --- |
+| — | — | — |
+
+## B-P7-D6 — D6 repair after the P7 independent audit (IA-D6), loop 1: evidence-plane security audit trail writes only through a validating port (F-D6-01), overstating immutable/replicated wording relabeled (F-D6-02), plugin provenance bound to the attested distribution (F-D6-05), stale sandbox governance-deny test root-caused (F-D6-07), provider text kept out of the credential error chain (F-D6-12)
+
+- **Ticket:** T-IGX-041-F · **Wave:** W13 · **ADR:** ADR-PDC-06 · **Auditor:** IA-D6 (re-audit, loop 1 of 2)
+- **Write set:** `intergrax/runtime/security/security_audit_trail.py`, `intergrax/runtime/security/multi_region_audit_trail.py`, `intergrax/core/plugins/admission.py`, `intergrax/integrations/credentials/secrets_store_resolver.py`, `tests/qualification/pdc_x/d6_repair/`, `tests/unit/runtime/sandbox/test_cap_c1c_sandbox_evidence_and_contract_purity.py`
+- **Tests:** tests/qualification/pdc_x/d6_repair/ red on unchanged code and green after; d6, xd_02/06/10, compat_x F-35 and event-evolution gates, sandbox unit suite and credential tests green except the known reds named in the ticket
+- **Evidence (exact SHA):** implementation SHA and publication SHA recorded in `PDC_SHA_LADDER.md`; test log under `.tmp/proof/pdc-x-p5/B-P7-D6/`; audited by IA-D6 (re-audit, loop 1 of 2) at the PDC-P7 audited SHA.
 - **Merge gate:** OD-PDC-SEQ-01: implement in an isolated worktree; merge only after MCP-SERVER-X P8 publication; ACT-N11 re-activation at PDC-P7-00
 
 | Requirement | Class | Test case |
