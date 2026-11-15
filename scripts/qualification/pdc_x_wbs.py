@@ -840,10 +840,13 @@ BATCHES: Final[tuple[Batch, ...]] = (
     Batch(
         "B-P8-R1",
         "R1",
-        "P8 repair loop 1, product defects of the independent global audit: RAG loader family (doc smart handler import, duplicate parser runtime document class, in-memory list_collections), recurrence chain survives eligibility-phase failures (scheduler), governed content key refusal in the workspace tools plus case, dot and filesystem-root hardening, credential error context, two product paths classified in the ENT-AUDIT impact map, durable projection slug pin (test-only); register, debt and test-hygiene findings are excluded in the plan",
+        "P8 repair loop 1, product defects of the independent global audit: RAG loader family (doc smart handler import, duplicate parser runtime document class, in-memory list_collections), recurrence chain survives eligibility-phase failures (scheduler), incident scenario runtime authority, manifest and registry carry-over plus evidence adapter token count (time-boxed), governed content key refusal in the workspace tools plus case, dot and filesystem-root hardening, credential error context, two product paths classified in the ENT-AUDIT impact map, durable projection slug pin (test-only); register, debt and test-hygiene findings are excluded in the plan",
         "T-IGX-041-M",
         "W14a",
         (
+            "intergrax/applications/_shared/scenario_runtime_baseline.py",
+            "intergrax/runtime/llm/model_call_runtime_evidence_adapter.py",
+            "platform_proofs/scenarios/ai_incident_investigation/application/runtime_composition.py",
             "intergrax/rag/document_loaders/handlers/doc_smart_document_handler.py",
             "intergrax/rag/document_loaders/contracts/parser_native_handle.py",
             "intergrax/rag/document_loaders/compat/legacy_runtime_document.py",
