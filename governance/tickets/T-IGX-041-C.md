@@ -12,7 +12,20 @@ Canonical plan: [`governance/tickets/plans/PLAN_T-IGX-041-C.md`](plans/PLAN_T-IG
 
 ## Approved
 
-(pending; the plan is signed by a delegate session under `DELEGATION-PDC-P7-REPAIR.md` or by the Operator; the implementer never writes the approval line)
+Approved: operator-delegate @ 2026-11-15T08:57:00+01:00
+Delegation: docs/project/maintainers/qualification/platform_domain_completeness/operator_decisions/DELEGATION-PDC-P7-REPAIR.md@8f4b139c1f5352c9861872f0b5077996b8f0f891
+
+Delegate checks (scope of `DELEGATION-PDC-P7-REPAIR.md`, all passed before this line was written; delegation read on `origin/development`, last changed by `8f4b139c1`; plan read at the batch branch, commit `93972680d`, base `1c864ea19`):
+
+- The plan digest recomputed with `scripts/governance/plan_digest.py` equals the digest above (`a42ea80029a3e8af786ac6d909715c260205b0a6f8d11af6a1d0cfc6e3bbe5a3`).
+- The product and test write set of the plan (24 entries) equals the write set of batch row `B-P7-D3` in `PDC_IMPLEMENTATION_WBS.md` (compared mechanically: no entry on either side only; the plan's only extra backticked name, `test_d3_r022_capability_flags.py`, lies inside the listed directory `tests/qualification/pdc_x/d3/`). The commit diff against `1c864ea19` touches only the ticket, the plan, the WBS, the DAG and `scripts/qualification/pdc_x_wbs.py`; no product path changed.
+- Hotspots: nothing under `intergrax/applications/_shared/` or `intergrax/contracts/` is in the write set; both are listed as out of scope and F-D3-04 is excluded because it would touch `intergrax/applications/_shared/llm_resolver.py`. The write-set paths `intergrax/llm_adapters/_shared/...` and `intergrax/llm_adapters/contracts/call_config.py` are different directories (the latter exists) and are named exactly, with one new file `stream_finish_signal.py`. The only directory entry is a test directory, `tests/qualification/pdc_x/d3/`.
+- Findings: in-scope table (F-D3-01, -02, -05, F-D3-07 defect part, F-D3-03 doc part, F-D2-01 estimator half, F-D3-08, F-D3-13) and excluded table (F-D3-03 enforcement and F-D3-07 taxonomy = missing feature versus claim, F-D3-04 = F-04 family, F-D3-06 -> T-IGX-041-I, LOW and INFO -> debt register), each exclusion with reason and reopen condition.
+- F-D2-01 estimator half: the plan limits it to `estimate_tokens_for_messages` in `intergrax/llm_adapters/base/base_llm_adapter.py` (counts serialized `tool_calls`, `name`, `tool_call_id`; messages without them estimate as before, frozen table) and leaves the compiler, ladder and trim half under `intergrax/runtime/nexus/context/` to T-IGX-041-B. The D2 ticket is not yet written (branch `claude/pdc-x-041b-ad8a21` carries no ticket or plan); the tickets of A, E and G name no `intergrax/llm_adapters/` path. No overlap can be shown today; the D2 plan must not name `base_llm_adapter.py` (a signer of the D2 ticket should check that).
+- Gates: no gate is weakened or deleted. `_declares_true` in `test_d3_r022_capability_flags.py` currently accepts a constant `True` or any `ast.Call` return (line 217-223); the plan tightens it to a constant `True` or a delegation to a named flag, with a negative test (`return bool(self._x)` must fail). If a shipped adapter fails the tighter predicate, the plan allows a named, commented allowlist entry for that adapter only, which is no weaker than the present predicate, and requires a report. Other edits of existing tests (`test_ollama_tool_calling.py` message regex, split of `test_invalid_adapter_missing_model_fails_clearly`, state isolation, `importorskip("anthropic")` for two modules) are justified in the plan as stale expectation or classification, with the Test contract running the modules unchanged with the llm extras; no test is deleted, xfailed or narrowed. A new source gate (AST) and pinned tests for mutants M03 and M12 strengthen.
+- No registry, scheduler, engine, trust, policy or audit authority is added (design constraints of the plan); nothing under `scripts/governance/` or `.github/` is in the write set; the C10/C15 freeze is respected (no credential, endpoint or vendor addition).
+- The plan states "This plan is not a certification verdict"; the implementer (branch `claude/pdc-x-041c-e320dd`) and this delegate session are different sessions. The delegate edited nothing except this approval block and the lifecycle state. Not checked by the delegate: the correctness of the plan's code-level claims (stream paths, line numbers), which the implementer re-verifies as the plan's first protocol step.
+- Merge gate (stated as the delegation record requires): product pull requests merge under authorizations 1 and 3 of `DELEGATION-PDC-STANDING.md` and decision 8 of `DELEGATION-PDC-WAVE2.md`, as `DELEGATION-PDC-P7-REPAIR.md` names them; WBS merge gate OD-PDC-SEQ-01 (merge only after MCP-SERVER-X P8 publication) also applies. The delegate did not verify that the numbering matches the numbered items of `DELEGATION-PDC-STANDING.md`. Write-set amendments are not delegated.
 
 ## Test contract
 
@@ -35,4 +48,4 @@ Plus the mutation run for M03 and M12 described in the plan (Protocol item 4).
 
 ## Lifecycle state
 
-plan_pending
+plan_approved
