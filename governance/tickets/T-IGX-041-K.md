@@ -6,7 +6,7 @@ Test-infrastructure ticket, preparatory to the final EBH-7 re-pin (T-IGX-041-J),
 
 ## Plan digest
 
-Plan digest: 96587b049180256320be3444504e69ac06f9cca5e5ee4f91f678ea414a4e4fda
+Plan digest: 924349b7f694436aae9bc0a8eafa44857d3e6f8ed0e8441fec41864395c1498e
 
 Canonical plan: [`governance/tickets/plans/PLAN_T-IGX-041-K.md`](plans/PLAN_T-IGX-041-K.md).
 
