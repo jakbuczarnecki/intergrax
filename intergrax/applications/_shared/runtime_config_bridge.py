@@ -5,13 +5,36 @@
 from __future__ import annotations
 
 from intergrax.agents.reference_harness import LabHarnessContext
-from intergrax.applications.contracts.manifest import ApplicationManifest
+from intergrax.applications._shared.adaptive_runtime_bridge import apply_adaptive_profiles_from_environment
+from intergrax.applications._shared.adaptive_wiring import wire_adaptive_profile
+from intergrax.applications._shared.agent_runtime_governance_wiring import (
+    AgentRuntimeGovernanceMaterializationError,
+    apply_agent_runtime_governance_to_config,
+    capability_grants_from_application_manifest,
+)
 from intergrax.applications._shared.application_composition_context import (
     ApplicationCompositionContext,
+)
+from intergrax.applications._shared.attestation_runtime_bridge import (
+    apply_attestation_profiles_from_environment,
 )
 from intergrax.applications._shared.catalog_runtime_bridge import (
     apply_catalog_profiles_from_composition,
     apply_catalog_profiles_from_environment,
+)
+from intergrax.applications._shared.context_runtime_bridge import (
+    apply_context_profiles_from_environment,
+    derive_run_budget_from_context_policy,
+)
+from intergrax.applications._shared.cost_runtime_bridge import (
+    apply_cost_profiles_from_environment,
+)
+from intergrax.applications._shared.evaluation_runtime_bridge import (
+    apply_evaluation_profiles_from_environment,
+)
+from intergrax.applications._shared.evaluation_wiring import wire_application_evaluation
+from intergrax.applications._shared.guardrail_runtime_bridge import (
+    apply_guardrail_profiles_to_runtime_config,
 )
 from intergrax.applications._shared.integration_runtime_bridge import (
     apply_integration_profiles_from_composition,
@@ -23,66 +46,43 @@ from intergrax.applications._shared.llm_routing_runtime_bridge import (
     make_config_routing_context_provider,
     wire_secondary_llm_routing_evaluating,
 )
-from intergrax.llm_adapters.routing.context_bridge import build_routing_context_from_runtime
-from intergrax.applications._shared.rag_runtime_bridge import apply_rag_for_environment
-from intergrax.applications._shared.context_runtime_bridge import (
-    apply_context_profiles_from_environment,
-    derive_run_budget_from_context_policy,
-)
 from intergrax.applications._shared.memory_runtime_bridge import apply_memory_profile_to_runtime_config
-from intergrax.applications._shared.observability_runtime_bridge import (
-    apply_observability_profiles_from_environment,
-)
-from intergrax.applications._shared.attestation_runtime_bridge import (
-    apply_attestation_profiles_from_environment,
-)
-from intergrax.applications._shared.reliability_runtime_bridge import (
-    apply_reliability_profiles_from_environment,
-)
-from intergrax.applications._shared.cost_runtime_bridge import (
-    apply_cost_profiles_from_environment,
-)
-from intergrax.applications._shared.adaptive_runtime_bridge import apply_adaptive_profiles_from_environment
-from intergrax.applications._shared.adaptive_wiring import ApplicationAdaptiveWiring, wire_adaptive_profile
-from intergrax.applications._shared.evaluation_runtime_bridge import (
-    apply_evaluation_profiles_from_environment,
-)
-from intergrax.applications._shared.evaluation_wiring import wire_application_evaluation
-from intergrax.applications._shared.reliability_wiring import wire_application_reliability
-from intergrax.applications._shared.guardrail_runtime_bridge import (
-    apply_guardrail_profiles_to_runtime_config,
-)
-from intergrax.applications._shared.security_runtime_bridge import (
-    apply_security_profiles_from_environment,
-)
-from intergrax.applications._shared.prompt_runtime_bridge import apply_prompt_profiles_from_environment
-from intergrax.applications._shared.prompt_wiring import resolve_prompt_registry
-from intergrax.applications._shared.memory_wiring import (
-    build_session_manager_from_environment,
-    resolve_memory_platform_wiring,
-)
 from intergrax.applications._shared.memory_vector_wiring import (
     assert_memory_vector_backend_available,
     resolve_rag_stack_for_memory_wiring,
 )
+from intergrax.applications._shared.memory_wiring import (
+    build_session_manager_from_environment,
+    resolve_memory_platform_wiring,
+)
+from intergrax.applications._shared.observability_runtime_bridge import (
+    apply_observability_profiles_from_environment,
+)
+from intergrax.applications._shared.prompt_runtime_bridge import apply_prompt_profiles_from_environment
+from intergrax.applications._shared.prompt_wiring import resolve_prompt_registry
+from intergrax.applications._shared.rag_runtime_bridge import apply_rag_for_environment
+from intergrax.applications._shared.reliability_runtime_bridge import (
+    apply_reliability_profiles_from_environment,
+)
+from intergrax.applications._shared.reliability_wiring import wire_application_reliability
+from intergrax.applications._shared.security_runtime_bridge import (
+    apply_security_profiles_from_environment,
+)
 from intergrax.applications.contracts.build_context import ApplicationBuildContext
 from intergrax.applications.contracts.environment_profile import ApplicationEnvironmentProfile
-from intergrax.runtime.policy.execution_mode_defaults import runtime_policies_for_execution_mode
+from intergrax.applications.contracts.manifest import ApplicationManifest
+from intergrax.contracts.agent_runtime_governance import CapabilityGrant
 from intergrax.llm_adapters.contracts.llm_adapter import LLMAdapter
-from intergrax.runtime.execution.host_runtime_config import RuntimeConfig
+from intergrax.llm_adapters.routing.context_bridge import build_routing_context_from_runtime
 from intergrax.runtime.execution.agent_runtime_context import RuntimeContext
 from intergrax.runtime.execution.agent_runtime_io import RuntimeRequest
+from intergrax.runtime.execution.host_runtime_config import RuntimeConfig
+from intergrax.runtime.policy.execution_mode_defaults import runtime_policies_for_execution_mode
 from intergrax.runtime.policy.policy_bundle import RuntimePolicyBundle
-from intergrax.runtime.wiring.policy_runtime_bridge import apply_policy_bundle_to_runtime_config
-from intergrax.applications._shared.agent_runtime_governance_wiring import (
-    AgentRuntimeGovernanceMaterializationError,
-    apply_agent_runtime_governance_to_config,
-    capability_grants_from_application_manifest,
-)
-from intergrax.contracts.agent_runtime_governance import CapabilityGrant
 from intergrax.runtime.wiring.agent_runtime_governance_factory import (
     default_lab_capability_grants,
 )
+from intergrax.runtime.wiring.policy_runtime_bridge import apply_policy_bundle_to_runtime_config
 
 
 def materialize_runtime_config(
@@ -181,9 +181,7 @@ def materialize_runtime_config(
         env,
         idempotency_store=reliability_wiring.idempotency_store,
     )
-    config.dependency_concurrency_admission = (
-        env.reliability_profile.dependency_concurrency_admission
-    )
+    config.dependency_concurrency_admission = env.reliability_profile.dependency_concurrency_admission
     apply_context_profiles_from_environment(config, env)
     from intergrax.applications._shared.context_wiring import apply_context_engine_to_runtime_config
 
@@ -194,7 +192,10 @@ def materialize_runtime_config(
         config.context_budget_policy = ContextBudgetPolicy.from_adapter(config.llm_adapter)
         derive_run_budget_from_context_policy(config)
     apply_cost_profiles_from_environment(config, env)
-    evaluation_wiring = wire_application_evaluation(env)
+    evaluation_wiring = wire_application_evaluation(
+        env,
+        tenant_id=(request.tenant_id or "").strip() or None,
+    )
     adaptive_wiring = wire_adaptive_profile(
         env,
         evaluation_governance_bridge=evaluation_wiring.governance_bridge,
@@ -246,8 +247,7 @@ def materialize_runtime_config(
             active_composition = composition
             if active_composition is None or active_composition.agent_registry is None:
                 raise AgentRuntimeGovernanceMaterializationError(
-                    "production agent runtime governance requires "
-                    "application composition agent_registry",
+                    "production agent runtime governance requires application composition agent_registry",
                 )
             grants = capability_grants_from_application_manifest(
                 harness_ctx.manifest,

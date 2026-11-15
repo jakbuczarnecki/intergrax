@@ -9,8 +9,6 @@ from types import SimpleNamespace
 from unittest.mock import MagicMock, patch
 
 import pytest
-from langchain_core.messages import AIMessage, HumanMessage, SystemMessage, ToolMessage
-
 from intergrax.llm.messages import ChatMessage
 from intergrax.llm_adapters.contracts.adapter_response import LLMAdapterResponse
 from intergrax.llm_adapters.contracts.finish_reason import LLMFinishReason
@@ -21,6 +19,7 @@ from intergrax.llm_adapters.providers.ollama_capabilities import (
     OllamaModelCapabilities,
     OllamaModelCapabilityResolver,
 )
+from langchain_core.messages import AIMessage, HumanMessage, SystemMessage, ToolMessage
 
 pytestmark = pytest.mark.unit
 
@@ -112,9 +111,7 @@ def test_capabilities_without_tools_disable_support(fake_chat: MagicMock) -> Non
 
 def test_capability_names_normalized() -> None:
     resolver = OllamaModelCapabilityResolver(
-        show_model=lambda _model: _capabilities_response(
-            capabilities=["  TOOLS ", "", "Completion"]
-        ),
+        show_model=lambda _model: _capabilities_response(capabilities=["  TOOLS ", "", "Completion"]),
     )
     caps = resolver.resolve("qwen2.5:14b")
     assert caps.capabilities == frozenset({"tools", "completion"})
@@ -445,7 +442,9 @@ def test_unsupported_tool_choice_rejects_before_provider(
 ) -> None:
     with pytest.raises(
         ValueError,
-        match="Ollama native tool calling supports only tool_choice=None, 'auto', or 'required'",
+        match=(
+            "Ollama native tool calling supports only tool_choice=None, 'auto', 'required', or a forced function choice"
+        ),
     ):
         adapter.generate_with_tools(
             [ChatMessage(role="user", content="search")],
@@ -599,9 +598,7 @@ def test_usage_tracking_registers_run_id(
             TOOLS_SCHEMA,
             run_id="tool-usage-run",
         )
-        estimate_input = "".join(
-            call.args[0] for call in estimate_text.call_args_list
-        )
+        estimate_input = "".join(call.args[0] for call in estimate_text.call_args_list)
         assert "lookup" in estimate_input
         assert '"query"' in estimate_input
 

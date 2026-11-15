@@ -24,7 +24,7 @@ Tier-3 solves this by keeping **one canonical composition path** from product de
 ## Maturity boundary
 
 > [!IMPORTANT]
-> **Protocol v2 (2026-08-18) accepted Tier-3 boundary defects that remain planned, not fixed:** **TL-FIX-C** (LKW-specific fields on generic `HostDeploymentProfile`). **TL-FIX-D** (private `_execution_adapter` mutation in Legal and Dispute Sim hosts) is **IMPLEMENTED** on current HEAD via public `DefaultRunService.bind_execution_adapter(...)` — historical audit text retained below. Finding 05 (dynamic boundary guard scope) is owned by **TL-FIX-A** in [`PLATFORM_FOUNDATION`](PLATFORM_FOUNDATION.md) - not Tier-3 remediation. See [Current limitations](#current-limitations--protocol-v2).
+> **Protocol v2 (2026-08-18) accepted Tier-3 boundary defects; one is partly fixed:** **TL-FIX-C** (LKW-specific fields on generic `HostDeploymentProfile`) is **PARTIALLY IMPLEMENTED**: T-IGX-036-R moved the three `lkw_*` keys to the typed `LkwHybridDaemonDeployment`; `business_agents_deploy_enabled` remains a typed field of the generic profile pending an Operator decision (IA-D4 finding F-D4-08). **TL-FIX-D** (private `_execution_adapter` mutation in Legal and Dispute Sim hosts) is **IMPLEMENTED** on current HEAD via public `DefaultRunService.bind_execution_adapter(...)` — historical audit text retained below. Finding 05 (dynamic boundary guard scope) is owned by **TL-FIX-A** in [`PLATFORM_FOUNDATION`](PLATFORM_FOUNDATION.md) - not Tier-3 remediation. See [Current limitations](#current-limitations--protocol-v2).
 
 > [!NOTE]
 > Historical **L3 / Done** plan rows and AUDIT-IDEAL closeout labels describe harness delivery - **not** automatic universal product production qualification. Representative product proof exists for LKW ([`PROOFS.md`](../proofs/PROOFS.md)); other hosts vary.
@@ -44,7 +44,7 @@ Tier-3 solves this by keeping **one canonical composition path** from product de
 | **App hooks** | `ApplicationHost.on_hook` - task/domain reactions; distinct from Hosting lifecycle hooks |
 | **Plugin boundary** | Applications consume admitted plugins; domain wiring discovers them |
 | **Hosting boundary** | [`APPLICATION_HOSTING.md`](APPLICATION_HOSTING.md) owns process lifecycle - not application definition |
-| **Protocol v2 debt** | TL-FIX-C **ACCEPTED / PLANNED**; TL-FIX-D **IMPLEMENTED** (public bind API) |
+| **Protocol v2 debt** | TL-FIX-C **PARTIALLY IMPLEMENTED** (three `lkw_*` keys moved, `business_agents_deploy_enabled` remains); TL-FIX-D **IMPLEMENTED** (public bind API) |
 | **Maturity** | **A4 · I3 · P3 · E3** - see [Current maturity](#current-maturity) |
 | **Go deeper** | [Engineering canon](#engineering-canon) · [extended depth satellite](satellites/TIER3_APPLICATION_ENVIRONMENT_extended_depth.md) · [production gates satellite](satellites/TIER3_APPLICATION_ENVIRONMENT_production_gates.md) · [plan](../maintainers/plans/TIER3_APPLICATION_ENVIRONMENT.md) |
 
@@ -170,16 +170,16 @@ Accepted audit: [`TIER_LAYER_BOUNDARIES`](../../audit_results/2026-08-18/TIER_LA
 
 ### TL-FIX-C - product vocabulary in generic contract
 
-**Status:** ACCEPTED / PLANNED · **not fixed**
+**Status:** **PARTIALLY IMPLEMENTED** (T-IGX-036-R, 2026-11-12; reconciled by T-IGX-041-D, 2026-11-15) · one key still open
 
-Some generic Tier-3 profile surfaces still contain product-specific deployment vocabulary; accepted remediation will move those concerns to product-owned configuration or typed extensions.
+The three `lkw_*` keys left the typed fields of `HostDeploymentProfile`: the profile accepts product-owned deployment keys as flat scalar entries (`extra="allow"`), and `LkwHybridDaemonDeployment` (`intergrax/applications/_shared/lkw_hybrid_daemon_wiring.py`) validates and interprets them. `business_agents_deploy_enabled` is still a typed field of the generic profile; where it belongs (a product-owned model, or recorded platform vocabulary) is an open Operator decision (IA-D4 finding F-D4-08).
 
 | Field | Contract | Impacted product | Target ownership |
 | ----- | -------- | ---------------- | ---------------- |
-| `lkw_hybrid_daemon_enabled` | `HostDeploymentProfile` | Local Knowledge Workspace | Product-owned deployment config or typed extension |
-| `lkw_daemon_bind_host` | `HostDeploymentProfile` | LKW hybrid daemon | Product-owned |
-| `lkw_daemon_port` | `HostDeploymentProfile` | LKW hybrid daemon | Product-owned |
-| `business_agents_deploy_enabled` | `HostDeploymentProfile` | LKW business agents deploy | Product-owned |
+| `lkw_hybrid_daemon_enabled` | flat entry of `HostDeploymentProfile`, typed by `LkwHybridDaemonDeployment` | Local Knowledge Workspace | Product-owned deployment config or typed extension (**moved**) |
+| `lkw_daemon_bind_host` | flat entry of `HostDeploymentProfile`, typed by `LkwHybridDaemonDeployment` | LKW hybrid daemon | Product-owned (**moved**) |
+| `lkw_daemon_port` | flat entry of `HostDeploymentProfile`, typed by `LkwHybridDaemonDeployment` | LKW hybrid daemon | Product-owned (**moved**) |
+| `business_agents_deploy_enabled` | typed field of `HostDeploymentProfile` | LKW business agents deploy | Product-owned (**open**: still a typed field; ownership decision pending) |
 
 **Code:** `intergrax/applications/contracts/environment_profile/sub_profiles.py` (`HostDeploymentProfile`).
 
@@ -270,7 +270,7 @@ Historical Tier-3 **Done** delivery facts, maturity score, and existing **IDT-FI
 | Intake parity | Done on plan register for product hosts (HTTP, async queue, streaming where implemented, scheduled/hybrid via profile) - not every theoretical surface |
 | Sandbox / shadow | Partial - real `SandboxSessionManager` / `ShadowWorkspaceManager` when profile enables; not a universal production isolation guarantee |
 | Production gates | Scripts exist (`check_application_production_gates.py` et al.); CI smoke invokes on PR/`main` - see [Evidence](#evidence--proof) |
-| TL-FIX-C | Open planned remediation |
+| TL-FIX-C | Partly implemented; `business_agents_deploy_enabled` open |
 | TL-FIX-D | Implemented (`bind_execution_adapter`) |
 
 ## Current maturity
@@ -279,7 +279,7 @@ Four-axis qualification ([`MATURITY_TAXONOMY.md`](../technical/guides/MATURITY_T
 
 | Axis | Rating | Rationale |
 | ---- | ------ | --------- |
-| **Architecture (A)** | **A4** | Stable composition model and adjacent ownership; **not A5** while TL-FIX-C remains accepted |
+| **Architecture (A)** | **A4** | Stable composition model and adjacent ownership; **not A5** while TL-FIX-C is only partly implemented (`business_agents_deploy_enabled`) |
 | **Implementation (I)** | **I3** | Canonical `HostTaskExecutionPort` path on supported production intake; TL-FIX-D reach-in remediated |
 | **Production (P)** | **P3** | Gate scripts + partial CI smoke; not universal product production qualification |
 | **Evidence (E)** | **E3** | LKW bounded platform proof; no E5 external/customer deployment evidence |
@@ -294,7 +294,7 @@ Four-axis qualification ([`MATURITY_TAXONOMY.md`](../technical/guides/MATURITY_T
 | Plugin bootstrap | Domain wiring owns discovery; evidence on wiring result |
 | Production gates | APP-PROD-1..8 Done in satellite register; CI wiring partial vs plan backlog drift |
 | Sandbox/shadow | Runtime managers exist; maturity varies by host |
-| Protocol v2 remediation | TL-FIX-C/D planned |
+| Protocol v2 remediation | TL-FIX-C partly implemented; TL-FIX-D implemented |
 
 > **Legacy naming:** Historical **L3** / feature **Done** rows in the plan describe harness delivery phases - not automatic **P4** production readiness for every Tier-3 host.
 
@@ -598,7 +598,7 @@ Remediation: **LLM-FIX-B/C**, **UER-FIX-A** in matching plans.
 
 Accepted [`TIER_LAYER_BOUNDARIES`](../../audit_results/2026-08-18/TIER_LAYER_BOUNDARIES.md) findings 03–05. **Target state** (remediation planned):
 
-1. Product-neutral generic Tier-3 contracts (TL-FIX-C).
+1. Product-neutral generic Tier-3 contracts (TL-FIX-C, partly implemented).
 2. Public typed composition API - no private platform mutation (TL-FIX-D).
 3. Platform-owned resolution of composition cycles (TL-FIX-D).
 4. Governed dynamic access at consumer boundaries (TL-FIX-A / Platform Foundation).
@@ -616,7 +616,7 @@ Accepted [`TIER3_APPLICATION_ENVIRONMENT`](../../audit_results/2026-08-18/TIER3_
 5. **Snapshot execution provenance** - deploy configuration snapshot and execution binding evidence have explicit semantics. For Task intake, canonical evidence must prove Task/Run identity ↔ exact `EnvironmentSnapshot`. This may be a separate typed binding rather than adding every execution field to `EnvironmentSnapshot` itself. Reuse canonical execution identity.
 6. **Typed composition boundary** - platform-significant canonical wiring artifacts use concrete types, Protocols, or typed unions/generics. In particular policy/governance artifacts must not be typed as arbitrary `Any`. Keep dynamic/`Any` values only at genuine edge adapters where unavoidable.
 
-Historical Tier-3 **Done** delivery facts and existing **TL-FIX-C/D**, **ITI-FIX-***, **IDT-FIX-A** remediation remain **PLANNED** - coordinate; do not duplicate.
+Historical Tier-3 **Done** delivery facts, the open part of **TL-FIX-C**, **ITI-FIX-***, **IDT-FIX-A** remediation remain **PLANNED** (TL-FIX-D is implemented) - coordinate; do not duplicate.
 
 <a id="protocol-v2-end-to-end-system-tier3-composition-target-invariants-2026-08-18"></a>
 

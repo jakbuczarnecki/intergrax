@@ -20,10 +20,14 @@ from intergrax.llm_adapters._shared.adapter_response_builders import (
 )
 from intergrax.llm_adapters._shared.messages import split_system_messages
 from intergrax.llm_adapters._shared.openai_tool_call_interop import tool_calls_from_openai_dicts
+from intergrax.llm_adapters._shared.stream_finish_signal import (
+    StreamFinishSignal,
+    finish_reason_from_raw,
+    gemini_stop_signal,
+)
 from intergrax.llm_adapters._shared.tool_schema import openai_tools_to_gemini
 from intergrax.llm_adapters.base.base_llm_adapter import BaseLLMAdapter
 from intergrax.llm_adapters.contracts.adapter_response import LLMAdapterResponse
-from intergrax.llm_adapters.contracts.finish_reason import LLMFinishReason
 from intergrax.llm_adapters.contracts.llm_provider import LLMProvider
 from intergrax.llm_adapters.contracts.native_tool_choice import NativeToolChoice
 from intergrax.llm_adapters.contracts.provider_extensions import LLMProviderExtensions
@@ -157,6 +161,7 @@ class GeminiChatAdapter(BaseLLMAdapter):
             out_tok = int(self.estimate_tokens_for_text(text, model_hint=self.model_name_for_token_estimation))
             response = build_adapter_response(
                 content=text,
+                finish_reason=finish_reason_from_raw(gemini_stop_signal(api_response)),
                 usage=LLMTokenUsage.from_counts(input_tokens=in_tok, output_tokens=out_tok),
                 model=self.model,
                 provider=self._provider_slug(),
@@ -193,6 +198,7 @@ class GeminiChatAdapter(BaseLLMAdapter):
         in_tok = 0
         out_tok = 0
         buf: list[str] = []
+        signal = StreamFinishSignal()
 
         try:
             in_tok = int(self.estimate_tokens_for_messages(messages, model_hint=self.model_name_for_token_estimation))
@@ -215,20 +221,23 @@ class GeminiChatAdapter(BaseLLMAdapter):
                     config=config,
                 )
 
-                with self._provider_dependency_attempt():
-                    for chunk in chat_session.send_message_stream(prompt):
-                        txt = chunk.text
-                        if txt:
-                            buf.append(txt)
-                            yield partial_stream_event(delta_content=txt)
+                for chunk in self._execute_streaming(lambda: chat_session.send_message_stream(prompt)):
+                    signal.observe_finish(gemini_stop_signal(chunk))
+                    txt = chunk.text
+                    if txt:
+                        buf.append(txt)
+                        yield partial_stream_event(delta_content=txt)
 
                 out_tok = int(
                     self.estimate_tokens_for_text("".join(buf), model_hint=self.model_name_for_token_estimation)
                 )
                 success = True
+                finish, refusal = signal.resolve()
                 yield final_stream_event(
                     response=build_adapter_response(
                         content="".join(buf),
+                        finish_reason=finish,
+                        refusal=refusal,
                         usage=LLMTokenUsage.from_counts(input_tokens=in_tok, output_tokens=out_tok),
                         model=self.model,
                         provider=self._provider_slug(),
@@ -245,22 +254,27 @@ class GeminiChatAdapter(BaseLLMAdapter):
                     "Client.models.generate_content_stream, but it is not available in this SDK version."
                 )
 
-            with self._provider_dependency_attempt():
-                for chunk in stream_fn(
+            for chunk in self._execute_streaming(
+                lambda: stream_fn(
                     model=self.model,
                     contents=contents,
                     config=config,
-                ):
-                    txt = attribute_access.optional(chunk, "text", None)
-                    if txt:
-                        buf.append(txt)
-                        yield partial_stream_event(delta_content=txt)
+                )
+            ):
+                signal.observe_finish(gemini_stop_signal(chunk))
+                txt = attribute_access.optional(chunk, "text", None)
+                if txt:
+                    buf.append(txt)
+                    yield partial_stream_event(delta_content=txt)
 
             out_tok = int(self.estimate_tokens_for_text("".join(buf), model_hint=self.model_name_for_token_estimation))
             success = True
+            finish, refusal = signal.resolve()
             yield final_stream_event(
                 response=build_adapter_response(
                     content="".join(buf),
+                    finish_reason=finish,
+                    refusal=refusal,
                     usage=LLMTokenUsage.from_counts(input_tokens=in_tok, output_tokens=out_tok),
                     model=self.model,
                     provider=self._provider_slug(),
@@ -343,7 +357,7 @@ class GeminiChatAdapter(BaseLLMAdapter):
             )
             text, tool_calls = self._parse_gemini_response(api_response)
             out_tok = int(self.estimate_tokens_for_text(text, model_hint=self.model_name_for_token_estimation))
-            finish = LLMFinishReason.TOOL_CALLS if tool_calls else LLMFinishReason.COMPLETED
+            finish = finish_reason_from_raw(gemini_stop_signal(api_response), has_tool_calls=bool(tool_calls))
             response = build_adapter_response(
                 content=text,
                 finish_reason=finish,
@@ -384,6 +398,7 @@ class GeminiChatAdapter(BaseLLMAdapter):
         in_tok = 0
         out_tok = 0
         buf: list[str] = []
+        signal = StreamFinishSignal()
 
         try:
             in_tok = int(self.estimate_tokens_for_messages(messages, model_hint=self.model_name_for_token_estimation))
@@ -409,23 +424,24 @@ class GeminiChatAdapter(BaseLLMAdapter):
                 return
 
             tool_calls_acc: tuple[LLMToolCall, ...] = ()
-            with self._provider_dependency_attempt():
-                for chunk in stream_fn(model=self.model, contents=contents, config=config):
-                    txt = attribute_access.optional(chunk, "text", None)
-                    if txt:
-                        buf.append(txt)
-                        yield partial_stream_event(delta_content=txt)
-                    _, chunk_tools = self._parse_gemini_response(chunk)
-                    if chunk_tools:
-                        tool_calls_acc = chunk_tools
+            for chunk in self._execute_streaming(lambda: stream_fn(model=self.model, contents=contents, config=config)):
+                txt = attribute_access.optional(chunk, "text", None)
+                if txt:
+                    buf.append(txt)
+                    yield partial_stream_event(delta_content=txt)
+                signal.observe_finish(gemini_stop_signal(chunk))
+                _, chunk_tools = self._parse_gemini_response(chunk)
+                if chunk_tools:
+                    tool_calls_acc = chunk_tools
 
             out_tok = int(self.estimate_tokens_for_text("".join(buf), model_hint=self.model_name_for_token_estimation))
-            finish = LLMFinishReason.TOOL_CALLS if tool_calls_acc else LLMFinishReason.COMPLETED
+            finish, refusal = signal.resolve(has_tool_calls=bool(tool_calls_acc))
             success = True
             yield final_stream_event(
                 response=build_adapter_response(
                     content="".join(buf),
                     finish_reason=finish,
+                    refusal=refusal,
                     usage=LLMTokenUsage.from_counts(input_tokens=in_tok, output_tokens=out_tok),
                     model=self.model,
                     provider=self._provider_slug(),

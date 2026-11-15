@@ -7,6 +7,12 @@ reads return only that tenant's observations and a read of another tenant's
 observation is denied. Observations recorded without a tenant (legacy callers) are
 never visible to a tenant-scoped read.
 
+The legacy surface of ``FileOnlineEvaluationRegistry`` (``append``, ``list_observations``,
+``clear``) works on the **untenanted namespace only** (T-IGX-041-E, F-D5-01): it never
+returns and never removes a tenant's rows. Tenant rows are reachable only through the
+tenant surface and ``TenantScopedOnlineEvaluationRegistry``.
+``InMemoryOnlineEvaluationRegistry`` is a unit-test double that keeps its single flat list.
+
 Concurrency semantics (PDC-D5-R018, DX-07) of ``FileOnlineEvaluationRegistry``:
 
 - every read-modify-write runs under one exclusive section: an in-process lock plus a
@@ -24,11 +30,11 @@ import contextlib
 import os
 import threading
 import time
-from collections.abc import Iterator
+from collections.abc import Iterator, Sequence
 from pathlib import Path
 from typing import Protocol
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, field_validator
 
 from intergrax.runtime.architecture.online_evaluation_models import (
     OnlineEvaluationObservation,
@@ -47,6 +53,13 @@ class TenantOnlineEvaluationObservation(OnlineEvaluationObservation):
     """Observation with an optional tenant (``None`` only for legacy untenanted records)."""
 
     tenant_id: str | None = None
+
+    @field_validator("tenant_id")
+    @classmethod
+    def _tenant_id_not_blank(cls, value: str | None) -> str | None:
+        if value is not None and not value.strip():
+            raise ValueError("tenant_id must be a non-blank string")
+        return value
 
 
 class _TenantRegistryStore(BaseModel):
@@ -67,6 +80,24 @@ def _stamp(observation: OnlineEvaluationObservation, tenant_id: str | None) -> T
     payload = observation.model_dump()
     payload["tenant_id"] = tenant_id if tenant_id is not None else existing
     return TenantOnlineEvaluationObservation.model_validate(payload)
+
+
+def _resolve_observation(
+    observations: Sequence[OnlineEvaluationObservation],
+    observation_id: str,
+    tenant_id: str,
+) -> OnlineEvaluationObservation:
+    """The caller's own row wins; an id held only by another tenant is denied (F-D5-12)."""
+    foreign = False
+    for item in observations:
+        if item.observation_id != observation_id:
+            continue
+        if getattr(item, "tenant_id", None) == tenant_id:
+            return item
+        foreign = True
+    if foreign:
+        raise OnlineEvaluationTenantBoundaryError("cross-tenant observation read denied")
+    raise KeyError(observation_id)
 
 
 class OnlineEvaluationRegistry(Protocol):
@@ -111,12 +142,7 @@ class InMemoryOnlineEvaluationRegistry:
     def get_observation(self, observation_id: str, *, tenant_id: str) -> OnlineEvaluationObservation:
         _require_tenant(tenant_id)
         with self._lock:
-            for item in self._observations:
-                if item.observation_id == observation_id:
-                    if getattr(item, "tenant_id", None) != tenant_id:
-                        raise OnlineEvaluationTenantBoundaryError("cross-tenant observation read denied")
-                    return item
-        raise KeyError(observation_id)
+            return _resolve_observation(self._observations, observation_id, tenant_id)
 
     def clear_tenant(self, tenant_id: str) -> None:
         _require_tenant(tenant_id)
@@ -150,12 +176,16 @@ class FileOnlineEvaluationRegistry:
             self._save(store)
 
     def list_observations(self) -> list[OnlineEvaluationObservation]:
+        """Untenanted observations only; a tenant's rows are never returned here."""
         with self._exclusive():
-            return list(self._load().observations)
+            return [item for item in self._load().observations if item.tenant_id is None]
 
     def clear(self) -> None:
+        """Remove untenanted observations only; a tenant's rows are never removed here."""
         with self._exclusive():
-            self._save(_TenantRegistryStore())
+            store = self._load()
+            store.observations = [item for item in store.observations if item.tenant_id is not None]
+            self._save(store)
 
     # -- tenant surface ---------------------------------------------------------------
 
@@ -174,12 +204,7 @@ class FileOnlineEvaluationRegistry:
     def get_observation(self, observation_id: str, *, tenant_id: str) -> OnlineEvaluationObservation:
         _require_tenant(tenant_id)
         with self._exclusive():
-            for item in self._load().observations:
-                if item.observation_id == observation_id:
-                    if item.tenant_id != tenant_id:
-                        raise OnlineEvaluationTenantBoundaryError("cross-tenant observation read denied")
-                    return item
-        raise KeyError(observation_id)
+            return _resolve_observation(self._load().observations, observation_id, tenant_id)
 
     def clear_tenant(self, tenant_id: str) -> None:
         _require_tenant(tenant_id)

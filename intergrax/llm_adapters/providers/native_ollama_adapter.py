@@ -6,7 +6,7 @@ from __future__ import annotations
 
 import json
 from collections.abc import Iterable, Mapping, Sequence
-from typing import Any, Dict, Optional, Protocol, Union, cast
+from typing import Any, Protocol, cast
 
 from intergrax.llm.messages import ChatMessage
 from intergrax.llm_adapters._shared.adapter_response_builders import (
@@ -14,35 +14,34 @@ from intergrax.llm_adapters._shared.adapter_response_builders import (
     final_stream_event,
     partial_stream_event,
 )
-from intergrax.llm_adapters.contracts.adapter_response import LLMAdapterResponse
-from intergrax.llm_adapters.contracts.finish_reason import LLMFinishReason
-from intergrax.llm_adapters.contracts.llm_adapter import LLMAdapter
-from intergrax.llm_adapters.base.base_llm_adapter import BaseLLMAdapter
-from intergrax.llm_adapters.contracts.llm_provider import LLMProvider
-from intergrax.llm_adapters.contracts.provider_extensions import LLMProviderExtensions
-from intergrax.llm_adapters.contracts.stream_event import LLMStreamEvent
-from intergrax.llm_adapters.contracts.structured_result import LLMStructuredResult, TStructured
-from intergrax.llm_adapters.contracts.token_usage import LLMTokenUsage
-from intergrax.llm_adapters.contracts.strict_tool_arguments import (
-    CanonicalFunctionToolDefinition,
-)
-from intergrax.llm_adapters.contracts.native_tool_choice import (
-    NativeForcedFunctionChoice,
-    NativeToolChoice,
-)
-from intergrax.llm_adapters.contracts.tool_call import (
-    LLMToolCall,
-    finalize_accepted_tool_call_identities,
-)
+from intergrax.llm_adapters._shared.stream_finish_signal import finish_reason_from_raw
 from intergrax.llm_adapters._shared.strict_tool_enforcement import (
     enforce_strict_tool_call_conformance,
     resolve_canonical_tool_definitions,
     wire_schemas_from_definitions,
 )
+from intergrax.llm_adapters.base.base_llm_adapter import BaseLLMAdapter
+from intergrax.llm_adapters.contracts.adapter_response import LLMAdapterResponse
+from intergrax.llm_adapters.contracts.finish_reason import LLMFinishReason
+from intergrax.llm_adapters.contracts.llm_provider import LLMProvider
+from intergrax.llm_adapters.contracts.native_tool_choice import (
+    NativeForcedFunctionChoice,
+    NativeToolChoice,
+)
+from intergrax.llm_adapters.contracts.provider_extensions import LLMProviderExtensions
+from intergrax.llm_adapters.contracts.stream_event import LLMStreamEvent
+from intergrax.llm_adapters.contracts.strict_tool_arguments import (
+    CanonicalFunctionToolDefinition,
+)
+from intergrax.llm_adapters.contracts.structured_result import LLMStructuredResult, TStructured
+from intergrax.llm_adapters.contracts.token_usage import LLMTokenUsage
+from intergrax.llm_adapters.contracts.tool_call import (
+    LLMToolCall,
+    finalize_accepted_tool_call_identities,
+)
 from intergrax.llm_adapters.providers._ollama_schema import (
     prepare_ollama_generation_schema,
 )
-from intergrax.utils import attribute_access
 from intergrax.llm_adapters.providers.ollama_capabilities import (
     OllamaModelCapabilities,
     OllamaModelCapabilityResolver,
@@ -50,6 +49,7 @@ from intergrax.llm_adapters.providers.ollama_capabilities import (
 from intergrax.llm_adapters.registry.context_window import (
     init_adapter_context_window_tokens,
 )
+from intergrax.utils import attribute_access
 
 
 class _NativeOllamaClient(Protocol):
@@ -64,8 +64,7 @@ class _NativeOllamaClient(Protocol):
         stream: bool = False,
         format: str | Mapping[str, object] | None = None,
         options: Mapping[str, object] | None = None,
-    ) -> object:
-        ...
+    ) -> object: ...
 
 
 _MISSING = object()
@@ -79,11 +78,11 @@ class NativeOllamaAdapter(BaseLLMAdapter):
     def __init__(
         self,
         client: _NativeOllamaClient | None = None,
-        model: Optional[str] = None,
-        context_window_tokens: Optional[int] = None,
+        model: str | None = None,
+        context_window_tokens: int | None = None,
         *,
         capability_resolver: OllamaModelCapabilityResolver | None = None,
-        base_url: Optional[str] = None,
+        base_url: str | None = None,
         **defaults: Any,
     ) -> None:
         super().__init__()
@@ -223,8 +222,7 @@ class NativeOllamaAdapter(BaseLLMAdapter):
                 }
                 if message.tool_calls:
                     item["tool_calls"] = [
-                        self._normalize_input_tool_call(tool_call)
-                        for tool_call in message.tool_calls
+                        self._normalize_input_tool_call(tool_call) for tool_call in message.tool_calls
                     ]
                 mapped.append(item)
             elif message.role == "tool":
@@ -257,15 +255,14 @@ class NativeOllamaAdapter(BaseLLMAdapter):
         if isinstance(tool_choice, str) and tool_choice in {"auto", "required"}:
             return
         raise ValueError(
-            "Ollama native tool calling supports only tool_choice=None, 'auto', 'required', "
-            "or a forced function choice"
+            "Ollama native tool calling supports only tool_choice=None, 'auto', 'required', or a forced function choice"
         )
 
     def _generation_options(
         self,
         *,
-        temperature: Optional[float],
-        max_tokens: Optional[int],
+        temperature: float | None,
+        max_tokens: int | None,
     ) -> dict[str, object]:
         raw_options = self.defaults.get("options") or {}
         if not isinstance(raw_options, Mapping):
@@ -357,9 +354,9 @@ class NativeOllamaAdapter(BaseLLMAdapter):
         self,
         messages: Sequence[ChatMessage],
         *,
-        temperature: Optional[float] = None,
-        max_tokens: Optional[int] = None,
-        run_id: Optional[str] = None,
+        temperature: float | None = None,
+        max_tokens: int | None = None,
+        run_id: str | None = None,
     ) -> LLMAdapterResponse:
         call = self.usage.begin_call(run_id=run_id, adapter=self)
         response: LLMAdapterResponse | None = None
@@ -387,6 +384,7 @@ class NativeOllamaAdapter(BaseLLMAdapter):
             )
             response = self._build_response(
                 content=content,
+                finish_reason=finish_reason_from_raw(self._field(native_response, "done_reason", None)),
                 usage=usage,
                 usage_source=usage_source,
             )
@@ -397,9 +395,7 @@ class NativeOllamaAdapter(BaseLLMAdapter):
             raise
         finally:
             usage = (
-                response.usage
-                if success and response is not None and response.usage is not None
-                else LLMTokenUsage()
+                response.usage if success and response is not None and response.usage is not None else LLMTokenUsage()
             )
             self.usage.end_call(
                 call,
@@ -413,9 +409,9 @@ class NativeOllamaAdapter(BaseLLMAdapter):
         self,
         messages: Sequence[ChatMessage],
         *,
-        temperature: Optional[float] = None,
-        max_tokens: Optional[int] = None,
-        run_id: Optional[str] = None,
+        temperature: float | None = None,
+        max_tokens: int | None = None,
+        run_id: str | None = None,
     ) -> Iterable[LLMStreamEvent]:
         call = self.usage.begin_call(run_id=run_id, adapter=self)
         success = False
@@ -477,6 +473,7 @@ class NativeOllamaAdapter(BaseLLMAdapter):
             yield final_stream_event(
                 response=self._build_response(
                     content=content,
+                    finish_reason=finish_reason_from_raw(self._field(last_response, "done_reason", None)),
                     usage=usage,
                     usage_source=usage_source,
                 )
@@ -565,15 +562,13 @@ class NativeOllamaAdapter(BaseLLMAdapter):
         messages: Sequence[ChatMessage],
         tools: Sequence[CanonicalFunctionToolDefinition],
         *,
-        temperature: Optional[float] = None,
-        max_tokens: Optional[int] = None,
+        temperature: float | None = None,
+        max_tokens: int | None = None,
         tool_choice: NativeToolChoice | None = None,
-        run_id: Optional[str] = None,
+        run_id: str | None = None,
     ) -> LLMAdapterResponse:
         if not self.supports_tools():
-            raise ValueError(
-                f"Ollama model does not declare native tool support: {self.model}"
-            )
+            raise ValueError(f"Ollama model does not declare native tool support: {self.model}")
         self._validate_ollama_tool_choice(tool_choice)
         tool_definitions = resolve_canonical_tool_definitions(tools)
         provider_tools = wire_schemas_from_definitions(tool_definitions)
@@ -614,10 +609,9 @@ class NativeOllamaAdapter(BaseLLMAdapter):
             )
             response = self._build_response(
                 content=content,
-                finish_reason=(
-                    LLMFinishReason.TOOL_CALLS
-                    if tool_calls
-                    else LLMFinishReason.COMPLETED
+                finish_reason=finish_reason_from_raw(
+                    self._field(native_response, "done_reason", None),
+                    has_tool_calls=bool(tool_calls),
                 ),
                 usage=usage,
                 usage_source=usage_source,
@@ -630,9 +624,7 @@ class NativeOllamaAdapter(BaseLLMAdapter):
             raise
         finally:
             usage = (
-                response.usage
-                if success and response is not None and response.usage is not None
-                else LLMTokenUsage()
+                response.usage if success and response is not None and response.usage is not None else LLMTokenUsage()
             )
             self.usage.end_call(
                 call,
@@ -647,9 +639,9 @@ class NativeOllamaAdapter(BaseLLMAdapter):
         messages: Sequence[ChatMessage],
         output_model: type[TStructured],
         *,
-        temperature: Optional[float] = None,
-        max_tokens: Optional[int] = None,
-        run_id: Optional[str] = None,
+        temperature: float | None = None,
+        max_tokens: int | None = None,
+        run_id: str | None = None,
     ) -> LLMStructuredResult[TStructured]:
         call = self.usage.begin_call(run_id=run_id, adapter=self)
         response: LLMAdapterResponse | None = None
@@ -697,9 +689,7 @@ class NativeOllamaAdapter(BaseLLMAdapter):
             raise
         finally:
             usage = (
-                response.usage
-                if success and response is not None and response.usage is not None
-                else LLMTokenUsage()
+                response.usage if success and response is not None and response.usage is not None else LLMTokenUsage()
             )
             self.usage.end_call(
                 call,

@@ -51,6 +51,10 @@ graph LR
   B-P6-F --> B-P6-I
   B-P6-I --> B-P6-J
   B-P6-J --> B-P7-D2
+  B-P6-J --> B-P7-D5
+  B-P6-J --> B-P7-D7
+  B-P6-J --> B-P7-D4
+  B-P6-J --> B-P7-D3
   P4 --> B-D1 & B-D3 & B-D7 & B-REG-P
   GATE -. merges .-> B-D1 & B-D3 & B-D7 & B-REG-P & B-D2 & B-D5 & B-D6 & B-D8 & B-D4
   B-P6 --> ACT{{PDC-P7-00 ACT-N11 activation}} --> P7[PDC-P7: 8 domain audits]
@@ -86,7 +90,7 @@ Wave 3 sets the length of the path. Its three batches run in sequence because th
 | W10 | B-P6-H | after B-P6-E and the signature of T-IGX-036-Y | any time (no product path) |
 | W11 | B-P6-I | after B-P6-F and the signature of T-IGX-036-Z | under DELEGATION-PDC-STANDING authorization 3 (one product path: deletion of an unused manifest) |
 | W12 | B-P6-J | after B-P6-I and the signature of T-IGX-040-A | after the signature of T-IGX-040-A (one-time exception OD-MCP-RC-05; both repairs in one PR, then product paths freeze again) |
-| W13 | B-P7-D2 | after B-P6-J and the signature of T-IGX-041-B | under DELEGATION-PDC-P7-REPAIR (product paths of the D2 repair; D3 estimator change T-IGX-041-C merges first; IIAC activation stays stale until the P8-04 rebind) |
+| W13 | B-P7-D2, B-P7-D5, B-P7-D7, B-P7-D4, B-P7-D3 | after B-P6-J and the signature of T-IGX-041-E | after the signature of T-IGX-041-E (DELEGATION-PDC-P7-REPAIR merge gate; product paths of the P7 repairs are re-pinned once after all repairs) |
 
 ## Operator gates
 
