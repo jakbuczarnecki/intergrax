@@ -1,14 +1,17 @@
 {
-  "freeze_label": "ROADMAP-REPLAY-X L2 @ 05549f9 — shim set delta vs 0612c2a7 historical baseline",
+  "freeze_label": "ROADMAP-REPLAY-X L2 @ 05549f9 — shim set delta vs 0612c2a7 historical baseline; re-pinned by T-IGX-041-L at 63005e290 (four heuristic hits added)",
   "baseline_source_sha": "0612c2a7a263b22a6b72ed5476e0bf0a52cdfea0",
   "lineage_head_sha": "05549f9acb9ecedf910c7470d442bba5d0a27337",
   "added_paths": [
     "intergrax/agent_distribution/activation_domain_coordinator.py",
+    "intergrax/agent_distribution/admin_service.py",
     "intergrax/agent_distribution/colocated_venv_unit_runtime_binding.py",
+    "intergrax/agent_distribution/runtime_revision.py",
     "intergrax/agent_distribution/sqlite_payload_legacy.py",
     "intergrax/agent_distribution/venv_bundle_colocated_runtime_deployment_adapter.py",
     "intergrax/applications/_shared/colocated_serving_runtime_composition.py",
     "intergrax/applications/_shared/colocated_unit_physical_execution_gate.py",
+    "intergrax/applications/_shared/mcp_host_mount.py",
     "intergrax/applications/_shared/production_lifecycle.py",
     "intergrax/applications/_shared/production_process_lifecycle.py",
     "intergrax/applications/_shared/strict_production_serving_launcher.py",
@@ -24,6 +27,7 @@
     "intergrax/runtime/governance/governed_inference_composition.py",
     "intergrax/runtime/governance/local_history_continuity.py",
     "intergrax/runtime/governance/structured_inference_pre_model_composition.py",
+    "intergrax/runtime/security/security_audit_trail.py",
     "intergrax/runtime/task_memory/sqlite_row_legacy.py",
     "intergrax/tools/providers/http/idempotent_post_qual.py",
     "intergrax/tools/providers/provider_resource_enforcement.py",
@@ -32,5 +36,17 @@
   "removed_paths": [
     "intergrax/runtime/execution/inference_composition.py"
   ],
-  "disposition": "Replay-head compat.shim closed-world delta vs frozen 0612c2a7 baseline; removed path superseded by governed_inference_composition."
+  "disposition": "Replay-head compat.shim closed-world delta vs frozen 0612c2a7 baseline; removed path superseded by governed_inference_composition. T-IGX-041-L adds four paths as classified heuristic hits (see repin_additions).",
+  "repin_additions": {
+    "ticket": "T-IGX-041-L",
+    "measured_at_sha": "63005e2902ed7724dcafdc036564bcbd9c3deb08",
+    "paths": [
+      "intergrax/agent_distribution/admin_service.py",
+      "intergrax/agent_distribution/runtime_revision.py",
+      "intergrax/applications/_shared/mcp_host_mount.py",
+      "intergrax/runtime/security/security_audit_trail.py"
+    ],
+    "classification": "heuristic hit, not a compatibility shim: source.contains:adapter, class TRANSLATION_ONLY",
+    "evidence": "tests/fixtures/compat_x/repin_pdc_x_p7_delta.json (shim_heuristic_hits)"
+  }
 }

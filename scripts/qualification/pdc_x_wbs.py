@@ -876,6 +876,24 @@ BATCHES: Final[tuple[Batch, ...]] = (
         "IA-GLOBAL (P8)",
         "tests/qualification/ebh_7 green at the new pin; replay run id and artifact digests recorded; not a B6 PASS",
     ),
+    Batch(
+        "B-P7-CX",
+        "ALL",
+        "Re-pin of the COMPAT-X counters (debt item Z-D1 of T-IGX-036-Z) at the last product change: pinned counters, id-exact evidence fixture and four accepted shim-delta paths classified as heuristic hits; tests and fixtures only",
+        "T-IGX-041-L",
+        "W14b",
+        (
+            "tests/qualification/compat_x/_compat_x_semantic_identity_reconciliation.py",
+            "tests/qualification/compat_x/test_compat_x_pdc_x_p7_repin_delta.py",
+            "tests/fixtures/compat_x/accepted_shim_delta_replay_x_05549f9.json",
+            "tests/fixtures/compat_x/repin_pdc_x_p7_delta.json",
+        ),
+        "—",
+        ("B-P7-D1", "B-P7-D2", "B-P7-D3", "B-P7-D4", "B-P7-D5", "B-P7-D6", "B-P7-D7", "B-P7-D8", "B-P7-TX"),
+        GATE_FREE,
+        "IA-GLOBAL (P8)",
+        "tests/qualification/compat_x green at the re-pinned counters; the ten red tests of the plan pass; new negative tests (hidden removal, extra candidate, balanced substitution, unexpected shim path) fail without their guard",
+    ),
 )
 
 # Requirement -> batch overrides where the corrective-task text alone is ambiguous.
@@ -1183,6 +1201,10 @@ def render_dag() -> str:
         "W14": (
             "after B-P7-D5 (W13) is merged and the signature of T-IGX-041-A",
             "after the signature of T-IGX-041-A (DELEGATION-PDC-P7-REPAIR merge gate; W14 because B-P7-D1 and B-P7-D5 both write under intergrax/applications/_shared/ and one wave may hold only one such batch)",
+        ),
+        "W14b": (
+            "after every B-P7 repair batch (W13, W14) is merged and the signature of T-IGX-041-L",
+            "before the EBH-7 pin P is taken (tests/qualification/compat_x and tests/fixtures are not on the executable-identity allowlist); test-only pull request",
         ),
         "W15": (
             "after every B-P7 repair batch (W13, W14) and the signature of T-IGX-041-J",

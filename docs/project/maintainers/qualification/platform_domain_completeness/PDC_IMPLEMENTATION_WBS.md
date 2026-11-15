@@ -46,6 +46,7 @@ Rows classed `CURRENT_HEAD_REQUALIFICATION`, `ALREADY_CERTIFIED_REUSABLE`, `N/A_
 | B-P7-TX | TX | W13 | T-IGX-041-I | 0 | — | B-P6-J | no | No product path: may merge before MCP-SERVER-X P8 | IA-GLOBAL (P8) |
 | B-P7-F10 | ALL | W13 | T-IGX-041-K | 0 | — | B-P6-H | no | No product path: may merge before MCP-SERVER-X P8 | IA-GLOBAL (P8) |
 | B-P7-RP | ALL | W15 | T-IGX-041-J | 0 | — | B-P7-D1, B-P7-D2, B-P7-D3, B-P7-D4, B-P7-D5, B-P7-D6, B-P7-D7, B-P7-D8, B-P7-TX | no | No product path: may merge before MCP-SERVER-X P8 | IA-GLOBAL (P8) |
+| B-P7-CX | ALL | W14b | T-IGX-041-L | 0 | — | B-P7-D1, B-P7-D2, B-P7-D3, B-P7-D4, B-P7-D5, B-P7-D6, B-P7-D7, B-P7-D8, B-P7-TX | no | No product path: may merge before MCP-SERVER-X P8 | IA-GLOBAL (P8) |
 
 ## B-P3 — Ownership records closed in P3
 
@@ -530,6 +531,18 @@ Rows classed `CURRENT_HEAD_REQUALIFICATION`, `ALREADY_CERTIFIED_REUSABLE`, `N/A_
 - **Write set:** `docs/project/maintainers/qualification/ebh_7_p03_independent_replay/`, `docs/project/maintainers/qualification/EBH_7_SHA_LADDER.md`, `docs/project/maintainers/qualification/EBH_7_B6_F10_ECAP_NORMATIVE_MATRIX.md`, `docs/project/maintainers/qualification/EBH_7_ECAP_CURRENT_HEAD_AUDIT_REPORT.md`, `docs/project/maintainers/qualification/platform_domain_completeness/PDC_SHA_LADDER.md`, `docs/project/maintainers/qualification/platform_domain_completeness/PDC_REG_DIAGNOSIS.md`, `docs/project/maintainers/qualification/platform_domain_completeness/PDC_EBH7_FINAL_REPIN_RECORD.md`, `.github/workflows/unit-tests.yml`, `tests/qualification/ebh_7/_constants.py`
 - **Tests:** tests/qualification/ebh_7 green at the new pin; replay run id and artifact digests recorded; not a B6 PASS
 - **Evidence (exact SHA):** implementation SHA and publication SHA recorded in `PDC_SHA_LADDER.md`; test log under `.tmp/proof/pdc-x-p5/B-P7-RP/`; audited by IA-GLOBAL (P8) at the PDC-P7 audited SHA.
+- **Merge gate:** No product path: may merge before MCP-SERVER-X P8
+
+| Requirement | Class | Test case |
+| --- | --- | --- |
+| — | — | — |
+
+## B-P7-CX — Re-pin of the COMPAT-X counters (debt item Z-D1 of T-IGX-036-Z) at the last product change: pinned counters, id-exact evidence fixture and four accepted shim-delta paths classified as heuristic hits; tests and fixtures only
+
+- **Ticket:** T-IGX-041-L · **Wave:** W14b · **ADR:** — · **Auditor:** IA-GLOBAL (P8)
+- **Write set:** `tests/qualification/compat_x/_compat_x_semantic_identity_reconciliation.py`, `tests/qualification/compat_x/test_compat_x_pdc_x_p7_repin_delta.py`, `tests/fixtures/compat_x/accepted_shim_delta_replay_x_05549f9.json`, `tests/fixtures/compat_x/repin_pdc_x_p7_delta.json`
+- **Tests:** tests/qualification/compat_x green at the re-pinned counters; the ten red tests of the plan pass; new negative tests (hidden removal, extra candidate, balanced substitution, unexpected shim path) fail without their guard
+- **Evidence (exact SHA):** implementation SHA and publication SHA recorded in `PDC_SHA_LADDER.md`; test log under `.tmp/proof/pdc-x-p5/B-P7-CX/`; audited by IA-GLOBAL (P8) at the PDC-P7 audited SHA.
 - **Merge gate:** No product path: may merge before MCP-SERVER-X P8
 
 | Requirement | Class | Test case |
