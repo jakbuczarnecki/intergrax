@@ -1,0 +1,9 @@
+{
+ "holder_banner": "acquired",
+ "holder_returncode": 1,
+ "start_after_holder_crash": "READY",
+ "events": [
+  "hosting.instance.stale_recovered",
+  "hosting.instance.acquired"
+ ]
+}

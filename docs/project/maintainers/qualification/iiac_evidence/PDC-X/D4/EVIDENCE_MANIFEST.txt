@@ -1,0 +1,56 @@
+PDC-X / D4 (HOST-RUNTIME) independent audit evidence manifest
+
+audited_implementation_sha: c08efe46a74a20595468d8d8bf06eab2dca5f573
+audit_execution_sha:        3b371ef9ddee209eb707f184337708303a956023 (= test_execution_sha; product tree identical)
+auditor branch:             claude/pdc-x-ia-d4-966471   (docs/evidence only; no product, test, script or governance edit)
+report verdict:             PARTIAL  (IIAC manifest verdict value: CONDITIONAL)
+findings:                   0 HIGH, 9 MEDIUM, 7 LOW, 4 INFO
+rows:                       9 PASS, 3 PASS_SCOPED, 8 PARTIAL, 0 FAIL
+
+Report:    docs/project/maintainers/qualification/platform_domain_completeness/PDC_P7_D4_AUDIT_REPORT.md
+Records:   audit_scope.json, iiac_audit_session_manifest.PDC-X.d4.json, iiac_audit_d4_findings.json, test_matrix.txt
+Logs:      logs/ (suite logs, probe outputs, mutants/, NOTES.txt)
+Scripts:   adversarial_scripts/ (probes, mutation plugin and runner)
+
+sha256 of every file listed (this manifest excluded):
+
+1f924d7104af00d0ff0f59dc4d0f31d11001045b285d0bcafb151b3858f55544  docs/project/maintainers/qualification/platform_domain_completeness/PDC_P7_D4_AUDIT_REPORT.md
+18d6121ace870e71e4889477c426fa8dfe099a048b515309a559883710f35304  docs/project/maintainers/qualification/iiac_evidence/PDC-X/D4/adversarial_scripts/mut_plugin.py
+b1a0ee83a4d828df6a96c3654292e1fb98b2f7a41aa9e1d27a5128aff49f64f2  docs/project/maintainers/qualification/iiac_evidence/PDC-X/D4/adversarial_scripts/probe_a.py
+ecffd8c2ba233875a829a9ece21fa315346498751060b47a348421fc9d0fe84a  docs/project/maintainers/qualification/iiac_evidence/PDC-X/D4/adversarial_scripts/probe_b.py
+5cef34e002727241c9438a51e3064a0f3765c0624128d2f4edf89020261fb4e7  docs/project/maintainers/qualification/iiac_evidence/PDC-X/D4/adversarial_scripts/probe_c.py
+efe8509e01c903f592d49a9b66fb1a9806aa791112e5039edf27a87ef848b58b  docs/project/maintainers/qualification/iiac_evidence/PDC-X/D4/adversarial_scripts/probe_d.py
+26286a4f85207e3c8e1a117e38db5d21bc41839c1301a6f2d6daec172e0ef783  docs/project/maintainers/qualification/iiac_evidence/PDC-X/D4/adversarial_scripts/probe_e.py
+7b81f1b18ceb49fae430d82a1893dfe95d5496bfcb042e2a619a409f5f7b1507  docs/project/maintainers/qualification/iiac_evidence/PDC-X/D4/adversarial_scripts/probe_f.py
+33449ee1fac03d1ee521faac5598722aab3cbbce806fa720aee936ab6d983948  docs/project/maintainers/qualification/iiac_evidence/PDC-X/D4/adversarial_scripts/run_mutants.sh
+e65fc46fccdb93e8cd689c64283c474fd42d5b71f3b91636e65fae59666cc1d1  docs/project/maintainers/qualification/iiac_evidence/PDC-X/D4/audit_scope.json
+fbbd31d66bdd1c3336321b1090f33b0137be8d0ce68cfa967a791322b26dd1ef  docs/project/maintainers/qualification/iiac_evidence/PDC-X/D4/iiac_audit_d4_findings.json
+29604e8c78e4bb66c5c0388a36801fe73775075a84aa00503b7abb727e9e3d3e  docs/project/maintainers/qualification/iiac_evidence/PDC-X/D4/iiac_audit_session_manifest.PDC-X.d4.json
+af36d748b1a64597bcfec340acc8adb45cbeac00795bf40056c708463ebcd71e  docs/project/maintainers/qualification/iiac_evidence/PDC-X/D4/logs/audit_execution_head.txt
+7cfeaa865ed6ecf0836d15d5943094cb93aa7f475692e304e3a297fb64c20ad7  docs/project/maintainers/qualification/iiac_evidence/PDC-X/D4/logs/d4_suite.log
+75045ea57a7c0f413f6e3e53a8b3dcab95799ea93f472ad4b89e8a9d524a4d39  docs/project/maintainers/qualification/iiac_evidence/PDC-X/D4/logs/env_profile_unit.log
+27ce116bccb6330837529c0162946a36e76b481fe87b9db784d79361f363148d  docs/project/maintainers/qualification/iiac_evidence/PDC-X/D4/logs/governance_full.log
+7b4b7f091645dfd90ab4a0405301bae2e77984481d72b547b0eb7936274fa913  docs/project/maintainers/qualification/iiac_evidence/PDC-X/D4/logs/gr12.log
+5049d4e6546d9e6ccb9a95227b09d86f0393e32f682187b65894b53dc6e0b2d8  docs/project/maintainers/qualification/iiac_evidence/PDC-X/D4/logs/host01_unit_hosting.log
+e39cc5b57ece4937d26878aca195a5972da05575d5bd7e086ad7f7655c031f7a  docs/project/maintainers/qualification/iiac_evidence/PDC-X/D4/logs/mutants/M10_startup_rollback_skipped.log
+c1a3fefdf3872fc400142965c59c4f94f6ba83e553d4c46bdccb1e244c4b9300  docs/project/maintainers/qualification/iiac_evidence/PDC-X/D4/logs/mutants/M11_lease_not_released.log
+826db8823d6f3c7ecb698e6e3dd52a9d2f2db5e92282dd720d570fe281f99de0  docs/project/maintainers/qualification/iiac_evidence/PDC-X/D4/logs/mutants/M12_exit_class_label_constant.log
+34ef7107f9f466be1d94511c2290f42647b8be7229cb7afef3cef6545457b91d  docs/project/maintainers/qualification/iiac_evidence/PDC-X/D4/logs/mutants/M1_forward_stop_order.log
+72e93d13a06857378e7452d9763737a8f912b56fd7233f6cde0b0dfe9f7a3122  docs/project/maintainers/qualification/iiac_evidence/PDC-X/D4/logs/mutants/M2_no_runtime_degradation.log
+7b0e1c79fceff9e8ef30a586d5311f6dc32b3eb5f5eb97db3136056631eec78e  docs/project/maintainers/qualification/iiac_evidence/PDC-X/D4/logs/mutants/M3_no_cancel.log
+ff1a52829ac108b218df4451f109a9de204812f23b97a9bf06e6db0fd4ee6ff5  docs/project/maintainers/qualification/iiac_evidence/PDC-X/D4/logs/mutants/M4_no_exclusive_lock.log
+1d644f44a97a5e2c58080b16e69e071bca32e93055dbf2ba926bd9752ed8c0b9  docs/project/maintainers/qualification/iiac_evidence/PDC-X/D4/logs/mutants/M5_no_digest_verification.log
+a9cf2be0bc5b9552ad07d9346a11eaf01ffb0b5c46e42fa6e0950d74e0cbee34  docs/project/maintainers/qualification/iiac_evidence/PDC-X/D4/logs/mutants/M6_no_metrics.log
+39704fc4b4b2f0c0e62fa52bad8cce27da5fd12a601e4514d20316878df060f5  docs/project/maintainers/qualification/iiac_evidence/PDC-X/D4/logs/mutants/M7_never_restart.log
+f60ac56fefd3a80d6cd330b017e83fa6ea8894e7f0c8aaf64a998edb35a2ce27  docs/project/maintainers/qualification/iiac_evidence/PDC-X/D4/logs/mutants/M8_public_surface_change.log
+212d76c5789ba7d179309b2dd9c6647f5d1a787c3a7ca5d7f4cfb44101858a79  docs/project/maintainers/qualification/iiac_evidence/PDC-X/D4/logs/mutants/M9_drain_skipped.log
+97c030759b4a746fd7a23817e5a5cab4ec33b7a907bef353b890ec3ca0d35b9c  docs/project/maintainers/qualification/iiac_evidence/PDC-X/D4/logs/mutants/results.txt
+9b4b4648b1c35e4e57b89aa0fe558bd225b427d92863a7868798d4ffa7d2bd56  docs/project/maintainers/qualification/iiac_evidence/PDC-X/D4/logs/NOTES.txt
+08d7abe6dd68cd088529e06c7abf8fb8cf65555526031bfd80e9c93b7c1caf19  docs/project/maintainers/qualification/iiac_evidence/PDC-X/D4/logs/probe_a.out.txt
+65dfe7eff8b33c152eaa8eb674c433a3c64cb9dc48ebde7f11ab30afc9aa17c6  docs/project/maintainers/qualification/iiac_evidence/PDC-X/D4/logs/probe_b.out.txt
+fb4ec5906412614de6d82a4b359376508b13c76effd79136680f2feab596fc79  docs/project/maintainers/qualification/iiac_evidence/PDC-X/D4/logs/probe_c.out.txt
+7142e3cbf88689e73ec4f6648b033a3aa3367b9904a530a351e16f589788605a  docs/project/maintainers/qualification/iiac_evidence/PDC-X/D4/logs/probe_d.out.txt
+e3566b3a06430868d71e9287dfd6c6c520a3da027aabea01951d407ee131dc2f  docs/project/maintainers/qualification/iiac_evidence/PDC-X/D4/logs/probe_e.out.txt
+836488c5a86a76f11897dac2589fdcba2dce12e31c77f72bb77da211d3f81200  docs/project/maintainers/qualification/iiac_evidence/PDC-X/D4/logs/probe_f.out.txt
+d256aa1600a02348db16996295956a1b2d72d2182290bfb7ed84c3807157a8ac  docs/project/maintainers/qualification/iiac_evidence/PDC-X/D4/logs/tenant_x_final_fast.log
+6833aba4fb6a861512fefb6e985c6d3a2d61c933da03fc5364f5babadfaeeeb4  docs/project/maintainers/qualification/iiac_evidence/PDC-X/D4/test_matrix.txt

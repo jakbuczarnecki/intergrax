@@ -1,0 +1,39 @@
+PDC-P7 D4 (HOST-RUNTIME) independent audit - test matrix (auditor runs, Windows 11, one pytest process at a time)
+audited_implementation_sha = c08efe46a74a20595468d8d8bf06eab2dca5f573
+test_execution_sha = audit_execution_sha = 3b371ef9ddee209eb707f184337708303a956023 (product tree identical to the audited SHA)
+interpreter: fresh worktree .venv, CPython 3.12.11, pytest 8.4.2, uv 0.13.4; extra `mcp` added via `uv run --extra mcp` where fastmcp is imported (host_01)
+environment deviation: psycopg (extra integrations-postgresql) not installed; symlink creation not permitted for the account (WinError 1314)
+
+1. D4 qualification suite
+   command: uv run pytest tests/qualification/pdc_x/d4 -q --durations=10
+   result: 36 passed in 4.70 s, exit 0, process exited after the summary                      [logs/d4_suite.log]
+   (a first start with `-p no:cacheprovider` failed at option parsing, exit 4, and was rerun without the flag)
+
+2. host_01 plus hosting unit suites
+   command: uv run --extra mcp pytest tests/qualification/host_01 tests/unit/hosting -q
+   result: 422 passed, 3 failed in 81.71 s                                                      [logs/host01_unit_hosting.log]
+   failures (environment, WinError 1314 symlink privilege): tests/unit/hosting/instance/test_file_guard.py::test_symlinked_run_directory_rejected,
+     tests/unit/hosting/instance/test_w3_file_guard_regression.py::test_symlinked_ancestor_rejected, ::test_symlinked_lock_file_rejected
+   (a first start without --extra mcp failed at collection: ModuleNotFoundError fastmcp, exit 2)
+
+3. GR-12 and governance directory
+   commands: uv run --extra mcp pytest tests/qualification/governance/gr12 -q  -> 139 passed in 86.87 s      [logs/gr12.log]
+             uv run --extra mcp pytest tests/qualification/governance -q        -> 403 passed in 112.18 s     [logs/governance_full.log]
+
+4. TENANT-X final fast
+   command: uv run --extra mcp pytest tests/qualification/tenant_x/test_tenant_x_final_fast.py -q -> 6 passed in 34.23 s   [logs/tenant_x_final_fast.log]
+
+5. Environment profile, package wiring, architecture unit gates (R001/R002/R020 neighbours)
+   command: uv run --extra mcp pytest tests/unit/applications/test_environment_profile.py tests/unit/applications/test_package_wiring.py tests/unit/applications/architecture -q
+   result: 102 passed, 8 failed in 11.67 s                                                      [logs/env_profile_unit.log]
+   failures (outside D4 rows, not compared with the pin): test_package_wiring::test_strict_product_package_closure_passes (no_ci; MemoryProviderAdmissionError qualification_evidence_missing),
+     architecture/test_gr10_r10_r2_...::test_gr10_r10_r2_missing_generic_production_policy_still_fail_closed (patch target removed),
+     architecture/test_npsc1_harness_host_execution_surface.py x5 (4 missing psycopg, 1 OrchestrationGovernanceEvidenceCompositionError),
+     architecture/test_npsc3g_application_runtime_convergence_gate.py::test_npsc3g_worker_runtime_uses_host_execution (stale text assertion)
+
+6. In-memory mutants (no file edited): adversarial_scripts/mut_plugin.py + run_mutants.sh, one pytest per mutant, `-x`
+   12 of 12 killed                                                                                [logs/mutants/results.txt, logs/mutants/M*.log]
+
+7. Probes (python, no pytest): adversarial_scripts/probe_a.py .. probe_f.py, outputs logs/probe_*.out.txt (probe_e inconclusive, not relied on)
+
+Not run: EBH-7 replay, roadmap_replay_x, dist_scale_x, full tests/unit, CI contexts, network or live-provider tests (see report section 10).

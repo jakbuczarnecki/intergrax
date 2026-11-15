@@ -1,0 +1,40 @@
+F
+================================== FAILURES ===================================
+____________ test_r003_startup_failure_rolls_back_in_reverse_order ____________
+
+tmp_path = WindowsPath('D:/Projekty/intergrax/.claude/worktrees/pdc-x-ia-d4-966471/build/pytest/17636-6b4e8115/test_r003_startup_failure_roll0')
+
+    async def test_r003_startup_failure_rolls_back_in_reverse_order(tmp_path: Path) -> None:
+        journal: list[str] = []
+        runtime = JournalRuntime(journal)
+        profile = make_profile(
+            runtime=runtime,
+            components=(
+                _required(OrderedComponent("alpha", journal)),
+                _required(OrderedComponent("bravo", journal), "alpha"),
+                _required(OrderedComponent("charlie", journal), "bravo"),
+                _required(OrderedComponent("delta", journal, fail_start=True), "charlie"),
+            ),
+        )
+        engine, publisher, _ = build_engine(definition_of(profile), tmp_path)
+    
+        with pytest.raises(HostedApplicationStartupError):
+            await engine.start()
+    
+        starts = [item for item in journal if item.startswith("start:")]
+        stops = [item for item in journal if item.startswith("stop:")]
+        assert starts == ["start:alpha", "start:bravo", "start:charlie", "start:delta"]
+        # The failed component never started, so it is not stopped; the rest roll back in reverse.
+>       assert stops == ["stop:charlie", "stop:bravo", "stop:alpha"]
+E       AssertionError: assert ['stop:alpha'...stop:charlie'] == ['stop:charli... 'stop:alpha']
+E         
+E         At index 0 diff: 'stop:alpha' != 'stop:charlie'
+E         Use -v to get more diff
+
+tests\qualification\pdc_x\d4\test_d4_lifecycle_suite.py:86: AssertionError
+---------------------------- Captured stdout setup ----------------------------
+Wrote build\agent_fleet_inventory.json (21 agents)
+=========================== short test summary info ===========================
+FAILED tests/qualification/pdc_x/d4/test_d4_lifecycle_suite.py::test_r003_startup_failure_rolls_back_in_reverse_order
+!!!!!!!!!!!!!!!!!!!!!!!!!! stopping after 1 failures !!!!!!!!!!!!!!!!!!!!!!!!!!
+1 failed in 0.50s

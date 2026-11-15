@@ -1,0 +1,42 @@
+.F
+================================== FAILURES ===================================
+___ test_xd05_work_that_outlives_the_drain_budget_is_cancelled_and_reported ___
+
+tmp_path = WindowsPath('D:/Projekty/intergrax/.claude/worktrees/pdc-x-ia-d4-966471/build/pytest/48564-f2615833/test_xd05_work_that_outlives_t0')
+
+    async def test_xd05_work_that_outlives_the_drain_budget_is_cancelled_and_reported(
+        tmp_path: Path,
+    ) -> None:
+        controller = AsyncioActiveWork()
+        profile = make_profile(
+            runtime=JournalRuntime(),
+            shutdown=ShutdownPolicy.drain_then_cancel(
+                drain_timeout_seconds=0.3,
+                cancel_timeout_seconds=2.0,
+                flush_timeout_seconds=1.0,
+            ),
+        )
+        engine, _, _ = build_engine(definition_of(profile), tmp_path, active_work_controller=controller)
+        await engine.start()
+    
+        async def stuck() -> None:
+            await asyncio.sleep(30.0)
+    
+        controller.submit("stuck-job", stuck)
+    
+        result = await asyncio.wait_for(engine.stop(reason_code="test.drain.budget"), timeout=20.0)
+    
+        assert result.terminal_state is HostedApplicationLifecycleState.STOPPED
+>       assert controller.cancelled == ["stuck-job"]
+E       AssertionError: assert [] == ['stuck-job']
+E         
+E         Right contains one more item: 'stuck-job'
+E         Use -v to get more diff
+
+tests\qualification\pdc_x\d4\test_xd05_drain_background_work.py:160: AssertionError
+=========================== short test summary info ===========================
+FAILED tests/qualification/pdc_x/d4/test_xd05_drain_background_work.py::test_xd05_work_that_outlives_the_drain_budget_is_cancelled_and_reported
+!!!!!!!!!!!!!!!!!!!!!!!!!! stopping after 1 failures !!!!!!!!!!!!!!!!!!!!!!!!!!
+1 failed, 1 passed in 1.35s
+Task was destroyed but it is pending!
+task: <Task pending name='Task-7' coro=<AsyncioActiveWork.submit.<locals>.runner() running at D:\Projekty\intergrax\.claude\worktrees\pdc-x-ia-d4-966471\tests\qualification\pdc_x\d4\_support.py:234> wait_for=<Future pending cb=[Task.task_wakeup()]> cb=[set.discard()]>

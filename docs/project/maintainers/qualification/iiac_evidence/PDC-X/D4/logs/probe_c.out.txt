@@ -1,0 +1,17 @@
+{
+ "Q1_startup_phase_sets_equal": true,
+ "Q1_only_in_classifier": [],
+ "Q1_only_in_diagnostics": [],
+ "Q2_supervisor_instance_conflict_with_ALWAYS_restart": {
+  "final": "instance_conflict",
+  "attempts": 1,
+  "exit_class_metric_labels": [
+   "instance_conflict"
+  ],
+  "exhausted": false
+ },
+ "Q3_always_restart_honours_explicit_shutdown": {
+  "attempts": 1,
+  "final": "clean_stop"
+ }
+}

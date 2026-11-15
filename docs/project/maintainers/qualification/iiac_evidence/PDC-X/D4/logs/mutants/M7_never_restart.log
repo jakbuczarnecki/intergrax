@@ -1,0 +1,44 @@
+F
+================================== FAILURES ===================================
+_______ test_r007_killed_worker_process_is_restarted_by_the_supervisor ________
+
+tmp_path = WindowsPath('D:/Projekty/intergrax/.claude/worktrees/pdc-x-ia-d4-966471/build/pytest/55368-1d06fbc8/test_r007_killed_worker_proces0')
+
+    async def test_r007_killed_worker_process_is_restarted_by_the_supervisor(tmp_path: Path) -> None:
+        workers: list[subprocess.Popen[str]] = []
+        supervisor, publisher, control = _build_supervisor(tmp_path, workers, max_attempts=3)
+        run = asyncio.ensure_future(supervisor.run())
+        try:
+            await _wait_until(lambda: _ready_count(publisher) == 1, "first instance ready")
+            assert len(workers) == 1 and workers[0].poll() is None
+            victim = workers[0]
+            victim_pid = victim.pid
+            assert victim_pid != os.getpid()
+    
+            victim.kill()  # hard kill of exactly the recorded worker PID
+    
+>           await _wait_until(
+                lambda: _ready_count(publisher) == 2,
+                "replacement instance ready after supervised restart",
+            )
+
+tests\qualification\pdc_x\d4\test_d4_crash_restart_subprocess.py:187: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+predicate = <function test_r007_killed_worker_process_is_restarted_by_the_supervisor.<locals>.<lambda> at 0x000001CB1E4FA0C0>
+description = 'replacement instance ready after supervised restart'
+
+    async def _wait_until(predicate, description: str) -> None:
+        deadline = asyncio.get_running_loop().time() + _WAIT_SECONDS
+        while not predicate():
+            if asyncio.get_running_loop().time() > deadline:
+>               raise AssertionError(f"timed out waiting for: {description}")
+E               AssertionError: timed out waiting for: replacement instance ready after supervised restart
+
+tests\qualification\pdc_x\d4\test_d4_crash_restart_subprocess.py:104: AssertionError
+---------------------------- Captured stdout setup ----------------------------
+Wrote build\agent_fleet_inventory.json (21 agents)
+=========================== short test summary info ===========================
+FAILED tests/qualification/pdc_x/d4/test_d4_crash_restart_subprocess.py::test_r007_killed_worker_process_is_restarted_by_the_supervisor
+!!!!!!!!!!!!!!!!!!!!!!!!!! stopping after 1 failures !!!!!!!!!!!!!!!!!!!!!!!!!!
+1 failed in 20.74s
