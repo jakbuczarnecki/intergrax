@@ -63,8 +63,8 @@ Not done here: no mutation run, no full `tests/unit`, no re-audit of any product
 | F-51 / F-52 (openai embedding bundle soft spots), F-53 (open, unchanged in the audit and certifier records) | accepted as declared in the audit and certifier records, not resolved | as declared in those records |
 | RA-02, RA-03, RA-04 (optional hardening from the delta re-audit) | accepted as declared, not implemented | as declared |
 | F-57 (INFO): `.github/workflows/unit-tests.yml` EBH-7 pins and `pdc_x_wbs.py` changed in the merged range | accepted by the auditor and the certifier | none needed |
-| `xfail` `test_scaffold_defaults_mcp_to_opt_in[product]` (AF-05 / AF-16, ticket `T-IGX-039-A`) | **no named owner**: the ticket names the role "strict-product scaffold owner" and says the operator names the person or team | **operator, open: must name the owner for `T-IGX-039-A`** |
-| Domain audits IA-D1..IA-D8 (27 routed findings) | not done | not assigned in this dossier |
+| `xfail` `test_scaffold_defaults_mcp_to_opt_in[product]` (AF-05 / AF-16, ticket `T-IGX-039-A`) | owner named on 2026-11-15: the operator (`jakbuczarnecki`) owns `T-IGX-039-A`; the xfail stays until the real product-factory composition is restored (no plan yet) | **operator** (named 2026-11-15) |
+| Domain audits IA-D1..IA-D8 (27 routed findings) | not done; **explicitly deferred** by the operator on 2026-11-15, outside the MCP-RC scope; the stage closes without them | **operator** (deferral decision 2026-11-15) |
 | Unreproduced leads F-18, F-24..F-28; full `tests/unit`, network and live-provider paths | not covered | not assigned in this dossier |
 | Drift: any product commit on `development` after `83d939095` voids the pin; the freeze is a declaration | standing condition | operator |
 | The signed decision text is stale (158 paths, tree `324d9dba3`); the operator confirmed the signature stands (`OD-MCP-RC-05`), the text was not edited | recorded | operator |
@@ -76,3 +76,12 @@ Not done here: no mutation run, no full `tests/unit`, no re-audit of any product
 - **Independence of roles.** The records name separate sessions for implementer, auditors, certifier, signer, activation certifier and evidence integrator, and this terminal verification was done by a further session that holds none of those roles. The attestation is `process_enforced`: one git identity signs all commits (as the certifier records state), so separation rests on session separation and the role records, not on distinct signing identities. This dossier does not verify those records beyond what the cited files say.
 - **No alteration of published history.** P8 files and the published history are unchanged; this dossier is additive.
 - **No edit** of product paths, of the IIAC activation record or of the signed decision.
+
+## 8. Operator closing decisions (2026-11-15)
+
+Recorded as an English rendering of the operator's chat answers; this addendum adds no verdict, audit or certification.
+
+1. The named owner of the strict `xfail` `test_scaffold_defaults_mcp_to_opt_in[product]` (`T-IGX-039-A`) is the operator (`jakbuczarnecki`).
+2. The domain audits IA-D1..IA-D8 are explicitly deferred and are not part of the MCP-RC closure. Nothing in this dossier claims that they were performed.
+
+With these two decisions no operator-owned MCP-RC item remains open. F-56 and F-35 stay with PDC-X. No FRZ status changed and no production-readiness claim is made.

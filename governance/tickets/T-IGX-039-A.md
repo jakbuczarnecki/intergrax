@@ -4,7 +4,7 @@
 
 Handoff record for the single strict `xfail` that the MCP-RC campaign transferred out of MCP ownership: `tests/unit/applications/test_mcp_surface_opt_in.py::test_scaffold_defaults_mcp_to_opt_in[product]`. The product scaffold fails the STRICT agent-contract authority (a non-MCP concern), so the MCP opt-in default cannot be proven against the real product factory composition. Findings: AF-05 and AF-16 of the MCP-RC independent audit; `MCP_SERVER_X_RC_CORRECTIONS_RECORD.md` ("Audit follow-up").
 
-Owner: **strict-product scaffold owner** (role, no named person yet; the operator names the person or team). This ticket creates no product change and no MCP change: it records who restores real product-factory composition and removes the xfail.
+Owner: **strict-product scaffold owner**, named by the operator on 2026-11-15 (chat decision, English rendering): the operator, `jakbuczarnecki`, owns this ticket and the xfail. This ticket creates no product change and no MCP change: it records who restores real product-factory composition and removes the xfail.
 
 ## Plan digest
 
