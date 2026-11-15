@@ -7,27 +7,26 @@ from datetime import UTC, datetime
 from pathlib import Path
 
 import pytest
-
 from intergrax.hosting import InstancePolicy
 from intergrax.hosting.contracts.context import HostedApplicationProcessIdentity
-from intergrax.hosting.instance.contracts import HostedApplicationInstanceIdentity
 from intergrax.hosting.errors import (
     HostedApplicationInstanceConflictError,
     HostedApplicationInstanceGuardError,
     HostedApplicationInstanceOwnershipError,
 )
+from intergrax.hosting.instance.contracts import (
+    HostedApplicationInstanceConflictSnapshot,
+    HostedApplicationInstanceIdentity,
+    InstanceAcquisitionClassification,
+)
 from intergrax.hosting.instance.file_guard import (
+    _METADATA_SCHEMA_VERSION,
     FileHostedApplicationInstanceGuard,
     FileHostedApplicationInstanceLease,
     OsProcessProbe,
+    _LeaseMetadata,
     lease_metadata_for_tests,
     lease_native_lock_for_tests,
-    _LeaseMetadata,
-    _METADATA_SCHEMA_VERSION,
-)
-from intergrax.hosting.instance.contracts import (
-    HostedApplicationInstanceConflictSnapshot,
-    InstanceAcquisitionClassification,
 )
 from tests.unit.hosting.engine._fakes import FixedClock
 
@@ -48,9 +47,7 @@ def _identity(instance_id: str = "instance-001") -> HostedApplicationInstanceIde
     )
 
 
-def _guard(
-    tmp_path: Path, *, allow_stale_recovery: bool = True
-) -> FileHostedApplicationInstanceGuard:
+def _guard(tmp_path: Path, *, allow_stale_recovery: bool = True) -> FileHostedApplicationInstanceGuard:
     clock = FixedClock()
     return FileHostedApplicationInstanceGuard(
         run_directory=tmp_path,
@@ -228,11 +225,19 @@ async def test_live_process_metadata_with_free_lock_rejected(tmp_path: Path) -> 
         await guard.acquire(_identity())
 
 
+def _symlink_or_skip(link: Path, target: Path, *, directory: bool = False) -> None:
+    """Create a symlink; skip only when the host does not permit symlink creation."""
+    try:
+        link.symlink_to(target, target_is_directory=directory)
+    except (OSError, NotImplementedError) as exc:
+        pytest.skip(f"symlink creation not permitted on this host: {exc.__class__.__name__}")
+
+
 def test_symlinked_run_directory_rejected(tmp_path: Path) -> None:
     target = tmp_path / "real"
     target.mkdir()
     link = tmp_path / "link"
-    link.symlink_to(target, target_is_directory=True)
+    _symlink_or_skip(link, target, directory=True)
     with pytest.raises(HostedApplicationInstanceGuardError):
         _guard(link)
 

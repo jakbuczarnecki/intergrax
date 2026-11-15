@@ -7,6 +7,13 @@ recorded PID; the application observes the death, asks for a restart through the
 coordinator, and the existing ``HostedApplicationSupervisor`` launches a replacement engine
 and worker. No second supervisor is involved.
 
+Scope of the proof (T-IGX-041-D, F-D4-03): the crash detector (``_SupervisedWorkerRuntime._watch``)
+is part of this test, not of the product. ``HostedApplicationSupervisor`` is in-process and
+restarts on the exit of its own engine or on a control-plane restart request; nothing in
+``intergrax/hosting`` watches an OS child process or the host process. The test therefore shows
+that a restart request after an OS worker death is honoured by the real supervisor, not that the
+product detects the crash.
+
 Process safety: every worker is self-bounded (see ``_worker_process.py``), started with a
 recorded ``Popen`` handle, and cleaned up by exact handle in ``finally``.
 """
