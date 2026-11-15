@@ -840,14 +840,19 @@ BATCHES: Final[tuple[Batch, ...]] = (
     Batch(
         "B-P8-R1",
         "R1",
-        "P8 repair loop 1 after the independent global audit: default documents loader import (doc smart handler), recurrence chain survives an eligibility-read failure (scheduler), workspace artifact tools refuse the governed content key space (storage and workspace tool services), two product paths classified in the ENT-AUDIT CHANGED-SINCE impact map; remaining object-storage tenant binding and any other finding are excluded in the plan",
+        "P8 repair loop 1, product defects of the independent global audit: RAG loader family (doc smart handler import, duplicate parser runtime document class, in-memory list_collections), recurrence chain survives eligibility-phase failures (scheduler), governed content key refusal in the workspace tools plus case, dot and filesystem-root hardening, credential error context, two product paths classified in the ENT-AUDIT impact map, durable projection slug pin (test-only); register, debt and test-hygiene findings are excluded in the plan",
         "T-IGX-041-M",
         "W14a",
         (
             "intergrax/rag/document_loaders/handlers/doc_smart_document_handler.py",
+            "intergrax/rag/document_loaders/contracts/parser_native_handle.py",
+            "intergrax/rag/document_loaders/compat/legacy_runtime_document.py",
+            "intergrax/integrations/providers/vector_store/inmemory/integration.py",
             "intergrax/runtime/long_running/scheduler.py",
             "intergrax/tools/providers/workspace/service.py",
             "intergrax/tools/providers/storage/service.py",
+            "intergrax/integrations/_shared/p3/clients.py",
+            "intergrax/integrations/credentials/secrets_store_resolver.py",
             "intergrax/platform/enterprise_audit/impact_map.py",
             "intergrax/platform/enterprise_audit/data/changed_since_impact_map.v1.json",
             "tests/qualification/pdc_x/p8_repair/",
@@ -855,10 +860,10 @@ BATCHES: Final[tuple[Batch, ...]] = (
             "docs/project/capabilities/architecture/ARTIFACT_LIFECYCLE.md",
         ),
         "—",
-        ("B-P7-D2", "B-P7-D7", "B-P7-D8"),
+        ("B-P7-D1", "B-P7-D2", "B-P7-D6", "B-P7-D7", "B-P7-D8"),
         GATE_PRODUCT,
         "IA-GLOBAL (P8)",
-        "tests/qualification/pdc_x/p8_repair/ red on unchanged code and green after; d7, d8, sched_01, p6_impact, xd_12, rag document loader and compat_x suites green except the known red classes named in the ticket",
+        "tests/qualification/pdc_x/p8_repair/ red on unchanged code and green after; d1, d6, d7, d8, sched_01, p6_impact, xd_12, rag loader and compat_x suites green except the known red classes named in the ticket",
     ),
 )
 

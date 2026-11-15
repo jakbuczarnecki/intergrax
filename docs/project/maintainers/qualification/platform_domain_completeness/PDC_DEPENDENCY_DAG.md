@@ -59,7 +59,9 @@ graph LR
   B-P6-J --> B-P7-D8
   B-P6-J --> B-P7-D6
   B-P6-J --> B-P7-TX
+  B-P7-D1 --> B-P8-R1
   B-P7-D2 --> B-P8-R1
+  B-P7-D6 --> B-P8-R1
   B-P7-D7 --> B-P8-R1
   B-P7-D8 --> B-P8-R1
   P4 --> B-D1 & B-D3 & B-D7 & B-REG-P
