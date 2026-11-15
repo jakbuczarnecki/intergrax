@@ -1,0 +1,69 @@
+.....................................F.................................. [ 71%]
+.............................                                            [100%]
+================================== FAILURES ===================================
+____________________ test_experiment_session_echo_workflow ____________________
+
+tmp_path = WindowsPath('D:/Projekty/intergrax/.claude/worktrees/pdc-x-ia-d5-fb28f3/build/pytest/55912-9f6345f7/test_experiment_session_echo_w0')
+
+    @pytest.mark.asyncio
+    async def test_experiment_session_echo_workflow(tmp_path):
+        experiments_db = tmp_path / "experiments.db"
+        trace_db = tmp_path / "trace.db"
+    
+        session = ExperimentSession(
+            experiments_db=experiments_db,
+            trace_db=trace_db,
+            tenant_id="t1",
+            user_id="u1",
+        )
+        record = session.register(
+            RegisterExperimentRequest(
+                hypothesis="Echo returns prefixed answer",
+                capability="echo.basic",
+                agent_id="echo",
+                expected_output="hello workflow",
+                validation_criteria="non-empty answer with echo prefix",
+            )
+        )
+    
+        loop = session.build_nexus_loop(build_harness_registry())
+>       outcome = await session.run(
+            loop=loop,
+            record=record,
+            message="hello workflow",
+        )
+
+tests\unit\experiments\test_experiment_workflow.py:49: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+self = <intergrax.experiments.workflow.ExperimentSession object at 0x00000268A7017FE0>
+
+    async def run(
+        self,
+        *,
+        loop: HostOrchestrationApplicationWiringTarget,
+        record: ExperimentRecord,
+        message: str,
+        capability: str | None = None,
+    ) -> ExperimentRunOutcome:
+        task = Task(
+            tenant_id=self.tenant_id,
+            user_id=self.user_id,
+            message=message,
+            context=TaskContext(
+                capability=capability or record.capability,
+            ),
+        )
+        if record.agent_id:
+            task.agent_id = record.agent_id
+    
+        result = await UnifiedTaskRunner(
+            build_harness_root_task_execution_port_from_wiring_target(loop),
+>       ).run_task(task, run_id=mint_run_id())
+                                ^^^^^^^^^^^
+E       NameError: name 'mint_run_id' is not defined
+
+intergrax\experiments\workflow.py:163: NameError
+=========================== short test summary info ===========================
+FAILED tests/unit/experiments/test_experiment_workflow.py::test_experiment_session_echo_workflow
+1 failed, 100 passed in 27.55s

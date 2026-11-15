@@ -1,0 +1,16 @@
+PDC-P7 IA-D5 test matrix (auditor runs, Windows, one pytest/python process at a time)
+audited_implementation_sha = c08efe46a74a20595468d8d8bf06eab2dca5f573; execution HEAD b7889220607b462195308fa186f4ba66fb78f3a8 (docs/governance-only delta, product delta = 0)
+interpreter: uv-managed .venv, CPython 3.12.11
+
+1. uv run pytest tests/qualification/pdc_x/d5 -q                       -> 79 passed (logs/pytest_pdc_x_d5.log)
+2. uv run pytest <21 files: xd_08_evaluation, tests/unit/eval, tests/unit/experiments, architecture evaluation/online_evaluation/agent_promotion/user_satisfaction unit tests,
+   evidence/test_eval_evidence_*, applications/test_harness_evaluation_wiring> -q
+                                                                       -> 100 passed, 1 failed (tests/unit/experiments/test_experiment_workflow.py::test_experiment_session_echo_workflow, NameError mint_run_id; F-D5-07) (logs/pytest_d5_unit_and_xd08.log)
+3. uv run python scripts/qualification/pdc_x_requirements.py --check    -> [OK] 172 rows, schema valid, FRZ 225/26
+4. python scripts/gates/check_mvp_promotion_gates.py                    -> G0/G1/G2 OK, authorization NOT GRANTED (logs/gate_script_default_run.txt)
+5. python scripts/gates/check_mvp_promotion_gates.py --governance-ticket governance/tickets/T-IGX-036-O.md --require-authorization
+                                                                       -> GRANTED, exit 0 (F-D5-02) (logs/gate_script_unrelated_ticket_granted.txt)
+6. adversarial_scripts/probe_a.py (contracts, evidence, comparison, promotion) -> logs/probe_a.out.txt (P6 repeated with PYTHONHASHSEED=1,2: three different digests)
+7. adversarial_scripts/probe_b.py (registry, tenant, lock lease, human queue)  -> logs/probe_b.out.txt
+8. adversarial_scripts/probe_c.py (4 processes x 25 appends)                   -> logs/probe_c.out.txt (100 stored, 0 lost)
+Known classified reds not re-reported: EBH-7 identity gate, roadmap_replay_x x5, dist_scale_x/Docker scope. R-05 (pytest process not exiting) not reproduced on runs 1 and 2.
