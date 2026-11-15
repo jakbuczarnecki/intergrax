@@ -35,6 +35,7 @@ Rows classed `CURRENT_HEAD_REQUALIFICATION`, `ALREADY_CERTIFIED_REUSABLE`, `N/A_
 | B-P6-H | ALL | W10 | T-IGX-036-Y | 0 | — | B-P6-E | no | No product path: may merge before MCP-SERVER-X P8 | IA-GLOBAL (P8) |
 | B-P6-I | ALL | W11 | T-IGX-036-Z | 0 | — | B-P6-F | YES | OD-PDC-SEQ-01: implement in an isolated worktree; merge only after MCP-SERVER-X P8 publication; ACT-N11 re-activation at PDC-P7-00 | IA-GLOBAL (P8) |
 | B-P6-J | ALL | W12 | T-IGX-040-A | 0 | — | B-P6-I | YES | OD-PDC-SEQ-01: implement in an isolated worktree; merge only after MCP-SERVER-X P8 publication; ACT-N11 re-activation at PDC-P7-00 | IA-GLOBAL (P8) |
+| B-P7-D1 | D1 | W13 | T-IGX-041-A | 0 | ADR-PDC-01 | B-P6-J | YES | OD-PDC-SEQ-01: implement in an isolated worktree; merge only after MCP-SERVER-X P8 publication; ACT-N11 re-activation at PDC-P7-00 | IA-D1 (re-audit, loop 1 of 2) |
 
 ## B-P3 — Ownership records closed in P3
 
@@ -387,6 +388,18 @@ Rows classed `CURRENT_HEAD_REQUALIFICATION`, `ALREADY_CERTIFIED_REUSABLE`, `N/A_
 - **Write set:** `intergrax/integrations/providers/embedding_provider/openai/register.py`, `intergrax/platform/enterprise_audit/impact_map.py`, `intergrax/platform/enterprise_audit/data/changed_since_impact_map.v1.json`, `tests/qualification/pdc_x/p6_ecapfix/`, `tests/qualification/pdc_x/p6_impact/`
 - **Tests:** tests/qualification/pdc_x/p6_ecapfix/ and p6_impact/; xd_12 and p6_impact coverage tests green on development and on a tree that contains the MCP-RC change
 - **Evidence (exact SHA):** implementation SHA and publication SHA recorded in `PDC_SHA_LADDER.md`; test log under `.tmp/proof/pdc-x-p5/B-P6-J/`; audited by IA-GLOBAL (P8) at the PDC-P7 audited SHA.
+- **Merge gate:** OD-PDC-SEQ-01: implement in an isolated worktree; merge only after MCP-SERVER-X P8 publication; ACT-N11 re-activation at PDC-P7-00
+
+| Requirement | Class | Test case |
+| --- | --- | --- |
+| — | — | — |
+
+## B-P7-D1 — D1 repair after the P7 independent audit (IA-D1): activation and rollback re-check revocation, authorized emergency revocation entry point, application-ownership guard on install/upgrade, no leftover VERIFIED upgrade candidate, 18 red D1 suites root-caused
+
+- **Ticket:** T-IGX-041-A · **Wave:** W13 · **ADR:** ADR-PDC-01 · **Auditor:** IA-D1 (re-audit, loop 1 of 2)
+- **Write set:** `intergrax/agent_distribution/admin_service.py`, `intergrax/applications/_shared/durable_registry_projection_input_store.py`, `tests/qualification/pdc_x/d1_repair/`, `tests/qualification/pdc_x/d1/test_d1_adversarial_lifecycle.py`, `tests/unit/agents/authoring/conftest.py`, `tests/unit/agents/authoring/patterns/test_pattern_probe_runs.py`, `tests/unit/agents/authoring/test_acp_execution_budget_ledger_factory.py`, `tests/unit/agents/authoring/test_acp_routing_trace_integration.py`, `tests/unit/agents/authoring/test_acp_wave3_trace.py`, `tests/unit/agents/authoring/test_rb2b2_uer_consumer_requalification.py`, `tests/unit/agent_distribution/test_ac6_architecture_gates.py`, `tests/unit/agent_distribution/test_agent_distribution_activation_remediation.py`, `tests/unit/agent_distribution/test_agent_distribution_build_remediation.py`, `tests/integration/agent_distribution/test_canonical_agent_lifecycle_e2e.py`, `tests/integration/agent_distribution/test_enterprise_agent_lifecycle_durable_e2e.py`, `tests/integration/agent_distribution/test_enterprise_projection_rehydration_e2e.py`, `tests/integration/agent_distribution/test_ac6_trust_lifecycle_e2e.py`
+- **Tests:** tests/qualification/pdc_x/d1_repair/ plus the D1-cited suites of the ticket test contract; the 18 ids of the IA-D1 report (F-D1-11) green
+- **Evidence (exact SHA):** implementation SHA and publication SHA recorded in `PDC_SHA_LADDER.md`; test log under `.tmp/proof/pdc-x-p5/B-P7-D1/`; audited by IA-D1 (re-audit, loop 1 of 2) at the PDC-P7 audited SHA.
 - **Merge gate:** OD-PDC-SEQ-01: implement in an isolated worktree; merge only after MCP-SERVER-X P8 publication; ACT-N11 re-activation at PDC-P7-00
 
 | Requirement | Class | Test case |
