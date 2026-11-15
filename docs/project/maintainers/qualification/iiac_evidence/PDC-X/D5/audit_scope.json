@@ -1,0 +1,65 @@
+{
+  "stage_id": "PDC-X/P7/D5",
+  "session_designation": "PDC-P7-IA-D5-INDEPENDENT-AUDITOR-2026-11-15",
+  "certification_profile": "iiac-v1",
+  "policy_version": "IIAC-2026-11-05.1",
+  "audited_implementation_sha": "c08efe46a74a20595468d8d8bf06eab2dca5f573",
+  "audit_execution_head": "b7889220607b462195308fa186f4ba66fb78f3a8",
+  "delta_audited_to_head": "8 commits, 7 files, docs/ and governance/ only; product, script, test delta = 0",
+  "batch": {
+    "ticket": "governance/tickets/T-IGX-036-O.md",
+    "adr": "ADR-PDC-05",
+    "implementation_sha": "85a8c441d8e3f37e3f2d09451686dcd2f556d490"
+  },
+  "requirement_rows": [
+    "PDC-D5-R001",
+    "PDC-D5-R002",
+    "PDC-D5-R003",
+    "PDC-D5-R004",
+    "PDC-D5-R005",
+    "PDC-D5-R006",
+    "PDC-D5-R007",
+    "PDC-D5-R008",
+    "PDC-D5-R009",
+    "PDC-D5-R010",
+    "PDC-D5-R011",
+    "PDC-D5-R012",
+    "PDC-D5-R013",
+    "PDC-D5-R014",
+    "PDC-D5-R015",
+    "PDC-D5-R016",
+    "PDC-D5-R017",
+    "PDC-D5-R018"
+  ],
+  "owner_paths_read": [
+    "intergrax/contracts/evaluation_contracts.py",
+    "intergrax/eval/evaluators.py",
+    "intergrax/eval/typed_run.py",
+    "intergrax/eval/eval_comparison.py",
+    "intergrax/runtime/architecture/evaluation_assets.py",
+    "intergrax/runtime/architecture/evaluation_automation.py",
+    "intergrax/runtime/architecture/evaluation_registry_trends.py",
+    "intergrax/runtime/architecture/evaluation_scenario_loader.py",
+    "intergrax/runtime/architecture/online_evaluation_registry.py",
+    "intergrax/runtime/architecture/agent_promotion.py",
+    "intergrax/runtime/evidence/eval_evidence_contracts.py",
+    "intergrax/runtime/evaluation/human_review_sample_queue.py",
+    "intergrax/applications/_shared/evaluation_wiring.py",
+    "scripts/gates/check_mvp_promotion_gates.py",
+    "scripts/gates/check_agent_promotion_eval_gate.py",
+    "intergrax/runtime/architecture/user_satisfaction.py",
+    "intergrax/runtime/architecture/online_evaluation.py"
+  ],
+  "tests_run": [
+    "tests/qualification/pdc_x/d5 (79 passed)",
+    "tests/qualification/pdc_x/xd/test_xd_08_evaluation.py + 20 unit files of touched packages (100 passed, 1 failed: F-D5-07)",
+    "scripts/qualification/pdc_x_requirements.py --check (OK)"
+  ],
+  "out_of_scope": [
+    "other domains' audit reports (independence)",
+    "known classified reds (EBH-7 identity gate, roadmap_replay_x x5, dist_scale_x/Docker)",
+    "full tests/unit",
+    "ruff/pyright",
+    "live providers and network"
+  ]
+}

@@ -1,0 +1,215 @@
+{
+  "stage_id": "PDC-X/P7/D5",
+  "auditor": "IA-D5",
+  "audited_implementation_sha": "c08efe46a74a20595468d8d8bf06eab2dca5f573",
+  "scope": "PDC-D5-R001..R018 (domain D5 Evaluation)",
+  "dossier_verdict": "FAIL",
+  "iiac_manifest_verdict": "FAIL",
+  "row_verdicts": {
+    "PDC-D5-R001": "PASS",
+    "PDC-D5-R002": "PARTIAL",
+    "PDC-D5-R003": "PASS",
+    "PDC-D5-R004": "PARTIAL",
+    "PDC-D5-R005": "PARTIAL",
+    "PDC-D5-R006": "PASS",
+    "PDC-D5-R007": "PASS",
+    "PDC-D5-R008": "PASS",
+    "PDC-D5-R009": "PASS",
+    "PDC-D5-R010": "PASS",
+    "PDC-D5-R011": "PASS",
+    "PDC-D5-R012": "PASS",
+    "PDC-D5-R013": "PARTIAL",
+    "PDC-D5-R014": "PARTIAL",
+    "PDC-D5-R015": "FAIL",
+    "PDC-D5-R016": "PASS",
+    "PDC-D5-R017": "PARTIAL",
+    "PDC-D5-R018": "PASS"
+  },
+  "row_totals": {
+    "PASS": 11,
+    "PARTIAL": 6,
+    "FAIL": 1
+  },
+  "counts": {
+    "HIGH": 1,
+    "MEDIUM": 7,
+    "LOW": 6,
+    "INFO": 4,
+    "total": 18
+  },
+  "dossier_findings_reverified": {
+    "F-04": "confirmed (F-D5-01, F-D5-06)",
+    "F-24": "confirmed (F-D5-11)",
+    "F-25": "confirmed (F-D5-12)",
+    "F-32": "confirmed, re-rated MEDIUM (F-D5-02)"
+  },
+  "verification_legend": {
+    "PROBE_CONFIRMED": "reproduced by an auditor script in adversarial_scripts/",
+    "TEST_CONFIRMED": "reproduced by a test run in logs/",
+    "CODE_CONFIRMED": "established by reading code and git grep, not executed"
+  },
+  "findings": [
+    {
+      "id": "F-D5-01",
+      "severity": "HIGH",
+      "rows": "R015",
+      "verification": "PROBE_CONFIRMED",
+      "title": "Tenant isolation of online evaluation observations is opt-in and unused in production",
+      "evidence": "probe_b Q1/Q2; four wire_application_evaluation call sites omit tenant_id; record_user_satisfaction drops event.tenant_id; legacy list_observations returns all rows",
+      "disposition": "REPAIR_TICKET_D5_OWNER"
+    },
+    {
+      "id": "F-D5-02",
+      "severity": "MEDIUM",
+      "rows": "R014",
+      "verification": "PROBE_CONFIRMED",
+      "title": "MVP promotion gate: G0/G2 symbol tuples empty (file existence); any Approved: line authorizes (GRANTED with T-IGX-036-O.md)",
+      "evidence": "logs/gate_script_unrelated_ticket_granted.txt; check_mvp_promotion_gates.py gate_g0_runnable/gate_g2_policy; dossier F-32 re-rated",
+      "disposition": "REPAIR_TICKET_D5_OWNER"
+    },
+    {
+      "id": "F-D5-03",
+      "severity": "MEDIUM",
+      "rows": "R014",
+      "verification": "PROBE_CONFIRMED",
+      "title": "Promotion decision accepts unverified free-text governance inputs, evidence not bound to subject, evaluate_agent_promotion unwired",
+      "evidence": "probe_a P8: approved=True with refs 'x', certification of another agent, unrelated comparison",
+      "disposition": "REPAIR_TICKET_D5_OWNER"
+    },
+    {
+      "id": "F-D5-04",
+      "severity": "MEDIUM",
+      "rows": "R013,R010",
+      "verification": "PROBE_CONFIRMED",
+      "title": "Evidence status PASSED for a run whose executor failed; empty runs compare clean; human_pending ignored",
+      "evidence": "probe_a P1/P2",
+      "disposition": "REPAIR_TICKET_D5_OWNER"
+    },
+    {
+      "id": "F-D5-05",
+      "severity": "MEDIUM",
+      "rows": "R005",
+      "verification": "CODE_CONFIRMED",
+      "title": "No groundedness evaluator in product code; evaluator registry composed only in tests",
+      "evidence": "git grep groundedness; register_existing_evaluators has no non-test caller",
+      "disposition": "REPAIR_TICKET_D5_OWNER_OR_OPERATOR_DECISION"
+    },
+    {
+      "id": "F-D5-06",
+      "severity": "MEDIUM",
+      "rows": "R001,R004,R013",
+      "verification": "CODE_CONFIRMED",
+      "title": "Typed evaluation pipeline has no production caller (dossier F-04 D5 part)",
+      "evidence": "git grep of execute_eval_run, compare_eval_runs, build_eval_run_evidence_report, register_existing_evaluators",
+      "disposition": "REPAIR_TICKET_D5_OWNER"
+    },
+    {
+      "id": "F-D5-07",
+      "severity": "MEDIUM",
+      "rows": "none (B-D5 acceptance: existing suites green)",
+      "verification": "TEST_CONFIRMED",
+      "title": "tests/unit/experiments test red: NameError mint_run_id at intergrax/experiments/workflow.py:163 (since e4079dfb1)",
+      "evidence": "logs/pytest_d5_unit_and_xd08.log",
+      "disposition": "REPAIR_TICKET_D5_OWNER"
+    },
+    {
+      "id": "F-D5-08",
+      "severity": "MEDIUM",
+      "rows": "R017",
+      "verification": "CODE_CONFIRMED",
+      "title": "Evaluation boundary documentation never delivered and unowned",
+      "evidence": "T-IGX-036-H excluded R017; PLAN_T-IGX-036-O delegates to orchestrator; no doc mentions EvalRun/EvalComparison/ADR-PDC-05",
+      "disposition": "DOCS_TICKET"
+    },
+    {
+      "id": "F-D5-09",
+      "severity": "LOW",
+      "rows": "R002",
+      "verification": "CODE_CONFIRMED",
+      "title": "GoldenDatasetAsset.content_digest optional, unvalidated, bind/verify unused",
+      "evidence": "evaluation_assets.py; git grep",
+      "disposition": "REPAIR_TICKET_D5_OWNER"
+    },
+    {
+      "id": "F-D5-10",
+      "severity": "LOW",
+      "rows": "R003,R009",
+      "verification": "PROBE_CONFIRMED",
+      "title": "Digest hygiene: default=str set payloads non-deterministic, frozen models with mutable dicts drift, result_digest excludes telemetry error",
+      "evidence": "probe_a P3/P5/P6",
+      "disposition": "REPAIR_TICKET_D5_OWNER"
+    },
+    {
+      "id": "F-D5-11",
+      "severity": "LOW",
+      "rows": "R013,R004",
+      "verification": "PROBE_CONFIRMED",
+      "title": "Evidence integrity self-attested (dossier F-24); trailing-newline accepted in code_sha/dataset_digest",
+      "evidence": "probe_a P3/P4",
+      "disposition": "REPAIR_TICKET_D5_OWNER"
+    },
+    {
+      "id": "F-D5-12",
+      "severity": "LOW",
+      "rows": "R015,R018",
+      "verification": "PROBE_CONFIRMED",
+      "title": "Registry id oracle, cross-tenant id collision denies owner read, lock lease edges (dossier F-25)",
+      "evidence": "probe_b Q3/Q4/Q5/Q6",
+      "disposition": "REPAIR_TICKET_D5_OWNER"
+    },
+    {
+      "id": "F-D5-13",
+      "severity": "LOW",
+      "rows": "R008",
+      "verification": "PROBE_CONFIRMED",
+      "title": "Human review queue in-process, tenant-less, unauthenticated; HUMAN decisions unlinked",
+      "evidence": "probe_b Q7; evaluators.py HumanReviewEvaluator",
+      "disposition": "REPAIR_TICKET_D5_OWNER"
+    },
+    {
+      "id": "F-D5-14",
+      "severity": "LOW",
+      "rows": "R006",
+      "verification": "CODE_CONFIRMED",
+      "title": "Safety evaluator passes only run_id to guardrail context; risk_level ignored",
+      "evidence": "evaluators.py GuardrailSafetyEvaluator; guardrail_verification.assess_guardrail_scan",
+      "disposition": "REPAIR_TICKET_D5_OWNER"
+    },
+    {
+      "id": "F-D5-15",
+      "severity": "INFO",
+      "rows": "process",
+      "verification": "CODE_CONFIRMED",
+      "title": "Commit 85a8c441d carries a Co-Authored-By AI trailer contrary to intergrax-no-ai-attribution (merged history)",
+      "evidence": "git show 85a8c441d",
+      "disposition": "RECORD_ONLY"
+    },
+    {
+      "id": "F-D5-16",
+      "severity": "INFO",
+      "rows": "R016",
+      "verification": "CODE_CONFIRMED",
+      "title": "Stale pointers: matrix path for R016, dead 1:1 link, ticket lifecycle plan_approved",
+      "evidence": "docs",
+      "disposition": "RECORD_ONLY"
+    },
+    {
+      "id": "F-D5-17",
+      "severity": "INFO",
+      "rows": "R007",
+      "verification": "CODE_CONFIRMED",
+      "title": "Judge isolation by convention; legacy final_passed unvalidated",
+      "evidence": "evaluators.py, evaluation_automation.py",
+      "disposition": "RECORD_ONLY"
+    },
+    {
+      "id": "F-D5-18",
+      "severity": "INFO",
+      "rows": "all",
+      "verification": "TEST_CONFIRMED",
+      "title": "Positives: layering clean, 79 D5 tests green, pdc_x process exit not reproduced",
+      "evidence": "logs/",
+      "disposition": "RECORD_ONLY"
+    }
+  ]
+}
