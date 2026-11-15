@@ -44,6 +44,7 @@ Rows classed `CURRENT_HEAD_REQUALIFICATION`, `ALREADY_CERTIFIED_REUSABLE`, `N/A_
 | B-P7-D8 | D8 | W13 | T-IGX-041-H | 0 | ADR-PDC-08 | B-P6-J | YES | OD-PDC-SEQ-01: implement in an isolated worktree; merge only after MCP-SERVER-X P8 publication; ACT-N11 re-activation at PDC-P7-00 | IA-D8 (P7 re-audit) |
 | B-P7-D6 | D6 | W13 | T-IGX-041-F | 0 | ADR-PDC-06 | B-P6-J | YES | OD-PDC-SEQ-01: implement in an isolated worktree; merge only after MCP-SERVER-X P8 publication; ACT-N11 re-activation at PDC-P7-00 | IA-D6 (re-audit, loop 1 of 2) |
 | B-P7-TX | TX | W13 | T-IGX-041-I | 0 | — | B-P6-J | no | No product path: may merge before MCP-SERVER-X P8 | IA-GLOBAL (P8) |
+| B-P8-R2 | P8 | W15 | T-IGX-041-N | 0 | — | B-P7-TX | no | No product path: may merge before MCP-SERVER-X P8 | IA-GLOBAL (P8 re-check of G-04, G-05, G-10) |
 
 ## B-P3 — Ownership records closed in P3
 
@@ -504,6 +505,18 @@ Rows classed `CURRENT_HEAD_REQUALIFICATION`, `ALREADY_CERTIFIED_REUSABLE`, `N/A_
 - **Write set:** `tests/qualification/tenant_x/_replay_x_carrier_reconciliation.py`, `tests/qualification/tenant_x/test_tenant_x_replay_carrier_reclassification.py`
 - **Tests:** tests/qualification/tenant_x green at the final head; negative tests prove an unclassified, swapped or unreasoned carrier still fails; PHASE 2 runs only after the D1, D2 and D6 repair PRs are merged
 - **Evidence (exact SHA):** implementation SHA and publication SHA recorded in `PDC_SHA_LADDER.md`; test log under `.tmp/proof/pdc-x-p5/B-P7-TX/`; audited by IA-GLOBAL (P8) at the PDC-P7 audited SHA.
+- **Merge gate:** No product path: may merge before MCP-SERVER-X P8
+
+| Requirement | Class | Test case |
+| --- | --- | --- |
+| — | — | — |
+
+## B-P8-R2 — P8 repair loop 1, test hygiene of the closure suites and the incident scenario (IA-GLOBAL G-04 test side, G-05 test-side residue, G-10): stale keyword, missing occurrence persistence, invalid proof descriptor value plus a descriptor gate, FakeVectorstore double, reingest test key scope, wrong CI claim of the RAG red classification, stale D5-contract and audit-depth tests; test, data and classification files only
+
+- **Ticket:** T-IGX-041-N · **Wave:** W15 · **ADR:** — · **Auditor:** IA-GLOBAL (P8 re-check of G-04, G-05, G-10)
+- **Write set:** `tests/unit/platform_proofs/scenarios/ai_incident_investigation/test_completion_alignment.py`, `tests/unit/platform_proofs/scenarios/ai_incident_investigation/test_diagnostic_platform_integration.py`, `platform_proofs/scenarios/indirect_prompt_injection/proof.json`, `tests/unit/rag/indexing/test_indexing_manager_indexes_documents.py`, `tests/integration/rag/test_same_source_reingest_serialization.py`, `tests/qualification/pdc_x/d2_repair/RAG_RED_CLASSIFICATION.md`, `tests/unit/applications/test_harness_host_runtime_llm.py`, `tests/unit/applications/test_scenario_runtime_baseline.py`, `tests/unit/runtime/architecture/test_audit_ideal_depth_gate.py`, `tests/qualification/pdc_x/n_repair/`
+- **Tests:** tests/qualification/pdc_x/n_repair green and red on the unchanged descriptor; the repaired tests of the plan green; the excluded rows stay red with named owners; no product or hotspot path written
+- **Evidence (exact SHA):** implementation SHA and publication SHA recorded in `PDC_SHA_LADDER.md`; test log under `.tmp/proof/pdc-x-p5/B-P8-R2/`; audited by IA-GLOBAL (P8 re-check of G-04, G-05, G-10) at the PDC-P7 audited SHA.
 - **Merge gate:** No product path: may merge before MCP-SERVER-X P8
 
 | Requirement | Class | Test case |
