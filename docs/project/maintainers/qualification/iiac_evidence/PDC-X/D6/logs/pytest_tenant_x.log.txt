@@ -1,0 +1,23 @@
+......................................................................F. [ 37%]
+........................................................................ [ 74%]
+.................................................. [100%]
+================================== FAILURES ===================================
+___________ test_tx_p0_r3_head_q02_class_field_carrier_count_stable ___________
+
+ def test_tx_p0_r3_head_q02_class_field_carrier_count_stable() -> None:
+ from tests.qualification.tenant_x._replay_x_carrier_reconciliation import (
+ TENANT_X_REPLAY_HEAD_CARRIER_TOTAL,
+ assert_replay_carrier_delta_classified,
+ )
+ 
+ report = carrier_semantics_report()
+> assert report.class_field_carrier_total == TENANT_X_REPLAY_HEAD_CARRIER_TOTAL
+E assert 831 == 819
+E + where 831 = TenantCarrierSemanticsReport(class_field_carrier_total=831, identity_carrier_count=1316, unknown_propagation_roles=5, ... authority_validator=0, authority_derivation=0, authority_narrowing=0, authority_mint_rewrite=0, authority_unknown=0))).class_field_carrier_total
+
+tests\qualification\tenant_x\test_tenant_x_p0_current_head.py:97: AssertionError
+- generated xml file: D:\Projekty\intergrax\.claude\worktrees\pdc-x-ia-d6-4b65c9\.tmp\session\ia-d6\tenant_x.xml -
+=========================== short test summary info ===========================
+FAILED tests/qualification/tenant_x/test_tenant_x_p0_current_head.py::test_tx_p0_r3_head_q02_class_field_carrier_count_stable
+1 failed, 193 passed in 47.40s
+EXIT 1
