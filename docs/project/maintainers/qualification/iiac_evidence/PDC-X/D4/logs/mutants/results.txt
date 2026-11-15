@@ -1,0 +1,13 @@
+M1_forward_stop_order | file=test_d4_lifecycle_suite.py | rc=1 | 1 failed in 0.50s | FAILED tests/qualification/pdc_x/d4/test_d4_lifecycle_suite.py::test_r003_startup_failure_rolls_back_in_reverse_order
+M2_no_runtime_degradation | file=test_d4_lifecycle_suite.py | rc=1 | 1 failed, 3 passed in 20.67s | FAILED tests/qualification/pdc_x/d4/test_d4_lifecycle_suite.py::test_r004_component_that_degrades_after_ready_is_reported_and_recovers
+M3_no_cancel | file=test_xd05_drain_background_work.py | rc=1 | 1 failed, 1 passed in 1.35s | FAILED tests/qualification/pdc_x/d4/test_xd05_drain_background_work.py::test_xd05_work_that_outlives_the_drain_budget_is_cancelled_and_reported
+M4_no_exclusive_lock | file=test_d4_lifecycle_suite.py | rc=1 | 1 failed, 6 passed in 1.38s | FAILED tests/qualification/pdc_x/d4/test_d4_lifecycle_suite.py::test_r006_instance_held_by_another_os_process_is_rejected
+M5_no_digest_verification | file=test_d4_restart_digest.py | rc=1 | 1 failed, 1 passed in 20.86s | FAILED tests/qualification/pdc_x/d4/test_d4_restart_digest.py::test_r010_restart_with_changed_configuration_is_rejected_before_start
+M6_no_metrics | file=test_d4_lifecycle_metrics.py | rc=1 | 1 failed in 0.83s | FAILED tests/qualification/pdc_x/d4/test_d4_lifecycle_metrics.py::test_r009_engine_emits_start_ready_degraded_and_drain_metrics
+M7_never_restart | file=test_d4_crash_restart_subprocess.py | rc=1 | 1 failed in 20.74s | FAILED tests/qualification/pdc_x/d4/test_d4_crash_restart_subprocess.py::test_r007_killed_worker_process_is_restarted_by_the_supervisor
+M8_public_surface_change | file=test_d4_public_api_manifest.py | rc=1 | 1 failed in 0.59s | FAILED tests/qualification/pdc_x/d4/test_d4_public_api_manifest.py::test_r014_public_surface_matches_the_declared_manifest
+M9_drain_skipped | file=test_xd05_drain_background_work.py | rc=1 | 1 failed in 0.77s | FAILED tests/qualification/pdc_x/d4/test_xd05_drain_background_work.py::test_xd05_shutdown_drains_in_flight_background_work
+M10_startup_rollback_skipped | file=test_d4_lifecycle_suite.py | rc=1 | 1 failed in 0.53s | FAILED tests/qualification/pdc_x/d4/test_d4_lifecycle_suite.py::test_r003_startup_failure_rolls_back_in_reverse_order
+M11_lease_not_released | file=test_d4_lifecycle_suite.py | rc=1 | 1 failed in 0.77s | FAILED tests/qualification/pdc_x/d4/test_d4_lifecycle_suite.py::test_r003_startup_failure_rolls_back_in_reverse_order
+M12_exit_class_label_constant | file=test_d4_lifecycle_metrics.py | rc=1 | 1 failed, 1 passed in 0.87s | FAILED tests/qualification/pdc_x/d4/test_d4_lifecycle_metrics.py::test_r009_supervisor_emits_restart_count_and_exit_class
+DONE

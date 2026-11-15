@@ -1,0 +1,102 @@
+warning: Failed to hardlink files; falling back to full copy. This may lead to degraded performance.
+         If the cache and target directories are on different filesystems, hardlinking may not be supported.
+         If this is intentional, set `export UV_LINK_MODE=copy` or use `--link-mode=copy` to suppress this warning.
+Installed 40 packages in 7.39s
+........................................................................ [ 16%]
+................................................................F....... [ 33%]
+FF...................................................................... [ 50%]
+........................................................................ [ 67%]
+........................................................................ [ 84%]
+.................................................................        [100%]
+================================== FAILURES ===================================
+____________________ test_symlinked_run_directory_rejected ____________________
+
+tmp_path = WindowsPath('D:/Projekty/intergrax/.claude/worktrees/pdc-x-ia-d4-966471/build/pytest/26044-6eb70c03/test_symlinked_run_directory_r0')
+
+    def test_symlinked_run_directory_rejected(tmp_path: Path) -> None:
+        target = tmp_path / "real"
+        target.mkdir()
+        link = tmp_path / "link"
+>       link.symlink_to(target, target_is_directory=True)
+
+tests\unit\hosting\instance\test_file_guard.py:235: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+self = WindowsPath('D:/Projekty/intergrax/.claude/worktrees/pdc-x-ia-d4-966471/build/pytest/26044-6eb70c03/test_symlinked_run_directory_r0/link')
+target = WindowsPath('D:/Projekty/intergrax/.claude/worktrees/pdc-x-ia-d4-966471/build/pytest/26044-6eb70c03/test_symlinked_run_directory_r0/real')
+target_is_directory = True
+
+    def symlink_to(self, target, target_is_directory=False):
+        """
+        Make this path a symlink pointing to the target path.
+        Note the order of arguments (link, target) is the reverse of os.symlink.
+        """
+        if not hasattr(os, "symlink"):
+            raise NotImplementedError("os.symlink() not available on this system")
+>       os.symlink(target, self, target_is_directory)
+E       OSError: [WinError 1314] Klient nie ma wymaganych uprawnieñ: 'D:\\Projekty\\intergrax\\.claude\\worktrees\\pdc-x-ia-d4-966471\\build\\pytest\\26044-6eb70c03\\test_symlinked_run_directory_r0\\real' -> 'D:\\Projekty\\intergrax\\.claude\\worktrees\\pdc-x-ia-d4-966471\\build\\pytest\\26044-6eb70c03\\test_symlinked_run_directory_r0\\link'
+
+C:\Users\XPS\AppData\Roaming\uv\python\cpython-3.12-windows-x86_64-none\Lib\pathlib.py:1386: OSError
+______________________ test_symlinked_ancestor_rejected _______________________
+
+tmp_path = WindowsPath('D:/Projekty/intergrax/.claude/worktrees/pdc-x-ia-d4-966471/build/pytest/26044-6eb70c03/test_symlinked_ancestor_reject0')
+
+    def test_symlinked_ancestor_rejected(tmp_path: Path) -> None:
+        real = tmp_path / "real"
+        real.mkdir()
+        link = tmp_path / "link"
+>       link.symlink_to(real, target_is_directory=True)
+
+tests\unit\hosting\instance\test_w3_file_guard_regression.py:160: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+self = WindowsPath('D:/Projekty/intergrax/.claude/worktrees/pdc-x-ia-d4-966471/build/pytest/26044-6eb70c03/test_symlinked_ancestor_reject0/link')
+target = WindowsPath('D:/Projekty/intergrax/.claude/worktrees/pdc-x-ia-d4-966471/build/pytest/26044-6eb70c03/test_symlinked_ancestor_reject0/real')
+target_is_directory = True
+
+    def symlink_to(self, target, target_is_directory=False):
+        """
+        Make this path a symlink pointing to the target path.
+        Note the order of arguments (link, target) is the reverse of os.symlink.
+        """
+        if not hasattr(os, "symlink"):
+            raise NotImplementedError("os.symlink() not available on this system")
+>       os.symlink(target, self, target_is_directory)
+E       OSError: [WinError 1314] Klient nie ma wymaganych uprawnieñ: 'D:\\Projekty\\intergrax\\.claude\\worktrees\\pdc-x-ia-d4-966471\\build\\pytest\\26044-6eb70c03\\test_symlinked_ancestor_reject0\\real' -> 'D:\\Projekty\\intergrax\\.claude\\worktrees\\pdc-x-ia-d4-966471\\build\\pytest\\26044-6eb70c03\\test_symlinked_ancestor_reject0\\link'
+
+C:\Users\XPS\AppData\Roaming\uv\python\cpython-3.12-windows-x86_64-none\Lib\pathlib.py:1386: OSError
+______________________ test_symlinked_lock_file_rejected ______________________
+
+tmp_path = WindowsPath('D:/Projekty/intergrax/.claude/worktrees/pdc-x-ia-d4-966471/build/pytest/26044-6eb70c03/test_symlinked_lock_file_rejec0')
+
+    def test_symlinked_lock_file_rejected(tmp_path: Path) -> None:
+        guard = _guard(tmp_path)
+        lock_path = guard.lock_path_for("test_app")
+        target = tmp_path / "target.lock"
+        target.write_text("x", encoding="utf-8")
+>       lock_path.symlink_to(target)
+
+tests\unit\hosting\instance\test_w3_file_guard_regression.py:171: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+self = WindowsPath('D:/Projekty/intergrax/.claude/worktrees/pdc-x-ia-d4-966471/build/pytest/26044-6eb70c03/test_symlinked_lock_file_rejec0/test_app.lock')
+target = WindowsPath('D:/Projekty/intergrax/.claude/worktrees/pdc-x-ia-d4-966471/build/pytest/26044-6eb70c03/test_symlinked_lock_file_rejec0/target.lock')
+target_is_directory = False
+
+    def symlink_to(self, target, target_is_directory=False):
+        """
+        Make this path a symlink pointing to the target path.
+        Note the order of arguments (link, target) is the reverse of os.symlink.
+        """
+        if not hasattr(os, "symlink"):
+            raise NotImplementedError("os.symlink() not available on this system")
+>       os.symlink(target, self, target_is_directory)
+E       OSError: [WinError 1314] Klient nie ma wymaganych uprawnieñ: 'D:\\Projekty\\intergrax\\.claude\\worktrees\\pdc-x-ia-d4-966471\\build\\pytest\\26044-6eb70c03\\test_symlinked_lock_file_rejec0\\target.lock' -> 'D:\\Projekty\\intergrax\\.claude\\worktrees\\pdc-x-ia-d4-966471\\build\\pytest\\26044-6eb70c03\\test_symlinked_lock_file_rejec0\\test_app.lock'
+
+C:\Users\XPS\AppData\Roaming\uv\python\cpython-3.12-windows-x86_64-none\Lib\pathlib.py:1386: OSError
+=========================== short test summary info ===========================
+FAILED tests/unit/hosting/instance/test_file_guard.py::test_symlinked_run_directory_rejected
+FAILED tests/unit/hosting/instance/test_w3_file_guard_regression.py::test_symlinked_ancestor_rejected
+FAILED tests/unit/hosting/instance/test_w3_file_guard_regression.py::test_symlinked_lock_file_rejected
+3 failed, 422 passed in 81.71s (0:01:21)
+EXIT=1

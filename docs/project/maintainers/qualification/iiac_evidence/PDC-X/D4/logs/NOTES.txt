@@ -1,0 +1,6 @@
+NOTES (IA-D4)
+- Probe scripts were run from <repo>/.tmp/session/ia-d4/probes/ (ROOT = Path(__file__).parents[4]); the archived copies keep that line. To replay from this directory set ROOT to the repository root.
+- Mutation plugin: PYTHONPATH=<dir with mut_plugin.py> IAD4_MUT=<name> uv run --extra mcp pytest -p mut_plugin <one d4 test file> -q -x ; the plugin patches classes in memory only.
+- probe_e.py (STRICT product manifest composition) printed {} because iter_strict_product_manifests() yields nothing outside the pytest path setup; the failing unit test it was meant to explain is recorded in the test matrix instead.
+- Timing: the P11 probe waits 60 s on purpose (hung publisher); the computed shutdown budget printed in probe_b.out.txt is 150 s.
+- No secret, credential or token was used or captured; logs contain local Windows paths only.

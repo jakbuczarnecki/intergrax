@@ -1,0 +1,40 @@
+F
+================================== FAILURES ===================================
+________ test_r009_engine_emits_start_ready_degraded_and_drain_metrics ________
+
+tmp_path = WindowsPath('D:/Projekty/intergrax/.claude/worktrees/pdc-x-ia-d4-966471/build/pytest/28664-91540603/test_r009_engine_emits_start_r0')
+
+    async def test_r009_engine_emits_start_ready_degraded_and_drain_metrics(tmp_path: Path) -> None:
+        journal: list[str] = []
+        controller = AsyncioActiveWork()
+        profile = make_profile(
+            runtime=JournalRuntime(journal),
+            components=(
+                HostedApplicationComponentRegistration(
+                    component=OrderedComponent("optional_cache", journal, fail_start=True)
+                ),
+            ),
+            shutdown=ShutdownPolicy.drain_then_cancel(
+                drain_timeout_seconds=10.0, cancel_timeout_seconds=2.0, flush_timeout_seconds=1.0
+            ),
+        )
+        engine, publisher, _ = build_engine(definition_of(profile), tmp_path, active_work_controller=controller)
+        await engine.start()
+    
+        async def in_flight() -> None:
+            await asyncio.sleep(0.3)
+    
+        controller.submit("drain-me", in_flight)
+        await engine.stop(reason_code="test.metrics")
+    
+>       (start,) = _metrics(publisher, HostedApplicationLifecycleMetric.START)
+        ^^^^^^^^
+E       ValueError: not enough values to unpack (expected 1, got 0)
+
+tests\qualification\pdc_x\d4\test_d4_lifecycle_metrics.py:87: ValueError
+---------------------------- Captured stdout setup ----------------------------
+Wrote build\agent_fleet_inventory.json (21 agents)
+=========================== short test summary info ===========================
+FAILED tests/qualification/pdc_x/d4/test_d4_lifecycle_metrics.py::test_r009_engine_emits_start_ready_degraded_and_drain_metrics
+!!!!!!!!!!!!!!!!!!!!!!!!!! stopping after 1 failures !!!!!!!!!!!!!!!!!!!!!!!!!!
+1 failed in 0.83s

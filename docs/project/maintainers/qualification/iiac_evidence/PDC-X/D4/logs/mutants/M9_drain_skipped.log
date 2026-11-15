@@ -1,0 +1,46 @@
+F
+================================== FAILURES ===================================
+_____________ test_xd05_shutdown_drains_in_flight_background_work _____________
+
+tmp_path = WindowsPath('D:/Projekty/intergrax/.claude/worktrees/pdc-x-ia-d4-966471/build/pytest/29492-f0f7a7a4/test_xd05_shutdown_drains_in_f0')
+
+    async def test_xd05_shutdown_drains_in_flight_background_work(tmp_path: Path) -> None:
+        registry = _registry()
+        controller = AsyncioActiveWork()
+        profile = make_profile(
+            runtime=JournalRuntime(),
+            shutdown=ShutdownPolicy.drain_then_cancel(
+                drain_timeout_seconds=10.0,
+                cancel_timeout_seconds=2.0,
+                flush_timeout_seconds=1.0,
+            ),
+        )
+        engine, publisher, _ = build_engine(definition_of(profile), tmp_path, active_work_controller=controller)
+        await engine.start()
+        assert engine.accepts_new_work
+    
+        controller.submit("job-1", _registered_work(registry, 0.4))
+        controller.submit("job-2", _registered_work(registry, 0.2))
+        assert controller.active_work_count() == 2
+    
+        result = await asyncio.wait_for(engine.stop(reason_code="test.drain"), timeout=20.0)
+    
+        assert result.terminal_state is HostedApplicationLifecycleState.STOPPED
+        # In-flight work finished (drained), it was not cancelled.
+>       assert sorted(controller.completed) == ["job-1", "job-2"]
+E       AssertionError: assert [] == ['job-1', 'job-2']
+E         
+E         Right contains 2 more items, first extra item: 'job-1'
+E         Use -v to get more diff
+
+tests\qualification\pdc_x\d4\test_xd05_drain_background_work.py:100: AssertionError
+---------------------------- Captured stdout setup ----------------------------
+Wrote build\agent_fleet_inventory.json (21 agents)
+=========================== short test summary info ===========================
+FAILED tests/qualification/pdc_x/d4/test_xd05_drain_background_work.py::test_xd05_shutdown_drains_in_flight_background_work
+!!!!!!!!!!!!!!!!!!!!!!!!!! stopping after 1 failures !!!!!!!!!!!!!!!!!!!!!!!!!!
+1 failed in 0.77s
+Task was destroyed but it is pending!
+task: <Task pending name='Task-4' coro=<AsyncioActiveWork.submit.<locals>.runner() running at D:\Projekty\intergrax\.claude\worktrees\pdc-x-ia-d4-966471\tests\qualification\pdc_x\d4\_support.py:234> wait_for=<Future pending cb=[_chain_future.<locals>._call_check_cancel() at C:\Users\XPS\AppData\Roaming\uv\python\cpython-3.12-windows-x86_64-none\Lib\asyncio\futures.py:389, Task.task_wakeup()]> cb=[set.discard()]>
+Task was destroyed but it is pending!
+task: <Task pending name='Task-3' coro=<AsyncioActiveWork.submit.<locals>.runner() running at D:\Projekty\intergrax\.claude\worktrees\pdc-x-ia-d4-966471\tests\qualification\pdc_x\d4\_support.py:234> wait_for=<Future pending cb=[_chain_future.<locals>._call_check_cancel() at C:\Users\XPS\AppData\Roaming\uv\python\cpython-3.12-windows-x86_64-none\Lib\asyncio\futures.py:389, Task.task_wakeup()]> cb=[set.discard()]>
