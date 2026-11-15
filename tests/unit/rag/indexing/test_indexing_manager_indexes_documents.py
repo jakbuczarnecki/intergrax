@@ -89,6 +89,20 @@ class FakeVectorstore(BaseVectorstoreManager):
     def count(self, *, scope: VectorStoreScope | None = None) -> int:
         return len(self.records)
 
+    def list_source_record_ids(
+        self,
+        *,
+        source_id: str,
+        scope: VectorStoreScope | None = None,
+        root_document_id: str | None = None,
+    ) -> Sequence[str]:
+        return [
+            record.vector_id
+            for record in self.records
+            if str(record.document.provenance.source_id) == source_id
+            and (root_document_id is None or str(record.document.identity.root_document_id) == root_document_id)
+        ]
+
 
 class CapturingStrategy(IndexStrategy):
     def __init__(self) -> None:

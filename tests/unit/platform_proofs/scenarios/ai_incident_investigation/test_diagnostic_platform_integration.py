@@ -7,7 +7,6 @@ from __future__ import annotations
 from datetime import UTC, datetime, timedelta
 
 import pytest
-
 from intergrax.contracts.execution_identity import mint_attempt_id, mint_run_id, mint_task_id
 from intergrax.runtime.diagnostics.deterministic_problem_grouping import (
     STRATEGY_ID,
@@ -25,10 +24,8 @@ from intergrax.runtime.diagnostics.diagnostic_orchestration_models import (
 from intergrax.runtime.diagnostics.diagnostic_orchestrator import DiagnosticOrchestrator
 from intergrax.runtime.diagnostics.diagnostic_read_models import DiagnosticOccurrenceReadStatus
 from intergrax.runtime.diagnostics.diagnostic_read_service import DiagnosticReadService
-from intergrax.runtime.observability.reconstruction import ExecutionReconstructor
 from intergrax.runtime.diagnostics.in_memory_problem_persistence import InMemoryProblemPersistence
 from intergrax.runtime.diagnostics.investigation_contracts import (
-    IncidentInvestigationIntegrityError,
     InvestigationConclusionStatus,
     incident_investigation_input_from_problem_details,
 )
@@ -55,6 +52,7 @@ from intergrax.runtime.observability.problem_signal import (
     PROBLEM_SOURCE_LAYER_APPLICATION,
     PlatformProblemSignal,
 )
+from intergrax.runtime.observability.reconstruction import ExecutionReconstructor
 from platform_proofs.scenarios.ai_incident_investigation.application.evidence_phase_context import (
     derive_evidence_phase_context,
 )
@@ -66,9 +64,9 @@ from platform_proofs.scenarios.ai_incident_investigation.application.platform_di
     format_platform_diagnostic_context_lines,
 )
 from platform_proofs.scenarios.ai_incident_investigation.application.scenario import (
+    OUTCOME_RESOLVED,
     execute_resolved_skeleton,
     investigation_conclusion_status_from_outcome,
-    OUTCOME_RESOLVED,
 )
 from platform_proofs.scenarios.ai_incident_investigation.application.scenario_composition import (
     IncidentInvestigationProblemNotFoundError,
@@ -76,6 +74,9 @@ from platform_proofs.scenarios.ai_incident_investigation.application.scenario_co
 )
 from platform_proofs.scenarios.ai_incident_investigation.fixtures.runtime_bundle import (
     build_runtime_bundle_from_diagnostic_problem,
+)
+from testing_support.runtime.diagnostics.problem_persistence_test_support import (
+    document_store_occurrence_persistence_for_tests,
 )
 
 pytestmark = pytest.mark.unit
@@ -140,6 +141,17 @@ def _assess_retry_pair(
     )
 
 
+_OCCURRENCES_BY_PERSISTENCE: dict[int, object] = {}
+
+
+def _occurrence_persistence(persistence: InMemoryProblemPersistence):
+    """One occurrence history per problem persistence, shared by the writer and the read service."""
+    key = id(persistence)
+    if key not in _OCCURRENCES_BY_PERSISTENCE:
+        _OCCURRENCES_BY_PERSISTENCE[key] = document_store_occurrence_persistence_for_tests()
+    return _OCCURRENCES_BY_PERSISTENCE[key]
+
+
 def _persist_execution_problem(
     *,
     tenant_id: str = _TENANT_A,
@@ -148,7 +160,7 @@ def _persist_execution_problem(
 ) -> tuple[object, InMemoryProblemPersistence, InMemoryRuntimeEventStore]:
     persistence = persistence or InMemoryProblemPersistence()
     runtime_store = runtime_store or InMemoryRuntimeEventStore()
-    lifecycle = ProblemLifecycleEngine(persistence)
+    lifecycle = ProblemLifecycleEngine(persistence, _occurrence_persistence(persistence))
     grouping = _grouping_engine().group(
         _assess_retry_pair(tenant_id=tenant_id, runtime_store=runtime_store),
         strategy_id=STRATEGY_ID,
@@ -164,6 +176,7 @@ def _read_service(
 ) -> DiagnosticReadService:
     return DiagnosticReadService(
         problem_persistence=persistence,
+        occurrence_persistence=_occurrence_persistence(persistence),
         execution_reconstructor=ExecutionReconstructor(
             runtime_events=runtime_store or InMemoryRuntimeEventStore(),
             causal_evidence=InMemoryCausalEvidencePersistence(),
@@ -198,7 +211,7 @@ def _build_orchestrator(
         lifecycle_analyzer=LifecycleAnomalyAnalyzer(),
         assessment_builder=DiagnosticAssessmentBuilder(),
         grouping_engine=ProblemGroupingEngine(registry),
-        problem_lifecycle_engine=ProblemLifecycleEngine(persistence),
+        problem_lifecycle_engine=ProblemLifecycleEngine(persistence, _occurrence_persistence(persistence)),
     )
     return orchestrator, persistence
 
@@ -408,6 +421,7 @@ def test_limitation_kind_rendered_in_platform_context_boundary() -> None:
         occurrence_count=detail.occurrence_count,
         record_version=detail.record_version,
         grouping_provenance=detail.grouping_provenance,
+        occurrence_aggregate_health=detail.occurrence_aggregate_health,
         occurrences=(patched_occurrence,),
         returned_occurrence_count=1,
         total_occurrence_count=detail.total_occurrence_count,
@@ -418,9 +432,7 @@ def test_limitation_kind_rendered_in_platform_context_boundary() -> None:
         details=(patched_detail,),
     )
     lines = format_platform_diagnostic_context_lines(investigation_input)
-    assert any(
-        DiagnosticLimitationKind.RUNTIME_HISTORY_TRUNCATED.value in line for line in lines
-    )
+    assert any(DiagnosticLimitationKind.RUNTIME_HISTORY_TRUNCATED.value in line for line in lines)
 
 
 def test_investigation_execution_identity_distinct_from_investigated_occurrence() -> None:
@@ -443,12 +455,6 @@ def test_investigation_execution_identity_distinct_from_investigated_occurrence(
 
 
 def test_outcome_to_conclusion_status_mapping() -> None:
-    assert investigation_conclusion_status_from_outcome(OUTCOME_RESOLVED) is (
-        InvestigationConclusionStatus.SUPPORTED
-    )
-    assert investigation_conclusion_status_from_outcome("UNRESOLVED") is (
-        InvestigationConclusionStatus.UNRESOLVED
-    )
-    assert investigation_conclusion_status_from_outcome("NOT_ACCEPTED") is (
-        InvestigationConclusionStatus.NOT_ACCEPTED
-    )
+    assert investigation_conclusion_status_from_outcome(OUTCOME_RESOLVED) is (InvestigationConclusionStatus.SUPPORTED)
+    assert investigation_conclusion_status_from_outcome("UNRESOLVED") is (InvestigationConclusionStatus.UNRESOLVED)
+    assert investigation_conclusion_status_from_outcome("NOT_ACCEPTED") is (InvestigationConclusionStatus.NOT_ACCEPTED)

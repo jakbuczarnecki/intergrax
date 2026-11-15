@@ -7,24 +7,15 @@ from __future__ import annotations
 from unittest.mock import patch
 
 import pytest
-
 from intergrax.applications._shared.harness_host_runtime import build_harness_host_runtime
-from intergrax.applications._shared.harness_host_composition import (
-    bootstrap_harness_host_application_plugins,
-    bootstrap_harness_host_platform,
-    resolve_harness_host_event_bus,
-    resolve_harness_host_lifecycle_hook_coordinator,
-    resolve_harness_host_middleware_pipeline,
-    resolve_harness_host_runtime_event_persistence,
-)
 from intergrax.applications._shared.lab_environment_profile import build_lab_environment_profile
-from testing_support.nexus_loop_from_environment import build_nexus_loop_from_environment
 from intergrax.applications.contracts.environment_profile import (
     ApplicationEnvironmentProfile,
-    OrchestrationProfile,
 )
 from intergrax.llm_adapters.registry.registration_contract import LLMProviderNotConfiguredError
 from intergrax.runtime.registry.agent_registry import AgentRegistry
+from testing_support.nexus_loop_from_environment import build_nexus_loop_from_environment
+
 from lab_application.host.settings import LabApplicationSettings
 from lab_application.manifest import build_lab_manifest
 
@@ -37,7 +28,7 @@ def test_build_harness_host_runtime_does_not_invoke_llm_resolution_without_requi
     manifest = build_lab_manifest(settings)
 
     with patch(
-        "intergrax.applications._shared.host_orchestration_backend_spec_builder.resolve_environment_llm_adapter",
+        "intergrax.runtime.execution.host_orchestration_environment_spec_builder.resolve_environment_llm_adapter",
     ) as resolve_mock:
         runtime = build_harness_host_runtime(
             manifest,
@@ -52,11 +43,16 @@ def test_build_harness_host_runtime_does_not_invoke_llm_resolution_without_requi
     assert runtime.env_wiring.composition.tool_profile is not None
 
 
-def test_engine_planner_without_provider_raises_at_orchestration_composition() -> None:
-    env = ApplicationEnvironmentProfile.product_defaults(
-        profile_id="test.engine-no-llm",
-    ).model_copy(
-        update={"orchestration_profile": OrchestrationProfile(planner_kind="engine")},
+def test_engine_planner_without_provider_raises_at_orchestration_composition(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    # The autouse fixture of this package stubs LLM resolution; this test is about the real resolver.
+    monkeypatch.undo()
+    base_env = ApplicationEnvironmentProfile.product_defaults(profile_id="test.engine-no-llm")
+    env = base_env.model_copy(
+        update={
+            "orchestration_profile": base_env.orchestration_profile.model_copy(update={"planner_kind": "engine"}),
+        },
     )
     with pytest.raises(LLMProviderNotConfiguredError, match="not explicitly configured"):
         build_nexus_loop_from_environment(AgentRegistry(), env=env)
