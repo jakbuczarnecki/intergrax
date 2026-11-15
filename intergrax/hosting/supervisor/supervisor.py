@@ -435,6 +435,13 @@ class HostedApplicationSupervisor:
             return False, "prior_engine_context_not_closed"
         return True, ""
 
+    async def _publish_bounded(self, event: HostedApplicationEvent) -> None:
+        """Publish on the event port, bounded by the observer timeout of the lifecycle policy (F-D4-12)."""
+        await asyncio.wait_for(
+            self.event_publisher.publish(event),
+            timeout=self.definition.lifecycle_policy.default_observer_hook_timeout_seconds,
+        )
+
     async def _publish_pre_engine_failure_event_safe(
         self,
         *,
@@ -448,7 +455,7 @@ class HostedApplicationSupervisor:
                 failure=failure,
                 occurred_at=self.clock.now(),
             )
-            await self.event_publisher.publish(event)
+            await self._publish_bounded(event)
         except Exception:
             _LOGGER.error(
                 "Failed to publish hosted application pre-engine failure event",
@@ -480,7 +487,7 @@ class HostedApplicationSupervisor:
     ) -> None:
         """Emit a lifecycle metric on the event port; never let a sink failure affect supervision."""
         try:
-            await self.event_publisher.publish(
+            await self._publish_bounded(
                 lifecycle_metric_event(
                     metric,
                     application_id=self.definition.application_id,
@@ -504,7 +511,7 @@ class HostedApplicationSupervisor:
         reason_code: str,
     ) -> None:
         try:
-            await self.event_publisher.publish(
+            await self._publish_bounded(
                 HostedApplicationEvent(
                     event_type=event_type,
                     application_id=self.definition.application_id,
