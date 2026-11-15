@@ -215,12 +215,11 @@ class GeminiChatAdapter(BaseLLMAdapter):
                     config=config,
                 )
 
-                with self._provider_dependency_attempt():
-                    for chunk in chat_session.send_message_stream(prompt):
-                        txt = chunk.text
-                        if txt:
-                            buf.append(txt)
-                            yield partial_stream_event(delta_content=txt)
+                for chunk in self._execute_streaming(lambda: chat_session.send_message_stream(prompt)):
+                    txt = chunk.text
+                    if txt:
+                        buf.append(txt)
+                        yield partial_stream_event(delta_content=txt)
 
                 out_tok = int(
                     self.estimate_tokens_for_text("".join(buf), model_hint=self.model_name_for_token_estimation)
@@ -245,16 +244,17 @@ class GeminiChatAdapter(BaseLLMAdapter):
                     "Client.models.generate_content_stream, but it is not available in this SDK version."
                 )
 
-            with self._provider_dependency_attempt():
-                for chunk in stream_fn(
+            for chunk in self._execute_streaming(
+                lambda: stream_fn(
                     model=self.model,
                     contents=contents,
                     config=config,
-                ):
-                    txt = attribute_access.optional(chunk, "text", None)
-                    if txt:
-                        buf.append(txt)
-                        yield partial_stream_event(delta_content=txt)
+                )
+            ):
+                txt = attribute_access.optional(chunk, "text", None)
+                if txt:
+                    buf.append(txt)
+                    yield partial_stream_event(delta_content=txt)
 
             out_tok = int(self.estimate_tokens_for_text("".join(buf), model_hint=self.model_name_for_token_estimation))
             success = True
@@ -409,15 +409,14 @@ class GeminiChatAdapter(BaseLLMAdapter):
                 return
 
             tool_calls_acc: tuple[LLMToolCall, ...] = ()
-            with self._provider_dependency_attempt():
-                for chunk in stream_fn(model=self.model, contents=contents, config=config):
-                    txt = attribute_access.optional(chunk, "text", None)
-                    if txt:
-                        buf.append(txt)
-                        yield partial_stream_event(delta_content=txt)
-                    _, chunk_tools = self._parse_gemini_response(chunk)
-                    if chunk_tools:
-                        tool_calls_acc = chunk_tools
+            for chunk in self._execute_streaming(lambda: stream_fn(model=self.model, contents=contents, config=config)):
+                txt = attribute_access.optional(chunk, "text", None)
+                if txt:
+                    buf.append(txt)
+                    yield partial_stream_event(delta_content=txt)
+                _, chunk_tools = self._parse_gemini_response(chunk)
+                if chunk_tools:
+                    tool_calls_acc = chunk_tools
 
             out_tok = int(self.estimate_tokens_for_text("".join(buf), model_hint=self.model_name_for_token_estimation))
             finish = LLMFinishReason.TOOL_CALLS if tool_calls_acc else LLMFinishReason.COMPLETED

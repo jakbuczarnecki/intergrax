@@ -35,6 +35,7 @@ from intergrax.llm_adapters.contracts.strict_tool_arguments import (
 from intergrax.llm_adapters.contracts.structured_result import LLMStructuredResult, TStructured
 from intergrax.llm_adapters.contracts.token_usage import LLMTokenUsage
 from intergrax.llm_adapters.contracts.tool_call import LLMToolCall
+from intergrax.llm_adapters.governance.quota import LLMQuotaExceeded
 from intergrax.llm_adapters.providers._langchain_compat import (
     tool_calls_from_langchain_message,
 )
@@ -50,6 +51,7 @@ from intergrax.llm_adapters.registry.context_window import (
     init_adapter_context_window_tokens,
     resolve_context_window_tokens,
 )
+from intergrax.runtime.execution.deadline_provider_guard import ExecutionProtectedWorkDeniedError
 from intergrax.utils import attribute_access
 
 
@@ -388,12 +390,11 @@ class LangChainOllamaAdapter(BaseLLMAdapter):
             buf: list[str] = []
 
             try:
-                with self._provider_dependency_attempt():
-                    for chunk in self.chat.stream(lc_msgs, **kwargs):
-                        c = chunk.content
-                        if c:
-                            buf.append(c)
-                            yield partial_stream_event(delta_content=c)
+                for chunk in self._execute_streaming(lambda: self.chat.stream(lc_msgs, **kwargs)):
+                    c = chunk.content
+                    if c:
+                        buf.append(c)
+                        yield partial_stream_event(delta_content=c)
 
                 out_tok = int(
                     self.estimate_tokens_for_text("".join(buf), model_hint=self.model_name_for_token_estimation)
@@ -410,7 +411,12 @@ class LangChainOllamaAdapter(BaseLLMAdapter):
                 )
                 return
 
+            except (ExecutionProtectedWorkDeniedError, LLMQuotaExceeded):
+                raise
             except Exception:
+                if buf:
+                    # Output was already emitted: re-issuing the call would duplicate it and hide the error.
+                    raise
                 res = self._execute(lambda: self.chat.invoke(lc_msgs, **kwargs))
                 text = res.content or str(res)
                 if text:
