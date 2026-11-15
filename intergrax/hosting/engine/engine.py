@@ -7,7 +7,9 @@ from __future__ import annotations  # noqa: I001
 
 import asyncio
 import math
+from collections.abc import Awaitable
 from dataclasses import dataclass, field
+from typing import TypeVar
 
 from intergrax.contracts.event_severity import EventSeverity
 from intergrax.hosting.contracts.context import (
@@ -77,6 +79,9 @@ from intergrax.hosting.shutdown import (
 from intergrax.hosting.eventing import HostingEventDispatcher
 from intergrax.hosting.services import HostedApplicationServiceRegistry
 from intergrax.utils import attribute_access
+
+
+_T = TypeVar("_T")
 
 
 class _ReadinessServiceAdapter:
@@ -149,6 +154,7 @@ class HostedApplicationEngine:
             self.definition.event_subscriptions,
             self._diagnostics,
             self._observer_tasks,
+            publish_timeout_seconds=self.definition.lifecycle_policy.default_observer_hook_timeout_seconds,
         )
         self._hooks = HookCoordinator(
             self.definition,
@@ -232,6 +238,7 @@ class HostedApplicationEngine:
                 self.definition.event_subscriptions,
                 self._diagnostics,
                 self._observer_tasks,
+                publish_timeout_seconds=self.definition.lifecycle_policy.default_observer_hook_timeout_seconds,
             )
             self._hooks = HookCoordinator(
                 self.definition,
@@ -251,6 +258,11 @@ class HostedApplicationEngine:
             self._diagnostics.set_operation_phase(HostedApplicationOperationPhase.STARTUP)
             try:
                 await self._startup_sequence()
+            except asyncio.CancelledError:
+                # Cancellation is a BaseException: without this branch the lease, the started
+                # components and the runtime would leak (T-IGX-041-D, F-D4-01).
+                await self._cleanup_after_startup_cancellation()
+                raise
             except Exception as exc:
                 state = self._lifecycle.state
                 if state in {
@@ -287,16 +299,83 @@ class HostedApplicationEngine:
             if state is HostedApplicationLifecycleState.STARTING:
                 self._startup_aborted = True
                 self._lifecycle.set_shutdown_requested(True)
-            return await self._graceful_stop_sequence(
-                reason_code=reason_code,
-                control_request=control_request,
+            # A cancelled caller must not interrupt the bounded stop sequence: lease, components
+            # and runtime are released first, then the cancellation is re-raised (F-D4-01).
+            return await self._drive_to_completion(
+                self._graceful_stop_sequence(
+                    reason_code=reason_code,
+                    control_request=control_request,
+                )
             )
 
     async def run_until_stopped(self) -> HostedApplicationEngineTerminalResult:
         if self._lifecycle.state is HostedApplicationLifecycleState.CREATED:
             await self.start()
-        request = await self.shutdown.wait_until_requested()
+        try:
+            request = await self.shutdown.wait_until_requested()
+        except asyncio.CancelledError:
+            await self._stop_after_cancellation()
+            raise
         return await self.stop(reason_code=request.reason_code, control_request=request)
+
+    @staticmethod
+    async def _drive_to_completion(awaitable: Awaitable[_T]) -> _T:
+        """Run ``awaitable`` to completion even when the caller is cancelled, then re-raise.
+
+        The work is bounded by the engine's own shutdown budget; repeated cancellation of the
+        caller does not interrupt it.
+        """
+        task = asyncio.ensure_future(awaitable)
+        cancelled = False
+        while not task.done():
+            try:
+                await asyncio.shield(task)
+            except asyncio.CancelledError:
+                if task.done():
+                    break
+                cancelled = True
+        if cancelled:
+            if not task.cancelled():
+                task.exception()  # mark a failure of the bounded work as retrieved
+            raise asyncio.CancelledError
+        return task.result()
+
+    async def _cleanup_after_startup_cancellation(self) -> None:
+        """Bounded rollback after the task running ``start()`` was cancelled."""
+        state = self._lifecycle.state
+        try:
+            if state in {
+                HostedApplicationLifecycleState.STARTING,
+                HostedApplicationLifecycleState.READY,
+            }:
+                await self._drive_to_completion(self._startup_failure_cleanup(RuntimeError("startup_cancelled")))
+            elif self._lease is not None and self._context is not None:
+                # Cancelled after the lease was acquired but before the lifecycle left CREATED.
+                await self._drive_to_completion(
+                    self._execute_bounded_terminal_cleanup(
+                        record_lifecycle_failure_event=False,
+                        transition_to_failed=False,
+                    )
+                )
+        except asyncio.CancelledError:
+            pass
+        finally:
+            self._reuse_blocked = True
+
+    async def _stop_after_cancellation(self) -> None:
+        """Bounded stop for the task running ``run_until_stopped()`` after it was cancelled."""
+        try:
+            await self._drive_to_completion(self.stop(reason_code="engine.cancelled"))
+        except asyncio.CancelledError:
+            pass
+        except Exception as exc:
+            self._diagnostics.record_secondary_failure(
+                phase=HostedApplicationFailurePhase.ROLLBACK,
+                source_kind="engine",
+                source_id="cancel_stop",
+                exc=exc,
+                reason_code="cancel_stop_failed",
+            )
 
     def _build_context(self) -> HostedApplicationContext:
         return HostedApplicationContext(
@@ -416,7 +495,17 @@ class HostedApplicationEngine:
         if self._should_abort_startup():
             await self._abort_startup_to_stopping("startup_aborted")
             return
-        runtime_ready = await self._runtime.ready(self._context)
+        try:
+            runtime_ready = await self._probe_runtime_ready()
+        except TimeoutError as exc:
+            self._diagnostics.record_primary_failure(
+                phase=HostedApplicationFailurePhase.HEALTH_EVALUATION,
+                source_kind="runtime",
+                source_id="ready",
+                exc=exc,
+                reason_code="runtime_ready_timeout",
+            )
+            raise
         self._health.set_runtime_ready(runtime_ready)
         # Refresh after before_ready so hook-driven component readiness is visible to the gate.
         await self._components.refresh_component_health(self._context)
@@ -495,11 +584,19 @@ class HostedApplicationEngine:
             source_id=source_id,
         )
 
+    async def _probe_runtime_ready(self) -> bool:
+        """Ask the application runtime for readiness, bounded like every component probe (F-D4-04)."""
+        assert self._runtime is not None and self._context is not None
+        return await asyncio.wait_for(
+            self._runtime.ready(self._context),
+            timeout=self.definition.lifecycle_policy.default_blocking_hook_timeout_seconds,
+        )
+
     async def _refresh_health(self) -> None:
         if self._context is None or self._runtime is None:
             return
         try:
-            runtime_ready = await self._runtime.ready(self._context)
+            runtime_ready = await self._probe_runtime_ready()
             await self._components.refresh_component_health(self._context)
             self._health.clear_health_evaluation_failed()
             self._health.set_runtime_ready(runtime_ready)

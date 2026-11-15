@@ -8,8 +8,8 @@ Maps each architecture section to **plan phase**, **implementation status**, **c
 
 | Arch § | Topic | Plan IDs | Status | Code / test anchor |
 |--------|-------|----------|--------|-------------------|
-| §20 | Shadow workspace lifecycle | H-APP.3.4 · APP-CON-8 · APP-PROD-8 | **Done** | `shadow_wiring.py` · `workspace_cleanup_wiring.py` · `check_workspace_cleanup.py` |
-| §21 | Sandbox lifecycle | H-APP.3.5 · APP-CON-8 · APP-PROD-8 | **Done** | `sandbox_wiring.py` · `workspace_cleanup_wiring.py` · `test_workspace_cleanup_wiring.py` |
+| §20 | Shadow workspace lifecycle | H-APP.3.4 · APP-CON-8 · APP-PROD-8 | **Done** *(lifecycle wiring only; not a universal production isolation guarantee, see the architecture)* | `shadow_wiring.py` · `workspace_cleanup_wiring.py` · `check_workspace_cleanup.py` |
+| §21 | Sandbox lifecycle | H-APP.3.5 · APP-CON-8 · APP-PROD-8 | **Done** *(lifecycle wiring only; not a universal production isolation guarantee, see the architecture)* | `sandbox_wiring.py` · `workspace_cleanup_wiring.py` · `test_workspace_cleanup_wiring.py` |
 | §22 | `ApplicationEnvironmentProfile` | H-APP.1.* · **APP-EVOL-8** | **Done** - flat §22.1 + bundles §22.6 M1–M3 | `environment_profile` · `test_environment_profile_bundles.py` · ADR-APP-003 |
 | §23 | Interaction postures | H-APP-DOC.* · H-APP-WIRING.* | **Done** | §23.7 matrix closed on reference hosts |
 | §24 | `ApplicationManifest` / `AgentBinding` | N.1 · H-APP.1.2 | **Done** | `manifest.py` · `test_manifest_conformance.py` |
@@ -57,7 +57,7 @@ Single register for all open architecture rows. **Execution order:** [§6.2y](.#
 | APP-CON-5 | §32.6 | Hook timeout · error→BLOCK · audit events | **Done** | `test_hook_runtime_guard.py` · product 250ms timeout |
 | APP-CON-6 | §26 · §48 | `RunArtifactBundle` on `ApplicationRunSummary.metadata` | **Done** | `test_task_finisher_artifact_bundle.py` |
 | APP-CON-7 | §35 · §44 | Scenario matrix gate - UC-A* minimum per posture | **Done** | `tier3_scenario_matrix_wiring.py` · `check_tier3_scenario_matrix.py` · `-m tier3_scenario` |
-| APP-CON-8 | §20–§21 | Shadow/sandbox refs in env state + lifespan cleanup | **Done** | `workspace_cleanup_wiring.py` · `test_workspace_cleanup_wiring.py` |
+| APP-CON-8 | §20–§21 | Shadow/sandbox refs in env state + lifespan cleanup | **Done** *(lifecycle wiring only; not a universal production isolation guarantee, see the architecture)* | `workspace_cleanup_wiring.py` · `test_workspace_cleanup_wiring.py` |
 | APP-CON-DX.1 | §31 · §45 · §47 | Author guide APP appendix (mental model + checklist) | **Done** | `APPLICATION_CREATION_GUIDE.md` |
 | APP-CON-DX.2 | §37 | Regenerate domain audit prompt for §24–§51 | **Done** | `check_tier3_audit_prompt.py` |
 
