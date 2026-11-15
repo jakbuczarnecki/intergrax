@@ -63,6 +63,10 @@
       "ENT-A-OWN-01",
       "ENT-A-TYP-01"
     ],
+    "intergrax/experiments/workflow.py": [
+      "ENT-A-REL-02",
+      "ENT-A-REL-03"
+    ],
     "intergrax/hosting": [
       "ENT-A-BND-01",
       "ENT-A-EXE-01",
@@ -280,6 +284,11 @@
       "ENT-A-STA-03",
       "TEN-STATE",
       "VBN-SQLITE-EFFECTIVE"
+    ],
+    "intergrax/runtime/policy/pre_context_policy_audit.py": [
+      "ENT-A-GOV-01",
+      "ENT-A-GOV-02",
+      "ENT-A-GOV-03"
     ],
     "intergrax/runtime/registry": [
       "ENT-A-OWN-01",

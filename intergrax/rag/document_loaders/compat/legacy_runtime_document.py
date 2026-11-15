@@ -5,39 +5,16 @@
 from __future__ import annotations
 
 from collections.abc import Mapping
-from typing import Any
-
-from pydantic import PrivateAttr
 
 from intergrax.compat.langchain import to_langchain_document
 from intergrax.compat.langchain.documents import make_langchain_document
 from intergrax.knowledge.contracts import KnowledgeDocument
 from intergrax.rag.document_loaders.contracts.document_metadata_key import DocumentMetadataKey
+from intergrax.rag.document_loaders.contracts.parser_native_handle import (
+    attach_parser_native_handle,
+    get_parser_native_handle,
+)
 from intergrax.utils import attribute_access
-
-
-class _KnowledgeDocumentWithParserRuntime(KnowledgeDocument):
-    _parser_native_handle: Any | None = PrivateAttr(default=None)
-
-
-def _as_runtime_document(document: KnowledgeDocument) -> _KnowledgeDocumentWithParserRuntime:
-    if isinstance(document, _KnowledgeDocumentWithParserRuntime):
-        return document
-    return _KnowledgeDocumentWithParserRuntime.model_validate(
-        document.model_dump(mode="python")
-    )
-
-
-def get_parser_native_handle(document: KnowledgeDocument) -> object | None:
-    if isinstance(document, _KnowledgeDocumentWithParserRuntime):
-        return document._parser_native_handle
-    return None
-
-
-def attach_parser_native_handle(document: KnowledgeDocument, handle: object) -> KnowledgeDocument:
-    runtime_doc = _as_runtime_document(document)
-    runtime_doc._parser_native_handle = handle
-    return runtime_doc
 
 
 def copy_parser_runtime_state(source: KnowledgeDocument, target: KnowledgeDocument) -> KnowledgeDocument:

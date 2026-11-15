@@ -207,7 +207,19 @@ class LongRunningScheduler:
     async def _process_claimed_schedule(self, claim: ScheduledResumeClaim, now: datetime) -> int:
         entry = claim.entry
         recurring = RECURRENCE_RULE_METADATA_KEY in entry.resume_metadata
-        checkpoint = self._eligible_target(entry)
+        if recurring and self._recurrence is not None:
+            # A failing eligibility read must not end the chain (G-02): hand the claim back, retry next tick.
+            try:
+                checkpoint = self._eligible_target(entry, probe_terminal_authority=True)
+            except Exception:
+                logger.exception(
+                    "eligibility check failed for schedule_id=%s; releasing the claim for retry",
+                    claim.schedule_id,
+                )
+                self._release_claim(claim)
+                return 0
+        else:
+            checkpoint = self._eligible_target(entry)
         if checkpoint is None:
             self._end_unexecuted_claim(claim, recurring=recurring)
             return 0
@@ -231,8 +243,19 @@ class LongRunningScheduler:
         )
         return 1
 
-    def _eligible_target(self, entry: ScheduledResume) -> TaskCheckpoint | None:
-        """The checkpoint a claimed schedule may resume, or None (read-only checks)."""
+    def _eligible_target(
+        self,
+        entry: ScheduledResume,
+        *,
+        probe_terminal_authority: bool = False,
+    ) -> TaskCheckpoint | None:
+        """The checkpoint a claimed schedule may resume, or None (read-only checks).
+
+        Both resume gates turn an unavailable terminal authority into "not resumable". With
+        ``probe_terminal_authority`` the authority is read first, so an ``ExecutionTerminalError``
+        reaches the caller as a failure (retry) instead of ending a recurrence chain; a real
+        terminal record is still judged by the gates.
+        """
         checkpoint = self._checkpoint_store.get_by_token(
             entry.task_id,
             entry.tenant_id,
@@ -240,6 +263,8 @@ class LongRunningScheduler:
         )
         if checkpoint is None:
             return None
+        if probe_terminal_authority and self._execution_terminal is not None:
+            self._execution_terminal.get_terminal_record(tenant_id=entry.tenant_id, task_id=entry.task_id)
         if not self._can_materialize_checkpoint(
             checkpoint,
             target_task_id=entry.task_id,
