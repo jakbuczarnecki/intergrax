@@ -49,6 +49,7 @@ Rows classed `CURRENT_HEAD_REQUALIFICATION`, `ALREADY_CERTIFIED_REUSABLE`, `N/A_
 | B-P7-CX | ALL | W14b | T-IGX-041-L | 0 | — | B-P7-D1, B-P7-D2, B-P7-D3, B-P7-D4, B-P7-D5, B-P7-D6, B-P7-D7, B-P7-D8, B-P7-TX | no | No product path: may merge before MCP-SERVER-X P8 | IA-GLOBAL (P8) |
 | B-P8-R2 | P8 | W15 | T-IGX-041-N | 0 | — | B-P7-TX | no | No product path: may merge before MCP-SERVER-X P8 | IA-GLOBAL (P8 re-check of G-04, G-05, G-10) |
 | B-P8-R1 | R1 | W14a | T-IGX-041-M | 0 | — | B-P7-D1, B-P7-D2, B-P7-D6, B-P7-D7, B-P7-D8 | YES | OD-PDC-SEQ-01: implement in an isolated worktree; merge only after MCP-SERVER-X P8 publication; ACT-N11 re-activation at PDC-P7-00 | IA-GLOBAL (P8) |
+| B-P8-R3 | P8 | W14c | T-IGX-041-O | 0 | — | B-P7-F10, B-P7-CX, B-P8-R1, B-P8-R2 | no | No product path: may merge before MCP-SERVER-X P8 | IA-GLOBAL (P8) |
 
 ## B-P3 — Ownership records closed in P3
 
@@ -570,6 +571,18 @@ Rows classed `CURRENT_HEAD_REQUALIFICATION`, `ALREADY_CERTIFIED_REUSABLE`, `N/A_
 - **Tests:** tests/qualification/pdc_x/p8_repair/ red on unchanged code and green after; d1, d6, d7, d8, sched_01, p6_impact, xd_12, rag loader and compat_x suites green except the known red classes named in the ticket
 - **Evidence (exact SHA):** implementation SHA and publication SHA recorded in `PDC_SHA_LADDER.md`; test log under `.tmp/proof/pdc-x-p5/B-P8-R1/`; audited by IA-GLOBAL (P8) at the PDC-P7 audited SHA.
 - **Merge gate:** OD-PDC-SEQ-01: implement in an isolated worktree; merge only after MCP-SERVER-X P8 publication; ACT-N11 re-activation at PDC-P7-00
+
+| Requirement | Class | Test case |
+| --- | --- | --- |
+| — | — | — |
+
+## B-P8-R3 — P8 repair loop 1, test-only refresh before the EBH-7 pin: three B6-F10 C4 classifier entries for the paths the P8 repairs made UNKNOWN (intergrax/integrations/_shared/p3/clients.py, platform_proofs/scenarios/ai_incident_investigation/application/runtime_composition.py, platform_proofs/scenarios/indirect_prompt_injection/proof.json) and the id-exact COMPAT-X evidence fixture row whose line number the P8 scheduler repair moved; entries are added, no gate is weakened
+
+- **Ticket:** T-IGX-041-O · **Wave:** W14c · **ADR:** — · **Auditor:** IA-GLOBAL (P8)
+- **Write set:** `tests/qualification/ebh_7/_ebh7_f10_canonical_inputs.py`, `tests/qualification/ebh_7/test_ebh_7_b6_f10_c4_041o_entries_gates.py`, `tests/fixtures/compat_x/repin_pdc_x_p7_delta.json`
+- **Tests:** tests/qualification/ebh_7/test_ebh_7_b6_f10_c4_041o_entries_gates.py red on the unchanged classifier and green after; the K gates and the whole tests/qualification/compat_x directory green; certify_f10() reports 0 UNKNOWN and C4 PASS over 5a3a05347..HEAD and dc18e36d9..HEAD
+- **Evidence (exact SHA):** implementation SHA and publication SHA recorded in `PDC_SHA_LADDER.md`; test log under `.tmp/proof/pdc-x-p5/B-P8-R3/`; audited by IA-GLOBAL (P8) at the PDC-P7 audited SHA.
+- **Merge gate:** No product path: may merge before MCP-SERVER-X P8
 
 | Requirement | Class | Test case |
 | --- | --- | --- |

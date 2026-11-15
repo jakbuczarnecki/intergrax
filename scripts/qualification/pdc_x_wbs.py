@@ -949,6 +949,23 @@ BATCHES: Final[tuple[Batch, ...]] = (
         "IA-GLOBAL (P8)",
         "tests/qualification/pdc_x/p8_repair/ red on unchanged code and green after; d1, d6, d7, d8, sched_01, p6_impact, xd_12, rag loader and compat_x suites green except the known red classes named in the ticket",
     ),
+    Batch(
+        "B-P8-R3",
+        "P8",
+        "P8 repair loop 1, test-only refresh before the EBH-7 pin: three B6-F10 C4 classifier entries for the paths the P8 repairs made UNKNOWN (intergrax/integrations/_shared/p3/clients.py, platform_proofs/scenarios/ai_incident_investigation/application/runtime_composition.py, platform_proofs/scenarios/indirect_prompt_injection/proof.json) and the id-exact COMPAT-X evidence fixture row whose line number the P8 scheduler repair moved; entries are added, no gate is weakened",
+        "T-IGX-041-O",
+        "W14c",
+        (
+            "tests/qualification/ebh_7/_ebh7_f10_canonical_inputs.py",
+            "tests/qualification/ebh_7/test_ebh_7_b6_f10_c4_041o_entries_gates.py",
+            "tests/fixtures/compat_x/repin_pdc_x_p7_delta.json",
+        ),
+        "—",
+        ("B-P7-F10", "B-P7-CX", "B-P8-R1", "B-P8-R2"),
+        GATE_FREE,
+        "IA-GLOBAL (P8)",
+        "tests/qualification/ebh_7/test_ebh_7_b6_f10_c4_041o_entries_gates.py red on the unchanged classifier and green after; the K gates and the whole tests/qualification/compat_x directory green; certify_f10() reports 0 UNKNOWN and C4 PASS over 5a3a05347..HEAD and dc18e36d9..HEAD",
+    ),
 )
 
 # Requirement -> batch overrides where the corrective-task text alone is ambiguous.
@@ -1264,6 +1281,10 @@ def render_dag() -> str:
         "W14b": (
             "after every B-P7 repair batch (W13, W14) is merged and the signature of T-IGX-041-L",
             "before the EBH-7 pin P is taken (tests/qualification/compat_x and tests/fixtures are not on the executable-identity allowlist); test-only pull request",
+        ),
+        "W14c": (
+            "after every B-P7 repair batch (W13, W14) and the P8 repair batches B-P8-R1 and B-P8-R2 are merged and the signature of T-IGX-041-O",
+            "before the EBH-7 pin P is taken (tests/qualification/ebh_7, tests/qualification/compat_x and tests/fixtures are not on the executable-identity allowlist); test-only pull request",
         ),
         "W15": (
             "after every B-P7 repair batch (W13, W14) and the signature of T-IGX-041-J",
