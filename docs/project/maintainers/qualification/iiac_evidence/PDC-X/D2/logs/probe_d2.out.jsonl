@@ -1,0 +1,7 @@
+{"probe": "P1_required_vs_egress", "raised": true, "exc": "ValueError", "msg": "required source missing after collect: rag"}
+{"probe": "P2_source_roles", "srcs": ["RAG", "TOOL_OUTPUT"], "roles": {"p2-RAG": "system"}}
+{"probe": "P3_task_scope_tenant", "store_keys": [], "value_after_b": null, "tenant_c_deleted": true, "capability_calls": [["ns", "k"], ["ns", "k"]]}
+{"probe": "P4_raising_hook", "raised": true, "exc": "RuntimeError"}
+{"probe": "P5_tool_call_args", "total_tokens": 4, "budget": 200, "trimmed": false, "kept_ids": ["s", "a", "t", "u"], "unbudgeted_tool_call_chars": 200078}
+{"probe": "P6_drop_order", "kept": ["s", "h0", "h1", "u"]}
+{"probe": "P7_nexus_poisoning", "has_production_mode_branch": true}

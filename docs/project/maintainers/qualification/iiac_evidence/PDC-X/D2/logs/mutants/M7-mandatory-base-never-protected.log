@@ -1,0 +1,28 @@
+F
+================================== FAILURES ===================================
+___________ test_hard_trim_never_truncates_a_mandatory_instruction ____________
+
+    def test_hard_trim_never_truncates_a_mandatory_instruction() -> None:
+        messages = [
+            ChatMessage(role="system", content="MANDATORY-RULE " * 40, entry_id="sys-big"),
+            ChatMessage(role="user", content="q", entry_id="user-final"),
+        ]
+        result = _hard_trim(messages, budget=100)
+        assert result is not None
+>       assert result.messages[0].content == "MANDATORY-RULE " * 40
+E       AssertionError: assert 'MANDATORY-RU...ULE MANDATORY' == 'MANDATORY-RU...NDATORY-RULE '
+E         
+E         Skipping 88 identical leading characters in diff, use -v to show
+E         - E MANDATORY-RULE MANDATORY-RULE MANDATORY-RULE MANDATORY-RULE MANDATORY-RULE MANDATORY-RULE MANDATORY-RULE MANDATORY-RULE MANDATORY-RULE MANDATORY-RULE MANDATORY-RULE MANDATORY-RULE MANDATORY-RULE MANDATORY-RULE MANDATORY-RULE MANDATORY-RULE MANDATORY-RULE MANDATORY-RULE MANDATORY-RULE MANDATORY-RULE MANDATORY-RULE MANDATORY-RULE MANDATORY-RULE MANDATORY-RULE MANDATORY-RULE MANDATORY-RULE MANDATORY-RULE MANDATORY-RULE MANDATORY-RULE MANDATORY-RULE MANDATORY-RULE MANDATORY-RULE MANDATORY-RULE MANDATORY-RULE 
+E         + E MANDATORY
+
+tests\qualification\pdc_x\d2\test_d2_context_fidelity.py:129: AssertionError
+---------------------------- Captured stdout setup ----------------------------
+Wrote build\agent_fleet_inventory.json (21 agents)
+
+=========================== short test summary info ===========================
+FAILED tests/qualification/pdc_x/d2/test_d2_context_fidelity.py::test_hard_trim_never_truncates_a_mandatory_instruction
+!!!!!!!!!!!!!!!!!!!!!!!!!! stopping after 1 failures !!!!!!!!!!!!!!!!!!!!!!!!!!
+1 failed, 10 deselected in 2.91s
+
+--- stderr ---

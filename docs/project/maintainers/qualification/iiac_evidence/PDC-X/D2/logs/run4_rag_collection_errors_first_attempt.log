@@ -1,0 +1,122 @@
+
+=================================== ERRORS ====================================
+_ ERROR collecting tests/unit/rag/indexing/test_indexing_manager_indexes_documents.py _
+ImportError while importing test module 'D:\Projekty\intergrax\.claude\worktrees\pdc-x-ia-d2-e1f727\tests\unit\rag\indexing\test_indexing_manager_indexes_documents.py'.
+Hint: make sure your test modules/packages have valid Python names.
+Traceback:
+tests\unit\rag\indexing\test_indexing_manager_indexes_documents.py:9: in <module>
+    from langchain_core.documents import Document
+E   ModuleNotFoundError: No module named 'langchain_core'
+_ ERROR collecting tests/unit/rag/vectorstore/test_source_ownership_contract.py _
+ImportError while importing test module 'D:\Projekty\intergrax\.claude\worktrees\pdc-x-ia-d2-e1f727\tests\unit\rag\vectorstore\test_source_ownership_contract.py'.
+Hint: make sure your test modules/packages have valid Python names.
+Traceback:
+tests\unit\rag\vectorstore\test_source_ownership_contract.py:9: in <module>
+    from qdrant_client.http.exceptions import UnexpectedResponse
+E   ModuleNotFoundError: No module named 'qdrant_client'
+_ ERROR collecting tests/unit/rag/vectorstore/test_vectorstore_cross_tenant_isolation.py _
+ImportError while importing test module 'D:\Projekty\intergrax\.claude\worktrees\pdc-x-ia-d2-e1f727\tests\unit\rag\vectorstore\test_vectorstore_cross_tenant_isolation.py'.
+Hint: make sure your test modules/packages have valid Python names.
+Traceback:
+tests\unit\rag\vectorstore\test_vectorstore_cross_tenant_isolation.py:12: in <module>
+    from qdrant_client.http.exceptions import UnexpectedResponse
+E   ModuleNotFoundError: No module named 'qdrant_client'
+_ ERROR collecting tests/integration/rag/document_loaders/parsers/test_doc_smart_document_handler.py _
+ImportError while importing test module 'D:\Projekty\intergrax\.claude\worktrees\pdc-x-ia-d2-e1f727\tests\integration\rag\document_loaders\parsers\test_doc_smart_document_handler.py'.
+Hint: make sure your test modules/packages have valid Python names.
+Traceback:
+tests\integration\rag\document_loaders\parsers\test_doc_smart_document_handler.py:10: in <module>
+    import docx
+E   ModuleNotFoundError: No module named 'docx'
+_ ERROR collecting tests/integration/rag/document_loaders/parsers/test_excel_smart_document_handler.py _
+ImportError while importing test module 'D:\Projekty\intergrax\.claude\worktrees\pdc-x-ia-d2-e1f727\tests\integration\rag\document_loaders\parsers\test_excel_smart_document_handler.py'.
+Hint: make sure your test modules/packages have valid Python names.
+Traceback:
+tests\integration\rag\document_loaders\parsers\test_excel_smart_document_handler.py:10: in <module>
+    import pandas as pd
+E   ModuleNotFoundError: No module named 'pandas'
+_ ERROR collecting tests/integration/rag/document_loaders/parsers/test_image_smart_document_handler.py _
+ImportError while importing test module 'D:\Projekty\intergrax\.claude\worktrees\pdc-x-ia-d2-e1f727\tests\integration\rag\document_loaders\parsers\test_image_smart_document_handler.py'.
+Hint: make sure your test modules/packages have valid Python names.
+Traceback:
+tests\integration\rag\document_loaders\parsers\test_image_smart_document_handler.py:10: in <module>
+    from langchain_core.documents import Document
+E   ModuleNotFoundError: No module named 'langchain_core'
+_ ERROR collecting tests/integration/rag/document_loaders/parsers/test_video_smart_document_handler.py _
+ImportError while importing test module 'D:\Projekty\intergrax\.claude\worktrees\pdc-x-ia-d2-e1f727\tests\integration\rag\document_loaders\parsers\test_video_smart_document_handler.py'.
+Hint: make sure your test modules/packages have valid Python names.
+Traceback:
+tests\integration\rag\document_loaders\parsers\test_video_smart_document_handler.py:10: in <module>
+    from langchain_core.documents import Document
+E   ModuleNotFoundError: No module named 'langchain_core'
+_ ERROR collecting tests/integration/rag/embedding/test_hf_embedding_pipeline_integration.py _
+ImportError while importing test module 'D:\Projekty\intergrax\.claude\worktrees\pdc-x-ia-d2-e1f727\tests\integration\rag\embedding\test_hf_embedding_pipeline_integration.py'.
+Hint: make sure your test modules/packages have valid Python names.
+Traceback:
+tests\integration\rag\embedding\test_hf_embedding_pipeline_integration.py:8: in <module>
+    from langchain_core.documents import Document
+E   ModuleNotFoundError: No module named 'langchain_core'
+_ ERROR collecting tests/integration/rag/embedding/test_ollama_embedding_pipeline_integration.py _
+ImportError while importing test module 'D:\Projekty\intergrax\.claude\worktrees\pdc-x-ia-d2-e1f727\tests\integration\rag\embedding\test_ollama_embedding_pipeline_integration.py'.
+Hint: make sure your test modules/packages have valid Python names.
+Traceback:
+tests\integration\rag\embedding\test_ollama_embedding_pipeline_integration.py:9: in <module>
+    from langchain_core.documents import Document
+E   ModuleNotFoundError: No module named 'langchain_core'
+_ ERROR collecting tests/integration/rag/embedding/test_vllm_embedding_pipeline_integration.py _
+ImportError while importing test module 'D:\Projekty\intergrax\.claude\worktrees\pdc-x-ia-d2-e1f727\tests\integration\rag\embedding\test_vllm_embedding_pipeline_integration.py'.
+Hint: make sure your test modules/packages have valid Python names.
+Traceback:
+tests\integration\rag\embedding\test_vllm_embedding_pipeline_integration.py:7: in <module>
+    from langchain_core.documents import Document
+E   ModuleNotFoundError: No module named 'langchain_core'
+_ ERROR collecting tests/integration/rag/retrievers/test_retrieval_integration.py _
+ImportError while importing test module 'D:\Projekty\intergrax\.claude\worktrees\pdc-x-ia-d2-e1f727\tests\integration\rag\retrievers\test_retrieval_integration.py'.
+Hint: make sure your test modules/packages have valid Python names.
+Traceback:
+tests\integration\rag\retrievers\test_retrieval_integration.py:9: in <module>
+    from langchain_core.documents import Document
+E   ModuleNotFoundError: No module named 'langchain_core'
+_ ERROR collecting tests/integration/rag/retrievers/test_retriever_pipeline_basic.py _
+ImportError while importing test module 'D:\Projekty\intergrax\.claude\worktrees\pdc-x-ia-d2-e1f727\tests\integration\rag\retrievers\test_retriever_pipeline_basic.py'.
+Hint: make sure your test modules/packages have valid Python names.
+Traceback:
+tests\integration\rag\retrievers\test_retriever_pipeline_basic.py:6: in <module>
+    from langchain_core.documents import Document
+E   ModuleNotFoundError: No module named 'langchain_core'
+___ ERROR collecting tests/integration/rag/test_neo4j_live_qualification.py ___
+.venv\Lib\site-packages\_pytest\python.py:498: in importtestmodule
+    mod = import_path(
+.venv\Lib\site-packages\_pytest\pathlib.py:561: in import_path
+    mod = _import_module_using_spec(
+.venv\Lib\site-packages\_pytest\pathlib.py:725: in _import_module_using_spec
+    spec.loader.exec_module(mod)  # type: ignore[union-attr]
+    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+.venv\Lib\site-packages\_pytest\assertion\rewrite.py:177: in exec_module
+    source_stat, co = _rewrite_test(fn, self.config)
+                      ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+.venv\Lib\site-packages\_pytest\assertion\rewrite.py:357: in _rewrite_test
+    tree = ast.parse(source, filename=strfn)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+C:\Users\XPS\AppData\Roaming\uv\python\cpython-3.12-windows-x86_64-none\Lib\ast.py:52: in parse
+    return compile(source, filename, mode, flags,
+E     File "D:\Projekty\intergrax\.claude\worktrees\pdc-x-ia-d2-e1f727\tests\integration\rag\test_neo4j_live_qualification.py", line 613
+E       with pytest.raises(RuntimeError, match="cypher error"):
+E   IndentationError: unexpected indent
+=========================== short test summary info ===========================
+ERROR tests/unit/rag/indexing/test_indexing_manager_indexes_documents.py
+ERROR tests/unit/rag/vectorstore/test_source_ownership_contract.py
+ERROR tests/unit/rag/vectorstore/test_vectorstore_cross_tenant_isolation.py
+ERROR tests/integration/rag/document_loaders/parsers/test_doc_smart_document_handler.py
+ERROR tests/integration/rag/document_loaders/parsers/test_excel_smart_document_handler.py
+ERROR tests/integration/rag/document_loaders/parsers/test_image_smart_document_handler.py
+ERROR tests/integration/rag/document_loaders/parsers/test_video_smart_document_handler.py
+ERROR tests/integration/rag/embedding/test_hf_embedding_pipeline_integration.py
+ERROR tests/integration/rag/embedding/test_ollama_embedding_pipeline_integration.py
+ERROR tests/integration/rag/embedding/test_vllm_embedding_pipeline_integration.py
+ERROR tests/integration/rag/retrievers/test_retrieval_integration.py
+ERROR tests/integration/rag/retrievers/test_retriever_pipeline_basic.py
+ERROR tests/integration/rag/test_neo4j_live_qualification.py
+!!!!!!!!!!!!!!!!!! Interrupted: 13 errors during collection !!!!!!!!!!!!!!!!!!!
+13 errors in 18.16s
+EXIT 2

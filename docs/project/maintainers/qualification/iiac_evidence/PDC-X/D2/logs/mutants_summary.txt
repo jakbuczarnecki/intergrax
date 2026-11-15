@@ -1,0 +1,10 @@
+M1-hard-trim-drops-identity [R011] rc=1 KILLED :: 1 failed, 11 deselected in 4.19s
+M2-no-atomic-group-drop [R011] rc=1 KILLED :: 1 failed, 9 deselected in 3.95s
+M3-egress-filter-noop [R014] rc=1 KILLED :: 1 failed, 12 deselected in 1.08s
+M4-unlinked-tool-output-allowed [R009] rc=1 KILLED :: 1 failed, 12 deselected in 3.41s
+M5-retention-never-due [R015] rc=1 KILLED :: 1 failed in 1.51s
+M6-freshness-always-fresh [R005] rc=1 KILLED :: 1 failed, 1 passed in 0.80s
+M7-mandatory-base-never-protected [R007] rc=1 KILLED :: 1 failed, 10 deselected in 2.91s
+M8-sweep-skips-vector-tombstone [R015] rc=1 KILLED :: 1 failed, 5 deselected in 0.86s
+M9-tenant-bound-guard-noop [R002] rc=1 KILLED :: 1 failed, 2 passed in 1.71s
+DONE

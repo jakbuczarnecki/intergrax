@@ -1,0 +1,60 @@
+F
+================================== FAILURES ===================================
+_____________ test_sensitive_fragment_is_not_sent_to_the_provider _____________
+
+    @pytest.mark.asyncio
+    async def test_sensitive_fragment_is_not_sent_to_the_provider() -> None:
+        registry = ContextPluginRegistry()
+        registry.add_provider(
+            FragmentProvider(
+                "test.r014",
+                {ContextFragmentSource.RAG},
+                lambda: [
+                    make_fragment(
+                        "r014-internal",
+                        ContextFragmentSource.RAG,
+                        "INTERNAL-OK-PDC-D2-R014",
+                        sensitivity=DataClassification.INTERNAL,
+                    ),
+                    make_fragment(
+                        "r014-confidential",
+                        ContextFragmentSource.RAG,
+                        "CONFIDENTIAL-LEAK-PDC-D2-R014",
+                        sensitivity=DataClassification.CONFIDENTIAL,
+                    ),
+                    make_fragment(
+                        "r014-restricted",
+                        ContextFragmentSource.RAG,
+                        "RESTRICTED-LEAK-PDC-D2-R014",
+                        sensitivity=DataClassification.RESTRICTED,
+                    ),
+                ],
+            )
+        )
+        engine = DefaultNexusContextEngine(registry=registry)
+        assembled = await engine.assemble(
+            assembly_request(),
+            provider_ctx=provider_context(FakeAdapter(), "summarise the policy"),
+        )
+        sent = message_text(assembled.messages)
+        assert "INTERNAL-OK-PDC-D2-R014" in sent
+>       assert "CONFIDENTIAL-LEAK" not in sent
+E       AssertionError: assert 'CONFIDENTIAL-LEAK' not in '[context:ra...e the policy'
+E         
+E         'CONFIDENTIAL-LEAK' is contained here:
+E           [context:rag:r014-confidential] CONFIDENTIAL-LEAK-PDC-D2-R014
+E         ?                                 +++++++++++++++++
+E           [context:rag:r014-internal] INTERNAL-OK-PDC-D2-R014
+E           [context:rag:r014-restricted] RESTRICTED-LEAK-PDC-D2-R014
+E           summarise the policy
+
+tests\qualification\pdc_x\d2\test_d2_context_fidelity.py:385: AssertionError
+---------------------------- Captured stdout setup ----------------------------
+Wrote build\agent_fleet_inventory.json (21 agents)
+
+=========================== short test summary info ===========================
+FAILED tests/qualification/pdc_x/d2/test_d2_context_fidelity.py::test_sensitive_fragment_is_not_sent_to_the_provider
+!!!!!!!!!!!!!!!!!!!!!!!!!! stopping after 1 failures !!!!!!!!!!!!!!!!!!!!!!!!!!
+1 failed, 12 deselected in 1.08s
+
+--- stderr ---

@@ -1,0 +1,24 @@
+PDC-P7 IA-D2 audit - test matrix (auditor runs, Windows, one pytest process at a time, default uv environment)
+audited_implementation_sha = c08efe46a74a20595468d8d8bf06eab2dca5f573
+test_execution_sha = audit_execution_sha = b7889220607b462195308fa186f4ba66fb78f3a8 (docs/governance-ticket delta only above the audited SHA)
+interpreter: worktree .venv (created by `uv run`), Python 3.12.11; nothing was installed beyond the project's default dependency set.
+
+1. uv run pytest tests/qualification/pdc_x/d2 tests/qualification/ce_02 tests/qualification/ce_01 -q
+   result: 77 passed, exit 0, 162.57 s                                  [logs/run1_d2_ce01_ce02.log]  rows R001 R005 R006 R007 R009 R010 R011 R012 R014 R015
+   (a first start with `-p no:cacheprovider` failed at option parsing, exit 4, and was rerun without it)
+2. uv run pytest tests/qualification/pdc_x/xd/test_xd_02_agent_context.py .../test_xd_07_model_context.py .../test_xd_09_artifacts_context.py tests/qualification/memory_behavior -q
+   result: 66 passed, exit 0, 10.31 s                                   [logs/run2_*]  rows R002 R003 R013 R018
+3. uv run pytest tests/unit/context tests/unit/memory tests/unit/ucl tests/qualification/tenant_x -q -x --maxfail=15
+   result: 1 failed, 1220 passed, 1 skipped, 70.17 s                    [logs/run3_*]  rows R002 R003 R006 R013; F-D2-03
+4. uv run pytest tests/unit/rag tests/integration/context tests/integration/rag tests/unit/runtime/architecture/test_ideal_harness_l3_w2_depth_gate.py -q
+   result: aborted, 13 collection errors (missing extras, one IndentationError)  [logs/run4_*]
+5. same paths + --continue-on-collection-errors -p no:randomly
+   result: 48 failed, 746 passed, 25 skipped, 13 errors, 63.00 s       [logs/run5_*]  rows R004 R016; F-D2-07..10
+6. uv run pytest tests/qualification/pdc_x/xd/test_xd_03_agent_governance.py -q (timeout 420 s)
+   result: 9 passed, exit 0 after 10 s; R-05 hang not reproduced        [logs/run6_*]
+7. uv run pytest tests/qualification/pdc_x/d6 -q -k "poison or R014 or r014 or retrieval"
+   result: 14 passed, 120 deselected                                    [logs/run7_*]  row R008
+8. .venv python scripts/maintenance/check_pre_context_policy_wiring.py -> exit 1 (missing scan root intergrax/agents/uaep.py); check_tool_injection_defense.py OK; check_context_golden.py OK (2 cases)
+9. python adversarial_scripts/probe_d2.py, probe_d2_b.py, probe_tenant_carriers.py                 [logs/probe_d2*.jsonl]
+10. python adversarial_scripts/run_mutants.py (M1..M9): 9/9 killed                                [logs/mutants_summary.txt, logs/mutants/]
+Not run: tests/unit (full), EBH-7, roadmap_replay_x, dist_scale_x, live vendor suites, CI contexts, igx_gov ticket.

@@ -1,0 +1,54 @@
+{
+  "stage_id": "PDC-X/D2",
+  "session_designation": "PDC-P7-IA-D2 independent audit of D2 CONTEXT-KNOWLEDGE",
+  "certification_profile": "iiac-v1",
+  "policy_version": "IIAC-2026-11-05.1",
+  "ticket_anchors": [
+    "governance/tickets/T-IGX-036-N.md"
+  ],
+  "audited_implementation_sha": "c08efe46a74a20595468d8d8bf06eab2dca5f573",
+  "audit_execution_sha": "b7889220607b462195308fa186f4ba66fb78f3a8",
+  "requirement_rows": [
+    "PDC-D2-R001",
+    "PDC-D2-R002",
+    "PDC-D2-R003",
+    "PDC-D2-R004",
+    "PDC-D2-R005",
+    "PDC-D2-R006",
+    "PDC-D2-R007",
+    "PDC-D2-R008",
+    "PDC-D2-R009",
+    "PDC-D2-R010",
+    "PDC-D2-R011",
+    "PDC-D2-R012",
+    "PDC-D2-R013",
+    "PDC-D2-R014",
+    "PDC-D2-R015",
+    "PDC-D2-R016",
+    "PDC-D2-R017",
+    "PDC-D2-R018"
+  ],
+  "owner_paths_read": [
+    "intergrax/context/**",
+    "intergrax/runtime/nexus/context/**",
+    "intergrax/runtime/token_optimization/protected_regions.py",
+    "intergrax/runtime/context_lifecycle/**",
+    "intergrax/runtime/context/citation_chain.py",
+    "intergrax/memory/**",
+    "intergrax/rag/governance/**",
+    "intergrax/rag/retrieval/**",
+    "intergrax/rag/ingest/ingest_pipeline.py",
+    "intergrax/tools/providers/rag/service.py",
+    "intergrax/runtime/nexus/tools/plan_context_invocation.py",
+    "intergrax/applications/_shared/application_security_wiring.py",
+    "intergrax/applications/_shared/memory_wiring.py"
+  ],
+  "diff_since_cited_head": "git diff 1ebd2ab4c2e6 HEAD over the owner paths: 19 files, +1552/-676 (B-D2, B-D6 shared files, B-P6-R repairs)",
+  "write_surface": "docs only: PDC_P7_D2_AUDIT_REPORT.md and iiac_evidence/PDC-X/D2/**",
+  "not_in_scope": [
+    "other domains' audits",
+    "P8 global audit",
+    "FRZ promotion",
+    "certification"
+  ]
+}
