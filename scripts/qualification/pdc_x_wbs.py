@@ -545,6 +545,34 @@ BATCHES: Final[tuple[Batch, ...]] = (
         "IA-GLOBAL (P8)",
         "tests/qualification/pdc_x/p6_ecapfix/ and p6_impact/; xd_12 and p6_impact coverage tests green on development and on a tree that contains the MCP-RC change",
     ),
+    Batch(
+        "B-P7-D7",
+        "D7",
+        "P7 repair of D7 Background and Scheduling (IA-D7 findings F-D7-01, 02, 04, 06, 07, 08, 10, 11, 12, 13): per-claim isolation and a crash-safe recurrence chain, tenant-qualified occurrence identity, UTC-normalized run_at_utc, bounded recurrence, sticky terminal queue states, conditional-write claims, head-of-line fix, reconciled documents; F-D7-03, 05, 09 are declared exceptions",
+        "T-IGX-041-G",
+        "W13",
+        (
+            "intergrax/runtime/long_running/scheduler.py",
+            "intergrax/runtime/long_running/recurrence.py",
+            "intergrax/runtime/long_running/scheduled_resume.py",
+            "intergrax/runtime/long_running/scheduled_resume_metadata.py",
+            "intergrax/runtime/long_running/scheduler_claim.py",
+            "intergrax/runtime/long_running/store.py",
+            "intergrax/runtime/long_running/postgresql_task_checkpoint_store.py",
+            "intergrax/queueing/providers/document_store/document_store_task_queue.py",
+            "tests/qualification/pdc_x/d7_repair/",
+            "tests/qualification/pdc_x/d7/test_d7_recurrence.py",
+            "tests/qualification/pdc_x/d7/test_d7_fencing_two_process.py",
+            "tests/qualification/pdc_x/d7/_fencing_worker.py",
+            "docs/project/architecture/BACKGROUND_TASKS.md",
+            "docs/project/maintainers/plans/BACKGROUND_TASKS.md",
+        ),
+        "—",
+        ("B-P6-J",),
+        GATE_PRODUCT,
+        "IA-D7 (P7 re-audit)",
+        "tests/qualification/pdc_x/d7_repair/ plus the cited d7, bg_01, sched_01 and XD-05/06 suites green; every in-scope finding pinned red-then-green with negative tests",
+    ),
 )
 
 # Requirement -> batch overrides where the corrective-task text alone is ambiguous.
@@ -844,6 +872,10 @@ def render_dag() -> str:
         "W12": (
             "after B-P6-I and the signature of T-IGX-040-A",
             "after the signature of T-IGX-040-A (one-time exception OD-MCP-RC-05; both repairs in one PR, then product paths freeze again)",
+        ),
+        "W13": (
+            "after B-P6-J and the signature of T-IGX-041-G",
+            "after the signature of T-IGX-041-G under DELEGATION-PDC-P7-REPAIR (green CI, only the known red classes IIAC activation and EBH-7 identity, head equals the verified SHA)",
         ),
     }
     for wave, bids in waves.items():
