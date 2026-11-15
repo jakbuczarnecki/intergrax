@@ -7,30 +7,29 @@ from datetime import UTC, datetime
 from pathlib import Path
 
 import pytest
-
 from intergrax.hosting import InstancePolicy
 from intergrax.hosting.contracts.context import HostedApplicationProcessIdentity
 from intergrax.hosting.engine.ports import HostedApplicationInstanceGuardPort
-from intergrax.hosting.instance.contracts import (
-    HostedApplicationInstanceAcquisitionResult,
-    HostedApplicationInstanceIdentity,
-    InstanceAcquisitionClassification,
-)
 from intergrax.hosting.errors import (
     HostedApplicationInstanceConflictError,
     HostedApplicationInstanceGuardError,
     HostedApplicationInstanceOwnershipError,
 )
+from intergrax.hosting.instance._native_lock import NativeFileLockError
+from intergrax.hosting.instance.contracts import (
+    HostedApplicationInstanceAcquisitionResult,
+    HostedApplicationInstanceIdentity,
+    InstanceAcquisitionClassification,
+)
 from intergrax.hosting.instance.file_guard import (
+    _METADATA_SCHEMA_VERSION,
     FileHostedApplicationInstanceGuard,
     FileHostedApplicationInstanceLease,
     OsProcessProbe,
+    _LeaseMetadata,
     lease_native_lock_for_tests,
     lease_release_verified_for_tests,
-    _LeaseMetadata,
-    _METADATA_SCHEMA_VERSION,
 )
-from intergrax.hosting.instance._native_lock import NativeFileLockError
 from tests.unit.hosting.engine._fakes import FixedClock
 
 pytestmark = pytest.mark.unit
@@ -88,8 +87,8 @@ async def test_metadata_reread_after_native_lock(tmp_path: Path) -> None:
 
 @pytest.mark.asyncio
 async def test_busy_native_lock_conflict(tmp_path: Path) -> None:
-    import intergrax.hosting.instance.file_guard as file_guard_module
     import intergrax.hosting.instance._native_lock as native_lock_module
+    import intergrax.hosting.instance.file_guard as file_guard_module
 
     guard = _guard(tmp_path)
     lock_path = guard.lock_path_for("test_app")
@@ -153,11 +152,19 @@ def test_invalid_timestamps() -> None:
         _LeaseMetadata.from_json_bytes(raw.encode())
 
 
+def _symlink_or_skip(link: Path, target: Path, *, directory: bool = False) -> None:
+    """Create a symlink; skip only when the host does not permit symlink creation."""
+    try:
+        link.symlink_to(target, target_is_directory=directory)
+    except (OSError, NotImplementedError) as exc:
+        pytest.skip(f"symlink creation not permitted on this host: {exc.__class__.__name__}")
+
+
 def test_symlinked_ancestor_rejected(tmp_path: Path) -> None:
     real = tmp_path / "real"
     real.mkdir()
     link = tmp_path / "link"
-    link.symlink_to(real, target_is_directory=True)
+    _symlink_or_skip(link, real, directory=True)
     nested = link / "nested"
     with pytest.raises(HostedApplicationInstanceGuardError):
         _guard(nested)
@@ -168,7 +175,7 @@ def test_symlinked_lock_file_rejected(tmp_path: Path) -> None:
     lock_path = guard.lock_path_for("test_app")
     target = tmp_path / "target.lock"
     target.write_text("x", encoding="utf-8")
-    lock_path.symlink_to(target)
+    _symlink_or_skip(lock_path, target)
     with pytest.raises(HostedApplicationInstanceGuardError):
         import asyncio
 

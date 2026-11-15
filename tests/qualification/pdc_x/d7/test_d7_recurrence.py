@@ -140,17 +140,23 @@ async def test_scheduler_materializes_next_one_shot_after_each_occurrence(tmp_pa
 
     first = materializer.start(rule)
     assert first is not None
-    assert first.schedule_id == occurrence_schedule_id(rule.rule_id, T0)
+    assert first.schedule_id == occurrence_schedule_id(rule.rule_id, T0, tenant_id=rule.tenant_id, task_id=rule.task_id)
     assert _pending_ids(store) == [first.schedule_id]  # exactly one materialized occurrence
 
     expected_ids: list[str] = []
     for k in range(3):
         occurrence = T0 + timedelta(seconds=60 * k)
-        expected_ids.append(occurrence_schedule_id(rule.rule_id, occurrence))
+        expected_ids.append(
+            occurrence_schedule_id(rule.rule_id, occurrence, tenant_id=rule.tenant_id, task_id=rule.task_id)
+        )
         fired = await drain_ticks(scheduler, now=occurrence + timedelta(seconds=1))
         assert fired == 1
         # After each occurrence exactly the NEXT one-shot is materialized (no pile-up).
-        assert _pending_ids(store) == [occurrence_schedule_id(rule.rule_id, occurrence + timedelta(seconds=60))]
+        assert _pending_ids(store) == [
+            occurrence_schedule_id(
+                rule.rule_id, occurrence + timedelta(seconds=60), tenant_id=rule.tenant_id, task_id=rule.task_id
+            )
+        ]
 
     assert executor.schedule_ids == expected_ids
     assert executor.occurrences == [(T0 + timedelta(seconds=60 * k)).isoformat() for k in range(3)]
@@ -327,7 +333,11 @@ async def test_scheduler_applies_misfire_policy_end_to_end(
     assert fired == expected_resumes
     assert len(set(executor.schedule_ids)) == expected_resumes  # no occurrence fired twice
     # Whatever the policy, the chain continues with the first future occurrence.
-    assert _pending_ids(store) == [occurrence_schedule_id(rule.rule_id, T0 + timedelta(seconds=360))]
+    assert _pending_ids(store) == [
+        occurrence_schedule_id(
+            rule.rule_id, T0 + timedelta(seconds=360), tenant_id=rule.tenant_id, task_id=rule.task_id
+        )
+    ]
 
 
 def test_misfire_scan_overflow_degrades_to_skip(tmp_path) -> None:

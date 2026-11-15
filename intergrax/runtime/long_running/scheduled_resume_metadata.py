@@ -5,15 +5,26 @@
 
 from __future__ import annotations
 
-from typing import Any, Mapping
+from collections.abc import Mapping
+from typing import Any
 
 from intergrax.contracts.task_metadata_keys import TaskMetadataKey
 
 __all__ = [
+    "RECURRENCE_METADATA_KEYS",
+    "RECURRENCE_OCCURRENCE_KEY",
+    "RECURRENCE_RULE_KEY",
     "ScheduledResumeMetadataValidationError",
+    "has_recurrence_metadata",
+    "reject_recurrence_metadata",
     "validate_scheduled_resume_metadata",
     "scheduled_resume_forbidden_metadata_keys",
 ]
+
+#: Keys that mint future executions; only ``RecurrenceMaterializer`` rows may carry them.
+RECURRENCE_RULE_KEY = "recurrence_rule"
+RECURRENCE_OCCURRENCE_KEY = "recurrence_occurrence_utc"
+RECURRENCE_METADATA_KEYS: frozenset[str] = frozenset({RECURRENCE_RULE_KEY, RECURRENCE_OCCURRENCE_KEY})
 
 
 class ScheduledResumeMetadataValidationError(ValueError):
@@ -74,3 +85,17 @@ def validate_scheduled_resume_metadata(metadata: Mapping[str, Any] | None) -> No
                 f"Scheduled resume metadata key {key!r} is authority-bearing or "
                 "identity-overriding and is rejected fail-closed.",
             )
+
+
+def has_recurrence_metadata(metadata: Mapping[str, Any] | None) -> bool:
+    """True when the metadata carries any recurrence-minting key."""
+    return bool(metadata) and any(key in RECURRENCE_METADATA_KEYS for key in metadata)
+
+
+def reject_recurrence_metadata(metadata: Mapping[str, Any] | None) -> None:
+    """Public entry points must not start a recurrence chain through plain metadata (F-D7-11)."""
+    if has_recurrence_metadata(metadata):
+        raise ScheduledResumeMetadataValidationError(
+            "Scheduled resume metadata carries recurrence keys; recurrence chains are started "
+            "only through RecurrenceMaterializer.",
+        )
