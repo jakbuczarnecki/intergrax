@@ -9,9 +9,6 @@ from pathlib import Path
 from unittest.mock import patch
 
 import pytest
-
-from echo.echo_agent import EchoAgent
-from intergrax.applications._shared.security_assembly_resolver import SecurityAssemblyError
 from intergrax.applications._shared.scenario_runtime_baseline import (
     ScenarioExecutionRequest,
     ScenarioRuntimeBuildError,
@@ -19,6 +16,10 @@ from intergrax.applications._shared.scenario_runtime_baseline import (
     execute_scenario_task,
     rewire_scenario_decision_wiring,
     validate_scenario_tenant_id,
+)
+from intergrax.applications._shared.security_assembly_resolver import SecurityAssemblyError
+from intergrax.applications._shared.strict_host_dependency_concurrency_admission import (
+    build_dependency_concurrency_admission_for_tool_ids,
 )
 from intergrax.applications.contracts.environment_profile import (
     ApplicationEnvironmentProfile,
@@ -35,21 +36,23 @@ from intergrax.applications.contracts.graph_spec import (
 )
 from intergrax.applications.contracts.manifest import AgentBinding, ApplicationManifest
 from intergrax.contracts.execution_identity import mint_run_id, mint_task_id
+from intergrax.contracts.validation import ValidationResult
 from intergrax.integrations._shared.in_memory_document_store import InMemoryDocumentStore
+from intergrax.runtime.decision_flow import DecisionFlowScope
+from intergrax.runtime.events.runtime_event import RuntimeEventType
 from intergrax.runtime.execution.request import ExecutionCapability, ExecutionRequest
 from intergrax.runtime.execution.strategy import StrategyResolver
 from intergrax.runtime.execution.strategy_router import StrategyExecutionRouter
 from intergrax.runtime.execution.task_adapter import TaskExecutionInput
 from intergrax.runtime.nexus.execution.evaluator_loop_spec import EvaluatorLoopSpec
-from intergrax.runtime.registry.agent_registry import AgentRegistry
-from intergrax.runtime.decision_flow import DecisionFlowScope
-from intergrax.runtime.events.runtime_event import RuntimeEventType
 from intergrax.runtime.nexus.validation.validation_engine import NexusValidationEngine
+from intergrax.runtime.registry.agent_registry import AgentRegistry
+from intergrax.runtime.task.task import TaskResult, TaskState
 from intergrax.runtime.task.task_result_authoritative_exposure_defaults import (
     terminal_task_result_exposure_no_decision_gate,
 )
-from intergrax.runtime.task.task import TaskResult, TaskState
-from intergrax.contracts.validation import ValidationResult
+
+from echo.echo_agent import EchoAgent
 
 pytestmark = [pytest.mark.unit, pytest.mark.gate, pytest.mark.no_ci]
 
@@ -208,7 +211,23 @@ def test_build_scenario_runtime_production_attached_without_manifest_fails(
 
 
 def test_build_scenario_runtime_strict_with_explicit_manifest(tmp_path: Path) -> None:
-    environment = ApplicationEnvironmentProfile.lab_defaults(profile_id="scenario.strict.manifest")
+    lab = ApplicationEnvironmentProfile.lab_defaults(profile_id="scenario.strict.manifest")
+    # Strict mode needs the process-local capacity caps and an explicit dependency concurrency admission.
+    environment = lab.model_copy(
+        update={
+            "orchestration_profile": lab.orchestration_profile.model_copy(
+                update={"max_parallel_nodes": 2, "max_inflight_nodes": 2},
+            ),
+            "reliability_profile": lab.reliability_profile.model_copy(
+                update={
+                    "dependency_concurrency_admission": build_dependency_concurrency_admission_for_tool_ids(
+                        ("echo.basic",),
+                        max_concurrent_calls=2,
+                    ),
+                },
+            ),
+        },
+    )
     environment.execution_mode = ExecutionMode.STRICT
     composition = build_scenario_runtime_from_environment(
         environment=environment,

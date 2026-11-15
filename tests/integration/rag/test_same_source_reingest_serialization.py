@@ -354,12 +354,6 @@ def test_stale_inflight_publication_cannot_become_active_after_takeover(
     vectorstore = _BlockingPublicationVectorstore()
     document_store = InMemoryDocumentStore()
     clock = {"now": 100.0}
-    key = RagSourceOperationKey(
-        tenant_id=TENANT_ID,
-        namespace=NAMESPACE,
-        workspace_id=WORKSPACE_ID,
-        source_id=SOURCE_ID,
-    )
     first_coordinator = DocumentStoreSourceOperationCoordinator(
         document_store,
         owner_id="worker-1",
@@ -427,8 +421,16 @@ def test_stale_inflight_publication_cannot_become_active_after_takeover(
     )
     source_hits = [hit for hit in hits if str(hit.document.provenance.source_id) == SOURCE_ID]
     assert [hit.document.content for hit in source_hits] == ["T2-content"]
+    # The ingest pipeline promotes the publication under a key scoped by the root document id.
+    publication_key = RagSourceOperationKey(
+        tenant_id=TENANT_ID,
+        namespace=NAMESPACE,
+        workspace_id=WORKSPACE_ID,
+        source_id=SOURCE_ID,
+        publication_scope_id=str(source_hits[0].document.identity.root_document_id).strip(),
+    )
     assert (
-        second_coordinator.active_publication_generation(key=key)
+        second_coordinator.active_publication_generation(key=publication_key)
         == source_hits[0].document.metadata["__intergrax_source_publication_generation"]
     )
 

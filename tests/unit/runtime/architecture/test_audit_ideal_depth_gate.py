@@ -232,10 +232,8 @@ def test_audit_ideal_16_1_context_drift_monitor() -> None:
 
 
 def test_audit_ideal_29_1_live_vision_profile() -> None:
-    from intergrax.llm_adapters.registry.profile import create_adapter
-
     profile = resolve_live_vision_profile()
-    assert create_adapter(profile).slug
+    assert profile.create_adapter().slug
 
 
 def test_audit_ideal_30_2_deploy_slo_evidence() -> None:
@@ -674,6 +672,7 @@ def test_audit_ideal_1_2_architecture_health() -> None:
 
 
 def test_audit_ideal_30_4_production_capacity() -> None:
+    from intergrax.applications._shared.control_plane_composition import ControlPlaneCompositionError
     from intergrax.applications._shared.production_capacity_governance_wiring import (
         build_production_capacity_governance,
     )
@@ -687,10 +686,10 @@ def test_audit_ideal_30_4_production_capacity() -> None:
     assert env.scaling_profile.production_adapters_enabled is True
     governance = build_production_capacity_governance(env)
     assert governance.mutation_authorization_boundary is None
-    wiring = resolve_production_capacity_wiring(env, governance=governance)
-    assert wiring.enabled is True
-    assert wiring.adapters is None
-    assert wiring.probe_passed is False
+    # Product capacity mutations without a mutation authorization boundary are refused (fail closed).
+    with pytest.raises(ControlPlaneCompositionError) as refusal:
+        resolve_production_capacity_wiring(env, governance=governance)
+    assert refusal.value.blocker_code == "ECP_BLOCKED_MISSING_BOUNDARY"
 
 
 def test_audit_ideal_4_1_critical_action_signing() -> None:
