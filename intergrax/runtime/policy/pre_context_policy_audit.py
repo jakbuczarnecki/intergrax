@@ -13,20 +13,24 @@ _REQUIRED_HOOK_MARKERS: tuple[str, ...] = (
 
 
 def audit_pre_context_policy_wiring(source_root: Path) -> list[str]:
-    """Return missing hook marker ids when pre-context policy wiring is incomplete."""
+    """Return missing hook marker ids when pre-context policy wiring is incomplete.
+
+    The UAEP executor lives under ``intergrax/runtime/nexus/uaep`` since 42cbe7e1a (it used to be
+    ``intergrax/agents/uaep.py``); both scan roots are required, a missing root fails closed.
+    """
+    runtime_root = source_root / "intergrax" / "runtime"
     scan_roots = [
-        source_root / "intergrax" / "runtime",
-        source_root / "intergrax" / "agents" / "uaep.py",
+        runtime_root,
+        runtime_root / "nexus" / "uaep",
     ]
-    corpus_parts: list[str] = []
+    corpus_parts: dict[Path, str] = {}
     for root in scan_roots:
         if root.is_file():
-            corpus_parts.append(root.read_text(encoding="utf-8"))
+            corpus_parts[root] = root.read_text(encoding="utf-8")
             continue
         if not root.is_dir():
             return [f"missing scan root: {root}"]
-        corpus_parts.extend(
-            path.read_text(encoding="utf-8") for path in root.rglob("*.py")
-        )
-    corpus = "\n".join(corpus_parts)
+        for path in root.rglob("*.py"):
+            corpus_parts[path] = path.read_text(encoding="utf-8")
+    corpus = "\n".join(corpus_parts[path] for path in sorted(corpus_parts))
     return [marker for marker in _REQUIRED_HOOK_MARKERS if marker not in corpus]
