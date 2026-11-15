@@ -6,7 +6,7 @@ One fresh EBH-7 L3 replay pin at the `development` tip `P` taken after the last 
 
 ## Plan digest
 
-Plan digest: 9e41a6e7e1b86cb6205aeab5f6548c12b018c9fb89c7862638ab8210bd97b06f
+Plan digest: 70b23e4fa18f7dbb41b161f0d7496111a885169ee1c95750cc6c17bc0c261a81
 
 Canonical plan: [`governance/tickets/plans/PLAN_T-IGX-041-J.md`](plans/PLAN_T-IGX-041-J.md).
 
