@@ -43,6 +43,15 @@ uv run python scripts/qualification/pdc_x_wbs.py --check
 - Any default change of the classifier, directory entries for the three paths, a change of a class definition or regression map, any COMPAT-X pin, counter, gate or test, the re-pin (T-IGX-041-J), the IIAC audit, activation and rebind, FRZ promotion, OD signatures, certification.
 - Everything under `intergrax/`, `agents/`, `applications/`, `platform_proofs/`, `scripts/governance/`, `.github/`, `pyproject.toml`, `uv.lock`, and every existing test (byte-identical).
 
+## Implementation checkpoint
+
+- Tests first (`cf8400a14`): `tests/qualification/ebh_7/test_ebh_7_b6_f10_c4_041o_entries_gates.py`, 15 cases. On the unchanged classifier 8 failed (the three positives, the three exact-path checks, `each_entry_occurs_exactly_once`, the rule-removal negative) and 7 passed (the five sibling negatives, the default check, the regression binding): log `.tmp/proof/pdc-x-041o/red.log` (not committed).
+- Entries and fixture (`aec20562e`): three exact-path `C4Rule` appended after the K entries (19 inserted lines); one token in `tests/fixtures/compat_x/repin_pdc_x_p7_delta.json:734` (`:337:1` to `:362:1`). Nothing else changed.
+- The O, K and closure gate files in one pytest command: 51 passed (`.tmp/proof/pdc-x-041o/green_ebh7.log`). ruff check and format clean, pyright 0 errors, `pdc_x_wbs.py --check` OK.
+- Probe on the implemented tree at `258bbf6ab`: `5a3a05347..HEAD` 3440 paths and `dc18e36d9..HEAD` 3226 paths, both 0 UNKNOWN and C4 PASS (`probe_after.log`); `git diff --name-only 5a3a05347 146e7acf1` lists none of the three paths.
+- The full `uv run pytest tests/qualification/compat_x -q` run is in progress at the time of the push (about 27 minutes); its result is posted on the pull request.
+- No deviation from the signed plan.
+
 ## Lifecycle state
 
 plan_approved
