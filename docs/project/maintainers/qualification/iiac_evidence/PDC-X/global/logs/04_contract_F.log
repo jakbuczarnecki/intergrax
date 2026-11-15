@@ -1,0 +1,81 @@
+........................................................................ [ 12%]
+........................................................................ [ 25%]
+........................................................................ [ 38%]
+......................F..................F....FFFFF..................... [ 50%]
+........................................................................ [ 63%]
+...sssssssssss.......................................................... [ 76%]
+............................F.....................................F..... [ 88%]
+................................................................         [100%]
+================================== FAILURES ===================================
+_____________ test_cx_r3_r1_combined_gate_passes_on_current_head ______________
+tests\qualification\compat_x\test_compat_x_event_evolution_r3_r1_gates.py:223: in test_cx_r3_r1_combined_gate_passes_on_current_head
+    assert passed, violations
+E   AssertionError: ('raw_candidates 7418 != accepted current-head 7356', 'exclusions 5357 != accepted current-head 5325', 'semantic_surfa...d 9dfd146f3b50bd56a8b997664569ac538396d322ceb21eb6682aa75a862716fa (lineage 05549f9acb9ecedf910c7470d442bba5d0a27337)')
+E   assert False
+_____ test_cx_r3_r1_probe_m_sanctioned_constructor_passes_classification ______
+tests\qualification\compat_x\test_compat_x_event_evolution_r3_r1_gates.py:373: in test_cx_r3_r1_probe_m_sanctioned_constructor_passes_classification
+    assert passed, violations
+E   AssertionError: ('raw_candidates 7418 != accepted current-head 7356', 'exclusions 5357 != accepted current-head 5325', 'semantic_surfa...d 9dfd146f3b50bd56a8b997664569ac538396d322ceb21eb6682aa75a862716fa (lineage 05549f9acb9ecedf910c7470d442bba5d0a27337)')
+E   assert False
+___________ test_cx_r3_r1_compat_current_head_inventory_reconciled ____________
+tests\qualification\compat_x\test_compat_x_event_evolution_r3_r1_gates.py:405: in test_cx_r3_r1_compat_current_head_inventory_reconciled
+    delta = build_r3_runtime_event_schema_version_candidate_delta()
+            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+tests\qualification\compat_x\_compat_x_semantic_identity_reconciliation.py:546: in build_r3_runtime_event_schema_version_candidate_delta
+    raise AssertionError("; ".join(violations))
+E   AssertionError: raw_candidates 7418 != accepted current-head 7356; current-minus-R3 raw count 7417 != replay accepted remainder 7355; current-minus-R3 stable inventory fingerprint e6c653a7c61ddd3ff0e24fee1823b44ddddd2ea030ed1cfe49bee2a34630612a != replay accepted 9dfd146f3b50bd56a8b997664569ac538396d322ceb21eb6682aa75a862716fa (lineage 05549f9acb9ecedf910c7470d442bba5d0a27337)
+______ test_cx_r3_r1_r3_candidate_semantic_identity_and_version_literal _______
+tests\qualification\compat_x\test_compat_x_event_evolution_r3_r1_gates.py:414: in test_cx_r3_r1_r3_candidate_semantic_identity_and_version_literal
+    delta = build_r3_runtime_event_schema_version_candidate_delta()
+            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+tests\qualification\compat_x\_compat_x_semantic_identity_reconciliation.py:546: in build_r3_runtime_event_schema_version_candidate_delta
+    raise AssertionError("; ".join(violations))
+E   AssertionError: raw_candidates 7418 != accepted current-head 7356; current-minus-R3 raw count 7417 != replay accepted remainder 7355; current-minus-R3 stable inventory fingerprint e6c653a7c61ddd3ff0e24fee1823b44ddddd2ea030ed1cfe49bee2a34630612a != replay accepted 9dfd146f3b50bd56a8b997664569ac538396d322ceb21eb6682aa75a862716fa (lineage 05549f9acb9ecedf910c7470d442bba5d0a27337)
+_______ test_cx_r3_r1_probe_q_equal_count_substitution_fails_inventory ________
+tests\qualification\compat_x\test_compat_x_event_evolution_r3_r1_gates.py:421: in test_cx_r3_r1_probe_q_equal_count_substitution_fails_inventory
+    assert len(report.raw_candidates) == ACCEPTED_CURRENT_HEAD_RAW_CANDIDATES
+E   AssertionError: assert 7418 == 7356
+E    +  where 7418 = len((DiscoveryCandidate(candidate_id='registry.contracts.AgentRunRequest', path='intergrax/contracts/agent_run.py', discov...='agent_run_checkpoint.v1', version_source='intergrax/contracts/migrations/registry.py:CONTRACT_SCHEMA_REGISTRY'), ...))
+E    +    where (DiscoveryCandidate(candidate_id='registry.contracts.AgentRunRequest', path='intergrax/contracts/agent_run.py', discov...='agent_run_checkpoint.v1', version_source='intergrax/contracts/migrations/registry.py:CONTRACT_SCHEMA_REGISTRY'), ...) = ClosedWorldReport(raw_candidates=(DiscoveryCandidate(candidate_id='registry.contracts.AgentRunRequest', path='intergra...dule_level.model_dump:539:6', 'export.intergrax.applications.contracts.profile_resolution.__init__.py::ProfileDelta'})).raw_candidates
+____________ test_cx_r3_r1_probe_r_hidden_removal_fails_inventory _____________
+tests\qualification\compat_x\test_compat_x_event_evolution_r3_r1_gates.py:429: in test_cx_r3_r1_probe_r_hidden_removal_fails_inventory
+    assert len(report.raw_candidates) == REPLAY_X_ACCEPTED_REMAINDER_RAW_CANDIDATES
+E   AssertionError: assert 7417 == 7355
+E    +  where 7417 = len((DiscoveryCandidate(candidate_id='registry.contracts.AgentRunRequest', path='intergrax/contracts/agent_run.py', discov...='agent_run_checkpoint.v1', version_source='intergrax/contracts/migrations/registry.py:CONTRACT_SCHEMA_REGISTRY'), ...))
+E    +    where (DiscoveryCandidate(candidate_id='registry.contracts.AgentRunRequest', path='intergrax/contracts/agent_run.py', discov...='agent_run_checkpoint.v1', version_source='intergrax/contracts/migrations/registry.py:CONTRACT_SCHEMA_REGISTRY'), ...) = ClosedWorldReport(raw_candidates=(DiscoveryCandidate(candidate_id='registry.contracts.AgentRunRequest', path='intergra...dule_level.model_dump:539:6', 'export.intergrax.applications.contracts.profile_resolution.__init__.py::ProfileDelta'})).raw_candidates
+__________ test_cx_r3_r1_probe_s_balanced_add_remove_fails_inventory __________
+tests\qualification\compat_x\test_compat_x_event_evolution_r3_r1_gates.py:436: in test_cx_r3_r1_probe_s_balanced_add_remove_fails_inventory
+    assert len(report.raw_candidates) == ACCEPTED_CURRENT_HEAD_RAW_CANDIDATES
+E   AssertionError: assert 7418 == 7356
+E    +  where 7418 = len((DiscoveryCandidate(candidate_id='registry.contracts.AgentRunRequest', path='intergrax/contracts/agent_run.py', discov...='agent_run_checkpoint.v1', version_source='intergrax/contracts/migrations/registry.py:CONTRACT_SCHEMA_REGISTRY'), ...))
+E    +    where (DiscoveryCandidate(candidate_id='registry.contracts.AgentRunRequest', path='intergrax/contracts/agent_run.py', discov...='agent_run_checkpoint.v1', version_source='intergrax/contracts/migrations/registry.py:CONTRACT_SCHEMA_REGISTRY'), ...) = ClosedWorldReport(raw_candidates=(DiscoveryCandidate(candidate_id='registry.contracts.AgentRunRequest', path='intergra...dule_level.model_dump:539:6', 'export.intergrax.applications.contracts.profile_resolution.__init__.py::ProfileDelta'})).raw_candidates
+__________________ test_audit_ideal_29_1_live_vision_profile __________________
+tests\unit\runtime\architecture\test_audit_ideal_depth_gate.py:238: in test_audit_ideal_29_1_live_vision_profile
+    assert create_adapter(profile).slug
+           ^^^^^^^^^^^^^^^^^^^^^^^
+intergrax\llm_adapters\registry\profile.py:42: in create_adapter
+    if profile.model:
+       ^^^^^^^^^^^^^
+.venv\Lib\site-packages\pydantic\main.py:1026: in __getattr__
+    raise AttributeError(f'{type(self).__name__!r} object has no attribute {item!r}')
+E   AttributeError: 'VisionProfile' object has no attribute 'model'
+__________________ test_audit_ideal_30_4_production_capacity __________________
+tests\unit\runtime\architecture\test_audit_ideal_depth_gate.py:690: in test_audit_ideal_30_4_production_capacity
+    wiring = resolve_production_capacity_wiring(env, governance=governance)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+intergrax\applications\_shared\production_capacity_wiring.py:48: in resolve_production_capacity_wiring
+    require_control_plane_mutation_boundary(
+intergrax\applications\_shared\control_plane_composition.py:50: in require_control_plane_mutation_boundary
+    raise ControlPlaneCompositionError(blocker_code, message)
+E   intergrax.applications._shared.control_plane_composition.ControlPlaneCompositionError: production capacity wiring requires ControlPlaneMutationAuthorizationBoundary
+=========================== short test summary info ===========================
+FAILED tests/qualification/compat_x/test_compat_x_event_evolution_r3_r1_gates.py::test_cx_r3_r1_combined_gate_passes_on_current_head
+FAILED tests/qualification/compat_x/test_compat_x_event_evolution_r3_r1_gates.py::test_cx_r3_r1_probe_m_sanctioned_constructor_passes_classification
+FAILED tests/qualification/compat_x/test_compat_x_event_evolution_r3_r1_gates.py::test_cx_r3_r1_compat_current_head_inventory_reconciled
+FAILED tests/qualification/compat_x/test_compat_x_event_evolution_r3_r1_gates.py::test_cx_r3_r1_r3_candidate_semantic_identity_and_version_literal
+FAILED tests/qualification/compat_x/test_compat_x_event_evolution_r3_r1_gates.py::test_cx_r3_r1_probe_q_equal_count_substitution_fails_inventory
+FAILED tests/qualification/compat_x/test_compat_x_event_evolution_r3_r1_gates.py::test_cx_r3_r1_probe_r_hidden_removal_fails_inventory
+FAILED tests/qualification/compat_x/test_compat_x_event_evolution_r3_r1_gates.py::test_cx_r3_r1_probe_s_balanced_add_remove_fails_inventory
+FAILED tests/unit/runtime/architecture/test_audit_ideal_depth_gate.py::test_audit_ideal_29_1_live_vision_profile
+FAILED tests/unit/runtime/architecture/test_audit_ideal_depth_gate.py::test_audit_ideal_30_4_production_capacity
+9 failed, 548 passed, 11 skipped in 55.27s

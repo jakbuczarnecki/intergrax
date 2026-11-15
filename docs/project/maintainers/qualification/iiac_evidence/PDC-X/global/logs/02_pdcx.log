@@ -1,0 +1,50 @@
+........................................................................ [  5%]
+........................................................................ [ 10%]
+........................................................................ [ 15%]
+........................................................................ [ 20%]
+........................................................................ [ 25%]
+........................................................................ [ 30%]
+........................................................................ [ 35%]
+........................................................................ [ 40%]
+........................................................................ [ 45%]
+........................................................................ [ 50%]
+........................................................................ [ 55%]
+........................................................................ [ 60%]
+........................................................................ [ 65%]
+........................................................................ [ 70%]
+........................................................................ [ 75%]
+........................................................................ [ 80%]
+......................................................F................. [ 85%]
+F....................................................................... [ 90%]
+........................................................................ [ 95%]
+..............................................................F          [100%]
+================================== FAILURES ===================================
+______ test_every_pdc_touched_product_module_maps_to_at_least_one_check _______
+tests\qualification\pdc_x\p6_impact\test_p6_impact_map_coverage.py:154: in test_every_pdc_touched_product_module_maps_to_at_least_one_check
+    assert unmapped == [], f"{len(unmapped)} PDC-touched product modules map to no check, e.g. {unmapped[:5]}"
+E   AssertionError: 2 PDC-touched product modules map to no check, e.g. ['intergrax/experiments/workflow.py', 'intergrax/runtime/policy/pre_context_policy_audit.py']
+E   assert ['intergrax/e...icy_audit.py'] == []
+E     
+E     Left contains 2 more items, first extra item: 'intergrax/experiments/workflow.py'
+E     Use -v to get more diff
+__ test_synthetic_mcp_rc_range_leaves_no_pdc_touched_product_module_unmapped __
+tests\qualification\pdc_x\p6_impact\test_p6_impact_tier3_root_rule.py:165: in test_synthetic_mcp_rc_range_leaves_no_pdc_touched_product_module_unmapped
+    assert unmapped == [], f"{len(unmapped)} PDC-touched product modules map to no check, e.g. {unmapped[:5]}"
+E   AssertionError: 2 PDC-touched product modules map to no check, e.g. ['intergrax/experiments/workflow.py', 'intergrax/runtime/policy/pre_context_policy_audit.py']
+E   assert ['intergrax/e...icy_audit.py'] == []
+E     
+E     Left contains 2 more items, first extra item: 'intergrax/experiments/workflow.py'
+E     Use -v to get more diff
+______ test_xd12_every_pdc_touched_product_module_maps_to_a_domain_check ______
+tests\qualification\pdc_x\xd\test_xd_12_evol_ent_audit.py:97: in test_xd12_every_pdc_touched_product_module_maps_to_a_domain_check
+    assert unmapped == [], f"{len(unmapped)} PDC-touched product modules map to no check, e.g. {unmapped[:5]}"
+E   AssertionError: 2 PDC-touched product modules map to no check, e.g. ['intergrax/experiments/workflow.py', 'intergrax/runtime/policy/pre_context_policy_audit.py']
+E   assert ['intergrax/e...icy_audit.py'] == []
+E     
+E     Left contains 2 more items, first extra item: 'intergrax/experiments/workflow.py'
+E     Use -v to get more diff
+=========================== short test summary info ===========================
+FAILED tests/qualification/pdc_x/p6_impact/test_p6_impact_map_coverage.py::test_every_pdc_touched_product_module_maps_to_at_least_one_check
+FAILED tests/qualification/pdc_x/p6_impact/test_p6_impact_tier3_root_rule.py::test_synthetic_mcp_rc_range_leaves_no_pdc_touched_product_module_unmapped
+FAILED tests/qualification/pdc_x/xd/test_xd_12_evol_ent_audit.py::test_xd12_every_pdc_touched_product_module_maps_to_a_domain_check
+3 failed, 1428 passed in 189.24s (0:03:09)
