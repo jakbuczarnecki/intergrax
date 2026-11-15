@@ -7,11 +7,13 @@
 | **Auditor session** | `PDC-P8-IA-GLOBAL-INDEPENDENT-AUDITOR-6573093f-9178-4c2c-93a3-64b0a5b6c657` (up to four read-only code-reading subagents; the auditor integrated and owns every verdict) |
 | **Date** | 2026-11-15 |
 | **Audited SHA (start)** | `cba32d2479cd134911d2fdf4fb1db4587c8a94d8` (`origin/development` at session start; product tree = merge `63005e290` of PR #576; later commits are docs-only) |
-| **Final audit SHA** | = start SHA (the final SHA was not yet announced when this record was written; see section 13) |
-| **Overall verdict** | **PARTIAL** (`PARTIAL_EXACT_BLOCKERS`; IIAC manifest value `CONDITIONAL`) |
+| **Final audit SHA** | `d39a520dda965981a38f8e1a90ec5135ea5d508e` |
+| **Overall verdict** | **PARTIAL** (`PARTIAL_EXACT_BLOCKERS`; IIAC manifest value `CONDITIONAL`), unchanged at the final audit SHA (section 13) |
 | **Nature** | An audit. It is **not** a certification, issues no `Approved:` or activation line, promotes no FRZ status, closes nothing and makes no production-readiness claim. The auditor did not implement, sign, domain-audit or certify anything in PDC-X and changed no product, test, script, governance or ticket file (docs-only deliverable). |
 
 ## 1. Verdict and exact blockers
+
+> **Status at the final audit SHA `d39a520dd`** (section 13 supersedes the status below): G-01, G-02, G-03 and G-06 are VERIFIED_FIXED; G-04 and G-05 are repaired only in part; the verdict remains PARTIAL. The tables of sections 1 to 12 describe the audit at the start SHA `cba32d247`.
 
 **PARTIAL.** The eight repairs are real: of 76 audited in-scope repair rows, **62 are VERIFIED_FIXED, 14 PARTIALLY_FIXED, 0 NOT_FIXED** (section 5). The Full Platform ECAP run is clean (85/85 checks, 0 findings), DUP-X/EBH-4 gates (130) and TENANT-X (213) are green, the MCP-SERVER-X delta is in the tree untouched, and every red test of the bounded runs is either a classified known red or listed as a finding below. The verdict is not PASS or PASS_SCOPED because the independent pass found **one HIGH and eleven MEDIUM defects or exception-register inaccuracies** that are not covered by an Operator-authorized exclusion (section 7). Exact blockers for one repair loop (proposed scope in section 8):
 
@@ -164,7 +166,7 @@ Verdict vocabulary: VERIFIED_FIXED / PARTIALLY_FIXED / NOT_FIXED. Counts: **62 /
 | D6 | F-D6-02 relabel | MED | VERIFIED_FIXED | [named module); PARTIAL across the surface] `multi_region_audit_trail.py:3-9` module doc, `:28-46` report doc and `Field(description=...)`, class doc; tests `test_d6_f02_audit_trail_claims.py` (phrases "in-process", "does not detect", "does not prove"; behavio |
 | D6 | F-D6-05 provenance binding | MED | VERIFIED_FIXED | `core/plugins/admission.py:301-308` (normalized `attestation.distribution` must equal normalized `spec.distribution`, else `PLUGIN_PROVENANCE_INVALID`; reason does not echo attestation content); every entry point goes through `evaluate` (`discovery.py`, `catal |
 | D6 | F-D6-07 sandbox deny test | MED | VERIFIED_FIXED | [test-only root cause] `tests/unit/runtime/sandbox/test_cap_c1c_sandbox_evidence_and_contract_purity.py`: deny test now passes `governance_tenant_id=state.tenant_id` and a principal; new `test_c1c_q_governance_deny_without_active_governance_identity_fails_clos |
-| D6 | F-D6-12 credential error chain | LOW | PARTIALLY_FIXED | `integrations/credentials/secrets_store_resolver.py:43-48` `except Exception:` ... `from None`; test `test_provider_text_is_absent_from_the_whole_error_chain` asserts `__cause__ is None` and a clean rendered traceback |
+| D6 | F-D6-12 credential error chain | LOW | VERIFIED_FIXED (at `d39a520dd`; PARTIALLY_FIXED at `cba32d247`) | `integrations/credentials/secrets_store_resolver.py:43-48` `except Exception:` ... `from None`; repaired by T-IGX-041-M: the typed errors are raised after the `except` block; test `test_provider_text_is_absent_from_the_whole_error_chain` asserts `__cause__ is None` and a clean rendered traceback |
 | D7 | F-D7-01 batch abort | HIGH | VERIFIED_FIXED | scheduler.py:186-204 (per-claim try, `StaleClaimError` separate, first failure re-raised after batch), tick() 129-143 runs both phases. test_s1_batch_isolation.py: 3 tenants, first raises -> siblings `completed`, failed claim neither completed nor pending; sta |
 | D7 | F-D7-02 chain ends silently | HIGH | PARTIALLY_FIXED | Successor now persisted before execution: scheduler.py:207-232, 267-291; `release_claim`/`skip_claim` store.py:585-643. Tests test_s2_chain_survival.py (real two-process `os._exit` crash via _crash_worker.py; transient `schedule()` error releases claim; dead t |
 | D7 | F-D7-04 occurrence id w/o tenant | MED | VERIFIED_FIXED | recurrence.py:416-424 (tenant digest + task digest, fixed-length), `start_checked` 505-512; validate_occurrence_entry 427-452. test_s3_occurrence_identity.py incl. pinned literal id |
@@ -262,4 +264,84 @@ For the orchestrator (the audit does not fix or sign anything): **product repair
 
 ## 13. Addendum — delta from the audit start SHA to the frozen SHA
 
-Not yet frozen. At the time of writing the audit SHA is the start SHA; the orchestrator has not yet sent the final audit SHA. This section is completed when it does.
+The orchestrator froze the audit on `GLOBAL_AUDITED_SHA` = `d39a520dda965981a38f8e1a90ec5135ea5d508e` (`origin/development` after PR #581 K, #582 L, #583 N, #584 M, #585 O; fast-forward from the audit start; worktree clean). This section supersedes the status columns of sections 1, 5 and 7 where it differs. Sections 1..12 describe the audit at `cba32d247`; the new audit SHA is `d39a520dd`.
+
+### 13.1 Delta `cba32d247..d39a520dd` (117 files)
+
+`git diff --stat cba32d247 d39a520dd`: 117 files, +12215/-413. 13 product paths under `intergrax/`, 2 under `platform_proofs/`, 1 script, 26 test and fixture paths, 12 governance paths (tickets and plans), 4 documentation paths (two architecture notes, WBS, DAG) and 59 files of the auditor's own report and evidence from PR #579. Judgement per group:
+
+| Group | Paths | Judgement |
+| --- | --- | --- |
+| Product, M (#584) RAG loader family | `rag/document_loaders/handlers/doc_smart_document_handler.py`, `contracts/parser_native_handle.py`, `compat/legacy_runtime_document.py`, `integrations/providers/vector_store/inmemory/integration.py` | Correct and minimal. The handler imports `PipelineDocumentHandler` from `pipeline/document_handler_loading.py`; the duplicate `_KnowledgeDocumentWithParserRuntime` is removed (one class, `get_parser_native_handle` moved next to `attach_parser_native_handle`); `list_collections` delegates to the inner store. Probe rerun: `create_default_documents_loader()` builds. Closes G-01. |
+| Product, M scheduler | `runtime/long_running/scheduler.py` | Recurring claims read eligibility (including a probe of the terminal authority) inside a try; any exception releases the claim for retry; a real terminal record still ends the chain. One-shot claims keep the previous behaviour, a permanently failing read retries every tick without a cap (declared E9; documented in `BACKGROUND_TASKS.md`). Closes G-02 for recurrence. |
+| Product, M storage keys | `tools/providers/storage/service.py`, `tools/providers/workspace/service.py`, `integrations/_shared/p3/clients.py` | The shared refusal now compares casefolded segments without trailing dots and spaces and is called first by `workspace.export_artifact` and `workspace.import_artifact`; `FilesystemBlobClient` refuses absolute, drive-qualified and `..` keys. Closes G-03. The tenant or prefix binding of all other keys stays a declared limit (E1). The edit of `clients.py` is mostly import and annotation reformatting; the only behaviour change is `_path_for`. |
+| Product, M credentials | `integrations/credentials/secrets_store_resolver.py` | The typed errors are raised outside the `except` blocks, so the provider exception no longer sits in `__context__`. Closes F-D6-12. |
+| Product, M scenario runtime | `applications/_shared/scenario_runtime_baseline.py` (named hotspot file), `platform_proofs/scenarios/ai_incident_investigation/application/runtime_composition.py`, `runtime/llm/model_call_runtime_evidence_adapter.py` | The composition carries the manifest, the contract authority and the application registry for the rebuild; the incident composition passes a `ManifestAgentContractAuthority`; the evidence adapter delegates `count_messages_tokens`. About 200 lines of the composition file are blank-line reflow. Sound, but only a first layer, see 13.4. |
+| Product, M impact map | `platform/enterprise_audit/impact_map.py`, `data/changed_since_impact_map.v1.json` | Two exact-file entries for `runtime/policy/pre_context_policy_audit.py` and `experiments/workflow.py`. They map the modules to the nearest manifest checks (the comment says that no check executes them): a classification, not coverage, see G-26. Closes G-06. |
+| Scenario proof | `platform_proofs/scenarios/indirect_prompt_injection/proof.json` | `safety_class` `LOCAL_NETWORK` -> `LOCAL_MUTATING` (gate fix of N, pinned by `n_repair`); the stricter class. |
+| Script | `scripts/qualification/pdc_x_wbs.py` | WBS and DAG regeneration for the new batches; no product behaviour. |
+| Tests, K/O | `tests/qualification/ebh_7/_ebh7_f10_canonical_inputs.py`, `test_ebh_7_b6_f10_c4_041k_entries_gates.py`, `..._041o_entries_gates.py` | Classifier entries for the unclassified paths with pinned negatives and positives; gate meaning unchanged. |
+| Tests, L | `tests/fixtures/compat_x/accepted_shim_delta_replay_x_05549f9.json`, `repin_pdc_x_p7_delta.json`, `test_compat_x_pdc_x_p7_repin_delta.py`, `_compat_x_semantic_identity_reconciliation.py` | Counters re-pinned with id-exact evidence (990-line id list) and a guard test; strengthens the pin. With the extras installed all 354 `compat_x` tests pass at the final SHA when run alone. |
+| Tests, N | `tests/qualification/pdc_x/n_repair/*`, `p8_repair/*` (R1..R8), `tests/unit/applications/*`, `tests/unit/platform_proofs/.../test_completion_alignment.py`, `test_diagnostic_platform_integration.py`, `tests/unit/rag/indexing/test_indexing_manager_indexes_documents.py`, `tests/integration/rag/test_same_source_reingest_serialization.py`, `tests/unit/runtime/architecture/test_audit_ideal_depth_gate.py`, `RAG_RED_CLASSIFICATION.md` | Stale doubles and signatures refreshed to the current API (for example `FakeVectorstore.list_source_record_ids`, `critic_verdict_passed`, scoped publication key); the capacity test now asserts the fail-closed refusal (stricter). The classification note corrects the CI claim (G-04). No assertion was weakened. |
+| Docs and governance | tickets J..O, plans, WBS, DAG, `BACKGROUND_TASKS.md`, `ARTIFACT_LIFECYCLE.md` | Documentation of the above; the two architecture notes state the new behaviour and limits truthfully. |
+
+### 13.2 Re-verification of the PARTIAL findings at `d39a520dd`
+
+| Id | Verdict at the final SHA | Evidence |
+| --- | --- | --- |
+| G-01 default document loader | **VERIFIED_FIXED** | Probe `probe_n03_default_document_loader.py` prints `loader built`; R1 tests green in the final run. Residual: three stale tests, see G-25. |
+| G-02 scheduler eligibility phase | **VERIFIED_FIXED** (recurring); F-D7-02 now VERIFIED_FIXED | Code read, R2 tests (get_by_token and get_latest failure, unavailable terminal authority, real terminal still skips, one-shot unchanged) green. Residual LOW: G-27. |
+| G-03 workspace import/export | **VERIFIED_FIXED** | Code read; R3 tests (case and dot aliases, refusal before any storage access, order gate) green. |
+| G-04 F-D2-08 closure | **PARTIALLY_FIXED** | Stale doubles fixed (5 tests green), the CI claim is corrected in `RAG_RED_CLASSIFICATION.md`, the `test_stale_inflight_publication...` red was a stale test (green). The two graph reingest reds remain and are a confirmed product defect, see G-23. |
+| G-05 ~99 scenario reds | **PARTIALLY_FIXED** | 99 -> 77 failed in the directory (22 fixed by the authority, manifest, registry, token layers and N). 59 of the 77 are `IncidentInvestigatorAgent.get_steps() missing ... 'context'`; the rest sit behind it. Not repaired, see 13.4. |
+| G-06 XD-12 and impact reds | **VERIFIED_FIXED** | `tests/qualification/pdc_x` has no red except an artifact of my out-of-tree base temp (see 13.3). |
+| G-10 seven unowned reds | **PARTIALLY_FIXED** | `29_1`, `30_4` and the strict-manifest/host-LLM tests fixed; `test_harness_evaluation_wiring` passes alone (red in the combined run, see G-24); `test_execute_scenario_task_persists_finalized_trace_for_orchestration` still red (`trace_bridge.v1` vs `graph_node.v1`, unowned, E11). |
+| F-D6-12 `from None` | **VERIFIED_FIXED** | Code read (typed error raised after the `except`); R5 green. |
+| F-D1-11 slug refusal | stays **PARTIALLY_FIXED** | The R6 pin covers the slug refusal; the durable compare-and-set narrowing (G-08) is unchanged. |
+| G-07 (docs limit), G-08, G-09, G-11, G-12, F-D3-02, F-D2-10/-18, F-D7-07/-12/-20, F-D8-03 rest, -04, -17 | unchanged, **excluded by T-IGX-041-M E1..E11** | No product delta for them; the only change is the documentation limit of `recover_interrupted_running` (accurate). None is covered by an Operator-authorized exception (decision 1 lists other items). F-D3-02 pins were assigned to N and not delivered. |
+
+Net of the 76 rows: 63 VERIFIED_FIXED, 13 PARTIALLY_FIXED, 0 NOT_FIXED.
+
+### 13.3 Run record at `d39a520dd` (PDC-P8-03 repeat)
+
+One bounded pytest process (log `.tmp/proof/pdc-x-p8/final/final_pytest.log`, command in `cmd.txt`): the union of the contract paths A..H, `pdc_x`, `tenant_x`, DUP-X, EBH-7, ROADMAP-REPLAY-X, DIST-SCALE-X, COMPAT-X, the two IIAC tests and the whole `tests/unit/platform_proofs/scenarios` tree, `-p no:randomly`, base temp under `_wt/intergrax/_scratch`. Result: **118 failed, 7691 passed, 91 skipped, 3 errors in 970 s** (the `-rf` list has 119 FAILED lines). The 3 errors are collection errors for the missing optional `sentence_transformers` extra (environment). The process did not exit after its summary and was killed (R-05). ECAP FULL was not rerun: no ECAP-governed rule changed except the two impact-map entries, which the R4 tests and `pdc_x` cover.
+
+| Class | Count | Disposition |
+| --- | --- | --- |
+| Incident scenario suite | 77 | G-05 residual (59 `get_steps`) |
+| Known classes: EBH-7 9, ROADMAP-REPLAY-X 5, DIST-SCALE-X 3 (PostgreSQL handshake), IIAC activation 2 | 19 | known, classified, not findings |
+| Order-dependent: 14 COMPAT-X, `audit_ideal_13_1`, `test_harness_evaluation_wiring` | 16 | green alone: `compat_x` + `13_1` 354 passed in a separate process, `test_harness_evaluation_wiring` passed in the residual rerun (log `rerun_compat_audit.log`, `rerun_residual.log`); run-order pollution of a global registry (G-24) |
+| `d2r` tree syntax gate | 1 | artifact of my base temp outside the repository (green in the rerun) |
+| Red alone | 6 | G-23 (2 graph reingest), trace_bridge (1), stale tests (3, G-25) |
+
+### 13.4 Judgement of M's declared deviation (G-05)
+
+The deviation text of T-IGX-041-M (P7 time-box, E10) is **truthful**: the first layer behind the repaired three is exactly the `get_steps(self, context)` versus `get_steps()` drift (59 occurrences at the final SHA), M predicted at most 86 failed and the suite shows 77, and the register names the reopen condition. It is **not covered** by `DELEGATION-PDC-CLOSE.md` decision 1: that decision declares four `fixture_strict_adapter_parity` tests, not the incident scenario family, and the plan itself says the exception must be widened by the Operator or the orchestrator ("assigns the `get_steps` contract, or widens the declared exception"). Decision 2 allows one repair loop, which M and N used; a second loop or a widening of the declared exceptions returns to the Operator. So the residual **needs the Operator**, and until then it is an open MEDIUM, not PASS_SCOPED. My observation for the decision: the scenario suite is a proof scenario family (`platform_proofs/`), not a product path; the deciding question is which side of the signature is canonical.
+
+### 13.5 New findings at the final SHA
+
+| Id | Sev | Finding | Confirmation | Fix location |
+| --- | --- | --- | --- | --- |
+| G-23 | MEDIUM | The graph side resolves the active publication generation with a `RagSourceOperationKey` that has no `publication_scope_id`, while ingest promotes under the key scoped by the root document id; after a re-ingest the graph evidence of the source is not visible. Orphaned: N's classification says "owner T-IGX-041-M", M excludes it as E11. | REPRODUCED standalone (`test_graphrag_source_reingest_replaces_vectors_and_graph_safely`: `assert set()`; `test_stale_graph_topology_is_inactive_after_generation_takeover`) and read in code | `intergrax/rag/graph/generation_visibility.py:82-87`, `intergrax/rag/graph/providers/inmemory_graph_store.py:343-348`: pass `publication_scope_id` from the source's root document id (as `ingest_pipeline.py:350` and `vectorstore_manager.py:353` do) |
+| G-24 | LOW | Order-dependent reds: with the contract suites in one process 14 COMPAT-X tests (raw candidate count 7420 vs 7417, schema-id registry mismatch), `audit_ideal_13_1` and `test_harness_evaluation_wiring` (unknown embedding slug `ollama`) fail; all pass alone. A test mutates a global registry and leaks it. | REPRODUCED | find the polluting test (registry or slug registration without restore) |
+| G-25 | INFO | Three red tests are labelled product defects in the RAG classification but are stale: `test_fixture_dataset_ingestion.py` (2, `load_documents()` now needs `tenant_id`) and `test_image_smart_document_handler.py::test_image_handler_builds_parser` (the handler requires `load()`); unowned. | REPRODUCED | the tests and the classification wording (N) |
+| G-26 | INFO | The two new impact-map entries bind modules to checks that do not execute them; honest comment, but the ENT-AUDIT does not cover `pre_context_policy_audit.py` and `experiments/workflow.py`. | CODE | register wording; a real check if coverage is wanted |
+| G-27 | LOW | A one-shot schedule whose terminal authority is unavailable is completed as "not resumable" and never executes (the previous behaviour, documented as unchanged). | CODE | `scheduler.py:219-222`, if a one-shot resume must survive an authority outage |
+
+The unfixed `trace_bridge.v1` mismatch (G-10 residual) is real until its root cause is established: a runtime-event schema guard rejects `step_started` payloads on the finalized-trace path of the scenario runtime; owner needed (`intergrax/runtime/events/payloads/canonical.py:171`, `intergrax/runtime/nexus/tracing/qualification_runtime_trace.py:101`).
+
+### 13.6 Allowlisted pin and records delta after `GLOBAL_AUDITED_SHA`
+
+PR #586 (`docs(pdc): EBH-7 re-pin W1' at P (T-IGX-041-J)`, open, head `22cfef5d91bb97e94c4f4bc92df094e4c4506a75` when read, base `development`) is covered by this note, with the file list of `gh pr diff 586 --name-only` (14 files): `.github/workflows/unit-tests.yml`, `tests/qualification/ebh_7/_constants.py`, `docs/project/maintainers/qualification/EBH_7_B6_F10_ECAP_NORMATIVE_MATRIX.md`, `EBH_7_ECAP_CURRENT_HEAD_AUDIT_REPORT.md`, `EBH_7_SHA_LADDER.md`, `ebh_7_p03_independent_replay/{ARTIFACT_DIGESTS.json, B6_EVIDENCE_CONSISTENCY_MATRIX.md, EBH_7_CLOSURE_EVIDENCE_AUDIT_MATRIX.md, EBH_7_P03_GITHUB_ACTIONS_REPLAY_RECORD.md, L3_REPLAY_RECORD.md, MANIFEST.json}`, `platform_domain_completeness/PDC_REG_DIAGNOSIS.md`, `PDC_SHA_LADDER.md`. Judgement: the workflow and the constants file change only the default `EBH7_TEST_EXECUTION_SHA` and `EBH7_EVIDENCE_PUBLICATION_SHA` from `146e7acf1434` to `d39a520dd`, that is the audited SHA of this report; the docs re-render the F10 matrix and record digests at that pin (the matrix diff is 482 lines of regenerated rows, not reviewed row by row). No product path. A later W2' record and any push to #586 after the head named here are outside this audit; the allowlisted paths are by themselves not product changes, so they do not void this audit for product paths.
+
+### 13.7 Verdict at the final SHA
+
+**PARTIAL** (`PARTIAL_EXACT_BLOCKERS`; IIAC manifest value `CONDITIONAL`) - the HIGH is closed and four of the six original blockers are closed (G-01, G-02, G-03, G-06 verified; G-04 and G-05 only in part), the verdict is not PASS or PASS_SCOPED because:
+
+1. G-23 (MEDIUM): confirmed product defect without an owner (graph reingest visibility), not an Operator-authorized exclusion.
+2. G-05 residual (MEDIUM): 77 incident scenario reds, 59 of them one signature drift; wider than the Operator's four-test exception; needs the Operator (13.4).
+3. The product MEDIUMs M excluded without an Operator authorization (E1 to E11: G-08 durable CAS, G-09 strict host with `tenant_id=None`, G-11 stream resilience claim, G-12 `install_agent` into an occupied slot, F-D3-02 pins) remain open; each has a reopen condition, but only decision 1 items are authorized exceptions.
+4. `trace_bridge.v1` mismatch (G-10 residual) unowned.
+
+If the Operator accepts items 2 to 4 as declared exceptions and G-23 is repaired or declared, the verdict would be PASS_SCOPED for the scoped rows. EBH-7 identity, IIAC activation staleness, ROADMAP-REPLAY-X and DIST-SCALE-X reds are the known classes and unchanged.
+
