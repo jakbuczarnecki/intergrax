@@ -7,7 +7,7 @@ from __future__ import annotations
 
 from collections.abc import Callable
 from datetime import UTC, datetime
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Any
 
 from intergrax.agent_distribution.activation import ActivationService, RollbackResult
 from intergrax.agent_distribution.admin_models import (
@@ -109,6 +109,7 @@ from intergrax.agent_distribution.emergency_revocation_response import (
 )
 from intergrax.agent_distribution.errors import (
     AgentDistributionNotFoundError,
+    AgentPackageTrustError,
     BindingRevisionConflict,
     EffectiveRosterAuthorityConflict,
     EffectiveRosterAuthorityNotFound,
@@ -121,7 +122,7 @@ from intergrax.agent_distribution.errors import (
     RuntimeRevisionConflict,
     RuntimeRollbackError,
 )
-from intergrax.agent_distribution.events import TransitionResult
+from intergrax.agent_distribution.events import AgentDistributionEvent, TransitionResult
 from intergrax.agent_distribution.identity import AgentPackageIdentity
 from intergrax.agent_distribution.installation import (
     AgentInstallationRecord,
@@ -172,6 +173,7 @@ from intergrax.agent_distribution.stores import (
 )
 from intergrax.agent_distribution.trust import (
     AgentPackageTrustPolicy,
+    AgentPackageTrustReasonCode,
     AgentPackageTrustRevocationState,
 )
 from intergrax.agent_distribution.upgrade_admission import (
@@ -192,7 +194,7 @@ if TYPE_CHECKING:
     from intergrax.llm_adapters.contracts.llm_profile import LLMProfile
 
 
-def _event_types(*results: TransitionResult[object]) -> tuple[str, ...]:
+def _event_types(*results: TransitionResult[Any]) -> tuple[str, ...]:
     events: list[str] = []
     for result in results:
         for event in result.events:
@@ -285,7 +287,11 @@ class AgentPlatformAdminService:
         package_trust_evaluation_time_source: Callable[[], datetime] | None = None,
         emergency_revocation_service: AgentEmergencyRevocationService | None = None,
         llm_profile_source: Callable[[str, str], LLMProfile | None] | None = None,
+        lifecycle_event_sink: Callable[[tuple[AgentDistributionEvent, ...]], None] | None = None,
     ) -> None:
+        # Optional, inert injection point (T-IGX-041-A, F-D1-06): receives the events of every
+        # install/upgrade/retire transition, failure paths included. It decides and stores nothing.
+        self._lifecycle_event_sink = lifecycle_event_sink
         self._llm_profile_source = llm_profile_source
         self._installation_store = installation_store
         self._binding_store = binding_store
@@ -618,6 +624,13 @@ class AgentPlatformAdminService:
                 installation_slot_id=request.installation_slot_id,
             )
         else:
+            # An occupied slot belongs to the application that bound it (T-IGX-041-A, F-D1-05);
+            # an unoccupied slot has no owner yet, ownership is created by the later binding.
+            self._assert_installation_application_scope(
+                application_id=application_id,
+                application_environment_id=application_environment_id,
+                record=active_for_slot,
+            )
             current_revision = installation_state_token(
                 installation_slot_id=active_for_slot.installation_slot_id,
                 installation_id=active_for_slot.installation_id,
@@ -677,7 +690,7 @@ class AgentPlatformAdminService:
         promoted = self._installation_service.promote_verified_to_active(request.installation_id)
         return InstallationMutationResult(
             installation=_installation_view(promoted.value),
-            audit_event_types=_event_types(created, verified, promoted),
+            audit_event_types=self._emit_events(created, verified, promoted),
         )
 
     def _require_install_project_metadata(
@@ -795,6 +808,11 @@ class AgentPlatformAdminService:
             raise AgentDistributionNotFoundError(f"no active installation for slot {request.installation_slot_id}")
         if active.installation_id != request.expected_active_installation_id:
             raise InstallationSlotConflict("active installation does not match expected_active_installation_id")
+        self._assert_installation_application_scope(
+            application_id=application_id,
+            application_environment_id=application_environment_id,
+            record=active,
+        )
         self._authorize_desired_state_mutation(
             build_upgrade_agent_mutation_request(
                 principal=principal,
@@ -850,27 +868,37 @@ class AgentPlatformAdminService:
                 trust_record=request.trust_record,
             )
         except Exception:
-            self._installation_service.mark_failed_candidate(
+            failed = self._installation_service.mark_failed_candidate(
                 request.installation_id,
                 reason_code="trust_verification_failed",
             )
+            self._emit_events(created, failed)
             raise
 
-        bindings = [
-            binding
-            for binding in self._binding_service.list_bindings_for_environment(
-                application_id,
-                application_environment_id,
+        try:
+            bindings = [
+                binding
+                for binding in self._binding_service.list_bindings_for_environment(
+                    application_id,
+                    application_environment_id,
+                )
+                if binding.installation_slot_id == request.installation_slot_id and not binding.tombstone
+            ]
+            report = evaluate_agent_upgrade_admission(
+                prior_identity=active.package_identity,
+                candidate_identity=identity,
+                prior_contracts=self._resolve_package_contracts(active),
+                candidate_contracts={record.contract_id: record.contract for record in authority_records},
+                bindings=bindings,
             )
-            if binding.installation_slot_id == request.installation_slot_id and not binding.tombstone
-        ]
-        report = evaluate_agent_upgrade_admission(
-            prior_identity=active.package_identity,
-            candidate_identity=identity,
-            prior_contracts=self._resolve_package_contracts(active),
-            candidate_contracts={record.contract_id: record.contract for record in authority_records},
-            bindings=bindings,
-        )
+        except Exception:
+            # T-IGX-041-A (F-D1-06): a verified candidate must never be left behind.
+            failed = self._installation_service.mark_failed_candidate(
+                request.installation_id,
+                reason_code="upgrade_admission_failed",
+            )
+            self._emit_events(created, verified, failed)
+            raise
         if not report.admitted:
             reason = report.primary_reason
             failed = self._installation_service.mark_failed_candidate(
@@ -891,7 +919,7 @@ class AgentPlatformAdminService:
                     )
                     for item in report.violations
                 ),
-                audit_event_types=_event_types(created, verified, failed),
+                audit_event_types=self._emit_events(created, verified, failed),
             )
 
         try:
@@ -900,10 +928,11 @@ class AgentPlatformAdminService:
                 expected_active_installation_id=active.installation_id,
             )
         except Exception:
-            self._installation_service.mark_failed_candidate(
+            failed = self._installation_service.mark_failed_candidate(
                 request.installation_id,
                 reason_code="promotion_failed",
             )
+            self._emit_events(created, verified, failed)
             raise
         refreshed = self._binding_service.refresh_active_installation_for_slot(
             request.installation_slot_id,
@@ -916,7 +945,7 @@ class AgentPlatformAdminService:
             active_installation=_installation_view(promoted.value),
             previous_installation_id=active.installation_id,
             refreshed_binding_ids=tuple(item.value.application_binding_id for item in refreshed),
-            audit_event_types=_event_types(created, verified, promoted, *refreshed),
+            audit_event_types=self._emit_events(created, verified, promoted, *refreshed),
         )
 
     def retire_agent(
@@ -1008,7 +1037,7 @@ class AgentPlatformAdminService:
             installation=_installation_view(outcome.value),
             disabled_binding_ids=tuple(item.value.application_binding_id for item in disabled),
             affected_logical_agent_ids=tuple(sorted({binding.logical_agent_id for binding in slot_bindings})),
-            audit_event_types=_event_types(*disabled, outcome),
+            audit_event_types=self._emit_events(*disabled, outcome),
         )
 
     def _resolve_package_contracts(
@@ -1424,6 +1453,8 @@ class AgentPlatformAdminService:
             application_id=application_id,
             application_environment_id=application_environment_id,
         )
+        # Revocation published after the build must stop activation (T-IGX-041-A, F-D1-02).
+        self.assert_revision_trust_admissible(revision)
         prepared = self._activation_service.prepare_candidate(
             application_id=application_id,
             application_environment_id=application_environment_id,
@@ -1510,21 +1541,52 @@ class AgentPlatformAdminService:
         *,
         application_id: str,
         application_environment_id: str,
-        request: AgentEmergencyRevocationRequest | None = None,
+        principal: RequestIdentity,
+        expected_current_traffic_revision_id: str | None = None,
+        expected_serving_pointer_revision: int | None = None,
     ) -> AgentEmergencyRevocationResponse:
-        """One-shot active runtime revocation response using immutable revocation snapshot."""
-        effective_request = request or AgentEmergencyRevocationRequest(
+        """One-shot active runtime revocation response (T-IGX-041-A, F-D1-03).
+
+        Tenant scope is checked first. When a rollback is possible the mutation is authorized
+        with the same boundary and evidence shape as ``rollback_revision``. The revocation
+        snapshot, trust policy and evaluation time come only from the injected sources: a caller
+        can no longer substitute them.
+        """
+        self._require_environment_tenant_scope(
+            principal=principal,
             application_id=application_id,
             application_environment_id=application_environment_id,
+            operation="respond_to_emergency_revocation",
+        )
+        serving = self._serving_store.get_serving_record(
+            application_id,
+            application_environment_id,
+        )
+        if (
+            serving is not None
+            and serving.traffic_serving_revision_id is not None
+            and serving.prior_traffic_revision_id is not None
+        ):
+            self._authorize_rollback(
+                principal=principal,
+                application_id=application_id,
+                application_environment_id=application_environment_id,
+                mutation_id=(
+                    f"emergency-revocation:{serving.traffic_serving_revision_id}:{serving.serving_pointer_revision}"
+                ),
+                current_traffic_revision_id=serving.traffic_serving_revision_id,
+                current_serving_pointer_revision=serving.serving_pointer_revision,
+                target_runtime_revision_id=serving.prior_traffic_revision_id,
+            )
+        effective_request = AgentEmergencyRevocationRequest(
+            application_id=application_id,
+            application_environment_id=application_environment_id,
+            expected_current_traffic_revision_id=expected_current_traffic_revision_id,
+            expected_serving_pointer_revision=expected_serving_pointer_revision,
             evaluated_at=self._package_trust_evaluation_time_source(),
             revocation_state=self._package_trust_revocation_state_source(),
             trust_policy=self._package_trust_policy_source(),
         )
-        if (
-            effective_request.application_id != application_id
-            or effective_request.application_environment_id != application_environment_id
-        ):
-            raise RuntimeActivationConflict("emergency revocation request environment scope mismatch")
         return self._emergency_revocation_service.respond_to_current_revocation(effective_request)
 
     def complete_revision_drain(
@@ -1689,6 +1751,38 @@ class AgentPlatformAdminService:
             audit_event_types=tuple(audit_events),
         )
 
+    def assert_revision_trust_admissible(self, revision: RuntimeRevision) -> None:
+        """Fail closed when an enabled package of ``revision`` is no longer admissible (F-D1-02).
+
+        Re-evaluates every enabled roster entry of the revision with the injected trust
+        coordinator, revocation-state, policy and time sources. Unlike the build-time check,
+        an enabled entry without an installation or without a trust record is a denial.
+        """
+        roster = self._effective_roster_authority.require_for_revision(revision)
+        policy = self._package_trust_policy_source()
+        evaluated_at = self._package_trust_evaluation_time_source()
+        revocation_state = self._package_trust_revocation_state_source()
+        for entry in roster.entries:
+            if not entry.effective_enablement:
+                continue
+            installation = (
+                self._installation_store.get_installation(entry.active_installation_id)
+                if entry.active_installation_id is not None
+                else None
+            )
+            if installation is None or installation.trust_record is None:
+                raise AgentPackageTrustError(
+                    "enabled roster entry lacks an installation trust record",
+                    reason_code=AgentPackageTrustReasonCode.MISSING_REQUIRED_EVIDENCE.value,
+                )
+            self._package_trust_coordinator.assert_install_admission(
+                trust_record=installation.trust_record,
+                package_identity=installation.package_identity,
+                revocation_state=revocation_state,
+                policy=policy,
+                evaluated_at=evaluated_at,
+            )
+
     def _assert_runtime_revision_trust_admission(
         self,
         *,
@@ -1714,6 +1808,15 @@ class AgentPlatformAdminService:
                 policy=policy,
                 evaluated_at=evaluated_at,
             )
+
+    def _emit_events(self, *results: TransitionResult[Any]) -> tuple[str, ...]:
+        """Deliver the events of lifecycle transitions to the optional sink; return their types."""
+        sink = self._lifecycle_event_sink
+        if sink is not None:
+            events = tuple(event for result in results for event in result.events)
+            if events:
+                sink(events)
+        return _event_types(*results)
 
     def _resolve_install_identity(self, request: InstallAgentRequest) -> AgentPackageIdentity:
         if request.catalog_entry_id is None:
@@ -2342,6 +2445,14 @@ class AgentPlatformAdminService:
             current_serving_pointer_revision=current_serving_pointer_revision,
             target_runtime_revision_id=target_runtime_revision_id,
         )
+        # The target must still be trusted now, not only when it was built (T-IGX-041-A, F-D1-02).
+        # Covers rollback_revision and the recovery rollback of handle_post_cutover_failure.
+        target_revision = self._require_revision_scope(
+            runtime_revision_id=target_runtime_revision_id,
+            application_id=application_id,
+            application_environment_id=application_environment_id,
+        )
+        self.assert_revision_trust_admissible(target_revision)
         rolled = self._activation_service.rollback(
             application_id=application_id,
             application_environment_id=application_environment_id,

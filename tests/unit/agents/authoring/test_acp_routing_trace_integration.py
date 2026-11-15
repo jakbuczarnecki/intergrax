@@ -2,12 +2,13 @@
 
 from __future__ import annotations
 
-import pytest
+from collections.abc import Callable
 
+import pytest
 from intergrax.agents.authoring.acp_session_host import ACP_HOST_CONTEXT_KEY
-from tests.unit.agents.conftest import make_acp_host_context
 from intergrax.agents.authoring.base import IntergraxAgent
 from intergrax.agents.authoring.step_outcome import StepOutcome
+from intergrax.applications._shared.acp_runtime_session_hooks import build_nexus_acp_runtime_session_hooks
 from intergrax.applications.contracts.environment_profile import ApplicationEnvironmentProfile
 from intergrax.applications.contracts.manifest import AgentBinding
 from intergrax.contracts.agent_contract_meta import AgentRiskLevel
@@ -21,6 +22,7 @@ from intergrax.runtime.nexus.config import RuntimeConfig
 from intergrax.runtime.nexus.engine.runtime_context import RuntimeContext
 from intergrax.runtime.nexus.responses.response_schema import RuntimeRequest
 from testing_support.builder import FakeLLMAdapter, build_in_memory_session_manager
+from tests.unit.agents.conftest import make_acp_host_context
 
 
 class _RoutingTraceAgent(IntergraxAgent):
@@ -54,7 +56,11 @@ class _RoutingTraceAgent(IntergraxAgent):
 
 @pytest.mark.unit
 @pytest.mark.gate
-async def test_acp_run_records_routing_rule_in_step_diagnostics(monkeypatch: pytest.MonkeyPatch) -> None:
+async def test_acp_run_records_routing_rule_in_step_diagnostics(
+    monkeypatch: pytest.MonkeyPatch,
+    bound_governance_identity: Callable[..., None],
+) -> None:
+    bound_governance_identity(tenant_id="tenant-1", principal_id="user-1")
     monkeypatch.setattr(
         "intergrax.runtime.wiring.llm_resolver.resolve_llm_adapter",
         lambda _env, **kwargs: FakeLLMAdapter(),
@@ -87,7 +93,13 @@ async def test_acp_run_records_routing_rule_in_step_diagnostics(monkeypatch: pyt
         contract_id="routing-trace-agent",
         capabilities=["demo.routing_trace"],
     )
-    host_ctx = make_acp_host_context(environment, binding=binding)
+    # Routing evaluations are recorded by the Tier-3 session hooks; the host must inject them
+    # (the default hooks of a bare host context carry no routing observer).
+    host_ctx = make_acp_host_context(
+        environment,
+        binding=binding,
+        runtime_session_hooks=build_nexus_acp_runtime_session_hooks(),
+    )
     request = AgentRunRequest(
         input="route",
         identity=RequestIdentity(tenant_id="tenant-1", user_id="user-1"),

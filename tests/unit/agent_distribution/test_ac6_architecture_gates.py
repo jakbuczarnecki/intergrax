@@ -12,9 +12,7 @@ import pytest
 
 REPO_ROOT = Path(__file__).resolve().parents[3]
 AGENT_DISTRIBUTION_DIR = REPO_ROOT / "intergrax" / "agent_distribution"
-ARCHITECTURE_DOC = (
-    REPO_ROOT / "docs" / "project" / "architecture" / "AGENT_DISTRIBUTION.md"
-)
+ARCHITECTURE_DOC = REPO_ROOT / "docs" / "project" / "architecture" / "AGENT_DISTRIBUTION.md"
 
 pytestmark = [pytest.mark.unit, pytest.mark.gate]
 
@@ -104,9 +102,7 @@ def test_emergency_revocation_service_has_no_direct_lifecycle_store_mutation() -
 def test_emergency_revocation_service_has_no_registry_coupling() -> None:
     text = _EMERGENCY_MODULE.read_text(encoding="utf-8")
     imported = _imported_names(_EMERGENCY_MODULE)
-    violations = sorted(
-        name for name in _FORBIDDEN_EMERGENCY_NAMES if name in imported or name in text
-    )
+    violations = sorted(name for name in _FORBIDDEN_EMERGENCY_NAMES if name in imported or name in text)
     assert not violations, f"forbidden emergency registry coupling: {violations}"
 
 
@@ -117,10 +113,7 @@ def test_trust_boundary_modules_delegate_to_package_trust_coordinator() -> None:
     assert "AgentPackageTrustCoordinator" in admin_text
     assert "assert_install_admission" in admin_text
     assert "AgentPackageTrustCoordinator" in emergency_text
-    assert (
-        "assert_install_admission" in emergency_text
-        or "package_trust_coordinator" in emergency_text
-    )
+    assert "assert_install_admission" in emergency_text or "package_trust_coordinator" in emergency_text
     assert "install_agent" in dynamic_text
     assert "trust_record" in dynamic_text
 
@@ -129,13 +122,9 @@ def test_package_trust_coordinator_has_no_direct_crypto_primitives() -> None:
     text = _TRUST_MODULE.read_text(encoding="utf-8")
     modules = _imported_modules(_TRUST_MODULE)
     violations = [
-        marker
-        for marker in _CRYPTO_PRIMITIVE_MARKERS
-        if marker in text or any(marker in module for module in modules)
+        marker for marker in _CRYPTO_PRIMITIVE_MARKERS if marker in text or any(marker in module for module in modules)
     ]
-    assert not violations, (
-        f"trust coordinator must not embed crypto primitives: {violations}"
-    )
+    assert not violations, f"trust coordinator must not embed crypto primitives: {violations}"
 
 
 def test_bounded_production_surfaces_have_no_duplicate_trust_engine_names() -> None:
@@ -167,18 +156,38 @@ def _testing_support_imports_from_tests() -> list[str]:
     return violations
 
 
+# Known cross-domain test-support debt (T-IGX-041-A, F-D1-11): two modules owned by the MCP memory
+# wiring and the research LLM support still import test helpers. They are classified here by exact
+# path and module, not repaired by D1. Any other import of ``tests`` from ``testing_support`` fails,
+# and an entry that no longer violates must be removed (see the staleness test below).
+_KNOWN_TESTING_SUPPORT_TEST_IMPORTS = frozenset(
+    {
+        "testing_support/mcp_ac3_strict_product_memory_test_wiring.py: "
+        "tests.unit.applications.test_mem_audit5a_production_provider_admission",
+        "testing_support/research_llm_test_support.py: tests.unit.llm_adapters.registry_state_test_support",
+    }
+)
+
+
+def _normalized(violations: list[str]) -> set[str]:
+    return {item.replace("\\", "/") for item in violations}
+
+
 def test_testing_support_does_not_import_tests() -> None:
-    violations = _testing_support_imports_from_tests()
-    assert not violations, (
-        "testing_support must not import tests; violations:\n" + "\n".join(violations)
-    )
+    violations = _normalized(_testing_support_imports_from_tests()) - _KNOWN_TESTING_SUPPORT_TEST_IMPORTS
+    assert not violations, "testing_support must not import tests; violations:\n" + "\n".join(sorted(violations))
+
+
+def test_known_testing_support_test_imports_are_not_stale() -> None:
+    stale = _KNOWN_TESTING_SUPPORT_TEST_IMPORTS - _normalized(_testing_support_imports_from_tests())
+    assert not stale, "remove classified entries that no longer violate:\n" + "\n".join(sorted(stale))
 
 
 def test_legacy_admin_test_aliases_reference_canonical_harness() -> None:
     from testing_support.agent_platform_admin_harness import (
+        AgentProjectMetadataTestProvider,
         DeterministicAgentDistributionAdapter,
         FakeAgentCatalog,
-        AgentProjectMetadataTestProvider,
     )
     from tests.unit.agent_distribution import (
         test_agent_platform_admin_service as admin_tests,

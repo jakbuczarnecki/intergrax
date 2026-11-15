@@ -5,17 +5,14 @@
 from __future__ import annotations
 
 import asyncio
-from datetime import UTC, datetime
 from pathlib import Path
 
 import pytest
-
 from intergrax.agent_distribution.admin_models import (
     ActivateRuntimeRevisionRequest,
     InstallAgentRequest,
 )
 from intergrax.agent_distribution.emergency_revocation_response import (
-    AgentEmergencyRevocationRequest,
     EmergencyTrustResponseAction,
     EmergencyTrustResponseReasonCode,
 )
@@ -39,6 +36,7 @@ from intergrax.core.qualification import QualificationStatus
 from testing_support.agent_platform_admin_harness import admin_test_principal
 from testing_support.canonical_agent_lifecycle_composition import (
     default_stage15_proof_config,
+    lifecycle_install_package_contract_authority_records,
 )
 from testing_support.enterprise_agent_lifecycle_composition import (
     EnterpriseAgentLifecycleProofStack,
@@ -181,10 +179,7 @@ def test_enterprise_durable_f3_revoked_install_rejected_serving_unchanged_after_
         application_id=config.application_id,
         application_environment_id=config.environment_id,
     )
-    assert (
-        serving_after.traffic_serving_revision_id
-        == serving_before.traffic_serving_revision_id
-    )
+    assert serving_after.traffic_serving_revision_id == serving_before.traffic_serving_revision_id
     del stack
     reopened = EnterpriseAgentLifecycleProofStack.reopen(shared_root, db_path, config)
     _, answer = asyncio.run(reopened.execute_canonical())
@@ -226,6 +221,13 @@ def test_enterprise_durable_f5_emergency_rollback_rehydrates_prior_revision(
                 ),
             ),
             agent_project_metadata_ref=config.metadata_ref,
+            package_contract_authority=lifecycle_install_package_contract_authority_records(
+                config,
+                package_digest=_DIGEST_N1,
+                distribution_package_id=config.distribution_package_id,
+                artifact_store_ref="store://artifacts/inst-enterprise-f5-n1",
+                agent_project_metadata_ref=config.metadata_ref,
+            ),
         ),
         principal=principal,
     )
@@ -236,24 +238,19 @@ def test_enterprise_durable_f5_emergency_rollback_rehydrates_prior_revision(
         application_environment_id=config.environment_id,
     )
     assert serving_n1.traffic_serving_revision_id == built_n1.runtime_revision_id
+    # the production admin builder injects no revocation source (excluded wiring, T-IGX-041-A);
+    # the test supplies one through the service's own injection point
+    revoked = AgentPackageTrustRevocationState(revoked_package_digests=frozenset({_DIGEST_N1}))
+    stack.admin._package_trust_revocation_state_source = lambda: revoked  # type: ignore[method-assign]
     response = stack.admin.respond_to_emergency_revocation(
         application_id=config.application_id,
         application_environment_id=config.environment_id,
-        request=AgentEmergencyRevocationRequest(
-            application_id=config.application_id,
-            application_environment_id=config.environment_id,
-            expected_current_traffic_revision_id=built_n1.runtime_revision_id,
-            expected_serving_pointer_revision=serving_n1.serving_pointer_revision,
-            evaluated_at=datetime.now(UTC),
-            revocation_state=AgentPackageTrustRevocationState(
-                revoked_package_digests=frozenset({_DIGEST_N1}),
-            ),
-        ),
+        principal=principal,
+        expected_current_traffic_revision_id=built_n1.runtime_revision_id,
+        expected_serving_pointer_revision=serving_n1.serving_pointer_revision,
     )
     assert response.action is EmergencyTrustResponseAction.ROLLBACK
-    assert response.response_reason_code is (
-        EmergencyTrustResponseReasonCode.SAFE_ROLLBACK_COMPLETED
-    )
+    assert response.response_reason_code is (EmergencyTrustResponseReasonCode.SAFE_ROLLBACK_COMPLETED)
     serving_rolled = stack.admin.inspect_serving(
         application_id=config.application_id,
         application_environment_id=config.environment_id,
