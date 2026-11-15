@@ -22,7 +22,7 @@ Without Application Hosting:
 > **Local instance supervision ≠ cluster autoscaling.**
 
 > [!NOTE]
-> **Maturity boundary:** Core hosting contracts, engine lifecycle, instance guard, graceful shutdown, in-process supervisor, foreground signal bridge, `run_hosted_application(profile)`, and LKW live proof (APP-HOST-8C–8E) are **implemented and closed** on the canonical path. **Not** claimed as complete stable public release: dedicated hosting metrics (APP-HOST-3D), `InteractionProfile` (APP-HOST-6), hosting plugins (APP-HOST-9E), OS adapter suite and service-manager integration (APP-HOST-7), generic supervisor digest-preservation contract (APP-HOST-5D), stable API declaration (APP-HOST-9F), and cross-platform service posture remain **planned or partial**.
+> **Maturity boundary:** Core hosting contracts, engine lifecycle, instance guard, graceful shutdown, in-process supervisor, foreground signal bridge, `run_hosted_application(profile)`, and LKW live proof (APP-HOST-8C–8E) are **implemented and closed** on the canonical path. The six lifecycle metrics (APP-HOST-3D) ship as typed events on the canonical event port; their export is opt-in (see Observability wiring). **Not** claimed as complete stable public release: `InteractionProfile` (APP-HOST-6), hosting plugins (APP-HOST-9E), OS adapter suite and service-manager integration (APP-HOST-7), generic supervisor digest-preservation contract (APP-HOST-5D), stable API declaration (APP-HOST-9F), and cross-platform service posture remain **planned or partial**.
 
 **Primary audience:** Principal / Staff engineers and Tier-3 application authors wrapping a product for continuous foreground or local single-instance operation - after [`TIER3_APPLICATION_ENVIRONMENT.md`](TIER3_APPLICATION_ENVIRONMENT.md).
 
@@ -38,7 +38,7 @@ Without Application Hosting:
 | **Instance ownership** | `FileHostedApplicationInstanceGuard` - local file lock under `~/.intergrax/hosting/run` |
 | **Author facade** | `run_hosted_application(profile)` - foreground runner with signal bridge |
 | **Events** | Typed `hosting.*` envelopes via existing Observability export path - no private bus |
-| **Metrics** | Lifecycle events and diagnostics **shipped**; dedicated hosting metrics row **planned** |
+| **Metrics** | Lifecycle events, diagnostics and the six lifecycle metrics (APP-HOST-3D) **shipped**; export through the observability policy is opt-in |
 | **LKW proof** | Real engine + supervisor; READY, duplicate rejection, stop, restart, work after restart |
 | **Planned** | `InteractionProfile`, plugins, OS adapters, systemd/Windows Service/launchd registration |
 | **Maturity** | A4 · I4 · P3 · E4 - see [Current maturity](#current-maturity) |
@@ -246,6 +246,10 @@ terminal RuntimeEvent persisted
 
 **Observability wiring:** hosting events export through HOS (`ObservabilityHostedApplicationEventPublisher`) before any optional diagnostic projection. Exporter health is process-local operator state - not execution truth. See [`OBSERVABILITY.md`](OBSERVABILITY.md).
 
+**Metric export is opt-in:** `ObservabilityHostedApplicationEventPublisher` uses a default `ObservabilityExportPolicy` that is disabled, so a host started through `run_hosted_application` emits the six lifecycle metrics as events but exports none until the operator supplies an exporter and an enabled policy (`event_publisher_factory`).
+
+**Cancellation and bounded publishing (T-IGX-041-D):** cancelling the task that runs `start()`, `run_until_stopped()` or `stop()` first completes the bounded rollback or stop sequence (components, runtime, instance lease, context) and then re-raises `CancelledError`. A downstream event or metric publish is bounded by `LifecyclePolicy.default_observer_hook_timeout_seconds` and a timeout is recorded as a secondary failure (`event_publish_timed_out`); `runtime.ready()` is bounded by `default_blocking_hook_timeout_seconds`, and a timeout makes the host not ready.
+
 **HOST-DIAG-3 (shipped):** `APPLICATION_FAILED` remains canonical hosting lifecycle truth and continues through `PLATFORM_SIGNAL` observability export. When product composition supplies an explicit tenant binding (`HostedDiagnosticTenantBinding` / environment `profile_id`), a composed `HostedApplicationDiagnosticEventPublisher` may additionally project bounded failure facts into central non-execution diagnostics with subject `tenant_id` + `application_id` + `instance_id`. Product composition owns tenant binding - hosting core remains tenant-neutral. Application-instance subjects do **not** receive full execution-style reconstruction unless canonical evidence contract provides it.
 
 ### ECP boundary
@@ -311,7 +315,7 @@ run_hosted_application(profile)
 | `intergrax.hosting.os.*` adapters | APP-HOST-7 | **Planned** - no OS namespace shipped |
 | systemd / Windows Service / launchd registration | APP-HOST-7E–7F | **Planned** |
 | `HarnessApplication.hosting(...)` | APP-HOST-9B | **Planned** |
-| Dedicated hosting metrics suite | APP-HOST-3D | **Planned** |
+| Dedicated hosting metrics suite | APP-HOST-3D | **Shipped** (six metrics as `hosting.lifecycle.metric` events; hosting owns no metrics store) |
 | Generic supervisor digest-preservation contract | APP-HOST-5D | **Planned** - LKW proof verifies digests on its path |
 | Stable public API declaration | APP-HOST-9F | **Planned** |
 
@@ -324,7 +328,7 @@ run_hosted_application(profile)
 | Profile / context / hooks / components / policies | **Shipped** (APP-HOST-1) |
 | Engine lifecycle, readiness, rollback | **Shipped** (APP-HOST-2) |
 | Typed events + Observability export | **Shipped** (APP-HOST-3A–3C) |
-| Hosting metrics integration | **Planned** (APP-HOST-3D) |
+| Hosting metrics integration | **Shipped** (APP-HOST-3D); export is opt-in |
 | File-lock `InstanceGuard`, stale recovery | **Shipped** (APP-HOST-4A–4B) |
 | Control coordinator, drain/cancel/flush executor | **Shipped** (APP-HOST-4C–4D) - drain via optional `HostedApplicationActiveWorkController` |
 | Foreground signal bridge | **Shipped** (APP-HOST-4E) |

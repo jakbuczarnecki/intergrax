@@ -6,16 +6,31 @@ Solves single-host product failure where HTTP-owned ``asyncio.create_task`` work
 is lost on process restart. Reuses DocumentStore (MongoDB / in-memory / …) rather
 than inventing an application-specific queue. Belongs below Tier-3 because any
 product host can enqueue through the shared MessageBus / TaskQueue contract.
+
+Concurrency: over a ``ConditionalDocumentStore`` every state transition is a
+compare-and-set (``replace_if_match``) and an idempotency key is reserved with
+``put_if_absent``, so several queue instances (or hosts) sharing one store never claim a
+task twice and never create two tasks for one key. Over a plain ``DocumentStore`` the
+per-instance lock is the only exclusion: that mode is single-instance by contract.
+Terminal states (``SUCCEEDED``, ``FAILED``, ``DEAD_LETTERED``) are sticky.
 """
 
 from __future__ import annotations
 
 import base64
+import logging
 import threading
 import time
 import uuid
+from collections.abc import Callable
+from dataclasses import dataclass
+from typing import Literal
 
-from intergrax.integrations.contracts.document_store import DocumentRecord, DocumentStore
+from intergrax.integrations.contracts.document_store import (
+    ConditionalDocumentStore,
+    DocumentRecord,
+    DocumentStore,
+)
 from intergrax.queueing.contracts.task_queue import (
     DeadLetterReason,
     DeadLetterRecord,
@@ -35,7 +50,13 @@ DOCUMENT_STORE_TASK_QUEUE_PROVIDER = "document_store"
 _PARTITION_PREFIX = "intergrax.task_queue.v1"
 _PENDING_INDEX_PARTITION = f"{_PARTITION_PREFIX}:__pending_index__"
 _RUNNING_INDEX_PARTITION = f"{_PARTITION_PREFIX}:__running_index__"
+# Retry back-off rows wait here, keyed by availability time, so they never hide fresh work (F-D7-08).
+_DELAYED_INDEX_PARTITION = f"{_PARTITION_PREFIX}:__delayed_index__"
 _IDEMPOTENCY_PREFIX = "idempotency:"
+_CAS_ATTEMPTS = 8
+_PENDING_SCAN_PAGES = 32  # upper bound of one claim call: pages x max(4 * limit, 32) index rows
+
+logger = logging.getLogger(__name__)
 
 
 def _partition(tenant_id: str) -> str:
@@ -46,12 +67,37 @@ def _index_row(tenant_id: str, task_id: str) -> str:
     return f"{tenant_id}:{task_id}"
 
 
+def _int_field(row: dict[str, object], key: str) -> int:
+    value = row.get(key)
+    return int(value) if isinstance(value, int | float | str) and value else 0
+
+
+def _float_field(row: dict[str, object], key: str) -> float:
+    value = row.get(key)
+    return float(value) if isinstance(value, int | float | str) and value else 0.0
+
+
+def _delayed_row(available_at: float, tenant_id: str, task_id: str) -> str:
+    # Zero-padded so that the lexicographic row-key order is the availability order.
+    return f"{available_at:017.6f}|{tenant_id}:{task_id}"
+
+
+@dataclass(frozen=True)
+class _CasResult:
+    kind: Literal["missing", "rejected", "applied"]
+    previous: dict[str, object] | None = None
+    updated: dict[str, object] | None = None
+
+
 class DocumentStoreTaskQueue(TaskQueue):
     """Crash-safe local MessageBus using DocumentStore as the durable log."""
 
     def __init__(self, document_store: DocumentStore) -> None:
         self._store = document_store
         self._lock = threading.RLock()
+        self._conditional: ConditionalDocumentStore | None = (
+            document_store if isinstance(document_store, ConditionalDocumentStore) else None
+        )
 
     @property
     def document_store(self) -> DocumentStore:
@@ -59,19 +105,16 @@ class DocumentStoreTaskQueue(TaskQueue):
 
     def enqueue(self, request: TaskRequest) -> TaskHandle:
         with self._lock:
+            task_id = f"dstq_{uuid.uuid4().hex}"
             if request.idempotency_key:
-                existing_id = self._lookup_idempotency(
-                    tenant_id=request.tenant_id,
-                    idempotency_key=request.idempotency_key,
-                )
-                if existing_id:
+                existing_id = self._reserve_idempotency(request, task_id)
+                if existing_id is not None:
                     return TaskHandle(
                         task_id=existing_id,
                         provider=DOCUMENT_STORE_TASK_QUEUE_PROVIDER,
                         tenant_id=request.tenant_id,
                     )
 
-            task_id = f"dstq_{uuid.uuid4().hex}"
             now = time.time()
             payload = {
                 "task_id": task_id,
@@ -104,7 +147,7 @@ class DocumentStoreTaskQueue(TaskQueue):
                     data={"tenant_id": request.tenant_id, "task_id": task_id},
                 )
             )
-            if request.idempotency_key:
+            if request.idempotency_key and self._conditional is None:
                 self._store.put(
                     DocumentRecord(
                         partition_key=_partition(request.tenant_id),
@@ -117,6 +160,38 @@ class DocumentStoreTaskQueue(TaskQueue):
                 provider=DOCUMENT_STORE_TASK_QUEUE_PROVIDER,
                 tenant_id=request.tenant_id,
             )
+
+    def _reserve_idempotency(self, request: TaskRequest, task_id: str) -> str | None:
+        """Return the task id that already owns the key, or None when ``task_id`` now owns it.
+
+        Plain store: lookup under the per-instance lock (the row is written by ``enqueue``).
+        Conditional store: the key is reserved with ``put_if_absent`` before the task row is
+        written, and a reservation whose task row never appeared (crash in between) is repaired
+        with ``replace_if_match`` instead of being returned as a live handle.
+        """
+        key = request.idempotency_key or ""
+        existing_id = self._lookup_idempotency(tenant_id=request.tenant_id, idempotency_key=key)
+        conditional = self._conditional
+        if conditional is None:
+            return existing_id
+        reservation = DocumentRecord(
+            partition_key=_partition(request.tenant_id),
+            row_key=f"{_IDEMPOTENCY_PREFIX}{key}",
+            data={"task_id": task_id},
+        )
+        for _ in range(_CAS_ATTEMPTS):
+            if conditional.put_if_absent(reservation):
+                return None
+            current = self._store.get(reservation.partition_key, reservation.row_key)
+            if current is None:
+                continue  # released between the two calls: try to reserve again
+            owner = str(current.data.get("task_id") or "").strip()
+            if owner and self._store.get(_partition(request.tenant_id), owner) is not None:
+                return owner
+            if conditional.replace_if_match(expected=current, replacement=reservation):
+                logger.warning("repaired orphan idempotency reservation for tenant=%s", request.tenant_id)
+                return None
+        raise RuntimeError("document_store_task_queue_idempotency_contention")
 
     def get_status(self, handle: TaskHandle) -> TaskStatus:
         record = self._load(handle)
@@ -182,16 +257,19 @@ class DocumentStoreTaskQueue(TaskQueue):
 
     def cancel(self, handle: TaskHandle) -> bool:
         with self._lock:
-            record = self._load(handle)
-            if record is None:
+            tenant_id = handle.tenant_id or ""
+
+            def _cancel(row: dict[str, object]) -> dict[str, object] | None:
+                if TaskStatus(str(row["status"])) is not TaskStatus.PENDING:
+                    return None
+                row["status"] = TaskStatus.FAILED.value
+                row["error_message"] = "cancelled"
+                row["updated_at_epoch"] = time.time()
+                return row
+
+            if not tenant_id or self._cas_update(tenant_id, handle.task_id, _cancel).kind != "applied":
                 return False
-            if TaskStatus(str(record["status"])) is not TaskStatus.PENDING:
-                return False
-            record["status"] = TaskStatus.FAILED.value
-            record["error_message"] = "cancelled"
-            record["updated_at_epoch"] = time.time()
-            self._put(handle.tenant_id or "", record)
-            self._drop_indexes(handle.tenant_id or "", handle.task_id)
+            self._drop_indexes(tenant_id, handle.task_id)
             return True
 
     def claim_pending(
@@ -200,46 +278,100 @@ class DocumentStoreTaskQueue(TaskQueue):
         tenant_id: str | None = None,
         limit: int = 8,
     ) -> list[tuple[TaskHandle, TaskRequest]]:
-        """Atomically transition PENDING → RUNNING and return claimed work."""
+        """Atomically transition PENDING → RUNNING and return claimed work.
+
+        Rows whose retry back-off has not elapsed live in the delayed index and are promoted
+        when due, so they never hide fresh work. Pending-index rows written before that split
+        (back-off rows that are not due) are relocated to the delayed index on the way.
+        """
         with self._lock:
             claimed: list[tuple[TaskHandle, TaskRequest]] = []
-            pending = self._store.query(_PENDING_INDEX_PARTITION, limit=max(limit * 4, 32))
-            for doc in pending.documents:
-                tid = str(doc.data.get("tenant_id") or "").strip()
-                task_id = str(doc.data.get("task_id") or "").strip()
-                if not tid or not task_id:
-                    continue
-                if tenant_id is not None and tid != tenant_id:
-                    continue
-                row = self._load(
-                    TaskHandle(task_id=task_id, provider=DOCUMENT_STORE_TASK_QUEUE_PROVIDER, tenant_id=tid)
-                )
-                if row is None or TaskStatus(str(row["status"])) is not TaskStatus.PENDING:
-                    self._store.delete(_PENDING_INDEX_PARTITION, _index_row(tid, task_id))
-                    continue
-                if float(row.get("available_at_epoch") or 0.0) > time.time():
-                    continue  # retry back-off not elapsed; stays PENDING in the index
-                row["status"] = TaskStatus.RUNNING.value
-                row["attempts"] = int(row.get("attempts") or 0) + 1
-                row["updated_at_epoch"] = time.time()
-                self._put(tid, row)
-                self._store.delete(_PENDING_INDEX_PARTITION, _index_row(tid, task_id))
-                self._store.put(
-                    DocumentRecord(
-                        partition_key=_RUNNING_INDEX_PARTITION,
-                        row_key=_index_row(tid, task_id),
-                        data={"tenant_id": tid, "task_id": task_id},
+            self._promote_due_delayed(limit)
+            page_size = max(limit * 4, 32)
+            cursor: str | None = None
+            for _ in range(_PENDING_SCAN_PAGES):
+                pending = self._store.query(_PENDING_INDEX_PARTITION, limit=page_size, cursor=cursor)
+                for doc in pending.documents:
+                    tid = str(doc.data.get("tenant_id") or "").strip()
+                    task_id = str(doc.data.get("task_id") or "").strip()
+                    if not tid or not task_id:
+                        continue
+                    if tenant_id is not None and tid != tenant_id:
+                        continue
+                    row = self._load(
+                        TaskHandle(task_id=task_id, provider=DOCUMENT_STORE_TASK_QUEUE_PROVIDER, tenant_id=tid)
                     )
-                )
-                handle = TaskHandle(
-                    task_id=task_id,
-                    provider=DOCUMENT_STORE_TASK_QUEUE_PROVIDER,
-                    tenant_id=tid,
-                )
-                claimed.append((handle, self._request_from_row(tid, row)))
-                if len(claimed) >= limit:
+                    if row is None or TaskStatus(str(row["status"])) is not TaskStatus.PENDING:
+                        self._store.delete(_PENDING_INDEX_PARTITION, _index_row(tid, task_id))
+                        continue
+                    available_at = _float_field(row, "available_at_epoch")
+                    if available_at > time.time():
+                        self._relocate_to_delayed(tid, task_id, available_at)
+                        continue
+                    result = self._cas_update(tid, task_id, self._claim_mutation)
+                    if result.kind != "applied" or result.updated is None:
+                        continue  # another instance won the compare-and-set
+                    self._store.delete(_PENDING_INDEX_PARTITION, _index_row(tid, task_id))
+                    self._store.put(
+                        DocumentRecord(
+                            partition_key=_RUNNING_INDEX_PARTITION,
+                            row_key=_index_row(tid, task_id),
+                            data={"tenant_id": tid, "task_id": task_id},
+                        )
+                    )
+                    handle = TaskHandle(
+                        task_id=task_id,
+                        provider=DOCUMENT_STORE_TASK_QUEUE_PROVIDER,
+                        tenant_id=tid,
+                    )
+                    claimed.append((handle, self._request_from_row(tid, result.updated)))
+                    if len(claimed) >= limit:
+                        return claimed
+                cursor = pending.next_cursor
+                if not cursor:
                     break
             return claimed
+
+    @staticmethod
+    def _claim_mutation(row: dict[str, object]) -> dict[str, object] | None:
+        if TaskStatus(str(row["status"])) is not TaskStatus.PENDING:
+            return None
+        if _float_field(row, "available_at_epoch") > time.time():
+            return None
+        row["status"] = TaskStatus.RUNNING.value
+        row["attempts"] = _int_field(row, "attempts") + 1
+        row["updated_at_epoch"] = time.time()
+        return row
+
+    def _promote_due_delayed(self, limit: int) -> None:
+        upper_bound = f"{time.time():017.6f}|\U0010ffff"
+        due = self._store.query(
+            _DELAYED_INDEX_PARTITION,
+            limit=max(limit * 4, 32),
+            row_key_upper_bound=upper_bound,
+        )
+        for doc in due.documents:
+            self._store.put(
+                DocumentRecord(
+                    partition_key=_PENDING_INDEX_PARTITION,
+                    row_key=_index_row(str(doc.data.get("tenant_id")), str(doc.data.get("task_id"))),
+                    data={"tenant_id": doc.data.get("tenant_id"), "task_id": doc.data.get("task_id")},
+                )
+            )
+            self._store.delete(_DELAYED_INDEX_PARTITION, doc.row_key)
+
+    def _put_delayed(self, tenant_id: str, task_id: str, available_at: float) -> None:
+        self._store.put(
+            DocumentRecord(
+                partition_key=_DELAYED_INDEX_PARTITION,
+                row_key=_delayed_row(available_at, tenant_id, task_id),
+                data={"tenant_id": tenant_id, "task_id": task_id},
+            )
+        )
+
+    def _relocate_to_delayed(self, tenant_id: str, task_id: str, available_at: float) -> None:
+        self._put_delayed(tenant_id, task_id, available_at)
+        self._store.delete(_PENDING_INDEX_PARTITION, _index_row(tenant_id, task_id))
 
     def mark_succeeded(
         self,
@@ -247,27 +379,33 @@ class DocumentStoreTaskQueue(TaskQueue):
         *,
         output: bytes | None = None,
     ) -> None:
+        def _succeed(row: dict[str, object]) -> dict[str, object] | None:
+            if self._standing_terminal(handle, row, "mark_succeeded"):
+                return None
+            row["status"] = TaskStatus.SUCCEEDED.value
+            row["output_base64"] = base64.b64encode(output).decode("ascii") if output else None
+            row["error_message"] = None
+            row["updated_at_epoch"] = time.time()
+            return row
+
         with self._lock:
-            record = self._load(handle)
-            if record is None:
-                return
-            record["status"] = TaskStatus.SUCCEEDED.value
-            record["output_base64"] = base64.b64encode(output).decode("ascii") if output else None
-            record["error_message"] = None
-            record["updated_at_epoch"] = time.time()
-            self._put(handle.tenant_id or "", record)
-            self._drop_indexes(handle.tenant_id or "", handle.task_id)
+            tenant_id = handle.tenant_id or ""
+            if self._cas_update(tenant_id, handle.task_id, _succeed).kind == "applied":
+                self._drop_indexes(tenant_id, handle.task_id)
 
     def mark_failed(self, handle: TaskHandle, *, error_message: str) -> None:
+        def _fail(row: dict[str, object]) -> dict[str, object] | None:
+            if self._standing_terminal(handle, row, "mark_failed"):
+                return None
+            row["status"] = TaskStatus.FAILED.value
+            row["error_message"] = error_message[:500]
+            row["updated_at_epoch"] = time.time()
+            return row
+
         with self._lock:
-            record = self._load(handle)
-            if record is None:
-                return
-            record["status"] = TaskStatus.FAILED.value
-            record["error_message"] = error_message[:500]
-            record["updated_at_epoch"] = time.time()
-            self._put(handle.tenant_id or "", record)
-            self._drop_indexes(handle.tenant_id or "", handle.task_id)
+            tenant_id = handle.tenant_id or ""
+            if self._cas_update(tenant_id, handle.task_id, _fail).kind == "applied":
+                self._drop_indexes(tenant_id, handle.task_id)
 
     def mark_dead_lettered(
         self,
@@ -277,16 +415,16 @@ class DocumentStoreTaskQueue(TaskQueue):
         error_message: str,
     ) -> None:
         """Move a task to the terminal ``DEAD_LETTERED`` state with a typed reason."""
+
+        def _dead_letter(row: dict[str, object]) -> dict[str, object] | None:
+            if self._standing_terminal(handle, row, "mark_dead_lettered"):
+                return None
+            return self._dead_letter_fields(row, reason=reason, error_message=error_message)
+
         with self._lock:
-            record = self._load(handle)
-            if record is None:
-                return
-            self._dead_letter_row(
-                handle.tenant_id or "",
-                record,
-                reason=reason,
-                error_message=error_message,
-            )
+            tenant_id = handle.tenant_id or ""
+            if self._cas_update(tenant_id, handle.task_id, _dead_letter).kind == "applied":
+                self._drop_indexes(tenant_id, handle.task_id)
 
     def retry_or_dead_letter(
         self,
@@ -299,39 +437,59 @@ class DocumentStoreTaskQueue(TaskQueue):
 
         ``attempts`` counts deliveries (incremented at claim). While
         ``attempts <= max_retries`` the task returns to ``PENDING`` after the policy
-        back-off; once the budget is spent it becomes terminal ``DEAD_LETTERED``.
+        back-off; once the budget is spent it becomes terminal ``DEAD_LETTERED``. A task
+        that already reached a terminal status keeps it (the standing status is returned).
         """
-        with self._lock:
-            record = self._load(handle)
-            if record is None:
-                return TaskStatus.PENDING
-            return self._settle_against_budget(
-                handle.tenant_id or "",
-                record,
+
+        def _settle(row: dict[str, object]) -> dict[str, object] | None:
+            if self._standing_terminal(handle, row, "retry_or_dead_letter"):
+                return None
+            return self._settled_fields(
+                row,
                 error_message=error_message,
                 max_retries=retry_policy.max_retries,
                 retry_policy=retry_policy,
             )
 
-    def _settle_against_budget(
+        with self._lock:
+            tenant_id = handle.tenant_id or ""
+            result = self._cas_update(tenant_id, handle.task_id, _settle)
+            if result.kind == "missing":
+                return TaskStatus.PENDING
+            if result.kind == "rejected" and result.previous is not None:
+                return TaskStatus(str(result.previous["status"]))
+            assert result.updated is not None
+            return self._after_settle(tenant_id, result.updated)
+
+    @staticmethod
+    def _standing_terminal(handle: TaskHandle, row: dict[str, object], operation: str) -> bool:
+        """True (and logged) when the row already holds a terminal status: terminal is sticky."""
+        status = TaskStatus(str(row["status"]))
+        if is_terminal_task_status(status):
+            logger.warning(
+                "%s ignored for task %s: already terminal (%s)",
+                operation,
+                handle.task_id,
+                status.value,
+            )
+            return True
+        return False
+
+    def _settled_fields(
         self,
-        tenant_id: str,
         record: dict[str, object],
         *,
         error_message: str,
         max_retries: int,
         retry_policy: RetryPolicy | None,
-    ) -> TaskStatus:
-        attempts = int(record.get("attempts") or 0)
-        task_id = str(record["task_id"])
+    ) -> dict[str, object]:
+        attempts = _int_field(record, "attempts")
         if attempts > max_retries:
-            self._dead_letter_row(
-                tenant_id,
+            return self._dead_letter_fields(
                 record,
                 reason=DeadLetterReason.RETRY_BUDGET_EXHAUSTED,
                 error_message=error_message,
             )
-            return TaskStatus.DEAD_LETTERED
         countdown = (
             calculate_retry_countdown(
                 policy=retry_policy,
@@ -345,36 +503,78 @@ class DocumentStoreTaskQueue(TaskQueue):
         record["error_message"] = error_message[:500]
         record["updated_at_epoch"] = now
         record["available_at_epoch"] = now + countdown
-        self._put(tenant_id, record)
+        return record
+
+    def _after_settle(self, tenant_id: str, record: dict[str, object]) -> TaskStatus:
+        """Index maintenance after a settle was applied; returns the new status."""
+        task_id = str(record["task_id"])
+        status = TaskStatus(str(record["status"]))
+        if status is TaskStatus.DEAD_LETTERED:
+            self._drop_indexes(tenant_id, task_id)
+            return status
         self._store.delete(_RUNNING_INDEX_PARTITION, _index_row(tenant_id, task_id))
-        self._store.put(
-            DocumentRecord(
-                partition_key=_PENDING_INDEX_PARTITION,
-                row_key=_index_row(tenant_id, task_id),
-                data={"tenant_id": tenant_id, "task_id": task_id},
+        available_at = _float_field(record, "available_at_epoch")
+        if available_at > time.time():
+            self._put_delayed(tenant_id, task_id, available_at)
+        else:
+            self._store.put(
+                DocumentRecord(
+                    partition_key=_PENDING_INDEX_PARTITION,
+                    row_key=_index_row(tenant_id, task_id),
+                    data={"tenant_id": tenant_id, "task_id": task_id},
+                )
             )
-        )
         return TaskStatus.PENDING
 
-    def _dead_letter_row(
-        self,
-        tenant_id: str,
+    @staticmethod
+    def _dead_letter_fields(
         record: dict[str, object],
         *,
         reason: DeadLetterReason,
         error_message: str,
-    ) -> None:
+    ) -> dict[str, object]:
         message = error_message[:500]
         record["status"] = TaskStatus.DEAD_LETTERED.value
         record["error_message"] = message
         record["dead_letter"] = DeadLetterRecord(
             reason=reason,
-            attempts=int(record.get("attempts") or 0),
+            attempts=_int_field(record, "attempts"),
             last_error=message,
         ).to_dict()
         record["updated_at_epoch"] = time.time()
-        self._put(tenant_id, record)
-        self._drop_indexes(tenant_id, str(record["task_id"]))
+        return record
+
+    def _cas_update(
+        self,
+        tenant_id: str,
+        task_id: str,
+        mutate: Callable[[dict[str, object]], dict[str, object] | None],
+    ) -> _CasResult:
+        """Read-modify-write one task row; a compare-and-set on a conditional store.
+
+        ``mutate`` returns the new row, or None to reject the transition (the row is left
+        untouched). A lost compare-and-set re-reads and re-evaluates, so a rejected
+        transition is decided on the freshest row.
+        """
+        if not tenant_id:
+            return _CasResult("missing")
+        partition = _partition(tenant_id)
+        for _ in range(_CAS_ATTEMPTS):
+            record = self._store.get(partition, task_id)
+            if record is None:
+                return _CasResult("missing")
+            previous = dict(record.data)
+            updated = mutate(dict(previous))
+            if updated is None:
+                return _CasResult("rejected", previous=previous)
+            replacement = DocumentRecord(partition_key=partition, row_key=task_id, data=updated)
+            conditional = self._conditional
+            if conditional is None:
+                self._store.put(replacement)
+                return _CasResult("applied", previous=previous, updated=updated)
+            if conditional.replace_if_match(expected=record, replacement=replacement):
+                return _CasResult("applied", previous=previous, updated=updated)
+        raise RuntimeError("document_store_task_queue_cas_contention")
 
     def recover_interrupted_running(
         self,
@@ -407,13 +607,14 @@ class DocumentStoreTaskQueue(TaskQueue):
                 if row is not None and TaskStatus(str(row["status"])) is TaskStatus.RUNNING:
                     interrupted.append((handle, self._request_from_row(tid, row)))
                     if max_retries is not None:
-                        self._settle_against_budget(
-                            tid,
-                            row,
+                        settled = self._settled_fields(
+                            dict(row),
                             error_message=error_message,
                             max_retries=max_retries,
                             retry_policy=None,
                         )
+                        self._put(tid, settled)
+                        self._after_settle(tid, settled)
                     else:
                         row["status"] = TaskStatus.FAILED.value
                         row["error_message"] = error_message

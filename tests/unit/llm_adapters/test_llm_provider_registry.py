@@ -4,16 +4,15 @@
 from __future__ import annotations
 
 import sys
-from pathlib import Path
-from typing import Any, Callable, Dict, Iterator, Optional, Sequence
+from collections.abc import Callable, Iterator, Sequence
+from typing import Any
 
 import pytest
-
 from intergrax.llm.messages import ChatMessage
 from intergrax.llm_adapters._shared.adapter_response_builders import build_adapter_response
+from intergrax.llm_adapters.base.base_llm_adapter import BaseLLMAdapter
 from intergrax.llm_adapters.contracts.adapter_response import LLMAdapterResponse
 from intergrax.llm_adapters.contracts.llm_adapter import LLMAdapter
-from intergrax.llm_adapters.base.base_llm_adapter import BaseLLMAdapter
 from intergrax.llm_adapters.contracts.llm_provider import LLMProvider
 from intergrax.llm_adapters.llm_provider_registry import (
     LLMAdapterDependencyError,
@@ -30,7 +29,6 @@ from tests.unit.llm_adapters.registry_state_test_support import (
     restore_registry_state,
     snapshot_registry_state,
 )
-
 
 pytestmark = pytest.mark.unit
 
@@ -54,9 +52,9 @@ class _TestAdapter(BaseLLMAdapter):
         self,
         messages: Sequence[ChatMessage],
         *,
-        temperature: Optional[float] = None,
-        max_tokens: Optional[int] = None,
-        run_id: Optional[str] = None,
+        temperature: float | None = None,
+        max_tokens: int | None = None,
+        run_id: str | None = None,
     ) -> LLMAdapterResponse:
         return build_adapter_response(content="ok")
 
@@ -70,24 +68,24 @@ def _restore_registry_state() -> Iterator[RegistryStateSnapshot]:
         restore_registry_state(snapshot)
 
 
-def test_normalize_provider_accepts_enum_values(_restore_registry_state: Dict[str, Any]) -> None:
+def test_normalize_provider_accepts_enum_values(_restore_registry_state: dict[str, Any]) -> None:
     key = LLMAdapterRegistry._normalize_provider(LLMProvider.OPENAI)
     assert key == LLMProvider.OPENAI.value
 
 
-def test_normalize_provider_strips_and_lowercases(_restore_registry_state: Dict[str, Any]) -> None:
+def test_normalize_provider_strips_and_lowercases(_restore_registry_state: dict[str, Any]) -> None:
     key = LLMAdapterRegistry._normalize_provider("  OpEnAI  ")
     assert key == "openai"
 
 
-def test_normalize_provider_rejects_empty(_restore_registry_state: Dict[str, Any]) -> None:
+def test_normalize_provider_rejects_empty(_restore_registry_state: dict[str, Any]) -> None:
     with pytest.raises(ValueError) as exc:
         LLMAdapterRegistry._normalize_provider("   ")
 
     assert "provider must not be empty" in str(exc.value)
 
 
-def test_register_overwrites_existing_factory(_restore_registry_state: Dict[str, Any]) -> None:
+def test_register_overwrites_existing_factory(_restore_registry_state: dict[str, Any]) -> None:
     provider = "unit-test-provider"
 
     def factory_v1(**kwargs: Any) -> LLMAdapter:
@@ -112,7 +110,7 @@ def test_register_overwrites_existing_factory(_restore_registry_state: Dict[str,
     assert out2.kwargs["version"] == "v2"
 
 
-def test_create_raises_for_unregistered_provider(_restore_registry_state: Dict[str, Any]) -> None:
+def test_create_raises_for_unregistered_provider(_restore_registry_state: dict[str, Any]) -> None:
     LLMAdapterRegistry.reset_for_testing()
     with pytest.raises(ValueError) as exc:
         LLMAdapterRegistry.create("missing-provider")
@@ -122,7 +120,7 @@ def test_create_raises_for_unregistered_provider(_restore_registry_state: Dict[s
     assert "missing-provider" in msg
 
 
-def test_create_forwards_kwargs_to_factory(_restore_registry_state: Dict[str, Any]) -> None:
+def test_create_forwards_kwargs_to_factory(_restore_registry_state: dict[str, Any]) -> None:
     provider = "unit-test-kwargs"
 
     def factory(**kwargs: Any) -> LLMAdapter:
@@ -135,7 +133,7 @@ def test_create_forwards_kwargs_to_factory(_restore_registry_state: Dict[str, An
     assert out.kwargs == {"x": 1, "y": "a"}
 
 
-def test_create_rejects_non_adapter_factory(_restore_registry_state: Dict[str, Any]) -> None:
+def test_create_rejects_non_adapter_factory(_restore_registry_state: dict[str, Any]) -> None:
     provider = "invalid-return-type"
 
     def bad_factory(**kwargs: object) -> object:
@@ -147,7 +145,7 @@ def test_create_rejects_non_adapter_factory(_restore_registry_state: Dict[str, A
 
 
 def test_ollama_default_resolves_to_native_adapter(
-    _restore_registry_state: Dict[str, Any],
+    _restore_registry_state: dict[str, Any],
 ) -> None:
     adapter = LLMAdapterRegistry.create(
         LLMProvider.OLLAMA,
@@ -160,7 +158,7 @@ def test_ollama_default_resolves_to_native_adapter(
     assert not isinstance(concrete, LangChainOllamaAdapter)
 
 
-def test_normalize_provider_rejects_non_string_and_non_enum(_restore_registry_state: Dict[str, Any]) -> None:
+def test_normalize_provider_rejects_non_string_and_non_enum(_restore_registry_state: dict[str, Any]) -> None:
     with pytest.raises((TypeError, ValueError)):
         LLMAdapterRegistry._normalize_provider(None)  # type: ignore[arg-type]
 
@@ -172,12 +170,11 @@ def test_normalize_provider_rejects_non_string_and_non_enum(_restore_registry_st
 
 
 def test_missing_optional_llm_dependency_is_controlled(
-    _restore_registry_state: Dict[str, _Factory],
+    _restore_registry_state: dict[str, _Factory],
 ) -> None:
     import importlib.abc
     import importlib.machinery
-    import sys
-    from typing import Sequence as _Sequence
+    from collections.abc import Sequence as _Sequence
 
     class _AnthropicBlocker(importlib.abc.MetaPathFinder):
         def find_spec(
@@ -197,11 +194,16 @@ def test_missing_optional_llm_dependency_is_controlled(
             name = getattr(module, "__name__", "anthropic")
             raise ModuleNotFoundError(f"No module named '{name}'", name=name)
 
-    removed = {
-        name: sys.modules.pop(name)
-        for name in list(sys.modules)
-        if name == "anthropic" or name.startswith("anthropic.")
-    }
+    from tests.unit.llm_adapters.registry_state_test_support import evict_provider_adapter_modules
+
+    removed: dict[str, object] = evict_provider_adapter_modules()
+    removed.update(
+        {
+            name: sys.modules.pop(name)
+            for name in list(sys.modules)
+            if name == "anthropic" or name.startswith("anthropic.")
+        }
+    )
     blocker = _AnthropicBlocker()
     sys.meta_path.insert(0, blocker)
     try:
@@ -216,22 +218,20 @@ def test_missing_optional_llm_dependency_is_controlled(
 
 
 def test_register_from_spec_delegates_to_same_storage(
-    _restore_registry_state: Dict[str, Any],
+    _restore_registry_state: dict[str, Any],
 ) -> None:
     provider = "typed-spec-provider"
 
     def factory(**kwargs: object) -> LLMAdapter:
         return _TestAdapter(**kwargs)
 
-    LLMAdapterRegistry.register_from_spec(
-        LLMAdapterRegistrationSpec(provider_id=provider, factory=factory)
-    )
+    LLMAdapterRegistry.register_from_spec(LLMAdapterRegistrationSpec(provider_id=provider, factory=factory))
     out = LLMAdapterRegistry.create(provider)
     assert isinstance(out, _TestAdapter)
 
 
 def test_ensure_builtin_registrations_installs_ollama_and_groq(
-    _restore_registry_state: Dict[str, Any],
+    _restore_registry_state: dict[str, Any],
 ) -> None:
     LLMAdapterRegistry.reset_for_testing()
     LLMAdapterRegistry.ensure_builtin_registrations_installed()
@@ -240,7 +240,7 @@ def test_ensure_builtin_registrations_installs_ollama_and_groq(
     assert LLMProvider.GROQ.value in providers
 
 
-def test_repeated_builtin_bootstrap_is_idempotent(_restore_registry_state: Dict[str, Any]) -> None:
+def test_repeated_builtin_bootstrap_is_idempotent(_restore_registry_state: dict[str, Any]) -> None:
     LLMAdapterRegistry.reset_for_testing()
     LLMAdapterRegistry.ensure_builtin_registrations_installed()
     first = snapshot_registry_state()
@@ -249,7 +249,7 @@ def test_repeated_builtin_bootstrap_is_idempotent(_restore_registry_state: Dict[
 
 
 def test_registry_reset_restores_builtins_on_next_create(
-    _restore_registry_state: Dict[str, Any],
+    _restore_registry_state: dict[str, Any],
 ) -> None:
     LLMAdapterRegistry.reset_for_testing()
     LLMAdapterRegistry.ensure_builtin_registrations_installed()
@@ -260,7 +260,7 @@ def test_registry_reset_restores_builtins_on_next_create(
 
 
 def test_custom_provider_retained_after_builtin_bootstrap(
-    _restore_registry_state: Dict[str, Any],
+    _restore_registry_state: dict[str, Any],
 ) -> None:
     def custom_factory(**kwargs: object) -> LLMAdapter:
         return _TestAdapter(**kwargs)
@@ -273,7 +273,7 @@ def test_custom_provider_retained_after_builtin_bootstrap(
 
 
 def test_explicit_override_not_silently_replaced_by_bootstrap(
-    _restore_registry_state: Dict[str, Any],
+    _restore_registry_state: dict[str, Any],
 ) -> None:
     provider = "openai"
 

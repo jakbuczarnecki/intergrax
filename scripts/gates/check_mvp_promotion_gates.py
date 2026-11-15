@@ -11,7 +11,9 @@ only ever *deny*. It never authorizes a promotion by itself:
 - G1 (evaluation baseline) is an advisory input: it must be present, but it is never
   sufficient and it never contributes to authorization;
 - authorization is granted only when a governance ticket under ``governance/tickets/``
-  carries an operator ``Approved:`` line, passed via ``--governance-ticket``.
+  carries an operator ``Approved:`` line inside its ``## Approved`` section (and, for a
+  delegated approval, a ``Delegation:`` line inside the same section), passed via
+  ``--governance-ticket``. Which ticket may authorize which promotion is not decided here.
 """
 
 from __future__ import annotations
@@ -27,6 +29,8 @@ from pathlib import Path
 REPO_ROOT = Path(__file__).resolve().parents[2]
 
 _APPROVED_LINE = re.compile(r"^Approved:\s*(?P<value>\S.*)$", re.MULTILINE)
+_DELEGATION_LINE = re.compile(r"^Delegation:\s*\S", re.MULTILINE)
+_APPROVED_SECTION = re.compile(r"^## Approved[ \t]*\n(?P<body>.*?)(?=^## |\Z)", re.MULTILINE | re.DOTALL)
 _PLACEHOLDER_VALUES = ("pending", "none", "tbd", "n/a")
 
 
@@ -64,10 +68,10 @@ def _check_modules(required: dict[str, tuple[str, ...]], label: str, root: Path)
 
 def gate_g0_runnable(root: Path = REPO_ROOT) -> tuple[bool, str]:
     required: dict[str, tuple[str, ...]] = {
-        "intergrax/scaffold/cli.py": (),
-        "intergrax/cli/doctor.py": (),
-        "intergrax/cli/run.py": (),
-        "applications/lab_application/host/factory.py": (),
+        "intergrax/scaffold/cli.py": ("main", "build_parser"),
+        "intergrax/cli/doctor.py": ("run_doctor",),
+        "intergrax/cli/run.py": ("run_command",),
+        "applications/lab_application/host/factory.py": ("create_lab_application",),
     }
     ok, detail = _check_modules(required, "runnable artifacts", root)
     return (True, "scaffold + lab host present") if ok else (False, detail)
@@ -86,10 +90,10 @@ def gate_g1_eval_baseline(root: Path = REPO_ROOT) -> tuple[bool, str]:
 
 def gate_g2_policy(root: Path = REPO_ROOT) -> tuple[bool, str]:
     required: dict[str, tuple[str, ...]] = {
-        "intergrax/contracts/resilience_policy.py": (),
-        "intergrax/contracts/autonomy_level.py": (),
-        "intergrax/runtime/policy/autonomy_resolver.py": (),
-        "scripts/maintenance/check_harness_resilience_policy.py": (),
+        "intergrax/contracts/resilience_policy.py": ("ResiliencePolicy", "default_resilience_policy"),
+        "intergrax/contracts/autonomy_level.py": ("AutonomyLevel",),
+        "intergrax/runtime/policy/autonomy_resolver.py": ("resolve_effective_autonomy", "tool_allowed_for_autonomy"),
+        "scripts/maintenance/check_harness_resilience_policy.py": ("main",),
     }
     ok, detail = _check_modules(required, "policy modules", root)
     return (True, "resilience + autonomy policy present") if ok else (False, detail)
@@ -103,15 +107,19 @@ def governance_authorization(ticket: str | None, root: Path = REPO_ROOT) -> tupl
     tickets_dir = (root / "governance" / "tickets").resolve()
     if tickets_dir not in path.parents or not path.is_file():
         return False, "governance ticket must be an existing file under governance/tickets/"
-    text = path.read_text(encoding="utf-8")
-    match = _APPROVED_LINE.search(text)
+    text = path.read_text(encoding="utf-8").replace("\r\n", "\n")
+    section = _APPROVED_SECTION.search(text)
+    if section is None:
+        return False, "governance ticket has no '## Approved' section"
+    body = section.group("body")
+    match = _APPROVED_LINE.search(body)
     if match is None:
-        return False, "governance ticket has no Approved: line"
+        return False, "governance ticket has no Approved: line in its '## Approved' section"
     value = match.group("value").strip()
     if value.lower().startswith(_PLACEHOLDER_VALUES):
         return False, "governance ticket Approved: line is a placeholder"
-    if value.startswith("operator-delegate") and "\nDelegation:" not in text:
-        return False, "delegated approval has no Delegation: line"
+    if value.startswith("operator-delegate") and _DELEGATION_LINE.search(body) is None:
+        return False, "delegated approval has no Delegation: line in the '## Approved' section"
     return True, f"approved by governance ticket {ticket}"
 
 
