@@ -838,6 +838,22 @@ BATCHES: Final[tuple[Batch, ...]] = (
         "tests/qualification/tenant_x green at the final head; negative tests prove an unclassified, swapped or unreasoned carrier still fails; PHASE 2 runs only after the D1, D2 and D6 repair PRs are merged",
     ),
     Batch(
+        "B-P7-F10",
+        "ALL",
+        "B6-F10 C4 classifier entries for the three paths the classifier reports as UNKNOWN (intergrax/experiments/workflow.py, intergrax/integrations/credentials/secrets_store_resolver.py, the incident investigator fixture agent): exact-path entries added, default classification unchanged, preparatory to the final EBH-7 re-pin",
+        "T-IGX-041-K",
+        "W13",
+        (
+            "tests/qualification/ebh_7/_ebh7_f10_canonical_inputs.py",
+            "tests/qualification/ebh_7/test_ebh_7_b6_f10_c4_041k_entries_gates.py",
+        ),
+        "—",
+        ("B-P6-H",),
+        GATE_FREE,
+        "IA-GLOBAL (P8)",
+        "tests/qualification/ebh_7/test_ebh_7_b6_f10_c4_041k_entries_gates.py and test_ebh_7_b6_f10_c1_c4_closure_gates.py green; certify_f10 C4 has 0 UNKNOWN paths over the accepted-baseline range; merges before the final re-pin pin P",
+    ),
+    Batch(
         "B-P7-RP",
         "ALL",
         "Final EBH-7 re-pin after all P7 repairs: fresh L3 replay at the development tip P (W1' prep with allowlisted paths only, one workflow dispatch, W2' record)",
@@ -859,6 +875,24 @@ BATCHES: Final[tuple[Batch, ...]] = (
         GATE_FREE,
         "IA-GLOBAL (P8)",
         "tests/qualification/ebh_7 green at the new pin; replay run id and artifact digests recorded; not a B6 PASS",
+    ),
+    Batch(
+        "B-P7-CX",
+        "ALL",
+        "Re-pin of the COMPAT-X counters (debt item Z-D1 of T-IGX-036-Z) at the last product change: pinned counters, id-exact evidence fixture and four accepted shim-delta paths classified as heuristic hits; tests and fixtures only",
+        "T-IGX-041-L",
+        "W14b",
+        (
+            "tests/qualification/compat_x/_compat_x_semantic_identity_reconciliation.py",
+            "tests/qualification/compat_x/test_compat_x_pdc_x_p7_repin_delta.py",
+            "tests/fixtures/compat_x/accepted_shim_delta_replay_x_05549f9.json",
+            "tests/fixtures/compat_x/repin_pdc_x_p7_delta.json",
+        ),
+        "—",
+        ("B-P7-D1", "B-P7-D2", "B-P7-D3", "B-P7-D4", "B-P7-D5", "B-P7-D6", "B-P7-D7", "B-P7-D8", "B-P7-TX"),
+        GATE_FREE,
+        "IA-GLOBAL (P8)",
+        "tests/qualification/compat_x green at the re-pinned counters; the ten red tests of the plan pass; new negative tests (hidden removal, extra candidate, balanced substitution, unexpected shim path) fail without their guard",
     ),
     Batch(
         "B-P8-R2",
@@ -1191,6 +1225,10 @@ def render_dag() -> str:
         "W14": (
             "after B-P7-D5 (W13) is merged and the signature of T-IGX-041-A",
             "after the signature of T-IGX-041-A (DELEGATION-PDC-P7-REPAIR merge gate; W14 because B-P7-D1 and B-P7-D5 both write under intergrax/applications/_shared/ and one wave may hold only one such batch)",
+        ),
+        "W14b": (
+            "after every B-P7 repair batch (W13, W14) is merged and the signature of T-IGX-041-L",
+            "before the EBH-7 pin P is taken (tests/qualification/compat_x and tests/fixtures are not on the executable-identity allowlist); test-only pull request",
         ),
         "W15": (
             "after every B-P7 repair batch (W13, W14) and the signature of T-IGX-041-J",
