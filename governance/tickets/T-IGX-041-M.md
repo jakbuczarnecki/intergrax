@@ -6,7 +6,7 @@ Repair ticket for the product defects found by the independent global auditor (I
 
 ## Plan digest
 
-Plan digest: 809b58e0f45f6feff04f69a118d8b9635480ac335ffd9dbcc0ae5f4e2d5970e9
+Plan digest: 6c6934a603f44d9772558e7f33f323a9132f75f5f88085e780cff81b51f34298
 
 Canonical plan: [`governance/tickets/plans/PLAN_T-IGX-041-M.md`](plans/PLAN_T-IGX-041-M.md).
 
