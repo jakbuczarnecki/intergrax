@@ -545,6 +545,38 @@ BATCHES: Final[tuple[Batch, ...]] = (
         "IA-GLOBAL (P8)",
         "tests/qualification/pdc_x/p6_ecapfix/ and p6_impact/; xd_12 and p6_impact coverage tests green on development and on a tree that contains the MCP-RC change",
     ),
+    Batch(
+        "B-P7-D8",
+        "D8",
+        "P7 repair of the independent D8 audit (loop 1): RuntimeContext.create_artifact tenant, producer and lineage (F-D8-07), version-safe and audited retention sweep (F-D8-05), expiry enforced at read (F-D8-06), stored workspace required on read and lifecycle operations (F-D8-04 partial), raw storage tools refuse the Collaborative Work content key space (F-D8-03 bounded), governed port honours a returned decision and audits backend failures (F-D8-08, F-D8-12), documentation of library-only parts (F-D8-17); F-D8-01 and F-D8-02 are declared exceptions",
+        "T-IGX-041-H",
+        "W13",
+        (
+            "intergrax/runtime/execution/agent_runtime_context.py",
+            "intergrax/runtime/nexus/artifacts/store_base.py",
+            "intergrax/runtime/nexus/artifacts/sqlite_artifact_store.py",
+            "intergrax/runtime/nexus/artifacts/in_memory_artifact_store.py",
+            "intergrax/runtime/nexus/artifacts/retention.py",
+            "intergrax/runtime/nexus/artifacts/sources.py",
+            "intergrax/runtime/nexus/artifacts/governed_access.py",
+            "intergrax/tools/providers/storage/service.py",
+            "tests/qualification/pdc_x/d8_repair/",
+            "tests/qualification/pdc_x/d8/test_d8_governed_port.py",
+            "tests/qualification/pdc_x/d8/test_xd09_spill_and_context_reference.py",
+            "tests/qualification/pdc_x/d8/test_xd10_tenant_and_ttl.py",
+            "tests/qualification/pdc_x/xd/test_xd_02_agent_context.py",
+            "tests/qualification/pdc_x/xd/test_xd_09_artifacts_context.py",
+            "tests/qualification/pdc_x/xd/test_xd_10_artifacts_security.py",
+            "tests/qualification/pdc_x/xd/test_xd_11_observability.py",
+            "docs/project/capabilities/architecture/ARTIFACT_LIFECYCLE.md",
+            "docs/project/capabilities/plan/ARTIFACT_LIFECYCLE.md",
+        ),
+        "ADR-PDC-08",
+        ("B-P6-J",),
+        GATE_PRODUCT,
+        "IA-D8 (P7 re-audit)",
+        "tests/qualification/pdc_x/d8_repair/ plus the cited d8, xd_02, xd_09, xd_10, xd_11 and storage tool suites green; every in-scope finding pinned red-then-green with negative tests",
+    ),
 )
 
 # Requirement -> batch overrides where the corrective-task text alone is ambiguous.
@@ -844,6 +876,10 @@ def render_dag() -> str:
         "W12": (
             "after B-P6-I and the signature of T-IGX-040-A",
             "after the signature of T-IGX-040-A (one-time exception OD-MCP-RC-05; both repairs in one PR, then product paths freeze again)",
+        ),
+        "W13": (
+            "after B-P6-J and the signature of T-IGX-041-H",
+            "under DELEGATION-PDC-P7-REPAIR (option B repair of the P7 audit findings); product merge gate OD-PDC-SEQ-01",
         ),
     }
     for wave, bids in waves.items():
