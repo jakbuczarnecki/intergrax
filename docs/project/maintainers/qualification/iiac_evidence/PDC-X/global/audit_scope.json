@@ -1,0 +1,68 @@
+{
+  "stage_id": "PDC-X/global",
+  "session_designation": "PDC-P8-IA-GLOBAL-INDEPENDENT-AUDIT-2026-11-15",
+  "certification_profile": "iiac-v1",
+  "policy_version": "IIAC-2026-11-05.1",
+  "campaign": "PDC-X P8 independent global audit (PDC-P8-01, -02, -03)",
+  "ticket_anchors": [
+    "governance/tickets/T-IGX-036-A.md"
+  ],
+  "audited_implementation_sha": "cba32d2479cd134911d2fdf4fb1db4587c8a94d8",
+  "final_audit_sha": "cba32d2479cd134911d2fdf4fb1db4587c8a94d8",
+  "repair_pull_requests": {
+    "D1": 574,
+    "D2": 575,
+    "D3": 569,
+    "D4": 571,
+    "D5": 568,
+    "D6": 573,
+    "D7": 570,
+    "D8": 572,
+    "TENANT-X": 576
+  },
+  "plans_and_tickets": [
+    "governance/tickets/plans/PLAN_T-IGX-041-A.md",
+    "governance/tickets/plans/PLAN_T-IGX-041-B.md",
+    "governance/tickets/plans/PLAN_T-IGX-041-C.md",
+    "governance/tickets/plans/PLAN_T-IGX-041-D.md",
+    "governance/tickets/plans/PLAN_T-IGX-041-E.md",
+    "governance/tickets/plans/PLAN_T-IGX-041-F.md",
+    "governance/tickets/plans/PLAN_T-IGX-041-G.md",
+    "governance/tickets/plans/PLAN_T-IGX-041-H.md",
+    "governance/tickets/plans/PLAN_T-IGX-041-I.md"
+  ],
+  "p7_audit_reports": [
+    "docs/project/maintainers/qualification/platform_domain_completeness/PDC_P7_D1_AUDIT_REPORT.md",
+    "docs/project/maintainers/qualification/platform_domain_completeness/PDC_P7_D2_AUDIT_REPORT.md",
+    "docs/project/maintainers/qualification/platform_domain_completeness/PDC_P7_D3_AUDIT_REPORT.md",
+    "docs/project/maintainers/qualification/platform_domain_completeness/PDC_P7_D4_AUDIT_REPORT.md",
+    "docs/project/maintainers/qualification/platform_domain_completeness/PDC_P7_D5_AUDIT_REPORT.md",
+    "docs/project/maintainers/qualification/platform_domain_completeness/PDC_P7_D6_AUDIT_REPORT.md",
+    "docs/project/maintainers/qualification/platform_domain_completeness/PDC_P7_D7_AUDIT_REPORT.md",
+    "docs/project/maintainers/qualification/platform_domain_completeness/PDC_P7_D8_AUDIT_REPORT.md"
+  ],
+  "checks": [
+    "P8-01 MCP closure",
+    "P8-02 checks 1-15",
+    "P8-03 ECAP FULL and bounded qualification runs",
+    "re-verification of repaired HIGH/MEDIUM findings",
+    "review of declared exceptions"
+  ],
+  "test_paths": [
+    "tests/qualification/pdc_x",
+    "tests/qualification/tenant_x",
+    "tests/qualification/dup_x",
+    "tests/qualification/ebh_7",
+    "tests/qualification/roadmap_replay_x",
+    "tests/qualification/dist_scale_x",
+    "tests/qualification/compat_x",
+    "plan contracts of T-IGX-041-A..H"
+  ],
+  "not_in_scope": [
+    "fixes",
+    "certification",
+    "FRZ promotion",
+    "freeze-SHA audit",
+    "VBN acceptance"
+  ]
+}
