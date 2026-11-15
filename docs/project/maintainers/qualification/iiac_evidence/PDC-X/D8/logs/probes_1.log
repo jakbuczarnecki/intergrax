@@ -1,0 +1,15 @@
+[P1_create_artifact_gateway] -> EXC ImportError: cannot import name 'AgentRuntimeContext' from 'intergrax.runtime.execution.agent_runtime_context' (D:\Projekty\intergrax\.claude\worktrees\pdc-x-ia-d8-04b4f7\intergrax\runtime\execution\agent_runtime_context.py)
+[P2_digest_trailing_newline] -> {'plain': True, 'with_nl': True}
+[P3_retention_class_downgrade] -> {'audit_evidence': 'audit_evidence', 'AUDIT_EVIDENCE': 'default', 'audit-evidence': 'default', 'evidence': 'default'}
+[P4_storage_tools_bypass] -> {'get_found': True, 'body_len': 15, 'exists': True, 'after_delete_in_store': False}
+[P5_read_after_expiry_unswept] -> expired 30d ago, read succeeded: 7 bytes
+[P6_workspace_scope_optional] -> {'no_workspace_in_request': 'allowed ws=ws-1', 'wrong_workspace': 'denied workspace_mismatch'}
+[P7_sweep_starvation_by_protected] -> {'first': (5, (), 5), 'second_deleted': (), 'plain_still_there': True}
+[P8_poisoned_row_aborts_sweep] -> sweep aborted ArtifactDigestMismatchError; a-good still stored=True
+[P9_lineage_cross_tenant_parent] -> ['tenant-OTHER/p', 'tenant-A/c']
+[P10_unhandled_error_not_audited] -> {'events_total': 1, 'last_capability': 'artifact.read', 'outcome_event_for_failure': False}
+[P11_evidence_via_late_version] -> refused: ArtifactDeletionRefused
+[P12_nonuniq_tenant_empty] -> empty tenant_id artifact accepted by store
+[P13_legal_hold_holder_overwritten_sqlite] -> [('other-agent', 'x')]
+[P14_inmemory_hold_metadata_dropped] -> in-memory holds attr: {('tenant-a', 'art-1')}
+DONE
