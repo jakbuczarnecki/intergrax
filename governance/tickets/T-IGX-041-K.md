@@ -41,6 +41,14 @@ uv run python scripts/qualification/pdc_x_wbs.py --check
 - Any default change of the classifier, directory entries for the three paths, a change of a class definition or regression map, the COMPAT-X counters (T-IGX-041-L), the re-pin (T-IGX-041-J), the IIAC audit, activation and rebind, FRZ promotion, OD signatures, certification.
 - Everything under `intergrax/`, `agents/`, `applications/`, `platform_proofs/`, `scripts/governance/`, `.github/`, `pyproject.toml`, `uv.lock`, and every existing test (byte-identical).
 
+## Implementation checkpoint
+
+- Tests first (`98040d3c3`): `tests/qualification/ebh_7/test_ebh_7_b6_f10_c4_041k_entries_gates.py`, 14 cases. On the unchanged classifier 8 failed (the three positives, the three exact-path checks, `each_entry_occurs_exactly_once`, and the rule-removal negative) and 6 passed (the four sibling negatives, the default-is-unknown check and the regression binding): log `.tmp/proof/pdc-x-041k/red.log` (not committed).
+- Entries: three exact-path `C4Rule` appended at the end of `C4_RULES`; nothing else in `_ebh7_f10_canonical_inputs.py` changed (19 inserted lines).
+- Test contract: the new file plus `test_ebh_7_b6_f10_c1_c4_closure_gates.py` in one pytest command: 36 passed (`.tmp/proof/pdc-x-041k/green.log`); ruff check and format clean, pyright 0 errors; `pdc_x_wbs.py --check` OK.
+- Probe on the implemented tree after merging `origin/development` (`.tmp/proof/pdc-x-041k/probe_after.log`): `5a3a05347..HEAD` 3402 paths, 0 UNKNOWN, C4 PASS; `dc18e36d9..HEAD` 3188 paths, 0 UNKNOWN, C4 PASS. `git diff --name-only 5a3a05347 146e7acf1` lists none of the three paths.
+- No deviation from the signed plan.
+
 ## Lifecycle state
 
 plan_approved
