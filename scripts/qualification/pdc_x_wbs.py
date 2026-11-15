@@ -837,6 +837,22 @@ BATCHES: Final[tuple[Batch, ...]] = (
         "IA-GLOBAL (P8)",
         "tests/qualification/tenant_x green at the final head; negative tests prove an unclassified, swapped or unreasoned carrier still fails; PHASE 2 runs only after the D1, D2 and D6 repair PRs are merged",
     ),
+    Batch(
+        "B-P7-F10",
+        "ALL",
+        "B6-F10 C4 classifier entries for the three paths the classifier reports as UNKNOWN (intergrax/experiments/workflow.py, intergrax/integrations/credentials/secrets_store_resolver.py, the incident investigator fixture agent): exact-path entries added, default classification unchanged, preparatory to the final EBH-7 re-pin",
+        "T-IGX-041-K",
+        "W13",
+        (
+            "tests/qualification/ebh_7/_ebh7_f10_canonical_inputs.py",
+            "tests/qualification/ebh_7/test_ebh_7_b6_f10_c4_041k_entries_gates.py",
+        ),
+        "—",
+        ("B-P6-H",),
+        GATE_FREE,
+        "IA-GLOBAL (P8)",
+        "tests/qualification/ebh_7/test_ebh_7_b6_f10_c4_041k_entries_gates.py and test_ebh_7_b6_f10_c1_c4_closure_gates.py green; certify_f10 C4 has 0 UNKNOWN paths over the accepted-baseline range; merges before the final re-pin pin P",
+    ),
 )
 
 # Requirement -> batch overrides where the corrective-task text alone is ambiguous.
