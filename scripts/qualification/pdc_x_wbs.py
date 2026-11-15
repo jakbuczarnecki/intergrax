@@ -548,11 +548,12 @@ BATCHES: Final[tuple[Batch, ...]] = (
     Batch(
         "B-P7-D1",
         "D1",
-        "D1 repair after the P7 independent audit (IA-D1): activation and rollback re-check revocation, authorized emergency revocation entry point, application-ownership guard on install/upgrade, no leftover VERIFIED upgrade candidate, 18 red D1 suites root-caused",
+        "D1 repair after the P7 independent audit (IA-D1): activation, rollback and the deploy/activate pipeline re-check revocation, authorized emergency revocation entry point, application-ownership guard on install/upgrade, no leftover VERIFIED upgrade candidate, 18 red D1 suites root-caused",
         "T-IGX-041-A",
         "W13",
         (
             "intergrax/agent_distribution/admin_service.py",
+            "intergrax/applications/_shared/deploy_activate_pipeline.py",
             "intergrax/applications/_shared/durable_registry_projection_input_store.py",
             "tests/qualification/pdc_x/d1_repair/",
             "tests/qualification/pdc_x/d1/test_d1_adversarial_lifecycle.py",
