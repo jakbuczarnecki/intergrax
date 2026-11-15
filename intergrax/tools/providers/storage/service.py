@@ -27,6 +27,31 @@ STORAGE_DELETE_TOOL_ID = "storage.delete"
 STORAGE_EXISTS_TOOL_ID = "storage.exists"
 
 
+#: Namespace of Collaborative Work artifact content (every key version). It is reachable only through
+#: the governed artifact port; the raw tools below refuse it (T-IGX-041-H, F-D8-03). A drift gate keeps
+#: it equal to the prefix of ``collaborative_work.content_storage``.
+GOVERNED_CONTENT_KEY_PREFIX = "intergrax/collaborative-work/artifact-content/"
+
+
+class GovernedStorageKeyError(PermissionError):
+    """The key addresses artifact content that is reachable only through the governed artifact port."""
+
+
+def _refuse_governed_content_key(key: str) -> None:
+    segments: list[str] = []
+    for part in key.strip().replace("\\", "/").split("/"):
+        if part in ("", "."):
+            continue
+        if part == "..":
+            raise GovernedStorageKeyError("storage keys with '..' segments are refused")
+        segments.append(part)
+    joined = "/".join(segments)
+    if joined == GOVERNED_CONTENT_KEY_PREFIX.rstrip("/") or joined.startswith(GOVERNED_CONTENT_KEY_PREFIX):
+        raise GovernedStorageKeyError(
+            "this key space holds governed artifact content: use the governed artifact read port"
+        )
+
+
 def _require_storage(ctx: ToolWiringContext) -> ObjectStorage:
     storage = ctx.object_storage
     if storage is None:
@@ -35,6 +60,7 @@ def _require_storage(ctx: ToolWiringContext) -> ObjectStorage:
 
 
 def storage_get(ctx: ToolWiringContext, params: StorageGetInput) -> StorageGetOutput:
+    _refuse_governed_content_key(params.key)
     stored = _require_storage(ctx).get(params.key.strip())
     if stored is None:
         return StorageGetOutput(key=params.key.strip(), found=False)
@@ -48,6 +74,7 @@ def storage_get(ctx: ToolWiringContext, params: StorageGetInput) -> StorageGetOu
 
 
 def storage_put(ctx: ToolWiringContext, params: StoragePutInput) -> StoragePutOutput:
+    _refuse_governed_content_key(params.key)
     body = base64.b64decode(params.body_base64)
     _require_storage(ctx).put(
         params.key.strip(),
@@ -75,11 +102,13 @@ def storage_presigned_url(ctx: ToolWiringContext, params: StoragePresignedUrlInp
 
 
 def storage_delete(ctx: ToolWiringContext, params: StorageDeleteInput) -> StorageDeleteOutput:
+    _refuse_governed_content_key(params.key)
     _require_storage(ctx).delete(params.key.strip())
     return StorageDeleteOutput(key=params.key.strip(), deleted=True)
 
 
 def storage_exists(ctx: ToolWiringContext, params: StorageExistsInput) -> StorageExistsOutput:
+    _refuse_governed_content_key(params.key)
     stored = _require_storage(ctx).get(params.key.strip())
     if stored is None:
         return StorageExistsOutput(key=params.key.strip(), exists=False)

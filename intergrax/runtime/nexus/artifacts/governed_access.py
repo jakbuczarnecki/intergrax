@@ -280,7 +280,7 @@ class GovernedArtifactReadPort:
                 raise ArtifactNotFound(request.artifact_id)
             if found.ref.scope.tenant_id != context.tenant_id:
                 raise ArtifactAccessDenied("tenant_mismatch", request.artifact_id, "stored tenant differs")
-            if request.workspace_id is not None and found.ref.scope.workspace_id != request.workspace_id:
+            if found.ref.scope.workspace_id is not None and found.ref.scope.workspace_id != request.workspace_id:
                 raise ArtifactAccessDenied("workspace_mismatch", request.artifact_id, "stored workspace differs")
             found.ref.verify_content(found.content)
             return found, (
@@ -354,7 +354,7 @@ class GovernedArtifactReadPort:
             raise ArtifactAccessDenied("no_source", request.artifact_id)
         # 3. authorization through the existing governance owner
         try:
-            self._governance.authorize_tool(
+            decision = self._governance.authorize_tool(
                 _authorization_request(
                     context,
                     capability=capability,
@@ -369,6 +369,13 @@ class GovernedArtifactReadPort:
         except ToolGovernanceApprovalRequiredError as exc:
             self._deny(context, request, capability, "approval_required", type(exc).__name__)
             raise ArtifactAccessDenied("approval_required", request.artifact_id) from exc
+        # a governance port that returns a decision instead of raising is honoured as well
+        if decision.decision is ToolAuthorizationDecisionState.REQUIRE_APPROVAL:
+            self._deny(context, request, capability, "approval_required", "ApprovalRequiredDecision")
+            raise ArtifactAccessDenied("approval_required", request.artifact_id)
+        if decision.decision is not ToolAuthorizationDecisionState.ALLOW:
+            self._deny(context, request, capability, "not_authorized", "DenyDecision")
+            raise ArtifactAccessDenied("not_authorized", request.artifact_id)
         # 4. the operation itself, with its outcome in evidence
         try:
             result, detail = action(source)
@@ -389,6 +396,11 @@ class GovernedArtifactReadPort:
             raise
         except ArtifactDownloadUnavailable:
             self._deny(context, request, capability, "download_unavailable", "no object-storage path")
+            raise
+        except Exception as exc:  # noqa: BLE001 - audited, then re-raised unchanged
+            # an authorized operation that failed unexpectedly still leaves an outcome event
+            # (error type only, never the message) before the failure propagates
+            self._deny(context, request, capability, "backend_error", type(exc).__name__)
             raise
         self._auditor.record(
             context,

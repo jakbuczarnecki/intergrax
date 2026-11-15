@@ -12,6 +12,7 @@ from __future__ import annotations
 
 from collections.abc import Callable
 from dataclasses import dataclass
+from datetime import UTC, datetime
 
 from intergrax.collaborative_work.content_storage import (
     ArtifactContentStore,
@@ -27,10 +28,12 @@ from intergrax.contracts.artifact_ref import (
 )
 from intergrax.contracts.collaborative_work import ArtifactContentRef
 from intergrax.runtime.nexus.artifacts.governed_access import (
+    ArtifactAccessDenied,
     ArtifactReadRequest,
     GovernedArtifactContent,
 )
-from intergrax.runtime.nexus.artifacts.store_base import ArtifactStore
+from intergrax.runtime.nexus.artifacts.store_base import ArtifactStore, protection_reason
+from intergrax.utils.time_provider import SystemTimeProvider
 
 #: Producer recorded for artifacts stored before producer identity became part of the contract.
 LEGACY_UNKNOWN_PRODUCER = "legacy_unknown"
@@ -39,8 +42,9 @@ LEGACY_UNKNOWN_PRODUCER = "legacy_unknown"
 class ExecutionArtifactSource:
     """Read source over the execution ``ArtifactStore`` (evidence and tool-output classes)."""
 
-    def __init__(self, store: ArtifactStore) -> None:
+    def __init__(self, store: ArtifactStore, *, clock: Callable[[], datetime] | None = None) -> None:
         self._store = store
+        self._clock = clock or SystemTimeProvider.utc_now
 
     def _fetch(self, request: ArtifactReadRequest):
         try:
@@ -52,7 +56,31 @@ class ExecutionArtifactSource:
             return None
         if artifact.artifact_class is not request.artifact_class:
             return None
+        if self._is_expired(artifact) and not self._is_protected(request.tenant_id, request.artifact_id):
+            return None  # expired and unprotected: not found, whether or not a sweep has run yet
         return artifact
+
+    def _is_expired(self, artifact) -> bool:
+        expires = artifact.expires_at_utc
+        if expires is None:
+            return False
+        now = self._clock()
+        if expires.tzinfo is None:
+            expires = expires.replace(tzinfo=UTC)
+        if now.tzinfo is None:
+            now = now.replace(tzinfo=UTC)
+        return expires <= now
+
+    def _is_protected(self, tenant_id: str, artifact_id: str) -> bool:
+        classes = [a.retention_class for a in self._store.list_versions(tenant_id, artifact_id)]
+        held = self._store.is_under_legal_hold(tenant_id, artifact_id)
+        return protection_reason(classes, legal_hold=held) is not None
+
+    def _require_workspace(self, request: ArtifactReadRequest) -> None:
+        """A stored workspace must be matched by the request (``KeyError`` when the artifact is unknown)."""
+        stored = self._store.get(request.tenant_id, request.artifact_id).workspace_id
+        if stored is not None and stored != request.workspace_id:
+            raise ArtifactAccessDenied("workspace_mismatch", request.artifact_id, "stored workspace differs")
 
     def read(self, request: ArtifactReadRequest) -> GovernedArtifactContent | None:
         artifact = self._fetch(request)
@@ -71,12 +99,15 @@ class ExecutionArtifactSource:
     # ---- lifecycle (legal hold / deletion), delegated to the store's own invariants ----
 
     def place_legal_hold(self, request: ArtifactReadRequest, *, placed_by: str, reason: str) -> None:
+        self._require_workspace(request)
         self._store.place_legal_hold(request.tenant_id, request.artifact_id, placed_by=placed_by, reason=reason)
 
     def release_legal_hold(self, request: ArtifactReadRequest) -> None:
+        self._require_workspace(request)
         self._store.release_legal_hold(request.tenant_id, request.artifact_id)
 
     def delete(self, request: ArtifactReadRequest) -> None:
+        self._require_workspace(request)
         self._store.delete_artifact(request.tenant_id, request.artifact_id)
 
 

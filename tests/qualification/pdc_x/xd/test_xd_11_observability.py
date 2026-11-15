@@ -62,10 +62,10 @@ from tests.qualification.pdc_x.d8._d8_support import (
     make_artifact,
     make_context,
     make_governance,
-    make_port,
     reader_grants,
     sqlite_store,
 )
+from tests.qualification.pdc_x.d8_repair._support import make_clocked_port as make_port
 from tests.qualification.pdc_x.xd._support import build_sqlite_agent_stack, build_sqlite_worker
 
 pytestmark = [pytest.mark.integration]
@@ -168,7 +168,10 @@ async def _artifact_read_and_deny(tmp_path: Path) -> list[Evidence]:
     harness = make_governance(granted=reader_grants(tenant_id=TENANT_A))
     port, _ = make_port(store, harness=harness)
     request = ArtifactReadRequest(
-        artifact_class=ArtifactClass.EXECUTION_EVIDENCE, tenant_id=TENANT_A, artifact_id="art-1"
+        artifact_class=ArtifactClass.EXECUTION_EVIDENCE,
+        tenant_id=TENANT_A,
+        artifact_id="art-1",
+        workspace_id="ws-1",
     )
     port.read(make_context(tenant_id=TENANT_A), request)  # allowed read
     foreign = ArtifactReadRequest(

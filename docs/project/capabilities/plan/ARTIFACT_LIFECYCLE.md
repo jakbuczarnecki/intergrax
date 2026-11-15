@@ -34,6 +34,21 @@
 | PDC-D8-R017 | single definition and COMPAT-X shim | `test_d8_dedupe_and_aliases.py` |
 | PDC-D8-R018 | one `ArtifactRef` contract, trace alias renamed | `test_d8_dedupe_and_aliases.py` |
 
+## PDC-P7 repair after the independent audit (T-IGX-041-H, 2026-11-15)
+
+Ticket [`governance/tickets/T-IGX-041-H.md`](../../../../governance/tickets/T-IGX-041-H.md), plan [`PLAN_T-IGX-041-H.md`](../../../../governance/tickets/plans/PLAN_T-IGX-041-H.md) (batch B-P7-D8). Tests: `tests/qualification/pdc_x/d8_repair/`.
+
+| Area | Delivered | Requirement rows |
+| --- | --- | --- |
+| Runtime gateway | `RuntimeContext.create_artifact` stores tenant, producer and lineage | PDC-D8-R004, R007 |
+| Retention sweep | delete conditional on the observed version; refused without an audit recorder unless explicitly allowed; positive limit | PDC-D8-R008, R009, R016, PDC-D6-R022 |
+| Expiry at read | an expired, unprotected version is not found | PDC-D8-R008 |
+| Workspace scope | a stored workspace is required on read, hold, release and delete | PDC-D8-R005, R006 |
+| Governed port | a returned DENY or approval-required decision denies; backend failures leave an outcome event | PDC-D8-R006, R016 |
+| Raw storage tools | refuse the Collaborative Work content key space | PDC-D8-R005, R006, R009 |
+
+**Declared exceptions (not repaired, reopen conditions in the architecture doc):** host composition of the artifact store, governance port, audit recorder and sweep trigger; an `AUDIT_EVIDENCE` producer; the spill resolver; tenant binding of the raw storage tools; principal or run binding of the capabilities; the LOW findings F-D8-09 (remainder), F-D8-10, F-D8-11, F-D8-13, F-D8-14, F-D8-15.
+
 ## Open items outside the B-D8 write set
 
 Reported to the orchestrator, not edited here (hub registration, wiring, alias callers); the rest is closed:
