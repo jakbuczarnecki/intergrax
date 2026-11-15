@@ -100,6 +100,45 @@ def _breaches(metrics: EvalRunMetrics, thresholds: EvalThresholds) -> list[EvalT
     return out
 
 
+def _evidence_breaches(baseline: EvalRun, candidate: EvalRun) -> list[EvalThresholdBreach]:
+    """Missing evidence is a breach, never a clean result (coverage and pending human review)."""
+    out: list[EvalThresholdBreach] = []
+    base_ids = {item.scenario_id for item in baseline.telemetry}
+    cand_ids = {item.scenario_id for item in candidate.telemetry}
+    rule_ids = {item.scenario_id for item in candidate.rule_outcomes}
+    missing = sorted((base_ids - cand_ids) | (cand_ids - rule_ids))
+    if not cand_ids:
+        out.append(
+            EvalThresholdBreach(
+                metric="coverage",
+                limit=1.0,
+                observed=0.0,
+                detail="candidate run executed no scenario",
+            )
+        )
+    elif missing:
+        universe = base_ids | cand_ids
+        out.append(
+            EvalThresholdBreach(
+                metric="coverage",
+                limit=1.0,
+                observed=1.0 - len(missing) / len(universe),
+                detail=f"candidate lacks executed scenarios or rule outcomes for: {', '.join(missing)}",
+            )
+        )
+    pending = candidate.metrics().human_pending
+    if pending:
+        out.append(
+            EvalThresholdBreach(
+                metric="human_review_pending",
+                limit=0.0,
+                observed=float(pending),
+                detail=f"{pending} human review outcome(s) pending; a missing review is never approval",
+            )
+        )
+    return out
+
+
 def compare_eval_runs(
     baseline: EvalRun,
     candidate: EvalRun,
@@ -139,7 +178,7 @@ def compare_eval_runs(
         metric_deltas=deltas,
         scenario_regressions=regressions,
         scenario_improvements=improvements,
-        threshold_breaches=tuple(_breaches(cand_metrics, limits)),
+        threshold_breaches=tuple([*_breaches(cand_metrics, limits), *_evidence_breaches(baseline, candidate)]),
         baseline_cost_to_success=base_metrics.cost_to_success,
         candidate_cost_to_success=cand_metrics.cost_to_success,
         baseline_mean_latency_ms=base_metrics.mean_latency_ms,
