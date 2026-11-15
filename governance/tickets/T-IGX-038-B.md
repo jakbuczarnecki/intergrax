@@ -29,4 +29,16 @@ uv run python -m scripts.governance.igx_gov ticket
 
 ## Lifecycle state
 
-quality_gate
+**closed**
+
+## Formal scoped closure — operator note and evidence
+
+**Operator instruction (current conversation, verbatim):** "Wykonajmy tę ostatnią folię formalnego close-outu." This authorizes completion of the final formal ticket closeout; it does not issue a new technical audit verdict or waive any residual.
+
+**Publication:** MCP-RC product corrections are on `development` via PR #554 (merge `61531828f5728acc8f2ed357b4b835d7f5dc4ebc`). Independent delta re-audit `PASS_SCOPED`, independent integrated-baseline addendum 4 `PASS_SCOPED`, certifier preflight `CERTIFIER_PREFLIGHT_PASS_SCOPED`, ACT-N11 re-pin 2 `IN_FORCE`, six PR #554 CI checks SUCCESS; terminal verification and 481 passed / 1 strict xfailed documented in `MCP_SERVER_X_RC_CLOSURE_DOSSIER.md` (published PR #555).
+
+**Scope:** `closed (scoped)` under `governance/tickets/README.md` lifecycle rule ("Merged or abandoned with operator note"). This ticket is complete for its MCP-RC deliverable, not an unscoped production-ready certification. No new product change, FRZ promotion, or P8 history revision is claimed.
+
+**Carried outside MCP-RC:** `T-IGX-039-A` remains `draft` for the strict product-scaffold xfail, owned by the operator. IA-D1..IA-D8 are explicitly operator-deferred in PR #556, outside this campaign. PDC-X findings and accepted scoped residuals retain their own owners, dispositions and gates. No historical findings are erased.
+
+**Publication gate:** this ticket-closeout change is effective on `development` only after the closeout PR passes required CI and is merged; independent review of the documentation-only diff must confirm six statuses, this note and the closure matrix.
