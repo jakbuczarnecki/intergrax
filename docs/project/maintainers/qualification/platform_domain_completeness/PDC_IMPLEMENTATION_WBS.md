@@ -35,6 +35,7 @@ Rows classed `CURRENT_HEAD_REQUALIFICATION`, `ALREADY_CERTIFIED_REUSABLE`, `N/A_
 | B-P6-H | ALL | W10 | T-IGX-036-Y | 0 | — | B-P6-E | no | No product path: may merge before MCP-SERVER-X P8 | IA-GLOBAL (P8) |
 | B-P6-I | ALL | W11 | T-IGX-036-Z | 0 | — | B-P6-F | YES | OD-PDC-SEQ-01: implement in an isolated worktree; merge only after MCP-SERVER-X P8 publication; ACT-N11 re-activation at PDC-P7-00 | IA-GLOBAL (P8) |
 | B-P6-J | ALL | W12 | T-IGX-040-A | 0 | — | B-P6-I | YES | OD-PDC-SEQ-01: implement in an isolated worktree; merge only after MCP-SERVER-X P8 publication; ACT-N11 re-activation at PDC-P7-00 | IA-GLOBAL (P8) |
+| B-P7-D5 | D5 | W13 | T-IGX-041-E | 0 | — | B-P6-J | YES | OD-PDC-SEQ-01: implement in an isolated worktree; merge only after MCP-SERVER-X P8 publication; ACT-N11 re-activation at PDC-P7-00 | IA-D5 (P7 re-audit) |
 | B-P7-D3 | D3 | W13 | T-IGX-041-C | 0 | ADR-PDC-03 | B-P6-J | YES | OD-PDC-SEQ-01: implement in an isolated worktree; merge only after MCP-SERVER-X P8 publication; ACT-N11 re-activation at PDC-P7-00 | IA-D3 (re-audit, loop 1 of 2) |
 
 ## B-P3 — Ownership records closed in P3
@@ -388,6 +389,18 @@ Rows classed `CURRENT_HEAD_REQUALIFICATION`, `ALREADY_CERTIFIED_REUSABLE`, `N/A_
 - **Write set:** `intergrax/integrations/providers/embedding_provider/openai/register.py`, `intergrax/platform/enterprise_audit/impact_map.py`, `intergrax/platform/enterprise_audit/data/changed_since_impact_map.v1.json`, `tests/qualification/pdc_x/p6_ecapfix/`, `tests/qualification/pdc_x/p6_impact/`
 - **Tests:** tests/qualification/pdc_x/p6_ecapfix/ and p6_impact/; xd_12 and p6_impact coverage tests green on development and on a tree that contains the MCP-RC change
 - **Evidence (exact SHA):** implementation SHA and publication SHA recorded in `PDC_SHA_LADDER.md`; test log under `.tmp/proof/pdc-x-p5/B-P6-J/`; audited by IA-GLOBAL (P8) at the PDC-P7 audited SHA.
+- **Merge gate:** OD-PDC-SEQ-01: implement in an isolated worktree; merge only after MCP-SERVER-X P8 publication; ACT-N11 re-activation at PDC-P7-00
+
+| Requirement | Class | Test case |
+| --- | --- | --- |
+| — | — | — |
+
+## B-P7-D5 — P7 repair of the independent D5 audit (loop 1): tenant isolation of online evaluation observations and the three hosts that hold a tenant (F-D5-01), ExperimentSession.run NameError and governance identity admission (F-D5-07), evaluation evidence status and comparison coverage (F-D5-04), promotion certification subject binding (F-D5-03 strengthening part), MVP promotion gate G0/G2 symbols and anchored authorization (F-D5-02 strengthening part), contract regex hygiene, R017 boundary documentation (F-D5-08); F-D5-05 and F-D5-06 are declared exceptions
+
+- **Ticket:** T-IGX-041-E · **Wave:** W13 · **ADR:** — · **Auditor:** IA-D5 (P7 re-audit)
+- **Write set:** `intergrax/runtime/architecture/online_evaluation_registry.py`, `intergrax/runtime/architecture/user_satisfaction.py`, `intergrax/runtime/architecture/online_evaluation.py`, `intergrax/runtime/architecture/agent_promotion.py`, `intergrax/runtime/evidence/eval_evidence_contracts.py`, `intergrax/eval/eval_comparison.py`, `intergrax/experiments/workflow.py`, `scripts/gates/check_mvp_promotion_gates.py`, `intergrax/contracts/evaluation_contracts.py`, `intergrax/applications/_shared/harness_host_runtime.py`, `intergrax/applications/_shared/runtime_config_bridge.py`, `intergrax/applications/_shared/scenario_runtime_baseline.py`, `tests/qualification/pdc_x/d5_repair/`, `docs/project/architecture/EXPERIMENTATION_AND_DEVELOPER_EXPERIENCE.md`, `docs/project/maintainers/plans/EXPERIMENTATION_AND_DEVELOPER_EXPERIENCE.md`
+- **Tests:** tests/qualification/pdc_x/d5_repair/ plus the cited d5, xd_08, experiments, online evaluation and host suites green; every in-scope finding pinned red-then-green with negative tests
+- **Evidence (exact SHA):** implementation SHA and publication SHA recorded in `PDC_SHA_LADDER.md`; test log under `.tmp/proof/pdc-x-p5/B-P7-D5/`; audited by IA-D5 (P7 re-audit) at the PDC-P7 audited SHA.
 - **Merge gate:** OD-PDC-SEQ-01: implement in an isolated worktree; merge only after MCP-SERVER-X P8 publication; ACT-N11 re-activation at PDC-P7-00
 
 | Requirement | Class | Test case |

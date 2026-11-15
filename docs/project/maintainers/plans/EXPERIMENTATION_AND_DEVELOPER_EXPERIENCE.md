@@ -192,6 +192,19 @@ Load **only** the satellite matching your task or cited gap ID.
 
 ---
 
+## PDC-D5 repair after the independent audit (T-IGX-041-E, 2026-11-15)
+
+**Status:** planned/implemented under ticket `T-IGX-041-E` (batch B-P7-D5). The architecture canon gained the section "Evaluation boundary and declared exceptions (PDC-D5)" in [`architecture/EXPERIMENTATION_AND_DEVELOPER_EXPERIENCE.md`](../../architecture/EXPERIMENTATION_AND_DEVELOPER_EXPERIENCE.md) (requirement `PDC-D5-R017`).
+
+| Area | Delivered | Tests |
+|------|-----------|-------|
+| Tenant isolation of online observations (F-D5-01) | legacy registry surface limited to the untenanted namespace; tenant stamped by `record_user_satisfaction` and `record_shadow_observation`; three hosts bind the tenant they hold | `tests/qualification/pdc_x/d5_repair/` |
+| `ExperimentSession.run` (F-D5-07) | `mint_run_id` import and governance identity admission | `tests/unit/experiments/test_experiment_workflow.py` |
+| Evidence status and comparison coverage (F-D5-04) | executor error is `FAILED`; missing coverage or pending human review is never green | `tests/qualification/pdc_x/d5_repair/` |
+| Promotion and MVP gate (F-D5-02/03, strengthening only) | certification must belong to the promoted agent; G0/G2 name required symbols; authorization lines read from `## Approved` only | `tests/qualification/pdc_x/d5_repair/` |
+
+**Declared exceptions (not repaired, reopen conditions in the architecture canon):** typed pipeline without a production caller (F-D5-06), no groundedness evaluator (F-D5-05), promotion decision not wired and not subject-bound (remainders of F-D5-02/03), LOW findings F-D5-09..F-D5-14 (debt register).
+
 ## Phase MVP-EVOL - MVP-to-product evolution layer (Band 2at - planned)
 
 **Status:** **Done** (2026-06-09) - architecture canon §44; MVP-EVOL.1–6 implemented.

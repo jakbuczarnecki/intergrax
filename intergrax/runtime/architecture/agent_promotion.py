@@ -53,6 +53,8 @@ def evaluate_agent_promotion(bundle: PromotionEvidenceBundle) -> PromotionDecisi
         governance_reasons.append(
             f"Unsupported promotion path: {bundle.source_stage.value} -> {bundle.target_stage.value}"
         )
+    if bundle.certification.agent_id != bundle.agent_id or bundle.certification.agent_version != bundle.agent_version:
+        governance_reasons.append("Agent certification does not belong to the promoted agent and version")
     if not bundle.certification.eligible:
         governance_reasons.append("Agent certification is not eligible")
     if not bundle.rollback_plan_ref.strip():

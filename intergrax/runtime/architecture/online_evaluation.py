@@ -4,6 +4,8 @@
 
 from __future__ import annotations
 
+from typing import Any
+
 from intergrax.runtime.architecture.evaluation_automation import (
     AutomatedEvaluationReport,
     EvaluationSignal,
@@ -21,6 +23,7 @@ from intergrax.runtime.architecture.online_evaluation_models import (
 )
 from intergrax.runtime.architecture.online_evaluation_registry import (
     OnlineEvaluationRegistry,
+    TenantOnlineEvaluationObservation,
     default_online_evaluation_registry,
 )
 
@@ -40,11 +43,7 @@ def observations_to_automated_report(batch: OnlineEvaluationBatch) -> AutomatedE
     rule_signals: dict[str, list[EvaluationSignal]] = {}
     llm_scores: dict[str, float] = {}
     for item in batch.observations:
-        mode = (
-            EvaluationMode.SHADOW
-            if item.mode == OnlineEvaluationMode.SHADOW
-            else EvaluationMode.ONLINE
-        )
+        mode = EvaluationMode.SHADOW if item.mode == OnlineEvaluationMode.SHADOW else EvaluationMode.ONLINE
         mode_results.append(
             EvaluationModeResult(
                 run_id=item.run_id,
@@ -95,17 +94,27 @@ def record_shadow_observation(
     score: float,
     registry: OnlineEvaluationRegistry | None = None,
     candidate_profile_version_id: str | None = None,
+    tenant_id: str | None = None,
 ) -> OnlineEvaluationObservation:
-    """Record a single shadow-mode harness observation and append to the registry."""
-    observation = OnlineEvaluationObservation(
-        observation_id=f"shadow:{run_id}:{scenario_id}",
-        run_id=run_id,
-        agent_id=agent_id,
-        mode=OnlineEvaluationMode.SHADOW,
-        scenario_id=scenario_id,
-        passed=passed,
-        score=score,
-        candidate_profile_version_id=candidate_profile_version_id,
+    """Record a single shadow-mode harness observation and append to the registry.
+
+    With ``tenant_id`` the observation is stamped with that tenant (a blank tenant fails
+    closed; a tenant-scoped registry of another tenant denies the write).
+    """
+    fields: dict[str, Any] = {
+        "observation_id": f"shadow:{run_id}:{scenario_id}",
+        "run_id": run_id,
+        "agent_id": agent_id,
+        "mode": OnlineEvaluationMode.SHADOW,
+        "scenario_id": scenario_id,
+        "passed": passed,
+        "score": score,
+        "candidate_profile_version_id": candidate_profile_version_id,
+    }
+    observation: OnlineEvaluationObservation = (
+        OnlineEvaluationObservation(**fields)
+        if tenant_id is None
+        else TenantOnlineEvaluationObservation(tenant_id=tenant_id, **fields)
     )
     target_registry = registry or default_online_evaluation_registry()
     target_registry.append(observation)
