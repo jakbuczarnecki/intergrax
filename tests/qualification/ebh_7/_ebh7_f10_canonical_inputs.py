@@ -603,6 +603,25 @@ C4_RULES: Final[tuple[C4Rule, ...]] = (
         ),
         "public contract modules of the queue state owner",
     ),
+    # T-IGX-041-K: exact-path entries for three paths changed by the P7 repairs; siblings stay unknown.
+    C4Rule(
+        "intergrax/experiments/workflow.py",
+        (
+            ChangeClass.RUNTIME_BEHAVIOR,
+            ChangeClass.SECURITY_GOVERNANCE_TENANT,
+        ),
+        "experiment workflow: runs a root task through UnifiedTaskRunner and admits a governance identity",
+    ),
+    C4Rule(
+        "intergrax/integrations/credentials/secrets_store_resolver.py",
+        (ChangeClass.SECURITY_GOVERNANCE_TENANT,),
+        "secrets-store credential resolver: enforces the tenant scope before a secret is read",
+    ),
+    C4Rule(
+        "platform_proofs/scenarios/ai_incident_investigation/application/investigator_agent.py",
+        (ChangeClass.QUALIFICATION_INFRASTRUCTURE,),
+        "proof-library fixture agent: not shipped and imported only by the proof scenario and tests",
+    ),
 )
 
 _TOOLS = "tests/unit/runtime/nexus/tools"
