@@ -12,7 +12,21 @@ Canonical plan: [`governance/tickets/plans/PLAN_T-IGX-041-M.md`](plans/PLAN_T-IG
 
 ## Approved
 
-(pending; the plan is signed by a delegate session under decision 2 of `DELEGATION-PDC-CLOSE.md` within the limits of `DELEGATION-PDC-P7-REPAIR.md`; the implementer never writes this section)
+Approved: operator-delegate @ 2026-11-15T15:21:12+01:00
+Delegation: docs/project/maintainers/qualification/platform_domain_completeness/operator_decisions/DELEGATION-PDC-CLOSE.md@7857632dd064e9fd6583d975d781cca516c5bca5
+
+Delegate checks (decision 2 of `DELEGATION-PDC-CLOSE.md`, within the limits of `DELEGATION-PDC-P7-REPAIR.md@8f4b139c1f5352c9861872f0b5077996b8f0f891`; read at branch `pdc-x-041m`, plan commit `0794db437`; all passed before this line was written):
+
+- A first plan version (`075058a92`, digest `809b58e0...`) was not signed: one untrue sentence in section P4 ("run only by" the pre-context check script; a pinned test also runs it). The planner corrected that sentence and two path citations; the diff `075058a92..0794db437` touches only the plan and the digest line of this ticket. Everything below was re-checked from scratch on the corrected version.
+- The plan digest recomputed with `scripts/governance/plan_digest.py` equals the digest above (`6c6934a603f44d9772558e7f33f323a9132f75f5f88085e780cff81b51f34298`).
+- The plan write set (14 product files, `tests/qualification/pdc_x/p8_repair/`, the two architecture documents) equals the write set of batch row `B-P8-R1` in `PDC_IMPLEMENTATION_WBS.md` and in the generator `scripts/qualification/pdc_x_wbs.py` (list comparison); no wildcard; `uv run python scripts/qualification/pdc_x_wbs.py --check` is OK. Nothing under `scripts/governance/`, `.github/` or `intergrax/contracts/`.
+- Exactly one hotspot file under `intergrax/applications/_shared/` is named, in full: `scenario_runtime_baseline.py`. `durable_registry_projection_input_store.py` is not in the write set (R6 is test-only and stops if red).
+- In-scope findings and the excluded findings E1..E11 are listed with reason and reopen condition; the declared exceptions of `DELEGATION-PDC-CLOSE.md` are not repaired. The time-box clause for further scenario layers (`get_steps` mismatch first) is stated in P7 and E10.
+- Factual sentences re-read against the code and true, among them: `doc_smart_document_handler.py:11-13` and the seven sibling imports; the duplicate `_KnowledgeDocumentWithParserRuntime` (`contracts/parser_native_handle.py:15`, `compat/legacy_runtime_document.py:19`) and its consumers; `InmemoryVectorStoreIntegration` without `list_collections` (`vectorstore_manager.py:445`, `hierarchical_bootstrap.py:38`); `scheduler.py:207-251`, `:267-291`, `:385-416`, `store.py:504-521`, `checkpoint_resume_validation.py:570-578`, `resume_admission.py:64-67`; `workspace/service.py:127-193` (put at 149, get at 168); `storage/service.py:33,40,63,77,105,111`; `clients.py:313-355`, `factories.py:743`; `secrets_store_resolver.py:36-48`; `scenario_runtime_baseline.py:57,168-195,334-370,373-415`; `environment_wiring.py:259,561`; `agent_resolution.py:35`; `ModelCallRuntimeEvidenceAdapter` (`__slots__ = ("_inner",)`, no `count_messages_tokens`), `context_preflight.py:49`, `base_llm_adapter.py:518`; `investigator_agent.py:223` against `uaep_executor.py:1136` and `uaep_protocol.py:23`; `recover_interrupted_running` and its single caller under `intergrax/queueing/providers/document_store/`; the corrected P4 sentence (script plus `test_d2r_pre_context_policy_gate.py:12`, entrypoint node ids of `ENT-A-REL-02/03`); the baseline and prototype logs (99/186/9, 86/199/9, 3 failed/63 passed).
+- The impact-map change is classification and strengthening only: two exact-file entries (`intergrax/experiments/workflow.py` to `ENT-A-REL-02/03`, `intergrax/runtime/policy/pre_context_policy_audit.py` to `ENT-A-GOV-01..03`), no check removed or narrowed, the manifest stays at 85 checks, no fail-closed prefix is touched; both paths are unmapped today (read with `check_ids_for_changed_path`). The negative test (unmapped siblings stay unmapped) is part of R4. Mapping the second path to the GOV checks is a classification choice stated in the plan under "Decisions".
+- No gate is weakened or deleted (the guard becomes stricter, the scheduler gates are not edited, existing tests stay byte-identical). No registry, scheduler, engine, trust, policy or audit authority is added: the contract authority parameter and the three composition fields are optional with defaults, the adapter change is one delegating method, `refuse_governed_content_key` is a plain function. The plan states it is not a certification verdict and not a closure.
+- Concerns for the Operator and orchestrator (not blockers): (1) G-10 (`test_rewire_scenario_decision_wiring_reapplies_validation_engine`) is expected, not measured, to turn green (extras environment needed); (2) 86 incident scenario tests stay red as declared exception E10 and need an owner decision on `get_steps`; (3) the case-insensitive guard also applies on case-sensitive backends (Decision 3); (4) `compat/legacy_runtime_document.py` and the new public function touch the COMPAT-X counters that T-IGX-041-L re-pins, so L must be re-verified after this ticket.
+- The implementer (planning lane of T-IGX-041-M) and this delegate session are different sessions; the delegate edited only this approval block and the lifecycle state. Write-set amendments are not delegated.
 
 ## Test contract
 
@@ -39,4 +53,4 @@ uv run python -m scripts.governance.igx_gov ticket
 
 ## Lifecycle state
 
-plan_pending
+plan_approved
