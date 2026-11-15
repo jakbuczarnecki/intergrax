@@ -73,6 +73,20 @@ Sources for the counts: the "Overall verdict", "Rows" and "Findings" lines of ea
 | One repair loop (if used) | `<findings, plan signer, merge SHAs, re-pin>` |
 | Known red classes at the audited SHA | `<list>` |
 
+### 5.1 Audit input already known (PR #579, read at head `54f1d21d5f99306d741b9eb8713ccd7e524e626e`, OPEN; **UNVERIFIED against the merged record**; wording rules for this report, not results)
+
+The P8 global audit record (`PDC_INDEPENDENT_AUDIT.md`) is an open pull request when this skeleton is edited. Its start SHA is `cba32d2479cd134911d2fdf4fb1db4587c8a94d8`; its final audit SHA is not yet frozen (audit section 13). Its draft verdict is `PARTIAL` (`PARTIAL_EXACT_BLOCKERS`); this report keeps `<P8 verdict>` until the record merges and the one repair loop has run. Wording that the final report **must** use, if the audit stands:
+
+- **Repairs, not "fixed".** Of 76 audited repair rows the audit counts 62 `VERIFIED_FIXED`, 14 `PARTIALLY_FIXED`, 0 `NOT_FIXED` (audit §1 and §7). The report never says "repaired" for a `PARTIALLY_FIXED` finding.
+- **F-D1-02 / F-D1-03: "fixed at service level only; inert in production".** No production composition injects a revocation source, trust coordinator or pipeline hook (audit §7 notes, §6 check 4). Register as "not wired" (exception register EX-D1-02, section 6.1).
+- **F-D5-01:** call sites bind the tenant, but a strict host with `tenant_id=None` uses the shared registry (G-09 / NEW-D5-2; `harness_host_runtime.py:518-521`, `evaluation_wiring.py:60-62`).
+- **F-D3-01:** guard, quota, permit and registration hold; **streaming resilience (breaker, retry) does not** (G-11, lazy generator). **F-D3-02:** pinned on two methods only; unpinned `stream_with_tools`, `generate_with_tools` and Bedrock paths (EX-D3-05).
+- **F-D7:** F-D7-02 `PARTIALLY_FIXED` (G-02); F-D7-07 and the architecture doc B.2.3 claim overstate multi-instance safety (`recover_interrupted_running` is not CAS, G-07); F-D7-20 proposed MEDIUM and separate from F-D7-03 (EX-D7-04).
+- **F-D2-10:** the gate is self-satisfying (`PARTIALLY_FIXED`); **F-D2-08:** closure depends on the environment, the default document loader cannot be built (G-01, HIGH, reproduced) and the CI claim is not supported (G-04).
+- **Findings G-01..G-06** are listed by the orchestrator as covered by repair tickets `T-IGX-041-M` (product) and `-N` (tests): `<closed by M/N if merged — to be confirmed by the final audit>`. Never written as done here. Tickets M and N are **not on `origin/development`** at drafting.
+- **Reds without an owner (G-10):** 5 D5-contract tests (red already at `f87df3b2a`) and 2 `test_audit_ideal_depth_gate` reds (`29_1`, `30_4`); possibly closed by `T-IGX-041-N`: **UNVERIFIED until N merges**.
+- **Clean results the audit reports (labelled, not ours):** ECAP FULL 85/85 with 0 findings at `cba32d247`; DUP-X/EBH-4 gates 130 passed; TENANT-X 213 passed. These are reproduced facts of that record only after it merges.
+
 ## 6. Requirement coverage
 
 | Metric | Value |
@@ -93,7 +107,7 @@ Sources for the counts: the "Overall verdict", "Rows" and "Findings" lines of ea
 
 ## 8. Operator decisions needed (consolidated)
 
-Taken from the exception register section 5, the FRZ proposal section 9 and the roadmap text section 1: (1) rating authority for "Operator decision" exclusions; (2) F-D1-04 severity; (3) EX-D5-05; (4) scope of EX-D3-04 (four tests vs. about 99); (5) rows open without exception; (6) FRZ option N or P; (7) closure vocabulary variant A or B; (8) whether PDC evidence suffices for criteria owned by other stages.
+Taken from the exception register sections 5 and 6, the FRZ proposal section 9 and the roadmap text section 1: (1) rating authority for "Operator decision" exclusions; (2) F-D1-04 severity; (3) EX-D5-05; (4) scope of EX-D3-04 (four tests vs. about 99); (5) rows open without exception; (6) FRZ option N or P; (7) closure vocabulary variant A or B; (8) whether PDC evidence suffices for criteria owned by other stages; (9) which audit-input limitations (EX-D7-05, EX-D3-05, EX-D3-06, EX-X-01, EX-X-04, F-D7-20 as EX-D7-04) are accepted as declared wording and which wait for `T-IGX-041-M`/`-N`; (10) the strict-host case of F-D5-01 (accept or fail closed).
 
 ## 9. Independence and provenance (to be completed)
 

@@ -28,7 +28,7 @@ ARCH-FREEZE is **not entered** by this document. `PDC-X` does not perform the fr
 | P7 repair merges (T-IGX-041-A..I) | see section 3 | `git log origin/development --merges` |
 | Operator records of the closing wave | #577 `a478eb235` (P7 re-pin record), #578 `cba32d247` (closing wave record) | `git log origin/development --merges` |
 | Final EBH-7 re-pin SHA `P` (tickets T-IGX-041-J, -K, -L) | `<UNKNOWN today: no ticket file T-IGX-041-J/K/L exists on development at drafting>` | `DELEGATION-PDC-P7-REPIN.md` names the tickets; `ls governance/tickets` shows only 041-A..I |
-| P8 re-pin (only if the P8 repair loop changes product paths) | `<P8 repair SHAs, if any>` | `DELEGATION-PDC-CLOSE.md` item 2 |
+| P8 re-pin (only if the P8 repair loop changes product paths) | `<P8 repair SHAs, if any; tickets T-IGX-041-M / -N per the orchestrator — not on development at drafting>` | `DELEGATION-PDC-CLOSE.md` item 2 |
 | GLOBAL_AUDITED_SHA | `<GLOBAL_AUDITED_SHA>` | `PDC_SHA_LADDER.md` row; "must contain the MCP-SERVER-X closure publication" |
 | FINAL_CLOSURE_PUBLICATION_SHA | `<FINAL_CLOSURE_PUBLICATION_SHA>` | P9 merge |
 
@@ -73,6 +73,8 @@ Earlier P6 facts that stay valid history: T-IGX-036-X product fix PR #537 `146e7
 6. **Pin validity.** IIAC activation is bound to an audit pin; any change under `intergrax/`, `agents/` or `applications/` after `audit_execution_sha` invalidates it (ACT-N11). `<state of the P8-04 rebind>`.
 7. **Held dependency-bot / `uv.lock` pull requests** are merged in one batch only after the final re-pin is recorded (`DELEGATION-PDC-WAVE2.md` decision 7): `<batch result>`.
 8. **No B6 verdict and no certification** is implied by the EBH-7 replay (`DELEGATION-PDC-WAVE2.md` decision 1, scope).
+9. **Repairs are not all end to end (audit input, PR #579, UNVERIFIED until it merges).** F-D1-02 / F-D1-03 are fixed at service level only and inert in production (no production composition injects a revocation source, trust coordinator or pipeline hook); the strict harness host with `tenant_id=None` uses the shared evaluation registry (G-09); streaming resilience (breaker, retry) is not real on the stream paths (G-11); D7 multi-instance claims exceed the code (G-07) and `DocumentStoreTaskWorker.stop()` can leave two consumers (F-D7-20, proposed MEDIUM). Details and reopen conditions: exception register section 6.
+10. **Open placeholders for repair tickets `T-IGX-041-M` (product) and `-N` (tests)** (audit findings G-01..G-06; the unowned reds of G-10): `<closed by M/N if merged>`. The tickets are not on `origin/development` at drafting; no item is stated as done here.
 
 ## 6. Dependency record for ARCH-FREEZE
 
