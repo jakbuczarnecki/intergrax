@@ -45,6 +45,29 @@ Known reds that remain by design and are not repaired here: the excluded rows of
 - `scripts/governance/`, `.github/`, FRZ files and P8 originals.
 - IIAC activation and rebind, the EBH-7 re-pin, OD signatures, certification and the re-audit.
 
+## Implementation checkpoint
+
+Logs under `.tmp/proof/pdc-x-041n/` (not committed). Environment: `uv sync --frozen` with `dev-ci`, `llm-all`, `dev-ci-rag`.
+
+- New gate `tests/qualification/pdc_x/n_repair/test_n_proof_descriptor_gate.py`: red on the unchanged `proof.json` (2 failed, 5 passed), green after the descriptor repair (`safety_class` `LOCAL_MUTATING`, as pinned by the plan; no gate pins the file content, `IIAC_GLOBAL_AUTHORITY_IMPACT_MATRIX.json` lists its path only).
+- Repaired and green: `test_completion_alignment.py` (21 passed), `test_indexing_manager_indexes_documents.py` (5 passed with `langchain-core`), `test_stale_inflight_publication_cannot_become_active_after_takeover`, `test_harness_host_runtime_llm.py` (3 passed), `test_build_scenario_runtime_strict_with_explicit_manifest`, `test_audit_ideal_depth_gate.py::29_1` and `::30_4`, and 5 of the 8 tests of `test_diagnostic_platform_integration.py`.
+- Signed test contract, one pytest run after all repairs (`contract_final.log`): 95 failed, 306 passed, 9 skipped in 72 s. An earlier full run before the last edit of `test_diagnostic_platform_integration.py` gave 96 failed, 305 passed, 9 skipped; the pytest process of such runs does not exit after its summary line (observation R-05) and had to be stopped.
+- The 95 failures are the excluded rows of the plan, all with a named cause:
+  - 85 in the incident scenario with `AgentBinding requires agent_type or import_path` (the 82 of the plan plus 3 that were hidden behind the residual causes now repaired);
+  - 6 in the incident scenario that run the real skeleton proof as a subprocess and now fail inside it (`test_parent_runner_integration_*` in `test_dual_canonical_evidence.py` and `test_skeleton_integration.py`, `test_canonical_cli_reproduces_scenario_proof`): the descriptor now loads, so the proof runs; the cause behind its failure was not traced (consistent with the `AgentBinding` cause, not proven);
+  - 4 outside the scenario directory: `test_stale_graph_topology_is_inactive_after_generation_takeover`, `test_graphrag_source_reingest_replaces_vectors_and_graph_safely`, `test_rewire_scenario_decision_wiring_reapplies_validation_engine`, `test_execute_scenario_task_persists_finalized_trace_for_orchestration` (owner T-IGX-041-M).
+- Newly seen layers behind repaired tests: the proof descriptor repair exposes the 6 skeleton-proof failures above; the `test_harness_host_runtime_llm` repair exposed that the autouse fixture of `tests/unit/applications/conftest.py` stubs the LLM resolver, so the provider-missing test calls `monkeypatch.undo()` first (inside the named file); the strict fixture of `test_scenario_runtime_baseline.py` needed explicit capacity caps and an explicit dependency concurrency admission (`build_dependency_concurrency_admission_for_tool_ids`), not the reference-host builder named in the plan, because that builder returns nothing when the lab tool profile has no available tools; `test_limitation_kind_rendered_in_platform_context_boundary` copied `DiagnosticProblemDetail` by hand and lacked its new field `occurrence_aggregate_health` (passed through, same file).
+- `RAG_RED_CLASSIFICATION.md`: a section "Corrections after IA-GLOBAL (G-04, T-IGX-041-N)" was appended; the original rows are unchanged.
+- Pyright on the touched files: 78 errors before, 64 after (the new gate file has 0); ruff check and format clean on all touched Python files. `ruff format` re-wrapped some lines of the legacy test files (formatting only).
+- `pdc_x_wbs.py --check`, `pdc_x_requirements.py --check`, `test_pdc_x_wbs.py`: OK after the merge of `origin/development`. In the merge, `B-P8-R2` stays in wave W15 (already used by `B-P7-RP`, T-IGX-041-J); the duplicate wave-text entry of this ticket was dropped and the entry of T-IGX-041-J kept, so the generated text of W15 describes T-IGX-041-J only.
+
+### Deviations from the signed plan
+
+- Item 7 (second test of `test_harness_host_runtime_llm.py`): the plan lists deriving the orchestration profile from the environment's own; the test additionally calls `monkeypatch.undo()` to drop the package's autouse LLM stub (same file, same intent).
+- Item 8 (`test_build_scenario_runtime_strict_with_explicit_manifest`): the fixture sets the capacity caps and an explicit admission instead of calling the reference-host builder (the plan allowed "the product's reference-host default builder or an explicit `max_inflight_nodes`"); the builder alone was tried and did not give the admission.
+- Item 2 (`test_diagnostic_platform_integration.py`): one more stale constructor argument (`occurrence_aggregate_health`) was passed through in the same file.
+- No file outside the signed write set was written; no product path and no hotspot path.
+
 ## Lifecycle state
 
 plan_approved
