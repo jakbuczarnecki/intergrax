@@ -32,12 +32,7 @@ from intergrax.runtime.schema.registry import (
     RUNTIME_SCHEMA_REGISTRY,
     validate_schema_version,
 )
-
 from testing_support.runtime_events import with_preferred_canonical_payload
-
-from tests.qualification.compat_x._compat_x_semantic_identity_reconciliation import (
-    validate_current_head_compat_closed_world_inventory,
-)
 from tests.qualification.compat_x._compat_x_event_evolution_inventory import (
     _enclosing_qualname,
     _iter_production_python_sources,
@@ -46,6 +41,9 @@ from tests.qualification.compat_x._compat_x_event_evolution_inventory import (
     count_canonical_production_raw_store_bypasses,
     count_unclassified_persistence_call_sites,
     discover_runtime_event_persistence_call_sites,
+)
+from tests.qualification.compat_x._compat_x_semantic_identity_reconciliation import (
+    validate_current_head_compat_closed_world_inventory,
 )
 
 _REPO_ROOT = Path(__file__).resolve().parents[3]
@@ -63,7 +61,7 @@ _RUNTIME_EVENT_STORE_MARKERS: Final = (
 )
 
 
-class RuntimeEventReaderDisposition(str, Enum):
+class RuntimeEventReaderDisposition(str, Enum):  # noqa: UP042 - keep (str, Enum) semantics
     CANONICAL_PARSER = "canonical_parser"
     NON_PERSISTED_CONSTRUCTION = "non_persisted_construction"
     INTERNAL_ALREADY_TYPED_FLOW = "internal_already_typed_flow"
@@ -71,7 +69,7 @@ class RuntimeEventReaderDisposition(str, Enum):
     UNCLASSIFIED = "unclassified"
 
 
-class RuntimeEventReaderClassificationEvidence(str, Enum):
+class RuntimeEventReaderClassificationEvidence(str, Enum):  # noqa: UP042 - keep (str, Enum) semantics
     UNSPECIFIED = "unspecified"
     RUNTIME_EVENT_STORE_SQLITE_WIRE_DECODE = "runtime_event_store_sqlite_wire_decode"
     RUNTIME_EVENT_STORE_DOCUMENT_WIRE_DECODE = "runtime_event_store_document_wire_decode"
@@ -89,9 +87,7 @@ class RuntimeEventReaderClassificationEvidence(str, Enum):
     PLATFORM_SPINE_SIGNAL_EVENT_FACTORY = "platform_spine_signal_event_factory"
     TRACE_BRIDGE_RUNTIME_EVENT_FACTORY = "trace_bridge_runtime_event_factory"
     EXECUTION_FAILURE_EVIDENCE_EVENT_RECORDER = "execution_failure_evidence_event_recorder"
-    INTEGRATION_CONFIG_PROVENANCE_EVENT_RECORDER = (
-        "integration_config_provenance_event_recorder"
-    )
+    INTEGRATION_CONFIG_PROVENANCE_EVENT_RECORDER = "integration_config_provenance_event_recorder"
     EXTERNAL_OPS_DIAGNOSTIC_EVENT_RECORDER = "external_ops_diagnostic_event_recorder"
     GOVERNANCE_EVIDENCE_EVENT_PRODUCER = "governance_evidence_event_producer"
     KERNEL_STEP_RUNTIME_EMISSION = "kernel_step_runtime_emission"
@@ -102,6 +98,7 @@ class RuntimeEventReaderClassificationEvidence(str, Enum):
     NEXUS_UAEP_EXECUTOR_EVENT_EMISSION = "nexus_uaep_executor_event_emission"
     OBSERVABILITY_TRACE_SCOPE_EVENT_EMISSION = "observability_trace_scope_event_emission"
     TASK_MEMORY_VIEW_EVENT_EMISSION = "task_memory_view_event_emission"
+    SECURITY_AUDIT_TRAIL_EVENT_RECORDER = "security_audit_trail_event_recorder"
 
 
 _NON_PERSISTED_CONSTRUCTION_EVIDENCE: Final = frozenset(
@@ -127,6 +124,7 @@ _NON_PERSISTED_CONSTRUCTION_EVIDENCE: Final = frozenset(
         RuntimeEventReaderClassificationEvidence.NEXUS_UAEP_EXECUTOR_EVENT_EMISSION,
         RuntimeEventReaderClassificationEvidence.OBSERVABILITY_TRACE_SCOPE_EVENT_EMISSION,
         RuntimeEventReaderClassificationEvidence.TASK_MEMORY_VIEW_EVENT_EMISSION,
+        RuntimeEventReaderClassificationEvidence.SECURITY_AUDIT_TRAIL_EVENT_RECORDER,
     }
 )
 
@@ -298,6 +296,11 @@ _CONSTRUCTOR_POSITIVE_EVIDENCE_RULES: Final = (
         "_emit",
         RuntimeEventReaderClassificationEvidence.TASK_MEMORY_VIEW_EVENT_EMISSION,
     ),
+    (
+        "runtime/security/security_audit_trail.py",
+        "append",
+        RuntimeEventReaderClassificationEvidence.SECURITY_AUDIT_TRAIL_EVENT_RECORDER,
+    ),
 )
 
 _LAB_CONSTRUCTOR_MODULE_SUFFIX: Final = "runtime/observability/persistence_conformance.py"
@@ -350,10 +353,7 @@ def count_runtime_event_v2_semantic_authority_literals() -> int:
             continue
         for target in node.targets:
             if isinstance(target, ast.Name) and target.id == "RUNTIME_EVENT_SCHEMA_VERSION":
-                if (
-                    isinstance(node.value, ast.Constant)
-                    and node.value.value == _V2_LITERAL
-                ):
+                if isinstance(node.value, ast.Constant) and node.value.value == _V2_LITERAL:
                     count += 1
     return count
 
@@ -364,9 +364,7 @@ def observability_runtime_event_v2_literal_sites() -> tuple[tuple[str, int], ...
         return ()
     for path in sorted(_OBSERVABILITY_ROOT.rglob("*.py")):
         rel = path.relative_to(_REPO_ROOT).as_posix()
-        for line_no, line in enumerate(
-            path.read_text(encoding="utf-8").splitlines(), start=1
-        ):
+        for line_no, line in enumerate(path.read_text(encoding="utf-8").splitlines(), start=1):
             if _V2_LITERAL in line:
                 sites.append((rel, line_no))
     return tuple(sites)
@@ -503,9 +501,7 @@ def _production_runtime_event_constructor_sites(
 ) -> tuple[RuntimeEventReaderSite, ...]:
     ctor_sites = sites if sites is not None else discover_runtime_event_constructor_sites()
     return tuple(
-        site
-        for site in ctor_sites
-        if not site.module_path.replace("\\", "/").endswith(_LAB_CONSTRUCTOR_MODULE_SUFFIX)
+        site for site in ctor_sites if not site.module_path.replace("\\", "/").endswith(_LAB_CONSTRUCTOR_MODULE_SUFFIX)
     )
 
 
@@ -515,18 +511,12 @@ def _constructor_sites_matching_positive_rule(
     sites: tuple[RuntimeEventReaderSite, ...],
 ) -> tuple[RuntimeEventReaderSite, ...]:
     return tuple(
-        site
-        for site in sites
-        if site.module_path.replace("\\", "/").endswith(suffix) and site.qualname == qualname
+        site for site in sites if site.module_path.replace("\\", "/").endswith(suffix) and site.qualname == qualname
     )
 
 
 def count_module_wide_constructor_positive_evidence_rules() -> int:
-    return sum(
-        1
-        for _, qualname, _ in _CONSTRUCTOR_POSITIVE_EVIDENCE_RULES
-        if qualname is None
-    )
+    return sum(1 for _, qualname, _ in _CONSTRUCTOR_POSITIVE_EVIDENCE_RULES if qualname is None)
 
 
 def count_stale_constructor_positive_evidence_rules(
@@ -561,8 +551,7 @@ def validate_constructor_positive_evidence_rule_integrity(
             stale_rules.append(f"({suffix}, {qualname})")
     if stale_rules:
         violations.append(
-            f"stale positive constructor rules matching zero call-sites ({len(stale_rules)}): "
-            f"{stale_rules}",
+            f"stale positive constructor rules matching zero call-sites ({len(stale_rules)}): {stale_rules}",
         )
     uncovered: list[str] = []
     for site in production_sites:
@@ -570,8 +559,7 @@ def validate_constructor_positive_evidence_rule_integrity(
             uncovered.append(f"{site.module_path}:{site.qualname}:{site.line}")
     if uncovered:
         violations.append(
-            f"production RuntimeEvent constructors without positive evidence ({len(uncovered)}): "
-            f"{uncovered}",
+            f"production RuntimeEvent constructors without positive evidence ({len(uncovered)}): {uncovered}",
         )
     return tuple(violations)
 
@@ -720,20 +708,14 @@ def discover_persisted_runtime_event_read_paths() -> tuple[str, ...]:
 
 
 def discover_runtime_event_constructor_sites() -> tuple[RuntimeEventReaderSite, ...]:
-    return tuple(
-        site
-        for site in discover_runtime_event_reader_sites()
-        if site.operation == "RuntimeEvent(...)"
-    )
+    return tuple(site for site in discover_runtime_event_reader_sites() if site.operation == "RuntimeEvent(...)")
 
 
 def count_constructor_sites_unclassified(
     sites: tuple[RuntimeEventReaderSite, ...] | None = None,
 ) -> int:
     ctor_sites = sites if sites is not None else discover_runtime_event_constructor_sites()
-    return sum(
-        1 for site in ctor_sites if site.disposition == RuntimeEventReaderDisposition.UNCLASSIFIED
-    )
+    return sum(1 for site in ctor_sites if site.disposition == RuntimeEventReaderDisposition.UNCLASSIFIED)
 
 
 def count_evidence_less_non_persisted_constructor_classifications(
@@ -770,14 +752,12 @@ def validate_runtime_event_reader_site_classification(
     for site in reader_sites:
         if site.disposition == RuntimeEventReaderDisposition.UNCLASSIFIED:
             violations.append(
-                f"unclassified runtime event reader {site.module_path}:{site.line} "
-                f"{site.qualname} {site.operation}",
+                f"unclassified runtime event reader {site.module_path}:{site.line} {site.qualname} {site.operation}",
             )
             continue
         if site.classification_evidence == RuntimeEventReaderClassificationEvidence.UNSPECIFIED:
             violations.append(
-                f"classified reader missing evidence {site.module_path}:{site.line} "
-                f"{site.disposition.value}",
+                f"classified reader missing evidence {site.module_path}:{site.line} {site.disposition.value}",
             )
             continue
         if site.disposition == RuntimeEventReaderDisposition.NON_PERSISTED_CONSTRUCTION:
@@ -799,9 +779,7 @@ def count_unclassified_runtime_event_reader_sites(
     sites: tuple[RuntimeEventReaderSite, ...] | None = None,
 ) -> int:
     reader_sites = sites if sites is not None else discover_runtime_event_reader_sites()
-    return sum(
-        1 for site in reader_sites if site.disposition == RuntimeEventReaderDisposition.UNCLASSIFIED
-    )
+    return sum(1 for site in reader_sites if site.disposition == RuntimeEventReaderDisposition.UNCLASSIFIED)
 
 
 def count_persisted_reader_canonical_version_bypasses(
@@ -943,9 +921,7 @@ def synthetic_unknown_qualname_in_trusted_module_constructor_site() -> RuntimeEv
     )
 
 
-def synthetic_stale_constructor_positive_evidence_rule() -> (
-    tuple[str, str, RuntimeEventReaderClassificationEvidence]
-):
+def synthetic_stale_constructor_positive_evidence_rule() -> tuple[str, str, RuntimeEventReaderClassificationEvidence]:
     """Probe O: positive rule with no matching production constructor call-site."""
     return (
         "runtime/events/signals.py",
@@ -1076,11 +1052,7 @@ def collect_event_evolution_r3_r1_violations(
     violations.extend(validate_runtime_event_reader_site_classification(reader_sites))
     if count_unclassified_runtime_event_reader_sites(reader_sites) != 0:
         violations.append("runtime event reader discovery includes UNCLASSIFIED sites")
-    ctor_unclassified = sum(
-        1
-        for site in ctor_sites
-        if site.disposition == RuntimeEventReaderDisposition.UNCLASSIFIED
-    )
+    ctor_unclassified = sum(1 for site in ctor_sites if site.disposition == RuntimeEventReaderDisposition.UNCLASSIFIED)
     if ctor_unclassified != 0:
         violations.append(
             f"runtime event constructor discovery includes UNCLASSIFIED sites ({ctor_unclassified})",
@@ -1176,8 +1148,7 @@ def compute_event_evolution_r3_r1_metrics() -> EventEvolutionR3R1Metrics:
     model_validate_sites = [
         site
         for site in reader_sites
-        if site.operation
-        in {"RuntimeEvent.model_validate", "RuntimeEvent.model_validate_json"}
+        if site.operation in {"RuntimeEvent.model_validate", "RuntimeEvent.model_validate_json"}
     ]
     persistence_sites = discover_runtime_event_persistence_call_sites()
     return EventEvolutionR3R1Metrics(
@@ -1186,12 +1157,8 @@ def compute_event_evolution_r3_r1_metrics() -> EventEvolutionR3R1Metrics:
         observability_v2_literals=len(observability_runtime_event_v2_literal_sites()),
         reader_candidate_count=len(reader_sites),
         reader_canonical_parser=reader_counts[RuntimeEventReaderDisposition.CANONICAL_PARSER],
-        reader_non_persisted_construction=reader_counts[
-            RuntimeEventReaderDisposition.NON_PERSISTED_CONSTRUCTION
-        ],
-        reader_internal_already_typed_flow=reader_counts[
-            RuntimeEventReaderDisposition.INTERNAL_ALREADY_TYPED_FLOW
-        ],
+        reader_non_persisted_construction=reader_counts[RuntimeEventReaderDisposition.NON_PERSISTED_CONSTRUCTION],
+        reader_internal_already_typed_flow=reader_counts[RuntimeEventReaderDisposition.INTERNAL_ALREADY_TYPED_FLOW],
         reader_test_lab_only=reader_counts[RuntimeEventReaderDisposition.TEST_LAB_ONLY],
         reader_unclassified=reader_counts[RuntimeEventReaderDisposition.UNCLASSIFIED],
         reader_bypass_count=count_persisted_reader_canonical_version_bypasses(reader_sites),
