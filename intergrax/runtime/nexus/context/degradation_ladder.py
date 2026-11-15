@@ -12,6 +12,7 @@ from intergrax.context.budget.contracts import (
     DegradationStepKind,
 )
 from intergrax.context.budget.mandatory_base_messages import complete_tool_call_group_spans
+from intergrax.context.budget.message_token_cost import message_non_content_cost, message_token_cost
 from intergrax.llm.messages import ChatMessage
 from intergrax.runtime.nexus.context.context_budget import (
     ContextBudgetPolicy,
@@ -76,14 +77,18 @@ def _hard_trim_messages(
 ) -> list[ChatMessage]:
     """Truncate content only (identity and tool-call linkage kept); drop unfittable pairs atomically.
 
-    Mandatory messages and the final user turn are never touched. The remaining token slack is
-    shared out fairly among the other messages; when even one token per message no longer fits,
-    the oldest complete tool-call group is dropped as a unit (PDC-D2-R011).
+    Mandatory messages and the final user turn are never touched. A message costs its content plus
+    its ``tool_calls``, ``name`` and ``tool_call_id`` (PDC-D2-R010); only the content can be
+    truncated, so that non-content share is reserved first. The remaining token slack is shared out
+    fairly among the content of the other messages; when even one content token per message no
+    longer fits, the oldest complete tool-call group is dropped as a unit (PDC-D2-R011).
     """
     fixed = {candidate.message_index for candidate in candidates if candidate.mandatory}
     if messages and messages[-1].role == "user":
         fixed.add(len(messages) - 1)
-    sizes = [count_tokens(message.content or "") for message in messages]
+    content_sizes = [max(0, count_tokens(message.content or "")) for message in messages]
+    overheads = [message_non_content_cost(message, count_tokens) for message in messages]
+    sizes = [content_sizes[index] + overheads[index] for index in range(len(messages))]
     alive = set(range(len(messages)))
     spans = complete_tool_call_group_spans(messages)
 
@@ -92,7 +97,7 @@ def _hard_trim_messages(
         if not flexible:
             break
         slack = budget_tokens - sum(sizes[index] for index in alive if index in fixed)
-        if slack >= len(flexible):
+        if slack >= sum(overheads[index] for index in flexible) + len(flexible):
             break
         victim = next(
             (
@@ -107,13 +112,18 @@ def _hard_trim_messages(
         alive -= victim
 
     flexible = [index for index in sorted(alive) if index not in fixed]
-    slack = max(0, budget_tokens - sum(sizes[index] for index in alive if index in fixed))
+    slack = max(
+        0,
+        budget_tokens
+        - sum(sizes[index] for index in alive if index in fixed)
+        - sum(overheads[index] for index in flexible),
+    )
     limits: dict[int, int] = {}
     remaining = slack
-    ordered = sorted(flexible, key=lambda index: sizes[index])
+    ordered = sorted(flexible, key=lambda index: content_sizes[index])
     for position, index in enumerate(ordered):
         share = max(1, remaining // (len(ordered) - position))
-        limits[index] = min(sizes[index], share)
+        limits[index] = min(content_sizes[index], share)
         remaining = max(0, remaining - limits[index])
 
     result: list[ChatMessage] = []
@@ -121,7 +131,7 @@ def _hard_trim_messages(
         if index not in alive:
             continue
         limit = limits.get(index)
-        if limit is None or sizes[index] <= limit:
+        if limit is None or content_sizes[index] <= limit:
             result.append(message)
             continue
         policy = ContextBudgetPolicy(max_chars=limit * 4, max_tokens_estimate=limit)
@@ -262,7 +272,7 @@ def apply_degradation_step(
             count_tokens=count_tokens,
         )
         total_chars_after = sum(len(m.content or "") for m in trimmed_messages)
-        tokens_after = sum(count_tokens(m.content or "") for m in trimmed_messages)
+        tokens_after = sum(message_token_cost(m, count_tokens) for m in trimmed_messages)
         return DegradationApplyResult(
             messages=trimmed_messages,
             step=step,
