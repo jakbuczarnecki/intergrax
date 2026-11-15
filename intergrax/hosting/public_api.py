@@ -36,7 +36,10 @@ HOSTING_PUBLIC_API_MANIFEST_SCHEMA_ID: Final[str] = "intergrax.hosting.public_ap
 
 # Current public API version (semantic version owned by hosting). Bump when the declared
 # surface below changes and add the matching entry to HOSTING_PUBLIC_API_VERSION_HISTORY.
-HOSTING_PUBLIC_API_VERSION: Final[str] = "1.0.0"
+# 1.0.1 extends the fingerprint scheme (model config, field constraints, validator names);
+# no symbol was added, removed or changed in behaviour. The gate cannot tell a scheme change
+# from a surface change, so the scheme change is recorded as a patch version.
+HOSTING_PUBLIC_API_VERSION: Final[str] = "1.0.1"
 
 _ADDRESS = re.compile(r"0x[0-9a-fA-F]+")
 
@@ -67,6 +70,37 @@ def _public_members(cls: type) -> dict[str, str]:
     return members
 
 
+def _model_contract(model: type) -> dict[str, object]:
+    """Behavioural contract of a model: config, per-field constraints and validator names.
+
+    Added in 1.0.1 (T-IGX-041-D, F-D4-07): flipping ``extra`` or widening a bound changes the
+    fingerprint. This is a change of the fingerprint scheme, not of the symbol set.
+    """
+    config = getattr(model, "model_config", {})
+    decorators = getattr(model, "__pydantic_decorators__", None)
+    validators: list[str] = []
+    if decorators is not None:
+        for group in (
+            "validators",
+            "field_validators",
+            "root_validators",
+            "model_validators",
+            "field_serializers",
+            "model_serializers",
+        ):
+            validators.extend(f"{group}:{name}" for name in getattr(decorators, group, {}))
+    constraints = {
+        name: [_stable(repr(item)) for item in field.metadata]
+        for name, field in sorted(model.model_fields.items())  # type: ignore[attr-defined]
+        if field.metadata
+    }
+    return {
+        "config": {key: _stable(repr(value)) for key, value in sorted(dict(config).items())},
+        "constraints": constraints,
+        "validators": sorted(validators),
+    }
+
+
 def describe_public_symbol(obj: object) -> dict[str, object]:
     """Return a deterministic structural description of one public symbol."""
     if inspect.isclass(obj):
@@ -87,6 +121,7 @@ def describe_public_symbol(obj: object) -> dict[str, object]:
                 name: [_stable(str(field.annotation)), field.is_required()]
                 for name, field in sorted(model_fields.items())
             }
+            description["contract"] = _model_contract(obj)
         elif dataclasses.is_dataclass(obj):
             description["kind"] = "dataclass"
             description["fields"] = {field.name: _stable(str(field.type)) for field in dataclasses.fields(obj)}
@@ -185,95 +220,95 @@ HOSTING_PUBLIC_API_FINGERPRINTS: Final[Mapping[str, str]] = {
     "BootstrapIdentitySnapshot": "c1ebe66d17f54e3b",
     "BootstrapReadinessLevel": "c9dec6db5396ea9a",
     "BootstrapSurfaceKind": "32ef522a61966f6d",
-    "ComponentFailurePolicy": "a305770868f5b83a",
+    "ComponentFailurePolicy": "05c2e9b6038e970b",
     "CompositeHostedApplicationEventPublisher": "f193aa96746499fb",
     "FileHostedApplicationInstanceGuard": "e1315ff8c3879f8c",
     "HOSTED_APPLICATION_PROFILE_SPEC_VERSION": "900dfafb2497b467",
-    "HookFailurePolicy": "07220ec76d614a0f",
+    "HookFailurePolicy": "90e1fb1ca0313729",
     "HostedApplicationActiveWorkController": "a81294d185fcf42a",
     "HostedApplicationClock": "75695384cd7bb1ae",
     "HostedApplicationComponent": "49de0c11d9928c99",
     "HostedApplicationComponentError": "fadb43d6ffda51f5",
-    "HostedApplicationComponentHealth": "df83960cb9faf322",
-    "HostedApplicationComponentRegistration": "5c3ab2a6d0078bb4",
+    "HostedApplicationComponentHealth": "9243238da3d3e45b",
+    "HostedApplicationComponentRegistration": "6631fc899c50cb12",
     "HostedApplicationComponentState": "492edda90c3869f7",
     "HostedApplicationConfigurationError": "fadb43d6ffda51f5",
     "HostedApplicationContext": "24fe1bf7ce68bf83",
-    "HostedApplicationContextPublicView": "6f6c34e1dba49eb0",
+    "HostedApplicationContextPublicView": "c6296f27ecb0b0b8",
     "HostedApplicationControlCoordinator": "c117f645181c4a09",
     "HostedApplicationControlError": "fadb43d6ffda51f5",
     "HostedApplicationControlIntent": "f8b3f3f9cc23b8ed",
-    "HostedApplicationControlSnapshot": "f67219a2c1050d91",
+    "HostedApplicationControlSnapshot": "ab540eec5fa40c54",
     "HostedApplicationDefinition": "1301939e7f4c37ae",
     "HostedApplicationDefinitionError": "fadb43d6ffda51f5",
-    "HostedApplicationDefinitionPublicView": "12596a22e51df227",
-    "HostedApplicationDiagnosticSnapshot": "f0f2b87625c7a0e3",
-    "HostedApplicationEffectiveControlRequest": "a77c1c0d2a0a55b5",
+    "HostedApplicationDefinitionPublicView": "caeb20fb6f37cda0",
+    "HostedApplicationDiagnosticSnapshot": "159578a459761b91",
+    "HostedApplicationEffectiveControlRequest": "c46fd1617e0f4215",
     "HostedApplicationEngine": "282ec2073f5931c9",
     "HostedApplicationEngineError": "1628b26193f04b65",
     "HostedApplicationEngineFactory": "476a39cafdf59241",
-    "HostedApplicationEngineTerminalResult": "e723614f856ec83a",
-    "HostedApplicationEvent": "6a43892d1df3a963",
+    "HostedApplicationEngineTerminalResult": "84c5a1a6e1cc51f7",
+    "HostedApplicationEvent": "4f2787e114aa5134",
     "HostedApplicationEventPublisher": "c80f749bed94e182",
-    "HostedApplicationEventSubscription": "f33f0bb73cf19cd2",
+    "HostedApplicationEventSubscription": "00b4c7280f397819",
     "HostedApplicationEventType": "d690229ce1d9b3a9",
     "HostedApplicationExitKind": "fbe0f571f33c07f4",
-    "HostedApplicationExitRecord": "5c90bbb2a2e1e3af",
+    "HostedApplicationExitRecord": "29520a005247f26a",
     "HostedApplicationFailurePhase": "d6f11a1c3e7c399e",
-    "HostedApplicationFailureRecord": "28bf4739ea2e8875",
+    "HostedApplicationFailureRecord": "dd0a401dbb5cbe9f",
     "HostedApplicationFlushService": "3ee9348de98dbe29",
-    "HostedApplicationHealthSnapshot": "48abde86c5fe54eb",
-    "HostedApplicationHook": "1bcc42a5fdf47979",
+    "HostedApplicationHealthSnapshot": "86f12579d5286b72",
+    "HostedApplicationHook": "6b37cbff2752dc36",
     "HostedApplicationHookError": "fadb43d6ffda51f5",
     "HostedApplicationHookMode": "e21237c644366b58",
     "HostedApplicationHookPoint": "515184f069de341b",
-    "HostedApplicationHooks": "265d5f9b1e59eeaf",
-    "HostedApplicationIdentity": "10b421173055ced8",
+    "HostedApplicationHooks": "24a3788a74d554f9",
+    "HostedApplicationIdentity": "b265baf3632e1484",
     "HostedApplicationInstanceAcquisitionResult": "e90bf3d1b293d4e7",
     "HostedApplicationInstanceConflictError": "8f6ebe86101e62d8",
     "HostedApplicationInstanceGuardError": "fadb43d6ffda51f5",
-    "HostedApplicationInstanceLeasePublicView": "ea1fe98864513ed9",
+    "HostedApplicationInstanceLeasePublicView": "3e1b9412ada3a7fa",
     "HostedApplicationInstanceOwnershipError": "8f6ebe86101e62d8",
     "HostedApplicationLifecycleMetric": "d567d568532153ba",
-    "HostedApplicationLifecycleSnapshot": "781df96f37b93589",
+    "HostedApplicationLifecycleSnapshot": "aff02da0c68ac4ea",
     "HostedApplicationLifecycleSnapshotProvider": "2d9f168077ffaf17",
     "HostedApplicationLifecycleState": "b76dbce4cadd7dd8",
     "HostedApplicationLifecycleTransitionError": "fadb43d6ffda51f5",
     "HostedApplicationLogger": "279e85f9bbdb64af",
-    "HostedApplicationPaths": "ceb9c290119140c2",
-    "HostedApplicationProcessIdentity": "44cae10772de862d",
-    "HostedApplicationProfile": "7e5dc1bf59f1124a",
-    "HostedApplicationProfilePublicView": "744d9c9d8440b58d",
+    "HostedApplicationPaths": "8ec7359a45b27664",
+    "HostedApplicationProcessIdentity": "ef85a86fc2700cd1",
+    "HostedApplicationProfile": "bc378a2e7becc206",
+    "HostedApplicationProfilePublicView": "b91b72b0dc8608b1",
     "HostedApplicationReadinessService": "e06db16f5630289c",
-    "HostedApplicationRestartDecision": "213e60f65a026f64",
+    "HostedApplicationRestartDecision": "22de2d4b0b113253",
     "HostedApplicationRestartPolicyError": "fadb43d6ffda51f5",
     "HostedApplicationRestartPolicyEvaluator": "2b3398e205790f28",
-    "HostedApplicationRestartRequestSnapshot": "e0caa003eebd11f0",
+    "HostedApplicationRestartRequestSnapshot": "87b61d48f42c3779",
     "HostedApplicationRuntime": "683497b0b40342a5",
     "HostedApplicationRuntimeError": "fadb43d6ffda51f5",
     "HostedApplicationServiceRegistry": "91e305a6adc483c3",
     "HostedApplicationShutdownCoordinator": "fde2e028189d8584",
     "HostedApplicationShutdownError": "fadb43d6ffda51f5",
-    "HostedApplicationShutdownExecutionSnapshot": "9c749099ed1ed933",
-    "HostedApplicationShutdownRequestSnapshot": "e0caa003eebd11f0",
+    "HostedApplicationShutdownExecutionSnapshot": "a34cf8c76e31a22f",
+    "HostedApplicationShutdownRequestSnapshot": "87b61d48f42c3779",
     "HostedApplicationShutdownTimeoutError": "0fa77807521490e5",
     "HostedApplicationSignalError": "fadb43d6ffda51f5",
     "HostedApplicationStartupError": "fadb43d6ffda51f5",
     "HostedApplicationSupervisor": "f8f3e2d4e60e65b2",
     "HostedApplicationSupervisorError": "5d80a5e3f580f78c",
-    "HostedApplicationSupervisorLaunchContext": "a1c9acc7c4113892",
-    "HostedApplicationSupervisorResult": "b67e568a1d7acd4a",
+    "HostedApplicationSupervisorLaunchContext": "302e0abc466dab36",
+    "HostedApplicationSupervisorResult": "ee0d5a51fffea6bb",
     "HostedBootstrapFailureProducer": "78aeffa8b7de573f",
     "HostedProcessBootstrapContext": "fd90b265000c0480",
     "HostedProcessBootstrapFailureFacts": "dcdae04bd97e9dae",
     "HostedProcessBootstrapPhase": "79003fc89f85b138",
-    "InstancePolicy": "4596b83dcf4eeefb",
-    "LifecyclePolicy": "d00415d521a7e330",
+    "InstancePolicy": "7290800f4a428576",
+    "LifecyclePolicy": "bf0390b795f84857",
     "LoggingBootstrapFailureReporter": "477a226bbd628f1e",
     "ObservabilityHostedApplicationEventPublisher": "f193aa96746499fb",
     "PortableForegroundSignalAdapter": "cc2ce40aeee449f1",
-    "RestartPolicy": "a0fb20d6905c0ba5",
-    "ShutdownPolicy": "82222717b3373c0f",
+    "RestartPolicy": "4ae4d8104ff2e6b8",
+    "ShutdownPolicy": "189f5fc6a3db36b7",
     "hosted_process_bootstrap_failure_payload": "710ec06fabbb195e",
     "mint_bootstrap_attempt_id": "6707085707a57420",
     "resolve_hosted_application_definition": "6a115995435bc66d",
@@ -286,6 +321,7 @@ HOSTING_PUBLIC_API_FINGERPRINTS: Final[Mapping[str, str]] = {
 # A changed surface must add a new, higher version here; recorded digests are never edited.
 HOSTING_PUBLIC_API_VERSION_HISTORY: Final[Mapping[str, str]] = {
     "1.0.0": "sha256:88814bef45fe1494f1a2a5d22165c932063eba8a77df96db83bf59efb9134907",
+    "1.0.1": "sha256:b833310d4d84cbf714def409735a9bdfa1cc477fc3d343f3488c202b686489eb",
 }
 
 

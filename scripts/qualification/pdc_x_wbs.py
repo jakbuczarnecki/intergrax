@@ -602,6 +602,32 @@ BATCHES: Final[tuple[Batch, ...]] = (
         "IA-D7 (P7 re-audit)",
         "tests/qualification/pdc_x/d7_repair/ plus the cited d7, bg_01, sched_01 and XD-05/06 suites green; every in-scope finding pinned red-then-green with negative tests",
     ),
+    Batch(
+        "B-P7-D4",
+        "D4",
+        "D4 repair after the P7 independent audit (IA-D4): cancellation rolls back lease, components and runtime; bounded runtime readiness probe and bounded event/metric publishes; public API fingerprint sees model config and constraints; composition-root gate with the declared lab MCP exception; TL-FIX-C and isolation-bound documentation reconciled; symlink tests skip without privilege",
+        "T-IGX-041-D",
+        "W13",
+        (
+            "intergrax/hosting/engine/engine.py",
+            "intergrax/hosting/eventing.py",
+            "intergrax/hosting/supervisor/supervisor.py",
+            "intergrax/hosting/public_api.py",
+            "tests/qualification/pdc_x/d4_repair/",
+            "tests/qualification/pdc_x/d4/test_d4_crash_restart_subprocess.py",
+            "tests/unit/hosting/instance/test_file_guard.py",
+            "tests/unit/hosting/instance/test_w3_file_guard_regression.py",
+            "docs/project/architecture/TIER3_APPLICATION_ENVIRONMENT.md",
+            "docs/project/maintainers/plans/TIER3_APPLICATION_ENVIRONMENT.md",
+            "docs/project/maintainers/plans/satellites/TIER3_APPLICATION_ENVIRONMENT_embedded_detail.md",
+            "docs/project/architecture/APPLICATION_HOSTING.md",
+        ),
+        "ADR-PDC-04",
+        ("B-P6-J",),
+        GATE_PRODUCT,
+        "IA-D4 (re-audit, loop 1 of 2)",
+        "tests/qualification/pdc_x/d4_repair/ plus the D4-cited suites of the ticket test contract (pdc_x/d4, host_01, tests/unit/hosting)",
+    ),
 )
 
 # Requirement -> batch overrides where the corrective-task text alone is ambiguous.

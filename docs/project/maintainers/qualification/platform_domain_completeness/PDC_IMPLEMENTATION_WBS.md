@@ -37,6 +37,7 @@ Rows classed `CURRENT_HEAD_REQUALIFICATION`, `ALREADY_CERTIFIED_REUSABLE`, `N/A_
 | B-P6-J | ALL | W12 | T-IGX-040-A | 0 | — | B-P6-I | YES | OD-PDC-SEQ-01: implement in an isolated worktree; merge only after MCP-SERVER-X P8 publication; ACT-N11 re-activation at PDC-P7-00 | IA-GLOBAL (P8) |
 | B-P7-D5 | D5 | W13 | T-IGX-041-E | 0 | — | B-P6-J | YES | OD-PDC-SEQ-01: implement in an isolated worktree; merge only after MCP-SERVER-X P8 publication; ACT-N11 re-activation at PDC-P7-00 | IA-D5 (P7 re-audit) |
 | B-P7-D7 | D7 | W13 | T-IGX-041-G | 0 | — | B-P6-J | YES | OD-PDC-SEQ-01: implement in an isolated worktree; merge only after MCP-SERVER-X P8 publication; ACT-N11 re-activation at PDC-P7-00 | IA-D7 (P7 re-audit) |
+| B-P7-D4 | D4 | W13 | T-IGX-041-D | 0 | ADR-PDC-04 | B-P6-J | YES | OD-PDC-SEQ-01: implement in an isolated worktree; merge only after MCP-SERVER-X P8 publication; ACT-N11 re-activation at PDC-P7-00 | IA-D4 (re-audit, loop 1 of 2) |
 
 ## B-P3 — Ownership records closed in P3
 
@@ -413,6 +414,18 @@ Rows classed `CURRENT_HEAD_REQUALIFICATION`, `ALREADY_CERTIFIED_REUSABLE`, `N/A_
 - **Write set:** `intergrax/runtime/long_running/scheduler.py`, `intergrax/runtime/long_running/recurrence.py`, `intergrax/runtime/long_running/scheduled_resume.py`, `intergrax/runtime/long_running/scheduled_resume_metadata.py`, `intergrax/runtime/long_running/scheduler_claim.py`, `intergrax/runtime/long_running/store.py`, `intergrax/runtime/long_running/postgresql_task_checkpoint_store.py`, `intergrax/queueing/providers/document_store/document_store_task_queue.py`, `tests/qualification/pdc_x/d7_repair/`, `tests/qualification/pdc_x/d7/test_d7_recurrence.py`, `tests/qualification/pdc_x/d7/test_d7_fencing_two_process.py`, `tests/qualification/pdc_x/d7/_fencing_worker.py`, `docs/project/architecture/BACKGROUND_TASKS.md`, `docs/project/maintainers/plans/BACKGROUND_TASKS.md`
 - **Tests:** tests/qualification/pdc_x/d7_repair/ plus the cited d7, bg_01, sched_01 and XD-05/06 suites green; every in-scope finding pinned red-then-green with negative tests
 - **Evidence (exact SHA):** implementation SHA and publication SHA recorded in `PDC_SHA_LADDER.md`; test log under `.tmp/proof/pdc-x-p5/B-P7-D7/`; audited by IA-D7 (P7 re-audit) at the PDC-P7 audited SHA.
+- **Merge gate:** OD-PDC-SEQ-01: implement in an isolated worktree; merge only after MCP-SERVER-X P8 publication; ACT-N11 re-activation at PDC-P7-00
+
+| Requirement | Class | Test case |
+| --- | --- | --- |
+| — | — | — |
+
+## B-P7-D4 — D4 repair after the P7 independent audit (IA-D4): cancellation rolls back lease, components and runtime; bounded runtime readiness probe and bounded event/metric publishes; public API fingerprint sees model config and constraints; composition-root gate with the declared lab MCP exception; TL-FIX-C and isolation-bound documentation reconciled; symlink tests skip without privilege
+
+- **Ticket:** T-IGX-041-D · **Wave:** W13 · **ADR:** ADR-PDC-04 · **Auditor:** IA-D4 (re-audit, loop 1 of 2)
+- **Write set:** `intergrax/hosting/engine/engine.py`, `intergrax/hosting/eventing.py`, `intergrax/hosting/supervisor/supervisor.py`, `intergrax/hosting/public_api.py`, `tests/qualification/pdc_x/d4_repair/`, `tests/qualification/pdc_x/d4/test_d4_crash_restart_subprocess.py`, `tests/unit/hosting/instance/test_file_guard.py`, `tests/unit/hosting/instance/test_w3_file_guard_regression.py`, `docs/project/architecture/TIER3_APPLICATION_ENVIRONMENT.md`, `docs/project/maintainers/plans/TIER3_APPLICATION_ENVIRONMENT.md`, `docs/project/maintainers/plans/satellites/TIER3_APPLICATION_ENVIRONMENT_embedded_detail.md`, `docs/project/architecture/APPLICATION_HOSTING.md`
+- **Tests:** tests/qualification/pdc_x/d4_repair/ plus the D4-cited suites of the ticket test contract (pdc_x/d4, host_01, tests/unit/hosting)
+- **Evidence (exact SHA):** implementation SHA and publication SHA recorded in `PDC_SHA_LADDER.md`; test log under `.tmp/proof/pdc-x-p5/B-P7-D4/`; audited by IA-D4 (re-audit, loop 1 of 2) at the PDC-P7 audited SHA.
 - **Merge gate:** OD-PDC-SEQ-01: implement in an isolated worktree; merge only after MCP-SERVER-X P8 publication; ACT-N11 re-activation at PDC-P7-00
 
 | Requirement | Class | Test case |
