@@ -2,27 +2,24 @@
 
 from __future__ import annotations
 
+from collections.abc import Sequence
 from pathlib import Path
-from typing import Any, Optional, Sequence
+from typing import Any
 
 import pytest
-
 from intergrax.llm.messages import ChatMessage
 from intergrax.llm_adapters._shared.adapter_response_builders import build_adapter_response
+from intergrax.llm_adapters.base.base_llm_adapter import BaseLLMAdapter
 from intergrax.llm_adapters.contracts.adapter_response import LLMAdapterResponse
 from intergrax.llm_adapters.contracts.llm_adapter import LLMAdapter
-from intergrax.llm_adapters.base.base_llm_adapter import BaseLLMAdapter
 from intergrax.llm_adapters.llm_provider_registry import (
     LLMAdapterRegistrationError,
     LLMAdapterRegistry,
 )
 
-
 pytestmark = pytest.mark.unit
 
-_REGISTRY_SOURCE = (
-    Path(__file__).resolve().parents[3] / "intergrax" / "llm_adapters" / "llm_provider_registry.py"
-)
+_REGISTRY_SOURCE = Path(__file__).resolve().parents[3] / "intergrax" / "llm_adapters" / "llm_provider_registry.py"
 
 
 class _ModelContractAdapter(BaseLLMAdapter):
@@ -42,9 +39,9 @@ class _ModelContractAdapter(BaseLLMAdapter):
         self,
         messages: Sequence[ChatMessage],
         *,
-        temperature: Optional[float] = None,
-        max_tokens: Optional[int] = None,
-        run_id: Optional[str] = None,
+        temperature: float | None = None,
+        max_tokens: int | None = None,
+        run_id: str | None = None,
     ) -> LLMAdapterResponse:
         return build_adapter_response(content="ok")
 
@@ -63,9 +60,9 @@ class _InvalidModelAdapter(BaseLLMAdapter):
         self,
         messages: Sequence[ChatMessage],
         *,
-        temperature: Optional[float] = None,
-        max_tokens: Optional[int] = None,
-        run_id: Optional[str] = None,
+        temperature: float | None = None,
+        max_tokens: int | None = None,
+        run_id: str | None = None,
     ) -> LLMAdapterResponse:
         return build_adapter_response(content="ok")
 
@@ -113,8 +110,18 @@ def test_invalid_adapter_missing_model_fails_clearly(_restore_registry_state) ->
         return _InvalidModelAdapter(**kwargs)
 
     LLMAdapterRegistry.register(provider, factory, override=True)
-    with pytest.raises(LLMAdapterRegistrationError, match="required public 'model'"):
+    # ``model: str`` is a member of the ``LLMAdapter`` runtime protocol, so ``create`` rejects an adapter
+    # without it at the protocol check, before the model-id resolution runs.
+    with pytest.raises(TypeError, match="returned invalid type .*expected LLMAdapter"):
         LLMAdapterRegistry.create(provider)
+
+
+def test_model_id_resolution_reports_a_missing_public_model_attribute() -> None:
+    from intergrax.llm_adapters.llm_provider_registry import _resolve_adapter_model_id
+
+    adapter: Any = _InvalidModelAdapter()
+    with pytest.raises(LLMAdapterRegistrationError, match="required public 'model'"):
+        _resolve_adapter_model_id(adapter, {})
 
 
 def test_registry_model_resolution_has_no_dict_introspection() -> None:
