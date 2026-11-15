@@ -11,15 +11,14 @@ from __future__ import annotations
 
 import sys
 from pathlib import Path
-from typing import Dict, Optional
 
 from pydantic import BaseModel, Field
 
-from intergrax.contracts.persisted_run_trace import persisted_trace_event_to_wire
-from intergrax.runtime.task.unified_task_runner import UnifiedTaskRunner
-from intergrax.runtime.persistence.sqlite_composition import (
-    create_sqlite_trace_store,
+from intergrax.contracts.execution_identity import mint_run_id
+from intergrax.contracts.host_orchestration_application_wiring_target import (
+    HostOrchestrationApplicationWiringTarget,
 )
+from intergrax.contracts.persisted_run_trace import persisted_trace_event_to_wire
 from intergrax.experiments.composition import resolve_experiment_persistence
 from intergrax.experiments.models import (
     ExperimentDecision,
@@ -27,15 +26,19 @@ from intergrax.experiments.models import (
     RegisterExperimentRequest,
 )
 from intergrax.experiments.persistence_contract import ExperimentPersistence
-from intergrax.contracts.host_orchestration_application_wiring_target import (
-    HostOrchestrationApplicationWiringTarget,
+from intergrax.runtime.execution.certified_internal_harness_governance_identity import (
+    admit_certified_internal_harness_root_governance_identity,
 )
 from intergrax.runtime.execution.debug_lab_nexus_loop import build_debug_minimal_nexus_loop
 from intergrax.runtime.execution.harness_task_execution_port import (
     build_harness_root_task_execution_port_from_wiring_target,
 )
+from intergrax.runtime.persistence.sqlite_composition import (
+    create_sqlite_trace_store,
+)
 from intergrax.runtime.registry.agent_registry import AgentRegistry
 from intergrax.runtime.task.task import Task, TaskContext, TaskResult, TaskState
+from intergrax.runtime.task.unified_task_runner import UnifiedTaskRunner
 
 
 def ensure_repo_root_on_path(start: Path | None = None) -> Path:
@@ -63,7 +66,7 @@ class ExperimentRunOutcome(BaseModel):
     record: ExperimentRecord
     task_result: TaskResult
     trace_event_count: int = 0
-    checks: Dict[str, bool] = Field(default_factory=dict)
+    checks: dict[str, bool] = Field(default_factory=dict)
 
     @property
     def passed(self) -> bool:
@@ -73,9 +76,9 @@ class ExperimentRunOutcome(BaseModel):
 def evaluate_against_criteria(
     record: ExperimentRecord,
     result: TaskResult,
-) -> Dict[str, bool]:
+) -> dict[str, bool]:
     """Apply lightweight checks from registry validation fields."""
-    checks: Dict[str, bool] = {
+    checks: dict[str, bool] = {
         "completed": result.state == TaskState.COMPLETED,
         "validation_valid": result.metadata.get("validation_valid") is True,
         "non_empty_answer": bool(result.answer.strip()),
@@ -159,7 +162,10 @@ class ExperimentSession:
             task.agent_id = record.agent_id
 
         result = await UnifiedTaskRunner(
-            build_harness_root_task_execution_port_from_wiring_target(loop),
+            build_harness_root_task_execution_port_from_wiring_target(
+                loop,
+                admit_root_governance_identity=admit_certified_internal_harness_root_governance_identity,
+            ),
         ).run_task(task, run_id=mint_run_id())
         run_id = result.run_id or result.task_id
 
@@ -188,7 +194,7 @@ class ExperimentSession:
         experiment_id: str,
         decision: ExperimentDecision,
         *,
-        notes: Optional[str] = None,
+        notes: str | None = None,
     ) -> ExperimentRecord:
         return self._experiment_store.set_decision(experiment_id, decision, notes=notes)
 
@@ -196,8 +202,7 @@ class ExperimentSession:
         """Read persisted trace metadata when ``trace_db`` was configured."""
         if self._trace_db is None or not self._trace_db.exists():
             raise FileNotFoundError(
-                "Trace database not configured or missing. "
-                "Pass trace_db= to ExperimentSession before running."
+                "Trace database not configured or missing. Pass trace_db= to ExperimentSession before running."
             )
         store = create_sqlite_trace_store(db_path=self._trace_db)
         persisted = store.read_run(run_id, self.tenant_id)
