@@ -1,6 +1,12 @@
 # © Artur Czarnecki. All rights reserved.
 
-"""Immutable multi-region security audit trail (AUDIT-IDEAL-23.1)."""
+"""Multi-region security audit trail bookkeeping (AUDIT-IDEAL-23.1).
+
+The "regions" are in-process bookkeeping: per-region lists of entry ids that live in this process
+next to one primary trail. Nothing is replicated to another store, the stored entries carry no hash
+chain or signature, and ``verify_replication`` never reads them back. See the classes below for what
+the report does and does not prove.
+"""
 
 from __future__ import annotations
 
@@ -19,14 +25,32 @@ class AuditRegionReplica(BaseModel):
 
 
 class MultiRegionAuditTrailReport(BaseModel):
+    """Consistency report of the in-process region bookkeeping (not a storage guarantee)."""
+
     schema_version: str = "1.0.0"
     regions: list[AuditRegionReplica] = Field(default_factory=list)
-    replicated: bool
-    immutable: bool
+    replicated: bool = Field(
+        description=(
+            "The in-process per-region id lists agree with each other (same count and head); "
+            "this does not prove that any replica store exists."
+        ),
+    )
+    immutable: bool = Field(
+        description=(
+            "The in-process per-region id lists still start with the prefix sealed by seal_prefix; "
+            "this does not prove that the stored entries are unchanged."
+        ),
+    )
 
 
 class MultiRegionSecurityAuditTrail:
-    """Append-only audit trail replicated across configured regions."""
+    """Append-only audit trail with in-process per-region bookkeeping over one primary trail.
+
+    Each append goes to the primary trail and the new entry id is recorded for every configured
+    region in this process. ``verify_replication`` compares those id lists with each other and with
+    the prefix sealed by ``seal_prefix``; it does not detect stored entries that were deleted or
+    altered in the primary trail, and the lists are empty after a restart.
+    """
 
     def __init__(
         self,

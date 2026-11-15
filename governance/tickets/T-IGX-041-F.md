@@ -47,6 +47,20 @@ Known reds that may remain and are not repaired here: the two `test_audit_ideal_
 - `intergrax/applications/_shared/` (including `security_audit_trail_wiring.py`), `intergrax/contracts/`, `intergrax/runtime/nexus/`, `testing_support/`, the COMPAT-X inventory and its tests, `scripts/governance/`, `.github/`, FRZ files and P8 originals.
 - IIAC activation and rebind, the EBH-7 re-pin, OD signatures, certification and the re-audit.
 
+## Implementation checkpoint
+
+Logs under `.tmp/proof/pdc-x-041f/` (not committed).
+
+- Red first: the new pinned tests of `tests/qualification/pdc_x/d6_repair/` against the unchanged product code: 14 failed, 26 passed (the passing ones are positive and regression controls); the unchanged sandbox test file: 1 failed, 12 passed (the red governance-deny test).
+- After the fixes: `d6_repair` and the sandbox file: 40 passed.
+- Test contract (one pytest, default extras): 548 passed, 11 skipped, 9 failed. The 9 failures are identical on unmodified `origin/development` (`dd58baa4d`, run in a scratch worktree): 7 x `test_compat_x_event_evolution_r3_r1_gates.py` (closed-world inventory counts, `raw_candidates 7416 != accepted current-head 7356`, the known COMPAT-X counter drift class) and the 2 known `test_audit_ideal_depth_gate.py` reds (`29_1`, `30_4`). The F-35 test file and `r3_p0_gates` are green and unedited. The 11 skips are the physical egress tests (Linux/WSL2 only).
+- `check_immutable_security_audit_trail.py`, `pdc_x_wbs.py --check`, `pdc_x_requirements.py --check`, `igx_gov ticket`: OK. ruff clean on touched files. pyright: the four product files 0 errors before and after; `test_cap_c1c_sandbox_evidence_and_contract_purity.py` 10 errors before and 12 after, the two added lines repeat typing patterns of the same file (`ToolExecutionRequest[SandboxExecInput]` and the sandbox isolation authority argument).
+- Double validation: the durable plane and the in-memory store used by the existing tests are legacy `RuntimeEventPersistence` objects; the trail now wraps them in the validating port. The durable restart, wiring, XD and audit-trail tests are green with identical listed entries; the second validation changes no stored event.
+
+### Deviations from the signed plan
+
+None: the write set is unchanged, nothing was narrowed or widened. Pre-existing lint in no touched file needed fixing.
+
 ## Lifecycle state
 
 plan_approved
