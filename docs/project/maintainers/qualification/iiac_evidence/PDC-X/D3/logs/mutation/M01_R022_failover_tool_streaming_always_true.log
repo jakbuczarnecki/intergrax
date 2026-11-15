@@ -1,0 +1,35 @@
+...........................................ss........................... [ 46%]
+.............................................................s.s...s.F
+================================== FAILURES ===================================
+____________________ test_failover_flags_follow_the_chain _____________________
+
+    def test_failover_flags_follow_the_chain() -> None:
+        policy = AlwaysTryNextPolicy()
+        mixed = FailoverLLMAdapter([StreamingOnlyAdapter(), StreamingToolsAdapter()], failover_policy=policy)
+        assert_capability_flags_match_methods(mixed, delegating=True)
+        assert mixed.supports_tools() is True  # was False before B-D3 although generate_with_tools forwards
+        assert mixed.supports_tool_streaming() is True
+
+        plain = FailoverLLMAdapter([BufferedOnlyAdapter()], failover_policy=policy)
+>       assert_capability_flags_match_methods(plain, delegating=True)
+
+tests\qualification\pdc_x\d3\test_d3_r022_capability_flags.py:193:
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+adapter = <intergrax.llm_adapters.registry.failover_adapter.FailoverLLMAdapter object at 0x000001B83CF94E60>
+
+    def assert_capability_flags_match_methods(adapter: object, *, delegating: bool = False) -> None:
+        violations = capability_flag_violations(adapter, delegating=delegating)
+>       assert not violations, "; ".join(violations)
+               ^^^^^^^^^^^^^^
+E       AssertionError: FailoverLLMAdapter: supports_tool_streaming() requires supports_tools() and supports_streaming()
+
+intergrax\llm_adapters\_shared\conformance.py:59: AssertionError
+=========================== short test summary info ===========================
+SKIPPED [1] tests\qualification\pdc_x\d3\test_d3_r009_refusal.py:146: optional extra llm-anthropic; the source gate covers the Claude adapter
+SKIPPED [1] tests\qualification\pdc_x\d3\test_d3_r009_refusal.py:156: optional extra llm-anthropic; the source gate covers the Claude adapter
+SKIPPED [2] tests\qualification\pdc_x\d3\test_d3_r022_capability_flags.py:74: optional extra llm-anthropic; the source gate covers the Claude adapter
+SKIPPED [1] tests\qualification\pdc_x\d3\test_d3_r022_capability_flags.py:126: optional extra llm-langchain-ollama; covered by the source gate
+FAILED tests/qualification/pdc_x/d3/test_d3_r022_capability_flags.py::test_failover_flags_follow_the_chain
+!!!!!!!!!!!!!!!!!!!!!!!!!! stopping after 1 failures !!!!!!!!!!!!!!!!!!!!!!!!!!
+1 failed, 136 passed, 5 skipped in 4.17s

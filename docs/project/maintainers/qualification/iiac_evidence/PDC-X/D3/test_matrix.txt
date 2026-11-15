@@ -1,0 +1,27 @@
+PDC-X / D3 independent audit - test matrix (auditor runs, Windows 11, one pytest process at a time)
+audited_implementation_sha = test_execution_sha = c08efe46a74a20595468d8d8bf06eab2dca5f573
+interpreter: uv-managed CPython 3.12.11 in the auditor worktree (.venv created by `uv run`); extras are named per run; nothing outside the worktree venv was installed.
+control checkout: detached worktree at 35b6772af~1 (517723684, before B-D3); mutation scratch: detached worktree at the audited SHA.
+
+#  command (cwd = auditor worktree unless noted)                                                    result                                   log
+1  uv run pytest tests/qualification/pdc_x/d3 -q                                                    150 passed, 5 skipped (optional extras)  logs/pytest_d3.log
+2  uv run pytest tests/unit/llm_adapters tests/qualification/ce_02 -q -x   (no extras)               collection ERROR in 2 modules (import anthropic)  (console only; overwritten by run 3)
+3  uv run --extra llm-anthropic --extra llm-mistral --extra llm-ollama --extra llm-langchain-ollama
+   --extra llm-gemini --extra llm-bedrock --extra llm-cohere-native --extra llm-openai
+   pytest tests/unit/llm_adapters tests/qualification/ce_02 tests/qualification/pdc_x/d3 -q          12 failed, 692 passed, 8 skipped        logs/pytest_unit_llm_ce02.log
+4  control (cwd = pre-B-D3 worktree): same extras, 5 files (8 of the 12 failures reproduce)         8 failed, 73 passed                      console only
+5  control (cwd = pre-B-D3 worktree): same extras, tests/unit/llm_adapters                          13 failed, 515 passed, 8 skipped         console only
+6  audited SHA: tests/unit/llm_adapters/test_llm_provider_registry.py + test_p2_002_c_provider_registration.py   28 passed (isolation)        console only
+7  uv run pytest tests/qualification/ebh_5 -q                                                        4 failed (duckdb missing), 239 passed   logs/pytest_ebh5.log
+8  uv run --extra integrations-duckdb pytest tests/qualification/ebh_5 -q                            243 passed                               logs/pytest_ebh5_duckdb.log
+9  uv run --extra integrations-duckdb pytest tests/qualification/pdc_x/p6_ecapfix reg_p p6_model p6_impact -q   110 passed                    logs/pytest_p6_ecapfix.log
+10 uv run --extra integrations-duckdb pytest tests/qualification/tenant_x -q                         1 failed (carrier count 831 vs 819), 193 passed   logs/pytest_tenant_x.log
+11 control: tenant_x test_tenant_x_p0_current_head.py -k carrier_count_stable at 35b6772af~1          1 passed                                 console only
+12 uv run --extra integrations-duckdb pytest tests/qualification/pdc_x/xd -q                         80 passed, process exited (36 s wall)    logs/pytest_xd.log
+13 uv run --extra integrations-duckdb pytest tests/qualification/ebh_6 -q -q                         exit 0 (all dots)                        logs/pytest_ebh6.log
+14 mutation sample (14 mutants, one pytest per mutant, scratch worktree; control 176 passed/5 skipped)   12 killed, 2 survived (M03, M12)    logs/mutation/
+15 adversarial probes (python, not pytest)                                                           see findings                             logs/probes/
+
+probes: probe_refusal_stream (F-D3-02), probe_ollama_stream (F-D3-08), probe_failover (F-D3-07), probe_timeout (F-D3-03/F-D3-10), probe_stream_guard (F-D3-01),
+        probe_multicat (F-D3-14), probe_ast (stream/flag inventory), probe_ctx_tables (context-window table inventory)
+python scripts/qualification/pdc_x_requirements.py --check  -> [OK] 172 rows, schema valid, FRZ 225/26

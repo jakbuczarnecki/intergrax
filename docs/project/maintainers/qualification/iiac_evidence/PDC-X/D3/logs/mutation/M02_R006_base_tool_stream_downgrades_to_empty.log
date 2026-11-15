@@ -1,0 +1,15 @@
+...........F
+================================== FAILURES ===================================
+________ test_unsupported_tool_streaming_fails_closed_with_typed_error ________
+
+    def test_unsupported_tool_streaming_fails_closed_with_typed_error() -> None:
+        adapter = BufferedToolsAdapter(provider="fake_buffered", model="m-1")
+>       with pytest.raises(LLMCapabilityMismatchError) as caught:
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E       Failed: DID NOT RAISE <class 'intergrax.llm_adapters.contracts.capabilities.LLMCapabilityMismatchError'>
+
+tests\qualification\pdc_x\d3\test_d3_r006_r015_fail_closed.py:37: Failed
+=========================== short test summary info ===========================
+FAILED tests/qualification/pdc_x/d3/test_d3_r006_r015_fail_closed.py::test_unsupported_tool_streaming_fails_closed_with_typed_error
+!!!!!!!!!!!!!!!!!!!!!!!!!! stopping after 1 failures !!!!!!!!!!!!!!!!!!!!!!!!!!
+1 failed, 11 passed in 1.89s

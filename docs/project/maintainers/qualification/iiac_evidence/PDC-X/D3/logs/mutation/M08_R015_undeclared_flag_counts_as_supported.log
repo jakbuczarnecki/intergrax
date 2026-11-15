@@ -1,0 +1,16 @@
+.............F
+================================== FAILURES ===================================
+__________ test_undeclared_feature_flag_is_treated_as_not_supported ___________
+
+    def test_undeclared_feature_flag_is_treated_as_not_supported() -> None:
+        """A third-party LLMAdapter without ``supports_tool_streaming`` never gets tool streaming."""
+        third_party = SimpleNamespace(provider="acme", model="x", supports_streaming=lambda: True)
+>       with pytest.raises(LLMCapabilityMismatchError) as caught:
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E       Failed: DID NOT RAISE <class 'intergrax.llm_adapters.contracts.capabilities.LLMCapabilityMismatchError'>
+
+tests\qualification\pdc_x\d3\test_d3_r006_r015_fail_closed.py:62: Failed
+=========================== short test summary info ===========================
+FAILED tests/qualification/pdc_x/d3/test_d3_r006_r015_fail_closed.py::test_undeclared_feature_flag_is_treated_as_not_supported
+!!!!!!!!!!!!!!!!!!!!!!!!!! stopping after 1 failures !!!!!!!!!!!!!!!!!!!!!!!!!!
+1 failed, 13 passed in 2.16s

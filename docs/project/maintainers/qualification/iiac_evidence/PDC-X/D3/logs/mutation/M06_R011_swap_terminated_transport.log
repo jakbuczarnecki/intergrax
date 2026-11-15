@@ -1,0 +1,20 @@
+...........................................ss........................... [ 46%]
+...............................F
+================================== FAILURES ===================================
+____ test_declared_cancel_capability_equals_observed_outcome[azure_openai] ____
+
+provider = <LLMProvider.AZURE_OPENAI: 'azure_openai'>
+
+    @pytest.mark.parametrize("provider", sorted(_WITH_SEAM, key=lambda p: p.value), ids=lambda p: p.value)
+    def test_declared_cancel_capability_equals_observed_outcome(provider: LLMProvider) -> None:
+        declared = LLMAdapterRegistry.cancel_capability_for(provider)
+>       assert declared is _WITH_SEAM[provider]
+E       AssertionError: assert <CancelCapability.TRANSPORT_CLOSED: 'transport_closed'> is <CancelCapability.TERMINATED: 'terminated'>
+
+tests\qualification\pdc_x\d3\test_d3_r011_cancel_outcome.py:64: AssertionError
+=========================== short test summary info ===========================
+SKIPPED [1] tests\qualification\pdc_x\d3\test_d3_r009_refusal.py:146: optional extra llm-anthropic; the source gate covers the Claude adapter
+SKIPPED [1] tests\qualification\pdc_x\d3\test_d3_r009_refusal.py:156: optional extra llm-anthropic; the source gate covers the Claude adapter
+FAILED tests/qualification/pdc_x/d3/test_d3_r011_cancel_outcome.py::test_declared_cancel_capability_equals_observed_outcome[azure_openai]
+!!!!!!!!!!!!!!!!!!!!!!!!!! stopping after 1 failures !!!!!!!!!!!!!!!!!!!!!!!!!!
+1 failed, 101 passed, 2 skipped in 2.79s

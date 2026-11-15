@@ -1,0 +1,32 @@
+...........................................ss........................... [ 46%]
+.............................................................s.sF
+================================== FAILURES ===================================
+___________ test_shipped_adapter_flags_match_methods[native_ollama] ___________
+
+name = 'native_ollama'
+
+    @pytest.mark.parametrize("name", sorted(_REAL_BUILDERS))
+    def test_shipped_adapter_flags_match_methods(name: str) -> None:
+        adapter = _REAL_BUILDERS[name]()
+>       assert_capability_flags_match_methods(adapter)
+
+tests\qualification\pdc_x\d3\test_d3_r022_capability_flags.py:157:
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+adapter = <intergrax.llm_adapters.providers.native_ollama_adapter.NativeOllamaAdapter object at 0x0000028D3FFFA3F0>
+
+    def assert_capability_flags_match_methods(adapter: object, *, delegating: bool = False) -> None:
+        violations = capability_flag_violations(adapter, delegating=delegating)
+>       assert not violations, "; ".join(violations)
+               ^^^^^^^^^^^^^^
+E       AssertionError: NativeOllamaAdapter: stream_messages is implemented but supports_streaming() is False
+
+intergrax\llm_adapters\_shared\conformance.py:59: AssertionError
+=========================== short test summary info ===========================
+SKIPPED [1] tests\qualification\pdc_x\d3\test_d3_r009_refusal.py:146: optional extra llm-anthropic; the source gate covers the Claude adapter
+SKIPPED [1] tests\qualification\pdc_x\d3\test_d3_r009_refusal.py:156: optional extra llm-anthropic; the source gate covers the Claude adapter
+SKIPPED [1] tests\qualification\pdc_x\d3\test_d3_r022_capability_flags.py:74: optional extra llm-anthropic; the source gate covers the Claude adapter
+SKIPPED [1] tests\qualification\pdc_x\d3\test_d3_r022_capability_flags.py:126: optional extra llm-langchain-ollama; covered by the source gate
+FAILED tests/qualification/pdc_x/d3/test_d3_r022_capability_flags.py::test_shipped_adapter_flags_match_methods[native_ollama]
+!!!!!!!!!!!!!!!!!!!!!!!!!! stopping after 1 failures !!!!!!!!!!!!!!!!!!!!!!!!!!
+1 failed, 132 passed, 4 skipped in 4.91s

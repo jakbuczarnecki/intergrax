@@ -1,0 +1,286 @@
+F..................................................F.F.................. [ 29%]
+.....................................F.................................. [ 59%]
+........................................................................ [ 88%]
+...........................                                              [100%]
+================================== FAILURES ===================================
+_________________ test_ebh5_pkgc_integration_relational_store _________________
+
+module_name = 'duckdb'
+
+    def require_python_module(module_name: str, *, qualification_context: str) -> None:
+        try:
+>           importlib.import_module(module_name)
+
+tests\qualification\ebh_5\_package_c_v2_primitives.py:26:
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+name = 'duckdb', package = None
+
+    def import_module(name, package=None):
+        """Import a module.
+
+        The 'package' argument is required when performing a relative import. It
+        specifies the package to use as the anchor point from which to resolve the
+        relative import to an absolute import.
+
+        """
+        level = 0
+        if name.startswith('.'):
+            if not package:
+                raise TypeError("the 'package' argument is required to perform a "
+                                f"relative import for {name!r}")
+            for character in name:
+                if character != '.':
+                    break
+                level += 1
+>       return _bootstrap._gcd_import(name[level:], package, level)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E       ModuleNotFoundError: No module named 'duckdb'
+
+C:\Users\XPS\AppData\Roaming\uv\python\cpython-3.12-windows-x86_64-none\Lib\importlib\__init__.py:90: ModuleNotFoundError
+
+The above exception was the direct cause of the following exception:
+
+tmp_path = WindowsPath('D:/Projekty/intergrax/.claude/worktrees/pdc-x-ia-d3-d10590/build/pytest/27568-68cc062e/test_ebh5_pkgc_integration_rel0')
+
+    def test_ebh5_pkgc_integration_relational_store(tmp_path: Path) -> None:
+>       run_package_c_concern_proof("integration.relational_store", tmp_path=tmp_path)
+
+tests\qualification\ebh_5\test_ebh_5_behavioral_package_c.py:16:
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+tests\qualification\ebh_5\_package_c_proof_helpers.py:118: in run_package_c_concern_proof
+    run_package_c_integration_proof(concern_id, tmp_path=tmp_path)
+tests\qualification\ebh_5\_package_c_proof_helpers.py:48: in run_package_c_integration_proof
+    run_package_c_v2_relational_sqlite_duckdb_dual_slug(tmp_path)
+tests\qualification\ebh_5\_package_c_v2_proof_helpers.py:19: in run_package_c_v2_relational_sqlite_duckdb_dual_slug
+    require_python_module("duckdb", qualification_context="integration.relational_store")
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+module_name = 'duckdb'
+
+    def require_python_module(module_name: str, *, qualification_context: str) -> None:
+        try:
+            importlib.import_module(module_name)
+        except ModuleNotFoundError as exc:
+>           raise RuntimeError(
+                f"{qualification_context}: mandatory dependency '{module_name}' missing � "
+                f"sync environment with sanctioned dev-ci / integration extras"
+            ) from exc
+E           RuntimeError: integration.relational_store: mandatory dependency 'duckdb' missing � sync environment with sanctioned dev-ci / integration extras
+
+tests\qualification\ebh_5\_package_c_v2_primitives.py:28: RuntimeError
+---------------------------- Captured stdout setup ----------------------------
+Wrote build\agent_fleet_inventory.json (21 agents)
+
+____________ test_ebh5_pkgc_v2_relational_sqlite_duckdb_dual_slug _____________
+
+module_name = 'duckdb'
+
+    def require_python_module(module_name: str, *, qualification_context: str) -> None:
+        try:
+>           importlib.import_module(module_name)
+
+tests\qualification\ebh_5\_package_c_v2_primitives.py:26:
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+name = 'duckdb', package = None
+
+    def import_module(name, package=None):
+        """Import a module.
+
+        The 'package' argument is required when performing a relative import. It
+        specifies the package to use as the anchor point from which to resolve the
+        relative import to an absolute import.
+
+        """
+        level = 0
+        if name.startswith('.'):
+            if not package:
+                raise TypeError("the 'package' argument is required to perform a "
+                                f"relative import for {name!r}")
+            for character in name:
+                if character != '.':
+                    break
+                level += 1
+>       return _bootstrap._gcd_import(name[level:], package, level)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E       ModuleNotFoundError: No module named 'duckdb'
+
+C:\Users\XPS\AppData\Roaming\uv\python\cpython-3.12-windows-x86_64-none\Lib\importlib\__init__.py:90: ModuleNotFoundError
+
+The above exception was the direct cause of the following exception:
+
+tmp_path = WindowsPath('D:/Projekty/intergrax/.claude/worktrees/pdc-x-ia-d3-d10590/build/pytest/27568-68cc062e/test_ebh5_pkgc_v2_relational_s0')
+
+    def test_ebh5_pkgc_v2_relational_sqlite_duckdb_dual_slug(tmp_path: Path) -> None:
+>       run_package_c_v2_relational_sqlite_duckdb_dual_slug(tmp_path)
+
+tests\qualification\ebh_5\test_ebh_5_behavioral_package_c_v2.py:23:
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+tests\qualification\ebh_5\_package_c_v2_proof_helpers.py:19: in run_package_c_v2_relational_sqlite_duckdb_dual_slug
+    require_python_module("duckdb", qualification_context="integration.relational_store")
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+module_name = 'duckdb'
+
+    def require_python_module(module_name: str, *, qualification_context: str) -> None:
+        try:
+            importlib.import_module(module_name)
+        except ModuleNotFoundError as exc:
+>           raise RuntimeError(
+                f"{qualification_context}: mandatory dependency '{module_name}' missing � "
+                f"sync environment with sanctioned dev-ci / integration extras"
+            ) from exc
+E           RuntimeError: integration.relational_store: mandatory dependency 'duckdb' missing � sync environment with sanctioned dev-ci / integration extras
+
+tests\qualification\ebh_5\_package_c_v2_primitives.py:28: RuntimeError
+____ test_ebh5_pkgc_v2_dual_slug_integration[integration.relational_store] ____
+
+module_name = 'duckdb'
+
+    def require_python_module(module_name: str, *, qualification_context: str) -> None:
+        try:
+>           importlib.import_module(module_name)
+
+tests\qualification\ebh_5\_package_c_v2_primitives.py:26:
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+name = 'duckdb', package = None
+
+    def import_module(name, package=None):
+        """Import a module.
+
+        The 'package' argument is required when performing a relative import. It
+        specifies the package to use as the anchor point from which to resolve the
+        relative import to an absolute import.
+
+        """
+        level = 0
+        if name.startswith('.'):
+            if not package:
+                raise TypeError("the 'package' argument is required to perform a "
+                                f"relative import for {name!r}")
+            for character in name:
+                if character != '.':
+                    break
+                level += 1
+>       return _bootstrap._gcd_import(name[level:], package, level)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E       ModuleNotFoundError: No module named 'duckdb'
+
+C:\Users\XPS\AppData\Roaming\uv\python\cpython-3.12-windows-x86_64-none\Lib\importlib\__init__.py:90: ModuleNotFoundError
+
+The above exception was the direct cause of the following exception:
+
+entry = IntegrationDualSlugCatalogEntry(concern_id='integration.relational_store', batch='RPL-B1', category=<IntegrationCategory.RELATIONAL_STORE: 'relational_store'>, slug_a='sqlite', slug_b='duckdb', operational_lifecycle=True)
+tmp_path = WindowsPath('D:/Projekty/intergrax/.claude/worktrees/pdc-x-ia-d3-d10590/build/pytest/27568-68cc062e/test_ebh5_pkgc_v2_dual_slug_in0')
+
+    @pytest.mark.parametrize(
+        "entry",
+        INTEGRATION_DUAL_SLUG_CATALOG,
+        ids=lambda e: e.concern_id,
+    )
+    def test_ebh5_pkgc_v2_dual_slug_integration(entry: object, tmp_path: Path) -> None:
+        from tests.qualification.ebh_5._package_c_v2_dual_slug_catalog import IntegrationDualSlugCatalogEntry
+
+        assert isinstance(entry, IntegrationDualSlugCatalogEntry)
+>       run_package_c_v2_dual_slug_for_entry(entry, tmp_path=tmp_path)
+
+tests\qualification\ebh_5\test_ebh_5_behavioral_package_c_v2.py:39:
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+tests\qualification\ebh_5\_package_c_v2_proof_helpers.py:40: in run_package_c_v2_dual_slug_for_entry
+    require_python_module("duckdb", qualification_context=entry.concern_id)
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+module_name = 'duckdb'
+
+    def require_python_module(module_name: str, *, qualification_context: str) -> None:
+        try:
+            importlib.import_module(module_name)
+        except ModuleNotFoundError as exc:
+>           raise RuntimeError(
+                f"{qualification_context}: mandatory dependency '{module_name}' missing � "
+                f"sync environment with sanctioned dev-ci / integration extras"
+            ) from exc
+E           RuntimeError: integration.relational_store: mandatory dependency 'duckdb' missing � sync environment with sanctioned dev-ci / integration extras
+
+tests\qualification\ebh_5\_package_c_v2_primitives.py:28: RuntimeError
+_ test_ebh5_pkgc_v2_dual_slug_rpl_cde_equivalence[integration.relational_store] _
+
+module_name = 'duckdb'
+
+    def require_python_module(module_name: str, *, qualification_context: str) -> None:
+        try:
+>           importlib.import_module(module_name)
+
+tests\qualification\ebh_5\_package_c_v2_primitives.py:26:
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+name = 'duckdb', package = None
+
+    def import_module(name, package=None):
+        """Import a module.
+
+        The 'package' argument is required when performing a relative import. It
+        specifies the package to use as the anchor point from which to resolve the
+        relative import to an absolute import.
+
+        """
+        level = 0
+        if name.startswith('.'):
+            if not package:
+                raise TypeError("the 'package' argument is required to perform a "
+                                f"relative import for {name!r}")
+            for character in name:
+                if character != '.':
+                    break
+                level += 1
+>       return _bootstrap._gcd_import(name[level:], package, level)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E       ModuleNotFoundError: No module named 'duckdb'
+
+C:\Users\XPS\AppData\Roaming\uv\python\cpython-3.12-windows-x86_64-none\Lib\importlib\__init__.py:90: ModuleNotFoundError
+
+The above exception was the direct cause of the following exception:
+
+entry = IntegrationDualSlugCatalogEntry(concern_id='integration.relational_store', batch='RPL-B1', category=<IntegrationCategory.RELATIONAL_STORE: 'relational_store'>, slug_a='sqlite', slug_b='duckdb', operational_lifecycle=True)
+tmp_path = WindowsPath('D:/Projekty/intergrax/.claude/worktrees/pdc-x-ia-d3-d10590/build/pytest/27568-68cc062e/test_ebh5_pkgc_v2_dual_slug_rp0')
+
+    @pytest.mark.parametrize(
+        "entry",
+        INTEGRATION_DUAL_SLUG_CATALOG,
+        ids=lambda e: e.concern_id,
+    )
+    def test_ebh5_pkgc_v2_dual_slug_rpl_cde_equivalence(entry: object, tmp_path: Path) -> None:
+        from tests.qualification.ebh_5._package_c_v2_dual_slug_catalog import IntegrationDualSlugCatalogEntry
+
+        assert isinstance(entry, IntegrationDualSlugCatalogEntry)
+>       run_package_c_v2_dual_slug_rpl_cde_equivalence(entry, tmp_path=tmp_path)
+
+tests\qualification\ebh_5\test_ebh_5_behavioral_package_c_v2.py:63:
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+tests\qualification\ebh_5\_package_c_v2_rpl_cde.py:58: in run_package_c_v2_dual_slug_rpl_cde_equivalence
+    inst_a, inst_b = run_dual_slug_resolve_from_profile(
+tests\qualification\ebh_5\_package_c_v2_primitives.py:103: in run_dual_slug_resolve_from_profile
+    require_python_module("duckdb", qualification_context="integration.relational_store")
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+module_name = 'duckdb'
+
+    def require_python_module(module_name: str, *, qualification_context: str) -> None:
+        try:
+            importlib.import_module(module_name)
+        except ModuleNotFoundError as exc:
+>           raise RuntimeError(
+                f"{qualification_context}: mandatory dependency '{module_name}' missing � "
+                f"sync environment with sanctioned dev-ci / integration extras"
+            ) from exc
+E           RuntimeError: integration.relational_store: mandatory dependency 'duckdb' missing � sync environment with sanctioned dev-ci / integration extras
+
+tests\qualification\ebh_5\_package_c_v2_primitives.py:28: RuntimeError
+=========================== short test summary info ===========================
+FAILED tests/qualification/ebh_5/test_ebh_5_behavioral_package_c.py::test_ebh5_pkgc_integration_relational_store
+FAILED tests/qualification/ebh_5/test_ebh_5_behavioral_package_c_v2.py::test_ebh5_pkgc_v2_relational_sqlite_duckdb_dual_slug
+FAILED tests/qualification/ebh_5/test_ebh_5_behavioral_package_c_v2.py::test_ebh5_pkgc_v2_dual_slug_integration[integration.relational_store]
+FAILED tests/qualification/ebh_5/test_ebh_5_behavioral_package_c_v2.py::test_ebh5_pkgc_v2_dual_slug_rpl_cde_equivalence[integration.relational_store]
+4 failed, 239 passed in 45.77s
