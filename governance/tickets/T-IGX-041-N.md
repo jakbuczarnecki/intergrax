@@ -6,7 +6,7 @@ Test, data and classification repair after the independent global audit IA-GLOBA
 
 ## Plan digest
 
-Plan digest: 6617cc90dbfc78205323a8e370d02cb09a1c55402429166b400f75ee40d33f54
+Plan digest: c11c4b605c4b6aa815141afe1da536b6ed088b4c1028bc5f107849c9ea0d2d65
 
 Canonical plan: [`governance/tickets/plans/PLAN_T-IGX-041-N.md`](plans/PLAN_T-IGX-041-N.md).
 
