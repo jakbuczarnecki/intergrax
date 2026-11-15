@@ -24,18 +24,16 @@ Canonical closed sets: 26 FRZ families (freeze checklist IDs), Tier-0..3 (`AGENT
 ECAP-C5 (this report) is evaluated against the block below and the F10 matrix by the read-only gate; its computed verdict is published only in the F10 matrix.
 
 <!-- F10-COMPUTED:BEGIN (generated — scripts/qualification/render_ebh7_f10_normative_matrix.py) -->
-**Computed from closed normative sets @ TEST_EXECUTION_SHA `146e7acf1434fffdf74ef6a2e91fffc10fd7b1ec`** (C5 verified by read-only gate; no hand-assigned verdicts).
+**Computed from closed normative sets @ TEST_EXECUTION_SHA `d39a520dda965981a38f8e1a90ec5135ea5d508e`** (C5 verified by read-only gate; no hand-assigned verdicts).
 
 | ECAP gate | Computed verdict | Obligations | PASS | N/A WITH EVIDENCE | FAIL |
 | --- | --- | --- | --- | --- | --- |
-| ECAP-C1 | BLOCKED | 32 | 28 | 2 | 2 |
+| ECAP-C1 | PASS | 32 | 30 | 2 | 0 |
 | ECAP-C2 | PASS | 43 | 43 | 0 | 0 |
 | ECAP-C3 | PASS | 105 | 99 | 6 | 0 |
-| ECAP-C4 | BLOCKED | 10 | 8 | 0 | 2 |
+| ECAP-C4 | PASS | 10 | 10 | 0 | 0 |
 
-**C1–C4 computed disposition:** EBH-7 — B6-F10 BLOCKED / EXACT MISSING OBLIGATIONS
-- C1 missing obligations: C1-FAM-AUD, C1-FAM-EVOL
-- C4 missing obligations: C4-UNCLASSIFIED, C4-CLASS-contract
+**C1–C4 computed disposition:** all obligations PASS or N/A WITH EVIDENCE
 <!-- F10-COMPUTED:END -->
 
 ## D. Architecture findings
