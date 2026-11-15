@@ -1,0 +1,305 @@
+{
+  "stage_id": "PDC-X/P7-D1",
+  "audited_implementation_sha": "c08efe46a74a20595468d8d8bf06eab2dca5f573",
+  "counts": {
+    "HIGH": 3,
+    "MEDIUM": 6,
+    "LOW": 7,
+    "INFO": 4
+  },
+  "findings": [
+    {
+      "id": "F-D1-01",
+      "severity": "HIGH",
+      "rows": [
+        "PDC-D1-R003"
+      ],
+      "title": "No production path verifies package attestation before agent install or upgrade; the trust record is caller-asserted",
+      "evidence": "install_agent/upgrade_agent (admin_service.py) take request.trust_record and call AgentPackageTrustCoordinator.assert_install_admission + assert_installation_trust_record_acceptable, which check the record's status, non-empty evidence refs, digest equality and revocation, never a signature. The Ed25519 verifier is wired only into core/plugins/admission.py (plugins). AgentPlatformAdminService builds a default AgentPackageTrustCoordinator() without a verifier (admin_service.py:321) and production_agent_capability_runtime.py:204 passes none. DynamicAgentAcquisitionService passes request.install.trust_record straight through (dynamic_acquisition.py:365). The pdc_x R003 tests exercise the verifier and coordinator in isolation, and the install test only covers digest mismatch, NOT_QUALIFIED and empty evidence refs.",
+      "reproduction": "probe_d1_a.py P8: install_agent with a SIGNATURE_VERIFICATION evidence ref 'forged:not-a-real-signature' -> installed_active; no verifier call exists on the path.",
+      "impact": "the requirement 'Package identity, provenance and attestation verified before install' holds for components, not for the composed install/upgrade path. A principal who may call install/upgrade can present any trust record.",
+      "suggested_repair_scope": "Make install_agent/upgrade_agent (and the acquisition bridge) obtain or re-verify the attestation through AgentPackageTrustCoordinator with a mandatory verifier under the production policy, or reject records that are not platform-verified evidence; add an install-path test with a forged ref and with a valid signature over another digest.",
+      "owner_path": "intergrax/agent_distribution/admin_service.py; intergrax/agent_distribution/package_trust.py; intergrax/agent_distribution/dynamic_acquisition.py; intergrax/applications/_shared/production_agent_capability_runtime.py",
+      "verification": "PROBE_CONFIRMED + CODE_READ_BY_AUDITOR"
+    },
+    {
+      "id": "F-D1-02",
+      "severity": "HIGH",
+      "rows": [
+        "PDC-D1-R012",
+        "PDC-D1-R013"
+      ],
+      "title": "Operator rollback_revision and activate_revision do not re-check trust or revocation of the target revision's packages",
+      "evidence": "Revocation is re-evaluated at build (_assert_runtime_revision_trust_admission) and in the emergency path (revision_passes_current_trust_admission) only. activate_revision (admin_service.py:1392) checks scope, authorization and the LLM profile pin; _execute_governed_rollback calls ActivationService.rollback whose default ArtifactRevalidationHook (activation.py:118-130) only checks that materialization_artifact_digest is present.",
+      "reproduction": "probe_d1_b.py P9: serve rev-2 (v1.1.0) with prior rev-1 (v1.0.0), revoke the v1.0.0 digest, call rollback_revision -> traffic restored to rev-1 (revoked package). probe_d1_c.py P13: build rev-1, revoke its digest, activate_revision(rev-1) succeeds.",
+      "impact": "a security-revoked package can be re-activated or restored by a normal operator action, after the revocation was published.",
+      "suggested_repair_scope": "Run revision_passes_current_trust_admission (or the coordinator) against the target revision roster in activate_revision and rollback_revision; fail closed with a typed error; pin with negative tests for both paths.",
+      "owner_path": "intergrax/agent_distribution/admin_service.py (activate_revision, rollback_revision); intergrax/agent_distribution/activation.py (ArtifactRevalidationHook)",
+      "verification": "PROBE_CONFIRMED"
+    },
+    {
+      "id": "F-D1-03",
+      "severity": "HIGH",
+      "rows": [
+        "PDC-D1-R013"
+      ],
+      "title": "respond_to_emergency_revocation is an unauthenticated state-changing entry point and accepts a caller-supplied revocation snapshot",
+      "evidence": "AgentPlatformAdminService.respond_to_emergency_revocation (admin_service.py:1508) has no principal parameter and calls neither _require_environment_tenant_scope nor _authorize_*; every other mutating method does. It performs ActivationService.rollback. The optional request carries revocation_state, trust_policy and evaluated_at chosen by the caller. The method has no production caller and no trigger (grep over intergrax/, applications/, agents/).",
+      "reproduction": "probe_d1_c.py P14: with the real revocation source empty, an anonymous call with a forged request revoking v1.1.0 rolled the serving revision from rev-2 to rev-1.",
+      "impact": "any code holding the service can force a rollback of any environment; conversely nothing triggers the response when a real revocation is published, so 'revocation reaches active executions' depends on an external caller that does not exist in the product tree.",
+      "suggested_repair_scope": "Require a principal (or a sealed system actor) with tenant scope and policy authorization; take the revocation snapshot only from the injected source; add a production trigger (revocation-feed subscriber) or document and test the operator procedure.",
+      "owner_path": "intergrax/agent_distribution/admin_service.py; intergrax/agent_distribution/emergency_revocation_response.py",
+      "verification": "PROBE_CONFIRMED + CODE_READ_BY_AUDITOR"
+    },
+    {
+      "id": "F-D1-04",
+      "severity": "MEDIUM",
+      "rows": [
+        "PDC-D1-R013"
+      ],
+      "title": "Without a trusted rollback target the emergency response is advisory: the revoked revision keeps serving and admitting new executions",
+      "evidence": "respond_to_current_revocation returns BLOCKED_NO_SAFE_TARGET without changing serving state; verify_current_serving_execution_admission_eligibility takes no revocation input. The pdc_x test for this case asserts only that new builds and re-installs are refused.",
+      "reproduction": "probe_d1_a.py P6: both packages revoked -> action blocked_no_safe_target, traffic_serving_revision_id still rev-2, execution admission on rev-2 returns eligibility evidence (open).",
+      "impact": "'revoke during execution -> fail closed' (matrix test case) holds only when a trusted prior revision exists. In-flight executions are never interrupted in either branch (drain waits).",
+      "suggested_repair_scope": "Decide and document the fail-closed rule for the no-target case (close admission on the revoked revision, or declare an operator-approved exception) and pin it with a test on the admission path; state explicitly what happens to in-flight executions.",
+      "owner_path": "intergrax/agent_distribution/emergency_revocation_response.py; intergrax/agent_distribution/serving_execution_admission.py",
+      "verification": "PROBE_CONFIRMED"
+    },
+    {
+      "id": "F-D1-05",
+      "severity": "MEDIUM",
+      "rows": [
+        "PDC-D1-R007"
+      ],
+      "title": "install_agent and upgrade_agent have no application-ownership guard; only retire_agent does",
+      "evidence": "retire_agent calls _assert_installation_application_scope (bindings of the calling application must reference the slot). install_agent/upgrade_agent resolve the slot by (environment_id, slot) only and the installation record carries no application id. The R007 tests cover cross-tenant denial for all verbs but cross-application only for retire.",
+      "reproduction": "probe_d1_a.py P1: principal of the same tenant calling upgrade_agent for application app-b and environment env-prod upgraded the slot that app-a bound -> active inst-1.1.0.",
+      "impact": "inside one tenant, an application (or caller) that shares an environment id can replace another application's active installation. Severity is bounded by the tenant resolver: StaticApplicationEnvironmentTenantResolver ignores application and environment ids; a resolver that validates the pair would block this.",
+      "suggested_repair_scope": "Apply the same application-scope check to upgrade_agent (existing slot) and to install_agent into an occupied slot, or store the owning application on the installation; add a cross-application test for install and upgrade.",
+      "owner_path": "intergrax/agent_distribution/admin_service.py (install_agent, upgrade_agent); intergrax/agent_distribution/installation.py",
+      "verification": "PROBE_CONFIRMED"
+    },
+    {
+      "id": "F-D1-06",
+      "severity": "MEDIUM",
+      "rows": [
+        "PDC-D1-R017"
+      ],
+      "title": "Lifecycle 'evidence' is an in-process return value; exception paths persist state transitions with no event",
+      "evidence": "AgentDistributionEvent is documented as a pure event with no bus coupling; admin_service._event_types reduces it to event-type strings returned as audit_event_types. No code in intergrax/, applications/ or agents/ consumes or persists these events (grep), and the timestamp, aggregate id and attributes (reason_code, prior_active_installation_id) are dropped by _event_types. In upgrade_agent the mark_failed_candidate results in the except paths are discarded before re-raising, and an exception after mark_verified leaves the candidate VERIFIED.",
+      "reproduction": "probe_d1_a.py P5 (promotion failure -> FAILED_CANDIDATE persisted, exception carries no events) and P4 (resolve_package_contracts failure -> candidate left VERIFIED).",
+      "impact": "FRZ-OBS-01/TRC-08 'every lifecycle transition emits canonical evidence' is verified only as 'service methods return event objects'. A caller that drops the result, or any failed path, leaves no evidence of the transition.",
+      "suggested_repair_scope": "Emit through the evidence/trace plane (or an injected event sink) inside the service, including failure paths; guard the post-verify section of upgrade_agent so the candidate always ends FAILED_CANDIDATE; test the sink, not the return tuple.",
+      "owner_path": "intergrax/agent_distribution/admin_service.py; intergrax/agent_distribution/events.py; intergrax/agent_distribution/installation_service.py",
+      "verification": "PROBE_CONFIRMED + CODE_READ_BY_AUDITOR"
+    },
+    {
+      "id": "F-D1-07",
+      "severity": "MEDIUM",
+      "rows": [
+        "PDC-D1-R014",
+        "PDC-D1-R004"
+      ],
+      "title": "retire_agent has no effect on AgentRegistry routing; AgentRegistry.mark_retired and upgrade/retire have no production caller",
+      "evidence": "AgentRegistry.mark_retired (agent_registry.py:91) is called only from tests; the distribution plane may not import AgentRegistry (R004 gate), and nothing bridges the two. upgrade_agent/retire_agent are reached only through AgentManagerCommandFacade, which has no caller in intergrax/applications or agents. The R014 test 'registry projection drops retired agent from routing' calls mark_retired directly.",
+      "reproduction": "grep -rn 'mark_retired|AgentManagerCommandFacade|retire_agent' over intergrax/ applications/ agents/ (see test_matrix.txt); no non-test caller outside the facade.",
+      "impact": "retire removes the slot from new effective rosters and refuses new installs, but a registry already populated for a serving revision keeps routing to the agent until a new revision is activated; the 'retire removes routing' claim is not demonstrated end to end. Related to F-04 (no production caller).",
+      "suggested_repair_scope": "Define the projection hook (revision activation or a retire event subscriber) that calls mark_retired, or state that routing changes only through revision activation and test that; wire the facade into a production composition or record it as library API.",
+      "owner_path": "intergrax/runtime/registry/agent_registry.py; intergrax/agent_distribution/agent_manager_command_facade.py; intergrax/applications/_shared/production_agent_capability_runtime.py",
+      "verification": "CODE_READ_BY_AUDITOR"
+    },
+    {
+      "id": "F-D1-08",
+      "severity": "MEDIUM",
+      "rows": [
+        "PDC-D1-R018"
+      ],
+      "title": "Skill disable/remove/upgrade have no production caller and emit no evidence beyond a returned event_type",
+      "evidence": "grep over intergrax/, applications/, agents/ finds disable_skill/remove_skill/upgrade_skill only in skills/host_lifecycle.py and tests. SkillLifecycleTransition.event_type is a string on the return value (same pattern as F-D1-06). Re-verifies F-04 for D1.",
+      "reproduction": "grep -rn 'upgrade_skill|disable_skill|remove_skill' (see test_matrix.txt).",
+      "impact": "the capability exists and is unit-tested but is not reachable from any composed host, so R018's 'implement' (OD-PDC-SCOPE-01 A) is satisfied at component level only.",
+      "suggested_repair_scope": "Expose through the host skill management composition or the agent manager facade, or record explicitly as library API; route skill events to the same sink as F-D1-06.",
+      "owner_path": "intergrax/skills/host_lifecycle.py",
+      "verification": "CODE_READ_BY_AUDITOR"
+    },
+    {
+      "id": "F-D1-09",
+      "severity": "LOW",
+      "rows": [
+        "PDC-D1-R018"
+      ],
+      "title": "upgrade_skill restores the previous release only for Exception, not BaseException (re-verifies F-11)",
+      "evidence": "host_lifecycle.py:262-271: unregister then try/except Exception, no finally.",
+      "reproduction": "probe_d1_c.py P12-F11: a BaseException subclass raised by the materializer leaves the skill uninstalled (control with RuntimeError: restored).",
+      "impact": "a cancelled or aborted upgrade silently uninstalls the skill.",
+      "suggested_repair_scope": "try/finally restore (or catch BaseException, restore, re-raise); add a test with a BaseException.",
+      "owner_path": "intergrax/skills/host_lifecycle.py",
+      "verification": "PROBE_CONFIRMED"
+    },
+    {
+      "id": "F-D1-10",
+      "severity": "LOW",
+      "rows": [
+        "PDC-D1-R018"
+      ],
+      "title": "Skill upgrade ordering ignores pre-release tags (re-verifies F-12)",
+      "evidence": "host_lifecycle.py _upgrade_denial compares only (minor, patch) of SemVer.parse, which drops the pre-release.",
+      "reproduction": "probe_d1_c.py P12-F12: 1.0.0 -> 1.0.1-rc.1 outcome applied.",
+      "impact": "a release candidate can replace a release in place.",
+      "suggested_repair_scope": "Compare full SemVer precedence including pre-release, or reject pre-release candidates; test both.",
+      "owner_path": "intergrax/skills/host_lifecycle.py; intergrax/contracts/semver.py",
+      "verification": "PROBE_CONFIRMED"
+    },
+    {
+      "id": "F-D1-11",
+      "severity": "MEDIUM",
+      "rows": [
+        "PDC-D1-R002",
+        "PDC-D1-R008",
+        "PDC-D1-R013",
+        "PDC-D1-R015"
+      ],
+      "title": "D1-owned suites cited as evidence are red at the audited SHA (18 tests, all also red at the activation pin)",
+      "evidence": "One pytest over tests/unit/agent_distribution, tests/integration/agent_distribution, tests/unit/runtime/registry, tests/unit/agents/authoring, tests/unit/skills and xd_04: 18 failed, 1581 passed. The same 18 node ids fail at 2d3eceb6c (pin_18.log). Groups: 3 architecture gates (ac6 testing_support import, activation/build bypass inventory: intergrax/applications/_shared/deploy_activate_pipeline.py unclassified); 3 integration lifecycle e2e (stale against the stricter install admission: PackageAgentContractAuthorityError 'incomplete package contract authority' / unresolved metadata ref; durable descriptor authority mismatch); 12 ACP authoring tests (PreModelPolicyConfigurationError 'pre_model governance identity unavailable').",
+      "reproduction": "logs/wide_run2.log and logs/pin_18.log; re-run the node ids in logs/failed_ids.txt.",
+      "impact": "the matrix names 'existing ACP unit suites' (R002) and 'existing distribution unit/integration suites' (R008, R010, R015) as the evidence; those cannot serve as green evidence, and the durable emergency-rollback e2e (f5) is among the red ones. Not a PDC-X regression (same at the pin) and not repaired by PDC-X; it is the F-39/F-53 bucket.",
+      "suggested_repair_scope": "Classify each group (stale gate vs regression) in a D1 repair ticket: update the e2e fixtures to supply package_contract_authority; classify deploy_activate_pipeline.py in the bypass inventories; fix or re-baseline the ACP governance identity fixture.",
+      "owner_path": "tests/integration/agent_distribution; tests/unit/agent_distribution; tests/unit/agents/authoring; intergrax/applications/_shared/deploy_activate_pipeline.py",
+      "verification": "TEST_RUN"
+    },
+    {
+      "id": "F-D1-12",
+      "severity": "LOW",
+      "rows": [
+        "PDC-D1-R004",
+        "PDC-D1-R020"
+      ],
+      "title": "R004 and R020 gates are name- or syntax-based and miss simple bypasses; D1 suite does not pin policy authorization on upgrade/retire",
+      "evidence": "R020 gate _scans_entry_points misses 'import importlib.metadata as md; md.entry_points()', 'from importlib import metadata as md', distributions(), pkg_resources and getattr indirection (probe P11). R004 gate matches the class name pattern \\w*Agent\\w*Registry only. Mutation sample (10 mutants, throwaway checkout of the audited SHA, D1 adversarial + upgrade/retire test files): 7 killed (admission bypass, retire app-scope, retire and upgrade tenant scope, retired-slot guard, bound-tool and capability removal checks); 3 SURVIVED: M2 policy authorization removed from upgrade_agent/retire_agent, M7 same-version candidate treated as an upgrade, M10 rejection reason_code dropped from the failed_candidate event.",
+      "reproduction": "probe_d1_b.py P11; run_mutants.py.",
+      "impact": "the single-owner and no-shadow-registry claims are true today (code read) but the gates would not catch the next drift.",
+      "suggested_repair_scope": "Resolve aliases in the AST gate (import map) or scan call targets by resolved name; add a DENY-boundary test for upgrade_agent and retire_agent.",
+      "owner_path": "tests/qualification/pdc_x/d1/test_d1_discovery_owner.py; tests/qualification/pdc_x/d1/test_d1_adversarial_lifecycle.py",
+      "verification": "PROBE_CONFIRMED + TEST_RUN"
+    },
+    {
+      "id": "F-D1-13",
+      "severity": "LOW",
+      "rows": [
+        "PDC-D1-R011"
+      ],
+      "title": "Upgrade admission edge cases (re-verifies F-26)",
+      "evidence": "(a) semver_compat.is_compatible_runtime treats 0.1.0 -> 0.9.0 as compatible although its docstring says minor is the breaking boundary for 0.x (probe P3). (b) Pre-release agent package versions are PEP 440 normalised ('1.2.4-rc.1' -> '1.2.4rc1') and then fail SemVer parse, so the upgrade fails closed with version_unparseable: no pre-release ordering bypass at agent level (F-26 sub-claim not reproduced) but also no rc -> release upgrade. (c) upgrade_agent returns ALREADY_UPGRADED before policy authorization (probe P7), mirroring install_agent replay; tenant scope still applies. (d) an exception between mark_verified and promotion outside the guarded blocks leaves the candidate VERIFIED (probe P4); retry with the same installation id then raises InstallationSlotConflict.",
+      "reproduction": "probe_d1_a.py P3, P4, P7.",
+      "impact": "weaker admission than documented for 0.x packages; replay discloses slot state to a policy-denied principal of the same tenant; orphan VERIFIED candidates.",
+      "suggested_repair_scope": "Define the 0.x rule explicitly and test it; authorize before replay views; wrap the post-verify section so every failure ends in FAILED_CANDIDATE.",
+      "owner_path": "intergrax/runtime/registry/semver_compat.py; intergrax/agent_distribution/upgrade_admission.py; intergrax/agent_distribution/admin_service.py",
+      "verification": "PROBE_CONFIRMED"
+    },
+    {
+      "id": "F-D1-14",
+      "severity": "LOW",
+      "rows": [
+        "PDC-D1-R001"
+      ],
+      "title": "The named closure gate 'identity uniqueness gate' does not exist and no test pins duplicate agent identity rejection",
+      "evidence": "No file in tests/qualification/pdc_x/d1 covers R001 (the B-D1 write set lists R003/R004/R007/R011/R012/R013/R014/R017/R018/R020 only; R001 was routed to this replay). AgentRegistry.register rejects a duplicate id (agent_registry.py:65) and the id pattern is enforced by validate_contract_metadata, but grep over tests/ finds no assertion of that ValueError for AgentRegistry.",
+      "reproduction": "grep -rn 'Agent already registered' tests/ (no AgentRegistry hit).",
+      "impact": "the claim holds by code read; it is not pinned. AgentContract.version is a free string (validated only at upgrade time).",
+      "suggested_repair_scope": "Add a gate: duplicate id rejected, one contract version per id, version SemVer-valid at register.",
+      "owner_path": "intergrax/runtime/registry/agent_registry.py; intergrax/contracts/agent_contract_meta.py",
+      "verification": "CODE_READ_BY_AUDITOR"
+    },
+    {
+      "id": "F-D1-15",
+      "severity": "LOW",
+      "rows": [
+        "PDC-D1-R009"
+      ],
+      "title": "Plan document still states Phase 10 READY_FOR_INDEPENDENT_AUDIT while the architecture document says CLOSED 'consistent with the plan'",
+      "evidence": "docs/project/architecture/AGENT_DISTRIBUTION.md:2002 (reconciled, PDC-D1-R009) versus docs/project/maintainers/plans/AGENT_DISTRIBUTION.md:327 (AC-4 plan row 10, READY_FOR_INDEPENDENT_AUDIT).",
+      "reproduction": "sed -n 327p docs/project/maintainers/plans/AGENT_DISTRIBUTION.md",
+      "impact": "the matrix test case 'doc status matches AGENT_PLATFORM_AC1_AC6_FINAL_ARCHITECTURE_AUDIT' is satisfied for the architecture doc only.",
+      "suggested_repair_scope": "Reconcile the plan row (docs-only, PDC-P5-DOC lane).",
+      "owner_path": "docs/project/maintainers/plans/AGENT_DISTRIBUTION.md",
+      "verification": "CODE_READ_BY_AUDITOR"
+    },
+    {
+      "id": "F-D1-16",
+      "severity": "LOW",
+      "rows": [
+        "PDC-D1-R010",
+        "PDC-D1-R020"
+      ],
+      "title": "Opt-in hardening re-verified: LLM profile pin (F-37) and plugin provenance (F-21, F-04) are not enforced by default",
+      "evidence": "_require_pinned_llm_profile returns when revision.llm_profile_digest is None (admin_service.py:1786), so an unpinned revision activates unchecked; llm_profile_source has no production caller. PluginProvenanceAdmission._attestation_for matches the operator mapping key to spec.distribution and never compares attestation.distribution; require_plugin_provenance defaults to False in catalog_bootstrap.",
+      "reproduction": "code read (admin_service.py:1778-1793; core/plugins/admission.py:259-303; core/catalog_bootstrap.py:82-83).",
+      "impact": "no regression versus the pin; fail-closed only for hosts that opt in.",
+      "suggested_repair_scope": "Decide whether host composition wiring is a PDC-X claim (orchestrator, F-04); if yes, make the defaults strict for production profiles.",
+      "owner_path": "intergrax/agent_distribution/admin_service.py; intergrax/core/plugins/admission.py; intergrax/core/catalog_bootstrap.py",
+      "verification": "CODE_READ_BY_AUDITOR"
+    },
+    {
+      "id": "F-D1-17",
+      "severity": "INFO",
+      "rows": [
+        "PDC-D1-R015"
+      ],
+      "title": "No test exercises cross-host agent reuse; the manager facade is a one-to-one delegate",
+      "evidence": "AgentManagerCommandFacade delegates install/bind/upgrade/retire to AgentPlatformAdminService. No test in the cited 'distribution integration suites' reuses one package across hosts or environments (grep for cross-host finds only unrelated UCA6C tests).",
+      "reproduction": "grep -rln 'cross_host|cross-host' tests/",
+      "impact": "R015 cannot be evidenced; the facade adds no logic that could break the claim.",
+      "suggested_repair_scope": "Add one test installing one digest-pinned package into two environments/applications and serving both.",
+      "owner_path": "intergrax/agent_distribution/agent_manager_command_facade.py",
+      "verification": "CODE_READ_BY_AUDITOR"
+    },
+    {
+      "id": "F-D1-18",
+      "severity": "INFO",
+      "rows": [
+        "PDC-D1-R019",
+        "PDC-D1-R021",
+        "PDC-D1-R022"
+      ],
+      "title": "Positive records: R019 exclusion valid, R021 ownership record present, R022 plug suites green",
+      "evidence": "OD-PDC-SCOPE-03 (Option A, 2026-11-12) authorizes the exclusion of non-VENV_BUNDLE runtime factories; PDC_OWNERSHIP_MATRIX.md assigns plug_03/plug_04/plug_final to D1; tests/qualification/plug_03 + plug_04 + plug_final: 27 passed, process exited.",
+      "reproduction": "logs/plug_run.log",
+      "impact": "none",
+      "suggested_repair_scope": "none",
+      "owner_path": "n/a",
+      "verification": "TEST_RUN"
+    },
+    {
+      "id": "F-D1-19",
+      "severity": "INFO",
+      "rows": [
+        "PDC-D1-R011",
+        "PDC-D1-R012",
+        "PDC-D1-R014",
+        "PDC-D1-R016"
+      ],
+      "title": "Positive records: the 65 D1 pdc_x tests pass; restart continuity and boundary checks hold",
+      "evidence": "tests/qualification/pdc_x/d1: 65 passed (94 s, process exited). xd_04 restart tests pass (3). No import of top-level agents/ or applications/ from the audited intergrax paths (intergrax.applications._shared is a Tier-0/1 subpackage, lazy import in sqlite_stores).",
+      "reproduction": "logs/d1_run.log, logs/wide_run2.log",
+      "impact": "none",
+      "suggested_repair_scope": "none",
+      "owner_path": "n/a",
+      "verification": "TEST_RUN"
+    },
+    {
+      "id": "F-D1-20",
+      "severity": "INFO",
+      "rows": [
+        "PDC-D1-R013",
+        "PDC-D1-R016"
+      ],
+      "title": "Process-exit debt R-05: a pytest process that included xd_04 did not exit after its summary (observed once)",
+      "evidence": "The wide run (6 path groups incl. xd_04) printed '18 failed, 1581 passed' after 43 s and the process stayed alive until stopped (about 10 min). The D1 dir run, the plug run, the mutation runs and xd_04 alone (6 s) exited normally; the offending test was not bisected.",
+      "reproduction": "logs/wide_run2.log (command in test_matrix.txt)",
+      "impact": "CI hang risk; classification: known debt R-05 (fix claimed in T-IGX-036-Z).",
+      "suggested_repair_scope": "Owner of T-IGX-036-Z to re-check the leak guard against xd_04.",
+      "owner_path": "tests/qualification/pdc_x/xd",
+      "verification": "TEST_RUN"
+    }
+  ]
+}

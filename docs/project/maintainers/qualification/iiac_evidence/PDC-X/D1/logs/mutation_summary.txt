@@ -1,0 +1,10 @@
+M1-admission-bypass: KILLED (rc=1, 130s) :: 1 failed, 24 passed in 111.20s (0:01:51)
+M2-no-policy-authz-upgrade-retire: SURVIVED (rc=0, 8s) :: 42 passed in 3.96s
+M3-retire-no-app-scope: KILLED (rc=1, 8s) :: 1 failed, 14 passed in 3.87s
+M4-retire-no-tenant-scope: KILLED (rc=1, 8s) :: 1 failed, 11 passed in 3.73s
+M5-upgrade-no-tenant-scope: KILLED (rc=1, 8s) :: 1 failed, 11 passed in 3.93s
+M6-retired-slot-accepts-candidates: KILLED (rc=1, 8s) :: 1 failed, 34 passed in 4.03s
+M7-same-version-is-upgrade: SURVIVED (rc=0, 9s) :: 42 passed in 4.55s
+M8-bound-tool-removal-ignored: KILLED (rc=1, 8s) :: 1 failed, 28 passed in 3.61s
+M9-capability-removal-ignored: KILLED (rc=1, 7s) :: 1 failed, 26 passed in 3.40s
+M10-failed-candidate-not-recorded-on-reject: SURVIVED (rc=0, 7s) :: 42 passed in 3.65s

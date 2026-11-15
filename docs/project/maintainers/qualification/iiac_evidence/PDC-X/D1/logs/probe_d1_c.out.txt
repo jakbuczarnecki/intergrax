@@ -1,0 +1,6 @@
+PROBE P12-F11: BaseException during upgrade -> skill still installed=False
+PROBE P12-ctl: Exception control -> rejected; installed=True
+PROBE P12-F12: 1.0.0 -> 1.0.1-rc.1 outcome=applied detail=skill upgraded
+PROBE P12-ok: 1.0.0 -> 1.0.1 outcome=applied
+PROBE P13: activation of revision pinning REVOKED package succeeded: traffic=rev-1
+PROBE P14: anonymous caller with forged snapshot -> action=rollback; traffic now rev-1
