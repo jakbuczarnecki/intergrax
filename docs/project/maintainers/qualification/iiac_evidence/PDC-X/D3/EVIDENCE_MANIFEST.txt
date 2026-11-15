@@ -1,0 +1,13 @@
+PDC-X / D3 independent audit (IA-D3) evidence manifest
+
+audited_implementation_sha: c08efe46a74a20595468d8d8bf06eab2dca5f573 (= test_execution_sha = audit_execution_sha)
+auditor branch:             claude/pdc-x-ia-d3-d10590 (docs/evidence only; no product, test, script or governance edit)
+dossier_verdict:            PARTIAL  (IIAC manifest verdict value: CONDITIONAL)
+rows:                       12 PASS, 3 PASS_SCOPED, 9 PARTIAL, 0 FAIL
+findings:                   1 HIGH, 6 MEDIUM, 6 LOW, 3 INFO
+
+Report:    docs/project/maintainers/qualification/platform_domain_completeness/PDC_P7_D3_AUDIT_REPORT.md
+Records:   audit_scope.json, iiac_audit_session_manifest.PDC-X.d3.json, iiac_audit_d3_findings.json, test_matrix.txt
+Logs:      logs/pytest_*.log, logs/probes/*.out, logs/mutation/ (results.json, one log per mutant, driver.log)
+Scripts:   adversarial_scripts/probe_*.py, run_mutants.py (mutation driver; edit WT/OUT to rerun)
+Control worktrees (not in the repository): D:/Projekty/_wt/intergrax/ia-d3-pre (35b6772af~1), D:/Projekty/_wt/intergrax/ia-d3-mut (audited SHA, mutation scratch)

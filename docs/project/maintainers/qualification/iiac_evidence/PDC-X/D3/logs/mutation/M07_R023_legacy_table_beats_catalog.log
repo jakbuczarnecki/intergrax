@@ -1,0 +1,21 @@
+...........................................ss........................... [ 46%]
+.............................................................s.s...s.... [ 92%]
+F
+================================== FAILURES ===================================
+_____ test_catalog_exact_record_beats_a_conflicting_provider_local_table ______
+
+    def test_catalog_exact_record_beats_a_conflicting_provider_local_table() -> None:
+        catalog = _catalog([{"model_id": "m-1", "context_window_tokens": 1_000}])
+        tokens = resolve_context_window_tokens(LLMProvider.CLAUDE, "m-1", legacy_windows={"m-1": 9_999}, catalog=catalog)
+>       assert tokens == 1_000
+E       assert 9999 == 1000
+
+tests\qualification\pdc_x\d3\test_d3_r023_context_window_source.py:50: AssertionError
+=========================== short test summary info ===========================
+SKIPPED [1] tests\qualification\pdc_x\d3\test_d3_r009_refusal.py:146: optional extra llm-anthropic; the source gate covers the Claude adapter
+SKIPPED [1] tests\qualification\pdc_x\d3\test_d3_r009_refusal.py:156: optional extra llm-anthropic; the source gate covers the Claude adapter
+SKIPPED [2] tests\qualification\pdc_x\d3\test_d3_r022_capability_flags.py:74: optional extra llm-anthropic; the source gate covers the Claude adapter
+SKIPPED [1] tests\qualification\pdc_x\d3\test_d3_r022_capability_flags.py:126: optional extra llm-langchain-ollama; covered by the source gate
+FAILED tests/qualification/pdc_x/d3/test_d3_r023_context_window_source.py::test_catalog_exact_record_beats_a_conflicting_provider_local_table
+!!!!!!!!!!!!!!!!!!!!!!!!!! stopping after 1 failures !!!!!!!!!!!!!!!!!!!!!!!!!!
+1 failed, 139 passed, 5 skipped in 4.69s

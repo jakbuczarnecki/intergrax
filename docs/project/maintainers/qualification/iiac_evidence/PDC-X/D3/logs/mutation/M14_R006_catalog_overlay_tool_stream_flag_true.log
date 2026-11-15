@@ -1,0 +1,19 @@
+.....................F
+================================== FAILURES ===================================
+___________ test_catalog_record_without_tools_vetoes_tool_streaming ___________
+
+    def test_catalog_record_without_tools_vetoes_tool_streaming() -> None:
+        inner = StreamingToolsAdapter()
+        overlay = CatalogCapabilityAdapter(
+            inner, ModelRecord(model_id="fake-model", context_window_tokens=8_192, supports_tools=False)
+        )
+        assert overlay.supports_tool_streaming() is False
+>       with pytest.raises(LLMCapabilityMismatchError):
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E       Failed: DID NOT RAISE <class 'intergrax.llm_adapters.contracts.capabilities.LLMCapabilityMismatchError'>
+
+tests\qualification\pdc_x\d3\test_d3_r006_r015_fail_closed.py:138: Failed
+=========================== short test summary info ===========================
+FAILED tests/qualification/pdc_x/d3/test_d3_r006_r015_fail_closed.py::test_catalog_record_without_tools_vetoes_tool_streaming
+!!!!!!!!!!!!!!!!!!!!!!!!!! stopping after 1 failures !!!!!!!!!!!!!!!!!!!!!!!!!!
+1 failed, 21 passed in 2.51s

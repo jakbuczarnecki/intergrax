@@ -1,0 +1,45 @@
+.......F
+================================== FAILURES ===================================
+_ test_resolve_embedding_category_without_api_key_returns_embedding_provider_integration _
+
+cleared_catalog = None, no_openai_key = None
+
+    def test_resolve_embedding_category_without_api_key_returns_embedding_provider_integration(
+        cleared_catalog: None, no_openai_key: None
+    ) -> None:
+        _register_owning_row_then_embedding_contribution()
+
+>       resolved = resolve(IntegrationCategory.EMBEDDING_PROVIDER, _SLUG)
+                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+tests\qualification\pdc_x\p6_ecapfix\test_p6_ecapfix_openai_embedding_resolve.py:83:
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+intergrax\integrations\registry\factory.py:157: in resolve
+    materialized = entry.factory(integration_category=normalized)
+                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+intergrax\integrations\providers\embedding_provider\openai\register.py:34: in _factory
+    return owning_factory(**kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^
+intergrax\integrations\providers\managed_retrieval\openai\bundle.py:65: in create_openai_managed_retrieval
+    config = _resolve_openai_config(**overrides)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+overrides = {'integration_category': <IntegrationCategory.EMBEDDING_PROVIDER: 'embedding_provider'>}
+config = None, api_key = ''
+
+    def _resolve_openai_config(**overrides: object) -> OpenAIManagedRetrievalConfig:
+        config = openai_managed_retrieval_config_from_env()
+        if config is None:
+            api_key = str(overrides.get("api_key", "")).strip()
+            if not api_key:
+>               raise IntegrationConfigurationError(
+                    "OpenAI managed retrieval requires OPENAI_API_KEY or explicit api_key",
+                )
+E               intergrax.integrations.contracts.base.IntegrationConfigurationError: OpenAI managed retrieval requires OPENAI_API_KEY or explicit api_key
+
+intergrax\integrations\providers\managed_retrieval\openai\bundle.py:86: IntegrationConfigurationError
+=========================== short test summary info ===========================
+FAILED tests/qualification/pdc_x/p6_ecapfix/test_p6_ecapfix_openai_embedding_resolve.py::test_resolve_embedding_category_without_api_key_returns_embedding_provider_integration
+!!!!!!!!!!!!!!!!!!!!!!!!!! stopping after 1 failures !!!!!!!!!!!!!!!!!!!!!!!!!!
+1 failed, 7 passed in 2.85s

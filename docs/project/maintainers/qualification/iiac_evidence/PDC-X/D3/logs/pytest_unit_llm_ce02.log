@@ -1,0 +1,801 @@
+warning: Failed to hardlink files; falling back to full copy. This may lead to degraded performance.
+         If the cache and target directories are on different filesystems, hardlinking may not be supported.
+         If this is intentional, set `export UV_LINK_MODE=copy` or use `--link-mode=copy` to suppress this warning.
+Installed 18 packages in 5.33s
+........................................................................ [ 10%]
+...........................................................FFFF......... [ 20%]
+...............................................F........................ [ 30%]
+...................................................ssssss............... [ 40%]
+...................s............................FFF.............s....... [ 50%]
+..................................................................FF.F.. [ 60%]
+.........F.............................................................. [ 70%]
+........................................................................ [ 80%]
+........................................................................ [ 91%]
+................................................................         [100%]
+================================== FAILURES ===================================
+________________ test_fixture_adapter_accepts_valid_arguments _________________
+
+    def test_fixture_adapter_accepts_valid_arguments() -> None:
+        adapter = FixtureDrivenIncidentInvestigationLLM()
+>       registry = _incident_registry()
+                   ^^^^^^^^^^^^^^^^^^^^
+
+tests\unit\llm_adapters\test_fixture_strict_adapter_parity.py:85:
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+tests\unit\llm_adapters\test_fixture_strict_adapter_parity.py:51: in _incident_registry
+    fixture_bundle = build_fixture_runtime_bundle()
+                     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+platform_proofs\scenarios\ai_incident_investigation\fixtures\runtime_bundle.py:65: in build_fixture_runtime_bundle
+    bundle = build_application_runtime_bundle(
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+    def build_runtime_bundle(
+        *,
+        operational_data: IncidentOperationalData,
+        runtime_composition: ScenarioRuntimeComposition | None = None,
+        tenant_id: str = STANDALONE_SCENARIO_TENANT_ID,
+        investigation_input: IncidentInvestigationInput | None = None,
+        llm_adapter_override: LLMAdapter | None = None,
+    ) -> ScenarioRuntimeBundle:
+        environment = (
+            runtime_composition.environment
+            if runtime_composition is not None
+            else build_scenario_environment_profile()
+        )
+        tool_registry = (
+            runtime_composition.tool_registry
+            if runtime_composition is not None
+            else ToolRegistry()
+        )
+        evidence_store = register_scenario_tools(tool_registry, operational_data)
+        composition = runtime_composition or ScenarioRuntimeComposition(
+            environment=environment,
+            tool_registry=tool_registry,
+            llm_adapter_override=llm_adapter_override,
+        )
+>       investigator = IncidentInvestigatorAgent(
+            station_id=operational_data.station_id,
+            runtime_composition=composition,
+            incident_scope=IncidentScope.from_operational_defaults(
+                station_id=operational_data.station_id,
+            ),
+            evidence_store=evidence_store,
+            investigation_input=investigation_input,
+        )
+E       TypeError: Can't instantiate abstract class IncidentInvestigatorAgent without an implementation for abstract method 'run'
+
+platform_proofs\scenarios\ai_incident_investigation\application\scenario.py:262: TypeError
+_______________ test_fixture_adapter_rejects_invalid_arguments ________________
+
+    def test_fixture_adapter_rejects_invalid_arguments() -> None:
+>       registry = _incident_registry()
+                   ^^^^^^^^^^^^^^^^^^^^
+
+tests\unit\llm_adapters\test_fixture_strict_adapter_parity.py:98:
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+tests\unit\llm_adapters\test_fixture_strict_adapter_parity.py:51: in _incident_registry
+    fixture_bundle = build_fixture_runtime_bundle()
+                     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+platform_proofs\scenarios\ai_incident_investigation\fixtures\runtime_bundle.py:65: in build_fixture_runtime_bundle
+    bundle = build_application_runtime_bundle(
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+    def build_runtime_bundle(
+        *,
+        operational_data: IncidentOperationalData,
+        runtime_composition: ScenarioRuntimeComposition | None = None,
+        tenant_id: str = STANDALONE_SCENARIO_TENANT_ID,
+        investigation_input: IncidentInvestigationInput | None = None,
+        llm_adapter_override: LLMAdapter | None = None,
+    ) -> ScenarioRuntimeBundle:
+        environment = (
+            runtime_composition.environment
+            if runtime_composition is not None
+            else build_scenario_environment_profile()
+        )
+        tool_registry = (
+            runtime_composition.tool_registry
+            if runtime_composition is not None
+            else ToolRegistry()
+        )
+        evidence_store = register_scenario_tools(tool_registry, operational_data)
+        composition = runtime_composition or ScenarioRuntimeComposition(
+            environment=environment,
+            tool_registry=tool_registry,
+            llm_adapter_override=llm_adapter_override,
+        )
+>       investigator = IncidentInvestigatorAgent(
+            station_id=operational_data.station_id,
+            runtime_composition=composition,
+            incident_scope=IncidentScope.from_operational_defaults(
+                station_id=operational_data.station_id,
+            ),
+            evidence_store=evidence_store,
+            investigation_input=investigation_input,
+        )
+E       TypeError: Can't instantiate abstract class IncidentInvestigatorAgent without an implementation for abstract method 'run'
+
+platform_proofs\scenarios\ai_incident_investigation\application\scenario.py:262: TypeError
+_____________ test_atomic_planner_accepts_strict_capable_fixture ______________
+
+    def test_atomic_planner_accepts_strict_capable_fixture() -> None:
+        adapter = FixtureDrivenIncidentInvestigationLLM()
+>       planner = ToolPlanningService(adapter, _incident_registry())
+                                               ^^^^^^^^^^^^^^^^^^^^
+
+tests\unit\llm_adapters\test_fixture_strict_adapter_parity.py:120:
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+tests\unit\llm_adapters\test_fixture_strict_adapter_parity.py:51: in _incident_registry
+    fixture_bundle = build_fixture_runtime_bundle()
+                     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+platform_proofs\scenarios\ai_incident_investigation\fixtures\runtime_bundle.py:65: in build_fixture_runtime_bundle
+    bundle = build_application_runtime_bundle(
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+    def build_runtime_bundle(
+        *,
+        operational_data: IncidentOperationalData,
+        runtime_composition: ScenarioRuntimeComposition | None = None,
+        tenant_id: str = STANDALONE_SCENARIO_TENANT_ID,
+        investigation_input: IncidentInvestigationInput | None = None,
+        llm_adapter_override: LLMAdapter | None = None,
+    ) -> ScenarioRuntimeBundle:
+        environment = (
+            runtime_composition.environment
+            if runtime_composition is not None
+            else build_scenario_environment_profile()
+        )
+        tool_registry = (
+            runtime_composition.tool_registry
+            if runtime_composition is not None
+            else ToolRegistry()
+        )
+        evidence_store = register_scenario_tools(tool_registry, operational_data)
+        composition = runtime_composition or ScenarioRuntimeComposition(
+            environment=environment,
+            tool_registry=tool_registry,
+            llm_adapter_override=llm_adapter_override,
+        )
+>       investigator = IncidentInvestigatorAgent(
+            station_id=operational_data.station_id,
+            runtime_composition=composition,
+            incident_scope=IncidentScope.from_operational_defaults(
+                station_id=operational_data.station_id,
+            ),
+            evidence_store=evidence_store,
+            investigation_input=investigation_input,
+        )
+E       TypeError: Can't instantiate abstract class IncidentInvestigatorAgent without an implementation for abstract method 'run'
+
+platform_proofs\scenarios\ai_incident_investigation\application\scenario.py:262: TypeError
+____________ test_non_strict_adapter_fails_closed_before_dispatch _____________
+
+    def test_non_strict_adapter_fails_closed_before_dispatch() -> None:
+        class _StrictlessAdapter(BaseLLMAdapter):
+            provider = "strictless"
+            model = "strictless"
+
+            @property
+            def context_window_tokens(self) -> int:
+                return 8192
+
+            def supports_tools(self) -> bool:
+                return True
+
+            def generate_messages(self, messages, *, temperature=None, max_tokens=None, run_id=None):
+                return build_adapter_response(content="unused")
+
+            def generate_with_tools(
+                self,
+                messages,
+                tools_schema,
+                *,
+                temperature=None,
+                max_tokens=None,
+                tool_choice=None,
+                run_id=None,
+            ):
+                _ = messages, tools_schema, temperature, max_tokens, tool_choice, run_id
+                return build_adapter_response(content="unused")
+
+>       planner = ToolPlanningService(_StrictlessAdapter(), _incident_registry())
+                                                            ^^^^^^^^^^^^^^^^^^^^
+
+tests\unit\llm_adapters\test_fixture_strict_adapter_parity.py:161:
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+tests\unit\llm_adapters\test_fixture_strict_adapter_parity.py:51: in _incident_registry
+    fixture_bundle = build_fixture_runtime_bundle()
+                     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+platform_proofs\scenarios\ai_incident_investigation\fixtures\runtime_bundle.py:65: in build_fixture_runtime_bundle
+    bundle = build_application_runtime_bundle(
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+    def build_runtime_bundle(
+        *,
+        operational_data: IncidentOperationalData,
+        runtime_composition: ScenarioRuntimeComposition | None = None,
+        tenant_id: str = STANDALONE_SCENARIO_TENANT_ID,
+        investigation_input: IncidentInvestigationInput | None = None,
+        llm_adapter_override: LLMAdapter | None = None,
+    ) -> ScenarioRuntimeBundle:
+        environment = (
+            runtime_composition.environment
+            if runtime_composition is not None
+            else build_scenario_environment_profile()
+        )
+        tool_registry = (
+            runtime_composition.tool_registry
+            if runtime_composition is not None
+            else ToolRegistry()
+        )
+        evidence_store = register_scenario_tools(tool_registry, operational_data)
+        composition = runtime_composition or ScenarioRuntimeComposition(
+            environment=environment,
+            tool_registry=tool_registry,
+            llm_adapter_override=llm_adapter_override,
+        )
+>       investigator = IncidentInvestigatorAgent(
+            station_id=operational_data.station_id,
+            runtime_composition=composition,
+            incident_scope=IncidentScope.from_operational_defaults(
+                station_id=operational_data.station_id,
+            ),
+            evidence_store=evidence_store,
+            investigation_input=investigation_input,
+        )
+E       TypeError: Can't instantiate abstract class IncidentInvestigatorAgent without an implementation for abstract method 'run'
+
+platform_proofs\scenarios\ai_incident_investigation\application\scenario.py:262: TypeError
+_____________ test_missing_optional_llm_dependency_is_controlled ______________
+
+_restore_registry_state = RegistryStateSnapshot(factories={'openai': <function lazy_adapter_registration_spec.<locals>.factory at 0x00000182A6F2...ernalOperationCapabilities(supports_native_cancel=True, supports_stream_abort=True, supports_remote_termination=True)})
+
+    def test_missing_optional_llm_dependency_is_controlled(
+        _restore_registry_state: Dict[str, _Factory],
+    ) -> None:
+        import importlib.abc
+        import importlib.machinery
+        import sys
+        from typing import Sequence as _Sequence
+
+        class _AnthropicBlocker(importlib.abc.MetaPathFinder):
+            def find_spec(
+                self,
+                fullname: str,
+                path: _Sequence[str] | None,
+                target: object | None = None,
+            ) -> importlib.machinery.ModuleSpec | None:
+                if fullname == "anthropic" or fullname.startswith("anthropic."):
+                    return importlib.machinery.ModuleSpec(fullname, self)
+                return None
+
+            def create_module(self, spec: importlib.machinery.ModuleSpec) -> None:
+                return None
+
+            def exec_module(self, module: object) -> None:
+                name = getattr(module, "__name__", "anthropic")
+                raise ModuleNotFoundError(f"No module named '{name}'", name=name)
+
+        removed = {
+            name: sys.modules.pop(name)
+            for name in list(sys.modules)
+            if name == "anthropic" or name.startswith("anthropic.")
+        }
+        blocker = _AnthropicBlocker()
+        sys.meta_path.insert(0, blocker)
+        try:
+            with pytest.raises(
+                LLMAdapterDependencyError,
+                match=r"Intergrax-ai\[llm-anthropic\]",
+            ):
+>               LLMAdapterRegistry.create(LLMProvider.CLAUDE, model="claude-3")
+
+tests\unit\llm_adapters\test_llm_provider_registry.py:212:
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+intergrax\llm_adapters\llm_provider_registry.py:164: in create
+    adapter = cls._factories[key](**kwargs)
+              ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+intergrax\llm_adapters\providers\registrations\_lazy_factory.py:40: in factory
+    return adapter_cls(**kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+self = <intergrax.llm_adapters.providers.claude_adapter.ClaudeChatAdapter object at 0x00000182A71369F0>
+client = None, model = 'claude-3', defaults = {}, api_key = None
+resolved_model = 'claude-3'
+
+    def __init__(
+        self,
+        client: Anthropic | None = None,
+        model: str | None = None,
+        **defaults,
+    ):
+        super().__init__()
+        self._apply_defaults_call_config(defaults)
+
+        api_key = os.getenv(self.ENV_API_KEY)
+
+        resolved_model = model or self.DEFAULT_MODEL
+
+        if client is None:
+            if not api_key:
+>               raise RuntimeError("ANTHROPIC_API_KEY not found in environment variables.")
+E               RuntimeError: ANTHROPIC_API_KEY not found in environment variables.
+
+intergrax\llm_adapters\providers\claude_adapter.py:76: RuntimeError
+_________ test_unsupported_tool_choice_rejects_before_provider[none] __________
+
+adapter = <intergrax.llm_adapters.providers.ollama_adapter.LangChainOllamaAdapter object at 0x00000182A8B12A80>
+fake_chat = <MagicMock id='1660687555696'>
+bound_chat = <MagicMock name='mock.bind_tools()' id='1660687559392'>
+tool_choice = 'none'
+
+    @pytest.mark.parametrize(
+        "tool_choice",
+        [
+            "none",
+            {"type": "function", "function": {"name": "lookup"}},
+            "lookup",
+        ],
+    )
+    def test_unsupported_tool_choice_rejects_before_provider(
+        adapter: LangChainOllamaAdapter,
+        fake_chat: MagicMock,
+        bound_chat: MagicMock,
+        tool_choice: object,
+    ) -> None:
+        with pytest.raises(
+            ValueError,
+            match="Ollama native tool calling supports only tool_choice=None, 'auto', or 'required'",
+        ):
+>           adapter.generate_with_tools(
+                [ChatMessage(role="user", content="search")],
+                TOOLS_SCHEMA,
+                tool_choice=tool_choice,  # type: ignore[arg-type]
+            )
+
+tests\unit\llm_adapters\test_ollama_tool_calling.py:450:
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+intergrax\llm_adapters\providers\ollama_adapter.py:479: in generate_with_tools
+    self._validate_ollama_tool_choice(tool_choice)
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+tool_choice = 'none'
+
+    @staticmethod
+    def _validate_ollama_tool_choice(
+        tool_choice: NativeToolChoice | None,
+    ) -> None:
+        if tool_choice is None:
+            return
+        if isinstance(tool_choice, NativeForcedFunctionChoice):
+            return
+        if isinstance(tool_choice, str) and tool_choice in {"auto", "required"}:
+            return
+>       raise ValueError(
+            "Ollama native tool calling supports only tool_choice=None, 'auto', 'required', or a forced function choice"
+        )
+E       ValueError: Ollama native tool calling supports only tool_choice=None, 'auto', 'required', or a forced function choice
+
+intergrax\llm_adapters\providers\ollama_adapter.py:256: ValueError
+
+During handling of the above exception, another exception occurred:
+
+adapter = <intergrax.llm_adapters.providers.ollama_adapter.LangChainOllamaAdapter object at 0x00000182A8B12A80>
+fake_chat = <MagicMock id='1660687555696'>
+bound_chat = <MagicMock name='mock.bind_tools()' id='1660687559392'>
+tool_choice = 'none'
+
+    @pytest.mark.parametrize(
+        "tool_choice",
+        [
+            "none",
+            {"type": "function", "function": {"name": "lookup"}},
+            "lookup",
+        ],
+    )
+    def test_unsupported_tool_choice_rejects_before_provider(
+        adapter: LangChainOllamaAdapter,
+        fake_chat: MagicMock,
+        bound_chat: MagicMock,
+        tool_choice: object,
+    ) -> None:
+>       with pytest.raises(
+            ValueError,
+            match="Ollama native tool calling supports only tool_choice=None, 'auto', or 'required'",
+        ):
+E       AssertionError: Regex pattern did not match.
+E        Regex: "Ollama native tool calling supports only tool_choice=None, 'auto', or 'required'"
+E        Input: "Ollama native tool calling supports only tool_choice=None, 'auto', 'required', or a forced function choice"
+
+tests\unit\llm_adapters\test_ollama_tool_calling.py:446: AssertionError
+_____ test_unsupported_tool_choice_rejects_before_provider[tool_choice1] ______
+
+adapter = <intergrax.llm_adapters.providers.ollama_adapter.LangChainOllamaAdapter object at 0x00000182A8B05C70>
+fake_chat = <MagicMock id='1660666783616'>
+bound_chat = <MagicMock name='mock.bind_tools()' id='1660687506448'>
+tool_choice = {'function': {'name': 'lookup'}, 'type': 'function'}
+
+    @pytest.mark.parametrize(
+        "tool_choice",
+        [
+            "none",
+            {"type": "function", "function": {"name": "lookup"}},
+            "lookup",
+        ],
+    )
+    def test_unsupported_tool_choice_rejects_before_provider(
+        adapter: LangChainOllamaAdapter,
+        fake_chat: MagicMock,
+        bound_chat: MagicMock,
+        tool_choice: object,
+    ) -> None:
+        with pytest.raises(
+            ValueError,
+            match="Ollama native tool calling supports only tool_choice=None, 'auto', or 'required'",
+        ):
+>           adapter.generate_with_tools(
+                [ChatMessage(role="user", content="search")],
+                TOOLS_SCHEMA,
+                tool_choice=tool_choice,  # type: ignore[arg-type]
+            )
+
+tests\unit\llm_adapters\test_ollama_tool_calling.py:450:
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+intergrax\llm_adapters\providers\ollama_adapter.py:479: in generate_with_tools
+    self._validate_ollama_tool_choice(tool_choice)
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+tool_choice = {'function': {'name': 'lookup'}, 'type': 'function'}
+
+    @staticmethod
+    def _validate_ollama_tool_choice(
+        tool_choice: NativeToolChoice | None,
+    ) -> None:
+        if tool_choice is None:
+            return
+        if isinstance(tool_choice, NativeForcedFunctionChoice):
+            return
+        if isinstance(tool_choice, str) and tool_choice in {"auto", "required"}:
+            return
+>       raise ValueError(
+            "Ollama native tool calling supports only tool_choice=None, 'auto', 'required', or a forced function choice"
+        )
+E       ValueError: Ollama native tool calling supports only tool_choice=None, 'auto', 'required', or a forced function choice
+
+intergrax\llm_adapters\providers\ollama_adapter.py:256: ValueError
+
+During handling of the above exception, another exception occurred:
+
+adapter = <intergrax.llm_adapters.providers.ollama_adapter.LangChainOllamaAdapter object at 0x00000182A8B05C70>
+fake_chat = <MagicMock id='1660666783616'>
+bound_chat = <MagicMock name='mock.bind_tools()' id='1660687506448'>
+tool_choice = {'function': {'name': 'lookup'}, 'type': 'function'}
+
+    @pytest.mark.parametrize(
+        "tool_choice",
+        [
+            "none",
+            {"type": "function", "function": {"name": "lookup"}},
+            "lookup",
+        ],
+    )
+    def test_unsupported_tool_choice_rejects_before_provider(
+        adapter: LangChainOllamaAdapter,
+        fake_chat: MagicMock,
+        bound_chat: MagicMock,
+        tool_choice: object,
+    ) -> None:
+>       with pytest.raises(
+            ValueError,
+            match="Ollama native tool calling supports only tool_choice=None, 'auto', or 'required'",
+        ):
+E       AssertionError: Regex pattern did not match.
+E        Regex: "Ollama native tool calling supports only tool_choice=None, 'auto', or 'required'"
+E        Input: "Ollama native tool calling supports only tool_choice=None, 'auto', 'required', or a forced function choice"
+
+tests\unit\llm_adapters\test_ollama_tool_calling.py:446: AssertionError
+________ test_unsupported_tool_choice_rejects_before_provider[lookup] _________
+
+adapter = <intergrax.llm_adapters.providers.ollama_adapter.LangChainOllamaAdapter object at 0x00000182A8A70BC0>
+fake_chat = <MagicMock id='1660686896928'>
+bound_chat = <MagicMock name='mock.bind_tools()' id='1660686896160'>
+tool_choice = 'lookup'
+
+    @pytest.mark.parametrize(
+        "tool_choice",
+        [
+            "none",
+            {"type": "function", "function": {"name": "lookup"}},
+            "lookup",
+        ],
+    )
+    def test_unsupported_tool_choice_rejects_before_provider(
+        adapter: LangChainOllamaAdapter,
+        fake_chat: MagicMock,
+        bound_chat: MagicMock,
+        tool_choice: object,
+    ) -> None:
+        with pytest.raises(
+            ValueError,
+            match="Ollama native tool calling supports only tool_choice=None, 'auto', or 'required'",
+        ):
+>           adapter.generate_with_tools(
+                [ChatMessage(role="user", content="search")],
+                TOOLS_SCHEMA,
+                tool_choice=tool_choice,  # type: ignore[arg-type]
+            )
+
+tests\unit\llm_adapters\test_ollama_tool_calling.py:450:
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+intergrax\llm_adapters\providers\ollama_adapter.py:479: in generate_with_tools
+    self._validate_ollama_tool_choice(tool_choice)
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+tool_choice = 'lookup'
+
+    @staticmethod
+    def _validate_ollama_tool_choice(
+        tool_choice: NativeToolChoice | None,
+    ) -> None:
+        if tool_choice is None:
+            return
+        if isinstance(tool_choice, NativeForcedFunctionChoice):
+            return
+        if isinstance(tool_choice, str) and tool_choice in {"auto", "required"}:
+            return
+>       raise ValueError(
+            "Ollama native tool calling supports only tool_choice=None, 'auto', 'required', or a forced function choice"
+        )
+E       ValueError: Ollama native tool calling supports only tool_choice=None, 'auto', 'required', or a forced function choice
+
+intergrax\llm_adapters\providers\ollama_adapter.py:256: ValueError
+
+During handling of the above exception, another exception occurred:
+
+adapter = <intergrax.llm_adapters.providers.ollama_adapter.LangChainOllamaAdapter object at 0x00000182A8A70BC0>
+fake_chat = <MagicMock id='1660686896928'>
+bound_chat = <MagicMock name='mock.bind_tools()' id='1660686896160'>
+tool_choice = 'lookup'
+
+    @pytest.mark.parametrize(
+        "tool_choice",
+        [
+            "none",
+            {"type": "function", "function": {"name": "lookup"}},
+            "lookup",
+        ],
+    )
+    def test_unsupported_tool_choice_rejects_before_provider(
+        adapter: LangChainOllamaAdapter,
+        fake_chat: MagicMock,
+        bound_chat: MagicMock,
+        tool_choice: object,
+    ) -> None:
+>       with pytest.raises(
+            ValueError,
+            match="Ollama native tool calling supports only tool_choice=None, 'auto', or 'required'",
+        ):
+E       AssertionError: Regex pattern did not match.
+E        Regex: "Ollama native tool calling supports only tool_choice=None, 'auto', or 'required'"
+E        Input: "Ollama native tool calling supports only tool_choice=None, 'auto', 'required', or a forced function choice"
+
+tests\unit\llm_adapters\test_ollama_tool_calling.py:446: AssertionError
+_ test_provider_creation_surfaces_dependency_error_without_sdk[gemini-google-llm-gemini] _
+
+provider = <LLMProvider.GEMINI: 'gemini'>, sdk_root = 'google'
+extra = 'llm-gemini', _restore_registry_state = None
+
+    @pytest.mark.parametrize(("provider", "sdk_root", "extra"), _REPRESENTATIVE_PROVIDERS)
+    def test_provider_creation_surfaces_dependency_error_without_sdk(
+        provider: LLMProvider,
+        sdk_root: str,
+        extra: str,
+        _restore_registry_state,
+    ) -> None:
+        removed = _clear_sdk_modules()
+        blocker = _SdkImportBlocker({sdk_root.split(".", 1)[0]})
+        sys.meta_path.insert(0, blocker)
+        try:
+            with pytest.raises(LLMAdapterDependencyError, match=extra):
+>               LLMAdapterRegistry.create(provider, model="test-model")
+
+tests\unit\llm_adapters\test_p2_002_c_provider_registration.py:206:
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+intergrax\llm_adapters\llm_provider_registry.py:164: in create
+    adapter = cls._factories[key](**kwargs)
+              ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+intergrax\llm_adapters\providers\registrations\_lazy_factory.py:40: in factory
+    return adapter_cls(**kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+self = <intergrax.llm_adapters.providers.gemini_adapter.GeminiChatAdapter object at 0x00000182A7775070>
+client = None, model = 'test-model', defaults = {}, api_key = None
+resolved_model = 'test-model'
+
+    def __init__(
+        self,
+        client: genai.Client | None = None,
+        model: str | None = None,
+        **defaults,
+    ):
+        super().__init__()
+        self._apply_defaults_call_config(defaults)
+
+        api_key = os.getenv(self.ENV_API_KEY)
+
+        resolved_model = model or self.DEFAULT_MODEL
+
+        if client is None:
+            if not api_key:
+>               raise RuntimeError("GOOGLE_API_KEY not found in environment variables.")
+E               RuntimeError: GOOGLE_API_KEY not found in environment variables.
+
+intergrax\llm_adapters\providers\gemini_adapter.py:79: RuntimeError
+_ test_provider_creation_surfaces_dependency_error_without_sdk[claude-anthropic-llm-anthropic] _
+
+provider = <LLMProvider.CLAUDE: 'claude'>, sdk_root = 'anthropic'
+extra = 'llm-anthropic', _restore_registry_state = None
+
+    @pytest.mark.parametrize(("provider", "sdk_root", "extra"), _REPRESENTATIVE_PROVIDERS)
+    def test_provider_creation_surfaces_dependency_error_without_sdk(
+        provider: LLMProvider,
+        sdk_root: str,
+        extra: str,
+        _restore_registry_state,
+    ) -> None:
+        removed = _clear_sdk_modules()
+        blocker = _SdkImportBlocker({sdk_root.split(".", 1)[0]})
+        sys.meta_path.insert(0, blocker)
+        try:
+            with pytest.raises(LLMAdapterDependencyError, match=extra):
+>               LLMAdapterRegistry.create(provider, model="test-model")
+
+tests\unit\llm_adapters\test_p2_002_c_provider_registration.py:206:
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+intergrax\llm_adapters\llm_provider_registry.py:164: in create
+    adapter = cls._factories[key](**kwargs)
+              ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+intergrax\llm_adapters\providers\registrations\_lazy_factory.py:40: in factory
+    return adapter_cls(**kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+self = <intergrax.llm_adapters.providers.claude_adapter.ClaudeChatAdapter object at 0x00000182A7774A40>
+client = None, model = 'test-model', defaults = {}, api_key = None
+resolved_model = 'test-model'
+
+    def __init__(
+        self,
+        client: Anthropic | None = None,
+        model: str | None = None,
+        **defaults,
+    ):
+        super().__init__()
+        self._apply_defaults_call_config(defaults)
+
+        api_key = os.getenv(self.ENV_API_KEY)
+
+        resolved_model = model or self.DEFAULT_MODEL
+
+        if client is None:
+            if not api_key:
+>               raise RuntimeError("ANTHROPIC_API_KEY not found in environment variables.")
+E               RuntimeError: ANTHROPIC_API_KEY not found in environment variables.
+
+intergrax\llm_adapters\providers\claude_adapter.py:76: RuntimeError
+_ test_provider_creation_surfaces_dependency_error_without_sdk[aws_bedrock-boto3-llm-bedrock] _
+
+provider = <LLMProvider.AWS_BEDROCK: 'aws_bedrock'>, sdk_root = 'boto3'
+extra = 'llm-bedrock', _restore_registry_state = None
+
+    @pytest.mark.parametrize(("provider", "sdk_root", "extra"), _REPRESENTATIVE_PROVIDERS)
+    def test_provider_creation_surfaces_dependency_error_without_sdk(
+        provider: LLMProvider,
+        sdk_root: str,
+        extra: str,
+        _restore_registry_state,
+    ) -> None:
+        removed = _clear_sdk_modules()
+        blocker = _SdkImportBlocker({sdk_root.split(".", 1)[0]})
+        sys.meta_path.insert(0, blocker)
+        try:
+            with pytest.raises(LLMAdapterDependencyError, match=extra):
+>               LLMAdapterRegistry.create(provider, model="test-model")
+
+tests\unit\llm_adapters\test_p2_002_c_provider_registration.py:206:
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+intergrax\llm_adapters\llm_provider_registry.py:164: in create
+    adapter = cls._factories[key](**kwargs)
+              ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+intergrax\llm_adapters\providers\registrations\_lazy_factory.py:40: in factory
+    return adapter_cls(**kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+self = <intergrax.llm_adapters.providers.aws_bedrock_adapter.BedrockChatAdapter object at 0x000001829FA01610>
+client = None, model_id = None, model = 'test-model', region = None
+family = None, defaults = {}, resolved_region = ''
+resolved_model_id = 'test-model'
+
+    def __init__(
+        self,
+        client: BedrockRuntimeClient | None = None,
+        model_id: str | None = None,
+        model: str | None = None,
+        region: str | None = None,
+        family: BedrockModelFamily | None = None,
+        **defaults,
+    ):
+        super().__init__()
+        self._apply_defaults_call_config(defaults)
+
+        resolved_region = region or os.getenv("INTERGRAX_DEFAULT_AWS_REGION", "")
+        resolved_model_id = (model_id or model or "").strip()
+
+        if not resolved_region:
+>           raise RuntimeError("INTERGRAX_DEFAULT_AWS_REGION must be configured for Bedrock adapter.")
+E           RuntimeError: INTERGRAX_DEFAULT_AWS_REGION must be configured for Bedrock adapter.
+
+intergrax\llm_adapters\providers\aws_bedrock_adapter.py:427: RuntimeError
+______________ test_invalid_adapter_missing_model_fails_clearly _______________
+
+_restore_registry_state = None
+
+    def test_invalid_adapter_missing_model_fails_clearly(_restore_registry_state) -> None:
+        provider = "invalid-model-contract"
+
+        def factory(**kwargs: object) -> LLMAdapter:
+            return _InvalidModelAdapter(**kwargs)
+
+        LLMAdapterRegistry.register(provider, factory, override=True)
+        with pytest.raises(LLMAdapterRegistrationError, match="required public 'model'"):
+>           LLMAdapterRegistry.create(provider)
+
+tests\unit\llm_adapters\test_registry_model_contract.py:117:
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+cls = <class 'intergrax.llm_adapters.llm_provider_registry.LLMAdapterRegistry'>
+provider = 'invalid-model-contract', kwargs = {}, key = 'invalid-model-contract'
+adapter = <tests.unit.llm_adapters.test_registry_model_contract._InvalidModelAdapter object at 0x00000182A8B12780>
+
+    @classmethod
+    def create(cls, provider: str | LLMProvider, **kwargs: object) -> LLMAdapter:
+        key = cls._normalize_provider(provider)
+        cls.ensure_builtin_registrations_installed()
+
+        if key not in cls._factories:
+            raise ValueError(f"LLM adapter not registered for provider='{key}'")
+
+        adapter = cls._factories[key](**kwargs)
+
+        if not isinstance(adapter, LLMAdapter):
+>           raise TypeError(
+                f"Factory for provider='{key}' returned invalid type {type(adapter)!r}, expected LLMAdapter"
+            )
+E           TypeError: Factory for provider='invalid-model-contract' returned invalid type <class 'tests.unit.llm_adapters.test_registry_model_contract._InvalidModelAdapter'>, expected LLMAdapter
+
+intergrax\llm_adapters\llm_provider_registry.py:167: TypeError
+=========================== short test summary info ===========================
+SKIPPED [1] tests\unit\llm_adapters\test_network_smoke.py:34: GROQ_API_KEY not set
+SKIPPED [1] tests\unit\llm_adapters\test_network_smoke.py:39: OPENAI_API_KEY not set
+SKIPPED [1] tests\unit\llm_adapters\test_network_smoke.py:44: ANTHROPIC_API_KEY not set
+SKIPPED [1] tests\unit\llm_adapters\test_network_smoke.py:49: Bedrock env not set
+SKIPPED [1] tests\unit\llm_adapters\test_network_smoke.py:58: INTERGRAX_VERTEX_PROJECT not set
+SKIPPED [1] testing_support\builder.py:321: vLLM not reachable at http://127.0.0.1:8000/v1: <urlopen error [WinError 10061] Nie mo�na nawi�za� po��czenia, poniewa� komputer docelowy aktywnie go odmawia>
+SKIPPED [1] tests\unit\llm_adapters\test_ollama_structured_output_live.py:55: INTERGRAX_OLLAMA_STRUCTURED_E2E is not set
+SKIPPED [1] tests\unit\llm_adapters\test_ollama_tool_calling_live.py:78: INTERGRAX_OLLAMA_TOOL_CALLING_E2E is not set
+FAILED tests/unit/llm_adapters/test_fixture_strict_adapter_parity.py::test_fixture_adapter_accepts_valid_arguments
+FAILED tests/unit/llm_adapters/test_fixture_strict_adapter_parity.py::test_fixture_adapter_rejects_invalid_arguments
+FAILED tests/unit/llm_adapters/test_fixture_strict_adapter_parity.py::test_atomic_planner_accepts_strict_capable_fixture
+FAILED tests/unit/llm_adapters/test_fixture_strict_adapter_parity.py::test_non_strict_adapter_fails_closed_before_dispatch
+FAILED tests/unit/llm_adapters/test_llm_provider_registry.py::test_missing_optional_llm_dependency_is_controlled
+FAILED tests/unit/llm_adapters/test_ollama_tool_calling.py::test_unsupported_tool_choice_rejects_before_provider[none]
+FAILED tests/unit/llm_adapters/test_ollama_tool_calling.py::test_unsupported_tool_choice_rejects_before_provider[tool_choice1]
+FAILED tests/unit/llm_adapters/test_ollama_tool_calling.py::test_unsupported_tool_choice_rejects_before_provider[lookup]
+FAILED tests/unit/llm_adapters/test_p2_002_c_provider_registration.py::test_provider_creation_surfaces_dependency_error_without_sdk[gemini-google-llm-gemini]
+FAILED tests/unit/llm_adapters/test_p2_002_c_provider_registration.py::test_provider_creation_surfaces_dependency_error_without_sdk[claude-anthropic-llm-anthropic]
+FAILED tests/unit/llm_adapters/test_p2_002_c_provider_registration.py::test_provider_creation_surfaces_dependency_error_without_sdk[aws_bedrock-boto3-llm-bedrock]
+FAILED tests/unit/llm_adapters/test_registry_model_contract.py::test_invalid_adapter_missing_model_fails_clearly
+12 failed, 692 passed, 8 skipped in 55.43s

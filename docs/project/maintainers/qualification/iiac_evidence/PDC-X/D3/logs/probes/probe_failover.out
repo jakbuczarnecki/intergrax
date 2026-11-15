@@ -1,0 +1,6 @@
+CooperativeCancellationAbort (default policy)    primary_calls=1 secondary_calls=0 -> raised CooperativeCancellationAbort
+KeyboardInterrupt (default policy)               primary_calls=1 secondary_calls=0 -> raised KeyboardInterrupt
+class named GenerateContentError (bad request)   primary_calls=1 secondary_calls=1 -> returned ok
+class named SeparateTenantError                  primary_calls=1 secondary_calls=1 -> returned ok
+status_code=429                                  primary_calls=1 secondary_calls=1 -> returned ok
+status_code=401                                  primary_calls=1 secondary_calls=0 -> raised Auth
