@@ -1,13 +1,13 @@
 # EBH-7 — Protocol 03 L3 GitHub Actions replay record
 
-**Status:** PDC-X P6 re-pin (T-IGX-036-W) — `TEST_EXECUTION_SHA` re-pinned to `146e7acf1434fffdf74ef6a2e91fffc10fd7b1ec`; the fresh L3 replay at this pin is **PENDING** (see *Re-pin replay*). Run `41238620036` (TEST `dc18e36d9`) is the previous final reconciliation replay and is historical. Not a B6 PASS.
+**Status:** PDC-X P7 final re-pin (T-IGX-041-J) — `TEST_EXECUTION_SHA` re-pinned to `d39a520dda965981a38f8e1a90ec5135ea5d508e`; the fresh L3 replay at this pin is **PENDING** (see *Re-pin replay*). Run `41238620036` (TEST `dc18e36d9`) is the previous final reconciliation replay and is historical. Not a B6 PASS.
 
 ## Current roles
 
 | Role | SHA |
 | --- | --- |
-| TEST_EXECUTION_SHA (qualification code) | `146e7acf1434fffdf74ef6a2e91fffc10fd7b1ec` (PDC-X P6 re-pin: `development` tip after PR #537) |
-| EVIDENCE_PUBLICATION_SHA (MANIFEST authority) | `146e7acf1434fffdf74ef6a2e91fffc10fd7b1ec` (= TEST_EXECUTION_SHA; pinned in `MANIFEST.json`) |
+| TEST_EXECUTION_SHA (qualification code) | `d39a520dda965981a38f8e1a90ec5135ea5d508e` (PDC-X P7 final re-pin: `development` tip after the last P7 repair merge) |
+| EVIDENCE_PUBLICATION_SHA (MANIFEST authority) | `d39a520dda965981a38f8e1a90ec5135ea5d508e` (= TEST_EXECUTION_SHA; pinned in `MANIFEST.json`) |
 | Previous TEST_EXECUTION_SHA (historical) | `dc18e36d971c93c8f631fbc86f73149d1b81b4d7` (= `EBH7_B6_FINAL_RECONCILIATION_IMPLEMENTATION_SHA`) |
 | INDEPENDENT_ACCEPTANCE_BASELINE_SHA | `dc18e36d971c93c8f631fbc86f73149d1b81b4d7` (independently accepted tree; not re-accepted at the re-pinned TEST) |
 | P03 replay checkout | `github.sha` of the `workflow_dispatch` (default) — recorded per run below |
@@ -38,12 +38,12 @@ gh workflow run unit-tests.yml --ref development -f profile=ebh7_p3_l3
 Optional: `-f ebh7_p03_replay_head_sha=<40-char>` for pinned replay audit. For the re-pin replay pass the SHA inputs explicitly (both equal the MANIFEST pins):
 
 ```powershell
-gh workflow run unit-tests.yml --ref development -f profile=ebh7_p3_l3 -f ebh7_test_execution_sha=146e7acf1434fffdf74ef6a2e91fffc10fd7b1ec -f ebh7_evidence_publication_sha=146e7acf1434fffdf74ef6a2e91fffc10fd7b1ec
+gh workflow run unit-tests.yml --ref development -f profile=ebh7_p3_l3 -f ebh7_test_execution_sha=d39a520dda965981a38f8e1a90ec5135ea5d508e -f ebh7_evidence_publication_sha=d39a520dda965981a38f8e1a90ec5135ea5d508e
 ```
 
 ## Re-pin replay (current — PENDING)
 
-No run exists yet. After the W1 prep PR merges, one `workflow_dispatch` of `unit-tests.yml` (`profile=ebh7_p3_l3`, TEST and EVIDENCE inputs `146e7acf1434fffdf74ef6a2e91fffc10fd7b1ec`) is made. Run ID, replay checkout, JUnit counts, F10 attestation, skip disposition and artifact SHA-256 values are recorded here by the follow-up record PR (W2). Until then this record makes no claim about the re-pinned tree and is not a B6 PASS.
+No run exists yet. After the W1' prep PR merges, one `workflow_dispatch` of `unit-tests.yml` (`profile=ebh7_p3_l3`, TEST and EVIDENCE inputs `d39a520dda965981a38f8e1a90ec5135ea5d508e`) is made. Run ID, replay checkout, JUnit counts, F10 attestation, skip disposition and artifact SHA-256 values are recorded here by the follow-up record PR (W2). Until then this record makes no claim about the re-pinned tree and is not a B6 PASS.
 
 ## Previous final reconciliation run (historical — superseded as current by the re-pin)
 
