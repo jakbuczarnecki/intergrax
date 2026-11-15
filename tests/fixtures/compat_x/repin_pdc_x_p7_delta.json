@@ -731,7 +731,7 @@
       "reason": "internal_wire_call_not_public_compat_surface"
     },
     {
-      "id": "exclusion.wire.intergrax.runtime.long_running.scheduler.py::module_level.model_validate:337:1",
+      "id": "exclusion.wire.intergrax.runtime.long_running.scheduler.py::module_level.model_validate:362:1",
       "reason": "internal_wire_call_not_public_compat_surface"
     },
     {

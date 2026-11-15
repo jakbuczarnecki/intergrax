@@ -622,6 +622,25 @@ C4_RULES: Final[tuple[C4Rule, ...]] = (
         (ChangeClass.QUALIFICATION_INFRASTRUCTURE,),
         "proof-library fixture agent: not shipped and imported only by the proof scenario and tests",
     ),
+    # T-IGX-041-O: exact-path entries for three paths changed by the P8 repair loop; siblings stay unknown.
+    C4Rule(
+        "intergrax/integrations/_shared/p3/clients.py",
+        (
+            ChangeClass.VENDOR_BACKEND,
+            ChangeClass.SECURITY_GOVERNANCE_TENANT,
+        ),
+        "catalog adapters over vendor backends (secret store, graph, observability, blob) with object-key confinement",
+    ),
+    C4Rule(
+        "platform_proofs/scenarios/ai_incident_investigation/application/runtime_composition.py",
+        (ChangeClass.QUALIFICATION_INFRASTRUCTURE,),
+        "proof-library scenario composition: not shipped, imported only by the proof scenario, testing_support, tests",
+    ),
+    C4Rule(
+        "platform_proofs/scenarios/indirect_prompt_injection/proof.json",
+        (ChangeClass.QUALIFICATION_INFRASTRUCTURE,),
+        "proof-library scenario descriptor read only by the proof suite discovery",
+    ),
 )
 
 _TOOLS = "tests/unit/runtime/nexus/tools"
