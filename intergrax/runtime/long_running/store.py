@@ -6,11 +6,12 @@
 from __future__ import annotations
 
 import json
+import logging
 import sqlite3
 from datetime import UTC, datetime, timedelta
 from pathlib import Path
-from typing import List, Optional
 
+from intergrax.contracts.execution_terminal import ExecutionTerminalOutcome, ExecutionTerminalRecord
 from intergrax.contracts.lease_claim import StaleClaimError
 from intergrax.integrations.providers.relational_store.sqlite.paths import (
     DEFAULT_TASK_CHECKPOINTS_DB,
@@ -24,22 +25,24 @@ from intergrax.runtime.long_running.checkpoint_revision import (
 from intergrax.runtime.long_running.models import TaskCheckpoint
 from intergrax.runtime.long_running.persistence_contract import TaskCheckpointPersistence
 from intergrax.runtime.long_running.runtime_checkpoint import RuntimeCheckpoint
+from intergrax.runtime.long_running.scheduled_resume import (
+    ScheduledResume,
+    ScheduledResumeStatus,
+    normalize_utc_iso,
+    validate_scheduled_resume_for_persistence,
+)
+from intergrax.runtime.long_running.scheduled_resume_metadata import (
+    ScheduledResumeMetadataValidationError,
+)
 from intergrax.runtime.long_running.scheduler_claim import (
     ScheduledResumeCancellationError,
     ScheduledResumeClaim,
     ScheduledResumeScheduleConflictError,
     SchedulerActionClaim,
 )
-from intergrax.runtime.long_running.scheduled_resume_metadata import (
-    ScheduledResumeMetadataValidationError,
-)
-from intergrax.runtime.long_running.scheduled_resume import (
-    ScheduledResume,
-    ScheduledResumeStatus,
-    validate_scheduled_resume_for_persistence,
-)
-from intergrax.contracts.execution_terminal import ExecutionTerminalOutcome, ExecutionTerminalRecord
 from intergrax.runtime.task.task_state import TaskState
+
+logger = logging.getLogger(__name__)
 
 __all__ = [
     "DEFAULT_TASK_CHECKPOINTS_DB",
@@ -106,9 +109,7 @@ class SQLiteTaskCheckpointStore(TaskCheckpointPersistence):
                 ON task_checkpoints (task_id, tenant_id, resume_token);
                 """
             )
-            checkpoint_columns = {
-                row[1] for row in conn.execute("PRAGMA table_info(task_checkpoints)").fetchall()
-            }
+            checkpoint_columns = {row[1] for row in conn.execute("PRAGMA table_info(task_checkpoints)").fetchall()}
             if "runtime_checkpoint_json" not in checkpoint_columns:
                 conn.execute(
                     "ALTER TABLE task_checkpoints ADD COLUMN runtime_checkpoint_json TEXT",
@@ -131,9 +132,7 @@ class SQLiteTaskCheckpointStore(TaskCheckpointPersistence):
                 );
                 """
             )
-            scheduled_columns = {
-                row[1] for row in conn.execute("PRAGMA table_info(scheduled_resumes)").fetchall()
-            }
+            scheduled_columns = {row[1] for row in conn.execute("PRAGMA table_info(scheduled_resumes)").fetchall()}
             if "owner_id" not in scheduled_columns:
                 conn.execute("ALTER TABLE scheduled_resumes ADD COLUMN owner_id TEXT")
             if "lease_expires_at_utc" not in scheduled_columns:
@@ -163,9 +162,7 @@ class SQLiteTaskCheckpointStore(TaskCheckpointPersistence):
                 );
                 """
             )
-            ledger_columns = {
-                row[1] for row in conn.execute("PRAGMA table_info(scheduler_ledger)").fetchall()
-            }
+            ledger_columns = {row[1] for row in conn.execute("PRAGMA table_info(scheduler_ledger)").fetchall()}
             if "status" not in ledger_columns:
                 conn.execute(
                     "ALTER TABLE scheduler_ledger ADD COLUMN status TEXT NOT NULL DEFAULT 'completed'",
@@ -233,9 +230,7 @@ class SQLiteTaskCheckpointStore(TaskCheckpointPersistence):
 
     @staticmethod
     def _migrate_checkpoint_revisions(conn: sqlite3.Connection) -> None:
-        checkpoint_columns = {
-            row[1] for row in conn.execute("PRAGMA table_info(task_checkpoints)").fetchall()
-        }
+        checkpoint_columns = {row[1] for row in conn.execute("PRAGMA table_info(task_checkpoints)").fetchall()}
         if "checkpoint_revision" not in checkpoint_columns:
             conn.execute(
                 "ALTER TABLE task_checkpoints ADD COLUMN checkpoint_revision INTEGER",
@@ -386,9 +381,7 @@ class SQLiteTaskCheckpointStore(TaskCheckpointPersistence):
                     checkpoint.progress_message,
                     checkpoint.notify_channel,
                     checkpoint.created_at_utc,
-                    json.dumps(checkpoint.runtime.model_dump(mode="json"))
-                    if checkpoint.runtime is not None
-                    else None,
+                    json.dumps(checkpoint.runtime.model_dump(mode="json")) if checkpoint.runtime is not None else None,
                     next_revision,
                 ),
             )
@@ -401,7 +394,7 @@ class SQLiteTaskCheckpointStore(TaskCheckpointPersistence):
             update={"revision": next_revision, "store_sequence": store_sequence},
         )
 
-    def get_latest(self, task_id: str, tenant_id: str) -> Optional[TaskCheckpoint]:
+    def get_latest(self, task_id: str, tenant_id: str) -> TaskCheckpoint | None:
         with self._connection() as conn:
             row = conn.execute(
                 """
@@ -419,7 +412,7 @@ class SQLiteTaskCheckpointStore(TaskCheckpointPersistence):
         task_id: str,
         tenant_id: str,
         resume_token: str,
-    ) -> Optional[TaskCheckpoint]:
+    ) -> TaskCheckpoint | None:
         with self._connection() as conn:
             row = conn.execute(
                 """
@@ -432,7 +425,7 @@ class SQLiteTaskCheckpointStore(TaskCheckpointPersistence):
             ).fetchone()
         return self._row_to_checkpoint(row) if row else None
 
-    def list_for_task(self, task_id: str, tenant_id: str) -> List[TaskCheckpoint]:
+    def list_for_task(self, task_id: str, tenant_id: str) -> list[TaskCheckpoint]:
         with self._connection() as conn:
             rows = conn.execute(
                 """
@@ -444,7 +437,7 @@ class SQLiteTaskCheckpointStore(TaskCheckpointPersistence):
             ).fetchall()
         return [self._row_to_checkpoint(row) for row in rows]
 
-    def list_paused(self) -> List[TaskCheckpoint]:
+    def list_paused(self) -> list[TaskCheckpoint]:
         paused_states = _PAUSED_TASK_STATES
         placeholders = ",".join("?" for _ in paused_states)
         query = f"""
@@ -500,10 +493,11 @@ class SQLiteTaskCheckpointStore(TaskCheckpointPersistence):
         owner_id: str,
         lease_seconds: int,
         limit: int = 100,
-    ) -> List[ScheduledResumeClaim]:
+    ) -> list[ScheduledResumeClaim]:
+        before_utc_iso = normalize_utc_iso(before_utc_iso, label="before_utc_iso")
         now = datetime.now(UTC)
         lease_expires_at = now + timedelta(seconds=lease_seconds)
-        claims: List[ScheduledResumeClaim] = []
+        claims: list[ScheduledResumeClaim] = []
         with self._connection() as conn:
             conn.execute("BEGIN IMMEDIATE")
             conn.execute(
@@ -522,7 +516,7 @@ class SQLiteTaskCheckpointStore(TaskCheckpointPersistence):
             )
             rows = conn.execute(
                 """
-                SELECT schedule_id FROM scheduled_resumes
+                SELECT * FROM scheduled_resumes
                 WHERE status = ? AND run_at_utc <= ?
                 ORDER BY run_at_utc ASC, schedule_id ASC
                 LIMIT ?
@@ -531,6 +525,20 @@ class SQLiteTaskCheckpointStore(TaskCheckpointPersistence):
             ).fetchall()
             for row in rows:
                 schedule_id = row["schedule_id"]
+                try:
+                    self._row_to_scheduled_resume(row)
+                except ScheduledResumeMetadataValidationError:
+                    # A legacy or corrupt row must not poison the whole batch (F-D7-10): quarantine it.
+                    logger.exception("scheduled resume %s is malformed; quarantined as uncertain", schedule_id)
+                    conn.execute(
+                        "UPDATE scheduled_resumes SET status = ? WHERE schedule_id = ? AND status = ?",
+                        (
+                            ScheduledResumeStatus.UNCERTAIN.value,
+                            schedule_id,
+                            ScheduledResumeStatus.PENDING.value,
+                        ),
+                    )
+                    continue
                 fence_row = conn.execute(
                     "SELECT fence FROM scheduled_resumes WHERE schedule_id = ?",
                     (schedule_id,),
@@ -572,6 +580,13 @@ class SQLiteTaskCheckpointStore(TaskCheckpointPersistence):
         return claims
 
     def complete_claim(self, claim: ScheduledResumeClaim) -> None:
+        self._end_claim(claim, ScheduledResumeStatus.COMPLETED)
+
+    def skip_claim(self, claim: ScheduledResumeClaim) -> None:
+        """Fence-validated end of a claim that was deliberately not executed."""
+        self._end_claim(claim, ScheduledResumeStatus.SKIPPED)
+
+    def _end_claim(self, claim: ScheduledResumeClaim, status: ScheduledResumeStatus) -> None:
         with self._connection() as conn:
             conn.execute("BEGIN IMMEDIATE")
             updated = conn.execute(
@@ -584,7 +599,7 @@ class SQLiteTaskCheckpointStore(TaskCheckpointPersistence):
                   AND fence = ?
                 """,
                 (
-                    ScheduledResumeStatus.COMPLETED.value,
+                    status.value,
                     claim.schedule_id,
                     ScheduledResumeStatus.RUNNING.value,
                     claim.owner_id,
@@ -599,12 +614,41 @@ class SQLiteTaskCheckpointStore(TaskCheckpointPersistence):
                 )
             conn.commit()
 
+    def release_claim(self, claim: ScheduledResumeClaim) -> None:
+        """Fence-validated hand-back of a claim to PENDING (nothing was executed)."""
+        with self._connection() as conn:
+            conn.execute("BEGIN IMMEDIATE")
+            updated = conn.execute(
+                """
+                UPDATE scheduled_resumes
+                SET status = ?, owner_id = NULL, lease_expires_at_utc = NULL
+                WHERE schedule_id = ?
+                  AND status = ?
+                  AND owner_id = ?
+                  AND fence = ?
+                """,
+                (
+                    ScheduledResumeStatus.PENDING.value,
+                    claim.schedule_id,
+                    ScheduledResumeStatus.RUNNING.value,
+                    claim.owner_id,
+                    claim.fence,
+                ),
+            )
+            if updated.rowcount != 1:
+                conn.rollback()
+                raise StaleClaimError(
+                    f"Stale scheduled resume release rejected for schedule_id={claim.schedule_id} fence={claim.fence}.",
+                )
+            conn.commit()
+
     def list_due(
         self,
         *,
         before_utc_iso: str,
         limit: int = 100,
-    ) -> List[ScheduledResume]:
+    ) -> list[ScheduledResume]:
+        before_utc_iso = normalize_utc_iso(before_utc_iso, label="before_utc_iso")
         with self._connection() as conn:
             rows = conn.execute(
                 """
@@ -615,7 +659,13 @@ class SQLiteTaskCheckpointStore(TaskCheckpointPersistence):
                 """,
                 (ScheduledResumeStatus.PENDING.value, before_utc_iso, limit),
             ).fetchall()
-        return [self._row_to_scheduled_resume(row) for row in rows]
+        due: list[ScheduledResume] = []
+        for row in rows:
+            try:
+                due.append(self._row_to_scheduled_resume(row))
+            except ScheduledResumeMetadataValidationError:
+                logger.exception("scheduled resume %s is malformed; omitted from the due list", row["schedule_id"])
+        return due
 
     def cancel(self, schedule_id: str) -> None:
         with self._connection() as conn:
@@ -663,7 +713,7 @@ class SQLiteTaskCheckpointStore(TaskCheckpointPersistence):
         lease_seconds: int,
         *,
         action: str,
-    ) -> Optional[SchedulerActionClaim]:
+    ) -> SchedulerActionClaim | None:
         now = datetime.now(UTC)
         lease_expires_at = now + timedelta(seconds=lease_seconds)
         with self._connection() as conn:
@@ -783,9 +833,7 @@ class SQLiteTaskCheckpointStore(TaskCheckpointPersistence):
     def _row_to_scheduled_resume(row: sqlite3.Row) -> ScheduledResume:
         keys = row.keys()
         owner_id = row["owner_id"] if "owner_id" in keys else None
-        lease_expires_at_utc = (
-            row["lease_expires_at_utc"] if "lease_expires_at_utc" in keys else None
-        )
+        lease_expires_at_utc = row["lease_expires_at_utc"] if "lease_expires_at_utc" in keys else None
         fence = int(row["fence"]) if "fence" in keys else 0
         try:
             metadata = json.loads(row["resume_metadata_json"])
@@ -809,8 +857,7 @@ class SQLiteTaskCheckpointStore(TaskCheckpointPersistence):
             )
         except (ValueError, ScheduledResumeMetadataValidationError) as exc:
             raise ScheduledResumeMetadataValidationError(
-                f"Durable scheduled resume row rejected for schedule_id="
-                f"{row['schedule_id']!r}: {exc}",
+                f"Durable scheduled resume row rejected for schedule_id={row['schedule_id']!r}: {exc}",
             ) from exc
 
     @staticmethod

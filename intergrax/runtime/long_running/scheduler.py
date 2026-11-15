@@ -12,6 +12,7 @@ from datetime import UTC, datetime
 from typing import Protocol, runtime_checkable
 from uuid import uuid4
 
+from intergrax.contracts.lease_claim import StaleClaimError
 from intergrax.runtime.cancellation.resume_admission import is_checkpoint_resumable
 from intergrax.runtime.execution.execution_terminal.service import (
     ExecutionTerminalService,
@@ -29,7 +30,10 @@ from intergrax.runtime.long_running.persistence_contract import (
     SchedulerLedger,
     TaskCheckpointPersistence,
 )
-from intergrax.runtime.long_running.recurrence import RecurrenceMaterializer
+from intergrax.runtime.long_running.recurrence import (
+    RECURRENCE_RULE_METADATA_KEY,
+    RecurrenceMaterializer,
+)
 from intergrax.runtime.long_running.resume_planner import (
     build_scheduled_resume_task,
     build_timeout_resume_task,
@@ -40,6 +44,7 @@ from intergrax.runtime.long_running.scheduled_resume import (
     ScheduledResume,
     ScheduledResumePersistence,
 )
+from intergrax.runtime.long_running.scheduled_resume_metadata import reject_recurrence_metadata
 from intergrax.runtime.long_running.scheduler_claim import (
     ScheduledResumeClaim,
     SchedulerActionClaim,
@@ -140,6 +145,8 @@ class LongRunningScheduler:
     ) -> ScheduledResume:
         if self._schedule_store is None:
             raise RuntimeError("schedule_store is not configured on LongRunningScheduler")
+        # Recurrence chains start only through RecurrenceMaterializer (F-D7-11).
+        reject_recurrence_metadata(resume_metadata)
         entry = ScheduledResume(
             task_id=task_id,
             tenant_id=tenant_id,
@@ -168,33 +175,30 @@ class LongRunningScheduler:
             lease_seconds=self._lease_seconds,
         )
         for claim in claims:
+            # Each claim is isolated: one failing resume must not strand its siblings, which
+            # would otherwise stay RUNNING until their lease expires and are then lost (F-D7-01).
             try:
-                processed += await self._process_claimed_schedule(claim)
-            finally:
-                # Recurrence chains must continue even when this occurrence was skipped
-                # or its execution raised; the next one-shot has a different schedule_id.
-                self._materialize_next_occurrence(claim.entry, now)
+                processed += await self._process_claimed_schedule(claim, now)
+            except StaleClaimError:
+                logger.warning(
+                    "scheduled resume %s lost its lease before completion; the new owner decides the outcome",
+                    claim.schedule_id,
+                )
+            except Exception:
+                logger.exception(
+                    "scheduled resume %s failed; its claim is left to the lease (at-most-once)",
+                    claim.schedule_id,
+                )
         return processed
 
-    async def _process_claimed_schedule(self, claim: ScheduledResumeClaim) -> int:
+    async def _process_claimed_schedule(self, claim: ScheduledResumeClaim, now: datetime) -> int:
         entry = claim.entry
-        checkpoint = self._checkpoint_store.get_by_token(
-            entry.task_id,
-            entry.tenant_id,
-            entry.resume_token,
-        )
+        recurring = RECURRENCE_RULE_METADATA_KEY in entry.resume_metadata
+        checkpoint = self._eligible_target(entry)
         if checkpoint is None:
-            self._schedule_store.complete_claim(claim)
+            self._end_unexecuted_claim(claim, recurring=recurring)
             return 0
-        if not self._can_materialize_checkpoint(
-            checkpoint,
-            target_task_id=entry.task_id,
-            target_tenant_id=entry.tenant_id,
-        ):
-            self._schedule_store.complete_claim(claim)
-            return 0
-        if not self._can_resume_checkpoint(checkpoint):
-            self._schedule_store.complete_claim(claim)
+        if recurring and self._recurrence is not None and not self._materialize_successor(claim, now):
             return 0
 
         latest = self._checkpoint_store.get_latest(entry.task_id, entry.tenant_id)
@@ -214,74 +218,152 @@ class LongRunningScheduler:
         )
         return 1
 
-    def _materialize_next_occurrence(self, entry: ScheduledResume, now: datetime) -> None:
-        if self._recurrence is None:
+    def _eligible_target(self, entry: ScheduledResume) -> TaskCheckpoint | None:
+        """The checkpoint a claimed schedule may resume, or None (read-only checks)."""
+        checkpoint = self._checkpoint_store.get_by_token(
+            entry.task_id,
+            entry.tenant_id,
+            entry.resume_token,
+        )
+        if checkpoint is None:
+            return None
+        if not self._can_materialize_checkpoint(
+            checkpoint,
+            target_task_id=entry.task_id,
+            target_tenant_id=entry.tenant_id,
+        ):
+            return None
+        if not self._can_resume_checkpoint(checkpoint):
+            return None
+        return checkpoint
+
+    def _end_unexecuted_claim(self, claim: ScheduledResumeClaim, *, recurring: bool) -> None:
+        """Finish a claim whose target can no longer be resumed (nothing is executed)."""
+        assert self._schedule_store is not None
+        if not recurring:
+            self._schedule_store.complete_claim(claim)
             return
+        # A recurrence rule targets exactly one checkpoint; once it cannot be resumed the
+        # occurrence is recorded as skipped and the chain ends (no successor, F-D7-13).
+        logger.warning(
+            "recurrence chain ended: target of schedule_id=%s can no longer be resumed",
+            claim.schedule_id,
+        )
+        self._schedule_store.skip_claim(claim)
+
+    def _materialize_successor(self, claim: ScheduledResumeClaim, now: datetime) -> bool:
+        """Persist the next occurrence BEFORE this one executes (F-D7-02).
+
+        Returns False when the occurrence must not execute now: either the persisted rule is
+        invalid (fail closed, occurrence skipped) or the store failed (claim handed back so the
+        next tick retries and the chain is not lost).
+        """
+        assert self._recurrence is not None and self._schedule_store is not None
         try:
-            self._recurrence.materialize_next(entry, now=now)
+            self._recurrence.materialize_next(claim.entry, now=now)
+        except (ValueError, OverflowError):
+            logger.exception(
+                "invalid recurrence rule for schedule_id=%s; occurrence skipped, nothing executed",
+                claim.schedule_id,
+            )
+            self._schedule_store.skip_claim(claim)
+            return False
         except Exception:
-            logger.exception("recurrence materialization failed for schedule_id=%s", entry.schedule_id)
+            logger.exception(
+                "recurrence materialization failed for schedule_id=%s; releasing the claim for retry",
+                claim.schedule_id,
+            )
+            self._release_claim(claim)
+            return False
+        return True
+
+    def _release_claim(self, claim: ScheduledResumeClaim) -> None:
+        assert self._schedule_store is not None
+        try:
+            self._schedule_store.release_claim(claim)
+        except NotImplementedError:
+            logger.error(
+                "schedule store cannot release claims; schedule_id=%s is left to its lease",
+                claim.schedule_id,
+            )
+        except StaleClaimError:
+            logger.warning("claim %s was already taken over; nothing to release", claim.schedule_id)
 
     async def _process_expired_human_timeouts(self, now: datetime) -> int:
         processed = 0
         for checkpoint in self._checkpoint_store.list_paused():
-            ledger_key = f"{TIMEOUT_LEDGER_PREFIX}{checkpoint.checkpoint_id}"
-            if not self._can_materialize_checkpoint(
-                checkpoint,
-                target_task_id=checkpoint.task_id,
-                target_tenant_id=checkpoint.tenant_id,
-            ):
-                continue
-            if not self._can_resume_checkpoint(checkpoint):
-                continue
-            task = Task.model_validate(checkpoint.task_snapshot)
-            if not HumanTimeoutCoordinator.is_expired(task, now=now):
-                continue
-
-            action = HumanTimeoutCoordinator.planned_timeout_action(task)
-            if action is None:
-                continue
-
-            if self._ledger is None:
+            # Same isolation as the schedule batch: one failing timeout resume must not stop the rest.
+            try:
+                processed += await self._process_expired_timeout(checkpoint, now)
+            except StaleClaimError:
                 logger.warning(
-                    "Skipping expired human timeout for checkpoint %s: scheduler ledger is not configured",
+                    "human timeout for checkpoint %s lost its lease before completion",
                     checkpoint.checkpoint_id,
                 )
-                continue
-
-            action_claim = self._ledger.claim_action(
-                ledger_key,
-                self._owner_id,
-                self._lease_seconds,
-                action="human_timeout",
-            )
-            if action_claim is None:
-                continue
-
-            verdict = timeout_action_to_verdict(action)
-            latest = self._checkpoint_store.get_latest(
-                checkpoint.task_id,
-                checkpoint.tenant_id,
-            )
-            resume_task = build_timeout_resume_task(
-                checkpoint,
-                verdict=verdict,
-                action=action,
-                target_task_id=checkpoint.task_id,
-                target_tenant_id=checkpoint.tenant_id,
-                latest_checkpoint=latest,
-                execution_terminal=self._execution_terminal,
-            )
-            await self._execute_resume(
-                resume_task,
-                checkpoint,
-                subject="Human approval timeout",
-                body=(f"Auto-resume after timeout with action={action.value} for task {checkpoint.task_id}"),
-                ledger_action="human_timeout",
-                action_claim=action_claim,
-            )
-            processed += 1
+            except Exception:
+                logger.exception(
+                    "human timeout resume for checkpoint %s failed; its action claim is left to the lease",
+                    checkpoint.checkpoint_id,
+                )
         return processed
+
+    async def _process_expired_timeout(self, checkpoint: TaskCheckpoint, now: datetime) -> int:
+        ledger_key = f"{TIMEOUT_LEDGER_PREFIX}{checkpoint.checkpoint_id}"
+        if not self._can_materialize_checkpoint(
+            checkpoint,
+            target_task_id=checkpoint.task_id,
+            target_tenant_id=checkpoint.tenant_id,
+        ):
+            return 0
+        if not self._can_resume_checkpoint(checkpoint):
+            return 0
+        task = Task.model_validate(checkpoint.task_snapshot)
+        if not HumanTimeoutCoordinator.is_expired(task, now=now):
+            return 0
+
+        action = HumanTimeoutCoordinator.planned_timeout_action(task)
+        if action is None:
+            return 0
+
+        if self._ledger is None:
+            logger.warning(
+                "Skipping expired human timeout for checkpoint %s: scheduler ledger is not configured",
+                checkpoint.checkpoint_id,
+            )
+            return 0
+
+        action_claim = self._ledger.claim_action(
+            ledger_key,
+            self._owner_id,
+            self._lease_seconds,
+            action="human_timeout",
+        )
+        if action_claim is None:
+            return 0
+
+        verdict = timeout_action_to_verdict(action)
+        latest = self._checkpoint_store.get_latest(
+            checkpoint.task_id,
+            checkpoint.tenant_id,
+        )
+        resume_task = build_timeout_resume_task(
+            checkpoint,
+            verdict=verdict,
+            action=action,
+            target_task_id=checkpoint.task_id,
+            target_tenant_id=checkpoint.tenant_id,
+            latest_checkpoint=latest,
+            execution_terminal=self._execution_terminal,
+        )
+        await self._execute_resume(
+            resume_task,
+            checkpoint,
+            subject="Human approval timeout",
+            body=(f"Auto-resume after timeout with action={action.value} for task {checkpoint.task_id}"),
+            ledger_action="human_timeout",
+            action_claim=action_claim,
+        )
+        return 1
 
     def _can_materialize_checkpoint(
         self,
@@ -389,4 +471,4 @@ class UnifiedTaskResumeExecutor:
 def _ensure_utc(value: datetime) -> datetime:
     if value.tzinfo is None:
         return value.replace(tzinfo=UTC)
-    return value
+    return value.astimezone(UTC)

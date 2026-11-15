@@ -150,7 +150,12 @@ def test_two_processes_fire_each_recurring_occurrence_exactly_once(tmp_path) -> 
     for returncode, out, err in results:
         assert returncode == 0, f"child failed: out={out!r} err={err!r}"
 
-    expected = [occurrence_schedule_id(rule.rule_id, T0 + timedelta(seconds=60 * k)) for k in range(4)]
+    expected = [
+        occurrence_schedule_id(
+            rule.rule_id, T0 + timedelta(seconds=60 * k), tenant_id=rule.tenant_id, task_id=rule.task_id
+        )
+        for k in range(4)
+    ]
     fired_ids = [schedule_id for schedule_id, _ in _fires(fire_log)]
     assert sorted(fired_ids) == sorted(expected)  # every due occurrence fired ...
     assert len(fired_ids) == len(set(fired_ids))  # ... exactly once across both processes
@@ -158,7 +163,9 @@ def test_two_processes_fire_each_recurring_occurrence_exactly_once(tmp_path) -> 
     rows = _ledger_rows(db)
     for schedule_id in expected:
         assert rows[schedule_id] == ("completed", 1)  # one claim generation each, no re-claim
-    next_id = occurrence_schedule_id(rule.rule_id, T0 + timedelta(seconds=240))
+    next_id = occurrence_schedule_id(
+        rule.rule_id, T0 + timedelta(seconds=240), tenant_id=rule.tenant_id, task_id=rule.task_id
+    )
     assert rows[next_id][0] == "pending"  # the chain continues with exactly one future one-shot
     assert len(rows) == 5
 

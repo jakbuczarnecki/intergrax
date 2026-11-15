@@ -7,10 +7,13 @@ from __future__ import annotations
 
 import hashlib
 import json
+import logging
 import struct
+from collections.abc import Mapping
 from datetime import UTC, datetime, timedelta
-from typing import Any, List, Mapping, Optional
+from typing import Any
 
+from intergrax.contracts.execution_terminal import ExecutionTerminalOutcome, ExecutionTerminalRecord
 from intergrax.contracts.lease_claim import StaleClaimError
 from intergrax.integrations.providers.relational_store.postgresql.config import (
     PostgreSQLIntegrationConfig,
@@ -28,22 +31,24 @@ from intergrax.runtime.long_running.checkpoint_revision import (
 from intergrax.runtime.long_running.models import TaskCheckpoint
 from intergrax.runtime.long_running.persistence_contract import TaskCheckpointPersistence
 from intergrax.runtime.long_running.runtime_checkpoint import RuntimeCheckpoint
+from intergrax.runtime.long_running.scheduled_resume import (
+    ScheduledResume,
+    ScheduledResumeStatus,
+    normalize_utc_iso,
+    validate_scheduled_resume_for_persistence,
+)
+from intergrax.runtime.long_running.scheduled_resume_metadata import (
+    ScheduledResumeMetadataValidationError,
+)
 from intergrax.runtime.long_running.scheduler_claim import (
     ScheduledResumeCancellationError,
     ScheduledResumeClaim,
     ScheduledResumeScheduleConflictError,
     SchedulerActionClaim,
 )
-from intergrax.runtime.long_running.scheduled_resume_metadata import (
-    ScheduledResumeMetadataValidationError,
-)
-from intergrax.runtime.long_running.scheduled_resume import (
-    ScheduledResume,
-    ScheduledResumeStatus,
-    validate_scheduled_resume_for_persistence,
-)
-from intergrax.contracts.execution_terminal import ExecutionTerminalOutcome, ExecutionTerminalRecord
 from intergrax.runtime.task.task_state import TaskState
+
+logger = logging.getLogger(__name__)
 
 __all__ = ["PostgreSQLTaskCheckpointStore"]
 
@@ -320,9 +325,7 @@ class PostgreSQLTaskCheckpointStore(TaskCheckpointPersistence):
                     checkpoint.progress_message,
                     checkpoint.notify_channel,
                     checkpoint.created_at_utc,
-                    json.dumps(checkpoint.runtime.model_dump(mode="json"))
-                    if checkpoint.runtime is not None
-                    else None,
+                    json.dumps(checkpoint.runtime.model_dump(mode="json")) if checkpoint.runtime is not None else None,
                     next_revision,
                 ),
             ).fetchone()
@@ -333,7 +336,7 @@ class PostgreSQLTaskCheckpointStore(TaskCheckpointPersistence):
             update={"revision": next_revision, "store_sequence": store_sequence},
         )
 
-    def get_latest(self, task_id: str, tenant_id: str) -> Optional[TaskCheckpoint]:
+    def get_latest(self, task_id: str, tenant_id: str) -> TaskCheckpoint | None:
         with self._provider.connection() as session:
             row = session.execute(
                 """
@@ -351,7 +354,7 @@ class PostgreSQLTaskCheckpointStore(TaskCheckpointPersistence):
         task_id: str,
         tenant_id: str,
         resume_token: str,
-    ) -> Optional[TaskCheckpoint]:
+    ) -> TaskCheckpoint | None:
         with self._provider.connection() as session:
             row = session.execute(
                 """
@@ -364,7 +367,7 @@ class PostgreSQLTaskCheckpointStore(TaskCheckpointPersistence):
             ).fetchone()
         return self._row_to_checkpoint(row) if row else None
 
-    def list_for_task(self, task_id: str, tenant_id: str) -> List[TaskCheckpoint]:
+    def list_for_task(self, task_id: str, tenant_id: str) -> list[TaskCheckpoint]:
         with self._provider.connection() as session:
             rows = session.execute(
                 """
@@ -376,7 +379,7 @@ class PostgreSQLTaskCheckpointStore(TaskCheckpointPersistence):
             ).fetchall()
         return [self._row_to_checkpoint(row) for row in rows]
 
-    def list_paused(self) -> List[TaskCheckpoint]:
+    def list_paused(self) -> list[TaskCheckpoint]:
         paused_states = _PAUSED_TASK_STATES
         placeholders = ",".join("%s" for _ in paused_states)
         query = f"""
@@ -437,10 +440,11 @@ class PostgreSQLTaskCheckpointStore(TaskCheckpointPersistence):
         owner_id: str,
         lease_seconds: int,
         limit: int = 100,
-    ) -> List[ScheduledResumeClaim]:
+    ) -> list[ScheduledResumeClaim]:
+        before_utc_iso = normalize_utc_iso(before_utc_iso, label="before_utc_iso")
         now = datetime.now(UTC)
         lease_expires_at = now + timedelta(seconds=lease_seconds)
-        claims: List[ScheduledResumeClaim] = []
+        claims: list[ScheduledResumeClaim] = []
         with self._provider.transaction() as session:
             session.execute(
                 """
@@ -458,7 +462,7 @@ class PostgreSQLTaskCheckpointStore(TaskCheckpointPersistence):
             )
             rows = session.execute(
                 """
-                SELECT schedule_id FROM scheduled_resumes
+                SELECT * FROM scheduled_resumes
                 WHERE status = %s AND run_at_utc <= %s
                 ORDER BY run_at_utc ASC, schedule_id ASC
                 LIMIT %s
@@ -467,6 +471,20 @@ class PostgreSQLTaskCheckpointStore(TaskCheckpointPersistence):
             ).fetchall()
             for row in rows:
                 schedule_id = row["schedule_id"]
+                try:
+                    self._row_to_scheduled_resume(row)
+                except ScheduledResumeMetadataValidationError:
+                    # A legacy or corrupt row must not poison the whole batch (F-D7-10): quarantine it.
+                    logger.exception("scheduled resume %s is malformed; quarantined as uncertain", schedule_id)
+                    session.execute(
+                        "UPDATE scheduled_resumes SET status = %s WHERE schedule_id = %s AND status = %s",
+                        (
+                            ScheduledResumeStatus.UNCERTAIN.value,
+                            schedule_id,
+                            ScheduledResumeStatus.PENDING.value,
+                        ),
+                    )
+                    continue
                 fence_row = session.execute(
                     "SELECT fence FROM scheduled_resumes WHERE schedule_id = %s",
                     (schedule_id,),
@@ -507,6 +525,13 @@ class PostgreSQLTaskCheckpointStore(TaskCheckpointPersistence):
         return claims
 
     def complete_claim(self, claim: ScheduledResumeClaim) -> None:
+        self._end_claim(claim, ScheduledResumeStatus.COMPLETED)
+
+    def skip_claim(self, claim: ScheduledResumeClaim) -> None:
+        """Fence-validated end of a claim that was deliberately not executed."""
+        self._end_claim(claim, ScheduledResumeStatus.SKIPPED)
+
+    def _end_claim(self, claim: ScheduledResumeClaim, status: ScheduledResumeStatus) -> None:
         with self._provider.transaction() as session:
             updated = session.execute(
                 """
@@ -518,7 +543,7 @@ class PostgreSQLTaskCheckpointStore(TaskCheckpointPersistence):
                   AND fence = %s
                 """,
                 (
-                    ScheduledResumeStatus.COMPLETED.value,
+                    status.value,
                     claim.schedule_id,
                     ScheduledResumeStatus.RUNNING.value,
                     claim.owner_id,
@@ -530,12 +555,39 @@ class PostgreSQLTaskCheckpointStore(TaskCheckpointPersistence):
                     f"Stale scheduled resume completion rejected for "
                     f"schedule_id={claim.schedule_id} fence={claim.fence}.",
                 )
+
+    def release_claim(self, claim: ScheduledResumeClaim) -> None:
+        """Fence-validated hand-back of a claim to PENDING (nothing was executed)."""
+        with self._provider.transaction() as session:
+            updated = session.execute(
+                """
+                UPDATE scheduled_resumes
+                SET status = %s, owner_id = NULL, lease_expires_at_utc = NULL
+                WHERE schedule_id = %s
+                  AND status = %s
+                  AND owner_id = %s
+                  AND fence = %s
+                """,
+                (
+                    ScheduledResumeStatus.PENDING.value,
+                    claim.schedule_id,
+                    ScheduledResumeStatus.RUNNING.value,
+                    claim.owner_id,
+                    claim.fence,
+                ),
+            )
+            if updated.rowcount != 1:
+                raise StaleClaimError(
+                    f"Stale scheduled resume release rejected for schedule_id={claim.schedule_id} fence={claim.fence}.",
+                )
+
     def list_due(
         self,
         *,
         before_utc_iso: str,
         limit: int = 100,
-    ) -> List[ScheduledResume]:
+    ) -> list[ScheduledResume]:
+        before_utc_iso = normalize_utc_iso(before_utc_iso, label="before_utc_iso")
         with self._provider.connection() as session:
             rows = session.execute(
                 """
@@ -546,7 +598,13 @@ class PostgreSQLTaskCheckpointStore(TaskCheckpointPersistence):
                 """,
                 (ScheduledResumeStatus.PENDING.value, before_utc_iso, limit),
             ).fetchall()
-        return [self._row_to_scheduled_resume(row) for row in rows]
+        due: list[ScheduledResume] = []
+        for row in rows:
+            try:
+                due.append(self._row_to_scheduled_resume(row))
+            except ScheduledResumeMetadataValidationError:
+                logger.exception("scheduled resume %s is malformed; omitted from the due list", row["schedule_id"])
+        return due
 
     def cancel(self, schedule_id: str) -> None:
         with self._provider.transaction() as session:
@@ -590,7 +648,7 @@ class PostgreSQLTaskCheckpointStore(TaskCheckpointPersistence):
         lease_seconds: int,
         *,
         action: str,
-    ) -> Optional[SchedulerActionClaim]:
+    ) -> SchedulerActionClaim | None:
         now = datetime.now(UTC)
         lease_expires_at = now + timedelta(seconds=lease_seconds)
         with self._provider.transaction() as session:
@@ -695,13 +753,12 @@ class PostgreSQLTaskCheckpointStore(TaskCheckpointPersistence):
                     f"Stale scheduler action completion rejected for "
                     f"ledger_key={claim.ledger_key} fence={claim.fence}.",
                 )
+
     @staticmethod
     def _row_to_scheduled_resume(row: Mapping[str, Any]) -> ScheduledResume:
         keys = row.keys()
         owner_id = row["owner_id"] if "owner_id" in keys else None
-        lease_expires_at_utc = (
-            row["lease_expires_at_utc"] if "lease_expires_at_utc" in keys else None
-        )
+        lease_expires_at_utc = row["lease_expires_at_utc"] if "lease_expires_at_utc" in keys else None
         fence = int(row["fence"]) if "fence" in keys else 0
         try:
             metadata = json.loads(row["resume_metadata_json"])
@@ -725,8 +782,7 @@ class PostgreSQLTaskCheckpointStore(TaskCheckpointPersistence):
             )
         except (ValueError, ScheduledResumeMetadataValidationError) as exc:
             raise ScheduledResumeMetadataValidationError(
-                f"Durable scheduled resume row rejected for schedule_id="
-                f"{row['schedule_id']!r}: {exc}",
+                f"Durable scheduled resume row rejected for schedule_id={row['schedule_id']!r}: {exc}",
             ) from exc
 
     @staticmethod
