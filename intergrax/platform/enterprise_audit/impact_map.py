@@ -74,6 +74,8 @@ PDC_DOMAIN_IMPACT_RULES: tuple[tuple[str, tuple[str, ...]], ...] = (
     ),
     # ebh_3 dependency ownership + ebh_2i contract surface purity + ebh_2a public contract boundary.
     ("intergrax/eval", ("ENT-A-OWN-01", "ENT-A-CTR-01", "ENT-A-TYP-01")),
+    # harness_01 tool budget and zero-bypass gates classify intergrax/experiments (TOOLING_INTERNAL Nexus importers).
+    ("intergrax/experiments/workflow.py", ("ENT-A-REL-02", "ENT-A-REL-03")),
     # ee_a1 execution engine ownership + harness_w5 observability transport gate + layer boundary gate.
     (
         "intergrax/hosting",
@@ -174,6 +176,9 @@ PDC_DOMAIN_IMPACT_RULES: tuple[tuple[str, tuple[str, ...]], ...] = (
         "intergrax/runtime/persistence",
         ("ENT-A-STA-01", "ENT-A-STA-03", "ENT-A-REC-01", "ENT-A-REC-03", "TEN-STATE", "VBN-SQLITE-EFFECTIVE"),
     ),
+    # No manifest check runs the pre-context policy audit (the IDEAL-L3 gate scripts and a pinned test do); the
+    # nearest manifest gates are the gov_x2 governance catalog and proof-node gates.
+    ("intergrax/runtime/policy/pre_context_policy_audit.py", ("ENT-A-GOV-01", "ENT-A-GOV-02", "ENT-A-GOV-03")),
     # ebh_3 dependency ownership gate + factory/plugin one-pass + config_x shadow-selection gate.
     (
         "intergrax/runtime/registry",

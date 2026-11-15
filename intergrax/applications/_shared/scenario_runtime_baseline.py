@@ -73,6 +73,7 @@ from intergrax.applications._shared.reliability_assembly_resolver import (
 from intergrax.applications._shared.reliability_wiring import (
     wire_application_reliability,
 )
+from intergrax.applications._shared.roster_agent_contract_authority import ContractAuthority
 from intergrax.applications._shared.scenario_runtime_profiles import (
     ScenarioRuntimeMode,
     ScenarioRuntimeWorkspace,
@@ -182,6 +183,11 @@ class ScenarioRuntimeComposition:
     decision_flow_gate: DecisionFlowGate[AgentExecutionResult] | None = None
     workspace: ScenarioRuntimeWorkspace | None = None
     runtime_mode: ScenarioRuntimeMode | None = None
+    # Rebuild inputs (T-IGX-041-M): the manifest, the contract authority and the application tool
+    # registry this runtime was built from; ``env_wiring.tool_wiring.registry`` is the merged registry.
+    manifest: ApplicationManifest | None = None
+    agent_contract_authority: ContractAuthority | None = None
+    application_tool_registry: ToolRegistry | None = None
 
     @property
     def terminal_diagnostic_trigger_attached(self) -> bool:
@@ -359,14 +365,15 @@ def rebuild_scenario_runtime_from_composition(
         tenant_id=composition.tenant_id,
         runtime_events_db_path=composition.observability.runtime_events_db_path,
         trace_db_path=composition.observability.trace_db_path,
-        manifest=manifest,
+        manifest=manifest if manifest is not None else composition.manifest,
         use_in_memory_trace=False,
         require_runtime_event_persistence=True,
         workspace=composition.workspace,
         runtime_mode=composition.runtime_mode,
         conformance_check=conformance_check,
         validation_engine=validation_engine,
-        application_tool_registry=composition.env_wiring.tool_wiring.registry,
+        application_tool_registry=composition.application_tool_registry,
+        agent_contract_authority=composition.agent_contract_authority,
     )
 
 
@@ -387,6 +394,7 @@ def build_scenario_runtime_from_environment(
     conformance_check: bool = True,
     validation_engine: NexusValidationEngine | None = None,
     application_tool_registry: ToolRegistry | None = None,
+    agent_contract_authority: ContractAuthority | None = None,
 ) -> ScenarioRuntimeComposition:
     """
     Compose a lighter Nexus-backed scenario runtime from platform primitives.
@@ -413,6 +421,7 @@ def build_scenario_runtime_from_environment(
         document_store=document_store,
         conformance_check=conformance_check,
         application_tool_registry=application_tool_registry,
+        agent_contract_authority=agent_contract_authority,
     )
     profile_provenance_reader = PinningStoreExecutionEffectiveProfileProvenanceReader(
         host_profile.persistence.pinning_store,
@@ -556,6 +565,9 @@ def build_scenario_runtime_from_environment(
         decision_flow_gate=decision_wiring.gate,
         workspace=workspace,
         runtime_mode=runtime_mode,
+        manifest=resolved_manifest,
+        agent_contract_authority=agent_contract_authority,
+        application_tool_registry=application_tool_registry,
     )
 
 

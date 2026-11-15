@@ -38,18 +38,28 @@ class GovernedStorageKeyError(PermissionError):
 
 
 def _refuse_governed_content_key(key: str) -> None:
+    # Each segment is compared case-insensitively and without trailing dots and spaces: case-insensitive
+    # and dot-stripping stores (Windows, macOS) address the same physical key through such spellings.
     segments: list[str] = []
     for part in key.strip().replace("\\", "/").split("/"):
         if part in ("", "."):
             continue
         if part == "..":
             raise GovernedStorageKeyError("storage keys with '..' segments are refused")
-        segments.append(part)
+        folded = part.rstrip(". ").casefold()
+        if folded:
+            segments.append(folded)
     joined = "/".join(segments)
-    if joined == GOVERNED_CONTENT_KEY_PREFIX.rstrip("/") or joined.startswith(GOVERNED_CONTENT_KEY_PREFIX):
+    prefix = GOVERNED_CONTENT_KEY_PREFIX.casefold()
+    if joined == prefix.rstrip("/") or joined.startswith(prefix):
         raise GovernedStorageKeyError(
             "this key space holds governed artifact content: use the governed artifact read port"
         )
+
+
+def refuse_governed_content_key(key: str) -> None:
+    """Shared refusal for every agent-callable tool that takes a caller-chosen object storage key."""
+    _refuse_governed_content_key(key)
 
 
 def _require_storage(ctx: ToolWiringContext) -> ObjectStorage:

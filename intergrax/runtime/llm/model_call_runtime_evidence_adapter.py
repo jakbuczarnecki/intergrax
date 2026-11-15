@@ -43,6 +43,10 @@ class ModelCallRuntimeEvidenceAdapter:
     def inner_adapter(self) -> LLMAdapter:
         return self._inner
 
+    def count_messages_tokens(self, messages: Sequence[ChatMessage]) -> int:
+        # The ``LLMAdapter`` protocol does not declare it; ``BaseLLMAdapter`` and the context preflight use it.
+        return self._inner.count_messages_tokens(messages)  # pyright: ignore[reportAttributeAccessIssue]
+
     def supports_streaming(self) -> bool:
         return self._inner.supports_streaming()
 

@@ -5,7 +5,8 @@
 
 from __future__ import annotations
 
-from typing import Protocol, Sequence, runtime_checkable
+from collections.abc import Sequence
+from typing import Protocol, runtime_checkable
 
 from pydantic import PrivateAttr
 
@@ -17,8 +18,8 @@ from intergrax.integrations.contracts.vector_store import (
     VectorStoreRecord,
     VectorStoreScope,
 )
-from intergrax.runtime.integrations.categories.storage import VectorStoreIntegrationContract
 from intergrax.runtime.integrations.categories._base import CategoryIntegrationConfig
+from intergrax.runtime.integrations.categories.storage import VectorStoreIntegrationContract
 
 INMEMORY_VECTOR_STORE_PROVIDER_ID = "inmemory"
 
@@ -41,7 +42,8 @@ class InmemoryVectorStoreIntegration(VectorStoreIntegrationContract):
     """
     Single public Inmemory vector store entrypoint.
 
-    Legacy catalog factories construct this class. Catalog factory (create_inmemory_vector_store) delegates to this class.
+    Legacy catalog factories construct this class.
+    Catalog factory (create_inmemory_vector_store) delegates to this class.
     """
 
     config: InmemoryVectorStoreIntegrationConfig = InmemoryVectorStoreIntegrationConfig()
@@ -66,7 +68,6 @@ class InmemoryVectorStoreIntegration(VectorStoreIntegrationContract):
         integration._inner = inner
         return integration
 
-
     @property
     def store_config(self) -> object | None:
         return self._store_config
@@ -74,6 +75,7 @@ class InmemoryVectorStoreIntegration(VectorStoreIntegrationContract):
     @property
     def rag_store(self) -> VectorStore:
         return self._require_inner()
+
     def add_records(
         self,
         records: Sequence[VectorStoreRecord],
@@ -118,6 +120,8 @@ class InmemoryVectorStoreIntegration(VectorStoreIntegrationContract):
             root_document_id=root_document_id,
         )
 
+    def list_collections(self) -> list[str]:
+        return self._require_inner().list_collections()
 
     def _require_inner(self) -> VectorStore:
         if self._inner is None:
@@ -125,7 +129,6 @@ class InmemoryVectorStoreIntegration(VectorStoreIntegrationContract):
                 f"{type(self).__name__} requires an inner store for vector operations",
             )
         return self._inner
-
 
     @classmethod
     def from_client(
@@ -145,5 +148,6 @@ class InmemoryVectorStoreIntegration(VectorStoreIntegrationContract):
     @property
     def client(self) -> InmemoryVectorStoreClient | None:
         return self._client
+
 
 VectorStore.register(InmemoryVectorStoreIntegration)
