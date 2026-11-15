@@ -36,8 +36,9 @@
 | EBH7_B6_FINAL_RECONCILIATION_IMPLEMENTATION_SHA | Strict JUnit metadata parser + per-node skip disposition register + L3 skip verification (tooling/tests only; no production semantics) | `dc18e36d971c93c8f631fbc86f73149d1b81b4d7` |
 | EBH7_PREVIOUS_TEST_EXECUTION_SHA | Final reconciliation L3 replay TEST (historical; run `41238620036`); equals `EBH7_B6_FINAL_RECONCILIATION_IMPLEMENTATION_SHA` | `dc18e36d971c93c8f631fbc86f73149d1b81b4d7` |
 | EBH7_PREVIOUS_EVIDENCE_PUBLICATION_SHA | Final reconciliation P03 dossier publication (historical) | `f30a90a14910afe8583081cab3b2e39480988c17` |
-| TEST_EXECUTION_SHA | PDC-X P6 re-pin (T-IGX-036-W): `development` tip after the T-IGX-036-X product fix (PR #537 merge); fresh L3 replay result PENDING (not a B6 PASS) | `146e7acf1434fffdf74ef6a2e91fffc10fd7b1ec` |
-| EVIDENCE_PUBLICATION_SHA | Re-pin replay evidence pin; equals `TEST_EXECUTION_SHA` (the W1 merge commit cannot be pinned inside its own manifest; `evidence == test` is allowed by the integrity gate) | `146e7acf1434fffdf74ef6a2e91fffc10fd7b1ec` |
+| EBH7_P6_REPIN_TEST_EXECUTION_SHA (historical) | PDC-X P6 re-pin (T-IGX-036-W) pin; its replay, run `43576897070`, ended 6 failed / 619 passed / 9 skipped (kept as history) | `146e7acf1434fffdf74ef6a2e91fffc10fd7b1ec` |
+| TEST_EXECUTION_SHA | PDC-X P7 final re-pin (T-IGX-041-J): `development` tip taken after the last P7 repair merge; fresh L3 replay result PENDING (not a B6 PASS) | `d39a520dda965981a38f8e1a90ec5135ea5d508e` |
+| EVIDENCE_PUBLICATION_SHA | Re-pin replay evidence pin; equals `TEST_EXECUTION_SHA` (the W1' merge commit cannot be pinned inside its own manifest; `evidence == test` is allowed by the integrity gate) | `d39a520dda965981a38f8e1a90ec5135ea5d508e` |
 | EBH7_B6_FINAL_GHA_REPLAY_HEAD_SHA | GHA L3 run `41238620036` checkout (634 tests: 625 passed / 9 skipped / 0 failed; F10 attestation PASS; skip disposition PASS; strict JUnit metadata PASS) | `73965c2eb3533dfb11ba5c57697316377f956bdd` |
 | INDEPENDENT_ACCEPTANCE_BASELINE_SHA | `dc18e36d971c93c8f631fbc86f73149d1b81b4d7` (independently accepted tree = `EBH7_PREVIOUS_TEST_EXECUTION_SHA`; ancestor of the re-pinned TEST_EXECUTION_SHA; the re-pinned tree is not independently accepted) |
 | B6_ACCEPTANCE_PUBLICATION_SHA | Commit publishing [`EBH_7_PROTOCOL_03_INDEPENDENT_AUDIT_PASS_RECORD.md`](EBH_7_PROTOCOL_03_INDEPENDENT_AUDIT_PASS_RECORD.md) — see roadmap §5 |
@@ -46,6 +47,8 @@
 **Deprecated alias:** `CLOSURE_SHA` must not denote implementation while B6/OD-08 are OPEN.
 
 **Re-pin (PDC-X P6):** `TEST_EXECUTION_SHA` moved from `dc18e36d9` to `146e7acf1` because the executable-tree identity gate rejects non-allowlisted paths changed after the pin (product fix PR #537 changed `intergrax/` and a non-allowlisted test helper). `INDEPENDENT_ACCEPTANCE_BASELINE_SHA` stays at the accepted tree `dc18e36d9`, which is an ancestor of the new pin. Fresh replay result: pending.
+
+**Final re-pin (PDC-X P7, T-IGX-041-J):** `TEST_EXECUTION_SHA` moved from `146e7acf1` to `d39a520dd`, the `development` tip taken after the last P7 repair merge, because the repairs changed paths outside the executable-identity allowlist. `INDEPENDENT_ACCEPTANCE_BASELINE_SHA` stays at `dc18e36d9`; the re-pinned tree is not independently accepted. The replay result is recorded by the W2' record pull request; not a B6 PASS.
 
 **Protocol 03 rule (as certified at `dc18e36d9`):** `TEST_EXECUTION_SHA` equaled `EBH7_B6_FINAL_RECONCILIATION_IMPLEMENTATION_SHA`; `EBH7_B6_F10_TEST_EXECUTION_SHA` (`496016c0`), `EBH7_B6_CORRECTIVE_IMPLEMENTATION_SHA` (`8afff322`), the B5 test execution (`4eb7eb1a`) and `EBH7_CLOSURE_IMPLEMENTATION_SHA` (`d4937889`) are strict git ancestors, not the replayed tree. The new TEST tree differs from `496016c0` only by qualification tooling/tests (`scripts/qualification/ebh7_junit_evidence.py`, `tests/qualification/ebh_7/_ebh7_skip_disposition_register.py`, `test_ebh_7_b6_junit_skip_disposition_gates.py`, `_semantic_disposition_registry.py` skip-equivalent bindings), the allowlisted constants/B5 gate files and `.github/workflows/unit-tests.yml`; no production code (`intergrax/`, `agents/`, `applications/`) changed.
 
