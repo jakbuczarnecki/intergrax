@@ -28,6 +28,7 @@ from intergrax.runtime.nexus.artifacts.context_reference import (
 from intergrax.runtime.nexus.artifacts.governed_access import ArtifactAccessDenied
 from intergrax.runtime.nexus.artifacts.retention import ArtifactRetentionSchedule
 from intergrax.runtime.nexus.artifacts.spill import ToolOutputSpiller
+from tests.qualification.pdc_x.d8_repair._support import make_clocked_port as make_port
 
 from ._d8_support import (
     T0,
@@ -36,7 +37,6 @@ from ._d8_support import (
     MutableClock,
     make_context,
     make_governance,
-    make_port,
     reader_grants,
     sqlite_store,
 )

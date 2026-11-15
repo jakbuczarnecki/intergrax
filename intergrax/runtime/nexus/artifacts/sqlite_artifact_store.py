@@ -28,6 +28,7 @@ from intergrax.runtime.nexus.artifacts.models import Artifact
 from intergrax.runtime.nexus.artifacts.store_base import (
     ArtifactDeletionRefused,
     ArtifactStore,
+    ArtifactVersionChanged,
     ArtifactVersionNotFound,
     protection_reason,
     require_owned_class,
@@ -293,7 +294,7 @@ class SQLiteArtifactStore(ArtifactStore):
         )
         return protection_reason(classes, legal_hold=held)
 
-    def delete_artifact(self, tenant_id: str, artifact_id: str) -> None:
+    def delete_artifact(self, tenant_id: str, artifact_id: str, *, expected_version: int | None = None) -> None:
         with self._transaction() as conn:
             exists = conn.execute(
                 "SELECT 1 FROM execution_artifacts WHERE tenant_id = ? AND artifact_id = ? LIMIT 1",
@@ -304,6 +305,12 @@ class SQLiteArtifactStore(ArtifactStore):
             reason = self._refusal(conn, tenant_id, artifact_id)
             if reason is not None:
                 raise ArtifactDeletionRefused(artifact_id, reason)
+            latest = conn.execute(
+                "SELECT MAX(version) FROM execution_artifacts WHERE tenant_id = ? AND artifact_id = ?",
+                (tenant_id, artifact_id),
+            ).fetchone()[0]
+            if expected_version is not None and latest != expected_version:
+                raise ArtifactVersionChanged(artifact_id, expected_version, latest)
             conn.execute(
                 "DELETE FROM execution_artifacts WHERE tenant_id = ? AND artifact_id = ?",
                 (tenant_id, artifact_id),

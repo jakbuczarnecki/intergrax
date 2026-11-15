@@ -33,7 +33,7 @@ Give every artifact a defined class, owner, identity, retention and access path 
 
 - The execution `ArtifactStore` is append-only: `put` adds a version, nothing is overwritten, `get` returns the latest, `get_version` and `list_versions` return history.
 - `SQLiteArtifactStore` follows the persistence-plane convention (`db_path`, WAL, `DURABLE_SINGLE_HOST`). Versions, retention class, expiry, producer, lineage and legal holds survive a restart; a tampered row fails its digest check on load.
-- Retention class, TTL and legal hold are enforced by `retention.py`. `AUDIT_EVIDENCE` is never expirable. The sweep is a handler registered on the existing `TaskExecutionRegistry` and run by canonical execution; it skips evidence and legal hold and the store refuses their deletion as well. Compaction operates on context fragments only and never touches the store.
+- Retention class, TTL and legal hold are implemented by `retention.py` and the stores, **as library behaviour**: no shipped host composition builds a sweep task or hands an artifact store to the runtime (see Declared exceptions). `AUDIT_EVIDENCE` is never expirable. The sweep is a handler that a worker root registers on the existing `TaskExecutionRegistry` when it is given an artifact store; it skips evidence and legal hold and the store refuses their deletion as well. A sweep deletes only the version it selected (`expected_version`; a version written after the selection is never destroyed) and refuses to run without an audit recorder unless it is built with `allow_unaudited_deletion=True`. Reads honour the TTL: an expired version that is neither audit evidence nor under legal hold is not found, whether or not a sweep has run. Compaction operates on context fragments only and never touches the store.
 
 ## One governed access port
 
@@ -45,15 +45,28 @@ Give every artifact a defined class, owner, identity, retention and access path 
 4. digest verification of what is returned;
 5. one `GovernanceAuditEvent` per operation outcome through the existing audit recorder, carrying actor, tenant, execution identity and artifact id.
 
-Stores contain no security logic. The port adds no policy engine, no registry and no authority. Capabilities: `artifact.read`, `artifact.download`, `artifact.legal_hold`, `artifact.delete`.
+Stores contain no security logic. The port adds no policy engine, no registry and no authority. Capabilities: `artifact.read`, `artifact.download`, `artifact.legal_hold`, `artifact.delete`. A stored workspace must be matched by the request on read and on hold, release and delete. The port honours a decision returned by the governance port (a DENY or approval-required return denies) and records an outcome event with check `backend_error` when an authorized operation fails unexpectedly. The capabilities are tenant-wide: they are not bound to a run or principal (declared exception below).
 
 ## Governed secure download (OD-PDC-SCOPE-04 = A)
 
-`issue_download_url` is the governed read port plus a short-lived provider URL: authorization, tenant check and audit first, then one `presigned_url(..., method="GET")` with a TTL clamped to the port maximum. No presigned URL is issued outside this port in the artifact lifecycle; a gate scans product code, and the agent-callable `storage.presigned_url` tool fails closed instead of signing.
+`issue_download_url` is the governed read port plus a short-lived provider URL: authorization, tenant check and audit first, then one `presigned_url(..., method="GET")` with a TTL clamped to the port maximum. No presigned URL is issued outside this port in the artifact lifecycle; a gate scans product code, and the agent-callable `storage.presigned_url` tool fails closed instead of signing. The raw tools `storage.get`, `storage.put`, `storage.delete` and `storage.exists` refuse every key under `intergrax/collaborative-work/artifact-content/` (the physical Collaborative Work content keys; normalized, so `..`, `.`, repeated slashes and backslashes do not bypass it); other keys are not scoped to a tenant.
 
 ## Spill and context references
 
 `ToolOutputSpiller` writes tool output above a threshold to the execution store (`tool_output`, ephemeral retention, producer and lineage set) and returns a self-verifying `ArtifactReferenceToken` plus a short preview. A context reference is a mandatory context fragment carrying that token, so fragment compaction never drops it, and `ArtifactReferenceResolver` resolves it through the governed port and re-checks the digest.
+
+## Declared exceptions (PDC-P7, IA-D8 audit, repair ticket T-IGX-041-H)
+
+What this document does **not** claim. Each row stays open until its reopen condition holds.
+
+| Exception | State | Reopen condition |
+| --------- | ----- | ---------------- |
+| Retention and TTL are not enforced by any shipped composition | **Library only**: `RuntimeContext.artifact_store` is assigned by no product code; `compose_worker_artifact_services` runs only when a worker root passes an artifact store; nothing builds or submits a sweep task; `queue_worker_wiring.py` passes no store | a composition ticket (store, governance port, audit recorder, sweep trigger) after an Operator decision that host composition of D8 is a PDC-X claim |
+| Nothing produces `AUDIT_EVIDENCE` | the evidence and legal-hold guards protect no artifact that the platform itself classifies as evidence | the same composition ticket (an evidence producer) |
+| The D8 runtime is dormant in shipped hosts; spill has no product resolver | `ToolOutputSpiller`, `ArtifactReferenceResolver`, `reference_fragment` and `CollaborativeWorkContentSource` have no non-test caller; spill must stay off until a read tool ships with it | the same composition ticket, shipping the `artifact.reference` read tool together with spill |
+| Raw storage tools are not tenant-scoped outside the Collaborative Work content key space | `ToolWiringContext` carries no tenant | an Operator decision on the storage tool contract |
+| `artifact.read` and the other capabilities are tenant-wide | no run or principal binding in `ArtifactAccessContext` | an Operator decision on the authorization model |
+| Hardening debt | sweep starvation by protected rows, one poisoned row aborting a sweep, naive datetimes in the stores, legal-hold trail, ancestor tenant check, retention-class downgrade, trailing-newline digests, bundle builder symlinks | the next D8 loop |
 
 ## Dedupe
 
