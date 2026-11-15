@@ -1,0 +1,13 @@
+PDC-X / D2 independent audit (IA-D2) evidence manifest
+
+audited_implementation_sha: c08efe46a74a20595468d8d8bf06eab2dca5f573
+audit_execution_sha:        b7889220607b462195308fa186f4ba66fb78f3a8
+auditor branch:             claude/pdc-x-ia-d2-e1f727 (docs/evidence only; no product, test, script, ticket or activation-record edit)
+overall verdict:            PARTIAL  (IIAC manifest verdict value: CONDITIONAL)
+rows:                       10 PASS, 1 PASS_SCOPED, 7 PARTIAL, 0 FAIL
+findings:                   0 HIGH, 8 MEDIUM, 10 LOW, 2 INFO
+
+Report:    docs/project/maintainers/qualification/platform_domain_completeness/PDC_P7_D2_AUDIT_REPORT.md
+Records:   audit_scope.json, iiac_audit_session_manifest.PDC-X.d2.json, iiac_audit_d2_findings.json, test_matrix.txt
+Logs:      logs/ (runs 1-7, probe outputs, mutants, verifier outputs)
+Scripts:   adversarial_scripts/ (probe_d2.py, probe_d2_b.py, probe_tenant_carriers.py, run_mutants.py)

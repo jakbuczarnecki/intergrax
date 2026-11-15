@@ -1,0 +1,1 @@
+{"probe": "P8_forged_tool_call_id", "roles": [["tool", "p8-forged", "call-does-not-exist"], ["user", "4bb8e371d519440dbecb5c6af4280351", null]], "linkage_violations": ["result without call: call-does-not-exist"]}

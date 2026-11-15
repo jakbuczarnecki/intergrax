@@ -1,0 +1,51 @@
+........................................................................ [  5%]
+........................................................................ [ 11%]
+........................................................................ [ 17%]
+........................................................................ [ 23%]
+........................................................................ [ 29%]
+........................................................................ [ 35%]
+........................................................................ [ 41%]
+........................................................................ [ 47%]
+........................................................................ [ 53%]
+........................................................................ [ 58%]
+........................................................................ [ 64%]
+.......................................s................................ [ 70%]
+........................................................................ [ 76%]
+........................................................................ [ 82%]
+........................................................................ [ 88%]
+..................F..................................................... [ 94%]
+......................................................................   [100%]
+================================== FAILURES ===================================
+___________ test_tx_p0_r3_head_q02_class_field_carrier_count_stable ___________
+
+    def test_tx_p0_r3_head_q02_class_field_carrier_count_stable() -> None:
+        from tests.qualification.tenant_x._replay_x_carrier_reconciliation import (
+            TENANT_X_REPLAY_HEAD_CARRIER_TOTAL,
+            assert_replay_carrier_delta_classified,
+        )
+    
+        report = carrier_semantics_report()
+>       assert report.class_field_carrier_total == TENANT_X_REPLAY_HEAD_CARRIER_TOTAL
+E       assert 831 == 819
+E        +  where 831 = TenantCarrierSemanticsReport(class_field_carrier_total=831, identity_carrier_count=1316, unknown_propagation_roles=5, ... authority_validator=0, authority_derivation=0, authority_narrowing=0, authority_mint_rewrite=0, authority_unknown=0))).class_field_carrier_total
+
+tests\qualification\tenant_x\test_tenant_x_p0_current_head.py:97: AssertionError
+============================== warnings summary ===============================
+tests/unit/memory/test_mem_depth_modules.py::test_entity_graph_legacy_facade_rejects_ungoverned_access
+  D:\Projekty\intergrax\.claude\worktrees\pdc-x-ia-d2-e1f727\tests\unit\memory\test_mem_depth_modules.py:54: DeprecationWarning: EntityGraphMemoryStore is migration-only; use EntityTemporalMemoryCapability
+    store = EntityGraphMemoryStore(backend=InMemoryEntityTemporalMemoryStore())
+
+tests/unit/memory/test_mem_ent11_platform_boundaries.py::test_entity_graph_legacy_neighbors_blocks_ungoverned_read
+  D:\Projekty\intergrax\.claude\worktrees\pdc-x-ia-d2-e1f727\tests\unit\memory\test_mem_ent11_platform_boundaries.py:221: DeprecationWarning: EntityGraphMemoryStore is migration-only; use EntityTemporalMemoryCapability
+    facade = EntityGraphMemoryStore(backend=InMemoryEntityTemporalMemoryStore())
+
+tests/unit/memory/test_mem_ent11_platform_boundaries.py::test_entity_graph_legacy_facade_blocks_ungoverned_mutations
+  D:\Projekty\intergrax\.claude\worktrees\pdc-x-ia-d2-e1f727\tests\unit\memory\test_mem_ent11_platform_boundaries.py:239: DeprecationWarning: EntityGraphMemoryStore is migration-only; use EntityTemporalMemoryCapability
+    facade = EntityGraphMemoryStore(backend=InMemoryEntityTemporalMemoryStore())
+
+-- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html
+=========================== short test summary info ===========================
+SKIPPED [1] tests\unit\memory\test_mem_final_audit_5b_sqlite_durable_reference.py:278: read-only chmod semantics are not reliable on Windows for this proof
+FAILED tests/qualification/tenant_x/test_tenant_x_p0_current_head.py::test_tx_p0_r3_head_q02_class_field_carrier_count_stable
+1 failed, 1220 passed, 1 skipped, 3 warnings in 70.17s (0:01:10)
+EXIT 1

@@ -1,0 +1,31 @@
+..F
+================================== FAILURES ===================================
+_ test_xd02_a_foreign_tenant_identity_on_a_tenant_bound_plane_recalls_nothing _
+
+    async def test_xd02_a_foreign_tenant_identity_on_a_tenant_bound_plane_recalls_nothing() -> None:
+        memory_a = _memory_for(TENANT_A)
+        await memory_a.remember("tenant-a private preference ALPHA-SECRET")
+        cross = memory_a.plane.recall(
+            _identity(TENANT_B),
+            user_memory_scope(_identity(TENANT_B)),
+            MemoryControlRecallRequest(query="preference", top_k=10),
+        )
+        try:
+            leaked = _recalled_text(await cross)
+        except MemoryControlAccessDenied:
+            return  # fail-closed is the expected behavior
+>       assert "ALPHA-SECRET" not in leaked
+E       assert 'ALPHA-SECRET' not in "MemoryContr...n='keyword')"
+E         
+E         'ALPHA-SECRET' is contained here:
+E         ?           ^^
+E           reference ALPHA-SECRET', kind=<MemoryKind.OTHER: 'other'>, score=0.8525, score_breakdown=MemoryRankingScore(total=0.8525, relevance=1.0, trust=0.35, temporal=1.0, freshness=1.0, supersession_adjustment=0.0), reason_codes=(<MemoryRecallReasonCode.HIGH_RELEVANCE: 'high_relevance'>, <MemoryRecallReasonCode.FRESHER_RECORD: 'fresher_record'>), conflict_unresolved=False),), used_semantic=False, reason='keyword')
+E         ?           ^^^^^^^^^^^^^^
+
+tests\qualification\pdc_x\xd\test_xd_02_agent_context.py:184: AssertionError
+=========================== short test summary info ===========================
+FAILED tests/qualification/pdc_x/xd/test_xd_02_agent_context.py::test_xd02_a_foreign_tenant_identity_on_a_tenant_bound_plane_recalls_nothing
+!!!!!!!!!!!!!!!!!!!!!!!!!! stopping after 1 failures !!!!!!!!!!!!!!!!!!!!!!!!!!
+1 failed, 2 passed in 1.71s
+
+--- stderr ---

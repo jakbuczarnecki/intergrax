@@ -1,0 +1,24 @@
+F
+================================== FAILURES ===================================
+____________ test_hard_trim_drops_unfittable_tool_pair_atomically _____________
+
+    def test_hard_trim_drops_unfittable_tool_pair_atomically() -> None:
+        messages = _conversation()
+        result = _hard_trim(messages, budget=16)
+        assert result is not None
+        trimmed = result.messages
+    
+        ids = [m.entry_id for m in trimmed]
+>       assert "asst-1" not in ids
+E       AssertionError: assert 'asst-1' not in ['sys-1', 'user-old', 'asst-1', 'tool-1', 'user-final']
+
+tests\qualification\pdc_x\d2\test_d2_context_fidelity.py:116: AssertionError
+---------------------------- Captured stdout setup ----------------------------
+Wrote build\agent_fleet_inventory.json (21 agents)
+
+=========================== short test summary info ===========================
+FAILED tests/qualification/pdc_x/d2/test_d2_context_fidelity.py::test_hard_trim_drops_unfittable_tool_pair_atomically
+!!!!!!!!!!!!!!!!!!!!!!!!!! stopping after 1 failures !!!!!!!!!!!!!!!!!!!!!!!!!!
+1 failed, 9 deselected in 3.95s
+
+--- stderr ---

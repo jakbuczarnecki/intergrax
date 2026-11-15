@@ -1,0 +1,43 @@
+F
+================================== FAILURES ===================================
+__ test_injected_tool_output_without_linkage_is_not_promoted_to_instruction ___
+
+    @pytest.mark.asyncio
+    async def test_injected_tool_output_without_linkage_is_not_promoted_to_instruction() -> None:
+        registry = ContextPluginRegistry()
+        registry.add_provider(
+            _tool_provider(
+                lambda: [
+                    # No tool_call_id: before the fix the formatter rendered this as a system message.
+                    make_fragment("r009-unlinked", ContextFragmentSource.TOOL_OUTPUT, _INJECTION),
+                    make_fragment(
+                        "r009-blank-id",
+                        ContextFragmentSource.TOOL_OUTPUT,
+                        _INJECTION,
+                        metadata={"tool_call_id": "   "},
+                    ),
+                ]
+            )
+        )
+        engine = DefaultNexusContextEngine(registry=registry)
+        assembled = await engine.assemble(
+            assembly_request(),
+            provider_ctx=provider_context(FakeAdapter(), "what is the status?"),
+        )
+        instruction_text = message_text(m for m in assembled.messages if m.role == "system")
+>       assert "PDC-D2-R009" not in instruction_text
+E       AssertionError: assert 'PDC-D2-R009' not in '[context:to... PDC-D2-R009'
+E         
+E         'PDC-D2-R009' is contained here:
+E           tem prompt PDC-D2-R009
+
+tests\qualification\pdc_x\d2\test_d2_context_fidelity.py:316: AssertionError
+---------------------------- Captured stdout setup ----------------------------
+Wrote build\agent_fleet_inventory.json (21 agents)
+
+=========================== short test summary info ===========================
+FAILED tests/qualification/pdc_x/d2/test_d2_context_fidelity.py::test_injected_tool_output_without_linkage_is_not_promoted_to_instruction
+!!!!!!!!!!!!!!!!!!!!!!!!!! stopping after 1 failures !!!!!!!!!!!!!!!!!!!!!!!!!!
+1 failed, 12 deselected in 1.04s
+
+--- stderr ---

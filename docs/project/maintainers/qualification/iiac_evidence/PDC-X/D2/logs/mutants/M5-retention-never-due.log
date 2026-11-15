@@ -1,0 +1,36 @@
+F
+================================== FAILURES ===================================
+______ test_expired_memory_is_forgotten_and_its_vector_entry_tombstoned _______
+
+    @pytest.mark.asyncio
+    async def test_expired_memory_is_forgotten_and_its_vector_entry_tombstoned() -> None:
+        harness = _harness()
+        expired = await harness.remember("expired", valid_until=_NOW - timedelta(days=1))
+        expired_two = await harness.remember("expired-two", valid_until=_NOW - timedelta(hours=1))
+        future = await harness.remember("future", valid_until=_NOW + timedelta(days=30))
+        forever = await harness.remember("forever")
+        assert harness.indexed_ids() == {expired, expired_two, future, forever}
+    
+        report = await MemoryRetentionSweep(
+            control_plane=harness.plane,
+            candidates=harness.capability,
+        ).run(MemoryRetentionSweepRequest(identity=_identity(), as_of=_NOW))
+    
+>       assert set(report.forgotten_entry_ids) == {expired, expired_two}
+E       AssertionError: assert set() == {'4a27565c4c8...80ad7bf25a36'}
+E         
+E         Extra items in the right set:
+E         'f174e74a32a84eb5aa0b80ad7bf25a36'
+E         '4a27565c4c8840bc8aa3a8a3f74ccb57'
+E         Use -v to get more diff
+
+tests\qualification\pdc_x\d2\test_d2_memory_retention.py:175: AssertionError
+---------------------------- Captured stdout setup ----------------------------
+Wrote build\agent_fleet_inventory.json (21 agents)
+
+=========================== short test summary info ===========================
+FAILED tests/qualification/pdc_x/d2/test_d2_memory_retention.py::test_expired_memory_is_forgotten_and_its_vector_entry_tombstoned
+!!!!!!!!!!!!!!!!!!!!!!!!!! stopping after 1 failures !!!!!!!!!!!!!!!!!!!!!!!!!!
+1 failed in 1.51s
+
+--- stderr ---
