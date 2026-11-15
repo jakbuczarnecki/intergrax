@@ -44,6 +44,7 @@ Rows classed `CURRENT_HEAD_REQUALIFICATION`, `ALREADY_CERTIFIED_REUSABLE`, `N/A_
 | B-P7-D8 | D8 | W13 | T-IGX-041-H | 0 | ADR-PDC-08 | B-P6-J | YES | OD-PDC-SEQ-01: implement in an isolated worktree; merge only after MCP-SERVER-X P8 publication; ACT-N11 re-activation at PDC-P7-00 | IA-D8 (P7 re-audit) |
 | B-P7-D6 | D6 | W13 | T-IGX-041-F | 0 | ADR-PDC-06 | B-P6-J | YES | OD-PDC-SEQ-01: implement in an isolated worktree; merge only after MCP-SERVER-X P8 publication; ACT-N11 re-activation at PDC-P7-00 | IA-D6 (re-audit, loop 1 of 2) |
 | B-P7-TX | TX | W13 | T-IGX-041-I | 0 | — | B-P6-J | no | No product path: may merge before MCP-SERVER-X P8 | IA-GLOBAL (P8) |
+| B-P8-R1 | R1 | W14a | T-IGX-041-M | 0 | — | B-P7-D2, B-P7-D7, B-P7-D8 | YES | OD-PDC-SEQ-01: implement in an isolated worktree; merge only after MCP-SERVER-X P8 publication; ACT-N11 re-activation at PDC-P7-00 | IA-GLOBAL (P8) |
 
 ## B-P3 — Ownership records closed in P3
 
@@ -505,6 +506,18 @@ Rows classed `CURRENT_HEAD_REQUALIFICATION`, `ALREADY_CERTIFIED_REUSABLE`, `N/A_
 - **Tests:** tests/qualification/tenant_x green at the final head; negative tests prove an unclassified, swapped or unreasoned carrier still fails; PHASE 2 runs only after the D1, D2 and D6 repair PRs are merged
 - **Evidence (exact SHA):** implementation SHA and publication SHA recorded in `PDC_SHA_LADDER.md`; test log under `.tmp/proof/pdc-x-p5/B-P7-TX/`; audited by IA-GLOBAL (P8) at the PDC-P7 audited SHA.
 - **Merge gate:** No product path: may merge before MCP-SERVER-X P8
+
+| Requirement | Class | Test case |
+| --- | --- | --- |
+| — | — | — |
+
+## B-P8-R1 — P8 repair loop 1 after the independent global audit: default documents loader import (doc smart handler), recurrence chain survives an eligibility-read failure (scheduler), workspace artifact tools refuse the governed content key space (storage and workspace tool services), two product paths classified in the ENT-AUDIT CHANGED-SINCE impact map; remaining object-storage tenant binding and any other finding are excluded in the plan
+
+- **Ticket:** T-IGX-041-M · **Wave:** W14a · **ADR:** — · **Auditor:** IA-GLOBAL (P8)
+- **Write set:** `intergrax/rag/document_loaders/handlers/doc_smart_document_handler.py`, `intergrax/runtime/long_running/scheduler.py`, `intergrax/tools/providers/workspace/service.py`, `intergrax/tools/providers/storage/service.py`, `intergrax/platform/enterprise_audit/impact_map.py`, `intergrax/platform/enterprise_audit/data/changed_since_impact_map.v1.json`, `tests/qualification/pdc_x/p8_repair/`, `docs/project/architecture/BACKGROUND_TASKS.md`, `docs/project/capabilities/architecture/ARTIFACT_LIFECYCLE.md`
+- **Tests:** tests/qualification/pdc_x/p8_repair/ red on unchanged code and green after; d7, d8, sched_01, p6_impact, xd_12, rag document loader and compat_x suites green except the known red classes named in the ticket
+- **Evidence (exact SHA):** implementation SHA and publication SHA recorded in `PDC_SHA_LADDER.md`; test log under `.tmp/proof/pdc-x-p5/B-P8-R1/`; audited by IA-GLOBAL (P8) at the PDC-P7 audited SHA.
+- **Merge gate:** OD-PDC-SEQ-01: implement in an isolated worktree; merge only after MCP-SERVER-X P8 publication; ACT-N11 re-activation at PDC-P7-00
 
 | Requirement | Class | Test case |
 | --- | --- | --- |

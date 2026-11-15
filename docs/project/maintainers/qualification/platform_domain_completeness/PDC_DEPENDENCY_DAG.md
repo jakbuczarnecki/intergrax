@@ -59,6 +59,9 @@ graph LR
   B-P6-J --> B-P7-D8
   B-P6-J --> B-P7-D6
   B-P6-J --> B-P7-TX
+  B-P7-D2 --> B-P8-R1
+  B-P7-D7 --> B-P8-R1
+  B-P7-D8 --> B-P8-R1
   P4 --> B-D1 & B-D3 & B-D7 & B-REG-P
   GATE -. merges .-> B-D1 & B-D3 & B-D7 & B-REG-P & B-D2 & B-D5 & B-D6 & B-D8 & B-D4
   B-P6 --> ACT{{PDC-P7-00 ACT-N11 activation}} --> P7[PDC-P7: 8 domain audits]
@@ -96,6 +99,7 @@ Wave 3 sets the length of the path. Its three batches run in sequence because th
 | W12 | B-P6-J | after B-P6-I and the signature of T-IGX-040-A | after the signature of T-IGX-040-A (one-time exception OD-MCP-RC-05; both repairs in one PR, then product paths freeze again) |
 | W13 | B-P7-D2, B-P7-D5, B-P7-D7, B-P7-D4, B-P7-D3, B-P7-D8, B-P7-D6, B-P7-TX | after B-P6-J and the signature of T-IGX-041-E | after the signature of T-IGX-041-E (DELEGATION-PDC-P7-REPAIR merge gate; product paths of the P7 repairs are re-pinned once after all repairs) |
 | W14 | B-P7-D1 | after B-P7-D5 (W13) is merged and the signature of T-IGX-041-A | after the signature of T-IGX-041-A (DELEGATION-PDC-P7-REPAIR merge gate; W14 because B-P7-D1 and B-P7-D5 both write under intergrax/applications/_shared/ and one wave may hold only one such batch) |
+| W14a | B-P8-R1 | after every B-P7 repair batch (W13, W14) is merged and the signature of T-IGX-041-M | before the EBH-7 pin P and before T-IGX-041-L takes the COMPAT-X counters (DELEGATION-PDC-CLOSE decision 2 merge gate; product paths of the P8 repair loop are re-pinned once by the EBH-7 pin) |
 
 ## Operator gates
 

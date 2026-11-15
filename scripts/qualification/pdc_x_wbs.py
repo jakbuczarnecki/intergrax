@@ -837,6 +837,29 @@ BATCHES: Final[tuple[Batch, ...]] = (
         "IA-GLOBAL (P8)",
         "tests/qualification/tenant_x green at the final head; negative tests prove an unclassified, swapped or unreasoned carrier still fails; PHASE 2 runs only after the D1, D2 and D6 repair PRs are merged",
     ),
+    Batch(
+        "B-P8-R1",
+        "R1",
+        "P8 repair loop 1 after the independent global audit: default documents loader import (doc smart handler), recurrence chain survives an eligibility-read failure (scheduler), workspace artifact tools refuse the governed content key space (storage and workspace tool services), two product paths classified in the ENT-AUDIT CHANGED-SINCE impact map; remaining object-storage tenant binding and any other finding are excluded in the plan",
+        "T-IGX-041-M",
+        "W14a",
+        (
+            "intergrax/rag/document_loaders/handlers/doc_smart_document_handler.py",
+            "intergrax/runtime/long_running/scheduler.py",
+            "intergrax/tools/providers/workspace/service.py",
+            "intergrax/tools/providers/storage/service.py",
+            "intergrax/platform/enterprise_audit/impact_map.py",
+            "intergrax/platform/enterprise_audit/data/changed_since_impact_map.v1.json",
+            "tests/qualification/pdc_x/p8_repair/",
+            "docs/project/architecture/BACKGROUND_TASKS.md",
+            "docs/project/capabilities/architecture/ARTIFACT_LIFECYCLE.md",
+        ),
+        "—",
+        ("B-P7-D2", "B-P7-D7", "B-P7-D8"),
+        GATE_PRODUCT,
+        "IA-GLOBAL (P8)",
+        "tests/qualification/pdc_x/p8_repair/ red on unchanged code and green after; d7, d8, sched_01, p6_impact, xd_12, rag document loader and compat_x suites green except the known red classes named in the ticket",
+    ),
 )
 
 # Requirement -> batch overrides where the corrective-task text alone is ambiguous.
@@ -1144,6 +1167,10 @@ def render_dag() -> str:
         "W14": (
             "after B-P7-D5 (W13) is merged and the signature of T-IGX-041-A",
             "after the signature of T-IGX-041-A (DELEGATION-PDC-P7-REPAIR merge gate; W14 because B-P7-D1 and B-P7-D5 both write under intergrax/applications/_shared/ and one wave may hold only one such batch)",
+        ),
+        "W14a": (
+            "after every B-P7 repair batch (W13, W14) is merged and the signature of T-IGX-041-M",
+            "before the EBH-7 pin P and before T-IGX-041-L takes the COMPAT-X counters (DELEGATION-PDC-CLOSE decision 2 merge gate; product paths of the P8 repair loop are re-pinned once by the EBH-7 pin)",
         ),
     }
     for wave, bids in waves.items():
