@@ -52,6 +52,7 @@ graph LR
   B-P6-I --> B-P6-J
   B-P6-J --> B-P7-D2
   B-P6-J --> B-P7-D5
+  B-P6-J --> B-P7-D1
   B-P6-J --> B-P7-D7
   B-P6-J --> B-P7-D4
   B-P6-J --> B-P7-D3
@@ -93,6 +94,7 @@ Wave 3 sets the length of the path. Its three batches run in sequence because th
 | W11 | B-P6-I | after B-P6-F and the signature of T-IGX-036-Z | under DELEGATION-PDC-STANDING authorization 3 (one product path: deletion of an unused manifest) |
 | W12 | B-P6-J | after B-P6-I and the signature of T-IGX-040-A | after the signature of T-IGX-040-A (one-time exception OD-MCP-RC-05; both repairs in one PR, then product paths freeze again) |
 | W13 | B-P7-D2, B-P7-D5, B-P7-D7, B-P7-D4, B-P7-D3, B-P7-D8, B-P7-D6 | after B-P6-J and the signature of T-IGX-041-E | after the signature of T-IGX-041-E (DELEGATION-PDC-P7-REPAIR merge gate; product paths of the P7 repairs are re-pinned once after all repairs) |
+| W14 | B-P7-D1 | after B-P7-D5 (W13) is merged and the signature of T-IGX-041-A | after the signature of T-IGX-041-A (DELEGATION-PDC-P7-REPAIR merge gate; W14 because B-P7-D1 and B-P7-D5 both write under intergrax/applications/_shared/ and one wave may hold only one such batch) |
 
 ## Operator gates
 

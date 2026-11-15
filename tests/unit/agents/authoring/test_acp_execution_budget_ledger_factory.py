@@ -5,12 +5,12 @@
 from __future__ import annotations
 
 import ast
+from collections.abc import Callable
 from dataclasses import dataclass, field
 from pathlib import Path
 from unittest.mock import patch
 
 import pytest
-
 from intergrax.agents.authoring.acp_run import run_acp_session
 from intergrax.agents.authoring.acp_session_host import ACP_HOST_CONTEXT_KEY
 from intergrax.agents.authoring.base import IntergraxAgent
@@ -27,8 +27,8 @@ from intergrax.contracts.execution_identity import (
     mint_execution_id,
     mint_run_id,
 )
-from intergrax.runtime.execution.active_execution_budget import peek_active_execution_budget
 from intergrax.contracts.execution_identity_authority import MintedExecutionIdentity
+from intergrax.runtime.execution.active_execution_budget import peek_active_execution_budget
 from intergrax.runtime.execution.budget.ledger import (
     ExecutionBudgetLedger,
     ExecutionBudgetLedgerFactory,
@@ -48,9 +48,7 @@ pytestmark = [pytest.mark.unit, pytest.mark.gate]
 _REPO_ROOT = Path(__file__).resolve().parents[4]
 _ACP_RUN = _REPO_ROOT / "intergrax" / "agents" / "authoring" / "acp_run.py"
 
-_ACP_MINT_PATCH = (
-    "intergrax.agents.authoring.acp_run.default_execution_identity_authority.mint_execution_identity"
-)
+_ACP_MINT_PATCH = "intergrax.agents.authoring.acp_run.default_execution_identity_authority.mint_execution_identity"
 
 
 @dataclass
@@ -139,7 +137,10 @@ def _minted_identity(root: RootTaskIdentity) -> MintedExecutionIdentity:
 
 
 @pytest.mark.asyncio
-async def test_acp_session_uses_injected_execution_budget_ledger_factory() -> None:
+async def test_acp_session_uses_injected_execution_budget_ledger_factory(
+    bound_governance_identity: Callable[..., None],
+) -> None:
+    bound_governance_identity(tenant_id="tenant-budget", principal_id="user-1")
     minted_run = mint_run_id()
     minted_attempt = mint_attempt_id()
     minted_execution = mint_execution_id()
