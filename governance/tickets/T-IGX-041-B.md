@@ -44,6 +44,11 @@ Plus the runtime mutation run (a)-(d) of plan Protocol item 4.
 - All excluded findings listed in the plan; composition of the retention sweep or the freshness observer; the formatter role contract (F-D2-04); the TENANT-X carrier re-pin (T-IGX-041-I); the adapter estimator half of F-D2-01 (T-IGX-041-C).
 - `scripts/governance/`, `.github/`, `pyproject.toml`, `uv.lock`, `intergrax/contracts/`, every `intergrax/applications/_shared/` file, `intergrax/llm_adapters/`, the requirements matrix, the EBH-7 re-pin, the IIAC activation record and rebind, FRZ promotion, OD signatures, certification.
 
+## Implementation checkpoint
+
+- Implementation PR: [#575](https://github.com/jakbuczarnecki/intergrax/pull/575), branch `claude/pdc-x-041b` (implementer session, distinct from the planner and the delegate). The plan text and its digest are unchanged.
+- **Operator-approved write-set extension (2026-11-15):** the Operator answered "Tak, dodaj" (English rendering: "Yes, add it") to adding `tests/unit/context/budget/test_ce02_r1g_hard_budget_preservation.py` to the scope of this ticket and updating its two stale budget expectations, relayed by the orchestrator session. Reason: the budget now counts `tool_calls` and `tool_call_id` (F-D2-01), so `test_hard_budget_preserves_incomplete_tool_group` (budget 30, mandatory cost 86) and `test_hard_budget_preserves_standalone_tool_message` (budget 40, mandatory cost 48) encoded content-only sizing. The edit raises the two budgets (96 and 60), asserts the summed per-message cost (`message_token_cost`) instead of content, keeps the byte-for-byte mandatory and "optional history dropped" assertions, and adds two tests that pin the fail-closed behaviour for a too-small budget (85 and 47). No gate is weakened. This is the only path added to the signed write set.
+
 ## Lifecycle state
 
 plan_approved
