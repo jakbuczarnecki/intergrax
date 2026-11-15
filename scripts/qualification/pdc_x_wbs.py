@@ -545,6 +545,35 @@ BATCHES: Final[tuple[Batch, ...]] = (
         "IA-GLOBAL (P8)",
         "tests/qualification/pdc_x/p6_ecapfix/ and p6_impact/; xd_12 and p6_impact coverage tests green on development and on a tree that contains the MCP-RC change",
     ),
+    Batch(
+        "B-P7-D5",
+        "D5",
+        "P7 repair of the independent D5 audit (loop 1): tenant isolation of online evaluation observations and the three hosts that hold a tenant (F-D5-01), ExperimentSession.run NameError and governance identity admission (F-D5-07), evaluation evidence status and comparison coverage (F-D5-04), promotion certification subject binding (F-D5-03 strengthening part), MVP promotion gate G0/G2 symbols and anchored authorization (F-D5-02 strengthening part), contract regex hygiene, R017 boundary documentation (F-D5-08); F-D5-05 and F-D5-06 are declared exceptions",
+        "T-IGX-041-E",
+        "W13",
+        (
+            "intergrax/runtime/architecture/online_evaluation_registry.py",
+            "intergrax/runtime/architecture/user_satisfaction.py",
+            "intergrax/runtime/architecture/online_evaluation.py",
+            "intergrax/runtime/architecture/agent_promotion.py",
+            "intergrax/runtime/evidence/eval_evidence_contracts.py",
+            "intergrax/eval/eval_comparison.py",
+            "intergrax/experiments/workflow.py",
+            "scripts/gates/check_mvp_promotion_gates.py",
+            "intergrax/contracts/evaluation_contracts.py",
+            "intergrax/applications/_shared/harness_host_runtime.py",
+            "intergrax/applications/_shared/runtime_config_bridge.py",
+            "intergrax/applications/_shared/scenario_runtime_baseline.py",
+            "tests/qualification/pdc_x/d5_repair/",
+            "docs/project/architecture/EXPERIMENTATION_AND_DEVELOPER_EXPERIENCE.md",
+            "docs/project/maintainers/plans/EXPERIMENTATION_AND_DEVELOPER_EXPERIENCE.md",
+        ),
+        "—",
+        ("B-P6-J",),
+        GATE_PRODUCT,
+        "IA-D5 (P7 re-audit)",
+        "tests/qualification/pdc_x/d5_repair/ plus the cited d5, xd_08, experiments, online evaluation and host suites green; every in-scope finding pinned red-then-green with negative tests",
+    ),
 )
 
 # Requirement -> batch overrides where the corrective-task text alone is ambiguous.
@@ -844,6 +873,10 @@ def render_dag() -> str:
         "W12": (
             "after B-P6-I and the signature of T-IGX-040-A",
             "after the signature of T-IGX-040-A (one-time exception OD-MCP-RC-05; both repairs in one PR, then product paths freeze again)",
+        ),
+        "W13": (
+            "after B-P6-J and the signature of T-IGX-041-E",
+            "after the signature of T-IGX-041-E (DELEGATION-PDC-P7-REPAIR merge gate; product paths of the P7 repairs are re-pinned once after all repairs)",
         ),
     }
     for wave, bids in waves.items():
