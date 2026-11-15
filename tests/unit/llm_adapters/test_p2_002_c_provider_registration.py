@@ -5,20 +5,18 @@ from __future__ import annotations
 import importlib.abc
 import importlib.machinery
 import sys
+from collections.abc import Sequence
 from pathlib import Path
-from typing import Optional, Sequence
 
 import pytest
-
 from intergrax.llm.messages import ChatMessage
 from intergrax.llm_adapters._shared.adapter_response_builders import build_adapter_response
+from intergrax.llm_adapters.base.base_llm_adapter import BaseLLMAdapter
 from intergrax.llm_adapters.contracts.adapter_response import LLMAdapterResponse
 from intergrax.llm_adapters.contracts.llm_adapter import LLMAdapter
-from intergrax.llm_adapters.base.base_llm_adapter import BaseLLMAdapter
 from intergrax.llm_adapters.contracts.llm_provider import LLMProvider
 from intergrax.llm_adapters.llm_provider_registry import (
     LLMAdapterDependencyError,
-    LLMAdapterRegistrationError,
     LLMAdapterRegistry,
 )
 from intergrax.llm_adapters.providers.registrations._lazy_factory import (
@@ -28,7 +26,6 @@ from intergrax.llm_adapters.registry.registration_contract import (
     LLMAdapterRegistrationSpec,
     OptionalDependencyRequirement,
 )
-
 
 pytestmark = pytest.mark.unit
 
@@ -116,9 +113,9 @@ class _FakeEnterpriseGatewayAdapter(BaseLLMAdapter):
         self,
         messages: Sequence[ChatMessage],
         *,
-        temperature: Optional[float] = None,
-        max_tokens: Optional[int] = None,
-        run_id: Optional[str] = None,
+        temperature: float | None = None,
+        max_tokens: int | None = None,
+        run_id: str | None = None,
     ) -> LLMAdapterResponse:
         return build_adapter_response(content="gateway-ok")
 
@@ -138,7 +135,9 @@ def _restore_registry_state():
 
 
 def _clear_sdk_modules() -> dict[str, object]:
-    removed: dict[str, object] = {}
+    from tests.unit.llm_adapters.registry_state_test_support import evict_provider_adapter_modules
+
+    removed: dict[str, object] = evict_provider_adapter_modules()
     for name in list(sys.modules):
         if name.split(".", 1)[0] in {root.split(".", 1)[0] for root in _SDK_ROOTS}:
             removed[name] = sys.modules.pop(name)
@@ -173,9 +172,7 @@ def test_bootstrap_registration_does_not_import_vendor_sdks(
         providers = LLMAdapterRegistry.registered_providers()
         assert len(providers) == len(LLMProvider)
         for root in _SDK_ROOTS:
-            assert not any(
-                name == root or name.startswith(f"{root}.") for name in sys.modules
-            )
+            assert not any(name == root or name.startswith(f"{root}.") for name in sys.modules)
     finally:
         sys.meta_path.remove(blocker)
         sys.modules.update(removed)
@@ -239,15 +236,9 @@ def test_optional_dependency_matches_declared_roots_only() -> None:
         distribution_name="openai",
         extra_name="llm-openai",
     )
-    assert dependency.matches_missing_module(
-        ModuleNotFoundError("No module named 'openai'", name="openai")
-    )
-    assert dependency.matches_missing_module(
-        ModuleNotFoundError("No module named 'openai.types'", name="openai.types")
-    )
-    assert not dependency.matches_missing_module(
-        ModuleNotFoundError("No module named 'requests'", name="requests")
-    )
+    assert dependency.matches_missing_module(ModuleNotFoundError("No module named 'openai'", name="openai"))
+    assert dependency.matches_missing_module(ModuleNotFoundError("No module named 'openai.types'", name="openai.types"))
+    assert not dependency.matches_missing_module(ModuleNotFoundError("No module named 'requests'", name="requests"))
 
 
 def test_fake_enterprise_gateway_pluginability(_restore_registry_state) -> None:

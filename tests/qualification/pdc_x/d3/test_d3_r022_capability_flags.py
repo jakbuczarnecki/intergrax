@@ -214,12 +214,40 @@ def _methods(node: ast.ClassDef) -> dict[str, ast.FunctionDef]:
     return {n.name: n for n in node.body if isinstance(n, ast.FunctionDef)}
 
 
+def _is_self_rooted_call(node: ast.AST | None) -> bool:
+    """A call such as ``self.supports_tools()`` or ``self._delegate.supports_streaming()``."""
+    if not isinstance(node, ast.Call):
+        return False
+    target: ast.AST = node.func
+    while isinstance(target, (ast.Attribute, ast.Call)):
+        target = target.value if isinstance(target, ast.Attribute) else target.func
+    return isinstance(target, ast.Name) and target.id == "self"
+
+
 def _declares_true(fn: ast.FunctionDef) -> bool:
-    """``return True`` or a delegating call (``self._delegate...`` / ``self.supports_tools()``)."""
+    """A constant ``return True`` or a delegation to a flag of ``self`` / of a delegate held by ``self``.
+
+    ``return bool(self._x)`` or any other arbitrary call does not declare anything and is rejected.
+    """
     returns = [n for n in ast.walk(fn) if isinstance(n, ast.Return)]
     return any(
-        (isinstance(r.value, ast.Constant) and r.value.value is True) or isinstance(r.value, ast.Call) for r in returns
+        (isinstance(r.value, ast.Constant) and r.value.value is True) or _is_self_rooted_call(r.value) for r in returns
     )
+
+
+def _declares_true_source(source: str) -> bool:
+    function = ast.parse(source).body[0]
+    assert isinstance(function, ast.FunctionDef)
+    return _declares_true(function)
+
+
+def test_declares_true_accepts_constants_and_self_rooted_delegations_only() -> None:
+    assert _declares_true_source("def supports_streaming(self):\n    return True\n")
+    assert _declares_true_source("def supports_tool_streaming(self):\n    return self.supports_tools()\n")
+    assert _declares_true_source("def supports_streaming(self):\n    return self._delegate.supports_streaming()\n")
+    assert not _declares_true_source("def supports_streaming(self):\n    return bool(self._x)\n")
+    assert not _declares_true_source("def supports_streaming(self):\n    return False\n")
+    assert not _declares_true_source("def supports_streaming(self):\n    return helper()\n")
 
 
 def test_every_provider_source_class_declares_what_it_implements() -> None:
