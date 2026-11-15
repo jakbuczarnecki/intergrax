@@ -1,0 +1,607 @@
+{
+  "path": "docs/project/maintainers/qualification/DIAGNOSTIC_GAP_LEDGER.md",
+  "tables": [
+    {
+      "header": [
+        "Level",
+        "Meaning"
+      ],
+      "rows": [
+        {
+          "line": 18,
+          "Level": "DQ-0",
+          "Meaning": "No canonical diagnostic visibility"
+        },
+        {
+          "line": 19,
+          "Level": "DQ-1",
+          "Meaning": "Execution identity visible"
+        },
+        {
+          "line": 20,
+          "Level": "DQ-2",
+          "Meaning": "Timeline reconstructable"
+        },
+        {
+          "line": 21,
+          "Level": "DQ-3",
+          "Meaning": "Causal boundary localized"
+        },
+        {
+          "line": 22,
+          "Level": "DQ-4",
+          "Meaning": "Primary failure proven"
+        },
+        {
+          "line": 23,
+          "Level": "DQ-5",
+          "Meaning": "Full operator-ready diagnostic story"
+        }
+      ]
+    },
+    {
+      "header": [
+        "Field",
+        "Value"
+      ],
+      "rows": [
+        {
+          "line": 41,
+          "Field": "ID",
+          "Value": "DG-001"
+        },
+        {
+          "line": 42,
+          "Field": "Discovered by",
+          "Value": "LKW File Watcher proof / background worker qualification; LKW public Windows proof bootstrap qualification"
+        },
+        {
+          "line": 43,
+          "Field": "Failure scenario",
+          "Value": "Critical host/application/worker or public proof bootstrap fails before canonical Task/Run creation"
+        },
+        {
+          "line": 44,
+          "Field": "Observed terminal symptom",
+          "Value": "Worker container exits before TaskId/RunId; or official public .bat fails with ModuleNotFoundError: local_workspace_application before workload starts"
+        },
+        {
+          "line": 45,
+          "Field": "What Diagnostic Engine could prove",
+          "Value": "Nothing for execution scope - no TaskId/RunId. Non-execution subject path is structurally available but not emitted by these bootstrap surfaces"
+        },
+        {
+          "line": 46,
+          "Field": "Last proven canonical boundary",
+          "Value": "N/A (pre-execution)"
+        },
+        {
+          "line": 47,
+          "Field": "First failed/unknown boundary",
+          "Value": "Host/application worker composition root; public proof launcher Python bootstrap"
+        },
+        {
+          "line": 48,
+          "Field": "Root cause automatically proven",
+          "Value": "NO"
+        },
+        {
+          "line": 49,
+          "Field": "Missing canonical evidence",
+          "Value": "Startup/bootstrap failure signal on platform spine before Task/Run exists"
+        },
+        {
+          "line": 50,
+          "Field": "Missing diagnostic capability",
+          "Value": "Pre-execution host/worker/bootstrap failure representation with operator discovery"
+        },
+        {
+          "line": 51,
+          "Field": "Manual work that was required",
+          "Value": "Container startup log inspection; manual PYTHONPATH workaround before bootstrap fix"
+        },
+        {
+          "line": 52,
+          "Field": "Universal platform improvement",
+          "Value": "Represent critical host/application/worker/public-proof bootstrap failure before Task/Run/Attempt exists"
+        },
+        {
+          "line": 53,
+          "Field": "Why this is not application-specific",
+          "Value": "Any queue-enabled Tier-3 host or public proof launcher can fail before execution identity is minted"
+        },
+        {
+          "line": 54,
+          "Field": "Priority",
+          "Value": "P1"
+        },
+        {
+          "line": 55,
+          "Field": "Status",
+          "Value": "PARTIALLY ADDRESSED / ROOT CAUSE LOCALIZED"
+        },
+        {
+          "line": 56,
+          "Field": "Related implementation",
+          "Value": "HOST-DIAG-2 typed DiagnosticSubjectRef + signal_subjects on DiagnosticOrchestrationRequest; HOST-DIAG-3 HostedApplicationDiagnosticEventPublisher for bounded APPLICATION_FAILED projection when product composition supplies tenant binding; R1 audit — [DG_001_PRE_EXECUTION_STARTUP_FAILURE_VISIBILITY_AUDIT.md](DG_001_PRE_EXECUTION_STARTUP_FAILURE_VISIBILITY_AUDIT.md); DG-001B R1 architecture freeze — [DG_001B_WORKER_BOOTSTRAP_TYPED_FAILURE_PRODUCER_ARCHITECTURE.md](DG_001B_WORKER_BOOTSTRAP_TYPED_FAILURE_PRODUCER_ARCHITECTURE.md); DG-001B R5 real qualification — [DG_001B_REAL_CONTROLLED_BOOTSTRAP_FAILURE_QUALIFICATION_R5.md](DG_001B_REAL_CONTROLLED_BOOTSTRAP_FAILURE_QUALIFICATION_R5.md); DG-001B R6 final closure — [DG_001B_FINAL_CLOSURE_R6.md](DG_001B_FINAL_CLOSURE_R6.md); DG-001D R1 architecture freeze — [DG_001D_SUPERVISOR_PRE_ENGINE_FAILURE_ARCHITECTURE_AUDIT_R1.md](DG_001D_SUPERVISOR_PRE_ENGINE_FAILURE_ARCHITECTURE_AUDIT_R1.md); DG-001D R3 HOST-DIAG-3 conformance — [DG_001D_SUPERVISOR_HOST_DIAG_3_CONFORMANCE_R3.md](DG_001D_SUPERVISOR_HOST_DIAG_3_CONFORMANCE_R3.md); DG-001D R4 real qualification — [DG_001D_REAL_SUPERVISOR_PRE_ENGINE_FAILURE_QUALIFICATION_R4.md](DG_001D_REAL_SUPERVISOR_PRE_ENGINE_FAILURE_QUALIFICATION_R4.md); DG-001D final closure — [DG_001D_FINAL_CLOSURE.md](DG_001D_FINAL_CLOSURE.md); remaining surfaces prioritization — [DG_001_REMAINING_PRE_EXECUTION_SURFACES_PRIORITIZATION.md](DG_001_REMAINING_PRE_EXECUTION_SURFACES_PRIORITIZATION.md)"
+        },
+        {
+          "line": 57,
+          "Field": "Qualification result after fix",
+          "Value": "Partial (DG-001 overall). Qualified sub-slice: DG-001B worker bootstrap visibility = CLOSED / QUALIFIED (R6). Canonical authority: R5-R1-A attempt dg001b-r5-r1-a-20260907132655 @ aafeff9569b1270936da0fbc384d783e14fb3a72. Qualified sub-slice: DG-001D supervisor pre-engine visibility = CLOSED / QUALIFIED (final closure). Canonical authority: R4 attempt dg001d-r4-20260907145456 @ a4b04eeeb5956408e847864773337cd396f50f68. R1 PASS; R2 PASS @ 4dff9d136085fe46fbffc342d1bfc690ce7a8d85; R3 PASS @ 70c342d4ccd0d65299bf433fbf7b74818e9f1b45; R4 PASS — real supervisor subprocess, proof-owned failing HostedApplicationEngineFactory, Elasticsearch observability, Mongo durable persistence, separate-process DiagnosticReadService, recurrence 1 Problem / 2 occurrences. Qualified sub-slice: DG-001A hosted default wiring coverage = CLOSED / QUALIFIED. Canonical authority: [DG_001A_HOSTED_DEFAULT_HOST_DIAG_3_QUALIFICATION.md](DG_001A_HOSTED_DEFAULT_HOST_DIAG_3_QUALIFICATION.md) @ qualification session on development. Platform default run_hosted_application is observability-only by design; canonical product event_publisher_factory + build_hosted_application_diagnostic_event_publisher qualifies Supervisor → HOST-DIAG-3 → Diagnostics without bypass. Qualified sub-slice: DG-001C public launcher/bootstrap visibility = CLOSED / QUALIFIED (limit identified). Canonical authority: [DG_001C_PUBLIC_LAUNCHER_BOOTSTRAP_QUALIFICATION.md](DG_001C_PUBLIC_LAUNCHER_BOOTSTRAP_QUALIFICATION.md) @ qualification session on development. Public transport wrappers delegate via canonical uv run --project … python; PRE-PYTHON / PYTHON-BOOTSTRAP failures do not reach Central Diagnostics by design (no identity/tenant/publisher); HOST-DIAG-3 boundary begins at product/host composition. Remaining DG-001 surfaces (ordered): 1 B0–B5-only failures before diagnostic prerequisites. LKW background worker is HOST-DIAG-3 wired; generic default foreground runner remains observability-only unless product overrides factory."
+        }
+      ]
+    },
+    {
+      "header": [
+        "Field",
+        "Value"
+      ],
+      "rows": [
+        {
+          "line": 65,
+          "Field": "ID",
+          "Value": "DG-002"
+        },
+        {
+          "line": 66,
+          "Field": "Discovered by",
+          "Value": "LKW File Watcher proof / operator diagnostic qualification"
+        },
+        {
+          "line": 67,
+          "Field": "Failure scenario",
+          "Value": "Operator has transport task reference, problem signal, or EventId but no canonical TaskId/RunId"
+        },
+        {
+          "line": 68,
+          "Field": "Observed terminal symptom",
+          "Value": "DIAG-7 request requires explicit TaskId + RunId"
+        },
+        {
+          "line": 69,
+          "Field": "What Diagnostic Engine could prove",
+          "Value": "Execution scope from ProblemId, transport reference, or EventId when canonical persistence is available; not from unstructured correlation alone"
+        },
+        {
+          "line": 70,
+          "Field": "Last proven canonical boundary",
+          "Value": "ProblemId, transport reference, or EventId (when present)"
+        },
+        {
+          "line": 71,
+          "Field": "First failed/unknown boundary",
+          "Value": "~~Enterprise-scale transport causal-evidence lookup (unbounded public persistence read)~~ removed — transport bounded read qualified R3"
+        },
+        {
+          "line": 72,
+          "Field": "Root cause automatically proven",
+          "Value": "NO"
+        },
+        {
+          "line": 73,
+          "Field": "Missing canonical evidence",
+          "Value": "~~Bounded transport causal-evidence lookup contract~~ addressed — page_for_transport_task + bounded provider scan"
+        },
+        {
+          "line": 74,
+          "Field": "Missing diagnostic capability",
+          "Value": "~~Enterprise-qualified transport scope discovery under high fan-out evidence cardinality~~ addressed for transport reference path"
+        },
+        {
+          "line": 75,
+          "Field": "Manual work that was required",
+          "Value": "Manual ID lookup across logs/stores when only unstructured correlation available"
+        },
+        {
+          "line": 76,
+          "Field": "Universal platform improvement",
+          "Value": "Canonical discovery from supported core references: ProblemId, transport task reference (provider + transport_task_id), EventId"
+        },
+        {
+          "line": 77,
+          "Field": "Why this is not application-specific",
+          "Value": "Any async or multi-host workload may surface transport/problem/event refs without explicit execution scope"
+        },
+        {
+          "line": 78,
+          "Field": "Priority",
+          "Value": "P1"
+        },
+        {
+          "line": 79,
+          "Field": "Status",
+          "Value": "CLOSED / QUALIFIED"
+        },
+        {
+          "line": 80,
+          "Field": "Related implementation",
+          "Value": "f2198be56 — ProblemId scope discovery (Slice 1); causal_transport_scope — transport reference scope discovery (Slice 2); runtime_event_scope — EventId exact RuntimeEvent scope discovery (Slice 3); reassessment R1 — [DG_002_SCOPE_DISCOVERY_REASSESSMENT.md](DG_002_SCOPE_DISCOVERY_REASSESSMENT.md); bounded-read audit R1 — [DG_002_TRANSPORT_BOUNDED_READ_HARDENING_AUDIT.md](DG_002_TRANSPORT_BOUNDED_READ_HARDENING_AUDIT.md); transport bounded read R3 — [DG_002_TRANSPORT_BOUNDED_READ_R3_QUALIFICATION.md](DG_002_TRANSPORT_BOUNDED_READ_R3_QUALIFICATION.md); final closure R4 — [DG_002_FINAL_CLOSURE.md](DG_002_FINAL_CLOSURE.md)"
+        },
+        {
+          "line": 81,
+          "Field": "Qualification result after fix",
+          "Value": "CLOSED / QUALIFIED. Core Diagnostic Scope Discovery is enterprise-qualified for ProblemId, transport task reference, and EventId. Three-provider pluginability qualified; tenant isolation hard; identity minting none; transport bounded read hard max 1000. Supported core references: ProblemId, transport task reference (provider + transport_task_id), EventId. Deferred extension: correlation-based discovery. Deferred / not core: ExecutionId discovery. DG-004 CLOSED / QUALIFIED. DG-005 UNCHANGED."
+        }
+      ]
+    },
+    {
+      "header": [
+        "Field",
+        "Value"
+      ],
+      "rows": [
+        {
+          "line": 89,
+          "Field": "ID",
+          "Value": "DG-003"
+        },
+        {
+          "line": 90,
+          "Field": "Discovered by",
+          "Value": "LKW diagnostic qualification protocol"
+        },
+        {
+          "line": 91,
+          "Field": "Failure scenario",
+          "Value": "DiagnosticOrchestrator runs ExecutionReconstruction and LifecycleAnalysis internally but bounded public result lacks operator-friendly timeline"
+        },
+        {
+          "line": 92,
+          "Field": "Observed terminal symptom",
+          "Value": "Operator must interpret internal reconstruction artifacts manually"
+        },
+        {
+          "line": 93,
+          "Field": "What Diagnostic Engine could prove",
+          "Value": "Internal reconstruction when scope known"
+        },
+        {
+          "line": 94,
+          "Field": "Last proven canonical boundary",
+          "Value": "Varies by case"
+        },
+        {
+          "line": 95,
+          "Field": "First failed/unknown boundary",
+          "Value": "Safe public operator projection"
+        },
+        {
+          "line": 96,
+          "Field": "Root cause automatically proven",
+          "Value": "NO"
+        },
+        {
+          "line": 97,
+          "Field": "Missing canonical evidence",
+          "Value": "Typed safe operator projection (no raw sensitive payloads)"
+        },
+        {
+          "line": 98,
+          "Field": "Missing diagnostic capability",
+          "Value": "Last-good / first-failed / evidence story in bounded public API"
+        },
+        {
+          "line": 99,
+          "Field": "Manual work that was required",
+          "Value": "Manual timeline assembly from partial engine output"
+        },
+        {
+          "line": 100,
+          "Field": "Universal platform improvement",
+          "Value": "Safe typed operator diagnostic projection on orchestrator result"
+        },
+        {
+          "line": 101,
+          "Field": "Why this is not application-specific",
+          "Value": "All hosted applications need bounded operator-readable failure stories"
+        },
+        {
+          "line": 102,
+          "Field": "Priority",
+          "Value": "P2"
+        },
+        {
+          "line": 103,
+          "Field": "Status",
+          "Value": "OPEN / architecture review"
+        },
+        {
+          "line": 104,
+          "Field": "Related implementation",
+          "Value": "-"
+        },
+        {
+          "line": 105,
+          "Field": "Qualification result after fix",
+          "Value": "Pending"
+        }
+      ]
+    },
+    {
+      "header": [
+        "Field",
+        "Value"
+      ],
+      "rows": [
+        {
+          "line": 113,
+          "Field": "ID",
+          "Value": "DG-004"
+        },
+        {
+          "line": 114,
+          "Field": "Discovered by",
+          "Value": "LKW File Watcher proof (pre- and post DG-A fix)"
+        },
+        {
+          "line": 115,
+          "Field": "Failure scenario",
+          "Value": "Queue-backed File Watcher → MessageBus → background execution path must be diagnosable as one async continuity story"
+        },
+        {
+          "line": 116,
+          "Field": "Observed terminal symptom (pre DG-A)",
+          "Value": "No fresh background execution; worker assembly blocked qualification"
+        },
+        {
+          "line": 117,
+          "Field": "Observed terminal symptom (post DG-A)",
+          "Value": "Fresh background execution exists; RuntimeEvents exist; DiagnosticOrchestrator reaches DQ-2 but has_transport_evidence=false"
+        },
+        {
+          "line": 118,
+          "Field": "What Diagnostic Engine could prove (post-fix)",
+          "Value": "Execution timeline reconstructable; transport causal continuity absent from reconstruction/result"
+        },
+        {
+          "line": 119,
+          "Field": "Last proven canonical boundary",
+          "Value": "Background execution admission + runtime event history (post DG-A)"
+        },
+        {
+          "line": 120,
+          "Field": "First failed/unknown boundary",
+          "Value": "Transport → execution causal continuity in diagnostic reconstruction (symptom: empty ExecutionReconstruction.causal_evidence; upstream producer/persistence cause not yet proven — see R1 audit)"
+        },
+        {
+          "line": 121,
+          "Field": "Root cause automatically proven",
+          "Value": "NO"
+        },
+        {
+          "line": 122,
+          "Field": "Missing canonical evidence",
+          "Value": "Transport causal evidence visible to ExecutionReconstructor / orchestrator result for fresh watcher execution"
+        },
+        {
+          "line": 123,
+          "Field": "Missing diagnostic capability",
+          "Value": "Async continuity proof across MessageBus and background execution in central diagnosis"
+        },
+        {
+          "line": 124,
+          "Field": "Manual work that was required",
+          "Value": "Manual correlation across watcher logs, bus, and worker execution"
+        },
+        {
+          "line": 125,
+          "Field": "Universal platform improvement",
+          "Value": "Prove async causal continuity across MessageBus and background execution"
+        },
+        {
+          "line": 126,
+          "Field": "Why this is not application-specific",
+          "Value": "Any queue-backed async host path shares this continuity requirement"
+        },
+        {
+          "line": 127,
+          "Field": "Priority",
+          "Value": "P1"
+        },
+        {
+          "line": 128,
+          "Field": "Status",
+          "Value": "CLOSED / QUALIFIED"
+        },
+        {
+          "line": 129,
+          "Field": "Related implementation",
+          "Value": "DG-A fix 24506c3c14e30984d78b7b22c5cd4c42e711d125; APP-DIAG baseline program (see OBSERVABILITY plan § Phase APP-DIAG); R1 root-cause audit — [DG_004_ASYNC_CAUSAL_CONTINUITY_ROOT_CAUSE_AUDIT.md](DG_004_ASYNC_CAUSAL_CONTINUITY_ROOT_CAUSE_AUDIT.md); R2 real qualification — [DG_004_REAL_ASYNC_CAUSAL_CONTINUITY_R2_QUALIFICATION.md](DG_004_REAL_ASYNC_CAUSAL_CONTINUITY_R2_QUALIFICATION.md); R3 final closure — [DG_004_FINAL_CLOSURE.md](DG_004_FINAL_CLOSURE.md)"
+        },
+        {
+          "line": 130,
+          "Field": "Qualification result after fix",
+          "Value": "CLOSED / QUALIFIED. Canonical async transport causal continuity is qualified end-to-end for the platform background-admission mechanism. Real LKW Kafka E0–E6 qualification proved: transport → execution identity → required causal evidence → durable cross-process persistence → execution read → ExecutionReconstructor → DiagnosticOrchestrator. Exact File Watcher replay is not a core blocker because the File Watcher path conforms to the same canonical admission/evidence mechanism. See R3 closure doc."
+        }
+      ]
+    },
+    {
+      "header": [
+        "Field",
+        "Value"
+      ],
+      "rows": [
+        {
+          "line": 138,
+          "Field": "ID",
+          "Value": "DG-005"
+        },
+        {
+          "line": 139,
+          "Field": "Discovered by",
+          "Value": "LKW File Watcher proof observation"
+        },
+        {
+          "line": 140,
+          "Field": "Failure scenario",
+          "Value": "HTTP host and worker appeared to use different runtime event physical topology"
+        },
+        {
+          "line": 141,
+          "Field": "Observed terminal symptom",
+          "Value": "Diagnostic reconstruction may not see unified event history"
+        },
+        {
+          "line": 142,
+          "Field": "What Diagnostic Engine could prove (post DG-A fresh worker run)",
+          "Value": "runtime_history_completeness=complete, has_runtime_events=true for fresh background execution"
+        },
+        {
+          "line": 143,
+          "Field": "Last proven canonical boundary",
+          "Value": "Fresh worker execution runtime history complete for diagnosed scope"
+        },
+        {
+          "line": 144,
+          "Field": "First failed/unknown boundary",
+          "Value": "Cross-topology event visibility for split HTTP-host/worker diagnostics"
+        },
+        {
+          "line": 145,
+          "Field": "Root cause automatically proven",
+          "Value": "NO"
+        },
+        {
+          "line": 146,
+          "Field": "Missing canonical evidence",
+          "Value": "Proof that split topology prevents diagnosis across host boundaries"
+        },
+        {
+          "line": 147,
+          "Field": "Missing diagnostic capability",
+          "Value": "Cross-topology runtime history completeness qualification"
+        },
+        {
+          "line": 148,
+          "Field": "Manual work that was required",
+          "Value": "Manual store topology comparison"
+        },
+        {
+          "line": 149,
+          "Field": "Universal platform improvement",
+          "Value": "Ensure diagnostic reconstruction sees complete runtime history across host/worker topologies"
+        },
+        {
+          "line": 150,
+          "Field": "Why this is not application-specific",
+          "Value": "Split host/worker topologies are common across Tier-3 applications"
+        },
+        {
+          "line": 151,
+          "Field": "Priority",
+          "Value": "P2"
+        },
+        {
+          "line": 152,
+          "Field": "Status",
+          "Value": "QUALIFICATION CANDIDATE"
+        },
+        {
+          "line": 153,
+          "Field": "Related implementation",
+          "Value": "-"
+        },
+        {
+          "line": 154,
+          "Field": "Qualification result after fix",
+          "Value": "Suspected topology mismatch disproven as blocker for fresh worker execution diagnosis. Remains a qualification candidate for HTTP-host/worker cross-process cases only."
+        }
+      ]
+    },
+    {
+      "header": [
+        "Field",
+        "Value"
+      ],
+      "rows": [
+        {
+          "line": 162,
+          "Field": "ID",
+          "Value": "DG-A (application/platform composition defect, not Diagnostic Engine feature gap)"
+        },
+        {
+          "line": 163,
+          "Field": "Discovered by",
+          "Value": "LKW File Watcher proof"
+        },
+        {
+          "line": 164,
+          "Field": "Failure scenario",
+          "Value": "background_worker_factory.py bypassed resolve_host_queue_execution_dependencies"
+        },
+        {
+          "line": 165,
+          "Field": "Observed terminal symptom",
+          "Value": "TypeError: create_kafka_worker() missing 1 required keyword-only argument: 'causal_evidence_persistence'"
+        },
+        {
+          "line": 166,
+          "Field": "What Diagnostic Engine could prove",
+          "Value": "N/A - pre-execution composition failure (see DG-001)"
+        },
+        {
+          "line": 167,
+          "Field": "Last proven canonical boundary",
+          "Value": "Worker composition root"
+        },
+        {
+          "line": 168,
+          "Field": "First failed/unknown boundary",
+          "Value": "create_kafka_worker assembly"
+        },
+        {
+          "line": 169,
+          "Field": "Root cause automatically proven",
+          "Value": "YES (static/type surface)"
+        },
+        {
+          "line": 170,
+          "Field": "Missing canonical evidence",
+          "Value": "N/A"
+        },
+        {
+          "line": 171,
+          "Field": "Missing diagnostic capability",
+          "Value": "N/A"
+        },
+        {
+          "line": 172,
+          "Field": "Manual work that was required",
+          "Value": "Container error log inspection"
+        },
+        {
+          "line": 173,
+          "Field": "Universal platform improvement",
+          "Value": "All queue-enabled hosts must consume HostQueueExecutionDependencies"
+        },
+        {
+          "line": 174,
+          "Field": "Why this is not application-specific",
+          "Value": "Canonical queue-worker contract applies to all Tier-3 queue hosts"
+        },
+        {
+          "line": 175,
+          "Field": "Priority",
+          "Value": "P0"
+        },
+        {
+          "line": 176,
+          "Field": "Status",
+          "Value": "REVALIDATED"
+        },
+        {
+          "line": 177,
+          "Field": "Related implementation",
+          "Value": "24506c3c14e30984d78b7b22c5cd4c42e711d125 - fix(lkw): use canonical queue execution dependencies"
+        },
+        {
+          "line": 178,
+          "Field": "Qualification result after fix",
+          "Value": "Old TypeError gone. Worker starts and remains alive. Kafka task consumed. Fresh runtime Task/Run created. RuntimeEvents exist. DiagnosticOrchestrator reaches DQ-2 on fresh execution."
+        }
+      ]
+    }
+  ],
+  "lines": 197
+}

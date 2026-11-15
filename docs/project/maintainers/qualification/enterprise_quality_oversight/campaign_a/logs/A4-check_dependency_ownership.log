@@ -1,0 +1,3 @@
+dependency governance: FAIL
+  CORE_OWNERSHIP_VIOLATION: jsonschema
+  CORE_OWNERSHIP_VIOLATION: tzdata

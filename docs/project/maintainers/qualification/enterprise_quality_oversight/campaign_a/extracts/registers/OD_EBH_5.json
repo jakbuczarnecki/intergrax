@@ -1,0 +1,93 @@
+{
+  "path": "docs/project/maintainers/qualification/EBH_5_OPERATOR_DECISION_REGISTER.md",
+  "tables": [
+    {
+      "header": [
+        "ID",
+        "Decision",
+        "Status",
+        "Blocks"
+      ],
+      "rows": [
+        {
+          "line": 5,
+          "ID": "OD-EBH5-01",
+          "Decision": "Authorize EBH-5 implementation wave (production delta > 0)",
+          "Status": "WAVE COMPLETE @ publication commit",
+          "Blocks": "Formal roadmap READY FOR AUDIT"
+        },
+        {
+          "line": 6,
+          "ID": "OD-EBH5-02",
+          "Decision": "Approve SAC-EBH-5-v1 freeze",
+          "Status": "APPROVED 2026-10-28 — OPERATOR APPROVED — EBH-5 SAC FREEZE",
+          "Blocks": "— (SAC FROZEN)"
+        },
+        {
+          "line": 7,
+          "ID": "OD-EBH5-03",
+          "Decision": "Allow L4 physical/live vendor tests",
+          "Status": "OPEN (default: deferred)",
+          "Blocks": "Optional QUALIFIED rows needing live brokers"
+        },
+        {
+          "line": 8,
+          "ID": "OD-EBH5-04",
+          "Decision": "Runtime SQLite extensibility vs FIXED ratification",
+          "Status": "APPROVED 2026-10-28 (see sub-rows)",
+          "Blocks": "—"
+        },
+        {
+          "line": 9,
+          "ID": "OD-EBH5-04-A",
+          "Decision": "Runtime SQLite persistence bundle (scoped FIXED)",
+          "Status": "APPROVED 2026-10-28 — OPERATOR APPROVED — OD-EBH5-04 RUNTIME SQLITE FIXED SUBSTRATE (SCOPED)",
+          "Blocks": "Scope: runtime-sqlite-persistence-bundle; single-node/profile constraints preserved"
+        },
+        {
+          "line": 10,
+          "ID": "OD-EBH5-04-B",
+          "Decision": "Lab adaptive SQLite (lab-only FIXED)",
+          "Status": "APPROVED 2026-10-28 — OPERATOR APPROVED — OD-EBH5-04 LAB ADAPTIVE SQLITE FIXED SUBSTRATE (LAB ONLY)",
+          "Blocks": "Scope: lab-adaptive-sqlite; H_REFERENCE / not production-effective default"
+        },
+        {
+          "line": 11,
+          "ID": "OD-EBH5-04-C",
+          "Decision": "Single-node profile v1 SQLite triad",
+          "Status": "RATIFIED — SCOPED PROD-Q (unchanged; prior qualification)",
+          "Blocks": "platform.single_node_profile_v1.sqlite_triad"
+        },
+        {
+          "line": 12,
+          "ID": "OD-EBH5-05",
+          "Decision": "Accept DIST-SCALE historical vendor proofs @ scoped SHA",
+          "Status": "RECOMMENDED",
+          "Blocks": "message_bus L3 deferral"
+        },
+        {
+          "line": 13,
+          "ID": "OD-EBH5-06",
+          "Decision": "PROD-Q F02-14 isinstance debt disposition",
+          "Status": "TRACKED DEBT",
+          "Blocks": "FRZ-RPL-04 global only"
+        },
+        {
+          "line": 14,
+          "ID": "OD-EBH5-07",
+          "Decision": "Independent auditor + Protocol 03",
+          "Status": "CLOSED — INDEPENDENT AUDIT PASS (SCOPED) @ 2026-10-28 — auditor ChatGPT; baseline 33ecf19cc020b112d9e586c87b49e819202f5d6d — [EBH_5_PROTOCOL_03_INDEPENDENT_AUDIT_PASS_RECORD.md](EBH_5_PROTOCOL_03_INDEPENDENT_AUDIT_PASS_RECORD.md)",
+          "Blocks": "—"
+        },
+        {
+          "line": 15,
+          "ID": "OD-EBH5-08",
+          "Decision": "Roadmap §5 EBH-5 closure publication",
+          "Status": "APPROVED 2026-10-28 — FORMAL PARENT CLOSURE PUBLICATION (SCOPED) — [EBH_5_OD_EBH5_08_CLOSURE_SIGNATURE_RECORD.md](EBH_5_OD_EBH5_08_CLOSURE_SIGNATURE_RECORD.md)",
+          "Blocks": "Parent CLOSED — INDEPENDENTLY ACCEPTED (SCOPED)"
+        }
+      ]
+    }
+  ],
+  "lines": 35
+}

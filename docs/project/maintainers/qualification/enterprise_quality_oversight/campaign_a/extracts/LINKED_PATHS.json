@@ -1,0 +1,1168 @@
+[
+  {
+    "path": "docs/project/architecture/INTERGRAX_ARCHITECTURE_PRINCIPLES.md",
+    "from": [
+      "S01"
+    ],
+    "exists": true
+  },
+  {
+    "path": "docs/project/maintainers/architecture/ADR_ENTERPRISE_RUNTIME_INTELLIGENCE_ARCHITECTURE.md",
+    "from": [
+      "S01"
+    ],
+    "exists": true
+  },
+  {
+    "path": "docs/project/maintainers/architecture/ADR_HARNESS_W5_OBSERVABILITY_TRANSPORT_CONTRACT.md",
+    "from": [
+      "S01"
+    ],
+    "exists": true
+  },
+  {
+    "path": "docs/project/maintainers/architecture/INT_CONFIG_REAL_X_EXISTING_CAPABILITY_CONFIGURATION_REALIZATION.md",
+    "from": [
+      "S01",
+      "S02"
+    ],
+    "exists": true
+  },
+  {
+    "path": "docs/project/maintainers/plans/PLATFORM_ENTERPRISE_COMPLETION_ROADMAP.md",
+    "from": [
+      "S01",
+      "S01-code",
+      "S02"
+    ],
+    "exists": true
+  },
+  {
+    "path": "docs/project/maintainers/plans/PLATFORM_PLUGIN_ENTERPRISE_ROADMAP.md",
+    "from": [
+      "S01"
+    ],
+    "exists": true
+  },
+  {
+    "path": "docs/project/maintainers/plans/satellites/ASF_SEF_MASTER_ARCHITECTURE_AND_IMPLEMENTATION_PLAN.md",
+    "from": [
+      "S01"
+    ],
+    "exists": true
+  },
+  {
+    "path": "docs/project/maintainers/qualification/ARCH_FREEZE_B2_BND03_EVIDENCE_RECONCILIATION.md",
+    "from": [
+      "S02"
+    ],
+    "exists": true
+  },
+  {
+    "path": "docs/project/maintainers/qualification/ARCH_FREEZE_EXECUTION_WAVE1_INDEPENDENT_AUDIT_HANDOFF.md",
+    "from": [
+      "S01"
+    ],
+    "exists": true
+  },
+  {
+    "path": "docs/project/maintainers/qualification/ARCH_FREEZE_PRE_ADMISSION_READINESS_REPORT.md",
+    "from": [
+      "S01"
+    ],
+    "exists": true
+  },
+  {
+    "path": "docs/project/maintainers/qualification/AW_7C_A2_SCOPED_ADAPTIVE_INTEGRATION_QUALIFICATION.md",
+    "from": [
+      "S01"
+    ],
+    "exists": true
+  },
+  {
+    "path": "docs/project/maintainers/qualification/CERT_CAMPAIGN_DELEGATED_DECISIONS_2026-11-07.md",
+    "from": [
+      "S01",
+      "S01-code"
+    ],
+    "exists": true
+  },
+  {
+    "path": "docs/project/maintainers/qualification/COMPAT_X_CONTRACT_SCHEMA_EVOLUTION_CERTIFICATION.md",
+    "from": [
+      "S01",
+      "S02"
+    ],
+    "exists": true
+  },
+  {
+    "path": "docs/project/maintainers/qualification/CONFIG_X_CONFIGURATION_PROVIDER_VENDOR_ACTIVATION_CERTIFICATION.md",
+    "from": [
+      "S01",
+      "S02"
+    ],
+    "exists": true
+  },
+  {
+    "path": "docs/project/maintainers/qualification/CTRL_X_ENTERPRISE_CONTROL_PLANE_RECERTIFICATION.md",
+    "from": [
+      "S01",
+      "S02"
+    ],
+    "exists": true
+  },
+  {
+    "path": "docs/project/maintainers/qualification/DIST_SCALE_X_P3_FORMAL_CLOSURE_RECONCILIATION.md",
+    "from": [
+      "S01"
+    ],
+    "exists": true
+  },
+  {
+    "path": "docs/project/maintainers/qualification/DIST_SCALE_X_P4_FORMAL_CLOSURE_RECONCILIATION.md",
+    "from": [
+      "S01"
+    ],
+    "exists": true
+  },
+  {
+    "path": "docs/project/maintainers/qualification/DIST_SCALE_X_PARENT_FORMAL_CLOSURE_RECONCILIATION.md",
+    "from": [
+      "S01"
+    ],
+    "exists": true
+  },
+  {
+    "path": "docs/project/maintainers/qualification/DIST_SCALE_X_WL7_4H_DEFERRED_NON_BLOCKING_RECORD.md",
+    "from": [
+      "S01"
+    ],
+    "exists": true
+  },
+  {
+    "path": "docs/project/maintainers/qualification/DUP_X_OD_DUPX_08_CLOSURE_SIGNATURE_RECORD.md",
+    "from": [
+      "S01"
+    ],
+    "exists": true
+  },
+  {
+    "path": "docs/project/maintainers/qualification/DUP_X_PROTOCOL_03_INDEPENDENT_AUDIT_PASS_RECORD.md",
+    "from": [
+      "S01"
+    ],
+    "exists": true
+  },
+  {
+    "path": "docs/project/maintainers/qualification/EBH_3_DEPENDENCY_OWNERSHIP_CERTIFICATION.md",
+    "from": [
+      "S01",
+      "S02"
+    ],
+    "exists": true
+  },
+  {
+    "path": "docs/project/maintainers/qualification/EBH_4_COMMUNICATION_COMPOSITION_BYPASS_CERTIFICATION.md",
+    "from": [
+      "S01"
+    ],
+    "exists": true
+  },
+  {
+    "path": "docs/project/maintainers/qualification/EBH_5_IMPLEMENTATION_WAVE_RECONCILIATION.md",
+    "from": [
+      "S01"
+    ],
+    "exists": true
+  },
+  {
+    "path": "docs/project/maintainers/qualification/EBH_5_OD_EBH5_08_CLOSURE_SIGNATURE_RECORD.md",
+    "from": [
+      "S01"
+    ],
+    "exists": true
+  },
+  {
+    "path": "docs/project/maintainers/qualification/EBH_5_PROTOCOL_03_INDEPENDENT_AUDIT_PASS_RECORD.md",
+    "from": [
+      "S01"
+    ],
+    "exists": true
+  },
+  {
+    "path": "docs/project/maintainers/qualification/EBH_5_STAGE_CERTIFICATION_READINESS.md",
+    "from": [
+      "S01"
+    ],
+    "exists": true
+  },
+  {
+    "path": "docs/project/maintainers/qualification/EBH_6_OD_EBH6_08_CLOSURE_SIGNATURE_RECORD.md",
+    "from": [
+      "S01"
+    ],
+    "exists": true
+  },
+  {
+    "path": "docs/project/maintainers/qualification/EBH_6_PROTOCOL_03_INDEPENDENT_AUDIT_PASS_RECORD.md",
+    "from": [
+      "S01"
+    ],
+    "exists": true
+  },
+  {
+    "path": "docs/project/maintainers/qualification/EBH_7_GAP_REGISTER.md",
+    "from": [
+      "S01"
+    ],
+    "exists": true
+  },
+  {
+    "path": "docs/project/maintainers/qualification/EBH_7_OD_EBH7_08_CLOSURE_SIGNATURE_RECORD.md",
+    "from": [
+      "S01"
+    ],
+    "exists": true
+  },
+  {
+    "path": "docs/project/maintainers/qualification/EBH_7_PROTOCOL_03_INDEPENDENT_AUDIT_PASS_RECORD.md",
+    "from": [
+      "S01"
+    ],
+    "exists": true
+  },
+  {
+    "path": "docs/project/maintainers/qualification/ENTERPRISE_EXECUTION_SCALE_RESILIENCE_W4_PARENT_RECERTIFICATION.md",
+    "from": [
+      "S01"
+    ],
+    "exists": true
+  },
+  {
+    "path": "docs/project/maintainers/qualification/ENTERPRISE_EXECUTION_SCALE_RESILIENCE_W5_PARENT_RECERTIFICATION.md",
+    "from": [
+      "S01"
+    ],
+    "exists": true
+  },
+  {
+    "path": "docs/project/maintainers/qualification/ENTERPRISE_RUNTIME_INTELLIGENCE_W6_PARENT_RECERTIFICATION.md",
+    "from": [
+      "S01"
+    ],
+    "exists": true
+  },
+  {
+    "path": "docs/project/maintainers/qualification/EVOL_ENT_INTERNAL_CERTIFICATION_RECORD_2026_11_04.md",
+    "from": [
+      "S01",
+      "S02"
+    ],
+    "exists": true
+  },
+  {
+    "path": "docs/project/maintainers/qualification/GOV_X1_GOVERNANCE_AUTHORITY_BOUNDARY_RECERTIFICATION.md",
+    "from": [
+      "S01"
+    ],
+    "exists": true
+  },
+  {
+    "path": "docs/project/maintainers/qualification/GOV_X2_GOVERNANCE_EXECUTION_E2E_CERTIFICATION.md",
+    "from": [
+      "S01",
+      "S02"
+    ],
+    "exists": true
+  },
+  {
+    "path": "docs/project/maintainers/qualification/HARNESS_FINAL_CURRENT_HEAD_CERTIFICATION.md",
+    "from": [
+      "S01",
+      "S02"
+    ],
+    "exists": true
+  },
+  {
+    "path": "docs/project/maintainers/qualification/HARNESS_RESIDUAL_CE_01_CURRENT_HEAD_RECERTIFICATION.md",
+    "from": [
+      "S01"
+    ],
+    "exists": true
+  },
+  {
+    "path": "docs/project/maintainers/qualification/HARNESS_RESIDUAL_SCHED_01_CURRENT_HEAD_RECERTIFICATION.md",
+    "from": [
+      "S01"
+    ],
+    "exists": true
+  },
+  {
+    "path": "docs/project/maintainers/qualification/HARNESS_TOP_TIER_GAP_AUDIT.md",
+    "from": [
+      "S01"
+    ],
+    "exists": true
+  },
+  {
+    "path": "docs/project/maintainers/qualification/HARNESS_W7_HOST_01_CURRENT_HEAD_RECERTIFICATION.md",
+    "from": [
+      "S01"
+    ],
+    "exists": true
+  },
+  {
+    "path": "docs/project/maintainers/qualification/HARNESS_W8_BG_01_CURRENT_HEAD_RECERTIFICATION.md",
+    "from": [
+      "S01"
+    ],
+    "exists": true
+  },
+  {
+    "path": "docs/project/maintainers/qualification/IIAC_POLICY_ACTIVATION_RECORD.json",
+    "from": [
+      "S01",
+      "S02"
+    ],
+    "exists": true
+  },
+  {
+    "path": "docs/project/maintainers/qualification/IIAC_REQUIREMENT_MIGRATION_MATRIX.md",
+    "from": [
+      "S02"
+    ],
+    "exists": true
+  },
+  {
+    "path": "docs/project/maintainers/qualification/INTEGRAX_INTERNAL_INDEPENDENT_AGENT_CERTIFICATION_PROTOCOL.md",
+    "from": [
+      "S01",
+      "S02"
+    ],
+    "exists": true
+  },
+  {
+    "path": "docs/project/maintainers/qualification/INTEGRAX_POST_FREEZE_EVOLUTION_GOVERNANCE.md",
+    "from": [
+      "S01"
+    ],
+    "exists": true
+  },
+  {
+    "path": "docs/project/maintainers/qualification/PLATFORM_ENTERPRISE_FREEZE_ACCEPTANCE_CHECKLIST.md",
+    "from": [
+      "S01",
+      "S01-code"
+    ],
+    "exists": true
+  },
+  {
+    "path": "docs/project/maintainers/qualification/PROD_Q_OPERATOR_SCOPE_CLOSURE_2026_11_02.md",
+    "from": [
+      "S01"
+    ],
+    "exists": true
+  },
+  {
+    "path": "docs/project/maintainers/qualification/PROD_Q_PLATFORM_PRODUCTION_QUALIFICATION.md",
+    "from": [
+      "S01"
+    ],
+    "exists": true
+  },
+  {
+    "path": "docs/project/maintainers/qualification/PROD_Q_R1_DISPATCH_Q1_PARENT_GATE_QUALIFICATION_EVIDENCE.md",
+    "from": [
+      "S01",
+      "S02"
+    ],
+    "exists": true
+  },
+  {
+    "path": "docs/project/maintainers/qualification/PROD_Q_R1_PACKAGE_P_INDEPENDENT_EVIDENCE_RECONCILIATION.md",
+    "from": [
+      "S01",
+      "S02"
+    ],
+    "exists": true
+  },
+  {
+    "path": "docs/project/maintainers/qualification/PROD_Q_R1_R7_D1_D1b_FINAL_ACCEPTANCE_EVIDENCE.md",
+    "from": [
+      "S01",
+      "S02"
+    ],
+    "exists": true
+  },
+  {
+    "path": "docs/project/maintainers/qualification/PROD_Q_R1_R7_D1_R6_FINAL_INDEPENDENT_CLOSURE_RECONCILIATION.md",
+    "from": [
+      "S01",
+      "S02"
+    ],
+    "exists": true
+  },
+  {
+    "path": "docs/project/maintainers/qualification/PROD_Q_R1_R7_D2_PRODUCTION_LIFECYCLE_COMPOSITION.md",
+    "from": [
+      "S01",
+      "S02"
+    ],
+    "exists": true
+  },
+  {
+    "path": "docs/project/maintainers/qualification/PROD_Q_R1_R7_D3_DURABLE_PROJECTION_RESTART_RECONCILIATION.md",
+    "from": [
+      "S01",
+      "S02"
+    ],
+    "exists": true
+  },
+  {
+    "path": "docs/project/maintainers/qualification/PROD_Q_R1_R7_D4_STRICT_GCA_PRODUCTION_LAUNCHER.md",
+    "from": [
+      "S01",
+      "S02"
+    ],
+    "exists": true
+  },
+  {
+    "path": "docs/project/maintainers/qualification/PROD_Q_R1_R7_PREREQUISITE_CANONICAL_ACCEPTANCE_ALIGNMENT.md",
+    "from": [
+      "S01"
+    ],
+    "exists": true
+  },
+  {
+    "path": "docs/project/maintainers/qualification/PROD_Q_R1_R7_PREREQUISITE_CONSOLIDATED_ACCEPTANCE_01.md",
+    "from": [
+      "S01"
+    ],
+    "exists": true
+  },
+  {
+    "path": "docs/project/maintainers/qualification/PROD_Q_R1_R7_Q_C_QUALIFICATION_EVIDENCE.md",
+    "from": [
+      "S01",
+      "S02"
+    ],
+    "exists": true
+  },
+  {
+    "path": "docs/project/maintainers/qualification/PROD_Q_R1_R7_Q_D03_A_CONDITIONAL_INFRASTRUCTURE_DIRECTION_OPERATOR_DECISION.md",
+    "from": [
+      "S01"
+    ],
+    "exists": true
+  },
+  {
+    "path": "docs/project/maintainers/qualification/PROD_Q_R1_R7_Q_D03_A_ELCR_IIRW_MECHANISM_CLASS_OPERATOR_RATIFICATION.md",
+    "from": [
+      "S01"
+    ],
+    "exists": true
+  },
+  {
+    "path": "docs/project/maintainers/qualification/PROD_Q_R1_R7_Q_D03_A_INFRASTRUCTURE_QUALIFICATION_PREPARATION.md",
+    "from": [
+      "S01"
+    ],
+    "exists": true
+  },
+  {
+    "path": "docs/project/maintainers/qualification/PROD_Q_R1_R7_Q_D03_A_INFRASTRUCTURE_RATIFICATION_READINESS_R1.md",
+    "from": [
+      "S01"
+    ],
+    "exists": true
+  },
+  {
+    "path": "docs/project/maintainers/qualification/PROD_Q_R1_R7_Q_D03_A_LOCAL_01_SCOPED_LOCAL_ELCR_IIRW.md",
+    "from": [
+      "S01"
+    ],
+    "exists": true
+  },
+  {
+    "path": "docs/project/maintainers/qualification/PROD_Q_R1_R7_Q_D03_A_OFFLINE_PROVIDER_IMPL_01.md",
+    "from": [
+      "S01",
+      "S02"
+    ],
+    "exists": true
+  },
+  {
+    "path": "docs/project/maintainers/qualification/PROD_Q_R1_R7_Q_D03_A_PLATFORM_POLICY_CONFIG_01.md",
+    "from": [
+      "S01"
+    ],
+    "exists": true
+  },
+  {
+    "path": "docs/project/maintainers/qualification/PROD_Q_R1_R7_Q_EXEC_E1_FINAL_ROLLUP_AUDIT.md",
+    "from": [
+      "S01"
+    ],
+    "exists": true
+  },
+  {
+    "path": "docs/project/maintainers/qualification/PROD_Q_R1_R7_Q_F02_DURABLE_FOLLOW_ON_SNAPSHOT_DECISION.md",
+    "from": [
+      "S01"
+    ],
+    "exists": true
+  },
+  {
+    "path": "docs/project/maintainers/qualification/PROD_Q_R1_R7_Q_GCA_SQLITE_DURABLE_RECOVERY_DECISION_01.md",
+    "from": [
+      "S01"
+    ],
+    "exists": true
+  },
+  {
+    "path": "docs/project/maintainers/qualification/PROD_Q_R1_R7_Q_LEGACY_CREATE_ADMISSION_COMPATIBILITY_DECISION_01.md",
+    "from": [
+      "S01"
+    ],
+    "exists": true
+  },
+  {
+    "path": "docs/project/maintainers/qualification/PROD_Q_R1_R7_Q_LEGACY_HISTORY_PROVENANCE_AUTHORITY_DECISION_02.md",
+    "from": [
+      "S01"
+    ],
+    "exists": true
+  },
+  {
+    "path": "docs/project/maintainers/qualification/PROD_Q_R1_R7_Q_LEGACY_HISTORY_TRUST_ANCHOR_GATE_QUALIFICATION_EVIDENCE.md",
+    "from": [
+      "S01"
+    ],
+    "exists": true
+  },
+  {
+    "path": "docs/project/maintainers/qualification/PROD_Q_R1_R7_Q_P1_STRICT_PRODUCTION_REACHABILITY.md",
+    "from": [
+      "S01"
+    ],
+    "exists": true
+  },
+  {
+    "path": "docs/project/maintainers/qualification/PROD_Q_R1_R7_Q_P2_C_ADR_01_CANONICAL_PACKAGE_CLOSURE_CONTRACT_AUTHORITY.md",
+    "from": [
+      "S01"
+    ],
+    "exists": true
+  },
+  {
+    "path": "docs/project/maintainers/qualification/PROD_Q_R1_R7_Q_P2_STRICT_PRODUCTION_INTEGRATED_E2E.md",
+    "from": [
+      "S01",
+      "S02"
+    ],
+    "exists": true
+  },
+  {
+    "path": "docs/project/maintainers/qualification/PROD_Q_R1_R7_Q_P3_A2_HTTP_CALLER_AUTHENTICATION_AND_TENANT_AUTHORIZATION_ADR.md",
+    "from": [
+      "S01"
+    ],
+    "exists": true
+  },
+  {
+    "path": "docs/project/maintainers/qualification/PROD_Q_R1_R7_Q_P3_FINAL_ACCEPTANCE_DECISION_PACKAGE.md",
+    "from": [
+      "S01",
+      "S02"
+    ],
+    "exists": true
+  },
+  {
+    "path": "docs/project/maintainers/qualification/PROD_Q_R1_R7_Q_P3_FINAL_ADVERSARIAL_ACCEPTANCE_MATRIX.md",
+    "from": [
+      "S01"
+    ],
+    "exists": true
+  },
+  {
+    "path": "docs/project/maintainers/qualification/PROD_Q_R1_R7_Q_QUALIFICATION_INVENTORY_AND_GATE_PLAN.md",
+    "from": [
+      "S01"
+    ],
+    "exists": true
+  },
+  {
+    "path": "docs/project/maintainers/qualification/PROD_Q_R1_R7_Q_REFLEX_EXTERNAL_WORK_ADMISSION_ADR_01.md",
+    "from": [
+      "S01"
+    ],
+    "exists": true
+  },
+  {
+    "path": "docs/project/maintainers/qualification/PROD_Q_R1_R7_Q_REFLEX_EXTERNAL_WORK_STRICT_COMPOSITION_AUTHORITY_DECISION_R2.md",
+    "from": [
+      "S01"
+    ],
+    "exists": true
+  },
+  {
+    "path": "docs/project/maintainers/qualification/PROD_Q_R1_R7_Q_SECTION_C_REMAINING_GATES_RECONCILIATION.md",
+    "from": [
+      "S01",
+      "S02"
+    ],
+    "exists": true
+  },
+  {
+    "path": "docs/project/maintainers/qualification/PROD_Q_R1_R7_Q_STABLE_CREATE_INVOCATION_IDENTITY_DECISION_01.md",
+    "from": [
+      "S01"
+    ],
+    "exists": true
+  },
+  {
+    "path": "docs/project/maintainers/qualification/PROD_Q_R1_R7_Q_TRUSTED_HISTORY_ANCHOR_MECHANISM_DECISION_03.md",
+    "from": [
+      "S01"
+    ],
+    "exists": true
+  },
+  {
+    "path": "docs/project/maintainers/qualification/QUAL_X_ENTERPRISE_QUALIFICATION_BASELINE_AND_GATE_INVENTORY.md",
+    "from": [
+      "S01"
+    ],
+    "exists": true
+  },
+  {
+    "path": "docs/project/maintainers/qualification/ROADMAP_REPLAY_X_OD_REPLAYX_08_CLOSURE_SIGNATURE_RECORD.md",
+    "from": [
+      "S01"
+    ],
+    "exists": true
+  },
+  {
+    "path": "docs/project/maintainers/qualification/ROADMAP_REPLAY_X_PROTOCOL_03_INDEPENDENT_AUDIT_PASS_RECORD.md",
+    "from": [
+      "S01"
+    ],
+    "exists": true
+  },
+  {
+    "path": "docs/project/maintainers/qualification/SKILL_X_BATCH_D_COMPLETE_QUALIFICATION_EVIDENCE.md",
+    "from": [
+      "S01",
+      "S02"
+    ],
+    "exists": true
+  },
+  {
+    "path": "docs/project/maintainers/qualification/SKILL_X_BATCH_E_INTEGRATED_QUALIFICATION_EVIDENCE.md",
+    "from": [
+      "S01",
+      "S02"
+    ],
+    "exists": true
+  },
+  {
+    "path": "docs/project/maintainers/qualification/SKILL_X_PARENT_FORMAL_CLOSURE_RECONCILIATION.md",
+    "from": [
+      "S01",
+      "S02"
+    ],
+    "exists": true
+  },
+  {
+    "path": "docs/project/maintainers/qualification/STATE_X_FINAL_CURRENT_HEAD_CERTIFICATION.md",
+    "from": [
+      "S01",
+      "S02"
+    ],
+    "exists": true
+  },
+  {
+    "path": "docs/project/maintainers/qualification/STATE_X_R3_AUXILIARY_DURABLE_STATE_CONSISTENCY_CLOSURE.md",
+    "from": [
+      "S01",
+      "S02"
+    ],
+    "exists": true
+  },
+  {
+    "path": "docs/project/maintainers/qualification/STATE_X_R4_TASK_CHECKPOINT_RESTORE_INTEGRITY_CERTIFICATION.md",
+    "from": [
+      "S02"
+    ],
+    "exists": true
+  },
+  {
+    "path": "docs/project/maintainers/qualification/STATE_X_R5_BACKUP_RESTORE_RESPONSIBILITY_CERTIFICATION.md",
+    "from": [
+      "S02"
+    ],
+    "exists": true
+  },
+  {
+    "path": "docs/project/maintainers/qualification/STATE_X_R6_RECOVERY_BRANCHING_SEMANTICS_CERTIFICATION.md",
+    "from": [
+      "S02"
+    ],
+    "exists": true
+  },
+  {
+    "path": "docs/project/maintainers/qualification/TENANT_X_CROSS_PLATFORM_TENANT_ISOLATION_CERTIFICATION.md",
+    "from": [
+      "S01",
+      "S02"
+    ],
+    "exists": true
+  },
+  {
+    "path": "docs/project/maintainers/qualification/TOOL_LIFE_X_PARENT_FORMAL_CLOSURE_RECONCILIATION.md",
+    "from": [
+      "S01"
+    ],
+    "exists": true
+  },
+  {
+    "path": "docs/project/maintainers/qualification/TRACE_X_CERT_CONFIGURED_EFFECTIVE_PROVENANCE_CERTIFICATION.md",
+    "from": [
+      "S01",
+      "S02"
+    ],
+    "exists": true
+  },
+  {
+    "path": "docs/project/maintainers/qualification/TRACE_X_P0_TRACEABILITY_OWNERSHIP_COVERAGE_BASELINE.md",
+    "from": [
+      "S01"
+    ],
+    "exists": true
+  },
+  {
+    "path": "docs/project/maintainers/qualification/TRACE_X_P1_IDENTITY_CAUSALITY_CERTIFICATION.md",
+    "from": [
+      "S01",
+      "S02"
+    ],
+    "exists": true
+  },
+  {
+    "path": "docs/project/maintainers/qualification/TRACE_X_P1_R1_STRICT_DURABLE_CHILD_LINEAGE_CERTIFICATION.md",
+    "from": [
+      "S01",
+      "S02"
+    ],
+    "exists": true
+  },
+  {
+    "path": "docs/project/maintainers/qualification/TRACE_X_P2_EXECUTION_CAUSAL_RECONSTRUCTION_CERTIFICATION.md",
+    "from": [
+      "S01",
+      "S02"
+    ],
+    "exists": true
+  },
+  {
+    "path": "docs/project/maintainers/qualification/TRACE_X_P3_R1_GOVERNED_BOUNDARY_V2_CERTIFICATION.md",
+    "from": [
+      "S01",
+      "S02"
+    ],
+    "exists": true
+  },
+  {
+    "path": "docs/project/maintainers/qualification/TRACE_X_P3_TOOL_PROVIDER_EFFECT_ATTRIBUTION_CERTIFICATION.md",
+    "from": [
+      "S01",
+      "S02"
+    ],
+    "exists": true
+  },
+  {
+    "path": "docs/project/maintainers/qualification/TRACE_X_P4_MODEL_CONTEXT_ATTRIBUTION_CERTIFICATION.md",
+    "from": [
+      "S01",
+      "S02"
+    ],
+    "exists": true
+  },
+  {
+    "path": "docs/project/maintainers/qualification/TRACE_X_P5_POLICY_PROFILE_CONFIGURATION_PROVENANCE_BASELINE.md",
+    "from": [
+      "S01",
+      "S02"
+    ],
+    "exists": true
+  },
+  {
+    "path": "docs/project/maintainers/qualification/TRACE_X_P5_R1_POLICY_PROFILE_EXECUTION_ATTRIBUTION_CERTIFICATION.md",
+    "from": [
+      "S01",
+      "S02"
+    ],
+    "exists": true
+  },
+  {
+    "path": "docs/project/maintainers/qualification/TRACE_X_P5_R2_CLOSED_WORLD_CONFIGURED_EFFECTIVE_EXECUTION_PROVENANCE.md",
+    "from": [
+      "S01"
+    ],
+    "exists": true
+  },
+  {
+    "path": "docs/project/maintainers/qualification/TRACE_X_P5_R2_CONFIGURED_EFFECTIVE_EXECUTION_PROVENANCE_ARCHITECTURE_LOCK.md",
+    "from": [
+      "S01",
+      "S02"
+    ],
+    "exists": true
+  },
+  {
+    "path": "docs/project/maintainers/qualification/TRACE_X_P5_R2_P1_TYPED_CONTRACTS_VALIDATION.md",
+    "from": [
+      "S01"
+    ],
+    "exists": true
+  },
+  {
+    "path": "docs/project/maintainers/qualification/TRACE_X_P5_R2_P2_DURABLE_CONFIGURATION_PROVENANCE.md",
+    "from": [
+      "S01"
+    ],
+    "exists": true
+  },
+  {
+    "path": "docs/project/maintainers/qualification/TRACE_X_P5_R2_P3_CONFIGURED_PROVIDER_EXECUTION_PARENT_RECONCILIATION.md",
+    "from": [
+      "S01"
+    ],
+    "exists": true
+  },
+  {
+    "path": "docs/project/maintainers/qualification/TRACE_X_P5_R2_P3_R1_R1_R1_R1_R1_CANONICAL_TOOL_EXECUTION_CONVERGENCE_LOCK.md",
+    "from": [
+      "S01"
+    ],
+    "exists": true
+  },
+  {
+    "path": "docs/project/maintainers/qualification/TRACE_X_P5_R2_P3_R1_R1_R1_R1_R1_R1_MARKETPLACE_BINDING_TARGET_INTENT_RECONCILIATION_LOCK.md",
+    "from": [
+      "S01"
+    ],
+    "exists": true
+  },
+  {
+    "path": "docs/project/maintainers/qualification/TRACE_X_P5_R2_P3_R1_R1_R1_R1_R1_R1_R1_TARGET_COMPATIBILITY_AND_INTENT_IDENTITY_FINAL_RECONCILIATION.md",
+    "from": [
+      "S01"
+    ],
+    "exists": true
+  },
+  {
+    "path": "docs/project/maintainers/qualification/TRACE_X_P5_R2_P3_R2_CONFIGURED_EXECUTION_CONVERGENCE_IMPLEMENTATION_QUALIFICATION.md",
+    "from": [
+      "S01"
+    ],
+    "exists": true
+  },
+  {
+    "path": "docs/project/maintainers/qualification/TRACE_X_P5_R2_P4_CONFIGURED_EFFECTIVE_RECONSTRUCTION.md",
+    "from": [
+      "S01"
+    ],
+    "exists": true
+  },
+  {
+    "path": "docs/project/maintainers/qualification/TRACE_X_P5_R2_P4_R1_R1_R1_R1_DURABLE_REQUIREMENT_FACT_RECOVERY_LOCK.md",
+    "from": [
+      "S01"
+    ],
+    "exists": true
+  },
+  {
+    "path": "docs/project/maintainers/qualification/TRACE_X_P5_R2_P4_R1_R1_R1_R1_R1_P2_PIN_RECOVERY_STAGING_CONTRACT_LOCK.md",
+    "from": [
+      "S01"
+    ],
+    "exists": true
+  },
+  {
+    "path": "docs/project/maintainers/qualification/TRACE_X_P5_R2_P4_R1_R1_R1_R1_R1_R1_AMBIGUOUS_PIN_OUTCOME_STAGING_TIMESTAMP_SEMANTICS.md",
+    "from": [
+      "S01"
+    ],
+    "exists": true
+  },
+  {
+    "path": "docs/project/maintainers/qualification/TRACE_X_P5_R2_P4_R1_R1_R1_REQUIREMENT_EVENT_CANONICAL_RETRY_IDENTITY_RECONCILIATION.md",
+    "from": [
+      "S01"
+    ],
+    "exists": true
+  },
+  {
+    "path": "docs/project/maintainers/qualification/TRACE_X_P5_R2_P4_R1_R1_REQUIREMENT_EVIDENCE_EMISSION_BOUNDARY_DUAL_WRITE_RECONCILIATION.md",
+    "from": [
+      "S01"
+    ],
+    "exists": true
+  },
+  {
+    "path": "docs/project/maintainers/qualification/TRACE_X_P5_R2_P4_R1_RECONSTRUCTION_REQUIREMENT_AUTHORITY_AS_OF_RECONCILIATION.md",
+    "from": [
+      "S01"
+    ],
+    "exists": true
+  },
+  {
+    "path": "docs/project/maintainers/qualification/TRACE_X_P5_R2_P4_R2_CORRECTED_RECONSTRUCTION_REQUIREMENT_EVIDENCE_RECOVERY.md",
+    "from": [
+      "S01"
+    ],
+    "exists": true
+  },
+  {
+    "path": "docs/project/maintainers/qualification/TRACE_X_P6_RESTART_RESUME_TERMINAL_CAUSALITY_CERTIFICATION.md",
+    "from": [
+      "S01",
+      "S02"
+    ],
+    "exists": true
+  },
+  {
+    "path": "docs/project/maintainers/qualification/VENDOR_BACKEND_NEUTRALITY_AND_REPLACEABILITY_EVIDENCE.md",
+    "from": [
+      "S01",
+      "S02"
+    ],
+    "exists": true
+  },
+  {
+    "path": "docs/project/maintainers/qualification/ent_audit_x/ENT_AUDIT_X_FORMAL_CLOSURE_CAMPAIGN_TERMINAL_REPORT.md",
+    "from": [
+      "S01"
+    ],
+    "exists": true
+  },
+  {
+    "path": "docs/project/maintainers/qualification/ent_audit_x/ENT_AUDIT_X_IIAC_INDEPENDENT_AUDIT_PASS_RECORD.md",
+    "from": [
+      "S01"
+    ],
+    "exists": true
+  },
+  {
+    "path": "docs/project/maintainers/qualification/ent_audit_x/ENT_AUDIT_X_INTERNAL_CLOSURE_CAMPAIGN_TERMINAL_REPORT.md",
+    "from": [
+      "S01"
+    ],
+    "exists": true
+  },
+  {
+    "path": "docs/project/maintainers/qualification/ent_audit_x/ENT_AUDIT_X_POST_B4_EXACT_BLOCKER_AUDIT_AND_CORRECTIVE_CLOSURE_REPORT.md",
+    "from": [
+      "S01"
+    ],
+    "exists": true
+  },
+  {
+    "path": "docs/project/maintainers/qualification/evol_x/EVOL_X_INTERNAL_CLOSURE_CAMPAIGN_TERMINAL_REPORT.md",
+    "from": [
+      "S01"
+    ],
+    "exists": true
+  },
+  {
+    "path": "docs/project/maintainers/qualification/evol_x/EVOL_X_SHA_LADDER.md",
+    "from": [
+      "S01"
+    ],
+    "exists": true
+  },
+  {
+    "path": "docs/project/maintainers/qualification/historical_certification_campaign/HISTORICAL_CAMPAIGN_P8_VERDICT.md",
+    "from": [
+      "S01"
+    ],
+    "exists": true
+  },
+  {
+    "path": "docs/project/maintainers/qualification/historical_certification_campaign/HISTORICAL_CAMPAIGN_TERMINAL_CLOSURE_REPORT.md",
+    "from": [
+      "S01"
+    ],
+    "exists": true
+  },
+  {
+    "path": "docs/project/maintainers/qualification/iiac_evidence/ENT-AUDIT-X/operator_decisions/ENT_AUDIT_X_OD_ENT_08_DECISION_RECORD.md",
+    "from": [
+      "S01"
+    ],
+    "exists": true
+  },
+  {
+    "path": "docs/project/maintainers/qualification/mcp_server_x/MCP_SERVER_X_FINAL_CLOSURE_REPORT.md",
+    "from": [
+      "S01"
+    ],
+    "exists": true
+  },
+  {
+    "path": "docs/project/maintainers/qualification/mcp_server_x/MCP_SERVER_X_INDEX.md",
+    "from": [
+      "S01"
+    ],
+    "exists": true
+  },
+  {
+    "path": "docs/project/maintainers/qualification/mcp_server_x/MCP_SERVER_X_P6_OPERATOR_CLOSURE_RECORD.md",
+    "from": [
+      "S01"
+    ],
+    "exists": true
+  },
+  {
+    "path": "docs/project/maintainers/qualification/platform_domain_completeness/PDC_INDEX.md",
+    "from": [
+      "S01"
+    ],
+    "exists": true
+  },
+  {
+    "path": "docs/project/maintainers/qualification/pre_ent_enterprise_certification/PRE_ENT_ENTERPRISE_CERTIFICATION_FINAL_MATRIX.md",
+    "from": [
+      "S01"
+    ],
+    "exists": true
+  },
+  {
+    "path": "docs/project/maintainers/qualification/pre_ent_enterprise_certification/PRE_ENT_WAVE6_CROSS_AUDIT_REPORT.md",
+    "from": [
+      "S01"
+    ],
+    "exists": true
+  },
+  {
+    "path": "docs/project/maintainers/qualification/scenario_factory_x/SFX_INDEX.md",
+    "from": [
+      "S01"
+    ],
+    "exists": true
+  },
+  {
+    "path": "docs/project/maintainers/qualification/scenario_factory_x/operator_decisions/OD-SFX-21.md",
+    "from": [
+      "S01"
+    ],
+    "exists": true
+  },
+  {
+    "path": "docs/project/overview/HARNESS_ARCHITECTURE_EVOLUTION_ROADMAP.md",
+    "from": [
+      "S01"
+    ],
+    "exists": true
+  },
+  {
+    "path": "docs/project/technical/adr/entries/2026-09-14/ADR-OBS-005.md",
+    "from": [
+      "S01"
+    ],
+    "exists": true
+  },
+  {
+    "path": "docs/project/technical/adr/entries/2026-11-05/ADR-SEF-001.md",
+    "from": [
+      "S01"
+    ],
+    "exists": true
+  },
+  {
+    "path": "governance/tickets/plans/ASF-SEF-MASTER-PLAN.md",
+    "from": [
+      "S01",
+      "S01-code"
+    ],
+    "exists": true
+  },
+  {
+    "path": "governance/tickets/plans/SFX-MASTER-PLAN.md",
+    "from": [
+      "S01",
+      "S01-code"
+    ],
+    "exists": true
+  },
+  {
+    "path": "intergrax/applications/_shared/harness_host_task_execution_wiring.py",
+    "from": [
+      "S01-code"
+    ],
+    "exists": true
+  },
+  {
+    "path": "intergrax/contracts/control_plane_mutation.py",
+    "from": [
+      "S01-code"
+    ],
+    "exists": true
+  },
+  {
+    "path": "scripts/proof/init_scenario_implementation.py",
+    "from": [
+      "S01-code"
+    ],
+    "exists": true
+  },
+  {
+    "path": "tests/conftest.py",
+    "from": [
+      "S01-code"
+    ],
+    "exists": true
+  },
+  {
+    "path": "tests/qualification/external_contract_compatibility/test_external_contract_compatibility_certification.py",
+    "from": [
+      "S02-code"
+    ],
+    "exists": true
+  },
+  {
+    "path": "tests/qualification/governance/gr11/catalog.py",
+    "from": [
+      "S02-code"
+    ],
+    "exists": true
+  },
+  {
+    "path": "tests/qualification/qual_x/_p5_freeze_selection_catalog.py",
+    "from": [
+      "S01-code"
+    ],
+    "exists": true
+  },
+  {
+    "path": "tests/qualification/trace_x/test_trace_x_p5_r1_qualification_gates.py",
+    "from": [
+      "S02-code"
+    ],
+    "exists": true
+  },
+  {
+    "path": "tests/unit/architecture/test_ebh_2i_final_rescan_gate.py",
+    "from": [
+      "S01-code"
+    ],
+    "exists": true
+  },
+  {
+    "path": "tests/unit/runtime/architecture/test_harness_w5_typed_observability_transport_gate.py",
+    "from": [
+      "S02-code"
+    ],
+    "exists": true
+  }
+]

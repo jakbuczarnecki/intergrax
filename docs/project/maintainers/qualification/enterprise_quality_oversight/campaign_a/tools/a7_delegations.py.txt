@@ -1,0 +1,79 @@
+"""A7-T04: delegation and approval integrity over governance/tickets/T-IGX-*.md at BASELINE_SHA."""
+from __future__ import annotations
+
+import re
+import sys
+from collections import Counter
+from pathlib import Path
+
+sys.path.insert(0, str(Path(__file__).parent))
+from common import *  # noqa
+
+APPR = re.compile(r"^\s*Approved:\s*(.*)$", re.I)
+DELEG = re.compile(r"^\s*Delegation:\s*(.*)$", re.I)
+REF = re.compile(r"(?P<path>[\w./\-]+\.(?:md|json|yaml|yml))(?:@(?P<sha>[0-9a-f]{7,40}))?")
+ANC = {l for l in git("rev-list", BASELINE_SHA).stdout.split()}
+
+
+def main():
+    files = [p for p in git("ls-tree", "-r", "--name-only", BASELINE_SHA, "governance/tickets/").stdout.split("\n") if re.search(r"/T-IGX-[\w\-]+\.md$", p)]
+    out = []
+    for f in sorted(files):
+        t = show_text(f) or ""
+        lines = t.split("\n")
+        recs = []
+        for i, l in enumerate(lines):
+            m = APPR.match(l)
+            if not m:
+                continue
+            body = m.group(1).strip()
+            kind = "PLACEHOLDER" if body.startswith("(operator)") or "(timestamp)" in body else ("DELEGATE" if body.lower().startswith("operator-delegate") else
+                   ("OPERATOR" if body.lower().startswith("operator") else "OTHER"))
+            rec = {"line": i + 1, "kind": kind, "text": body[:140], "delegation": None}
+            if kind == "DELEGATE":
+                nxt = next((lines[j] for j in range(i + 1, min(i + 4, len(lines))) if DELEG.match(lines[j])), None)
+                same = re.search(r"\|\s*Delegation:\s*(.*)$", body)
+                if same and not nxt:
+                    nxt = "Delegation: " + same.group(1)
+                if nxt:
+                    dm = DELEG.match(nxt).group(1)
+                    refs = []
+                    for r in REF.finditer(dm):
+                        p, s = r.group("path"), r.group("sha")
+                        full = None
+                        if s:
+                            rr = git("rev-parse", "--verify", "--quiet", f"{s}^{{commit}}")
+                            full = rr.stdout.strip() or None
+                        ex_at = path_exists_at(p, full) if full else path_exists_at(p)
+                        refs.append({"path": p, "sha": full or s, "exists_at_cited_sha": bool(ex_at), "sha_ancestor": (full in ANC) if full else None})
+                    low = dm.lower()
+                    if refs and all(x["path"].startswith(".tmp/") for x in refs):
+                        dk = "GITIGNORED_TMP_PATH"
+                    elif refs and all(x["exists_at_cited_sha"] and x["sha_ancestor"] in (True, None) for x in refs):
+                        dk = "FILE_RESOLVES"
+                    elif refs:
+                        dk = "FILE_UNRESOLVED"
+                    elif "chat" in low or "operator" in low:
+                        dk = "CHAT_ONLY"
+                    else:
+                        dk = "OTHER_TEXT"
+                    rec["delegation"] = {"text": dm[:200], "kind": dk, "refs": refs, "resolves": dk == "FILE_RESOLVES"}
+                else:
+                    rec["delegation"] = {"text": None, "refs": [], "resolves": False}
+            recs.append(rec)
+        out.append({"ticket": Path(f).stem, "path": f, "approvals": recs, "n_approvals": len(recs)})
+    write_jsonl(WS / "A7" / "delegations.jsonl", out)
+    allrec = [r for o in out for r in o["approvals"]]
+    k = Counter(r["kind"] for r in allrec)
+    d = [r for r in allrec if r["kind"] == "DELEGATE"]
+    bad = [(o["ticket"], r["line"]) for o in out for r in o["approvals"] if r["kind"] == "DELEGATE" and not (r["delegation"] and r["delegation"]["resolves"])]
+    noapp = [o["ticket"] for o in out if o["n_approvals"] == 0]
+    plc = [o["ticket"] for o in out for r in o["approvals"] if r["kind"] == "PLACEHOLDER"]
+    dk = Counter((r["delegation"] or {}).get("kind", "NONE") for o in out for r in o["approvals"] if r["kind"] == "DELEGATE")
+    print("delegation kinds", dict(dk))
+    print("tickets", len(out), "approval kinds", dict(k), "delegate lines", len(d), "unresolved delegations", len(bad), bad[:10])
+    print("tickets without any Approved line:", noapp[:20], len(noapp)); print("placeholder approvals:", plc[:10])
+
+
+if __name__ == "__main__":
+    main()

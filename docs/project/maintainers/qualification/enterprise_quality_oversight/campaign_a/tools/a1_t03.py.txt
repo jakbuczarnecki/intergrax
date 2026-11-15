@@ -1,0 +1,101 @@
+"""A1-T03: cross-source reconciliation findings (parent, from mechanical flags) + seeds S-01, S-02, S-05, S-06, S-20."""
+from __future__ import annotations
+
+import sys
+from collections import defaultdict
+from pathlib import Path
+
+sys.path.insert(0, str(Path(__file__).parent))
+from common import *  # noqa
+import fl
+import seeds
+
+B = BASELINE_SHA
+RM = f"{ROADMAP}@{B}"
+base = read_jsonl(WS / "A1" / "stage_base.jsonl")
+byflag = defaultdict(list)
+for r in base:
+    for f in r["mech_flags"]:
+        byflag[f].append(r["id"])
+
+
+def ids(flag):
+    return sorted(byflag.get(flag, []))
+
+
+# S-01
+seeds.confirm("S-01", [f"{RM}:489", f"{RM}:963", f"{RM}:2155"],
+    title="DIST-SCALE-X carries two contradictory statuses in the roadmap (table/ledger CLOSED vs section 3.0.6 'IN PROGRESS, Parent OPEN')",
+    severity="MEDIUM", **{"class": "GOVERNANCE_INCONSISTENCY"}, scope=["DIST-SCALE-X"],
+    affected_invariant="roadmap section 2.2/2.3 status lifecycle; ARCH-FREEZE entry condition 'DIST-SCALE-X = CLOSED (independent exact-SHA evidence)'",
+    evidence=[f"{RM}:489", f"{RM}:963", f"{RM}:2155"], evidence_level="E3",
+    impact="Table row L489 reads '[x] CLOSED - OPERATOR SCOPED ACCEPTANCE' and ledger L2155 agrees, while the section 3.0.6 status line L963 still reads 'IN PROGRESS ... P5 = NEXT ... Parent OPEN - not CLOSED until L9 + formal parent reconciliation'. A reader cannot tell from the roadmap alone whether the parent is closed. Closure basis is operator scoped acceptance (see A2: no independent exact-SHA audit).",
+    arch_freeze_impact="CONDITIONS", recommendation="Roadmap owner reconciles the section 3.0.6 status line with the table and ledger.",
+    owner="Roadmap owner (Operator)", next_action="DOC_FIX_BY_OWNER", decision_authority="Operator")
+
+# S-02
+seeds.confirm("S-02", [f"{RM}:259", f"{RM}:484", f"{RM}:564"],
+    title="PROD-Q has three simultaneous status expressions (CLOSED BY OPERATOR - SCOPED, OPEN/BLOCKED on the live slice, NEXT / CURRENT)",
+    severity="MEDIUM", **{"class": "GOVERNANCE_INCONSISTENCY"}, scope=["PROD-Q"],
+    affected_invariant="roadmap section 2.2 status vocabulary; section 2.0.3 Path B; ARCH-FREEZE entry 'PROD-Q may remain OPEN/BLOCKED solely for the live slice'",
+    evidence=[f"{RM}:259", f"{RM}:484", f"{RM}:564"], evidence_level="E3",
+    impact="Table row L484 is '[x] CLOSED BY OPERATOR - SCOPED (live qualification NOT QUALIFIED)' (off-vocabulary), L259 allows the parent to stay OPEN/BLOCKED solely for the live slice, and L564 still says PROD-Q = NEXT / CURRENT for live qualification work. The Path B construct is consistent in intent, but the status field cannot be read mechanically and 13 child rows follow.",
+    arch_freeze_impact="CONDITIONS", recommendation="Roadmap owner expresses the scoped closure plus the open live slice in the section 2.2 vocabulary (closed scope + named residual).",
+    owner="Roadmap owner (Operator) / PROD-Q", next_action="DOC_FIX_BY_OWNER", decision_authority="Operator")
+
+# S-05
+rfa = ids("RFA_UNDER_CLOSED_PARENT")
+seeds.confirm("S-05", [f"{RM}:401", f"{RM}:410", f"{RM}:2027", f"{RM}:2030", f"{RM}:2034", f"{RM}:2117", f"{RM}:2124", f"{RM}:2145"],
+    title=f"{len(rfa)} 'READY FOR AUDIT' rows sit under CLOSED parents (table L401, L410; ledger L2027, L2030, L2034, L2117, L2124, L2145)",
+    severity="MEDIUM", **{"class": "GOVERNANCE_INCONSISTENCY"}, scope=rfa,
+    affected_invariant="roadmap section 5 ledger rule (update only after independent exact-SHA audit); ARCH-FREEZE entry 'mandatory roadmap OPEN = 0'",
+    evidence=[f"{RM}:401", f"{RM}:410", f"{RM}:2027", f"{RM}:2117"], evidence_level="E3",
+    impact="Mechanical parse: 8 rows in READY FOR AUDIT state belong to roots whose row is CLOSED (TRACE-X and PROD-Q-R1-R7-Q trees). Either the children are closure bookkeeping not yet synchronised, or the parent closure overstates the audited scope. The seed S-05 line list is reproduced exactly.",
+    arch_freeze_impact="CONDITIONS", recommendation="Owner closes or re-labels the bookkeeping rows; ARCH-FREEZE entry counts OPEN rows mechanically.",
+    owner="TRACE-X / PROD-Q owners", next_action="DOC_FIX_BY_OWNER", decision_authority="Operator")
+
+# S-06
+cbm, offv, mal, stale = ids("CHECKBOX_MISUSE"), ids("OFF_VOCAB_STATUS"), ids("MALFORMED_ROW"), ids("STALE_NEXT_CURRENT_TEXT")
+seeds.confirm("S-06", [f"{RM}:436", f"{RM}:437", f"{RM}:446", f"{RM}:450", f"{RM}:477", f"{RM}:574", f"{RM}:2172"],
+    title="Roadmap hygiene: checkbox misuse, off-vocabulary statuses, malformed rows, placeholder row, self-dependency and stale NEXT/CURRENT text",
+    severity="MEDIUM", **{"class": "GOVERNANCE_INCONSISTENCY"}, scope=sorted(set(cbm) | set(offv) | set(mal) | set(stale)),
+    affected_invariant="roadmap section 2.2 allowed statuses; section 2.3/2.4 closure and evidence rules",
+    evidence=[f"{RM}:292", f"{RM}:436", f"{RM}:477", f"{RM}:574", f"{RM}:2172"], evidence_level="E3",
+    impact=(f"Parser results at the baseline: {len(offv)} section 3 rows have an off-vocabulary status (section 2.2 lists seven allowed); "
+            f"{len(cbm)} rows use '[x]' on a status that is not plain CLOSED, or on REJECTED/SUPERSEDED text; {len(mal)} table row(s) and 6 ledger rows have a cell count different from the header; "
+            f"L2172 is a placeholder row ('remaining mandatory stages | - | Fill on closure.'); section 3.0.3 DUP-X (L566) states 'Depends on: DUP-X' at L574 (self-dependency); "
+            f"{len(stale)} closed rows still carry NEXT/CURRENT wording, e.g. L397, L1952, L2009, L2019, L2053. The seed S-06 line list is confirmed."),
+    arch_freeze_impact="CONDITIONS", recommendation="Roadmap owner normalises statuses to the section 2.2 vocabulary plus structured qualifiers.",
+    owner="Roadmap owner (Operator)", next_action="DOC_FIX_BY_OWNER", decision_authority="Operator")
+
+# dual statuses
+dual = sorted(set(ids("DUAL_STATUS_TABLE_CLOSED_LEDGER_OPEN") + ids("DUAL_STATUS_TABLE_OPEN_LEDGER_CLOSED")))
+fl.add("A1", title=f"{len(dual)} stages show a table status that differs from their last ledger row",
+    severity="MEDIUM", cls="GOVERNANCE_INCONSISTENCY", scope=dual,
+    affected_invariant="roadmap section 2.4 (every CLOSED row has an evidence anchor in section 5) and the section 5 rule",
+    evidence=[f"{RM}:347", f"{RM}:499", f"{RM}:1956", f"{RM}:2161"], evidence_level="E3",
+    impact="By file order the last ledger row for these IDs carries a non-CLOSED family (CURRENT, BLOCKED, REJECTED) while the section 3 table says CLOSED (EBH-2G, EBH-2G-R1/-R2, HARNESS-QINF-01, HARNESS-W5/W6, COMPAT-X-R2-R2, COMPAT-X-R3-P0, EBH-2F-R2-R1 chain). The table is treated as deciding authority; both values are kept in the rows.",
+    arch_freeze_impact="CONDITIONS", recommendation="Roadmap owner appends a final ledger row per ID or corrects the table; closure must not be inferred from either alone.",
+    owner="Roadmap owner (Operator)", next_action="DOC_FIX_BY_OWNER", decision_authority="Operator")
+
+# S-20
+prose = sorted(r["id"] for r in base if r["row_source"] == "PROSE")
+seeds.confirm("S-20", [f"{RM}:393", f"{RM}:2114", f"{RM}:2115", f"{RM}:496"],
+    title=f"{len(prose)} stage-like IDs appear only in prose; IMPL-01, D03-A/B/C and GATE-* are referenced without rows; ECAP is not expanded in the roadmap",
+    severity="LOW", **{"class": "GOVERNANCE_INCONSISTENCY"}, scope=prose,
+    affected_invariant="roadmap section 2.4 (evidence anchors) and completeness of the stage inventory",
+    evidence=[f"{RM}:393", f"{RM}:2114", f"{RM}:2115", f"{RM}:496"], evidence_level="E3",
+    impact=(f"{len(prose)} IDs extend a known stage ID (e.g. PROD-Q-P1, PROD-Q-R1, QUAL-X-P1, QUAL-X-FINAL, EVOL-X-P0, GOV-X2-Q2/R1..R3, CE-01-R1..) but have neither a table nor a ledger row (disposition PROSE_ORPHAN). "
+            "IMPL-01, D03-A/B/C, GATE-SFX-ENTRY and GATE-SEF-* are used as decision or gate labels without rows. STATE-X-R4..R6 from the seed are NOT referenced at the baseline (that part is refuted). "
+            "ECAP is used in L496/L1925/L2149 without an in-document expansion (the protocol document defines it)."),
+    arch_freeze_impact="NONE", recommendation="Roadmap owner decides which prose IDs are real sub-stages and gives them rows, or labels them as decision/gate IDs.",
+    owner="Roadmap owner (Operator)", next_action="DOC_FIX_BY_OWNER", decision_authority="Operator")
+
+# ledger-only INFO
+lo = ids("LEDGER_ONLY_NO_TABLE_ROW")
+fl.add("A1", title=f"{len(lo)} stage IDs exist only as section 5 ledger rows (no section 3 table row)", severity="INFO", cls="GOVERNANCE_INCONSISTENCY",
+    scope=lo, affected_invariant="roadmap section 3 'canonical ordered roadmap' vs section 5 'closure evidence ledger'",
+    evidence=[f"{RM}:338", f"{RM}:1929"], evidence_level="E3",
+    impact="Ledger-only rows are mostly closure bookkeeping or child steps of tabled parents; they are inventoried as LEDGER rows and inherit their disposition from the root. Listed so that completeness (C01) is explicit; no defect asserted.",
+    arch_freeze_impact="NONE", recommendation="None required; awareness only.", owner="Roadmap owner (Operator)", next_action="NONE", decision_authority="Operator")
+print("done", len(fl.consolidate()))

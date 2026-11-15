@@ -1,0 +1,483 @@
+{
+  "path": "docs/project/maintainers/qualification/historical_certification_campaign/HISTORICAL_STAGE_SHA_AND_EVIDENCE_REGISTRY.md",
+  "tables": [
+    {
+      "header": [
+        "group",
+        "label",
+        "SHA",
+        "date",
+        "subject",
+        "on origin/development"
+      ],
+      "rows": [
+        {
+          "line": 7,
+          "group": "campaign",
+          "label": "CAMPAIGN_START_SHA (origin/development at start)",
+          "SHA": "ba07ebaa34d0",
+          "date": "2026-11-08",
+          "subject": "docs(roadmap): PROD-Q-P0-R1^8 labelled CLOSED - OPERATOR ACCEPTED (scoped) (OD-SSOT-D3, de",
+          "on origin/development": "True"
+        },
+        {
+          "line": 8,
+          "group": "campaign",
+          "label": "integration base for the 3 PRs",
+          "SHA": "15347255ac62",
+          "date": "2026-11-08",
+          "subject": "Merge pull request #404 from jakbuczarnecki/ent-w1-d",
+          "on origin/development": "True"
+        },
+        {
+          "line": 9,
+          "group": "campaign",
+          "label": "origin/development after the Operator merged PRs 405-407",
+          "SHA": "41908e3fb85d",
+          "date": "2026-11-08",
+          "subject": "Merge pull request #405 from jakbuczarnecki/hist-cert/docs-patches",
+          "on origin/development": "True"
+        },
+        {
+          "line": 10,
+          "group": "campaign",
+          "label": "PR 405 head (docs patches)",
+          "SHA": "6d1434796396",
+          "date": "2026-11-08",
+          "subject": "docs: address independent review of the documentation patch set (revert EVOL-X stage-cell",
+          "on origin/development": "True"
+        },
+        {
+          "line": 11,
+          "group": "campaign",
+          "label": "PR 406 head (rules update)",
+          "SHA": "937c39820885",
+          "date": "2026-11-08",
+          "subject": "docs(iiac): correct two defects found in the delta re-review of the Amendment 01 revision",
+          "on origin/development": "True"
+        },
+        {
+          "line": 12,
+          "group": "campaign",
+          "label": "PR 407 head (T-IGX-030-A)",
+          "SHA": "90fae38aa39c",
+          "date": "2026-11-08",
+          "subject": "docs(tickets): T-IGX-030-A ready_for_audit with implementer checkpoint (no PASS claimed)",
+          "on origin/development": "True"
+        },
+        {
+          "line": 13,
+          "group": "campaign",
+          "label": "T-IGX-030-A implementation SHA audited by aud-030a (C2)",
+          "SHA": "683f955727fb",
+          "date": "2026-11-08",
+          "subject": "test(f3): make streamable-HTTP parent-cancel test event-driven (T-IGX-030-A)",
+          "on origin/development": "True"
+        },
+        {
+          "line": 14,
+          "group": "campaign",
+          "label": "T-IGX-030-A C1",
+          "SHA": "ec105a789b8d",
+          "date": "2026-11-08",
+          "subject": "test(tool-life-x): reconcile four stale side-effect-safety tests with ABANDONED semantics",
+          "on origin/development": "True"
+        },
+        {
+          "line": 15,
+          "group": "campaign",
+          "label": "T-IGX-030-A plan commit",
+          "SHA": "78657d445ea3",
+          "date": "2026-11-08",
+          "subject": "docs(tickets): re-plan T-IGX-030 per DR-12=B (030-A tests-only; 030-B and new 030-C HELD f",
+          "on origin/development": "True"
+        },
+        {
+          "line": 16,
+          "group": "campaign",
+          "label": "merge commit PR 405",
+          "SHA": "41908e3fb85d",
+          "date": "2026-11-08",
+          "subject": "Merge pull request #405 from jakbuczarnecki/hist-cert/docs-patches",
+          "on origin/development": "True"
+        },
+        {
+          "line": 17,
+          "group": "campaign",
+          "label": "merge commit PR 406",
+          "SHA": "feee82b2e824",
+          "date": "2026-11-08",
+          "subject": "Merge pull request #406 from jakbuczarnecki/hist-cert/rules-update",
+          "on origin/development": "True"
+        },
+        {
+          "line": 18,
+          "group": "campaign",
+          "label": "merge commit PR 407",
+          "SHA": "4e48eba82b43",
+          "date": "2026-11-08",
+          "subject": "Merge pull request #407 from jakbuczarnecki/hist-cert/impl-tlx",
+          "on origin/development": "True"
+        },
+        {
+          "line": 19,
+          "group": "historical",
+          "label": "QUAL-X Population A accepted SHA",
+          "SHA": "d9ea0d6e87b9",
+          "date": "2026-10-23",
+          "subject": "QUAL-X-FINAL BND-03: commit observability qual repair and SQLite journal E2E.",
+          "on origin/development": "True"
+        },
+        {
+          "line": 20,
+          "group": "historical",
+          "label": "QUAL-X publication (per HIST-04 matrix)",
+          "SHA": "b0286f76956c",
+          "date": "2026-11-08",
+          "subject": "docs(roadmap): QUAL-X Population A accepted and QUAL-X-P0 verified separately (OD-QUALX-AC",
+          "on origin/development": "True"
+        },
+        {
+          "line": 21,
+          "group": "historical",
+          "label": "SKILL-X publication (per HIST-04 matrix)",
+          "SHA": "756b2d60c5d4",
+          "date": "2026-11-08",
+          "subject": "docs(roadmap): SKILL-X re-acceptance on AUD-SKILLX, conditional (OD-SKILLX-ACCEPT, delegat",
+          "on origin/development": "True"
+        },
+        {
+          "line": 22,
+          "group": "historical",
+          "label": "TOOL-LIFE-X accepted baseline (AUD-TOOLLIFE CONDITIONAL / STOP)",
+          "SHA": "1548640708c8",
+          "date": "2026-10-26",
+          "subject": "fix(qual): F8-Q01 deterministic SQLite oracle fault and Q02 evidence SHA",
+          "on origin/development": "True"
+        },
+        {
+          "line": 23,
+          "group": "historical",
+          "label": "SKILL-X Batch C (origin of the P2-C regression, F-015)",
+          "SHA": "d1040f485d7e",
+          "date": "2026-10-23",
+          "subject": "SKILL-X Batch C: durable execution skill pinning with provenance recovery.",
+          "on origin/development": "True"
+        },
+        {
+          "line": 24,
+          "group": "historical",
+          "label": "TOOL-LIFE-X Batch C recovery code (origin of the EBH-4 R1 import, F-013)",
+          "SHA": "a5f813a2c6a2",
+          "date": "2026-10-24",
+          "subject": "fix(runtime): TOOL-LIFE-X Batch C stalled/abandoned/recovery lifecycle",
+          "on origin/development": "True"
+        },
+        {
+          "line": 25,
+          "group": "historical",
+          "label": "TOOL-LIFE-X tool_operation_recovery foundation",
+          "SHA": "ce57be26c63d",
+          "date": "2026-10-24",
+          "subject": "TOOL-LIFE-X L3-R6: tenant-safe external operation foundation.",
+          "on origin/development": "True"
+        },
+        {
+          "line": 26,
+          "group": "unpublished",
+          "label": "source commit C1 (tests)",
+          "SHA": "0adb7338075d",
+          "date": "2026-11-08",
+          "subject": "test(tool-life-x): reconcile four stale side-effect-safety tests with ABANDONED semantics",
+          "on origin/development": "False"
+        },
+        {
+          "line": 27,
+          "group": "unpublished",
+          "label": "source commit C2 (test)",
+          "SHA": "10089121e3e1",
+          "date": "2026-11-08",
+          "subject": "test(f3): make streamable-HTTP parent-cancel test event-driven (T-IGX-023-B)",
+          "on origin/development": "False"
+        },
+        {
+          "line": 28,
+          "group": "unpublished",
+          "label": "HELD product fix, invoker.py (030-C)",
+          "SHA": "29c387879a43",
+          "date": "2026-11-08",
+          "subject": "fix(nexus-tools): terminalise external-operation record when pool.submit fails without dep",
+          "on origin/development": "False"
+        },
+        {
+          "line": 29,
+          "group": "unpublished",
+          "label": "HELD red-first test (030-C, C4)",
+          "SHA": "98b4bf514db6",
+          "date": "2026-11-08",
+          "subject": "test(tool-life-x): red-first tests for no-boundary pool.submit failure terminal state (T-I",
+          "on origin/development": "False"
+        },
+        {
+          "line": 30,
+          "group": "iiac",
+          "label": "IIAC audit execution SHA (ACT-N11 reference)",
+          "SHA": "ae467c8c4dd9",
+          "date": "2026-11-05",
+          "subject": "Record ACT-01 gate and evidence-preservation SHAs.",
+          "on origin/development": "True"
+        },
+        {
+          "line": 31,
+          "group": "iiac",
+          "label": "IIAC policy effective_from / activation phase 1",
+          "SHA": "f8c29fb8dfe5",
+          "date": "2026-11-05",
+          "subject": "IIAC OD-01 phase 1: publish IN_FORCE activation record (effective SHA pending).",
+          "on origin/development": "True"
+        },
+        {
+          "line": 32,
+          "group": "iiac",
+          "label": "Amendment 01 status commit",
+          "SHA": "d82f8b722ca6",
+          "date": "2026-11-07",
+          "subject": "docs(iiac): adopt Amendment 01 (operator-designated signing session) as policy text per op",
+          "on origin/development": "True"
+        },
+        {
+          "line": 33,
+          "group": "evol-x",
+          "label": "EVOL-X B6 acceptance publication",
+          "SHA": "1dd769331506",
+          "date": "2026-11-07",
+          "subject": "docs(evol-x): publish IIAC B6 acceptance record, phase 1 (delegated operator signature; b6",
+          "on origin/development": "True"
+        },
+        {
+          "line": 34,
+          "group": "evol-x",
+          "label": "EVOL-X formal closure publication",
+          "SHA": "be77b3a5fb97",
+          "date": "2026-11-07",
+          "subject": "docs(evol-x): W7-05 formal closure publication, phase 1 (CLOSED - independently accepted,",
+          "on origin/development": "True"
+        },
+        {
+          "line": 35,
+          "group": "evol-x",
+          "label": "EVOL-X W7-06 handoff pin",
+          "SHA": "7a4f279fd8c0",
+          "date": "2026-11-08",
+          "subject": "docs(evol-x): W7-06 phase 1, formal ENT-AUDIT-X handoff record and D10 digest-chain attest",
+          "on origin/development": "True"
+        }
+      ]
+    },
+    {
+      "header": [
+        "entry",
+        "label at baseline",
+        "HIST-04 classification",
+        "roadmap line",
+        "publication state"
+      ],
+      "rows": [
+        {
+          "line": 42,
+          "entry": "TRACE-X-P5-R2-P3-R1-R1-R1-R1",
+          "label at baseline": "SUPERSEDED - LINEAGE ONLY (OD-SSOT-D1, delegated; commit e7eabef81)",
+          "HIST-04 classification": "NO_REMAINING_OBLIGATION",
+          "roadmap line": "L392",
+          "publication state": "PUBLISHED"
+        },
+        {
+          "line": 43,
+          "entry": "TRACE-X-P5-R2-P3-R1-R1-R1-R1-R1",
+          "label at baseline": "SUPERSEDED - LINEAGE ONLY (OD-SSOT-D1, delegated; commit e7eabef81)",
+          "HIST-04 classification": "NO_REMAINING_OBLIGATION",
+          "roadmap line": "L393",
+          "publication state": "PUBLISHED"
+        },
+        {
+          "line": 44,
+          "entry": "TRACE-X-P5-R2-P3-R1-R1-R1-R1-R1-R1",
+          "label at baseline": "SUPERSEDED - LINEAGE ONLY (OD-SSOT-D1, delegated; commit e7eabef81)",
+          "HIST-04 classification": "NO_REMAINING_OBLIGATION",
+          "roadmap line": "L394",
+          "publication state": "PUBLISHED"
+        },
+        {
+          "line": 45,
+          "entry": "TRACE-X-P5-R2-P4-R1",
+          "label at baseline": "SUPERSEDED - LINEAGE ONLY (OD-SSOT-D1, delegated; commit e7eabef81)",
+          "HIST-04 classification": "NO_REMAINING_OBLIGATION",
+          "roadmap line": "L399",
+          "publication state": "PUBLISHED"
+        },
+        {
+          "line": 46,
+          "entry": "TRACE-X-P5-R2-P4-R1-R1",
+          "label at baseline": "SUPERSEDED - LINEAGE ONLY (OD-SSOT-D1, delegated; commit e7eabef81)",
+          "HIST-04 classification": "NO_REMAINING_OBLIGATION",
+          "roadmap line": "L400",
+          "publication state": "PUBLISHED"
+        },
+        {
+          "line": 47,
+          "entry": "TRACE-X-P5-R2-P4-R1-R1-R1",
+          "label at baseline": "SUPERSEDED - LINEAGE ONLY (OD-SSOT-D1, delegated; commit e7eabef81)",
+          "HIST-04 classification": "NO_REMAINING_OBLIGATION",
+          "roadmap line": "L401",
+          "publication state": "PUBLISHED"
+        },
+        {
+          "line": 48,
+          "entry": "TRACE-X-P5-R2-P4-R1-R1-R1-R1",
+          "label at baseline": "SUPERSEDED - LINEAGE ONLY (OD-SSOT-D1, delegated; commit e7eabef81)",
+          "HIST-04 classification": "NO_REMAINING_OBLIGATION",
+          "roadmap line": "L402",
+          "publication state": "PUBLISHED"
+        },
+        {
+          "line": 49,
+          "entry": "TRACE-X-P5-R2-P4-R1-R1-R1-R1-R1",
+          "label at baseline": "SUPERSEDED - LINEAGE ONLY (OD-SSOT-D1, delegated; commit e7eabef81)",
+          "HIST-04 classification": "NO_REMAINING_OBLIGATION",
+          "roadmap line": "L403",
+          "publication state": "PUBLISHED"
+        },
+        {
+          "line": 50,
+          "entry": "TRACE-X-P5-R2-P3-R1-R1-R1-R1-R1-R1-R1",
+          "label at baseline": "[ ] READY FOR AUDIT",
+          "HIST-04 classification": "VALID_SCOPED_PASS_CANDIDATE",
+          "roadmap line": "L395",
+          "publication state": "PUBLICATION_PENDING (SIGN-6, unpublished)"
+        },
+        {
+          "line": 51,
+          "entry": "TRACE-X-P5-R2-P4-R1-R1-R1-R1-R1-R1",
+          "label at baseline": "[ ] READY FOR AUDIT",
+          "HIST-04 classification": "VALID_SCOPED_PASS_CANDIDATE",
+          "roadmap line": "L404",
+          "publication state": "PUBLICATION_PENDING (SIGN-6, unpublished)"
+        },
+        {
+          "line": 52,
+          "entry": "PROD-Q-P0",
+          "label at baseline": "CLOSED - OPERATOR ACCEPTED / SCOPED PROD-Q-P0",
+          "HIST-04 classification": "INDEPENDENT_AUDIT_GAP",
+          "roadmap line": "L466",
+          "publication state": "PUBLISHED"
+        },
+        {
+          "line": 53,
+          "entry": "PROD-Q-P0-R1 .. R1^4",
+          "label at baseline": "[ ] REJECTED / superseded (checkbox unchecked)",
+          "HIST-04 classification": "SSOT_DRIFT",
+          "roadmap line": "L467-L470",
+          "publication state": "DECISION_UNPUBLISHED"
+        },
+        {
+          "line": 54,
+          "entry": "PROD-Q-P0-R1^8",
+          "label at baseline": "CLOSED - OPERATOR ACCEPTED (scoped, as implementation evidence of PROD-Q-P0 B6 @ 8b3db676)",
+          "HIST-04 classification": "INDEPENDENT_AUDIT_GAP",
+          "roadmap line": "L474",
+          "publication state": "PUBLISHED (ba07ebaa3)"
+        },
+        {
+          "line": 55,
+          "entry": "PROD-Q-P2 / P3 / PROD-Q",
+          "label at baseline": "CLOSED BY OPERATOR - SCOPED (live qualification NOT QUALIFIED)",
+          "HIST-04 classification": "PATH_B_LIVE_DEFERRED",
+          "roadmap line": "L475, L476, L478",
+          "publication state": "PUBLISHED"
+        },
+        {
+          "line": 56,
+          "entry": "QUAL-X",
+          "label at baseline": "CLOSED - POPULATION A ONLY (independently accepted, delegated)",
+          "HIST-04 classification": "ACCEPTED_LIMITATION",
+          "roadmap line": "L480",
+          "publication state": "PUBLISHED (b0286f769)"
+        },
+        {
+          "line": 57,
+          "entry": "QUAL-X-P0",
+          "label at baseline": "INDEPENDENTLY VERIFIED - SCOPED (not a stage closure)",
+          "HIST-04 classification": "ACCEPTED_LIMITATION",
+          "roadmap line": "L479",
+          "publication state": "PUBLISHED"
+        },
+        {
+          "line": 58,
+          "entry": "SKILL-X",
+          "label at baseline": "CLOSED - INDEPENDENTLY ACCEPTED (conditional on DS-5)",
+          "HIST-04 classification": "VALID_SCOPED_PASS_CANDIDATE",
+          "roadmap line": "L481",
+          "publication state": "PUBLISHED (756b2d60c)"
+        },
+        {
+          "line": 59,
+          "entry": "TOOL-LIFE-X",
+          "label at baseline": "CLOSED - INDEPENDENTLY ACCEPTED",
+          "HIST-04 classification": "SSOT_DRIFT",
+          "roadmap line": "L482",
+          "publication state": "PUBLISHED label unchanged"
+        },
+        {
+          "line": 60,
+          "entry": "DIST-SCALE-X",
+          "label at baseline": "CLOSED - OPERATOR SCOPED ACCEPTANCE",
+          "HIST-04 classification": "INDEPENDENT_AUDIT_GAP",
+          "roadmap line": "L483",
+          "publication state": "PUBLISHED"
+        },
+        {
+          "line": 61,
+          "entry": "EVOL-X",
+          "label at baseline": "stage row: [ ] FORMAL PROTOCOL 03 B6 - PENDING_AUTHORITY (stale)",
+          "HIST-04 classification": "SSOT_DRIFT",
+          "roadmap line": "L489 (stale) vs L1565/L561/ladder",
+          "publication state": "PATCH_H4_01 proposed"
+        }
+      ]
+    },
+    {
+      "header": [
+        "stage",
+        "campaign update"
+      ],
+      "rows": [
+        {
+          "line": 66,
+          "stage": "TOOL-LIFE-X",
+          "campaign update": "Conditions C-1/C-2 addressed by T-IGX-030-A (tests only), independently audited PASS_SCOPED at 683f95572; stage NOT closed (EBH-4 R1 gate red because of its recovery code; product batch HELD; label decision DR-3 open)."
+        },
+        {
+          "line": 67,
+          "stage": "EVOL-X",
+          "campaign update": "AUTHORITY_GAP unchanged (delegated plain-form signatures; campaign delegations exclude EVOL-X). Roadmap row L489 prose says CLOSED while its stage cell says PENDING_AUTHORITY (base inconsistency, left for the Operator, DR-1)."
+        },
+        {
+          "line": 68,
+          "stage": "SKILL-X",
+          "campaign update": "Acceptance conditional on DS-5 (met per HIST-04). Batch C d1040f485 introduced the PROD-Q P2-C regression (F-015, worker thesis: code defect) that the acceptance did not catch."
+        },
+        {
+          "line": 69,
+          "stage": "QUAL-X",
+          "campaign update": "Population A only; global FRZ-REG-01..10 stay OPEN; replay of Dimension A on the final SHA approved (DR-10) but not yet run."
+        },
+        {
+          "line": 70,
+          "stage": "PROD-Q",
+          "campaign update": "Live Dimension B remains unqualified (Path B); P2-C HTTP admission tests are red at the base (F-015)."
+        }
+      ]
+    }
+  ],
+  "lines": 78
+}

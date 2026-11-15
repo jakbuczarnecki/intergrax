@@ -1,0 +1,25 @@
+{
+  "campaign": "EQO-A",
+  "baseline_sha": "258bbf6abb6fdbb92ef0185d058527fbb1e47f04",
+  "commit_date": "2026-11-15T16:34:32+01:00",
+  "commit_subject": "Merge pull request #584 from jakbuczarnecki/claude/pdc-x-041m",
+  "origin_development_fetch_utc": "2026-11-15T15:44:16Z",
+  "worktree": "D:\\Projekty\\_wt\\intergrax\\eqo-a-258bbf6a",
+  "worktree_porcelain": "",
+  "worktree_head": "258bbf6abb6fdbb92ef0185d058527fbb1e47f04",
+  "uv_version": "uv 0.13.4 (7456b60bc 2026-10-20 x86_64-pc-windows-msvc)",
+  "uv_lock_sha256": "b836d0ddd43b4ed156ebb663680e95f30357e9c12e64428dbaf7f21f3c9e25ed",
+  "python_audit_tools": "Python 3.12.11",
+  "python_dossier_tools": "3.13.1",
+  "os": "Windows-11-10.0.26200-SP0",
+  "tool_runner_note": "Allowed tools were run with the main checkout .venv python (same uv.lock sha256) with cwd=WT and PYTHONDONTWRITEBYTECODE=1 instead of `uv run`, to avoid creating an environment inside the audit worktree.",
+  "planning_head": "f87df3b2a93bd09aa8e1577b80122391249772c8",
+  "planning_pin_delta_commits": 116,
+  "planning_pin_delta_first_last": [
+    "258bbf6ab Merge pull request #584 from jakbuczarnecki/claude/pdc-x-041m",
+    "f87df3b2a Merge pull request #567 from jakbuczarnecki/pdc-x-p7-record"
+  ],
+  "main_checkout_head_w0": "f87df3b2a93bd09aa8e1577b80122391249772c8",
+  "main_checkout_branch_w0": "development",
+  "main_porcelain_w0": "?? agent-env/plans/pasted-content-id-c041-intergrax-jolly-newell.md\n?? docs/project/assets/public/scenario-factory/ASSET_INTEGRATION.md\n"
+}

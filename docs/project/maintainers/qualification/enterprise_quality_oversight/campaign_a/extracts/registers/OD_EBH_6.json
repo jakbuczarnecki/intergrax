@@ -1,0 +1,240 @@
+{
+  "path": "docs/project/maintainers/qualification/EBH_6_OPERATOR_DECISION_REGISTER.md",
+  "tables": [
+    {
+      "header": [
+        "ID",
+        "Decision",
+        "Status",
+        "Blocks"
+      ],
+      "rows": [
+        {
+          "line": 5,
+          "ID": "OD-EBH5-08",
+          "Decision": "EBH-5 formal parent closure publication",
+          "Status": "APPROVED — 2026-10-28 — [EBH_5_OD_EBH5_08_CLOSURE_SIGNATURE_RECORD.md](EBH_5_OD_EBH5_08_CLOSURE_SIGNATURE_RECORD.md)",
+          "Blocks": "— (EBH-5 parent CLOSED — SCOPED)"
+        },
+        {
+          "line": 6,
+          "ID": "OD-EBH6-01",
+          "Decision": "Authorize EBH-6 implementation wave (OPERATOR APPROVED — EBH-6 IMPLEMENTATION WAVE OPEN)",
+          "Status": "APPROVED — 2026-10-29 — Q2-D2 Path B remediation scope only",
+          "Blocks": "Production delta authorized for EBH6-DEBT-Q2-D2"
+        },
+        {
+          "line": 7,
+          "ID": "OD-EBH6-02",
+          "Decision": "Accept EBH-6 plan / scope (independent plan audit)",
+          "Status": "APPROVED — 2026-10-28 — OPERATOR APPROVED — EBH-6 L9 EVIDENCE EXECUTION (OD-EBH6-02) — does not equal independent code acceptance or Protocol 03 PASS",
+          "Blocks": "Protocol 03 plan review unblocked for B-L9-5"
+        },
+        {
+          "line": 8,
+          "ID": "OD-EBH6-ADR-*",
+          "Decision": "Finding REQUIRES ARCHITECTURE DECISION without ADR",
+          "Status": "TRACKED",
+          "Blocks": "P3 remediation blocked per finding"
+        },
+        {
+          "line": 9,
+          "ID": "OD-EBH6-08",
+          "Decision": "Formal EBH-6 closure publication",
+          "Status": "APPROVED — 2026-10-29 — [EBH_6_OD_EBH6_08_CLOSURE_SIGNATURE_RECORD.md](EBH_6_OD_EBH6_08_CLOSURE_SIGNATURE_RECORD.md) · TEST_EXECUTION_SHA f27bfaf2f… · EVIDENCE_PUBLICATION_SHA 3c8e6122d…",
+          "Blocks": "EBH-6 parent CLOSED — SCOPED · DUP-X eligible"
+        },
+        {
+          "line": 10,
+          "ID": "OD-EBH6-Q2D2",
+          "Decision": "EBH6-DEBT-Q2-D2 — Path A vs Path B for Protocol 03",
+          "Status": "APPROVED — PATH B — 2026-10-29 — production typing remediation authorized; does not equal E01-PRE-01 / Protocol 03 PASS or EBH-6 CLOSED",
+          "Blocks": "Independent audit + semantic_core×F disposition until auditor accepts"
+        },
+        {
+          "line": 11,
+          "ID": "E02-OP-01",
+          "Decision": "EBH6-DEBT-APP-TYP-01..11 scoped typing debt (category A)",
+          "Status": "OPERATOR RATIFIED — 2026-10-29 — scoped _shared seams only; conditional on E02-AUD-01; no new unregistered Any/object seams; no admission/auth/tenant/recovery waiver",
+          "Blocks": "E02-AUD-01 PENDING — auditor may escalate any item to B"
+        }
+      ]
+    },
+    {
+      "header": [
+        "Field",
+        "Value"
+      ],
+      "rows": [
+        {
+          "line": 25,
+          "Field": "Branch",
+          "Value": "development"
+        },
+        {
+          "line": 26,
+          "Field": "CLOSURE_BASELINE_SHA",
+          "Value": "202239f726dd5e3fe23bf1a68cafa61c1eb9fca7 (contracts_typing)"
+        },
+        {
+          "line": 27,
+          "Field": "FINAL_CLOSURE_WAVE",
+          "Value": "CERTIFICATION_HANDOFF_SHA — see ledger after E09"
+        },
+        {
+          "line": 28,
+          "Field": "T2 repair",
+          "Value": "33b77c7828fff9d2606b2f8cf434b8d9c24a2c86"
+        },
+        {
+          "line": 29,
+          "Field": "EBH-5 parent",
+          "Value": "CLOSED — INDEPENDENTLY ACCEPTED (SCOPED) @ OD-EBH5-08"
+        },
+        {
+          "line": 30,
+          "Field": "Agent closure",
+          "Value": "Forbidden — no OD-EBH6-08, no EBH-6 — CLOSED"
+        }
+      ]
+    },
+    {
+      "header": [
+        "Doc",
+        "Stage"
+      ],
+      "rows": [
+        {
+          "line": 36,
+          "Doc": "[EBH_6_C0_BASELINE_AUDIT_RECORD.md](EBH_6_C0_BASELINE_AUDIT_RECORD.md)",
+          "Stage": "C0"
+        },
+        {
+          "line": 37,
+          "Doc": "[EBH_6_TECHNICAL_PRE_CERT_EVIDENCE_DOSSIER.md](EBH_6_TECHNICAL_PRE_CERT_EVIDENCE_DOSSIER.md)",
+          "Stage": "C1"
+        }
+      ]
+    },
+    {
+      "header": [
+        "Artifact",
+        "Purpose"
+      ],
+      "rows": [
+        {
+          "line": 41,
+          "Artifact": "[EBH_6_PRE_CERT_INDEPENDENT_AUDIT_WORKSHEET.md](EBH_6_PRE_CERT_INDEPENDENT_AUDIT_WORKSHEET.md)",
+          "Purpose": "E01"
+        },
+        {
+          "line": 42,
+          "Artifact": "[EBH_6_APP_TYP_DEBT_DISPOSITION_REGISTER.md](EBH_6_APP_TYP_DEBT_DISPOSITION_REGISTER.md)",
+          "Purpose": "E02"
+        },
+        {
+          "line": 43,
+          "Artifact": "[EBH_6_Q2D2_DECISION_DOSSIER.md](EBH_6_Q2D2_DECISION_DOSSIER.md)",
+          "Purpose": "E03"
+        },
+        {
+          "line": 44,
+          "Artifact": "[EBH_6_CONDITIONAL_REMEDIATION_REGISTER.md](EBH_6_CONDITIONAL_REMEDIATION_REGISTER.md)",
+          "Purpose": "E04"
+        },
+        {
+          "line": 45,
+          "Artifact": "[EBH_6_INDEPENDENT_REPLAY_CHECKLIST.md](EBH_6_INDEPENDENT_REPLAY_CHECKLIST.md)",
+          "Purpose": "E05–E08"
+        },
+        {
+          "line": 46,
+          "Artifact": "[EBH_6_PROTOCOL_03_EXECUTION_PACKAGE.md](EBH_6_PROTOCOL_03_EXECUTION_PACKAGE.md)",
+          "Purpose": "E10"
+        },
+        {
+          "line": 47,
+          "Artifact": "[EBH_6_OD_EBH6_08_CLOSURE_SIGNATURE_RECORD.md](EBH_6_OD_EBH6_08_CLOSURE_SIGNATURE_RECORD.md)",
+          "Purpose": "E11"
+        }
+      ]
+    },
+    {
+      "header": [
+        "Field",
+        "Value"
+      ],
+      "rows": [
+        {
+          "line": 53,
+          "Field": "Branch",
+          "Value": "development"
+        },
+        {
+          "line": 54,
+          "Field": "IMPLEMENTATION_SHA",
+          "Value": "129eee82dff33fd4d815643387a10fa2d56058bf"
+        },
+        {
+          "line": 55,
+          "Field": "EXPECTED_START_HEAD",
+          "Value": "11b896f7a35007e14ba859211351ec144c7a083e"
+        },
+        {
+          "line": 56,
+          "Field": "TEST_EXECUTION_SHA",
+          "Value": "129eee82dff33fd4d815643387a10fa2d56058bf"
+        },
+        {
+          "line": 57,
+          "Field": "EBH-5 parent",
+          "Value": "CLOSED — INDEPENDENTLY ACCEPTED (SCOPED) @ OD-EBH5-08"
+        },
+        {
+          "line": 58,
+          "Field": "EBH-5 independent audit SHA",
+          "Value": "33ecf19cc020b112d9e586c87b49e819202f5d6d (OD-EBH5-07 satisfied)"
+        },
+        {
+          "line": 59,
+          "Field": "Agent closure",
+          "Value": "Forbidden — no OD-EBH6-08, no EBH-6 — CLOSED"
+        }
+      ]
+    },
+    {
+      "header": [
+        "Step",
+        "Owner",
+        "Action"
+      ],
+      "rows": [
+        {
+          "line": 69,
+          "Step": "E1",
+          "Owner": "Operator",
+          "Action": "Resolve OD-EBH6-Q2D2 (evidence path A or remediation path B + OD-EBH6-01)"
+        },
+        {
+          "line": 70,
+          "Step": "E2",
+          "Owner": "Implementer + auditor",
+          "Action": "Pre-cert PASS on T2 review @ SHA (0 mandatory INSUFFICIENT)"
+        },
+        {
+          "line": 71,
+          "Step": "E3",
+          "Owner": "Independent auditor",
+          "Action": "Protocol 03 ECAP B1–B6"
+        },
+        {
+          "line": 72,
+          "Step": "E4",
+          "Owner": "Operator",
+          "Action": "OD-EBH6-08 — EBH-6 CLOSED on roadmap"
+        }
+      ]
+    }
+  ],
+  "lines": 75
+}

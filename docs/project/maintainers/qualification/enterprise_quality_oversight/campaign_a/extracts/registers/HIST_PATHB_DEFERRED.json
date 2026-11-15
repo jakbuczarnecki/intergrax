@@ -1,0 +1,159 @@
+{
+  "path": "docs/project/maintainers/qualification/historical_certification_campaign/HISTORICAL_PATH_B_DEFERRED_OBLIGATIONS.md",
+  "tables": [
+    {
+      "header": [
+        "FRZ id",
+        "requirement",
+        "live obligation",
+        "residual"
+      ],
+      "rows": [
+        {
+          "line": 7,
+          "FRZ id": "FRZ-PRD-01",
+          "requirement": "production qualification independent of lab/harness",
+          "live obligation": "Independent production qualification evidence; acceptance owner PROD-Q live gate / SCENARIO-GATE.",
+          "residual": "Live slice NOT QUALIFIED by design."
+        },
+        {
+          "line": 8,
+          "FRZ id": "FRZ-PRD-02",
+          "requirement": "provider/plugin qualification enforced",
+          "live obligation": "Per-provider live qualification (PROD-Q-P1, operator profiles).",
+          "residual": "Live slice NOT QUALIFIED by design. Architecture part (structural replaceability, EBH-5 / EBH-6) is NOT deferred: it is tracked under FRZ-RPL-01..04."
+        }
+      ]
+    },
+    {
+      "header": [
+        "FRZ id",
+        "primary classification",
+        "state",
+        "live obligation (deferred)"
+      ],
+      "rows": [
+        {
+          "line": 16,
+          "FRZ id": "FRZ-REG-08",
+          "primary classification": "QUALIFICATION_GAP",
+          "state": "QUALIFICATION_REQUIRED",
+          "live obligation (deferred)": "build_r1_sqlite_disposition for live HTTP / GCA is NOT_EXECUTED and owned by PROD-Q Dimension B (recorded dependency; REG-08 is not on the checklist Path B list L66)."
+        },
+        {
+          "line": 17,
+          "FRZ id": "FRZ-SEC-01",
+          "primary classification": "QUALIFICATION_GAP",
+          "state": "QUALIFICATION_REQUIRED",
+          "live obligation (deferred)": "Multi-instance (Kubernetes) trust anchor/global first-writer PIS (Decision-03; D03-A Spanner+Azure witness) - infra, not ratified/live."
+        },
+        {
+          "line": 18,
+          "FRZ id": "FRZ-SEC-04",
+          "primary classification": "QUALIFICATION_GAP",
+          "state": "QUALIFICATION_REQUIRED",
+          "live obligation (deferred)": "Operator production profiles (DIM6/DIM17) - Path B live-scoped (checklist L66)."
+        },
+        {
+          "line": 19,
+          "FRZ id": "FRZ-SEC-05",
+          "primary classification": "QUALIFICATION_GAP",
+          "state": "QUALIFICATION_REQUIRED",
+          "live obligation (deferred)": "Real provider sandboxes (see SEC-06)."
+        },
+        {
+          "line": 20,
+          "FRZ id": "FRZ-SEC-06",
+          "primary classification": "QUALIFICATION_GAP",
+          "state": "QUALIFICATION_REQUIRED",
+          "live obligation (deferred)": "E2B/Modal/Daytona production provider qualification (PROD-Q-P1) - row note says OPEN under PROD-Q."
+        },
+        {
+          "line": 21,
+          "FRZ id": "FRZ-SEC-09",
+          "primary classification": "QUALIFICATION_GAP",
+          "state": "QUALIFICATION_REQUIRED",
+          "live obligation (deferred)": "Operator/infra retention config (not platform)."
+        },
+        {
+          "line": 22,
+          "FRZ id": "FRZ-REL-03",
+          "primary classification": "QUALIFICATION_GAP",
+          "state": "QUALIFICATION_REQUIRED",
+          "live obligation (deferred)": "Multi-instance global first-writer PIS (Decision-03) - infra/live-dependent."
+        },
+        {
+          "line": 23,
+          "FRZ id": "FRZ-REL-05",
+          "primary classification": "QUALIFICATION_GAP",
+          "state": "QUALIFICATION_REQUIRED",
+          "live obligation (deferred)": "Provider native termination live behaviour."
+        },
+        {
+          "line": 24,
+          "FRZ id": "FRZ-REL-08",
+          "primary classification": "VALID_SCOPED_PASS_CANDIDATE",
+          "state": "AUDIT_REQUIRED",
+          "live obligation (deferred)": "Production capacity (see PRD-11)."
+        },
+        {
+          "line": 25,
+          "FRZ id": "FRZ-REL-09",
+          "primary classification": "VALID_SCOPED_PASS_CANDIDATE",
+          "state": "AUDIT_REQUIRED",
+          "live obligation (deferred)": "Production capacity (see PRD-11)."
+        },
+        {
+          "line": 26,
+          "FRZ id": "FRZ-REL-10",
+          "primary classification": "VALID_SCOPED_PASS_CANDIDATE",
+          "state": "AUDIT_REQUIRED",
+          "live obligation (deferred)": "Production capacity (see PRD-11)."
+        },
+        {
+          "line": 27,
+          "FRZ id": "FRZ-REL-11",
+          "primary classification": "VALID_SCOPED_PASS_CANDIDATE",
+          "state": "AUDIT_REQUIRED",
+          "live obligation (deferred)": "Production capacity (see PRD-11)."
+        },
+        {
+          "line": 28,
+          "FRZ id": "FRZ-PRD-03",
+          "primary classification": "QUALIFICATION_GAP",
+          "state": "QUALIFICATION_REQUIRED",
+          "live obligation (deferred)": "Unsupported-config proof for operator production profiles (DIM6/DIM17) - live (checklist L66)."
+        },
+        {
+          "line": 29,
+          "FRZ id": "FRZ-PRD-04",
+          "primary classification": "QUALIFICATION_GAP",
+          "state": "AUTHORITY_REQUIRED",
+          "live obligation (deferred)": "Live HTTP/GCA reproduction (R1-SQLITE-ENV-01 / PROD-Q-R1 mandatory child, roadmap places PROD-Q-R1 in live slice)."
+        },
+        {
+          "line": 30,
+          "FRZ id": "FRZ-PRD-08",
+          "primary classification": "QUALIFICATION_GAP",
+          "state": "QUALIFICATION_REQUIRED",
+          "live obligation (deferred)": "Production-graph bypass proof for unqualified operator profiles (live)."
+        },
+        {
+          "line": 31,
+          "FRZ id": "FRZ-PRD-11",
+          "primary classification": "QUALIFICATION_GAP",
+          "state": "QUALIFICATION_REQUIRED",
+          "live obligation (deferred)": "Load-level capacity of live deployment."
+        },
+        {
+          "line": 32,
+          "FRZ id": "FRZ-PRD-12",
+          "primary classification": "EVIDENCE_GAP",
+          "state": "QUALIFICATION_REQUIRED",
+          "live obligation (deferred)": "Operator runbook for live environments."
+        }
+      ]
+    }
+  ],
+  "lines": 39
+}

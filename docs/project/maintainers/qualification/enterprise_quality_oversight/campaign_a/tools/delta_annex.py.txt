@@ -1,0 +1,37 @@
+"""W5-T05: post-baseline delta annex (informative only; never changes a verdict): git log BASELINE..origin/development and findings possibly affected."""
+from __future__ import annotations
+
+import re
+import sys
+from pathlib import Path
+
+sys.path.insert(0, str(Path(__file__).parent))
+from common import *  # noqa
+import fl
+
+
+def main():
+    # origin/development tip is read from the main checkout's remote ref (fetch was done earlier in W5/W3)
+    tip = git("rev-parse", "origin/development", cwd=MAIN).stdout.strip()
+    log = git("log", "--format=%H%x1f%ci%x1f%s", f"{BASELINE_SHA}..{tip}", cwd=MAIN).stdout.strip().split("\n")
+    commits = [dict(zip(("sha", "date", "subject"), l.split("\x1f"))) for l in log if l]
+    files = [f for f in git("diff", "--name-only", BASELINE_SHA, tip, cwd=MAIN).stdout.split("\n") if f]
+    prod = [f for f in files if f.startswith(("intergrax/", "agents/", "applications/", "scripts/"))]
+    fset = set(files)
+    possibly = []
+    for f in fl.consolidate():
+        hit = []
+        for e in f.get("evidence", []):
+            m = re.match(r"^([^@\s]+)@", e)
+            if m and m.group(1) in fset:
+                hit.append(m.group(1))
+        txt = (f["title"] + " " + f.get("impact", "")).lower()
+        if any(k in txt for k in ("ebh-7", "f10", "act-n11", "iiac policy activation", "pdc-x", "t-igx-041")) or hit:
+            possibly.append({"finding_id": f["finding_id"], "reason": ("evidence path changed: " + ", ".join(hit[:3])) if hit else "subject touched by the PDC-X P7/P8 re-pin / rebind work in the delta"})
+    out = {"tip": tip, "n_commits": len(commits), "commits": commits, "changed_files": len(files), "changed_product_paths": len(prod), "changed_dirs": sorted({f.rsplit('/', 1)[0] for f in files})[:40], "possibly_affected_findings": possibly}
+    write_json(WS / "data" / "post_baseline_delta.json", out)
+    print("tip", tip[:9], "commits", len(commits), "files", len(files), "product", len(prod), "possibly affected", len(possibly))
+
+
+if __name__ == "__main__":
+    main()

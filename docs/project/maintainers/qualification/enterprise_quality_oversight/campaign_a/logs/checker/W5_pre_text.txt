@@ -1,0 +1,31 @@
+== EQO-A checker  wave=W5  baseline=258bbf6abb6fdbb92ef0185d058527fbb1e47f04  utc=2026-11-15T18:59:06Z ==
+
+== INVENTORY COMPLETENESS ==
+[PASS] C01: 100.0% (expected 292, inventoried 292); missing=[] extra=[]
+[PASS] C02: 100.0% complete (292 rows); incomplete=[]
+[PASS] C03: 49/49 CLOSED-type parent rows and 137/137 closed-type child rows (own source or documented inheritance from their root) have a resolving certification source or a linked finding; bad=[]
+[PASS] C04: FRZ rows=225 unique=225 raw-regex unique=225 diff=[] no-owner/status=[]
+[PASS] C05: 1298/1298 real entries have an owner or a linked finding (owner missing without finding: []); entries lacking severity/currency/evidence/arch_freeze_impact fields: 0
+[PASS] C06: 18 files checked; problems=[]
+[PASS] C07: 240 findings; schema errors=[]; unresolved evidence=[] (n=0)
+[PASS] C08: 535 rendered roll-ups recomputed; problems=[] (n=0)
+[PASS] C09: BLOCKER/HIGH rows below E3 not marked UNVERIFIED_HYPOTHESIS: []
+[PASS] C10: 53/53 B/C findings in the handoff; missing=[]
+[PASS] C11: WT porcelain empty; MAIN porcelain == W0 snapshot; MAIN HEAD unchanged
+[FAIL] C12: 356 manifest entries; mismatched=['A3/frz_rows.jsonl', 'A4/boundary_scan.md', 'A5/drift_rows.jsonl', 'A9/requalifications.jsonl', 'AUTHORITY_CONFLICT_REGISTER.md']; unlisted=[] (n=0)
+[PASS] C13: 12 exclusions; problems=[]
+[PASS] C14: 6/10 budget rows; problems=[]
+[PASS] C15: 20 seeds; unresolved/invalid=[] (n=0)
+[PASS] NOT-ASSESSED: NOT-ASSESSED count == 0
+
+== VERIFICATION STRENGTH ==
+findings by evidence level: {'E3': 160, 'E4': 4, 'E2': 66, 'E1': 10}
+findings by class x severity: {'GOVERNANCE_INCONSISTENCY/MEDIUM': 39, 'EVIDENCE_DEFICIENCY/HIGH': 1, 'CONFIRMED_DEFECT/BLOCKER': 2, 'GOVERNANCE_INCONSISTENCY/LOW': 36, 'EVIDENCE_DEFICIENCY/MEDIUM': 44, 'CONFIRMED_DEFECT/MEDIUM': 5, 'ARCHITECTURE_RISK/LOW': 8, 'EVIDENCE_DEFICIENCY/LOW': 20, 'CERTIFICATION_DRIFT/HIGH': 3, 'CERTIFICATION_DRIFT/MEDIUM': 23, 'CONFIRMED_DEFECT/HIGH': 1, 'GOVERNANCE_INCONSISTENCY/INFO': 4, 'UNVERIFIED_HYPOTHESIS/LOW': 7, 'ARCHITECTURE_RISK/MEDIUM': 14, 'ACCEPTED_SCOPED_LIMITATION/LOW': 4, 'ACCEPTED_SCOPED_LIMITATION/INFO': 7, 'CONFIRMED_DEFECT/LOW': 1, 'UNVERIFIED_HYPOTHESIS/MEDIUM': 12, 'EVIDENCE_DEFICIENCY/BLOCKER': 1, 'CERTIFICATION_DRIFT/LOW': 6, 'EVIDENCE_DEFICIENCY/INFO': 1, 'ACCEPTED_SCOPED_LIMITATION/MEDIUM': 1}
+A2/cert_rows.jsonl verdict: {'EV-INCOMPLETE': 13, 'EV-INCONSISTENT': 11, 'CV-SCOPED': 19, 'HIST-REQUAL': 5, 'OPEN_NOT_CERTIFIED': 11, 'CLAIM-UNSUPPORTED': 1}
+A5/drift_rows.jsonl drift_class: {'DRIFT-REQUALIFIED': 24, 'DRIFT-BENIGN': 12, 'DRIFT-NONE': 5, 'DRIFT-UNREQUALIFIED': 9}
+A2/cert_rows.jsonl E-level histogram: {'E2': 26, 'E3': 34}
+A3/frz_rows.jsonl E-level histogram: {'E2': 145, 'E1': 44, 'E0': 10, 'E3': 26}
+A4/concern_rows.jsonl E-level histogram: {'E3': 26, 'E2': 2}
+A5/drift_rows.jsonl E-level histogram: {'E3': 34, 'E2': 14, 'E4': 2}
+
+RESULT wave=W5: FAILED: C12

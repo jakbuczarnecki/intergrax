@@ -1,0 +1,82 @@
+"""A6-T01: ENT-AUDIT manifest analysis: 85 checks x kind x mode x severity x pg_id -> FRZ (G2 mapping, frz_coverage) -> 225 FRZ IDs.
+Label per FRZ ID: AUTOMATED | PARTIAL | MANUAL_ONLY | NONE. Output A6/coverage.jsonl (+ A6/checks.jsonl, A6/coverage_summary.json)."""
+from __future__ import annotations
+
+import fnmatch
+import re
+import sys
+from collections import Counter, defaultdict
+from pathlib import Path
+
+sys.path.insert(0, str(Path(__file__).parent))
+from common import *  # noqa
+
+MAN = "intergrax/platform/enterprise_audit/data/enterprise_audit_check_manifest.v1.json"
+
+
+def main():
+    man = json.loads(show_text(MAN))
+    log_read(MAN, note="A6-T01")
+    checks = {c["check_id"]: c for c in man["checks"]}
+    cov = read_json(WS / "logs" / "entaudit_full_dry" / "frz_coverage.v1.json")["rows"]
+    out_json = read_json(WS / "logs" / "entaudit_full_dry" / "enterprise_audit_outcomes.json")
+    frz = read_json(WS / "extracts" / "frz_rows.json")
+    # per-check records
+    crow = []
+    for cid, c in sorted(checks.items()):
+        cv = next((x for x in cov if x["check_id"] == cid), {})
+        pats = list(cv.get("frz_mapping") or []) + ([cv["frz_aud"]] if cv.get("frz_aud") else [])
+        crow.append({"check_id": cid, "category": c["category"], "entrypoint_kind": c["entrypoint_kind"], "entrypoint": c["entrypoint"][:200],
+                     "modes": sorted(c["modes"]), "fast_mandatory": c.get("fast_mandatory"), "mutating": c.get("mutating"), "pg_id": c["pg_id"],
+                     "severity_default": c["severity_default"], "executable": cv.get("executable"), "frz_patterns": sorted(set(pats)),
+                     "env_gated_hint": bool(re.search(r"semantic|gate_matrix|ENT_AUDIT_X_", c["entrypoint"], re.I))})
+    write_jsonl(WS / "A6" / "checks.jsonl", crow)
+    rows = []
+    AGG = "FRZ-AUD-03"
+    cat_of = {c["check_id"]: (c["check_id"].split("-")[2] if c["check_id"].startswith("ENT-A-") else c["check_id"].split("-")[0]) for c in crow}
+    for r in frz:
+        fid = r["frz_id"]
+        fam = r["family"]
+        exact, wild, agg = [], [], []
+        for c in crow:
+            for p in c["frz_patterns"]:
+                if p == fid and fid == AGG:
+                    agg.append(c["check_id"])
+                elif p == fid:
+                    exact.append(c["check_id"])
+                elif "*" in p and fnmatch.fnmatch(fid, p):
+                    wild.append(c["check_id"])
+        byname = [c["check_id"] for c in crow if cat_of[c["check_id"]] == fam and c["check_id"] not in wild and c["check_id"] not in exact]
+        exe = {c["check_id"]: c["executable"] for c in crow}
+        if [x for x in exact if exe.get(x)]:
+            label, basis = "AUTOMATED", "exact FRZ ID mapped to an executable check"
+        elif [x for x in wild if exe.get(x)]:
+            label, basis = "PARTIAL", "family wildcard mapping to executable checks (criterion-level assertion not shown by the mapping)"
+        elif byname:
+            label, basis = "PARTIAL", "checks exist whose ID category equals the family, but the coverage map does not map them to this family (they map to FRZ-AUD-03 only)"
+        elif fid == AGG and agg:
+            label, basis = "PARTIAL", f"aggregator criterion: {len(agg)} checks of ten categories are mapped only to FRZ-AUD-03"
+        else:
+            label, basis = "NONE", "no check maps to this FRZ ID and no check carries the family category"
+        rows.append({"frz_id": fid, "family": fam, "coverage_label": label, "basis": basis, "exact_checks": sorted(exact), "family_checks": sorted(set(wild)), "name_only_checks": sorted(byname)[:12],
+                     "n_exact": len(exact), "n_family": len(set(wild)), "n_name_only": len(byname), "checklist_status": r["status_base"], "exclusion_id": None})
+    write_jsonl(WS / "A6" / "coverage.jsonl", rows)
+    lab = Counter(r["coverage_label"] for r in rows)
+    famlab = defaultdict(Counter)
+    for r in rows:
+        famlab[r["family"]][r["coverage_label"]] += 1
+    summary = {"checks": len(crow), "by_category": dict(Counter(c["category"] for c in crow)), "by_kind": dict(Counter(c["entrypoint_kind"] for c in crow)),
+               "by_pg": dict(Counter(c["pg_id"] for c in crow)), "by_severity": dict(Counter(c["severity_default"] for c in crow)),
+               "mutating": sum(c.get("mutating") for c in crow), "env_gated_hint": [c["check_id"] for c in crow if c["env_gated_hint"]],
+               "frz_labels": dict(lab), "family_labels": {k: dict(v) for k, v in famlab.items()},
+               "pass_labels_with_none": [r["frz_id"] for r in rows if r["coverage_label"] == "NONE" and r["checklist_status"].startswith("PASS")],
+               "dry_run_outcomes_keys": list(out_json.keys()) if isinstance(out_json, dict) else str(type(out_json))}
+    write_json(WS / "A6" / "coverage_summary.json", summary)
+    print("labels", dict(lab))
+    print("by_kind", summary["by_kind"]); print("env hints", summary["env_gated_hint"])
+    print("families with NONE:", {k: v["NONE"] for k, v in famlab.items() if v.get("NONE")})
+    print("PASS rows with NONE:", len(summary["pass_labels_with_none"]))
+
+
+if __name__ == "__main__":
+    main()

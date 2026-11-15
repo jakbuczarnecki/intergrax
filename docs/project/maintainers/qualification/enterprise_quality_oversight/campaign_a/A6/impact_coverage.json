@@ -1,0 +1,1102 @@
+{
+ "n_prefixes": 117,
+ "n_json": 117,
+ "n_pdc": 39,
+ "rows": [
+  {
+   "path": "intergrax/agent_distribution",
+   "covered_by_prefix": [
+    "intergrax/agent_distribution"
+   ],
+   "only_deeper_prefixes": 0,
+   "uncovered": false,
+   "py_files": 78
+  },
+  {
+   "path": "intergrax/agent_kit",
+   "covered_by_prefix": [],
+   "only_deeper_prefixes": 0,
+   "uncovered": true,
+   "py_files": 3
+  },
+  {
+   "path": "intergrax/agents",
+   "covered_by_prefix": [],
+   "only_deeper_prefixes": 0,
+   "uncovered": true,
+   "py_files": 80
+  },
+  {
+   "path": "intergrax/applications",
+   "covered_by_prefix": [
+    "intergrax/applications"
+   ],
+   "only_deeper_prefixes": 0,
+   "uncovered": false,
+   "py_files": 463
+  },
+  {
+   "path": "intergrax/autonomous_work",
+   "covered_by_prefix": [],
+   "only_deeper_prefixes": 0,
+   "uncovered": true,
+   "py_files": 72
+  },
+  {
+   "path": "intergrax/background_tasks",
+   "covered_by_prefix": [],
+   "only_deeper_prefixes": 0,
+   "uncovered": true,
+   "py_files": 6
+  },
+  {
+   "path": "intergrax/capability_acquisition",
+   "covered_by_prefix": [],
+   "only_deeper_prefixes": 0,
+   "uncovered": true,
+   "py_files": 10
+  },
+  {
+   "path": "intergrax/capability_catalog",
+   "covered_by_prefix": [],
+   "only_deeper_prefixes": 0,
+   "uncovered": true,
+   "py_files": 39
+  },
+  {
+   "path": "intergrax/capability_metering",
+   "covered_by_prefix": [],
+   "only_deeper_prefixes": 0,
+   "uncovered": true,
+   "py_files": 7
+  },
+  {
+   "path": "intergrax/capability_qualification",
+   "covered_by_prefix": [],
+   "only_deeper_prefixes": 0,
+   "uncovered": true,
+   "py_files": 7
+  },
+  {
+   "path": "intergrax/cli",
+   "covered_by_prefix": [],
+   "only_deeper_prefixes": 0,
+   "uncovered": true,
+   "py_files": 17
+  },
+  {
+   "path": "intergrax/codecraft",
+   "covered_by_prefix": [],
+   "only_deeper_prefixes": 0,
+   "uncovered": true,
+   "py_files": 8
+  },
+  {
+   "path": "intergrax/collaborative_work",
+   "covered_by_prefix": [
+    "intergrax/collaborative_work"
+   ],
+   "only_deeper_prefixes": 0,
+   "uncovered": false,
+   "py_files": 48
+  },
+  {
+   "path": "intergrax/compat",
+   "covered_by_prefix": [],
+   "only_deeper_prefixes": 0,
+   "uncovered": true,
+   "py_files": 3
+  },
+  {
+   "path": "intergrax/context",
+   "covered_by_prefix": [
+    "intergrax/context"
+   ],
+   "only_deeper_prefixes": 0,
+   "uncovered": false,
+   "py_files": 61
+  },
+  {
+   "path": "intergrax/contracts",
+   "covered_by_prefix": [
+    "intergrax/contracts"
+   ],
+   "only_deeper_prefixes": 0,
+   "uncovered": false,
+   "py_files": 781
+  },
+  {
+   "path": "intergrax/core",
+   "covered_by_prefix": [
+    "intergrax/core"
+   ],
+   "only_deeper_prefixes": 0,
+   "uncovered": false,
+   "py_files": 50
+  },
+  {
+   "path": "intergrax/debug",
+   "covered_by_prefix": [],
+   "only_deeper_prefixes": 0,
+   "uncovered": true,
+   "py_files": 13
+  },
+  {
+   "path": "intergrax/decision_system",
+   "covered_by_prefix": [],
+   "only_deeper_prefixes": 0,
+   "uncovered": true,
+   "py_files": 21
+  },
+  {
+   "path": "intergrax/dev_support",
+   "covered_by_prefix": [],
+   "only_deeper_prefixes": 0,
+   "uncovered": true,
+   "py_files": 3
+  },
+  {
+   "path": "intergrax/distributed",
+   "covered_by_prefix": [],
+   "only_deeper_prefixes": 0,
+   "uncovered": true,
+   "py_files": 14
+  },
+  {
+   "path": "intergrax/eval",
+   "covered_by_prefix": [
+    "intergrax/eval"
+   ],
+   "only_deeper_prefixes": 0,
+   "uncovered": false,
+   "py_files": 9
+  },
+  {
+   "path": "intergrax/experiments",
+   "covered_by_prefix": [],
+   "only_deeper_prefixes": 1,
+   "uncovered": false,
+   "py_files": 7
+  },
+  {
+   "path": "intergrax/fastapi_core",
+   "covered_by_prefix": [],
+   "only_deeper_prefixes": 0,
+   "uncovered": true,
+   "py_files": 84
+  },
+  {
+   "path": "intergrax/globals",
+   "covered_by_prefix": [],
+   "only_deeper_prefixes": 0,
+   "uncovered": true,
+   "py_files": 2
+  },
+  {
+   "path": "intergrax/harness",
+   "covered_by_prefix": [],
+   "only_deeper_prefixes": 0,
+   "uncovered": true,
+   "py_files": 6
+  },
+  {
+   "path": "intergrax/hosting",
+   "covered_by_prefix": [
+    "intergrax/hosting"
+   ],
+   "only_deeper_prefixes": 0,
+   "uncovered": false,
+   "py_files": 44
+  },
+  {
+   "path": "intergrax/integrations",
+   "covered_by_prefix": [
+    "intergrax/integrations"
+   ],
+   "only_deeper_prefixes": 0,
+   "uncovered": false,
+   "py_files": 1755
+  },
+  {
+   "path": "intergrax/knowledge",
+   "covered_by_prefix": [],
+   "only_deeper_prefixes": 0,
+   "uncovered": true,
+   "py_files": 5
+  },
+  {
+   "path": "intergrax/lab",
+   "covered_by_prefix": [],
+   "only_deeper_prefixes": 0,
+   "uncovered": true,
+   "py_files": 2
+  },
+  {
+   "path": "intergrax/legacy",
+   "covered_by_prefix": [],
+   "only_deeper_prefixes": 0,
+   "uncovered": true,
+   "py_files": 24
+  },
+  {
+   "path": "intergrax/llm",
+   "covered_by_prefix": [],
+   "only_deeper_prefixes": 0,
+   "uncovered": true,
+   "py_files": 2
+  },
+  {
+   "path": "intergrax/llm_adapters",
+   "covered_by_prefix": [
+    "intergrax/llm_adapters"
+   ],
+   "only_deeper_prefixes": 0,
+   "uncovered": false,
+   "py_files": 136
+  },
+  {
+   "path": "intergrax/marketplace",
+   "covered_by_prefix": [],
+   "only_deeper_prefixes": 0,
+   "uncovered": true,
+   "py_files": 47
+  },
+  {
+   "path": "intergrax/memory",
+   "covered_by_prefix": [
+    "intergrax/memory"
+   ],
+   "only_deeper_prefixes": 0,
+   "uncovered": false,
+   "py_files": 123
+  },
+  {
+   "path": "intergrax/model_inference",
+   "covered_by_prefix": [],
+   "only_deeper_prefixes": 0,
+   "uncovered": true,
+   "py_files": 29
+  },
+  {
+   "path": "intergrax/multimedia",
+   "covered_by_prefix": [],
+   "only_deeper_prefixes": 0,
+   "uncovered": true,
+   "py_files": 8
+  },
+  {
+   "path": "intergrax/platform",
+   "covered_by_prefix": [],
+   "only_deeper_prefixes": 12,
+   "uncovered": false,
+   "py_files": 24
+  },
+  {
+   "path": "intergrax/prompts",
+   "covered_by_prefix": [],
+   "only_deeper_prefixes": 0,
+   "uncovered": true,
+   "py_files": 20
+  },
+  {
+   "path": "intergrax/proof_data",
+   "covered_by_prefix": [],
+   "only_deeper_prefixes": 0,
+   "uncovered": true,
+   "py_files": 12
+  },
+  {
+   "path": "intergrax/proofs",
+   "covered_by_prefix": [],
+   "only_deeper_prefixes": 0,
+   "uncovered": true,
+   "py_files": 6
+  },
+  {
+   "path": "intergrax/queueing",
+   "covered_by_prefix": [
+    "intergrax/queueing"
+   ],
+   "only_deeper_prefixes": 0,
+   "uncovered": false,
+   "py_files": 37
+  },
+  {
+   "path": "intergrax/rag",
+   "covered_by_prefix": [
+    "intergrax/rag"
+   ],
+   "only_deeper_prefixes": 0,
+   "uncovered": false,
+   "py_files": 284
+  },
+  {
+   "path": "intergrax/scaffold",
+   "covered_by_prefix": [],
+   "only_deeper_prefixes": 0,
+   "uncovered": true,
+   "py_files": 30
+  },
+  {
+   "path": "intergrax/skills",
+   "covered_by_prefix": [
+    "intergrax/skills"
+   ],
+   "only_deeper_prefixes": 0,
+   "uncovered": false,
+   "py_files": 197
+  },
+  {
+   "path": "intergrax/speech_adapters",
+   "covered_by_prefix": [],
+   "only_deeper_prefixes": 0,
+   "uncovered": true,
+   "py_files": 10
+  },
+  {
+   "path": "intergrax/supervisor",
+   "covered_by_prefix": [],
+   "only_deeper_prefixes": 0,
+   "uncovered": true,
+   "py_files": 5
+  },
+  {
+   "path": "intergrax/tokenizers",
+   "covered_by_prefix": [],
+   "only_deeper_prefixes": 0,
+   "uncovered": true,
+   "py_files": 15
+  },
+  {
+   "path": "intergrax/tools",
+   "covered_by_prefix": [
+    "intergrax/tools"
+   ],
+   "only_deeper_prefixes": 0,
+   "uncovered": false,
+   "py_files": 397
+  },
+  {
+   "path": "intergrax/ucl",
+   "covered_by_prefix": [],
+   "only_deeper_prefixes": 0,
+   "uncovered": true,
+   "py_files": 3
+  },
+  {
+   "path": "intergrax/utils",
+   "covered_by_prefix": [],
+   "only_deeper_prefixes": 0,
+   "uncovered": true,
+   "py_files": 4
+  },
+  {
+   "path": "intergrax/websearch",
+   "covered_by_prefix": [],
+   "only_deeper_prefixes": 0,
+   "uncovered": true,
+   "py_files": 39
+  },
+  {
+   "path": "intergrax/runtime/adaptive",
+   "covered_by_prefix": [],
+   "only_deeper_prefixes": 0,
+   "uncovered": true,
+   "py_files": 49
+  },
+  {
+   "path": "intergrax/runtime/agent_governance",
+   "covered_by_prefix": [
+    "intergrax/runtime/agent_governance"
+   ],
+   "only_deeper_prefixes": 0,
+   "uncovered": false,
+   "py_files": 12
+  },
+  {
+   "path": "intergrax/runtime/architecture",
+   "covered_by_prefix": [
+    "intergrax/runtime/architecture"
+   ],
+   "only_deeper_prefixes": 0,
+   "uncovered": false,
+   "py_files": 62
+  },
+  {
+   "path": "intergrax/runtime/attestation",
+   "covered_by_prefix": [
+    "intergrax/runtime/attestation"
+   ],
+   "only_deeper_prefixes": 0,
+   "uncovered": false,
+   "py_files": 10
+  },
+  {
+   "path": "intergrax/runtime/background_execution",
+   "covered_by_prefix": [],
+   "only_deeper_prefixes": 0,
+   "uncovered": true,
+   "py_files": 11
+  },
+  {
+   "path": "intergrax/runtime/cancellation",
+   "covered_by_prefix": [],
+   "only_deeper_prefixes": 0,
+   "uncovered": true,
+   "py_files": 4
+  },
+  {
+   "path": "intergrax/runtime/capacity",
+   "covered_by_prefix": [],
+   "only_deeper_prefixes": 0,
+   "uncovered": true,
+   "py_files": 19
+  },
+  {
+   "path": "intergrax/runtime/codecraft",
+   "covered_by_prefix": [],
+   "only_deeper_prefixes": 0,
+   "uncovered": true,
+   "py_files": 20
+  },
+  {
+   "path": "intergrax/runtime/cognition",
+   "covered_by_prefix": [],
+   "only_deeper_prefixes": 0,
+   "uncovered": true,
+   "py_files": 1
+  },
+  {
+   "path": "intergrax/runtime/config",
+   "covered_by_prefix": [],
+   "only_deeper_prefixes": 0,
+   "uncovered": true,
+   "py_files": 1
+  },
+  {
+   "path": "intergrax/runtime/context",
+   "covered_by_prefix": [],
+   "only_deeper_prefixes": 0,
+   "uncovered": true,
+   "py_files": 3
+  },
+  {
+   "path": "intergrax/runtime/context_lifecycle",
+   "covered_by_prefix": [],
+   "only_deeper_prefixes": 0,
+   "uncovered": true,
+   "py_files": 9
+  },
+  {
+   "path": "intergrax/runtime/decision_verification_stages",
+   "covered_by_prefix": [],
+   "only_deeper_prefixes": 0,
+   "uncovered": true,
+   "py_files": 7
+  },
+  {
+   "path": "intergrax/runtime/diagnostics",
+   "covered_by_prefix": [],
+   "only_deeper_prefixes": 0,
+   "uncovered": true,
+   "py_files": 86
+  },
+  {
+   "path": "intergrax/runtime/enterprise_reliability",
+   "covered_by_prefix": [],
+   "only_deeper_prefixes": 0,
+   "uncovered": true,
+   "py_files": 29
+  },
+  {
+   "path": "intergrax/runtime/evaluation",
+   "covered_by_prefix": [],
+   "only_deeper_prefixes": 0,
+   "uncovered": true,
+   "py_files": 1
+  },
+  {
+   "path": "intergrax/runtime/events",
+   "covered_by_prefix": [],
+   "only_deeper_prefixes": 0,
+   "uncovered": true,
+   "py_files": 48
+  },
+  {
+   "path": "intergrax/runtime/evidence",
+   "covered_by_prefix": [
+    "intergrax/runtime/evidence"
+   ],
+   "only_deeper_prefixes": 0,
+   "uncovered": false,
+   "py_files": 23
+  },
+  {
+   "path": "intergrax/runtime/execution",
+   "covered_by_prefix": [
+    "intergrax/runtime/execution"
+   ],
+   "only_deeper_prefixes": 0,
+   "uncovered": false,
+   "py_files": 255
+  },
+  {
+   "path": "intergrax/runtime/execution_evidence",
+   "covered_by_prefix": [
+    "intergrax/runtime/execution_evidence"
+   ],
+   "only_deeper_prefixes": 0,
+   "uncovered": false,
+   "py_files": 5
+  },
+  {
+   "path": "intergrax/runtime/external_operations",
+   "covered_by_prefix": [],
+   "only_deeper_prefixes": 0,
+   "uncovered": true,
+   "py_files": 30
+  },
+  {
+   "path": "intergrax/runtime/governance",
+   "covered_by_prefix": [],
+   "only_deeper_prefixes": 0,
+   "uncovered": true,
+   "py_files": 56
+  },
+  {
+   "path": "intergrax/runtime/hooks",
+   "covered_by_prefix": [],
+   "only_deeper_prefixes": 0,
+   "uncovered": true,
+   "py_files": 10
+  },
+  {
+   "path": "intergrax/runtime/human",
+   "covered_by_prefix": [],
+   "only_deeper_prefixes": 0,
+   "uncovered": true,
+   "py_files": 19
+  },
+  {
+   "path": "intergrax/runtime/integrations",
+   "covered_by_prefix": [
+    "intergrax/runtime/integrations"
+   ],
+   "only_deeper_prefixes": 0,
+   "uncovered": false,
+   "py_files": 20
+  },
+  {
+   "path": "intergrax/runtime/interactions",
+   "covered_by_prefix": [],
+   "only_deeper_prefixes": 0,
+   "uncovered": true,
+   "py_files": 27
+  },
+  {
+   "path": "intergrax/runtime/interrupts",
+   "covered_by_prefix": [],
+   "only_deeper_prefixes": 0,
+   "uncovered": true,
+   "py_files": 2
+  },
+  {
+   "path": "intergrax/runtime/invariants",
+   "covered_by_prefix": [],
+   "only_deeper_prefixes": 0,
+   "uncovered": true,
+   "py_files": 7
+  },
+  {
+   "path": "intergrax/runtime/kernel",
+   "covered_by_prefix": [],
+   "only_deeper_prefixes": 0,
+   "uncovered": true,
+   "py_files": 3
+  },
+  {
+   "path": "intergrax/runtime/llm",
+   "covered_by_prefix": [
+    "intergrax/runtime/llm"
+   ],
+   "only_deeper_prefixes": 0,
+   "uncovered": false,
+   "py_files": 3
+  },
+  {
+   "path": "intergrax/runtime/long_running",
+   "covered_by_prefix": [
+    "intergrax/runtime/long_running"
+   ],
+   "only_deeper_prefixes": 0,
+   "uncovered": false,
+   "py_files": 22
+  },
+  {
+   "path": "intergrax/runtime/metrics",
+   "covered_by_prefix": [],
+   "only_deeper_prefixes": 0,
+   "uncovered": true,
+   "py_files": 2
+  },
+  {
+   "path": "intergrax/runtime/middleware",
+   "covered_by_prefix": [],
+   "only_deeper_prefixes": 0,
+   "uncovered": true,
+   "py_files": 6
+  },
+  {
+   "path": "intergrax/runtime/migration",
+   "covered_by_prefix": [],
+   "only_deeper_prefixes": 0,
+   "uncovered": true,
+   "py_files": 7
+  },
+  {
+   "path": "intergrax/runtime/modality",
+   "covered_by_prefix": [],
+   "only_deeper_prefixes": 0,
+   "uncovered": true,
+   "py_files": 2
+  },
+  {
+   "path": "intergrax/runtime/nexus",
+   "covered_by_prefix": [],
+   "only_deeper_prefixes": 6,
+   "uncovered": false,
+   "py_files": 328
+  },
+  {
+   "path": "intergrax/runtime/notifications",
+   "covered_by_prefix": [],
+   "only_deeper_prefixes": 0,
+   "uncovered": true,
+   "py_files": 21
+  },
+  {
+   "path": "intergrax/runtime/observability",
+   "covered_by_prefix": [
+    "intergrax/runtime/observability"
+   ],
+   "only_deeper_prefixes": 0,
+   "uncovered": false,
+   "py_files": 102
+  },
+  {
+   "path": "intergrax/runtime/organization",
+   "covered_by_prefix": [],
+   "only_deeper_prefixes": 0,
+   "uncovered": true,
+   "py_files": 8
+  },
+  {
+   "path": "intergrax/runtime/persistence",
+   "covered_by_prefix": [
+    "intergrax/runtime/persistence"
+   ],
+   "only_deeper_prefixes": 0,
+   "uncovered": false,
+   "py_files": 4
+  },
+  {
+   "path": "intergrax/runtime/plugins",
+   "covered_by_prefix": [],
+   "only_deeper_prefixes": 0,
+   "uncovered": true,
+   "py_files": 6
+  },
+  {
+   "path": "intergrax/runtime/policy",
+   "covered_by_prefix": [],
+   "only_deeper_prefixes": 1,
+   "uncovered": false,
+   "py_files": 40
+  },
+  {
+   "path": "intergrax/runtime/prediction",
+   "covered_by_prefix": [],
+   "only_deeper_prefixes": 0,
+   "uncovered": true,
+   "py_files": 50
+  },
+  {
+   "path": "intergrax/runtime/prevention",
+   "covered_by_prefix": [],
+   "only_deeper_prefixes": 0,
+   "uncovered": true,
+   "py_files": 20
+  },
+  {
+   "path": "intergrax/runtime/registry",
+   "covered_by_prefix": [
+    "intergrax/runtime/registry"
+   ],
+   "only_deeper_prefixes": 0,
+   "uncovered": false,
+   "py_files": 10
+  },
+  {
+   "path": "intergrax/runtime/reliability",
+   "covered_by_prefix": [],
+   "only_deeper_prefixes": 0,
+   "uncovered": true,
+   "py_files": 2
+  },
+  {
+   "path": "intergrax/runtime/replay",
+   "covered_by_prefix": [
+    "intergrax/runtime/replay"
+   ],
+   "only_deeper_prefixes": 0,
+   "uncovered": false,
+   "py_files": 22
+  },
+  {
+   "path": "intergrax/runtime/resilience",
+   "covered_by_prefix": [],
+   "only_deeper_prefixes": 0,
+   "uncovered": true,
+   "py_files": 10
+  },
+  {
+   "path": "intergrax/runtime/runtime_inspection",
+   "covered_by_prefix": [],
+   "only_deeper_prefixes": 0,
+   "uncovered": true,
+   "py_files": 22
+  },
+  {
+   "path": "intergrax/runtime/runtime_intelligence",
+   "covered_by_prefix": [],
+   "only_deeper_prefixes": 0,
+   "uncovered": true,
+   "py_files": 8
+  },
+  {
+   "path": "intergrax/runtime/sandbox",
+   "covered_by_prefix": [],
+   "only_deeper_prefixes": 0,
+   "uncovered": true,
+   "py_files": 16
+  },
+  {
+   "path": "intergrax/runtime/schema",
+   "covered_by_prefix": [],
+   "only_deeper_prefixes": 0,
+   "uncovered": true,
+   "py_files": 2
+  },
+  {
+   "path": "intergrax/runtime/security",
+   "covered_by_prefix": [
+    "intergrax/runtime/security"
+   ],
+   "only_deeper_prefixes": 0,
+   "uncovered": false,
+   "py_files": 18
+  },
+  {
+   "path": "intergrax/runtime/self_healing",
+   "covered_by_prefix": [],
+   "only_deeper_prefixes": 0,
+   "uncovered": true,
+   "py_files": 97
+  },
+  {
+   "path": "intergrax/runtime/task",
+   "covered_by_prefix": [
+    "intergrax/runtime/task"
+   ],
+   "only_deeper_prefixes": 0,
+   "uncovered": false,
+   "py_files": 20
+  },
+  {
+   "path": "intergrax/runtime/task_memory",
+   "covered_by_prefix": [],
+   "only_deeper_prefixes": 0,
+   "uncovered": true,
+   "py_files": 16
+  },
+  {
+   "path": "intergrax/runtime/token_optimization",
+   "covered_by_prefix": [],
+   "only_deeper_prefixes": 0,
+   "uncovered": true,
+   "py_files": 54
+  },
+  {
+   "path": "intergrax/runtime/tools",
+   "covered_by_prefix": [],
+   "only_deeper_prefixes": 0,
+   "uncovered": true,
+   "py_files": 10
+  },
+  {
+   "path": "intergrax/runtime/transport",
+   "covered_by_prefix": [],
+   "only_deeper_prefixes": 0,
+   "uncovered": true,
+   "py_files": 4
+  },
+  {
+   "path": "intergrax/runtime/user_profile",
+   "covered_by_prefix": [],
+   "only_deeper_prefixes": 0,
+   "uncovered": true,
+   "py_files": 6
+  },
+  {
+   "path": "intergrax/runtime/vendor_knowledge",
+   "covered_by_prefix": [
+    "intergrax/runtime/vendor_knowledge"
+   ],
+   "only_deeper_prefixes": 0,
+   "uncovered": false,
+   "py_files": 96
+  },
+  {
+   "path": "intergrax/runtime/wiring",
+   "covered_by_prefix": [],
+   "only_deeper_prefixes": 0,
+   "uncovered": true,
+   "py_files": 10
+  },
+  {
+   "path": "intergrax/runtime/workspace",
+   "covered_by_prefix": [],
+   "only_deeper_prefixes": 0,
+   "uncovered": true,
+   "py_files": 6
+  },
+  {
+   "path": "agents/boundary_demo",
+   "covered_by_prefix": [],
+   "only_deeper_prefixes": 0,
+   "uncovered": true,
+   "py_files": 6
+  },
+  {
+   "path": "agents/dispute_analyst",
+   "covered_by_prefix": [],
+   "only_deeper_prefixes": 0,
+   "uncovered": true,
+   "py_files": 8
+  },
+  {
+   "path": "agents/dispute_intake",
+   "covered_by_prefix": [],
+   "only_deeper_prefixes": 0,
+   "uncovered": true,
+   "py_files": 8
+  },
+  {
+   "path": "agents/dispute_scenario",
+   "covered_by_prefix": [],
+   "only_deeper_prefixes": 0,
+   "uncovered": true,
+   "py_files": 8
+  },
+  {
+   "path": "agents/dispute_strategist",
+   "covered_by_prefix": [],
+   "only_deeper_prefixes": 0,
+   "uncovered": true,
+   "py_files": 8
+  },
+  {
+   "path": "agents/echo",
+   "covered_by_prefix": [],
+   "only_deeper_prefixes": 0,
+   "uncovered": true,
+   "py_files": 3
+  },
+  {
+   "path": "agents/external_contractor_adapter",
+   "covered_by_prefix": [],
+   "only_deeper_prefixes": 0,
+   "uncovered": true,
+   "py_files": 40
+  },
+  {
+   "path": "agents/intergrax_assistant",
+   "covered_by_prefix": [],
+   "only_deeper_prefixes": 0,
+   "uncovered": true,
+   "py_files": 8
+  },
+  {
+   "path": "agents/lab",
+   "covered_by_prefix": [],
+   "only_deeper_prefixes": 0,
+   "uncovered": true,
+   "py_files": 3
+  },
+  {
+   "path": "agents/legal",
+   "covered_by_prefix": [],
+   "only_deeper_prefixes": 0,
+   "uncovered": true,
+   "py_files": 8
+  },
+  {
+   "path": "agents/local_indexer",
+   "covered_by_prefix": [],
+   "only_deeper_prefixes": 0,
+   "uncovered": true,
+   "py_files": 13
+  },
+  {
+   "path": "agents/local_search",
+   "covered_by_prefix": [],
+   "only_deeper_prefixes": 0,
+   "uncovered": true,
+   "py_files": 17
+  },
+  {
+   "path": "agents/local_synthesizer",
+   "covered_by_prefix": [],
+   "only_deeper_prefixes": 0,
+   "uncovered": true,
+   "py_files": 14
+  },
+  {
+   "path": "agents/model_routing_qualifier",
+   "covered_by_prefix": [],
+   "only_deeper_prefixes": 0,
+   "uncovered": true,
+   "py_files": 10
+  },
+  {
+   "path": "agents/organization_worker",
+   "covered_by_prefix": [],
+   "only_deeper_prefixes": 0,
+   "uncovered": true,
+   "py_files": 2
+  },
+  {
+   "path": "agents/problem_radar",
+   "covered_by_prefix": [],
+   "only_deeper_prefixes": 0,
+   "uncovered": true,
+   "py_files": 10
+  },
+  {
+   "path": "agents/research",
+   "covered_by_prefix": [],
+   "only_deeper_prefixes": 0,
+   "uncovered": true,
+   "py_files": 6
+  },
+  {
+   "path": "agents/signoff_probe",
+   "covered_by_prefix": [],
+   "only_deeper_prefixes": 0,
+   "uncovered": true,
+   "py_files": 8
+  },
+  {
+   "path": "agents/tool_selection_qualifier",
+   "covered_by_prefix": [],
+   "only_deeper_prefixes": 0,
+   "uncovered": true,
+   "py_files": 7
+  },
+  {
+   "path": "agents/vendor_discovery",
+   "covered_by_prefix": [],
+   "only_deeper_prefixes": 0,
+   "uncovered": true,
+   "py_files": 10
+  },
+  {
+   "path": "agents/web_search_qualifier",
+   "covered_by_prefix": [],
+   "only_deeper_prefixes": 0,
+   "uncovered": true,
+   "py_files": 18
+  },
+  {
+   "path": "applications/attestation_demo",
+   "covered_by_prefix": [
+    "applications"
+   ],
+   "only_deeper_prefixes": 0,
+   "uncovered": false,
+   "py_files": 20
+  },
+  {
+   "path": "applications/dispute_sim_application",
+   "covered_by_prefix": [
+    "applications"
+   ],
+   "only_deeper_prefixes": 0,
+   "uncovered": false,
+   "py_files": 24
+  },
+  {
+   "path": "applications/governed_contractor_application",
+   "covered_by_prefix": [
+    "applications"
+   ],
+   "only_deeper_prefixes": 0,
+   "uncovered": false,
+   "py_files": 81
+  },
+  {
+   "path": "applications/intergrax_assistant_application",
+   "covered_by_prefix": [
+    "applications"
+   ],
+   "only_deeper_prefixes": 0,
+   "uncovered": false,
+   "py_files": 16
+  },
+  {
+   "path": "applications/lab_application",
+   "covered_by_prefix": [
+    "applications"
+   ],
+   "only_deeper_prefixes": 0,
+   "uncovered": false,
+   "py_files": 18
+  },
+  {
+   "path": "applications/legal_application",
+   "covered_by_prefix": [
+    "applications"
+   ],
+   "only_deeper_prefixes": 0,
+   "uncovered": false,
+   "py_files": 29
+  },
+  {
+   "path": "applications/local_workspace_application",
+   "covered_by_prefix": [
+    "applications"
+   ],
+   "only_deeper_prefixes": 0,
+   "uncovered": false,
+   "py_files": 463
+  },
+  {
+   "path": "applications/poc_template_application",
+   "covered_by_prefix": [
+    "applications"
+   ],
+   "only_deeper_prefixes": 0,
+   "uncovered": false,
+   "py_files": 17
+  },
+  {
+   "path": "applications/research_application",
+   "covered_by_prefix": [
+    "applications"
+   ],
+   "only_deeper_prefixes": 0,
+   "uncovered": false,
+   "py_files": 28
+  }
+ ]
+}

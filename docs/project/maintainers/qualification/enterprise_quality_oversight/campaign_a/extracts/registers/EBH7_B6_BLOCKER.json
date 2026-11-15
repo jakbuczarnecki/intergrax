@@ -1,0 +1,55 @@
+{
+  "path": "docs/project/maintainers/qualification/EBH_7_B6_BLOCKER_REGISTER.md",
+  "tables": [
+    {
+      "header": [
+        "ID",
+        "Semantic",
+        "Verified",
+        "Defect",
+        "Operator path"
+      ],
+      "rows": []
+    },
+    {
+      "header": [
+        "ID",
+        "Subject",
+        "Agent disposition"
+      ],
+      "rows": [
+        {
+          "line": 12,
+          "ID": "B6-F10",
+          "Subject": "ECAP C1–C5 computed certification over closed normative sets",
+          "Agent disposition": "Computed verdict in F10 matrix + §14 block; bound to L3 JUnit attestation (see GHA replay record)"
+        },
+        {
+          "line": 13,
+          "ID": "B6-F10-C4-STATE-REG-01",
+          "Subject": "SQLite conversational memory reload TypeError",
+          "Agent disposition": "Fixed @ a803191ad; regression in L3 profile"
+        },
+        {
+          "line": 14,
+          "ID": "B6-F10-P03-DIRTY-TREE",
+          "Subject": "Mechanism census counted gitignored docker build context (685 → 238)",
+          "Agent disposition": "Discovery fixed; equal on local and clean CI"
+        },
+        {
+          "line": 15,
+          "ID": "B6-F10-P03-PROFILE-SHADOW",
+          "Subject": "ebh_7 directory not executed by prior L3 profile",
+          "Agent disposition": "Profile corrected; prior 195-node runs historical only"
+        },
+        {
+          "line": 16,
+          "ID": "B6-F11",
+          "Subject": "Final dossier / traceability sync",
+          "Agent disposition": "PASS (SCOPED) — aligned with independent B6 pass record"
+        }
+      ]
+    }
+  ],
+  "lines": 19
+}

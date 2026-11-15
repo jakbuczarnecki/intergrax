@@ -1,0 +1,102 @@
+"""W0-T04: parse FRZ checklist S02 at BASELINE_SHA (rows incl. headerless block, evidence log, family owners)."""
+from __future__ import annotations
+
+import re
+import sys
+from collections import Counter
+from pathlib import Path
+
+sys.path.insert(0, str(Path(__file__).parent))
+from common import *  # noqa
+
+TOKEN = re.compile(r"\b[A-Z][A-Z0-9]+(?:-[A-Z0-9]+)+\b")
+
+
+def norm_status(raw: str):
+    s = clean_cell(raw)
+    up = s.upper().replace("—", "—")
+    if s in FRZ_VOCAB:
+        return s, s
+    base = "OFF_VOCAB"
+    for b in ("PASS", "OPEN", "BLOCKED", "N/A"):
+        if up.startswith(b):
+            base = b
+            break
+    return "OFF_VOCAB", base
+
+
+def main():
+    txt = show_text(FRZ_CHECKLIST)
+    log_read(FRZ_CHECKLIST, note="W0-T04 parse_frz (full parse by script)")
+    lines = txt.split("\n")
+    rows = []
+    for ln, l in enumerate(lines, 1):
+        if not l.startswith("| FRZ-"):
+            continue
+        cells = split_row(l)
+        fid = clean_cell(cells[0])
+        status_raw = cells[4] if len(cells) > 4 else ""
+        sn, sb = norm_status(status_raw)
+        ev = " | ".join(cells[5:]) if len(cells) > 5 else ""
+        shas = sorted({m.group(0) for m in SHA40.finditer(l)})
+        abbr = sorted(set(re.findall(r"`([0-9a-f]{7,12})(?:…|\.\.\.)`", l)) | set(re.findall(r"@ `?([0-9a-f]{7,12})(?:…|\.\.\.)", l)))
+        m = re.match(r"FRZ-([A-Z]+)-(\d+)", fid)
+        rows.append({"frz_id": fid, "family": m.group(1) if m else "?", "num": int(m.group(2)) if m else -1,
+                     "checklist_line": ln, "domain": clean_cell(cells[1]) if len(cells) > 1 else "",
+                     "criterion": clean_cell(cells[2]) if len(cells) > 2 else "",
+                     "closing_stages_raw": clean_cell(cells[3]) if len(cells) > 3 else "",
+                     "closing_stage_tokens": TOKEN.findall(clean_cell(cells[3])) if len(cells) > 3 else [],
+                     "status_raw": clean_cell(status_raw), "status_normalized": sn, "status_base": sb,
+                     "n_cells": len(cells), "malformed_cells": len(cells) != 6,
+                     "evidence_excerpt": clean_cell(ev)[:600], "evidence_len": len(ev), "shas": shas, "abbr_shas": abbr,
+                     "headerless_block": ln > 183})
+    write_json(WS / "extracts" / "frz_rows.json", rows)
+
+    # evidence log
+    start = next(i for i, l in enumerate(lines) if l.startswith("## Accumulated evidence log"))
+    end = next(i for i in range(start + 1, len(lines)) if lines[i].startswith("## "))
+    log = []
+    for i in range(start, end):
+        l = lines[i]
+        if not l.startswith("|"):
+            continue
+        cells = split_row(l)
+        first = clean_cell(cells[0])
+        if first in ("Evidence ID", "") or set(first) <= set("-: "):
+            continue
+        frz_ids = sorted(set(re.findall(r"FRZ-[A-Z]+-\d+", " ".join(cells[3:4]))))
+        log.append({"evidence_id": first, "line": i + 1, "sha_cell": clean_cell(cells[1]) if len(cells) > 1 else "",
+                    "shas": sorted({m.group(0) for m in SHA40.finditer(cells[1] if len(cells) > 1 else "")}),
+                    "scope_excerpt": clean_cell(cells[2])[:500] if len(cells) > 2 else "",
+                    "frz_informed_raw": clean_cell(cells[3])[:400] if len(cells) > 3 else "",
+                    "frz_informed_ids": frz_ids, "effect_excerpt": clean_cell(" | ".join(cells[4:]))[:400],
+                    "n_cells": len(cells)})
+    write_json(WS / "extracts" / "frz_evidence_log.json", log)
+
+    # family owners
+    fs = next(i for i, l in enumerate(lines) if l.startswith("### FRZ family"))
+    owners = {}
+    for i in range(fs + 1, len(lines)):
+        if lines[i].startswith("## "):
+            break
+        if lines[i].startswith("|"):
+            c = split_row(lines[i])
+            f = clean_cell(c[0])
+            if re.fullmatch(r"[A-Z]{2,5}", f):
+                owners[f] = {"line": i + 1, "owners_raw": clean_cell(c[1]), "tokens": TOKEN.findall(clean_cell(c[1]))}
+    write_json(WS / "extracts" / "frz_family_owners.json", owners)
+
+    # independent second parse (raw regex) for C04
+    raw_ids = sorted(set(re.findall(r"FRZ-[A-Z]+-\d+", txt)))
+    ids = [r["frz_id"] for r in rows]
+    write_json(WS / "extracts" / "frz_ids_raw_regex.json", raw_ids)
+    print(f"frz rows={len(rows)} unique={len(set(ids))} raw_regex_unique={len(raw_ids)} families={len(set(r['family'] for r in rows))} "
+          f"evidence_log_rows={len(log)} family_owner_rows={len(owners)} headerless_rows={sum(r['headerless_block'] for r in rows)} "
+          f"malformed={sum(r['malformed_cells'] for r in rows)}")
+    print("status_raw:", dict(Counter(r["status_raw"] for r in rows)))
+    print("off_vocab:", [(r['frz_id'], r['status_raw']) for r in rows if r['status_normalized'] == 'OFF_VOCAB'])
+    print("diff raw-vs-rows:", sorted(set(raw_ids) ^ set(ids)))
+
+
+if __name__ == "__main__":
+    main()

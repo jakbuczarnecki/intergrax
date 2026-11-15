@@ -1,0 +1,208 @@
+{
+  "tip": "4b4a199e89c86a7204a76ff896c9a2a6b767c7fd",
+  "n_commits": 14,
+  "commits": [
+    {
+      "sha": "4b4a199e89c86a7204a76ff896c9a2a6b767c7fd",
+      "date": "2026-11-15 18:21:49 +0100",
+      "subject": "Merge pull request #587 from jakbuczarnecki/pdc-x-p8-act-record"
+    },
+    {
+      "sha": "3529217dde07f41389d539d6603b4f2253e7b8f2",
+      "date": "2026-11-15 18:12:57 +0100",
+      "subject": "docs(pdc): Operator decisions and delegation record for the P8-04 ACT-N11 rebind"
+    },
+    {
+      "sha": "8115de877249e9a4a62d1c2390513690bc082cd2",
+      "date": "2026-11-15 17:57:35 +0100",
+      "subject": "Merge pull request #586 from jakbuczarnecki/claude/pdc-x-041j-w1"
+    },
+    {
+      "sha": "22cfef5d91bb97e94c4f4bc92df094e4c4506a75",
+      "date": "2026-11-15 17:52:55 +0100",
+      "subject": "chore(qual): re-render EBH-7 P03 artifact digests (closure matrix)"
+    },
+    {
+      "sha": "5ad2faf10457e2464eddfd1569d0ce8848df2a32",
+      "date": "2026-11-15 17:52:52 +0100",
+      "subject": "docs(qual): re-render EBH-7 closure evidence audit matrix after digests"
+    },
+    {
+      "sha": "259b78079ad6b118fee3e0208d0b8db144e11373",
+      "date": "2026-11-15 17:51:11 +0100",
+      "subject": "chore(qual): re-render EBH-7 P03 artifact digests after the final re-pin"
+    },
+    {
+      "sha": "62f8f67562a6ad1fb831d47dc304f5d4ccc1bb84",
+      "date": "2026-11-15 17:51:09 +0100",
+      "subject": "docs(qual): re-render the EBH-7 B6-F10 matrix and ECAP block at the final re-pin"
+    },
+    {
+      "sha": "ee8b37925b2d24a159a9fbdfd38af05083e6b3ba",
+      "date": "2026-11-15 17:50:34 +0100",
+      "subject": "docs(qual): EBH-7 final re-pin TEST_EXECUTION_SHA to d39a520dd (PDC-X P7, W1')"
+    },
+    {
+      "sha": "d39a520dda965981a38f8e1a90ec5135ea5d508e",
+      "date": "2026-11-15 17:42:13 +0100",
+      "subject": "Merge pull request #585 from jakbuczarnecki/claude/pdc-x-041o"
+    },
+    {
+      "sha": "1181b92bf5f4a86a7ea7cbbae43f83420ac60a04",
+      "date": "2026-11-15 17:41:13 +0100",
+      "subject": "docs(pdc): implementation checkpoint of T-IGX-041-O"
+    },
+    {
+      "sha": "aec20562ea16e970b5bcdc0294b375108c551493",
+      "date": "2026-11-15 17:40:06 +0100",
+      "subject": "test(pdc): B6-F10 classifier entries for three UNKNOWN paths and the COMPAT-X fixture id after the P8 repair loop (T-IGX-041-O)"
+    },
+    {
+      "sha": "cf8400a148aa3535032e7616e2e37b79ecd10809",
+      "date": "2026-11-15 17:39:20 +0100",
+      "subject": "test(pdc): pinned negatives and positives for the B6-F10 classifier entries after the P8 repair loop (T-IGX-041-O)"
+    },
+    {
+      "sha": "fb5d9c2a54a1118b316cd0b90eb951ada540d1f7",
+      "date": "2026-11-15 17:33:45 +0100",
+      "subject": "docs(pdc): delegate signature of plan T-IGX-041-O (B6-F10 classifier entries, COMPAT-X fixture id)"
+    },
+    {
+      "sha": "a557e680852c505266e03a2621be140346470064",
+      "date": "2026-11-15 17:28:08 +0100",
+      "subject": "docs(pdc): ticket, plan and WBS batch B-P8-R3 for the B6-F10 classifier entries and the COMPAT-X fixture id refresh (T-IGX-041-O)"
+    }
+  ],
+  "changed_files": 22,
+  "changed_product_paths": 1,
+  "changed_dirs": [
+    ".github/workflows",
+    "docs/project/maintainers/qualification",
+    "docs/project/maintainers/qualification/ebh_7_p03_independent_replay",
+    "docs/project/maintainers/qualification/platform_domain_completeness",
+    "docs/project/maintainers/qualification/platform_domain_completeness/operator_decisions",
+    "governance/tickets",
+    "governance/tickets/plans",
+    "scripts/qualification",
+    "tests/fixtures/compat_x",
+    "tests/qualification/ebh_7"
+  ],
+  "possibly_affected_findings": [
+    {
+      "finding_id": "EQOA-A6-001",
+      "reason": "subject touched by the PDC-X P7/P8 re-pin / rebind work in the delta"
+    },
+    {
+      "finding_id": "EQOA-A0-001",
+      "reason": "subject touched by the PDC-X P7/P8 re-pin / rebind work in the delta"
+    },
+    {
+      "finding_id": "EQOA-A0-006",
+      "reason": "subject touched by the PDC-X P7/P8 re-pin / rebind work in the delta"
+    },
+    {
+      "finding_id": "EQOA-A0-007",
+      "reason": "subject touched by the PDC-X P7/P8 re-pin / rebind work in the delta"
+    },
+    {
+      "finding_id": "EQOA-A0-008",
+      "reason": "subject touched by the PDC-X P7/P8 re-pin / rebind work in the delta"
+    },
+    {
+      "finding_id": "EQOA-A4-004",
+      "reason": "evidence path changed: .github/workflows/unit-tests.yml"
+    },
+    {
+      "finding_id": "EQOA-A7-037",
+      "reason": "subject touched by the PDC-X P7/P8 re-pin / rebind work in the delta"
+    },
+    {
+      "finding_id": "EQOA-A1-019",
+      "reason": "subject touched by the PDC-X P7/P8 re-pin / rebind work in the delta"
+    },
+    {
+      "finding_id": "EQOA-A1-020",
+      "reason": "subject touched by the PDC-X P7/P8 re-pin / rebind work in the delta"
+    },
+    {
+      "finding_id": "EQOA-A1-022",
+      "reason": "subject touched by the PDC-X P7/P8 re-pin / rebind work in the delta"
+    },
+    {
+      "finding_id": "EQOA-A2-016",
+      "reason": "subject touched by the PDC-X P7/P8 re-pin / rebind work in the delta"
+    },
+    {
+      "finding_id": "EQOA-A2-017",
+      "reason": "evidence path changed: docs/project/maintainers/qualification/platform_domain_completeness/PDC_SHA_LADDER.md, docs/project/maintainers/qualification/platform_domain_completeness/PDC_SHA_LADDER.md"
+    },
+    {
+      "finding_id": "EQOA-A2-046",
+      "reason": "subject touched by the PDC-X P7/P8 re-pin / rebind work in the delta"
+    },
+    {
+      "finding_id": "EQOA-A2-024",
+      "reason": "subject touched by the PDC-X P7/P8 re-pin / rebind work in the delta"
+    },
+    {
+      "finding_id": "EQOA-A2-030",
+      "reason": "subject touched by the PDC-X P7/P8 re-pin / rebind work in the delta"
+    },
+    {
+      "finding_id": "EQOA-A2-031",
+      "reason": "subject touched by the PDC-X P7/P8 re-pin / rebind work in the delta"
+    },
+    {
+      "finding_id": "EQOA-A2-035",
+      "reason": "subject touched by the PDC-X P7/P8 re-pin / rebind work in the delta"
+    },
+    {
+      "finding_id": "EQOA-A3-019",
+      "reason": "subject touched by the PDC-X P7/P8 re-pin / rebind work in the delta"
+    },
+    {
+      "finding_id": "EQOA-A3-021",
+      "reason": "subject touched by the PDC-X P7/P8 re-pin / rebind work in the delta"
+    },
+    {
+      "finding_id": "EQOA-A5-013",
+      "reason": "subject touched by the PDC-X P7/P8 re-pin / rebind work in the delta"
+    },
+    {
+      "finding_id": "EQOA-A5-015",
+      "reason": "subject touched by the PDC-X P7/P8 re-pin / rebind work in the delta"
+    },
+    {
+      "finding_id": "EQOA-A7-005",
+      "reason": "subject touched by the PDC-X P7/P8 re-pin / rebind work in the delta"
+    },
+    {
+      "finding_id": "EQOA-A7-008",
+      "reason": "subject touched by the PDC-X P7/P8 re-pin / rebind work in the delta"
+    },
+    {
+      "finding_id": "EQOA-A7-009",
+      "reason": "evidence path changed: docs/project/maintainers/qualification/ebh_7_p03_independent_replay/EBH_7_CLOSURE_EVIDENCE_AUDIT_MATRIX.md"
+    },
+    {
+      "finding_id": "EQOA-A7-010",
+      "reason": "subject touched by the PDC-X P7/P8 re-pin / rebind work in the delta"
+    },
+    {
+      "finding_id": "EQOA-A7-014",
+      "reason": "subject touched by the PDC-X P7/P8 re-pin / rebind work in the delta"
+    },
+    {
+      "finding_id": "EQOA-A7-028",
+      "reason": "subject touched by the PDC-X P7/P8 re-pin / rebind work in the delta"
+    },
+    {
+      "finding_id": "EQOA-A7-031",
+      "reason": "subject touched by the PDC-X P7/P8 re-pin / rebind work in the delta"
+    },
+    {
+      "finding_id": "EQOA-A8-019",
+      "reason": "evidence path changed: .github/workflows/unit-tests.yml"
+    }
+  ]
+}

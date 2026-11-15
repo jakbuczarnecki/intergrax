@@ -1,0 +1,104 @@
+"""A7 consolidation: register shards (G1a,G1b,G2a,G2b,G3) + mechanical entries (G4) -> A7/entries.jsonl; carry-forward graph -> A7/carry_forward_graph.json."""
+from __future__ import annotations
+
+import sys
+from collections import Counter, defaultdict
+from pathlib import Path
+
+sys.path.insert(0, str(Path(__file__).parent))
+from common import *  # noqa
+import fl
+
+POST_FREEZE = {"SCENARIO-FACTORY-X", "SEF-X", "SCENARIO-READINESS-X", "SCENARIO-GATE"}
+
+
+def main():
+    entries = []
+    for f in sorted((WS / "shards" / "A7").glob("G*.jsonl")):
+        if f.name.endswith(".findings.jsonl"):
+            continue
+        for i, r in enumerate(read_jsonl(f)):
+            r = dict(r)
+            r["shard"] = f.name
+            r.setdefault("source", "register")
+            r["uid"] = f"{f.stem}-{i:04d}"
+            entries.append(r)
+    for i, r in enumerate(read_jsonl(WS / "A7" / "input_G4.jsonl")):
+        r = dict(r)
+        r["shard"] = "G4(mechanical)"
+        r["uid"] = f"G4-{i:04d}"
+        entries.append(r)
+    fids = {f["finding_id"] for f in fl.consolidate()}
+    stage = {r["id"]: r for r in read_jsonl(WS / "A1" / "stage_rows.jsonl")}
+    # owner link: entries without owner point at the group finding if present
+    own_f = next((f["finding_id"] for f in read_jsonl(WS / "findings" / "parent_findings.jsonl") if "no owner" in f["title"].lower() and f["ws"] == "A7"), None)
+    for e in entries:
+        o = str(e.get("owner") or "")
+        e["owner_finding"] = own_f if (not o or "OWNER_MISSING" in o) else None
+        e["entry_id"] = e.get("entry_id") or e["uid"]
+    write_jsonl(WS / "A7" / "entries.jsonl", entries)
+
+    # carry-forward graph
+    nodes = {e["uid"]: e for e in entries if e.get("kind") != "NOT_AN_ENTRY"}
+    by_eid = defaultdict(list)
+    for u, e in nodes.items():
+        by_eid[str(e.get("entry_id"))].append(u)
+    edges = []
+    for u, e in nodes.items():
+        cf = e.get("carry_forward") or {}
+        for t in cf.get("deferred_to") or []:
+            edges.append((u, str(t), cf.get("edge_text", "")))
+        for o in cf.get("obligation_ids") or []:
+            if str(o) in by_eid and str(o) != str(e.get("entry_id")):
+                for v in by_eid[str(o)]:
+                    edges.append((u, v, "obligation reference"))
+    adj = defaultdict(list)
+    for a, b, t in edges:
+        adj[a].append((b, t))
+    chains = []
+
+    def walk(start, node, path, depth):
+        nxt = adj.get(node, [])
+        if not nxt or depth > 6:
+            chains.append(path)
+            return
+        for b, _ in nxt:
+            if b in path:
+                chains.append(path + [b + "(cycle)"])
+                continue
+            walk(start, b, path + [b], depth + 1)
+
+    for u in list(adj):
+        walk(u, u, [u], 0)
+    classified = []
+    for ch in chains:
+        end = ch[-1].replace("(cycle)", "")
+        length = len(ch) - 1
+        end_stage = stage.get(end)
+        reason = []
+        if length >= 2:
+            reason.append("chain length >= 2")
+        if "(cycle)" in ch[-1]:
+            reason.append("cycle")
+        if end_stage and end_stage.get("closed_type"):
+            reason.append(f"ends at CLOSED stage {end}")
+        if end in POST_FREEZE:
+            reason.append(f"ends at post-freeze stage {end}")
+        classified.append({"chain": ch, "length": length, "end": end, "bouncing": bool(reason), "reason": reason, "start_register": nodes.get(ch[0], {}).get("register")})
+    # dedupe
+    seen, uniq = set(), []
+    for c in classified:
+        k = tuple(c["chain"])
+        if k not in seen:
+            seen.add(k)
+            uniq.append(c)
+    write_json(WS / "A7" / "carry_forward_graph.json", {"n_nodes": len(nodes), "n_edges": len(edges), "chains": uniq})
+    print("entries", len(entries), "real entries", len(nodes), dict(Counter(e.get("kind") for e in entries)))
+    print("edges", len(edges), "chains", len(uniq), "bouncing", sum(c["bouncing"] for c in uniq))
+    print("currency", dict(Counter(e.get("currency") for e in nodes.values())))
+    print("owner missing", sum(1 for e in nodes.values() if "OWNER_MISSING" in str(e.get("owner"))), "unstated severity", sum(1 for e in nodes.values() if e.get("severity") == "UNSTATED"))
+    print("stale_vs_baseline true", sum(1 for e in nodes.values() if e.get("stale_vs_baseline") is True))
+
+
+if __name__ == "__main__":
+    main()

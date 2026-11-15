@@ -1,0 +1,38 @@
+F
+================================== FAILURES ===================================
+_________________ test_intergrax_no_applications_import_gate __________________
+
+    def test_intergrax_no_applications_import_gate() -> None:
+        script = REPO_ROOT / "scripts" / "maintenance" / "check_intergrax_no_applications_imports.py"
+        completed = subprocess.run(
+            [sys.executable, str(script)],
+            cwd=REPO_ROOT,
+            check=False,
+            capture_output=True,
+            text=True,
+        )
+>       assert completed.returncode == 0, completed.stdout + completed.stderr
+E       AssertionError: Lower layers must not import applications/ or intergrax.applications:
+E           - intergrax/runtime/architecture/obs_diag_x3_ast_gates.py
+E           - intergrax/runtime/execution/application_environment_context_composition.py
+E           - intergrax/runtime/execution/application_graph_spec_to_plan.py
+E           - intergrax/runtime/execution/application_host_orchestration_composition.py
+E           - intergrax/runtime/execution/environment_host_task_execution.py
+E           - intergrax/runtime/execution/harness_host_internal_composition.py
+E           - intergrax/runtime/execution/host_orchestration_application_wiring_applier.py
+E           - intergrax/runtime/execution/host_orchestration_assembly_validation.py
+E           - intergrax/runtime/execution/host_orchestration_environment_spec_builder.py
+E           - intergrax/runtime/execution/host_orchestration_planner_classifier_wiring.py
+E           - intergrax/runtime/execution/host_orchestration_wiring_bundle.py
+E           - intergrax/runtime/execution/scenario_host_diagnostic_wiring.py
+E         
+E       assert 1 == 0
+E        +  where 1 = CompletedProcess(args=['D:\\Projekty\\intergrax\\.venv\\Scripts\\python.exe', 'D:\\Projekty\\_wt\\intergrax\\eqo-a-258.../host_orchestration_wiring_bundle.py\n  - intergrax/runtime/execution/scenario_host_diagnostic_wiring.py\n', stderr='').returncode
+
+tests\unit\runtime\architecture\test_faudit_remediation.py:49: AssertionError
+---------------------------- Captured stdout setup ----------------------------
+Wrote build\agent_fleet_inventory.json (21 agents)
+=========================== short test summary info ===========================
+FAILED tests/unit/runtime/architecture/test_faudit_remediation.py::test_intergrax_no_applications_import_gate
+!!!!!!!!!!!!!!!!!!!!!!!!!! stopping after 1 failures !!!!!!!!!!!!!!!!!!!!!!!!!!
+1 failed in 3.55s

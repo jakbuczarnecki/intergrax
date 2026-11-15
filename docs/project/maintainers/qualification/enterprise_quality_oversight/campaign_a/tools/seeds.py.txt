@@ -1,0 +1,59 @@
+"""Seed resolution helpers (C15): confirm / refute / merge. Writes data/seeds.jsonl and parent_findings."""
+from __future__ import annotations
+
+import sys
+from pathlib import Path
+
+sys.path.insert(0, str(Path(__file__).parent))
+from common import *  # noqa
+import fl
+
+SEEDS = WS / "data" / "seeds.jsonl"
+
+
+def _load():
+    return read_jsonl(SEEDS)
+
+
+def _save(rows):
+    write_jsonl(SEEDS, rows)
+
+
+def confirm(seed_id, resolution_evidence, **finding_fields):
+    rows = _load()
+    for s in rows:
+        if s["seed_id"] == seed_id:
+            fl.update(s["finding_id"], **finding_fields)
+            s["resolution"] = "CONFIRMED"
+            s["resolution_evidence"] = resolution_evidence
+            _save(rows)
+            return s["finding_id"]
+    raise KeyError(seed_id)
+
+
+def refute(seed_id, resolution_evidence, note):
+    rows = _load()
+    for s in rows:
+        if s["seed_id"] == seed_id:
+            fl.remove(s["finding_id"])
+            s["resolution"] = "REFUTED"
+            s["resolution_evidence"] = resolution_evidence
+            s["note"] = note
+            _save(rows)
+            return
+    raise KeyError(seed_id)
+
+
+def merge(seed_id, into_finding_id, note, resolution_evidence=None):
+    rows = _load()
+    for s in rows:
+        if s["seed_id"] == seed_id:
+            fl.remove(s["finding_id"])
+            s["resolution"] = "MERGED"
+            s["merged_into"] = into_finding_id
+            s["note"] = note
+            s["resolution_evidence"] = resolution_evidence or []
+            s["finding_id"] = into_finding_id
+            _save(rows)
+            return
+    raise KeyError(seed_id)

@@ -1,0 +1,165 @@
+"""A1-T01: mechanical stage inventory base -> A1/stage_base.jsonl (+ batch partition for subagents)."""
+from __future__ import annotations
+
+import re
+import sys
+from collections import Counter, defaultdict
+from pathlib import Path
+
+sys.path.insert(0, str(Path(__file__).parent))
+from common import *  # noqa
+
+TOKEN = re.compile(r"\b[A-Z][A-Z0-9]+(?:-[A-Z0-9]+)+\b")
+
+
+def load_tickets():
+    out = {}
+    ls = git("ls-tree", "-r", "--name-only", BASELINE_SHA, "governance/tickets/").stdout.split()
+    for p in ls:
+        if p.endswith(".md"):
+            t = show_text(p)
+            if t:
+                out[p] = t
+    return out
+
+
+def main():
+    rows = read_json(WS / "extracts" / "roadmap_rows.json")
+    shareg = {(r.get("sha") or r.get("abbr")): r for r in read_jsonl(WS / "data" / "sha_registry.jsonl")}
+    abbr_reg = {r["abbr"]: r for r in read_jsonl(WS / "data" / "sha_registry.jsonl") if r["kind"] == "abbr"}
+    full_reg = {r["sha"]: r for r in read_jsonl(WS / "data" / "sha_registry.jsonl") if r["kind"] == "full"}
+    byid = {r["id"]: r for r in rows}
+    children = defaultdict(list)
+    for r in rows:
+        if r["parent_id"]:
+            children[r["parent_id"]].append(r["id"])
+
+    def root(i):
+        seen = set()
+        while byid[i]["parent_id"] and byid[i]["parent_id"] in byid and i not in seen:
+            seen.add(i)
+            i = byid[i]["parent_id"]
+        return i
+
+    # FRZ links
+    frz = read_json(WS / "extracts" / "frz_rows.json")
+    chk = show_text(FRZ_CHECKLIST).split("\n")
+    ev_tokens = {}
+    for r in frz:
+        cells = split_row(chk[r["checklist_line"] - 1])
+        full_ev = " | ".join(cells[5:]) if len(cells) > 5 else ""
+        ev_tokens[r["frz_id"]] = set(TOKEN.findall(clean_cell(full_ev)))
+    fam_owners = read_json(WS / "extracts" / "frz_family_owners.json")
+
+    def frz_closing(i):
+        out = []
+        for r in frz:
+            for t in r["closing_stage_tokens"] + [x.strip() for x in re.split(r"[,/]", r["closing_stages_raw"])]:
+                t = t.strip().replace("`", "")
+                if not t:
+                    continue
+                if t == i or (t.endswith("*") and i.startswith(t[:-1])):
+                    out.append(r["frz_id"])
+                    break
+        return sorted(set(out))
+
+    def frz_evidence(i):
+        return sorted(f for f, toks in ev_tokens.items() if i in toks)
+
+    tickets = load_tickets()
+    ticket_hits = defaultdict(list)
+    for tid in {r["id"] for r in rows if r["row_source"] != "PROSE"} | {r["id"] for r in rows}:
+        toks = TOKEN.findall(tid)
+        if not toks:
+            continue
+        pat = re.compile(r"(?<![A-Z0-9-])" + re.escape(toks[0]) + r"(?![A-Z0-9-])")
+        for p, t in tickets.items():
+            if pat.search(t):
+                ticket_hits[tid].append(Path(p).stem)
+
+    out = []
+    for r in rows:
+        i = r["id"]
+        rid = root(i)
+        flags = []
+        fam = r["status_family"]
+        lf = set(r.get("ledger_families", []))
+        closed_t = fam == "CLOSED"
+        closed_l = "CLOSED" in lf
+        if r["row_source"] != "PROSE":
+            if r["row_source"] == "S3TABLE" and r["status_normalized"] == "OFF_VOCAB":
+                flags.append("OFF_VOCAB_STATUS")
+            if r["row_source"] == "S3TABLE":
+                if r["checkbox_checked"] and (fam != "CLOSED" or re.search(r"REJECT|SUPERSED", r["status_raw"].upper())):
+                    flags.append("CHECKBOX_MISUSE")
+                OPENSET = {"READY FOR AUDIT", "PLANNED", "BLOCKED", "OPEN", "NEXT", "IN PROGRESS", "CURRENT", "QUEUED", "HELD", "CONDITIONAL", "REJECTED"}
+                lfl = r.get("ledger_families", [])
+                if closed_t and lfl and lfl[-1] in OPENSET:
+                    flags.append("DUAL_STATUS_TABLE_CLOSED_LEDGER_OPEN")
+                elif closed_t and (lf & OPENSET):
+                    flags.append("LEDGER_HISTORY_NONFINAL_INFO")
+                if (not closed_t) and fam not in ("EMPTY",) and closed_l:
+                    flags.append("DUAL_STATUS_TABLE_OPEN_LEDGER_CLOSED")
+                if closed_t and re.search(r"\b(NEXT|CURRENT)\b", r["status_raw"].upper()) and "CURRENT" not in "":
+                    flags.append("STALE_NEXT_CURRENT_TEXT")
+            if r["row_source"] == "LEDGER" and "READY FOR AUDIT" in lf:
+                rootrow = byid.get(rid)
+                if rootrow and rootrow["status_family"] == "CLOSED" and rid != i:
+                    flags.append("RFA_UNDER_CLOSED_PARENT")
+            if r["row_source"] == "S3TABLE" and r["status_family"] != "CLOSED" and "READY FOR AUDIT" in r["status_raw"].upper():
+                rootrow = byid.get(rid)
+                if rootrow and rootrow["status_family"] == "CLOSED" and rid != i:
+                    flags.append("RFA_UNDER_CLOSED_PARENT")
+            if r["malformed_cells"]:
+                flags.append("MALFORMED_ROW")
+            if r["row_source"] == "LEDGER" and r["status_normalized"] == "NO_TABLE_ROW":
+                flags.append("LEDGER_ONLY_NO_TABLE_ROW")
+        else:
+            flags.append("PROSE_ONLY_ID")
+        shas = []
+        for s in r["shas"]:
+            reg = full_reg.get(s["sha"], {})
+            shas.append({"sha": s["sha"], "role": s["role"], "resolves": reg.get("resolves"), "ancestor": reg.get("ancestor_of_baseline"),
+                         "subject": (reg.get("subject") or "")[:90]})
+        abbrs = []
+        for a in r["abbr_shas"]:
+            reg = abbr_reg.get(a)
+            if reg:
+                abbrs.append({"abbr": a, "expansion": reg["expansion"], "sha": reg["sha"], "ancestor": reg["ancestor_of_baseline"]})
+        if any(s["resolves"] is False for s in shas) or any(a["expansion"] != "EXPANDED" for a in abbrs):
+            flags.append("SHA_UNRESOLVED_OR_AMBIGUOUS")
+        row = dict(r)
+        row.update({"root_id": rid, "children": sorted(children.get(i, [])), "n_children": len(children.get(i, [])),
+                    "closed_type": closed_t or closed_l, "shas": shas, "abbr_shas_expanded": abbrs, "mech_flags": flags,
+                    "frz_links_closing": frz_closing(i) if r["row_source"] != "PROSE" else [],
+                    "frz_links_evidence": frz_evidence(i), "tickets": sorted(set(ticket_hits.get(i, [])))[:20], "n_tickets": len(set(ticket_hits.get(i, [])))})
+        out.append(row)
+    write_jsonl(WS / "A1" / "stage_base.jsonl", out)
+
+    # batch partition
+    def batch_of(rw):
+        rt = byid[rw["root_id"]]
+        if rt["row_source"] == "S3TABLE":
+            ln = rt["line"]
+            if ln <= 417:
+                return "alpha"
+            if ln <= 484:
+                return "beta"
+            return "gamma"
+        return "gamma"
+
+    parts = defaultdict(list)
+    for rw in out:
+        parts[batch_of(rw)].append(rw["id"])
+    for b, ids in parts.items():
+        write_json(WS / "A1" / f"batch_{b}.json", {"batch": b, "ids": ids, "n": len(ids)})
+    print("rows", len(out), "closed_type", sum(r["closed_type"] for r in out), "roots", sum(1 for r in out if r["root_id"] == r["id"] and r["row_source"] != "PROSE"))
+    print("batches", {b: len(v) for b, v in parts.items()})
+    c = Counter(f for r in out for f in r["mech_flags"])
+    print("flags", dict(c))
+    print("ids with tickets", sum(1 for r in out if r["n_tickets"]))
+    print("frz-linked", sum(1 for r in out if r["frz_links_closing"] or r["frz_links_evidence"]))
+
+
+if __name__ == "__main__":
+    main()

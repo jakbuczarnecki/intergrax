@@ -1,0 +1,194 @@
+{
+  "path": "docs/project/maintainers/qualification/CERT_CAMPAIGN_DELEGATED_DECISIONS_2026-11-07.md",
+  "tables": [
+    {
+      "header": [
+        "Decision",
+        "Session",
+        "Outcome",
+        "Signed at",
+        "Roadmap / SSOT effect (published by the integration branch)"
+      ],
+      "rows": [
+        {
+          "line": 18,
+          "Decision": "OD-QUALX-ACCEPT-2026-11-07",
+          "Session": "SIGN-1",
+          "Outcome": "SIGNED",
+          "Signed at": "2026-11-07T18:20:51+01:00",
+          "Roadmap / SSOT effect (published by the integration branch)": "QUAL-X row and ledger: Population A independently accepted (scoped)"
+        },
+        {
+          "line": 19,
+          "Decision": "OD-QUALXP0-VERIFIED-2026-11-07",
+          "Session": "SIGN-1",
+          "Outcome": "SIGNED (separate verification, not absorbed)",
+          "Signed at": "2026-11-07T18:20:51+01:00",
+          "Roadmap / SSOT effect (published by the integration branch)": "QUAL-X-P0 row and ledger"
+        },
+        {
+          "line": 20,
+          "Decision": "OD-SKILLX-ACCEPT-2026-11-07",
+          "Session": "SIGN-2",
+          "Outcome": "SIGNED_WITH_CONDITIONS",
+          "Signed at": "2026-11-07T18:18:48+01:00",
+          "Roadmap / SSOT effect (published by the integration branch)": "SKILL-X row (conditional text intact)"
+        },
+        {
+          "line": 21,
+          "Decision": "OD-ROUTE-DS0..DS4-2026-11-07",
+          "Session": "SIGN-5",
+          "Outcome": "SIGNED",
+          "Signed at": "2026-11-07T18:24:31+01:00",
+          "Roadmap / SSOT effect (published by the integration branch)": "route decisions; no roadmap edit"
+        },
+        {
+          "line": 22,
+          "Decision": "OD-ROUTE-DS5-2026-11-07",
+          "Session": "SIGN-5",
+          "Outcome": "SIGNED_WITH_CONDITIONS",
+          "Signed at": "2026-11-07T18:24:31+01:00",
+          "Roadmap / SSOT effect (published by the integration branch)": "predecessor deviation regularisation, conditional"
+        },
+        {
+          "line": 23,
+          "Decision": "OD-SSOT-D1-2026-11-07",
+          "Session": "SIGN-5",
+          "Outcome": "SIGNED",
+          "Signed at": "2026-11-07T18:24:31+01:00",
+          "Roadmap / SSOT effect (published by the integration branch)": "SSOT patch 07 (eight TRACE-X rows, lineage only)"
+        },
+        {
+          "line": 24,
+          "Decision": "OD-SSOT-D2-2026-11-07",
+          "Session": "SIGN-5",
+          "Outcome": "SIGNED (exact-SHA audits; absorption not adopted)",
+          "Signed at": "2026-11-07T18:24:32+01:00",
+          "Roadmap / SSOT effect (published by the integration branch)": "SSOT patch 10 NOT applied"
+        },
+        {
+          "line": 25,
+          "Decision": "OD-SSOT-D3-2026-11-07",
+          "Session": "SIGN-5",
+          "Outcome": "SIGNED (operator-scoped acceptance only)",
+          "Signed at": "2026-11-07T18:24:32+01:00",
+          "Roadmap / SSOT effect (published by the integration branch)": "SSOT patch 09"
+        }
+      ]
+    },
+    {
+      "header": [
+        "Signing session",
+        "Decisions",
+        "Outcomes",
+        "Bound to",
+        "Source dossier file (sha256)"
+      ],
+      "rows": [
+        {
+          "line": 31,
+          "Signing session": "SIGN-3_CTENT",
+          "Decisions": "OD-CTENT01-PLAN-2026-11-07, OD-CTENT02-PLAN-2026-11-07",
+          "Outcomes": "SIGNED_WITH_CONDITIONS (both)",
+          "Bound to": "plan-approval lines of tickets T-IGX-022-A, T-IGX-022-B",
+          "Source dossier file (sha256)": ".tmp/session/cert-campaign/SIGNING/SIGN-3_CTENT/SIGNED_DECISIONS.md (6ce86682eaad9dd1c1a304da4ec419d633a5f5696ce7c0f9e1712e1853b19650)"
+        },
+        {
+          "line": 32,
+          "Signing session": "SIGN-4_TLX",
+          "Decisions": "OD-TLX-A, OD-TLX-B (SIGNED); OD-TLX-C, OD-TLX-D (SIGNED_WITH_CONDITIONS); OD-TLXCORR-A-PLAN, OD-TLXCORR-B-PLAN (SIGNED); OD-TLXCORR-C-PLAN (REFUSED, no signature written)",
+          "Outcomes": "as listed",
+          "Bound to": "plan-approval lines of tickets T-IGX-023-A, T-IGX-023-B",
+          "Source dossier file (sha256)": ".tmp/session/cert-campaign/SIGNING/SIGN-4_TLX/SIGNED_DECISIONS.md (672518014018fb4ab88eaf22d4c87b47abbf7478423418ca26448bc4cd38c32c)"
+        }
+      ]
+    },
+    {
+      "header": [
+        "Item",
+        "Choice",
+        "Why"
+      ],
+      "rows": [
+        {
+          "line": 146,
+          "Item": "OD-SKILLX-A",
+          "Choice": "ACCEPT (recommended option)",
+          "Why": "Roadmap 3.0.4 says \"no prescribed package technology\" for supply-chain/content (EC9), so catalog-witness without signing meets the wording. It mandates no full GOV-X2 replay (EC2). Negative tests for plan ceiling, forged metadata and HITL pass in the replay."
+        },
+        {
+          "line": 147,
+          "Item": "OD-SKILLX-B",
+          "Choice": "ACCEPT (recommended option)",
+          "Why": "I found no SKILL-X review artefact: git ls-tree at 76a98cb has only the Batch D/E evidence and the reconciliation doc, and git grep of governance/ and docs/audit_results/ for \"skill-x\" has no hits. The only description of the review is the implementer-authored section 0 of the reconciliation doc. So AUD-SKILLX serves as the re-acceptance."
+        },
+        {
+          "line": 148,
+          "Item": "F-03",
+          "Choice": "ACCEPT as record debt (recommended option)",
+          "Why": "SKILL-X code and tests are unchanged since e00a0aab (git), and the wave suite was independently replayed at the baseline. The L2 gap is a missing record, not a defect."
+        },
+        {
+          "line": 149,
+          "Item": "F-04",
+          "Choice": "Roadmap scope note REQUIRED (recommended option)",
+          "Why": "I confirmed in intergrax/skills/host_lifecycle.py that there are no disable/remove/upgrade methods. Only install projection, enable_installed_skill and bind exist."
+        }
+      ]
+    },
+    {
+      "header": [
+        "Decision",
+        "Outcome"
+      ],
+      "rows": [
+        {
+          "line": 208,
+          "Decision": "OD-ROUTE-DS0-2026-11-07",
+          "Outcome": "SIGNED (wording tightened, not widened)"
+        },
+        {
+          "line": 209,
+          "Decision": "OD-ROUTE-DS1-2026-11-07",
+          "Outcome": "SIGNED (ratifies the AUD-QUALX audit as performed)"
+        },
+        {
+          "line": 210,
+          "Decision": "OD-ROUTE-DS2-2026-11-07",
+          "Outcome": "SIGNED (ratifies the AUD-SKILLX audit as performed)"
+        },
+        {
+          "line": 211,
+          "Decision": "OD-ROUTE-DS3-2026-11-07",
+          "Outcome": "SIGNED (re-audit authorised after correctives; no waiver)"
+        },
+        {
+          "line": 212,
+          "Decision": "OD-ROUTE-DS4-2026-11-07",
+          "Outcome": "SIGNED (WL-7 wording judged NOT to be a waiver; see reasoning)"
+        },
+        {
+          "line": 213,
+          "Decision": "OD-ROUTE-DS5-2026-11-07",
+          "Outcome": "SIGNED_WITH_CONDITIONS (regularisation effective only once OD-QUALX-ACCEPT-2026-11-07 is recorded in the repository)"
+        },
+        {
+          "line": 214,
+          "Decision": "OD-SSOT-D1-2026-11-07",
+          "Outcome": "SIGNED (8 rows as lineage only)"
+        },
+        {
+          "line": 215,
+          "Decision": "OD-SSOT-D2-2026-11-07",
+          "Outcome": "SIGNED, option = exact-SHA audits for L395 and L404; absorption NOT adopted"
+        },
+        {
+          "line": 216,
+          "Decision": "OD-SSOT-D3-2026-11-07",
+          "Outcome": "SIGNED (operator-scoped acceptance only; audit obligation stays attached)"
+        }
+      ]
+    }
+  ],
+  "lines": 426
+}

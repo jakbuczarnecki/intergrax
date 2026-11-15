@@ -1,0 +1,11 @@
+Tier-2 agents must not import intergrax.integrations/tools directly:
+  - agents/external_contractor_adapter/external_contractor_adapter_agent.py
+  - agents/external_contractor_adapter/external_work_adapter.py
+  - agents/external_contractor_adapter/external_work_reconciliation_plugin.py
+  - agents/external_contractor_adapter/steps/domain_job.py
+  - agents/external_contractor_adapter/strict_host_dependency_injection.py
+  - agents/local_search/steps/search_job.py
+  - agents/tool_selection_qualifier/steps/tool_selection_job.py
+  - agents/tool_selection_qualifier/tool_selection.py
+  - agents/web_search_qualifier/search_provider_resolver.py
+  - agents/web_search_qualifier/steps/web_search_job.py

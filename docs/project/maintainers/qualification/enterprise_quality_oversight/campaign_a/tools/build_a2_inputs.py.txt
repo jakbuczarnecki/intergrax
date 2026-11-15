@@ -1,0 +1,62 @@
+"""A2-T02 inputs: Tier-1 batches B1..B10 over parent stages (roots of the A1 inventory)."""
+from __future__ import annotations
+
+import sys
+from collections import Counter, defaultdict
+from pathlib import Path
+
+sys.path.insert(0, str(Path(__file__).parent))
+from common import *  # noqa
+
+BATCHES = {
+    "B1": ["EBH-2E", "ADR3-IMP-03-R1", "ADR3-IMP-03 / M4", "ADR3-IMP-04", "ADR3-IMP-05", "HARNESS-01-R5-W3-R1-Q2", "EBH-2F", "EBH-2G", "EBH-2H", "EBH-2I",
+           "HARNESS-QINF-01", "HARNESS-W4", "HARNESS-W5", "HARNESS-W6"],
+    "B2": ["GOV-X1", "INT-EXTCOMP-X", "S24-GAP-04-P1-R1", "S24-GAP-04-P2", "S24-GAP-04-CERT", "INT-CONFIG-REAL-X", "AW-7C", "EBH-3", "EBH-4"],
+    "B3": ["HARNESS-W7", "HARNESS-W8", "HARNESS-RESIDUAL / SCHED-01", "HARNESS-RESIDUAL / CE-01", "HARNESS-FINAL", "GOV-X2", "CTRL-X", "STATE-X"],
+    "B4": ["TRACE-X"],
+    "B5": ["CONFIG-X", "COMPAT-X", "TENANT-X"],
+    "B6": ["PROD-Q"],
+    "B7": ["QUAL-X", "SKILL-X", "TOOL-LIFE-X", "DIST-SCALE-X"],
+    "B8": ["EBH-5", "EBH-6", "DUP-X", "ROADMAP-REPLAY-X", "EBH-7"],
+    "B9": ["EVOL-X", "ENT-AUDIT-X", "MCP-SERVER-X", "PRE-ENT / T-IGX-034-I (Wave 5 matrix)", "PRE-ENT / T-IGX-034-A (Wave 6 cross-audit)", "PRE-ENT / T-IGX-034-A (W6-G4 settlement)"],
+    "B10": ["PDC-X", "ARCH-FREEZE", "SCENARIO-FACTORY-X", "SEF-X", "SCENARIO-READINESS-X", "SCENARIO-GATE", "T-IGX-010-B / ARCH-FREEZE wave 1", "ENTERPRISE-FREEZE-CONTROL-01", "remaining mandatory stages"],
+}
+SEEDS = {"DIST-SCALE-X": ["S-01", "S-04", "S-11"], "PROD-Q": ["S-02", "S-11"], "TOOL-LIFE-X": ["S-03", "S-04"], "SKILL-X": ["S-03", "S-04"], "EBH-5": ["S-11"],
+         "MCP-SERVER-X": ["S-18"], "ENT-AUDIT-X": ["S-15", "S-16", "S-18"], "PDC-X": ["S-19"], "ARCH-FREEZE": ["S-04", "S-17", "S-19"], "EBH-7": ["S-14"],
+         "HARNESS-FINAL": [], "EVOL-X": ["S-17"]}
+
+
+def main():
+    rows = read_jsonl(WS / "A1" / "stage_rows.jsonl")
+    byid = {r["id"]: r for r in rows}
+    t2 = {r["id"]: r for r in read_jsonl(WS / "A2" / "t2_mechanical.jsonl")}
+    kids = defaultdict(list)
+    for r in rows:
+        if r["root_id"] != r["id"]:
+            kids[r["root_id"]].append(r["id"])
+    allroots = {r["id"] for r in rows if r["id"] == r["root_id"] and r["row_source"] != "PROSE"}
+    mapped = {i for ids in BATCHES.values() for i in ids}
+    assert mapped >= allroots, f"unmapped roots: {sorted(allroots - mapped)}"
+    assert not (mapped - allroots), f"unknown ids: {sorted(mapped - allroots)}"
+    for b, ids in BATCHES.items():
+        out = []
+        for i in ids:
+            r = byid[i]
+            sub = kids.get(i, [])
+            sub_flags = Counter(f for k in sub for f in byid[k]["mech_flags"])
+            sub_t2 = Counter(f for k in sub for f in t2.get(k, {}).get("t2_flags", []))
+            out.append({"id": i, "line": r["line"], "ledger_lines": r["ledger_lines"], "status_raw": r["status_raw"][:300], "status_family": r["status_family"],
+                        "ledger_families": r["ledger_families"], "owner": r.get("owner"), "disposition": r["disposition"], "tier": r["assessment_tier"],
+                        "frz_links": r.get("frz_links", []), "shas": [{"sha": s["sha"], "role": s["role"], "ancestor": s["ancestor"]} for s in r["shas"][:8]],
+                        "abbr_shas_expanded": r["abbr_shas_expanded"][:6], "linked_docs": r["linked_docs"][:8], "ledger_notes": [x[:400] for x in r["ledger_notes_excerpt"][:2]],
+                        "children": sub[:60], "n_children": len(sub), "subtree_mech_flags": dict(sub_flags), "subtree_t2_flags": dict(sub_t2),
+                        "mech_flags": r["mech_flags"], "stated_dependencies": r.get("stated_dependencies", []), "open_obligations": r.get("open_obligations", []),
+                        "closure_evidence_claimed": r.get("closure_evidence_claimed", []), "closure_conditions": r.get("closure_conditions"),
+                        "status_assessment_a1": r.get("status_assessment"), "t2": {k: v for k, v in t2.get(i, {}).items() if k.startswith("q") or k in ("t2_flags", "independence_wording", "artifacts")} if i in t2 else None,
+                        "seeds": SEEDS.get(i, [])})
+        write_jsonl(WS / "A2" / f"input_{b}.jsonl", out)
+        print(b, len(out), "roots; subtree rows", sum(x["n_children"] for x in out))
+
+
+if __name__ == "__main__":
+    main()

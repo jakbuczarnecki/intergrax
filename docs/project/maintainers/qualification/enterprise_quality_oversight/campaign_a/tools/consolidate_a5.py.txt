@@ -1,0 +1,47 @@
+"""A5 consolidation: deltas.jsonl + shards/A5 -> A5/drift_rows.jsonl."""
+from __future__ import annotations
+
+import sys
+from collections import Counter
+from pathlib import Path
+
+sys.path.insert(0, str(Path(__file__).parent))
+from common import *  # noqa
+
+
+def main():
+    cert = {r["id"]: r for r in read_jsonl(WS / "A2" / "cert_rows.jsonl")}
+    dl = {r["id"]: r for r in read_jsonl(WS / "A5" / "deltas.jsonl")}
+    shard = {}
+    for f in sorted((WS / "shards" / "A5").glob("A5-[0-9].jsonl")):
+        for r in read_jsonl(f):
+            shard[r["id"]] = r
+    want = []
+    for i in set().union(*[{r["id"] for r in read_jsonl(WS / "A5" / f"input_A5-{n}.jsonl")} for n in range(1, 5)]):
+        want.append(i)
+    out, missing = [], []
+    for i in sorted(want, key=lambda x: cert[x]["line"]):
+        s = shard.get(i)
+        if not s:
+            missing.append(i)
+            s = {}
+        d = dl.get(i, {})
+        out.append({"id": i, "line": cert[i]["line"], "a2_verdict": cert[i]["verdict"], "cert_sha": s.get("cert_sha") or d.get("cert_sha"), "n_surface_product": d.get("n_surface_product"),
+                    "changed_files": d.get("changed_files"), "commits_since_cert": d.get("commits_since_cert"), "invariants_claimed": s.get("invariants_claimed", []),
+                    "changes_touching_invariant": s.get("changes_touching_invariant", []), "requalification_evidence": s.get("requalification_evidence", []),
+                    "drift_class": s.get("drift_class") or "NOT-ASSESSED", "rationale": s.get("rationale"), "evidence_level": s.get("evidence_level") or "E0",
+                    "arch_freeze_relevance": s.get("arch_freeze_relevance") or "UNKNOWN", "needs_test_slot": bool(s.get("needs_test_slot")), "test_node": s.get("test_node"), "notes": s.get("notes")})
+    ovp = WS / "data" / "a5_row_overrides.json"
+    ovr = read_json(ovp) if ovp.exists() else {}
+    for r in out:
+        if r["id"] in ovr:
+            r.update(ovr[r["id"]])
+    write_jsonl(WS / "A5" / "drift_rows.jsonl", out)
+    print("drift rows", len(out), "missing", missing)
+    print("classes", dict(Counter(r["drift_class"] for r in out)))
+    print("relevance", dict(Counter(r["arch_freeze_relevance"] for r in out)))
+    print("test slots requested", [(r["id"], r["test_node"]) for r in out if r["needs_test_slot"]])
+
+
+if __name__ == "__main__":
+    main()

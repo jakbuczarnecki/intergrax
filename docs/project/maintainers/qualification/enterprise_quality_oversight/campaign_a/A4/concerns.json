@@ -1,0 +1,170 @@
+[
+  {
+    "concern_id": "C01",
+    "name": "Layer boundaries and composition roots",
+    "expected_owner_docs": "PLATFORM_FOUNDATION; INTERGRAX_ARCHITECTURE_PRINCIPLES; DEPENDENCY_OWNERSHIP",
+    "origin": "derived"
+  },
+  {
+    "concern_id": "C02",
+    "name": "Execution authority (Unified Execution Runtime, Nexus orchestration)",
+    "expected_owner_docs": "UNIFIED_EXECUTION_RUNTIME; ORCHESTRATION; NEXUS_EXECUTION_FLOW",
+    "origin": "derived"
+  },
+  {
+    "concern_id": "C03",
+    "name": "Governance, policy and authority narrowing",
+    "expected_owner_docs": "GOVERNED_EXECUTION; GOV-X1/X2",
+    "origin": "derived"
+  },
+  {
+    "concern_id": "C04",
+    "name": "Agent contracts, assembly, lifecycle and distribution",
+    "expected_owner_docs": "AGENT_CONTRACTS_AND_ASSEMBLY; AGENT_DISTRIBUTION; PDC D1",
+    "origin": "derived"
+  },
+  {
+    "concern_id": "C05",
+    "name": "LLM boundary, model runtime and modality",
+    "expected_owner_docs": "LLM_ADAPTERS; MODALITY; PDC D3",
+    "origin": "derived"
+  },
+  {
+    "concern_id": "C06",
+    "name": "Tools and tool execution lifecycle",
+    "expected_owner_docs": "TOOLS; TOOL-LIFE-X",
+    "origin": "derived"
+  },
+  {
+    "concern_id": "C07",
+    "name": "Skills",
+    "expected_owner_docs": "SKILLS; SKILL-X",
+    "origin": "derived"
+  },
+  {
+    "concern_id": "C08",
+    "name": "Integrations, plugins, capability catalog and MCP exposure",
+    "expected_owner_docs": "INTEGRATIONS; PLATFORM_PLUGINS; CAPABILITY_CATALOG_AND_DISCOVERY; MCP_SERVER",
+    "origin": "derived"
+  },
+  {
+    "concern_id": "C09",
+    "name": "Knowledge and RAG",
+    "expected_owner_docs": "RAG; PDC D2 (knowledge)",
+    "origin": "derived"
+  },
+  {
+    "concern_id": "C10",
+    "name": "Memory",
+    "expected_owner_docs": "MEMORY",
+    "origin": "derived"
+  },
+  {
+    "concern_id": "C11",
+    "name": "Context engineering and context lifecycle",
+    "expected_owner_docs": "CONTEXT_ENGINEERING; UNIFIED_CONTEXT_LIFECYCLE; PDC D2",
+    "origin": "derived"
+  },
+  {
+    "concern_id": "C12",
+    "name": "Configuration and provider/vendor activation",
+    "expected_owner_docs": "CONFIG-X; PLATFORM_CONFIGURATION",
+    "origin": "derived"
+  },
+  {
+    "concern_id": "C13",
+    "name": "Tenant isolation",
+    "expected_owner_docs": "TENANT-X",
+    "origin": "derived"
+  },
+  {
+    "concern_id": "C14",
+    "name": "Persistence and state",
+    "expected_owner_docs": "STATE-X",
+    "origin": "derived"
+  },
+  {
+    "concern_id": "C15",
+    "name": "Observability, tracing and diagnostics",
+    "expected_owner_docs": "OBSERVABILITY; DIAGNOSTICS; TRACE-X",
+    "origin": "derived"
+  },
+  {
+    "concern_id": "C16",
+    "name": "Security and data lifecycle",
+    "expected_owner_docs": "SEC family; sandbox; security packages",
+    "origin": "derived"
+  },
+  {
+    "concern_id": "C17",
+    "name": "Reliability, recovery and resilience",
+    "expected_owner_docs": "RELIABILITY_FAILURE_AND_HITL; ENTERPRISE_RELIABILITY_LAYER; REC family",
+    "origin": "derived"
+  },
+  {
+    "concern_id": "C18",
+    "name": "Capacity, background work and distributed scale",
+    "expected_owner_docs": "ELASTIC_CAPACITY_AND_SCALING; BACKGROUND_TASKS; DIST-SCALE-X; PDC D7",
+    "origin": "derived"
+  },
+  {
+    "concern_id": "C19",
+    "name": "Compatibility, evolvability and change safety",
+    "expected_owner_docs": "COMPAT-X; EVOL-X",
+    "origin": "derived"
+  },
+  {
+    "concern_id": "C20",
+    "name": "Evaluation, qualification and enterprise audit system",
+    "expected_owner_docs": "QUAL-X; ENT-AUDIT-X; PDC D5; evaluation packages",
+    "origin": "derived"
+  },
+  {
+    "concern_id": "C21",
+    "name": "Decision System",
+    "expected_owner_docs": "DECISION_SYSTEM; DECISION_VERIFICATION",
+    "origin": "plan addition"
+  },
+  {
+    "concern_id": "C22",
+    "name": "Human-in-the-loop and interrupts",
+    "expected_owner_docs": "RELIABILITY_FAILURE_AND_HITL; interrupts; human packages",
+    "origin": "plan addition"
+  },
+  {
+    "concern_id": "C23",
+    "name": "Hosting and application tier (Tier-3)",
+    "expected_owner_docs": "APPLICATION_HOSTING; TIER3_APPLICATION_ENVIRONMENT; PDC D4",
+    "origin": "plan addition"
+  },
+  {
+    "concern_id": "C24",
+    "name": "Proof receipts and evidence plane",
+    "expected_owner_docs": "PROOF_RECEIPTS; evidence packages",
+    "origin": "plan addition"
+  },
+  {
+    "concern_id": "C25",
+    "name": "MCP Server (platform MCP exposure engine)",
+    "expected_owner_docs": "MCP_SERVER; MCP-SERVER-X; PDC D6",
+    "origin": "spec concern missing from the executor-derived list (added after the planning session supplied the spec list)"
+  },
+  {
+    "concern_id": "C26",
+    "name": "Artifact lifecycle",
+    "expected_owner_docs": "ARTIFACT_LIFECYCLE; PDC D8",
+    "origin": "spec concern missing from the executor-derived list (added after the planning session supplied the spec list)"
+  },
+  {
+    "concern_id": "C27",
+    "name": "Vendor / backend replaceability",
+    "expected_owner_docs": "roadmap 3.0.8 VBN; EBH-5/6; VENDOR_BACKEND_NEUTRALITY evidence spec",
+    "origin": "spec concern missing from the executor-derived list (added after the planning session supplied the spec list)"
+  },
+  {
+    "concern_id": "C28",
+    "name": "Scenario-facing contracts",
+    "expected_owner_docs": "SCENARIO_FACTORY; SCENARIO-READINESS-X; scenario runtime baseline",
+    "origin": "spec concern missing from the executor-derived list (added after the planning session supplied the spec list)"
+  }
+]

@@ -1,0 +1,87 @@
+{
+  "wave": "W5",
+  "utc": "2026-11-15T19:04:19Z",
+  "baseline_sha": "258bbf6abb6fdbb92ef0185d058527fbb1e47f04",
+  "results": [
+    {
+      "check": "C01",
+      "pass": true,
+      "message": "100.0% (expected 292, inventoried 292); missing=[] extra=[]"
+    },
+    {
+      "check": "C02",
+      "pass": true,
+      "message": "100.0% complete (292 rows); incomplete=[]"
+    },
+    {
+      "check": "C03",
+      "pass": true,
+      "message": "49/49 CLOSED-type parent rows and 137/137 closed-type child rows (own source or documented inheritance from their root) have a resolving certification source or a linked finding; bad=[]"
+    },
+    {
+      "check": "C04",
+      "pass": true,
+      "message": "FRZ rows=225 unique=225 raw-regex unique=225 diff=[] no-owner/status=[]"
+    },
+    {
+      "check": "C05",
+      "pass": true,
+      "message": "1298/1298 real entries have an owner or a linked finding (owner missing without finding: []); entries lacking severity/currency/evidence/arch_freeze_impact fields: 0"
+    },
+    {
+      "check": "C06",
+      "pass": true,
+      "message": "18 files checked; problems=[]"
+    },
+    {
+      "check": "C07",
+      "pass": true,
+      "message": "240 findings; schema errors=[]; unresolved evidence=[] (n=0)"
+    },
+    {
+      "check": "C08",
+      "pass": true,
+      "message": "535 rendered roll-ups recomputed; problems=[] (n=0)"
+    },
+    {
+      "check": "C09",
+      "pass": true,
+      "message": "BLOCKER/HIGH rows below E3 not marked UNVERIFIED_HYPOTHESIS: []"
+    },
+    {
+      "check": "C10",
+      "pass": true,
+      "message": "53/53 B/C findings in the handoff; missing=[]"
+    },
+    {
+      "check": "C11",
+      "pass": true,
+      "message": "WT porcelain empty; MAIN porcelain == W0 snapshot; MAIN HEAD unchanged"
+    },
+    {
+      "check": "C12",
+      "pass": true,
+      "message": "356 manifest entries; mismatched=[]; unlisted=[] (n=0)"
+    },
+    {
+      "check": "C13",
+      "pass": true,
+      "message": "12 exclusions; problems=[]"
+    },
+    {
+      "check": "C14",
+      "pass": true,
+      "message": "6/10 budget rows; problems=[]"
+    },
+    {
+      "check": "C15",
+      "pass": true,
+      "message": "20 seeds; unresolved/invalid=[] (n=0)"
+    },
+    {
+      "check": "NOT-ASSESSED",
+      "pass": true,
+      "message": "NOT-ASSESSED count == 0"
+    }
+  ]
+}

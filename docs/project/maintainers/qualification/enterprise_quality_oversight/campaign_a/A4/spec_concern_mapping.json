@@ -1,0 +1,157 @@
+{
+  "source": "message from the planning session (Campaign A brief, workstream A4), 2026-11-15",
+  "spec_concerns": [
+    {
+      "n": 1,
+      "name": "Composition Root / Dependency Injection",
+      "executor_concerns": [
+        "C01"
+      ]
+    },
+    {
+      "n": 2,
+      "name": "Governance / Policy / Authorization",
+      "executor_concerns": [
+        "C03"
+      ]
+    },
+    {
+      "n": 3,
+      "name": "Execution / Nexus / Scheduling",
+      "executor_concerns": [
+        "C02",
+        "C18"
+      ]
+    },
+    {
+      "n": 4,
+      "name": "Agent Runtime",
+      "executor_concerns": [
+        "C04"
+      ]
+    },
+    {
+      "n": 5,
+      "name": "Tool / Skill / Plugin Lifecycle",
+      "executor_concerns": [
+        "C06",
+        "C07",
+        "C08"
+      ]
+    },
+    {
+      "n": 6,
+      "name": "MCP Server",
+      "executor_concerns": [
+        "C25"
+      ]
+    },
+    {
+      "n": 7,
+      "name": "Integration Boundaries",
+      "executor_concerns": [
+        "C08"
+      ]
+    },
+    {
+      "n": 8,
+      "name": "Configuration / Profiles",
+      "executor_concerns": [
+        "C12"
+      ]
+    },
+    {
+      "n": 9,
+      "name": "State / Persistence / Recovery",
+      "executor_concerns": [
+        "C14",
+        "C17"
+      ]
+    },
+    {
+      "n": 10,
+      "name": "Context / Memory / Knowledge / RAG",
+      "executor_concerns": [
+        "C09",
+        "C10",
+        "C11"
+      ]
+    },
+    {
+      "n": 11,
+      "name": "Model Routing / LLM Boundary",
+      "executor_concerns": [
+        "C05"
+      ]
+    },
+    {
+      "n": 12,
+      "name": "Tenant Isolation",
+      "executor_concerns": [
+        "C13"
+      ]
+    },
+    {
+      "n": 13,
+      "name": "Secrets / Credentials / Security",
+      "executor_concerns": [
+        "C16"
+      ]
+    },
+    {
+      "n": 14,
+      "name": "Tracing / Observability / Diagnostics",
+      "executor_concerns": [
+        "C15"
+      ]
+    },
+    {
+      "n": 15,
+      "name": "Evaluation / Certification",
+      "executor_concerns": [
+        "C20"
+      ]
+    },
+    {
+      "n": 16,
+      "name": "Event / Background Processing",
+      "executor_concerns": [
+        "C18"
+      ]
+    },
+    {
+      "n": 17,
+      "name": "Artifact Lifecycle",
+      "executor_concerns": [
+        "C26"
+      ]
+    },
+    {
+      "n": 18,
+      "name": "Evolution / Compatibility / Versioning",
+      "executor_concerns": [
+        "C19"
+      ]
+    },
+    {
+      "n": 19,
+      "name": "Vendor / Backend Replaceability",
+      "executor_concerns": [
+        "C27"
+      ]
+    },
+    {
+      "n": 20,
+      "name": "Scenario-facing contracts",
+      "executor_concerns": [
+        "C28"
+      ]
+    }
+  ],
+  "plan_additions": [
+    "C21",
+    "C22",
+    "C23",
+    "C24"
+  ]
+}

@@ -1,0 +1,13 @@
+Lower layers must not import applications/ or intergrax.applications:
+  - intergrax/runtime/architecture/obs_diag_x3_ast_gates.py
+  - intergrax/runtime/execution/application_environment_context_composition.py
+  - intergrax/runtime/execution/application_graph_spec_to_plan.py
+  - intergrax/runtime/execution/application_host_orchestration_composition.py
+  - intergrax/runtime/execution/environment_host_task_execution.py
+  - intergrax/runtime/execution/harness_host_internal_composition.py
+  - intergrax/runtime/execution/host_orchestration_application_wiring_applier.py
+  - intergrax/runtime/execution/host_orchestration_assembly_validation.py
+  - intergrax/runtime/execution/host_orchestration_environment_spec_builder.py
+  - intergrax/runtime/execution/host_orchestration_planner_classifier_wiring.py
+  - intergrax/runtime/execution/host_orchestration_wiring_bundle.py
+  - intergrax/runtime/execution/scenario_host_diagnostic_wiring.py

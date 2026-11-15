@@ -1,0 +1,129 @@
+{
+  "path": "docs/project/maintainers/qualification/historical_certification_campaign/HISTORICAL_INDEPENDENT_AUDIT_REGISTER.md",
+  "tables": [
+    {
+      "header": [
+        "name",
+        "session id",
+        "role",
+        "scope",
+        "verdict",
+        "report"
+      ],
+      "rows": [
+        {
+          "line": 10,
+          "name": "rev-docs",
+          "session id": "2fa420b1-3289-4211-bdde-8f7a59068b02",
+          "role": "independent non-author reviewer",
+          "scope": "PR 405 / branch hist-cert/docs-patches (5 commits)",
+          "verdict": "ACCEPT (after 1 correction commit; found a stage-label flip and an absent quotation)",
+          "report": "audits/rev-docs/REVIEW.md"
+        },
+        {
+          "line": 11,
+          "name": "rev-rules",
+          "session id": "36de2835-33cd-4117-a4a4-0f201f898370",
+          "role": "independent non-author reviewer",
+          "scope": "PR 406 / branch hist-cert/rules-update (3 commits)",
+          "verdict": "ACCEPT (after nine required edits and two follow-up defects; found a false tooling statement)",
+          "report": "audits/rev-rules/REVIEW.md"
+        },
+        {
+          "line": 12,
+          "name": "aud-030a",
+          "session id": "cdb0c03b-866b-433c-b899-a8d0ccbcc05f",
+          "role": "independent auditor (not implementer, planner or approver)",
+          "scope": "T-IGX-030-A implementation SHA 683f955727fb (tests only)",
+          "verdict": "PASS_SCOPED (conditions C-1/C-2 only; does not close TOOL-LIFE-X; OD-TLX-A/C authority not verifiable from the repo)",
+          "report": "audits/aud-030a/AUDIT_REPORT.md"
+        },
+        {
+          "line": 13,
+          "name": "aud-final",
+          "session id": "9b703bc3-6a1e-4ac8-9a52-dc662c0f5a1c",
+          "role": "independent integration auditor of this package (mission phase P3)",
+          "scope": "campaign final package, commits 2a7aec93d -> 6c973c93a -> 63ff33812 (documentation only)",
+          "verdict": "ACCEPT_WITH_CHANGES at 2a7aec93d (13 findings: 1 HIGH, 8 MEDIUM, 4 LOW), all applied; re-read at 6c973c93a: ACCEPT_WITH_CHANGES with one mechanical numeric edit (R-1, dashboard counters), applied in 63ff33812 and checked by git diff; the auditor stated the package is ACCEPT once R-1 is applied. Covers fidelity of the consolidation, NOT the correctness of the 85 worker judgements",
+          "report": "audits/aud-final/AUDIT_REPORT.md"
+        },
+        {
+          "line": 14,
+          "name": "cert-030a",
+          "session id": "929ea8c8-4988-4fc1-bcc6-6e66b265b0ac",
+          "role": "designated certifying session (plan approval only, IIAC Amendment 01)",
+          "scope": "Plan of T-IGX-030-A, digest c6d1dca6...",
+          "verdict": "APPROVE (plan only)",
+          "report": "audits/cert-030a/CERT_DECISION.md"
+        },
+        {
+          "line": 15,
+          "name": "hist-p8-final-aud",
+          "session id": "a91e4f28-6c3d-4b8e-a0f5-2e7d9c1b4f63",
+          "role": "independent final campaign auditor (P8-AUD-FINAL)",
+          "scope": "Dossier at b5c2481d7 / pin 878e2e384 lineage",
+          "verdict": "PASS (dossier; not campaign CLOSED_VERIFIED)",
+          "report": "audits/final-p8/AUDIT_REPORT.md"
+        },
+        {
+          "line": 16,
+          "name": "hist-p8-cert",
+          "session id": "process_enforced",
+          "role": "designated certifying session (P8-CERT)",
+          "scope": "Terminal label after P8-AUD-FINAL",
+          "verdict": "ACCEPT HISTORICAL_CAMPAIGN_PARTIAL_EXACT_BLOCKERS",
+          "report": "audits/cert-p8/CERT_DECISION.md"
+        },
+        {
+          "line": 17,
+          "name": "hist-final-scope",
+          "session id": "f7c2a8e1-4b9d-4e6f-9a3c-2d8e5f1a0b7c",
+          "role": "independent final HIST-scope auditor (post batch; not final-closure implementer)",
+          "scope": "Full HIST end state @ 087bd1769 lineage + final-closure batch docs",
+          "verdict": "PASS (scope closure honest; not CLOSED_VERIFIED)",
+          "report": "audits/final-hist-scope/AUDIT_REPORT.md"
+        }
+      ]
+    },
+    {
+      "header": [
+        "name",
+        "session id",
+        "role"
+      ],
+      "rows": [
+        {
+          "line": 22,
+          "name": "impl-tlx",
+          "session id": "4e77efc7-e2c5-4334-9974-392ee06497ca",
+          "role": "planner and implementer of T-IGX-030-A (and plans of 030-B / 030-C)"
+        },
+        {
+          "line": 23,
+          "name": "HIST-01",
+          "session id": "8cca8db3-455a-4d8d-9c63-d356410c6ef8",
+          "role": "campaign worker HIST-01 (inventory and candidate evidence; no PASS issued)"
+        },
+        {
+          "line": 24,
+          "name": "HIST-02",
+          "session id": "f13fa3c1-138a-4d38-9ff4-19244367cc49",
+          "role": "campaign worker HIST-02 (inventory and candidate evidence; no PASS issued)"
+        },
+        {
+          "line": 25,
+          "name": "HIST-03",
+          "session id": "5a9e8ba9-967f-49ab-bccd-cf3651c93abc",
+          "role": "campaign worker HIST-03 (inventory and candidate evidence; no PASS issued)"
+        },
+        {
+          "line": 26,
+          "name": "HIST-04",
+          "session id": "303eeffe-0910-416b-b572-c2f1f67d1240",
+          "role": "campaign worker HIST-04 (inventory and candidate evidence; no PASS issued)"
+        }
+      ]
+    }
+  ],
+  "lines": 37
+}

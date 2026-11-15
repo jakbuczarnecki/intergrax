@@ -1,0 +1,134 @@
+"""W0-T03: SOURCE_REGISTRY (S01..S15) resolved at BASELINE_SHA + LINKED_PATHS discovery from S01/S02."""
+from __future__ import annotations
+
+import re
+import sys
+from pathlib import Path
+
+sys.path.insert(0, str(Path(__file__).parent))
+from common import *  # noqa
+
+MP = "docs/project/maintainers"
+Q = f"{MP}/qualification"
+SOURCES = [
+    ("S01", "Roadmap (order, status, formal closure)", "SSOT order/status", [ROADMAP]),
+    ("S02", "FRZ acceptance checklist", "Acceptance criteria", [FRZ_CHECKLIST]),
+    ("S03", "IIAC protocol + amendment + activation + schema + handoff template", "Certification semantics",
+     [f"{Q}/INTEGRAX_INTERNAL_INDEPENDENT_AGENT_CERTIFICATION_PROTOCOL.md",
+      f"{Q}/IIAC_AMENDMENT_01_OPERATOR_DESIGNATED_SIGNING_SESSION.md", f"{Q}/IIAC_POLICY_ACTIVATION_RECORD.json",
+      f"{Q}/schemas/iiac_audit_session_manifest.v1.schema.json", f"{Q}/IIAC_SESSION_HANDOFF_RECORD.template.md"]),
+    ("S04", "ECAP protocol + EBH-7 ECAP checklist + normative matrix", "Audit-mode semantics",
+     [f"{Q}/ENTERPRISE_CONTINUOUS_ARCHITECTURE_ASSURANCE_PROTOCOL.md", f"{Q}/EBH_7_ECAP_EXECUTABLE_CHECKLIST.md",
+      f"{Q}/EBH_7_B6_F10_ECAP_NORMATIVE_MATRIX.md"]),
+    ("S05", "ENT-AUDIT-X control system", "Control system",
+     ["intergrax/platform/enterprise_audit/data/enterprise_audit_check_manifest.v1.json",
+      "intergrax/platform/enterprise_audit/data/changed_since_impact_map.v1.json",
+      "intergrax/platform/enterprise_audit/data/evidence_artifact_catalog.v1.json",
+      "tests/qualification/ent_audit_x/ENTERPRISE_AUDIT_BASELINE.json"]),
+    ("S06", "ARCH-FREEZE records", "ARCH-FREEZE in-flight",
+     [f"{Q}/ARCH_FREEZE_FRZ_ACCEPTANCE_MATRIX.md", f"{Q}/ARCH_FREEZE_CLOSED_WORLD_GAP_REGISTER.md", f"{Q}/ARCH_FREEZE_SHA_LADDER.md",
+      f"{Q}/ARCH_FREEZE_B2_DEBT_REGISTER_RECONCILIATION.md", f"{Q}/ARCH_FREEZE_OPERATOR_DECISION_REGISTER.md",
+      f"{Q}/ARCH_FREEZE_WBS_AND_DEPENDENCY_DAG.md", f"{Q}/ARCH_FREEZE_ARCHITECTURE_AND_PRODUCTION_SURFACE_INVENTORY.md",
+      f"{Q}/ARCH_FREEZE_EXECUTION_WAVE1_INDEPENDENT_AUDIT_HANDOFF.md"]),
+    ("S07", "PDC-X records", "PDC-X in flight", [f"{Q}/platform_domain_completeness/PDC_INDEX.md",
+      f"{Q}/platform_domain_completeness/PDC_OWNERSHIP_MATRIX.md", f"{Q}/platform_domain_completeness/PDC_DOMAIN_REQUIREMENTS_MATRIX.json",
+      f"{Q}/platform_domain_completeness/PDC_FRZ_COVERAGE_MATRIX.md", f"{Q}/platform_domain_completeness/PDC_GAP_REGISTER.md",
+      f"{Q}/platform_domain_completeness/PDC_SHA_LADDER.md"]),
+    ("S08", "Historical certification campaign", "Prior HIST assurance", [f"{Q}/historical_certification_campaign"]),
+    ("S09", "PRE-ENT, IIAC evidence, EVOL-X, MCP-SERVER-X, EBH replays", "Stage evidence bundles",
+     [f"{Q}/pre_ent_enterprise_certification", f"{Q}/iiac_evidence", f"{Q}/evol_x", f"{Q}/mcp_server_x/MCP_SERVER_X_INDEX.md",
+      f"{Q}/ebh_6_p03_independent_replay", f"{Q}/ebh_7_p03_independent_replay"]),
+    ("S10", "Per-stage qualification records", "Per-stage certification records", [Q]),
+    ("S11", "VBN / PROD-Q", "VBN / PROD-Q", [f"{Q}/VENDOR_BACKEND_NEUTRALITY_AND_REPLACEABILITY_EVIDENCE.md",
+      f"{Q}/PROD_Q_R1_R7_Q_QUALIFICATION_INVENTORY_AND_GATE_PLAN.md", f"{Q}/EBH_5_CROSS_LAYER_REPLACEABILITY_MATRIX.md"]),
+    ("S12", "Architecture docs", "Domain semantic authorities", ["docs/project/architecture",
+      "docs/project/architecture/INTERGRAX_ARCHITECTURE_PRINCIPLES.md", "docs/project/architecture/DEPENDENCY_OWNERSHIP.md",
+      "docs/project/architecture/ARCHITECTURE_OVERVIEW.md", "docs/project/capabilities/architecture", f"{MP}/plans"]),
+    ("S13", "Registers (debt/exceptions/decisions)", "Debt, exceptions, decisions",
+     ["docs/project/technical/guides/ARCHITECTURE_DEBT_REGISTER.md", f"{Q}/ARCH_FREEZE_CLOSED_WORLD_GAP_REGISTER.md",
+      f"{Q}/EBH_7_GAP_REGISTER.md", f"{Q}/EBH_7_B6_BLOCKER_REGISTER.md", f"{Q}/ent_audit_x/ANNEX_F_GAP_REGISTER.md",
+      f"{Q}/DIAGNOSTIC_GAP_LEDGER.md", f"{Q}/DUP_X_FINDINGS_REGISTER.md", f"{Q}/EBH_6_CORE_HARDCODING_FINDINGS_REGISTER.md",
+      f"{Q}/ROADMAP_REPLAY_X_CORE_HARDCODING_FINDINGS_REGISTER.md", f"{Q}/EBH_6_CONDITIONAL_REMEDIATION_REGISTER.md",
+      f"{Q}/EBH_7_CROSS_DOMAIN_RISK_MATRIX.md", f"{Q}/CERT_CAMPAIGN_DELEGATED_DECISIONS_2026-11-07.md",
+      f"{Q}/ebh_7_p03_independent_replay/EBH_7_SKIP_DISPOSITION_REGISTER.md", f"{Q}/platform_domain_completeness/PDC_GAP_REGISTER.md",
+      f"{Q}/mcp_server_x/MCP_SERVER_X_GAP_REGISTER.md"]),
+    ("S14", "Delivery governance", "Delivery governance, approvals", ["governance/tickets", "governance/plans",
+      "governance/agent-control-plane/role_registry.yaml", "governance/policy-registry.yaml", "governance/TRUSTED_POLICY_PIN.yaml",
+      "governance/GOVERNANCE-MANIFEST.yaml"]),
+    ("S15", "Documentation map", "Navigation hub", ["docs/project/technical/DOCUMENTATION_MAP.md"]),
+]
+
+
+def blob_stats(path: str):
+    r = git("cat-file", "-t", f"{BASELINE_SHA}:{path}")
+    if r.returncode != 0:
+        return {"path": path, "exists": False}
+    kind = r.stdout.strip()
+    if kind == "tree":
+        ls = git("ls-tree", "-r", "--name-only", BASELINE_SHA, path + "/").stdout.split("\n")
+        files = [x for x in ls if x]
+        return {"path": path, "exists": True, "kind": "tree", "n_files": len(files)}
+    b = show_bytes(path)
+    return {"path": path, "exists": True, "kind": "blob", "lines": b.count(b"\n") + (0 if b.endswith(b"\n") else 1),
+            "blob_sha256": sha256_bytes(b), "git_blob": git("rev-parse", f"{BASELINE_SHA}:{path}").stdout.strip()}
+
+
+def resolve_link(base_dir: str, target: str) -> str:
+    parts = []
+    for seg in (base_dir + "/" + target).replace("\\", "/").split("/"):
+        if seg == "..":
+            if parts:
+                parts.pop()
+        elif seg and seg != ".":
+            parts.append(seg)
+    return "/".join(parts)
+
+
+def main():
+    reg = []
+    for sid, title, role, paths in SOURCES:
+        reg.append({"id": sid, "title": title, "authority_role": role, "entries": [blob_stats(p) for p in paths]})
+    # linked paths from S01 and S02
+    linked = {}
+    for src, path in (("S01", ROADMAP), ("S02", FRZ_CHECKLIST)):
+        txt = show_text(path)
+        base = str(Path(path).parent).replace("\\", "/")
+        for m in re.finditer(r"\]\(([^)\s]+?)(?:#[^)]*)?\)", txt):
+            t = m.group(1)
+            if t.startswith(("http", "mailto:")) or t == "":
+                continue
+            rp = resolve_link(base, t)
+            linked.setdefault(rp, set()).add(src)
+        for m in re.finditer(r"`((?:docs|governance|scripts|tests|intergrax|agents|applications)/[A-Za-z0-9_./\-]+\.(?:md|json|yaml|yml|py))`", txt):
+            linked.setdefault(m.group(1), set()).add(src + "-code")
+    lp = []
+    for p, srcs in sorted(linked.items()):
+        ok = path_exists_at(p)
+        lp.append({"path": p, "from": sorted(srcs), "exists": ok})
+    write_json(WS / "extracts" / "LINKED_PATHS.json", lp)
+    missing = [x for x in lp if not x["exists"]]
+    digest_src = json.dumps(reg, sort_keys=True, ensure_ascii=False).encode()
+    out = {"campaign": CAMPAIGN, "baseline_sha": BASELINE_SHA, "generated_utc": utc_now(), "sources": reg,
+           "linked_paths_total": len(lp), "linked_paths_missing": len(missing),
+           "registry_digest": sha256_bytes(digest_src)}
+    write_json(WS / "SOURCE_REGISTRY.json", out)
+    # markdown
+    md = [f"# Source registry (S01-S15)\n", header_block().strip(), "",
+          "Resolved with `git cat-file` at `BASELINE_SHA`. Sizes and sha256 are of blobs at the baseline.\n",
+          "| ID | Source | Authority role | Path | Exists | Lines / files | sha256 (blob) |", "|---|---|---|---|---|---|---|"]
+    for s in reg:
+        for e in s["entries"]:
+            md.append(f"| {s['id']} | {s['title']} | {s['authority_role']} | `{e['path']}` | {'yes' if e['exists'] else '**MISSING**'} | "
+                      f"{e.get('lines', e.get('n_files', ''))} | {e.get('blob_sha256', '')[:16]} |")
+    md += ["", f"Linked paths discovered in S01/S02: {len(lp)}; missing at baseline: {len(missing)} (see `data/LINKED_PATHS.json`).", "",
+           "Known absences recorded as findings (plan section 3): known-red test register, dedicated N/A register, certification-debt register, README/index for `qualification/`, import-linter config, standalone ECAP script."]
+    (WS / "SOURCE_REGISTRY.md").write_text("\n".join(md) + "\n", encoding="utf-8")
+    print(f"registry digest={out['registry_digest'][:16]} linked={len(lp)} missing={len(missing)}")
+    for x in missing[:40]:
+        print("  MISSING", x["path"], x["from"])
+    bad = [(s["id"], e["path"]) for s in reg for e in s["entries"] if not e["exists"]]
+    print("registry entries missing:", bad)
+
+
+if __name__ == "__main__":
+    main()

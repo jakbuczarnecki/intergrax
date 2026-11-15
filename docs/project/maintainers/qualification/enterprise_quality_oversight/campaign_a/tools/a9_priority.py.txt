@@ -1,0 +1,59 @@
+"""A9-T03: prioritisation (severity x ARCH-FREEZE impact x evidence level), potential ARCH-FREEZE blockers, recommended requalifications."""
+from __future__ import annotations
+
+import sys
+from collections import Counter
+from pathlib import Path
+
+sys.path.insert(0, str(Path(__file__).parent))
+from common import *  # noqa
+import fl
+
+SEV = {"BLOCKER": 100, "HIGH": 60, "MEDIUM": 25, "LOW": 8, "INFO": 2}
+AF = {"BLOCKS": 3.0, "CONDITIONS": 2.0, "UNKNOWN": 1.5, "NONE": 1.0}
+EV = {"E4": 1.2, "E3": 1.0, "E2": 0.7, "E1": 0.4, "E0": 0.2}
+
+
+def main():
+    fs = [f for f in fl.consolidate() if f.get("status", "OPEN") == "OPEN"]
+    rows = []
+    for f in fs:
+        rows.append({"finding_id": f["finding_id"], "severity": f["severity"], "class": f["class"], "arch_freeze_impact": f["arch_freeze_impact"], "evidence_level": f["evidence_level"],
+                     "score": round(SEV[f["severity"]] * AF[f["arch_freeze_impact"]] * EV[f["evidence_level"]], 1), "title": f["title"], "owner": f.get("owner"), "next_action": f["next_action"]})
+    rows.sort(key=lambda r: -r["score"])
+    for i, r in enumerate(rows, 1):
+        r["rank"] = i
+    write_jsonl(WS / "A9" / "priority.jsonl", rows)
+    blockers = [r for r in rows if r["arch_freeze_impact"] == "BLOCKS" or r["severity"] == "BLOCKER"]
+    write_jsonl(WS / "A9" / "arch_freeze_blockers.jsonl", blockers)
+    # requalification list
+    cert = {r["id"]: r for r in read_jsonl(WS / "A2" / "cert_rows.jsonl")}
+    drift = {r["id"]: r for r in read_jsonl(WS / "A5" / "drift_rows.jsonl")}
+    frz = read_jsonl(WS / "A3" / "frz_rows.jsonl")
+    req = []
+    for i, c in cert.items():
+        d = drift.get(i)
+        reasons = []
+        if c["verdict"] == "HIST-REQUAL":
+            reasons.append("A2 verdict HIST-REQUAL")
+        if d and d["drift_class"] == "DRIFT-UNREQUALIFIED":
+            reasons.append("A5 DRIFT-UNREQUALIFIED: " + (d.get("rationale") or "")[:160])
+        if c["verdict"] in ("EV-INCONSISTENT", "CLAIM-UNSUPPORTED"):
+            reasons.append(f"A2 verdict {c['verdict']}")
+        if reasons:
+            req.append({"stage": i, "reasons": reasons, "minimal_evidence": "independent exact-SHA audit at the current integrated baseline of the stage's named gates; for EV-INCONSISTENT rows first reconcile the record status with the roadmap",
+                        "owner": c.get("owner"), "verdict": c["verdict"], "drift": (d or {}).get("drift_class")})
+    fam = {}
+    for r in frz:
+        if r["frz_verdict"] == "HIST-REQUAL":
+            fam.setdefault(r["family"], []).append(r["frz_id"])
+    for fm, ids in fam.items():
+        req.append({"stage": f"FRZ family {fm}", "reasons": [f"{len(ids)} FRZ rows HIST-REQUAL: {', '.join(ids[:6])}"], "minimal_evidence": "replay of the closing stage gates at the freeze SHA with independent acceptance", "owner": "FRZ checklist owner / closing stage owners", "verdict": "HIST-REQUAL", "drift": None})
+    write_jsonl(WS / "A9" / "requalifications.jsonl", req)
+    print("ranked", len(rows), "blockers/BLOCKS", len(blockers), "requalifications", len(req))
+    print("top 8:", [(r["finding_id"], r["score"]) for r in rows[:8]])
+    print(dict(Counter(r["severity"] for r in rows)))
+
+
+if __name__ == "__main__":
+    main()

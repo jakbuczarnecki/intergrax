@@ -1,0 +1,10 @@
+--- Enterprise audit summary ---
+Mode: CHANGED-SINCE  certifying_run=False
+Git SHA: 258bbf6abb6fdbb92ef0185d058527fbb1e47f04
+Status: INCOMPLETE  exit_code=2
+Checks executed/skipped/planned: 0/68/68
+Checks failed (executed): 0
+Coverage label: NONE
+Duration ms: 906
+Report JSON: D:\Projekty\intergrax\.tmp\session\eqo-a\logs\a6\changed_since_planning\enterprise_audit_report.json
+Report Markdown: D:\Projekty\intergrax\.tmp\session\eqo-a\logs\a6\changed_since_planning\enterprise_audit_report.md

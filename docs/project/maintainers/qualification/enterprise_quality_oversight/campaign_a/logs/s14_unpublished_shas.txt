@@ -1,0 +1,6 @@
+S-14 check at BASELINE_SHA (git cat-file / merge-base --is-ancestor in the audit worktree):
+0adb7338075d596e7a9a0a262e78f5e990d52ea2  resolves=commit  ancestor_of_baseline=NO  contained only in local branch cert-wave/publish-v1-with-tlx
+10089121e3e130ee88d4d850b4ccfbb2ec842cf4  resolves=commit  ancestor_of_baseline=NO
+29c387879a43a65256c2c16fc92d9d7667f6031e  resolves=commit  ancestor_of_baseline=NO  contained only in local branch cert-wave/impl-c0 (HELD product fix 030-C)
+98b4bf514db6cd5098725a0f9c1d0fcbf6aaef60  resolves=commit  ancestor_of_baseline=NO
+Source: HISTORICAL_STAGE_SHA_AND_EVIDENCE_REGISTRY.md group 'unpublished' rows (on origin/development = False).

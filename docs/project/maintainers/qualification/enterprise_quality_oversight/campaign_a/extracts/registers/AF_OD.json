@@ -1,0 +1,20 @@
+{
+  "path": "docs/project/maintainers/qualification/ARCH_FREEZE_OPERATOR_DECISION_REGISTER.md",
+  "tables": [
+    {
+      "header": [
+        "OD_ID",
+        "PURPOSE",
+        "PREREQUISITES",
+        "EVIDENCE",
+        "ROLE",
+        "SIGNATURE",
+        "TIMING",
+        "CONSEQUENCE",
+        "STATUS"
+      ],
+      "rows": []
+    }
+  ],
+  "lines": 13
+}

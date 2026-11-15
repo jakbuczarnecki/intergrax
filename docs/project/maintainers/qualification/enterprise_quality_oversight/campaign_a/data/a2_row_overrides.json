@@ -1,0 +1,20 @@
+{
+ "PRE-ENT / T-IGX-034-A (W6-G4 settlement)": {
+  "verdict": "OPEN_NOT_CERTIFIED",
+  "correction": "AUD-07: the row's own note says it is a scoped campaign settlement, not a certification; treated as OPEN_NOT_CERTIFIED like its two sibling PRE-ENT rows"
+ },
+ "EBH-6": {
+  "independence_basis": "SELF_CLAIMED",
+  "answers_patch": {
+   "Q05": {
+    "a": "PARTIAL",
+    "evidence": [
+     "E1:pass record 'Auditor identity' cell reads 'Independent auditor - Protocol 03 ECAP B1-B6' (implementer-published record)"
+    ],
+    "level": "E1",
+    "note": "AUD-08: aligned with EBH-5 (self-claimed independence without an auditor artefact)"
+   }
+  },
+  "correction": "AUD-08: Q05 and independence basis aligned with EBH-5"
+ }
+}

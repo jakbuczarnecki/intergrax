@@ -1,0 +1,2018 @@
+[
+  {
+    "evidence_id": "EBH-2F-R1",
+    "line": 347,
+    "sha_cell": "324ad07d60211cb9c72bcff668e988f180e6ff5b",
+    "shas": [
+      "324ad07d60211cb9c72bcff668e988f180e6ff5b"
+    ],
+    "scope_excerpt": "Final host-execution-boundary recertification. Tier-3 production hosts consume runtime.execution / HostTaskExecutionPort; shared harness execution wiring is governance-only and contains no NexusLoop; Nexus-backed materialization remains in sanctioned runtime/composition owners; revision admission is strongly typed; structural custom execution-port replaceability and anti-regression gates were independently verified.",
+    "frz_informed_raw": "FRZ-BND-04, FRZ-BND-05, FRZ-OWN-03, FRZ-CTR-01, FRZ-CTR-02, FRZ-CTR-06, FRZ-TYP-01, FRZ-TYP-03, FRZ-PLG-02, FRZ-RPL-02, FRZ-RPL-03, FRZ-EXE-01, FRZ-EXE-03, FRZ-REG-02, FRZ-REG-09",
+    "frz_informed_ids": [
+      "FRZ-BND-04",
+      "FRZ-BND-05",
+      "FRZ-CTR-01",
+      "FRZ-CTR-02",
+      "FRZ-CTR-06",
+      "FRZ-EXE-01",
+      "FRZ-EXE-03",
+      "FRZ-OWN-03",
+      "FRZ-PLG-02",
+      "FRZ-REG-02",
+      "FRZ-REG-09",
+      "FRZ-RPL-02",
+      "FRZ-RPL-03",
+      "FRZ-TYP-01",
+      "FRZ-TYP-03"
+    ],
+    "effect_excerpt": "Evidence contribution only; criteria remain OPEN until their platform-wide closing stages.",
+    "n_cells": 5
+  },
+  {
+    "evidence_id": "R1-SQLITE-ENV-01",
+    "line": 348,
+    "sha_cell": "3e1c82f224a9f7d5a87555836c5fd80a3fdf22f7",
+    "shas": [
+      "3e1c82f224a9f7d5a87555836c5fd80a3fdf22f7"
+    ],
+    "scope_excerpt": "CLASSIFIED — default build/intergrax.db polluted (non-SQLite); fresh INTERGRAX_RELATIONAL_DB isolates collaborative-work bootstrap (STATE-X semantic impact = NONE). GCA HTTP test harness debt remains PROD-Q/QUAL-X. [STATE_X_FINAL_CURRENT_HEAD_CERTIFICATION.md](STATE_X_FINAL_CURRENT_HEAD_CERTIFICATION.md).",
+    "frz_informed_raw": "FRZ-STA-03 (STATE-X reconciled), FRZ-PRD-04, FRZ-REG-08",
+    "frz_informed_ids": [
+      "FRZ-PRD-04",
+      "FRZ-REG-08",
+      "FRZ-STA-03"
+    ],
+    "effect_excerpt": "STATE-X-FINAL disposition complete; PROD-Q/QUAL-X criteria remain OPEN.",
+    "n_cells": 5
+  },
+  {
+    "evidence_id": "EBH-2F-R2-BLOCKER",
+    "line": 349,
+    "sha_cell": "8c89bdfa046bbf124ed838b64834bdc825bb8f57",
+    "shas": [
+      "8c89bdfa046bbf124ed838b64834bdc825bb8f57"
+    ],
+    "scope_excerpt": "Independent audit rejected EBH-2F parent closure: weak IntegrationPlugin / IntegrationFactory typing and CONTRACT_SPECS reflection on register_integration_plugin. Superseded by R2 remediation chain + parent recert on HEAD 26f529e8cac295a9791f2b5763ae9d43da7633c5 (mechanical gates); EBH-2F-R2 awaits independent parent closure.",
+    "frz_informed_raw": "FRZ-CTR-01, FRZ-CTR-03, FRZ-CTR-05, FRZ-TYP-01, FRZ-TYP-02, FRZ-TYP-04, FRZ-PLG-01, FRZ-PLG-02, FRZ-REG-02, FRZ-REG-09",
+    "frz_informed_ids": [
+      "FRZ-CTR-01",
+      "FRZ-CTR-03",
+      "FRZ-CTR-05",
+      "FRZ-PLG-01",
+      "FRZ-PLG-02",
+      "FRZ-REG-02",
+      "FRZ-REG-09",
+      "FRZ-TYP-01",
+      "FRZ-TYP-02",
+      "FRZ-TYP-04"
+    ],
+    "effect_excerpt": "Historical blocker record retained; FRZ rows remain OPEN until platform-wide closure stages.",
+    "n_cells": 5
+  },
+  {
+    "evidence_id": "EBH-2F-R2-R1-BLOCKER",
+    "line": 350,
+    "sha_cell": "8570c8440ddf75d1256f58ecb5182d9a1a441ec5",
+    "shas": [
+      "8570c8440ddf75d1256f58ecb5182d9a1a441ec5"
+    ],
+    "scope_excerpt": "Independent audit rejected EBH-2F-R2-R1 pre-built closure: instance_for_category accepted generic PlatformIntegrationContract, wrong category, and plain objects. Tracked as EBH-2F-R2-R1-R1 (CLOSED at audit scope) with follow-on EBH-2F-R2-R1-R1-R1.",
+    "frz_informed_raw": "FRZ-CTR-01, FRZ-TYP-02, FRZ-TYP-03, FRZ-TYP-06, FRZ-PLG-02, FRZ-REG-02, FRZ-REG-09",
+    "frz_informed_ids": [
+      "FRZ-CTR-01",
+      "FRZ-PLG-02",
+      "FRZ-REG-02",
+      "FRZ-REG-09",
+      "FRZ-TYP-02",
+      "FRZ-TYP-03",
+      "FRZ-TYP-06"
+    ],
+    "effect_excerpt": "Blocker evidence; FRZ rows remain OPEN until independent closure at platform scope.",
+    "n_cells": 5
+  },
+  {
+    "evidence_id": "EBH-2F-R2-R1-R1-BLOCKER",
+    "line": 351,
+    "sha_cell": "3c6f84b5ca8c5478ec3908f17fabfaf467567146",
+    "shas": [
+      "3c6f84b5ca8c5478ec3908f17fabfaf467567146"
+    ],
+    "scope_excerpt": "Independent audit rejected EBH-2F-R2-R1-R1 closure: registry-only contract_for_category broke DI-only external_work pre-built binding. Tracked as EBH-2F-R2-R1-R1-R1 with follow-on EBH-2F-R2-R1-R1-R1-R1.",
+    "frz_informed_raw": "FRZ-CTR-01, FRZ-OWN-02, FRZ-OWN-05, FRZ-TYP-02, FRZ-TYP-03, FRZ-PLG-02, FRZ-REG-02, FRZ-REG-09",
+    "frz_informed_ids": [
+      "FRZ-CTR-01",
+      "FRZ-OWN-02",
+      "FRZ-OWN-05",
+      "FRZ-PLG-02",
+      "FRZ-REG-02",
+      "FRZ-REG-09",
+      "FRZ-TYP-02",
+      "FRZ-TYP-03"
+    ],
+    "effect_excerpt": "Blocker evidence; FRZ rows remain OPEN until independent closure at platform scope.",
+    "n_cells": 5
+  },
+  {
+    "evidence_id": "EBH-2F-R2-R1-R1-R1-BLOCKER",
+    "line": 352,
+    "sha_cell": "fd7a12f773406d1c7babb79388aba30526a17aa6",
+    "shas": [
+      "fd7a12f773406d1c7babb79388aba30526a17aa6"
+    ],
+    "scope_excerpt": "Independent audit rejected EBH-2F-R2-R1-R1-R1 closure: category contract resolution unified, but public result APIs still annotated as PlatformIntegrationContract while external_work legally returns ExternalWorkIntegration. Tracked as EBH-2F-R2-R1-R1-R1-R1 with follow-on EBH-2F-R2-R1-R1-R1-R1-R1.",
+    "frz_informed_raw": "FRZ-CTR-01, FRZ-CTR-04, FRZ-CTR-05, FRZ-CTR-06, FRZ-TYP-01, FRZ-TYP-02, FRZ-TYP-03, FRZ-TYP-06, FRZ-PLG-01, FRZ-PLG-02, FRZ-PLG-04, FRZ-REG-02, FRZ-REG-09",
+    "frz_informed_ids": [
+      "FRZ-CTR-01",
+      "FRZ-CTR-04",
+      "FRZ-CTR-05",
+      "FRZ-CTR-06",
+      "FRZ-PLG-01",
+      "FRZ-PLG-02",
+      "FRZ-PLG-04",
+      "FRZ-REG-02",
+      "FRZ-REG-09",
+      "FRZ-TYP-01",
+      "FRZ-TYP-02",
+      "FRZ-TYP-03",
+      "FRZ-TYP-06"
+    ],
+    "effect_excerpt": "Blocker evidence; FRZ rows remain OPEN until independent closure at platform scope.",
+    "n_cells": 5
+  },
+  {
+    "evidence_id": "EBH-2F-R2-R1-R1-R1-R1-BLOCKER",
+    "line": 353,
+    "sha_cell": "77054d545143b86a2fb3082448919adfcc1e3a5a",
+    "shas": [
+      "77054d545143b86a2fb3082448919adfcc1e3a5a"
+    ],
+    "scope_excerpt": "Independent audit rejected EBH-2F-R2-R1-R1-R1-R1 closure: catalog-only resolve() over-declared CategoryIntegrationInstance. Superseded by child closure be8c6aaec48431d74dc93572fa27e34433e7c4c5; EBH-2F-R2 parent recert CURRENT on HEAD 26f529e8cac295a9791f2b5763ae9d43da7633c5.",
+    "frz_informed_raw": "FRZ-BND-02, FRZ-BND-03, FRZ-OWN-01, FRZ-OWN-02, FRZ-OWN-05, FRZ-CTR-01, FRZ-CTR-04, FRZ-CTR-05, FRZ-CTR-06, FRZ-TYP-01, FRZ-TYP-02, FRZ-TYP-03, FRZ-TYP-06, FRZ-PLG-01, FRZ-PLG-02, FRZ-PLG-04, FRZ-REG-02, FRZ-REG-09",
+    "frz_informed_ids": [
+      "FRZ-BND-02",
+      "FRZ-BND-03",
+      "FRZ-CTR-01",
+      "FRZ-CTR-04",
+      "FRZ-CTR-05",
+      "FRZ-CTR-06",
+      "FRZ-OWN-01",
+      "FRZ-OWN-02",
+      "FRZ-OWN-05",
+      "FRZ-PLG-01",
+      "FRZ-PLG-02",
+      "FRZ-PLG-04",
+      "FRZ-REG-02",
+      "FRZ-REG-09",
+      "FRZ-TYP-01",
+      "FRZ-TYP-02",
+      "FRZ-TYP-03",
+      "FRZ-TYP-06"
+    ],
+    "effect_excerpt": "Historical blocker record retained; FRZ rows remain OPEN until platform-wide closure stages.",
+    "n_cells": 5
+  },
+  {
+    "evidence_id": "EBH-2F-R2-R1-R1-R1-R1-R1",
+    "line": 354,
+    "sha_cell": "be8c6aaec48431d74dc93572fa27e34433e7c4c5",
+    "shas": [
+      "be8c6aaec48431d74dc93572fa27e34433e7c4c5"
+    ],
+    "scope_excerpt": "Independent audit accepted catalog vs profile resolution result precision (resolve → PlatformIntegrationContract; profile surfaces → CategoryIntegrationInstance).",
+    "frz_informed_raw": "FRZ-CTR-01, FRZ-TYP-02, FRZ-TYP-03, FRZ-REG-02, FRZ-REG-09",
+    "frz_informed_ids": [
+      "FRZ-CTR-01",
+      "FRZ-REG-02",
+      "FRZ-REG-09",
+      "FRZ-TYP-02",
+      "FRZ-TYP-03"
+    ],
+    "effect_excerpt": "Child CLOSED; FRZ criteria remain OPEN at platform scope.",
+    "n_cells": 5
+  },
+  {
+    "evidence_id": "EBH-2F-R2-PARENT-RECERT",
+    "line": 355,
+    "sha_cell": "26f529e8cac295a9791f2b5763ae9d43da7633c5",
+    "shas": [
+      "26f529e8cac295a9791f2b5763ae9d43da7633c5"
+    ],
+    "scope_excerpt": "Independent parent recertification rejected closure: public resolve_typed.resolve_contract() generic overload + implementation declared semantic Any. EBH-2F-R2 BLOCKED; remediation EBH-2F-R2-R2 CURRENT.",
+    "frz_informed_raw": "FRZ-CTR-01, FRZ-CTR-04, FRZ-CTR-05, FRZ-TYP-01, FRZ-TYP-02, FRZ-TYP-03, FRZ-TYP-06, FRZ-REG-02, FRZ-REG-09",
+    "frz_informed_ids": [
+      "FRZ-CTR-01",
+      "FRZ-CTR-04",
+      "FRZ-CTR-05",
+      "FRZ-REG-02",
+      "FRZ-REG-09",
+      "FRZ-TYP-01",
+      "FRZ-TYP-02",
+      "FRZ-TYP-03",
+      "FRZ-TYP-06"
+    ],
+    "effect_excerpt": "Blocker evidence; FRZ rows remain OPEN.",
+    "n_cells": 5
+  },
+  {
+    "evidence_id": "EBH-2F-R2-R2",
+    "line": 356,
+    "sha_cell": "311064ffc9534e053498f5ae1d70f1c398cb319b",
+    "shas": [
+      "311064ffc9534e053498f5ae1d70f1c398cb319b"
+    ],
+    "scope_excerpt": "Independent audit accepted generic integration resolution helper strong typing (resolve_contract → CategoryIntegrationInstance / T; semantic Any = 0; cast/type-ignore = 0). Historical accepted evidence.",
+    "frz_informed_raw": "FRZ-CTR-01, FRZ-CTR-04, FRZ-CTR-05, FRZ-TYP-01, FRZ-TYP-02, FRZ-TYP-03, FRZ-TYP-06, FRZ-OWN-02, FRZ-OWN-05, FRZ-PLG-01, FRZ-PLG-02, FRZ-REG-02, FRZ-REG-09",
+    "frz_informed_ids": [
+      "FRZ-CTR-01",
+      "FRZ-CTR-04",
+      "FRZ-CTR-05",
+      "FRZ-OWN-02",
+      "FRZ-OWN-05",
+      "FRZ-PLG-01",
+      "FRZ-PLG-02",
+      "FRZ-REG-02",
+      "FRZ-REG-09",
+      "FRZ-TYP-01",
+      "FRZ-TYP-02",
+      "FRZ-TYP-03",
+      "FRZ-TYP-06"
+    ],
+    "effect_excerpt": "Child CLOSED; FRZ criteria remain OPEN at platform scope.",
+    "n_cells": 5
+  },
+  {
+    "evidence_id": "EBH-2F-R2",
+    "line": 357,
+    "sha_cell": "f7fabab880595c6baf941847219701e466f67c39",
+    "shas": [
+      "f7fabab880595c6baf941847219701e466f67c39"
+    ],
+    "scope_excerpt": "Independent audit accepted R2 parent closure on exact GitHub SHA (typed plugin/factory, explicit specs, no reflection, catalog/profile precision, DI-only external_work, resolve_typed strong typing, structural external plugin, fail-closed negatives, regression gate).",
+    "frz_informed_raw": "FRZ-CTR-01, FRZ-CTR-03..06, FRZ-TYP-01..06, FRZ-OWN-02, FRZ-OWN-05, FRZ-PLG-01..02, FRZ-REG-02, FRZ-REG-09",
+    "frz_informed_ids": [
+      "FRZ-CTR-01",
+      "FRZ-CTR-03",
+      "FRZ-OWN-02",
+      "FRZ-OWN-05",
+      "FRZ-PLG-01",
+      "FRZ-REG-02",
+      "FRZ-REG-09",
+      "FRZ-TYP-01"
+    ],
+    "effect_excerpt": "Child CLOSED at platform stage scope; FRZ rows remain OPEN until platform-wide closure stages.",
+    "n_cells": 5
+  },
+  {
+    "evidence_id": "EBH-2F-PARENT-RECERT-FINAL",
+    "line": 358,
+    "sha_cell": "765fabe38d0f35fe9087ae811887382b41aa9323",
+    "shas": [
+      "765fabe38d0f35fe9087ae811887382b41aa9323"
+    ],
+    "scope_excerpt": "Historical Cursor AI parent recertification (R1+R2+cross-boundary) — superseded by independent EBH-2F CLOSED on same SHA.",
+    "frz_informed_raw": "FRZ-BND-01..06, FRZ-OWN-01..05, FRZ-CTR-01..06, FRZ-TYP-01..06, FRZ-PLG-01..08, FRZ-REG-02, FRZ-REG-09, FRZ-RPL-02..04",
+    "frz_informed_ids": [
+      "FRZ-BND-01",
+      "FRZ-CTR-01",
+      "FRZ-OWN-01",
+      "FRZ-PLG-01",
+      "FRZ-REG-02",
+      "FRZ-REG-09",
+      "FRZ-RPL-02",
+      "FRZ-TYP-01"
+    ],
+    "effect_excerpt": "Evidence contribution only; all FRZ rows remain OPEN.",
+    "n_cells": 5
+  },
+  {
+    "evidence_id": "EBH-2F",
+    "line": 359,
+    "sha_cell": "765fabe38d0f35fe9087ae811887382b41aa9323",
+    "shas": [
+      "765fabe38d0f35fe9087ae811887382b41aa9323"
+    ],
+    "scope_excerpt": "Independent audit accepted Integrations & Hosting parent closure (R1 host execution + R2 integration/plugin + cross-boundary). Post-closure HEAD delta to ba41ef759…: suspended-operation lease/authority only — EBH-2F invariants preserved.",
+    "frz_informed_raw": "FRZ-BND-01..06, FRZ-OWN-01..05, FRZ-CTR-01..06, FRZ-TYP-01..06, FRZ-PLG-01..08, FRZ-REG-02, FRZ-REG-09, FRZ-RPL-02..04",
+    "frz_informed_ids": [
+      "FRZ-BND-01",
+      "FRZ-CTR-01",
+      "FRZ-OWN-01",
+      "FRZ-PLG-01",
+      "FRZ-REG-02",
+      "FRZ-REG-09",
+      "FRZ-RPL-02",
+      "FRZ-TYP-01"
+    ],
+    "effect_excerpt": "Stage CLOSED; FRZ criteria remain OPEN at platform scope.",
+    "n_cells": 5
+  },
+  {
+    "evidence_id": "EBH-2G-AUDIT",
+    "line": 360,
+    "sha_cell": "ba41ef7592c07df04d75a15cd2efc36fe86bd041",
+    "shas": [
+      "ba41ef7592c07df04d75a15cd2efc36fe86bd041"
+    ],
+    "scope_excerpt": "Cursor AI closed-world RAG boundary audit: single RetrievalService semantic owner; integration backends via catalog/integration_vectorstore; tool seam delegates to RAG; no agent direct vector SDK. BLOCKED — semantic typing gaps (resolve_retrieval_service Any, _candidates_to_chunks duck-typing), targeted pyright 49 errors on retrieval/tool surfaces, rag-guard path coverage gap. Child EBH-2G-R1 required.",
+    "frz_informed_raw": "FRZ-BND-01..06, FRZ-OWN-01..05, FRZ-CTR-01..06, FRZ-TYP-01..06, FRZ-PLG-01..08, FRZ-REG-02, FRZ-REG-09, FRZ-RPL-01..04",
+    "frz_informed_ids": [
+      "FRZ-BND-01",
+      "FRZ-CTR-01",
+      "FRZ-OWN-01",
+      "FRZ-PLG-01",
+      "FRZ-REG-02",
+      "FRZ-REG-09",
+      "FRZ-RPL-01",
+      "FRZ-TYP-01"
+    ],
+    "effect_excerpt": "Evidence contribution only; all FRZ rows remain OPEN.",
+    "n_cells": 5
+  },
+  {
+    "evidence_id": "EBH-2G-R1",
+    "line": 361,
+    "sha_cell": "94eb6ae87532057f96cb1512a1487b1f6194ae28",
+    "shas": [
+      "94eb6ae87532057f96cb1512a1487b1f6194ae28"
+    ],
+    "scope_excerpt": "Independent exact-SHA audit accepted retrieval typing / ABI / qualification closure (remediation chain d6eba2c6…, c65832a2…, bf0b5f02…, anchor 94eb6ae…): strong typing on composition seam, canonical RetrievalHit ABI, typed capability contract, MetadataFilter and query-embedding boundaries, package/leaf import gate, reconciled rag-guard paths, targeted pyright = 0, mechanical regression gates.",
+    "frz_informed_raw": "FRZ-BND-04, FRZ-BND-05, FRZ-CTR-01, FRZ-CTR-02, FRZ-TYP-01..04, FRZ-TYP-06, FRZ-REG-09",
+    "frz_informed_ids": [
+      "FRZ-BND-04",
+      "FRZ-BND-05",
+      "FRZ-CTR-01",
+      "FRZ-CTR-02",
+      "FRZ-REG-09",
+      "FRZ-TYP-01",
+      "FRZ-TYP-06"
+    ],
+    "effect_excerpt": "Child CLOSED; FRZ criteria remain OPEN at platform scope.",
+    "n_cells": 5
+  },
+  {
+    "evidence_id": "EBH-2G-R2-R1",
+    "line": 362,
+    "sha_cell": "be7e81755fe720bc02e02736a9aa20007083e7e5",
+    "shas": [
+      "be7e81755fe720bc02e02736a9aa20007083e7e5"
+    ],
+    "scope_excerpt": "Independent exact-SHA audit accepted Graph Store ownership remediation: Integration-owned provider selection; RAG-local registry and graph_store_backend authority removed; typed Integration→RAG graph adaptation; fail-closed resolution; preserved RAG DI and local/harness InMemoryGraphStore; ownership regression gate; targeted pyright = 0; RAG gates green per audited implementation. Post-closure HEAD 7fe4e00… delta unrelated to R2-R1 scope.",
+    "frz_informed_raw": "FRZ-BND-04, FRZ-BND-05, FRZ-OWN-01..03, FRZ-OWN-05, FRZ-CTR-01..02, FRZ-CTR-04..06, FRZ-TYP-01..02, FRZ-TYP-04, FRZ-TYP-06, FRZ-PLG-01, FRZ-PLG-03..05",
+    "frz_informed_ids": [
+      "FRZ-BND-04",
+      "FRZ-BND-05",
+      "FRZ-CTR-01",
+      "FRZ-CTR-04",
+      "FRZ-OWN-01",
+      "FRZ-OWN-05",
+      "FRZ-PLG-01",
+      "FRZ-PLG-03",
+      "FRZ-TYP-01",
+      "FRZ-TYP-04",
+      "FRZ-TYP-06"
+    ],
+    "effect_excerpt": "Child CLOSED; FRZ criteria remain OPEN at platform scope.",
+    "n_cells": 5
+  },
+  {
+    "evidence_id": "EBH-2G-R2",
+    "line": 363,
+    "sha_cell": "29c721356e20efd00db290740abdfd334a314b9c",
+    "shas": [
+      "29c721356e20efd00db290740abdfd334a314b9c"
+    ],
+    "scope_excerpt": "Independent exact-SHA audit accepted parent R2 recertification on current HEAD after independently closed R2-R1 + R2-R2: Integrations = exactly-one Graph Store discovery/selection/materialization owner; RAG = GraphRAG semantics + typed IntegrationGraphStore → RagGraphStore adaptation; no RAG-local provider registry; no RagProfile.graph_store_backend; configured resolution fail-closed; canonical IntegrationProfile; R2-R2 S1–S4 green; canonical RerankProvider; zero legacy rerank_scores; zero dynam",
+    "frz_informed_raw": "FRZ-BND-04, FRZ-BND-05, FRZ-OWN-01..05, FRZ-CTR-01..02, FRZ-CTR-04..06, FRZ-TYP-01..04, FRZ-TYP-06, FRZ-PLG-01, FRZ-PLG-03..05",
+    "frz_informed_ids": [
+      "FRZ-BND-04",
+      "FRZ-BND-05",
+      "FRZ-CTR-01",
+      "FRZ-CTR-04",
+      "FRZ-OWN-01",
+      "FRZ-PLG-01",
+      "FRZ-PLG-03",
+      "FRZ-TYP-01",
+      "FRZ-TYP-06"
+    ],
+    "effect_excerpt": "Stage CLOSED at R2 parent scope; evidence contribution only. All listed FRZ criteria remain OPEN until platform-wide closure stages.",
+    "n_cells": 5
+  },
+  {
+    "evidence_id": "EBH-2G",
+    "line": 364,
+    "sha_cell": "33175f8e6f48af2f4cfc414247fbbfe15ac77ac3",
+    "shas": [
+      "33175f8e6f48af2f4cfc414247fbbfe15ac77ac3"
+    ],
+    "scope_excerpt": "Independent exact-SHA audit accepted parent EBH-2G closure after independently closed EBH-2G-R1 + EBH-2G-R2: unified current-HEAD RAG boundary (R1 Retrieval + R2 Composition); canonical RetrievalHit; typed retrieval/query/filter seams; Integrations-owned provider selection/materialization; typed Graph Store adaptation; canonical RerankProvider; zero RAG-local provider selection authority; zero relevant dynamic probing/type-ignore workaround on audited surfaces; structural subsystem replaceabilit",
+    "frz_informed_raw": "FRZ-BND-04, FRZ-BND-05, FRZ-OWN-01..05, FRZ-CTR-01..02, FRZ-CTR-05..06, FRZ-TYP-01..04, FRZ-TYP-06, FRZ-PLG-01, FRZ-PLG-03..05",
+    "frz_informed_ids": [
+      "FRZ-BND-04",
+      "FRZ-BND-05",
+      "FRZ-CTR-01",
+      "FRZ-CTR-05",
+      "FRZ-OWN-01",
+      "FRZ-PLG-01",
+      "FRZ-PLG-03",
+      "FRZ-TYP-01",
+      "FRZ-TYP-06"
+    ],
+    "effect_excerpt": "Stage CLOSED at parent scope; evidence contribution only. All listed FRZ criteria remain OPEN until platform-wide closure stages.",
+    "n_cells": 5
+  },
+  {
+    "evidence_id": "EBH-2G-R2-R2",
+    "line": 365,
+    "sha_cell": "29a27007204c93f13fec6a3c70ecb0c96f17fc0f",
+    "shas": [
+      "29a27007204c93f13fec6a3c70ecb0c96f17fc0f"
+    ],
+    "scope_excerpt": "Independent exact-SHA audit accepted RAG composition typing / contract-purity closure: S1–S4; canonical IntegrationProfile / IntegrationContractSpec / RerankProvider seams; no compatibility profile import, duplicate mode authority, legacy rerank_scores, dynamic rerank probing, or concrete rerank-provider leakage; typed Sequence[RerankerResult] result boundary; provider manifest/maturity metadata path remains lightweight; targeted pyright and RAG regression gates green. .env.example UTF-8 qualifi",
+    "frz_informed_raw": "FRZ-BND-04, FRZ-BND-05, FRZ-OWN-01..05, FRZ-CTR-01..02, FRZ-CTR-04..06, FRZ-TYP-01..04, FRZ-TYP-06, FRZ-PLG-01, FRZ-PLG-03..05, FRZ-REG-08, FRZ-REG-09",
+    "frz_informed_ids": [
+      "FRZ-BND-04",
+      "FRZ-BND-05",
+      "FRZ-CTR-01",
+      "FRZ-CTR-04",
+      "FRZ-OWN-01",
+      "FRZ-PLG-01",
+      "FRZ-PLG-03",
+      "FRZ-REG-08",
+      "FRZ-REG-09",
+      "FRZ-TYP-01",
+      "FRZ-TYP-06"
+    ],
+    "effect_excerpt": "Stage CLOSED at R2-R2 scope; evidence contribution only. All listed FRZ criteria remain OPEN until their designated platform-wide closing stages.",
+    "n_cells": 5
+  },
+  {
+    "evidence_id": "HARNESS-QINF-01",
+    "line": 366,
+    "sha_cell": "0155580ac9b4185ad815d542d187879e6d384a10",
+    "shas": [
+      "0155580ac9b4185ad815d542d187879e6d384a10"
+    ],
+    "scope_excerpt": "Global Harness qualification inventory reconciliation and integrity closure.",
+    "frz_informed_raw": "FRZ-REG-03, FRZ-REG-05",
+    "frz_informed_ids": [
+      "FRZ-REG-03",
+      "FRZ-REG-05"
+    ],
+    "effect_excerpt": "Stage independently CLOSED at QINF scope. Evidence contribution only. FRZ criteria remain OPEN until QUAL-X platform-wide closure.",
+    "n_cells": 5
+  },
+  {
+    "evidence_id": "GOV-X1-FINAL",
+    "line": 367,
+    "sha_cell": "27af801bec916165dab85019c07cf43d18e18551",
+    "shas": [
+      "27af801bec916165dab85019c07cf43d18e18551"
+    ],
+    "scope_excerpt": "Independent exact-SHA audit accepted Governance Authority Boundary Recertification parent reconciliation (GX1-01..GX1-10). Not full Governance+Execution E2E, TRACE-X, or global FRZ closure; GOV-X2 remains future mandatory work.",
+    "frz_informed_raw": "FRZ-GOV-01..10, FRZ-EXE-01, FRZ-EXE-02, FRZ-EXE-07, FRZ-TRC-06, FRZ-TRC-07, FRZ-TRC-10",
+    "frz_informed_ids": [
+      "FRZ-EXE-01",
+      "FRZ-EXE-02",
+      "FRZ-EXE-07",
+      "FRZ-GOV-01",
+      "FRZ-TRC-06",
+      "FRZ-TRC-07",
+      "FRZ-TRC-10"
+    ],
+    "effect_excerpt": "Stage CLOSED at GOV-X1 scope; FRZ criteria remain OPEN.",
+    "n_cells": 5
+  },
+  {
+    "evidence_id": "GOV-X2",
+    "line": 368,
+    "sha_cell": "e2d7a40b291c658677cc6d981183e20957c7cf0e",
+    "shas": [
+      "e2d7a40b291c658677cc6d981183e20957c7cf0e"
+    ],
+    "scope_excerpt": "CLOSED / independently accepted — Governance + Execution E2E certification. Qualification evidence: e2d7a40b291c658677cc6d981183e20957c7cf0e. Final code baseline: b233c61b123464726124dc02daaee21f55d3b856. R1/R2/R3/Q2 accepted on chain 4b3a791… → 8b4734c2… → b233c61b… → e2d7a40b…. GX2-01..20; 30/30 exact proof replay; 403 governance qualification; 9 GOV-X2 gates; targeted Governance pyright 0; local tenant audit PASS.",
+    "frz_informed_raw": "FRZ-GOV-01..10, FRZ-EXE-01..07 (PASS); FRZ-TRC-03,04,06,07,09,10,12; FRZ-TEN-01,02,03,07,09,10; FRZ-TYP-01,03 (debt)",
+    "frz_informed_ids": [
+      "FRZ-EXE-01",
+      "FRZ-GOV-01",
+      "FRZ-TEN-01",
+      "FRZ-TRC-03",
+      "FRZ-TYP-01"
+    ],
+    "effect_excerpt": "FRZ-GOV/EXE PASS = 17; new FRZ-TRC/TEN/TYP PASS = 0; new PASS outside GOV/EXE = 0; next = CTRL-X (not entered).",
+    "n_cells": 5
+  },
+  {
+    "evidence_id": "S24-GAP-04-P1-R1",
+    "line": 369,
+    "sha_cell": "0323272989df515b70537e0e654efde6013afb95",
+    "shas": [
+      "0323272989df515b70537e0e654efde6013afb95"
+    ],
+    "scope_excerpt": "Evidence-lineage hardening independently accepted: no raw request evidence reaches evaluator selection; fresh authoritative dimension-scoped tuple drives selection/evaluation; no-evidence and stale evidence fail closed; evaluator finding refs derive from supplied evidence; no architecture/ownership/public-contract change. Not INT-EXTCOMP-X parent closure.",
+    "frz_informed_raw": "FRZ-CTR-01, FRZ-CTR-05, FRZ-TYP-01, FRZ-TYP-02, FRZ-TYP-06, FRZ-PLG-01",
+    "frz_informed_ids": [
+      "FRZ-CTR-01",
+      "FRZ-CTR-05",
+      "FRZ-PLG-01",
+      "FRZ-TYP-01",
+      "FRZ-TYP-02",
+      "FRZ-TYP-06"
+    ],
+    "effect_excerpt": "Child CLOSED; FRZ criteria remain OPEN.",
+    "n_cells": 5
+  },
+  {
+    "evidence_id": "S24-GAP-04-P2-R1",
+    "line": 370,
+    "sha_cell": "73ebf5742d8eb9a826e4c30d954408a7c586e582",
+    "shas": [
+      "73ebf5742d8eb9a826e4c30d954408a7c586e582"
+    ],
+    "scope_excerpt": "Typed provider/domain extension SPI and composition boundary independently accepted: typed evidence provider + optional expectation resolver; canonical evaluator SPI unchanged; immutable typed extension bundle; composition without vendor branches; generic service performs no provider I/O; no second Integration Catalog; duplicate extension IDs fail closed; structural replaceability; strong typing; no Governance/Execution ownership change. Not P2 parent closure. Not INT-EXTCOMP-X parent closure.",
+    "frz_informed_raw": "FRZ-CTR-01, FRZ-CTR-05, FRZ-CTR-06, FRZ-TYP-01, FRZ-TYP-02, FRZ-TYP-03, FRZ-TYP-04, FRZ-TYP-06, FRZ-PLG-01, FRZ-PLG-02, FRZ-TEN-01",
+    "frz_informed_ids": [
+      "FRZ-CTR-01",
+      "FRZ-CTR-05",
+      "FRZ-CTR-06",
+      "FRZ-PLG-01",
+      "FRZ-PLG-02",
+      "FRZ-TEN-01",
+      "FRZ-TYP-01",
+      "FRZ-TYP-02",
+      "FRZ-TYP-03",
+      "FRZ-TYP-04",
+      "FRZ-TYP-06"
+    ],
+    "effect_excerpt": "Child CLOSED; FRZ criteria remain OPEN.",
+    "n_cells": 5
+  },
+  {
+    "evidence_id": "S24-GAP-04-P2-R1-R1",
+    "line": 371,
+    "sha_cell": "73ebf5742d8eb9a826e4c30d954408a7c586e582",
+    "shas": [
+      "73ebf5742d8eb9a826e4c30d954408a7c586e582"
+    ],
+    "scope_excerpt": "Expectation identity and evidence continuity independently accepted: canonical subject in resolver key; contract pin separate from subject; exact collection/assessment expectation equality before collect(); invalid pairing fails closed; no cross-expectation evidence merge; P1-R1 lineage invariants intact. Not P2 parent closure. Not INT-EXTCOMP-X parent closure.",
+    "frz_informed_raw": "FRZ-TEN-01, FRZ-TEN-07 (supporting only), FRZ-TRC-10",
+    "frz_informed_ids": [
+      "FRZ-TEN-01",
+      "FRZ-TEN-07",
+      "FRZ-TRC-10"
+    ],
+    "effect_excerpt": "Child CLOSED; FRZ criteria remain OPEN.",
+    "n_cells": 5
+  },
+  {
+    "evidence_id": "S24-GAP-04-P2-R2",
+    "line": 372,
+    "sha_cell": "041057266cfc7e5f89d0ab4af31a4e90fada88aa",
+    "shas": [
+      "041057266cfc7e5f89d0ab4af31a4e90fada88aa"
+    ],
+    "scope_excerpt": "Reference provider/domain extension proof independently accepted: typed evidence provider + evaluator through platform contracts; generic core vendor-agnostic; structural replaceability; tenant continuity; no alternate registry/authority. Not INT-EXTCOMP-X parent closure.",
+    "frz_informed_raw": "FRZ-CTR-01, FRZ-CTR-02, FRZ-CTR-05, FRZ-CTR-06, FRZ-TYP-01..04, FRZ-TYP-06, FRZ-PLG-01, FRZ-PLG-02, FRZ-CMP-05, FRZ-CMP-08, FRZ-GOV-09, FRZ-TRC-10, FRZ-TEN-01, FRZ-TEN-02, FRZ-TEN-07, FRZ-TEN-10, FRZ-TEN-11, FRZ-TEN-12",
+    "frz_informed_ids": [
+      "FRZ-CMP-05",
+      "FRZ-CMP-08",
+      "FRZ-CTR-01",
+      "FRZ-CTR-02",
+      "FRZ-CTR-05",
+      "FRZ-CTR-06",
+      "FRZ-GOV-09",
+      "FRZ-PLG-01",
+      "FRZ-PLG-02",
+      "FRZ-TEN-01",
+      "FRZ-TEN-02",
+      "FRZ-TEN-07",
+      "FRZ-TEN-10",
+      "FRZ-TEN-11",
+      "FRZ-TEN-12",
+      "FRZ-TRC-10",
+      "FRZ-TYP-01",
+      "FRZ-TYP-06"
+    ],
+    "effect_excerpt": "Child CLOSED; FRZ criteria remain OPEN. new global FRZ PASS = 0; new FRZ-TEN PASS = 0.",
+    "n_cells": 5
+  },
+  {
+    "evidence_id": "S24-GAP-04-P2-R2-R1",
+    "line": 373,
+    "sha_cell": "041057266cfc7e5f89d0ab4af31a4e90fada88aa",
+    "shas": [
+      "041057266cfc7e5f89d0ab4af31a4e90fada88aa"
+    ],
+    "scope_excerpt": "Observation provenance and cross-subject fail-closed collection independently accepted: tenant/provider/operation mismatch emits zero evidence; observed_at preserved; stale observations remain stale under evidence policy. Not INT-EXTCOMP-X parent closure.",
+    "frz_informed_raw": "FRZ-TRC-10, FRZ-TEN-11",
+    "frz_informed_ids": [
+      "FRZ-TEN-11",
+      "FRZ-TRC-10"
+    ],
+    "effect_excerpt": "Child CLOSED; FRZ criteria remain OPEN.",
+    "n_cells": 5
+  },
+  {
+    "evidence_id": "S24-GAP-04-P2",
+    "line": 374,
+    "sha_cell": "041057266cfc7e5f89d0ab4af31a4e90fada88aa",
+    "shas": [
+      "041057266cfc7e5f89d0ab4af31a4e90fada88aa"
+    ],
+    "scope_excerpt": "P2 parent reconciliation CLOSED — Provider / Domain Evidence Extensions after independently accepted R1, R1-R1, R2, R2-R1. Not S24-GAP-04-CERT closure. Not INT-EXTCOMP-X parent closure. Not global FRZ closure.",
+    "frz_informed_raw": "(inherits P2 child FRZ contributions)",
+    "frz_informed_ids": [],
+    "effect_excerpt": "Parent CLOSED at P2 scope; FRZ criteria remain OPEN.",
+    "n_cells": 5
+  },
+  {
+    "evidence_id": "S24-GAP-04-CERT",
+    "line": 375,
+    "sha_cell": "234d3c03dce5708766f8e068afbd2ea496132002",
+    "shas": [
+      "234d3c03dce5708766f8e068afbd2ea496132002"
+    ],
+    "scope_excerpt": "Adversarial external contract compatibility certification independently accepted: schema/protocol/semantic drift; LLM-only and missing/stale/contradictory evidence; wrong tenant/provider/operation; evidence-lineage falsification; tenant A ≠ tenant B adversarial matrix (tests/qualification/external_contract_compatibility/test_external_contract_compatibility_certification.py). Enables INT-EXTCOMP-X parent closure on combined accepted HEAD. Not COMPAT-X closure. Not global FRZ closure.",
+    "frz_informed_raw": "FRZ-CTR-01, FRZ-CTR-03, FRZ-CTR-05, FRZ-CTR-06, FRZ-TYP-01, FRZ-TYP-02, FRZ-TYP-03, FRZ-TYP-04, FRZ-TYP-06, FRZ-PLG-01, FRZ-PLG-02, FRZ-RPL-01, FRZ-RPL-02, FRZ-CMP-05, FRZ-CMP-08, FRZ-TRC-10, FRZ-GOV-09, FRZ-TEN-01, FRZ-TEN-02, FRZ-TEN-07, FRZ-TEN-10, FRZ-TEN-11, FRZ-TEN-12",
+    "frz_informed_ids": [
+      "FRZ-CMP-05",
+      "FRZ-CMP-08",
+      "FRZ-CTR-01",
+      "FRZ-CTR-03",
+      "FRZ-CTR-05",
+      "FRZ-CTR-06",
+      "FRZ-GOV-09",
+      "FRZ-PLG-01",
+      "FRZ-PLG-02",
+      "FRZ-RPL-01",
+      "FRZ-RPL-02",
+      "FRZ-TEN-01",
+      "FRZ-TEN-02",
+      "FRZ-TEN-07",
+      "FRZ-TEN-10",
+      "FRZ-TEN-11",
+      "FRZ-TEN-12",
+      "FRZ-TRC-10",
+      "FRZ-TYP-01",
+      "FRZ-TYP-02",
+      "FRZ-TYP-03",
+      "FRZ-TYP-04",
+      "FRZ-TYP-06"
+    ],
+    "effect_excerpt": "Child CLOSED; FRZ criteria remain OPEN. new global FRZ PASS = 0; new FRZ-TEN PASS = 0.",
+    "n_cells": 5
+  },
+  {
+    "evidence_id": "INT-EXTCOMP-X",
+    "line": 376,
+    "sha_cell": "234d3c03dce5708766f8e068afbd2ea496132002",
+    "shas": [
+      "234d3c03dce5708766f8e068afbd2ea496132002"
+    ],
+    "scope_excerpt": "Parent CLOSED / independently accepted on combined accepted HEAD after S24-GAP-04-CERT exact-SHA audit. Does not close COMPAT-X, TENANT-X, TRACE-X, or global FRZ-* PASS.",
+    "frz_informed_raw": "(inherits CERT + P2 child FRZ contributions)",
+    "frz_informed_ids": [],
+    "effect_excerpt": "Parent CLOSED at INT-EXTCOMP-X scope; FRZ criteria remain OPEN.",
+    "n_cells": 5
+  },
+  {
+    "evidence_id": "INT-CONFIG-REAL-X-P0",
+    "line": 377,
+    "sha_cell": "4e1d7f48d2facf60a34a18b0727c78b3a7131903",
+    "shas": [
+      "4e1d7f48d2facf60a34a18b0727c78b3a7131903"
+    ],
+    "scope_excerpt": "Architecture lock [INT_CONFIG_REAL_X_EXISTING_CAPABILITY_CONFIGURATION_REALIZATION.md](../architecture/INT_CONFIG_REAL_X_EXISTING_CAPABILITY_CONFIGURATION_REALIZATION.md) — CLOSED after P0-R2-I1 reconciliation @ 4e1d7f48d2facf60a34a18b0727c78b3a7131903.",
+    "frz_informed_raw": "(FRZ evidence plan recorded in architecture doc §26)",
+    "frz_informed_ids": [],
+    "effect_excerpt": "Child CLOSED at P0 scope; no FRZ PASS. new global FRZ PASS = 0.",
+    "n_cells": 5
+  },
+  {
+    "evidence_id": "INT-CONFIG-REAL-X-P0-R2-I1",
+    "line": 378,
+    "sha_cell": "4e1d7f48d2facf60a34a18b0727c78b3a7131903",
+    "shas": [
+      "4e1d7f48d2facf60a34a18b0727c78b3a7131903"
+    ],
+    "scope_excerpt": "CLOSED / independently accepted — canonical ControlPlaneMutationAuthorizationPort promotion + boundary conformance.",
+    "frz_informed_raw": "FRZ-GOV-01, FRZ-GOV-02 (supporting only)",
+    "frz_informed_ids": [
+      "FRZ-GOV-01",
+      "FRZ-GOV-02"
+    ],
+    "effect_excerpt": "Child CLOSED; FRZ criteria remain OPEN. new global FRZ PASS = 0.",
+    "n_cells": 5
+  },
+  {
+    "evidence_id": "INT-CONFIG-REAL-X-P1",
+    "line": 379,
+    "sha_cell": "e2ff871969a7ceb0dc3bf03b308657adda9d8c26",
+    "shas": [
+      "e2ff871969a7ceb0dc3bf03b308657adda9d8c26"
+    ],
+    "scope_excerpt": "CLOSED — combined accepted HEAD incl. P1-R1 @ same SHA; typed realization contracts + pure service + governed façade; P1 unit matrix; no reference provider.",
+    "frz_informed_raw": "(scoped FRZ contributions consolidated under INT-CONFIG-REAL-X-CERT / parent @ a59744517b92847f55def1db22826d17d89ee155)",
+    "frz_informed_ids": [],
+    "effect_excerpt": "Child CLOSED; FRZ criteria remain OPEN. new global FRZ PASS = 0; new FRZ-TEN PASS = 0.",
+    "n_cells": 5
+  },
+  {
+    "evidence_id": "INT-CONFIG-REAL-X-P2",
+    "line": 380,
+    "sha_cell": "9ef853a8eb5bafeef0e32c660b3b538c7523fdfb",
+    "shas": [
+      "9ef853a8eb5bafeef0e32c660b3b538c7523fdfb"
+    ],
+    "scope_excerpt": "CLOSED / independently accepted — reference RELATIONAL_STORE / sqlite configuration realization strategy + tenant isolation proof @ exact SHA.",
+    "frz_informed_raw": "(inherits P2 scoped contributions; adversarial evidence under CERT)",
+    "frz_informed_ids": [],
+    "effect_excerpt": "Child CLOSED; FRZ criteria remain OPEN. new global FRZ PASS = 0; new FRZ-TEN PASS = 0.",
+    "n_cells": 5
+  },
+  {
+    "evidence_id": "INT-CONFIG-REAL-X-CERT",
+    "line": 381,
+    "sha_cell": "a59744517b92847f55def1db22826d17d89ee155",
+    "shas": [
+      "a59744517b92847f55def1db22826d17d89ee155"
+    ],
+    "scope_excerpt": "CLOSED / independently accepted — adversarial configuration realization certification (tests/qualification/existing_capability_configuration/): governance admission provenance; tenant/provider/resource-scope/revision/configuration-fingerprint continuity; strategy ambiguity/failure fail-closed; ambient state isolation; configured ≠ effective; static architecture regression protection. Enables INT-CONFIG-REAL-X parent closure on combined accepted HEAD. Not CONFIG-X closure. Not global FRZ closure.",
+    "frz_informed_raw": "FRZ-CFG-01..04, FRZ-CFG-07..08, FRZ-CTR-01..03, FRZ-CTR-06, FRZ-TYP-01..04, FRZ-TYP-06, FRZ-PLG-01..02, FRZ-RPL-01..02, FRZ-GOV-01..02, FRZ-GOV-04, FRZ-GOV-07, FRZ-GOV-09..10, FRZ-TRC-06, FRZ-TRC-11, FRZ-TEN-01..02, FRZ-TEN-05, FRZ-TEN-07, FRZ-TEN-11..12, FRZ-REG-02, FRZ-REG-03, FRZ-REG-09",
+    "frz_informed_ids": [
+      "FRZ-CFG-01",
+      "FRZ-CFG-07",
+      "FRZ-CTR-01",
+      "FRZ-CTR-06",
+      "FRZ-GOV-01",
+      "FRZ-GOV-04",
+      "FRZ-GOV-07",
+      "FRZ-GOV-09",
+      "FRZ-PLG-01",
+      "FRZ-REG-02",
+      "FRZ-REG-03",
+      "FRZ-REG-09",
+      "FRZ-RPL-01",
+      "FRZ-TEN-01",
+      "FRZ-TEN-05",
+      "FRZ-TEN-07",
+      "FRZ-TEN-11",
+      "FRZ-TRC-06",
+      "FRZ-TRC-11",
+      "FRZ-TYP-01",
+      "FRZ-TYP-06"
+    ],
+    "effect_excerpt": "Child CLOSED; FRZ criteria remain OPEN. new global FRZ PASS = 0; new FRZ-TEN PASS = 0.",
+    "n_cells": 5
+  },
+  {
+    "evidence_id": "INT-CONFIG-REAL-X",
+    "line": 382,
+    "sha_cell": "a59744517b92847f55def1db22826d17d89ee155",
+    "shas": [
+      "a59744517b92847f55def1db22826d17d89ee155"
+    ],
+    "scope_excerpt": "Parent CLOSED / independently accepted on combined accepted baseline after closed P0 / P0-R* / P1 / P1-R1 / P2 child chain + accepted INT-CONFIG-REAL-X-CERT @ same SHA. Integrations remains semantic owner; Integration Catalog remains canonical; no acquisition; no activation/materialization; no Governance/Execution authority expansion; does not close CONFIG-X, TENANT-X, GOV-X2, TRACE-X, or global FRZ-* PASS.",
+    "frz_informed_raw": "(inherits CERT + P0/P1/P2 child FRZ contributions)",
+    "frz_informed_ids": [],
+    "effect_excerpt": "Parent CLOSED at INT-CONFIG-REAL-X scope; FRZ criteria remain OPEN. new global FRZ PASS = 0; new FRZ-TEN PASS = 0.",
+    "n_cells": 5
+  },
+  {
+    "evidence_id": "AW-7C-P1-ARCH",
+    "line": 383,
+    "sha_cell": "fa5853ec009d015cb52c9de15dd7e283932a9b4d",
+    "shas": [
+      "fa5853ec009d015cb52c9de15dd7e283932a9b4d"
+    ],
+    "scope_excerpt": "A2 architecture / ownership / qualification-subject lock independently accepted through P1-ARCH-R1 after blocked P1 baseline e055a5bdb3c120b90dad546dc33cc0219824ced7. Docs-only — production/contract/test delta = 0; R1 gates 38+4 passed. Integrations owns scope + strategy composition; Capability Qualification owns subject + single qualification path; no A1 bypass; no second Execution/qualification mechanism.",
+    "frz_informed_raw": "FRZ-OWN-01..03, FRZ-CTR-01, FRZ-CTR-04..06, FRZ-TYP-01..04, FRZ-TYP-06, FRZ-PLG-01..02, FRZ-RPL-01..02, FRZ-GOV-09, FRZ-TRC-10, FRZ-TEN-01..02, FRZ-TEN-07, FRZ-TEN-10..12",
+    "frz_informed_ids": [
+      "FRZ-CTR-01",
+      "FRZ-CTR-04",
+      "FRZ-GOV-09",
+      "FRZ-OWN-01",
+      "FRZ-PLG-01",
+      "FRZ-RPL-01",
+      "FRZ-TEN-01",
+      "FRZ-TEN-07",
+      "FRZ-TEN-10",
+      "FRZ-TRC-10",
+      "FRZ-TYP-01",
+      "FRZ-TYP-06"
+    ],
+    "effect_excerpt": "P1 architecture lock CLOSED; AW-7C remains CURRENT; AW-7C-P2 next; no FRZ PASS. new global FRZ PASS = 0; new FRZ-TEN PASS = 0.",
+    "n_cells": 5
+  },
+  {
+    "evidence_id": "AW-7C-P0-3B-PHYSQ",
+    "line": 384,
+    "sha_cell": "deaafee1a7612824bbe06dd7f0d403c3e490124b",
+    "shas": [
+      "deaafee1a7612824bbe06dd7f0d403c3e490124b"
+    ],
+    "scope_excerpt": "Provider-neutral physical sandbox egress qualification. Qualified code baseline d44a238dbe0d23dd9b864297175f54e663cfee3d. Machine evidence AW_7C_P0_3B_PHYSQ_EVIDENCE.json.",
+    "frz_informed_raw": "FRZ-SEC-05, FRZ-SEC-07, FRZ-REG-02, FRZ-REG-03, FRZ-REG-06, FRZ-REG-08",
+    "frz_informed_ids": [
+      "FRZ-REG-02",
+      "FRZ-REG-03",
+      "FRZ-REG-06",
+      "FRZ-REG-08",
+      "FRZ-SEC-05",
+      "FRZ-SEC-07"
+    ],
+    "effect_excerpt": "PHYSQ CLOSED at child scope; P0-3B prerequisite satisfied; all listed global FRZ criteria remain OPEN; new global FRZ PASS = 0; new FRZ-TEN PASS = 0.",
+    "n_cells": 5
+  },
+  {
+    "evidence_id": "EBH-3",
+    "line": 385,
+    "sha_cell": "bd2f7d788b882bcd633fc2fd0dcf35da9bdc243b",
+    "shas": [
+      "bd2f7d788b882bcd633fc2fd0dcf35da9bdc243b"
+    ],
+    "scope_excerpt": "Parent CLOSED / independently accepted after EBH-3-R1 (health probes facade + import-cycle remediation) + EBH-3-R2 (cross-domain integrations._shared.* AST gate + circuit-breaker contract/registry facades). Implementation baseline 4423eea906cfce147c61e670190b2775d898f09f. Qualification [EBH_3_DEPENDENCY_OWNERSHIP_CERTIFICATION.md](EBH_3_DEPENDENCY_OWNERSHIP_CERTIFICATION.md). Resolves historical EBH-2G _shared.health freeze debt. Does not close EBH-4, TENANT-X, or global FRZ-* PASS.",
+    "frz_informed_raw": "FRZ-BND-03, FRZ-BND-04, FRZ-OWN-01..03, FRZ-CTR-01..02, FRZ-REG-02, FRZ-REG-09",
+    "frz_informed_ids": [
+      "FRZ-BND-03",
+      "FRZ-BND-04",
+      "FRZ-CTR-01",
+      "FRZ-OWN-01",
+      "FRZ-REG-02",
+      "FRZ-REG-09"
+    ],
+    "effect_excerpt": "Stage CLOSED at EBH-3 scope; FRZ criteria remain OPEN. new global FRZ PASS = 0; new FRZ-TEN PASS = 0.",
+    "n_cells": 5
+  },
+  {
+    "evidence_id": "STATE-X-R3-R2-R1-R1",
+    "line": 386,
+    "sha_cell": "d5979a531e41f9a45a3a00b0b150765ee34bb0f8",
+    "shas": [
+      "d5979a531e41f9a45a3a00b0b150765ee34bb0f8"
+    ],
+    "scope_excerpt": "CLOSED / independently accepted — same-key cross-tenant compensation queue isolation (R3-R2-Q18 matrix; InMemory + SQLite); production delta = 0. Enables reconciled STATE-X-R3-R2 chain closure on this SHA. Qualification [STATE_X_R3_AUXILIARY_DURABLE_STATE_CONSISTENCY_CLOSURE.md](STATE_X_R3_AUXILIARY_DURABLE_STATE_CONSISTENCY_CLOSURE.md).",
+    "frz_informed_raw": "FRZ-STA-01, FRZ-STA-02, FRZ-STA-03, FRZ-STA-04, FRZ-STA-05, FRZ-REC-01, FRZ-REC-04, FRZ-REC-06, FRZ-REC-07, FRZ-REC-09 (supporting only), FRZ-REC-10 (supporting only), FRZ-TEN-04, FRZ-TEN-08 (scoped contribution)",
+    "frz_informed_ids": [
+      "FRZ-REC-01",
+      "FRZ-REC-04",
+      "FRZ-REC-06",
+      "FRZ-REC-07",
+      "FRZ-REC-09",
+      "FRZ-REC-10",
+      "FRZ-STA-01",
+      "FRZ-STA-02",
+      "FRZ-STA-03",
+      "FRZ-STA-04",
+      "FRZ-STA-05",
+      "FRZ-TEN-04",
+      "FRZ-TEN-08"
+    ],
+    "effect_excerpt": "Child CLOSED; FRZ criteria remain OPEN. new global FRZ PASS = 0; new FRZ-TEN PASS = 0.",
+    "n_cells": 5
+  },
+  {
+    "evidence_id": "STATE-X-R3-R2-R1",
+    "line": 387,
+    "sha_cell": "5b0e937c1bb4cbc309bf12b94402552deaab5d82",
+    "shas": [
+      "5b0e937c1bb4cbc309bf12b94402552deaab5d82"
+    ],
+    "scope_excerpt": "CLOSED / reconciled — canonical production compensation idempotency path + SX-F11 SQLite/InMemory provider parity (Q23, Q30–Q32); qualification-only delta. Final child acceptance @ d5979a531e41f9a45a3a00b0b150765ee34bb0f8. Qualification [STATE_X_R3_AUXILIARY_DURABLE_STATE_CONSISTENCY_CLOSURE.md](STATE_X_R3_AUXILIARY_DURABLE_STATE_CONSISTENCY_CLOSURE.md).",
+    "frz_informed_raw": "(inherits R3-R2-R1-R1 FRZ contributions)",
+    "frz_informed_ids": [],
+    "effect_excerpt": "Child CLOSED via accepted R3-R2-R1-R1; FRZ criteria remain OPEN.",
+    "n_cells": 5
+  },
+  {
+    "evidence_id": "STATE-X-R3-R2",
+    "line": 388,
+    "sha_cell": "d5979a531e41f9a45a3a00b0b150765ee34bb0f8",
+    "shas": [
+      "d5979a531e41f9a45a3a00b0b150765ee34bb0f8"
+    ],
+    "scope_excerpt": "CLOSED / independently accepted — idempotency + compensation auxiliary durable state. Provenance: implementation 7f392e442f46ed3aff1c44d4b97d66aaeb703598; remediation 5b0e937c1bb4cbc309bf12b94402552deaab5d82; final child d5979a531e41f9a45a3a00b0b150765ee34bb0f8. SX-F10/SX-F11; canonical path; crash/RETRYABLE/UNCERTAIN/stale-fence/same-key tenant proofs. Does not close STATE-X parent / TRACE-X / TENANT-X / global FRZ-STA/REC/TEN. Qualification [STATE_X_R3_AUXILIARY_DURABLE_STATE_CONSISTENCY_CLOSU",
+    "frz_informed_raw": "FRZ-STA-01, FRZ-STA-02, FRZ-STA-03, FRZ-STA-04, FRZ-STA-05, FRZ-REC-01, FRZ-REC-04, FRZ-REC-06, FRZ-REC-07, FRZ-REC-09 (supporting only), FRZ-REC-10 (supporting only), FRZ-TEN-04, FRZ-TEN-08 (scoped contribution)",
+    "frz_informed_ids": [
+      "FRZ-REC-01",
+      "FRZ-REC-04",
+      "FRZ-REC-06",
+      "FRZ-REC-07",
+      "FRZ-REC-09",
+      "FRZ-REC-10",
+      "FRZ-STA-01",
+      "FRZ-STA-02",
+      "FRZ-STA-03",
+      "FRZ-STA-04",
+      "FRZ-STA-05",
+      "FRZ-TEN-04",
+      "FRZ-TEN-08"
+    ],
+    "effect_excerpt": "Stage child chain CLOSED at R3-R2 scope; STATE-X parent remains CURRENT. new global FRZ PASS = 0.",
+    "n_cells": 5
+  },
+  {
+    "evidence_id": "STATE-X-R3-R3",
+    "line": 389,
+    "sha_cell": "e05b5b8eb3a60e8f46b5502083440e2e863e7204",
+    "shas": [
+      "e05b5b8eb3a60e8f46b5502083440e2e863e7204"
+    ],
+    "scope_excerpt": "CLOSED / independently accepted (PRIOR ACCEPTED BOOKKEEPING) — SX-F12 Human Decision / HITL persistence chain through R3-R3-A1-R1 @ this baseline. Does not close STATE-X parent or global FRZ. Qualification [STATE_X_R3_AUXILIARY_DURABLE_STATE_CONSISTENCY_CLOSURE.md](STATE_X_R3_AUXILIARY_DURABLE_STATE_CONSISTENCY_CLOSURE.md).",
+    "frz_informed_raw": "(scoped SX-F12 FRZ contributions per closure doc)",
+    "frz_informed_ids": [],
+    "effect_excerpt": "Child CLOSED @ accepted baseline; new global FRZ PASS = 0.",
+    "n_cells": 5
+  },
+  {
+    "evidence_id": "STATE-X-R3-R4",
+    "line": 390,
+    "sha_cell": "716ed746f8b463681db536804235cedc86adc162",
+    "shas": [
+      "716ed746f8b463681db536804235cedc86adc162"
+    ],
+    "scope_excerpt": "CLOSED / independently accepted (PRIOR ACCEPTED BOOKKEEPING) — SX-F13 scheduler durable state @ accepted SX-F14 baseline. Qualification [STATE_X_R3_AUXILIARY_DURABLE_STATE_CONSISTENCY_CLOSURE.md](STATE_X_R3_AUXILIARY_DURABLE_STATE_CONSISTENCY_CLOSURE.md).",
+    "frz_informed_raw": "(scoped SX-F13 FRZ contributions per closure doc)",
+    "frz_informed_ids": [],
+    "effect_excerpt": "Child CLOSED @ accepted baseline; new global FRZ PASS = 0.",
+    "n_cells": 5
+  },
+  {
+    "evidence_id": "STATE-X-R3-R5",
+    "line": 391,
+    "sha_cell": "716ed746f8b463681db536804235cedc86adc162",
+    "shas": [
+      "716ed746f8b463681db536804235cedc86adc162"
+    ],
+    "scope_excerpt": "CLOSED / independently accepted (PRIOR ACCEPTED BOOKKEEPING) — SX-F14 agent checkpoint persistence chain @ this baseline. Qualification [STATE_X_R3_AUXILIARY_DURABLE_STATE_CONSISTENCY_CLOSURE.md](STATE_X_R3_AUXILIARY_DURABLE_STATE_CONSISTENCY_CLOSURE.md).",
+    "frz_informed_raw": "(scoped SX-F14 FRZ contributions per closure doc)",
+    "frz_informed_ids": [],
+    "effect_excerpt": "Child CLOSED @ accepted baseline; new global FRZ PASS = 0.",
+    "n_cells": 5
+  },
+  {
+    "evidence_id": "STATE-X-R4",
+    "line": 392,
+    "sha_cell": "61faf8f317125b996526ceceaf5754b9c28073d6",
+    "shas": [
+      "61faf8f317125b996526ceceaf5754b9c28073d6"
+    ],
+    "scope_excerpt": "CLOSED / independently accepted — TaskCheckpoint restore integrity + STATE-X-R4-R1 / R4-R1-Q1 @ this SHA. Qualification [STATE_X_R4_TASK_CHECKPOINT_RESTORE_INTEGRITY_CERTIFICATION.md](STATE_X_R4_TASK_CHECKPOINT_RESTORE_INTEGRITY_CERTIFICATION.md).",
+    "frz_informed_raw": "FRZ-STA-01/02/04/05/06/08, FRZ-REC-01/02/03/04/06/09/10, FRZ-TEN-08 (scoped evidence only)",
+    "frz_informed_ids": [
+      "FRZ-REC-01",
+      "FRZ-STA-01",
+      "FRZ-TEN-08"
+    ],
+    "effect_excerpt": "Child CLOSED; new global FRZ PASS = 0.",
+    "n_cells": 5
+  },
+  {
+    "evidence_id": "STATE-X-R5",
+    "line": 393,
+    "sha_cell": "bcd8157065cc649412b64e9d6ada34be92d4b6a3",
+    "shas": [
+      "bcd8157065cc649412b64e9d6ada34be92d4b6a3"
+    ],
+    "scope_excerpt": "CLOSED / independently accepted — backup/restore responsibility & recovery consistency (FRZ-REC-08). Qualification [STATE_X_R5_BACKUP_RESTORE_RESPONSIBILITY_CERTIFICATION.md](STATE_X_R5_BACKUP_RESTORE_RESPONSIBILITY_CERTIFICATION.md).",
+    "frz_informed_raw": "FRZ-REC-08 primary PASS @ accepted SHA; FRZ-REC-01..04/06/07/09/10, FRZ-STA-01..03/06/07/08, FRZ-TEN-04/08 supporting (scoped)",
+    "frz_informed_ids": [
+      "FRZ-REC-01",
+      "FRZ-REC-08",
+      "FRZ-STA-01",
+      "FRZ-TEN-04"
+    ],
+    "effect_excerpt": "Child CLOSED; new global FRZ PASS = 0 (scoped FRZ-REC-08 only).",
+    "n_cells": 5
+  },
+  {
+    "evidence_id": "STATE-X-R6",
+    "line": 394,
+    "sha_cell": "3e1c82f224a9f7d5a87555836c5fd80a3fdf22f7",
+    "shas": [
+      "3e1c82f224a9f7d5a87555836c5fd80a3fdf22f7"
+    ],
+    "scope_excerpt": "CLOSED / independently accepted — recovery branching / fork semantics (FRZ-REC-05 PASS). Qualification [STATE_X_R6_RECOVERY_BRANCHING_SEMANTICS_CERTIFICATION.md](STATE_X_R6_RECOVERY_BRANCHING_SEMANTICS_CERTIFICATION.md).",
+    "frz_informed_raw": "FRZ-REC-05 PASS @ this SHA; supporting FRZ-REC/STA scoped",
+    "frz_informed_ids": [
+      "FRZ-REC-05"
+    ],
+    "effect_excerpt": "Child CLOSED; new global FRZ PASS = 0 (scoped FRZ-REC-05 only).",
+    "n_cells": 5
+  },
+  {
+    "evidence_id": "STATE-X-FINAL-R1-R1",
+    "line": 395,
+    "sha_cell": "bd54941d933069b8bfb2819bb819c1cbdbe71576",
+    "shas": [
+      "bd54941d933069b8bfb2819bb819c1cbdbe71576"
+    ],
+    "scope_excerpt": "CLOSED / independently accepted — closed-world durable discovery; qualification range d2b08198… → bd54941d…; unknown → UNCLASSIFIED → gate failure; REVIEW-QUEUE fallback = 0; F16–F20 green; soundness 38 passed; full STATE-X 654 passed @ accepted SHA; production delta = 0. Qualification [STATE_X_FINAL_CURRENT_HEAD_CERTIFICATION.md](STATE_X_FINAL_CURRENT_HEAD_CERTIFICATION.md).",
+    "frz_informed_raw": "FRZ-STA-01..08, FRZ-REC-01..10 (parent recertification)",
+    "frz_informed_ids": [
+      "FRZ-REC-01",
+      "FRZ-STA-01"
+    ],
+    "effect_excerpt": "Child CLOSED; enables STATE-X-FINAL-R1 closure.",
+    "n_cells": 5
+  },
+  {
+    "evidence_id": "STATE-X-FINAL-R1",
+    "line": 396,
+    "sha_cell": "bd54941d933069b8bfb2819bb819c1cbdbe71576",
+    "shas": [
+      "bd54941d933069b8bfb2819bb819c1cbdbe71576"
+    ],
+    "scope_excerpt": "CLOSED — residual blocker STATE-X-FINAL-R1-R1 independently accepted; no further child.",
+    "frz_informed_raw": "(inherits R1-R1)",
+    "frz_informed_ids": [],
+    "effect_excerpt": "Child CLOSED.",
+    "n_cells": 5
+  },
+  {
+    "evidence_id": "STATE-X-FINAL",
+    "line": 397,
+    "sha_cell": "bd54941d933069b8bfb2819bb819c1cbdbe71576",
+    "shas": [
+      "bd54941d933069b8bfb2819bb819c1cbdbe71576"
+    ],
+    "scope_excerpt": "CLOSED / independently accepted — parent current-HEAD certification. Historical baselines: initial 3e1c82f…, implementation 4ed4c01d…, R1 d2b08198…. Qualification [STATE_X_FINAL_CURRENT_HEAD_CERTIFICATION.md](STATE_X_FINAL_CURRENT_HEAD_CERTIFICATION.md).",
+    "frz_informed_raw": "FRZ-STA-01..08, FRZ-REC-01..10 → PASS",
+    "frz_informed_ids": [
+      "FRZ-REC-01",
+      "FRZ-STA-01"
+    ],
+    "effect_excerpt": "Parent CLOSED @ accepted HEAD.",
+    "n_cells": 5
+  },
+  {
+    "evidence_id": "STATE-X",
+    "line": 398,
+    "sha_cell": "bd54941d933069b8bfb2819bb819c1cbdbe71576",
+    "shas": [
+      "bd54941d933069b8bfb2819bb819c1cbdbe71576"
+    ],
+    "scope_excerpt": "CLOSED / independently accepted — Persistence, State & Recovery Certification. FRZ-STA-01..08 + FRZ-REC-01..10 = PASS; SX-F01..F20; R1-SQLITE-ENV-01 CLASSIFIED (STATE-X semantic impact none); global TENANT-X not closed; TRACE-X = next mandatory stage. Closure-maintenance/bookkeeping: first development commit after evidence baseline (docs-only; git log bd54941d933069b8bfb2819bb819c1cbdbe71576..).",
+    "frz_informed_raw": "FRZ-STA-01..08, FRZ-REC-01..10 primary STATE-X closure",
+    "frz_informed_ids": [
+      "FRZ-REC-01",
+      "FRZ-STA-01"
+    ],
+    "effect_excerpt": "Stage CLOSED @ evidence baseline; bookkeeping commit is docs-only.",
+    "n_cells": 5
+  },
+  {
+    "evidence_id": "TRACE-X-CERT",
+    "line": 399,
+    "sha_cell": "69d8b111e8d2f6717b75d866d3738a0106d00304",
+    "shas": [
+      "69d8b111e8d2f6717b75d866d3738a0106d00304"
+    ],
+    "scope_excerpt": "CLOSED / independently accepted — configured/effective provenance current-HEAD certification; replay PASS; 160 pytest PASS; closed-world 32/32; unclassified = 0; production bypass = 0; duplicate semantic owner = 0; E2E-A..H = PASS; local tenant audit PASS; CERT blockers = 0; production delta = 0. Bookkeeping tip f4c42c79928ac7fb8568591fe06ab71c2ff3aa15. Qualification [TRACE_X_CERT_CONFIGURED_EFFECTIVE_PROVENANCE_CERTIFICATION.md](TRACE_X_CERT_CONFIGURED_EFFECTIVE_PROVENANCE_CERTIFICATION.md). Do",
+    "frz_informed_raw": "FRZ-TRC-11 → PASS",
+    "frz_informed_ids": [
+      "FRZ-TRC-11"
+    ],
+    "effect_excerpt": "Child CLOSED; new FRZ-TEN PASS = 0.",
+    "n_cells": 5
+  },
+  {
+    "evidence_id": "TRACE-X-P6",
+    "line": 400,
+    "sha_cell": "a3203d7994bdfd3c1dde2f741aaefcc3896a5cc2 (accepted evidence; START_HEAD e2deaee3efd7ee4e7d43414be3e76fe024a85408)",
+    "shas": [
+      "a3203d7994bdfd3c1dde2f741aaefcc3896a5cc2",
+      "e2deaee3efd7ee4e7d43414be3e76fe024a85408"
+    ],
+    "scope_excerpt": "CLOSED / independently accepted — corrective chain P6 → R1 (0ce1469f440f58938ceeeb0f7c9be347091206be) → R1-R1 (cd1f6fbbb0991c02dba95e07433fa999e61260cf) → R1-R1-R1 (a3203d7994bdfd3c1dde2f741aaefcc3896a5cc2); initial P6 REJECTED @ 51b1f26a7a473658f6f83d0d8dbfd66ab62f4516; restart/resume 159; terminal producers 50; unclassified = 0; production bypass = 0; P6-A..H = PASS; qualification [TRACE_X_P6_RESTART_RESUME_TERMINAL_CAUSALITY_CERTIFICATION.md](TRACE_X_P6_RESTART_RESUME_TERMINAL_CAUSALITY_CERTI",
+    "frz_informed_raw": "FRZ-TRC-09, FRZ-TRC-10 → PASS",
+    "frz_informed_ids": [
+      "FRZ-TRC-09",
+      "FRZ-TRC-10"
+    ],
+    "effect_excerpt": "Child CLOSED; new FRZ-TEN PASS = 0.",
+    "n_cells": 5
+  },
+  {
+    "evidence_id": "TRACE-X",
+    "line": 401,
+    "sha_cell": "a3203d7994bdfd3c1dde2f741aaefcc3896a5cc2 (parent closure evidence; bookkeeping tip 270e57a70630d3df959fd2b4431ec0fa3cc944b0)",
+    "shas": [
+      "270e57a70630d3df959fd2b4431ec0fa3cc944b0",
+      "a3203d7994bdfd3c1dde2f741aaefcc3896a5cc2"
+    ],
+    "scope_excerpt": "CLOSED / independently accepted — End-to-End Traceability & Evidence Certification. FRZ-TRC-01..12 = PASS (12 of 12). Evidence chain: P0 3a6030deb… → P1 2643d36e… → P2 4c6b7d05… → P3 3799b2d9… → P4 95fd9062… → P5 → TRACE-X-CERT 69d8b111… → TRACE-X-P6 a3203d79…. Does not close TENANT-X / global freeze. next mandatory stage = COMPAT-X (subsequently CONFIG-X CLOSED @ fac9a43f…).",
+    "frz_informed_raw": "FRZ-TRC-01..12 primary TRACE-X closure",
+    "frz_informed_ids": [
+      "FRZ-TRC-01"
+    ],
+    "effect_excerpt": "Parent CLOSED @ accepted P6 evidence; bookkeeping commit after 270e57a70630d3df959fd2b4431ec0fa3cc944b0 is docs-only.",
+    "n_cells": 5
+  },
+  {
+    "evidence_id": "CONFIG-X-FINAL-R1",
+    "line": 402,
+    "sha_cell": "dc42728a7260c2b48996fcd77dcda070f65b3c91",
+    "shas": [
+      "dc42728a7260c2b48996fcd77dcda070f65b3c91"
+    ],
+    "scope_excerpt": "CLOSED / superseded-and-accepted — REJECTED as final evidence; subsequent FINAL-R1-R1 / FINAL-R1-R1-R1 close findings. production delta = 0.",
+    "frz_informed_raw": "(enables FINAL-R1-R1 chain)",
+    "frz_informed_ids": [],
+    "effect_excerpt": "Child CLOSED; not parent closure.",
+    "n_cells": 5
+  },
+  {
+    "evidence_id": "CONFIG-X-FINAL-R1-R1",
+    "line": 403,
+    "sha_cell": "de5701f09dbb18397f7ffcbfee0a246d05097cd2",
+    "shas": [
+      "de5701f09dbb18397f7ffcbfee0a246d05097cd2"
+    ],
+    "scope_excerpt": "CLOSED / superseded-and-accepted — corrective qualification wave after CONFIG-X-FINAL-R1 rejection. production delta = 0.",
+    "frz_informed_raw": "(inherits FINAL-R1 lineage)",
+    "frz_informed_ids": [],
+    "effect_excerpt": "Child CLOSED.",
+    "n_cells": 5
+  },
+  {
+    "evidence_id": "CONFIG-X-FINAL-R1-R1-R1",
+    "line": 404,
+    "sha_cell": "fac9a43f3b128fde63541d2b56ebd8f4a751e8fb",
+    "shas": [
+      "fac9a43f3b128fde63541d2b56ebd8f4a751e8fb"
+    ],
+    "scope_excerpt": "CLOSED / independently accepted — exact-SHA independent audit; FRZ-CFG-01..08 = PASS; CX-A..H = PASS; active blockers = 0; 54/54 classified. Qualification [CONFIG_X_CONFIGURATION_PROVIDER_VENDOR_ACTIVATION_CERTIFICATION.md](CONFIG_X_CONFIGURATION_PROVIDER_VENDOR_ACTIVATION_CERTIFICATION.md).",
+    "frz_informed_raw": "FRZ-CFG-01..08 → PASS",
+    "frz_informed_ids": [
+      "FRZ-CFG-01"
+    ],
+    "effect_excerpt": "Child CLOSED; new FRZ-TEN PASS = 0.",
+    "n_cells": 5
+  },
+  {
+    "evidence_id": "CONFIG-X",
+    "line": 405,
+    "sha_cell": "fac9a43f3b128fde63541d2b56ebd8f4a751e8fb",
+    "shas": [
+      "fac9a43f3b128fde63541d2b56ebd8f4a751e8fb"
+    ],
+    "scope_excerpt": "CLOSED / independently accepted — Configuration / Provider / Vendor Activation Certification. FRZ-CFG-01..08 = PASS (8 of 8). Evidence chain: wave-1 4dc5d15c… → R1 d7183eb3… → R1-R1 4b8961e4… → R1-R1-R1 e405b71a… → final reconciliation 1e74c276… → FINAL-R1 dc42728a… (rejected) → FINAL-R1-R1 de5701f0… → FINAL-R1-R1-R1 fac9a43f…. CONFIG-X local tenant audit PASS; does not close TENANT-X. next mandatory stage = COMPAT-X (CURRENT).",
+    "frz_informed_raw": "FRZ-CFG-01..08 primary CONFIG-X closure",
+    "frz_informed_ids": [
+      "FRZ-CFG-01"
+    ],
+    "effect_excerpt": "Parent CLOSED @ fac9a43f…; closure-maintenance commit after evidence baseline is docs-only.",
+    "n_cells": 5
+  },
+  {
+    "evidence_id": "COMPAT-X-P0-R3",
+    "line": 406,
+    "sha_cell": "0612c2a7a263b22a6b72ed5476e0bf0a52cdfea0",
+    "shas": [
+      "0612c2a7a263b22a6b72ed5476e0bf0a52cdfea0"
+    ],
+    "scope_excerpt": "CLOSED / independently accepted — shim discovery / authority scope convergence; 474/474 authority-inspected candidates; 0 production PARALLEL_AUTHORITY; 5 preserved PERSISTED_SCHEMA_WITHOUT_VERSION (CHILD TASK REQUIRED → COMPAT-X-R2); FRZ-CMP-01 / FRZ-CMP-08 = PASS CANDIDATE; FRZ-CMP-02..07 = BLOCKED; production delta = 0. Qualification [COMPAT_X_CONTRACT_SCHEMA_EVOLUTION_CERTIFICATION.md](COMPAT_X_CONTRACT_SCHEMA_EVOLUTION_CERTIFICATION.md).",
+    "frz_informed_raw": "FRZ-CMP-01, FRZ-CMP-08 P0 candidate evidence",
+    "frz_informed_ids": [
+      "FRZ-CMP-01",
+      "FRZ-CMP-08"
+    ],
+    "effect_excerpt": "Child CLOSED; FRZ rows remain OPEN; new global FRZ PASS = 0.",
+    "n_cells": 5
+  },
+  {
+    "evidence_id": "COMPAT-X-P0",
+    "line": 407,
+    "sha_cell": "0612c2a7a263b22a6b72ed5476e0bf0a52cdfea0",
+    "shas": [
+      "0612c2a7a263b22a6b72ed5476e0bf0a52cdfea0"
+    ],
+    "scope_excerpt": "CLOSED / independently accepted — closed-world contract & evolution inventory certification (accepted P0-R3 evidence SHA). Rejected lineage: initial cea639377… → P0-R1 065a0dcd… → P0-R2 6512ac5d…. Does not close COMPAT-X parent.",
+    "frz_informed_raw": "(inherits P0-R3 FRZ candidate contributions)",
+    "frz_informed_ids": [],
+    "effect_excerpt": "Child CLOSED @ accepted SHA; bookkeeping after evidence baseline is docs-only.",
+    "n_cells": 5
+  },
+  {
+    "evidence_id": "COMPAT-X-R1-R5",
+    "line": 408,
+    "sha_cell": "4361943d6812a83db321e3d3fbc6d361ed393fee",
+    "shas": [
+      "4361943d6812a83db321e3d3fbc6d361ed393fee"
+    ],
+    "scope_excerpt": "CLOSED / independently accepted — exact historical P0 AST projection; mechanical collision reconciliation; FRZ-CMP-02 candidate evidence @ accepted SHA; five PERSISTED_SCHEMA_WITHOUT_VERSION preserved → COMPAT-X-R2; production delta = 0. Qualification [COMPAT_X_CONTRACT_SCHEMA_EVOLUTION_CERTIFICATION.md](COMPAT_X_CONTRACT_SCHEMA_EVOLUTION_CERTIFICATION.md).",
+    "frz_informed_raw": "FRZ-CMP-02 independently accepted candidate evidence",
+    "frz_informed_ids": [
+      "FRZ-CMP-02"
+    ],
+    "effect_excerpt": "Child CLOSED; FRZ row remains OPEN; new global FRZ PASS = 0.",
+    "n_cells": 5
+  },
+  {
+    "evidence_id": "COMPAT-X-R1",
+    "line": 409,
+    "sha_cell": "4361943d6812a83db321e3d3fbc6d361ed393fee",
+    "shas": [
+      "4361943d6812a83db321e3d3fbc6d361ed393fee"
+    ],
+    "scope_excerpt": "CLOSED / independently accepted — Contract Versioning & Classification; rejected R1-R1..R1-R4 lineage preserved; does not close COMPAT-X parent.",
+    "frz_informed_raw": "FRZ-CMP-02 primary R1 closure",
+    "frz_informed_ids": [
+      "FRZ-CMP-02"
+    ],
+    "effect_excerpt": "Child CLOSED @ accepted SHA; bookkeeping after evidence baseline is docs-only.",
+    "n_cells": 5
+  },
+  {
+    "evidence_id": "COMPAT-X-R2-P0-R1",
+    "line": 410,
+    "sha_cell": "9138b12a77c5e42831846b11220216fa6772df1a",
+    "shas": [
+      "9138b12a77c5e42831846b11220216fa6772df1a"
+    ],
+    "scope_excerpt": "REJECTED / superseded by R2-P0-R2 — durable mechanism coverage gaps.",
+    "frz_informed_raw": "FRZ-CMP-03/06 evidence (inventory)",
+    "frz_informed_ids": [
+      "FRZ-CMP-03"
+    ],
+    "effect_excerpt": "Superseded.",
+    "n_cells": 5
+  },
+  {
+    "evidence_id": "COMPAT-X-R2-P0-R2",
+    "line": 411,
+    "sha_cell": "78bd502b5da5284b1bdaae2e321b7076fa22227d",
+    "shas": [
+      "78bd502b5da5284b1bdaae2e321b7076fa22227d"
+    ],
+    "scope_excerpt": "CLOSED / independently accepted — durable mechanism coverage + false-exclusion closure; accepted inventory baseline 7378 / 1613 / 601 / 1012 / 0; families 28; missing durable version 10; production delta = 0. Qualification [COMPAT_X_CONTRACT_SCHEMA_EVOLUTION_CERTIFICATION.md](COMPAT_X_CONTRACT_SCHEMA_EVOLUTION_CERTIFICATION.md).",
+    "frz_informed_raw": "FRZ-CMP-03/06 inventory evidence (not PASS)",
+    "frz_informed_ids": [
+      "FRZ-CMP-03"
+    ],
+    "effect_excerpt": "Child CLOSED @ accepted evidence SHA; bookkeeping after evidence baseline is docs-only.",
+    "n_cells": 5
+  },
+  {
+    "evidence_id": "COMPAT-X-R2-R1",
+    "line": 412,
+    "sha_cell": "549c8c1937267f07639043719d7fa27bba968430",
+    "shas": [
+      "549c8c1937267f07639043719d7fa27bba968430"
+    ],
+    "scope_excerpt": "REJECTED / superseded by R2-R1-R1 — idempotency mutation paths lacked universal schema gate.",
+    "frz_informed_raw": "FRZ-CMP-03 evidence (partial)",
+    "frz_informed_ids": [
+      "FRZ-CMP-03"
+    ],
+    "effect_excerpt": "Superseded.",
+    "n_cells": 5
+  },
+  {
+    "evidence_id": "COMPAT-X-R2-R1-R1",
+    "line": 413,
+    "sha_cell": "bb5900cd9a502f3e967b88ee54e4e18f6ff101cb",
+    "shas": [
+      "bb5900cd9a502f3e967b88ee54e4e18f6ff101cb"
+    ],
+    "scope_excerpt": "CLOSED / independently accepted — idempotency ledger universal existing-state schema gating (SQLite + Redis); SCHEMA_TOOL_IDEMPOTENCY_LEDGER_V1 sole contract-level semantic owner; semantic MISSING_VERSION 0; opaque carriers 1; unclassified durable 0; duplicate version/migration authority 0/0; live Redis behavioral matrix = future mandatory evidence (static Lua audit passed; not resolved as live run). Qualification [COMPAT_X_CONTRACT_SCHEMA_EVOLUTION_CERTIFICATION.md](COMPAT_X_CONTRACT_SCHEMA_EVO",
+    "frz_informed_raw": "FRZ-CMP-03 independently supported candidate evidence",
+    "frz_informed_ids": [
+      "FRZ-CMP-03"
+    ],
+    "effect_excerpt": "Child CLOSED @ accepted evidence SHA; bookkeeping after evidence baseline is docs-only.",
+    "n_cells": 5
+  },
+  {
+    "evidence_id": "COMPAT-X-R2-R2",
+    "line": 414,
+    "sha_cell": "60a6c3b2987d0e321268b0750fdcdd7816d47578",
+    "shas": [
+      "60a6c3b2987d0e321268b0750fdcdd7816d47578"
+    ],
+    "scope_excerpt": "REJECTED — legacy compatibility policy largely correct; typed migration-boundary defects; qualification implicit-compatibility proof insufficient. Parent CLOSED via accepted corrective descendant @ 2e7d6173….",
+    "frz_informed_raw": "FRZ-CMP-06 evidence chain (partial → accepted descendant)",
+    "frz_informed_ids": [
+      "FRZ-CMP-06"
+    ],
+    "effect_excerpt": "Rejected baseline preserved; closure via R2-R2-R1-R1-R1.",
+    "n_cells": 5
+  },
+  {
+    "evidence_id": "COMPAT-X-R2-R2-R1",
+    "line": 415,
+    "sha_cell": "552db5c5d9ead99471d5db78f357393e167ebdef",
+    "shas": [
+      "552db5c5d9ead99471d5db78f357393e167ebdef"
+    ],
+    "scope_excerpt": "REJECTED — module-level sanctioned-owner bypass; adversarial gates proved detection but not enforcement; UserProfile migration typing incomplete.",
+    "frz_informed_raw": "FRZ-CMP-06 corrective evidence",
+    "frz_informed_ids": [
+      "FRZ-CMP-06"
+    ],
+    "effect_excerpt": "Superseded by R2-R2-R1-R1.",
+    "n_cells": 5
+  },
+  {
+    "evidence_id": "COMPAT-X-R2-R2-R1-R1",
+    "line": 416,
+    "sha_cell": "ef5e05ef1f3b818611236dc9b5248b18feceea22",
+    "shas": [
+      "ef5e05ef1f3b818611236dc9b5248b18feceea22"
+    ],
+    "scope_excerpt": "REJECTED — qualification anti-bypass substantially corrected; UserProfile legacy memory-entry path still returned through Dict[str, Any].",
+    "frz_informed_raw": "FRZ-CMP-06 corrective evidence",
+    "frz_informed_ids": [
+      "FRZ-CMP-06"
+    ],
+    "effect_excerpt": "Superseded by R2-R2-R1-R1-R1.",
+    "n_cells": 5
+  },
+  {
+    "evidence_id": "COMPAT-X-R2-R2-R1-R1-R1",
+    "line": 417,
+    "sha_cell": "2e7d6173cc13bd1fb5ae48ef02292ee76bd22137",
+    "shas": [
+      "2e7d6173cc13bd1fb5ae48ef02292ee76bd22137"
+    ],
+    "scope_excerpt": "CLOSED / independently accepted — typed legacy UserProfile migration; symbol-level sanctioned boundaries; fail-closed implicit-compatibility qualification; implicit_compatibility_branches 0; orphan_migration_readers 0; strong_typing_violations 0; production delta = 0. Qualification [COMPAT_X_CONTRACT_SCHEMA_EVOLUTION_CERTIFICATION.md](COMPAT_X_CONTRACT_SCHEMA_EVOLUTION_CERTIFICATION.md).",
+    "frz_informed_raw": "FRZ-CMP-06 evidence chain (partial → R2-FINAL-R1)",
+    "frz_informed_ids": [
+      "FRZ-CMP-06"
+    ],
+    "effect_excerpt": "Child CLOSED @ accepted SHA.",
+    "n_cells": 5
+  },
+  {
+    "evidence_id": "COMPAT-X-R2-FINAL",
+    "line": 418,
+    "sha_cell": "b9d456a0ec69026101214c79dffa7a33ad713a34",
+    "shas": [
+      "b9d456a0ec69026101214c79dffa7a33ad713a34"
+    ],
+    "scope_excerpt": "REJECTED — semantic baseline used generic mapping/Any; fixture provenance not sufficiently tied to evidence meaning; superseded by COMPAT-X-R2-FINAL-R1.",
+    "frz_informed_raw": "FRZ-CMP-03, FRZ-CMP-06 R2 reconciliation (rejected attempt)",
+    "frz_informed_ids": [
+      "FRZ-CMP-03",
+      "FRZ-CMP-06"
+    ],
+    "effect_excerpt": "Rejected baseline preserved.",
+    "n_cells": 5
+  },
+  {
+    "evidence_id": "COMPAT-X-R2-FINAL-R1",
+    "line": 419,
+    "sha_cell": "97abf88f6364758e7768e6fbf1bf56e138b43520",
+    "shas": [
+      "97abf88f6364758e7768e6fbf1bf56e138b43520"
+    ],
+    "scope_excerpt": "CLOSED / independently accepted — typed baseline; fail-closed fixture parsing; exact provenance validation; family/obligation reconciliation; probes A–L; drift 0; production delta = 0. Qualification [COMPAT_X_CONTRACT_SCHEMA_EVOLUTION_CERTIFICATION.md](COMPAT_X_CONTRACT_SCHEMA_EVOLUTION_CERTIFICATION.md).",
+    "frz_informed_raw": "FRZ-CMP-03, FRZ-CMP-06 R2 current-HEAD candidate evidence",
+    "frz_informed_ids": [
+      "FRZ-CMP-03",
+      "FRZ-CMP-06"
+    ],
+    "effect_excerpt": "Child CLOSED @ accepted SHA; closes COMPAT-X-R2.",
+    "n_cells": 5
+  },
+  {
+    "evidence_id": "COMPAT-X-R2",
+    "line": 420,
+    "sha_cell": "97abf88f6364758e7768e6fbf1bf56e138b43520",
+    "shas": [
+      "97abf88f6364758e7768e6fbf1bf56e138b43520"
+    ],
+    "scope_excerpt": "CLOSED / independently accepted — parent R2 closure evidence @ R2-FINAL-R1; child chain R2-P0-R2 · R2-R1-R1 · R2-R2-R1-R1-R1 · R2-FINAL-R1; R2-FINAL rejected @ b9d456a0… preserved.",
+    "frz_informed_raw": "FRZ-CMP-03, FRZ-CMP-06",
+    "frz_informed_ids": [
+      "FRZ-CMP-03",
+      "FRZ-CMP-06"
+    ],
+    "effect_excerpt": "Parent R2 CLOSED; new global FRZ PASS = 0.",
+    "n_cells": 5
+  },
+  {
+    "evidence_id": "COMPAT-X-R3-P0",
+    "line": 421,
+    "sha_cell": "7a2cbeddf4b64368ebab13a01697f6ab56201621",
+    "shas": [
+      "7a2cbeddf4b64368ebab13a01697f6ab56201621"
+    ],
+    "scope_excerpt": "REJECTED — payload numeric schema version not enforced; closed-world write-path proof too weak. CLOSED via R3-P0-R1-R1 @ 8ff23c9….",
+    "frz_informed_raw": "FRZ-CMP-04 evidence chain",
+    "frz_informed_ids": [
+      "FRZ-CMP-04"
+    ],
+    "effect_excerpt": "Rejected baseline preserved.",
+    "n_cells": 5
+  },
+  {
+    "evidence_id": "COMPAT-X-R3-P0-R1",
+    "line": 422,
+    "sha_cell": "0e5262199a6c2f1737cf8ff48def53945ec02974",
+    "shas": [
+      "0e5262199a6c2f1737cf8ff48def53945ec02974"
+    ],
+    "scope_excerpt": "REJECTED — unknown persistence append classification not fully fail-closed.",
+    "frz_informed_raw": "FRZ-CMP-04 corrective evidence",
+    "frz_informed_ids": [
+      "FRZ-CMP-04"
+    ],
+    "effect_excerpt": "Superseded by R3-P0-R1-R1.",
+    "n_cells": 5
+  },
+  {
+    "evidence_id": "COMPAT-X-R3-P0-R1-R1",
+    "line": 423,
+    "sha_cell": "8ff23c9ef19f9baf9f9b013d73716e990c7d4e26",
+    "shas": [
+      "8ff23c9ef19f9baf9f9b013d73716e990c7d4e26"
+    ],
+    "scope_excerpt": "CLOSED / independently accepted — closes COMPAT-X-R3-P0; FRZ-CMP-04 R3-P0 evidence accepted. Qualification [COMPAT_X_CONTRACT_SCHEMA_EVOLUTION_CERTIFICATION.md](COMPAT_X_CONTRACT_SCHEMA_EVOLUTION_CERTIFICATION.md).",
+    "frz_informed_raw": "FRZ-CMP-04 R3-P0 @ 8ff23c9…",
+    "frz_informed_ids": [
+      "FRZ-CMP-04"
+    ],
+    "effect_excerpt": "production delta = 0.",
+    "n_cells": 5
+  },
+  {
+    "evidence_id": "COMPAT-X-R3-R1",
+    "line": 424,
+    "sha_cell": "c2c6b689b0171125eac84f8a6dc40faa8cab94cd",
+    "shas": [
+      "c2c6b689b0171125eac84f8a6dc40faa8cab94cd"
+    ],
+    "scope_excerpt": "CLOSED / independently accepted — Event Evolution Enforcement & Current-HEAD Closure; FRZ-CMP-04 = PASS; production implementation origin 69f5e6fcb34918a43a602c1e00b079656c79c9a5.",
+    "frz_informed_raw": "FRZ-CMP-04 PASS",
+    "frz_informed_ids": [
+      "FRZ-CMP-04"
+    ],
+    "effect_excerpt": "Closes COMPAT-X-R3.",
+    "n_cells": 5
+  },
+  {
+    "evidence_id": "COMPAT-X-R3",
+    "line": 425,
+    "sha_cell": "c2c6b689b0171125eac84f8a6dc40faa8cab94cd",
+    "shas": [
+      "c2c6b689b0171125eac84f8a6dc40faa8cab94cd"
+    ],
+    "scope_excerpt": "CLOSED / independently accepted — Event Evolution; FRZ-CMP-04 = PASS; rejected lineage preserved.",
+    "frz_informed_raw": "FRZ-CMP-04",
+    "frz_informed_ids": [
+      "FRZ-CMP-04"
+    ],
+    "effect_excerpt": "Parent R3 CLOSED.",
+    "n_cells": 5
+  },
+  {
+    "evidence_id": "COMPAT-X-R4-R1",
+    "line": 426,
+    "sha_cell": "06a0ac38d6fa7a49cf008333e85b48d4c070469d",
+    "shas": [
+      "06a0ac38d6fa7a49cf008333e85b48d4c070469d"
+    ],
+    "scope_excerpt": "REJECTED / superseded by R4-R1-R1 — R4 corrective; initial R4 REJECTED @ fcfd0245c69ee1dcf881d0c71cff7c5394a7d8ba preserved.",
+    "frz_informed_raw": "FRZ-CMP-05 corrective evidence",
+    "frz_informed_ids": [
+      "FRZ-CMP-05"
+    ],
+    "effect_excerpt": "Superseded.",
+    "n_cells": 5
+  },
+  {
+    "evidence_id": "COMPAT-X-R4-R1-R1",
+    "line": 427,
+    "sha_cell": "f80c60af8963e4c20c5c174a45dfe4c5297e825b",
+    "shas": [
+      "f80c60af8963e4c20c5c174a45dfe4c5297e825b"
+    ],
+    "scope_excerpt": "CLOSED / independently accepted — plugin/provider closed-world anti-bypass; FRZ-CMP-05 = PASS; R4 gate 27 passed; combined scope 543 passed; Pyright 0; production delta = 0. Qualification [COMPAT_X_CONTRACT_SCHEMA_EVOLUTION_CERTIFICATION.md](COMPAT_X_CONTRACT_SCHEMA_EVOLUTION_CERTIFICATION.md).",
+    "frz_informed_raw": "FRZ-CMP-05 PASS",
+    "frz_informed_ids": [
+      "FRZ-CMP-05"
+    ],
+    "effect_excerpt": "Closes COMPAT-X-R4.",
+    "n_cells": 5
+  },
+  {
+    "evidence_id": "COMPAT-X-R4",
+    "line": 428,
+    "sha_cell": "f80c60af8963e4c20c5c174a45dfe4c5297e825b",
+    "shas": [
+      "f80c60af8963e4c20c5c174a45dfe4c5297e825b"
+    ],
+    "scope_excerpt": "CLOSED / independently accepted — Plugin/Provider Compatibility; FRZ-CMP-05 = PASS; rejected lineage preserved.",
+    "frz_informed_raw": "FRZ-CMP-05",
+    "frz_informed_ids": [
+      "FRZ-CMP-05"
+    ],
+    "effect_excerpt": "Parent R4 CLOSED.",
+    "n_cells": 5
+  },
+  {
+    "evidence_id": "COMPAT-X-R5-P0",
+    "line": 429,
+    "sha_cell": "8843c29b3de178282eb5b16fad6d110bf54ecf0e",
+    "shas": [
+      "8843c29b3de178282eb5b16fad6d110bf54ecf0e"
+    ],
+    "scope_excerpt": "REJECTED / superseded — initial R5-P0 implementation; superseded by corrective chain @ 84b8739b…. Historical READY FOR AUDIT @ 66f5c847… preserved.",
+    "frz_informed_raw": "FRZ-CMP-07 evidence chain",
+    "frz_informed_ids": [
+      "FRZ-CMP-07"
+    ],
+    "effect_excerpt": "Rejected baseline preserved.",
+    "n_cells": 5
+  },
+  {
+    "evidence_id": "COMPAT-X-R5-P0-R1",
+    "line": 430,
+    "sha_cell": "9d210b69407dba1144b843ab6b2fca8d97f94000",
+    "shas": [
+      "9d210b69407dba1144b843ab6b2fca8d97f94000"
+    ],
+    "scope_excerpt": "REJECTED / superseded — deprecation/removal proof hardening.",
+    "frz_informed_raw": "FRZ-CMP-07 corrective evidence",
+    "frz_informed_ids": [
+      "FRZ-CMP-07"
+    ],
+    "effect_excerpt": "Superseded by R5-P0-R1-R1.",
+    "n_cells": 5
+  },
+  {
+    "evidence_id": "COMPAT-X-R5-P0-R1-R1",
+    "line": 431,
+    "sha_cell": "5e4391a1b4c923d42f6c9d61de1181ac7605c576",
+    "shas": [
+      "5e4391a1b4c923d42f6c9d61de1181ac7605c576"
+    ],
+    "scope_excerpt": "REJECTED / superseded — shim reconciliation evidence.",
+    "frz_informed_raw": "FRZ-CMP-07 / 08 corrective evidence",
+    "frz_informed_ids": [
+      "FRZ-CMP-07"
+    ],
+    "effect_excerpt": "Superseded by R5-P0-R1-R1-R1.",
+    "n_cells": 5
+  },
+  {
+    "evidence_id": "COMPAT-X-R5-P0-R1-R1-R1",
+    "line": 432,
+    "sha_cell": "84b8739b8b6e62c8e580e26ca3011f6aa46d457a",
+    "shas": [
+      "84b8739b8b6e62c8e580e26ca3011f6aa46d457a"
+    ],
+    "scope_excerpt": "CLOSED / independently accepted — COMPAT-X-R5-FINAL qualification evidence; FRZ-CMP-07 + FRZ-CMP-08 = PASS; R5 gate 1 passed (~63.24 s); production delta = 0. Qualification [COMPAT_X_CONTRACT_SCHEMA_EVOLUTION_CERTIFICATION.md](COMPAT_X_CONTRACT_SCHEMA_EVOLUTION_CERTIFICATION.md).",
+    "frz_informed_raw": "FRZ-CMP-07, FRZ-CMP-08 PASS",
+    "frz_informed_ids": [
+      "FRZ-CMP-07",
+      "FRZ-CMP-08"
+    ],
+    "effect_excerpt": "Closes COMPAT-X-R5.",
+    "n_cells": 5
+  },
+  {
+    "evidence_id": "COMPAT-X-R5",
+    "line": 433,
+    "sha_cell": "84b8739b8b6e62c8e580e26ca3011f6aa46d457a",
+    "shas": [
+      "84b8739b8b6e62c8e580e26ca3011f6aa46d457a"
+    ],
+    "scope_excerpt": "CLOSED / independently accepted — Deprecation / Compatibility Shim Closure; rejected lineage preserved.",
+    "frz_informed_raw": "FRZ-CMP-07, FRZ-CMP-08",
+    "frz_informed_ids": [
+      "FRZ-CMP-07",
+      "FRZ-CMP-08"
+    ],
+    "effect_excerpt": "Parent R5 CLOSED.",
+    "n_cells": 5
+  },
+  {
+    "evidence_id": "COMPAT-X",
+    "line": 434,
+    "sha_cell": "84b8739b8b6e62c8e580e26ca3011f6aa46d457a",
+    "shas": [
+      "84b8739b8b6e62c8e580e26ca3011f6aa46d457a"
+    ],
+    "scope_excerpt": "CLOSED / independently accepted — Contract, Schema & Evolution Certification. FRZ-CMP-01..08 = PASS; child evidence chain P0 0612c2a7… · R1 4361943d… · R2 97abf88f… · R3 c2c6b689… · R4 f80c60af… · R5 84b8739b…. Does not close TENANT-X / global FRZ-TEN-*. next mandatory stage = TENANT-X-R1 (NEXT / QUEUED).",
+    "frz_informed_raw": "FRZ-CMP-01..08 primary COMPAT-X closure",
+    "frz_informed_ids": [
+      "FRZ-CMP-01"
+    ],
+    "effect_excerpt": "Parent CLOSED @ accepted R5 evidence; bookkeeping commit after evidence baseline is docs-only.",
+    "n_cells": 5
+  },
+  {
+    "evidence_id": "TENANT-X-P0",
+    "line": 435,
+    "sha_cell": "3b1a86b138750a1ab289ac328151feecb9f7496c",
+    "shas": [
+      "3b1a86b138750a1ab289ac328151feecb9f7496c"
+    ],
+    "scope_excerpt": "CLOSED / independently accepted — discovery/inventory only; child evidence P0-R1-R1-R1 f3ea1887… · P0-R2 9b289b2e… · P0-R3-R1-R1 3b1a86b…; does not promote FRZ-TEN-*. Qualification [TENANT_X_CROSS_PLATFORM_TENANT_ISOLATION_CERTIFICATION.md](TENANT_X_CROSS_PLATFORM_TENANT_ISOLATION_CERTIFICATION.md). production delta = 0.",
+    "frz_informed_raw": "— (discovery; FRZ-TEN-* remain OPEN)",
+    "frz_informed_ids": [],
+    "effect_excerpt": "P0 closure bookkeeping; accepted scan evidence @ 3b1a86b….",
+    "n_cells": 5
+  },
+  {
+    "evidence_id": "TENANT-X-R1",
+    "line": 436,
+    "sha_cell": "220fd6e9c5c59fb7bae6c789ebee0484d8bc7c0e",
+    "shas": [
+      "220fd6e9c5c59fb7bae6c789ebee0484d8bc7c0e"
+    ],
+    "scope_excerpt": "CLOSED / independently accepted — critical provenance + authority scope; production delta = 0.",
+    "frz_informed_raw": "FRZ-TEN-01, 02, 03, 09, 10, 11 (scoped R1 contribution)",
+    "frz_informed_ids": [
+      "FRZ-TEN-01"
+    ],
+    "effect_excerpt": "Does not promote global FRZ-TEN PASS.",
+    "n_cells": 5
+  },
+  {
+    "evidence_id": "TENANT-X-R2",
+    "line": 437,
+    "sha_cell": "9bc53dfad65dc20d327d7c7340953264c5d69c7a",
+    "shas": [
+      "9bc53dfad65dc20d327d7c7340953264c5d69c7a"
+    ],
+    "scope_excerpt": "CLOSED / independently accepted — provider/configuration/credential isolation; credential → provider consumption CLOSED for R2-owned canonical mechanisms; production delta = 0.",
+    "frz_informed_raw": "FRZ-TEN-05, 06, 11 (primary) + supporting 01, 02, 10, 12",
+    "frz_informed_ids": [
+      "FRZ-TEN-05"
+    ],
+    "effect_excerpt": "Does not promote global FRZ-TEN PASS.",
+    "n_cells": 5
+  },
+  {
+    "evidence_id": "TENANT-X-R3",
+    "line": 438,
+    "sha_cell": "c3e708febf6a138258f65ca0fa391925fa3e2ad8",
+    "shas": [
+      "c3e708febf6a138258f65ca0fa391925fa3e2ad8"
+    ],
+    "scope_excerpt": "CLOSED / independently accepted — checkpoint/recovery tenant continuity; checkpoint → recovery PROVEN_CURRENT_HEAD; production delta = 0.",
+    "frz_informed_raw": "FRZ-TEN-04, 08 (primary) + supporting 01, 02, 03, 10, 12",
+    "frz_informed_ids": [
+      "FRZ-TEN-04"
+    ],
+    "effect_excerpt": "Does not promote global FRZ-TEN PASS.",
+    "n_cells": 5
+  },
+  {
+    "evidence_id": "TENANT-X-R4-R1-R1-R1",
+    "line": 439,
+    "sha_cell": "d903a8dfaf7acaa53b013e2f7074fde9814441d2",
+    "shas": [
+      "d903a8dfaf7acaa53b013e2f7074fde9814441d2"
+    ],
+    "scope_excerpt": "CLOSED / independently accepted — fail-closed bounded intergrax//*.py AST scan (6808 eligible / 6808 scanned / 0 failures); protected candidates 4 / resolved 4 / ambiguous 0; canonical protected call-site inventories reconciled; production delta = 0.",
+    "frz_informed_raw": "— (corrective child)",
+    "frz_informed_ids": [],
+    "effect_excerpt": "Closes TENANT-X-R4 qualification evidence.",
+    "n_cells": 5
+  },
+  {
+    "evidence_id": "TENANT-X-R4",
+    "line": 440,
+    "sha_cell": "d903a8dfaf7acaa53b013e2f7074fde9814441d2",
+    "shas": [
+      "d903a8dfaf7acaa53b013e2f7074fde9814441d2"
+    ],
+    "scope_excerpt": "CLOSED / independently accepted — Evidence / Context / Async Cross-Boundary Continuity; gap.context_model_scope PROVEN_CURRENT_HEAD; SSOT tests/qualification/tenant_x/_r4_*.py; rejected lineage R4-R1 @ b57ba7cf… · R4-R1-R1 @ eec0d0ef…; production delta = 0.",
+    "frz_informed_raw": "FRZ-TEN-02, 03, 07, 11 (primary) + supporting 01, 10, 12",
+    "frz_informed_ids": [
+      "FRZ-TEN-02"
+    ],
+    "effect_excerpt": "Does not promote global FRZ-TEN PASS. Parent TENANT-X OPEN / BLOCKED ON FINAL.",
+    "n_cells": 5
+  },
+  {
+    "evidence_id": "TENANT-X",
+    "line": 441,
+    "sha_cell": "—",
+    "shas": [],
+    "scope_excerpt": "OPEN / BLOCKED ON FINAL — FINAL after P0/R1/R2/R3/R4 CLOSED; precedes PROD-Q (PROD-Q BLOCKED ON TENANT-X).",
+    "frz_informed_raw": "FRZ-TEN-01..12 primary cross-platform closer",
+    "frz_informed_ids": [
+      "FRZ-TEN-01"
+    ],
+    "effect_excerpt": "P0 @ 3b1a86b…; R1 @ 220fd6e9…; R2 @ 9bc53dfa…; R3 @ c3e708fe…; R4 @ d903a8df…; global PASS not claimed.",
+    "n_cells": 5
+  },
+  {
+    "evidence_id": "PROD-Q-R1-R7-D1–D3 — OPERATOR B6",
+    "line": 442,
+    "sha_cell": "Execution SHA: 5dfefe416f6561c76a9c670c052661bd4d72f913 · Evidence baseline: 435e2e77d54d92ec05228af71edeeace15e6fe9e",
+    "shas": [
+      "435e2e77d54d92ec05228af71edeeace15e6fe9e",
+      "5dfefe416f6561c76a9c670c052661bd4d72f913"
+    ],
+    "scope_excerpt": "OPERATOR B6 — CLOSED SCOPED A1 (2026-10-21) — five children D1, D1b, D1-R6, D2, D3; rollup [PROD_Q_R1_R7_D1_D1b_FINAL_ACCEPTANCE_EVIDENCE.md](PROD_Q_R1_R7_D1_D1b_FINAL_ACCEPTANCE_EVIDENCE.md) §OPERATOR B6. A1 scope; cross-process SQLite debt; DIM16 excluded.",
+    "frz_informed_raw": "FRZ-PRD-03/04/05/07/08/11/12, FRZ-SEC-04, FRZ-OWN/BND/CTR/TYP/REL/REC/REG (local contribution only)",
+    "frz_informed_ids": [
+      "FRZ-PRD-03",
+      "FRZ-SEC-04"
+    ],
+    "effect_excerpt": "Scoped operator acceptance recorded; all global FRZ rows remain OPEN; new global FRZ PASS = 0.",
+    "n_cells": 5
+  },
+  {
+    "evidence_id": "PROD-Q-R1-PACKAGE-P — OPERATOR B6",
+    "line": 443,
+    "sha_cell": "Independent audit baseline: 24d99a14d615442b2c82becbd94fd25556530340 · Pinned execution evidence: H09 43f6e0e232add1cf9fd9a947716d4c5444ae13d3 · H10/H11 08f1ef069073fbb91944807777e9b744ca76ebd4 · AUTH-PI/PI e49a04fe18ec9fb0afd78f7e30bf4baf7ba63b26 (not replayed @ B6 record)",
+    "shas": [
+      "08f1ef069073fbb91944807777e9b744ca76ebd4",
+      "24d99a14d615442b2c82becbd94fd25556530340",
+      "43f6e0e232add1cf9fd9a947716d4c5444ae13d3",
+      "e49a04fe18ec9fb0afd78f7e30bf4baf7ba63b26"
+    ],
+    "scope_excerpt": "OPERATOR B6 — CLOSED SCOPED PACKAGE P (2026-10-21) — P01–P10; interpretation A; B scoped to CREATE / ACCEPT_QUOTE / CANCEL; P09-A; P09-B debt explicit; ledger [PROD_Q_R1_PACKAGE_P_INDEPENDENT_EVIDENCE_RECONCILIATION.md](PROD_Q_R1_PACKAGE_P_INDEPENDENT_EVIDENCE_RECONCILIATION.md) §OPERATOR B6; §C DIM20 slice [PROD_Q_R1_R7_Q_SECTION_C_REMAINING_GATES_RECONCILIATION.md](PROD_Q_R1_R7_Q_SECTION_C_REMAINING_GATES_RECONCILIATION.md) §OPERATOR B6 PACKAGE P.",
+    "frz_informed_raw": "FRZ-PRD-04/05/08, FRZ-REL-03/05, FRZ-SEC-01/04, FRZ-REG-02/03/09, FRZ-OWN/BND/CTR/TYP/TEN (scoped Package P matrix §6) — local contribution only",
+    "frz_informed_ids": [
+      "FRZ-PRD-04",
+      "FRZ-REG-02",
+      "FRZ-REL-03",
+      "FRZ-SEC-01"
+    ],
+    "effect_excerpt": "Scoped operator acceptance recorded; all global FRZ table statuses remain OPEN; new global FRZ PASS = 0.",
+    "n_cells": 5
+  },
+  {
+    "evidence_id": "PROD-Q-R1-R7-Q-C — OPERATOR B6",
+    "line": 444,
+    "sha_cell": "Execution SHA: 93c17a959f48c5115cc52cb90ec9e16964169a0a · Independent audit baseline: d8a8e43ef4801b61acb5f689419a8fdd78598170",
+    "shas": [
+      "93c17a959f48c5115cc52cb90ec9e16964169a0a",
+      "d8a8e43ef4801b61acb5f689419a8fdd78598170"
+    ],
+    "scope_excerpt": "OPERATOR B6 — CLOSED SCOPED §C (2026-10-21) — dims 2, 3, 7, 8, 9, 10, 11, 13, 14, 15, 18, 19, 21; ledger [PROD_Q_R1_R7_Q_SECTION_C_REMAINING_GATES_RECONCILIATION.md](PROD_Q_R1_R7_Q_SECTION_C_REMAINING_GATES_RECONCILIATION.md) §OPERATOR B6 + hub [PROD_Q_R1_R7_Q_C_QUALIFICATION_EVIDENCE.md](PROD_Q_R1_R7_Q_C_QUALIFICATION_EVIDENCE.md). Excluded: DIM6, DIM16 (not re-accepted), DIM17. DIM20 Package P: row PROD-Q-R1-PACKAGE-P — OPERATOR B6. F02-09 S2b / DIM18 AST / P09-B debt explicit.",
+    "frz_informed_raw": "FRZ-PRD-03/04/07/08/09/12, FRZ-SEC-04 (dims 3/15 only), FRZ-TEN-* (dim 8 scoped), FRZ-REG-02/03/09 (dim 21 + §C modules) — local contribution only",
+    "frz_informed_ids": [
+      "FRZ-PRD-03",
+      "FRZ-REG-02",
+      "FRZ-SEC-04"
+    ],
+    "effect_excerpt": "Scoped operator acceptance recorded; all global FRZ table statuses remain OPEN; new global FRZ PASS = 0.",
+    "n_cells": 5
+  },
+  {
+    "evidence_id": "PROD-Q-R1-R7-D1",
+    "line": 445,
+    "sha_cell": "5dfefe416f6561c76a9c670c052661bd4d72f913 (execution) · dossier 17e928e4f3264ac73c4efe3a1a23741aff1617dc",
+    "shas": [
+      "17e928e4f3264ac73c4efe3a1a23741aff1617dc",
+      "5dfefe416f6561c76a9c670c052661bd4d72f913"
+    ],
+    "scope_excerpt": "CLOSED — OPERATOR ACCEPTED / SCOPED A1 — colocated deployment adapter (A1); [PROD_Q_R1_R7_D1_D1b_FINAL_ACCEPTANCE_EVIDENCE.md](PROD_Q_R1_R7_D1_D1b_FINAL_ACCEPTANCE_EVIDENCE.md).",
+    "frz_informed_raw": "FRZ-PRD-03, FRZ-PRD-08, FRZ-SEC-04, FRZ-REG-02/03/09 (scoped D1)",
+    "frz_informed_ids": [
+      "FRZ-PRD-03",
+      "FRZ-PRD-08",
+      "FRZ-REG-02",
+      "FRZ-SEC-04"
+    ],
+    "effect_excerpt": "Stage CLOSED (operator B6); global FRZ OPEN.",
+    "n_cells": 5
+  },
+  {
+    "evidence_id": "PROD-Q-R1-R7-D1b",
+    "line": 446,
+    "sha_cell": "5dfefe416f6561c76a9c670c052661bd4d72f913 (execution) · dossier 17e928e4f3264ac73c4efe3a1a23741aff1617dc",
+    "shas": [
+      "17e928e4f3264ac73c4efe3a1a23741aff1617dc",
+      "5dfefe416f6561c76a9c670c052661bd4d72f913"
+    ],
+    "scope_excerpt": "CLOSED — OPERATOR ACCEPTED / SCOPED A1 — serving handoff + admission bridge (A1); same dossier.",
+    "frz_informed_raw": "FRZ-PRD-03, FRZ-PRD-08, FRZ-SEC-04, FRZ-REG-02/03/09 (scoped D1b)",
+    "frz_informed_ids": [
+      "FRZ-PRD-03",
+      "FRZ-PRD-08",
+      "FRZ-REG-02",
+      "FRZ-SEC-04"
+    ],
+    "effect_excerpt": "Stage CLOSED (operator B6); global FRZ OPEN.",
+    "n_cells": 5
+  },
+  {
+    "evidence_id": "PROD-Q-R1-R7-D1-R6",
+    "line": 447,
+    "sha_cell": "c25e7efee93b64e44119eaf5366a5841d557acbf · execution 5dfefe416f6561c76a9c670c052661bd4d72f913",
+    "shas": [
+      "5dfefe416f6561c76a9c670c052661bd4d72f913",
+      "c25e7efee93b64e44119eaf5366a5841d557acbf"
+    ],
+    "scope_excerpt": "CLOSED — OPERATOR ACCEPTED / SCOPED A1 — transaction-coordinated serving admission; [PROD_Q_R1_R7_D1_R6_FINAL_INDEPENDENT_CLOSURE_RECONCILIATION.md](PROD_Q_R1_R7_D1_R6_FINAL_INDEPENDENT_CLOSURE_RECONCILIATION.md).",
+    "frz_informed_raw": "FRZ-PRD-03/08, FRZ-SEC-04, FRZ-STA/REC (supporting), FRZ-REG-02/03/09 (scoped D1-R6)",
+    "frz_informed_ids": [
+      "FRZ-PRD-03",
+      "FRZ-REG-02",
+      "FRZ-SEC-04"
+    ],
+    "effect_excerpt": "Stage CLOSED (operator B6); global FRZ OPEN.",
+    "n_cells": 5
+  },
+  {
+    "evidence_id": "PROD-Q-R1-R7-D2",
+    "line": 448,
+    "sha_cell": "0c63b3f2814cbbe18024eaf99670e7b923bbaa03 · execution 5dfefe416f6561c76a9c670c052661bd4d72f913",
+    "shas": [
+      "0c63b3f2814cbbe18024eaf99670e7b923bbaa03",
+      "5dfefe416f6561c76a9c670c052661bd4d72f913"
+    ],
+    "scope_excerpt": "CLOSED — OPERATOR ACCEPTED / SCOPED A1 — production lifecycle composition; [PROD_Q_R1_R7_D2_PRODUCTION_LIFECYCLE_COMPOSITION.md](PROD_Q_R1_R7_D2_PRODUCTION_LIFECYCLE_COMPOSITION.md).",
+    "frz_informed_raw": "FRZ-PRD-04/05/08/11, FRZ-REG-02/03/09 (scoped D2)",
+    "frz_informed_ids": [
+      "FRZ-PRD-04",
+      "FRZ-REG-02"
+    ],
+    "effect_excerpt": "Stage CLOSED (operator B6); global FRZ OPEN.",
+    "n_cells": 5
+  },
+  {
+    "evidence_id": "PROD-Q-R1-R7-D4-R1",
+    "line": 449,
+    "sha_cell": "339ffc12aa13d9c6f72b031e9c3b64cd52971787",
+    "shas": [
+      "339ffc12aa13d9c6f72b031e9c3b64cd52971787"
+    ],
+    "scope_excerpt": "Independently accepted — D4-R1 test-boundary corrective: D4-03 uses public exit/stderr + patched lifecycle only; rejects b3d9aced0f255d249812622647a356c0b91d76f8 private _active_production_process_lifecycle inspection. Qualification [PROD_Q_R1_R7_D4_STRICT_GCA_PRODUCTION_LAUNCHER.md](PROD_Q_R1_R7_D4_STRICT_GCA_PRODUCTION_LAUNCHER.md). production delta = 0 (test-only corrective on accepted implementation chain).",
+    "frz_informed_raw": "FRZ-PRD-03, FRZ-PRD-10, FRZ-SEC-04, FRZ-REG-02, FRZ-REG-03, FRZ-REG-09 (scoped D4-R1)",
+    "frz_informed_ids": [
+      "FRZ-PRD-03",
+      "FRZ-PRD-10",
+      "FRZ-REG-02",
+      "FRZ-REG-03",
+      "FRZ-REG-09",
+      "FRZ-SEC-04"
+    ],
+    "effect_excerpt": "Corrective slice accepted; new global FRZ PASS = 0.",
+    "n_cells": 5
+  },
+  {
+    "evidence_id": "PROD-Q-R1-R7-D4-R2",
+    "line": 450,
+    "sha_cell": "b4336eb03a9f2d6eabed0edbbe48526c33a07957 (implementation)",
+    "shas": [
+      "b4336eb03a9f2d6eabed0edbbe48526c33a07957"
+    ],
+    "scope_excerpt": "Independently accepted — startup-failure cleanup aggregation in strict_production_serving_launcher.py + D4-R2-a/b regressions; test-boundary slot proof @ 0dd51fe1c7fdd9f4f93d4abdf26f89bea879709e (rejects private module-state inspection on b4336eb… tip). Qualification [PROD_Q_R1_R7_D4_STRICT_GCA_PRODUCTION_LAUNCHER.md](PROD_Q_R1_R7_D4_STRICT_GCA_PRODUCTION_LAUNCHER.md).",
+    "frz_informed_raw": "FRZ-PRD-04, FRZ-PRD-05, FRZ-PRD-10, FRZ-PRD-12, FRZ-REG-02, FRZ-REG-03, FRZ-REG-09 (scoped D4-R2)",
+    "frz_informed_ids": [
+      "FRZ-PRD-04",
+      "FRZ-PRD-05",
+      "FRZ-PRD-10",
+      "FRZ-PRD-12",
+      "FRZ-REG-02",
+      "FRZ-REG-03",
+      "FRZ-REG-09"
+    ],
+    "effect_excerpt": "Corrective chain accepted; new global FRZ PASS = 0.",
+    "n_cells": 5
+  },
+  {
+    "evidence_id": "PROD-Q-R1-R7-D4",
+    "line": 451,
+    "sha_cell": "0dd51fe1c7fdd9f4f93d4abdf26f89bea879709e (evidence HEAD)",
+    "shas": [
+      "0dd51fe1c7fdd9f4f93d4abdf26f89bea879709e"
+    ],
+    "scope_excerpt": "CLOSED / independently accepted (operator) — strict GCA production launcher / ASGI admission; implementation 9b6efa8dc3993a3d00460cf1dc45d6bdabe65c72; D4-R1 @ 339ffc12aa13d9c6f72b031e9c3b64cd52971787; D4-R2 @ b4336eb03a9f2d6eabed0edbbe48526c33a07957 / 0dd51fe…; rejected D4-03 @ b3d9aced0f255d249812622647a356c0b91d76f8 preserved; 16-case D4 unit module; pre-closure reconciliation b96be3ba2d14f0761bc7989aeee5e86cddc52d20. PROD-Q-R1-R7-Q IN PROGRESS (P2 operator-closed). Does not close PROD-Q-R1-R7",
+    "frz_informed_raw": "FRZ-PRD-03..05, FRZ-PRD-07..10, FRZ-PRD-12, FRZ-SEC-04, FRZ-REG-02/03/09 (local contribution only)",
+    "frz_informed_ids": [
+      "FRZ-PRD-03",
+      "FRZ-PRD-07",
+      "FRZ-PRD-12",
+      "FRZ-REG-02",
+      "FRZ-SEC-04"
+    ],
+    "effect_excerpt": "Stage CLOSED; all global FRZ rows remain OPEN; new global FRZ PASS = 0.",
+    "n_cells": 5
+  },
+  {
+    "evidence_id": "PROD-Q-R1-R7-Q-P2",
+    "line": 452,
+    "sha_cell": "8e43b160447ca43de6631fe2a1b7f99948b64f2f (implementation + P2-C HTTP)",
+    "shas": [
+      "8e43b160447ca43de6631fe2a1b7f99948b64f2f"
+    ],
+    "scope_excerpt": "CLOSED — operator exact-SHA acceptance — P2-B @ 4dfbf4e80bc0e752b958f125d1f548b17a7751e1 (historical; not HEAD replay); P2-C HTTP 6/6 @ 8e43b1604 (partial log); acceptance 56b061d5…; reconciliation 5093ba77…; ADR-01 ACCEPTED; qualification [PROD_Q_R1_R7_Q_P2_STRICT_PRODUCTION_INTEGRATED_E2E.md](PROD_Q_R1_R7_Q_P2_STRICT_PRODUCTION_INTEGRATED_E2E.md). PROD-Q-R1-R7-Q NOT QUALIFIED.",
+    "frz_informed_raw": "FRZ-PRD-03/04/07/08/09/12, FRZ-SEC-04, FRZ-REG-02/03, FRZ-CTR-01 (local P2 contribution only)",
+    "frz_informed_ids": [
+      "FRZ-CTR-01",
+      "FRZ-PRD-03",
+      "FRZ-REG-02",
+      "FRZ-SEC-04"
+    ],
+    "effect_excerpt": "Stage CLOSED (operator); global FRZ rows OPEN; new global FRZ PASS = 0.",
+    "n_cells": 5
+  },
+  {
+    "evidence_id": "PROD-Q-R1-DISPATCH-Q1",
+    "line": 453,
+    "sha_cell": "f96884fdac73bcc8e12cb98ee3460c9e5148b393",
+    "shas": [
+      "f96884fdac73bcc8e12cb98ee3460c9e5148b393"
+    ],
+    "scope_excerpt": "ACCEPTED — SCOPED / OPERATOR (2026-10-15) — PIS + dispatch gate scoped acceptance; qualification [PROD_Q_R1_DISPATCH_Q1_PARENT_GATE_QUALIFICATION_EVIDENCE.md](PROD_Q_R1_DISPATCH_Q1_PARENT_GATE_QUALIFICATION_EVIDENCE.md). Does not close PROD-Q-R1.",
+    "frz_informed_raw": "FRZ-PRD-08, FRZ-REL-03/05 (local contribution)",
+    "frz_informed_ids": [
+      "FRZ-PRD-08",
+      "FRZ-REL-03"
+    ],
+    "effect_excerpt": "Scoped operator acceptance; new global FRZ PASS = 0.",
+    "n_cells": 5
+  },
+  {
+    "evidence_id": "PROD-Q-R1-R7-Q-P3",
+    "line": 454,
+    "sha_cell": "28c9bc40d1cdcbf62700e961677b4048c0753b85 (operator-closure docs baseline)",
+    "shas": [
+      "28c9bc40d1cdcbf62700e961677b4048c0753b85"
+    ],
+    "scope_excerpt": "CLOSED — OPERATOR ACCEPTED (2026-10-15) — P3-T-01…08 @ qualified depths; [PROD_Q_R1_R7_Q_P3_FINAL_ACCEPTANCE_DECISION_PACKAGE.md](PROD_Q_R1_R7_Q_P3_FINAL_ACCEPTANCE_DECISION_PACKAGE.md). E.1 NOT EXECUTED; PROD-Q-R1-R7-Q NOT QUALIFIED.",
+    "frz_informed_raw": "FRZ-SEC-01/04/07, FRZ-PRD-03/04/05/08/09, FRZ-REL-03/05, FRZ-REG-02/03/09 (local P3 contribution)",
+    "frz_informed_ids": [
+      "FRZ-PRD-03",
+      "FRZ-REG-02",
+      "FRZ-REL-03",
+      "FRZ-SEC-01"
+    ],
+    "effect_excerpt": "Wave CLOSED (operator); global FRZ OPEN; new global FRZ PASS = 0.",
+    "n_cells": 5
+  },
+  {
+    "evidence_id": "PROD-Q-R1-R7-D3",
+    "line": 455,
+    "sha_cell": "f2dd8ecbbff8561a50ec10321ddef62d345b65a9 · execution 5dfefe416f6561c76a9c670c052661bd4d72f913",
+    "shas": [
+      "5dfefe416f6561c76a9c670c052661bd4d72f913",
+      "f2dd8ecbbff8561a50ec10321ddef62d345b65a9"
+    ],
+    "scope_excerpt": "CLOSED — OPERATOR ACCEPTED / SCOPED A1 — durable projection inputs + post-restart serving reconciliation; [PROD_Q_R1_R7_D3_DURABLE_PROJECTION_RESTART_RECONCILIATION.md](PROD_Q_R1_R7_D3_DURABLE_PROJECTION_RESTART_RECONCILIATION.md).",
+    "frz_informed_raw": "FRZ-PRD-12, FRZ-STA/REC (supporting via D3 scope), FRZ-REG-02/03/09 (scoped D3)",
+    "frz_informed_ids": [
+      "FRZ-PRD-12",
+      "FRZ-REG-02"
+    ],
+    "effect_excerpt": "Stage CLOSED (operator B6); global FRZ rows OPEN; new global FRZ PASS = 0.",
+    "n_cells": 5
+  },
+  {
+    "evidence_id": "SKILL-X — Batch D",
+    "line": 456,
+    "sha_cell": "9228f2c9e77b5e766ae77f707e620671ba507f00 (implementation) · evidence publication b413b81f506cec8c46c5e70fa6d04c1f821e186c",
+    "shas": [
+      "9228f2c9e77b5e766ae77f707e620671ba507f00",
+      "b413b81f506cec8c46c5e70fa6d04c1f821e186c"
+    ],
+    "scope_excerpt": "Wave evidence — historical disposition preserved — BC-F02 catalog witness + adversarial wave; 90/90 pytest @ implementation SHA; qualification [SKILL_X_BATCH_D_COMPLETE_QUALIFICATION_EVIDENCE.md](SKILL_X_BATCH_D_COMPLETE_QUALIFICATION_EVIDENCE.md). Parent closure: [SKILL_X_PARENT_FORMAL_CLOSURE_RECONCILIATION.md](SKILL_X_PARENT_FORMAL_CLOSURE_RECONCILIATION.md).",
+    "frz_informed_raw": "FRZ-CTL-09, FRZ-BND-03, FRZ-REC-02/04 (scoped)",
+    "frz_informed_ids": [
+      "FRZ-BND-03",
+      "FRZ-CTL-09",
+      "FRZ-REC-02"
+    ],
+    "effect_excerpt": "Wave evidence only; new global FRZ PASS = 0.",
+    "n_cells": 5
+  },
+  {
+    "evidence_id": "SKILL-X — Batch E",
+    "line": 457,
+    "sha_cell": "e00a0aab20d98a7050dc26a0e46324f635afe798",
+    "shas": [
+      "e00a0aab20d98a7050dc26a0e46324f635afe798"
+    ],
+    "scope_excerpt": "Wave evidence — historical disposition preserved — integrated authority + tenant adversarial; 117/117 pytest @ implementation SHA; qualification [SKILL_X_BATCH_E_INTEGRATED_QUALIFICATION_EVIDENCE.md](SKILL_X_BATCH_E_INTEGRATED_QUALIFICATION_EVIDENCE.md). Parent closure: reconciliation doc above.",
+    "frz_informed_raw": "FRZ-TEN-04, FRZ-CTL-09, FRZ-REC-02/04 (scoped)",
+    "frz_informed_ids": [
+      "FRZ-CTL-09",
+      "FRZ-REC-02",
+      "FRZ-TEN-04"
+    ],
+    "effect_excerpt": "Wave evidence only; new global FRZ PASS = 0.",
+    "n_cells": 5
+  },
+  {
+    "evidence_id": "SKILL-X — parent formal reconciliation",
+    "line": 458,
+    "sha_cell": "INDEPENDENT_ACCEPTANCE_BASELINE_SHA: 552e379845a9512c275f3ebe520ac51767c97cf8 · IMPLEMENTATION_AND_TEST_SHA: e00a0aab20d98a7050dc26a0e46324f635afe798 · START_HEAD (reconciliation): e00a0aab20d98a7050dc26a0e46324f635afe798",
+    "shas": [
+      "552e379845a9512c275f3ebe520ac51767c97cf8",
+      "e00a0aab20d98a7050dc26a0e46324f635afe798"
+    ],
+    "scope_excerpt": "SKILL-X parent = CLOSED — INDEPENDENTLY ACCEPTED — EC1–EC11 §3.0.4; documentation-only acceptance publication; pytest @ publication = 0; qualification [SKILL_X_PARENT_FORMAL_CLOSURE_RECONCILIATION.md](SKILL_X_PARENT_FORMAL_CLOSURE_RECONCILIATION.md). Enters TOOL-LIFE-X as next mandatory Dimension A stage (not CLOSED). Publication commit READY FOR INDEPENDENT AUDIT on GitHub.",
+    "frz_informed_raw": "FRZ-CTL-09, FRZ-BND-03 (OPEN global), FRZ-TEN-04, FRZ-STA-06, FRZ-REC-02/04 (scoped notes in main table)",
+    "frz_informed_ids": [
+      "FRZ-BND-03",
+      "FRZ-CTL-09",
+      "FRZ-REC-02",
+      "FRZ-STA-06",
+      "FRZ-TEN-04"
+    ],
+    "effect_excerpt": "Parent CLOSED @ acceptance baseline; new global FRZ PASS = 0.",
+    "n_cells": 5
+  }
+]

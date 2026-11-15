@@ -1,0 +1,7 @@
+Absence checks at BASELINE_SHA (git ls-files / git grep, W0):
+- qualification/ top-level README or index: none (only sub-folder READMEs: ebh_6_p03_independent_replay, ent_audit_x/b6_independent_handoff, ent_audit_x/operator_records, evol_x/b6_technical_qualification, evol_x/e2_m09h_human_drill_prep).
+- import-linter config (.importlinter, pyproject, setup.cfg, tox.ini): none.
+- known-red register: none repo-wide; only a run log docs/project/maintainers/qualification/iiac_evidence/PDC-X/global/logs/06_known_reds.{start,log,end}.
+- N/A register: only tests/qualification/evol_x/data/deployment_na_register.v1.json (EVOL-X deployment scope); no repo-wide register.
+- certification-debt register (CERTIFICATION_DEBT / CERT_DEBT file names): none.
+- standalone ECAP script under scripts/: none.

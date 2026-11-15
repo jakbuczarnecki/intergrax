@@ -1,0 +1,74 @@
+"""A2 consolidation: Tier-1 shards (B1..B10) + Tier-2 mechanical -> A2/cert_rows.jsonl (one row per parent stage) and A2/t2_rows.jsonl (children closed-type rows)."""
+from __future__ import annotations
+
+import sys
+from collections import Counter
+from pathlib import Path
+
+sys.path.insert(0, str(Path(__file__).parent))
+from common import *  # noqa
+import fl
+
+NA = "NOT-ASSESSED"
+QS = [f"Q{i:02d}" for i in range(1, 13)]
+
+
+def main():
+    a1 = {r["id"]: r for r in read_jsonl(WS / "A1" / "stage_rows.jsonl")}
+    t2 = {r["id"]: r for r in read_jsonl(WS / "A2" / "t2_mechanical.jsonl")}
+    shard = {}
+    for f in sorted((WS / "shards" / "A2").glob("B*.jsonl")):
+        if f.name.endswith(".findings.jsonl"):
+            continue
+        for r in read_jsonl(f):
+            shard[r["id"]] = r
+    roots = [r for r in a1.values() if r["id"] == r["root_id"] and r["row_source"] != "PROSE"]
+    out, missing = [], []
+    for r in sorted(roots, key=lambda x: x["line"]):
+        s = shard.get(r["id"])
+        if s is None:
+            missing.append(r["id"])
+            s = {}
+        mech = t2.get(r["id"], {})
+        row = {"id": r["id"], "line": r["line"], "status_raw": r["status_raw"][:200], "status_family": r["status_family"], "closed_type": r["closed_type"],
+               "owner": r.get("owner"), "assessment_tier": r["assessment_tier"], "frz_links": r.get("frz_links", []), "shas": r["shas"][:8],
+               "answers": s.get("answers", {}), "verdict": s.get("verdict") or NA, "evidence_level": s.get("evidence_level") or "E0",
+               "limitations": s.get("limitations", []), "independence_basis": s.get("independence_basis") or "NONE_STATED",
+               "od_trace": s.get("od_trace", []), "seed_checks": s.get("seed_checks", []), "recommended_next_action": s.get("recommended_next_action") or "NONE",
+               "notes": s.get("notes"), "t2_flags": mech.get("t2_flags", []), "cert_sources": mech.get("cert_sources", []),
+               "status_family_roadmap": r["status_family"], "disagreement_flags": r["disagreement_flags"], "finding_refs": r.get("finding_refs", [])}
+        # root-level mechanical cert sources fall back to the subtree rows
+        if not row["cert_sources"]:
+            for k, x in a1.items():
+                if x["root_id"] == r["id"] and t2.get(k, {}).get("cert_sources"):
+                    row["cert_sources"] = t2[k]["cert_sources"]
+                    break
+        out.append(row)
+    allf = fl.consolidate()
+    for row in out:
+        if row["closed_type"] and not row["cert_sources"]:
+            cand = [f["finding_id"] for f in allf if row["id"] in f.get("scope", []) and f["class"] in ("EVIDENCE_DEFICIENCY", "CERTIFICATION_DRIFT", "GOVERNANCE_INCONSISTENCY", "UNVERIFIED_HYPOTHESIS") and f.get("status", "OPEN") == "OPEN"]
+            row["deficiency_finding"] = cand[0] if cand else None
+    ovp = WS / "data" / "a2_row_overrides.json"
+    ovr = read_json(ovp) if ovp.exists() else {}
+    for row in out:
+        o = ovr.get(row["id"])
+        if o:
+            row["verdict_executor"] = row["verdict"]
+            qs = o.pop("answers_patch", None) if isinstance(o, dict) else None
+            row.update({k: v for k, v in o.items() if k != "answers_patch"})
+            if qs:
+                row["answers"].update(qs)
+            row["correction"] = o.get("correction")
+    write_jsonl(WS / "A2" / "cert_rows.jsonl", out)
+    t2rows = [dict(v, root_id=a1[k]["root_id"]) for k, v in t2.items() if k in a1 and not (a1[k]["id"] == a1[k]["root_id"] and a1[k]["row_source"] != "PROSE")]
+    write_jsonl(WS / "A2" / "t2_rows.jsonl", t2rows)
+    print("T1 rows", len(out), "missing shard rows", len(missing), "T2 child rows", len(t2rows))
+    print("verdicts", dict(Counter(r["verdict"] for r in out)))
+    print("independence", dict(Counter(r["independence_basis"] for r in out)))
+    print("evidence", dict(Counter(r["evidence_level"] for r in out)))
+    print("incomplete answers:", [(r["id"], [q for q in QS if q not in r["answers"]][:3]) for r in out if r["verdict"] != NA and any(q not in r["answers"] for q in QS)][:6])
+
+
+if __name__ == "__main__":
+    main()

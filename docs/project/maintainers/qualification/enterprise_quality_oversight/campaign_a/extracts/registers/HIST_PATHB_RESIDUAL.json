@@ -1,0 +1,59 @@
+{
+  "path": "docs/project/maintainers/qualification/historical_certification_campaign/HISTORICAL_FINAL_PATH_B_RESIDUAL_REGISTER.md",
+  "tables": [
+    {
+      "header": [
+        "Field",
+        "Value"
+      ],
+      "rows": [
+        {
+          "line": 5,
+          "Field": "Evidence SHA",
+          "Value": "427646f41de0df992cd54c0e157de8f36b560f39 (product batch); P6 authoritative bf03550aa (POST_ACTIVATION)"
+        },
+        {
+          "line": 6,
+          "Field": "Record date",
+          "Value": "2026-11-09"
+        }
+      ]
+    },
+    {
+      "header": [
+        "FRZ ID",
+        "Requirement gist",
+        "Owner",
+        "Status",
+        "Reason"
+      ],
+      "rows": [
+        {
+          "line": 12,
+          "FRZ ID": "FRZ-PRD-01",
+          "Requirement gist": "Live production qualification",
+          "Owner": "PROD-Q",
+          "Status": "OPEN",
+          "Reason": "Path B live; no authority to PASS"
+        },
+        {
+          "line": 13,
+          "FRZ ID": "FRZ-PRD-02",
+          "Requirement gist": "Live provider qualification",
+          "Owner": "PROD-Q",
+          "Status": "OPEN",
+          "Reason": "Path B live; no authority to PASS"
+        },
+        {
+          "line": 14,
+          "FRZ ID": "FRZ-REG-08 (live)",
+          "Requirement gist": "Population B / live slice",
+          "Owner": "PROD-Q",
+          "Status": "OPEN",
+          "Reason": "Not checklist L66 Path B list; live deferred"
+        }
+      ]
+    }
+  ],
+  "lines": 23
+}

@@ -1,0 +1,42 @@
+"""A6-T02/T04: pass-despite-gap mechanism register (data) + one more finding. Run once."""
+from __future__ import annotations
+
+import sys
+from pathlib import Path
+
+sys.path.insert(0, str(Path(__file__).parent))
+from common import *  # noqa
+import fl
+
+B = BASELINE_SHA
+rows = fl.consolidate()
+
+
+def fid(title_part):
+    return next((r["finding_id"] for r in rows if title_part in r["title"]), None)
+
+
+f_fast = fl.add("A6", title="A non-certifying FAST run promotes PARTIAL to PASS (exit 0) when the only drift is TRACKED_DEBT",
+                severity="LOW", cls="EVIDENCE_DEFICIENCY", scope=["ENT-AUDIT-X", "intergrax/platform/enterprise_audit/runner.py"], affected_invariant="FRZ-AUD-04 report honesty (PARTIAL must not read as PASS)",
+                evidence=[f"intergrax/platform/enterprise_audit/runner.py@{B}:267", f"intergrax/platform/enterprise_audit/runner.py@{B}:274"], evidence_level="E3",
+                impact="runner.py L267-274: when the run is not certifying, the mode is FAST, the aggregate status is PARTIAL and every non-resolved drift has severity TRACKED_DEBT, status becomes PASS and the exit code CLEAN. The promotion is explicit and limited to non-certifying FAST runs, but a consumer that reads only the exit code sees a clean run while debt is outstanding.",
+                arch_freeze_impact="NONE", recommendation="Owner reports the promoted state in the report header (not only the exit code).", owner="ENT-AUDIT-X", next_action="DOC_FIX_BY_OWNER", decision_authority="Operator")
+mech = [
+    {"id": "M1", "mechanism": "Env-gated semantic acceptance wrappers (ENT_AUDIT_X_SEMANTIC / ENT_AUDIT_X_GATE_MATRIX) skip silently", "verdict": "SILENT_SKIP_BY_DESIGN; not part of the 85 manifest entrypoints",
+     "evidence": [f"tests/qualification/ent_audit_x/acceptance/test_ent_a_ent_a_bnd_01.py@{B}:12", f"pyproject.toml@{B}:426"], "level": "E3", "findings": [fid("semantic acceptance wrappers skip silently")]},
+    {"id": "M2", "mechanism": "Existence-only gate: check_architecture_debt_register.py", "verdict": "EXISTENCE_ONLY (file present and contains DEBT-)",
+     "evidence": [f"scripts/maintenance/check_architecture_debt_register.py@{B}:17"], "level": "E3", "findings": [fid("semantic acceptance wrappers skip silently")]},
+    {"id": "M3", "mechanism": "Allowlist gate NPSC-4.2 recorded as FAIL in DUP-X / ROADMAP-REPLAY-X", "verdict": "UNPROVEN (gate refreshed under EBH-7 W3 without recorded result; roadmap wording still says FAIL retained)",
+     "evidence": ["ws:shards/A2/B8.jsonl"], "level": "E2", "findings": [fid("NPSC-4.2")]},
+    {"id": "M4", "mechanism": "CHANGED-SINCE unmapped-path behaviour", "verdict": "FAIL_CLOSED only for audit tooling prefixes; unmapped product paths select the invariant floor only",
+     "evidence": [f"intergrax/platform/enterprise_audit/impact_map.py@{B}:15", f"intergrax/platform/enterprise_audit/impact_map.py@{B}:335"], "level": "E3", "findings": [fid("CHANGED-SINCE is fail-closed only")]},
+    {"id": "M5", "mechanism": "CHANGED-SINCE selection from historical certification SHAs", "verdict": "FAIL_CLOSED (exit 1) for 9 of 12 cert SHAs: evol_x test-support paths unmapped", "evidence": ["ws:logs/A5-impact-TENANT-X.log"], "level": "E3",
+     "findings": [fid("CHANGED-SINCE impact selection fails closed")]},
+    {"id": "M6", "mechanism": "PARTIAL / INCOMPLETE to exit code mapping", "verdict": "INCOMPLETE and PARTIAL give exit 2 in dry-run; non-certifying FAST promotion of tracked-debt PARTIAL to PASS", "evidence": [f"intergrax/platform/enterprise_audit/runner.py@{B}:267", "ws:logs/T06-entaudit-full-dry.log"], "level": "E3", "findings": [f_fast]},
+    {"id": "M7", "mechanism": "FRZ coverage map: ten categories mapped only to FRZ-AUD-03", "verdict": "COVERAGE_MAP_UNDERSTATES", "evidence": ["ws:logs/entaudit_full_dry/frz_coverage.v1.json"], "level": "E3", "findings": [fid("aggregator FRZ-AUD-03")]},
+    {"id": "M8", "mechanism": "IIAC validators: process_enforced independence and Approved: prefix check", "verdict": "PROCESS_ONLY (string inequality of session ids; any text after Approved:)",
+     "evidence": [f"scripts/governance/verify_plan_approval.py@{B}:17", f"scripts/governance/verify_iiac_role_separation.py@{B}:1"], "level": "E3", "findings": [fid("Ticket approval validators accept any line")]},
+    {"id": "M9", "mechanism": "ACT-N11 product-path sensitivity of the IIAC activation record", "verdict": "FAILS_CLOSED (activation reports FAIL when pinned product paths change) - which currently invalidates the activation", "evidence": ["ws:logs/T06-iiac-activation.log"], "level": "E3", "findings": ["EQOA-A0-007"]},
+]
+write_jsonl(WS / "A6" / "mechanisms.jsonl", mech)
+print("ok", f_fast, [m["findings"] for m in mech])

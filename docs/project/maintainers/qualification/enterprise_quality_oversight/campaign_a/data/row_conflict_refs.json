@@ -1,0 +1,214 @@
+{
+  "A1/stage_rows.jsonl:COMPAT-X-R2-R2": [
+    "CONF-A001"
+  ],
+  "A1/stage_rows.jsonl:COMPAT-X-R3-P0": [
+    "CONF-A002"
+  ],
+  "A1/stage_rows.jsonl:DIST-SCALE-X": [
+    "CONF-A003"
+  ],
+  "A1/stage_rows.jsonl:EBH-2F": [
+    "CONF-A004"
+  ],
+  "A1/stage_rows.jsonl:EBH-2F-R2": [
+    "CONF-A005"
+  ],
+  "A1/stage_rows.jsonl:EBH-2F-R2-R1": [
+    "CONF-A006"
+  ],
+  "A1/stage_rows.jsonl:EBH-2F-R2-R1-R1": [
+    "CONF-A007"
+  ],
+  "A1/stage_rows.jsonl:EBH-2F-R2-R1-R1-R1": [
+    "CONF-A008"
+  ],
+  "A1/stage_rows.jsonl:EBH-2F-R2-R1-R1-R1-R1": [
+    "CONF-A009"
+  ],
+  "A1/stage_rows.jsonl:EBH-2G": [
+    "CONF-A010"
+  ],
+  "A1/stage_rows.jsonl:EVOL-X": [
+    "CONF-A011"
+  ],
+  "A1/stage_rows.jsonl:HARNESS-RESIDUAL / SCHED-01": [
+    "CONF-A012"
+  ],
+  "A1/stage_rows.jsonl:PDC-X": [
+    "CONF-A013"
+  ],
+  "A1/stage_rows.jsonl:PROD-Q": [
+    "CONF-A014"
+  ],
+  "A1/stage_rows.jsonl:PROD-Q-P0": [
+    "CONF-A015"
+  ],
+  "A1/stage_rows.jsonl:PROD-Q-R1-PACKAGE-P — OPERATOR B6 SCOPED ACCEPTANCE": [
+    "CONF-A016"
+  ],
+  "A1/stage_rows.jsonl:PROD-Q-R1-R7": [
+    "CONF-A017"
+  ],
+  "A1/stage_rows.jsonl:PROD-Q-R1-R7-Q": [
+    "CONF-A018"
+  ],
+  "A1/stage_rows.jsonl:SKILL-X": [
+    "CONF-A019"
+  ],
+  "A1/stage_rows.jsonl:TOOL-LIFE-X": [
+    "CONF-A020"
+  ],
+  "A1/stage_rows.jsonl:TRACE-X-P5-R2-P3-R1-R1-R1-R1-R1-R1-R1": [
+    "CONF-A021"
+  ],
+  "A1/stage_rows.jsonl:TRACE-X-P5-R2-P4-R1-R1-R1-R1-R1-R1": [
+    "CONF-A022"
+  ],
+  "A3/frz_rows.jsonl:FRZ-BND-03": [
+    "CONF-A023"
+  ],
+  "A3/frz_rows.jsonl:FRZ-REC-09": [
+    "CONF-A024"
+  ],
+  "A3/frz_rows.jsonl:FRZ-SEC-04": [
+    "CONF-A025"
+  ],
+  "A3/frz_rows.jsonl:FRZ-CTL-08": [
+    "CONF-A026"
+  ],
+  "A3/frz_rows.jsonl:FRZ-CTL-10": [
+    "CONF-A027"
+  ],
+  "A3/frz_rows.jsonl:FRZ-PRD-04": [
+    "CONF-A028"
+  ],
+  "A3/frz_rows.jsonl:FRZ-PRD-05": [
+    "CONF-A029"
+  ],
+  "A3/frz_rows.jsonl:FRZ-PRD-06": [
+    "CONF-A030",
+    "CONF-A031"
+  ],
+  "A3/frz_rows.jsonl:FRZ-PRD-07": [
+    "CONF-A032"
+  ],
+  "A3/frz_rows.jsonl:FRZ-PRD-09": [
+    "CONF-A033"
+  ],
+  "A3/frz_rows.jsonl:FRZ-PRD-10": [
+    "CONF-A034"
+  ],
+  "A3/frz_rows.jsonl:FRZ-PRD-11": [
+    "CONF-A035",
+    "CONF-A036"
+  ],
+  "A3/frz_rows.jsonl:FRZ-PRD-12": [
+    "CONF-A037"
+  ],
+  "A3/frz_rows.jsonl:FRZ-REG-10": [
+    "CONF-A038"
+  ],
+  "A3/frz_rows.jsonl:FRZ-EVOL-01": [
+    "CONF-A039"
+  ],
+  "A3/frz_rows.jsonl:FRZ-EVOL-02": [
+    "CONF-A040"
+  ],
+  "A3/frz_rows.jsonl:FRZ-EVOL-03": [
+    "CONF-A041"
+  ],
+  "A3/frz_rows.jsonl:FRZ-EVOL-04": [
+    "CONF-A042"
+  ],
+  "A3/frz_rows.jsonl:FRZ-EVOL-05": [
+    "CONF-A043"
+  ],
+  "A3/frz_rows.jsonl:FRZ-EVOL-06": [
+    "CONF-A044"
+  ],
+  "A3/frz_rows.jsonl:FRZ-EVOL-07": [
+    "CONF-A045"
+  ],
+  "A3/frz_rows.jsonl:FRZ-EVOL-08": [
+    "CONF-A046"
+  ],
+  "A3/frz_rows.jsonl:FRZ-EVOL-09": [
+    "CONF-A047"
+  ],
+  "A3/frz_rows.jsonl:FRZ-EVOL-10": [
+    "CONF-A048"
+  ],
+  "A3/frz_rows.jsonl:FRZ-HRN-08": [
+    "CONF-A049"
+  ],
+  "A3/frz_rows.jsonl:FRZ-FRZ-11": [
+    "CONF-A050"
+  ],
+  "A3/frz_rows.jsonl:FRZ-AUD-01": [
+    "CONF-A051"
+  ],
+  "A3/frz_rows.jsonl:FRZ-AUD-02": [
+    "CONF-A052"
+  ],
+  "A3/frz_rows.jsonl:FRZ-AUD-03": [
+    "CONF-A053"
+  ],
+  "A3/frz_rows.jsonl:FRZ-AUD-04": [
+    "CONF-A054"
+  ],
+  "A3/frz_rows.jsonl:FRZ-AUD-05": [
+    "CONF-A055"
+  ],
+  "A3/frz_rows.jsonl:FRZ-AUD-06": [
+    "CONF-A056"
+  ],
+  "A3/frz_rows.jsonl:FRZ-AUD-07": [
+    "CONF-A057"
+  ],
+  "A3/frz_rows.jsonl:FRZ-AUD-08": [
+    "CONF-A058"
+  ],
+  "A3/frz_rows.jsonl:FRZ-AUD-09": [
+    "CONF-A059"
+  ],
+  "A3/frz_rows.jsonl:FRZ-AUD-10": [
+    "CONF-A060"
+  ],
+  "A3/frz_rows.jsonl:FRZ-TEN-01": [
+    "CONF-A061"
+  ],
+  "A3/frz_rows.jsonl:FRZ-TEN-02": [
+    "CONF-A062"
+  ],
+  "A3/frz_rows.jsonl:FRZ-TEN-03": [
+    "CONF-A063"
+  ],
+  "A3/frz_rows.jsonl:FRZ-TEN-04": [
+    "CONF-A064"
+  ],
+  "A3/frz_rows.jsonl:FRZ-TEN-05": [
+    "CONF-A065"
+  ],
+  "A3/frz_rows.jsonl:FRZ-TEN-06": [
+    "CONF-A066"
+  ],
+  "A3/frz_rows.jsonl:FRZ-TEN-07": [
+    "CONF-A067"
+  ],
+  "A3/frz_rows.jsonl:FRZ-TEN-08": [
+    "CONF-A068"
+  ],
+  "A3/frz_rows.jsonl:FRZ-TEN-09": [
+    "CONF-A069"
+  ],
+  "A3/frz_rows.jsonl:FRZ-TEN-10": [
+    "CONF-A070"
+  ],
+  "A3/frz_rows.jsonl:FRZ-TEN-11": [
+    "CONF-A071"
+  ],
+  "A3/frz_rows.jsonl:FRZ-TEN-12": [
+    "CONF-A072"
+  ]
+}

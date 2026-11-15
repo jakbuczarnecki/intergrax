@@ -1,0 +1,67 @@
+"""A1 consolidation: stage_base.jsonl + shards/A1/*.jsonl (+ parent mechanical findings) -> A1/stage_rows.jsonl."""
+from __future__ import annotations
+
+import re
+import sys
+from collections import Counter
+from pathlib import Path
+
+sys.path.insert(0, str(Path(__file__).parent))
+from common import *  # noqa
+
+DISP_RE = re.compile(r"^(PARENT_ASSESSED|LINEAGE_ONLY|OPEN_NOT_CERTIFIED|PROSE_ORPHAN|CHILD_INHERITS:.+|OUT_OF_SCOPE:.+)$")
+
+
+def main():
+    base = {r["id"]: r for r in read_jsonl(WS / "A1" / "stage_base.jsonl")}
+    shard = {}
+    for f in sorted((WS / "shards" / "A1").glob("*.jsonl")):
+        if f.name.endswith(".findings.jsonl"):
+            continue
+        for r in read_jsonl(f):
+            if r["id"] in shard:
+                print("DUP shard id", r["id"], f.name)
+            shard[r["id"]] = r
+    out, missing = [], []
+    for i, b in base.items():
+        s = shard.get(i)
+        row = dict(b)
+        if s is None:
+            missing.append(i)
+            s = {}
+        for k in ("owner", "owner_basis", "disposition", "assessment_tier", "frz_links", "tickets", "adrs", "stated_dependencies",
+                  "open_obligations", "closure_conditions", "closure_evidence_claimed", "status_assessment", "conflicts", "notes"):
+            if k in s:
+                row[f"sh_{k}" if k in ("tickets",) else k] = s[k]
+        row.setdefault("frz_links", sorted(set(b["frz_links_closing"]) | set(b["frz_links_evidence"])))
+        row.setdefault("owner", "")
+        row["disposition"] = s.get("disposition") or ""
+        row["assessment_tier"] = s.get("assessment_tier") or ""
+        INFO = ("LEDGER_ONLY_NO_TABLE_ROW", "PROSE_ONLY_ID")
+        row["disagreement_flags"] = [f for f in b["mech_flags"] if not f.endswith("_INFO") and f not in INFO]
+        row["info_flags"] = [f for f in b["mech_flags"] if f in INFO or f.endswith("_INFO")]
+        out.append(row)
+    seeds = {x["seed_id"]: x["finding_id"] for x in read_jsonl(WS / "data" / "seeds.jsonl")}
+    fnd = read_jsonl(WS / "findings" / "parent_findings.jsonl")
+    dual_id = next((f["finding_id"] for f in fnd if re.match(r"^\d+ stages show a table status", f["title"])), None)
+    link = {"OFF_VOCAB_STATUS": seeds["S-06"], "CHECKBOX_MISUSE": seeds["S-06"], "STALE_NEXT_CURRENT_TEXT": seeds["S-06"], "MALFORMED_ROW": seeds["S-06"],
+            "RFA_UNDER_CLOSED_PARENT": seeds["S-05"], "DUAL_STATUS_TABLE_CLOSED_LEDGER_OPEN": dual_id, "DUAL_STATUS_TABLE_OPEN_LEDGER_CLOSED": dual_id,
+            "SHA_UNRESOLVED_OR_AMBIGUOUS": None}
+    for row in out:
+        row["finding_refs"] = sorted({link[f] for f in row["disagreement_flags"] if link.get(f)})
+    cref = read_json(WS / "data" / "row_conflict_refs.json") if (WS / "data" / "row_conflict_refs.json").exists() else {}
+    xid = read_json(WS / "data" / "row_exclusion_ids.json") if (WS / "data" / "row_exclusion_ids.json").exists() else {}
+    for row in out:
+        row["conflict_refs"] = cref.get(f"A1/stage_rows.jsonl:{row['id']}", [])
+        row["exclusion_id"] = xid.get(row["id"])
+    write_jsonl(WS / "A1" / "stage_rows.jsonl", out)
+    bad = [r["id"] for r in out if not r["owner"] or not DISP_RE.match(r["disposition"]) or r["assessment_tier"] not in ("T1", "T2")]
+    print("rows", len(out), "missing shard rows", len(missing), "incomplete", len(bad))
+    print("dispositions", dict(Counter(r["disposition"].split(":")[0] for r in out)))
+    print("tiers", dict(Counter(r["assessment_tier"] for r in out)))
+    if bad[:10]:
+        print("incomplete sample", bad[:10])
+
+
+if __name__ == "__main__":
+    main()

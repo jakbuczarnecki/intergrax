@@ -1,0 +1,77 @@
+"""A4 consolidation: concern shards + package census + unowned classification -> A4/concern_rows.jsonl, A4/package_map.jsonl, A4/boundary_scan.md."""
+from __future__ import annotations
+
+import sys
+from collections import Counter, defaultdict
+from pathlib import Path
+
+sys.path.insert(0, str(Path(__file__).parent))
+from common import *  # noqa
+
+NA_CLASSES = ("OWNED", "OWNED_BY_PARENT_DOMAIN", "LEGACY_OR_SHIM", "DEMO_OR_SCENARIO", "PRODUCT_AGENT", "UNOWNED")
+
+
+def main():
+    concerns = {c["concern_id"]: c for c in read_json(WS / "A4" / "concerns.json")}
+    shard = {}
+    for f in sorted((WS / "shards" / "A4").glob("a4_[0-9].jsonl")):
+        for r in read_jsonl(f):
+            shard[r["concern_id"]] = r
+    rows, missing = [], []
+    for cid, c in concerns.items():
+        s = shard.get(cid)
+        if not s:
+            missing.append(cid)
+            s = {}
+        rows.append({"concern_id": cid, "name": c["name"], "origin": c["origin"], "expected_owner_docs": c["expected_owner_docs"],
+                     "semantic_owner_doc": s.get("semantic_owner_doc"), "owner_basis": s.get("owner_basis"), "composition_owner": s.get("composition_owner"),
+                     "public_contracts": s.get("public_contracts", []), "implementations": s.get("implementations", []), "packages": s.get("packages", []),
+                     "tests": s.get("tests", []), "frz_links": s.get("frz_links", []), "certifications": s.get("certifications", []), "dependencies": s.get("dependencies", []),
+                     "owner_status": s.get("owner_status") or "NOT-ASSESSED", "risks": s.get("risks", []), "coverage_note": s.get("coverage_note"),
+                     "evidence_level": s.get("evidence_level") or "E0", "notes": s.get("notes")})
+    write_jsonl(WS / "A4" / "concern_rows.jsonl", rows)
+    census = read_jsonl(WS / "A4" / "package_census.jsonl")
+    un = {}
+    uf = WS / "shards" / "A4" / "a4_5_unowned.jsonl"
+    for r in read_jsonl(uf):
+        un[r["path"]] = r
+    claimed = defaultdict(list)
+    for r in rows:
+        for p in r["packages"]:
+            claimed[p.rstrip("/")].append(r["concern_id"])
+    pm = []
+    for c in census:
+        path = c["path"]
+        cons = claimed.get(path, [])
+        u = un.get(path)
+        if cons:
+            cls, owner, cid = "OWNED", None, cons
+        elif u:
+            cls, owner, cid = u["classification"], u.get("owner_doc"), [u["concern_id"]] if u.get("concern_id") else []
+        elif c["root"] == "agents":
+            cls, owner, cid = "PRODUCT_AGENT", None, []
+        elif c["arch_doc_hits"] or c["owner_doc_mentions"]:
+            top = c["arch_doc_hits"][0]["doc"] if c["arch_doc_hits"] else next(iter(c["owner_doc_mentions"]))
+            cls, owner, cid = "DOCUMENTED_DOMAIN_OUTSIDE_CONCERN_LIST", top, []
+        else:
+            cls, owner, cid = "UNOWNED", None, []
+        pm.append({"path": path, "root": c["root"], "package": c["package"], "py_files": c["py_files"], "classification": cls, "concerns": cid, "owner_doc": owner,
+                   "doc_mentions": c["owner_doc_mentions"], "arch_doc_hits": c["arch_doc_hits"][:2], "tests_path_hits": c["tests_path_hits"], "note": (u or {}).get("note")})
+    write_jsonl(WS / "A4" / "package_map.jsonl", pm)
+    cc = Counter(p["classification"] for p in pm)
+    print("concern rows", len(rows), "missing", missing)
+    print("owner_status", dict(Counter(r["owner_status"] for r in rows)))
+    print("packages", len(pm), dict(cc))
+    print("UNOWNED/UNCLASSIFIED:", [p["path"] for p in pm if p["classification"] in ("UNOWNED", "UNCLASSIFIED", "DOCUMENTED_DOMAIN_OUTSIDE_CONCERN_LIST")][:30])
+    # boundary scan notes
+    runs = [r for r in read_jsonl(WS / "logs" / "tool_runs.jsonl") if r["run_id"].startswith("A4-")]
+    L = [header_block().rstrip(), "", "# Static boundary sweep (A4-T04)", "",
+         "Allowed read-only scanners run from the audit worktree at the baseline (see `TOOL_RUN_LOG.md`). Exclusions: `build/`, `applications/*/docker/runtime-context/` (SX-06). Dynamic-import grep: see EQOA-A4-007.", "",
+         "| Run | Exit | Duration (s) | Log |", "|---|---|---|---|"]
+    for r in runs:
+        L.append(f"| {r['run_id'][3:]} | {r['exit_code']} | {r['duration_s']} | `logs/{r['run_id']}.log` |")
+    (WS / "A4" / "boundary_scan.md").write_text("\n".join(L) + "\n", encoding="utf-8")
+
+
+if __name__ == "__main__":
+    main()

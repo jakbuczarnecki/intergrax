@@ -1,0 +1,253 @@
+{
+  "path": "docs/project/maintainers/qualification/DUP_X_FINDINGS_REGISTER.md",
+  "tables": [
+    {
+      "header": [
+        "Field",
+        "Value"
+      ],
+      "rows": [
+        {
+          "line": 5,
+          "Field": "AUDITED_HEAD",
+          "Value": "8245b7471379414dc24385d1e770ccb56a7b0e2d"
+        },
+        {
+          "line": 6,
+          "Field": "WAVE1_IMPLEMENTATION_HEAD",
+          "Value": "2325460ff7f1f0290f95dae03145e30e20e0d991"
+        },
+        {
+          "line": 7,
+          "Field": "Python SSOT",
+          "Value": "tests/qualification/dup_x/_findings_register.py"
+        },
+        {
+          "line": 8,
+          "Field": "Prefix",
+          "Value": "DUPX-F-* (confirmed) · DUPX-GAP-* (evidence gaps)"
+        }
+      ]
+    },
+    {
+      "header": [
+        "Metric",
+        "Count"
+      ],
+      "rows": [
+        {
+          "line": 14,
+          "Metric": "Open gaps (DUPX-GAP-*)",
+          "Count": "0 (Wave 1 closed with evidence)"
+        },
+        {
+          "line": 15,
+          "Metric": "Unresolved DUPLICATE/BLOCKER (DUPX-F-*)",
+          "Count": "0"
+        },
+        {
+          "line": 16,
+          "Metric": "RATIFIED bypass fence (COMPAT-R3)",
+          "Count": "1"
+        },
+        {
+          "line": 17,
+          "Metric": "Pre-audit candidates classified",
+          "Count": "15 / 15"
+        }
+      ]
+    },
+    {
+      "header": [
+        "ID",
+        "Severity",
+        "Class",
+        "Kind",
+        "Status",
+        "Production reachability",
+        "Remediation"
+      ],
+      "rows": [
+        {
+          "line": 23,
+          "ID": "DUPX-GAP-CLASS-D",
+          "Severity": "Gap",
+          "Class": "DUP-10",
+          "Kind": "GAP",
+          "Status": "PASS",
+          "Production reachability": "factory + config canonical",
+          "Remediation": "Wave 1 caller matrix — OD-DUPX-01 still OPEN"
+        },
+        {
+          "line": 24,
+          "ID": "DUPX-GAP-L3-TIER3-DEDUPE",
+          "Severity": "Gap",
+          "Class": "DUP-02",
+          "Kind": "GAP",
+          "Status": "PASS",
+          "Production reachability": "LKW Slack only",
+          "Remediation": "Tier-3 disposition doc"
+        },
+        {
+          "line": 25,
+          "ID": "DUPX-F-COMPAT-R3-FENCE",
+          "Severity": "Major",
+          "Class": "DUP-08, DUP-09",
+          "Kind": "BYPASS",
+          "Status": "RATIFIED",
+          "Production reachability": "lab-only",
+          "Remediation": "Qual fence tests"
+        }
+      ]
+    },
+    {
+      "header": [
+        "ID",
+        "Classes",
+        "Status",
+        "Disposition"
+      ],
+      "rows": [
+        {
+          "line": 31,
+          "ID": "DUPX-CAND-01",
+          "Classes": "DUP-01, DUP-09",
+          "Status": "N/A WITH EVIDENCE",
+          "Disposition": "Legacy tools_base — no prod imports"
+        },
+        {
+          "line": 32,
+          "ID": "DUPX-CAND-02",
+          "Classes": "DUP-03, DUP-13",
+          "Status": "RATIFIED",
+          "Disposition": "registry_v2 projection — see delta dossier"
+        },
+        {
+          "line": 33,
+          "ID": "DUPX-CAND-03",
+          "Classes": "DUP-10",
+          "Status": "RATIFIED",
+          "Disposition": "CANONICAL Class D — caller matrix"
+        },
+        {
+          "line": 34,
+          "ID": "DUPX-CAND-04",
+          "Classes": "DUP-03, DUP-11, DUP-14",
+          "Status": "RATIFIED",
+          "Disposition": "Harness projection — delta dossier"
+        },
+        {
+          "line": 35,
+          "ID": "DUPX-CAND-05",
+          "Classes": "DUP-04, DUP-11",
+          "Status": "N/A WITH EVIDENCE",
+          "Disposition": "Resolver pipeline stages"
+        },
+        {
+          "line": 36,
+          "ID": "DUPX-CAND-06",
+          "Classes": "DUP-01, DUP-05",
+          "Status": "RATIFIED",
+          "Disposition": "context dedup wrapper — delta dossier"
+        },
+        {
+          "line": 37,
+          "ID": "DUPX-CAND-07",
+          "Classes": "DUP-05",
+          "Status": "N/A WITH EVIDENCE",
+          "Disposition": "Distinct dedup semantics"
+        },
+        {
+          "line": 38,
+          "ID": "DUPX-CAND-08",
+          "Classes": "DUP-14",
+          "Status": "PASS",
+          "Disposition": "CONFIG-X ∪ EBH-5 hints"
+        },
+        {
+          "line": 39,
+          "ID": "DUPX-CAND-09",
+          "Classes": "DUP-10, DUP-12",
+          "Status": "RATIFIED",
+          "Disposition": "DISTINCT observability export routing — delta dossier"
+        },
+        {
+          "line": 40,
+          "ID": "DUPX-CAND-10",
+          "Classes": "DUP-03, DUP-10",
+          "Status": "N/A WITH EVIDENCE",
+          "Disposition": "Tenant factory registry bounded"
+        },
+        {
+          "line": 41,
+          "ID": "DUPX-CAND-11",
+          "Classes": "DUP-07, DUP-12",
+          "Status": "N/A WITH EVIDENCE",
+          "Disposition": "Diagnostics — evidence ports"
+        },
+        {
+          "line": 42,
+          "ID": "DUPX-CAND-12",
+          "Classes": "DUP-02",
+          "Status": "N/A WITH EVIDENCE",
+          "Disposition": "LKW Slack DISTINCT — Tier-3 disposition"
+        },
+        {
+          "line": 43,
+          "ID": "DUPX-CAND-13",
+          "Classes": "DUP-01",
+          "Status": "RATIFIED",
+          "Disposition": "Ephemeral store — delta dossier"
+        },
+        {
+          "line": 44,
+          "ID": "DUPX-CAND-14",
+          "Classes": "DUP-05, DUP-10",
+          "Status": "N/A WITH EVIDENCE",
+          "Disposition": "SQLite annex replay"
+        },
+        {
+          "line": 45,
+          "ID": "DUPX-CAND-15",
+          "Classes": "DUP-08, DUP-09",
+          "Status": "RATIFIED",
+          "Disposition": "COMPAT-R3 lab-only"
+        }
+      ]
+    },
+    {
+      "header": [
+        "Field",
+        "Value"
+      ],
+      "rows": [
+        {
+          "line": 51,
+          "Field": "Gate",
+          "Value": "tests/unit/runtime/architecture/test_npsc4_2_residual_compatibility_gate.py"
+        },
+        {
+          "line": 52,
+          "Field": "DUP-X mapping",
+          "Value": "Architecture allowlist drift — not a DUP-01..14 invariant"
+        },
+        {
+          "line": 53,
+          "Field": "DUP invariants",
+          "Value": "Duplicate/bypass census + factory-first Class D + COMPAT-R3 fence remain L2 primary"
+        },
+        {
+          "line": 54,
+          "Field": "Wave 1 action",
+          "Value": "Document only — no NPSC allowlist change"
+        },
+        {
+          "line": 55,
+          "Field": "Exclusion record",
+          "Value": "[DUP_X_NPSC_4_2_DUPX_EXCLUSION_RECORD.md](DUP_X_NPSC_4_2_DUPX_EXCLUSION_RECORD.md) — 10 _orchestration_backend modules · excluded from DUP-X mandatory"
+        }
+      ]
+    }
+  ],
+  "lines": 58
+}

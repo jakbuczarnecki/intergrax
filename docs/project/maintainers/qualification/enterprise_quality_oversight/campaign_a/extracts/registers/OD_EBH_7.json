@@ -1,0 +1,72 @@
+{
+  "path": "docs/project/maintainers/qualification/EBH_7_OPERATOR_DECISION_REGISTER.md",
+  "tables": [
+    {
+      "header": [
+        "OD ID",
+        "Subject",
+        "Status",
+        "Notes"
+      ],
+      "rows": [
+        {
+          "line": 5,
+          "OD ID": "OD-EBH7-01",
+          "Subject": "Program entry @ 81679e672",
+          "Status": "APPROVED",
+          "Notes": "Canonical roadmap + qualification; stage gates + arch controls; see entry readiness record"
+        },
+        {
+          "line": 6,
+          "OD ID": "W0-RC04-D",
+          "Subject": "TEN-04 route — integrate-test-first vs ADR",
+          "Status": "integrate-test-first",
+          "Notes": "ADR only if integrated test fails after minimal canonical remediation"
+        },
+        {
+          "line": 7,
+          "OD ID": "W1-PROD-DELTA",
+          "Subject": "Invoker tenant guard @ 5df074fcb",
+          "Status": "RETAIN — pending architectural reconciliation",
+          "Notes": "Interim fail-closed; historical auth deviation acknowledged — not retroactive prod approval; no revert mandate; no duplicate tenant/gov authority"
+        },
+        {
+          "line": 8,
+          "OD ID": "W1-PROD-ADR",
+          "Subject": "Targeted architecture review / minimal remediation",
+          "Status": "AUTHORIZED",
+          "Notes": "Operator @ OD-EBH7-01; agent executes only canonical minimal path after review"
+        },
+        {
+          "line": 9,
+          "OD ID": "RPL-REL-SQLITE-DUCKDB",
+          "Subject": "Sanctioned registry sqlite + duckdb qualification",
+          "Status": "AUTHORIZED",
+          "Notes": "Contract compatibility + behavioral evidence required; no fake dual-instance sqlite"
+        },
+        {
+          "line": 10,
+          "OD ID": "OD-EBH7-08",
+          "Subject": "Program closure — B6 + evidence dossier",
+          "Status": "APPROVED",
+          "Notes": "OPERATOR APPROVED — OD-EBH7-08 (2026-11-01); [EBH_7_OD_EBH7_08_CLOSURE_SIGNATURE_RECORD.md](EBH_7_OD_EBH7_08_CLOSURE_SIGNATURE_RECORD.md)"
+        },
+        {
+          "line": 11,
+          "OD ID": "B6",
+          "Subject": "Protocol 03 independent audit",
+          "Status": "PASS (SCOPED)",
+          "Notes": "[EBH_7_PROTOCOL_03_INDEPENDENT_AUDIT_PASS_RECORD.md](EBH_7_PROTOCOL_03_INDEPENDENT_AUDIT_PASS_RECORD.md) @ dc18e36d9…"
+        },
+        {
+          "line": 12,
+          "OD ID": "OD-EBH7-SCOPE-RESIDUAL",
+          "Subject": "Scoped CLOSED with documented non-PROHIBITED residuals",
+          "Status": "OPEN",
+          "Notes": "Required if normative RPL gaps remain at B6"
+        }
+      ]
+    }
+  ],
+  "lines": 15
+}

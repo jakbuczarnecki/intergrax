@@ -1,0 +1,48 @@
+"""A7 parent findings from the consolidated entries, carry-forward graph and the skip/N/A inventories (run once after consolidate_a7)."""
+from __future__ import annotations
+
+import sys
+from collections import Counter
+from pathlib import Path
+
+sys.path.insert(0, str(Path(__file__).parent))
+from common import *  # noqa
+import fl
+
+B = BASELINE_SHA
+ent = [e for e in read_jsonl(WS / "A7" / "entries.jsonl") if e.get("kind") != "NOT_AN_ENTRY"]
+g = read_json(WS / "A7" / "carry_forward_graph.json")
+sk = read_json(WS / "A7" / "skips.json")
+na = read_json(WS / "A7" / "na_decisions.json")
+
+nomiss = [e["entry_id"] for e in ent if not str(e.get("owner") or "") or "OWNER_MISSING" in str(e.get("owner"))]
+f_owner = fl.add("A7", title=f"{len(nomiss)} register or limitation entries have no owner (OWNER_MISSING)", severity="LOW", cls="EVIDENCE_DEFICIENCY", scope=nomiss[:80],
+                 affected_invariant="roadmap section 2.5 / debt register rules (every active exception or debt has an accountable owner)", evidence=["ws:A7/entries.jsonl"], evidence_level="E3",
+                 impact="Entry-level scan of the consolidated registers: these entries name no owner and no owner column exists in their source register. Each entry is listed by ID in the finding scope (first 80).",
+                 arch_freeze_impact="CONDITIONS", recommendation="Register owners assign owners.", owner="Register owners (Operator)", next_action="DOC_FIX_BY_OWNER", decision_authority="Operator")
+unst = [e for e in ent if e.get("severity") in (None, "", "UNSTATED") and e.get("currency") in ("OPEN", "DEFERRED")]
+f_sev = fl.add("A7", title=f"{len(unst)} OPEN or DEFERRED entries carry no severity ({len(ent)} entries analysed; mechanical limitation entries included)", severity="MEDIUM", cls="EVIDENCE_DEFICIENCY",
+               scope=[e["entry_id"] for e in unst[:80]], affected_invariant="ARCH-FREEZE entry: unresolved architecture debt = 0 (needs severity and impact to be assessed)",
+               evidence=["ws:A7/entries.jsonl"], evidence_level="E3",
+               impact=f"Of {len(ent)} entries {len(unst)} are OPEN/DEFERRED with severity UNSTATED. The PDC gap register, DUP-X/EBH-6 hardcoding rows and the stage residuals have no severity or owner columns, so a mechanical OPEN count cannot be turned into a risk ranking without reading each row.",
+               arch_freeze_impact="CONDITIONS", recommendation="Owners add severity and reopen conditions at the next register refresh.", owner="Register owners (Operator)", next_action="DOC_FIX_BY_OWNER", decision_authority="Operator")
+stale = [e for e in ent if e.get("stale_vs_baseline") is True]
+cnt = Counter(e.get("register") for e in stale)
+f_stale = fl.add("A7", title=f"{len(stale)} register entries state a currency that a source at the baseline contradicts (snapshot registers)", severity="MEDIUM", cls="GOVERNANCE_INCONSISTENCY",
+                 scope=[e["entry_id"] for e in stale[:60]], affected_invariant="registers must reflect the current state (roadmap section 2.4 evidence anchors; checklist update protocol)",
+                 evidence=["ws:A7/entries.jsonl"], evidence_level="E2",
+                 impact="Reviewers marked these entries stale against the baseline (largest registers: " + ", ".join(f"{k} {v}" for k, v in cnt.most_common(6)) + "). Examples: the Annex F gap register (14 'No X' gaps contradicted by code), the PDC gap register P2 snapshot (63 rows resolved by P7/P8), FIND-FORMAL-B6, the EBH-6 conditional remediation register pinned to 202239f7. Staleness was judged by the reviewers from documents; E2.",
+                 arch_freeze_impact="CONDITIONS", recommendation="Owners regenerate or retire snapshot registers at the freeze SHA.", owner="Register owners (Operator)", next_action="DOC_FIX_BY_OWNER", decision_authority="Operator")
+bounce = [c for c in g["chains"] if c["bouncing"]]
+ex = "; ".join(f"{' -> '.join(c['chain'][:3])} ({'; '.join(c['reason'])})" for c in bounce[:4])
+f_bounce = fl.add("A7", title=f"{len(bounce)} obligation carry-forward chains are longer than one hop or end at a CLOSED / post-freeze stage ('bouncing obligations')", severity="MEDIUM", cls="GOVERNANCE_INCONSISTENCY",
+                  scope=sorted({c["end"] for c in bounce})[:60], affected_invariant="roadmap section 2.5 (new blockers get an owner; do not skip forward)", evidence=["ws:A7/carry_forward_graph.json"], evidence_level="E2",
+                  impact=f"Graph of {g['n_nodes']} entries and {g['n_edges']} deferral edges extracted from the registers: {len(g['chains'])} chains, {len(bounce)} flagged. Examples: {ex}. Graph edges come from the reviewers' carry_forward fields (E2).",
+                  arch_freeze_impact="CONDITIONS", recommendation="Owners confirm that each chain ends at a stage that owns the concern; the PDC-X D7 drain-seam chain (R014) is the clearest case.", owner="Roadmap owner / PDC-X", next_action="OWNER_DECISION", decision_authority="Operator")
+f_skip = fl.add("A7", title=f"{sk['high_surface_non_noci_unregistered']} skip/xfail markers in qualification and architecture test trees are not in the EBH-7 skip disposition register; {sk['reasonless']} markers carry no reason; no repo-wide N/A register exists",
+                severity="MEDIUM", cls="EVIDENCE_DEFICIENCY", scope=["tests/qualification", "tests/unit/architecture", "tests/unit/runtime/architecture", "EBH_7_SKIP_DISPOSITION_REGISTER"],
+                affected_invariant="FRZ N/A - WITH EVIDENCE rule; no known-red/skip without disposition",
+                evidence=["ws:A7/skips.json", "ws:A7/skip_hits.jsonl", "ws:A7/na_decisions.json"], evidence_level="E3",
+                impact=f"Static scan of tests/ at the baseline: {sk['total_hits']} skip-class markers ({sk['by_marker']}). Of the {sk['high_surface_non_noci']} non-no_ci markers in qualification/architecture/security/tenant trees, {sk['high_surface_non_noci_unregistered']} are in files that the EBH-7 skip disposition register (9 nodes, 5 files) does not cover (many are env-gated acceptance wrappers, see EQOA-A6 finding); {sk['high_surface_no_ci']} high-surface tests carry no_ci. {na['total']} N/A decision mentions in {len(na['files'])} files exist without a register (only the EVOL-X deployment N/A register exists).",
+                arch_freeze_impact="CONDITIONS", recommendation="Owner extends the skip register scope or classifies the categories (env-gated, optional dependency, no_ci).", owner="QUAL-X / EBH-7", next_action="CAMPAIGN_B", decision_authority="Operator")
+print(f_owner, f_sev, f_stale, f_bounce, f_skip)
