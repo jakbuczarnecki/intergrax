@@ -44,6 +44,7 @@ Rows classed `CURRENT_HEAD_REQUALIFICATION`, `ALREADY_CERTIFIED_REUSABLE`, `N/A_
 | B-P7-D8 | D8 | W13 | T-IGX-041-H | 0 | ADR-PDC-08 | B-P6-J | YES | OD-PDC-SEQ-01: implement in an isolated worktree; merge only after MCP-SERVER-X P8 publication; ACT-N11 re-activation at PDC-P7-00 | IA-D8 (P7 re-audit) |
 | B-P7-D6 | D6 | W13 | T-IGX-041-F | 0 | ADR-PDC-06 | B-P6-J | YES | OD-PDC-SEQ-01: implement in an isolated worktree; merge only after MCP-SERVER-X P8 publication; ACT-N11 re-activation at PDC-P7-00 | IA-D6 (re-audit, loop 1 of 2) |
 | B-P7-TX | TX | W13 | T-IGX-041-I | 0 | — | B-P6-J | no | No product path: may merge before MCP-SERVER-X P8 | IA-GLOBAL (P8) |
+| B-P7-RP | ALL | W15 | T-IGX-041-J | 0 | — | B-P7-D1, B-P7-D2, B-P7-D3, B-P7-D4, B-P7-D5, B-P7-D6, B-P7-D7, B-P7-D8, B-P7-TX | no | No product path: may merge before MCP-SERVER-X P8 | IA-GLOBAL (P8) |
 
 ## B-P3 — Ownership records closed in P3
 
@@ -504,6 +505,18 @@ Rows classed `CURRENT_HEAD_REQUALIFICATION`, `ALREADY_CERTIFIED_REUSABLE`, `N/A_
 - **Write set:** `tests/qualification/tenant_x/_replay_x_carrier_reconciliation.py`, `tests/qualification/tenant_x/test_tenant_x_replay_carrier_reclassification.py`
 - **Tests:** tests/qualification/tenant_x green at the final head; negative tests prove an unclassified, swapped or unreasoned carrier still fails; PHASE 2 runs only after the D1, D2 and D6 repair PRs are merged
 - **Evidence (exact SHA):** implementation SHA and publication SHA recorded in `PDC_SHA_LADDER.md`; test log under `.tmp/proof/pdc-x-p5/B-P7-TX/`; audited by IA-GLOBAL (P8) at the PDC-P7 audited SHA.
+- **Merge gate:** No product path: may merge before MCP-SERVER-X P8
+
+| Requirement | Class | Test case |
+| --- | --- | --- |
+| — | — | — |
+
+## B-P7-RP — Final EBH-7 re-pin after all P7 repairs: fresh L3 replay at the development tip P (W1' prep with allowlisted paths only, one workflow dispatch, W2' record)
+
+- **Ticket:** T-IGX-041-J · **Wave:** W15 · **ADR:** — · **Auditor:** IA-GLOBAL (P8)
+- **Write set:** `docs/project/maintainers/qualification/ebh_7_p03_independent_replay/`, `docs/project/maintainers/qualification/EBH_7_SHA_LADDER.md`, `docs/project/maintainers/qualification/EBH_7_B6_F10_ECAP_NORMATIVE_MATRIX.md`, `docs/project/maintainers/qualification/EBH_7_ECAP_CURRENT_HEAD_AUDIT_REPORT.md`, `docs/project/maintainers/qualification/platform_domain_completeness/PDC_SHA_LADDER.md`, `docs/project/maintainers/qualification/platform_domain_completeness/PDC_REG_DIAGNOSIS.md`, `docs/project/maintainers/qualification/platform_domain_completeness/PDC_EBH7_FINAL_REPIN_RECORD.md`, `.github/workflows/unit-tests.yml`, `tests/qualification/ebh_7/_constants.py`
+- **Tests:** tests/qualification/ebh_7 green at the new pin; replay run id and artifact digests recorded; not a B6 PASS
+- **Evidence (exact SHA):** implementation SHA and publication SHA recorded in `PDC_SHA_LADDER.md`; test log under `.tmp/proof/pdc-x-p5/B-P7-RP/`; audited by IA-GLOBAL (P8) at the PDC-P7 audited SHA.
 - **Merge gate:** No product path: may merge before MCP-SERVER-X P8
 
 | Requirement | Class | Test case |
