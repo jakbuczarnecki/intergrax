@@ -1,0 +1,13 @@
+..............................................s...s..................... [ 16%]
+........................................................................ [ 32%]
+........................................................................ [ 48%]
+........................................................................ [ 64%]
+........................................................................ [ 80%]
+........................................................................ [ 96%]
+............... [100%]
+- generated xml file: D:\Projekty\intergrax\.claude\worktrees\pdc-x-ia-d6-4b65c9\.tmp\session\ia-d6\prod_q.xml -
+=========================== short test summary info ===========================
+SKIPPED [1] tests\qualification\prod_q\test_prod_q_p0_integrity.py:239: POSIX-only: owned process-group ID is the Popen PID under start_new_session
+SKIPPED [1] tests\qualification\prod_q\test_prod_q_p0_integrity.py:305: Windows: after parent exit, bounded subprocess cannot verify owned descendant termination without a job-object ownership mechanism (STOP — ARCHITECTURE DECISION REQUIRED)
+445 passed, 2 skipped in 291.60s (0:04:51)
+EXIT 124

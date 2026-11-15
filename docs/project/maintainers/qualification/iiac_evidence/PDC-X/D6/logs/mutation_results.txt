@@ -1,0 +1,12 @@
+== M1: 5 failed, 9 passed in 0.56s
+== M2: 2 failed, 8 passed in 3.38s
+== M3: 2 failed, 4 passed in 1.60s
+== M4: 10 failed, 4 passed in 0.87s
+== M5: 1 failed, 8 passed in 5.82s
+== M6: 1 failed, 9 passed in 3.22s
+== M7: 3 failed, 5 passed in 0.54s
+== M8: 10 failed, 13 passed in 3.87s
+== M9: 1 failed, 36 passed in 15.02s
+== M10: 5 failed, 9 passed in 2.88s
+== M11: 7 failed, 3 passed in 0.96s
+== M12: 2 failed, 23 passed in 6.90s

@@ -1,0 +1,40 @@
+PDC-X / P7-D6 (IA-D6) independent audit evidence manifest
+
+audited_implementation_sha: c08efe46a74a20595468d8d8bf06eab2dca5f573
+execution HEAD:             b7889220607b462195308fa186f4ba66fb78f3a8 (product tree identical)
+report verdict:             PARTIAL (IIAC manifest value: CONDITIONAL)
+rows:                       14 PASS, 3 PASS_SCOPED, 11 PARTIAL, 0 FAIL
+findings:                   0 HIGH, 6 MEDIUM, 9 LOW, 5 INFO
+
+Report:  docs/project/maintainers/qualification/platform_domain_completeness/PDC_P7_D6_AUDIT_REPORT.md
+Records: audit_scope.json, iiac_audit_session_manifest.PDC-X.d6.json, iiac_audit_d6_findings.json, test_matrix.txt
+Logs:    logs/ (pytest runs, mutation results, probe outputs, verifier outputs)
+Scripts: adversarial_scripts/ (probes, mutation plugin and runner)
+
+sha256 of every file listed (this manifest excluded):
+
+1e12ddf439a2e554ef9f4b151d554254488405f6ab50f2abb1e9c4cc4abf364f *docs/project/maintainers/qualification/iiac_evidence/PDC-X/D6/adversarial_scripts/ia_d6_probes.py
+e9c89b9a2f4ab3febe66c9e96aae5f7efe46b3a25d8d53c33febe9d69d61eb0e *docs/project/maintainers/qualification/iiac_evidence/PDC-X/D6/adversarial_scripts/ia_d6_probes2.py
+adb1fcd8f75b6ea6177b213d2a3c8942f762e48a5b5820ddaaca7ef081745286 *docs/project/maintainers/qualification/iiac_evidence/PDC-X/D6/adversarial_scripts/ia_d6_probes3.py
+15ce8d07aeeabf54069323d695ddc7cbb2283be6337f5567e1a5eebb15893cb5 *docs/project/maintainers/qualification/iiac_evidence/PDC-X/D6/adversarial_scripts/ia_mut.py
+773b49aeb3b53ad50fd05f65d7708a46bc5d0ce340f1b25c1661d168d82aae4f *docs/project/maintainers/qualification/iiac_evidence/PDC-X/D6/adversarial_scripts/run_mutants.sh
+ae3fe5a1760b4f6924418f108a08da0e916f48602eead0dd323c08bd53fa992f *docs/project/maintainers/qualification/iiac_evidence/PDC-X/D6/audit_scope.json
+3961a26ecbf28d32e30a0f5eaf9b0342297e01bf96abe8426fe2b00fa3e535ab *docs/project/maintainers/qualification/iiac_evidence/PDC-X/D6/iiac_audit_d6_findings.json
+a28ba08f809d420fd3447c977325529bdc526b2d09a4411e0fe8268c9cca16ad *docs/project/maintainers/qualification/iiac_evidence/PDC-X/D6/iiac_audit_session_manifest.PDC-X.d6.json
+13f735a5787587cdb7520c25b6c827b84a04cbb71d84853359c3e5d8911c2aee *docs/project/maintainers/qualification/iiac_evidence/PDC-X/D6/logs/ia_d6_probes.out.json
+2e79731014af802872ea3f46268624fe44684d737e84b437a713fe2db8be3c19 *docs/project/maintainers/qualification/iiac_evidence/PDC-X/D6/logs/ia_d6_probes2.out.json
+e59ab70b849225b01a94de2376560dfe308174eb9951edcdc9ea9860d9b7aff0 *docs/project/maintainers/qualification/iiac_evidence/PDC-X/D6/logs/ia_d6_probes3.out.json
+c3ca4163216e5bb9f32dfaf2a0ce8c348e61a67181015590f69fffc1b5dbe53c *docs/project/maintainers/qualification/iiac_evidence/PDC-X/D6/logs/lead_reproduction_p7_00_probes_d6.out.json
+fbcef5f350fc864511a526009713c1f994f111ffd137e2bc8c07983716e9d3c4 *docs/project/maintainers/qualification/iiac_evidence/PDC-X/D6/logs/mutation_results.txt
+c0453d9851c74651cb3680a2a1cf6967362b872d84cf8c09e65ded0867fca3a2 *docs/project/maintainers/qualification/iiac_evidence/PDC-X/D6/logs/mutation_summary.txt
+832d275e95b2b0e1721e54e59635082c999acbb0e735f965f4fdad54cc580b44 *docs/project/maintainers/qualification/iiac_evidence/PDC-X/D6/logs/pytest_audit_ideal.log.txt
+894de3089dcf84e6f03d928db768c5596d0e8f136b21a135209bc51b31e8cfbe *docs/project/maintainers/qualification/iiac_evidence/PDC-X/D6/logs/pytest_d6.junit.xml
+ff5c077604ea89f2f12728afba55c8a90bd216c88d1d1f075247da64cf86c49a *docs/project/maintainers/qualification/iiac_evidence/PDC-X/D6/logs/pytest_d6.log.txt
+5fe73180f750a2c1f4147d10482d3dd906a68db82bc8d0d2a6312270af0fb0e2 *docs/project/maintainers/qualification/iiac_evidence/PDC-X/D6/logs/pytest_governance.log.txt
+de8adeb51329e670d1611e59b73e4aceddaed3a61d352173734189e5c69af970 *docs/project/maintainers/qualification/iiac_evidence/PDC-X/D6/logs/pytest_mcp_sec.log.txt
+041a048da89f11015b7f2a5e080e8f0fa9bef8899e09a12aca0cb296021f403f *docs/project/maintainers/qualification/iiac_evidence/PDC-X/D6/logs/pytest_prod_q.log.txt
+5395a599f9ded33c7e3bedba887549bcb98d8dbf0f078de94df8ef2b23f807bb *docs/project/maintainers/qualification/iiac_evidence/PDC-X/D6/logs/pytest_sandbox.log.txt
+c50053dbb38f940adf48215377097cf4b4649367d81719462495ffddb4dc5250 *docs/project/maintainers/qualification/iiac_evidence/PDC-X/D6/logs/pytest_tenant_x.log.txt
+bdd85a0dd0e682550073cb3f02d301bb255e0e62e9a55f61294e404f5054aa55 *docs/project/maintainers/qualification/iiac_evidence/PDC-X/D6/logs/pytest_xd.log.txt
+db62e5edda97b3f9ebe3dbce4cfd8acca236cfa87be5d08cb16d028cb55108ef *docs/project/maintainers/qualification/iiac_evidence/PDC-X/D6/logs/verifier_outputs.txt
+373e12f4befc50bbe57d7a403940e7df3585934a865761977b12ef3bd4a9abef *docs/project/maintainers/qualification/iiac_evidence/PDC-X/D6/test_matrix.txt

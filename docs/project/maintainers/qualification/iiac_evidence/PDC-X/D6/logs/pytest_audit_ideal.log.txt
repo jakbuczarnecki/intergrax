@@ -1,0 +1,95 @@
+..................F.....................................F............... [100%]
+================================== FAILURES ===================================
+__________________ test_audit_ideal_29_1_live_vision_profile __________________
+
+ def test_audit_ideal_29_1_live_vision_profile() -> None:
+ from intergrax.llm_adapters.registry.profile import create_adapter
+ 
+ profile = resolve_live_vision_profile()
+> assert create_adapter(profile).slug
+ ^^^^^^^^^^^^^^^^^^^^^^^
+
+tests\unit\runtime\architecture\test_audit_ideal_depth_gate.py:238: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+intergrax\llm_adapters\registry\profile.py:42: in create_adapter
+ if profile.model:
+ ^^^^^^^^^^^^^
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+self = VisionProfile(provider=<VisionProvider.OPENCV: 'onnxruntime'>, artifact_id=None, options={})
+item = 'model'
+
+ def __getattr__(self, item: str) -> Any:
+ private_attributes = object.__getattribute__(self, '__private_attributes__')
+ if item in private_attributes:
+ attribute = private_attributes[item]
+ if hasattr(attribute, '__get__'):
+ return attribute.__get__(self, type(self)) # type: ignore
+ 
+ try:
+ # Note: self.__pydantic_private__ cannot be None if self.__private_attributes__ has items
+ return self.__pydantic_private__[item] # type: ignore
+ except KeyError as exc:
+ raise AttributeError(f'{type(self).__name__!r} object has no attribute {item!r}') from exc
+ else:
+ # `__pydantic_extra__` can fail to be set if the model is not yet fully initialized.
+ # See `BaseModel.__repr_args__` for more details
+ try:
+ pydantic_extra = object.__getattribute__(self, '__pydantic_extra__')
+ except AttributeError:
+ pydantic_extra = None
+ 
+ if pydantic_extra and item in pydantic_extra:
+ return pydantic_extra[item]
+ else:
+ if hasattr(self.__class__, item):
+ return super().__getattribute__(item) # Raises AttributeError if appropriate
+ else:
+ # this is the current error
+> raise AttributeError(f'{type(self).__name__!r} object has no attribute {item!r}')
+E AttributeError: 'VisionProfile' object has no attribute 'model'
+
+.venv\Lib\site-packages\pydantic\main.py:1026: AttributeError
+__________________ test_audit_ideal_30_4_production_capacity __________________
+
+ def test_audit_ideal_30_4_production_capacity() -> None:
+ from intergrax.applications._shared.production_capacity_governance_wiring import (
+ build_production_capacity_governance,
+ )
+ from intergrax.applications._shared.production_capacity_wiring import (
+ resolve_production_capacity_wiring,
+ )
+ from intergrax.applications.contracts.application_host import ApplicationProfile
+ 
+ env = ApplicationEnvironmentProfile.product_defaults()
+ assert env.application_profile is ApplicationProfile.PRODUCT
+ assert env.scaling_profile.production_adapters_enabled is True
+ governance = build_production_capacity_governance(env)
+ assert governance.mutation_authorization_boundary is None
+> wiring = resolve_production_capacity_wiring(env, governance=governance)
+ ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+tests\unit\runtime\architecture\test_audit_ideal_depth_gate.py:690: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+intergrax\applications\_shared\production_capacity_wiring.py:48: in resolve_production_capacity_wiring
+ require_control_plane_mutation_boundary(
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+boundary = None
+
+ def require_control_plane_mutation_boundary(
+ boundary: ControlPlaneMutationAuthorizationBoundary | None,
+ *,
+ blocker_code: str,
+ message: str,
+ ) -> ControlPlaneMutationAuthorizationBoundary:
+ if boundary is None:
+> raise ControlPlaneCompositionError(blocker_code, message)
+E intergrax.applications._shared.control_plane_composition.ControlPlaneCompositionError: production capacity wiring requires ControlPlaneMutationAuthorizationBoundary
+
+intergrax\applications\_shared\control_plane_composition.py:50: ControlPlaneCompositionError
+=========================== short test summary info ===========================
+FAILED tests/unit/runtime/architecture/test_audit_ideal_depth_gate.py::test_audit_ideal_29_1_live_vision_profile
+FAILED tests/unit/runtime/architecture/test_audit_ideal_depth_gate.py::test_audit_ideal_30_4_production_capacity
+2 failed, 70 passed in 11.79s
+EXIT 1

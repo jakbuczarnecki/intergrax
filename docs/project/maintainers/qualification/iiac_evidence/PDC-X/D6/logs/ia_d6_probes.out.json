@@ -1,0 +1,96 @@
+{
+ "S1_weak_signing_secret_accepted_on_product": {
+  "one_char": true,
+  "literal_changeme": true,
+  "padded": true
+ },
+ "S2_product_signing_off_is_silent_and_strict_validator_clean": {
+  "signing_enabled": false,
+  "strict_issues_with_defenses_off": []
+ },
+ "S3_strict_mode_on_lab_profile_has_no_strict_checks": {
+  "issues": []
+ },
+ "A1_trail_and_wiring_accept_non_validating_port": {
+  "enabled": true,
+  "port_is_canonical_validated_marker": false,
+  "events_written_to_raw_port": 2,
+  "trail_type": "MultiRegionSecurityAuditTrail"
+ },
+ "A2_tamper_evidence_delete_rows_in_durable_store": {
+  "tables": [
+   "runtime_events",
+   "sqlite_sequence",
+   "runtime_event_run_sequences"
+  ],
+  "deleted": [
+   "runtime_events",
+   2
+  ],
+  "entries_before": 5,
+  "entries_after": 3,
+  "replicated": true,
+  "immutable": true
+ },
+ "A3_list_entries_oldest_1000_only": {
+  "appended": 1003,
+  "listed": 1000,
+  "newest_listed": false,
+  "oldest_listed": true
+ },
+ "A4_metadata_nonserializable_stringified_secret_value": {
+  "stored_metadata": {
+   "note": "Bearer eyJhbGciOiJIUzI1NiJ9.AAAA.BBBB"
+  }
+ },
+ "A5_tenant_scope_cross_tenant_and_blank": {
+  "b_sees": 0,
+  "a_sees": 1,
+  "list_None": "ValueError",
+  "list_''": "ValueError",
+  "list_'  '": "ValueError"
+ },
+ "T1_tool_guard_evasions": {
+  "plain": "blocked",
+  "ignore_all_previous": "NOT_BLOCKED",
+  "disregard_prior": "NOT_BLOCKED",
+  "zero_width": "NOT_BLOCKED",
+  "homoglyph_cyrillic_o": "NOT_BLOCKED",
+  "newline_split": "blocked",
+  "role_marker_system_colon": "blocked",
+  "role_marker_assistant": "NOT_BLOCKED",
+  "html_tool_call": "blocked",
+  "base64": "NOT_BLOCKED",
+  "fullwidth_colon": "NOT_BLOCKED",
+  "false_positive_benign": "blocked"
+ },
+ "T2_middleware_empty_tool_id_and_open_default_allowlist": {
+  "empty_tool_id_with_injection": "HookAction.ALLOW",
+  "any_tool_default_policy": "HookAction.ALLOW"
+ },
+ "R1_poisoning_default_matrix_and_plan_context_nonprod": {
+  "None": true,
+  "dict_false": true,
+  "str_False": true,
+  "attr_False": false,
+  "plan_context_nonproduction_absent_profile_is_off": true
+ },
+ "D1_delegation_narrowing_adversarial": {
+  "scoped_child_subset": [
+   "a"
+  ],
+  "scoped_child_extra": "denied",
+  "case_variant": "denied",
+  "whitespace_variant": "denied",
+  "wildcard_request": "denied",
+  "unknown_parent_empty_req": [],
+  "unrestricted_parent_wildcard": [
+   "*"
+  ],
+  "duplicate_scopes": [
+   "a",
+   "a"
+  ],
+  "empty_string_scope": "denied"
+ }
+}

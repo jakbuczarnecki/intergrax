@@ -1,0 +1,24 @@
+
+=================================== ERRORS ====================================
+_ ERROR collecting tests/qualification/mcp_server_x/test_mcp_server_x_p7_l2_security_trace.py _
+ImportError while importing test module 'D:\Projekty\intergrax\.claude\worktrees\pdc-x-ia-d6-4b65c9\tests\qualification\mcp_server_x\test_mcp_server_x_p7_l2_security_trace.py'.
+Hint: make sure your test modules/packages have valid Python names.
+Traceback:
+tests\qualification\mcp_server_x\test_mcp_server_x_p7_l2_security_trace.py:34: in <module>
+ from fastmcp import Client
+E ModuleNotFoundError: No module named 'fastmcp'
+_ ERROR collecting tests/qualification/mcp_server_x/test_mcp_server_x_p7_l3_invoke_security.py _
+ImportError while importing test module 'D:\Projekty\intergrax\.claude\worktrees\pdc-x-ia-d6-4b65c9\tests\qualification\mcp_server_x\test_mcp_server_x_p7_l3_invoke_security.py'.
+Hint: make sure your test modules/packages have valid Python names.
+Traceback:
+tests\qualification\mcp_server_x\test_mcp_server_x_p7_l3_invoke_security.py:29: in <module>
+ from tests.qualification.mcp_server_x.reference_app.build import (
+tests\qualification\mcp_server_x\reference_app\build.py:13: in <module>
+ from fastmcp import FastMCP
+E ModuleNotFoundError: No module named 'fastmcp'
+=========================== short test summary info ===========================
+ERROR tests/qualification/mcp_server_x/test_mcp_server_x_p7_l2_security_trace.py
+ERROR tests/qualification/mcp_server_x/test_mcp_server_x_p7_l3_invoke_security.py
+!!!!!!!!!!!!!!!!!!! Interrupted: 2 errors during collection !!!!!!!!!!!!!!!!!!!
+2 errors in 3.00s
+EXIT 2

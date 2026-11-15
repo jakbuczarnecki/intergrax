@@ -1,0 +1,31 @@
+{
+ "ID1_request_identity_whitespace_tenant_not_normalised": {
+  "stored": "'  tenant-a  '",
+  "scope_normalised": "tenant-a"
+ },
+ "CR1_provider_exception_chain_keeps_secret_text": {
+  "exc_type": "CredentialProviderUnavailableError",
+  "message_has_secret": false,
+  "full_traceback_has_secret": true
+ },
+ "PL1_default_defense_plugin_admission_is_structural_only": {
+  "provenance": null,
+  "on_load_failure": "isolate"
+ },
+ "BS1_bootstrap_catalogs_signature_defaults": {
+  "discover_entry_points": "False",
+  "plugin_provenance": "None",
+  "require_plugin_provenance": "False"
+ },
+ "ENV1_product_defaults_security_toggles": {
+  "tool_injection_defense_enabled": true,
+  "retrieval_poisoning_defense_enabled": true,
+  "immutable_audit_trail_enabled": true,
+  "audit_trail_regions": [
+   "eu-central-1",
+   "us-east-1"
+  ],
+  "critical_action_signing_enabled": true,
+  "execution_mode": "ExecutionMode.STRICT"
+ }
+}
