@@ -1,0 +1,147 @@
+"""Build the IA-GLOBAL deliverables (report + evidence manifest). Re-runnable. Run from repo root."""
+import hashlib
+import json
+import pathlib
+import re
+import sys
+
+ROOT = pathlib.Path(".")
+Q = ROOT / "docs/project/maintainers/qualification"
+REPORT = Q / "platform_domain_completeness/PDC_INDEPENDENT_AUDIT.md"
+G = Q / "iiac_evidence/PDC-X/global"
+SES = ROOT / ".tmp/session/ia-global"
+
+start_sha = "cba32d2479cd134911d2fdf4fb1db4587c8a94d8"
+final_sha = sys.argv[1] if len(sys.argv) > 1 else start_sha
+addendum_file = SES / "addendum.md"
+
+
+def sha(p):
+    return hashlib.sha256(pathlib.Path(p).read_bytes()).hexdigest()
+
+
+tpl = (SES / "audit_template.md").read_text(encoding="utf-8")
+table = (SES / "findings_table.md").read_text(encoding="utf-8")
+addendum = addendum_file.read_text(encoding="utf-8") if addendum_file.exists() else (
+    "Not yet frozen. At the time of writing the audit SHA is the start SHA; the orchestrator has not yet sent the final audit SHA. "
+    "This section is completed when it does."
+)
+final_line = (
+    f"`{final_sha}`" if final_sha != start_sha else "= start SHA (the final SHA was not yet announced when this record was written; see section 13)"
+)
+text = tpl.replace("{{FINDINGS_TABLE}}", table).replace("{{ADDENDUM}}", addendum).replace("{{FINAL_SHA_LINE}}", final_line)
+REPORT.write_text(text, encoding="utf-8", newline="\n")
+
+# findings json
+new = []
+for m in re.finditer(r"^\| (G-\d+) \| (\*\*)?(HIGH|MEDIUM|LOW|INFO)(\*\*)? \| (.*?) \| (.*?) \| (REPRODUCED[^|]*|CODE[^|]*|READ[^|]*) \| (.*?) \|$", text, re.M):
+    new.append({"id": m.group(1), "severity": m.group(3), "title": m.group(5)[:400], "confirmation": m.group(7).strip(), "scope": m.group(8).strip()})
+counts = {}
+for f in new:
+    counts[f["severity"]] = counts.get(f["severity"], 0) + 1
+rows = [r for r in table.splitlines()[2:]]
+verdict_counts = {"VERIFIED_FIXED": sum("| VERIFIED_FIXED |" in r for r in rows), "PARTIALLY_FIXED": sum("| PARTIALLY_FIXED |" in r for r in rows), "NOT_FIXED": 0}
+findings = {
+    "stage_id": "PDC-X/global",
+    "auditor": "IA-GLOBAL",
+    "audited_implementation_sha": start_sha,
+    "final_audit_sha": final_sha,
+    "overall_verdict": "PARTIAL",
+    "iiac_manifest_verdict": "CONDITIONAL",
+    "repaired_finding_verdicts": verdict_counts,
+    "new_finding_counts": counts,
+    "new_findings": new,
+    "known_reds_classified_not_reported": [
+        "IIAC activation staleness ACT-N11 (2 tests + activation gate)",
+        "EBH-7 identity gate and F10 classifier (9 tests)",
+        "roadmap_replay_x (5 tests)",
+        "dist_scale_x Docker/C10-C15 freeze (3 tests)",
+        "COMPAT-X counters (10 tests, T-IGX-041-L)",
+        "fixture_strict_adapter_parity (4 tests, declared T-IGX-041-C deviation)",
+        "strict xfail test_scaffold_defaults_mcp_to_opt_in[product] (T-IGX-039-A, owner Operator; not in selected paths)",
+    ],
+}
+(G / "iiac_audit_global_findings.json").write_text(json.dumps(findings, indent=2, ensure_ascii=False) + "\n", encoding="utf-8", newline="\n")
+
+scope = {
+    "stage_id": "PDC-X/global",
+    "session_designation": "PDC-P8-IA-GLOBAL-INDEPENDENT-AUDIT-2026-11-15",
+    "certification_profile": "iiac-v1",
+    "policy_version": "IIAC-2026-11-05.1",
+    "campaign": "PDC-X P8 independent global audit (PDC-P8-01, -02, -03)",
+    "ticket_anchors": ["governance/tickets/T-IGX-036-A.md"],
+    "audited_implementation_sha": start_sha,
+    "final_audit_sha": final_sha,
+    "repair_pull_requests": {"D1": 574, "D2": 575, "D3": 569, "D4": 571, "D5": 568, "D6": 573, "D7": 570, "D8": 572, "TENANT-X": 576},
+    "plans_and_tickets": [f"governance/tickets/plans/PLAN_T-IGX-041-{x}.md" for x in "ABCDEFGHI"],
+    "p7_audit_reports": [f"docs/project/maintainers/qualification/platform_domain_completeness/PDC_P7_D{n}_AUDIT_REPORT.md" for n in range(1, 9)],
+    "checks": ["P8-01 MCP closure", "P8-02 checks 1-15", "P8-03 ECAP FULL and bounded qualification runs", "re-verification of repaired HIGH/MEDIUM findings", "review of declared exceptions"],
+    "test_paths": ["tests/qualification/pdc_x", "tests/qualification/tenant_x", "tests/qualification/dup_x", "tests/qualification/ebh_7", "tests/qualification/roadmap_replay_x", "tests/qualification/dist_scale_x", "tests/qualification/compat_x", "plan contracts of T-IGX-041-A..H"],
+    "not_in_scope": ["fixes", "certification", "FRZ promotion", "freeze-SHA audit", "VBN acceptance"],
+}
+(G / "audit_scope.json").write_text(json.dumps(scope, indent=2) + "\n", encoding="utf-8", newline="\n")
+
+tm = ["PDC-X / global IA-GLOBAL test matrix (audited SHA " + start_sha + "; one process at a time; logs in logs/)", ""]
+for line in (SES / "test_matrix_lines.txt").read_text(encoding="utf-8").splitlines():
+    tm.append(line)
+(G / "test_matrix.txt").write_text("\n".join(tm) + "\n", encoding="utf-8", newline="\n")
+
+# evidence manifest (sha256 of every evidence file except the manifests)
+files = sorted(p for p in G.rglob("*") if p.is_file() and p.name not in ("EVIDENCE_MANIFEST.txt",) and not p.name.startswith("iiac_audit_session_manifest"))
+lines = [
+    "PDC-X / global independent audit (IA-GLOBAL) evidence manifest",
+    "",
+    f"audited_implementation_sha: {start_sha}",
+    f"final_audit_sha:            {final_sha}",
+    "verdict:                    PARTIAL (IIAC manifest verdict value: CONDITIONAL)",
+    "",
+    "Report:    docs/project/maintainers/qualification/platform_domain_completeness/PDC_INDEPENDENT_AUDIT.md",
+    f"           sha256 {sha(REPORT)}",
+    "",
+    "sha256 of every evidence file listed (this manifest and the session manifest excluded; the session manifest carries the digests):",
+    "",
+]
+for p in files:
+    lines.append(f"{sha(p)}  {p.as_posix()}")
+(G / "EVIDENCE_MANIFEST.txt").write_text("\n".join(lines) + "\n", encoding="utf-8", newline="\n")
+
+manifest = {
+    "stage_id": "PDC-X/global",
+    "certification_profile": "iiac-v1",
+    "policy_version": "IIAC-2026-11-05.1",
+    "implementation_session_id": "PDC-X implementers (T-IGX-036-* and T-IGX-041-A..I lanes; session ids not recorded in the repository); this auditor implemented nothing",
+    "implementation_agent_id": "implementer",
+    "auditor_session_id": "PDC-P8-IA-GLOBAL-INDEPENDENT-AUDITOR-6573093f-9178-4c2c-93a3-64b0a5b6c657",
+    "auditor_agent_id": "independent-quality-auditor",
+    "certifier_session_id": "PDC-P8-GLOBAL-CERTIFIER-PENDING (not yet assigned)",
+    "certifier_agent_id": "certification-governance-agent",
+    "audited_implementation_sha": final_sha,
+    "test_execution_sha": start_sha,
+    "evidence_publication_sha": "0000000000000000000000000000000000000000",
+    "audit_execution_sha": final_sha,
+    "audit_report_digest": sha(REPORT),
+    "audit_scope_manifest_digest": sha(G / "audit_scope.json"),
+    "test_matrix_digest": sha(G / "test_matrix.txt"),
+    "findings_digest": sha(G / "iiac_audit_global_findings.json"),
+    "verdict": "CONDITIONAL",
+    "dossier_verdict": "PARTIAL",
+    "limitations": [
+        "LIM-verdict-mapping: report verdict PARTIAL (PARTIAL_EXACT_BLOCKERS); the IIAC manifest schema has no PARTIAL value, CONDITIONAL is the closest and means: 1 HIGH and 11 MEDIUM new findings (G-01..G-12) remain open for the single repair loop",
+        "LIM-method: repair verdicts are code reading plus mutation reasoning by four read-only subagents and the auditor; no mutant was executed; findings marked READ in the report were not re-derived by the auditor",
+        "LIM-test-execution: tests ran at the start SHA (test_execution_sha); the delta to the final SHA is covered by the addendum of the report; run 04A was killed after its summary (non-exiting process) and its 27 MAX_PATH failures were re-run green with a short base temp",
+        "LIM-environment: optional extras (sentence_transformers), Docker, PostgreSQL, Cassandra, Mongo, live providers and network were not available or not used",
+        "LIM-known-reds: IIAC activation staleness, EBH-7 identity gate, roadmap_replay_x, dist_scale_x, COMPAT-X counters and the declared D3 parity tests were classified, not re-reported",
+        "LIM-scope: repaired findings and checks 1-15 of PDC-P8-02; no row-by-row recertification of the 172 requirement rows; no freeze-SHA audit; no VBN acceptance",
+        "LIM-publication-pending: certifier_session_id is a placeholder and evidence_publication_sha and certification_publication_sha are 40 zeros until a certifier publishes",
+        "LIM-delta: any product change after the final audit SHA voids this audit for the changed paths",
+        "LIM-no-certification: no certification, FRZ promotion, closure or production-readiness claim",
+    ],
+    "certification_publication_sha": "0000000000000000000000000000000000000000",
+    "assurance_level": "process_enforced",
+    "audit_report_path": "docs/project/maintainers/qualification/platform_domain_completeness/PDC_INDEPENDENT_AUDIT.md",
+    "findings_path": "docs/project/maintainers/qualification/iiac_evidence/PDC-X/global/iiac_audit_global_findings.json",
+    "audit_scope_path": "docs/project/maintainers/qualification/iiac_evidence/PDC-X/global/audit_scope.json",
+    "test_matrix_path": "docs/project/maintainers/qualification/iiac_evidence/PDC-X/global/test_matrix.txt",
+}
+(G / "iiac_audit_session_manifest.PDC-X.global.json").write_text(json.dumps(manifest, indent=2) + "\n", encoding="utf-8", newline="\n")
+print("built; new findings:", counts, verdict_counts)

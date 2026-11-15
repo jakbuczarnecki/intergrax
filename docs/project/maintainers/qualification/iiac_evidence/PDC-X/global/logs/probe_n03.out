@@ -1,0 +1,1 @@
+LOADER FAIL ImportError cannot import name 'PipelineDocumentHandler' from 'intergrax.rag.document_loaders.contracts.base_document_handler' (D:\Projekty\intergrax\.claude\worktrees\pdc-x-ia-global-cdaa97\intergrax\rag\documen

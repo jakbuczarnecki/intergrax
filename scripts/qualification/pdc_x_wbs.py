@@ -838,6 +838,45 @@ BATCHES: Final[tuple[Batch, ...]] = (
         "tests/qualification/tenant_x green at the final head; negative tests prove an unclassified, swapped or unreasoned carrier still fails; PHASE 2 runs only after the D1, D2 and D6 repair PRs are merged",
     ),
     Batch(
+        "B-P7-F10",
+        "ALL",
+        "B6-F10 C4 classifier entries for the three paths the classifier reports as UNKNOWN (intergrax/experiments/workflow.py, intergrax/integrations/credentials/secrets_store_resolver.py, the incident investigator fixture agent): exact-path entries added, default classification unchanged, preparatory to the final EBH-7 re-pin",
+        "T-IGX-041-K",
+        "W13",
+        (
+            "tests/qualification/ebh_7/_ebh7_f10_canonical_inputs.py",
+            "tests/qualification/ebh_7/test_ebh_7_b6_f10_c4_041k_entries_gates.py",
+        ),
+        "—",
+        ("B-P6-H",),
+        GATE_FREE,
+        "IA-GLOBAL (P8)",
+        "tests/qualification/ebh_7/test_ebh_7_b6_f10_c4_041k_entries_gates.py and test_ebh_7_b6_f10_c1_c4_closure_gates.py green; certify_f10 C4 has 0 UNKNOWN paths over the accepted-baseline range; merges before the final re-pin pin P",
+    ),
+    Batch(
+        "B-P7-RP",
+        "ALL",
+        "Final EBH-7 re-pin after all P7 repairs: fresh L3 replay at the development tip P (W1' prep with allowlisted paths only, one workflow dispatch, W2' record)",
+        "T-IGX-041-J",
+        "W15",
+        (
+            "docs/project/maintainers/qualification/ebh_7_p03_independent_replay/",
+            "docs/project/maintainers/qualification/EBH_7_SHA_LADDER.md",
+            "docs/project/maintainers/qualification/EBH_7_B6_F10_ECAP_NORMATIVE_MATRIX.md",
+            "docs/project/maintainers/qualification/EBH_7_ECAP_CURRENT_HEAD_AUDIT_REPORT.md",
+            "docs/project/maintainers/qualification/platform_domain_completeness/PDC_SHA_LADDER.md",
+            "docs/project/maintainers/qualification/platform_domain_completeness/PDC_REG_DIAGNOSIS.md",
+            "docs/project/maintainers/qualification/platform_domain_completeness/PDC_EBH7_FINAL_REPIN_RECORD.md",
+            ".github/workflows/unit-tests.yml",
+            "tests/qualification/ebh_7/_constants.py",
+        ),
+        "—",
+        ("B-P7-D1", "B-P7-D2", "B-P7-D3", "B-P7-D4", "B-P7-D5", "B-P7-D6", "B-P7-D7", "B-P7-D8", "B-P7-TX"),
+        GATE_FREE,
+        "IA-GLOBAL (P8)",
+        "tests/qualification/ebh_7 green at the new pin; replay run id and artifact digests recorded; not a B6 PASS",
+    ),
+    Batch(
         "B-P8-R1",
         "R1",
         "P8 repair loop 1, product defects of the independent global audit: RAG loader family (doc smart handler import, duplicate parser runtime document class, in-memory list_collections), recurrence chain survives eligibility-phase failures (scheduler), incident scenario runtime authority, manifest and registry carry-over plus evidence adapter token count (time-boxed), governed content key refusal in the workspace tools plus case, dot and filesystem-root hardening, credential error context, two product paths classified in the ENT-AUDIT impact map, durable projection slug pin (test-only); register, debt and test-hygiene findings are excluded in the plan",
@@ -1179,6 +1218,10 @@ def render_dag() -> str:
         "W14a": (
             "after every B-P7 repair batch (W13, W14) is merged and the signature of T-IGX-041-M",
             "before the EBH-7 pin P and before T-IGX-041-L takes the COMPAT-X counters (DELEGATION-PDC-CLOSE decision 2 merge gate; product paths of the P8 repair loop are re-pinned once by the EBH-7 pin)",
+        ),
+        "W15": (
+            "after every B-P7 repair batch (W13, W14) and the signature of T-IGX-041-J",
+            "docs-only pull requests W1' and W2' after the preconditions of the plan (F10 classifier entries, COMPAT-X counters) are merged; one workflow dispatch between them",
         ),
     }
     for wave, bids in waves.items():

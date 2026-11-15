@@ -1,0 +1,160 @@
+........................................................................ [ 26%]
+........................................................................ [ 52%]
+......................................F...F..............FFF............ [ 78%]
+..........................................................               [100%]
+================================== FAILURES ===================================
+__________ test_build_scenario_runtime_strict_with_explicit_manifest __________
+tests\unit\applications\test_scenario_runtime_baseline.py:213: in test_build_scenario_runtime_strict_with_explicit_manifest
+    composition = build_scenario_runtime_from_environment(
+intergrax\applications\_shared\scenario_runtime_baseline.py:476: in build_scenario_runtime_from_environment
+    declarative_tool_invoker = build_declarative_invoker_for_application_host(
+intergrax\applications\_shared\declarative_tool_wiring.py:129: in build_declarative_invoker_for_application_host
+    dependency_boundary = materialize_tool_dependency_attempt_boundary(
+intergrax\runtime\resilience\dependency_attempt_boundary_composition.py:36: in materialize_tool_dependency_attempt_boundary
+    raise ToolDependencyAttemptBoundaryMaterializationError(
+E   intergrax.runtime.resilience.dependency_attempt_boundary_composition.ToolDependencyAttemptBoundaryMaterializationError: strict production requires reliability_profile.dependency_concurrency_admission
+______ test_rewire_scenario_decision_wiring_reapplies_validation_engine _______
+tests\unit\applications\test_scenario_runtime_baseline.py:286: in test_rewire_scenario_decision_wiring_reapplies_validation_engine
+    composition = rewire_scenario_decision_wiring(composition, validation_engine=replacement)
+                  ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+intergrax\applications\_shared\scenario_runtime_baseline.py:340: in rewire_scenario_decision_wiring
+    return rebuild_scenario_runtime_from_composition(
+intergrax\applications\_shared\scenario_runtime_baseline.py:356: in rebuild_scenario_runtime_from_composition
+    return build_scenario_runtime_from_environment(
+intergrax\applications\_shared\scenario_runtime_baseline.py:408: in build_scenario_runtime_from_environment
+    env_wiring = wire_application_environment(
+intergrax\applications\_shared\environment_wiring.py:477: in wire_application_environment
+    tool_wiring = apply_application_owned_tool_registry(
+intergrax\applications\_shared\application_owned_tool_wiring.py:28: in apply_application_owned_tool_registry
+    raise ApplicationManifestConformanceError(
+E   intergrax.applications.contracts.errors.ApplicationManifestConformanceError: application tool registry provided without manifest application_owned_tools declarations
+____ test_execute_scenario_task_persists_finalized_trace_for_orchestration ____
+intergrax\runtime\events\schema_guard.py:34: in assert_runtime_event_schema
+    assert_canonical_production_runtime_event_payload(event)
+intergrax\runtime\events\payload_registry.py:195: in assert_canonical_production_runtime_event_payload
+    raise RuntimeEventPayloadError(
+E   intergrax.runtime.events.payload_registry.RuntimeEventPayloadError: payload_schema_id mismatch for step_started: expected 'graph_node.v1', got 'trace_bridge.v1'
+
+The above exception was the direct cause of the following exception:
+tests\unit\applications\test_scenario_runtime_baseline.py:601: in test_execute_scenario_task_persists_finalized_trace_for_orchestration
+    result = await execute_scenario_task(
+intergrax\applications\_shared\scenario_runtime_baseline.py:586: in execute_scenario_task
+    task_result = await composition.host_execution.execute(task)
+                  ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+intergrax\runtime\execution\host_task.py:618: in execute
+    launch_result = await launcher.launch(
+intergrax\runtime\governance\default_root_execution_launcher.py:85: in launch
+    intake_result = await self._execution_intake.dispatch(
+intergrax\runtime\execution\host_root_execution_intake.py:74: in dispatch
+    result = await execution.execute(
+intergrax\runtime\execution\facade.py:42: in execute
+    return await self._runtime.execute(
+intergrax\runtime\execution\runtime.py:359: in execute
+    return await self._execute_with_capacity(
+intergrax\runtime\execution\runtime.py:556: in _execute_with_capacity
+    return await boundary.execute(request)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+intergrax\runtime\execution\boundary.py:119: in execute
+    return await self._run_admission_and_delegate(request)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+intergrax\runtime\execution\boundary.py:176: in _run_admission_and_delegate
+    result = await self._delegate.execute(request)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+intergrax\runtime\execution\host_task.py:331: in execute
+    result = await self._inner.execute(request)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+intergrax\runtime\execution\host_root_catalog_child_ingress_draining_delegate.py:35: in execute
+    result = await execute_delegate_with_root_child_work_ingress(
+intergrax\runtime\execution\root_execution_child_work_ingress.py:312: in execute_delegate_with_root_child_work_ingress
+    return await execute(request)
+           ^^^^^^^^^^^^^^^^^^^^^^
+intergrax\runtime\execution\strategy_router.py:91: in execute
+    return await self._orchestration_executor.execute(request)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+intergrax\runtime\execution\orchestration.py:208: in execute
+    return await self._executor.execute(self._task)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+intergrax\runtime\execution\orchestration.py:141: in execute
+    return await self._nexus_loop.handle_task(
+intergrax\runtime\nexus\nexus_loop.py:806: in handle_task
+    result = await self._handle_task_impl(
+intergrax\runtime\nexus\nexus_loop.py:828: in _handle_task_impl
+    return await self._handle_task_impl_with_exposure_session(
+intergrax\runtime\nexus\nexus_loop.py:870: in _handle_task_impl_with_exposure_session
+    phase = await self._graph_runner.run(
+intergrax\runtime\nexus\orchestration\graph_runner.py:365: in run
+    ) = await self.graph_executor.execute(
+intergrax\runtime\nexus\execution\graph_executor.py:373: in execute
+    return await self._execute_graph(
+intergrax\runtime\nexus\execution\graph_executor.py:455: in _execute_graph
+    return await self._execute_graph_batches(
+intergrax\runtime\nexus\execution\graph_executor.py:491: in _execute_graph_batches
+    execution, retries, failed, cancelled, handoff_extras = await self._execute_node(
+intergrax\runtime\nexus\execution\graph_executor.py:807: in _execute_node
+    child_result = await self._child_runner.execute(
+intergrax\runtime\execution\child.py:292: in execute
+    return await boundary.execute(request)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+intergrax\runtime\execution\boundary.py:119: in execute
+    return await self._run_admission_and_delegate(request)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+intergrax\runtime\execution\boundary.py:176: in _run_admission_and_delegate
+    result = await self._delegate.execute(request)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+intergrax\runtime\execution\failure_evidence\recording_delegate.py:37: in execute
+    return await self._delegate.execute(request)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+intergrax\runtime\nexus\execution\graph_executor.py:208: in execute
+    return await self._executor._execute_node_in_child(request)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+intergrax\runtime\nexus\execution\graph_executor.py:1048: in _execute_node_in_child
+    execution, retries, validation = await self._retry_engine.execute_with_retry(
+intergrax\runtime\nexus\retry\retry_engine.py:97: in execute_with_retry
+    execution = await execute_fn(agent)
+                ^^^^^^^^^^^^^^^^^^^^^^^
+intergrax\runtime\nexus\execution\graph_executor.py:1027: in execute_fn
+    trace_port.emit_evaluator_model_attempt(
+intergrax\runtime\observability\qualification_runtime_trace.py:101: in emit_evaluator_model_attempt
+    self.trace_emitter.emit_trace_step(
+intergrax\runtime\task\task_trace.py:210: in emit_trace_step
+    evt = super().emit_trace_step(
+intergrax\runtime\task\task_trace.py:114: in emit_trace_step
+    self._event_bus.record(
+intergrax\runtime\events\event_bus.py:295: in record
+    committed = self._commit_durable_evidence(event, tenant_id=tenant_id)
+                ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+intergrax\runtime\events\event_bus.py:397: in _commit_durable_evidence
+    positioned = self._persistence.append(event, tenant_id=scoped_tenant)
+                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+intergrax\runtime\events\validating_evidence_persistence_port.py:57: in append
+    assert_runtime_event_schema(prepared)
+intergrax\runtime\events\schema_guard.py:37: in assert_runtime_event_schema
+    raise RuntimeEventSchemaError(str(exc)) from exc
+E   intergrax.runtime.events.schema_guard.RuntimeEventSchemaError: payload_schema_id mismatch for step_started: expected 'graph_node.v1', got 'trace_bridge.v1'
+_ test_build_harness_host_runtime_does_not_invoke_llm_resolution_without_requirement _
+tests\unit\applications\test_harness_host_runtime_llm.py:39: in test_build_harness_host_runtime_does_not_invoke_llm_resolution_without_requirement
+    with patch(
+C:\Users\XPS\AppData\Roaming\uv\python\cpython-3.12-windows-x86_64-none\Lib\unittest\mock.py:1467: in __enter__
+    original, local = self.get_original()
+                      ^^^^^^^^^^^^^^^^^^^
+C:\Users\XPS\AppData\Roaming\uv\python\cpython-3.12-windows-x86_64-none\Lib\unittest\mock.py:1437: in get_original
+    raise AttributeError(
+E   AttributeError: <module 'intergrax.applications._shared.host_orchestration_backend_spec_builder' from 'D:\\Projekty\\intergrax\\.claude\\worktrees\\pdc-x-ia-global-cdaa97\\intergrax\\applications\\_shared\\host_orchestration_backend_spec_builder.py'> does not have the attribute 'resolve_environment_llm_adapter'
+__ test_engine_planner_without_provider_raises_at_orchestration_composition ___
+tests\unit\applications\test_harness_host_runtime_llm.py:62: in test_engine_planner_without_provider_raises_at_orchestration_composition
+    build_nexus_loop_from_environment(AgentRegistry(), env=env)
+testing_support\nexus_loop_from_environment.py:21: in build_nexus_loop_from_environment
+    spec = build_host_orchestration_loop_init_spec_from_environment(registry, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+intergrax\runtime\execution\host_orchestration_environment_spec_builder.py:162: in build_host_orchestration_loop_init_spec_from_environment
+    validate_strict_host_execution_capacity(env)
+intergrax\applications\_shared\host_execution_capacity_policy.py:44: in validate_strict_host_execution_capacity
+    raise HostExecutionCapacityPolicyError("; ".join(violations))
+E   intergrax.applications._shared.host_execution_capacity_policy.HostExecutionCapacityPolicyError: execution_mode=strict requires orchestration_profile.max_parallel_nodes (process-local batch parallelism cap; not cluster-wide); execution_mode=strict requires orchestration_profile.max_inflight_nodes (process-local inflight cap; not cluster-wide)
+=========================== short test summary info ===========================
+FAILED tests/unit/applications/test_scenario_runtime_baseline.py::test_build_scenario_runtime_strict_with_explicit_manifest
+FAILED tests/unit/applications/test_scenario_runtime_baseline.py::test_rewire_scenario_decision_wiring_reapplies_validation_engine
+FAILED tests/unit/applications/test_scenario_runtime_baseline.py::test_execute_scenario_task_persists_finalized_trace_for_orchestration
+FAILED tests/unit/applications/test_harness_host_runtime_llm.py::test_build_harness_host_runtime_does_not_invoke_llm_resolution_without_requirement
+FAILED tests/unit/applications/test_harness_host_runtime_llm.py::test_engine_planner_without_provider_raises_at_orchestration_composition
+5 failed, 269 passed in 13.78s
