@@ -1,0 +1,4 @@
+RESULT no auth configured, no key list_catalog_tools isError= True | MCP_PRINCIPAL_REQUIRED: authenticated harness principal required for MCP calls
+RESULT no auth configured, no key describe_catalog_tool isError= True | MCP_PRINCIPAL_REQUIRED: authenticated harness principal required for MCP calls
+RESULT auth configured, key list_catalog_tools isError= False | [{"name":"af.tool","description":"af.tool","inputSchema":{"properties":{"query":{"default"
+RESULT auth configured, key describe_catalog_tool isError= False | {"name":"af.tool","description":"af.tool","inputSchema":{"properties":{"query":{"default":

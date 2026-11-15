@@ -1,0 +1,2 @@
+run_agent host failure -> Error calling tool 'run_agent': SECRET-HOST-FAILURE-hunter2 /srv/app/db.py:42
+run_agent host failure -> Error calling tool 'run_agent': tenant=victim token=abc

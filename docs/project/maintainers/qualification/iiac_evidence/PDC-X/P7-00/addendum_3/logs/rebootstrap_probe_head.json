@@ -1,0 +1,41 @@
+{
+ "first_full": {
+  "categories": [
+   "model_serving_runtime",
+   "embedding_provider"
+  ],
+  "rows": 1,
+  "resolve": {
+   "embedding_provider": "OllamaEmbeddingProviderIntegration",
+   "model_serving_runtime": "OllamaModelServingRuntimeIntegration"
+  },
+  "generation": 201,
+  "factory": "_dispatching_factory.<locals>._factory"
+ },
+ "second_full_no_override_is_noop": {
+  "categories": [
+   "model_serving_runtime",
+   "embedding_provider"
+  ],
+  "rows": 1,
+  "resolve": {
+   "embedding_provider": "OllamaEmbeddingProviderIntegration",
+   "model_serving_runtime": "OllamaModelServingRuntimeIntegration"
+  },
+  "generation": 201,
+  "factory": "_dispatching_factory.<locals>._factory"
+ },
+ "third_full_override": {
+  "categories": [
+   "model_serving_runtime",
+   "embedding_provider"
+  ],
+  "rows": 1,
+  "resolve": {
+   "embedding_provider": "OllamaEmbeddingProviderIntegration",
+   "model_serving_runtime": "OllamaModelServingRuntimeIntegration"
+  },
+  "generation": 205,
+  "factory": "_dispatching_factory.<locals>._factory"
+ }
+}

@@ -7,6 +7,7 @@ from __future__ import annotations
 
 import functools
 import inspect
+import logging
 from collections.abc import Awaitable, Callable, Mapping, Sequence
 from dataclasses import dataclass
 from typing import Any
@@ -23,7 +24,9 @@ from intergrax.applications._shared.mcp_engine_concurrency import (
     McpEngineConcurrentCallAdmission,
     optional_mcp_call_admission,
 )
-from intergrax.applications._shared.mcp_harness_principal import resolve_mcp_run_agent_identity
+from intergrax.applications._shared.mcp_harness_principal import require_mcp_caller_principal
+from intergrax.applications._shared.mcp_identity_mode import McpIdentityMode, coerce_mcp_identity_mode
+from intergrax.applications._shared.mcp_wire_errors import bound_mcp_result_or_raise, sanitized_tool_errors
 from intergrax.contracts.execution_bound_catalog_tool_invocation import (
     ExecutionBoundCatalogToolInvoker,
 )
@@ -34,6 +37,7 @@ from intergrax.contracts.mcp_server_definition import (
     McpHostBuiltinId,
     McpHostCustomBinding,
     McpServerDefinition,
+    McpServerDefinitionErrorCode,
     McpServerDefinitionValidationError,
     build_mcp_server_definition,
     resolve_effective_bindings,
@@ -50,8 +54,9 @@ from intergrax.runtime.governance.control_plane_mutation_authorization import (
     ControlPlaneMutationAuthorizationBoundary,
 )
 from intergrax.runtime.registry.agent_registry_read import AgentRegistryRead
-from intergrax.tools.mcp_result_bounds import emit_bounded_mcp_list
 from intergrax.tools.registry.runtime import ToolRegistry
+
+_LOG = logging.getLogger(__name__)
 
 
 @dataclass(frozen=True, slots=True)
@@ -67,10 +72,17 @@ class McpServerCompositionDeps:
     meaningful_side_effect_authorization: MeaningfulSideEffectAuthorizationPort | None = None
     transport_detachment_supervision: RootExecutionTransportDetachmentSupervisionPort | None = None
     auto_wire_catalog_transport_supervision: bool = True
+    """Reserved: no consumer in the engine (documented no-op since MCP-RC); supervision comes from the coupling."""
     catalog_root_child_work_ingress: object | None = None
     enable_cross_loop_catalog_child: bool = False
     custom_host_tools: Mapping[str, Callable[..., Awaitable[dict[str, object]]]] | None = None
     max_concurrent_tool_calls: int | None = DEFAULT_MCP_MAX_CONCURRENT_TOOL_CALLS
+    identity_mode: McpIdentityMode = McpIdentityMode.HARNESS_BOUND
+    max_call_seconds: float | None = None
+    public_custom_tool_names: frozenset[str] = frozenset()
+    """Custom host tool names exempt from the principal gate (explicit opt-out; default: every custom tool is gated)."""
+    """Optional MCP call bound (OD-MCP-RC-02): a transport trigger of the governed cancel, not a deadline."""
+    """Fail-closed ``HARNESS_BOUND`` by default; ``LOCAL_DEV_EXPLICIT`` only by explicit composition opt-in."""
 
 
 def _filtered_catalog_registry(registry: ToolRegistry, allowed_tool_ids: frozenset[str]) -> ToolRegistry:
@@ -101,13 +113,26 @@ def _exec_parameter_spec(param: inspect.Parameter) -> str:
     return f"{param.name}={param.default!r}"
 
 
+async def _run_custom_host_tool_bounded(
+    handler: Callable[..., Awaitable[dict[str, object]]],
+    kwargs: Mapping[str, object],
+    gate: Callable[[], None] | None = None,
+) -> dict[str, object]:
+    """Run a host-supplied custom tool behind the principal gate; bound its result, never echo raw errors."""
+    async with sanitized_tool_errors(getattr(handler, "__name__", "custom_tool")):
+        if gate is not None:
+            gate()
+        result = await handler(**kwargs)
+        return bound_mcp_result_or_raise(result)
+
+
 def _bind_custom_host_tool_for_fastmcp(
     handler: Callable[..., Awaitable[dict[str, object]]],
     *,
     call_admission: McpEngineConcurrentCallAdmission | None,
+    gate: Callable[[], None] | None = None,
 ) -> Callable[..., Awaitable[dict[str, object]]]:
     """Materialize a FastMCP tool wrapper that preserves the handler's public signature (no **kwargs)."""
-    from intergrax.contracts.mcp_server_definition import McpServerDefinitionErrorCode
 
     sig = inspect.signature(handler)
     for param in sig.parameters.values():
@@ -117,20 +142,19 @@ def _bind_custom_host_tool_for_fastmcp(
                 "custom host tool handler must declare explicit parameters (no *args or **kwargs)",
             )
 
-    if call_admission is None:
-        return handler
-
     params_joined = ", ".join(_exec_parameter_spec(p) for p in sig.parameters.values())
-    call_joined = ", ".join(f"{name}={name}" for name in sig.parameters)
+    kwargs_joined = ", ".join(f"{name!r}: {name}" for name in sig.parameters)
     namespace: dict[str, object] = {
         "_handler": handler,
         "_optional_mcp_call_admission": optional_mcp_call_admission,
         "_call_admission": call_admission,
+        "_run_bounded": _run_custom_host_tool_bounded,
+        "_gate": gate,
     }
     source = (
         f"async def _custom_host_mcp_tool({params_joined}):\n"
         f"    async with _optional_mcp_call_admission(_call_admission):\n"
-        f"        return await _handler({call_joined})\n"
+        f"        return await _run_bounded(_handler, {{{kwargs_joined}}}, _gate)\n"
     )
     exec(source, namespace)  # noqa: S102 — bounded signature mirror for FastMCP ParsedFunction
     bound = namespace["_custom_host_mcp_tool"]
@@ -207,6 +231,13 @@ def compose_mcp_server_from_definition(
     custom_bindings = [b for b in exposed if isinstance(b, McpHostCustomBinding)]
     builtin_ids = _host_builtin_ids(host_builtins)
 
+    identity_mode = coerce_mcp_identity_mode(deps.identity_mode)
+    if identity_mode is McpIdentityMode.LOCAL_DEV_EXPLICIT:
+        _LOG.warning(
+            "MCP server %r composed in LOCAL_DEV_EXPLICIT identity mode: client-asserted tenant/user are "
+            "trusted for in-process and loopback callers only",
+            definition.server_id,
+        )
     mcp = FastMCP(definition.display_name)
     call_admission: McpEngineConcurrentCallAdmission | None = None
     if deps.max_concurrent_tool_calls is not None:
@@ -217,7 +248,8 @@ def compose_mcp_server_from_definition(
         @mcp.tool
         async def list_agents() -> list[dict[str, Any]]:
             """List registered agents and capabilities (same roster as the HTTP agents endpoint)."""
-            async with optional_mcp_call_admission(call_admission):
+            async with optional_mcp_call_admission(call_admission), sanitized_tool_errors("list_agents"):
+                require_mcp_caller_principal(identity_mode=identity_mode)
                 agents: list[dict[str, Any]] = []
                 for agent_id in deps.registry.list_agent_ids():
                     contract = deps.registry.get(agent_id).get_contract()
@@ -228,10 +260,12 @@ def compose_mcp_server_from_definition(
                             "capabilities": list(contract.capabilities),
                         }
                     )
-                return emit_bounded_mcp_list(agents)
+                return bound_mcp_result_or_raise(agents)
 
     if McpHostBuiltinId.RUN_AGENT in builtin_ids:
-        from intergrax.applications._shared.mcp_nexus_server import execute_mcp_agent_task
+        from intergrax.applications._shared.mcp_nexus_server import (
+            execute_mcp_agent_task_with_resolved_identity,
+        )
 
         default_capability = definition.default_capability
         default_tenant_id = definition.default_tenant_id
@@ -249,24 +283,21 @@ def compose_mcp_server_from_definition(
             intent: str | None = None,
         ) -> dict[str, object]:
             """Run one agent task via canonical host task execution (same path as HTTP POST /run)."""
-            async with optional_mcp_call_admission(call_admission):
-                resolved = resolve_mcp_run_agent_identity(
-                    harness_auth=None,
+            async with optional_mcp_call_admission(call_admission), sanitized_tool_errors("run_agent"):
+                return await execute_mcp_agent_task_with_resolved_identity(
+                    host_execution,
+                    message=message,
+                    capability=capability,
                     asserted_tenant_id=tenant_id,
                     asserted_user_id=user_id,
                     default_tenant_id=default_tenant_id,
                     default_user_id=default_user_id,
-                )
-                return await execute_mcp_agent_task(
-                    host_execution,
-                    message=message,
-                    capability=capability,
-                    tenant_id=resolved.tenant_id,
-                    user_id=resolved.user_id,
+                    identity_mode=identity_mode,
                     session_id=session_id,
                     intent=intent,
-                    caller_request_identity=resolved.request_identity,
                     task_control_mutation_boundary=task_control_mutation_boundary,
+                    transport_detachment_supervision=deps.transport_detachment_supervision,
+                    max_call_seconds=deps.max_call_seconds,
                 )
 
     catalog_surface = {
@@ -283,7 +314,6 @@ def compose_mcp_server_from_definition(
 
         catalog_invocation: McpCatalogInvocationComposition | None = None
         if deps.catalog_tool_invoker is not None and McpHostBuiltinId.INVOKE_CATALOG_TOOL in builtin_ids:
-            _ = deps.auto_wire_catalog_transport_supervision, deps.transport_detachment_supervision
             from intergrax.applications._shared.production_catalog_tool_child_execution_wiring import (
                 build_production_catalog_tool_child_execution_port,
             )
@@ -291,7 +321,7 @@ def compose_mcp_server_from_definition(
             catalog_child_execution = build_production_catalog_tool_child_execution_port()
             catalog_invocation = McpCatalogInvocationComposition(
                 catalog_invoker=deps.catalog_tool_invoker,
-                registry=deps.tool_registry,
+                registry=registry_view,
                 tool_enablement=deps.tool_enablement,
                 task_control_mutation_boundary=deps.task_control_mutation_boundary,
                 meaningful_side_effect_authorization=deps.meaningful_side_effect_authorization,
@@ -300,11 +330,15 @@ def compose_mcp_server_from_definition(
                 enable_cross_loop_catalog_child=deps.enable_cross_loop_catalog_child,
                 default_tenant_id=definition.default_tenant_id,
                 default_user_id=definition.default_user_id,
+                identity_mode=identity_mode,
+                invoke_timeout_s=deps.max_call_seconds,
             )
         mount_catalog_tools_on_mcp(
             mcp,
             registry_view,
             catalog_invocation=catalog_invocation,
+            identity_mode=identity_mode,
+            call_admission=call_admission,
         )
 
     if custom_bindings:
@@ -319,7 +353,12 @@ def compose_mcp_server_from_definition(
                     f"missing custom tool handler for {binding.tool_name!r}",
                 )
 
-            registered = _bind_custom_host_tool_for_fastmcp(handler, call_admission=call_admission)
+            custom_gate = (
+                None
+                if binding.tool_name in deps.public_custom_tool_names
+                else lambda: require_mcp_caller_principal(identity_mode=identity_mode)
+            )
+            registered = _bind_custom_host_tool_for_fastmcp(handler, call_admission=call_admission, gate=custom_gate)
             mcp.tool(name=binding.tool_name)(registered)
 
     return mcp

@@ -25,6 +25,7 @@ from intergrax.applications._shared.mcp_developer_api import (
     McpServerCompositionDeps,
     compose_mcp_server_from_definition,
 )
+from intergrax.applications._shared.mcp_identity_mode import McpIdentityMode
 from intergrax.contracts.execution_identity import mint_run_id, mint_task_id
 from intergrax.contracts.mcp_server_definition import (
     McpBindingVisibility,
@@ -123,6 +124,7 @@ def _deps(
         registry=agent_registry,
         tool_registry=tool_registry,
         custom_host_tools=custom,
+        identity_mode=McpIdentityMode.LOCAL_DEV_EXPLICIT,
     )
 
 
@@ -446,7 +448,8 @@ async def test_acc_04_catalog_allowlist_filters_list_and_describe_surfaces() -> 
         dropped = await client.call_tool("describe_catalog_tool", {"tool_id": "tool.drop"})
     assert {item["name"] for item in listed.data} == {"tool.keep"}
     assert kept.data.get("name") == "tool.keep"
-    assert dropped.data == {"error": "unknown_tool:tool.drop"}
+    assert dropped.data["error"] == "unknown_tool:tool.drop"
+    assert dropped.data["mcp_code"] == "MCP_CATALOG_TOOL_REFUSED"
 
 
 # --------------------------------------------------------------------------------------
@@ -563,4 +566,5 @@ async def test_acc_16_retired_catalog_binding_removed_from_catalog_surface() -> 
         listed = await client.call_tool("list_catalog_tools", {})
         old = await client.call_tool("describe_catalog_tool", {"tool_id": "tool.old"})
     assert {item["name"] for item in listed.data} == {"tool.live"}
-    assert old.data == {"error": "unknown_tool:tool.old"}
+    assert old.data["error"] == "unknown_tool:tool.old"
+    assert old.data["mcp_code"] == "MCP_CATALOG_TOOL_REFUSED"

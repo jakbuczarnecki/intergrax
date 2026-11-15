@@ -34,6 +34,23 @@ def serialize_bounded_mcp_json(
     return bounded, truncated
 
 
+_BOUND_ENCODER = json.JSONEncoder(default=str, separators=(",", ":"))
+
+
+def mcp_serialized_size_exceeds(value: Any, *, max_bytes: int = DEFAULT_MCP_MAX_SERIALIZED_BYTES) -> bool:
+    """True when the compact JSON form of *value* is larger than *max_bytes* UTF-8 bytes.
+
+    Encodes incrementally and stops at the first chunk that crosses the ceiling, so an oversized result
+    is never fully serialized in memory just to be rejected (MCP-RC R-P7-03).
+    """
+    total = 0
+    for chunk in _BOUND_ENCODER.iterencode(value):
+        total += utf8_byte_length(chunk)
+        if total > max_bytes:
+            return True
+    return False
+
+
 def bound_mcp_structured_result(
     value: Any,
     *,
@@ -45,8 +62,7 @@ def bound_mcp_structured_result(
 
     When the serialized form exceeds ``max_bytes``, returns a typed error object instead.
     """
-    payload = json.dumps(value, default=str, separators=(",", ":"))
-    if utf8_byte_length(payload) <= max_bytes:
+    if not mcp_serialized_size_exceeds(value, max_bytes=max_bytes):
         return value, False
     return {"error": overflow_error_code}, True
 
@@ -64,5 +80,6 @@ __all__ = [
     "McpPayloadByteLimitExceeded",
     "bound_mcp_structured_result",
     "emit_bounded_mcp_list",
+    "mcp_serialized_size_exceeds",
     "serialize_bounded_mcp_json",
 ]

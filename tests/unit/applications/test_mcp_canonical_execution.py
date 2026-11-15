@@ -5,7 +5,7 @@ from __future__ import annotations
 from unittest.mock import AsyncMock, patch
 
 import pytest
-
+from intergrax.applications._shared.mcp_identity_mode import McpIdentityMode
 from intergrax.applications._shared.mcp_nexus_server import build_nexus_mcp_server
 from intergrax.contracts.execution_identity import (
     mint_run_id,
@@ -13,20 +13,21 @@ from intergrax.contracts.execution_identity import (
     validate_execution_id,
 )
 from intergrax.runtime.execution.facade import Execution as ExecutionFacade
-from tests.fixtures.harness_host_task_execution import (
-    build_harness_environment_host_task_execution,
-    build_harness_host_task_execution,
-)
 from intergrax.runtime.execution.request import ExecutionCapability, ExecutionRequest
 from intergrax.runtime.execution.strategy import ExecutionStrategy, StrategyResolver
 from intergrax.runtime.execution.strategy_router import StrategyExecutionRouter
 from intergrax.runtime.execution.task_adapter import TaskExecutionInput
 from intergrax.runtime.nexus.nexus_loop import NexusLoop
 from intergrax.runtime.registry.agent_registry import AgentRegistry
+from intergrax.runtime.task.task import TaskResult, TaskState
 from intergrax.runtime.task.task_result_authoritative_exposure_defaults import (
     terminal_task_result_exposure_no_decision_gate,
 )
-from intergrax.runtime.task.task import TaskResult, TaskState
+from tests.fixtures.harness_host_task_execution import (
+    build_harness_environment_host_task_execution,
+    build_harness_host_task_execution,
+)
+
 from governed_contractor_application.host.environment_profile import (
     build_governed_contractor_environment_profile,
 )
@@ -56,6 +57,7 @@ async def test_shared_mcp_run_agent_uses_canonical_execution_facade() -> None:
     nexus_loop = NexusLoop(registry)
     host_execution = _build_governed_contractor_host_execution(nexus_loop)
     mcp = build_nexus_mcp_server(
+        identity_mode=McpIdentityMode.LOCAL_DEV_EXPLICIT,
         name="Shared MCP Test",
         host_execution=host_execution,
         registry=registry,
@@ -105,6 +107,7 @@ async def test_governed_contractor_mcp_adapt_does_not_root_call_nexus_handle_tas
     nexus_loop.handle_task = AsyncMock()
     host_execution = _build_governed_contractor_host_execution(nexus_loop)
     mcp = build_governed_contractor_mcp_server(
+        identity_mode=McpIdentityMode.LOCAL_DEV_EXPLICIT,
         host_execution=host_execution,
         registry=registry,
         route_prefix="/v1/governed_contractor",
@@ -138,6 +141,7 @@ async def test_governed_contractor_mcp_adapt_reaches_strategy_router_with_agenti
     nexus_loop = NexusLoop(registry)
     host_execution = _build_governed_contractor_host_execution(nexus_loop)
     mcp = build_governed_contractor_mcp_server(
+        identity_mode=McpIdentityMode.LOCAL_DEV_EXPLICIT,
         host_execution=host_execution,
         registry=registry,
         route_prefix="/v1/governed_contractor",
@@ -177,6 +181,7 @@ async def test_research_mcp_pipeline_reaches_orchestration_strategy() -> None:
     nexus_loop = NexusLoop(registry)
     host_execution = _build_research_host_execution(nexus_loop)
     mcp = build_research_mcp_server(
+        identity_mode=McpIdentityMode.LOCAL_DEV_EXPLICIT,
         host_execution=host_execution,
         registry=registry,
         route_prefix="/v1/research",
@@ -216,6 +221,7 @@ async def test_mcp_root_execution_id_is_platform_owned() -> None:
     nexus_loop = NexusLoop(registry)
     host_execution = _build_governed_contractor_host_execution(nexus_loop)
     mcp = build_governed_contractor_mcp_server(
+        identity_mode=McpIdentityMode.LOCAL_DEV_EXPLICIT,
         host_execution=host_execution,
         registry=registry,
         route_prefix="/v1/governed_contractor",
@@ -260,6 +266,7 @@ async def test_mcp_request_produces_single_root_execution_invocation() -> None:
     nexus_loop = NexusLoop(registry)
     host_execution = _build_governed_contractor_host_execution(nexus_loop)
     mcp = build_governed_contractor_mcp_server(
+        identity_mode=McpIdentityMode.LOCAL_DEV_EXPLICIT,
         host_execution=host_execution,
         registry=registry,
         route_prefix="/v1/governed_contractor",

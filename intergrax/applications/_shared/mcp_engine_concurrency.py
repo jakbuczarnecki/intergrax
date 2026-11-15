@@ -5,7 +5,7 @@
 
 from __future__ import annotations
 
-import asyncio
+import threading
 from collections.abc import AsyncIterator
 from contextlib import asynccontextmanager
 from typing import TypeVar
@@ -32,35 +32,48 @@ async def optional_mcp_call_admission(
 
 
 class McpConcurrentToolCallLimitExceeded(RuntimeError):
-    """Raised when in-flight MCP tool calls exceed configured admission (protocol-visible failure)."""
+    """Raised when in-flight MCP tool calls exceed configured admission (protocol-visible failure).
+
+    The message carries the declared wire code ``MCP_CONCURRENT_CALL_LIMIT_EXCEEDED`` and keeps the legacy
+    string, so clients matching either keep working (contract v1.1).
+    """
 
     def __init__(self, code: str = "mcp_concurrent_call_limit_exceeded") -> None:
         self.code = code
-        super().__init__(code)
+        super().__init__(f"MCP_CONCURRENT_CALL_LIMIT_EXCEEDED: {code}")
 
 
 class McpEngineConcurrentCallAdmission:
-    """Process-local admission for concurrent MCP tool handler executions."""
+    """Process-local admission for concurrent MCP tool handler executions.
+
+    Slot accounting never awaits: a task cancelled while releasing cannot leak a slot (MRC-3, G-DL-05). The
+    cap bounds MCP handler occupancy; executions handed to the transport-detachment supervisor after a
+    cancel or deadline are bounded by that supervisor, not by this counter (documented limit, G-DL-03).
+    """
 
     def __init__(self, max_concurrent_calls: int) -> None:
         if max_concurrent_calls < 1:
             raise ValueError("max_concurrent_calls must be >= 1")
         self._max = max_concurrent_calls
         self._inflight = 0
-        self._lock = asyncio.Lock()
+        self._lock = threading.Lock()
 
     @property
     def max_concurrent_calls(self) -> int:
         return self._max
 
+    @property
+    def inflight(self) -> int:
+        return self._inflight
+
     async def __aenter__(self) -> None:
-        async with self._lock:
+        with self._lock:
             if self._inflight >= self._max:
                 raise McpConcurrentToolCallLimitExceeded()
             self._inflight += 1
 
     async def __aexit__(self, *exc: object) -> None:
-        async with self._lock:
+        with self._lock:
             self._inflight -= 1
 
 

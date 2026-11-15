@@ -1,0 +1,971 @@
+{
+  "P1_ssot_diff": {
+    "added_keys": [
+      "intergrax/agent_distribution",
+      "intergrax/applications",
+      "intergrax/collaborative_work",
+      "intergrax/context",
+      "intergrax/contracts",
+      "intergrax/core",
+      "intergrax/eval",
+      "intergrax/hosting",
+      "intergrax/integrations",
+      "intergrax/llm_adapters",
+      "intergrax/memory",
+      "intergrax/queueing",
+      "intergrax/rag",
+      "intergrax/runtime/agent_governance",
+      "intergrax/runtime/architecture",
+      "intergrax/runtime/attestation",
+      "intergrax/runtime/evidence",
+      "intergrax/runtime/execution",
+      "intergrax/runtime/execution_evidence",
+      "intergrax/runtime/integrations",
+      "intergrax/runtime/llm",
+      "intergrax/runtime/long_running",
+      "intergrax/runtime/nexus/artifacts",
+      "intergrax/runtime/nexus/context",
+      "intergrax/runtime/nexus/engine",
+      "intergrax/runtime/nexus/orchestration",
+      "intergrax/runtime/nexus/tools",
+      "intergrax/runtime/nexus/tracing",
+      "intergrax/runtime/observability",
+      "intergrax/runtime/persistence",
+      "intergrax/runtime/registry",
+      "intergrax/runtime/replay",
+      "intergrax/runtime/security",
+      "intergrax/runtime/task",
+      "intergrax/runtime/vendor_knowledge",
+      "intergrax/skills",
+      "intergrax/tools"
+    ],
+    "added_keys_count": 37,
+    "changed_keys": {
+      "intergrax/platform/enterprise_audit/data/changed_since_impact_map.v1.json": {
+        "added": [
+          "ENT-A-EVOL-01",
+          "ENT-A-EVOL-02",
+          "ENT-A-EVOL-03"
+        ],
+        "dropped": [
+          "C024",
+          "C029"
+        ]
+      },
+      "intergrax/platform/enterprise_audit/impact_map.py": {
+        "added": [
+          "ENT-A-EVOL-01",
+          "ENT-A-EVOL-02",
+          "ENT-A-EVOL-03"
+        ],
+        "dropped": [
+          "C024",
+          "C029",
+          "C072"
+        ]
+      }
+    },
+    "new_keys": 114,
+    "old_keys": 77,
+    "removed_keys": []
+  },
+  "P2_non_manifest_ids": {
+    "manifest_size": 85,
+    "new": [
+      "C002",
+      "C004",
+      "C006",
+      "C009",
+      "C011",
+      "C013",
+      "C014",
+      "C015",
+      "C016",
+      "C017",
+      "C019",
+      "C021",
+      "C022",
+      "C023",
+      "C024",
+      "C025",
+      "C026",
+      "C027",
+      "C028",
+      "C029",
+      "C030",
+      "C049",
+      "C051",
+      "C067",
+      "C068",
+      "C069",
+      "C071",
+      "C072",
+      "C073",
+      "C074"
+    ],
+    "old": [
+      "C002",
+      "C004",
+      "C006",
+      "C009",
+      "C011",
+      "C013",
+      "C014",
+      "C015",
+      "C016",
+      "C017",
+      "C019",
+      "C021",
+      "C022",
+      "C023",
+      "C024",
+      "C025",
+      "C026",
+      "C027",
+      "C028",
+      "C029",
+      "C030",
+      "C049",
+      "C051",
+      "C067",
+      "C068",
+      "C069",
+      "C071",
+      "C072",
+      "C073",
+      "C074"
+    ]
+  },
+  "P3_selection_old_vs_new": {
+    "dropped_impact_examples": [
+      {
+        "dropped": [
+          "C024",
+          "C029"
+        ],
+        "new": [
+          "ENT-A-EVOL-01",
+          "ENT-A-EVOL-02",
+          "ENT-A-EVOL-03"
+        ],
+        "old": [
+          "C024",
+          "C029"
+        ],
+        "path": "intergrax/platform/enterprise_audit/data/changed_since_impact_map.v1.json"
+      },
+      {
+        "dropped": [
+          "C024",
+          "C029",
+          "C072"
+        ],
+        "new": [
+          "ENT-A-EVOL-01",
+          "ENT-A-EVOL-02",
+          "ENT-A-EVOL-03"
+        ],
+        "old": [
+          "C024",
+          "C029",
+          "C072"
+        ],
+        "path": "intergrax/platform/enterprise_audit/impact_map.py"
+      }
+    ],
+    "effective_dropped": [
+      {
+        "dropped": [
+          "C024",
+          "C029"
+        ],
+        "path": "intergrax/platform/enterprise_audit/data/changed_since_impact_map.v1.json"
+      },
+      {
+        "dropped": [
+          "C024",
+          "C029",
+          "C072"
+        ],
+        "path": "intergrax/platform/enterprise_audit/impact_map.py"
+      }
+    ],
+    "files_whose_impact_ids_changed": 5780,
+    "files_with_dropped_impact_ids": 2,
+    "files_with_effective_dropped_ids": 2,
+    "files_with_old_ids_not_subset_of_new": 2,
+    "tracked_files": 19319
+  },
+  "P4_rule_ids": {
+    "count": 52,
+    "detail": {
+      "ENT-A-BND-01": {
+        "entrypoint": "tests/unit/runtime/architecture/test_hardening_3_layer_boundary_gate.py::test_hardening_3_contracts_do_not_import_runtime_except_allowlist",
+        "exists": true,
+        "fast_mandatory": true
+      },
+      "ENT-A-BND-02": {
+        "entrypoint": "tests/unit/runtime/architecture/test_hardening_3_layer_boundary_gate.py::test_hardening_3_unallowlisted_runtime_import_detected_in_isolated_tree",
+        "exists": true,
+        "fast_mandatory": false
+      },
+      "ENT-A-CTR-01": {
+        "entrypoint": "tests/unit/architecture/test_ebh_2i_final_rescan_gate.py::test_ebh_2i_contract_surface_purity_gate_passes",
+        "exists": true,
+        "fast_mandatory": false
+      },
+      "ENT-A-CTR-02": {
+        "entrypoint": "tests/unit/architecture/test_ebh_2i_final_rescan_gate.py::test_ebh_2i_contract_surface_purity_gate_passes",
+        "exists": true,
+        "fast_mandatory": false
+      },
+      "ENT-A-CTR-03": {
+        "entrypoint": "tests/unit/architecture/test_ebh_2i_final_rescan_gate.py::test_ebh_2i_contract_surface_purity_gate_passes",
+        "exists": true,
+        "fast_mandatory": false
+      },
+      "ENT-A-EXE-01": {
+        "entrypoint": "tests/unit/runtime/architecture/test_ee_a1_execution_engine_ownership_certification_gate.py",
+        "exists": true,
+        "fast_mandatory": true
+      },
+      "ENT-A-EXE-02": {
+        "entrypoint": "tests/unit/runtime/architecture/test_ee_a1_execution_engine_ownership_certification_gate.py",
+        "exists": true,
+        "fast_mandatory": false
+      },
+      "ENT-A-EXE-03": {
+        "entrypoint": "tests/unit/runtime/architecture/test_ee_a1_execution_engine_ownership_certification_gate.py",
+        "exists": true,
+        "fast_mandatory": false
+      },
+      "ENT-A-GOV-01": {
+        "entrypoint": "tests/qualification/governance/gov_x2/test_gov_x2_qualification_batch.py::test_gov_x2_catalog_covers_gx2_01_through_gx2_20",
+        "exists": true,
+        "fast_mandatory": false
+      },
+      "ENT-A-GOV-02": {
+        "entrypoint": "tests/qualification/governance/gov_x2/test_gov_x2_qualification_batch.py::test_gov_x2_invariants_declare_pass_with_proof_nodes",
+        "exists": true,
+        "fast_mandatory": false
+      },
+      "ENT-A-GOV-03": {
+        "entrypoint": "tests/qualification/governance/gov_x2/test_gov_x2_proof_replay_gates.py::test_gov_x2_each_invariant_has_at_least_one_proof_node",
+        "exists": true,
+        "fast_mandatory": false
+      },
+      "ENT-A-OBS-01": {
+        "entrypoint": "tests/unit/runtime/architecture/test_harness_w5_typed_observability_transport_gate.py::test_g1_otlp_transport_port_export_parameter",
+        "exists": true,
+        "fast_mandatory": false
+      },
+      "ENT-A-OBS-02": {
+        "entrypoint": "tests/unit/runtime/architecture/test_harness_w5_typed_observability_transport_gate.py::test_g6_contracts_observability_export_no_runtime_imports",
+        "exists": true,
+        "fast_mandatory": false
+      },
+      "ENT-A-OBS-03": {
+        "entrypoint": "tests/qualification/trace_x/test_trace_x_p4_r1_recorder_tenant.py::test_txp4r1_q06_sequential_tenant_isolation",
+        "exists": true,
+        "fast_mandatory": false
+      },
+      "ENT-A-OWN-01": {
+        "entrypoint": "tests/unit/architecture/test_ebh_3_dependency_ownership_gate.py",
+        "exists": true,
+        "fast_mandatory": false
+      },
+      "ENT-A-OWN-02": {
+        "entrypoint": "tests/unit/architecture/test_ebh_3_dependency_ownership_gate.py",
+        "exists": true,
+        "fast_mandatory": false
+      },
+      "ENT-A-OWN-03": {
+        "entrypoint": "tests/unit/architecture/test_ebh_3_dependency_ownership_gate.py",
+        "exists": true,
+        "fast_mandatory": false
+      },
+      "ENT-A-PLG-01": {
+        "entrypoint": "tests/qualification/ebh_5/test_ebh_5_factory_rpl_one_pass.py",
+        "exists": true,
+        "fast_mandatory": false
+      },
+      "ENT-A-PLG-02": {
+        "entrypoint": "tests/qualification/ebh_5/test_ebh_5_factory_rpl_one_pass.py",
+        "exists": true,
+        "fast_mandatory": false
+      },
+      "ENT-A-PLG-03": {
+        "entrypoint": "tests/qualification/ebh_5/test_ebh_5_factory_rpl_one_pass.py",
+        "exists": true,
+        "fast_mandatory": false
+      },
+      "ENT-A-REC-01": {
+        "entrypoint": "tests/qualification/state_x/test_state_x_p0_baseline.py::test_sx_p0_q15_backup_restore_responsibility_classified",
+        "exists": true,
+        "fast_mandatory": false
+      },
+      "ENT-A-REC-02": {
+        "entrypoint": "tests/qualification/state_x/test_state_x_r3_auxiliary_durable_state.py::test_r3_r1_q13_redelivery_preserves_consumption",
+        "exists": true,
+        "fast_mandatory": false
+      },
+      "ENT-A-REC-03": {
+        "entrypoint": "tests/qualification/state_x/test_state_x_r3_auxiliary_durable_state.py::test_r3_r1_q12_corrupt_state_fails_closed",
+        "exists": true,
+        "fast_mandatory": false
+      },
+      "ENT-A-REL-01": {
+        "entrypoint": "tests/unit/runtime/architecture/test_harness_w4_r1_production_tool_boundedness_gate.py::test_w4_r1_production_roots_pass_dependency_attempt_boundary",
+        "exists": true,
+        "fast_mandatory": false
+      },
+      "ENT-A-REL-02": {
+        "entrypoint": "tests/qualification/harness_01/test_harness_01_gates.py::test_harness_01_tool_budget_record_precedes_invoker_invoke",
+        "exists": true,
+        "fast_mandatory": false
+      },
+      "ENT-A-REL-03": {
+        "entrypoint": "tests/qualification/harness_01/test_harness_01_gates.py::test_harness_01_zero_bypass_findings_index_reports_no_blocker_rows",
+        "exists": true,
+        "fast_mandatory": false
+      },
+      "ENT-A-SEC-01": {
+        "entrypoint": "scripts/maintenance/check_immutable_security_audit_trail.py",
+        "exists": true,
+        "fast_mandatory": true
+      },
+      "ENT-A-SEC-02": {
+        "entrypoint": "scripts/maintenance/check_immutable_security_audit_trail.py",
+        "exists": true,
+        "fast_mandatory": false
+      },
+      "ENT-A-SEC-03": {
+        "entrypoint": "tests/qualification/ent_audit_x/unit/test_enterprise_audit_report_redaction.py::test_report_json_contains_no_environment_secrets",
+        "exists": true,
+        "fast_mandatory": false
+      },
+      "ENT-A-STA-01": {
+        "entrypoint": "tests/qualification/state_x/test_state_x_p0_baseline.py::test_sx_p0_q19_duplicated_truth_gate",
+        "exists": true,
+        "fast_mandatory": false
+      },
+      "ENT-A-STA-02": {
+        "entrypoint": "tests/qualification/state_x/test_state_x_p0_baseline.py::test_sx_p0_q11_projections_coordination_not_mint_authority",
+        "exists": true,
+        "fast_mandatory": false
+      },
+      "ENT-A-STA-03": {
+        "entrypoint": "tests/qualification/state_x/test_state_x_r3_auxiliary_durable_state.py::test_r3_r1_q10_tenant_isolation_same_run_id",
+        "exists": true,
+        "fast_mandatory": false
+      },
+      "ENT-A-TYP-01": {
+        "entrypoint": "tests/unit/architecture/test_ebh_2a_public_contract_boundary_gate.py",
+        "exists": true,
+        "fast_mandatory": false
+      },
+      "TEN-ASYNC": {
+        "entrypoint": "tests/qualification/tenant_x/test_tenant_x_r4_fast.py::test_tx_r4_q06_adversarial_context_view_request_mismatch",
+        "exists": true,
+        "fast_mandatory": false
+      },
+      "TEN-AUTHORITY": {
+        "entrypoint": "tests/qualification/tenant_x/test_tenant_x_r4_fast.py::test_tx_r4_q07_adversarial_background_identity",
+        "exists": true,
+        "fast_mandatory": false
+      },
+      "TEN-CONFIG": {
+        "entrypoint": "tests/qualification/config_x/test_config_x_final_reconciliation_gates.py",
+        "exists": true,
+        "fast_mandatory": false
+      },
+      "TEN-CREDENTIALS": {
+        "entrypoint": "tests/qualification/tenant_x/test_tenant_x_r2_current_head.py::test_tx_r2_head_q01_qualification_closure_on_current_head",
+        "exists": true,
+        "fast_mandatory": false
+      },
+      "TEN-CROSS-TENANT": {
+        "entrypoint": "tests/qualification/tenant_x/test_tenant_x_r4_fast.py::test_tx_r4_q05_adversarial_context_llm_cross_tenant",
+        "exists": true,
+        "fast_mandatory": false
+      },
+      "TEN-EVIDENCE": {
+        "entrypoint": "tests/qualification/tenant_x/test_tenant_x_r4_fast.py::test_tx_r4_q09_adversarial_functional_evidence_tenant",
+        "exists": true,
+        "fast_mandatory": false
+      },
+      "TEN-PROVIDER": {
+        "entrypoint": "tests/qualification/existing_capability_configuration/test_configuration_realization_certification.py::test_cert_p02_resolver_target_provider_mismatch_before_strategy",
+        "exists": true,
+        "fast_mandatory": false
+      },
+      "TEN-RECOVERY": {
+        "entrypoint": "tests/qualification/tenant_x/test_tenant_x_r4_fast.py::test_tx_r4_q08_adversarial_vendor_async_queue",
+        "exists": true,
+        "fast_mandatory": false
+      },
+      "TEN-STATE": {
+        "entrypoint": "tests/qualification/tenant_x/test_tenant_x_r4_fast.py::test_tx_r4_q05_adversarial_context_llm_cross_tenant",
+        "exists": true,
+        "fast_mandatory": false
+      },
+      "TEN-TRACE": {
+        "entrypoint": "tests/qualification/trace_x/test_trace_x_p4_r1_recorder_tenant.py::test_txp4r1_q04_recorder_binding_resets_tenant",
+        "exists": true,
+        "fast_mandatory": false
+      },
+      "VBN-CONTRACT-LEAKAGE": {
+        "entrypoint": "tests/unit/architecture/test_ebh_2i_final_rescan_gate.py::test_ebh_2i_contract_surface_purity_gate_passes",
+        "exists": true,
+        "fast_mandatory": false
+      },
+      "VBN-CORE-HARDCODING": {
+        "entrypoint": "tests/qualification/ebh_6/test_ebh_6_hardcoding_register_integrity.py::test_ebh6_prohibited_unresolved_zero",
+        "exists": true,
+        "fast_mandatory": true
+      },
+      "VBN-INVENTORY-DRIFT": {
+        "entrypoint": "tests/qualification/ebh_5/test_ebh_5_g06_enterprise_integrity_gates.py::test_ebh5_g06_01_roadmap_31_domains_accounted",
+        "exists": true,
+        "fast_mandatory": true
+      },
+      "VBN-OBS-OPS-COUPLING": {
+        "entrypoint": "tests/unit/runtime/architecture/test_harness_w5_typed_observability_transport_gate.py::test_g5_otlp_event_export_sink_passes_payload_to_transport",
+        "exists": true,
+        "fast_mandatory": false
+      },
+      "VBN-REACHABILITY": {
+        "entrypoint": "tests/qualification/ebh_5/test_ebh_5_behavioral_package_c_v2.py",
+        "exists": true,
+        "fast_mandatory": false
+      },
+      "VBN-REPLACEABILITY-MATRIX": {
+        "entrypoint": "tests/qualification/ebh_5/test_ebh_5_dual_slug_rpl_e_operational_gates.py",
+        "exists": true,
+        "fast_mandatory": false
+      },
+      "VBN-SHADOW-SELECTION": {
+        "entrypoint": "tests/qualification/config_x/test_config_x_final_reconciliation_gates.py",
+        "exists": true,
+        "fast_mandatory": false
+      },
+      "VBN-SILENT-FALLBACK": {
+        "entrypoint": "tests/qualification/ebh_6/test_ebh_6_config_x_head_reconciliation.py",
+        "exists": true,
+        "fast_mandatory": false
+      },
+      "VBN-SQLITE-EFFECTIVE": {
+        "entrypoint": "tests/qualification/ebh_5/test_ebh_5_l2_integrity_gates.py",
+        "exists": true,
+        "fast_mandatory": false
+      }
+    },
+    "entrypoint_missing": [],
+    "missing": []
+  },
+  "P5_ssot_equals_generator": true,
+  "P6_sensitive_areas": {
+    "governance_identity_authority_policy_python_files": {
+      "count": 259,
+      "impact_ids_changed": 113,
+      "no_impact_ids_new": 146,
+      "no_impact_ids_old": 259,
+      "unmapped_new_examples": [
+        "intergrax/fastapi_core/auth/__init__.py",
+        "intergrax/fastapi_core/auth/api_key.py",
+        "intergrax/fastapi_core/auth/authorization.py",
+        "intergrax/fastapi_core/auth/context.py",
+        "intergrax/fastapi_core/auth/dependency.py",
+        "intergrax/fastapi_core/auth/extractors/__init__.py",
+        "intergrax/fastapi_core/auth/extractors/api_key.py",
+        "intergrax/fastapi_core/auth/extractors/base.py",
+        "intergrax/fastapi_core/auth/extractors/jwt_bearer.py",
+        "intergrax/fastapi_core/auth/provider.py",
+        "intergrax/fastapi_core/auth/providers/__init__.py",
+        "intergrax/fastapi_core/auth/providers/allow_all.py",
+        "intergrax/fastapi_core/auth/providers/api_key/__init__.py",
+        "intergrax/fastapi_core/auth/providers/api_key/extractor.py",
+        "intergrax/fastapi_core/auth/providers/api_key/provider.py"
+      ]
+    },
+    "mcp_named_python_files": {
+      "count": 37,
+      "impact_ids_changed": 21,
+      "no_impact_ids_new": 16,
+      "no_impact_ids_old": 37,
+      "unmapped_new_examples": [
+        "applications/dispute_sim_application/mcp/__init__.py",
+        "applications/dispute_sim_application/mcp/server.py",
+        "applications/governed_contractor_application/mcp/__init__.py",
+        "applications/governed_contractor_application/mcp/server.py",
+        "applications/intergrax_assistant_application/mcp/__init__.py",
+        "applications/intergrax_assistant_application/mcp/server.py",
+        "applications/lab_application/mcp/__init__.py",
+        "applications/lab_application/mcp/server.py",
+        "applications/legal_application/mcp/__init__.py",
+        "applications/legal_application/mcp/server.py",
+        "applications/local_workspace_application/mcp/__init__.py",
+        "applications/local_workspace_application/mcp/server.py",
+        "applications/poc_template_application/mcp/__init__.py",
+        "applications/poc_template_application/mcp/server.py",
+        "applications/research_application/mcp/__init__.py"
+      ]
+    },
+    "rc23_detail": {
+      "applications/dispute_sim_application/mcp/server.py": {
+        "new_impact": [],
+        "old_impact": []
+      },
+      "applications/governed_contractor_application/mcp/server.py": {
+        "new_impact": [],
+        "old_impact": []
+      },
+      "applications/intergrax_assistant_application/mcp/server.py": {
+        "new_impact": [],
+        "old_impact": []
+      },
+      "applications/lab_application/mcp/server.py": {
+        "new_impact": [],
+        "old_impact": []
+      },
+      "applications/legal_application/mcp/server.py": {
+        "new_impact": [],
+        "old_impact": []
+      },
+      "applications/local_workspace_application/mcp/server.py": {
+        "new_impact": [],
+        "old_impact": []
+      },
+      "applications/poc_template_application/mcp/server.py": {
+        "new_impact": [],
+        "old_impact": []
+      },
+      "applications/research_application/mcp/server.py": {
+        "new_impact": [],
+        "old_impact": []
+      },
+      "intergrax/applications/_shared/fastapi_mcp.py": {
+        "new_impact": [
+          "ENT-A-BND-01",
+          "ENT-A-CTR-01",
+          "ENT-A-CTR-02",
+          "ENT-A-CTR-03",
+          "ENT-A-SEC-01",
+          "ENT-A-SEC-02",
+          "ENT-A-TYP-01",
+          "VBN-CONTRACT-LEAKAGE"
+        ],
+        "old_impact": []
+      },
+      "intergrax/applications/_shared/mcp_application_server.py": {
+        "new_impact": [
+          "ENT-A-BND-01",
+          "ENT-A-CTR-01",
+          "ENT-A-CTR-02",
+          "ENT-A-CTR-03",
+          "ENT-A-SEC-01",
+          "ENT-A-SEC-02",
+          "ENT-A-TYP-01",
+          "VBN-CONTRACT-LEAKAGE"
+        ],
+        "old_impact": []
+      },
+      "intergrax/applications/_shared/mcp_catalog_invocation_bridge.py": {
+        "new_impact": [
+          "ENT-A-BND-01",
+          "ENT-A-CTR-01",
+          "ENT-A-CTR-02",
+          "ENT-A-CTR-03",
+          "ENT-A-SEC-01",
+          "ENT-A-SEC-02",
+          "ENT-A-TYP-01",
+          "VBN-CONTRACT-LEAKAGE"
+        ],
+        "old_impact": []
+      },
+      "intergrax/applications/_shared/mcp_catalog_tools.py": {
+        "new_impact": [
+          "ENT-A-BND-01",
+          "ENT-A-CTR-01",
+          "ENT-A-CTR-02",
+          "ENT-A-CTR-03",
+          "ENT-A-SEC-01",
+          "ENT-A-SEC-02",
+          "ENT-A-TYP-01",
+          "VBN-CONTRACT-LEAKAGE"
+        ],
+        "old_impact": []
+      },
+      "intergrax/applications/_shared/mcp_developer_api.py": {
+        "new_impact": [
+          "ENT-A-BND-01",
+          "ENT-A-CTR-01",
+          "ENT-A-CTR-02",
+          "ENT-A-CTR-03",
+          "ENT-A-SEC-01",
+          "ENT-A-SEC-02",
+          "ENT-A-TYP-01",
+          "VBN-CONTRACT-LEAKAGE"
+        ],
+        "old_impact": []
+      },
+      "intergrax/applications/_shared/mcp_engine_concurrency.py": {
+        "new_impact": [
+          "ENT-A-BND-01",
+          "ENT-A-CTR-01",
+          "ENT-A-CTR-02",
+          "ENT-A-CTR-03",
+          "ENT-A-SEC-01",
+          "ENT-A-SEC-02",
+          "ENT-A-TYP-01",
+          "VBN-CONTRACT-LEAKAGE"
+        ],
+        "old_impact": []
+      },
+      "intergrax/applications/_shared/mcp_harness_principal.py": {
+        "new_impact": [
+          "ENT-A-BND-01",
+          "ENT-A-CTR-01",
+          "ENT-A-CTR-02",
+          "ENT-A-CTR-03",
+          "ENT-A-SEC-01",
+          "ENT-A-SEC-02",
+          "ENT-A-TYP-01",
+          "VBN-CONTRACT-LEAKAGE"
+        ],
+        "old_impact": []
+      },
+      "intergrax/applications/_shared/mcp_host_execution_transport_cancel.py": {
+        "new_impact": [
+          "ENT-A-BND-01",
+          "ENT-A-CTR-01",
+          "ENT-A-CTR-02",
+          "ENT-A-CTR-03",
+          "ENT-A-SEC-01",
+          "ENT-A-SEC-02",
+          "ENT-A-TYP-01",
+          "VBN-CONTRACT-LEAKAGE"
+        ],
+        "old_impact": []
+      },
+      "intergrax/applications/_shared/mcp_identity_mode.py": {
+        "new_impact": [
+          "ENT-A-BND-01",
+          "ENT-A-CTR-01",
+          "ENT-A-CTR-02",
+          "ENT-A-CTR-03",
+          "ENT-A-SEC-01",
+          "ENT-A-SEC-02",
+          "ENT-A-TYP-01",
+          "VBN-CONTRACT-LEAKAGE"
+        ],
+        "old_impact": []
+      },
+      "intergrax/applications/_shared/mcp_invocation_id.py": {
+        "new_impact": [
+          "ENT-A-BND-01",
+          "ENT-A-CTR-01",
+          "ENT-A-CTR-02",
+          "ENT-A-CTR-03",
+          "ENT-A-SEC-01",
+          "ENT-A-SEC-02",
+          "ENT-A-TYP-01",
+          "VBN-CONTRACT-LEAKAGE"
+        ],
+        "old_impact": []
+      },
+      "intergrax/applications/_shared/mcp_nexus_server.py": {
+        "new_impact": [
+          "ENT-A-BND-01",
+          "ENT-A-CTR-01",
+          "ENT-A-CTR-02",
+          "ENT-A-CTR-03",
+          "ENT-A-SEC-01",
+          "ENT-A-SEC-02",
+          "ENT-A-TYP-01",
+          "VBN-CONTRACT-LEAKAGE"
+        ],
+        "old_impact": []
+      },
+      "intergrax/applications/_shared/mcp_server_engine.py": {
+        "new_impact": [
+          "ENT-A-BND-01",
+          "ENT-A-CTR-01",
+          "ENT-A-CTR-02",
+          "ENT-A-CTR-03",
+          "ENT-A-SEC-01",
+          "ENT-A-SEC-02",
+          "ENT-A-TYP-01",
+          "VBN-CONTRACT-LEAKAGE"
+        ],
+        "old_impact": []
+      },
+      "intergrax/applications/_shared/mcp_wire_errors.py": {
+        "new_impact": [
+          "ENT-A-BND-01",
+          "ENT-A-CTR-01",
+          "ENT-A-CTR-02",
+          "ENT-A-CTR-03",
+          "ENT-A-SEC-01",
+          "ENT-A-SEC-02",
+          "ENT-A-TYP-01",
+          "VBN-CONTRACT-LEAKAGE"
+        ],
+        "old_impact": []
+      },
+      "intergrax/contracts/mcp_server_definition.py": {
+        "new_impact": [
+          "ENT-A-BND-01",
+          "ENT-A-BND-02",
+          "ENT-A-CTR-01",
+          "ENT-A-CTR-02",
+          "ENT-A-CTR-03",
+          "ENT-A-TYP-01"
+        ],
+        "old_impact": []
+      },
+      "intergrax/tools/mcp_result_bounds.py": {
+        "new_impact": [
+          "ENT-A-REL-01",
+          "ENT-A-REL-02",
+          "ENT-A-REL-03",
+          "TEN-CROSS-TENANT",
+          "VBN-REPLACEABILITY-MATRIX"
+        ],
+        "old_impact": []
+      }
+    },
+    "rc23_paths": {
+      "count": 23,
+      "impact_ids_changed": 15,
+      "no_impact_ids_new": 8,
+      "no_impact_ids_old": 23,
+      "unmapped_new_examples": [
+        "applications/dispute_sim_application/mcp/server.py",
+        "applications/governed_contractor_application/mcp/server.py",
+        "applications/intergrax_assistant_application/mcp/server.py",
+        "applications/lab_application/mcp/server.py",
+        "applications/legal_application/mcp/server.py",
+        "applications/local_workspace_application/mcp/server.py",
+        "applications/poc_template_application/mcp/server.py",
+        "applications/research_application/mcp/server.py"
+      ]
+    }
+  },
+  "P7_intergrax_top_level_without_any_mapped_file_new": [
+    "intergrax/agent_kit",
+    "intergrax/agents",
+    "intergrax/autonomous_work",
+    "intergrax/background_tasks",
+    "intergrax/capability_acquisition",
+    "intergrax/capability_catalog",
+    "intergrax/capability_metering",
+    "intergrax/capability_qualification",
+    "intergrax/cli",
+    "intergrax/codecraft",
+    "intergrax/compat",
+    "intergrax/debug",
+    "intergrax/decision_system",
+    "intergrax/dev_support",
+    "intergrax/distributed",
+    "intergrax/experiments",
+    "intergrax/fastapi_core",
+    "intergrax/globals",
+    "intergrax/harness",
+    "intergrax/knowledge",
+    "intergrax/lab",
+    "intergrax/legacy",
+    "intergrax/llm",
+    "intergrax/marketplace",
+    "intergrax/model_inference",
+    "intergrax/multimedia",
+    "intergrax/prompts",
+    "intergrax/proof_data",
+    "intergrax/proofs",
+    "intergrax/scaffold",
+    "intergrax/speech_adapters",
+    "intergrax/supervisor",
+    "intergrax/tokenizers",
+    "intergrax/ucl",
+    "intergrax/utils",
+    "intergrax/websearch"
+  ],
+  "P7b_runtime_subdirs_with_unmapped_files_new": [
+    "intergrax/runtime/adaptive",
+    "intergrax/runtime/background_execution",
+    "intergrax/runtime/cancellation",
+    "intergrax/runtime/capacity",
+    "intergrax/runtime/codecraft",
+    "intergrax/runtime/cognition",
+    "intergrax/runtime/config",
+    "intergrax/runtime/context",
+    "intergrax/runtime/context_lifecycle",
+    "intergrax/runtime/decision_verification_stages",
+    "intergrax/runtime/diagnostics",
+    "intergrax/runtime/enterprise_reliability",
+    "intergrax/runtime/evaluation",
+    "intergrax/runtime/events",
+    "intergrax/runtime/external_operations",
+    "intergrax/runtime/governance",
+    "intergrax/runtime/hooks",
+    "intergrax/runtime/human",
+    "intergrax/runtime/interactions",
+    "intergrax/runtime/interrupts",
+    "intergrax/runtime/invariants",
+    "intergrax/runtime/kernel",
+    "intergrax/runtime/metrics",
+    "intergrax/runtime/middleware",
+    "intergrax/runtime/migration",
+    "intergrax/runtime/modality",
+    "intergrax/runtime/nexus",
+    "intergrax/runtime/notifications",
+    "intergrax/runtime/organization",
+    "intergrax/runtime/plugins",
+    "intergrax/runtime/policy",
+    "intergrax/runtime/prediction",
+    "intergrax/runtime/prevention",
+    "intergrax/runtime/reliability",
+    "intergrax/runtime/resilience",
+    "intergrax/runtime/runtime_inspection",
+    "intergrax/runtime/runtime_intelligence",
+    "intergrax/runtime/sandbox",
+    "intergrax/runtime/schema",
+    "intergrax/runtime/self_healing",
+    "intergrax/runtime/task_memory",
+    "intergrax/runtime/token_optimization",
+    "intergrax/runtime/tools",
+    "intergrax/runtime/transport",
+    "intergrax/runtime/user_profile",
+    "intergrax/runtime/wiring",
+    "intergrax/runtime/workspace"
+  ],
+  "P7c_runtime_subdirs_with_unmapped_files_old": [
+    "intergrax/runtime/adaptive",
+    "intergrax/runtime/agent_governance",
+    "intergrax/runtime/architecture",
+    "intergrax/runtime/attestation",
+    "intergrax/runtime/background_execution",
+    "intergrax/runtime/cancellation",
+    "intergrax/runtime/capacity",
+    "intergrax/runtime/codecraft",
+    "intergrax/runtime/cognition",
+    "intergrax/runtime/config",
+    "intergrax/runtime/context",
+    "intergrax/runtime/context_lifecycle",
+    "intergrax/runtime/decision_verification_stages",
+    "intergrax/runtime/diagnostics",
+    "intergrax/runtime/enterprise_reliability",
+    "intergrax/runtime/evaluation",
+    "intergrax/runtime/events",
+    "intergrax/runtime/evidence",
+    "intergrax/runtime/execution",
+    "intergrax/runtime/execution_evidence",
+    "intergrax/runtime/external_operations",
+    "intergrax/runtime/governance",
+    "intergrax/runtime/hooks",
+    "intergrax/runtime/human",
+    "intergrax/runtime/integrations",
+    "intergrax/runtime/interactions",
+    "intergrax/runtime/interrupts",
+    "intergrax/runtime/invariants",
+    "intergrax/runtime/kernel",
+    "intergrax/runtime/llm",
+    "intergrax/runtime/long_running",
+    "intergrax/runtime/metrics",
+    "intergrax/runtime/middleware",
+    "intergrax/runtime/migration",
+    "intergrax/runtime/modality",
+    "intergrax/runtime/nexus",
+    "intergrax/runtime/notifications",
+    "intergrax/runtime/observability",
+    "intergrax/runtime/organization",
+    "intergrax/runtime/persistence",
+    "intergrax/runtime/plugins",
+    "intergrax/runtime/policy",
+    "intergrax/runtime/prediction",
+    "intergrax/runtime/prevention",
+    "intergrax/runtime/registry",
+    "intergrax/runtime/reliability",
+    "intergrax/runtime/replay",
+    "intergrax/runtime/resilience",
+    "intergrax/runtime/runtime_inspection",
+    "intergrax/runtime/runtime_intelligence",
+    "intergrax/runtime/sandbox",
+    "intergrax/runtime/schema",
+    "intergrax/runtime/security",
+    "intergrax/runtime/self_healing",
+    "intergrax/runtime/task",
+    "intergrax/runtime/task_memory",
+    "intergrax/runtime/token_optimization",
+    "intergrax/runtime/tools",
+    "intergrax/runtime/transport",
+    "intergrax/runtime/user_profile",
+    "intergrax/runtime/vendor_knowledge",
+    "intergrax/runtime/wiring",
+    "intergrax/runtime/workspace"
+  ],
+  "P7d_unmapped_python_file_counts": {
+    "intergrax_new": 1676,
+    "intergrax_old": 7037,
+    "intergrax_total": 7046
+  },
+  "P8_fail_closed_prefixes": [
+    "intergrax/platform/enterprise_audit/",
+    "scripts/enterprise_audit/"
+  ],
+  "P8_own_files_new": {
+    "intergrax/platform/enterprise_audit/changed_since.py": [
+      "C024",
+      "C025",
+      "C029",
+      "C072"
+    ],
+    "intergrax/platform/enterprise_audit/data/changed_since_impact_map.v1.json": [
+      "ENT-A-EVOL-01",
+      "ENT-A-EVOL-02",
+      "ENT-A-EVOL-03"
+    ],
+    "intergrax/platform/enterprise_audit/data/enterprise_audit_check_manifest.v1.json": [
+      "C019",
+      "C021",
+      "C030"
+    ],
+    "intergrax/platform/enterprise_audit/data/schemas/enterprise_audit_report.v1.schema.json": [
+      "C013",
+      "C026",
+      "C027"
+    ],
+    "intergrax/platform/enterprise_audit/impact_map.py": [
+      "ENT-A-EVOL-01",
+      "ENT-A-EVOL-02",
+      "ENT-A-EVOL-03"
+    ]
+  },
+  "P8_own_files_old": {
+    "intergrax/platform/enterprise_audit/changed_since.py": [
+      "C024",
+      "C025",
+      "C029",
+      "C072"
+    ],
+    "intergrax/platform/enterprise_audit/data/changed_since_impact_map.v1.json": [
+      "C024",
+      "C029"
+    ],
+    "intergrax/platform/enterprise_audit/data/enterprise_audit_check_manifest.v1.json": [
+      "C019",
+      "C021",
+      "C030"
+    ],
+    "intergrax/platform/enterprise_audit/data/schemas/enterprise_audit_report.v1.schema.json": [
+      "C013",
+      "C026",
+      "C027"
+    ],
+    "intergrax/platform/enterprise_audit/impact_map.py": [
+      "C024",
+      "C029",
+      "C072"
+    ]
+  }
+}

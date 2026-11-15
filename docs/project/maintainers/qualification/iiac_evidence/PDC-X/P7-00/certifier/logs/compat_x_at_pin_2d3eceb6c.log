@@ -1,0 +1,102 @@
+# HEAD 2d3eceb6cf7e93dccd4d96919319a6c969b4444b (activation pin), PYTHONPATH=D:/Projekty/_wt/intergrax/_scratch/p7pin
+# intergrax from D:\Projekty\_wt\intergrax\_scratch\p7pin\intergrax\__init__.py
+....................................................F..................F [ 83%]
+....FFFFF.....                                                           [100%]
+================================== FAILURES ===================================
+_____________ test_cx_r3_r1_combined_gate_passes_on_current_head ______________
+
+    def test_cx_r3_r1_combined_gate_passes_on_current_head() -> None:
+        passed, violations = event_evolution_r3_r1_gate_passes()
+>       assert passed, violations
+E       AssertionError: ('raw_candidates 7363 != accepted current-head 7356', 'exclusions 5326 != accepted current-head 5325', 'semantic_surfa...d 9dfd146f3b50bd56a8b997664569ac538396d322ceb21eb6682aa75a862716fa (lineage 05549f9acb9ecedf910c7470d442bba5d0a27337)')
+E       assert False
+
+tests\qualification\compat_x\test_compat_x_event_evolution_r3_r1_gates.py:223: AssertionError
+_____ test_cx_r3_r1_probe_m_sanctioned_constructor_passes_classification ______
+
+    def test_cx_r3_r1_probe_m_sanctioned_constructor_passes_classification() -> None:
+        site = synthetic_sanctioned_runtime_event_constructor_site()
+        assert site.disposition == RuntimeEventReaderDisposition.NON_PERSISTED_CONSTRUCTION
+        assert site.classification_evidence == RuntimeEventReaderClassificationEvidence.PLATFORM_SIGNAL_EVENT_FACTORY
+        passed, violations = event_evolution_r3_r1_gate_passes(extra_reader_sites=(site,))
+>       assert passed, violations
+E       AssertionError: ('raw_candidates 7363 != accepted current-head 7356', 'exclusions 5326 != accepted current-head 5325', 'semantic_surfa...d 9dfd146f3b50bd56a8b997664569ac538396d322ceb21eb6682aa75a862716fa (lineage 05549f9acb9ecedf910c7470d442bba5d0a27337)')
+E       assert False
+
+tests\qualification\compat_x\test_compat_x_event_evolution_r3_r1_gates.py:373: AssertionError
+___________ test_cx_r3_r1_compat_current_head_inventory_reconciled ____________
+
+    def test_cx_r3_r1_compat_current_head_inventory_reconciled() -> None:
+>       delta = build_r3_runtime_event_schema_version_candidate_delta()
+                ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+tests\qualification\compat_x\test_compat_x_event_evolution_r3_r1_gates.py:405: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+    def build_r3_runtime_event_schema_version_candidate_delta() -> CurrentHeadCompatInventoryDelta:
+        """R3 reconciliation: derived added/removed IDs only after historical remainder fingerprint proof."""
+        report = build_closed_world_report()
+        violations = prove_r3_runtime_event_schema_version_inventory_delta(report)
+        if violations:
+>           raise AssertionError("; ".join(violations))
+E           AssertionError: raw_candidates 7363 != accepted current-head 7356; current-minus-R3 raw count 7362 != replay accepted remainder 7355; current-minus-R3 stable inventory fingerprint c2f288f1777b35cb65a9076b38a726ed6474ffe550de37a7af1e859b7cc2c3e4 != replay accepted 9dfd146f3b50bd56a8b997664569ac538396d322ceb21eb6682aa75a862716fa (lineage 05549f9acb9ecedf910c7470d442bba5d0a27337)
+
+tests\qualification\compat_x\_compat_x_semantic_identity_reconciliation.py:546: AssertionError
+______ test_cx_r3_r1_r3_candidate_semantic_identity_and_version_literal _______
+
+    def test_cx_r3_r1_r3_candidate_semantic_identity_and_version_literal() -> None:
+>       delta = build_r3_runtime_event_schema_version_candidate_delta()
+                ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+tests\qualification\compat_x\test_compat_x_event_evolution_r3_r1_gates.py:414: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+    def build_r3_runtime_event_schema_version_candidate_delta() -> CurrentHeadCompatInventoryDelta:
+        """R3 reconciliation: derived added/removed IDs only after historical remainder fingerprint proof."""
+        report = build_closed_world_report()
+        violations = prove_r3_runtime_event_schema_version_inventory_delta(report)
+        if violations:
+>           raise AssertionError("; ".join(violations))
+E           AssertionError: raw_candidates 7363 != accepted current-head 7356; current-minus-R3 raw count 7362 != replay accepted remainder 7355; current-minus-R3 stable inventory fingerprint c2f288f1777b35cb65a9076b38a726ed6474ffe550de37a7af1e859b7cc2c3e4 != replay accepted 9dfd146f3b50bd56a8b997664569ac538396d322ceb21eb6682aa75a862716fa (lineage 05549f9acb9ecedf910c7470d442bba5d0a27337)
+
+tests\qualification\compat_x\_compat_x_semantic_identity_reconciliation.py:546: AssertionError
+_______ test_cx_r3_r1_probe_q_equal_count_substitution_fails_inventory ________
+
+    def test_cx_r3_r1_probe_q_equal_count_substitution_fails_inventory() -> None:
+        report = build_synthetic_r3_inventory_equal_count_substitution_report()
+>       assert len(report.raw_candidates) == ACCEPTED_CURRENT_HEAD_RAW_CANDIDATES
+E       AssertionError: assert 7363 == 7356
+E        +  where 7363 = len((DiscoveryCandidate(candidate_id='registry.contracts.AgentRunRequest', path='intergrax/contracts/agent_run.py', discov...='agent_run_checkpoint.v1', version_source='intergrax/contracts/migrations/registry.py:CONTRACT_SCHEMA_REGISTRY'), ...))
+E        +    where (DiscoveryCandidate(candidate_id='registry.contracts.AgentRunRequest', path='intergrax/contracts/agent_run.py', discov...='agent_run_checkpoint.v1', version_source='intergrax/contracts/migrations/registry.py:CONTRACT_SCHEMA_REGISTRY'), ...) = ClosedWorldReport(raw_candidates=(DiscoveryCandidate(candidate_id='registry.contracts.AgentRunRequest', path='intergra...racts.runtime_intelligence.analyzer.py', 'export.intergrax.runtime.observability.__init__.py::ObservabilityExporter'})).raw_candidates
+
+tests\qualification\compat_x\test_compat_x_event_evolution_r3_r1_gates.py:421: AssertionError
+____________ test_cx_r3_r1_probe_r_hidden_removal_fails_inventory _____________
+
+    def test_cx_r3_r1_probe_r_hidden_removal_fails_inventory() -> None:
+        report = build_synthetic_r3_inventory_hidden_removal_report()
+>       assert len(report.raw_candidates) == REPLAY_X_ACCEPTED_REMAINDER_RAW_CANDIDATES
+E       AssertionError: assert 7362 == 7355
+E        +  where 7362 = len((DiscoveryCandidate(candidate_id='registry.contracts.AgentRunRequest', path='intergrax/contracts/agent_run.py', discov...='agent_run_checkpoint.v1', version_source='intergrax/contracts/migrations/registry.py:CONTRACT_SCHEMA_REGISTRY'), ...))
+E        +    where (DiscoveryCandidate(candidate_id='registry.contracts.AgentRunRequest', path='intergrax/contracts/agent_run.py', discov...='agent_run_checkpoint.v1', version_source='intergrax/contracts/migrations/registry.py:CONTRACT_SCHEMA_REGISTRY'), ...) = ClosedWorldReport(raw_candidates=(DiscoveryCandidate(candidate_id='registry.contracts.AgentRunRequest', path='intergra...racts.runtime_intelligence.analyzer.py', 'export.intergrax.runtime.observability.__init__.py::ObservabilityExporter'})).raw_candidates
+
+tests\qualification\compat_x\test_compat_x_event_evolution_r3_r1_gates.py:429: AssertionError
+__________ test_cx_r3_r1_probe_s_balanced_add_remove_fails_inventory __________
+
+    def test_cx_r3_r1_probe_s_balanced_add_remove_fails_inventory() -> None:
+        report = build_synthetic_r3_inventory_balanced_add_remove_report()
+>       assert len(report.raw_candidates) == ACCEPTED_CURRENT_HEAD_RAW_CANDIDATES
+E       AssertionError: assert 7363 == 7356
+E        +  where 7363 = len((DiscoveryCandidate(candidate_id='registry.contracts.AgentRunRequest', path='intergrax/contracts/agent_run.py', discov...='agent_run_checkpoint.v1', version_source='intergrax/contracts/migrations/registry.py:CONTRACT_SCHEMA_REGISTRY'), ...))
+E        +    where (DiscoveryCandidate(candidate_id='registry.contracts.AgentRunRequest', path='intergrax/contracts/agent_run.py', discov...='agent_run_checkpoint.v1', version_source='intergrax/contracts/migrations/registry.py:CONTRACT_SCHEMA_REGISTRY'), ...) = ClosedWorldReport(raw_candidates=(DiscoveryCandidate(candidate_id='registry.contracts.AgentRunRequest', path='intergra...racts.runtime_intelligence.analyzer.py', 'export.intergrax.runtime.observability.__init__.py::ObservabilityExporter'})).raw_candidates
+
+tests\qualification\compat_x\test_compat_x_event_evolution_r3_r1_gates.py:436: AssertionError
+=========================== short test summary info ===========================
+FAILED tests/qualification/compat_x/test_compat_x_event_evolution_r3_r1_gates.py::test_cx_r3_r1_combined_gate_passes_on_current_head
+FAILED tests/qualification/compat_x/test_compat_x_event_evolution_r3_r1_gates.py::test_cx_r3_r1_probe_m_sanctioned_constructor_passes_classification
+FAILED tests/qualification/compat_x/test_compat_x_event_evolution_r3_r1_gates.py::test_cx_r3_r1_compat_current_head_inventory_reconciled
+FAILED tests/qualification/compat_x/test_compat_x_event_evolution_r3_r1_gates.py::test_cx_r3_r1_r3_candidate_semantic_identity_and_version_literal
+FAILED tests/qualification/compat_x/test_compat_x_event_evolution_r3_r1_gates.py::test_cx_r3_r1_probe_q_equal_count_substitution_fails_inventory
+FAILED tests/qualification/compat_x/test_compat_x_event_evolution_r3_r1_gates.py::test_cx_r3_r1_probe_r_hidden_removal_fails_inventory
+FAILED tests/qualification/compat_x/test_compat_x_event_evolution_r3_r1_gates.py::test_cx_r3_r1_probe_s_balanced_add_remove_fails_inventory
+7 failed, 79 passed in 128.29s (0:02:08)
+# exit 1

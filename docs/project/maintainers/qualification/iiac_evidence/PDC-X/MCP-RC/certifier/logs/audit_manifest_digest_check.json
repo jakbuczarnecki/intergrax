@@ -1,0 +1,110 @@
+{
+  "a1": {
+    "audit_report_digest": {
+      "claimed": "30e002c28af0c51070b5236dd674fb0465d439f976bb550c39927e23703eccf1",
+      "file": "docs/project/maintainers/qualification/mcp_server_x/MCP_SERVER_X_RC_INDEPENDENT_AUDIT_DOSSIER.md",
+      "match": [
+        "raw",
+        "lf",
+        "plan_normalized"
+      ],
+      "computed": {
+        "raw": "30e002c28af0c51070b5236dd674fb0465d439f976bb550c39927e23703eccf1",
+        "lf": "30e002c28af0c51070b5236dd674fb0465d439f976bb550c39927e23703eccf1",
+        "plan_normalized": "30e002c28af0c51070b5236dd674fb0465d439f976bb550c39927e23703eccf1"
+      }
+    },
+    "audit_scope_manifest_digest": {
+      "claimed": "d9badd094325003529e63ca2c8511a453edf1e09cc6053a9ab8385d3f20770a1",
+      "file": "docs/project/maintainers/qualification/iiac_evidence/PDC-X/MCP-RC/audit_scope.json",
+      "match": [
+        "raw"
+      ],
+      "computed": {
+        "raw": "d9badd094325003529e63ca2c8511a453edf1e09cc6053a9ab8385d3f20770a1",
+        "lf": "0044f90b724be1a6a5e2b5370ae3fb599d50820a593c6bb7265bca0cd6727f91",
+        "plan_normalized": "0044f90b724be1a6a5e2b5370ae3fb599d50820a593c6bb7265bca0cd6727f91"
+      }
+    },
+    "test_matrix_digest": {
+      "claimed": "5f0ee3302bfd253c25f5da466ea1f7c445ece4aea383352e0d5193511f8f544e",
+      "file": "docs/project/maintainers/qualification/iiac_evidence/PDC-X/MCP-RC/test_matrix.txt",
+      "match": [
+        "raw",
+        "lf",
+        "plan_normalized"
+      ],
+      "computed": {
+        "raw": "5f0ee3302bfd253c25f5da466ea1f7c445ece4aea383352e0d5193511f8f544e",
+        "lf": "5f0ee3302bfd253c25f5da466ea1f7c445ece4aea383352e0d5193511f8f544e",
+        "plan_normalized": "5f0ee3302bfd253c25f5da466ea1f7c445ece4aea383352e0d5193511f8f544e"
+      }
+    },
+    "findings_digest": {
+      "claimed": "a3a197293128d8c29167c7f9220e01a54de53e448074b74b114da6db6af42f1c",
+      "file": "docs/project/maintainers/qualification/iiac_evidence/PDC-X/MCP-RC/iiac_audit_mcp_rc_findings.json",
+      "match": [
+        "raw",
+        "lf",
+        "plan_normalized"
+      ],
+      "computed": {
+        "raw": "a3a197293128d8c29167c7f9220e01a54de53e448074b74b114da6db6af42f1c",
+        "lf": "a3a197293128d8c29167c7f9220e01a54de53e448074b74b114da6db6af42f1c",
+        "plan_normalized": "a3a197293128d8c29167c7f9220e01a54de53e448074b74b114da6db6af42f1c"
+      }
+    }
+  },
+  "a2": {
+    "audit_report_digest": {
+      "claimed": "fb4ba5a70ad20578513fec793ef4e1421b2ed7ba06d599ce3d89ad3e23aa4f34",
+      "file": "docs/project/maintainers/qualification/mcp_server_x/MCP_SERVER_X_RC_INDEPENDENT_REAUDIT_DOSSIER.md",
+      "match": [
+        "raw",
+        "lf",
+        "plan_normalized"
+      ],
+      "computed": {
+        "raw": "fb4ba5a70ad20578513fec793ef4e1421b2ed7ba06d599ce3d89ad3e23aa4f34",
+        "lf": "fb4ba5a70ad20578513fec793ef4e1421b2ed7ba06d599ce3d89ad3e23aa4f34",
+        "plan_normalized": "fb4ba5a70ad20578513fec793ef4e1421b2ed7ba06d599ce3d89ad3e23aa4f34"
+      }
+    },
+    "audit_scope_manifest_digest": {
+      "claimed": "d1ca3598d982264e199061e95f82e5c058d01a1ebf279a6a84e6496094576a3c",
+      "file": "docs/project/maintainers/qualification/iiac_evidence/PDC-X/MCP-RC/reaudit/audit_scope.json",
+      "match": [
+        "raw"
+      ],
+      "computed": {
+        "raw": "d1ca3598d982264e199061e95f82e5c058d01a1ebf279a6a84e6496094576a3c",
+        "lf": "c473d97630cf98da064e4ab9fc7b1e89d18aa3b1fe859b9362222a5dfa9b946d",
+        "plan_normalized": "c473d97630cf98da064e4ab9fc7b1e89d18aa3b1fe859b9362222a5dfa9b946d"
+      }
+    },
+    "test_matrix_digest": {
+      "claimed": "4e81fcbdca6a9d32f4239affa17e76486ac774823a0aa03380c94d0de2bb03f5",
+      "file": "docs/project/maintainers/qualification/iiac_evidence/PDC-X/MCP-RC/reaudit/test_matrix.txt",
+      "match": [
+        "raw"
+      ],
+      "computed": {
+        "raw": "4e81fcbdca6a9d32f4239affa17e76486ac774823a0aa03380c94d0de2bb03f5",
+        "lf": "441338db9428b9e1407f89ce5460d59835735da47882ba81725fd71df7652011",
+        "plan_normalized": "441338db9428b9e1407f89ce5460d59835735da47882ba81725fd71df7652011"
+      }
+    },
+    "findings_digest": {
+      "claimed": "2c24f7f755903f848c2f2b1c1afcd250e284b4d322dc1d23bffd9f96bd385a12",
+      "file": "docs/project/maintainers/qualification/iiac_evidence/PDC-X/MCP-RC/reaudit/iiac_audit_mcp_rc_reaudit_findings.json",
+      "match": [
+        "raw"
+      ],
+      "computed": {
+        "raw": "2c24f7f755903f848c2f2b1c1afcd250e284b4d322dc1d23bffd9f96bd385a12",
+        "lf": "449ca8da726eecb3b1d29cdde5114ee86494ba4dd92f8b6bdd8297cf9061b671",
+        "plan_normalized": "449ca8da726eecb3b1d29cdde5114ee86494ba4dd92f8b6bdd8297cf9061b671"
+      }
+    }
+  }
+}

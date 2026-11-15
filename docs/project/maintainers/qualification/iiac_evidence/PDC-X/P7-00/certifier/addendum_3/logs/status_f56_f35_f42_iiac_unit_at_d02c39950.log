@@ -1,0 +1,57 @@
+# certifier finding-status re-run (PDC-P7-00 preflight addendum 3): F-56 (roadmap_replay_x closure counter), F-35 (COMPAT-X), F-42 (ebh_5 package_c_v2), F-07 inventory, IIAC governance unit tests (protocol edit)
+# HEAD: d02c399508c40b4a06d846410334d677f226c18d | checkout: D:\Projekty\intergrax\.claude\worktrees\mcp-rc-certifier-fe2eb3 | PYTHONPATH: D:/Projekty/intergrax/.claude/worktrees/mcp-rc-certifier-fe2eb3 | intergrax from: D:\Projekty\intergrax\.claude\worktrees\mcp-rc-certifier-fe2eb3\intergrax\__init__.py
+......F.F...........................F...FF...............FF.F.........F. [ 30%]
+...FF..FF...FFFFF.....F.F............................................... [ 60%]
+........F....................................F...............s.......... [ 90%]
+.....................F.                                                  [100%]
+================================== FAILURES ===================================
+D:\Projekty\intergrax\.claude\worktrees\mcp-rc-certifier-fe2eb3\tests\qualification\roadmap_replay_x\test_roadmap_replay_x_closure_counter_integrity.py:117: AssertionError: assert ('scoped_path...manifest.py',) == ()
+D:\Projekty\intergrax\.claude\worktrees\mcp-rc-certifier-fe2eb3\tests\qualification\compat_x\test_compat_x_event_evolution_r3_p0_gates.py:63: AssertionError: assert ('unclassifie...ion bypasses') == ()
+D:\Projekty\intergrax\.claude\worktrees\mcp-rc-certifier-fe2eb3\tests\qualification\compat_x\test_compat_x_event_evolution_r3_p0_gates.py:299: AssertionError: assert ('unclassifie...ence.append',) == ()
+D:\Projekty\intergrax\.claude\worktrees\mcp-rc-certifier-fe2eb3\tests\qualification\compat_x\test_compat_x_event_evolution_r3_p0_gates.py:345: AssertionError: ('unclassified persistence append intergrax/runtime/security/security_audit_trail.py:213 self._evidence.append', 'inve...nce discovery includes UNCLASSIFIED append call sites', 'canonical production persistence bypass count 1 (expected 0)')
+D:\Projekty\intergrax\.claude\worktrees\mcp-rc-certifier-fe2eb3\tests\qualification\compat_x\test_compat_x_event_evolution_r3_p0_gates.py:351: AssertionError: assert ('probe K: pr...n injection',) == ()
+D:\Projekty\intergrax\.claude\worktrees\mcp-rc-certifier-fe2eb3\tests\qualification\compat_x\test_compat_x_event_evolution_r3_r1_gates.py:206: AssertionError: ('unclassified persistence append intergrax/runtime/security/security_audit_trail.py:213 self._evidence.append', 'inve...nce discovery includes UNCLASSIFIED append call sites', 'canonical production persistence bypass count 1 (expected 0)')
+D:\Projekty\intergrax\.claude\worktrees\mcp-rc-certifier-fe2eb3\tests\qualification\compat_x\test_compat_x_event_evolution_r3_r1_gates.py:211: AssertionError: assert ('unclassifie...ence.append',) == ()
+D:\Projekty\intergrax\.claude\worktrees\mcp-rc-certifier-fe2eb3\tests\qualification\compat_x\test_compat_x_event_evolution_r3_r1_gates.py:223: AssertionError: ('unclassified runtime event reader intergrax/runtime/security/security_audit_trail.py:198 append RuntimeEvent(...)', ...dit_trail.py:213 self._evidence.append', 'inventory persistence call sites include canonical production bypasses', ...)
+D:\Projekty\intergrax\.claude\worktrees\mcp-rc-certifier-fe2eb3\tests\qualification\compat_x\test_compat_x_event_evolution_r3_r1_gates.py:299: AssertionError: assert ('probe K: pr...n injection',) == ()
+D:\Projekty\intergrax\.claude\worktrees\mcp-rc-certifier-fe2eb3\tests\qualification\compat_x\test_compat_x_event_evolution_r3_r1_gates.py:328: assert False
+D:\Projekty\intergrax\.claude\worktrees\mcp-rc-certifier-fe2eb3\tests\qualification\compat_x\test_compat_x_event_evolution_r3_r1_gates.py:341: assert False
+D:\Projekty\intergrax\.claude\worktrees\mcp-rc-certifier-fe2eb3\tests\qualification\compat_x\test_compat_x_event_evolution_r3_r1_gates.py:373: AssertionError: ('unclassified runtime event reader intergrax/runtime/security/security_audit_trail.py:198 append RuntimeEvent(...)', ...dit_trail.py:213 self._evidence.append', 'inventory persistence call sites include canonical production bypasses', ...)
+D:\Projekty\intergrax\.claude\worktrees\mcp-rc-certifier-fe2eb3\tests\qualification\compat_x\test_compat_x_event_evolution_r3_r1_gates.py:379: assert ("production ...ppend:198']",) == ()
+D:\Projekty\intergrax\.claude\worktrees\mcp-rc-certifier-fe2eb3\tests\qualification\compat_x\_compat_x_semantic_identity_reconciliation.py:546: AssertionError: raw_candidates 7411 != accepted current-head 7356; current-minus-R3 raw count 7410 != replay accepted remainder 7355; current-minus-R3 stable inventory fingerprint 014a74b6e61bd10537cbbe96051f333f82aa191451b856c3cfbee126ea40424d != replay accepted 9dfd146f3b50bd56a8b997664569ac538396d322ceb21eb6682aa75a862716fa (lineage 05549f9acb9ecedf910c7470d442bba5d0a27337)
+D:\Projekty\intergrax\.claude\worktrees\mcp-rc-certifier-fe2eb3\tests\qualification\compat_x\_compat_x_semantic_identity_reconciliation.py:546: AssertionError: raw_candidates 7411 != accepted current-head 7356; current-minus-R3 raw count 7410 != replay accepted remainder 7355; current-minus-R3 stable inventory fingerprint 014a74b6e61bd10537cbbe96051f333f82aa191451b856c3cfbee126ea40424d != replay accepted 9dfd146f3b50bd56a8b997664569ac538396d322ceb21eb6682aa75a862716fa (lineage 05549f9acb9ecedf910c7470d442bba5d0a27337)
+D:\Projekty\intergrax\.claude\worktrees\mcp-rc-certifier-fe2eb3\tests\qualification\compat_x\test_compat_x_event_evolution_r3_r1_gates.py:421: AssertionError: assert 7411 == 7356
+D:\Projekty\intergrax\.claude\worktrees\mcp-rc-certifier-fe2eb3\tests\qualification\compat_x\test_compat_x_event_evolution_r3_r1_gates.py:429: AssertionError: assert 7410 == 7355
+D:\Projekty\intergrax\.claude\worktrees\mcp-rc-certifier-fe2eb3\tests\qualification\compat_x\test_compat_x_event_evolution_r3_r1_gates.py:436: AssertionError: assert 7411 == 7356
+D:\Projekty\intergrax\.claude\worktrees\mcp-rc-certifier-fe2eb3\tests\qualification\ebh_5\_package_c_v2_primitives.py:28: RuntimeError: integration.relational_store: mandatory dependency 'duckdb' missing — sync environment with sanctioned dev-ci / integration extras
+D:\Projekty\intergrax\.claude\worktrees\mcp-rc-certifier-fe2eb3\tests\qualification\ebh_5\_package_c_v2_primitives.py:28: RuntimeError: integration.relational_store: mandatory dependency 'duckdb' missing — sync environment with sanctioned dev-ci / integration extras
+D:\Projekty\intergrax\.claude\worktrees\mcp-rc-certifier-fe2eb3\tests\qualification\ebh_5\_package_c_v2_primitives.py:28: RuntimeError: integration.relational_store: mandatory dependency 'duckdb' missing — sync environment with sanctioned dev-ci / integration extras
+D:\Projekty\intergrax\.claude\worktrees\mcp-rc-certifier-fe2eb3\tests\unit\governance\test_iiac_activation_gate.py:256: AssertionError: IIAC policy activation: FAIL
+D:\Projekty\intergrax\.claude\worktrees\mcp-rc-certifier-fe2eb3\tests\unit\governance\test_iiac_negative_guards.py:281: AssertionError: assert 1 == 0
+=========================== short test summary info ===========================
+FAILED tests/qualification/roadmap_replay_x/test_roadmap_replay_x_closure_counter_integrity.py::test_b6_03_scoped_disposition_valid_at_head
+FAILED tests/qualification/compat_x/test_compat_x_event_evolution_r3_p0_gates.py::test_cx_r3_p0_closed_world_inventory_gate
+FAILED tests/qualification/compat_x/test_compat_x_event_evolution_r3_p0_gates.py::test_cx_r3_p0_mechanical_persistence_discovery_classified
+FAILED tests/qualification/compat_x/test_compat_x_event_evolution_r3_p0_gates.py::test_cx_r3_p0_combined_gate_passes
+FAILED tests/qualification/compat_x/test_compat_x_event_evolution_r3_p0_gates.py::test_cx_r3_p0_probe_k_unknown_persistence_append
+FAILED tests/qualification/compat_x/test_compat_x_event_evolution_r3_r1_gates.py::test_cx_r3_r1_q13_p0_combined_gate_passes
+FAILED tests/qualification/compat_x/test_compat_x_event_evolution_r3_r1_gates.py::test_cx_r3_r1_q14_production_persistence_bypass_zero
+FAILED tests/qualification/compat_x/test_compat_x_event_evolution_r3_r1_gates.py::test_cx_r3_r1_combined_gate_passes_on_current_head
+FAILED tests/qualification/compat_x/test_compat_x_event_evolution_r3_r1_gates.py::test_cx_r3_r1_probe_h_p0_bypass_regression
+FAILED tests/qualification/compat_x/test_compat_x_event_evolution_r3_r1_gates.py::test_cx_r3_r1_reader_sites_closed_world_classified
+FAILED tests/qualification/compat_x/test_compat_x_event_evolution_r3_r1_gates.py::test_cx_r3_r1_constructor_sites_closed_world_evidence_backed
+FAILED tests/qualification/compat_x/test_compat_x_event_evolution_r3_r1_gates.py::test_cx_r3_r1_probe_m_sanctioned_constructor_passes_classification
+FAILED tests/qualification/compat_x/test_compat_x_event_evolution_r3_r1_gates.py::test_cx_r3_r1_constructor_evidence_rule_integrity_on_current_head
+FAILED tests/qualification/compat_x/test_compat_x_event_evolution_r3_r1_gates.py::test_cx_r3_r1_compat_current_head_inventory_reconciled
+FAILED tests/qualification/compat_x/test_compat_x_event_evolution_r3_r1_gates.py::test_cx_r3_r1_r3_candidate_semantic_identity_and_version_literal
+FAILED tests/qualification/compat_x/test_compat_x_event_evolution_r3_r1_gates.py::test_cx_r3_r1_probe_q_equal_count_substitution_fails_inventory
+FAILED tests/qualification/compat_x/test_compat_x_event_evolution_r3_r1_gates.py::test_cx_r3_r1_probe_r_hidden_removal_fails_inventory
+FAILED tests/qualification/compat_x/test_compat_x_event_evolution_r3_r1_gates.py::test_cx_r3_r1_probe_s_balanced_add_remove_fails_inventory
+FAILED tests/qualification/ebh_5/test_ebh_5_behavioral_package_c_v2.py::test_ebh5_pkgc_v2_relational_sqlite_duckdb_dual_slug
+FAILED tests/qualification/ebh_5/test_ebh_5_behavioral_package_c_v2.py::test_ebh5_pkgc_v2_dual_slug_integration[integration.relational_store]
+FAILED tests/qualification/ebh_5/test_ebh_5_behavioral_package_c_v2.py::test_ebh5_pkgc_v2_dual_slug_rpl_cde_equivalence[integration.relational_store]
+FAILED tests/unit/governance/test_iiac_activation_gate.py::test_canonical_policy_is_in_force_and_verifies
+FAILED tests/unit/governance/test_iiac_negative_guards.py::test_n12_policy_is_in_force_only_with_valid_activation_evidence
+23 failed, 215 passed, 1 skipped in 462.45s (0:07:42)
+# pytest exit code: 1
+# elapsed_s: 466.69

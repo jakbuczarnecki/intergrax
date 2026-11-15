@@ -1,0 +1,25 @@
+IIAC policy activation: FAIL
+  - ACT-N11 product path changed after the audited SHA: applications/dispute_sim_application/mcp/server.py
+  - ACT-N11 product path changed after the audited SHA: applications/governed_contractor_application/mcp/server.py
+  - ACT-N11 product path changed after the audited SHA: applications/intergrax_assistant_application/mcp/server.py
+  - ACT-N11 product path changed after the audited SHA: applications/lab_application/mcp/server.py
+  - ACT-N11 product path changed after the audited SHA: applications/legal_application/mcp/server.py
+  - ACT-N11 product path changed after the audited SHA: applications/local_workspace_application/mcp/server.py
+  - ACT-N11 product path changed after the audited SHA: applications/poc_template_application/mcp/server.py
+  - ACT-N11 product path changed after the audited SHA: applications/research_application/mcp/server.py
+  - ACT-N11 product path changed after the audited SHA: intergrax/applications/_shared/fastapi_mcp.py
+  - ACT-N11 product path changed after the audited SHA: intergrax/applications/_shared/mcp_application_server.py
+  - ACT-N11 product path changed after the audited SHA: intergrax/applications/_shared/mcp_catalog_invocation_bridge.py
+  - ACT-N11 product path changed after the audited SHA: intergrax/applications/_shared/mcp_catalog_tools.py
+  - ACT-N11 product path changed after the audited SHA: intergrax/applications/_shared/mcp_developer_api.py
+  - ACT-N11 product path changed after the audited SHA: intergrax/applications/_shared/mcp_engine_concurrency.py
+  - ACT-N11 product path changed after the audited SHA: intergrax/applications/_shared/mcp_harness_principal.py
+  - ACT-N11 product path changed after the audited SHA: intergrax/applications/_shared/mcp_host_execution_transport_cancel.py
+  - ACT-N11 product path changed after the audited SHA: intergrax/applications/_shared/mcp_identity_mode.py
+  - ACT-N11 product path changed after the audited SHA: intergrax/applications/_shared/mcp_invocation_id.py
+  - ACT-N11 product path changed after the audited SHA: intergrax/applications/_shared/mcp_nexus_server.py
+  - ACT-N11 product path changed after the audited SHA: intergrax/applications/_shared/mcp_server_engine.py
+  - ACT-N11 product path changed after the audited SHA: intergrax/applications/_shared/mcp_wire_errors.py
+  - ACT-N11 product path changed after the audited SHA: intergrax/contracts/mcp_server_definition.py
+  - ACT-N11 product path changed after the audited SHA: intergrax/tools/mcp_result_bounds.py
+exit=1

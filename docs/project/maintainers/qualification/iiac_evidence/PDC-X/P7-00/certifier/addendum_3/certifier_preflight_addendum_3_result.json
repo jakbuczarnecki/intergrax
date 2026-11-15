@@ -1,0 +1,149 @@
+{
+  "schema": "pdc-p7-00-certifier-preflight-addendum.v1",
+  "addendum": 3,
+  "verdict": "CERTIFIER_PREFLIGHT_PASS_SCOPED",
+  "certifier_designation": "PDC-P7-00-CERTIFIER-PREFLIGHT-2026-11-13",
+  "date": "2026-11-14",
+  "checked_head": "d02c399508c40b4a06d846410334d677f226c18d",
+  "audit_head_read": "origin/p7-00-baseline-audit 0d4758ca1a185f150c7e0c37ea5dbc1a6eea03cb",
+  "covers_audit": "addendum 4, delta 0fc8badd81c4c3e46a3d0ce262c08e8efba41898..d02c399508c40b4a06d846410334d677f226c18d",
+  "act_n11_union": {
+    "fa6ff1c96": 153,
+    "19d552bee": 156,
+    "0fc8badd8": 158,
+    "d02c39950": 161,
+    "head": 161,
+    "mcp_rc": 23,
+    "non_mcp": 138,
+    "new_paths": [
+      "applications/local_workspace_application/tests/test_run_artifact_metadata.py",
+      "intergrax/integrations/providers/embedding_provider/ollama/manifest.py",
+      "intergrax/integrations/providers/embedding_provider/openai/register.py"
+    ],
+    "delta_paths_count": 5,
+    "paths_vs_audited_tree_324d9dba3": 6,
+    "product_diff_0cb5dd011_to_head": 0
+  },
+  "activation_gate_at_head": {
+    "result": "FAIL",
+    "lines": 7,
+    "stale_material_governance": [
+      "INTEGRAX_INTERNAL_INDEPENDENT_AGENT_CERTIFICATION_PROTOCOL.md"
+    ],
+    "product_paths": 6,
+    "exit": 1
+  },
+  "manifest_verifiers_addendum_4_unpinned": {
+    "verify_iiac_audit_manifest": "PASS",
+    "verify_iiac_role_separation_strict_product_diff": "PASS"
+  },
+  "digests_match_auditor_branch": true,
+  "addendum_4_evidence_on_mcp_rc": true,
+  "mcp_rc_contract": {
+    "passed": 481,
+    "xfailed_strict": 1,
+    "failed": 0,
+    "exit": 0,
+    "pytest_seconds": 637.56
+  },
+  "pdc_x_directory_run": {
+    "passed": 975,
+    "skipped": 2,
+    "exited_by_itself": true,
+    "exit": 0,
+    "seconds": 266.21
+  },
+  "status_run": {
+    "tests": 239,
+    "passed": 215,
+    "failed": 23,
+    "skipped": 1,
+    "failures": {
+      "F-56": 1,
+      "F-35": 17,
+      "duckdb_env": 3,
+      "iiac_activation_red_by_design": 2
+    }
+  },
+  "resolved_confirmed": [
+    "F-49",
+    "F-50",
+    "F-41",
+    "F-09",
+    "F-42",
+    "F-07",
+    "F-06"
+  ],
+  "findings_addendum_4": {
+    "F-56": "MEDIUM open, reproduced",
+    "F-57": "INFO accept",
+    "F-58": "INFO accept",
+    "F-59": "INFO accept",
+    "F-60": "INFO accept",
+    "F-61": "INFO accept, confirmed"
+  },
+  "open": [
+    "F-56",
+    "F-35",
+    "F-53",
+    "F-52 (extended to openai)",
+    "F-51 (extended to openai)",
+    "F-05",
+    "F-04/F-37",
+    "F-38",
+    "F-43",
+    "F-44",
+    "F-10",
+    "AF-05/AF-16 owner",
+    "RA-02",
+    "RA-03",
+    "RA-04"
+  ],
+  "protocol_edit": {
+    "numstat": "2/2",
+    "lines": [
+      4,
+      91
+    ],
+    "weakens_gate": false
+  },
+  "f56_position": "agree not a blocker of the rebind; not named in any .github or scripts/ci selection; needs an owner and an operator answer",
+  "observation_not_in_audit": "two relaxed EBH-7 assertions in tests (_ebh7_p03_evidence_integrity.py, test_ebh_7_b6_f10_f11_corrective_gates.py), test-side, not ACT-N11 paths",
+  "repin": {
+    "corrective": "d02c39950",
+    "audit_execution_at_or_after": "d02c39950",
+    "round_5_evidence_integration_first": true,
+    "second_signature_needed_by_gate": false,
+    "route_question": "DELEGATION-PDC-P7-ACT (c)/(e) versus OD-MCP-RC-04 section 3"
+  },
+  "not_determined": [
+    "five CI contexts",
+    "F-53/F-59 reruns",
+    "gate after the re-pin is predicted not run"
+  ],
+  "no_edits_to": [
+    "auditor files",
+    "product",
+    "tests",
+    "tickets",
+    "activation record",
+    "signed decision",
+    "delegations",
+    "binding manifest",
+    "handoff",
+    "Approved lines"
+  ],
+  "round_5": {
+    "publication_commit": "a1b3053b49c28124a0abde679d733f21a597797f",
+    "pin_only_commit": "fbe400f06cd9b77f0fb548ec0d2b2aaeafe10dac",
+    "blob_identity": "40 of 40",
+    "pin_only_fields": [
+      "certifier_session_id",
+      "evidence_publication_sha",
+      "certification_publication_sha"
+    ],
+    "digests": "12 of 12",
+    "verifiers": "PASS PASS",
+    "other_changes": []
+  }
+}

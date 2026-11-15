@@ -1,0 +1,46 @@
+=== scripts/maintenance/check_intergrax_no_applications_imports.py
+  - intergrax/runtime/execution/host_orchestration_application_wiring_applier.py
+  - intergrax/runtime/execution/host_orchestration_assembly_validation.py
+  - intergrax/runtime/execution/host_orchestration_environment_spec_builder.py
+  - intergrax/runtime/execution/host_orchestration_planner_classifier_wiring.py
+  - intergrax/runtime/execution/host_orchestration_wiring_bundle.py
+  - intergrax/runtime/execution/scenario_host_diagnostic_wiring.py
+exit=1
+=== scripts/maintenance/check_agents_no_tier3_imports.py
+agents tier-3 import audit: OK
+exit=0
+=== scripts/maintenance/check_harness_no_getattr.py --smoke
+getattr/setattr audit: OK (smoke scan, bridge modules only)
+exit=0
+=== scripts/maintenance/check_agents_no_vendor_sdk_imports.py
+OK: no forbidden vendor SDK imports in agents/
+exit=0
+=== scripts/maintenance/check_context_tier0_import_boundary.py
+context tier-0 import boundary: OK
+exit=0
+=== scripts/maintenance/check_integration_vendor_imports.py
+OK: no vendor imports outside approved boundary modules.
+exit=0
+=== scripts/maintenance/check_llm_routing_tier_boundary.py
+check_llm_routing_tier_boundary: OK
+exit=0
+=== scripts/maintenance/check_architecture_boundary_chaos.py
+         If the cache and target directories are on different filesystems, hardlinking may not be supported.
+         If this is intentional, set `export UV_LINK_MODE=copy` or use `--link-mode=copy` to suppress this warning.
+Installed 69 packages in 12.54s
+C:\Users\XPS\AppData\Roaming\uv\python\cpython-3.12-windows-x86_64-none\python.exe: can't open file 'D:\\Projekty\\intergrax\\.claude\\worktrees\\magical-germain-65dac8\\scripts\\check_intergrax_no_applications_imports.py': [Errno 2] No such file or directory
+C:\Users\XPS\AppData\Roaming\uv\python\cpython-3.12.11-windows-x86_64-none\python.exe: can't open file 'D:\\Projekty\\intergrax\\.claude\\worktrees\\magical-germain-65dac8\\scripts\\check_intergrax_no_applications_imports.py': [Errno 2] No such file or directory
+FAILED: check_intergrax_no_applications_imports.py
+exit=1
+=== scripts/maintenance/check_critical_action_signing.py
+OK: critical action signing (security_config_change); missing secret fails closed
+exit=0
+=== scripts/maintenance/check_immutable_security_audit_trail.py
+OK: immutable security audit trail (2 regions, durable across restart)
+exit=0
+=== scripts/docs/check_docs_domain_pairs.py
+check_docs_domain_pairs: OK (23 domain pairs; 5 feature pairs)
+exit=0
+=== uv lock --check
+Resolved 404 packages in 8ms
+exit=0

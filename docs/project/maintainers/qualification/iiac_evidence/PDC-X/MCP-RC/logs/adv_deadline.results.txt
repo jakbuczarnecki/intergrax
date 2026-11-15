@@ -1,0 +1,3 @@
+INFO     D1 max_call_seconds=1.0 non-cooperative host, DEFAULT drain :: wall=31.2s isError=True :: MCP_DEADLINE_EXCEEDED: call exceeded 1.0s; outcome=outcome_unknown | drain_const=30.0
+PASS     D1 not success :: MCP_DEADLINE_EXCEEDED: call exceeded 1.0s; outcome=outcome_unknown
+INFO     D1 late completion after reported deadline (documented limit) :: supervised_count=0 cancel_seen=True

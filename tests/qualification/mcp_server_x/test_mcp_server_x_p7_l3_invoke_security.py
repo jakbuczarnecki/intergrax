@@ -184,7 +184,7 @@ async def test_acc_10_forged_tenant_assertion_is_denied_before_execution() -> No
         )
     assert result.isError is True
     text = error_text(result) or ""
-    assert text.startswith("identity_conflict:")
+    assert text.startswith("MCP_TENANT_ASSERTION_CONFLICT:") and "identity_conflict:" in text
     assert "tenant_id" in text
     port.execute.assert_not_awaited()
 
@@ -199,7 +199,7 @@ async def test_acc_10_forged_user_assertion_is_denied_before_execution() -> None
         )
     assert result.isError is True
     text = error_text(result) or ""
-    assert text.startswith("identity_conflict:")
+    assert text.startswith("MCP_TENANT_ASSERTION_CONFLICT:") and "identity_conflict:" in text
     assert "user_id" in text
     port.execute.assert_not_awaited()
 
@@ -224,7 +224,7 @@ async def test_acc_11_principal_cannot_assert_another_tenant_on_one_server() -> 
             headers={"Authorization": "Bearer token-a"},
         )
         assert denied.isError is True
-        assert (error_text(denied) or "").startswith("identity_conflict:")
+        assert (error_text(denied) or "").startswith("MCP_TENANT_ASSERTION_CONFLICT:")
         port.execute.assert_not_awaited()
         allowed = await call_tool(
             served.url,

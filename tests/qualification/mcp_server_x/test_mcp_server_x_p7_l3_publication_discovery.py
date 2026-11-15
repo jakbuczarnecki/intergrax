@@ -325,7 +325,9 @@ async def test_acc_08_describe_catalog_tool_unknown_id_is_a_typed_error_payload(
         {"tool_id": "does.not.exist"},
         headers=_AUTH,
     )
-    assert tool_payload(result) == {"error": "unknown_tool:does.not.exist"}
+    payload = tool_payload(result)
+    assert payload["error"] == "unknown_tool:does.not.exist"
+    assert payload["mcp_code"] == "MCP_CATALOG_TOOL_REFUSED"
 
 
 async def test_acc_08_list_catalog_tools_matches_contract_over_http(reference_server: ServedMcp) -> None:

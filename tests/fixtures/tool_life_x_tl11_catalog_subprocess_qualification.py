@@ -14,12 +14,12 @@ from pathlib import Path
 
 import pytest
 
-_TL11_SERVER = (
-    Path(__file__).resolve().parent / "tool_life_x_tl11_nexus_catalog_qualification_server.py"
-)
+_TL11_SERVER = Path(__file__).resolve().parent / "tool_life_x_tl11_nexus_catalog_qualification_server.py"
 pytest.importorskip("fastmcp")
 
-_STARTUP_READ_TIMEOUT_S = 15.0
+# Import-heavy server startup measured at 8-21 s on this machine under concurrent load (R-P7-02 follow-up);
+# the budget only bounds how long we wait for the port line, it is not the behaviour under test.
+_STARTUP_READ_TIMEOUT_S = 60.0
 _TEARDOWN_WAIT_S = 3.0
 
 

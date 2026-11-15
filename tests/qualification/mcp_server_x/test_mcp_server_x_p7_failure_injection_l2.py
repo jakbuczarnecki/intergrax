@@ -34,7 +34,6 @@ from unittest.mock import AsyncMock, patch
 import pytest
 from fastmcp import Client
 from fastmcp.exceptions import ToolError
-from intergrax.applications._shared import mcp_host_execution_transport_cancel as transport_cancel_module
 from intergrax.applications._shared.harness_control_plane_policy_wiring import (
     build_harness_control_plane_mutation_boundary,
 )
@@ -206,7 +205,7 @@ async def test_acc_13_cancel_of_in_flight_run_agent_reaches_governed_cancel() ->
     supervision = build_host_root_execution_transport_detachment_supervisor()
     mcp = _reference_server(host.port, task_control_mutation_boundary=_boundary())
     with (
-        patch(f"{_ENGINE}.resolve_mcp_run_agent_identity", return_value=_identity_resolution()),
+        patch(f"{_NEXUS_SERVER}.resolve_mcp_run_agent_identity", return_value=_identity_resolution()),
         patch(f"{_NEXUS_SERVER}.resolve_transport_detachment_supervision_from_request", return_value=supervision),
     ):
         call = asyncio.create_task(mcp.call_tool("run_agent", {"message": "hang"}))
@@ -281,7 +280,7 @@ async def test_acc_13_cancel_by_another_tenant_principal_is_not_applied() -> Non
     supervision = build_host_root_execution_transport_detachment_supervisor()
     mcp = _reference_server(host.port, task_control_mutation_boundary=_boundary())
     with (
-        patch(f"{_ENGINE}.resolve_mcp_run_agent_identity", return_value=_identity_resolution()),
+        patch(f"{_NEXUS_SERVER}.resolve_mcp_run_agent_identity", return_value=_identity_resolution()),
         patch(f"{_NEXUS_SERVER}.resolve_transport_detachment_supervision_from_request", return_value=supervision),
     ):
         call = asyncio.create_task(mcp.call_tool("run_agent", {"message": "hang"}))
@@ -345,32 +344,32 @@ async def test_acc_14_client_deadline_through_in_memory_client_ends_terminal_and
     async with Client(mcp) as client:
         with pytest.raises(asyncio.TimeoutError):
             await asyncio.wait_for(client.call_tool("qual_slow", {"delay_s": 1.0}), timeout=0.3)
-        # terminal handler state is "completed" (the in-memory client does not cancel the server) or
-        # "cancelled"; either way it ends within a bound and never hangs
+        # a client timing out is not proof the server stopped: the handler ends exactly once, either
+        # "completed" (the in-memory client does not cancel the server) or "cancelled", within a bound
         await asyncio.wait_for(slow.done.wait(), timeout=_DEADLINE_S)
-        assert slow.outcomes[0] in {"completed", "cancelled"}
+        assert slow.outcomes in (["completed"], ["cancelled"])
         echoed = await asyncio.wait_for(client.call_tool("qual_echo", {"message": "still-up"}), timeout=_DEADLINE_S)
     assert echoed.data["echo"] == "still-up"
 
 
 async def test_acc_14_canonical_execution_deadline_is_not_reachable_from_run_agent() -> None:
-    """N/A record: no per-request canonical-execution deadline can be set through MCP ``run_agent``.
+    """OD-MCP-RC-02: the canonical deadline stays with the host; MCP adds only a transport trigger.
 
-    Facts pinned (each failing would mean the N/A reasoning changed and this record must be revisited):
-    ``run_agent`` takes no timeout/deadline argument; the reference host composition carries no
-    ``ExecutionDeadlineAuthorityResolver``; the MCP transport module declares it is not the deadline
-    authority; the owning API exists in Execution.
+    Behavioural facts (each failing means the ownership split changed and the record must be revisited):
+    ``run_agent`` takes no per-request timeout argument; composing an MCP server with a call bound neither
+    installs nor changes the host's deadline authority; the owning API still exists in Execution.
     """
-    mcp = _reference_server(AsyncMock(spec=HostTaskExecutionPort))
+    host_port = AsyncMock(spec=HostTaskExecutionPort)
+    mcp = _reference_server(host_port, max_call_seconds=5.0)
     async with Client(mcp) as client:
         tools = {tool.name: tool for tool in await client.list_tools()}
     properties = tools["run_agent"].inputSchema["properties"]
     assert not [name for name in properties if "timeout" in name.lower() or "deadline" in name.lower()], properties
 
     host = build_harness_host_task_execution(NexusLoop(AgentRegistry()), orchestration_triggers=frozenset())
-    assert host._deadline_authority_resolver is None
-
-    assert "not root Execution deadline authority" in inspect.getsource(transport_cancel_module)
+    before = host._deadline_authority_resolver
+    _reference_server(host, max_call_seconds=5.0)  # composing with a call bound must not touch the host
+    assert host._deadline_authority_resolver is before is None
     assert inspect.isclass(deadline_authority.ExecutionDeadlineAuthorityResolver)
 
 
@@ -392,7 +391,7 @@ async def test_acc_15_disconnect_observation_admits_governed_cancel_in_process()
 
     mcp = _reference_server(host.port, task_control_mutation_boundary=_boundary())
     with (
-        patch(f"{_ENGINE}.resolve_mcp_run_agent_identity", return_value=_identity_resolution()),
+        patch(f"{_NEXUS_SERVER}.resolve_mcp_run_agent_identity", return_value=_identity_resolution()),
         patch(f"{_NEXUS_SERVER}.resolve_transport_detachment_supervision_from_request", return_value=supervision),
         patch(f"{_TRANSPORT}._client_disconnected", side_effect=_probe),
     ):
@@ -457,12 +456,12 @@ async def test_p7_05_limit_exceeded_result_bound_on_list_agents_is_a_typed_error
 
     mcp = _reference_server(AsyncMock(spec=HostTaskExecutionPort), registry=_BigRegistry())
     async with Client(mcp) as client:
-        with pytest.raises(ToolError, match="mcp_payload_byte_limit_exceeded"):
+        with pytest.raises(ToolError, match="MCP_RESULT_BOUND_EXCEEDED"):
             await asyncio.wait_for(client.call_tool("list_agents", {}), timeout=_DEADLINE_S)
 
 
-async def test_p7_05_limit_exceeded_result_bound_on_run_agent_is_a_typed_error_payload() -> None:
-    """An over-large ``run_agent`` answer is replaced by a typed error payload (terminal, bounded)."""
+async def test_p7_05_limit_exceeded_result_bound_on_run_agent_is_a_typed_tool_error() -> None:
+    """An over-large ``run_agent`` answer is a typed tool error (``isError=true``), never a normal result."""
     port = AsyncMock(spec=HostTaskExecutionPort)
 
     async def _huge(task: Task, **_kwargs: object) -> TaskResult:
@@ -473,23 +472,17 @@ async def test_p7_05_limit_exceeded_result_bound_on_run_agent_is_a_typed_error_p
     port.execute = AsyncMock(side_effect=_huge)
     mcp = _reference_server(port)
     async with Client(mcp) as client:
-        result = await asyncio.wait_for(client.call_tool("run_agent", {"message": "big"}), timeout=_DEADLINE_S)
-    assert result.data == {"error": "mcp_payload_byte_limit_exceeded"}
+        with pytest.raises(ToolError, match="MCP_RESULT_BOUND_EXCEEDED"):
+            await asyncio.wait_for(client.call_tool("run_agent", {"message": "big"}), timeout=_DEADLINE_S)
 
 
-async def test_p7_05_limit_exceeded_result_bound_is_not_applied_to_the_custom_tool_qual_echo() -> None:
-    """RECORDED GAP (not a pass of a bound): the custom-tool wrapper applies concurrency admission only.
-
-    An over-large ``qual_echo`` result is returned in full instead of a typed ``mcp_payload_byte_limit_exceeded``
-    error, unlike ``list_agents`` / ``run_agent``. This pins current behaviour so the gap stays visible; if the
-    engine later bounds custom tool results, this test must be updated to assert the typed error.
-    """
+async def test_p7_05_limit_exceeded_result_bound_is_applied_to_the_custom_tool_qual_echo() -> None:
+    """R-P7-03 closed in MCP-RC: the custom-tool wrapper bounds its result like every other tool path."""
     oversize = DEFAULT_MCP_MAX_SERIALIZED_BYTES + 1024
     mcp = _reference_server(AsyncMock(spec=HostTaskExecutionPort))
     async with Client(mcp) as client:
-        result = await asyncio.wait_for(client.call_tool("qual_echo", {"message": "z" * oversize}), timeout=_DEADLINE_S)
-    assert len(result.data["echo"]) == oversize
-    assert "error" not in result.data
+        with pytest.raises(ToolError, match="MCP_RESULT_BOUND_EXCEEDED"):
+            await asyncio.wait_for(client.call_tool("qual_echo", {"message": "z" * oversize}), timeout=_DEADLINE_S)
 
 
 # --------------------------------------------------------------------------- AC-P7-04: unknown tool

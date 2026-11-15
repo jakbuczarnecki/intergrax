@@ -1,0 +1,21 @@
+MCP-RC independent delta re-audit - test matrix (auditor runs, Windows, one pytest process at a time)
+audited delta   = 93a089d3cca941592f1ad4f65435333c86da82e5..b0e19bf61b346e6941b2e190b703c6922e708b34
+audited_implementation_sha = test_execution_sha = b0e19bf61b346e6941b2e190b703c6922e708b34
+audit execution base = f1dde5a3e19924b82e902be18f11a21b64b822ba (documentation/evidence only after b0e19bf61)
+
+1. Mandatory contract: PYTHONPATH=<checkout> python -m pytest <MCP_SERVER_X_RC_SELECTION, 39 files> -q
+   result: 480 passed, 1 xfailed (strict), exit 0, 421.65 s  [logs/reaudit_rc_contract_at_b0e19bf61.log]
+   xfail: tests/unit/applications/test_mcp_surface_opt_in.py::test_scaffold_defaults_mcp_to_opt_in[product] (TRANSFERRED)
+2. Implementer mutation harness (scripts/qualification/mcp_rc_mutation.py, 17 mutants): 17 of 17 killed  [mutation/implementer_harness_17_rerun.*]
+3. Auditor mutants R1..R16 (new code): 14 killed, 2 survived (R8 real gap RA-01; R16 equivalent control)  [mutation/reaudit_mutants_R1-R16.*]
+   R3 additionally verified by hand (killed by test_non_cooperative_host_is_never_reported_as_success_and_stays_supervised)
+   R8 wide re-run (7 catalog suites + RC file, 134 tests, PYTHONPATH = scratch checkout): survived  [mutation/reaudit_mutant_R8_wide_catalog_suites.*]
+   (a first wide run without PYTHONPATH reported killed because of a subprocess import error; discarded)
+4. Throw-away probes (adversarial_scripts/, results under logs/):
+   reaudit_probes.py            run_agent error text over real HTTP, custom-tool gate, ToolError pass-through, TimeoutError label, loop liveness, deep metadata, admission cap
+   reaudit_probe_cancel.py      server-side cancellation under cap 1 (CancelledError unchanged, slot released)
+   reaudit_probe_catalog_http.py catalog discovery gates over real streamable HTTP, default mode
+   reaudit_probe_research.py    research pipeline custom tool (double identity resolution)
+   startup_timing.py            server start time for the 60 s fixture budget
+   first audit adv_identity / adv_runagent_leak / adv_deadline_cancelled re-run (logs/)
+5. verify_iiac_audit_manifest.py / verify_iiac_role_separation.py --strict-product-diff on the session manifest (logs/)

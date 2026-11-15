@@ -1,0 +1,27 @@
+PASS     H1 default/no-auth run_agent :: MCP_PRINCIPAL_REQUIRED: authenticated harness principal required for MCP calls
+PASS     H1 default/no-auth list_agents :: MCP_PRINCIPAL_REQUIRED: authenticated harness principal required for MCP calls
+FAIL     H1 default/no-auth list_catalog_tools :: Unknown tool: 'list_catalog_tools'
+FAIL     H1 default/no-auth describe_catalog_tool :: Unknown tool: 'describe_catalog_tool'
+PASS     H1 no execute :: 0
+PASS     H1b spoof headers + empty key :: MCP_PRINCIPAL_REQUIRED: authenticated harness principal required for MCP calls
+PASS     H2 after-coupling no key :: isError=True ran=False tenant=None user=None :: MCP_PRINCIPAL_REQUIRED: unauthorized: Invalid or missing harness credentials
+PASS     H2 after-coupling wrong key :: isError=True ran=False tenant=None user=None :: MCP_PRINCIPAL_REQUIRED: unauthorized: Invalid or missing harness credentials
+PASS     H2 after-coupling empty key :: isError=True ran=False tenant=None user=None :: MCP_PRINCIPAL_REQUIRED: unauthorized: Invalid or missing harness credentials
+PASS     H2 after-coupling bearer empty :: isError=True ran=False tenant=None user=None :: TRANSPORT:ExceptionGroup:unhandled errors in a TaskGroup (1 sub-exception)
+PASS     H2 after-coupling bearer wrong :: isError=True ran=False tenant=None user=None :: MCP_PRINCIPAL_REQUIRED: unauthorized: Invalid or missing harness credentials
+PASS     H2 after-coupling key + forged tenant :: isError=True ran=False tenant=None user=None :: MCP_TENANT_ASSERTION_CONFLICT: identity_conflict: tenant_id in request body conflicts with authenticated principal.
+PASS     H2 after-coupling key + forged user (tenant matches) :: isError=True ran=False tenant=None user=None :: MCP_TENANT_ASSERTION_CONFLICT: identity_conflict: user_id in request body conflicts with authenticated principal.
+PASS     H2 after-coupling key + matching tenant :: isError=False ran=True tenant=T1 user=harness-api-key :: {"task_id":"task_c484b66ea8c440208058003058ffb2f1","run_id":"run_093c9e0bb46743999cb92fb975bb4ea3","state":"completed","
+PASS     H2 after-coupling key + tenant padded variant :: isError=True ran=False tenant=None user=None :: MCP_TENANT_ASSERTION_CONFLICT: identity_conflict: tenant_id in request body conflicts with authenticated principal.
+PASS     H2 after-coupling key + tenant case variant :: isError=True ran=False tenant=None user=None :: MCP_TENANT_ASSERTION_CONFLICT: identity_conflict: tenant_id in request body conflicts with authenticated principal.
+PASS     H2 after-coupling key only :: isError=False ran=True tenant=T1 user=harness-api-key :: {"task_id":"task_c484b66ea8c440208058003058ffb2f1","run_id":"run_093c9e0bb46743999cb92fb975bb4ea3","state":"completed","
+PASS     H2b list_agents with key :: 
+PASS     H2b list_agents no key :: MCP_PRINCIPAL_REQUIRED: unauthorized: Invalid or missing harness credentials
+INFO     H3 lan ip :: 192.168.0.51
+PASS     H3 local_dev loopback admitted :: {"task_id":"task_4df20501ca6149c5abbe6e3173be46fb","run_id":"run_60181e3b95c543a1a49fd43fcc72639d","state":"completed","answer":"ok","agent_id":null,"metadata":{},"mcp_invocation_id":"mcpi-077e69bafbf
+PASS     H3 local_dev via LAN ip refused :: MCP_PRINCIPAL_REQUIRED: local development identity mode refuses non-loopback clients
+PASS     H3 local_dev list_agents via LAN refused :: MCP_PRINCIPAL_REQUIRED: local development identity mode refuses non-loopback clients
+PASS     H3 local_dev via LAN + XFF spoof refused :: MCP_PRINCIPAL_REQUIRED: local development identity mode refuses non-loopback clients
+PASS     H3b local_dev + configured auth, no key (no downgrade) :: MCP_PRINCIPAL_REQUIRED: unauthorized: Invalid or missing harness credentials
+PASS     H3b local_dev + auth + key + forged tenant -> conflict :: MCP_TENANT_ASSERTION_CONFLICT: identity_conflict: tenant_id in request body conflicts with authenticated principal.
+PASS     H4 custom host tool reachable w/o principal in HARNESS_BOUND (GAP if reachable) :: MCP_PRINCIPAL_REQUIRED: authenticated harness principal required for MCP calls

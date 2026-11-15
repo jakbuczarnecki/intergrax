@@ -1,0 +1,22 @@
+{
+  "stage_id": "PDC-X/P7-00/addendum_2",
+  "method": "the node ids that failed in the long combined run were re-run in short-path detached checkouts, one pytest process per checkout; first attempts with all 84 ids at 19d552bee and at the pin hung after 30 tests (logs/failing_nodes_at_{prev,pin}_first_attempt_all84_hung_after_30_tests.log) and were replaced by runs of the 15 ids that still fail at 324d9dba3",
+  "long_combined_run": { "entries": 274, "failed": 84, "passed": 1359, "skipped": 176, "xfailed": 1, "seconds": 1022 },
+  "at_324d9dba3_isolated": { "failed": 15, "passed": 69 },
+  "persisting_failures": [
+    { "node": "tests/qualification/pdc_x/xd/test_xd_12_evol_ent_audit.py::test_xd12_every_pdc_touched_product_module_maps_to_a_domain_check", "at_head": "FAIL", "at_19d552bee": "XFAIL (strict)", "at_pin": "absent or xfail", "class": "F-41", "finding": "F-41" },
+    { "node": "tests/qualification/pdc_x/p6_impact/test_p6_impact_map_coverage.py::test_every_pdc_touched_product_module_maps_to_at_least_one_check", "at_head": "FAIL", "at_19d552bee": "absent", "at_pin": "absent", "class": "new test, red on integrated tree", "finding": "F-41" },
+    { "node": "tests/unit/governance/test_pdc_x_inventory.py (2 tests)", "at_head": "FAIL", "at_19d552bee": "FAIL", "at_pin": "absent", "class": "F-07 open", "finding": "F-07" },
+    { "node": "tests/qualification/ebh_5/test_ebh_5_behavioral_package_c_v2.py::..dual_slug_integration[integration.embedding_provider] and ..dual_slug_rpl_cde_equivalence[integration.embedding_provider]", "at_head": "FAIL", "at_19d552bee": "FAIL", "at_pin": "PASS", "class": "red since PDC-X", "finding": "F-42" },
+    { "node": "tests/qualification/ebh_5/test_ebh_5_behavioral_package_c_v2.py (3 duckdb tests)", "at_head": "FAIL", "at_19d552bee": "FAIL", "at_pin": "FAIL", "class": "environment: duckdb not installed in the shared .venv", "finding": "F-46" },
+    { "node": "tests/qualification/roadmap_replay_x (5 tests: mechanical_exit_gates x3, b6_r2_reconciliation x2)", "at_head": "FAIL", "at_19d552bee": "FAIL", "at_pin": "FAIL", "class": "red at the pin", "finding": "F-46" },
+    { "node": "tests/qualification/evol_x/gates/test_evol_x_p03_integrity.py::test_mode_a_automation_first_scoped_final_passes", "at_head": "FAIL", "at_19d552bee": "FAIL", "at_pin": "FAIL", "class": "red at the pin", "finding": "F-46" }
+  ],
+  "pass_in_isolation_fail_in_long_run": { "count": 69, "examples": "all 23 test_baseline_promotion_iiac cases, 46 of 47 evol_x p03 integrity cases", "note": "probable long-worktree-path / MAX_PATH effect (delegation record not found ... @<sha>); not isolated", "finding": "F-46 (extends F-38)" },
+  "logs": [
+    "logs/failing_nodes_at_head.log",
+    "logs/failing_15_nodes_at_head.list.txt",
+    "logs/failing15_nodes_at_prev.log",
+    "logs/failing15_nodes_at_pin.log"
+  ]
+}

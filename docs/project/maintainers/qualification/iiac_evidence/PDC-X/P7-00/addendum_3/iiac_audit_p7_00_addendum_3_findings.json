@@ -1,0 +1,136 @@
+{
+  "stage_id": "PDC-X/P7-00/addendum_3",
+  "base_sha": "324d9dba37cb54e1b74a79a05148d2dcc05e6d09",
+  "audited_implementation_sha": "0fc8badd81c4c3e46a3d0ce262c08e8efba41898",
+  "activation_pin_audit_execution_sha": "2d3eceb6cf7e93dccd4d96919319a6c969b4444b",
+  "dossier_verdict_addendum": "PASS_SCOPED",
+  "iiac_manifest_verdict": "CONDITIONAL",
+  "combined_verdict": "PASS_SCOPED",
+  "counts_new": {
+    "HIGH": 0,
+    "MEDIUM": 1,
+    "LOW": 2,
+    "INFO": 4,
+    "total": 7
+  },
+  "product_change_required_for_activation": [],
+  "orchestrator_or_operator_decision_required": [
+    "F-49",
+    "F-41 (carried, no rule at this head)"
+  ],
+  "test_only_change_required_before_merge_or_ci": [
+    "F-50 (optional test addition)",
+    "F-41 test scope or map rule (decision)",
+    "F-35",
+    "F-09"
+  ],
+  "status_of_earlier_findings": [
+    {
+      "id": "F-42",
+      "status": "RESOLVED",
+      "evidence": "the [integration.embedding_provider] cases of test_ebh_5_behavioral_package_c_v2.py pass at 0fc8badd8 (control run of the mutation sample: 3 embedding cases passed; long run: only the 3 duckdb cases fail, red at the pin too). Fixed by the harness registration order plus the dispatch (T-IGX-036-X); mutants M2 and M12 show both layers are needed."
+    },
+    {
+      "id": "F-41",
+      "status": "OPEN_UNCHANGED",
+      "evidence": "impact_map.py and the SSOT JSON are unchanged in this range; the eight applications/*/mcp/server.py modules still select no check (logs/impact_selection_probe_head.json); the XD-12 case and the p6_impact coverage test are red at 0fc8badd8 (long run and isolated re-run). A rule is not part of this delta."
+    },
+    {
+      "id": "F-35",
+      "status": "OPEN_UNCHANGED",
+      "evidence": "the same 10 COMPAT-X event-evolution gates (r3_p0 x4, r3_r1 x6) fail at head and 324d9dba3 and pass at the pin; the other COMPAT-X files of the status list fail at the pin as well (attribution json)"
+    },
+    {
+      "id": "F-09",
+      "status": "OPEN_REPRODUCED",
+      "evidence": "logs/xd03_exit_probe_at_head.log: test_xd_03_agent_governance.py prints '9 passed' after 7 s and the pytest process is still alive 90 s later (killed); T-IGX-036-X lists it as a debt item"
+    },
+    {
+      "id": "F-07",
+      "status": "RESOLVED",
+      "evidence": "test_pdc_x_inventory / requirements / wbs pass in the long run; pdc_x_inventory.py now classifies ARTIFACT_LIFECYCLE to PDC-D8"
+    },
+    {
+      "id": "F-05",
+      "status": "UNCHANGED",
+      "evidence": "as in addendum 2 (red on the integrated tree through F-41)"
+    },
+    {
+      "id": "F-06",
+      "status": "RESOLVED_UNCHANGED",
+      "evidence": "the three EBH-5 gate files pass"
+    }
+  ],
+  "findings": [
+    {
+      "id": "F-49",
+      "severity": "MEDIUM",
+      "area": "integration catalog / shared-slug embedding rows",
+      "verification": "PROBE_CONFIRMED",
+      "title": "The sibling shared-slug embedding row `openai` has the defect that T-IGX-036-X fixed for `ollama`: resolving it as an embedding provider returns the managed-retrieval integration",
+      "evidence": "logs/openai_sibling_probe_head.json (identical at 324d9dba3): row `openai` has categories [managed_retrieval, embedding_provider] and the factory create_openai_managed_retrieval; resolve(EMBEDDING_PROVIDER, 'openai') raises IntegrationConfigurationError without OPENAI_API_KEY and, with a placeholder key, TypeError 'returned OpenAIManagedRetrievalIntegration, expected EmbeddingProvider'. The openai register module uses the same augment_integration_contract_specs pattern as ollama and was not touched (code read). Only two rows of the full default catalog carry more than one category (ollama, openai); after the delta ollama resolves, openai still does not. T-IGX-036-X lists other providers as out of scope; the ebh_5 harness catalog covers embedding_provider only with ollama and hf (code read), so no test pins openai. The RAG runtime binder bind_embedding_provider does not use the catalog factory (code read), so the failure is on the generic resolve / resolve_from_profile / health path (integrations/_shared/health.py).",
+      "impact": "any profile that binds embedding_provider to openai and is resolved through the catalog (health checks, execution-bound resolution) fails; not a security issue; the defect class (one catalog row, factory of the owning category) is only half closed",
+      "recommendation": "orchestrator/operator decision: development is frozen on product paths, so a mirrored dispatch for openai would be a new product path and another pin; alternatively accept, record as debt for the domain audit IA-D3 and add a pinned test"
+    },
+    {
+      "id": "F-50",
+      "severity": "LOW",
+      "area": "tests of the wrapper",
+      "verification": "TEST_RUN",
+      "title": "The new tests do not pin the `enabled` handling or the pass-through of keyword arguments of the dispatching factory: 4 of 11 non-equivalent mutants survive (12th is equivalent)",
+      "evidence": "logs/mutation_sample.stdout.txt (control green: 508 + 3 tests): killed M1 inverted condition, M2 revert of the fix, M3 always-embedding, M7 no wrapper registration, M8 registration without override, M10 model-serving routed to embedding, M12 harness without owning row. Survived: M4 embedding branch hard-wired to enabled=True, M5 default enabled=True, M6 enabled ignored, M9 non-embedding branch calls the owning factory without its keyword arguments; M11 (string comparison) is equivalent. A first run whose -k filter deselected most tests (logs/mutation_sample_first_run_k_filter_deselected_most_tests.stdout.txt) reported M3 and M10 as survivors and was superseded.",
+      "impact": "a later change could flip the fail-closed default (enabled=False) of the embedding integration or drop configuration of the model-serving category without a red test",
+      "recommendation": "test-only addition by the ticket owner (assert enabled default False and True pass-through; assert keyword arguments reach the owning factory); route to IA-D3; accept for the rebind"
+    },
+    {
+      "id": "F-51",
+      "severity": "INFO",
+      "area": "wrapper semantics",
+      "verification": "PROBE_CONFIRMED",
+      "title": "In the embedding branch `enabled` is coerced with bool() and every other keyword (base_url, api_key, ...) is silently dropped; both are carried over from the pre-B-REG-P embedding factory",
+      "evidence": "logs/probes_head.json P2: enabled='false' gives enabled=True; base_url and api_key are ignored (config base_url stays None) although the config class declares base_url; create_ollama_embedding_provider at c3d5b7005^ did the same (code read). The integration is catalog-only (module docstring: runtime binding pending B3), builds no client, reads no environment and makes no network call; default endpoint: none (base_url None), default enabled False.",
+      "impact": "no new credential, tenant or endpoint handling; a string 'false' read from a profile would enable a catalog-only flag; a configured base_url is not forwarded",
+      "recommendation": "accept for the rebind; address together with the runtime binding (B3) in IA-D3"
+    },
+    {
+      "id": "F-52",
+      "severity": "LOW",
+      "area": "catalog registration atomicity",
+      "verification": "PROBE_CONFIRMED",
+      "title": "The embedding registration is two catalog writes (augment, then wrapper re-registration); between them the row advertises the embedding category with the owning factory",
+      "evidence": "logs/probes_head.json P6: an observer called between the two writes sees categories [model_serving_runtime, embedding_provider] and resolve(EMBEDDING_PROVIDER, 'ollama') raises the old TypeError; afterwards it resolves. A 200-round concurrent soak (P7) did not hit the window (0 of 200), so it is narrow; the second write cannot fail (override=True, no I/O). The catalog revision generation and digest are unchanged versus 324d9dba3 (P4 and the rebootstrap probe: generation 201 / 205 in both).",
+      "impact": "bootstrap-time window only; the catalog otherwise treats registration as atomic (registry/test_catalog_atomic_registration_concurrency.py passes)",
+      "recommendation": "accept; a single-write form (wrap the factory before the one write) would remove the window if the file is touched again"
+    },
+    {
+      "id": "F-53",
+      "severity": "INFO",
+      "area": "regression attribution",
+      "verification": "TEST_RUN",
+      "title": "The widened selection (integration catalog, provider cutover, agent distribution, COMPAT-X) shows 231 failures in one process; only 12 are new since the pin and none is caused by the delta",
+      "evidence": "attribution_of_regression_failures.json: head and 324d9dba3 fail the same 222 ids in isolation (9 pass); the pin fails 218 of 229 existing ids. 210 are red at the pin as well (test_provider_runtime_cutover 92, test_provider_category_contract_migration 67, agent_distribution 30, the rest; plus duckdb-dependent ebh_5/ebh_7 tests), 12 are new since the pin (F-35 x10, F-41 x2), 9 fail only inside the long run. The cause of the 210 was not diagnosed (AttributeError from_client / TypeError in the provider tests). The new p6_ecapfix tests do not pollute catalog state (logs/pollution_check_*.log).",
+      "impact": "the integration-unit part of this selection is partly red at the pin, so it detects a regression in the touched area less sharply; the delta-specific tests (p6_ecapfix, reg_p, ebh_5 embedding cases, catalog and registry unit tests) are all green",
+      "recommendation": "route the 210 to the owners of the integration provider tests; accept as attributed"
+    },
+    {
+      "id": "F-54",
+      "severity": "INFO",
+      "area": "non-ACT-N11 changes in the range",
+      "verification": "CODE_READ_BY_AUDITOR",
+      "title": "Positive record: the other non-docs changes in 324d9dba3..0fc8badd8 weaken no gate",
+      "evidence": "uv.lock: dependabot bump of opentelemetry-api 1.38.0 to 1.45.2 with transitive changes (mistralai 1.10.1 to 1.12.4, importlib-metadata dropped, two otel exporter packages added, all hash-pinned); pyproject.toml unchanged; the packages sit in the test and observability-otlp extras; uv lock --check exit 0. scripts/qualification/pdc_x_inventory.py (ARTIFACT_LIFECYCLE docs classified to PDC-D8, which resolves F-07) and pdc_x_wbs.py (two WBS batches) are qualification scripts outside the ACT-N11 prefixes. tests/qualification/ebh_5/_package_c_v2_primitives.py adds only the owning-row registration and no assertion changes. The commits of the range carry no AI-attribution trailer.",
+      "impact": "none",
+      "recommendation": "accept"
+    },
+    {
+      "id": "F-55",
+      "severity": "INFO",
+      "area": "delta product code",
+      "verification": "PROBE_CONFIRMED",
+      "title": "Positive record: the delta adds no boundary violation, credential, endpoint, process or network surface and changes exactly one resolve result",
+      "evidence": "register.py adds imports of dataclasses.replace, typing, catalog_factory.IntegrationFactory, the embedding bundle and register_integration (code read; ruff and pyright clean, tier and boundary gates exit 0, no_applications_imports output md5 identical to the earlier audits). Of the 201 (slug, category) pairs of the full catalog exactly one result differs between 324d9dba3 and 0fc8badd8: ollama|embedding_provider (TypeError to OllamaEmbeddingProviderIntegration); model-serving and all other categories resolve identically; the wrapper forwards every non-embedding shape (enum, string, None, absent, unknown category) to the owning factory with unchanged keyword arguments (spy probe P3). Repeated and overriding default registration keep one ollama row with both categories and the same revision generation. B-REG-P lineage: the same item (code read of 7aa9cfa18, c3d5b7005 and f209febbe, plus the base probe reproducing the T-IGX-036-X problem statement exactly): 7aa9cfa18 registered a second row, c3d5b7005 merged the rows without a per-category factory, f209febbe adds the dispatch.",
+      "impact": "none",
+      "recommendation": "accept"
+    }
+  ]
+}

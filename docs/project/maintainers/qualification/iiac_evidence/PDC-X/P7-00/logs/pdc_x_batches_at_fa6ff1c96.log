@@ -1,0 +1,3 @@
+﻿Z
+fa6ff1c9616a6df28c11b087eb3f1b0dc4097b5f
+env note: PYTHONPATH=<checkout>;<tzdata 2026.3 copied from build/dep2-core-gate site-packages> (shared .venv lacks tzdata declared in baseline pyproject)

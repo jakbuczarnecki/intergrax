@@ -1,0 +1,9 @@
+# gate before re-pin 2 (activation record as on origin/mcp-rc e76785ea2); log captured at HEAD e76785ea2 before any re-pin edit, copied here at UTC 2026-11-14T18:13:50Z
+IIAC policy activation: FAIL
+  - ACT-N11 stale audit after material governance change: docs/project/maintainers/qualification/INTEGRAX_INTERNAL_INDEPENDENT_AGENT_CERTIFICATION_PROTOCOL.md
+  - ACT-N11 product path changed after the audited SHA: applications/local_workspace_application/tests/test_run_artifact_metadata.py
+  - ACT-N11 product path changed after the audited SHA: intergrax/integrations/providers/embedding_provider/ollama/manifest.py
+  - ACT-N11 product path changed after the audited SHA: intergrax/integrations/providers/embedding_provider/ollama/register.py
+  - ACT-N11 product path changed after the audited SHA: intergrax/integrations/providers/embedding_provider/openai/register.py
+  - ACT-N11 product path changed after the audited SHA: intergrax/platform/enterprise_audit/data/changed_since_impact_map.v1.json
+  - ACT-N11 product path changed after the audited SHA: intergrax/platform/enterprise_audit/impact_map.py

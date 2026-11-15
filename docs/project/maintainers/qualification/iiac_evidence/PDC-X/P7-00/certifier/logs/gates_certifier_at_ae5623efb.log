@@ -1,0 +1,249 @@
+# certifier gate re-run (PDC-P7-00 preflight): 3 EBH-5 gate files + test_pdc_x_inventory + 2 COMPAT-X event-evolution gate files (F-35)
+# command: python .tmp/session/p7-00-cert/run_gates.py  (pytest.main(FILES+['-q','-rfE']))
+# checkout: D:\Projekty\intergrax\.claude\worktrees\mcp-rc-certifier-fe2eb3
+# HEAD: ae5623efbdfd69ddf4ba67f82861ccad130c9b33
+# PYTHONPATH: D:/Projekty/intergrax/.claude/worktrees/mcp-rc-certifier-fe2eb3
+# intergrax from: D:\Projekty\intergrax\.claude\worktrees\mcp-rc-certifier-fe2eb3\intergrax\__init__.py
+.......................F.F....F...........................F...FF........ [ 62%]
+.......FF.F.........F....FF..FF...FFFFF.....                             [100%]
+================================== FAILURES ===================================
+____________ test_committed_inventory_is_current_and_closed_world _____________
+
+inv = <module 'pdc_x_inventory_under_test' from 'D:\\Projekty\\intergrax\\.claude\\worktrees\\mcp-rc-certifier-fe2eb3\\scripts\\qualification\\pdc_x_inventory.py'>
+
+    def test_committed_inventory_is_current_and_closed_world(inv: ModuleType) -> None:
+>       assert inv.check(inv.build()) == []
+E       AssertionError: assert ['UNMAPPED:do...ith --write)'] == []
+E         
+E         Left contains 3 more items, first extra item: 'UNMAPPED:docs/project/capabilities/architecture/ARTIFACT_LIFECYCLE.md'
+E         Use -v to get more diff
+
+tests\unit\governance\test_pdc_x_inventory.py:37: AssertionError
+__________ test_every_item_has_exactly_one_known_category_and_status __________
+
+inv = <module 'pdc_x_inventory_under_test' from 'D:\\Projekty\\intergrax\\.claude\\worktrees\\mcp-rc-certifier-fe2eb3\\scripts\\qualification\\pdc_x_inventory.py'>
+
+    def test_every_item_has_exactly_one_known_category_and_status(inv: ModuleType) -> None:
+        allowed = set(inv.DOMAINS) | {inv.FOUNDATION, inv.CONSUMER}
+        for item in inv.build()["items"]:
+>           assert item["category"] in allowed, item
+E           AssertionError: {'category': 'UNMAPPED', 'kind': 'document', 'path': 'docs/project/capabilities/architecture/ARTIFACT_LIFECYCLE.md', 'status': 'INDEX_ONLY'}
+E           assert 'UNMAPPED' in {'CONSUMER', 'PDC-D1', 'PDC-D2', 'PDC-D3', 'PDC-D4', 'PDC-D5', ...}
+
+tests\unit\governance\test_pdc_x_inventory.py:47: AssertionError
+__________________ test_cx_r3_p0_closed_world_inventory_gate __________________
+
+    def test_cx_r3_p0_closed_world_inventory_gate() -> None:
+        violations = validate_inventory_closed_world()
+>       assert violations == ()
+E       AssertionError: assert ('unclassifie...ion bypasses') == ()
+E         
+E         Left contains 2 more items, first extra item: 'unclassified persistence append intergrax/runtime/security/security_audit_trail.py:213 self._evidence.append'
+E         Use -v to get more diff
+
+tests\qualification\compat_x\test_compat_x_event_evolution_r3_p0_gates.py:63: AssertionError
+__________ test_cx_r3_p0_mechanical_persistence_discovery_classified __________
+
+    def test_cx_r3_p0_mechanical_persistence_discovery_classified() -> None:
+        sites = discover_runtime_event_persistence_call_sites()
+        assert sites
+>       assert validate_production_persistence_call_site_classification(sites) == ()
+E       AssertionError: assert ('unclassifie...ence.append',) == ()
+E         
+E         Left contains one more item: 'unclassified persistence append intergrax/runtime/security/security_audit_trail.py:213 self._evidence.append'
+E         Use -v to get more diff
+
+tests\qualification\compat_x\test_compat_x_event_evolution_r3_p0_gates.py:299: AssertionError
+_____________________ test_cx_r3_p0_combined_gate_passes ______________________
+
+    def test_cx_r3_p0_combined_gate_passes() -> None:
+        passed, violations = event_evolution_r3_p0_gate_passes()
+>       assert passed, violations
+E       AssertionError: ('unclassified persistence append intergrax/runtime/security/security_audit_trail.py:213 self._evidence.append', 'inve...nce discovery includes UNCLASSIFIED append call sites', 'canonical production persistence bypass count 1 (expected 0)')
+E       assert False
+
+tests\qualification\compat_x\test_compat_x_event_evolution_r3_p0_gates.py:345: AssertionError
+______________ test_cx_r3_p0_probe_k_unknown_persistence_append _______________
+
+    def test_cx_r3_p0_probe_k_unknown_persistence_append() -> None:
+        site = synthetic_unknown_persistence_append_call_site()
+        assert site.disposition == RuntimeEventWritePathDisposition.UNCLASSIFIED
+>       assert synthetic_probe_k_unknown_persistence_append_gate() == ()
+E       AssertionError: assert ('probe K: pr...n injection',) == ()
+E         
+E         Left contains one more item: 'probe K: production gate must pass before unknown injection'
+E         Use -v to get more diff
+
+tests\qualification\compat_x\test_compat_x_event_evolution_r3_p0_gates.py:351: AssertionError
+__________________ test_cx_r3_r1_q13_p0_combined_gate_passes __________________
+
+    def test_cx_r3_r1_q13_p0_combined_gate_passes() -> None:
+        passed, violations = event_evolution_r3_p0_gate_passes()
+>       assert passed, violations
+E       AssertionError: ('unclassified persistence append intergrax/runtime/security/security_audit_trail.py:213 self._evidence.append', 'inve...nce discovery includes UNCLASSIFIED append call sites', 'canonical production persistence bypass count 1 (expected 0)')
+E       assert False
+
+tests\qualification\compat_x\test_compat_x_event_evolution_r3_r1_gates.py:206: AssertionError
+____________ test_cx_r3_r1_q14_production_persistence_bypass_zero _____________
+
+    def test_cx_r3_r1_q14_production_persistence_bypass_zero() -> None:
+        sites = discover_runtime_event_persistence_call_sites()
+>       assert validate_production_persistence_call_site_classification(sites) == ()
+E       AssertionError: assert ('unclassifie...ence.append',) == ()
+E         
+E         Left contains one more item: 'unclassified persistence append intergrax/runtime/security/security_audit_trail.py:213 self._evidence.append'
+E         Use -v to get more diff
+
+tests\qualification\compat_x\test_compat_x_event_evolution_r3_r1_gates.py:211: AssertionError
+_____________ test_cx_r3_r1_combined_gate_passes_on_current_head ______________
+
+    def test_cx_r3_r1_combined_gate_passes_on_current_head() -> None:
+        passed, violations = event_evolution_r3_r1_gate_passes()
+>       assert passed, violations
+E       AssertionError: ('unclassified runtime event reader intergrax/runtime/security/security_audit_trail.py:198 append RuntimeEvent(...)', ...dit_trail.py:213 self._evidence.append', 'inventory persistence call sites include canonical production bypasses', ...)
+E       assert False
+
+tests\qualification\compat_x\test_compat_x_event_evolution_r3_r1_gates.py:223: AssertionError
+_________________ test_cx_r3_r1_probe_h_p0_bypass_regression __________________
+
+    def test_cx_r3_r1_probe_h_p0_bypass_regression() -> None:
+>       assert synthetic_probe_k_unknown_persistence_append_gate() == ()
+E       AssertionError: assert ('probe K: pr...n injection',) == ()
+E         
+E         Left contains one more item: 'probe K: production gate must pass before unknown injection'
+E         Use -v to get more diff
+
+tests\qualification\compat_x\test_compat_x_event_evolution_r3_r1_gates.py:299: AssertionError
+_____________ test_cx_r3_r1_reader_sites_closed_world_classified ______________
+
+    def test_cx_r3_r1_reader_sites_closed_world_classified() -> None:
+        sites = discover_runtime_event_reader_sites()
+        assert sites
+>       assert all(site.disposition != RuntimeEventReaderDisposition.UNCLASSIFIED for site in sites)
+E       assert False
+E        +  where False = all(<generator object test_cx_r3_r1_reader_sites_closed_world_classified.<locals>.<genexpr> at 0x0000020231166740>)
+
+tests\qualification\compat_x\test_compat_x_event_evolution_r3_r1_gates.py:328: AssertionError
+________ test_cx_r3_r1_constructor_sites_closed_world_evidence_backed _________
+
+    def test_cx_r3_r1_constructor_sites_closed_world_evidence_backed() -> None:
+        ctor_sites = discover_runtime_event_constructor_sites()
+        assert ctor_sites
+>       assert all(site.disposition != RuntimeEventReaderDisposition.UNCLASSIFIED for site in ctor_sites)
+E       assert False
+E        +  where False = all(<generator object test_cx_r3_r1_constructor_sites_closed_world_evidence_backed.<locals>.<genexpr> at 0x0000020231167370>)
+
+tests\qualification\compat_x\test_compat_x_event_evolution_r3_r1_gates.py:341: AssertionError
+_____ test_cx_r3_r1_probe_m_sanctioned_constructor_passes_classification ______
+
+    def test_cx_r3_r1_probe_m_sanctioned_constructor_passes_classification() -> None:
+        site = synthetic_sanctioned_runtime_event_constructor_site()
+        assert site.disposition == RuntimeEventReaderDisposition.NON_PERSISTED_CONSTRUCTION
+        assert site.classification_evidence == RuntimeEventReaderClassificationEvidence.PLATFORM_SIGNAL_EVENT_FACTORY
+        passed, violations = event_evolution_r3_r1_gate_passes(extra_reader_sites=(site,))
+>       assert passed, violations
+E       AssertionError: ('unclassified runtime event reader intergrax/runtime/security/security_audit_trail.py:198 append RuntimeEvent(...)', ...dit_trail.py:213 self._evidence.append', 'inventory persistence call sites include canonical production bypasses', ...)
+E       assert False
+
+tests\qualification\compat_x\test_compat_x_event_evolution_r3_r1_gates.py:373: AssertionError
+______ test_cx_r3_r1_constructor_evidence_rule_integrity_on_current_head ______
+
+    def test_cx_r3_r1_constructor_evidence_rule_integrity_on_current_head() -> None:
+        assert count_module_wide_constructor_positive_evidence_rules() == 0
+        assert count_stale_constructor_positive_evidence_rules() == 0
+>       assert validate_constructor_positive_evidence_rule_integrity() == ()
+E       assert ("production ...ppend:198']",) == ()
+E         
+E         Left contains one more item: "production RuntimeEvent constructors without positive evidence (1): ['intergrax/runtime/security/security_audit_trail.py:append:198']"
+E         Use -v to get more diff
+
+tests\qualification\compat_x\test_compat_x_event_evolution_r3_r1_gates.py:379: AssertionError
+___________ test_cx_r3_r1_compat_current_head_inventory_reconciled ____________
+
+    def test_cx_r3_r1_compat_current_head_inventory_reconciled() -> None:
+>       delta = build_r3_runtime_event_schema_version_candidate_delta()
+                ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+tests\qualification\compat_x\test_compat_x_event_evolution_r3_r1_gates.py:405: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+    def build_r3_runtime_event_schema_version_candidate_delta() -> CurrentHeadCompatInventoryDelta:
+        """R3 reconciliation: derived added/removed IDs only after historical remainder fingerprint proof."""
+        report = build_closed_world_report()
+        violations = prove_r3_runtime_event_schema_version_inventory_delta(report)
+        if violations:
+>           raise AssertionError("; ".join(violations))
+E           AssertionError: raw_candidates 7411 != accepted current-head 7356; current-minus-R3 raw count 7410 != replay accepted remainder 7355; current-minus-R3 stable inventory fingerprint 014a74b6e61bd10537cbbe96051f333f82aa191451b856c3cfbee126ea40424d != replay accepted 9dfd146f3b50bd56a8b997664569ac538396d322ceb21eb6682aa75a862716fa (lineage 05549f9acb9ecedf910c7470d442bba5d0a27337)
+
+tests\qualification\compat_x\_compat_x_semantic_identity_reconciliation.py:546: AssertionError
+______ test_cx_r3_r1_r3_candidate_semantic_identity_and_version_literal _______
+
+    def test_cx_r3_r1_r3_candidate_semantic_identity_and_version_literal() -> None:
+>       delta = build_r3_runtime_event_schema_version_candidate_delta()
+                ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+tests\qualification\compat_x\test_compat_x_event_evolution_r3_r1_gates.py:414: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+    def build_r3_runtime_event_schema_version_candidate_delta() -> CurrentHeadCompatInventoryDelta:
+        """R3 reconciliation: derived added/removed IDs only after historical remainder fingerprint proof."""
+        report = build_closed_world_report()
+        violations = prove_r3_runtime_event_schema_version_inventory_delta(report)
+        if violations:
+>           raise AssertionError("; ".join(violations))
+E           AssertionError: raw_candidates 7411 != accepted current-head 7356; current-minus-R3 raw count 7410 != replay accepted remainder 7355; current-minus-R3 stable inventory fingerprint 014a74b6e61bd10537cbbe96051f333f82aa191451b856c3cfbee126ea40424d != replay accepted 9dfd146f3b50bd56a8b997664569ac538396d322ceb21eb6682aa75a862716fa (lineage 05549f9acb9ecedf910c7470d442bba5d0a27337)
+
+tests\qualification\compat_x\_compat_x_semantic_identity_reconciliation.py:546: AssertionError
+_______ test_cx_r3_r1_probe_q_equal_count_substitution_fails_inventory ________
+
+    def test_cx_r3_r1_probe_q_equal_count_substitution_fails_inventory() -> None:
+        report = build_synthetic_r3_inventory_equal_count_substitution_report()
+>       assert len(report.raw_candidates) == ACCEPTED_CURRENT_HEAD_RAW_CANDIDATES
+E       AssertionError: assert 7411 == 7356
+E        +  where 7411 = len((DiscoveryCandidate(candidate_id='registry.contracts.AgentRunRequest', path='intergrax/contracts/agent_run.py', discov...='agent_run_checkpoint.v1', version_source='intergrax/contracts/migrations/registry.py:CONTRACT_SCHEMA_REGISTRY'), ...))
+E        +    where (DiscoveryCandidate(candidate_id='registry.contracts.AgentRunRequest', path='intergrax/contracts/agent_run.py', discov...='agent_run_checkpoint.v1', version_source='intergrax/contracts/migrations/registry.py:CONTRACT_SCHEMA_REGISTRY'), ...) = ClosedWorldReport(raw_candidates=(DiscoveryCandidate(candidate_id='registry.contracts.AgentRunRequest', path='intergra...mentMode', 'export.intergrax.contracts.runtime_intelligence.__init__.py::run_runtime_intelligence_analyzer_isolated'})).raw_candidates
+
+tests\qualification\compat_x\test_compat_x_event_evolution_r3_r1_gates.py:421: AssertionError
+____________ test_cx_r3_r1_probe_r_hidden_removal_fails_inventory _____________
+
+    def test_cx_r3_r1_probe_r_hidden_removal_fails_inventory() -> None:
+        report = build_synthetic_r3_inventory_hidden_removal_report()
+>       assert len(report.raw_candidates) == REPLAY_X_ACCEPTED_REMAINDER_RAW_CANDIDATES
+E       AssertionError: assert 7410 == 7355
+E        +  where 7410 = len((DiscoveryCandidate(candidate_id='registry.contracts.AgentRunRequest', path='intergrax/contracts/agent_run.py', discov...='agent_run_checkpoint.v1', version_source='intergrax/contracts/migrations/registry.py:CONTRACT_SCHEMA_REGISTRY'), ...))
+E        +    where (DiscoveryCandidate(candidate_id='registry.contracts.AgentRunRequest', path='intergrax/contracts/agent_run.py', discov...='agent_run_checkpoint.v1', version_source='intergrax/contracts/migrations/registry.py:CONTRACT_SCHEMA_REGISTRY'), ...) = ClosedWorldReport(raw_candidates=(DiscoveryCandidate(candidate_id='registry.contracts.AgentRunRequest', path='intergra...mentMode', 'export.intergrax.contracts.runtime_intelligence.__init__.py::run_runtime_intelligence_analyzer_isolated'})).raw_candidates
+
+tests\qualification\compat_x\test_compat_x_event_evolution_r3_r1_gates.py:429: AssertionError
+__________ test_cx_r3_r1_probe_s_balanced_add_remove_fails_inventory __________
+
+    def test_cx_r3_r1_probe_s_balanced_add_remove_fails_inventory() -> None:
+        report = build_synthetic_r3_inventory_balanced_add_remove_report()
+>       assert len(report.raw_candidates) == ACCEPTED_CURRENT_HEAD_RAW_CANDIDATES
+E       AssertionError: assert 7411 == 7356
+E        +  where 7411 = len((DiscoveryCandidate(candidate_id='registry.contracts.AgentRunRequest', path='intergrax/contracts/agent_run.py', discov...='agent_run_checkpoint.v1', version_source='intergrax/contracts/migrations/registry.py:CONTRACT_SCHEMA_REGISTRY'), ...))
+E        +    where (DiscoveryCandidate(candidate_id='registry.contracts.AgentRunRequest', path='intergrax/contracts/agent_run.py', discov...='agent_run_checkpoint.v1', version_source='intergrax/contracts/migrations/registry.py:CONTRACT_SCHEMA_REGISTRY'), ...) = ClosedWorldReport(raw_candidates=(DiscoveryCandidate(candidate_id='registry.contracts.AgentRunRequest', path='intergra...mentMode', 'export.intergrax.contracts.runtime_intelligence.__init__.py::run_runtime_intelligence_analyzer_isolated'})).raw_candidates
+
+tests\qualification\compat_x\test_compat_x_event_evolution_r3_r1_gates.py:436: AssertionError
+=========================== short test summary info ===========================
+FAILED tests/unit/governance/test_pdc_x_inventory.py::test_committed_inventory_is_current_and_closed_world
+FAILED tests/unit/governance/test_pdc_x_inventory.py::test_every_item_has_exactly_one_known_category_and_status
+FAILED tests/qualification/compat_x/test_compat_x_event_evolution_r3_p0_gates.py::test_cx_r3_p0_closed_world_inventory_gate
+FAILED tests/qualification/compat_x/test_compat_x_event_evolution_r3_p0_gates.py::test_cx_r3_p0_mechanical_persistence_discovery_classified
+FAILED tests/qualification/compat_x/test_compat_x_event_evolution_r3_p0_gates.py::test_cx_r3_p0_combined_gate_passes
+FAILED tests/qualification/compat_x/test_compat_x_event_evolution_r3_p0_gates.py::test_cx_r3_p0_probe_k_unknown_persistence_append
+FAILED tests/qualification/compat_x/test_compat_x_event_evolution_r3_r1_gates.py::test_cx_r3_r1_q13_p0_combined_gate_passes
+FAILED tests/qualification/compat_x/test_compat_x_event_evolution_r3_r1_gates.py::test_cx_r3_r1_q14_production_persistence_bypass_zero
+FAILED tests/qualification/compat_x/test_compat_x_event_evolution_r3_r1_gates.py::test_cx_r3_r1_combined_gate_passes_on_current_head
+FAILED tests/qualification/compat_x/test_compat_x_event_evolution_r3_r1_gates.py::test_cx_r3_r1_probe_h_p0_bypass_regression
+FAILED tests/qualification/compat_x/test_compat_x_event_evolution_r3_r1_gates.py::test_cx_r3_r1_reader_sites_closed_world_classified
+FAILED tests/qualification/compat_x/test_compat_x_event_evolution_r3_r1_gates.py::test_cx_r3_r1_constructor_sites_closed_world_evidence_backed
+FAILED tests/qualification/compat_x/test_compat_x_event_evolution_r3_r1_gates.py::test_cx_r3_r1_probe_m_sanctioned_constructor_passes_classification
+FAILED tests/qualification/compat_x/test_compat_x_event_evolution_r3_r1_gates.py::test_cx_r3_r1_constructor_evidence_rule_integrity_on_current_head
+FAILED tests/qualification/compat_x/test_compat_x_event_evolution_r3_r1_gates.py::test_cx_r3_r1_compat_current_head_inventory_reconciled
+FAILED tests/qualification/compat_x/test_compat_x_event_evolution_r3_r1_gates.py::test_cx_r3_r1_r3_candidate_semantic_identity_and_version_literal
+FAILED tests/qualification/compat_x/test_compat_x_event_evolution_r3_r1_gates.py::test_cx_r3_r1_probe_q_equal_count_substitution_fails_inventory
+FAILED tests/qualification/compat_x/test_compat_x_event_evolution_r3_r1_gates.py::test_cx_r3_r1_probe_r_hidden_removal_fails_inventory
+FAILED tests/qualification/compat_x/test_compat_x_event_evolution_r3_r1_gates.py::test_cx_r3_r1_probe_s_balanced_add_remove_fails_inventory
+19 failed, 97 passed in 45.71s
+# pytest exit code: 1
+# elapsed_s: 48.16

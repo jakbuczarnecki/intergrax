@@ -1,0 +1,34 @@
+PDC-X / P7-00 addendum 1 - ACT-N11 baseline independent audit (G6) evidence manifest
+
+base_sha:                   fa6ff1c9616a6df28c11b087eb3f1b0dc4097b5f
+audited_implementation_sha: 19d552beeb6f0677a8bdc3b4ce65da15dd637c7b (= test_execution_sha = audit_execution_sha)
+activation pin:             2d3eceb6cf7e93dccd4d96919319a6c969b4444b
+auditor branch:             p7-00-baseline-audit (docs/evidence only; origin/mcp-rc merged in, no product, test, ticket or activation-record edit)
+addendum / combined verdict: PASS_SCOPED  (IIAC manifest verdict value: CONDITIONAL)
+new findings:               0 HIGH, 1 MEDIUM, 3 LOW, 2 INFO (F-35..F-40)
+
+Dossier:   docs/project/maintainers/qualification/platform_domain_completeness/PDC_P7_00_ACT_N11_BASELINE_AUDIT_ADDENDUM_1.md
+Records:   audit_scope.json, iiac_audit_session_manifest.PDC-X.p7_00.addendum_1.json, iiac_audit_p7_00_addendum_1_findings.json, test_matrix.txt, attribution_of_regression_failures.json
+Logs:      logs/   Scripts: adversarial_scripts/
+
+sha256 of every file listed (this manifest excluded):
+
+9aa0cc532059e5fdd7bf19b72b43b6a1ba2cac8520a099e821f739a4e2df3b94  docs/project/maintainers/qualification/iiac_evidence/PDC-X/P7-00/addendum_1/adversarial_scripts/addendum_1_probes.py
+ac283b1aa579ad63d92c5d7a12743eba1ac7ce0d6733997add5f59d8a0aa9d9d  docs/project/maintainers/qualification/iiac_evidence/PDC-X/P7-00/addendum_1/adversarial_scripts/run_addendum_tests.py
+5ffdbdf345c58820d6ed151742e72ea6496e6b938e9ff227f1ca04ea41fe7ab6  docs/project/maintainers/qualification/iiac_evidence/PDC-X/P7-00/addendum_1/adversarial_scripts/run_failing_files_at_checkout.py
+26455930580d9314a1356c32ee00e3167e0130418a002dd1e404bce1431e98cc  docs/project/maintainers/qualification/iiac_evidence/PDC-X/P7-00/addendum_1/attribution_of_regression_failures.json
+08e6bf5041348659ffb5e450bae080863b2abe1778416e436b729da488708792  docs/project/maintainers/qualification/iiac_evidence/PDC-X/P7-00/addendum_1/audit_scope.json
+224e86a27b60a8213628943098ac988d41d7bd3568d1bb89b4a6a548911c61c9  docs/project/maintainers/qualification/iiac_evidence/PDC-X/P7-00/addendum_1/iiac_audit_p7_00_addendum_1_findings.json
+7ad9adb2f3617325e816e0967147ba8ea702e144a3aba53e82102a33aa6fbe51  docs/project/maintainers/qualification/iiac_evidence/PDC-X/P7-00/addendum_1/iiac_audit_session_manifest.PDC-X.p7_00.addendum_1.json
+ec0dfeca01c0d43b921373d7aa8a5dda287b4597dfb16d2a20b7d82cb39d6475  docs/project/maintainers/qualification/iiac_evidence/PDC-X/P7-00/addendum_1/logs/addendum_1_probes.results.json
+c3604383bf1dd9e3fe7d7ec03604e8d4bb77a7b80c65d7e72a1d087633a2bdb7  docs/project/maintainers/qualification/iiac_evidence/PDC-X/P7-00/addendum_1/logs/addendum_regression_run.header.txt
+4a6200d64fe3779c1c763e2874a75c75edf64f9ffc7804bbfcec563ec5e8703d  docs/project/maintainers/qualification/iiac_evidence/PDC-X/P7-00/addendum_1/logs/addendum_regression_run.stdout.txt
+cbbfbd6c1ab8bad4f320a103041746438cc62105a31086d5ff94b17016df796c  docs/project/maintainers/qualification/iiac_evidence/PDC-X/P7-00/addendum_1/logs/addendum_static_gates.log
+8ddbbdc4148b4f70d1160fd7f014a485be5f017722212dbac7d246df90a1edf9  docs/project/maintainers/qualification/iiac_evidence/PDC-X/P7-00/addendum_1/logs/failing_files_at_head_first_attempt_whole_files_aborted.log
+e4bda7ddeba94396c139ae7fa41b5af7597d33dfa4b2616e16d7176cafac8e9f  docs/project/maintainers/qualification/iiac_evidence/PDC-X/P7-00/addendum_1/logs/failing_nodes_at_fa6.log
+3632a491300ff4b8f8435b3fa0a29d8d69cc800d52b2cd249d901ccc5f5ea9c6  docs/project/maintainers/qualification/iiac_evidence/PDC-X/P7-00/addendum_1/logs/failing_nodes_at_head.log
+70a392445a7ab994b5d93751067a3e6a90350d27d473a2464df75ddaea606108  docs/project/maintainers/qualification/iiac_evidence/PDC-X/P7-00/addendum_1/logs/failing_nodes_at_pin.log
+0d54130c7517d815704205067dae004a089d5f3da8b06b3402f96ae3e9a6def4  docs/project/maintainers/qualification/iiac_evidence/PDC-X/P7-00/addendum_1/logs/verify_iiac_audit_manifest.log
+10d393916c4a82bbcf5eeff055981e7550fa54167244c1812c07d6e3d22ffbf3  docs/project/maintainers/qualification/iiac_evidence/PDC-X/P7-00/addendum_1/logs/verify_iiac_role_separation.log
+7c8e9f862828188d09af37fd7d372e085ec9cf0d109bc80c0d67df40efd352aa  docs/project/maintainers/qualification/iiac_evidence/PDC-X/P7-00/addendum_1/test_matrix.txt
+722cf0654530883c9466e4269eb43c8ae239190145c2ca6ec478b1ed61c3e1c2  docs/project/maintainers/qualification/platform_domain_completeness/PDC_P7_00_ACT_N11_BASELINE_AUDIT_ADDENDUM_1.md

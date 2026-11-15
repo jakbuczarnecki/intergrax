@@ -1,0 +1,23 @@
+FFFFFFFF.F.                                                              [100%]
+================================== FAILURES ===================================
+D:\Projekty\_wt\_scratch\p7a2-pin\tests\qualification\evol_x\gates\test_evol_x_p03_integrity.py:450: AssertionError: assert ['artifact mi...tion.v1.json'] == []
+D:\Projekty\_wt\_scratch\p7a2-pin\tests\qualification\roadmap_replay_x\test_roadmap_replay_x_b6_r2_reconciliation.py:30: AssertionError: assert ('ecap_counte...ailures:0!=1') == ()
+D:\Projekty\_wt\_scratch\p7a2-pin\tests\qualification\roadmap_replay_x\test_roadmap_replay_x_b6_r2_reconciliation.py:34: AssertionError: assert ('ecap_counte...ailures:0!=1') == ()
+D:\Projekty\_wt\_scratch\p7a2-pin\tests\qualification\roadmap_replay_x\test_roadmap_replay_x_mechanical_exit_gates.py:110: AssertionError: intergrax: ['intergrax/applications/_shared/mcp_application_server.py', 'intergrax/applications/_shared/mcp_developer_api.py', 'intergrax/applications/_shared/mcp_engine_concurrency.py', 'intergrax/applications/_shared/mcp_host_mount.py', 'intergrax/applications/_shared/mcp_import_guard.py', 'intergrax/applications/_shared/mcp_nexus_server.py', 'intergrax/applications/_shared/mcp_server_engine.py', 'intergrax/applications/_shared/settings_loader.py', 'intergrax/contracts/mcp_server_definition.py']
+D:\Projekty\_wt\_scratch\p7a2-pin\tests\qualification\roadmap_replay_x\test_roadmap_replay_x_mechanical_exit_gates.py:148: AssertionError: assert 2 == 0
+D:\Projekty\_wt\_scratch\p7a2-pin\tests\qualification\roadmap_replay_x\test_roadmap_replay_x_mechanical_exit_gates.py:160: AssertionError: assert ('ecap_counte...ailures:0!=1') == ()
+D:\Projekty\_wt\_scratch\p7a2-pin\tests\qualification\ebh_5\_package_c_v2_primitives.py:27: RuntimeError: integration.relational_store: mandatory dependency 'duckdb' missing — sync environment with sanctioned dev-ci / integration extras
+D:\Projekty\_wt\_scratch\p7a2-pin\tests\qualification\ebh_5\_package_c_v2_primitives.py:27: RuntimeError: integration.relational_store: mandatory dependency 'duckdb' missing — sync environment with sanctioned dev-ci / integration extras
+D:\Projekty\_wt\_scratch\p7a2-pin\tests\qualification\ebh_5\_package_c_v2_primitives.py:27: RuntimeError: integration.relational_store: mandatory dependency 'duckdb' missing — sync environment with sanctioned dev-ci / integration extras
+=========================== short test summary info ===========================
+FAILED tests/qualification/evol_x/gates/test_evol_x_p03_integrity.py::test_mode_a_automation_first_scoped_final_passes
+FAILED tests/qualification/roadmap_replay_x/test_roadmap_replay_x_b6_r2_reconciliation.py::test_r2_reconciliation_clean_at_head
+FAILED tests/qualification/roadmap_replay_x/test_roadmap_replay_x_b6_r2_reconciliation.py::test_r2_ecap_counter_matches_mechanical_counters
+FAILED tests/qualification/roadmap_replay_x/test_roadmap_replay_x_mechanical_exit_gates.py::test_replay_x_prod_delta_empty_since_dup_x
+FAILED tests/qualification/roadmap_replay_x/test_roadmap_replay_x_mechanical_exit_gates.py::test_replay_x_closure_counters_computed
+FAILED tests/qualification/roadmap_replay_x/test_roadmap_replay_x_mechanical_exit_gates.py::test_replay_x_b6_r2_reconciliation_zero
+FAILED tests/qualification/ebh_5/test_ebh_5_behavioral_package_c_v2.py::test_ebh5_pkgc_v2_relational_sqlite_duckdb_dual_slug
+FAILED tests/qualification/ebh_5/test_ebh_5_behavioral_package_c_v2.py::test_ebh5_pkgc_v2_dual_slug_integration[integration.relational_store]
+FAILED tests/qualification/ebh_5/test_ebh_5_behavioral_package_c_v2.py::test_ebh5_pkgc_v2_dual_slug_rpl_cde_equivalence[integration.relational_store]
+9 failed, 2 passed in 9.33s
+RUNNER files=11 elapsed=13.0s
