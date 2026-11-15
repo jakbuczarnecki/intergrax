@@ -35,6 +35,7 @@ Rows classed `CURRENT_HEAD_REQUALIFICATION`, `ALREADY_CERTIFIED_REUSABLE`, `N/A_
 | B-P6-H | ALL | W10 | T-IGX-036-Y | 0 | — | B-P6-E | no | No product path: may merge before MCP-SERVER-X P8 | IA-GLOBAL (P8) |
 | B-P6-I | ALL | W11 | T-IGX-036-Z | 0 | — | B-P6-F | YES | OD-PDC-SEQ-01: implement in an isolated worktree; merge only after MCP-SERVER-X P8 publication; ACT-N11 re-activation at PDC-P7-00 | IA-GLOBAL (P8) |
 | B-P6-J | ALL | W12 | T-IGX-040-A | 0 | — | B-P6-I | YES | OD-PDC-SEQ-01: implement in an isolated worktree; merge only after MCP-SERVER-X P8 publication; ACT-N11 re-activation at PDC-P7-00 | IA-GLOBAL (P8) |
+| B-P7-D3 | D3 | W13 | T-IGX-041-C | 0 | ADR-PDC-03 | B-P6-J | YES | OD-PDC-SEQ-01: implement in an isolated worktree; merge only after MCP-SERVER-X P8 publication; ACT-N11 re-activation at PDC-P7-00 | IA-D3 (re-audit, loop 1 of 2) |
 
 ## B-P3 — Ownership records closed in P3
 
@@ -387,6 +388,18 @@ Rows classed `CURRENT_HEAD_REQUALIFICATION`, `ALREADY_CERTIFIED_REUSABLE`, `N/A_
 - **Write set:** `intergrax/integrations/providers/embedding_provider/openai/register.py`, `intergrax/platform/enterprise_audit/impact_map.py`, `intergrax/platform/enterprise_audit/data/changed_since_impact_map.v1.json`, `tests/qualification/pdc_x/p6_ecapfix/`, `tests/qualification/pdc_x/p6_impact/`
 - **Tests:** tests/qualification/pdc_x/p6_ecapfix/ and p6_impact/; xd_12 and p6_impact coverage tests green on development and on a tree that contains the MCP-RC change
 - **Evidence (exact SHA):** implementation SHA and publication SHA recorded in `PDC_SHA_LADDER.md`; test log under `.tmp/proof/pdc-x-p5/B-P6-J/`; audited by IA-GLOBAL (P8) at the PDC-P7 audited SHA.
+- **Merge gate:** OD-PDC-SEQ-01: implement in an isolated worktree; merge only after MCP-SERVER-X P8 publication; ACT-N11 re-activation at PDC-P7-00
+
+| Requirement | Class | Test case |
+| --- | --- | --- |
+| — | — | — |
+
+## B-P7-D3 — P7 repair of the independent D3 audit (loop 1): streaming guard, quota and cancel registration on the default OpenAI, Gemini/Vertex and LangChain Ollama stream paths (F-D3-01); refusal and content-filter normalization on every stream and buffered path (F-D3-02); word-boundary retry classification (F-D3-07 defect part); tool_calls in the token estimator (F-D2-01 estimator half); stale llm_adapters unit suites (F-D3-05); timeout_sec doc honesty (F-D3-03 doc part)
+
+- **Ticket:** T-IGX-041-C · **Wave:** W13 · **ADR:** ADR-PDC-03 · **Auditor:** IA-D3 (re-audit, loop 1 of 2)
+- **Write set:** `intergrax/llm_adapters/base/base_llm_adapter.py`, `intergrax/llm_adapters/contracts/call_config.py`, `intergrax/llm_adapters/_shared/retry.py`, `intergrax/llm_adapters/_shared/openai_completion_mapping.py`, `intergrax/llm_adapters/_shared/stream_finish_signal.py`, `intergrax/llm_adapters/providers/openai_responses_adapter.py`, `intergrax/llm_adapters/providers/openai_chat_completions_adapter.py`, `intergrax/llm_adapters/providers/gemini_adapter.py`, `intergrax/llm_adapters/providers/ollama_adapter.py`, `intergrax/llm_adapters/providers/native_ollama_adapter.py`, `intergrax/llm_adapters/providers/mistral_adapter.py`, `intergrax/llm_adapters/providers/claude_adapter.py`, `intergrax/llm_adapters/providers/cohere_native_adapter.py`, `intergrax/llm_adapters/providers/aws_bedrock_adapter.py`, `platform_proofs/scenarios/ai_incident_investigation/application/investigator_agent.py`, `tests/qualification/pdc_x/d3/`, `tests/unit/llm_adapters/test_estimate_tokens_tool_calls.py`, `tests/unit/llm_adapters/test_ollama_tool_calling.py`, `tests/unit/llm_adapters/test_registry_model_contract.py`, `tests/unit/llm_adapters/test_llm_provider_registry.py`, `tests/unit/llm_adapters/test_p2_002_c_provider_registration.py`, `tests/unit/llm_adapters/registry_state_test_support.py`, `tests/unit/llm_adapters/test_adapter_conformance.py`, `tests/unit/llm_adapters/test_structured_output_flags.py`
+- **Tests:** tests/unit/llm_adapters, ce_02 and pdc_x/d3 green in the combined run with the llm extras; new pinned tests red on the unchanged code; mutants M03 and M12 killed
+- **Evidence (exact SHA):** implementation SHA and publication SHA recorded in `PDC_SHA_LADDER.md`; test log under `.tmp/proof/pdc-x-p5/B-P7-D3/`; audited by IA-D3 (re-audit, loop 1 of 2) at the PDC-P7 audited SHA.
 - **Merge gate:** OD-PDC-SEQ-01: implement in an isolated worktree; merge only after MCP-SERVER-X P8 publication; ACT-N11 re-activation at PDC-P7-00
 
 | Requirement | Class | Test case |

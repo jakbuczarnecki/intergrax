@@ -545,6 +545,44 @@ BATCHES: Final[tuple[Batch, ...]] = (
         "IA-GLOBAL (P8)",
         "tests/qualification/pdc_x/p6_ecapfix/ and p6_impact/; xd_12 and p6_impact coverage tests green on development and on a tree that contains the MCP-RC change",
     ),
+    Batch(
+        "B-P7-D3",
+        "D3",
+        "P7 repair of the independent D3 audit (loop 1): streaming guard, quota and cancel registration on the default OpenAI, Gemini/Vertex and LangChain Ollama stream paths (F-D3-01); refusal and content-filter normalization on every stream and buffered path (F-D3-02); word-boundary retry classification (F-D3-07 defect part); tool_calls in the token estimator (F-D2-01 estimator half); stale llm_adapters unit suites (F-D3-05); timeout_sec doc honesty (F-D3-03 doc part)",
+        "T-IGX-041-C",
+        "W13",
+        (
+            "intergrax/llm_adapters/base/base_llm_adapter.py",
+            "intergrax/llm_adapters/contracts/call_config.py",
+            "intergrax/llm_adapters/_shared/retry.py",
+            "intergrax/llm_adapters/_shared/openai_completion_mapping.py",
+            "intergrax/llm_adapters/_shared/stream_finish_signal.py",
+            "intergrax/llm_adapters/providers/openai_responses_adapter.py",
+            "intergrax/llm_adapters/providers/openai_chat_completions_adapter.py",
+            "intergrax/llm_adapters/providers/gemini_adapter.py",
+            "intergrax/llm_adapters/providers/ollama_adapter.py",
+            "intergrax/llm_adapters/providers/native_ollama_adapter.py",
+            "intergrax/llm_adapters/providers/mistral_adapter.py",
+            "intergrax/llm_adapters/providers/claude_adapter.py",
+            "intergrax/llm_adapters/providers/cohere_native_adapter.py",
+            "intergrax/llm_adapters/providers/aws_bedrock_adapter.py",
+            "platform_proofs/scenarios/ai_incident_investigation/application/investigator_agent.py",
+            "tests/qualification/pdc_x/d3/",
+            "tests/unit/llm_adapters/test_estimate_tokens_tool_calls.py",
+            "tests/unit/llm_adapters/test_ollama_tool_calling.py",
+            "tests/unit/llm_adapters/test_registry_model_contract.py",
+            "tests/unit/llm_adapters/test_llm_provider_registry.py",
+            "tests/unit/llm_adapters/test_p2_002_c_provider_registration.py",
+            "tests/unit/llm_adapters/registry_state_test_support.py",
+            "tests/unit/llm_adapters/test_adapter_conformance.py",
+            "tests/unit/llm_adapters/test_structured_output_flags.py",
+        ),
+        "ADR-PDC-03",
+        ("B-P6-J",),
+        GATE_PRODUCT,
+        "IA-D3 (re-audit, loop 1 of 2)",
+        "tests/unit/llm_adapters, ce_02 and pdc_x/d3 green in the combined run with the llm extras; new pinned tests red on the unchanged code; mutants M03 and M12 killed",
+    ),
 )
 
 # Requirement -> batch overrides where the corrective-task text alone is ambiguous.
@@ -844,6 +882,10 @@ def render_dag() -> str:
         "W12": (
             "after B-P6-I and the signature of T-IGX-040-A",
             "after the signature of T-IGX-040-A (one-time exception OD-MCP-RC-05; both repairs in one PR, then product paths freeze again)",
+        ),
+        "W13": (
+            "after B-P6-J and the signature of T-IGX-041-C",
+            "under DELEGATION-PDC-P7-REPAIR (product paths of the D3 repair; IIAC activation stays stale until the P8-04 rebind)",
         ),
     }
     for wave, bids in waves.items():
