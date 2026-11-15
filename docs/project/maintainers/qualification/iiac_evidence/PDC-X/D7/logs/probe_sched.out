@@ -1,0 +1,93 @@
+recurrence materialization failed for schedule_id=rec_r-fail_20260301T100100Z
+Traceback (most recent call last):
+  File "D:\Projekty\intergrax\.claude\worktrees\pdc-x-ia-d7-858697\intergrax\runtime\long_running\scheduler.py", line 221, in _materialize_next_occurrence
+    self._recurrence.materialize_next(entry, now=now)
+  File "D:\Projekty\intergrax\.claude\worktrees\pdc-x-ia-d7-858697\intergrax\runtime\long_running\recurrence.py", line 444, in materialize_next
+    row = self._materialize(rule, occurrence)
+          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "D:\Projekty\intergrax\.claude\worktrees\pdc-x-ia-d7-858697\intergrax\runtime\long_running\recurrence.py", line 476, in _materialize
+    return self._schedule_store.schedule(entry)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "D:\Projekty\intergrax\.claude\worktrees\pdc-x-ia-d7-858697\.tmp\session\ia-d7\probes\probe_sched.py", line 62, in flaky
+    raise sqlite3.OperationalError("database is locked")
+sqlite3.OperationalError: database is locked
+{
+ "P1_tenant_collision": {
+  "a_created": true,
+  "b_created": false,
+  "rows": [
+   [
+    "rec_daily-report_20260301T100000Z",
+    "tenant-a"
+   ]
+  ]
+ },
+ "P2_crash_chain": {
+  "claimed": 1,
+  "survivor_fired": 0,
+  "rows": [
+   [
+    "rec_r-crash_20260301T100000Z",
+    "uncertain"
+   ]
+  ]
+ },
+ "P2b_transient_materialize_failure": {
+  "fired": 1,
+  "fired_later": 1,
+  "rows": [
+   [
+    "rec_r-fail_20260301T100000Z",
+    "completed"
+   ],
+   [
+    "rec_r-fail_20260301T100100Z",
+    "completed"
+   ]
+  ]
+ },
+ "P3_nonutc_run_at": {
+  "due_at_0830Z": [
+   "t4",
+   "t"
+  ],
+  "expected_due": [
+   "t2"
+  ]
+ },
+ "P4_unsatisfiable_cron": {
+  "accepted": true,
+  "first_occurrence": "None",
+  "scan_seconds": 0.0
+ },
+ "P4_overflow_rule_accepted": true,
+ "P4_overflow_next": "OverflowError: Python int too large to convert to C int",
+ "P7_gap_30_2": [
+  "2026-03-07 02:30:00-05:00",
+  "2026-03-08 03:30:00-04:00",
+  "2026-03-09 02:30:00-04:00"
+ ],
+ "P7_gap_0_2": [
+  "2026-03-07 02:00:00-05:00",
+  "2026-03-08 03:00:00-04:00",
+  "2026-03-09 02:00:00-04:00"
+ ],
+ "P7_gap_30_2_3": [
+  "2026-03-07 02:30:00-05:00",
+  "2026-03-07 03:30:00-05:00",
+  "2026-03-08 03:30:00-04:00",
+  "2026-03-09 02:30:00-04:00",
+  "2026-03-09 03:30:00-04:00"
+ ],
+ "P7_fallback_30_1": [
+  "2026-10-31 05:30:00+00:00",
+  "2026-11-01 05:30:00+00:00",
+  "2026-11-02 06:30:00+00:00"
+ ],
+ "P7_lord_howe": [
+  "2026-10-04 02:45:00+11:00",
+  "2026-10-05 02:15:00+11:00",
+  "2026-10-06 02:15:00+11:00",
+  "2026-10-07 02:15:00+11:00"
+ ]
+}

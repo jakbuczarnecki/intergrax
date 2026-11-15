@@ -1,0 +1,37 @@
+{
+ "P5_terminal_overwrite": {
+  "before": "DEAD_LETTERED",
+  "after": "SUCCEEDED",
+  "stale_dead_letter_field_remains": true,
+  "result_dead_letter_attr": null
+ },
+ "P5_after_failed": "FAILED",
+ "P5b_retry_on_succeeded": {
+  "returned": "PENDING",
+  "now": "PENDING"
+ },
+ "P6_window": "TypeError: '<' not supported between instances of 'NoneType' and 'float'",
+ "P6_window_cap": 7.0,
+ "P9_hol": {
+  "backed_off": 40,
+  "fresh_claimed": [],
+  "claimed_n": 0
+ },
+ "P10_idem_after_dlq": {
+  "same_handle": true,
+  "status": "DEAD_LETTERED"
+ },
+ "P11_two_instances": {
+  "a": 50,
+  "b": 0,
+  "double_claimed": 0
+ },
+ "P12_tenant_isolation": {
+  "foreign_status": "PENDING",
+  "foreign_result": null,
+  "foreign_cancel": false,
+  "foreign_list": []
+ },
+ "P12_idem_cross_tenant_distinct": true,
+ "P13_purge_completed_default": 0
+}

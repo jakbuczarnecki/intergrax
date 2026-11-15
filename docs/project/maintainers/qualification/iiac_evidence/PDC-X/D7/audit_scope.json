@@ -1,0 +1,66 @@
+{
+  "stage_id": "PDC-X/D7",
+  "session_designation": "PDC-P7-IA-D7-INDEPENDENT-AUDIT-2026-11-15",
+  "certification_profile": "iiac-v1",
+  "policy_version": "IIAC-2026-11-05.1",
+  "campaign": "PDC-X P7 per-domain independent audit, domain D7 Background and Scheduling",
+  "ticket_anchors": [
+    "governance/tickets/T-IGX-036-L.md"
+  ],
+  "audited_implementation_sha": "c08efe46a74a20595468d8d8bf06eab2dca5f573",
+  "implementation_commit": "52f35a41fcd32e552edb68401aefb2ec3f565daf",
+  "d7_product_paths_unchanged_since_implementation_commit": true,
+  "requirement_rows": [
+    "PDC-D7-R001",
+    "PDC-D7-R002",
+    "PDC-D7-R003",
+    "PDC-D7-R004",
+    "PDC-D7-R005",
+    "PDC-D7-R006",
+    "PDC-D7-R007",
+    "PDC-D7-R008",
+    "PDC-D7-R009",
+    "PDC-D7-R010",
+    "PDC-D7-R011",
+    "PDC-D7-R012",
+    "PDC-D7-R013",
+    "PDC-D7-R014",
+    "PDC-D7-R015",
+    "PDC-D7-R016",
+    "PDC-D7-R017",
+    "PDC-D7-R018",
+    "PDC-D7-R019",
+    "PDC-D7-R020",
+    "PDC-D7-R021",
+    "PDC-D7-R022",
+    "PDC-D7-R023"
+  ],
+  "product_paths_read": [
+    "intergrax/queueing",
+    "intergrax/background_tasks",
+    "intergrax/runtime/long_running",
+    "intergrax/runtime/background_execution"
+  ],
+  "test_paths": [
+    "tests/qualification/pdc_x/d7",
+    "tests/qualification/bg_01",
+    "tests/qualification/sched_01",
+    "tests/qualification/pdc_x/xd/test_xd_05_host_background.py",
+    "tests/qualification/pdc_x/xd/test_xd_06_background_security.py"
+  ],
+  "docs_read": [
+    "docs/project/architecture/BACKGROUND_TASKS.md",
+    "docs/project/maintainers/plans/BACKGROUND_TASKS.md",
+    "docs/project/maintainers/architecture/ADR_PDC_07_BACKGROUND_RECURRENCE_AND_DLQ.md",
+    "PDC_OWNERSHIP_MATRIX.md",
+    "PDC_DOMAIN_REQUIREMENTS_MATRIX.json",
+    "PDC_IMPLEMENTATION_WBS.md",
+    "PDC_P7_00_ACT_N11_BASELINE_AUDIT_DOSSIER.md"
+  ],
+  "not_in_scope": [
+    "Celery/Kafka/RabbitMQ identity and DLQ (declared debt)",
+    "dist_scale_x, Docker, PostgreSQL execution (C10/C15 freeze)",
+    "D1..D6, D8",
+    "FRZ/SHA-ladder/P8 global checks"
+  ]
+}
