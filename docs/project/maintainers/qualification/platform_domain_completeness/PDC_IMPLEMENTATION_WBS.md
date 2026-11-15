@@ -35,6 +35,7 @@ Rows classed `CURRENT_HEAD_REQUALIFICATION`, `ALREADY_CERTIFIED_REUSABLE`, `N/A_
 | B-P6-H | ALL | W10 | T-IGX-036-Y | 0 | — | B-P6-E | no | No product path: may merge before MCP-SERVER-X P8 | IA-GLOBAL (P8) |
 | B-P6-I | ALL | W11 | T-IGX-036-Z | 0 | — | B-P6-F | YES | OD-PDC-SEQ-01: implement in an isolated worktree; merge only after MCP-SERVER-X P8 publication; ACT-N11 re-activation at PDC-P7-00 | IA-GLOBAL (P8) |
 | B-P6-J | ALL | W12 | T-IGX-040-A | 0 | — | B-P6-I | YES | OD-PDC-SEQ-01: implement in an isolated worktree; merge only after MCP-SERVER-X P8 publication; ACT-N11 re-activation at PDC-P7-00 | IA-GLOBAL (P8) |
+| B-P7-D4 | D4 | W13 | T-IGX-041-D | 0 | ADR-PDC-04 | B-P6-J | YES | OD-PDC-SEQ-01: implement in an isolated worktree; merge only after MCP-SERVER-X P8 publication; ACT-N11 re-activation at PDC-P7-00 | IA-D4 (re-audit, loop 1 of 2) |
 
 ## B-P3 — Ownership records closed in P3
 
@@ -387,6 +388,18 @@ Rows classed `CURRENT_HEAD_REQUALIFICATION`, `ALREADY_CERTIFIED_REUSABLE`, `N/A_
 - **Write set:** `intergrax/integrations/providers/embedding_provider/openai/register.py`, `intergrax/platform/enterprise_audit/impact_map.py`, `intergrax/platform/enterprise_audit/data/changed_since_impact_map.v1.json`, `tests/qualification/pdc_x/p6_ecapfix/`, `tests/qualification/pdc_x/p6_impact/`
 - **Tests:** tests/qualification/pdc_x/p6_ecapfix/ and p6_impact/; xd_12 and p6_impact coverage tests green on development and on a tree that contains the MCP-RC change
 - **Evidence (exact SHA):** implementation SHA and publication SHA recorded in `PDC_SHA_LADDER.md`; test log under `.tmp/proof/pdc-x-p5/B-P6-J/`; audited by IA-GLOBAL (P8) at the PDC-P7 audited SHA.
+- **Merge gate:** OD-PDC-SEQ-01: implement in an isolated worktree; merge only after MCP-SERVER-X P8 publication; ACT-N11 re-activation at PDC-P7-00
+
+| Requirement | Class | Test case |
+| --- | --- | --- |
+| — | — | — |
+
+## B-P7-D4 — D4 repair after the P7 independent audit (IA-D4): cancellation rolls back lease, components and runtime; bounded runtime readiness probe and bounded event/metric publishes; public API fingerprint sees model config and constraints; composition-root gate with the declared lab MCP exception; TL-FIX-C and isolation-bound documentation reconciled; symlink tests skip without privilege
+
+- **Ticket:** T-IGX-041-D · **Wave:** W13 · **ADR:** ADR-PDC-04 · **Auditor:** IA-D4 (re-audit, loop 1 of 2)
+- **Write set:** `intergrax/hosting/engine/engine.py`, `intergrax/hosting/eventing.py`, `intergrax/hosting/supervisor/supervisor.py`, `intergrax/hosting/public_api.py`, `tests/qualification/pdc_x/d4_repair/`, `tests/qualification/pdc_x/d4/test_d4_crash_restart_subprocess.py`, `tests/unit/hosting/instance/test_file_guard.py`, `tests/unit/hosting/instance/test_w3_file_guard_regression.py`, `docs/project/architecture/TIER3_APPLICATION_ENVIRONMENT.md`, `docs/project/maintainers/plans/TIER3_APPLICATION_ENVIRONMENT.md`, `docs/project/maintainers/plans/satellites/TIER3_APPLICATION_ENVIRONMENT_embedded_detail.md`, `docs/project/architecture/APPLICATION_HOSTING.md`
+- **Tests:** tests/qualification/pdc_x/d4_repair/ plus the D4-cited suites of the ticket test contract (pdc_x/d4, host_01, tests/unit/hosting)
+- **Evidence (exact SHA):** implementation SHA and publication SHA recorded in `PDC_SHA_LADDER.md`; test log under `.tmp/proof/pdc-x-p5/B-P7-D4/`; audited by IA-D4 (re-audit, loop 1 of 2) at the PDC-P7 audited SHA.
 - **Merge gate:** OD-PDC-SEQ-01: implement in an isolated worktree; merge only after MCP-SERVER-X P8 publication; ACT-N11 re-activation at PDC-P7-00
 
 | Requirement | Class | Test case |

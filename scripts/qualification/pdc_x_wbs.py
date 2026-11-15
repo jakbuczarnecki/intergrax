@@ -545,6 +545,32 @@ BATCHES: Final[tuple[Batch, ...]] = (
         "IA-GLOBAL (P8)",
         "tests/qualification/pdc_x/p6_ecapfix/ and p6_impact/; xd_12 and p6_impact coverage tests green on development and on a tree that contains the MCP-RC change",
     ),
+    Batch(
+        "B-P7-D4",
+        "D4",
+        "D4 repair after the P7 independent audit (IA-D4): cancellation rolls back lease, components and runtime; bounded runtime readiness probe and bounded event/metric publishes; public API fingerprint sees model config and constraints; composition-root gate with the declared lab MCP exception; TL-FIX-C and isolation-bound documentation reconciled; symlink tests skip without privilege",
+        "T-IGX-041-D",
+        "W13",
+        (
+            "intergrax/hosting/engine/engine.py",
+            "intergrax/hosting/eventing.py",
+            "intergrax/hosting/supervisor/supervisor.py",
+            "intergrax/hosting/public_api.py",
+            "tests/qualification/pdc_x/d4_repair/",
+            "tests/qualification/pdc_x/d4/test_d4_crash_restart_subprocess.py",
+            "tests/unit/hosting/instance/test_file_guard.py",
+            "tests/unit/hosting/instance/test_w3_file_guard_regression.py",
+            "docs/project/architecture/TIER3_APPLICATION_ENVIRONMENT.md",
+            "docs/project/maintainers/plans/TIER3_APPLICATION_ENVIRONMENT.md",
+            "docs/project/maintainers/plans/satellites/TIER3_APPLICATION_ENVIRONMENT_embedded_detail.md",
+            "docs/project/architecture/APPLICATION_HOSTING.md",
+        ),
+        "ADR-PDC-04",
+        ("B-P6-J",),
+        GATE_PRODUCT,
+        "IA-D4 (re-audit, loop 1 of 2)",
+        "tests/qualification/pdc_x/d4_repair/ plus the D4-cited suites of the ticket test contract (pdc_x/d4, host_01, tests/unit/hosting)",
+    ),
 )
 
 # Requirement -> batch overrides where the corrective-task text alone is ambiguous.
@@ -844,6 +870,10 @@ def render_dag() -> str:
         "W12": (
             "after B-P6-I and the signature of T-IGX-040-A",
             "after the signature of T-IGX-040-A (one-time exception OD-MCP-RC-05; both repairs in one PR, then product paths freeze again)",
+        ),
+        "W13": (
+            "after B-P6-J and the signature of T-IGX-041-A",
+            "under DELEGATION-PDC-P7-REPAIR (option B repair of the P7 audit findings); product merge gate OD-PDC-SEQ-01",
         ),
     }
     for wave, bids in waves.items():
