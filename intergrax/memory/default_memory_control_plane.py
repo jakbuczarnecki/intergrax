@@ -38,10 +38,12 @@ from intergrax.memory.contracts.memory_control import (
     MemoryControlUnsupportedScope,
     MemoryRetentionCandidateReader,
     TaskMemoryCapability,
+    TenantBoundMemoryCapability,
     UserMemoryForgetCapabilityResult,
     UserMemoryRecallCapabilityResult,
     UserMemoryRememberCapabilityResult,
     UserProfileMemoryCapability,
+    task_namespace_for_tenant,
 )
 from intergrax.memory.contracts.memory_lifecycle import (
     MemoryReconciliationDisposition,
@@ -376,13 +378,18 @@ class DefaultMemoryControlPlane:
     security_governance: MemorySecurityGovernanceService | None = None
     diagnostic_emitter: MemoryDiagnosticEmitter = field(default_factory=default_memory_diagnostic_emitter)
 
-    def _assert_identity_tenant_is_bound_tenant(self, identity: RequestIdentity) -> None:
-        """A tenant-bound user-profile plane serves only identities of that tenant (PDC-D6-R019)."""
-        capability = self.user_profile
-        if (
-            isinstance(capability, UserProfileManagerMemoryCapability)
-            and identity.tenant_id != capability.bound_tenant_id
-        ):
+    def _assert_identity_tenant_is_bound_tenant(
+        self,
+        identity: RequestIdentity,
+        capability: object | None = None,
+    ) -> None:
+        """A tenant-bound capability serves only identities of that tenant (PDC-D6-R019, PDC-D2-R002).
+
+        Any capability that exposes ``bound_tenant_id`` is guarded, not only the shipped wrapper;
+        the user-profile capability is checked unless another capability is passed (TASK scope).
+        """
+        target = self.user_profile if capability is None else capability
+        if isinstance(target, TenantBoundMemoryCapability) and identity.tenant_id != target.bound_tenant_id:
             raise MemoryControlAccessDenied("identity tenant_id differs from the tenant this memory plane is bound to")
 
     async def remember(
@@ -396,7 +403,8 @@ class DefaultMemoryControlPlane:
             self._assert_identity_tenant_is_bound_tenant(identity)
             return await self._remember_user(identity, scope, request)
         if scope.kind is MemoryControlPlaneScope.TASK:
-            return await self._remember_task(scope, request)
+            self._assert_identity_tenant_is_bound_tenant(identity, self.task_memory)
+            return await self._remember_task(identity, scope, request)
         raise MemoryControlUnsupportedScope(f"unsupported scope for remember: {scope.kind.value}")
 
     async def recall(
@@ -464,7 +472,8 @@ class DefaultMemoryControlPlane:
             self._assert_identity_tenant_is_bound_tenant(identity)
             return await self._forget_user(identity, scope, request)
         if scope.kind is MemoryControlPlaneScope.TASK:
-            return await self._forget_task(scope, request)
+            self._assert_identity_tenant_is_bound_tenant(identity, self.task_memory)
+            return await self._forget_task(identity, scope, request)
         raise MemoryControlUnsupportedScope(f"unsupported scope for forget: {scope.kind.value}")
 
     async def reconcile(
@@ -845,6 +854,7 @@ class DefaultMemoryControlPlane:
 
     async def _remember_task(
         self,
+        identity: RequestIdentity,
         scope: MemoryControlScopeRef,
         request: MemoryControlRememberRequest,
     ) -> MemoryControlRememberResult:
@@ -861,7 +871,19 @@ class DefaultMemoryControlPlane:
             parsed: dict[str, object] = json.loads(payload)
         except json.JSONDecodeError:
             parsed = {"value": payload}
-        await self.task_memory.write(namespace, key, parsed)
+        _enforce_governance(
+            self.security_governance,
+            MemoryGovernanceEvaluationRequest(
+                context=_security_context(identity, scope, MemoryGovernanceOperation.REMEMBER),
+                target=MemoryGovernanceTarget(memory_id=f"task:{namespace}/{key}", scope=scope),
+            ),
+            diagnostic_emitter=self.diagnostic_emitter,
+            control_plane_operation=MemoryDiagnosticOperation.REMEMBER,
+            identity=identity,
+            scope=scope,
+        )
+        # The capability has no tenant parameter: tenant isolation is carried by the namespace.
+        await self.task_memory.write(task_namespace_for_tenant(identity.tenant_id, namespace), key, parsed)
         return MemoryControlRememberResult(
             scope=MemoryControlPlaneScope.TASK,
             task_written=True,
@@ -869,6 +891,7 @@ class DefaultMemoryControlPlane:
 
     async def _forget_task(
         self,
+        identity: RequestIdentity,
         scope: MemoryControlScopeRef,
         request: MemoryControlForgetRequest,
     ) -> MemoryControlForgetResult:
@@ -878,7 +901,18 @@ class DefaultMemoryControlPlane:
         key = (request.task_key or scope.task_key or "").strip()
         if not namespace or not key:
             raise MemoryControlAccessDenied("task forget requires namespace and key")
-        deleted = await self.task_memory.delete(namespace, key)
+        _enforce_governance(
+            self.security_governance,
+            MemoryGovernanceEvaluationRequest(
+                context=_security_context(identity, scope, MemoryGovernanceOperation.DELETE),
+                target=MemoryGovernanceTarget(memory_id=f"task:{namespace}/{key}", scope=scope),
+            ),
+            diagnostic_emitter=self.diagnostic_emitter,
+            control_plane_operation=MemoryDiagnosticOperation.FORGET,
+            identity=identity,
+            scope=scope,
+        )
+        deleted = await self.task_memory.delete(task_namespace_for_tenant(identity.tenant_id, namespace), key)
         if not deleted:
             raise MemoryControlNotFound(f"task memory key not found: {namespace}/{key}")
         return MemoryControlForgetResult(
