@@ -6,12 +6,13 @@ from __future__ import annotations
 
 import pytest
 
-from intergrax.rag.rerankers.providers.semantic_reranker import SemanticReranker
+pytest.importorskip("sentence_transformers", reason="requires the 'rag-local-embeddings' extra (sentence-transformers)")
+
 from intergrax.rag.rerankers.contracts.reranker_types import (
     RerankerResult,
 )
+from intergrax.rag.rerankers.providers.semantic_reranker import SemanticReranker
 from tests.integration.rag.rerankers._datasets import candidates
-
 
 pytestmark = pytest.mark.integration
 

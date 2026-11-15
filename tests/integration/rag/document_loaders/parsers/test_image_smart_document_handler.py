@@ -5,33 +5,30 @@
 from __future__ import annotations
 
 import pytest
+
+pytest.importorskip(
+    "langchain_core", reason="requires the 'dev-ci-rag' extra (langchain-core); executed by the rag-guard CI profile"
+)
+
 from pathlib import Path
 
-from langchain_core.documents import Document
-
 from intergrax.knowledge.contracts import KnowledgeDocument, KnowledgeDocumentScope
-
 from intergrax.rag.document_loaders.config.document_loader_config import GLOBAL_DOCUMENT_LOADER_CONFIG
 from intergrax.rag.document_loaders.handlers.image_smart_document_handler import (
     ImageSmartDocumentHandler,
 )
+from langchain_core.documents import Document
 
 pytestmark = pytest.mark.integration
 
 
 class _DummyImageLoader:
-
     def __init__(self, *args, **kwargs):
         pass
 
     def load(self):
 
-        return [
-            Document(
-                page_content="dummy image text",
-                metadata={"source": "image_test"}
-            )
-        ]
+        return [Document(page_content="dummy image text", metadata={"source": "image_test"})]
 
 
 def test_image_handler_supports_extensions():
@@ -65,11 +62,7 @@ def test_image_handler_load(monkeypatch, tmp_path: Path):
 
     from intergrax.rag.document_loaders.parsers import image_smart_parser
 
-    monkeypatch.setattr(
-        image_smart_parser,
-        "ImageSmartLoader",
-        _DummyImageLoader
-    )
+    monkeypatch.setattr(image_smart_parser, "ImageSmartLoader", _DummyImageLoader)
 
     image_path = tmp_path / "sample.jpg"
     image_path.write_bytes(b"fake image")

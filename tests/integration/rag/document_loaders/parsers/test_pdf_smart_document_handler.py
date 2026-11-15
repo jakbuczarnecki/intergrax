@@ -4,9 +4,9 @@
 
 from __future__ import annotations
 
-import pytest
 from pathlib import Path
 
+import pytest
 from intergrax.knowledge.contracts import KnowledgeDocumentScope
 from intergrax.rag.document_loaders.config.document_loader_config import GLOBAL_DOCUMENT_LOADER_CONFIG
 from intergrax.rag.document_loaders.handlers.pdf_smart_document_handler import (
@@ -54,6 +54,7 @@ def test_pdf_handler_builds_parser():
 
 
 def test_pdf_handler_loads_pdf(tmp_path: Path):
+    pytest.importorskip("fitz", reason="requires the 'parsing-pdf' extra (PyMuPDF)")
 
     pdf_path = tmp_path / "sample.pdf"
     _create_minimal_pdf(pdf_path)

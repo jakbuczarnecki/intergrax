@@ -1,17 +1,17 @@
 from __future__ import annotations
 
+import pytest
+
+pytest.importorskip(
+    "qdrant_client", reason="requires the 'dev-ci-rag' extra (qdrant-client); executed by the rag-guard CI profile"
+)
+
 from dataclasses import dataclass
-from typing import Any
 from types import SimpleNamespace
+from typing import Any
 
 import httpx
-import pytest
-from qdrant_client.http.exceptions import UnexpectedResponse
-
-from intergrax.integrations.contracts.base import IntegrationDependencyError
-from intergrax.utils import attribute_access
-
-from intergrax.integrations.contracts.base import IntegrationConfigurationError
+from intergrax.integrations.contracts.base import IntegrationConfigurationError, IntegrationDependencyError
 from intergrax.integrations.providers.vector_store.inmemory.rag_store import (
     InMemoryVectorStore,
 )
@@ -27,6 +27,8 @@ from intergrax.rag.vectorstore.contracts.native_vectorstore import (
     VectorStoreScope,
 )
 from intergrax.rag.vectorstore.vectorstore_manager import VectorstoreManager
+from intergrax.utils import attribute_access
+from qdrant_client.http.exceptions import UnexpectedResponse
 
 pytestmark = pytest.mark.unit
 
@@ -115,13 +117,8 @@ def test_inmemory_returns_complete_persisted_ids_with_exact_source_scope() -> No
         "persisted-a-1",
         "persisted-a-2",
     )
-    assert manager.list_source_record_ids(source_id=source_b, scope=scope_a) == (
-        "persisted-b",
-    )
-    assert (
-        manager.list_source_record_ids(source_id=source_a, scope=scope_b)
-        == ("persisted-a-other-workspace",)
-    )
+    assert manager.list_source_record_ids(source_id=source_b, scope=scope_a) == ("persisted-b",)
+    assert manager.list_source_record_ids(source_id=source_a, scope=scope_b) == ("persisted-a-other-workspace",)
     assert manager.list_source_record_ids(
         source_id=source_a,
         scope=scope_other_namespace,
@@ -191,14 +188,16 @@ def test_add_ownership_delete_uses_one_logical_id_domain(store_factory: Any) -> 
         [_record("logical/other", source_id=other_source_id, scope=scope)],
         scope=scope,
     )
-    ownership = set(
-        manager.list_source_record_ids(source_id=source_id, scope=scope)
-    )
+    ownership = set(manager.list_source_record_ids(source_id=source_id, scope=scope))
 
-    assert returned == ownership == {
-        "logical/lifecycle-1",
-        "logical/lifecycle-2",
-    }
+    assert (
+        returned
+        == ownership
+        == {
+            "logical/lifecycle-1",
+            "logical/lifecycle-2",
+        }
+    )
     lifecycle_ids = {
         "logical/lifecycle-1",
         "logical/lifecycle-2",
@@ -227,13 +226,9 @@ def test_source_lookup_is_tenant_isolated_and_bound_scope_cannot_escape() -> Non
         InMemoryVectorStore(tenant_id="tenant-a"),
         scope=scope_a,
     )
-    manager_a.add_records(
-        [_record("tenant-a-vector", source_id=source_id, scope=scope_a)]
-    )
+    manager_a.add_records([_record("tenant-a-vector", source_id=source_id, scope=scope_a)])
 
-    assert manager_a.list_source_record_ids(source_id=source_id) == (
-        "tenant-a-vector",
-    )
+    assert manager_a.list_source_record_ids(source_id=source_id) == ("tenant-a-vector",)
     with pytest.raises(VectorStoreContractError):
         manager_a.list_source_record_ids(
             source_id=source_id,
@@ -253,9 +248,7 @@ def test_source_lookup_is_tenant_isolated_and_bound_scope_cannot_escape() -> Non
         [_record("tenant-b-vector", source_id=source_id, scope=scope_b)],
         scope=scope_b,
     )
-    assert manager_b.list_source_record_ids(source_id=source_id, scope=scope_b) == (
-        "tenant-b-vector",
-    )
+    assert manager_b.list_source_record_ids(source_id=source_id, scope=scope_b) == ("tenant-b-vector",)
 
 
 def test_source_lookup_reports_unsupported_optional_provider_explicitly() -> None:
@@ -375,9 +368,7 @@ class _FakeQdrantClient:
             raise ConnectionError("qdrant hybrid query backend unavailable")
         if not self.allow_query:
             raise AssertionError("source ownership must not use similarity query")
-        selected = [
-            point for point in self.points if self._matches(point, query_filter)
-        ]
+        selected = [point for point in self.points if self._matches(point, query_filter)]
         if self.query_zero_hits:
             selected = []
         return SimpleNamespace(
@@ -415,11 +406,7 @@ class _FakeQdrantClient:
         self.points = [
             point
             for point in self.points
-            if (
-                not self._matches(point, qfilter)
-                if qfilter is not None
-                else point.id not in (point_ids or [])
-            )
+            if (not self._matches(point, qfilter) if qfilter is not None else point.id not in (point_ids or []))
         ]
 
     def scroll(self, *, scroll_filter: Any, offset: Any, **_: Any) -> tuple[list[Any], Any]:
@@ -427,18 +414,14 @@ class _FakeQdrantClient:
             raise ConnectionError("qdrant backend unavailable")
         self.scroll_calls.append({"filter": scroll_filter})
         start = int(offset or 0)
-        selected = [
-            point for point in self.points if self._matches(point, scroll_filter)
-        ]
+        selected = [point for point in self.points if self._matches(point, scroll_filter)]
         page = selected[start : start + 1]
         next_offset = start + 1 if start + 1 < len(selected) else None
         return page, next_offset
 
 
 def _qdrant_store() -> tuple[QdrantVectorStore, _FakeQdrantClient]:
-    store = QdrantVectorStore(
-        QdrantConfig(collection_name="ownership", tenant_id="tenant-a")
-    )
+    store = QdrantVectorStore(QdrantConfig(collection_name="ownership", tenant_id="tenant-a"))
     client = _FakeQdrantClient()
     store._client = client  # type: ignore[attr-defined]
     return store, client
@@ -529,9 +512,7 @@ def test_qdrant_first_ingest_missing_collection_lifecycle_remains_valid() -> Non
 
     assert returned == ["first-ingest-1"]
     assert client.created_collections
-    assert store.list_source_record_ids(source_id=source_id, scope=scope) == [
-        "first-ingest-1"
-    ]
+    assert store.list_source_record_ids(source_id=source_id, scope=scope) == ["first-ingest-1"]
 
 
 def test_qdrant_source_lookup_scrolls_complete_native_ids_with_scope_filter() -> None:
@@ -576,7 +557,8 @@ def test_qdrant_source_lookup_scrolls_complete_native_ids_with_scope_filter() ->
     )
     assert any(
         attribute_access.optional(condition, "key", None) == "workspace_id"
-        and attribute_access.optional(attribute_access.optional(condition, "match", None), "value", None) == "workspace-a"
+        and attribute_access.optional(attribute_access.optional(condition, "match", None), "value", None)
+        == "workspace-a"
         for condition in conditions
     )
     assert any(
@@ -612,18 +594,13 @@ def test_qdrant_logical_ids_are_queryable_and_delete_maps_with_scope() -> None:
 
     store.delete(["logical/a"], scope=scope_a)
 
-    assert not any(
-        point.id == _normalize_point_id("logical/a") for point in client.points
-    )
+    assert not any(point.id == _normalize_point_id("logical/a") for point in client.points)
     assert any(
-        point.id == _normalize_point_id("logical/b")
-        and point.payload["workspace_id"] == "workspace-b"
+        point.id == _normalize_point_id("logical/b") and point.payload["workspace_id"] == "workspace-b"
         for point in client.points
     )
     assert store.list_source_record_ids(source_id=source_id, scope=scope_a) == []
-    assert store.list_source_record_ids(source_id=source_id, scope=scope_b) == [
-        "logical/b"
-    ]
+    assert store.list_source_record_ids(source_id=source_id, scope=scope_b) == ["logical/b"]
 
 
 def test_qdrant_source_lookup_fails_closed_without_logical_id() -> None:
@@ -713,12 +690,15 @@ def test_pgvector_uses_server_side_scope_and_cosine_query() -> None:
     store = _uninitialized_pgvector_store(connection)
     scope = _scope()
 
-    assert store.query(
-        [1.0, 0.0],
-        scope=scope,
-        top_k=3,
-        metadata_filter=None,
-    ) == []
+    assert (
+        store.query(
+            [1.0, 0.0],
+            scope=scope,
+            top_k=3,
+            metadata_filter=None,
+        )
+        == []
+    )
 
     statement, params = connection.cursor_instance.executed[0]
     assert "<=>" in statement

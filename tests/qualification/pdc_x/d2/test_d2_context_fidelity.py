@@ -274,13 +274,10 @@ def test_mandatory_instruction_exceeding_budget_fails_closed_never_truncated() -
     ]
     config = RuntimeConfig(llm_adapter=FakeAdapter(window=4096), production_mode=False)
     compiler = ContextCompiler(count_tokens=_count)
-    try:
-        result = compiler.compile(list(messages), config, max_output_tokens=64, input_budget_tokens=300)
-    except ContextBudgetUnsatisfiableError:
-        return
-    # If the compile succeeds, the instruction must be intact (never silently truncated).
-    system = [m for m in result.messages if m.entry_id == "sys-big"]
-    assert system and system[0].content == instruction
+    # The mandatory instruction alone (720 chars) exceeds the 300-token budget: fail closed with the
+    # typed error, never a silently truncated instruction.
+    with pytest.raises(ContextBudgetUnsatisfiableError, match="mandatory_system_instructions_exceed_budget"):
+        compiler.compile(list(messages), config, max_output_tokens=64, input_budget_tokens=300)
 
 
 # --------------------------------------------------------------------------- R009

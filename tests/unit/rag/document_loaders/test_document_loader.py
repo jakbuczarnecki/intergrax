@@ -4,30 +4,27 @@
 
 from __future__ import annotations
 
-from typing import Sequence
+from collections.abc import Sequence
 
 import pytest
-
-from pydantic import ValidationError
-
 from intergrax.knowledge.contracts import KnowledgeDocument, KnowledgeDocumentScope
 from intergrax.knowledge.contracts.document import dump_knowledge_document
+from intergrax.rag.document_loaders.bootstrap.default_loader import create_default_normalizer_pipeline
 from intergrax.rag.document_loaders.compat.legacy_runtime_document import (
     attach_parser_native_handle,
     copy_parser_runtime_state,
     get_parser_native_handle,
     to_legacy_rag_document,
 )
-from intergrax.rag.document_loaders.bootstrap.default_loader import create_default_normalizer_pipeline
-from intergrax.rag.document_loaders.documents_loader import DocumentsLoader
 from intergrax.rag.document_loaders.contracts.base_document_handler import (
     BaseDocumentHandler,
 )
 from intergrax.rag.document_loaders.contracts.document_metadata_key import DocumentMetadataKey
+from intergrax.rag.document_loaders.documents_loader import DocumentsLoader
 from intergrax.rag.document_loaders.registry.document_handler_registry import (
     DocumentHandlerRegistry,
 )
-
+from pydantic import ValidationError
 
 pytestmark = pytest.mark.unit
 
@@ -60,7 +57,6 @@ def _sample_knowledge_doc(content: str = "A") -> KnowledgeDocument:
 
 
 class _DummyHandler(BaseDocumentHandler):
-
     def __init__(self, docs: Sequence[KnowledgeDocument]):
         self.docs = list(docs)
         self.load_called = False
@@ -90,7 +86,6 @@ class _DummyHandler(BaseDocumentHandler):
 
 
 class _DummyMetadataPipeline:
-
     def __init__(self):
         self.called = False
 
@@ -173,7 +168,6 @@ def test_loader_returns_empty_when_handler_returns_none():
 def test_loader_returns_empty_on_exception():
 
     class _FailingHandler(_DummyHandler):
-
         def load(self, source: str, *, scope: KnowledgeDocumentScope):
             raise RuntimeError("boom")
 
@@ -431,6 +425,10 @@ def test_loader_preserves_parser_runtime_state_through_custom_metadata():
 
 
 def test_to_legacy_rag_document_does_not_mutate_source():
+    pytest.importorskip(
+        "langchain_core",
+        reason="requires the 'dev-ci-rag' extra (langchain-core); executed by the rag-guard CI profile",
+    )
 
     handle = object()
     source_doc = attach_parser_native_handle(_sample_knowledge_doc(), handle)

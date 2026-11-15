@@ -1,12 +1,10 @@
 # © Artur Czarnecki. All rights reserved.
 # Intergrax framework – proprietary and confidential.
 
-from typing import Optional, Sequence
+from collections.abc import Sequence
 
 import numpy as np
-from numpy.typing import NDArray
 import pytest
-
 from intergrax.knowledge.contracts import KnowledgeDocument
 from intergrax.rag.embedding.contracts.base_embedding_manager import BaseEmbeddingManager
 from intergrax.rag.embedding.contracts.embedding_result import EmbeddingResult
@@ -19,13 +17,12 @@ from intergrax.rag.vectorstore.contracts.native_vectorstore import (
     VectorStoreRecord,
     VectorStoreScope,
 )
-
+from numpy.typing import NDArray
 
 pytestmark = pytest.mark.unit
 
 
 class FakeEmbeddingManager(BaseEmbeddingManager):
-
     def __init__(self) -> None:
         self.received_documents: tuple[KnowledgeDocument, ...] = ()
 
@@ -49,10 +46,7 @@ class FakeEmbeddingManager(BaseEmbeddingManager):
         return EmbeddingResult(
             documents=self.received_documents,
             embeddings=np.array(
-                [
-                    [index, index + 1, index + 2]
-                    for index in range(len(documents))
-                ],
+                [[index, index + 1, index + 2] for index in range(len(documents))],
                 dtype=np.float32,
             ),
         )
@@ -79,7 +73,6 @@ class ControlledEmbeddingManager(FakeEmbeddingManager):
 
 
 class FakeVectorstore(BaseVectorstoreManager):
-
     def __init__(self):
         self.records = []
         self.embeddings = None
@@ -94,18 +87,18 @@ class FakeVectorstore(BaseVectorstoreManager):
         self.calls.append({"records": records, "scope": scope})
         self.records.extend(records)
         self.embeddings = np.array([record.embedding for record in records])
-    
+
     def query(
         self,
         query_embedding: Sequence[float],
         *,
         scope: VectorStoreScope | None = None,
         top_k: int,
-        metadata_filter: Optional[MetadataFilter] = None,
+        metadata_filter: MetadataFilter | None = None,
         include_embeddings: bool = False,
     ) -> Sequence[VectorStoreHit]:
         pass
-    
+
     def delete(
         self,
         ids: Sequence[str],
@@ -113,7 +106,16 @@ class FakeVectorstore(BaseVectorstoreManager):
         scope: VectorStoreScope | None = None,
     ) -> None:
         pass
-    
+
+    def list_source_record_ids(
+        self,
+        *,
+        source_id: str,
+        scope: VectorStoreScope | None = None,
+        root_document_id: str | None = None,
+    ) -> Sequence[str]:
+        return ()
+
     def count(self, *, scope: VectorStoreScope | None = None) -> int:
         return len(self.records)
 
@@ -163,11 +165,7 @@ def test_dual_index_strategy_batches_without_operational_scope():
     )
 
     assert [call["scope"] for call in vectorstore.calls] == [None, None]
-    assert [
-        record.document.content
-        for call in vectorstore.calls
-        for record in call["records"]
-    ] == ["A", "B"]
+    assert [record.document.content for call in vectorstore.calls for record in call["records"]] == ["A", "B"]
     assert toc_vectorstore.calls == []
 
 

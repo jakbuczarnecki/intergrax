@@ -6,19 +6,19 @@ from __future__ import annotations
 
 import pytest
 
+pytest.importorskip("sentence_transformers", reason="requires the 'rag-local-embeddings' extra (sentence-transformers)")
+
 from intergrax.rag.embedding.bootstrap.default_embedding_engine import create_default_embedding_pipeline
 from intergrax.rag.embedding.embedding_manager import EmbeddingManager
-from intergrax.rag.rerankers.providers.embedding_cosine_reranker import (
-    EmbeddingCosineReranker,
-)
 from intergrax.rag.rerankers.contracts.reranker_types import (
     RerankerResult,
 )
+from intergrax.rag.rerankers.providers.embedding_cosine_reranker import (
+    EmbeddingCosineReranker,
+)
 from tests.integration.rag.rerankers._datasets import candidates
 
-
 pytestmark = pytest.mark.integration
-
 
 
 def test_embedding_cosine_reranker_basic() -> None:
