@@ -31,6 +31,7 @@ from intergrax.core.security.secret_safety import (
     SecretSafeValidationPolicy,
     validate_secret_safe_value,
 )
+from intergrax.runtime.events.evidence_persistence_adapter import as_evidence_persistence_port
 from intergrax.runtime.events.payload_registry import register_payload_schema
 from intergrax.runtime.events.payloads.base import RuntimeEventPayload
 
@@ -153,10 +154,18 @@ class EvidencePlaneSecurityAuditTrail:
     No security-owned store: each entry is a canonical ``RuntimeEvent`` appended through the
     platform evidence plane. The port exposes no update or delete, so the trail is append-only
     by construction; reads are tenant-scoped by the port.
+
+    The injected port is normalized with ``as_evidence_persistence_port``: every write goes through a
+    ``CanonicalRuntimeEventWriteValidatedPort`` (canonical prepare and schema validation), whatever
+    port the host passes. This is what the COMPAT-X classification of ``append`` as a canonical
+    validating path relies on.
     """
 
     def __init__(self, evidence_persistence: EvidencePersistencePort) -> None:
-        self._evidence = evidence_persistence
+        port = as_evidence_persistence_port(evidence_persistence)
+        if port is None:
+            raise TypeError("EvidencePlaneSecurityAuditTrail requires an evidence persistence port")
+        self._evidence = port
 
     def append(
         self,

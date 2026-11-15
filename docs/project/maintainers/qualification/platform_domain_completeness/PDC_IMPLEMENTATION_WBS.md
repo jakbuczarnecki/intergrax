@@ -41,6 +41,7 @@ Rows classed `CURRENT_HEAD_REQUALIFICATION`, `ALREADY_CERTIFIED_REUSABLE`, `N/A_
 | B-P7-D4 | D4 | W13 | T-IGX-041-D | 0 | ADR-PDC-04 | B-P6-J | YES | OD-PDC-SEQ-01: implement in an isolated worktree; merge only after MCP-SERVER-X P8 publication; ACT-N11 re-activation at PDC-P7-00 | IA-D4 (re-audit, loop 1 of 2) |
 | B-P7-D3 | D3 | W13 | T-IGX-041-C | 0 | ADR-PDC-03 | B-P6-J | YES | OD-PDC-SEQ-01: implement in an isolated worktree; merge only after MCP-SERVER-X P8 publication; ACT-N11 re-activation at PDC-P7-00 | IA-D3 (re-audit, loop 1 of 2) |
 | B-P7-D8 | D8 | W13 | T-IGX-041-H | 0 | ADR-PDC-08 | B-P6-J | YES | OD-PDC-SEQ-01: implement in an isolated worktree; merge only after MCP-SERVER-X P8 publication; ACT-N11 re-activation at PDC-P7-00 | IA-D8 (P7 re-audit) |
+| B-P7-D6 | D6 | W13 | T-IGX-041-F | 0 | ADR-PDC-06 | B-P6-J | YES | OD-PDC-SEQ-01: implement in an isolated worktree; merge only after MCP-SERVER-X P8 publication; ACT-N11 re-activation at PDC-P7-00 | IA-D6 (re-audit, loop 1 of 2) |
 
 ## B-P3 — Ownership records closed in P3
 
@@ -465,6 +466,18 @@ Rows classed `CURRENT_HEAD_REQUALIFICATION`, `ALREADY_CERTIFIED_REUSABLE`, `N/A_
 - **Write set:** `intergrax/runtime/execution/agent_runtime_context.py`, `intergrax/runtime/nexus/artifacts/store_base.py`, `intergrax/runtime/nexus/artifacts/sqlite_artifact_store.py`, `intergrax/runtime/nexus/artifacts/in_memory_artifact_store.py`, `intergrax/runtime/nexus/artifacts/retention.py`, `intergrax/runtime/nexus/artifacts/sources.py`, `intergrax/runtime/nexus/artifacts/governed_access.py`, `intergrax/tools/providers/storage/service.py`, `tests/qualification/pdc_x/d8_repair/`, `tests/qualification/pdc_x/d8/test_d8_governed_port.py`, `tests/qualification/pdc_x/d8/test_xd09_spill_and_context_reference.py`, `tests/qualification/pdc_x/d8/test_xd10_tenant_and_ttl.py`, `tests/qualification/pdc_x/xd/test_xd_02_agent_context.py`, `tests/qualification/pdc_x/xd/test_xd_09_artifacts_context.py`, `tests/qualification/pdc_x/xd/test_xd_10_artifacts_security.py`, `tests/qualification/pdc_x/xd/test_xd_11_observability.py`, `docs/project/capabilities/architecture/ARTIFACT_LIFECYCLE.md`, `docs/project/capabilities/plan/ARTIFACT_LIFECYCLE.md`
 - **Tests:** tests/qualification/pdc_x/d8_repair/ plus the cited d8, xd_02, xd_09, xd_10, xd_11 and storage tool suites green; every in-scope finding pinned red-then-green with negative tests
 - **Evidence (exact SHA):** implementation SHA and publication SHA recorded in `PDC_SHA_LADDER.md`; test log under `.tmp/proof/pdc-x-p5/B-P7-D8/`; audited by IA-D8 (P7 re-audit) at the PDC-P7 audited SHA.
+- **Merge gate:** OD-PDC-SEQ-01: implement in an isolated worktree; merge only after MCP-SERVER-X P8 publication; ACT-N11 re-activation at PDC-P7-00
+
+| Requirement | Class | Test case |
+| --- | --- | --- |
+| — | — | — |
+
+## B-P7-D6 — D6 repair after the P7 independent audit (IA-D6), loop 1: evidence-plane security audit trail writes only through a validating port (F-D6-01), overstating immutable/replicated wording relabeled (F-D6-02), plugin provenance bound to the attested distribution (F-D6-05), stale sandbox governance-deny test root-caused (F-D6-07), provider text kept out of the credential error chain (F-D6-12)
+
+- **Ticket:** T-IGX-041-F · **Wave:** W13 · **ADR:** ADR-PDC-06 · **Auditor:** IA-D6 (re-audit, loop 1 of 2)
+- **Write set:** `intergrax/runtime/security/security_audit_trail.py`, `intergrax/runtime/security/multi_region_audit_trail.py`, `intergrax/core/plugins/admission.py`, `intergrax/integrations/credentials/secrets_store_resolver.py`, `tests/qualification/pdc_x/d6_repair/`, `tests/unit/runtime/sandbox/test_cap_c1c_sandbox_evidence_and_contract_purity.py`
+- **Tests:** tests/qualification/pdc_x/d6_repair/ red on unchanged code and green after; d6, xd_02/06/10, compat_x F-35 and event-evolution gates, sandbox unit suite and credential tests green except the known reds named in the ticket
+- **Evidence (exact SHA):** implementation SHA and publication SHA recorded in `PDC_SHA_LADDER.md`; test log under `.tmp/proof/pdc-x-p5/B-P7-D6/`; audited by IA-D6 (re-audit, loop 1 of 2) at the PDC-P7 audited SHA.
 - **Merge gate:** OD-PDC-SEQ-01: implement in an isolated worktree; merge only after MCP-SERVER-X P8 publication; ACT-N11 re-activation at PDC-P7-00
 
 | Requirement | Class | Test case |
