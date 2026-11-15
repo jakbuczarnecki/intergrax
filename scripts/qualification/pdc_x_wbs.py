@@ -838,6 +838,29 @@ BATCHES: Final[tuple[Batch, ...]] = (
         "tests/qualification/tenant_x green at the final head; negative tests prove an unclassified, swapped or unreasoned carrier still fails; PHASE 2 runs only after the D1, D2 and D6 repair PRs are merged",
     ),
     Batch(
+        "B-P7-RP",
+        "ALL",
+        "Final EBH-7 re-pin after all P7 repairs: fresh L3 replay at the development tip P (W1' prep with allowlisted paths only, one workflow dispatch, W2' record)",
+        "T-IGX-041-J",
+        "W15",
+        (
+            "docs/project/maintainers/qualification/ebh_7_p03_independent_replay/",
+            "docs/project/maintainers/qualification/EBH_7_SHA_LADDER.md",
+            "docs/project/maintainers/qualification/EBH_7_B6_F10_ECAP_NORMATIVE_MATRIX.md",
+            "docs/project/maintainers/qualification/EBH_7_ECAP_CURRENT_HEAD_AUDIT_REPORT.md",
+            "docs/project/maintainers/qualification/platform_domain_completeness/PDC_SHA_LADDER.md",
+            "docs/project/maintainers/qualification/platform_domain_completeness/PDC_REG_DIAGNOSIS.md",
+            "docs/project/maintainers/qualification/platform_domain_completeness/PDC_EBH7_FINAL_REPIN_RECORD.md",
+            ".github/workflows/unit-tests.yml",
+            "tests/qualification/ebh_7/_constants.py",
+        ),
+        "—",
+        ("B-P7-D1", "B-P7-D2", "B-P7-D3", "B-P7-D4", "B-P7-D5", "B-P7-D6", "B-P7-D7", "B-P7-D8", "B-P7-TX"),
+        GATE_FREE,
+        "IA-GLOBAL (P8)",
+        "tests/qualification/ebh_7 green at the new pin; replay run id and artifact digests recorded; not a B6 PASS",
+    ),
+    Batch(
         "B-P7-CX",
         "ALL",
         "Re-pin of the COMPAT-X counters (debt item Z-D1 of T-IGX-036-Z) at the last product change: pinned counters, id-exact evidence fixture and four accepted shim-delta paths classified as heuristic hits; tests and fixtures only",
@@ -1166,6 +1189,10 @@ def render_dag() -> str:
         "W14b": (
             "after every B-P7 repair batch (W13, W14) is merged and the signature of T-IGX-041-L",
             "before the EBH-7 pin P is taken (tests/qualification/compat_x and tests/fixtures are not on the executable-identity allowlist); test-only pull request",
+        ),
+        "W15": (
+            "after every B-P7 repair batch (W13, W14) and the signature of T-IGX-041-J",
+            "docs-only pull requests W1' and W2' after the preconditions of the plan (F10 classifier entries, COMPAT-X counters) are merged; one workflow dispatch between them",
         ),
     }
     for wave, bids in waves.items():

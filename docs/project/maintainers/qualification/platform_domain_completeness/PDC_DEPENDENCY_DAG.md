@@ -59,6 +59,15 @@ graph LR
   B-P6-J --> B-P7-D8
   B-P6-J --> B-P7-D6
   B-P6-J --> B-P7-TX
+  B-P7-D1 --> B-P7-RP
+  B-P7-D2 --> B-P7-RP
+  B-P7-D3 --> B-P7-RP
+  B-P7-D4 --> B-P7-RP
+  B-P7-D5 --> B-P7-RP
+  B-P7-D6 --> B-P7-RP
+  B-P7-D7 --> B-P7-RP
+  B-P7-D8 --> B-P7-RP
+  B-P7-TX --> B-P7-RP
   B-P7-D1 --> B-P7-CX
   B-P7-D2 --> B-P7-CX
   B-P7-D3 --> B-P7-CX
@@ -105,6 +114,7 @@ Wave 3 sets the length of the path. Its three batches run in sequence because th
 | W12 | B-P6-J | after B-P6-I and the signature of T-IGX-040-A | after the signature of T-IGX-040-A (one-time exception OD-MCP-RC-05; both repairs in one PR, then product paths freeze again) |
 | W13 | B-P7-D2, B-P7-D5, B-P7-D7, B-P7-D4, B-P7-D3, B-P7-D8, B-P7-D6, B-P7-TX | after B-P6-J and the signature of T-IGX-041-E | after the signature of T-IGX-041-E (DELEGATION-PDC-P7-REPAIR merge gate; product paths of the P7 repairs are re-pinned once after all repairs) |
 | W14 | B-P7-D1 | after B-P7-D5 (W13) is merged and the signature of T-IGX-041-A | after the signature of T-IGX-041-A (DELEGATION-PDC-P7-REPAIR merge gate; W14 because B-P7-D1 and B-P7-D5 both write under intergrax/applications/_shared/ and one wave may hold only one such batch) |
+| W15 | B-P7-RP | after every B-P7 repair batch (W13, W14) and the signature of T-IGX-041-J | docs-only pull requests W1' and W2' after the preconditions of the plan (F10 classifier entries, COMPAT-X counters) are merged; one workflow dispatch between them |
 | W14b | B-P7-CX | after every B-P7 repair batch (W13, W14) is merged and the signature of T-IGX-041-L | before the EBH-7 pin P is taken (tests/qualification/compat_x and tests/fixtures are not on the executable-identity allowlist); test-only pull request |
 
 ## Operator gates
