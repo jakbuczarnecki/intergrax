@@ -1,0 +1,168 @@
+"""EQO-A shared helpers (stdlib only). Read-only: reads git objects at BASELINE_SHA and writes only under WS."""
+from __future__ import annotations
+
+import hashlib
+import json
+import os
+import re
+import subprocess
+from pathlib import Path
+
+WS = Path(os.environ.get("EQOA_WS", r"D:\Projekty\intergrax\.tmp\session\eqo-a"))
+MAIN = Path(os.environ.get("EQOA_MAIN", r"D:\Projekty\intergrax"))
+WT = Path(os.environ.get("EQOA_WT", r"D:\Projekty\_wt\intergrax\eqo-a-258bbf6a"))
+BASELINE_SHA = "258bbf6abb6fdbb92ef0185d058527fbb1e47f04"
+PLANNING_HEAD = "f87df3b2a93bd09aa8e1577b80122391249772c8"
+CAMPAIGN = "EQO-A"
+
+ROADMAP = "docs/project/maintainers/plans/PLATFORM_ENTERPRISE_COMPLETION_ROADMAP.md"
+FRZ_CHECKLIST = "docs/project/maintainers/qualification/PLATFORM_ENTERPRISE_FREEZE_ACCEPTANCE_CHECKLIST.md"
+QUAL = "docs/project/maintainers/qualification"
+
+SHA40 = re.compile(r"(?<![0-9a-fA-F])[0-9a-f]{40}(?![0-9a-fA-F])")
+SHA_ABBR = re.compile(r"(?<![0-9a-zA-Z_/\-.])[0-9a-f]{7,39}(?![0-9a-zA-Z_\-])")
+
+SEVERITIES = ["BLOCKER", "HIGH", "MEDIUM", "LOW", "INFO"]
+CLASSES = ["CONFIRMED_DEFECT", "EVIDENCE_DEFICIENCY", "GOVERNANCE_INCONSISTENCY", "CERTIFICATION_DRIFT",
+           "ARCHITECTURE_RISK", "UNVERIFIED_HYPOTHESIS", "ACCEPTED_SCOPED_LIMITATION"]
+EVIDENCE_LEVELS = ["E0", "E1", "E2", "E3", "E4"]
+CERT_VERDICTS = ["CV-VERIFIED", "CV-SCOPED", "EV-INCOMPLETE", "EV-INCONSISTENT", "HIST-REQUAL", "CLAIM-UNSUPPORTED",
+                 "OPEN_NOT_CERTIFIED", "NOT-ASSESSED"]
+DRIFT_CLASSES = ["DRIFT-NONE", "DRIFT-BENIGN", "DRIFT-REQUALIFIED", "DRIFT-UNREQUALIFIED", "DRIFT-UNKNOWN"]
+NEXT_ACTIONS = ["OWNER_DECISION", "CAMPAIGN_B", "CAMPAIGN_C", "REQUALIFY", "DOC_FIX_BY_OWNER", "NONE"]
+ARCH_FREEZE_IMPACT = ["BLOCKS", "CONDITIONS", "NONE", "UNKNOWN"]
+ROADMAP_STATUS_VOCAB = ["CLOSED", "CURRENT", "READY FOR AUDIT", "BLOCKED", "QUEUED", "PLANNED", "FINAL / MANDATORY"]
+DISPOSITIONS = ["PARENT_ASSESSED", "LINEAGE_ONLY", "OPEN_NOT_CERTIFIED", "PROSE_ORPHAN"]  # + CHILD_INHERITS:<p>, OUT_OF_SCOPE:<r>
+FRZ_VOCAB = ["OPEN", "PASS", "BLOCKED", "N/A — WITH EVIDENCE"]
+
+
+def header_block(extra: str = "") -> str:
+    reg = WS / "SOURCE_REGISTRY.json"
+    digest = sha256_file(reg) if reg.exists() else "pending"
+    return (f"<!-- Campaign: {CAMPAIGN} | BASELINE_SHA: {BASELINE_SHA} | generated_utc: {utc_now()} | "
+            f"source_registry_sha256: {digest} -->\n")
+
+
+def utc_now() -> str:
+    import datetime
+    return datetime.datetime.now(datetime.timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
+
+
+def sha256_file(p) -> str:
+    h = hashlib.sha256()
+    with open(p, "rb") as f:
+        for chunk in iter(lambda: f.read(1 << 20), b""):
+            h.update(chunk)
+    return h.hexdigest()
+
+
+def sha256_bytes(b: bytes) -> str:
+    return hashlib.sha256(b).hexdigest()
+
+
+def git(*args: str, cwd: Path = WT, check: bool = False) -> subprocess.CompletedProcess:
+    # read-only git only
+    allowed = {"log", "show", "diff", "rev-parse", "merge-base", "cat-file", "ls-tree", "blame", "grep", "status",
+               "rev-list", "name-rev", "branch", "for-each-ref", "ls-files", "describe", "cherry", "shortlog",
+               "diff-tree", "show-ref"}
+    if args[0] not in allowed:
+        raise RuntimeError(f"git subcommand not allowed: {args[0]}")
+    r = subprocess.run(["git", "-C", str(cwd), *args], capture_output=True, text=True, encoding="utf-8", errors="replace")
+    if check and r.returncode != 0:
+        raise RuntimeError(r.stderr)
+    return r
+
+
+def show_text(path: str, sha: str = BASELINE_SHA) -> str | None:
+    r = subprocess.run(["git", "-C", str(WT), "show", f"{sha}:{path}"], capture_output=True)
+    if r.returncode != 0:
+        return None
+    return r.stdout.decode("utf-8", errors="replace")
+
+
+def show_bytes(path: str, sha: str = BASELINE_SHA) -> bytes | None:
+    r = subprocess.run(["git", "-C", str(WT), "show", f"{sha}:{path}"], capture_output=True)
+    return r.stdout if r.returncode == 0 else None
+
+
+def path_exists_at(path: str, sha: str = BASELINE_SHA) -> bool:
+    return git("cat-file", "-e", f"{sha}:{path}").returncode == 0
+
+
+def commit_exists(sha: str) -> bool:
+    return git("cat-file", "-e", f"{sha}^{{commit}}").returncode == 0
+
+
+def is_ancestor(sha: str, of: str = BASELINE_SHA) -> bool:
+    return git("merge-base", "--is-ancestor", sha, of).returncode == 0
+
+
+def write_json(path, obj) -> None:
+    Path(path).parent.mkdir(parents=True, exist_ok=True)
+    Path(path).write_text(json.dumps(obj, indent=2, ensure_ascii=False) + "\n", encoding="utf-8")
+
+
+def write_jsonl(path, rows) -> None:
+    Path(path).parent.mkdir(parents=True, exist_ok=True)
+    with open(path, "w", encoding="utf-8", newline="\n") as f:
+        for r in rows:
+            f.write(json.dumps(r, ensure_ascii=False, sort_keys=False) + "\n")
+
+
+def read_jsonl(path):
+    out = []
+    p = Path(path)
+    if not p.exists():
+        return out
+    with open(p, encoding="utf-8") as f:
+        for line in f:
+            line = line.strip()
+            if line:
+                out.append(json.loads(line))
+    return out
+
+
+def read_json(path):
+    return json.loads(Path(path).read_text(encoding="utf-8"))
+
+
+def clean_cell(s: str) -> str:
+    s = s.strip()
+    s = re.sub(r"\*\*", "", s)
+    s = s.replace("`", "")
+    return s.strip()
+
+
+def split_row(line: str) -> list[str]:
+    """Split a markdown table row on unescaped pipes outside inline code."""
+    s = line.strip()
+    if s.startswith("|"):
+        s = s[1:]
+    if s.endswith("|"):
+        s = s[:-1]
+    cells, cur, in_code, i = [], [], False, 0
+    while i < len(s):
+        ch = s[i]
+        if ch == "\\" and i + 1 < len(s) and s[i + 1] == "|":
+            cur.append("|")
+            i += 2
+            continue
+        if ch == "`":
+            in_code = not in_code
+        if ch == "|" and not in_code:
+            cells.append("".join(cur))
+            cur = []
+        else:
+            cur.append(ch)
+        i += 1
+    cells.append("".join(cur))
+    return [c.strip() for c in cells]
+
+
+def log_read(path: str, sha: str = BASELINE_SHA, lines: str = "all", note: str = "") -> None:
+    """Append to READ_LOG.jsonl (path, blob sha, line range)."""
+    r = git("rev-parse", f"{sha}:{path}")
+    blob = r.stdout.strip() if r.returncode == 0 else "MISSING"
+    with open(WS / "READ_LOG.jsonl", "a", encoding="utf-8", newline="\n") as f:
+        f.write(json.dumps({"path": path, "sha": sha, "blob": blob, "lines": lines, "note": note,
+                            "utc": utc_now()}, ensure_ascii=False) + "\n")

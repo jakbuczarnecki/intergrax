@@ -1,0 +1,106 @@
+"""Findings library. Parent-authored findings live in findings/parent_findings.jsonl (fixed IDs);
+shard findings (shards/*/*.findings.jsonl) get IDs assigned deterministically by consolidate_findings(). Output: findings/FINDINGS.jsonl."""
+from __future__ import annotations
+
+import sys
+from pathlib import Path
+
+sys.path.insert(0, str(Path(__file__).parent))
+from common import *  # noqa
+
+PARENT = WS / "findings" / "parent_findings.jsonl"
+IDMAP = WS / "findings" / "id_map.json"
+FINAL = WS / "findings" / "FINDINGS.jsonl"
+REQUIRED = ["finding_id", "severity", "class", "scope", "affected_invariant", "exact_sha", "evidence", "evidence_level",
+            "impact", "arch_freeze_impact", "recommendation", "owner", "next_action", "decision_authority", "related_findings"]
+
+
+def _next_id(ws: str, rows) -> str:
+    used = [r["finding_id"] for r in rows] + (list(read_json(IDMAP).values()) if IDMAP.exists() else [])
+    n = max([int(x.rsplit("-", 1)[1]) for x in used if x.startswith(f"EQOA-{ws}-")] + [0]) + 1
+    return f"EQOA-{ws}-{n:03d}"
+
+
+def add(ws: str, *, title: str, severity: str, cls: str, scope, affected_invariant: str, evidence, evidence_level: str,
+        impact: str, arch_freeze_impact: str, recommendation: str, owner: str, next_action: str, decision_authority: str,
+        related=None, seed_id=None, fid: str | None = None, status: str = "OPEN") -> str:
+    rows = read_jsonl(PARENT)
+    fid = fid or _next_id(ws, rows)
+    if any(r["finding_id"] == fid for r in rows):
+        raise ValueError(f"duplicate finding id {fid}")
+    rows.append({"finding_id": fid, "title": title, "ws": ws, "severity": severity, "class": cls,
+                 "scope": scope if isinstance(scope, list) else [scope], "affected_invariant": affected_invariant,
+                 "exact_sha": BASELINE_SHA, "evidence": evidence if isinstance(evidence, list) else [evidence],
+                 "evidence_level": evidence_level, "impact": impact, "arch_freeze_impact": arch_freeze_impact,
+                 "recommendation": recommendation, "owner": owner, "next_action": next_action,
+                 "decision_authority": decision_authority, "related_findings": related or [], "seed_id": seed_id,
+                 "status": status, "origin": "parent"})
+    write_jsonl(PARENT, rows)
+    return fid
+
+
+def update(fid: str, **kw) -> None:
+    rows = read_jsonl(PARENT)
+    for r in rows:
+        if r["finding_id"] == fid:
+            r.update(kw)
+            write_jsonl(PARENT, rows)
+            return
+    raise KeyError(fid)
+
+
+def remove(fid: str) -> None:
+    rows = [r for r in read_jsonl(PARENT) if r["finding_id"] != fid]
+    write_jsonl(PARENT, rows)
+
+
+def consolidate() -> list[dict]:
+    """parent findings + shard findings (IDs assigned stably) -> FINDINGS.jsonl"""
+    idmap = read_json(IDMAP) if IDMAP.exists() else {}
+    rows = read_jsonl(PARENT)
+    taken = {r["finding_id"] for r in rows}
+    shard_files = sorted((WS / "shards").glob("*/*.findings.jsonl"))
+    allrows = list(rows)
+    for sf in shard_files:
+        ws = sf.parent.name
+        for i, r in enumerate(read_jsonl(sf)):
+            key = f"{sf.parent.name}/{sf.name}#{r.get('local_id', i)}"
+            if key not in idmap:
+                allrows_ids = {x["finding_id"] for x in allrows} | taken | set(idmap.values())
+                n = max([int(x.rsplit("-", 1)[1]) for x in allrows_ids if x.startswith(f"EQOA-{ws}-")] + [0]) + 1
+                idmap[key] = f"EQOA-{ws}-{n:03d}"
+            r = dict(r)
+            ov = read_json(WS / "findings" / "overrides.json") if (WS / "findings" / "overrides.json").exists() else {}
+            if key in ov:
+                r.update(ov[key])
+                r["parent_override"] = True
+            r["finding_id"] = idmap[key]
+            r.setdefault("exact_sha", BASELINE_SHA)
+            r.setdefault("ws", ws)
+            r.setdefault("related_findings", [])
+            r.setdefault("status", "OPEN")
+            r["origin"] = f"shard:{key}"
+            allrows.append(r)
+    write_json(IDMAP, idmap)
+    # resolve merged_into chains: keep rows, mark
+    write_jsonl(FINAL, allrows)
+    return allrows
+
+
+def validate(rows) -> list[str]:
+    errs = []
+    for r in rows:
+        for k in REQUIRED:
+            if k not in r or r[k] in (None, "") and k not in ("related_findings",):
+                errs.append(f"{r.get('finding_id')}: missing {k}")
+        if r.get("severity") not in SEVERITIES:
+            errs.append(f"{r.get('finding_id')}: bad severity {r.get('severity')}")
+        if r.get("class") not in CLASSES:
+            errs.append(f"{r.get('finding_id')}: bad class {r.get('class')}")
+        if r.get("evidence_level") not in EVIDENCE_LEVELS:
+            errs.append(f"{r.get('finding_id')}: bad evidence_level")
+        if r.get("arch_freeze_impact") not in ARCH_FREEZE_IMPACT:
+            errs.append(f"{r.get('finding_id')}: bad arch_freeze_impact")
+        if r.get("next_action") not in NEXT_ACTIONS:
+            errs.append(f"{r.get('finding_id')}: bad next_action")
+    return errs

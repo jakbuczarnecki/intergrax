@@ -1,0 +1,9 @@
+..                                                                       [100%]
+=================================== PASSES ====================================
+_________________ test_sxf_r1_q50_discovery_inventory_counts __________________
+---------------------------- Captured stdout setup ----------------------------
+Wrote build\agent_fleet_inventory.json (21 agents)
+=========================== short test summary info ===========================
+PASSED tests/qualification/state_x/_state_x_final_r1_closed_world_tests.py::test_sxf_r1_q50_discovery_inventory_counts
+PASSED tests/qualification/trace_x/test_trace_x_p4_r5_closed_world.py::test_txp4r5_q04_production_composition_registry_parity
+2 passed in 12.00s

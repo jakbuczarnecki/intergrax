@@ -1,0 +1,99 @@
+{
+  "path": "docs/project/maintainers/qualification/ebh_7_p03_independent_replay/EBH_7_SKIP_DISPOSITION_REGISTER.md",
+  "tables": [
+    {
+      "header": [
+        "#",
+        "NODE_ID",
+        "MANDATORY",
+        "DISPOSITION",
+        "AUDIT_STATUS",
+        "SOURCE_SHA"
+      ],
+      "rows": [
+        {
+          "line": 11,
+          "#": "1",
+          "NODE_ID": "tests/qualification/ebh_7/test_ebh_7_w6_tenant_e2e_behavioral_gates.py::test_ebh7_w6_tenant_e2e_executes_registered_proof[EBH7-TEN-E2E-04]",
+          "MANDATORY": "YES",
+          "DISPOSITION": "ACCEPTED_NA",
+          "AUDIT_STATUS": "READY",
+          "SOURCE_SHA": "8bbda35dd168"
+        },
+        {
+          "line": 12,
+          "#": "2",
+          "NODE_ID": "tests/qualification/ebh_7/test_ebh_7_w6_tenant_e2e_behavioral_gates.py::test_ebh7_w6_tenant_e2e_executes_registered_proof[EBH7-TEN-E2E-07]",
+          "MANDATORY": "YES",
+          "DISPOSITION": "ACCEPTED_NA",
+          "AUDIT_STATUS": "READY",
+          "SOURCE_SHA": "8bbda35dd168"
+        },
+        {
+          "line": 13,
+          "#": "3",
+          "NODE_ID": "tests/qualification/ebh_7/test_ebh_7_w6_tenant_e2e_behavioral_gates.py::test_ebh7_w6_tenant_e2e_executes_registered_proof[EBH7-TEN-E2E-11]",
+          "MANDATORY": "YES",
+          "DISPOSITION": "ACCEPTED_NA",
+          "AUDIT_STATUS": "READY",
+          "SOURCE_SHA": "8bbda35dd168"
+        },
+        {
+          "line": 14,
+          "#": "4",
+          "NODE_ID": "tests/qualification/ebh_7/test_ebh_7_w6_tenant_e2e_behavioral_gates.py::test_ebh7_w6_tenant_e2e_executes_registered_proof[EBH7-TEN-E2E-14]",
+          "MANDATORY": "YES",
+          "DISPOSITION": "ACCEPTED_NA",
+          "AUDIT_STATUS": "READY",
+          "SOURCE_SHA": "8bbda35dd168"
+        },
+        {
+          "line": 15,
+          "#": "5",
+          "NODE_ID": "tests/qualification/ebh_7/test_ebh_7_w7_cross_domain_behavioral_gates.py::test_ebh7_w7_cross_domain_executes_registered_proof[EBH7-XDM-010]",
+          "MANDATORY": "YES",
+          "DISPOSITION": "ACCEPTED_NA",
+          "AUDIT_STATUS": "READY",
+          "SOURCE_SHA": "8bbda35dd168"
+        },
+        {
+          "line": 16,
+          "#": "6",
+          "NODE_ID": "tests/qualification/ebh_7/test_ebh_7_w7_cross_domain_behavioral_gates.py::test_ebh7_w7_cross_domain_executes_registered_proof[EBH7-XDM-016]",
+          "MANDATORY": "YES",
+          "DISPOSITION": "ACCEPTED_NA",
+          "AUDIT_STATUS": "READY",
+          "SOURCE_SHA": "8bbda35dd168"
+        },
+        {
+          "line": 17,
+          "#": "7",
+          "NODE_ID": "tests/qualification/ebh_7/test_ebh_7_w7_cross_domain_behavioral_gates.py::test_ebh7_w7_cross_domain_executes_registered_proof[EBH7-XDM-017]",
+          "MANDATORY": "YES",
+          "DISPOSITION": "ACCEPTED_NA",
+          "AUDIT_STATUS": "READY",
+          "SOURCE_SHA": "8bbda35dd168"
+        },
+        {
+          "line": 18,
+          "#": "8",
+          "NODE_ID": "tests/qualification/ebh_7/test_ebh_7_w7_cross_domain_behavioral_gates.py::test_ebh7_w7_cross_domain_executes_registered_proof[EBH7-XDM-029]",
+          "MANDATORY": "YES",
+          "DISPOSITION": "ACCEPTED_NA",
+          "AUDIT_STATUS": "READY",
+          "SOURCE_SHA": "8bbda35dd168"
+        },
+        {
+          "line": 19,
+          "#": "9",
+          "NODE_ID": "tests/qualification/ebh_7/test_ebh_7_w9_dossier_gates.py::test_ebh7_w9_proof_staging_dir_exists",
+          "MANDATORY": "NO",
+          "DISPOSITION": "ACCEPTED_NA",
+          "AUDIT_STATUS": "READY",
+          "SOURCE_SHA": "496016c0cf6c"
+        }
+      ]
+    }
+  ],
+  "lines": 172
+}

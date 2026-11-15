@@ -1,0 +1,97 @@
+"""A3 consolidation: frz_base.jsonl + shards/A3/b*.jsonl -> A3/frz_rows.jsonl (+ conflict register entries for cross-source disagreements)."""
+from __future__ import annotations
+
+import re
+import sys
+from collections import Counter, defaultdict
+from pathlib import Path
+
+sys.path.insert(0, str(Path(__file__).parent))
+from common import *  # noqa
+import fl
+
+NA = "NOT-ASSESSED"
+
+
+def main():
+    base = {r["frz_id"]: r for r in read_jsonl(WS / "A3" / "frz_base.jsonl")}
+    shard = {}
+    for f in sorted((WS / "shards" / "A3").glob("b*.jsonl")):
+        if f.name.endswith(".findings.jsonl"):
+            continue
+        for r in read_jsonl(f):
+            shard[r["frz_id"]] = r
+    stage_ids = [r["id"] for r in read_jsonl(WS / "A1" / "stage_rows.jsonl")] or [r["id"] for r in read_jsonl(WS / "A1" / "stage_base.jsonl")]
+    stage_set = set(stage_ids)
+
+    def resolve(tok):
+        tok = tok.strip().replace("`", "")
+        if tok.endswith("*"):
+            return [i for i in stage_ids if i.startswith(tok[:-1])]
+        return [tok] if tok in stage_set else []
+
+    out, missing = [], []
+    for fid, b in base.items():
+        s = shard.get(fid)
+        row = dict(b)
+        row["id"] = fid
+        if s is None:
+            missing.append(fid)
+            s = {}
+        row["owner"] = s.get("owner") or ""
+        row["responsible_stage_ids"] = s.get("responsible_stage_ids", [])
+        closing, unresolved = [], []
+        for t in [x.strip() for x in re.split(r",", b["closing_stages_raw"]) if x.strip()]:
+            t = t.replace("`", "")
+            m = resolve(t.split(" ")[0])
+            if m:
+                closing.extend(m)
+            else:
+                unresolved.append(t)
+        row["closing_stage_ids"] = sorted(set(closing))
+        row["closing_unresolved"] = unresolved
+        for k in ("implementation_evidence", "test_evidence", "audit_evidence", "evidence_level", "pass_applies_to_current_code", "scope_limits", "history",
+                  "open_obligations", "na_validity", "status_assessment", "frz_verdict", "conflicts", "notes"):
+            row[k] = s.get(k)
+        row["verdict"] = s.get("frz_verdict") or NA
+        row["frz_verdict"] = s.get("frz_verdict") or NA
+        row["family_owner_stages"] = b.get("family_owner_tokens", [])
+        # AUD-01 (corrective loop 1): CV-VERIFIED requires evidence level >= E3 (E2 = artifact exists, not content-checked)
+        row["frz_verdict_executor"] = row["frz_verdict"]
+        row["relabel_reason"] = None
+        if row["frz_verdict"] == "CV-VERIFIED":
+            txt = " ".join(str(row.get(k) or "") for k in ("history", "notes", "status_assessment")) + " " + " ".join(str(x) for x in (row.get("open_obligations") or []) + (row.get("scope_limits") or []))
+            low_level = str(row.get("evidence_level")) not in ("E3", "E4")
+            later = row.get("pass_applies_to_current_code") == "NO" or re.search(r"changed after|files changed|later (change|commit)|commits? (after|since)|post-cert|modified after|updated after|since the pin|after the pin|not covered by this row", txt, re.I)
+            if later:
+                row["frz_verdict"] = row["verdict"] = "HIST-REQUAL"
+                row["relabel_reason"] = ("AUD-01: evidence level below E3 and " if low_level else "R-1 (loop 2): ") + "the row's own text records later changes to the certified surface"
+            elif low_level:
+                row["frz_verdict"] = row["verdict"] = "EV-INCOMPLETE"
+                row["relabel_reason"] = "AUD-01: evidence level below E3 (artifact exists, content not checked against the claim)"
+        out.append(row)
+    seeds_ = {x["seed_id"]: x["finding_id"] for x in read_jsonl(WS / "data" / "seeds.jsonl")}
+    pf = read_jsonl(WS / "findings" / "parent_findings.jsonl")
+    nosha_f = next((x["finding_id"] for x in pf if "PASS rows carry no SHA" in x["title"]), None)
+    for row in out:
+        refs = set()
+        for fl_ in row["disagreement_flags"]:
+            if fl_ == "OFF_VOCAB_STATUS":
+                refs.add(seeds_["S-07"])
+            elif fl_.startswith("STATUS_ARCH_FREEZE_MATRIX"):
+                refs.add(seeds_["S-08"])
+            elif fl_ == "PASS_WITHOUT_SHA_IN_ROW" and nosha_f:
+                refs.add(nosha_f)
+        row["finding_refs"] = sorted(refs)
+    cref = read_json(WS / "data" / "row_conflict_refs.json") if (WS / "data" / "row_conflict_refs.json").exists() else {}
+    for row in out:
+        row["conflict_refs"] = cref.get(f"A3/frz_rows.jsonl:{row['frz_id']}", [])
+    write_jsonl(WS / "A3" / "frz_rows.jsonl", out)
+    print("rows", len(out), "missing shard rows", len(missing))
+    print("verdicts", dict(Counter(r["frz_verdict"] for r in out)))
+    print("closing unresolved:", [(r["frz_id"], r["closing_unresolved"]) for r in out if r["closing_unresolved"]][:10])
+    print("pass_applies:", dict(Counter(str(r["pass_applies_to_current_code"]) for r in out)))
+
+
+if __name__ == "__main__":
+    main()

@@ -1,0 +1,68 @@
+"""A6: parent findings from the enterprise audit coverage analysis (run once)."""
+from __future__ import annotations
+
+import sys
+from pathlib import Path
+
+sys.path.insert(0, str(Path(__file__).parent))
+from common import *  # noqa
+import fl
+import seeds
+
+B = BASELINE_SHA
+cov = read_jsonl(WS / "A6" / "coverage.jsonl")
+none = [r["frz_id"] for r in cov if r["coverage_label"] == "NONE"]
+nonepass = [r["frz_id"] for r in cov if r["coverage_label"] == "NONE" and r["checklist_status"] == "PASS"]
+nonefam = sorted({r["family"] for r in cov if r["coverage_label"] == "NONE"})
+M = "intergrax/platform/enterprise_audit/data/enterprise_audit_check_manifest.v1.json"
+n_env = 86
+
+f1 = fl.add("A6", title=f"The enterprise audit system maps no check to {len(none)} of 225 FRZ criteria (families {', '.join(nonefam)}); {len(nonepass)} of them are PASS in the checklist",
+            severity="MEDIUM", cls="EVIDENCE_DEFICIENCY", scope=nonefam + ["ENT-AUDIT-X", "FRZ-AUD-03"],
+            affected_invariant="FRZ-AUD-03 'audit coverage maps frozen enterprise invariants / FRZ families'; ENT-AUDIT-X purpose 'run the whole platform as one audit'",
+            evidence=["ws:A6/coverage.jsonl", "ws:A6/coverage_summary.json", "ws:logs/entaudit_full_dry/frz_coverage.v1.json", f"{M}@{B}:1"], evidence_level="E3",
+            impact=(f"Static join of the 85-check manifest, its frz_coverage.v1.json (from the allowed FULL --dry-run) and the checklist: no check maps to, or carries the category of, the criteria in families "
+                    f"{', '.join(nonefam)} ({len(none)} criteria, {len(nonepass)} PASS rows). These criteria rest on their own stage gate tests and records, not on the continuous audit system. "
+                    "The AUTOMATED label is used for no criterion because no check is mapped to an individual FRZ ID other than the aggregator FRZ-AUD-03."),
+            arch_freeze_impact="CONDITIONS", recommendation="ENT-AUDIT-X owner extends the coverage map (or states explicitly that those families are guarded by stage gates only).",
+            owner="ENT-AUDIT-X", next_action="CAMPAIGN_C", decision_authority="Operator")
+
+f2 = fl.add("A6", title="Ten check categories (CMP, DUP, EXE, GOV, OBS, PLG, REC, REL, SEC, STA) are mapped in frz_coverage.v1.json only to the aggregator FRZ-AUD-03, so per-family FRZ coverage cannot be read from the coverage map",
+            severity="MEDIUM", cls="EVIDENCE_DEFICIENCY", scope=["ENT-AUDIT-X", "FRZ-AUD-03", "frz_coverage.v1.json"], affected_invariant="FRZ-AUD-03 / Annex G2 mapping of 85 controls to FRZ families",
+            evidence=["ws:logs/entaudit_full_dry/frz_coverage.v1.json", "ws:A6/checks.jsonl"], evidence_level="E3",
+            impact=("In the dry-run coverage report a block of checks carries frz_mapping ['FRZ-AUD-03'] instead of their family (e.g. ENT-A-GOV-*, ENT-A-SEC-*, ENT-A-STA-*). The checks exist and are executable, "
+                    "but the machine-readable map used to compute FRZ coverage does not attribute them to the criteria they presumably protect, so FRZ coverage by family is understated and FRZ-AUD-03 PASS is only "
+                    "supported for the families with wildcard mappings."),
+            arch_freeze_impact="NONE", recommendation="ENT-AUDIT-X owner corrects the mapping data; no code change by EQO-A.", owner="ENT-AUDIT-X", next_action="DOC_FIX_BY_OWNER", decision_authority="Operator")
+
+f3 = fl.add("A6", title="ENT-AUDIT semantic acceptance wrappers skip silently unless ENT_AUDIT_X_SEMANTIC=1 / ENT_AUDIT_X_GATE_MATRIX=1, and the debt-register gate checks only for the text DEBT-",
+            severity="MEDIUM", cls="EVIDENCE_DEFICIENCY", scope=["ENT-AUDIT-X", "tests/qualification/ent_audit_x/acceptance", "scripts/maintenance/check_architecture_debt_register.py", "FRZ-DEBT-*"],
+            affected_invariant="ARCH-FREEZE entry 'unresolved architecture debt inside frozen scope = 0'; FRZ-AUD (audit does not silently skip)",
+            evidence=[f"tests/qualification/ent_audit_x/acceptance/test_ent_a_ent_a_bnd_01.py@{B}:12", f"pyproject.toml@{B}:426", f"scripts/maintenance/check_architecture_debt_register.py@{B}:17", "ws:A6/notes_parent.md"],
+            evidence_level="E3",
+            impact=(f"{n_env} test files reference ENT_AUDIT_X_SEMANTIC and one references ENT_AUDIT_X_GATE_MATRIX; each calls pytest.skip when the variable is not 1 (pyproject markers ent_semantic_gate / ent_semantic_matrix; "
+                    "run_qual_wave.py sets them). None of the 85 manifest entrypoints is one of these wrappers, so default FULL runs are not weakened, but a default pytest run of the acceptance tree reports skips, not failures, "
+                    "for the semantic oracle. check_architecture_debt_register.py exits 0 when the register file exists and contains the text DEBT- (L17-21): it cannot detect unresolved debt."),
+            arch_freeze_impact="CONDITIONS", recommendation="ENT-AUDIT-X owner makes the semantic wrappers fail (or report SKIPPED_ENV) when the env gate is off in certifying modes; replace the debt gate by a content check of OPEN debt rows.",
+            owner="ENT-AUDIT-X", next_action="OWNER_DECISION", decision_authority="Operator")
+
+f4 = fl.add("A6", title="CHANGED-SINCE is fail-closed only for the audit tooling prefixes; a new product package path outside the impact map selects no mapped check (only the 31-id invariant floor runs)",
+            severity="MEDIUM", cls="ARCHITECTURE_RISK", scope=["ENT-AUDIT-X", "intergrax/platform/enterprise_audit/impact_map.py", "FRZ-EVOL-*"], affected_invariant="FRZ-EVOL-06 / FRZ-AUD-06 change-impact selection completeness",
+            evidence=[f"intergrax/platform/enterprise_audit/impact_map.py@{B}:15", f"intergrax/platform/enterprise_audit/impact_map.py@{B}:317", f"intergrax/platform/enterprise_audit/impact_map.py@{B}:335",
+                      "ws:logs/a6/impact_map_planning.json", "ws:logs/a6/changed_since_planning/enterprise_audit_report.json"], evidence_level="E3",
+            impact=("_FAIL_CLOSED_PREFIXES lists only intergrax/platform/enterprise_audit/ and scripts/enterprise_audit/; selected_check_ids_from_impact simply unions prefix hits. Both CHANGED-SINCE dry-runs "
+                    "(planning pin: 68 of 85 checks planned; EVOL-X-era SHA: 80 of 85) and build_impact_map reported unmapped_paths = 0, but that count only covers the fail-closed prefixes. "
+                    "Static grouping shows 101 of 145 top-level census packages have no whole-package prefix in the JSON map or the PDC rules (the manifest-derived map adds entrypoint directories), so a change "
+                    "confined to such a package selects at most the invariant floor. Not exercised with a synthetic path (Campaign B)."),
+            arch_freeze_impact="CONDITIONS", recommendation="Campaign B: adversarial test with a brand-new package path; owner decides whether unmapped product paths should select FULL.",
+            owner="ENT-AUDIT-X", next_action="CAMPAIGN_B", decision_authority="Operator")
+
+seeds.confirm("S-15", [f"tests/qualification/ent_audit_x/acceptance/test_ent_a_ent_a_bnd_01.py@{B}:12", f"scripts/maintenance/check_architecture_debt_register.py@{B}:17", "ws:shards/A2/B8.jsonl"],
+              title="ENT-AUDIT semantic wrappers are env-gated, the debt-register gate is existence-only and the NPSC-4.2 allowlist FAIL wording is unreconciled (seed S-15 confirmed in parts)",
+              severity="MEDIUM", **{"class": "EVIDENCE_DEFICIENCY"}, scope=["ENT-AUDIT-X", "NPSC-4.2", "FRZ-DEBT-*"], affected_invariant="ARCH-FREEZE entry: no failing mandatory architecture gate; FRZ-AUD",
+              evidence=[f"tests/qualification/ent_audit_x/acceptance/test_ent_a_ent_a_bnd_01.py@{B}:12", f"scripts/maintenance/check_architecture_debt_register.py@{B}:17"], evidence_level="E3",
+              impact=(f"Seed S-15 verified: (1) env-gated semantic/matrix wrappers: confirmed ({n_env}+1 files, see {f3}); (2) debt-register gate is existence-only: confirmed ({f3}); "
+                      "(3) NPSC-4.2 allowlist recorded as FAIL in DUP-X / ROADMAP-REPLAY-X: roadmap L568 still says it is retained while the gate was refreshed under EBH-7 W3 and no document records the result "
+                      "(B8 finding, unproven). None of the 85 manifest entrypoints is an env-gated wrapper."),
+              arch_freeze_impact="CONDITIONS", recommendation="See the linked A6 findings.", owner="ENT-AUDIT-X", next_action="OWNER_DECISION", decision_authority="Operator", related_findings=[f3])
+print(f1, f2, f3, f4)

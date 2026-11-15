@@ -1,0 +1,68 @@
+"""Logged runner for allowed read-only tools (plan section 4). Usage: run_tool.py <run-id> <purpose> [--count-budget] -- <argv...>
+Runs with cwd=WT using the main checkout's .venv python (same uv.lock). Checks porcelain before/after in WT and MAIN."""
+from __future__ import annotations
+
+import os
+import subprocess
+import sys
+import time
+from pathlib import Path
+
+sys.path.insert(0, str(Path(__file__).parent))
+from common import *  # noqa
+
+PY = str(MAIN / ".venv" / "Scripts" / "python.exe")
+FORBIDDEN = ["promote-baseline", "--bootstrap-candidate", "--write-baseline", "bootstrap", "sync-adapters", "before-push",
+             "run_regression_gate_ci", "generate_roadmap_replay_x_matrices", "sync_agent_env", "--sync-matrix", "--sync-wbs"]
+
+
+def porcelain(cwd):
+    return git("status", "--porcelain", cwd=cwd).stdout
+
+
+def main():
+    a = sys.argv[1:]
+    run_id, purpose = a[0], a[1]
+    rest = a[2:]
+    count_budget = False
+    if rest and rest[0] == "--count-budget":
+        count_budget = True
+        rest = rest[1:]
+    assert rest[0] == "--"
+    argv = rest[1:]
+    flat = " ".join(argv)
+    for f in FORBIDDEN:
+        if f in flat and not (f == "bootstrap" and "bootstrap" not in argv):
+            raise SystemExit(f"FORBIDDEN token in command: {f}")
+    if "igx_gov" in flat and argv[-1] == "ticket":
+        raise SystemExit("FORBIDDEN igx_gov ticket")
+    before_wt, before_main = porcelain(WT), porcelain(MAIN)
+    env = dict(os.environ)
+    env["PYTHONDONTWRITEBYTECODE"] = "1"
+    env["PYTHONUTF8"] = "1"
+    t0 = time.time()
+    start = utc_now()
+    log = WS / "logs" / f"{run_id}.log"
+    log.parent.mkdir(parents=True, exist_ok=True)
+    cmd = [PY, *argv]
+    p = subprocess.run(cmd, cwd=str(WT), capture_output=True, env=env, timeout=1500)
+    out = p.stdout.decode("utf-8", errors="replace") + ("\n--- STDERR ---\n" + p.stderr.decode("utf-8", errors="replace") if p.stderr else "")
+    log.write_text(out, encoding="utf-8")
+    dur = round(time.time() - t0, 1)
+    after_wt, after_main = porcelain(WT), porcelain(MAIN)
+    rec = {"run_id": run_id, "purpose": purpose, "command": " ".join(["python", *argv]), "cwd": str(WT),
+           "baseline_sha_head": git("rev-parse", "HEAD").stdout.strip(), "exit_code": p.returncode, "duration_s": dur,
+           "start_utc": start, "end_utc": utc_now(), "log": str(log), "log_sha256": sha256_file(log),
+           "wt_porcelain_changed": before_wt != after_wt, "main_porcelain_changed": before_main != after_main,
+           "counts_against_test_budget": count_budget}
+    with open(WS / "logs" / "tool_runs.jsonl", "a", encoding="utf-8", newline="\n") as f:
+        f.write(json.dumps(rec, ensure_ascii=False) + "\n")
+    print(json.dumps({k: rec[k] for k in ("run_id", "exit_code", "duration_s", "wt_porcelain_changed", "main_porcelain_changed")}))
+    print("--- tail ---")
+    print("\n".join(out.strip().split("\n")[-12:])[:2500])
+    if rec["wt_porcelain_changed"]:
+        print("!!! E7: WT porcelain changed:", after_wt[:500])
+
+
+if __name__ == "__main__":
+    main()

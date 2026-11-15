@@ -1,0 +1,84 @@
+"""A2-T01: tier-2 mechanical pass over every closed-type roadmap row (questions 1, 2, 4, 5, 11 of the certification review answered mechanically):
+exact SHA present/resolves/ancestor; cited artifact exists at baseline; audit or acceptance record exists; independence wording present."""
+from __future__ import annotations
+
+import re
+import sys
+from collections import Counter, defaultdict
+from pathlib import Path
+
+sys.path.insert(0, str(Path(__file__).parent))
+from common import *  # noqa
+
+INDEP = [("independently accepted", r"independently\s+(?:accepted|audited|verified)"), ("INDEPENDENTLY_VERIFIED_SCOPED", r"independently verified\s*[-—–]\s*scoped"),
+         ("operator_accepted", r"operator[\s-]*(?:accepted|scoped|acceptance)"), ("operator_delegate", r"operator[\s-]delegate|delegate\b"),
+         ("scoped", r"\bscoped\b|PASS_SCOPED"), ("protocol_03", r"protocol\s*03"), ("IIAC", r"\bIIAC\b"),
+         ("no_independent", r"no (?:independent|external)|not independent|never independently|unverified"), ("conditional", r"\bconditional\b|\bSTOP\b"),
+         ("process_enforced", r"process[_-]enforced")]
+AUDIT_WORDS = re.compile(r"audit|accepted|acceptance|AUD-[A-Z0-9]+|PASS(?:_SCOPED)?", re.I)
+
+
+def basename_index():
+    names = git("ls-tree", "-r", "--name-only", BASELINE_SHA).stdout.split("\n")
+    idx = defaultdict(list)
+    for n in names:
+        if n.startswith(("docs/", "governance/", "tests/", "scripts/", "intergrax/platform/")):
+            idx[n.rsplit("/", 1)[-1]].append(n)
+    return idx
+
+
+def main():
+    rows = read_jsonl(WS / "A1" / "stage_base.jsonl")
+    txt = show_text(ROADMAP).split("\n")
+    idx = basename_index()
+    full_reg = {r["sha"]: r for r in read_jsonl(WS / "data" / "sha_registry.jsonl") if r["kind"] == "full"}
+    out = []
+    for r in rows:
+        if not r["closed_type"]:
+            continue
+        lines = ([r["line"]] if r["row_source"] == "S3TABLE" else []) + r["ledger_lines"]
+        raw = "\n".join(txt[l - 1] for l in lines if 0 < l <= len(txt))
+        docs = set(r["linked_docs"])
+        for m in re.finditer(r"`?([A-Za-z0-9_\-]+\.(?:md|json|yaml))`?", raw):
+            nm = m.group(1)
+            cands = idx.get(nm, [])
+            if len(cands) == 1:
+                docs.add(cands[0])
+        docs_chk = [{"path": d, "exists_at_baseline": path_exists_at(d)} for d in sorted(docs)]
+        sha_info = r["shas"]
+        n_sha = len(sha_info)
+        n_res = sum(1 for s in sha_info if s["resolves"])
+        n_anc = sum(1 for s in sha_info if s["ancestor"])
+        roles = Counter(s["role"] for s in sha_info)
+        indep = [name for name, pat in INDEP if re.search(pat, raw, re.I)]
+        has_audit = bool(AUDIT_WORDS.search(raw)) and any(s["role"] in ("audit", "certification", "closure_publication") or True for s in sha_info)
+        cert_sources = [{"path": d["path"], "sha": BASELINE_SHA} for d in docs_chk if d["exists_at_baseline"]] if n_res else []
+        flags = []
+        if n_sha == 0 and not r["abbr_shas_expanded"]:
+            flags.append("NO_SHA_CITED")
+        if n_sha and n_res < n_sha:
+            flags.append("SHA_NOT_RESOLVING")
+        if n_sha and n_anc < n_res:
+            flags.append("SHA_NOT_ANCESTOR")
+        if not docs_chk:
+            flags.append("NO_ARTIFACT_CITED")
+        elif not any(d["exists_at_baseline"] for d in docs_chk):
+            flags.append("CITED_ARTIFACT_MISSING")
+        if not indep:
+            flags.append("NO_INDEPENDENCE_WORDING")
+        if "no_independent" in indep or "conditional" in indep:
+            flags.append("NEGATIVE_INDEPENDENCE_WORDING")
+        out.append({"id": r["id"], "row_source": r["row_source"], "line": r["line"], "root_id": r["root_id"], "status_raw": r["status_raw"][:140],
+                    "n_sha": n_sha, "n_sha_resolve": n_res, "n_sha_ancestor": n_anc, "sha_roles": dict(roles), "abbr_expanded": len(r["abbr_shas_expanded"]),
+                    "artifacts": docs_chk, "cert_sources": cert_sources, "independence_wording": indep, "audit_or_accept_wording": has_audit,
+                    "t2_flags": flags, "q1_exact_sha": n_sha > 0 or bool(r["abbr_shas_expanded"]), "q2_artifact_exists": any(d["exists_at_baseline"] for d in docs_chk),
+                    "q4_audit_record": has_audit, "q5_independence_stated": bool(indep), "q11_sha_ancestry_ok": n_sha > 0 and n_anc == n_sha})
+    write_jsonl(WS / "A2" / "t2_mechanical.jsonl", out)
+    c = Counter(f for r in out for f in r["t2_flags"])
+    print("closed-type rows", len(out), "flags", dict(c))
+    print("q1", sum(r["q1_exact_sha"] for r in out), "q2", sum(r["q2_artifact_exists"] for r in out), "q4", sum(r["q4_audit_record"] for r in out),
+          "q5", sum(r["q5_independence_stated"] for r in out), "q11", sum(r["q11_sha_ancestry_ok"] for r in out))
+
+
+if __name__ == "__main__":
+    main()

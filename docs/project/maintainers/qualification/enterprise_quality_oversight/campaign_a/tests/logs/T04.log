@@ -1,0 +1,26 @@
+F
+================================== FAILURES ===================================
+___________________ test_replay_x_closure_counters_computed ___________________
+
+    def test_replay_x_closure_counters_computed() -> None:
+        from tests.qualification.roadmap_replay_x._closure_counters import all_counters
+        from tests.qualification.roadmap_replay_x._replay_blocker_register import (
+            replay_blocker_register_violations,
+        )
+    
+        counters = all_counters()
+        assert len(counters) == 6
+        by_name = {c.name: c for c in counters}
+        assert replay_blocker_register_violations() == ()
+        assert by_name["roadmap_drift"].value == 0
+>       assert by_name["historical_evidence_invalidated_by_later_changes"].value == 0
+E       AssertionError: assert 2 == 0
+E        +  where 2 = CounterResult(name='historical_evidence_invalidated_by_later_changes', value=2, denominator='prod paths since DUP-X ac...oadmap_replay_x/_prod_delta_disposition.py', failure_mode='non-zero unscoped prod delta or invalid scoped disposition').value
+
+tests\qualification\roadmap_replay_x\test_roadmap_replay_x_mechanical_exit_gates.py:148: AssertionError
+---------------------------- Captured stdout setup ----------------------------
+Wrote build\agent_fleet_inventory.json (21 agents)
+=========================== short test summary info ===========================
+FAILED tests/qualification/roadmap_replay_x/test_roadmap_replay_x_mechanical_exit_gates.py::test_replay_x_closure_counters_computed
+!!!!!!!!!!!!!!!!!!!!!!!!!! stopping after 1 failures !!!!!!!!!!!!!!!!!!!!!!!!!!
+1 failed in 6.48s

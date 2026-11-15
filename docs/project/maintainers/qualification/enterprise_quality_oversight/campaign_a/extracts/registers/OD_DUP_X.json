@@ -1,0 +1,110 @@
+{
+  "path": "docs/project/maintainers/qualification/DUP_X_OPERATOR_DECISION_REGISTER.md",
+  "tables": [
+    {
+      "header": [
+        "ID",
+        "Decision",
+        "Status",
+        "Blocks"
+      ],
+      "rows": [
+        {
+          "line": 5,
+          "ID": "OD-DUPX-02",
+          "Decision": "Independent audit of final parent closure master plan",
+          "Status": "APPROVED — 2026-10-29 — Block I–II · B4 publication · final closure plan execution authorized",
+          "Blocks": "Block A hygiene · B6 handoff"
+        },
+        {
+          "line": 6,
+          "ID": "OD-DUPX-01",
+          "Decision": "Authorize production remediation (Wave B+)",
+          "Status": "OPEN — NOT TRIGGERED (no prod delta on closure path; waiver phrase optional before B6)",
+          "Blocks": "Code changes beyond qual gates"
+        },
+        {
+          "line": 7,
+          "ID": "OD-DUPX-03..07",
+          "Decision": "Class C architecture reopen (per finding)",
+          "Status": "TRACKED",
+          "Blocks": "Ownership / public contract changes"
+        },
+        {
+          "line": 8,
+          "ID": "OD-DUPX-08",
+          "Decision": "Formal DUP-X closure + roadmap §5 ledger",
+          "Status": "APPROVED — 2026-10-29 — operator explicitly authorized final parent closure; B6 ISSUED — PASS (SCOPED)",
+          "Blocks": "After Protocol PASS only"
+        }
+      ]
+    },
+    {
+      "header": [
+        "Field",
+        "Value"
+      ],
+      "rows": [
+        {
+          "line": 23,
+          "Field": "Branch",
+          "Value": "development"
+        },
+        {
+          "line": 24,
+          "Field": "AUDITED_HEAD",
+          "Value": "8245b7471379414dc24385d1e770ccb56a7b0e2d"
+        },
+        {
+          "line": 25,
+          "Field": "WAVE1_IMPLEMENTATION_HEAD",
+          "Value": "2325460ff7f1f0290f95dae03145e30e20e0d991"
+        },
+        {
+          "line": 26,
+          "Field": "Wave 1 execution",
+          "Value": "RECORDED — GAP-CLASS-D + GAP-L3-TIER3 + CAND-03/09/12 disposition; qual gates only"
+        },
+        {
+          "line": 27,
+          "Field": "Final closure plan",
+          "Value": "Block A–B complete; B6 PASS (SCOPED) @ a7d83925b…; OD-DUPX-08 APPROVED — 2026-10-29"
+        },
+        {
+          "line": 28,
+          "Field": "EBH-6 parent",
+          "Value": "CLOSED — SCOPED @ OD-EBH6-08"
+        },
+        {
+          "line": 29,
+          "Field": "Agent closure",
+          "Value": "Authorized after explicit operator approval — OPERATOR APPROVED — DUP-X CLOSED (OD-DUPX-08)"
+        }
+      ]
+    },
+    {
+      "header": [
+        "Doc",
+        "Stage"
+      ],
+      "rows": [
+        {
+          "line": 35,
+          "Doc": "[DUP_X_C0_BASELINE_AUDIT_RECORD.md](DUP_X_C0_BASELINE_AUDIT_RECORD.md)",
+          "Stage": "C0"
+        },
+        {
+          "line": 36,
+          "Doc": "[DUP_X_CLOSED_WORLD_INVENTORY.md](DUP_X_CLOSED_WORLD_INVENTORY.md)",
+          "Stage": "Wave A"
+        },
+        {
+          "line": 37,
+          "Doc": "[DUP_X_PROTOCOL_03_INDEPENDENT_AUDIT_PACKAGE.md](DUP_X_PROTOCOL_03_INDEPENDENT_AUDIT_PACKAGE.md)",
+          "Stage": "Wave D handoff"
+        }
+      ]
+    }
+  ],
+  "lines": 40
+}

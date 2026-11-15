@@ -1,0 +1,283 @@
+{
+  "path": "docs/project/maintainers/qualification/mcp_server_x/MCP_SERVER_X_GAP_REGISTER.md",
+  "tables": [
+    {
+      "header": [
+        "REQ-ID",
+        "Owner",
+        "Gap",
+        "Risk",
+        "TASK",
+        "TEST",
+        "FRZ/ECAP"
+      ],
+      "rows": [
+        {
+          "line": 11,
+          "REQ-ID": "REQ-MCP-P-01",
+          "Owner": "Transport adapter",
+          "Gap": "No platform contract pin for protocol revision FastMCP announces",
+          "Risk": "False “full MCP” claim",
+          "TASK": "MCP-P3-02",
+          "TEST": "L3 streamable HTTP only",
+          "FRZ/ECAP": "FRZ-BND-06 (incremental)"
+        },
+        {
+          "line": 12,
+          "REQ-ID": "REQ-MCP-P-02",
+          "Owner": "SDK",
+          "Gap": "Negotiation deferred to FastMCP single transport",
+          "Risk": "Low",
+          "TASK": "—",
+          "TEST": "DEFERRED",
+          "FRZ/ECAP": "—"
+        },
+        {
+          "line": 13,
+          "REQ-ID": "REQ-MCP-P-03",
+          "Owner": "Design",
+          "Gap": "stdio/SSE not attached to host",
+          "Risk": "By design v1",
+          "TASK": "—",
+          "TEST": "OD-MCP-03 UNSUPPORTED",
+          "FRZ/ECAP": "—"
+        },
+        {
+          "line": 14,
+          "REQ-ID": "REQ-MCP-P-04",
+          "Owner": "Execution + cancel",
+          "Gap": "Reference cancel/disconnect/unknown on P5 batch",
+          "Risk": "Medium — scoped qualified P5",
+          "TASK": "MCP-P7-03",
+          "TEST": "L2/L3",
+          "FRZ/ECAP": "EXE/REL incremental"
+        },
+        {
+          "line": 15,
+          "REQ-ID": "REQ-MCP-P-05",
+          "Owner": "Definition contract",
+          "Gap": "No shared error code catalog on definition contract",
+          "Risk": "Medium",
+          "TASK": "MCP-P2-05",
+          "TEST": "L1",
+          "FRZ/ECAP": "CMP incremental"
+        }
+      ]
+    },
+    {
+      "header": [
+        "REQ-ID",
+        "Owner",
+        "Gap",
+        "Risk",
+        "TASK",
+        "TEST",
+        "FRZ/ECAP"
+      ],
+      "rows": [
+        {
+          "line": 21,
+          "REQ-ID": "REQ-MCP-S-01",
+          "Owner": "Platform contracts",
+          "Gap": "No typed server identity",
+          "Risk": "High",
+          "TASK": "MCP-P2-01",
+          "TEST": "L1",
+          "FRZ/ECAP": "TYP/CMP incremental"
+        },
+        {
+          "line": 22,
+          "REQ-ID": "REQ-MCP-S-02",
+          "Owner": "Composition",
+          "Gap": "No enable/disable exposure policy",
+          "Risk": "High",
+          "TASK": "MCP-P2-03",
+          "TEST": "L1/L2",
+          "FRZ/ECAP": "CTR incremental"
+        },
+        {
+          "line": 23,
+          "REQ-ID": "REQ-MCP-S-03",
+          "Owner": "Host mount",
+          "Gap": "One mount per app; multi-definition ASGI compose missing",
+          "Risk": "Medium",
+          "TASK": "MCP-P2-04",
+          "TEST": "L1",
+          "FRZ/ECAP": "BND incremental"
+        }
+      ]
+    },
+    {
+      "header": [
+        "Capability",
+        "Classification",
+        "Notes"
+      ],
+      "rows": [
+        {
+          "line": 29,
+          "Capability": "Tools",
+          "Classification": "MANDATORY",
+          "Notes": "Via ToolContract + host tools"
+        },
+        {
+          "line": 30,
+          "Capability": "Resources",
+          "Classification": "UNSUPPORTED_BY_DESIGN v1",
+          "Notes": "OD-MCP-02"
+        },
+        {
+          "line": 31,
+          "Capability": "Prompts",
+          "Classification": "UNSUPPORTED_BY_DESIGN v1",
+          "Notes": "Skill-X owns behavior influence"
+        },
+        {
+          "line": 32,
+          "Capability": "streamable HTTP",
+          "Classification": "MANDATORY",
+          "Notes": "FastMCP 3.x"
+        },
+        {
+          "line": 33,
+          "Capability": "Other transports",
+          "Classification": "UNSUPPORTED_BY_DESIGN v1",
+          "Notes": "OD-MCP-03"
+        },
+        {
+          "line": 34,
+          "Capability": "sampling/roots extensions",
+          "Classification": "DEFERRED_WITH_JUSTIFICATION",
+          "Notes": "—"
+        }
+      ]
+    },
+    {
+      "header": [
+        "REQ-ID",
+        "Owner",
+        "Gap",
+        "Risk",
+        "TASK",
+        "TEST",
+        "FRZ/ECAP"
+      ],
+      "rows": [
+        {
+          "line": 40,
+          "REQ-ID": "REQ-MCP-C-01",
+          "Owner": "COMPAT exporter",
+          "Gap": "Schema export exists; no surface version/fingerprint",
+          "Risk": "High",
+          "TASK": "MCP-P4-03",
+          "TEST": "L1",
+          "FRZ/ECAP": "FRZ-CMP-* incremental"
+        },
+        {
+          "line": 41,
+          "REQ-ID": "REQ-MCP-SEC-01",
+          "Owner": "Harness auth",
+          "Gap": "Dev bypass documented; prod fail-closed qualified P5",
+          "Risk": "High — P5 qual @ c59892829",
+          "TASK": "maintain",
+          "TEST": "L2/L3 neg",
+          "FRZ/ECAP": "FRZ-SEC/TEN incremental"
+        },
+        {
+          "line": 42,
+          "REQ-ID": "REQ-MCP-SEC-02",
+          "Owner": "Principal resolver",
+          "Gap": "Client tenant_id is assertion only",
+          "Risk": "—",
+          "TASK": "maintain",
+          "TEST": "L2",
+          "FRZ/ECAP": "TEN incremental"
+        },
+        {
+          "line": 43,
+          "REQ-ID": "REQ-MCP-X-01",
+          "Owner": "Host execution",
+          "Gap": "run_agent path exists",
+          "Risk": "—",
+          "TASK": "requal if signature changes",
+          "TEST": "regresja",
+          "FRZ/ECAP": "EXE"
+        },
+        {
+          "line": 44,
+          "REQ-ID": "REQ-MCP-X-02",
+          "Owner": "Catalog bridge",
+          "Gap": "Child execution per ADR TL11 exists",
+          "Risk": "—",
+          "TASK": "EVOL-gated requal",
+          "TEST": "L2",
+          "FRZ/ECAP": "EXE"
+        },
+        {
+          "line": 45,
+          "REQ-ID": "REQ-MCP-X-03",
+          "Owner": "TOOL-LIFE-X",
+          "Gap": "Retry/deadline owner unchanged",
+          "Risk": "—",
+          "TASK": "no engine retry",
+          "TEST": "—",
+          "FRZ/ECAP": "—"
+        }
+      ]
+    },
+    {
+      "header": [
+        "REQ-ID",
+        "Owner",
+        "Gap",
+        "Risk",
+        "TASK",
+        "TEST",
+        "FRZ/ECAP"
+      ],
+      "rows": [
+        {
+          "line": 51,
+          "REQ-ID": "REQ-MCP-O-01",
+          "Owner": "Lifespan",
+          "Gap": "No separate MCP readiness probe",
+          "Risk": "Low",
+          "TASK": "DEFERRED unless host pattern exists",
+          "TEST": "—",
+          "FRZ/ECAP": "—"
+        },
+        {
+          "line": 52,
+          "REQ-ID": "REQ-MCP-O-02",
+          "Owner": "Engine bounds",
+          "Gap": "Result bound partial; concurrent session cap missing",
+          "Risk": "Medium",
+          "TASK": "MCP-P3-06",
+          "TEST": "L2",
+          "FRZ/ECAP": "REL incremental"
+        },
+        {
+          "line": 53,
+          "REQ-ID": "REQ-MCP-OBS-01",
+          "Owner": "Trace",
+          "Gap": "No single MCP invocation id on execution event",
+          "Risk": "Medium",
+          "TASK": "MCP-P5-07",
+          "TEST": "L2",
+          "FRZ/ECAP": "TRC incremental"
+        },
+        {
+          "line": 54,
+          "REQ-ID": "REQ-MCP-DX-01",
+          "Owner": "Public API",
+          "Gap": "Consolidated mcp_developer_api + guide @ P6",
+          "Risk": "High — closed in P6 (scoped): T-IGX-035-G closed; P6 batch @ 5ff8606b0, G6 ACCEPT_SCOPED @ 9b8c19d75, IIIC PASS_SCOPED; requalification at the P7 exact SHA required",
+          "TASK": "MCP-P6-01",
+          "TEST": "L1 import",
+          "FRZ/ECAP": "DOC incremental"
+        }
+      ]
+    }
+  ],
+  "lines": 69
+}

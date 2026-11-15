@@ -1,0 +1,34 @@
+"""A9-T07: MANIFEST.json = sha256 of every dossier file (except the manifest itself, logs/checker/, __pycache__, audit_replay/), BASELINE_SHA, tool versions, source registry digest."""
+from __future__ import annotations
+
+import platform
+import subprocess
+import sys
+from pathlib import Path
+
+sys.path.insert(0, str(Path(__file__).parent))
+from common import *  # noqa
+
+
+def main():
+    files = {}
+    for p in sorted(WS.rglob("*")):
+        if p.is_dir():
+            continue
+        rel = p.relative_to(WS).as_posix()
+        if rel == "MANIFEST.json" or rel.startswith("logs/checker/") or "__pycache__" in rel or rel.startswith("audit_replay/") or rel.startswith("handoff/"):
+            continue
+        files[rel] = sha256_file(p)
+    reg = read_json(WS / "SOURCE_REGISTRY.json")
+    man = {"campaign": CAMPAIGN, "baseline_sha": BASELINE_SHA, "generated_utc": utc_now(), "n_files": len(files),
+           "source_registry_digest": reg["registry_digest"], "source_registry_sha256": sha256_file(WS / "SOURCE_REGISTRY.json"),
+           "tool_versions": {"uv": subprocess.run(["uv", "--version"], capture_output=True, text=True).stdout.strip(), "python_dossier_tools": sys.version.split()[0],
+                             "python_audit_tools": subprocess.run([str(MAIN / ".venv" / "Scripts" / "python.exe"), "--version"], capture_output=True, text=True).stdout.strip(),
+                             "os": platform.platform(), "uv_lock_sha256": sha256_file(WT / "uv.lock")},
+           "excluded": ["MANIFEST.json", "logs/checker/*", "__pycache__", "audit_replay/*", "handoff/*"], "files": files}
+    write_json(WS / "MANIFEST.json", man)
+    print("manifest files", len(files), "digest", sha256_file(WS / "MANIFEST.json")[:16])
+
+
+if __name__ == "__main__":
+    main()

@@ -1,0 +1,78 @@
+"""W0-T04 / A7-T01: generic Markdown table -> JSON for every S13 register (plus operator decision registers) at the baseline."""
+from __future__ import annotations
+
+import re
+import sys
+from pathlib import Path
+
+sys.path.insert(0, str(Path(__file__).parent))
+from common import *  # noqa
+
+Q = QUAL
+REGS = {
+    "ARCH_DEBT": "docs/project/technical/guides/ARCHITECTURE_DEBT_REGISTER.md",
+    "AF_CLOSED_WORLD_GAP": f"{Q}/ARCH_FREEZE_CLOSED_WORLD_GAP_REGISTER.md",
+    "AF_B2_DEBT_RECON": f"{Q}/ARCH_FREEZE_B2_DEBT_REGISTER_RECONCILIATION.md",
+    "AF_OD": f"{Q}/ARCH_FREEZE_OPERATOR_DECISION_REGISTER.md",
+    "EBH7_GAP": f"{Q}/EBH_7_GAP_REGISTER.md",
+    "EBH7_B6_BLOCKER": f"{Q}/EBH_7_B6_BLOCKER_REGISTER.md",
+    "ANNEX_F_GAP": f"{Q}/ent_audit_x/ANNEX_F_GAP_REGISTER.md",
+    "DIAG_GAP_LEDGER": f"{Q}/DIAGNOSTIC_GAP_LEDGER.md",
+    "DUPX_FINDINGS": f"{Q}/DUP_X_FINDINGS_REGISTER.md",
+    "EBH6_HARDCODING": f"{Q}/EBH_6_CORE_HARDCODING_FINDINGS_REGISTER.md",
+    "RRX_HARDCODING": f"{Q}/ROADMAP_REPLAY_X_CORE_HARDCODING_FINDINGS_REGISTER.md",
+    "EBH6_COND_REMEDIATION": f"{Q}/EBH_6_CONDITIONAL_REMEDIATION_REGISTER.md",
+    "EBH7_CROSS_DOMAIN_RISK": f"{Q}/EBH_7_CROSS_DOMAIN_RISK_MATRIX.md",
+    "CERT_DELEGATED_DECISIONS": f"{Q}/CERT_CAMPAIGN_DELEGATED_DECISIONS_2026-11-07.md",
+    "EBH7_SKIP_DISPOSITION": f"{Q}/ebh_7_p03_independent_replay/EBH_7_SKIP_DISPOSITION_REGISTER.md",
+    "PDC_GAP": f"{Q}/platform_domain_completeness/PDC_GAP_REGISTER.md",
+    "MCP_GAP": f"{Q}/mcp_server_x/MCP_SERVER_X_GAP_REGISTER.md",
+    "HIST_RESIDUAL_FINDINGS": f"{Q}/historical_certification_campaign/HISTORICAL_RESIDUAL_FINDINGS_REGISTER.md",
+    "HIST_PATHB_DEFERRED": f"{Q}/historical_certification_campaign/HISTORICAL_PATH_B_DEFERRED_OBLIGATIONS.md",
+    "HIST_PATHB_RESIDUAL": f"{Q}/historical_certification_campaign/HISTORICAL_FINAL_PATH_B_RESIDUAL_REGISTER.md",
+    "HIST_REMAINING_BLOCKERS": f"{Q}/historical_certification_campaign/HISTORICAL_REMAINING_EXACT_BLOCKERS.md",
+    "HIST_INDEPENDENT_AUDIT": f"{Q}/historical_certification_campaign/HISTORICAL_INDEPENDENT_AUDIT_REGISTER.md",
+    "HIST_STAGE_SHA": f"{Q}/historical_certification_campaign/HISTORICAL_STAGE_SHA_AND_EVIDENCE_REGISTRY.md",
+}
+for n in ("DUP_X", "EBH_5", "EBH_6", "EBH_7", "ROADMAP_REPLAY_X"):
+    REGS[f"OD_{n}"] = f"{Q}/{n}_OPERATOR_DECISION_REGISTER.md"
+
+
+def tables(text: str):
+    out, cur, hdr = [], None, None
+    for ln, l in enumerate(text.split("\n"), 1):
+        if l.startswith("|"):
+            c = [clean_cell(x) for x in split_row(l)]
+            if cur is None:
+                cur, hdr = [], c
+                continue
+            if all(set(x) <= set("-: ") for x in c):
+                continue
+            cur.append({"line": ln, **{(hdr[i] if i < len(hdr) and hdr[i] else f"c{i}"): c[i] for i in range(len(c))}})
+        else:
+            if cur is not None:
+                out.append({"header": hdr, "rows": cur})
+            cur, hdr = None, None
+    if cur is not None:
+        out.append({"header": hdr, "rows": cur})
+    return out
+
+
+def main():
+    summary = {}
+    for name, path in REGS.items():
+        t = show_text(path)
+        if t is None:
+            summary[name] = {"path": path, "exists": False}
+            continue
+        log_read(path, note="A7-T01 parse_registers")
+        tabs = tables(t)
+        write_json(WS / "extracts" / "registers" / f"{name}.json", {"path": path, "tables": tabs, "lines": t.count("\n") + 1})
+        summary[name] = {"path": path, "exists": True, "lines": t.count("\n") + 1, "tables": len(tabs), "rows": sum(len(x["rows"]) for x in tabs)}
+    write_json(WS / "extracts" / "registers_summary.json", summary)
+    for k, v in summary.items():
+        print(k, v.get("exists"), v.get("rows"), v.get("lines"))
+
+
+if __name__ == "__main__":
+    main()

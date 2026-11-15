@@ -1,0 +1,45 @@
+"""A8-T01/T03 mechanical part: domain universe (arch doc <-> plan pairs, capability docs, PDC domains, FRZ families, A4 concerns, census packages)
+and orphan detection (doc pairs missing a side)."""
+from __future__ import annotations
+
+import re
+import sys
+from pathlib import Path
+
+sys.path.insert(0, str(Path(__file__).parent))
+from common import *  # noqa
+
+ARCH = "docs/project/architecture/"
+PLANS = "docs/project/maintainers/plans/"
+CAPA = "docs/project/capabilities/architecture/"
+CAPP = "docs/project/capabilities/plan/"
+
+
+def main():
+    allf = [f for f in git("ls-tree", "-r", "--name-only", BASELINE_SHA).stdout.split("\n") if f]
+    arch = {Path(f).stem: f for f in allf if f.startswith(ARCH) and f.count("/") == ARCH.count("/") and f.endswith(".md")}
+    plans = {Path(f).stem: f for f in allf if f.startswith(PLANS) and f.count("/") == PLANS.count("/") and f.endswith(".md")}
+    capa = {Path(f).stem: f for f in allf if f.startswith(CAPA) and f.endswith(".md") and f.count("/") == CAPA.count("/")}
+    capp = {Path(f).stem: f for f in allf if f.startswith(CAPP) and f.endswith(".md") and f.count("/") == CAPP.count("/")}
+    hub = show_text(f"{ARCH}intergrax_runtime_architecture.md") or ""
+    hub_names = set(re.findall(r"`([A-Z][A-Z0-9_]{3,})`", hub))
+    domains = []
+    for n in sorted(set(arch) | set(plans)):
+        domains.append({"domain": n, "kind": "DOMAIN_PAIR_CANDIDATE", "arch_doc": arch.get(n), "plan_doc": plans.get(n), "in_arch_hub_index": n in hub_names,
+                        "pair_complete": n in arch and n in plans})
+    feats = []
+    for n in sorted(set(capa) | set(capp)):
+        feats.append({"feature": n, "arch_doc": capa.get(n), "plan_doc": capp.get(n), "pair_complete": n in capa and n in capp})
+    pdc = read_json(WS / "extracts" / "pdc_domains.json") if (WS / "extracts" / "pdc_domains.json").exists() else None
+    write_json(WS / "A8" / "domain_docs.json", {"domains": domains, "features": feats})
+    missing_plan = [d["domain"] for d in domains if d["arch_doc"] and not d["plan_doc"]]
+    missing_arch = [d["domain"] for d in domains if d["plan_doc"] and not d["arch_doc"]]
+    print("arch docs", len(arch), "plans", len(plans), "complete pairs", sum(d["pair_complete"] for d in domains))
+    print("arch without plan:", missing_plan[:40], len(missing_plan))
+    print("plan without arch:", missing_arch[:40], len(missing_arch))
+    print("features", len(feats), "incomplete", [f["feature"] for f in feats if not f["pair_complete"]])
+    print("hub-index names not matching any arch doc:", sorted(n for n in hub_names if n.isupper() and n not in arch)[:20])
+
+
+if __name__ == "__main__":
+    main()

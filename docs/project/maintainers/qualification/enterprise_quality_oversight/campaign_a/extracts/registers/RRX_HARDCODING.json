@@ -1,0 +1,55 @@
+{
+  "path": "docs/project/maintainers/qualification/ROADMAP_REPLAY_X_CORE_HARDCODING_FINDINGS_REGISTER.md",
+  "tables": [
+    {
+      "header": [
+        "Field",
+        "Requirement"
+      ],
+      "rows": [
+        {
+          "line": 5,
+          "Field": "Artifact",
+          "Requirement": "CORE_HARDCODING_FINDINGS_REGISTER"
+        },
+        {
+          "line": 6,
+          "Field": "Historical SSOT",
+          "Requirement": "[EBH_6_CORE_HARDCODING_FINDINGS_REGISTER.md](EBH_6_CORE_HARDCODING_FINDINGS_REGISTER.md)"
+        },
+        {
+          "line": 7,
+          "Field": "Python SSOT",
+          "Requirement": "tests/qualification/ebh_6/_findings_register.py"
+        },
+        {
+          "line": 8,
+          "Field": "AUDITED_HEAD",
+          "Requirement": "a2ed11f0e811446ae67fdfd57b4c4997c546e10f"
+        }
+      ]
+    },
+    {
+      "header": [
+        "Metric",
+        "@ HEAD",
+        "Source"
+      ],
+      "rows": [
+        {
+          "line": 14,
+          "Metric": "PROHIBITED unresolved (applicable scope)",
+          "@ HEAD": "0 (register + pytest)",
+          "Source": "ebh_6 mechanical gates"
+        },
+        {
+          "line": 15,
+          "Metric": "New PROHIBITED from prod delta",
+          "@ HEAD": "0",
+          "Source": "empty prod diff since DUP-X"
+        }
+      ]
+    }
+  ],
+  "lines": 18
+}

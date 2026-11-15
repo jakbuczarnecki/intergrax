@@ -1,0 +1,45 @@
+"""A8 consolidation: input domains + shards A8-1..3 -> A8/domain_rows.jsonl; orphan packages from A4 package map."""
+from __future__ import annotations
+
+import sys
+from collections import Counter
+from pathlib import Path
+
+sys.path.insert(0, str(Path(__file__).parent))
+from common import *  # noqa
+
+CELLS = ["semantic_owner", "contracts", "lifecycle_owner", "failure_recovery_owner", "tenant_security_rules", "configuration_rules", "observability", "test_evidence", "certification"]
+
+
+def main():
+    inp = read_jsonl(WS / "A8" / "input_domains_all.jsonl")
+    shard = {}
+    for f in sorted((WS / "shards" / "A8").glob("A8-[0-9].jsonl")):
+        for r in read_jsonl(f):
+            shard[r["domain"]] = r
+    out, missing = [], []
+    for d in inp:
+        s = shard.get(d["domain"])
+        if not s:
+            missing.append(d["domain"])
+            s = {}
+        cells = s.get("cells", {})
+        states = {c: (cells.get(c) or {}).get("state", "unfilled") for c in CELLS}
+        out.append({"domain": d["domain"], "kind": d["kind"], "arch_doc": d.get("arch_doc"), "plan_doc": d.get("plan_doc"), "pair_complete": d.get("pair_complete"),
+                    "cells": cells, "cell_states": states, "n_present": sum(1 for v in states.values() if v == "present"), "n_absent": sum(1 for v in states.values() if v == "absent"),
+                    "n_ambiguous": sum(1 for v in states.values() if v == "ambiguous"), "all_filled": all(v != "unfilled" for v in states.values()), "packages": s.get("packages", []),
+                    "frz_families": s.get("frz_families", []), "stages": s.get("stages", []), "status": s.get("status") or "NOT-ASSESSED", "orphan_flags": s.get("orphan_flags", []),
+                    "evidence_level": s.get("evidence_level") or "E0", "notes": s.get("notes")})
+    write_jsonl(WS / "A8" / "domain_rows.jsonl", out)
+    pm = read_jsonl(WS / "A4" / "package_map.jsonl")
+    covered = {p for r in out for p in r["packages"]}
+    orphans = [p["path"] for p in pm if p["classification"] in ("UNOWNED",) or (p["classification"] == "DOCUMENTED_DOMAIN_OUTSIDE_CONCERN_LIST" and p["path"] not in covered and not p["concerns"])]
+    write_json(WS / "A8" / "orphans.json", {"orphan_packages": orphans, "n_census_packages": len(pm), "n_in_concerns": sum(1 for p in pm if p["concerns"]), "n_in_domain_rows": len(covered)})
+    print("domain rows", len(out), "missing", missing, "unfilled cells rows", sum(1 for r in out if not r["all_filled"]))
+    print("status", dict(Counter(r["status"] for r in out)))
+    print("cell states", dict(Counter(v for r in out for v in r["cell_states"].values())))
+    print("orphan packages", orphans)
+
+
+if __name__ == "__main__":
+    main()

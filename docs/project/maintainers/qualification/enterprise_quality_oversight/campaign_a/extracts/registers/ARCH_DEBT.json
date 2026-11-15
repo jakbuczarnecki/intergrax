@@ -1,0 +1,119 @@
+{
+  "path": "docs/project/technical/guides/ARCHITECTURE_DEBT_REGISTER.md",
+  "tables": [
+    {
+      "header": [
+        "ID",
+        "Layer",
+        "Description",
+        "Owner",
+        "Target wave",
+        "AUDIT-IDEAL ID",
+        "Status"
+      ],
+      "rows": [
+        {
+          "line": 7,
+          "ID": "P1-ARCH-01",
+          "Layer": "§22 Tier-3 profile",
+          "Description": "Flat ApplicationEnvironmentProfile namespace growth (43+ top-level fields)",
+          "Owner": "platform",
+          "Target wave": "APP-EVOL-8 (M1–M3)",
+          "AUDIT-IDEAL ID": "-",
+          "Status": "Planned - architecture §22.6 + ADR-APP-003 accepted (2026-06-17)"
+        },
+        {
+          "line": 8,
+          "ID": "P1-ARCH-03",
+          "Layer": "docs / README",
+          "Description": "Root README.md Overview snapshot stale vs domain canon (ECC (planned) vs L3 Done)",
+          "Owner": "platform",
+          "Target wave": "doc-sync",
+          "AUDIT-IDEAL ID": "-",
+          "Status": "Closed (2026-06-17)"
+        },
+        {
+          "line": 9,
+          "ID": "P2-ARCH-03",
+          "Layer": "docs / README",
+          "Description": "Root README.md lacks per-layer maturity visibility for architects (only aggregate L3 statement)",
+          "Owner": "platform",
+          "Target wave": "doc-sync",
+          "AUDIT-IDEAL ID": "-",
+          "Status": "Closed (2026-06-17)"
+        },
+        {
+          "line": 10,
+          "ID": "DEBT-19-01",
+          "Layer": "§19 Registry",
+          "Description": "Durable cross-host registry snapshot store",
+          "Owner": "platform",
+          "Target wave": "W1 (Band 2az)",
+          "AUDIT-IDEAL ID": "AUDIT-IDEAL-19.1",
+          "Status": "Closed (2026-06-09)"
+        },
+        {
+          "line": 11,
+          "ID": "DEBT-25-01",
+          "Layer": "§25 Evaluation",
+          "Description": "Shadow eval path automation",
+          "Owner": "platform",
+          "Target wave": "W2 (Band 2az)",
+          "AUDIT-IDEAL ID": "AUDIT-IDEAL-25.1",
+          "Status": "Closed (2026-06-09)"
+        },
+        {
+          "line": 12,
+          "ID": "DEBT-28-01",
+          "Layer": "§28 Tier-3",
+          "Description": "Product durable queue default beyond SQLite scaffold",
+          "Owner": "product",
+          "Target wave": "W2 / Band 3",
+          "AUDIT-IDEAL ID": "AUDIT-IDEAL-28.1",
+          "Status": "Closed"
+        },
+        {
+          "line": 13,
+          "ID": "DEBT-ECP-01",
+          "Layer": "§30 Ops",
+          "Description": "Sync architecture/ELASTIC_CAPACITY_AND_SCALING.md §22 after ECP-DEPTH",
+          "Owner": "platform",
+          "Target wave": "W1 (Band 2az)",
+          "AUDIT-IDEAL ID": "AUDIT-IDEAL-30.1",
+          "Status": "Closed (2026-06-12 honest maturity)"
+        },
+        {
+          "line": 14,
+          "ID": "DEBT-ECP-02",
+          "Layer": "§30 Ops",
+          "Description": "Production elasticity - live signal bridge, K8s/Celery adapters, E2E loop",
+          "Owner": "platform",
+          "Target wave": "ECP-PROD",
+          "AUDIT-IDEAL ID": "AUDIT-IDEAL-30.4",
+          "Status": "Closed (2026-06-12)"
+        },
+        {
+          "line": 15,
+          "ID": "DEBT-MEM-01",
+          "Layer": "§15 Memory",
+          "Description": "Org memory 2.5 (organizational LTM scope)",
+          "Owner": "platform",
+          "Target wave": "W1 (Band 2az)",
+          "AUDIT-IDEAL ID": "AUDIT-IDEAL-15.1",
+          "Status": "Closed (2026-06-09)"
+        },
+        {
+          "line": 16,
+          "ID": "DEBT-UE-9D-01",
+          "Layer": "§19 Execution",
+          "Description": "Sync bounded tool loop without CE (run_bounded_tool_loop → BoundedReactPattern → append_native_tool_messages) when context_engine is unwired",
+          "Owner": "platform",
+          "Target wave": "UE-9D",
+          "AUDIT-IDEAL ID": "MEM-XINT-4-R",
+          "Status": "Closed - iterative ReAct requires run_bounded_tool_loop_async + CE"
+        }
+      ]
+    }
+  ],
+  "lines": 17
+}

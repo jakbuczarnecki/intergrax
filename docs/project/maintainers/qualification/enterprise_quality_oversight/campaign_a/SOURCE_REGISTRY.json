@@ -1,0 +1,625 @@
+{
+  "campaign": "EQO-A",
+  "baseline_sha": "258bbf6abb6fdbb92ef0185d058527fbb1e47f04",
+  "generated_utc": "2026-11-15T18:00:02Z",
+  "sources": [
+    {
+      "id": "S01",
+      "title": "Roadmap (order, status, formal closure)",
+      "authority_role": "SSOT order/status",
+      "entries": [
+        {
+          "path": "docs/project/maintainers/plans/PLATFORM_ENTERPRISE_COMPLETION_ROADMAP.md",
+          "exists": true,
+          "kind": "blob",
+          "lines": 2374,
+          "blob_sha256": "329c5b385232130d9548c3a2d224928ebe89609329fb118705f85bd0d713dde4",
+          "git_blob": "2006ac32441da56bcb0a99b73acae0810d72dc1f"
+        }
+      ]
+    },
+    {
+      "id": "S02",
+      "title": "FRZ acceptance checklist",
+      "authority_role": "Acceptance criteria",
+      "entries": [
+        {
+          "path": "docs/project/maintainers/qualification/PLATFORM_ENTERPRISE_FREEZE_ACCEPTANCE_CHECKLIST.md",
+          "exists": true,
+          "kind": "blob",
+          "lines": 600,
+          "blob_sha256": "96afcdabfcaf032b96ef410ced5053fb9526fceef52e5c0a247e63d61c2a7e3d",
+          "git_blob": "8500023569686a2c00d6da548f6d7a140bfc611d"
+        }
+      ]
+    },
+    {
+      "id": "S03",
+      "title": "IIAC protocol + amendment + activation + schema + handoff template",
+      "authority_role": "Certification semantics",
+      "entries": [
+        {
+          "path": "docs/project/maintainers/qualification/INTEGRAX_INTERNAL_INDEPENDENT_AGENT_CERTIFICATION_PROTOCOL.md",
+          "exists": true,
+          "kind": "blob",
+          "lines": 122,
+          "blob_sha256": "ef77adfc040d63b37d49f538225643043db462d1106c3b3f0f3866c7ae0077dd",
+          "git_blob": "a9ce897eec079171d1ba48a3e85e53e22356c520"
+        },
+        {
+          "path": "docs/project/maintainers/qualification/IIAC_AMENDMENT_01_OPERATOR_DESIGNATED_SIGNING_SESSION.md",
+          "exists": true,
+          "kind": "blob",
+          "lines": 171,
+          "blob_sha256": "82a60f54f23a3446c7b4c8029f0a7db04e11019e19b30fe81150a9d7f58fcf2b",
+          "git_blob": "d491db8237345b0b978356cab49417ff538c56ba"
+        },
+        {
+          "path": "docs/project/maintainers/qualification/IIAC_POLICY_ACTIVATION_RECORD.json",
+          "exists": true,
+          "kind": "blob",
+          "lines": 27,
+          "blob_sha256": "df7b9c7477a607f10dce74474bc2784656a177b2d171cdd82474fff17fa5e8ba",
+          "git_blob": "b0f38beea740fe0fa501e328f2745a072b1ff0b8"
+        },
+        {
+          "path": "docs/project/maintainers/qualification/schemas/iiac_audit_session_manifest.v1.schema.json",
+          "exists": true,
+          "kind": "blob",
+          "lines": 59,
+          "blob_sha256": "1a14d4d54652fa72cfaca9f6baa5b0944155298be8169135a8bf1881f00d2f6f",
+          "git_blob": "4a700ab99d84b6a04ab71bf0fd2dc0844be5c3cd"
+        },
+        {
+          "path": "docs/project/maintainers/qualification/IIAC_SESSION_HANDOFF_RECORD.template.md",
+          "exists": true,
+          "kind": "blob",
+          "lines": 31,
+          "blob_sha256": "567b68d1ab7cc687294e8fd8656593123b55a9185f59bf95c73a95bfbfb87e15",
+          "git_blob": "c2c230099eea69079c1c90b6edfc59f7645ebe95"
+        }
+      ]
+    },
+    {
+      "id": "S04",
+      "title": "ECAP protocol + EBH-7 ECAP checklist + normative matrix",
+      "authority_role": "Audit-mode semantics",
+      "entries": [
+        {
+          "path": "docs/project/maintainers/qualification/ENTERPRISE_CONTINUOUS_ARCHITECTURE_ASSURANCE_PROTOCOL.md",
+          "exists": true,
+          "kind": "blob",
+          "lines": 1196,
+          "blob_sha256": "3b98215d513212189a3727ec180e57ec21e77812a50c027873f52b8f2b530fee",
+          "git_blob": "16b5e3decc1545fcf06b563c3d95bf087b4be8a7"
+        },
+        {
+          "path": "docs/project/maintainers/qualification/EBH_7_ECAP_EXECUTABLE_CHECKLIST.md",
+          "exists": true,
+          "kind": "blob",
+          "lines": 17,
+          "blob_sha256": "d822e8f7d6a2e9befea1bedf88877d0682a554fad6ddffdb640508c246e838a2",
+          "git_blob": "b3713dba306e5636fc9b01feb626ae0aa15569f5"
+        },
+        {
+          "path": "docs/project/maintainers/qualification/EBH_7_B6_F10_ECAP_NORMATIVE_MATRIX.md",
+          "exists": true,
+          "kind": "blob",
+          "lines": 241,
+          "blob_sha256": "dfc053a176f80c3219ec75f398e8c834835fc84748c9984637a4e2f2db7d93a6",
+          "git_blob": "b21690b520dee5661363771d6ddc871a8fe9b100"
+        }
+      ]
+    },
+    {
+      "id": "S05",
+      "title": "ENT-AUDIT-X control system",
+      "authority_role": "Control system",
+      "entries": [
+        {
+          "path": "intergrax/platform/enterprise_audit/data/enterprise_audit_check_manifest.v1.json",
+          "exists": true,
+          "kind": "blob",
+          "lines": 1373,
+          "blob_sha256": "baef53d80e1642b8d305c69aa050df0faf219a3da885a47c2985d31f0192d853",
+          "git_blob": "fce8092139894035dc37d20a4a220b6a904c97f4"
+        },
+        {
+          "path": "intergrax/platform/enterprise_audit/data/changed_since_impact_map.v1.json",
+          "exists": true,
+          "kind": "blob",
+          "lines": 643,
+          "blob_sha256": "de0b61dcfc15d9c21df2879b6c83776a284ce9239d6a5def40cb96fa769eaff7",
+          "git_blob": "e49d71d083e33210ab92d9e6481013dc1739c095"
+        },
+        {
+          "path": "intergrax/platform/enterprise_audit/data/evidence_artifact_catalog.v1.json",
+          "exists": true,
+          "kind": "blob",
+          "lines": 10,
+          "blob_sha256": "de407508431230eab987949c2eb456fa4110408a4f0a0a6e703e6523853958ed",
+          "git_blob": "ebef35e84a9d516ab50f869f473cbbd9146e466d"
+        },
+        {
+          "path": "tests/qualification/ent_audit_x/ENTERPRISE_AUDIT_BASELINE.json",
+          "exists": true,
+          "kind": "blob",
+          "lines": 6,
+          "blob_sha256": "8999035269318d4bbd0a6ac611c6718da9c1c6795e8fa5f47476ceb12e7eeadb",
+          "git_blob": "701a771817aad4e41c123fe24f30d407894a60d8"
+        }
+      ]
+    },
+    {
+      "id": "S06",
+      "title": "ARCH-FREEZE records",
+      "authority_role": "ARCH-FREEZE in-flight",
+      "entries": [
+        {
+          "path": "docs/project/maintainers/qualification/ARCH_FREEZE_FRZ_ACCEPTANCE_MATRIX.md",
+          "exists": true,
+          "kind": "blob",
+          "lines": 231,
+          "blob_sha256": "a9c7060cb564c47de67a6aae291fec9a16a05f5f8927c5bc450634d0539c2907",
+          "git_blob": "c23fc5837ea9bde69c777597a165b389f7e077fd"
+        },
+        {
+          "path": "docs/project/maintainers/qualification/ARCH_FREEZE_CLOSED_WORLD_GAP_REGISTER.md",
+          "exists": true,
+          "kind": "blob",
+          "lines": 24,
+          "blob_sha256": "424ac781e0cf38404deb8c2e864e048520f4a3bd454aac42b16342230a29d217",
+          "git_blob": "882af09b9d678601cc911f307ba682ac57afd036"
+        },
+        {
+          "path": "docs/project/maintainers/qualification/ARCH_FREEZE_SHA_LADDER.md",
+          "exists": true,
+          "kind": "blob",
+          "lines": 26,
+          "blob_sha256": "4e3def00bb6d1222afe77fd312f87dd942fab078d8f9ec1e18f04906c3ee6483",
+          "git_blob": "dacfbb42b8741393de95722df82fb2382c86c9c8"
+        },
+        {
+          "path": "docs/project/maintainers/qualification/ARCH_FREEZE_B2_DEBT_REGISTER_RECONCILIATION.md",
+          "exists": true,
+          "kind": "blob",
+          "lines": 30,
+          "blob_sha256": "74cbb0dfee2022c5c44442dbd105eb7e6ca625e1923cc218ddfb25c6b8acf0af",
+          "git_blob": "c813505bdfdc277e7cbdeb8212fed79235786939"
+        },
+        {
+          "path": "docs/project/maintainers/qualification/ARCH_FREEZE_OPERATOR_DECISION_REGISTER.md",
+          "exists": true,
+          "kind": "blob",
+          "lines": 12,
+          "blob_sha256": "340521894254a42f5bd9e7690882cdf5e9cb502f27d9a8ba0e054dc3fe2e0e0b",
+          "git_blob": "4fe0c9d0394f8f53313162b6a2f7eeb4b8138016"
+        },
+        {
+          "path": "docs/project/maintainers/qualification/ARCH_FREEZE_WBS_AND_DEPENDENCY_DAG.md",
+          "exists": true,
+          "kind": "blob",
+          "lines": 120,
+          "blob_sha256": "30f7dcd581cb2b5957636db41b16209f7958671f27fb800e735ecbd7e416c675",
+          "git_blob": "9f78ec19712d94a24928b86ca0e0253a11fe92e4"
+        },
+        {
+          "path": "docs/project/maintainers/qualification/ARCH_FREEZE_ARCHITECTURE_AND_PRODUCTION_SURFACE_INVENTORY.md",
+          "exists": true,
+          "kind": "blob",
+          "lines": 113,
+          "blob_sha256": "87744d5882db9025d7e72fcd0bfe4183b8e22e27fc7ba56b1c4e4c339adace92",
+          "git_blob": "725b285eee088146acde19cae1de60d0eefee808"
+        },
+        {
+          "path": "docs/project/maintainers/qualification/ARCH_FREEZE_EXECUTION_WAVE1_INDEPENDENT_AUDIT_HANDOFF.md",
+          "exists": true,
+          "kind": "blob",
+          "lines": 78,
+          "blob_sha256": "88793f1527d46e2417ced55edd5e7487f1513f68d130000a6f65677f4b084533",
+          "git_blob": "923754729faac3aefaf1b86b1d0c9fc967eca25e"
+        }
+      ]
+    },
+    {
+      "id": "S07",
+      "title": "PDC-X records",
+      "authority_role": "PDC-X in flight",
+      "entries": [
+        {
+          "path": "docs/project/maintainers/qualification/platform_domain_completeness/PDC_INDEX.md",
+          "exists": true,
+          "kind": "blob",
+          "lines": 57,
+          "blob_sha256": "0f46f379b1e67366593f24c234a5a4dbbf94682db097ebc76e85ddb776333aad",
+          "git_blob": "bad85180c217b68b235cf24458a4a46285b82287"
+        },
+        {
+          "path": "docs/project/maintainers/qualification/platform_domain_completeness/PDC_OWNERSHIP_MATRIX.md",
+          "exists": true,
+          "kind": "blob",
+          "lines": 38,
+          "blob_sha256": "346ff01ea7057d79bf60da2d5f44e6f9130656e7b341cdfc71286d2776a311ac",
+          "git_blob": "2df7c11b43c4a633145c62b1f806e39cf38c5808"
+        },
+        {
+          "path": "docs/project/maintainers/qualification/platform_domain_completeness/PDC_DOMAIN_REQUIREMENTS_MATRIX.json",
+          "exists": true,
+          "kind": "blob",
+          "lines": 4573,
+          "blob_sha256": "c83ea04461c3ecb14344c5bb2713d89c4b4ad7c25cb4ac46ef3c183571b3ac9c",
+          "git_blob": "f6ed6489eb1d8aa17710b4b7315798214b078c16"
+        },
+        {
+          "path": "docs/project/maintainers/qualification/platform_domain_completeness/PDC_FRZ_COVERAGE_MATRIX.md",
+          "exists": true,
+          "kind": "blob",
+          "lines": 152,
+          "blob_sha256": "3285e59ddb8366563fe81575dbee9c3f1b0604c8a18f7c861aa42ea84b4f2cd8",
+          "git_blob": "2b394d7b68c476eb7820dfc3cb6c9a3b67814db2"
+        },
+        {
+          "path": "docs/project/maintainers/qualification/platform_domain_completeness/PDC_GAP_REGISTER.md",
+          "exists": true,
+          "kind": "blob",
+          "lines": 191,
+          "blob_sha256": "6e7d191583ae33a9775c4da81fe617a0a7127e8d32ca974ee6f14595eaf477d5",
+          "git_blob": "ee8e3cf1766f362e01aece2766746eb142a24f3d"
+        },
+        {
+          "path": "docs/project/maintainers/qualification/platform_domain_completeness/PDC_SHA_LADDER.md",
+          "exists": true,
+          "kind": "blob",
+          "lines": 35,
+          "blob_sha256": "453c6e0a9c50bb183c28ed5f7484b2f47c82c7ce3a10e6489f2509fb2b101908",
+          "git_blob": "b863b0f320c97ffc4beb7bd3796c5815e99f87d4"
+        }
+      ]
+    },
+    {
+      "id": "S08",
+      "title": "Historical certification campaign",
+      "authority_role": "Prior HIST assurance",
+      "entries": [
+        {
+          "path": "docs/project/maintainers/qualification/historical_certification_campaign",
+          "exists": true,
+          "kind": "tree",
+          "n_files": 126
+        }
+      ]
+    },
+    {
+      "id": "S09",
+      "title": "PRE-ENT, IIAC evidence, EVOL-X, MCP-SERVER-X, EBH replays",
+      "authority_role": "Stage evidence bundles",
+      "entries": [
+        {
+          "path": "docs/project/maintainers/qualification/pre_ent_enterprise_certification",
+          "exists": true,
+          "kind": "tree",
+          "n_files": 35
+        },
+        {
+          "path": "docs/project/maintainers/qualification/iiac_evidence",
+          "exists": true,
+          "kind": "tree",
+          "n_files": 1024
+        },
+        {
+          "path": "docs/project/maintainers/qualification/evol_x",
+          "exists": true,
+          "kind": "tree",
+          "n_files": 191
+        },
+        {
+          "path": "docs/project/maintainers/qualification/mcp_server_x/MCP_SERVER_X_INDEX.md",
+          "exists": true,
+          "kind": "blob",
+          "lines": 43,
+          "blob_sha256": "5ba221aaa4b97c0f959769e09bc4b0bf913c1a5e26be7f068447a85d5cd791e0",
+          "git_blob": "f97cf1c03d7905f8100e87b35b4c3c83b07b4192"
+        },
+        {
+          "path": "docs/project/maintainers/qualification/ebh_6_p03_independent_replay",
+          "exists": true,
+          "kind": "tree",
+          "n_files": 14
+        },
+        {
+          "path": "docs/project/maintainers/qualification/ebh_7_p03_independent_replay",
+          "exists": true,
+          "kind": "tree",
+          "n_files": 8
+        }
+      ]
+    },
+    {
+      "id": "S10",
+      "title": "Per-stage qualification records",
+      "authority_role": "Per-stage certification records",
+      "entries": [
+        {
+          "path": "docs/project/maintainers/qualification",
+          "exists": true,
+          "kind": "tree",
+          "n_files": 2514
+        }
+      ]
+    },
+    {
+      "id": "S11",
+      "title": "VBN / PROD-Q",
+      "authority_role": "VBN / PROD-Q",
+      "entries": [
+        {
+          "path": "docs/project/maintainers/qualification/VENDOR_BACKEND_NEUTRALITY_AND_REPLACEABILITY_EVIDENCE.md",
+          "exists": true,
+          "kind": "blob",
+          "lines": 234,
+          "blob_sha256": "810e7486fb59969c33dfa5b1eb32041d3a77fd72c427dd63dbb8c9dd47c0f2f4",
+          "git_blob": "88c443d7619e423937b25fcf103dba89f8f4567b"
+        },
+        {
+          "path": "docs/project/maintainers/qualification/PROD_Q_R1_R7_Q_QUALIFICATION_INVENTORY_AND_GATE_PLAN.md",
+          "exists": true,
+          "kind": "blob",
+          "lines": 326,
+          "blob_sha256": "3a3edac151254a5d55bb48206c4c037f5e131596e995cc1805160b2c4f8e5d3a",
+          "git_blob": "bd9ff5b6ac3b8d11b29c24c29fb430a94404e463"
+        },
+        {
+          "path": "docs/project/maintainers/qualification/EBH_5_CROSS_LAYER_REPLACEABILITY_MATRIX.md",
+          "exists": true,
+          "kind": "blob",
+          "lines": 13,
+          "blob_sha256": "07b29bb90b20072ecea212a98d3ba5f338300c0bbd6ca06d8c33f7e4d76849ba",
+          "git_blob": "6efd9a62533323eddd47b2697ab36e4dbee086b2"
+        }
+      ]
+    },
+    {
+      "id": "S12",
+      "title": "Architecture docs",
+      "authority_role": "Domain semantic authorities",
+      "entries": [
+        {
+          "path": "docs/project/architecture",
+          "exists": true,
+          "kind": "tree",
+          "n_files": 271
+        },
+        {
+          "path": "docs/project/architecture/INTERGRAX_ARCHITECTURE_PRINCIPLES.md",
+          "exists": true,
+          "kind": "blob",
+          "lines": 1227,
+          "blob_sha256": "626402a404266672ce0b76fff86a1efb2169ceb3266230521c36425bdbbdaea6",
+          "git_blob": "f3195d7586cbb64cdd56d42f8ab9409c4df93e94"
+        },
+        {
+          "path": "docs/project/architecture/DEPENDENCY_OWNERSHIP.md",
+          "exists": true,
+          "kind": "blob",
+          "lines": 105,
+          "blob_sha256": "6005951aec5b1584674725242c5ecc5f9a17ef13e7b76053329ca817b94a3fb3",
+          "git_blob": "822d0b682f10a37c27bfd77fec17d081f063dda0"
+        },
+        {
+          "path": "docs/project/architecture/ARCHITECTURE_OVERVIEW.md",
+          "exists": true,
+          "kind": "blob",
+          "lines": 295,
+          "blob_sha256": "e2a6d992862dbb84588d81b35858d456072b8585957fa57ccb4ba0565aac1dca",
+          "git_blob": "a216ae817891b8a7e817da49f2079082a7ef7fcd"
+        },
+        {
+          "path": "docs/project/capabilities/architecture",
+          "exists": true,
+          "kind": "tree",
+          "n_files": 25
+        },
+        {
+          "path": "docs/project/maintainers/plans",
+          "exists": true,
+          "kind": "tree",
+          "n_files": 112
+        }
+      ]
+    },
+    {
+      "id": "S13",
+      "title": "Registers (debt/exceptions/decisions)",
+      "authority_role": "Debt, exceptions, decisions",
+      "entries": [
+        {
+          "path": "docs/project/technical/guides/ARCHITECTURE_DEBT_REGISTER.md",
+          "exists": true,
+          "kind": "blob",
+          "lines": 16,
+          "blob_sha256": "637ba628e746bcc5b0726984fde97e73f6d267c342599263e9e4cc62cf7ada65",
+          "git_blob": "0f34ce68c9cc9a2c60553ec06d358b58e7bcd547"
+        },
+        {
+          "path": "docs/project/maintainers/qualification/ARCH_FREEZE_CLOSED_WORLD_GAP_REGISTER.md",
+          "exists": true,
+          "kind": "blob",
+          "lines": 24,
+          "blob_sha256": "424ac781e0cf38404deb8c2e864e048520f4a3bd454aac42b16342230a29d217",
+          "git_blob": "882af09b9d678601cc911f307ba682ac57afd036"
+        },
+        {
+          "path": "docs/project/maintainers/qualification/EBH_7_GAP_REGISTER.md",
+          "exists": true,
+          "kind": "blob",
+          "lines": 16,
+          "blob_sha256": "7211bc70bd467213f8d3b44c3a4a7565de3c179629b276f5addc11e327049eb5",
+          "git_blob": "ef4c323e1c24aea2f264428d246f8b56829a34cb"
+        },
+        {
+          "path": "docs/project/maintainers/qualification/EBH_7_B6_BLOCKER_REGISTER.md",
+          "exists": true,
+          "kind": "blob",
+          "lines": 18,
+          "blob_sha256": "78afc71300560e29f43c64952a9dbc36fd7f6dac94a79835eb9e9500e1813c52",
+          "git_blob": "7cceaee7486323b3b6c424d28c909a1f7c70f927"
+        },
+        {
+          "path": "docs/project/maintainers/qualification/ent_audit_x/ANNEX_F_GAP_REGISTER.md",
+          "exists": true,
+          "kind": "blob",
+          "lines": 66,
+          "blob_sha256": "ef6c53d6c77ec3e556d4a50233c38780689cc608c638f19d0398f4892aa8ea03",
+          "git_blob": "af6445ac9f4642834605e1bb0d79dd7be3570fe3"
+        },
+        {
+          "path": "docs/project/maintainers/qualification/DIAGNOSTIC_GAP_LEDGER.md",
+          "exists": true,
+          "kind": "blob",
+          "lines": 196,
+          "blob_sha256": "bf66ecfe72c8353e46bb74f7e59fa06b8a40143daa5bf7dbfaeff37bddfdcc47",
+          "git_blob": "9155898b9bedb6b4cee0c7081226cb767c4627a7"
+        },
+        {
+          "path": "docs/project/maintainers/qualification/DUP_X_FINDINGS_REGISTER.md",
+          "exists": true,
+          "kind": "blob",
+          "lines": 57,
+          "blob_sha256": "9ba75353ae2faea0610f409bdda3bb03c9c59901e6a28372f9e3ff3a0c28087b",
+          "git_blob": "c953a28cb2fbecde36b6618b5e70e16a66142729"
+        },
+        {
+          "path": "docs/project/maintainers/qualification/EBH_6_CORE_HARDCODING_FINDINGS_REGISTER.md",
+          "exists": true,
+          "kind": "blob",
+          "lines": 58,
+          "blob_sha256": "ed1e5a88c5ce92b240e50f6576aaf8a76d7f777f8bdc4065619d1333a8b13af5",
+          "git_blob": "68c0577cac18df5f5fac425ba5bc9637e1e89f00"
+        },
+        {
+          "path": "docs/project/maintainers/qualification/ROADMAP_REPLAY_X_CORE_HARDCODING_FINDINGS_REGISTER.md",
+          "exists": true,
+          "kind": "blob",
+          "lines": 17,
+          "blob_sha256": "2b8939cb5a67b750b28eee759ca02f864bac9a12ee60fbc43d4ae42390c9c9ae",
+          "git_blob": "d2e3863cf7b48ec0c5d22267b47a1853f498094b"
+        },
+        {
+          "path": "docs/project/maintainers/qualification/EBH_6_CONDITIONAL_REMEDIATION_REGISTER.md",
+          "exists": true,
+          "kind": "blob",
+          "lines": 16,
+          "blob_sha256": "4c4f26eb5480488abac2c959f082485cd2273642ce25fa6bc00d1b9f7242ede8",
+          "git_blob": "1ce487ae1b66746f8d5ef905a5e3b3e2417594f8"
+        },
+        {
+          "path": "docs/project/maintainers/qualification/EBH_7_CROSS_DOMAIN_RISK_MATRIX.md",
+          "exists": true,
+          "kind": "blob",
+          "lines": 12,
+          "blob_sha256": "963a7108c81f58ab11a56ae6df5790850fffc732a30e8452487499fb5e89b598",
+          "git_blob": "ecf570cc3b7ae1683f40a3672d7f484700be72f6"
+        },
+        {
+          "path": "docs/project/maintainers/qualification/CERT_CAMPAIGN_DELEGATED_DECISIONS_2026-11-07.md",
+          "exists": true,
+          "kind": "blob",
+          "lines": 425,
+          "blob_sha256": "2636e5e017ead55243ad21d8603f319b9228adfd45ccb4755b34f0aa5e67cafc",
+          "git_blob": "d7b7af2bd9973b9604c4871e541421a68d46bb76"
+        },
+        {
+          "path": "docs/project/maintainers/qualification/ebh_7_p03_independent_replay/EBH_7_SKIP_DISPOSITION_REGISTER.md",
+          "exists": true,
+          "kind": "blob",
+          "lines": 171,
+          "blob_sha256": "f31fcb993e0f236bd68cec34325b431e161f71dd74d7f015363c6bbc5393987b",
+          "git_blob": "61ed00523aeecf2dedc552ddcc2f4409aefc14fb"
+        },
+        {
+          "path": "docs/project/maintainers/qualification/platform_domain_completeness/PDC_GAP_REGISTER.md",
+          "exists": true,
+          "kind": "blob",
+          "lines": 191,
+          "blob_sha256": "6e7d191583ae33a9775c4da81fe617a0a7127e8d32ca974ee6f14595eaf477d5",
+          "git_blob": "ee8e3cf1766f362e01aece2766746eb142a24f3d"
+        },
+        {
+          "path": "docs/project/maintainers/qualification/mcp_server_x/MCP_SERVER_X_GAP_REGISTER.md",
+          "exists": true,
+          "kind": "blob",
+          "lines": 68,
+          "blob_sha256": "fac70f80ddc50b22546acf09bf825c5bdf236f659bf6fc44dc16664a619af458",
+          "git_blob": "b384de10bb318da3ad003e272ec0c5cd0f28d152"
+        }
+      ]
+    },
+    {
+      "id": "S14",
+      "title": "Delivery governance",
+      "authority_role": "Delivery governance, approvals",
+      "entries": [
+        {
+          "path": "governance/tickets",
+          "exists": true,
+          "kind": "tree",
+          "n_files": 185
+        },
+        {
+          "path": "governance/plans",
+          "exists": false
+        },
+        {
+          "path": "governance/agent-control-plane/role_registry.yaml",
+          "exists": true,
+          "kind": "blob",
+          "lines": 89,
+          "blob_sha256": "79f82f36ea3bd1b8b8bca6889c1def835bae87ba5a34868d2768a5ed795c7e37",
+          "git_blob": "e7e416933ed7589b7fa1b69e0d4291303a7ecdcb"
+        },
+        {
+          "path": "governance/policy-registry.yaml",
+          "exists": true,
+          "kind": "blob",
+          "lines": 92,
+          "blob_sha256": "d676336c7a6ad1fdba07041cdd903cbbfa151cc23e4b1330e4016f2c72003022",
+          "git_blob": "651e5d54897488170929c0db26e3ff83429e4c84"
+        },
+        {
+          "path": "governance/TRUSTED_POLICY_PIN.yaml",
+          "exists": true,
+          "kind": "blob",
+          "lines": 16,
+          "blob_sha256": "fc5bac84bc6be8f18f0707b8b2270451b101c2ccc055f70b288464fb9da5ff4d",
+          "git_blob": "a798264e30296f0fe18fed58acb4ddb54e48f284"
+        },
+        {
+          "path": "governance/GOVERNANCE-MANIFEST.yaml",
+          "exists": true,
+          "kind": "blob",
+          "lines": 66,
+          "blob_sha256": "ca2d6f694ca2e756a36e309a3c40076a8db874e94507978698d95d4e8300bbb0",
+          "git_blob": "094404ff383da1ebfa63cd2224b99f94fbf37476"
+        }
+      ]
+    },
+    {
+      "id": "S15",
+      "title": "Documentation map",
+      "authority_role": "Navigation hub",
+      "entries": [
+        {
+          "path": "docs/project/technical/DOCUMENTATION_MAP.md",
+          "exists": true,
+          "kind": "blob",
+          "lines": 177,
+          "blob_sha256": "79543806b0ffa2305064dd0aaf064c43bbb59021afe7268f1b4adf1580400e2a",
+          "git_blob": "038884aad90868be450bdad54d7a9354c7a7062d"
+        }
+      ]
+    }
+  ],
+  "linked_paths_total": 160,
+  "linked_paths_missing": 0,
+  "registry_digest": "eb80a5123b203a47f4428efdf535dd932bdacc385feefcccc87ced5bc5c3ecbf"
+}

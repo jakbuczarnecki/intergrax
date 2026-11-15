@@ -1,0 +1,8 @@
+{
+  "orphan_packages": [
+    "intergrax/runtime/runtime_intelligence"
+  ],
+  "n_census_packages": 145,
+  "n_in_concerns": 126,
+  "n_in_domain_rows": 103
+}

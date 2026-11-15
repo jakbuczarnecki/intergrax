@@ -1,0 +1,84 @@
+"""A5-T01/T02 mechanical: stage surface definition and delta cert_sha -> BASELINE for every closed-type root stage.
+Surface = product paths (intergrax/ agents/ applications/ scripts/ tests/) cited in the stage's roadmap rows, ledger notes and linked qualification docs.
+cert_sha = latest (by commit date) resolving SHA among the stage's cited SHAs excluding roles rejected/superseded."""
+from __future__ import annotations
+
+import re
+import sys
+from pathlib import Path
+
+sys.path.insert(0, str(Path(__file__).parent))
+from common import *  # noqa
+
+PATH_RE = re.compile(r"`?((?:intergrax|agents|applications|scripts|tests)/[A-Za-z0-9_./\-]+?\.(?:py|json|yaml|yml|md)|(?:intergrax|agents|applications)/[A-Za-z0-9_/\-]+/)`?")
+EXCL = re.compile(r"(^|/)build/|docker/runtime-context/|__pycache__")
+
+
+def commit_date(sha):
+    r = git("show", "-s", "--format=%ct", sha)
+    return int(r.stdout.strip() or 0)
+
+
+def main():
+    rows = read_jsonl(WS / "A1" / "stage_rows.jsonl")
+    kids = {}
+    for r in rows:
+        kids.setdefault(r["root_id"], []).append(r)
+    rm = (show_text(ROADMAP) or "").split("\n")
+    out = []
+    for r in rows:
+        if r["id"] != r["root_id"] or r["row_source"] == "PROSE":
+            continue
+        fam = kids[r["id"]]
+        shas = []
+        for x in fam:
+            for s in x["shas"]:
+                if s.get("resolves") and s["role"] not in ("rejected", "superseded"):
+                    shas.append(s["sha"])
+            for a in x.get("abbr_shas_expanded", []):
+                if a.get("sha") and a.get("ancestor"):
+                    shas.append(a["sha"])
+        shas = sorted(set(shas), key=commit_date)
+        cert = shas[-1] if shas else None
+        paths = set()
+        texts = []
+        for x in fam:
+            for ln in ([x["line"]] if x["row_source"] == "S3TABLE" else []) + x["ledger_lines"]:
+                if 0 < ln <= len(rm):
+                    texts.append(rm[ln - 1])
+            for d in x["linked_docs"][:8]:
+                t = show_text(d)
+                if t:
+                    texts.append(t[:300000])
+        for t in texts:
+            for m in PATH_RE.finditer(t):
+                p = m.group(1)
+                if not EXCL.search(p) and path_exists_at(p):
+                    paths.add(p)
+        prod = sorted(p for p in paths if p.startswith(("intergrax/", "agents/", "applications/", "scripts/")))
+        tst = sorted(p for p in paths if p.startswith("tests/"))
+        rec = {"id": r["id"], "closed_type": r["closed_type"], "cert_sha": cert, "n_cert_candidates": len(shas), "n_surface_product": len(prod), "n_surface_tests": len(tst),
+               "surface_product": prod[:120], "surface_tests": tst[:80]}
+        if cert and (prod or tst):
+            surf = prod + tst
+            diff = git("diff", "--name-status", cert, BASELINE_SHA, "--", *surf[:300]).stdout.split("\n")
+            diff = [d for d in diff if d]
+            rec["changed_files"] = len(diff)
+            rec["changed_status"] = {s: sum(1 for d in diff if d.startswith(s)) for s in "MADR"}
+            rec["changed_product_sample"] = [d for d in diff if re.search(r"\s(intergrax|agents|applications)/", d)][:25]
+            rec["commits_since_cert"] = len([l for l in git("log", "--oneline", f"{cert}..{BASELINE_SHA}", "--", *surf[:300]).stdout.split("\n") if l])
+            rec["contract_files_changed"] = [d for d in diff if "/contracts/" in d or d.endswith("_contracts.py")][:15]
+            rec["tests_changed"] = len([d for d in diff if "\ttests/" in d or " tests/" in d])
+        else:
+            rec.update({"changed_files": None, "commits_since_cert": None, "mech_drift_hint": "DRIFT-UNKNOWN (no cert SHA or no surface paths found)"})
+        out.append(rec)
+    write_jsonl(WS / "A5" / "deltas.jsonl", out)
+    ok = [o for o in out if o["changed_files"] is not None]
+    print("roots", len(out), "with surface+cert", len(ok), "unknown", len(out) - len(ok))
+    for o in sorted(ok, key=lambda x: -x["changed_files"])[:12]:
+        print(o["id"][:34], o["changed_files"], o["commits_since_cert"], o["n_surface_product"])
+    print("unknown:", [o["id"] for o in out if o["changed_files"] is None][:25])
+
+
+if __name__ == "__main__":
+    main()

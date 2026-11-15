@@ -1,0 +1,82 @@
+{
+  "path": "docs/project/maintainers/qualification/ARCH_FREEZE_B2_DEBT_REGISTER_RECONCILIATION.md",
+  "tables": [
+    {
+      "header": [
+        "Source",
+        "Item",
+        "Frozen-scope blocking?",
+        "Disposition @ EXECUTION_SHA"
+      ],
+      "rows": [
+        {
+          "line": 10,
+          "Source": "COMPAT-X-R3-P0 / FRZ-BND-03",
+          "Item": "Execution persistence wiring",
+          "Frozen-scope blocking?": "No (code remediated)",
+          "Disposition @ EXECUTION_SHA": "[ARCH_FREEZE_B2_BND03_EVIDENCE_RECONCILIATION.md](ARCH_FREEZE_B2_BND03_EVIDENCE_RECONCILIATION.md)"
+        },
+        {
+          "line": 11,
+          "Source": "FRZ-DEBT family checklist rows",
+          "Item": "FRZ-DEBT-01..06",
+          "Frozen-scope blocking?": "Promotion blocked (all OPEN)",
+          "Disposition @ EXECUTION_SHA": "Reconciled; criteria unchanged until T-B7-PROMOTE-DEBT + FREEZE audit"
+        },
+        {
+          "line": 12,
+          "Source": "Historical execution debt registers",
+          "Item": "R1–R13 revalidation docs",
+          "Frozen-scope blocking?": "Out of ARCH-FREEZE wave-2 scope",
+          "Disposition @ EXECUTION_SHA": "Referenced; no new OPEN blocker introduced @ HEAD"
+        }
+      ]
+    },
+    {
+      "header": [
+        "FRZ ID",
+        "Criterion (abbrev.)",
+        "Reconciliation @ HEAD"
+      ],
+      "rows": [
+        {
+          "line": 18,
+          "FRZ ID": "FRZ-DEBT-01",
+          "Criterion (abbrev.)": "unresolved architecture blocker = 0",
+          "Reconciliation @ HEAD": "No new blocker in B2 surfaces; BND03 seam remediated"
+        },
+        {
+          "line": 19,
+          "FRZ ID": "FRZ-DEBT-02",
+          "Criterion (abbrev.)": "unresolved transitional authority = 0",
+          "Reconciliation @ HEAD": "No new transitional authority debt in B2 batch"
+        },
+        {
+          "line": 20,
+          "FRZ ID": "FRZ-DEBT-03",
+          "Criterion (abbrev.)": "temporary compatibility seam = 0",
+          "Reconciliation @ HEAD": "COMPAT-X-R3-P0 seam closed in code (EvidencePersistencePort)"
+        },
+        {
+          "line": 21,
+          "FRZ ID": "FRZ-DEBT-04",
+          "Criterion (abbrev.)": "PARTIAL inside frozen scope = 0",
+          "Reconciliation @ HEAD": "No PARTIAL rows added in wave-2"
+        },
+        {
+          "line": 22,
+          "FRZ ID": "FRZ-DEBT-05",
+          "Criterion (abbrev.)": "DEFERRED inside frozen scope = 0",
+          "Reconciliation @ HEAD": "No DEFERRED rows added in wave-2"
+        },
+        {
+          "line": 23,
+          "FRZ ID": "FRZ-DEBT-06",
+          "Criterion (abbrev.)": "N/A/outside-scope evidence-backed",
+          "Reconciliation @ HEAD": "Path B / stage-scoped debts remain evidence-backed elsewhere"
+        }
+      ]
+    }
+  ],
+  "lines": 31
+}

@@ -1,0 +1,118 @@
+"""W0-T07: seed registers (seeds, absences, scope exclusions, conflict register schema) and W0 tool-run findings."""
+from __future__ import annotations
+
+import sys
+from pathlib import Path
+
+sys.path.insert(0, str(Path(__file__).parent))
+from common import *  # noqa
+import fl
+
+SEEDS = [
+    ("S-01", "A1/A2", "DIST-SCALE-X has dual status: roadmap §3.0.6 'IN PROGRESS … Parent OPEN' vs rows/ledger 'CLOSED — OPERATOR SCOPED ACCEPTANCE'."),
+    ("S-02", "A1/A2", "PROD-Q has dual status: table row '[x] CLOSED BY OPERATOR — SCOPED' vs text 'OPEN/BLOCKED', 'NEXT / CURRENT'."),
+    ("S-03", "A2", "TOOL-LIFE-X and SKILL-X claim 'external independent review' while other rows say no review artefact (F-03), AUD-TOOLLIFE CONDITIONAL/STOP; next stage stated inconsistently; P0 SHA prefix 76a98cb3 collides with SKILL-X publication SHA."),
+    ("S-04", "A2/A9", "ARCH-FREEZE row requirement of independent exact-SHA evidence for SKILL-X, TOOL-LIFE-X and DIST-SCALE-X is not met by the recorded evidence (potential BLOCKER)."),
+    ("S-05", "A1", "'[ ] READY FOR AUDIT' rows under CLOSED parents and ledger CLOSE/RFA rows conflict with 'mandatory OPEN = 0' and the §5 ledger rule."),
+    ("S-06", "A1", "Checkbox misuse ([x] on REJECTED/SUPERSEDED), off-vocabulary statuses, malformed ledger rows, placeholder row, self-dependency text, stale NEXT/CURRENT text."),
+    ("S-07", "A3", "FRZ checklist: 8 off-vocabulary statuses, stale 'all FRZ-AUD OPEN' sentence vs PASS rows, table broken by prose (rows without header)."),
+    ("S-08", "A3", "ARCH_FREEZE_FRZ_ACCEPTANCE_MATRIX.md is stale vs the checklist on 21 rows (AUD-01..10, EVOL-01..10, FRZ-11); WAVE1 handoff says '130 OPEN'."),
+    ("S-09", "A3/A8", "FRZ cardinality '22 families / 168' vs '225 / 26' is never reconciled; PDC requirements 172 rows vs PDC_INDEX '168'."),
+    ("S-10", "A3/A2", "HIST-85 FRZ dispositions and 62 worker findings were never independently audited, yet may be relied on downstream."),
+    ("S-11", "A2", "PROD-Q-P0-R1 x8 'OPERATOR ACCEPTED' with no independent exact-SHA audit; DIST-SCALE-X 'no Protocol 03 audit'; EBH-5 '51 rows NOT YET QUALIFIED'."),
+    ("S-12", "A4/A9", "HIST-F-BND-03B (HIGH): intergrax/applications/_shared/product_manifest_registry.py dynamically imports Tier-3 manifest modules from Tier-0 (potential breach of the AGENTS.md hard boundary); FRZ-BND-03 OPEN."),
+    ("S-13", "A4/A7", "HIST-F-DUR-01: hard-coded is_durable=True on KV/document pin stores (qualification honesty, FRZ-PRD-07)."),
+    ("S-14", "A2", "Unpublished SHAs cited as evidence in the HIST registry (0adb7338, 10089121, 29c38787, 98b4bf51) plus the HELD fix 030-C."),
+    ("S-15", "A6", "ENT-AUDIT semantic/matrix gates are env-gated (ENT_AUDIT_X_SEMANTIC=1, ENT_AUDIT_X_GATE_MATRIX=1) and may skip silently; debt-register gate checks existence only; NPSC-4.2 allowlist recorded as FAIL in DUP-X / ROADMAP-REPLAY-X."),
+    ("S-16", "A6/A7", "Ticket approval validators accept any line starting 'Approved:', so delegate-form assurance is process-only."),
+    ("S-17", "A7", "ARCH-FREEZE operator decisions OD-EVOL-11, OD-EVOL-FORMAL, OD-ENT-00/01/08 and OD-ARCH-FREEZE-01 OPEN; OD-ENT-02 BLOCKED_EXTERNAL; OPEN-BP-01 under the compensating path."),
+    ("S-18", "A2/A7", "MCP-SERVER-X is CLOSED (SCOPED) with F-P8-01 HIGH and R-P7-01..06 residuals open; the ENT-AUDIT-X ledger says 'MCP-SERVER-X (not CLOSED)'."),
+    ("S-19", "A8/A9", "PDC P7 audits: D5 FAIL (R015), others PARTIAL; ARCH-FREEZE WBS notes make PDC-X CLOSED a precondition. EQO-A treats this as in-flight and records dependency health only."),
+    ("S-20", "A1", "IDs referenced without row or section (PROD-Q-P1, PROD-Q-R1, D03-A/B/C, IMPL-01, QUAL-X-P1..P4/FINAL, EVOL-X-P0, STATE-X-R3..R6, GOV-X2 children, GATE-SFX-ENTRY, GATE-SEF-*); 'ECAP' used in S01 without definition."),
+]
+
+OWNER = {"A1": "Roadmap owner (Operator)", "A2": "Stage owner", "A3": "FRZ checklist owner (Operator)", "A4": "ARCH-FREEZE", "A6": "ENT-AUDIT-X",
+         "A7": "Operator", "A8": "PDC-X", "A9": "Operator"}
+
+
+def main():
+    # clean slate (idempotent W0 seed)
+    for p in (fl.PARENT, fl.IDMAP, fl.FINAL):
+        if p.exists():
+            p.unlink()
+    seeds = []
+    for sid, ws, hyp in SEEDS:
+        w = ws.split("/")[0]
+        fid = fl.add(w, title=f"Seed {sid} (unverified)", severity="INFO", cls="UNVERIFIED_HYPOTHESIS", scope=[sid],
+                     affected_invariant="to be determined at verification", evidence=["E1: planning discovery only (plan section 15)"],
+                     evidence_level="E1", impact=hyp, arch_freeze_impact="UNKNOWN",
+                     recommendation="Verify at BASELINE_SHA; confirm, refute or merge (check C15).", owner=OWNER.get(w, "Operator"),
+                     next_action="NONE", decision_authority="Operator", seed_id=sid)
+        seeds.append({"seed_id": sid, "workstream": ws, "hypothesis": hyp, "finding_id": fid, "resolution": "PENDING",
+                      "resolution_evidence": [], "merged_into": None})
+    write_jsonl(WS / "data" / "seeds.jsonl", seeds)
+
+    (WS / "logs" / "absence_checks.txt").write_text(
+        "Absence checks at BASELINE_SHA (git ls-files / git grep, W0):\n"
+        "- qualification/ top-level README or index: none (only sub-folder READMEs: ebh_6_p03_independent_replay, ent_audit_x/b6_independent_handoff, "
+        "ent_audit_x/operator_records, evol_x/b6_technical_qualification, evol_x/e2_m09h_human_drill_prep).\n"
+        "- import-linter config (.importlinter, pyproject, setup.cfg, tox.ini): none.\n"
+        "- known-red register: none repo-wide; only a run log docs/project/maintainers/qualification/iiac_evidence/PDC-X/global/logs/06_known_reds.{start,log,end}.\n"
+        "- N/A register: only tests/qualification/evol_x/data/deployment_na_register.v1.json (EVOL-X deployment scope); no repo-wide register.\n"
+        "- certification-debt register (CERTIFICATION_DEBT / CERT_DEBT file names): none.\n"
+        "- standalone ECAP script under scripts/: none.\n", encoding="utf-8")
+    ab = "ws:logs/absence_checks.txt"
+    items = [
+        ("No repo-wide known-red test register", "MEDIUM", "EVIDENCE_DEFICIENCY", "A7-T03 builds a static inventory instead; a run log of known reds exists only for PDC-X global audit.",
+         "Operator", "FRZ-REG-*, FRZ-PRD-*"),
+        ("No repo-wide N/A register (only the EVOL-X deployment N/A register)", "MEDIUM", "EVIDENCE_DEFICIENCY", "N/A decisions are inline in qualification records; validity cannot be checked mechanically.",
+         "Operator", "FRZ N/A — WITH EVIDENCE rule"),
+        ("No certification-debt register", "MEDIUM", "EVIDENCE_DEFICIENCY", "Certification limitations and scoped acceptances are distributed over records and ledger notes.",
+         "Operator", "roadmap §2.4 evidence rule"),
+        ("No README or index for docs/project/maintainers/qualification/ (about 820 files)", "LOW", "GOVERNANCE_INCONSISTENCY", "Navigation depends on DOCUMENTATION_MAP and roadmap links.",
+         "Operator", "documentation navigation"),
+        ("No import-linter configuration; tier boundaries enforced by AST gates in tests and scripts/maintenance/check_*.py", "LOW", "ARCHITECTURE_RISK", "Boundary enforcement is bespoke; coverage of dynamic imports is by custom gates only (see seed S-12).",
+         "ARCH-FREEZE", "AGENTS.md hard boundaries"),
+        ("No standalone ECAP executable", "LOW", "EVIDENCE_DEFICIENCY", "ECAP modes are realised through ENT-AUDIT-X and EBH-7 attestation scripts, not one entrypoint.",
+         "ENT-AUDIT-X", "ECAP-1 protocol"),
+    ]
+    for t, sev, cls, imp, own, inv in items:
+        fl.add("A0", title=t, severity=sev, cls=cls, scope=["S-known-absence"], affected_invariant=inv, evidence=[ab],
+               evidence_level="E3", impact=imp, arch_freeze_impact="NONE", recommendation="Owner to decide whether a register or index is needed.",
+               owner=own, next_action="OWNER_DECISION", decision_authority="Operator")
+
+    # W0 tool run findings
+    fl.add("A0", title="IIAC policy activation is not IN_FORCE at BASELINE_SHA: 71 ACT-N11 product paths changed after the audited SHA",
+           severity="HIGH", cls="CERTIFICATION_DRIFT", scope=["IIAC-GOV-1", "IIAC activation record", "PDC-X P7 repairs"],
+           affected_invariant="IIAC protocol 'Policy activation' / ACT-N11 product-path pin",
+           evidence=["ws:logs/T06-iiac-activation.log", f"docs/project/maintainers/qualification/IIAC_POLICY_ACTIVATION_RECORD.json@{BASELINE_SHA}:1"],
+           evidence_level="E3", impact="verify_iiac_policy_activation --require-in-force exits 1; IIAC certification claims bound to the old pin are not mechanically in force at this SHA (PDC-X P7/P8 repairs touched pinned product paths).",
+           arch_freeze_impact="CONDITIONS", recommendation="Re-pin per the PDC window plan (activation/rebind at the integrated baseline); do not edit the record outside that process.",
+           owner="PDC-X / IIAC-GOV-1", next_action="OWNER_DECISION", decision_authority="Operator")
+    fl.add("A0", title="EBH-7 F10 normative matrix / ECAP report block is STALE vs computed state at BASELINE_SHA",
+           severity="MEDIUM", cls="CERTIFICATION_DRIFT", scope=["EBH-7", "B6-F10"], affected_invariant="ECAP §14 computed block / F10 normative matrix in sync",
+           evidence=["ws:logs/T06-f10-check.log", "scripts/qualification/render_ebh7_f10_normative_matrix.py --check"], evidence_level="E3",
+           impact="render_ebh7_f10_normative_matrix.py --check prints STALE (exit 1): the committed matrix/report differ from the computed rendering.",
+           arch_freeze_impact="CONDITIONS", recommendation="Owner re-renders at the final EBH-7 re-pin (T-IGX-041-J); EQO-A does not run the generator.",
+           owner="PDC-X (T-IGX-041-J EBH-7 re-pin)", next_action="REQUALIFY", decision_authority="Operator")
+
+    # scope exclusions
+    ex = [
+        ("SX-01", "Deep security, adversarial, fault-injection and chaos testing", "Campaign B", "Plan section 2 out of scope"),
+        ("SX-02", "Full re-audit of individual mechanisms", "Campaigns B and C", "Plan section 2 out of scope"),
+        ("SX-03", "Live vendor or production qualification (PROD-Q Path B)", "PROD-Q", "Plan section 2 out of scope"),
+        ("SX-04", "Re-running PDC-X P7 domain audits (PDC_P7_D1..D8 reports consumed as in-flight inputs)", "PDC-X", "Plan section 2 out of scope"),
+        ("SX-05", "Scenario implementation", "SCENARIO-FACTORY-X / SEF-X", "Plan section 2 out of scope"),
+        ("SX-06", "Code scans exclude build/ and applications/*/docker/runtime-context/ (build and venv artefacts)", "EQO-A", "Plan A4-T04"),
+        ("SX-07", "Regression tiers, igx_gov ticket, run_regression_gate_ci --profile *, ENT-AUDIT --mode FULL/FREEZE execution, broad suites", "Operator (OD-EQOA-03)", "Test budget OD-EQOA-03"),
+        ("SX-08", "Post-baseline commits (PDC-X P8/P9 and later) are recorded in the delta annex only (R-SHA-4)", "EQO-A", "R-SHA-4"),
+    ]
+    write_jsonl(WS / "data" / "scope_exclusions.jsonl", [{"exclusion_id": a, "item": b, "owner": c, "reason": d} for a, b, c, d in ex])
+    write_jsonl(WS / "data" / "conflicts.jsonl", [])
+    rows = fl.consolidate()
+    errs = fl.validate(rows)
+    print("findings", len(rows), "validation errors", errs[:5])
+
+
+if __name__ == "__main__":
+    main()

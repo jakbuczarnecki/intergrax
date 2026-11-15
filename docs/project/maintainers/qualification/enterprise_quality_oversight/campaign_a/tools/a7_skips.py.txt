@@ -1,0 +1,63 @@
+"""A7-T03: static known-red / skip inventory in tests/ at BASELINE_SHA, cross-checked with EBH_7_SKIP_DISPOSITION_REGISTER. + N/A decisions inline."""
+from __future__ import annotations
+
+import re
+import sys
+from collections import Counter, defaultdict
+from pathlib import Path
+
+sys.path.insert(0, str(Path(__file__).parent))
+from common import *  # noqa
+
+PAT = r"pytest\.mark\.(skip|skipif|xfail|no_ci)|pytest\.(skip|xfail)\(|@unittest\.skip|importorskip"
+HIGH = ("tests/qualification/", "tests/unit/runtime/architecture/", "tests/unit/architecture/", "tests/unit/security/", "tests/unit/runtime/security/",
+        "tests/unit/tenant", "tests/unit/runtime/tenant", "tests/integration/security", "tests/unit/governance")
+REG = "docs/project/maintainers/qualification/ebh_7_p03_independent_replay/EBH_7_SKIP_DISPOSITION_REGISTER.md"
+REGPY = "tests/qualification/ebh_7/_ebh7_skip_disposition_register.py"
+
+
+def main():
+    r = git("grep", "-nE", PAT, "--", "tests")
+    hits = []
+    for line in r.stdout.split("\n"):
+        m = re.match(r"^([^:]+):(\d+):(.*)$", line)
+        if not m:
+            continue
+        f, ln, body = m.group(1), int(m.group(2)), m.group(3)
+        mk = re.search(r"pytest\.mark\.(skipif|skip|xfail|no_ci)|pytest\.(skip|xfail)\(|importorskip|unittest\.skip", body)
+        reason = re.search(r"reason\s*=\s*(\"[^\"]*\"|'[^']*')", body)
+        marker = mk.group(0) if mk else "?"
+        hits.append({"file": f, "line": ln, "marker": marker, "reason": reason.group(1)[:140] if reason else None,
+                     "high_surface": f.startswith(HIGH), "snippet": body.strip()[:140]})
+    regtxt = show_text(REG) or ""
+    reg_nodes = set(re.findall(r"`(tests/[^`]+?\.py)::", regtxt))
+    reg_files = reg_nodes
+    for h in hits:
+        h["in_ebh7_skip_register_file"] = h["file"] in reg_files
+    write_jsonl(WS / "A7" / "skip_hits.jsonl", hits)
+    by_marker = Counter(h["marker"] for h in hits)
+    by_dir = Counter("/".join(h["file"].split("/")[:3]) for h in hits)
+    hi = [h for h in hits if h["high_surface"] and h["marker"] != "pytest.mark.no_ci"]
+    hi_unreg = [h for h in hi if not h["in_ebh7_skip_register_file"]]
+    no_ci_hi = [h for h in hits if h["high_surface"] and h["marker"] == "pytest.mark.no_ci"]
+    # N/A decisions inline in qualification records
+    na = git("grep", "-nE", r"N/A — WITH EVIDENCE|NOT_APPLICABLE|ACCEPTED_NA", "--", "docs/project/maintainers/qualification", "tests/qualification")
+    na_by_file = Counter()
+    for l in na.stdout.split("\n"):
+        m = re.match(r"^([^:]+):", l)
+        if m:
+            na_by_file[m.group(1)] += 1
+    summary = {"total_hits": len(hits), "by_marker": dict(by_marker), "by_dir_top": by_dir.most_common(15),
+               "high_surface_non_noci": len(hi), "high_surface_non_noci_unregistered": len(hi_unreg),
+               "high_surface_no_ci": len(no_ci_hi), "reasonless": sum(1 for h in hits if h["reason"] is None and h["marker"] in ("pytest.mark.skip", "pytest.mark.skipif", "pytest.mark.xfail")),
+               "ebh7_register_files": sorted(reg_files), "na_decision_hits": sum(na_by_file.values()), "na_files": len(na_by_file),
+               "na_top_files": na_by_file.most_common(12), "unregistered_high_sample": hi_unreg[:25]}
+    write_json(WS / "A7" / "skips.json", summary)
+    write_json(WS / "A7" / "na_decisions.json", {"files": dict(na_by_file), "total": sum(na_by_file.values())})
+    print({k: v for k, v in summary.items() if k not in ("unregistered_high_sample", "na_top_files", "by_dir_top")})
+    print(summary["by_dir_top"][:8])
+    print("sample unregistered high:", [(h["file"].split("/")[-1], h["marker"]) for h in hi_unreg[:10]])
+
+
+if __name__ == "__main__":
+    main()

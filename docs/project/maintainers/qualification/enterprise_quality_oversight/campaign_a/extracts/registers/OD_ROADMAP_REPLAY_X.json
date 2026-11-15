@@ -1,0 +1,61 @@
+{
+  "path": "docs/project/maintainers/qualification/ROADMAP_REPLAY_X_OPERATOR_DECISION_REGISTER.md",
+  "tables": [
+    {
+      "header": [
+        "ID",
+        "Decision",
+        "Status",
+        "Blocks"
+      ],
+      "rows": [
+        {
+          "line": 5,
+          "ID": "OD-REPLAYX-08",
+          "Decision": "Formal ROADMAP-REPLAY-X closure + roadmap §5",
+          "Status": "APPROVED — 2026-10-30 — operator explicitly authorized final parent closure; B6 ISSUED — PASS (SCOPED)",
+          "Blocks": "After Protocol PASS only"
+        }
+      ]
+    },
+    {
+      "header": [
+        "Field",
+        "Value"
+      ],
+      "rows": [
+        {
+          "line": 18,
+          "Field": "Branch",
+          "Value": "development"
+        },
+        {
+          "line": 19,
+          "Field": "INDEPENDENT_ACCEPTANCE_BASELINE_SHA",
+          "Value": "5a3a05347aaea93a8e4086fc90bc08e6d5eeaf92"
+        },
+        {
+          "line": 20,
+          "Field": "B6_R2_CORRECTION_SHA",
+          "Value": "6abe074eacc4be957b90a57bece0e4d6d4d102f1"
+        },
+        {
+          "line": 21,
+          "Field": "B6 independent",
+          "Value": "[ROADMAP_REPLAY_X_PROTOCOL_03_INDEPENDENT_AUDIT_PASS_RECORD.md](ROADMAP_REPLAY_X_PROTOCOL_03_INDEPENDENT_AUDIT_PASS_RECORD.md) — PASS (SCOPED) 2026-10-30"
+        },
+        {
+          "line": 22,
+          "Field": "DUP-X predecessor",
+          "Value": "CLOSED — SCOPED @ a7d83925b375b5f08eb0f175ced2c17fa026bba9"
+        },
+        {
+          "line": 23,
+          "Field": "Agent closure",
+          "Value": "Authorized after explicit operator approval — OD-REPLAYX-08"
+        }
+      ]
+    }
+  ],
+  "lines": 26
+}

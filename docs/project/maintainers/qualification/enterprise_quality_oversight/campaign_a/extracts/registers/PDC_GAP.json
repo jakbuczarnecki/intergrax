@@ -1,0 +1,1078 @@
+{
+  "path": "docs/project/maintainers/qualification/platform_domain_completeness/PDC_GAP_REGISTER.md",
+  "tables": [
+    {
+      "header": [
+        "Lane",
+        "Count"
+      ],
+      "rows": [
+        {
+          "line": 7,
+          "Lane": "MCP-SERVER-X",
+          "Count": "1"
+        },
+        {
+          "line": 8,
+          "Lane": "PDC-P3-01",
+          "Count": "4"
+        },
+        {
+          "line": 9,
+          "Lane": "PDC-P5-D1",
+          "Count": "9"
+        },
+        {
+          "line": 10,
+          "Lane": "PDC-P5-D2",
+          "Count": "7"
+        },
+        {
+          "line": 11,
+          "Lane": "PDC-P5-D3",
+          "Count": "6"
+        },
+        {
+          "line": 12,
+          "Lane": "PDC-P5-D4",
+          "Count": "9"
+        },
+        {
+          "line": 13,
+          "Lane": "PDC-P5-D5",
+          "Count": "15"
+        },
+        {
+          "line": 14,
+          "Lane": "PDC-P5-D6",
+          "Count": "13"
+        },
+        {
+          "line": 15,
+          "Lane": "PDC-P5-D7",
+          "Count": "7"
+        },
+        {
+          "line": 16,
+          "Lane": "PDC-P5-D8",
+          "Count": "17"
+        },
+        {
+          "line": 17,
+          "Lane": "PDC-P5-DOC",
+          "Count": "11"
+        },
+        {
+          "line": 18,
+          "Lane": "PDC-P5-REG",
+          "Count": "4"
+        },
+        {
+          "line": 19,
+          "Lane": "PDC-P6",
+          "Count": "4"
+        }
+      ]
+    },
+    {
+      "header": [
+        "ID",
+        "Gap",
+        "Class",
+        "Test / evidence",
+        "Depends on"
+      ],
+      "rows": [
+        {
+          "line": 25,
+          "ID": "PDC-D6-R017",
+          "Gap": "MCP exposure security",
+          "Class": "BLOCKED_EXACT_REASON",
+          "Test / evidence": "MCP-SERVER-X qualification package",
+          "Depends on": "MCP-SERVER-X"
+        }
+      ]
+    },
+    {
+      "header": [
+        "ID",
+        "Gap",
+        "Class",
+        "Test / evidence",
+        "Depends on"
+      ],
+      "rows": [
+        {
+          "line": 31,
+          "ID": "PDC-D1-R020",
+          "Gap": "One owner for plugin discovery (core/plugins/discovery.py vs vendor_knowledge and rag entry-point loaders)",
+          "Class": "INTEGRATION_CORRECTION",
+          "Test / evidence": "tests/qualification/pdc_x/d1 single discovery owner gate",
+          "Depends on": "—"
+        },
+        {
+          "line": 32,
+          "ID": "PDC-D1-R021",
+          "Gap": "plug_03/plug_04/plug_final suites have no owning roadmap stage",
+          "Class": "DOCUMENTATION_RECONCILIATION",
+          "Test / evidence": "inventory ownership record",
+          "Depends on": "—"
+        },
+        {
+          "line": 33,
+          "ID": "PDC-D3-R023",
+          "Gap": "Context-window tables duplicated inside providers and ModelCatalog",
+          "Class": "INTEGRATION_CORRECTION",
+          "Test / evidence": "tests/qualification/pdc_x/d3 single context-window source",
+          "Depends on": "—"
+        },
+        {
+          "line": 34,
+          "ID": "PDC-D7-R022",
+          "Gap": "TaskRegistry/WorkerRuntime wraps TaskExecutionRegistry (layered, not duplicate); ownership unrecorded",
+          "Class": "DOCUMENTATION_RECONCILIATION",
+          "Test / evidence": "ownership matrix entry",
+          "Depends on": "—"
+        }
+      ]
+    },
+    {
+      "header": [
+        "ID",
+        "Gap",
+        "Class",
+        "Test / evidence",
+        "Depends on"
+      ],
+      "rows": [
+        {
+          "line": 40,
+          "ID": "PDC-D1-R003",
+          "Gap": "Package identity, provenance and attestation verified before install",
+          "Class": "ADVERSARIAL_COVERAGE_REQUIRED",
+          "Test / evidence": "tests/qualification/pdc_x/d1 tampered/unsigned package rejected",
+          "Depends on": "—"
+        },
+        {
+          "line": 41,
+          "ID": "PDC-D1-R004",
+          "Gap": "Single agent registry authority (runtime projection, not an install API)",
+          "Class": "ADVERSARIAL_COVERAGE_REQUIRED",
+          "Test / evidence": "tests/qualification/pdc_x/d1 no-shadow-registry gate",
+          "Depends on": "—"
+        },
+        {
+          "line": 42,
+          "ID": "PDC-D1-R007",
+          "Gap": "Tenant-scoped install, bind and activate",
+          "Class": "ADVERSARIAL_COVERAGE_REQUIRED",
+          "Test / evidence": "tests/qualification/pdc_x/d1 cross-tenant install/bind/activate denied",
+          "Depends on": "—"
+        },
+        {
+          "line": 43,
+          "ID": "PDC-D1-R011",
+          "Gap": "UPGRADE is an explicit governed operation with a compatibility check",
+          "Class": "IMPLEMENTATION_COMPLETION",
+          "Test / evidence": "tests/qualification/pdc_x/d1 upgrade compat accept/reject + rollback",
+          "Depends on": "ADR-PDC-01"
+        },
+        {
+          "line": 44,
+          "ID": "PDC-D1-R012",
+          "Gap": "Rollback safety",
+          "Class": "ADVERSARIAL_COVERAGE_REQUIRED",
+          "Test / evidence": "tests/qualification/pdc_x/d1 rollback after failed activation",
+          "Depends on": "—"
+        },
+        {
+          "line": 45,
+          "ID": "PDC-D1-R013",
+          "Gap": "Revocation and emergency revocation reach active executions",
+          "Class": "ADVERSARIAL_COVERAGE_REQUIRED",
+          "Test / evidence": "tests/qualification/pdc_x/d1 revoke during execution -> fail closed",
+          "Depends on": "—"
+        },
+        {
+          "line": 46,
+          "ID": "PDC-D1-R014",
+          "Gap": "RETIRE is an explicit operation (state exists, no operation)",
+          "Class": "IMPLEMENTATION_COMPLETION",
+          "Test / evidence": "tests/qualification/pdc_x/d1 retire removes routing + keeps evidence",
+          "Depends on": "ADR-PDC-01"
+        },
+        {
+          "line": 47,
+          "ID": "PDC-D1-R017",
+          "Gap": "Every lifecycle transition emits canonical evidence",
+          "Class": "ADVERSARIAL_COVERAGE_REQUIRED",
+          "Test / evidence": "tests/qualification/pdc_x/d1 transition evidence completeness",
+          "Depends on": "—"
+        },
+        {
+          "line": 48,
+          "ID": "PDC-D1-R018",
+          "Gap": "Skill disable/remove/upgrade (SKILL-X F-04) kept separate from agent lifecycle",
+          "Class": "IMPLEMENTATION_COMPLETION",
+          "Test / evidence": "tests/qualification/pdc_x/d1 skill disable/remove (if implemented)",
+          "Depends on": "—"
+        }
+      ]
+    },
+    {
+      "header": [
+        "ID",
+        "Gap",
+        "Class",
+        "Test / evidence",
+        "Depends on"
+      ],
+      "rows": [
+        {
+          "line": 54,
+          "ID": "PDC-D2-R005",
+          "Gap": "Index consistency and source freshness (only an embedding-version warning + optional reindex hook)",
+          "Class": "IMPLEMENTATION_COMPLETION",
+          "Test / evidence": "tests/qualification/pdc_x/d2 stale source detected",
+          "Depends on": "—"
+        },
+        {
+          "line": 55,
+          "ID": "PDC-D2-R007",
+          "Gap": "Mandatory instructions survive compaction and degradation",
+          "Class": "ADVERSARIAL_COVERAGE_REQUIRED",
+          "Test / evidence": "tests/qualification/pdc_x/d2 mandatory retention under pressure",
+          "Depends on": "—"
+        },
+        {
+          "line": 56,
+          "ID": "PDC-D2-R009",
+          "Gap": "Tool-output ingestion boundary",
+          "Class": "ADVERSARIAL_COVERAGE_REQUIRED",
+          "Test / evidence": "tests/qualification/pdc_x/d2 injected tool output not promoted to instruction",
+          "Depends on": "—"
+        },
+        {
+          "line": 57,
+          "ID": "PDC-D2-R011",
+          "Gap": "Degradation step TOKENIZER_HARD_TRIM drops entry_id/tool_calls/tool_call_id",
+          "Class": "INTEGRATION_CORRECTION",
+          "Test / evidence": "tests/qualification/pdc_x/d2 hard trim preserves tool-call linkage",
+          "Depends on": "ADR-PDC-02"
+        },
+        {
+          "line": 58,
+          "ID": "PDC-D2-R012",
+          "Gap": "Durable compaction semantics (CE-02 PARTIAL in gap audit)",
+          "Class": "ADVERSARIAL_COVERAGE_REQUIRED",
+          "Test / evidence": "tests/qualification/pdc_x/d2 compaction round-trip + reconstruction",
+          "Depends on": "ADR-PDC-02"
+        },
+        {
+          "line": 59,
+          "ID": "PDC-D2-R014",
+          "Gap": "Sensitive data in context is classified and redacted",
+          "Class": "ADVERSARIAL_COVERAGE_REQUIRED",
+          "Test / evidence": "tests/qualification/pdc_x/d2 sensitive fragment not leaked to provider",
+          "Depends on": "—"
+        },
+        {
+          "line": 60,
+          "ID": "PDC-D2-R015",
+          "Gap": "Memory retention enforcement (retention is decision-only, no TTL; MEMORY-DURABILITY-LIFECYCLE planned)",
+          "Class": "IMPLEMENTATION_COMPLETION",
+          "Test / evidence": "tests/qualification/pdc_x/d2 retention expiry + vector tombstone",
+          "Depends on": "ADR-PDC-02"
+        }
+      ]
+    },
+    {
+      "header": [
+        "ID",
+        "Gap",
+        "Class",
+        "Test / evidence",
+        "Depends on"
+      ],
+      "rows": [
+        {
+          "line": 66,
+          "ID": "PDC-D3-R004",
+          "Gap": "Routing and failover bounded",
+          "Class": "ADVERSARIAL_COVERAGE_REQUIRED",
+          "Test / evidence": "tests/qualification/pdc_x/d3 failover exhaustion bounded",
+          "Depends on": "—"
+        },
+        {
+          "line": 67,
+          "ID": "PDC-D3-R006",
+          "Gap": "Streaming / tool-call streaming parity or explicit capability fail-closed (Ollama adapters lack stream_with_tools)",
+          "Class": "IMPLEMENTATION_COMPLETION",
+          "Test / evidence": "tests/qualification/pdc_x/d3 unsupported tool streaming fails closed",
+          "Depends on": "ADR-PDC-03"
+        },
+        {
+          "line": 68,
+          "ID": "PDC-D3-R009",
+          "Gap": "Refusal semantics: typed finish reason exists, refusal payload is a string",
+          "Class": "ADVERSARIAL_COVERAGE_REQUIRED",
+          "Test / evidence": "tests/qualification/pdc_x/d3 refusal normalized across providers",
+          "Depends on": "—"
+        },
+        {
+          "line": 69,
+          "ID": "PDC-D3-R011",
+          "Gap": "Cancellation explicit per provider (seam beside the ABI; Ollama has no native remote cancel)",
+          "Class": "ADVERSARIAL_COVERAGE_REQUIRED",
+          "Test / evidence": "tests/qualification/pdc_x/d3 cancel outcome typed (terminated / transport_closed / not_supported)",
+          "Depends on": "—"
+        },
+        {
+          "line": 70,
+          "ID": "PDC-D3-R015",
+          "Gap": "Capability mismatch fails closed",
+          "Class": "ADVERSARIAL_COVERAGE_REQUIRED",
+          "Test / evidence": "tests/qualification/pdc_x/d3 mismatch denied before call",
+          "Depends on": "—"
+        },
+        {
+          "line": 71,
+          "ID": "PDC-D3-R022",
+          "Gap": "Streaming capability flags misreport: six adapters stream but supports_streaming() returns False",
+          "Class": "INTEGRATION_CORRECTION",
+          "Test / evidence": "tests/qualification/pdc_x/d3 capability flags match implemented methods",
+          "Depends on": "ADR-PDC-03"
+        }
+      ]
+    },
+    {
+      "header": [
+        "ID",
+        "Gap",
+        "Class",
+        "Test / evidence",
+        "Depends on"
+      ],
+      "rows": [
+        {
+          "line": 77,
+          "ID": "PDC-D4-R003",
+          "Gap": "Startup dependency ordering and rollback",
+          "Class": "ADVERSARIAL_COVERAGE_REQUIRED",
+          "Test / evidence": "tests/qualification/pdc_x/d4 startup failure rolls back in reverse order",
+          "Depends on": "—"
+        },
+        {
+          "line": 78,
+          "ID": "PDC-D4-R004",
+          "Gap": "Readiness and degraded states",
+          "Class": "ADVERSARIAL_COVERAGE_REQUIRED",
+          "Test / evidence": "tests/qualification/pdc_x/d4 degraded component reported",
+          "Depends on": "—"
+        },
+        {
+          "line": 79,
+          "ID": "PDC-D4-R005",
+          "Gap": "Graceful shutdown with in-flight drain",
+          "Class": "ADVERSARIAL_COVERAGE_REQUIRED",
+          "Test / evidence": "tests/qualification/pdc_x/xd_05 drain with background work",
+          "Depends on": "—"
+        },
+        {
+          "line": 80,
+          "ID": "PDC-D4-R006",
+          "Gap": "Instance ownership guard",
+          "Class": "ADVERSARIAL_COVERAGE_REQUIRED",
+          "Test / evidence": "tests/qualification/pdc_x/d4 second instance rejected",
+          "Depends on": "—"
+        },
+        {
+          "line": 81,
+          "ID": "PDC-D4-R007",
+          "Gap": "Restart supervision with an OS-process crash proof (APP-HOST-5E Planned)",
+          "Class": "IMPLEMENTATION_COMPLETION",
+          "Test / evidence": "tests/qualification/pdc_x/d4 subprocess kill + supervised restart",
+          "Depends on": "—"
+        },
+        {
+          "line": 82,
+          "ID": "PDC-D4-R009",
+          "Gap": "Hosting lifecycle metrics through canonical observability (APP-HOST-3D; no metrics today)",
+          "Class": "IMPLEMENTATION_COMPLETION",
+          "Test / evidence": "tests/qualification/pdc_x/d4 lifecycle metrics emitted via observability port",
+          "Depends on": "ADR-PDC-04"
+        },
+        {
+          "line": 83,
+          "ID": "PDC-D4-R010",
+          "Gap": "Restart preserves configuration/profile digest generically (APP-HOST-5D)",
+          "Class": "IMPLEMENTATION_COMPLETION",
+          "Test / evidence": "tests/qualification/pdc_x/d4 digest mismatch on restart rejected",
+          "Depends on": "ADR-PDC-04"
+        },
+        {
+          "line": 84,
+          "ID": "PDC-D4-R014",
+          "Gap": "Stable public hosting API declaration (APP-HOST-9F)",
+          "Class": "IMPLEMENTATION_COMPLETION",
+          "Test / evidence": "tests/qualification/pdc_x/d4 public API manifest + COMPAT gate",
+          "Depends on": "ADR-PDC-04"
+        },
+        {
+          "line": 85,
+          "ID": "PDC-D4-R015",
+          "Gap": "Generic HostDeploymentProfile carries LKW-specific fields (TL-FIX-C)",
+          "Class": "INTEGRATION_CORRECTION",
+          "Test / evidence": "tests/qualification/pdc_x/d4 no product vocabulary in generic profile",
+          "Depends on": "—"
+        }
+      ]
+    },
+    {
+      "header": [
+        "ID",
+        "Gap",
+        "Class",
+        "Test / evidence",
+        "Depends on"
+      ],
+      "rows": [
+        {
+          "line": 91,
+          "ID": "PDC-D5-R001",
+          "Gap": "Typed EvalDataset / EvalScenario / EvalRun contracts",
+          "Class": "IMPLEMENTATION_COMPLETION",
+          "Test / evidence": "tests/qualification/pdc_x/d5 contract schema + persistence",
+          "Depends on": "ADR-PDC-05"
+        },
+        {
+          "line": 92,
+          "ID": "PDC-D5-R002",
+          "Gap": "Dataset versioning with content digest (GoldenDatasetAsset has free-string version)",
+          "Class": "IMPLEMENTATION_COMPLETION",
+          "Test / evidence": "tests/qualification/pdc_x/d5 digest mismatch rejected",
+          "Depends on": "ADR-PDC-05"
+        },
+        {
+          "line": 93,
+          "ID": "PDC-D5-R003",
+          "Gap": "Evaluation scenario identity",
+          "Class": "IMPLEMENTATION_COMPLETION",
+          "Test / evidence": "tests/qualification/pdc_x/d5 scenario identity stable",
+          "Depends on": "ADR-PDC-05"
+        },
+        {
+          "line": 94,
+          "ID": "PDC-D5-R004",
+          "Gap": "Agent/model/prompt/profile/code-SHA references on every run (EvalResult lacks them)",
+          "Class": "IMPLEMENTATION_COMPLETION",
+          "Test / evidence": "tests/qualification/pdc_x/d5 run provenance complete",
+          "Depends on": "ADR-PDC-05"
+        },
+        {
+          "line": 95,
+          "ID": "PDC-D5-R005",
+          "Gap": "Task-success, tool-use, groundedness and citation evaluators behind one contract",
+          "Class": "INTEGRATION_CORRECTION",
+          "Test / evidence": "tests/qualification/pdc_x/d5 evaluator registry covers kinds",
+          "Depends on": "ADR-PDC-05"
+        },
+        {
+          "line": 96,
+          "ID": "PDC-D5-R006",
+          "Gap": "Safety evaluation hook (no safety/harm evaluator exists)",
+          "Class": "IMPLEMENTATION_COMPLETION",
+          "Test / evidence": "tests/qualification/pdc_x/d5 safety evaluator kind via guardrail provider",
+          "Depends on": "ADR-PDC-05"
+        },
+        {
+          "line": 97,
+          "ID": "PDC-D5-R007",
+          "Gap": "Deterministic vs model-assisted evaluator separation",
+          "Class": "INTEGRATION_CORRECTION",
+          "Test / evidence": "tests/qualification/pdc_x/d5 judge results isolated from rule results",
+          "Depends on": "ADR-PDC-05"
+        },
+        {
+          "line": 98,
+          "ID": "PDC-D5-R009",
+          "Gap": "Reproducible evaluation runs",
+          "Class": "IMPLEMENTATION_COMPLETION",
+          "Test / evidence": "tests/qualification/pdc_x/xd_08 digest-identical rerun",
+          "Depends on": "ADR-PDC-05"
+        },
+        {
+          "line": 99,
+          "ID": "PDC-D5-R010",
+          "Gap": "Baseline vs candidate comparison (only a pass-rate delta exists)",
+          "Class": "IMPLEMENTATION_COMPLETION",
+          "Test / evidence": "tests/qualification/pdc_x/d5 candidate regression detected",
+          "Depends on": "ADR-PDC-05"
+        },
+        {
+          "line": 100,
+          "ID": "PDC-D5-R011",
+          "Gap": "Quality regression detection",
+          "Class": "IMPLEMENTATION_COMPLETION",
+          "Test / evidence": "tests/qualification/pdc_x/d5 threshold breach flagged",
+          "Depends on": "ADR-PDC-05"
+        },
+        {
+          "line": 101,
+          "ID": "PDC-D5-R012",
+          "Gap": "Cost-to-success and latency/quality comparison",
+          "Class": "IMPLEMENTATION_COMPLETION",
+          "Test / evidence": "tests/qualification/pdc_x/d5 comparison carries cost and latency",
+          "Depends on": "ADR-PDC-05"
+        },
+        {
+          "line": 102,
+          "ID": "PDC-D5-R013",
+          "Gap": "Evaluation provenance in the canonical evidence store",
+          "Class": "INTEGRATION_CORRECTION",
+          "Test / evidence": "tests/qualification/pdc_x/d5 run recorded as evidence",
+          "Depends on": "ADR-PDC-05"
+        },
+        {
+          "line": 103,
+          "ID": "PDC-D5-R014",
+          "Gap": "Promotion gates G0-G2 are file-existence checks; evaluation must stay advisory and never authorize",
+          "Class": "INTEGRATION_CORRECTION",
+          "Test / evidence": "tests/qualification/pdc_x/xd_08 eval PASS cannot authorize promotion",
+          "Depends on": "ADR-PDC-05"
+        },
+        {
+          "line": 104,
+          "ID": "PDC-D5-R015",
+          "Gap": "tenant_id on OnlineEvaluationObservation (TENANT-X debt recorded by CTRL-X)",
+          "Class": "INTEGRATION_CORRECTION",
+          "Test / evidence": "tests/qualification/pdc_x/d5 cross-tenant observation denied",
+          "Depends on": "—"
+        },
+        {
+          "line": 105,
+          "ID": "PDC-D5-R018",
+          "Gap": "File-based evaluation registries have no concurrency semantics (DX-07)",
+          "Class": "INTEGRATION_CORRECTION",
+          "Test / evidence": "tests/qualification/pdc_x/d5 concurrent writes safe or rejected",
+          "Depends on": "ADR-PDC-05"
+        }
+      ]
+    },
+    {
+      "header": [
+        "ID",
+        "Gap",
+        "Class",
+        "Test / evidence",
+        "Depends on"
+      ],
+      "rows": [
+        {
+          "line": 111,
+          "ID": "PDC-D2-R008",
+          "Gap": "Retrieval-poisoning filter consumed on both paths; RAG service fallback is fail-open (False when profile absent)",
+          "Class": "INTEGRATION_CORRECTION",
+          "Test / evidence": "tests/qualification/pdc_x/d6 missing profile -> filter enforced",
+          "Depends on": "—"
+        },
+        {
+          "line": 112,
+          "ID": "PDC-D6-R004",
+          "Gap": "Delegation and authority narrowing",
+          "Class": "ADVERSARIAL_COVERAGE_REQUIRED",
+          "Test / evidence": "tests/qualification/pdc_x/d6 child widening denied",
+          "Depends on": "—"
+        },
+        {
+          "line": 113,
+          "ID": "PDC-D6-R006",
+          "Gap": "Secret references with late resolution",
+          "Class": "ADVERSARIAL_COVERAGE_REQUIRED",
+          "Test / evidence": "tests/qualification/pdc_x/d6 secret resolved only at use site",
+          "Depends on": "—"
+        },
+        {
+          "line": 114,
+          "ID": "PDC-D6-R007",
+          "Gap": "Raw secrets never cross layers, logs or traces (no static gate exists)",
+          "Class": "IMPLEMENTATION_COMPLETION",
+          "Test / evidence": "tests/qualification/pdc_x/d6 caplog/trace secret scan + static gate",
+          "Depends on": "ADR-PDC-06"
+        },
+        {
+          "line": 115,
+          "ID": "PDC-D6-R008",
+          "Gap": "Critical-action signing falls back to literal 'harness-dev-signing-key' (SEC-BND-05)",
+          "Class": "INTEGRATION_CORRECTION",
+          "Test / evidence": "tests/qualification/pdc_x/d6 missing signing secret fails closed outside lab",
+          "Depends on": "ADR-PDC-06"
+        },
+        {
+          "line": 116,
+          "ID": "PDC-D6-R009",
+          "Gap": "Credential scope and revocation",
+          "Class": "ADVERSARIAL_COVERAGE_REQUIRED",
+          "Test / evidence": "tests/qualification/pdc_x/xd_06 revoked credential mid-retry denied",
+          "Depends on": "—"
+        },
+        {
+          "line": 117,
+          "ID": "PDC-D6-R013",
+          "Gap": "Tool-input injection guard assert_tool_input_safe has zero consumers",
+          "Class": "INTEGRATION_CORRECTION",
+          "Test / evidence": "tests/qualification/pdc_x/d6 single tool-input defense path",
+          "Depends on": "ADR-PDC-06"
+        },
+        {
+          "line": 118,
+          "ID": "PDC-D6-R014",
+          "Gap": "Retrieval-poisoning defense must fail closed when the profile is absent (SEC-BND-04)",
+          "Class": "INTEGRATION_CORRECTION",
+          "Test / evidence": "tests/qualification/pdc_x/d6 missing profile -> filter enforced",
+          "Depends on": "ADR-PDC-06"
+        },
+        {
+          "line": 119,
+          "ID": "PDC-D6-R015",
+          "Gap": "Data exfiltration / propagation across provider boundaries",
+          "Class": "ADVERSARIAL_COVERAGE_REQUIRED",
+          "Test / evidence": "tests/qualification/pdc_x/d6 tenant data not sent to unapproved provider",
+          "Depends on": "—"
+        },
+        {
+          "line": 120,
+          "ID": "PDC-D6-R016",
+          "Gap": "Plugin entry-point admission is structural only (no signature/provenance); agent packages are attested",
+          "Class": "IMPLEMENTATION_COMPLETION",
+          "Test / evidence": "tests/qualification/pdc_x/d6 unsigned plugin rejected (if in scope)",
+          "Depends on": "—"
+        },
+        {
+          "line": 121,
+          "ID": "PDC-D6-R020",
+          "Gap": "Security audit trail is in-memory only (SEC-BND-06)",
+          "Class": "IMPLEMENTATION_COMPLETION",
+          "Test / evidence": "tests/qualification/pdc_x/d6 audit trail survives restart",
+          "Depends on": "ADR-PDC-06"
+        },
+        {
+          "line": 122,
+          "ID": "PDC-D6-R024",
+          "Gap": "Fail-closed security defaults",
+          "Class": "ADVERSARIAL_COVERAGE_REQUIRED",
+          "Test / evidence": "tests/qualification/pdc_x/d6 missing security config fails closed",
+          "Depends on": "—"
+        },
+        {
+          "line": 123,
+          "ID": "PDC-D6-R027",
+          "Gap": "Demo attestation signing seed reachable only in lab/proof paths",
+          "Class": "ADVERSARIAL_COVERAGE_REQUIRED",
+          "Test / evidence": "tests/qualification/pdc_x/d6 demo seed unreachable in strict profile",
+          "Depends on": "—"
+        }
+      ]
+    },
+    {
+      "header": [
+        "ID",
+        "Gap",
+        "Class",
+        "Test / evidence",
+        "Depends on"
+      ],
+      "rows": [
+        {
+          "line": 129,
+          "ID": "PDC-D7-R006",
+          "Gap": "Recurrence (interval/cron) as occurrences on SchedulerLedger; no second engine",
+          "Class": "IMPLEMENTATION_COMPLETION",
+          "Test / evidence": "tests/qualification/pdc_x/d7 recurrence occurrences + DST",
+          "Depends on": "ADR-PDC-07"
+        },
+        {
+          "line": 130,
+          "ID": "PDC-D7-R007",
+          "Gap": "Time-zone and DST semantics for recurrence",
+          "Class": "IMPLEMENTATION_COMPLETION",
+          "Test / evidence": "tests/qualification/pdc_x/d7 DST transition",
+          "Depends on": "PDC-D7-R006"
+        },
+        {
+          "line": 131,
+          "ID": "PDC-D7-R008",
+          "Gap": "Recurrence misfire / catch-up policy",
+          "Class": "IMPLEMENTATION_COMPLETION",
+          "Test / evidence": "tests/qualification/pdc_x/d7 misfire policy",
+          "Depends on": "PDC-D7-R006"
+        },
+        {
+          "line": 132,
+          "ID": "PDC-D7-R009",
+          "Gap": "Aggregate retry budget",
+          "Class": "ADVERSARIAL_COVERAGE_REQUIRED",
+          "Test / evidence": "tests/qualification/pdc_x/d7 retry budget exhaustion terminal",
+          "Depends on": "—"
+        },
+        {
+          "line": 133,
+          "ID": "PDC-D7-R012",
+          "Gap": "Lease/fencing proven across processes (today: two schedulers in one process)",
+          "Class": "ADVERSARIAL_COVERAGE_REQUIRED",
+          "Test / evidence": "tests/qualification/pdc_x/d7 two-process fencing over SQLite",
+          "Depends on": "—"
+        },
+        {
+          "line": 134,
+          "ID": "PDC-D7-R013",
+          "Gap": "Dead-letter / terminal-failed semantics (no DLQ anywhere)",
+          "Class": "IMPLEMENTATION_COMPLETION",
+          "Test / evidence": "tests/qualification/pdc_x/d7 poison task reaches terminal dead-letter state",
+          "Depends on": "ADR-PDC-07"
+        },
+        {
+          "line": 135,
+          "ID": "PDC-D7-R016",
+          "Gap": "Full execution identity carried on enqueue (adoption gap)",
+          "Class": "INTEGRATION_CORRECTION",
+          "Test / evidence": "tests/qualification/pdc_x/d7 enqueue envelope carries canonical identity",
+          "Depends on": "—"
+        }
+      ]
+    },
+    {
+      "header": [
+        "ID",
+        "Gap",
+        "Class",
+        "Test / evidence",
+        "Depends on"
+      ],
+      "rows": [
+        {
+          "line": 141,
+          "ID": "PDC-D6-R022",
+          "Gap": "Retention/deletion/redaction responsibility explicit",
+          "Class": "IMPLEMENTATION_COMPLETION",
+          "Test / evidence": "tests/qualification/pdc_x/xd_10 TTL deletion honored",
+          "Depends on": "ADR-PDC-08"
+        },
+        {
+          "line": 142,
+          "ID": "PDC-D8-R001",
+          "Gap": "Artifact taxonomy (business / execution evidence / context / temporary tool output) with one owner per class; no global storage engine",
+          "Class": "IMPLEMENTATION_COMPLETION",
+          "Test / evidence": "taxonomy + ownership gate",
+          "Depends on": "ADR-PDC-08"
+        },
+        {
+          "line": 143,
+          "ID": "PDC-D8-R002",
+          "Gap": "Mandatory content digest on durable artifact refs (optional outside Collaborative Work)",
+          "Class": "IMPLEMENTATION_COMPLETION",
+          "Test / evidence": "tests/qualification/pdc_x/d8 digest mismatch rejected",
+          "Depends on": "ADR-PDC-08"
+        },
+        {
+          "line": 144,
+          "ID": "PDC-D8-R003",
+          "Gap": "Versioning (business artifacts certified; run artifacts unversioned)",
+          "Class": "IMPLEMENTATION_COMPLETION",
+          "Test / evidence": "tests/qualification/pdc_x/d8 run artifact version append-only",
+          "Depends on": "ADR-PDC-08"
+        },
+        {
+          "line": 145,
+          "ID": "PDC-D8-R004",
+          "Gap": "Producer identity and execution lineage",
+          "Class": "INTEGRATION_CORRECTION",
+          "Test / evidence": "tests/qualification/pdc_x/d8 artifact lineage reconstructable",
+          "Depends on": "—"
+        },
+        {
+          "line": 146,
+          "ID": "PDC-D8-R005",
+          "Gap": "Tenant/workspace scope of artifacts",
+          "Class": "ADVERSARIAL_COVERAGE_REQUIRED",
+          "Test / evidence": "tests/qualification/pdc_x/xd_10 cross-tenant read denied",
+          "Depends on": "—"
+        },
+        {
+          "line": 147,
+          "ID": "PDC-D8-R006",
+          "Gap": "Governed artifact read/access authorization port (store explicitly has no security)",
+          "Class": "IMPLEMENTATION_COMPLETION",
+          "Test / evidence": "tests/qualification/pdc_x/d8 unauthorized read denied",
+          "Depends on": "ADR-PDC-08"
+        },
+        {
+          "line": 148,
+          "ID": "PDC-D8-R007",
+          "Gap": "Durable execution artifact store (only InMemoryArtifactStore)",
+          "Class": "IMPLEMENTATION_COMPLETION",
+          "Test / evidence": "tests/qualification/pdc_x/d8 artifacts survive restart",
+          "Depends on": "ADR-PDC-08"
+        },
+        {
+          "line": 149,
+          "ID": "PDC-D8-R008",
+          "Gap": "Retention/TTL enforcement (ArtifactRetentionPolicy has zero consumers)",
+          "Class": "IMPLEMENTATION_COMPLETION",
+          "Test / evidence": "tests/qualification/pdc_x/d8 TTL expiry enforced",
+          "Depends on": "ADR-PDC-08"
+        },
+        {
+          "line": 150,
+          "ID": "PDC-D8-R009",
+          "Gap": "Deletion and legal hold; audit evidence non-deletable (Collaborative Work defers hard delete)",
+          "Class": "IMPLEMENTATION_COMPLETION",
+          "Test / evidence": "tests/qualification/pdc_x/d8 evidence delete refused; legal hold respected",
+          "Depends on": "ADR-PDC-08"
+        },
+        {
+          "line": 151,
+          "ID": "PDC-D8-R010",
+          "Gap": "Governed secure download (only provider presigned_url)",
+          "Class": "IMPLEMENTATION_COMPLETION",
+          "Test / evidence": "tests/qualification/pdc_x/d8 governed download (if in scope)",
+          "Depends on": "—"
+        },
+        {
+          "line": 152,
+          "ID": "PDC-D8-R012",
+          "Gap": "Large output / tool-result spill to artifact refs (none exists)",
+          "Class": "IMPLEMENTATION_COMPLETION",
+          "Test / evidence": "tests/qualification/pdc_x/xd_09 spill round-trip",
+          "Depends on": "ADR-PDC-08"
+        },
+        {
+          "line": 153,
+          "ID": "PDC-D8-R013",
+          "Gap": "Durable context references to artifacts",
+          "Class": "INTEGRATION_CORRECTION",
+          "Test / evidence": "tests/qualification/pdc_x/xd_09 context ref resolves after compaction",
+          "Depends on": "—"
+        },
+        {
+          "line": 154,
+          "ID": "PDC-D8-R014",
+          "Gap": "Artifact recovery after restart",
+          "Class": "ADVERSARIAL_COVERAGE_REQUIRED",
+          "Test / evidence": "tests/qualification/pdc_x/d8 restart recovery",
+          "Depends on": "PDC-D8-R007"
+        },
+        {
+          "line": 155,
+          "ID": "PDC-D8-R016",
+          "Gap": "Auditability of artifact operations",
+          "Class": "INTEGRATION_CORRECTION",
+          "Test / evidence": "tests/qualification/pdc_x/d8 artifact ops in evidence",
+          "Depends on": "—"
+        },
+        {
+          "line": 156,
+          "ID": "PDC-D8-R017",
+          "Gap": "Identical contracts in contracts/task_artifacts.py and applications/contracts/application_artifacts.py (copy has 0 production importers)",
+          "Class": "INTEGRATION_CORRECTION",
+          "Test / evidence": "tests/qualification/pdc_x/d8 single definition gate",
+          "Depends on": "—"
+        },
+        {
+          "line": 157,
+          "ID": "PDC-D8-R018",
+          "Gap": "Three types named ArtifactRef (pydantic ArtifactRef vs TraceArtifactRef aliases)",
+          "Class": "INTEGRATION_CORRECTION",
+          "Test / evidence": "tests/qualification/pdc_x/d8 no ambiguous ArtifactRef alias",
+          "Depends on": "—"
+        }
+      ]
+    },
+    {
+      "header": [
+        "ID",
+        "Gap",
+        "Class",
+        "Test / evidence",
+        "Depends on"
+      ],
+      "rows": [
+        {
+          "line": 163,
+          "ID": "PDC-D1-R009",
+          "Gap": "Dynamic discovery and acquisition (AC-4); architecture doc still says READY_FOR_INDEPENDENT_AUDIT",
+          "Class": "DOCUMENTATION_RECONCILIATION",
+          "Test / evidence": "doc status matches AGENT_PLATFORM_AC1_AC6_FINAL_ARCHITECTURE_AUDIT",
+          "Depends on": "—"
+        },
+        {
+          "line": 164,
+          "ID": "PDC-D4-R016",
+          "Gap": "TL-FIX-D implemented in code (bind_execution_adapter) but plan row still ACCEPTED/PLANNED",
+          "Class": "DOCUMENTATION_RECONCILIATION",
+          "Test / evidence": "plan status matches code",
+          "Depends on": "—"
+        },
+        {
+          "line": 165,
+          "ID": "PDC-D4-R019",
+          "Gap": "Sandbox/shadow app isolation is not a universal production guarantee; plan marks APP-CON-8 Done",
+          "Class": "DOCUMENTATION_RECONCILIATION",
+          "Test / evidence": "bounded claim stated consistently in arch + plan",
+          "Depends on": "—"
+        },
+        {
+          "line": 166,
+          "ID": "PDC-D5-R016",
+          "Gap": "CRITIC_VERIFICATION findings are legacy lineage; canonical authority is DECISION_SYSTEM",
+          "Class": "DOCUMENTATION_RECONCILIATION",
+          "Test / evidence": "audit findings re-dispositioned as legacy",
+          "Depends on": "—"
+        },
+        {
+          "line": 167,
+          "ID": "PDC-D5-R017",
+          "Gap": "Production-feedback boundary of evaluation",
+          "Class": "DOCUMENTATION_RECONCILIATION",
+          "Test / evidence": "boundary documented",
+          "Depends on": "—"
+        },
+        {
+          "line": 168,
+          "ID": "PDC-D6-R021",
+          "Gap": "Consolidated security architecture and threat model (no doc pair; broken IDENTITY_TRUST.md link)",
+          "Class": "DOCUMENTATION_RECONCILIATION",
+          "Test / evidence": "threat model covers D1-D8 surfaces",
+          "Depends on": "—"
+        },
+        {
+          "line": 169,
+          "ID": "PDC-D6-R023",
+          "Gap": "Encryption / residency responsibility matrix",
+          "Class": "DOCUMENTATION_RECONCILIATION",
+          "Test / evidence": "responsibility matrix published",
+          "Depends on": "—"
+        },
+        {
+          "line": 170,
+          "ID": "PDC-D6-R025",
+          "Gap": "HARNESS-FINAL 'ENTERPRISE QUALIFIED' for plugin trust/secrets/security contradicts FRZ-SEC OPEN",
+          "Class": "DOCUMENTATION_RECONCILIATION",
+          "Test / evidence": "scoped wording reconciled",
+          "Depends on": "—"
+        },
+        {
+          "line": 171,
+          "ID": "PDC-D7-R011",
+          "Gap": "At-least-once delivery consequences documented",
+          "Class": "DOCUMENTATION_RECONCILIATION",
+          "Test / evidence": "delivery semantics section",
+          "Depends on": "—"
+        },
+        {
+          "line": 172,
+          "ID": "PDC-D7-R021",
+          "Gap": "Horizontal scaling boundary documented (DIST-SCALE-X scoped)",
+          "Class": "DOCUMENTATION_RECONCILIATION",
+          "Test / evidence": "scaling boundary section",
+          "Depends on": "—"
+        },
+        {
+          "line": 173,
+          "ID": "PDC-D7-R023",
+          "Gap": "BACKGROUND_TASKS plan statuses stale; doc not registered in runtime hub (PDC-P1-F01)",
+          "Class": "DOCUMENTATION_RECONCILIATION",
+          "Test / evidence": "plan + hub registration",
+          "Depends on": "—"
+        }
+      ]
+    },
+    {
+      "header": [
+        "ID",
+        "Gap",
+        "Class",
+        "Test / evidence",
+        "Depends on"
+      ],
+      "rows": [
+        {
+          "line": 179,
+          "ID": "PDC-D1-R022",
+          "Gap": "plug_03 external chunker entry-point flow fails at HEAD (test_plug_03_full_qualification_evidence_batch)",
+          "Class": "INTEGRATION_CORRECTION",
+          "Test / evidence": "tests/qualification/plug_03 green",
+          "Depends on": "PDC-D1-R020"
+        },
+        {
+          "line": 180,
+          "ID": "PDC-D3-R024",
+          "Gap": "EBH-5 replaceability gates red at HEAD: proof matrix/registry drift (48 vs 56 qualified concerns; RPL-F N/A vs PASS)",
+          "Class": "INTEGRATION_CORRECTION",
+          "Test / evidence": "tests/qualification/ebh_5 green",
+          "Depends on": "—"
+        },
+        {
+          "line": 181,
+          "ID": "PDC-D4-R020",
+          "Gap": "GR-12 product host composition fails under STRICT agent contract authority (revision-bound authority required)",
+          "Class": "INTEGRATION_CORRECTION",
+          "Test / evidence": "tests/qualification/governance gr12 green",
+          "Depends on": "—"
+        },
+        {
+          "line": 182,
+          "ID": "PDC-D6-R028",
+          "Gap": "GR-10 inference governance gates red at HEAD (pre-model enforcement AST, evidence-persistence wiring, checkpoint authority)",
+          "Class": "INTEGRATION_CORRECTION",
+          "Test / evidence": "tests/qualification/governance gr10 green",
+          "Depends on": "—"
+        }
+      ]
+    },
+    {
+      "header": [
+        "ID",
+        "Gap",
+        "Class",
+        "Test / evidence",
+        "Depends on"
+      ],
+      "rows": [
+        {
+          "line": 188,
+          "ID": "PDC-D2-R018",
+          "Gap": "Compaction never deletes audit evidence",
+          "Class": "ADVERSARIAL_COVERAGE_REQUIRED",
+          "Test / evidence": "tests/qualification/pdc_x/xd_09 evidence survives compaction",
+          "Depends on": "—"
+        },
+        {
+          "line": 189,
+          "ID": "PDC-D6-R019",
+          "Gap": "Cross-tenant negative tests across D1-D8",
+          "Class": "ADVERSARIAL_COVERAGE_REQUIRED",
+          "Test / evidence": "tests/qualification/pdc_x/xd_02, xd_06, xd_10",
+          "Depends on": "—"
+        },
+        {
+          "line": 190,
+          "ID": "PDC-D7-R014",
+          "Gap": "Graceful worker shutdown with host drain",
+          "Class": "ADVERSARIAL_COVERAGE_REQUIRED",
+          "Test / evidence": "tests/qualification/pdc_x/xd_05 drain + lease release",
+          "Depends on": "—"
+        },
+        {
+          "line": 191,
+          "ID": "PDC-D8-R019",
+          "Gap": "Compaction never deletes evidence artifacts (same invariant as PDC-D2-R018)",
+          "Class": "ADVERSARIAL_COVERAGE_REQUIRED",
+          "Test / evidence": "tests/qualification/pdc_x/xd_09",
+          "Depends on": "PDC-D2-R018"
+        }
+      ]
+    }
+  ],
+  "lines": 192
+}
