@@ -1,0 +1,10 @@
+--- Enterprise audit summary ---
+Mode: FULL  certifying_run=True
+Git SHA: cba32d2479cd134911d2fdf4fb1db4587c8a94d8
+Status: PASS  exit_code=0
+Checks executed/skipped/planned: 85/0/85
+Checks failed (executed): 0
+Coverage label: FULL
+Duration ms: 1288641
+Report JSON: .tmp\proof\pdc-x-p8\ecap\enterprise_audit_report.json
+Report Markdown: .tmp\proof\pdc-x-p8\ecap\enterprise_audit_report.md
