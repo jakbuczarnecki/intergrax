@@ -1,0 +1,281 @@
+# PLAN T-IGX-043-B — EQO-A remediation code wave, batch FC-2: production wiring fail-closed (capacity, queue worker, memory org/session stores, OTLP export, sandbox)
+
+Status: DRAFT for Operator review. Drafted 2026-11-16 for master-plan node `PT-FC2`. Nothing here is approved, implemented, executed or audited; no test was run while drafting. This plan certifies nothing, promotes no FRZ criterion and states no independent verification.
+
+Notation. `H` = `origin/development` `7960ae7f6c82da60ca9acdc0ceebf63810002a42` (read 2026-11-16). `B` = Campaign A baseline `258bbf6abb6fdbb92ef0185d058527fbb1e47f04`. Every citation is written `path@<full 40-hex SHA>:line` with the SHA of `H` or `B` spelled out. Status words: `UNCHANGED` = `git diff B H -- <path>` empty; `CHANGED`; `GONE`.
+
+## 1. Purpose and findings
+
+Make five Tier-3 / Tier-1 production-wiring selectors fail closed in PRODUCT/STRICT postures instead of silently substituting in-memory or no-op stand-ins (OD-REM-03, C3, DP-24). One ticket, one batch of the single integrated wave (DP-11); it never merges alone.
+
+| Finding | Severity (dossier) | Class WP-2 / needs | What this ticket does | Decision that fixes the design |
+|---|---|---|---|---|
+| EQOA-A4-035 | MEDIUM | BLOCKS (WP-2; dossier CONDITIONS) | Capacity wiring without a cluster reports capacity unqualified and builds no adapters, so capacity mutations are refused; in-memory scaler only through an explicit typed CI posture | DP-29, DP-24, DP-25 |
+| EQOA-A4-036 + WP2-OBS-01 | MEDIUM | BLOCKS | `wire_optional_queue_execution` never rewrites Kafka/RabbitMQ to eager Celery; production posture refuses the memory-broker eager worker; env var documented | DP-30, DP-24 |
+| EQOA-A4-030 + WP2-OBS-04 | LOW | CONDITIONS (dossier NONE) | PRODUCT/STRICT admission extended to session storage and the organization store; org memory on the Mongo branch (no durable store exists) and org memory with no backend raise | DP-30, DP-24 |
+| EQOA-A4-032 leg (a) | LOW | CONDITIONS (leg alone NONE) | Enabled OTLP exporter with empty endpoint raises in PRODUCT/STRICT (as `DISTRIBUTED_OTLP` already does) | DP-24 |
+| EQOA-A4-032 leg (b) + WP2-OBS-02 | LOW | CONDITIONS | `product_requires_sandbox` gets a composition caller: PRODUCT/STRICT with side-effect tools requires a configured sandbox profile with an explicit root | DP-24, DP-25 |
+
+Leg (c) of A4-032 (guardrail engine downgrade) belongs to FC-3 (`PT-FC3`) and is not touched. WP2-OBS-03 (stub vision slug) belongs to FC-3. Missing features recorded as raise-until-built (DP-30): production queue worker through the real Celery bundle, durable document-store organization store.
+
+## 2. Prerequisites that must hold before implementation starts
+
+| Item | Source | State read at `H` |
+|---|---|---|
+| Node `SCOPE` (wave scope frozen: V04, B-1, B-2, exception reconciliation) | `WP-12/DAG.md` (`PT-FC2` hard prerequisites `SCOPE`, `DS-3`) | not evidenced in the repository; orchestrator state |
+| Node `DS-3` / DP-24..DP-33 | Operator decision session 3 | decided (`OPERATOR_DECISIONS_REMEDIATION_WAVE1.md`) |
+| Milestone `M1` (PDC P9 closed) | DP-11, `WP-12/DAG.md` | `PDC_INDEX.md@7960ae7f6c82da60ca9acdc0ceebf63810002a42:44-49` still lists the six P9 artifacts as "Answers recorded in chat; awaiting the Operator's final confirmation", while `OD-PDC-X-CLOSE.md` (merged by PR #603, `feaa2a87d`) carries a signature line dated 2026-11-16 and `PLATFORM_ENTERPRISE_COMPLETION_ROADMAP.md@7960ae7f6c82da60ca9acdc0ceebf63810002a42:570` carries a PDC-X closure label. The repository texts disagree; this plan does not decide whether P9 is closed |
+| Merge order and ruling on `T-IGX-043-E` | Recorded from the Operator's chat answers as transcribed by the orchestrating session on 2026-11-16 in `.tmp/session/eqo-a-remediation/FC/OPERATOR_ANSWERS_TRANSCRIPTION.md` (a session artefact under `.tmp/`, a draft transcription that is not yet a repository record and not an Operator signature): merge order B, then A, then C, then F confirmed, with D at any time, and W-A/W-B before A on `host_orchestration_environment_spec_builder.py`, `harness_host_runtime.py` and `nexus_loop.py` (so `T-IGX-043-B`, which owns `wiring_posture.py`, merges first); the Operator's personal ruling on `T-IGX-043-E`: both parts accepted as drafted, the sandbox part may be ruled out separately without affecting this ticket. The approval line of E remains the Operator's own and is not written | recorded; the approval lines of B and E are not written |
+| Authorisation `AR-41` (wave package W-C) and ticket approval (`AR-38`) | `WP-12/AUTHORIZATION_REQUESTS.md` | open; see `AUTHORIZATION_REQUESTS.md` |
+| Operator answers to the nine design questions | `OPEN_QUESTIONS.md` | decided as relayed by the orchestrating session on 2026-11-16: the recommended option of Q1..Q9 was accepted (the design below is that design). The decision record is a session artefact under `.tmp/`, not a repository record; the first-draft option lists were overwritten by it, and publishing or signing the answers is not done by this ticket. The items still open are listed in that file |
+| Shared posture helper `wiring_posture.py` | FC-2 owns the file (one file, one owner); merge order FC-2 first, FC-1 and FC-3 import it and define no equivalent (refines decision Q8a at the orchestrator's instruction after the delegate review) | the same sentence must stand in the FC-3 plan write set; until it does, the dependency is open |
+| DB-F2 docs PR merged (it touches `MEMORY_ARCHITECTURE.md` and `ELASTIC_CAPACITY_AND_SCALING.md` headers) so doc hunks rebase on it | `LINKED SESSIONS`: PR #608 done | rebase at implementation |
+
+## 3. Posture rule used by every guard (DP-24)
+
+`wiring_fails_closed(env)` = `env.application_profile is ApplicationProfile.PRODUCT` **or** `env.execution_mode is ExecutionMode.STRICT` (union: either weaker signal is a hole). Evidence for the union: `build_harness_production_defaults` builds a LAB profile with `ExecutionMode.STRICT` (`presets.py@7960ae7f6c82da60ca9acdc0ceebf63810002a42:209,218-220`), so STRICT-only hosts exist; `HostMeta.product` is PRODUCT+STRICT (`bundles.py@7960ae7f6c82da60ca9acdc0ceebf63810002a42:140-146`). Leaf code that receives no posture (`build_production_capacity_adapters`, `resolve_kubernetes_backend`) is default-deny with an explicit typed CI/LAB opt-in. Exception: the existing user-profile-store admission stays PRODUCT-only because `test_strict_lab_not_product_still_allows_reference` pins it (decision Q1 = A).
+
+## 4. Design per file
+
+Every cited line is read at `H` and is identical at `B` (every file below is `UNCHANGED`).
+
+### 4.1 Capacity (A4-035)
+
+| File | Current code | Change |
+|---|---|---|
+| `intergrax/runtime/capacity/production_adapters.py` | `resolve_kubernetes_backend` returns `InMemoryKubernetesScaler(... {"nexus-host": 2})` with kind `in_memory` when `INTERGRAX_KUBERNETES_URL` is empty (`:80-88`); `CeleryProductionAdapter(worker_count=2)` intent counter always built (`:106`); `apply_production_scale_probe` computes `replicas_ok` only for `in_memory` and returns True (`:152-162`) | New `CapacityBackendPosture` (`PRODUCTION` default, `CI_DETERMINISTIC` explicit). New `CapacityBackendNotConfiguredError(RuntimeError)` whose message starts `kubernetes backend not configured` (text already used by `provisioner.py@7960ae7f6c82da60ca9acdc0ceebf63810002a42:109,125,169`). `resolve_kubernetes_backend(*, posture=PRODUCTION)` and `build_production_capacity_adapters(..., backend_posture=PRODUCTION)`: URL unset + `PRODUCTION` raises; `CI_DETERMINISTIC` keeps today's scaler. Module constant `CELERY_BACKEND_KIND = "intent_only"`. **Do not add fields to `ProductionCapacityAdapters`**: `test_ecp_cpm11_...` and `test_ecp_cpm12_...` pin the exact field set `{governed_executor, kubernetes_backend, kubernetes_observation, celery_observation}` (`test_ecp_control_plane_governance.py@7960ae7f6c82da60ca9acdc0ceebf63810002a42:363-368,380-385`). `apply_production_scale_probe` keeps its signature and meaning (governed path executed) |
+| `intergrax/applications/_shared/production_capacity_wiring.py` | PRODUCT + `production_adapters_enabled` builds adapters and runs the probe; `probe_passed` can be True against the in-memory scaler (`:58-72`); the shape `enabled=True, adapters=None, probe_passed=False` already exists for a missing boundary (`:56-57`) | New `CapacityQualification` enum: `NOT_ENABLED`, `UNQUALIFIED_NO_CLUSTER`, `CI_DETERMINISTIC_ONLY`, `LIVE_KUBERNETES_CELERY_INTENT_ONLY`. There is deliberately no fully-qualified member: no live Celery scaler exists at `H`, and live capacity qualification stays PROD-Q (FRZ-PRD-11 checklist `:261`). `ProductionCapacityWiring` gains defaulted fields `qualification` and `reason` (existing 3-argument constructions stay valid; no test pins its field set: `git grep ProductionCapacityWiring tests` finds none). `resolve_production_capacity_wiring(env, *, governance=None, backend_posture=PRODUCTION)`: boundary checks run first (unchanged, so `test_ecp_cpm14/16` and `test_audit_ideal_30_4_...` keep their `ControlPlaneCompositionError`); then build; `CapacityBackendNotConfiguredError` returns `enabled=True, adapters=None, probe_passed=False, qualification=UNQUALIFIED_NO_CLUSTER` (DP-29: reported unqualified; mutations refused because `wire_application_scaling` then builds `ScalingProvisioner(kubernetes=None, celery=None, GOVERNED_ONLY)` without a governed executor, so `apply` raises `GovernedExecutionRequiredError` before any backend is touched, `scaling_wiring.py@7960ae7f6c82da60ca9acdc0ceebf63810002a42:96-107`, `provisioner.py@7960ae7f6c82da60ca9acdc0ceebf63810002a42:154-159`; a governed path that reaches a missing backend returns False with `kubernetes backend not configured`, `provisioner.py@7960ae7f6c82da60ca9acdc0ceebf63810002a42:167-173`). `probe_passed` is True only when the probe passed **and** `adapters.kubernetes_backend == "live"` |
+| (not in this ticket) `scripts/maintenance/check_production_capacity_adapters.py` | asserts `wiring.adapters is not None and probe_passed` with `product_defaults()` and a supplied boundary (`:36-38`); run by `scripts/gates/check_audit_ideal_gates.py:92`. By reading it is red at `H` independently of FC-2: it calls `resolve_production_capacity_wiring` at `:20` with boundary-less governance on a PRODUCT profile, which raises `ControlPlaneCompositionError` at `production_capacity_wiring.py@7960ae7f6c82da60ca9acdc0ceebf63810002a42:47-55`, and `test_audit_ideal_30_4_production_capacity` pins that raise (UNVERIFIED by execution) | **Not edited here.** Repairing it and adding the new assertions is part 1 of the separate draft ticket `T-IGX-043-E` (gate-meaning change, the Operator's personal ruling). This ticket does not depend on it |
+
+Reachability fact (does not change the fix, bounds the evidence): no non-test, non-script caller of `resolve_production_capacity_wiring` or `build_production_capacity_adapters` exists at `H` (`git grep` over `intergrax applications agents scripts`); `wire_application_scaling` is called by `applications/lab_application/host/factory.py:212` without `production_capacity_adapters`. The defect is therefore a contract/gate defect today, reachable only through callers that supply the adapters.
+
+### 4.2 Queue worker (A4-036, WP2-OBS-01)
+
+| File | Current code | Change |
+|---|---|---|
+| `intergrax/applications/_shared/production_queue_resolver.py` | env `INTERGRAX_QUEUE_BACKEND` → enum, unknown values silently `INLINE` (`:18-30`) | New `UnsupportedQueueBackendError(ValueError)` (reason codes: `BROKER_WIRING_NOT_BUILT`, `EAGER_WORKER_FORBIDDEN_IN_PRODUCTION`). Resolver mapping unchanged (typo handling is out of scope, decision Q9a) |
+| `intergrax/applications/_shared/queue_worker_wiring.py` | `enabled=False` returns inline only when the backend is `INLINE` (`:61-67`), so an env `celery` with `enabled=False` falls through to the eager worker; Kafka/RabbitMQ rewritten to `CELERY` (`:69-71`); worker app always `memory://` + `cache+memory://` + `task_always_eager=True` (`:86-93`); `production_mode` accepted but unused for the decision (`:53`, `:98`) | Kafka/RabbitMQ raise `UnsupportedQueueBackendError(BROKER_WIRING_NOT_BUILT)` in every mode (never rewritten). Celery or `enabled=True` with `production_mode=True` raises `EAGER_WORKER_FORBIDDEN_IN_PRODUCTION` before `create_nexus_celery_worker_app` is reached, including the `enabled=False` + env `celery` fall-through. With `production_mode=False` the eager worker stays and `QueueWorkerWiring` gains a defaulted `worker_kind` (`"inline"` / `"eager_in_process_lab"`). Docstring at `:58` corrected. The call keeps `production_mode=production_mode` |
+
+Source-scan gates on this file that must stay green: it must still contain `production_mode: bool`, `production_mode=production_mode` (`test_gr10_r12_r2_queue_wiring_passes_production_mode_kwarg`), `HostTaskExecutionRunAdapter`, `QueuedHostTaskExecutionAdapter`, `host_execution: HostTaskExecutionPort` and must not contain `task_runner:` (`test_npsc3g_queue_worker_wiring_routes_through_host_execution`), must contain `create_nexus_celery_worker_app` and no `NexusTaskExecutionAdapter`, `QueuedNexusExecutionAdapter`, `execute_root_task` (`test_bg_q1_...`, `test_bg_q12_...`). Callers (`applications/legal_application/host/factory.py@7960ae7f6c82da60ca9acdc0ceebf63810002a42:142-156`, `applications/dispute_sim_application/host/factory.py@7960ae7f6c82da60ca9acdc0ceebf63810002a42:117-135`) derive `production_mode` from STRICT only and are **not edited** (decision Q6 = A: the factories are not extended to PRODUCT-or-STRICT). `include_queue_worker` defaults False in every host settings class found (`legal_application/host/settings.py@7960ae7f6c82da60ca9acdc0ceebf63810002a42:67`, `dispute_sim_application/host/settings.py@7960ae7f6c82da60ca9acdc0ceebf63810002a42:58`).
+
+### 4.3 Memory (A4-030, WP2-OBS-04)
+
+| File | Current code | Change |
+|---|---|---|
+| `intergrax/applications/_shared/memory_provider_admission.py` | `persistent_canonical_user_profile_memory_required` ignores `enable_org_memory` (`:92-98`); `validate_memory_platform_wiring_admission` gates the final user profile store only (`:161-251`) | New pure functions: `organization_profile_store_required(env)`, `validate_organization_and_session_admission(env, *, session_storage, organization_profile_store)`, typed `MemoryOrgSessionAdmissionError(ValueError)` with reason codes `ORG_STORE_UNSUPPORTED_BACKEND`, `ORG_STORE_MISSING`, `ORG_STORE_NOT_DURABLE`, `SESSION_STORAGE_NOT_DURABLE`. Applies under `wiring_fails_closed(env)`. Classification: known-ephemeral classes (`InMemoryOrganizationProfileStore`, `InMemorySessionStorage`) and unclassifiable stores are refused; SQLite stores accepted; `DocumentStoreSessionStorage` (`runtime/nexus/session/document_store_session_storage.py@7960ae7f6c82da60ca9acdc0ceebf63810002a42:19`) accepted only if its backing store passes `document_store_survives_process_restart` (`intergrax/integrations/contracts/document_store_process_durability.py@7960ae7f6c82da60ca9acdc0ceebf63810002a42:21-26`, which returns False for any store that does not implement the restart-durability protocol; whether the session storage exposes its backing store, and whether the Mongo document store implements the protocol, is UNVERIFIED and is settled by reading at implementation; if the session storage exposes no backing store the document-store session storage is refused in guard postures); plugin-provided session storage must declare `MemoryStoreProviderMetadata` durability `DURABLE`. Session-storage refusal applies only when persistent memory is required (decision Q2 = A). Trusted qualification/durability evidence for org/session capabilities is **not** required by this ticket (the evidence registry has no entry kind for them; Tier-0 `intergrax/memory/contracts/` is outside the write set, decision Q8b: local Tier-3 error and enum) — recorded as a limitation, not as closure |
+| `intergrax/applications/_shared/memory_wiring.py` | Mongo branch builds `InMemoryOrganizationProfileStore` when `enable_org_memory` (`:367-373`); no-backend branch builds in-memory session storage and user store with `organization_profile_store=None` (`:389-401`); admission after overlay checks the user store only (`:521-527`); `build_session_manager_from_environment` silently skips the org manager when the store is None (`:589-597`) | Mongo branch + org memory + `wiring_fails_closed` raises `ORG_STORE_UNSUPPORTED_BACKEND` (DP-30: no durable document-store org store exists; only `in_memory_organization_profile_store.py` and `sqlite_organization_profile_store.py` under `intergrax/runtime/organization/stores/`). Call the new validator after the existing user-store admission in `resolve_memory_platform_wiring` and again in `build_session_manager_from_environment` (covers an injected `memory_wiring=`). Org memory enabled with no org store raises `ORG_STORE_MISSING` instead of the silent skip. LAB unchanged |
+
+### 4.4 OTLP export (A4-032 leg a)
+
+`intergrax/applications/_shared/runtime_event_delivery_wiring.py`: in `_create_export_transport`, `ExporterKind.OTLP` with `config is None` returns None today (`:105-112`); `DISTRIBUTED_OTLP` raises `ConfigurationError` (`:126-128`). Change: when `wiring_fails_closed(env)` and no injected `export_sink_factory`, raise `ConfigurationError("OTLP exporter requires a non-empty OTLP endpoint in PRODUCT/STRICT")`; LAB/BALANCED keeps the no-op. Endpoint sources stay env profile field and host settings (`:56-77`). `otlp_event_export_sink.py:27-28` stays silent (runtime layer; the composition guard is the fix). Blast radius: the PRODUCT preset ships `observability_exporter_kind=ExporterKind.OTLP`, `bounded_event_delivery_enabled=True` and an empty endpoint (`bundles.py@7960ae7f6c82da60ca9acdc0ceebf63810002a42:341-343`), so every PRODUCT/STRICT composition without an endpoint now raises (decision Q4 = A). This reaches real Tier-3 hosts: five applications build their environment with `ApplicationEnvironmentProfile.product_defaults(` (`applications/legal_application/host/wiring.py@7960ae7f6c82da60ca9acdc0ceebf63810002a42:51`, `applications/dispute_sim_application/host/environment_profile.py@7960ae7f6c82da60ca9acdc0ceebf63810002a42:17`, `applications/governed_contractor_application/host/environment_profile.py@7960ae7f6c82da60ca9acdc0ceebf63810002a42:18`, `applications/local_workspace_application/host/environment_profile.py@7960ae7f6c82da60ca9acdc0ceebf63810002a42:136`, `applications/research_application/host/environment_profile.py@7960ae7f6c82da60ca9acdc0ceebf63810002a42:61`); only the local-workspace host settings expose `observability_otlp_endpoint` (`local_workspace_application/host/settings.py@7960ae7f6c82da60ca9acdc0ceebf63810002a42:123`). Whether the other four hosts compose bounded delivery with an empty endpoint today is UNVERIFIED (the delivery wiring is reached through `wire_application_environment`, `environment_wiring.py@7960ae7f6c82da60ca9acdc0ceebf63810002a42:502`); the census must settle it before approval of leg (a).
+
+### 4.5 Sandbox (A4-032 leg b, WP2-OBS-02)
+
+`intergrax/applications/_shared/sandbox_wiring.py`: `product_requires_sandbox` (`:25-37`) has no composition caller; only `scripts/maintenance/check_sandbox_policy_wiring.py@7960ae7f6c82da60ca9acdc0ceebf63810002a42:23` and `test_audit_ideal_11_1_sandbox_product_requirement` use it. `wire_sandbox_sessions(env)` returns None without a sandbox profile and otherwise builds `SandboxSessionManager(root=profile.root)`; root None resolves to the relative default `build/sandbox_sessions` (`runtime/sandbox/manager.py@7960ae7f6c82da60ca9acdc0ceebf63810002a42:13-23`). Change: keep `product_requires_sandbox` unchanged (gate-pinned); add `sandbox_required_for_posture(env)` = `wiring_fails_closed(env)` and side-effect tool prefixes enabled; inside `wire_sandbox_sessions` raise `SandboxCompositionError` when required and (profile is None, or neither `profile.root` nor `INTERGRAX_SANDBOX_ROOT` is set). The only composition caller is `environment_wiring.py@7960ae7f6c82da60ca9acdc0ceebf63810002a42:592` and the harness passes the result on (`harness_host_runtime.py@7960ae7f6c82da60ca9acdc0ceebf63810002a42:610`), so no edit of `environment_wiring.py` is needed. Not changed (other owners, residuals R-6): Tier-1 defaults `nexus_loop.py@7960ae7f6c82da60ca9acdc0ceebf63810002a42:316` (FC-1 hotspot) and `uaep/uaep_executor.py@7960ae7f6c82da60ca9acdc0ceebf63810002a42:204`, `workspace/exec_ctx_isolation.py@7960ae7f6c82da60ca9acdc0ceebf63810002a42:32`; declared exceptions EX-D4-04 and EX-G-04 (`PDC_EXCEPTION_REGISTER.md@7960ae7f6c82da60ca9acdc0ceebf63810002a42:27,132`) are untouched. The sandbox gate `scripts/maintenance/check_sandbox_policy_wiring.py` (run by `scripts/gates/check_audit_ideal_gates.py:39`) builds `product_defaults(tool_ids=["sandbox.exec", "workspace.write_file"])` with `SandboxProfile(enable_exec_tool=True)` and no root and expects `wire_sandbox_sessions` to return a manager (`:20-30`); with the guard that call raises, so the script needs a changed positive case. That is the only script change caused by this ticket; the edit is part 2 of `T-IGX-043-E`, not of this ticket, and the dependency below applies to it alone.
+
+### 4.6 Shared helper
+
+New `intergrax/applications/_shared/wiring_posture.py` with `wiring_fails_closed(env)` only. Ownership and order: FC-2 owns this file; it merges first (merge order B, A, C, F confirmed, D at any time; recorded in section 2); FC-1 and FC-3 import `wiring_fails_closed` from it and define no equivalent. Classification of the new path: the EBH-7/B6-F10 C4 classifier matches by longest prefix and `intergrax/applications/` is a rule (`COMPOSITION_CONFIGURATION`, `tests/qualification/ebh_7/_ebh7_f10_canonical_inputs.py@7960ae7f6c82da60ca9acdc0ceebf63810002a42:272-276`; `classify_change` at `tests/qualification/ebh_7/_ebh7_f10_ecap_normative_matrix.py@7960ae7f6c82da60ca9acdc0ceebf63810002a42:654-660`), so a new file there is not `UNKNOWN` and cannot raise `C4-UNCLASSIFIED`; the EBH-6 layer evidence globs the whole directory (`tests/qualification/ebh_6/_layer_evidence.py@7960ae7f6c82da60ca9acdc0ceebf63810002a42:262,271`). The only per-file inventory found that names sibling `_shared` modules is `IIAC_GLOBAL_AUTHORITY_IMPACT_MATRIX.json`; a new file is absent from it, which the wave-wide RB-2 rebind covers (effect UNVERIFIED). Why a new file and not an existing module: the alternative home, `control_plane_composition.py`, is named for the control plane and would be imported by memory, observability and queue code unrelated to it, and FC-3 would import a control-plane module for a posture predicate; the new file adds one declared product path (ACT-N11 is breached by the wave in any case) and no inventory exposure beyond the IIAC matrix, so it is the smaller risk. A `git grep` for per-file lists of `_shared` modules in the PDC closed-world inventory, the seam ledger and the COMPAT-X shim candidates is repeated at implementation step 0 (none was found to list them individually at `H`).
+
+## 5. Exact write set
+
+Product paths (ACT-N11 / IIAC sensitive; all under `intergrax/`; 9 files, 8 modified, 1 new):
+
+```text
+intergrax/runtime/capacity/production_adapters.py
+intergrax/applications/_shared/production_capacity_wiring.py
+intergrax/applications/_shared/production_queue_resolver.py
+intergrax/applications/_shared/queue_worker_wiring.py
+intergrax/applications/_shared/memory_provider_admission.py
+intergrax/applications/_shared/memory_wiring.py
+intergrax/applications/_shared/runtime_event_delivery_wiring.py
+intergrax/applications/_shared/sandbox_wiring.py
+intergrax/applications/_shared/wiring_posture.py   (new)
+```
+
+Scripts: none. The two gate scripts `scripts/maintenance/check_production_capacity_adapters.py` and `check_sandbox_policy_wiring.py` are edited only by the separate draft ticket `T-IGX-043-E` (gate-meaning change, the Operator's personal ruling; master-plan node `PT-G01` owns these gates). Attribution: the capacity script is red at `H` independently of this ticket (section 4.1), so this ticket creates no dependency on part 1 of E; the sandbox script is made red by this ticket's sandbox guard, so the product part of this ticket assumes that part 2 of E (the sandbox gate edit) lands in the same wave. The Operator can rule the two parts of E separately. Fallback if part 2 of E is ruled out or delayed: this ticket stays approvable and its own contract (V1..V7) does not run the scripts; the sandbox script then stays red in `scripts/gates/check_audit_ideal_gates.py` at the wave head, the owner of that red gate is the owner of `PT-G01` together with the Operator, it is listed as a known residual in the wave audit, and this ticket's closure statements do not claim that gate green. Whether `check_audit_ideal_gates.py` runs in CI, and whether the two scripts are IIAC-material through the impact matrix, are UNVERIFIED.
+
+Tests (new, 6 files; 29 tests): `tests/unit/runtime/capacity/test_fc2_capacity_fail_closed.py`, `tests/unit/applications/test_fc2_queue_worker_fail_closed.py`, `tests/unit/applications/test_fc2_memory_org_session_admission.py`, `tests/unit/applications/test_fc2_otlp_composition_fail_closed.py`, `tests/unit/applications/test_fc2_sandbox_composition_fail_closed.py`, `tests/unit/applications/architecture/test_fc2_capacity_ci_posture_not_used_by_product_code.py`.
+
+Tests (existing, edit only to add the explicit typed opt-in or to replace a test that pins a defect): `tests/unit/runtime/capacity/test_ecp_depth_gate.py` (`test_resolve_kubernetes_backend_in_memory_by_default` is replaced by CAP-4); `tests/unit/runtime/capacity/test_ecp_control_plane_governance.py` (19 call sites of `build_production_capacity_adapters(` / `resolve_production_capacity_wiring(` at lines 351, 372, 423, 438, 451, 464, 483, 498, 591, 626, 1574, 1587, 1601, 1665, 1713, 1736, 1761, 1829, 1847; up to 15 reach the backend and need `CI_DETERMINISTIC`, the four that raise on the missing boundary first do not); further files found by the census step (known candidates, test files that use both `wire_application_environment(` and `product_defaults(`: `tests/unit/applications/architecture/test_diag_platform_adoption_gate.py`, `tests/unit/applications/test_environment_llm_wiring.py`, `tests/unit/applications/test_memory_plugin_discovery_unified.py`, `tests/unit/applications/test_package_wiring.py`, `tests/unit/applications/test_specialized_memory_composition.py`; plus the Tier-3 host test suites under `applications/*/tests/` that build a PRODUCT host, size UNVERIFIED). The census may only add opt-ins; a test that needs a changed assertion is listed in the PR body.
+
+Docs (ride the ticket; rebase on the merged DB-F2 PR): `docs/project/architecture/ELASTIC_CAPACITY_AND_SCALING.md` (rows `:175-176`, `:179`, `:181`, `:435`; keep the string `maintainers/plans/ELASTIC_CAPACITY_AND_SCALING.md` required by `test_audit_ideal_depth_gate.py@7960ae7f6c82da60ca9acdc0ceebf63810002a42:144`), `docs/project/architecture/BACKGROUND_TASKS.md` (`:211` row plus the `INTERGRAX_QUEUE_BACKEND` description), `docs/project/architecture/MEMORY_ARCHITECTURE.md` (after `:534`: org-store and session-storage admission matrix), `docs/project/technical/guides/PLATFORM_CONFIGURATION.md` (`INTERGRAX_QUEUE_BACKEND`, `INTERGRAX_KUBERNETES_URL`; both absent at `H`; keep `tests/unit/docs/test_platform_configuration_reference.py` green; overlap with the DP-25 guide rewrite; decision Q9b: this ticket adds only the two missing variable entries and the reconciling lines). Ticket files: `governance/tickets/T-IGX-043-B.md`, `governance/tickets/plans/PLAN_T-IGX-043-B.md`.
+
+Forbidden for this ticket: the roadmap and the FRZ checklist (the DP-30 exception texts are delivered as input to `PT-D09`/`PT-D10`/EDER, §10), `IIAC_*`, `governance/` other than the two ticket files, `.github/`, `pyproject.toml`, `uv.lock`, `intergrax/runtime/nexus/**` and every other FC-1/FC-3/FC-4 path, `intergrax/memory/contracts/**`, `intergrax/applications/contracts/environment_profile/**` (presets), `applications/**` host factories, `intergrax/runtime/observability/**`, `llm_guardrail/**`, `tests/qualification/config_x/**`.
+
+## 6. Negative tests (21 refusal/unqualified tests; 7 positive controls; 1 source-scan gate)
+
+Name | configuration it exercises | expected result. `PROD` = `ApplicationEnvironmentProfile.product_defaults(...)`.
+
+| ID | Test (file in §5) | Configuration | Expected |
+|---|---|---|---|
+| CAP-1 | `test_product_wiring_without_cluster_is_unqualified_and_builds_no_adapters` | PROD + supplied boundary + `INTERGRAX_KUBERNETES_URL` unset | `enabled True`, `adapters None`, `probe_passed False`, `qualification UNQUALIFIED_NO_CLUSTER`; evaluator recorded zero calls |
+| CAP-2 | `test_unqualified_capacity_refuses_scale_mutation_through_application_scaling` | CAP-1 wiring into `wire_application_scaling` | scale attempt refused (`GovernedExecutionRequiredError`); no replica state created, no backend object exists |
+| CAP-3 | `test_build_adapters_default_posture_raises_without_url` | `build_production_capacity_adapters(...)` default posture, URL unset | `CapacityBackendNotConfiguredError` |
+| CAP-4 | `test_resolve_kubernetes_backend_default_posture_never_returns_in_memory` | default posture, URL unset | raises (replaces the test that pins `kind == "in_memory"`) |
+| CAP-5 | `test_in_memory_backend_wiring_never_reports_probe_passed` | PROD + boundary + `CI_DETERMINISTIC` | `probe_passed False`, `CI_DETERMINISTIC_ONLY` |
+| CAP-6 | `test_celery_intent_only_backend_is_reported_not_counted_as_live` | any built adapters | constant `intent_only` reported; no member of `CapacityQualification` claims live Celery |
+| CAP-7 | `test_live_kubernetes_with_intent_only_celery_is_not_fully_qualified` | PROD + monkeypatched live backend (as `cpm53`) | `LIVE_KUBERNETES_CELERY_INTENT_ONLY`, `probe_passed` only from the live probe |
+| QUE-1 | `test_production_mode_with_queue_worker_enabled_raises` | `enabled=True, production_mode=True`, valid kv and evidence stubs, spy on `create_nexus_celery_worker_app` | `UnsupportedQueueBackendError(EAGER_WORKER_FORBIDDEN_IN_PRODUCTION)`; spy not called |
+| QUE-2 | `test_kafka_never_rewritten_to_celery` | `queue_backend=KAFKA`, both modes | raises `BROKER_WIRING_NOT_BUILT` |
+| QUE-3 | `test_rabbitmq_never_rewritten_to_celery` | `queue_backend=RABBITMQ`, both modes | raises `BROKER_WIRING_NOT_BUILT` |
+| QUE-4 | `test_enabled_false_with_celery_backend_in_production_mode_raises` | `enabled=False`, env `celery`, `production_mode=True` | raises (closes the fall-through at `:61-71`) |
+| QUE-5 (P) | `test_non_production_eager_worker_is_labelled` | `production_mode=False`, backend `CELERY` | worker built; `worker_kind == "eager_in_process_lab"` |
+| MEM-1 | `test_product_org_memory_on_mongo_raises_unsupported_org_store` | PROD + Mongo document store + `enable_org_memory` | `ORG_STORE_UNSUPPORTED_BACKEND` |
+| MEM-2 | `test_product_org_memory_without_backend_raises_instead_of_silent_skip` | PROD + no backend + `enable_org_memory` (decision Q7 = A) | `ORG_STORE_MISSING` |
+| MEM-3 | `test_product_durable_user_plugin_with_in_memory_session_storage_raises` | PROD + trusted durable user plugin + no session plugin + no backend | `SESSION_STORAGE_NOT_DURABLE` |
+| MEM-4 | `test_admission_classifies_in_memory_org_store_as_not_durable` | direct call with `InMemoryOrganizationProfileStore` | `ORG_STORE_NOT_DURABLE` |
+| MEM-5 | `test_strict_lab_org_memory_with_in_memory_org_store_raises` | LAB + STRICT + `enable_org_memory` + no backend (decision Q1 = A: union for the new guards) | refused |
+| MEM-6 (P) | `test_lab_balanced_keeps_in_memory_org_store` | LAB + BALANCED | builds, unchanged |
+| MEM-7 (P) | `test_product_without_persistent_memory_flags_keeps_in_memory_baseline` | PROD + all memory flags False | builds (pins decision Q2 = A) |
+| OBS-1 | `test_product_otlp_without_endpoint_raises_configuration_error` | PROD, bounded delivery, `ExporterKind.OTLP`, endpoint empty, no settings | `ConfigurationError`; no `OtlpEventExportSink` built |
+| OBS-2 | `test_strict_lab_otlp_without_endpoint_raises` | LAB + STRICT, same exporter | `ConfigurationError` |
+| OBS-3 (P) | `test_settings_endpoint_satisfies_otlp_requirement` | PROD + settings object with endpoint | builds |
+| OBS-4 (P) | `test_lab_balanced_otlp_without_endpoint_keeps_noop` | LAB + BALANCED (as `test_ebh5_behavioral_otlp_transport_negative_otlp_without_endpoint_fail_closed`) | transport None, unchanged |
+| SBX-1 | `test_product_side_effect_tools_without_sandbox_profile_raises` | PROD with `tool_ids=["sandbox.exec"]`, `sandbox=None` | `SandboxCompositionError` |
+| SBX-2 | `test_product_side_effect_tools_without_explicit_root_raises` | PROD + side-effect tools, `SandboxProfile(root=None)`, `INTERGRAX_SANDBOX_ROOT` unset | `SandboxCompositionError`; no directory created |
+| SBX-3 (P) | `test_product_side_effect_tools_with_explicit_root_builds_manager` | PROD + `root=tmp_path` | manager with that root |
+| SBX-4 (P) | `test_product_without_side_effect_tools_does_not_require_sandbox` | PROD, no tools | unchanged |
+| SBX-5 | `test_strict_lab_side_effect_tools_require_explicit_root` | LAB + STRICT + side-effect tools, root None | raises (decision Q5 = A: union posture) |
+| GATE-1 | `test_no_product_module_uses_capacity_ci_posture` | source scan of `intergrax/ agents/ applications/` | `CI_DETERMINISTIC` appears only in the defining module and its documented definitions |
+
+Totals: 29 new tests (21 negative, 7 positive controls, 1 gate). Exact assertions are fixed at implementation; the table fixes what must be refused.
+
+## 7. Regression scope (55 node IDs, each verified by definition search at `H`, see `FACT_CHECK.md` and `REGRESSION_NODES_VERIFIED.txt`)
+
+The 55 nodes, written out. Notes: the first node is replaced by CAP-4; the legal and dispute_sim queue nodes monkeypatch `wire_optional_queue_execution`, so they cannot see the change and the CAP/QUE tests carry the proof; `test_ebh5_behavioral_otlp_transport_negative_otlp_without_endpoint_fail_closed` pins the LAB no-op despite its name and must stay green; `test_product_persistent_memory_disabled_allows_in_memory_baseline` and `test_strict_lab_not_product_still_allows_reference` pin the decisions Q2 = A and Q1 = A.
+
+```text
+tests/unit/runtime/capacity/test_ecp_depth_gate.py::test_resolve_kubernetes_backend_in_memory_by_default
+tests/unit/runtime/capacity/test_ecp_control_plane_governance.py::test_ecp_cpm11_production_probe_uses_governed_facade
+tests/unit/runtime/capacity/test_ecp_control_plane_governance.py::test_ecp_cpm12_production_adapters_expose_governed_executor_only
+tests/unit/runtime/capacity/test_ecp_control_plane_governance.py::test_ecp_cpm14_production_missing_policy_fails_closed
+tests/unit/runtime/capacity/test_ecp_control_plane_governance.py::test_ecp_cpm15_production_supplied_deny_policy_zero_provider_effect
+tests/unit/runtime/capacity/test_ecp_control_plane_governance.py::test_ecp_cpm16_product_without_authority_fails_at_wiring
+tests/unit/runtime/capacity/test_ecp_control_plane_governance.py::test_ecp_gr12_r2_resolve_production_capacity_wiring_consumes_supplied_boundary
+tests/unit/runtime/capacity/test_ecp_control_plane_governance.py::test_ecp_gr12_r2_production_wiring_passes_supplied_boundary_to_adapter_builder
+tests/unit/runtime/capacity/test_ecp_control_plane_governance.py::test_ecp_gr12_r2_external_evaluator_receives_composition_probe_mutations
+tests/unit/runtime/capacity/test_ecp_control_plane_governance.py::test_ecp_cpm17_production_adapters_block_raw_exact_target_mutation
+tests/unit/runtime/capacity/test_ecp_control_plane_governance.py::test_ecp_cpm47_production_adapters_do_not_expose_k8s_mutation_surface
+tests/unit/runtime/capacity/test_ecp_control_plane_governance.py::test_ecp_cpm48_production_adapters_do_not_expose_celery_mutation_surface
+tests/unit/runtime/capacity/test_ecp_control_plane_governance.py::test_ecp_cpm49_production_probe_verifies_without_raw_provider_access
+tests/unit/runtime/capacity/test_ecp_control_plane_governance.py::test_ecp_cpm52_missing_governance_fail_closed_after_composition_refactor
+tests/unit/runtime/capacity/test_ecp_control_plane_governance.py::test_ecp_cpm53_live_kubernetes_backend_only_behind_governed_write_path
+tests/unit/runtime/capacity/test_ecp_control_plane_governance.py::test_ecp_cpm54_governed_executor_public_api_does_not_expose_scaling_provisioner
+tests/qualification/governance/gr12/test_gr12_a2_mandatory_cla04_composition.py::test_gr12_a2_ecp_product_without_authority_fails_at_wiring
+tests/qualification/governance/gr12/test_gr12_a2_mandatory_cla04_composition.py::test_gr12_a2_ecp_enabled_without_boundary_fails_at_wiring
+tests/unit/runtime/architecture/test_audit_ideal_depth_gate.py::test_audit_ideal_30_4_production_capacity
+tests/unit/runtime/architecture/test_audit_ideal_depth_gate.py::test_audit_ideal_9_1_production_queue_backend
+tests/unit/runtime/architecture/test_audit_ideal_depth_gate.py::test_audit_ideal_11_1_sandbox_product_requirement
+applications/legal_application/tests/host/test_legal_queue_worker_wiring.py::test_legal_backend_builds_with_queue_worker_disabled
+applications/legal_application/tests/host/test_legal_queue_worker_wiring.py::test_legal_backend_builds_with_queue_worker_and_platform_storage
+applications/legal_application/tests/host/test_legal_queue_worker_wiring.py::test_legal_backend_queue_worker_fails_closed_without_platform_storage
+applications/dispute_sim_application/tests/host/test_dispute_sim_queue_worker_wiring.py::test_dispute_sim_backend_builds_with_queue_worker_disabled
+applications/dispute_sim_application/tests/host/test_dispute_sim_queue_worker_wiring.py::test_dispute_sim_backend_builds_with_queue_worker_and_platform_storage
+applications/dispute_sim_application/tests/host/test_dispute_sim_queue_worker_wiring.py::test_dispute_sim_backend_queue_worker_fails_closed_without_platform_storage
+tests/qualification/bg_01/test_bg_01_gates.py::test_bg_q1_production_background_execution_surfaces_use_host_port
+tests/qualification/bg_01/test_bg_01_gates.py::test_bg_q12_no_legacy_alternate_execution_in_composition
+tests/unit/applications/architecture/test_npsc3g_application_runtime_convergence_gate.py::test_npsc3g_queue_worker_wiring_routes_through_host_execution
+tests/unit/runtime/architecture/test_gr10_r12_r2_worker_continuation_durability_mode.py::test_gr10_r12_r2_queue_wiring_passes_production_mode_kwarg
+tests/unit/runtime/architecture/test_gr10_r12_r2_worker_continuation_durability_mode.py::test_gr10_r12_r2_celery_root_requires_production_mode
+tests/unit/applications/test_memory_wiring.py::test_resolve_memory_platform_wiring_uses_sqlite_when_relational_store_sqlite
+tests/unit/applications/test_memory_wiring.py::test_resolve_memory_platform_wiring_falls_back_to_in_memory_without_sqlite
+tests/unit/applications/test_memory_wiring.py::test_resolve_memory_platform_wiring_uses_mongodb_document_store_for_user_ltm
+tests/unit/applications/test_memory_wiring.py::test_build_session_manager_from_environment_respects_memory_profile_flags
+tests/unit/applications/test_memory_wiring.py::test_build_session_manager_skips_managers_when_memory_flags_disabled
+tests/unit/applications/test_mem_audit5a_production_provider_admission.py::test_gap_4_01_product_postgres_persistent_memory_fails_closed
+tests/unit/applications/test_mem_audit5a_production_provider_admission.py::test_product_persistent_memory_disabled_allows_in_memory_baseline
+tests/unit/applications/test_mem_audit5a_production_provider_admission.py::test_lab_persistent_memory_allows_in_memory
+tests/unit/applications/test_mem_audit5a_production_provider_admission.py::test_strict_lab_not_product_still_allows_reference
+tests/unit/applications/test_mem_audit5a_production_provider_admission.py::test_product_sqlite_with_trusted_evidence_passes
+tests/unit/applications/test_mem_audit5a_production_provider_admission.py::test_direct_custom_wiring_cannot_bypass_admission
+tests/unit/applications/test_mem_final_audit_5g_task_org_durable_restart_e2e.py::test_lab_organization_memory_composition_survives_rebuild
+tests/qualification/ebh_5/test_ebh_5_behavioral_proofs.py::test_ebh5_behavioral_otlp_transport_via_sanctioned_composition_wiring
+tests/qualification/ebh_5/test_ebh_5_behavioral_proofs.py::test_ebh5_behavioral_otlp_transport_negative_invalid_distributed_configuration
+tests/qualification/ebh_5/test_ebh_5_behavioral_proofs.py::test_ebh5_behavioral_otlp_transport_negative_otlp_without_endpoint_fail_closed
+tests/unit/runtime/observability/test_enterprise_scale_resilience_w5_h_final_qualification.py::test_production_slo_regression_not_distributed_otlp
+tests/unit/runtime/observability/test_enterprise_scale_resilience_w5_h_final_qualification.py::test_enterprise_profile_wires_collector_transport
+tests/unit/runtime/observability/test_enterprise_scale_resilience_w5_g_profile_activation.py::test_invalid_distributed_configuration_raises_configuration_error
+tests/unit/runtime/observability/test_enterprise_scale_resilience_w5_g_profile_activation.py::test_enterprise_profile_selects_distributed_otlp
+tests/unit/runtime/observability/exporters/test_otlp_transport_adapter.py::test_wiring_injects_otlp_transport_when_endpoint_configured
+tests/unit/applications/test_reference_capability_bundle.py::test_bundle_profile_survives_sandbox_and_codecraft_side_effect_extensions
+applications/local_workspace_application/tests/host/test_local_workspace_environment_profile.py::test_lkw_skill_tool_requirements_satisfied_by_product_tool_profile
+applications/local_workspace_application/tests/host/test_local_workspace_environment_profile.py::test_lkw_skill_tool_requirements_fail_closed_when_required_tool_removed
+```
+
+Integration suites `tests/integration/queueing/providers/*` and `tests/conformance/runtime/durability/*` need live infrastructure or are outside the default budget: not part of the default contract; listed as a residual (§12).
+
+## 8. Test commands (one process at a time; none run when this plan was drafted)
+
+Take the repository test lock (`mkdir D:/Projekty/_wt/_locks/pytest.lock`), run V1..V7 strictly in sequence, release the lock after each, log under `.tmp/session/fc2/`.
+
+1. V1 capacity: `uv run pytest tests/unit/runtime/capacity/test_fc2_capacity_fail_closed.py tests/unit/runtime/capacity/test_ecp_depth_gate.py tests/unit/runtime/capacity/test_ecp_control_plane_governance.py tests/qualification/governance/gr12/test_gr12_a2_mandatory_cla04_composition.py -p no:cacheprovider`
+2. V2 queue: `uv run pytest tests/unit/applications/test_fc2_queue_worker_fail_closed.py tests/unit/runtime/architecture/test_gr10_r12_r2_worker_continuation_durability_mode.py tests/unit/applications/architecture/test_npsc3g_application_runtime_convergence_gate.py applications/legal_application/tests/host/test_legal_queue_worker_wiring.py applications/dispute_sim_application/tests/host/test_dispute_sim_queue_worker_wiring.py "tests/qualification/bg_01/test_bg_01_gates.py::test_bg_q1_production_background_execution_surfaces_use_host_port" "tests/qualification/bg_01/test_bg_01_gates.py::test_bg_q12_no_legacy_alternate_execution_in_composition" -p no:cacheprovider`
+3. V3 memory: `uv run pytest tests/unit/applications/test_fc2_memory_org_session_admission.py tests/unit/applications/test_memory_wiring.py tests/unit/applications/test_mem_audit5a_production_provider_admission.py tests/unit/applications/test_mem_final_audit_5g_task_org_durable_restart_e2e.py -p no:cacheprovider`
+4. V4 observability and sandbox: `uv run pytest tests/unit/applications/test_fc2_otlp_composition_fail_closed.py tests/unit/applications/test_fc2_sandbox_composition_fail_closed.py tests/unit/applications/architecture/test_fc2_capacity_ci_posture_not_used_by_product_code.py tests/unit/runtime/observability/test_enterprise_scale_resilience_w5_g_profile_activation.py tests/unit/runtime/observability/test_enterprise_scale_resilience_w5_h_final_qualification.py tests/unit/runtime/observability/exporters/test_otlp_transport_adapter.py tests/unit/applications/test_reference_capability_bundle.py applications/local_workspace_application/tests/host/test_local_workspace_environment_profile.py "tests/unit/runtime/architecture/test_audit_ideal_depth_gate.py" "tests/qualification/ebh_5/test_ebh_5_behavioral_proofs.py" -p no:cacheprovider`
+5. V5 census-driven files edited in step 8 (list recorded in the PR body), one command.
+6. V6 docs: `uv run pytest tests/unit/docs/test_platform_configuration_reference.py -p no:cacheprovider`, then `uv run python scripts/docs/check_docs_domain_pairs.py` (each its own process). The two gate scripts are run by `T-IGX-043-E`, not here.
+7. V7 ticket quality: `uv run python -m scripts.governance.igx_gov ticket`.
+
+No broad or diagnostic suite, no `uv` fan-out. COMPAT-X, STATE-X, TENANT-X and EBH-7 gates are not run by this ticket; they belong to `PT-Q04`/`PT-V04` (R-7).
+
+### 8a. Census command (bounded; run at step 7 and again on the integrated wave tree)
+
+Step 1, static and read-only (no test run): the candidate list is the intersection of two `git grep -l` lists over `tests` and `applications`.
+Set P (PRODUCT/STRICT environments): `git grep -l -e "product_defaults(" -e "ApplicationProfile.PRODUCT" -e "ExecutionMode.STRICT" -e "build_harness_production_defaults" -- tests applications`.
+Set C (code that reaches an FC-2 guard): `git grep -l -e "wire_application_environment(" -e "resolve_application_runtime_event_delivery_wiring(" -e "resolve_memory_platform_wiring(" -e "build_session_manager_from_environment(" -e "wire_sandbox_sessions(" -e "wire_optional_queue_execution(" -e "build_production_capacity_adapters(" -e "resolve_production_capacity_wiring(" -- tests applications`.
+Candidate list = P intersect C, written to `.tmp/session/fc2/census_<head>.txt` and pasted into the PR body. At the drafting head the narrower intersection of `product_defaults(` with `wire_application_environment(` alone had 7 files; the full list is not computed yet.
+Step 2, one bounded run (authorisation AR-FC2-05, under the shared lock): `uv run pytest <exactly the candidate files> -p no:cacheprovider`, one process. Bound: if the list has more than 40 files, STOP and ask; no directory arguments, no `-x`, no `--maxfail`. A file that fails only because a guard now refuses its PRODUCT/STRICT environment gets an explicit typed opt-in; any other failure is reported, not fixed.
+
+## 9. Order of work inside the ticket
+
+0. Preflight: restate read scope, edit scope, tests (token-budget rule); re-verify head and the `git grep` facts; confirm that FC-3 and FC-1 import `wiring_posture.py` and define no helper of their own. Stop and ask if the census (step 7) exceeds the files listed in §5.
+1. `wiring_posture.py` + a 3-case unit test inside the OBS file.
+2. Capacity (§4.1) with CAP tests, then the existing-test opt-ins.
+3. Queue (§4.2) with QUE tests.
+4. Memory (§4.3) with MEM tests.
+5. OTLP (§4.4) with OBS tests.
+6. Sandbox (§4.5) with SBX tests.
+7. Census of existing tests that compose PRODUCT/STRICT environments, with the command of section 8a: add explicit opt-ins only. Because the FC-2, FC-3 and FC-4 guards (OTLP endpoint, sandbox root, org store; embedding, vector store, notification, verifier, guardrail; pin durability) meet the same PRODUCT/STRICT test environments, the census is repeated once on the integrated wave tree (FC-1..FC-4 merged) before the independent audit; the ticket that merges first carries the opt-ins for the files it breaks and later tickets rebase on them.
+8. Docs hunks (§5).
+9. GATE-1, then V1..V7, then ticket status to `quality_gate` by the implementer; never to `ready_for_audit` PASS.
+
+## 10. ACT-N11 / IIAC consequence and ARCH-FREEZE impact
+
+- All 9 product files sit under `intergrax/` and match `PRODUCT_PATH_PREFIXES = ("intergrax/", "agents/", "applications/")` (`scripts/governance/iiac_common.py@7960ae7f6c82da60ca9acdc0ceebf63810002a42:22`). Any merge breaks the IIAC activation until the single RB-2 re-pin (ACT-N11); this ticket therefore merges only inside the integrated wave train `RW` (DP-11) and is never merged alone. A revert does not restore the activation; the rebind must be redone.
+- New tests and docs are outside the EBH-7 identity allowlist and must be in place before the final EBH-7 pin (master plan note for tests and docs).
+- Exception-record text for the freeze documents (DP-30, an explicit Operator yes): "A STRICT/PRODUCT host cannot run a queue worker (the Tier-3 wiring has no real-broker wiring; Kafka/RabbitMQ are unsupported) and cannot enable organization memory on a document-store backend (no durable store exists) until the corresponding features are built; both are separate planned work." Delivered as input to `PT-D09`/`PT-D10` and EDER rows; this ticket does not edit those Operator-only files.
+
+| Finding | Class (WP-2) | What this ticket does for ARCH-FREEZE | What closes it (not claimed here) |
+|---|---|---|---|
+| A4-035 | BLOCKS | Removes silent in-memory success from capacity wiring; relates to FRZ-REL-07/FRZ-REL-10 (checklist `:234,237`, OPEN) | negative tests green + independent audit at the exact wave SHA + ELASTIC doc reconciliation; FRZ-PRD-11 (`:261`) architecture part is to be handled separately under DP-34; live capacity qualification stays PROD-Q |
+| A4-036 | BLOCKS | Removes silent eager substitution; relates to FRZ-REL-07/08/09 (`:234-236`) | tests + audit + env var documented + the DP-30 exception stated in the freeze documents; the closure statement names the residual: a PRODUCT-profile host in BALANCED mode with `include_queue_worker=True` (default False) is not covered, because the two Tier-3 factories derive `production_mode` from STRICT only (decision Q6 = A). Owner of that exception: the Operator (accepted Q6 = A); the EDER row and its `owner_ref` are assigned by the Operator under DP-47/DP-48 and are not yet assigned |
+| A4-030 | CONDITIONS | Closes the unadmitted org/session stores; FRZ-STA-06 (`:189`) is PASS and is not touched | tests + audit + documented supported backends (DP-30 exception for org-on-Mongo); the closure statement names the residual: the user-profile-store admission stays PRODUCT-only, so a LAB+STRICT harness host may keep an in-memory user store (decision Q1 = A, pinned by `test_strict_lab_not_product_still_allows_reference`). Owner of that exception: the Operator (accepted Q1 = A); the EDER row and its `owner_ref` are assigned by the Operator under DP-47/DP-48 and are not yet assigned |
+| A4-032 (a, b) | CONDITIONS | Composition guards; FRZ-OBS-06 (`:137`) and FRZ-SEC-06 (`:223`, provider qualification stays PROD-Q) are not closed by a guard | tests + audit |
+
+## 11. Independent audit design (separate non-implementing session at the exact wave head SHA)
+
+The auditor is neither the implementer nor a reviewer of FC-2 (C3, DP-03, PT-Q02), works in a scratch worktree at the audited SHA, and replays: (1) mutation check: for each of the 21 negative tests, remove the corresponding guard hunk in the scratch tree and show the test fails (red-first), then restore; (2) fallback census over the 9 product files for `InMemory`, `memory://`, `task_always_eager`, `SandboxSessionManager(`, `return None` in selectors, each remaining hit mapped to a LAB/CI opt-in or a listed residual; (3) ACT-N11 reconciliation: `git diff --name-only <RW base> <RW SHA>` intersected with the three prefixes equals the declared 9 files plus the other tickets' files; (4) regression V1..V7 at that SHA; (5) docs claim check: every sentence added to the four docs maps to code; (6) opt-in census: no product module passes `CI_DETERMINISTIC`; (7) verify no text claims closure. The verdict vocabulary and publication are the auditor's and the Operator's; this plan asserts none.
+
+## 12. Risks
+
+| ID | Risk | Mitigation |
+|---|---|---|
+| R-1 | PRODUCT preset has OTLP kind with empty endpoint (`bundles.py@7960ae7f6c82da60ca9acdc0ceebf63810002a42:341-343`): every PRODUCT/STRICT composition without an endpoint raises. Five Tier-3 hosts build PRODUCT environments (§4.4); 88 test/app files use `product_defaults(`, 7 of them also call `wire_application_environment(` | decision Q4 = A; census step; tests supply an endpoint or a LAB environment; stop and ask if any host or the census exceeds §5 |
+| R-2 | LAB+STRICT harness production hosts (`presets.py@7960ae7f6c82da60ca9acdc0ceebf63810002a42:209-255`) and the five PRODUCT hosts now hit the union guards (sandbox root when side-effect tools are enabled, org store, OTLP); Tier-3 host settings or profiles may then need explicit values (for example a sandbox root for a host that enables `workspace.*` tools; which hosts do is UNVERIFIED) | census; if any Tier-3 host needs a settings or profile edit, stop and ask (those files are outside §5) |
+| R-3 | `test_strict_lab_not_product_still_allows_reference` pins the LAB+STRICT permissiveness DP-24 would remove for the user store | decision Q1 = A: user-store admission unchanged |
+| R-4 | Source-scan gates on `queue_worker_wiring.py` (§4.2) | keep the listed strings; run V2 |
+| R-5 | FC-1/FC-3 define their own posture helper instead of importing `wiring_posture.py` | section 4.6: FC-2 owns the file and merges first; FC-1 and FC-3 import it; checked at step 0 |
+| R-6 | Residuals outside the write set: Tier-1 sandbox defaults, silent `OtlpEventExportSink` no-op, callers deriving `production_mode` from STRICT only, queue-backend typo resolves to INLINE | recorded (decisions Q6 = A, Q9a); not closed by this ticket |
+| R-7 | COMPAT-X delta fixtures can be line- or surface-sensitive (precedent T-IGX-041-O); new public names | `PT-Q04` classification; bounded gate run authorised separately |
+| R-8 | The sandbox guard of this ticket turns `check_sandbox_policy_wiring.py` red unless part 2 of `T-IGX-043-E` lands in the same wave (`check_audit_ideal_gates.py` runs it); the capacity gate script is red at `H` independently of this ticket | part 2 of `T-IGX-043-E` is drafted; the Operator's personal ruling on it is a prerequisite of the wave, not of this ticket's approval; fallback in section 5 (this ticket stays approvable, the sandbox gate stays red and is owned by the `PT-G01` owner with the Operator) |
+| R-9 | The composition-time probe scales a live `nexus-host` deployment by +1 when a cluster URL is set (`production_adapters.py@7960ae7f6c82da60ca9acdc0ceebf63810002a42:125-149`) | observation, not changed here; separate decision |
+| R-10 | Docs: docs-pair gate, config-reference test, DB-F2 overlap | V6; rebase on DB-F2; decision Q9b |
+
+## 13. Rollback
+
+Single revert of the FC-2 commits (or its merge inside the wave integration branch). Behaviour rollback is not configuration: the typed opt-ins are not a rollback switch for PRODUCT. After a revert the IIAC activation must be rebound (ACT-N11); revert alone does not restore it. No data migration, no setting change.
+
+## 14. Effort (S/M/L)
+
+Posture helper S; capacity M; queue M; memory M-L (admission design and classification); OTLP S; sandbox S; existing-test sweep M-L (census-bound, UNVERIFIED size); docs M; independent audit M (the gate scripts are `T-IGX-043-E`). Overall L, consistent with the master plan's FC-2 estimate.
