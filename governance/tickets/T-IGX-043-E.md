@@ -12,7 +12,7 @@ Gate-meaning change, split out of `T-IGX-043-B` (FC-2) after the independent del
 
 ## Plan digest
 
-Plan digest: 80402c1289dd1757b98ec0867c47f483c1ef3e2ef1c8d2e92581ee520646d86b
+Plan digest: 00ee08731e80d0938681014d33bf5f2f8ccb83673756f764d8099a3582d4d32a
 
 Canonical plan: [`governance/tickets/plans/PLAN_T-IGX-043-E.md`](plans/PLAN_T-IGX-043-E.md). The digest was computed with `scripts/governance/plan_digest.py` on the draft; it must be recomputed after any edit of the plan.
 

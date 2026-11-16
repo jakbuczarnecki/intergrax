@@ -1,6 +1,6 @@
 # PLAN T-IGX-043-D — EQO-A code wave FC-4: skill execution pin durability and KV durability attestation (A4-002)
 
-Status: DRAFT for Operator review, drafted 2026-11-16 (read-only planning session; nothing implemented, no branch, no test run). Nothing here is approved, applied or audited. It certifies nothing, promotes no FRZ criterion and changes no stage status.
+Status: plan approved by the commissioned signing delegate (see the `## Approved` section of `T-IGX-043-D`); the approval covers the plan text and is NOT an implementation go (implementation waits for the ARCH-FREEZE gate `SCOPE` and the Operator's product-path go). Drafted 2026-11-16 (read-only planning session; nothing implemented, no branch, no test run). Nothing here is applied or audited. It certifies nothing, promotes no FRZ criterion and changes no stage status.
 
 Reading notation: `H` = `7960ae7f6c82da60ca9acdc0ceebf63810002a42` (`origin/development` at drafting, merge of PR #604); `B` = `258bbf6abb6fdbb92ef0185d058527fbb1e47f04` (Campaign A baseline). Code lines below are at `H`; every FC-4 source file is byte-identical between `B` and `H` (`git diff --stat B H` over the six product files and the touched tests is empty: UNCHANGED). Full-SHA evidence is in `FACT_CHECK.md`.
 

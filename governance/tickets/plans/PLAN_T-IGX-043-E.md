@@ -49,6 +49,18 @@ Both scripts are run by `scripts/gates/check_audit_ideal_gates.py` (`@7960ae7f6c
 2. Positive case: `SandboxProfile(enable_exec_tool=True, root=<tempfile.TemporaryDirectory path>)` returns a manager whose `root` equals that path (replaces the root-less positive case).
 3. Negative cases: root None with `INTERGRAX_SANDBOX_ROOT` removed from the environment raises `SandboxCompositionError`; `sandbox=None` with side-effect tools raises it; a PRODUCT environment without side-effect tools still returns None or a manager without raising.
 
+## Negative tests
+
+The refusal cases that the edited gate scripts must assert (each is a configuration the gates must see refused, taken from section 3; none is run by this plan):
+
+1. Capacity gate, missing boundary: a PRODUCT environment with adapters enabled and no mutation-authorization boundary must raise `ControlPlaneCompositionError` with `blocker_code == "ECP_BLOCKED_MISSING_BOUNDARY"`; the script exits 1 if no refusal occurs.
+2. Capacity gate, default posture with a supplied boundary and `INTERGRAX_KUBERNETES_URL` unset: adapters are not built and the probe is not reported as passed (`wiring.adapters is None`, `wiring.probe_passed is False`, `UNQUALIFIED_NO_CLUSTER`); a built adapter or a passed probe is a failure of the gate.
+3. Capacity gate, `CI_DETERMINISTIC` posture: an in-memory backend is never reported as a passed probe (`wiring.probe_passed is False`, `CI_DETERMINISTIC_ONLY`).
+4. Sandbox gate, root-less profile: a `SandboxProfile` with `enable_exec_tool=True`, no root and `INTERGRAX_SANDBOX_ROOT` removed from the environment must raise `SandboxCompositionError`.
+5. Sandbox gate, `sandbox=None` with side-effect tools must raise `SandboxCompositionError`.
+
+The expected-red check E-1 (section 5) shows the unedited scripts failing and E-3 is the audit-only mutation check.
+
 ## 4. Exact write set
 
 ```text

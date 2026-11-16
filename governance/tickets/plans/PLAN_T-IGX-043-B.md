@@ -1,6 +1,6 @@
 # PLAN T-IGX-043-B — EQO-A remediation code wave, batch FC-2: production wiring fail-closed (capacity, queue worker, memory org/session stores, OTLP export, sandbox)
 
-Status: DRAFT for Operator review. Drafted 2026-11-16 for master-plan node `PT-FC2`. Nothing here is approved, implemented, executed or audited; no test was run while drafting. This plan certifies nothing, promotes no FRZ criterion and states no independent verification.
+Status: plan approved by the commissioned signing delegate (see the `## Approved` section of `T-IGX-043-B`); the approval covers the plan text and is NOT an implementation go (implementation waits for the ARCH-FREEZE gate `SCOPE` and the Operator's product-path go). Drafted 2026-11-16 for master-plan node `PT-FC2`. Nothing here is implemented, executed or audited; no test was run while drafting. This plan certifies nothing, promotes no FRZ criterion and states no independent verification.
 
 Notation. `H` = `origin/development` `7960ae7f6c82da60ca9acdc0ceebf63810002a42` (read 2026-11-16). `B` = Campaign A baseline `258bbf6abb6fdbb92ef0185d058527fbb1e47f04`. Every citation is written `path@<full 40-hex SHA>:line` with the SHA of `H` or `B` spelled out. Status words: `UNCHANGED` = `git diff B H -- <path>` empty; `CHANGED`; `GONE`.
 
