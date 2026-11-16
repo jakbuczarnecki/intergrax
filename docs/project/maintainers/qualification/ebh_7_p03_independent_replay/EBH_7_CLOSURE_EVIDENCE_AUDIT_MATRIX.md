@@ -2,7 +2,7 @@
 
 **TEST_EXECUTION_SHA:** `d39a520dda965981a38f8e1a90ec5135ea5d508e`
 
-**OPEN_FINDING count:** 0 (must be 0 before independent B6)
+**OPEN_FINDING count:** 2 (must be 0 before independent B6)
 
 **Authority:** `tests/qualification/ebh_7/_ebh7_closure_evidence_audit.py`
 
@@ -147,8 +147,8 @@
 | G09 | B6-F04-P03-TEST-CLOSURE-SHA | PASS | tests.qualification.ebh_7._ebh7_p03_evidence_integrity:assert_ebh7_p03_manifest_role_integrity | CORRECTIVE_ASSERT: TEST_EXECUTION_SHA descends from B6 corrective — not closu... |
 | G09 | B6-F07-RPL-EF-PROOF-STRENGTH | PASS | tests.qualification.ebh_5._dual_slug_rpl_ef_matrix:assert_dual_slug_rpl_ef_matrix_complete | CORRECTIVE_ASSERT: 28-row F07 matrix + Package C v2 CDE operational surface |
 | G09 | B6-F08-ECAP-P03-DERIVED-GATES | PASS | tests.qualification.ebh_7._ebh7_closure_evidence_audit:assert_ebh7_ecap_p03_derived_closure_gates | CORRECTIVE_ASSERT: G07/G08 derive from certification + P03 integrity — not st... |
-| G09 | B6-F09-FINDING-RESOLUTION-EVIDENCE | PASS | tests.qualification.ebh_7._gate_finding_resolution:assert_ebh7_f09_resolution_registry_integrity | CORRECTIVE_ASSERT: Complete resolution map validated without recursive self-call |
-| G09 | B6-F10-ECAP-NORMATIVE-C1-C5 | PASS | tests.qualification.ebh_7._ebh7_f10_ecap_normative_matrix:assert_ebh7_f10_ecap_normative_ready | CORRECTIVE_ASSERT: Computed C1–C5 verdict — READY FOR INDEPENDENT RE-AUDIT on... |
+| G09 | B6-F09-FINDING-RESOLUTION-EVIDENCE | OPEN_FINDING | tests.qualification.ebh_7._gate_finding_resolution:assert_ebh7_f09_resolution_registry_integrity | B6-F09-FINDING-RESOLUTION-EVIDENCE: assert hook failed — B6-F10-ECAP-NORMATIV... |
+| G09 | B6-F10-ECAP-NORMATIVE-C1-C5 | OPEN_FINDING | tests.qualification.ebh_7._ebh7_f10_ecap_normative_matrix:assert_ebh7_f10_ecap_normative_ready | B6-F10-ECAP-NORMATIVE-C1-C5: assert hook failed — EBH-7 — B6-F10 BLOCKED / EX... |
 | G09 | B6-F10-C1-STALE-GATE-REG | PASS | tests/qualification/ebh_6/test_ebh_6_l3_and_family_evidence_integrity.py::test_aj_evidence_requir... | CORRECTIVE_PYTEST: Renamed FRZ-REG successor gate executed in L3 profile |
 | G09 | B6-F10-C4-STATE-REG-01 | PASS | tests/qualification/ebh_7/test_ebh_7_terminal_rpl_gates.py::test_ebh7_fixed_substrate_rpl_positive | CORRECTIVE_PYTEST: FIXED substrate round-trip incl. memory.sqlite.conversational |
 | G09 | B6-F10-P03-PROFILE-SHADOW | PASS | tests/qualification/ebh_7/test_ebh_7_b6_f10_certification_adversarial.py::test_f10_adv_directory_... | CORRECTIVE_PYTEST: Shadowed directory argument is not execution evidence |
