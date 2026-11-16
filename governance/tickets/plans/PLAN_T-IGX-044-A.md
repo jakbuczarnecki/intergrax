@@ -32,8 +32,9 @@ governance/tickets/plans/PLAN_T-IGX-044-A.md
 ## 4. Method
 
 1. Worktree `<parent>/_wt/intergrax/eqo-pt-e00` from `origin/development` (`2ab57e36d94eae98c962b3d7b09e5a540d8c70d2`), branch `docs/eqo-a-pt-e00-enf0-docs`.
-2. Every factual sentence is checked against the head with a `path@sha:line` source (validator runs logged under `.tmp/session/eqo-a-remediation/IMPL/pt-e00/`).
-3. One commit with the `Ref: governance/tickets/T-IGX-044-A.md` trailer; no AI-tool attribution; upstream set to `origin/development` before the explicit-refspec push; draft PR against `development`.
+2. `origin/development` (`332c5217c390202a911ad5592e88a8f366845587`) was merged into the branch before the PR; the cited scripts, checklist rows and records are unchanged between the two SHAs and the manifest corpus count was re-measured at the merged head (40 manifests, 3 failing).
+3. Every factual sentence is checked against the head with a `path@sha:line` source (validator runs logged under `.tmp/session/eqo-a-remediation/IMPL/pt-e00/`).
+4. Commits with the `Ref: governance/tickets/T-IGX-044-A.md` trailer; no AI-tool attribution; upstream set to `origin/development` before the explicit-refspec push; draft PR against `development`.
 
 ## 5. Test contract
 

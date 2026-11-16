@@ -6,7 +6,7 @@ Documentation-only. Findings EQOA-A2-006 (three of 40 IIAC manifests fail the re
 
 ## Plan digest
 
-Plan digest: fe3aeda1b377e9ba64e70653a2c28b4486325e38c554faeab4444485a3fef50d
+Plan digest: f1233e47fa7fe8e07784fe544a9ec6bbbe70ccab427623fc9e5857eea5d5f544
 
 Canonical plan: [`governance/tickets/plans/PLAN_T-IGX-044-A.md`](plans/PLAN_T-IGX-044-A.md). The digest was computed with `scripts/governance/plan_digest.py`; it must be recomputed after any edit of the plan.
 
