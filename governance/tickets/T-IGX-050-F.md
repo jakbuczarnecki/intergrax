@@ -6,7 +6,7 @@ Documentation-only. Adds `docs/project/maintainers/qualification/arch_freeze_pro
 
 ## Plan digest
 
-Plan digest: 86bd73b831c419db9803163f8df20ad0755b2ac306ea07f5532c8b4c2ceea2fc
+Plan digest: dc90800c5e6ffc93e31d0bc358f56cbaa4c25b9a23c48879ceef7e43614c3761
 
 Canonical plan: [`governance/tickets/plans/PLAN_T-IGX-050-F.md`](plans/PLAN_T-IGX-050-F.md). The digest was computed with `scripts/governance/plan_digest.py`; it must be recomputed after any edit of the plan.
 
