@@ -582,6 +582,23 @@ LocalWorkspace hosted profile
 
 Generic contracts and engine code **MUST NOT** live under `applications/local_workspace_application`.
 
+### Direct serving declaration (Operator ruling DP-19, 2026-11-16 - target state)
+
+Rule decided by the Operator (DP-19):
+
+- An entrypoint that calls `uvicorn.run` directly is declared **non-production serving**. A gate counts such entrypoints with a ceiling.
+- Production serving goes through `run_hosted_application` (`intergrax/hosting/runner.py`) and the hosting engine described above.
+- The default bind host is `127.0.0.1`; binding `0.0.0.0` requires an explicit opt-in.
+
+Present state at `origin/development` `2ab57e36d` (read from the code; the rule above is not yet implemented):
+
+- Non-test `uvicorn.run` call sites: 7 under `applications/` (`attestation_demo`, `governed_contractor_application` strict-production serving command, `intergrax_assistant_application`, `lab_application`, `local_workspace_application`, `poc_template_application`, `research_application`) and 4 under `intergrax/` (`cli/run.py`, `harness/app.py`, `scaffold/external_project/app.py`, and the `scaffold/new_application.py` template).
+- Three of them default the bind host to `0.0.0.0`: `applications/local_workspace_application/host/main.py`, `applications/research_application/host/main.py` and `applications/governed_contractor_application/host/package_b_strict_production_serving_command.py`. The other call sites default to `127.0.0.1`.
+- The only non-test caller of `run_hosted_application` is `applications/local_workspace_application/hosting/foreground.py`.
+- Until the code wave moves the production-named entrypoints above onto `run_hosted_application`, this document makes no production-serving claim for them; by decision DP-19 their direct `uvicorn.run` path is non-production.
+
+The gate, the bind-default change and the entrypoint migration are not part of this documentation change; the code wave implements them.
+
 ### Anti-patterns
 
 | ID | Anti-pattern | Correct |

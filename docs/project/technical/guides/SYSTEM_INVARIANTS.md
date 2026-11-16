@@ -342,6 +342,14 @@ Format: **ID · Layer · Rule · Canon · CI (if enforced)**
 | **SYS-INV-34** | Tier-1 | CodeCraft promotion to durable tools requires review, tests and governance approval. | [`CODE_CRAFT.md`](../../architecture/CODE_CRAFT.md#promotion-boundary) · [`TOOLS.md`](../../architecture/TOOLS.md) | review |
 | **SYS-INV-35** | Tier-1 | CodeCraft **never** bypasses ToolRuntime, PolicyEngine, CVL or RuntimeEventBus. | [`CODE_CRAFT.md`](../../architecture/CODE_CRAFT.md#disallowed-codecraft-actions) | review |
 
+### 5.7 Dated notes (EQO-A remediation, 2026-11-16)
+
+Additive notes recorded from Operator decisions of the EQO-A remediation planning. The invariant rows above are unchanged. Statements about the target state describe what the Operator decided; the code and gate changes are not part of this documentation change and are implemented by the code wave.
+
+- **SYS-INV-01 (decision DP-13).** The Operator kept the canon: lower layers MUST NOT import `intergrax.applications`, with no grandfather exceptions ([`PLATFORM_FOUNDATION.md`](../../architecture/PLATFORM_FOUNDATION.md), dated note under "CI guards"). There is no allowlist for the twelve `intergrax/runtime` modules that import `intergrax.applications` at `origin/development` `2ab57e36d`; they are to be fixed by inversion in the code wave.
+- **SYS-INV-10, LLM concern (decision DP-16).** The Tier-1 resolver in `intergrax/runtime/wiring/llm_resolver.py` is the canonical host LLM resolver and the Tier-3 resolver delegates to it; see [`LLM_ADAPTERS.md`](../../architecture/LLM_ADAPTERS.md) (Provider selection). Two resolver implementations exist at `2ab57e36d`; the consolidation is target state.
+- **SYS-INV-06 and the section 7 map entry for `check_agent_registry_bypass.py` - scope of earlier claims (relabel; no re-certification).** Finding `EQOA-A3-016` (evidence level E3) in the [Campaign A findings register](../../maintainers/qualification/enterprise_quality_oversight/campaign_a/FINDINGS_REGISTER.md) records that the gate's own pattern, applied to git output, matches 9 non-test `agents/*` files at the SHAs of the CTRL-X, GOV-X2 and HARNESS-FINAL certifications (10 at the audit baseline `258bbf6ab`), and that the CTRL-X matrix rows CX-08 (Tools) and CX-10 (Agent Registry) show `Bypass` = 0 in [`CTRL_X_ENTERPRISE_CONTROL_PLANE_RECERTIFICATION.md`](../../maintainers/qualification/CTRL_X_ENTERPRISE_CONTROL_PLANE_RECERTIFICATION.md) (section 11) while the records do not reference this gate. Read those claims as **not covering this gate**. This note relabels the scope of historical claims only: it neither re-certifies nor withdraws CTRL-X, GOV-X2 or HARNESS-FINAL, and it states no verdict on the gate's current result. Whether CI ran the gate at those SHAs was not determinable in the audit.
+
 ---
 
 ## 6. Related invariant registers (domain detail)
