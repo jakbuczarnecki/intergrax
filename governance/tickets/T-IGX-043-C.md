@@ -45,4 +45,4 @@ Everything outside the write set above: the CONFIG-X scan extension (`T-IGX-043-
 
 ## Lifecycle state
 
-`draft`
+plan_pending
