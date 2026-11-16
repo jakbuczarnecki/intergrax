@@ -10,7 +10,7 @@
 > [!NOTE]
 > **PDC-X reconciliation (PDC-D5-R016, 2026-11-12):** this domain is **LEGACY / HISTORICAL** per the runtime hub [`intergrax_runtime_architecture.md`](../../architecture/intergrax_runtime_architecture.md) (primary-24 row #18). Canonical decision authority is [`DECISION_SYSTEM.md`](../../architecture/DECISION_SYSTEM.md). Open critic findings in this plan are **legacy lineage only**; their disposition is owned by PDC-X ([`PDC_DOMAIN_REQUIREMENTS_MATRIX.md`](../qualification/platform_domain_completeness/PDC_DOMAIN_REQUIREMENTS_MATRIX.md)). The historical findings below are retained, not deleted.
 
-**Architecture (1:1):** [`architecture/CRITIC_VERIFICATION.md`](../../architecture/CRITIC_VERIFICATION.md)
+**Architecture (1:1):** [`architecture/CRITIC_VERIFICATION.md`](../../architecture/CRITIC_VERIFICATION.md) (legacy tombstone; canonical authority is [`DECISION_VERIFICATION.md`](../../architecture/DECISION_VERIFICATION.md))
 **Hub:** [`intergrax_runtime_architecture.md`](../../architecture/intergrax_runtime_architecture.md)
 **Strategy:** [`guides/INTERGRAX_DEVELOPMENT_STRATEGY.md`](../../technical/guides/INTERGRAX_DEVELOPMENT_STRATEGY.md)
 
