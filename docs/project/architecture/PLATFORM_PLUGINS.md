@@ -25,6 +25,8 @@ Read this hub in four layers - do not merge them into a single “shipped” hea
 
 **C. Program closeout vs ongoing domain work.** The PLATFORM-PLUGIN-1..9 implementation roadmap is **closed** with verdict **PRODUCTION-GRADE — ROADMAP COMPLETE**; residual Protocol v2 audit findings (§Protocol v2 platform extensibility target invariants) remain **planned, not implemented**. Domain programs continue to own capability behavior independently.
 
+> **EQO-A remediation note, as of 2026-11-16:** program closure is not freeze acceptance. The freeze criteria FRZ-PLG-01..08 are OPEN in the freeze checklist (FRZ-PLG-08 has no recorded evidence at baseline); their closure stays with stages `EBH-2*` and `EBH-5` and with PDC domain D1 (plugin discovery owner `intergrax/core/plugins/discovery.py`).
+
 **D. Cross-flow production evidence (established).** A production Tier-3 cross-flow proof is established for the key Platform Plugin coordination path across Tool, Policy, Security, Context, and Memory. The complete evidence chain combines:
 
 - application cross-flow host proof (`tests/integration/platform_plugins/test_plugin_engine_cross_flow.py`)
@@ -371,6 +373,8 @@ Third-party authors install Python packages. Hosts and applications decide which
 | Descriptor-only contracts | token optimization plugin descriptor |
 
 **FACT:** `intergrax/core/plugins/discovery.py` provides a unified setuptools loader used by several Tier-0 groups but **not all** surfaces use it.
+
+**Two packages carry "plugin" in their path.** `intergrax/core/plugins/` (9 py files) is the entry-point plugin discovery and admission package (discovery owner: `discovery.py`). `intergrax/runtime/plugins/` (6 py files: `contract.py` with `RuntimePlugin`, `bootstrap.py`, `compatibility.py`, `default_plugins.py`, ...) holds the host-composed `RuntimePlugin` contract, its bootstrap and compatibility checks. They are distinct mechanisms; the table above lists `RuntimePlugin` under host-composed wiring.
 
 **FACT:** `INTERGRAX_DISCOVER_PLUGINS` gates Tier-0 discovery in wiring helpers (default **off**). Vendor Knowledge and other domains use additional opt-in flags or explicit composition parameters.
 

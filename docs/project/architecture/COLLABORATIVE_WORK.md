@@ -4,6 +4,7 @@
 **Plan (1:1):** [`plan/COLLABORATIVE_WORK.md`](../maintainers/plans/COLLABORATIVE_WORK.md)
 **Feature coordination:** [`capabilities/architecture/MULTIPLAYER_AI.md`](../capabilities/architecture/MULTIPLAYER_AI.md)
 **Architecture governance:** [`INTERGRAX_ARCHITECTURE_PRINCIPLES.md`](INTERGRAX_ARCHITECTURE_PRINCIPLES.md)
+**Owner mapping (EQO-A remediation note, as of 2026-11-16):** PDC domain D8 (business artifacts, owner `collaborative_work`, see [`PDC_OWNERSHIP_MATRIX.md`](../maintainers/qualification/platform_domain_completeness/PDC_OWNERSHIP_MATRIX.md)); tenant isolation: stage `TENANT-X` (its classifier covers `intergrax/collaborative_work`; historical CLOSED stages are not automatically tenant-certified, roadmap); governance seam: `GOV-X2`. Multiplayer (MP-*) statuses are feature-local, see [`MULTIPLAYER_AI.md`](../capabilities/architecture/MULTIPLAYER_AI.md).  
 **ADR:** [ADR-MP-001](../technical/adr/entries/2026-08-11/ADR-MP-001.md) · [ADR-MP-002](../technical/adr/entries/2026-08-11/ADR-MP-002.md) · [ADR-MP-003](../technical/adr/entries/2026-09-06/ADR-MP-003.md) · [ADR-MP-004](../technical/adr/entries/2026-09-07/ADR-MP-004.md) · MP-4 → [DECISION_APPROVAL_GOVERNANCE](DECISION_APPROVAL_GOVERNANCE.md) / [ADR-MP-005](../technical/adr/entries/2026-09-08/ADR-MP-005.md) · [ADR-MP-006](../technical/adr/entries/2026-09-17/ADR-MP-006.md) (MP-5 ContextView) · [ADR-MP-007](../technical/adr/entries/2026-09-18/ADR-MP-007.md) (MP-6 Activity)
 
 ---
@@ -700,6 +701,10 @@ Collaborative Work (identity + authority semantics)
 ```
 
 ---
+
+## Recovery and observability ownership
+
+Repository-level concurrency (CAS) and reassignment semantics are defined in this document (see the MP-2 section). Platform failure, retry and HITL semantics are owned by [`RELIABILITY_FAILURE_AND_HITL.md`](RELIABILITY_FAILURE_AND_HITL.md); evidence and correlation by [`OBSERVABILITY.md`](OBSERVABILITY.md).
 
 ## Related documents
 

@@ -4,6 +4,8 @@
 
 > **Backpressure limits work. Scaling changes capacity.**
 
+> **Owner mapping (EQO-A remediation note, as of 2026-11-16; assignment to existing owners decided by the Operator):** the Elastic Capacity Plane has no stage of its own. Owners: roadmap stage `HARNESS-W4` (scale / resilience recertification) and `DIST-SCALE-X` (roadmap ledger: `CLOSED — OPERATOR SCOPED ACCEPTANCE`, scoped). Known limits are stated in the maturity boundary below (policy default off; reference host wiring injects the ceiling patcher only). This is an assignment, not a scoped exclusion.
+
 Orchestration decides **how** work runs inside available capacity. ECP decides **how much** capacity is available. Raising the orchestration concurrency ceiling changes logical runtime parallelism; it does **not** add CPU, RAM, or host replicas.
 
 > [!NOTE]

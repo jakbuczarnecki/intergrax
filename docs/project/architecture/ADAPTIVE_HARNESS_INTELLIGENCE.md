@@ -4,6 +4,8 @@
 
 AHI is **evidence-driven, governed adaptation of versioned Harness configuration artifacts** - not a self-learning agent, not foundation-model training, and not uncontrolled reinforcement learning.
 
+> **Owner mapping (EQO-A remediation note, as of 2026-11-16; assignment to existing owners decided by the Operator):** AHI has no stage of its own. Owners: roadmap stage `HARNESS-W6` (Runtime Intelligence recertification) and `GOV-X2` for the governance seam. Known limits: auto-apply is disabled by default and the policy-learning approval store is in-memory (`InMemoryPolicyLearningApprovalStore`). This is an assignment, not a new stage or FRZ family, and not a scoped exclusion.
+
 > [!IMPORTANT]
 > **Adaptation is versioned promotion, not silent mutation.**
 
