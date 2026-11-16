@@ -91,5 +91,20 @@
       "FRZ promotion",
       "freeze-SHA audit"
     ]
+  },
+  "addendum_3": {
+    "checks": [
+      "exception record read at PR #596 head b0b43e5d6",
+      "no product or test change after 969cbd964",
+      "manifest and findings updated",
+      "two IIAC validators re-run"
+    ],
+    "not_in_scope": [
+      "new tests",
+      "certification",
+      "B6",
+      "FRZ promotion",
+      "closure"
+    ]
   }
 }
