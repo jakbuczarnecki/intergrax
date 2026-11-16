@@ -159,9 +159,9 @@ AB rows in WP-11 file: 20; mapped: 20; unmapped: none; not found in file: none
 | AR-12-01 | SESSION | Start AUD-ENF-1: independent (G6) audit of T-ENF-1/2/3 and the EDER script (negative tests, legacy-exception replay) | PT-AUD-ENF1 | tickets merged; implementer excluded; exact SHA | Operator go | stop the session; no repo effect |
 | AR-12-02 | SESSION | Start AUD-ENF-A: independent audit of the enforcement stages (ruleset JSON, verifier output, trial evidence; read-only GETs) before FRZ-AUD-10 may be called LIVE | PT-AUD-ENFA | Stage 1..5 evidence; separate non-executing session | Operator go | stop the session |
 | AR-12-03 | SESSION | Start the independent review of statement-changing hunks of DB-A (roadmap) and DB-B (FRZ checklist) before the F10 render and the pin | PT-AUD-DOC | DB-A/DB-B drafts merged to a review branch; reviewer is not the author | Operator go | stop the session |
-| AR-12-04 | SESSION | Start the independent re-read of WP-4's 14 LOW-confidence OPEN classifications and 28 would-be-hidden-obligation rows | PT-FRZ-RR | DS-4 answered; reads WP-4 rows and the checklist | Operator go | stop the session |
+| AR-12-04 | SESSION | Start the independent re-read of WP-4's 14 LOW-confidence OPEN classifications and 28 would-be-hidden-obligation rows | PT-FRZ-RR | before the DS-4 re-check (PT-FRZ-RR precedes DS-4); reads WP-4 rows and the checklist | Operator go | stop the session |
 | AR-12-06 | SESSION | Start AUD-ENF-A part 1: independent audit of the trial and Stages 1-2 before Stage 3 may start (rollback rule if it fails or is late) | PT-AUD-ENF12 | Stage 1 and 2 evidence; separate non-executing session; exact SHA | Operator go | disable the ruleset (WP-7 s4.6) if the audit fails or has not run when Stage 3 is due |
-| AR-12-05 | SESSION | Start the independent acceptance T-B7-VBN-INDEPENDENT-ACCEPT (FIND-VBN-PARTIAL) | PT-VBN | FCS; DS-5; scope from FRZ-RPL-01..04 | Operator go | stop the session |
+| AR-12-05 | SESSION | Start the independent acceptance T-B7-VBN-INDEPENDENT-ACCEPT (FIND-VBN-PARTIAL) | PT-VBN | FCS; DS-5; M3 (= T-B7-LOCK-FREEZE-SHA); PT-Q13; T-B7-ECAP-2C (merged DAG); scope from FRZ-RPL-01..04 | Operator go | stop the session |
 
 Further sessions the DAG names without a numbered AR (WP-11 AB-15 covers the Campaign B auditor): PT-Q02 wave audit = AR-58; RB-2 certifier/delegate = AR-36/AR-60.
 

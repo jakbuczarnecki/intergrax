@@ -1,15 +1,15 @@
 # sha256sum format; check with: sha256sum -c SOURCES.sha256 (run inside this folder)
 # Digests are of the published copies (LF line endings, two machine-path redactions; see README.md).
-# 'source' comments give the original untracked path and the sha256 of the source file as it was before normalization/redaction.
-009b7b1fe22bda7089e68584d71ff7525f283b81277e75a5a8b7b28a568d79ca  MEP-AF2_v2.1.md
-# source of MEP-AF2_v2.1.md: agent-env/plans/pasted-content-id-e2b1-integrax-melodic-aho.md sha256=dc2e23663c519bb74279799af00c32fbd3a5eaafaae3f74db3823d444939bb22
-22ec34698b12a733af597406d927d171bf3909c0bd44d04b71da113517d73c8a  README.md
+# 'source' comments give the original untracked path, its modification time (local) and the sha256 of the source file before normalization/redaction.
+079314509b4626e7fd8b44ce71ad122288fbb5d2d731246774c5e7f226b54cef  MEP-AF2_v2.1.md
+# source of MEP-AF2_v2.1.md: agent-env/plans/pasted-content-id-e2b1-integrax-melodic-aho.md mtime=2026-11-16 12:47:09 sha256=4582aaa901255897bdd09a26e08806b0abe086e864ab2c11ed4b52d0ec0637ed
+2766d4dc6dbfa65b03b1796a2cc16ef0d8068e898f69e73f3c6bafd336758432  README.md
 # README.md: written for this publication; no source file
-d2e12d86600f828ac60babd8cd098d5d01e00db452e3c85d7ba4555aa3e4a9f7  WP12_AUTHORIZATION_REQUESTS.md
-# source of WP12_AUTHORIZATION_REQUESTS.md: .tmp/session/eqo-a-remediation/WP-12/AUTHORIZATION_REQUESTS.md sha256=5b8d1f871e3944aeacc54528f3203011958cd7660a6ce3c92cdc463633827cad
-8ce67eb04151006b7b90531d6065931ed9af1ed62c785c58b01f81693579bf90  WP12_DAG.md
-# source of WP12_DAG.md: .tmp/session/eqo-a-remediation/WP-12/DAG.md sha256=c2f6a110f3fdae2ebf5d28c81d8cccd5b31ca405e99c4ec380240fbd55363623
-7889b937974e36a9672fe19e3654b0f2168e6ae455c5bc5e50cfefed91abe967  WP12_OPEN_QUESTIONS.md
-# source of WP12_OPEN_QUESTIONS.md: .tmp/session/eqo-a-remediation/WP-12/OPEN_QUESTIONS.md sha256=026d0220e871ac78955bc17f310d0757caa52986de0b6c096ee5171ed55c4aef
-7cc7ec8812fd53e4de801e75964ce291d1474c2d4a1c886f578575c8d4b961e6  WP12_TICKETS_DRAFT.md
-# source of WP12_TICKETS_DRAFT.md: .tmp/session/eqo-a-remediation/WP-12/TICKETS_DRAFT.md sha256=710cb5c02d36411d2c25764ba1f7fccd3b866f43aa8d164f5b1ac7cc1a8fe7e5
+9591927d492b1d08128952cff969ef62c8338e515ffa2c9927be78e3f00a7dfb  WP12_AUTHORIZATION_REQUESTS.md
+# source of WP12_AUTHORIZATION_REQUESTS.md: .tmp/session/eqo-a-remediation/WP-12/AUTHORIZATION_REQUESTS.md mtime=2026-11-16 12:50:12 sha256=3ac68ee85552a9f7ef239bb4495464fa084334f63be6da1bec9619a6beffaa7b
+eb6f2f2dbbf2418593bb1e9856c5f92cd903f4070a3451b961cef38bbe91fa27  WP12_DAG.md
+# source of WP12_DAG.md: .tmp/session/eqo-a-remediation/WP-12/DAG.md mtime=2026-11-16 12:50:11 sha256=0e66a6cf38ff124ce11a77457797e3f6d955762f085fa66764956c6b24a5e990
+91a1f13adc406990fbd86c244616fa532fb413364e0e0426a81e5133ce14c4ef  WP12_OPEN_QUESTIONS.md
+# source of WP12_OPEN_QUESTIONS.md: .tmp/session/eqo-a-remediation/WP-12/OPEN_QUESTIONS.md mtime=2026-11-16 12:50:13 sha256=a5488729a1cfc4bc9444320593213f97aa7c770a77ecb627096ff0dbb96ce82d
+022cb78b8cb3afe3d95d723f2fac208b122139c5f0b761f9deb2fb6657747f77  WP12_TICKETS_DRAFT.md
+# source of WP12_TICKETS_DRAFT.md: .tmp/session/eqo-a-remediation/WP-12/TICKETS_DRAFT.md mtime=2026-11-16 12:50:11 sha256=cb4022f67c693ab12f465c56f0a0a1a09d2521bdb56af5c4245e60f78f7f9af2
