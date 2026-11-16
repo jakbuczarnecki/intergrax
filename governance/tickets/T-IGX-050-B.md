@@ -6,7 +6,7 @@ Amend `scripts/governance/verify_arch_freeze_plan_traceability.py` as specified 
 
 - every hard DAG rule unchanged; one additive rule (pre-lock ancestors `T-B5-EVOL-FRZ` and `T-B6-FRZ-AUD` never follow `T-B7-ECAP-2C` / `T-B7-LOCK-FREEZE-SHA`);
 - `SUPERSEDED_BY_CURRENT_AUTHORITY` is a satisfied dependency and requires a non-empty `authority_ref`;
-- counters computed from the files (checklist counts, WBS = 54 historical + `T-AF2-*` / `PT-*` rows, qualification runs);
+- counters computed from the files (checklist counts, WBS = 54 historical + `T-AF2-*` / `PT-*` rows, qualification runs), with two invariants kept (225 FRZ rows in 26 families; at least 16 qualification runs);
 - matrix-vs-checklist cross-check opt-in via the matrix header line `**MATRIX_CHECKLIST_CROSSCHECK:** ENABLED`;
 - word-boundary task-ID regex that accepts `PT-` and `T-AF2-` IDs;
 - `FIND-PROD-REACH-DEFERRED` at severity INFO;
@@ -17,7 +17,7 @@ The change is tooling only. It certifies nothing, promotes no FRZ criterion and 
 
 ## Plan digest
 
-Plan digest: e038be8901ae2677c9dc22354698ece35214253a7f659b2429ab22b669e497d5
+Plan digest: 8903bd6e98785cd7b33fa8718d642e520d49b54833b446539d7609877d1b74f0
 
 Canonical plan: [`governance/tickets/plans/PLAN_T-IGX-050-B.md`](plans/PLAN_T-IGX-050-B.md). The digest was computed with `scripts/governance/plan_digest.py`; it must be recomputed after any edit of the plan.
 

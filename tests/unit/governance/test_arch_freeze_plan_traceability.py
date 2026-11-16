@@ -266,11 +266,24 @@ def test_superseded_without_authority_ref_is_rejected(sandbox: Sandbox) -> None:
     )
 
 
-def test_superseded_with_placeholder_authority_ref_is_rejected() -> None:
-    rows = [{"TASK_ID": "T-X", "V21_QUALIFICATION": "SUPERSEDED_BY_CURRENT_AUTHORITY - authority_ref: TBD"}]
+@pytest.mark.parametrize("ref", ["TBD", "pending", "Pending.", "`PENDING`", "?", "none", "N/A", "todo", "—", "unknown"])
+def test_superseded_with_placeholder_authority_ref_is_rejected(ref: str) -> None:
+    rows = [{"TASK_ID": "T-X", "V21_QUALIFICATION": f"SUPERSEDED_BY_CURRENT_AUTHORITY - authority_ref: {ref}"}]
     errors: list[str] = []
     assert v._check_qualification_states(rows, errors) == set()
     assert errors
+
+
+def test_deleting_a_frz_row_fails(sandbox: Sandbox) -> None:
+    lines = [x for x in sandbox.read(v._CHECKLIST).split(chr(10)) if not x.startswith("| FRZ-EXE-01 |")]
+    sandbox.write(v._CHECKLIST, chr(10).join(lines))
+    assert any("FRZ count expected 225 got 224" in e for e in _errors())
+
+
+def test_deleting_a_qualification_run_fails(sandbox: Sandbox) -> None:
+    lines = [x for x in sandbox.read(v._QUAL_PLAN).split(chr(10)) if not x.startswith("| L1-GOV |")]
+    sandbox.write(v._QUAL_PLAN, chr(10).join(lines))
+    assert any("qual RUN_ID count must be at least 16" in e for e in _errors())
 
 
 def test_unknown_checklist_status_is_rejected(sandbox: Sandbox) -> None:

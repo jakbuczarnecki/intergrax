@@ -40,6 +40,11 @@ BLOCKER_FINDINGS = frozenset(
     }
 )
 INFO_FINDINGS = frozenset({"FIND-PROD-REACH-DEFERRED"})
+# The FRZ checklist is frozen at 225 criteria in 26 families; deleting or adding a row must fail.
+EXPECTED_FRZ_ROWS = 225
+EXPECTED_FRZ_FAMILIES = 26
+# The qualification plan is append-only: runs may be added, never deleted (16 at AUDIT_BASELINE_2).
+MIN_QUAL_RUNS = 16
 # Historical WBS tasks (the original 54 rows). The WBS total is this number plus the T-AF2-* / PT-* rows.
 BASE_WBS_TASKS = 54
 EXTENSION_TASK_PREFIXES = ("T-AF2-", "PT-")
@@ -50,6 +55,10 @@ _MATRIX_CROSSCHECK_FLAG_RE = re.compile(r"^\*\*MATRIX_CHECKLIST_CROSSCHECK:\*\*\
 _MATRIX_HEADER_COUNTS_RE = re.compile(r"\*\*Rows:\*\*\s*(\d+)\s*\|\s*\*\*Families:\*\*\s*(\d+)")
 _AUTHORITY_REF_RE = re.compile(r"authority_ref:\s*(.+)$")
 SUPERSEDED_STATE = "SUPERSEDED_BY_CURRENT_AUTHORITY"
+# authority_ref placeholders are rejected case-insensitively (after stripping punctuation and backticks).
+AUTHORITY_REF_PLACEHOLDERS = frozenset(
+    {"", "-", "—", "?", "??", "???", "NONE", "NULL", "NIL", "N/A", "NA", "TBD", "TODO", "PENDING", "UNKNOWN", "XXX"}
+)
 
 PROMOTE_FAMS = ("BND", "CTR", "OBS", "OWN", "PLG", "PRD", "REG", "REL", "SEC", "TYP")
 PROMOTE_TASKS = tuple(f"T-B7-PROMOTE-{fam}" for fam in PROMOTE_FAMS)
@@ -73,6 +82,17 @@ INDEPENDENT_AUDITOR_TASKS = frozenset(
         "T-B7-TEN-REVAL",
         "T-B7-CMP-REVAL",
         "T-B7-VBN-INDEPENDENT-ACCEPT",
+    }
+)
+REQUIRED_SEMANTIC_TASKS = frozenset(
+    {
+        "T-B7-COORD-ARCH-FRZ",
+        "T-B7-FRZ-FRZ",
+        "T-B7-PFP-ACTIVATE",
+        "T-B7-PFP-VERIFY",
+        "T-PATHB-EXCL",
+        "T-B8-ROADMAP",
+        "T-B8-ECAP-16",
     }
 )
 # Pre-lock validator ancestors: they stay before the lock and never follow ECAP-2C [PD2-01].
@@ -195,6 +215,10 @@ def _qualification_state(cell: str) -> tuple[str, str]:
     return state, (ref.group(1).strip() if ref else "")
 
 
+def _is_placeholder_ref(ref: str) -> bool:
+    return ref.strip().strip("`*_.;:()[]<>\"' ").upper() in AUTHORITY_REF_PLACEHOLDERS
+
+
 def _check_qualification_states(wbs_rows: list[dict[str, str]], errors: list[str]) -> set[str]:
     """SUPERSEDED_BY_CURRENT_AUTHORITY is a satisfied dependency, but only with a non-empty authority_ref.
 
@@ -206,7 +230,7 @@ def _check_qualification_states(wbs_rows: list[dict[str, str]], errors: list[str
         state, ref = _qualification_state(row.get("V21_QUALIFICATION", ""))
         if state != SUPERSEDED_STATE:
             continue
-        if not ref or ref in {"—", "-", "TBD", "TODO", "N/A"}:
+        if _is_placeholder_ref(ref):
             errors.append(f"{row['TASK_ID']}: {SUPERSEDED_STATE} requires a non-empty authority_ref")
             continue
         satisfied.add(row["TASK_ID"])
@@ -255,16 +279,7 @@ def _find_cycles(graph: dict[str, list[str]]) -> list[str]:
 
 
 def _validate_semantic_dag(graph: dict[str, list[str]], task_ids: set[str], errors: list[str]) -> None:
-    required = {
-        "T-B7-COORD-ARCH-FRZ",
-        "T-B7-FRZ-FRZ",
-        "T-B7-PFP-ACTIVATE",
-        "T-B7-PFP-VERIFY",
-        "T-PATHB-EXCL",
-        "T-B8-ROADMAP",
-        "T-B8-ECAP-16",
-    }
-    missing = required - task_ids
+    missing = REQUIRED_SEMANTIC_TASKS - task_ids
     if missing:
         errors.append(f"semantic DAG missing tasks: {sorted(missing)}")
         return
@@ -408,6 +423,11 @@ def _isolated(graph: dict[str, list[str]], node: str) -> dict[str, list[str]]:
     return {k: [d for d in v if d != node] for k, v in graph.items()}
 
 
+def _removed(graph: dict[str, list[str]], node: str) -> dict[str, list[str]]:
+    """Delete the task itself (its row) but keep the edges that point at it."""
+    return {k: list(v) for k, v in graph.items() if k != node}
+
+
 def _with_edge(graph: dict[str, list[str]], node: str, dep: str) -> dict[str, list[str]]:
     g = _copy_graph(graph)
     g[node].append(dep)
@@ -517,6 +537,66 @@ def _self_test_cases() -> list[tuple[str, dict[str, list[str]], str]]:
         ),
     )
     cases.extend(hard)
+    cases.extend(_extra_self_test_cases(ref))
+    return cases
+
+
+def _extra_self_test_cases(ref: dict[str, list[str]]) -> list[tuple[str, dict[str, list[str]], str]]:
+    """Mutations for the remaining hard rules (required tasks, gates, auditor order, FRZ-FRZ-10, PD2-01 vs LOCK)."""
+    cases: list[tuple[str, dict[str, list[str]], str]] = []
+    for task in sorted(REQUIRED_SEMANTIC_TASKS):
+        cases.append((f"required task {task} missing", _removed(ref, task), "semantic DAG missing tasks"))
+    for task in sorted(INDEPENDENT_AUDITOR_TASKS):
+        cases.append((f"auditor task {task} missing", _removed(ref, task), f"missing independent auditor task {task}"))
+    no_coord = _isolated(ref, "T-B7-COORD-ARCH-FRZ")
+    no_verify = _isolated(ref, "T-B7-PFP-VERIFY")
+    # PFP-VERIFY reaches PFP-ACTIVATE directly and through L3-FREEZE -> LOCK; cut both paths.
+    verify_no_activate = _without_edge(
+        _without_edge(ref, "T-B7-PFP-VERIFY", "T-B7-PFP-ACTIVATE"), "T-B7-L3-FREEZE", "T-B7-LOCK-FREEZE-SHA"
+    )
+    cases.extend(
+        [
+            ("FRZ-FRZ without COORD", no_coord, "T-B7-FRZ-FRZ must follow T-B7-COORD-ARCH-FRZ"),
+            ("FRZ-FRZ without PFP-VERIFY", no_verify, "T-B7-FRZ-FRZ must follow T-B7-PFP-VERIFY"),
+            (
+                "PFP-VERIFY without PFP-ACTIVATE",
+                verify_no_activate,
+                "FRZ-FRZ-10: T-B7-PFP-VERIFY must follow T-B7-PFP-ACTIVATE",
+            ),
+            ("ROADMAP without PFP-VERIFY", no_verify, "Formal closure T-B8-ROADMAP must follow T-B7-PFP-VERIFY"),
+            (
+                "ROADMAP without PFP-VERIFY (FRZ-FRZ-10 message)",
+                no_verify,
+                "FRZ-FRZ-10: post-freeze policy must be verified before T-B8-ROADMAP",
+            ),
+            ("ROADMAP without COORD", no_coord, "Formal closure T-B8-ROADMAP must follow T-B7-COORD-ARCH-FRZ"),
+            (
+                "auditor order: EVOL-B6 not before EVOL-FRZ",
+                _isolated(ref, "T-B5-EVOL-B6"),
+                "EVOL B6 before FRZ-EVOL promotion: T-B5-EVOL-B6 must precede T-B5-EVOL-FRZ",
+            ),
+            (
+                "auditor order: ENT-B6 not before FRZ-AUD",
+                _isolated(ref, "T-B6-ENT-B6"),
+                "ENT B6 before FRZ-AUD promotion: T-B6-ENT-B6 must precede T-B6-FRZ-AUD",
+            ),
+            (
+                "auditor order: ECAP-2C not before FRZ-FRZ",
+                _isolated(ref, "T-B7-ECAP-2C"),
+                "ECAP §2.C before FRZ-FRZ admission: T-B7-ECAP-2C must precede T-B7-FRZ-FRZ",
+            ),
+            (
+                "PD2-01: EVOL-FRZ <- LOCK",
+                _with_edge(ref, "T-B5-EVOL-FRZ", "T-B7-LOCK-FREEZE-SHA"),
+                "PD2-01: T-B5-EVOL-FRZ is a pre-lock ancestor and must not follow T-B7-LOCK-FREEZE-SHA",
+            ),
+            (
+                "PD2-01: FRZ-AUD <- LOCK",
+                _with_edge(ref, "T-B6-FRZ-AUD", "T-B7-LOCK-FREEZE-SHA"),
+                "PD2-01: T-B6-FRZ-AUD is a pre-lock ancestor and must not follow T-B7-LOCK-FREEZE-SHA",
+            ),
+        ]
+    )
     return cases
 
 
@@ -591,8 +671,10 @@ def collect(errors: list[str] | None = None) -> tuple[list[str], dict[str, objec
     statuses = _parse_checklist()
     canonical = set(statuses)
     families = {fid.split("-")[1] for fid in canonical}
-    if not canonical:
-        errors.append("checklist has no FRZ rows")
+    if len(canonical) != EXPECTED_FRZ_ROWS:
+        errors.append(f"FRZ count expected {EXPECTED_FRZ_ROWS} got {len(canonical)}")
+    if len(families) != EXPECTED_FRZ_FAMILIES:
+        errors.append(f"FRZ families expected {EXPECTED_FRZ_FAMILIES} got {len(families)}")
     classes = defaultdict(int)
     for st in statuses.values():
         classes[_status_class(st)] += 1
@@ -707,8 +789,8 @@ def collect(errors: list[str] | None = None) -> tuple[list[str], dict[str, objec
     run_ids = re.findall(r"^\| (L[123]-[A-Z0-9-]+) \|", qual_text, re.M)
     if len(run_ids) != len(set(run_ids)):
         errors.append("duplicate qualification RUN_ID")
-    if not run_ids:
-        errors.append("qualification plan has no RUN_ID rows")
+    if len(set(run_ids)) < MIN_QUAL_RUNS:
+        errors.append(f"qual RUN_ID count must be at least {MIN_QUAL_RUNS} (append-only) got {len(set(run_ids))}")
     stats["qual_runs"] = len(set(run_ids))
     if re.search(r"^L[123]-", qual_text, re.M):
         errors.append("qual plan contains non-table RUN rows")
