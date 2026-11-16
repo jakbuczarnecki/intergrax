@@ -36,6 +36,6 @@
 | AUDIT_EXECUTION_SHA | `a73d15ab341b30e9748aad03894f6faa75ad4e09` | IIAC `audit_execution_sha` = merge of PR #597 (IA-GLOBAL addendum 3); no product delta to HEAD at activation (ACT-N11), checked by the certifier (`PDC_P8_04_ACTIVATION_CERTIFIER_REPORT.md`) |
 | EVIDENCE_PUBLICATION_SHA / CERTIFICATION_PUBLICATION_SHA | `a73d15ab341b30e9748aad03894f6faa75ad4e09` (evidence, = `E`) / `fd2ad28efde6216be38194b020188d116264adb6` (certification, = `C`: matrix, preflight, pre-check scripts and logs) | Evidence-only descendants (docs paths only) |
 | GLOBAL_AUDITED_SHA | `969cbd964c679d563b02e55f065b452d46fdf90b` | P8, `G` (merge of PR #593, T-IGX-041-Q; last product-path change PR #594 `7f1859e0f`, T-IGX-041-P). The frozen SHA of addendum 1 was `d39a520dda965981a38f8e1a90ec5135ea5d508e` (also the EBH-7 final re-pin). Contains the MCP-SERVER-X closure publication (audit section 4). Verdict at `G`: `PASS_SCOPED` (audit section 15) |
-| FINAL_CLOSURE_PUBLICATION_SHA | — | P9 merge; exists only after the Operator signs and the closure pull request merges (`PDC_FINAL_ACCEPTANCE_REPORT.md`) |
+| FINAL_CLOSURE_PUBLICATION_SHA | `feaa2a87d41c3c8ae95724590291f360d0232016` (PR #603) | P9 merge; exists only after the Operator signs and the closure pull request merges (`PDC_FINAL_ACCEPTANCE_REPORT.md`) |
 
 Historical accepted SHAs of predecessor stages are reuse evidence only. Each reuse needs change-delta evidence from the accepted SHA to the audited SHA (PDC-P2-09). Being an ancestor does not make a commit a current-HEAD PASS.
