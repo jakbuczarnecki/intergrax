@@ -120,6 +120,9 @@ jobs:
     timeout-minutes: 15
 
     steps:
+      - name: AF2 workflow source probe
+        run: echo AF2_WORKFLOW_SOURCE_PROBE
+
       - name: Checkout
         uses: actions/checkout@v5
         with:
