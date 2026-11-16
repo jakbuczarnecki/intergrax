@@ -38,6 +38,14 @@ uv run python scripts/qualification/pdc_x_wbs.py --check
 - Any change of the classifier, of `C4_RULES`, of a regression map, of a class definition or of the replay inputs; the EBH-7 L3 replay, a new EBH-7 pin, the broad or full suites, the `compat_x` directory.
 - Everything under `intergrax/`, `agents/`, `applications/`, `platform_proofs/`, `scripts/governance/`, `.github/`, `pyproject.toml`, `uv.lock`, and every other test (byte-identical); T-IGX-041-P.
 
+## Implementation checkpoint
+
+- Red before: the two changed tests on the unchanged files at the manifest pin `d39a520dd` (`uv run pytest <K node> <O node> -q`): 2 failed (`assert 2 == 1` at `test_ebh_7_b6_f10_c4_041k_entries_gates.py:103` and `test_ebh_7_b6_f10_c4_041o_entries_gates.py:104`), log `.tmp/proof/pdc-x-041q/red.log` (not committed).
+- Change: one private helper `_with_paths` per file (append only the paths the range does not already hold) and the one input line of each changed test; every assertion of the two tests is unchanged. Added per file: `removing_one_entry_reopens_exactly_that_path` (3 parametrized cases), `reopen_check_does_not_depend_on_the_paths_being_in_the_range`, `with_paths_appends_only_missing_paths`.
+- Green after: the two files in one pytest command (`uv run pytest tests/qualification/ebh_7/test_ebh_7_b6_f10_c4_041k_entries_gates.py tests/qualification/ebh_7/test_ebh_7_b6_f10_c4_041o_entries_gates.py -q`): 39 passed (`.tmp/proof/pdc-x-041q/green.log`). ruff check and format clean, pyright 0 errors, `pdc_x_wbs.py --check` OK (107 rows, 39 batches).
+- No other test was run: no EBH-7 replay, no `ebh_7` directory run, no `compat_x`, no broad suite, no new pin.
+- No deviation from the signed plan.
+
 ## Lifecycle state
 
 plan_approved
