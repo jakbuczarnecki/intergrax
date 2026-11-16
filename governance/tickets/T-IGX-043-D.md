@@ -32,4 +32,4 @@ One process at a time, under the shared pytest lock; none run when this ticket w
 
 ## Lifecycle state
 
-`draft`
+plan_pending
