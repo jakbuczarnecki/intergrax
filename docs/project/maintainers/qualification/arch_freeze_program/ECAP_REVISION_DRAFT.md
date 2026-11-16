@@ -16,7 +16,7 @@
 **It is not inside an Operator-only file.** The roadmap (`PLATFORM_ENTERPRISE_COMPLETION_ROADMAP.md`) and the FRZ checklist are separate files; ECAP only lists them as companion authorities. So the task's rule "if ECAP is inside an Operator-only file, write a proposal" is not triggered by the letter of the file layout. This draft is a **proposal document anyway**, for three reasons:
 
 1. **The content does not exist yet.** The contract names behind the PT-WA ports, the typed provider error contract, the public/internal split and the counts at M3 come from W3 and W5 work. The binding scope of the RW train is still being planned (T-AF2-RW-PLAN). A W2 edit of ECAP would freeze guesses into an authority document.
-2. **ECAP is an input of the EBH-7 F10 harness.** `tests/qualification/ebh_7/_ebh7_f10_canonical_inputs.py:24,1006` reads it and parses its `#### FRZ-<FAMILY> — ` headers and the `Primary closing stage(s)` rows (lines 39-40, 704-716). ECAP is also listed in `IIAC_GLOBAL_AUTHORITY_IMPACT_MATRIX.json`. An edit of those parts before the single EBH-7 pin (DP-61) would change an input of the generated F10 matrix (see gap G-08).
+2. **ECAP is an input of the EBH-7 F10 harness.** `tests/qualification/ebh_7/_ebh7_f10_canonical_inputs.py:24,1006` reads it and parses its `#### FRZ-<FAMILY> — ` headers and the `Primary closing stage(s)` rows (lines 39-40, 704-716). ECAP is also listed in `docs/project/maintainers/qualification/IIAC_GLOBAL_AUTHORITY_IMPACT_MATRIX.json`. An edit of those parts before the single EBH-7 pin (DP-61) would change an input of the generated F10 matrix (see gap G-08).
 3. **The wording must match two Operator-only edits.** PT-D09 (roadmap) and PT-D10 (checklist, including the A/B split) change the statements ECAP defers to. The applying ECAP edit should follow them.
 
 **Applying path (proposed).** The W5 final (T-IGX-052-D) is reviewed with the roadmap and checklist hunks (PT-AUD-DOC), and the ECAP edit is applied after PT-D09 and PT-D10, before the lock. Who may apply it, and whether it counts as a statement-changing hunk for PT-AUD-DOC, is for the Operator (gap G-09).
@@ -30,7 +30,7 @@ ECAP §16 (lines 1109-1117) lists seven conditions for updating the protocol. Ap
 | New platform domain or responsibility | No new domain section | PDC-X decided: no new ECAP domain sections (ECAP header, PDC-P3-D04). The program adds no domain | none |
 | **New public contract or extension mechanism** | **Yes** | Four manifests, planned Tier-0 ports (PT-WA), typed provider error contract, trust classes, projection field maps (section 3) | §2.C, §4.6, §5, §15 items 3, 11 |
 | New infrastructure/provider class | None found | The plan keeps C10/C15 (no new vendor integrations) and records E2B/Modal/Daytona as `NOT_CLAIMED`; no new provider class appears in the sources read | §15 item 11 wording only |
-| New enterprise invariant or FRZ criterion | Not as new IDs | The inventory stays 225 / 26 (section 5); how the A/B split is written into the checklist is undecided (G-01) | §3.0, §17.1, header, §18 |
+| New enterprise invariant or FRZ criterion | Not as new IDs | The inventory is 225 / 26 at `a7f023615` (section 5); the total after the A/B split depends on G-01; how the A/B split is written into the checklist is undecided (G-01) | §3.0, §17.1, header, §18 |
 | New architecture-reopen trigger | Depends on W5 | T-B7-PFP-ACTIVATE defines requalification triggers; ECAP §2.D must then agree with it (G-07) | §2.D, §16 |
 | **New regression class** | **Yes** | Known-red classes FIX / ENV / OUT / UNKNOWN and the expected-red set (section 4) | §2.A A8, §2.C C4, §2.D D4, §12, §13, §14 |
 | **Canonical evidence requirement changes** | **Yes** | The PASS rule is exact SHA = M3 with product tree equal to FCS, evidence executed at M3, an independent audit row; ECAP §12 and §2.C do not state the M3 identity condition | §2.C, §12, §15 |
@@ -82,7 +82,7 @@ Every "Planned" row is a claim about the future. Nothing in this table says a su
 
 Counts below were computed with a stdlib script over the checklist and ECAP text at `a7f023615`; the commands are in section 8. They are counts of the checklist's own status cells, not verdicts.
 
-**Inventory.** 225 rows `FRZ-<FAMILY>-<NN>`, all unique, in 26 families. ECAP §3 lists exactly the same 225 IDs in 26 family subsections; the declared per-family counts equal the listed ones; no ID is missing on either side. §3.0, §17.1 and the header ("225 criteria, 26 families") therefore agree with the checklist today. ECAP contains no per-row status column (checked: no `| OPEN` or `| PASS ` table cell in ECAP).
+**Inventory.** 225 rows `FRZ-<FAMILY>-<NN>`, all unique, in 26 families. ECAP §3 lists exactly the same 225 IDs in 26 family subsections; the declared per-family counts equal the listed ones; no ID is missing on either side. §3.0, §17.1 and the header (225 criteria in 26 families) therefore agree with the checklist today. ECAP contains no per-row status column (checked: no `| OPEN` or `| PASS ` table cell in ECAP).
 
 **Status cells today.**
 
@@ -104,7 +104,7 @@ By family (OPEN / PASS / off-vocabulary PASS label): OPEN only: BND 6, CTR 6, DE
 | Off-vocabulary labels | 8 | become PASS with a linked limitation after the W7 verdict (AUD-10 after PT-AUD-ENFA) | OD-AF-08 |
 | Path B rows (checklist line 66) | FRZ-PRD-01, FRZ-PRD-02 whole; live parts of FRZ-PRD-03, FRZ-PRD-08, FRZ-SEC-04 | PRD-01, PRD-02 stay OPEN under PROD-Q; PRD-03, -08, SEC-04: architecture part PASS (Dimension A), live part OPEN (Dimension B) | DP-34, DP-35; split matrix in plan section D |
 | SEC-05, SEC-06 (OD-AF-18) | 2 | architecture gates PASS; the E2B/Modal/Daytona part is `NOT_CLAIMED`, `N/A — WITH EVIDENCE` for that part. **Not Path B** | needs an evidence file and its own row verdict |
-| A/B chain (EQOA-A7-019) | 14 rows: PRD-04, -11, -12, REG-08, REL-03, -05, -08, -09, -10, -11, SEC-01, -05, -06, -09 | architecture sub-part PASS; live sub-part may stay OPEN under PROD-Q | split is a checklist amendment (PT-D10); SEC-05, -06 are in this chain and handled by the previous row |
+| A/B chain (EQOA-A7-019) | 14 rows: PRD-04, -11, -12, REG-08, REL-03, -05, -08, -09, -10, -11, SEC-01, -05, -06, -09 | architecture sub-part PASS; live sub-part may stay OPEN under PROD-Q | split is a checklist amendment (PT-D10); SEC-05, -06 are in this chain and handled by the previous row; source: `ARCH_FREEZE_FRZ_ACCEPTANCE_MATRIX.md:641` |
 | PLG-02 | 1 | planned `N/A — WITH EVIDENCE` under SCOPE-03 (EX-G-03) | the manifests list EX-G-03 without a derivable mark |
 | All other OPEN rows | rest of the 109 | PASS (or `N/A — WITH EVIDENCE`) after the closing nodes of plan section D | no count is predicted here |
 
