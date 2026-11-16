@@ -11,7 +11,7 @@
 | Certifier | binding manifest `PASS` scoped (19 limitations); not a certification of the stage |
 | IIAC activation | `IN_FORCE` from phase-1 commit `9f05749bc23592868f3d0a7f505f9edbb2cfd025` |
 | EBH-7 L3 replay (final re-pin) | run `43738431866` **FAILED** (2 failed, 720 passed, 9 skipped), **not re-run**; **not a B6 PASS and not a certification verdict** |
-| FINAL_CLOSURE_PUBLICATION_SHA | `<FINAL_CLOSURE_PUBLICATION_SHA>` (exists only after the closure pull request merges) |
+| FINAL_CLOSURE_PUBLICATION_SHA | `feaa2a87d41c3c8ae95724590291f360d0232016` (PR #603) |
 | Operator signature | `<Operator signature — not written by the orchestrator, an auditor, the certifier or a delegate>` |
 
 ARCH-FREEZE is **not entered** by this document. `PDC-X` does not perform the freeze-SHA audit or VBN acceptance (roadmap §3.2, "Non-negotiable boundaries"); those remain with ARCH-FREEZE.
@@ -35,7 +35,7 @@ ARCH-FREEZE is **not entered** by this document. `PDC-X` does not perform the fr
 | `E` = `audit_execution_sha` = `evidence_publication_sha` | `a73d15ab341b30e9748aad03894f6faa75ad4e09` (PR #597) | certifier report |
 | `C` = `certification_publication_sha` | `fd2ad28efde6216be38194b020188d116264adb6` | certifier report |
 | Activation phase 1 / phase 2 / merge | `9f05749bc23592868f3d0a7f505f9edbb2cfd025` / `293bb5b3c` / `f6f335aae` (PR #601) | `IIAC_POLICY_ACTIVATION_RECORD.json` |
-| FINAL_CLOSURE_PUBLICATION_SHA | `<FINAL_CLOSURE_PUBLICATION_SHA>` | P9 merge |
+| FINAL_CLOSURE_PUBLICATION_SHA | `feaa2a87d41c3c8ae95724590291f360d0232016` | P9 merge |
 
 ## 3. Repair merges on `development`
 

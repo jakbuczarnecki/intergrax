@@ -57,7 +57,7 @@ Signed: <pending — the Operator confirms the final text in chat>
 | `governance_implementation_sha` | `2ae1014116d353bc7742985e62f2bccc2bfac798` | certifier report |
 | Activation phase 1 / phase 2 / merge | `9f05749bc23592868f3d0a7f505f9edbb2cfd025` / `293bb5b3c` / `f6f335aaef3d1e9ee204bd531f52f8a779566326` (PR #601) | `IIAC_POLICY_ACTIVATION_RECORD.json`; `git log` |
 | `development` tip at drafting | `f6f335aaef3d1e9ee204bd531f52f8a779566326` | `git rev-parse origin/development`; **re-read before signing** |
-| FINAL_CLOSURE_PUBLICATION_SHA | `<FINAL_CLOSURE_PUBLICATION_SHA>` — exists only after the closure pull request merges | P9 merge |
+| FINAL_CLOSURE_PUBLICATION_SHA | `feaa2a87d41c3c8ae95724590291f360d0232016` | P9 merge |
 
 ## 4. Domain dispositions
 
