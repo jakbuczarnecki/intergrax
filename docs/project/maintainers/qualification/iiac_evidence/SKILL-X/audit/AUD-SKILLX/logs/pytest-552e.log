@@ -1,0 +1,11 @@
+Using CPython 3.12.11
+Creating virtual environment at: .venv
+   Building intergrax-ai @ file:///D:/Projekty/_wt/_scratch/aud-skillx
+      Built intergrax-ai @ file:///D:/Projekty/_wt/_scratch/aud-skillx
+warning: Failed to hardlink files; falling back to full copy. This may lead to degraded performance.
+         If the cache and target directories are on different filesystems, hardlinking may not be supported.
+         If this is intentional, set `export UV_LINK_MODE=copy` or use `--link-mode=copy` to suppress this warning.
+Installed 63 packages in 20.97s
+........................................................................ [ 61%]
+.............................................                            [100%]
+117 passed in 94.80s (0:01:34)

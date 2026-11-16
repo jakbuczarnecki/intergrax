@@ -1,0 +1,25 @@
+{
+  "label": "AUD-TOOLLIFE2",
+  "audited_sha": "2d14bd76f29366a6eda562c22cf857b55d515700",
+  "baseline_sha": "1548640708c850b3fbfca3f2db0e5ecfee4274dd",
+  "verdict": "CONDITIONAL",
+  "findings": [
+    {"id": "F-01", "severity": "HIGH", "status": "CLOSED_TECHNICAL", "title": "4 Batch B L2 tests red since Batch C", "note": "Green at post-fix SHA (64 passed in the Batch B set; 37 in the module). Safety assertions kept. Disclosure part open as F-13 / C-4."},
+    {"id": "F-02", "severity": "MEDIUM", "status": "CLOSED", "title": "F3 streamable-HTTP parent-cancel test failed in module order", "note": "Event-driven fix. Green in the 18-module in-order run and in 3 of 3 whole-module runs. Classified as a test timing defect."},
+    {"id": "F-03", "severity": "MEDIUM", "status": "OPEN", "title": "No independent review artifact for the baseline", "note": "Re-checked: only text in the Cursor-authored reconciliation. Out of scope for this re-audit per OD-TLX-D; still stands for any closure signature."},
+    {"id": "F-04", "severity": "MEDIUM", "status": "OPEN", "title": "Exit criteria 7 and 8 narrowed via qualification records (OD-EC7, default-off recovery)", "note": "Out of scope per OD-TLX-D."},
+    {"id": "F-05", "severity": "LOW", "status": "OPEN", "title": "P0 SHA citation slip", "note": "Documentation slip, not an evidence defect (carried from the prior audit; not re-derived)."},
+    {"id": "F-06", "severity": "LOW", "status": "OPEN", "title": "Large production delta under a certification stage; wave approvals are unverifiable text", "note": "Carried."},
+    {"id": "F-07", "severity": "LOW", "status": "NOT_OBSERVED", "title": "pytest process did not exit after the combined run", "note": "All runs here exited rc 0. Not claimed fixed."},
+    {"id": "F-08", "severity": "LOW", "status": "OPEN", "title": "Stale in-document status wording", "note": "Carried."},
+    {"id": "F-09", "severity": "INFO", "status": "OPEN", "title": "Optional extra mcp required to collect the L3/TL11 modules", "note": "Used --extra mcp throughout."},
+    {"id": "F-10", "severity": "INFO", "status": "RESOLVED", "title": "invoker.py drift since the baseline (EBH-7 5df074fcb)", "note": "AST diff: only an additive, fail-closed tenant-mismatch deny guard in _require_current_attempt_authorization. No effect on prior conclusions; replays ran on the current code."},
+    {"id": "F-11", "severity": "MEDIUM", "status": "OPEN", "blocking_for_pass": true, "title": "C0: durable external-operation record left RUNNING after a post-close() pool.submit failure", "evidence": "invoker.py:1905-1915 (unguarded dep_boundary-is-None branch) vs :1976-1977 (guarded); runtime repro 2 of 2 at post-fix SHA, logs/c0_repro_at_postfix.log", "scope_ruling": "IN SCOPE of the TOOL-LIFE-X acceptance (roadmap section 3.0.5 line 866; Worker shutdown row; TL15). OD-TLX-C expressly left it unsanctioned.", "verdict_effect": "At best CONDITIONAL. PASS_SCOPED unavailable: no declared, Operator-signed exclusion covers it.", "bounds": "Caller-visible result is correct. Requires a store wired and a call on a closed invoker. In-memory store dies with the process. Durable SQLite variant not run. Production exposure not checked.", "condition": "C-3"},
+    {"id": "F-12", "severity": "LOW", "status": "OPEN", "title": "The 17-module L3/TL11 set is not enumerated in the stage docs", "note": "Ran an 18-module superset (230 passed). Reconciled by count: 230 - 11 (trust_a) = 219 = 217 + 2 new F3 tests."},
+    {"id": "F-13", "severity": "LOW", "status": "OPEN", "title": "OD-TLX-D disclosure addendum not yet in the tree", "note": "The reconciliation record has no commit since 35344557d. Administrative.", "condition": "C-4"}
+  ],
+  "conditions": [
+    "C-3: resolve C0 (F-11) either by a product fix with a regression test and replay at a new exact SHA, or by an Operator-signed scoped exclusion / known-limitation record that states the durable-store variant explicitly",
+    "C-4: publish the OD-TLX-D item 1 disclosure addendum to the reconciliation record and record test_tools_side_effect_safety.py in the standing mandatory L2 inventory"
+  ]
+}
