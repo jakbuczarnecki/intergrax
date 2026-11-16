@@ -1,6 +1,6 @@
 # PLAN T-IGX-047-A — EQO-A remediation node PT-R01 (EDER batch B): register data load, reconciliation, exclusions, proposed owner vocabulary
 
-Status: DRAFT for Operator review. Nothing here is approved, applied or audited. This ticket certifies nothing, promotes no FRZ criterion, changes no stage status, triages no row, closes no row and edits no product path.
+Approval state: see the Approved section of ticket T-IGX-047-A; approval of this plan is not an implementation go and is not an audit. This ticket certifies nothing, promotes no FRZ criterion, changes no stage status, triages no row, closes no row and edits no product path.
 
 ## 1. Purpose
 

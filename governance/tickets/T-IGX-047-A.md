@@ -6,7 +6,7 @@ Documentation-only data load of the Enterprise Debt & Exceptions Register whose 
 
 ## Plan digest
 
-Plan digest: bbb1714655bb00aea3f63e2e20fdd710e357681ec4c043f36ad883eef6f828ce
+Plan digest: 6021649da78e68b34dec52e4e603b10b4929b8a36da7bcbd56cde8aabd9ca680
 
 Canonical plan: [`governance/tickets/plans/PLAN_T-IGX-047-A.md`](plans/PLAN_T-IGX-047-A.md). The digest was computed with `scripts/governance/plan_digest.py`; it must be recomputed after any edit of the plan.
 
@@ -21,7 +21,7 @@ docs/project/maintainers/qualification/enterprise_debt_register/owner_vocabulary
 
 ## Approved
 
-PENDING. The approval line is written after plan review by the Operator or a commissioned session; the implementer never writes it. This placeholder deliberately avoids the approval keyword because the ticket validators accept any line that starts with it (finding EQOA-A6-002).
+State: the approval line, if any, is written in this section by the Operator or a commissioned session and never by the implementer; this text deliberately avoids the approval keyword because the ticket validators accept any line that starts with it (finding EQOA-A6-002). Approval of the plan is not an implementation go.
 
 ## Test contract
 
