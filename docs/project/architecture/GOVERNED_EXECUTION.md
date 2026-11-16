@@ -23,6 +23,10 @@ Primary audience: Principal / Staff engineers, architects, CTOs, security and go
 
 **GOV-FINAL-1 reconciliation (code truth on `development`):** documentation status below was synchronized to production paths and qualification tests; **enterprise certification of the full Governance Layer is not claimed.**
 
+> **Note (EQO-A remediation draft, as of 2026-11-16):** the sentence above records the GOV-FINAL-1 state and is kept as written. Since then the roadmap records two scoped closures that touch this plane. **GOV-X1** (Governance Authority Boundary Recertification) is closed at `27af801bec916165dab85019c07cf43d18e18551` (roadmap stage table row `GOV-X1`, ledger row `GOV-X1-FINAL`); the roadmap limits it to that scope: not full Governance+Execution E2E and not global FRZ closure. **GOV-X2** (Governance + Execution E2E certification) is closed with final code baseline `b233c61b123464726124dc02daaee21f55d3b856` and qualification evidence `e2d7a40b291c658677cc6d981183e20957c7cf0e` (roadmap stage table row `GOV-X2`, ledger row `GOV-X2`). The freeze checklist records FRZ-GOV-01..10 as PASS on that basis.
+>
+> Scope that stays open: (1) the freeze checklist (read at `origin/development` `7960ae7f6`) records FRZ-TYP-01..06 as OPEN and FRZ-TRC-01..12 and FRZ-TEN-01..12 as PASS; this note restates none of those rows as its own claim; (2) the GOVERNANCE-FINAL certification record cited at the end of this document concluded `NOT CERTIFIED — ENTERPRISE BLOCKERS REMAIN` at its audited SHA, and the roadmap carries no GOVERNANCE-FINAL row, so this document still makes no Governance-Plane-wide enterprise certification claim; (3) the per-mechanism "Enterprise CLOSED?" cells of table C below were not re-derived by this note. This note does not decide whether GOV-X1 and GOV-X2 supersede the GOVERNANCE-FINAL record; that is a roadmap-owner decision.
+
 ---
 
 ## Governance implementation truth (GOV-FINAL-1)
@@ -43,6 +47,8 @@ Unchanged platform intent: contract-first evaluation at named **Governance Evalu
 
 **None at Governance-Plane-wide scope.** Individual slices are regression-gated (GR-1 identity binding, GR-4 policy core gates, GR-6 architecture gates, GR-7 reliability boundary gates) but **GR-13 / GR-16 enterprise qualification is open**.
 
+> **Note (EQO-A remediation draft, as of 2026-11-16):** "None at Governance-Plane-wide scope" is the GOV-FINAL-1 statement. Scoped certifications recorded by the roadmap since then are GOV-X1 (authority boundary only) and GOV-X2 (Governance + Execution E2E; FRZ-GOV-01..10 and FRZ-EXE-01..07 primary closure); see the note under the GOV-FINAL-1 reconciliation line above. Neither is restated here as a Governance-Plane-wide enterprise certification.
+
 ### C. Implemented — qualification open
 
 | Mechanism | Code / contract anchor | Qualification evidence (non-exhaustive) | Enterprise CLOSED? |
@@ -61,6 +67,7 @@ Unchanged platform intent: contract-first evaluation at named **Governance Evalu
 - **Strategy coverage (GR-10):** **FINAL CLOSED within formally defined GR-10 scope** (typed matrix §9 + `tests/qualification/governance/strategy/`; SSOT `GR10_*_FORMAL_CLOSURE` in `catalog.py`; **GR-10-R7** residual matrix requalification retained as qualification artifact). **INFERENCE:** **CLOSED** — PRE_MODEL **QUALIFIED** on `InferenceExecutor` structured path (**GR-10-R2-C1/R1** — [ADR-GR-10-001](../technical/adr/entries/2026-09-18/ADR-GR-10-001.md)); root admission **NOT_APPLICABLE** (**GR-10-R4**); Inner Governance **NOT_APPLICABLE** (**GR-10-R5**); Governance Evidence **QUALIFIED** (**GR-10-R6 / R6-R1**); remaining INFERENCE blockers **NONE**. **ORCHESTRATION:** **FINAL CLOSED** — R8–R15 qualification slices; per-GEP GR-8 fact adoption **DEFERRED_TO_GR13** where typed ([ADR-GR-10-003](../technical/adr/entries/2026-09-21/ADR-GR-10-003-gr10-gr13-governance-evidence-certification-scope.md)). **AGENTIC:** **FINAL CLOSED** — P-UAEP canonical ([ADR-GR-10-004](../technical/adr/entries/2026-09-21/ADR-GR-10-004-agentic-execution-model-uaep-canonical.md)); `acp.session.v1` explicit opt-in only; Governance Evidence capability **PARTIAL** (mandatory spine qualified; per-GEP facts **GR-13**). **Next governance milestone:** **GR-12** control-plane mutation (not GR-10 scope).
 - **Control-plane mutation (GR-12):** **CLOSED** — independent exact-SHA audit accepted @ `03dde6c68a37ac0a8fe19cc5bcf683da8a3afc06` (semantic qualification baseline `b706c2c72a900575ec360b7f217c97a3656c71b9`). GOV_FINAL_4 scenario **CP** = **QUALIFIED** within GR-12 scope. Not an extension of `MeaningfulSideEffectRequest`.
 - **Plugin enterprise certification (GR-11):** **READY FOR AUDIT** (GOV-X1 child). **GR-13** open.
+  - Note (EQO-A remediation draft, as of 2026-11-16): the roadmap ledger lists a GR-11 audit row at `4e5878f538521ef2bc7e080599574e23d8821a5a` (`GOV-X1-GR11`) and a GR-13 audit row at `df0855e724430a3b4e58f757ec14ddcac4164d29` (`GOV-X1-GR13`), each described as a GOV-X1 parent contribution only. The READY FOR AUDIT / open wording above and in the GR-12 status block is the GOV-FINAL-1 state; the ledger rows are the roadmap's statements and are not restated here as verification by this document.
 - **Transitional Task/Nexus coupling** on some pause bridges — Execution owns lifecycle target; port integration incomplete on non-orchestration strategies.
 - **Human APPROVED ≠ Governance ALLOW** — fresh DENY still applies; resume requires scoped authorization (see HITL section).
 
@@ -953,6 +960,10 @@ Orientation map: [Existing implementation map](#existing-implementation-map). Ca
 | Governance Evaluation Points and enforcement ownership | [ADR-GOVERNED-EXECUTION-001](../technical/adr/entries/2026-08-16/ADR-GOVERNED-EXECUTION-001.md) |
 | Policy Catalog identity and ownership | [ADR-GOVERNED-EXECUTION-002](../technical/adr/entries/2026-08-17/ADR-GOVERNED-EXECUTION-002.md) |
 | Platform plugins and policy handler admission | [PLATFORM_PLUGINS.md](PLATFORM_PLUGINS.md) · [ADR-PLATFORM-PLUGIN-001](../technical/adr/entries/2026-08-14/ADR-PLATFORM-PLUGIN-001.md) |
+| Runtime security hardening decision (PDC-D6) | [ADR-PDC-06](../maintainers/architecture/ADR_PDC_06_RUNTIME_SECURITY_HARDENING.md) |
+| Execution engine security boundary and threat model | [EXECUTION_ENGINE_SECURITY_BOUNDARY_AND_THREAT_MODEL.md](../maintainers/architecture/EXECUTION_ENGINE_SECURITY_BOUNDARY_AND_THREAT_MODEL.md) |
+| Security responsibility matrix over the eight PDC domain surfaces (satellite; owns no authority) | [SECURITY_ARCHITECTURE_D1_D8.md](../maintainers/architecture/satellites/SECURITY_ARCHITECTURE_D1_D8.md) |
+| Why there is no separate security pair (satellite plus matrix under existing domain pairs) | [PDC-P3-D03](../maintainers/qualification/platform_domain_completeness/PDC_ARCHITECTURE_DECISIONS.md) |
 | Observability and evidence spine | [OBSERVABILITY.md](OBSERVABILITY.md) · [PROOF_RECEIPTS.md](PROOF_RECEIPTS.md) |
 | Public architecture overview | [ARCHITECTURE_OVERVIEW.md](ARCHITECTURE_OVERVIEW.md) |
 | Current bounded evidence | [PROOFS.md](../proofs/PROOFS.md) |

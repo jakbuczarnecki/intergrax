@@ -276,9 +276,9 @@ Replaceable ERL behavior is grouped by **`EnterpriseReliabilityCapabilityKind`**
 | Axis | Boundary |
 | ---- | -------- |
 | **Architecture** | ERL capability canon defined in this hub and subordinate documents (**TARGET**). |
-| **Implementation** | **NOT STARTED** as a dedicated layer—related behaviors partially overlap Reliability, Integrations, and external-operation contracts elsewhere. |
+| **Implementation** | **Implemented slice exists; extent against the six plan phases not re-derived.** At baseline `258bbf6abb6fdbb92ef0185d058527fbb1e47f04` the repository contains `intergrax/runtime/enterprise_reliability/` (29 py), `intergrax/contracts/enterprise_reliability/` (38 py) and unit tests under `tests/unit/runtime/enterprise_reliability/` (18 py); the plugin registry and gateway named above are implemented. The layer as a whole remains target architecture. Earlier wording of this row: "NOT STARTED as a dedicated layer—related behaviors partially overlap Reliability, Integrations, and external-operation contracts elsewhere." |
 | **Proof** | No dedicated public ERL proof route. |
-| **Plan** | Implementation roadmap is **NEXT** (roadmap step 5)—no 1:1 maintainer plan pair yet. |
+| **Plan** | 1:1 maintainer plan pair: [`ENTERPRISE_RELIABILITY_LAYER_IMPLEMENTATION_PLAN.md`](../maintainers/plans/ENTERPRISE_RELIABILITY_LAYER_IMPLEMENTATION_PLAN.md) (its header names this file as `Architecture (1:1)`). The plan's own roadmap-position table still lists runtime implementation as **Future**; refreshing the plan is outside this document. |
 
 ---
 

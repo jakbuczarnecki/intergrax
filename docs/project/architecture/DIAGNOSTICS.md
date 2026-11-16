@@ -454,6 +454,8 @@ ProblemOccurrence
 
 DG-003 does not own execution facts, persist story state, or bypass `ExecutionReconstructionReader`.
 
+> **Note (EQO-A remediation draft, as of 2026-11-16):** this document is the canonical architecture owner for the implemented state of DG-003 and DG-005. [`DIAGNOSTIC_GAP_LEDGER.md`](../maintainers/qualification/DIAGNOSTIC_GAP_LEDGER.md) is the discovery-time backlog: its DG-003 entry reads `OPEN / architecture review` and its DG-005 entry reads `QUALIFICATION CANDIDATE`, and the DG-001B closure record (2026-09-07) states DG-003 OPEN. Read those ledger statuses as point-in-time records; where they differ from this document, this document decides. The ledger refresh is tracked separately (finding A7-002).
+
 ```text
 Problem
   → occurrence
