@@ -7,7 +7,7 @@ Status: **DRAFT - not adopted.** This page is a map. It is **not** a certificate
 
 ## 1. How to use this directory
 
-`docs/project/maintainers/qualification/` holds the certification, qualification, audit, reconciliation and decision records of the Enterprise program: 808 top-level files (801 `.md`, 7 `.json`) and 13 sub-directories at the EQO-A baseline `258bbf6abb6fdbb92ef0185d058527fbb1e47f04` (2,514 tracked files in total). The Campaign A dossier directory and later PDC/EBH-7 records were added after the baseline: at `4220069c260a5f27bf9f56961155247256541304` there are 14 sub-directories and 2,898 tracked files. Every file name starts with the program, stage or campaign it belongs to.
+`docs/project/maintainers/qualification/` holds the certification, qualification, audit, reconciliation and decision records of the Enterprise program: 808 top-level files (801 `.md`, 7 `.json`) and 13 sub-directories at the EQO-A baseline `258bbf6abb6fdbb92ef0185d058527fbb1e47f04` (2,514 tracked files in total). The Campaign A dossier directory and later PDC/EBH-7 records were added after the baseline: at `4220069c260a5f27bf9f56961155247256541304` there are 14 sub-directories and 2,898 tracked files, and at `7960ae7f6c82da60ca9acdc0ceebf63810002a42` (`origin/development` when this index was prepared, before this change) 14 sub-directories and 2,937 tracked files. Both counts are dated snapshots and drift with every merge. Every file name starts with the program, stage or campaign it belongs to.
 
 Start from the question you have:
 
