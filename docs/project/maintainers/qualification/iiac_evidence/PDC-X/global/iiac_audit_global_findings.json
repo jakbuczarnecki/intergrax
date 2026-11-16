@@ -245,5 +245,28 @@
     "COMPAT-X counters (10 tests, T-IGX-041-L)",
     "fixture_strict_adapter_parity (4 tests, declared T-IGX-041-C deviation)",
     "strict xfail test_scaffold_defaults_mcp_to_opt_in[product] (T-IGX-039-A, owner Operator; not in selected paths)"
-  ]
+  ],
+  "delta_audit_sha": "969cbd964c679d563b02e55f065b452d46fdf90b",
+  "addendum_2": {
+    "section": "PDC_INDEPENDENT_AUDIT.md section 14",
+    "scope": "T-IGX-041-P (G-23) and T-IGX-041-Q (K/O gate tests); targeted tests only (Operator condition, DELEGATION-PDC-LOOP2)",
+    "overall_verdict": "PARTIAL",
+    "iiac_manifest_verdict": "CONDITIONAL",
+    "verdict_if_operator_accepts_open_items": "PASS_SCOPED for the rows in scope, with the accepted items named: the 77 scenario reds (G-05 residual), E1..E11, trace_bridge.v1 and the Neo4j residual G-28; not a repeat-run PASS (ECAP FULL, contract suites and combined pytest not repeated)",
+    "product_paths_changed_since_d39a520dd": [
+      "intergrax/rag/graph/generation_visibility.py",
+      "intergrax/rag/graph/indexer/heuristic_graph_indexer.py",
+      "intergrax/rag/graph/providers/inmemory_graph_store.py"
+    ],
+    "status": {
+      "G-23": "VERIFIED_FIXED (in-memory graph store)",
+      "G-28": "NEW MEDIUM: Cypher/Neo4j store still resolves the unscoped key (declared residual R1 of T-IGX-041-P), fail closed, READ not reproduced; cypher_rag_graph_store.py:156-161",
+      "G-24..G-27": "unchanged (debt register)",
+      "G-05_residual_E1_E11_trace_bridge": "unchanged, open, not Operator-authorized"
+    },
+    "runs": {
+      "targeted_at_969cbd964": "64 passed (2 G-23 reproductions, P file 23, K gate 19, O gate 20)",
+      "mutant": "34 failed, 30 passed (pre-P graph code and two real classifier entries renamed); worktree restored"
+    }
+  }
 }

@@ -1,22 +1,23 @@
 PDC-X / global independent audit (IA-GLOBAL) evidence manifest
 
-audited_implementation_sha: cba32d2479cd134911d2fdf4fb1db4587c8a94d8
+audited_implementation_sha: cba32d2479cd134911d2fdf4fb1db4587c8a94d8 (start)
 final_audit_sha:            d39a520dda965981a38f8e1a90ec5135ea5d508e
+delta_audit_sha:            969cbd964c679d563b02e55f065b452d46fdf90b (Addendum 2, section 14)
 verdict:                    PARTIAL (IIAC manifest verdict value: CONDITIONAL)
 
 Report:    docs/project/maintainers/qualification/platform_domain_completeness/PDC_INDEPENDENT_AUDIT.md
-           sha256 91fed089e2a6d4f87c6f31b34171c7b48fa694c1884f509015cc029e81e20ee8
+           sha256 128a204065cbc1b2870e105d94b11a99c5cb31783e0af160eb6e21a182adbe77
 
 sha256 of every evidence file listed (this manifest and the session manifest excluded; the session manifest carries the digests):
 
 641b0c77cebe203997a4f463f4d9553bb630c1608c887124c69fe44441089027  docs/project/maintainers/qualification/iiac_evidence/PDC-X/global/adversarial_scripts/build_deliverables.py.txt
 0da6b0b596e424cc50c4903e250d6668e2bbfe729a08eef08e88771486de0a96  docs/project/maintainers/qualification/iiac_evidence/PDC-X/global/adversarial_scripts/probe_n03_default_document_loader.py
 ca74ed0b9d5bdf75f12e9df4babcc98360beac406aa12f290ec7f947c33c9652  docs/project/maintainers/qualification/iiac_evidence/PDC-X/global/adversarial_scripts/run_p8_sequential.sh
-79963654aaccb8b176bf79c018b59fd843388d611bca88f9079e12a1a657bc11  docs/project/maintainers/qualification/iiac_evidence/PDC-X/global/audit_scope.json
+15dba5f3c33131d212180797abf5145883c01e332f7a081115f13cd612b35796  docs/project/maintainers/qualification/iiac_evidence/PDC-X/global/audit_scope.json
 728cab042736b7b7ef38c23eb872d1163e56e911700f7f255f4326298cfcc8ca  docs/project/maintainers/qualification/iiac_evidence/PDC-X/global/ecap/enterprise_audit_outcomes.json
 5b4e6efb0a54e0962d080a9688697869850bc918f26010d5b7b6e1e2af46b567  docs/project/maintainers/qualification/iiac_evidence/PDC-X/global/ecap/enterprise_audit_report.json
 9b297de1e86f9b9fbc8d7e26bbd8bdea03b7ca09356833f1427a0cd267fda733  docs/project/maintainers/qualification/iiac_evidence/PDC-X/global/ecap/enterprise_audit_report.md
-492c7ce8711022a6f52310e9281b405d226f80f2a24ff704cc6cae89354b62d4  docs/project/maintainers/qualification/iiac_evidence/PDC-X/global/iiac_audit_global_findings.json
+8e514019a20559e3ae8d4c7d78a576d08f743a204d962d7a180157ae39ded79e  docs/project/maintainers/qualification/iiac_evidence/PDC-X/global/iiac_audit_global_findings.json
 9b45be984890050ea7f1cbec677d08ba8f50e715b4c936b93f8f8dfdc9154116  docs/project/maintainers/qualification/iiac_evidence/PDC-X/global/logs/01_ecap_full.end
 9674ff404cab4e849538b904969c7866a40d031e62248b4d9e3ff45dfa87ca5d  docs/project/maintainers/qualification/iiac_evidence/PDC-X/global/logs/01_ecap_full.log
 baf8bdc466c6f9a38407def3fecfdba32f1b1a9872c02ad55e2783077841ff01  docs/project/maintainers/qualification/iiac_evidence/PDC-X/global/logs/01_ecap_full.start
@@ -60,6 +61,11 @@ cf30f47bb1ba8ce852667f1193e9e70f7368655d94fc996c790532d9245b544c  docs/project/m
 1eeb5f9c5f68320a63aeaf6960616e7ebf78637fce9d99fcf5164953aadfd113  docs/project/maintainers/qualification/iiac_evidence/PDC-X/global/logs/08_base_f87df3b2a_d5_five.log
 cb0a3562a7df7f96ba69ecd76c21c6cef83c9e109402a27bc24bce018457f44d  docs/project/maintainers/qualification/iiac_evidence/PDC-X/global/logs/audited_head.txt
 0e98e81a85ec7c23668f767b9412d3fe44f291abb56cb50e674ad76a7661a167  docs/project/maintainers/qualification/iiac_evidence/PDC-X/global/logs/probe_n03.out
+5a20800813245750e736b9f35b8a13ec03146cdd608ffdece579e817d793011a  docs/project/maintainers/qualification/iiac_evidence/PDC-X/global/logs_addendum2/cmd.txt
+f0f266b29a0abd0789128012b59461a2346e4869eb6de56d699821c8704625e6  docs/project/maintainers/qualification/iiac_evidence/PDC-X/global/logs_addendum2/delta_files.txt
+ca12f3a14f4483ece9975106bceddcefbc8ec01ea0b89d5d41a33f1b25f93be1  docs/project/maintainers/qualification/iiac_evidence/PDC-X/global/logs_addendum2/mutation_pytest.log
+42705501efa5989c6065146384931b3dd1197b86f5794b0502d0fe751842b0ad  docs/project/maintainers/qualification/iiac_evidence/PDC-X/global/logs_addendum2/sha.txt
+d670ce0bff7f7d78c5ebdc107ca456ffbef76ba22d6f0282c2fca03d0786776e  docs/project/maintainers/qualification/iiac_evidence/PDC-X/global/logs_addendum2/targeted_pytest.log
 01c9b90045b76e0309a830d30b2d10e44496e8344f808869acb6dcf372a49886  docs/project/maintainers/qualification/iiac_evidence/PDC-X/global/logs_final/cmd.txt
 fa962be66887e003799031504ad33606ee8bb17c81177f34714ed372c1231d68  docs/project/maintainers/qualification/iiac_evidence/PDC-X/global/logs_final/final_pytest.log
 3ca89767600f4cacf6d62c3598441f0eb3e93cfdc95d8d4d4f4c6d816db152e7  docs/project/maintainers/qualification/iiac_evidence/PDC-X/global/logs_final/probe_n03.out
@@ -70,4 +76,4 @@ a4342b8368baa087072029e524fb51129d5a0a20bd1427c50a04cbfb50801813  docs/project/m
 8161f3c28921e603fc9b9e652338a8ff96ff283adac4c2a364aaed1828bdf431  docs/project/maintainers/qualification/iiac_evidence/PDC-X/global/subagent_notes/D3_D4.md
 1dd55bb084ed772a590a0b1d7b6921c29bb2d476ee13d20a80e9c4d38cb96b90  docs/project/maintainers/qualification/iiac_evidence/PDC-X/global/subagent_notes/D5_D6.md
 053e20b4008dea56f3b015bb2df73e667df7aa00ff023f1e4ab56b365f97bb8e  docs/project/maintainers/qualification/iiac_evidence/PDC-X/global/subagent_notes/D7_D8.md
-bfcb59b40d0950008f852584d3d10b2d733da301f3c2820f10768ea0bbd3f488  docs/project/maintainers/qualification/iiac_evidence/PDC-X/global/test_matrix.txt
+61c3d980ba3280efc5c17807398f28b0d983a745460b2be7b8c434eab7ab30c3  docs/project/maintainers/qualification/iiac_evidence/PDC-X/global/test_matrix.txt

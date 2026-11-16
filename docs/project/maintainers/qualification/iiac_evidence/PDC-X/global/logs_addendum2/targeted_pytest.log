@@ -1,0 +1,18 @@
+Using CPython 3.12.11
+Creating virtual environment at: .venv
+   Building intergrax-ai @ file:///D:/Projekty/_wt/intergrax/ia-g-add2
+      Built intergrax-ai @ file:///D:/Projekty/_wt/intergrax/ia-g-add2
+warning: Failed to hardlink files; falling back to full copy. This may lead to degraded performance.
+         If the cache and target directories are on different filesystems, hardlinking may not be supported.
+         If this is intentional, set `export UV_LINK_MODE=copy` or use `--link-mode=copy` to suppress this warning.
+Installed 69 packages in 7.56s
+................................................................         [100%]
+============================== warnings summary ===============================
+.venv\Lib\site-packages\_pytest\config\__init__.py:1474
+  D:\Projekty\_wt\intergrax\ia-g-add2\.venv\Lib\site-packages\_pytest\config\__init__.py:1474: PytestConfigWarning: Unknown config option: cache_dir
+  
+    self._warn_or_fail_if_strict(f"Unknown config option: {key}\n")
+
+-- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html
+64 passed, 1 warning in 175.63s (0:02:55)
+exit=0

@@ -5,14 +5,17 @@
 | **Record** | `PDC_INDEPENDENT_AUDIT` (PDC-P8-02 / PDC-P8-03) |
 | **Role** | IA-GLOBAL — independent global auditor, new clean session (OD-PDC-IIAC-SCOPE, `IIAC-2026-11-05.1`, profile `iiac-v1`) |
 | **Auditor session** | `PDC-P8-IA-GLOBAL-INDEPENDENT-AUDITOR-6573093f-9178-4c2c-93a3-64b0a5b6c657` (up to four read-only code-reading subagents; the auditor integrated and owns every verdict) |
-| **Date** | 2026-11-15 |
+| **Date** | 2026-11-15 (Addendum 2: 2026-11-16) |
 | **Audited SHA (start)** | `cba32d2479cd134911d2fdf4fb1db4587c8a94d8` (`origin/development` at session start; product tree = merge `63005e290` of PR #576; later commits are docs-only) |
 | **Final audit SHA** | `d39a520dda965981a38f8e1a90ec5135ea5d508e` |
-| **Overall verdict** | **PARTIAL** (`PARTIAL_EXACT_BLOCKERS`; IIAC manifest value `CONDITIONAL`), unchanged at the final audit SHA (section 13) |
+| **Delta audit SHA (Addendum 2)** | `969cbd964c679d563b02e55f065b452d46fdf90b` (repair loop 2, T-IGX-041-P and T-IGX-041-Q; section 14) |
+| **Overall verdict** | **PARTIAL** (`PARTIAL_EXACT_BLOCKERS`; IIAC manifest value `CONDITIONAL`), unchanged at the final audit SHA (section 13) and at the delta audit SHA of repair loop 2 (section 14) |
 | **Nature** | An audit. It is **not** a certification, issues no `Approved:` or activation line, promotes no FRZ status, closes nothing and makes no production-readiness claim. The auditor did not implement, sign, domain-audit or certify anything in PDC-X and changed no product, test, script, governance or ticket file (docs-only deliverable). |
 
 ## 1. Verdict and exact blockers
 
+> **Status at the delta audit SHA `969cbd964`** (section 14 supersedes the status below for G-23): G-23 is VERIFIED_FIXED for the in-memory graph store; the Neo4j store keeps the same defect class as a declared residual (G-28); G-24 to G-27, the G-05 residual, E1 to E11 and `trace_bridge.v1` are unchanged; the verdict remains PARTIAL (section 14.6 states what it would be if the Operator accepts the open items).
+>
 > **Status at the final audit SHA `d39a520dd`** (section 13 supersedes the status below): G-01, G-02, G-03 and G-06 are VERIFIED_FIXED; G-04 and G-05 are repaired only in part; the verdict remains PARTIAL. The tables of sections 1 to 12 describe the audit at the start SHA `cba32d247`.
 
 **PARTIAL.** The eight repairs are real: of 76 audited in-scope repair rows, **62 are VERIFIED_FIXED, 14 PARTIALLY_FIXED, 0 NOT_FIXED** (section 5). The Full Platform ECAP run is clean (85/85 checks, 0 findings), DUP-X/EBH-4 gates (130) and TENANT-X (213) are green, the MCP-SERVER-X delta is in the tree untouched, and every red test of the bounded runs is either a classified known red or listed as a finding below. The verdict is not PASS or PASS_SCOPED because the independent pass found **one HIGH and eleven MEDIUM defects or exception-register inaccuracies** that are not covered by an Operator-authorized exclusion (section 7). Exact blockers for one repair loop (proposed scope in section 8):
@@ -345,3 +348,77 @@ PR #586 (`docs(pdc): EBH-7 re-pin W1' at P (T-IGX-041-J)`, open, head `22cfef5d9
 
 If the Operator accepts items 2 to 4 as declared exceptions and G-23 is repaired or declared, the verdict would be PASS_SCOPED for the scoped rows. EBH-7 identity, IIAC activation staleness, ROADMAP-REPLAY-X and DIST-SCALE-X reds are the known classes and unchanged.
 
+## 14. Addendum 2 — delta audit of repair loop 2 at `969cbd964`
+
+Requested by the orchestrator under `operator_decisions/DELEGATION-PDC-LOOP2.md` (including Amendment 1). Binding Operator condition: **only the targeted tests that cover the fixes run**; no broad or long suite, no EBH-7 L3 replay, no repeat of the full global pytest, no ECAP FULL. The auditor is the same IA-GLOBAL session that wrote sections 1 to 13; it did not implement, sign or certify T-IGX-041-P or T-IGX-041-Q. Audited SHA of this addendum: `969cbd964c679d563b02e55f065b452d46fdf90b` (`origin/development`, merge of PR #593; PR #594 merged earlier as `7f1859e0f`). Worktree `D:/Projekty/_wt/intergrax/ia-g-add2`, own branch, docs-only PR, not merged.
+
+### 14.1 Delta `d39a520dd..969cbd964` (414 files)
+
+`git diff --name-only d39a520dd..969cbd964` (list in `logs_addendum2/delta_files.txt`), by category:
+
+| Category | Files | What |
+| --- | --- | --- |
+| Product (`intergrax/`, `agents/`, `applications/`) | **3** | `intergrax/rag/graph/generation_visibility.py`, `intergrax/rag/graph/indexer/heuristic_graph_indexer.py`, `intergrax/rag/graph/providers/inmemory_graph_store.py` (T-IGX-041-P). Nothing under `agents/` or `applications/`. |
+| Tests | 4 | P: `tests/unit/rag/graph/test_graph_publication_scope_visibility.py` (new, 23 tests). Q: `test_ebh_7_b6_f10_c4_041k_entries_gates.py`, `test_ebh_7_b6_f10_c4_041o_entries_gates.py`. Pin: `tests/qualification/ebh_7/_constants.py` (default EBH-7 SHA `146e7acf` to `d39a520dd`, PR #586, allowlisted in 13.6). |
+| CI workflows | 4 | `unit-tests.yml` (EBH-7 default SHA pin, PR #586, plus runner pin), `llm-adapters-guard.yml`, `llm-network-smoke.yml`, `rag-guard.yml` (runner `ubuntu-latest` to `ubuntu-24.04`, PR #592; no test logic changed). |
+| Scripts | 1 | `scripts/qualification/pdc_x_wbs.py`: two WBS batch rows (B-P8-R4, B-P8-R5) for P and Q; data only. |
+| Governance | 4 | `governance/tickets/T-IGX-041-P.md`, `T-IGX-041-Q.md` and their two plans. |
+| Docs | 398 | 371 under `enterprise_quality_oversight/` (EQO-A Campaign A dossier, PR #589, a separate workstream, including `OD_EBH_7.json`), 11 `iiac_evidence/PDC-X/global/` (my own section 13 evidence, PR #588), 7 `platform_domain_completeness/` (this report, the LOOP2 delegation and the P8-ACT record, WBS and DAG, REG diagnosis, SHA ladder), 6 `ebh_7_p03_independent_replay/` and 3 `EBH_7_*` re-renders (PR #586). |
+
+Finding: the claim "only these three files" holds for **product paths** (exactly three, all under `intergrax/rag/graph/`). Besides them the delta holds 13 other non-docs paths (4 tests, 4 workflows, 1 script, 4 tickets and plans); none is under a product tree and none changes product behavior. Because P changes product paths, IIAC activation staleness (ACT-N11) is a known class and is not changed by this addendum.
+
+### 14.2 G-23 (P) — verified from code and by test
+
+Read: the full diff of the three files. The semantic change is small; the rest of `inmemory_graph_store.py` (96 lines) is typing-alias modernization and line reflow (`Dict` to `dict`, `Set` to `set`, one-line expressions), the behavior-neutral style commit `f044fcdfc`, which I read hunk by hunk.
+
+- `generation_visibility.py`: new constant `GRAPH_PUBLICATION_SCOPE_METADATA_KEY = "root_document_id"`; helper `publication_scope_from_metadata` (stripped string or `None`; blank or non-string gives `None`); `resolve_scope_active_generations` and `visibility_query_params` take an optional `publication_scope_ids` mapping (source id to root document id) and put it into the `RagSourceOperationKey` as `publication_scope_id`; a missing, blank or non-string entry keeps the unscoped key.
+- `heuristic_graph_indexer.py`: stamps `root_document_id = str(doc.identity.root_document_id)` on **versioned** evidence only (the branch that already stamps the generation).
+- `inmemory_graph_store.py`: `_evidence` builds the `RagSourceOperationKey` with `publication_scope_id=publication_scope_from_metadata(metadata)`.
+
+Closure: ingest (`ingest_pipeline.py:350`, `vectorstore_manager.py:353`) promotes under the key scoped by the root document id; the graph evidence is now resolved under the identical key, so the active generation is found and the evidence of the active generation is visible after a re-ingest. Both reproductions that failed at `d39a520dd` pass (14.4).
+
+No widening (checked, not assumed):
+
+1. The new input narrows the lookup key. `active_publication_generation` is an exact dictionary lookup on the frozen key (`InProcessSourceOperationCoordinator`, `source_operation.py:175-182`; the durable coordinator reads one publication record per key); there is no fallback to the unscoped key.
+2. Tenant, namespace and workspace still come from the bound `GraphScope`, never from evidence metadata; `source_id` is unchanged. The only new field qualifies the publication inside one tenant, namespace, workspace and source. Whoever can write evidence metadata could already choose `source_id` and the generation; the root document id adds no authority across tenants, namespaces or workspaces.
+3. Failure stays closed: versioned evidence without a valid root id resolves the unscoped key, finds no scoped publication and is hidden; unversioned evidence and unscoped publications behave as before.
+4. Tests of P (all pass; 16 of the 23 fail when the three files are restored to `d39a520dd`, the other 7 are negatives that held before): wrong scope id invisible, missing scope id fails closed, blank or non-string never becomes a key, another source with a borrowed scope id invisible, other tenant, namespace or workspace sees nothing (parametrized), unscoped publication still visible, mapping passthrough, indexer stamps only versioned evidence, indexer evidence visible under its own root and invisible under another.
+5. The only producer of versioned graph evidence is the heuristic indexer (`SOURCE_PUBLICATION_GENERATION_METADATA_KEY` appears in no other indexer); the LLM and community-report indexers write no generation or source metadata, so their evidence stays unversioned and visible, as before.
+
+**G-23: VERIFIED_FIXED for the in-memory graph store.** Residual (new finding G-28): the Cypher/Neo4j store is unchanged on purpose (P's declared residual R1). `cypher_rag_graph_store.py:156-161` calls `visibility_query_params` without `publication_scope_ids`, so with a bound coordinator and a scoped publication its evidence is still resolved under the unscoped key and stays **invisible (fail closed, no leak)** after a re-ingest. Not reproduced (no Neo4j in this environment; READ).
+
+### 14.3 T-IGX-041-Q — verified
+
+Q is two test files only. It adds `_with_paths` (appends only the paths the changed-path range does not already hold) and, per file, a parametrized "removing one entry reopens exactly that path" test, a "reopen check does not depend on the paths being in the range" test and a `_with_paths` unit test. No gate is weakened: the existing assertions stay and the classifier file is untouched. **Mutation (executed)**: in `tests/qualification/ebh_7/_ebh7_f10_canonical_inputs.py` I renamed the real K entry (`secrets_store_resolver.py`) and the real O entry (`p3/clients.py`) to dead paths, ran both gate files, then restored the file. Result: 8 of 19 K tests and 8 of 20 O tests fail, including the "path is classified as documented" and "entry is an exact path with a reason" tests. The gates fail when an entry is really missing and pass when all entries are present (14.4). Not touched: the EBH-7 L3 replay, which stays recorded as failed at `d39a520dd` ("not B6 PASS", LOOP2); I did not run or judge it.
+
+### 14.4 Run record (targeted only; one pytest process at a time)
+
+| Run | Command (abridged; full in `logs_addendum2/cmd.txt`) | Result |
+| --- | --- | --- |
+| 1, at `969cbd964` | `uv run pytest` the two G-23 reproductions (`tests/integration/rag/test_graph_reingest_qualification.py::test_graphrag_source_reingest_replaces_vectors_and_graph_safely`, `tests/integration/rag/test_same_source_reingest_serialization.py::test_stale_graph_topology_is_inactive_after_generation_takeover`), P's new file, the K and O gate files | **64 passed** in 175.6 s, exit 0 (`targeted_pytest.log`) |
+| 2, mutant | the same 64 tests with the three graph files restored to `d39a520dd` and two real classifier entries renamed | 34 failed, 30 passed: both reproductions, 16 of P's 23, 8 of K's 19, 8 of O's 20 (`mutation_pytest.log`); worktree restored, `git status` clean |
+
+Not run, by the Operator's condition: ECAP FULL, the EBH-7 L3 replay, the broad contract suites, the combined global pytest. The base temp of both runs was under `D:/Projekty/_wt/intergrax/_scratch/` (short path, outside the repo).
+
+### 14.5 Findings status at `969cbd964`
+
+| Id | Sev | Status |
+| --- | --- | --- |
+| G-23 | MEDIUM | **VERIFIED_FIXED** (in-memory graph store); see G-28 for the declared Neo4j residual |
+| G-28 (new) | MEDIUM | The Cypher/Neo4j graph store still resolves the active generation under the unscoped key, so graph evidence of a re-ingested (scoped) source stays invisible there; fail closed, declared by P as residual R1, not an Operator-authorized exception. Fix site `cypher_rag_graph_store.py:156-161` (pass the evidence root document ids); needs a Neo4j run to verify. READ, not reproduced. |
+| G-24, G-25, G-26, G-27 | LOW, INFO, INFO, LOW | **Unchanged** (debt register): order-dependent reds, three stale RAG tests, two impact-map entries that do not execute their modules, one-shot schedule on an authority outage. No file of the delta touches them. |
+| G-05 residual | MEDIUM | Unchanged: 77 incident scenario reds (59 `get_steps() missing 'context'`), beyond decision 1; LOOP2: "not approved as exceptions and not repaired". |
+| E1 to E11 (G-08, G-09, G-11, G-12, F-D3-02, ...) | MEDIUM | Unchanged, open, not Operator-authorized. |
+| `trace_bridge.v1` (G-10 residual) | MEDIUM | Unchanged, unowned. |
+
+### 14.6 Verdict at `969cbd964`
+
+**Now: PARTIAL** (`PARTIAL_EXACT_BLOCKERS`; IIAC manifest value `CONDITIONAL`) — unchanged. One blocker is gone (G-23 in the in-memory store) and the same class remains on the Neo4j store (G-28). The verdict is not PASS or PASS_SCOPED because these items are open and none is an Operator-authorized exception: the G-05 residual (77 scenario reds), E1 to E11, `trace_bridge.v1` and G-28. LOOP2 states explicitly that the first three are "not approved as exceptions and not repaired".
+
+**If the Operator accepts those open items as declared exceptions** (the 77 scenario reds, E1 to E11, `trace_bridge.v1`, and the Neo4j residual G-28 with its reopen condition) and keeps G-24 to G-27 in the debt register: **PASS_SCOPED** for the rows in scope of sections 7 and 13, with the scope text naming each accepted item. That conditional rests on the evidence of sections 5 to 13 at `d39a520dd` plus the targeted tests above. ECAP FULL, the contract suites and the combined pytest were **not repeated** at `969cbd964` (Operator condition), so it is not a repeat-run PASS. The EBH-7 identity gate, the failed replay at `d39a520dd` ("not B6 PASS"), IIAC activation staleness (ACT-N11), `roadmap_replay_x` and `dist_scale_x` stay known red classes outside this verdict; nothing here certifies B6, promotes an FRZ status or claims production readiness.
+
+### 14.7 Limitations of this addendum
+
+- Verification of P is code reading, the targeted tests and one executed mutation; the Neo4j path was read, not run.
+- The 3 product files were read in full as a diff. Of the tests, the K gate diff was read in full; the O gate diff (same shape, 48 lines) and P's 390-line test file were checked by test names, helpers, the targeted run and the mutant run, not line by line. The 371 EQO-A files, the EBH-7 re-render files, the workflows' non-pin lines and the ticket and plan files were categorized by path and diff statistics, not reviewed.
+- Any product change after `969cbd964` voids this addendum for the changed paths; the verdict on every other path rests on the `d39a520dd` evidence of section 13.
