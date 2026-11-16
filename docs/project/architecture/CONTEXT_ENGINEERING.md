@@ -344,6 +344,10 @@ Context Engineering evidence is **engineering- and qualification-oriented** - th
 
 **Platform audit:** [`docs/audit_results/AUDIT_PROTOCOL.md`](../../audit_results/AUDIT_PROTOCOL.md).
 
+## Failure, recovery and lifecycle ownership
+
+Retry, failure classification, recovery and HITL semantics beyond what this document states are owned by [`RELIABILITY_FAILURE_AND_HITL.md`](RELIABILITY_FAILURE_AND_HITL.md) (failure model, retry, HITL) and [`ENTERPRISE_RELIABILITY_LAYER.md`](ENTERPRISE_RELIABILITY_LAYER.md) (post-admission uncertainty); the freeze criteria are the FRZ-REC and FRZ-REL families in the freeze checklist. Durable context lifecycle (revisions, artifact reuse) is owned by [`UNIFIED_CONTEXT_LIFECYCLE.md`](UNIFIED_CONTEXT_LIFECYCLE.md) (see "Context Engineering vs Unified Context Lifecycle" above) and memory lifecycle by [`MEMORY.md`](MEMORY.md).
+
 ## Go deeper
 
 | Depth | Route |
