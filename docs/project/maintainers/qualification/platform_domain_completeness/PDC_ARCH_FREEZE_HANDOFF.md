@@ -6,7 +6,7 @@
 
 | Item | Value |
 | --- | --- |
-| Handoff status | **Pending the Operator's signature** (`HANDOFF READY (SCOPED)` if the Operator signs closure outcome A or B; `PARTIAL_EXACT_BLOCKERS` if outcome C; see the report, decision 1) |
+| Handoff status | **`HANDOFF READY (SCOPED)`** if the Operator confirms closure outcome A (chosen in chat on 2026-11-16, awaiting final confirmation; decision 8: handoff published as written, ARCH-FREEZE not entered); `PARTIAL_EXACT_BLOCKERS` only if the Operator does not confirm |
 | P8 global audit verdict | **`PASS_SCOPED`** at `G` = `969cbd964c679d563b02e55f065b452d46fdf90b` (`PDC_INDEPENDENT_AUDIT.md` section 15), only with the declared exceptions; not a PASS |
 | Certifier | binding manifest `PASS` scoped (19 limitations); not a certification of the stage |
 | IIAC activation | `IN_FORCE` from phase-1 commit `9f05749bc23592868f3d0a7f505f9edbb2cfd025` |

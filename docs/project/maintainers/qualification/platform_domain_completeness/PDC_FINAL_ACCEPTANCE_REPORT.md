@@ -1,29 +1,28 @@
-# PDC-X — Final acceptance report (PDC-P9-01) — DRAFT for the Operator's signature
+# PDC-X — Final acceptance report (PDC-P9-01) — answers recorded, awaiting the Operator's final confirmation
+
+> **Operator's answers recorded (chosen by the Operator in chat (2026-11-16), awaiting final confirmation).** Transcription: [`operator_decisions/OD-PDC-X-CLOSE.md`](./operator_decisions/OD-PDC-X-CLOSE.md) (English rendering of the Operator's chat answer of 2026-11-16; unsigned: `Signed: <pending — the Operator confirms the final text in chat>`). Outcome A; all 18 "Operator decision" exceptions declared; the 13 rows open with no exception are documented debt (rows stay `PARTIAL`, no new tickets); FRZ option N; debt register accepted; limitations acknowledged; ARCH-FREEZE handoff published, ARCH-FREEZE not entered.
 
 > **DRAFT — proposal for the Operator, not a verdict.** This report consolidates facts (each with its source file) and states the decisions the Operator is asked to sign **once**. It claims no certification of the stage, no closure, no FRZ promotion, no B6 verdict and no production readiness. Nothing in it is signed. Prepared at `origin/development` `f6f335aaef3d1e9ee204bd531f52f8a779566326` (PR #601 merge, 2026-11-16). `UNVERIFIED` marks anything I could not check against a file or `git`.
 
-## 1. Decisions the Operator signs (single signature)
+## 1. Decisions the Operator signs (single signature) and the answers chosen in chat
 
-The orchestrator prepared the package under `DELEGATION-PDC-CLOSE.md` item 3; the Operator signs once. Each decision is independent; a `no` leaves the named rows `PARTIAL` or the stage not closed.
+The orchestrator prepared the package under `DELEGATION-PDC-CLOSE.md` item 3; the Operator signs once. The "Answer" column shows what the Operator chose in chat on 2026-11-16 (chosen by the Operator in chat (2026-11-16), awaiting final confirmation); nothing is signed until the Operator confirms the final text of `operator_decisions/OD-PDC-X-CLOSE.md`.
 
-| # | Decision | Proposed answer | Where the exact text is |
+| # | Decision | Answer (chosen by the Operator in chat (2026-11-16), awaiting final confirmation) | Where the exact text is |
 | --- | --- | --- | --- |
-| 1 | **Closure outcome.** A: close in the IIAC vocabulary, scoped (`PASS_SCOPED` covers the scoped rows only). B: the master-plan wording. C: do not close, report `PARTIAL_EXACT_BLOCKERS`. Roadmap §3.2 exit criteria are **not met literally** (global audit is `PASS_SCOPED`, not `PASS`; P7 domain verdicts were not re-graded; the certifier's manifest is not a stage certification); the choice is an Operator reading of those criteria. | A (recommended in the roadmap text), but the Operator decides | `PDC_ROADMAP_CLOSURE_TEXT.md` sections 1, 2, 3, 6 |
-| 2 | **Exceptions of the "Operator decision" kind**, outside `DELEGATION-PDC-P7-REPAIR.md` and `DELEGATION-PDC-CLOSE.md`: EX-D1-03, EX-D1-07, EX-D2-01, EX-D2-06, EX-D2-07, EX-D3-02, EX-D4-02, EX-D4-03, EX-D4-04, EX-D4-05, EX-D5-04, EX-D5-05, EX-D6-03, EX-D6-04, EX-D7-02, EX-D7-03, EX-D8-03, EX-D8-04. Declare them as exceptions (rows `PASS_SCOPED`), all or a named subset. | all, if outcome A or B | `PDC_EXCEPTION_REGISTER.md` section 2 |
-| 3 | **Rows open with no exception** (D1 R009, R015, R017; D2 R004; D3 R005, R018, R019; D5 R002; D6 R007, R010, R015; D7 R015, R022): per row, an exception, a debt acknowledgement, or a small ticket. | Operator names the treatment | `PDC_EXCEPTION_REGISTER.md` sections 5, 6 |
-| 4 | **Exceptions already authorized, recorded here for the signature:** `DELEGATION-PDC-CLOSE.md` decision 1 (F-D1-04, F-D5-02 remainder, F-D7-03 with row PDC-D7-R014 `PASS_SCOPED`, F-04 family and missing-feature findings, four D3 `fixture_strict_adapter_parity` tests) and `DELEGATION-PDC-EXCEPTIONS.md` (G-05 residual 77 scenario reds, E1-E11, G-10 residual `trace_bridge.v1`, G-28 Cypher store). Each has a reopen condition and owner path. | confirm as listed | `PDC_EXCEPTION_REGISTER.md` sections 1-4 |
-| 5 | **FRZ.** Option N (no promotion, evidence notes only; counters 225 / 26) or Option P (only after a further FRZ-row-level independent audit names the FRZ ids; none exists today). | N | `PDC_FRZ_PROMOTION_PROPOSAL.md` section 4 |
-| 6 | **Debt register** (LOW and INFO findings, WAVE2 decision-5 items, G-13..G-27) accepted as documented debt, not repaired. | accept | `PDC_DEBT_REGISTER.md` |
-| 7 | **Limitations stated as facts** (no decision on their truth, only acknowledgement): the EBH-7 L3 replay (run `43738431866`) failed and was **not re-run**, so **B6 is not passed**; the EBH-7 identity gate stays a known red class; the C10/C15 freeze is **not lifted**; **no production-readiness claim**; rows were not re-certified one by one; ECAP FULL, the contract suites and the combined pytest were last run at `d39a520dd`, not at `G`. | acknowledge | section 7 below |
-| 8 | **ARCH-FREEZE handoff** published as written; ARCH-FREEZE is **not entered**. | publish | `PDC_ARCH_FREEZE_HANDOFF.md` |
+| 1 | **Closure outcome.** A: close in the IIAC vocabulary, scoped (`PASS_SCOPED` covers the scoped rows only). B: the master-plan wording. C: do not close, report `PARTIAL_EXACT_BLOCKERS`. Roadmap §3.2 exit criteria are **not met literally** (global audit is `PASS_SCOPED`, not `PASS`; P7 domain verdicts were not re-graded; the certifier's manifest is not a stage certification); the choice is an Operator reading of those criteria. | **A** — scoped closure, IIAC canonical wording | `PDC_ROADMAP_CLOSURE_TEXT.md` sections 1, 2, 3, 6 |
+| 2 | **Exceptions of the "Operator decision" kind**, outside `DELEGATION-PDC-P7-REPAIR.md` and `DELEGATION-PDC-CLOSE.md`: EX-D1-03, EX-D1-07, EX-D2-01, EX-D2-06, EX-D2-07, EX-D3-02, EX-D4-02, EX-D4-03, EX-D4-04, EX-D4-05, EX-D5-04, EX-D5-05, EX-D6-03, EX-D6-04, EX-D7-02, EX-D7-03, EX-D8-03, EX-D8-04. Declare them as exceptions (rows `PASS_SCOPED`), all or a named subset. | **All 18 declared as exceptions** | `PDC_EXCEPTION_REGISTER.md` section 2 |
+| 3 | **Rows open with no exception** (D1 R009, R015, R017; D2 R004; D3 R005, R018, R019; D5 R002; D6 R007, R010, R015; D7 R015, R022): per row, an exception, a debt acknowledgement, or a small ticket. | **Documented debt; the 13 rows stay `PARTIAL`; no new tickets** | `PDC_DEBT_REGISTER.md` section 13; `PDC_EXCEPTION_REGISTER.md` sections 5, 6 |
+| 4 | **Exceptions already authorized, recorded here for the signature:** `DELEGATION-PDC-CLOSE.md` decision 1 (F-D1-04, F-D5-02 remainder, F-D7-03 with row PDC-D7-R014 `PASS_SCOPED`, F-04 family and missing-feature findings, four D3 `fixture_strict_adapter_parity` tests) and `DELEGATION-PDC-EXCEPTIONS.md` (G-05 residual 77 scenario reds, E1-E11, G-10 residual `trace_bridge.v1`, G-28 Cypher store). Each has a reopen condition and owner path. | **Confirmed** | `PDC_EXCEPTION_REGISTER.md` sections 1-4 |
+| 5 | **FRZ.** Option N (no promotion, evidence notes only; counters 225 / 26) or Option P (only after a further FRZ-row-level independent audit names the FRZ ids; none exists today). | **N** — no promotion; 225 / 26 | `PDC_FRZ_PROMOTION_PROPOSAL.md` section 4 |
+| 6 | **Debt register** (LOW and INFO findings, WAVE2 decision-5 items, G-13..G-27) accepted as documented debt, not repaired. | **Accepted** | `PDC_DEBT_REGISTER.md` |
+| 7 | **Limitations stated as facts** (no decision on their truth, only acknowledgement): the EBH-7 L3 replay (run `43738431866`) failed and was **not re-run**, so **B6 is not passed**; the EBH-7 identity gate stays a known red class; the C10/C15 freeze is **not lifted**; **no production-readiness claim**; rows were not re-certified one by one; ECAP FULL, the contract suites and the combined pytest were last run at `d39a520dd`, not at `G`. | **Acknowledged** | section 7 below |
+| 8 | **ARCH-FREEZE handoff** published as written; ARCH-FREEZE is **not entered**. | **Published as written; ARCH-FREEZE not entered** | `PDC_ARCH_FREEZE_HANDOFF.md` |
 
-**Signature block (unsigned; not to be filled by the orchestrator, an auditor, the certifier or a delegate):**
+**Signature block** (not filled by the orchestrator, an auditor, the certifier or a delegate; the Operator's answers above are transcribed in `operator_decisions/OD-PDC-X-CLOSE.md`):
 
 ```text
-Operator decision PDC-X-CLOSE <date>.
-Decisions: (1) outcome <A|B|C>; (2) <all|list>; (3) <treatment per row>; (4) <confirm|list>;
-(5) FRZ option <N|P>; (6) <accept|list>; (7) acknowledged; (8) <publish|hold>.
-Signed: <Operator signature and date>
+Signed: <pending — the Operator confirms the final text in chat>
 ```
 
 ## 2. Status
@@ -31,7 +30,7 @@ Signed: <Operator signature and date>
 | Item | Value |
 | --- | --- |
 | Stage | PDC-X, Platform Domain Completeness and Certification (roadmap §3.2) |
-| Overall result | **Not decided by this document.** Facts: global audit `PASS_SCOPED` at `G`; certifier binding manifest `PASS` (scoped, 19 limitations); stage closure pending the Operator's signature |
+| Overall result | **Not decided by this document** (the Operator chose outcome A in chat; final confirmation pending). Facts: global audit `PASS_SCOPED` at `G`; certifier binding manifest `PASS` (scoped, 19 limitations); stage closure pending the Operator's signature |
 | Global audit (P8, IA-GLOBAL) | **`PASS_SCOPED`** at `G` = `969cbd964c679d563b02e55f065b452d46fdf90b`, "only" with the declared exceptions; "not a PASS", "not a repeat-run PASS", "not a verdict on B6 or on certification" (`PDC_INDEPENDENT_AUDIT.md` section 15, merge #597 `a73d15ab3`). It was `PARTIAL` at `d39a520dd` (13.7) and at `969cbd964` before the exception record (14.6) |
 | Certifier (CERT-PDC) | binding manifest `PASS`, scoped, 19 limitations; "not a verdict on B6, not a certification of the whole PDC-X stage and not an FRZ or roadmap action" (`PDC_P8_04_ACTIVATION_CERTIFIER_REPORT.md`; matrix `PDC_DOMAIN_CERTIFICATION_MATRIX.md`) |
 | IIAC activation (ACT-N11) | `IN_FORCE` from phase-1 commit `9f05749bc23592868f3d0a7f505f9edbb2cfd025`, phase 2 `293bb5b3c`, merged as PR #601 `f6f335aae` (`IIAC_POLICY_ACTIVATION_RECORD.json`). Any later product-path change voids it |

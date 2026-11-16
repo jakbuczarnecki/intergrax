@@ -41,12 +41,12 @@ PDC-X is **one** campaign with eight certification workstreams (`PDC-D1`..`PDC-D
 | `PDC_DOMAIN_CERTIFICATION_MATRIX` → [`PDC_DOMAIN_CERTIFICATION_MATRIX.md`](./PDC_DOMAIN_CERTIFICATION_MATRIX.md) | P7 / P8-04 | Published (CERT-PDC consolidation of domain dispositions; no row re-grade; not a stage certification) |
 | `PDC_INDEPENDENT_AUDIT` → [`PDC_INDEPENDENT_AUDIT.md`](./PDC_INDEPENDENT_AUDIT.md) | P8 | Published (IA-GLOBAL; addenda 1-3; final verdict `PASS_SCOPED` at `969cbd964`, with declared exceptions) |
 | `PDC_P8_04_ACTIVATION_CERTIFIER_REPORT` → [`PDC_P8_04_ACTIVATION_CERTIFIER_REPORT.md`](./PDC_P8_04_ACTIVATION_CERTIFIER_REPORT.md), [`PDC_P8_ACTIVATION_RUNBOOK.md`](./PDC_P8_ACTIVATION_RUNBOOK.md) | P8-04 | Published (binding manifest `PASS` scoped; IIAC activation `IN_FORCE`) |
-| `PDC_FINAL_ACCEPTANCE_REPORT` → [`PDC_FINAL_ACCEPTANCE_REPORT.md`](./PDC_FINAL_ACCEPTANCE_REPORT.md) | P9 | **Draft for the Operator's signature** (lists the decisions to sign; not a closure) |
-| `PDC_ARCH_FREEZE_HANDOFF` → [`PDC_ARCH_FREEZE_HANDOFF.md`](./PDC_ARCH_FREEZE_HANDOFF.md) | P9 | **Draft for the Operator's signature** (ARCH-FREEZE not entered) |
-| `PDC_EXCEPTION_REGISTER` → [`PDC_EXCEPTION_REGISTER.md`](./PDC_EXCEPTION_REGISTER.md) | P9 | **Draft for the Operator's signature** |
-| `PDC_DEBT_REGISTER` → [`PDC_DEBT_REGISTER.md`](./PDC_DEBT_REGISTER.md) | P9 | **Draft for the Operator's signature** |
-| `PDC_FRZ_PROMOTION_PROPOSAL` → [`PDC_FRZ_PROMOTION_PROPOSAL.md`](./PDC_FRZ_PROMOTION_PROPOSAL.md) | P9 | **Draft for the Operator's signature** (no FRZ status changed; 225 / 26) |
-| `PDC_ROADMAP_CLOSURE_TEXT` → [`PDC_ROADMAP_CLOSURE_TEXT.md`](./PDC_ROADMAP_CLOSURE_TEXT.md) | P9 | **Draft for the Operator's signature** (roadmap not edited; closure line not written) |
+| `PDC_FINAL_ACCEPTANCE_REPORT` → [`PDC_FINAL_ACCEPTANCE_REPORT.md`](./PDC_FINAL_ACCEPTANCE_REPORT.md) | P9 | **Answers recorded in chat; awaiting the Operator's final confirmation** (lists the decisions to sign; not a closure) |
+| `PDC_ARCH_FREEZE_HANDOFF` → [`PDC_ARCH_FREEZE_HANDOFF.md`](./PDC_ARCH_FREEZE_HANDOFF.md) | P9 | **Answers recorded in chat; awaiting the Operator's final confirmation** (ARCH-FREEZE not entered) |
+| `PDC_EXCEPTION_REGISTER` → [`PDC_EXCEPTION_REGISTER.md`](./PDC_EXCEPTION_REGISTER.md) | P9 | **Answers recorded in chat; awaiting the Operator's final confirmation** |
+| `PDC_DEBT_REGISTER` → [`PDC_DEBT_REGISTER.md`](./PDC_DEBT_REGISTER.md) | P9 | **Answers recorded in chat; awaiting the Operator's final confirmation** |
+| `PDC_FRZ_PROMOTION_PROPOSAL` → [`PDC_FRZ_PROMOTION_PROPOSAL.md`](./PDC_FRZ_PROMOTION_PROPOSAL.md) | P9 | **Answers recorded in chat; awaiting the Operator's final confirmation** (no FRZ status changed; 225 / 26) |
+| `PDC_ROADMAP_CLOSURE_TEXT` → [`PDC_ROADMAP_CLOSURE_TEXT.md`](./PDC_ROADMAP_CLOSURE_TEXT.md) | P9 | **Answers recorded in chat; awaiting the Operator's final confirmation** (roadmap not edited; closure line not written) |
 
 ## Workstreams
 

@@ -1,4 +1,8 @@
-# PDC-X — Proposed roadmap closure text (PDC-P9-04) — DRAFT for the Operator's signature
+# PDC-X — Proposed roadmap closure text (PDC-P9-04) — Variant A chosen in chat, awaiting final confirmation
+
+> **Operator's answers recorded (chosen by the Operator in chat (2026-11-16), awaiting final confirmation).** Transcription: [`operator_decisions/OD-PDC-X-CLOSE.md`](./operator_decisions/OD-PDC-X-CLOSE.md) (English rendering of the Operator's chat answer of 2026-11-16; unsigned: `Signed: <pending — the Operator confirms the final text in chat>`). Outcome A; all 18 "Operator decision" exceptions declared; the 13 rows open with no exception are documented debt (rows stay `PARTIAL`, no new tickets); FRZ option N; debt register accepted; limitations acknowledged; ARCH-FREEZE handoff published, ARCH-FREEZE not entered.
+
+The Variant A edits of section 3 are applied, as the exact text of section 3, in the **last commit** of the draft closure pull request, which can be dropped if the Operator does not confirm.
 
 > **DRAFT — proposal for the Operator, not a verdict.** Nothing in this file is written into the roadmap, the checklist or any status line. The PDC-X closure line is **not delegated** (`DELEGATION-PDC-CLOSE.md`, "Not delegated"; PDC-P9-03, PDC-P9-04); the Operator signs it once (`PDC_FINAL_ACCEPTANCE_REPORT.md` section 1). Prepared at `origin/development` `f6f335aaef3d1e9ee204bd531f52f8a779566326` (2026-11-16). The closure line is **not written** here: it is shown only inside fenced proposal blocks.
 
