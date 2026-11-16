@@ -6,7 +6,7 @@ Documentation-only implementation of the structure part of Operator decision OD-
 
 ## Plan digest
 
-Plan digest: 87fc5aab2eda91072ccc091ed5cc8be1c6ac6151f50992f045c1f4e4231f8976
+Plan digest: 5fbd963a4f2a2da5660e6a7956884df2b0e555c0f418c1f6f10995346b9b7027
 
 Canonical plan: [`governance/tickets/plans/PLAN_T-IGX-042-D.md`](plans/PLAN_T-IGX-042-D.md). The digest was computed with `scripts/governance/plan_digest.py`; it must be recomputed after any edit of the plan.
 
@@ -27,7 +27,7 @@ PENDING. <<OPERATOR: the approval line goes here after plan review, written by t
 
 One process at a time, under the shared pytest lock:
 
-- `uv run pytest tests/unit/docs/ -p no:cacheprovider`
+- `uv run pytest tests/unit/docs/` (without `-p no:cacheprovider`: that flag conflicts with the repo pytest temp plugin, which sets `cache_dir`, and the run aborts with exit 4)
 - `uv run python scripts/docs/check_docs_domain_pairs.py`
 - Register checker `check_register.py` (standard library, read-only, kept outside the repository), run once against the draft data; informative only because no data rows are committed.
 - Reviewer check: `git diff --name-only origin/development...HEAD` lists exactly the four Write set paths plus this ticket and its plan.

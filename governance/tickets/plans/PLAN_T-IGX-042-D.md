@@ -54,7 +54,7 @@ None is under the IIAC product-path prefixes (`intergrax/`, `agents/`, `applicat
 
 One process at a time, under the shared pytest lock:
 
-- `uv run pytest tests/unit/docs/ -p no:cacheprovider`
+- `uv run pytest tests/unit/docs/` (without `-p no:cacheprovider`: that flag conflicts with the repo pytest temp plugin, which sets `cache_dir`, and the run aborts with exit 4)
 - `uv run python scripts/docs/check_docs_domain_pairs.py`
 - The register's own read-only checker `check_register.py` (standard library, kept outside the repository) is run once against the draft data to confirm the schema enums it relies on; its result is informative only because no data rows are committed.
 - Reviewer checks: `git diff --name-only origin/development...HEAD` lists exactly the Write set; every link in the two READMEs and the three map rows resolves; every count is reproducible with `git ls-tree` at the stated SHA.
