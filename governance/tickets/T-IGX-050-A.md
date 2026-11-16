@@ -19,7 +19,7 @@ Canonical plan: [`governance/tickets/plans/PLAN_T-IGX-050-A.md`](plans/PLAN_T-IG
 ## Approved
 
 Approved: operator-delegate @ 2026-11-16T16:37:03+01:00
-Delegation: docs/project/maintainers/qualification/ARCH_FREEZE_OPERATOR_DECISION_REGISTER.md@31ba3aa84490ad7984106bdeb410163e873b0fc1
+Delegation: docs/project/maintainers/qualification/ARCH_FREEZE_OPERATOR_DECISION_REGISTER.md@712686a8e6567030c4a2f306bb3b7541c619e8c9
 
 ## Test contract
 
