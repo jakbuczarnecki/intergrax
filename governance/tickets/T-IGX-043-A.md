@@ -25,7 +25,7 @@ Canonical plan: `governance/tickets/plans/PLAN_T-IGX-043-A.md` (drafted at `.tmp
 
 ## Approved
 
-Approved: operator-delegate @ 2026-11-16T17:04:39+01:00
+Approved: operator-delegate @ 2026-11-16T17:17:25+01:00
 Delegation: docs/project/maintainers/qualification/eqo_a_remediation/OPERATOR_ANSWERS_CODE_WAVE_TRANSCRIPTION.md@743087d57c674100dc9119959dc875271f70e72c
 
 ## Test contract
