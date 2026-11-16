@@ -23,7 +23,8 @@ docs/project/maintainers/qualification/platform_domain_completeness/PDC_OWNERSHI
 
 ## Approved
 
-PENDING. The approval line is written by the Operator or a commissioned session after plan review; the implementer never writes it. This placeholder deliberately avoids the approval keyword because the ticket validators accept any line that starts with it.
+Approved: operator-delegate @ 2026-11-16T17:44:25+01:00
+Delegation: docs/project/maintainers/qualification/eqo_a_remediation/OPERATOR_ANSWERS_CODE_WAVE_TRANSCRIPTION.md@743087d57c674100dc9119959dc875271f70e72c
 
 ## Test contract
 
@@ -39,4 +40,4 @@ Edits of PDC-owned records, the PDC-P9-01 reference amendment of DP-52, owner as
 
 ## Lifecycle state
 
-`plan_pending`
+plan_approved
