@@ -42,6 +42,8 @@ Intergrax already provides governed execution, agents, tools, policy, evidence, 
 >
 > Do not present Virtual Workers as production capability until implementation and proof gates say so.
 
+> **Implemented slice versus target (EQO-A remediation note, as of 2026-11-16):** the statements above are the AW-0 position and are kept as written. The plan hub ([`maintainers/plans/AUTONOMOUS_WORK.md`](../maintainers/plans/AUTONOMOUS_WORK.md)) records AW-1, AW-2, AW-3, AW-5 and AW-6 as DONE, AW-4 and AW-7 as IN PROGRESS, and AW-8..AW-14 as NOT STARTED; the roadmap records stage `AW-7C` as CLOSED (independent exact-SHA audit accepted at `2fab207f3e850f1b339523587a19906ea1e9b292`; not global FRZ closure). Code at baseline: `intergrax/autonomous_work/` (72 py files) and `intergrax/contracts/autonomous_work/` (31 py files). Static reach of this code from shipped hosts was not assessed here. The Virtual Worker lifecycle, control plane and product remain target architecture.
+
 ---
 
 ## At a glance
@@ -130,7 +132,24 @@ Worker lifetime != process lifetime
 
 Normative rule: **Capability may grow. Authority may not self-expand.**
 
+> **Owner mapping (EQO-A remediation note, as of 2026-11-16):** no PDC domain row names Autonomous Work at baseline. Stage and certification owners are the AW stage chain in the plan hub, the roadmap stage `AW-7C`, and UCA (S24-GAP-02) for capability acquisition. Concern-level mapping is pending the Operator's concern list.
+
 ---
+
+## Module groups and owner documents (EQO-A remediation note, as of 2026-11-16; owner to confirm)
+
+Proposed grouping of the modules in `intergrax/autonomous_work/` (72 py files at baseline) by module name; the examples are existing modules, the list is not exhaustive and the grouping is not a coverage proof.
+
+| Module group | Examples | Owner document or stage |
+| ------------ | -------- | ----------------------- |
+| capability discovery (catalog, host-available bindings, configuration opportunity, need projection) | `capability_catalog_discovery_adapters.py`, `catalog_canonical_discovery_service.py`, `host_available_capability_binding_service.py`, `worker_capability_need_projection.py` | [`CAPABILITY_CATALOG_AND_DISCOVERY.md`](CAPABILITY_CATALOG_AND_DISCOVERY.md) |
+| capability acquisition, fulfilment and qualified resume | `capability_acquisition_service.py`, `worker_capability_fulfillment_coordinator.py`, `worker_qualified_capability_resume_coordinator.py` | UCA (roadmap UCA table, row S24-GAP-02) and [`CAPABILITY_MARKETPLACE_ENGINE.md`](CAPABILITY_MARKETPLACE_ENGINE.md); worker side: this document |
+| recovery episodes, obstacles and wake-up | `worker_obstacle_classifier.py`, `worker_recovery_orchestration_service.py`, `wake_up_service.py` | this document |
+| worker budget, accounting, dispatch and principal binding | `worker_budget_admission.py`, `worker_execution_accounting.py`, `worker_execution_dispatch.py`, `principal_binding_resolver.py` | this document |
+| collaborative-work bridge | `collaborative_work_intake.py`, `worker_collaborative_work_bridge.py` | [`COLLABORATIVE_WORK.md`](COLLABORATIVE_WORK.md) |
+| AW-7C scoped adaptive integration and ephemeral capability execution | `scoped_adaptive_integration.py`, `scoped_adaptive_integration_execution.py`, `execution_authority_admission.py`, `ephemeral_capability_execution.py` | roadmap stage `AW-7C` |
+| goal evaluation | `goal_evaluation_service.py`, `goal_evaluation_ports.py` | this document |
+| persistence, serialization and lifecycle | `persistence.py`, `repository.py`, `serialization.py`, `lifecycle.py`, `materialization_factory.py` | this document |
 
 ## Relationship to Intergrax
 
@@ -963,6 +982,8 @@ Architecture existence does not imply production qualification.
 ## Maturity boundary
 
 Current state at AW-0:
+
+> **EQO-A remediation note, as of 2026-11-16:** this list is the AW-0 position. Later slices (AW-1..AW-7C) are tracked in the plan hub and the roadmap; see the "Implemented slice versus target" note in the maturity block at the top of this document.
 
 - market/problem class validated strategically,
 - repository capability audit completed,

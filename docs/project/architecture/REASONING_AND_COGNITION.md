@@ -4,6 +4,15 @@
 
 Reasoning in Intergrax is **not** “call an LLM and hope the executor understands the prose.” The platform structures cognition into **three planes**, each answering a distinct question and returning a **typed contract** the runtime can validate, observe, and policy-check before `GraphExecutor`, UAEP, or `ToolRuntime` commit work.
 
+> **Owner mapping (EQO-A remediation note, as of 2026-11-16; assignment to existing owners decided by the Operator):** Reasoning and Cognition is a sub-domain of the Execution plane (proposal ≠ permission ≠ execution: freeze-checklist rows FRZ-GOV-02 and FRZ-EXE-01..07; roadmap stages `GOV-X2`, `HARNESS-FINAL`). This is an assignment, not a new stage or FRZ family.
+
+| Code at baseline | Role |
+| ---------------- | ---- |
+| `intergrax/runtime/nexus/planning/` (10 py files) | Planner and plan validation |
+| `intergrax/runtime/nexus/task_classifier.py`, `rules_task_classifier.py`, `llm_task_classifier.py`, `task_classifier_protocol.py` | Task classification |
+| `intergrax/contracts/reasoning_failure.py`, `reasoning_profile.py` | Typed reasoning contracts |
+| `intergrax/runtime/cognition/` (one module, `reasoning_failure_taxonomy.py`) | Helper enum `ReasoningFailureFamily`; referenced nowhere else at baseline |
+
 ## Why it matters
 
 Without a central cognition layer:

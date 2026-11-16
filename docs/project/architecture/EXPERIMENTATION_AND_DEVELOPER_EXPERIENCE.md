@@ -330,6 +330,10 @@ Repository architecture conformance - not the public DX story:
 | **Public proof** | **No dedicated Experimentation/DX route** in [`PROOFS.md`](../proofs/PROOFS.md) at audit time |
 | **External usage** | Not claimed |
 
+## Experiment registry: recovery and ownership
+
+The experiment registry is a SQLite store (`SQLiteExperimentStore` in `intergrax/experiments/store.py`). Its two tables (`experiments`, `experiment_runs`) have no tenant column at baseline, and no recovery owner is documented for the store. Whether a shipped host or mounted router reaches the registry is to be established first by a reachability check (Campaign B of the EQO-A remediation); this paragraph records no reachability result. The decided handling is: a scoped limitation in the Enterprise Debt & Exceptions Register if the registry is unreachable, and a fix (tenant column and scoping) if it is reachable. Platform failure, retry and HITL semantics are owned by [`RELIABILITY_FAILURE_AND_HITL.md`](RELIABILITY_FAILURE_AND_HITL.md); evidence by [`OBSERVABILITY.md`](OBSERVABILITY.md).
+
 ## Go deeper
 
 | Depth | Route |

@@ -2,6 +2,8 @@
 
 > **Enterprise architecture:** canonical maintainer reference [`MEMORY_ARCHITECTURE.md`](MEMORY_ARCHITECTURE.md) — **ENTERPRISE CERTIFIED / CLOSED** at exact SHA **`4db4bb69671c7f6091284e448e2d09094ebd54cd`** ([`MEMORY_FINAL_ENTERPRISE_AUDIT.md`](../maintainers/qualification/MEMORY_FINAL_ENTERPRISE_AUDIT.md) § MEM-ENTERPRISE-CLOSURE). Visual flows [`MEMORY_ARCHITECTURE_DIAGRAMS.md`](MEMORY_ARCHITECTURE_DIAGRAMS.md) ([provider](MEMORY_PROVIDER_EXTENSION_GUIDE.md) · [projection](MEMORY_PROJECTION_EXTENSION_GUIDE.md)). This hub remains the product-oriented domain overview; [public proof catalog](#evidence--proof) entry for Memory is still **not claimed**.
 
+> **Scope label (EQO-A remediation note, as of 2026-11-16):** the certification statement above is the domain-ledger / scoped certification described in [`MEMORY_ARCHITECTURE.md`](MEMORY_ARCHITECTURE.md) — feature-local, not IIAC certified; no independent-audit artefact located; covered at roadmap level by stage `EBH-2H`; not an ARCH-FREEZE closure.
+
 **Intergrax Memory** is the platform domain that governs **what the harness remembers** - session turns, task-scoped state, user and organization profiles, and durable long-term facts - across execution boundaries, with explicit stores, write policies, and recall contracts.
 
 ## Why it matters
@@ -109,6 +111,14 @@ Consolidation (`SessionMemoryConsolidationService`) extracts durable facts from 
 - Application business semantics - Tier-3 configures via `MemoryProfile` and host wiring.
 - Generic database operations outside memory store contracts.
 - Graph RAG document knowledge graphs as user/episodic entity memory.
+
+### Semantic owner and composition root
+
+| Concern | Semantic owner | Composition root | Record |
+| ------- | -------------- | ---------------- | ------ |
+| Memory (PDC domain D2) | `memory/contracts/memory_control.MemoryControlPlane` | `memory/default_memory_control_plane.py` | [`PDC_OWNERSHIP_MATRIX.md`](../maintainers/qualification/platform_domain_completeness/PDC_OWNERSHIP_MATRIX.md), row D2 Memory |
+
+This hub defers the maintainer-level architecture to [`MEMORY_ARCHITECTURE.md`](MEMORY_ARCHITECTURE.md).
 
 ### Applications (Tier-3) configure
 
@@ -240,6 +250,10 @@ Memory evidence is currently **engineering- and qualification-oriented**:
 - ADRs: [ADR-MEM-001](../technical/adr/entries/2026-06-08/ADR-MEM-001.md) (Context Compiler / consolidation), [ADR-MEM-002](../technical/adr/entries/2026-06-14/ADR-MEM-002.md) (vector catalog).
 
 There is **no** dedicated public proof route in [`docs/project/proofs/`](../proofs/) for the Memory domain at this time. Do not infer production qualification from RAG or unrelated proof artifacts.
+
+## Failure, recovery and lifecycle ownership
+
+Retry, failure classification, recovery and HITL semantics beyond what this document states are owned by [`RELIABILITY_FAILURE_AND_HITL.md`](RELIABILITY_FAILURE_AND_HITL.md) (failure model, retry, HITL) and [`ENTERPRISE_RELIABILITY_LAYER.md`](ENTERPRISE_RELIABILITY_LAYER.md) (post-admission uncertainty); the freeze criteria are the FRZ-REC and FRZ-REL families in the freeze checklist. Memory lifecycle (consolidation, retention, forget/TTL) is defined in this hub and in the write-path section of the engineering canon below; the semantic owner is named in "Semantic owner and composition root" above.
 
 ## Go deeper
 

@@ -395,6 +395,12 @@ Skill / Tool / Agent / Integration ownership unchanged. Skills remain declarativ
 
 Remediation: **SKILLS-AUTHORITY-INTEGRITY** (01, 03, 05), **SKILLS-IDENTITY-PROVENANCE** (02, 04), **SKILLS-EVIDENCE-SYNC** (06) in [plan](../maintainers/plans/SKILLS.md). **Not implemented** by audit persistence.
 
+## Failure, recovery and lifecycle ownership
+
+Retry, failure classification, recovery and HITL semantics beyond what this document states are owned by [`RELIABILITY_FAILURE_AND_HITL.md`](RELIABILITY_FAILURE_AND_HITL.md) (failure model, retry, HITL) and [`ENTERPRISE_RELIABILITY_LAYER.md`](ENTERPRISE_RELIABILITY_LAYER.md) (post-admission uncertainty); the freeze criteria are the FRZ-REC and FRZ-REL families in the freeze checklist.
+
+Skill lifecycle (host-profile scoped installation into the registry projection) is owned by `SkillHostLifecycleService` in `intergrax/skills/host_lifecycle.py`; PDC domain D1 records it as the semantic owner of "Skill lifecycle" in [`PDC_OWNERSHIP_MATRIX.md`](../maintainers/qualification/platform_domain_completeness/PDC_OWNERSHIP_MATRIX.md). Agent distribution consumes skills and does not own them. Catalog, registry and profile roles are described in "SkillCatalog vs SkillRegistry vs SkillProfile" above.
+
 ## Go deeper
 
 | Depth | Route |

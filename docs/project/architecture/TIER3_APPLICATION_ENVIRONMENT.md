@@ -311,6 +311,10 @@ Four-axis qualification ([`MATURITY_TAXONOMY.md`](../technical/guides/MATURITY_T
 
 **Production gates + CI:** `check_application_production_gates.py` runs in `.github/workflows/unit-tests.yml` ci-smoke (PR and `main` push). **`development`-branch pushes and doc-only pushes do not trigger this path.** Plan §6.2y still lists **APP-PROD-9** without Done marker while production-gates satellite marks it Done - **plan drift; not reconciled in this task.**
 
+## Failure, recovery and reliability references
+
+Host lifecycle and hosting behaviour are described in [`APPLICATION_HOSTING.md`](APPLICATION_HOSTING.md). Platform failure, retry and HITL semantics are owned by [`RELIABILITY_FAILURE_AND_HITL.md`](RELIABILITY_FAILURE_AND_HITL.md) and [`ENTERPRISE_RELIABILITY_LAYER.md`](ENTERPRISE_RELIABILITY_LAYER.md); evidence and correlation by [`OBSERVABILITY.md`](OBSERVABILITY.md).
+
 ## Go deeper
 
 | Depth | Route |

@@ -8,6 +8,17 @@
 
 **Semantic authority:** Subordinate to frozen [`UNIFIED_EXECUTION_ARCHITECTURE.md`](UNIFIED_EXECUTION_ARCHITECTURE.md) (UEA). Where Orchestration docs and UEA conflict, **UEA wins**.
 
+> **Owner mapping (EQO-A remediation note, as of 2026-11-16; assignment to existing owners decided by the Operator):** Orchestration is a sub-domain of the Execution plane; its closure owners are the freeze-checklist rows FRZ-EXE-01..07 and the roadmap stages `GOV-X2`, `HARNESS-FINAL` and `EBH-4`. The profile half is owned through PDC domain D4 (hosting / Tier-3 profile). This is an assignment, not a new stage or FRZ family.
+
+| Code at baseline | Role | Owner document |
+| ---------------- | ---- | -------------- |
+| `intergrax/contracts/` — 8 files matching `orchestration_*` / `host_orchestration_*` | Orchestration contracts | this document |
+| `intergrax/runtime/nexus/orchestration/` — 21 py files | Nexus-side interpretation of accepted topology | [`NEXUS_EXECUTION_FLOW.md`](NEXUS_EXECUTION_FLOW.md) |
+| `intergrax/runtime/execution/` — 17 py files matching `*orchestration*` | Execution-side composition | [`UNIFIED_EXECUTION_RUNTIME.md`](UNIFIED_EXECUTION_RUNTIME.md) |
+| `OrchestrationProfile` in `intergrax/contracts/host_profile_slices.py` and a second class of the same name in `intergrax/applications/contracts/environment_profile/sub_profiles.py` | Two distinct classes with one name; see "OrchestrationProfile (CURRENT contract)" | this document; Tier-3 profile half: [`TIER3_APPLICATION_ENVIRONMENT.md`](TIER3_APPLICATION_ENVIRONMENT.md) |
+
+A package `intergrax/runtime/orchestration/` does not exist at baseline.
+
 Orchestration is **not** a second runtime, a private agent thread mechanism, or a place for product-specific orchestration code. Tier-3 hosts declare an `OrchestrationProfile` and optional `ApplicationGraphSpec`; Nexus consumes **accepted** topology on orchestration-strategy Executions.
 
 ## Why it matters

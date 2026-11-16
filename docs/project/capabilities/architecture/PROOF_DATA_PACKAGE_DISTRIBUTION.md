@@ -58,6 +58,19 @@ VPI-specific semantics live under `platform_proofs/scenarios/verified_product_id
 
 `TransportDownloadResult.bytes_written` reports useful bytes persisted during the invocation: bytes that remain part of the resulting partial/final file after the call completes. Bytes transferred in an earlier attempt but later discarded because the partial was reset (HTTP 200 after `Range`, bounded HTTP 416 restart) are excluded. Bytes that survive a failed attempt and remain in the resumed partial are included. Pre-existing partial bytes from before the invocation are not counted. `DataPackageInstallReport.bytes_downloaded` aggregates those per-file persisted byte counts across the install.
 
+## Cross-cutting ownership (EQO-A remediation note, as of 2026-11-16)
+
+One line per area; "not applicable" lines state the reason.
+
+| Area | Statement |
+| ---- | --------- |
+| Plan pair | None. This document is proof infrastructure, a satellite of the stages `QUAL-X` and `EBH-6`, not a feature with its own plan; the Operator decided the promote-or-demote question (register entry ADR-REG-004 in [`ENTERPRISE_CROSS_LAYER_CANONICAL_LAYER_INVENTORY_EAC0.md`](../../maintainers/audits/ENTERPRISE_CROSS_LAYER_CANONICAL_LAYER_INVENTORY_EAC0.md)) as demotion on 2026-11-16; closing that register entry is a separate action not done by this note. Recorded in the exemption table of [`../README.md`](../README.md). |
+| Tenant isolation | Not applicable: `intergrax/proof_data/` contains no tenant identifier and handles content-addressed proof assets only. |
+| Configuration | The download location (`base_uri`) is supplied per install request, separate from the committed descriptor (see "Package identity vs location"). |
+| Observability | The only reporting surface is the typed `DataPackageInstallReport` (`intergrax/proof_data/report.py`); the package emits no runtime events and has no logging calls at baseline. |
+| Failure and recovery | See "HTTP transport resume semantics" above. |
+| Consumers | No importer under `intergrax/`, `agents/` or `applications/` at baseline; the VPI proof scenarios under `platform_proofs/` reference it. |
+
 ## Related documents
 
 - [DATASET_REPRODUCIBILITY.md](../../../platform_proofs/scenarios/verified_product_identification/DATASET_REPRODUCIBILITY.md)

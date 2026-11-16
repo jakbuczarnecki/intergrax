@@ -201,6 +201,8 @@ Each V1 capability type retains **its own** runtime path. Do not generalize thes
 | **Skill** | `SkillProfile` → `SkillRegistry` → `SkillResolver` (composition into agent contract; not direct execution) |
 | **Tool** | `ToolProfile` → `ToolRegistry` → governed `ToolRuntime` execution |
 
+**Scope of this document (EQO-A remediation note, as of 2026-11-16):** this document owns the discovery and read plane for Agent, Skill and Tool candidates. Modules in `intergrax/autonomous_work/` that implement acquisition, fulfilment, recovery or scoped adaptive integration are mapped in the "Module groups and owner documents" table of [`AUTONOMOUS_WORK.md`](AUTONOMOUS_WORK.md); only the capability-discovery group is within this document's scope.
+
 **Agent canonical chain (unchanged):**
 
 ```text
