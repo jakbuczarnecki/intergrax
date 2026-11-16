@@ -64,6 +64,11 @@ def _without_entries(inputs: F10Inputs) -> F10Inputs:
     return replace(inputs, c4_rules=tuple(rule for rule in inputs.c4_rules if rule.prefix not in _EXPECTED))
 
 
+def _with_paths(base: F10Inputs, paths: tuple[str, ...]) -> tuple[str, ...]:
+    """Changed paths of ``base`` plus the given paths that the range does not already hold (never a duplicate)."""
+    return (*base.changed_paths, *(path for path in paths if path not in base.changed_paths))
+
+
 # --- negatives: the default is unchanged ------------------------------------------------------------------------
 
 
@@ -93,7 +98,7 @@ def test_f10_c4_041o_each_entry_occurs_exactly_once() -> None:
 def test_f10_c4_041o_removing_the_entries_reopens_exactly_the_three_paths() -> None:
     base = _neutral()
     paths = tuple(_EXPECTED)
-    closed = replace(base, changed_paths=(*base.changed_paths, *paths))
+    closed = replace(base, changed_paths=_with_paths(base, paths))
     assert _result(closed, "C4-UNCLASSIFIED").status is ResultStatus.PASS
     assert certify_f10(closed).verdict(EcapGate.C4).verdict is GateVerdict.PASS
 
@@ -104,6 +109,47 @@ def test_f10_c4_041o_removing_the_entries_reopens_exactly_the_three_paths() -> N
         assert sum(1 for reason in result.reasons if reason == f"unclassified change {path}") == 1, result.reasons
     assert len(result.reasons) == len(paths), result.reasons
     assert certify_f10(reopened).verdict(EcapGate.C4).verdict is GateVerdict.BLOCKED
+
+
+@pytest.mark.parametrize("path", sorted(_EXPECTED))
+def test_f10_c4_041o_removing_one_entry_reopens_exactly_that_path(path: str) -> None:
+    base = _neutral()
+    closed = replace(base, changed_paths=_with_paths(base, tuple(_EXPECTED)))
+    assert _result(closed, "C4-UNCLASSIFIED").status is ResultStatus.PASS
+
+    reopened = replace(closed, c4_rules=tuple(rule for rule in closed.c4_rules if rule.prefix != path))
+    result = _result(reopened, "C4-UNCLASSIFIED")
+    assert result.status is ResultStatus.FAIL
+    assert list(result.reasons) == [f"unclassified change {path}"], result.reasons
+    assert certify_f10(reopened).verdict(EcapGate.C4).verdict is GateVerdict.BLOCKED
+
+
+def test_f10_c4_041o_reopen_check_does_not_depend_on_the_paths_being_in_the_range() -> None:
+    base = _neutral()
+    paths = tuple(_EXPECTED)
+    without = replace(base, changed_paths=tuple(p for p in base.changed_paths if p not in _EXPECTED))
+    assert not any(path in without.changed_paths for path in paths)
+    closed = replace(without, changed_paths=_with_paths(without, paths))
+    assert _result(closed, "C4-UNCLASSIFIED").status is ResultStatus.PASS
+
+    reopened = _without_entries(closed)
+    result = _result(reopened, "C4-UNCLASSIFIED")
+    assert result.status is ResultStatus.FAIL
+    for path in paths:
+        assert sum(1 for reason in result.reasons if reason == f"unclassified change {path}") == 1, result.reasons
+    assert len(result.reasons) == len(paths), result.reasons
+    assert certify_f10(reopened).verdict(EcapGate.C4).verdict is GateVerdict.BLOCKED
+
+
+def test_f10_c4_041o_with_paths_appends_only_missing_paths() -> None:
+    base = _neutral()
+    paths = tuple(_EXPECTED)
+    first, *others = paths
+    synthetic = replace(base, changed_paths=("zz_q/a.py", first))
+    assert _with_paths(synthetic, paths) == ("zz_q/a.py", first, *others)
+
+    present = tuple(path for path in paths if path in base.changed_paths)
+    assert _with_paths(base, present) == base.changed_paths
 
 
 # --- positives: the three entries -------------------------------------------------------------------------------
