@@ -6,7 +6,7 @@ Documentation-only point-in-time notes on seven registers and matrices (six unde
 
 ## Plan digest
 
-Plan digest: 345dc4f9e7d96cfdbe801517cbc4e9f75f719ce8576ceec46622b34f40fbeb09
+Plan digest: 16f69b0a43c17c57d351852a735c591a24105b74b91f842dc421fe0c4cd16b50
 
 Canonical plan: [`governance/tickets/plans/PLAN_T-IGX-042-C.md`](plans/PLAN_T-IGX-042-C.md). The digest was computed with `scripts/governance/plan_digest.py`; it must be recomputed after any edit of the plan.
 
