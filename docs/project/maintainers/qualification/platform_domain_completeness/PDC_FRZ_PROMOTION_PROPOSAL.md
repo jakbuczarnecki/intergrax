@@ -1,4 +1,8 @@
-# PDC-X — FRZ promotion proposal (PDC-P9-03) — DRAFT for the Operator's signature
+# PDC-X — FRZ promotion proposal (PDC-P9-03) — option N chosen in chat, awaiting final confirmation
+
+> **Operator's answers recorded (chosen by the Operator in chat (2026-11-16), awaiting final confirmation).** Transcription: [`operator_decisions/OD-PDC-X-CLOSE.md`](./operator_decisions/OD-PDC-X-CLOSE.md) (English rendering of the Operator's chat answer of 2026-11-16; unsigned: `Signed: <pending — the Operator confirms the final text in chat>`). Outcome A; all 18 "Operator decision" exceptions declared; the 13 rows open with no exception are documented debt (rows stay `PARTIAL`, no new tickets); FRZ option N; debt register accepted; limitations acknowledged; ARCH-FREEZE handoff published, ARCH-FREEZE not entered.
+
+**Effect:** option N: no FRZ row is promoted; the checklist is untouched; counters stay **225 / 26**. Sections 5-7 stay as information only.
 
 > **DRAFT — proposal for the Operator, not a verdict.** No FRZ status is changed by this file. `PLATFORM_ENTERPRISE_FREEZE_ACCEPTANCE_CHECKLIST.md` is untouched. FRZ promotion is **not delegated** (`DELEGATION-PDC-CLOSE.md`, "Not delegated"; `DELEGATION-PDC-WAVE2.md`); it needs the Operator's signature and the certifier role, and any promotion would rest on the P8 result: global audit **`PASS_SCOPED`** at `G` = `969cbd964c679d563b02e55f065b452d46fdf90b` (`PDC_INDEPENDENT_AUDIT.md` section 15), which is **not row-level FRZ evidence** (section 3, item 3). **I do not change any FRZ status, the checklist or the roadmap.** Proposed default: **Option N (no promotion)**.
 

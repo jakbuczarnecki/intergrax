@@ -1,4 +1,6 @@
-# PDC-X — Debt register (PDC-P9-01) — DRAFT for the Operator's signature
+# PDC-X — Debt register (PDC-P9-01) — accepted per the Operator's chat answers, awaiting final confirmation
+
+> **Operator's answers recorded (chosen by the Operator in chat (2026-11-16), awaiting final confirmation).** Transcription: [`operator_decisions/OD-PDC-X-CLOSE.md`](./operator_decisions/OD-PDC-X-CLOSE.md) (English rendering of the Operator's chat answer of 2026-11-16; unsigned: `Signed: <pending — the Operator confirms the final text in chat>`). Outcome A; all 18 "Operator decision" exceptions declared; the 13 rows open with no exception are documented debt (rows stay `PARTIAL`, no new tickets); FRZ option N; debt register accepted; limitations acknowledged; ARCH-FREEZE handoff published, ARCH-FREEZE not entered.
 
 > **DRAFT — proposal for the Operator, not a verdict.** This register lists LOW and INFO findings of the eight P7 audits and of the P8 global audit (section 12), the debt items of `DELEGATION-PDC-WAVE2.md` decision 5, and the debt table of ticket `T-IGX-036-Z`. "Debt" means documented and not repaired in PDC-X; it is not a waiver, not an acceptance and not a rating. Nothing is closed by being listed. Declared exceptions (HIGH and MEDIUM findings and their rows) are in [`PDC_EXCEPTION_REGISTER.md`](./PDC_EXCEPTION_REGISTER.md).
 
@@ -205,3 +207,16 @@ Decision 5: "One omnibus ticket (see scope); the rest recorded as documented deb
 | A-16 (G-27) | LOW | A one-shot schedule whose terminal authority is unavailable is completed as "not resumable" and never executes (previous behaviour, documented as unchanged) | `intergrax/runtime/long_running/scheduler.py:219-222` | CODE | DEBT (see EX-L-10) |
 
 All dispositions are proposals; a LOW finding the Operator wants repaired goes to a new ticket, not to a signature line.
+
+## 13. Rows open with no exception: documented debt (Operator's answer 3, chosen by the Operator in chat (2026-11-16), awaiting final confirmation)
+
+The Operator answered in chat that the 13 requirement rows that were open with neither a repair nor an exception are **documented debt**, the rows **stay `PARTIAL`**, and **no new tickets** are opened. The rows are not rated `PASS_SCOPED` and no finding below is closed by being listed. Row ids are those of `PDC_EXCEPTION_REGISTER.md` section 5, last column; the findings are those the sources attach to each row (D1 R009 F-D1-15; D1 R015 F-D1-17; D1 R017 F-D1-06 consumption; D2 R004 the D2 RAG remainder, see EX-L-05; D3 R005 F-D3-10; D3 R019 F-D3-09; D3 R018 depends on T-IGX-041-I and F-D3-12; D5 R002 F-D5-09; D6 R007 F-D6-14, F-D6-03; D6 R010 the isolation-gate strength remark with no finding id; D6 R015 F-D6-20; D7 R015 the no-UNCERTAIN-reconciler residual; D7 R022 F-D7-16). Where a source does not state the finding the entry says so; the reason text of each row is in the exception register.
+
+| Row | Treatment (answer 3) | Reopen condition |
+| --- | --- | --- |
+| PDC-D1-R009, PDC-D1-R015, PDC-D1-R017 | debt; row stays `PARTIAL` | a doc status fix (R009), a cross-host reuse test (R015), a production consumer of the lifecycle evidence sink (R017) |
+| PDC-D2-R004 | debt; row stays `PARTIAL` | see EX-L-05 (root cause under the extras profile) |
+| PDC-D3-R005, PDC-D3-R018, PDC-D3-R019 | debt; rows stay `PARTIAL` | F-D3-10 served-model attribution; T-IGX-041-I and F-D3-12; F-D3-09 VBN classification |
+| PDC-D5-R002 | debt; row stays `PARTIAL` | F-D5-09 |
+| PDC-D6-R007, PDC-D6-R010, PDC-D6-R015 | debt; rows stay `PARTIAL` | F-D6-14 and F-D6-03; an isolation-gate strength check; F-D6-20 (model-provider tenant data) |
+| PDC-D7-R015, PDC-D7-R022 | debt; rows stay `PARTIAL` | an UNCERTAIN reconciler and the double-execution check of plan G; F-D7-16 documentation fix |
