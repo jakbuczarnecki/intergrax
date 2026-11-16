@@ -4,7 +4,7 @@ Ticket `T-IGX-050-J` (`plan_pending`). Draft by the implementer. This register l
 
 ## 1. Rules
 
-- **FIX**: a defect or stale artefact that needs a change. **ENV**: red only because of the environment, and proven so (column *How to prove ENV*). **OUT**: outside the frozen scope by a cited Operator decision. **UNKNOWN**: the evidence read does not decide it.
+- **FIX**: a defect or stale artefact that needs a change. **ENV**: red only because of the environment; provisional until proven (see below and the column *How to prove ENV*). **OUT**: outside the frozen scope by a cited Operator decision. **UNKNOWN**: the evidence read does not decide it.
 - ENV is provisional until a proving run at the qualification SHA: rows with `env_proof` `PENDING` (cause visible in a log, no proving run yet) or `QUOTED` (figure from a source this draft did not re-run) are ENV candidates, not proven. Only a proven ENV row may stay in the expected-red set at M3.
 - No row is OUT in this draft: OUT needs a cited Operator decision that excludes the class from the ARCH-FREEZE scope, and none was found in the sources read (the PDC decisions exclude scope from PDC-X, not from ARCH-FREEZE).
 - No skip or xfail may hide a red. This register adds none. Two strict xfails that already exist are named (KR-19, KR-24) because they hide reds.
