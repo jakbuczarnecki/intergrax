@@ -1,5 +1,7 @@
 # ARCH-FREEZE execution wave 1 — independent audit handoff
 
+> **Header note 2026-11-16 (ticket `T-IGX-050-A`):** the independent audit requested below is recorded in [`ARCH_FREEZE_INDEPENDENT_AUDIT_AND_CLOSURE_MATRIX.md`](./ARCH_FREEZE_INDEPENDENT_AUDIT_AND_CLOSURE_MATRIX.md) as **INDEPENDENTLY ACCEPTED (SCOPED)** @ G6 audit `3d96691f1b02b393a4de189139a6e1347db99382`, closure document `950097ea4bcfd5bba828f663bcd993b8bd1e1d63` (this note quotes that record and does not re-assert it; the audit artefacts themselves were not re-verified by this batch; see [`ARCH_FREEZE_SHA_LADDER.md`](./ARCH_FREEZE_SHA_LADDER.md) and [`ARCH_FREEZE_INDEPENDENT_AUDIT_AND_CLOSURE_MATRIX.md`](./ARCH_FREEZE_INDEPENDENT_AUDIT_AND_CLOSURE_MATRIX.md)). The body below is the 2026-11-04 handoff text and is left unchanged; its "Disposition" line and its counts (for example 130 OPEN checklist rows) are historical. This does not certify ARCH-FREEZE.
+
 **Disposition:** `READY FOR INDEPENDENT AUDIT` (engineering waves **B0–B4** only)  
 **Ticket:** [`governance/tickets/T-IGX-010-B.md`](../../../governance/tickets/T-IGX-010-B.md)  
 **Publication HEAD:** `32fc2bce52c46ec721633453e401839cb39181d7` · **Branch:** `development`

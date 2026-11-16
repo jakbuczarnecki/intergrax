@@ -1,0 +1,9 @@
+OD-SKILLX-ACCEPT-2026-11-07
+SKILL-X parent is CLOSED — INDEPENDENTLY ACCEPTED for roadmap §3.0.4 EC1–EC11, scoped to: catalog-witness supply-chain model (EC9), no per-certification full GOV-X2 replay (EC2), structural-only registry-less recovery, lifecycle install/bind/enable, no global FRZ promotion, PROD-Q Dimension B open — on the basis of the AUD-SKILLX audit of 552e379845a9512c275f3ebe520ac51767c97cf8 (publication 76a98cb3f3e4576ab694f03a5b3e270eb7694f9e), replacing the unverified 'external independent review' claim.
+Decided inside this record:
+- OD-SKILLX-A: ACCEPTED — EC9 reclassification (optional signing out of §3.0.4; catalog-witness model) and EC2 no-full-GOV-X2 scope.
+- OD-SKILLX-B: ACCEPTED — no original external review artefact exists in the repository (verified at 76a98cb3f3e4576ab694f03a5b3e270eb7694f9e); the AUD-SKILLX audit of 552e379845a9512c275f3ebe520ac51767c97cf8 serves as the re-acceptance.
+- F-03: ACCEPTED as record debt — ROADMAP-REPLAY-X L2 row 222 has no SKILL-X run/log; no targeted L2 entry ordered.
+- F-04: roadmap scope note REQUIRED — SKILL-X lifecycle certification covers install/bind/enable only; disable/remove/upgrade are unsupported and untested.
+Condition: this acceptance is conditional on the QUAL-X predecessor regularisation (decided by SIGN-5, DS-5). This record does not decide DS-5. If the QUAL-X regularisation is not completed, this acceptance does not stand.
+Not granted: no FRZ-* promotion; TOOL-LIFE-X not CLOSED; PROD-Q Dimension B remains open.

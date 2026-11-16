@@ -1,0 +1,15 @@
+# sha256sum format; check with: sha256sum -c SOURCES.sha256 (run inside this folder)
+# Digests are of the published copies (LF line endings, two machine-path redactions; see README.md).
+# 'source' comments give the original untracked path, its modification time (local) and the sha256 of the source file before normalization/redaction.
+9f23168ef50f1f5367f5071e09e51c55ad60118bc0e907b77b065b81ecfcbb85  MEP-AF2_v2.1.md
+# source of MEP-AF2_v2.1.md: agent-env/plans/pasted-content-id-e2b1-integrax-melodic-aho.md mtime=2026-11-16 13:02:01 sha256=5c31bd9116a587732bc814e12800e904c2ff8a5330e4daeaaf1e17232053af19
+af5c11674cd5c0ac2215d5782d43be1f5549f14fafdedbb4076dca3b0cefd81d  README.md
+# README.md: written for this publication; no source file
+9591927d492b1d08128952cff969ef62c8338e515ffa2c9927be78e3f00a7dfb  WP12_AUTHORIZATION_REQUESTS.md
+# source of WP12_AUTHORIZATION_REQUESTS.md: .tmp/session/eqo-a-remediation/WP-12/AUTHORIZATION_REQUESTS.md mtime=2026-11-16 12:50:12 sha256=3ac68ee85552a9f7ef239bb4495464fa084334f63be6da1bec9619a6beffaa7b
+eb6f2f2dbbf2418593bb1e9856c5f92cd903f4070a3451b961cef38bbe91fa27  WP12_DAG.md
+# source of WP12_DAG.md: .tmp/session/eqo-a-remediation/WP-12/DAG.md mtime=2026-11-16 12:50:11 sha256=0e66a6cf38ff124ce11a77457797e3f6d955762f085fa66764956c6b24a5e990
+91a1f13adc406990fbd86c244616fa532fb413364e0e0426a81e5133ce14c4ef  WP12_OPEN_QUESTIONS.md
+# source of WP12_OPEN_QUESTIONS.md: .tmp/session/eqo-a-remediation/WP-12/OPEN_QUESTIONS.md mtime=2026-11-16 12:50:13 sha256=a5488729a1cfc4bc9444320593213f97aa7c770a77ecb627096ff0dbb96ce82d
+022cb78b8cb3afe3d95d723f2fac208b122139c5f0b761f9deb2fb6657747f77  WP12_TICKETS_DRAFT.md
+# source of WP12_TICKETS_DRAFT.md: .tmp/session/eqo-a-remediation/WP-12/TICKETS_DRAFT.md mtime=2026-11-16 12:50:11 sha256=cb4022f67c693ab12f465c56f0a0a1a09d2521bdb56af5c4245e60f78f7f9af2
