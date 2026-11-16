@@ -1,6 +1,6 @@
 # OD-PDC-X-CLOSE — Operator answers to the single-signature questions of the PDC-X closing wave
 
-> **Status: answers recorded from chat; awaiting the Operator's final confirmation of this text.** This record is a transcription prepared by the orchestrating session. It is **not signed**, contains no `Approved` line and writes no closure line. It becomes the Operator's decision only when the Operator confirms the final text in chat.
+> **Status: answers recorded from chat; the Operator confirmed the final text in chat on 2026-11-16 (see the signature line).** This record is a transcription prepared by the orchestrating session. It is **not signed**, contains no `Approved` line and writes no closure line. It becomes the Operator's decision only when the Operator confirms the final text in chat.
 
 | Field | Value |
 | --- | --- |
@@ -43,6 +43,6 @@ OD signatures other than this record; lifting C10/C15; the verdict on B6 or on c
 
 ## Separation
 
-The orchestrating session, the implementers, the auditors, the certifier and the delegates did not write the signature line. The text below stays pending until the Operator confirms it in chat.
+The orchestrating session, the implementers, the auditors, the certifier and the delegates did not write the signature line. The Operator confirmed the text in chat; the signature line below transcribes that confirmation, as the earlier delegation records transcribe the Operator's chat answers.
 
-Signed: <pending — the Operator confirms the final text in chat>
+Signed: Operator, in chat on 2026-11-16, after seeing PR #603 (OD-PDC-X-CLOSE, the registers and the Variant A roadmap text). English rendering of the Operator's answer: "Yes, I sign" (original wording in Polish: "Tak, podpisuję").
