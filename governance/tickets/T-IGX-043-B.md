@@ -38,4 +38,4 @@ Leg (c) of A4-032 (guardrail engine downgrade) and WP2-OBS-03 (stub vision), bot
 
 ## Lifecycle state
 
-`draft`
+plan_pending
