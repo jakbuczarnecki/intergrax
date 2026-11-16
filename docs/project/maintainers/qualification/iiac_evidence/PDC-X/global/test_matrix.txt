@@ -30,3 +30,6 @@ Addendum 2, delta audit SHA 969cbd964c679d563b02e55f065b452d46fdf90b (targeted o
 cmd: pytest 2 G-23 reproductions + test_graph_publication_scope_visibility + K and O B6-F10 C4 entry gates   result: 64 passed, 175.6 s, exit 0   log: logs_addendum2/targeted_pytest.log
 cmd: same 64 tests with the pre-P graph code and two real classifier entries renamed (mutant)                  result: 34 failed, 30 passed (both reproductions, 16/23 P, 8/19 K, 8/20 O); restored   log: logs_addendum2/mutation_pytest.log
 cmd: git diff --name-only d39a520dd..969cbd964                                                                result: 414 files; product paths: 3 (intergrax/rag/graph/*)   log: logs_addendum2/delta_files.txt
+
+Addendum 3, audited SHA 969cbd964c679d563b02e55f065b452d46fdf90b: no new tests (Operator exception record); two IIAC validators re-run once   log: logs_addendum3/validators.txt
+cmd: git diff --name-only 969cbd964..origin/development (4220069c2)   result: docs paths only

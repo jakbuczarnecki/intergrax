@@ -5,15 +5,17 @@
 | **Record** | `PDC_INDEPENDENT_AUDIT` (PDC-P8-02 / PDC-P8-03) |
 | **Role** | IA-GLOBAL — independent global auditor, new clean session (OD-PDC-IIAC-SCOPE, `IIAC-2026-11-05.1`, profile `iiac-v1`) |
 | **Auditor session** | `PDC-P8-IA-GLOBAL-INDEPENDENT-AUDITOR-6573093f-9178-4c2c-93a3-64b0a5b6c657` (up to four read-only code-reading subagents; the auditor integrated and owns every verdict) |
-| **Date** | 2026-11-15 (Addendum 2: 2026-11-16) |
+| **Date** | 2026-11-15 (Addendums 2 and 3: 2026-11-16) |
 | **Audited SHA (start)** | `cba32d2479cd134911d2fdf4fb1db4587c8a94d8` (`origin/development` at session start; product tree = merge `63005e290` of PR #576; later commits are docs-only) |
 | **Final audit SHA** | `d39a520dda965981a38f8e1a90ec5135ea5d508e` |
 | **Delta audit SHA (Addendum 2)** | `969cbd964c679d563b02e55f065b452d46fdf90b` (repair loop 2, T-IGX-041-P and T-IGX-041-Q; section 14) |
-| **Overall verdict** | **PARTIAL** (`PARTIAL_EXACT_BLOCKERS`; IIAC manifest value `CONDITIONAL`), unchanged at the final audit SHA (section 13) and at the delta audit SHA of repair loop 2 (section 14) |
+| **Overall verdict** | **PASS_SCOPED** (IIAC manifest value `PASS_SCOPED`) at `969cbd964` for the scoped rows, only with the Operator-accepted declared exceptions named in section 15; it was PARTIAL at `d39a520dd` (section 13) and at `969cbd964` before the exception record (section 14) |
 | **Nature** | An audit. It is **not** a certification, issues no `Approved:` or activation line, promotes no FRZ status, closes nothing and makes no production-readiness claim. The auditor did not implement, sign, domain-audit or certify anything in PDC-X and changed no product, test, script, governance or ticket file (docs-only deliverable). |
 
 ## 1. Verdict and exact blockers
 
+> **Final status (Addendum 3, section 15):** PASS_SCOPED at `969cbd964` for the scoped rows, with the declared exceptions G-05 residual, E1 to E11, G-10 residual (`trace_bridge.v1`) and G-28 accepted by the Operator (`DELEGATION-PDC-EXCEPTIONS`); every residual stays open and visible; not a PASS, not a verdict on B6 or certification. The text of sections 1 to 14 below is the record of the earlier states and is kept unchanged.
+>
 > **Status at the delta audit SHA `969cbd964`** (section 14 supersedes the status below for G-23): G-23 is VERIFIED_FIXED for the in-memory graph store; the Neo4j store keeps the same defect class as a declared residual (G-28); G-24 to G-27, the G-05 residual, E1 to E11 and `trace_bridge.v1` are unchanged; the verdict remains PARTIAL (section 14.6 states what it would be if the Operator accepts the open items).
 >
 > **Status at the final audit SHA `d39a520dd`** (section 13 supersedes the status below): G-01, G-02, G-03 and G-06 are VERIFIED_FIXED; G-04 and G-05 are repaired only in part; the verdict remains PARTIAL. The tables of sections 1 to 12 describe the audit at the start SHA `cba32d247`.
@@ -422,3 +424,35 @@ Not run, by the Operator's condition: ECAP FULL, the EBH-7 L3 replay, the broad 
 - Verification of P is code reading, the targeted tests and one executed mutation; the Neo4j path was read, not run.
 - The 3 product files were read in full as a diff. Of the tests, the K gate diff was read in full; the O gate diff (same shape, 48 lines) and P's 390-line test file were checked by test names, helpers, the targeted run and the mutant run, not line by line. The 371 EQO-A files, the EBH-7 re-render files, the workflows' non-pin lines and the ticket and plan files were categorized by path and diff statistics, not reviewed.
 - Any product change after `969cbd964` voids this addendum for the changed paths; the verdict on every other path rests on the `d39a520dd` evidence of section 13.
+
+## 15. Addendum 3 — final verdict at `969cbd964` after the Operator's exception record
+
+Requested by the orchestrator after the Operator accepted the open items as declared exceptions: `operator_decisions/DELEGATION-PDC-EXCEPTIONS.md` (PR #596, head `b0b43e5d68fbe349f2baf308711812d59987cce5`; the auditor read the file at that head; it was not yet merged when this addendum was written). The Operator's answer, as transcribed there: "Yes, all as exceptions". Audited SHA unchanged: `969cbd964c679d563b02e55f065b452d46fdf90b`. No new tests were run; the only re-run is the two IIAC validators (`logs_addendum3/validators.txt`).
+
+### 15.1 What was checked
+
+| Check | Result |
+| --- | --- |
+| The exception record exists and names the four items | Yes: G-05 residual (77 scenario reds), E1 to E11, G-10 residual (`trace_bridge.v1`), G-28 (Cypher store); LOW and INFO findings (G-24 to G-27 and earlier) go to the debt register of the P9 package. |
+| Any change after the audited SHA | `git diff --name-only 969cbd964..origin/development` (tip `4220069c2`) shows docs paths only: the merged addendum 2 and its evidence. No product path, test, workflow, script or ticket changed. |
+| Nothing else invalidates sections 13 and 14 | The G-23 repair and the Q tests were verified (14.2 to 14.4); the evidence of sections 5 to 13 at `d39a520dd` is unchanged; the three graph files are the only product paths after `d39a520dd`. |
+| Scope widened by the record | No. The record names exactly the items listed in 14.5 and 14.6 as the open items and does not touch the exceptions of `DELEGATION-PDC-CLOSE.md` decision 1, B6, certification, FRZ or C10/C15. |
+
+### 15.2 Final verdict
+
+**PASS_SCOPED** at `969cbd964` for the scoped rows of sections 7 and 13, **only** with the exceptions below named in the manifest limitations. This is the vocabulary of `OD-PDC-IIAC-SCOPE.md`; the IIAC manifest value is `PASS_SCOPED`. It is **not** a PASS: the verdict was PARTIAL at `d39a520dd` (section 13) and at `969cbd964` before the exception record (section 14); the only thing that changed is the Operator's acceptance of the items, none of which was repaired or re-measured.
+
+| Open residual | Status | Reopen / owner |
+| --- | --- | --- |
+| G-05 residual: 77 red incident scenario tests (59 `get_steps() missing 'context'`) | declared exception, still red | repair or retire the scenario suite; P9 exception register |
+| E1 to E11: G-08 durable CAS, G-09 strict host with `tenant_id=None`, G-11 stream resilience claim, G-12 `install_agent` into an occupied slot, F-D3-02 pins and the others of T-IGX-041-M | declared exception, still open product MEDIUMs | each has its reopen condition in T-IGX-041-M; P9 exception register |
+| G-10 residual: `trace_bridge.v1` mismatch | declared exception, unowned | `intergrax/runtime/events/payloads/canonical.py:171`, `intergrax/runtime/nexus/tracing/qualification_runtime_trace.py:101` |
+| G-28: Cypher/Neo4j store keeps the unscoped key; fails closed, no leak | declared exception, not reproduced here | `cypher_rag_graph_store.py:156-161`; needs a fourth file and Docker qualification (C10/C15 freeze) |
+| G-24 to G-27 and earlier LOW/INFO | debt register | P9 closure package |
+
+### 15.3 What this verdict is not
+
+- Not a repeat-run PASS: ECAP FULL, the contract suites and the combined pytest were last run at `d39a520dd` (section 13); at `969cbd964` only the targeted tests of 14.4 ran (Operator condition of `DELEGATION-PDC-LOOP2.md`).
+- Not a verdict on B6 or on certification: the EBH-7 L3 replay run 43738431866 stays recorded as failed ("not B6 PASS"); the EBH-7 identity gate, IIAC activation staleness (ACT-N11), `roadmap_replay_x` and `dist_scale_x` stay known red classes outside this verdict.
+- Not a certification of the stage, not an FRZ promotion, not a production-readiness claim, not a closure. The certifier authors any binding manifest.
+- Any product change after `969cbd964` voids this verdict for the changed paths.

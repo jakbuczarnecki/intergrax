@@ -3,14 +3,14 @@
   "auditor": "IA-GLOBAL",
   "audited_implementation_sha": "cba32d2479cd134911d2fdf4fb1db4587c8a94d8",
   "final_audit_sha": "d39a520dda965981a38f8e1a90ec5135ea5d508e",
-  "overall_verdict": "PARTIAL",
+  "overall_verdict": "PASS_SCOPED",
   "residual_blockers_at_final_sha": [
     "G-23 MEDIUM unowned product defect",
     "G-05 residual: 77 incident scenario reds, 59 get_steps, beyond decision 1, needs Operator",
     "product MEDIUMs excluded by T-IGX-041-M E1..E11 without Operator authorization",
     "trace_bridge.v1 payload mismatch (G-10 residual) unowned"
   ],
-  "iiac_manifest_verdict": "CONDITIONAL",
+  "iiac_manifest_verdict": "PASS_SCOPED",
   "repaired_finding_verdicts": {
     "VERIFIED_FIXED": 63,
     "PARTIALLY_FIXED": 13,
@@ -268,5 +268,31 @@
       "targeted_at_969cbd964": "64 passed (2 G-23 reproductions, P file 23, K gate 19, O gate 20)",
       "mutant": "34 failed, 30 passed (pre-P graph code and two real classifier entries renamed); worktree restored"
     }
+  },
+  "overall_verdict_history": {
+    "d39a520dd": "PARTIAL",
+    "969cbd964_before_exception_record": "PARTIAL"
+  },
+  "addendum_3": {
+    "section": "PDC_INDEPENDENT_AUDIT.md section 15",
+    "audited_sha": "969cbd964c679d563b02e55f065b452d46fdf90b",
+    "exception_record": "operator_decisions/DELEGATION-PDC-EXCEPTIONS.md (PR #596, head b0b43e5d68fbe349f2baf308711812d59987cce5)",
+    "final_verdict": "PASS_SCOPED for the scoped rows, only with the declared exceptions below; not a PASS; no verdict on B6 or certification",
+    "declared_exceptions_accepted_by_operator": [
+      "G-05 residual: 77 red incident scenario tests (59 get_steps() missing 'context')",
+      "E1..E11 (T-IGX-041-M): G-08 durable CAS, G-09 strict host with tenant_id=None, G-11 stream resilience claim, G-12 install_agent into an occupied slot, F-D3-02 pins, others of the plan",
+      "G-10 residual: trace_bridge.v1 mismatch",
+      "G-28: Cypher/Neo4j store keeps the unscoped key (fail closed, not reproduced)"
+    ],
+    "debt_register": [
+      "G-24",
+      "G-25",
+      "G-26",
+      "G-27",
+      "earlier LOW and INFO findings"
+    ],
+    "still_open_and_visible": "all four exceptions stay open; none repaired or re-measured",
+    "product_changes_after_969cbd964": "none (git diff --name-only 969cbd964..4220069c2 shows docs paths only)",
+    "tests_run": "none new; the two IIAC validators re-run once (logs_addendum3/validators.txt)"
   }
 }
