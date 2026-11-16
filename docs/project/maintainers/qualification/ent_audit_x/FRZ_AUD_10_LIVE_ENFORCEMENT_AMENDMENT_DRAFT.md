@@ -1,8 +1,8 @@
-<!-- Draft added by governance/tickets/T-IGX-044-A.md (EQO-A remediation node PT-E00, documentation only). Not adopted: the ticket carries no approval line. -->
+<!-- Draft added by governance/tickets/T-IGX-044-A.md (EQO-A remediation node PT-E00, documentation only). Approval state: see the Approved section of that ticket; approval of the ticket does not make this text a LIVE disposition. -->
 
 # FRZ-AUD-10 - live enforcement amendment (DRAFT)
 
-Status: **DRAFT - not adopted, no effect.** This page is a proposal text. It is **not** an Operator decision record (`OD-ENT-02-R1` does not exist), it does **not** change the FRZ-AUD-10 disposition, it edits neither the freeze checklist nor the roadmap, and it claims no PASS, closure or independent verification. FRZ-AUD-10 stays as the checklist row reads today (section 2). Facts were checked at `2ab57e36d94eae98c962b3d7b09e5a540d8c70d2` (`origin/development` when this draft was written).
+Status: **DRAFT - proposal text, not a LIVE disposition, no effect.** This page is a proposal text. It is **not** an Operator decision record (`OD-ENT-02-R1` does not exist), it does **not** change the FRZ-AUD-10 disposition, it edits neither the freeze checklist nor the roadmap, and it claims no PASS, closure or independent verification. FRZ-AUD-10 stays as the checklist row reads today (section 2). Facts were checked at `2ab57e36d94eae98c962b3d7b09e5a540d8c70d2` (`origin/development` when this draft was written).
 
 ## 1. Purpose and origin
 

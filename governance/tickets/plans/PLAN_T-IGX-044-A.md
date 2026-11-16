@@ -1,6 +1,6 @@
 # PLAN T-IGX-044-A - EQO-A remediation node PT-E00 (T-ENF-0): enforcement documentation records
 
-Status: DRAFT for Operator review. Drafted 2026-11-16 from the EQO-A remediation master plan (node PT-E00). Nothing here is approved, applied or audited.
+Approval state: see the Approved section of `governance/tickets/T-IGX-044-A.md`. Approval of this plan is not an implementation go beyond its documentation write set. Drafted 2026-11-16 from the EQO-A remediation master plan (node PT-E00); the plan certifies, closes and audits nothing.
 
 ## 1. Purpose
 

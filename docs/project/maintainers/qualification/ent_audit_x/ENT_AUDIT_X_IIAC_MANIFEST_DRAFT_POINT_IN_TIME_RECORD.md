@@ -1,8 +1,8 @@
-<!-- Draft added by governance/tickets/T-IGX-044-A.md (EQO-A remediation node PT-E00, documentation only). Not adopted: the ticket carries no approval line. -->
+<!-- Draft added by governance/tickets/T-IGX-044-A.md (EQO-A remediation node PT-E00, documentation only). Approval state: see the Approved section of that ticket; approval is not an implementation go and adds no status to this record. -->
 
 # IIAC manifest drafts that fail the repository validators - point-in-time record (EQOA-A2-006)
 
-Status: **DRAFT - point-in-time record, not a certificate.** It records facts about three files; it does not certify, close, supersede or re-label anything, and it grants no exception. Facts were measured at `2ab57e36d94eae98c962b3d7b09e5a540d8c70d2` (`origin/development` when this record was written). The finding behind it is EQO-A A2-006 (baseline `258bbf6abb6fdbb92ef0185d058527fbb1e47f04`); the standing entry in the register is section 9.6 of [`enterprise_debt_register/README.md`](../enterprise_debt_register/README.md).
+Status: **point-in-time record, not a certificate.** It records facts about three files; it does not certify, close, supersede or re-label anything, and it grants no exception. Facts were measured at `2ab57e36d94eae98c962b3d7b09e5a540d8c70d2` (`origin/development` when this record was written). The finding behind it is EQO-A A2-006 (baseline `258bbf6abb6fdbb92ef0185d058527fbb1e47f04`); the standing entry in the register is section 9.6 of [`enterprise_debt_register/README.md`](../enterprise_debt_register/README.md).
 
 ## 1. Result
 
