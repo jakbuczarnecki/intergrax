@@ -55,11 +55,7 @@ def graph_evidence_visible(
     """Return whether one evidence record is visible under the canonical law."""
     if not versioned:
         return True
-    if (
-        generation is None
-        or source_key is None
-        or coordinator is None
-    ):
+    if generation is None or source_key is None or coordinator is None:
         return False
     try:
         active = coordinator.active_publication_generation(key=source_key)
@@ -112,7 +108,6 @@ def visibility_query_params(
         "scope_key": scope.key,
         "coordinator_bound": True,
         "active_pairs": [
-            {"source_id": source_id, "generation": generation}
-            for source_id, generation in sorted(active.items())
+            {"source_id": source_id, "generation": generation} for source_id, generation in sorted(active.items())
         ],
     }

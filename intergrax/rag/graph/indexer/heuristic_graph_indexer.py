@@ -33,9 +33,7 @@ class HeuristicGraphIndexer:
         *,
         chunk_ids: Sequence[str] | None = None,
     ) -> int:
-        validated_documents, resolved_ids = validate_graph_index_batch(
-            self._store, documents, chunk_ids
-        )
+        validated_documents, resolved_ids = validate_graph_index_batch(self._store, documents, chunk_ids)
         count = 0
         for doc, chunk_id in zip(validated_documents, resolved_ids):
             count += self._index_one(doc, chunk_id)
