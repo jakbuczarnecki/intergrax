@@ -21,8 +21,8 @@ docs/project/technical/DOCUMENTATION_MAP.md
 
 ## Approved
 
-Approved: operator-delegate @ 2026-11-16T13:13:59+01:00
-Delegation: D:/Projekty/intergrax/.tmp/session/eqo-a-remediation/FC/OPERATOR_ANSWERS_TRANSCRIPTION.md@sha256:cbb86371ec01828fff5e84683d1cf225e7bacdd7bca5d7692a3e7603dc2cdc85
+Approved: operator-delegate @ 2026-11-16T13:44:11+01:00
+Delegation: docs/project/maintainers/qualification/eqo_a_remediation/OPERATOR_ANSWERS_CODE_WAVE_TRANSCRIPTION.md@c98a0d7d67a0b52b8e7e0e279baa0d906bb9c45d
 
 ## Test contract
 
