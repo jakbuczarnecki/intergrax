@@ -63,8 +63,8 @@ As in the ticket: one `uv run` process at a time under the lock; the traceabilit
 
 - **Conflicts with PR #606 and PR #607.** Neither file set is touched here. The orchestrator re-checks that #606's hunks do not overlap the files edited here.
 - **Stale claims.** The pre-admission addendum attributes the blockers to MEP-AF2 v2.1 section A and says they are not re-verified; the roadmap decides every closure label.
-- **Dependency on PR #615 (ticket T-IGX-042-E).** The register rows for OD-REM-01..08, C1–C10 and DS-1..DS-6 (DP-01..DP-68) are one-line pointers to the Operator decision record that #615 publishes under `qualification/eqo_a_remediation/`. #615 must merge first or together with this PR. The queued decisions recorded in the EQO-A planning artefacts as EDER-D-0167..0171 are not asserted as register rows (see #607 / PT-R01).
-- **Ticket numbering.** The id `T-IGX-050-A` follows the renumbering decision OD-AF-01a (packet 2): ARCH-FREEZE tickets use T-IGX-050/051/052 because T-IGX-043-A..F are EQO-A drafts. The first publication of this batch (PR #611, ticket id `T-IGX-043-A`) is superseded by this one.
+- **Dependency on PR #615 (ticket T-IGX-042-E).** The register rows for OD-REM-01..08, C1–C10 and DS-1..DS-6 (DP-01..DP-68) are one-line pointers to the Operator decision record that #615 (a draft PR, head `c98a0d7d6`) publishes under `qualification/eqo_a_remediation/`. #615 must merge first or together with this PR. The queued decisions recorded in the EQO-A planning artefacts as EDER-D-0167..0171 are not asserted as register rows (see #607 / PT-R01).
+- **Ticket numbering.** The id `T-IGX-050-A` follows the renumbering decision OD-AF-01a (packet 2): ARCH-FREEZE tickets use T-IGX-050/051/052 because T-IGX-043-A..J are used by EQO-A (FC A..F, W-A..W-F drafts as reported by the orchestrator). The first publication of this batch (PR #611, ticket id `T-IGX-043-A`) is superseded by this one.
 - **EBH-7 / IIAC interplay.** Docs under `qualification/` are not product paths; whether the EBH-7 allowlist needs a re-pin for them is for the orchestrator to confirm before merge.
 
 ## 8. Rollback
