@@ -2,6 +2,8 @@
 
 **Rows:** 225 | **Families:** 26 | **AUDIT_BASELINE_SHA:** `a0624e28ff77b061e83f3e10aab4c2a9083ee1b4`
 
+> **Currency note (EQO-A remediation, as of 2026-11-16).** This matrix is a point-in-time snapshot (see `AUDIT_BASELINE_SHA` above) and is not regenerated from the checklist. At `258bbf6abb6fdbb92ef0185d058527fbb1e47f04` it differs from `PLATFORM_ENTERPRISE_FREEZE_ACCEPTANCE_CHECKLIST.md` in the status of exactly 21 rows: FRZ-AUD-01..10, FRZ-EVOL-01..10 and FRZ-FRZ-11 read `OPEN` here and a status beginning with `PASS` in the checklist (the checklist carries 109 `OPEN` rows at that SHA). The checklist is the deciding authority; do not use this matrix as current status. The `--sync-matrix` option of `scripts/governance/verify_arch_freeze_plan_traceability.py` rewrites only the REMEDIATION_TASK column and does not refresh the status column.
+
 | FRZ_ID | CURRENT_STATUS | REQUIREMENT | SEMANTIC_OWNER | CODE_PATH | PRODUCTION_REACHABILITY | ACCEPTED_EVIDENCE_SHA | EVIDENCE_GAP | REMEDIATION_TASK | TEST_ID | AUDIT_GATE | OPERATOR_GATE | CLOSURE_DISPOSITION | WORK_CLASS |
 | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
 | FRZ-BND-01 | OPEN | Layer boundaries | EBH-2*, EBH-3, EBH-4 | tier+ENT manifest | PRODUCTION_EFFECTIVE | a8d47a6396c3e5e73a979be74429ed59a93e1551 | Missing independent PASS @ freeze SHA | T-B7-PROMOTE-BND | ENT-A / stage pytest | ECAP+stage B6 | Operator promotion | Close via audit+promotion | EVIDENCE_RECONCILIATION;INDEPENDENT_AUDIT_REQUIRED;QUALIFICATION_REQUIRED |
@@ -73,7 +75,7 @@
 | FRZ-TRC-08 | PASS | Traceability | TRACE-X, GOV-X* | tier+ENT manifest | PRODUCTION_EFFECTIVE | 05fd5d9b2b97f9d85a534a949d882cd47d4a54c9 | — | — | ENT-A / stage pytest | ECAP+stage B6 | Operator promotion | Close via audit+promotion | — |
 | FRZ-TRC-09 | PASS | Traceability | TRACE-X, GOV-X* | tier+ENT manifest | PRODUCTION_EFFECTIVE | a3203d7994bdfd3c1dde2f741aaefcc3896a5cc2 | — | — | ENT-A / stage pytest | ECAP+stage B6 | Operator promotion | Close via audit+promotion | — |
 | FRZ-TRC-10 | PASS | Traceability | TRACE-X, GOV-X* | tier+ENT manifest | PRODUCTION_EFFECTIVE | a3203d7994bdfd3c1dde2f741aaefcc3896a5cc2 | — | — | ENT-A / stage pytest | ECAP+stage B6 | Operator promotion | Close via audit+promotion | — |
-| FRZ-TRC-11 | PASS | Traceability | TRACE-X, GOV-X* | tier+ENT manifest | PRODUCTION_EFFECTIVE | — | — | — | ENT-A / stage pytest | ECAP+stage B6 | Operator promotion | Close via audit+promotion | — |
+| FRZ-TRC-11 | PASS | Traceability | TRACE-X, GOV-X* | tier+ENT manifest | PRODUCTION_EFFECTIVE | 69d8b111e8d2f6717b75d866d3738a0106d00304 | — | — | ENT-A / stage pytest | ECAP+stage B6 | Operator promotion | Close via audit+promotion | — |
 | FRZ-TRC-12 | PASS | Traceability | TRACE-X, GOV-X* | tier+ENT manifest | PRODUCTION_EFFECTIVE | 2643d36edb7e90fb2e68b4dd88dc146aca1b58af | — | — | ENT-A / stage pytest | ECAP+stage B6 | Operator promotion | Close via audit+promotion | — |
 | FRZ-STA-01 | PASS | Persistence / state | STATE-X | tier+ENT manifest | PRODUCTION_EFFECTIVE | bd54941d933069b8bfb2819bb819c1cbdbe71576 | — | — | ENT-A / stage pytest | ECAP+stage B6 | Operator promotion | Close via audit+promotion | — |
 | FRZ-STA-02 | PASS | Persistence / state | STATE-X | tier+ENT manifest | PRODUCTION_EFFECTIVE | — | — | — | ENT-A / stage pytest | ECAP+stage B6 | Operator promotion | Close via audit+promotion | — |

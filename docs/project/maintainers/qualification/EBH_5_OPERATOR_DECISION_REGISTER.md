@@ -1,5 +1,7 @@
 # EBH-5 — Operator Decision Register
 
+> **Currency note (EQO-A remediation, as of 2026-11-16).** The rows are unchanged. At `258bbf6abb6fdbb92ef0185d058527fbb1e47f04` EBH-5 parent closure is recorded in this register (OD-EBH5-07 and OD-EBH5-08, rows L14-L15). Three rows are not closed or waived by that record and keep the status written in them: `OD-EBH5-03` (L7, OPEN, default deferred), `OD-EBH5-05` (L12, RECOMMENDED) and `OD-EBH5-06` (L13, TRACKED DEBT, FRZ-RPL-04 global only). This note takes no disposition for them. Line references (L<n>) are to the files at that SHA, before this note was added.
+
 | ID | Decision | Status | Blocks |
 | --- | --- | --- | --- |
 | OD-EBH5-01 | Authorize EBH-5 implementation wave (`production delta > 0`) | **WAVE COMPLETE** @ publication commit | Formal roadmap **READY FOR AUDIT** |
