@@ -1,5 +1,7 @@
 # ARCH-FREEZE — Complete implementation and certification master plan (SSOT)
 
+> **Header note 2026-11-16 (ticket `T-IGX-043-A`, OD-AF-01):** the R1–R6 content of this plan, and the scope of ticket `T-IGX-010-C`, are **superseded** by [`arch_freeze_program/MEP-AF2_v2.1.md`](./arch_freeze_program/MEP-AF2_v2.1.md) (decision recorded in [`ARCH_FREEZE_OPERATOR_DECISION_REGISTER.md`](./ARCH_FREEZE_OPERATOR_DECISION_REGISTER.md)). The FRZ counts quoted in this document (for example 95 PASS / 130 OPEN) are **historical**; the checklist is the authority for current counts. The text below is kept unchanged as the 2026-11-04 planning record.
+
 **Status:** PLANNING ARTIFACT — **NOT** ARCH-FREEZE CLOSED · **NOT** global FRZ PASS  
 **Disposition:** `WAVE1 G6 ACCEPTED (SCOPED) @ 3d96691f — R0–R6 CLOSURE OPEN (T-IGX-010-C)`  
 **AUDIT_BASELINE_SHA:** `a0624e28ff77b061e83f3e10aab4c2a9083ee1b4` · **Wave EXECUTION_SHA:** B1 `6bdf78c…` · B2–B4 `f7ce9dae…` · **G6 AUDIT:** `3d96691f…` · **CLOSURE_DOC_HEAD:** `950097ea4bcfd5bba828f663bcd993b8bd1e1d63` · **Branch:** `development` · **Recorded:** 2026-11-04  

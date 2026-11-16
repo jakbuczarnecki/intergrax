@@ -14,6 +14,32 @@
 
 ---
 
+## Current-state addendum (2026-11-16)
+
+Added by ticket `T-IGX-043-A` (node T-AF2-SSOT-RECONCILE-A). Planning record only: it certifies nothing and does not rewrite the 2026-11-04 assessment below, which stays as the historical record. Repository baseline for this addendum: `AUDIT_BASELINE_2` `7960ae7f6c82da60ca9acdc0ceebf63810002a42` (see [`ARCH_FREEZE_SHA_LADDER.md`](./ARCH_FREEZE_SHA_LADDER.md)). Program plan: [`arch_freeze_program/MEP-AF2_v2.1.md`](./arch_freeze_program/MEP-AF2_v2.1.md).
+
+| Item | State at `7960ae7f6` | Where recorded |
+| --- | --- | --- |
+| EVOL-X formal closure | Established through IIAC. The roadmap row carries the label "CLOSED — INDEPENDENTLY ACCEPTED (AUTOMATION_FIRST SCOPED) — PUBLISHED". Section 1 and gate rows STG-EVOL-FORMAL / FRZ-EVOL below ("NOT ESTABLISHED", "FORMALLY_OPEN") describe 2026-11-04 and are historical. | Roadmap closure table L2160; [`evol_x/EVOL_X_SHA_LADDER.md`](./evol_x/EVOL_X_SHA_LADDER.md) |
+| ENT-AUDIT-X formal closure | Established through IIAC. The roadmap row carries the label "CLOSED — INDEPENDENTLY AUDITED (INTERNAL AGENT CERTIFICATION) — PUBLISHED" (IIAC PASS_SCOPED; limitations OPEN-BP-01, F-W3-001, Path B). Gate rows STG-ENT-FORMAL / FRZ-AUD below are historical. | Roadmap closure table L2161; [`ent_audit_x/ENT_AUDIT_X_SHA_LADDER.md`](./ent_audit_x/ENT_AUDIT_X_SHA_LADDER.md) |
+| MCP-SERVER-X | Roadmap label: CLOSED (SCOPED, P0–P8). | Roadmap closure table L2162 |
+| PDC-X | CLOSED (scoped): roadmap label "CLOSED — INDEPENDENTLY AUDITED (INTERNAL AGENT CERTIFICATION) — PUBLISHED", global audit PASS_SCOPED (not a PASS); closure PR #603, SHA fill-in PR #604. | Roadmap closure table L2163 and PDC-X section status (L1847) |
+| ARCH-FREEZE formal entry | **STILL NOT AUTHORIZED.** OD-ARCH-FREEZE-01 is OPEN. | [`ARCH_FREEZE_OPERATOR_DECISION_REGISTER.md`](./ARCH_FREEZE_OPERATOR_DECISION_REGISTER.md) |
+
+**Blockers to entry, as stated by MEP-AF2 v2.1 section A** (a planning verdict; this addendum does not re-verify them and they are not independently certified):
+
+1. SYS-INV-01: the gate `scripts/maintenance/check_intergrax_no_applications_imports.py` fails (12 `intergrax/runtime/**` files import `intergrax.applications.*`) and is in no CI profile (EQO-A A4-003).
+2. The Tier-2 registry-bypass gate fails (10 `agents/*` files import integrations/tools; A4-004).
+3. The roadmap L499 independence conditions are unmet for TOOL-LIFE-X, SKILL-X, DIST-SCALE-X, EBH-7 and ROADMAP-REPLAY-X (A2-002, A2-001, A1-017, A5-007, A0-008).
+4. No live merge enforcement on `development` (the ruleset has only `deletion` and `non_fast_forward`; the regression gate is red on recent pushes; FRZ-AUD-10 live enforcement is planned as PT-S01..S06).
+5. PDC-X residuals (tenant isolation, supply chain, prompt trust, streaming, drain, non-CAS recovery) remain reachable on production paths and are planned in the RW product train.
+6. FRZ checklist: 109 rows OPEN (104 architecture-scoped, 3 split, 2 live); 116 PASS-type rows are historical and need re-acceptance; 8 rows carry off-vocabulary labels; FRZ-DEBT-04 requires PARTIAL = 0 while 13 PDC rows are PARTIAL; 35 BLOCKS/CODE_FIX rows had no plan.
+7. Missing artefacts: freeze manifests (FRZ-FRZ-05..08), independent VBN acceptance (FIND-VBN-PARTIAL), FREEZE_CERTIFICATION_SHA.
+
+Everything below this addendum stays as recorded on 2026-11-04.
+
+---
+
 ## 1. Executive disposition
 
 | Field | Value |

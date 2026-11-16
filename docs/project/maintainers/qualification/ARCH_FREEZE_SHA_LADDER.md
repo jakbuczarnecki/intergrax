@@ -22,5 +22,12 @@
 | EVOL TEST_EXECUTION_SHA | 3c4a641b3e48a13f437e830a0562e2a80b03aabb | reusable evidence |
 | ENT TEST_EXECUTION_SHA | 89c76eb7b53a0a3ce6f75ab395cf4a2802638a91 | reusable evidence |
 | EXECUTION_WAVE1_SHA (legacy label) | 18a0f68fc6c8107e6344fdb4641ecec1945dae5e | superseded by B1/B2–B4 rungs above |
+| AUDIT_BASELINE_2 | 7960ae7f6c82da60ca9acdc0ceebf63810002a42 | **PINNED 2026-11-16** — `origin/development` at PR #604 merge; start pin of MEP-AF2 v2.1 (T-AF2-BASELINE-PIN). Does not replace `AUDIT_BASELINE_SHA` above. |
+| G2 | NOT SET | **NOT SET** — RW product-train head audited in the single product wave (MEP-AF2 v2.1 section J) |
+| R | NOT SET | **NOT SET** — RB-2 phase-2 commit; `git diff G2 R` must be docs only |
+| FCS | NOT SET | **NOT SET** — merge commit of the train into `development`; product tree identical to G2 |
+| M3 | NOT SET | **NOT SET** — EBH-7 final pin; planned to equal FREEZE_CERTIFICATION_SHA and TEST_EXECUTION_SHA, product tree identical to FCS |
+
+**Rungs added 2026-11-16** (ticket `T-IGX-043-A`; definitions in [`arch_freeze_program/MEP-AF2_v2.1.md`](./arch_freeze_program/MEP-AF2_v2.1.md) section J): `AUDIT_BASELINE_2` is pinned; `G2`, `R`, `FCS` and `M3` are placeholders and nothing here claims they exist. The `Status @ CLOSURE_DOC_HEAD` column header above still describes the older rungs.
 
 **Rules:** Do not overwrite G6 / B1 / B2–B4 rungs. **FREEZE_CERTIFICATION_SHA** is the single consumer SHA for L3 FREEZE, ECAP §2.C, VBN independent accept, and authorized FRZ promotions.
