@@ -45,4 +45,4 @@ Nothing was run when this ticket was drafted. One process at a time, one `uv run
 
 ## Lifecycle state
 
-draft
+plan_pending
