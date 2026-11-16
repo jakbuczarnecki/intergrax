@@ -10,12 +10,12 @@
     "UNKNOWN"
   ],
   "env_proof_values": {
-    "PENDING": "cause visible in logs, no proving run yet",
-    "QUOTED": "proof quoted from a source, not re-run",
+    "PENDING": "ENV provisional: cause visible in logs, no proving run yet",
+    "QUOTED": "ENV provisional: proof quoted from a source, not re-run",
     "n/a": "not an ENV row"
   },
   "status": "DRAFT: a register of what is red, not evidence that anything passes; no row is closed",
-  "m3_rule_proposed": "At M3 the red set must equal the ENV and OUT rows exactly; a row counts as ENV only when env_proof is a proving run at the M3 SHA; FIX and UNKNOWN rows must be gone or the qualification fails.",
+  "m3_rule_proposed": "At M3 the red set must equal the ENV and OUT rows exactly; ENV is provisional until a proving run at the M3 SHA (env_proof PENDING or QUOTED is not proof); only a proven ENV row may stay in the expected-red set; FIX and UNKNOWN rows must be gone or the qualification fails.",
   "rows": [
     {
       "id": "KR-01",
