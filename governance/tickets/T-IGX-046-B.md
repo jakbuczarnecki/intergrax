@@ -6,7 +6,7 @@ Documentation-only implementation of the surviving hunks of batch DB-E of the EQ
 
 ## Plan digest
 
-Plan digest: 85c6b73f5bcf50d08a3d9ddb36df55c3be12285c85901f8df40bff48ea8d977c
+Plan digest: 248aeb4205fdaa62cd1d64304c61c6bc140121d721f64fba57096b7a4f4db388
 
 Canonical plan: [`governance/tickets/plans/PLAN_T-IGX-046-B.md`](plans/PLAN_T-IGX-046-B.md). The digest was computed with `scripts/governance/plan_digest.py`; it must be recomputed after any edit of the plan.
 

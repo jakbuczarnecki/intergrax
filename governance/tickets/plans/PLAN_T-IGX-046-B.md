@@ -1,6 +1,6 @@
 # PLAN T-IGX-046-B — EQO-A remediation node PT-D06 (batch DB-E): PDC-X document corrections, legacy Critic tombstone
 
-Status: DRAFT for Operator review. Nothing here is approved, applied or audited. This ticket certifies nothing, promotes no FRZ criterion, changes no stage status and edits no product path.
+Approval state: see the Approved section of the ticket `governance/tickets/T-IGX-046-B.md`. Approval of this plan is not an implementation go and not an audit. This ticket certifies nothing, promotes no FRZ criterion, changes no stage status and edits no product path.
 
 ## 1. Purpose
 
