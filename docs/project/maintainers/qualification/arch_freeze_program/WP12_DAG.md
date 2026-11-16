@@ -7,8 +7,8 @@ Node kinds: DEC decision, MILE milestone, PDC external PDC-X work, DOC docs-only
 
 | check | result |
 |---|---|
-| nodes | 90 (37 tickets) |
-| hard edges / soft edges | 193 / 20 |
+| nodes | 92 (37 tickets) |
+| hard edges / soft edges | 200 / 20 |
 | hard edges acyclic | True |
 | hard+soft acyclic | True |
 | hard edges consistent with wave order | True |
@@ -19,11 +19,11 @@ Node kinds: DEC decision, MILE milestone, PDC external PDC-X work, DOC docs-only
 
 ## Longest path by node count (not a duration-weighted critical path)
 
-20 nodes; 64 distinct longest paths exist (ties). The DAG has no durations. One of them: `M-NOW -> DS-1 -> DS-4 -> DS-6 -> PT-V04 -> SCOPE -> PT-WA -> RW -> PT-Q02 -> PT-Q03 -> FCS -> PT-D09 -> PT-AUD-DOC -> PT-D11 -> PT-Q11 -> M3 -> PT-Q13 -> PT-VBN -> ENTRY -> DS-ADM`
+20 nodes; 136 distinct longest paths exist (ties). The DAG has no durations. One of them: `M-NOW -> DS-1 -> DS-4 -> DS-6 -> PT-V04 -> SCOPE -> PT-WA -> RW -> PT-Q02 -> PT-Q03 -> FCS -> PT-D09 -> PT-AUD-DOC -> PT-D11 -> PT-Q11 -> M3 -> PT-Q13 -> PT-VBN -> ENTRY -> DS-ADM`
 
 ## Nodes that are not hard ancestors of ENTRY (informational)
 
-DS-ADM, PT-D12, PT-D13, PT-E00, PT-Q10, PT-V03, PT-V05, PT-V06, PT-WE, REV-MASTER
+DS-ADM, PT-D12, PT-D13, PT-E00, PT-Q10, PT-V03, PT-V05, PT-V06, PT-WE
 
 ## Nodes by wave
 
@@ -82,7 +82,9 @@ DS-ADM, PT-D12, PT-D13, PT-E00, PT-Q10, PT-V03, PT-V05, PT-V06, PT-WE, REV-MASTE
 | PT-G02 | TEST | FRZ evidence surface: new gates/inventories for BND-05/06, TYP-05, PLG-03..08, OWN-02..05, CTR-01/02/04/06, DEBT-02..04 (WP-4 section C test/script part) + STATE-X citation repair | DS-4 | - | UNVERIFIED | PT-Q02 | - | - | - |
 | PT-B01 | CAMP | Campaign B-1 alpha at B (R00..R17; 18 planned + 4 reserve slots): critical security, tenant, fail-closed, governance, recovery, replay - diagnostic, non-certifying, READ-ONLY, scratch worktree at B | DS-3, AUTH-PRE | - | RUN | PT-BA | AR-61, AR-04, AR-06, AR-11, AR-12, AR-13 | - | - |
 | PT-B02 | CAMP | Campaign B-2 alpha at B (R20..R25, S01..S03; 9 planned + 3 reserve): remaining findings by risk, each with class, worst case and promotion trigger - READ-ONLY | PT-B01 | - | RUN | PT-BA | AR-61 | - | - |
-| SCOPE | MILE | Wave scope frozen (DP-11): defect list from the WP-2 probes (= B-1 run R03), V03, V04, B-1 and B-2 alpha, PDC-X exception reconciliation; gates G01/G02 designed | M1, DS-1, DS-2, DS-3, DS-4, DS-EXC, PT-V04, PT-B01, PT-B02 | PT-V02, PT-V03, PT-R01 | - | - | - | - | - |
+| SCOPE | MILE | Wave scope frozen (DP-11): defect list from the WP-2 probes (= B-1 run R03), V03, V04, B-1 and B-2 alpha, PDC-X exception reconciliation; gates G01/G02 designed | M1, DS-1, DS-2, DS-3, DS-4, DS-EXC, PT-V04, PT-B01, PT-B02, REV-MASTER, T-AF2-RW-PLAN, T-AF2-RW-PLAN-AUDIT | PT-V02, PT-V03, PT-R01 | - | - | - | - | - |
+| T-AF2-RW-PLAN | DOC | T-AF2-RW-PLAN (MEP-AF2 DOC node, executor: orchestrator): train overlap matrix, merge order, a negative test per CODE_FIX finding, a regression scope per ticket, plans for the 35 FRZ CODE_FIX rows; the full prerequisites (T-AF2-FRZ-MATRIX, T-AF2-DS-EXC-PACKAGE, T-AF2-BND-CLOSURE) live in the merg... | DS-EXC, DS-4 | - | DOCS | T-AF2-RW-PLAN-AUDIT | - | - | - |
+| T-AF2-RW-PLAN-AUDIT | AUD | T-AF2-RW-PLAN-AUDIT (REV-MASTER RM-03): independent session recomputes phase check 3 with the strict criterion over the RW-PLAN and FRZ-MATRIX output; red-first rule (each negative test fails at a pre-fix SHA; a gate that is already red does not count); regression scope per ticket mapped to each ... | T-AF2-RW-PLAN | - | SESSION | - | - | - | - |
 | PT-E03 | TEST | T-ENF-3 ENT-AUDIT acceptance conftest hook and debt-gate rewrite (A6-001, A6-006) | PT-D02 | - | NONPRODUCT | PT-AUD-ENF1 | AR-32 | - | - |
 | PT-E04 | TEST | T-ENF-4 new IIAC corpus and artifact verifiers (new files only) | DS-6 | - | NONPRODUCT | PT-Q02 | AR-33 | - | - |
 | PT-AUD-ENF12 | AUD | AUD-ENF-A (part 1): independent audit of the trial and enforcement Stages 1 and 2 (ruleset JSON, verifier output, trial evidence N1..N10, read-only GETs) BEFORE Stage 3 may start; rollback rule: Stage 1/2 are live from W1/W2 without independent audit until this node passes - if it fails, or has n... | PT-S02, PT-S03 | - | SESSION | - | AR-12-06 | - | - |
@@ -102,7 +104,7 @@ DS-ADM, PT-D12, PT-D13, PT-E00, PT-Q10, PT-V03, PT-V05, PT-V06, PT-WE, REV-MASTE
 | PT-WE | PROD | W-E (conditional) TOOL-LIFE-X residual hardening PW-3 (invoker.py) - only if DP-43 sends residuals to a fix and the audit reproduces one | DS-4, PT-V02, SCOPE | - | PRODUCT | PT-Q02 | AR-43 | - | OPTIONAL: exists only if DP-43 sends residuals to a fix and RA-1 reproduces one; ON ACTIVATION the soft edge PT-WE -> RW becomes a HARD edge, PT-WE becomes a... |
 | PT-WF | PROD | W-F tenant G-09 fail-closed, owner repairs, Campaign-B-conditional fixes (WP-4 section C: OWN/CTR/DOC-05/DEBT/PLG/PRD/SEC-04/TEN rows; E2-E4 if B-1 confirms) | SCOPE, PT-B01 | - | PRODUCT | PT-Q02 | AR-44 | - | - |
 | PT-D08 | DOC | DB-H product-path docs (2 files under intergrax/, agents/ or applications/) | M1, SCOPE | - | PRODUCT | PT-Q02 | - | - | - |
-| PT-E05 | MAT | T-ENF-5 IIAC validator hardening (material governance paths): schema v2, strict default, delegate resolver, provenance | DS-6, PT-E04, M1 | - | MATERIAL | PT-Q02 | AR-35 | - | - |
+| PT-E05 | MAT | T-ENF-5 IIAC validator hardening (material governance paths): schema v2, strict default, delegate resolver, provenance | DS-6, PT-E04, M1, SCOPE | - | MATERIAL | PT-Q02 | AR-35 | - | - |
 | RW | MILE | RW: remediation wave head - all W-A..W-F, FC-*, T-ENF-5/6 merged as ONE train on one integration branch | PT-WA, PT-WB, PT-FC1, PT-FC2, PT-FC3, PT-FC4, PT-WD, PT-WF, PT-D08, PT-E05, PT-T01, PT-G01, PT-G02 | PT-WE | - | - | - | - | - |
 | PT-AUD-ENF1 | AUD | AUD-ENF-1 independent (G6) audit of T-ENF-1/2/3 and the EDER script: negative tests and legacy-exception replay | PT-E01, PT-E02, PT-E03, PT-R02 | - | SESSION | - | AR-12-01 | - | - |
 
@@ -112,7 +114,7 @@ DS-ADM, PT-D12, PT-D13, PT-E00, PT-Q10, PT-V03, PT-V05, PT-V06, PT-WE, REV-MASTE
 |---|---|---|---|---|---|---|---|---|---|
 | PT-Q02 | AUD | Wave audit at the exact RW head by a session that did not implement or review (negative-test mutation check, fallback census, CONFIG-X delta, ACT-N11 path reconciliation); AUD-ENF-2/3 packages | RW | - | SESSION | - | AR-58, AR-15 | - | - |
 | PT-Q03 | MAT | RB-2 IIAC rebind at FCS (two-phase; delegate-written activation line only under Operator delegation DP-08) | PT-Q02 | - | MATERIAL | PT-Q02 | AR-36, AR-60 | - | - |
-| FCS | MILE | FCS: merge commit of the RW train into development, product tree identical to G2 (= RB-2 audited SHA, MEP-AF2 s0 amendment d); product tree frozen from here (only docs/tests-before-pin/tickets-before-pin descend) | PT-Q03 | - | - | - | - | - | - |
+| FCS | MILE | FCS: merge commit of the RW train into development with a product tree identical to G2; RB-2 audits G2, FCS is a different commit (MEP-AF2 s0 amendment d); product tree frozen from here (only docs/tests-before-pin/tickets-before-pin descend) | PT-Q03 | - | - | - | - | - | - |
 | PT-S04 | SET | Stage 3: governance-fast required on development | PT-Q03, PT-S03, PT-AUD-ENF12 | - | SETTINGS | PT-AUD-ENFA | AR-48 | - | - |
 
 ### W5 Pre-pin preparation
@@ -146,15 +148,15 @@ DS-ADM, PT-D12, PT-D13, PT-E00, PT-Q10, PT-V03, PT-V05, PT-V06, PT-WE, REV-MASTE
 | PT-Q06 | REQ | RQ-2 STATE-X, TRACE-X requalification | PT-Q04 | - | SESSION | - | AR-57 | - | - |
 | PT-Q07 | REQ | RQ-3 TENANT-X + T-B7-TEN-REVAL, PROD-Q architecture scope, MCP-SERVER-X delta | PT-Q04 | - | SESSION | - | AR-57 | - | - |
 | PT-Q11 | REQ | EBH-7 final pin (last event of the program) + replay dispatch + independent B6 acceptance | PT-Q05, PT-Q04, PT-D09, PT-D10, PT-D11, PT-D01, PT-D07, PT-D05 | PT-Q06, PT-Q07, PT-B1W | MATERIAL | - | AR-37, AR-53, AR-57 | - | - |
+| M3 | MILE | M3 (= T-B7-LOCK-FREEZE-SHA): ARCH-FREEZE certification SHA, the EBH-7 pin = the last event of W6 (should be FCS or a docs-only descendant); W7 starts with the lock (MEP-AF2 s0 amendment h) | PT-Q11 | - | - | - | - | - | - |
 
 ### W7 Enterprise audit FULL at M3 + entry check
 
 | node | kind | title | hard prerequisites | soft | sens | audit node | AR | DP | status |
 |---|---|---|---|---|---|---|---|---|---|
-| M3 | MILE | M3: ARCH-FREEZE certification SHA (should be FCS or a docs-only descendant) | PT-Q11 | - | - | - | - | - | - |
 | PT-Q13 | AUD | Enterprise audit FULL at M3 (T-B7-L3-FREEZE; ECAP FULL) + FRZ-AUD-10 LIVE verification + EDER populated | M3, PT-Q12, PT-Q08, PT-S04, PT-R01, PT-BA, PT-Q06, PT-Q07, PT-Q09, DS-Q, PT-AUD-ENFA, PT-FRZ-RR, PT-C01, PT-PB, PT-AUD-ENF1, PT-D06, PT-R03 | PT-Q10 | SESSION | - | AR-10, AR-25 | - | - |
 | DS-ADM | DEC | ARCH-FREEZE admission steps of the Operator that are NOT closable before ENTRY: promote the accepted baseline (ENT B6, FREEZE mode; EDER-D-0170), ENT stage closure (0172), ARCH-FREEZE admission (0173) | ENTRY | - | - | - | - | - | POST-ENTRY: runs after the entry check by definition; not a prerequisite of ENTRY (DR-02) |
-| PT-VBN | AUD | T-B7-VBN-INDEPENDENT-ACCEPT: independent acceptance that closes FIND-VBN-PARTIAL (EDER-D-0010; A7-005 stays a BLOCKER until it) | FCS, DS-5, M3, PT-Q13 | - | SESSION | - | AR-12-05 | - | - |
+| PT-VBN | AUD | T-B7-VBN-INDEPENDENT-ACCEPT: independent acceptance that closes FIND-VBN-PARTIAL (EDER-D-0010; A7-005 stays a BLOCKER until it); runs after T-B7-LOCK-FREEZE-SHA (= M3) and T-B7-ECAP-2C in the merged DAG (WP-12 keeps M3 and PT-Q13 as the hard minimum) | FCS, DS-5, M3, PT-Q13 | - | SESSION | - | AR-12-05 | - | - |
 | ENTRY | MILE | ARCH-FREEZE entry check against roadmap L499; FRZ promotions by the Operator only (no promotion by this plan) | PT-Q13, PT-VBN | - | - | - | - | - | - |
 
 ## Mermaid (hard edges solid, soft edges dashed)
@@ -201,6 +203,8 @@ flowchart LR
   PT_B02["PT-B02"]
   PT_T01["PT-T01"]
   SCOPE["SCOPE"]
+  T_AF2_RW_PLAN["T-AF2-RW-PLAN"]
+  T_AF2_RW_PLAN_AUDIT["T-AF2-RW-PLAN-AUDIT"]
   PT_WA["PT-WA"]
   PT_WB["PT-WB"]
   PT_FC4["PT-FC4"]
@@ -309,6 +313,12 @@ flowchart LR
   PT_V04 --> SCOPE
   PT_B01 --> SCOPE
   PT_B02 --> SCOPE
+  REV_MASTER --> SCOPE
+  T_AF2_RW_PLAN --> SCOPE
+  T_AF2_RW_PLAN_AUDIT --> SCOPE
+  DS_EXC --> T_AF2_RW_PLAN
+  DS_4 --> T_AF2_RW_PLAN
+  T_AF2_RW_PLAN --> T_AF2_RW_PLAN_AUDIT
   SCOPE --> PT_WA
   SCOPE --> PT_WB
   SCOPE --> PT_FC4
@@ -331,6 +341,7 @@ flowchart LR
   DS_6 --> PT_E05
   PT_E04 --> PT_E05
   M1 --> PT_E05
+  SCOPE --> PT_E05
   PT_D02 --> PT_E03
   DS_6 --> PT_E04
   PT_WA --> RW
