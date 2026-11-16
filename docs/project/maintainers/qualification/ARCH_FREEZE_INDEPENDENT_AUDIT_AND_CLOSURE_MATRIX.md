@@ -2,6 +2,8 @@
 
 **Wave 1 (2026-11-04):** [`ARCH_FREEZE_EXECUTION_WAVE1_INDEPENDENT_AUDIT_HANDOFF.md`](./ARCH_FREEZE_EXECUTION_WAVE1_INDEPENDENT_AUDIT_HANDOFF.md) — **INDEPENDENTLY ACCEPTED (SCOPED)** @ G6 AUDIT `3d96691f1b02b393a4de189139a6e1347db99382`; closure doc `950097ea4bcfd5bba828f663bcd993b8bd1e1d63`. B0–B4 replay @ B1 `6bdf78c`, B2–B4 `f7ce9dae`, L3 FULL 85/85. **Not** ARCH-FREEZE certified; B5–B8 gates **OPEN**.
 
+**Update 2026-11-16 (ticket `T-IGX-043-A`):** only the OD-ENT-08 row was corrected, to match the roadmap and the ENT SHA ladder; the other rows are the 2026-11-04 snapshot and several are stale (EVOL-B6, EVOL-FORMAL, OD-ENT-00, ENT-B6, OD-ENT-01, OD-ENT-02, FRZ-AUD were superseded or executed, see [`ARCH_FREEZE_OPERATOR_DECISION_REGISTER.md`](./ARCH_FREEZE_OPERATOR_DECISION_REGISTER.md)). Re-reconciling them is part of T-AF2-SSOT-RECONCILE-B.
+
 | GATE | MODE | PREREQUISITE | EVIDENCE | OWNER | STATUS @ CLOSURE_DOC_HEAD |
 | --- | --- | --- | --- | --- | --- |
 | EVOL-B6 | Protocol03 B6 | OD-EVOL-11; L3-EVOL-REPLAY | B6_ACCEPTANCE_PUBLICATION_SHA | independent_auditor | PENDING |
@@ -12,7 +14,7 @@
 | OD-ENT-01 | baseline | ENT-B6 | ACCEPTED_BASELINE_SHA | operator | OPEN |
 | OD-ENT-02 | CI | ENT-B6 | branch protection | github_admin | BLOCKED_EXTERNAL |
 | FRZ-AUD | promotion | ENT-B6 | 10 rows | operator | OPEN |
-| OD-ENT-08 | ENT closure | FRZ-AUD + OD-ENT-01 + **OD-ENT-02** | FORMAL_CLOSURE_PUBLICATION_SHA (ENT) | operator | OPEN |
+| OD-ENT-08 | ENT closure | FRZ-AUD + OD-ENT-01 + **OD-ENT-02** | FORMAL_CLOSURE_PUBLICATION_SHA (ENT) | operator | **COMPLETE** (updated 2026-11-16; was OPEN; roadmap ENT-AUDIT-X row L2161 and `ENT_AUDIT_X_SHA_LADDER.md` L39 @ `7960ae7f6`; OD-ENT-02 satisfied in compensating mode only) |
 | LOCK-FREEZE-SHA | implementation lock | OD-ENT-08 | FREEZE_CERTIFICATION_SHA | implementer+operator | OPEN (**T-B7-LOCK-FREEZE-SHA**) |
 | VBN-ACCEPT | VBN §2.1–2.7 | L3 FREEZE + dossier | signed dossier @ FREEZE_SHA | independent_auditor | OPEN (**T-B7-VBN-INDEPENDENT-ACCEPT**) |
 | ECAP-2C | §2.C FULL | L3 FREEZE @ FREEZE_CERTIFICATION_SHA | full audit dossier | independent_auditor | NOT RUN @ freeze SHA |
