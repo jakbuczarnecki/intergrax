@@ -85,7 +85,7 @@ jobs:
         github.event_name == 'workflow_dispatch' &&
         github.event.inputs.profile == 'smoke'
       )
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     # checkout + uv sync (~5s warm) + smoke gate (~60s pytest + scripts); was 10m when DF5 leaked threads
     timeout-minutes: 10
 
@@ -115,7 +115,7 @@ jobs:
           github.ref == 'refs/heads/development'
         )
       )
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     # 8 -> 15: tests/unit/governance now also clones the real repository three times (autocrlf true/false/input, W4-F07)
     timeout-minutes: 15
 
@@ -154,7 +154,7 @@ jobs:
           github.ref == 'refs/heads/development'
         )
       )
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     timeout-minutes: 25
 
     steps:
@@ -190,7 +190,7 @@ jobs:
           github.ref == 'refs/heads/development'
         )
       )
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     timeout-minutes: 5
     continue-on-error: true
 
@@ -214,7 +214,7 @@ jobs:
     if: >-
       github.event_name == 'workflow_dispatch' &&
       github.event.inputs.profile == 'enterprise'
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     timeout-minutes: 15
 
     steps:
@@ -264,7 +264,7 @@ jobs:
     if: >-
       github.event_name == 'workflow_dispatch' &&
       github.event.inputs.profile == 'full'
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     timeout-minutes: 15
 
     steps:
@@ -321,7 +321,7 @@ jobs:
     if: >-
       github.event_name == 'workflow_dispatch' &&
       github.event.inputs.profile == 'full'
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     timeout-minutes: 12
 
     steps:
@@ -373,7 +373,7 @@ jobs:
     if: >-
       github.event_name == 'workflow_dispatch' &&
       github.event.inputs.profile == 'full'
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     timeout-minutes: 12
 
     steps:
@@ -421,7 +421,7 @@ jobs:
       needs.gate-tests.result == 'success' &&
       needs.gate-governance-tier.result == 'success' &&
       needs.gate-governance-wiring.result == 'success'
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     timeout-minutes: 12
 
     steps:
@@ -462,7 +462,7 @@ jobs:
     if: >-
       github.event_name == 'workflow_dispatch' &&
       github.event.inputs.profile == 'full'
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     timeout-minutes: 20
 
     env:
@@ -501,7 +501,7 @@ jobs:
     if: >-
       github.event_name == 'workflow_dispatch' &&
       github.event.inputs.profile == 'full'
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     timeout-minutes: 10
 
     services:
@@ -586,7 +586,7 @@ jobs:
     if: >-
       github.event_name == 'workflow_dispatch' &&
       github.event.inputs.profile == 'diagnostics_full'
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     timeout-minutes: 130
 
     env:
@@ -797,7 +797,7 @@ jobs:
     if: >-
       github.event_name == 'workflow_dispatch' &&
       github.event.inputs.profile == 'ebh7_p3_l3'
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     timeout-minutes: 45
 
     env:
@@ -1070,7 +1070,7 @@ jobs:
     if: >-
       github.event_name == 'workflow_dispatch' &&
       github.event.inputs.profile == 'evol_x_p3_l3'
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     timeout-minutes: 45
     env:
       TEST_EXECUTION_SHA: >-
