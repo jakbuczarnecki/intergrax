@@ -200,7 +200,7 @@ parsing-office = [
   "langchain-community>=0.3,<0.5",
 ]
 parsing-pdf = [
-  "PyMuPDF>=1.23,<2",
+  "PyMuPDF>=1.23,<3",
   "langchain-community>=0.3,<0.5",
 ]
 parsing-ocr = [
