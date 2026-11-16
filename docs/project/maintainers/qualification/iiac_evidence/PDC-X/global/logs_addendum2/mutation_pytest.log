@@ -1,0 +1,735 @@
+FFFF.....FFFF.FFFFFFFFF.F.....FFFFFF..F..F........FFFFFF.F..F...         [100%]
+================================== FAILURES ===================================
+_______ test_graphrag_source_reingest_replaces_vectors_and_graph_safely _______
+
+tmp_path = WindowsPath('D:/Projekty/_wt/intergrax/_scratch/ia-g-add2/bt2/test_graphrag_source_reingest_0')
+
+    def test_graphrag_source_reingest_replaces_vectors_and_graph_safely(
+        tmp_path: Path,
+    ) -> None:
+        pipeline, embedding, vectorstore, graph, retrieval = _build()
+        source_a = tmp_path / "a" / "same.txt"
+        source_b = tmp_path / "b" / "same.txt"
+    
+        _write(
+            source_a,
+            "A-old Old Alpha supports Old Beta|A-old Old Alpha supports Shared Entity|A-old Shared One connects Shared Two",
+        )
+        _write(
+            source_b,
+            "B-stable Shared Entity supports Shared One|B-stable Shared Two supports B Stable",
+        )
+        a_v1 = set(_ingest(pipeline, source_a))
+        b_v1 = set(_ingest(pipeline, source_b))
+        b_graph_nodes = graph.node_ids_for_chunks(b_v1)
+        assert len(a_v1) == 3
+        assert len(b_v1) == 2
+        a_v1_graph_nodes = graph.node_ids_for_chunks(a_v1)
+>       assert a_v1_graph_nodes
+E       assert set()
+
+tests\integration\rag\test_graph_reingest_qualification.py:251: AssertionError
+---------------------------- Captured stdout setup ----------------------------
+Wrote build\agent_fleet_inventory.json (21 agents)
+_______ test_stale_graph_topology_is_inactive_after_generation_takeover _______
+
+tmp_path = WindowsPath('D:/Projekty/_wt/intergrax/_scratch/ia-g-add2/bt2/test_stale_graph_topology_is_i0')
+
+    def test_stale_graph_topology_is_inactive_after_generation_takeover(
+        tmp_path: Path,
+    ) -> None:
+        source_a = tmp_path / "source-a.txt"
+        source_b = tmp_path / "source-b.txt"
+        source_a.write_text("unused", encoding="utf-8")
+        source_b.write_text("unused", encoding="utf-8")
+        vectorstore = _SnapshotRaceVectorstore()
+        graph = _BlockingGraphStore()
+        document_store = InMemoryDocumentStore()
+        clock = {"now": 100.0}
+        first_coordinator = DocumentStoreSourceOperationCoordinator(
+            document_store,
+            owner_id="graph-worker-1",
+            ttl_seconds=5,
+            clock=lambda: clock["now"],
+            token_factory=lambda: "graph-generation-1-token",
+            version_factory=lambda: "graph-lease-version-1",
+        )
+        second_coordinator = DocumentStoreSourceOperationCoordinator(
+            document_store,
+            owner_id="graph-worker-2",
+            ttl_seconds=5,
+            clock=lambda: clock["now"],
+            token_factory=lambda: "graph-generation-2-token",
+            version_factory=lambda: "graph-lease-version-2",
+        )
+        first_pipeline = _graph_pipeline(vectorstore, graph, first_coordinator)
+        second_pipeline = _graph_pipeline(vectorstore, graph, second_coordinator)
+        b_result = second_pipeline.run(
+            IngestRequest(
+                source_path=str(source_b),
+                base_metadata={"tenant_id": TENANT_ID, "namespace": NAMESPACE},
+                workspace_id=WORKSPACE_ID,
+            )
+        )
+        assert b_result.reason == "ok"
+    
+        results: dict[str, object] = {}
+    
+        def _run(name: str, pipeline: IngestPipeline) -> None:
+            try:
+                results[name] = pipeline.run(
+                    IngestRequest(
+                        source_path=str(source_a),
+                        base_metadata={"tenant_id": TENANT_ID, "namespace": NAMESPACE},
+                        workspace_id=WORKSPACE_ID,
+                    )
+                )
+            except BaseException as exc:
+                results[name] = exc
+    
+        first_thread = threading.Thread(
+            target=_run,
+            args=("G1", first_pipeline),
+            name="G1",
+        )
+        first_thread.start()
+        assert graph.write_started.wait(timeout=5)
+        g1_ids = set(
+            vectorstore.list_source_record_ids(
+                source_id=GRAPH_SOURCE_A,
+                scope=SCOPE,
+            )
+        )
+        assert g1_ids
+    
+        clock["now"] = 106.0
+        second_thread = threading.Thread(
+            target=_run,
+            args=("G2", second_pipeline),
+            name="G2",
+        )
+        second_thread.start()
+        second_thread.join(timeout=10)
+        assert not second_thread.is_alive()
+        assert results["G2"].reason == "ok"
+    
+        graph.allow_g1_write.set()
+        first_thread.join(timeout=10)
+        assert not first_thread.is_alive()
+        assert isinstance(results["G1"], RuntimeError)
+        assert str(results["G1"]) == "source_ingest_conflict"
+    
+        assert "ent:old_entity" in graph._nodes
+        assert graph.node_ids_for_chunks(g1_ids) == set()
+        assert graph.find_nodes(label_contains="Old", limit=10) == []
+        assert all(node.id != "ent:old_entity" for node in graph.neighbors("ent:shared_entity", max_hops=1))
+    
+        retriever = GraphRagRetriever(
+            vectorstore,
+            _GraphRaceEmbedding(),
+            graph,
+            seed_top_k=1,
+            graph_hops=1,
+            source_coordinator=second_coordinator,
+        )
+        old_hits = retriever.retrieve(
+            RetrieverQuery(
+                query_text="Old Entity",
+                query_embedding=[1.0, 0.0],
+                top_k=10,
+                scope=SCOPE,
+            )
+        )
+        assert retriever.last_graph_trace is not None
+        assert "ent:old_entity" not in retriever.last_graph_trace.expanded_node_ids
+        assert all("Old Entity" not in hit.document.content for hit in old_hits)
+    
+        new_hits = retriever.retrieve(
+            RetrieverQuery(
+                query_text="New Entity",
+                query_embedding=[0.0, 1.0],
+                top_k=10,
+                scope=SCOPE,
+            )
+        )
+>       assert any("New Entity" in hit.document.content for hit in new_hits)
+E       assert False
+E        +  where False = any(<generator object test_stale_graph_topology_is_inactive_after_generation_takeover.<locals>.<genexpr> at 0x00000258F6542CF0>)
+
+tests\integration\rag\test_same_source_reingest_serialization.py:555: AssertionError
+___________ test_scoped_publication_makes_stamped_evidence_visible ____________
+
+    def test_scoped_publication_makes_stamped_evidence_visible() -> None:
+        coordinator = _coordinator()
+        generation = _promote(coordinator, SOURCE_A, root=ROOT_A)
+        store = _bound_store(coordinator)
+        _write_source_edge(store, source_id=SOURCE_A, generation=generation, root=ROOT_A, from_id="ent:a", to_id="ent:b")
+    
+>       assert store.find_nodes(label_contains="ent:a", limit=5)
+E       AssertionError: assert []
+E        +  where [] = find_nodes(label_contains='ent:a', limit=5)
+E        +    where find_nodes = <intergrax.rag.graph.providers.inmemory_graph_store.InMemoryGraphStore object at 0x00000258CED9CE30>.find_nodes
+
+tests\unit\rag\graph\test_graph_publication_scope_visibility.py:141: AssertionError
+_____ test_reingest_under_the_same_scoped_key_hides_the_first_generation ______
+
+    def test_reingest_under_the_same_scoped_key_hides_the_first_generation() -> None:
+        coordinator = _coordinator()
+        g1 = _promote(coordinator, SOURCE_A, root=ROOT_A)
+        store = _bound_store(coordinator)
+        _write_source_edge(store, source_id=SOURCE_A, generation=g1, root=ROOT_A, from_id="ent:g1", to_id="ent:shared")
+>       assert _is_visible(store, "ent:g1")
+E       AssertionError: assert False
+E        +  where False = _is_visible(<intergrax.rag.graph.providers.inmemory_graph_store.InMemoryGraphStore object at 0x00000258F530C080>, 'ent:g1')
+
+tests\unit\rag\graph\test_graph_publication_scope_visibility.py:151: AssertionError
+_________ test_other_source_with_a_borrowed_scope_id_stays_invisible __________
+
+    def test_other_source_with_a_borrowed_scope_id_stays_invisible() -> None:
+        coordinator = _coordinator()
+        g_a = _promote(coordinator, SOURCE_A, root=ROOT_A)
+        store = _bound_store(coordinator)
+        _write_source_edge(store, source_id=SOURCE_A, generation=g_a, root=ROOT_A, from_id="ent:a", to_id="ent:a-target")
+        # SOURCE_B has no publication; its evidence claims SOURCE_A's root and generation.
+        _write_source_edge(
+            store,
+            source_id=SOURCE_B,
+            generation=g_a,
+            root=ROOT_A,
+            from_id="ent:b",
+            to_id="ent:b-target",
+            chunk_id="chunk-b",
+        )
+    
+>       assert _is_visible(store, "ent:a")
+E       AssertionError: assert False
+E        +  where False = _is_visible(<intergrax.rag.graph.providers.inmemory_graph_store.InMemoryGraphStore object at 0x00000258F530C8F0>, 'ent:a')
+
+tests\unit\rag\graph\test_graph_publication_scope_visibility.py:219: AssertionError
+_ test_other_tenant_namespace_or_workspace_sees_nothing[other0-chunk-other-tenant] _
+
+other = GraphScope(tenant_id='other-tenant', namespace='scope-vis-ns', workspace_id='scope-vis-ws')
+chunk_id = 'chunk-other-tenant'
+
+    @pytest.mark.parametrize(
+        ("other", "chunk_id"),
+        [
+            (OTHER_TENANT, "chunk-other-tenant"),
+            (OTHER_SCOPE, "chunk-other-ns"),
+            (OTHER_WORKSPACE, "chunk-other-ws"),
+        ],
+    )
+    def test_other_tenant_namespace_or_workspace_sees_nothing(other: GraphScope, chunk_id: str) -> None:
+        coordinator = _coordinator()
+        generation = _promote(coordinator, SOURCE_A, root=ROOT_A)  # promoted under SCOPE only
+        main_store = _bound_store(coordinator)
+        other_store = _bound_store(coordinator, other)
+        _write_source_edge(
+            main_store, source_id=SOURCE_A, generation=generation, root=ROOT_A, from_id="ent:main", to_id="ent:m2"
+        )
+        _write_source_edge(
+            other_store,
+            source_id=SOURCE_A,
+            generation=generation,
+            root=ROOT_A,
+            from_id="ent:other",
+            to_id="ent:o2",
+            scope=other,
+            chunk_id=chunk_id,
+        )
+    
+>       assert _is_visible(main_store, "ent:main")
+E       AssertionError: assert False
+E        +  where False = _is_visible(<intergrax.rag.graph.providers.inmemory_graph_store.InMemoryGraphStore object at 0x00000258F52FF9B0>, 'ent:main')
+
+tests\unit\rag\graph\test_graph_publication_scope_visibility.py:250: AssertionError
+_ test_other_tenant_namespace_or_workspace_sees_nothing[other1-chunk-other-ns] _
+
+other = GraphScope(tenant_id='scope-vis-tenant', namespace='other-ns', workspace_id='scope-vis-ws')
+chunk_id = 'chunk-other-ns'
+
+    @pytest.mark.parametrize(
+        ("other", "chunk_id"),
+        [
+            (OTHER_TENANT, "chunk-other-tenant"),
+            (OTHER_SCOPE, "chunk-other-ns"),
+            (OTHER_WORKSPACE, "chunk-other-ws"),
+        ],
+    )
+    def test_other_tenant_namespace_or_workspace_sees_nothing(other: GraphScope, chunk_id: str) -> None:
+        coordinator = _coordinator()
+        generation = _promote(coordinator, SOURCE_A, root=ROOT_A)  # promoted under SCOPE only
+        main_store = _bound_store(coordinator)
+        other_store = _bound_store(coordinator, other)
+        _write_source_edge(
+            main_store, source_id=SOURCE_A, generation=generation, root=ROOT_A, from_id="ent:main", to_id="ent:m2"
+        )
+        _write_source_edge(
+            other_store,
+            source_id=SOURCE_A,
+            generation=generation,
+            root=ROOT_A,
+            from_id="ent:other",
+            to_id="ent:o2",
+            scope=other,
+            chunk_id=chunk_id,
+        )
+    
+>       assert _is_visible(main_store, "ent:main")
+E       AssertionError: assert False
+E        +  where False = _is_visible(<intergrax.rag.graph.providers.inmemory_graph_store.InMemoryGraphStore object at 0x00000258F52FCA40>, 'ent:main')
+
+tests\unit\rag\graph\test_graph_publication_scope_visibility.py:250: AssertionError
+_ test_other_tenant_namespace_or_workspace_sees_nothing[other2-chunk-other-ws] _
+
+other = GraphScope(tenant_id='scope-vis-tenant', namespace='scope-vis-ns', workspace_id='other-ws')
+chunk_id = 'chunk-other-ws'
+
+    @pytest.mark.parametrize(
+        ("other", "chunk_id"),
+        [
+            (OTHER_TENANT, "chunk-other-tenant"),
+            (OTHER_SCOPE, "chunk-other-ns"),
+            (OTHER_WORKSPACE, "chunk-other-ws"),
+        ],
+    )
+    def test_other_tenant_namespace_or_workspace_sees_nothing(other: GraphScope, chunk_id: str) -> None:
+        coordinator = _coordinator()
+        generation = _promote(coordinator, SOURCE_A, root=ROOT_A)  # promoted under SCOPE only
+        main_store = _bound_store(coordinator)
+        other_store = _bound_store(coordinator, other)
+        _write_source_edge(
+            main_store, source_id=SOURCE_A, generation=generation, root=ROOT_A, from_id="ent:main", to_id="ent:m2"
+        )
+        _write_source_edge(
+            other_store,
+            source_id=SOURCE_A,
+            generation=generation,
+            root=ROOT_A,
+            from_id="ent:other",
+            to_id="ent:o2",
+            scope=other,
+            chunk_id=chunk_id,
+        )
+    
+>       assert _is_visible(main_store, "ent:main")
+E       AssertionError: assert False
+E        +  where False = _is_visible(<intergrax.rag.graph.providers.inmemory_graph_store.InMemoryGraphStore object at 0x00000258F52FD280>, 'ent:main')
+
+tests\unit\rag\graph\test_graph_publication_scope_visibility.py:250: AssertionError
+_______ test_resolve_scope_active_generations_uses_the_scope_id_mapping _______
+
+    def test_resolve_scope_active_generations_uses_the_scope_id_mapping() -> None:
+        coordinator = _coordinator()
+        generation = _promote(coordinator, SOURCE_A, root=ROOT_A)
+    
+>       assert resolve_scope_active_generations(
+            coordinator, SCOPE, [SOURCE_A], publication_scope_ids={SOURCE_A: ROOT_A}
+        ) == {SOURCE_A: generation}
+E       TypeError: resolve_scope_active_generations() got an unexpected keyword argument 'publication_scope_ids'
+
+tests\unit\rag\graph\test_graph_publication_scope_visibility.py:275: TypeError
+_ test_resolve_scope_active_generations_wrong_blank_or_no_scope_id_finds_nothing[mapping0] _
+
+mapping = {'source-a': 'root-x'}
+
+    @pytest.mark.parametrize("mapping", [{SOURCE_A: "root-x"}, {SOURCE_A: "  "}, {SOURCE_B: ROOT_A}, {}, None])
+    def test_resolve_scope_active_generations_wrong_blank_or_no_scope_id_finds_nothing(
+        mapping: dict[str, str] | None,
+    ) -> None:
+        coordinator = _coordinator()
+        _promote(coordinator, SOURCE_A, root=ROOT_A)
+    
+>       assert resolve_scope_active_generations(coordinator, SCOPE, [SOURCE_A], publication_scope_ids=mapping) == {}
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E       TypeError: resolve_scope_active_generations() got an unexpected keyword argument 'publication_scope_ids'
+
+tests\unit\rag\graph\test_graph_publication_scope_visibility.py:290: TypeError
+_ test_resolve_scope_active_generations_wrong_blank_or_no_scope_id_finds_nothing[mapping1] _
+
+mapping = {'source-a': '  '}
+
+    @pytest.mark.parametrize("mapping", [{SOURCE_A: "root-x"}, {SOURCE_A: "  "}, {SOURCE_B: ROOT_A}, {}, None])
+    def test_resolve_scope_active_generations_wrong_blank_or_no_scope_id_finds_nothing(
+        mapping: dict[str, str] | None,
+    ) -> None:
+        coordinator = _coordinator()
+        _promote(coordinator, SOURCE_A, root=ROOT_A)
+    
+>       assert resolve_scope_active_generations(coordinator, SCOPE, [SOURCE_A], publication_scope_ids=mapping) == {}
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E       TypeError: resolve_scope_active_generations() got an unexpected keyword argument 'publication_scope_ids'
+
+tests\unit\rag\graph\test_graph_publication_scope_visibility.py:290: TypeError
+_ test_resolve_scope_active_generations_wrong_blank_or_no_scope_id_finds_nothing[mapping2] _
+
+mapping = {'source-b': 'root-a'}
+
+    @pytest.mark.parametrize("mapping", [{SOURCE_A: "root-x"}, {SOURCE_A: "  "}, {SOURCE_B: ROOT_A}, {}, None])
+    def test_resolve_scope_active_generations_wrong_blank_or_no_scope_id_finds_nothing(
+        mapping: dict[str, str] | None,
+    ) -> None:
+        coordinator = _coordinator()
+        _promote(coordinator, SOURCE_A, root=ROOT_A)
+    
+>       assert resolve_scope_active_generations(coordinator, SCOPE, [SOURCE_A], publication_scope_ids=mapping) == {}
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E       TypeError: resolve_scope_active_generations() got an unexpected keyword argument 'publication_scope_ids'
+
+tests\unit\rag\graph\test_graph_publication_scope_visibility.py:290: TypeError
+_ test_resolve_scope_active_generations_wrong_blank_or_no_scope_id_finds_nothing[mapping3] _
+
+mapping = {}
+
+    @pytest.mark.parametrize("mapping", [{SOURCE_A: "root-x"}, {SOURCE_A: "  "}, {SOURCE_B: ROOT_A}, {}, None])
+    def test_resolve_scope_active_generations_wrong_blank_or_no_scope_id_finds_nothing(
+        mapping: dict[str, str] | None,
+    ) -> None:
+        coordinator = _coordinator()
+        _promote(coordinator, SOURCE_A, root=ROOT_A)
+    
+>       assert resolve_scope_active_generations(coordinator, SCOPE, [SOURCE_A], publication_scope_ids=mapping) == {}
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E       TypeError: resolve_scope_active_generations() got an unexpected keyword argument 'publication_scope_ids'
+
+tests\unit\rag\graph\test_graph_publication_scope_visibility.py:290: TypeError
+_ test_resolve_scope_active_generations_wrong_blank_or_no_scope_id_finds_nothing[None] _
+
+mapping = None
+
+    @pytest.mark.parametrize("mapping", [{SOURCE_A: "root-x"}, {SOURCE_A: "  "}, {SOURCE_B: ROOT_A}, {}, None])
+    def test_resolve_scope_active_generations_wrong_blank_or_no_scope_id_finds_nothing(
+        mapping: dict[str, str] | None,
+    ) -> None:
+        coordinator = _coordinator()
+        _promote(coordinator, SOURCE_A, root=ROOT_A)
+    
+>       assert resolve_scope_active_generations(coordinator, SCOPE, [SOURCE_A], publication_scope_ids=mapping) == {}
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E       TypeError: resolve_scope_active_generations() got an unexpected keyword argument 'publication_scope_ids'
+
+tests\unit\rag\graph\test_graph_publication_scope_visibility.py:290: TypeError
+_ test_resolve_scope_active_generations_still_resolves_an_unscoped_publication _
+
+    def test_resolve_scope_active_generations_still_resolves_an_unscoped_publication() -> None:
+        coordinator = _coordinator()
+        generation = _promote(coordinator, SOURCE_A, root=None)
+    
+        assert resolve_scope_active_generations(coordinator, SCOPE, [SOURCE_A]) == {SOURCE_A: generation}
+>       assert resolve_scope_active_generations(coordinator, SCOPE, [SOURCE_A], publication_scope_ids={SOURCE_A: "  "}) == {
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+            SOURCE_A: generation
+        }
+E       TypeError: resolve_scope_active_generations() got an unexpected keyword argument 'publication_scope_ids'
+
+tests\unit\rag\graph\test_graph_publication_scope_visibility.py:298: TypeError
+___________ test_visibility_query_params_passes_the_mapping_through ___________
+
+    def test_visibility_query_params_passes_the_mapping_through() -> None:
+        coordinator = _coordinator()
+        generation = _promote(coordinator, SOURCE_A, root=ROOT_A)
+    
+>       scoped = visibility_query_params(
+            scope=SCOPE,
+            coordinator=coordinator,
+            source_ids=[SOURCE_A],
+            publication_scope_ids={SOURCE_A: ROOT_A},
+        )
+E       TypeError: visibility_query_params() got an unexpected keyword argument 'publication_scope_ids'
+
+tests\unit\rag\graph\test_graph_publication_scope_visibility.py:307: TypeError
+_______ test_indexer_stamps_the_root_document_id_on_versioned_evidence ________
+
+    def test_indexer_stamps_the_root_document_id_on_versioned_evidence() -> None:
+        store = _RecordingStore()
+        HeuristicGraphIndexer(store).index_documents([_document("root-doc", "1:token")], chunk_ids=["c-1"])
+    
+        assert store.node_metadata and store.edge_metadata
+        for metadata in (*store.node_metadata, *store.edge_metadata):
+>           assert metadata[_ROOT_KEY] == "root-doc"
+                   ^^^^^^^^^^^^^^^^^^^
+E           KeyError: 'root_document_id'
+
+tests\unit\rag\graph\test_graph_publication_scope_visibility.py:361: KeyError
+_ test_indexer_evidence_is_visible_under_its_root_and_invisible_under_another _
+
+    def test_indexer_evidence_is_visible_under_its_root_and_invisible_under_another() -> None:
+        root = "root-doc"
+        source_id = f"source:{root}"
+        coordinator = _coordinator()
+        generation = _promote(coordinator, source_id, root=root, scope=_DOC_SCOPE)
+        store = _bound_store(coordinator, _DOC_SCOPE)
+        HeuristicGraphIndexer(store).index_documents([_document(root, generation)], chunk_ids=["c-1"])
+>       assert store.find_nodes(label_contains="Alice Smith", limit=5)
+E       AssertionError: assert []
+E        +  where [] = find_nodes(label_contains='Alice Smith', limit=5)
+E        +    where find_nodes = <intergrax.rag.graph.providers.inmemory_graph_store.InMemoryGraphStore object at 0x00000258F52EE180>.find_nodes
+
+tests\unit\rag\graph\test_graph_publication_scope_visibility.py:382: AssertionError
+_______________ test_f10_c4_041k_each_entry_occurs_exactly_once _______________
+
+    def test_f10_c4_041k_each_entry_occurs_exactly_once() -> None:
+        prefixes = [rule.prefix for rule in C4_RULES]
+        for path in _EXPECTED:
+>           assert prefixes.count(path) == 1, path
+E           AssertionError: intergrax/integrations/credentials/secrets_store_resolver.py
+E           assert 0 == 1
+E            +  where 0 = <built-in method count of list object at 0x00000258F66F9E80>('intergrax/integrations/credentials/secrets_store_resolver.py')
+E            +    where <built-in method count of list object at 0x00000258F66F9E80> = ['docs/', 'tests/', 'scripts/qualification/', 'scripts/ci/', '.github/', 'pyproject.toml', ...].count
+
+tests\qualification\ebh_7\test_ebh_7_b6_f10_c4_041k_entries_gates.py:94: AssertionError
+____ test_f10_c4_041k_removing_the_entries_reopens_exactly_the_three_paths ____
+
+    def test_f10_c4_041k_removing_the_entries_reopens_exactly_the_three_paths() -> None:
+        base = _neutral()
+        paths = tuple(_EXPECTED)
+        closed = replace(base, changed_paths=_with_paths(base, paths))
+>       assert _result(closed, "C4-UNCLASSIFIED").status is ResultStatus.PASS
+E       AssertionError: assert <ResultStatus.FAIL: 'FAIL'> is <ResultStatus.PASS: 'PASS'>
+E        +  where <ResultStatus.FAIL: 'FAIL'> = QualificationResult(obligation=NormativeObligation(obligation_id='C4-UNCLASSIFIED', gate=<EcapGate.C4: 'C4'>, subject=...tegrations/_shared/p3/clients.py', 'unclassified change intergrax/integrations/credentials/secrets_store_resolver.py')).status
+E        +    where QualificationResult(obligation=NormativeObligation(obligation_id='C4-UNCLASSIFIED', gate=<EcapGate.C4: 'C4'>, subject=...tegrations/_shared/p3/clients.py', 'unclassified change intergrax/integrations/credentials/secrets_store_resolver.py')) = _result(F10Inputs(head_sha='969cbd964c679d563b02e55f065b452d46fdf90b', test_execution_sha='d39a520dda965981a38f8e1a90ec5135ea5...l_x/frz/test_evol_x_frz_09_extensibility.py', 'tests/qualification/evol_x/frz/test_evol_x_frz_10_requalification.py')}), 'C4-UNCLASSIFIED')
+E        +  and   <ResultStatus.PASS: 'PASS'> = ResultStatus.PASS
+
+tests\qualification\ebh_7\test_ebh_7_b6_f10_c4_041k_entries_gates.py:101: AssertionError
+_ test_f10_c4_041k_removing_one_entry_reopens_exactly_that_path[intergrax/experiments/workflow.py] _
+
+path = 'intergrax/experiments/workflow.py'
+
+    @pytest.mark.parametrize("path", sorted(_EXPECTED))
+    def test_f10_c4_041k_removing_one_entry_reopens_exactly_that_path(path: str) -> None:
+        base = _neutral()
+        closed = replace(base, changed_paths=_with_paths(base, tuple(_EXPECTED)))
+>       assert _result(closed, "C4-UNCLASSIFIED").status is ResultStatus.PASS
+E       AssertionError: assert <ResultStatus.FAIL: 'FAIL'> is <ResultStatus.PASS: 'PASS'>
+E        +  where <ResultStatus.FAIL: 'FAIL'> = QualificationResult(obligation=NormativeObligation(obligation_id='C4-UNCLASSIFIED', gate=<EcapGate.C4: 'C4'>, subject=...tegrations/_shared/p3/clients.py', 'unclassified change intergrax/integrations/credentials/secrets_store_resolver.py')).status
+E        +    where QualificationResult(obligation=NormativeObligation(obligation_id='C4-UNCLASSIFIED', gate=<EcapGate.C4: 'C4'>, subject=...tegrations/_shared/p3/clients.py', 'unclassified change intergrax/integrations/credentials/secrets_store_resolver.py')) = _result(F10Inputs(head_sha='969cbd964c679d563b02e55f065b452d46fdf90b', test_execution_sha='d39a520dda965981a38f8e1a90ec5135ea5...l_x/frz/test_evol_x_frz_09_extensibility.py', 'tests/qualification/evol_x/frz/test_evol_x_frz_10_requalification.py')}), 'C4-UNCLASSIFIED')
+E        +  and   <ResultStatus.PASS: 'PASS'> = ResultStatus.PASS
+
+tests\qualification\ebh_7\test_ebh_7_b6_f10_c4_041k_entries_gates.py:117: AssertionError
+_ test_f10_c4_041k_removing_one_entry_reopens_exactly_that_path[intergrax/integrations/credentials/secrets_store_resolver.py] _
+
+path = 'intergrax/integrations/credentials/secrets_store_resolver.py'
+
+    @pytest.mark.parametrize("path", sorted(_EXPECTED))
+    def test_f10_c4_041k_removing_one_entry_reopens_exactly_that_path(path: str) -> None:
+        base = _neutral()
+        closed = replace(base, changed_paths=_with_paths(base, tuple(_EXPECTED)))
+>       assert _result(closed, "C4-UNCLASSIFIED").status is ResultStatus.PASS
+E       AssertionError: assert <ResultStatus.FAIL: 'FAIL'> is <ResultStatus.PASS: 'PASS'>
+E        +  where <ResultStatus.FAIL: 'FAIL'> = QualificationResult(obligation=NormativeObligation(obligation_id='C4-UNCLASSIFIED', gate=<EcapGate.C4: 'C4'>, subject=...tegrations/_shared/p3/clients.py', 'unclassified change intergrax/integrations/credentials/secrets_store_resolver.py')).status
+E        +    where QualificationResult(obligation=NormativeObligation(obligation_id='C4-UNCLASSIFIED', gate=<EcapGate.C4: 'C4'>, subject=...tegrations/_shared/p3/clients.py', 'unclassified change intergrax/integrations/credentials/secrets_store_resolver.py')) = _result(F10Inputs(head_sha='969cbd964c679d563b02e55f065b452d46fdf90b', test_execution_sha='d39a520dda965981a38f8e1a90ec5135ea5...l_x/frz/test_evol_x_frz_09_extensibility.py', 'tests/qualification/evol_x/frz/test_evol_x_frz_10_requalification.py')}), 'C4-UNCLASSIFIED')
+E        +  and   <ResultStatus.PASS: 'PASS'> = ResultStatus.PASS
+
+tests\qualification\ebh_7\test_ebh_7_b6_f10_c4_041k_entries_gates.py:117: AssertionError
+_ test_f10_c4_041k_removing_one_entry_reopens_exactly_that_path[platform_proofs/scenarios/ai_incident_investigation/application/investigator_agent.py] _
+
+path = 'platform_proofs/scenarios/ai_incident_investigation/application/investigator_agent.py'
+
+    @pytest.mark.parametrize("path", sorted(_EXPECTED))
+    def test_f10_c4_041k_removing_one_entry_reopens_exactly_that_path(path: str) -> None:
+        base = _neutral()
+        closed = replace(base, changed_paths=_with_paths(base, tuple(_EXPECTED)))
+>       assert _result(closed, "C4-UNCLASSIFIED").status is ResultStatus.PASS
+E       AssertionError: assert <ResultStatus.FAIL: 'FAIL'> is <ResultStatus.PASS: 'PASS'>
+E        +  where <ResultStatus.FAIL: 'FAIL'> = QualificationResult(obligation=NormativeObligation(obligation_id='C4-UNCLASSIFIED', gate=<EcapGate.C4: 'C4'>, subject=...tegrations/_shared/p3/clients.py', 'unclassified change intergrax/integrations/credentials/secrets_store_resolver.py')).status
+E        +    where QualificationResult(obligation=NormativeObligation(obligation_id='C4-UNCLASSIFIED', gate=<EcapGate.C4: 'C4'>, subject=...tegrations/_shared/p3/clients.py', 'unclassified change intergrax/integrations/credentials/secrets_store_resolver.py')) = _result(F10Inputs(head_sha='969cbd964c679d563b02e55f065b452d46fdf90b', test_execution_sha='d39a520dda965981a38f8e1a90ec5135ea5...l_x/frz/test_evol_x_frz_09_extensibility.py', 'tests/qualification/evol_x/frz/test_evol_x_frz_10_requalification.py')}), 'C4-UNCLASSIFIED')
+E        +  and   <ResultStatus.PASS: 'PASS'> = ResultStatus.PASS
+
+tests\qualification\ebh_7\test_ebh_7_b6_f10_c4_041k_entries_gates.py:117: AssertionError
+_ test_f10_c4_041k_reopen_check_does_not_depend_on_the_paths_being_in_the_range _
+
+    def test_f10_c4_041k_reopen_check_does_not_depend_on_the_paths_being_in_the_range() -> None:
+        base = _neutral()
+        paths = tuple(_EXPECTED)
+        without = replace(base, changed_paths=tuple(p for p in base.changed_paths if p not in _EXPECTED))
+        assert not any(path in without.changed_paths for path in paths)
+        closed = replace(without, changed_paths=_with_paths(without, paths))
+>       assert _result(closed, "C4-UNCLASSIFIED").status is ResultStatus.PASS
+E       AssertionError: assert <ResultStatus.FAIL: 'FAIL'> is <ResultStatus.PASS: 'PASS'>
+E        +  where <ResultStatus.FAIL: 'FAIL'> = QualificationResult(obligation=NormativeObligation(obligation_id='C4-UNCLASSIFIED', gate=<EcapGate.C4: 'C4'>, subject=...tegrations/_shared/p3/clients.py', 'unclassified change intergrax/integrations/credentials/secrets_store_resolver.py')).status
+E        +    where QualificationResult(obligation=NormativeObligation(obligation_id='C4-UNCLASSIFIED', gate=<EcapGate.C4: 'C4'>, subject=...tegrations/_shared/p3/clients.py', 'unclassified change intergrax/integrations/credentials/secrets_store_resolver.py')) = _result(F10Inputs(head_sha='969cbd964c679d563b02e55f065b452d46fdf90b', test_execution_sha='d39a520dda965981a38f8e1a90ec5135ea5...l_x/frz/test_evol_x_frz_09_extensibility.py', 'tests/qualification/evol_x/frz/test_evol_x_frz_10_requalification.py')}), 'C4-UNCLASSIFIED')
+E        +  and   <ResultStatus.PASS: 'PASS'> = ResultStatus.PASS
+
+tests\qualification\ebh_7\test_ebh_7_b6_f10_c4_041k_entries_gates.py:132: AssertionError
+_ test_f10_c4_041k_path_is_classified_as_documented[intergrax/integrations/credentials/secrets_store_resolver.py] _
+
+path = 'intergrax/integrations/credentials/secrets_store_resolver.py'
+
+    @pytest.mark.parametrize("path", sorted(_EXPECTED))
+    def test_f10_c4_041k_path_is_classified_as_documented(path: str) -> None:
+>       assert classify_change(path, _neutral()) == _EXPECTED[path]
+E       AssertionError: assert (<ChangeClass...: 'unknown'>,) == (<ChangeClass...nce-tenant'>,)
+E         
+E         At index 0 diff: <ChangeClass.UNKNOWN: 'unknown'> != <ChangeClass.SECURITY_GOVERNANCE_TENANT: 'security-governance-tenant'>
+E         Use -v to get more diff
+
+tests\qualification\ebh_7\test_ebh_7_b6_f10_c4_041k_entries_gates.py:159: AssertionError
+_ test_f10_c4_041k_entry_is_an_exact_path_with_a_reason[intergrax/integrations/credentials/secrets_store_resolver.py] _
+
+path = 'intergrax/integrations/credentials/secrets_store_resolver.py'
+
+    @pytest.mark.parametrize("path", sorted(_EXPECTED))
+    def test_f10_c4_041k_entry_is_an_exact_path_with_a_reason(path: str) -> None:
+        rules = [rule for rule in C4_RULES if rule.prefix == path]
+>       assert len(rules) == 1, path
+E       AssertionError: intergrax/integrations/credentials/secrets_store_resolver.py
+E       assert 0 == 1
+E        +  where 0 = len([])
+
+tests\qualification\ebh_7\test_ebh_7_b6_f10_c4_041k_entries_gates.py:165: AssertionError
+_______________ test_f10_c4_041o_each_entry_occurs_exactly_once _______________
+
+    def test_f10_c4_041o_each_entry_occurs_exactly_once() -> None:
+        prefixes = [rule.prefix for rule in C4_RULES]
+        for path in _EXPECTED:
+>           assert prefixes.count(path) == 1, path
+E           AssertionError: intergrax/integrations/_shared/p3/clients.py
+E           assert 0 == 1
+E            +  where 0 = <built-in method count of list object at 0x00000258F6DA8A00>('intergrax/integrations/_shared/p3/clients.py')
+E            +    where <built-in method count of list object at 0x00000258F6DA8A00> = ['docs/', 'tests/', 'scripts/qualification/', 'scripts/ci/', '.github/', 'pyproject.toml', ...].count
+
+tests\qualification\ebh_7\test_ebh_7_b6_f10_c4_041o_entries_gates.py:95: AssertionError
+____ test_f10_c4_041o_removing_the_entries_reopens_exactly_the_three_paths ____
+
+    def test_f10_c4_041o_removing_the_entries_reopens_exactly_the_three_paths() -> None:
+        base = _neutral()
+        paths = tuple(_EXPECTED)
+        closed = replace(base, changed_paths=_with_paths(base, paths))
+>       assert _result(closed, "C4-UNCLASSIFIED").status is ResultStatus.PASS
+E       AssertionError: assert <ResultStatus.FAIL: 'FAIL'> is <ResultStatus.PASS: 'PASS'>
+E        +  where <ResultStatus.FAIL: 'FAIL'> = QualificationResult(obligation=NormativeObligation(obligation_id='C4-UNCLASSIFIED', gate=<EcapGate.C4: 'C4'>, subject=...tegrations/_shared/p3/clients.py', 'unclassified change intergrax/integrations/credentials/secrets_store_resolver.py')).status
+E        +    where QualificationResult(obligation=NormativeObligation(obligation_id='C4-UNCLASSIFIED', gate=<EcapGate.C4: 'C4'>, subject=...tegrations/_shared/p3/clients.py', 'unclassified change intergrax/integrations/credentials/secrets_store_resolver.py')) = _result(F10Inputs(head_sha='969cbd964c679d563b02e55f065b452d46fdf90b', test_execution_sha='d39a520dda965981a38f8e1a90ec5135ea5...l_x/frz/test_evol_x_frz_09_extensibility.py', 'tests/qualification/evol_x/frz/test_evol_x_frz_10_requalification.py')}), 'C4-UNCLASSIFIED')
+E        +  and   <ResultStatus.PASS: 'PASS'> = ResultStatus.PASS
+
+tests\qualification\ebh_7\test_ebh_7_b6_f10_c4_041o_entries_gates.py:102: AssertionError
+_ test_f10_c4_041o_removing_one_entry_reopens_exactly_that_path[intergrax/integrations/_shared/p3/clients.py] _
+
+path = 'intergrax/integrations/_shared/p3/clients.py'
+
+    @pytest.mark.parametrize("path", sorted(_EXPECTED))
+    def test_f10_c4_041o_removing_one_entry_reopens_exactly_that_path(path: str) -> None:
+        base = _neutral()
+        closed = replace(base, changed_paths=_with_paths(base, tuple(_EXPECTED)))
+>       assert _result(closed, "C4-UNCLASSIFIED").status is ResultStatus.PASS
+E       AssertionError: assert <ResultStatus.FAIL: 'FAIL'> is <ResultStatus.PASS: 'PASS'>
+E        +  where <ResultStatus.FAIL: 'FAIL'> = QualificationResult(obligation=NormativeObligation(obligation_id='C4-UNCLASSIFIED', gate=<EcapGate.C4: 'C4'>, subject=...tegrations/_shared/p3/clients.py', 'unclassified change intergrax/integrations/credentials/secrets_store_resolver.py')).status
+E        +    where QualificationResult(obligation=NormativeObligation(obligation_id='C4-UNCLASSIFIED', gate=<EcapGate.C4: 'C4'>, subject=...tegrations/_shared/p3/clients.py', 'unclassified change intergrax/integrations/credentials/secrets_store_resolver.py')) = _result(F10Inputs(head_sha='969cbd964c679d563b02e55f065b452d46fdf90b', test_execution_sha='d39a520dda965981a38f8e1a90ec5135ea5...l_x/frz/test_evol_x_frz_09_extensibility.py', 'tests/qualification/evol_x/frz/test_evol_x_frz_10_requalification.py')}), 'C4-UNCLASSIFIED')
+E        +  and   <ResultStatus.PASS: 'PASS'> = ResultStatus.PASS
+
+tests\qualification\ebh_7\test_ebh_7_b6_f10_c4_041o_entries_gates.py:118: AssertionError
+_ test_f10_c4_041o_removing_one_entry_reopens_exactly_that_path[platform_proofs/scenarios/ai_incident_investigation/application/runtime_composition.py] _
+
+path = 'platform_proofs/scenarios/ai_incident_investigation/application/runtime_composition.py'
+
+    @pytest.mark.parametrize("path", sorted(_EXPECTED))
+    def test_f10_c4_041o_removing_one_entry_reopens_exactly_that_path(path: str) -> None:
+        base = _neutral()
+        closed = replace(base, changed_paths=_with_paths(base, tuple(_EXPECTED)))
+>       assert _result(closed, "C4-UNCLASSIFIED").status is ResultStatus.PASS
+E       AssertionError: assert <ResultStatus.FAIL: 'FAIL'> is <ResultStatus.PASS: 'PASS'>
+E        +  where <ResultStatus.FAIL: 'FAIL'> = QualificationResult(obligation=NormativeObligation(obligation_id='C4-UNCLASSIFIED', gate=<EcapGate.C4: 'C4'>, subject=...tegrations/_shared/p3/clients.py', 'unclassified change intergrax/integrations/credentials/secrets_store_resolver.py')).status
+E        +    where QualificationResult(obligation=NormativeObligation(obligation_id='C4-UNCLASSIFIED', gate=<EcapGate.C4: 'C4'>, subject=...tegrations/_shared/p3/clients.py', 'unclassified change intergrax/integrations/credentials/secrets_store_resolver.py')) = _result(F10Inputs(head_sha='969cbd964c679d563b02e55f065b452d46fdf90b', test_execution_sha='d39a520dda965981a38f8e1a90ec5135ea5...l_x/frz/test_evol_x_frz_09_extensibility.py', 'tests/qualification/evol_x/frz/test_evol_x_frz_10_requalification.py')}), 'C4-UNCLASSIFIED')
+E        +  and   <ResultStatus.PASS: 'PASS'> = ResultStatus.PASS
+
+tests\qualification\ebh_7\test_ebh_7_b6_f10_c4_041o_entries_gates.py:118: AssertionError
+_ test_f10_c4_041o_removing_one_entry_reopens_exactly_that_path[platform_proofs/scenarios/indirect_prompt_injection/proof.json] _
+
+path = 'platform_proofs/scenarios/indirect_prompt_injection/proof.json'
+
+    @pytest.mark.parametrize("path", sorted(_EXPECTED))
+    def test_f10_c4_041o_removing_one_entry_reopens_exactly_that_path(path: str) -> None:
+        base = _neutral()
+        closed = replace(base, changed_paths=_with_paths(base, tuple(_EXPECTED)))
+>       assert _result(closed, "C4-UNCLASSIFIED").status is ResultStatus.PASS
+E       AssertionError: assert <ResultStatus.FAIL: 'FAIL'> is <ResultStatus.PASS: 'PASS'>
+E        +  where <ResultStatus.FAIL: 'FAIL'> = QualificationResult(obligation=NormativeObligation(obligation_id='C4-UNCLASSIFIED', gate=<EcapGate.C4: 'C4'>, subject=...tegrations/_shared/p3/clients.py', 'unclassified change intergrax/integrations/credentials/secrets_store_resolver.py')).status
+E        +    where QualificationResult(obligation=NormativeObligation(obligation_id='C4-UNCLASSIFIED', gate=<EcapGate.C4: 'C4'>, subject=...tegrations/_shared/p3/clients.py', 'unclassified change intergrax/integrations/credentials/secrets_store_resolver.py')) = _result(F10Inputs(head_sha='969cbd964c679d563b02e55f065b452d46fdf90b', test_execution_sha='d39a520dda965981a38f8e1a90ec5135ea5...l_x/frz/test_evol_x_frz_09_extensibility.py', 'tests/qualification/evol_x/frz/test_evol_x_frz_10_requalification.py')}), 'C4-UNCLASSIFIED')
+E        +  and   <ResultStatus.PASS: 'PASS'> = ResultStatus.PASS
+
+tests\qualification\ebh_7\test_ebh_7_b6_f10_c4_041o_entries_gates.py:118: AssertionError
+_ test_f10_c4_041o_reopen_check_does_not_depend_on_the_paths_being_in_the_range _
+
+    def test_f10_c4_041o_reopen_check_does_not_depend_on_the_paths_being_in_the_range() -> None:
+        base = _neutral()
+        paths = tuple(_EXPECTED)
+        without = replace(base, changed_paths=tuple(p for p in base.changed_paths if p not in _EXPECTED))
+        assert not any(path in without.changed_paths for path in paths)
+        closed = replace(without, changed_paths=_with_paths(without, paths))
+>       assert _result(closed, "C4-UNCLASSIFIED").status is ResultStatus.PASS
+E       AssertionError: assert <ResultStatus.FAIL: 'FAIL'> is <ResultStatus.PASS: 'PASS'>
+E        +  where <ResultStatus.FAIL: 'FAIL'> = QualificationResult(obligation=NormativeObligation(obligation_id='C4-UNCLASSIFIED', gate=<EcapGate.C4: 'C4'>, subject=...tegrations/credentials/secrets_store_resolver.py', 'unclassified change intergrax/integrations/_shared/p3/clients.py')).status
+E        +    where QualificationResult(obligation=NormativeObligation(obligation_id='C4-UNCLASSIFIED', gate=<EcapGate.C4: 'C4'>, subject=...tegrations/credentials/secrets_store_resolver.py', 'unclassified change intergrax/integrations/_shared/p3/clients.py')) = _result(F10Inputs(head_sha='969cbd964c679d563b02e55f065b452d46fdf90b', test_execution_sha='d39a520dda965981a38f8e1a90ec5135ea5...l_x/frz/test_evol_x_frz_09_extensibility.py', 'tests/qualification/evol_x/frz/test_evol_x_frz_10_requalification.py')}), 'C4-UNCLASSIFIED')
+E        +  and   <ResultStatus.PASS: 'PASS'> = ResultStatus.PASS
+
+tests\qualification\ebh_7\test_ebh_7_b6_f10_c4_041o_entries_gates.py:133: AssertionError
+_ test_f10_c4_041o_path_is_classified_as_documented[intergrax/integrations/_shared/p3/clients.py] _
+
+path = 'intergrax/integrations/_shared/p3/clients.py'
+
+    @pytest.mark.parametrize("path", sorted(_EXPECTED))
+    def test_f10_c4_041o_path_is_classified_as_documented(path: str) -> None:
+>       assert classify_change(path, _neutral()) == _EXPECTED[path]
+E       AssertionError: assert (<ChangeClass...: 'unknown'>,) == (<ChangeClass...ance-tenant'>)
+E         
+E         At index 0 diff: <ChangeClass.UNKNOWN: 'unknown'> != <ChangeClass.VENDOR_BACKEND: 'vendor-backend'>
+E         Right contains one more item: <ChangeClass.SECURITY_GOVERNANCE_TENANT: 'security-governance-tenant'>
+E         Use -v to get more diff
+
+tests\qualification\ebh_7\test_ebh_7_b6_f10_c4_041o_entries_gates.py:160: AssertionError
+_ test_f10_c4_041o_entry_is_an_exact_path_with_a_reason[intergrax/integrations/_shared/p3/clients.py] _
+
+path = 'intergrax/integrations/_shared/p3/clients.py'
+
+    @pytest.mark.parametrize("path", sorted(_EXPECTED))
+    def test_f10_c4_041o_entry_is_an_exact_path_with_a_reason(path: str) -> None:
+        rules = [rule for rule in C4_RULES if rule.prefix == path]
+>       assert len(rules) == 1, path
+E       AssertionError: intergrax/integrations/_shared/p3/clients.py
+E       assert 0 == 1
+E        +  where 0 = len([])
+
+tests\qualification\ebh_7\test_ebh_7_b6_f10_c4_041o_entries_gates.py:166: AssertionError
+============================== warnings summary ===============================
+.venv\Lib\site-packages\_pytest\config\__init__.py:1474
+  D:\Projekty\_wt\intergrax\ia-g-add2\.venv\Lib\site-packages\_pytest\config\__init__.py:1474: PytestConfigWarning: Unknown config option: cache_dir
+  
+    self._warn_or_fail_if_strict(f"Unknown config option: {key}\n")
+
+-- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html
+=========================== short test summary info ===========================
+FAILED tests/integration/rag/test_graph_reingest_qualification.py::test_graphrag_source_reingest_replaces_vectors_and_graph_safely
+FAILED tests/integration/rag/test_same_source_reingest_serialization.py::test_stale_graph_topology_is_inactive_after_generation_takeover
+FAILED tests/unit/rag/graph/test_graph_publication_scope_visibility.py::test_scoped_publication_makes_stamped_evidence_visible
+FAILED tests/unit/rag/graph/test_graph_publication_scope_visibility.py::test_reingest_under_the_same_scoped_key_hides_the_first_generation
+FAILED tests/unit/rag/graph/test_graph_publication_scope_visibility.py::test_other_source_with_a_borrowed_scope_id_stays_invisible
+FAILED tests/unit/rag/graph/test_graph_publication_scope_visibility.py::test_other_tenant_namespace_or_workspace_sees_nothing[other0-chunk-other-tenant]
+FAILED tests/unit/rag/graph/test_graph_publication_scope_visibility.py::test_other_tenant_namespace_or_workspace_sees_nothing[other1-chunk-other-ns]
+FAILED tests/unit/rag/graph/test_graph_publication_scope_visibility.py::test_other_tenant_namespace_or_workspace_sees_nothing[other2-chunk-other-ws]
+FAILED tests/unit/rag/graph/test_graph_publication_scope_visibility.py::test_resolve_scope_active_generations_uses_the_scope_id_mapping
+FAILED tests/unit/rag/graph/test_graph_publication_scope_visibility.py::test_resolve_scope_active_generations_wrong_blank_or_no_scope_id_finds_nothing[mapping0]
+FAILED tests/unit/rag/graph/test_graph_publication_scope_visibility.py::test_resolve_scope_active_generations_wrong_blank_or_no_scope_id_finds_nothing[mapping1]
+FAILED tests/unit/rag/graph/test_graph_publication_scope_visibility.py::test_resolve_scope_active_generations_wrong_blank_or_no_scope_id_finds_nothing[mapping2]
+FAILED tests/unit/rag/graph/test_graph_publication_scope_visibility.py::test_resolve_scope_active_generations_wrong_blank_or_no_scope_id_finds_nothing[mapping3]
+FAILED tests/unit/rag/graph/test_graph_publication_scope_visibility.py::test_resolve_scope_active_generations_wrong_blank_or_no_scope_id_finds_nothing[None]
+FAILED tests/unit/rag/graph/test_graph_publication_scope_visibility.py::test_resolve_scope_active_generations_still_resolves_an_unscoped_publication
+FAILED tests/unit/rag/graph/test_graph_publication_scope_visibility.py::test_visibility_query_params_passes_the_mapping_through
+FAILED tests/unit/rag/graph/test_graph_publication_scope_visibility.py::test_indexer_stamps_the_root_document_id_on_versioned_evidence
+FAILED tests/unit/rag/graph/test_graph_publication_scope_visibility.py::test_indexer_evidence_is_visible_under_its_root_and_invisible_under_another
+FAILED tests/qualification/ebh_7/test_ebh_7_b6_f10_c4_041k_entries_gates.py::test_f10_c4_041k_each_entry_occurs_exactly_once
+FAILED tests/qualification/ebh_7/test_ebh_7_b6_f10_c4_041k_entries_gates.py::test_f10_c4_041k_removing_the_entries_reopens_exactly_the_three_paths
+FAILED tests/qualification/ebh_7/test_ebh_7_b6_f10_c4_041k_entries_gates.py::test_f10_c4_041k_removing_one_entry_reopens_exactly_that_path[intergrax/experiments/workflow.py]
+FAILED tests/qualification/ebh_7/test_ebh_7_b6_f10_c4_041k_entries_gates.py::test_f10_c4_041k_removing_one_entry_reopens_exactly_that_path[intergrax/integrations/credentials/secrets_store_resolver.py]
+FAILED tests/qualification/ebh_7/test_ebh_7_b6_f10_c4_041k_entries_gates.py::test_f10_c4_041k_removing_one_entry_reopens_exactly_that_path[platform_proofs/scenarios/ai_incident_investigation/application/investigator_agent.py]
+FAILED tests/qualification/ebh_7/test_ebh_7_b6_f10_c4_041k_entries_gates.py::test_f10_c4_041k_reopen_check_does_not_depend_on_the_paths_being_in_the_range
+FAILED tests/qualification/ebh_7/test_ebh_7_b6_f10_c4_041k_entries_gates.py::test_f10_c4_041k_path_is_classified_as_documented[intergrax/integrations/credentials/secrets_store_resolver.py]
+FAILED tests/qualification/ebh_7/test_ebh_7_b6_f10_c4_041k_entries_gates.py::test_f10_c4_041k_entry_is_an_exact_path_with_a_reason[intergrax/integrations/credentials/secrets_store_resolver.py]
+FAILED tests/qualification/ebh_7/test_ebh_7_b6_f10_c4_041o_entries_gates.py::test_f10_c4_041o_each_entry_occurs_exactly_once
+FAILED tests/qualification/ebh_7/test_ebh_7_b6_f10_c4_041o_entries_gates.py::test_f10_c4_041o_removing_the_entries_reopens_exactly_the_three_paths
+FAILED tests/qualification/ebh_7/test_ebh_7_b6_f10_c4_041o_entries_gates.py::test_f10_c4_041o_removing_one_entry_reopens_exactly_that_path[intergrax/integrations/_shared/p3/clients.py]
+FAILED tests/qualification/ebh_7/test_ebh_7_b6_f10_c4_041o_entries_gates.py::test_f10_c4_041o_removing_one_entry_reopens_exactly_that_path[platform_proofs/scenarios/ai_incident_investigation/application/runtime_composition.py]
+FAILED tests/qualification/ebh_7/test_ebh_7_b6_f10_c4_041o_entries_gates.py::test_f10_c4_041o_removing_one_entry_reopens_exactly_that_path[platform_proofs/scenarios/indirect_prompt_injection/proof.json]
+FAILED tests/qualification/ebh_7/test_ebh_7_b6_f10_c4_041o_entries_gates.py::test_f10_c4_041o_reopen_check_does_not_depend_on_the_paths_being_in_the_range
+FAILED tests/qualification/ebh_7/test_ebh_7_b6_f10_c4_041o_entries_gates.py::test_f10_c4_041o_path_is_classified_as_documented[intergrax/integrations/_shared/p3/clients.py]
+FAILED tests/qualification/ebh_7/test_ebh_7_b6_f10_c4_041o_entries_gates.py::test_f10_c4_041o_entry_is_an_exact_path_with_a_reason[intergrax/integrations/_shared/p3/clients.py]
+34 failed, 30 passed, 1 warning in 26.10s
+exit=1
