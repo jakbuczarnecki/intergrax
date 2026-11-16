@@ -29,19 +29,19 @@
 
 ## L3 replay (MANIFEST `pytest_profile.last_replay`)
 
-**Re-pin replay: PENDING.** TEST_EXECUTION_SHA was re-pinned to `d39a520dda965981a38f8e1a90ec5135ea5d508e` (PDC-X P7, T-IGX-041-J) and the fresh L3 replay at this pin has not run yet; `last_replay` carries no counts. Counts, run ID and artifact digests are recorded after the replay (W2). This record is not a B6 PASS for the re-pinned tree; the independent acceptance (scoped) stays bound to `INDEPENDENT_ACCEPTANCE_BASELINE_SHA` `dc18e36d9…`.
+**Re-pin replay: FAILED.** TEST_EXECUTION_SHA was re-pinned to `d39a520dda965981a38f8e1a90ec5135ea5d508e` (PDC-X P7, T-IGX-041-J). The one L3 replay at this pin, GitHub Actions run `43738431866`, ended `2 failed / 720 passed / 9 skipped`, with the strict JUnit summary FAIL (duplicate testcase). It is not a B6 PASS and not evidence of a green L3; the two failures are test defects fixed by T-IGX-041-Q (PR #593) and there is no re-run and no new pin (Operator condition). The independent acceptance (scoped) stays bound to `INDEPENDENT_ACCEPTANCE_BASELINE_SHA` `dc18e36d9…`; the re-pinned tree is not independently accepted.
 
 Previous authoritative replay (historical, kept in `MANIFEST.json` → `pytest_profile.historical_replays`): final reconciliation GitHub Actions run `41238620036` @ `73965c2ea…` (TEST `dc18e36d9…`; JUnit 634 tests; recorded in `EBH_7_P03_GITHUB_ACTIONS_REPLAY_RECORD.md`). Older historical (superseded): B6-F10 run `41231430749` @ `e6ff57b13…` (TEST `496016c0c…`, JUnit 590 tests: 581 passed / 9 skipped). Skipped tests: nine individual dispositions in [`EBH_7_SKIP_DISPOSITION_REGISTER.md`](EBH_7_SKIP_DISPOSITION_REGISTER.md). The historical B5 run (`4eb7eb1a…`, 195 passed) shadowed the `ebh_7` directory (F10-P03-PROFILE-SHADOW).
 
 | Field | Previous replay `41238620036` (historical, TEST `dc18e36d9`) | Final re-pin replay (TEST `d39a520dda965981a38f8e1a90ec5135ea5d508e`) |
 | --- | --- | --- |
-| JUnit tests | **634** | PENDING |
-| Passed | **625** | PENDING |
-| Skipped | **9** (nine individual `ACCEPTED_NA` dispositions; 0 unregistered / 0 stale) | PENDING |
-| Failed / errors | **0 / 0** | PENDING |
-| Xfailed | **0** | PENDING |
+| JUnit tests | **634** | unknown (strict JUnit summary FAIL: duplicate testcase) |
+| Passed | **625** | **720** (pytest summary) |
+| Skipped | **9** (nine individual `ACCEPTED_NA` dispositions; 0 unregistered / 0 stale) | **9** (pytest summary; skip disposition FAIL, not produced) |
+| Failed / errors | **0 / 0** | **2** / unknown (two test defects, see the GitHub Actions replay record) |
+| Xfailed | **0** | unknown |
 | Profile | `MANIFEST.json` → `pytest_profile.command` | same profile |
-| Log | GHA run `41238620036` artifact `ebh7-p03-l3-dc18e36d971c93c8f631fbc86f73149d1b81b4d7` (pytest.log, junit.xml, meta.txt, junit-summary.json, skip-disposition.json, f10-attestation.json) | PENDING |
+| Log | GHA run `41238620036` artifact `ebh7-p03-l3-dc18e36d971c93c8f631fbc86f73149d1b81b4d7` (pytest.log, junit.xml, meta.txt, junit-summary.json, skip-disposition.json, f10-attestation.json) | GHA run `43738431866` artifact `ebh7-p03-l3-d39a520dda965981a38f8e1a90ec5135ea5d508e` (pytest.log, junit.xml, meta.txt, junit-summary.json, f10-attestation.json; no skip-disposition.json) |
 
 ## INT2E / ECAP
 

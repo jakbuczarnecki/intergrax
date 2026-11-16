@@ -1,6 +1,6 @@
 {
   "TEST_EXECUTION_SHA": "d39a520dda965981a38f8e1a90ec5135ea5d508e",
-  "TEST_EXECUTION_NOTE": "PDC-X P7 final re-pin (T-IGX-041-J): development tip taken after the last P7 repair merge (all domain repair tickets T-IGX-041-A..I, the F10 classifier entries and the COMPAT-X counter re-pin merged before the pin). Replay result pending - not a B6 PASS. Previous pin 146e7acf1 (PDC-X P6 re-pin, T-IGX-036-W; its replay, run 43576897070, ended 6 failed / 619 passed / 9 skipped) and dc18e36d9 (EBH-7 final B6 evidence reconciliation, GHA run 41238620036) moved to historical_replays; B6-F10 certification TEST 496016c0c (GHA run 41231430749) and B5 test execution 4eb7eb1a preserved in SHA ladder",
+  "TEST_EXECUTION_NOTE": "PDC-X P7 final re-pin (T-IGX-041-J): development tip taken after the last P7 repair merge (all domain repair tickets T-IGX-041-A..I, the F10 classifier entries and the COMPAT-X counter re-pin merged before the pin). Replay run 43738431866 FAILED (2 failed / 720 passed / 9 skipped (pytest summary, 149 s); strict JUnit summary FAIL) - not a B6 PASS; the two failing tests are test defects fixed by T-IGX-041-Q (PR 593); no re-run and no new pin by Operator condition. Previous pin 146e7acf1 (PDC-X P6 re-pin, T-IGX-036-W; its replay, run 43576897070, ended 6 failed / 619 passed / 9 skipped) and dc18e36d9 (EBH-7 final B6 evidence reconciliation, GHA run 41238620036) moved to historical_replays; B6-F10 certification TEST 496016c0c (GHA run 41231430749) and B5 test execution 4eb7eb1a preserved in SHA ladder",
   "EBH7_B6_F10_TEST_EXECUTION_SHA": "496016c0cf6cc5cf1f9a29d885677605dd0415d3",
   "EBH7_B6_F10_EVIDENCE_PUBLICATION_SHA": "06d46537f5f252dbb395e865a33ce6f2475bf7b1",
   "EBH7_B6_FINAL_RECONCILIATION_IMPLEMENTATION_SHA": "dc18e36d971c93c8f631fbc86f73149d1b81b4d7",
@@ -20,10 +20,21 @@
     "replay_record": "L3_REPLAY_RECORD.md",
     "last_replay": {
       "role": "PDC_P7_FINAL_REPIN_REPLAY",
-      "status": "PENDING",
-      "note": "Fresh L3 replay at the final re-pinned TEST_EXECUTION_SHA is dispatched after W1' merges; counts, run ID and artifact digests are recorded by W2'. Not a B6 PASS.",
+      "status": "FAILED_NOT_B6_PASS",
+      "note": "Run concluded failure. Two test defects (test_f10_c4_041k_... and test_f10_c4_041o_removing_the_entries_reopens_exactly_the_three_paths: the appended paths are already inside the F10 range at this pin) and a strict JUnit summary FAIL (duplicate testcase, node id and its whole file are both in the command). Fixed in the test tree by T-IGX-041-Q (PR 593, merge 969cbd964) after this run; no re-run and no new pin by Operator condition (DELEGATION-PDC-LOOP2). Not a B6 PASS and not evidence of a green L3.",
       "test_execution_sha": "d39a520dda965981a38f8e1a90ec5135ea5d508e",
-      "evidence_publication_sha": "d39a520dda965981a38f8e1a90ec5135ea5d508e"
+      "evidence_publication_sha": "d39a520dda965981a38f8e1a90ec5135ea5d508e",
+      "github_run_id": "43738431866",
+      "replay_checkout_sha": "8115de877249e9a4a62d1c2390513690bc082cd2",
+      "workflow_sha": "8115de877249e9a4a62d1c2390513690bc082cd2",
+      "junit_tests": "unknown",
+      "junit_metadata": "junit_parse=FAIL (junit counts unknown); skip_disposition=FAIL; pytest_exit_code=UNKNOWN",
+      "pytest_summary": "2 failed, 720 passed, 9 skipped in 149.26s",
+      "passed": 720,
+      "failed": 2,
+      "skipped": 9,
+      "f10_attestation": "PASS nodes=70 problems=0",
+      "artifact": "ebh7-p03-l3-d39a520dda965981a38f8e1a90ec5135ea5d508e"
     },
     "historical_replays": [
       {
