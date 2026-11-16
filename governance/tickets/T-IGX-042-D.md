@@ -21,7 +21,8 @@ docs/project/technical/DOCUMENTATION_MAP.md
 
 ## Approved
 
-PENDING. The approval line goes here after plan review, written by the Operator or a commissioned session; the implementer never writes it. This placeholder deliberately avoids the approval keyword because the ticket validators accept any line that starts with it (finding EQOA-A6-002).
+Approved: operator-delegate @ 2026-11-16T13:13:59+01:00
+Delegation: D:/Projekty/intergrax/.tmp/session/eqo-a-remediation/FC/OPERATOR_ANSWERS_TRANSCRIPTION.md@sha256:cbb86371ec01828fff5e84683d1cf225e7bacdd7bca5d7692a3e7603dc2cdc85
 
 ## Test contract
 
@@ -38,4 +39,4 @@ Data ingest (`register.jsonl`, `reconciliation.json`, owner vocabulary), the con
 
 ## Lifecycle state
 
-`plan_pending`
+plan_approved
