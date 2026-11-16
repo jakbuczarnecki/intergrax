@@ -12,7 +12,8 @@ Canonical plan: [`governance/tickets/plans/PLAN_T-IGX-050-C.md`](plans/PLAN_T-IG
 
 ## Approved
 
-PENDING. <<OPERATOR: the approval line goes here after plan review, written by the Operator or a commissioned session; the implementer never writes it. This placeholder deliberately avoids the approval keyword because the ticket validators accept any line that starts with it (finding EQOA-A6-002).>>
+Approved: operator-delegate @ 2026-11-16T16:59:46+01:00
+Delegation: docs/project/maintainers/qualification/ARCH_FREEZE_OPERATOR_DECISION_REGISTER.md@31ba3aa84490ad7984106bdeb410163e873b0fc1
 
 ## Test contract
 
@@ -28,4 +29,4 @@ Code, tests, scripts, workflows, roadmap, FRZ checklist, PDC-X records, reachabi
 
 ## Lifecycle state
 
-`plan_pending`
+plan_approved
