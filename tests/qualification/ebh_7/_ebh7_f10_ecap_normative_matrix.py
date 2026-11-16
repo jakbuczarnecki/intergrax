@@ -81,6 +81,7 @@ REPORT_BLOCK_BEGIN: Final[str] = (
 REPORT_BLOCK_END: Final[str] = "<!-- F10-COMPUTED:END -->"
 DISPOSITION_QUALIFIED: Final[str] = "EBH-7 — B6-F10 NORMATIVELY QUALIFIED / READY FOR INDEPENDENT B6 ACCEPTANCE"
 DISPOSITION_BLOCKED: Final[str] = "EBH-7 — B6-F10 BLOCKED / EXACT MISSING OBLIGATIONS"
+_C1_CLOSED_STAGE_MARK: Final[str] = "already CLOSED"
 _FALSE_PASS_RE = re.compile(r"ECAP-C[1-5][^\n]*\bPASS\b")
 
 
@@ -202,7 +203,7 @@ def _c1_family_na_reasons(family: str, inputs: F10Inputs) -> tuple[list[str], tu
         if token.rstrip("*") == "EBH-7":
             reasons.append("closing stage is EBH-7 — family coverage required")
         elif any(s in inputs.roadmap_closed_stages for s in matched):
-            reasons.append(f"closing stage {token} already CLOSED — evidence required, N/A invalid")
+            reasons.append(f"closing stage {token} {_C1_CLOSED_STAGE_MARK} — evidence required, N/A invalid")
         elif not matched or ebh7_index is None:
             reasons.append(f"closing stage {token} not in roadmap stage table")
         elif any(inputs.roadmap_stage_order[s] <= ebh7_index for s in matched):
@@ -283,6 +284,19 @@ def evaluate_c1(inputs: F10Inputs, sink: list[ExecutionAttestation]) -> list[Qua
             results.append(_evaluate(ob, binding, inputs, sink, extra))
             continue
         reasons, stages = _c1_family_na_reasons(family, inputs)
+        closed = [r for r in reasons if _C1_CLOSED_STAGE_MARK in r]
+        if closed and len(closed) == len(reasons):
+            # Every closing-stage problem is "already CLOSED": N/A is invalid, the family needs executable evidence.
+            nodes = inputs.c1_closed_stage_family_evidence.get(family, ())
+            closed_binding = EvidenceBinding(
+                ob.obligation_id,
+                owner=f"ECAP §3 FRZ-{family} closing stage(s): {', '.join(stages)}",
+                classification="closed-stage family (current-HEAD executable evidence)",
+                form=EvidenceForm.EXECUTED,
+                evidence_nodes=nodes,
+            )
+            results.append(_evaluate(ob, closed_binding, inputs, sink, [] if nodes else closed))
+            continue
         binding = EvidenceBinding(
             ob.obligation_id,
             owner=f"ECAP §3 FRZ-{family} closing stage(s): {', '.join(stages) or '—'}",

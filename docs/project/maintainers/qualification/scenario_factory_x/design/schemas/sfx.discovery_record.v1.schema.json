@@ -1,0 +1,267 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "sfx.discovery_record.v1",
+  "title": "DiscoveryRecord",
+  "description": "SFX-CON-02. Record of the discovery interview that turns a problem statement into specification inputs. LLM turns are recorded for replay (determinism scope: LLM replay). Envelope: canonical_digest = sha256(JCS(model_dump without canonical_digest)); see SFX_CANONICALIZATION.md. Persisted as a CW WorkArtifactVersion (ADR-SFX-002 §D5). Status: PROPOSED design draft (T-IGX-037-C); not code.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version",
+    "tenant_id",
+    "workspace_id",
+    "work_item_id",
+    "scenario_id",
+    "artifact_id",
+    "version",
+    "canonical_digest",
+    "created_at",
+    "created_by",
+    "problem_statement_ref",
+    "turns",
+    "inferred_facts",
+    "open_questions",
+    "completeness_bp",
+    "turn_recording_ref"
+  ],
+  "properties": {
+    "schema_version": {
+      "const": "sfx.discovery_record.v1"
+    },
+    "tenant_id": {
+      "$ref": "#/$defs/id"
+    },
+    "workspace_id": {
+      "$ref": "#/$defs/id"
+    },
+    "work_item_id": {
+      "$ref": "#/$defs/id"
+    },
+    "scenario_id": {
+      "$ref": "#/$defs/id"
+    },
+    "artifact_id": {
+      "$ref": "#/$defs/id"
+    },
+    "version": {
+      "type": "integer",
+      "maximum": 9007199254740991,
+      "minimum": 1,
+      "description": "SFX logical version; one CW WorkArtifactVersion per value."
+    },
+    "canonical_digest": {
+      "$ref": "#/$defs/digest"
+    },
+    "created_at": {
+      "$ref": "#/$defs/timestamp"
+    },
+    "created_by": {
+      "$ref": "#/$defs/principal_ref"
+    },
+    "problem_statement_ref": {
+      "$ref": "#/$defs/artifact_version_ref"
+    },
+    "turns": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "turn_index",
+          "question_id",
+          "question_text",
+          "answer_text_untrusted",
+          "answered_by",
+          "answer_kind"
+        ],
+        "properties": {
+          "turn_index": {
+            "type": "integer",
+            "maximum": 9007199254740991,
+            "minimum": 0
+          },
+          "question_id": {
+            "$ref": "#/$defs/id"
+          },
+          "question_text": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 4000
+          },
+          "answer_text_untrusted": {
+            "anyOf": [
+              {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 20000
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "answered_by": {
+            "anyOf": [
+              {
+                "$ref": "#/$defs/principal_ref"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "answer_kind": {
+            "enum": [
+              "ANSWERED",
+              "SKIPPED",
+              "INFERRED_CONFIRMED",
+              "INFERRED_UNCONFIRMED"
+            ]
+          }
+        }
+      },
+      "description": "Ordered by turn_index (ordered array)."
+    },
+    "inferred_facts": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "fact_id",
+          "statement",
+          "source",
+          "confidence_bp"
+        ],
+        "properties": {
+          "fact_id": {
+            "$ref": "#/$defs/id"
+          },
+          "statement": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 2000
+          },
+          "source": {
+            "enum": [
+              "ANSWERED",
+              "INFERRED",
+              "DOCUMENT"
+            ]
+          },
+          "confidence_bp": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 10000,
+            "description": "Basis points; floats are not allowed (CF-4)."
+          }
+        }
+      },
+      "description": "Set semantics; sorted by fact_id before canonicalization."
+    },
+    "open_questions": {
+      "type": "array",
+      "items": {
+        "type": "string",
+        "minLength": 1,
+        "maxLength": 2000
+      }
+    },
+    "completeness_bp": {
+      "type": "integer",
+      "minimum": 0,
+      "maximum": 10000
+    },
+    "turn_recording_ref": {
+      "anyOf": [
+        {
+          "$ref": "#/$defs/id"
+        },
+        {
+          "type": "null"
+        }
+      ]
+    }
+  },
+  "$defs": {
+    "id": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 256,
+      "pattern": "^[A-Za-z0-9][A-Za-z0-9._:/-]*$",
+      "description": "Opaque identifier. Never a secret and never a free-text value."
+    },
+    "digest": {
+      "type": "string",
+      "pattern": "^sha256:[0-9a-f]{64}$",
+      "description": "Platform content digest convention sha256:<64 lowercase hex> (intergrax/contracts/validation.py:13)."
+    },
+    "timestamp": {
+      "type": "string",
+      "pattern": "^[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}:[0-9]{2}:[0-9]{2}\\.[0-9]{6}Z$",
+      "description": "RFC 3339 UTC timestamp with exactly six fractional digits and a Z suffix (SFX_CANONICALIZATION.md, rule CF-5)."
+    },
+    "slug": {
+      "type": "string",
+      "pattern": "^[a-z][a-z0-9_]*$",
+      "maxLength": 64,
+      "description": "Same pattern as SCENARIO_SLUG_PATTERN (scripts/proof/create_scenario_proof.py:19)."
+    },
+    "principal_ref": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "principal_id",
+        "actor_kind"
+      ],
+      "properties": {
+        "principal_id": {
+          "$ref": "#/$defs/id"
+        },
+        "actor_kind": {
+          "enum": [
+            "HUMAN",
+            "AGENT",
+            "SYSTEM"
+          ],
+          "description": "Kind of actor. G-2 counts only HUMAN actors."
+        }
+      },
+      "description": "Harness principal reference."
+    },
+    "artifact_version_ref": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "schema_id",
+        "artifact_id",
+        "version",
+        "canonical_digest"
+      ],
+      "properties": {
+        "schema_id": {
+          "type": "string",
+          "pattern": "^sfx\\.[a-z_]+\\.v[0-9]+$"
+        },
+        "artifact_id": {
+          "$ref": "#/$defs/id"
+        },
+        "version": {
+          "type": "integer",
+          "maximum": 9007199254740991,
+          "minimum": 1
+        },
+        "canonical_digest": {
+          "$ref": "#/$defs/digest"
+        }
+      },
+      "description": "Immutable reference to one SFX artifact version (CW WorkArtifactVersion)."
+    },
+    "secret_ref": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 512,
+      "pattern": "^[a-z][a-z0-9+.-]*:[^\\s]+$",
+      "description": "Reference resolved by the credential broker at run time. Never a secret value."
+    }
+  }
+}

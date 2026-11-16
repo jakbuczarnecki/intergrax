@@ -19,15 +19,26 @@ def test_adv02_duplicate_check_id_rejected() -> None:
 
 
 def test_adv08_freeze_without_baseline_blocked(tmp_path) -> None:
+    import shutil
+    import uuid
     from pathlib import Path
 
     from intergrax.platform.enterprise_audit.contracts import AuditMode, EnterpriseAuditExitCode
     from intergrax.platform.enterprise_audit.runner import EnterpriseAuditRunner
 
     root = Path(__file__).resolve().parents[4]
-    runner = EnterpriseAuditRunner(root, dry_run=True, require_clean_repo=False)
-    _, _, code = runner.run(AuditMode.FREEZE, output_dir=tmp_path / "adv8")
-    assert code is EnterpriseAuditExitCode.VIOLATION
+    qual = root / "tests" / "qualification" / "ent_audit_x" / ".pytest-baseline" / uuid.uuid4().hex
+    qual.mkdir(parents=True, exist_ok=True)
+    try:
+        runner = EnterpriseAuditRunner(root, dry_run=True, require_clean_repo=False)
+        _, _, code = runner.run(
+            AuditMode.FREEZE,
+            output_dir=tmp_path / "adv8",
+            baseline_dir=qual,
+        )
+        assert code is EnterpriseAuditExitCode.VIOLATION
+    finally:
+        shutil.rmtree(qual, ignore_errors=True)
 
 
 def test_adv12_tampered_evidence_fails(tmp_path) -> None:

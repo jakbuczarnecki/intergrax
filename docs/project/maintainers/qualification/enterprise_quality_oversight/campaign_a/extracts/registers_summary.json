@@ -1,0 +1,198 @@
+{
+  "ARCH_DEBT": {
+    "path": "docs/project/technical/guides/ARCHITECTURE_DEBT_REGISTER.md",
+    "exists": true,
+    "lines": 17,
+    "tables": 1,
+    "rows": 10
+  },
+  "AF_CLOSED_WORLD_GAP": {
+    "path": "docs/project/maintainers/qualification/ARCH_FREEZE_CLOSED_WORLD_GAP_REGISTER.md",
+    "exists": true,
+    "lines": 25,
+    "tables": 1,
+    "rows": 18
+  },
+  "AF_B2_DEBT_RECON": {
+    "path": "docs/project/maintainers/qualification/ARCH_FREEZE_B2_DEBT_REGISTER_RECONCILIATION.md",
+    "exists": true,
+    "lines": 31,
+    "tables": 2,
+    "rows": 9
+  },
+  "AF_OD": {
+    "path": "docs/project/maintainers/qualification/ARCH_FREEZE_OPERATOR_DECISION_REGISTER.md",
+    "exists": true,
+    "lines": 13,
+    "tables": 1,
+    "rows": 0
+  },
+  "EBH7_GAP": {
+    "path": "docs/project/maintainers/qualification/EBH_7_GAP_REGISTER.md",
+    "exists": true,
+    "lines": 17,
+    "tables": 1,
+    "rows": 12
+  },
+  "EBH7_B6_BLOCKER": {
+    "path": "docs/project/maintainers/qualification/EBH_7_B6_BLOCKER_REGISTER.md",
+    "exists": true,
+    "lines": 19,
+    "tables": 2,
+    "rows": 5
+  },
+  "ANNEX_F_GAP": {
+    "path": "docs/project/maintainers/qualification/ent_audit_x/ANNEX_F_GAP_REGISTER.md",
+    "exists": true,
+    "lines": 67,
+    "tables": 4,
+    "rows": 36
+  },
+  "DIAG_GAP_LEDGER": {
+    "path": "docs/project/maintainers/qualification/DIAGNOSTIC_GAP_LEDGER.md",
+    "exists": true,
+    "lines": 197,
+    "tables": 7,
+    "rows": 109
+  },
+  "DUPX_FINDINGS": {
+    "path": "docs/project/maintainers/qualification/DUP_X_FINDINGS_REGISTER.md",
+    "exists": true,
+    "lines": 58,
+    "tables": 5,
+    "rows": 31
+  },
+  "EBH6_HARDCODING": {
+    "path": "docs/project/maintainers/qualification/EBH_6_CORE_HARDCODING_FINDINGS_REGISTER.md",
+    "exists": true,
+    "lines": 59,
+    "tables": 5,
+    "rows": 21
+  },
+  "RRX_HARDCODING": {
+    "path": "docs/project/maintainers/qualification/ROADMAP_REPLAY_X_CORE_HARDCODING_FINDINGS_REGISTER.md",
+    "exists": true,
+    "lines": 18,
+    "tables": 2,
+    "rows": 6
+  },
+  "EBH6_COND_REMEDIATION": {
+    "path": "docs/project/maintainers/qualification/EBH_6_CONDITIONAL_REMEDIATION_REGISTER.md",
+    "exists": true,
+    "lines": 17,
+    "tables": 2,
+    "rows": 7
+  },
+  "EBH7_CROSS_DOMAIN_RISK": {
+    "path": "docs/project/maintainers/qualification/EBH_7_CROSS_DOMAIN_RISK_MATRIX.md",
+    "exists": true,
+    "lines": 13,
+    "tables": 1,
+    "rows": 6
+  },
+  "CERT_DELEGATED_DECISIONS": {
+    "path": "docs/project/maintainers/qualification/CERT_CAMPAIGN_DELEGATED_DECISIONS_2026-11-07.md",
+    "exists": true,
+    "lines": 426,
+    "tables": 4,
+    "rows": 23
+  },
+  "EBH7_SKIP_DISPOSITION": {
+    "path": "docs/project/maintainers/qualification/ebh_7_p03_independent_replay/EBH_7_SKIP_DISPOSITION_REGISTER.md",
+    "exists": true,
+    "lines": 172,
+    "tables": 1,
+    "rows": 9
+  },
+  "PDC_GAP": {
+    "path": "docs/project/maintainers/qualification/platform_domain_completeness/PDC_GAP_REGISTER.md",
+    "exists": true,
+    "lines": 192,
+    "tables": 14,
+    "rows": 120
+  },
+  "MCP_GAP": {
+    "path": "docs/project/maintainers/qualification/mcp_server_x/MCP_SERVER_X_GAP_REGISTER.md",
+    "exists": true,
+    "lines": 69,
+    "tables": 5,
+    "rows": 24
+  },
+  "HIST_RESIDUAL_FINDINGS": {
+    "path": "docs/project/maintainers/qualification/historical_certification_campaign/HISTORICAL_RESIDUAL_FINDINGS_REGISTER.md",
+    "exists": true,
+    "lines": 22,
+    "tables": 2,
+    "rows": 6
+  },
+  "HIST_PATHB_DEFERRED": {
+    "path": "docs/project/maintainers/qualification/historical_certification_campaign/HISTORICAL_PATH_B_DEFERRED_OBLIGATIONS.md",
+    "exists": true,
+    "lines": 39,
+    "tables": 2,
+    "rows": 19
+  },
+  "HIST_PATHB_RESIDUAL": {
+    "path": "docs/project/maintainers/qualification/historical_certification_campaign/HISTORICAL_FINAL_PATH_B_RESIDUAL_REGISTER.md",
+    "exists": true,
+    "lines": 23,
+    "tables": 2,
+    "rows": 5
+  },
+  "HIST_REMAINING_BLOCKERS": {
+    "path": "docs/project/maintainers/qualification/historical_certification_campaign/HISTORICAL_REMAINING_EXACT_BLOCKERS.md",
+    "exists": true,
+    "lines": 37,
+    "tables": 1,
+    "rows": 19
+  },
+  "HIST_INDEPENDENT_AUDIT": {
+    "path": "docs/project/maintainers/qualification/historical_certification_campaign/HISTORICAL_INDEPENDENT_AUDIT_REGISTER.md",
+    "exists": true,
+    "lines": 37,
+    "tables": 2,
+    "rows": 13
+  },
+  "HIST_STAGE_SHA": {
+    "path": "docs/project/maintainers/qualification/historical_certification_campaign/HISTORICAL_STAGE_SHA_AND_EVIDENCE_REGISTRY.md",
+    "exists": true,
+    "lines": 78,
+    "tables": 3,
+    "rows": 54
+  },
+  "OD_DUP_X": {
+    "path": "docs/project/maintainers/qualification/DUP_X_OPERATOR_DECISION_REGISTER.md",
+    "exists": true,
+    "lines": 40,
+    "tables": 3,
+    "rows": 14
+  },
+  "OD_EBH_5": {
+    "path": "docs/project/maintainers/qualification/EBH_5_OPERATOR_DECISION_REGISTER.md",
+    "exists": true,
+    "lines": 35,
+    "tables": 1,
+    "rows": 11
+  },
+  "OD_EBH_6": {
+    "path": "docs/project/maintainers/qualification/EBH_6_OPERATOR_DECISION_REGISTER.md",
+    "exists": true,
+    "lines": 75,
+    "tables": 6,
+    "rows": 33
+  },
+  "OD_EBH_7": {
+    "path": "docs/project/maintainers/qualification/EBH_7_OPERATOR_DECISION_REGISTER.md",
+    "exists": true,
+    "lines": 15,
+    "tables": 1,
+    "rows": 8
+  },
+  "OD_ROADMAP_REPLAY_X": {
+    "path": "docs/project/maintainers/qualification/ROADMAP_REPLAY_X_OPERATOR_DECISION_REGISTER.md",
+    "exists": true,
+    "lines": 26,
+    "tables": 2,
+    "rows": 7
+  }
+}

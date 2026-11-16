@@ -1,0 +1,74 @@
+# re-pin 2 independent pre-checks (activation certifier local_8974948e-d8d3-45e3-96ca-fb61dfd5f249)
+# HEAD: e76785ea26ef1729d392892d97941b0863f89022
+# UTC: 2026-11-14T17:55:25Z
+HEAD e76785ea26ef1729d392892d97941b0863f89022
+origin/mcp-rc e76785ea26ef1729d392892d97941b0863f89022
+[OK ] ancestor 2ae101411 -> d02c39950 
+[OK ] ancestor d02c39950 -> a1b3053b4 
+[OK ] ancestor a1b3053b4 -> e76785ea2 
+[OK ] ancestor dc1e66fa1 -> e76785ea2 
+[OK ] ancestor 2d3eceb6c -> d02c39950 
+[OK ] ancestor d02c39950 -> e76785ea2 
+[OK ] ancestor a1b3053b4 -> dc1e66fa1 
+[OK ] ancestor a1b3053b4 -> fbe400f06 
+[OK ] ancestor 324d9dba3 -> d02c39950 
+[OK ] 2ae101411 resolves to itself 
+[OK ] d02c39950 resolves to itself 
+[OK ] a1b3053b4 resolves to itself 
+[OK ] dc1e66fa1 resolves to itself 
+[OK ] 2d3eceb6c resolves to itself 
+[OK ] ACT-N11 union pin..audited tree count=161
+[OK ] union pin..HEAD equals pin..audited count=161
+[OK ] union pin..evidence equals count=161
+[OK ] product diff audited..HEAD empty n=0
+[OK ] product diff audited..evidence_publication empty n=0
+[OK ] product diff evidence..HEAD empty n=0
+[OK ] 23 MCP-RC paths equal audit_scope product_paths_delta_vs_base n=23
+[OK ] 23 MCP-RC paths byte-identical to b0e19bf61 at HEAD diff=[]
+non-MCP: 138
+[OK ] non-MCP count 138 
+product paths vs previous pin 324d9dba3 (record today): 6
+applications/local_workspace_application/tests/test_run_artifact_metadata.py
+intergrax/integrations/providers/embedding_provider/ollama/manifest.py
+intergrax/integrations/providers/embedding_provider/ollama/register.py
+intergrax/integrations/providers/embedding_provider/openai/register.py
+intergrax/platform/enterprise_audit/data/changed_since_impact_map.v1.json
+intergrax/platform/enterprise_audit/impact_map.py
+[OK ] previous-pin delta is exactly the 6 paths the gate reports 
+[OK ] no MATERIAL_GOVERNANCE_PATHS change a1b3053b4..HEAD []
+[OK ] no MATERIAL_GOVERNANCE_PATHS change d02c39950..HEAD []
+INFO material governance change 2d3eceb6c ..HEAD: ['docs/project/maintainers/qualification/INTEGRAX_INTERNAL_INDEPENDENT_AGENT_CERTIFICATION_PROTOCOL.md']
+INFO material governance change 324d9dba3 ..HEAD: ['docs/project/maintainers/qualification/INTEGRAX_INTERNAL_INDEPENDENT_AGENT_CERTIFICATION_PROTOCOL.md']
+INFO material governance change 0cb5dd011 ..HEAD: ['docs/project/maintainers/qualification/INTEGRAX_INTERNAL_INDEPENDENT_AGENT_CERTIFICATION_PROTOCOL.md']
+INFO last protocol-changing commit: 7b1c0a4b7 is ancestor of audit_execution_sha: True
+[OK ] protocol change precedes audit_execution_sha 
+non-docs diff audited..HEAD: 58 files total
+[]
+[OK ] signed decision file unchanged (OD-MCP-RC-05) 0e0aed5816ff76c631d8aefb897e83399d26aa6d9692f3b0c2fe6b1fd8d25147
+[OK ] decision file unchanged since signing commit afdf27e62 
+[OK ] exactly one signature line ['Approved IIAC policy activation IIAC-2026-11-05.1: operator @ 2026-11-14T08:21:13+01:00']
+[OK ] signature regex fullmatch 2026-11-14T08:21:13+01:00
+line bytes: b'Approved IIAC policy activation IIAC-2026-11-05.1: operator @ 2026-11-14T08:21:13+01:00'
+[OK ] no trailing space/CR on the line in the file bytes 
+[OK ] gate _operator_errors empty []
+[OK ] ACT-N18 closure_conflicts empty (record+text) []
+[OK ] forbidden string absent: '________________' 
+[OK ] forbidden string absent: 'NOT SIGNED' 
+[OK ] forbidden string absent: 'Decision status: PENDING' 
+[OK ] file name rule 
+[OK ] 'Approved:' line absent (repo-forbidden for me) 
+[OK ] audit_report_path worktree sha256 == expected c405c65faf53243a0511b0b9584a9f3abda4db08c09ee9b9266c86fe9f6b7a4e
+[OK ] audit_report_path bytes == bytes at evidence_publication_sha 
+[OK ] audit_report_path under iiac_evidence 
+[OK ] audit_scope_path worktree sha256 == expected e06ce433ac1c260390885e19cc60b0687be9d8908d78bd38ae4fb5f1102fe56f
+[OK ] audit_scope_path bytes == bytes at evidence_publication_sha 
+[OK ] audit_scope_path under iiac_evidence 
+[OK ] test_matrix_path worktree sha256 == expected d5028f194bb7917d07e8df5264075952dcf8757503975042988caba6e89a240b
+[OK ] test_matrix_path bytes == bytes at evidence_publication_sha 
+[OK ] test_matrix_path under iiac_evidence 
+[OK ] findings_path worktree sha256 == expected df3648f926dad3199ff40c7c83c7fae4ed7a26bd1c67701a355bc7130073f831
+[OK ] findings_path bytes == bytes at evidence_publication_sha 
+[OK ] findings_path under iiac_evidence 
+[OK ] ACT-N15 findings register passes [] n=4
+ALL_PRECHECKS_OK = True
+exit=0

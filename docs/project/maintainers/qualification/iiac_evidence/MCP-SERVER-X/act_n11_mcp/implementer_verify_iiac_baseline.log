@@ -1,0 +1,5 @@
+ACT-N11 MCP corrective batch @ 2026-11-11
+Command: .venv/Scripts/python.exe -m scripts.governance.verify_iiac_policy_activation --require-in-force
+Repo: mcp-server-x-p4 @ 06be8bfd4ee56539efe2fe2b4e73eb563cef16f4
+Result: FAIL exit 1 — 16× ACT-N11 (MCP P2–P4 paths vs audit_execution_sha 11ac8ad85f62a6925d25ea840c92d5c6a936cfe4)
+Note: origin/development @ 7172f294f yields 7× ACT-N11 (P2/P3 only). Expected until MCP IIIC re-activation.

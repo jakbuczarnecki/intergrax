@@ -19,14 +19,15 @@ def run_doctor() -> int:
     if readiness.returncode != 0:
         exit_code = readiness.returncode
 
-    for script in (
-        "validate_policy_registry.py",
-        "verify_agent_control_plane.py",
-        "verify_control_plane_consistency.py",
-        "verify_agent_skills.py",
+    for script, *args in (
+        ("validate_policy_registry.py",),
+        ("verify_agent_control_plane.py",),
+        ("verify_control_plane_consistency.py",),
+        ("verify_agent_skills.py",),
+        ("sync_agent_env.py", "--check"),
     ):
         completed = subprocess.run(
-            [sys.executable, str(_REPO / "scripts/governance" / script)],
+            [sys.executable, str(_REPO / "scripts/governance" / script), *args],
             cwd=_REPO,
             check=False,
         )

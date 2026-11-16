@@ -24,14 +24,14 @@ Canonical closed sets: 26 FRZ families (freeze checklist IDs), Tier-0..3 (`AGENT
 ECAP-C5 (this report) is evaluated against the block below and the F10 matrix by the read-only gate; its computed verdict is published only in the F10 matrix.
 
 <!-- F10-COMPUTED:BEGIN (generated — scripts/qualification/render_ebh7_f10_normative_matrix.py) -->
-**Computed from closed normative sets @ TEST_EXECUTION_SHA `dc18e36d971c93c8f631fbc86f73149d1b81b4d7`** (C5 verified by read-only gate; no hand-assigned verdicts).
+**Computed from closed normative sets @ TEST_EXECUTION_SHA `d39a520dda965981a38f8e1a90ec5135ea5d508e`** (C5 verified by read-only gate; no hand-assigned verdicts).
 
 | ECAP gate | Computed verdict | Obligations | PASS | N/A WITH EVIDENCE | FAIL |
 | --- | --- | --- | --- | --- | --- |
-| ECAP-C1 | PASS | 32 | 28 | 4 | 0 |
+| ECAP-C1 | PASS | 32 | 30 | 2 | 0 |
 | ECAP-C2 | PASS | 43 | 43 | 0 | 0 |
 | ECAP-C3 | PASS | 105 | 99 | 6 | 0 |
-| ECAP-C4 | PASS | 9 | 9 | 0 | 0 |
+| ECAP-C4 | PASS | 10 | 10 | 0 | 0 |
 
 **C1–C4 computed disposition:** all obligations PASS or N/A WITH EVIDENCE
 <!-- F10-COMPUTED:END -->

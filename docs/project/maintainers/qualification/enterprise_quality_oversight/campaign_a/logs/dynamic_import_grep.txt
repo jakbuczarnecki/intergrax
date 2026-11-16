@@ -1,0 +1,2 @@
+git grep -nE 'import_module\(|__import__\(|importlib\.' -- intergrax (filtered for applications|agents) at BASELINE_SHA
+result: intergrax/applications/_shared/agent_resolution.py:42,99; migration_wiring.py:337; intergrax/agents/authoring/__init__.py:38; intergrax/agents/readiness/scoreboard.py:57; mcp_import_guard.py:60. product_manifest_registry.py: static imports only (36 lines).

@@ -1,0 +1,458 @@
+{
+ "schema": "historical-campaign-master-closure.v1",
+ "generated_utc": "2026-11-08T11:20:52Z",
+ "overall_result": "PARTIAL / EXACT BLOCKERS",
+ "not": "HISTORICAL_CAMPAIGN_CLOSED_VERIFIED",
+ "campaign_start_sha": "ba07ebaa34d04633bd60510f68c18346b1ef160d",
+ "origin_development_at_generation": "41908e3fb85d0ce86377b0f8ee0f3f84097631be",
+ "counters": {
+  "total_historical_requirements": 85,
+  "verified_independent_closures": 0,
+  "valid_scope_limited_acceptances": 0,
+  "open_architecture_blockers": 52,
+  "path_b_primary_deferrals": 2,
+  "rows_on_checklist_path_b_list_L66": 5,
+  "rows_with_worker_identified_live_dependency_or_path_b": 19,
+  "outstanding_audit_requirements": 29,
+  "outstanding_operator_decisions": 7,
+  "findings_requiring_implementation": 4,
+  "ssot_discrepancies": 13,
+  "authority_required_rows": 2
+ },
+ "findings": {
+  "total": 62,
+  "by_class": {
+   "SSOT_DRIFT": 13,
+   "QUALIFICATION_GAP": 12,
+   "ACCEPTED_LIMITATION": 6,
+   "EVIDENCE_GAP": 13,
+   "AUTHORITY_GAP": 5,
+   "UNVERIFIED": 3,
+   "IMPLEMENTATION_GAP": 4,
+   "INDEPENDENT_AUDIT_GAP": 3,
+   "NO_REMAINING_OBLIGATION": 1,
+   "PATH_B_LIVE_DEFERRED": 1,
+   "VALID_SCOPED_PASS_CANDIDATE": 1
+  },
+  "by_severity": {
+   "HIGH": 15,
+   "MEDIUM": 20,
+   "LOW": 12,
+   "MAJOR": 7,
+   "MINOR": 5,
+   "BLOCKER": 1,
+   "INFO": 2
+  },
+  "by_workstream": {
+   "HIST-01": 16,
+   "HIST-02": 14,
+   "HIST-03": 16,
+   "HIST-04": 16
+  }
+ },
+ "dispositions": {
+  "by_classification": {
+   "QUALIFICATION_GAP": 34,
+   "EVIDENCE_GAP": 20,
+   "VALID_SCOPED_PASS_CANDIDATE": 19,
+   "AUTHORITY_GAP": 1,
+   "IMPLEMENTATION_GAP": 1,
+   "SSOT_DRIFT": 5,
+   "INDEPENDENT_AUDIT_GAP": 3,
+   "PATH_B_LIVE_DEFERRED": 2
+  },
+  "by_dashboard_state": {
+   "QUALIFICATION_REQUIRED": 51,
+   "AUDIT_REQUIRED": 29,
+   "AUTHORITY_REQUIRED": 2,
+   "IMPLEMENTATION_REQUIRED": 1,
+   "PATH_B_DEFERRED": 2
+  }
+ },
+ "operator_decisions": {
+  "answered": [
+   {
+    "id": "OD-HIST01-A",
+    "answer": "yes: one bounded QUAL-X Dimension A replay in a fresh independent session on a pinned current SHA; MASTER sequencing: run on the post-integration candidate SHA so the evidence is for the final SHA"
+   },
+   {
+    "id": "OD-HIST02-B",
+    "answer": "option 1: move/alias RuntimeErrorCode to contract layer, gate unweakened, independent audit; bundled with DR-7"
+   },
+   {
+    "id": "OD-INT-01",
+    "answer": "option 1: mechanical integration of 0adb73380/10089121e/29c387879 under NEW unique ticket IDs + fresh independent auditor (Q-07) incl. gate-weakening review; test-only batch (F-006,F-016) NOT included"
+   },
+   {
+    "id": "OD-PUB-01",
+    "answer": "option A: publish doc-patch set (i) after independent non-author review; signed unpublished records (ii) only after DR-1/DR-2 (unanswered => held)"
+   },
+   {
+    "id": "OD-ACT-N11",
+    "answer": "B: tests-only C1/C2 now (030-A); product-path batch (030-B F-013, 030-C = C3+C4) HELD and batched with next IIAC re-audit/re-activation; C4 (98b4bf514) included with C3"
+   }
+  ],
+  "open": [
+   {
+    "id": "OD-HIST04-A",
+    "topic": "Ratify or re-sign the EVOL-X delegated plain-form signature lines (P3, PRE-P3, B6-ACCEPT, OD-EVOL-12, OD-EVOLX-08); campaign delegations exclude EVOL-X"
+   },
+   {
+    "id": "OD-HIST04-B",
+    "topic": "Resolve IIAC Amendment 01 status contradiction (header IN FORCE vs SS5.3/SS6 PROPOSED) and S-1..S-3 / OQ-1..4; mechanical enforcement needs T-IGX-021-B/C + new [truncated; full text in the source dossier]"
+   },
+   {
+    "id": "OD-HIST04-C",
+    "topic": "TOOL-LIFE-X roadmap L482 label decision (B1 option A/B)"
+   },
+   {
+    "id": "OD-HIST02-A",
+    "topic": "FRZ-BND-03: a Tier-0 module (intergrax/) imports a Tier-3 demo fixture (CLI demo composition), treated as 'ratified tier exception' but the only cited authority [truncated; full text in the source dossier]"
+   },
+   {
+    "id": "OD-HIST03-A",
+    "topic": "HIST-03 consolidated rulings: P-03 (SEC-06 split note: plugin-trust architecture part vs provider-live part; not on checklist L66 Path B list), P-04 (PRD-04 sco [truncated; full text in the source dossier]"
+   },
+   {
+    "id": "OD-HIST03-B",
+    "topic": "HIST03-F-015 (IMPLEMENTATION_GAP, HIGH; PRD/SEC/REL rows relying on PROD-Q P2-C HTTP admission): tests/qualification/prod_q/test_prod_q_r1_r7_q_p2_c_http_execut [truncated; full text in the source dossier]"
+   },
+   {
+    "id": "OD-HIST01-B",
+    "topic": "Scope of promotion for FRZ-REG rows (H01-F013): (a) only on ENT-AUDIT-X Pop. E rollup, (b) Pop. A-D at pinned current SHA with stated Pop. E residual, (c) all O [truncated; full text in the source dossier]"
+   }
+  ]
+ },
+ "stages": [
+  {
+   "stage_or_entry": "TRACE-X-P5-R2-P3-R1-R1-R1-R1",
+   "label_at_baseline": "SUPERSEDED - LINEAGE ONLY (OD-SSOT-D1, delegated; commit e7eabef81)",
+   "hist04_classification": "NO_REMAINING_OBLIGATION",
+   "roadmap_line": "L392",
+   "publication_state": "PUBLISHED"
+  },
+  {
+   "stage_or_entry": "TRACE-X-P5-R2-P3-R1-R1-R1-R1-R1",
+   "label_at_baseline": "SUPERSEDED - LINEAGE ONLY (OD-SSOT-D1, delegated; commit e7eabef81)",
+   "hist04_classification": "NO_REMAINING_OBLIGATION",
+   "roadmap_line": "L393",
+   "publication_state": "PUBLISHED"
+  },
+  {
+   "stage_or_entry": "TRACE-X-P5-R2-P3-R1-R1-R1-R1-R1-R1",
+   "label_at_baseline": "SUPERSEDED - LINEAGE ONLY (OD-SSOT-D1, delegated; commit e7eabef81)",
+   "hist04_classification": "NO_REMAINING_OBLIGATION",
+   "roadmap_line": "L394",
+   "publication_state": "PUBLISHED"
+  },
+  {
+   "stage_or_entry": "TRACE-X-P5-R2-P4-R1",
+   "label_at_baseline": "SUPERSEDED - LINEAGE ONLY (OD-SSOT-D1, delegated; commit e7eabef81)",
+   "hist04_classification": "NO_REMAINING_OBLIGATION",
+   "roadmap_line": "L399",
+   "publication_state": "PUBLISHED"
+  },
+  {
+   "stage_or_entry": "TRACE-X-P5-R2-P4-R1-R1",
+   "label_at_baseline": "SUPERSEDED - LINEAGE ONLY (OD-SSOT-D1, delegated; commit e7eabef81)",
+   "hist04_classification": "NO_REMAINING_OBLIGATION",
+   "roadmap_line": "L400",
+   "publication_state": "PUBLISHED"
+  },
+  {
+   "stage_or_entry": "TRACE-X-P5-R2-P4-R1-R1-R1",
+   "label_at_baseline": "SUPERSEDED - LINEAGE ONLY (OD-SSOT-D1, delegated; commit e7eabef81)",
+   "hist04_classification": "NO_REMAINING_OBLIGATION",
+   "roadmap_line": "L401",
+   "publication_state": "PUBLISHED"
+  },
+  {
+   "stage_or_entry": "TRACE-X-P5-R2-P4-R1-R1-R1-R1",
+   "label_at_baseline": "SUPERSEDED - LINEAGE ONLY (OD-SSOT-D1, delegated; commit e7eabef81)",
+   "hist04_classification": "NO_REMAINING_OBLIGATION",
+   "roadmap_line": "L402",
+   "publication_state": "PUBLISHED"
+  },
+  {
+   "stage_or_entry": "TRACE-X-P5-R2-P4-R1-R1-R1-R1-R1",
+   "label_at_baseline": "SUPERSEDED - LINEAGE ONLY (OD-SSOT-D1, delegated; commit e7eabef81)",
+   "hist04_classification": "NO_REMAINING_OBLIGATION",
+   "roadmap_line": "L403",
+   "publication_state": "PUBLISHED"
+  },
+  {
+   "stage_or_entry": "TRACE-X-P5-R2-P3-R1-R1-R1-R1-R1-R1-R1",
+   "label_at_baseline": "[ ] READY FOR AUDIT",
+   "hist04_classification": "VALID_SCOPED_PASS_CANDIDATE",
+   "roadmap_line": "L395",
+   "publication_state": "PUBLICATION_PENDING (SIGN-6, unpublished)"
+  },
+  {
+   "stage_or_entry": "TRACE-X-P5-R2-P4-R1-R1-R1-R1-R1-R1",
+   "label_at_baseline": "[ ] READY FOR AUDIT",
+   "hist04_classification": "VALID_SCOPED_PASS_CANDIDATE",
+   "roadmap_line": "L404",
+   "publication_state": "PUBLICATION_PENDING (SIGN-6, unpublished)"
+  },
+  {
+   "stage_or_entry": "PROD-Q-P0",
+   "label_at_baseline": "CLOSED - OPERATOR ACCEPTED / SCOPED PROD-Q-P0",
+   "hist04_classification": "INDEPENDENT_AUDIT_GAP",
+   "roadmap_line": "L466",
+   "publication_state": "PUBLISHED"
+  },
+  {
+   "stage_or_entry": "PROD-Q-P0-R1 .. R1^4",
+   "label_at_baseline": "[ ] REJECTED / superseded (checkbox unchecked)",
+   "hist04_classification": "SSOT_DRIFT",
+   "roadmap_line": "L467-L470",
+   "publication_state": "DECISION_UNPUBLISHED"
+  },
+  {
+   "stage_or_entry": "PROD-Q-P0-R1^8",
+   "label_at_baseline": "CLOSED - OPERATOR ACCEPTED (scoped, as implementation evidence of PROD-Q-P0 B6 @ 8b3db676)",
+   "hist04_classification": "INDEPENDENT_AUDIT_GAP",
+   "roadmap_line": "L474",
+   "publication_state": "PUBLISHED (ba07ebaa3)"
+  },
+  {
+   "stage_or_entry": "PROD-Q-P2 / P3 / PROD-Q",
+   "label_at_baseline": "CLOSED BY OPERATOR - SCOPED (live qualification NOT QUALIFIED)",
+   "hist04_classification": "PATH_B_LIVE_DEFERRED",
+   "roadmap_line": "L475, L476, L478",
+   "publication_state": "PUBLISHED"
+  },
+  {
+   "stage_or_entry": "QUAL-X",
+   "label_at_baseline": "CLOSED - POPULATION A ONLY (independently accepted, delegated)",
+   "hist04_classification": "ACCEPTED_LIMITATION",
+   "roadmap_line": "L480",
+   "publication_state": "PUBLISHED (b0286f769)"
+  },
+  {
+   "stage_or_entry": "QUAL-X-P0",
+   "label_at_baseline": "INDEPENDENTLY VERIFIED - SCOPED (not a stage closure)",
+   "hist04_classification": "ACCEPTED_LIMITATION",
+   "roadmap_line": "L479",
+   "publication_state": "PUBLISHED"
+  },
+  {
+   "stage_or_entry": "SKILL-X",
+   "label_at_baseline": "CLOSED - INDEPENDENTLY ACCEPTED (conditional on DS-5)",
+   "hist04_classification": "VALID_SCOPED_PASS_CANDIDATE",
+   "roadmap_line": "L481",
+   "publication_state": "PUBLISHED (756b2d60c)"
+  },
+  {
+   "stage_or_entry": "TOOL-LIFE-X",
+   "label_at_baseline": "CLOSED - INDEPENDENTLY ACCEPTED",
+   "hist04_classification": "SSOT_DRIFT",
+   "roadmap_line": "L482",
+   "publication_state": "PUBLISHED label unchanged"
+  },
+  {
+   "stage_or_entry": "DIST-SCALE-X",
+   "label_at_baseline": "CLOSED - OPERATOR SCOPED ACCEPTANCE",
+   "hist04_classification": "INDEPENDENT_AUDIT_GAP",
+   "roadmap_line": "L483",
+   "publication_state": "PUBLISHED"
+  },
+  {
+   "stage_or_entry": "EVOL-X",
+   "label_at_baseline": "stage row: [ ] FORMAL PROTOCOL 03 B6 - PENDING_AUTHORITY (stale)",
+   "hist04_classification": "SSOT_DRIFT",
+   "roadmap_line": "L489 (stale) vs L1565/L561/ladder",
+   "publication_state": "PATCH_H4_01 proposed"
+  }
+ ],
+ "campaign_updates_per_stage": {
+  "TOOL-LIFE-X": "Conditions C-1/C-2 addressed by T-IGX-030-A (tests only), independently audited PASS_SCOPED at 683f95572; stage NOT closed (EBH-4 R1 gate red because of its recovery code; product batch HELD; label decision DR-3 open).",
+  "EVOL-X": "AUTHORITY_GAP unchanged (delegated plain-form signatures; campaign delegations exclude EVOL-X). Roadmap row L489 prose says CLOSED while its stage cell says PENDING_AUTHORITY (base inconsistency, left for the Operator, DR-1).",
+  "SKILL-X": "Acceptance conditional on DS-5 (met per HIST-04). Batch C d1040f485 introduced the PROD-Q P2-C regression (F-015, worker thesis: code defect) that the acceptance did not catch.",
+  "QUAL-X": "Population A only; global FRZ-REG-01..10 stay OPEN; replay of Dimension A on the final SHA approved (DR-10) but not yet run.",
+  "PROD-Q": "Live Dimension B remains unqualified (Path B); P2-C HTTP admission tests are red at the base (F-015)."
+ },
+ "master_queue": [
+  {
+   "id": "Q-01",
+   "item": "Integrate PATCH_H4_01 (roadmap + EVOL_X_SHA_LADDER, +3/-2) via central lane; reviewer must be non-author; git apply --check OK at ba07ebaa3 (per hist04)",
+   "state": "QUEUED_FOR_P2",
+   "risk2": "Re-fetch before integrating: open PR #399 (ENT-AUDIT-X, IIAC closure status overlay + ladder pins) may touch the same EVOL-X SHA ladder / roadmap files as PATCH_H4_01. Rebase onto then-current origin/development; never overwrite ENT-AUDIT-X work."
+  },
+  {
+   "id": "Q-02",
+   "item": "Publication of unpublished signed records SIGN-6..10, TRACE-X L395/L404 closures and byte-preserving DELEGATION_2026-11-07/08_MASTER.md copies; patch 10 must stay unapplied",
+   "state": "HELD - needs Operator awareness: they are agent-authored delegated records; publish only verbatim and only in P4"
+  },
+  {
+   "id": "Q-03",
+   "item": "Fresh independent auditor for DIST-SCALE-X per OD-ROUTE-DS4 (never run)",
+   "state": "TO_SCHEDULE"
+  },
+  {
+   "id": "Q-04",
+   "item": "HIST-01 re-audit of TOOL-LIFE-X after correctives",
+   "state": "WAITS_ON_HIST01"
+  },
+  {
+   "id": "Q-05",
+   "item": "hist04 optional adverse-case regression (one uv run pytest under heavy lock)",
+   "state": "DEFERRED - analysis is source-based; independent auditor can reproduce on an exact SHA"
+  },
+  {
+   "id": "Q-06",
+   "item": "Integrate unpublished TLX correctives 0adb73380 (T-IGX-023-A, tests), 10089121e (T-IGX-023-B, tests), 29c387879 (T-IGX-024-A, PRODUCT CODE intergrax/runtime/nexus/tools/invoker.py +5/-1) onto a candidate branch from the then-current origin/development under UNIQUE ticket IDs (T-IGX-023-A already exists on baseline as a different ticket). Mechanical integration only, no new logic",
+   "state": "QUEUED - start after HIST-02/03 replays release the heavy lock",
+   "risk": "0adb73380 rewrites stale test assertions - auditor must prove it does not weaken the gate",
+   "risk2": "ID collisions: T-IGX-023-A exists on baseline as a different ticket; T-IGX-024-A is now used by OPEN PR #399 (ENT-AUDIT-X session, branch t-igx-024-a-docs, created 2026-11-08T07:36Z) - commit 29c387879 also carries T-IGX-024-A. Use unique new IDs for all three.",
+   "bundle": "Candidate scope may also include the F-013 fix IF Operator approves OD-HIST02-B; otherwise Q-06 stays integration-only."
+  },
+  {
+   "id": "Q-07",
+   "item": "FRESH independent auditor session: TOOL-LIFE-X re-audit per OD-ROUTE-DS3 on the Q-06 implementation SHA (read-only audited surface, exact-SHA, negative probes, includes C-1/C-2 red-at-HEAD proof before/after and a gate-weakening review) ADDITIONAL SCOPE: EBH-4 R1 nexus encapsulation gate is RED at ba07ebaa3 because of tool_operation_recovery.py (TOOL-LIFE-X). Auditor must state whether the Q-06 candidate fixes, ignores or worsens it.",
+   "state": "AFTER Q-06"
+  },
+  {
+   "id": "Q-08",
+   "item": "Candidate doc patches P-H01-1..4 (HIST01_ACCEPTANCE_HANDOFF.md section C); HIST-03 candidate patches (HIST03_CANDIDATE_PATCH_PROPOSALS.md); HIST-02 diffs F-003/F-008",
+   "state": "QUEUED_FOR_P2"
+  },
+  {
+   "id": "Q-09",
+   "item": "Optional: separate implementer/auditor for QUAL-X chaos-script defect (hist01 F-02 / N7)",
+   "state": "DEFERRED - decide after Q-07"
+  },
+  {
+   "id": "Q-10",
+   "item": "Test-only batch for HIST03-F-006 (test_sec_ent.py 7 red, ineffective patch target) and HIST03-F-016 (W5 b2/c/d global-registry isolation; run in separate processes until fixed). Needs ticket; independent audit must prove no gate weakening",
+   "state": "QUEUED - needs ticket (Operator plan approval)"
+  },
+  {
+   "id": "Q-11",
+   "item": "Root-cause read-only of F-015: config conflict (env/settings making both kv_store and document_store present) vs code defect; and whether the test was green at the P2-C accepted SHA. Assign to a fresh read-only investigator before any product ticket is proposed",
+   "state": "TO_SCHEDULE"
+  },
+  {
+   "id": "Q-12",
+   "item": "Align validators with the updated delegation rule: (1) intergrax/platform/enterprise_audit/baseline.py + scripts/enterprise_audit/iiac_baseline_promotion.py (ENT delegate path REQUIRES an operator-signed delegation line = struck S-1; product-path edit -> ACT-N11); (2) scripts/qualification/evol_x_closure_publication_preflight.py (B6 allow-list rejects the delegate form); (3) iiac_activation_gate.py L34,211,262 and the protocol doc L77,L97 (literal 'operator @' activation line; MATERIAL paths - editing voids activation). T-IGX-021-B scope",
+   "state": "HELD - batch with the IIAC re-audit/re-activation (DR-12=B); owner ENT-AUDIT-X stream for (1)"
+  }
+ ],
+ "publications": {
+  "status": "MERGED_BY_OPERATOR",
+  "merged_at": "2026-11-08T10:43Z (11:43 local)",
+  "origin_development_after": "41908e3fb",
+  "pull_requests": {
+   "405": {
+    "merge_commit": "41908e3fb",
+    "head": "6d1434796",
+    "ci_on_head": "6 pass, 11 skipping (after re-running jobs that failed on Install uv HTTP 504)"
+   },
+   "406": {
+    "merge_commit": "feee82b2e",
+    "head": "937c39820",
+    "ci_on_head": "6 pass, 11 skipping"
+   },
+   "407": {
+    "merge_commit": "4e48eba82",
+    "head": "90fae38aa",
+    "ci_on_head": "6 pass, 11 skipping"
+   }
+  },
+  "verified": "each PR head == pushed tip; all tips are ancestors of origin/development; ACT-N11: 0 product-path changes vs ae467c8c4; 0 of the six MATERIAL_GOVERNANCE_PATHS changed; 21 files changed by the three PRs",
+  "post_merge_ci": "at 2026-11-08T11:08Z (aud-final): Regression gate success on 4e48eba82 and feee82b2e; no run listed for 41908e3fb (docs-only path filter plausible, not checked)",
+  "ci_failures_before_rerun": "all caused by 'Unexpected HTTP response: 504' in the uv install step (infrastructure), none by tests or verifications"
+ },
+ "global_acceptance_criteria": [
+  {
+   "n": 1,
+   "criterion": "All four workstreams completed their inventories",
+   "status": "MET",
+   "basis": "4 worker dossiers + DONE flags"
+  },
+  {
+   "n": 2,
+   "criterion": "All 85 original FRZ criteria were reconciled",
+   "status": "MET",
+   "basis": "85/85 rows dispositioned in HISTORICAL_FRZ_85_DISPOSITION_MATRIX.json (dispositioned, NOT closed)"
+  },
+  {
+   "n": 3,
+   "criterion": "No applicable mandatory architecture invariant remains OPEN without an authorized resolution",
+   "status": "NOT MET",
+   "basis": "all 85 rows OPEN; 0 closed independently"
+  },
+  {
+   "n": 4,
+   "criterion": "No unresolved critical implementation blocker remains",
+   "status": "NOT MET",
+   "basis": "4 IMPLEMENTATION_GAP findings (EBH-4 R1 gate red, PROD-Q P2-C red, and others)"
+  },
+  {
+   "n": 5,
+   "criterion": "All material correctives have independent acceptance",
+   "status": "PARTIAL",
+   "basis": "T-IGX-030-A (tests only) PASS_SCOPED; product correctives (030-B, 030-C, P2-C) not yet implemented"
+  },
+  {
+   "n": 6,
+   "criterion": "Required authority exists",
+   "status": "NOT MET",
+   "basis": "7 Operator decisions open (EVOL-X ratification, Amendment 01 status, labels, scope rulings)"
+  },
+  {
+   "n": 7,
+   "criterion": "No delegated signature is misrepresented",
+   "status": "MET (campaign-created records); earlier chains UNRESOLVED",
+   "basis": "campaign delegation lines disclose themselves; EVOL-X chain stays AUTHORITY_GAP"
+  },
+  {
+   "n": 8,
+   "criterion": "Historical scoped closures retain their limitations",
+   "status": "MET",
+   "basis": "no scope was widened in any campaign output"
+  },
+  {
+   "n": 9,
+   "criterion": "All applicable supersession records agree",
+   "status": "PARTIAL",
+   "basis": "EVOL-X roadmap row and TOOL-LIFE-X label still disagree with their evidence"
+  },
+  {
+   "n": 10,
+   "criterion": "Canonical roadmap and FRZ checklist are reconciled",
+   "status": "NOT MET",
+   "basis": "documentation patches merged (PR 405) but label/scope decisions DR-1/3/4/9 are open"
+  },
+  {
+   "n": 11,
+   "criterion": "Required negative regression tests are green",
+   "status": "NOT MET",
+   "basis": "known red gates at the base: EBH-4 R1 (1 test), PROD-Q P2-C (6 tests), test_sec_ent (7 tests)"
+  },
+  {
+   "n": 12,
+   "criterion": "Publication is complete on the authorized branch",
+   "status": "PARTIAL",
+   "basis": "PRs 405-407 merged; final package PR pending"
+  },
+  {
+   "n": 13,
+   "criterion": "Independent integration audit has passed",
+   "status": "MET (conditional edit applied)",
+   "basis": "aud-final: ACCEPT_WITH_CHANGES at 2a7aec93d, re-read ACCEPT_WITH_CHANGES at 6c973c93a with one mechanical edit (R-1, four dashboard numbers); the auditor stated the package is ACCEPT once R-1 is applied and that a git-diff check is sufficient; R-1 applied in 63ff33812 and the diff shows only those numbers and the generation timestamp. No second audit round was run"
+  },
+  {
+   "n": 14,
+   "criterion": "All residual Path B live obligations remain correctly OPEN",
+   "status": "MET",
+   "basis": "5 rows named by checklist L66 plus 14 worker-identified live dependencies; all OPEN"
+  },
+  {
+   "n": 15,
+   "criterion": "Handoff is suitable for ARCH-FREEZE readiness review",
+   "status": "MET (as a NOT-READY handoff)",
+   "basis": "ARCH_FREEZE_HISTORICAL_PREDECESSOR_READINESS_HANDOFF.md"
+  }
+ ]
+}

@@ -113,13 +113,22 @@ frozen Execution Engine
 
 | Topic | Supported @ SCHED-01 |
 |-------|----------------------|
-| Trigger types | **One-shot** delayed resume (`run_at_utc` ISO UTC); human-timeout ledger actions — **not** cron/interval/calendar in core |
-| Misfire (overdue one-shot) | **Fire once** on next poll when status is PENDING (no unbounded catch-up storm) |
-| Timezone | Persist **UTC instant** (`run_at_utc`); calendar timezone/DST — **NOT APPLICABLE** until calendar triggers exist |
-| Occurrence identity | `schedule_id` per `ScheduledResume` row (one logical occurrence per one-shot entry) |
+| Trigger types | **One-shot** delayed resume (`run_at_utc`: an aware ISO-8601 timestamp, validated and normalized to UTC at construction; naive, empty and non-ISO values are rejected); human-timeout ledger actions; **recurrence** (fixed interval or 5-field cron, IANA time zone) expressed as a chain of one-shot occurrences (see *Recurrence* below) |
+| Misfire (overdue one-shot) | **Fire once** on next poll when status is PENDING (no unbounded catch-up storm). A recurrence rule additionally carries a misfire policy `skip` / `fire_once` / `catch_up(n)` (n at most `MAX_CATCH_UP`); a missed range longer than `MAX_MISFIRE_SCAN` degrades to `skip` |
+| Timezone | Every instant is stored and compared in **UTC**; `tick(now=…)` converts a non-UTC aware `now` to UTC. Cron rules are evaluated on the wall clock of their IANA zone with deterministic DST rules: a fixed-hour time inside a spring-forward gap fires once, shifted by the gap (wall time plus gap length, so `30 2` fires at 03:30 in a one-hour gap), a repeated fall-back hour fires once, a wildcard-hour rule follows elapsed time; interval rules are elapsed time and DST-immune |
+| Occurrence identity | `schedule_id` per `ScheduledResume` row. Recurrence occurrences use a deterministic id qualified by tenant, task, `rule_id` and instant (tenant and task as fixed-length digests, so two tenants never collide); restarting a rule is idempotent |
 | Multi-instance coordination | **QUALIFIED** for shared `ScheduledResumePersistence` implementations that provide atomic `claim_due` + fencing (SCHED-Q5/Q6; proof uses two in-process scheduler instances over one SQLite store) |
 | Distributed multi-node deployment | **Provider-dependent**; not universally qualified by SCHED-01 (no independent multi-process / arbitrary distributed backend proof in this qualification slice) |
 | Retry ownership | Scheduler poll/claim retry **≠** queue transport retry **≠** execution attempt retry (UEA / AttemptLifecycleService) |
+
+**Recurrence (PDC-X P7 repair, T-IGX-041-G).** `RecurrenceRule` / `RecurrenceMaterializer` (`intergrax/runtime/long_running/recurrence.py`) add no scheduler of their own: each occurrence is an ordinary one-shot `ScheduledResume`, claimed, fenced and admitted like any other.
+
+- The successor is persisted **before** its predecessor executes, so a crash or lease expiry while an occurrence runs (the predecessor ends `UNCERTAIN`, at-most-once) does not end the chain. If persisting the successor fails with a store error the claim is released back to `PENDING` and retried at the next tick; an invalid persisted rule skips the occurrence without executing it. The same applies to the eligibility reads of a recurring claim (target checkpoint, latest checkpoint, resume gates): an exception releases the claim for retry instead of leaving it `RUNNING` without a successor, and an unavailable execution terminal authority (`ExecutionTerminalError`, which both resume gates report as "not resumable") is retried, not recorded as `SKIPPED`; only a real terminal record or a missing or non-resumable target ends the chain. A permanently failing read is retried at every tick (no cap).
+- A rule targets exactly one `(task_id, resume_token)`. When that checkpoint is superseded, terminal, missing or not resumable the occurrence is recorded `SKIPPED` (not `completed`), the chain ends explicitly with a WARNING and no successor is created. Retargeting a rule to a newer checkpoint is **not** implemented. One-shot entries keep their previous behaviour.
+- Rules are bounded (`MIN_INTERVAL_SECONDS`, `MAX_INTERVAL_SECONDS`, `MAX_CATCH_UP`); a cron expression without any occurrence is rejected. `recurrence_rule` and `recurrence_occurrence_utc` are rejected in plain `resume_metadata` of `LongRunningScheduler.schedule_resume`, and persistence accepts them only on a self-consistent occurrence row (valid rule, matching tenant, task and token, a real occurrence instant, canonical `schedule_id`).
+- With the successor created before execution, a second scheduler process may claim occurrence N+1 while occurrence N is still running (run time longer than the interval); no overlap guard exists. Occurrences of one rule resume the same checkpoint with the same deterministic run and attempt identity, so a long-running overlap is bounded only by the host execution admission.
+- A scheduler tick processes every claim of its batch in isolation: one failing resume (or a lost lease at completion) does not strand the sibling claims. The first failure is still re-raised after the batch and after both tick phases (due schedules, human timeouts) ran. A failing resume leaves its own claim `RUNNING` until the lease expires, then `UNCERTAIN` (at-most-once, never auto-retried).
+- **NOT WIRED:** `wire_long_running_scheduler_with_host_execution` has no recurrence parameter and `RecurrenceMaterializer` is not exported from `intergrax.runtime.long_running`; no host composes recurrence today (declared exception F-D7-05). Rows written before the tenant-qualified id (`rec_<rule>_<stamp>`) would not be recognised as the same occurrence; none exist in a production host.
 
 **Multi-instance vs distributed:** one process may host multiple scheduler instances; SCHED-01 proves safe coordination when they share persistence with contract-grade claim/fence semantics. Universal multi-node correctness for every production store provider is **not** claimed here — custom `ScheduledResumePersistence` plugins (SCHED-Q10) prove replaceability, not distributed concurrency unless the implementation documents atomic claim + fence behavior.
 
@@ -128,6 +137,30 @@ Production harness wiring: `wire_harness_host_long_running_scheduler` → `wire_
 [`AGENT_DISTRIBUTION.md`](AGENT_DISTRIBUTION.md) is package installation/activation only. [`ELASTIC_CAPACITY_AND_SCALING.md`](ELASTIC_CAPACITY_AND_SCALING.md) may constrain worker capacity but does not own Execution identity.
 
 Aligned with [`UNIFIED_EXECUTION_ARCHITECTURE.md`](UNIFIED_EXECUTION_ARCHITECTURE.md) §11, §20, **UEA-INV-011**, **UEA-INV-021**.
+
+### B.2.2 Delivery semantics (at-least-once)
+
+*(PDC-X reconciliation PDC-D7-R011, 2026-11-12)*
+
+Queue delivery is **at-least-once**: a provider may deliver the same `TaskRequest` more than once (broker redelivery, visibility timeout, transport retry). Duplicates are therefore possible and are handled as follows:
+
+- `TaskRequest.idempotency_key` identifies the logical task; with an idempotency store, a duplicate delivery of the same logical task results in a **single handler invocation** (BG-Q5).
+- Transport retry is separate from execution attempts; redelivery does not reconcile or mint a new attempt (BG-Q6).
+- Redelivery after a terminal outcome resolves to a safe `TERMINAL_ALREADY_RECORDED` disposition with no fresh side effect (BG-Q7).
+- Over `DocumentStoreTaskQueue` the terminal states `SUCCEEDED`, `FAILED` and `DEAD_LETTERED` are **sticky**: a late or duplicate completion, failure or retry cannot overwrite them or re-open the task.
+- **Retry budget and dead-letter (library capability, NOT wired):** `DocumentStoreTaskWorker(retry_policy=…)` settles a failed delivery against a `RetryPolicy` (back-off, then terminal `DEAD_LETTERED` with a typed `DeadLetterReason`). The three production construction sites (`vendor_knowledge/sync_runtime.py`, `local_workspace_application/workspaces/sync_runtime.py` twice) pass no `retry_policy`, so production workers neither retry nor dead-letter (declared exception F-D7-05). Retry and dead-letter transitions emit no dedicated event, and an idempotency key keeps resolving to a dead-lettered task.
+- Certified by HARNESS-W8 / BG-01: [`HARNESS_W8_BG_01_CURRENT_HEAD_RECERTIFICATION.md`](../maintainers/qualification/HARNESS_W8_BG_01_CURRENT_HEAD_RECERTIFICATION.md).
+- **Handlers must be idempotent for external effects.** Platform dedup covers handler invocation, not effects a handler issues to external systems before a crash; see [`EXTERNAL_EFFECT_CONTRACTS.md`](EXTERNAL_EFFECT_CONTRACTS.md).
+
+### B.2.3 Horizontal scaling boundary
+
+*(PDC-X reconciliation PDC-D7-R021, 2026-11-12)*
+
+- Multi-node correctness **depends on the queue provider** (delivery, visibility and ack semantics) and on the `ScheduledResumePersistence` provider (atomic `claim_due` + fence); the platform does not claim universal distributed correctness.
+- Scheduler fencing is proven for **two scheduler instances over one SQLite store in one process** (SCHED-01, SCHED-Q5/Q6: [`HARNESS_RESIDUAL_SCHED_01_CURRENT_HEAD_RECERTIFICATION.md`](../maintainers/qualification/HARNESS_RESIDUAL_SCHED_01_CURRENT_HEAD_RECERTIFICATION.md)) and, since PDC-X B-D7, for **two OS processes over one on-disk SQLite ledger** (`tests/qualification/pdc_x/d7/test_d7_fencing_two_process.py`: every due occurrence fires exactly once, a crash after claim is never re-fired and a stale completion is rejected). The proof is **scoped to SQLite**; PostgreSQL and other multi-node stores are excluded by the C10/C15 freeze and are not proven.
+- `DocumentStoreTaskQueue` coordination: over a `ConditionalDocumentStore` (the in-memory, MongoDB, PostgreSQL and Cassandra document-store adapters) claims and state transitions are compare-and-set and an idempotency key is reserved with `put_if_absent`, so several queue instances over one store do not claim a task twice or create two tasks for one key (proven with two instances over the in-memory conditional store, `tests/qualification/pdc_x/d7_repair/`). Over a plain `DocumentStore` the only exclusion is a per-instance lock and the queue is **single-instance**; the platform does not check which mode a composition got. Retry back-off rows wait in a delayed index and are promoted when due, so they do not block fresh work. `recover_interrupted_running` (startup recovery of the co-located worker) is **not** compare-and-set and treats every `RUNNING` row of the store as interrupted, so recovery is a single-instance operation even over a `ConditionalDocumentStore`: the queue stores no owner or lease on `RUNNING` rows.
+- The certified scale envelope is the scoped DIST-SCALE-X envelope ([`DIST_SCALE_X_CAPACITY_ENVELOPE.md`](../maintainers/qualification/DIST_SCALE_X_CAPACITY_ENVELOPE.md), [`DIST_SCALE_X_INTERIM_SCOPED_QUALIFICATION_RECORD.md`](../maintainers/qualification/DIST_SCALE_X_INTERIM_SCOPED_QUALIFICATION_RECORD.md)); nothing outside it is qualified.
+- Declared exceptions (PDC-X P7, Operator option B): **graceful worker shutdown with host drain is not implemented** (no `HostedApplicationActiveWorkController` over `WorkerRuntime` or `DocumentStoreTaskWorker`; `DocumentStoreTaskWorker.stop()` can abandon a still-running thread; the XD-05 proof uses a test-side adapter) - reopen when the worker-side drain controller is commissioned; recurrence and the retry budget are **not composed** in any host (F-D7-05) - reopen when a host composition enabling them is commissioned. Decision record: [`ADR_PDC_07_BACKGROUND_RECURRENCE_AND_DLQ.md`](../maintainers/architecture/ADR_PDC_07_BACKGROUND_RECURRENCE_AND_DLQ.md).
 
 ### Canonical background execution identity (BG-EXEC-1 / BG-EXEC-2)
 
@@ -184,7 +217,7 @@ Stable `TaskId`/`RunId` across process restart and concurrent workers requires a
 #### TARGET / ADOPTION GAPS
 
 - **Frozen rule (UEA §10):** queue redelivery **≠** automatically new logical execution; provider retry **≠** automatically new `AttemptId`. A **new** `AttemptId` requires an explicit whole-Run retry boundary.
-- **ADOPTION GAP:** transport envelope carrying full runtime identity on enqueue (worker side stabilizes identity at intake today).
+- **ADOPTION GAP:** the transport envelope **can** carry full runtime identity on enqueue (`TaskRequest.identity`: `TaskId`, `RunId`, `AttemptId`, `ExecutionId`, principal, trace) and the `DocumentStoreTaskQueue` persists it and `DocumentStoreTaskWorker` seeds the quadruple at intake, but **no production producer sets it**, principal and trace are carried and never consumed, a partial identity is ignored, and the Celery and broker providers drop it (declared exception F-D7-09). The worker side still stabilizes identity at intake.
 
 ### Required audit evidence admission (BG-EXEC-3)
 

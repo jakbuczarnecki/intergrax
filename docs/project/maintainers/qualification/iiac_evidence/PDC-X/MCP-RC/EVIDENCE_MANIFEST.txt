@@ -1,0 +1,15 @@
+PDC-X / MCP-RC independent audit (G6) evidence manifest
+
+audited_implementation_sha: 93a089d3cca941592f1ad4f65435333c86da82e5 (= test_execution_sha)
+base_sha:                   6a6279a49a9aa5a33936a1c6a577c7194b4bcebb
+audit_execution_base_sha:   f3078b293ecee402583b3d6ad9ef5aaeff0b2d1d
+auditor branch:             mcp-rc-audit   (docs/evidence only; no product, test, ticket or activation-record edit)
+dossier_verdict:            PARTIAL  (IIAC manifest verdict value: CONDITIONAL)
+
+Dossier:   docs/project/maintainers/qualification/mcp_server_x/MCP_SERVER_X_RC_INDEPENDENT_AUDIT_DOSSIER.md
+Records:   audit_scope.json, iiac_audit_session_manifest.PDC-X.mcp_rc.json, iiac_audit_mcp_rc_findings.json, test_matrix.txt
+Logs:      logs/  (contract run, manifest/role-separation verifiers, adversarial results, removed-vehicle probe)
+Mutation:  mutation/ (implementer harness re-run, auditor mutants A1-A13)
+Scripts:   adversarial_scripts/ (throw-away; run with AUDIT_ROOT=<checkout> PYTHONPATH=<checkout>; the mutant scripts expect to live under <checkout>/.tmp/session/<x>/adv/)
+
+Not touched: IIAC_POLICY_ACTIVATION_RECORD.json, governance/tickets/*, implementer tests, any P8 record.

@@ -1,0 +1,8 @@
+command: .venv/Scripts/python.exe -m pytest tests/qualification/mcp_server_x/test_mcp_server_x_p7_l1_contract.py tests/qualification/mcp_server_x/test_mcp_server_x_p7_matrix_consistency.py -q
+cwd: /d/Projekty/_wt/intergrax/p8-reaudit
+git_head: c50547012c353463e86525411a5a065f43e5bab8
+date_utc: 2026-11-12T11:45:39Z
+.......................................................                  [100%]
+55 passed in 96.07s (0:01:36)
+exit_code: 0
+date_end_utc: 2026-11-12T11:47:41Z

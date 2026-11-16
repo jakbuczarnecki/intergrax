@@ -1,0 +1,31 @@
+MCP-SERVER-X / T-IGX-035-F / P5 independent G6 test matrix
+audit_execution_sha: c5989282937f5e592748cb606b2272d04837c601
+test_execution_sha: c5989282937f5e592748cb606b2272d04837c601
+
+Canonical consolidated batch:
+  tests/qualification/mcp_server_x/test_mcp_server_x_p5_qualification_batch.py
+
+Nested targets (MCP_SERVER_X_P5_SELECTION_BATCH):
+  tests/unit/applications/test_mcp_trust_a_principal_binding.py
+  tests/unit/applications/test_mcp_canonical_execution.py
+  tests/unit/applications/test_mcp_cancel_a_transport_governed_cancel.py
+  tests/unit/applications/test_mcp_catalog_gate_b_cancel_c_qualification.py
+  tests/unit/applications/test_mcp_catalog_child_execution_qualification.py
+  tests/unit/applications/test_mcp_catalog_discovery_qualification.py
+  tests/unit/applications/test_mcp_engine_concurrency.py
+  tests/unit/applications/test_mcp_host_mount.py
+  tests/unit/applications/test_mcp_server_engine.py
+  tests/unit/applications/test_mcp_server_p4_lifecycle.py
+  tests/unit/applications/test_reference_apps_mcp.py
+  tests/unit/contracts/test_mcp_server_definition.py
+
+Ticket supplementary contract (T-IGX-035-F):
+  tests/unit/contracts/test_mcp_server_definition.py
+  tests/unit/applications/test_mcp_server_engine.py
+  tests/unit/applications/test_mcp_server_p4_lifecycle.py
+  tests/unit/applications/test_mcp_host_mount.py
+  tests/unit/applications/test_reference_apps_mcp.py
+
+Logs:
+  auditor_p5_qualification_batch.log
+  auditor_p5_supplementary_ticket_contract.log

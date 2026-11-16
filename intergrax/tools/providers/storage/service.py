@@ -5,7 +5,7 @@ from __future__ import annotations
 
 import base64
 
-from intergrax.integrations.contracts.object_storage import ObjectStorage, PresignedUrlMethod
+from intergrax.integrations.contracts.object_storage import ObjectStorage
 from intergrax.tools.providers.storage.contracts import (
     StorageDeleteInput,
     StorageDeleteOutput,
@@ -27,6 +27,41 @@ STORAGE_DELETE_TOOL_ID = "storage.delete"
 STORAGE_EXISTS_TOOL_ID = "storage.exists"
 
 
+#: Namespace of Collaborative Work artifact content (every key version). It is reachable only through
+#: the governed artifact port; the raw tools below refuse it (T-IGX-041-H, F-D8-03). A drift gate keeps
+#: it equal to the prefix of ``collaborative_work.content_storage``.
+GOVERNED_CONTENT_KEY_PREFIX = "intergrax/collaborative-work/artifact-content/"
+
+
+class GovernedStorageKeyError(PermissionError):
+    """The key addresses artifact content that is reachable only through the governed artifact port."""
+
+
+def _refuse_governed_content_key(key: str) -> None:
+    # Each segment is compared case-insensitively and without trailing dots and spaces: case-insensitive
+    # and dot-stripping stores (Windows, macOS) address the same physical key through such spellings.
+    segments: list[str] = []
+    for part in key.strip().replace("\\", "/").split("/"):
+        if part in ("", "."):
+            continue
+        if part == "..":
+            raise GovernedStorageKeyError("storage keys with '..' segments are refused")
+        folded = part.rstrip(". ").casefold()
+        if folded:
+            segments.append(folded)
+    joined = "/".join(segments)
+    prefix = GOVERNED_CONTENT_KEY_PREFIX.casefold()
+    if joined == prefix.rstrip("/") or joined.startswith(prefix):
+        raise GovernedStorageKeyError(
+            "this key space holds governed artifact content: use the governed artifact read port"
+        )
+
+
+def refuse_governed_content_key(key: str) -> None:
+    """Shared refusal for every agent-callable tool that takes a caller-chosen object storage key."""
+    _refuse_governed_content_key(key)
+
+
 def _require_storage(ctx: ToolWiringContext) -> ObjectStorage:
     storage = ctx.object_storage
     if storage is None:
@@ -35,6 +70,7 @@ def _require_storage(ctx: ToolWiringContext) -> ObjectStorage:
 
 
 def storage_get(ctx: ToolWiringContext, params: StorageGetInput) -> StorageGetOutput:
+    _refuse_governed_content_key(params.key)
     stored = _require_storage(ctx).get(params.key.strip())
     if stored is None:
         return StorageGetOutput(key=params.key.strip(), found=False)
@@ -48,6 +84,7 @@ def storage_get(ctx: ToolWiringContext, params: StorageGetInput) -> StorageGetOu
 
 
 def storage_put(ctx: ToolWiringContext, params: StoragePutInput) -> StoragePutOutput:
+    _refuse_governed_content_key(params.key)
     body = base64.b64decode(params.body_base64)
     _require_storage(ctx).put(
         params.key.strip(),
@@ -57,27 +94,31 @@ def storage_put(ctx: ToolWiringContext, params: StoragePutInput) -> StoragePutOu
     return StoragePutOutput(key=params.key.strip(), stored=True, size_bytes=len(body))
 
 
+class GovernedPresignRequiredError(RuntimeError):
+    """Presigned URLs are issued only through the governed artifact read port."""
+
+
 def storage_presigned_url(ctx: ToolWiringContext, params: StoragePresignedUrlInput) -> StoragePresignedUrlOutput:
-    method: PresignedUrlMethod = "PUT" if params.method == "PUT" else "GET"
-    url = _require_storage(ctx).presigned_url(
-        params.key.strip(),
-        expires_in_seconds=params.expires_in_seconds,
-        method=method,
-    )
-    return StoragePresignedUrlOutput(
-        key=params.key.strip(),
-        url=url,
-        method=params.method,
-        expires_in_seconds=params.expires_in_seconds,
+    """Fail closed (PDC-D8-R010, OD-PDC-SCOPE-04 = A).
+
+    This tool used to sign any key for any caller, with no tenant scope, authorization or audit.
+    A presigned URL is now issued only by ``GovernedArtifactReadPort.issue_download_url``
+    (tenant check, authorization, audit event, short-lived GET). The tool stays registered so
+    catalogs and manifests keep resolving, but it never calls the storage provider.
+    """
+    raise GovernedPresignRequiredError(
+        "storage.presigned_url is disabled: request a download through the governed artifact read port"
     )
 
 
 def storage_delete(ctx: ToolWiringContext, params: StorageDeleteInput) -> StorageDeleteOutput:
+    _refuse_governed_content_key(params.key)
     _require_storage(ctx).delete(params.key.strip())
     return StorageDeleteOutput(key=params.key.strip(), deleted=True)
 
 
 def storage_exists(ctx: ToolWiringContext, params: StorageExistsInput) -> StorageExistsOutput:
+    _refuse_governed_content_key(params.key)
     stored = _require_storage(ctx).get(params.key.strip())
     if stored is None:
         return StorageExistsOutput(key=params.key.strip(), exists=False)

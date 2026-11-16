@@ -6,29 +6,31 @@ from __future__ import annotations
 
 import argparse
 import sys
+from collections.abc import Sequence
 
+from intergrax.cli.command_set import CliCommandSet
 from intergrax.scaffold.cli import main as scaffold_main
 from intergrax.scaffold.cli import register_scaffold_commands
 
 
-def build_parser() -> argparse.ArgumentParser:
+def build_parser(*, extra_command_sets: Sequence[CliCommandSet] = ()) -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(
         prog="intergrax",
         description="Intergrax harness developer CLI.",
     )
     sub = parser.add_subparsers(dest="command", required=True)
     register_scaffold_commands(sub)
-    from intergrax.cli.run import register_parser as register_run
-    from intergrax.cli.doctor import register_parser as register_doctor
-    from intergrax.cli.integrations_pick import register_parser as register_pick
-    from intergrax.cli.init_project import register_parser as register_init
-    from intergrax.cli.certify import register_parser as register_certify
-    from intergrax.cli.trace import register_parser as register_trace
-    from intergrax.cli.evidence import register_parser as register_evidence
-    from intergrax.cli.mvp_evolution import register_parser as register_mvp
     from intergrax.cli.apps import register_parser as register_apps
+    from intergrax.cli.certify import register_parser as register_certify
+    from intergrax.cli.doctor import register_parser as register_doctor
     from intergrax.cli.envs import register_parser as register_envs
+    from intergrax.cli.evidence import register_parser as register_evidence
     from intergrax.cli.external_work import register_parser as register_external_work
+    from intergrax.cli.init_project import register_parser as register_init
+    from intergrax.cli.integrations_pick import register_parser as register_pick
+    from intergrax.cli.mvp_evolution import register_parser as register_mvp
+    from intergrax.cli.run import register_parser as register_run
+    from intergrax.cli.trace import register_parser as register_trace
 
     register_run(sub)
     register_doctor(sub)
@@ -41,13 +43,19 @@ def build_parser() -> argparse.ArgumentParser:
     register_evidence(sub)
     register_mvp(sub)
     register_external_work(sub)
+    for command_set in extra_command_sets:
+        command_set.register_parsers(sub)
     return parser
 
 
-def main(argv: list[str] | None = None) -> int:
+def main(
+    argv: list[str] | None = None,
+    *,
+    extra_command_sets: Sequence[CliCommandSet] = (),
+) -> int:
     argv = list(sys.argv[1:] if argv is None else argv)
     if not argv:
-        build_parser().print_help()
+        build_parser(extra_command_sets=extra_command_sets).print_help()
         return 0
     if argv[0] in {
         "new-agent",
@@ -60,7 +68,7 @@ def main(argv: list[str] | None = None) -> int:
         "expand",
     }:
         return scaffold_main(argv)
-    parser = build_parser()
+    parser = build_parser(extra_command_sets=extra_command_sets)
     args = parser.parse_args(argv)
     if args.command == "run":
         from intergrax.cli.run import run_command
@@ -102,18 +110,13 @@ def main(argv: list[str] | None = None) -> int:
         from intergrax.cli.evidence import run_evidence
 
         return run_evidence(args)
-    if args.command == "external-work":
-        from intergrax.cli.external_work import run_external_work
-
-        return run_external_work(args)
-    if args.command == "demo":
-        from intergrax.cli.external_work import run_demo
-
-        return run_demo(args)
     if args.command == "receipt":
         from intergrax.cli.external_work import run_receipt
 
         return run_receipt(args)
+    run = getattr(args, "cli_run", None)
+    if run is not None:
+        return int(run(args))
     parser.error(f"Unknown command: {args.command}")
     return 2
 

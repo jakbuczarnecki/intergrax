@@ -1,0 +1,40 @@
+2026-11-13T15:23:58Z
+fa6ff1c9616a6df28c11b087eb3f1b0dc4097b5f
+tree changes: 0
+selection files: 39
+........................................................................ [ 14%]
+........................................................................ [ 29%]
+........................................................................ [ 44%]
+........................................................................ [ 59%]
+..............................................x......................... [ 74%]
+........................................................................ [ 89%]
+..................................................                       [100%]
+============================== warnings summary ===============================
+tests/qualification/mcp_server_x/test_mcp_server_x_p7_l3_publication_discovery.py::test_acc_01_reference_server_exact_tool_set_over_http
+  D:\Projekty\intergrax\.venv\Lib\site-packages\websockets\legacy\__init__.py:6: DeprecationWarning: websockets.legacy is deprecated; see https://websockets.readthedocs.io/en/stable/howto/upgrade.html for upgrade instructions
+    warnings.warn(  # deprecated in 14.0 - 2024-11-09
+
+tests/qualification/mcp_server_x/test_mcp_server_x_p7_l3_publication_discovery.py::test_acc_01_reference_server_exact_tool_set_over_http
+  D:\Projekty\intergrax\.venv\Lib\site-packages\uvicorn\protocols\websockets\websockets_impl.py:17: DeprecationWarning: websockets.server.WebSocketServerProtocol is deprecated
+    from websockets.server import WebSocketServerProtocol
+
+tests/qualification/mcp_server_x/test_mcp_server_x_p7_l3_publication_discovery.py: 18 warnings
+tests/qualification/mcp_server_x/test_mcp_server_x_p7_l3_invoke_security.py: 16 warnings
+tests/qualification/mcp_server_x/test_mcp_server_x_p7_l3_protocol_subset.py: 5 warnings
+tests/qualification/mcp_server_x/test_mcp_server_x_p7_failure_injection_l3.py: 18 warnings
+tests/unit/applications/test_mcp_trust_a_principal_binding.py: 4 warnings
+tests/unit/applications/test_mcp_cancel_a_transport_governed_cancel.py: 3 warnings
+tests/unit/applications/test_mcp_catalog_f3_streamable_http_physical_l3.py: 6 warnings
+tests/qualification/mcp_server_x/test_mcp_server_x_p6_reference_l3_qualification.py: 3 warnings
+tests/unit/applications/test_mcp_catalog_e2e_hung_server_qualification.py: 12 warnings
+tests/unit/applications/test_mcp_identity_mode_fail_closed.py: 6 warnings
+tests/unit/applications/test_mcp_rc_audit_corrections.py: 3 warnings
+tests/unit/tools/providers/test_tool_life_x_l3_r2_mcp_host_lifecycle_qualification.py: 7 warnings
+  C:\Users\XPS\AppData\Roaming\uv\python\cpython-3.12.11-windows-x86_64-none\Lib\contextlib.py:105: DeprecationWarning: Use `streamable_http_client` instead.
+    self.gen = func(*args, **kwds)
+
+-- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html
+=========================== short test summary info ===========================
+XFAIL tests/unit/applications/test_mcp_surface_opt_in.py::test_scaffold_defaults_mcp_to_opt_in[product] - TRANSFERRED (MCP-RC R-P7-02, not MCP-owned): the product scaffold fails STRICT agent-contract authority resolution in package emission; strict=True forces removal once that is fixed
+481 passed, 1 xfailed, 103 warnings in 975.51s (0:16:15)
+exit=0 elapsed=1001.0s

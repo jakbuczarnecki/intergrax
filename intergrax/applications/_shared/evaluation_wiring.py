@@ -18,6 +18,7 @@ from intergrax.applications.contracts.environment_profile import (
 from intergrax.runtime.architecture.online_evaluation_registry import (
     FileOnlineEvaluationRegistry,
     OnlineEvaluationRegistry,
+    TenantScopedOnlineEvaluationRegistry,
     default_online_evaluation_registry,
 )
 from intergrax.runtime.architecture.runtime_governance_bridge import (
@@ -25,7 +26,7 @@ from intergrax.runtime.architecture.runtime_governance_bridge import (
 )
 
 
-def _resolve_evaluation_registry(profile: EvaluationProfile) -> OnlineEvaluationRegistry | None:
+def _resolve_evaluation_registry(profile: EvaluationProfile) -> FileOnlineEvaluationRegistry | None:
     if not profile.online_registry_enabled:
         return None
     if profile.registry_path is not None:
@@ -42,15 +43,26 @@ class ApplicationEvaluationWiring:
     registry: OnlineEvaluationRegistry | None
     governance_bridge: RuntimeArchitectureGovernanceBridge | None
     domain_fragments: dict[str, Any]
+    tenant_id: str | None = None
 
 
 def wire_application_evaluation(
     env: ApplicationEnvironmentProfile,
+    *,
+    tenant_id: str | None = None,
 ) -> ApplicationEvaluationWiring:
-    """Materialize evaluation registry and governance bridge from environment profile."""
+    """Materialize evaluation registry and governance bridge from environment profile.
+
+    With ``tenant_id`` the registry is bound to that tenant (PDC-D5-R015): the host can
+    only write and read its own tenant's observations. Without it the registry is the
+    legacy unscoped one, which must not be shared between tenants.
+    """
     profile = env.evaluation_profile
     options = resolve_evaluation_wiring_options(profile)
-    registry = _resolve_evaluation_registry(profile)
+    file_registry = _resolve_evaluation_registry(profile)
+    registry: OnlineEvaluationRegistry | None = file_registry
+    if file_registry is not None and tenant_id is not None:
+        registry = TenantScopedOnlineEvaluationRegistry(file_registry, tenant_id)
     governance_bridge = (
         RuntimeArchitectureGovernanceBridge(evaluation_registry=registry)
         if profile.shadow_eval_enabled or profile.online_registry_enabled
@@ -61,6 +73,7 @@ def wire_application_evaluation(
         options=options,
         registry=registry,
         governance_bridge=governance_bridge,
+        tenant_id=tenant_id,
         domain_fragments={
             "evaluation_governance": {
                 "shadow_eval_enabled": profile.shadow_eval_enabled,

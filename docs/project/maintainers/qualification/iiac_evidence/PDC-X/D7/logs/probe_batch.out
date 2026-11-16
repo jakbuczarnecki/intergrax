@@ -1,0 +1,25 @@
+{
+ "first_tick_error": "RuntimeError: resume failed",
+ "second_tick_fired": 0,
+ "executor_calls": [
+  "rec_rule-0_20260301T100000Z"
+ ],
+ "rows": [
+  [
+   "rec_rule-0_20260301T100000Z",
+   "uncertain"
+  ],
+  [
+   "rec_rule-0_20260301T100100Z",
+   "pending"
+  ],
+  [
+   "rec_rule-1_20260301T100000Z",
+   "uncertain"
+  ],
+  [
+   "rec_rule-2_20260301T100000Z",
+   "uncertain"
+  ]
+ ]
+}

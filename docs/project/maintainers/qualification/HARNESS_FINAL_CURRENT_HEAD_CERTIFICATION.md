@@ -82,6 +82,8 @@ Full per-surface rows align with [`HARNESS_TOP_TIER_GAP_AUDIT.md`](HARNESS_TOP_T
 
 No frozen-scope row uses PARTIAL/GAP/TARGET/DEFERRED/TBD.
 
+> **PDC-X reconciliation note (PDC-D6-R025, 2026-11-12; added note, historical rows unchanged):** the **ENTERPRISE QUALIFIED** label on rows **D Plugin trust**, **Q Secrets** and **Z Enterprise security** is scoped to the HARNESS-FINAL invariant scope of this certification only. It is not a global security qualification: **FRZ-SEC-01..10 remain OPEN** and are tracked by PDC-X D6 in [`PDC_DOMAIN_REQUIREMENTS_MATRIX.md`](platform_domain_completeness/PDC_DOMAIN_REQUIREMENTS_MATRIX.md).
+
 ## 5. INV-1..INV-34 (verdict summary)
 
 | INV | Verdict | Primary evidence |

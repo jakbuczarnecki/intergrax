@@ -1,0 +1,13 @@
+# command: D:/Projekty/intergrax/.venv/Scripts/python.exe -m scripts.governance.verify_iiac_policy_activation --require-in-force --repo .
+# HEAD: 9f05749bc23592868f3d0a7f505f9edbb2cfd025
+# UTC start: 2026-11-16T08:08:10Z
+# UTC end: 2026-11-16T08:08:12Z
+# python: D:\Projekty\intergrax\.venv\Scripts\python.exe
+# ---- stdout ----
+# ---- stderr ----
+IIAC policy activation: FAIL
+  - missing activation field: effective_from_sha
+  - missing activation field: policy_activation_sha
+  - effective_from_sha must be a 40-char lowercase git SHA
+  - policy_activation_sha must be a 40-char lowercase git SHA
+# exit code: 1

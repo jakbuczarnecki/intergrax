@@ -1,0 +1,4 @@
+# MCP-SERVER-X P6 independent G6 test matrix
+# AUDIT_EXECUTION_SHA: 9b8c19d75d5df0f4b7c87d2707811f3715805102
+
+tests/qualification/mcp_server_x/test_mcp_server_x_p6_qualification_batch.py

@@ -1,0 +1,29 @@
+{
+  "stage_id": "MCP-SERVER-X",
+  "wave": "P5",
+  "ticket": "T-IGX-035-F",
+  "certification_profile": "g6-scoped-audit-v2.2",
+  "implementation_session_id": "T-IGX-035-F-MCP-P5-IMPLEMENTER",
+  "implementation_agent_id": "implementer",
+  "auditor_session_id": "T-IGX-035-F-P5-G6-POST-PUBLICATION-AUDIT-2026-11-11",
+  "auditor_agent_id": "independent-quality-auditor",
+  "certifier_session_id": "NOT_APPLICABLE_P5_G6",
+  "certifier_agent_id": "not_engaged",
+  "audited_implementation_sha": "8b153422ec1e526c588b7144e934d268055a6df8",
+  "product_publication_sha": "c5989282937f5e592748cb606b2272d04837c601",
+  "test_execution_sha": "c5989282937f5e592748cb606b2272d04837c601",
+  "audit_execution_sha": "c5989282937f5e592748cb606b2272d04837c601",
+  "evidence_publication_sha": "7fd899aaea873aac6ec9ae3fe6ce5e3ef9ec9c8c",
+  "verdict": "ACCEPT_SCOPED_WITH_GOVERNANCE_FINDING",
+  "independent_acceptance_timing": "post_merge",
+  "prior_merge_pr": "456",
+  "audit_report_path": "docs/project/maintainers/qualification/mcp_server_x/MCP_SERVER_X_P5_INDEPENDENT_AUDIT_DOSSIER.md",
+  "findings_path": "docs/project/maintainers/qualification/iiac_evidence/MCP-SERVER-X/p5_g6_closeout/mcp_p5_g6_findings.json",
+  "test_matrix_path": "docs/project/maintainers/qualification/iiac_evidence/MCP-SERVER-X/p5_g6_closeout/test_matrix_p5_independent.txt",
+  "governance_reconciliation_path": "docs/project/maintainers/qualification/iiac_evidence/MCP-SERVER-X/p5_g6_closeout/GOVERNANCE_RECONCILIATION.md",
+  "limitations": [
+    "LIM-gov-merge: F-MCP-P5-GOV-001 preserved — no retroactive pre-merge approval",
+    "LIM-operator-od: ticket formal closed only after OD-MCP-P5-* operator authorization",
+    "LIM-no-iiac: P5 G6 is not IIIC stage closure"
+  ]
+}

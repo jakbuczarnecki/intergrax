@@ -1,0 +1,363 @@
+{
+  "total_hits": 691,
+  "by_marker": {
+    "pytest.skip(": 259,
+    "pytest.mark.no_ci": 284,
+    "pytest.mark.skipif": 71,
+    "importorskip": 69,
+    "pytest.mark.xfail": 2,
+    "pytest.mark.skip": 6
+  },
+  "by_dir_top": [
+    [
+      "tests/unit/applications",
+      123
+    ],
+    [
+      "tests/qualification/ent_audit_x",
+      112
+    ],
+    [
+      "tests/unit/runtime",
+      49
+    ],
+    [
+      "tests/integration/rag",
+      36
+    ],
+    [
+      "tests/integration/runtime",
+      30
+    ],
+    [
+      "tests/unit/scripts",
+      30
+    ],
+    [
+      "tests/integration/platform_proofs",
+      28
+    ],
+    [
+      "tests/unit/platform_proofs",
+      21
+    ],
+    [
+      "tests/unit/agents",
+      19
+    ],
+    [
+      "tests/integration/decision_system",
+      17
+    ],
+    [
+      "tests/unit/rag",
+      16
+    ],
+    [
+      "tests/qualification/pdc_x",
+      15
+    ],
+    [
+      "tests/unit/llm_adapters",
+      15
+    ],
+    [
+      "tests/integration/applications",
+      11
+    ],
+    [
+      "tests/integration/memory",
+      11
+    ]
+  ],
+  "high_surface_non_noci": 168,
+  "high_surface_non_noci_unregistered": 164,
+  "high_surface_no_ci": 13,
+  "reasonless": 15,
+  "ebh7_register_files": [
+    "tests/qualification/ebh_7/cross_domain_e2e/test_ebh7_cross_domain_platform_proofs.py",
+    "tests/qualification/ebh_7/tenant_platform_e2e/test_ebh7_platform_tenant_boundary_proofs.py",
+    "tests/qualification/ebh_7/test_ebh_7_w6_tenant_e2e_behavioral_gates.py",
+    "tests/qualification/ebh_7/test_ebh_7_w7_cross_domain_behavioral_gates.py",
+    "tests/qualification/ebh_7/test_ebh_7_w9_dossier_gates.py"
+  ],
+  "na_decision_hits": 558,
+  "na_files": 147,
+  "na_top_files": [
+    [
+      "docs/project/maintainers/qualification/EBH_7_FINAL_AUDIT_MATRICES_APPENDIX.md",
+      51
+    ],
+    [
+      "tests/qualification/governance/strategy/catalog.py",
+      37
+    ],
+    [
+      "tests/qualification/compat_x/_compat_x_deprecation_r5_inventory.py",
+      30
+    ],
+    [
+      "docs/project/maintainers/qualification/ebh_7_p03_independent_replay/EBH_7_CLOSURE_EVIDENCE_AUDIT_MATRIX.md",
+      28
+    ],
+    [
+      "docs/project/maintainers/qualification/ebh_7_p03_independent_replay/EBH_7_DUAL_SLUG_RPL_EF_MATRIX.md",
+      28
+    ],
+    [
+      "docs/project/maintainers/qualification/ebh_7_p03_independent_replay/EBH_7_SKIP_DISPOSITION_REGISTER.md",
+      19
+    ],
+    [
+      "tests/qualification/compat_x/_compat_x_versioning_classification.py",
+      14
+    ],
+    [
+      "tests/qualification/governance/gr12/gr12_a4_r3_memory_architecture_decision.py",
+      14
+    ],
+    [
+      "tests/qualification/tenant_x/_classifiers.py",
+      13
+    ],
+    [
+      "docs/project/maintainers/qualification/EBH_4_COMMUNICATION_COMPOSITION_BYPASS_CERTIFICATION.md",
+      10
+    ],
+    [
+      "tests/qualification/governance/gr12/catalog.py",
+      10
+    ],
+    [
+      "tests/qualification/ebh_5/_rpl_f_evidence_registry.py",
+      9
+    ]
+  ],
+  "unregistered_high_sample": [
+    {
+      "file": "tests/qualification/dist_scale_x/_p2_support.py",
+      "line": 109,
+      "marker": "pytest.skip(",
+      "reason": null,
+      "high_surface": true,
+      "snippet": "pytest.skip(\"PostgreSQL not reachable for DIST-SCALE-X P2 qual\")",
+      "in_ebh7_skip_register_file": false
+    },
+    {
+      "file": "tests/qualification/dist_scale_x/_p2_support.py",
+      "line": 111,
+      "marker": "pytest.skip(",
+      "reason": null,
+      "high_surface": true,
+      "snippet": "pytest.skip(\"RabbitMQ broker not ready for DIST-SCALE-X P2 qual\")",
+      "in_ebh7_skip_register_file": false
+    },
+    {
+      "file": "tests/qualification/dist_scale_x/_p3_support.py",
+      "line": 62,
+      "marker": "pytest.skip(",
+      "reason": null,
+      "high_surface": true,
+      "snippet": "pytest.skip(\"PostgreSQL not reachable for DIST-SCALE-X P3 qual\")",
+      "in_ebh7_skip_register_file": false
+    },
+    {
+      "file": "tests/qualification/dist_scale_x/wl_07_soak_mixed_load.py",
+      "line": 117,
+      "marker": "pytest.skip(",
+      "reason": null,
+      "high_surface": true,
+      "snippet": "pytest.skip(",
+      "in_ebh7_skip_register_file": false
+    },
+    {
+      "file": "tests/qualification/ebh_5/test_ebh_5_behavioral_proofs.py",
+      "line": 296,
+      "marker": "importorskip",
+      "reason": null,
+      "high_surface": true,
+      "snippet": "pytest.importorskip(\"opentelemetry.sdk._logs\")",
+      "in_ebh7_skip_register_file": false
+    },
+    {
+      "file": "tests/qualification/ebh_7/test_ebh_7_audit_remediation_gates.py",
+      "line": 52,
+      "marker": "pytest.mark.xfail",
+      "reason": null,
+      "high_surface": true,
+      "snippet": "assert \"@pytest.mark.xfail\" not in text, f\"xfail forbidden in {path}\"",
+      "in_ebh7_skip_register_file": false
+    },
+    {
+      "file": "tests/qualification/ebh_7/test_ebh_7_b6_junit_skip_disposition_gates.py",
+      "line": 418,
+      "marker": "pytest.skip(",
+      "reason": null,
+      "high_surface": true,
+      "snippet": "assert \"pytest.skip(\" in source, r.node_id",
+      "in_ebh7_skip_register_file": false
+    },
+    {
+      "file": "tests/qualification/ebh_7/test_ebh_7_b6_junit_skip_disposition_gates.py",
+      "line": 422,
+      "marker": "pytest.skip(",
+      "reason": null,
+      "high_surface": true,
+      "snippet": "assert \"pytest.skip(\" in source.splitlines()[line - 1], f\"skip site line mismatch for {r.node_id}\"",
+      "in_ebh7_skip_register_file": false
+    },
+    {
+      "file": "tests/qualification/ebh_7/test_ebh_7_b6_junit_skip_disposition_gates.py",
+      "line": 432,
+      "marker": "pytest.skip(",
+      "reason": null,
+      "high_surface": true,
+      "snippet": "assert \"pytest.skip(\" not in _function_source(file_rel, fn), ev_node",
+      "in_ebh7_skip_register_file": false
+    },
+    {
+      "file": "tests/qualification/ent_audit_x/acceptance/test_ent_a_ent_a_bnd_01.py",
+      "line": 13,
+      "marker": "pytest.skip(",
+      "reason": null,
+      "high_surface": true,
+      "snippet": "pytest.skip(\"semantic gate matrix requires ENT_AUDIT_X_SEMANTIC=1\")",
+      "in_ebh7_skip_register_file": false
+    },
+    {
+      "file": "tests/qualification/ent_audit_x/acceptance/test_ent_a_ent_a_bnd_02.py",
+      "line": 13,
+      "marker": "pytest.skip(",
+      "reason": null,
+      "high_surface": true,
+      "snippet": "pytest.skip(\"semantic gate matrix requires ENT_AUDIT_X_SEMANTIC=1\")",
+      "in_ebh7_skip_register_file": false
+    },
+    {
+      "file": "tests/qualification/ent_audit_x/acceptance/test_ent_a_ent_a_bnd_03.py",
+      "line": 13,
+      "marker": "pytest.skip(",
+      "reason": null,
+      "high_surface": true,
+      "snippet": "pytest.skip(\"semantic gate matrix requires ENT_AUDIT_X_SEMANTIC=1\")",
+      "in_ebh7_skip_register_file": false
+    },
+    {
+      "file": "tests/qualification/ent_audit_x/acceptance/test_ent_a_ent_a_cmp_01.py",
+      "line": 13,
+      "marker": "pytest.skip(",
+      "reason": null,
+      "high_surface": true,
+      "snippet": "pytest.skip(\"semantic gate matrix requires ENT_AUDIT_X_SEMANTIC=1\")",
+      "in_ebh7_skip_register_file": false
+    },
+    {
+      "file": "tests/qualification/ent_audit_x/acceptance/test_ent_a_ent_a_cmp_02.py",
+      "line": 13,
+      "marker": "pytest.skip(",
+      "reason": null,
+      "high_surface": true,
+      "snippet": "pytest.skip(\"semantic gate matrix requires ENT_AUDIT_X_SEMANTIC=1\")",
+      "in_ebh7_skip_register_file": false
+    },
+    {
+      "file": "tests/qualification/ent_audit_x/acceptance/test_ent_a_ent_a_cmp_03.py",
+      "line": 13,
+      "marker": "pytest.skip(",
+      "reason": null,
+      "high_surface": true,
+      "snippet": "pytest.skip(\"semantic gate matrix requires ENT_AUDIT_X_SEMANTIC=1\")",
+      "in_ebh7_skip_register_file": false
+    },
+    {
+      "file": "tests/qualification/ent_audit_x/acceptance/test_ent_a_ent_a_ctr_01.py",
+      "line": 13,
+      "marker": "pytest.skip(",
+      "reason": null,
+      "high_surface": true,
+      "snippet": "pytest.skip(\"semantic gate matrix requires ENT_AUDIT_X_SEMANTIC=1\")",
+      "in_ebh7_skip_register_file": false
+    },
+    {
+      "file": "tests/qualification/ent_audit_x/acceptance/test_ent_a_ent_a_ctr_02.py",
+      "line": 13,
+      "marker": "pytest.skip(",
+      "reason": null,
+      "high_surface": true,
+      "snippet": "pytest.skip(\"semantic gate matrix requires ENT_AUDIT_X_SEMANTIC=1\")",
+      "in_ebh7_skip_register_file": false
+    },
+    {
+      "file": "tests/qualification/ent_audit_x/acceptance/test_ent_a_ent_a_ctr_03.py",
+      "line": 13,
+      "marker": "pytest.skip(",
+      "reason": null,
+      "high_surface": true,
+      "snippet": "pytest.skip(\"semantic gate matrix requires ENT_AUDIT_X_SEMANTIC=1\")",
+      "in_ebh7_skip_register_file": false
+    },
+    {
+      "file": "tests/qualification/ent_audit_x/acceptance/test_ent_a_ent_a_doc_01.py",
+      "line": 13,
+      "marker": "pytest.skip(",
+      "reason": null,
+      "high_surface": true,
+      "snippet": "pytest.skip(\"semantic gate matrix requires ENT_AUDIT_X_SEMANTIC=1\")",
+      "in_ebh7_skip_register_file": false
+    },
+    {
+      "file": "tests/qualification/ent_audit_x/acceptance/test_ent_a_ent_a_doc_02.py",
+      "line": 13,
+      "marker": "pytest.skip(",
+      "reason": null,
+      "high_surface": true,
+      "snippet": "pytest.skip(\"semantic gate matrix requires ENT_AUDIT_X_SEMANTIC=1\")",
+      "in_ebh7_skip_register_file": false
+    },
+    {
+      "file": "tests/qualification/ent_audit_x/acceptance/test_ent_a_ent_a_doc_03.py",
+      "line": 13,
+      "marker": "pytest.skip(",
+      "reason": null,
+      "high_surface": true,
+      "snippet": "pytest.skip(\"semantic gate matrix requires ENT_AUDIT_X_SEMANTIC=1\")",
+      "in_ebh7_skip_register_file": false
+    },
+    {
+      "file": "tests/qualification/ent_audit_x/acceptance/test_ent_a_ent_a_dup_01.py",
+      "line": 13,
+      "marker": "pytest.skip(",
+      "reason": null,
+      "high_surface": true,
+      "snippet": "pytest.skip(\"semantic gate matrix requires ENT_AUDIT_X_SEMANTIC=1\")",
+      "in_ebh7_skip_register_file": false
+    },
+    {
+      "file": "tests/qualification/ent_audit_x/acceptance/test_ent_a_ent_a_dup_02.py",
+      "line": 13,
+      "marker": "pytest.skip(",
+      "reason": null,
+      "high_surface": true,
+      "snippet": "pytest.skip(\"semantic gate matrix requires ENT_AUDIT_X_SEMANTIC=1\")",
+      "in_ebh7_skip_register_file": false
+    },
+    {
+      "file": "tests/qualification/ent_audit_x/acceptance/test_ent_a_ent_a_dup_03.py",
+      "line": 13,
+      "marker": "pytest.skip(",
+      "reason": null,
+      "high_surface": true,
+      "snippet": "pytest.skip(\"semantic gate matrix requires ENT_AUDIT_X_SEMANTIC=1\")",
+      "in_ebh7_skip_register_file": false
+    },
+    {
+      "file": "tests/qualification/ent_audit_x/acceptance/test_ent_a_ent_a_evol_01.py",
+      "line": 13,
+      "marker": "pytest.skip(",
+      "reason": null,
+      "high_surface": true,
+      "snippet": "pytest.skip(\"semantic gate matrix requires ENT_AUDIT_X_SEMANTIC=1\")",
+      "in_ebh7_skip_register_file": false
+    }
+  ]
+}

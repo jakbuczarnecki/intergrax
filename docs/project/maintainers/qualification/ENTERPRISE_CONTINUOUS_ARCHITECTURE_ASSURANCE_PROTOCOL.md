@@ -21,6 +21,10 @@
 
 **Baseline inventory (recompute at every audit):** **225** `FRZ-*` criteria in **26** families at checklist HEAD synchronized with repository checkout.
 
+**MCP-SERVER-X (2026-11-11):** Formal stage closure for platform MCP exposure uses **incremental evidence** against existing FRZ families (e.g. BND, CMP, EXE, SEC, TEN) via campaign matrix MCP-ACC and dossier notes — **not** a new `FRZ-MCP-*` criterion family unless operator separately authorizes OD-MCP-07 path B. Checklist row **count remains 225**; no MCP stage PASS may promote checklist rows without certifier role.
+
+**PDC-X (2026-11-11):** The eight-domain completeness stage (roadmap §3.2) uses Change Delta (§2.A) per batch, Parent Closure (§2.B) at stage closure and a Full Platform run (§2.C) at its global cross-audit, with **incremental evidence** against existing FRZ families — **no** new `FRZ-PDC-*` family; checklist count remains **225**. Whether ECAP needs dedicated domain sections for evaluation (D5) or artifacts (D8) under §16 is decided in PDC-P3. **PDC-P3 decision (PDC-P3-D04):** no new ECAP domain sections. Artifact lifecycle (D8) is an accepted **feature** coordinating existing owners (ADR-PDC-08), and its audit coverage maps to FRZ-OWN, FRZ-SEC-09, FRZ-AUD-05 and FRZ-REC-10 through `platform_domain_completeness/PDC_FRZ_COVERAGE_MATRIX.md`.
+
 ---
 
 ## ECAP-§1 — Purpose, Scope and Authority
@@ -43,7 +47,7 @@ This protocol MUST ensure that enterprise compliance is **evidence-driven**, **s
 | **ECAP-P2** | Historical stage `CLOSED` MUST NOT imply current-HEAD `FRZ-*` PASS. |
 | **ECAP-P3** | A change-delta audit MUST NOT claim full-platform certification. |
 | **ECAP-P4** | Implementation agents MUST NOT self-accept `FRZ-*` PASS or publish `IIAC_*_PASS` / activate IIAC policy. |
-| **IIAC** | [INTEGRAX Internal Independent Agent Certification Protocol](INTEGRAX_INTERNAL_INDEPENDENT_AGENT_CERTIFICATION_PROTOCOL.md) — **NOT IN FORCE** until the fail-closed activation gate and an operator activation record. Session B PASS does not by itself activate the policy. |
+| **IIAC** | [INTEGRAX Internal Independent Agent Certification Protocol](INTEGRAX_INTERNAL_INDEPENDENT_AGENT_CERTIFICATION_PROTOCOL.md) — **`IN_FORCE`** (`IIAC-2026-11-05.1`) per [`IIAC_POLICY_ACTIVATION_RECORD.json`](IIAC_POLICY_ACTIVATION_RECORD.json), verified by the fail-closed activation gate with the operator activation record `IIAC-OD-01-2026-11-05`; the earlier "NOT IN FORCE until ..." wording is superseded. Session B PASS alone did not activate the policy. |
 | **ECAP-P5** | Replaceability MUST NOT be claimed without RPL-A..H evidence where extensibility is promised. |
 | **ECAP-P6** | Corrective work MUST be opened only for proven invariant violations or missing mandatory evidence—not hypothetical perfection. |
 
@@ -149,9 +153,9 @@ Conflicts with ratified domain semantics: **STOP — ARCHITECTURE DECISION REQUI
 | **B3** | Positive proofs per stage qualification record. |
 | **B4** | Adversarial negatives (fail-closed, bypass attempts). |
 | **B5** | Execution evidence bundle at exact SHA. |
-| **B6** | Independent exact-SHA acceptance recorded in roadmap §5 ledger. **Active policy:** human Protocol 03 until IIAC `IN_FORCE`; then **IIAC-B6** (independent agent session + manifest + certifier gate — semantics preserved). |
+| **B6** | Independent exact-SHA acceptance recorded in roadmap §5 ledger. **Active policy:** IIAC `IN_FORCE` since 2026-11-05 (`IIAC-2026-11-05.1`): **IIAC-B6** (independent agent session + manifest + certifier gate — semantics preserved); human Protocol 03 is historical for EVOL-X and ENT-AUDIT-X. |
 
-**EVOL-X scoped automation (not in force):** amendment `ECAP-P4-EVOL-SCOPE-AUTO-B6` … **Superseded by IIAC** when IIAC activates — archive with pointer; no dual activation.
+**EVOL-X scoped automation (never activated):** amendment `ECAP-P4-EVOL-SCOPE-AUTO-B6` … **Superseded by IIAC** (policy `IIAC-2026-11-05.1` IN_FORCE) — archived with pointer; no dual activation.
 
 ### ECAP-§2.C Full Platform Current-HEAD Audit
 

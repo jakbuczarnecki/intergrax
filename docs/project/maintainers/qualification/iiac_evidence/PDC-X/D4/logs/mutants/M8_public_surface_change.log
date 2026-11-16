@@ -1,0 +1,29 @@
+F
+================================== FAILURES ===================================
+___________ test_r014_public_surface_matches_the_declared_manifest ____________
+
+    def test_r014_public_surface_matches_the_declared_manifest() -> None:
+        violations = verify_public_api(
+            compute_public_api_fingerprints(),
+            HOSTING_PUBLIC_API_FINGERPRINTS,
+            HOSTING_PUBLIC_API_VERSION_HISTORY,
+            HOSTING_PUBLIC_API_VERSION,
+        )
+>       assert violations == [], (
+            "The public hosting API changed without a version decision. Review the change, then run "
+            "`uv run python -m intergrax.hosting.public_api`, update HOSTING_PUBLIC_API_FINGERPRINTS, "
+            "bump HOSTING_PUBLIC_API_VERSION and add a HOSTING_PUBLIC_API_VERSION_HISTORY entry: " + "; ".join(violations)
+        )
+E       AssertionError: The public hosting API changed without a version decision. Review the change, then run `uv run python -m intergrax.hosting.public_api`, update HOSTING_PUBLIC_API_FINGERPRINTS, bump HOSTING_PUBLIC_API_VERSION and add a HOSTING_PUBLIC_API_VERSION_HISTORY entry: public symbol changed without a declared version: HostedApplicationEngine; live surface digest differs from the digest recorded for version 1.0.0; bump the version and add a history entry
+E       assert ['public symb...istory entry'] == []
+E         
+E         Left contains 2 more items, first extra item: 'public symbol changed without a declared version: HostedApplicationEngine'
+E         Use -v to get more diff
+
+tests\qualification\pdc_x\d4\test_d4_public_api_manifest.py:29: AssertionError
+---------------------------- Captured stdout setup ----------------------------
+Wrote build\agent_fleet_inventory.json (21 agents)
+=========================== short test summary info ===========================
+FAILED tests/qualification/pdc_x/d4/test_d4_public_api_manifest.py::test_r014_public_surface_matches_the_declared_manifest
+!!!!!!!!!!!!!!!!!!!!!!!!!! stopping after 1 failures !!!!!!!!!!!!!!!!!!!!!!!!!!
+1 failed in 0.59s

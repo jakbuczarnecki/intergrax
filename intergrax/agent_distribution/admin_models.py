@@ -6,24 +6,25 @@
 from __future__ import annotations
 
 from collections.abc import Mapping
+from enum import StrEnum
 
 from pydantic import BaseModel, ConfigDict, Field, field_validator, model_validator
 
-from intergrax.agent_distribution.agent_contract_authority import (
-    PackageAgentContractAuthorityRecord,
-)
-from intergrax.agent_distribution.errors import AgentPackageTrustError
 from intergrax.agent_distribution._config_validation import (
     validate_non_secret_distribution_config,
 )
 from intergrax.agent_distribution._immutable_json import DistributionJsonValue
+from intergrax.agent_distribution.agent_contract_authority import (
+    PackageAgentContractAuthorityRecord,
+)
 from intergrax.agent_distribution.binding import (
     AgentBindingFactoryReference,
     AgentBindingPolicyOverrides,
 )
 from intergrax.agent_distribution.catalog import AgentCatalogEntry, CatalogEntryFilters
-from intergrax.agent_distribution.deployment import DeploymentInstanceState, DrainPolicy
 from intergrax.agent_distribution.dependency import RepositoryDependencyDeclaration
+from intergrax.agent_distribution.deployment import DeploymentInstanceState, DrainPolicy
+from intergrax.agent_distribution.errors import AgentPackageTrustError
 from intergrax.agent_distribution.identity import AgentPackageIdentity
 from intergrax.agent_distribution.installation import InstallationState
 from intergrax.agent_distribution.runtime_revision import (
@@ -34,6 +35,8 @@ from intergrax.agent_distribution.trust import (
     AgentInstallationTrustRecord,
     AgentPackageTrustReasonCode,
 )
+from intergrax.agent_distribution.upgrade_admission import AgentUpgradeRejectionReason
+from intergrax.contracts.agent_lifecycle_state import AgentLifecycleState
 from intergrax.contracts.agent_run_enums import PrincipalType
 from intergrax.contracts.control_plane_mutation import (
     ControlPlaneMutationAuthorizationEvidence,
@@ -65,9 +68,7 @@ class ControlPlaneTenantScopeDenial(BaseModel):
     principal_auth_subject: str | None = None
     reason: str = _NON_EMPTY
 
-    @field_validator(
-        "tenant_id", "resource_type", "resource_id", "resource_scope", "reason"
-    )
+    @field_validator("tenant_id", "resource_type", "resource_id", "resource_scope", "reason")
     @classmethod
     def _strip_required(cls, value: str) -> str:
         normalized = value.strip()
@@ -101,17 +102,11 @@ class AgentPlatformAdminGovernanceBlockedError(AgentPlatformAdminBlockedError):
             "policy_action": self.policy_action,
         }
         if self.authorization_evidence is not None:
-            detail["authorization_evidence"] = self.authorization_evidence.model_dump(
-                mode="json"
-            )
+            detail["authorization_evidence"] = self.authorization_evidence.model_dump(mode="json")
         if self.authorization_scope is not None:
-            detail["authorization_scope"] = self.authorization_scope.model_dump(
-                mode="json"
-            )
+            detail["authorization_scope"] = self.authorization_scope.model_dump(mode="json")
         if self.tenant_scope_denial is not None:
-            detail["tenant_scope_denial"] = self.tenant_scope_denial.model_dump(
-                mode="json"
-            )
+            detail["tenant_scope_denial"] = self.tenant_scope_denial.model_dump(mode="json")
         return detail
 
 
@@ -165,10 +160,53 @@ class InstallAgentRequest(BaseModel):
             if record.artifact_store_ref != self.artifact_store_ref:
                 raise ValueError("package_contract_authority artifact_store_ref mismatch")
             if record.agent_project_metadata_ref != self.agent_project_metadata_ref:
-                raise ValueError(
-                    "package_contract_authority agent_project_metadata_ref mismatch"
-                )
+                raise ValueError("package_contract_authority agent_project_metadata_ref mismatch")
         return self
+
+
+class UpgradeAgentRequest(InstallAgentRequest):
+    """Upgrade the active release of one installation slot to a digest-pinned candidate.
+
+    ``installation_id`` names the new candidate installation; the previous revision is
+    named by ``expected_active_installation_id`` and stays ``installed_active`` unless the
+    candidate passes trust admission and the compatibility check.
+    """
+
+    expected_active_installation_id: str = _NON_EMPTY
+
+    @field_validator("expected_active_installation_id")
+    @classmethod
+    def _strip_expected_active(cls, value: str) -> str:
+        normalized = value.strip()
+        if not normalized:
+            raise ValueError("must be non-empty")
+        return normalized
+
+
+class RetireAgentRequest(BaseModel):
+    """Retire the active installation of one slot (ADR-PDC-01)."""
+
+    model_config = ConfigDict(extra="forbid", frozen=True)
+
+    mutation_id: str = _NON_EMPTY
+    installation_slot_id: str = _NON_EMPTY
+    expected_active_installation_id: str = _NON_EMPTY
+    reason: str | None = Field(default=None, max_length=256)
+
+    @field_validator(
+        "mutation_id",
+        "installation_slot_id",
+        "expected_active_installation_id",
+        "reason",
+    )
+    @classmethod
+    def _strip_optional(cls, value: str | None) -> str | None:
+        if value is None:
+            return None
+        normalized = value.strip()
+        if not normalized:
+            raise ValueError("must be non-empty")
+        return normalized
 
 
 class BindAgentRequest(BaseModel):
@@ -189,9 +227,7 @@ class BindAgentRequest(BaseModel):
 
     @field_validator("config", mode="before")
     @classmethod
-    def _reject_secret_config(
-        cls, value: object
-    ) -> Mapping[str, DistributionJsonValue]:
+    def _reject_secret_config(cls, value: object) -> Mapping[str, DistributionJsonValue]:
         if not isinstance(value, Mapping):
             raise ValueError("config must be a mapping")
         return validate_non_secret_distribution_config(
@@ -235,9 +271,7 @@ class UpdateAgentBindingRequest(BaseModel):
 
     @field_validator("config", mode="before")
     @classmethod
-    def _reject_secret_config(
-        cls, value: object
-    ) -> Mapping[str, DistributionJsonValue]:
+    def _reject_secret_config(cls, value: object) -> Mapping[str, DistributionJsonValue]:
         if not isinstance(value, Mapping):
             raise ValueError("config must be a mapping")
         return validate_non_secret_distribution_config(
@@ -578,9 +612,7 @@ class PostCutoverFailureResultView(BaseModel):
 
     runtime_revision_id: str
     instance_state: DeploymentInstanceState | None = None
-    failure_mark_authorization_evidence: (
-        ControlPlaneMutationAuthorizationEvidence | None
-    ) = None
+    failure_mark_authorization_evidence: ControlPlaneMutationAuthorizationEvidence | None = None
     rollback_result: RollbackResultView | None = None
     audit_event_types: tuple[str, ...] = ()
 
@@ -595,6 +627,44 @@ class MutationResultView(BaseModel):
 
 class InstallationMutationResult(MutationResultView):
     installation: InstallationView
+
+
+class AgentUpgradeOutcome(StrEnum):
+    UPGRADED = "upgraded"
+    REJECTED = "rejected"
+    ALREADY_UPGRADED = "already_upgraded"
+
+
+class UpgradeViolationView(BaseModel):
+    """One typed compatibility violation recorded for a rejected upgrade."""
+
+    model_config = ConfigDict(extra="forbid", frozen=True)
+
+    reason: AgentUpgradeRejectionReason
+    subject: str
+    detail: str
+
+
+class UpgradeAgentResult(MutationResultView):
+    """Upgrade outcome: ``installation`` is the candidate; ``active_installation`` serves the slot."""
+
+    outcome: AgentUpgradeOutcome
+    installation: InstallationView
+    active_installation: InstallationView
+    previous_installation_id: str
+    rejection_reason: AgentUpgradeRejectionReason | None = None
+    violations: tuple[UpgradeViolationView, ...] = ()
+    refreshed_binding_ids: tuple[str, ...] = ()
+
+
+class RetireAgentResult(MutationResultView):
+    """Retire outcome: installation and evidence retained, routing eligibility removed."""
+
+    installation: InstallationView
+    lifecycle_state: AgentLifecycleState = AgentLifecycleState.RETIRED
+    disabled_binding_ids: tuple[str, ...] = ()
+    affected_logical_agent_ids: tuple[str, ...] = ()
+    already_done: bool = False
 
 
 class BindingMutationResult(MutationResultView):

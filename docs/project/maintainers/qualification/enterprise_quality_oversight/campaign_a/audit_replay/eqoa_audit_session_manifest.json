@@ -1,0 +1,33 @@
+{
+  "stage_id": "EQO-A",
+  "certification_profile": "iiac-v1",
+  "policy_version": "IIAC-2026-11-05.1",
+  "implementation_session_id": "EQO-A executor session (id not stated in the handoff; the app's top linked session is local_d172daf6-c9b4-4b83-ba5b-a65fe3c1c339)",
+  "implementation_agent_id": "orchestrator (EQO-A executor, Delivery DevOS role registry)",
+  "auditor_session_id": "502865f5-02d3-4057-be94-8a5a4cf7c7e4 (auditor session scratch id; started from local_906c0620-5b4f-46ba-b20e-687b63f14ccf)",
+  "auditor_agent_id": "independent-quality-auditor (claude-sonnet-5-5)",
+  "certifier_session_id": "N/A - EQO-A issues no certificate; no certifier session exists",
+  "certifier_agent_id": "N/A - EQO-A issues no certificate; no certifier agent exists",
+  "audited_implementation_sha": "258bbf6abb6fdbb92ef0185d058527fbb1e47f04",
+  "test_execution_sha": "258bbf6abb6fdbb92ef0185d058527fbb1e47f04",
+  "evidence_publication_sha": "0000000000000000000000000000000000000000",
+  "audit_execution_sha": "258bbf6abb6fdbb92ef0185d058527fbb1e47f04",
+  "audit_report_digest": "ad693991c260ae652bc4b9441e30eea012d56deabc7a56277e21d9e33b267001",
+  "audit_scope_manifest_digest": "d3e1879112e01b5a7fe05de9a2c2f20949b71e83d3b52c82c768f832af2c22a9",
+  "test_matrix_digest": "e0093a1dbdc44ce0fff2ac3c2740949247953d1fc823b34d9af55f18a52c1fc6",
+  "findings_digest": "48356aeb48f65ea5d159f548022cfe1632dd04ac04d94e759d83cf8f509f6eda",
+  "verdict": "PASS_SCOPED",
+  "limitations": [
+    "Verdict applies to the EQO-A dossier after corrective loop 2 (MANIFEST.json sha256 d3e1879112e01b5a7fe05de9a2c2f20949b71e83d3b52c82c768f832af2c22a9), not to the platform; no certificate, no FRZ or stage status is issued or changed.",
+    "PASS_SCOPED: AUD-01..AUD-11 (v1) and R-1..R-3 (v2) are resolved in the dossier data and the checker replay passes (C01-C15); verdict history CONDITIONAL, CONDITIONAL, PASS_SCOPED. Evidence levels remain mostly E2/E3; 62 FRZ rows are EV-INCOMPLETE or HIST-REQUAL for lack of E3 evidence and no FRZ PASS is current-code proof on the strength of this dossier.",
+    "All seven BLOCKER/HIGH findings were re-checked and upheld (A4-003, A4-004, A0-007 and A5-007 by replaying the gate, verifier or code path); none was found inflated.",
+    "Sampling only: 12 of 60 A2 Tier-1 rows, 14 of 225 FRZ rows, 4 of 50 drift rows, 7 of 73 conflict entries content-checked (all screened), 9 of 20 seeds re-verified from source, 8 random MEDIUM/LOW findings re-read.",
+    "The Campaign A spec (12 certification questions and 20 concerns) was not available to the auditor; Q01-Q12 could not be compared with the spec (DEV-02).",
+    "No pytest slot was used by the auditor in any round; E4 claims T03 (EQOA-A4-005) and T06 were not re-executed; CI results for the baseline SHA were not checked.",
+    "The post-baseline delta (origin/development cc57311d25a658a635c5044ea12ae946ac136a35 at audit time) was not used for any verdict.",
+    "evidence_publication_sha and certification_publication_sha are all-zero placeholders: the dossier is not yet published; session ids are those visible to the auditor session, not host-issued attestations (assurance level process_enforced)."
+  ],
+  "certification_publication_sha": "0000000000000000000000000000000000000000",
+  "assurance_level": "process_enforced",
+  "handoff_record_path": "IIAC_SESSION_HANDOFF_RECORD_EQO_A.md"
+}

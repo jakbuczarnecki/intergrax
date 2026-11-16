@@ -18,7 +18,7 @@ Without a platform-owned tool runtime:
 Intergrax Tools addresses this through `ToolContract` / registry, layered permissions, planning and selection, `ToolRuntime`, invocation patterns, idempotency and resilience hooks, and observability on the platform event spine.
 
 > [!NOTE]
-> **Maturity boundary:** Phase **TOOL-ENG** is **closed** (36/36) with a gate-tested **200**-`tool_id` catalog and a mature invoke engine on the harness path. That is **not** universal production qualification: not every side-effect path is customer-qualified, governance wiring is **partial** on some external-effect surfaces, **TOKEN-TOOLS-1B** runtime compact-catalog wiring remains **Planned**, **TOOL-PRODUCT-ROI** tools (`code.*`, `git.*`, `patch.*`, browser automation, research evidence) remain **Planned**, and Protocol v2 audit (2026-08-18 campaign) accepted residual governed-boundary and side-effect safety gaps beyond prior closeout - see [Protocol v2 tools target invariants](#protocol-v2-tools-target-invariants-2026-08-18). See [Current maturity](#current-maturity).
+> **Maturity boundary:** Phase **TOOL-ENG** is **closed** (36/36) with a gate-tested **201**-`tool_id` catalog (200 at TOOL-ENG closure; `rag.schedule_graph_maintenance_job` was added later, see "Catalog scale vs engine maturity") and a mature invoke engine on the harness path. That is **not** universal production qualification: not every side-effect path is customer-qualified, governance wiring is **partial** on some external-effect surfaces, **TOKEN-TOOLS-1B** runtime compact-catalog wiring remains **Planned**, **TOOL-PRODUCT-ROI** tools (`code.*`, `git.*`, `patch.*`, browser automation, research evidence) remain **Planned**, and Protocol v2 audit (2026-08-18 campaign) accepted residual governed-boundary and side-effect safety gaps beyond prior closeout - see [Protocol v2 tools target invariants](#protocol-v2-tools-target-invariants-2026-08-18). See [Current maturity](#current-maturity).
 
 **Primary audience:** Principal / Staff engineers, harness integrators, and extension authors wiring `ToolProfile`, plugins, and agent tool access - after the platform overview in the root README.
 
@@ -40,7 +40,7 @@ Intergrax Tools addresses this through `ToolContract` / registry, layered permis
 | **Skills relation** | Skills compose `tool_ids` and guidance - **not** runtime-callable tools |
 | **Integrations relation** | Vendor/backend binding behind tool handlers |
 | **MCP** | `ToolContract` export/protocol surface - not a duplicate catalog |
-| **Catalog scale** | Same runtime model exercised at **200** tools / **49** bundles (gate-tested count) |
+| **Catalog scale** | Same runtime model exercised at **201** tools (gate-asserted count) / **49** bundles (per plan/register; no gate asserting this number was located) |
 | **Production boundary** | Harness-proven engine - not representative customer SLO or universal side-effect qualification |
 | **Maturity** | Four-axis statement in [Current maturity](#current-maturity) |
 
@@ -332,7 +332,7 @@ MCP is an **exposure/protocol boundary** - not a second tool catalog or bypass a
 Tool engine maturity  ≠  every planned tool exists
 ```
 
-- **Shipped catalog:** **200** `tool_id`s and **49** bundles per plan/register; **200** count gate-tested in `tests/unit/tools/providers/test_catalog_expansion.py`.
+- **Shipped catalog:** **201** `tool_id`s (asserted by `tests/unit/tools/providers/test_catalog_expansion.py`, `len(registered) == 201`) and **49** bundles per plan/register (no gate asserting the bundle count was located). The count was 200 at **TOOL-ENG** closure; commit `ec7b5bc9bc2c61bbc4f863ec30d8183300c82055` (2026-09-16) added `rag.schedule_graph_maintenance_job` to the RAG bundle and moved the gate from 200 to 201. Other mentions of "200" elsewhere in this document (maturity, evidence and planning sections) were not updated by this note. The registry count itself was not re-executed when this note was drafted.
 - **TOOL-PRODUCT-ROI:** **Planned** - `code.*`, `git.*`, `patch.apply_safe`, browser automation suite, research evidence tools are **not** shipped unless a matching implementation PR lands.
 
 Large catalog exercises the same runtime model - it is **not** a substitute for production qualification.
@@ -568,6 +568,7 @@ Remediation: **TOOLS-GOVERNED-BOUNDARY-INTEGRITY** (01, 02, 03) and **TOOLS-SIDE
 | Selection / plugins | [`satellites/TOOLS_selection_and_plugins.md`](satellites/TOOLS_selection_and_plugins.md) |
 | Runtime config reference | [`satellites/TOOLS_runtime_config_reference.md`](satellites/TOOLS_runtime_config_reference.md) |
 | Plan | [`maintainers/plans/TOOLS.md`](../maintainers/plans/TOOLS.md) |
+| Capability acquisition / qualified marketplace tools (UCA) | [`S24_GAP_02_QUALIFIED_MARKETPLACE_TOOL_HANDOFF.md`](../maintainers/architecture/S24_GAP_02_QUALIFIED_MARKETPLACE_TOOL_HANDOFF.md) · [`CAPABILITY_MARKETPLACE_ENGINE.md`](CAPABILITY_MARKETPLACE_ENGINE.md) (section 5) |
 | Skills | [`SKILLS.md`](SKILLS.md) |
 | Integrations | [`INTEGRATIONS.md`](INTEGRATIONS.md) |
 | Governance | [`GOVERNED_EXECUTION.md`](GOVERNED_EXECUTION.md) |

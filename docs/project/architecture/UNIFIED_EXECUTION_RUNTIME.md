@@ -12,6 +12,8 @@
 > [!NOTE]
 > **Maturity boundary:** **Execution Engine core** is **FROZEN / ENTERPRISE-QUALIFIED** per UEA and execution qualification artifacts. Canonical `ExecutionId`, root `ExecutionRuntime`, `ExecutionBoundary`, `StrategyExecutionRouter`, `RuntimeEvent.execution_id`, child Execution lineage, `ExecutionTreeSnapshot`, and certified recovery semantics exist on approved Execution boundaries. **Consumer adoption** (legacy harness routing, full five-ID evidence convergence on every surface, product-host qualification) may still be **PARTIAL** — a separate dimension from frozen core. Extended engineering sections (§42.8+) live in the [runtime extended satellite](satellites/UNIFIED_EXECUTION_RUNTIME_runtime_extended.md).
 
+> **Scope label (EQO-A remediation note, as of 2026-11-16):** the FROZEN / ENTERPRISE-QUALIFIED statement is a domain-hub statement. At roadmap level it is carried by the freeze checklist rows FRZ-EXE-01..07 (PASS) and by the scoped stage closures `GOV-X2`, `EBH-4` and `HARNESS-FINAL`; those are not an ARCH-FREEZE closure. This note does not establish that those records cover the current head; that is established only by replay evidence.
+
 ## Why it matters
 
 Without a platform-owned execution runtime, every path could independently implement IDs, retries, failure handling, cancellation, pause/resume, HITL, event emission, policy checks, and terminal states. That produces inconsistent behavior, untraceable retries, hidden callbacks, policy bypass, incompatible audit histories, and difficult recovery.

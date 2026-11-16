@@ -5,18 +5,16 @@
 from __future__ import annotations
 
 import asyncio
-from unittest.mock import AsyncMock, patch
-
-import intergrax.applications._shared.mcp_catalog_tools as mcp_catalog_tools_module
+from unittest.mock import AsyncMock
 
 import pytest
 from fastapi import FastAPI
 from fastapi.testclient import TestClient
 from fastmcp import Client
-from pydantic import BaseModel
-
+from fastmcp.exceptions import ToolError
 from intergrax.applications._shared.fastapi_mcp import couple_fastapi_with_mcp
 from intergrax.applications._shared.harness_auth import HarnessAuthState
+from intergrax.applications._shared.mcp_identity_mode import McpIdentityMode
 from intergrax.applications._shared.mcp_nexus_server import build_nexus_mcp_server
 from intergrax.contracts.execution_identity import mint_run_id, mint_task_id
 from intergrax.runtime.execution.host_task import HostTaskExecutionPort
@@ -26,10 +24,9 @@ from intergrax.runtime.task.task_result_authoritative_exposure_defaults import (
     terminal_task_result_exposure_no_decision_gate,
 )
 from intergrax.tools.core.contracts import ToolContract, ToolRiskLevel
-from intergrax.tools.mcp_result_bounds import emit_bounded_mcp_list
-from fastmcp.exceptions import ToolError
 from intergrax.tools.registry.runtime import ToolRegistry
 from intergrax.tools.tool_executor import ToolHandler
+from pydantic import BaseModel
 
 pytestmark = [pytest.mark.unit, pytest.mark.gate]
 
@@ -76,6 +73,7 @@ def _build_mcp(
 ) -> object:
     port = host or AsyncMock(spec=HostTaskExecutionPort)
     return build_nexus_mcp_server(
+        identity_mode=McpIdentityMode.LOCAL_DEV_EXPLICIT,
         name="tl11-discovery-qual",
         host_execution=port,
         registry=AgentRegistry(),
@@ -148,31 +146,26 @@ async def test_discovery_invalid_empty_tool_id() -> None:
 @pytest.mark.asyncio
 async def test_discovery_oversized_catalog_raises() -> None:
     registry = ToolRegistry()
-    for index in range(50):
+    for index in range(8):
         registry.register(
-            _contract(f"qual.big.{index}", description="z" * 200),
+            _contract(f"qual.big.{index}", description="z" * 200_000),
             _noop_handler(),
         )
     mcp = _build_mcp(registry)
 
-    def _tight_list(payload: list[object]) -> list[object]:
-        return emit_bounded_mcp_list(payload, max_bytes=256)
-
-    with patch.object(mcp_catalog_tools_module, "emit_bounded_mcp_list", _tight_list):
-        async with Client(mcp) as client:
-            with pytest.raises(ToolError, match="mcp_payload_byte_limit_exceeded"):
-                await client.call_tool("list_catalog_tools", {})
+    async with Client(mcp) as client:
+        with pytest.raises(ToolError, match="MCP_RESULT_BOUND_EXCEEDED"):
+            await client.call_tool("list_catalog_tools", {})
 
 
 @pytest.mark.asyncio
-async def test_discovery_oversized_description_returns_byte_limit_error() -> None:
+async def test_discovery_oversized_description_is_a_typed_byte_limit_tool_error() -> None:
     registry = ToolRegistry()
     registry.register(_contract("qual.huge", description="ż" * 2_000_000), _noop_handler())
     mcp = _build_mcp(registry)
     async with Client(mcp) as client:
-        result = await client.call_tool("describe_catalog_tool", {"tool_id": "qual.huge"})
-    assert result.data["error"] == "mcp_payload_byte_limit_exceeded"
-    assert result.data["tool_id"] == "qual.huge"
+        with pytest.raises(ToolError, match="MCP_RESULT_BOUND_EXCEEDED"):
+            await client.call_tool("describe_catalog_tool", {"tool_id": "qual.huge"})
 
 
 @pytest.mark.asyncio

@@ -5,6 +5,7 @@
 
 from __future__ import annotations
 
+import asyncio
 from dataclasses import dataclass
 from typing import Any
 
@@ -12,25 +13,44 @@ from fastmcp.exceptions import ToolError
 from pydantic import BaseModel, ValidationError
 
 from intergrax.agents.tool_enablement import ToolEnablementProfile
-from intergrax.applications._shared.mcp_harness_principal import resolve_mcp_run_agent_identity
 from intergrax.applications._shared.catalog_tool_child_mse_admission_hook import (
     CatalogToolChildMeaningfulSideEffectAdmissionHook,
 )
+from intergrax.applications._shared.mcp_harness_principal import resolve_mcp_run_agent_identity
+from intergrax.applications._shared.mcp_identity_mode import McpIdentityMode
+from intergrax.applications._shared.mcp_invocation_id import (
+    MCP_INVOCATION_ID_METADATA_KEY,
+    mint_mcp_invocation_id,
+)
+from intergrax.applications._shared.mcp_wire_errors import (
+    bound_cross_loop_catalog_payload,
+    bound_mcp_result_or_raise,
+    mcp_code_for_legacy,
+    mcp_tool_error,
+)
 from intergrax.contracts.agent_run import RequestIdentity, canonical_principal_id_from_request_identity
-from intergrax.runtime.execution.catalog_tool_child_work_port import CatalogToolChildInvokeWork
+from intergrax.contracts.execution_bound_catalog_tool_invocation import (
+    ExecutionBoundCatalogToolInvoker,
+    ExecutionBoundCatalogToolInvokeRequest,
+)
 from intergrax.contracts.execution_identity import (
     peek_active_execution_id,
     peek_active_execution_identity,
     peek_active_execution_task_id,
+    validate_run_id,
+    validate_task_id,
 )
+from intergrax.contracts.mcp_server_definition import McpServerDefinitionErrorCode
 from intergrax.contracts.meaningful_side_effect_authorization import (
     MeaningfulSideEffectAuthorizationPort,
 )
 from intergrax.contracts.root_execution_child_work_ingress import (
     RootExecutionChildWorkIngressPort,
 )
+from intergrax.runtime.cancellation.coordinator import CancellationCoordinator
 from intergrax.runtime.execution.catalog_tool_child_work_port import (
     CatalogToolChildExecutionPort,
+    CatalogToolChildInvokeWork,
 )
 from intergrax.runtime.execution.root_execution_child_work_ingress import (
     RootCatalogChildWorkTicket,
@@ -41,26 +61,21 @@ from intergrax.runtime.governance.active_execution_authority import (
 from intergrax.runtime.governance.active_execution_governance_identity import (
     peek_active_execution_governance_identity,
 )
-from intergrax.runtime.governance.governance_identity_projection import (
-    validate_governance_identity_projection,
-)
-from intergrax.contracts.execution_bound_catalog_tool_invocation import (
-    ExecutionBoundCatalogToolInvokeRequest,
-    ExecutionBoundCatalogToolInvoker,
-)
-from intergrax.contracts.execution_identity import validate_run_id, validate_task_id
-from intergrax.runtime.cancellation.coordinator import CancellationCoordinator
 from intergrax.runtime.governance.control_plane_mutation_authorization import (
     ControlPlaneMutationAuthorizationBoundary,
+)
+from intergrax.runtime.governance.governance_identity_projection import (
+    validate_governance_identity_projection,
 )
 from intergrax.runtime.task.active_task_registry import ActiveTaskBinding, ActiveTaskRegistry
 from intergrax.runtime.task.task import Task
 from intergrax.runtime.task.task_state import task_state_requires_authoritative_exposure
-from intergrax.tools.mcp_result_bounds import bound_mcp_structured_result
 from intergrax.tools.registry.runtime import ToolRegistry
 
 _METADATA_STEP_ID = "mcp_catalog_invoke_step_id"
 _METADATA_AGENT_ID = "mcp_catalog_invoke_agent_id"
+
+
 @dataclass(frozen=True, slots=True)
 class McpCatalogInvocationComposition:
     """Sanctioned host composition inputs for MCP catalog Tool invoke (no new authority)."""
@@ -75,19 +90,28 @@ class McpCatalogInvocationComposition:
     enable_cross_loop_catalog_child: bool = False
     default_tenant_id: str = "mcp"
     default_user_id: str = "mcp-user"
+    identity_mode: McpIdentityMode = McpIdentityMode.HARNESS_BOUND
+    invoke_timeout_s: float | None = None
+    """Optional bound for one catalog invoke (OD-MCP-RC-02); a synchronous tool thread cannot be killed."""
+    cross_loop_wait_timeout_s: float = 120.0
 
 
 def _tool_error(code: str, detail: str) -> ToolError:
-    return ToolError(f"{code}: {detail}")
+    return mcp_tool_error(mcp_code_for_legacy(code), f"{code}: {detail}")
+
+
+def _deadline_error(seconds: float) -> ToolError:
+    return mcp_tool_error(
+        McpServerDefinitionErrorCode.MCP_DEADLINE_EXCEEDED,
+        f"catalog tool call exceeded {seconds}s; outcome=outcome_unknown "
+        "(a non-cooperative tool thread may still be running)",
+    )
 
 
 def _bound_error_payload(code: str, detail: str, **extra: object) -> dict[str, object]:
-    payload: dict[str, object] = {"error": code, "detail": detail}
+    payload: dict[str, object] = {"error": code, "mcp_code": mcp_code_for_legacy(code).value, "detail": detail}
     payload.update(extra)
-    bounded, truncated = bound_mcp_structured_result(payload)
-    if truncated or not isinstance(bounded, dict):
-        return {"error": "mcp_payload_byte_limit_exceeded"}
-    return bounded
+    return bound_mcp_result_or_raise(payload)
 
 
 async def resolve_mcp_catalog_execution_binding(
@@ -285,10 +309,7 @@ def _serialize_tool_result(result: object) -> dict[str, object]:
         err = result.error
         payload["error_code"] = err.error_code if err is not None else "tool_failed"
         payload["error_message"] = err.error_message if err is not None else "tool_failed"
-    bounded, truncated = bound_mcp_structured_result(payload)
-    if truncated or not isinstance(bounded, dict):
-        return {"error": "mcp_payload_byte_limit_exceeded"}
-    return bounded
+    return bound_mcp_result_or_raise(payload)
 
 
 async def execute_mcp_catalog_tool_invocation(
@@ -307,12 +328,14 @@ async def execute_mcp_catalog_tool_invocation(
     Execution identity (tenant, run, step, agent) is taken from the active task binding
     and bound metadata — not synthesized from untrusted MCP fields alone.
     """
+    invocation_id = mint_mcp_invocation_id()
     identity = resolve_mcp_run_agent_identity(
         harness_auth=None,
         asserted_tenant_id=asserted_tenant_id,
         asserted_user_id=None,
         default_tenant_id=composition.default_tenant_id,
         default_user_id=composition.default_user_id,
+        identity_mode=composition.identity_mode,
     )
     if identity.request_identity is None:
         raise _tool_error(
@@ -341,10 +364,7 @@ async def execute_mcp_catalog_tool_invocation(
 
     cross_loop_ingress = composition.root_child_work_ingress
     if not _in_process_parent_matches_binding(binding, identity.request_identity):
-        if not (
-            composition.enable_cross_loop_catalog_child
-            and cross_loop_ingress is not None
-        ):
+        if not (composition.enable_cross_loop_catalog_child and cross_loop_ingress is not None):
             return _bound_error_payload(
                 "execution_admission_denied",
                 "catalog tool invoke requires in-process parent execution child admission; "
@@ -396,24 +416,36 @@ async def execute_mcp_catalog_tool_invocation(
             work=work,
             admission_hooks=(mse_hook,),
         )
-        terminal = await cross_loop_ingress.submit_catalog_child_work(
-            ticket,
-            wait_timeout_s=120.0,
-        )
+        cross_loop_wait_s = composition.cross_loop_wait_timeout_s
+        if composition.invoke_timeout_s is not None:
+            cross_loop_wait_s = min(cross_loop_wait_s, composition.invoke_timeout_s)
+        try:
+            terminal = await cross_loop_ingress.submit_catalog_child_work(
+                ticket,
+                wait_timeout_s=cross_loop_wait_s,
+            )
+        except TimeoutError as exc:
+            raise _deadline_error(cross_loop_wait_s) from exc
         if not terminal.success:
-            return terminal.payload
+            return bound_cross_loop_catalog_payload(terminal.payload)
         if CancellationCoordinator.is_requested(dict(work.governed_task.metadata)):
             return _bound_error_payload(
                 "execution_cancelled",
                 "active execution cooperative cancellation observed after catalog invoke",
             )
-        return terminal.payload
+        return {
+            **bound_cross_loop_catalog_payload(terminal.payload),
+            MCP_INVOCATION_ID_METADATA_KEY: invocation_id,
+        }
 
     try:
-        tool_result = await child_port.execute(
-            work=work,
-            admission_hooks=(mse_hook,),
-        )
+        execution = child_port.execute(work=work, admission_hooks=(mse_hook,))
+        if composition.invoke_timeout_s is None:
+            tool_result = await execution
+        else:
+            tool_result = await asyncio.wait_for(execution, timeout=composition.invoke_timeout_s)
+    except TimeoutError as exc:
+        raise _deadline_error(composition.invoke_timeout_s or 0.0) from exc
     except ToolError:
         raise
     if CancellationCoordinator.is_requested(dict(binding.task.metadata)):
@@ -424,7 +456,7 @@ async def execute_mcp_catalog_tool_invocation(
     serialized = _serialize_tool_result(tool_result)
     if isinstance(serialized.get("tool_id"), type(None)):
         serialized = {**serialized, "tool_id": tool_id}
-    return serialized
+    return {**serialized, MCP_INVOCATION_ID_METADATA_KEY: invocation_id}
 
 
 __all__ = [

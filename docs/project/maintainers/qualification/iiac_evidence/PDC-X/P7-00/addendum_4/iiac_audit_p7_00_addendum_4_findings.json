@@ -1,0 +1,139 @@
+{
+  "stage_id": "PDC-X/P7-00/addendum_4",
+  "base_sha": "0fc8badd81c4c3e46a3d0ce262c08e8efba41898",
+  "audited_implementation_sha": "d02c399508c40b4a06d846410334d677f226c18d",
+  "test_execution_sha": "0cb5dd011f363a7318246e907a1d307ad968db38",
+  "activation_pin_audit_execution_sha": "2d3eceb6cf7e93dccd4d96919319a6c969b4444b",
+  "dossier_verdict_addendum": "PASS_SCOPED",
+  "iiac_manifest_verdict": "CONDITIONAL",
+  "combined_verdict": "PASS_SCOPED",
+  "counts_new": {
+    "HIGH": 0,
+    "MEDIUM": 1,
+    "LOW": 0,
+    "INFO": 5,
+    "total": 6
+  },
+  "product_change_required_for_activation": [],
+  "orchestrator_or_operator_decision_required": [
+    "F-56"
+  ],
+  "test_only_change_required_before_merge_or_ci": [
+    "F-56 (frozen list in tests/qualification/roadmap_replay_x/_pre_ent_l3_prod_delta.py, if accepted as a repair)",
+    "F-35"
+  ],
+  "status_of_earlier_findings": [
+    {
+      "id": "F-49",
+      "status": "RESOLVED",
+      "evidence": "openai embedding category resolves through the dispatching wrapper; pins in p6_ecapfix/test_p6_ecapfix_openai_embedding_resolve.py (13 tests) pass; all non-equivalent mutants killed"
+    },
+    {
+      "id": "F-50",
+      "status": "RESOLVED",
+      "evidence": "enabled default/pass-through and keyword pass-through pins exist for both wrappers (test_p6_ecapfix_ollama_wrapper_pins.py, the openai file); the mutants that survived in addendum 3 (M4, M5, M6, M9) are now killed for ollama and openai"
+    },
+    {
+      "id": "F-41",
+      "status": "RESOLVED",
+      "evidence": "PDC_TIER3_ROOT_IMPACT_RULES maps the root applications prefix to 8 existing ids; the XD-12 case and p6_impact coverage test pass on the integrated tree without being narrowed (unchanged test files); the eight applications/*/mcp/server.py modules now select those ids"
+    },
+    {
+      "id": "F-09",
+      "status": "RESOLVED",
+      "evidence": "the whole tests/qualification/pdc_x directory: 975 passed, 2 skipped, the process exits by itself with exit 0 after 147 s (logs/pdc_x_whole_dir_exit_proof_at_0cb5dd011.log)"
+    },
+    {
+      "id": "F-52",
+      "status": "OPEN_EXTENDED",
+      "evidence": "the two-write registration (augment, then wrapper re-registration) is repeated for openai; probe P6 shows the same narrow window; the handoff's suggestion to write once was not taken; soak 0 of 200 rounds wrong"
+    },
+    {
+      "id": "F-51",
+      "status": "OPEN_EXTENDED",
+      "evidence": "same coercion and dropped keywords for openai; the config also declares credential_ref and base_url, neither is reachable through the factory (probe P2); catalog-only integration"
+    },
+    {
+      "id": "F-35",
+      "status": "OPEN_UNCHANGED",
+      "evidence": "the same 10 COMPAT-X event-evolution gates fail at head and 0fc8badd8 and pass at the pin"
+    },
+    {
+      "id": "F-53",
+      "status": "OPEN_UNCHANGED",
+      "evidence": "216 of 227 isolated failures are red at the pin as well"
+    },
+    {
+      "id": "F-42, F-07, F-06",
+      "status": "RESOLVED_UNCHANGED",
+      "evidence": "the EBH-5 embedding cases, pdc_x inventory/requirements/wbs tests and the EBH-5 gate files pass"
+    },
+    {
+      "id": "F-43, F-44, F-45",
+      "status": "UNCHANGED",
+      "evidence": "30 legacy C0xx ids unchanged; 1676 of 7045 intergrax python files still select no check; no pdc_x entrypoint was added to the manifest (stays at 85)"
+    }
+  ],
+  "findings": [
+    {
+      "id": "F-56",
+      "severity": "MEDIUM",
+      "area": "closed-stage replay gate / unused manifest deletion",
+      "verification": "TEST_RUN",
+      "title": "Deleting the unused embedding_provider/ollama/manifest.py (T-IGX-036-Z) turns a previously green roadmap_replay_x gate red: test_b6_03_scoped_disposition_valid_at_head",
+      "evidence": "logs/failing_nodes_at_head.log vs failing_nodes_at_prev.log / failing_nodes_at_pin.log: the test passes at 0fc8badd8 and at the pin 2d3eceb6c and fails at 0cb5dd011 with 'scoped_path_not_in_prod_diff:intergrax/integrations/providers/embedding_provider/ollama/manifest.py'. Cause (code read, tests/qualification/roadmap_replay_x/_prod_delta_disposition.py:70-90 and _pre_ent_l3_prod_delta.py:57): the frozen PRE-ENT scoped-delta list names the file; the check requires every listed path to appear in git diff DUP-X-pin..HEAD; the file was added after that pin and is now deleted, so it no longer appears. The plan of T-IGX-036-Z (section 3) states the list only 'names files, never imports them' and its test contract does not include roadmap_replay_x; the G0 stop rule covered only test_iiac_g0_inventory (passes). The five other roadmap_replay_x reds are red at the pin as well.",
+      "impact": "a closed-stage replay gate that was green at the pin is red on the integrated baseline because of this delta; CI contexts that run roadmap_replay_x would show it; no product behaviour is affected",
+      "recommendation": "orchestrator/operator decision: a test-side edit of the frozen list (closed-stage evidence, so it needs acceptance) or accept the red; restoring the file would be another product path and a re-pin; no product change is required for the ACT-N11 rebind"
+    },
+    {
+      "id": "F-57",
+      "severity": "INFO",
+      "area": "CI workflow in the merged range",
+      "verification": "CODE_READ_BY_AUDITOR",
+      "title": ".github/workflows/unit-tests.yml changed in 0fc8badd8..0cb5dd011: EBH-7 default pins moved to 146e7acf1, with test_execution_sha equal to evidence_publication_sha",
+      "evidence": "git diff 0fc8badd8 0cb5dd011 -- .github (commit 0b62781a2, T-IGX-036-W B-P6-E write set): only the SHA values in the concurrency group, EBH7_DEFAULT_* and TEST/EVIDENCE_PUBLICATION_SHA expressions; tests/qualification/ebh_7/_constants.py carries the same values plus EBH7_INDEPENDENT_ACCEPTANCE_BASELINE_SHA; the ebh_7 directory has 14 failures at 0cb5dd011 against 16 at 0fc8badd8 and none that is new (logs/ebh7_dir_run*.log); the remaining ones are the duckdb case and the F10 certification cascade that the WBS records as red until the final re-pin. The MCP-RC handoff listed .github as 'not requested', so this is a change by another batch, not by the F-49/F-41 repairs.",
+      "impact": "none for the audited paths; the claim 'the merge changed no governance path' needs the qualification that .github/workflows/unit-tests.yml (pins) and scripts/qualification/pdc_x_wbs.py changed",
+      "recommendation": "accept"
+    },
+    {
+      "id": "F-58",
+      "severity": "INFO",
+      "area": "environment",
+      "verification": "TEST_RUN",
+      "title": "test_hf_execution_snapshot_reports_configured_state still fails in the shared .venv although the repair added importorskip",
+      "evidence": "the import of sentence_transformers raises inside transformers (traceback in logs/addendum4_regression_run.stdout.txt) with an exception that importorskip does not treat as a missing package; the test fails the same way at 0fc8badd8 and at the pin (failing_nodes_at_*.log)",
+      "impact": "none for the delta; an environment issue of the shared venv",
+      "recommendation": "accept; sync the extra or use a clean venv"
+    },
+    {
+      "id": "F-59",
+      "severity": "INFO",
+      "area": "delta product code (F-49, F-41)",
+      "verification": "PROBE_CONFIRMED",
+      "title": "Positive record: the openai wrapper and the tier-3 root rule do what the handoff says, add no credential, endpoint, tenant or network handling, change exactly one resolve result and drop no check",
+      "evidence": "dispatch probes at 0cb5dd011 vs 0fc8badd8 (logs/dispatch_probes_head.json, _prev.json): of 201 (slug, category) pairs exactly one differs, openai|embedding_provider (TypeError to OpenaiEmbeddingProviderIntegration); ollama behaviour is identical in every probe; the wrapper forwards enum, string, None, absent and unknown categories to the owning factory with unchanged keyword arguments; embedding category resolves without OPENAI_API_KEY (logs/openai_no_key_probe_head.json) while managed_retrieval stays fail-closed; the revision generation (0, 1, 2) and digest behaviour equal ollama's and the pre-fix state; added lines contain only imports of dataclasses.replace, typing, IntegrationFactory, the openai embedding bundle and register_integration (logs/added_line_surface_scan.log). Impact map: one key added (applications), none removed or changed, 0 of 19472 tracked files lose an impact id, 1016 gain ids, shipped JSON equals the generator, 8 ids all in the 85-check manifest with existing entrypoints (logs/impact_map_probes.results.json). Mutation: all 20 non-equivalent wrapper mutants killed (the F-50 pins work) and 7 of 7 non-equivalent tier-3 rule mutants killed; the known F-44 survivor (weak catch-all runtime prefix) is outside the delta. ruff, pyright, tier and boundary gates clean.",
+      "impact": "none",
+      "recommendation": "accept"
+    },
+    {
+      "id": "F-60",
+      "severity": "INFO",
+      "area": "test and deletion changes of T-IGX-036-Z",
+      "verification": "CODE_READ_BY_AUDITOR",
+      "title": "Positive record: the stale-red repairs weaken no assertion and the manifest deletion leaves no importer or catalog reference",
+      "evidence": "local_workspace test: only authoritative_decision_exposure=terminal_task_result_exposure_no_decision_gate() added to four TaskResult constructions plus import order, as the plan states; passes. test_sqlite_run_trace_store: persisted.events[0]['run_id'] becomes .run_id, same value asserted. test_pgvector_vector_store: tenant variable set by monkeypatch and a companion test pins the fail-closed tenant rule. test_hf: importorskip only (F-58). pdc_x conftest: module-scoped leak guard for non-daemon threads; xd_03: closes every built invoker and the refused-composition boundary, no assertion changed; the whole pdc_x directory now exits by itself (975 passed, 147 s). Deleted manifest.py: git grep over code, tests and scripts finds no importer; the only remaining mentions are the G0 impact matrix (two entries, verify_iiac_g0_inventory_completeness PASS and test_iiac_g0_inventory passes), the frozen PRE-ENT list (F-56), docs, plans and the WBS; env prefix INTERGRAX_OLLAMA_EMBEDDING is referenced nowhere else.",
+      "impact": "none",
+      "recommendation": "accept"
+    },
+    {
+      "id": "F-61",
+      "severity": "INFO",
+      "area": "governance delta d02c39950",
+      "verification": "CODE_READ_BY_AUDITOR",
+      "title": "Positive record: the T-IGX-040-B edit of the IIAC protocol is exactly two lines of header wording and weakens no gate",
+      "evidence": "git diff 0cb5dd011 d02c39950: product diff empty; non-docs delta only governance/tickets/T-IGX-040-B.md (approval block); the protocol diff is numstat 2/2, lines 4 and 91: the hard-coded status 'NOT_IN_FORCE' (stale, the record is IN_FORCE) is replaced by a pointer to IIAC_POLICY_ACTIVATION_RECORD.json as the single source of truth; the sentences that IN_FORCE requires the fail-closed gate (--require-in-force) and a separate operator activation record, and that a certification session after the ACT-01 gate correction is required, are kept. No script or test parses the protocol text for the status (git grep); iiac_activation_gate lists the file as MATERIAL_GOVERNANCE_PATHS, so the gate now reports 'stale audit after material governance change' for it, expected until the rebind. The ACT-N05/ACT-N11 logic, --require-in-force text and the activation record are unchanged. IIAC unit tests at d02c39950: 73 passed, 2 failed, both the by-design activation red class; verify_iiac_g0_inventory_completeness PASS.",
+      "impact": "none; the rebind must follow after the protocol edit (as the orchestrator states)",
+      "recommendation": "accept"
+    }
+  ]
+}

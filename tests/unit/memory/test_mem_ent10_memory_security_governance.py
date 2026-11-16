@@ -2,7 +2,7 @@
 
 """MEM-ENT-10: memory security & governance boundary."""
 
-from __future__ import annotations
+from __future__ import annotations  # noqa: I001
 
 import ast
 import inspect
@@ -76,7 +76,7 @@ def _plane(
     governance: MemorySecurityGovernanceService | None = None,
 ) -> DefaultMemoryControlPlane:
     store = InMemoryUserProfileStore()
-    manager = UserProfileManager(store=store, tenant_id="tenant-test")
+    manager = UserProfileManager(store=store, tenant_id=_TENANT)
     return DefaultMemoryControlPlane(
         user_profile=UserProfileManagerMemoryCapability(_manager=manager),
         security_governance=governance,

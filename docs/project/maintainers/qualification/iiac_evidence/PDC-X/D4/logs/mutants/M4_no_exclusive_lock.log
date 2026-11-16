@@ -1,0 +1,46 @@
+......F
+================================== FAILURES ===================================
+__________ test_r006_instance_held_by_another_os_process_is_rejected __________
+
+tmp_path = WindowsPath('D:/Projekty/intergrax/.claude/worktrees/pdc-x-ia-d4-966471/build/pytest/37524-9fb29233/test_r006_instance_held_by_ano0')
+
+    async def test_r006_instance_held_by_another_os_process_is_rejected(tmp_path: Path) -> None:
+        """The lease is an OS-level lock: a different process holding it rejects this engine."""
+        holder = subprocess.Popen(  # noqa: S603 - fixed argv, test-owned script
+            [
+                sys.executable,
+                "-u",
+                str(_HOLDER_SCRIPT),
+                str(tmp_path / "run"),
+                APP_ID,
+                str(_HOLDER_MAX_SECONDS),
+            ],
+            stdout=subprocess.PIPE,
+            stderr=subprocess.DEVNULL,
+            text=True,
+        )
+        try:
+            assert holder.stdout is not None
+            (tmp_path / "run").mkdir(parents=True, exist_ok=True)
+            banner = await asyncio.wait_for(asyncio.to_thread(holder.stdout.readline), timeout=_TEST_TIMEOUT_SECONDS)
+            assert banner.strip() == "acquired"
+            assert holder.pid != os.getpid()
+    
+            journal: list[str] = []
+            profile = make_profile(
+                runtime=JournalRuntime(journal),
+                components=(_required(OrderedComponent("guarded", journal)),),
+            )
+            engine, events, _ = build_engine(definition_of(profile), tmp_path)
+            with pytest.raises(HostedApplicationStartupError) as raised:
+                await engine.start()
+>           assert _has_cause(raised.value, HostedApplicationInstanceConflictError)
+E           AssertionError: assert False
+E            +  where False = _has_cause(HostedApplicationStartupError('instance acquisition failed'), HostedApplicationInstanceConflictError)
+E            +    where HostedApplicationStartupError('instance acquisition failed') = <ExceptionInfo HostedApplicationStartupError('instance acquisition failed') tblen=2>.value
+
+tests\qualification\pdc_x\d4\test_d4_lifecycle_suite.py:279: AssertionError
+=========================== short test summary info ===========================
+FAILED tests/qualification/pdc_x/d4/test_d4_lifecycle_suite.py::test_r006_instance_held_by_another_os_process_is_rejected
+!!!!!!!!!!!!!!!!!!!!!!!!!! stopping after 1 failures !!!!!!!!!!!!!!!!!!!!!!!!!!
+1 failed, 6 passed in 1.38s

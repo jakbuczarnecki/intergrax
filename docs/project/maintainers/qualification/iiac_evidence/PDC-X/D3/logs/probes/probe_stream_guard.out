@@ -1,0 +1,3 @@
+openai_responses.stream_messages                        -> ALLOWED (['partial', 'final'])
+openai_responses.generate_messages                      -> denied by protected-work guard
+openai_chat.stream_messages (control)                   -> denied by protected-work guard

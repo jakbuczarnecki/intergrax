@@ -1,0 +1,8 @@
+command: pytest tests/qualification/mcp_server_x/test_mcp_server_x_p7_matrix_consistency.py --deselect tests/qualification/mcp_server_x/test_mcp_server_x_p7_matrix_consistency.py::test_acc_20_exact_sha_package_record_exists_and_pins_a_test_execution_sha -q
+cwd: /d/Projekty/_wt/intergrax/p7-replay
+git_head: abbe1525450da77da6801b080619a600c20cd497
+date_utc: 2026-11-12T10:36:12Z
+.............                                                            [100%]
+13 passed, 1 deselected in 0.31s
+exit_code: 0
+date_end_utc: 2026-11-12T10:36:18Z

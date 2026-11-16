@@ -108,6 +108,7 @@ class RuntimeEventCallSiteClassificationEvidence(str, Enum):
     SECURITY_AUDIT_TRAIL_WIRING_MULTI_REGION = "security_audit_trail_wiring_multi_region"
     SECURITY_AUDIT_TRAIL_INNER_PRIMARY_DELEGATE = "security_audit_trail_inner_primary_delegate"
     PLATFORM_RUNTIME_EVENT_HISTORY_BUFFER = "platform_runtime_event_history_buffer"
+    SECURITY_AUDIT_TRAIL_EVIDENCE_PLANE_PORT = "security_audit_trail_evidence_plane_port"
     RUNTIME_EVENT_BUS_VALIDATING_PERSISTENCE = "runtime_event_bus_validating_persistence"
     GOVERNANCE_VALIDATING_EVIDENCE_PERSISTENCE = "governance_validating_evidence_persistence"
     VALIDATING_RUNTIME_EVENT_STORE_OUTER_APPEND = "validating_runtime_event_store_outer_append"
@@ -134,6 +135,7 @@ _CANONICAL_VALIDATING_PATH_EVIDENCE: Final = frozenset(
         RuntimeEventCallSiteClassificationEvidence.GOVERNANCE_VALIDATING_EVIDENCE_PERSISTENCE,
         RuntimeEventCallSiteClassificationEvidence.VALIDATING_RUNTIME_EVENT_STORE_OUTER_APPEND,
         RuntimeEventCallSiteClassificationEvidence.VALIDATING_EVIDENCE_PERSISTENCE_PORT_OUTER,
+        RuntimeEventCallSiteClassificationEvidence.SECURITY_AUDIT_TRAIL_EVIDENCE_PLANE_PORT,
     }
 )
 
@@ -564,6 +566,17 @@ def classify_runtime_event_append_call_site(
         return RuntimeEventAppendCallSiteClassification(
             RuntimeEventWritePathDisposition.CANONICAL_VALIDATING_PATH,
             RuntimeEventCallSiteClassificationEvidence.GOVERNANCE_VALIDATING_EVIDENCE_PERSISTENCE,
+        )
+    # PDC-D6-R020: appends a registered typed payload through the injected EvidencePersistencePort
+    # (canonical composition wraps it in the validating port); bound to exact function + callee.
+    if (
+        path.endswith("runtime/security/security_audit_trail.py")
+        and qualname == "append"
+        and callee_expr == "self._evidence.append"
+    ):
+        return RuntimeEventAppendCallSiteClassification(
+            RuntimeEventWritePathDisposition.CANONICAL_VALIDATING_PATH,
+            RuntimeEventCallSiteClassificationEvidence.SECURITY_AUDIT_TRAIL_EVIDENCE_PLANE_PORT,
         )
     if path.endswith("runtime/observability/persistence_conformance.py"):
         return RuntimeEventAppendCallSiteClassification(

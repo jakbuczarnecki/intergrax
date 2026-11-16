@@ -1,0 +1,142 @@
+# © Artur Czarnecki. All rights reserved.
+
+"""PRE-ENT Wave 1 L3 prod delta dispositions (batch 034-E)."""
+
+from __future__ import annotations
+
+from typing import Final
+
+PRE_ENT_REPLAY_L3_QUALIFICATION_HEAD: Final[str] = "01b3e1961f01e1ad578b84f3a20fbde7e16755f6"
+_PRE_ENT_EVIDENCE: Final[str] = (
+    "docs/project/maintainers/qualification/pre_ent_enterprise_certification/PRE_ENT_REPLAY_L3_PROD_DELTA.md"
+)
+
+PRE_ENT_L3_PROD_DELTA_BATCHES: Final[tuple[tuple[tuple[str, ...], str, str], ...]] = (
+    (
+        "applications/governed_contractor_application/__main__.py",
+        "applications/governed_contractor_application/host/cli_commands.py",
+        "applications/governed_contractor_application/host/offline_demo.py",
+        "applications/governed_contractor_application/tests/host/test_cli_verification_hardening.py",
+        "intergrax/cli/command_set.py",
+        "intergrax/cli/external_work.py",
+        "intergrax/cli/main.py",
+        "T-IGX-033-A: Tier-0 CLI demo composition moved to Tier-3; BND-03 receipt-only seam",
+        "docs/project/maintainers/qualification/pre_ent_enterprise_certification/PRE_ENT_REPLAY_L3_PROD_DELTA.md",
+    ),
+    (
+        "intergrax/contracts/runtime_error_code.py",
+        "intergrax/runtime/tools/tool_operation_recovery.py",
+        "T-IGX-030-B: runtime error code contract + tool operation recovery wiring",
+        "docs/project/maintainers/qualification/pre_ent_enterprise_certification/PRE_ENT_REPLAY_L3_PROD_DELTA.md",
+    ),
+    (
+        "intergrax/runtime/nexus/tools/invoker.py",
+        "T-IGX-030-C: Nexus invoker dep_boundary pool.submit BaseException handling",
+        "docs/project/maintainers/qualification/pre_ent_enterprise_certification/PRE_ENT_REPLAY_L3_PROD_DELTA.md",
+    ),
+    (
+        "intergrax/skills/skill_execution_pinning_wiring.py",
+        "T-IGX-032-A: skill execution pinning KV/document store precedence",
+        "docs/project/maintainers/qualification/pre_ent_enterprise_certification/PRE_ENT_REPLAY_L3_PROD_DELTA.md",
+    ),
+    (
+        "intergrax/runtime/resilience/dependency_attempt_execution_boundary.py",
+        "CTRL-X L2: pyright callback typing; admission/shutdown unchanged",
+        "tests/qualification/control_planes/ctrl_x/test_ctrl_x_typing_gates.py",
+    ),
+    (
+        "intergrax/integrations/providers/browser_automation/apify/bundle.py",
+        "intergrax/integrations/providers/browser_automation/firecrawl/bundle.py",
+        "intergrax/integrations/providers/cloud_platform/aws/bundle.py",
+        "intergrax/integrations/providers/cloud_platform/gcp/bundle.py",
+        "intergrax/integrations/providers/collaboration_suite/google_workspace/bundle.py",
+        "intergrax/integrations/providers/collaboration_suite/ms365_graph/bundle.py",
+        "intergrax/integrations/providers/document_store/cassandra/bundle.py",
+        "intergrax/integrations/providers/document_store/dynamodb/bundle.py",
+        "intergrax/integrations/providers/document_store/mongodb/bundle.py",
+        "intergrax/integrations/providers/embedding_provider/ollama/manifest.py",
+        "intergrax/integrations/providers/embedding_provider/ollama/register.py",
+        "intergrax/integrations/providers/graph_store/memgraph/bundle.py",
+        "intergrax/integrations/providers/graph_store/neo4j/bundle.py",
+        "intergrax/integrations/providers/issue_tracker/gitlab/bundle.py",
+        "intergrax/integrations/providers/issue_tracker/jira/bundle.py",
+        "intergrax/integrations/providers/message_bus/celery/bundle.py",
+        "intergrax/integrations/providers/message_bus/kafka/bundle.py",
+        "intergrax/integrations/providers/message_bus/nats/bundle.py",
+        "intergrax/integrations/providers/message_bus/pulsar/bundle.py",
+        "intergrax/integrations/providers/message_bus/rabbitmq/bundle.py",
+        "intergrax/integrations/providers/message_bus/sqs/bundle.py",
+        "intergrax/integrations/providers/notification_channel/pagerduty/bundle.py",
+        "intergrax/integrations/providers/notification_channel/webhook/bundle.py",
+        "intergrax/integrations/providers/object_storage/cloudflare_r2/bundle.py",
+        "intergrax/integrations/providers/object_storage/filesystem/bundle.py",
+        "intergrax/integrations/providers/sandbox_host/daytona/bundle.py",
+        "intergrax/integrations/providers/sandbox_host/modal/bundle.py",
+        "intergrax/integrations/providers/secrets_store/doppler/bundle.py",
+        "intergrax/integrations/providers/secrets_store/infisical/bundle.py",
+        "intergrax/integrations/providers/speech_provider/deepgram/bundle.py",
+        "intergrax/integrations/providers/speech_provider/elevenlabs/bundle.py",
+        "intergrax/integrations/providers/vector_store/chroma/bundle.py",
+        "intergrax/integrations/providers/vector_store/inmemory/bundle.py",
+        "intergrax/integrations/providers/vector_store/lancedb/bundle.py",
+        "intergrax/integrations/providers/wiki_knowledge/confluence/bundle.py",
+        "intergrax/integrations/providers/wiki_knowledge/notion/bundle.py",
+        "PRE-ENT integration provider bundle SSOT (VBN-neutral manifests); no historical parent reopen",
+        "docs/project/maintainers/qualification/pre_ent_enterprise_certification/PRE_ENT_REPLAY_L3_PROD_DELTA.md",
+    ),
+    (
+        "intergrax/platform/__init__.py",
+        "intergrax/platform/enterprise_audit/__init__.py",
+        "intergrax/platform/enterprise_audit/baseline.py",
+        "intergrax/platform/enterprise_audit/changed_since.py",
+        "intergrax/platform/enterprise_audit/checks/__init__.py",
+        "intergrax/platform/enterprise_audit/checks/executor.py",
+        "intergrax/platform/enterprise_audit/contracts.py",
+        "intergrax/platform/enterprise_audit/coverage.py",
+        "intergrax/platform/enterprise_audit/data/__init__.py",
+        "intergrax/platform/enterprise_audit/data/changed_since_impact_map.v1.json",
+        "intergrax/platform/enterprise_audit/data/enterprise_audit_check_manifest.v1.json",
+        "intergrax/platform/enterprise_audit/data/evidence_artifact_catalog.v1.json",
+        "intergrax/platform/enterprise_audit/data/schemas/enterprise_audit_outcomes.v1.schema.json",
+        "intergrax/platform/enterprise_audit/data/schemas/enterprise_audit_report.v1.schema.json",
+        "intergrax/platform/enterprise_audit/data/schemas/evidence_manifest.v1.schema.json",
+        "intergrax/platform/enterprise_audit/data/schemas/frz_coverage.v1.schema.json",
+        "intergrax/platform/enterprise_audit/data/schemas/publication_index.v1.schema.json",
+        "intergrax/platform/enterprise_audit/data/schemas/vbn_domains.v1.schema.json",
+        "intergrax/platform/enterprise_audit/digests.py",
+        "intergrax/platform/enterprise_audit/drift.py",
+        "intergrax/platform/enterprise_audit/evidence.py",
+        "intergrax/platform/enterprise_audit/impact_map.py",
+        "intergrax/platform/enterprise_audit/manifest.py",
+        "intergrax/platform/enterprise_audit/modes.py",
+        "intergrax/platform/enterprise_audit/repo_identity.py",
+        "intergrax/platform/enterprise_audit/report.py",
+        "intergrax/platform/enterprise_audit/report_summary.py",
+        "intergrax/platform/enterprise_audit/runner.py",
+        "intergrax/platform/enterprise_audit/sandbox.py",
+        "intergrax/platform/enterprise_audit/schedule.py",
+        "intergrax/platform/enterprise_audit/tenant.py",
+        "intergrax/platform/enterprise_audit/validators.py",
+        "intergrax/platform/enterprise_audit/vbn.py",
+        "PRE-ENT enterprise_audit platform scaffolding on development; qualification-only scope",
+        "docs/project/maintainers/qualification/pre_ent_enterprise_certification/PRE_ENT_REPLAY_L3_PROD_DELTA.md",
+    ),
+    (
+        "intergrax/applications/_shared/health_score_wiring.py",
+        "intergrax/memory/stores/sqlite_conversational_memory_store.py",
+        "intergrax/runtime/nexus/errors/error_codes.py",
+        "PRE-ENT adjunct Tier-0 paths; Wave 0 presence confirmed",
+        "docs/project/maintainers/qualification/pre_ent_enterprise_certification/PRE_ENT_REPLAY_L3_PROD_DELTA.md",
+    ),
+    (
+        "applications/shipped_product_manifest_catalog.py",
+        "intergrax/applications/_shared/product_manifest_registry.py",
+        "intergrax/cli/doctor_diff_app.py",
+        "intergrax/cli/doctor_health_app.py",
+        (
+            "T-IGX-034-B: BND-03B manifest edge — Tier-3 shipped catalog + "
+            "Tier-0 registry refactor; doctor CLI loads catalog via importlib in handler scope"
+        ),
+        "docs/project/maintainers/qualification/pre_ent_enterprise_certification/PRE_ENT_REPLAY_L3_PROD_DELTA.md",
+    ),
+)

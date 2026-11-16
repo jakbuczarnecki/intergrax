@@ -1,0 +1,44 @@
+...F
+================================== FAILURES ===================================
+___ test_r004_component_that_degrades_after_ready_is_reported_and_recovers ____
+
+tmp_path = WindowsPath('D:/Projekty/intergrax/.claude/worktrees/pdc-x-ia-d4-966471/build/pytest/39708-ccdf6d6e/test_r004_component_that_degra0')
+
+    async def test_r004_component_that_degrades_after_ready_is_reported_and_recovers(
+        tmp_path: Path,
+    ) -> None:
+        journal: list[str] = []
+        flaky = OrderedComponent("flaky_index", journal)
+        profile = make_profile(
+            runtime=JournalRuntime(journal),
+            components=(
+                HostedApplicationComponentRegistration(component=flaky),
+                _required(OrderedComponent("core", journal)),
+            ),
+        )
+        engine, publisher, _ = build_engine(definition_of(profile), tmp_path)
+        await engine.start()
+        try:
+            assert engine.health_snapshot().degraded is False
+    
+            flaky.healthy = False
+>           await _wait_for(lambda: engine.health_snapshot().degraded, "degradation reported")
+
+tests\qualification\pdc_x\d4\test_d4_lifecycle_suite.py:188: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+predicate = <function test_r004_component_that_degrades_after_ready_is_reported_and_recovers.<locals>.<lambda> at 0x0000026E21E672E0>
+description = 'degradation reported'
+
+    async def _wait_for(predicate, description: str) -> None:
+        deadline = asyncio.get_running_loop().time() + _TEST_TIMEOUT_SECONDS
+        while not predicate():
+            if asyncio.get_running_loop().time() > deadline:
+>               raise AssertionError(f"timed out waiting for: {description}")
+E               AssertionError: timed out waiting for: degradation reported
+
+tests\qualification\pdc_x\d4\test_d4_lifecycle_suite.py:42: AssertionError
+=========================== short test summary info ===========================
+FAILED tests/qualification/pdc_x/d4/test_d4_lifecycle_suite.py::test_r004_component_that_degrades_after_ready_is_reported_and_recovers
+!!!!!!!!!!!!!!!!!!!!!!!!!! stopping after 1 failures !!!!!!!!!!!!!!!!!!!!!!!!!!
+1 failed, 3 passed in 20.67s

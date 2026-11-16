@@ -3,15 +3,23 @@
 from __future__ import annotations
 
 import pytest
-
 from intergrax.integrations.providers.vector_store.milvus.bundle import create_milvus_vector_store
 from intergrax.integrations.providers.vector_store.pinecone.bundle import create_pinecone_vector_store
+from intergrax.integrations.providers.vector_store.pinecone.config import ENV_PINECONE_TENANT_ID
+from intergrax.integrations.providers.vector_store.vespa.config import ENV_VESPA_TENANT
 from intergrax.rag.vectorstore.soak.prod_slo import (
     SoakConfig,
     evaluate_beta_promotion_readiness,
 )
 
 pytestmark = [pytest.mark.unit, pytest.mark.gate]
+
+
+@pytest.fixture(autouse=True)
+def _vector_tenant_env(monkeypatch: pytest.MonkeyPatch) -> None:
+    """Pinecone and Vespa configs fail closed without a tenant (CONFIG-X); the soak harness needs one."""
+    monkeypatch.setenv(ENV_PINECONE_TENANT_ID, "soak-test-tenant")
+    monkeypatch.setenv(ENV_VESPA_TENANT, "soak-test-tenant")
 
 
 def test_beta_promotion_readiness_passes_for_soaked_adapter() -> None:

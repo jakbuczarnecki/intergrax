@@ -1,0 +1,27 @@
+......................................F
+================================== FAILURES ===================================
+_______________ test_openai_chat_refusal_payload_is_normalized ________________
+
+    def test_openai_chat_refusal_payload_is_normalized() -> None:
+        res = adapter_response_from_openai_chat_completion(
+            _openai_completion(content=None, refusal=_REFUSAL_TEXT), model="gpt-4o-mini", provider="openai"
+        )
+>       assert_normalized_refusal(res, text=_REFUSAL_TEXT)
+
+tests\qualification\pdc_x\d3\test_d3_r009_refusal.py:99:
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+response = LLMAdapterResponse(content='', finish_reason=<LLMFinishReason.COMPLETED: 'completed'>, usage=LLMTokenUsage(input_token...'sdk', openai=OpenAIProviderExtensions(system_fingerprint=None), anthropic=None, gemini=None, bedrock=None, vllm=None))
+
+    def assert_normalized_refusal(response: LLMAdapterResponse, *, text: str | None = None) -> None:
+        """The one shape every provider's refusal must take."""
+>       assert response.finish_reason is LLMFinishReason.REFUSAL
+E       AssertionError: assert <LLMFinishReason.COMPLETED: 'completed'> is <LLMFinishReason.REFUSAL: 'refusal'>
+E        +  where <LLMFinishReason.COMPLETED: 'completed'> = LLMAdapterResponse(content='', finish_reason=<LLMFinishReason.COMPLETED: 'completed'>, usage=LLMTokenUsage(input_token...'sdk', openai=OpenAIProviderExtensions(system_fingerprint=None), anthropic=None, gemini=None, bedrock=None, vllm=None)).finish_reason
+E        +  and   <LLMFinishReason.REFUSAL: 'refusal'> = LLMFinishReason.REFUSAL
+
+tests\qualification\pdc_x\d3\test_d3_r009_refusal.py:34: AssertionError
+=========================== short test summary info ===========================
+FAILED tests/qualification/pdc_x/d3/test_d3_r009_refusal.py::test_openai_chat_refusal_payload_is_normalized
+!!!!!!!!!!!!!!!!!!!!!!!!!! stopping after 1 failures !!!!!!!!!!!!!!!!!!!!!!!!!!
+1 failed, 38 passed in 2.53s

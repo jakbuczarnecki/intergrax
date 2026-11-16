@@ -10,23 +10,12 @@ from __future__ import annotations
 
 import json
 from dataclasses import dataclass
-from datetime import datetime, timedelta, timezone
+from datetime import UTC, datetime, timedelta
 from decimal import Decimal
 from pathlib import Path
 from typing import Any
 
-from external_contractor_adapter.external_work_adapter import (
-    META_CORRELATION_ID,
-    META_IDEMPOTENCY_KEY,
-    META_PROVIDER_ID,
-    META_SCOPE_DESCRIPTION,
-    META_SCOPE_DIGEST,
-    META_WORKSPACE_REF,
-    ExternalWorkAdapter,
-)
-from applications.governed_contractor_application.host.collaborative_work_local_fixture import (
-    build_seeded_in_memory_external_work_authorization_boundary,
-)
+from intergrax.contracts.actor_identity import ActorIdentity, ActorKind
 from intergrax.contracts.execution_identity import (
     AttemptId,
     ExecutionId,
@@ -37,19 +26,6 @@ from intergrax.contracts.execution_identity import (
     validate_run_id,
     validate_task_id,
 )
-from intergrax.runtime.execution.identity_authority import mint_root_execution_identity
-from intergrax.runtime.governance.decision_requirement_policy import (
-    PermissiveDecisionRequirementPolicy,
-)
-from external_contractor_adapter.side_effect_actions import (
-    ACTION_ACCEPT_QUOTE,
-    ACTION_CANCEL_EXTERNAL_WORK,
-    ACTION_CREATE_EXTERNAL_WORK,
-)
-from external_contractor_adapter.tests.fakes.deterministic_external_work import (
-    DeterministicExternalWorkFake,
-)
-from intergrax.contracts.actor_identity import ActorIdentity, ActorKind
 from intergrax.contracts.external_work import QuoteAcceptanceEvidence
 from intergrax.contracts.external_work_provider_capabilities import (
     quote_first_partner_capability_fixture,
@@ -59,6 +35,7 @@ from intergrax.contracts.runtime_policy_bundle import (
     PolicyBundleRule,
     build_immutable_runtime_policy_bundle,
 )
+from intergrax.runtime.execution.identity_authority import mint_root_execution_identity
 from intergrax.runtime.execution_evidence.attestor import build_deterministic_test_attestor
 from intergrax.runtime.execution_evidence.key_store import (
     DEMO_OFFLINE_KEY_ID,
@@ -67,8 +44,32 @@ from intergrax.runtime.execution_evidence.key_store import (
     write_verification_key_artifact,
 )
 from intergrax.runtime.execution_evidence.verify import verify_proof_receipt
+from intergrax.runtime.governance.decision_requirement_policy import (
+    PermissiveDecisionRequirementPolicy,
+)
 from intergrax.runtime.policy.runtime_policy_bundle_evaluator import (
     RuntimePolicyBundleEvaluator,
+)
+
+from applications.governed_contractor_application.host.collaborative_work_local_fixture import (
+    build_seeded_in_memory_external_work_authorization_boundary,
+)
+from external_contractor_adapter.external_work_adapter import (
+    META_CORRELATION_ID,
+    META_IDEMPOTENCY_KEY,
+    META_PROVIDER_ID,
+    META_SCOPE_DESCRIPTION,
+    META_SCOPE_DIGEST,
+    META_WORKSPACE_REF,
+    ExternalWorkAdapter,
+)
+from external_contractor_adapter.side_effect_actions import (
+    ACTION_ACCEPT_QUOTE,
+    ACTION_CANCEL_EXTERNAL_WORK,
+    ACTION_CREATE_EXTERNAL_WORK,
+)
+from external_contractor_adapter.tests.fakes.deterministic_external_work import (
+    DeterministicExternalWorkFake,
 )
 from governed_contractor_application.host.lifecycle_states import (
     GovernedExternalWorkHostState,
@@ -79,7 +80,7 @@ from governed_contractor_application.host.orchestrator import (
 from governed_contractor_application.host.stores import FilesystemHostStore
 
 _DIGEST = "sha256:" + ("ab" * 32)
-_T0 = datetime(2026, 7, 21, 8, 0, 0, tzinfo=timezone.utc)
+_T0 = datetime(2026, 7, 21, 8, 0, 0, tzinfo=UTC)
 _PROVIDER_ID = "gec3_deterministic_fake"
 
 
@@ -220,9 +221,7 @@ def _meta() -> dict[str, object]:
         META_IDEMPOTENCY_KEY: "idem-offline-create",
         META_CORRELATION_ID: "corr-offline-demo",
         META_WORKSPACE_REF: "workspace-a",
-        "external_work.budget_limit": MoneyAmount(
-            amount=Decimal("25.00"), currency="USD"
-        ),
+        "external_work.budget_limit": MoneyAmount(amount=Decimal("25.00"), currency="USD"),
         "external_work.principal_id": "offline-demo-user",
         "external_work.tenant_id": "offline-demo-tenant",
     }
@@ -318,9 +317,7 @@ def run_offline_governed_contractor_demo(
     write_demo_mode_marker(store_root, key_id=recovery_attestor.key_id)
 
     create_attestor = recovery_attestor
-    accept_attestor: Any = (
-        _ThrowingAttestor() if simulate_signing_failure else recovery_attestor
-    )
+    accept_attestor: Any = _ThrowingAttestor() if simulate_signing_failure else recovery_attestor
 
     orch_create = GovernedExternalWorkOrchestrator(
         adapter=adapter,
@@ -410,19 +407,14 @@ def run_offline_governed_contractor_demo(
 
     store_disp = display_relative_path(store_root)
     key_disp = display_relative_path(key_path)
-    verify_cmd = (
-        f"uv run intergrax receipt verify "
-        f"{store_disp}/export/accept_receipt.json --store {store_disp}"
-    )
+    verify_cmd = f"uv run intergrax receipt verify {store_disp}/export/accept_receipt.json --store {store_disp}"
     recovery_cmd = (
-        f"uv run intergrax external-work retry-attestation "
-        f"exec-offline-accept --store {store_disp}"
+        "uv run python -m applications.governed_contractor_application "
+        f"external-work retry-attestation exec-offline-accept --store {store_disp}"
     )
 
     if simulate_signing_failure:
-        if accepted.state is not (
-            GovernedExternalWorkHostState.EXECUTION_SUCCEEDED_ATTESTATION_FAILED
-        ):
+        if accepted.state is not (GovernedExternalWorkHostState.EXECUTION_SUCCEEDED_ATTESTATION_FAILED):
             raise RuntimeError(f"expected_signer_failure:{accepted.reason}")
         if accepted.receipt is not None:
             raise RuntimeError("receipt_unexpected_after_signer_failure")
@@ -471,9 +463,7 @@ def run_offline_governed_contractor_demo(
         raise RuntimeError(f"accept_attestation_failed:{accepted.reason}")
     export_path = store_root / "export" / "accept_receipt.json"
     export_path.parent.mkdir(parents=True, exist_ok=True)
-    export_path.write_text(
-        accepted.receipt.model_dump_json(indent=2), encoding="utf-8"
-    )
+    export_path.write_text(accepted.receipt.model_dump_json(indent=2), encoding="utf-8")
     resolver = FilesystemHostKeyResolver(store_root)
     vr = verify_proof_receipt(
         accepted.receipt,
@@ -503,9 +493,7 @@ def run_offline_governed_contractor_demo(
         receipt_path=receipt_rel,
         receipt_absolute_path=str(export_path.resolve()),
         verification_key_path=key_disp,
-        verification_command=(
-            f"uv run intergrax receipt verify {receipt_rel} --store {store_disp}"
-        ),
+        verification_command=(f"uv run intergrax receipt verify {receipt_rel} --store {store_disp}"),
         verification_valid=vr.valid,
         store_root=store_disp,
         provider_execution_succeeded=True,

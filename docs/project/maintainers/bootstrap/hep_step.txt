@@ -1,5 +1,5 @@
-Use @.cursor/rules/intergrax-hep-step.mdc.
-Before reading/editing, perform the mandatory preflight from intergrax-token-budget.mdc.
+Use @agent-env/rules/intergrax-hep-step.md.
+Before reading/editing, perform the mandatory preflight from intergrax-token-budget.md.
 Do not proceed until the preflight is printed.
 
 SESSION: ONE_DOMAIN_ONE_CHAT - one HEP step per new chat recommended.

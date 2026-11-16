@@ -10,19 +10,25 @@ from openai.types.chat.chat_completion import ChatCompletion
 from openai.types.completion_usage import CompletionUsage
 
 from intergrax.llm_adapters._shared.adapter_response_builders import build_adapter_response
+from intergrax.llm_adapters._shared.openai_tool_call_interop import (
+    tool_calls_from_openai_dicts,
+    tool_calls_from_openai_message,
+)
+from intergrax.llm_adapters._shared.stream_finish_signal import finish_reason_from_raw
 from intergrax.llm_adapters.contracts.adapter_response import LLMAdapterResponse
-from intergrax.llm_adapters.contracts.finish_reason import LLMFinishReason, parse_finish_reason
+from intergrax.llm_adapters.contracts.finish_reason import (
+    LLMFinishReason,
+    parse_finish_reason,
+    refusal_text,
+)
 from intergrax.llm_adapters.contracts.provider_extensions import (
     LLMProviderExtensions,
     OpenAIProviderExtensions,
     VllmProviderExtensions,
 )
 from intergrax.llm_adapters.contracts.token_usage import LLMTokenUsage, LLMTokenUsageValidationError
-from intergrax.llm_adapters._shared.openai_tool_call_interop import (
-    tool_calls_from_openai_dicts,
-    tool_calls_from_openai_message,
-)
 from intergrax.llm_adapters.contracts.tool_call import LLMToolCall
+from intergrax.utils import attribute_access
 
 
 def usage_from_openai_chat_completion(usage: CompletionUsage | None) -> LLMTokenUsage:
@@ -44,11 +50,7 @@ def _usage_from_openai_chat_completion(
     provider_is_vllm: bool,
 ) -> tuple[LLMTokenUsage, VllmProviderExtensions | None]:
     if usage is None:
-        extensions = (
-            VllmProviderExtensions(prompt_tokens_details_reported=False)
-            if provider_is_vllm
-            else None
-        )
+        extensions = VllmProviderExtensions(prompt_tokens_details_reported=False) if provider_is_vllm else None
         return LLMTokenUsage(), extensions
 
     details_reported = usage.prompt_tokens_details is not None
@@ -90,6 +92,39 @@ def usage_from_openai_responses(usage: Any) -> LLMTokenUsage:
     )
 
 
+def _refusal_from_openai_responses_output(response: Any) -> str | None:
+    """First ``refusal`` content part of a Responses API result, if any."""
+    output = getattr(response, "output", None)
+    if not isinstance(output, (list, tuple)):
+        return None
+    for item in output:
+        parts = getattr(item, "content", None)
+        if not isinstance(parts, (list, tuple)):
+            continue
+        for part in parts:
+            if getattr(part, "type", None) == "refusal":
+                text = refusal_text(getattr(part, "refusal", None))
+                if text is not None:
+                    return text
+    return None
+
+
+def responses_stop_signal(response: Any) -> object:
+    """Stop signal of a Responses API result: the incomplete reason when ``status == "incomplete"``."""
+    status = attribute_access.optional(response, "status", None)
+    if status == "incomplete":
+        details = attribute_access.optional(response, "incomplete_details", None)
+        reason = attribute_access.optional(details, "reason", None)
+        if isinstance(reason, str) and reason.strip():
+            return reason
+    return status
+
+
+def responses_refusal(response: Any) -> str | None:
+    """Refusal text of a Responses API result, if any."""
+    return _refusal_from_openai_responses_output(response)
+
+
 def adapter_response_from_openai_responses(
     response: Any,
     *,
@@ -100,7 +135,7 @@ def adapter_response_from_openai_responses(
 ) -> LLMAdapterResponse:
     usage = usage_from_openai_responses(response.usage)
     response_id = str(response.id or "") or None
-    finish = parse_finish_reason(response.status)
+    finish = finish_reason_from_raw(responses_stop_signal(response))
     typed_calls: tuple[LLMToolCall, ...]
     if tool_calls and isinstance(tool_calls[0], LLMToolCall):
         typed_calls = tuple(tool_calls)  # type: ignore[return-value]
@@ -116,6 +151,7 @@ def adapter_response_from_openai_responses(
         model=model,
         provider=provider,
         response_id=response_id,
+        refusal=_refusal_from_openai_responses_output(response),
         tool_calls=typed_calls,
         provider_extensions=extensions,
     )
@@ -136,9 +172,7 @@ def adapter_response_from_openai_chat_completion(
         fingerprint = res.system_fingerprint
         extensions = LLMProviderExtensions(
             usage_source="sdk",
-            openai=OpenAIProviderExtensions(
-                system_fingerprint=str(fingerprint) if fingerprint else None
-            ),
+            openai=OpenAIProviderExtensions(system_fingerprint=str(fingerprint) if fingerprint else None),
         )
     choices = res.choices or []
     if not choices:
@@ -164,6 +198,7 @@ def adapter_response_from_openai_chat_completion(
         model=model,
         provider=provider,
         response_id=response_id,
+        refusal=refusal_text(getattr(msg, "refusal", None)),
         tool_calls=tool_calls,
         provider_extensions=extensions,
     )

@@ -4,11 +4,11 @@
 """Cohere API v2 native adapter (ClientV2 chat / chat_stream)."""
 
 from __future__ import annotations
-from intergrax.utils import attribute_access
 
 import json
 import os
-from typing import Any, Dict, Iterable, List, Optional, Sequence, Union
+from collections.abc import Iterable, Sequence
+from typing import Any
 
 import cohere
 
@@ -19,18 +19,19 @@ from intergrax.llm_adapters._shared.adapter_response_builders import (
     partial_stream_event,
 )
 from intergrax.llm_adapters._shared.messages import split_system_messages
+from intergrax.llm_adapters._shared.openai_tool_call_interop import tool_calls_from_openai_dicts
+from intergrax.llm_adapters._shared.stream_finish_signal import StreamFinishSignal, finish_reason_from_raw
+from intergrax.llm_adapters.base.base_llm_adapter import BaseLLMAdapter
 from intergrax.llm_adapters.contracts.adapter_response import LLMAdapterResponse
 from intergrax.llm_adapters.contracts.finish_reason import LLMFinishReason
-from intergrax.llm_adapters.contracts.llm_adapter import LLMAdapter
-from intergrax.llm_adapters.base.base_llm_adapter import BaseLLMAdapter
 from intergrax.llm_adapters.contracts.llm_provider import LLMProvider
+from intergrax.llm_adapters.contracts.native_tool_choice import NativeToolChoice
 from intergrax.llm_adapters.contracts.provider_extensions import LLMProviderExtensions
 from intergrax.llm_adapters.contracts.stream_event import LLMStreamEvent
 from intergrax.llm_adapters.contracts.token_usage import LLMTokenUsage
-from intergrax.llm_adapters._shared.openai_tool_call_interop import tool_calls_from_openai_dicts
 from intergrax.llm_adapters.contracts.tool_call import LLMToolCall
-from intergrax.llm_adapters.contracts.native_tool_choice import NativeToolChoice
 from intergrax.llm_adapters.registry.context_window import init_adapter_context_window_tokens
+from intergrax.utils import attribute_access
 
 
 class CohereNativeChatAdapter(BaseLLMAdapter):
@@ -39,15 +40,15 @@ class CohereNativeChatAdapter(BaseLLMAdapter):
     ENV_API_KEY = "COHERE_API_KEY"
     DEFAULT_MODEL = "command-r-plus-08-2024"
 
-    _CONTEXT_WINDOWS: Dict[str, int] = {
+    _CONTEXT_WINDOWS: dict[str, int] = {
         "command-r-plus-08-2024": 128_000,
         "command-r-08-2024": 128_000,
     }
 
     def __init__(
         self,
-        client: Optional[cohere.ClientV2] = None,
-        model: Optional[str] = None,
+        client: cohere.ClientV2 | None = None,
+        model: str | None = None,
         **defaults: Any,
     ) -> None:
         super().__init__()
@@ -71,9 +72,9 @@ class CohereNativeChatAdapter(BaseLLMAdapter):
     def context_window_tokens(self) -> int:
         return self._context_window_tokens
 
-    def _map_messages(self, messages: Sequence[ChatMessage]) -> List[Dict[str, str]]:
+    def _map_messages(self, messages: Sequence[ChatMessage]) -> list[dict[str, str]]:
         system_text, convo = split_system_messages(messages)
-        out: List[Dict[str, str]] = []
+        out: list[dict[str, str]] = []
         if system_text:
             out.append({"role": "system", "content": system_text})
         for m in convo:
@@ -82,8 +83,8 @@ class CohereNativeChatAdapter(BaseLLMAdapter):
         return out
 
     def _parse_tool_blocks(self, blocks: Any) -> tuple[str, tuple[LLMToolCall, ...]]:
-        text_parts: List[str] = []
-        tool_calls_raw: List[Dict[str, Any]] = []
+        text_parts: list[str] = []
+        tool_calls_raw: list[dict[str, Any]] = []
         for block in blocks or []:
             if attribute_access.optional(block, "type", None) == "text":
                 text_parts.append(attribute_access.optional(block, "text", "") or "")
@@ -105,9 +106,9 @@ class CohereNativeChatAdapter(BaseLLMAdapter):
         self,
         messages: Sequence[ChatMessage],
         *,
-        temperature: Optional[float] = None,
-        max_tokens: Optional[int] = None,
-        run_id: Optional[str] = None,
+        temperature: float | None = None,
+        max_tokens: int | None = None,
+        run_id: str | None = None,
     ) -> LLMAdapterResponse:
         call = self.usage.begin_call(run_id=run_id, adapter=self)
         response: LLMAdapterResponse | None = None
@@ -117,7 +118,7 @@ class CohereNativeChatAdapter(BaseLLMAdapter):
         out_tok = 0
         try:
             in_tok = int(self.estimate_tokens_for_messages(messages, model_hint=self.model))
-            kwargs: Dict[str, Any] = {
+            kwargs: dict[str, Any] = {
                 "model": self.model,
                 "messages": self._map_messages(messages),
             }
@@ -132,6 +133,7 @@ class CohereNativeChatAdapter(BaseLLMAdapter):
             out_tok = int(self.estimate_tokens_for_text(text, model_hint=self.model))
             response = build_adapter_response(
                 content=text,
+                finish_reason=finish_reason_from_raw(attribute_access.optional(resp, "finish_reason", None)),
                 usage=LLMTokenUsage.from_counts(input_tokens=in_tok, output_tokens=out_tok),
                 model=self.model,
                 provider=self._provider_slug(),
@@ -156,19 +158,20 @@ class CohereNativeChatAdapter(BaseLLMAdapter):
         self,
         messages: Sequence[ChatMessage],
         *,
-        temperature: Optional[float] = None,
-        max_tokens: Optional[int] = None,
-        run_id: Optional[str] = None,
+        temperature: float | None = None,
+        max_tokens: int | None = None,
+        run_id: str | None = None,
     ) -> Iterable[LLMStreamEvent]:
         call = self.usage.begin_call(run_id=run_id, adapter=self)
         success = False
         err_type = None
         in_tok = 0
         out_tok = 0
-        buf: List[str] = []
+        buf: list[str] = []
+        signal = StreamFinishSignal()
         try:
             in_tok = int(self.estimate_tokens_for_messages(messages, model_hint=self.model))
-            kwargs: Dict[str, Any] = {
+            kwargs: dict[str, Any] = {
                 "model": self.model,
                 "messages": self._map_messages(messages),
             }
@@ -183,11 +186,17 @@ class CohereNativeChatAdapter(BaseLLMAdapter):
                     if txt:
                         buf.append(txt)
                         yield partial_stream_event(delta_content=txt)
+                elif attribute_access.optional(event, "type", None) == "message-end":
+                    end_delta = attribute_access.optional(event, "delta", None)
+                    signal.observe_finish(attribute_access.optional(end_delta, "finish_reason", None))
             out_tok = int(self.estimate_tokens_for_text("".join(buf), model_hint=self.model))
             success = True
+            finish, refusal = signal.resolve()
             yield final_stream_event(
                 response=build_adapter_response(
                     content="".join(buf),
+                    finish_reason=finish,
+                    refusal=refusal,
                     usage=LLMTokenUsage.from_counts(input_tokens=in_tok, output_tokens=out_tok),
                     model=self.model,
                     provider=self._provider_slug(),
@@ -206,18 +215,24 @@ class CohereNativeChatAdapter(BaseLLMAdapter):
                 error_type=err_type,
             )
 
+    def supports_streaming(self) -> bool:
+        return True
+
+    def supports_tool_streaming(self) -> bool:
+        return True
+
     def supports_tools(self) -> bool:
         return True
 
     def generate_with_tools(
         self,
         messages: Sequence[ChatMessage],
-        tools_schema: List[Dict[str, Any]],
+        tools_schema: list[dict[str, Any]],
         *,
-        temperature: Optional[float] = None,
-        max_tokens: Optional[int] = None,
+        temperature: float | None = None,
+        max_tokens: int | None = None,
         tool_choice: NativeToolChoice | None = None,
-        run_id: Optional[str] = None,
+        run_id: str | None = None,
     ) -> LLMAdapterResponse:
         del tool_choice
         call = self.usage.begin_call(run_id=run_id, adapter=self)
@@ -228,7 +243,7 @@ class CohereNativeChatAdapter(BaseLLMAdapter):
         out_tok = 0
         try:
             in_tok = int(self.estimate_tokens_for_messages(messages, model_hint=self.model))
-            kwargs: Dict[str, Any] = {
+            kwargs: dict[str, Any] = {
                 "model": self.model,
                 "messages": self._map_messages(messages),
                 "tools": self._cohere_tools_payload(tools_schema),
@@ -243,7 +258,9 @@ class CohereNativeChatAdapter(BaseLLMAdapter):
             if resp.message and resp.message.content:
                 text, tool_calls = self._parse_tool_blocks(resp.message.content)
             out_tok = int(self.estimate_tokens_for_text(text, model_hint=self.model))
-            finish = LLMFinishReason.TOOL_CALLS if tool_calls else LLMFinishReason.COMPLETED
+            finish = finish_reason_from_raw(
+                attribute_access.optional(resp, "finish_reason", None), has_tool_calls=bool(tool_calls)
+            )
             response = build_adapter_response(
                 content=text,
                 finish_reason=finish,
@@ -268,7 +285,7 @@ class CohereNativeChatAdapter(BaseLLMAdapter):
                 error_type=err_type,
             )
 
-    def _cohere_tools_payload(self, tools_schema: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
+    def _cohere_tools_payload(self, tools_schema: list[dict[str, Any]]) -> list[dict[str, Any]]:
         return [
             {
                 "type": "function",
@@ -285,12 +302,12 @@ class CohereNativeChatAdapter(BaseLLMAdapter):
     def stream_with_tools(
         self,
         messages: Sequence[ChatMessage],
-        tools_schema: List[Dict[str, Any]],
+        tools_schema: list[dict[str, Any]],
         *,
-        temperature: Optional[float] = None,
-        max_tokens: Optional[int] = None,
+        temperature: float | None = None,
+        max_tokens: int | None = None,
         tool_choice: NativeToolChoice | None = None,
-        run_id: Optional[str] = None,
+        run_id: str | None = None,
     ) -> Iterable[LLMStreamEvent]:
         del tool_choice
         call = self.usage.begin_call(run_id=run_id, adapter=self)
@@ -298,12 +315,13 @@ class CohereNativeChatAdapter(BaseLLMAdapter):
         err_type = None
         in_tok = 0
         out_tok = 0
-        buf: List[str] = []
+        buf: list[str] = []
+        signal = StreamFinishSignal()
         tool_calls: tuple[LLMToolCall, ...] = ()
 
         try:
             in_tok = int(self.estimate_tokens_for_messages(messages, model_hint=self.model))
-            kwargs: Dict[str, Any] = {
+            kwargs: dict[str, Any] = {
                 "model": self.model,
                 "messages": self._map_messages(messages),
                 "tools": self._cohere_tools_payload(tools_schema),
@@ -321,11 +339,14 @@ class CohereNativeChatAdapter(BaseLLMAdapter):
                         buf.append(txt)
                         yield partial_stream_event(delta_content=txt)
                 if attribute_access.optional(event, "type", None) == "message-end":
+                    end_delta = attribute_access.optional(event, "delta", None)
+                    signal.observe_finish(attribute_access.optional(end_delta, "finish_reason", None))
                     msg = attribute_access.optional(event, "message", None)
                     if msg and attribute_access.optional(msg, "content", None):
                         _, tool_calls = self._parse_tool_blocks(msg.content)
 
-            if not buf and not tool_calls:
+            finish, refusal = signal.resolve(has_tool_calls=bool(tool_calls))
+            if not buf and not tool_calls and finish is LLMFinishReason.COMPLETED:
                 result = self.generate_with_tools(
                     messages,
                     tools_schema,
@@ -338,12 +359,12 @@ class CohereNativeChatAdapter(BaseLLMAdapter):
                 return
 
             out_tok = int(self.estimate_tokens_for_text("".join(buf), model_hint=self.model))
-            finish = LLMFinishReason.TOOL_CALLS if tool_calls else LLMFinishReason.COMPLETED
             success = True
             yield final_stream_event(
                 response=build_adapter_response(
                     content="".join(buf),
                     finish_reason=finish,
+                    refusal=refusal,
                     usage=LLMTokenUsage.from_counts(input_tokens=in_tok, output_tokens=out_tok),
                     model=self.model,
                     provider=self._provider_slug(),

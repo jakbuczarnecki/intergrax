@@ -7,7 +7,6 @@ from __future__ import annotations
 from datetime import timedelta
 
 import pytest
-
 from intergrax.agent_distribution.admin_models import (
     ActivateRuntimeRevisionRequest,
     BindAgentRequest,
@@ -19,7 +18,6 @@ from intergrax.agent_distribution.ed25519_package_attestation_verifier import (
     Ed25519PackageAttestationVerifier,
 )
 from intergrax.agent_distribution.emergency_revocation_response import (
-    AgentEmergencyRevocationRequest,
     EmergencyTrustResponseAction,
     EmergencyTrustResponseReasonCode,
 )
@@ -48,7 +46,6 @@ from testing_support.ac6_trust_lifecycle_composition import (
     AC6_ENV,
     AC6_EVAL_FRESH,
     AC6_EVAL_STALE,
-    AC6_FIXED_AT,
     AC6_META_REF,
     AC6_PUBLISHER_ID,
     AC6_QUALIFIED_AT,
@@ -182,9 +179,7 @@ def _install_bind_enable_build_activate(
     )
 
 
-def test_ac6_signed_package_reaches_active_revision_through_canonical_trust_path() -> (
-    None
-):
+def test_ac6_signed_package_reaches_active_revision_through_canonical_trust_path() -> None:
     package = ac6_package_identity(AC6_DIGEST_D2)
     qualification = ac6_qualification(package)
     decision = ac6_evaluate_trust(
@@ -316,18 +311,14 @@ def test_ac6_revoked_digest_blocked_before_install() -> None:
     assert not stack.state.revisions
 
 
-def test_ac6_stale_qualification_blocks_new_runtime_revision_but_preserves_active_n() -> (
-    None
-):
+def test_ac6_stale_qualification_blocks_new_runtime_revision_but_preserves_active_n() -> None:
     package = ac6_package_identity(AC6_DIGEST_D2)
     qualification = ac6_qualification(package)
     stack = build_ac6_admin_stack(
         evaluation_at=AC6_EVAL_FRESH,
         policy=AgentPackageTrustPolicy(max_qualification_age=timedelta(days=7)),
     )
-    trust_record = ac6_require_trust_record(
-        ac6_evaluate_trust(stack.coordinator, package, qualification=qualification)
-    )
+    trust_record = ac6_require_trust_record(ac6_evaluate_trust(stack.coordinator, package, qualification=qualification))
     _install_bind_enable_build_activate(
         stack,
         installation_id="inst-ac6-stale",
@@ -357,10 +348,7 @@ def test_ac6_stale_qualification_blocks_new_runtime_revision_but_preserves_activ
         application_environment_id=AC6_ENV,
     )
     assert serving_after.traffic_serving_revision_id == "rev-ac6-active"
-    assert (
-        serving_after.serving_pointer_revision
-        == serving_before.serving_pointer_revision
-    )
+    assert serving_after.serving_pointer_revision == serving_before.serving_pointer_revision
 
 
 def _bootstrap_two_revision_stack() -> Ac6AdminStack:
@@ -452,9 +440,7 @@ def _bootstrap_two_revision_stack() -> Ac6AdminStack:
     return stack
 
 
-def test_ac6_active_digest_revocation_rolls_back_to_currently_trusted_prior_revision() -> (
-    None
-):
+def test_ac6_active_digest_revocation_rolls_back_to_currently_trusted_prior_revision() -> None:
     stack = _bootstrap_two_revision_stack()
     serving_before = stack.service.inspect_serving(
         application_id=AC6_APP,
@@ -462,28 +448,22 @@ def test_ac6_active_digest_revocation_rolls_back_to_currently_trusted_prior_revi
     )
     assert serving_before.traffic_serving_revision_id == "rev-ac6-n2"
 
+    stack.revocation_state["state"] = AgentPackageTrustRevocationState(
+        revoked_package_digests=frozenset({AC6_DIGEST_D2}),
+    )
     response = stack.service.respond_to_emergency_revocation(
         application_id=AC6_APP,
         application_environment_id=AC6_ENV,
-        request=AgentEmergencyRevocationRequest(
-            application_id=AC6_APP,
-            application_environment_id=AC6_ENV,
-            expected_current_traffic_revision_id="rev-ac6-n2",
-            expected_serving_pointer_revision=serving_before.serving_pointer_revision,
-            evaluated_at=AC6_FIXED_AT,
-            revocation_state=AgentPackageTrustRevocationState(
-                revoked_package_digests=frozenset({AC6_DIGEST_D2}),
-            ),
-        ),
+        principal=ac6_admin_principal(),
+        expected_current_traffic_revision_id="rev-ac6-n2",
+        expected_serving_pointer_revision=serving_before.serving_pointer_revision,
     )
     serving_after = stack.service.inspect_serving(
         application_id=AC6_APP,
         application_environment_id=AC6_ENV,
     )
     assert response.action is EmergencyTrustResponseAction.ROLLBACK
-    assert response.response_reason_code is (
-        EmergencyTrustResponseReasonCode.SAFE_ROLLBACK_COMPLETED
-    )
+    assert response.response_reason_code is (EmergencyTrustResponseReasonCode.SAFE_ROLLBACK_COMPLETED)
     assert serving_after.traffic_serving_revision_id == "rev-ac6-n1"
     restored = stack.service.inspect_revision(
         application_id=AC6_APP,
@@ -501,26 +481,20 @@ def test_ac6_active_digest_revocation_rolls_back_to_currently_trusted_prior_revi
 
 def test_ac6_revoked_prior_revision_is_not_emergency_rollback_target() -> None:
     stack = _bootstrap_two_revision_stack()
+    stack.revocation_state["state"] = AgentPackageTrustRevocationState(
+        revoked_package_digests=frozenset({AC6_DIGEST_D1, AC6_DIGEST_D2}),
+    )
     response = stack.service.respond_to_emergency_revocation(
         application_id=AC6_APP,
         application_environment_id=AC6_ENV,
-        request=AgentEmergencyRevocationRequest(
-            application_id=AC6_APP,
-            application_environment_id=AC6_ENV,
-            evaluated_at=AC6_FIXED_AT,
-            revocation_state=AgentPackageTrustRevocationState(
-                revoked_package_digests=frozenset({AC6_DIGEST_D1, AC6_DIGEST_D2}),
-            ),
-        ),
+        principal=ac6_admin_principal(),
     )
     serving = stack.service.inspect_serving(
         application_id=AC6_APP,
         application_environment_id=AC6_ENV,
     )
     assert response.action is EmergencyTrustResponseAction.BLOCKED_NO_SAFE_TARGET
-    assert response.response_reason_code is (
-        EmergencyTrustResponseReasonCode.ROLLBACK_TARGET_UNTRUSTED
-    )
+    assert response.response_reason_code is (EmergencyTrustResponseReasonCode.ROLLBACK_TARGET_UNTRUSTED)
     assert serving.traffic_serving_revision_id == "rev-ac6-n2"
 
 
@@ -548,53 +522,37 @@ def test_ac6_qualification_expiry_alone_does_not_trigger_emergency_rollback() ->
         revision_id="rev-ac6-expiry",
     )
     stack.evaluation_times["at"] = AC6_EVAL_STALE
+    # the stack policy source already carries max_qualification_age=7 days (see build_ac6_admin_stack above)
     response = stack.service.respond_to_emergency_revocation(
         application_id=AC6_APP,
         application_environment_id=AC6_ENV,
-        request=AgentEmergencyRevocationRequest(
-            application_id=AC6_APP,
-            application_environment_id=AC6_ENV,
-            evaluated_at=AC6_EVAL_STALE,
-            revocation_state=AgentPackageTrustRevocationState(),
-            trust_policy=AgentPackageTrustPolicy(
-                max_qualification_age=timedelta(days=7)
-            ),
-        ),
+        principal=ac6_admin_principal(),
     )
     serving = stack.service.inspect_serving(
         application_id=AC6_APP,
         application_environment_id=AC6_ENV,
     )
     assert response.action is EmergencyTrustResponseAction.NO_ACTION
-    assert response.response_reason_code is (
-        EmergencyTrustResponseReasonCode.NO_ACTIVE_REVOCATION
-    )
+    assert response.response_reason_code is (EmergencyTrustResponseReasonCode.NO_ACTIVE_REVOCATION)
     assert serving.traffic_serving_revision_id == "rev-ac6-expiry"
 
 
 def test_ac6_stale_emergency_request_cannot_override_newer_activation() -> None:
     stack = _bootstrap_two_revision_stack()
-    stale_request = AgentEmergencyRevocationRequest(
-        application_id=AC6_APP,
-        application_environment_id=AC6_ENV,
-        expected_current_traffic_revision_id="rev-ac6-n1",
-        expected_serving_pointer_revision=0,
-        evaluated_at=AC6_FIXED_AT,
-        revocation_state=AgentPackageTrustRevocationState(
-            revoked_package_digests=frozenset({AC6_DIGEST_D2}),
-        ),
+    stack.revocation_state["state"] = AgentPackageTrustRevocationState(
+        revoked_package_digests=frozenset({AC6_DIGEST_D2}),
     )
     response = stack.service.respond_to_emergency_revocation(
         application_id=AC6_APP,
         application_environment_id=AC6_ENV,
-        request=stale_request,
+        principal=ac6_admin_principal(),
+        expected_current_traffic_revision_id="rev-ac6-n1",
+        expected_serving_pointer_revision=0,
     )
     serving = stack.service.inspect_serving(
         application_id=AC6_APP,
         application_environment_id=AC6_ENV,
     )
     assert response.action is EmergencyTrustResponseAction.BLOCKED_NO_SAFE_TARGET
-    assert response.response_reason_code is (
-        EmergencyTrustResponseReasonCode.SERVING_POINTER_MISMATCH
-    )
+    assert response.response_reason_code is (EmergencyTrustResponseReasonCode.SERVING_POINTER_MISMATCH)
     assert serving.traffic_serving_revision_id == "rev-ac6-n2"

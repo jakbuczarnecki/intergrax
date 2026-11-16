@@ -1,0 +1,25 @@
+ACT-N11 Session B — independent auditor replay matrix
+Auditor role: independent-quality-auditor (new chat; @intergrax-independent-audit)
+Implementer session: T-IGX-024-B ACT-N11 recovery (no PASS)
+Tree under audit: origin/development @ 1563a9cdb4f70c917f6a6f76519c68e92a1c9282 (or successor tip at audit time)
+Prior audit_execution_sha: 0946b11576d2ee617321fb099ed794f8b21bf5ba
+
+# Baseline (expect FAIL until post-activation)
+.venv/Scripts/python.exe -m scripts.governance.verify_iiac_policy_activation --require-in-force
+
+# Governance unit / IIAC guards (implementer log: governance_iiac_tests_inventory.log)
+.venv/Scripts/python.exe -m pytest tests/unit/governance/test_iiac_negative_guards.py tests/unit/governance/test_iiac_g0_inventory.py tests/unit/governance/test_iiac_activation_gate.py -q
+
+# ENT W4 / C0 slice tied to ACT-N11 paths (representative)
+.venv/Scripts/python.exe -m pytest tests/qualification/ent_audit_x/unit/test_b5_publication_verifier.py -q
+
+# Product Δ verification (read-only)
+git diff --stat 0946b11576d2ee617321fb099ed794f8b21bf5ba..HEAD -- applications/shipped_product_manifest_catalog.py intergrax/applications/_shared/product_manifest_registry.py intergrax/cli/doctor_diff_app.py intergrax/cli/doctor_health_app.py intergrax/platform/enterprise_audit/baseline.py intergrax/platform/enterprise_audit/data/changed_since_impact_map.v1.json intergrax/platform/enterprise_audit/data/schemas/enterprise_audit_report.v1.schema.json
+
+# After manifest publication by auditor (paths relative to repo root)
+.venv/Scripts/python.exe scripts/governance/verify_iiac_audit_manifest.py docs/project/maintainers/qualification/iiac_evidence/ENT-AUDIT-X/act_n11_recovery/iiac_audit_session_manifest.ENT-AUDIT-X.act_n11_session_b.json --repo .
+.venv/Scripts/python.exe scripts/governance/verify_iiac_role_separation.py docs/project/maintainers/qualification/iiac_evidence/ENT-AUDIT-X/act_n11_recovery/iiac_audit_session_manifest.ENT-AUDIT-X.act_n11_session_b.json --strict-product-diff --repo .
+
+# Post-Operator activation only (not in implementer run)
+.venv/Scripts/python.exe -m scripts.governance.verify_iiac_policy_activation --require-in-force
+# CI: governance-fast on activated development tip

@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 from pathlib import Path
+
 import pytest
 from intergrax.knowledge.contracts import KnowledgeDocument
 from intergrax.knowledge.contracts.document import RESERVED_METADATA_KEYS
@@ -12,7 +13,6 @@ from intergrax.rag.document_loaders.compat.legacy_runtime_document import (
 from intergrax.rag.document_loaders.contracts.document_metadata_key import DocumentMetadataKey
 from intergrax.rag.ingest.ingest_pipeline import IngestPipeline, IngestRequest
 from intergrax.rag.profiles.rag_profile import RagProfile
-
 
 pytestmark = pytest.mark.unit
 
@@ -51,7 +51,13 @@ class _NoopVectorstore:
         self.received = {"records": records, "scope": scope}
         return ["id-0"]
 
-    def list_source_record_ids(self, *, source_id: str, scope: object) -> tuple[str, ...]:
+    def list_source_record_ids(
+        self,
+        *,
+        source_id: str,
+        scope: object,
+        root_document_id: str | None = None,
+    ) -> tuple[str, ...]:
         return ()
 
     def count(self, *, scope: object) -> int:
@@ -331,6 +337,7 @@ def test_ingest_pipeline_isolates_reserved_metadata_at_native_boundary(
             *,
             source_id: str,
             scope: object,
+            root_document_id: str | None = None,
         ) -> tuple[str, ...]:
             return ()
 
@@ -363,7 +370,10 @@ def test_ingest_pipeline_isolates_reserved_metadata_at_native_boundary(
     assert result.reason == "ok"
     assert loader.custom_metadata is not None
     assert RESERVED_METADATA_KEYS.isdisjoint(loader.custom_metadata)
-    assert loader.custom_metadata == {
+    custom_metadata = dict(loader.custom_metadata)
+    # The source freshness stamp (PDC-D2-R005) is added to the loader metadata next to the managed keys.
+    assert custom_metadata.pop("source_modified_at")
+    assert custom_metadata == {
         "operation_id": "operation-1",
         "source_path": str(source),
         "file_name": "managed.txt",
@@ -444,6 +454,7 @@ def test_ingest_pipeline_propagates_splitter_typeerror_without_retry(tmp_path: P
             *,
             source_id: str,
             scope: object,
+            root_document_id: str | None = None,
         ) -> tuple[str, ...]:
             return ()
 

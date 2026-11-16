@@ -1,0 +1,48 @@
+PDC-P7-00 addendum 3 - test matrix (auditor runs, Windows, one pytest/python process at a time)
+base 324d9dba37cb54e1b74a79a05148d2dcc05e6d09 -> audited head 0fc8badd81c4c3e46a3d0ce262c08e8efba41898 (mcp-rc, merge of development 146e7acf1 after B-P6, PR #537 / T-IGX-036-X); previous activation pin 2d3eceb6cf7e93dccd4d96919319a6c969b4444b
+auditor branch p7-00-baseline-audit = origin/mcp-rc merged (a5c1fd514); product tree identical to 0fc8badd8
+interpreter: D:\Projekty\intergrax\.venv (Python 3.12.11), tzdata through a PYTHONPATH overlay, nothing installed; duckdb is not installed there. The main run and the isolated re-runs used short-path detached checkouts under D:\Projekty\_wt\_scratch (p7a3-head, p7a3-base, p7a3-pin, p7a3-mut, p7a3-prev)
+
+0. Scope from git (audit_scope.json)
+   git diff --name-only 324d9dba3 0fc8badd8 -- intergrax agents applications = exactly 1 path: intergrax/integrations/providers/embedding_provider/ollama/register.py (+25 / -3, commit f209febbe)
+   git diff b0e19bf61 0fc8badd8 -- <23 MCP-RC paths> = empty
+   git diff --name-only 2d3eceb6c 0fc8badd8 -- intergrax agents applications = 158 (the delta path was already in the set through B-REG-P c3d5b7005; the combined count stays 158, not 159)
+   other non-docs changes: uv.lock, scripts/qualification/pdc_x_inventory.py and pdc_x_wbs.py, tests/qualification/ebh_5/_package_c_v2_primitives.py, tests/qualification/pdc_x/p6_ecapfix (new), governance/tickets T-IGX-036-W/-X + plans
+   activation record: changed by the activation certifier's rebind (phase 1 92d730821, phase 2 9949fe2c3, binding manifest 2899735e5, report 18242609d); no path under scripts/governance, scripts/maintenance, scripts/enterprise_audit, .github, agent-env changed
+   verify_iiac_policy_activation.py at this head (logs/verify_iiac_policy_activation_at_head.log): exit 1, exactly one line: ACT-N11 product path changed after the audited SHA: intergrax/integrations/providers/embedding_provider/ollama/register.py
+   (the first attempt, logs/verify_iiac_policy_activation_WRONG_REPO_main_checkout_first_attempt.log, evaluated the main checkout because PYTHONPATH carried an MSYS path; kept, superseded)
+
+1. Dispatch probes (read-only, in-process, head vs 324d9dba3) [adversarial_scripts/addendum_3_dispatch_probes.py, logs/probes_head.json, logs/probes_base.json]
+   P1 resolve matrix: 201 (slug, category) pairs of the full default catalog; exactly 1 differs: ollama|embedding_provider (TypeError -> OllamaEmbeddingProviderIntegration)
+   P2 factory called directly with 11 category/keyword shapes   P3 wrapper vs spy owning factory   P4 revision generation / digest / idempotency / ordering   P5 isolated registration sink
+   P6 transient window between the two catalog writes (F-52)   P7 concurrent resolve soak, 200 rounds, 0 wrong at head
+   openai sibling probe [addendum_3_openai_sibling_probe.py, logs/openai_sibling_probe_*.json]: same defect on the row openai (F-49)
+   re-bootstrap probe [addendum_3_rebootstrap_probe.py, logs/rebootstrap_probe_*.json]: first / second / override-True full registration keep one ollama row, same generation as 324d9dba3
+   impact selection probe [addendum_3_impact_selection_probe.py, logs/impact_selection_probe_head.json]: delta path selects ENT-A-PLG-01, TEN-PROVIDER, VBN-REPLACEABILITY-MATRIX, VBN-SILENT-FALLBACK plus the floor (31 ids); the eight applications/*/mcp/server.py modules select nothing (F-41 unchanged)
+   lineage probe [addendum_3_lineage_probe.py]: runs at 0fc8badd8; at the two older checkouts the probe itself hit an import cycle (logs/lineage_probe_*_import_cycle_of_the_probe_on_old_tree.txt), so the lineage 7aa9cfa18 -> c3d5b7005 -> f209febbe rests on code read plus the 324d9dba3 probe
+
+2. Regression run, ONE pytest process, 86 entries, 1230 s [adversarial_scripts/run_addendum3_tests.py, logs/addendum3_regression_run.stdout.txt]
+   contents: MCP-RC mandatory contract (39 files, list from Python), pdc_x p6_ecapfix + reg_p + p6_impact + XD-12, ebh_5 package C v2 + three EBH-5 gate files, ebh_7 int2e bundle regression, integration catalog / registry / contracts / embedding-provider / managed_retrieval / provider-cutover unit tests, rag bootstrap, dep1 dependency foundation, test_pdc_x_{inventory,requirements,wbs}, status files of F-35 (COMPAT-X, agent_distribution)
+   result: 231 failed, 5176 passed, 1 xfailed (the known TRANSFERRED case), pytest exited by itself (xd_03 not in this selection)
+   delta tests: p6_ecapfix 7/7, reg_p, ebh_5 embedding cases, catalog / registry unit tests, pdc_x inventory/requirements/wbs: no failure; no MCP test failed
+   a first attempt of this run was aborted after 13 minutes as too slow for its time limit (logs/addendum3_regression_run_first_attempt_aborted_too_slow.stdout.txt); the limit was raised and the run repeated in full
+   2a. attribution [adversarial_scripts/run_failing_nodes_at_checkout.py, attribution_of_regression_failures.json]
+       head: 222 failed / 9 passed   324d9dba3: 222 / 9 (same set)   pin: 218 failed / 11 passed (229 ids exist)
+       new since the pin: 12 (F-35 x10, F-41 x2); red at the pin as well: 210; order dependent: 9 (+8 that fail at the pin only); none caused by the delta (F-53)
+   2b. pollution check: harness_lab_health + rag entry point alone / after p6_ecapfix / after reg_p -> identical single failure (logs/pollution_check_*.log)
+   2c. F-09: test_xd_03_agent_governance.py alone [adversarial_scripts/addendum_3_xd03_exit_probe.py, logs/xd03_exit_probe_at_head.log]: 9 passed after 7 s, process alive 90 s later, killed -> hang reproduced
+
+3. Mutation sample on the wrapper and the harness, scratch detached checkout D:/Projekty/_wt/_scratch/p7a3-mut [adversarial_scripts/addendum_3_mutation_sample.py, logs/mutation_sample.stdout.txt]
+   targeted tests: p6_ecapfix + reg_p + test_p2_002_b2 + test_p2_003_explicit_contract_specs + unit/integrations/registry; ebh_5 package C v2 -k embedding_provider in a second process; control green; verdicts count only new failures
+   12 mutants: KILLED M1, M2, M3, M7, M8, M10, M12; SURVIVED M4, M5, M6 (enabled handling), M9 (keyword arguments dropped for non-embedding categories), M11 (equivalent mutant)   (F-50)
+   first run (logs/mutation_sample_first_run_k_filter_deselected_most_tests.stdout.txt): the -k filter deselected most tests; superseded. second attempt died on a syntax error of the script (logs/mutation_sample_second_attempt_syntax_error.stdout.txt)
+
+4. Static gates [logs/addendum_3_static_gates.log, logs/ruff_repo_files.log]
+   ruff check + format --check on register.py, _package_c_v2_primitives.py, the p6_ecapfix test, pdc_x_inventory.py, pdc_x_wbs.py: clean; pyright on register.py: 0 errors
+   check_agents_no_tier3_imports, check_agents_no_vendor_sdk_imports, check_context_tier0_import_boundary, check_immutable_security_audit_trail, check_llm_routing_tier_boundary: exit 0
+   check_intergrax_no_applications_imports: exit 1, stdout md5 61159eb9c5e10de4b70f9a7ba4625be9 identical to the first audit and addenda 1-2 (12 pre-existing untouched files)
+   uv lock --check: exit 0
+
+5. Not run: GitHub Actions contexts, full tests/unit, the pdc_x suites other than p6_ecapfix, reg_p, p6_impact, XD-12 and the three governance unit files, igx_gov ticket, tests/e2e/rag (needs services), network and live-provider tests, the eight domain replays; mutation on anything but register.py and the harness primitive.
+
+6. verify_iiac_audit_manifest.py and verify_iiac_role_separation.py --strict-product-diff: logs/verify_iiac_audit_manifest.log, logs/verify_iiac_role_separation.log

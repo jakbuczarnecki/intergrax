@@ -1,0 +1,39 @@
+# MCP-SERVER-X P8 independent technical audit (MCP-P8-02) - test matrix
+# audited_implementation_sha / audit_execution_sha: eadb1c2116feb0a2090b234a36fd4182bd6ace8d (merge of PR #474)
+# test_execution_sha (P7 package): abbe1525450da77da6801b080619a600c20cd497
+# policy: IIAC-2026-11-05.1
+# interpreter: .venv/Scripts/python.exe (main checkout venv), cwd = detached audit worktree; one pytest process at a time (shared lock)
+
+Replay (own execution, logs with command / git head / UTC date headers in this folder):
+  p8_audit_replay_new.log          MCP_SERVER_X_P7_NEW_QUALIFICATION (8 files)         exit=0  164 passed  (package: 164)  166.98 s
+  p8_audit_replay_consistency.log  test_mcp_server_x_p7_matrix_consistency.py (full)   exit=0   14 passed  (package: 13 + ACC-20 test = 14)
+  p8_audit_replay_regression.log   MCP_SERVER_X_P7_REGRESSION_SELECTION (19 files)     exit=0  141 passed  (package: 141)  118.42 s
+
+R-P7-02 baseline reproduction (3 files, 11 expected failures):
+  p8_audit_r_p7_02_freeze.log      at eadb1c211 (freeze SHA)                           exit=1  13 failed, 16 passed (package: 11 failed)
+  p8_audit_r_p7_02_c59892829.log   at c59892829 (P5 publication, throwaway worktree)   exit=1  12 failed, 17 passed (package: 11 failed)
+
+Static traceability (AST count of test_acc_<NN>_ functions per module level, parametrization not expanded):
+  ACC-01 L3=3 | ACC-02 L1=17 | ACC-03 L2=10 | ACC-04 L1=8 L2=8 | ACC-05 L3=3 | ACC-06 L3=2 | ACC-07 L3=4 | ACC-08 L3=5
+  ACC-09 L3=3 | ACC-10 L2=10 L3=5 | ACC-11 L2=5 L3=3 | ACC-12 L2=8 | ACC-13 L2=4 L3=2 | ACC-14 L2=3 L3=3 | ACC-15 L2=1 L3=2
+  ACC-16 L1=7 L2=6 | ACC-17 L2=4 | ACC-18 L3=10 | test_p7_05_*: L2=6 L3=3 | total test functions 145 (164 collected with parametrization)
+  Result: all counts equal the package table; no L2 module is imported by an L3 module, no L3 module uses an in-process client (grep for Client(mcp / mcp.call_tool / TestClient / patch( in the three L3 files and the FI L3 file: none; the only patching is the host-drain constant via monkeypatch in the FI L3 file).
+  Record-only rows: ACC-19 -> p8_audit_replay_regression.log (141 passed, per-file selection); ACC-20 -> MCP_SERVER_X_P7_QUALIFICATION_PACKAGE.md + test_acc_20_exact_sha_package_record_exists_and_pins_a_test_execution_sha (passed in p8_audit_replay_consistency.log).
+
+Scope / governance checks (logs in this folder):
+  p8_audit_product_paths_changed_between.log   product_paths_changed_between(6e53fb36f, eadb1c211) == []
+  p8_audit_scope_product_diff.log              git diff over intergrax/ agents/ applications/ scripts/: only scripts/qualification/pdc_x_requirements.py (outside the ACT-N11 product prefixes, PDC-X lineage, informational)
+  p8_audit_verify_iiac_require_in_force.log   verify_iiac_policy_activation --require-in-force exit 0 (IN_FORCE @ IIAC-2026-11-05.1)
+  p8_audit_frz_counter_unchanged.log          FRZ checklist/matrix unchanged since 6e53fb36f; verify_arch_freeze_plan_traceability OK: FRZ=225 PASS=108 OPEN=109
+  p8_audit_verify_manifest.log / p8_audit_verify_role_separation.log   verifier output on the P8 audit manifest (certifier fields pending)
+
+Not executed by the auditor (stated, not hidden): mutation runs against product code (read-only), broad diagnostic suites (C10/C15), any test outside the three replay sets and the R-P7-02 files, CI of the evidence commit.
+
+R-P7-02 comparison: the 11 failing ids of the package are a subset of both reproductions; extras are TL11 subprocess startup timeouts (test_tl11_e2e_slow_list_within_deadline at both SHAs; test_tl11_e2e_http_ingress_rejects_missing_api_key at the freeze SHA only). See finding F-P8-03.
+
+Re-review of P8 corrections (MCP-P8-03 round 1) at c50547012c353463e86525411a5a065f43e5bab8 (logs in reaudit/):
+  reaudit/p8_reaudit_replay_l1_consistency.log   test_mcp_server_x_p7_l1_contract.py + test_mcp_server_x_p7_matrix_consistency.py   exit=0  55 passed (96.07 s)
+  reaudit/p8_reaudit_scope.log                   docs-only diff against eadb1c211; product_paths_changed_between == [] (vs 6e53fb36f and vs eadb1c211)
+  reaudit/p8_reaudit_verify_iiac_require_in_force.log   exit 0
+  reaudit/p8_reaudit_frz_counter_unchanged.log   FRZ=225 PASS=108 OPEN=109, checklist and matrix unchanged
+  reaudit/p8_reaudit_verify_manifest.log / p8_reaudit_verify_role_separation.log   verifier output after the manifest update

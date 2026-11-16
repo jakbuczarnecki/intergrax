@@ -12,14 +12,14 @@ if TYPE_CHECKING:
     from intergrax.memory.contracts.memory_security_governance import MemoryGovernanceDecision
 
 from intergrax.contracts.agent_run import RequestIdentity
-from intergrax.memory.contracts.memory_lifecycle import (
-    MemoryLifecycleOutcome,
-    MemoryReconciliationOutcome,
-)
 from intergrax.memory.contracts.enterprise_memory_record import (
     MemoryProvenance,
     MemoryRecordGovernance,
     MemoryRecordTrust,
+)
+from intergrax.memory.contracts.memory_lifecycle import (
+    MemoryLifecycleOutcome,
+    MemoryReconciliationOutcome,
 )
 from intergrax.memory.contracts.memory_models import MemoryKind, UserProfileMemoryEntry
 from intergrax.memory.contracts.memory_recall import (
@@ -49,18 +49,21 @@ __all__ = [
     "MemoryControlRememberResult",
     "MemoryControlScopeRef",
     "MemoryControlUnsupportedScope",
+    "MemoryRetentionCandidateReader",
     "TaskMemoryCapability",
+    "TenantBoundMemoryCapability",
     "UserMemoryForgetCapabilityResult",
     "UserMemoryRecallCapabilityResult",
     "UserMemoryRememberCapabilityResult",
     "UserProfileMemoryCapability",
     "ProcedureMemoryCapability",
     "MemoryControlSupersessionApplyResult",
+    "task_namespace_for_tenant",
     "user_memory_scope",
 ]
 
 
-class MemoryControlPlaneScope(str, Enum):
+class MemoryControlPlaneScope(str, Enum):  # noqa: UP042 - str() semantics are relied upon
     """Logical memory surface routed by the control plane."""
 
     TASK = "task"
@@ -104,8 +107,7 @@ class MemoryControlPartialLifecycleError(RuntimeError):
         cause: BaseException | None = None,
     ) -> None:
         super().__init__(
-            f"memory control partial lifecycle: operation={lifecycle.operation.value}, "
-            f"user_id={lifecycle.user_id}"
+            f"memory control partial lifecycle: operation={lifecycle.operation.value}, user_id={lifecycle.user_id}"
         )
         self.lifecycle = lifecycle
         self.__cause__ = cause
@@ -179,6 +181,8 @@ class MemoryControlForgetRequest:
     entry_id: str = ""
     task_namespace: str | None = None
     task_key: str | None = None
+    include_expired: bool = False
+    """Retention path: also forget entries whose ``valid_until`` has passed (hidden from recall)."""
 
 
 @dataclass(frozen=True, slots=True)
@@ -280,6 +284,16 @@ class UserProfileMemoryCapability(Protocol):
 
 
 @runtime_checkable
+class MemoryRetentionCandidateReader(Protocol):
+    """Lists non-deleted USER entries including expired ones (retention sweep input only)."""
+
+    async def list_retention_candidates(
+        self,
+        user_id: str,
+    ) -> tuple[UserProfileMemoryEntry, ...]: ...
+
+
+@runtime_checkable
 class TaskMemoryCapability(Protocol):
     async def write(
         self,
@@ -291,6 +305,27 @@ class TaskMemoryCapability(Protocol):
     async def read(self, namespace: str, key: str) -> dict[str, object] | None: ...
 
     async def delete(self, namespace: str, key: str) -> bool: ...
+
+
+@runtime_checkable
+class TenantBoundMemoryCapability(Protocol):
+    """A memory capability that is bound to exactly one tenant (PDC-D2-R002).
+
+    The control plane refuses an identity of another tenant before it calls such a capability.
+    """
+
+    @property
+    def bound_tenant_id(self) -> str: ...
+
+
+def task_namespace_for_tenant(tenant_id: str, namespace: str) -> str:
+    """Tenant-qualified TASK namespace passed to ``TaskMemoryCapability`` by the control plane.
+
+    ``TaskMemoryCapability`` has no tenant parameter, so tenant isolation of a shared capability
+    is carried by the namespace. The length prefix makes the encoding injective: no tenant id or
+    namespace, whatever separators it contains, can collide with another ``(tenant, namespace)``.
+    """
+    return f"{len(tenant_id)}:{tenant_id}/{namespace}"
 
 
 @runtime_checkable

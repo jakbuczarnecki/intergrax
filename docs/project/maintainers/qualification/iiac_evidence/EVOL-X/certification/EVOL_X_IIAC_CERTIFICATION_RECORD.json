@@ -4,8 +4,8 @@
   "policy_version": "IIAC-2026-11-05.1",
   "independent_audit_verdict": "PASS_SCOPED",
   "certification_verdict": "PASS_SCOPED_EVIDENCE_PUBLICATION_ONLY",
-  "stage_closure_status": "NOT_CLOSED",
-  "b6_acceptance": "NOT_ISSUED",
+  "stage_closure_status": "CLOSED",
+  "b6_acceptance": "ISSUED",
   "audited_implementation_sha": "3c4a641b3e48a13f437e830a0562e2a80b03aabb",
   "test_execution_sha": "3c4a641b3e48a13f437e830a0562e2a80b03aabb",
   "evidence_publication_sha": "bbf3e33bc62a05fd205e07f3d2e35a6d1d689ca1",
@@ -14,8 +14,8 @@
   "audit_publication_sha": "4dee0050d1ab2d353c982da23cc82439bd79a53a",
   "certification_publication_sha": "ad0877715ed079ce920ff9d925fda03555b2c04e",
   "certification_publication_sha_binding": "bound to the P2 publication commit (the commit that first published this record); interim placeholder in that commit was audit_execution_sha",
-  "b6_acceptance_publication_sha": null,
-  "formal_closure_publication_sha": null,
+  "b6_acceptance_publication_sha": "1dd769331506149a1ee2f411c2bc62e85e5bbf25",
+  "formal_closure_publication_sha": "be77b3a5fb97f10a3bd2df6ee038cb92aad77eca",
   "accepted_audit_report_digest": "88f9f427d52a70a2e703600261f48b2e6d1a42689f611dde5eb6ebe3208177c6",
   "findings_digest": "d0e7b5749e7b2ce006b69dad7cfc57ccc79d54a5a2881d559952c4000de1e95f",
   "audit_evidence_index_digest": "e4694606ed2bd0db420b77ea4234fa9376f584c41381b3fb155f0eb89068f59c",
@@ -37,10 +37,7 @@
     "FRZ-EVOL-10": "ELIGIBLE_PASS_SCOPED(LIM-07)"
   },
   "frz_checklist_rows_changed": false,
-  "open_blockers_for_closure": [
-    "B-5 OD-EVOL-12 / OD-EVOLX-08 authority confirmation or signed rows",
-    "B6 acceptance (P3), FRZ promotion (P4) and formal closure (P5) not authorized in this publication"
-  ],
+  "open_blockers_for_closure": [],
   "assessment_path": "docs/project/maintainers/qualification/iiac_evidence/EVOL-X/certification/EVOL_X_IIAC_CERTIFICATION_ASSESSMENT.md",
   "notes": "Evidence-only P1/P2 publication under operator authorization. P1 pre-commit ruff gate skipped once by operator authorization (byte-preserved auditor probe scripts). Eligible dispositions are not promotions.",
   "resolved_blockers_for_closure": [
@@ -64,6 +61,43 @@
         "audit_report_digest": "966d54436aa73a8b6c01fa43d9248875222253eb73a202527ffe62dec1105109",
         "findings_digest": "ba415e90cf5d59b691ce25cc82ae65df5d4a88daaf031e144a34a204fed65b91"
       }
+    },
+    {
+      "blocker_id": "B6-P3",
+      "status": "RESOLVED_WITH_EVIDENCE",
+      "baseline_text_sha256": "61dd0bc263232a6a1ff2c41ba4f936635d21c2c5ac9232bc47c37a8f55b3990e",
+      "opened_at_sha": "ad0877715ed079ce920ff9d925fda03555b2c04e",
+      "resolution_kind": "OPERATOR_AUTHORIZATION",
+      "closure_publication_sha": "27d905027f1db6dfa36f1a7147971d3f8e3f16f0",
+      "closure_evidence": [
+        {
+          "path": "docs/project/maintainers/qualification/iiac_evidence/EVOL-X/operator_decisions/EVOL_X_P3_B6_AUTHORIZATION_RECORD.md",
+          "sha256": "90d5c3288a3d205cce37e52664c63ab03c323fe0755975f5375c6342864045b9",
+          "decision_id": "OD-EVOLX-P3-B6-2026-11-07"
+        }
+      ]
+    },
+    {
+      "blocker_id": "B-5",
+      "status": "RESOLVED_WITH_EVIDENCE",
+      "baseline_text_sha256": "3bf8d5983f6db71782f39e2ac5adf451aed397b8490aaf5b4df69eb38219fe24",
+      "opened_at_sha": "ad0877715ed079ce920ff9d925fda03555b2c04e",
+      "resolution_kind": "OPERATOR_AUTHORIZATION",
+      "closure_publication_sha": "5f972703237268ef22a477c8954842508301dd51",
+      "closure_evidence": [
+        {
+          "path": "docs/project/maintainers/qualification/iiac_evidence/EVOL-X/operator_decisions/EVOL_X_OD_EVOL_12_DECISION_RECORD.md",
+          "sha256": "481c6328e820c0ca1f753a1acea635138afd04eac9b8aa618a5c60d20c1746de",
+          "decision_id": "OD-EVOL-12"
+        },
+        {
+          "path": "docs/project/maintainers/qualification/iiac_evidence/EVOL-X/operator_decisions/EVOL_X_OD_EVOLX_08_DECISION_RECORD.md",
+          "sha256": "760cdb37c7593702672dab70a374faec4b84a4a36c821a431cf213497a5d8add",
+          "decision_id": "OD-EVOLX-08"
+        }
+      ]
     }
-  ]
+  ],
+  "b6_acceptance_record_path": "docs/project/maintainers/qualification/iiac_evidence/EVOL-X/b6_acceptance/EVOL_X_IIAC_B6_ACCEPTANCE_RECORD.md",
+  "b6_acceptance_record_digest": "68cbec32b17049eecc8211d0e074ab4b6303467ff2d3037b08361d606c0eba1d"
 }

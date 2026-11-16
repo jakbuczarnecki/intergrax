@@ -71,7 +71,10 @@
             "type": "array",
             "items": { "type": "string" }
           },
-          "drift": { "type": "string" }
+          "drift": {
+            "type": "string",
+            "enum": ["NEW", "RESOLVED", "REGRESSED", "UNCHANGED"]
+          }
         }
       }
     }

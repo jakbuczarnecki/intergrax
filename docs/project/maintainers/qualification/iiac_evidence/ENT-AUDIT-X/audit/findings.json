@@ -1,0 +1,245 @@
+[
+  {
+    "id": "F-01",
+    "severity": "HIGH",
+    "title": "B5 evidence digests line-ending dependent; strict B5 verification skipped on Linux CI",
+    "evidence": "Round-3 re-check @ audit_execution_sha ee5470f5 on TES' b5c2481d. Round-1 defect re-tested. New tree qualification_at_62d1c615855a3eaf569777a10e342aacc889a128 (commit 163ef0c0): .gitattributes marks it -text (git check-attr: 'text: unset'; git ls-files --eol: i/crlf w/crlf for 7 files and i/lf w/lf for the index, identical in an autocrlf=false worktree and an autocrlf=true worktree). sha256 of every file of the tree equals (a) publication_index.v1.json, (b) evidence_manifest.v1.json, (c) the git blob bytes at 163ef0c0 (probes/modeA_probe.py A01). verify_b5_publication_tree = () (no errors) in the autocrlf=false worktree (A00c), in the autocrlf=true worktree (A00b), on a copy of the worktree bytes (A00) and on git-blob bytes (A01). Tamper cases A02-A15, A19, A21, A22 rejected; wrong pin (A08), non-ancestor SHA (A09), nonexistent SHA (A07), missing file (A04), missing index (A05), altered digest (A06) rejected. Linux CI: push run 42522213144 on fb48714de065166bf5aed558183c76074573b808 ran the ladder-pinned strict test: 311 passed, 92 skipped, the two 'no strictly valid B5 tree' skips of run 42490370822 are gone. Legacy 89c76eb7 tree: still LF-blob/CRLF-digest, 8 digest errors on an LF checkout (A00d), 0 on a CRLF checkout (A00e); the waiver exists only in test_ladder_pinned_b5_tree_verifies_strictly_on_every_platform and applies only while the ladder still pins 89c76eb7 (no longer the case).",
+    "affected_path": "docs/project/maintainers/qualification/ent_audit_x/b6_independent_handoff/qualification_at_89c76eb7b53a0a3ce6f75ab395cf4a2802638a91/**; .gitattributes; tests/qualification/ent_audit_x/unit/test_b5_publication_verifier.py:79,181; intergrax/platform/enterprise_audit/validators.py:282-296",
+    "recommendation": "Fix by the implementer in a separate loop: mark the B5 tree `-text` (as already done for iiac_evidence) or define the digests over LF-normalised bytes, republish the tree with a new EVIDENCE_PUBLICATION_SHA, make the pinned-tree test FAIL (not skip) when the ladder-pinned tree does not verify, and add a Linux CI step that runs verify_b5_publication_tree on the pinned tree. Until then B5 integrity can be demonstrated only on an autocrlf=true Windows checkout.",
+    "status": "FIXED_VERIFIED"
+  },
+  {
+    "id": "F-02",
+    "severity": "HIGH",
+    "title": "promote-baseline trust gate bound to the current working directory",
+    "evidence": "Round-3 re-check @ audit_execution_sha ee5470f5 on TES' b5c2481d. Round-1 probe Q02 repeated (probes/f02_probe.py, logs/f02_probe.log). Control Q00 (the round-1 script text run with cwd = forged directory) still exits 0 and writes the accepted baseline, so the probe is able to detect the exploit. With the fixed script (_cmd_promote passes repo_root=root, run_enterprise_audit.py:90-95): Q01 cwd=real repo, record outside; Q02 cwd=forged dir; Q03 forged cwd + relative record/evidence paths; Q04 record outside any repo; Q05/Q05b cwd=directory junction to the forged dir (and record path through the junction); all exit 1 'OD-ENT-01 record must live under operator_records/', nothing written. Q06 --baseline-dir outside the jail exits 1 (uncaught ValueError traceback, see N-07). scripts/enterprise_audit/iiac_baseline_promotion.py (unchanged since round 1, defaults --repo-root to its own repository): Q07 forged cwd, Q08 real cwd + outside record, Q09 forged cwd + relative paths, all exit 1, nothing written. Q10: an attacker-chosen explicit --repo-root=<forged> is honoured but writes only into the forged tree (real repo untouched). Unit tests tests/qualification/ent_audit_x/unit/test_promote_baseline_repo_root.py pass.",
+    "affected_path": "scripts/enterprise_audit/run_enterprise_audit.py:85-96; intergrax/platform/enterprise_audit/baseline.py:251-290",
+    "recommendation": "Pass repo_root=_repo_root() in _cmd_promote, and route the CLI through scripts/enterprise_audit/iiac_baseline_promotion.py (which already passes repo_root explicitly). Note both files are qualification-sensitive: run_enterprise_audit.py edit requires a new TES.",
+    "status": "FIXED_VERIFIED"
+  },
+  {
+    "id": "F-03",
+    "severity": "MEDIUM",
+    "title": "The human OD-ENT-01 path (still reachable through the public promote-baseline CLI) accepts an unsigned JSON record with `operator_origin: true`; the delegated path's 'operator signature' is a textual line with no authorship or cryptographic check",
+    "evidence": "Round-3: product delta b5c2481d..ee5470f5 empty on intergrax/agents/applications; Unchanged files (baseline.py, iiac_baseline_promotion.py not in the delta). Probe P01 (record with operator_origin=true and four pins, no signature) ACCEPTED, P10 (all delegation/record commits authored by 'claude-agent-implementer') ACCEPTED, again at the audit SHA (logs/modeC_probe2.log). P02-P09, P12, P14 rejected as in round 1.",
+    "affected_path": "intergrax/platform/enterprise_audit/baseline.py:171-248; scripts/enterprise_audit/iiac_baseline_promotion.py (_verify_delegation); scripts/enterprise_audit/run_enterprise_audit.py (promote-baseline)",
+    "recommendation": "Disable the human path in promote-baseline under IIAC IN_FORCE (or require the same signature+delegation evidence); document explicitly that delegated authenticity is process_enforced only; have the certifier run verify_iiac_audit_manifest/role separation on the delegation commit authorship at publication time.",
+    "status": "CARRIED"
+  },
+  {
+    "id": "F-04",
+    "severity": "MEDIUM",
+    "title": "The 'ADV-01..31' acceptance stage (qual-wave stage adv31, 33 passed) is mostly existence/importability assertions; 23 of the 29 oracle test names in master-plan Matrix F do not exist",
+    "evidence": "Round-3: product delta b5c2481d..ee5470f5 empty on intergrax/agents/applications; tests/qualification/ent_audit_x/integration/test_adversarial_adv01_30.py and Matrix F not in the delta; adv31 stage still 33 passed.",
+    "affected_path": "tests/qualification/ent_audit_x/integration/test_adversarial_adv01_30.py; docs/.../ENT_AUDIT_X_POST_IMPLEMENTATION_FINAL_CLOSURE_MASTER_PLAN.md (Matrix F); scripts/enterprise_audit/qual_wave_lib.py:36-39 (_ADV_PATHS)",
+    "recommendation": "Replace the vacuous ADV tests with the Matrix F injections (or rename Matrix F to the real tests and state which ADV ids are covered only by other test files) and make the validator check that every Matrix F test name resolves.",
+    "status": "CARRIED"
+  },
+  {
+    "id": "F-05",
+    "severity": "MEDIUM",
+    "title": "41 of the 69 Matrix C rows marked QUALIFIED cite only non-durable, git-ignored local evidence; qualification state is assigned from hard-coded sets, not derived from results",
+    "evidence": "Round-3: product delta b5c2481d..ee5470f5 empty on intergrax/agents/applications; Master plan and wbs_reconciliation_lib.py not in the delta. Matrix C re-counted at the audit SHA: 75 rows = 69 QUALIFIED + 6 NOT_QUALIFIED (C001, C002, C003, C042, C057, C065).",
+    "affected_path": "docs/.../ENT_AUDIT_X_POST_IMPLEMENTATION_FINAL_CLOSURE_MASTER_PLAN.md (Matrix C); scripts/enterprise_audit/wbs_reconciliation_lib.py:40-110,299-315",
+    "recommendation": "Re-point these rows to durable, committed evidence (this audit's test matrix/junit, or a published log) and derive Qual from the evidence file rather than from literal sets.",
+    "status": "CARRIED"
+  },
+  {
+    "id": "F-06",
+    "severity": "MEDIUM",
+    "title": "The 'sandbox' is an allowlist runner, not an isolation boundary; redaction misses 10 of 15 secret shapes while its output is persisted in published outcomes; W8 disposition cites a test that does not test isolation",
+    "evidence": "Round-3: product delta b5c2481d..ee5470f5 empty on intergrax/agents/applications; sandbox.py unchanged. Probe C13 re-run at the audit SHA: secret shapes survive _redact; C14 environment inherited; C15 mutating=false check wrote a file in the repo (logs/modeC_probe1.log).",
+    "affected_path": "intergrax/platform/enterprise_audit/sandbox.py:17-45,70-110; tests/qualification/ent_audit_x/unit/test_sandbox_isolation.py; docs/.../ENT_AUDIT_X_W8_B6_FINDINGS_DISPOSITION.md",
+    "recommendation": "Re-label the component honestly (allowlist runner), extend redaction (or do not persist stdout tails), scrub the environment, reject entrypoints starting with '-', and replace the isolation evidence with real tests.",
+    "status": "CARRIED"
+  },
+  {
+    "id": "F-07",
+    "severity": "MEDIUM",
+    "title": "A manifest check passes on process exit code 0 alone: an all-skipped or xfail-only pytest entrypoint counts as an executed PASS",
+    "evidence": "Round-3: product delta b5c2481d..ee5470f5 empty on intergrax/agents/applications; executor.py unchanged. Probes C11 (option injection --version), C12a (all skipped), C12d (xfail-only) re-run: still counted as pass (logs/modeC_probe1.log). Mitigation observed: the retained FULL report shows 0 outcomes with 'skipped'/'no tests ran' and the 85 acceptance wrappers executed 85 passed in the qual wave at TES.",
+    "affected_path": "intergrax/platform/enterprise_audit/checks/executor.py:88-130",
+    "recommendation": "Parse the pytest summary (require passed>=1 and skipped==0 for mandatory checks) or run pytest with -W error --strict-markers and treat exit-0-with-skips as a finding.",
+    "status": "CARRIED"
+  },
+  {
+    "id": "F-08",
+    "severity": "MEDIUM",
+    "title": "verify_b5_publication_tree checks structural digest consistency only: an attacker who re-seals the digests in the tree can change the qualification report, SHA bindings and check counts undetected",
+    "evidence": "Round-3: product delta b5c2481d..ee5470f5 empty on intergrax/agents/applications; validators.py unchanged. Probes A16 (qual_wave status=FAIL, re-sealed), A17 (evidence_manifest SHAs replaced, re-sealed), A18 (report current_sha replaced, re-sealed), A20 (checks_executed=84, re-sealed) are still ACCEPTED at the audit SHA; A19 (status vs exit_code) rejected (logs/modeA_probe.log). Integrity of the content therefore rests on the git commit identity of 163ef0c0, which I verified (tree unchanged since: git diff 163ef0c0..HEAD on the tree is empty) and on my own independent comparison with the replay.",
+    "affected_path": "intergrax/platform/enterprise_audit/validators.py:207-330; intergrax/platform/enterprise_audit/evidence.py:146-160",
+    "recommendation": "Bind the tree contents: compare report/evidence-manifest SHAs to the index SHA, require checks_executed==checks_planned==85 and skipped==0 and qual_wave status PASS inside verify_b5_publication_tree; catch JSON errors instead of raising (an empty evidence_manifest.v1.json raises JSONDecodeError out of verify_evidence_manifest, observed in a harness defect run).",
+    "status": "CARRIED"
+  },
+  {
+    "id": "F-09",
+    "severity": "MEDIUM",
+    "title": "Formal-closure preflight accepted a fabricated manifest and a one-line pass record",
+    "evidence": "Round-3 re-check @ audit_execution_sha ee5470f5 on TES' b5c2481d. Round-1 probe F15 repeated with the original code (logs/modeC_probe2.log F15 now yields manifest errors) and with 20 new variants (probes/f09_f10_f11_probe.py, logs/f09_f10_f11_probe.log): control M00 (well-formed, file-bound manifest) accepted; M01 random digests, M02 non-commit SHAs, M03 real non-ancestor SHAs, M04 one-line pass record without verdict/SHA, M05 missing audit_report_path, M06/M06b escaping and absolute paths, M07 report changed after sealing, M10 empty evidence index, M11 invalid index JSON, M12 invalid manifest JSON, M13 manifest not an object, M14 verdict CONDITIONAL, M15 equal session ids, M16 stale TES: all rejected. M17: the default verifier subprocess (verify_iiac_audit_manifest --require-handoff-template) is wired and rejects an incomplete manifest. Gate A/B on the real tree: exit 1 with 18/19 errors; ladder cells *unset*, blank, TBD, 39-hex, uppercase, trailing text, PENDING all give 'unset or malformed'; non-ancestor B6 pin rejected; Gate A with formal pin set rejected. Residual limits are recorded as N-02.",
+    "affected_path": "scripts/qualification/ent_audit_x_formal_closure_preflight.py:112-150",
+    "recommendation": "Invoke verify_iiac_audit_manifest (schema + ancestry) and verify that each *_digest equals the sha256 of the file named in the manifest/evidence index; require audit_execution_sha to be an ancestor of HEAD.",
+    "status": "FIXED_VERIFIED"
+  },
+  {
+    "id": "F-10",
+    "severity": "MEDIUM",
+    "title": "Compensating OD-ENT-02 route unsatisfiable by default wiring",
+    "evidence": "Round-3 re-check @ audit_execution_sha ee5470f5 on TES' b5c2481d. Round-1 probes O01-O03 repeated with the original code (logs/modeC_probe2.log): O01 now returns [] with the default wiring and a complete package; probes/o01_full.py on a checkout holding the whole qualification tree: good active rules -> [], missing non_fast_forward -> 'active branch rules lack: non_fast_forward', reader failure -> two errors, REAL gh default reader on development (rules deletion, non_fast_forward) -> []. Unknown or missing od_ent_02_mode rejected; mode live against the real GitHub state rejected (no protection). No equivalence claim is made anywhere; verified by test and text. Sufficiency of the compensating control is NOT judged here. Note: a package whose controls are all kind=document passes with an empty active rule list (design: no ruleset control declared).",
+    "affected_path": "scripts/qualification/ent_audit_x_formal_closure_preflight.py:178-195; scripts/governance/verify_od_ent_02_compensating_control.py:_published_errors",
+    "recommendation": "Read the live branch rules inside the preflight (gh api rules/branches/development) and pass them to collect_errors; add a test using the real default wiring.",
+    "status": "FIXED_VERIFIED"
+  },
+  {
+    "id": "F-11",
+    "severity": "MEDIUM",
+    "title": "Live branch-protection verifier required context strings GitHub does not emit",
+    "evidence": "Round-3 re-check @ audit_execution_sha ee5470f5 on TES' b5c2481d. Round-1 probes B01-B04 repeated with the original code: B01 classic protection and B02 ruleset naming the bare job names now PASS, B03 display form PASS, B04 real GitHub state FAIL (protection endpoint 404; ruleset 26771061 has only deletion and non_fast_forward; confirmed with gh api GET at audit time). New variants: only one of the two jobs, nightly-only extra context, look-alike names, empty required checks, unreadable API, display form with trailing text: all rejected. Residual: the match is by context name only (no app/integration id), and the fix tests use synthetic payloads in the documented GitHub shape because no real protection payload exists to record (NOT VERIFIED against a real protected-branch payload).",
+    "affected_path": "scripts/governance/verify_ent_audit_branch_protection.py:23-26,71-110",
+    "recommendation": "Accept the check-run job names (and optionally the app id), and test against recorded real API payloads.",
+    "status": "FIXED_VERIFIED"
+  },
+  {
+    "id": "F-12",
+    "severity": "MEDIUM",
+    "title": "FRZ coverage artifact is a prefix heuristic: 30 of 85 checks are mapped only to the catch-all FRZ-AUD-03 and 14 of the 26 FRZ families have no mapped check; mappings are family wildcards, not criterion rows",
+    "evidence": "Round-3: product delta b5c2481d..ee5470f5 empty on intergrax/agents/applications; digests.py and Annex C are not in the delta; the JSON content of frz_coverage.v1.json in the new B5 tree is identical to the round-1 tree (jq -S diff empty; only the byte digest differs, a5b309d3... vs ddef45a1..., because of line endings), so the same prefix-heuristic mapping (30 checks to FRZ-AUD-03) stands.",
+    "affected_path": "intergrax/platform/enterprise_audit/digests.py:25-62; docs/.../ANNEX_C_CONTROL_MATRIX.md; B5 frz_coverage.v1.json",
+    "recommendation": "Derive the FRZ mapping from Annex C, map to criterion ids, and test completeness against the checklist before FRZ-AUD-03 is promoted (later audit).",
+    "status": "CARRIED"
+  },
+  {
+    "id": "F-13",
+    "severity": "MEDIUM",
+    "title": "GAP register status honesty: 10 of 33 GAP-RC rows are 'CLOSED' with Closure 'PARTIAL' and several closures are derived from unrelated gate booleans",
+    "evidence": "Round-3: product delta b5c2481d..ee5470f5 empty on intergrax/agents/applications; Master plan Matrix D, Annex F and wbs_reconciliation_lib.py not in the delta; the status overlay was not updated either (see N-03).",
+    "affected_path": "docs/.../ENT_AUDIT_X_POST_IMPLEMENTATION_FINAL_CLOSURE_MASTER_PLAN.md (Matrix D); docs/.../ANNEX_F_GAP_REGISTER.md; scripts/enterprise_audit/wbs_reconciliation_lib.py:160-190",
+    "recommendation": "Tie each GAP-RC closure to its own positive+negative evidence; correct REDACTION; refresh Annex F with status columns.",
+    "status": "CARRIED"
+  },
+  {
+    "id": "F-14",
+    "severity": "LOW",
+    "title": "Documentation drift: Annex B test names and Annex G2 acceptance-test column no longer match the repository",
+    "evidence": "Round-3: product delta b5c2481d..ee5470f5 empty on intergrax/agents/applications; Annex B and G2 not in the delta.",
+    "affected_path": "docs/.../ANNEX_B_FRZ_AUD_CLOSURE_MATRIX.md; docs/.../ANNEX_G2_CONTROL_GATE_MAPPING.md",
+    "recommendation": "Map each FRZ-AUD row to real, executed tests before the per-row FRZ-AUD audit.",
+    "status": "CARRIED"
+  },
+  {
+    "id": "F-15",
+    "severity": "LOW",
+    "title": "VBN domain accounting is inventory mapping: all 31 domains reference one test file, 6 are N/A_WITH_EVIDENCE, and D30 defers to ENT-AUDIT-X itself",
+    "evidence": "Round-3: product delta b5c2481d..ee5470f5 empty on intergrax/agents/applications; New tree vbn_domains.v1.json: 31 domains, 25 QUALIFIED + 6 NA_WITH_EVIDENCE (jq), same shape as round 1.",
+    "affected_path": "B5 l3-cli-full/vbn_domains.v1.json; intergrax/platform/enterprise_audit/vbn.py",
+    "recommendation": "Record these as accepted scoped limitations in the manifest and close D30 explicitly.",
+    "status": "CARRIED"
+  },
+  {
+    "id": "F-16",
+    "severity": "LOW",
+    "title": "mechanical_readiness_check cannot pass from a fresh clone or CI and reuses CI proofs on a weak 'doc-only' criterion",
+    "evidence": "Round-3: product delta b5c2481d..ee5470f5 empty on intergrax/agents/applications; Script unchanged. Run at the audit SHA in a clean worktree: exit 1; FAIL lines depend on untracked .tmp/session evidence or on a nightly run at HEAD (ten_13, vbn_9, pre_qual_or_certifying_wave, adv_31, l1_l2_l3_logs, evidence_integrity 'closed-world bundle @ EVIDENCE_PUBLICATION_SHA missing', ci_nightly_green_at_head, pr_nightly_ci_proof); 14 other lines OK (logs/val_mechanical_readiness_check.log).",
+    "affected_path": "scripts/enterprise_audit/mechanical_readiness_check.py:263-330,463-561",
+    "recommendation": "Make evidence_integrity read the published qual_wave_report, base proof reuse on 'no product-path delta', return structured fields instead of substring matches.",
+    "status": "CARRIED"
+  },
+  {
+    "id": "F-17",
+    "severity": "LOW",
+    "title": "A certifying FULL run does not require a clean working tree (only FREEZE does)",
+    "evidence": "Round-3: product delta b5c2481d..ee5470f5 empty on intergrax/agents/applications; run_enterprise_audit.py differs from round 1 by one line (repo_root); require_clean_repo is still only set for FREEZE.",
+    "affected_path": "scripts/enterprise_audit/run_enterprise_audit.py:56; intergrax/platform/enterprise_audit/runner.py:76-80",
+    "recommendation": "Require a clean tree for every certifying run that writes an evidence bundle.",
+    "status": "CARRIED"
+  },
+  {
+    "id": "F-18",
+    "severity": "LOW",
+    "title": "Ladder parsing is 'last exact-role row wins' without duplicate detection (two parsers agree)",
+    "evidence": "Round-3: product delta b5c2481d..ee5470f5 empty on intergrax/agents/applications; Both parsers unchanged and still last-wins. Mitigation observed: the ladder now has exactly one exact-role row each for TEST_EXECUTION_SHA, EVIDENCE_PUBLICATION_SHA, B6_ACCEPTANCE_PUBLICATION_SHA, ACCEPTED_BASELINE_SHA, FORMAL_CLOSURE_PUBLICATION_SHA (historical rows were renamed with a suffix, not appended); both parsers return TES 62d1c615 and EVID 163ef0c0 (probe L03). Probe L02: malformed variants yield no pin.",
+    "affected_path": "intergrax/platform/enterprise_audit/baseline.py:129-148; scripts/qualification/ent_audit_x_formal_closure_preflight.py:ladder_pin",
+    "recommendation": "Fail on a second exact-role row whose pin differs from the first unless it is a strictly later commit.",
+    "status": "CARRIED"
+  },
+  {
+    "id": "F-19",
+    "severity": "INFO",
+    "title": "No live enforcement on development: ENT checks were red on three consecutive pushes to development and PRs merged with failed ENT jobs",
+    "evidence": "Round-3: product delta b5c2481d..ee5470f5 empty on intergrax/agents/applications; gh api branches/development/protection = 404; ruleset 26771061 enforcement active, rules deletion + non_fast_forward only, no bypass actors (GET, this audit). Recurrence: PR #411 was merged (2026-11-08T14:25:28Z) with ent-audit-fast FAILURE, producing push run 42489741869 red on bc7032c1, repaired by PR #412 (merge commit 62d1c615 = TES, push run 42490370822 success).",
+    "affected_path": "GitHub repository settings; .github/workflows/enterprise-audit*.yml",
+    "recommendation": "None for this audit; evidence for the OD-ENT-02 sufficiency audit.",
+    "status": "CARRIED"
+  },
+  {
+    "id": "F-20",
+    "severity": "INFO",
+    "title": "Permanently skipped / environment-gated tests (classified)",
+    "evidence": "Round-3: product delta b5c2481d..ee5470f5 empty on intergrax/agents/applications; Re-classified in the report section 6.3. The two strict-B5 skips of round 1 no longer occur on Linux CI (run 42522213144).",
+    "affected_path": "tests/qualification/ent_audit_x/{integration,l3,unit}",
+    "recommendation": "None.",
+    "status": "CARRIED"
+  },
+  {
+    "id": "N-01",
+    "severity": "LOW",
+    "title": "Library-level promote_accepted_baseline still defaults repo_root to Path.cwd()",
+    "evidence": "intergrax/platform/enterprise_audit/baseline.py:258 ('root = repo_root or Path.cwd()') and scripts/enterprise_audit/iiac_baseline_promotion.py:363 are unchanged; only run_enterprise_audit.py and the iiac_baseline_promotion CLI pass an explicit root. Any future caller that omits repo_root re-introduces F-02. The iiac_baseline_promotion CLI also accepts an attacker-chosen --repo-root (probe Q10: effect confined to that tree).",
+    "affected_path": "intergrax/platform/enterprise_audit/baseline.py:248-262; scripts/enterprise_audit/iiac_baseline_promotion.py:354-364",
+    "recommendation": "Make repo_root mandatory (fail closed) in a later loop; requires a Tier-0 change and a new TES.",
+    "status": "OPEN"
+  },
+  {
+    "id": "N-02",
+    "severity": "LOW",
+    "title": "Preflight manifest bindings: residual weaknesses and an undocumented field contract",
+    "evidence": "probes M04b (pass record containing only the verdict word and the audit SHA is accepted: substring check), M08 (scope digest and findings digest swapped: accepted, digests are only required to match some file of the evidence index), M09 (evidence-index entry '../outside.txt' outside the index directory supplies a digest: accepted, entries are not path-confined). The check also requires manifest fields audit_report_path, evidence_index_path (and pass_record_path, defaulting to the ENT pass record) that are absent from the standard field list given to the auditor; the certifier must add them and publish an EVIDENCE_INDEX.json with {files: {name: {sha256}}}.",
+    "affected_path": "scripts/qualification/ent_audit_x_formal_closure_preflight.py:112-200",
+    "recommendation": "Bind each digest key to a named file, confine index entries to the index directory, require the pass record to name the report digest; document the field contract in the ENT runbook.",
+    "status": "OPEN"
+  },
+  {
+    "id": "N-05",
+    "severity": "INFO",
+    "title": "tests/unit/governance fresh-clone tests fail under a long worktree path on Windows",
+    "evidence": "tests/unit/governance/test_evol_x_real_repo_fresh_clone.py: 8 failed in the first run (worktree D:\\Projekty\\_wt\\intergrax\\ent-w2-audit2 + default build\\pytest basetemp: 'unable to create file ...qualification_at_.../enterprise_audit_outcomes.json: Filename too long' inside the test's own fresh clone; B5 trees have 174-char repo-relative paths, old and new alike). Re-run with --basetemp=D:/Projekty/_wt/intergrax/_scratch/a2: 15 passed (logs/b_freshclone.log). Environmental, not a product or evidence defect.",
+    "affected_path": "tests/unit/governance/test_evol_x_real_repo_fresh_clone.py",
+    "recommendation": "Run these tests with a short --basetemp (as CLAUDE.md prescribes).",
+    "status": "OPEN"
+  },
+  {
+    "id": "N-06",
+    "severity": "INFO",
+    "title": "Delta contains governance policy edits from the HIST workstream outside the ENT scope",
+    "evidence": "governance/agent-control-plane/plan_approvers.yaml adds approver 'operator-delegate' (may_approve_plans: true) and governance/TRUSTED_POLICY_PIN.yaml pins its new digest; governance/tickets/README.md documents the delegate approval form. None of the six MATERIAL_GOVERNANCE_PATHS (iiac_activation_gate.py:40-49) changed (git diff, all 0), verify_iiac_policy_activation --require-in-force exits 0 (IN_FORCE @ IIAC-2026-11-05.1 from f8c29fb8). No intergrax/, agents/, applications/ path changed. I did not audit the HIST workstream.",
+    "affected_path": "governance/agent-control-plane/plan_approvers.yaml; governance/TRUSTED_POLICY_PIN.yaml",
+    "recommendation": "None for this audit.",
+    "status": "OPEN"
+  },
+  {
+    "id": "N-07",
+    "severity": "INFO",
+    "title": "promote-baseline: --baseline-dir outside the jail ends in an uncaught ValueError traceback",
+    "evidence": "probe Q06: assert_baseline_dir_jailed is called before the try block in _cmd_promote; exit code is 1 and nothing is written (fails closed by crash).",
+    "affected_path": "scripts/enterprise_audit/run_enterprise_audit.py:87-97",
+    "recommendation": "Move the call into the try block (cosmetic).",
+    "status": "OPEN"
+  },
+  {
+    "id": "N-03",
+    "severity": "INFO",
+    "title": "Historical round-1/2 status overlay stale pins superseded by R-PUB",
+    "evidence": "ENT_AUDIT_X_CLOSURE_EXECUTION_STATUS.json @ ee5470f5 now pins test_execution_sha b5c2481d and evidence_publication_sha 63ff80819; ci_nightly_proof_run_ids includes 42593448899.",
+    "affected_path": "docs/project/maintainers/qualification/ent_audit_x/ENT_AUDIT_X_CLOSURE_EXECUTION_STATUS.json",
+    "recommendation": "Keep overlay factual on status columns only during W5.",
+    "status": "OPEN"
+  },
+  {
+    "id": "N-04",
+    "severity": "INFO",
+    "title": "SUPERSEDED — no CI at f9e3a932 (round 2)",
+    "evidence": "R-FRESH provides nightly 42593448899 @ b5c2481d and PR #421 run 42613400627 success.",
+    "affected_path": "process",
+    "recommendation": "None.",
+    "status": "SUPERSEDED"
+  }
+]

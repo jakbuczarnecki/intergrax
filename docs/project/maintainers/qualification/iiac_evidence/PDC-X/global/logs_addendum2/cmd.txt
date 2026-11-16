@@ -1,0 +1,8 @@
+# run 1 at 969cbd964 (targeted; one process; base temp D:/Projekty/_wt/intergrax/_scratch/ia-g-add2/bt)
+uv run pytest "tests/integration/rag/test_graph_reingest_qualification.py::test_graphrag_source_reingest_replaces_vectors_and_graph_safely" "tests/integration/rag/test_same_source_reingest_serialization.py::test_stale_graph_topology_is_inactive_after_generation_takeover" tests/unit/rag/graph/test_graph_publication_scope_visibility.py tests/qualification/ebh_7/test_ebh_7_b6_f10_c4_041k_entries_gates.py tests/qualification/ebh_7/test_ebh_7_b6_f10_c4_041o_entries_gates.py -p no:cacheprovider -q --basetemp=<scratch>/bt -o addopts=""
+
+# run 2, mutant (same tests; base temp .../bt2)
+# mutation: for the three files intergrax/rag/graph/{generation_visibility.py,indexer/heuristic_graph_indexer.py,providers/inmemory_graph_store.py}
+#   git show d39a520dd:<file> > <file>   (restore the pre-P code)
+# mutation: tests/qualification/ebh_7/_ebh7_f10_canonical_inputs.py: rename the K entry secrets_store_resolver.py and the O entry p3/clients.py to *_MUT.py
+# after the run: git checkout -- intergrax tests (worktree clean again)

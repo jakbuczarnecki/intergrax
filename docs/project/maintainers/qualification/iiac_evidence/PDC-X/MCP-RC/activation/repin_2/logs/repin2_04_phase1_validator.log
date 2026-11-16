@@ -1,0 +1,10 @@
+# re-pin 2 phase-1 validator (local_8974948e-d8d3-45e3-96ca-fb61dfd5f249)
+# HEAD (CP1): 88fd679e63188303e0590e4033abc81a3c30805b
+# UTC: 2026-11-14T18:06:46Z
+# command: python -m scripts.governance.verify_iiac_policy_activation --require-in-force
+IIAC policy activation: FAIL
+  - missing activation field: effective_from_sha
+  - missing activation field: policy_activation_sha
+  - effective_from_sha must be a 40-char lowercase git SHA
+  - policy_activation_sha must be a 40-char lowercase git SHA
+exit=1

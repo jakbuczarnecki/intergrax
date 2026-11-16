@@ -11,18 +11,20 @@ from typing import Any
 
 import numpy as np
 import pytest
-
-from intergrax.integrations.contracts.base import IntegrationConfigurationError
-from intergrax.integrations._shared.p3.factories import (
-    create_neo4j_graph_store as create_neo4j_legacy_graph_store,
-)
-from intergrax.integrations.providers.graph_store.neo4j.bundle import (
-    create_neo4j_graph_store,
-)
-from intergrax.knowledge.contracts import KnowledgeDocument
 from intergrax.distributed.source_operation import (
     SOURCE_PUBLICATION_GENERATION_METADATA_KEY,
 )
+from intergrax.integrations._shared.p3.factories import (
+    create_neo4j_graph_store as create_neo4j_legacy_graph_store,
+)
+from intergrax.integrations.contracts.base import IntegrationConfigurationError
+from intergrax.integrations.providers.graph_store.neo4j.bundle import (
+    create_neo4j_graph_store,
+)
+from intergrax.integrations.providers.vector_store.inmemory.rag_store import (
+    InMemoryVectorStore,
+)
+from intergrax.knowledge.contracts import KnowledgeDocument
 from intergrax.rag.document_splitters.chunk_document import build_derived_chunk
 from intergrax.rag.embedding.contracts.base_embedding_manager import (
     BaseEmbeddingManager,
@@ -40,9 +42,6 @@ from intergrax.rag.retrievers.bootstrap.retriever_bootstrap import (
 )
 from intergrax.rag.vectorstore.contracts.native_vectorstore import VectorStoreScope
 from intergrax.rag.vectorstore.vectorstore_manager import VectorstoreManager
-from intergrax.integrations.providers.vector_store.inmemory.rag_store import (
-    InMemoryVectorStore,
-)
 
 pytestmark = [pytest.mark.integration, pytest.mark.gate]
 
@@ -141,14 +140,17 @@ class _LiveContext:
                 )
                 if ids:
                     runtime.vectorstore.delete(ids, scope=runtime.scope)
-                if runtime.graph._run(  # noqa: SLF001 - qualification inspection
-                    "MATCH (e:RagEvidence {scope_key: $scope_key, source_id: $source_id}) "
-                    "RETURN count(e) AS remaining",
-                    {
-                        "scope_key": _scope_key(runtime.scope),
-                        "source_id": source_id,
-                    },
-                )[0]["remaining"] != 0:
+                if (
+                    runtime.graph._run(  # noqa: SLF001 - qualification inspection
+                        "MATCH (e:RagEvidence {scope_key: $scope_key, source_id: $source_id}) "
+                        "RETURN count(e) AS remaining",
+                        {
+                            "scope_key": _scope_key(runtime.scope),
+                            "source_id": source_id,
+                        },
+                    )[0]["remaining"]
+                    != 0
+                ):
                     errors.append(f"{source_id}: graph evidence remains")
                 if runtime.vectorstore.list_source_record_ids(
                     source_id=source_id,
@@ -161,8 +163,7 @@ class _LiveContext:
         for scope in self.runtimes:
             try:
                 rows = self.integration.run_query(
-                    "MATCH (n) WHERE n.scope_key = $scope_key "
-                    "RETURN count(n) AS remaining",
+                    "MATCH (n) WHERE n.scope_key = $scope_key RETURN count(n) AS remaining",
                     parameters={"scope_key": _scope_key(scope)},
                 ).records
                 if not rows or dict(rows[0])["remaining"] != 0:
@@ -292,9 +293,7 @@ class _QualificationEmbeddingManager(BaseEmbeddingManager):
         native_documents = tuple(documents)
         return EmbeddingResult(
             documents=native_documents,
-            embeddings=self.embed_texts(
-                [document.content for document in native_documents]
-            ),
+            embeddings=self.embed_texts([document.content for document in native_documents]),
         )
 
 
@@ -394,8 +393,7 @@ def test_neo4j_live_graphrag_baseline(
     matrix_entity_id = "ent:matrix_alpha_node"
     physical = _raw(
         context,
-        "MATCH (n:RagEntity {id: $id}) "
-        "RETURN collect(n.scope_key) AS scope_keys, count(n) AS count",
+        "MATCH (n:RagEntity {id: $id}) RETURN collect(n.scope_key) AS scope_keys, count(n) AS count",
         id=matrix_entity_id,
     )[0]
     assert physical["count"] == len(scope_matrix)
@@ -418,13 +416,10 @@ def test_neo4j_live_graphrag_baseline(
 
     chunk_rows = _raw(
         context,
-        "MATCH (c:RagChunk {scope_key: $scope_key}) "
-        "RETURN c.scope_key AS scope_key, c.id AS id",
+        "MATCH (c:RagChunk {scope_key: $scope_key}) RETURN c.scope_key AS scope_key, c.id AS id",
         scope_key=_scope_key(scope_matrix[0]),
     )
-    assert chunk_rows and all(
-        row["scope_key"] == _scope_key(scope_matrix[0]) for row in chunk_rows
-    )
+    assert chunk_rows and all(row["scope_key"] == _scope_key(scope_matrix[0]) for row in chunk_rows)
 
     scope = scope_matrix[0]
     runtime = context.runtime(scope)
@@ -458,9 +453,7 @@ def test_neo4j_live_graphrag_baseline(
     )[0]["generations"]
     assert generation and all(value for value in generation)
 
-    shared_edge_key = (
-        f"{_scope_key(scope)}|ent:alpha_node|co_occurs|ent:beta_node"
-    )
+    shared_edge_key = f"{_scope_key(scope)}|ent:alpha_node|co_occurs|ent:beta_node"
     supporters = _raw(
         context,
         "MATCH (e:RagEvidence {scope_key: $scope_key, edge_key: $edge_key}) "
@@ -471,10 +464,13 @@ def test_neo4j_live_graphrag_baseline(
     assert set(supporters["source_ids"]) == {source_a_id, source_b_id}
     assert supporters["count"] == 2
 
-    assert runtime.graph.unlink_source(
-        source_a_id,
-        scope=GraphScope.from_object(scope),
-    ) > 0
+    assert (
+        runtime.graph.unlink_source(
+            source_a_id,
+            scope=GraphScope.from_object(scope),
+        )
+        > 0
+    )
     a_vector_ids = list(
         runtime.vectorstore.list_source_record_ids(
             source_id=source_a_id,
@@ -499,16 +495,16 @@ def test_neo4j_live_graphrag_baseline(
     a_v2 = _ingest(context, runtime, source_a)
     assert a_v1.isdisjoint(a_v2)
     assert runtime.graph.node_ids_for_chunks(a_v1) == set()
-    old_a_only_edge = (
-        f"{_scope_key(scope)}|ent:beta_node|co_occurs|ent:gamma_node"
+    old_a_only_edge = f"{_scope_key(scope)}|ent:beta_node|co_occurs|ent:gamma_node"
+    assert (
+        _raw(
+            context,
+            "MATCH ()-[r:RAG_REL {scope_key: $scope_key, edge_key: $edge_key}]->() RETURN count(r) AS count",
+            scope_key=_scope_key(scope),
+            edge_key=old_a_only_edge,
+        )[0]["count"]
+        == 0
     )
-    assert _raw(
-        context,
-        "MATCH ()-[r:RAG_REL {scope_key: $scope_key, edge_key: $edge_key}]->() "
-        "RETURN count(r) AS count",
-        scope_key=_scope_key(scope),
-        edge_key=old_a_only_edge,
-    )[0]["count"] == 0
     assert runtime.graph.node_ids_for_chunks(b_v1)
     assert _raw(
         context,
@@ -542,10 +538,13 @@ def test_neo4j_live_graphrag_baseline(
         for chunk in shared.chunks
     )
 
-    assert runtime.graph.unlink_source(
-        source_a_id,
-        scope=GraphScope.from_object(scope),
-    ) > 0
+    assert (
+        runtime.graph.unlink_source(
+            source_a_id,
+            scope=GraphScope.from_object(scope),
+        )
+        > 0
+    )
     runtime.vectorstore.delete(
         list(
             runtime.vectorstore.list_source_record_ids(
@@ -556,20 +555,26 @@ def test_neo4j_live_graphrag_baseline(
         scope=scope,
     )
     assert runtime.graph.node_ids_for_chunks(b_v1)
-    assert set(
-        runtime.vectorstore.list_source_record_ids(
-            source_id=source_b_id,
-            scope=scope,
+    assert (
+        set(
+            runtime.vectorstore.list_source_record_ids(
+                source_id=source_b_id,
+                scope=scope,
+            )
         )
-    ) == b_v1
+        == b_v1
+    )
     for foreign_scope in scope_matrix[1:]:
         foreign_runtime = context.runtime(foreign_scope)
         assert foreign_runtime.graph.find_nodes(label_contains="Matrix", limit=20)
 
-    assert runtime.graph.unlink_source(
-        source_b_id,
-        scope=GraphScope.from_object(scope),
-    ) > 0
+    assert (
+        runtime.graph.unlink_source(
+            source_b_id,
+            scope=GraphScope.from_object(scope),
+        )
+        > 0
+    )
     runtime.vectorstore.delete(
         list(
             runtime.vectorstore.list_source_record_ids(
@@ -579,13 +584,15 @@ def test_neo4j_live_graphrag_baseline(
         ),
         scope=scope,
     )
-    assert _raw(
-        context,
-        "MATCH ()-[r:RAG_REL {scope_key: $scope_key, edge_key: $edge_key}]->() "
-        "RETURN count(r) AS count",
-        scope_key=_scope_key(scope),
-        edge_key=shared_edge_key,
-    )[0]["count"] == 0
+    assert (
+        _raw(
+            context,
+            "MATCH ()-[r:RAG_REL {scope_key: $scope_key, edge_key: $edge_key}]->() RETURN count(r) AS count",
+            scope_key=_scope_key(scope),
+            edge_key=shared_edge_key,
+        )[0]["count"]
+        == 0
+    )
 
     with pytest.raises(ValueError, match="graph scope cannot change"):
         runtime.graph.bind_scope(
@@ -606,20 +613,21 @@ def test_neo4j_live_graphrag_baseline(
     monkeypatch.setattr(
         integration_type,
         "run_query",
-        lambda self, *args, **kwargs: (_ for _ in ()).throw(
-            RuntimeError("cypher error")
-        ),
+        lambda self, *args, **kwargs: (_ for _ in ()).throw(RuntimeError("cypher error")),
     )
-        with pytest.raises(RuntimeError, match="cypher error"):
-            runtime.graph.find_nodes(label_contains="Matrix")
-        with pytest.raises(RuntimeError, match="cypher error"):
-            runtime.graph.unlink_source("ownership://failure", scope=GraphScope.from_object(scope))
-        with pytest.raises(RuntimeError, match="cypher error"):
-            runtime.graph.neighbors("ent:matrix_alpha_node")
-    assert runtime.graph.unlink_source(
-        "missing://zero-row",
-        scope=GraphScope.from_object(scope),
-    ) == 0
+    with pytest.raises(RuntimeError, match="cypher error"):
+        runtime.graph.find_nodes(label_contains="Matrix")
+    with pytest.raises(RuntimeError, match="cypher error"):
+        runtime.graph.unlink_source("ownership://failure", scope=GraphScope.from_object(scope))
+    with pytest.raises(RuntimeError, match="cypher error"):
+        runtime.graph.neighbors("ent:matrix_alpha_node")
+    assert (
+        runtime.graph.unlink_source(
+            "missing://zero-row",
+            scope=GraphScope.from_object(scope),
+        )
+        == 0
+    )
     factory_source = inspect.getsource(create_neo4j_legacy_graph_store)
     assert "execute_write" in factory_source
     assert "session" in factory_source
@@ -645,14 +653,10 @@ def test_neo4j_live_graphrag_baseline(
     latencies: list[float] = []
     for _ in range(5):
         started = time.perf_counter()
-        assert "ent:soak_beta_node" in {
-            node.id
-            for node in soak_runtime.graph.neighbors("ent:soak_alpha_node")
-        }
+        assert "ent:soak_beta_node" in {node.id for node in soak_runtime.graph.neighbors("ent:soak_alpha_node")}
         latencies.append((time.perf_counter() - started) * 1000.0)
     p95_ms = sorted(latencies)[-1]
     assert P95_OBSERVATION_ONLY is True
     print(
-        f"NEO4J_R2 run_id={run_id} scope_matrix=5 "
-        f"soak_evidence={soak_evidence} traversal_rounds=5 p95_ms={p95_ms:.2f}"
+        f"NEO4J_R2 run_id={run_id} scope_matrix=5 soak_evidence={soak_evidence} traversal_rounds=5 p95_ms={p95_ms:.2f}"
     )

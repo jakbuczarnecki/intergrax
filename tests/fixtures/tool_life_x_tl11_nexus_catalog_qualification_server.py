@@ -14,10 +14,9 @@ if os.environ.get("TOOL_LIFE_X_TL11_MODE") == "unavailable":
 
 import uvicorn
 from fastapi import FastAPI
-from pydantic import BaseModel
-
 from intergrax.applications._shared.fastapi_mcp import couple_fastapi_with_mcp
 from intergrax.applications._shared.harness_auth import HarnessAuthState
+from intergrax.applications._shared.mcp_identity_mode import McpIdentityMode
 from intergrax.applications._shared.mcp_nexus_server import build_nexus_mcp_server
 from intergrax.contracts.execution_identity import mint_run_id, mint_task_id
 from intergrax.runtime.registry.agent_registry import AgentRegistry
@@ -28,9 +27,14 @@ from intergrax.runtime.task.task_result_authoritative_exposure_defaults import (
 from intergrax.tools.core.contracts import ToolContract, ToolRiskLevel
 from intergrax.tools.registry.runtime import RegisteredTool, ToolRegistry
 from intergrax.tools.tool_executor import ToolHandler
+from pydantic import BaseModel
 
 _MODE = os.environ.get("TOOL_LIFE_X_TL11_MODE", "ok")
 _REQUIRE_AUTH = os.environ.get("TOOL_LIFE_X_TL11_REQUIRE_AUTH", "") == "1"
+
+# Faults are armed only after composition: composing the MCP server enumerates the registry once, and a fault
+# armed earlier would hang or kill the process before it prints its port (R-P7-02 root cause).
+_FAULTS_ARMED = False
 
 
 class _In(BaseModel):
@@ -84,6 +88,8 @@ class _StubHostExecution:
 
 def _inject_catalog_dependency_fault(phase: str) -> None:
     """Fault injection at ToolRegistry read boundary (production mount unchanged)."""
+    if not _FAULTS_ARMED:
+        return
     if phase == "list":
         if _MODE == "hang_list":
             time.sleep(10_000)
@@ -100,16 +106,27 @@ def _inject_catalog_dependency_fault(phase: str) -> None:
             os._exit(8)
 
 
-class _Tl11FaultInjectingToolRegistry(ToolRegistry):
-    """Delegates to ToolRegistry; delays/crashes on canonical exporter read paths only."""
+def _arm_registry_read_faults() -> None:
+    """Install the faults on the ToolRegistry read boundary AFTER the MCP server is composed.
 
-    def list(self) -> list[RegisteredTool]:
+    The engine serves the catalog from an allowlist-filtered copy (a plain ``ToolRegistry``), so a fault placed
+    in a registry subclass would never fire (R-P7-02 root cause 2); patching the class methods covers the copy.
+    """
+    global _FAULTS_ARMED
+    original_list = ToolRegistry.list
+    original_get = ToolRegistry.get
+
+    def _list(self: ToolRegistry) -> list[RegisteredTool]:
         _inject_catalog_dependency_fault("list")
-        return super().list()
+        return original_list(self)
 
-    def get(self, tool_id: str) -> RegisteredTool:
+    def _get(self: ToolRegistry, tool_id: str) -> RegisteredTool:
         _inject_catalog_dependency_fault("describe")
-        return super().get(tool_id)
+        return original_get(self, tool_id)
+
+    ToolRegistry.list = _list  # type: ignore[method-assign]
+    ToolRegistry.get = _get  # type: ignore[method-assign]
+    _FAULTS_ARMED = True
 
 
 def main() -> None:
@@ -119,7 +136,7 @@ def main() -> None:
         time.sleep(60_000)
         return
 
-    registry = _Tl11FaultInjectingToolRegistry()
+    registry = ToolRegistry()
     registry.register(_contract("tl11.qual.one"), _catalog_handler())
 
     mcp = build_nexus_mcp_server(
@@ -128,6 +145,8 @@ def main() -> None:
         registry=AgentRegistry(),
         default_capability="tl11.qual.cap",
         tool_registry=registry,
+        # qualification fixture without harness auth in the default mode: explicit local-development identity
+        identity_mode=McpIdentityMode.LOCAL_DEV_EXPLICIT,
     )
 
     if _REQUIRE_AUTH:
@@ -141,6 +160,7 @@ def main() -> None:
     else:
         http_app = mcp.http_app(path="/")
 
+    _arm_registry_read_faults()
     sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
     sock.bind(("127.0.0.1", 0))
     port = sock.getsockname()[1]

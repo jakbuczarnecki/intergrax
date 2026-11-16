@@ -28,6 +28,8 @@ Multiplayer AI is **not** Slack chat, group conversation, shared memory, executi
 
 **Summary:** Multiplayer enterprise core through MP-7 is implemented/closed in its certified scopes. External-agent interoperability (MP-8) and advanced product-facing collaboration UX (MP-9) remain future work.
 
+> **Scope label (EQO-A remediation note, as of 2026-11-16):** the MP-* statuses in this section are feature-local — feature-local, not IIAC certified; no independent-audit artefact located. The roadmap carries no MP-* stage row. Covering owners: PDC domain D8 for business artifacts (`collaborative_work`), stage `TENANT-X` for tenant isolation (historical CLOSED stages are not automatically tenant-certified, roadmap) and `GOV-X2` for the governance seam. Not an ARCH-FREEZE closure; no re-certification is implied.
+
 ### ENTERPRISE CORE IMPLEMENTED (MP-1…MP-7)
 
 | Slice | Final status | Exact certified scope (do not inflate) |

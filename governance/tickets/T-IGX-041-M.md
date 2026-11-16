@@ -1,0 +1,56 @@
+# T-IGX-041-M — PDC-X P8 repair loop 1: four findings of the independent global audit
+
+## Scope
+
+Repair ticket for the product defects found by the independent global auditor (IA-GLOBAL, session `ia-global`; interim findings at `development` `cba32d247`, full table in sections 7 and 9 of `PDC_INDEPENDENT_AUDIT.md`, PR #579), the one P8 repair loop of decision 2 of `DELEGATION-PDC-CLOSE.md`, under the limits of `DELEGATION-PDC-P7-REPAIR.md` (option B: real defects; hotspot paths only as exactly named files; gates only strengthened or classified; no new authority). Product defects only; test hygiene, register and debt wording belong to other tickets. Every item was re-verified in code by the planner. In scope: (G-01, HIGH) three defects of the RAG loader family: `doc_smart_document_handler.py:11-13` imports `PipelineDocumentHandler` from a module that does not define it, so `create_default_documents_loader()` raises `ImportError`; `_KnowledgeDocumentWithParserRuntime` is defined twice (`contracts/parser_native_handle.py`, `compat/legacy_runtime_document.py`), so a native parser handle attached by a handler is invisible to `get_parser_native_handle` (red `test_parser_pipeline`); `InmemoryVectorStoreIntegration` has no `list_collections` (red `test_hierarchical_dual_index_wiring`). (G-02, MEDIUM) regression of F-D7-02: an exception in the eligibility reads of `LongRunningScheduler._process_claimed_schedule` (`scheduler.py:207-251`), or an `ExecutionTerminalError` that both resume gates turn into "not resumable", leaves a recurring claim `RUNNING` with no successor or ends the chain as `SKIPPED`: release the claim and retry. (G-03, MEDIUM) `workspace.export_artifact` and `workspace.import_artifact` reach object storage with arbitrary keys, and the guard of T-IGX-041-H is bypassable by case and trailing-dot variants and by absolute keys on the filesystem store (reproduced). (G-06, MEDIUM) two PDC-touched product paths map to no ENT-AUDIT check (three `pdc_x` tests red): exact-file entries in the CHANGED-SINCE impact map, with a negative test that unmapped siblings still fail. (LOW) F-D6-12: `from None` leaves provider text in `__context__`. (G-05 and G-10, time-boxed) the product layers behind the red incident scenario suite, brought in from the plan of T-IGX-041-N: the contract authority parameter, manifest carry-over and original-registry re-feed of the scenario runtime in the hotspot file `intergrax/applications/_shared/scenario_runtime_baseline.py` (named exactly; the scenario composition passes a `ManifestAgentContractAuthority`), and `count_messages_tokens` delegation in `ModelCallRuntimeEvidenceAdapter`; a prototype took the suite from 99 to 86 failed (13 tests green, no regression), further layers found behind them (first known: the `get_steps(context)` signature drift, 57 tests) are not repaired and stay a declared exception with a reopen condition. (MEDIUM, test-only) F-D1-11: pin that a changed integration binding slug is still refused by the durable projection input store; no hotspot file is edited. Excluded with reason and reopen condition (plan section "Excluded findings"): tenant or prefix binding of all other object keys, non-CAS `recover_interrupted_running` (documentation limit only), other vector store wrappers, the extras-profile reds and reingest/takeover reds of G-04, F-D7-20, F-D3-02 pins, G-11 stream resilience, the further layers of the incident scenario family, graph-side publication keys and the `trace_bridge.v1` payload mismatch (routed here by T-IGX-041-N, not part of this commission), G-09, G-12 and the LOW debt. Product paths: yes (fourteen files, one hotspot file named exactly). Batch: `B-P8-R1` (wave W14a). Plan: `PLAN_T-IGX-041-M.md`. Order: must merge before the EBH-7 pin P, together with T-IGX-041-K and T-IGX-041-L; T-IGX-041-L re-pins the COMPAT-X counters at the last product change and must be re-verified after this ticket. This ticket is not a certification verdict and not a closure of any domain; the product-path changes keep the IIAC activation stale (ACT-N11) until the P8-04 rebind and the EBH-7 executable-identity gate red until the final re-pin.
+
+## Plan digest
+
+Plan digest: 6c6934a603f44d9772558e7f33f323a9132f75f5f88085e780cff81b51f34298
+
+Canonical plan: [`governance/tickets/plans/PLAN_T-IGX-041-M.md`](plans/PLAN_T-IGX-041-M.md).
+
+## Approved
+
+Approved: operator-delegate @ 2026-11-15T15:21:12+01:00
+Delegation: docs/project/maintainers/qualification/platform_domain_completeness/operator_decisions/DELEGATION-PDC-CLOSE.md@7857632dd064e9fd6583d975d781cca516c5bca5
+
+Delegate checks (decision 2 of `DELEGATION-PDC-CLOSE.md`, within the limits of `DELEGATION-PDC-P7-REPAIR.md@8f4b139c1f5352c9861872f0b5077996b8f0f891`; read at branch `pdc-x-041m`, plan commit `0794db437`; all passed before this line was written):
+
+- A first plan version (`075058a92`, digest `809b58e0...`) was not signed: one untrue sentence in section P4 ("run only by" the pre-context check script; a pinned test also runs it). The planner corrected that sentence and two path citations; the diff `075058a92..0794db437` touches only the plan and the digest line of this ticket. Everything below was re-checked from scratch on the corrected version.
+- The plan digest recomputed with `scripts/governance/plan_digest.py` equals the digest above (`6c6934a603f44d9772558e7f33f323a9132f75f5f88085e780cff81b51f34298`).
+- The plan write set (14 product files, `tests/qualification/pdc_x/p8_repair/`, the two architecture documents) equals the write set of batch row `B-P8-R1` in `PDC_IMPLEMENTATION_WBS.md` and in the generator `scripts/qualification/pdc_x_wbs.py` (list comparison); no wildcard; `uv run python scripts/qualification/pdc_x_wbs.py --check` is OK. Nothing under `scripts/governance/`, `.github/` or `intergrax/contracts/`.
+- Exactly one hotspot file under `intergrax/applications/_shared/` is named, in full: `scenario_runtime_baseline.py`. `durable_registry_projection_input_store.py` is not in the write set (R6 is test-only and stops if red).
+- In-scope findings and the excluded findings E1..E11 are listed with reason and reopen condition; the declared exceptions of `DELEGATION-PDC-CLOSE.md` are not repaired. The time-box clause for further scenario layers (`get_steps` mismatch first) is stated in P7 and E10.
+- Factual sentences re-read against the code and true, among them: `doc_smart_document_handler.py:11-13` and the seven sibling imports; the duplicate `_KnowledgeDocumentWithParserRuntime` (`contracts/parser_native_handle.py:15`, `compat/legacy_runtime_document.py:19`) and its consumers; `InmemoryVectorStoreIntegration` without `list_collections` (`vectorstore_manager.py:445`, `hierarchical_bootstrap.py:38`); `scheduler.py:207-251`, `:267-291`, `:385-416`, `store.py:504-521`, `checkpoint_resume_validation.py:570-578`, `resume_admission.py:64-67`; `workspace/service.py:127-193` (put at 149, get at 168); `storage/service.py:33,40,63,77,105,111`; `clients.py:313-355`, `factories.py:743`; `secrets_store_resolver.py:36-48`; `scenario_runtime_baseline.py:57,168-195,334-370,373-415`; `environment_wiring.py:259,561`; `agent_resolution.py:35`; `ModelCallRuntimeEvidenceAdapter` (`__slots__ = ("_inner",)`, no `count_messages_tokens`), `context_preflight.py:49`, `base_llm_adapter.py:518`; `investigator_agent.py:223` against `uaep_executor.py:1136` and `uaep_protocol.py:23`; `recover_interrupted_running` and its single caller under `intergrax/queueing/providers/document_store/`; the corrected P4 sentence (script plus `test_d2r_pre_context_policy_gate.py:12`, entrypoint node ids of `ENT-A-REL-02/03`); the baseline and prototype logs (99/186/9, 86/199/9, 3 failed/63 passed).
+- The impact-map change is classification and strengthening only: two exact-file entries (`intergrax/experiments/workflow.py` to `ENT-A-REL-02/03`, `intergrax/runtime/policy/pre_context_policy_audit.py` to `ENT-A-GOV-01..03`), no check removed or narrowed, the manifest stays at 85 checks, no fail-closed prefix is touched; both paths are unmapped today (read with `check_ids_for_changed_path`). The negative test (unmapped siblings stay unmapped) is part of R4. Mapping the second path to the GOV checks is a classification choice stated in the plan under "Decisions".
+- No gate is weakened or deleted (the guard becomes stricter, the scheduler gates are not edited, existing tests stay byte-identical). No registry, scheduler, engine, trust, policy or audit authority is added: the contract authority parameter and the three composition fields are optional with defaults, the adapter change is one delegating method, `refuse_governed_content_key` is a plain function. The plan states it is not a certification verdict and not a closure.
+- Concerns for the Operator and orchestrator (not blockers): (1) G-10 (`test_rewire_scenario_decision_wiring_reapplies_validation_engine`) is expected, not measured, to turn green (extras environment needed); (2) 86 incident scenario tests stay red as declared exception E10 and need an owner decision on `get_steps`; (3) the case-insensitive guard also applies on case-sensitive backends (Decision 3); (4) `compat/legacy_runtime_document.py` and the new public function touch the COMPAT-X counters that T-IGX-041-L re-pins, so L must be re-verified after this ticket.
+- The implementer (planning lane of T-IGX-041-M) and this delegate session are different sessions; the delegate edited only this approval block and the lifecycle state. Write-set amendments are not delegated.
+
+## Test contract
+
+```text
+uv run pytest tests/qualification/pdc_x/p8_repair -q
+uv run pytest tests/qualification/pdc_x/d7_repair tests/qualification/pdc_x/d7 tests/qualification/sched_01 -q
+uv run pytest tests/unit/platform_proofs/scenarios/ai_incident_investigation tests/unit/applications/test_scenario_runtime_baseline.py -q
+uv run pytest tests/qualification/pdc_x/d8_repair tests/qualification/pdc_x/d8 tests/qualification/pdc_x/d6_repair tests/qualification/pdc_x/d1_repair/test_d1_repair_durable_projection_inputs.py -q
+uv run pytest tests/unit/tools/providers/test_catalog_expansion.py tests/unit/tools/providers/test_t10_catalog_tools.py -q
+uv run pytest tests/unit/rag/document_loaders tests/unit/rag/ingest/test_hierarchical_dual_index_wiring.py tests/integration/rag/document_loaders/test_fixture_dataset_ingestion.py -q
+uv run pytest tests/qualification/pdc_x/p6_impact tests/qualification/pdc_x/xd/test_xd_12_evol_ent_audit.py -q
+uv run pytest tests/qualification/compat_x -q
+uv run ruff check <touched files>
+uv run ruff format --check <touched files>
+uv run pyright <touched files>
+uv run python scripts/qualification/pdc_x_wbs.py --check
+uv run python -m scripts.governance.igx_gov ticket
+```
+
+## Out of scope
+
+- Every item of the plan section "Excluded findings"; the declared exceptions of `DELEGATION-PDC-CLOSE.md`; any hotspot path other than the one file named in the scope (`intergrax/applications/_shared/scenario_runtime_baseline.py`); `scripts/governance/`, `.github/`; the ENT-AUDIT manifest and checks; the existing storage tools and their gate; every existing test.
+- The EBH-7 re-pin, the IIAC activation record, OD signatures, certification.
+
+## Lifecycle state
+
+plan_approved

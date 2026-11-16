@@ -1,0 +1,36 @@
+{
+  "artifacts": [
+    {
+      "path": "docs/project/maintainers/qualification/ent_audit_x/b6_independent_handoff/freeze_normal_at_32a9633440007eb4e8f00a825bbf2e399192b346/l3-cli-full/enterprise_audit_report.json",
+      "sha256": "e84ec1b86aa897d2722c7cf7c7a79717b292d5173870567b73b33eb34a92c1be"
+    },
+    {
+      "path": "docs/project/maintainers/qualification/ent_audit_x/b6_independent_handoff/freeze_normal_at_32a9633440007eb4e8f00a825bbf2e399192b346/l3-cli-full/enterprise_audit_report.md",
+      "sha256": "a8184e01e7cd94797b191ed3b40712d85e9efb18932273a73ce34f0f6a1d6f16"
+    },
+    {
+      "path": "docs/project/maintainers/qualification/ent_audit_x/b6_independent_handoff/freeze_normal_at_32a9633440007eb4e8f00a825bbf2e399192b346/l3-cli-full/enterprise_audit_outcomes.json",
+      "sha256": "3c3aa0527c0e59244be96fd7d68f4e16e82238603632212abba61ae274f68431"
+    },
+    {
+      "path": "docs/project/maintainers/qualification/ent_audit_x/b6_independent_handoff/freeze_normal_at_32a9633440007eb4e8f00a825bbf2e399192b346/l3-cli-full/vbn_domains.v1.json",
+      "sha256": "a36b079a810db42882d9b2e15b9a58f5fb32f143796b63dcf1eb934922978ae0"
+    },
+    {
+      "path": "docs/project/maintainers/qualification/ent_audit_x/b6_independent_handoff/freeze_normal_at_32a9633440007eb4e8f00a825bbf2e399192b346/l3-cli-full/frz_coverage.v1.json",
+      "sha256": "ddef45a165fc8623146d83c23af44297f2cf37d60a20f6bae15b582c6f87dfe0"
+    },
+    {
+      "path": "docs/project/maintainers/qualification/ent_audit_x/b6_independent_handoff/freeze_normal_at_32a9633440007eb4e8f00a825bbf2e399192b346/l3-cli-full/evidence_manifest.v1.json",
+      "sha256": "a5f9d9b40e83f9ea78b10b2b78e696ce35b2d5b5289e3cbe5fa5429c9434c900"
+    }
+  ],
+  "l3_bundle_relpath": "docs/project/maintainers/qualification/ent_audit_x/b6_independent_handoff/freeze_normal_at_32a9633440007eb4e8f00a825bbf2e399192b346/l3-cli-full",
+  "publication_role": "W2_NORMAL_FREEZE_EVIDENCE",
+  "qual_wave_report": {
+    "path": "docs/project/maintainers/qualification/ent_audit_x/b6_independent_handoff/freeze_normal_at_32a9633440007eb4e8f00a825bbf2e399192b346/qual_wave_report.json",
+    "sha256": "b30d83ac1a21677d598107fc159c653d3bb7717f6e308d9af310e0582a2d5bc7"
+  },
+  "qualification_sha": "32a9633440007eb4e8f00a825bbf2e399192b346",
+  "schema_version": 1
+}

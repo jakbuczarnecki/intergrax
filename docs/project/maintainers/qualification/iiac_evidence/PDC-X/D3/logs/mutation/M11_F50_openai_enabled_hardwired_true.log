@@ -1,0 +1,22 @@
+............F
+================================== FAILURES ===================================
+__________ test_enabled_defaults_to_false_for_the_embedding_category __________
+
+cleared_catalog = None, no_openai_key = None
+
+    def test_enabled_defaults_to_false_for_the_embedding_category(cleared_catalog: None, no_openai_key: None) -> None:
+        _register_owning_row_then_embedding_contribution()
+
+        resolved = resolve(IntegrationCategory.EMBEDDING_PROVIDER, _SLUG)
+
+        assert isinstance(resolved, OpenaiEmbeddingProviderIntegration)
+>       assert resolved.config.enabled is False
+E       AssertionError: assert True is False
+E        +  where True = OpenaiEmbeddingProviderIntegrationConfig(enabled=True, timeout_seconds=None, base_url=None, credential_ref=None).enabled
+E        +    where OpenaiEmbeddingProviderIntegrationConfig(enabled=True, timeout_seconds=None, base_url=None, credential_ref=None) = OpenaiEmbeddingProviderIntegration(schema_id='embedding_provider_integration_contract.v1', integration_id='openai:embe...ityPosture(expose_secrets=False, expose_raw_payloads=False, sanitize_diagnostics=True), expects_failure_isolation=True).config
+
+tests\qualification\pdc_x\p6_ecapfix\test_p6_ecapfix_openai_embedding_resolve.py:133: AssertionError
+=========================== short test summary info ===========================
+FAILED tests/qualification/pdc_x/p6_ecapfix/test_p6_ecapfix_openai_embedding_resolve.py::test_enabled_defaults_to_false_for_the_embedding_category
+!!!!!!!!!!!!!!!!!!!!!!!!!! stopping after 1 failures !!!!!!!!!!!!!!!!!!!!!!!!!!
+1 failed, 12 passed in 4.59s

@@ -15,9 +15,11 @@ Public readers looking for product value, proof paths, evaluation, partnership o
 |-----------|------|
 | Project overview and quick start | [README.md](../../../README.md) |
 | **Platform configuration** (env, LLM, embeddings) | [PLATFORM_CONFIGURATION.md](guides/PLATFORM_CONFIGURATION.md) |
+| **Configuration / tenant isolation / state semantics** (canonical owners are the stage certification records; no separate architecture pair) | CONFIG-X [CONFIG_X_CONFIGURATION_PROVIDER_VENDOR_ACTIVATION_CERTIFICATION.md](../maintainers/qualification/CONFIG_X_CONFIGURATION_PROVIDER_VENDOR_ACTIVATION_CERTIFICATION.md) · TENANT-X [TENANT_X_CROSS_PLATFORM_TENANT_ISOLATION_CERTIFICATION.md](../maintainers/qualification/TENANT_X_CROSS_PLATFORM_TENANT_ISOLATION_CERTIFICATION.md) · STATE-X [STATE_X_FINAL_CURRENT_HEAD_CERTIFICATION.md](../maintainers/qualification/STATE_X_FINAL_CURRENT_HEAD_CERTIFICATION.md) · configuration usage guide above · stage status: roadmap rows `CONFIG-X`, `TENANT-X`, `STATE-X` |
 | **Public documentation map** (reader routes, proof paths) | [PUBLIC_DOCUMENTATION_MAP.md](../community/PUBLIC_DOCUMENTATION_MAP.md) |
 | **Public documentation architecture** (maintainer contract) | [public-adoption/PUBLIC_DOCUMENTATION_ARCHITECTURE.md](../maintainers/public-adoption/PUBLIC_DOCUMENTATION_ARCHITECTURE.md) |
 | **Governed Execution** (policy enforcement capability) | [GOVERNED_EXECUTION.md](../architecture/GOVERNED_EXECUTION.md) |
+| **Security owner chain** (runtime hardening decision, execution-engine threat model, D1-D8 responsibility matrix; no separate security architecture pair) | [ADR-PDC-06](../maintainers/architecture/ADR_PDC_06_RUNTIME_SECURITY_HARDENING.md) · [EXECUTION_ENGINE_SECURITY_BOUNDARY_AND_THREAT_MODEL.md](../maintainers/architecture/EXECUTION_ENGINE_SECURITY_BOUNDARY_AND_THREAT_MODEL.md) · [SECURITY_ARCHITECTURE_D1_D8.md](../maintainers/architecture/satellites/SECURITY_ARCHITECTURE_D1_D8.md) · decision [PDC-P3-D03](../maintainers/qualification/platform_domain_completeness/PDC_ARCHITECTURE_DECISIONS.md) · architecture owner [GOVERNED_EXECUTION.md](../architecture/GOVERNED_EXECUTION.md) |
 | **Central Diagnostics** (canonical Problem spine, authority, qualification) | [DIAGNOSTICS.md](../architecture/DIAGNOSTICS.md) · engine [DIAGNOSTIC_E2E_MATRIX_HARDEN_4A.md](../maintainers/qualification/DIAGNOSTIC_E2E_MATRIX_HARDEN_4A.md) · platform [DIAGNOSTIC_PLATFORM_ADOPTION_MATRIX.md](../maintainers/qualification/DIAGNOSTIC_PLATFORM_ADOPTION_MATRIX.md) · [DIAGNOSTIC_MULTI_SCENARIO_E2E_MATRIX.md](../maintainers/qualification/DIAGNOSTIC_MULTI_SCENARIO_E2E_MATRIX.md) · **X1 gap baseline (evidence):** [OBS_DIAG_UNIVERSAL_ENTERPRISE_GAP_BASELINE_X1.md](../maintainers/audits/OBS_DIAG_UNIVERSAL_ENTERPRISE_GAP_BASELINE_X1.md) |
 | **Observability** (HOS, RuntimeEvent, export) | [OBSERVABILITY.md](../architecture/OBSERVABILITY.md) · **X1 gap baseline (evidence):** [OBS_DIAG_UNIVERSAL_ENTERPRISE_GAP_BASELINE_X1.md](../maintainers/audits/OBS_DIAG_UNIVERSAL_ENTERPRISE_GAP_BASELINE_X1.md) |
 | **Decision System** (canonical lifecycle, verification, deliberation) | [DECISION_SYSTEM.md](../architecture/DECISION_SYSTEM.md) · [DECISION_VERIFICATION.md](../architecture/DECISION_VERIFICATION.md) · [DECISION_DELIBERATION.md](../architecture/DECISION_DELIBERATION.md) · **L1–L18 reference:** [DECISION_SYSTEM_ARCHITECTURE.md](../architecture/DECISION_SYSTEM_ARCHITECTURE.md) · **Closure:** [DS-E2E-15J-DECISION-SYSTEM-FINAL-ARCHITECTURE-CLOSURE.md](../maintainers/qualification/DS-E2E-15J-DECISION-SYSTEM-FINAL-ARCHITECTURE-CLOSURE.md) · **Platform cert:** [INTEGRAX_FINAL_PLATFORM_CERTIFICATION.md](../maintainers/qualification/INTEGRAX_FINAL_PLATFORM_CERTIFICATION.md) · **Core freeze:** [INTEGRAX_CORE_PLATFORM_FREEZE.md](../maintainers/qualification/INTEGRAX_CORE_PLATFORM_FREEZE.md) |
@@ -29,6 +31,8 @@ Public readers looking for product value, proof paths, evaluation, partnership o
 | Architecture hub (primary 24 baseline + additional canonical domain pairs) | [intergrax_runtime_architecture.md](../architecture/intergrax_runtime_architecture.md) |
 | Multi-layer capability docs | [capabilities/README.md](../capabilities/README.md) - includes `TOKEN_OPTIMIZATION`, `LANGCHAIN_INDEPENDENCE` |
 | Domain architecture canon | `docs/project/architecture/<DOMAIN>.md` |
+| **Vendor / backend neutrality owner chain** | roadmap section 3.0.8 (Vendor / Backend Neutrality & Cross-Layer Replaceability) in [PLATFORM_ENTERPRISE_COMPLETION_ROADMAP.md](../maintainers/plans/PLATFORM_ENTERPRISE_COMPLETION_ROADMAP.md) · evidence [VENDOR_BACKEND_NEUTRALITY_AND_REPLACEABILITY_EVIDENCE.md](../maintainers/qualification/VENDOR_BACKEND_NEUTRALITY_AND_REPLACEABILITY_EVIDENCE.md) · ENT-AUDIT-X control `VBN-INVENTORY-DRIFT` in [ANNEX_C_CONTROL_MATRIX.md](../maintainers/qualification/ent_audit_x/ANNEX_C_CONTROL_MATRIX.md) (inventory-drift gate: `tests/qualification/ebh_5/test_ebh_5_g06_enterprise_integrity_gates.py`) |
+| **Qualification directory index** (what is in `maintainers/qualification/`, the registers, the ECAP entrypoints) | [maintainers/qualification/README.md](../maintainers/qualification/README.md) · debt and exceptions register [enterprise_debt_register/README.md](../maintainers/qualification/enterprise_debt_register/README.md) |
 | Implementation status / backlog | `docs/project/maintainers/plans/<DOMAIN>.md` |
 | Strategy, invariants, authoring guides | [guides/README.md](guides/README.md) |
 | **Documentation Design System** (domain / feature hub standard) | [DOCUMENTATION_DESIGN_SYSTEM.md](guides/DOCUMENTATION_DESIGN_SYSTEM.md) |
@@ -93,7 +97,7 @@ Decision System
 | [integrations/impeachmentright_validation_readiness.md](../integrations/impeachmentright_validation_readiness.md) | Partner-facing readiness / five-point compatibility matrix for governed external execution | Platform architecture canon, attestation/EBE design |
 | [AGENTS.md](../../../AGENTS.md) | Cursor auto-load **stub** (~350 tok) | Full agent instructions |
 | [AGENT_INSTRUCTIONS.md](guides/AGENT_INSTRUCTIONS.md) | Full AI agent reference (routing, verification, ADR, O1 output) | Human onboarding doc |
-| [.cursor/rules/](../../../.cursor/rules/README.md) | Always-on / triggered Cursor rules | Replacement for AGENT_INSTRUCTIONS |
+| [agent-env/](../../../agent-env/README.md) | Shared agent environment: rules, skills, plans (Cursor + Claude Code adapters generated) | Replacement for AGENT_INSTRUCTIONS |
 | [bootstrap/*.txt](../maintainers/bootstrap/README.md) | Copy-paste **first message** for a new agent chat (HEP, CI preflight, micro implement) | Stored audit results |
 | [platform_proofs/](../../../platform_proofs/) | **Proof Library** - protocol, authoring, scenario/conformance packages; execution via `scripts/proof/` | Product proofs, public dashboard, duplicate runners |
 | [audit_results/](../../audit_results/) | **Canonical** platform audit methodology, campaigns, results, remediation status | Architecture canon or implementation plan |
@@ -136,7 +140,7 @@ Authoring: [AGENT_CREATION_GUIDE.md](guides/AGENT_CREATION_GUIDE.md) · Tier-3: 
 ### AI coding agent (Cursor)
 
 ```text
-AGENTS.md (stub)  →  AGENT_INSTRUCTIONS.md  →  .cursor/rules/intergrax-iteration.mdc
+AGENTS.md (stub)  →  AGENT_INSTRUCTIONS.md  →  agent-env/rules/intergrax-iteration.md
 ```
 
 - Load domain canon on demand - not bulk guides (respect `.cursorignore`)

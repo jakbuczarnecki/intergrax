@@ -1,0 +1,52 @@
+"""A7-T01 mechanical entries: residuals/limitations from A1 and A2 rows and IIAC manifest limitations, ARCH-FREEZE and PDC operator decision files."""
+from __future__ import annotations
+
+import re
+import sys
+from pathlib import Path
+
+sys.path.insert(0, str(Path(__file__).parent))
+from common import *  # noqa
+
+
+def main():
+    a1 = read_jsonl(WS / "A1" / "stage_rows.jsonl")
+    a2 = {r["id"]: r for r in read_jsonl(WS / "A2" / "cert_rows.jsonl")}
+    out = []
+    n = 0
+    for r in a1:
+        for ob in r.get("open_obligations") or []:
+            n += 1
+            out.append({"entry_id": f"A1-OB-{n:04d}", "source": "A1:open_obligations", "stage": r["id"], "kind": "RESIDUAL", "title": str(ob)[:160], "owner": r.get("owner") or "OWNER_MISSING",
+                        "severity": "UNSTATED", "invariant": "NOT_STATED", "currency": "OPEN" if r["status_family"] != "CLOSED" else "UNKNOWN", "evidence": [f"{ROADMAP}@{BASELINE_SHA}:{r['line']}"],
+                        "reason": "listed in the stage row/ledger", "reopen_condition": "none stated", "arch_freeze_impact": "UNKNOWN", "production_impact": "UNKNOWN", "carry_forward": {"obligation_ids": [], "deferred_to": [], "edge_text": ""}})
+    for sid, r in a2.items():
+        for lim in r.get("limitations") or []:
+            n += 1
+            out.append({"entry_id": f"A2-LIM-{n:04d}", "source": "A2:limitations", "stage": sid, "kind": "LIMITATION", "title": str(lim)[:160], "owner": r.get("owner") or "OWNER_MISSING",
+                        "severity": "UNSTATED", "invariant": "NOT_STATED", "currency": "ACCEPTED" if r["verdict"] == "CV-SCOPED" else "OPEN", "evidence": ["ws:A2/cert_rows.jsonl"],
+                        "reason": "stated limitation of the certification", "reopen_condition": "none stated", "arch_freeze_impact": "CONDITIONS" if r["verdict"] in ("CV-SCOPED", "EV-INCOMPLETE", "HIST-REQUAL") else "UNKNOWN",
+                        "production_impact": "UNKNOWN", "carry_forward": {"obligation_ids": [], "deferred_to": [], "edge_text": ""}})
+    for m in read_jsonl(WS / "A2" / "manifest_checks.jsonl"):
+        d = json.loads(show_text(m["manifest"]) or "{}")
+        for lim in d.get("limitations") or []:
+            n += 1
+            txt = lim if isinstance(lim, str) else json.dumps(lim, ensure_ascii=False)
+            out.append({"entry_id": f"IIAC-LIM-{n:04d}", "source": "IIAC manifest limitations", "stage": m.get("stage_id"), "kind": "LIMITATION", "title": txt[:160], "owner": "IIAC auditor session (see manifest)",
+                        "severity": "UNSTATED", "invariant": "NOT_STATED", "currency": "ACCEPTED", "evidence": [f"{m['manifest']}@{BASELINE_SHA}:1"], "reason": "limitation declared by the auditor session", "reopen_condition": "none stated",
+                        "arch_freeze_impact": "UNKNOWN", "production_impact": "UNKNOWN", "carry_forward": {"obligation_ids": [], "deferred_to": [], "edge_text": ""}})
+    # operator decision files
+    q = QUAL
+    ls = git("ls-tree", "-r", "--name-only", BASELINE_SHA, f"{q}/platform_domain_completeness/operator_decisions/").stdout.split("\n")
+    for f in [x for x in ls if x]:
+        n += 1
+        out.append({"entry_id": f"PDC-OD-{n:04d}", "source": "PDC operator decisions", "stage": "PDC-X", "kind": "OPERATOR_DECISION", "title": Path(f).stem, "owner": "Operator", "severity": "INFO", "invariant": "NOT_STATED",
+                    "currency": "UNKNOWN", "evidence": [f"{f}@{BASELINE_SHA}:1"], "reason": "operator decision record", "reopen_condition": "none stated", "arch_freeze_impact": "UNKNOWN", "production_impact": "NONE",
+                    "carry_forward": {"obligation_ids": [], "deferred_to": [], "edge_text": ""}})
+    write_jsonl(WS / "A7" / "input_G4.jsonl", [dict(o, register="MECH", group="G4") for o in out])
+    from collections import Counter
+    print("mechanical entries", len(out), dict(Counter(o["source"] for o in out)))
+
+
+if __name__ == "__main__":
+    main()

@@ -1,0 +1,51 @@
+{
+  "path": "docs/project/maintainers/qualification/EBH_7_CROSS_DOMAIN_RISK_MATRIX.md",
+  "tables": [
+    {
+      "header": [
+        "Risk cluster",
+        "Scenarios",
+        "Primary reuse"
+      ],
+      "rows": [
+        {
+          "line": 7,
+          "Risk cluster": "Tenant x Gov/Exec/State",
+          "Scenarios": "001–006",
+          "Primary reuse": "tenant_x, state_x"
+        },
+        {
+          "line": 8,
+          "Risk cluster": "Tool/Skill/Plugin",
+          "Scenarios": "007",
+          "Primary reuse": "skill_x"
+        },
+        {
+          "line": 9,
+          "Risk cluster": "Provider/Config",
+          "Scenarios": "008–009",
+          "Primary reuse": "config_x, gov_x2"
+        },
+        {
+          "line": 10,
+          "Risk cluster": "Backend/Persistence",
+          "Scenarios": "010–011",
+          "Primary reuse": "ebh_5, state_x"
+        },
+        {
+          "line": 11,
+          "Risk cluster": "Trace/Distributed",
+          "Scenarios": "012–013",
+          "Primary reuse": "trace_x, dist_scale"
+        },
+        {
+          "line": 12,
+          "Risk cluster": "Compat/VBN/Host",
+          "Scenarios": "015–016, 033–034",
+          "Primary reuse": "compat_x, ebh_6, dup_x, npsc"
+        }
+      ]
+    }
+  ],
+  "lines": 13
+}

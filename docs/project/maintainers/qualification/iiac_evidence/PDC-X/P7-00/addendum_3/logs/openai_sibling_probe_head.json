@@ -1,0 +1,19 @@
+{
+ "row_categories": [
+  "managed_retrieval",
+  "embedding_provider"
+ ],
+ "row_factory": "create_openai_managed_retrieval",
+ "no_key|embedding_provider": {
+  "error": "IntegrationConfigurationError: OpenAI managed retrieval requires OPENAI_API_KEY or explicit api_key"
+ },
+ "no_key|managed_retrieval": {
+  "error": "IntegrationConfigurationError: OpenAI managed retrieval requires OPENAI_API_KEY or explicit api_key"
+ },
+ "dummy_key|embedding_provider": {
+  "error": "TypeError: Integration factory for slug 'openai' (category 'embedding_provider') returned OpenAIManagedRetrievalIntegration, expected EmbeddingProvider"
+ },
+ "dummy_key|managed_retrieval": {
+  "ok": "intergrax.integrations.providers.managed_retrieval.openai.integration.OpenAIManagedRetrievalIntegration"
+ }
+}

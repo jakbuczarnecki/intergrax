@@ -1,0 +1,35 @@
+PDC-X / global IA-GLOBAL test matrix (audited SHA cba32d2479cd134911d2fdf4fb1db4587c8a94d8; one process at a time; logs in logs/)
+
+cmd: uv sync --frozen (dev-ci, mcp, llm-* extras, integrations-duckdb)           result: exit 0                          log: logs/ (uv sync log not committed)
+cmd: run_enterprise_audit.py run --mode FULL                                     result: PASS 85/85, 0 findings, exit 0, 1288 s  log: logs/01_ecap_full.log, ecap/
+cmd: pytest tests/qualification/pdc_x                                            result: 3 failed, 1428 passed (G-06)    log: logs/02_pdcx.log
+cmd: pytest DUP-X + EBH-4 gates (7 paths)                                        result: 130 passed                      log: logs/03_gates.log
+cmd: contract of T-IGX-041-A (D1)                                                result: 27 failed (MAX_PATH), 1674 passed; process killed after summary  log: logs/04_contract_A.log
+cmd: pytest 2 materialization files with short --basetemp                        result: 57 passed                       log: logs/07_materialization_short_basetemp.log
+cmd: contract of T-IGX-041-B (D2)                                                result: 13 failed, 3 errors, 2131 passed, 44 skipped (G-04)  log: logs/04_contract_B.log
+cmd: contract of T-IGX-041-C (D3)                                                result: 103 failed, 1546 passed, 17 skipped (G-05)  log: logs/04_contract_C.log
+cmd: contract of T-IGX-041-D (D4)                                                result: 491 passed, 3 skipped           log: logs/04_contract_D.log
+cmd: contract of T-IGX-041-E (D5)                                                result: 5 failed, 269 passed (pre-existing, G-10)  log: logs/04_contract_E.log
+cmd: 2 D5 test files at base f87df3b2a (scratch worktree)                        result: 5 failed, 21 passed             log: logs/08_base_f87df3b2a_d5_five.log
+cmd: contract of T-IGX-041-F (D6)                                                result: 9 failed (7 COMPAT-X, 2 audit_ideal), 548 passed, 11 skipped  log: logs/04_contract_F.log
+cmd: contract of T-IGX-041-G (D7)                                                result: 159 passed                      log: logs/04_contract_G.log
+cmd: contract of T-IGX-041-H (D8)                                                result: 272 passed                      log: logs/04_contract_H.log
+cmd: pytest tests/qualification/tenant_x                                         result: 213 passed                      log: logs/05_tenant_x.log
+cmd: pytest ebh_7 roadmap_replay_x dist_scale_x IIAC activation tests compat_x   result: 28 failed (all known classes), 799 passed, 16 skipped  log: logs/06_known_reds.log
+cmd: python -I adversarial_scripts/probe_n03_default_document_loader.py           result: ImportError (G-01 reproduced)   log: logs/probe_n03.out
+
+Final audit SHA d39a520dda965981a38f8e1a90ec5135ea5d508e (one process at a time; logs in logs_final/)
+
+cmd: one bounded pytest: contract paths A..H + pdc_x + tenant_x + dup_x + ebh_7 + roadmap_replay_x + dist_scale_x + compat_x + iiac tests + scenarios tree  result: 118 failed, 7691 passed, 91 skipped, 3 errors in 970 s (classified in report 13.3; killed after summary)  log: logs_final/final_pytest.log, cmd.txt
+cmd: pytest tests/qualification/compat_x + test_audit_ideal_13_1_integration_marketplace                       result: 354 passed in 1064 s                    log: logs_final/rerun_compat_audit.log
+cmd: pytest d2r syntax gate + 6 residual RAG/applications tests (standalone)                                    result: 6 failed (G-23 x2, trace_bridge, stale x3), 10 passed, 2 skipped  log: logs_final/rerun_residual.log
+cmd: python -I adversarial_scripts/probe_n03_default_document_loader.py                                          result: "loader built" (G-01 closed)            log: logs_final/probe_n03.out
+
+Addendum 2, delta audit SHA 969cbd964c679d563b02e55f065b452d46fdf90b (targeted only, one process at a time; logs in logs_addendum2/)
+
+cmd: pytest 2 G-23 reproductions + test_graph_publication_scope_visibility + K and O B6-F10 C4 entry gates   result: 64 passed, 175.6 s, exit 0   log: logs_addendum2/targeted_pytest.log
+cmd: same 64 tests with the pre-P graph code and two real classifier entries renamed (mutant)                  result: 34 failed, 30 passed (both reproductions, 16/23 P, 8/19 K, 8/20 O); restored   log: logs_addendum2/mutation_pytest.log
+cmd: git diff --name-only d39a520dd..969cbd964                                                                result: 414 files; product paths: 3 (intergrax/rag/graph/*)   log: logs_addendum2/delta_files.txt
+
+Addendum 3, audited SHA 969cbd964c679d563b02e55f065b452d46fdf90b: no new tests (Operator exception record); two IIAC validators re-run once   log: logs_addendum3/validators.txt
+cmd: git diff --name-only 969cbd964..origin/development (4220069c2)   result: docs paths only

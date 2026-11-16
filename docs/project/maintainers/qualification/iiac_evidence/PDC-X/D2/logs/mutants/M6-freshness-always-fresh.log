@@ -1,0 +1,21 @@
+.F
+================================== FAILURES ===================================
+_______________ test_stale_source_detected_by_revision_mismatch _______________
+
+    def test_stale_source_detected_by_revision_mismatch() -> None:
+        verdict = evaluate_source_freshness(
+            _chunk("docs/a.md", revision="rev-1"),
+            current=SourceFreshnessObservation(source_id="docs/a.md", revision="rev-2"),
+        )
+>       assert verdict.status is SourceFreshnessStatus.STALE
+E       AssertionError: assert <SourceFreshnessStatus.FRESH: 'fresh'> is <SourceFreshnessStatus.STALE: 'stale'>
+E        +  where <SourceFreshnessStatus.FRESH: 'fresh'> = SourceFreshnessVerdict(source_id='docs/a.md', status=<SourceFreshnessStatus.FRESH: 'fresh'>, reason='mutant', indexed_revision=None, current_revision=None, indexed_modified_at=None, current_modified_at=None).status
+E        +  and   <SourceFreshnessStatus.STALE: 'stale'> = SourceFreshnessStatus.STALE
+
+tests\qualification\pdc_x\d2\test_d2_rag_freshness.py:69: AssertionError
+=========================== short test summary info ===========================
+FAILED tests/qualification/pdc_x/d2/test_d2_rag_freshness.py::test_stale_source_detected_by_revision_mismatch
+!!!!!!!!!!!!!!!!!!!!!!!!!! stopping after 1 failures !!!!!!!!!!!!!!!!!!!!!!!!!!
+1 failed, 1 passed in 0.80s
+
+--- stderr ---

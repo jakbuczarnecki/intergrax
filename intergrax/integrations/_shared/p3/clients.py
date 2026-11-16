@@ -4,30 +4,35 @@
 """Phase M.7 catalog adapters over duck-typed backends."""
 
 from __future__ import annotations
-from intergrax.utils import attribute_access
 
 import json
-from pathlib import Path
-from typing import Any, Callable, Mapping, Optional, Protocol, Sequence
+from collections.abc import Callable, Mapping, Sequence
+from pathlib import Path, PureWindowsPath
+from typing import Any, Protocol
 
+from intergrax.integrations._shared.p2.clients import RestSearchProvider
 from intergrax.integrations._shared.rest_search import hits_from_exa_payload, hits_from_tavily_payload
 from intergrax.integrations._shared.vector_store_bridge import VectorStoreBridge
 from intergrax.integrations.contracts.base import HealthStatus, IntegrationConfigurationError
-from intergrax.integrations.contracts.browser_automation import BrowserAutomation, PageContent
+from intergrax.integrations.contracts.browser_automation import PageContent
 from intergrax.integrations.contracts.browser_automation_navigation import (
     BrowserAutomationNavigationTimeoutPort,
 )
-from intergrax.integrations.contracts.graph_store import GraphNodeRecord, GraphQueryResult, GraphStore
-from intergrax.integrations.contracts.observability_backend import MetricPoint, MetricQueryResult, MetricSeries, TraceQueryResult, TraceRecord
-from intergrax.integrations.contracts.secrets_store import SecretsStore
+from intergrax.integrations.contracts.graph_store import GraphNodeRecord, GraphQueryResult
+from intergrax.integrations.contracts.observability_backend import (
+    MetricPoint,
+    MetricQueryResult,
+    MetricSeries,
+    TraceQueryResult,
+)
 from intergrax.integrations.contracts.search_provider import SearchProvider
 from intergrax.integrations.contracts.vector_store import VectorStore
-from intergrax.integrations._shared.p2.clients import RestSearchProvider
+from intergrax.utils import attribute_access
 from intergrax.websearch.schemas.search_hit import SearchHit
 
 
 class TraceQueryClient(Protocol):
-    def query_traces(self, *, limit: int = 20, name: Optional[str] = None) -> TraceQueryResult: ...
+    def query_traces(self, *, limit: int = 20, name: str | None = None) -> TraceQueryResult: ...
 
 
 class VaultSecretsStore:
@@ -36,7 +41,7 @@ class VaultSecretsStore:
         self._mount = mount
         self._closed = False
 
-    def get_secret(self, path: str, *, version: Optional[str] = None) -> str:
+    def get_secret(self, path: str, *, version: str | None = None) -> str:
         self._require_open()
         return str(self._client.read_secret(self._mount, path, version=version))
 
@@ -72,13 +77,13 @@ class Neo4jGraphStore:
         self,
         statement: str,
         *,
-        parameters: Optional[Mapping[str, Any]] = None,
+        parameters: Mapping[str, Any] | None = None,
     ) -> GraphQueryResult:
         self._require_open()
         records = self._client.run(statement, dict(parameters or {}))
         return GraphQueryResult(records=[dict(r) for r in records])
 
-    def get_node(self, node_id: str) -> Optional[GraphNodeRecord]:
+    def get_node(self, node_id: str) -> GraphNodeRecord | None:
         self._require_open()
         payload = self._client.get_node(node_id)
         if payload is None:
@@ -112,7 +117,7 @@ class HttpObservabilityBackend:
         client: Any,
         *,
         provider: str,
-        instant_fn: Callable[[str, Optional[float]], float],
+        instant_fn: Callable[[str, float | None], float],
         range_fn: Callable[[str, float, float, str], list[dict[str, float]]],
     ) -> None:
         self._client = client
@@ -120,7 +125,7 @@ class HttpObservabilityBackend:
         self._instant_fn = instant_fn
         self._range_fn = range_fn
 
-    def query_instant(self, promql: str, *, eval_time: Optional[float] = None) -> MetricQueryResult:
+    def query_instant(self, promql: str, *, eval_time: float | None = None) -> MetricQueryResult:
         value = float(self._instant_fn(promql, eval_time))
         ts = float(eval_time or 0.0)
         return MetricQueryResult(
@@ -143,7 +148,7 @@ class HttpObservabilityBackend:
             series=[MetricSeries(metric={"provider": self._provider}, points=points)],
         )
 
-    def query_traces(self, *, limit: int = 20, name: Optional[str] = None) -> TraceQueryResult:
+    def query_traces(self, *, limit: int = 20, name: str | None = None) -> TraceQueryResult:
         if isinstance(self._client, TraceQueryClient):
             return self._client.query_traces(limit=limit, name=name)
         return TraceQueryResult()
@@ -165,7 +170,7 @@ class SentryObservabilityBackend:
     def __init__(self, client: Any) -> None:
         self._client = client
 
-    def query_instant(self, promql: str, *, eval_time: Optional[float] = None) -> MetricQueryResult:
+    def query_instant(self, promql: str, *, eval_time: float | None = None) -> MetricQueryResult:
         value = float(self._client.query_instant(promql, eval_time=eval_time))
         ts = float(eval_time or 0.0)
         return MetricQueryResult(
@@ -188,11 +193,11 @@ class SentryObservabilityBackend:
             series=[MetricSeries(metric={"provider": "sentry"}, points=points)],
         )
 
-    def query_traces(self, *, limit: int = 20, name: Optional[str] = None) -> TraceQueryResult:
+    def query_traces(self, *, limit: int = 20, name: str | None = None) -> TraceQueryResult:
         _ = limit, name
         return TraceQueryResult()
 
-    def capture_exception(self, exc: BaseException, *, tags: Optional[dict[str, str]] = None) -> str:
+    def capture_exception(self, exc: BaseException, *, tags: dict[str, str] | None = None) -> str:
         return str(self._client.capture_exception(exc, tags=tags or {}))
 
     def capture_message(self, message: str, *, level: str = "info") -> str:
@@ -212,7 +217,7 @@ class HttpNotificationChannel:
         sender: Callable[..., None],
         *,
         provider: str,
-        health_client: Optional[Any] = None,
+        health_client: Any | None = None,
     ) -> None:
         self._sender = sender
         self._provider = provider
@@ -315,15 +320,32 @@ class FilesystemBlobClient:
         self._root = root
         self._root.mkdir(parents=True, exist_ok=True)
 
-    def put_object(self, *, Key: str, Body: bytes, ContentType: str, Metadata: Optional[dict[str, str]] = None) -> None:
-        path = self._root / Key
+    def _path_for(self, key: str) -> Path:
+        """Resolve ``key`` below the store root; absolute, drive-qualified and ``..`` keys are refused."""
+        normalized = key.replace("\\", "/")
+        windows = PureWindowsPath(normalized)
+        if (
+            not normalized.strip()
+            or normalized.startswith("/")
+            or windows.drive
+            or windows.is_absolute()
+            or ".." in normalized.split("/")
+        ):
+            raise ValueError("object key must be a relative path inside the store root")
+        path = self._root / normalized
+        if not path.resolve().is_relative_to(self._root.resolve()):
+            raise ValueError("object key escapes the store root")
+        return path
+
+    def put_object(self, *, Key: str, Body: bytes, ContentType: str, Metadata: dict[str, str] | None = None) -> None:
+        path = self._path_for(Key)
         path.parent.mkdir(parents=True, exist_ok=True)
         path.write_bytes(Body)
         meta_path = path.with_suffix(path.suffix + ".meta.json")
         meta_path.write_text(json.dumps({"content_type": ContentType, "metadata": Metadata or {}}), encoding="utf-8")
 
     def get_object(self, *, Key: str) -> Any:
-        path = self._root / Key
+        path = self._path_for(Key)
         if not path.is_file():
             raise FileNotFoundError(Key)
 
@@ -349,7 +371,7 @@ class FilesystemBlobClient:
         }
 
     def delete_object(self, *, Key: str) -> None:
-        path = self._root / Key
+        path = self._path_for(Key)
         path.unlink(missing_ok=True)
         meta_path = path.with_suffix(path.suffix + ".meta.json")
         meta_path.unlink(missing_ok=True)

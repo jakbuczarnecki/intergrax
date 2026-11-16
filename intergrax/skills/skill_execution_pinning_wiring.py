@@ -33,9 +33,10 @@ def resolve_skill_execution_pinning_wiring(
     if pinning_store is not None:
         resolved = pinning_store
     elif kv_store is not None or document_store is not None:
+        # KV store is authoritative when both backends are supplied.
         resolved = wire_skill_execution_pinning_store(
             kv_store=kv_store,
-            document_store=document_store,
+            document_store=document_store if kv_store is None else None,
         )
     else:
         resolved = InMemorySkillExecutionPinningStore()

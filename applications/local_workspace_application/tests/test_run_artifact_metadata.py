@@ -5,7 +5,6 @@ from __future__ import annotations
 from unittest.mock import AsyncMock
 
 import pytest
-
 from intergrax.contracts.acp_metadata_keys import AcpStructuredDataKey
 from intergrax.contracts.agent_execution_result import AgentExecutionResult, AgentExecutionStatus
 from intergrax.contracts.agent_run_enums import AgentRunStatus
@@ -13,6 +12,10 @@ from intergrax.contracts.run_artifact_bundle import RUN_ARTIFACT_BUNDLE_METADATA
 from intergrax.contracts.task_artifacts import RunArtifactBundle, WorkspaceArtifactRef
 from intergrax.runtime.task.task import TaskResult, TaskState
 from intergrax.runtime.task.task_metadata_keys import TaskResultMetadataKey
+from intergrax.runtime.task.task_result_authoritative_exposure_defaults import (
+    terminal_task_result_exposure_no_decision_gate,
+)
+
 from local_workspace_application.host.lifecycle import LocalWorkspaceHostLifecycle
 from local_workspace_application.host.task_executor import LocalWorkspaceTaskExecutor
 from local_workspace_application.serving.fastapi_router import LocalWorkspaceRunService
@@ -49,6 +52,7 @@ def test_extract_run_artifact_bundle_from_task_result_metadata() -> None:
         task_id="task-synth",
         run_id="run-synth",
         state=TaskState.COMPLETED,
+        authoritative_decision_exposure=terminal_task_result_exposure_no_decision_gate(),
         answer="done",
         agent_id="local_synthesizer",
         metadata={TaskResultMetadataKey.RUN_ARTIFACT_BUNDLE: bundle_payload},
@@ -69,6 +73,7 @@ def test_extract_run_artifact_bundle_from_application_run_summary_nested_metadat
         task_id="task-synth",
         run_id="run-synth",
         state=TaskState.COMPLETED,
+        authoritative_decision_exposure=terminal_task_result_exposure_no_decision_gate(),
         answer="done",
         agent_id="local_synthesizer",
         metadata={
@@ -125,6 +130,7 @@ def test_ensure_run_artifact_bundle_metadata_promotes_nested_bundle() -> None:
         task_id="task-synth",
         run_id="run-synth",
         state=TaskState.COMPLETED,
+        authoritative_decision_exposure=terminal_task_result_exposure_no_decision_gate(),
         answer="done",
         agent_id="local_synthesizer",
         metadata={
@@ -170,6 +176,7 @@ async def test_run_task_exposes_platform_bundle_and_lkw_synthesize_diagnostic() 
         task_id="task-api",
         run_id="run-api",
         state=TaskState.COMPLETED,
+        authoritative_decision_exposure=terminal_task_result_exposure_no_decision_gate(),
         answer="answer",
         agent_id="local_synthesizer",
         execution_result=execution,

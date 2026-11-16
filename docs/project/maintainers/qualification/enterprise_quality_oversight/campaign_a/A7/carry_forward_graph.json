@@ -1,0 +1,3253 @@
+{
+  "n_nodes": 1298,
+  "n_edges": 281,
+  "chains": [
+    {
+      "chain": [
+        "G1a-0001",
+        "ARCH-FREEZE:T-B7-PROMOTE-DEBT"
+      ],
+      "length": 1,
+      "end": "ARCH-FREEZE:T-B7-PROMOTE-DEBT",
+      "bouncing": false,
+      "reason": [],
+      "start_register": "AF_B2_DEBT_RECON"
+    },
+    {
+      "chain": [
+        "G1a-0001",
+        "ARCH-FREEZE:FREEZE-audit"
+      ],
+      "length": 1,
+      "end": "ARCH-FREEZE:FREEZE-audit",
+      "bouncing": false,
+      "reason": [],
+      "start_register": "AF_B2_DEBT_RECON"
+    },
+    {
+      "chain": [
+        "G1a-0001",
+        "G1a-0003",
+        "ARCH-FREEZE:T-B7-PROMOTE-DEBT"
+      ],
+      "length": 2,
+      "end": "ARCH-FREEZE:T-B7-PROMOTE-DEBT",
+      "bouncing": true,
+      "reason": [
+        "chain length >= 2"
+      ],
+      "start_register": "AF_B2_DEBT_RECON"
+    },
+    {
+      "chain": [
+        "G1a-0001",
+        "G1a-0004",
+        "ARCH-FREEZE:T-B7-PROMOTE-DEBT"
+      ],
+      "length": 2,
+      "end": "ARCH-FREEZE:T-B7-PROMOTE-DEBT",
+      "bouncing": true,
+      "reason": [
+        "chain length >= 2"
+      ],
+      "start_register": "AF_B2_DEBT_RECON"
+    },
+    {
+      "chain": [
+        "G1a-0001",
+        "G1a-0005",
+        "ARCH-FREEZE:T-B7-PROMOTE-DEBT"
+      ],
+      "length": 2,
+      "end": "ARCH-FREEZE:T-B7-PROMOTE-DEBT",
+      "bouncing": true,
+      "reason": [
+        "chain length >= 2"
+      ],
+      "start_register": "AF_B2_DEBT_RECON"
+    },
+    {
+      "chain": [
+        "G1a-0001",
+        "G1a-0006",
+        "ARCH-FREEZE:T-B7-PROMOTE-DEBT"
+      ],
+      "length": 2,
+      "end": "ARCH-FREEZE:T-B7-PROMOTE-DEBT",
+      "bouncing": true,
+      "reason": [
+        "chain length >= 2"
+      ],
+      "start_register": "AF_B2_DEBT_RECON"
+    },
+    {
+      "chain": [
+        "G1a-0001",
+        "G1a-0007",
+        "ARCH-FREEZE:T-B7-PROMOTE-DEBT"
+      ],
+      "length": 2,
+      "end": "ARCH-FREEZE:T-B7-PROMOTE-DEBT",
+      "bouncing": true,
+      "reason": [
+        "chain length >= 2"
+      ],
+      "start_register": "AF_B2_DEBT_RECON"
+    },
+    {
+      "chain": [
+        "G1a-0001",
+        "G1a-0008",
+        "ARCH-FREEZE:T-B7-PROMOTE-DEBT"
+      ],
+      "length": 2,
+      "end": "ARCH-FREEZE:T-B7-PROMOTE-DEBT",
+      "bouncing": true,
+      "reason": [
+        "chain length >= 2"
+      ],
+      "start_register": "AF_B2_DEBT_RECON"
+    },
+    {
+      "chain": [
+        "G1a-0003",
+        "ARCH-FREEZE:T-B7-PROMOTE-DEBT"
+      ],
+      "length": 1,
+      "end": "ARCH-FREEZE:T-B7-PROMOTE-DEBT",
+      "bouncing": false,
+      "reason": [],
+      "start_register": "AF_B2_DEBT_RECON"
+    },
+    {
+      "chain": [
+        "G1a-0004",
+        "ARCH-FREEZE:T-B7-PROMOTE-DEBT"
+      ],
+      "length": 1,
+      "end": "ARCH-FREEZE:T-B7-PROMOTE-DEBT",
+      "bouncing": false,
+      "reason": [],
+      "start_register": "AF_B2_DEBT_RECON"
+    },
+    {
+      "chain": [
+        "G1a-0005",
+        "ARCH-FREEZE:T-B7-PROMOTE-DEBT"
+      ],
+      "length": 1,
+      "end": "ARCH-FREEZE:T-B7-PROMOTE-DEBT",
+      "bouncing": false,
+      "reason": [],
+      "start_register": "AF_B2_DEBT_RECON"
+    },
+    {
+      "chain": [
+        "G1a-0006",
+        "ARCH-FREEZE:T-B7-PROMOTE-DEBT"
+      ],
+      "length": 1,
+      "end": "ARCH-FREEZE:T-B7-PROMOTE-DEBT",
+      "bouncing": false,
+      "reason": [],
+      "start_register": "AF_B2_DEBT_RECON"
+    },
+    {
+      "chain": [
+        "G1a-0007",
+        "ARCH-FREEZE:T-B7-PROMOTE-DEBT"
+      ],
+      "length": 1,
+      "end": "ARCH-FREEZE:T-B7-PROMOTE-DEBT",
+      "bouncing": false,
+      "reason": [],
+      "start_register": "AF_B2_DEBT_RECON"
+    },
+    {
+      "chain": [
+        "G1a-0008",
+        "ARCH-FREEZE:T-B7-PROMOTE-DEBT"
+      ],
+      "length": 1,
+      "end": "ARCH-FREEZE:T-B7-PROMOTE-DEBT",
+      "bouncing": false,
+      "reason": [],
+      "start_register": "AF_B2_DEBT_RECON"
+    },
+    {
+      "chain": [
+        "G1a-0009",
+        "ARCH-FREEZE:T-B0-SSOT-REFRESH"
+      ],
+      "length": 1,
+      "end": "ARCH-FREEZE:T-B0-SSOT-REFRESH",
+      "bouncing": false,
+      "reason": [],
+      "start_register": "AF_CLOSED_WORLD_GAP"
+    },
+    {
+      "chain": [
+        "G1a-0010",
+        "ARCH-FREEZE:T-B0-SSOT-REFRESH"
+      ],
+      "length": 1,
+      "end": "ARCH-FREEZE:T-B0-SSOT-REFRESH",
+      "bouncing": false,
+      "reason": [],
+      "start_register": "AF_CLOSED_WORLD_GAP"
+    },
+    {
+      "chain": [
+        "G1a-0011",
+        "ARCH-FREEZE:T-B0-SSOT-REFRESH"
+      ],
+      "length": 1,
+      "end": "ARCH-FREEZE:T-B0-SSOT-REFRESH",
+      "bouncing": false,
+      "reason": [],
+      "start_register": "AF_CLOSED_WORLD_GAP"
+    },
+    {
+      "chain": [
+        "G1a-0012",
+        "ARCH-FREEZE:T-R0-WAVE1-SSOT-RECONCILE"
+      ],
+      "length": 1,
+      "end": "ARCH-FREEZE:T-R0-WAVE1-SSOT-RECONCILE",
+      "bouncing": false,
+      "reason": [],
+      "start_register": "AF_CLOSED_WORLD_GAP"
+    },
+    {
+      "chain": [
+        "G1a-0013",
+        "ARCH-FREEZE:T-B1-ENGINE"
+      ],
+      "length": 1,
+      "end": "ARCH-FREEZE:T-B1-ENGINE",
+      "bouncing": false,
+      "reason": [],
+      "start_register": "AF_CLOSED_WORLD_GAP"
+    },
+    {
+      "chain": [
+        "G1a-0014",
+        "ARCH-FREEZE:T-B1-ENGINE"
+      ],
+      "length": 1,
+      "end": "ARCH-FREEZE:T-B1-ENGINE",
+      "bouncing": false,
+      "reason": [],
+      "start_register": "AF_CLOSED_WORLD_GAP"
+    },
+    {
+      "chain": [
+        "G1a-0015",
+        "ARCH-FREEZE:T-B1-ENGINE"
+      ],
+      "length": 1,
+      "end": "ARCH-FREEZE:T-B1-ENGINE",
+      "bouncing": false,
+      "reason": [],
+      "start_register": "AF_CLOSED_WORLD_GAP"
+    },
+    {
+      "chain": [
+        "G1a-0015",
+        "ARCH-FREEZE:T-B1-STRICT-QUALIFY"
+      ],
+      "length": 1,
+      "end": "ARCH-FREEZE:T-B1-STRICT-QUALIFY",
+      "bouncing": false,
+      "reason": [],
+      "start_register": "AF_CLOSED_WORLD_GAP"
+    },
+    {
+      "chain": [
+        "G1a-0016",
+        "ARCH-FREEZE:T-B1-MANDATORY-DISPOSITION"
+      ],
+      "length": 1,
+      "end": "ARCH-FREEZE:T-B1-MANDATORY-DISPOSITION",
+      "bouncing": false,
+      "reason": [],
+      "start_register": "AF_CLOSED_WORLD_GAP"
+    },
+    {
+      "chain": [
+        "G1a-0017",
+        "ARCH-FREEZE:T-B1-MANDATORY-DISPOSITION"
+      ],
+      "length": 1,
+      "end": "ARCH-FREEZE:T-B1-MANDATORY-DISPOSITION",
+      "bouncing": false,
+      "reason": [],
+      "start_register": "AF_CLOSED_WORLD_GAP"
+    },
+    {
+      "chain": [
+        "G1a-0018",
+        "ARCH-FREEZE:T-B1-ENGINE"
+      ],
+      "length": 1,
+      "end": "ARCH-FREEZE:T-B1-ENGINE",
+      "bouncing": false,
+      "reason": [],
+      "start_register": "AF_CLOSED_WORLD_GAP"
+    },
+    {
+      "chain": [
+        "G1a-0019",
+        "ARCH-FREEZE:T-B1-ENGINE"
+      ],
+      "length": 1,
+      "end": "ARCH-FREEZE:T-B1-ENGINE",
+      "bouncing": false,
+      "reason": [],
+      "start_register": "AF_CLOSED_WORLD_GAP"
+    },
+    {
+      "chain": [
+        "G1a-0020",
+        "ARCH-FREEZE:T-B2-BND03-RECONCILE"
+      ],
+      "length": 1,
+      "end": "ARCH-FREEZE:T-B2-BND03-RECONCILE",
+      "bouncing": false,
+      "reason": [],
+      "start_register": "AF_CLOSED_WORLD_GAP"
+    },
+    {
+      "chain": [
+        "G1a-0021",
+        "ARCH-FREEZE:T-B7-PROMOTE-DEBT"
+      ],
+      "length": 1,
+      "end": "ARCH-FREEZE:T-B7-PROMOTE-DEBT",
+      "bouncing": false,
+      "reason": [],
+      "start_register": "AF_CLOSED_WORLD_GAP"
+    },
+    {
+      "chain": [
+        "G1a-0021",
+        "G1a-0003",
+        "ARCH-FREEZE:T-B7-PROMOTE-DEBT"
+      ],
+      "length": 2,
+      "end": "ARCH-FREEZE:T-B7-PROMOTE-DEBT",
+      "bouncing": true,
+      "reason": [
+        "chain length >= 2"
+      ],
+      "start_register": "AF_CLOSED_WORLD_GAP"
+    },
+    {
+      "chain": [
+        "G1a-0021",
+        "G1a-0004",
+        "ARCH-FREEZE:T-B7-PROMOTE-DEBT"
+      ],
+      "length": 2,
+      "end": "ARCH-FREEZE:T-B7-PROMOTE-DEBT",
+      "bouncing": true,
+      "reason": [
+        "chain length >= 2"
+      ],
+      "start_register": "AF_CLOSED_WORLD_GAP"
+    },
+    {
+      "chain": [
+        "G1a-0021",
+        "G1a-0005",
+        "ARCH-FREEZE:T-B7-PROMOTE-DEBT"
+      ],
+      "length": 2,
+      "end": "ARCH-FREEZE:T-B7-PROMOTE-DEBT",
+      "bouncing": true,
+      "reason": [
+        "chain length >= 2"
+      ],
+      "start_register": "AF_CLOSED_WORLD_GAP"
+    },
+    {
+      "chain": [
+        "G1a-0021",
+        "G1a-0006",
+        "ARCH-FREEZE:T-B7-PROMOTE-DEBT"
+      ],
+      "length": 2,
+      "end": "ARCH-FREEZE:T-B7-PROMOTE-DEBT",
+      "bouncing": true,
+      "reason": [
+        "chain length >= 2"
+      ],
+      "start_register": "AF_CLOSED_WORLD_GAP"
+    },
+    {
+      "chain": [
+        "G1a-0021",
+        "G1a-0007",
+        "ARCH-FREEZE:T-B7-PROMOTE-DEBT"
+      ],
+      "length": 2,
+      "end": "ARCH-FREEZE:T-B7-PROMOTE-DEBT",
+      "bouncing": true,
+      "reason": [
+        "chain length >= 2"
+      ],
+      "start_register": "AF_CLOSED_WORLD_GAP"
+    },
+    {
+      "chain": [
+        "G1a-0021",
+        "G1a-0008",
+        "ARCH-FREEZE:T-B7-PROMOTE-DEBT"
+      ],
+      "length": 2,
+      "end": "ARCH-FREEZE:T-B7-PROMOTE-DEBT",
+      "bouncing": true,
+      "reason": [
+        "chain length >= 2"
+      ],
+      "start_register": "AF_CLOSED_WORLD_GAP"
+    },
+    {
+      "chain": [
+        "G1a-0022",
+        "ARCH-FREEZE:T-B7-VBN-HEAD-DOSSIER"
+      ],
+      "length": 1,
+      "end": "ARCH-FREEZE:T-B7-VBN-HEAD-DOSSIER",
+      "bouncing": false,
+      "reason": [],
+      "start_register": "AF_CLOSED_WORLD_GAP"
+    },
+    {
+      "chain": [
+        "G1a-0022",
+        "ARCH-FREEZE:T-B7-PFP-ACTIVATE"
+      ],
+      "length": 1,
+      "end": "ARCH-FREEZE:T-B7-PFP-ACTIVATE",
+      "bouncing": false,
+      "reason": [],
+      "start_register": "AF_CLOSED_WORLD_GAP"
+    },
+    {
+      "chain": [
+        "G1a-0022",
+        "ARCH-FREEZE:T-B7-VBN-INDEPENDENT-ACCEPT"
+      ],
+      "length": 1,
+      "end": "ARCH-FREEZE:T-B7-VBN-INDEPENDENT-ACCEPT",
+      "bouncing": false,
+      "reason": [],
+      "start_register": "AF_CLOSED_WORLD_GAP"
+    },
+    {
+      "chain": [
+        "G1a-0022",
+        "ARCH-FREEZE:T-B7-PROMOTE-RPL"
+      ],
+      "length": 1,
+      "end": "ARCH-FREEZE:T-B7-PROMOTE-RPL",
+      "bouncing": false,
+      "reason": [],
+      "start_register": "AF_CLOSED_WORLD_GAP"
+    },
+    {
+      "chain": [
+        "G1a-0023",
+        "EVOL-X:T-B5-EVOL-B6"
+      ],
+      "length": 1,
+      "end": "EVOL-X:T-B5-EVOL-B6",
+      "bouncing": false,
+      "reason": [],
+      "start_register": "AF_CLOSED_WORLD_GAP"
+    },
+    {
+      "chain": [
+        "G1a-0023",
+        "ENT-AUDIT-X:T-B6-ENT-B6"
+      ],
+      "length": 1,
+      "end": "ENT-AUDIT-X:T-B6-ENT-B6",
+      "bouncing": false,
+      "reason": [],
+      "start_register": "AF_CLOSED_WORLD_GAP"
+    },
+    {
+      "chain": [
+        "G1a-0024",
+        "ENT-AUDIT-X:T-B6-OD-ENT-01"
+      ],
+      "length": 1,
+      "end": "ENT-AUDIT-X:T-B6-OD-ENT-01",
+      "bouncing": false,
+      "reason": [],
+      "start_register": "AF_CLOSED_WORLD_GAP"
+    },
+    {
+      "chain": [
+        "G1a-0025",
+        "ARCH-FREEZE:T-PATHB-EXCL"
+      ],
+      "length": 1,
+      "end": "ARCH-FREEZE:T-PATHB-EXCL",
+      "bouncing": false,
+      "reason": [],
+      "start_register": "AF_CLOSED_WORLD_GAP"
+    },
+    {
+      "chain": [
+        "G1a-0026",
+        "ARCH-FREEZE:T-B1-PROD-REACH-SCAN"
+      ],
+      "length": 1,
+      "end": "ARCH-FREEZE:T-B1-PROD-REACH-SCAN",
+      "bouncing": false,
+      "reason": [],
+      "start_register": "AF_CLOSED_WORLD_GAP"
+    },
+    {
+      "chain": [
+        "G1a-0034",
+        "ENT-AUDIT-X:ENT-T-0101"
+      ],
+      "length": 1,
+      "end": "ENT-AUDIT-X:ENT-T-0101",
+      "bouncing": false,
+      "reason": [],
+      "start_register": "ANNEX_F_GAP"
+    },
+    {
+      "chain": [
+        "G1a-0035",
+        "ENT-AUDIT-X:ENT-T-0201"
+      ],
+      "length": 1,
+      "end": "ENT-AUDIT-X:ENT-T-0201",
+      "bouncing": false,
+      "reason": [],
+      "start_register": "ANNEX_F_GAP"
+    },
+    {
+      "chain": [
+        "G1a-0036",
+        "ENT-AUDIT-X:ENT-T-0301"
+      ],
+      "length": 1,
+      "end": "ENT-AUDIT-X:ENT-T-0301",
+      "bouncing": false,
+      "reason": [],
+      "start_register": "ANNEX_F_GAP"
+    },
+    {
+      "chain": [
+        "G1a-0037",
+        "ENT-AUDIT-X:ENT-T-0302"
+      ],
+      "length": 1,
+      "end": "ENT-AUDIT-X:ENT-T-0302",
+      "bouncing": false,
+      "reason": [],
+      "start_register": "ANNEX_F_GAP"
+    },
+    {
+      "chain": [
+        "G1a-0038",
+        "ENT-AUDIT-X:ENT-T-0701"
+      ],
+      "length": 1,
+      "end": "ENT-AUDIT-X:ENT-T-0701",
+      "bouncing": false,
+      "reason": [],
+      "start_register": "ANNEX_F_GAP"
+    },
+    {
+      "chain": [
+        "G1a-0039",
+        "ENT-AUDIT-X:ENT-T-0702"
+      ],
+      "length": 1,
+      "end": "ENT-AUDIT-X:ENT-T-0702",
+      "bouncing": false,
+      "reason": [],
+      "start_register": "ANNEX_F_GAP"
+    },
+    {
+      "chain": [
+        "G1a-0040",
+        "ENT-AUDIT-X:ENT-T-0801"
+      ],
+      "length": 1,
+      "end": "ENT-AUDIT-X:ENT-T-0801",
+      "bouncing": false,
+      "reason": [],
+      "start_register": "ANNEX_F_GAP"
+    },
+    {
+      "chain": [
+        "G1a-0041",
+        "ENT-AUDIT-X:ENT-T-0901"
+      ],
+      "length": 1,
+      "end": "ENT-AUDIT-X:ENT-T-0901",
+      "bouncing": false,
+      "reason": [],
+      "start_register": "ANNEX_F_GAP"
+    },
+    {
+      "chain": [
+        "G1a-0042",
+        "ENT-AUDIT-X:ENT-T-0902"
+      ],
+      "length": 1,
+      "end": "ENT-AUDIT-X:ENT-T-0902",
+      "bouncing": false,
+      "reason": [],
+      "start_register": "ANNEX_F_GAP"
+    },
+    {
+      "chain": [
+        "G1a-0043",
+        "ENT-AUDIT-X:ENT-T-1001"
+      ],
+      "length": 1,
+      "end": "ENT-AUDIT-X:ENT-T-1001",
+      "bouncing": false,
+      "reason": [],
+      "start_register": "ANNEX_F_GAP"
+    },
+    {
+      "chain": [
+        "G1a-0044",
+        "ENT-AUDIT-X:ENT-T-1101"
+      ],
+      "length": 1,
+      "end": "ENT-AUDIT-X:ENT-T-1101",
+      "bouncing": false,
+      "reason": [],
+      "start_register": "ANNEX_F_GAP"
+    },
+    {
+      "chain": [
+        "G1a-0045",
+        "ENT-AUDIT-X:ENT-T-1201"
+      ],
+      "length": 1,
+      "end": "ENT-AUDIT-X:ENT-T-1201",
+      "bouncing": false,
+      "reason": [],
+      "start_register": "ANNEX_F_GAP"
+    },
+    {
+      "chain": [
+        "G1a-0046",
+        "ENT-AUDIT-X:ENT-T-1202"
+      ],
+      "length": 1,
+      "end": "ENT-AUDIT-X:ENT-T-1202",
+      "bouncing": false,
+      "reason": [],
+      "start_register": "ANNEX_F_GAP"
+    },
+    {
+      "chain": [
+        "G1a-0047",
+        "ENT-AUDIT-X:ENT-T-1203"
+      ],
+      "length": 1,
+      "end": "ENT-AUDIT-X:ENT-T-1203",
+      "bouncing": false,
+      "reason": [],
+      "start_register": "ANNEX_F_GAP"
+    },
+    {
+      "chain": [
+        "G1a-0048",
+        "ENT-AUDIT-X:ENT-T-1002"
+      ],
+      "length": 1,
+      "end": "ENT-AUDIT-X:ENT-T-1002",
+      "bouncing": false,
+      "reason": [],
+      "start_register": "ANNEX_F_GAP"
+    },
+    {
+      "chain": [
+        "G1a-0049",
+        "ENT-AUDIT-X:ENT-T-0303"
+      ],
+      "length": 1,
+      "end": "ENT-AUDIT-X:ENT-T-0303",
+      "bouncing": false,
+      "reason": [],
+      "start_register": "ANNEX_F_GAP"
+    },
+    {
+      "chain": [
+        "G1a-0050",
+        "ENT-AUDIT-X:ENT-T-1102"
+      ],
+      "length": 1,
+      "end": "ENT-AUDIT-X:ENT-T-1102",
+      "bouncing": false,
+      "reason": [],
+      "start_register": "ANNEX_F_GAP"
+    },
+    {
+      "chain": [
+        "G1a-0051",
+        "EVOL-X:EXT-EVOL-06"
+      ],
+      "length": 1,
+      "end": "EVOL-X:EXT-EVOL-06",
+      "bouncing": false,
+      "reason": [],
+      "start_register": "ANNEX_F_GAP"
+    },
+    {
+      "chain": [
+        "G1a-0052",
+        "ARCH-FREEZE:OPEN-BP-01 (repo admin)"
+      ],
+      "length": 1,
+      "end": "ARCH-FREEZE:OPEN-BP-01 (repo admin)",
+      "bouncing": false,
+      "reason": [],
+      "start_register": "ANNEX_F_GAP"
+    },
+    {
+      "chain": [
+        "G1a-0053",
+        "ENT-AUDIT-X:ENT-T-0608"
+      ],
+      "length": 1,
+      "end": "ENT-AUDIT-X:ENT-T-0608",
+      "bouncing": false,
+      "reason": [],
+      "start_register": "ANNEX_F_GAP"
+    },
+    {
+      "chain": [
+        "G1a-0054",
+        "ENT-AUDIT-X:ENT-T-0304"
+      ],
+      "length": 1,
+      "end": "ENT-AUDIT-X:ENT-T-0304",
+      "bouncing": false,
+      "reason": [],
+      "start_register": "ANNEX_F_GAP"
+    },
+    {
+      "chain": [
+        "G1a-0056",
+        "ENT-AUDIT-X:ENT-T-0903"
+      ],
+      "length": 1,
+      "end": "ENT-AUDIT-X:ENT-T-0903",
+      "bouncing": false,
+      "reason": [],
+      "start_register": "ANNEX_F_GAP"
+    },
+    {
+      "chain": [
+        "G1a-0057",
+        "EVOL-X"
+      ],
+      "length": 1,
+      "end": "EVOL-X",
+      "bouncing": true,
+      "reason": [
+        "ends at CLOSED stage EVOL-X"
+      ],
+      "start_register": "ANNEX_F_GAP"
+    },
+    {
+      "chain": [
+        "G1a-0058",
+        "EVOL-X"
+      ],
+      "length": 1,
+      "end": "EVOL-X",
+      "bouncing": true,
+      "reason": [
+        "ends at CLOSED stage EVOL-X"
+      ],
+      "start_register": "ANNEX_F_GAP"
+    },
+    {
+      "chain": [
+        "G1a-0059",
+        "EVOL-X"
+      ],
+      "length": 1,
+      "end": "EVOL-X",
+      "bouncing": true,
+      "reason": [
+        "ends at CLOSED stage EVOL-X"
+      ],
+      "start_register": "ANNEX_F_GAP"
+    },
+    {
+      "chain": [
+        "G1a-0060",
+        "Operator (OD-ENT-02)"
+      ],
+      "length": 1,
+      "end": "Operator (OD-ENT-02)",
+      "bouncing": false,
+      "reason": [],
+      "start_register": "ANNEX_F_GAP"
+    },
+    {
+      "chain": [
+        "G1a-0061",
+        "Operator (OD-ENT-00)"
+      ],
+      "length": 1,
+      "end": "Operator (OD-ENT-00)",
+      "bouncing": false,
+      "reason": [],
+      "start_register": "ANNEX_F_GAP"
+    },
+    {
+      "chain": [
+        "G1a-0062",
+        "ENT-AUDIT-X"
+      ],
+      "length": 1,
+      "end": "ENT-AUDIT-X",
+      "bouncing": true,
+      "reason": [
+        "ends at CLOSED stage ENT-AUDIT-X"
+      ],
+      "start_register": "ANNEX_F_GAP"
+    },
+    {
+      "chain": [
+        "G1a-0063",
+        "APP-EVOL-8"
+      ],
+      "length": 1,
+      "end": "APP-EVOL-8",
+      "bouncing": false,
+      "reason": [],
+      "start_register": "ARCH_DEBT"
+    },
+    {
+      "chain": [
+        "G1a-0079",
+        "Observability / DIAG maintainers:DG-001 remaining surface 1"
+      ],
+      "length": 1,
+      "end": "Observability / DIAG maintainers:DG-001 remaining surface 1",
+      "bouncing": false,
+      "reason": [],
+      "start_register": "DIAG_GAP_LEDGER"
+    },
+    {
+      "chain": [
+        "G1a-0095",
+        "Observability / DIAG maintainers:DG-001 remaining surface 1"
+      ],
+      "length": 1,
+      "end": "Observability / DIAG maintainers:DG-001 remaining surface 1",
+      "bouncing": false,
+      "reason": [],
+      "start_register": "DIAG_GAP_LEDGER"
+    },
+    {
+      "chain": [
+        "G1a-0096",
+        "Observability / DIAG maintainers:correlation-based discovery"
+      ],
+      "length": 1,
+      "end": "Observability / DIAG maintainers:correlation-based discovery",
+      "bouncing": false,
+      "reason": [],
+      "start_register": "DIAG_GAP_LEDGER"
+    },
+    {
+      "chain": [
+        "G1a-0096",
+        "Observability / DIAG maintainers:ExecutionId discovery"
+      ],
+      "length": 1,
+      "end": "Observability / DIAG maintainers:ExecutionId discovery",
+      "bouncing": false,
+      "reason": [],
+      "start_register": "DIAG_GAP_LEDGER"
+    },
+    {
+      "chain": [
+        "G1a-0112",
+        "Observability / DIAG maintainers:correlation-based discovery"
+      ],
+      "length": 1,
+      "end": "Observability / DIAG maintainers:correlation-based discovery",
+      "bouncing": false,
+      "reason": [],
+      "start_register": "DIAG_GAP_LEDGER"
+    },
+    {
+      "chain": [
+        "G1a-0164",
+        "Observability / DIAG maintainers:cross-process qualification"
+      ],
+      "length": 1,
+      "end": "Observability / DIAG maintainers:cross-process qualification",
+      "bouncing": false,
+      "reason": [],
+      "start_register": "DIAG_GAP_LEDGER"
+    },
+    {
+      "chain": [
+        "G1b-0008",
+        "OD-DUPX-01 (Operator)"
+      ],
+      "length": 1,
+      "end": "OD-DUPX-01 (Operator)",
+      "bouncing": false,
+      "reason": [],
+      "start_register": "DUPX_FINDINGS"
+    },
+    {
+      "chain": [
+        "G1b-0008",
+        "G3-0033",
+        "Wave B+ production remediation"
+      ],
+      "length": 2,
+      "end": "Wave B+ production remediation",
+      "bouncing": true,
+      "reason": [
+        "chain length >= 2"
+      ],
+      "start_register": "DUPX_FINDINGS"
+    },
+    {
+      "chain": [
+        "G1b-0027",
+        "NPSC-4.2"
+      ],
+      "length": 1,
+      "end": "NPSC-4.2",
+      "bouncing": false,
+      "reason": [],
+      "start_register": "DUPX_FINDINGS"
+    },
+    {
+      "chain": [
+        "G1b-0033",
+        "OD-EBH6-01 (Operator)"
+      ],
+      "length": 1,
+      "end": "OD-EBH6-01 (Operator)",
+      "bouncing": false,
+      "reason": [],
+      "start_register": "EBH6_COND_REMEDIATION"
+    },
+    {
+      "chain": [
+        "G1b-0033",
+        "G3-0058"
+      ],
+      "length": 1,
+      "end": "G3-0058",
+      "bouncing": false,
+      "reason": [],
+      "start_register": "EBH6_COND_REMEDIATION"
+    },
+    {
+      "chain": [
+        "G1b-0034",
+        "OD-EBH6-01 (Operator)"
+      ],
+      "length": 1,
+      "end": "OD-EBH6-01 (Operator)",
+      "bouncing": false,
+      "reason": [],
+      "start_register": "EBH6_COND_REMEDIATION"
+    },
+    {
+      "chain": [
+        "G1b-0035",
+        "E01-PRE-01"
+      ],
+      "length": 1,
+      "end": "E01-PRE-01",
+      "bouncing": false,
+      "reason": [],
+      "start_register": "EBH6_COND_REMEDIATION"
+    },
+    {
+      "chain": [
+        "G1b-0048",
+        "EBH-6 Protocol 03"
+      ],
+      "length": 1,
+      "end": "EBH-6 Protocol 03",
+      "bouncing": false,
+      "reason": [],
+      "start_register": "EBH6_HARDCODING"
+    },
+    {
+      "chain": [
+        "G1b-0054",
+        "EBH-6 Protocol 03"
+      ],
+      "length": 1,
+      "end": "EBH-6 Protocol 03",
+      "bouncing": false,
+      "reason": [],
+      "start_register": "EBH6_HARDCODING"
+    },
+    {
+      "chain": [
+        "G1b-0058",
+        "EBH-6 Protocol 03"
+      ],
+      "length": 1,
+      "end": "EBH-6 Protocol 03",
+      "bouncing": false,
+      "reason": [],
+      "start_register": "EBH6_HARDCODING"
+    },
+    {
+      "chain": [
+        "G1b-0079",
+        "PROD-Q"
+      ],
+      "length": 1,
+      "end": "PROD-Q",
+      "bouncing": true,
+      "reason": [
+        "ends at CLOSED stage PROD-Q"
+      ],
+      "start_register": "EBH7_GAP"
+    },
+    {
+      "chain": [
+        "G1b-0081",
+        "EBH-6"
+      ],
+      "length": 1,
+      "end": "EBH-6",
+      "bouncing": true,
+      "reason": [
+        "ends at CLOSED stage EBH-6"
+      ],
+      "start_register": "EBH7_GAP"
+    },
+    {
+      "chain": [
+        "G2a-0002",
+        "T-IGX-030-B"
+      ],
+      "length": 1,
+      "end": "T-IGX-030-B",
+      "bouncing": false,
+      "reason": [],
+      "start_register": "HIST_INDEPENDENT_AUDIT"
+    },
+    {
+      "chain": [
+        "G2a-0002",
+        "T-IGX-030-C"
+      ],
+      "length": 1,
+      "end": "T-IGX-030-C",
+      "bouncing": false,
+      "reason": [],
+      "start_register": "HIST_INDEPENDENT_AUDIT"
+    },
+    {
+      "chain": [
+        "G2a-0002",
+        "G2a-0108"
+      ],
+      "length": 1,
+      "end": "G2a-0108",
+      "bouncing": false,
+      "reason": [],
+      "start_register": "HIST_INDEPENDENT_AUDIT"
+    },
+    {
+      "chain": [
+        "G2a-0002",
+        "G2a-0111",
+        "T-IGX-030-B"
+      ],
+      "length": 2,
+      "end": "T-IGX-030-B",
+      "bouncing": true,
+      "reason": [
+        "chain length >= 2"
+      ],
+      "start_register": "HIST_INDEPENDENT_AUDIT"
+    },
+    {
+      "chain": [
+        "G2a-0002",
+        "G2a-0111",
+        "T-IGX-030-C"
+      ],
+      "length": 2,
+      "end": "T-IGX-030-C",
+      "bouncing": true,
+      "reason": [
+        "chain length >= 2"
+      ],
+      "start_register": "HIST_INDEPENDENT_AUDIT"
+    },
+    {
+      "chain": [
+        "G2a-0002",
+        "G2a-0111",
+        "DR-3"
+      ],
+      "length": 2,
+      "end": "DR-3",
+      "bouncing": true,
+      "reason": [
+        "chain length >= 2"
+      ],
+      "start_register": "HIST_INDEPENDENT_AUDIT"
+    },
+    {
+      "chain": [
+        "G2a-0013",
+        "PROD-Q"
+      ],
+      "length": 1,
+      "end": "PROD-Q",
+      "bouncing": true,
+      "reason": [
+        "ends at CLOSED stage PROD-Q"
+      ],
+      "start_register": "HIST_PATHB_DEFERRED"
+    },
+    {
+      "chain": [
+        "G2a-0013",
+        "SCENARIO-GATE"
+      ],
+      "length": 1,
+      "end": "SCENARIO-GATE",
+      "bouncing": true,
+      "reason": [
+        "ends at post-freeze stage SCENARIO-GATE"
+      ],
+      "start_register": "HIST_PATHB_DEFERRED"
+    },
+    {
+      "chain": [
+        "G2a-0014",
+        "PROD-Q-P1"
+      ],
+      "length": 1,
+      "end": "PROD-Q-P1",
+      "bouncing": false,
+      "reason": [],
+      "start_register": "HIST_PATHB_DEFERRED"
+    },
+    {
+      "chain": [
+        "G2a-0015",
+        "PROD-Q Dimension B"
+      ],
+      "length": 1,
+      "end": "PROD-Q Dimension B",
+      "bouncing": false,
+      "reason": [],
+      "start_register": "HIST_PATHB_DEFERRED"
+    },
+    {
+      "chain": [
+        "G2a-0016",
+        "Decision-03"
+      ],
+      "length": 1,
+      "end": "Decision-03",
+      "bouncing": false,
+      "reason": [],
+      "start_register": "HIST_PATHB_DEFERRED"
+    },
+    {
+      "chain": [
+        "G2a-0016",
+        "D03-A"
+      ],
+      "length": 1,
+      "end": "D03-A",
+      "bouncing": false,
+      "reason": [],
+      "start_register": "HIST_PATHB_DEFERRED"
+    },
+    {
+      "chain": [
+        "G2a-0017",
+        "PROD-Q"
+      ],
+      "length": 1,
+      "end": "PROD-Q",
+      "bouncing": true,
+      "reason": [
+        "ends at CLOSED stage PROD-Q"
+      ],
+      "start_register": "HIST_PATHB_DEFERRED"
+    },
+    {
+      "chain": [
+        "G2a-0018",
+        "FRZ-SEC-06"
+      ],
+      "length": 1,
+      "end": "FRZ-SEC-06",
+      "bouncing": false,
+      "reason": [],
+      "start_register": "HIST_PATHB_DEFERRED"
+    },
+    {
+      "chain": [
+        "G2a-0019",
+        "PROD-Q-P1"
+      ],
+      "length": 1,
+      "end": "PROD-Q-P1",
+      "bouncing": false,
+      "reason": [],
+      "start_register": "HIST_PATHB_DEFERRED"
+    },
+    {
+      "chain": [
+        "G2a-0020",
+        "Operator/infra"
+      ],
+      "length": 1,
+      "end": "Operator/infra",
+      "bouncing": false,
+      "reason": [],
+      "start_register": "HIST_PATHB_DEFERRED"
+    },
+    {
+      "chain": [
+        "G2a-0021",
+        "Decision-03"
+      ],
+      "length": 1,
+      "end": "Decision-03",
+      "bouncing": false,
+      "reason": [],
+      "start_register": "HIST_PATHB_DEFERRED"
+    },
+    {
+      "chain": [
+        "G2a-0023",
+        "FRZ-PRD-11"
+      ],
+      "length": 1,
+      "end": "FRZ-PRD-11",
+      "bouncing": false,
+      "reason": [],
+      "start_register": "HIST_PATHB_DEFERRED"
+    },
+    {
+      "chain": [
+        "G2a-0024",
+        "FRZ-PRD-11"
+      ],
+      "length": 1,
+      "end": "FRZ-PRD-11",
+      "bouncing": false,
+      "reason": [],
+      "start_register": "HIST_PATHB_DEFERRED"
+    },
+    {
+      "chain": [
+        "G2a-0025",
+        "FRZ-PRD-11"
+      ],
+      "length": 1,
+      "end": "FRZ-PRD-11",
+      "bouncing": false,
+      "reason": [],
+      "start_register": "HIST_PATHB_DEFERRED"
+    },
+    {
+      "chain": [
+        "G2a-0026",
+        "FRZ-PRD-11"
+      ],
+      "length": 1,
+      "end": "FRZ-PRD-11",
+      "bouncing": false,
+      "reason": [],
+      "start_register": "HIST_PATHB_DEFERRED"
+    },
+    {
+      "chain": [
+        "G2a-0027",
+        "PROD-Q"
+      ],
+      "length": 1,
+      "end": "PROD-Q",
+      "bouncing": true,
+      "reason": [
+        "ends at CLOSED stage PROD-Q"
+      ],
+      "start_register": "HIST_PATHB_DEFERRED"
+    },
+    {
+      "chain": [
+        "G2a-0028",
+        "PROD-Q-R1"
+      ],
+      "length": 1,
+      "end": "PROD-Q-R1",
+      "bouncing": false,
+      "reason": [],
+      "start_register": "HIST_PATHB_DEFERRED"
+    },
+    {
+      "chain": [
+        "G2a-0029",
+        "PROD-Q"
+      ],
+      "length": 1,
+      "end": "PROD-Q",
+      "bouncing": true,
+      "reason": [
+        "ends at CLOSED stage PROD-Q"
+      ],
+      "start_register": "HIST_PATHB_DEFERRED"
+    },
+    {
+      "chain": [
+        "G2a-0034",
+        "PROD-Q"
+      ],
+      "length": 1,
+      "end": "PROD-Q",
+      "bouncing": true,
+      "reason": [
+        "ends at CLOSED stage PROD-Q"
+      ],
+      "start_register": "HIST_PATHB_RESIDUAL"
+    },
+    {
+      "chain": [
+        "G2a-0035",
+        "PROD-Q"
+      ],
+      "length": 1,
+      "end": "PROD-Q",
+      "bouncing": true,
+      "reason": [
+        "ends at CLOSED stage PROD-Q"
+      ],
+      "start_register": "HIST_PATHB_RESIDUAL"
+    },
+    {
+      "chain": [
+        "G2a-0036",
+        "PROD-Q"
+      ],
+      "length": 1,
+      "end": "PROD-Q",
+      "bouncing": true,
+      "reason": [
+        "ends at CLOSED stage PROD-Q"
+      ],
+      "start_register": "HIST_PATHB_RESIDUAL"
+    },
+    {
+      "chain": [
+        "G2a-0037",
+        "Operator"
+      ],
+      "length": 1,
+      "end": "Operator",
+      "bouncing": false,
+      "reason": [],
+      "start_register": "HIST_REMAINING_BLOCKERS"
+    },
+    {
+      "chain": [
+        "G2a-0037",
+        "HISTORICAL_AUTHORITY_AND_OPERATOR_DECISIONS.md"
+      ],
+      "length": 1,
+      "end": "HISTORICAL_AUTHORITY_AND_OPERATOR_DECISIONS.md",
+      "bouncing": false,
+      "reason": [],
+      "start_register": "HIST_REMAINING_BLOCKERS"
+    },
+    {
+      "chain": [
+        "G2a-0038",
+        "Operator"
+      ],
+      "length": 1,
+      "end": "Operator",
+      "bouncing": false,
+      "reason": [],
+      "start_register": "HIST_REMAINING_BLOCKERS"
+    },
+    {
+      "chain": [
+        "G2a-0038",
+        "HISTORICAL_AUTHORITY_AND_OPERATOR_DECISIONS.md"
+      ],
+      "length": 1,
+      "end": "HISTORICAL_AUTHORITY_AND_OPERATOR_DECISIONS.md",
+      "bouncing": false,
+      "reason": [],
+      "start_register": "HIST_REMAINING_BLOCKERS"
+    },
+    {
+      "chain": [
+        "G2a-0039",
+        "Operator"
+      ],
+      "length": 1,
+      "end": "Operator",
+      "bouncing": false,
+      "reason": [],
+      "start_register": "HIST_REMAINING_BLOCKERS"
+    },
+    {
+      "chain": [
+        "G2a-0039",
+        "HISTORICAL_AUTHORITY_AND_OPERATOR_DECISIONS.md"
+      ],
+      "length": 1,
+      "end": "HISTORICAL_AUTHORITY_AND_OPERATOR_DECISIONS.md",
+      "bouncing": false,
+      "reason": [],
+      "start_register": "HIST_REMAINING_BLOCKERS"
+    },
+    {
+      "chain": [
+        "G2a-0040",
+        "Operator"
+      ],
+      "length": 1,
+      "end": "Operator",
+      "bouncing": false,
+      "reason": [],
+      "start_register": "HIST_REMAINING_BLOCKERS"
+    },
+    {
+      "chain": [
+        "G2a-0040",
+        "HISTORICAL_AUTHORITY_AND_OPERATOR_DECISIONS.md"
+      ],
+      "length": 1,
+      "end": "HISTORICAL_AUTHORITY_AND_OPERATOR_DECISIONS.md",
+      "bouncing": false,
+      "reason": [],
+      "start_register": "HIST_REMAINING_BLOCKERS"
+    },
+    {
+      "chain": [
+        "G2a-0041",
+        "Operator"
+      ],
+      "length": 1,
+      "end": "Operator",
+      "bouncing": false,
+      "reason": [],
+      "start_register": "HIST_REMAINING_BLOCKERS"
+    },
+    {
+      "chain": [
+        "G2a-0041",
+        "HISTORICAL_AUTHORITY_AND_OPERATOR_DECISIONS.md"
+      ],
+      "length": 1,
+      "end": "HISTORICAL_AUTHORITY_AND_OPERATOR_DECISIONS.md",
+      "bouncing": false,
+      "reason": [],
+      "start_register": "HIST_REMAINING_BLOCKERS"
+    },
+    {
+      "chain": [
+        "G2a-0042",
+        "Operator"
+      ],
+      "length": 1,
+      "end": "Operator",
+      "bouncing": false,
+      "reason": [],
+      "start_register": "HIST_REMAINING_BLOCKERS"
+    },
+    {
+      "chain": [
+        "G2a-0042",
+        "HISTORICAL_AUTHORITY_AND_OPERATOR_DECISIONS.md"
+      ],
+      "length": 1,
+      "end": "HISTORICAL_AUTHORITY_AND_OPERATOR_DECISIONS.md",
+      "bouncing": false,
+      "reason": [],
+      "start_register": "HIST_REMAINING_BLOCKERS"
+    },
+    {
+      "chain": [
+        "G2a-0043",
+        "Operator"
+      ],
+      "length": 1,
+      "end": "Operator",
+      "bouncing": false,
+      "reason": [],
+      "start_register": "HIST_REMAINING_BLOCKERS"
+    },
+    {
+      "chain": [
+        "G2a-0043",
+        "HISTORICAL_AUTHORITY_AND_OPERATOR_DECISIONS.md"
+      ],
+      "length": 1,
+      "end": "HISTORICAL_AUTHORITY_AND_OPERATOR_DECISIONS.md",
+      "bouncing": false,
+      "reason": [],
+      "start_register": "HIST_REMAINING_BLOCKERS"
+    },
+    {
+      "chain": [
+        "G2a-0047",
+        "T-IGX-021-B"
+      ],
+      "length": 1,
+      "end": "T-IGX-021-B",
+      "bouncing": false,
+      "reason": [],
+      "start_register": "HIST_REMAINING_BLOCKERS"
+    },
+    {
+      "chain": [
+        "G2a-0047",
+        "T-IGX-021-C"
+      ],
+      "length": 1,
+      "end": "T-IGX-021-C",
+      "bouncing": false,
+      "reason": [],
+      "start_register": "HIST_REMAINING_BLOCKERS"
+    },
+    {
+      "chain": [
+        "G2a-0048",
+        "MASTER / ENT-AUDIT-X stream"
+      ],
+      "length": 1,
+      "end": "MASTER / ENT-AUDIT-X stream",
+      "bouncing": false,
+      "reason": [],
+      "start_register": "HIST_REMAINING_BLOCKERS"
+    },
+    {
+      "chain": [
+        "G2a-0049",
+        "MASTER / ENT-AUDIT-X stream"
+      ],
+      "length": 1,
+      "end": "MASTER / ENT-AUDIT-X stream",
+      "bouncing": false,
+      "reason": [],
+      "start_register": "HIST_REMAINING_BLOCKERS"
+    },
+    {
+      "chain": [
+        "G2a-0050",
+        "MASTER / ENT-AUDIT-X stream"
+      ],
+      "length": 1,
+      "end": "MASTER / ENT-AUDIT-X stream",
+      "bouncing": false,
+      "reason": [],
+      "start_register": "HIST_REMAINING_BLOCKERS"
+    },
+    {
+      "chain": [
+        "G2a-0051",
+        "MASTER / ENT-AUDIT-X stream"
+      ],
+      "length": 1,
+      "end": "MASTER / ENT-AUDIT-X stream",
+      "bouncing": false,
+      "reason": [],
+      "start_register": "HIST_REMAINING_BLOCKERS"
+    },
+    {
+      "chain": [
+        "G2a-0052",
+        "MASTER / ENT-AUDIT-X stream"
+      ],
+      "length": 1,
+      "end": "MASTER / ENT-AUDIT-X stream",
+      "bouncing": false,
+      "reason": [],
+      "start_register": "HIST_REMAINING_BLOCKERS"
+    },
+    {
+      "chain": [
+        "G2a-0053",
+        "MASTER / ENT-AUDIT-X stream"
+      ],
+      "length": 1,
+      "end": "MASTER / ENT-AUDIT-X stream",
+      "bouncing": false,
+      "reason": [],
+      "start_register": "HIST_REMAINING_BLOCKERS"
+    },
+    {
+      "chain": [
+        "G2a-0054",
+        "MASTER / ENT-AUDIT-X stream"
+      ],
+      "length": 1,
+      "end": "MASTER / ENT-AUDIT-X stream",
+      "bouncing": false,
+      "reason": [],
+      "start_register": "HIST_REMAINING_BLOCKERS"
+    },
+    {
+      "chain": [
+        "G2a-0059",
+        "Future product ticket (Operator / ARCH-FREEZE B7); not HIST P3–P8"
+      ],
+      "length": 1,
+      "end": "Future product ticket (Operator / ARCH-FREEZE B7); not HIST P3–P8",
+      "bouncing": false,
+      "reason": [],
+      "start_register": "HIST_RESIDUAL_FINDINGS"
+    },
+    {
+      "chain": [
+        "G2a-0060",
+        "SKILL-X (CLOSED at baseline)"
+      ],
+      "length": 1,
+      "end": "SKILL-X (CLOSED at baseline)",
+      "bouncing": false,
+      "reason": [],
+      "start_register": "HIST_RESIDUAL_FINDINGS"
+    },
+    {
+      "chain": [
+        "G2a-0061",
+        "Optional env/fixture ticket; outside HIST mandate"
+      ],
+      "length": 1,
+      "end": "Optional env/fixture ticket; outside HIST mandate",
+      "bouncing": false,
+      "reason": [],
+      "start_register": "HIST_RESIDUAL_FINDINGS"
+    },
+    {
+      "chain": [
+        "G2a-0081",
+        "T-IGX-030-A/B/C"
+      ],
+      "length": 1,
+      "end": "T-IGX-030-A/B/C",
+      "bouncing": false,
+      "reason": [],
+      "start_register": "HIST_STAGE_SHA"
+    },
+    {
+      "chain": [
+        "G2a-0082",
+        "T-IGX-030-A/B/C"
+      ],
+      "length": 1,
+      "end": "T-IGX-030-A/B/C",
+      "bouncing": false,
+      "reason": [],
+      "start_register": "HIST_STAGE_SHA"
+    },
+    {
+      "chain": [
+        "G2a-0083",
+        "T-IGX-030-A/B/C"
+      ],
+      "length": 1,
+      "end": "T-IGX-030-A/B/C",
+      "bouncing": false,
+      "reason": [],
+      "start_register": "HIST_STAGE_SHA"
+    },
+    {
+      "chain": [
+        "G2a-0084",
+        "T-IGX-030-A/B/C"
+      ],
+      "length": 1,
+      "end": "T-IGX-030-A/B/C",
+      "bouncing": false,
+      "reason": [],
+      "start_register": "HIST_STAGE_SHA"
+    },
+    {
+      "chain": [
+        "G2a-0099",
+        "SIGN-6 publication"
+      ],
+      "length": 1,
+      "end": "SIGN-6 publication",
+      "bouncing": false,
+      "reason": [],
+      "start_register": "HIST_STAGE_SHA"
+    },
+    {
+      "chain": [
+        "G2a-0100",
+        "SIGN-6 publication"
+      ],
+      "length": 1,
+      "end": "SIGN-6 publication",
+      "bouncing": false,
+      "reason": [],
+      "start_register": "HIST_STAGE_SHA"
+    },
+    {
+      "chain": [
+        "G2a-0104",
+        "PROD-Q live gate"
+      ],
+      "length": 1,
+      "end": "PROD-Q live gate",
+      "bouncing": false,
+      "reason": [],
+      "start_register": "HIST_STAGE_SHA"
+    },
+    {
+      "chain": [
+        "G2a-0105",
+        "ENT-AUDIT-X Population E rollup"
+      ],
+      "length": 1,
+      "end": "ENT-AUDIT-X Population E rollup",
+      "bouncing": false,
+      "reason": [],
+      "start_register": "HIST_STAGE_SHA"
+    },
+    {
+      "chain": [
+        "G2a-0106",
+        "ENT-AUDIT-X Population E rollup"
+      ],
+      "length": 1,
+      "end": "ENT-AUDIT-X Population E rollup",
+      "bouncing": false,
+      "reason": [],
+      "start_register": "HIST_STAGE_SHA"
+    },
+    {
+      "chain": [
+        "G2a-0107",
+        "DS-5"
+      ],
+      "length": 1,
+      "end": "DS-5",
+      "bouncing": false,
+      "reason": [],
+      "start_register": "HIST_STAGE_SHA"
+    },
+    {
+      "chain": [
+        "G2a-0107",
+        "QUAL-X"
+      ],
+      "length": 1,
+      "end": "QUAL-X",
+      "bouncing": true,
+      "reason": [
+        "ends at CLOSED stage QUAL-X"
+      ],
+      "start_register": "HIST_STAGE_SHA"
+    },
+    {
+      "chain": [
+        "G2a-0109",
+        "OD-ROUTE-DS4 fresh independent auditor (Q-03)"
+      ],
+      "length": 1,
+      "end": "OD-ROUTE-DS4 fresh independent auditor (Q-03)",
+      "bouncing": false,
+      "reason": [],
+      "start_register": "HIST_STAGE_SHA"
+    },
+    {
+      "chain": [
+        "G2a-0111",
+        "T-IGX-030-B"
+      ],
+      "length": 1,
+      "end": "T-IGX-030-B",
+      "bouncing": false,
+      "reason": [],
+      "start_register": "HIST_STAGE_SHA"
+    },
+    {
+      "chain": [
+        "G2a-0111",
+        "T-IGX-030-C"
+      ],
+      "length": 1,
+      "end": "T-IGX-030-C",
+      "bouncing": false,
+      "reason": [],
+      "start_register": "HIST_STAGE_SHA"
+    },
+    {
+      "chain": [
+        "G2a-0111",
+        "DR-3"
+      ],
+      "length": 1,
+      "end": "DR-3",
+      "bouncing": false,
+      "reason": [],
+      "start_register": "HIST_STAGE_SHA"
+    },
+    {
+      "chain": [
+        "G2a-0112",
+        "DR-1 (Operator)"
+      ],
+      "length": 1,
+      "end": "DR-1 (Operator)",
+      "bouncing": false,
+      "reason": [],
+      "start_register": "HIST_STAGE_SHA"
+    },
+    {
+      "chain": [
+        "G2a-0113",
+        "T-IGX-032-A"
+      ],
+      "length": 1,
+      "end": "T-IGX-032-A",
+      "bouncing": false,
+      "reason": [],
+      "start_register": "HIST_STAGE_SHA"
+    },
+    {
+      "chain": [
+        "G2a-0114",
+        "DR-10 Dimension A replay on final SHA"
+      ],
+      "length": 1,
+      "end": "DR-10 Dimension A replay on final SHA",
+      "bouncing": false,
+      "reason": [],
+      "start_register": "HIST_STAGE_SHA"
+    },
+    {
+      "chain": [
+        "G2a-0115",
+        "PROD-Q live gate"
+      ],
+      "length": 1,
+      "end": "PROD-Q live gate",
+      "bouncing": false,
+      "reason": [],
+      "start_register": "HIST_STAGE_SHA"
+    },
+    {
+      "chain": [
+        "G2a-0116",
+        "MCP-P3-02"
+      ],
+      "length": 1,
+      "end": "MCP-P3-02",
+      "bouncing": false,
+      "reason": [],
+      "start_register": "MCP_GAP"
+    },
+    {
+      "chain": [
+        "G2a-0117",
+        "—"
+      ],
+      "length": 1,
+      "end": "—",
+      "bouncing": false,
+      "reason": [],
+      "start_register": "MCP_GAP"
+    },
+    {
+      "chain": [
+        "G2a-0118",
+        "—"
+      ],
+      "length": 1,
+      "end": "—",
+      "bouncing": false,
+      "reason": [],
+      "start_register": "MCP_GAP"
+    },
+    {
+      "chain": [
+        "G2a-0119",
+        "MCP-P7-03"
+      ],
+      "length": 1,
+      "end": "MCP-P7-03",
+      "bouncing": false,
+      "reason": [],
+      "start_register": "MCP_GAP"
+    },
+    {
+      "chain": [
+        "G2a-0120",
+        "MCP-P2-05"
+      ],
+      "length": 1,
+      "end": "MCP-P2-05",
+      "bouncing": false,
+      "reason": [],
+      "start_register": "MCP_GAP"
+    },
+    {
+      "chain": [
+        "G2a-0121",
+        "MCP-P2-01"
+      ],
+      "length": 1,
+      "end": "MCP-P2-01",
+      "bouncing": false,
+      "reason": [],
+      "start_register": "MCP_GAP"
+    },
+    {
+      "chain": [
+        "G2a-0122",
+        "MCP-P2-03"
+      ],
+      "length": 1,
+      "end": "MCP-P2-03",
+      "bouncing": false,
+      "reason": [],
+      "start_register": "MCP_GAP"
+    },
+    {
+      "chain": [
+        "G2a-0123",
+        "MCP-P2-04"
+      ],
+      "length": 1,
+      "end": "MCP-P2-04",
+      "bouncing": false,
+      "reason": [],
+      "start_register": "MCP_GAP"
+    },
+    {
+      "chain": [
+        "G2a-0130",
+        "MCP-P4-03"
+      ],
+      "length": 1,
+      "end": "MCP-P4-03",
+      "bouncing": false,
+      "reason": [],
+      "start_register": "MCP_GAP"
+    },
+    {
+      "chain": [
+        "G2a-0131",
+        "maintain"
+      ],
+      "length": 1,
+      "end": "maintain",
+      "bouncing": false,
+      "reason": [],
+      "start_register": "MCP_GAP"
+    },
+    {
+      "chain": [
+        "G2a-0134",
+        "EVOL-X"
+      ],
+      "length": 1,
+      "end": "EVOL-X",
+      "bouncing": true,
+      "reason": [
+        "ends at CLOSED stage EVOL-X"
+      ],
+      "start_register": "MCP_GAP"
+    },
+    {
+      "chain": [
+        "G2a-0135",
+        "TOOL-LIFE-X"
+      ],
+      "length": 1,
+      "end": "TOOL-LIFE-X",
+      "bouncing": true,
+      "reason": [
+        "ends at CLOSED stage TOOL-LIFE-X"
+      ],
+      "start_register": "MCP_GAP"
+    },
+    {
+      "chain": [
+        "G2a-0136",
+        "DEFERRED unless host pattern exists"
+      ],
+      "length": 1,
+      "end": "DEFERRED unless host pattern exists",
+      "bouncing": false,
+      "reason": [],
+      "start_register": "MCP_GAP"
+    },
+    {
+      "chain": [
+        "G2a-0137",
+        "MCP-P3-06"
+      ],
+      "length": 1,
+      "end": "MCP-P3-06",
+      "bouncing": false,
+      "reason": [],
+      "start_register": "MCP_GAP"
+    },
+    {
+      "chain": [
+        "G2a-0138",
+        "MCP-P5-07"
+      ],
+      "length": 1,
+      "end": "MCP-P5-07",
+      "bouncing": false,
+      "reason": [],
+      "start_register": "MCP_GAP"
+    },
+    {
+      "chain": [
+        "G2a-0138",
+        "R-P7-01"
+      ],
+      "length": 1,
+      "end": "R-P7-01",
+      "bouncing": false,
+      "reason": [],
+      "start_register": "MCP_GAP"
+    },
+    {
+      "chain": [
+        "G2a-0138",
+        "operator DR-1"
+      ],
+      "length": 1,
+      "end": "operator DR-1",
+      "bouncing": false,
+      "reason": [],
+      "start_register": "MCP_GAP"
+    },
+    {
+      "chain": [
+        "G2a-0139",
+        "MCP-P6-01"
+      ],
+      "length": 1,
+      "end": "MCP-P6-01",
+      "bouncing": false,
+      "reason": [],
+      "start_register": "MCP_GAP"
+    },
+    {
+      "chain": [
+        "G2b-0013",
+        "MCP-SERVER-X"
+      ],
+      "length": 1,
+      "end": "MCP-SERVER-X",
+      "bouncing": true,
+      "reason": [
+        "ends at CLOSED stage MCP-SERVER-X"
+      ],
+      "start_register": "PDC_GAP"
+    },
+    {
+      "chain": [
+        "G2b-0021",
+        "ADR-PDC-01"
+      ],
+      "length": 1,
+      "end": "ADR-PDC-01",
+      "bouncing": false,
+      "reason": [],
+      "start_register": "PDC_GAP"
+    },
+    {
+      "chain": [
+        "G2b-0024",
+        "ADR-PDC-01"
+      ],
+      "length": 1,
+      "end": "ADR-PDC-01",
+      "bouncing": false,
+      "reason": [],
+      "start_register": "PDC_GAP"
+    },
+    {
+      "chain": [
+        "G2b-0026",
+        "SKILL-X F-04"
+      ],
+      "length": 1,
+      "end": "SKILL-X F-04",
+      "bouncing": false,
+      "reason": [],
+      "start_register": "PDC_GAP"
+    },
+    {
+      "chain": [
+        "G2b-0026",
+        "OD-PDC-SCOPE-01"
+      ],
+      "length": 1,
+      "end": "OD-PDC-SCOPE-01",
+      "bouncing": false,
+      "reason": [],
+      "start_register": "PDC_GAP"
+    },
+    {
+      "chain": [
+        "G2b-0030",
+        "ADR-PDC-02"
+      ],
+      "length": 1,
+      "end": "ADR-PDC-02",
+      "bouncing": false,
+      "reason": [],
+      "start_register": "PDC_GAP"
+    },
+    {
+      "chain": [
+        "G2b-0031",
+        "ADR-PDC-02"
+      ],
+      "length": 1,
+      "end": "ADR-PDC-02",
+      "bouncing": false,
+      "reason": [],
+      "start_register": "PDC_GAP"
+    },
+    {
+      "chain": [
+        "G2b-0033",
+        "ADR-PDC-02"
+      ],
+      "length": 1,
+      "end": "ADR-PDC-02",
+      "bouncing": false,
+      "reason": [],
+      "start_register": "PDC_GAP"
+    },
+    {
+      "chain": [
+        "G2b-0035",
+        "ADR-PDC-03"
+      ],
+      "length": 1,
+      "end": "ADR-PDC-03",
+      "bouncing": false,
+      "reason": [],
+      "start_register": "PDC_GAP"
+    },
+    {
+      "chain": [
+        "G2b-0039",
+        "ADR-PDC-03"
+      ],
+      "length": 1,
+      "end": "ADR-PDC-03",
+      "bouncing": false,
+      "reason": [],
+      "start_register": "PDC_GAP"
+    },
+    {
+      "chain": [
+        "G2b-0042",
+        "wiring ticket (F-D4-02)"
+      ],
+      "length": 1,
+      "end": "wiring ticket (F-D4-02)",
+      "bouncing": false,
+      "reason": [],
+      "start_register": "PDC_GAP"
+    },
+    {
+      "chain": [
+        "G2b-0045",
+        "ADR-PDC-04"
+      ],
+      "length": 1,
+      "end": "ADR-PDC-04",
+      "bouncing": false,
+      "reason": [],
+      "start_register": "PDC_GAP"
+    },
+    {
+      "chain": [
+        "G2b-0046",
+        "ADR-PDC-04"
+      ],
+      "length": 1,
+      "end": "ADR-PDC-04",
+      "bouncing": false,
+      "reason": [],
+      "start_register": "PDC_GAP"
+    },
+    {
+      "chain": [
+        "G2b-0047",
+        "ADR-PDC-04"
+      ],
+      "length": 1,
+      "end": "ADR-PDC-04",
+      "bouncing": false,
+      "reason": [],
+      "start_register": "PDC_GAP"
+    },
+    {
+      "chain": [
+        "G2b-0049",
+        "ADR-PDC-05"
+      ],
+      "length": 1,
+      "end": "ADR-PDC-05",
+      "bouncing": false,
+      "reason": [],
+      "start_register": "PDC_GAP"
+    },
+    {
+      "chain": [
+        "G2b-0050",
+        "ADR-PDC-05"
+      ],
+      "length": 1,
+      "end": "ADR-PDC-05",
+      "bouncing": false,
+      "reason": [],
+      "start_register": "PDC_GAP"
+    },
+    {
+      "chain": [
+        "G2b-0051",
+        "ADR-PDC-05"
+      ],
+      "length": 1,
+      "end": "ADR-PDC-05",
+      "bouncing": false,
+      "reason": [],
+      "start_register": "PDC_GAP"
+    },
+    {
+      "chain": [
+        "G2b-0052",
+        "ADR-PDC-05"
+      ],
+      "length": 1,
+      "end": "ADR-PDC-05",
+      "bouncing": false,
+      "reason": [],
+      "start_register": "PDC_GAP"
+    },
+    {
+      "chain": [
+        "G2b-0053",
+        "ADR-PDC-05"
+      ],
+      "length": 1,
+      "end": "ADR-PDC-05",
+      "bouncing": false,
+      "reason": [],
+      "start_register": "PDC_GAP"
+    },
+    {
+      "chain": [
+        "G2b-0054",
+        "ADR-PDC-05"
+      ],
+      "length": 1,
+      "end": "ADR-PDC-05",
+      "bouncing": false,
+      "reason": [],
+      "start_register": "PDC_GAP"
+    },
+    {
+      "chain": [
+        "G2b-0055",
+        "ADR-PDC-05"
+      ],
+      "length": 1,
+      "end": "ADR-PDC-05",
+      "bouncing": false,
+      "reason": [],
+      "start_register": "PDC_GAP"
+    },
+    {
+      "chain": [
+        "G2b-0056",
+        "ADR-PDC-05"
+      ],
+      "length": 1,
+      "end": "ADR-PDC-05",
+      "bouncing": false,
+      "reason": [],
+      "start_register": "PDC_GAP"
+    },
+    {
+      "chain": [
+        "G2b-0057",
+        "ADR-PDC-05"
+      ],
+      "length": 1,
+      "end": "ADR-PDC-05",
+      "bouncing": false,
+      "reason": [],
+      "start_register": "PDC_GAP"
+    },
+    {
+      "chain": [
+        "G2b-0058",
+        "ADR-PDC-05"
+      ],
+      "length": 1,
+      "end": "ADR-PDC-05",
+      "bouncing": false,
+      "reason": [],
+      "start_register": "PDC_GAP"
+    },
+    {
+      "chain": [
+        "G2b-0059",
+        "ADR-PDC-05"
+      ],
+      "length": 1,
+      "end": "ADR-PDC-05",
+      "bouncing": false,
+      "reason": [],
+      "start_register": "PDC_GAP"
+    },
+    {
+      "chain": [
+        "G2b-0060",
+        "ADR-PDC-05"
+      ],
+      "length": 1,
+      "end": "ADR-PDC-05",
+      "bouncing": false,
+      "reason": [],
+      "start_register": "PDC_GAP"
+    },
+    {
+      "chain": [
+        "G2b-0061",
+        "ADR-PDC-05"
+      ],
+      "length": 1,
+      "end": "ADR-PDC-05",
+      "bouncing": false,
+      "reason": [],
+      "start_register": "PDC_GAP"
+    },
+    {
+      "chain": [
+        "G2b-0062",
+        "CTRL-X"
+      ],
+      "length": 1,
+      "end": "CTRL-X",
+      "bouncing": true,
+      "reason": [
+        "ends at CLOSED stage CTRL-X"
+      ],
+      "start_register": "PDC_GAP"
+    },
+    {
+      "chain": [
+        "G2b-0062",
+        "TENANT-X"
+      ],
+      "length": 1,
+      "end": "TENANT-X",
+      "bouncing": true,
+      "reason": [
+        "ends at CLOSED stage TENANT-X"
+      ],
+      "start_register": "PDC_GAP"
+    },
+    {
+      "chain": [
+        "G2b-0063",
+        "ADR-PDC-05"
+      ],
+      "length": 1,
+      "end": "ADR-PDC-05",
+      "bouncing": false,
+      "reason": [],
+      "start_register": "PDC_GAP"
+    },
+    {
+      "chain": [
+        "G2b-0067",
+        "ADR-PDC-06"
+      ],
+      "length": 1,
+      "end": "ADR-PDC-06",
+      "bouncing": false,
+      "reason": [],
+      "start_register": "PDC_GAP"
+    },
+    {
+      "chain": [
+        "G2b-0068",
+        "ADR-PDC-06"
+      ],
+      "length": 1,
+      "end": "ADR-PDC-06",
+      "bouncing": false,
+      "reason": [],
+      "start_register": "PDC_GAP"
+    },
+    {
+      "chain": [
+        "G2b-0070",
+        "ADR-PDC-06"
+      ],
+      "length": 1,
+      "end": "ADR-PDC-06",
+      "bouncing": false,
+      "reason": [],
+      "start_register": "PDC_GAP"
+    },
+    {
+      "chain": [
+        "G2b-0071",
+        "ADR-PDC-06"
+      ],
+      "length": 1,
+      "end": "ADR-PDC-06",
+      "bouncing": false,
+      "reason": [],
+      "start_register": "PDC_GAP"
+    },
+    {
+      "chain": [
+        "G2b-0074",
+        "ADR-PDC-06"
+      ],
+      "length": 1,
+      "end": "ADR-PDC-06",
+      "bouncing": false,
+      "reason": [],
+      "start_register": "PDC_GAP"
+    },
+    {
+      "chain": [
+        "G2b-0077",
+        "ADR-PDC-07"
+      ],
+      "length": 1,
+      "end": "ADR-PDC-07",
+      "bouncing": false,
+      "reason": [],
+      "start_register": "PDC_GAP"
+    },
+    {
+      "chain": [
+        "G2b-0078",
+        "PDC-D7-R006"
+      ],
+      "length": 1,
+      "end": "PDC-D7-R006",
+      "bouncing": false,
+      "reason": [],
+      "start_register": "PDC_GAP"
+    },
+    {
+      "chain": [
+        "G2b-0079",
+        "PDC-D7-R006"
+      ],
+      "length": 1,
+      "end": "PDC-D7-R006",
+      "bouncing": false,
+      "reason": [],
+      "start_register": "PDC_GAP"
+    },
+    {
+      "chain": [
+        "G2b-0082",
+        "ADR-PDC-07"
+      ],
+      "length": 1,
+      "end": "ADR-PDC-07",
+      "bouncing": false,
+      "reason": [],
+      "start_register": "PDC_GAP"
+    },
+    {
+      "chain": [
+        "G2b-0084",
+        "ADR-PDC-08"
+      ],
+      "length": 1,
+      "end": "ADR-PDC-08",
+      "bouncing": false,
+      "reason": [],
+      "start_register": "PDC_GAP"
+    },
+    {
+      "chain": [
+        "G2b-0085",
+        "ADR-PDC-08"
+      ],
+      "length": 1,
+      "end": "ADR-PDC-08",
+      "bouncing": false,
+      "reason": [],
+      "start_register": "PDC_GAP"
+    },
+    {
+      "chain": [
+        "G2b-0086",
+        "ADR-PDC-08"
+      ],
+      "length": 1,
+      "end": "ADR-PDC-08",
+      "bouncing": false,
+      "reason": [],
+      "start_register": "PDC_GAP"
+    },
+    {
+      "chain": [
+        "G2b-0087",
+        "ADR-PDC-08"
+      ],
+      "length": 1,
+      "end": "ADR-PDC-08",
+      "bouncing": false,
+      "reason": [],
+      "start_register": "PDC_GAP"
+    },
+    {
+      "chain": [
+        "G2b-0090",
+        "ADR-PDC-08"
+      ],
+      "length": 1,
+      "end": "ADR-PDC-08",
+      "bouncing": false,
+      "reason": [],
+      "start_register": "PDC_GAP"
+    },
+    {
+      "chain": [
+        "G2b-0091",
+        "ADR-PDC-08"
+      ],
+      "length": 1,
+      "end": "ADR-PDC-08",
+      "bouncing": false,
+      "reason": [],
+      "start_register": "PDC_GAP"
+    },
+    {
+      "chain": [
+        "G2b-0092",
+        "ADR-PDC-08"
+      ],
+      "length": 1,
+      "end": "ADR-PDC-08",
+      "bouncing": false,
+      "reason": [],
+      "start_register": "PDC_GAP"
+    },
+    {
+      "chain": [
+        "G2b-0093",
+        "ADR-PDC-08"
+      ],
+      "length": 1,
+      "end": "ADR-PDC-08",
+      "bouncing": false,
+      "reason": [],
+      "start_register": "PDC_GAP"
+    },
+    {
+      "chain": [
+        "G2b-0093",
+        "Collaborative Work"
+      ],
+      "length": 1,
+      "end": "Collaborative Work",
+      "bouncing": false,
+      "reason": [],
+      "start_register": "PDC_GAP"
+    },
+    {
+      "chain": [
+        "G2b-0095",
+        "ADR-PDC-08"
+      ],
+      "length": 1,
+      "end": "ADR-PDC-08",
+      "bouncing": false,
+      "reason": [],
+      "start_register": "PDC_GAP"
+    },
+    {
+      "chain": [
+        "G2b-0097",
+        "PDC-D8-R007"
+      ],
+      "length": 1,
+      "end": "PDC-D8-R007",
+      "bouncing": false,
+      "reason": [],
+      "start_register": "PDC_GAP"
+    },
+    {
+      "chain": [
+        "G2b-0108",
+        "HARNESS-FINAL"
+      ],
+      "length": 1,
+      "end": "HARNESS-FINAL",
+      "bouncing": true,
+      "reason": [
+        "ends at CLOSED stage HARNESS-FINAL"
+      ],
+      "start_register": "PDC_GAP"
+    },
+    {
+      "chain": [
+        "G2b-0110",
+        "DIST-SCALE-X"
+      ],
+      "length": 1,
+      "end": "DIST-SCALE-X",
+      "bouncing": true,
+      "reason": [
+        "ends at CLOSED stage DIST-SCALE-X"
+      ],
+      "start_register": "PDC_GAP"
+    },
+    {
+      "chain": [
+        "G2b-0112",
+        "PDC-D1-R020"
+      ],
+      "length": 1,
+      "end": "PDC-D1-R020",
+      "bouncing": false,
+      "reason": [],
+      "start_register": "PDC_GAP"
+    },
+    {
+      "chain": [
+        "G2b-0118",
+        "DELEGATION-PDC-CLOSE decision 1"
+      ],
+      "length": 1,
+      "end": "DELEGATION-PDC-CLOSE decision 1",
+      "bouncing": false,
+      "reason": [],
+      "start_register": "PDC_GAP"
+    },
+    {
+      "chain": [
+        "G2b-0118",
+        "Operator"
+      ],
+      "length": 1,
+      "end": "Operator",
+      "bouncing": false,
+      "reason": [],
+      "start_register": "PDC_GAP"
+    },
+    {
+      "chain": [
+        "G2b-0119",
+        "PDC-D2-R018"
+      ],
+      "length": 1,
+      "end": "PDC-D2-R018",
+      "bouncing": false,
+      "reason": [],
+      "start_register": "PDC_GAP"
+    },
+    {
+      "chain": [
+        "G3-0002",
+        "SIGN-5 DS-5"
+      ],
+      "length": 1,
+      "end": "SIGN-5 DS-5",
+      "bouncing": false,
+      "reason": [],
+      "start_register": "CERT_DELEGATED_DECISIONS"
+    },
+    {
+      "chain": [
+        "G3-0002",
+        "G3-0004",
+        "QUAL-X acceptance"
+      ],
+      "length": 2,
+      "end": "QUAL-X acceptance",
+      "bouncing": true,
+      "reason": [
+        "chain length >= 2"
+      ],
+      "start_register": "CERT_DELEGATED_DECISIONS"
+    },
+    {
+      "chain": [
+        "G3-0002",
+        "G3-0004",
+        "G3-0000"
+      ],
+      "length": 2,
+      "end": "G3-0000",
+      "bouncing": true,
+      "reason": [
+        "chain length >= 2"
+      ],
+      "start_register": "CERT_DELEGATED_DECISIONS"
+    },
+    {
+      "chain": [
+        "G3-0002",
+        "G3-0019",
+        "QUAL-X acceptance"
+      ],
+      "length": 2,
+      "end": "QUAL-X acceptance",
+      "bouncing": true,
+      "reason": [
+        "chain length >= 2"
+      ],
+      "start_register": "CERT_DELEGATED_DECISIONS"
+    },
+    {
+      "chain": [
+        "G3-0002",
+        "G3-0019",
+        "G3-0000"
+      ],
+      "length": 2,
+      "end": "G3-0000",
+      "bouncing": true,
+      "reason": [
+        "chain length >= 2"
+      ],
+      "start_register": "CERT_DELEGATED_DECISIONS"
+    },
+    {
+      "chain": [
+        "G3-0002",
+        "G3-0000"
+      ],
+      "length": 1,
+      "end": "G3-0000",
+      "bouncing": false,
+      "reason": [],
+      "start_register": "CERT_DELEGATED_DECISIONS"
+    },
+    {
+      "chain": [
+        "G3-0003",
+        "TOOL-LIFE-X re-audit"
+      ],
+      "length": 1,
+      "end": "TOOL-LIFE-X re-audit",
+      "bouncing": false,
+      "reason": [],
+      "start_register": "CERT_DELEGATED_DECISIONS"
+    },
+    {
+      "chain": [
+        "G3-0003",
+        "G3-0017",
+        "TOOL-LIFE-X"
+      ],
+      "length": 2,
+      "end": "TOOL-LIFE-X",
+      "bouncing": true,
+      "reason": [
+        "chain length >= 2",
+        "ends at CLOSED stage TOOL-LIFE-X"
+      ],
+      "start_register": "CERT_DELEGATED_DECISIONS"
+    },
+    {
+      "chain": [
+        "G3-0004",
+        "QUAL-X acceptance"
+      ],
+      "length": 1,
+      "end": "QUAL-X acceptance",
+      "bouncing": false,
+      "reason": [],
+      "start_register": "CERT_DELEGATED_DECISIONS"
+    },
+    {
+      "chain": [
+        "G3-0004",
+        "G3-0000"
+      ],
+      "length": 1,
+      "end": "G3-0000",
+      "bouncing": false,
+      "reason": [],
+      "start_register": "CERT_DELEGATED_DECISIONS"
+    },
+    {
+      "chain": [
+        "G3-0006",
+        "exact-SHA audits L395/L404"
+      ],
+      "length": 1,
+      "end": "exact-SHA audits L395/L404",
+      "bouncing": false,
+      "reason": [],
+      "start_register": "CERT_DELEGATED_DECISIONS"
+    },
+    {
+      "chain": [
+        "G3-0007",
+        "independent exact-SHA audit of the accepted row"
+      ],
+      "length": 1,
+      "end": "independent exact-SHA audit of the accepted row",
+      "bouncing": false,
+      "reason": [],
+      "start_register": "CERT_DELEGATED_DECISIONS"
+    },
+    {
+      "chain": [
+        "G3-0008",
+        "T-IGX-022-A"
+      ],
+      "length": 1,
+      "end": "T-IGX-022-A",
+      "bouncing": false,
+      "reason": [],
+      "start_register": "CERT_DELEGATED_DECISIONS"
+    },
+    {
+      "chain": [
+        "G3-0008",
+        "T-IGX-022-B"
+      ],
+      "length": 1,
+      "end": "T-IGX-022-B",
+      "bouncing": false,
+      "reason": [],
+      "start_register": "CERT_DELEGATED_DECISIONS"
+    },
+    {
+      "chain": [
+        "G3-0009",
+        "T-IGX-023-A"
+      ],
+      "length": 1,
+      "end": "T-IGX-023-A",
+      "bouncing": false,
+      "reason": [],
+      "start_register": "CERT_DELEGATED_DECISIONS"
+    },
+    {
+      "chain": [
+        "G3-0009",
+        "T-IGX-023-B"
+      ],
+      "length": 1,
+      "end": "T-IGX-023-B",
+      "bouncing": false,
+      "reason": [],
+      "start_register": "CERT_DELEGATED_DECISIONS"
+    },
+    {
+      "chain": [
+        "G3-0012",
+        "ROADMAP-REPLAY-X L2 row 222"
+      ],
+      "length": 1,
+      "end": "ROADMAP-REPLAY-X L2 row 222",
+      "bouncing": false,
+      "reason": [],
+      "start_register": "CERT_DELEGATED_DECISIONS"
+    },
+    {
+      "chain": [
+        "G3-0017",
+        "TOOL-LIFE-X"
+      ],
+      "length": 1,
+      "end": "TOOL-LIFE-X",
+      "bouncing": true,
+      "reason": [
+        "ends at CLOSED stage TOOL-LIFE-X"
+      ],
+      "start_register": "CERT_DELEGATED_DECISIONS"
+    },
+    {
+      "chain": [
+        "G3-0019",
+        "QUAL-X acceptance"
+      ],
+      "length": 1,
+      "end": "QUAL-X acceptance",
+      "bouncing": false,
+      "reason": [],
+      "start_register": "CERT_DELEGATED_DECISIONS"
+    },
+    {
+      "chain": [
+        "G3-0019",
+        "G3-0000"
+      ],
+      "length": 1,
+      "end": "G3-0000",
+      "bouncing": false,
+      "reason": [],
+      "start_register": "CERT_DELEGATED_DECISIONS"
+    },
+    {
+      "chain": [
+        "G3-0022",
+        "independent exact-SHA audit"
+      ],
+      "length": 1,
+      "end": "independent exact-SHA audit",
+      "bouncing": false,
+      "reason": [],
+      "start_register": "CERT_DELEGATED_DECISIONS"
+    },
+    {
+      "chain": [
+        "G3-0023",
+        "equivalent evidence node in tenant_platform_e2e / dedicated fixture test"
+      ],
+      "length": 1,
+      "end": "equivalent evidence node in tenant_platform_e2e / dedicated fixture test",
+      "bouncing": false,
+      "reason": [],
+      "start_register": "EBH7_SKIP_DISPOSITION"
+    },
+    {
+      "chain": [
+        "G3-0024",
+        "equivalent evidence node in tenant_platform_e2e / dedicated fixture test"
+      ],
+      "length": 1,
+      "end": "equivalent evidence node in tenant_platform_e2e / dedicated fixture test",
+      "bouncing": false,
+      "reason": [],
+      "start_register": "EBH7_SKIP_DISPOSITION"
+    },
+    {
+      "chain": [
+        "G3-0025",
+        "equivalent evidence node in tenant_platform_e2e / dedicated fixture test"
+      ],
+      "length": 1,
+      "end": "equivalent evidence node in tenant_platform_e2e / dedicated fixture test",
+      "bouncing": false,
+      "reason": [],
+      "start_register": "EBH7_SKIP_DISPOSITION"
+    },
+    {
+      "chain": [
+        "G3-0026",
+        "equivalent evidence node in tenant_platform_e2e / dedicated fixture test"
+      ],
+      "length": 1,
+      "end": "equivalent evidence node in tenant_platform_e2e / dedicated fixture test",
+      "bouncing": false,
+      "reason": [],
+      "start_register": "EBH7_SKIP_DISPOSITION"
+    },
+    {
+      "chain": [
+        "G3-0027",
+        "equivalent evidence node in tenant_platform_e2e / dedicated fixture test"
+      ],
+      "length": 1,
+      "end": "equivalent evidence node in tenant_platform_e2e / dedicated fixture test",
+      "bouncing": false,
+      "reason": [],
+      "start_register": "EBH7_SKIP_DISPOSITION"
+    },
+    {
+      "chain": [
+        "G3-0028",
+        "equivalent evidence node in tenant_platform_e2e / dedicated fixture test"
+      ],
+      "length": 1,
+      "end": "equivalent evidence node in tenant_platform_e2e / dedicated fixture test",
+      "bouncing": false,
+      "reason": [],
+      "start_register": "EBH7_SKIP_DISPOSITION"
+    },
+    {
+      "chain": [
+        "G3-0029",
+        "equivalent evidence node in tenant_platform_e2e / dedicated fixture test"
+      ],
+      "length": 1,
+      "end": "equivalent evidence node in tenant_platform_e2e / dedicated fixture test",
+      "bouncing": false,
+      "reason": [],
+      "start_register": "EBH7_SKIP_DISPOSITION"
+    },
+    {
+      "chain": [
+        "G3-0030",
+        "equivalent evidence node in tenant_platform_e2e / dedicated fixture test"
+      ],
+      "length": 1,
+      "end": "equivalent evidence node in tenant_platform_e2e / dedicated fixture test",
+      "bouncing": false,
+      "reason": [],
+      "start_register": "EBH7_SKIP_DISPOSITION"
+    },
+    {
+      "chain": [
+        "G3-0033",
+        "Wave B+ production remediation"
+      ],
+      "length": 1,
+      "end": "Wave B+ production remediation",
+      "bouncing": false,
+      "reason": [],
+      "start_register": "OD_DUP_X"
+    },
+    {
+      "chain": [
+        "G3-0034",
+        "Operator per-finding decision"
+      ],
+      "length": 1,
+      "end": "Operator per-finding decision",
+      "bouncing": false,
+      "reason": [],
+      "start_register": "OD_DUP_X"
+    },
+    {
+      "chain": [
+        "G3-0048",
+        "Operator (L4 live vendor tests)"
+      ],
+      "length": 1,
+      "end": "Operator (L4 live vendor tests)",
+      "bouncing": false,
+      "reason": [],
+      "start_register": "OD_EBH_5"
+    },
+    {
+      "chain": [
+        "G3-0053",
+        "DIST-SCALE-X"
+      ],
+      "length": 1,
+      "end": "DIST-SCALE-X",
+      "bouncing": true,
+      "reason": [
+        "ends at CLOSED stage DIST-SCALE-X"
+      ],
+      "start_register": "OD_EBH_5"
+    },
+    {
+      "chain": [
+        "G3-0053",
+        "message_bus L3 deferral"
+      ],
+      "length": 1,
+      "end": "message_bus L3 deferral",
+      "bouncing": false,
+      "reason": [],
+      "start_register": "OD_EBH_5"
+    },
+    {
+      "chain": [
+        "G3-0054",
+        "FRZ-RPL-04"
+      ],
+      "length": 1,
+      "end": "FRZ-RPL-04",
+      "bouncing": false,
+      "reason": [],
+      "start_register": "OD_EBH_5"
+    },
+    {
+      "chain": [
+        "G3-0054",
+        "PROD-Q DIM16"
+      ],
+      "length": 1,
+      "end": "PROD-Q DIM16",
+      "bouncing": false,
+      "reason": [],
+      "start_register": "OD_EBH_5"
+    },
+    {
+      "chain": [
+        "G3-0060",
+        "Operator/ADR per finding"
+      ],
+      "length": 1,
+      "end": "Operator/ADR per finding",
+      "bouncing": false,
+      "reason": [],
+      "start_register": "OD_EBH_6"
+    },
+    {
+      "chain": [
+        "G3-0063",
+        "E02-AUD-01"
+      ],
+      "length": 1,
+      "end": "E02-AUD-01",
+      "bouncing": false,
+      "reason": [],
+      "start_register": "OD_EBH_6"
+    },
+    {
+      "chain": [
+        "G3-0092",
+        "W1-PROD-ADR"
+      ],
+      "length": 1,
+      "end": "W1-PROD-ADR",
+      "bouncing": false,
+      "reason": [],
+      "start_register": "OD_EBH_7"
+    },
+    {
+      "chain": [
+        "G3-0093",
+        "architecture review owner"
+      ],
+      "length": 1,
+      "end": "architecture review owner",
+      "bouncing": false,
+      "reason": [],
+      "start_register": "OD_EBH_7"
+    },
+    {
+      "chain": [
+        "G3-0097",
+        "Operator"
+      ],
+      "length": 1,
+      "end": "Operator",
+      "bouncing": false,
+      "reason": [],
+      "start_register": "OD_EBH_7"
+    },
+    {
+      "chain": [
+        "G3-0106",
+        "OD-EVOL-FORMAL"
+      ],
+      "length": 1,
+      "end": "OD-EVOL-FORMAL",
+      "bouncing": false,
+      "reason": [],
+      "start_register": "AF_OD"
+    },
+    {
+      "chain": [
+        "G3-0107",
+        "OD-ENT-00"
+      ],
+      "length": 1,
+      "end": "OD-ENT-00",
+      "bouncing": false,
+      "reason": [],
+      "start_register": "AF_OD"
+    },
+    {
+      "chain": [
+        "G3-0108",
+        "OD-ENT-01"
+      ],
+      "length": 1,
+      "end": "OD-ENT-01",
+      "bouncing": false,
+      "reason": [],
+      "start_register": "AF_OD"
+    },
+    {
+      "chain": [
+        "G3-0108",
+        "ENT stage"
+      ],
+      "length": 1,
+      "end": "ENT stage",
+      "bouncing": false,
+      "reason": [],
+      "start_register": "AF_OD"
+    },
+    {
+      "chain": [
+        "G3-0109",
+        "OD-ENT-08"
+      ],
+      "length": 1,
+      "end": "OD-ENT-08",
+      "bouncing": false,
+      "reason": [],
+      "start_register": "AF_OD"
+    },
+    {
+      "chain": [
+        "G3-0109",
+        "ARCH-FREEZE"
+      ],
+      "length": 1,
+      "end": "ARCH-FREEZE",
+      "bouncing": false,
+      "reason": [],
+      "start_register": "AF_OD"
+    },
+    {
+      "chain": [
+        "G3-0110",
+        "OD-ENT-08"
+      ],
+      "length": 1,
+      "end": "OD-ENT-08",
+      "bouncing": false,
+      "reason": [],
+      "start_register": "AF_OD"
+    },
+    {
+      "chain": [
+        "G3-0111",
+        "OD-ARCH-FREEZE-01"
+      ],
+      "length": 1,
+      "end": "OD-ARCH-FREEZE-01",
+      "bouncing": false,
+      "reason": [],
+      "start_register": "AF_OD"
+    }
+  ]
+}

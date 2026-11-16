@@ -1,0 +1,13 @@
+INFO     B deep :: isError=True dt=0.16s :: Error calling tool 'deep': maximum recursion depth exceeded
+INFO     B circular :: isError=True dt=0.05s :: Error calling tool 'circular': Circular reference detected
+INFO     B huge :: isError=True dt=0.00s :: MCP_RESULT_BOUND_EXCEEDED: tool result exceeds the serialized byte ceiling
+INFO     B widelist :: isError=True dt=0.09s :: MCP_RESULT_BOUND_EXCEEDED: tool result exceeds the serialized byte ceiling
+INFO     B weird :: isError=True dt=0.00s :: Output validation error: outputSchema defined but no structured output returned
+INFO     B boom :: isError=True dt=0.00s :: MCP_INTERNAL_ERROR: tool execution failed (RuntimeError)
+INFO     B toolerr :: isError=True dt=0.01s :: author-controlled message
+INFO     B many_small :: isError=True dt=0.22s :: MCP_RESULT_BOUND_EXCEEDED: tool result exceeds the serialized byte ceiling
+INFO     B event-loop liveness during large bound :: echo=(False, "{'echo': 'live', 'server_id': 'mcp-server-x-p6-reference'}") total=0.20s
+INFO     B describe unknown huge id :: isError=True len=37 :: Unknown tool: 'describe_catalog_tool'
+PASS     C 8 calls cap 2 :: ok=2 refused=6 sample=Error calling tool 'slow': MCP_CONCURRENT_CALL_LIMIT_EXCEEDED: mcp_concurrent_call_limit_exceeded
+PASS     C slots free after :: [(False, "{'ok': 1}"), (False, "{'ok': 1}")]
+PASS     C slots free after client-side cancel :: [(False, "{'ok': 1}"), (False, "{'ok': 1}")]

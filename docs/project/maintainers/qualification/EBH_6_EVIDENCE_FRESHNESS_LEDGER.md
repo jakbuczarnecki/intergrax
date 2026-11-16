@@ -1,5 +1,7 @@
 # EBH-6 — Evidence Freshness Ledger
 
+> **Currency note (EQO-A remediation, as of 2026-11-16).** The ledger is point-in-time: its header rows read `CLOSURE_BASELINE_SHA` `202239f726dd5e3fe23bf1a68cafa61c1eb9fca7` and `CERTIFICATION_HANDOFF_SHA` "@ final enterprise closure wave", and the SHA ladder marks the E02-OP-01 + P03 final execution replay row as CURRENT (L22). Later EBH-6 records at `258bbf6abb6fdbb92ef0185d058527fbb1e47f04`: `EBH_6_OD_EBH6_08_CLOSURE_SIGNATURE_RECORD.md`, `EBH_6_PROTOCOL_03_INDEPENDENT_AUDIT_PASS_RECORD.md` and the roadmap row L491, which owns the stage status. This note does not change any CURRENT or Superseded mark. Line references (L<n>) are to the files at that SHA, before this note was added.
+
 | Field | Value |
 | --- | --- |
 | **CLOSURE_BASELINE_SHA** | `202239f726dd5e3fe23bf1a68cafa61c1eb9fca7` |

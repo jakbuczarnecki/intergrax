@@ -1,0 +1,43 @@
+"""A9 data finalization: conflict register from row conflicts, scope exclusions for OUT_OF_SCOPE rows, row links. Idempotent (rebuilds generated parts)."""
+from __future__ import annotations
+
+import json
+import sys
+from pathlib import Path
+
+sys.path.insert(0, str(Path(__file__).parent))
+from common import *  # noqa
+import fl
+
+
+def main():
+    cf_path = WS / "data" / "conflicts.jsonl"
+    base = [c for c in read_jsonl(cf_path) if not c["conflict_id"].startswith("CONF-A")]  # keep hand-written (CONF-001)
+    gen, refs = [], {}
+    n = 0
+    for rel, key in (("A1/stage_rows.jsonl", "id"), ("A3/frz_rows.jsonl", "frz_id")):
+        for r in read_jsonl(WS / rel):
+            for c in r.get("conflicts") or []:
+                n += 1
+                cid = f"CONF-A{n:03d}"
+                gen.append({"conflict_id": cid, "sources": c.get("sources"), "values": c.get("values"), "hierarchy_rule": "plan section 3.4 authority hierarchy",
+                            "deciding_authority": c.get("deciding_authority") or "Roadmap owner (Operator)", "resolution_procedure": "Deciding authority per hierarchy; both values kept in the row; owner reconciles the lower source",
+                            "affected_rows": [r[key]], "finding_refs": r.get("finding_refs", [])[:3]})
+                refs.setdefault(f"{rel}:{r[key]}", []).append(cid)
+    write_jsonl(cf_path, base + gen)
+    write_json(WS / "data" / "row_conflict_refs.json", refs)
+    # exclusions for OUT_OF_SCOPE stage rows
+    ex = [e for e in read_jsonl(WS / "data" / "scope_exclusions.jsonl") if not e["exclusion_id"].startswith("SX-A1-")]
+    rowex = {}
+    for r in read_jsonl(WS / "A1" / "stage_rows.jsonl"):
+        if str(r.get("disposition", "")).startswith("OUT_OF_SCOPE"):
+            eid = f"SX-A1-{len(rowex) + 1:02d}"
+            rowex[r["id"]] = eid
+            ex.append({"exclusion_id": eid, "item": f"stage row {r['id']} ({r['disposition']})", "owner": r.get("owner") or "Roadmap owner (Operator)", "reason": (r.get("notes") or r["disposition"])[:200], "row_id": r["id"]})
+    write_jsonl(WS / "data" / "scope_exclusions.jsonl", ex)
+    write_json(WS / "data" / "row_exclusion_ids.json", rowex)
+    print("conflicts", len(base) + len(gen), "row exclusions", len(rowex))
+
+
+if __name__ == "__main__":
+    main()

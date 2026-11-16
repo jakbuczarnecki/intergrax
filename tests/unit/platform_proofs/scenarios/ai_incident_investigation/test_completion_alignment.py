@@ -7,7 +7,6 @@ from __future__ import annotations
 from dataclasses import FrozenInstanceError
 
 import pytest
-
 from intergrax.contracts.evidence_claims import (
     ClaimResolution,
     EvidenceBackedClaim,
@@ -16,12 +15,12 @@ from intergrax.contracts.evidence_claims import (
 from platform_proofs.scenarios.ai_incident_investigation.application.completion_alignment import (
     COMPLETION_ALIGNMENT_MISMATCH_SIGNAL,
     COMPLETION_ALIGNMENT_REVISION_GUIDANCE,
+    SUPPORTED_DIAGNOSIS_WITHOUT_SUPPORTED_STATE_ERROR,
+    UNRESOLVED_WITH_SUPPORTED_DIAGNOSIS_ERROR,
     CompletionAlignmentAssessment,
     CompletionAlignmentMismatchReason,
     CompletionAlignmentState,
     CompletionAlignmentStatus,
-    SUPPORTED_DIAGNOSIS_WITHOUT_SUPPORTED_STATE_ERROR,
-    UNRESOLVED_WITH_SUPPORTED_DIAGNOSIS_ERROR,
     assess_completion_alignment,
     completion_alignment_validation_error,
     expand_critic_feedback_with_alignment_guidance,
@@ -31,14 +30,17 @@ from platform_proofs.scenarios.ai_incident_investigation.application.completion_
 from platform_proofs.scenarios.ai_incident_investigation.application.completion_reconciliation import (
     reconcile_investigation_completion,
 )
+from platform_proofs.scenarios.ai_incident_investigation.application.completion_revision_context import (
+    CompletionAlignmentRevisionContext,
+)
 from platform_proofs.scenarios.ai_incident_investigation.application.completion_transition import (
     PreReconciliationRecoveryStatus,
     PreReconciliationTransitionOutcome,
-    decide_pre_reconciliation_transition,
     PreReconciliationTransitionState,
+    decide_pre_reconciliation_transition,
 )
-from platform_proofs.scenarios.ai_incident_investigation.application.completion_revision_context import (
-    CompletionAlignmentRevisionContext,
+from platform_proofs.scenarios.ai_incident_investigation.application.evidence_phase_context import (
+    EvidencePhaseContext,
 )
 from platform_proofs.scenarios.ai_incident_investigation.application.incident_data_contracts import (
     HypothesisId,
@@ -48,18 +50,15 @@ from platform_proofs.scenarios.ai_incident_investigation.application.incident_re
     PriorInvestigationState,
     build_reasoning_messages,
 )
-from platform_proofs.scenarios.ai_incident_investigation.application.evidence_phase_context import (
-    EvidencePhaseContext,
-)
-from platform_proofs.scenarios.ai_incident_investigation.application.scenario import (
-    TERMINAL_STATE_NOT_ACCEPTED,
-    derive_terminal_outcome,
-)
 from platform_proofs.scenarios.ai_incident_investigation.application.investigator_agent import (
     COMPARISON_EVIDENCE_ID,
     DIAGNOSIS_KIND,
     H3_CLAIM_ID,
     TELEMETRY_EVIDENCE_ID,
+)
+from platform_proofs.scenarios.ai_incident_investigation.application.scenario import (
+    TERMINAL_STATE_NOT_ACCEPTED,
+    derive_terminal_outcome,
 )
 from platform_proofs.scenarios.ai_incident_investigation.application.scenario_contract import (
     COMPLETION_NEED_MORE_EVIDENCE,
@@ -138,10 +137,7 @@ def test_target_15e_residual_is_misaligned() -> None:
         )
     )
     assert assessment.status is CompletionAlignmentStatus.MISALIGNED
-    assert (
-        validation_error_for_alignment_assessment(assessment)
-        == UNRESOLVED_WITH_SUPPORTED_DIAGNOSIS_ERROR
-    )
+    assert validation_error_for_alignment_assessment(assessment) == UNRESOLVED_WITH_SUPPORTED_DIAGNOSIS_ERROR
 
 
 def test_misaligned_terminal_candidate_not_accepted() -> None:
@@ -188,9 +184,7 @@ def test_budget_zero_misaligned_state_is_fail_closed() -> None:
 
 
 def test_revision_feedback_is_structured_without_prescribing_answer() -> None:
-    feedback = structured_revision_feedback_for_alignment_error(
-        UNRESOLVED_WITH_SUPPORTED_DIAGNOSIS_ERROR
-    )
+    feedback = structured_revision_feedback_for_alignment_error(UNRESOLVED_WITH_SUPPORTED_DIAGNOSIS_ERROR)
     assert feedback is not None
     assert COMPLETION_ALIGNMENT_MISMATCH_SIGNAL in feedback
     assert COMPLETION_ALIGNMENT_REVISION_GUIDANCE in feedback
@@ -198,9 +192,7 @@ def test_revision_feedback_is_structured_without_prescribing_answer() -> None:
 
 
 def test_expand_critic_feedback_adds_alignment_guidance_once() -> None:
-    expanded = expand_critic_feedback_with_alignment_guidance(
-        (UNRESOLVED_WITH_SUPPORTED_DIAGNOSIS_ERROR,)
-    )
+    expanded = expand_critic_feedback_with_alignment_guidance((UNRESOLVED_WITH_SUPPORTED_DIAGNOSIS_ERROR,))
     assert expanded[0] == UNRESOLVED_WITH_SUPPORTED_DIAGNOSIS_ERROR
     assert expanded[1].startswith(COMPLETION_ALIGNMENT_MISMATCH_SIGNAL)
 
@@ -293,7 +285,7 @@ def test_pre_terminal_alignment_consistent_with_reconciliation_overlap() -> None
     )
     reconciled = reconcile_investigation_completion(
         model_intent=CompletionIntent.UNRESOLVED,
-        decision_accepted=True,
+        critic_verdict_passed=True,
         has_supported_diagnosis=False,
         validation_errors=(),
         evidence_gathering_stop_reason="planner_final_answer",
@@ -311,7 +303,7 @@ def test_pre_terminal_alignment_consistent_with_reconciliation_overlap() -> None
     with pytest.raises(Exception, match="unresolved_intent_with_supported_state"):
         reconcile_investigation_completion(
             model_intent=CompletionIntent.UNRESOLVED,
-            decision_accepted=True,
+            critic_verdict_passed=True,
             has_supported_diagnosis=True,
             validation_errors=(),
             evidence_gathering_stop_reason="planner_final_answer",
@@ -345,7 +337,7 @@ def test_need_more_evidence_with_supported_state_stays_aligned_pre_terminal() ->
     assert assessment.status is CompletionAlignmentStatus.ALIGNED
     reconciled = reconcile_investigation_completion(
         model_intent=CompletionIntent.NEED_MORE_EVIDENCE,
-        decision_accepted=True,
+        critic_verdict_passed=True,
         has_supported_diagnosis=True,
         validation_errors=(),
         evidence_gathering_stop_reason="planner_final_answer",

@@ -91,6 +91,7 @@ def _cmd_promote(args: argparse.Namespace) -> int:
             baseline_dir,
             od_record_path=args.od_record,
             verify_closed_bundle_dir=args.evidence_dir,
+            repo_root=root,
         )
     except ValueError as exc:
         print(str(exc), file=sys.stderr)

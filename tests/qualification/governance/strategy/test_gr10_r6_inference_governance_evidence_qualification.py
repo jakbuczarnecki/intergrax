@@ -9,7 +9,6 @@ from dataclasses import dataclass
 from pathlib import Path
 
 import pytest
-
 from tests.qualification.governance.strategy.catalog import (
     GR10_INFERENCE_CAPABILITY_SEMANTICS,
     GR10_SCENARIO_CATALOG,
@@ -23,11 +22,10 @@ pytestmark = [pytest.mark.unit, pytest.mark.gate]
 _REPO_ROOT = Path(__file__).resolve().parents[4]
 _INFERENCE = _REPO_ROOT / "intergrax" / "runtime" / "execution" / "inference.py"
 _PRE_MODEL = _REPO_ROOT / "intergrax" / "runtime" / "policy" / "pre_model_policy_evaluation.py"
-_INFERENCE_COMPOSITION = _REPO_ROOT / "intergrax" / "runtime" / "execution" / "inference_composition.py"
+# PDC-X B-REG-T (T-IGX-036-I): aligned with 6700ff756 (execution module is now a re-export).
+_INFERENCE_COMPOSITION = _REPO_ROOT / "intergrax" / "runtime" / "governance" / "governed_inference_composition.py"
 _DECISION_E2E_COMPOSITION = _REPO_ROOT / "testing_support" / "decision_e2e" / "composition.py"
-_INFERENCE_EXEC = (
-    _REPO_ROOT / "tests" / "unit" / "runtime" / "execution" / "test_inference_executor.py"
-)
+_INFERENCE_EXEC = _REPO_ROOT / "tests" / "unit" / "runtime" / "execution" / "test_inference_executor.py"
 
 
 @dataclass(frozen=True, slots=True)
@@ -62,9 +60,7 @@ def test_gr10_r6_applicable_gep_inventory_pre_model_only() -> None:
 
 
 def test_gr10_r6_semantics_governance_evidence_qualified() -> None:
-    row = next(
-        entry for entry in GR10_INFERENCE_CAPABILITY_SEMANTICS if entry.capability == "Governance Evidence"
-    )
+    row = next(entry for entry in GR10_INFERENCE_CAPABILITY_SEMANTICS if entry.capability == "Governance Evidence")
     assert row.applicability is Gr10Applicability.APPLICABLE
     assert row.coverage is Gr10CoverageStatus.QUALIFIED
 
@@ -95,9 +91,7 @@ def test_gr10_r6_pre_model_evidence_path_uses_public_contract_ast() -> None:
     assert "GovernanceDecisionEvidenceFact" not in source or "build_governance_fact_from_policy_decision" in source
     tree = ast.parse(source, filename=str(_PRE_MODEL))
     module_assigns_dict_fact = any(
-        isinstance(node, ast.Call)
-        and isinstance(getattr(node.func, "id", None), str)
-        and node.func.id == "dict"
+        isinstance(node, ast.Call) and isinstance(getattr(node.func, "id", None), str) and node.func.id == "dict"
         for node in ast.walk(tree)
         if isinstance(node, ast.Call)
     )
@@ -107,15 +101,19 @@ def test_gr10_r6_pre_model_evidence_path_uses_public_contract_ast() -> None:
 def test_gr10_r6_canonical_composition_wires_evidence_persistence() -> None:
     import inspect
 
-    from intergrax.runtime.execution.inference_composition import build_governed_inference_executor
+    from intergrax.runtime.execution.inference_composition import (
+        build_governed_inference_executor as reexported_builder,
+    )
+    from intergrax.runtime.governance.governed_inference_composition import (
+        build_governed_inference_executor,
+    )
 
+    assert reexported_builder is build_governed_inference_executor
     source = _INFERENCE_COMPOSITION.read_text(encoding="utf-8-sig")
     assert "build_governed_inference_executor" in source
     assert "build_governance_evidence_recorder" in source
     assert "build_in_memory_governance_evidence_persistence" not in source
-    param = inspect.signature(build_governed_inference_executor).parameters[
-        "governance_evidence_persistence"
-    ]
+    param = inspect.signature(build_governed_inference_executor).parameters["governance_evidence_persistence"]
     assert param.default is inspect.Parameter.empty
     decision_e2e = _DECISION_E2E_COMPOSITION.read_text(encoding="utf-8-sig")
     assert "governance_evidence_persistence=build_in_memory_governance_evidence_persistence()" in decision_e2e

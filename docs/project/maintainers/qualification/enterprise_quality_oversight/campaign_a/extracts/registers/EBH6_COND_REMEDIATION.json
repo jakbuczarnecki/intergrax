@@ -1,0 +1,69 @@
+{
+  "path": "docs/project/maintainers/qualification/EBH_6_CONDITIONAL_REMEDIATION_REGISTER.md",
+  "tables": [
+    {
+      "header": [
+        "Field",
+        "Value"
+      ],
+      "rows": [
+        {
+          "line": 5,
+          "Field": "Baseline SHA",
+          "Value": "202239f726dd5e3fe23bf1a68cafa61c1eb9fca7"
+        },
+        {
+          "line": 6,
+          "Field": "Wave status",
+          "Value": "NO mandatory E04 production delta @ baseline"
+        }
+      ]
+    },
+    {
+      "header": [
+        "Trigger",
+        "Status @ baseline",
+        "Task",
+        "Authorization"
+      ],
+      "rows": [
+        {
+          "line": 10,
+          "Trigger": "Q2-D2 Path B",
+          "Status @ baseline": "Not triggered (operator OPEN)",
+          "Task": "E04-Q2D2-01",
+          "Authorization": "OD-EBH6-01"
+        },
+        {
+          "line": 11,
+          "Trigger": "APP-TYP category B",
+          "Status @ baseline": "None proposed (all A pending ratification)",
+          "Task": "E04-APP-*",
+          "Authorization": "OD-EBH6-01"
+        },
+        {
+          "line": 12,
+          "Trigger": "E01 independent INSUFFICIENT",
+          "Status @ baseline": "Not known until E01-PRE-01",
+          "Task": "E04-BND-*",
+          "Authorization": "Qual-first"
+        },
+        {
+          "line": 13,
+          "Trigger": "PROHIBITED > 0",
+          "Status @ baseline": "0 @ baseline",
+          "Task": "—",
+          "Authorization": "—"
+        },
+        {
+          "line": 14,
+          "Trigger": "Doc/register drift",
+          "Status @ baseline": "Addressed Wave 0",
+          "Task": "E04-SYNC-01",
+          "Authorization": "Agent"
+        }
+      ]
+    }
+  ],
+  "lines": 17
+}

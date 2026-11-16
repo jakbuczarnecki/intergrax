@@ -1,0 +1,80 @@
+{
+  "stage_id": "ENT-AUDIT-X",
+  "certification_profile": "iiac-v1",
+  "policy_version": "IIAC-2026-11-05.1",
+  "auditor_role": "independent-quality-auditor",
+  "assurance_level": "process_enforced",
+  "audit_round": 3,
+  "prior_rounds_read_only": [
+    ".tmp/session/ent-w2-audit/ (round 1 CONDITIONAL @ 15347255)",
+    ".tmp/session/ent-w2-audit2/ (round 2 INTERRUPTED_NO_VERDICT @ f9e3a932)"
+  ],
+  "audited_implementation_sha": "b5c2481d79f955fa5f483a9288aee8de4581f953",
+  "test_execution_sha": "b5c2481d79f955fa5f483a9288aee8de4581f953",
+  "evidence_publication_sha": "63ff80819da5a7324257ea598e342810c1838199",
+  "audit_execution_sha": "ee5470f543d0c1494a7dd5febc41e5ff968ade72",
+  "audit_session_head_sha": "ee5470f543d0c1494a7dd5febc41e5ff968ade72",
+  "auditor_harness_subagent_id": "631309c1-023b-47e2-ac78-f7c104011033",
+  "pins_verified_as_ancestors": {
+    "iiac_activation": "f8c29fb8dfe5e14d9b06ff16659fd9cbe9ad326d",
+    "evol_x_formal_closure": "be77b3a5fb97f10a3bd2df6ee038cb92aad77eca",
+    "evol_iiac_b6": "1dd769331506149a1ee2f411c2bc62e85e5bbf25",
+    "ent_handoff": "7a4f279fd8c0986431941c77283d872ea5b0c1ba",
+    "loop1_tes": "62d1c615855a3eaf569777a10e342aacc889a128",
+    "loop1_evidence": "163ef0c03b3cbead556499ee81cb99d640665dce",
+    "r_fresh_qual_wave_log": ".tmp/session/ent-r-fresh/qual_wave_report.json"
+  },
+  "scope_lock": {
+    "product_delta_range": "b5c2481d79f955fa5f483a9288aee8de4581f953...ee5470f543d0c1494a7dd5febc41e5ff968ade72",
+    "product_paths_intergrax_agents_applications": 0,
+    "worktree": "D:/Projekty/_wt/intergrax/ent-w2-audit3",
+    "worktree_core_autocrlf": false
+  },
+  "b5_tree": "docs/project/maintainers/qualification/ent_audit_x/b6_independent_handoff/qualification_at_b5c2481d79f955fa5f483a9288aee8de4581f953/",
+  "ci_runs_cited": {
+    "nightly_full_tes": {
+      "run_id": "42593448899",
+      "head_sha": "b5c2481d79f955fa5f483a9288aee8de4581f953",
+      "conclusion": "success"
+    },
+    "pr_421_ent_audit": {
+      "run_id": "42613400627",
+      "head_sha": "6f25e35916f3acb1de6f39f9e6bf73f69750780f",
+      "conclusion": "success"
+    },
+    "merge_421_push_ent_audit": {
+      "run_id": "42614851524",
+      "head_sha": "ee5470f543d0c1494a7dd5febc41e5ff968ade72",
+      "conclusion": "success per operator; gh status in_progress at audit UTC cut"
+    }
+  },
+  "in_scope": [
+    "ENT-AUDIT-X implementation @ b5c2481d (unchanged product and qualification-sensitive code vs audit HEAD)",
+    "B5 tree qualification_at_b5c2481d @ 63ff80819",
+    "R-FRESH qual_wave PASS (.tmp/session/ent-r-fresh/) and published B5 qual_wave_report",
+    "Loop-1 corrective fixes F-01,F-02,F-09,F-10,F-11 (scripts/tests only; re-verified)",
+    "85-check manifest, Annex C alignment, Matrix C 75 (69+6 NOT_QUALIFIED), VBN 31 in bundle",
+    "Mode A B5 verify_b5_publication_tree; Mode B CI/gh replay; Mode C spot negative probes (F-02 unit tests)",
+    "IIAC IN_FORCE; SHA ladder last-wins TES/EVID rows"
+  ],
+  "out_of_scope_by_authority": [
+    "W2-04 certifier publication to docs/project/maintainers/qualification/iiac_evidence/ENT-AUDIT-X/",
+    "B6_ACCEPTANCE_PUBLICATION_SHA / ACCEPTED_BASELINE_SHA / FORMAL_CLOSURE pin",
+    "OD-ENT-02 sufficiency verdict and FRZ-AUD-01..10 row promotion",
+    "OD-ENT-01 operator record (O-1), OD-ENT-08 CLOSED headline",
+    "Full adversarial re-probe matrix from round 1 (history + targeted re-checks only)"
+  ],
+  "documents_read": [
+    "agent-env/plans/pasted-content-id-00e5-integrax-expressive-bubble.md (§10 W2-02)",
+    "ent-audit-x_recovery_closure plan (2026-11-09)",
+    "governance/tickets/T-IGX-024-A.md",
+    "governance/tickets/T-IGX-024-B.md",
+    "docs/project/maintainers/qualification/IIAC_SESSION_D_ENT_INDEPENDENT_AUDITOR_INSTRUCTIONS.md",
+    "docs/project/maintainers/qualification/ent_audit_x/ENT_AUDIT_X_SHA_LADDER.md",
+    "docs/project/maintainers/qualification/ent_audit_x/ENT_AUDIT_X_CLOSURE_EXECUTION_STATUS.json",
+    "docs/project/maintainers/qualification/iiac_evidence/ENT-AUDIT-X/historical/IIAC_ENT_AUDIT_ROUND1_CONDITIONAL_ANNEX.md",
+    "docs/project/maintainers/qualification/iiac_evidence/ENT-AUDIT-X/historical/IIAC_ENT_AUDIT_ROUND2_INTERRUPTED_NO_VERDICT.md"
+  ],
+  "write_surface": "Auditor wrote only d:\\Projekty\\intergrax\\.tmp\\session\\ent-w2-audit3\\ and created read-only worktree D:\\Projekty\\_wt\\intergrax\\ent-w2-audit3. No product-path edits; no commits.",
+  "product_paths_changed_by_auditor": []
+}

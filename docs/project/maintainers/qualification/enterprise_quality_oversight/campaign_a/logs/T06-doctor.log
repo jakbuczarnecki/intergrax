@@ -1,0 +1,22 @@
+OK    present .githooks\pre-push
+OK    present .githooks\pre-commit
+OK    present scripts\ci\run_push_gate.py
+OK    present scripts\ci\run_pre_commit_gate.py
+OK    present scripts\ci\diff_scoped_gates.py
+OK    present scripts\ci\run_regression_gate_ci.py
+OK    present docs\project\technical\guides\LOCAL_PUSH_GATE.md
+OK    present docs\project\technical\guides\ENTERPRISE_QUALITY_WORKFLOW.md
+OK    push_gate profile=fast
+OK    smoke_steps SSOT (4 steps without uv sync)
+OK    unit-tests.yml smoke SSOT + development push
+
+Push gate pipeline ready for rollout (install hooks per clone; configure branch protection on GitHub).
+[INFO] validate_policy_registry: OK
+[INFO] verify_agent_control_plane: OK
+[INFO] verify_control_plane_consistency: OK
+[INFO] verify_agent_skills: OK (11 skills)
+[INFO] sync_agent_env --check: OK (58 adapters + CLAUDE.md block)
+[INFO] igx_gov doctor: OK
+
+--- STDERR ---
+WARN  core.hooksPath=D:\Projekty\intergrax\.githooks — run scripts/dev/install_git_hooks.py

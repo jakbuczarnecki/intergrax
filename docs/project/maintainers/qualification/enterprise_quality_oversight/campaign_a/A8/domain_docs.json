@@ -1,0 +1,874 @@
+{
+  "domains": [
+    {
+      "domain": "ADAPTIVE_HARNESS_INTELLIGENCE",
+      "kind": "DOMAIN_PAIR_CANDIDATE",
+      "arch_doc": "docs/project/architecture/ADAPTIVE_HARNESS_INTELLIGENCE.md",
+      "plan_doc": "docs/project/maintainers/plans/ADAPTIVE_HARNESS_INTELLIGENCE.md",
+      "in_arch_hub_index": true,
+      "pair_complete": true
+    },
+    {
+      "domain": "ADAPTIVE_HARNESS_INTELLIGENCE_agent_design_search",
+      "kind": "DOMAIN_PAIR_CANDIDATE",
+      "arch_doc": null,
+      "plan_doc": "docs/project/maintainers/plans/ADAPTIVE_HARNESS_INTELLIGENCE_agent_design_search.md",
+      "in_arch_hub_index": false,
+      "pair_complete": false
+    },
+    {
+      "domain": "AGENT_CONTRACTS_AND_ASSEMBLY",
+      "kind": "DOMAIN_PAIR_CANDIDATE",
+      "arch_doc": "docs/project/architecture/AGENT_CONTRACTS_AND_ASSEMBLY.md",
+      "plan_doc": "docs/project/maintainers/plans/AGENT_CONTRACTS_AND_ASSEMBLY.md",
+      "in_arch_hub_index": true,
+      "pair_complete": true
+    },
+    {
+      "domain": "AGENT_DISTRIBUTION",
+      "kind": "DOMAIN_PAIR_CANDIDATE",
+      "arch_doc": "docs/project/architecture/AGENT_DISTRIBUTION.md",
+      "plan_doc": "docs/project/maintainers/plans/AGENT_DISTRIBUTION.md",
+      "in_arch_hub_index": true,
+      "pair_complete": true
+    },
+    {
+      "domain": "APPLICATION_DEPENDENCY_MODEL",
+      "kind": "DOMAIN_PAIR_CANDIDATE",
+      "arch_doc": "docs/project/architecture/APPLICATION_DEPENDENCY_MODEL.md",
+      "plan_doc": "docs/project/maintainers/plans/APPLICATION_DEPENDENCY_MODEL.md",
+      "in_arch_hub_index": false,
+      "pair_complete": true
+    },
+    {
+      "domain": "APPLICATION_HOSTING",
+      "kind": "DOMAIN_PAIR_CANDIDATE",
+      "arch_doc": "docs/project/architecture/APPLICATION_HOSTING.md",
+      "plan_doc": "docs/project/maintainers/plans/APPLICATION_HOSTING.md",
+      "in_arch_hub_index": true,
+      "pair_complete": true
+    },
+    {
+      "domain": "APPLICATION_RUNTIME_GRAPH_MODEL",
+      "kind": "DOMAIN_PAIR_CANDIDATE",
+      "arch_doc": "docs/project/architecture/APPLICATION_RUNTIME_GRAPH_MODEL.md",
+      "plan_doc": null,
+      "in_arch_hub_index": false,
+      "pair_complete": false
+    },
+    {
+      "domain": "ARCHITECTURE_OVERVIEW",
+      "kind": "DOMAIN_PAIR_CANDIDATE",
+      "arch_doc": "docs/project/architecture/ARCHITECTURE_OVERVIEW.md",
+      "plan_doc": null,
+      "in_arch_hub_index": false,
+      "pair_complete": false
+    },
+    {
+      "domain": "AUDIT_IDEAL_2026",
+      "kind": "DOMAIN_PAIR_CANDIDATE",
+      "arch_doc": null,
+      "plan_doc": "docs/project/maintainers/plans/AUDIT_IDEAL_2026.md",
+      "in_arch_hub_index": false,
+      "pair_complete": false
+    },
+    {
+      "domain": "AUTONOMOUS_ORGANIZATION_CAPABILITY_MODEL",
+      "kind": "DOMAIN_PAIR_CANDIDATE",
+      "arch_doc": null,
+      "plan_doc": "docs/project/maintainers/plans/AUTONOMOUS_ORGANIZATION_CAPABILITY_MODEL.md",
+      "in_arch_hub_index": false,
+      "pair_complete": false
+    },
+    {
+      "domain": "AUTONOMOUS_ORGANIZATION_INITIATIVE",
+      "kind": "DOMAIN_PAIR_CANDIDATE",
+      "arch_doc": null,
+      "plan_doc": "docs/project/maintainers/plans/AUTONOMOUS_ORGANIZATION_INITIATIVE.md",
+      "in_arch_hub_index": false,
+      "pair_complete": false
+    },
+    {
+      "domain": "AUTONOMOUS_ORGANIZATION_ROADMAP",
+      "kind": "DOMAIN_PAIR_CANDIDATE",
+      "arch_doc": null,
+      "plan_doc": "docs/project/maintainers/plans/AUTONOMOUS_ORGANIZATION_ROADMAP.md",
+      "in_arch_hub_index": false,
+      "pair_complete": false
+    },
+    {
+      "domain": "AUTONOMOUS_ORGANIZATION_SCENARIO_PORTFOLIO",
+      "kind": "DOMAIN_PAIR_CANDIDATE",
+      "arch_doc": null,
+      "plan_doc": "docs/project/maintainers/plans/AUTONOMOUS_ORGANIZATION_SCENARIO_PORTFOLIO.md",
+      "in_arch_hub_index": false,
+      "pair_complete": false
+    },
+    {
+      "domain": "AUTONOMOUS_WORK",
+      "kind": "DOMAIN_PAIR_CANDIDATE",
+      "arch_doc": "docs/project/architecture/AUTONOMOUS_WORK.md",
+      "plan_doc": "docs/project/maintainers/plans/AUTONOMOUS_WORK.md",
+      "in_arch_hub_index": true,
+      "pair_complete": true
+    },
+    {
+      "domain": "BACKGROUND_TASKS",
+      "kind": "DOMAIN_PAIR_CANDIDATE",
+      "arch_doc": "docs/project/architecture/BACKGROUND_TASKS.md",
+      "plan_doc": "docs/project/maintainers/plans/BACKGROUND_TASKS.md",
+      "in_arch_hub_index": true,
+      "pair_complete": true
+    },
+    {
+      "domain": "CAPABILITY_CATALOG_AND_DISCOVERY",
+      "kind": "DOMAIN_PAIR_CANDIDATE",
+      "arch_doc": "docs/project/architecture/CAPABILITY_CATALOG_AND_DISCOVERY.md",
+      "plan_doc": "docs/project/maintainers/plans/CAPABILITY_CATALOG_AND_DISCOVERY.md",
+      "in_arch_hub_index": true,
+      "pair_complete": true
+    },
+    {
+      "domain": "CAPABILITY_MARKETPLACE_ENGINE",
+      "kind": "DOMAIN_PAIR_CANDIDATE",
+      "arch_doc": "docs/project/architecture/CAPABILITY_MARKETPLACE_ENGINE.md",
+      "plan_doc": null,
+      "in_arch_hub_index": false,
+      "pair_complete": false
+    },
+    {
+      "domain": "CODE_CRAFT",
+      "kind": "DOMAIN_PAIR_CANDIDATE",
+      "arch_doc": "docs/project/architecture/CODE_CRAFT.md",
+      "plan_doc": "docs/project/maintainers/plans/CODE_CRAFT.md",
+      "in_arch_hub_index": true,
+      "pair_complete": true
+    },
+    {
+      "domain": "COLLABORATIVE_WORK",
+      "kind": "DOMAIN_PAIR_CANDIDATE",
+      "arch_doc": "docs/project/architecture/COLLABORATIVE_WORK.md",
+      "plan_doc": "docs/project/maintainers/plans/COLLABORATIVE_WORK.md",
+      "in_arch_hub_index": true,
+      "pair_complete": true
+    },
+    {
+      "domain": "CONTEXT_ENGINEERING",
+      "kind": "DOMAIN_PAIR_CANDIDATE",
+      "arch_doc": "docs/project/architecture/CONTEXT_ENGINEERING.md",
+      "plan_doc": "docs/project/maintainers/plans/CONTEXT_ENGINEERING.md",
+      "in_arch_hub_index": true,
+      "pair_complete": true
+    },
+    {
+      "domain": "CONVERSATION_CHANNEL_CONTRACT",
+      "kind": "DOMAIN_PAIR_CANDIDATE",
+      "arch_doc": "docs/project/architecture/CONVERSATION_CHANNEL_CONTRACT.md",
+      "plan_doc": null,
+      "in_arch_hub_index": false,
+      "pair_complete": false
+    },
+    {
+      "domain": "CRITIC_VERIFICATION",
+      "kind": "DOMAIN_PAIR_CANDIDATE",
+      "arch_doc": null,
+      "plan_doc": "docs/project/maintainers/plans/CRITIC_VERIFICATION.md",
+      "in_arch_hub_index": true,
+      "pair_complete": false
+    },
+    {
+      "domain": "DECISION_APPROVAL_GOVERNANCE",
+      "kind": "DOMAIN_PAIR_CANDIDATE",
+      "arch_doc": "docs/project/architecture/DECISION_APPROVAL_GOVERNANCE.md",
+      "plan_doc": "docs/project/maintainers/plans/DECISION_APPROVAL_GOVERNANCE.md",
+      "in_arch_hub_index": false,
+      "pair_complete": true
+    },
+    {
+      "domain": "DECISION_DELIBERATION",
+      "kind": "DOMAIN_PAIR_CANDIDATE",
+      "arch_doc": "docs/project/architecture/DECISION_DELIBERATION.md",
+      "plan_doc": "docs/project/maintainers/plans/DECISION_DELIBERATION.md",
+      "in_arch_hub_index": false,
+      "pair_complete": true
+    },
+    {
+      "domain": "DECISION_SYSTEM",
+      "kind": "DOMAIN_PAIR_CANDIDATE",
+      "arch_doc": "docs/project/architecture/DECISION_SYSTEM.md",
+      "plan_doc": "docs/project/maintainers/plans/DECISION_SYSTEM.md",
+      "in_arch_hub_index": true,
+      "pair_complete": true
+    },
+    {
+      "domain": "DECISION_SYSTEM_ARCHITECTURE",
+      "kind": "DOMAIN_PAIR_CANDIDATE",
+      "arch_doc": "docs/project/architecture/DECISION_SYSTEM_ARCHITECTURE.md",
+      "plan_doc": null,
+      "in_arch_hub_index": false,
+      "pair_complete": false
+    },
+    {
+      "domain": "DECISION_VERIFICATION",
+      "kind": "DOMAIN_PAIR_CANDIDATE",
+      "arch_doc": "docs/project/architecture/DECISION_VERIFICATION.md",
+      "plan_doc": "docs/project/maintainers/plans/DECISION_VERIFICATION.md",
+      "in_arch_hub_index": false,
+      "pair_complete": true
+    },
+    {
+      "domain": "DEPENDENCY_OWNERSHIP",
+      "kind": "DOMAIN_PAIR_CANDIDATE",
+      "arch_doc": "docs/project/architecture/DEPENDENCY_OWNERSHIP.md",
+      "plan_doc": null,
+      "in_arch_hub_index": false,
+      "pair_complete": false
+    },
+    {
+      "domain": "DIAGNOSTICS",
+      "kind": "DOMAIN_PAIR_CANDIDATE",
+      "arch_doc": "docs/project/architecture/DIAGNOSTICS.md",
+      "plan_doc": null,
+      "in_arch_hub_index": false,
+      "pair_complete": false
+    },
+    {
+      "domain": "E2E_SCENARIO_FRAMEWORK_AUDIT",
+      "kind": "DOMAIN_PAIR_CANDIDATE",
+      "arch_doc": "docs/project/architecture/E2E_SCENARIO_FRAMEWORK_AUDIT.md",
+      "plan_doc": null,
+      "in_arch_hub_index": false,
+      "pair_complete": false
+    },
+    {
+      "domain": "ELASTIC_CAPACITY_AND_SCALING",
+      "kind": "DOMAIN_PAIR_CANDIDATE",
+      "arch_doc": "docs/project/architecture/ELASTIC_CAPACITY_AND_SCALING.md",
+      "plan_doc": "docs/project/maintainers/plans/ELASTIC_CAPACITY_AND_SCALING.md",
+      "in_arch_hub_index": true,
+      "pair_complete": true
+    },
+    {
+      "domain": "ENTERPRISE_E2E_SCENARIO_CATALOG",
+      "kind": "DOMAIN_PAIR_CANDIDATE",
+      "arch_doc": null,
+      "plan_doc": "docs/project/maintainers/plans/ENTERPRISE_E2E_SCENARIO_CATALOG.md",
+      "in_arch_hub_index": false,
+      "pair_complete": false
+    },
+    {
+      "domain": "ENTERPRISE_RELIABILITY_LAYER",
+      "kind": "DOMAIN_PAIR_CANDIDATE",
+      "arch_doc": "docs/project/architecture/ENTERPRISE_RELIABILITY_LAYER.md",
+      "plan_doc": null,
+      "in_arch_hub_index": false,
+      "pair_complete": false
+    },
+    {
+      "domain": "ENTERPRISE_RELIABILITY_LAYER_IMPLEMENTATION_PLAN",
+      "kind": "DOMAIN_PAIR_CANDIDATE",
+      "arch_doc": null,
+      "plan_doc": "docs/project/maintainers/plans/ENTERPRISE_RELIABILITY_LAYER_IMPLEMENTATION_PLAN.md",
+      "in_arch_hub_index": false,
+      "pair_complete": false
+    },
+    {
+      "domain": "ENTERPRISE_RUNTIME_INTELLIGENCE",
+      "kind": "DOMAIN_PAIR_CANDIDATE",
+      "arch_doc": "docs/project/architecture/ENTERPRISE_RUNTIME_INTELLIGENCE.md",
+      "plan_doc": null,
+      "in_arch_hub_index": false,
+      "pair_complete": false
+    },
+    {
+      "domain": "ERL_ADMISSION_BOUNDARY",
+      "kind": "DOMAIN_PAIR_CANDIDATE",
+      "arch_doc": "docs/project/architecture/ERL_ADMISSION_BOUNDARY.md",
+      "plan_doc": null,
+      "in_arch_hub_index": false,
+      "pair_complete": false
+    },
+    {
+      "domain": "ERL_DIAG_001_EXTERNAL_EFFECT_RELIABILITY_OPERATOR_DIAGNOSTICS",
+      "kind": "DOMAIN_PAIR_CANDIDATE",
+      "arch_doc": "docs/project/architecture/ERL_DIAG_001_EXTERNAL_EFFECT_RELIABILITY_OPERATOR_DIAGNOSTICS.md",
+      "plan_doc": null,
+      "in_arch_hub_index": false,
+      "pair_complete": false
+    },
+    {
+      "domain": "ERL_EVIDENCE_EVALUATION",
+      "kind": "DOMAIN_PAIR_CANDIDATE",
+      "arch_doc": "docs/project/architecture/ERL_EVIDENCE_EVALUATION.md",
+      "plan_doc": null,
+      "in_arch_hub_index": false,
+      "pair_complete": false
+    },
+    {
+      "domain": "ERL_QUAL_004_DIAGNOSTICS_PLATFORM_GAP",
+      "kind": "DOMAIN_PAIR_CANDIDATE",
+      "arch_doc": "docs/project/architecture/ERL_QUAL_004_DIAGNOSTICS_PLATFORM_GAP.md",
+      "plan_doc": null,
+      "in_arch_hub_index": false,
+      "pair_complete": false
+    },
+    {
+      "domain": "ERL_QUAL_004_PLATFORM_CAPABILITY_GAP_ANALYSIS",
+      "kind": "DOMAIN_PAIR_CANDIDATE",
+      "arch_doc": "docs/project/architecture/ERL_QUAL_004_PLATFORM_CAPABILITY_GAP_ANALYSIS.md",
+      "plan_doc": null,
+      "in_arch_hub_index": false,
+      "pair_complete": false
+    },
+    {
+      "domain": "ERL_QUAL_004_SCENARIO_QUALITY_GATE",
+      "kind": "DOMAIN_PAIR_CANDIDATE",
+      "arch_doc": "docs/project/architecture/ERL_QUAL_004_SCENARIO_QUALITY_GATE.md",
+      "plan_doc": null,
+      "in_arch_hub_index": false,
+      "pair_complete": false
+    },
+    {
+      "domain": "ERL_RECONCILIATION_PLUGIN_INTEGRATION",
+      "kind": "DOMAIN_PAIR_CANDIDATE",
+      "arch_doc": "docs/project/architecture/ERL_RECONCILIATION_PLUGIN_INTEGRATION.md",
+      "plan_doc": null,
+      "in_arch_hub_index": false,
+      "pair_complete": false
+    },
+    {
+      "domain": "EXPERIMENTATION_AND_DEVELOPER_EXPERIENCE",
+      "kind": "DOMAIN_PAIR_CANDIDATE",
+      "arch_doc": "docs/project/architecture/EXPERIMENTATION_AND_DEVELOPER_EXPERIENCE.md",
+      "plan_doc": "docs/project/maintainers/plans/EXPERIMENTATION_AND_DEVELOPER_EXPERIENCE.md",
+      "in_arch_hub_index": true,
+      "pair_complete": true
+    },
+    {
+      "domain": "EXTERNAL_EFFECT_CONTRACTS",
+      "kind": "DOMAIN_PAIR_CANDIDATE",
+      "arch_doc": "docs/project/architecture/EXTERNAL_EFFECT_CONTRACTS.md",
+      "plan_doc": null,
+      "in_arch_hub_index": false,
+      "pair_complete": false
+    },
+    {
+      "domain": "GOVERNED_EXECUTION",
+      "kind": "DOMAIN_PAIR_CANDIDATE",
+      "arch_doc": "docs/project/architecture/GOVERNED_EXECUTION.md",
+      "plan_doc": "docs/project/maintainers/plans/GOVERNED_EXECUTION.md",
+      "in_arch_hub_index": true,
+      "pair_complete": true
+    },
+    {
+      "domain": "HARNESS_ARCHITECTURE_EVOLUTION_P0A_AS_BUILT_AUDIT",
+      "kind": "DOMAIN_PAIR_CANDIDATE",
+      "arch_doc": null,
+      "plan_doc": "docs/project/maintainers/plans/HARNESS_ARCHITECTURE_EVOLUTION_P0A_AS_BUILT_AUDIT.md",
+      "in_arch_hub_index": false,
+      "pair_complete": false
+    },
+    {
+      "domain": "HARNESS_ARCHITECTURE_EVOLUTION_P0A_CLOSURE",
+      "kind": "DOMAIN_PAIR_CANDIDATE",
+      "arch_doc": null,
+      "plan_doc": "docs/project/maintainers/plans/HARNESS_ARCHITECTURE_EVOLUTION_P0A_CLOSURE.md",
+      "in_arch_hub_index": false,
+      "pair_complete": false
+    },
+    {
+      "domain": "HARNESS_EVIDENCE_PACK",
+      "kind": "DOMAIN_PAIR_CANDIDATE",
+      "arch_doc": null,
+      "plan_doc": "docs/project/maintainers/plans/HARNESS_EVIDENCE_PACK.md",
+      "in_arch_hub_index": false,
+      "pair_complete": false
+    },
+    {
+      "domain": "IDEAL_HARNESS_L3",
+      "kind": "DOMAIN_PAIR_CANDIDATE",
+      "arch_doc": null,
+      "plan_doc": "docs/project/maintainers/plans/IDEAL_HARNESS_L3.md",
+      "in_arch_hub_index": false,
+      "pair_complete": false
+    },
+    {
+      "domain": "INTEGRATIONS",
+      "kind": "DOMAIN_PAIR_CANDIDATE",
+      "arch_doc": "docs/project/architecture/INTEGRATIONS.md",
+      "plan_doc": "docs/project/maintainers/plans/INTEGRATIONS.md",
+      "in_arch_hub_index": true,
+      "pair_complete": true
+    },
+    {
+      "domain": "INTERGRAX_ARCHITECTURE_PRINCIPLES",
+      "kind": "DOMAIN_PAIR_CANDIDATE",
+      "arch_doc": "docs/project/architecture/INTERGRAX_ARCHITECTURE_PRINCIPLES.md",
+      "plan_doc": null,
+      "in_arch_hub_index": false,
+      "pair_complete": false
+    },
+    {
+      "domain": "KNOWLEDGE_SOURCE_INTEGRATIONS",
+      "kind": "DOMAIN_PAIR_CANDIDATE",
+      "arch_doc": "docs/project/architecture/KNOWLEDGE_SOURCE_INTEGRATIONS.md",
+      "plan_doc": "docs/project/maintainers/plans/KNOWLEDGE_SOURCE_INTEGRATIONS.md",
+      "in_arch_hub_index": false,
+      "pair_complete": true
+    },
+    {
+      "domain": "LLM_ADAPTERS",
+      "kind": "DOMAIN_PAIR_CANDIDATE",
+      "arch_doc": "docs/project/architecture/LLM_ADAPTERS.md",
+      "plan_doc": "docs/project/maintainers/plans/LLM_ADAPTERS.md",
+      "in_arch_hub_index": true,
+      "pair_complete": true
+    },
+    {
+      "domain": "MEMORY",
+      "kind": "DOMAIN_PAIR_CANDIDATE",
+      "arch_doc": "docs/project/architecture/MEMORY.md",
+      "plan_doc": "docs/project/maintainers/plans/MEMORY.md",
+      "in_arch_hub_index": true,
+      "pair_complete": true
+    },
+    {
+      "domain": "MEMORY_ARCHITECTURE",
+      "kind": "DOMAIN_PAIR_CANDIDATE",
+      "arch_doc": "docs/project/architecture/MEMORY_ARCHITECTURE.md",
+      "plan_doc": null,
+      "in_arch_hub_index": false,
+      "pair_complete": false
+    },
+    {
+      "domain": "MEMORY_ARCHITECTURE_DIAGRAMS",
+      "kind": "DOMAIN_PAIR_CANDIDATE",
+      "arch_doc": "docs/project/architecture/MEMORY_ARCHITECTURE_DIAGRAMS.md",
+      "plan_doc": null,
+      "in_arch_hub_index": false,
+      "pair_complete": false
+    },
+    {
+      "domain": "MEMORY_PROJECTION_EXTENSION_GUIDE",
+      "kind": "DOMAIN_PAIR_CANDIDATE",
+      "arch_doc": "docs/project/architecture/MEMORY_PROJECTION_EXTENSION_GUIDE.md",
+      "plan_doc": null,
+      "in_arch_hub_index": false,
+      "pair_complete": false
+    },
+    {
+      "domain": "MEMORY_PROVIDER_EXTENSION_GUIDE",
+      "kind": "DOMAIN_PAIR_CANDIDATE",
+      "arch_doc": "docs/project/architecture/MEMORY_PROVIDER_EXTENSION_GUIDE.md",
+      "plan_doc": null,
+      "in_arch_hub_index": false,
+      "pair_complete": false
+    },
+    {
+      "domain": "MODALITY",
+      "kind": "DOMAIN_PAIR_CANDIDATE",
+      "arch_doc": "docs/project/architecture/MODALITY.md",
+      "plan_doc": "docs/project/maintainers/plans/MODALITY.md",
+      "in_arch_hub_index": true,
+      "pair_complete": true
+    },
+    {
+      "domain": "MSGRAPH_KNOWLEDGE_LIVE_CAPABILITY_1C_TEAMS_CHANNEL",
+      "kind": "DOMAIN_PAIR_CANDIDATE",
+      "arch_doc": null,
+      "plan_doc": "docs/project/maintainers/plans/MSGRAPH_KNOWLEDGE_LIVE_CAPABILITY_1C_TEAMS_CHANNEL.md",
+      "in_arch_hub_index": false,
+      "pair_complete": false
+    },
+    {
+      "domain": "NEXUS_EXECUTION_FLOW",
+      "kind": "DOMAIN_PAIR_CANDIDATE",
+      "arch_doc": "docs/project/architecture/NEXUS_EXECUTION_FLOW.md",
+      "plan_doc": "docs/project/maintainers/plans/NEXUS_EXECUTION_FLOW.md",
+      "in_arch_hub_index": true,
+      "pair_complete": true
+    },
+    {
+      "domain": "OBSERVABILITY",
+      "kind": "DOMAIN_PAIR_CANDIDATE",
+      "arch_doc": "docs/project/architecture/OBSERVABILITY.md",
+      "plan_doc": "docs/project/maintainers/plans/OBSERVABILITY.md",
+      "in_arch_hub_index": true,
+      "pair_complete": true
+    },
+    {
+      "domain": "OLLAMA_PROVIDER_CLASSIFICATION",
+      "kind": "DOMAIN_PAIR_CANDIDATE",
+      "arch_doc": "docs/project/architecture/OLLAMA_PROVIDER_CLASSIFICATION.md",
+      "plan_doc": null,
+      "in_arch_hub_index": false,
+      "pair_complete": false
+    },
+    {
+      "domain": "ORCHESTRATION",
+      "kind": "DOMAIN_PAIR_CANDIDATE",
+      "arch_doc": "docs/project/architecture/ORCHESTRATION.md",
+      "plan_doc": "docs/project/maintainers/plans/ORCHESTRATION.md",
+      "in_arch_hub_index": true,
+      "pair_complete": true
+    },
+    {
+      "domain": "PLATFORM_ENTERPRISE_COMPLETION_ROADMAP",
+      "kind": "DOMAIN_PAIR_CANDIDATE",
+      "arch_doc": null,
+      "plan_doc": "docs/project/maintainers/plans/PLATFORM_ENTERPRISE_COMPLETION_ROADMAP.md",
+      "in_arch_hub_index": false,
+      "pair_complete": false
+    },
+    {
+      "domain": "PLATFORM_FOUNDATION",
+      "kind": "DOMAIN_PAIR_CANDIDATE",
+      "arch_doc": "docs/project/architecture/PLATFORM_FOUNDATION.md",
+      "plan_doc": "docs/project/maintainers/plans/PLATFORM_FOUNDATION.md",
+      "in_arch_hub_index": true,
+      "pair_complete": true
+    },
+    {
+      "domain": "PLATFORM_PLUGINS",
+      "kind": "DOMAIN_PAIR_CANDIDATE",
+      "arch_doc": "docs/project/architecture/PLATFORM_PLUGINS.md",
+      "plan_doc": "docs/project/maintainers/plans/PLATFORM_PLUGINS.md",
+      "in_arch_hub_index": true,
+      "pair_complete": true
+    },
+    {
+      "domain": "PLATFORM_PLUGIN_1_EXTENSION_SURFACE_AUDIT",
+      "kind": "DOMAIN_PAIR_CANDIDATE",
+      "arch_doc": null,
+      "plan_doc": "docs/project/maintainers/plans/PLATFORM_PLUGIN_1_EXTENSION_SURFACE_AUDIT.md",
+      "in_arch_hub_index": false,
+      "pair_complete": false
+    },
+    {
+      "domain": "PLATFORM_PLUGIN_9_CLOSEOUT",
+      "kind": "DOMAIN_PAIR_CANDIDATE",
+      "arch_doc": null,
+      "plan_doc": "docs/project/maintainers/plans/PLATFORM_PLUGIN_9_CLOSEOUT.md",
+      "in_arch_hub_index": false,
+      "pair_complete": false
+    },
+    {
+      "domain": "PLATFORM_PLUGIN_DOCUMENTATION_AUDIT",
+      "kind": "DOMAIN_PAIR_CANDIDATE",
+      "arch_doc": null,
+      "plan_doc": "docs/project/maintainers/plans/PLATFORM_PLUGIN_DOCUMENTATION_AUDIT.md",
+      "in_arch_hub_index": false,
+      "pair_complete": false
+    },
+    {
+      "domain": "PLATFORM_PLUGIN_DOCUMENTATION_CLOSEOUT",
+      "kind": "DOMAIN_PAIR_CANDIDATE",
+      "arch_doc": null,
+      "plan_doc": "docs/project/maintainers/plans/PLATFORM_PLUGIN_DOCUMENTATION_CLOSEOUT.md",
+      "in_arch_hub_index": false,
+      "pair_complete": false
+    },
+    {
+      "domain": "PLATFORM_PLUGIN_ENTERPRISE_ROADMAP",
+      "kind": "DOMAIN_PAIR_CANDIDATE",
+      "arch_doc": null,
+      "plan_doc": "docs/project/maintainers/plans/PLATFORM_PLUGIN_ENTERPRISE_ROADMAP.md",
+      "in_arch_hub_index": false,
+      "pair_complete": false
+    },
+    {
+      "domain": "PLATFORM_PLUGIN_PRODUCTION_AUDIT",
+      "kind": "DOMAIN_PAIR_CANDIDATE",
+      "arch_doc": null,
+      "plan_doc": "docs/project/maintainers/plans/PLATFORM_PLUGIN_PRODUCTION_AUDIT.md",
+      "in_arch_hub_index": false,
+      "pair_complete": false
+    },
+    {
+      "domain": "PRODUCT_FIRST_MVP",
+      "kind": "DOMAIN_PAIR_CANDIDATE",
+      "arch_doc": null,
+      "plan_doc": "docs/project/maintainers/plans/PRODUCT_FIRST_MVP.md",
+      "in_arch_hub_index": false,
+      "pair_complete": false
+    },
+    {
+      "domain": "PRODUCT_REUSE_PROOF",
+      "kind": "DOMAIN_PAIR_CANDIDATE",
+      "arch_doc": null,
+      "plan_doc": "docs/project/maintainers/plans/PRODUCT_REUSE_PROOF.md",
+      "in_arch_hub_index": false,
+      "pair_complete": false
+    },
+    {
+      "domain": "PROOF_RECEIPTS",
+      "kind": "DOMAIN_PAIR_CANDIDATE",
+      "arch_doc": "docs/project/architecture/PROOF_RECEIPTS.md",
+      "plan_doc": "docs/project/maintainers/plans/PROOF_RECEIPTS.md",
+      "in_arch_hub_index": true,
+      "pair_complete": true
+    },
+    {
+      "domain": "PROVIDER_CATEGORY_CONTRACTS",
+      "kind": "DOMAIN_PAIR_CANDIDATE",
+      "arch_doc": null,
+      "plan_doc": "docs/project/maintainers/plans/PROVIDER_CATEGORY_CONTRACTS.md",
+      "in_arch_hub_index": false,
+      "pair_complete": false
+    },
+    {
+      "domain": "RAG",
+      "kind": "DOMAIN_PAIR_CANDIDATE",
+      "arch_doc": "docs/project/architecture/RAG.md",
+      "plan_doc": "docs/project/maintainers/plans/RAG.md",
+      "in_arch_hub_index": false,
+      "pair_complete": true
+    },
+    {
+      "domain": "REASONING_AND_COGNITION",
+      "kind": "DOMAIN_PAIR_CANDIDATE",
+      "arch_doc": "docs/project/architecture/REASONING_AND_COGNITION.md",
+      "plan_doc": "docs/project/maintainers/plans/REASONING_AND_COGNITION.md",
+      "in_arch_hub_index": true,
+      "pair_complete": true
+    },
+    {
+      "domain": "RECONCILIATION",
+      "kind": "DOMAIN_PAIR_CANDIDATE",
+      "arch_doc": "docs/project/architecture/RECONCILIATION.md",
+      "plan_doc": null,
+      "in_arch_hub_index": false,
+      "pair_complete": false
+    },
+    {
+      "domain": "RECOVERY_AND_COMPENSATION",
+      "kind": "DOMAIN_PAIR_CANDIDATE",
+      "arch_doc": "docs/project/architecture/RECOVERY_AND_COMPENSATION.md",
+      "plan_doc": null,
+      "in_arch_hub_index": false,
+      "pair_complete": false
+    },
+    {
+      "domain": "RELIABILITY_FAILURE_AND_HITL",
+      "kind": "DOMAIN_PAIR_CANDIDATE",
+      "arch_doc": "docs/project/architecture/RELIABILITY_FAILURE_AND_HITL.md",
+      "plan_doc": "docs/project/maintainers/plans/RELIABILITY_FAILURE_AND_HITL.md",
+      "in_arch_hub_index": true,
+      "pair_complete": true
+    },
+    {
+      "domain": "SCENARIO_1_P0_B_D1_AUTHORITATIVE_DECISION_RESULT_EXPOSURE",
+      "kind": "DOMAIN_PAIR_CANDIDATE",
+      "arch_doc": "docs/project/architecture/SCENARIO_1_P0_B_D1_AUTHORITATIVE_DECISION_RESULT_EXPOSURE.md",
+      "plan_doc": null,
+      "in_arch_hub_index": false,
+      "pair_complete": false
+    },
+    {
+      "domain": "SCENARIO_RUNTIME_BASELINE",
+      "kind": "DOMAIN_PAIR_CANDIDATE",
+      "arch_doc": null,
+      "plan_doc": "docs/project/maintainers/plans/SCENARIO_RUNTIME_BASELINE.md",
+      "in_arch_hub_index": false,
+      "pair_complete": false
+    },
+    {
+      "domain": "SKILLS",
+      "kind": "DOMAIN_PAIR_CANDIDATE",
+      "arch_doc": "docs/project/architecture/SKILLS.md",
+      "plan_doc": "docs/project/maintainers/plans/SKILLS.md",
+      "in_arch_hub_index": true,
+      "pair_complete": true
+    },
+    {
+      "domain": "TIER3_APPLICATION_ENVIRONMENT",
+      "kind": "DOMAIN_PAIR_CANDIDATE",
+      "arch_doc": "docs/project/architecture/TIER3_APPLICATION_ENVIRONMENT.md",
+      "plan_doc": "docs/project/maintainers/plans/TIER3_APPLICATION_ENVIRONMENT.md",
+      "in_arch_hub_index": true,
+      "pair_complete": true
+    },
+    {
+      "domain": "TOOLS",
+      "kind": "DOMAIN_PAIR_CANDIDATE",
+      "arch_doc": "docs/project/architecture/TOOLS.md",
+      "plan_doc": "docs/project/maintainers/plans/TOOLS.md",
+      "in_arch_hub_index": true,
+      "pair_complete": true
+    },
+    {
+      "domain": "UNCERTAINTY_MANAGEMENT",
+      "kind": "DOMAIN_PAIR_CANDIDATE",
+      "arch_doc": "docs/project/architecture/UNCERTAINTY_MANAGEMENT.md",
+      "plan_doc": null,
+      "in_arch_hub_index": false,
+      "pair_complete": false
+    },
+    {
+      "domain": "UNIFIED_CONTEXT_LIFECYCLE",
+      "kind": "DOMAIN_PAIR_CANDIDATE",
+      "arch_doc": "docs/project/architecture/UNIFIED_CONTEXT_LIFECYCLE.md",
+      "plan_doc": "docs/project/maintainers/plans/UNIFIED_CONTEXT_LIFECYCLE.md",
+      "in_arch_hub_index": true,
+      "pair_complete": true
+    },
+    {
+      "domain": "UNIFIED_EXECUTION_ARCHITECTURE",
+      "kind": "DOMAIN_PAIR_CANDIDATE",
+      "arch_doc": "docs/project/architecture/UNIFIED_EXECUTION_ARCHITECTURE.md",
+      "plan_doc": null,
+      "in_arch_hub_index": false,
+      "pair_complete": false
+    },
+    {
+      "domain": "UNIFIED_EXECUTION_ARCHITECTURE_DIAGRAMS",
+      "kind": "DOMAIN_PAIR_CANDIDATE",
+      "arch_doc": "docs/project/architecture/UNIFIED_EXECUTION_ARCHITECTURE_DIAGRAMS.md",
+      "plan_doc": null,
+      "in_arch_hub_index": false,
+      "pair_complete": false
+    },
+    {
+      "domain": "UNIFIED_EXECUTION_IMPLEMENTATION_MAP",
+      "kind": "DOMAIN_PAIR_CANDIDATE",
+      "arch_doc": "docs/project/architecture/UNIFIED_EXECUTION_IMPLEMENTATION_MAP.md",
+      "plan_doc": null,
+      "in_arch_hub_index": false,
+      "pair_complete": false
+    },
+    {
+      "domain": "UNIFIED_EXECUTION_IMPLEMENTATION_READINESS",
+      "kind": "DOMAIN_PAIR_CANDIDATE",
+      "arch_doc": "docs/project/architecture/UNIFIED_EXECUTION_IMPLEMENTATION_READINESS.md",
+      "plan_doc": null,
+      "in_arch_hub_index": false,
+      "pair_complete": false
+    },
+    {
+      "domain": "UNIFIED_EXECUTION_RUNTIME",
+      "kind": "DOMAIN_PAIR_CANDIDATE",
+      "arch_doc": "docs/project/architecture/UNIFIED_EXECUTION_RUNTIME.md",
+      "plan_doc": "docs/project/maintainers/plans/UNIFIED_EXECUTION_RUNTIME.md",
+      "in_arch_hub_index": true,
+      "pair_complete": true
+    },
+    {
+      "domain": "VENDOR_KNOWLEDGE_ADAPTER_FAMILY_AUDIT",
+      "kind": "DOMAIN_PAIR_CANDIDATE",
+      "arch_doc": null,
+      "plan_doc": "docs/project/maintainers/plans/VENDOR_KNOWLEDGE_ADAPTER_FAMILY_AUDIT.md",
+      "in_arch_hub_index": false,
+      "pair_complete": false
+    },
+    {
+      "domain": "VENDOR_KNOWLEDGE_LIVE_CAPABILITY_ROLLOUT",
+      "kind": "DOMAIN_PAIR_CANDIDATE",
+      "arch_doc": "docs/project/architecture/VENDOR_KNOWLEDGE_LIVE_CAPABILITY_ROLLOUT.md",
+      "plan_doc": null,
+      "in_arch_hub_index": false,
+      "pair_complete": false
+    },
+    {
+      "domain": "VENDOR_KNOWLEDGE_PUBLICATION_PERMIT",
+      "kind": "DOMAIN_PAIR_CANDIDATE",
+      "arch_doc": "docs/project/architecture/VENDOR_KNOWLEDGE_PUBLICATION_PERMIT.md",
+      "plan_doc": null,
+      "in_arch_hub_index": false,
+      "pair_complete": false
+    },
+    {
+      "domain": "VENDOR_KNOWLEDGE_RECONCILIATION_FINALIZATION",
+      "kind": "DOMAIN_PAIR_CANDIDATE",
+      "arch_doc": null,
+      "plan_doc": "docs/project/maintainers/plans/VENDOR_KNOWLEDGE_RECONCILIATION_FINALIZATION.md",
+      "in_arch_hub_index": false,
+      "pair_complete": false
+    },
+    {
+      "domain": "VENDOR_KNOWLEDGE_THREE_MODE_CAPABILITY_MATRIX",
+      "kind": "DOMAIN_PAIR_CANDIDATE",
+      "arch_doc": null,
+      "plan_doc": "docs/project/maintainers/plans/VENDOR_KNOWLEDGE_THREE_MODE_CAPABILITY_MATRIX.md",
+      "in_arch_hub_index": false,
+      "pair_complete": false
+    },
+    {
+      "domain": "WEB_CONTENT_CAPTURE",
+      "kind": "DOMAIN_PAIR_CANDIDATE",
+      "arch_doc": "docs/project/architecture/WEB_CONTENT_CAPTURE.md",
+      "plan_doc": null,
+      "in_arch_hub_index": false,
+      "pair_complete": false
+    },
+    {
+      "domain": "intergrax_runtime_architecture",
+      "kind": "DOMAIN_PAIR_CANDIDATE",
+      "arch_doc": "docs/project/architecture/intergrax_runtime_architecture.md",
+      "plan_doc": null,
+      "in_arch_hub_index": false,
+      "pair_complete": false
+    }
+  ],
+  "features": [
+    {
+      "feature": "ARTIFACT_LIFECYCLE",
+      "arch_doc": "docs/project/capabilities/architecture/ARTIFACT_LIFECYCLE.md",
+      "plan_doc": "docs/project/capabilities/plan/ARTIFACT_LIFECYCLE.md",
+      "pair_complete": true
+    },
+    {
+      "feature": "COMPAT_X_CONTRACT_SCHEMA_EVOLUTION",
+      "arch_doc": "docs/project/capabilities/architecture/COMPAT_X_CONTRACT_SCHEMA_EVOLUTION.md",
+      "plan_doc": null,
+      "pair_complete": false
+    },
+    {
+      "feature": "EVOL_X_CHANGE_SAFETY",
+      "arch_doc": "docs/project/capabilities/architecture/EVOL_X_CHANGE_SAFETY.md",
+      "plan_doc": "docs/project/capabilities/plan/EVOL_X_CHANGE_SAFETY.md",
+      "pair_complete": true
+    },
+    {
+      "feature": "LANGCHAIN_INDEPENDENCE",
+      "arch_doc": "docs/project/capabilities/architecture/LANGCHAIN_INDEPENDENCE.md",
+      "plan_doc": "docs/project/capabilities/plan/LANGCHAIN_INDEPENDENCE.md",
+      "pair_complete": true
+    },
+    {
+      "feature": "MCP_SERVER",
+      "arch_doc": "docs/project/capabilities/architecture/MCP_SERVER.md",
+      "plan_doc": "docs/project/capabilities/plan/MCP_SERVER.md",
+      "pair_complete": true
+    },
+    {
+      "feature": "MULTIPLAYER_AI",
+      "arch_doc": "docs/project/capabilities/architecture/MULTIPLAYER_AI.md",
+      "plan_doc": "docs/project/capabilities/plan/MULTIPLAYER_AI.md",
+      "pair_complete": true
+    },
+    {
+      "feature": "PROOF_DATA_PACKAGE_DISTRIBUTION",
+      "arch_doc": "docs/project/capabilities/architecture/PROOF_DATA_PACKAGE_DISTRIBUTION.md",
+      "plan_doc": null,
+      "pair_complete": false
+    },
+    {
+      "feature": "SCENARIO_FACTORY",
+      "arch_doc": "docs/project/capabilities/architecture/SCENARIO_FACTORY.md",
+      "plan_doc": "docs/project/capabilities/plan/SCENARIO_FACTORY.md",
+      "pair_complete": true
+    },
+    {
+      "feature": "TOKEN_OPTIMIZATION",
+      "arch_doc": "docs/project/capabilities/architecture/TOKEN_OPTIMIZATION.md",
+      "plan_doc": "docs/project/capabilities/plan/TOKEN_OPTIMIZATION.md",
+      "pair_complete": true
+    },
+    {
+      "feature": "TOKEN_OPTIMIZATION_CACHE_PREFIX_STABILIZATION",
+      "arch_doc": "docs/project/capabilities/architecture/TOKEN_OPTIMIZATION_CACHE_PREFIX_STABILIZATION.md",
+      "plan_doc": null,
+      "pair_complete": false
+    }
+  ]
+}

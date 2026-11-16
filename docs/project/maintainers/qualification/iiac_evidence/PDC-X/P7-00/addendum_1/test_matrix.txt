@@ -1,0 +1,40 @@
+PDC-P7-00 addendum 1 - test matrix (auditor runs, Windows, one pytest/python process at a time)
+base fa6ff1c9616a6df28c11b087eb3f1b0dc4097b5f -> audited head 19d552beeb6f0677a8bdc3b4ce65da15dd637c7b (mcp-rc, merge of development 3dd991336); activation pin 2d3eceb6cf7e93dccd4d96919319a6c969b4444b
+auditor branch p7-00-baseline-audit = origin/mcp-rc merged (2bbcca89c); product tree identical to 19d552bee
+interpreter: D:\Projekty\intergrax\.venv (Python 3.12.11, pytest 8.4.2, ruff 0.15.20); environment deviation as in the first audit (tzdata via PYTHONPATH, nothing installed)
+
+0. Scope from git (audit_scope.json)
+   git diff --name-only fa6ff1c96 19d552bee -- intergrax agents applications = 6 paths (exactly as announced); 3 were already in the first 153, 3 are new => 156 unique paths vs the pin
+   git diff b0e19bf61 19d552bee -- <23 MCP-RC paths> = empty; no path under scripts/governance, governance gate files, the IIAC activation record, iiac_evidence or .github changed
+   PRs: #523 (commit 25aaa1bfd, T-IGX-036-T item 11) and #524 (commit 4dbe68452, T-IGX-036-U); both commits carry their ticket Ref
+
+1. Combined regression run, ONE pytest process, 268 files, 2832.94 s  [logs/addendum_regression_run.stdout.txt, adversarial_scripts/run_addendum_tests.py]
+   contents: MCP-RC mandatory contract (39 files, list from Python) + all tests/qualification/pdc_x (incl. new p6_model) + EBH-5 gate files (3) + test_pdc_x_{inventory,requirements,wbs}
+             + tests/unit/memory (51) + tests/unit/agent_distribution (72) + tests/qualification/compat_x (17) + agent-contract unit tests
+   result: 53 failed, 3384 passed, 3 skipped, 2 xfailed; pytest did not exit after the summary, killed 30 s after it by the runner
+   MCP-RC part: no MCP failure; 1 strict xfail (TRANSFERRED) present => consistent with 481 passed / 1 xfailed of the first audit
+   EBH-5 gate files: all pass (F-06 RESOLVED: SQLITE_TOUCHPOINT_COUNT == 39)
+   test_pdc_x_inventory.py: 2 failed (F-07 still open)
+   xfails: MCP-RC TRANSFERRED + xd_12 FINDING-8 only (the 5 other declared gaps of the first audit were repaired and their xfail markers removed)
+   2a. attribution of the 53 failures: re-run of exactly those node ids in short-path detached checkouts, one process each  [adversarial_scripts/run_failing_files_at_checkout.py, attribution_of_regression_failures.json]
+       19d552bee: 52 failed, 1 passed (1 test passed in isolation: F-38)       fa6ff1c96: the same 52 failed       2d3eceb6c (pin): 40 failed, 11 passed (51 nodes exist there)
+       red since PDC-X (fail at head and fa6ff1c96, pass at pin): 10 COMPAT-X event-evolution gates (r3_p0 x4, r3_r1 x6) + the 2 inventory tests  -> F-35 / F-07
+       red at the pin as well (40): agent_distribution materialization_adapter x23, materialization x4, ac6_architecture_gates, build_remediation, activation_remediation, compat_x r3_r1 x7, versioning r1_r3, versioning r1_r5, deprecation r5_p0 -> F-39 (not investigated)
+       head == fa6ff1c96 => the six delta paths change none of these results
+
+2b. Aborted attempt: whole-file re-run of the failing files at the head checkout was stopped after ~9 minutes (logs/failing_files_at_head_first_attempt_whole_files_aborted.log); replaced by node-id runs.
+
+3. Static gates [logs/addendum_static_gates.log]
+   ruff check: 6 delta paths, p6_model/p6_repair/xd tests, EBH-5 gate file, mem_ent10 test, pdc_x_wbs.py -> all checks passed
+   check_agents_no_tier3_imports, check_context_tier0_import_boundary, check_llm_routing_tier_boundary, check_agents_no_vendor_sdk_imports -> exit 0
+   check_intergrax_no_applications_imports -> exit 1, output byte-identical to the first audit (the same 12 pre-existing intergrax/runtime files, none changed by the delta)
+   uv lock --check -> exit 0
+   added-line scan of the 6 paths: no agents/applications import from intergrax/, no subprocess/socket/eval/exec/pickle/http surface, no credential or endpoint (the only grep hits are the identifier application_environment_id)
+
+4. Adversarial probes (5, throw-away, read-only)  [adversarial_scripts/addendum_1_probes.py, logs/addendum_1_probes.results.json]
+   Q1 memory plane guard vs shipped and duck-typed capability, whitespace tenant variant   Q2 required features on an undeclared adapter   Q3 AgentContract feature edge cases
+   Q4 LLM profile digest sensitivity   Q5 production callers of the two new parameters      => F-36, F-37 (Q2, Q3, Q4 positive)
+
+5. Not run: mutation sample on the 6 paths (not repeated; the first-audit sample did not cover them), GitHub Actions contexts, full tests/unit, igx_gov ticket, the eight domain replays, network tests.
+
+6. verify_iiac_audit_manifest.py and verify_iiac_role_separation.py --strict-product-diff: logs/verify_iiac_audit_manifest.log, logs/verify_iiac_role_separation.log

@@ -1,0 +1,32 @@
+{
+  "verdict": "PASS",
+  "manifest_verdict": "PASS",
+  "policy_status": "ACTIVATION_REBINDING",
+  "findings": [
+    {
+      "id": "HIST-P5-01",
+      "original_severity": "BLOCKER",
+      "reaudit_disposition": "RESOLVED",
+      "evidence": "Prior activation bound audited_implementation_sha 2a6545f1 with audit_execution_sha 0946b1157 spanning 12 product paths (N-03). Re-audit binds audited_implementation_sha to HIST merge 3c91694c6; auditor publication tree 0946b1157 has zero product delta vs audited."
+    },
+    {
+      "id": "HIST-P5-02",
+      "original_severity": "INFO",
+      "reaudit_disposition": "ACCEPTED",
+      "evidence": "IIAC-GOV-1 Session B certification manifest bytes restored to pre-HIST publication (ae467c8c4 audit execution); HIST binding uses sibling manifest under HIST-P5-2026-11-09."
+    },
+    {
+      "id": "HIST-P5-03",
+      "original_severity": "INFO",
+      "reaudit_disposition": "ACCEPTED",
+      "evidence": "P4 product audit PASS_SCOPED @ 468b17576; C1-C4 allowed-file discipline confirmed in campaign ladder."
+    },
+    {
+      "id": "HIST-P5-04",
+      "original_severity": "INFO",
+      "reaudit_disposition": "OPEN",
+      "classification": "external_authority",
+      "evidence": "ENT-AUDIT-X counter-signature on shared re-activation remains absent; does not block N-03 correction."
+    }
+  ]
+}

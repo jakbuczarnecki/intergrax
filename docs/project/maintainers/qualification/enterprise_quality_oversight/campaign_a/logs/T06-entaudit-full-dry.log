@@ -1,0 +1,10 @@
+--- Enterprise audit summary ---
+Mode: FULL  certifying_run=False
+Git SHA: 258bbf6abb6fdbb92ef0185d058527fbb1e47f04
+Status: INCOMPLETE  exit_code=2
+Checks executed/skipped/planned: 0/85/85
+Checks failed (executed): 0
+Coverage label: PARTIAL
+Duration ms: 11875
+Report JSON: D:\Projekty\intergrax\.tmp\session\eqo-a\logs\entaudit_full_dry\enterprise_audit_report.json
+Report Markdown: D:\Projekty\intergrax\.tmp\session\eqo-a\logs\entaudit_full_dry\enterprise_audit_report.md

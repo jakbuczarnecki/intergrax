@@ -1,0 +1,11 @@
+# activation certifier validation of the binding manifest (certification-governance-agent, session local_8974948e-d8d3-45e3-96ca-fb61dfd5f249)
+# HEAD: afdf27e622369c3c635aeb1301c9d90d962d8371 (working tree includes the uncommitted binding manifest and CRLF handoff under test)
+# UTC: 2026-11-14T07:31:46Z
+
+# command: python -m scripts.governance.verify_iiac_audit_manifest docs/project/maintainers/qualification/iiac_evidence/PDC-X/MCP-RC/activation/iiac_audit_session_manifest.IIAC-ACT-N11-MCP-RC-ACTIVATION.json --repo . --require-handoff-template
+verify_iiac_audit_manifest: PASS
+exit=0
+
+# command: python -m scripts.governance.verify_iiac_role_separation docs/project/maintainers/qualification/iiac_evidence/PDC-X/MCP-RC/activation/iiac_audit_session_manifest.IIAC-ACT-N11-MCP-RC-ACTIVATION.json --strict-product-diff --repo .
+verify_iiac_role_separation: PASS
+exit=0

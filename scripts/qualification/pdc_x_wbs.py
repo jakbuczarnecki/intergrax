@@ -1,0 +1,1408 @@
+# © Artur Czarnecki. All rights reserved.
+# ruff: noqa: E501  (WBS text data)
+
+"""PDC-X P4 implementation design (T-IGX-036-G).
+
+Reads ``PDC_DOMAIN_REQUIREMENTS_MATRIX.json`` and the checked-in ``BATCHES`` table, then
+renders the implementation WBS, the dependency DAG and the cross-domain test matrix.
+
+``--check`` fails when:
+
+* a work-requiring requirement row (gap classes) is not assigned to exactly one batch;
+* two batches of the same wave own the same write path (or one is a prefix of the other);
+* more than one batch of a wave writes under a shared integration hotspot;
+* a batch depends on an unknown batch, or the dependency graph has a cycle;
+* a rendered output is stale.
+
+Usage::
+
+    uv run python scripts/qualification/pdc_x_wbs.py --write
+    uv run python scripts/qualification/pdc_x_wbs.py --check
+"""
+
+from __future__ import annotations
+
+import argparse
+import json
+import re
+import sys
+from pathlib import Path
+from typing import Final, NamedTuple
+
+REPO: Final[Path] = Path(__file__).resolve().parents[2]
+DOSSIER: Final[Path] = REPO / "docs/project/maintainers/qualification/platform_domain_completeness"
+MATRIX: Final[Path] = DOSSIER / "PDC_DOMAIN_REQUIREMENTS_MATRIX.json"
+OUT_WBS: Final[Path] = DOSSIER / "PDC_IMPLEMENTATION_WBS.md"
+OUT_DAG: Final[Path] = DOSSIER / "PDC_DEPENDENCY_DAG.md"
+OUT_XD: Final[Path] = DOSSIER / "PDC_CROSS_DOMAIN_TEST_MATRIX.md"
+
+GAP_CLASSES: Final[frozenset[str]] = frozenset(
+    {
+        "IMPLEMENTATION_COMPLETION",
+        "INTEGRATION_CORRECTION",
+        "DOCUMENTATION_RECONCILIATION",
+        "ADVERSARIAL_COVERAGE_REQUIRED",
+        "BLOCKED_EXACT_REASON",
+    }
+)
+# Shared integration hotspots: one integration owner (the PDC orchestrator) serializes writers,
+# so at most one batch per wave may write under each prefix (PDC-P4-02).
+HOTSPOTS: Final[tuple[str, ...]] = ("intergrax/applications/_shared/", "intergrax/contracts/")
+INTEGRATION_OWNER: Final[str] = "PDC orchestrator session (single integration owner for shared hotspots)"
+PRODUCT_PREFIXES: Final[tuple[str, ...]] = ("intergrax/", "agents/", "applications/")
+
+GATE_PRODUCT: Final[str] = (
+    "OD-PDC-SEQ-01: implement in an isolated worktree; merge only after MCP-SERVER-X P8 publication; ACT-N11 re-activation at PDC-P7-00"
+)
+GATE_FREE: Final[str] = "No product path: may merge before MCP-SERVER-X P8"
+GATE_DONE: Final[str] = "Closed in PDC-P3 (ownership record)"
+GATE_EXTERNAL: Final[str] = "External: owned by MCP-SERVER-X P8"
+
+
+class Batch(NamedTuple):
+    bid: str
+    lane: str
+    title: str
+    ticket: str
+    wave: str
+    writes: tuple[str, ...]
+    adr: str
+    deps: tuple[str, ...]
+    gate: str
+    auditor: str
+    tests: str
+
+
+BATCHES: Final[tuple[Batch, ...]] = (
+    Batch(
+        "B-P3",
+        "GOV",
+        "Ownership records closed in P3",
+        "T-IGX-036-D",
+        "W0-done",
+        (),
+        "—",
+        (),
+        GATE_DONE,
+        "IA of the owning domain (P7 replay)",
+        "PDC_OWNERSHIP_MATRIX.md",
+    ),
+    Batch(
+        "B-MCP",
+        "EXT",
+        "MCP exposure security (MCP-SERVER-X P8)",
+        "MCP-SERVER-X",
+        "W0-external",
+        (),
+        "—",
+        (),
+        GATE_EXTERNAL,
+        "MCP-SERVER-X P8 auditor; PDC IA-D6 consumes the result",
+        "MCP-SERVER-X qualification package",
+    ),
+    Batch(
+        "B-DOC",
+        "DOC",
+        "Documentation reconciliations (wave A)",
+        "T-IGX-036-H",
+        "WA",
+        (
+            "docs/project/architecture/AGENT_DISTRIBUTION.md",
+            "docs/project/architecture/TIER3_APPLICATION_ENVIRONMENT.md",
+            "docs/project/architecture/BACKGROUND_TASKS.md",
+            "docs/project/architecture/intergrax_runtime_architecture.md",
+            "docs/project/maintainers/plans/TIER3_APPLICATION_ENVIRONMENT.md",
+            "docs/project/maintainers/plans/CRITIC_VERIFICATION.md",
+            "docs/project/maintainers/plans/BACKGROUND_TASKS.md",
+            "docs/project/maintainers/qualification/HARNESS_FINAL_CURRENT_HEAD_CERTIFICATION.md",
+        ),
+        "—",
+        (),
+        GATE_FREE,
+        "IA of the affected domain (doc delta at P7)",
+        "check_docs_domain_pairs.py; pdc_x_inventory.py --check",
+    ),
+    Batch(
+        "B-REG-T",
+        "REG",
+        "Stale-gate repair: ebh_5 (EBH-7 reclassification), GR-12 fixture authority, GR-10 AST gates",
+        "T-IGX-036-I",
+        "WB",
+        (
+            "tests/qualification/ebh_5/",
+            "tests/qualification/governance/",
+            "tests/unit/applications/task_control_product_host_test_support.py",
+            "docs/project/maintainers/qualification/EBH_5_CROSS_LAYER_REPLACEABILITY_MATRIX.md",
+        ),
+        "—",
+        (),
+        GATE_FREE,
+        "IA-D3 (ebh_5), IA-D4 (GR-12), IA-D6 (GR-10)",
+        "tests/qualification/ebh_5 + tests/qualification/governance green",
+    ),
+    Batch(
+        "B-REG-P",
+        "REG",
+        "Regression: duplicate `ollama` catalog slug breaks full integration bootstrap (7aa9cfa18)",
+        "T-IGX-036-M",
+        "W1",
+        ("intergrax/integrations/providers/embedding_provider/", "tests/qualification/pdc_x/reg_p/"),
+        "—",
+        (),
+        GATE_PRODUCT,
+        "IA-D1 (plug_03 replay)",
+        "tests/unit/rag/test_rag_plugin_discovery.py + tests/qualification/plug_03 green",
+    ),
+    Batch(
+        "B-D1",
+        "D1",
+        "Agent lifecycle: upgrade/retire, skill lifecycle, discovery owner, adversarial lifecycle",
+        "T-IGX-036-J",
+        "W1",
+        (
+            "intergrax/agent_distribution/",
+            "intergrax/skills/",
+            "intergrax/runtime/registry/",
+            "intergrax/core/plugins/discovery.py",
+            "intergrax/rag/bootstrap/entry_point_load.py",
+            "intergrax/runtime/vendor_knowledge/contribution_catalog.py",
+            "intergrax/contracts/agent_lifecycle_state.py",
+            "tests/qualification/pdc_x/d1/",
+        ),
+        "ADR-PDC-01",
+        (),
+        GATE_PRODUCT,
+        "IA-D1",
+        "tests/qualification/pdc_x/d1/",
+    ),
+    Batch(
+        "B-D3",
+        "D3",
+        "Model runtime: declared streaming/tool-streaming/cancel capabilities, conformance gate, catalog-owned context windows",
+        "T-IGX-036-K",
+        "W1",
+        ("intergrax/llm_adapters/", "tests/qualification/pdc_x/d3/"),
+        "ADR-PDC-03",
+        (),
+        GATE_PRODUCT,
+        "IA-D3",
+        "tests/qualification/pdc_x/d3/",
+    ),
+    Batch(
+        "B-D7",
+        "D7",
+        "Background: recurrence on SchedulerLedger, dead-letter state, identity on enqueue, two-process fencing",
+        "T-IGX-036-L",
+        "W1",
+        (
+            "intergrax/queueing/",
+            "intergrax/background_tasks/",
+            "intergrax/runtime/long_running/",
+            "intergrax/runtime/background_execution/",
+            "tests/qualification/pdc_x/d7/",
+        ),
+        "ADR-PDC-07",
+        (),
+        GATE_PRODUCT,
+        "IA-D7",
+        "tests/qualification/pdc_x/d7/",
+    ),
+    Batch(
+        "B-D2",
+        "D2",
+        "Context: trim fidelity, durable compaction (CE-02 closure), memory retention, RAG freshness, adversarial context",
+        "T-IGX-036-N",
+        "W2",
+        (
+            "intergrax/context/",
+            "intergrax/runtime/nexus/context/",
+            "intergrax/runtime/token_optimization/",
+            "intergrax/runtime/context_lifecycle/",
+            "intergrax/memory/",
+            "intergrax/rag/governance/",
+            "intergrax/rag/retrieval/retrieval_result.py",
+            "intergrax/rag/retrieval/retrieval_service.py",
+            "intergrax/rag/ingest/ingest_pipeline.py",
+            "tests/qualification/pdc_x/d2/",
+        ),
+        "ADR-PDC-02",
+        ("B-D1",),
+        GATE_PRODUCT,
+        "IA-D2",
+        "tests/qualification/pdc_x/d2/ + ce_02 replay",
+    ),
+    Batch(
+        "B-D5",
+        "D5",
+        "Evaluation: typed EvalDataset/EvalRun/EvalComparison, evaluator kinds, evidence persistence, advisory promotion",
+        "T-IGX-036-O",
+        "W2",
+        (
+            "intergrax/eval/",
+            "intergrax/experiments/",
+            "intergrax/runtime/evaluation/",
+            "intergrax/runtime/architecture/evaluation_assets.py",
+            "intergrax/runtime/architecture/evaluation_automation.py",
+            "intergrax/runtime/architecture/evaluation_registry_trends.py",
+            "intergrax/runtime/architecture/evaluation_scenario_loader.py",
+            "intergrax/runtime/architecture/online_evaluation_registry.py",
+            "intergrax/runtime/architecture/agent_promotion.py",
+            "intergrax/runtime/evidence/eval_evidence_contracts.py",
+            "intergrax/contracts/evaluation_contracts.py",
+            "intergrax/applications/_shared/evaluation_wiring.py",
+            "scripts/gates/check_mvp_promotion_gates.py",
+            "tests/qualification/pdc_x/d5/",
+        ),
+        "ADR-PDC-05",
+        ("B-D3",),
+        GATE_PRODUCT,
+        "IA-D5",
+        "tests/qualification/pdc_x/d5/",
+    ),
+    Batch(
+        "B-D6",
+        "D6",
+        "Security: fail-closed signing/poisoning defaults, single tool-input defense, durable audit trail, secret gate, plugin provenance",
+        "T-IGX-036-P",
+        "W3a",
+        (
+            "intergrax/runtime/security/",
+            "intergrax/core/security/",
+            "intergrax/core/catalog_bootstrap.py",
+            "intergrax/core/plugins/admission.py",
+            "intergrax/runtime/execution_evidence/attestor.py",
+            "intergrax/tools/providers/rag/service.py",
+            "intergrax/applications/_shared/critical_action_signing_wiring.py",
+            "intergrax/applications/_shared/security_assembly_resolver.py",
+            "intergrax/applications/_shared/security_audit_trail_wiring.py",
+            "intergrax/applications/_shared/application_security_wiring.py",
+            "docs/project/maintainers/architecture/satellites/",
+            "intergrax/runtime/attestation/host_attestation.py",
+            "intergrax/runtime/attestation/__init__.py",
+            "intergrax/applications/_shared/attestation_runtime_bridge.py",
+            "intergrax/core/plugins/discovery.py",
+            "intergrax/runtime/nexus/tools/plan_context_invocation.py",
+            "scripts/maintenance/check_critical_action_signing.py",
+            "scripts/maintenance/check_immutable_security_audit_trail.py",
+            "tests/unit/runtime/architecture/test_audit_ideal_depth_gate.py",
+            "tests/qualification/pdc_x/d6/",
+        ),
+        "ADR-PDC-06",
+        ("B-D2", "B-D5"),
+        GATE_PRODUCT,
+        "IA-D6",
+        "tests/qualification/pdc_x/d6/",
+    ),
+    Batch(
+        "B-D8",
+        "D8",
+        "Artifacts: taxonomy, mandatory digest, governed read/download port, durable store, retention, spill, dedupe",
+        "T-IGX-036-Q",
+        "W3b",
+        (
+            "intergrax/contracts/artifact_ref.py",
+            "intergrax/contracts/task_artifacts.py",
+            "intergrax/applications/contracts/application_artifacts.py",
+            "intergrax/runtime/nexus/artifacts/",
+            "intergrax/runtime/nexus/tracing/trace_models.py",
+            "intergrax/collaborative_work/",
+            "intergrax/runtime/execution/run_artifact_bundle_composition.py",
+            "intergrax/runtime/nexus/orchestration/run_artifact_bundle_builder.py",
+            "intergrax/applications/_shared/run_artifact_bundle_builder.py",
+            "docs/project/capabilities/architecture/ARTIFACT_LIFECYCLE.md",
+            "docs/project/capabilities/plan/ARTIFACT_LIFECYCLE.md",
+            "tests/qualification/state_x/_state_x_explicit_mechanism_classifications.py",
+            "intergrax/tools/providers/storage/service.py",
+            "intergrax/runtime/replay/models.py",
+            "intergrax/runtime/replay/replay_engine.py",
+            "tests/qualification/pdc_x/d8/",
+        ),
+        "ADR-PDC-08",
+        ("B-D6",),
+        GATE_PRODUCT,
+        "IA-D8",
+        "tests/qualification/pdc_x/d8/",
+    ),
+    Batch(
+        "B-D4",
+        "D4",
+        "Hosting: lifecycle suite + crash/restart proof, metrics, digest-preserving restart, stable API, TL-FIX-C",
+        "T-IGX-036-R",
+        "W3c",
+        (
+            "intergrax/hosting/",
+            "intergrax/applications/_shared/environment_wiring.py",
+            "intergrax/applications/contracts/environment_profile/sub_profiles.py",
+            "intergrax/applications/_shared/lkw_hybrid_daemon_wiring.py",
+            "tests/qualification/pdc_x/d4/",
+        ),
+        "ADR-PDC-04",
+        ("B-D7", "B-D8"),
+        GATE_PRODUCT,
+        "IA-D4",
+        "tests/qualification/pdc_x/d4/",
+    ),
+    Batch(
+        "B-P6",
+        "ALL",
+        "Cross-domain integration XD-01..12, DUP-X/EBH-4 replay, full ECAP change-delta",
+        "T-IGX-036-S",
+        "W4",
+        ("tests/qualification/pdc_x/xd/",),
+        "—",
+        ("B-D1", "B-D2", "B-D3", "B-D4", "B-D5", "B-D6", "B-D7", "B-D8", "B-REG-P", "B-REG-T"),
+        GATE_PRODUCT,
+        "IA-GLOBAL (P8) and each IA-Dn for its XD rows",
+        "tests/qualification/pdc_x/xd/",
+    ),
+    Batch(
+        "B-P6-R",
+        "ALL",
+        "Integration repairs found by the P5 lanes and the XD runs (tzdata, capability flags, freshness, launcher path, circular import, trace alias callers, feature-doc registration)",
+        "T-IGX-036-T",
+        "W5",
+        (
+            "pyproject.toml",
+            "uv.lock",
+            "intergrax/runtime/llm/model_call_runtime_evidence_adapter.py",
+            "intergrax/rag/retrieval/agentic_loop.py",
+            "intergrax/applications/_shared/lkw_hybrid_daemon_wiring.py",
+            "intergrax/runtime/integrations/observability.py",
+            "intergrax/runtime/execution/agent_runtime_context.py",
+            "intergrax/runtime/execution/trace_persistence_models_bridge.py",
+            "intergrax/runtime/nexus/context/context_manager.py",
+            "intergrax/runtime/nexus/context/shared_task_context.py",
+            "intergrax/runtime/nexus/engine/runtime_state.py",
+            "intergrax/runtime/nexus/engine/contracts/runtime_state_contract.py",
+            "intergrax/runtime/nexus/tracing/persistence_models.py",
+            "docs/project/capabilities/README.md",
+            "docs/project/architecture/intergrax_runtime_architecture.md",
+            "intergrax/runtime/nexus/tools/tool_runtime.py",
+            "intergrax/runtime/nexus/tools/plan_context_invocation.py",
+            "intergrax/runtime/task/worker_bootstrap.py",
+            "intergrax/runtime/persistence/sqlite_opens.py",
+            "intergrax/runtime/persistence/sqlite_composition.py",
+            "intergrax/runtime/nexus/artifacts/context_reference.py",
+            "intergrax/runtime/nexus/artifacts/spill.py",
+            "intergrax/memory/default_memory_control_plane.py",
+            "intergrax/runtime/agent_governance/pipeline.py",
+            "intergrax/llm_adapters/contracts/capabilities.py",
+            "tests/qualification/ebh_5/_sqlite_touchpoint_registry.py",
+            "intergrax/runtime/observability/export_boundary.py",
+            "tests/qualification/pdc_x/d4/test_d4_no_product_vocabulary.py",
+            "tests/qualification/pdc_x/xd/test_xd_02_agent_context.py",
+            "tests/qualification/pdc_x/xd/test_xd_03_agent_governance.py",
+            "tests/qualification/pdc_x/xd/test_xd_09_artifacts_context.py",
+            "tests/qualification/pdc_x/xd/test_xd_10_artifacts_security.py",
+            "tests/unit/memory/test_mem_ent10_memory_security_governance.py",
+            "tests/qualification/ebh_5/test_ebh_5_proof_integrity_gates.py",
+            "tests/qualification/pdc_x/p6_repair/",
+        ),
+        "—",
+        ("B-D1", "B-D2", "B-D3", "B-D4", "B-D5", "B-D6", "B-D7", "B-D8", "B-REG-P", "B-REG-T", "B-P6"),
+        GATE_PRODUCT,
+        "IA-GLOBAL (P8)",
+        "tests/qualification/pdc_x/p6_repair/",
+    ),
+    Batch(
+        "B-P6-M",
+        "ALL",
+        "Model binding found by XD-01: activated revision pins the LLM profile digest; required model features of an agent are checked when the adapter is bound",
+        "T-IGX-036-U",
+        "W6",
+        (
+            "intergrax/agent_distribution/runtime_revision.py",
+            "intergrax/agent_distribution/admin_service.py",
+            "intergrax/contracts/agent_contract_meta.py",
+            "intergrax/applications/_shared/llm_resolver.py",
+            "tests/qualification/pdc_x/xd/test_xd_01_agent_model.py",
+            "tests/qualification/pdc_x/p6_model/",
+        ),
+        "—",
+        ("B-P6-R",),
+        GATE_PRODUCT,
+        "IA-GLOBAL (P8)",
+        "tests/qualification/pdc_x/p6_model/",
+    ),
+    Batch(
+        "B-P6-G",
+        "ALL",
+        "ENT-AUDIT impact-map coverage of the PDC-touched product modules (XD finding 8)",
+        "T-IGX-036-V",
+        "W7",
+        (
+            "intergrax/platform/enterprise_audit/impact_map.py",
+            "intergrax/platform/enterprise_audit/data/changed_since_impact_map.v1.json",
+            "tests/qualification/ent_audit_x/unit/test_changed_since_impact_map.py",
+            "tests/qualification/pdc_x/xd/test_xd_12_evol_ent_audit.py",
+            "tests/qualification/pdc_x/p6_impact/",
+        ),
+        "—",
+        ("B-P6-R", "B-P6-M"),
+        GATE_PRODUCT,
+        "IA-GLOBAL (P8)",
+        "tests/qualification/pdc_x/p6_impact/",
+    ),
+    Batch(
+        "B-P6-F",
+        "ALL",
+        "ECAP VBN-REACHABILITY: the single ollama catalog row resolves the embedding category; ebh_5 harness registers the owning row first",
+        "T-IGX-036-X",
+        "W8",
+        (
+            "intergrax/integrations/providers/model_serving_runtime/ollama/bundle.py",
+            "intergrax/integrations/providers/model_serving_runtime/ollama/register.py",
+            "intergrax/integrations/providers/embedding_provider/ollama/bundle.py",
+            "intergrax/integrations/providers/embedding_provider/ollama/register.py",
+            "tests/qualification/ebh_5/_package_c_v2_primitives.py",
+            "tests/qualification/pdc_x/p6_ecapfix/",
+        ),
+        "—",
+        ("B-P6-G",),
+        GATE_PRODUCT,
+        "IA-GLOBAL (P8)",
+        "tests/qualification/pdc_x/p6_ecapfix/; test_ebh_5_behavioral_package_c_v2.py green",
+    ),
+    Batch(
+        "B-P6-E",
+        "ALL",
+        "P6 acceptance record and EBH-7 re-pin (fresh L3 replay at the integrated baseline)",
+        "T-IGX-036-W",
+        "W9",
+        (
+            "docs/project/maintainers/qualification/ebh_7_p03_independent_replay/",
+            "docs/project/maintainers/qualification/EBH_7_SHA_LADDER.md",
+            "docs/project/maintainers/qualification/EBH_7_B6_F10_ECAP_NORMATIVE_MATRIX.md",
+            "docs/project/maintainers/qualification/platform_domain_completeness/PDC_P6_ACCEPTANCE_RECORD.md",
+            "docs/project/maintainers/qualification/platform_domain_completeness/PDC_SHA_LADDER.md",
+            "docs/project/maintainers/qualification/platform_domain_completeness/PDC_REG_DIAGNOSIS.md",
+            ".github/workflows/unit-tests.yml",
+            "tests/qualification/ebh_7/_constants.py",
+        ),
+        "—",
+        ("B-P6-G", "B-P6-F"),
+        GATE_FREE,
+        "IA-GLOBAL (P8)",
+        "PDC_P6_ACCEPTANCE_RECORD.md; tests/qualification/ebh_7 green at the new pin",
+    ),
+    Batch(
+        "B-P6-H",
+        "ALL",
+        "EBH-7 B6-F10 computed certification at the P6 pin: closed-stage family evidence (FRZ-AUD, FRZ-EVOL), C4 path classification, replay-profile coverage",
+        "T-IGX-036-Y",
+        "W10",
+        (
+            "tests/qualification/ebh_7/_ebh7_f10_canonical_inputs.py",
+            "tests/qualification/ebh_7/_ebh7_f10_ecap_normative_matrix.py",
+            "tests/qualification/ebh_7/test_ebh_7_b6_f10_c1_c4_closure_gates.py",
+            "docs/project/maintainers/qualification/ebh_7_p03_independent_replay/MANIFEST.json",
+            "docs/project/maintainers/qualification/ebh_7_p03_independent_replay/ARTIFACT_DIGESTS.json",
+        ),
+        "—",
+        ("B-P6-E",),
+        GATE_FREE,
+        "IA-GLOBAL (P8)",
+        "tests/qualification/ebh_7/test_ebh_7_b6_f10_c1_c4_closure_gates.py; the real F10 gate and five cascade tests stay red until the final re-pin",
+    ),
+    Batch(
+        "B-P6-I",
+        "ALL",
+        "Omnibus repair of the cheap P6 debt: pdc_x process exit (R-05), stale baseline-red test fixtures, unused embedding_provider/ollama manifest",
+        "T-IGX-036-Z",
+        "W11",
+        (
+            "intergrax/integrations/providers/embedding_provider/ollama/manifest.py",
+            "applications/local_workspace_application/tests/test_run_artifact_metadata.py",
+            "tests/integration/runtime/nexus/tracing/test_sqlite_run_trace_store.py",
+            "tests/unit/integrations/providers/test_p5_m6_p4_providers.py",
+            "tests/unit/rag/embedding/test_hf_embedding_provider_execution.py",
+            "tests/qualification/pdc_x/conftest.py",
+            "tests/qualification/pdc_x/xd/test_xd_03_agent_governance.py",
+            "tests/qualification/pdc_x/p6_debt/",
+        ),
+        "—",
+        ("B-P6-F",),
+        GATE_PRODUCT,
+        "IA-GLOBAL (P8)",
+        "tests/qualification/pdc_x/p6_debt/; the pdc_x pytest process exits after its summary line",
+    ),
+    Batch(
+        "B-P6-J",
+        "ALL",
+        "MCP-RC handoff repairs: the single openai catalog row dispatches on integration_category (F-49, F-50 pins); ENT-AUDIT impact rule for the Tier-3 applications/ root (F-41)",
+        "T-IGX-040-A",
+        "W12",
+        (
+            "intergrax/integrations/providers/embedding_provider/openai/register.py",
+            "intergrax/platform/enterprise_audit/impact_map.py",
+            "intergrax/platform/enterprise_audit/data/changed_since_impact_map.v1.json",
+            "tests/qualification/pdc_x/p6_ecapfix/",
+            "tests/qualification/pdc_x/p6_impact/",
+        ),
+        "—",
+        ("B-P6-I",),
+        GATE_PRODUCT,
+        "IA-GLOBAL (P8)",
+        "tests/qualification/pdc_x/p6_ecapfix/ and p6_impact/; xd_12 and p6_impact coverage tests green on development and on a tree that contains the MCP-RC change",
+    ),
+    Batch(
+        "B-P7-D2",
+        "D2",
+        "D2 repair after the P7 independent audit (IA-D2): tool-call payloads counted by the hard context budget and oldest-first last-resort drop (F-D2-01 compiler half, F-D2-17), tenant-qualified and governed TASK memory scope (F-D2-02, F-D2-14), isolated reindex hooks (F-D2-11), bounded retention-sweep clock and deadline (F-D2-13), 35 red D2-cited RAG and context test files root-caused (F-D2-08, F-D2-09, F-D2-10, F-D2-18); F-D2-03..07, 12, 15, 16, 19 are declared exceptions",
+        "T-IGX-041-B",
+        "W13",
+        (
+            "intergrax/context/budget/message_token_cost.py",
+            "intergrax/context/budget/mandatory_base_messages.py",
+            "intergrax/context/budget/token_counter.py",
+            "intergrax/runtime/nexus/context/context_compiler.py",
+            "intergrax/runtime/nexus/context/degradation_ladder.py",
+            "intergrax/runtime/nexus/context/context_preflight.py",
+            "intergrax/memory/default_memory_control_plane.py",
+            "intergrax/memory/contracts/memory_control.py",
+            "intergrax/memory/retention_sweep.py",
+            "intergrax/rag/governance/embedding_version_policy.py",
+            "intergrax/runtime/policy/pre_context_policy_audit.py",
+            "scripts/maintenance/check_pre_context_policy_wiring.py",
+            "tests/qualification/pdc_x/d2_repair/",
+            "tests/unit/rag/document_loaders/parsers/test_parser_pipeline.py",
+            "tests/unit/rag/document_loaders/registry/test_document_handler_registry.py",
+            "tests/unit/rag/document_loaders/test_document_loader.py",
+            "tests/unit/rag/document_splitters/test_native_strategies.py",
+            "tests/unit/rag/indexing/test_indexing_manager_indexes_documents.py",
+            "tests/unit/rag/indexing/test_single_index_strategy.py",
+            "tests/unit/rag/ingest/test_hierarchical_dual_index_wiring.py",
+            "tests/unit/rag/ingest/test_ingest_lci2b_loader_boundary.py",
+            "tests/unit/rag/ingest/test_ingest_pipeline_graph_wiring.py",
+            "tests/unit/rag/retrieval/test_ebh_2g_r1_retrieval_contract_typing_gate.py",
+            "tests/unit/rag/retrievers/test_hybrid_retriever.py",
+            "tests/unit/rag/vectorstore/test_hybrid_capability_routing.py",
+            "tests/unit/rag/vectorstore/test_source_ownership_contract.py",
+            "tests/unit/rag/vectorstore/test_vectorstore_cross_tenant_isolation.py",
+            "tests/integration/rag/document_loaders/parsers/test_doc_smart_document_handler.py",
+            "tests/integration/rag/document_loaders/parsers/test_document_handlers_framework.py",
+            "tests/integration/rag/document_loaders/parsers/test_excel_smart_document_handler.py",
+            "tests/integration/rag/document_loaders/parsers/test_html_smart_document_handler.py",
+            "tests/integration/rag/document_loaders/parsers/test_image_smart_document_handler.py",
+            "tests/integration/rag/document_loaders/parsers/test_pdf_smart_document_handler.py",
+            "tests/integration/rag/document_loaders/parsers/test_video_smart_document_handler.py",
+            "tests/integration/rag/document_loaders/test_fixture_dataset_ingestion.py",
+            "tests/integration/rag/embedding/test_hf_embedding_pipeline_integration.py",
+            "tests/integration/rag/embedding/test_ollama_embedding_pipeline_integration.py",
+            "tests/integration/rag/embedding/test_vllm_embedding_pipeline_integration.py",
+            "tests/integration/rag/rerankers/test_cross_encoder_reranker.py",
+            "tests/integration/rag/rerankers/test_embedding_cosine_reranker.py",
+            "tests/integration/rag/rerankers/test_semantic_reranker.py",
+            "tests/integration/rag/retrievers/test_retrieval_integration.py",
+            "tests/integration/rag/retrievers/test_retriever_pipeline_basic.py",
+            "tests/integration/rag/test_graph_reingest_qualification.py",
+            "tests/integration/rag/test_neo4j_live_qualification.py",
+            "tests/integration/rag/test_same_source_reingest_serialization.py",
+            "tests/integration/context/test_mem_xint6_cross_layer_e2e_certification.py",
+            "tests/unit/runtime/architecture/test_ideal_harness_l3_w2_depth_gate.py",
+            "tests/qualification/pdc_x/d2/test_d2_compaction_roundtrip.py",
+            "tests/qualification/pdc_x/d2/test_d2_context_fidelity.py",
+            "tests/qualification/memory_behavior/fixtures.py",
+            "tests/qualification/memory_behavior/scenarios/task.py",
+            "tests/unit/runtime/nexus/context/test_context_compiler.py",
+            "tests/unit/context/test_ce_02_r1d_safe_degradation.py",
+            "tests/unit/context/budget/test_ce02_r1i_mandatory_provider_hard_budget.py",
+            "tests/qualification/ce_02/test_ce_02_qualification_batch.py",
+            "tests/qualification/pdc_x/d2/test_d2_memory_retention.py",
+        ),
+        "ADR-PDC-02",
+        ("B-P6-J",),
+        GATE_PRODUCT,
+        "IA-D2 (re-audit, loop 1 of 2)",
+        "tests/qualification/pdc_x/d2_repair/ plus the D2-cited suites of the ticket test contract; the 35 red files of IA-D2 run 5 green or classified; D3 estimator change (T-IGX-041-C, PR 569) merged first",
+    ),
+    Batch(
+        "B-P7-D5",
+        "D5",
+        "P7 repair of the independent D5 audit (loop 1): tenant isolation of online evaluation observations and the three hosts that hold a tenant (F-D5-01), ExperimentSession.run NameError and governance identity admission (F-D5-07), evaluation evidence status and comparison coverage (F-D5-04), promotion certification subject binding (F-D5-03 strengthening part), MVP promotion gate G0/G2 symbols and anchored authorization (F-D5-02 strengthening part), contract regex hygiene, R017 boundary documentation (F-D5-08); F-D5-05 and F-D5-06 are declared exceptions",
+        "T-IGX-041-E",
+        "W13",
+        (
+            "intergrax/runtime/architecture/online_evaluation_registry.py",
+            "intergrax/runtime/architecture/user_satisfaction.py",
+            "intergrax/runtime/architecture/online_evaluation.py",
+            "intergrax/runtime/architecture/agent_promotion.py",
+            "intergrax/runtime/evidence/eval_evidence_contracts.py",
+            "intergrax/eval/eval_comparison.py",
+            "intergrax/experiments/workflow.py",
+            "scripts/gates/check_mvp_promotion_gates.py",
+            "intergrax/contracts/evaluation_contracts.py",
+            "intergrax/applications/_shared/harness_host_runtime.py",
+            "intergrax/applications/_shared/runtime_config_bridge.py",
+            "intergrax/applications/_shared/scenario_runtime_baseline.py",
+            "tests/qualification/pdc_x/d5_repair/",
+            "docs/project/architecture/EXPERIMENTATION_AND_DEVELOPER_EXPERIENCE.md",
+            "docs/project/maintainers/plans/EXPERIMENTATION_AND_DEVELOPER_EXPERIENCE.md",
+        ),
+        "—",
+        ("B-P6-J",),
+        GATE_PRODUCT,
+        "IA-D5 (P7 re-audit)",
+        "tests/qualification/pdc_x/d5_repair/ plus the cited d5, xd_08, experiments, online evaluation and host suites green; every in-scope finding pinned red-then-green with negative tests",
+    ),
+    Batch(
+        "B-P7-D1",
+        "D1",
+        "D1 repair after the P7 independent audit (IA-D1): activation, rollback and the deploy/activate pipeline re-check revocation, authorized emergency revocation entry point, application-ownership guard on install/upgrade, no leftover VERIFIED upgrade candidate, 18 red D1 suites root-caused",
+        "T-IGX-041-A",
+        "W14",
+        (
+            "intergrax/agent_distribution/admin_service.py",
+            "intergrax/applications/_shared/deploy_activate_pipeline.py",
+            "intergrax/applications/_shared/durable_registry_projection_input_store.py",
+            "tests/qualification/pdc_x/d1_repair/",
+            "tests/qualification/pdc_x/d1/test_d1_adversarial_lifecycle.py",
+            "tests/unit/agents/authoring/conftest.py",
+            "tests/unit/agents/authoring/patterns/test_pattern_probe_runs.py",
+            "tests/unit/agents/authoring/test_acp_execution_budget_ledger_factory.py",
+            "tests/unit/agents/authoring/test_acp_routing_trace_integration.py",
+            "tests/unit/agents/authoring/test_acp_wave3_trace.py",
+            "tests/unit/agents/authoring/test_rb2b2_uer_consumer_requalification.py",
+            "tests/unit/agent_distribution/test_ac6_architecture_gates.py",
+            "tests/unit/agent_distribution/test_agent_distribution_activation_remediation.py",
+            "tests/unit/agent_distribution/test_agent_distribution_build_remediation.py",
+            "tests/integration/agent_distribution/test_canonical_agent_lifecycle_e2e.py",
+            "tests/integration/agent_distribution/test_enterprise_agent_lifecycle_durable_e2e.py",
+            "tests/integration/agent_distribution/test_enterprise_projection_rehydration_e2e.py",
+            "tests/integration/agent_distribution/test_ac6_trust_lifecycle_e2e.py",
+        ),
+        "ADR-PDC-01",
+        ("B-P6-J",),
+        GATE_PRODUCT,
+        "IA-D1 (re-audit, loop 1 of 2)",
+        "tests/qualification/pdc_x/d1_repair/ plus the D1-cited suites of the ticket test contract; the 18 ids of the IA-D1 report (F-D1-11) green",
+    ),
+    Batch(
+        "B-P7-D7",
+        "D7",
+        "P7 repair of D7 Background and Scheduling (IA-D7 findings F-D7-01, 02, 04, 06, 07, 08, 10, 11, 12, 13): per-claim isolation and a crash-safe recurrence chain, tenant-qualified occurrence identity, UTC-normalized run_at_utc, bounded recurrence, sticky terminal queue states, conditional-write claims, head-of-line fix, reconciled documents; F-D7-03, 05, 09 are declared exceptions",
+        "T-IGX-041-G",
+        "W13",
+        (
+            "intergrax/runtime/long_running/scheduler.py",
+            "intergrax/runtime/long_running/recurrence.py",
+            "intergrax/runtime/long_running/scheduled_resume.py",
+            "intergrax/runtime/long_running/scheduled_resume_metadata.py",
+            "intergrax/runtime/long_running/scheduler_claim.py",
+            "intergrax/runtime/long_running/store.py",
+            "intergrax/runtime/long_running/postgresql_task_checkpoint_store.py",
+            "intergrax/queueing/providers/document_store/document_store_task_queue.py",
+            "tests/qualification/pdc_x/d7_repair/",
+            "tests/qualification/pdc_x/d7/test_d7_recurrence.py",
+            "tests/qualification/pdc_x/d7/test_d7_fencing_two_process.py",
+            "tests/qualification/pdc_x/d7/_fencing_worker.py",
+            "docs/project/architecture/BACKGROUND_TASKS.md",
+            "docs/project/maintainers/plans/BACKGROUND_TASKS.md",
+        ),
+        "—",
+        ("B-P6-J",),
+        GATE_PRODUCT,
+        "IA-D7 (P7 re-audit)",
+        "tests/qualification/pdc_x/d7_repair/ plus the cited d7, bg_01, sched_01 and XD-05/06 suites green; every in-scope finding pinned red-then-green with negative tests",
+    ),
+    Batch(
+        "B-P7-D4",
+        "D4",
+        "D4 repair after the P7 independent audit (IA-D4): cancellation rolls back lease, components and runtime; bounded runtime readiness probe and bounded event/metric publishes; public API fingerprint sees model config and constraints; composition-root gate with the declared lab MCP exception; TL-FIX-C and isolation-bound documentation reconciled; symlink tests skip without privilege",
+        "T-IGX-041-D",
+        "W13",
+        (
+            "intergrax/hosting/engine/engine.py",
+            "intergrax/hosting/eventing.py",
+            "intergrax/hosting/supervisor/supervisor.py",
+            "intergrax/hosting/public_api.py",
+            "tests/qualification/pdc_x/d4_repair/",
+            "tests/qualification/pdc_x/d4/test_d4_crash_restart_subprocess.py",
+            "tests/unit/hosting/instance/test_file_guard.py",
+            "tests/unit/hosting/instance/test_w3_file_guard_regression.py",
+            "docs/project/architecture/TIER3_APPLICATION_ENVIRONMENT.md",
+            "docs/project/maintainers/plans/TIER3_APPLICATION_ENVIRONMENT.md",
+            "docs/project/maintainers/plans/satellites/TIER3_APPLICATION_ENVIRONMENT_embedded_detail.md",
+            "docs/project/architecture/APPLICATION_HOSTING.md",
+        ),
+        "ADR-PDC-04",
+        ("B-P6-J",),
+        GATE_PRODUCT,
+        "IA-D4 (re-audit, loop 1 of 2)",
+        "tests/qualification/pdc_x/d4_repair/ plus the D4-cited suites of the ticket test contract (pdc_x/d4, host_01, tests/unit/hosting)",
+    ),
+    Batch(
+        "B-P7-D3",
+        "D3",
+        "P7 repair of the independent D3 audit (loop 1): streaming guard, quota and cancel registration on the default OpenAI, Gemini/Vertex and LangChain Ollama stream paths (F-D3-01); refusal and content-filter normalization on every stream and buffered path (F-D3-02); word-boundary retry classification (F-D3-07 defect part); tool_calls in the token estimator (F-D2-01 estimator half); stale llm_adapters unit suites (F-D3-05); timeout_sec doc honesty (F-D3-03 doc part)",
+        "T-IGX-041-C",
+        "W13",
+        (
+            "intergrax/llm_adapters/base/base_llm_adapter.py",
+            "intergrax/llm_adapters/contracts/call_config.py",
+            "intergrax/llm_adapters/_shared/retry.py",
+            "intergrax/llm_adapters/_shared/openai_completion_mapping.py",
+            "intergrax/llm_adapters/_shared/stream_finish_signal.py",
+            "intergrax/llm_adapters/providers/openai_responses_adapter.py",
+            "intergrax/llm_adapters/providers/openai_chat_completions_adapter.py",
+            "intergrax/llm_adapters/providers/gemini_adapter.py",
+            "intergrax/llm_adapters/providers/ollama_adapter.py",
+            "intergrax/llm_adapters/providers/native_ollama_adapter.py",
+            "intergrax/llm_adapters/providers/mistral_adapter.py",
+            "intergrax/llm_adapters/providers/claude_adapter.py",
+            "intergrax/llm_adapters/providers/cohere_native_adapter.py",
+            "intergrax/llm_adapters/providers/aws_bedrock_adapter.py",
+            "platform_proofs/scenarios/ai_incident_investigation/application/investigator_agent.py",
+            "tests/qualification/pdc_x/d3/",
+            "tests/unit/llm_adapters/test_estimate_tokens_tool_calls.py",
+            "tests/unit/llm_adapters/test_ollama_tool_calling.py",
+            "tests/unit/llm_adapters/test_registry_model_contract.py",
+            "tests/unit/llm_adapters/test_llm_provider_registry.py",
+            "tests/unit/llm_adapters/test_p2_002_c_provider_registration.py",
+            "tests/unit/llm_adapters/registry_state_test_support.py",
+            "tests/unit/llm_adapters/test_adapter_conformance.py",
+            "tests/unit/llm_adapters/test_structured_output_flags.py",
+        ),
+        "ADR-PDC-03",
+        ("B-P6-J",),
+        GATE_PRODUCT,
+        "IA-D3 (re-audit, loop 1 of 2)",
+        "tests/unit/llm_adapters, ce_02 and pdc_x/d3 green in the combined run with the llm extras; new pinned tests red on the unchanged code; mutants M03 and M12 killed",
+    ),
+    Batch(
+        "B-P7-D8",
+        "D8",
+        "P7 repair of the independent D8 audit (loop 1): RuntimeContext.create_artifact tenant, producer and lineage (F-D8-07), version-safe and audited retention sweep (F-D8-05), expiry enforced at read (F-D8-06), stored workspace required on read and lifecycle operations (F-D8-04 partial), raw storage tools refuse the Collaborative Work content key space (F-D8-03 bounded), governed port honours a returned decision and audits backend failures (F-D8-08, F-D8-12), documentation of library-only parts (F-D8-17); F-D8-01 and F-D8-02 are declared exceptions",
+        "T-IGX-041-H",
+        "W13",
+        (
+            "intergrax/runtime/execution/agent_runtime_context.py",
+            "intergrax/runtime/nexus/artifacts/store_base.py",
+            "intergrax/runtime/nexus/artifacts/sqlite_artifact_store.py",
+            "intergrax/runtime/nexus/artifacts/in_memory_artifact_store.py",
+            "intergrax/runtime/nexus/artifacts/retention.py",
+            "intergrax/runtime/nexus/artifacts/sources.py",
+            "intergrax/runtime/nexus/artifacts/governed_access.py",
+            "intergrax/tools/providers/storage/service.py",
+            "tests/qualification/pdc_x/d8_repair/",
+            "tests/qualification/pdc_x/d8/test_d8_governed_port.py",
+            "tests/qualification/pdc_x/d8/test_xd09_spill_and_context_reference.py",
+            "tests/qualification/pdc_x/d8/test_xd10_tenant_and_ttl.py",
+            "tests/qualification/pdc_x/xd/test_xd_02_agent_context.py",
+            "tests/qualification/pdc_x/xd/test_xd_09_artifacts_context.py",
+            "tests/qualification/pdc_x/xd/test_xd_10_artifacts_security.py",
+            "tests/qualification/pdc_x/xd/test_xd_11_observability.py",
+            "docs/project/capabilities/architecture/ARTIFACT_LIFECYCLE.md",
+            "docs/project/capabilities/plan/ARTIFACT_LIFECYCLE.md",
+        ),
+        "ADR-PDC-08",
+        ("B-P6-J",),
+        GATE_PRODUCT,
+        "IA-D8 (P7 re-audit)",
+        "tests/qualification/pdc_x/d8_repair/ plus the cited d8, xd_02, xd_09, xd_10, xd_11 and storage tool suites green; every in-scope finding pinned red-then-green with negative tests",
+    ),
+    Batch(
+        "B-P7-D6",
+        "D6",
+        "D6 repair after the P7 independent audit (IA-D6), loop 1: evidence-plane security audit trail writes only through a validating port (F-D6-01), overstating immutable/replicated wording relabeled (F-D6-02), plugin provenance bound to the attested distribution (F-D6-05), stale sandbox governance-deny test root-caused (F-D6-07), provider text kept out of the credential error chain (F-D6-12)",
+        "T-IGX-041-F",
+        "W13",
+        (
+            "intergrax/runtime/security/security_audit_trail.py",
+            "intergrax/runtime/security/multi_region_audit_trail.py",
+            "intergrax/core/plugins/admission.py",
+            "intergrax/integrations/credentials/secrets_store_resolver.py",
+            "tests/qualification/pdc_x/d6_repair/",
+            "tests/unit/runtime/sandbox/test_cap_c1c_sandbox_evidence_and_contract_purity.py",
+        ),
+        "ADR-PDC-06",
+        ("B-P6-J",),
+        GATE_PRODUCT,
+        "IA-D6 (re-audit, loop 1 of 2)",
+        "tests/qualification/pdc_x/d6_repair/ red on unchanged code and green after; d6, xd_02/06/10, compat_x F-35 and event-evolution gates, sandbox unit suite and credential tests green except the known reds named in the ticket",
+    ),
+    Batch(
+        "B-P7-TX",
+        "TX",
+        "P7 re-pin of the TENANT-X class-field carrier-count gate (F-D2-03, F-D3-06, F-D6-06): classify the carriers added and removed since the pin, re-pin the total once after the last domain repair, strengthen the classification check; test-only",
+        "T-IGX-041-I",
+        "W13",
+        (
+            "tests/qualification/tenant_x/_replay_x_carrier_reconciliation.py",
+            "tests/qualification/tenant_x/test_tenant_x_replay_carrier_reclassification.py",
+        ),
+        "—",
+        ("B-P6-J",),
+        GATE_FREE,
+        "IA-GLOBAL (P8)",
+        "tests/qualification/tenant_x green at the final head; negative tests prove an unclassified, swapped or unreasoned carrier still fails; PHASE 2 runs only after the D1, D2 and D6 repair PRs are merged",
+    ),
+    Batch(
+        "B-P7-F10",
+        "ALL",
+        "B6-F10 C4 classifier entries for the three paths the classifier reports as UNKNOWN (intergrax/experiments/workflow.py, intergrax/integrations/credentials/secrets_store_resolver.py, the incident investigator fixture agent): exact-path entries added, default classification unchanged, preparatory to the final EBH-7 re-pin",
+        "T-IGX-041-K",
+        "W13",
+        (
+            "tests/qualification/ebh_7/_ebh7_f10_canonical_inputs.py",
+            "tests/qualification/ebh_7/test_ebh_7_b6_f10_c4_041k_entries_gates.py",
+        ),
+        "—",
+        ("B-P6-H",),
+        GATE_FREE,
+        "IA-GLOBAL (P8)",
+        "tests/qualification/ebh_7/test_ebh_7_b6_f10_c4_041k_entries_gates.py and test_ebh_7_b6_f10_c1_c4_closure_gates.py green; certify_f10 C4 has 0 UNKNOWN paths over the accepted-baseline range; merges before the final re-pin pin P",
+    ),
+    Batch(
+        "B-P7-RP",
+        "ALL",
+        "Final EBH-7 re-pin after all P7 repairs: fresh L3 replay at the development tip P (W1' prep with allowlisted paths only, one workflow dispatch, W2' record)",
+        "T-IGX-041-J",
+        "W15",
+        (
+            "docs/project/maintainers/qualification/ebh_7_p03_independent_replay/",
+            "docs/project/maintainers/qualification/EBH_7_SHA_LADDER.md",
+            "docs/project/maintainers/qualification/EBH_7_B6_F10_ECAP_NORMATIVE_MATRIX.md",
+            "docs/project/maintainers/qualification/EBH_7_ECAP_CURRENT_HEAD_AUDIT_REPORT.md",
+            "docs/project/maintainers/qualification/platform_domain_completeness/PDC_SHA_LADDER.md",
+            "docs/project/maintainers/qualification/platform_domain_completeness/PDC_REG_DIAGNOSIS.md",
+            "docs/project/maintainers/qualification/platform_domain_completeness/PDC_EBH7_FINAL_REPIN_RECORD.md",
+            ".github/workflows/unit-tests.yml",
+            "tests/qualification/ebh_7/_constants.py",
+        ),
+        "—",
+        ("B-P7-D1", "B-P7-D2", "B-P7-D3", "B-P7-D4", "B-P7-D5", "B-P7-D6", "B-P7-D7", "B-P7-D8", "B-P7-TX"),
+        GATE_FREE,
+        "IA-GLOBAL (P8)",
+        "tests/qualification/ebh_7 green at the new pin; replay run id and artifact digests recorded; not a B6 PASS",
+    ),
+    Batch(
+        "B-P7-CX",
+        "ALL",
+        "Re-pin of the COMPAT-X counters (debt item Z-D1 of T-IGX-036-Z) at the last product change: pinned counters, id-exact evidence fixture and four accepted shim-delta paths classified as heuristic hits; tests and fixtures only",
+        "T-IGX-041-L",
+        "W14b",
+        (
+            "tests/qualification/compat_x/_compat_x_semantic_identity_reconciliation.py",
+            "tests/qualification/compat_x/test_compat_x_pdc_x_p7_repin_delta.py",
+            "tests/fixtures/compat_x/accepted_shim_delta_replay_x_05549f9.json",
+            "tests/fixtures/compat_x/repin_pdc_x_p7_delta.json",
+        ),
+        "—",
+        ("B-P7-D1", "B-P7-D2", "B-P7-D3", "B-P7-D4", "B-P7-D5", "B-P7-D6", "B-P7-D7", "B-P7-D8", "B-P7-TX"),
+        GATE_FREE,
+        "IA-GLOBAL (P8)",
+        "tests/qualification/compat_x green at the re-pinned counters; the ten red tests of the plan pass; new negative tests (hidden removal, extra candidate, balanced substitution, unexpected shim path) fail without their guard",
+    ),
+    Batch(
+        "B-P8-R2",
+        "P8",
+        "P8 repair loop 1, test hygiene of the closure suites and the incident scenario (IA-GLOBAL G-04 test side, G-05 test-side residue, G-10): stale keyword, missing occurrence persistence, invalid proof descriptor value plus a descriptor gate, FakeVectorstore double, reingest test key scope, wrong CI claim of the RAG red classification, stale D5-contract and audit-depth tests; test, data and classification files only",
+        "T-IGX-041-N",
+        "W15",
+        (
+            "tests/unit/platform_proofs/scenarios/ai_incident_investigation/test_completion_alignment.py",
+            "tests/unit/platform_proofs/scenarios/ai_incident_investigation/test_diagnostic_platform_integration.py",
+            "platform_proofs/scenarios/indirect_prompt_injection/proof.json",
+            "tests/unit/rag/indexing/test_indexing_manager_indexes_documents.py",
+            "tests/integration/rag/test_same_source_reingest_serialization.py",
+            "tests/qualification/pdc_x/d2_repair/RAG_RED_CLASSIFICATION.md",
+            "tests/unit/applications/test_harness_host_runtime_llm.py",
+            "tests/unit/applications/test_scenario_runtime_baseline.py",
+            "tests/unit/runtime/architecture/test_audit_ideal_depth_gate.py",
+            "tests/qualification/pdc_x/n_repair/",
+        ),
+        "—",
+        ("B-P7-TX",),
+        GATE_FREE,
+        "IA-GLOBAL (P8 re-check of G-04, G-05, G-10)",
+        "tests/qualification/pdc_x/n_repair green and red on the unchanged descriptor; the repaired tests of the plan green; the excluded rows stay red with named owners; no product or hotspot path written",
+    ),
+    Batch(
+        "B-P8-R1",
+        "R1",
+        "P8 repair loop 1, product defects of the independent global audit: RAG loader family (doc smart handler import, duplicate parser runtime document class, in-memory list_collections), recurrence chain survives eligibility-phase failures (scheduler), incident scenario runtime authority, manifest and registry carry-over plus evidence adapter token count (time-boxed), governed content key refusal in the workspace tools plus case, dot and filesystem-root hardening, credential error context, two product paths classified in the ENT-AUDIT impact map, durable projection slug pin (test-only); register, debt and test-hygiene findings are excluded in the plan",
+        "T-IGX-041-M",
+        "W14a",
+        (
+            "intergrax/applications/_shared/scenario_runtime_baseline.py",
+            "intergrax/runtime/llm/model_call_runtime_evidence_adapter.py",
+            "platform_proofs/scenarios/ai_incident_investigation/application/runtime_composition.py",
+            "intergrax/rag/document_loaders/handlers/doc_smart_document_handler.py",
+            "intergrax/rag/document_loaders/contracts/parser_native_handle.py",
+            "intergrax/rag/document_loaders/compat/legacy_runtime_document.py",
+            "intergrax/integrations/providers/vector_store/inmemory/integration.py",
+            "intergrax/runtime/long_running/scheduler.py",
+            "intergrax/tools/providers/workspace/service.py",
+            "intergrax/tools/providers/storage/service.py",
+            "intergrax/integrations/_shared/p3/clients.py",
+            "intergrax/integrations/credentials/secrets_store_resolver.py",
+            "intergrax/platform/enterprise_audit/impact_map.py",
+            "intergrax/platform/enterprise_audit/data/changed_since_impact_map.v1.json",
+            "tests/qualification/pdc_x/p8_repair/",
+            "docs/project/architecture/BACKGROUND_TASKS.md",
+            "docs/project/capabilities/architecture/ARTIFACT_LIFECYCLE.md",
+        ),
+        "—",
+        ("B-P7-D1", "B-P7-D2", "B-P7-D6", "B-P7-D7", "B-P7-D8"),
+        GATE_PRODUCT,
+        "IA-GLOBAL (P8)",
+        "tests/qualification/pdc_x/p8_repair/ red on unchanged code and green after; d1, d6, d7, d8, sched_01, p6_impact, xd_12, rag loader and compat_x suites green except the known red classes named in the ticket",
+    ),
+    Batch(
+        "B-P8-R3",
+        "P8",
+        "P8 repair loop 1, test-only refresh before the EBH-7 pin: three B6-F10 C4 classifier entries for the paths the P8 repairs made UNKNOWN (intergrax/integrations/_shared/p3/clients.py, platform_proofs/scenarios/ai_incident_investigation/application/runtime_composition.py, platform_proofs/scenarios/indirect_prompt_injection/proof.json) and the id-exact COMPAT-X evidence fixture row whose line number the P8 scheduler repair moved; entries are added, no gate is weakened",
+        "T-IGX-041-O",
+        "W14c",
+        (
+            "tests/qualification/ebh_7/_ebh7_f10_canonical_inputs.py",
+            "tests/qualification/ebh_7/test_ebh_7_b6_f10_c4_041o_entries_gates.py",
+            "tests/fixtures/compat_x/repin_pdc_x_p7_delta.json",
+        ),
+        "—",
+        ("B-P7-F10", "B-P7-CX", "B-P8-R1", "B-P8-R2"),
+        GATE_FREE,
+        "IA-GLOBAL (P8)",
+        "tests/qualification/ebh_7/test_ebh_7_b6_f10_c4_041o_entries_gates.py red on the unchanged classifier and green after; the K gates and the whole tests/qualification/compat_x directory green; certify_f10() reports 0 UNKNOWN and C4 PASS over 5a3a05347..HEAD and dc18e36d9..HEAD",
+    ),
+    Batch(
+        "B-P8-R4",
+        "P8",
+        "P8 repair loop 2, finding G-23 of the global audit: the GraphRAG evidence of a re-ingested source resolves its active publication generation under the key scoped by the root document id, as ingest and the vector side do (the graph indexer stamps the root document id on versioned evidence, the in-memory graph store and the shared visibility helper use it as publication_scope_id); the Neo4j store stays unchanged as a declared residual",
+        "T-IGX-041-P",
+        "W16",
+        (
+            "intergrax/rag/graph/generation_visibility.py",
+            "intergrax/rag/graph/providers/inmemory_graph_store.py",
+            "intergrax/rag/graph/indexer/heuristic_graph_indexer.py",
+            "tests/unit/rag/graph/test_graph_publication_scope_visibility.py",
+        ),
+        "—",
+        ("B-P7-D2", "B-P8-R1"),
+        GATE_PRODUCT,
+        "Delta audit (DELEGATION-PDC-LOOP2)",
+        "tests/unit/rag/graph/test_graph_publication_scope_visibility.py red on the unchanged code and green after, with negatives for a wrong scope id, a missing scope id, another source and another tenant, namespace or workspace; the two G-23 reproduction tests green; only these tests run (no EBH-7 replay, no broad suite, no new pin)",
+    ),
+    Batch(
+        "B-P8-R5",
+        "P8",
+        "P8 repair loop 2, test hygiene of the two B6-F10 C4 entry gates: the tests that remove the K and O classifier entries append three paths to the canonical changed paths only when the range does not already hold them, so each reason occurs once at the new pin; no gate is weakened",
+        "T-IGX-041-Q",
+        "W16",
+        (
+            "tests/qualification/ebh_7/test_ebh_7_b6_f10_c4_041k_entries_gates.py",
+            "tests/qualification/ebh_7/test_ebh_7_b6_f10_c4_041o_entries_gates.py",
+        ),
+        "—",
+        ("B-P7-F10", "B-P8-R3"),
+        GATE_FREE,
+        "Delta audit (DELEGATION-PDC-LOOP2)",
+        "the two changed removing-the-entries tests red before and green after at the manifest pin, with negatives for one missing entry and for a range that lacks the paths; only the two files run (no EBH-7 replay, no broad suite, no new pin)",
+    ),
+)
+
+# Requirement -> batch overrides where the corrective-task text alone is ambiguous.
+OVERRIDES: Final[dict[str, str]] = {
+    "PDC-D1-R022": "B-REG-P",
+    "PDC-D3-R024": "B-REG-T",
+    "PDC-D4-R020": "B-REG-T",
+    "PDC-D6-R028": "B-REG-T",
+    "PDC-D1-R021": "B-P3",
+    "PDC-D7-R022": "B-P3",
+    "PDC-D6-R017": "B-MCP",
+    "PDC-D5-R017": "B-D5",
+    "PDC-D6-R021": "B-D6",
+    "PDC-D6-R023": "B-D6",
+    "PDC-D6-R022": "B-D8",
+}
+_LANE_TO_BATCH: Final[dict[str, str]] = {
+    "PDC-P5-D1": "B-D1",
+    "PDC-P5-D2": "B-D2",
+    "PDC-P5-D3": "B-D3",
+    "PDC-P5-D4": "B-D4",
+    "PDC-P5-D5": "B-D5",
+    "PDC-P5-D6": "B-D6",
+    "PDC-P5-D7": "B-D7",
+    "PDC-P5-D8": "B-D8",
+    "PDC-P5-DOC": "B-DOC",
+    "PDC-P6": "B-P6",
+}
+_LANE = re.compile(r"PDC-P5-D\d|PDC-P5-DOC|PDC-P6")
+
+XD: Final[tuple[tuple[str, str, str, str], ...]] = (
+    (
+        "XD-01",
+        "Agent ↔ Model",
+        "Activated agent revision pins profile/model; provider swap by config leaves the agent contract unchanged; capability mismatch fails closed",
+        "test_xd_01_agent_model.py",
+    ),
+    (
+        "XD-02",
+        "Agent ↔ Context",
+        "Tenant A agent cannot read tenant B memory/RAG; revoked agent loses context access",
+        "test_xd_02_agent_context.py",
+    ),
+    (
+        "XD-03",
+        "Agent ↔ Tools/Governance",
+        "Agent-proposed tool call without a governance permit is denied; no agent-owned execution path",
+        "test_xd_03_agent_governance.py",
+    ),
+    (
+        "XD-04",
+        "Agent ↔ Host",
+        "Configured vs effective roster; restart preserves active revision and profile digest",
+        "test_xd_04_agent_host.py",
+    ),
+    (
+        "XD-05",
+        "Host ↔ Background",
+        "Shutdown drains in-flight tasks; scheduler lease released/fenced; no duplicate on restart",
+        "test_xd_05_host_background.py",
+    ),
+    (
+        "XD-06",
+        "Background ↔ Security",
+        "Retried task re-authorizes; credential revoked mid-retry fails closed; no duplicate side effect",
+        "test_xd_06_background_security.py",
+    ),
+    (
+        "XD-07",
+        "Model ↔ Context",
+        "Budget/truncation keeps mandatory instructions; streamed tool-call provenance recorded; restart reconstruction",
+        "test_xd_07_model_context.py",
+    ),
+    (
+        "XD-08",
+        "Evaluation ↔ Model/Agent",
+        "Baseline vs candidate rerun is digest-identical; an evaluation PASS cannot authorize promotion",
+        "test_xd_08_evaluation.py",
+    ),
+    (
+        "XD-09",
+        "Artifacts ↔ Context/Tools",
+        "Large tool output spills to an artifact ref; compaction keeps the ref; evidence artifacts undeletable",
+        "test_xd_09_artifacts_context.py",
+    ),
+    (
+        "XD-10",
+        "Artifacts ↔ Security",
+        "Cross-tenant artifact read denied; TTL deletion honored; no raw secret in artifacts",
+        "test_xd_10_artifacts_security.py",
+    ),
+    (
+        "XD-11",
+        "All ↔ Observability/Trace",
+        "Every mandatory operation emits canonical trace/evidence (inventory-driven assertion)",
+        "test_xd_11_observability.py",
+    ),
+    (
+        "XD-12",
+        "All ↔ EVOL/ENT-AUDIT",
+        "ENT-AUDIT changed_since maps every PDC-touched path to checks (impact-map completeness)",
+        "test_xd_12_evol_ent_audit.py",
+    ),
+)
+
+
+def load_rows() -> list[dict[str, str]]:
+    rows = json.loads(MATRIX.read_text(encoding="utf-8"))["rows"]
+    assert isinstance(rows, list)
+    return rows
+
+
+def work_rows(rows: list[dict[str, str]]) -> list[dict[str, str]]:
+    return [r for r in rows if r["GAP_CLASS"] in GAP_CLASSES]
+
+
+def assign(row: dict[str, str]) -> list[str]:
+    rid = row["REQUIREMENT_ID"]
+    if rid in OVERRIDES:
+        return [OVERRIDES[rid]]
+    return sorted({_LANE_TO_BATCH[m] for m in _LANE.findall(row["CORRECTIVE_TASK"])})
+
+
+def _overlap(a: str, b: str) -> bool:
+    return a == b or a.startswith(b) or b.startswith(a)
+
+
+def validate(rows: list[dict[str, str]]) -> list[str]:
+    errors: list[str] = []
+    ids = {b.bid for b in BATCHES}
+    if len(ids) != len(BATCHES):
+        errors.append("DUPLICATE_BATCH_ID")
+    for row in work_rows(rows):
+        got = assign(row)
+        if len(got) != 1:
+            errors.append(f"ASSIGNMENT:{row['REQUIREMENT_ID']}:{got}")
+        elif got[0] not in ids:
+            errors.append(f"UNKNOWN_BATCH:{row['REQUIREMENT_ID']}:{got[0]}")
+    for b in BATCHES:
+        errors.extend(f"UNKNOWN_DEP:{b.bid}:{d}" for d in b.deps if d not in ids)
+    by_wave: dict[str, list[Batch]] = {}
+    for b in BATCHES:
+        by_wave.setdefault(b.wave, []).append(b)
+    for wave, group in by_wave.items():
+        for i, a in enumerate(group):
+            for b in group[i + 1 :]:
+                errors.extend(
+                    f"WRITE_CONFLICT:{wave}:{a.bid}:{b.bid}:{pa}"
+                    for pa in a.writes
+                    for pb in b.writes
+                    if _overlap(pa, pb)
+                )
+        for hot in HOTSPOTS:
+            writers = [b.bid for b in group if any(w.startswith(hot) for w in b.writes)]
+            if len(writers) > 1:
+                errors.append(f"HOTSPOT:{wave}:{hot}:{writers}")
+    seen: set[str] = set()
+    stack: set[str] = set()
+    graph = {b.bid: b.deps for b in BATCHES}
+
+    def visit(node: str) -> None:
+        if node in stack:
+            errors.append(f"CYCLE:{node}")
+            return
+        if node in seen or node not in graph:
+            return
+        stack.add(node)
+        for dep in graph[node]:
+            visit(dep)
+        stack.discard(node)
+        seen.add(node)
+
+    for bid in graph:
+        visit(bid)
+    return errors
+
+
+def _is_product(batch: Batch) -> bool:
+    return any(w.startswith(PRODUCT_PREFIXES) for w in batch.writes)
+
+
+def render_wbs(rows: list[dict[str, str]]) -> str:
+    members: dict[str, list[dict[str, str]]] = {b.bid: [] for b in BATCHES}
+    for row in work_rows(rows):
+        members[assign(row)[0]].append(row)
+    total = len(work_rows(rows))
+    out = [
+        "# PDC-X — implementation WBS (PDC-P4)",
+        "",
+        "**Generated** by `scripts/qualification/pdc_x_wbs.py` from `PDC_DOMAIN_REQUIREMENTS_MATRIX.json` and the checked-in batch table; do not edit by hand. Ticket T-IGX-036-G.",
+        "",
+        f"**Coverage:** {total} work-requiring requirement rows, each assigned to exactly one batch (checked).",
+        "Rows classed `CURRENT_HEAD_REQUALIFICATION`, `ALREADY_CERTIFIED_REUSABLE`, `N/A_WITH_EVIDENCE` or `DEFERRED_OUTSIDE_FREEZE_SCOPE` close at PDC-P7 by replay or carry their authorizing OD, so they are not P5 work.",
+        "",
+        f"**Integration owner:** {INTEGRATION_OWNER}. Shared hotspots: "
+        + ", ".join(f"`{h}`" for h in HOTSPOTS)
+        + ". At most one batch per wave may write under each hotspot (checked).",
+        "",
+        "**Ticket letters** for P5 batches are reserved here. Each ticket file is scaffolded with its own plan at batch start, so draft tickets do not go stale while product merges wait on MCP-SERVER-X P8.",
+        "",
+        "## Batches",
+        "",
+        "| Batch | Lane | Wave | Ticket (reserved) | Rows | ADR | Depends on | Product code | Merge gate | Auditor |",
+        "| --- | --- | --- | --- | ---: | --- | --- | --- | --- | --- |",
+    ]
+    for b in BATCHES:
+        out.append(
+            f"| {b.bid} | {b.lane} | {b.wave} | {b.ticket} | {len(members[b.bid])} | {b.adr} | {', '.join(b.deps) or '—'} | "
+            f"{'YES' if _is_product(b) else 'no'} | {b.gate} | {b.auditor} |"
+        )
+    for b in BATCHES:
+        out += [
+            "",
+            f"## {b.bid} — {b.title}",
+            "",
+            f"- **Ticket:** {b.ticket} · **Wave:** {b.wave} · **ADR:** {b.adr} · **Auditor:** {b.auditor}",
+            f"- **Write set:** {', '.join(f'`{w}`' for w in b.writes) if b.writes else '— (no writes)'}",
+            f"- **Tests:** {b.tests}",
+            f"- **Evidence (exact SHA):** implementation SHA and publication SHA recorded in `PDC_SHA_LADDER.md`; test log under `.tmp/proof/pdc-x-p5/{b.bid}/`; audited by {b.auditor} at the PDC-P7 audited SHA.",
+            f"- **Merge gate:** {b.gate}",
+            "",
+            "| Requirement | Class | Test case |",
+            "| --- | --- | --- |",
+        ]
+        out += [f"| {r['REQUIREMENT_ID']} | {r['GAP_CLASS']} | {r['TEST_CASE']} |" for r in members[b.bid]] or [
+            "| — | — | — |"
+        ]
+    return "\n".join(out) + "\n"
+
+
+def render_dag() -> str:
+    out = [
+        "# PDC-X — dependency DAG (PDC-P4-02)",
+        "",
+        "**Generated** by `scripts/qualification/pdc_x_wbs.py`. Waves run in order; batches within a wave run in parallel in separate worktrees (at most 3 concurrent implementer sessions, one bounded pytest each). Fala 3 is deliberately sequential because its batches share `intergrax/applications/_shared/` and `intergrax/contracts/`.",
+        "",
+        "```mermaid",
+        "graph LR",
+        "  P4[PDC-P4 design] --> WA",
+        "  subgraph WA[Wave A - now]",
+        "    B-DOC",
+        "  end",
+        "  subgraph WB[Wave B - tests only]",
+        "    B-REG-T",
+        "  end",
+        "  WA --> WB",
+        "  GATE{{OD-PDC-SEQ-01: MCP-SERVER-X P8 published}}",
+    ]
+    for b in BATCHES:
+        if b.wave in {"W0-done", "W0-external", "WA", "WB"}:
+            continue
+        for dep in b.deps:
+            out.append(f"  {dep} --> {b.bid}")
+    out += [
+        "  P4 --> B-D1 & B-D3 & B-D7 & B-REG-P",
+        "  GATE -. merges .-> B-D1 & B-D3 & B-D7 & B-REG-P & B-D2 & B-D5 & B-D6 & B-D8 & B-D4",
+        "  B-P6 --> ACT{{PDC-P7-00 ACT-N11 activation}} --> P7[PDC-P7: 8 domain audits]",
+        "  B-REG-T --> P7",
+        "  P7 --> MCPC{{MCP-SERVER-X CLOSED}} --> P8[PDC-P8 global audit] --> P9[PDC-P9 closure + ARCH-FREEZE handoff]",
+        "```",
+        "",
+        "## Critical path",
+        "",
+        "PDC-P4 → (implementation in worktrees, merges gated) → **MCP-SERVER-X P8 published** → B-D6 → B-D8 → B-D4 → B-P6 → PDC-P7-00 ACT-N11 → PDC-P7 → PDC-P8 → PDC-P9.",
+        "",
+        "Wave 3 sets the length of the path. Its three batches run in sequence because they share hotspot files. Waves 1–2 run alongside it and finish earlier.",
+        "",
+        "## Waves",
+        "",
+        "| Wave | Batches | Can start | Merge |",
+        "| --- | --- | --- | --- |",
+    ]
+    waves: dict[str, list[str]] = {}
+    for b in BATCHES:
+        waves.setdefault(b.wave, []).append(b.bid)
+    starts = {
+        "W0-done": ("—", "done"),
+        "W0-external": ("MCP-SERVER-X campaign", "MCP-SERVER-X"),
+        "WA": ("now", "any time"),
+        "WB": ("after P4", "any time (tests only)"),
+        "W1": ("after P4", "after MCP-SERVER-X P8"),
+        "W2": ("after W1 dependencies", "after MCP-SERVER-X P8"),
+        "W3a": ("after W2", "after MCP-SERVER-X P8"),
+        "W3b": ("after B-D6", "after MCP-SERVER-X P8"),
+        "W3c": ("after B-D7 and B-D8", "after MCP-SERVER-X P8"),
+        "W4": ("after all P5 batches", "after MCP-SERVER-X P8"),
+        "W5": ("after B-P6 (XD runs)", "after MCP-SERVER-X P8"),
+        "W6": ("after B-P6-R", "after MCP-SERVER-X P8"),
+        "W7": ("after B-P6-R and B-P6-M", "after MCP-SERVER-X P8"),
+        "W8": ("after B-P6-G and the signature of T-IGX-036-X", "any time (no product path)"),
+        "W9": ("after B-P6-F and the signature of T-IGX-036-W", "any time (no product path)"),
+        "W10": ("after B-P6-E and the signature of T-IGX-036-Y", "any time (no product path)"),
+        "W11": (
+            "after B-P6-F and the signature of T-IGX-036-Z",
+            "under DELEGATION-PDC-STANDING authorization 3 (one product path: deletion of an unused manifest)",
+        ),
+        "W12": (
+            "after B-P6-I and the signature of T-IGX-040-A",
+            "after the signature of T-IGX-040-A (one-time exception OD-MCP-RC-05; both repairs in one PR, then product paths freeze again)",
+        ),
+        "W13": (
+            "after B-P6-J and the signature of T-IGX-041-E",
+            "after the signature of T-IGX-041-E (DELEGATION-PDC-P7-REPAIR merge gate; product paths of the P7 repairs are re-pinned once after all repairs)",
+        ),
+        "W14": (
+            "after B-P7-D5 (W13) is merged and the signature of T-IGX-041-A",
+            "after the signature of T-IGX-041-A (DELEGATION-PDC-P7-REPAIR merge gate; W14 because B-P7-D1 and B-P7-D5 both write under intergrax/applications/_shared/ and one wave may hold only one such batch)",
+        ),
+        "W14a": (
+            "after every B-P7 repair batch (W13, W14) is merged and the signature of T-IGX-041-M",
+            "before the EBH-7 pin P and before T-IGX-041-L takes the COMPAT-X counters (DELEGATION-PDC-CLOSE decision 2 merge gate; product paths of the P8 repair loop are re-pinned once by the EBH-7 pin)",
+        ),
+        "W14b": (
+            "after every B-P7 repair batch (W13, W14) is merged and the signature of T-IGX-041-L",
+            "before the EBH-7 pin P is taken (tests/qualification/compat_x and tests/fixtures are not on the executable-identity allowlist); test-only pull request",
+        ),
+        "W14c": (
+            "after every B-P7 repair batch (W13, W14) and the P8 repair batches B-P8-R1 and B-P8-R2 are merged and the signature of T-IGX-041-O",
+            "before the EBH-7 pin P is taken (tests/qualification/ebh_7, tests/qualification/compat_x and tests/fixtures are not on the executable-identity allowlist); test-only pull request",
+        ),
+        "W16": (
+            "after the merge of PR #590 (DELEGATION-PDC-LOOP2) and the signatures of T-IGX-041-P and T-IGX-041-Q",
+            "targeted tests only (DELEGATION-PDC-LOOP2 condition: no EBH-7 replay, no new pin); B-P8-R4 writes a product path (ACT-N11), B-P8-R5 is test-only; the delta audit follows both",
+        ),
+        "W15": (
+            "after every B-P7 repair batch (W13, W14) and the signature of T-IGX-041-J",
+            "docs-only pull requests W1' and W2' after the preconditions of the plan (F10 classifier entries, COMPAT-X counters) are merged; one workflow dispatch between them",
+        ),
+    }
+    for wave, bids in waves.items():
+        start, merge = starts.get(wave, ("?", "?"))
+        out.append(f"| {wave} | {', '.join(bids)} | {start} | {merge} |")
+    out += [
+        "",
+        "## Operator gates",
+        "",
+        "| Gate | Blocks | Authority |",
+        "| --- | --- | --- |",
+        "| MCP-SERVER-X P8 published | every product-path merge (B-REG-P, B-D1..B-D8, B-P6) | OD-PDC-SEQ-01 |",
+        "| PDC-P7-00 ACT-N11 activation at INTEGRATED_BASELINE_SHA | PDC-P7 audits | OD-PDC-IIAC-SCOPE + Operator activation line |",
+        "| IIAC protocol header sub-question | PDC-P7-00 | Operator (open) |",
+        "| MCP-SERVER-X CLOSED | PDC-P8 | roadmap §3.2 |",
+        "| PDC-P9 closure | ARCH-FREEZE handoff | IIAC-B6 + Operator |",
+    ]
+    return "\n".join(out) + "\n"
+
+
+def render_xd(rows: list[dict[str, str]]) -> str:
+    out = [
+        "# PDC-X — cross-domain test matrix (PDC-P4-03)",
+        "",
+        "**Generated** by `scripts/qualification/pdc_x_wbs.py`. Owner batch: **B-P6** (T-IGX-036-S). Every scenario is a real-integration qualification test: mandatory paths use the canonical composition roots, not mocks; fakes are allowed only for external vendors (Path B).",
+        "",
+        "| XD | Pair | Scenario | Planned module | Requirements proven |",
+        "| --- | --- | --- | --- | --- |",
+    ]
+    for xid, pair, scenario, module in XD:
+        tag = "xd_" + xid[-2:]
+        proven = [r["REQUIREMENT_ID"] for r in rows if tag in r["TEST_CASE"]]
+        out.append(
+            f"| {xid} | {pair} | {scenario} | `tests/qualification/pdc_x/xd/{module}` | {', '.join(proven) or 'scenario-level (no single row)'} |"
+        )
+    return "\n".join(out) + "\n"
+
+
+def _outputs(rows: list[dict[str, str]]) -> tuple[tuple[Path, str], ...]:
+    return ((OUT_WBS, render_wbs(rows)), (OUT_DAG, render_dag()), (OUT_XD, render_xd(rows)))
+
+
+def check() -> list[str]:
+    rows = load_rows()
+    errors = validate(rows)
+    if errors:
+        return errors
+    for path, text in _outputs(rows):
+        if not path.is_file() or path.read_text(encoding="utf-8") != text:
+            errors.append(f"STALE_OUTPUT:{path.name} (re-run with --write)")
+    return errors
+
+
+def main(argv: list[str] | None = None) -> int:
+    parser = argparse.ArgumentParser(description=__doc__.splitlines()[0])
+    mode = parser.add_mutually_exclusive_group(required=True)
+    mode.add_argument("--write", action="store_true")
+    mode.add_argument("--check", action="store_true")
+    args = parser.parse_args(argv)
+    rows = load_rows()
+    if args.write:
+        errors = validate(rows)
+        if not errors:
+            for path, text in _outputs(rows):
+                path.write_text(text, encoding="utf-8", newline="\n")
+            print(f"[OK] wrote WBS for {len(work_rows(rows))} rows in {len(BATCHES)} batches")
+            return 0
+    else:
+        errors = check()
+        if not errors:
+            print(f"[OK] pdc_x_wbs: {len(work_rows(rows))} rows assigned, {len(BATCHES)} batches, no write conflicts")
+            return 0
+    for err in errors:
+        print(f"[ERROR] {err}", file=sys.stderr)
+    return 1
+
+
+if __name__ == "__main__":
+    raise SystemExit(main())

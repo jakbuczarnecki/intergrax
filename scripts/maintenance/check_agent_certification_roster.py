@@ -14,13 +14,14 @@ for path in (REPO_ROOT, APPLICATIONS_ROOT, REPO_ROOT / "agents"):
     text = str(path)
     if text not in sys.path:
         sys.path.insert(0, text)
-
-from intergrax.applications._shared.strict_product_manifest_ci_gates import (  # noqa: E402
-    check_strict_product_agent_certification,
-)
 from intergrax.applications._shared.product_manifest_registry import (  # noqa: E402
     iter_strict_product_manifests,
 )
+from intergrax.applications._shared.strict_product_manifest_ci_gates import (  # noqa: E402
+    check_strict_product_agent_certification,
+)
+
+import shipped_product_manifest_catalog  # noqa: E402, F401
 
 
 def main() -> int:

@@ -19,10 +19,6 @@ from dataclasses import dataclass
 from pathlib import Path
 
 import pytest
-
-from governed_contractor_application.host.offline_demo import (
-    run_offline_governed_contractor_demo,
-)
 from intergrax.cli.main import main as cli_main
 from intergrax.contracts.execution_evidence.receipt import ProofReceipt
 from intergrax.runtime.execution_evidence.attestor import build_deterministic_test_attestor
@@ -32,6 +28,12 @@ from intergrax.runtime.execution_evidence.key_store import (
     write_verification_key_artifact,
 )
 from intergrax.runtime.execution_evidence.verify import verify_proof_receipt
+
+from governed_contractor_application.host.offline_demo import (
+    run_offline_governed_contractor_demo,
+)
+
+_GCA_MODULE = "applications.governed_contractor_application"
 
 pytestmark = [pytest.mark.unit, pytest.mark.gate]
 
@@ -65,6 +67,35 @@ def _cli_subprocess(*args: str, cwd: Path | None = None) -> subprocess.Completed
     env["PYTHONIOENCODING"] = "cp1252"
     return subprocess.run(
         [sys.executable, "-m", "intergrax.cli", *args],
+        cwd=str(cwd or _REPO),
+        capture_output=True,
+        text=True,
+        encoding="utf-8",
+        errors="replace",
+        env=env,
+        check=False,
+    )
+
+
+def _gca_cli(*args: str) -> _CliResult:
+    out = io.StringIO()
+    err = io.StringIO()
+    with redirect_stdout(out), redirect_stderr(err):
+        try:
+            from applications.governed_contractor_application.__main__ import main as gca_main
+
+            code = gca_main(list(args))
+        except SystemExit as exc:
+            code = int(exc.code or 0)
+    return _CliResult(returncode=int(code), stdout=out.getvalue(), stderr=err.getvalue())
+
+
+def _gca_cli_subprocess(*args: str, cwd: Path | None = None) -> subprocess.CompletedProcess[str]:
+    env = os.environ.copy()
+    env.pop("PYTHONUTF8", None)
+    env["PYTHONIOENCODING"] = "cp1252"
+    return subprocess.run(
+        [sys.executable, "-m", _GCA_MODULE, *args],
         cwd=str(cwd or _REPO),
         capture_output=True,
         text=True,
@@ -115,17 +146,10 @@ def test_filesystem_key_resolver_malformed_and_deprecated(tmp_path: Path) -> Non
         status="active",
     )
     assert (
-        FilesystemHostKeyResolver(tmp_path, allow_deprecated=True).resolve_public_key(
-            "dep-1"
-        )
+        FilesystemHostKeyResolver(tmp_path, allow_deprecated=True).resolve_public_key("dep-1")
         == attestor.public_key_bytes
     )
-    assert (
-        FilesystemHostKeyResolver(tmp_path, allow_deprecated=False).resolve_public_key(
-            "dep-1"
-        )
-        is None
-    )
+    assert FilesystemHostKeyResolver(tmp_path, allow_deprecated=False).resolve_public_key("dep-1") is None
 
     write_verification_key_artifact(
         tmp_path,
@@ -141,26 +165,36 @@ def test_filesystem_key_resolver_malformed_and_deprecated(tmp_path: Path) -> Non
 
 
 def test_cli_help_ascii_safe_inprocess() -> None:
-    commands = [
+    tier0_commands = [
+        ["--help"],
+        ["receipt", "--help"],
+        ["receipt", "verify", "--help"],
+    ]
+    gca_commands = [
         ["--help"],
         ["demo", "--help"],
         ["demo", "governed-contractor", "--help"],
-        ["receipt", "--help"],
-        ["receipt", "verify", "--help"],
         ["external-work", "--help"],
         ["external-work", "retry-attestation", "--help"],
     ]
-    for cmd in commands:
-        result = _cli(*cmd)
-        assert result.returncode == 0, (cmd, result.stderr)
-        combined = result.stdout + result.stderr
-        for ch in _BANNED_HELP_CHARS:
-            assert ch not in combined, f"{cmd} contains {ch!r}"
+    commands = [(tier0_commands, _cli), (gca_commands, _gca_cli)]
+    for cmd_list, runner in commands:
+        for cmd in cmd_list:
+            result = runner(*cmd)
+            assert result.returncode == 0, (cmd, result.stderr)
+            combined = result.stdout + result.stderr
+            for ch in _BANNED_HELP_CHARS:
+                assert ch not in combined, f"{cmd} contains {ch!r}"
+
+
+def test_tier0_cli_rejects_governed_contractor_commands() -> None:
+    result = _cli("demo", "governed-contractor", "--help")
+    assert result.returncode == 2
 
 
 def test_cli_help_cp1252_subprocess_smoke() -> None:
     """One real process under narrow encoding — Windows help contract."""
-    proc = _cli_subprocess("demo", "governed-contractor", "--help")
+    proc = _gca_cli_subprocess("demo", "governed-contractor", "--help")
     assert proc.returncode == 0, proc.stderr
     combined = (proc.stdout or "") + (proc.stderr or "")
     for ch in _BANNED_HELP_CHARS:
@@ -274,11 +308,7 @@ def test_verify_key_sources_and_negatives(demo_store: tuple[Path, object]) -> No
     assert "digest_mismatch" in mut_payload["errors"]
 
     bad_key_receipt = receipt_obj.model_copy(
-        update={
-            "host_attestation": receipt_obj.host_attestation.model_copy(
-                update={"key_id": "other-key"}
-            )
-        }
+        update={"host_attestation": receipt_obj.host_attestation.model_copy(update={"key_id": "other-key"})}
     )
     bad_path = store / "bad_key.json"
     bad_path.write_text(bad_key_receipt.model_dump_json(), encoding="utf-8")
@@ -296,15 +326,13 @@ def test_offline_demo_exports_verification_key(demo_store: tuple[Path, object]) 
     receipt = ProofReceipt.model_validate_json(
         Path(report.receipt_absolute_path).read_text(encoding="utf-8")  # type: ignore[attr-defined]
     )
-    assert verify_proof_receipt(
-        receipt, key_resolver=resolver, require_policy_bundle_artifact=True
-    ).valid
+    assert verify_proof_receipt(receipt, key_resolver=resolver, require_policy_bundle_artifact=True).valid
 
 
 def test_retry_invalid_execution_and_without_signer(tmp_path: Path) -> None:
     store = tmp_path / "empty"
     store.mkdir()
-    missing = _cli(
+    missing = _gca_cli(
         "external-work",
         "retry-attestation",
         "no-such-exec",
@@ -318,7 +346,7 @@ def test_retry_invalid_execution_and_without_signer(tmp_path: Path) -> None:
         store_root=store,
         simulate_signing_failure=True,
     )
-    bad_id = _cli(
+    bad_id = _gca_cli(
         "external-work",
         "retry-attestation",
         "missing-exec",
@@ -332,7 +360,7 @@ def test_retry_invalid_execution_and_without_signer(tmp_path: Path) -> None:
 def test_signer_failure_recovery_fresh_process(tmp_path: Path) -> None:
     """Fresh-process proof: demo fail -> retry -> verify -> idempotent retry."""
     store = tmp_path / "recovery"
-    fail = _cli_subprocess(
+    fail = _gca_cli_subprocess(
         "demo",
         "governed-contractor",
         "--offline",
@@ -350,7 +378,7 @@ def test_signer_failure_recovery_fresh_process(tmp_path: Path) -> None:
     assert ledger["create_calls"] == 1
     assert ledger["accept_calls"] == 1
 
-    retry = _cli_subprocess(
+    retry = _gca_cli_subprocess(
         "external-work",
         "retry-attestation",
         "exec-offline-accept",
@@ -365,13 +393,11 @@ def test_signer_failure_recovery_fresh_process(tmp_path: Path) -> None:
     export = store / "export" / "accept_receipt.json"
     assert export.is_file()
 
-    verify = _cli_subprocess(
-        "receipt", "verify", str(export), "--store", str(store)
-    )
+    verify = _cli_subprocess("receipt", "verify", str(export), "--store", str(store))
     assert verify.returncode == 0
     assert json.loads(verify.stdout)["valid"] is True
 
-    again = _cli_subprocess(
+    again = _gca_cli_subprocess(
         "external-work",
         "retry-attestation",
         "exec-offline-accept",
@@ -393,7 +419,7 @@ def test_signer_failure_recovery_fresh_process(tmp_path: Path) -> None:
 def test_demo_then_verify_fresh_process(tmp_path: Path) -> None:
     """Fresh-process proof: demo process exits, verifier process validates via --store."""
     store = tmp_path / "cli_demo"
-    demo = _cli_subprocess(
+    demo = _gca_cli_subprocess(
         "demo",
         "governed-contractor",
         "--offline",

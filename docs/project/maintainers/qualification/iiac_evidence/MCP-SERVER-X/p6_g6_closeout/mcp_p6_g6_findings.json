@@ -1,0 +1,27 @@
+{
+  "ticket": "T-IGX-035-G",
+  "auditor_session_id": "77e4a696-c2e5-4a47-94dc-58aff28ccb8d",
+  "verdict": "ACCEPT_SCOPED",
+  "audit_execution_sha": "9b8c19d75d5df0f4b7c87d2707811f3715805102",
+  "merge_sha": "a695c9c835bb5b4b206e6e3e00bb2aee23ca7b6b",
+  "findings": [
+    {
+      "id": "F-MCP-P6-GOV-001",
+      "severity": "CRITICAL",
+      "class": "governance",
+      "summary": "PR #459 merged before G6 publication, IIIC P6 rebind, and governance-fast green."
+    },
+    {
+      "id": "F-MCP-P6-GOV-002",
+      "severity": "HIGH",
+      "class": "governance",
+      "summary": "Ticket quality_gate stale vs merge reality."
+    },
+    {
+      "id": "F-MCP-P5-MEM-001",
+      "severity": "LOW",
+      "class": "residual",
+      "summary": "LIM-RESEARCH-STRICT-FACTORY-MEMORY unchanged cross-stage OPEN."
+    }
+  ]
+}

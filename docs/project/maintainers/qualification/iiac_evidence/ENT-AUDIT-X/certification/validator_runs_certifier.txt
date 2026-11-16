@@ -1,0 +1,6 @@
+W2-04 certifier validator runs @ ee5470f5 (pre phase-1 commit)
+PYTHONUTF8=1
+
+verify_iiac_policy_activation --require-in-force: exit 0
+verify_iiac_audit_manifest iiac_audit_session_manifest.ENT-AUDIT-X.json --require-handoff-template: exit 0
+verify_iiac_role_separation iiac_audit_session_manifest.ENT-AUDIT-X.json --strict-product-diff: exit 0

@@ -1,0 +1,6 @@
+slugs 199 dups 0
+OK    ollama                 model_serving_runtime    -> OllamaModelServingRuntimeIntegration
+OK    ollama                 embedding_provider       -> OllamaEmbeddingProviderIntegration
+FAIL  openai                 managed_retrieval        -> IntegrationConfigurationError: OpenAI managed retrieval requires OPENAI_API_KEY or explicit api_key
+OK    openai                 embedding_provider       -> OpenaiEmbeddingProviderIntegration
+multi-category resolves 4

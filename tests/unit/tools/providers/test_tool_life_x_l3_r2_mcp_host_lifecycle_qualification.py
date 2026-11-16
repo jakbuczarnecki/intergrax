@@ -10,7 +10,7 @@ from unittest.mock import AsyncMock
 
 import pytest
 from fastmcp import Client
-
+from intergrax.applications._shared.mcp_identity_mode import McpIdentityMode
 from intergrax.applications._shared.mcp_nexus_server import (
     build_nexus_mcp_server,
     execute_mcp_agent_task,
@@ -19,11 +19,10 @@ from intergrax.applications._shared.mcp_nexus_server import (
 from intergrax.contracts.execution_identity import mint_run_id, mint_task_id
 from intergrax.runtime.execution.host_task import HostTaskExecutionPort
 from intergrax.runtime.registry.agent_registry import AgentRegistry
-from intergrax.runtime.task.task import TaskState
+from intergrax.runtime.task.task import TaskResult, TaskState
 from intergrax.runtime.task.task_result_authoritative_exposure_defaults import (
     terminal_task_result_exposure_no_decision_gate,
 )
-from intergrax.runtime.task.task import TaskResult
 from intergrax.tools.mcp_result_bounds import bound_mcp_structured_result
 from tests.fixtures.tool_life_x_mcp_subprocess_qualification import (
     mcp_call_tool,
@@ -53,6 +52,7 @@ async def test_l3r2_host_run_agent_delegates_to_host_task_execution_port() -> No
     port.execute = AsyncMock(return_value=_completed_result("delegated"))
     registry = AgentRegistry()
     mcp = build_nexus_mcp_server(
+        identity_mode=McpIdentityMode.LOCAL_DEV_EXPLICIT,
         name="l3r2-host-contract",
         host_execution=port,
         registry=registry,
@@ -82,6 +82,7 @@ async def test_l3r2_host_tenant_isolation_between_mcp_calls() -> None:
     port.execute = AsyncMock(return_value=_completed_result())
     registry = AgentRegistry()
     mcp = build_nexus_mcp_server(
+        identity_mode=McpIdentityMode.LOCAL_DEV_EXPLICIT,
         name="l3r2-tenant",
         host_execution=port,
         registry=registry,

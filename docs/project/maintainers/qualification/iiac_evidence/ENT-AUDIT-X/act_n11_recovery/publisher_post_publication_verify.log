@@ -1,0 +1,15 @@
+ACT-N11 Session B — publisher post-publication verification
+Date: 2026-11-10
+Branch: iiac/act-n11-session-b-evidence
+
+Phase-1 evidence commit: e2bb6e9c0dab0b603f98fb6ffa11ff463da19c0b
+
+Manifest @ phase-2 pin (pre phase-3 cert binding correction):
+  verify_iiac_audit_manifest.py: PASS
+  verify_iiac_role_separation.py --strict-product-diff: PASS
+
+Independent audit verdict (unchanged): PASS_SCOPED
+Auditor session: 24eaa26b-34d7-451e-8acf-7e4949e5d348
+
+Pre-activation gate (expected red):
+  verify_iiac_policy_activation --require-in-force: exit 1 (7x ACT-N11 until Operator activation)

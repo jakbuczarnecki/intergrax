@@ -1,0 +1,41 @@
+"""Independent recompute of roll-up counts for check C08.
+Key format: '<relative jsonl>?field=value&field2=value2' (count rows) or '<relative jsonl>?*' (count all rows).
+A value of '~x' means: field contains list element x. Field 'a.b' reads nested dict."""
+from __future__ import annotations
+
+import sys
+from pathlib import Path
+
+sys.path.insert(0, str(Path(__file__).parent))
+from common import WS, read_jsonl
+
+
+def _get(row, field):
+    cur = row
+    for part in field.split("."):
+        if isinstance(cur, dict):
+            cur = cur.get(part)
+        else:
+            return None
+    return cur
+
+
+def compute(key: str) -> int:
+    rel, _, query = key.partition("?")
+    rows = read_jsonl(WS / rel)
+    if query in ("", "*"):
+        return len(rows)
+    conds = [c.split("=", 1) for c in query.split("&")]
+    n = 0
+    for r in rows:
+        ok = True
+        for f, v in conds:
+            val = _get(r, f)
+            if v.startswith("~"):
+                ok &= isinstance(val, list) and v[1:] in val
+            elif v.startswith("^"):
+                ok &= isinstance(val, str) and val.startswith(v[1:])
+            else:
+                ok &= str(val) == v
+        n += ok
+    return n

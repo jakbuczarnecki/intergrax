@@ -1,0 +1,16 @@
+{
+ "STATE-X": {
+  "evidence_level": "E4",
+  "rationale_parent": "EQO-A run T06: the closed-world gate test_sxf_r1_q50_discovery_inventory_counts passes at the baseline (E4; this one node only, the suite was not executed). No independent requalification record exists, so the class stays DRIFT-UNREQUALIFIED."
+ },
+ "TRACE-X": {
+  "evidence_level": "E4",
+  "rationale_parent": "EQO-A run T06: the closed-world gate test_txp4r5_q04_production_composition_registry_parity passes at the baseline (E4; this one node only, the suite was not executed). No independent requalification record exists, so the class stays DRIFT-UNREQUALIFIED."
+ },
+ "TOOL-LIFE-X": {
+  "drift_class": "DRIFT-UNREQUALIFIED",
+  "evidence_level": "E2",
+  "rationale_parent": "AUD-03: surface derived by reasoning; the listed changes omit 5df074fcb (2026-10-30, EBH-7 gap-closure W1 'invoker tenant guard'), a second post-certification commit to the same invoker.py (2 commits since 1548640708) and one touches entry is UNKNOWN; BENIGN at E3 is too strong. Re-labelled DRIFT-UNREQUALIFIED at E2 with an explicit gap.",
+  "rationale": "DRIFT-UNREQUALIFIED at E2 (corrective loop 1, AUD-03/R-2): the surface was derived by reasoning; the listed changes omit commit 5df074fcb (2026-10-30, EBH-7 gap-closure W1 'invoker tenant guard'), a second post-certification commit to the same invoker.py since 1548640708; one touches entry is UNKNOWN. No later requalification of the TOOL-LIFE-X invariant was found; BENIGN at E3 would be too strong."
+ }
+}

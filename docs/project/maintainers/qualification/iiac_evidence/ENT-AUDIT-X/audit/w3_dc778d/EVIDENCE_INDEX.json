@@ -1,0 +1,36 @@
+{
+  "schema_version": "iiac_evidence_index.v1",
+  "stage_id": "ENT-AUDIT-X",
+  "scope": "W3 independent audit Batch A @ dc778d12",
+  "note": "sha256 over file bytes as written; EVIDENCE_INDEX.json excluded from itself",
+  "files": {
+    "ENT_AUDIT_X_W3_INDEPENDENT_AUDIT_REPORT.md": {
+      "sha256": "c4c1bcb422bc7b82008a5bd8edf319bb598840441fa94322f78c610bc6b83023",
+      "bytes": 3435
+    },
+    "audit_scope.json": {
+      "sha256": "46a718ae030156a16ffcd260ba21219c484fa46c42560df1e1d3928b2da90b3b",
+      "bytes": 2804
+    },
+    "test_matrix.txt": {
+      "sha256": "5fdc0049465a265d72af7ca17ba61691e0235cd40bc903cdf73886cd7ad03db4",
+      "bytes": 2569
+    },
+    "findings.json": {
+      "sha256": "2e4683c82267dfbdbb3496e2da3116da90eebe4206e5b1da7254eb9f92e838a9",
+      "bytes": 3170
+    },
+    "ENT_AUDIT_X_W3_INDEPENDENT_AUDIT_PASS_RECORD.md": {
+      "sha256": "4e156b5a5fb1500b49985cc72ec5ef3d5bc6c69f18a54a5d4ddf1f349994eefc",
+      "bytes": 2349
+    },
+    "W3_INDEPENDENT_AUDITOR_HANDOFF.md": {
+      "sha256": "ccd0ae712f96a5b9058a1b0fdb554ca350ff7ac1550264b6ea4d490bb2cf1a23",
+      "bytes": 2291
+    },
+    "iiac_audit_session_manifest.ENT-AUDIT-X.w3_dc778d.json": {
+      "sha256": "7f63752c58a96ea2b4691bdc014761e2cbe2f719e50af76565be7b4d81108be2",
+      "bytes": 3195
+    }
+  }
+}

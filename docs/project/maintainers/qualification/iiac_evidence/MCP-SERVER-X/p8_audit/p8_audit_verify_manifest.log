@@ -1,0 +1,6 @@
+command: python scripts/governance/verify_iiac_audit_manifest.py docs/project/maintainers/qualification/iiac_evidence/MCP-SERVER-X/p8_audit/iiac_audit_session_manifest.MCP-SERVER-X.p8_audit.json --repo . --require-handoff-template
+git_head: eadb1c2116feb0a2090b234a36fd4182bd6ace8d
+date_utc: 2026-11-12T11:39:20Z
+note: certifier_session_id / evidence_publication_sha / certification_publication_sha are placeholders (PENDING_CERTIFIER / 40 zeros)
+verify_iiac_audit_manifest: PASS
+exit_code: 0

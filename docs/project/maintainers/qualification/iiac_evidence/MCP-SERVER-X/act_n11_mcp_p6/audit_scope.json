@@ -1,0 +1,56 @@
+{
+  "stage_id": "MCP-SERVER-X",
+  "session_designation": "IIIC-ACT-N11-MCP-P6-2026-11-11",
+  "certification_profile": "iiac-v1",
+  "policy_version": "IIAC-2026-11-05.1",
+  "campaign": "ACT-N11 MCP product re-bind (P6 cumulative after P4 lineage)",
+  "ticket_anchors": [
+    "governance/tickets/T-IGX-035-G.md",
+    "docs/project/maintainers/qualification/mcp_server_x/MCP_SERVER_X_P6_ACT_N11_TRIGGER.md"
+  ],
+  "audit_execution_sha_prior": "8fff85e3bfc5190929ff464b00fbe759dadcb5f8",
+  "prior_iiac_session_lineage": "docs/project/maintainers/qualification/iiac_evidence/MCP-SERVER-X/act_n11_mcp/iiac_audit_session_manifest.MCP-SERVER-X.act_n11_mcp.reaudit_p4.json",
+  "audited_implementation_sha_pr459": "5ff8606b089828b334ebac133518ba47c9f6f7ce",
+  "audited_implementation_sha_candidate_head": "9b8c19d75d5df0f4b7c87d2707811f3715805102",
+  "pr_number": 459,
+  "product_paths_delta_vs_prior_pin": [
+    "intergrax/applications/_shared/mcp_developer_api.py",
+    "intergrax/applications/_shared/mcp_application_server.py",
+    "applications/research_application/mcp/server.py"
+  ],
+  "product_paths_cumulative_post_rebind": [
+    "intergrax/contracts/mcp_server_definition.py",
+    "intergrax/applications/_shared/mcp_server_engine.py",
+    "intergrax/applications/_shared/mcp_host_mount.py",
+    "intergrax/applications/_shared/mcp_import_guard.py",
+    "intergrax/applications/_shared/mcp_engine_concurrency.py",
+    "intergrax/applications/_shared/settings_loader.py",
+    "intergrax/applications/_shared/mcp_nexus_server.py",
+    "intergrax/applications/_shared/mcp_application_server.py",
+    "intergrax/applications/_shared/mcp_developer_api.py",
+    "applications/dispute_sim_application/mcp/server.py",
+    "applications/governed_contractor_application/mcp/server.py",
+    "applications/intergrax_assistant_application/mcp/server.py",
+    "applications/lab_application/mcp/server.py",
+    "applications/legal_application/mcp/server.py",
+    "applications/local_workspace_application/mcp/server.py",
+    "applications/poc_template_application/mcp/server.py",
+    "applications/research_application/mcp/server.py"
+  ],
+  "path_introducers": {
+    "5ff8606b089828b334ebac133518ba47c9f6f7ce": [
+      "intergrax/applications/_shared/mcp_developer_api.py",
+      "intergrax/applications/_shared/mcp_application_server.py",
+      "applications/research_application/mcp/server.py"
+    ]
+  },
+  "exclusions": [
+    "P4 sixteen-path lineage artifacts under act_n11_mcp/ — preserved, not overwritten",
+    "IIAC_POLICY_ACTIVATION_RECORD.json edit by auditor/implementer",
+    "ACT-N11 gate weakening or scoped product diff in verifier",
+    "Implementer PASS / self-audit",
+    "PR #459 merged 2026-11-11T17:08:34Z before evidence publication (F-MCP-P6-GOV-001; recovery not waiver)",
+    "MCP-SERVER-X stage CLOSED, FRZ promotion, P7/P8 certification"
+  ],
+  "role_separation_requirement": "Auditor audit_execution_sha publication must not span unauthorized product diff vs audited_implementation_sha (N-03); P6 implementer session must not equal auditor session."
+}

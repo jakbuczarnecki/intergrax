@@ -156,6 +156,8 @@ Full certification proof = reviewer route, not first product introduction
 
 Product trial and platform evaluation are different routes. A certification runbook must not replace a product tour.
 
+**Scenario Factory clause.** [Scenario Factory](SCENARIO_FACTORY.md) is a **planned** product layer (`Planned` / `Not yet implemented`). Public copy places it in the scenario and future-direction sections only. It is not a call to action, it never appears among the first-screen calls to action or the platform capabilities of the three entry points, and it must not be described as available, certified or production-ready.
+
 ---
 
 ## LKW visual evidence rule

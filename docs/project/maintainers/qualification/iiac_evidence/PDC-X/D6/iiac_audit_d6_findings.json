@@ -1,0 +1,171 @@
+{
+  "stage_id": "PDC-X/P7-D6",
+  "auditor": "IA-D6",
+  "audited_implementation_sha": "c08efe46a74a20595468d8d8bf06eab2dca5f573",
+  "overall_verdict": "PARTIAL",
+  "manifest_verdict": "CONDITIONAL",
+  "counts": {
+    "MEDIUM": 6,
+    "LOW": 9,
+    "INFO": 5
+  },
+  "row_verdicts": {
+    "PDC-D6-R001": "PARTIAL",
+    "PDC-D6-R002": "PASS_SCOPED",
+    "PDC-D6-R003": "PASS",
+    "PDC-D6-R004": "PASS",
+    "PDC-D6-R005": "PARTIAL",
+    "PDC-D6-R006": "PASS",
+    "PDC-D6-R007": "PARTIAL",
+    "PDC-D6-R008": "PASS",
+    "PDC-D6-R009": "PARTIAL",
+    "PDC-D6-R010": "PARTIAL",
+    "PDC-D6-R011": "PARTIAL",
+    "PDC-D6-R012": "PASS_SCOPED",
+    "PDC-D6-R013": "PASS",
+    "PDC-D6-R014": "PASS",
+    "PDC-D6-R015": "PARTIAL",
+    "PDC-D6-R016": "PARTIAL",
+    "PDC-D6-R017": "PARTIAL",
+    "PDC-D6-R018": "PASS",
+    "PDC-D6-R019": "PASS",
+    "PDC-D6-R020": "PARTIAL",
+    "PDC-D6-R021": "PASS",
+    "PDC-D6-R022": "PASS",
+    "PDC-D6-R023": "PASS",
+    "PDC-D6-R024": "PARTIAL",
+    "PDC-D6-R025": "PASS",
+    "PDC-D6-R026": "PASS_SCOPED",
+    "PDC-D6-R027": "PASS",
+    "PDC-D6-R028": "PASS"
+  },
+  "row_verdict_counts": {
+    "PARTIAL": 11,
+    "PASS_SCOPED": 3,
+    "PASS": 14
+  },
+  "findings": [
+    {
+      "id": "F-D6-01",
+      "severity": "MEDIUM",
+      "rows": "R020",
+      "title": "F-35: `EvidencePlaneSecurityAuditTrail` is a legitimate persistence site, but its `CANONICAL_VALIDATING_PATH` classification rests on a composition assumption the code does not enforce"
+    },
+    {
+      "id": "F-D6-02",
+      "severity": "MEDIUM",
+      "rows": "R020",
+      "title": "The \"immutable, replicated\" audit trail report is bookkeeping: deleting stored entries leaves `replicated=True, immutable=True` and nothing detects it"
+    },
+    {
+      "id": "F-D6-03",
+      "severity": "LOW",
+      "rows": "R020, R007",
+      "title": "Audit trail `list_entries` returns the oldest 1000 entries only; secret-shaped values under benign keys are stored (re-verified P7-00 F-20)"
+    },
+    {
+      "id": "F-D6-04",
+      "severity": "MEDIUM",
+      "rows": "R008, R009, R016, R020, R024",
+      "title": "Hardening has no production composition: signing, audit trail, strict-config validator, plugin provenance gate and the credential broker with its admission port have no non-test caller (re-verified P7-00 F-04)"
+    },
+    {
+      "id": "F-D6-05",
+      "severity": "MEDIUM",
+      "rows": "R016",
+      "title": "Plugin provenance is bound to the operator mapping key, not to `attestation.distribution`, and the installed files are never hashed (re-verified P7-00 F-21)"
+    },
+    {
+      "id": "F-D6-06",
+      "severity": "MEDIUM",
+      "rows": "R001, R005",
+      "title": "TENANT-X carrier-count gate is red at this SHA (831 vs pinned 819); not covered by any earlier audit"
+    },
+    {
+      "id": "F-D6-07",
+      "severity": "MEDIUM",
+      "rows": "R010, R011, R012",
+      "title": "The sandbox unit suite has a red governance-deny test, and the physical egress tests are skipped on this host"
+    },
+    {
+      "id": "F-D6-08",
+      "severity": "LOW",
+      "rows": "R013",
+      "title": "Tool-input guard is a four-regex heuristic with simple evasions; the middleware passes an empty `tool_id` and the default allow-list is empty (allow all)"
+    },
+    {
+      "id": "F-D6-09",
+      "severity": "LOW",
+      "rows": "R014",
+      "title": "Poisoning default differs by path: the plan-context path stays off in non-production mode when the profile is absent"
+    },
+    {
+      "id": "F-D6-10",
+      "severity": "LOW",
+      "rows": "R024, R008",
+      "title": "Strict-config validator and signing wiring accept weak or disabled settings; strict mode on a lab profile is unchecked"
+    },
+    {
+      "id": "F-D6-11",
+      "severity": "LOW",
+      "rows": "R005, R001",
+      "title": "A resource with no tenant is accessible to any scoped tenant; `RequestIdentity.tenant_id` is not normalised"
+    },
+    {
+      "id": "F-D6-12",
+      "severity": "LOW",
+      "rows": "R006",
+      "title": "The credential resolver keeps the provider exception, with its text, as `__cause__`"
+    },
+    {
+      "id": "F-D6-13",
+      "severity": "LOW",
+      "rows": "R016, R015",
+      "title": "Security-defense plugin admission defaults to structural-only and `isolate` on load failure (a failed defense plugin is silently absent)"
+    },
+    {
+      "id": "F-D6-14",
+      "severity": "INFO",
+      "rows": "R007",
+      "title": "`raw_secret_gate` evasions (re-verified P7-00 F-30)"
+    },
+    {
+      "id": "F-D6-15",
+      "severity": "INFO",
+      "rows": "R027",
+      "title": "Lab profiles use the public demo seed implicitly; the seed is still importable (re-verified P7-00 F-23)"
+    },
+    {
+      "id": "F-D6-16",
+      "severity": "LOW",
+      "rows": "R021",
+      "title": "Satellite wording is stale or imprecise (link note, definition of \"strict\", coverage depth)"
+    },
+    {
+      "id": "F-D6-17",
+      "severity": "INFO",
+      "rows": "process",
+      "title": "Both B-D6 implementation commits carry a forbidden AI `Co-Authored-By` trailer"
+    },
+    {
+      "id": "F-D6-18",
+      "severity": "INFO",
+      "rows": "process",
+      "title": "`prod_q` pytest process does not exit after its summary"
+    },
+    {
+      "id": "F-D6-19",
+      "severity": "INFO",
+      "rows": "R017",
+      "title": "MCP exposure security not independently exercised (BLOCKED row, `fastmcp` absent)"
+    },
+    {
+      "id": "F-D6-20",
+      "severity": "LOW",
+      "rows": "R015, R019",
+      "title": "R015 and R019 are proven for credentials, tool allow-list and three XD pairs, not for tenant data sent to a model provider or for all of D1-D8"
+    }
+  ],
+  "report": "docs/project/maintainers/qualification/platform_domain_completeness/PDC_P7_D6_AUDIT_REPORT.md",
+  "routing": "each finding is repaired in a D6 ticket by a session other than the implementer and the auditor; fresh auditor re-audits (loop 1 of 2)"
+}

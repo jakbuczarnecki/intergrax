@@ -1,0 +1,230 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "sfx.scenario_test_plan.v1",
+  "title": "ScenarioTestPlan",
+  "description": "SFX-CON-07. Sandbox test plan, including negative and security cases. Thresholds reference OD-SFX-07 targets; they are not fixed here. Envelope: canonical_digest = sha256(JCS(model_dump without canonical_digest)); see SFX_CANONICALIZATION.md. Persisted as a CW WorkArtifactVersion (ADR-SFX-002 §D5). Status: PROPOSED design draft (T-IGX-037-C); not code.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version",
+    "tenant_id",
+    "workspace_id",
+    "work_item_id",
+    "scenario_id",
+    "artifact_id",
+    "version",
+    "canonical_digest",
+    "created_at",
+    "created_by",
+    "blueprint_ref",
+    "test_cases",
+    "eval_suites",
+    "authority_level"
+  ],
+  "properties": {
+    "schema_version": {
+      "const": "sfx.scenario_test_plan.v1"
+    },
+    "tenant_id": {
+      "$ref": "#/$defs/id"
+    },
+    "workspace_id": {
+      "$ref": "#/$defs/id"
+    },
+    "work_item_id": {
+      "$ref": "#/$defs/id"
+    },
+    "scenario_id": {
+      "$ref": "#/$defs/id"
+    },
+    "artifact_id": {
+      "$ref": "#/$defs/id"
+    },
+    "version": {
+      "type": "integer",
+      "maximum": 9007199254740991,
+      "minimum": 1,
+      "description": "SFX logical version; one CW WorkArtifactVersion per value."
+    },
+    "canonical_digest": {
+      "$ref": "#/$defs/digest"
+    },
+    "created_at": {
+      "$ref": "#/$defs/timestamp"
+    },
+    "created_by": {
+      "$ref": "#/$defs/principal_ref"
+    },
+    "blueprint_ref": {
+      "$ref": "#/$defs/artifact_version_ref"
+    },
+    "test_cases": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "test_id",
+          "kind",
+          "description",
+          "fixture_ref",
+          "expected_outcome",
+          "acceptance_criterion_ids"
+        ],
+        "properties": {
+          "test_id": {
+            "$ref": "#/$defs/id"
+          },
+          "kind": {
+            "enum": [
+              "POSITIVE",
+              "NEGATIVE",
+              "SECURITY",
+              "PERFORMANCE",
+              "EVAL"
+            ]
+          },
+          "description": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 2000
+          },
+          "fixture_ref": {
+            "anyOf": [
+              {
+                "$ref": "#/$defs/id"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "expected_outcome": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 2000
+          },
+          "acceptance_criterion_ids": {
+            "type": "array",
+            "items": {
+              "$ref": "#/$defs/id"
+            }
+          }
+        }
+      },
+      "minItems": 1
+    },
+    "eval_suites": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "suite_id",
+          "metric",
+          "target_ref"
+        ],
+        "properties": {
+          "suite_id": {
+            "$ref": "#/$defs/id"
+          },
+          "metric": {
+            "$ref": "#/$defs/id"
+          },
+          "target_ref": {
+            "type": "string",
+            "pattern": "^OD-SFX-07(:[A-Za-z0-9._-]+)?$"
+          }
+        }
+      }
+    },
+    "authority_level": {
+      "enum": [
+        "L1",
+        "L2"
+      ]
+    }
+  },
+  "$defs": {
+    "id": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 256,
+      "pattern": "^[A-Za-z0-9][A-Za-z0-9._:/-]*$",
+      "description": "Opaque identifier. Never a secret and never a free-text value."
+    },
+    "digest": {
+      "type": "string",
+      "pattern": "^sha256:[0-9a-f]{64}$",
+      "description": "Platform content digest convention sha256:<64 lowercase hex> (intergrax/contracts/validation.py:13)."
+    },
+    "timestamp": {
+      "type": "string",
+      "pattern": "^[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}:[0-9]{2}:[0-9]{2}\\.[0-9]{6}Z$",
+      "description": "RFC 3339 UTC timestamp with exactly six fractional digits and a Z suffix (SFX_CANONICALIZATION.md, rule CF-5)."
+    },
+    "slug": {
+      "type": "string",
+      "pattern": "^[a-z][a-z0-9_]*$",
+      "maxLength": 64,
+      "description": "Same pattern as SCENARIO_SLUG_PATTERN (scripts/proof/create_scenario_proof.py:19)."
+    },
+    "principal_ref": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "principal_id",
+        "actor_kind"
+      ],
+      "properties": {
+        "principal_id": {
+          "$ref": "#/$defs/id"
+        },
+        "actor_kind": {
+          "enum": [
+            "HUMAN",
+            "AGENT",
+            "SYSTEM"
+          ],
+          "description": "Kind of actor. G-2 counts only HUMAN actors."
+        }
+      },
+      "description": "Harness principal reference."
+    },
+    "artifact_version_ref": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "schema_id",
+        "artifact_id",
+        "version",
+        "canonical_digest"
+      ],
+      "properties": {
+        "schema_id": {
+          "type": "string",
+          "pattern": "^sfx\\.[a-z_]+\\.v[0-9]+$"
+        },
+        "artifact_id": {
+          "$ref": "#/$defs/id"
+        },
+        "version": {
+          "type": "integer",
+          "maximum": 9007199254740991,
+          "minimum": 1
+        },
+        "canonical_digest": {
+          "$ref": "#/$defs/digest"
+        }
+      },
+      "description": "Immutable reference to one SFX artifact version (CW WorkArtifactVersion)."
+    },
+    "secret_ref": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 512,
+      "pattern": "^[a-z][a-z0-9+.-]*:[^\\s]+$",
+      "description": "Reference resolved by the credential broker at run time. Never a secret value."
+    }
+  }
+}

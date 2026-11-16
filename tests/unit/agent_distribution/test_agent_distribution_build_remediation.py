@@ -12,11 +12,9 @@ from unittest.mock import patch
 import pytest
 from fastapi import FastAPI
 from fastapi.testclient import TestClient
-
 from intergrax.agent_distribution.admin_models import (
     AgentPlatformAdminBlockedError,
     AgentPlatformAdminGovernanceBlockedError,
-    BuildApplicationRevisionRequest,
 )
 from intergrax.agent_distribution.control_plane_governance import (
     MUTATION_TYPE_ADMIT_RUNTIME_REVISION,
@@ -49,7 +47,6 @@ from intergrax.runtime.governance.control_plane_mutation_authorization import (
 )
 from tests.unit.agent_distribution.test_agent_platform_admin_service import (
     _APP,
-    _ARTIFACT,
     _ENV,
     _bind_request,
     _build_request,
@@ -78,16 +75,12 @@ _CONTROL_PLANE_GOVERNANCE_SLICE_FILES = (
     "intergrax/applications/_shared/agent_platform_admin_routes.py",
 )
 
-_FORBIDDEN_DYNAMIC_PATTERNS = re.compile(
-    r"getattr\s*\(|setattr\s*\(|hasattr\s*\(|__dict__|eval\s*\(|exec\s*\("
-)
+_FORBIDDEN_DYNAMIC_PATTERNS = re.compile(r"getattr\s*\(|setattr\s*\(|hasattr\s*\(|__dict__|eval\s*\(|exec\s*\(")
 
 
 @dataclass
 class _RecordingEvaluator:
-    decision: PolicyDecision = field(
-        default_factory=lambda: PolicyDecision(action=PolicyAction.ALLOW, reason="ok")
-    )
+    decision: PolicyDecision = field(default_factory=lambda: PolicyDecision(action=PolicyAction.ALLOW, reason="ok"))
     calls: list[ControlPlaneMutationRequest] = field(default_factory=list)
     raise_error: bool = False
 
@@ -153,11 +146,7 @@ def _prepare_build_evaluator_stack(evaluator: _RecordingEvaluator):
 
 
 def _build_mutation_calls(evaluator: _RecordingEvaluator) -> list[ControlPlaneMutationRequest]:
-    return [
-        call
-        for call in evaluator.calls
-        if call.mutation_type == MUTATION_TYPE_BUILD_RUNTIME_REVISION
-    ]
+    return [call for call in evaluator.calls if call.mutation_type == MUTATION_TYPE_BUILD_RUNTIME_REVISION]
 
 
 def _build_payload(revision_id: str, mutation_id: str = "mut-build") -> dict[str, object]:
@@ -172,6 +161,7 @@ def _research_reference_input(
         build_reference_activation_request,
         build_reference_registry_projection_input_bundle,
     )
+
     from research_application.host.agent_builders import RESEARCH_AGENT_BUILDERS
     from research_application.host.settings import ResearchBackendSettings
     from research_application.host.wiring import build_research_environment_profile
@@ -198,11 +188,11 @@ def _reference_deploy_and_activate(
     *,
     principal: RequestIdentity,
 ):
-    from intergrax.applications._shared.registry_projection_input_bundle import (
-        reference_admission_mutation_id,
-    )
     from intergrax.applications._shared.reference_runtime_materialization import (
         prepare_reference_runtime_materialization,
+    )
+    from intergrax.applications._shared.registry_projection_input_bundle import (
+        reference_admission_mutation_id,
     )
 
     prepare_reference_runtime_materialization(
@@ -214,9 +204,7 @@ def _reference_deploy_and_activate(
         projection_input,
         activation_request,
         principal=principal,
-        admission_mutation_id=reference_admission_mutation_id(
-            projection_input.runtime_revision.runtime_revision_id
-        ),
+        admission_mutation_id=reference_admission_mutation_id(projection_input.runtime_revision.runtime_revision_id),
     )
 
 
@@ -238,9 +226,7 @@ def test_adb2_build_deny_zero_writes() -> None:
     _install_enable(stack)
     stack.service._mutation_authorization_boundary = (  # type: ignore[attr-defined]
         ControlPlaneMutationAuthorizationBoundary(
-            evaluator=_RecordingEvaluator(
-                decision=PolicyDecision(action=PolicyAction.DENY, reason="deny")
-            )
+            evaluator=_RecordingEvaluator(decision=PolicyDecision(action=PolicyAction.DENY, reason="deny"))
         )
     )
     before_locks = len(stack.state.locks)
@@ -256,9 +242,7 @@ def test_adb3_require_human_zero_writes_preserves_scope() -> None:
     _install_enable(stack)
     stack.service._mutation_authorization_boundary = (  # type: ignore[attr-defined]
         ControlPlaneMutationAuthorizationBoundary(
-            evaluator=_RecordingEvaluator(
-                decision=PolicyDecision(action=PolicyAction.REQUIRE_HUMAN, reason="hitl")
-            )
+            evaluator=_RecordingEvaluator(decision=PolicyDecision(action=PolicyAction.REQUIRE_HUMAN, reason="hitl"))
         )
     )
     with pytest.raises(AgentPlatformAdminGovernanceBlockedError) as exc:
@@ -309,9 +293,7 @@ def test_adb7_policy_failure_deny_zero_writes() -> None:
     stack = build_admin_stack()
     _install_enable(stack)
     stack.service._mutation_authorization_boundary = (  # type: ignore[attr-defined]
-        ControlPlaneMutationAuthorizationBoundary(
-            evaluator=_RecordingEvaluator(raise_error=True)
-        )
+        ControlPlaneMutationAuthorizationBoundary(evaluator=_RecordingEvaluator(raise_error=True))
     )
     before_revisions = len(stack.state.revisions)
     with pytest.raises(AgentPlatformAdminGovernanceBlockedError):
@@ -324,9 +306,7 @@ def test_adb8_modify_deny_zero_writes() -> None:
     _install_enable(stack)
     stack.service._mutation_authorization_boundary = (  # type: ignore[attr-defined]
         ControlPlaneMutationAuthorizationBoundary(
-            evaluator=_RecordingEvaluator(
-                decision=PolicyDecision(action=PolicyAction.MODIFY, reason="modify")
-            )
+            evaluator=_RecordingEvaluator(decision=PolicyDecision(action=PolicyAction.MODIFY, reason="modify"))
         )
     )
     before_revisions = len(stack.state.revisions)
@@ -354,18 +334,10 @@ def test_adb10_target_identity_changes_with_build_fields() -> None:
         "identity_digest": "digest-a",
     }
     base = build_runtime_revision_mutation_request(**base_kwargs)
-    changed_revision = build_runtime_revision_mutation_request(
-        **{**base_kwargs, "runtime_revision_id": "rev-adb10-b"}
-    )
-    changed_digest = build_runtime_revision_mutation_request(
-        **{**base_kwargs, "identity_digest": "digest-b"}
-    )
-    assert control_plane_mutation_request_digest(base) != control_plane_mutation_request_digest(
-        changed_revision
-    )
-    assert control_plane_mutation_request_digest(base) != control_plane_mutation_request_digest(
-        changed_digest
-    )
+    changed_revision = build_runtime_revision_mutation_request(**{**base_kwargs, "runtime_revision_id": "rev-adb10-b"})
+    changed_digest = build_runtime_revision_mutation_request(**{**base_kwargs, "identity_digest": "digest-b"})
+    assert control_plane_mutation_request_digest(base) != control_plane_mutation_request_digest(changed_revision)
+    assert control_plane_mutation_request_digest(base) != control_plane_mutation_request_digest(changed_digest)
 
 
 def test_adb11_resolver_identity_changes_digest() -> None:
@@ -508,9 +480,7 @@ def test_adb16_same_revision_id_different_build_conflicts() -> None:
     stack = build_admin_stack()
     _install_enable(stack)
     _build_revision(stack, "rev-adb16")
-    different = _build_request("rev-adb16", mutation_id="mut-adb16-b").model_copy(
-        update={"platform_version": "9.9.9"}
-    )
+    different = _build_request("rev-adb16", mutation_id="mut-adb16-b").model_copy(update={"platform_version": "9.9.9"})
     with pytest.raises(RuntimeRevisionConflict):
         stack.service.build_application_revision(
             application_id=_APP,
@@ -681,11 +651,9 @@ def test_r1_7_reference_admission_allow_persists_revision(
     from intergrax.applications._shared.reference_production_lifecycle import (
         ReferenceProductionLifecycleLauncher,
     )
-    from research_application.manifest import RESEARCH_APPLICATION_MANIFEST
 
     composition = create_reference_production_process_composition()
     projection_input, activation_request, env = _research_reference_input("rev-r1-7")
-    manifest = RESEARCH_APPLICATION_MANIFEST
     governance = build_reference_production_control_plane_governance(env)
     launcher = ReferenceProductionLifecycleLauncher(
         composition,
@@ -722,9 +690,7 @@ def test_r1_8_reference_admission_deny_zero_revision_writes(
     launcher = ReferenceProductionLifecycleLauncher(
         composition,
         mutation_authorization_boundary=ControlPlaneMutationAuthorizationBoundary(
-            evaluator=_RecordingEvaluator(
-                decision=PolicyDecision(action=PolicyAction.DENY, reason="deny")
-            )
+            evaluator=_RecordingEvaluator(decision=PolicyDecision(action=PolicyAction.DENY, reason="deny"))
         ),
         environment_tenant_resolver=governance.environment_tenant_resolver,
     )
@@ -759,9 +725,7 @@ def test_r1_9_reference_admission_require_human_zero_writes(
     launcher = ReferenceProductionLifecycleLauncher(
         composition,
         mutation_authorization_boundary=ControlPlaneMutationAuthorizationBoundary(
-            evaluator=_RecordingEvaluator(
-                decision=PolicyDecision(action=PolicyAction.REQUIRE_HUMAN, reason="hitl")
-            )
+            evaluator=_RecordingEvaluator(decision=PolicyDecision(action=PolicyAction.REQUIRE_HUMAN, reason="hitl"))
         ),
         environment_tenant_resolver=governance.environment_tenant_resolver,
     )
@@ -799,6 +763,7 @@ def test_r1_11_admission_allow_activation_deny_leaves_traffic_unchanged(
         ReferenceProductionLifecycleGovernanceBlockedError,
         ReferenceProductionLifecycleLauncher,
     )
+
     from research_application.manifest import RESEARCH_APPLICATION_MANIFEST
 
     composition = create_reference_production_process_composition()
@@ -829,6 +794,7 @@ def test_r1_11_admission_allow_activation_deny_leaves_traffic_unchanged(
 
 def test_r1_15_reference_governance_error_typed_evidence_scope() -> None:
     import inspect
+
     from intergrax.applications._shared import reference_production_lifecycle as module
     from intergrax.applications._shared.reference_production_lifecycle import (
         ReferenceProductionLifecycleGovernanceBlockedError,
@@ -877,6 +843,8 @@ def test_adb22_production_revision_write_bypass_inventory() -> None:
         "intergrax/applications/_shared/reference_production_lifecycle.py": (
             "governed_reference_admission_orchestration"
         ),
+        # shared deploy/activate pipeline (T-IGX-041-A, F-D1-11); order of authorization pinned below
+        "intergrax/applications/_shared/deploy_activate_pipeline.py": "governed_reference_admission_orchestration",
         "intergrax/agent_distribution/runtime_revision_service.py": "domain_executor",
         "intergrax/agent_distribution/in_memory_stores.py": "store_executor",
         "intergrax/agent_distribution/sqlite_stores.py": "store_executor",
@@ -895,9 +863,10 @@ def test_adb22_production_revision_write_bypass_inventory() -> None:
     }
     for path in orchestration_paths:
         assert path in classification, f"unclassified revision-write surface: {path}"
-    assert classification[
-        "intergrax/applications/_shared/reference_production_lifecycle.py"
-    ].startswith("governed_")
+    assert classification["intergrax/applications/_shared/reference_production_lifecycle.py"].startswith("governed_")
+    pipeline = (_REPO_ROOT / "intergrax/applications/_shared/deploy_activate_pipeline.py").read_text(encoding="utf-8")
+    assert classification["intergrax/applications/_shared/deploy_activate_pipeline.py"].startswith("governed_")
+    assert pipeline.index("_authorize_admission(") < pipeline.index("persist_candidate_revision(")
 
 
 def test_adb23_desired_state_regression_still_green() -> None:

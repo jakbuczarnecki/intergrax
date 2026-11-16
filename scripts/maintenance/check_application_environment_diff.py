@@ -13,7 +13,6 @@ for path in (REPO_ROOT, REPO_ROOT / "applications", REPO_ROOT / "agents"):
     text = str(path)
     if text not in sys.path:
         sys.path.insert(0, text)
-
 from intergrax.applications._shared.environment_diff_wiring import (  # noqa: E402
     build_application_environment_diff,
 )
@@ -22,6 +21,8 @@ from intergrax.applications._shared.product_manifest_registry import (  # noqa: 
 )
 from intergrax.applications.contracts.application_environment_diff import DiffRiskLevel  # noqa: E402
 from intergrax.applications.contracts.execution_mode import ExecutionMode  # noqa: E402
+
+import shipped_product_manifest_catalog  # noqa: E402, F401
 
 
 def main() -> int:

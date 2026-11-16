@@ -1,0 +1,38 @@
+..........................F
+================================== FAILURES ===================================
+_ test_vendor_stop_reasons_map_to_one_vocabulary[gemini-SAFETY-content_filter] _
+
+vendor = 'gemini', raw = 'SAFETY'
+expected = <LLMFinishReason.CONTENT_FILTER: 'content_filter'>
+
+    @pytest.mark.parametrize(
+        ("vendor", "raw", "expected"),
+        [
+            ("anthropic", "refusal", LLMFinishReason.REFUSAL),
+            ("generic", "refused", LLMFinishReason.REFUSAL),
+            ("openai", "content_filter", LLMFinishReason.CONTENT_FILTER),
+            ("gemini", "SAFETY", LLMFinishReason.CONTENT_FILTER),
+            ("gemini", "PROHIBITED_CONTENT", LLMFinishReason.CONTENT_FILTER),
+            ("gemini", "BLOCKLIST", LLMFinishReason.CONTENT_FILTER),
+            ("gemini", "SPII", LLMFinishReason.CONTENT_FILTER),
+            ("gemini", "RECITATION", LLMFinishReason.CONTENT_FILTER),
+            ("bedrock", "guardrail_intervened", LLMFinishReason.CONTENT_FILTER),
+            ("bedrock", "content_filtered", LLMFinishReason.CONTENT_FILTER),
+            ("cohere", "ERROR_TOXIC", LLMFinishReason.CONTENT_FILTER),
+            # Existing mappings stay untouched.
+            ("anthropic", "end_turn", LLMFinishReason.COMPLETED),
+            ("anthropic", "tool_use", LLMFinishReason.TOOL_CALLS),
+            ("openai", "length", LLMFinishReason.LENGTH),
+            ("any", "something_new", LLMFinishReason.UNKNOWN),
+        ],
+    )
+    def test_vendor_stop_reasons_map_to_one_vocabulary(vendor: str, raw: str, expected: LLMFinishReason) -> None:
+>       assert parse_finish_reason(raw) is expected
+E       AssertionError: assert <LLMFinishReason.UNKNOWN: 'unknown'> is <LLMFinishReason.CONTENT_FILTER: 'content_filter'>
+E        +  where <LLMFinishReason.UNKNOWN: 'unknown'> = parse_finish_reason('SAFETY')
+
+tests\qualification\pdc_x\d3\test_d3_r009_refusal.py:70: AssertionError
+=========================== short test summary info ===========================
+FAILED tests/qualification/pdc_x/d3/test_d3_r009_refusal.py::test_vendor_stop_reasons_map_to_one_vocabulary[gemini-SAFETY-content_filter]
+!!!!!!!!!!!!!!!!!!!!!!!!!! stopping after 1 failures !!!!!!!!!!!!!!!!!!!!!!!!!!
+1 failed, 26 passed in 2.88s

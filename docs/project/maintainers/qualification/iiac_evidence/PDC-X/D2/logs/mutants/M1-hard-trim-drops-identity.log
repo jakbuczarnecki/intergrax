@@ -1,0 +1,26 @@
+F
+================================== FAILURES ===================================
+___________ test_hard_trim_preserves_tool_call_linkage_and_identity ___________
+
+    def test_hard_trim_preserves_tool_call_linkage_and_identity() -> None:
+        messages = _conversation()
+        result = _hard_trim(messages, budget=100)
+        assert result is not None
+        trimmed = result.messages
+    
+>       assert [m.entry_id for m in trimmed] == [m.entry_id for m in messages]
+E       AssertionError: assert ['sys-1', 'us... 'user-final'] == ['sys-1', 'us... 'user-final']
+E         
+E         At index 3 diff: '1366df65e76e4ef5893cd6c19f2884df' != 'tool-1'
+E         Use -v to get more diff
+
+tests\qualification\pdc_x\d2\test_d2_context_fidelity.py:95: AssertionError
+---------------------------- Captured stdout setup ----------------------------
+Wrote build\agent_fleet_inventory.json (21 agents)
+
+=========================== short test summary info ===========================
+FAILED tests/qualification/pdc_x/d2/test_d2_context_fidelity.py::test_hard_trim_preserves_tool_call_linkage_and_identity
+!!!!!!!!!!!!!!!!!!!!!!!!!! stopping after 1 failures !!!!!!!!!!!!!!!!!!!!!!!!!!
+1 failed, 11 deselected in 4.19s
+
+--- stderr ---

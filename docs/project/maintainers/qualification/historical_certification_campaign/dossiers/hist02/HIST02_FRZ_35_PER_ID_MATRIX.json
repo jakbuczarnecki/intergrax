@@ -1,0 +1,1549 @@
+{
+ "workstream": "HIST-02",
+ "audited_head": "ba07ebaa34d04633bd60510f68c18346b1ef160d",
+ "generated_utc": "2026-11-08T07:24:48Z",
+ "row_count": 35,
+ "note": "No row promoted. Status stays OPEN. Replay executed once at pin ba07ebaa3 (see replay_results.json). 813/818 first run; 4 environment/harness failures pass on rerun with --extra dev-ci; 1 real product failure (F-013).",
+ "rows": [
+  {
+   "frz_id": "FRZ-BND-01",
+   "family": "BND",
+   "criterion": "canonical layer model documented",
+   "checklist_status": "OPEN",
+   "primary_classification": "QUALIFICATION_GAP",
+   "dashboard_state": "QUALIFICATION_REQUIRED",
+   "secondary_causes": [
+    "IMPLEMENTATION_GAP"
+   ],
+   "scoped_historical_evidence": "EBH-2H 86fafaa; EBH-2I 4958c7e4; CE-01 a8d47a639; EBH-6 f27bfaf2f",
+   "ssot_selection_p5": [
+    {
+     "selection": "QUAL-X-P5-F01-ARCH-BOUNDARIES",
+     "status": "COLLECTABLE_LINKAGE",
+     "boundary": "AST/closed-world gates @ exact SHA; historical EBH waves not auto-PASS",
+     "modules": [
+      "tests/unit/architecture/test_ebh_3_dependency_ownership_gate.py",
+      "tests/unit/architecture/test_ebh_2a_public_contract_boundary_gate.py",
+      "tests/unit/architecture/test_ebh_2i_final_rescan_gate.py",
+      "tests/unit/architecture/test_ebh_4_r1_nexus_encapsulation_gate.py",
+      "tests/unit/runtime/architecture/test_hardening_3_layer_boundary_gate.py",
+      "tests/unit/runtime/architecture/test_harness_w5_typed_observability_transport_gate.py",
+      "tests/unit/runtime/architecture/test_ue_9br1_runtime_event_legacy_retirement_gate.py",
+      "tests/unit/runtime/events/test_evidence_persistence_boundary.py"
+     ]
+    }
+   ],
+   "ssot_ebh6_family_bundles": [
+    {
+     "family": "BND",
+     "disposition": "SCOPED_CANDIDATE",
+     "scope_limitation": "Not global FRZ-BND PASS",
+     "gates": [
+      "tests/unit/runtime/architecture/test_hardening_3_layer_boundary_gate.py::test_hardening_3_contracts_do_not_import_runtime_except_allowlist"
+     ]
+    }
+   ],
+   "hist02_candidate_gates_not_ssot_mapped": [],
+   "gate_path_exists_at_head": {
+    "tests/unit/architecture/test_ebh_3_dependency_ownership_gate.py": true,
+    "tests/unit/architecture/test_ebh_2a_public_contract_boundary_gate.py": true,
+    "tests/unit/architecture/test_ebh_2i_final_rescan_gate.py": true,
+    "tests/unit/architecture/test_ebh_4_r1_nexus_encapsulation_gate.py": true,
+    "tests/unit/runtime/architecture/test_hardening_3_layer_boundary_gate.py": true,
+    "tests/unit/runtime/architecture/test_harness_w5_typed_observability_transport_gate.py": true,
+    "tests/unit/runtime/architecture/test_ue_9br1_runtime_event_legacy_retirement_gate.py": true,
+    "tests/unit/runtime/events/test_evidence_persistence_boundary.py": true,
+    "tests/unit/runtime/architecture/test_hardening_3_layer_boundary_gate.py::test_hardening_3_contracts_do_not_import_runtime_except_allowlist": true
+   },
+   "executed_at_current_head_by_hist02": true,
+   "accountable_workstream": "HIST-02",
+   "owner_of_remaining_gate": "ARCH-FREEZE B7 (T-B7-PROMOTE-BND)",
+   "remaining_gate": "P5-F01 current-HEAD replay at pinned SHA + independent audit @ FREEZE_SHA + operator/auditor promotion",
+   "rationale": "P5 F01 selects 8 mandatory HEAD gates; EBH-6 family bundle BND (SCOPED CANDIDATE). No platform-wide claim; scoped only. REPLAY: mandatory P5-F01 selection is not fully green at baseline (EBH-4 gate red, 7 of 8 F01 modules green); downgraded from VALID_SCOPED_PASS_CANDIDATE.",
+   "inherited_scoped_proof_only": true,
+   "promotion_allowed_by_hist02": false,
+   "current_head_replay_at_pin": {
+    "target_sha": "ba07ebaa34d04633bd60510f68c18346b1ef160d",
+    "results_by_path": {
+     "tests/unit/architecture/test_ebh_3_dependency_ownership_gate.py": "PASS",
+     "tests/unit/architecture/test_ebh_2a_public_contract_boundary_gate.py": "PASS",
+     "tests/unit/architecture/test_ebh_2i_final_rescan_gate.py": "PASS",
+     "tests/unit/architecture/test_ebh_4_r1_nexus_encapsulation_gate.py": "FAIL_REAL (product)",
+     "tests/unit/runtime/architecture/test_hardening_3_layer_boundary_gate.py": "PASS",
+     "tests/unit/runtime/architecture/test_harness_w5_typed_observability_transport_gate.py": "PASS",
+     "tests/unit/runtime/architecture/test_ue_9br1_runtime_event_legacy_retirement_gate.py": "FAIL_ENV_OR_HARNESS_THEN_PASS_ON_RERUN",
+     "tests/unit/runtime/events/test_evidence_persistence_boundary.py": "PASS"
+    },
+    "note": "Results are existing scoped gates executed once at the pinned SHA. Green does NOT promote; status stays OPEN."
+   },
+   "replay_red_gate_links": [
+    {
+     "finding": "HIST02-F-013",
+     "gate": "tests/unit/architecture/test_ebh_4_r1_nexus_encapsulation_gate.py::test_ebh_4_r1_production_nexus_imports_outside_ee_are_zero",
+     "effect": "P5-F01 member red"
+    }
+   ]
+  },
+  {
+   "frz_id": "FRZ-BND-02",
+   "family": "BND",
+   "criterion": "allowed dependency directions explicit",
+   "checklist_status": "OPEN",
+   "primary_classification": "EVIDENCE_GAP",
+   "dashboard_state": "QUALIFICATION_REQUIRED",
+   "secondary_causes": [
+    "QUALIFICATION_GAP"
+   ],
+   "scoped_historical_evidence": "EBH-2H 86fafaa (Memory seams); CE-01",
+   "ssot_selection_p5": [],
+   "ssot_ebh6_family_bundles": [],
+   "hist02_candidate_gates_not_ssot_mapped": [
+    "tests/unit/runtime/architecture/test_hardening_3_layer_boundary_gate.py",
+    "tests/unit/architecture/test_ebh_2a_public_contract_boundary_gate.py"
+   ],
+   "gate_path_exists_at_head": {
+    "tests/unit/runtime/architecture/test_hardening_3_layer_boundary_gate.py": true,
+    "tests/unit/architecture/test_ebh_2a_public_contract_boundary_gate.py": true
+   },
+   "executed_at_current_head_by_hist02": true,
+   "accountable_workstream": "HIST-02",
+   "owner_of_remaining_gate": "HIST-02 (mapping) -> ARCH-FREEZE B7",
+   "remaining_gate": "Map explicit direction rules (AGENTS.md hard boundaries) to hardening_3 gate as per-ID evidence; replay; audit",
+   "rationale": "Checklist cites only Memory-seam and CE-01 scope. Not in P5 or EBH-6 family bundles. Candidate gate hardening_3 exists but is not SSOT-mapped to this ID. REPLAY: allowed-direction gate EBH-4 red for runtime.tools->runtime.nexus edge (F-013).",
+   "inherited_scoped_proof_only": true,
+   "promotion_allowed_by_hist02": false,
+   "current_head_replay_at_pin": {
+    "target_sha": "ba07ebaa34d04633bd60510f68c18346b1ef160d",
+    "results_by_path": {
+     "tests/unit/runtime/architecture/test_hardening_3_layer_boundary_gate.py": "PASS",
+     "tests/unit/architecture/test_ebh_2a_public_contract_boundary_gate.py": "PASS"
+    },
+    "note": "Results are existing scoped gates executed once at the pinned SHA. Green does NOT promote; status stays OPEN."
+   },
+   "replay_red_gate_links": [
+    {
+     "finding": "HIST02-F-013",
+     "gate": "tests/unit/architecture/test_ebh_4_r1_nexus_encapsulation_gate.py::test_ebh_4_r1_production_nexus_imports_outside_ee_are_zero",
+     "effect": "gate maps to allowed directions"
+    }
+   ]
+  },
+  {
+   "frz_id": "FRZ-BND-03",
+   "family": "BND",
+   "criterion": "reverse dependencies = 0",
+   "checklist_status": "OPEN",
+   "primary_classification": "AUTHORITY_GAP",
+   "dashboard_state": "AUTHORITY_REQUIRED",
+   "secondary_causes": [
+    "SSOT_DRIFT",
+    "EVIDENCE_GAP",
+    "IMPLEMENTATION_GAP"
+   ],
+   "scoped_historical_evidence": "EBH-3 bd2f7d78; AW-7C 2fab207f; ARCH-FREEZE T-B2-BND03-RECONCILE f7ce9dae",
+   "ssot_selection_p5": [
+    {
+     "selection": "QUAL-X-P5-F01-ARCH-BOUNDARIES",
+     "status": "COLLECTABLE_LINKAGE",
+     "boundary": "AST/closed-world gates @ exact SHA; historical EBH waves not auto-PASS",
+     "modules": [
+      "tests/unit/architecture/test_ebh_3_dependency_ownership_gate.py",
+      "tests/unit/architecture/test_ebh_2a_public_contract_boundary_gate.py",
+      "tests/unit/architecture/test_ebh_2i_final_rescan_gate.py",
+      "tests/unit/architecture/test_ebh_4_r1_nexus_encapsulation_gate.py",
+      "tests/unit/runtime/architecture/test_hardening_3_layer_boundary_gate.py",
+      "tests/unit/runtime/architecture/test_harness_w5_typed_observability_transport_gate.py",
+      "tests/unit/runtime/architecture/test_ue_9br1_runtime_event_legacy_retirement_gate.py",
+      "tests/unit/runtime/events/test_evidence_persistence_boundary.py"
+     ]
+    }
+   ],
+   "ssot_ebh6_family_bundles": [
+    {
+     "family": "BND",
+     "disposition": "SCOPED_CANDIDATE",
+     "scope_limitation": "Not global FRZ-BND PASS",
+     "gates": [
+      "tests/unit/runtime/architecture/test_hardening_3_layer_boundary_gate.py::test_hardening_3_contracts_do_not_import_runtime_except_allowlist"
+     ]
+    }
+   ],
+   "hist02_candidate_gates_not_ssot_mapped": [
+    "tests/unit/runtime/architecture/test_hardening_3_layer_boundary_gate.py",
+    "tests/unit/runtime/events/test_evidence_persistence_boundary.py",
+    "tests/unit/architecture/test_ebh_3_dependency_ownership_gate.py"
+   ],
+   "gate_path_exists_at_head": {
+    "tests/unit/architecture/test_ebh_3_dependency_ownership_gate.py": true,
+    "tests/unit/architecture/test_ebh_2a_public_contract_boundary_gate.py": true,
+    "tests/unit/architecture/test_ebh_2i_final_rescan_gate.py": true,
+    "tests/unit/architecture/test_ebh_4_r1_nexus_encapsulation_gate.py": true,
+    "tests/unit/runtime/architecture/test_hardening_3_layer_boundary_gate.py": true,
+    "tests/unit/runtime/architecture/test_harness_w5_typed_observability_transport_gate.py": true,
+    "tests/unit/runtime/architecture/test_ue_9br1_runtime_event_legacy_retirement_gate.py": true,
+    "tests/unit/runtime/events/test_evidence_persistence_boundary.py": true,
+    "tests/unit/runtime/architecture/test_hardening_3_layer_boundary_gate.py::test_hardening_3_contracts_do_not_import_runtime_except_allowlist": true
+   },
+   "executed_at_current_head_by_hist02": true,
+   "accountable_workstream": "HIST-02",
+   "owner_of_remaining_gate": "Operator (exception) / ARCH-FREEZE B7",
+   "remaining_gate": "Operator decision on Tier-0->Tier-3 exception in intergrax/cli/external_work.py (accept as limitation with decision id, or relocate to Tier-3) + dynamic-edge coverage; then replay and audit",
+   "rationale": "Criterion is literally 0, AGENTS.md says MUST NOT; code has a Tier-0 -> applications import (cli/external_work.py:338) kept as a 'ratified tier exception' whose only authority is an audit document (AC1-AC6), decision id UNKNOWN. 7 further importlib Tier-2/3 imports + sys.path injection in same module not in exception tuple. REPLAY: P5-F01 member EBH-4 gate red (F-013); primary stays AUTHORITY_GAP (F-001).",
+   "inherited_scoped_proof_only": true,
+   "promotion_allowed_by_hist02": false,
+   "current_head_replay_at_pin": {
+    "target_sha": "ba07ebaa34d04633bd60510f68c18346b1ef160d",
+    "results_by_path": {
+     "tests/unit/architecture/test_ebh_3_dependency_ownership_gate.py": "PASS",
+     "tests/unit/architecture/test_ebh_2a_public_contract_boundary_gate.py": "PASS",
+     "tests/unit/architecture/test_ebh_2i_final_rescan_gate.py": "PASS",
+     "tests/unit/architecture/test_ebh_4_r1_nexus_encapsulation_gate.py": "FAIL_REAL (product)",
+     "tests/unit/runtime/architecture/test_hardening_3_layer_boundary_gate.py": "PASS",
+     "tests/unit/runtime/architecture/test_harness_w5_typed_observability_transport_gate.py": "PASS",
+     "tests/unit/runtime/architecture/test_ue_9br1_runtime_event_legacy_retirement_gate.py": "FAIL_ENV_OR_HARNESS_THEN_PASS_ON_RERUN",
+     "tests/unit/runtime/events/test_evidence_persistence_boundary.py": "PASS"
+    },
+    "note": "Results are existing scoped gates executed once at the pinned SHA. Green does NOT promote; status stays OPEN."
+   },
+   "replay_red_gate_links": [
+    {
+     "finding": "HIST02-F-013",
+     "gate": "tests/unit/architecture/test_ebh_4_r1_nexus_encapsulation_gate.py::test_ebh_4_r1_production_nexus_imports_outside_ee_are_zero",
+     "effect": "P5-F01 member red"
+    }
+   ]
+  },
+  {
+   "frz_id": "FRZ-BND-04",
+   "family": "BND",
+   "criterion": "private implementation leakage = 0",
+   "checklist_status": "OPEN",
+   "primary_classification": "IMPLEMENTATION_GAP",
+   "dashboard_state": "IMPLEMENTATION_REQUIRED",
+   "secondary_causes": [
+    "EVIDENCE_GAP"
+   ],
+   "scoped_historical_evidence": "EBH-2G-R1 94eb6ae; EBH-2G 33175f8e; EBH-3 bd2f7d7",
+   "ssot_selection_p5": [],
+   "ssot_ebh6_family_bundles": [],
+   "hist02_candidate_gates_not_ssot_mapped": [
+    "tests/unit/architecture/test_ebh_2a_public_contract_boundary_gate.py",
+    "tests/unit/architecture/test_ebh_3_dependency_ownership_gate.py"
+   ],
+   "gate_path_exists_at_head": {
+    "tests/unit/architecture/test_ebh_2a_public_contract_boundary_gate.py": true,
+    "tests/unit/architecture/test_ebh_3_dependency_ownership_gate.py": true
+   },
+   "executed_at_current_head_by_hist02": true,
+   "accountable_workstream": "HIST-02",
+   "owner_of_remaining_gate": "TOOL-LIFE-X owner / ARCH-FREEZE B7",
+   "remaining_gate": "Operator-approved fix of tools->nexus import (ticket required) or recorded exception; rerun EBH-4 gate; independent audit",
+   "rationale": "Only RAG/EBH-3 scoped evidence; not in P5 or EBH-6 bundles; ARCH-FREEZE B1 inventory lists it as impacted (inventory, not proof). REPLAY: EBH-4 R1 nexus encapsulation gate FAILS at pin ba07eba (tool_operation_recovery.py:22 imports intergrax.runtime.nexus.errors.error_codes).",
+   "inherited_scoped_proof_only": true,
+   "promotion_allowed_by_hist02": false,
+   "current_head_replay_at_pin": {
+    "target_sha": "ba07ebaa34d04633bd60510f68c18346b1ef160d",
+    "results_by_path": {
+     "tests/unit/architecture/test_ebh_2a_public_contract_boundary_gate.py": "PASS",
+     "tests/unit/architecture/test_ebh_3_dependency_ownership_gate.py": "PASS"
+    },
+    "note": "Results are existing scoped gates executed once at the pinned SHA. Green does NOT promote; status stays OPEN."
+   },
+   "replay_red_gate_links": [
+    {
+     "finding": "HIST02-F-013",
+     "gate": "tests/unit/architecture/test_ebh_4_r1_nexus_encapsulation_gate.py::test_ebh_4_r1_production_nexus_imports_outside_ee_are_zero",
+     "effect": "gate = private implementation leakage (nexus internals)"
+    }
+   ]
+  },
+  {
+   "frz_id": "FRZ-BND-05",
+   "family": "BND",
+   "criterion": "cross-layer construction only sanctioned composition",
+   "checklist_status": "OPEN",
+   "primary_classification": "VALID_SCOPED_PASS_CANDIDATE",
+   "dashboard_state": "AUDIT_REQUIRED",
+   "secondary_causes": [],
+   "scoped_historical_evidence": "EBH-2G 33175f8e; CE-01 a8d47a639; EBH-6",
+   "ssot_selection_p5": [],
+   "ssot_ebh6_family_bundles": [
+    {
+     "family": "BND",
+     "disposition": "SCOPED_CANDIDATE",
+     "scope_limitation": "Not global FRZ-BND PASS",
+     "gates": [
+      "tests/unit/runtime/architecture/test_hardening_3_layer_boundary_gate.py::test_hardening_3_contracts_do_not_import_runtime_except_allowlist"
+     ]
+    }
+   ],
+   "hist02_candidate_gates_not_ssot_mapped": [],
+   "gate_path_exists_at_head": {
+    "tests/unit/runtime/architecture/test_hardening_3_layer_boundary_gate.py::test_hardening_3_contracts_do_not_import_runtime_except_allowlist": true
+   },
+   "executed_at_current_head_by_hist02": true,
+   "accountable_workstream": "HIST-02",
+   "owner_of_remaining_gate": "ARCH-FREEZE B7",
+   "remaining_gate": "Replay of EBH-6 BND bundle gate at pinned SHA; audit; promotion",
+   "rationale": "EBH-6 BND family bundle covers BND-05 (SCOPED CANDIDATE); not in P5 F01 list.",
+   "inherited_scoped_proof_only": true,
+   "promotion_allowed_by_hist02": false,
+   "current_head_replay_at_pin": {
+    "target_sha": "ba07ebaa34d04633bd60510f68c18346b1ef160d",
+    "results_by_path": {
+     "tests/unit/runtime/architecture/test_hardening_3_layer_boundary_gate.py": "PASS"
+    },
+    "note": "Results are existing scoped gates executed once at the pinned SHA. Green does NOT promote; status stays OPEN."
+   }
+  },
+  {
+   "frz_id": "FRZ-BND-06",
+   "family": "BND",
+   "criterion": "transport adapters do not own runtime semantics",
+   "checklist_status": "OPEN",
+   "primary_classification": "SSOT_DRIFT",
+   "dashboard_state": "QUALIFICATION_REQUIRED",
+   "secondary_causes": [
+    "QUALIFICATION_GAP"
+   ],
+   "scoped_historical_evidence": "HARNESS-W5 5a87046 (via QUAL-X-FINAL row CW-HARNESS-W5-BND-06)",
+   "ssot_selection_p5": [
+    {
+     "selection": "QUAL-X-P5-F01-ARCH-BOUNDARIES",
+     "status": "COLLECTABLE_LINKAGE",
+     "boundary": "AST/closed-world gates @ exact SHA; historical EBH waves not auto-PASS",
+     "modules": [
+      "tests/unit/architecture/test_ebh_3_dependency_ownership_gate.py",
+      "tests/unit/architecture/test_ebh_2a_public_contract_boundary_gate.py",
+      "tests/unit/architecture/test_ebh_2i_final_rescan_gate.py",
+      "tests/unit/architecture/test_ebh_4_r1_nexus_encapsulation_gate.py",
+      "tests/unit/runtime/architecture/test_hardening_3_layer_boundary_gate.py",
+      "tests/unit/runtime/architecture/test_harness_w5_typed_observability_transport_gate.py",
+      "tests/unit/runtime/architecture/test_ue_9br1_runtime_event_legacy_retirement_gate.py",
+      "tests/unit/runtime/events/test_evidence_persistence_boundary.py"
+     ]
+    }
+   ],
+   "ssot_ebh6_family_bundles": [],
+   "hist02_candidate_gates_not_ssot_mapped": [],
+   "gate_path_exists_at_head": {
+    "tests/unit/architecture/test_ebh_3_dependency_ownership_gate.py": true,
+    "tests/unit/architecture/test_ebh_2a_public_contract_boundary_gate.py": true,
+    "tests/unit/architecture/test_ebh_2i_final_rescan_gate.py": true,
+    "tests/unit/architecture/test_ebh_4_r1_nexus_encapsulation_gate.py": true,
+    "tests/unit/runtime/architecture/test_hardening_3_layer_boundary_gate.py": true,
+    "tests/unit/runtime/architecture/test_harness_w5_typed_observability_transport_gate.py": true,
+    "tests/unit/runtime/architecture/test_ue_9br1_runtime_event_legacy_retirement_gate.py": true,
+    "tests/unit/runtime/events/test_evidence_persistence_boundary.py": true
+   },
+   "executed_at_current_head_by_hist02": true,
+   "accountable_workstream": "HIST-02",
+   "owner_of_remaining_gate": "HIST-04 (SSOT) / ARCH-FREEZE B7",
+   "remaining_gate": "Reconcile checklist cell ('-') with QUAL-X-FINAL/P5 F01 proof; extend proof beyond OTLP/collector transports (hosting/queue/MCP/HTTP) or record scope limitation",
+   "rationale": "Executable proof exists at HEAD (test_harness_w5_typed_observability_transport_gate.py) and is in P5 F01, yet checklist row shows no evidence. Proof scope = observability transport only.",
+   "inherited_scoped_proof_only": true,
+   "promotion_allowed_by_hist02": false,
+   "current_head_replay_at_pin": {
+    "target_sha": "ba07ebaa34d04633bd60510f68c18346b1ef160d",
+    "results_by_path": {
+     "tests/unit/architecture/test_ebh_3_dependency_ownership_gate.py": "PASS",
+     "tests/unit/architecture/test_ebh_2a_public_contract_boundary_gate.py": "PASS",
+     "tests/unit/architecture/test_ebh_2i_final_rescan_gate.py": "PASS",
+     "tests/unit/architecture/test_ebh_4_r1_nexus_encapsulation_gate.py": "FAIL_REAL (product)",
+     "tests/unit/runtime/architecture/test_hardening_3_layer_boundary_gate.py": "PASS",
+     "tests/unit/runtime/architecture/test_harness_w5_typed_observability_transport_gate.py": "PASS",
+     "tests/unit/runtime/architecture/test_ue_9br1_runtime_event_legacy_retirement_gate.py": "FAIL_ENV_OR_HARNESS_THEN_PASS_ON_RERUN",
+     "tests/unit/runtime/events/test_evidence_persistence_boundary.py": "PASS"
+    },
+    "note": "Results are existing scoped gates executed once at the pinned SHA. Green does NOT promote; status stays OPEN."
+   },
+   "replay_red_gate_links": [
+    {
+     "finding": "HIST02-F-013",
+     "gate": "tests/unit/architecture/test_ebh_4_r1_nexus_encapsulation_gate.py::test_ebh_4_r1_production_nexus_imports_outside_ee_are_zero",
+     "effect": "P5-F01 member red (own W5 gate green)"
+    }
+   ]
+  },
+  {
+   "frz_id": "FRZ-OWN-01",
+   "family": "OWN",
+   "criterion": "every major concern has exactly one semantic owner",
+   "checklist_status": "OPEN",
+   "primary_classification": "QUALIFICATION_GAP",
+   "dashboard_state": "QUALIFICATION_REQUIRED",
+   "secondary_causes": [
+    "INDEPENDENT_AUDIT_GAP"
+   ],
+   "scoped_historical_evidence": "EBH-2H; EBH-2I; EBH-2G; AW-7C; CE-01 a8d47a639; DUP-X a7d83925 (scoped)",
+   "ssot_selection_p5": [
+    {
+     "selection": "QUAL-X-P5-F02-OWNERSHIP-DUPLICATION",
+     "status": "PARTIAL_PLATFORM_GAP",
+     "boundary": "EBH-3 gate green; platform DUP-X certification not claimed",
+     "modules": [
+      "tests/unit/architecture/test_ebh_3_dependency_ownership_gate.py"
+     ]
+    }
+   ],
+   "ssot_ebh6_family_bundles": [
+    {
+     "family": "OWN",
+     "disposition": "SCOPED_CANDIDATE",
+     "scope_limitation": "Closed-world rescan \u2014 not whole-platform ownership closure",
+     "gates": [
+      "tests/unit/runtime/architecture/test_ee_final_arch_owner_uniqueness.py::test_ee_final_arch_owner_matrix_documented"
+     ]
+    }
+   ],
+   "hist02_candidate_gates_not_ssot_mapped": [],
+   "gate_path_exists_at_head": {
+    "tests/unit/architecture/test_ebh_3_dependency_ownership_gate.py": true,
+    "tests/unit/runtime/architecture/test_ee_final_arch_owner_uniqueness.py::test_ee_final_arch_owner_matrix_documented": true
+   },
+   "executed_at_current_head_by_hist02": true,
+   "accountable_workstream": "HIST-02",
+   "owner_of_remaining_gate": "ARCH-FREEZE B7",
+   "remaining_gate": "Platform-wide owner uniqueness gate (P5 F02 = PARTIAL_PLATFORM_GAP, 'DUP-X certification not claimed'); replay; audit",
+   "rationale": "P5 F02 selects a single EBH-3 gate and itself marks the evidence PARTIAL_PLATFORM_GAP.",
+   "inherited_scoped_proof_only": true,
+   "promotion_allowed_by_hist02": false,
+   "current_head_replay_at_pin": {
+    "target_sha": "ba07ebaa34d04633bd60510f68c18346b1ef160d",
+    "results_by_path": {
+     "tests/unit/architecture/test_ebh_3_dependency_ownership_gate.py": "PASS",
+     "tests/unit/runtime/architecture/test_ee_final_arch_owner_uniqueness.py": "PASS"
+    },
+    "note": "Results are existing scoped gates executed once at the pinned SHA. Green does NOT promote; status stays OPEN."
+   }
+  },
+  {
+   "frz_id": "FRZ-OWN-02",
+   "family": "OWN",
+   "criterion": "one canonical contract per responsibility",
+   "checklist_status": "OPEN",
+   "primary_classification": "EVIDENCE_GAP",
+   "dashboard_state": "QUALIFICATION_REQUIRED",
+   "secondary_causes": [],
+   "scoped_historical_evidence": "EBH-2G-R2 29c72135; AW-7C-P1-ARCH fa5853ec; CE-01",
+   "ssot_selection_p5": [],
+   "ssot_ebh6_family_bundles": [],
+   "hist02_candidate_gates_not_ssot_mapped": [
+    "tests/unit/runtime/architecture/test_ebh_2f_r2_integration_plugin_contract_typing_gate.py"
+   ],
+   "gate_path_exists_at_head": {
+    "tests/unit/runtime/architecture/test_ebh_2f_r2_integration_plugin_contract_typing_gate.py": true
+   },
+   "executed_at_current_head_by_hist02": true,
+   "accountable_workstream": "HIST-02",
+   "owner_of_remaining_gate": "ARCH-FREEZE B7",
+   "remaining_gate": "Per-ID mapping + replay + audit",
+   "rationale": "Scoped to RAG/Integration graph, AW-7C adaptation, CE-01. No SSOT gate selection.",
+   "inherited_scoped_proof_only": true,
+   "promotion_allowed_by_hist02": false,
+   "current_head_replay_at_pin": {
+    "target_sha": "ba07ebaa34d04633bd60510f68c18346b1ef160d",
+    "results_by_path": {
+     "tests/unit/runtime/architecture/test_ebh_2f_r2_integration_plugin_contract_typing_gate.py": "PASS"
+    },
+    "note": "Results are existing scoped gates executed once at the pinned SHA. Green does NOT promote; status stays OPEN."
+   }
+  },
+  {
+   "frz_id": "FRZ-OWN-03",
+   "family": "OWN",
+   "criterion": "one sanctioned composition owner",
+   "checklist_status": "OPEN",
+   "primary_classification": "EVIDENCE_GAP",
+   "dashboard_state": "QUALIFICATION_REQUIRED",
+   "secondary_causes": [],
+   "scoped_historical_evidence": "EBH-2G-R2 29c72135; AW-7C-P1-ARCH; CE-01",
+   "ssot_selection_p5": [],
+   "ssot_ebh6_family_bundles": [],
+   "hist02_candidate_gates_not_ssot_mapped": [
+    "tests/unit/architecture/test_ebh_3_dependency_ownership_gate.py"
+   ],
+   "gate_path_exists_at_head": {
+    "tests/unit/architecture/test_ebh_3_dependency_ownership_gate.py": true
+   },
+   "executed_at_current_head_by_hist02": true,
+   "accountable_workstream": "HIST-02",
+   "owner_of_remaining_gate": "ARCH-FREEZE B7",
+   "remaining_gate": "Per-ID mapping + replay + audit",
+   "rationale": "Scoped to RAG provider paths and AW-7C-P1-ARCH design lock. No SSOT gate selection.",
+   "inherited_scoped_proof_only": true,
+   "promotion_allowed_by_hist02": false,
+   "current_head_replay_at_pin": {
+    "target_sha": "ba07ebaa34d04633bd60510f68c18346b1ef160d",
+    "results_by_path": {
+     "tests/unit/architecture/test_ebh_3_dependency_ownership_gate.py": "PASS"
+    },
+    "note": "Results are existing scoped gates executed once at the pinned SHA. Green does NOT promote; status stays OPEN."
+   }
+  },
+  {
+   "frz_id": "FRZ-OWN-04",
+   "family": "OWN",
+   "criterion": "no shadow authority",
+   "checklist_status": "OPEN",
+   "primary_classification": "QUALIFICATION_GAP",
+   "dashboard_state": "QUALIFICATION_REQUIRED",
+   "secondary_causes": [
+    "EVIDENCE_GAP"
+   ],
+   "scoped_historical_evidence": "EBH-2G-R2 29c72135; EBH-2G 33175f8e (RAG only)",
+   "ssot_selection_p5": [],
+   "ssot_ebh6_family_bundles": [
+    {
+     "family": "OWN",
+     "disposition": "SCOPED_CANDIDATE",
+     "scope_limitation": "Closed-world rescan \u2014 not whole-platform ownership closure",
+     "gates": [
+      "tests/unit/runtime/architecture/test_ee_final_arch_owner_uniqueness.py::test_ee_final_arch_owner_matrix_documented"
+     ]
+    }
+   ],
+   "hist02_candidate_gates_not_ssot_mapped": [],
+   "gate_path_exists_at_head": {
+    "tests/unit/runtime/architecture/test_ee_final_arch_owner_uniqueness.py::test_ee_final_arch_owner_matrix_documented": true
+   },
+   "executed_at_current_head_by_hist02": true,
+   "accountable_workstream": "HIST-02",
+   "owner_of_remaining_gate": "HIST-02 / ARCH-FREEZE B7",
+   "remaining_gate": "Closed-world shadow-registry gate or recorded disposition for vision/speech/document-splitter adapter registries; replay; audit",
+   "rationale": "Checklist evidence is RAG-only. Module-level registries outside the Integration catalog exist (vision_adapter_registry, speech_adapter_registry, rag document_splitters plugin_registry) with no HIST-02-scope disposition. graph_store_backend is gone from code (only a USAGE.md mention).",
+   "inherited_scoped_proof_only": true,
+   "promotion_allowed_by_hist02": false,
+   "current_head_replay_at_pin": {
+    "target_sha": "ba07ebaa34d04633bd60510f68c18346b1ef160d",
+    "results_by_path": {
+     "tests/unit/runtime/architecture/test_ee_final_arch_owner_uniqueness.py": "PASS"
+    },
+    "note": "Results are existing scoped gates executed once at the pinned SHA. Green does NOT promote; status stays OPEN."
+   }
+  },
+  {
+   "frz_id": "FRZ-OWN-05",
+   "family": "OWN",
+   "criterion": "no duplicated semantic mechanism",
+   "checklist_status": "OPEN",
+   "primary_classification": "QUALIFICATION_GAP",
+   "dashboard_state": "QUALIFICATION_REQUIRED",
+   "secondary_causes": [
+    "EVIDENCE_GAP"
+   ],
+   "scoped_historical_evidence": "EBH-2G-R2-R1 be7e817; EBH-2G; EBH-6 bundle OWN",
+   "ssot_selection_p5": [],
+   "ssot_ebh6_family_bundles": [
+    {
+     "family": "OWN",
+     "disposition": "SCOPED_CANDIDATE",
+     "scope_limitation": "Closed-world rescan \u2014 not whole-platform ownership closure",
+     "gates": [
+      "tests/unit/runtime/architecture/test_ee_final_arch_owner_uniqueness.py::test_ee_final_arch_owner_matrix_documented"
+     ]
+    }
+   ],
+   "hist02_candidate_gates_not_ssot_mapped": [],
+   "gate_path_exists_at_head": {
+    "tests/unit/runtime/architecture/test_ee_final_arch_owner_uniqueness.py::test_ee_final_arch_owner_matrix_documented": true
+   },
+   "executed_at_current_head_by_hist02": true,
+   "accountable_workstream": "HIST-02",
+   "owner_of_remaining_gate": "HIST-02 / ARCH-FREEZE B7",
+   "remaining_gate": "Same as OWN-04 (shared cause F-005); replay; audit",
+   "rationale": "EBH-6 OWN bundle is SCOPED CANDIDATE: 'closed-world rescan, not whole-platform ownership closure'.",
+   "inherited_scoped_proof_only": true,
+   "promotion_allowed_by_hist02": false,
+   "current_head_replay_at_pin": {
+    "target_sha": "ba07ebaa34d04633bd60510f68c18346b1ef160d",
+    "results_by_path": {
+     "tests/unit/runtime/architecture/test_ee_final_arch_owner_uniqueness.py": "PASS"
+    },
+    "note": "Results are existing scoped gates executed once at the pinned SHA. Green does NOT promote; status stays OPEN."
+   }
+  },
+  {
+   "frz_id": "FRZ-CTR-01",
+   "family": "CTR",
+   "criterion": "consumers depend on contracts",
+   "checklist_status": "OPEN",
+   "primary_classification": "VALID_SCOPED_PASS_CANDIDATE",
+   "dashboard_state": "AUDIT_REQUIRED",
+   "secondary_causes": [],
+   "scoped_historical_evidence": "many (INT-CONFIG a5974451, EBH-2G 33175f8e, HARNESS-W5/W6, S24-GAP-04, CE-01, PROD-Q-P2 8e43b160)",
+   "ssot_selection_p5": [
+    {
+     "selection": "QUAL-X-P5-F03-CONTRACTS-TYPING",
+     "status": "COLLECTABLE_LINKAGE",
+     "boundary": "EBH-2F/R2 + EBH-2I rescan @ exact SHA",
+     "modules": [
+      "tests/unit/runtime/architecture/test_ebh_2f_r2_integration_plugin_contract_typing_gate.py",
+      "tests/unit/architecture/test_ebh_2i_final_rescan_gate.py"
+     ]
+    }
+   ],
+   "ssot_ebh6_family_bundles": [],
+   "hist02_candidate_gates_not_ssot_mapped": [],
+   "gate_path_exists_at_head": {
+    "tests/unit/runtime/architecture/test_ebh_2f_r2_integration_plugin_contract_typing_gate.py": true,
+    "tests/unit/architecture/test_ebh_2i_final_rescan_gate.py": true
+   },
+   "executed_at_current_head_by_hist02": true,
+   "accountable_workstream": "HIST-02",
+   "owner_of_remaining_gate": "ARCH-FREEZE B7",
+   "remaining_gate": "P5 F03 replay + audit",
+   "rationale": "Broadest scoped evidence; P5 F03 selects EBH-2F-R2 and EBH-2I gates. Still scoped only.",
+   "inherited_scoped_proof_only": true,
+   "promotion_allowed_by_hist02": false,
+   "current_head_replay_at_pin": {
+    "target_sha": "ba07ebaa34d04633bd60510f68c18346b1ef160d",
+    "results_by_path": {
+     "tests/unit/runtime/architecture/test_ebh_2f_r2_integration_plugin_contract_typing_gate.py": "PASS",
+     "tests/unit/architecture/test_ebh_2i_final_rescan_gate.py": "PASS"
+    },
+    "note": "Results are existing scoped gates executed once at the pinned SHA. Green does NOT promote; status stays OPEN."
+   }
+  },
+  {
+   "frz_id": "FRZ-CTR-02",
+   "family": "CTR",
+   "criterion": "concrete provider leakage = 0",
+   "checklist_status": "OPEN",
+   "primary_classification": "VALID_SCOPED_PASS_CANDIDATE",
+   "dashboard_state": "AUDIT_REQUIRED",
+   "secondary_causes": [
+    "INDEPENDENT_AUDIT_GAP"
+   ],
+   "scoped_historical_evidence": "INT-CONFIG a5974451; EBH-2G; S24-GAP-04-P2-R2 041057266; EBH-6 f27bfaf2f; EBH-5 33ecf19cc",
+   "ssot_selection_p5": [],
+   "ssot_ebh6_family_bundles": [
+    {
+     "family": "CTR",
+     "disposition": "SCOPED_CANDIDATE",
+     "scope_limitation": "Not full FRZ-CTR closed-world rescan",
+     "gates": [
+      "tests/qualification/ebh_6/test_ebh_6_hardcoding_register_integrity.py::test_ebh6_prohibited_unresolved_zero",
+      "tests/unit/runtime/architecture/test_hardening_3_layer_boundary_gate.py::test_hardening_3_contracts_do_not_import_runtime_except_allowlist",
+      "tests/unit/architecture/test_ebh_2i_final_rescan_gate.py::test_ebh_2i_contract_surface_purity_gate_passes"
+     ]
+    },
+    {
+     "family": "VBN",
+     "disposition": "SCOPED_CANDIDATE",
+     "scope_limitation": "Independent L9 still required",
+     "gates": [
+      "tests/qualification/ebh_6/test_ebh_6_hardcoding_register_integrity.py::test_ebh6_findings_unclassified_zero",
+      "tests/qualification/ebh_6/test_ebh_6_hardcoding_register_integrity.py::test_ebh6_prohibited_unresolved_zero"
+     ]
+    }
+   ],
+   "hist02_candidate_gates_not_ssot_mapped": [
+    "tests/qualification/ebh_6/test_ebh_6_hardcoding_register_integrity.py"
+   ],
+   "gate_path_exists_at_head": {
+    "tests/qualification/ebh_6/test_ebh_6_hardcoding_register_integrity.py::test_ebh6_prohibited_unresolved_zero": true,
+    "tests/unit/runtime/architecture/test_hardening_3_layer_boundary_gate.py::test_hardening_3_contracts_do_not_import_runtime_except_allowlist": true,
+    "tests/unit/architecture/test_ebh_2i_final_rescan_gate.py::test_ebh_2i_contract_surface_purity_gate_passes": true,
+    "tests/qualification/ebh_6/test_ebh_6_hardcoding_register_integrity.py::test_ebh6_findings_unclassified_zero": true,
+    "tests/qualification/ebh_6/test_ebh_6_hardcoding_register_integrity.py": true
+   },
+   "executed_at_current_head_by_hist02": true,
+   "accountable_workstream": "HIST-02",
+   "owner_of_remaining_gate": "ARCH-FREEZE B7 / VBN",
+   "remaining_gate": "EBH-6 hardcoding register gate replay + ARCH-FREEZE B1 inventory reuse + independent L9 (VBN bundle)",
+   "rationale": "EBH-6 CTR + VBN bundles (SCOPED CANDIDATE; VBN 'Independent L9 still required' at bundle time; EBH-6 later independently accepted scoped). B1 closed-world inventory strict_pass @ 6bdf78c, 12 production_effective.",
+   "inherited_scoped_proof_only": true,
+   "promotion_allowed_by_hist02": false,
+   "current_head_replay_at_pin": {
+    "target_sha": "ba07ebaa34d04633bd60510f68c18346b1ef160d",
+    "results_by_path": {
+     "tests/qualification/ebh_6/test_ebh_6_hardcoding_register_integrity.py": "PASS",
+     "tests/unit/runtime/architecture/test_hardening_3_layer_boundary_gate.py": "PASS",
+     "tests/unit/architecture/test_ebh_2i_final_rescan_gate.py": "PASS"
+    },
+    "note": "Results are existing scoped gates executed once at the pinned SHA. Green does NOT promote; status stays OPEN."
+   }
+  },
+  {
+   "frz_id": "FRZ-CTR-03",
+   "family": "CTR",
+   "criterion": "no pseudo-contract dicts",
+   "checklist_status": "OPEN",
+   "primary_classification": "EVIDENCE_GAP",
+   "dashboard_state": "QUALIFICATION_REQUIRED",
+   "secondary_causes": [],
+   "scoped_historical_evidence": "INT-CONFIG a5974451; HARNESS-W5; HARNESS-W6",
+   "ssot_selection_p5": [],
+   "ssot_ebh6_family_bundles": [],
+   "hist02_candidate_gates_not_ssot_mapped": [
+    "tests/unit/runtime/architecture/test_ebh_2f_r2_integration_plugin_contract_typing_gate.py",
+    "tests/unit/integrations/test_p2_003_explicit_contract_specs.py"
+   ],
+   "gate_path_exists_at_head": {
+    "tests/unit/runtime/architecture/test_ebh_2f_r2_integration_plugin_contract_typing_gate.py": true,
+    "tests/unit/integrations/test_p2_003_explicit_contract_specs.py": true
+   },
+   "executed_at_current_head_by_hist02": true,
+   "accountable_workstream": "HIST-02",
+   "owner_of_remaining_gate": "ARCH-FREEZE B7",
+   "remaining_gate": "Per-ID platform-wide dict-contract scan or scoped limitation; replay; audit",
+   "rationale": "Three scoped surfaces only.",
+   "inherited_scoped_proof_only": true,
+   "promotion_allowed_by_hist02": false,
+   "current_head_replay_at_pin": {
+    "target_sha": "ba07ebaa34d04633bd60510f68c18346b1ef160d",
+    "results_by_path": {
+     "tests/unit/runtime/architecture/test_ebh_2f_r2_integration_plugin_contract_typing_gate.py": "PASS",
+     "tests/unit/integrations/test_p2_003_explicit_contract_specs.py": "PASS"
+    },
+    "note": "Results are existing scoped gates executed once at the pinned SHA. Green does NOT promote; status stays OPEN."
+   }
+  },
+  {
+   "frz_id": "FRZ-CTR-04",
+   "family": "CTR",
+   "criterion": "public/internal contracts classified",
+   "checklist_status": "OPEN",
+   "primary_classification": "EVIDENCE_GAP",
+   "dashboard_state": "QUALIFICATION_REQUIRED",
+   "secondary_causes": [],
+   "scoped_historical_evidence": "EBH-2F-R2 f7fabab; EBH-2G-R2; AW-7C-P1-ARCH",
+   "ssot_selection_p5": [],
+   "ssot_ebh6_family_bundles": [],
+   "hist02_candidate_gates_not_ssot_mapped": [
+    "tests/unit/architecture/test_ebh_2a_public_contract_boundary_gate.py"
+   ],
+   "gate_path_exists_at_head": {
+    "tests/unit/architecture/test_ebh_2a_public_contract_boundary_gate.py": true
+   },
+   "executed_at_current_head_by_hist02": true,
+   "accountable_workstream": "HIST-02",
+   "owner_of_remaining_gate": "ARCH-FREEZE B7",
+   "remaining_gate": "Per-ID mapping (EBH-2A public-contract gate candidate); replay; audit",
+   "rationale": "No SSOT selection.",
+   "inherited_scoped_proof_only": true,
+   "promotion_allowed_by_hist02": false,
+   "current_head_replay_at_pin": {
+    "target_sha": "ba07ebaa34d04633bd60510f68c18346b1ef160d",
+    "results_by_path": {
+     "tests/unit/architecture/test_ebh_2a_public_contract_boundary_gate.py": "PASS"
+    },
+    "note": "Results are existing scoped gates executed once at the pinned SHA. Green does NOT promote; status stays OPEN."
+   }
+  },
+  {
+   "frz_id": "FRZ-CTR-05",
+   "family": "CTR",
+   "criterion": "contract responsibility narrow/cohesive",
+   "checklist_status": "OPEN",
+   "primary_classification": "EVIDENCE_GAP",
+   "dashboard_state": "QUALIFICATION_REQUIRED",
+   "secondary_causes": [],
+   "scoped_historical_evidence": "EBH-2G; HARNESS-W5/W6; S24-GAP-04; AW-7C-P1-ARCH; CE-01",
+   "ssot_selection_p5": [],
+   "ssot_ebh6_family_bundles": [],
+   "hist02_candidate_gates_not_ssot_mapped": [
+    "tests/unit/runtime/architecture/test_ebh_2f_r2_integration_plugin_contract_typing_gate.py"
+   ],
+   "gate_path_exists_at_head": {
+    "tests/unit/runtime/architecture/test_ebh_2f_r2_integration_plugin_contract_typing_gate.py": true
+   },
+   "executed_at_current_head_by_hist02": true,
+   "accountable_workstream": "HIST-02",
+   "owner_of_remaining_gate": "ARCH-FREEZE B7",
+   "remaining_gate": "Per-ID mapping + replay + audit",
+   "rationale": "Judgment-type criterion; only per-contract scoped evidence.",
+   "inherited_scoped_proof_only": true,
+   "promotion_allowed_by_hist02": false,
+   "current_head_replay_at_pin": {
+    "target_sha": "ba07ebaa34d04633bd60510f68c18346b1ef160d",
+    "results_by_path": {
+     "tests/unit/runtime/architecture/test_ebh_2f_r2_integration_plugin_contract_typing_gate.py": "PASS"
+    },
+    "note": "Results are existing scoped gates executed once at the pinned SHA. Green does NOT promote; status stays OPEN."
+   }
+  },
+  {
+   "frz_id": "FRZ-CTR-06",
+   "family": "CTR",
+   "criterion": "contracts do not encode concrete vendor/runtime implementation",
+   "checklist_status": "OPEN",
+   "primary_classification": "VALID_SCOPED_PASS_CANDIDATE",
+   "dashboard_state": "AUDIT_REQUIRED",
+   "secondary_causes": [
+    "INDEPENDENT_AUDIT_GAP"
+   ],
+   "scoped_historical_evidence": "INT-CONFIG; EBH-2G; S24-GAP-04; EBH-6; EBH-5",
+   "ssot_selection_p5": [],
+   "ssot_ebh6_family_bundles": [
+    {
+     "family": "CTR",
+     "disposition": "SCOPED_CANDIDATE",
+     "scope_limitation": "Not full FRZ-CTR closed-world rescan",
+     "gates": [
+      "tests/qualification/ebh_6/test_ebh_6_hardcoding_register_integrity.py::test_ebh6_prohibited_unresolved_zero",
+      "tests/unit/runtime/architecture/test_hardening_3_layer_boundary_gate.py::test_hardening_3_contracts_do_not_import_runtime_except_allowlist",
+      "tests/unit/architecture/test_ebh_2i_final_rescan_gate.py::test_ebh_2i_contract_surface_purity_gate_passes"
+     ]
+    }
+   ],
+   "hist02_candidate_gates_not_ssot_mapped": [
+    "tests/qualification/ebh_6/test_ebh_6_hardcoding_register_integrity.py"
+   ],
+   "gate_path_exists_at_head": {
+    "tests/qualification/ebh_6/test_ebh_6_hardcoding_register_integrity.py::test_ebh6_prohibited_unresolved_zero": true,
+    "tests/unit/runtime/architecture/test_hardening_3_layer_boundary_gate.py::test_hardening_3_contracts_do_not_import_runtime_except_allowlist": true,
+    "tests/unit/architecture/test_ebh_2i_final_rescan_gate.py::test_ebh_2i_contract_surface_purity_gate_passes": true,
+    "tests/qualification/ebh_6/test_ebh_6_hardcoding_register_integrity.py": true
+   },
+   "executed_at_current_head_by_hist02": true,
+   "accountable_workstream": "HIST-02",
+   "owner_of_remaining_gate": "ARCH-FREEZE B7 / VBN",
+   "remaining_gate": "Same as CTR-02",
+   "rationale": "EBH-6 CTR bundle covers it (SCOPED CANDIDATE).",
+   "inherited_scoped_proof_only": true,
+   "promotion_allowed_by_hist02": false,
+   "current_head_replay_at_pin": {
+    "target_sha": "ba07ebaa34d04633bd60510f68c18346b1ef160d",
+    "results_by_path": {
+     "tests/qualification/ebh_6/test_ebh_6_hardcoding_register_integrity.py": "PASS",
+     "tests/unit/runtime/architecture/test_hardening_3_layer_boundary_gate.py": "PASS",
+     "tests/unit/architecture/test_ebh_2i_final_rescan_gate.py": "PASS"
+    },
+    "note": "Results are existing scoped gates executed once at the pinned SHA. Green does NOT promote; status stays OPEN."
+   }
+  },
+  {
+   "frz_id": "FRZ-TYP-01",
+   "family": "TYP",
+   "criterion": "semantic boundaries strongly typed",
+   "checklist_status": "OPEN",
+   "primary_classification": "VALID_SCOPED_PASS_CANDIDATE",
+   "dashboard_state": "AUDIT_REQUIRED",
+   "secondary_causes": [],
+   "scoped_historical_evidence": "GOV-X2; INT-CONFIG; EBH-2G; EBH-2H; EBH-2I; HARNESS-W5/W6; CE-01",
+   "ssot_selection_p5": [
+    {
+     "selection": "QUAL-X-P5-F03-CONTRACTS-TYPING",
+     "status": "COLLECTABLE_LINKAGE",
+     "boundary": "EBH-2F/R2 + EBH-2I rescan @ exact SHA",
+     "modules": [
+      "tests/unit/runtime/architecture/test_ebh_2f_r2_integration_plugin_contract_typing_gate.py",
+      "tests/unit/architecture/test_ebh_2i_final_rescan_gate.py"
+     ]
+    }
+   ],
+   "ssot_ebh6_family_bundles": [
+    {
+     "family": "TYP",
+     "disposition": "SCOPED_CANDIDATE",
+     "scope_limitation": "Not global FRZ-TYP PASS",
+     "gates": [
+      "tests/qualification/ebh_6/test_ebh_6_q2d2_dual_path.py::test_ebh6_q2d2_path_b_remediation_proves_registered_violation_removed",
+      "tests/unit/runtime/nexus/test_authoritative_decision_exposure_propagation.py::test_b13_ambiguous_candidates_fail_closed",
+      "tests/qualification/ebh_6/test_ebh_6_contracts_typing_qualification.py::test_ebh6_application_services_production_seam_typing_passes"
+     ]
+    }
+   ],
+   "hist02_candidate_gates_not_ssot_mapped": [],
+   "gate_path_exists_at_head": {
+    "tests/unit/runtime/architecture/test_ebh_2f_r2_integration_plugin_contract_typing_gate.py": true,
+    "tests/unit/architecture/test_ebh_2i_final_rescan_gate.py": true,
+    "tests/qualification/ebh_6/test_ebh_6_q2d2_dual_path.py::test_ebh6_q2d2_path_b_remediation_proves_registered_violation_removed": true,
+    "tests/unit/runtime/nexus/test_authoritative_decision_exposure_propagation.py::test_b13_ambiguous_candidates_fail_closed": true,
+    "tests/qualification/ebh_6/test_ebh_6_contracts_typing_qualification.py::test_ebh6_application_services_production_seam_typing_passes": true
+   },
+   "executed_at_current_head_by_hist02": true,
+   "accountable_workstream": "HIST-02",
+   "owner_of_remaining_gate": "ARCH-FREEZE B7",
+   "remaining_gate": "P5 F03 replay + pyright gates; audit",
+   "rationale": "Q2-D2 resolved (OD-EBH6-Q2D2 Path B APPROVED 2026-10-29).",
+   "inherited_scoped_proof_only": true,
+   "promotion_allowed_by_hist02": false,
+   "current_head_replay_at_pin": {
+    "target_sha": "ba07ebaa34d04633bd60510f68c18346b1ef160d",
+    "results_by_path": {
+     "tests/unit/runtime/architecture/test_ebh_2f_r2_integration_plugin_contract_typing_gate.py": "PASS",
+     "tests/unit/architecture/test_ebh_2i_final_rescan_gate.py": "PASS",
+     "tests/qualification/ebh_6/test_ebh_6_q2d2_dual_path.py": "PASS",
+     "tests/unit/runtime/nexus/test_authoritative_decision_exposure_propagation.py": "PASS",
+     "tests/qualification/ebh_6/test_ebh_6_contracts_typing_qualification.py": "PASS"
+    },
+    "note": "Results are existing scoped gates executed once at the pinned SHA. Green does NOT promote; status stays OPEN."
+   }
+  },
+  {
+   "frz_id": "FRZ-TYP-02",
+   "family": "TYP",
+   "criterion": "Any at semantic boundaries = 0 unless evidence-backed",
+   "checklist_status": "OPEN",
+   "primary_classification": "EVIDENCE_GAP",
+   "dashboard_state": "QUALIFICATION_REQUIRED",
+   "secondary_causes": [],
+   "scoped_historical_evidence": "INT-CONFIG; EBH-2G; HARNESS-W5/W6; S24-GAP-04",
+   "ssot_selection_p5": [],
+   "ssot_ebh6_family_bundles": [],
+   "hist02_candidate_gates_not_ssot_mapped": [
+    "tests/unit/runtime/architecture/test_ebh_2f_r2_integration_plugin_contract_typing_gate.py",
+    "tests/qualification/ebh_6/test_ebh_6_contracts_typing_qualification.py"
+   ],
+   "gate_path_exists_at_head": {
+    "tests/unit/runtime/architecture/test_ebh_2f_r2_integration_plugin_contract_typing_gate.py": true,
+    "tests/qualification/ebh_6/test_ebh_6_contracts_typing_qualification.py": true
+   },
+   "executed_at_current_head_by_hist02": true,
+   "accountable_workstream": "HIST-02",
+   "owner_of_remaining_gate": "ARCH-FREEZE B7",
+   "remaining_gate": "Per-ID mapping; AST Any-scan replay; audit",
+   "rationale": "Only scoped AST gates; no platform-wide selection.",
+   "inherited_scoped_proof_only": true,
+   "promotion_allowed_by_hist02": false,
+   "current_head_replay_at_pin": {
+    "target_sha": "ba07ebaa34d04633bd60510f68c18346b1ef160d",
+    "results_by_path": {
+     "tests/unit/runtime/architecture/test_ebh_2f_r2_integration_plugin_contract_typing_gate.py": "PASS",
+     "tests/qualification/ebh_6/test_ebh_6_contracts_typing_qualification.py": "PASS"
+    },
+    "note": "Results are existing scoped gates executed once at the pinned SHA. Green does NOT promote; status stays OPEN."
+   }
+  },
+  {
+   "frz_id": "FRZ-TYP-03",
+   "family": "TYP",
+   "criterion": "generic object semantic seams = 0",
+   "checklist_status": "OPEN",
+   "primary_classification": "EVIDENCE_GAP",
+   "dashboard_state": "AUDIT_REQUIRED",
+   "secondary_causes": [
+    "ACCEPTED_LIMITATION"
+   ],
+   "scoped_historical_evidence": "GOV-X2 (Q2-D2); EBH-6 f27bfaf2f; INT-CONFIG; EBH-2G",
+   "ssot_selection_p5": [],
+   "ssot_ebh6_family_bundles": [
+    {
+     "family": "TYP",
+     "disposition": "SCOPED_CANDIDATE",
+     "scope_limitation": "Not global FRZ-TYP PASS",
+     "gates": [
+      "tests/qualification/ebh_6/test_ebh_6_q2d2_dual_path.py::test_ebh6_q2d2_path_b_remediation_proves_registered_violation_removed",
+      "tests/unit/runtime/nexus/test_authoritative_decision_exposure_propagation.py::test_b13_ambiguous_candidates_fail_closed",
+      "tests/qualification/ebh_6/test_ebh_6_contracts_typing_qualification.py::test_ebh6_application_services_production_seam_typing_passes"
+     ]
+    }
+   ],
+   "hist02_candidate_gates_not_ssot_mapped": [],
+   "gate_path_exists_at_head": {
+    "tests/qualification/ebh_6/test_ebh_6_q2d2_dual_path.py::test_ebh6_q2d2_path_b_remediation_proves_registered_violation_removed": true,
+    "tests/unit/runtime/nexus/test_authoritative_decision_exposure_propagation.py::test_b13_ambiguous_candidates_fail_closed": true,
+    "tests/qualification/ebh_6/test_ebh_6_contracts_typing_qualification.py::test_ebh6_application_services_production_seam_typing_passes": true
+   },
+   "executed_at_current_head_by_hist02": true,
+   "accountable_workstream": "HIST-02",
+   "owner_of_remaining_gate": "ARCH-FREEZE B7 / auditor",
+   "remaining_gate": "Auditor judgment on nexus_loop.py:680,1037 AuthoritativeDecisionExposure[object]; replay",
+   "rationale": "EBH-6 TYP bundle SCOPED. Residual generic `object` type argument at two Nexus seams after Q2-D2 Path B (F-006).",
+   "inherited_scoped_proof_only": true,
+   "promotion_allowed_by_hist02": false,
+   "current_head_replay_at_pin": {
+    "target_sha": "ba07ebaa34d04633bd60510f68c18346b1ef160d",
+    "results_by_path": {
+     "tests/qualification/ebh_6/test_ebh_6_q2d2_dual_path.py": "PASS",
+     "tests/unit/runtime/nexus/test_authoritative_decision_exposure_propagation.py": "PASS",
+     "tests/qualification/ebh_6/test_ebh_6_contracts_typing_qualification.py": "PASS"
+    },
+    "note": "Results are existing scoped gates executed once at the pinned SHA. Green does NOT promote; status stays OPEN."
+   }
+  },
+  {
+   "frz_id": "FRZ-TYP-04",
+   "family": "TYP",
+   "criterion": "reflection-based semantic dispatch = 0",
+   "checklist_status": "OPEN",
+   "primary_classification": "QUALIFICATION_GAP",
+   "dashboard_state": "QUALIFICATION_REQUIRED",
+   "secondary_causes": [
+    "EVIDENCE_GAP"
+   ],
+   "scoped_historical_evidence": "INT-CONFIG; EBH-2I; EBH-2G; HARNESS-W5/W6",
+   "ssot_selection_p5": [],
+   "ssot_ebh6_family_bundles": [],
+   "hist02_candidate_gates_not_ssot_mapped": [
+    "tests/unit/architecture/test_ebh_2i_final_rescan_gate.py"
+   ],
+   "gate_path_exists_at_head": {
+    "tests/unit/architecture/test_ebh_2i_final_rescan_gate.py": true
+   },
+   "executed_at_current_head_by_hist02": true,
+   "accountable_workstream": "HIST-02",
+   "owner_of_remaining_gate": "ARCH-FREEZE B7",
+   "remaining_gate": "Dynamic-dispatch inventory beyond static gates: 21 B1 'unknown:dynamic' nodes (EXTRACTOR_LIMITATION) and cli/external_work.py importlib imports",
+   "rationale": "Static AST gates cannot see string-based dynamic imports; B1 dispositions them as EXTRACTOR_LIMITATION, not behaviorally proven.",
+   "inherited_scoped_proof_only": true,
+   "promotion_allowed_by_hist02": false,
+   "current_head_replay_at_pin": {
+    "target_sha": "ba07ebaa34d04633bd60510f68c18346b1ef160d",
+    "results_by_path": {
+     "tests/unit/architecture/test_ebh_2i_final_rescan_gate.py": "PASS"
+    },
+    "note": "Results are existing scoped gates executed once at the pinned SHA. Green does NOT promote; status stays OPEN."
+   }
+  },
+  {
+   "frz_id": "FRZ-TYP-05",
+   "family": "TYP",
+   "criterion": "string-dispatch substitute for typed contract = 0",
+   "checklist_status": "OPEN",
+   "primary_classification": "QUALIFICATION_GAP",
+   "dashboard_state": "QUALIFICATION_REQUIRED",
+   "secondary_causes": [],
+   "scoped_historical_evidence": "HARNESS-W6 846af28 only",
+   "ssot_selection_p5": [],
+   "ssot_ebh6_family_bundles": [],
+   "hist02_candidate_gates_not_ssot_mapped": [
+    "tests/unit/runtime/architecture/test_harness_w6_runtime_intelligence_boundary_gate.py"
+   ],
+   "gate_path_exists_at_head": {
+    "tests/unit/runtime/architecture/test_harness_w6_runtime_intelligence_boundary_gate.py": true
+   },
+   "executed_at_current_head_by_hist02": true,
+   "accountable_workstream": "HIST-02",
+   "owner_of_remaining_gate": "ARCH-FREEZE B7",
+   "remaining_gate": "Platform-wide string-dispatch gate or scoped limitation; replay; audit",
+   "rationale": "Single stage (W6 outcome strings); no gate named for string dispatch anywhere in tests.",
+   "inherited_scoped_proof_only": true,
+   "promotion_allowed_by_hist02": false,
+   "current_head_replay_at_pin": {
+    "target_sha": "ba07ebaa34d04633bd60510f68c18346b1ef160d",
+    "results_by_path": {
+     "tests/unit/runtime/architecture/test_harness_w6_runtime_intelligence_boundary_gate.py": "PASS"
+    },
+    "note": "Results are existing scoped gates executed once at the pinned SHA. Green does NOT promote; status stays OPEN."
+   }
+  },
+  {
+   "frz_id": "FRZ-TYP-06",
+   "family": "TYP",
+   "criterion": "type-ignore/cast cannot mask architecture mismatch",
+   "checklist_status": "OPEN",
+   "primary_classification": "EVIDENCE_GAP",
+   "dashboard_state": "QUALIFICATION_REQUIRED",
+   "secondary_causes": [],
+   "scoped_historical_evidence": "INT-CONFIG; EBH-2G; HARNESS-W5/W6; S24-GAP-04",
+   "ssot_selection_p5": [],
+   "ssot_ebh6_family_bundles": [],
+   "hist02_candidate_gates_not_ssot_mapped": [
+    "tests/unit/runtime/architecture/test_ebh_2f_r2_integration_plugin_contract_typing_gate.py"
+   ],
+   "gate_path_exists_at_head": {
+    "tests/unit/runtime/architecture/test_ebh_2f_r2_integration_plugin_contract_typing_gate.py": true
+   },
+   "executed_at_current_head_by_hist02": true,
+   "accountable_workstream": "HIST-02",
+   "owner_of_remaining_gate": "ARCH-FREEZE B7",
+   "remaining_gate": "Per-ID mapping; cast/type-ignore AST scan replay; audit",
+   "rationale": "Scoped per-surface AST gates only.",
+   "inherited_scoped_proof_only": true,
+   "promotion_allowed_by_hist02": false,
+   "current_head_replay_at_pin": {
+    "target_sha": "ba07ebaa34d04633bd60510f68c18346b1ef160d",
+    "results_by_path": {
+     "tests/unit/runtime/architecture/test_ebh_2f_r2_integration_plugin_contract_typing_gate.py": "PASS"
+    },
+    "note": "Results are existing scoped gates executed once at the pinned SHA. Green does NOT promote; status stays OPEN."
+   }
+  },
+  {
+   "frz_id": "FRZ-PLG-01",
+   "family": "PLG",
+   "criterion": "extensible mechanisms expose platform contracts",
+   "checklist_status": "OPEN",
+   "primary_classification": "VALID_SCOPED_PASS_CANDIDATE",
+   "dashboard_state": "AUDIT_REQUIRED",
+   "secondary_causes": [],
+   "scoped_historical_evidence": "many scoped; EBH-6 bundle PLG",
+   "ssot_selection_p5": [
+    {
+     "selection": "QUAL-X-P5-F03-CONTRACTS-TYPING",
+     "status": "COLLECTABLE_LINKAGE",
+     "boundary": "EBH-2F/R2 + EBH-2I rescan @ exact SHA",
+     "modules": [
+      "tests/unit/runtime/architecture/test_ebh_2f_r2_integration_plugin_contract_typing_gate.py",
+      "tests/unit/architecture/test_ebh_2i_final_rescan_gate.py"
+     ]
+    }
+   ],
+   "ssot_ebh6_family_bundles": [
+    {
+     "family": "PLG",
+     "disposition": "SCOPED_CANDIDATE",
+     "scope_limitation": "EBH-5 scoped",
+     "gates": [
+      "tests/qualification/ebh_5/test_ebh_5_mechanical_exit_gates.py::test_ebh5_exit_inventory_complete"
+     ]
+    }
+   ],
+   "hist02_candidate_gates_not_ssot_mapped": [],
+   "gate_path_exists_at_head": {
+    "tests/unit/runtime/architecture/test_ebh_2f_r2_integration_plugin_contract_typing_gate.py": true,
+    "tests/unit/architecture/test_ebh_2i_final_rescan_gate.py": true,
+    "tests/qualification/ebh_5/test_ebh_5_mechanical_exit_gates.py::test_ebh5_exit_inventory_complete": true
+   },
+   "executed_at_current_head_by_hist02": true,
+   "accountable_workstream": "HIST-02",
+   "owner_of_remaining_gate": "ARCH-FREEZE B7",
+   "remaining_gate": "P5 F03 replay + audit",
+   "rationale": "In P5 F03 and EBH-6 PLG bundle.",
+   "inherited_scoped_proof_only": true,
+   "promotion_allowed_by_hist02": false,
+   "current_head_replay_at_pin": {
+    "target_sha": "ba07ebaa34d04633bd60510f68c18346b1ef160d",
+    "results_by_path": {
+     "tests/unit/runtime/architecture/test_ebh_2f_r2_integration_plugin_contract_typing_gate.py": "PASS",
+     "tests/unit/architecture/test_ebh_2i_final_rescan_gate.py": "PASS",
+     "tests/qualification/ebh_5/test_ebh_5_mechanical_exit_gates.py": "PASS"
+    },
+    "note": "Results are existing scoped gates executed once at the pinned SHA. Green does NOT promote; status stays OPEN."
+   }
+  },
+  {
+   "frz_id": "FRZ-PLG-02",
+   "family": "PLG",
+   "criterion": "external structural implementation works without core patch",
+   "checklist_status": "OPEN",
+   "primary_classification": "EVIDENCE_GAP",
+   "dashboard_state": "QUALIFICATION_REQUIRED",
+   "secondary_causes": [
+    "INDEPENDENT_AUDIT_GAP"
+   ],
+   "scoped_historical_evidence": "INT-CONFIG; HARNESS-W6; S24-GAP-04-P2; EBH-5 33ecf19cc",
+   "ssot_selection_p5": [],
+   "ssot_ebh6_family_bundles": [],
+   "hist02_candidate_gates_not_ssot_mapped": [
+    "tests/unit/integrations/test_external_plugin.py",
+    "tests/unit/integrations/test_p2_003_explicit_contract_specs.py"
+   ],
+   "gate_path_exists_at_head": {
+    "tests/unit/integrations/test_external_plugin.py": true,
+    "tests/unit/integrations/test_p2_003_explicit_contract_specs.py": true
+   },
+   "executed_at_current_head_by_hist02": true,
+   "accountable_workstream": "HIST-02",
+   "owner_of_remaining_gate": "ARCH-FREEZE B7",
+   "remaining_gate": "Map test_external_plugin/EBH-5 behavioral proofs; replay; audit",
+   "rationale": "Gates exist (test_external_plugin.py, EBH-5 behavioral proofs) but no SSOT selection.",
+   "inherited_scoped_proof_only": true,
+   "promotion_allowed_by_hist02": false,
+   "current_head_replay_at_pin": {
+    "target_sha": "ba07ebaa34d04633bd60510f68c18346b1ef160d",
+    "results_by_path": {
+     "tests/unit/integrations/test_external_plugin.py": "PASS",
+     "tests/unit/integrations/test_p2_003_explicit_contract_specs.py": "PASS"
+    },
+    "note": "Results are existing scoped gates executed once at the pinned SHA. Green does NOT promote; status stays OPEN."
+   }
+  },
+  {
+   "frz_id": "FRZ-PLG-03",
+   "family": "PLG",
+   "criterion": "provider discovery has explicit owner",
+   "checklist_status": "OPEN",
+   "primary_classification": "EVIDENCE_GAP",
+   "dashboard_state": "QUALIFICATION_REQUIRED",
+   "secondary_causes": [],
+   "scoped_historical_evidence": "EBH-2G-R2-R1/R2/parent (RAG graph only)",
+   "ssot_selection_p5": [],
+   "ssot_ebh6_family_bundles": [],
+   "hist02_candidate_gates_not_ssot_mapped": [
+    "tests/unit/integrations/registry/test_catalog_revision_and_mutation.py"
+   ],
+   "gate_path_exists_at_head": {
+    "tests/unit/integrations/registry/test_catalog_revision_and_mutation.py": true
+   },
+   "executed_at_current_head_by_hist02": true,
+   "accountable_workstream": "HIST-02",
+   "owner_of_remaining_gate": "ARCH-FREEZE B7",
+   "remaining_gate": "Platform-wide discovery owner statement + gate mapping; replay; audit",
+   "rationale": "RAG graph scope only.",
+   "inherited_scoped_proof_only": true,
+   "promotion_allowed_by_hist02": false,
+   "current_head_replay_at_pin": {
+    "target_sha": "ba07ebaa34d04633bd60510f68c18346b1ef160d",
+    "results_by_path": {
+     "tests/unit/integrations/registry/test_catalog_revision_and_mutation.py": "PASS"
+    },
+    "note": "Results are existing scoped gates executed once at the pinned SHA. Green does NOT promote; status stays OPEN."
+   }
+  },
+  {
+   "frz_id": "FRZ-PLG-04",
+   "family": "PLG",
+   "criterion": "provider selection has explicit owner",
+   "checklist_status": "OPEN",
+   "primary_classification": "VALID_SCOPED_PASS_CANDIDATE",
+   "dashboard_state": "AUDIT_REQUIRED",
+   "secondary_causes": [],
+   "scoped_historical_evidence": "EBH-2G (RAG); EBH-5; EBH-6 bundle PLG",
+   "ssot_selection_p5": [],
+   "ssot_ebh6_family_bundles": [
+    {
+     "family": "PLG",
+     "disposition": "SCOPED_CANDIDATE",
+     "scope_limitation": "EBH-5 scoped",
+     "gates": [
+      "tests/qualification/ebh_5/test_ebh_5_mechanical_exit_gates.py::test_ebh5_exit_inventory_complete"
+     ]
+    }
+   ],
+   "hist02_candidate_gates_not_ssot_mapped": [],
+   "gate_path_exists_at_head": {
+    "tests/qualification/ebh_5/test_ebh_5_mechanical_exit_gates.py::test_ebh5_exit_inventory_complete": true
+   },
+   "executed_at_current_head_by_hist02": true,
+   "accountable_workstream": "HIST-02",
+   "owner_of_remaining_gate": "ARCH-FREEZE B7",
+   "remaining_gate": "EBH-6 PLG bundle replay; audit",
+   "rationale": "EBH-6 PLG bundle covers PLG-04 (SCOPED CANDIDATE, 'EBH-5 scoped').",
+   "inherited_scoped_proof_only": true,
+   "promotion_allowed_by_hist02": false,
+   "current_head_replay_at_pin": {
+    "target_sha": "ba07ebaa34d04633bd60510f68c18346b1ef160d",
+    "results_by_path": {
+     "tests/qualification/ebh_5/test_ebh_5_mechanical_exit_gates.py": "PASS"
+    },
+    "note": "Results are existing scoped gates executed once at the pinned SHA. Green does NOT promote; status stays OPEN."
+   }
+  },
+  {
+   "frz_id": "FRZ-PLG-05",
+   "family": "PLG",
+   "criterion": "activation/admission explicit",
+   "checklist_status": "OPEN",
+   "primary_classification": "EVIDENCE_GAP",
+   "dashboard_state": "QUALIFICATION_REQUIRED",
+   "secondary_causes": [],
+   "scoped_historical_evidence": "EBH-2G (RAG fail-closed)",
+   "ssot_selection_p5": [],
+   "ssot_ebh6_family_bundles": [],
+   "hist02_candidate_gates_not_ssot_mapped": [
+    "tests/unit/applications/test_catalog_hot_reload_governance.py"
+   ],
+   "gate_path_exists_at_head": {
+    "tests/unit/applications/test_catalog_hot_reload_governance.py": true
+   },
+   "executed_at_current_head_by_hist02": true,
+   "accountable_workstream": "HIST-02",
+   "owner_of_remaining_gate": "ARCH-FREEZE B7",
+   "remaining_gate": "Map catalog hot-reload governance gates (CHR1-12); replay; audit",
+   "rationale": "RAG scope only in checklist; catalog admission governance tests exist but unmapped.",
+   "inherited_scoped_proof_only": true,
+   "promotion_allowed_by_hist02": false,
+   "current_head_replay_at_pin": {
+    "target_sha": "ba07ebaa34d04633bd60510f68c18346b1ef160d",
+    "results_by_path": {
+     "tests/unit/applications/test_catalog_hot_reload_governance.py": "PASS"
+    },
+    "note": "Results are existing scoped gates executed once at the pinned SHA. Green does NOT promote; status stays OPEN."
+   }
+  },
+  {
+   "frz_id": "FRZ-PLG-06",
+   "family": "PLG",
+   "criterion": "plugin package != capability authority",
+   "checklist_status": "OPEN",
+   "primary_classification": "QUALIFICATION_GAP",
+   "dashboard_state": "QUALIFICATION_REQUIRED",
+   "secondary_causes": [
+    "SSOT_DRIFT"
+   ],
+   "scoped_historical_evidence": "GR-11 (governance plugin closed world, READY FOR AUDIT doc; roadmap GOV-X1-GR11 4e5878f5)",
+   "ssot_selection_p5": [],
+   "ssot_ebh6_family_bundles": [],
+   "hist02_candidate_gates_not_ssot_mapped": [
+    "tests/qualification/governance/gr11/test_gr11_plugin_enterprise_certification.py"
+   ],
+   "gate_path_exists_at_head": {
+    "tests/qualification/governance/gr11/test_gr11_plugin_enterprise_certification.py": true
+   },
+   "executed_at_current_head_by_hist02": true,
+   "accountable_workstream": "HIST-02",
+   "owner_of_remaining_gate": "ARCH-FREEZE B7",
+   "remaining_gate": "Platform-wide gate for tool/skill/MCP/integration packages; fix citation G11-17",
+   "rationale": "GR-11 is governance-only (nine rows); checklist ref 'G11-17' matches no catalog row id.",
+   "inherited_scoped_proof_only": true,
+   "promotion_allowed_by_hist02": false,
+   "current_head_replay_at_pin": {
+    "target_sha": "ba07ebaa34d04633bd60510f68c18346b1ef160d",
+    "results_by_path": {
+     "tests/qualification/governance/gr11/test_gr11_plugin_enterprise_certification.py": "PASS"
+    },
+    "note": "Results are existing scoped gates executed once at the pinned SHA. Green does NOT promote; status stays OPEN."
+   }
+  },
+  {
+   "frz_id": "FRZ-PLG-07",
+   "family": "PLG",
+   "criterion": "runtime extensions cannot self-expand authority",
+   "checklist_status": "OPEN",
+   "primary_classification": "QUALIFICATION_GAP",
+   "dashboard_state": "QUALIFICATION_REQUIRED",
+   "secondary_causes": [],
+   "scoped_historical_evidence": "HARNESS-W6 846af28 only",
+   "ssot_selection_p5": [],
+   "ssot_ebh6_family_bundles": [],
+   "hist02_candidate_gates_not_ssot_mapped": [
+    "tests/unit/runtime/architecture/test_harness_w6_runtime_intelligence_boundary_gate.py"
+   ],
+   "gate_path_exists_at_head": {
+    "tests/unit/runtime/architecture/test_harness_w6_runtime_intelligence_boundary_gate.py": true
+   },
+   "executed_at_current_head_by_hist02": true,
+   "accountable_workstream": "HIST-02",
+   "owner_of_remaining_gate": "ARCH-FREEZE B7",
+   "remaining_gate": "Platform-wide extension-authority gate; replay; audit",
+   "rationale": "W6 boundary gate g10 covers Runtime Intelligence analyzers only.",
+   "inherited_scoped_proof_only": true,
+   "promotion_allowed_by_hist02": false,
+   "current_head_replay_at_pin": {
+    "target_sha": "ba07ebaa34d04633bd60510f68c18346b1ef160d",
+    "results_by_path": {
+     "tests/unit/runtime/architecture/test_harness_w6_runtime_intelligence_boundary_gate.py": "PASS"
+    },
+    "note": "Results are existing scoped gates executed once at the pinned SHA. Green does NOT promote; status stays OPEN."
+   }
+  },
+  {
+   "frz_id": "FRZ-PLG-08",
+   "family": "PLG",
+   "criterion": "dynamic registration reversible/scoped when supported",
+   "checklist_status": "OPEN",
+   "primary_classification": "EVIDENCE_GAP",
+   "dashboard_state": "QUALIFICATION_REQUIRED",
+   "secondary_causes": [
+    "QUALIFICATION_GAP"
+   ],
+   "scoped_historical_evidence": "none in checklist",
+   "ssot_selection_p5": [],
+   "ssot_ebh6_family_bundles": [],
+   "hist02_candidate_gates_not_ssot_mapped": [
+    "tests/unit/integrations/registry/test_catalog_revision_and_mutation.py",
+    "tests/unit/applications/test_catalog_hot_reload_governance.py",
+    "tests/unit/context/test_context_plugin_registry.py"
+   ],
+   "gate_path_exists_at_head": {
+    "tests/unit/integrations/registry/test_catalog_revision_and_mutation.py": true,
+    "tests/unit/applications/test_catalog_hot_reload_governance.py": true,
+    "tests/unit/context/test_context_plugin_registry.py": true
+   },
+   "executed_at_current_head_by_hist02": true,
+   "accountable_workstream": "HIST-02",
+   "owner_of_remaining_gate": "HIST-02 (mapping) -> ARCH-FREEZE B7",
+   "remaining_gate": "Map catalog/tool/skill/context registry reversibility tests to the ID; confirm uniform scope across registries; replay; audit",
+   "rationale": "Implementation and HEAD tests exist (unregister_*, ContextVar scoped sink, digest/generation, ABA/CAS) but no record maps them to PLG-08.",
+   "inherited_scoped_proof_only": true,
+   "promotion_allowed_by_hist02": false,
+   "current_head_replay_at_pin": {
+    "target_sha": "ba07ebaa34d04633bd60510f68c18346b1ef160d",
+    "results_by_path": {
+     "tests/unit/integrations/registry/test_catalog_revision_and_mutation.py": "PASS",
+     "tests/unit/applications/test_catalog_hot_reload_governance.py": "PASS",
+     "tests/unit/context/test_context_plugin_registry.py": "PASS"
+    },
+    "note": "Results are existing scoped gates executed once at the pinned SHA. Green does NOT promote; status stays OPEN."
+   }
+  },
+  {
+   "frz_id": "FRZ-RPL-01",
+   "family": "RPL",
+   "criterion": "representative default provider replaceable",
+   "checklist_status": "OPEN",
+   "primary_classification": "INDEPENDENT_AUDIT_GAP",
+   "dashboard_state": "AUDIT_REQUIRED",
+   "secondary_causes": [
+    "SSOT_DRIFT"
+   ],
+   "scoped_historical_evidence": "INT-CONFIG; AW-7C-P1-ARCH; CE-01; EBH-5 33ecf19cc; EBH-7 dc18e36d9",
+   "ssot_selection_p5": [],
+   "ssot_ebh6_family_bundles": [
+    {
+     "family": "RPL",
+     "disposition": "SCOPED_CANDIDATE",
+     "scope_limitation": "51 NYQ \u2014 EBH-7 convergence",
+     "gates": [
+      "tests/qualification/ebh_5/test_ebh_5_rpl_g_regression_gates.py::test_ebh5_rpl_g_config_x_active_blockers_remain_empty"
+     ]
+    },
+    {
+     "family": "VBN",
+     "disposition": "SCOPED_CANDIDATE",
+     "scope_limitation": "Independent L9 still required",
+     "gates": [
+      "tests/qualification/ebh_6/test_ebh_6_hardcoding_register_integrity.py::test_ebh6_findings_unclassified_zero",
+      "tests/qualification/ebh_6/test_ebh_6_hardcoding_register_integrity.py::test_ebh6_prohibited_unresolved_zero"
+     ]
+    }
+   ],
+   "hist02_candidate_gates_not_ssot_mapped": [
+    "tests/qualification/ebh_5/test_ebh_5_rpl_g_regression_gates.py",
+    "tests/qualification/ebh_5/test_ebh_5_behavioral_proofs.py",
+    "tests/qualification/ebh_5/test_ebh_5_behavioral_package_c_v2.py",
+    "tests/qualification/ebh_7/test_ebh_7_w5_vbn_gates.py"
+   ],
+   "gate_path_exists_at_head": {
+    "tests/qualification/ebh_5/test_ebh_5_rpl_g_regression_gates.py::test_ebh5_rpl_g_config_x_active_blockers_remain_empty": true,
+    "tests/qualification/ebh_6/test_ebh_6_hardcoding_register_integrity.py::test_ebh6_findings_unclassified_zero": true,
+    "tests/qualification/ebh_6/test_ebh_6_hardcoding_register_integrity.py::test_ebh6_prohibited_unresolved_zero": true,
+    "tests/qualification/ebh_5/test_ebh_5_rpl_g_regression_gates.py": true,
+    "tests/qualification/ebh_5/test_ebh_5_behavioral_proofs.py": true,
+    "tests/qualification/ebh_5/test_ebh_5_behavioral_package_c_v2.py": true,
+    "tests/qualification/ebh_7/test_ebh_7_w5_vbn_gates.py": true
+   },
+   "executed_at_current_head_by_hist02": true,
+   "accountable_workstream": "HIST-02",
+   "owner_of_remaining_gate": "independent_auditor (T-B7-VBN-INDEPENDENT-ACCEPT, BLOCKED_EXTERNAL)",
+   "remaining_gate": "T-B7-VBN-HEAD-DOSSIER -> independent replay @ FREEZE_SHA -> T-B7-PROMOTE-RPL",
+   "rationale": "WBS makes it an auditor-owned gate (FIND-VBN-PARTIAL BLOCKER). GAP-RPL-51 register CLOSED vs RPL-H disposition record deferring 56-row reconciliation. No PASS inferred from EBH-7. REPLAY: EBH-5 package_c_v2 dual-slug relational_store tests passed only with --extra dev-ci (duckdb); first default-env run failed to import duckdb. Passing does not discharge T-B7-VBN-INDEPENDENT-ACCEPT.",
+   "inherited_scoped_proof_only": true,
+   "promotion_allowed_by_hist02": false,
+   "current_head_replay_at_pin": {
+    "target_sha": "ba07ebaa34d04633bd60510f68c18346b1ef160d",
+    "results_by_path": {
+     "tests/qualification/ebh_5/test_ebh_5_rpl_g_regression_gates.py": "PASS",
+     "tests/qualification/ebh_6/test_ebh_6_hardcoding_register_integrity.py": "PASS",
+     "tests/qualification/ebh_5/test_ebh_5_behavioral_proofs.py": "PASS",
+     "tests/qualification/ebh_5/test_ebh_5_behavioral_package_c_v2.py": "FAIL_ENV_OR_HARNESS_THEN_PASS_ON_RERUN",
+     "tests/qualification/ebh_7/test_ebh_7_w5_vbn_gates.py": "PASS"
+    },
+    "note": "Results are existing scoped gates executed once at the pinned SHA. Green does NOT promote; status stays OPEN."
+   }
+  },
+  {
+   "frz_id": "FRZ-RPL-02",
+   "family": "RPL",
+   "criterion": "custom implementation proof exists",
+   "checklist_status": "OPEN",
+   "primary_classification": "INDEPENDENT_AUDIT_GAP",
+   "dashboard_state": "AUDIT_REQUIRED",
+   "secondary_causes": [
+    "SSOT_DRIFT"
+   ],
+   "scoped_historical_evidence": "INT-CONFIG; HARNESS-W6; AW-7C-P1-ARCH; CE-01",
+   "ssot_selection_p5": [],
+   "ssot_ebh6_family_bundles": [],
+   "hist02_candidate_gates_not_ssot_mapped": [
+    "tests/qualification/ebh_5/test_ebh_5_behavioral_proofs.py",
+    "tests/qualification/ebh_5/test_ebh_5_behavioral_package_c_v2.py",
+    "tests/qualification/ebh_7/test_ebh_7_rpl_final_convergence_gates.py"
+   ],
+   "gate_path_exists_at_head": {
+    "tests/qualification/ebh_5/test_ebh_5_behavioral_proofs.py": true,
+    "tests/qualification/ebh_5/test_ebh_5_behavioral_package_c_v2.py": true,
+    "tests/qualification/ebh_7/test_ebh_7_rpl_final_convergence_gates.py": true
+   },
+   "executed_at_current_head_by_hist02": true,
+   "accountable_workstream": "HIST-02",
+   "owner_of_remaining_gate": "independent_auditor (T-B7-VBN-INDEPENDENT-ACCEPT)",
+   "remaining_gate": "as RPL-01",
+   "rationale": "as RPL-01 REPLAY: EBH-5 package_c_v2 dual-slug relational_store tests passed only with --extra dev-ci (duckdb); first default-env run failed to import duckdb. Passing does not discharge T-B7-VBN-INDEPENDENT-ACCEPT.",
+   "inherited_scoped_proof_only": true,
+   "promotion_allowed_by_hist02": false,
+   "current_head_replay_at_pin": {
+    "target_sha": "ba07ebaa34d04633bd60510f68c18346b1ef160d",
+    "results_by_path": {
+     "tests/qualification/ebh_5/test_ebh_5_behavioral_proofs.py": "PASS",
+     "tests/qualification/ebh_5/test_ebh_5_behavioral_package_c_v2.py": "FAIL_ENV_OR_HARNESS_THEN_PASS_ON_RERUN",
+     "tests/qualification/ebh_7/test_ebh_7_rpl_final_convergence_gates.py": "PASS"
+    },
+    "note": "Results are existing scoped gates executed once at the pinned SHA. Green does NOT promote; status stays OPEN."
+   }
+  },
+  {
+   "frz_id": "FRZ-RPL-03",
+   "family": "RPL",
+   "criterion": "replaceability not monkeypatch-only",
+   "checklist_status": "OPEN",
+   "primary_classification": "EVIDENCE_GAP",
+   "dashboard_state": "QUALIFICATION_REQUIRED",
+   "secondary_causes": [
+    "INDEPENDENT_AUDIT_GAP"
+   ],
+   "scoped_historical_evidence": "CE-01 a8d47a639 only",
+   "ssot_selection_p5": [],
+   "ssot_ebh6_family_bundles": [],
+   "hist02_candidate_gates_not_ssot_mapped": [
+    "tests/qualification/ebh_5/test_ebh_5_behavioral_proofs.py",
+    "tests/qualification/ebh_5/test_ebh_5_behavioral_package_c_v2.py"
+   ],
+   "gate_path_exists_at_head": {
+    "tests/qualification/ebh_5/test_ebh_5_behavioral_proofs.py": true,
+    "tests/qualification/ebh_5/test_ebh_5_behavioral_package_c_v2.py": true
+   },
+   "executed_at_current_head_by_hist02": true,
+   "accountable_workstream": "HIST-02",
+   "owner_of_remaining_gate": "HIST-02 (gate) + independent_auditor",
+   "remaining_gate": "Explicit gate that EBH-5/7 proofs register real alternate factories and use monkeypatch only for env selection; then T-B7-VBN-INDEPENDENT-ACCEPT",
+   "rationale": "EBH-5 proofs use monkeypatch only for setenv/delenv; no gate asserts that; checklist row shows only CE-01. REPLAY: EBH-5 package_c_v2 dual-slug relational_store tests passed only with --extra dev-ci (duckdb); first default-env run failed to import duckdb. Passing does not discharge T-B7-VBN-INDEPENDENT-ACCEPT.",
+   "inherited_scoped_proof_only": true,
+   "promotion_allowed_by_hist02": false,
+   "current_head_replay_at_pin": {
+    "target_sha": "ba07ebaa34d04633bd60510f68c18346b1ef160d",
+    "results_by_path": {
+     "tests/qualification/ebh_5/test_ebh_5_behavioral_proofs.py": "PASS",
+     "tests/qualification/ebh_5/test_ebh_5_behavioral_package_c_v2.py": "FAIL_ENV_OR_HARNESS_THEN_PASS_ON_RERUN"
+    },
+    "note": "Results are existing scoped gates executed once at the pinned SHA. Green does NOT promote; status stays OPEN."
+   }
+  },
+  {
+   "frz_id": "FRZ-RPL-04",
+   "family": "RPL",
+   "criterion": "vendor/backend switch does not modify consumers",
+   "checklist_status": "OPEN",
+   "primary_classification": "INDEPENDENT_AUDIT_GAP",
+   "dashboard_state": "AUDIT_REQUIRED",
+   "secondary_causes": [
+    "SSOT_DRIFT"
+   ],
+   "scoped_historical_evidence": "HARNESS-W5; HARNESS-W6; TRACE-X-P5-R2-P2 660d9d9c; EBH-6 bundle RPL",
+   "ssot_selection_p5": [],
+   "ssot_ebh6_family_bundles": [
+    {
+     "family": "RPL",
+     "disposition": "SCOPED_CANDIDATE",
+     "scope_limitation": "51 NYQ \u2014 EBH-7 convergence",
+     "gates": [
+      "tests/qualification/ebh_5/test_ebh_5_rpl_g_regression_gates.py::test_ebh5_rpl_g_config_x_active_blockers_remain_empty"
+     ]
+    }
+   ],
+   "hist02_candidate_gates_not_ssot_mapped": [
+    "tests/qualification/ebh_5/test_ebh_5_behavioral_proofs.py",
+    "tests/qualification/ebh_7/test_ebh_7_rpl_final_convergence_gates.py",
+    "tests/unit/runtime/architecture/test_harness_w5_typed_observability_transport_gate.py"
+   ],
+   "gate_path_exists_at_head": {
+    "tests/qualification/ebh_5/test_ebh_5_rpl_g_regression_gates.py::test_ebh5_rpl_g_config_x_active_blockers_remain_empty": true,
+    "tests/qualification/ebh_5/test_ebh_5_behavioral_proofs.py": true,
+    "tests/qualification/ebh_7/test_ebh_7_rpl_final_convergence_gates.py": true,
+    "tests/unit/runtime/architecture/test_harness_w5_typed_observability_transport_gate.py": true
+   },
+   "executed_at_current_head_by_hist02": true,
+   "accountable_workstream": "HIST-02",
+   "owner_of_remaining_gate": "independent_auditor (T-B7-VBN-INDEPENDENT-ACCEPT)",
+   "remaining_gate": "as RPL-01",
+   "rationale": "EBH-6 RPL bundle: '51 NYQ - EBH-7 convergence'.",
+   "inherited_scoped_proof_only": true,
+   "promotion_allowed_by_hist02": false,
+   "current_head_replay_at_pin": {
+    "target_sha": "ba07ebaa34d04633bd60510f68c18346b1ef160d",
+    "results_by_path": {
+     "tests/qualification/ebh_5/test_ebh_5_rpl_g_regression_gates.py": "PASS",
+     "tests/qualification/ebh_5/test_ebh_5_behavioral_proofs.py": "PASS",
+     "tests/qualification/ebh_7/test_ebh_7_rpl_final_convergence_gates.py": "PASS",
+     "tests/unit/runtime/architecture/test_harness_w5_typed_observability_transport_gate.py": "PASS"
+    },
+    "note": "Results are existing scoped gates executed once at the pinned SHA. Green does NOT promote; status stays OPEN."
+   }
+  }
+ ]
+}

@@ -1,0 +1,171 @@
+{
+  "path": "docs/project/maintainers/qualification/EBH_6_CORE_HARDCODING_FINDINGS_REGISTER.md",
+  "tables": [
+    {
+      "header": [
+        "Field",
+        "Value"
+      ],
+      "rows": [
+        {
+          "line": 5,
+          "Field": "B2 IMPLEMENTATION_SHA",
+          "Value": "8cf61e971a752428ea7eff04e36f1345af123319"
+        },
+        {
+          "line": 6,
+          "Field": "B1 IMPLEMENTATION_SHA (historical)",
+          "Value": "446dfa7263b6571a11bdd2a973e66e57892eacca"
+        },
+        {
+          "line": 7,
+          "Field": "Historical IMPLEMENTATION (P03 remediation)",
+          "Value": "475c20289a1ef0420461a1ba748c792a10ea3e99 — HISTORICAL"
+        },
+        {
+          "line": 8,
+          "Field": "Closure plan",
+          "Value": "[EBH_6_FINAL_BLOCKER_CLOSURE_PLAN.md](EBH_6_FINAL_BLOCKER_CLOSURE_PLAN.md) @ 0489054c5f80ee392211fb33a39f2736fa2fdfa0"
+        },
+        {
+          "line": 9,
+          "Field": "Mechanical SSOT",
+          "Value": "[tests/qualification/ebh_6/_findings_register.py](../../../tests/qualification/ebh_6/_findings_register.py)"
+        },
+        {
+          "line": 10,
+          "Field": "L9 layer annex",
+          "Value": "[tests/qualification/ebh_6/_layer_evidence.py](../../../tests/qualification/ebh_6/_layer_evidence.py)"
+        },
+        {
+          "line": 11,
+          "Field": "L3 reachability annex",
+          "Value": "[tests/qualification/ebh_6/_l3_reachability_evidence.py](../../../tests/qualification/ebh_6/_l3_reachability_evidence.py)"
+        },
+        {
+          "line": 12,
+          "Field": "Schema authority",
+          "Value": "[VENDOR_BACKEND_NEUTRALITY_AND_REPLACEABILITY_EVIDENCE.md](VENDOR_BACKEND_NEUTRALITY_AND_REPLACEABILITY_EVIDENCE.md) §2.2"
+        }
+      ]
+    },
+    {
+      "header": [
+        "Criterion",
+        "Status"
+      ],
+      "rows": [
+        {
+          "line": 18,
+          "Criterion": "unclassified_findings (inventory-style)",
+          "Status": "0"
+        },
+        {
+          "line": 19,
+          "Criterion": "In-scope PROHIBITED-* unresolved",
+          "Status": "0"
+        },
+        {
+          "line": 20,
+          "Criterion": "Layer A–J L9 attestation (16 layers)",
+          "Status": "CANDIDATE-RESOLVED @ code SSOT — independent RESOLVED only via Protocol 03"
+        }
+      ]
+    },
+    {
+      "header": [
+        "Category",
+        "Count",
+        "Notes"
+      ],
+      "rows": [
+        {
+          "line": 26,
+          "Category": "Tracked architecture debts",
+          "Count": "2",
+          "Notes": "Q2-D2 (RATIFIED ADR track), BND-COMPAT-R3 (lab-only)"
+        },
+        {
+          "line": 27,
+          "Category": "VBN inventory replay",
+          "Count": "1",
+          "Notes": "EBH-5 inventory @ HEAD"
+        },
+        {
+          "line": 28,
+          "Category": "Layer coverage (§3.0.8)",
+          "Count": "16",
+          "Notes": "EBH6-LAYER-01..16 — CANDIDATE-RESOLVED + L3 mechanism annex"
+        },
+        {
+          "line": 29,
+          "Category": "SQLite annex @ HEAD",
+          "Count": "38",
+          "Notes": "EBH6-SQLITE-* — mapped from EBH-5 annex"
+        },
+        {
+          "line": 30,
+          "Category": "Total",
+          "Count": "57",
+          "Notes": "Full rows in Python SSOT only"
+        }
+      ]
+    },
+    {
+      "header": [
+        "finding_id",
+        "layer",
+        "status",
+        "evidence"
+      ],
+      "rows": [
+        {
+          "line": 36,
+          "finding_id": "EBH6-LAYER-01..16",
+          "layer": "§3.0.8 layers",
+          "status": "CANDIDATE-RESOLVED",
+          "evidence": "_l3_reachability_evidence.py — entrypoint, call_chain, A–J per mechanism"
+        }
+      ]
+    },
+    {
+      "header": [
+        "finding_id",
+        "class",
+        "classification",
+        "status"
+      ],
+      "rows": [
+        {
+          "line": 44,
+          "finding_id": "EBH6-DEBT-Q2-D2",
+          "class": "F",
+          "classification": "REQUIRES ARCHITECTURE DECISION",
+          "status": "RATIFIED"
+        },
+        {
+          "line": 45,
+          "finding_id": "EBH6-DEBT-BND-COMPAT-R3",
+          "class": "H",
+          "classification": "ALLOWED — INTERNAL NON-EXTENSIBLE MECHANISM",
+          "status": "RATIFIED"
+        },
+        {
+          "line": 46,
+          "finding_id": "EBH6-VBN-INVENTORY-REPLAY",
+          "class": "I",
+          "classification": "ALLOWED — INTERNAL NON-EXTENSIBLE MECHANISM",
+          "status": "RESOLVED"
+        },
+        {
+          "line": 47,
+          "finding_id": "EBH6-LAYER-07 (example)",
+          "class": "G",
+          "classification": "ALLOWED — INTERNAL NON-EXTENSIBLE MECHANISM",
+          "status": "L9_EVIDENCE_SUBMITTED"
+        }
+      ]
+    }
+  ],
+  "lines": 59
+}

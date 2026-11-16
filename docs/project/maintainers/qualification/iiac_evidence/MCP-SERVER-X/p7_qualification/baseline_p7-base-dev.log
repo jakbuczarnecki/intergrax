@@ -1,0 +1,576 @@
+command: pytest tests/unit/applications/test_mcp_surface_opt_in.py tests/unit/applications/test_mcp_surface_opt_in_runtime.py tests/unit/applications/test_mcp_catalog_e2e_hung_server_qualification.py -q
+cwd: /d/Projekty/_wt/intergrax/p7-base-dev
+git_head: d5c1383fc15c005daafd131eaf03b3c49393b792
+date_utc: 2026-11-12T10:14:31Z
+........F.FFF.FF.FFFFF.......                                            [100%]
+================================== FAILURES ===================================
+_______________ test_http_only_factory_does_not_import_fastmcp ________________
+
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x0000023149A10E00>
+
+    @pytest.mark.no_ci
+    def test_http_only_factory_does_not_import_fastmcp(monkeypatch: pytest.MonkeyPatch) -> None:
+        monkeypatch.setenv("LOCAL_WORKSPACE_VECTOR_STORE", "inmemory")
+        imported: list[str] = []
+        import builtins
+    
+        real_import = builtins.__import__
+    
+        def track_import(
+            name: str,
+            globals: object | None = None,
+            locals: object | None = None,
+            fromlist: object = (),
+            level: int = 0,
+        ) -> object:
+            imported.append(name)
+            return real_import(name, globals, locals, fromlist, level)
+    
+        monkeypatch.setattr(builtins, "__import__", track_import)
+    
+        from local_workspace_application.host.factory import create_local_workspace_backend_app
+    
+        settings = _http_only_settings()
+        create_local_workspace_backend_app(
+>           registry_projection=build_lkw_test_registry_projection(settings),
+                                ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+            settings=settings,
+        )
+
+tests\unit\applications\test_mcp_surface_opt_in.py:88: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+applications\local_workspace_application\tests\lkw_ac3_projection.py:38: in build_lkw_test_registry_projection
+    return build_test_registry_projection(
+tests\unit\applications\ac3_projection_helpers.py:202: in build_test_registry_projection
+    return build_registry_projection(bundle)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+intergrax\applications\_shared\registry_projection.py:478: in build_registry_projection
+    registry = build_application_registry(
+intergrax\applications\_shared\wiring.py:566: in build_application_registry
+    _register_binding(
+intergrax\applications\_shared\wiring.py:414: in _register_binding
+    agent = invoke_canonical_agent_factory(
+intergrax\applications\_shared\wiring.py:140: in invoke_canonical_agent_factory
+    result = factory(ctx, binding)
+             ^^^^^^^^^^^^^^^^^^^^^
+applications\local_workspace_application\host\agent_factories.py:61: in build_local_workspace_tool_selection_qualifier_from_context
+    adapter = resolve_llm_adapter(ctx.environment)
+              ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+env = ApplicationEnvironmentProfile(meta=HostMeta(profile_id='local_workspace.product', spec_version='1.0.0', application_pr...enable_exec_tool=True)), extensions=EnvironmentExtensions(domain_policy_fragments=DomainPolicyFragments(fragments={})))
+agent_override = None
+
+    def resolve_llm_adapter(
+        env: ApplicationEnvironmentProfile | None,
+        agent_override: LLMAdapter | None = None,
+        *,
+        policy_route_hint: str | None = None,
+        routing_context: RoutingContext | None = None,
+        routing_metadata: dict[str, Any] | None = None,
+        tenant_id: str | None = None,
+        agent_id: str | None = None,
+        context_provider: RoutingContextProvider | None = None,
+        routing_evaluator: RoutingEvaluator | None = None,
+    ) -> LLMAdapter:
+        """
+        Resolve LLM adapter with explicit precedence.
+    
+        1. ``agent_override`` when provided by Tier-2 factory
+        2. ``env.llm_profile`` when set on environment (with failover chain when configured)
+        3. Platform selection from ``INTERGRAX_LLM_*`` env vars when explicitly set
+    
+        When ``llm_routing_profile`` is set, evaluates via injected/default ``RoutingEvaluator``
+        before adapter creation. Live AHI routing may override hints on product hosts.
+        When ``context_provider`` is set, wraps with ``RoutingEvaluatingLLMAdapter`` (M-LLM-X.11).
+        """
+        if agent_override is not None:
+            return agent_override
+        if resolve_optional_llm_profile(env) is None:
+>           raise LLMProviderNotConfiguredError(_LLM_PROVIDER_NOT_CONFIGURED_MESSAGE)
+E           intergrax.llm_adapters.registry.registration_contract.LLMProviderNotConfiguredError: LLM provider not explicitly configured: set ApplicationEnvironmentProfile.llm_profile or INTERGRAX_LLM_PROVIDER before materializing an adapter.
+
+intergrax\applications\_shared\llm_resolver.py:319: LLMProviderNotConfiguredError
+____________ test_mcp_enabled_factory_raises_when_fastmcp_missing _____________
+
+    @pytest.mark.no_ci
+    def test_mcp_enabled_factory_raises_when_fastmcp_missing() -> None:
+        from local_workspace_application.host.factory import create_local_workspace_backend_app
+    
+        settings = _http_only_settings(include_mcp=True)
+        with patch(
+            "intergrax.applications._shared.mcp_import_guard.ensure_mcp_dependencies",
+            side_effect=MCPDependencyError("INCLUDE_MCP=true"),
+        ):
+            with pytest.raises(MCPDependencyError, match="INCLUDE_MCP=true"):
+>               create_local_workspace_backend_app(registry_projection=build_lkw_test_registry_projection(settings), settings=settings)
+                                                                       ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+tests\unit\applications\test_mcp_surface_opt_in.py:126: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+applications\local_workspace_application\tests\lkw_ac3_projection.py:38: in build_lkw_test_registry_projection
+    return build_test_registry_projection(
+tests\unit\applications\ac3_projection_helpers.py:202: in build_test_registry_projection
+    return build_registry_projection(bundle)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+intergrax\applications\_shared\registry_projection.py:478: in build_registry_projection
+    registry = build_application_registry(
+intergrax\applications\_shared\wiring.py:566: in build_application_registry
+    _register_binding(
+intergrax\applications\_shared\wiring.py:414: in _register_binding
+    agent = invoke_canonical_agent_factory(
+intergrax\applications\_shared\wiring.py:140: in invoke_canonical_agent_factory
+    result = factory(ctx, binding)
+             ^^^^^^^^^^^^^^^^^^^^^
+applications\local_workspace_application\host\agent_factories.py:61: in build_local_workspace_tool_selection_qualifier_from_context
+    adapter = resolve_llm_adapter(ctx.environment)
+              ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+env = ApplicationEnvironmentProfile(meta=HostMeta(profile_id='local_workspace.product', spec_version='1.0.0', application_pr...enable_exec_tool=True)), extensions=EnvironmentExtensions(domain_policy_fragments=DomainPolicyFragments(fragments={})))
+agent_override = None
+
+    def resolve_llm_adapter(
+        env: ApplicationEnvironmentProfile | None,
+        agent_override: LLMAdapter | None = None,
+        *,
+        policy_route_hint: str | None = None,
+        routing_context: RoutingContext | None = None,
+        routing_metadata: dict[str, Any] | None = None,
+        tenant_id: str | None = None,
+        agent_id: str | None = None,
+        context_provider: RoutingContextProvider | None = None,
+        routing_evaluator: RoutingEvaluator | None = None,
+    ) -> LLMAdapter:
+        """
+        Resolve LLM adapter with explicit precedence.
+    
+        1. ``agent_override`` when provided by Tier-2 factory
+        2. ``env.llm_profile`` when set on environment (with failover chain when configured)
+        3. Platform selection from ``INTERGRAX_LLM_*`` env vars when explicitly set
+    
+        When ``llm_routing_profile`` is set, evaluates via injected/default ``RoutingEvaluator``
+        before adapter creation. Live AHI routing may override hints on product hosts.
+        When ``context_provider`` is set, wraps with ``RoutingEvaluatingLLMAdapter`` (M-LLM-X.11).
+        """
+        if agent_override is not None:
+            return agent_override
+        if resolve_optional_llm_profile(env) is None:
+>           raise LLMProviderNotConfiguredError(_LLM_PROVIDER_NOT_CONFIGURED_MESSAGE)
+E           intergrax.llm_adapters.registry.registration_contract.LLMProviderNotConfiguredError: LLM provider not explicitly configured: set ApplicationEnvironmentProfile.llm_profile or INTERGRAX_LLM_PROVIDER before materializing an adapter.
+
+intergrax\applications\_shared\llm_resolver.py:319: LLMProviderNotConfiguredError
+____________________ test_scaffold_defaults_mcp_to_opt_in _____________________
+
+tmp_path = WindowsPath('D:/Projekty/_wt/intergrax/p7-base-dev/build/pytest/47556-72530fb1/test_scaffold_defaults_mcp_to_0')
+
+    def test_scaffold_defaults_mcp_to_opt_in(tmp_path: Path) -> None:
+        from tests.unit.applications.scaffold_runtime_helper import (
+            import_scaffold_modules,
+            prepare_scaffold_package,
+            product_settings_class,
+        )
+    
+>       target, pkg, short = prepare_scaffold_package(
+            tmp_path,
+            name="mcp_opt_in_test",
+            profile="product",
+            port=8298,
+            route_prefix="/v1/mcp_opt_in_test",
+            agents=["echo"],
+        )
+
+tests\unit\applications\test_mcp_surface_opt_in.py:136: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+tests\unit\applications\scaffold_runtime_helper.py:36: in prepare_scaffold_package
+    target = create_application(
+intergrax\scaffold\new_application.py:1255: in create_application
+    _create_product_application(
+intergrax\scaffold\new_application.py:1213: in _create_product_application
+    write_scaffold_package_json(target, names, specs, profile, force=force)
+intergrax\scaffold\package_emit.py:116: in write_scaffold_package_json
+    package = build_scaffold_application_package(
+intergrax\applications\_shared\package_wiring.py:347: in build_scaffold_application_package
+    return build_application_package(
+intergrax\applications\_shared\package_wiring.py:199: in build_application_package
+    dependencies = collect_application_dependencies(
+intergrax\applications\_shared\package_wiring.py:114: in collect_application_dependencies
+    contract = resolve_roster_agent_contract(
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+binding = AgentBinding(agent_type=None, import_path='echo.echo_agent.EchoAgent', factory=None, factory_path=None, builder_key=No...ide=None, rag_collection_override=None, tool_allowlist_extra=[], tool_denylist=[], org_role_id=None, budget_slice=None)
+
+    def resolve_roster_agent_contract(
+        binding: AgentBinding,
+        *,
+        contract_authority: ContractAuthority | None,
+        allow_compatibility_resolver: bool = False,
+    ) -> AgentContract:
+        """Resolve AgentContract for roster governance (STRICT uses authority only)."""
+        if contract_authority is not None:
+            return contract_authority.contract_for_binding(binding)
+        if allow_compatibility_resolver:
+            from intergrax.applications._shared.agent_resolution import (
+                resolve_agent_contract_from_binding,
+            )
+    
+            return resolve_agent_contract_from_binding(binding)
+>       raise StrictAgentContractAuthorityError(
+            "STRICT agent contract resolution requires revision-bound authority"
+        )
+E       intergrax.applications._shared.roster_agent_contract_authority.StrictAgentContractAuthorityError: STRICT agent contract resolution requires revision-bound authority
+
+intergrax\applications\_shared\roster_agent_contract_authority.py:121: StrictAgentContractAuthorityError
+__________ test_mcp_enabled_factory_mounts_mcp_route_when_available ___________
+
+    def test_mcp_enabled_factory_mounts_mcp_route_when_available() -> None:
+        from local_workspace_application.host.factory import create_local_workspace_backend_app
+    
+        settings = _http_only_settings(include_mcp=True)
+        app = create_local_workspace_backend_app(
+>           registry_projection=build_lkw_test_registry_projection(settings),
+                                ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+            settings=settings,
+        )
+
+tests\unit\applications\test_mcp_surface_opt_in_runtime.py:33: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+applications\local_workspace_application\tests\lkw_ac3_projection.py:38: in build_lkw_test_registry_projection
+    return build_test_registry_projection(
+tests\unit\applications\ac3_projection_helpers.py:202: in build_test_registry_projection
+    return build_registry_projection(bundle)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+intergrax\applications\_shared\registry_projection.py:478: in build_registry_projection
+    registry = build_application_registry(
+intergrax\applications\_shared\wiring.py:566: in build_application_registry
+    _register_binding(
+intergrax\applications\_shared\wiring.py:414: in _register_binding
+    agent = invoke_canonical_agent_factory(
+intergrax\applications\_shared\wiring.py:140: in invoke_canonical_agent_factory
+    result = factory(ctx, binding)
+             ^^^^^^^^^^^^^^^^^^^^^
+applications\local_workspace_application\host\agent_factories.py:61: in build_local_workspace_tool_selection_qualifier_from_context
+    adapter = resolve_llm_adapter(ctx.environment)
+              ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+env = ApplicationEnvironmentProfile(meta=HostMeta(profile_id='local_workspace.product', spec_version='1.0.0', application_pr...enable_exec_tool=True)), extensions=EnvironmentExtensions(domain_policy_fragments=DomainPolicyFragments(fragments={})))
+agent_override = None
+
+    def resolve_llm_adapter(
+        env: ApplicationEnvironmentProfile | None,
+        agent_override: LLMAdapter | None = None,
+        *,
+        policy_route_hint: str | None = None,
+        routing_context: RoutingContext | None = None,
+        routing_metadata: dict[str, Any] | None = None,
+        tenant_id: str | None = None,
+        agent_id: str | None = None,
+        context_provider: RoutingContextProvider | None = None,
+        routing_evaluator: RoutingEvaluator | None = None,
+    ) -> LLMAdapter:
+        """
+        Resolve LLM adapter with explicit precedence.
+    
+        1. ``agent_override`` when provided by Tier-2 factory
+        2. ``env.llm_profile`` when set on environment (with failover chain when configured)
+        3. Platform selection from ``INTERGRAX_LLM_*`` env vars when explicitly set
+    
+        When ``llm_routing_profile`` is set, evaluates via injected/default ``RoutingEvaluator``
+        before adapter creation. Live AHI routing may override hints on product hosts.
+        When ``context_provider`` is set, wraps with ``RoutingEvaluatingLLMAdapter`` (M-LLM-X.11).
+        """
+        if agent_override is not None:
+            return agent_override
+        if resolve_optional_llm_profile(env) is None:
+>           raise LLMProviderNotConfiguredError(_LLM_PROVIDER_NOT_CONFIGURED_MESSAGE)
+E           intergrax.llm_adapters.registry.registration_contract.LLMProviderNotConfiguredError: LLM provider not explicitly configured: set ApplicationEnvironmentProfile.llm_profile or INTERGRAX_LLM_PROVIDER before materializing an adapter.
+
+intergrax\applications\_shared\llm_resolver.py:319: LLMProviderNotConfiguredError
+_____ test_tl11_e2e_hung_list_catalog_client_timeout_not_definite_failure _____
+
+    def test_tl11_e2e_hung_list_catalog_client_timeout_not_definite_failure() -> None:
+        """Client ``wait_for`` timeout — does not prove server process was killed."""
+>       with tl11_catalog_qualification_subprocess("hang_list") as (base, proc):
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+tests\unit\applications\test_mcp_catalog_e2e_hung_server_qualification.py:43: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+C:\Users\XPS\AppData\Roaming\uv\python\cpython-3.12.11-windows-x86_64-none\Lib\contextlib.py:137: in __enter__
+    return next(self.gen)
+           ^^^^^^^^^^^^^^
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+mode = 'hang_list'
+
+    @contextmanager
+    def tl11_catalog_qualification_subprocess(
+        mode: str,
+        *,
+        require_auth: bool = False,
+    ):
+        """Start TL11 Nexus catalog server; yield ``(base_url | None, proc | exit_code)``."""
+        proc_env = os.environ.copy()
+        proc_env["TOOL_LIFE_X_TL11_MODE"] = mode
+        if require_auth:
+            proc_env["TOOL_LIFE_X_TL11_REQUIRE_AUTH"] = "1"
+        else:
+            proc_env.pop("TOOL_LIFE_X_TL11_REQUIRE_AUTH", None)
+        proc = subprocess.Popen(
+            [sys.executable, str(_TL11_SERVER)],
+            stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE,
+            text=True,
+            env=proc_env,
+        )
+        try:
+            if mode == "unavailable":
+                proc.wait(timeout=60.0)
+                yield None, proc.returncode
+                return
+            assert proc.stdout is not None
+            with concurrent.futures.ThreadPoolExecutor(max_workers=1) as pool:
+                line_future = pool.submit(proc.stdout.readline)
+                try:
+                    line = line_future.result(timeout=_STARTUP_READ_TIMEOUT_S).strip()
+                except concurrent.futures.TimeoutError:
+                    proc.kill()
+                    proc.wait(timeout=_TEARDOWN_WAIT_S)
+>                   raise TimeoutError("tl11_catalog_qualification_subprocess_startup_timeout") from None
+E                   TimeoutError: tl11_catalog_qualification_subprocess_startup_timeout
+
+tests\fixtures\tool_life_x_tl11_catalog_subprocess_qualification.py:59: TimeoutError
+_____________ test_tl11_e2e_hung_describe_catalog_client_timeout ______________
+
+    def test_tl11_e2e_hung_describe_catalog_client_timeout() -> None:
+        with tl11_catalog_qualification_subprocess("hang_describe") as (base, proc):
+            assert base is not None
+>           with pytest.raises(asyncio.TimeoutError):
+                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E           Failed: DID NOT RAISE <class 'TimeoutError'>
+
+tests\unit\applications\test_mcp_catalog_e2e_hung_server_qualification.py:56: Failed
+_________________ test_tl11_e2e_server_crash_mid_catalog_list _________________
+
+    def test_tl11_e2e_server_crash_mid_catalog_list() -> None:
+>       with tl11_catalog_qualification_subprocess("crash_list") as (base, proc):
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+tests\unit\applications\test_mcp_catalog_e2e_hung_server_qualification.py:79: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+C:\Users\XPS\AppData\Roaming\uv\python\cpython-3.12.11-windows-x86_64-none\Lib\contextlib.py:137: in __enter__
+    return next(self.gen)
+           ^^^^^^^^^^^^^^
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+mode = 'crash_list'
+
+    @contextmanager
+    def tl11_catalog_qualification_subprocess(
+        mode: str,
+        *,
+        require_auth: bool = False,
+    ):
+        """Start TL11 Nexus catalog server; yield ``(base_url | None, proc | exit_code)``."""
+        proc_env = os.environ.copy()
+        proc_env["TOOL_LIFE_X_TL11_MODE"] = mode
+        if require_auth:
+            proc_env["TOOL_LIFE_X_TL11_REQUIRE_AUTH"] = "1"
+        else:
+            proc_env.pop("TOOL_LIFE_X_TL11_REQUIRE_AUTH", None)
+        proc = subprocess.Popen(
+            [sys.executable, str(_TL11_SERVER)],
+            stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE,
+            text=True,
+            env=proc_env,
+        )
+        try:
+            if mode == "unavailable":
+                proc.wait(timeout=60.0)
+                yield None, proc.returncode
+                return
+            assert proc.stdout is not None
+            with concurrent.futures.ThreadPoolExecutor(max_workers=1) as pool:
+                line_future = pool.submit(proc.stdout.readline)
+                try:
+                    line = line_future.result(timeout=_STARTUP_READ_TIMEOUT_S).strip()
+                except concurrent.futures.TimeoutError:
+                    proc.kill()
+                    proc.wait(timeout=_TEARDOWN_WAIT_S)
+                    raise TimeoutError("tl11_catalog_qualification_subprocess_startup_timeout") from None
+            if not line:
+                err = proc.stderr.read() if proc.stderr is not None else ""
+                proc.kill()
+>               raise RuntimeError(f"tl11_catalog_qualification_subprocess_no_port_line stderr={err!r}")
+E               RuntimeError: tl11_catalog_qualification_subprocess_no_port_line stderr=''
+
+tests\fixtures\tool_life_x_tl11_catalog_subprocess_qualification.py:63: RuntimeError
+_______________ test_tl11_e2e_server_crash_mid_catalog_describe _______________
+
+    def test_tl11_e2e_server_crash_mid_catalog_describe() -> None:
+        with tl11_catalog_qualification_subprocess("crash_describe") as (base, proc):
+            assert base is not None
+>           with pytest.raises(Exception):
+                 ^^^^^^^^^^^^^^^^^^^^^^^^
+E           Failed: DID NOT RAISE <class 'Exception'>
+
+tests\unit\applications\test_mcp_catalog_e2e_hung_server_qualification.py:92: Failed
+____________ test_tl11_e2e_client_cancel_during_hung_catalog_list _____________
+
+    def test_tl11_e2e_client_cancel_during_hung_catalog_list() -> None:
+        async def _cancelled() -> None:
+            with tl11_catalog_qualification_subprocess("hang_list") as (base, proc):
+                assert base is not None
+                task = asyncio.create_task(
+                    mcp_call_catalog_tool(base, "list_catalog_tools", {}, timeout_s=30.0)
+                )
+                await asyncio.sleep(0.25)
+                task.cancel()
+                with pytest.raises(asyncio.CancelledError):
+                    await task
+                proc.terminate()
+    
+>       asyncio.run(_cancelled())
+
+tests\unit\applications\test_mcp_catalog_e2e_hung_server_qualification.py:118: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+C:\Users\XPS\AppData\Roaming\uv\python\cpython-3.12.11-windows-x86_64-none\Lib\asyncio\runners.py:195: in run
+    return runner.run(main)
+           ^^^^^^^^^^^^^^^^
+C:\Users\XPS\AppData\Roaming\uv\python\cpython-3.12.11-windows-x86_64-none\Lib\asyncio\runners.py:118: in run
+    return self._loop.run_until_complete(task)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+C:\Users\XPS\AppData\Roaming\uv\python\cpython-3.12.11-windows-x86_64-none\Lib\asyncio\base_events.py:691: in run_until_complete
+    return future.result()
+           ^^^^^^^^^^^^^^^
+tests\unit\applications\test_mcp_catalog_e2e_hung_server_qualification.py:107: in _cancelled
+    with tl11_catalog_qualification_subprocess("hang_list") as (base, proc):
+         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+C:\Users\XPS\AppData\Roaming\uv\python\cpython-3.12.11-windows-x86_64-none\Lib\contextlib.py:137: in __enter__
+    return next(self.gen)
+           ^^^^^^^^^^^^^^
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+mode = 'hang_list'
+
+    @contextmanager
+    def tl11_catalog_qualification_subprocess(
+        mode: str,
+        *,
+        require_auth: bool = False,
+    ):
+        """Start TL11 Nexus catalog server; yield ``(base_url | None, proc | exit_code)``."""
+        proc_env = os.environ.copy()
+        proc_env["TOOL_LIFE_X_TL11_MODE"] = mode
+        if require_auth:
+            proc_env["TOOL_LIFE_X_TL11_REQUIRE_AUTH"] = "1"
+        else:
+            proc_env.pop("TOOL_LIFE_X_TL11_REQUIRE_AUTH", None)
+        proc = subprocess.Popen(
+            [sys.executable, str(_TL11_SERVER)],
+            stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE,
+            text=True,
+            env=proc_env,
+        )
+        try:
+            if mode == "unavailable":
+                proc.wait(timeout=60.0)
+                yield None, proc.returncode
+                return
+            assert proc.stdout is not None
+            with concurrent.futures.ThreadPoolExecutor(max_workers=1) as pool:
+                line_future = pool.submit(proc.stdout.readline)
+                try:
+                    line = line_future.result(timeout=_STARTUP_READ_TIMEOUT_S).strip()
+                except concurrent.futures.TimeoutError:
+                    proc.kill()
+                    proc.wait(timeout=_TEARDOWN_WAIT_S)
+>                   raise TimeoutError("tl11_catalog_qualification_subprocess_startup_timeout") from None
+E                   TimeoutError: tl11_catalog_qualification_subprocess_startup_timeout
+
+tests\fixtures\tool_life_x_tl11_catalog_subprocess_qualification.py:59: TimeoutError
+_________ test_tl11_e2e_reconnect_after_catalog_timeout_fresh_session _________
+
+    def test_tl11_e2e_reconnect_after_catalog_timeout_fresh_session() -> None:
+        with tl11_catalog_qualification_subprocess("slow_list") as (base, proc):
+            assert base is not None
+>           with pytest.raises(asyncio.TimeoutError):
+                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E           Failed: DID NOT RAISE <class 'TimeoutError'>
+
+tests\unit\applications\test_mcp_catalog_e2e_hung_server_qualification.py:124: Failed
+_____________ test_tl11_e2e_subprocess_cleanup_after_hung_catalog _____________
+
+    def test_tl11_e2e_subprocess_cleanup_after_hung_catalog() -> None:
+>       with tl11_catalog_qualification_subprocess("hang_list") as (base, proc):
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+tests\unit\applications\test_mcp_catalog_e2e_hung_server_qualification.py:139: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+C:\Users\XPS\AppData\Roaming\uv\python\cpython-3.12.11-windows-x86_64-none\Lib\contextlib.py:137: in __enter__
+    return next(self.gen)
+           ^^^^^^^^^^^^^^
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+mode = 'hang_list'
+
+    @contextmanager
+    def tl11_catalog_qualification_subprocess(
+        mode: str,
+        *,
+        require_auth: bool = False,
+    ):
+        """Start TL11 Nexus catalog server; yield ``(base_url | None, proc | exit_code)``."""
+        proc_env = os.environ.copy()
+        proc_env["TOOL_LIFE_X_TL11_MODE"] = mode
+        if require_auth:
+            proc_env["TOOL_LIFE_X_TL11_REQUIRE_AUTH"] = "1"
+        else:
+            proc_env.pop("TOOL_LIFE_X_TL11_REQUIRE_AUTH", None)
+        proc = subprocess.Popen(
+            [sys.executable, str(_TL11_SERVER)],
+            stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE,
+            text=True,
+            env=proc_env,
+        )
+        try:
+            if mode == "unavailable":
+                proc.wait(timeout=60.0)
+                yield None, proc.returncode
+                return
+            assert proc.stdout is not None
+            with concurrent.futures.ThreadPoolExecutor(max_workers=1) as pool:
+                line_future = pool.submit(proc.stdout.readline)
+                try:
+                    line = line_future.result(timeout=_STARTUP_READ_TIMEOUT_S).strip()
+                except concurrent.futures.TimeoutError:
+                    proc.kill()
+                    proc.wait(timeout=_TEARDOWN_WAIT_S)
+>                   raise TimeoutError("tl11_catalog_qualification_subprocess_startup_timeout") from None
+E                   TimeoutError: tl11_catalog_qualification_subprocess_startup_timeout
+
+tests\fixtures\tool_life_x_tl11_catalog_subprocess_qualification.py:59: TimeoutError
+============================== warnings summary ===============================
+tests/unit/applications/test_mcp_catalog_e2e_hung_server_qualification.py: 10 warnings
+  C:\Users\XPS\AppData\Roaming\uv\python\cpython-3.12.11-windows-x86_64-none\Lib\contextlib.py:105: DeprecationWarning: Use `streamable_http_client` instead.
+    self.gen = func(*args, **kwds)
+
+-- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html
+=========================== short test summary info ===========================
+FAILED tests/unit/applications/test_mcp_surface_opt_in.py::test_http_only_factory_does_not_import_fastmcp
+FAILED tests/unit/applications/test_mcp_surface_opt_in.py::test_mcp_enabled_factory_raises_when_fastmcp_missing
+FAILED tests/unit/applications/test_mcp_surface_opt_in.py::test_scaffold_defaults_mcp_to_opt_in
+FAILED tests/unit/applications/test_mcp_surface_opt_in_runtime.py::test_mcp_enabled_factory_mounts_mcp_route_when_available
+FAILED tests/unit/applications/test_mcp_catalog_e2e_hung_server_qualification.py::test_tl11_e2e_hung_list_catalog_client_timeout_not_definite_failure
+FAILED tests/unit/applications/test_mcp_catalog_e2e_hung_server_qualification.py::test_tl11_e2e_hung_describe_catalog_client_timeout
+FAILED tests/unit/applications/test_mcp_catalog_e2e_hung_server_qualification.py::test_tl11_e2e_server_crash_mid_catalog_list
+FAILED tests/unit/applications/test_mcp_catalog_e2e_hung_server_qualification.py::test_tl11_e2e_server_crash_mid_catalog_describe
+FAILED tests/unit/applications/test_mcp_catalog_e2e_hung_server_qualification.py::test_tl11_e2e_client_cancel_during_hung_catalog_list
+FAILED tests/unit/applications/test_mcp_catalog_e2e_hung_server_qualification.py::test_tl11_e2e_reconnect_after_catalog_timeout_fresh_session
+FAILED tests/unit/applications/test_mcp_catalog_e2e_hung_server_qualification.py::test_tl11_e2e_subprocess_cleanup_after_hung_catalog
+11 failed, 18 passed, 10 warnings in 172.49s (0:02:52)
+exit_code: 1
+date_end_utc: 2026-11-12T10:18:19Z

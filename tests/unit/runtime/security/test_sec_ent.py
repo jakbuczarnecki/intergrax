@@ -4,11 +4,13 @@
 
 from __future__ import annotations
 
+from collections.abc import Iterator
+from typing import ClassVar
 from unittest.mock import patch
 
 import pytest
-
 from intergrax.applications._shared.application_security_wiring import register_application_security_hooks
+from intergrax.applications._shared.integration_wiring import bootstrap_application_integration_catalog
 from intergrax.applications._shared.security_runtime_bridge import (
     RestrictedPayloadEncryptorResolutionError,
     resolve_restricted_payload_encryptor,
@@ -16,13 +18,17 @@ from intergrax.applications._shared.security_runtime_bridge import (
 from intergrax.applications.contracts.environment_profile import ApplicationEnvironmentProfile
 from intergrax.applications.contracts.environment_profile.bundles import SecurityEnvelope
 from intergrax.contracts.data_classification import DataClassification
+from intergrax.contracts.execution_identity import (
+    bind_active_execution_identity,
+    reset_active_execution_identity,
+)
 from intergrax.core.security_bootstrap import register_security_payload_schemas
-from intergrax.integrations.registry.bootstrap import register_default_integrations
 from intergrax.integrations.registry.presets import harness_defense_stack
 from intergrax.integrations.registry.profile import IntegrationProfile
 from intergrax.runtime.events.event_kind_registry import get_event_kind_entry
 from intergrax.runtime.hooks.hook_context import HookContext
 from intergrax.runtime.hooks.hook_point import HookPoint
+from intergrax.runtime.integrations.categories.security import SecretsStoreIntegrationContract
 from intergrax.runtime.nexus.nexus_loop import NexusLoop
 from intergrax.runtime.registry.agent_registry import AgentRegistry
 from intergrax.runtime.security.defense_plugin import (
@@ -37,6 +43,8 @@ from intergrax.runtime.security.encryption_transform import (
 )
 from intergrax.runtime.security.security_events import KIND_DEFENSE_BLOCKED
 from intergrax.runtime.security.security_observability import wire_security_spine_subscriber
+from testing_support.runtime_events import runtime_event_test_identity
+from tests.support.integration_catalog_isolation import reset_integration_tool_skill_catalogs
 
 pytestmark = [pytest.mark.unit, pytest.mark.gate, pytest.mark.no_ci]
 
@@ -65,9 +73,34 @@ class _FakeSecretsStore:
         self.stored.pop(path, None)
 
 
+class _PrebuiltFakeSecretsStore(SecretsStoreIntegrationContract):
+    stored: ClassVar[dict[str, str]] = {}
+
+    def get_secret(self, path: str, *, version: str | None = None) -> str:
+        return self.stored[path]
+
+    def put_secret(self, path: str, value: str) -> None:
+        self.stored[path] = value
+
+    def delete_secret(self, path: str) -> None:
+        self.stored.pop(path, None)
+
+
 @pytest.fixture(autouse=True)
 def _reset_store() -> None:
     _FakeSecretsStore.stored.clear()
+    _PrebuiltFakeSecretsStore.stored.clear()
+
+
+@pytest.fixture(autouse=True)
+def _clean_catalogs() -> Iterator[None]:
+    reset_integration_tool_skill_catalogs()
+    yield
+    reset_integration_tool_skill_catalogs()
+
+
+def _bootstrap_catalog() -> None:
+    bootstrap_application_integration_catalog()
 
 
 def test_security_payload_schemas_registered() -> None:
@@ -87,7 +120,7 @@ def test_resolve_encryptor_returns_none_without_secrets_store() -> None:
 
 
 def test_resolve_encryptor_uses_valid_secrets_store() -> None:
-    store = _FakeSecretsStore()
+    store = _PrebuiltFakeSecretsStore.for_provider(provider_id="sec-ent-fake")
     encryptor = resolve_restricted_payload_encryptor(_env_with_secrets_store(store))
     assert isinstance(encryptor, SecretsStorePayloadEncryptor)
     payload = {
@@ -103,36 +136,44 @@ def test_resolve_encryptor_uses_valid_secrets_store() -> None:
 
 
 def test_resolve_encryptor_fails_closed_on_resolution_error() -> None:
-    register_default_integrations()
+    _bootstrap_catalog()
     env = ApplicationEnvironmentProfile.lab_defaults(profile_id="sec.ent.fail.resolve")
     env.integration_profile = IntegrationProfile(secrets_store="infisical")
     with patch(
-        "intergrax.integrations.registry.factory.resolve_from_profile",
+        "intergrax.applications._shared.security_runtime_bridge.resolve_from_profile",
         side_effect=RuntimeError("secrets backend unavailable"),
     ):
         with pytest.raises(RestrictedPayloadEncryptorResolutionError) as exc_info:
             resolve_restricted_payload_encryptor(env)
     assert "failed to resolve configured secrets_store" in str(exc_info.value)
     assert isinstance(exc_info.value.__cause__, RuntimeError)
+    assert str(exc_info.value.__cause__) == "secrets backend unavailable"
 
 
 def test_resolve_encryptor_fails_closed_on_conformance_error() -> None:
-    env = _env_with_secrets_store(object())
+    env = _env_with_secrets_store(SecretsStoreIntegrationContract.for_provider(provider_id="sec-ent-nonconforming"))
     with pytest.raises(RestrictedPayloadEncryptorResolutionError) as exc_info:
         resolve_restricted_payload_encryptor(env)
     assert "does not satisfy SecretsStore contract" in str(exc_info.value)
 
 
+def test_prebuilt_non_contract_object_is_rejected_by_type_guard() -> None:
+    env = _env_with_secrets_store(object())
+    with pytest.raises(TypeError, match="expected SecretsStoreIntegrationContract"):
+        resolve_restricted_payload_encryptor(env)
+
+
 def test_harness_envelope_encryptor_not_selected_by_resolver() -> None:
-    register_default_integrations()
+    _bootstrap_catalog()
     env = ApplicationEnvironmentProfile.lab_defaults(profile_id="sec.ent.no.harness")
     env.integration_profile = IntegrationProfile(secrets_store="infisical")
     with patch(
-        "intergrax.integrations.registry.factory.resolve_from_profile",
+        "intergrax.applications._shared.security_runtime_bridge.resolve_from_profile",
         side_effect=RuntimeError("resolution failed"),
     ):
-        with pytest.raises(RestrictedPayloadEncryptorResolutionError):
+        with pytest.raises(RestrictedPayloadEncryptorResolutionError) as exc_info:
             resolve_restricted_payload_encryptor(env)
+    assert str(exc_info.value.__cause__) == "resolution failed"
 
 
 @pytest.mark.asyncio
@@ -193,7 +234,7 @@ def test_harness_envelope_encryptor_available_for_explicit_lab_use() -> None:
 
 
 def test_resolve_encryptor_uses_secrets_store_when_resolvable() -> None:
-    register_default_integrations()
+    _bootstrap_catalog()
     env = ApplicationEnvironmentProfile.lab_defaults(profile_id="sec.ent.enc")
     env.integration_profile = harness_defense_stack()
     encryptor = resolve_restricted_payload_encryptor(env)
@@ -208,7 +249,7 @@ def test_register_security_hooks_wires_spine_subscriber() -> None:
     env = ApplicationEnvironmentProfile.lab_defaults(profile_id="sec.ent.hooks")
     env.security_profile = SecurityEnvelope.production().application_security
     env.integration_profile = harness_defense_stack()
-    register_default_integrations()
+    _bootstrap_catalog()
     register_application_security_hooks(
         nexus,
         env.security_profile,
@@ -220,7 +261,6 @@ def test_register_security_hooks_wires_spine_subscriber() -> None:
 
 @pytest.mark.asyncio
 async def test_defense_middleware_blocks_cross_tenant_scope() -> None:
-    from intergrax.runtime.events.event_bus import RuntimeEventBus
 
     middleware = PluginSecurityDefenseMiddleware(
         _AllowDefensePlugin(),
@@ -250,11 +290,21 @@ async def test_security_spine_counters_increment() -> None:
 
     bus = RuntimeEventBus()
     counters = wire_security_spine_subscriber(bus)
-    event = build_platform_signal_event(
-        kind=KIND_DEFENSE_BLOCKED,
-        task_id="t1",
-        run_id="r1",
-        payload={"plugin_id": "x", "reason": "y", "hook_point": "before_tool_call"},
+    ids = runtime_event_test_identity()
+    token = bind_active_execution_identity(
+        run_id=ids["run_id"],
+        attempt_id=ids["attempt_id"],
+        execution_id=ids["execution_id"],
+        task_id=ids["task_id"],
     )
-    await bus.publish(event)
-    assert counters.defense_blocked == 1
+    try:
+        event = build_platform_signal_event(
+            kind=KIND_DEFENSE_BLOCKED,
+            task_id=ids["task_id"],
+            run_id=ids["run_id"],
+            payload={"plugin_id": "x", "reason": "y", "hook_point": "before_tool_call"},
+        )
+        await bus.publish(event)
+        assert counters.defense_blocked == 1
+    finally:
+        reset_active_execution_identity(token)

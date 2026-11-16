@@ -9,7 +9,6 @@ from pathlib import Path
 from unittest.mock import MagicMock
 
 import pytest
-
 from intergrax.applications._shared.policy_wiring import wire_policy_bundle
 from intergrax.applications.contracts.environment_profile import (
     ApplicationEnvironmentProfile,
@@ -23,13 +22,12 @@ from intergrax.runtime.nexus.errors.declarative_policy_violation_error import De
 from intergrax.runtime.nexus.tools.invoker import RuntimeToolInvoker
 from intergrax.runtime.nexus.tools.registry_tool_executor import RegistryToolExecutor
 from intergrax.runtime.sandbox.contracts import (
-    SandboxExecCapable,
     SandboxSecurityCapabilities,
-    SandboxSecurityCapable,
 )
 from intergrax.runtime.sandbox.enforcement import resolve_tool_execution_environment
 from intergrax.runtime.sandbox.execution_environment import (
     ExecutionEnvironmentProviderKind,
+    ExecutionEnvironmentRequirement,
     FilesystemAccess,
     ProcessExecution,
 )
@@ -42,7 +40,6 @@ from intergrax.runtime.sandbox.provider_adapters import (
 )
 from intergrax.runtime.sandbox.resolver import resolve_effective_execution_environment_for_profile
 from intergrax.runtime.sandbox.session import SandboxSession
-from intergrax.runtime.sandbox.execution_environment import ExecutionEnvironmentRequirement
 from intergrax.tools.core.contracts import ToolIsolationRequirement
 from intergrax.tools.execution_models import ToolExecutionRequest
 from intergrax.tools.providers.sandbox.bundle import register_sandbox_tools, sandbox_exec_contract
@@ -230,8 +227,46 @@ def test_c1c_q_governance_deny_zero_physical_execute(sandbox_session: SandboxSes
         input=SandboxExecInput(operation="echo", payload={"message": "blocked"}),
     )
     audit_before = len(sandbox_session.audit_log)
-    with canonical_governed_execution_scope("c1c_gov"):
+    # The invoker records the policy decision as governance evidence and requires an active governance
+    # identity for that; the tenant must match the runtime state under test.
+    with canonical_governed_execution_scope(
+        "c1c_gov",
+        governance_tenant_id=state.tenant_id,
+        governance_principal_id="c1c-principal",
+    ):
         with pytest.raises(DeclarativePolicyViolationError):
+            invoker.invoke(state=state, agent_id="agent", request=request)
+    assert len(sandbox_session.audit_log) == audit_before
+
+
+def test_c1c_q_governance_deny_without_active_governance_identity_fails_closed(
+    sandbox_session: SandboxSession,
+) -> None:
+    ctx = ToolWiringContext(
+        sandbox_session=sandbox_session,
+        sandbox_isolation_authority=_explicit_authority(),
+    )
+    registry = ToolRegistry()
+    register_sandbox_tools(registry, ctx)
+    invoker = RuntimeToolInvoker(
+        registry=registry,
+        executor=RegistryToolExecutor(registry),
+        sandbox_availability=sandbox_availability_provider(ctx),
+    )
+    state = build_runtime_state_for_tests(run_id="c1c_gov_noid")
+    state = replace(
+        state,
+        context=replace(state.context, config=replace(state.context.config, policy_bundle=_deny_policy_bundle())),
+    )
+    request = ToolExecutionRequest(
+        run_id="c1c_gov_noid",
+        step_id="step/1",
+        tool_id="sandbox.exec",
+        input=SandboxExecInput(operation="echo", payload={"message": "blocked"}),
+    )
+    audit_before = len(sandbox_session.audit_log)
+    with canonical_governed_execution_scope("c1c_gov_noid"):
+        with pytest.raises(RuntimeError, match="active execution governance identity required"):
             invoker.invoke(state=state, agent_id="agent", request=request)
     assert len(sandbox_session.audit_log) == audit_before
 

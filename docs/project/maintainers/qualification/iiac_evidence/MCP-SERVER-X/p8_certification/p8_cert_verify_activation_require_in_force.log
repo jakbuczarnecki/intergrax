@@ -1,0 +1,6 @@
+command: D:/Projekty/intergrax/.venv/Scripts/python.exe -m scripts.governance.verify_iiac_policy_activation --require-in-force
+git_head: a618a03a8b245ceefef6ab5a922213aaef46dcd1
+date_utc: 2026-11-12T12:20:48Z
+cwd: worktree p8-cert (detached at origin/development a618a03a8, branch mcp-p8-certification)
+IIAC policy activation: IN_FORCE @ IIAC-2026-11-05.1 from 92ad3555775649742299826e3680ec8ce703cc8a
+exit_code: 0

@@ -1,0 +1,9 @@
+...........................................ss........................... [ 46%]
+.............................................................s.s...s.... [ 92%]
+...........                                                              [100%]
+=========================== short test summary info ===========================
+SKIPPED [1] tests\qualification\pdc_x\d3\test_d3_r009_refusal.py:146: optional extra llm-anthropic; the source gate covers the Claude adapter
+SKIPPED [1] tests\qualification\pdc_x\d3\test_d3_r009_refusal.py:156: optional extra llm-anthropic; the source gate covers the Claude adapter
+SKIPPED [2] tests\qualification\pdc_x\d3\test_d3_r022_capability_flags.py:74: optional extra llm-anthropic; the source gate covers the Claude adapter
+SKIPPED [1] tests\qualification\pdc_x\d3\test_d3_r022_capability_flags.py:126: optional extra llm-langchain-ollama; covered by the source gate
+150 passed, 5 skipped in 4.87s

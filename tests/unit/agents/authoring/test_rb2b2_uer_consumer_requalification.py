@@ -4,12 +4,17 @@
 
 from __future__ import annotations
 
+from collections.abc import Callable
 from unittest.mock import patch
 
 import pytest
-
 from intergrax.agents.authoring.acp_run import run_acp_session
+from intergrax.agents.authoring.acp_session_host import ACP_HOST_CONTEXT_KEY
+from intergrax.agents.authoring.base import IntergraxAgent
 from intergrax.agents.authoring.step_outcome import StepOutcome
+from intergrax.applications.contracts.environment_profile import ApplicationEnvironmentProfile
+from intergrax.applications.contracts.execution_mode import ExecutionMode
+from intergrax.applications.contracts.org_policy import lab_strict_org_envelope
 from intergrax.contracts.agent_contract_meta import AgentRiskLevel
 from intergrax.contracts.agent_run import AgentRunRequest, RequestIdentity
 from intergrax.contracts.agent_run_enums import AgentRunErrorCode, SideEffectMode
@@ -22,27 +27,20 @@ from intergrax.contracts.execution_identity import (
     mint_task_id,
     reset_active_execution_identity,
 )
+from intergrax.runtime.kernel.step_kernel import HarnessKernel, StepKernelContext
 from intergrax.runtime.nexus.config import RuntimeConfig
 from intergrax.runtime.nexus.engine.runtime_context import RuntimeContext
 from intergrax.runtime.nexus.responses.response_schema import RuntimeRequest
-from testing_support.builder import FakeLLMAdapter, build_in_memory_session_manager
-from intergrax.agents.authoring.base import IntergraxAgent
-from intergrax.agents.authoring.acp_session_host import ACP_HOST_CONTEXT_KEY
-from intergrax.runtime.kernel.step_kernel import HarnessKernel, StepKernelContext
 from intergrax.runtime.policy.policy_engine import PolicyEngine
 from intergrax.tools.core.contracts import ToolContract, ToolRiskLevel
 from intergrax.tools.tool_execution_profile import build_profile_map
 from pydantic import BaseModel
+from testing_support.builder import FakeLLMAdapter, build_in_memory_session_manager
 from tests.unit.agents.conftest import make_acp_host_context
-from intergrax.applications.contracts.execution_mode import ExecutionMode
-from intergrax.applications.contracts.environment_profile import ApplicationEnvironmentProfile
-from intergrax.applications.contracts.org_policy import lab_strict_org_envelope
 
 pytestmark = [pytest.mark.unit, pytest.mark.gate]
 
-_ACP_MINT_PATCH = (
-    "intergrax.agents.authoring.acp_run.default_execution_identity_authority.mint_execution_identity"
-)
+_ACP_MINT_PATCH = "intergrax.agents.authoring.acp_run.default_execution_identity_authority.mint_execution_identity"
 
 
 class _In(BaseModel):
@@ -107,8 +105,11 @@ def _strict_profile() -> ApplicationEnvironmentProfile:
 
 
 @pytest.mark.asyncio
-async def test_rb2b2_uer02_kernel_merged_state_survives_failed_tool_step() -> None:
+async def test_rb2b2_uer02_kernel_merged_state_survives_failed_tool_step(
+    bound_governance_identity: Callable[..., None],
+) -> None:
     """UER-FIX-B: outcome_applied=False can still leave merged state_root (historical defect)."""
+    bound_governance_identity(tenant_id="tenant-test", principal_id="user-1")
 
     from intergrax.agents.persistence.declarative_tool_executor import (
         CallableDeclarativeToolInvoker,
@@ -124,6 +125,7 @@ async def test_rb2b2_uer02_kernel_merged_state_survives_failed_tool_step() -> No
     kernel_ctx = StepKernelContext(
         agent_id="demo",
         tenant_id="tenant-test",
+        principal_id="user-1",
         run_id=run_id,
         task_id=task_id,
         side_effect_mode=SideEffectMode.DECLARATIVE,
@@ -133,7 +135,8 @@ async def test_rb2b2_uer02_kernel_merged_state_survives_failed_tool_step() -> No
         allow_permissive_missing_policy=True,
         state_root={"acp.state": {"schema_version": "acp.state.v1", "_version": 0, "phase": "before"}},
     )
-    step_ctx = AgentStepContext(tenant_id="tenant-test", 
+    step_ctx = AgentStepContext(
+        tenant_id="tenant-test",
         step_index=0,
         side_effect_mode=SideEffectMode.DECLARATIVE,
     )
@@ -159,8 +162,11 @@ _LLM_PATCH = "intergrax.runtime.wiring.llm_resolver.resolve_llm_adapter"
 
 
 @pytest.mark.asyncio
-async def test_rb2b2_uer03_acp_resume_still_mints_execution_identity() -> None:
+async def test_rb2b2_uer03_acp_resume_still_mints_execution_identity(
+    bound_governance_identity: Callable[..., None],
+) -> None:
     """UER-FIX-C: resume path re-enters mint before checkpoint attempt continuity exists."""
+    bound_governance_identity(tenant_id="tenant-a", principal_id="user-1")
 
     class _OneStepAgent(_AcpProbeAgent):
         contract_id = "resume-probe"
@@ -182,8 +188,8 @@ async def test_rb2b2_uer03_acp_resume_still_mints_execution_identity() -> None:
         },
     )
     with patch(_ACP_MINT_PATCH) as mint:
-        from intergrax.runtime.execution.identity_authority import RootTaskIdentity
         from intergrax.contracts.execution_identity import mint_attempt_id, mint_execution_id
+        from intergrax.runtime.execution.identity_authority import RootTaskIdentity
 
         mint.return_value = RootTaskIdentity(
             run_id=run_id,
@@ -199,8 +205,11 @@ async def test_rb2b2_uer03_acp_resume_still_mints_execution_identity() -> None:
 
 
 @pytest.mark.asyncio
-async def test_rb2b2_uer04_unexpected_agent_exception_escapes_acp_session() -> None:
+async def test_rb2b2_uer04_unexpected_agent_exception_escapes_acp_session(
+    bound_governance_identity: Callable[..., None],
+) -> None:
     """UER-FIX-D: non-budget agent exceptions are not converted to typed AgentRunResult."""
+    bound_governance_identity(tenant_id="tenant-a", principal_id="user-1")
 
     request = AgentRunRequest(
         input="throw",
@@ -209,17 +218,23 @@ async def test_rb2b2_uer04_unexpected_agent_exception_escapes_acp_session() -> N
             ACP_HOST_CONTEXT_KEY: make_acp_host_context(_strict_profile()),
         },
     )
-    with patch("intergrax.runtime.nexus.agents.acp_uaep_shim.attach_acp_catalog_exec_ctx"), patch(
-        _LLM_PATCH,
-        return_value=FakeLLMAdapter(),
+    with (
+        patch("intergrax.runtime.nexus.agents.acp_uaep_shim.attach_acp_catalog_exec_ctx"),
+        patch(
+            _LLM_PATCH,
+            return_value=FakeLLMAdapter(),
+        ),
     ):
         with pytest.raises(RuntimeError, match="rb2b2-unhandled-domain-failure"):
             await run_acp_session(_ThrowingAgent(), request)
 
 
 @pytest.mark.asyncio
-async def test_rb2b2_uer01_acp_session_uses_fresh_policy_engine_instance() -> None:
+async def test_rb2b2_uer01_acp_session_uses_fresh_policy_engine_instance(
+    bound_governance_identity: Callable[..., None],
+) -> None:
     """UER-FIX-A: direct ACP constructs its own PolicyEngine instead of host-carried engine."""
+    bound_governance_identity(tenant_id="tenant-a", principal_id="user-1")
 
     constructed: list[PolicyEngine] = []
 
@@ -244,11 +259,15 @@ async def test_rb2b2_uer01_acp_session_uses_fresh_policy_engine_instance() -> No
             ACP_HOST_CONTEXT_KEY: make_acp_host_context(_strict_profile()),
         },
     )
-    with patch("intergrax.agents.authoring.acp_run.PolicyEngine", _RecordingPolicyEngine), patch(
-        "intergrax.runtime.nexus.agents.acp_uaep_shim.attach_acp_catalog_exec_ctx",
-    ), patch(
-        _LLM_PATCH,
-        return_value=FakeLLMAdapter(),
+    with (
+        patch("intergrax.agents.authoring.acp_run.PolicyEngine", _RecordingPolicyEngine),
+        patch(
+            "intergrax.runtime.nexus.agents.acp_uaep_shim.attach_acp_catalog_exec_ctx",
+        ),
+        patch(
+            _LLM_PATCH,
+            return_value=FakeLLMAdapter(),
+        ),
     ):
         await run_acp_session(_OneStepAgent(), request)
     assert len(constructed) >= 1

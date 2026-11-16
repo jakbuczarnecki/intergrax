@@ -9,6 +9,9 @@ import subprocess
 from pathlib import Path
 
 from tests.qualification.ebh_6._findings_register import count_prohibited_unresolved
+from tests.qualification.roadmap_replay_x._prod_delta_disposition import (
+    REPLAY_X_L2_SCOPED_PROD_DELTA_PATHS,
+)
 
 _REPO = Path(__file__).resolve().parents[3]
 _DUP_X_PIN = "a7d83925b375b5f08eb0f175ced2c17fa026bba9"
@@ -59,9 +62,7 @@ def vbn_replay_failure_violations(
         if match and int(match.group(1)) != prohibited:
             violations.append("vbn_narrative_vs_register_mismatch")
     unscoped = [
-        p
-        for p in _production_effective_vendor_delta_paths(root)
-        if p != "intergrax/runtime/resilience/dependency_attempt_execution_boundary.py"
+        p for p in _production_effective_vendor_delta_paths(root) if p not in REPLAY_X_L2_SCOPED_PROD_DELTA_PATHS
     ]
     if unscoped:
         violations.append(f"unexpected_prod_delta_for_vbn:{unscoped[0]}")

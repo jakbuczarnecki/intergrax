@@ -1,0 +1,71 @@
+{
+  "stage_id": "PDC-X/P7-00/addendum_3",
+  "parent_audits": [
+    "docs/project/maintainers/qualification/platform_domain_completeness/PDC_P7_00_ACT_N11_BASELINE_AUDIT_DOSSIER.md",
+    "docs/project/maintainers/qualification/platform_domain_completeness/PDC_P7_00_ACT_N11_BASELINE_AUDIT_ADDENDUM_1.md",
+    "docs/project/maintainers/qualification/platform_domain_completeness/PDC_P7_00_ACT_N11_BASELINE_AUDIT_ADDENDUM_2.md"
+  ],
+  "certification_profile": "iiac-v1",
+  "policy_version": "IIAC-2026-11-05.1",
+  "base_sha": "324d9dba37cb54e1b74a79a05148d2dcc05e6d09",
+  "audited_implementation_sha": "0fc8badd81c4c3e46a3d0ce262c08e8efba41898",
+  "audit_execution_sha": "0fc8badd81c4c3e46a3d0ce262c08e8efba41898",
+  "activation_pin_audit_execution_sha": "2d3eceb6cf7e93dccd4d96919319a6c969b4444b",
+  "activation_record_at_head": {
+    "effective_from_sha": "92d7308213bd46e76ce0b545cd94b36bc65d8e0e",
+    "corrective_implementation_sha": "324d9dba37cb54e1b74a79a05148d2dcc05e6d09",
+    "audit_execution_sha": "29d66ae3fcc7a06a919d7e07541740841e8abfe8",
+    "note": "the activation record at 0fc8badd8 is the two-phase MCP-RC integrated-baseline rebind; its audited tree is 324d9dba3 (product tree of 29d66ae3f equals it); verify_iiac_policy_activation at this head lists exactly one path"
+  },
+  "re_pinned_development_head": "146e7acf1",
+  "auditor_branch": "p7-00-baseline-audit",
+  "delta_act_n11_paths_count": 1,
+  "delta_act_n11_paths": [
+    "intergrax/integrations/providers/embedding_provider/ollama/register.py"
+  ],
+  "delta_numstat": [
+    "25\t3\tintergrax/integrations/providers/embedding_provider/ollama/register.py"
+  ],
+  "source_prs": {
+    "#537": "T-IGX-036-X B-P6-F ollama embedding resolve (commit f209febbe, merge 146e7acf1 of development into mcp-rc as 0fc8badd8)"
+  },
+  "delta_tests_changed": [
+    "tests/qualification/ebh_5/_package_c_v2_primitives.py (+5: owning model-serving ollama row registered first)",
+    "tests/qualification/pdc_x/p6_ecapfix/__init__.py (new)",
+    "tests/qualification/pdc_x/p6_ecapfix/test_p6_ecapfix_register_catalog_slug.py (new, 7 tests)"
+  ],
+  "other_non_docs_changes_in_range": [
+    "uv.lock (dependabot PR #526 opentelemetry-api 1.38.0 -> 1.45.2 with transitive changes; pyproject.toml unchanged; uv lock --check exit 0)",
+    "scripts/qualification/pdc_x_inventory.py (ARTIFACT_LIFECYCLE classified to PDC-D8)",
+    "scripts/qualification/pdc_x_wbs.py (batches B-P6-F and B-P6-E, waves W8/W9)",
+    "governance/tickets/T-IGX-036-W.md, T-IGX-036-X.md and their plans"
+  ],
+  "mcp_rc_paths_count": 23,
+  "mcp_rc_byte_identical_to_b0e19bf61": true,
+  "changed_governance_gate_activation_or_iiac_evidence_paths": [
+    "docs/project/maintainers/qualification/IIAC_POLICY_ACTIVATION_RECORD.json (activation certifier rebind: phase 1 92d730821, phase 2 9949fe2c3)",
+    "IIAC_OD_ACTIVATION_MCP_RC_2026-11-13.md, iiac_evidence/PDC-X/MCP-RC/activation/* (binding manifest 2899735e5, report 18242609d)",
+    "docs-only evidence (certifier preflight addendum 1, evidence integration of addendum 2)"
+  ],
+  "no_path_changed_under": [
+    "scripts/governance",
+    "scripts/maintenance",
+    "scripts/enterprise_audit",
+    ".github",
+    "agent-env",
+    "IIAC_GLOBAL_AUTHORITY_IMPACT_MATRIX.json"
+  ],
+  "activation_gate_at_head": "verify_iiac_policy_activation exit 1, one line: ACT-N11 product path changed after the audited SHA: intergrax/integrations/providers/embedding_provider/ollama/register.py",
+  "combined_coverage": {
+    "act_n11_paths_vs_pin_combined_unique": 158,
+    "audited_head": "0fc8badd81c4c3e46a3d0ce262c08e8efba41898",
+    "pin": "2d3eceb6cf7e93dccd4d96919319a6c969b4444b",
+    "statement": "git diff --name-only 2d3eceb6c 0fc8badd8 -- intergrax agents applications = 158 paths, the same set as at 324d9dba3: the delta path was already in the set because B-REG-P (c3d5b7005) changed it before 324d9dba3. The delta therefore adds no new path (158, not 159); it changes the content of one audited path, which this addendum re-audits. The other 157 paths are byte-identical to the content audited in the first audit and addenda 1-2; the 23 MCP-RC paths are byte-identical to b0e19bf61."
+  },
+  "out_of_scope": [
+    "eight per-domain audits IA-D1..IA-D8",
+    "CI contexts",
+    "P8 and FRZ (counter 225)",
+    "G-DOC-01..12"
+  ]
+}

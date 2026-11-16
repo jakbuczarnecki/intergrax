@@ -3,30 +3,31 @@
 # Use, modification, or distribution without written permission is prohibited.
 
 from __future__ import annotations
-import sys
 
 import pytest
-from langchain_core.documents import Document
 
+pytest.importorskip(
+    "langchain_core", reason="requires the 'dev-ci-rag' extra (langchain-core); executed by the rag-guard CI profile"
+)
+import sys
+
+from intergrax.integrations.providers.vector_store.qdrant.bundle import create_qdrant_vector_store
 from intergrax.rag.embedding.contracts.base_embedding_manager import BaseEmbeddingManager
-from intergrax.rag.embedding.contracts.embedding_metadata_key import EmbeddingMetadataKey
 from intergrax.rag.embedding.embedding_manager import EmbeddingManager
-from intergrax.rag.embedding.pipeline.embedding_pipeline import EmbeddingPipeline
 from intergrax.rag.embedding.engine.embedding_engine import EmbeddingEngine
+from intergrax.rag.embedding.pipeline.embedding_pipeline import EmbeddingPipeline
 from intergrax.rag.embedding.providers.hf_embedding_provider import HFEmbeddingProvider
-
+from intergrax.rag.retrievers.contracts.base_retriever import RetrieverQuery
+from intergrax.rag.retrievers.engine.retriever_engine import RetrieverEngine
+from intergrax.rag.retrievers.pipeline.retriever_pipeline import RetrieverPipeline
 from intergrax.rag.retrievers.providers.vector_similarity_retriever import (
     VectorSimilarityRetriever,
 )
 from intergrax.rag.retrievers.registry.retriever_registry import RetrieverRegistry
-from intergrax.rag.retrievers.engine.retriever_engine import RetrieverEngine
-from intergrax.rag.retrievers.contracts.base_retriever import RetrieverQuery
 from intergrax.rag.retrievers.retriever_manager import RetrieverManager
-from intergrax.rag.retrievers.pipeline.retriever_pipeline import RetrieverPipeline
 from intergrax.rag.vectorstore.contracts.base_vectorstore_manager import BaseVectorstoreManager
-from intergrax.integrations.providers.vector_store.qdrant.bundle import create_qdrant_vector_store
 from intergrax.rag.vectorstore.vectorstore_manager import VectorstoreManager
-
+from langchain_core.documents import Document
 
 pytestmark = [
     pytest.mark.integration,
@@ -62,9 +63,7 @@ def create_retriever_manager(vector_store: BaseVectorstoreManager, embedding_man
         embedding_manager=embedding_manager,
     )
 
-    manager = RetrieverManager(
-        pipeline=pipeline
-    )
+    manager = RetrieverManager(pipeline=pipeline)
 
     return manager
 
@@ -87,7 +86,6 @@ def test_retrieval_pipeline():
             tenant_id="tenant_a",
         )
     )
-
 
     vector_store.add_documents(
         result.documents,
@@ -113,7 +111,4 @@ def test_retrieval_pipeline():
 
     contents = [r.content for r in results]
 
-    assert any(
-        "Artificial intelligence" in c
-        for c in contents
-    )
+    assert any("Artificial intelligence" in c for c in contents)

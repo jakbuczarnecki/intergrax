@@ -129,7 +129,7 @@ Orchestrator **must not** commit product paths; parent synthesizes subagent outp
 ### Parallelization rules
 
 1. **Independent file trees** → parallel Task subagents (`explore`, `generalPurpose`, `ci-investigator`) with **max 2–3 concurrent** (registry caps: `explore` 3, `generalPurpose` 2).
-2. **One pytest / one `uv run pytest`** per verification step — [`.cursor/rules/intergrax-test-process-budget.mdc`](../.cursor/rules/intergrax-test-process-budget.mdc).
+2. **One pytest / one `uv run pytest`** per verification step — [`agent-env/rules/intergrax-test-process-budget.md`](../agent-env/rules/intergrax-test-process-budget.md).
 3. **Isolated code attempts** → `best-of-n-runner` or separate git worktree ([`WORKTREES.md`](./workflows/WORKTREES.md)); `requires_worktree: true` in registry.
 4. **Subagent_role_map** (authoritative):
 
@@ -190,5 +190,5 @@ If `gh api` branch protection cannot run (auth), record **EXTERNAL_BLOCKED** in 
 
 - [`governance/tickets/README.md`](./tickets/README.md)
 - [`docs/project/technical/devos/README.md`](../docs/project/technical/devos/README.md)
-- [`.cursor/skills/igx-devos-parallel-orchestration/SKILL.md`](../.cursor/skills/igx-devos-parallel-orchestration/SKILL.md)
+- [`agent-env/skills/igx-devos-parallel-orchestration/SKILL.md`](../agent-env/skills/igx-devos-parallel-orchestration/SKILL.md)
 - [`T-IGX-003-A`](./tickets/T-IGX-003-A.md) — prior gap doc closure

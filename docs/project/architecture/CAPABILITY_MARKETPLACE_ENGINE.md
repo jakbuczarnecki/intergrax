@@ -208,6 +208,8 @@ CapabilityCatalogSource → common engine
 
 Adapter: `intergrax.capability_catalog.adapters.tool` (+ private enterprise source Stage 7).
 
+**Capability acquisition plane (UCA) is not the Agent Distribution plane.** Dynamic acquisition of agents is Agent Distribution (§4, `dynamic_acquisition.py`). Governed acquisition of tool/capability grants and the qualified marketplace tool hand-off are owned by UCA (roadmap UCA table, row S24-GAP-02). Code at baseline: `intergrax/capability_acquisition/` (10 py, 966 lines), `intergrax/capability_qualification/` (7 py, 765 lines) and 16 marketplace tool modules in `intergrax/tools/` (`marketplace_*.py`, `qualified_marketplace_*.py`; 2,627 lines). Decision and certification records: [`S24_GAP_02_QUALIFIED_MARKETPLACE_TOOL_HANDOFF.md`](../maintainers/architecture/S24_GAP_02_QUALIFIED_MARKETPLACE_TOOL_HANDOFF.md) and [`S24_GAP_02_QUALIFIED_MARKETPLACE_TOOL_CERTIFICATION.md`](../maintainers/qualification/S24_GAP_02_QUALIFIED_MARKETPLACE_TOOL_CERTIFICATION.md). The composition module `intergrax/applications/_shared/uca6c_marketplace_qualified_execution_composition.py` is not referenced outside tests and docs at baseline; this section makes no claim about shipped-host wiring and does not restate the certification status of S24-GAP-02.
+
 ---
 
 ## 6. Skill vertical

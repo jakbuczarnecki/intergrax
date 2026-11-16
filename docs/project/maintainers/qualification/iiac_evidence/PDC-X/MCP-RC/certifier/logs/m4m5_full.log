@@ -1,0 +1,13 @@
+===== M4-deadline-propagation-dropped exit 1
+___ test_call_bound_requests_governed_cancel_and_reports_deadline_exceeded ____
+E   asyncio.exceptions.CancelledError
+E   TimeoutError
+FAILED tests/unit/applications/test_mcp_deadline_and_resilience.py::test_call_bound_requests_governed_cancel_and_reports_deadline_exceeded
+1 failed in 18.52s
+===== M5-deadline-does-not-request-governed-cancel exit 1
+___ test_call_bound_requests_governed_cancel_and_reports_deadline_exceeded ____
+E   AssertionError: assert 'outcome=cancelled' in 'MCP_DEADLINE_EXCEEDED: call exceeded 0.3s; outcome=outcome_unknown'
+E    +  where 'MCP_DEADLINE_EXCEEDED: call exceeded 0.3s; outcome=outcome_unknown' = str(ToolError('MCP_DEADLINE_EXCEEDED: call exceeded 0.3s; outcome=outcome_unknown'))
+E    +    where ToolError('MCP_DEADLINE_EXCEEDED: call exceeded 0.3s; outcome=outcome_unknown') = <ExceptionInfo ToolError('MCP_DEADLINE_EXCEEDED: call exceeded 0.3s; outcome=outcome_unknown') tblen=5>.value
+FAILED tests/unit/applications/test_mcp_deadline_and_resilience.py::test_call_bound_requests_governed_cancel_and_reports_deadline_exceeded
+1 failed in 6.09s

@@ -1,0 +1,36 @@
+MCP-SERVER-X / ACT-N11 MCP / IIIC evidence manifest
+
+Historical partial audit (preserved — do not delete):
+  audit_execution_sha: 7c401fd98cf2b42b9b2fd5860485bac34a8c2df3
+  iiac_audit_session_manifest.MCP-SERVER-X.act_n11_mcp.json
+  MCP_ACT_N11_INDEPENDENT_AUDIT_DOSSIER.md
+  iiac_audit_act_n11_mcp_findings.json
+  test_matrix.txt
+  IIAC_SESSION_HANDOFF_RECORD_ACT_N11_MCP.md
+  auditor_verify_iiac_require_in_force_baseline.log
+  auditor_mcp_ticket_test_contract.log
+  auditor_mcp_adversarial_tests.log
+
+P4 corrective re-audit (PASS_SCOPED — independent auditor f7c3b2a1-5d4e-4f8a-9c62-2b1e0d9f8a7c):
+  iiac_audit_session_manifest.MCP-SERVER-X.act_n11_mcp.reaudit_p4.json
+  MCP_ACT_N11_INDEPENDENT_REAUDIT_DOSSIER_P4.md
+  iiac_audit_act_n11_mcp_findings_reaudit_p4.json
+  test_matrix_reaudit_p4.txt
+  IIIC_SESSION_HANDOFF_RECORD_ACT_N11_MCP_REAUDIT_P4.md
+  auditor_mcp_reaudit_p4_ticket_test_contract.log
+  auditor_mcp_reaudit_adversarial_tests.log
+  auditor_reaudit_verify_iiac_require_in_force_baseline.log
+  auditor_reaudit_verify_iiac_audit_manifest.log
+  auditor_reaudit_verify_iiac_role_separation.log
+  MCP_ACT_N11_CERTIFIER_PREFLIGHT_REPORT_P4.md (certifier preflight)
+  certifier_reaudit_preflight_manifest.log
+  certifier_reaudit_preflight_role_separation.log
+
+Shared scope:
+  audit_scope.json
+
+evidence_publication_sha: 8fff85e3bfc5190929ff464b00fbe759dadcb5f8
+test_execution_sha: b3d130d78e4b6799079568cde4af9787f9baab79
+certifier_preflight_head: 816ad861357a851f754dbb3c6b020434bcf818aa
+certifier_preflight: CERTIFIER_PREFLIGHT_PASS
+publication_state: published

@@ -1,0 +1,176 @@
+.F
+================================== FAILURES ===================================
+____ test_r010_restart_with_changed_configuration_is_rejected_before_start ____
+
+fut = <Task cancelled name='Task-6' coro=<HostedApplicationSupervisor.run() done, defined at D:\Projekty\intergrax\.claude\worktrees\pdc-x-ia-d4-966471\intergrax\hosting\supervisor\supervisor.py:112>>
+timeout = 20.0
+
+    async def wait_for(fut, timeout):
+        """Wait for the single Future or coroutine to complete, with timeout.
+    
+        Coroutine will be wrapped in Task.
+    
+        Returns result of the Future or coroutine.  When a timeout occurs,
+        it cancels the task and raises TimeoutError.  To avoid the task
+        cancellation, wrap it in shield().
+    
+        If the wait is cancelled, the task is also cancelled.
+    
+        If the task suppresses the cancellation and returns a value instead,
+        that value is returned.
+    
+        This function is a coroutine.
+        """
+        # The special case for timeout <= 0 is for the following case:
+        #
+        # async def test_waitfor():
+        #     func_started = False
+        #
+        #     async def func():
+        #         nonlocal func_started
+        #         func_started = True
+        #
+        #     try:
+        #         await asyncio.wait_for(func(), 0)
+        #     except asyncio.TimeoutError:
+        #         assert not func_started
+        #     else:
+        #         assert False
+        #
+        # asyncio.run(test_waitfor())
+    
+    
+        if timeout is not None and timeout <= 0:
+            fut = ensure_future(fut)
+    
+            if fut.done():
+                return fut.result()
+    
+            await _cancel_and_wait(fut)
+            try:
+                return fut.result()
+            except exceptions.CancelledError as exc:
+                raise TimeoutError from exc
+    
+        async with timeouts.timeout(timeout):
+>           return await fut
+                   ^^^^^^^^^
+
+C:\Users\XPS\AppData\Roaming\uv\python\cpython-3.12-windows-x86_64-none\Lib\asyncio\tasks.py:520: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+intergrax\hosting\supervisor\supervisor.py:193: in run
+    terminal = await engine.run_until_stopped()
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+intergrax\hosting\engine\engine.py:298: in run_until_stopped
+    request = await self.shutdown.wait_until_requested()
+              ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+intergrax\hosting\control.py:196: in wait_until_requested
+    await self._shutdown_event.wait()
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+self = <asyncio.locks.Event object at 0x00000171BDAE6DE0 [unset]>
+
+    async def wait(self):
+        """Block until the internal flag is true.
+    
+        If the internal flag is true on entry, return True
+        immediately.  Otherwise, block until another coroutine calls
+        set() to set the flag to true, then return True.
+        """
+        if self._value:
+            return True
+    
+        fut = self._get_loop().create_future()
+        self._waiters.append(fut)
+        try:
+>           await fut
+E           asyncio.exceptions.CancelledError
+
+C:\Users\XPS\AppData\Roaming\uv\python\cpython-3.12-windows-x86_64-none\Lib\asyncio\locks.py:212: CancelledError
+
+The above exception was the direct cause of the following exception:
+
+tmp_path = WindowsPath('D:/Projekty/intergrax/.claude/worktrees/pdc-x-ia-d4-966471/build/pytest/31284-bc06ca6f/test_r010_restart_with_changed0')
+
+    async def test_r010_restart_with_changed_configuration_is_rejected_before_start(
+        tmp_path: Path,
+    ) -> None:
+        original = make_profile(runtime=JournalRuntime(), restart=_FAST_RESTART, metadata={"config": "v1"})
+        drifted = make_profile(runtime=JournalRuntime(), restart=_FAST_RESTART, metadata={"config": "v2"})
+        definition = definition_of(original)
+        drifted_definition = definition_of(drifted)
+        assert drifted_definition.profile_digest != definition.profile_digest
+    
+        clock = SystemClock()
+        control = HostedApplicationControlCoordinator(clock=clock)
+        publisher = RecordingPublisher()
+        launched: list[str] = []
+        counter = iter(range(100))
+    
+        def engine_factory(launch: HostedApplicationSupervisorLaunchContext):
+            launched.append(launch.instance_id)
+            # The restarted attempt is (wrongly) composed from drifted configuration.
+            chosen = definition if launch.attempt_number == 0 else drifted_definition
+            engine, _, _ = build_engine(
+                chosen,
+                tmp_path,
+                publisher=publisher,
+                control=launch.control,
+                instance_id=launch.instance_id,
+            )
+            return engine
+    
+        supervisor = HostedApplicationSupervisor(
+            definition=definition,
+            engine_factory=engine_factory,
+            control=control,
+            event_publisher=publisher,
+            clock=clock,
+            instance_id_generator=lambda: f"drift-attempt-{next(counter)}",
+        )
+        run = asyncio.ensure_future(supervisor.run())
+        try:
+            await _wait_until(lambda: _ready_count(publisher) == 1, "first instance ready")
+            control.request_restart("test.config_drift")
+>           result = await asyncio.wait_for(run, timeout=_WAIT_SECONDS)
+                     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+tests\qualification\pdc_x\d4\test_d4_restart_digest.py:179: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+C:\Users\XPS\AppData\Roaming\uv\python\cpython-3.12-windows-x86_64-none\Lib\asyncio\tasks.py:519: in wait_for
+    async with timeouts.timeout(timeout):
+               ^^^^^^^^^^^^^^^^^^^^^^^^^
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+self = <Timeout [expired]>
+exc_type = <class 'asyncio.exceptions.CancelledError'>
+exc_val = CancelledError(), exc_tb = <traceback object at 0x00000171BDCF4B80>
+
+    async def __aexit__(
+        self,
+        exc_type: Optional[Type[BaseException]],
+        exc_val: Optional[BaseException],
+        exc_tb: Optional[TracebackType],
+    ) -> Optional[bool]:
+        assert self._state in (_State.ENTERED, _State.EXPIRING)
+    
+        if self._timeout_handler is not None:
+            self._timeout_handler.cancel()
+            self._timeout_handler = None
+    
+        if self._state is _State.EXPIRING:
+            self._state = _State.EXPIRED
+    
+            if self._task.uncancel() <= self._cancelling and exc_type is exceptions.CancelledError:
+                # Since there are no new cancel requests, we're
+                # handling this.
+>               raise TimeoutError from exc_val
+E               TimeoutError
+
+C:\Users\XPS\AppData\Roaming\uv\python\cpython-3.12-windows-x86_64-none\Lib\asyncio\timeouts.py:115: TimeoutError
+=========================== short test summary info ===========================
+FAILED tests/qualification/pdc_x/d4/test_d4_restart_digest.py::test_r010_restart_with_changed_configuration_is_rejected_before_start
+!!!!!!!!!!!!!!!!!!!!!!!!!! stopping after 1 failures !!!!!!!!!!!!!!!!!!!!!!!!!!
+1 failed, 1 passed in 20.86s
+Task was destroyed but it is pending!
+task: <Task pending name='Task-8' coro=<HostedApplicationHealthCoordinator._poll_loop() running at D:\Projekty\intergrax\.claude\worktrees\pdc-x-ia-d4-966471\intergrax\hosting\engine\health.py:238> wait_for=<Future pending cb=[Task.task_wakeup()]>>

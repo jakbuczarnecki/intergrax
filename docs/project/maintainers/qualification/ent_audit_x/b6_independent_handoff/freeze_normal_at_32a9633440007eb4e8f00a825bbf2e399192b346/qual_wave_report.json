@@ -1,0 +1,82 @@
+{
+  "certifying": false,
+  "clean_tree": true,
+  "error": "",
+  "interruption_class": "",
+  "pinned_sha": null,
+  "profile": "pre-qual",
+  "qualification_sha": "32a9633440007eb4e8f00a825bbf2e399192b346",
+  "stages": [
+    {
+      "detail": "passed=246",
+      "duration_ms": 818282,
+      "exit_code": 0,
+      "name": "l1",
+      "skipped": false
+    },
+    {
+      "detail": "passed=42",
+      "duration_ms": 14594,
+      "exit_code": 0,
+      "name": "l2",
+      "skipped": false
+    },
+    {
+      "detail": "passed=63",
+      "duration_ms": 673974,
+      "exit_code": 0,
+      "name": "semantic_acceptance",
+      "skipped": false
+    },
+    {
+      "detail": "passed=85",
+      "duration_ms": 777568,
+      "exit_code": 0,
+      "name": "semantic_matrix",
+      "skipped": false
+    },
+    {
+      "detail": "passed=33",
+      "duration_ms": 10770,
+      "exit_code": 0,
+      "name": "adv31",
+      "skipped": false
+    },
+    {
+      "detail": "passed=13",
+      "duration_ms": 113168,
+      "exit_code": 0,
+      "name": "ten13",
+      "skipped": false
+    },
+    {
+      "detail": "passed=9",
+      "duration_ms": 59438,
+      "exit_code": 0,
+      "name": "vbn9",
+      "skipped": false
+    },
+    {
+      "detail": "passed=2",
+      "duration_ms": 3130,
+      "exit_code": 0,
+      "name": "d31",
+      "skipped": false
+    },
+    {
+      "detail": "pre-qual profile (not certifying)",
+      "duration_ms": 0,
+      "exit_code": 0,
+      "name": "l3_cli_full",
+      "skipped": true
+    },
+    {
+      "detail": "pre-qual profile (not certifying)",
+      "duration_ms": 0,
+      "exit_code": 0,
+      "name": "first_freeze_candidate",
+      "skipped": true
+    }
+  ],
+  "status": "PRE_QUAL_PASS"
+}

@@ -1,0 +1,26 @@
+# © Artur Czarnecki. All rights reserved.
+# Intergrax framework – proprietary and confidential.
+# Use, modification, or distribution without written permission is prohibited.
+
+"""Tier-0 vocabulary for harness runtime error classification."""
+
+from enum import Enum
+
+
+class RuntimeErrorCode(str, Enum):  # noqa: UP042 — frozen vocabulary; same bases as pre-move Nexus definition
+    INTERNAL_ERROR = "internal_error"
+    VALIDATION_ERROR = "validation_error"
+    TIMEOUT = "timeout"
+    LLM_ERROR = "llm_error"
+    TOOL_ERROR = "tool_error"
+    USER_ERROR = "user_error"
+    POLICY_ERROR = "policy_error"
+    DEPENDENCY_ERROR = "dependency_error"
+    QUALITY_ERROR = "quality_error"
+    PERMISSION_ERROR = "permission_error"
+    RUNTIME_ERROR = "runtime_error"
+    ABANDONED = "abandoned"
+    STALLED = "stalled"
+
+
+__all__ = ["RuntimeErrorCode"]

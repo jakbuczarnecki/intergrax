@@ -14,12 +14,13 @@ from intergrax.memory.contracts.memory_control import (
     MemoryControlRememberRequest,
     MemoryControlScopeRef,
     MemoryControlUnsupportedScope,
+    task_namespace_for_tenant,
 )
 from tests.qualification.memory_behavior.contracts import BehaviorEvalContext
 from tests.qualification.memory_behavior.fixtures import (
-    InMemoryTaskMemoryCapability,
     TENANT_A,
     TENANT_B,
+    InMemoryTaskMemoryCapability,
     build_task_control_plane,
     request_identity,
     task_scope,
@@ -46,7 +47,7 @@ async def run_task_01_remember_and_capability_read(_ctx: BehaviorEvalContext) ->
         pass
     else:
         raise AssertionError("TASK recall via MemoryControlPlane must be unsupported")
-    value = await store.read("ns-a", "checkpoint")
+    value = await store.read(task_namespace_for_tenant(identity.tenant_id, "ns-a"), "checkpoint")
     assert value == {"step": 1}
 
 
@@ -61,7 +62,7 @@ async def run_task_02_forget(_ctx: BehaviorEvalContext) -> None:
         MemoryControlRememberRequest(content=json.dumps({"x": 1})),
     )
     await plane.forget(identity, scope, MemoryControlForgetRequest())
-    assert await store.read("ns-a", "temp") is None
+    assert await store.read(task_namespace_for_tenant(identity.tenant_id, "ns-a"), "temp") is None
 
 
 async def run_task_03_namespace_isolation(_ctx: BehaviorEvalContext) -> None:
@@ -80,8 +81,8 @@ async def run_task_03_namespace_isolation(_ctx: BehaviorEvalContext) -> None:
         scope_b,
         MemoryControlRememberRequest(content=json.dumps({"from": "b"})),
     )
-    assert await store.read("ns-a", "same-key") == {"from": "a"}
-    assert await store.read("ns-b", "same-key") == {"from": "b"}
+    assert await store.read(task_namespace_for_tenant(identity.tenant_id, "ns-a"), "same-key") == {"from": "a"}
+    assert await store.read(task_namespace_for_tenant(identity.tenant_id, "ns-b"), "same-key") == {"from": "b"}
 
 
 async def run_task_05_tenant_scope_on_task(_ctx: BehaviorEvalContext) -> None:

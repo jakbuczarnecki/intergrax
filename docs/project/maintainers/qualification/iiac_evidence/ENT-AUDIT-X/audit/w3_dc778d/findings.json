@@ -1,0 +1,62 @@
+[
+  {
+    "id": "F-W3-001",
+    "severity": "LOW",
+    "title": "freeze_normal_at_*: strict B5 verifier — nazwa katalogu vs qualification_at_<TES>",
+    "evidence": "verify_b5_publication_tree na freeze_normal_at_32a963344… zwraca qualification_sha inconsistent with qualification_at_<TES> directory name; publication_index i manifest FREEZE spójne bajtowo.",
+    "affected_path": "docs/project/maintainers/qualification/ent_audit_x/b6_independent_handoff/freeze_normal_at_32a9633440007eb4e8f00a825bbf2e399192b346/",
+    "recommendation": "Kanonizacja nazwy katalogu lub rozszerzenie weryfikatora o rolę W2_NORMAL_FREEZE_EVIDENCE (opcjonalnie implementer lub waiver W4).",
+    "status": "OPEN_SCOPED",
+    "owner": "implementer"
+  },
+  {
+    "id": "F-W3-002",
+    "severity": "MEDIUM",
+    "title": "Overlay IIAC closure matrix §2.3 E-3 OPEN mimo opublikowanego freeze_normal @ TES",
+    "evidence": "Rozjazd SSOT overlay vs dowód FREEZE; disposition implementer W4 reconcile.",
+    "affected_path": "docs/project/maintainers/qualification/ent_audit_x/ENT_AUDIT_X_IIAC_CLOSURE_MATRIX.md",
+    "recommendation": "Zsynchronizować overlay z ladder W2 (E-3 SATISFIED @ 32a96334…).",
+    "status": "FIXED_SSOT_PER_DISPOSITION",
+    "owner": "implementer"
+  },
+  {
+    "id": "F-W3-003",
+    "severity": "LOW",
+    "title": "ENT_AUDIT_X_CLOSURE_EXECUTION_STATUS.json ci_nightly_proof_head_sha stale vs TES",
+    "evidence": "Pole wskazywało b5c2481d zamiast 32a96334…; CI @ TES potwierdzone gh run 42869847981.",
+    "affected_path": "docs/project/maintainers/qualification/ent_audit_x/ENT_AUDIT_X_CLOSURE_EXECUTION_STATUS.json",
+    "recommendation": "Odświeżyć pin CI w status JSON.",
+    "status": "FIXED_SSOT_PER_DISPOSITION",
+    "owner": "implementer"
+  },
+  {
+    "id": "F-W3-004",
+    "severity": "INFO",
+    "title": "Overlay §1 last-wins TES nadal R-FRESH b5c2481d w historycznym wierszu",
+    "evidence": "Historyczny opis; last-wins ladder zaktualizowany do 32a96334….",
+    "affected_path": "docs/project/maintainers/qualification/ent_audit_x/ENT_AUDIT_X_IIAC_CLOSURE_MATRIX.md",
+    "recommendation": "Zachować historyczne wiersze ladder; aktywny pin zgodny z SHA ladder.",
+    "status": "FIXED_SSOT_PER_DISPOSITION",
+    "owner": "implementer"
+  },
+  {
+    "id": "F-W3-005",
+    "severity": "MEDIUM",
+    "title": "OD-ENT-02 auditor sufficiency — odroczone W4-02",
+    "evidence": "FRZ-AUD-10 COMPENSATING; pełny werdykt sufficiency poza zakresem W3 dossier.",
+    "affected_path": "scripts/governance/verify_od_ent_02_compensating_control.py",
+    "recommendation": "Independent certifier / auditor W4-02.",
+    "status": "DEFERRED_W4",
+    "owner": "certifier"
+  },
+  {
+    "id": "F-W3-006",
+    "severity": "LOW",
+    "title": "Brak niezależnego ponownego CLI FULL/FREEZE @ TES w sesji dossier",
+    "evidence": "Poleganie na opublikowanym L3 bundle; Mode A B5 replay w sesji publikacji.",
+    "affected_path": "process",
+    "recommendation": "Zaakceptowane jako PRESERVED LIMITATION (W3 findings disposition).",
+    "status": "OPEN_SCOPED",
+    "owner": "auditor"
+  }
+]

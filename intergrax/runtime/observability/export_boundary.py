@@ -3,9 +3,9 @@
 
 """Normalized observability export boundary (OBS-EXPORT-1)."""
 
-from __future__ import annotations
+from __future__ import annotations  # noqa: I001
 
-from datetime import datetime, timezone
+from datetime import datetime, timezone, UTC  # noqa: F401
 from enum import StrEnum
 from typing import TYPE_CHECKING, Literal, Protocol, runtime_checkable
 
@@ -89,11 +89,9 @@ class ObservabilityExportEnvelope(BaseModel):
 
     model_config = ConfigDict(extra="forbid", frozen=True)
 
-    schema_version: Literal["observability_export_envelope.v1"] = (
-        OBSERVABILITY_EXPORT_ENVELOPE_SCHEMA
-    )
+    schema_version: Literal["observability_export_envelope.v1"] = OBSERVABILITY_EXPORT_ENVELOPE_SCHEMA
     record_kind: ExportRecordKind
-    recorded_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
+    recorded_at: datetime = Field(default_factory=lambda: datetime.now(UTC))
 
     run_id: str = ""
     task_id: str = ""
@@ -129,12 +127,8 @@ class ObservabilityExportEnvelope(BaseModel):
     problem_error_code: str = ""
 
     application_attributes: ApplicationObservabilityAttributes | None = None
-    sanitized_application_attributes: (
-        SanitizedApplicationObservabilityAttributes | None
-    ) = None
-    causal_evidence_source: (
-        CausalEvidenceExportSource | LegacyCausalEvidenceExportSource | None
-    ) = None
+    sanitized_application_attributes: SanitizedApplicationObservabilityAttributes | None = None
+    causal_evidence_source: CausalEvidenceExportSource | LegacyCausalEvidenceExportSource | None = None
 
 
 class LegacyCausalEvidenceExportSource(BaseModel):
@@ -142,9 +136,7 @@ class LegacyCausalEvidenceExportSource(BaseModel):
 
     model_config = ConfigDict(extra="forbid", frozen=True)
 
-    schema_version: Literal["causal_evidence_export_source.v1"] = (
-        "causal_evidence_export_source.v1"
-    )
+    schema_version: Literal["causal_evidence_export_source.v1"] = "causal_evidence_export_source.v1"
     evidence_id: str
     relation_kind: str
     tenant_id: str
@@ -161,9 +153,7 @@ class CausalEvidenceExportSource(BaseModel):
 
     model_config = ConfigDict(extra="forbid", frozen=True)
 
-    schema_version: Literal["causal_evidence_export_source.v2"] = (
-        "causal_evidence_export_source.v2"
-    )
+    schema_version: Literal["causal_evidence_export_source.v2"] = "causal_evidence_export_source.v2"
     evidence_id: str
     relation_kind: str
     tenant_id: str
@@ -181,9 +171,7 @@ class PlatformObservabilityExportSource(BaseModel):
 
     model_config = ConfigDict(extra="forbid", frozen=True)
 
-    schema_version: Literal["platform_observability_export_source.v1"] = (
-        "platform_observability_export_source.v1"
-    )
+    schema_version: Literal["platform_observability_export_source.v1"] = "platform_observability_export_source.v1"
     event_id: str
     source_schema_id: str
     event_type: str
@@ -197,9 +185,7 @@ class GatewayCallExportSource(BaseModel):
 
     model_config = ConfigDict(extra="forbid", frozen=True)
 
-    schema_version: Literal["gateway_call_export_source.v1"] = (
-        "gateway_call_export_source.v1"
-    )
+    schema_version: Literal["gateway_call_export_source.v1"] = "gateway_call_export_source.v1"
     record_kind: Literal[ExportRecordKind.TOOL_CALL, ExportRecordKind.RAG_CALL]
     call_id: str
     run_id: str
@@ -242,7 +228,7 @@ TestObservabilityExporter = InMemoryObservabilityExporter
 
 
 def _utc_now() -> datetime:
-    return datetime.now(timezone.utc)
+    return datetime.now(UTC)
 
 
 def envelope_from_platform_observability_source(
@@ -280,13 +266,11 @@ def _export_structure_has_no_forbidden_keys(value: object) -> bool:
     return True
 
 
-from intergrax.contracts.agent_run_trace import (
+from intergrax.contracts.agent_run_trace import (  # noqa: E402
     GatewayCallStatus,
     RagCallRecord,
     ToolCallRecord,
 )
-from intergrax.runtime.events.runtime_event import RuntimeEvent
-from intergrax.runtime.observability.journal_export import JournalRef
 
 GatewayCallExportSource.model_rebuild()
 
@@ -372,9 +356,7 @@ def envelope_from_runtime_event_source(
         duration_ms = safe_payload.get("duration_ms")
         latency_ms = duration_ms if isinstance(duration_ms, int) else None
 
-    schema_id = str(
-        safe_payload.get("payload_schema_id") or safe_payload.get("schema_id") or ""
-    )
+    schema_id = str(safe_payload.get("payload_schema_id") or safe_payload.get("schema_id") or "")
 
     return ObservabilityExportEnvelope(
         record_kind=ExportRecordKind.RUNTIME_EVENT,
@@ -404,9 +386,7 @@ def envelope_from_runtime_event_source(
 
 
 def envelope_from_runtime_event(event: RuntimeEvent) -> ObservabilityExportEnvelope:
-    return envelope_from_runtime_event_source(
-        runtime_event_export_source_from_event(event)
-    )
+    return envelope_from_runtime_event_source(runtime_event_export_source_from_event(event))
 
 
 def envelope_from_gateway_call_source(

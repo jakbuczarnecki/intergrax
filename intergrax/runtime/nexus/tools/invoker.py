@@ -1912,7 +1912,11 @@ class RuntimeToolInvoker:
                 physical_attempt_sequence=physical_attempt_sequence,
             )
             ext_op.mark_running()
-            future = self._execution_pool.submit(self._executor.execute, request)
+            try:
+                future = self._execution_pool.submit(self._executor.execute, request)
+            except BaseException:
+                ext_op.mark_failed()
+                raise
             if self._tool_termination_port is not None and ext_op.operation_id is not None:
                 self._tool_termination_port.bind_future(ext_op.operation_id, future)
             result: BaseModel | None = None

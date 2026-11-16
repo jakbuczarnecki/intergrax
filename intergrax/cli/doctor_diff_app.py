@@ -18,8 +18,11 @@ from intergrax.applications.contracts.manifest import ApplicationManifest
 
 
 def _load_product_manifest(app_id: str) -> ApplicationManifest:
+    import importlib
+
     from intergrax.applications._shared.product_manifest_registry import iter_product_manifests
 
+    importlib.import_module("shipped_product_manifest_catalog")
     for product_id, manifest in iter_product_manifests():
         if product_id == app_id or manifest.app_id == app_id:
             return manifest

@@ -1,0 +1,43 @@
+{
+ "TS1_tenant_scope_unscoped_resource_is_accessible": {
+  "req_a_res_none": true,
+  "req_a_res_blank": true,
+  "req_none_res_a": false,
+  "req_a_res_A": false,
+  "none_none_strict": false
+ },
+ "TS2_middleware_intake_resource_tenant_none": {
+  "resource_none": "HookAction.ALLOW",
+  "resource_other": "HookAction.BLOCK",
+  "resource_same": "HookAction.ALLOW"
+ },
+ "G1_raw_secret_gate_scope_and_extra_evasions": {
+  "env_or_literal": [
+   "known_forbidden_literal"
+  ],
+  "walrus_default": [
+   "known_forbidden_literal"
+  ],
+  "dict_get_default": [
+   "known_forbidden_literal"
+  ],
+  "kwarg_literal": [
+   "secret_named_literal"
+  ],
+  "named_literal": [
+   "known_forbidden_literal"
+  ],
+  "concat": [],
+  "aws_token_in_dict": [
+   "credential_format_literal"
+  ],
+  "aws_token_assign": [
+   "credential_format_literal"
+  ],
+  "bearer_in_fstring": []
+ },
+ "SIG1_signing_has_no_production_consumer": [
+  "intergrax/applications/_shared/critical_action_signing_wiring.py",
+  "intergrax/runtime/security/critical_action_signing.py"
+ ]
+}

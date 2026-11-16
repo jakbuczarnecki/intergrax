@@ -1,0 +1,18 @@
+F
+================================== FAILURES ===================================
+______________ test_current_project_passes_dependency_governance ______________
+
+    def test_current_project_passes_dependency_governance() -> None:
+>       assert check_project(ROOT / "pyproject.toml") == []
+E       AssertionError: assert ['CORE_OWNERS...TION: tzdata'] == []
+E         
+E         Left contains 2 more items, first extra item: 'CORE_OWNERSHIP_VIOLATION: jsonschema'
+E         Use -v to get more diff
+
+tests\unit\test_dependency_governance.py:19: AssertionError
+---------------------------- Captured stdout setup ----------------------------
+Wrote build\agent_fleet_inventory.json (21 agents)
+=========================== short test summary info ===========================
+FAILED tests/unit/test_dependency_governance.py::test_current_project_passes_dependency_governance
+!!!!!!!!!!!!!!!!!!!!!!!!!! stopping after 1 failures !!!!!!!!!!!!!!!!!!!!!!!!!!
+1 failed in 0.67s

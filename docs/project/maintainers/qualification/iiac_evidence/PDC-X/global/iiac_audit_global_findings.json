@@ -1,0 +1,298 @@
+{
+  "stage_id": "PDC-X/global",
+  "auditor": "IA-GLOBAL",
+  "audited_implementation_sha": "cba32d2479cd134911d2fdf4fb1db4587c8a94d8",
+  "final_audit_sha": "d39a520dda965981a38f8e1a90ec5135ea5d508e",
+  "overall_verdict": "PASS_SCOPED",
+  "residual_blockers_at_final_sha": [
+    "G-23 MEDIUM unowned product defect",
+    "G-05 residual: 77 incident scenario reds, 59 get_steps, beyond decision 1, needs Operator",
+    "product MEDIUMs excluded by T-IGX-041-M E1..E11 without Operator authorization",
+    "trace_bridge.v1 payload mismatch (G-10 residual) unowned"
+  ],
+  "iiac_manifest_verdict": "PASS_SCOPED",
+  "repaired_finding_verdicts": {
+    "VERIFIED_FIXED": 63,
+    "PARTIALLY_FIXED": 13,
+    "NOT_FIXED": 0
+  },
+  "new_finding_counts_at_start_sha": {
+    "HIGH": 1,
+    "MEDIUM": 11,
+    "LOW": 9,
+    "INFO": 1
+  },
+  "new_findings_at_start_sha": [
+    {
+      "id": "G-01",
+      "severity": "HIGH",
+      "title": "The default document loader cannot be built: `handlers/doc_smart_document_handler.py:9-12` imports `PipelineDocumentHandler` from `contracts/base_document_handler.py`, which does not define it (it lives in `pipeline/document_handler_loading.py:81`). `create_default_documents_loader()` raises `ImportError`; callers include `runtime/nexus/ingestion/ingestion_service.py:127` and `tools/providers/rag/",
+      "confirmation": "REPRODUCED",
+      "scope": "repair (option B, product bug behind a red cited suite); needs a write-set amendment or a new ticket"
+    },
+    {
+      "id": "G-02",
+      "severity": "MEDIUM",
+      "title": "F-D7-02 regression: `_process_claimed_schedule` runs `_eligible_target` (`scheduler.py:210`, `234-251`) before materialization with no handling. An exception from `get_by_token`, `get_latest` or the terminal-authority read leaves the claim RUNNING and creates no successor (the old `finally` did); `ExecutionTerminalError` becomes \"not resumable\" and ends the chain as SKIPPED. No test covers it",
+      "confirmation": "CODE",
+      "scope": "repair: treat eligibility-phase exceptions like materialization failures (release the claim); distinguish unavailable from not-resumable"
+    },
+    {
+      "id": "G-03",
+      "severity": "MEDIUM",
+      "title": "`workspace_export_artifact` / `workspace_import_artifact` (`tools/providers/workspace/service.py:132-167`) call `ObjectStorage.put/get` with an arbitrary `storage_key`, bypassing the F-D8-03 guard that only protects the four `storage.*` tools. The guard is also case-sensitive and ignores backend path rules (Windows/macOS filesystem store, trailing dots, drive keys). The service file is not in plan",
+      "confirmation": "CODE",
+      "scope": "repair (same defect class as the repaired finding)"
+    },
+    {
+      "id": "G-04",
+      "severity": "MEDIUM",
+      "title": "F-D2-08 closure rests on environment-dependent skips. With `langchain-core` installed (the dev and `llm-langchain-ollama` environments) the D2 contract gives 13 failed + 3 errors, not the 8 stated: 5 `FakeVectorstore` doubles still miss `list_source_record_ids` (`test_indexing_manager_indexes_documents.py`; the PR only added `importorskip`), `InmemoryVectorStoreIntegration.list_collections` is mis",
+      "confirmation": "REPRODUCED (reds), READ (workflow claim)",
+      "scope": "repair or explicit exception; the reingest/takeover reds must be root-caused (possible stale-publication defect)"
+    },
+    {
+      "id": "G-05",
+      "severity": "MEDIUM",
+      "title": "`DELEGATION-PDC-CLOSE.md` authorizes four red tests (`fixture_strict_adapter_parity`). The same defect leaves **103** red tests (4 + ~99 in `tests/unit/platform_proofs/scenarios/ai_incident_investigation`; `ValueError: AgentBinding requires agent_type or import_path`; unit tests are outside the CI selection, so they stay invisible)",
+      "confirmation": "REPRODUCED",
+      "scope": "Operator to widen the authorization or a small repair (pass a `ManifestAgentContractAuthority`)"
+    },
+    {
+      "id": "G-06",
+      "severity": "MEDIUM",
+      "title": "`test_xd12_every_pdc_touched_product_module_maps_to_a_domain_check` and two `p6_impact` tests fail: `intergrax/experiments/workflow.py` (D5) and `intergrax/runtime/policy/pre_context_policy_audit.py` (D2) map to no ENT-AUDIT check",
+      "confirmation": "REPRODUCED",
+      "scope": "classifier entries (T-IGX-041-K is expected to cover; re-verify at the final SHA)"
+    },
+    {
+      "id": "G-07",
+      "severity": "MEDIUM",
+      "title": "D7 multi-instance claims exceed the code: `recover_interrupted_running` (`document_store_task_queue.py:579-624`) is not CAS and treats every RUNNING row of a shared store as interrupted (FAILED or requeued), and the orphan-reservation repair cannot tell a crashed reservation from one about to be written, so two tasks can still be created for one idempotency key. Architecture doc B.2.3 states insta",
+      "confirmation": "READ",
+      "scope": "repair or exception wording; docs must state the limits"
+    },
+    {
+      "id": "G-08",
+      "severity": "MEDIUM",
+      "title": "F-D1-11 durable CAS fix narrows what the durable projection store compares (`durable_registry_projection_input_store.py:32-46`, `109-117`): integration bindings reduced to slug references, `revision_state` and `activated_at` neutralized; plan and ticket say the comparison is not weakened; the tamper test passes with and without the fix",
+      "confirmation": "READ",
+      "scope": "classification: record the narrowing and pin a different-slug refusal"
+    },
+    {
+      "id": "G-09",
+      "severity": "MEDIUM",
+      "title": "A strict or production harness host built with `tenant_id=None` wires the shared untenanted evaluation registry without failure (`harness_host_runtime.py:518-521`, `evaluation_wiring.py:60-62`); the F-D5-01 exclusion rationale cites only the lab",
+      "confirmation": "READ",
+      "scope": "exception-register wording (name the strict-host case) or fail closed"
+    },
+    {
+      "id": "G-10",
+      "severity": "MEDIUM",
+      "title": "Seven red tests in cited closure suites have no owner: 5 in the D5 contract (`test_scenario_runtime_baseline` x3, `test_harness_host_runtime_llm` x2; **also red at the pre-repair base `f87df3b2a`**, run 08) and 2 `test_audit_ideal_depth_gate` (`29_1`, `30_4`; named as \"known\" by ticket F only)",
+      "confirmation": "REPRODUCED",
+      "scope": "owner and reopen condition in the P9 register, or repair (option B repairs red cited suites)"
+    },
+    {
+      "id": "G-11",
+      "severity": "MEDIUM",
+      "title": "Streaming resilience claim: `_execute_streaming` hands `execute_with_resilience` a lazy generator (`provider_stream_admission.py:62-96`), so the circuit breaker records success before any SDK call and retry never sees stream-open errors. The deadline, quota and permit guards do hold. The F-D3-01 plan text claims rate-limit/breaker/retry on streams",
+      "confirmation": "CODE",
+      "scope": "claim correction or repair"
+    },
+    {
+      "id": "G-12",
+      "severity": "MEDIUM",
+      "title": "`install_agent` into an occupied slot replaces the active installation with no upgrade-admission check or CAS (`admin_service.py:597-697`): an owner has an ungated second upgrade path (R011 says upgrade is a governed operation)",
+      "confirmation": "READ",
+      "scope": "owner semantic decision, then repair or register"
+    },
+    {
+      "id": "G-13",
+      "severity": "LOW",
+      "title": "Pipeline trust hook runs after `persist_candidate_revision`, `mark_validated`, `register`, `prepare_candidate` (`deploy_activate_pipeline.py:155-204`): a refused revision is persisted and its deployment prepared",
+      "confirmation": "READ",
+      "scope": "debt"
+    },
+    {
+      "id": "G-14",
+      "severity": "LOW",
+      "title": "Idempotent-replay branches of `install_agent`/`upgrade_agent` return the installation view before the ownership check; a raising event sink masks the original error or fails a committed transition",
+      "confirmation": "READ",
+      "scope": "debt"
+    },
+    {
+      "id": "G-15",
+      "severity": "LOW",
+      "title": "Retention sweep keeps running after its deadline fires; the deadline test hangs instead of failing; rollback now fails on aged qualification evidence (availability trade-off); pre-context gate is satisfied by its own marker literals",
+      "confirmation": "READ",
+      "scope": "debt"
+    },
+    {
+      "id": "G-16",
+      "severity": "LOW",
+      "title": "D3: OpenAI Responses refusal text may be duplicated when both delta and terminal part arrive; stream-guard gate drives 4 of 11 adapters and the refusal matrix covers only two methods; LangChain Ollama `raise` clause unpinned; unknown finish reasons map to UNKNOWN",
+      "confirmation": "READ",
+      "scope": "debt"
+    },
+    {
+      "id": "G-17",
+      "severity": "LOW",
+      "title": "D4: cancellation lost in `_drive_to_completion` when it coincides with completion; unbounded publish at `process_bootstrap.py:151`; fingerprint blind to field defaults; timeouts cooperative only",
+      "confirmation": "READ",
+      "scope": "debt"
+    },
+    {
+      "id": "G-18",
+      "severity": "LOW",
+      "title": "D5: `compare_eval_runs` ignores candidate executor errors (same-scenario failures compare `clean`); F-D5-07 tests are `no_ci`; blank-tenant legacy row makes the registry unreadable on load; stamped satisfaction rows invisible to unscoped trend consumers; hotspot host files carry ~300 lines of format and import churn beyond the named lines",
+      "confirmation": "READ",
+      "scope": "debt"
+    },
+    {
+      "id": "G-19",
+      "severity": "LOW",
+      "title": "D6: `from None` leaves `__context__` holding the provider exception text (`secrets_store_resolver.py:43-48`; the test never asserts `__context__`); `check_immutable_security_audit_trail.py` still prints replicate/immutable claims; normalization wraps store errors unpinned",
+      "confirmation": "CODE (D6-1), READ",
+      "scope": "debt"
+    },
+    {
+      "id": "G-20",
+      "severity": "LOW",
+      "title": "D7: permanent materialization failure releases the claim every tick with no cap; `OverflowError` from `normalize_utc_iso` not mapped; a hand-built row can pre-empt a chain at the port; the overlap test required by the plan and other promised pins are missing",
+      "confirmation": "READ",
+      "scope": "debt"
+    },
+    {
+      "id": "G-21",
+      "severity": "LOW",
+      "title": "D8: empty producer id accepted; reference tokens carry no workspace, so workspace-scoped artifacts cannot be resolved (XD-09 stores its artifact with `workspace_id=None`); PR #572 touches governance batch files absent from the plan H write set (INFO)",
+      "confirmation": "READ",
+      "scope": "debt"
+    },
+    {
+      "id": "G-22",
+      "severity": "INFO",
+      "title": "Process and documentation: the P7 certification matrix (`PDC_DOMAIN_CERTIFICATION_MATRIX`) was not produced; `PDC_INDEX.md` still says 168 requirement rows (script: 172) and lists P8/P9 artifacts as not started; the SHA ladder says implementation heads are \"not merged\" although they are ancestors; the B-D6 commits before the audited SHA carry an AI co-author trailer (history, not rewritten); no AI",
+      "confirmation": "CODE",
+      "scope": "P9 package"
+    }
+  ],
+  "status_at_final_sha": {
+    "closed_verified_fixed": [
+      "G-01",
+      "G-02",
+      "G-03",
+      "G-06",
+      "F-D6-12"
+    ],
+    "partially_fixed": [
+      "G-04",
+      "G-05",
+      "G-10"
+    ],
+    "excluded_by_T-IGX-041-M_open": [
+      "G-07",
+      "G-08",
+      "G-09",
+      "G-11",
+      "G-12",
+      "F-D3-02"
+    ]
+  },
+  "new_findings_at_final_sha": [
+    {
+      "id": "G-23",
+      "severity": "MEDIUM",
+      "title": "graph-side active publication generation resolved without publication_scope_id; graph evidence invisible after re-ingest; unowned (N says owner M, M excludes as E11)",
+      "confirmation": "REPRODUCED",
+      "scope": "intergrax/rag/graph/generation_visibility.py:82-87; intergrax/rag/graph/providers/inmemory_graph_store.py:343-348"
+    },
+    {
+      "id": "G-24",
+      "severity": "LOW",
+      "title": "order-dependent reds: 14 COMPAT-X tests, audit_ideal_13_1 and test_harness_evaluation_wiring fail in one combined process and pass alone (global registry leak)",
+      "confirmation": "REPRODUCED",
+      "scope": "test isolation"
+    },
+    {
+      "id": "G-25",
+      "severity": "INFO",
+      "title": "three RAG reds labelled product defects are stale tests (tenant_id, scoped load)",
+      "confirmation": "REPRODUCED",
+      "scope": "tests/integration/rag/document_loaders"
+    },
+    {
+      "id": "G-26",
+      "severity": "INFO",
+      "title": "two impact-map entries map modules to checks that do not execute them",
+      "confirmation": "CODE",
+      "scope": "intergrax/platform/enterprise_audit/impact_map.py"
+    },
+    {
+      "id": "G-27",
+      "severity": "LOW",
+      "title": "one-shot schedule with unavailable terminal authority is completed as not resumable",
+      "confirmation": "CODE",
+      "scope": "intergrax/runtime/long_running/scheduler.py"
+    }
+  ],
+  "known_reds_classified_not_reported": [
+    "IIAC activation staleness ACT-N11 (2 tests + activation gate)",
+    "EBH-7 identity gate and F10 classifier (9 tests)",
+    "roadmap_replay_x (5 tests)",
+    "dist_scale_x Docker/C10-C15 freeze (3 tests)",
+    "COMPAT-X counters (10 tests, T-IGX-041-L)",
+    "fixture_strict_adapter_parity (4 tests, declared T-IGX-041-C deviation)",
+    "strict xfail test_scaffold_defaults_mcp_to_opt_in[product] (T-IGX-039-A, owner Operator; not in selected paths)"
+  ],
+  "delta_audit_sha": "969cbd964c679d563b02e55f065b452d46fdf90b",
+  "addendum_2": {
+    "section": "PDC_INDEPENDENT_AUDIT.md section 14",
+    "scope": "T-IGX-041-P (G-23) and T-IGX-041-Q (K/O gate tests); targeted tests only (Operator condition, DELEGATION-PDC-LOOP2)",
+    "overall_verdict": "PARTIAL",
+    "iiac_manifest_verdict": "CONDITIONAL",
+    "verdict_if_operator_accepts_open_items": "PASS_SCOPED for the rows in scope, with the accepted items named: the 77 scenario reds (G-05 residual), E1..E11, trace_bridge.v1 and the Neo4j residual G-28; not a repeat-run PASS (ECAP FULL, contract suites and combined pytest not repeated)",
+    "product_paths_changed_since_d39a520dd": [
+      "intergrax/rag/graph/generation_visibility.py",
+      "intergrax/rag/graph/indexer/heuristic_graph_indexer.py",
+      "intergrax/rag/graph/providers/inmemory_graph_store.py"
+    ],
+    "status": {
+      "G-23": "VERIFIED_FIXED (in-memory graph store)",
+      "G-28": "NEW MEDIUM: Cypher/Neo4j store still resolves the unscoped key (declared residual R1 of T-IGX-041-P), fail closed, READ not reproduced; cypher_rag_graph_store.py:156-161",
+      "G-24..G-27": "unchanged (debt register)",
+      "G-05_residual_E1_E11_trace_bridge": "unchanged, open, not Operator-authorized"
+    },
+    "runs": {
+      "targeted_at_969cbd964": "64 passed (2 G-23 reproductions, P file 23, K gate 19, O gate 20)",
+      "mutant": "34 failed, 30 passed (pre-P graph code and two real classifier entries renamed); worktree restored"
+    }
+  },
+  "overall_verdict_history": {
+    "d39a520dd": "PARTIAL",
+    "969cbd964_before_exception_record": "PARTIAL"
+  },
+  "addendum_3": {
+    "section": "PDC_INDEPENDENT_AUDIT.md section 15",
+    "audited_sha": "969cbd964c679d563b02e55f065b452d46fdf90b",
+    "exception_record": "operator_decisions/DELEGATION-PDC-EXCEPTIONS.md (PR #596, head b0b43e5d68fbe349f2baf308711812d59987cce5)",
+    "final_verdict": "PASS_SCOPED for the scoped rows, only with the declared exceptions below; not a PASS; no verdict on B6 or certification",
+    "declared_exceptions_accepted_by_operator": [
+      "G-05 residual: 77 red incident scenario tests (59 get_steps() missing 'context')",
+      "E1..E11 (T-IGX-041-M): G-08 durable CAS, G-09 strict host with tenant_id=None, G-11 stream resilience claim, G-12 install_agent into an occupied slot, F-D3-02 pins, others of the plan",
+      "G-10 residual: trace_bridge.v1 mismatch",
+      "G-28: Cypher/Neo4j store keeps the unscoped key (fail closed, not reproduced)"
+    ],
+    "debt_register": [
+      "G-24",
+      "G-25",
+      "G-26",
+      "G-27",
+      "earlier LOW and INFO findings"
+    ],
+    "still_open_and_visible": "all four exceptions stay open; none repaired or re-measured",
+    "product_changes_after_969cbd964": "none (git diff --name-only 969cbd964..4220069c2 shows docs paths only)",
+    "tests_run": "none new; the two IIAC validators re-run once (logs_addendum3/validators.txt)"
+  }
+}

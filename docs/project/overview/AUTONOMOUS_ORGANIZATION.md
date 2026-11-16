@@ -36,6 +36,8 @@ Autonomous Organization names a **strategic program** on Intergrax: how the plat
 
 **Platform principle (non-negotiable):** the platform operates on **contracts, not implementations**. Mechanisms from this program must be pluggable, governable, replaceable, and reachable through explicit platform contracts.
 
+The planned [Scenario Factory](SCENARIO_FACTORY.md) may later contribute designed and checked scenarios to this program. It is a separate, planned product layer, not a part of the North Star and not yet implemented.
+
 ---
 
 ## Organization is state, not configuration

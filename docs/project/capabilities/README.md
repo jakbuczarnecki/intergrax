@@ -74,7 +74,11 @@ This is analogous to `MULTIPLAYER_AI`: Multiplayer is a cross-layer feature, whi
 |---------|-------|--------------|------|--------|
 | `TOKEN_OPTIMIZATION` | [`token_optimization/README.md`](token_optimization/README.md) | [`architecture/TOKEN_OPTIMIZATION.md`](architecture/TOKEN_OPTIMIZATION.md) | [`plan/TOKEN_OPTIMIZATION.md`](plan/TOKEN_OPTIMIZATION.md) | Implemented foundation; TOKEN-10 cache-aware runtime and proof planned |
 | `LANGCHAIN_INDEPENDENCE` | - | [`architecture/LANGCHAIN_INDEPENDENCE.md`](architecture/LANGCHAIN_INDEPENDENCE.md) | [`plan/LANGCHAIN_INDEPENDENCE.md`](plan/LANGCHAIN_INDEPENDENCE.md) | Architecture and migration roadmap awaiting review; implementation not started |
-| `MULTIPLAYER_AI` | - | [`architecture/MULTIPLAYER_AI.md`](architecture/MULTIPLAYER_AI.md) | [`plan/MULTIPLAYER_AI.md`](plan/MULTIPLAYER_AI.md) | **MP-0** - canonical architecture and roadmap (documentation only); MP-1…MP-9 planned, not started |
+| `MULTIPLAYER_AI` | - | [`architecture/MULTIPLAYER_AI.md`](architecture/MULTIPLAYER_AI.md) | [`plan/MULTIPLAYER_AI.md`](plan/MULTIPLAYER_AI.md) | Per the maturity section of the architecture file (`MULTIPLAYER_AI.md`, Summary): enterprise core through MP-7 "implemented/closed in its certified scopes"; MP-8, MP-9 planned. Feature-local, not IIAC certified; no independent-audit artefact located; not an ARCH-FREEZE closure |
+| `SCENARIO_FACTORY` | [`SFX-MASTER-PLAN.md`](../../../governance/tickets/plans/SFX-MASTER-PLAN.md) | [`architecture/SCENARIO_FACTORY.md`](architecture/SCENARIO_FACTORY.md) | [`plan/SCENARIO_FACTORY.md`](plan/SCENARIO_FACTORY.md) | **Proposed** - SCENARIO-FACTORY-X (SFX) post-freeze product stage; pre-freeze docs/research/design SFX-P0..P4 open; SFX-P5+ gated by ARCH-FREEZE CLOSED and GATE-SFX-ENTRY |
+| `ARTIFACT_LIFECYCLE` | - | [`architecture/ARTIFACT_LIFECYCLE.md`](architecture/ARTIFACT_LIFECYCLE.md) | [`plan/ARTIFACT_LIFECYCLE.md`](plan/ARTIFACT_LIFECYCLE.md) | Implemented by PDC-X B-D8 (ADR-PDC-08; four artifact classes, domain-owned); registered here by B-P6-R; no certification claimed |
+| `EVOL_X_CHANGE_SAFETY` | - | [`architecture/EVOL_X_CHANGE_SAFETY.md`](architecture/EVOL_X_CHANGE_SAFETY.md) | [`plan/EVOL_X_CHANGE_SAFETY.md`](plan/EVOL_X_CHANGE_SAFETY.md) | Stage status: see the roadmap row `EVOL-X` (the roadmap decides) |
+| `MCP_SERVER` | - | [`architecture/MCP_SERVER.md`](architecture/MCP_SERVER.md) | [`plan/MCP_SERVER.md`](plan/MCP_SERVER.md) | Stage status: see the roadmap row `MCP-SERVER-X` (the roadmap decides) |
 
 **Reserved future product/cross-layer concept:** `VIRTUAL_WORKFORCE` — no feature pair exists yet; canonical worker semantics belong to [`../architecture/AUTONOMOUS_WORK.md`](../architecture/AUTONOMOUS_WORK.md).
 
@@ -86,6 +90,16 @@ This is analogous to `MULTIPLAYER_AI`: Multiplayer is a cross-layer feature, whi
 | `LANGCHAIN_INDEPENDENCE` | [`architecture/satellites/LANGCHAIN_INDEPENDENCE_dependency_inventory.md`](architecture/satellites/LANGCHAIN_INDEPENDENCE_dependency_inventory.md) | [`plan/satellites/LANGCHAIN_INDEPENDENCE_domain_plan_cross_references.md`](plan/satellites/LANGCHAIN_INDEPENDENCE_domain_plan_cross_references.md) |
 
 ---
+
+## Feature architecture files without a plan pair
+
+Rule 3 above requires a matching plan file for every feature architecture file. At baseline three architecture files have none. They are recorded here, and not in the feature index above, because the pair checker treats every row of that index as a feature that must have both an architecture file and a plan file (EQO-A remediation note, as of 2026-11-16).
+
+| Feature | Architecture | Plan | Tracker or disposition |
+|---------|--------------|------|------------------------|
+| `COMPAT_X_CONTRACT_SCHEMA_EVOLUTION` | [`architecture/COMPAT_X_CONTRACT_SCHEMA_EVOLUTION.md`](architecture/COMPAT_X_CONTRACT_SCHEMA_EVOLUTION.md) | none | Roadmap rows `COMPAT-X` (stage table and ledger) |
+| `TOKEN_OPTIMIZATION_CACHE_PREFIX_STABILIZATION` | [`architecture/TOKEN_OPTIMIZATION_CACHE_PREFIX_STABILIZATION.md`](architecture/TOKEN_OPTIMIZATION_CACHE_PREFIX_STABILIZATION.md) | none (parent feature plan: [`plan/TOKEN_OPTIMIZATION.md`](plan/TOKEN_OPTIMIZATION.md), section TOKEN-10) | Addendum to [`architecture/TOKEN_OPTIMIZATION.md`](architecture/TOKEN_OPTIMIZATION.md) |
+| `PROOF_DATA_PACKAGE_DISTRIBUTION` | [`architecture/PROOF_DATA_PACKAGE_DISTRIBUTION.md`](architecture/PROOF_DATA_PACKAGE_DISTRIBUTION.md) | none | Proof infrastructure, satellite of the stages `QUAL-X` and `EBH-6`; promote-or-demote register entry ADR-REG-004 decided as demotion by the Operator on 2026-11-16 (closing the entry is a separate action) |
 
 ## Authoring flow
 

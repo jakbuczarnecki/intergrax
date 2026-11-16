@@ -20,6 +20,11 @@ class EvaluationComparisonSummary(BaseModel):
     pass_rate_from: float
     pass_rate_to: float
     delta: float
+    # Rule and judge verdicts are reported apart (never mixed into one rate).
+    rule_pass_rate_from: float = 0.0
+    rule_pass_rate_to: float = 0.0
+    judge_pass_rate_from: float = 0.0
+    judge_pass_rate_to: float = 0.0
 
 
 class EvaluationRegistryTrendReport(BaseModel):
@@ -44,9 +49,20 @@ def build_evaluation_registry_trend_report(
                 pass_rate_from=previous_rate,
                 pass_rate_to=current_rate,
                 delta=current_rate - previous_rate,
+                rule_pass_rate_from=_kind_rate(previous.automated_report, judge=False),
+                rule_pass_rate_to=_kind_rate(current.automated_report, judge=False),
+                judge_pass_rate_from=_kind_rate(previous.automated_report, judge=True),
+                judge_pass_rate_to=_kind_rate(current.automated_report, judge=True),
             )
         )
     return EvaluationRegistryTrendReport(snapshots=snapshots, comparisons=comparisons)
+
+
+def _kind_rate(report: AutomatedEvaluationReport, *, judge: bool) -> float:
+    if not report.records:
+        return 0.0
+    passed = sum(1 for record in report.records if (record.judge_passed if judge else record.rule_passed))
+    return float(passed) / float(len(report.records))
 
 
 def _pass_rate(report: AutomatedEvaluationReport) -> float:

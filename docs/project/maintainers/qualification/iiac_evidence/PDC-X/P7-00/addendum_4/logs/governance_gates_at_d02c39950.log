@@ -1,0 +1,13 @@
+== verify_iiac_g0_inventory_completeness at d02c39950 tree
+verify_iiac_g0_inventory_completeness: PASS (17510 paths @ afe9e8abeabdbab410bf562ebed6f4a309a91057)
+exit=0
+== verify_iiac_policy_activation (expected FAIL, listing material governance change and product paths)
+IIAC policy activation: FAIL
+  - ACT-N11 stale audit after material governance change: docs/project/maintainers/qualification/INTEGRAX_INTERNAL_INDEPENDENT_AGENT_CERTIFICATION_PROTOCOL.md
+  - ACT-N11 product path changed after the audited SHA: applications/local_workspace_application/tests/test_run_artifact_metadata.py
+  - ACT-N11 product path changed after the audited SHA: intergrax/integrations/providers/embedding_provider/ollama/manifest.py
+  - ACT-N11 product path changed after the audited SHA: intergrax/integrations/providers/embedding_provider/ollama/register.py
+  - ACT-N11 product path changed after the audited SHA: intergrax/integrations/providers/embedding_provider/openai/register.py
+  - ACT-N11 product path changed after the audited SHA: intergrax/platform/enterprise_audit/data/changed_since_impact_map.v1.json
+  - ACT-N11 product path changed after the audited SHA: intergrax/platform/enterprise_audit/impact_map.py
+exit=1

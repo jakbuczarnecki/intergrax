@@ -309,6 +309,10 @@ CI guards (no grandfather exceptions):
 - `scripts/maintenance/check_intergrax_no_applications_imports.py`
 - `scripts/maintenance/check_agents_no_tier3_imports.py`
 
+**Operator ruling DP-13 (2026-11-16) - canon kept; additive dated note, the text above is unchanged.** In the EQO-A remediation planning the Operator ruled (decision DP-13) that the lower-layer import rule and the "no grandfather exceptions" clause above stay as written. Recorded fact: at `origin/development` `2ab57e36d`, twelve modules under `intergrax/runtime` import `intergrax.applications` - eleven under `intergrax/runtime/execution/` and `intergrax/runtime/architecture/obs_diag_x3_ast_gates.py` (in-function imports); finding `EQOA-A4-003` in the [Campaign A findings register](../maintainers/qualification/enterprise_quality_oversight/campaign_a/FINDINGS_REGISTER.md) reports twelve modules at the audit baseline `258bbf6ab`. Ruling (DP-13): there is **no allowlist, grandfather entry or documented-seam classification** for these twelve modules; they are to be fixed by inversion - neutral Tier-0 contracts and ports, Tier-3 builds, Tier-1 applies. The ruling narrows `OD-REM-02` for these modules only; the allowlist idea stays open for other seams.
+
+This note describes the target state decided by the Operator. The code and gate changes are not part of this documentation change and are implemented by the code wave. Until then this text does not claim that the twelve modules comply with the rule above.
+
 ### Tier-boundary enforcement qualification
 
 **Audit snapshot:** `4c92e0a08f92341f559408c234d213a8ac482d76`  

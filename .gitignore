@@ -18,6 +18,10 @@ applications/governed_contractor_application/deploy/docker-compose-local-qualifi
 temp_documents/
 .tmp/
 .worktrees/
+# Claude Code: session worktrees (full copies of the project) and personal settings are never committed;
+# the rest of .claude/ (skills, rules, settings.json, ...) is meant to be committed.
+.claude/worktrees/
+.claude/settings.local.json
 api/chat/rag_app.db
 
 # Documents
@@ -65,6 +69,7 @@ applications/local_workspace_application/docker/lkw-platform-proof-startup.log
 tests/qualification/ent_audit_x/baselines/qual_wave_runs/
 tests/qualification/ent_audit_x/baselines/qual_wave_freeze_candidate/
 .cursor/plans/ebh-7-annexes/
+agent-env/plans/ebh-7-annexes/
 exports/ROADMAP_REPLAY_X_B6_R2_FINAL_AUDIT.zip
 platform_proofs/test_domain/fake_publish/
 platform_proofs/test_artifact_verify/

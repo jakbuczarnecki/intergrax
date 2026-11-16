@@ -4,30 +4,26 @@
 
 from __future__ import annotations
 
-import numpy as np
-from numpy.typing import NDArray
-import pytest
-from typing import List, Optional, Sequence
+from collections.abc import Sequence
 
+import numpy as np
+import pytest
 from intergrax.knowledge.contracts import KnowledgeDocument
 from intergrax.rag.document_splitters.contracts.chunk_metadata_key import ChunkMetadataKey
 from intergrax.rag.embedding.contracts.base_embedding_manager import BaseEmbeddingManager
 from intergrax.rag.embedding.contracts.embedding_result import EmbeddingResult
+from intergrax.rag.retrievers.contracts.base_retriever import RetrievalHit, RetrieverQuery
 from intergrax.rag.retrievers.providers.hybrid_retriever import HybridRetriever
-from intergrax.rag.retrievers.contracts.base_retriever import RetrieverQuery
 from intergrax.rag.vectorstore.contracts.vector_store import MetadataFilter, VectorStoreHit
-from intergrax.rag.retrievers.contracts.base_retriever import RetrievalHit
-
+from numpy.typing import NDArray
 
 pytestmark = pytest.mark.unit
 
 
-    
 class FakeEmbeddingManager(BaseEmbeddingManager):
-
-    def embed_one(self, text: str) -> List[float]:
+    def embed_one(self, text: str) -> list[float]:
         return [1.0, 0.0]
-    
+
     def embed_texts(
         self,
         texts: Sequence[str],
@@ -54,15 +50,17 @@ def _document(document_id: str, parent: str) -> KnowledgeDocument:
         }
     )
 
-    
+
 class FakeVectorStoreManager:
+    def supports_native_hybrid_search(self) -> bool:
+        return False
 
     def query(
         self,
         query_embedding: Sequence[float],
         *,
         top_k: int,
-        metadata_filter: Optional[MetadataFilter] = None,
+        metadata_filter: MetadataFilter | None = None,
         include_embeddings: bool = False,
     ) -> Sequence[VectorStoreHit]:
         return [
@@ -77,7 +75,8 @@ class FakeVectorStoreManager:
                 [("a", "docA", 0.95), ("b", "docB", 0.90), ("c", "docC", 0.80)]
             )
         ]
-    
+
+
 def test_hybrid_retriever_basic():
 
     vs = FakeVectorStoreManager()

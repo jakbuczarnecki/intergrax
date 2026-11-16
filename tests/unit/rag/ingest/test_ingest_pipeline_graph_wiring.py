@@ -8,7 +8,6 @@ from pathlib import Path
 
 import numpy as np
 import pytest
-
 from intergrax.knowledge.contracts import KnowledgeDocument
 from intergrax.rag.embedding.contracts.embedding_result import EmbeddingResult
 from intergrax.rag.ingest import ingest_pipeline as ingest_pipeline_module
@@ -71,12 +70,16 @@ class _VectorstoreManager:
         *,
         source_id: str,
         scope: object,
+        root_document_id: str | None = None,
     ) -> tuple[str, ...]:
         return tuple(
             sorted(
                 record.vector_id
                 for record in self.records
                 if record.document.provenance.source_id == source_id  # type: ignore[attr-defined]
+                and (
+                    root_document_id is None or record.document.identity.root_document_id == root_document_id  # type: ignore[attr-defined]
+                )
                 and scope.matches_document(record.document)  # type: ignore[attr-defined]
             )
         )
@@ -209,10 +212,7 @@ def test_ingest_passes_native_chunks_to_graph_in_all_index_modes(
     persisted_records = pipeline._vectorstore.records  # type: ignore[attr-defined]
     persisted_ids = [record.vector_id for record in persisted_records]
     assert result.vector_ids == persisted_ids
-    assert all(
-        record.vector_id == record.document.identity.document_id
-        for record in persisted_records
-    )
+    assert all(record.vector_id == record.document.identity.document_id for record in persisted_records)
     assert graph_indexer.documents is not None
     assert graph_indexer.chunk_ids == result.vector_ids
     assert all(isinstance(document, KnowledgeDocument) for document in graph_indexer.documents)
@@ -267,8 +267,7 @@ def test_ingest_ids_are_not_based_on_same_stem_for_distinct_documents(
 
     assert first_result.vector_ids != second_result.vector_ids
     assert all(
-        not vector_id.startswith("ingest-same-")
-        for vector_id in first_result.vector_ids + second_result.vector_ids
+        not vector_id.startswith("ingest-same-") for vector_id in first_result.vector_ids + second_result.vector_ids
     )
 
 

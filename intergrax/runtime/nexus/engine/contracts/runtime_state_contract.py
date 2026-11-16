@@ -2,9 +2,9 @@
 # Intergrax framework – proprietary and confidential.
 # Use, modification, or distribution without written permission is prohibited.
 
-from __future__ import annotations
+from __future__ import annotations  # noqa: I001
 from abc import ABC, abstractmethod
-from typing import List, Optional, TYPE_CHECKING
+from typing import List, Optional, TYPE_CHECKING  # noqa: F401, UP035
 
 from intergrax.runtime.nexus.tracing.trace_models import (
     DiagnosticPayload,
@@ -13,7 +13,7 @@ from intergrax.runtime.nexus.tracing.trace_models import (
 )
 
 if TYPE_CHECKING:
-    from intergrax.runtime.nexus.artifacts.models import ArtifactRef
+    from intergrax.runtime.nexus.artifacts.models import TraceArtifactRef
 
 
 class RuntimeStateContract(ABC):
@@ -44,7 +44,6 @@ class RuntimeStateContract(ABC):
         step: str,
         message: str,
         level: TraceLevel = TraceLevel.INFO,
-        payload: Optional[DiagnosticPayload] = None,
-        artifact_refs: Optional[List["ArtifactRef"]] = None,
-    ) -> None:
-        ...
+        payload: DiagnosticPayload | None = None,
+        artifact_refs: list[TraceArtifactRef] | None = None,
+    ) -> None: ...

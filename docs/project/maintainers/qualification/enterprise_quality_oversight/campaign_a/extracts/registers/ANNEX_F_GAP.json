@@ -1,0 +1,288 @@
+{
+  "path": "docs/project/maintainers/qualification/ent_audit_x/ANNEX_F_GAP_REGISTER.md",
+  "tables": [
+    {
+      "header": [
+        "Bucket",
+        "Count"
+      ],
+      "rows": [
+        {
+          "line": 12,
+          "Bucket": "GAP-C missing components",
+          "Count": "14"
+        },
+        {
+          "line": 13,
+          "Bucket": "GAP-P partial mechanisms",
+          "Count": "9"
+        },
+        {
+          "line": 14,
+          "Bucket": "Mandatory check definitions (Annex C)",
+          "Count": "85"
+        },
+        {
+          "line": 15,
+          "Bucket": "GAP-COV coverage deficiencies (no ENT adapter @ PLAN_BASELINE)",
+          "Count": "85"
+        },
+        {
+          "line": 16,
+          "Bucket": "GAP-D documentation gaps",
+          "Count": "8"
+        },
+        {
+          "line": 17,
+          "Bucket": "GAP-B formal blockers",
+          "Count": "6"
+        },
+        {
+          "line": 18,
+          "Bucket": "GAP-O external/operator dependencies",
+          "Count": "9"
+        }
+      ]
+    },
+    {
+      "header": [
+        "GAP ID",
+        "Absence evidence",
+        "Remediation",
+        "Owner",
+        "WBS",
+        "Closure test"
+      ],
+      "rows": [
+        {
+          "line": 24,
+          "GAP ID": "GAP-C-01",
+          "Absence evidence": "No intergrax/platform/enterprise_audit/",
+          "Remediation": "Create Tier-0 package",
+          "Owner": "ENT",
+          "WBS": "ENT-T-0101",
+          "Closure test": "import boundary gate"
+        },
+        {
+          "line": 25,
+          "GAP ID": "GAP-C-02",
+          "Absence evidence": "No EnterpriseAuditRunner",
+          "Remediation": "Runner module",
+          "Owner": "ENT",
+          "WBS": "ENT-T-0201",
+          "Closure test": "test_ent_audit_runner_exists"
+        },
+        {
+          "line": 26,
+          "GAP ID": "GAP-C-03",
+          "Absence evidence": "No check manifest SSOT",
+          "Remediation": "enterprise_audit_check_manifest.v1.json",
+          "Owner": "ENT",
+          "WBS": "ENT-T-0301",
+          "Closure test": "manifest schema test"
+        },
+        {
+          "line": 27,
+          "GAP ID": "GAP-C-04",
+          "Absence evidence": "No subprocess sandbox",
+          "Remediation": "CheckExecutionSandbox allowlist",
+          "Owner": "ENT",
+          "WBS": "ENT-T-0302",
+          "Closure test": "injection adversarial"
+        },
+        {
+          "line": 28,
+          "GAP ID": "GAP-C-05",
+          "Absence evidence": "No baseline store",
+          "Remediation": "ENTERPRISE_AUDIT_BASELINE.json",
+          "Owner": "ENT/Op",
+          "WBS": "ENT-T-0701",
+          "Closure test": "baseline validator"
+        },
+        {
+          "line": 29,
+          "GAP ID": "GAP-C-06",
+          "Absence evidence": "No drift engine",
+          "Remediation": "Drift classifier",
+          "Owner": "ENT",
+          "WBS": "ENT-T-0702",
+          "Closure test": "drift semantics tests"
+        },
+        {
+          "line": 30,
+          "GAP ID": "GAP-C-07",
+          "Absence evidence": "No report builder",
+          "Remediation": "JSON/MD + schemas",
+          "Owner": "ENT",
+          "WBS": "ENT-T-0801",
+          "Closure test": "schema tests"
+        },
+        {
+          "line": 31,
+          "GAP ID": "GAP-C-08",
+          "Absence evidence": "No CLI",
+          "Remediation": "scripts/enterprise_audit/run_enterprise_audit.py",
+          "Owner": "ENT",
+          "WBS": "ENT-T-0901",
+          "Closure test": "exit code tests"
+        },
+        {
+          "line": 32,
+          "GAP ID": "GAP-C-09",
+          "Absence evidence": "No mode policies",
+          "Remediation": "FAST/FULL/FREEZE/CHANGED-SINCE",
+          "Owner": "ENT",
+          "WBS": "ENT-T-0902",
+          "Closure test": "mode matrix test"
+        },
+        {
+          "line": 33,
+          "GAP ID": "GAP-C-10",
+          "Absence evidence": "No CI workflow",
+          "Remediation": "enterprise-audit.yml",
+          "Owner": "ENT",
+          "WBS": "ENT-T-1001",
+          "Closure test": "workflow run"
+        },
+        {
+          "line": 34,
+          "GAP ID": "GAP-C-11",
+          "Absence evidence": "No qual tree",
+          "Remediation": "tests/qualification/ent_audit_x/",
+          "Owner": "ENT",
+          "WBS": "ENT-T-1101",
+          "Closure test": "L1/L2/L3"
+        },
+        {
+          "line": 35,
+          "GAP ID": "GAP-C-12",
+          "Absence evidence": "No Protocol 03 dossier",
+          "Remediation": "ENT_AUDIT_X_PROTOCOL_03_*",
+          "Owner": "ENT",
+          "WBS": "ENT-T-1201",
+          "Closure test": "auditor checklist"
+        },
+        {
+          "line": 36,
+          "GAP ID": "GAP-C-13",
+          "Absence evidence": "No composite evidence bundle",
+          "Remediation": ".tmp/proof/ent-audit-x/ layout spec",
+          "Owner": "ENT",
+          "WBS": "ENT-T-1202",
+          "Closure test": "bundle manifest"
+        },
+        {
+          "line": 37,
+          "GAP ID": "GAP-C-14",
+          "Absence evidence": "No operator closure record",
+          "Remediation": "OD-ENT-08 template",
+          "Owner": "Operator",
+          "WBS": "ENT-T-1203",
+          "Closure test": "signed record"
+        }
+      ]
+    },
+    {
+      "header": [
+        "GAP ID",
+        "Partial state",
+        "WBS"
+      ],
+      "rows": [
+        {
+          "line": 43,
+          "GAP ID": "GAP-P-01",
+          "Partial state": "CI --profile enterprise ≠ platform audit",
+          "WBS": "ENT-T-1002"
+        },
+        {
+          "line": 44,
+          "GAP ID": "GAP-P-02",
+          "Partial state": "411 gate files without manifest index",
+          "WBS": "ENT-T-0303"
+        },
+        {
+          "line": 45,
+          "GAP ID": "GAP-P-03",
+          "Partial state": "Post-freeze guard matrix stale header SHA",
+          "WBS": "ENT-T-1102"
+        },
+        {
+          "line": 46,
+          "GAP ID": "GAP-P-04",
+          "Partial state": "EVOL W7-06 handoff pin TBD",
+          "WBS": "EXT-EVOL-06"
+        },
+        {
+          "line": 47,
+          "GAP ID": "GAP-P-05",
+          "Partial state": "development branch not protected (gh API 404)",
+          "WBS": "OD-ENT-02"
+        },
+        {
+          "line": 48,
+          "GAP ID": "GAP-P-06",
+          "Partial state": "EBH-5 reachability graph skipped @ historical baseline",
+          "WBS": "ENT-T-0608"
+        },
+        {
+          "line": 49,
+          "GAP ID": "GAP-P-07",
+          "Partial state": "Overlapping ideal/ebh gates",
+          "WBS": "ENT-T-0304 dedupe rules"
+        },
+        {
+          "line": 50,
+          "GAP ID": "GAP-P-08",
+          "Partial state": "Historical PLATFORM_WIDE audit",
+          "WBS": "reference-only flag"
+        },
+        {
+          "line": 51,
+          "GAP ID": "GAP-P-09",
+          "Partial state": "EVOL selection not bound to CHANGED-SINCE",
+          "WBS": "ENT-T-0903"
+        }
+      ]
+    },
+    {
+      "header": [
+        "ID",
+        "Resolution path"
+      ],
+      "rows": [
+        {
+          "line": 57,
+          "ID": "BLK-EVOL-B6",
+          "Resolution path": "Human Protocol 03 @ EVOL TES/FINAL; publish B6 SHA"
+        },
+        {
+          "line": 58,
+          "ID": "BLK-EVOL-FRZ",
+          "Resolution path": "W7-03 promotes FRZ-EVOL after B6"
+        },
+        {
+          "line": 59,
+          "ID": "BLK-EVOL-HANDOFF",
+          "Resolution path": "W7-06 updates handoff closure SHA"
+        },
+        {
+          "line": 60,
+          "ID": "BLK-CI-ENFORCE",
+          "Resolution path": "GitHub branch protection + required checks"
+        },
+        {
+          "line": 61,
+          "ID": "BLK-ROADMAP-ENT-DEP",
+          "Resolution path": "Roadmap requires EVOL CLOSED for ENT stage closure — operator decision OD-ENT-00 (not waived in this plan)"
+        },
+        {
+          "line": 62,
+          "ID": "BLK-ENT-B6",
+          "Resolution path": "Independent ENT Protocol 03 before FRZ-AUD PASS"
+        }
+      ]
+    }
+  ],
+  "lines": 67
+}

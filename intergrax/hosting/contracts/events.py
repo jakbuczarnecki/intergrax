@@ -3,7 +3,7 @@
 
 """Typed hosting event contracts (APP-HOST-3A)."""
 
-from __future__ import annotations
+from __future__ import annotations  # noqa: I001
 
 from collections.abc import Awaitable, Callable
 from datetime import UTC, datetime
@@ -30,7 +30,7 @@ HOSTED_APPLICATION_EVENT_SCHEMA_ID = "intergrax.hosting.event"
 HOSTED_APPLICATION_EVENT_SCHEMA_VERSION = "1.0"
 
 
-class HostedApplicationEventType(str, Enum):
+class HostedApplicationEventType(str, Enum):  # noqa: UP042
     APPLICATION_STARTING = "hosting.application.starting"
     APPLICATION_STARTED = "hosting.application.started"
     APPLICATION_READY = "hosting.application.ready"
@@ -61,6 +61,8 @@ class HostedApplicationEventType(str, Enum):
 
     PLUGIN_LOADED = "hosting.plugin.loaded"
     PLUGIN_FAILED = "hosting.plugin.failed"
+
+    LIFECYCLE_METRIC = "hosting.lifecycle.metric"
 
 
 class HostedApplicationEvent(BaseModel):

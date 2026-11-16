@@ -1,5 +1,7 @@
 # Architecture Debt Register
 
+> **Currency note (EQO-A remediation, as of 2026-11-16).** The table rows are unchanged (the `DEBT-*` rows are parsed by `intergrax/runtime/architecture/debt_burn_down.py`). At `258bbf6abb6fdbb92ef0185d058527fbb1e47f04` row `P1-ARCH-01` reads **Planned** for target APP-EVOL-8, while `docs/project/maintainers/plans/satellites/TIER3_APPLICATION_ENVIRONMENT_embedded_detail.md` L90 reads APP-EVOL-8 (P1-ARCH-01) **Done** - M1-M3; the domain plan decides the status. Nine rows read **Closed** (L8-L16); the table has no closure-evidence or reopen-condition column, and `DEBT-28-01` and `DEBT-UE-9D-01` carry no closure date. Commit `eb5c9e9eef333b676d777a8a49f320d645304e60` (2026-09-17, "refactor(context): close react context authority gap") is the first commit that records `DEBT-UE-9D-01` as Closed in this file. Line references (L<n>) are to the files at that SHA, before this note was added.
+
 Living register of harness architecture debt (IDEAL-32.2). Review quarterly with `docs/project/maintainers/plans/IDEAL_HARNESS_L3.md` and `docs/project/maintainers/plans/AUDIT_IDEAL_2026.md`.
 
 | ID | Layer | Description | Owner | Target wave | AUDIT-IDEAL ID | Status |

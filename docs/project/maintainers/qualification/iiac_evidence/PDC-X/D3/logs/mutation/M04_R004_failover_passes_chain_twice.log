@@ -1,0 +1,26 @@
+F
+================================== FAILURES ===================================
+_ test_exhaustion_tries_each_member_exactly_once_and_raises_the_last_error[1] _
+
+size = 1
+
+    @pytest.mark.parametrize("size", [1, 2, 5, 12])
+    def test_exhaustion_tries_each_member_exactly_once_and_raises_the_last_error(size: int) -> None:
+        chain, members = _chain(size)
+        with pytest.raises(_ServerError) as caught:
+            chain.generate_messages(USER)
+        assert str(caught.value) == f"down-{size - 1}"
+>       assert [m.calls for m in members] == [["generate_messages"]] * size
+E       AssertionError: assert [['generate_m...te_messages']] == [['generate_messages']]
+E
+E         At index 0 diff: ['generate_messages', 'generate_messages'] != ['generate_messages']
+E         Use -v to get more diff
+
+tests\qualification\pdc_x\d3\test_d3_r004_failover_bounded.py:31: AssertionError
+---------------------------- Captured stdout setup ----------------------------
+Wrote build\agent_fleet_inventory.json (21 agents)
+
+=========================== short test summary info ===========================
+FAILED tests/qualification/pdc_x/d3/test_d3_r004_failover_bounded.py::test_exhaustion_tries_each_member_exactly_once_and_raises_the_last_error[1]
+!!!!!!!!!!!!!!!!!!!!!!!!!! stopping after 1 failures !!!!!!!!!!!!!!!!!!!!!!!!!!
+1 failed in 2.60s

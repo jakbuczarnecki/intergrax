@@ -1,0 +1,136 @@
+"""A3-T01: mechanical FRZ matrix: checklist rows joined with ARCH-FREEZE matrix, PDC coverage, HIST-85, Annex B, ROADMAP_REPLAY_X, evidence log, ENT-AUDIT coverage."""
+from __future__ import annotations
+
+import json
+import re
+import sys
+from collections import Counter, defaultdict
+from pathlib import Path
+
+sys.path.insert(0, str(Path(__file__).parent))
+from common import *  # noqa
+
+Q = QUAL
+TOKEN = re.compile(r"\b[A-Z][A-Z0-9]+(?:-[A-Z0-9]+)+\b")
+
+
+def md_rows(path, first_re=r"^FRZ-[A-Z]+-\d+$"):
+    t = show_text(path)
+    log_read(path, note="A3-T01 join source")
+    out = []
+    if t is None:
+        return None
+    for l in t.split("\n"):
+        if l.startswith("|"):
+            c = [clean_cell(x) for x in split_row(l)]
+            if c and re.match(first_re, c[0]):
+                out.append(c)
+    return out
+
+
+def main():
+    frz = read_json(WS / "extracts" / "frz_rows.json")
+    log = read_json(WS / "extracts" / "frz_evidence_log.json")
+    fam_owner = read_json(WS / "extracts" / "frz_family_owners.json")
+    chk = show_text(FRZ_CHECKLIST).split("\n")
+    sha_reg = {r["sha"]: r for r in read_jsonl(WS / "data" / "sha_registry.jsonl") if r["kind"] == "full"}
+    abbr_reg = {r["abbr"]: r for r in read_jsonl(WS / "data" / "sha_registry.jsonl") if r["kind"] == "abbr"}
+
+    arch = {c[0]: c for c in (md_rows(f"{Q}/ARCH_FREEZE_FRZ_ACCEPTANCE_MATRIX.md") or [])}
+    pdc = {}
+    for c in md_rows(f"{Q}/platform_domain_completeness/PDC_FRZ_COVERAGE_MATRIX.md") or []:
+        pdc[c[0]] = {"status": c[2] if len(c) > 2 else "", "refs": re.findall(r"PDC-D\d-R\d+", c[3]) if len(c) > 3 else []}
+    rr = {c[0]: c for c in (md_rows(f"{Q}/ROADMAP_REPLAY_X_FRZ_225_RECONCILIATION.md") or [])}
+    annexb = {c[0]: c for c in (md_rows(f"{Q}/ent_audit_x/ANNEX_B_FRZ_AUD_CLOSURE_MATRIX.md", r"^FRZ-AUD-\d+$") or [])}
+    h85 = read_json_text(show_text(f"{Q}/historical_certification_campaign/HISTORICAL_FRZ_85_FINAL_DISPOSITION_MATRIX.json"))
+    log_read(f"{Q}/historical_certification_campaign/HISTORICAL_FRZ_85_FINAL_DISPOSITION_MATRIX.json", note="A3-T01")
+    h85r = {r["frz_id"]: r for r in h85["rows"]}
+    cov_p = WS / "logs" / "entaudit_full_dry" / "frz_coverage.v1.json"
+    cov = read_json(cov_p) if cov_p.exists() else {}
+    # evidence-log informed
+    log_inf = defaultdict(list)
+    for e in log:
+        for f in e["frz_informed_ids"]:
+            log_inf[f].append(e["evidence_id"])
+    # ent-audit check -> FRZ mapping (patterns like FRZ-BND-* or exact IDs)
+    import fnmatch
+    cov_rows = cov.get("rows", []) if isinstance(cov, dict) else []
+    def cov_for(fid):
+        hits = []
+        for c in cov_rows:
+            pats = list(c.get("frz_mapping") or []) + ([c["frz_aud"]] if c.get("frz_aud") else [])
+            if any(fnmatch.fnmatch(fid, p) for p in pats):
+                hits.append({"check_id": c["check_id"], "executable": c.get("executable"), "pg_id": c.get("pg_id")})
+        return hits
+    cov_map = {}
+    rows = []
+    for r in frz:
+        fid = r["frz_id"]
+        cells = split_row(chk[r["checklist_line"] - 1])
+        full_ev = clean_cell(" | ".join(cells[5:]))
+        ev_stage_tokens = sorted(set(TOKEN.findall(full_ev)))
+        a = arch.get(fid)
+        pd = pdc.get(fid)
+        hr = h85r.get(fid)
+        rp = rr.get(fid)
+        ab = annexb.get(fid)
+        shas40 = r["shas"]
+        n_res = sum(1 for s in shas40 if sha_reg.get(s, {}).get("resolves"))
+        n_anc = sum(1 for s in shas40 if sha_reg.get(s, {}).get("ancestor_of_baseline"))
+        abbrs = [{"abbr": x, "sha": abbr_reg[x]["sha"], "ancestor": abbr_reg[x]["ancestor_of_baseline"]} for x in r["abbr_shas"] if x in abbr_reg]
+        dis, info = [], []
+        base = r["status_base"]
+        if r["status_normalized"] == "OFF_VOCAB":
+            dis.append("OFF_VOCAB_STATUS")
+        if a and a[1].upper() != base and not (a[1].upper() == "OPEN" and base == "OPEN"):
+            dis.append(f"STATUS_ARCH_FREEZE_MATRIX={a[1]}")
+        if rp and rp[1].upper() != base:
+            info.append(f"STATUS_ROADMAP_REPLAY_X_HISTORICAL={rp[1]}")
+        if hr and hr["baseline_status"].upper() != base:
+            info.append(f"STATUS_HIST85_BASELINE={hr['baseline_status']}")
+        if pd and pd["status"].upper() and not pd["status"].upper().startswith(base):
+            dis.append(f"STATUS_PDC_COVERAGE={pd['status']}")
+        if base.startswith("PASS") and not shas40 and not abbrs:
+            dis.append("PASS_WITHOUT_SHA_IN_ROW")
+        if base.startswith("PASS") and shas40 and n_res < len(shas40):
+            dis.append("PASS_CITES_UNRESOLVED_SHA")
+        if base.startswith("PASS") and shas40 and n_anc == 0:
+            dis.append("PASS_NO_ANCESTOR_SHA")
+        if hr and hr.get("proposed_status", "").upper() == "PASS" and base != "PASS" and not base.startswith("PASS"):
+            info.append("HIST85_PROPOSED_PASS_BUT_CHECKLIST_OPEN")
+        fam = r["family"]
+        fo = fam_owner.get(fam, {})
+        rows.append({
+            "frz_id": fid, "family": fam, "checklist_line": r["checklist_line"], "domain": r["domain"], "criterion": r["criterion"],
+            "closing_stages_raw": r["closing_stages_raw"], "closing_stage_tokens": r["closing_stage_tokens"],
+            "family_owner_tokens": fo.get("tokens", []),
+            "status_raw": r["status_raw"], "status_normalized": r["status_normalized"], "status_base": base,
+            "headerless_block": r["headerless_block"], "evidence_len": r["evidence_len"], "evidence_excerpt": r["evidence_excerpt"][:400],
+            "evidence_stage_tokens": ev_stage_tokens[:40], "shas": [{"sha": s, "resolves": sha_reg.get(s, {}).get("resolves"),
+                                                             "ancestor": sha_reg.get(s, {}).get("ancestor_of_baseline")} for s in shas40],
+            "abbr_shas": abbrs, "evidence_log_ids": log_inf.get(fid, []),
+            "src_arch_freeze_matrix": ({"status": a[1], "owner": a[3], "evidence_sha": a[6], "evidence_gap": a[7], "closure_disposition": a[12],
+                                         "work_class": a[13] if len(a) > 13 else ""} if a else None),
+            "src_pdc": pd,
+            "src_roadmap_replay_x_historical": ({"status": rp[1], "primary_stage": rp[2], "path_b": rp[3], "disposition": rp[5] if len(rp) > 5 else ""} if rp else None),
+            "src_hist85": ({k: hr.get(k) for k in ("baseline_status", "proposed_status", "primary_classification", "dashboard_state", "promotion_allowed", "linked_findings")} if hr else None),
+            "src_annex_b": ({"code": ab[1][:120], "impl_sha": ab[5], "auditor": ab[6][:60]} if ab else None),
+            "src_ent_audit_checks": cov_for(fid),
+            "disagreement_flags": dis, "info_flags": info,
+        })
+    write_jsonl(WS / "A3" / "frz_base.jsonl", rows)
+    print("rows", len(rows), "arch", sum(1 for r in rows if r["src_arch_freeze_matrix"]), "pdc", sum(1 for r in rows if r["src_pdc"]),
+          "rr", sum(1 for r in rows if r["src_roadmap_replay_x_historical"]), "hist85", sum(1 for r in rows if r["src_hist85"]),
+          "annexb", sum(1 for r in rows if r["src_annex_b"]), "entcov", sum(1 for r in rows if r["src_ent_audit_checks"]))
+    print("dis flags:", dict(Counter(f.split("=")[0] for r in rows for f in r["disagreement_flags"])))
+    print("info flags:", dict(Counter(f.split("=")[0] for r in rows for f in r["info_flags"])))
+    print("arch-vs-checklist rows:", [r["frz_id"] for r in rows if any(f.startswith("STATUS_ARCH") for f in r["disagreement_flags"])])
+    print("status base:", dict(Counter(r["status_base"] for r in rows)))
+
+
+def read_json_text(t):
+    return json.loads(t)
+
+
+if __name__ == "__main__":
+    main()

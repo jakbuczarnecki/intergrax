@@ -1,0 +1,124 @@
+{
+ "digests": {
+  "first.audit_report_digest": {
+   "claimed": "08b1bc2d5b98920fe09008cae5272e7bf63becdad1a125019cf3c26b200a861d",
+   "file_at_head": true,
+   "file_at_6b195980d": true,
+   "file_on_auditor_branch": true
+  },
+  "first.audit_scope_manifest_digest": {
+   "claimed": "2f6fbdc3100a7bbee9d40039a77e5d2deeff52608f383e686417f6577002b109",
+   "file_at_head": true,
+   "file_at_6b195980d": true,
+   "file_on_auditor_branch": true
+  },
+  "first.test_matrix_digest": {
+   "claimed": "381b79a47b86a0399c18c18fae114d5dd971561d18aeac4e1685f69c3af75d91",
+   "file_at_head": true,
+   "file_at_6b195980d": true,
+   "file_on_auditor_branch": true
+  },
+  "first.findings_digest": {
+   "claimed": "720b9c2abf098b8263a62433538731143b4d61cda425254929952ffdd0a0133c",
+   "file_at_head": true,
+   "file_at_6b195980d": true,
+   "file_on_auditor_branch": true
+  },
+  "addendum_1.audit_report_digest": {
+   "claimed": "722cf0654530883c9466e4269eb43c8ae239190145c2ca6ec478b1ed61c3e1c2",
+   "file_at_head": true,
+   "file_at_6b195980d": true,
+   "file_on_auditor_branch": true
+  },
+  "addendum_1.audit_scope_manifest_digest": {
+   "claimed": "08e6bf5041348659ffb5e450bae080863b2abe1778416e436b729da488708792",
+   "file_at_head": true,
+   "file_at_6b195980d": true,
+   "file_on_auditor_branch": true
+  },
+  "addendum_1.test_matrix_digest": {
+   "claimed": "7c8e9f862828188d09af37fd7d372e085ec9cf0d109bc80c0d67df40efd352aa",
+   "file_at_head": true,
+   "file_at_6b195980d": true,
+   "file_on_auditor_branch": true
+  },
+  "addendum_1.findings_digest": {
+   "claimed": "224e86a27b60a8213628943098ac988d41d7bd3568d1bb89b4a6a548911c61c9",
+   "file_at_head": true,
+   "file_at_6b195980d": true,
+   "file_on_auditor_branch": true
+  }
+ },
+ "pin_only_edits": {
+  "first": {
+   "certification_publication_sha": [
+    "0000000000000000000000000000000000000000",
+    "6b195980d20067449ade0d2c2fd2280781c5a25d"
+   ],
+   "certifier_session_id": [
+    "PENDING-CERTIFIER-PDC-P7-00",
+    "PDC-P7-00-CERTIFIER-PREFLIGHT-2026-11-13"
+   ],
+   "evidence_publication_sha": [
+    "0000000000000000000000000000000000000000",
+    "6b195980d20067449ade0d2c2fd2280781c5a25d"
+   ]
+  },
+  "first_vs_auditor_branch": [
+   "certification_publication_sha",
+   "certifier_session_id",
+   "evidence_publication_sha"
+  ],
+  "addendum_1": {
+   "certification_publication_sha": [
+    "0000000000000000000000000000000000000000",
+    "6b195980d20067449ade0d2c2fd2280781c5a25d"
+   ],
+   "certifier_session_id": [
+    "PENDING-CERTIFIER-PDC-P7-00",
+    "PDC-P7-00-CERTIFIER-PREFLIGHT-2026-11-13"
+   ],
+   "evidence_publication_sha": [
+    "0000000000000000000000000000000000000000",
+    "6b195980d20067449ade0d2c2fd2280781c5a25d"
+   ]
+  },
+  "addendum_1_vs_auditor_branch": [
+   "certification_publication_sha",
+   "certifier_session_id",
+   "evidence_publication_sha"
+  ]
+ },
+ "blob_identity": {
+  "files_in_publication_commit": 56,
+  "identical_to_auditor_branch": 56,
+  "differ": []
+ },
+ "sessions": {
+  "first": {
+   "implementation": "T-IGX-036-J-T-PDC-X-IMPLEMENTERS+T-IGX-038-A-F-MCP-RC-IMPLEMENTER",
+   "auditor": "PDC-P7-00-ACT-N11-G6-BASELINE-AUDITOR-85fb061a-028f-4648-a3d6-284a392f4e27",
+   "certifier": "PDC-P7-00-CERTIFIER-PREFLIGHT-2026-11-13",
+   "auditor_equals_any_known": [],
+   "implementation_contains_mcp_rc_implementer": true,
+   "auditor_differs_from_certifier": true,
+   "implementation_differs_from_auditor": true
+  },
+  "addendum_1": {
+   "implementation": "T-IGX-036-J-T-PDC-X-IMPLEMENTERS+T-IGX-038-A-F-MCP-RC-IMPLEMENTER",
+   "auditor": "PDC-P7-00-ACT-N11-G6-BASELINE-AUDITOR-85fb061a-028f-4648-a3d6-284a392f4e27-ADDENDUM-1",
+   "certifier": "PDC-P7-00-CERTIFIER-PREFLIGHT-2026-11-13",
+   "auditor_equals_any_known": [],
+   "implementation_contains_mcp_rc_implementer": true,
+   "auditor_differs_from_certifier": true,
+   "implementation_differs_from_auditor": true
+  },
+  "first_vs_addendum_auditor_distinct_strings": true,
+  "addendum_auditor_id_derived_from_first": true
+ },
+ "changed_6b195980d_to_head": [
+  "docs/project/maintainers/qualification/iiac_evidence/PDC-X/P7-00/EVIDENCE_INTEGRATION_RECORD.md",
+  "docs/project/maintainers/qualification/iiac_evidence/PDC-X/P7-00/addendum_1/iiac_audit_session_manifest.PDC-X.p7_00.addendum_1.json",
+  "docs/project/maintainers/qualification/iiac_evidence/PDC-X/P7-00/iiac_audit_session_manifest.PDC-X.p7_00.json"
+ ]
+}

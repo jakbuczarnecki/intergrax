@@ -14,12 +14,11 @@ from pathlib import Path
 
 import pytest
 
-_MCP_SERVER = (
-    Path(__file__).resolve().parent / "tool_life_x_l3_r1_mcp_qualification_server.py"
-)
+_MCP_SERVER = Path(__file__).resolve().parent / "tool_life_x_l3_r1_mcp_qualification_server.py"
 _FASTMCP = pytest.importorskip("fastmcp")
 
-_STARTUP_READ_TIMEOUT_S = 15.0
+# Import-heavy server startup measured at 8-21 s under concurrent load (R-P7-02 follow-up); a wait budget only.
+_STARTUP_READ_TIMEOUT_S = 60.0
 _TEARDOWN_WAIT_S = 3.0
 
 

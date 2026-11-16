@@ -1,0 +1,5 @@
+audited SHA 969cbd964c679d563b02e55f065b452d46fdf90b; manifest verdict PASS_SCOPED; run once
+verify_iiac_audit_manifest: PASS
+rc=0
+verify_iiac_role_separation: PASS
+rc=0

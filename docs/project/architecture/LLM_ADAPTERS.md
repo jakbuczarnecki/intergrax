@@ -410,6 +410,16 @@ Evidence maturity: **E3**
 | Conformance gates | Universal SLO/cost evidence |
 | | Customer production evidence |
 
+## Runtime model-call attribution (`intergrax/runtime/llm`)
+
+`intergrax/runtime/llm/` (3 modules, Tier-1) is the model-call attribution layer, owned by stage TRACE-X-P4 (model call and context decision attribution; freeze checklist row FRZ-TRC-05) and described architecturally in [`OBSERVABILITY.md`](OBSERVABILITY.md). It sits around the adapter ABI above and does not change it.
+
+| Module | Role (module docstring) |
+| ------ | ----------------------- |
+| `model_call_attribution.py` | Request-scoped model-call attribution for runtime `LLM_CALL` evidence |
+| `model_call_runtime_evidence_adapter.py` | `LLMAdapter` wrapper binding the model-input hash before outbound provider calls |
+| `model_context_attribution.py` | Typed model-call ↔ context-assembly attribution (TRACE-X-P4-R1) |
+
 ## Evidence / proof
 
 | Evidence class | What exists | What it does not prove |
@@ -421,6 +431,10 @@ Evidence maturity: **E3**
 | Production / customer | **None** cited for full domain qualification | Not E5 |
 
 **Platform audit:** [`docs/audit_results/AUDIT_PROTOCOL.md`](../../audit_results/AUDIT_PROTOCOL.md).
+
+## Failure, recovery and lifecycle ownership
+
+Retry, failure classification, recovery and HITL semantics beyond what this document states are owned by [`RELIABILITY_FAILURE_AND_HITL.md`](RELIABILITY_FAILURE_AND_HITL.md) (failure model, retry, HITL) and [`ENTERPRISE_RELIABILITY_LAYER.md`](ENTERPRISE_RELIABILITY_LAYER.md) (post-admission uncertainty); the freeze criteria are the FRZ-REC and FRZ-REL families in the freeze checklist. Adapter registration is `LLMAdapterRegistry.register` (see "Provider selection" below); per-call lifecycle is `LLMCallLifecycle` (`intergrax/llm_adapters/_shared/call_lifecycle.py`). This hub names no further lifecycle owner.
 
 ## Go deeper
 
@@ -600,6 +614,8 @@ Re-validate per [`audit/LLM_ADAPTERS.md`](../../audit_results/2026-08-18/LLM_ADA
 | 3 | `LLMProfile(provider=..., model=..., options=...)` | Declarative Tier-3 selection |
 | 4 | Env defaults | `INTERGRAX_LLM_PROVIDER`, `INTERGRAX_LLM_MODEL` via `llm_profile_from_env()` |
 | 5 | Host resolver | `resolve_llm_adapter(env, agent_override)` - agent factory > env profile > platform env |
+
+**Canonical host LLM resolver (Operator ruling DP-16, 2026-11-16 - target state).** The Tier-1 resolver `resolve_llm_adapter` in `intergrax/runtime/wiring/llm_resolver.py` is the canonical host LLM resolver named in step 5; the Tier-3 resolver in `intergrax/applications/_shared/llm_resolver.py` is to delegate to it. Present state at `origin/development` `2ab57e36d`: both modules exist, each defines `resolve_llm_adapter` and its own module-level routing-evaluation record. The consolidation is delivered by the code wave and is not part of this documentation change; until then this text does not claim that a single resolver exists.
 
 ### OpenAI-compatible cluster
 

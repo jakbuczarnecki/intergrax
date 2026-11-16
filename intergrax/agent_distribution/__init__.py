@@ -3,38 +3,14 @@
 
 """Tier-0 Agent Distribution domain contracts, stores, and services (AP-3/AP-4)."""
 
-from intergrax.agent_distribution.agent_capability_metadata import (
-    AgentCapabilityDescriptor,
-    AgentCapabilityDescriptorConflictError,
-    AgentCapabilityMetadataProvider,
-    merge_agent_capability_descriptors,
-)
-from intergrax.agent_distribution.agent_project_metadata import (
-    AgentPackageContractDeclaration,
-    AgentProjectMetadata,
-    AgentProjectMetadataParseError,
-    AgentProjectMetadataProvider,
-    parse_agent_project_pyproject,
-    project_agent_capability_descriptors,
-)
-from intergrax.agent_distribution.builtin_capability_metadata import (
-    PackageAgentCapabilityMetadataProvider,
-)
-from intergrax.agent_distribution.agent_contract_authority import (
-    AgentPackageContractAuthorityService,
-    PackageAgentContractAuthorityError,
-    PackageAgentContractAuthorityRecord,
-    contract_metadata_content_digest,
-)
-from intergrax.agent_distribution.contract_metadata_parity import (
-    AgentContractMetadataParityError,
-    AgentContractMetadataParityMismatch,
-    validate_agent_contract_metadata_parity,
-)
-from intergrax.agent_distribution.binding import (
-    AgentBindingFactoryReference,
-    AgentBindingPolicyOverrides,
-    ApplicationAgentBinding,
+from intergrax.agent_distribution.activation import (
+    ActivationCommitResult,
+    ActivationService,
+    ArtifactRevalidationHook,
+    DrainCompletionResult,
+    FakeRuntimeServingProjectionCoordinator,
+    RollbackResult,
+    RuntimeServingProjectionCoordinator,
 )
 from intergrax.agent_distribution.admin_models import (
     ActivateRuntimeRevisionRequest,
@@ -43,11 +19,27 @@ from intergrax.agent_distribution.admin_models import (
     BindAgentRequest,
     BuildApplicationRevisionRequest,
     InstallAgentRequest,
+    RetireAgentRequest,
+    RetireAgentResult,
     RollbackRuntimeRevisionRequest,
     SetAgentEnablementRequest,
     UpdateAgentBindingRequest,
+    UpgradeAgentRequest,
+    UpgradeAgentResult,
 )
 from intergrax.agent_distribution.admin_service import AgentPlatformAdminService
+from intergrax.agent_distribution.agent_capability_metadata import (
+    AgentCapabilityDescriptor,
+    AgentCapabilityDescriptorConflictError,
+    AgentCapabilityMetadataProvider,
+    merge_agent_capability_descriptors,
+)
+from intergrax.agent_distribution.agent_contract_authority import (
+    AgentPackageContractAuthorityService,
+    PackageAgentContractAuthorityError,
+    PackageAgentContractAuthorityRecord,
+    contract_metadata_content_digest,
+)
 from intergrax.agent_distribution.agent_discovery import (
     AgentDiscoveryCandidate,
     AgentDiscoveryContractError,
@@ -64,20 +56,17 @@ from intergrax.agent_distribution.agent_discovery import (
     project_package_contract_capabilities,
     project_to_capability_candidate,
 )
-from intergrax.agent_distribution.federated_discovery import (
-    FEDERATED_DISCOVERY_STRATEGY_ID,
-    FederatedAgentDiscoveryResult,
-    FederatedAgentDiscoveryStrategy,
-    FederatedDiscoveryCandidateEvidence,
-    FederatedDiscoveryChildResultError,
-    FederatedDiscoveryConfigurationError,
-    FederatedDiscoveryError,
-    merge_federated_candidates,
-    provenance_for,
+from intergrax.agent_distribution.agent_project_metadata import (
+    AgentPackageContractDeclaration,
+    AgentProjectMetadata,
+    AgentProjectMetadataParseError,
+    AgentProjectMetadataProvider,
+    parse_agent_project_pyproject,
+    project_agent_capability_descriptors,
 )
 from intergrax.agent_distribution.agent_selection import (
-    AgentSelectionContractError,
     AgentSelectionContext,
+    AgentSelectionContractError,
     AgentSelectionDecision,
     AgentSelectionError,
     AgentSelectionIdentityConflict,
@@ -91,45 +80,15 @@ from intergrax.agent_distribution.agent_selection import (
     build_agent_selection_request,
     require_selected_identity,
 )
-from intergrax.agent_distribution.dynamic_acquisition import (
-    AcquisitionMode,
-    AgentPlatformLifecyclePort,
-    CatalogSourceProviderRegistry,
-    DynamicAgentAcquisitionActivationError,
-    DynamicAgentAcquisitionContractError,
-    DynamicAgentAcquisitionError,
-    DynamicAgentAcquisitionInstallIntent,
-    DynamicAgentAcquisitionOutcome,
-    DynamicAgentAcquisitionRequest,
-    DynamicAgentAcquisitionResolutionError,
-    DynamicAgentAcquisitionResult,
-    DynamicAgentAcquisitionService,
-    assert_exact_discovery_candidate_match,
-    resolve_discovery_candidate_exact,
+from intergrax.agent_distribution.binding import (
+    AgentBindingFactoryReference,
+    AgentBindingPolicyOverrides,
+    ApplicationAgentBinding,
 )
-from intergrax.agent_distribution.decision_coordination_projection import (
-    DecisionCoordinationProjectionContext,
-    DecisionCoordinationProjectionError,
-    coordination_intent_id_from_decision_identity,
-    project_authoritative_accepted_decision_coordination,
-    project_decision_coordination_artifact,
-)
-from intergrax.agent_distribution.delegated_subtasks import (
-    ChildExecutionPort,
-    DelegatedSubtaskAcquisitionPlanFactory,
-    DelegatedSubtaskDelegate,
-    DelegatedSubtaskError,
-    DelegatedSubtaskInvocation,
-    DelegatedSubtaskNoEligibleAgent,
-    DelegatedSubtaskReleasePlanFactory,
-    DelegatedSubtaskRequest,
-    DelegatedSubtaskResult,
-    DelegatedSubtaskService,
-    DelegationId,
-    SpecialistInvocationPort,
-    validate_delegation_id,
-)
+from intergrax.agent_distribution.binding_service import BindingService
 from intergrax.agent_distribution.bounded_multi_agent_fanout import (
+    MAX_FAN_OUT_CONCURRENCY,
+    MAX_FAN_OUT_ITEMS,
     BoundedMultiAgentFanOutService,
     FanOutError,
     FanOutExecutorContractError,
@@ -145,80 +104,13 @@ from intergrax.agent_distribution.bounded_multi_agent_fanout import (
     FanOutRequest,
     FanOutResult,
     InvalidFanOutError,
-    MAX_FAN_OUT_CONCURRENCY,
-    MAX_FAN_OUT_ITEMS,
     validate_fan_out_id,
     validate_fan_out_item_id,
     validate_fan_out_request,
 )
-from intergrax.agent_distribution.multi_agent_coordination import (
-    CoordinationDelegation,
-    CoordinationError,
-    CoordinationFailureCode,
-    CoordinationId,
-    CoordinationPolicy,
-    CoordinationRequest,
-    CoordinationResult,
-    MultiAgentCoordinationService,
-    validate_coordination_id,
+from intergrax.agent_distribution.builtin_capability_metadata import (
+    PackageAgentCapabilityMetadataProvider,  # noqa: F401
 )
-from intergrax.agent_distribution.task_scoped_agents import (
-    BindingTaskOrigin,
-    DynamicAgentAcquisitionPort,
-    InMemoryTaskScopedAgentLeaseStore,
-    TaskScopeId,
-    TaskScopedAgentAcquisitionOutcome,
-    TaskScopedAgentAcquisitionRequest,
-    TaskScopedAgentAcquisitionResult,
-    TaskScopedAgentAcquisitionService,
-    TaskScopedAgentContractError,
-    TaskScopedAgentError,
-    TaskScopedAgentLease,
-    TaskScopedAgentLeaseConflict,
-    TaskScopedAgentLeaseId,
-    TaskScopedAgentLeaseNotFound,
-    TaskScopedAgentLeaseState,
-    TaskScopedAgentLeaseStore,
-    TaskScopedAgentLifecyclePort,
-    TaskScopedAgentOwnershipError,
-    TaskScopedAgentReleaseError,
-    TaskScopedAgentReleaseOutcome,
-    TaskScopedAgentReleaseRequest,
-    TaskScopedAgentReleaseResult,
-    TaskScopedAgentReleaseService,
-    TaskScopedAgentService,
-    TaskScopedOwnershipMode,
-    binding_requires_runtime_release,
-)
-from intergrax.agent_distribution.task_capability_resolution import (
-    AgentDistributionCapabilityNeed,
-    AgentDistributionCapabilityNeedKind,
-    CapabilityRequirementKind,
-    DETERMINISTIC_MAPPING_RESOLVER_ID,
-    DeterministicTaskCapabilityResolver,
-    StructuredTaskCapabilityInferencePort,
-    TaskCapabilityEvidence,
-    TaskCapabilityEvidenceRationaleCategory,
-    TaskCapabilityResolutionConflict,
-    TaskCapabilityResolutionContractError,
-    TaskCapabilityResolutionError,
-    TaskCapabilityResolutionNoMatch,
-    TaskCapabilityResolutionRequest,
-    TaskCapabilityResolutionResult,
-    TaskCapabilityResolver,
-    TaskCapabilityResolverId,
-    TaskCapabilityRule,
-    TaskCapabilityRuleId,
-    TaskCapabilityRuleVersion,
-    TaskKind,
-    build_deterministic_task_capability_resolver,
-    build_task_capability_resolution_request,
-    build_task_capability_rule,
-    materialize_agent_capability_requirement,
-    resolved_agent_distribution_capability_need,
-    unresolved_agent_distribution_capability_need,
-)
-from intergrax.agent_distribution.binding_service import BindingService
 from intergrax.agent_distribution.capability_matching import (
     AgentCapabilityCandidate,
     AgentCapabilityDeclaration,
@@ -244,6 +136,33 @@ from intergrax.agent_distribution.catalog import (
     ProviderHealth,
     ProviderHealthStatus,
 )
+from intergrax.agent_distribution.contract_metadata_parity import (
+    AgentContractMetadataParityError,
+    AgentContractMetadataParityMismatch,
+    validate_agent_contract_metadata_parity,
+)
+from intergrax.agent_distribution.decision_coordination_projection import (
+    DecisionCoordinationProjectionContext,
+    DecisionCoordinationProjectionError,
+    coordination_intent_id_from_decision_identity,
+    project_authoritative_accepted_decision_coordination,
+    project_decision_coordination_artifact,
+)
+from intergrax.agent_distribution.delegated_subtasks import (
+    ChildExecutionPort,
+    DelegatedSubtaskAcquisitionPlanFactory,
+    DelegatedSubtaskDelegate,
+    DelegatedSubtaskError,
+    DelegatedSubtaskInvocation,
+    DelegatedSubtaskNoEligibleAgent,
+    DelegatedSubtaskReleasePlanFactory,
+    DelegatedSubtaskRequest,
+    DelegatedSubtaskResult,
+    DelegatedSubtaskService,
+    DelegationId,
+    SpecialistInvocationPort,
+    validate_delegation_id,
+)
 from intergrax.agent_distribution.dependency import (
     CandidateDependencySpecification,
     DependencyResolverInput,
@@ -259,6 +178,38 @@ from intergrax.agent_distribution.dependency import (
 )
 from intergrax.agent_distribution.dependency_specification import (
     build_candidate_dependency_specification,
+)
+from intergrax.agent_distribution.deployment import (
+    DeploymentInstanceRecord,
+    DeploymentInstanceState,
+    DrainActionOnTimeout,
+    DrainPolicy,
+    DrainStatus,
+    FakeInMemoryRuntimeDeploymentAdapter,
+    PreparedDeployment,
+    RuntimeDeploymentAdapter,
+    ServingUnitAttestation,
+    ServingUnitAttestationError,
+    ServingUnitAttestationRequest,
+)
+from intergrax.agent_distribution.dynamic_acquisition import (
+    AcquisitionMode,
+    AgentPlatformLifecyclePort,
+    CatalogSourceProviderRegistry,
+    DynamicAgentAcquisitionActivationError,  # noqa: F401
+    DynamicAgentAcquisitionContractError,
+    DynamicAgentAcquisitionError,
+    DynamicAgentAcquisitionInstallIntent,
+    DynamicAgentAcquisitionOutcome,
+    DynamicAgentAcquisitionRequest,
+    DynamicAgentAcquisitionResolutionError,
+    DynamicAgentAcquisitionResult,
+    DynamicAgentAcquisitionService,
+    assert_exact_discovery_candidate_match,
+    resolve_discovery_candidate_exact,
+)
+from intergrax.agent_distribution.ed25519_package_attestation_verifier import (
+    Ed25519PackageAttestationVerifier,
 )
 from intergrax.agent_distribution.effective_roster import (
     EffectiveRosterBuilder,
@@ -277,17 +228,17 @@ from intergrax.agent_distribution.errors import (
     AgentPackageTrustError,
     BindingLifecycleError,
     BindingRevisionConflict,
-    DependencySpecificationError,
+    CandidateRuntimeGraphError,
     DependencyResolutionError,
+    DependencySpecificationError,
     EffectiveRosterConflict,
     InstallationLifecycleError,
     InstallationSlotConflict,
-    MaterializedRuntimeLockConflict,
-    MaterializedRuntimeLockError,
     MaterializationError,
     MaterializationInputConflict,
     MaterializationUnsupportedTopology,
-    CandidateRuntimeGraphError,
+    MaterializedRuntimeLockConflict,
+    MaterializedRuntimeLockError,
     RuntimeActivationConflict,
     RuntimeActivationError,
     RuntimeDrainError,
@@ -297,6 +248,21 @@ from intergrax.agent_distribution.errors import (
     RuntimeRollbackError,
 )
 from intergrax.agent_distribution.events import AgentDistributionEvent, TransitionResult
+from intergrax.agent_distribution.federated_discovery import (
+    FEDERATED_DISCOVERY_STRATEGY_ID,
+    FederatedAgentDiscoveryResult,
+    FederatedAgentDiscoveryStrategy,
+    FederatedDiscoveryCandidateEvidence,
+    FederatedDiscoveryChildResultError,
+    FederatedDiscoveryConfigurationError,
+    FederatedDiscoveryError,
+    merge_federated_candidates,
+    provenance_for,
+)
+from intergrax.agent_distribution.identity import (
+    AgentPackageCandidate,
+    AgentPackageIdentity,
+)
 from intergrax.agent_distribution.in_memory_stores import (
     AgentDistributionStoreState,
     InMemoryAgentArtifactMetadataStore,
@@ -308,53 +274,12 @@ from intergrax.agent_distribution.in_memory_stores import (
     InMemoryMaterializedRuntimeLockStore,
     InMemoryRuntimeRevisionStore,
 )
-from intergrax.agent_distribution.installation_service import InstallationService
 from intergrax.agent_distribution.installation import (
     AgentInstallationRecord,
     InstallationState,
     installation_state_is_installed,
 )
-from intergrax.agent_distribution.package_trust import (
-    AgentPackageTrustCoordinator,
-    assert_installation_trust_record_acceptable,
-)
-from intergrax.agent_distribution.package_attestation import (
-    AgentPackageAttestationAlgorithm,
-    AgentPackageAttestationQualificationEvidence,
-    AgentPackageAttestationVerificationRequest,
-    AgentPackageAttestationVerificationResult,
-    AgentPackageAttestationVerifier,
-    AgentPublisherVerificationKeyProvider,
-)
-from intergrax.agent_distribution.ed25519_package_attestation_verifier import (
-    Ed25519PackageAttestationVerifier,
-)
-from intergrax.agent_distribution.activation import (
-    ActivationCommitResult,
-    ActivationService,
-    ArtifactRevalidationHook,
-    DrainCompletionResult,
-    FakeRuntimeServingProjectionCoordinator,
-    RollbackResult,
-    RuntimeServingProjectionCoordinator,
-)
-from intergrax.agent_distribution.deployment import (
-    DeploymentInstanceRecord,
-    DeploymentInstanceState,
-    DrainActionOnTimeout,
-    DrainPolicy,
-    DrainStatus,
-    FakeInMemoryRuntimeDeploymentAdapter,
-    PreparedDeployment,
-    RuntimeDeploymentAdapter,
-    ServingUnitAttestation,
-    ServingUnitAttestationError,
-    ServingUnitAttestationRequest,
-)
-from intergrax.agent_distribution.venv_bundle_colocated_runtime_deployment_adapter import (
-    VenvBundleColocatedDeploymentError,
-    VenvBundleColocatedRuntimeDeploymentAdapter,
-)
+from intergrax.agent_distribution.installation_service import InstallationService
 from intergrax.agent_distribution.materialization import (
     ApplicationBuildContext,
     MaterializationInput,
@@ -370,6 +295,34 @@ from intergrax.agent_distribution.materialization_adapters import (
 from intergrax.agent_distribution.materialization_service import (
     RuntimeMaterializationService,
 )
+from intergrax.agent_distribution.multi_agent_coordination import (
+    CoordinationDelegation,
+    CoordinationError,
+    CoordinationFailureCode,
+    CoordinationId,
+    CoordinationPolicy,
+    CoordinationRequest,
+    CoordinationResult,
+    MultiAgentCoordinationService,
+    validate_coordination_id,
+)
+from intergrax.agent_distribution.package_attestation import (
+    AgentPackageAttestationAlgorithm,
+    AgentPackageAttestationQualificationEvidence,
+    AgentPackageAttestationVerificationRequest,
+    AgentPackageAttestationVerificationResult,
+    AgentPackageAttestationVerifier,
+    AgentPublisherVerificationKeyProvider,
+)
+from intergrax.agent_distribution.package_trust import (
+    AgentPackageTrustCoordinator,
+    assert_installation_trust_record_acceptable,
+)
+from intergrax.agent_distribution.resolver import (
+    CallableDependencyResolver,
+    DependencyResolver,
+    ResolvedDependencyClosure,
+)
 from intergrax.agent_distribution.roster import (
     EffectiveRoster,
     EffectiveRosterEntry,
@@ -381,20 +334,6 @@ from intergrax.agent_distribution.runtime_graph import (
     RuntimeGraphThirdPartyRef,
     RuntimeGraphTierViolation,
 )
-from intergrax.agent_distribution.identity import (
-    AgentPackageCandidate,
-    AgentPackageIdentity,
-)
-from intergrax.agent_distribution.runtime_revision import (
-    MaterializationTopology,
-    RuntimeRevision,
-    RuntimeRevisionState,
-)
-from intergrax.agent_distribution.resolver import (
-    CallableDependencyResolver,
-    DependencyResolver,
-    ResolvedDependencyClosure,
-)
 from intergrax.agent_distribution.runtime_graph_service import (
     CandidateRuntimeGraphBuilder,
     CandidateRuntimeGraphValidator,
@@ -402,6 +341,11 @@ from intergrax.agent_distribution.runtime_graph_service import (
 from intergrax.agent_distribution.runtime_lock import (
     MaterializedRuntimeLockProducer,
     MaterializedRuntimeLockService,
+)
+from intergrax.agent_distribution.runtime_revision import (
+    MaterializationTopology,
+    RuntimeRevision,
+    RuntimeRevisionState,
 )
 from intergrax.agent_distribution.runtime_revision_service import RuntimeRevisionService
 from intergrax.agent_distribution.stores import (
@@ -418,6 +362,62 @@ from intergrax.agent_distribution.stores import (
     RollbackAtomicCommitResult,
     RuntimeRevisionStore,
 )
+from intergrax.agent_distribution.task_capability_resolution import (
+    DETERMINISTIC_MAPPING_RESOLVER_ID,
+    AgentDistributionCapabilityNeed,
+    AgentDistributionCapabilityNeedKind,
+    CapabilityRequirementKind,
+    DeterministicTaskCapabilityResolver,
+    StructuredTaskCapabilityInferencePort,
+    TaskCapabilityEvidence,
+    TaskCapabilityEvidenceRationaleCategory,
+    TaskCapabilityResolutionConflict,
+    TaskCapabilityResolutionContractError,
+    TaskCapabilityResolutionError,
+    TaskCapabilityResolutionNoMatch,
+    TaskCapabilityResolutionRequest,
+    TaskCapabilityResolutionResult,
+    TaskCapabilityResolver,
+    TaskCapabilityResolverId,
+    TaskCapabilityRule,
+    TaskCapabilityRuleId,
+    TaskCapabilityRuleVersion,
+    TaskKind,
+    build_deterministic_task_capability_resolver,
+    build_task_capability_resolution_request,
+    build_task_capability_rule,
+    materialize_agent_capability_requirement,
+    resolved_agent_distribution_capability_need,
+    unresolved_agent_distribution_capability_need,
+)
+from intergrax.agent_distribution.task_scoped_agents import (
+    BindingTaskOrigin,
+    DynamicAgentAcquisitionPort,
+    InMemoryTaskScopedAgentLeaseStore,
+    TaskScopedAgentAcquisitionOutcome,
+    TaskScopedAgentAcquisitionRequest,
+    TaskScopedAgentAcquisitionResult,
+    TaskScopedAgentAcquisitionService,
+    TaskScopedAgentContractError,
+    TaskScopedAgentError,
+    TaskScopedAgentLease,
+    TaskScopedAgentLeaseConflict,
+    TaskScopedAgentLeaseId,
+    TaskScopedAgentLeaseNotFound,
+    TaskScopedAgentLeaseState,
+    TaskScopedAgentLeaseStore,
+    TaskScopedAgentLifecyclePort,
+    TaskScopedAgentOwnershipError,
+    TaskScopedAgentReleaseError,
+    TaskScopedAgentReleaseOutcome,
+    TaskScopedAgentReleaseRequest,
+    TaskScopedAgentReleaseResult,
+    TaskScopedAgentReleaseService,
+    TaskScopedAgentService,
+    TaskScopedOwnershipMode,
+    TaskScopeId,
+    binding_requires_runtime_release,
+)
 from intergrax.agent_distribution.trust import (
     AgentDeliverySource,
     AgentInstallationTrustRecord,
@@ -431,6 +431,16 @@ from intergrax.agent_distribution.trust import (
     AgentPublisherIdentity,
     AgentQualificationEvidenceKind,
     AgentTrustEvidenceRef,
+)
+from intergrax.agent_distribution.upgrade_admission import (
+    AgentUpgradeRejectionReason,
+    UpgradeAdmissionReport,
+    UpgradeAdmissionViolation,
+    evaluate_agent_upgrade_admission,
+)
+from intergrax.agent_distribution.venv_bundle_colocated_runtime_deployment_adapter import (
+    VenvBundleColocatedDeploymentError,
+    VenvBundleColocatedRuntimeDeploymentAdapter,
 )
 
 __all__ = [
@@ -673,6 +683,14 @@ __all__ = [
     "InMemoryMaterializedRuntimeLockStore",
     "InMemoryRuntimeRevisionStore",
     "InstallAgentRequest",
+    "RetireAgentRequest",
+    "RetireAgentResult",
+    "UpgradeAgentRequest",
+    "UpgradeAgentResult",
+    "AgentUpgradeRejectionReason",
+    "UpgradeAdmissionReport",
+    "UpgradeAdmissionViolation",
+    "evaluate_agent_upgrade_admission",
     "InstalledAgentPackageRequirement",
     "InstalledAgentRequirementSet",
     "InstalledAgentRequirementSetBuilder",

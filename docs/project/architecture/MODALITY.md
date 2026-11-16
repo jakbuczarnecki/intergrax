@@ -168,6 +168,10 @@ The domain headline uses the weakest-plane value on each maturity axis. Plane C 
 | **Public proof** | No dedicated Modality row in [`docs/project/proofs/PROOFS.md`](../proofs/PROOFS.md) - bounded harness proofs only |
 | **Production / customer** | Not inferred |
 
+## Failure, recovery and lifecycle ownership
+
+Retry, failure classification, recovery and HITL semantics beyond what this document states are owned by [`RELIABILITY_FAILURE_AND_HITL.md`](RELIABILITY_FAILURE_AND_HITL.md) (failure model, retry, HITL) and [`ENTERPRISE_RELIABILITY_LAYER.md`](ENTERPRISE_RELIABILITY_LAYER.md) (post-admission uncertainty); the freeze criteria are the FRZ-REC and FRZ-REL families in the freeze checklist. Plane C adapter registration follows the registry pattern described in this document (`VisionAdapterRegistry` / `ModelInferenceRegistry`); this hub names no separate lifecycle owner for modality.
+
 ## Go deeper
 
 | Depth | Route |

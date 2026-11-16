@@ -1,0 +1,91 @@
+{
+  "stage_id": "PDC-X/P7-00/addendum_4",
+  "parent_audits": [
+    "docs/project/maintainers/qualification/platform_domain_completeness/PDC_P7_00_ACT_N11_BASELINE_AUDIT_DOSSIER.md",
+    "docs/project/maintainers/qualification/platform_domain_completeness/PDC_P7_00_ACT_N11_BASELINE_AUDIT_ADDENDUM_1.md",
+    "docs/project/maintainers/qualification/platform_domain_completeness/PDC_P7_00_ACT_N11_BASELINE_AUDIT_ADDENDUM_2.md",
+    "docs/project/maintainers/qualification/platform_domain_completeness/PDC_P7_00_ACT_N11_BASELINE_AUDIT_ADDENDUM_3.md"
+  ],
+  "certification_profile": "iiac-v1",
+  "policy_version": "IIAC-2026-11-05.1",
+  "base_sha": "0fc8badd81c4c3e46a3d0ce262c08e8efba41898",
+  "audited_implementation_sha": "d02c399508c40b4a06d846410334d677f226c18d",
+  "audit_execution_sha": "d02c399508c40b4a06d846410334d677f226c18d",
+  "test_execution_sha": "0cb5dd011f363a7318246e907a1d307ad968db38",
+  "test_execution_note": "the product tree of 0cb5dd011 equals that of d02c39950 (git diff 0cb5dd011 d02c39950 -- intergrax agents applications is empty); the pytest runs used 0cb5dd011 except the IIAC governance unit tests, run at d02c39950",
+  "activation_record": {
+    "effective_from_sha": "92d7308213bd46e76ce0b545cd94b36bc65d8e0e",
+    "corrective_implementation_sha": "324d9dba37cb54e1b74a79a05148d2dcc05e6d09",
+    "audit_execution_sha": "29d66ae3fcc7a06a919d7e07541740841e8abfe8",
+    "note": "unchanged in this range; audited tree 324d9dba3"
+  },
+  "previous_activation_pin": "2d3eceb6cf7e93dccd4d96919319a6c969b4444b",
+  "re_pinned_development_heads": [
+    "4835bae8e (merged as 0cb5dd011)",
+    "83d939095 (merged as d02c39950)"
+  ],
+  "auditor_branch": "p7-00-baseline-audit",
+  "delta_act_n11_paths_vs_0fc8badd8": [
+    "applications/local_workspace_application/tests/test_run_artifact_metadata.py",
+    "intergrax/integrations/providers/embedding_provider/ollama/manifest.py",
+    "intergrax/integrations/providers/embedding_provider/openai/register.py",
+    "intergrax/platform/enterprise_audit/data/changed_since_impact_map.v1.json",
+    "intergrax/platform/enterprise_audit/impact_map.py"
+  ],
+  "delta_act_n11_paths_vs_0fc8badd8_count": 5,
+  "act_n11_paths_vs_324d9dba3_count": 6,
+  "act_n11_paths_vs_324d9dba3": [
+    "applications/local_workspace_application/tests/test_run_artifact_metadata.py",
+    "intergrax/integrations/providers/embedding_provider/ollama/manifest.py",
+    "intergrax/integrations/providers/embedding_provider/ollama/register.py",
+    "intergrax/integrations/providers/embedding_provider/openai/register.py",
+    "intergrax/platform/enterprise_audit/data/changed_since_impact_map.v1.json",
+    "intergrax/platform/enterprise_audit/impact_map.py"
+  ],
+  "delta_numstat_0fc8badd8_0cb5dd011": [
+    "8\t1\tapplications/local_workspace_application/tests/test_run_artifact_metadata.py",
+    "0\t17\tintergrax/integrations/providers/embedding_provider/ollama/manifest.py",
+    "30\t3\tintergrax/integrations/providers/embedding_provider/openai/register.py",
+    "10\t0\tintergrax/platform/enterprise_audit/data/changed_since_impact_map.v1.json",
+    "23\t1\tintergrax/platform/enterprise_audit/impact_map.py"
+  ],
+  "ollama_register_unchanged_since_0fc8badd8": true,
+  "product_diff_0cb5dd011_to_d02c39950": 0,
+  "non_product_delta_0cb5dd011_to_d02c39950": [
+    "docs/project/maintainers/qualification/INTEGRAX_INTERNAL_INDEPENDENT_AGENT_CERTIFICATION_PROTOCOL.md (lines 4 and 91 only, +2/-2)",
+    "docs/project/maintainers/qualification/platform_domain_completeness/operator_decisions/DELEGATION-PDC-P7-ACT.md (new)",
+    "governance/tickets/T-IGX-040-B.md (approval block)"
+  ],
+  "other_non_docs_changes_0fc8badd8_to_0cb5dd011": [
+    ".github/workflows/unit-tests.yml (EBH-7 default pins to 146e7acf1, commit 0b62781a2)",
+    "scripts/qualification/pdc_x_wbs.py (WBS batches B-P6-H/I/J)",
+    "tests/qualification/ebh_7 (_constants, f10 inputs/matrix, p03 integrity, new c1_c4 closure gates)",
+    "tests/qualification/pdc_x (conftest leak guard, p6_debt, p6_ecapfix openai + wrapper pins, p6_impact tier-3 rule test, xd_03)",
+    "tests/integration/runtime/nexus/tracing/test_sqlite_run_trace_store.py, tests/unit/integrations/providers/test_p5_m6_p4_providers.py, tests/unit/rag/embedding/test_hf_embedding_provider_execution.py",
+    "governance/tickets T-IGX-036-Y/-Z, T-IGX-040-A/-B and plans"
+  ],
+  "mcp_rc_paths_count": 23,
+  "mcp_rc_byte_identical_to_b0e19bf61": true,
+  "no_path_changed_under": [
+    "scripts/governance",
+    "scripts/maintenance",
+    "scripts/enterprise_audit",
+    "agent-env",
+    "IIAC_POLICY_ACTIVATION_RECORD.json",
+    "IIAC_GLOBAL_AUTHORITY_IMPACT_MATRIX.json",
+    "pyproject.toml",
+    "uv.lock"
+  ],
+  "activation_gate_at_head": "verify_iiac_policy_activation exit 1: one 'stale audit after material governance change' line (the protocol) and exactly six 'product path changed after the audited SHA' lines (the six paths); see logs/governance_gates_at_d02c39950.log",
+  "combined_coverage": {
+    "act_n11_paths_vs_pin_2d3eceb6c_combined_unique": 161,
+    "audited_head": "d02c399508c40b4a06d846410334d677f226c18d",
+    "statement": "git diff --name-only 2d3eceb6c 0cb5dd011 -- intergrax agents applications = 161 paths: the 158 of addendum 3 plus 3 new ones (openai/register.py, ollama/manifest.py deleted, the local_workspace test). impact_map.py, its JSON and ollama/register.py were already counted. Against the audited tree 324d9dba3 of the current activation record the gate lists exactly 6 paths, all audited here (ollama/register.py was audited in addendum 3 and is unchanged)."
+  },
+  "out_of_scope": [
+    "eight per-domain audits IA-D1..IA-D8",
+    "CI contexts",
+    "P8 and FRZ (counter 225)",
+    "G-DOC-01..12"
+  ]
+}

@@ -1,0 +1,478 @@
+"""EQO-A mechanical completeness checker (C01-C15). Reads only $WS and git. Stdlib only.
+Usage: python -I tools/verify_campaign_a.py --wave W0|W1|W2|W3|W4|W5 [--ws PATH]
+Prints two blocks: Inventory completeness and Verification strength. Exit 0 only if every check of the wave passes."""
+from __future__ import annotations
+
+import argparse
+import re
+import sys
+from collections import Counter
+from pathlib import Path
+
+sys.path.insert(0, str(Path(__file__).parent))
+from common import *  # noqa
+import fl
+
+TOKEN = re.compile(r"\b[A-Z][A-Z0-9]+(?:-[A-Z0-9]+)+\b")
+DELIVERABLES = ["ENTERPRISE_STAGE_INVENTORY.md", "ENTERPRISE_CERTIFICATION_EVIDENCE_MATRIX.md", "ENTERPRISE_FRZ_RECONCILIATION_MATRIX.md",
+                "ENTERPRISE_ARCHITECTURE_BASELINE.md", "ENTERPRISE_CERTIFICATION_DRIFT_MATRIX.md", "ENTERPRISE_AUDIT_COVERAGE_GAP_MATRIX.md",
+                "ENTERPRISE_RESIDUAL_RISK_REGISTER.md", "ENTERPRISE_DOMAIN_COMPLETENESS_MATRIX.md", "ENTERPRISE_BASELINE_AUDIT_REPORT.md",
+                "ENTERPRISE_BASELINE_CLOSURE_MATRIX.md", "ENTERPRISE_CAMPAIGN_B_C_HANDOFF.md"]
+ROOT_DOCS = ["CAMPAIGN_A_CHARTER.md", "SOURCE_REGISTRY.md", "AUTHORITY_CONFLICT_REGISTER.md", "SCOPE_EXCLUSIONS.md", "FINDINGS_REGISTER.md",
+             "TOOL_RUN_LOG.md", "TEST_EXECUTION_RECORD.md"]
+DISP_RE = re.compile(r"^(PARENT_ASSESSED|LINEAGE_ONLY|OPEN_NOT_CERTIFIED|PROSE_ORPHAN|CHILD_INHERITS:.+|OUT_OF_SCOPE:.+)$")
+
+RESULTS: list[tuple[str, bool, str]] = []
+
+
+def rec(cid: str, ok: bool, msg: str):
+    RESULTS.append((cid, ok, msg))
+
+
+def load_jsonl(rel):
+    return read_jsonl(WS / rel)
+
+
+# ---------------------------------------------------------------- independent second parse for C01 / C04
+def second_parse_roadmap() -> set[str]:
+    """Independent regex parse: section 3 = first contiguous table after the '## 3.' heading; section 5 = every table line before '## 6.'."""
+    txt = show_text(ROADMAP)
+    ids = set()
+    mode, started = None, False
+    for line in txt.split("\n"):
+        if re.match(r"^## 3\. ", line):
+            mode, started = "3", False
+            continue
+        if re.match(r"^## 5\. ", line):
+            mode, started = "5", False
+            continue
+        if re.match(r"^## \d", line):
+            mode = None
+            continue
+        if mode is None:
+            continue
+        is_row = line.startswith("|")
+        if mode == "3":
+            if is_row:
+                started = True
+            elif started:
+                mode = None
+                continue
+        if is_row and not re.match(r"^\|\s*[-: |]+$", line):
+            m = re.match(r"^\|\s*(?:\*\*)?`?(.+?)`?(?:\*\*)?\s*\|", line)
+            if m:
+                cell = re.sub(r"\*\*|`", "", m.group(1)).strip()
+                if cell and cell not in ("Stage", "Etap"):
+                    ids.add(cell)
+    return ids
+
+
+def second_parse_prose(known: set[str]) -> set[str]:
+    txt = show_text(ROADMAP)
+    known_tokens = set()
+    for k in known:
+        known_tokens.update(TOKEN.findall(k))
+    ordered = sorted(known_tokens, key=len, reverse=True)
+    out = set()
+    for t in set(TOKEN.findall(txt)):
+        if t in known_tokens:
+            continue
+        par = next((k for k in ordered if t.startswith(k + "-")), None)
+        if par and re.match(r"^(?:[A-Z]{1,3}\d+[A-Z0-9]*|FINAL|CERT|CLOSE|GATE|R\d+)$", t.split("-")[-1]):
+            out.add(t)
+    return out
+
+
+# ------------------------------------------------------------------------------------------ checks
+def c01():
+    rows = load_jsonl("A1/stage_rows.jsonl")
+    if not rows:
+        rec("C01", False, "inventory pending (A1/stage_rows.jsonl absent)")
+        return
+    tbl_ledger = second_parse_roadmap()
+    have = {r["id"] for r in rows}
+    prose = second_parse_prose(tbl_ledger)
+    expect = tbl_ledger | prose
+    miss, extra = sorted(expect - have), sorted(have - expect)
+    pct = 100.0 * len(expect & have) / max(1, len(expect))
+    rec("C01", not miss and not extra, f"{pct:.1f}% (expected {len(expect)}, inventoried {len(have)}); missing={miss[:10]} extra={extra[:10]}")
+
+
+def c02():
+    rows = load_jsonl("A1/stage_rows.jsonl")
+    if not rows:
+        rec("C02", False, "inventory pending")
+        return
+    bad = []
+    for r in rows:
+        if not r.get("status_normalized") or not r.get("owner") or not DISP_RE.match(str(r.get("disposition", ""))) \
+                or r.get("assessment_tier") not in ("T1", "T2"):
+            bad.append(r["id"])
+    rec("C02", not bad, f"{100.0 * (len(rows) - len(bad)) / len(rows):.1f}% complete ({len(rows)} rows); incomplete={bad[:10]}")
+
+
+def finding_ids():
+    p = WS / "findings" / "FINDINGS.jsonl"
+    return {r["finding_id"] for r in read_jsonl(p)}
+
+
+def c03():
+    rows = load_jsonl("A2/cert_rows.jsonl")
+    t2 = load_jsonl("A2/t2_rows.jsonl")
+    if not rows:
+        rec("C03", False, "inventory pending")
+        return
+    fids = finding_ids()
+
+    def source_ok(r):
+        for cs in r.get("cert_sources") or []:
+            if cs.get("path") and cs.get("sha") and git("cat-file", "-e", f"{cs['sha']}:{cs['path']}").returncode == 0:
+                return True
+        return False
+
+    root_ok = {}
+    bad = []
+    closed = [r for r in rows if r.get("closed_type") or r.get("status_family") == "CLOSED"]
+    for r in closed:
+        ok = source_ok(r) or (r.get("deficiency_finding") in fids)
+        root_ok[r["id"]] = ok
+        if not ok:
+            bad.append(r["id"])
+    child_total = child_bad = 0
+    for r in t2:
+        child_total += 1
+        if source_ok(r) or root_ok.get(r.get("root_id")):
+            continue
+        child_bad += 1
+        bad.append(r["id"])
+    rec("C03", not bad, f"{len(closed) - sum(1 for i in bad if i in root_ok)}/{len(closed)} CLOSED-type parent rows and {child_total - child_bad}/{child_total} closed-type child rows (own source or documented inheritance from their root) have a resolving certification source or a linked finding; bad={bad[:10]}")
+
+
+def c04():
+    rows = load_jsonl("A3/frz_rows.jsonl")
+    if not rows:
+        rec("C04", False, "inventory pending")
+        return
+    raw = set(re.findall(r"FRZ-[A-Z]+-\d+", show_text(FRZ_CHECKLIST)))
+    have = {r["frz_id"] for r in rows}
+    bad = [r["frz_id"] for r in rows if not r.get("owner") or not r.get("status_raw")]
+    ok = raw == have and not bad and len(have) == len(rows)
+    rec("C04", ok, f"FRZ rows={len(rows)} unique={len(have)} raw-regex unique={len(raw)} diff={sorted(raw ^ have)[:10]} no-owner/status={bad[:10]}")
+
+
+def c05():
+    rows = [r for r in load_jsonl("A7/entries.jsonl") if r.get("kind") != "NOT_AN_ENTRY"]
+    if not rows:
+        rec("C05", False, "inventory pending")
+        return
+    fids = finding_ids()
+    bad = []
+    for r in rows:
+        o = str(r.get("owner") or "")
+        if (not o or "OWNER_MISSING" in o) and r.get("owner_finding") not in fids:
+            bad.append(r.get("entry_id"))
+    miss_fields = [r.get("entry_id") for r in rows if not (r.get("severity") and r.get("currency") and r.get("evidence") is not None and r.get("arch_freeze_impact"))]
+    rec("C05", not bad and not miss_fields, f"{len(rows) - len(bad)}/{len(rows)} real entries have an owner or a linked finding (owner missing without finding: {bad[:6]}); entries lacking severity/currency/evidence/arch_freeze_impact fields: {len(miss_fields)}")
+
+
+def deliverable_files():
+    d = WS / "deliverables"
+    return [d / n for n in DELIVERABLES if (d / n).exists()]
+
+
+def c06():
+    files = deliverable_files() + [WS / n for n in ROOT_DOCS if (WS / n).exists()]
+    if not files:
+        rec("C06", False, "no deliverables yet")
+        return
+    reg = {r["sha"]: r for r in load_jsonl("data/sha_registry.jsonl") if r.get("sha")}
+    probs = []
+    for f in files:
+        t = f.read_text(encoding="utf-8")
+        m = re.search(r"BASELINE_SHA:\s*([0-9a-f]{40})", t[:600])
+        if not m or m.group(1) != BASELINE_SHA:
+            probs.append(f"{f.name}: header")
+            continue
+        for s in set(SHA40.findall(t)):
+            if s == BASELINE_SHA:
+                continue
+            if git("cat-file", "-e", f"{s}^{{commit}}").returncode != 0:
+                rr = reg.get(s)
+                if not (rr and rr.get("resolves") is False and rr.get("finding")):
+                    probs.append(f"{f.name}: unresolved {s[:12]}")
+    rec("C06", not probs, f"{len(files)} files checked; problems={probs[:8]}")
+
+
+def check_evidence(e: str) -> bool:
+    e = e.strip()
+    if e.startswith("ws:"):
+        return (WS / e[3:].split("#")[0].split(" ")[0]).exists()
+    if e.startswith("E1:") or e.startswith("none:"):
+        return True
+    if re.match(r"^[0-9a-f]{40}$", e):
+        return git("cat-file", "-e", f"{e}^{{commit}}").returncode == 0
+    m = re.match(r"^(?P<p>[^@\s]+)@(?P<s>[0-9a-f]{40})(?::(?P<l>\d+))?", e)
+    if not m:
+        return False
+    p, s = m.group("p"), m.group("s")
+    if git("cat-file", "-e", f"{s}:{p}").returncode != 0:
+        return False
+    return True
+
+
+def c07(scope_ws=None):
+    rows = fl.consolidate()
+    if scope_ws:
+        rows = [r for r in rows if r.get("ws") in scope_ws]
+    errs = fl.validate(rows)
+    ids_ = [r["finding_id"] for r in rows]
+    if len(ids_) != len(set(ids_)):
+        errs.append("duplicate finding IDs: " + ", ".join(sorted({i for i in ids_ if ids_.count(i) > 1})[:5]))
+    bad_ev = []
+    for r in rows:
+        for e in r.get("evidence", []):
+            if not check_evidence(e):
+                bad_ev.append(f"{r['finding_id']}:{e[:60]}")
+    rec("C07", not errs and not bad_ev, f"{len(rows)} findings; schema errors={errs[:5]}; unresolved evidence={bad_ev[:5]} (n={len(bad_ev)})")
+
+
+def c08():
+    """Roll-up recompute: deliverables carry <!--rollup:KEY=VALUE--> markers (KEY per rollup_calc); recompute from rows and compare."""
+    from rollup_calc import compute
+    files = deliverable_files()
+    probs, n = [], 0
+    for f in files:
+        t = f.read_text(encoding="utf-8")
+        for m in re.finditer(r"<!--rollup:(?P<k>.+?)=(?P<v>\d+)-->", t):
+            n += 1
+            c = compute(m.group("k"))
+            if c != int(m.group("v")):
+                probs.append(f"{f.name}:{m.group('k')} rendered {m.group('v')} != recomputed {c}")
+    confl = {c["conflict_id"] for c in load_jsonl("data/conflicts.jsonl")}
+    fids = finding_ids()
+    for rel in ("A1/stage_rows.jsonl", "A3/frz_rows.jsonl"):
+        for r in load_jsonl(rel):
+            if r.get("disagreement_flags") and not (set(r.get("conflict_refs", [])) & confl or set(r.get("finding_refs", [])) & fids):
+                probs.append(f"{rel}:{r.get('id') or r.get('frz_id')} flag without link")
+    rec("C08", not probs and n > 0, f"{n} rendered roll-ups recomputed; problems={probs[:6]} (n={len(probs)})")
+
+
+def c09():
+    rows = fl.consolidate()
+    bad = [r["finding_id"] for r in rows if r["severity"] in ("BLOCKER", "HIGH") and r["class"] != "UNVERIFIED_HYPOTHESIS"
+           and r["evidence_level"] not in ("E3", "E4")]
+    rec("C09", not bad, f"BLOCKER/HIGH rows below E3 not marked UNVERIFIED_HYPOTHESIS: {bad[:10]}")
+
+
+def c10():
+    rows = fl.consolidate()
+    need = [r["finding_id"] for r in rows if r["next_action"] in ("CAMPAIGN_B", "CAMPAIGN_C") and r.get("status", "OPEN") == "OPEN"]
+    p = WS / "deliverables" / "ENTERPRISE_CAMPAIGN_B_C_HANDOFF.md"
+    if not p.exists():
+        rec("C10", False, f"handoff absent ({len(need)} findings need it)")
+        return
+    t = p.read_text(encoding="utf-8")
+    miss = [i for i in need if i not in t]
+    rec("C10", not miss, f"{len(need) - len(miss)}/{len(need)} B/C findings in the handoff; missing={miss[:10]}")
+
+
+def c11():
+    import os
+    if os.environ.get("EQOA_REPLAY") == "1":
+        wt = git("status", "--porcelain").stdout
+        ok = wt == "" and git("rev-parse", "HEAD").stdout.strip() == BASELINE_SHA
+        rec("C11", ok, f"REPLAY mode: WT porcelain {'empty' if not wt else 'DIRTY'}, WT HEAD == BASELINE_SHA (main-checkout comparison skipped in replay)")
+        return
+    wt = git("status", "--porcelain").stdout
+    mp = git("status", "--porcelain", cwd=MAIN).stdout
+    snap = (WS / "logs" / "main_porcelain_W0.txt").read_text()
+    head_now = git("rev-parse", "HEAD", cwd=MAIN).stdout.strip()
+    head0 = (WS / "logs" / "main_head_W0.txt").read_text().strip()
+    ok = (wt == "") and (mp == snap) and (head_now == head0) and git("rev-parse", "HEAD").stdout.strip() == BASELINE_SHA
+    rec("C11", ok, f"WT porcelain {'empty' if not wt else 'DIRTY'}; MAIN porcelain {'== W0 snapshot' if mp == snap else 'CHANGED'}; MAIN HEAD {'unchanged' if head_now == head0 else 'CHANGED'}")
+
+
+def manifest_files():
+    out = []
+    for p in sorted(WS.rglob("*")):
+        if p.is_dir():
+            continue
+        rel = p.relative_to(WS).as_posix()
+        if rel == "MANIFEST.json" or rel.startswith("logs/checker/") or "__pycache__" in rel or rel.startswith("audit_replay/") or rel.startswith("handoff/"):
+            continue
+        out.append(rel)
+    return out
+
+
+def c12():
+    mp = WS / "MANIFEST.json"
+    if not mp.exists():
+        rec("C12", False, "MANIFEST.json absent")
+        return
+    man = read_json(mp)
+    files = man.get("files", {})
+    probs = []
+    for rel, h in files.items():
+        p = WS / rel
+        if not p.exists() or sha256_file(p) != h:
+            probs.append(rel)
+    extra = [r for r in manifest_files() if r not in files]
+    rec("C12", not probs and not extra, f"{len(files)} manifest entries; mismatched={probs[:5]}; unlisted={extra[:5]} (n={len(extra)})")
+
+
+def c13():
+    ex = {e["exclusion_id"]: e for e in load_jsonl("data/scope_exclusions.jsonl")}
+    probs = [k for k, e in ex.items() if not e.get("reason") or not e.get("owner")]
+    for rel in ("A1/stage_rows.jsonl", "A6/coverage.jsonl"):
+        for r in load_jsonl(rel):
+            tagged = str(r.get("disposition", "")).startswith("OUT_OF_SCOPE") or r.get("coverage_label") == "MANUAL_ONLY"
+            if tagged and r.get("exclusion_id") not in ex:
+                probs.append(f"{rel}:{r.get('id') or r.get('frz_id')}")
+    rec("C13", not probs, f"{len(ex)} exclusions; problems={probs[:8]}")
+
+
+def c14():
+    runs = load_jsonl("tests/test_runs.jsonl")
+    fields = ["run_id", "purpose", "command", "cwd", "baseline_sha", "python", "uv", "uv_lock_sha256", "os", "start_utc", "end_utc",
+              "exit_code", "log", "log_sha256"]
+    probs = []
+    for r in runs:
+        for f in fields:
+            if f not in r or r[f] in (None, ""):
+                probs.append(f"{r.get('run_id')}:{f}")
+        lp = Path(r.get("log", ""))
+        if lp.exists() and sha256_file(lp) != r.get("log_sha256"):
+            probs.append(f"{r.get('run_id')}:digest")
+        elif not lp.exists():
+            probs.append(f"{r.get('run_id')}:log missing")
+    rec("C14", len(runs) <= 10 and not probs, f"{len(runs)}/10 budget rows; problems={probs[:6]}")
+
+
+def c15():
+    seeds = load_jsonl("data/seeds.jsonl")
+    fids = finding_ids()
+    bad = []
+    for s in seeds:
+        if s["resolution"] not in ("CONFIRMED", "REFUTED", "MERGED"):
+            bad.append(f"{s['seed_id']}:{s['resolution']}")
+        elif s["resolution"] == "CONFIRMED" and s.get("finding_id") not in fids:
+            bad.append(f"{s['seed_id']}:no finding")
+        elif s["resolution"] in ("REFUTED",) and not s.get("resolution_evidence"):
+            bad.append(f"{s['seed_id']}:no refutation evidence")
+        elif s["resolution"] == "MERGED" and not s.get("merged_into"):
+            bad.append(f"{s['seed_id']}:no merge target")
+    rec("C15", not bad and len(seeds) == 20, f"{len(seeds)} seeds; unresolved/invalid={bad[:10]} (n={len(bad)})")
+
+
+# ---------------------------------------------------------------- wave-specific
+def w0():
+    b = WS / "BASELINE.json"
+    ok = b.exists()
+    if ok:
+        d = read_json(b)
+        ok = d["baseline_sha"] == BASELINE_SHA and d["worktree_porcelain"] == "" and d["worktree_head"] == BASELINE_SHA
+    rec("W0-baseline", ok, "BASELINE.json valid, WT HEAD == BASELINE_SHA, porcelain empty" if ok else "BASELINE.json invalid")
+    sr = WS / "SOURCE_REGISTRY.json"
+    rec("W0-sources", sr.exists() and read_json(sr)["linked_paths_missing"] == 0, "source registry resolved; linked paths missing=0" if sr.exists() else "absent")
+    ex = [WS / "extracts" / n for n in ("roadmap_rows.json", "frz_rows.json", "frz_evidence_log.json", "frz_family_owners.json")]
+    rec("W0-extracts", all(p.exists() for p in ex), "extracts present")
+    fr = read_json(WS / "extracts" / "frz_rows.json")
+    rr = read_json(WS / "extracts" / "roadmap_rows.json")
+    rec("W0-counts", len({r['frz_id'] for r in fr}) == 225, f"FRZ unique={len({r['frz_id'] for r in fr})}; roadmap unique IDs={len(rr)} (S3TABLE={sum(1 for r in rr if r['row_source']=='S3TABLE')}, ledger-only={sum(1 for r in rr if r['row_source']=='LEDGER')}, prose={sum(1 for r in rr if r['row_source']=='PROSE')})")
+    runs = load_jsonl("logs/tool_runs.jsonl")
+    rec("W0-toolruns", len(runs) >= 6 and all("exit_code" in r for r in runs) and not any(r["wt_porcelain_changed"] for r in runs),
+        f"{len(runs)} tool runs logged, none changed the worktree")
+    seeds = load_jsonl("data/seeds.jsonl")
+    fids = finding_ids()
+    rec("W0-seeds", len(seeds) == 20 and all("finding_id" in s for s in seeds), f"{len(seeds)} seeds registered (resolution tracked by C15)")
+
+
+def strength_block():
+    rows = fl.consolidate()
+    print("\n== VERIFICATION STRENGTH ==")
+    print("findings by evidence level:", dict(Counter(r["evidence_level"] for r in rows)))
+    print("findings by class x severity:", dict(Counter(f"{r['class']}/{r['severity']}" for r in rows)))
+    for rel, key in (("A2/cert_rows.jsonl", "verdict"), ("A5/drift_rows.jsonl", "drift_class")):
+        rr = load_jsonl(rel)
+        if rr:
+            print(f"{rel} {key}:", dict(Counter(r.get(key) for r in rr)))
+    for rel in ("A1/stage_rows.jsonl", "A2/cert_rows.jsonl", "A3/frz_rows.jsonl", "A4/concern_rows.jsonl", "A5/drift_rows.jsonl"):
+        rr = load_jsonl(rel)
+        if rr and any("evidence_level" in r for r in rr):
+            print(f"{rel} E-level histogram:", dict(Counter(r.get("evidence_level") for r in rr)))
+
+
+WAVE_CHECKS = {
+    "W0": [],
+    "W1": [c01, c02, c04],
+    "W2": [c03, lambda: c07({"A0", "A1", "A2", "A3", "A4"})],
+    "W3": [c05, c09],
+    "W4": [c01, c02, c03, c04, c05, c06, c07, c08, c09, c10, c11],
+    "W5": [c01, c02, c03, c04, c05, c06, c07, c08, c09, c10, c11, c12, c13, c14, c15],
+}
+
+
+def main():
+    ap = argparse.ArgumentParser()
+    ap.add_argument("--wave", required=True)
+    a = ap.parse_args()
+    RESULTS.clear()
+    if a.wave == "W0":
+        w0()
+    else:
+        for fn in WAVE_CHECKS[a.wave]:
+            try:
+                fn()
+            except Exception as e:  # a crashing check is a failing check
+                rec(getattr(fn, "__name__", "check"), False, f"CHECK ERROR: {type(e).__name__}: {e}")
+        if a.wave in ("W1", "W2"):
+            join = join_checks(a.wave)
+            RESULTS.extend(join)
+        if a.wave in ("W3", "W4", "W5"):
+            rec("NOT-ASSESSED", not_assessed_zero(a.wave), "NOT-ASSESSED count == 0" if not_assessed_zero(a.wave) else "NOT-ASSESSED rows remain")
+    print(f"== EQO-A checker  wave={a.wave}  baseline={BASELINE_SHA}  utc={utc_now()} ==")
+    print("\n== INVENTORY COMPLETENESS ==")
+    for cid, ok, msg in RESULTS:
+        print(f"[{'PASS' if ok else 'FAIL'}] {cid}: {msg}")
+    strength_block()
+    failed = [c for c, ok, _ in RESULTS if not ok]
+    print(f"\nRESULT wave={a.wave}: {'ALL PASS' if not failed else 'FAILED: ' + ', '.join(failed)}")
+    (WS / "logs" / "checker").mkdir(parents=True, exist_ok=True)
+    write_json(WS / "logs" / "checker" / f"{a.wave}.json", {"wave": a.wave, "utc": utc_now(), "baseline_sha": BASELINE_SHA, "results": [{"check": c, "pass": ok, "message": m} for c, ok, m in RESULTS]})
+    sys.exit(0 if not failed else 1)
+
+
+def not_assessed_zero(wave):
+    n = 0
+    for rel in ("A2/cert_rows.jsonl", "A3/frz_rows.jsonl"):
+        n += sum(1 for r in load_jsonl(rel) if r.get("verdict") == "NOT-ASSESSED" or r.get("frz_verdict") == "NOT-ASSESSED")
+    return n == 0
+
+
+def join_checks(wave):
+    out = []
+    st = {r["id"] for r in load_jsonl("A1/stage_rows.jsonl")}
+    fr = load_jsonl("A3/frz_rows.jsonl")
+    if st and fr:
+        miss = set()
+        for r in fr:
+            for s in r.get("closing_stage_ids", []):
+                if s not in st:
+                    miss.add(s)
+        out.append(("JOIN-FRZ-stages", not miss, f"FRZ closing stages not in inventory: {sorted(miss)[:10]} (n={len(miss)})"))
+        fscopes = {sc for f in read_jsonl(WS / "findings" / "FINDINGS.jsonl") for sc in f.get("scope", [])}
+        unres = [(r["frz_id"], r["closing_unresolved"]) for r in fr if r.get("closing_unresolved") and r["frz_id"] not in fscopes]
+        out.append(("JOIN-closing-unresolved", not unres, f"closing tokens that are not stages and have no finding: {unres[:6]}"))
+        frz_ids = {r["frz_id"] for r in fr}
+        bad = []
+        for r in load_jsonl("A1/stage_rows.jsonl"):
+            if r.get("assessment_tier") == "T1":
+                for f in r.get("frz_links", []):
+                    if f not in frz_ids:
+                        bad.append((r["id"], f))
+        out.append(("JOIN-T1-frz-links", not bad, f"T1 stage FRZ links not in matrix: {bad[:6]} (n={len(bad)})"))
+    return out
+
+
+if __name__ == "__main__":
+    main()

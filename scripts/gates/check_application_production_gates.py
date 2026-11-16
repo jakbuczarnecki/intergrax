@@ -17,6 +17,8 @@ for path in (REPO_ROOT, APPLICATIONS_ROOT, REPO_ROOT / "agents"):
     text = str(path)
     if text not in sys.path:
         sys.path.insert(0, text)
+import shipped_product_manifest_catalog  # noqa: E402, F401
+
 _CI_DIR = REPO_ROOT / "scripts" / "ci"
 if str(_CI_DIR) not in sys.path:
     sys.path.insert(0, str(_CI_DIR))

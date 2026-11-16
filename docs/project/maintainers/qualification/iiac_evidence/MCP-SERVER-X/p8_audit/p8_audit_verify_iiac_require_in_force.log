@@ -1,0 +1,5 @@
+command: python -m scripts.governance.verify_iiac_policy_activation --require-in-force
+git_head: eadb1c2116feb0a2090b234a36fd4182bd6ace8d
+date_utc: 2026-11-12T11:24:27Z
+IIAC policy activation: IN_FORCE @ IIAC-2026-11-05.1 from 92ad3555775649742299826e3680ec8ce703cc8a
+exit_code: 0

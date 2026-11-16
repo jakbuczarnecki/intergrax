@@ -1,0 +1,230 @@
+{
+  "BND": {
+    "line": 546,
+    "owners_raw": "EBH-2*, EBH-3, EBH-4",
+    "tokens": [
+      "EBH-2",
+      "EBH-3",
+      "EBH-4"
+    ]
+  },
+  "OWN": {
+    "line": 547,
+    "owners_raw": "EBH-2*, EBH-3",
+    "tokens": [
+      "EBH-2",
+      "EBH-3"
+    ]
+  },
+  "CTR": {
+    "line": 548,
+    "owners_raw": "EBH-2*, EBH-3, EBH-4, INT-EXTCOMP-X, INT-CONFIG-REAL-X, AW-7C",
+    "tokens": [
+      "EBH-2",
+      "EBH-3",
+      "EBH-4",
+      "INT-EXTCOMP-X",
+      "INT-CONFIG-REAL-X",
+      "AW-7C"
+    ]
+  },
+  "TYP": {
+    "line": 549,
+    "owners_raw": "EBH-2*, INT-EXTCOMP-X",
+    "tokens": [
+      "EBH-2",
+      "INT-EXTCOMP-X"
+    ]
+  },
+  "PLG": {
+    "line": 550,
+    "owners_raw": "EBH-2*, EBH-5, INT-EXTCOMP-X, INT-CONFIG-REAL-X, AW-7C",
+    "tokens": [
+      "EBH-2",
+      "EBH-5",
+      "INT-EXTCOMP-X",
+      "INT-CONFIG-REAL-X",
+      "AW-7C"
+    ]
+  },
+  "RPL": {
+    "line": 551,
+    "owners_raw": "EBH-5 (primary), EBH-7 (convergence), EBH-6 (recert), INT-CONFIG-REAL-X, AW-7C",
+    "tokens": [
+      "EBH-5",
+      "EBH-7",
+      "EBH-6",
+      "INT-CONFIG-REAL-X",
+      "AW-7C"
+    ]
+  },
+  "EXE": {
+    "line": 552,
+    "owners_raw": "HARNESS-*, EBH-4, GOV-X*, AW-7C",
+    "tokens": [
+      "EBH-4",
+      "GOV-X",
+      "AW-7C"
+    ]
+  },
+  "GOV": {
+    "line": 553,
+    "owners_raw": "HARNESS-*, GOV-X*, INT-CONFIG-REAL-X, AW-7C",
+    "tokens": [
+      "GOV-X",
+      "INT-CONFIG-REAL-X",
+      "AW-7C"
+    ]
+  },
+  "OBS": {
+    "line": 554,
+    "owners_raw": "HARNESS-*, TRACE-X, CTRL-X",
+    "tokens": [
+      "TRACE-X",
+      "CTRL-X"
+    ]
+  },
+  "TRC": {
+    "line": 555,
+    "owners_raw": "TRACE-X, GOV-X*, INT-EXTCOMP-X",
+    "tokens": [
+      "TRACE-X",
+      "GOV-X",
+      "INT-EXTCOMP-X"
+    ]
+  },
+  "STA": {
+    "line": 556,
+    "owners_raw": "STATE-X",
+    "tokens": [
+      "STATE-X"
+    ]
+  },
+  "REC": {
+    "line": 557,
+    "owners_raw": "STATE-X",
+    "tokens": [
+      "STATE-X"
+    ]
+  },
+  "CMP": {
+    "line": 558,
+    "owners_raw": "COMPAT-X, INT-EXTCOMP-X",
+    "tokens": [
+      "COMPAT-X",
+      "INT-EXTCOMP-X"
+    ]
+  },
+  "CFG": {
+    "line": 559,
+    "owners_raw": "INT-CONFIG-REAL-X, CONFIG-X (historical PASS @ fac9a43f…); current-HEAD structural requalification: EBH-5, EBH-6, ROADMAP-REPLAY-X",
+    "tokens": [
+      "INT-CONFIG-REAL-X",
+      "CONFIG-X",
+      "EBH-5",
+      "EBH-6",
+      "ROADMAP-REPLAY-X"
+    ]
+  },
+  "SEC": {
+    "line": 560,
+    "owners_raw": "CTRL-X, PROD-Q",
+    "tokens": [
+      "CTRL-X",
+      "PROD-Q"
+    ]
+  },
+  "REL": {
+    "line": 561,
+    "owners_raw": "HARNESS-W4, CTRL-X, PROD-Q",
+    "tokens": [
+      "HARNESS-W4",
+      "CTRL-X",
+      "PROD-Q"
+    ]
+  },
+  "CTL": {
+    "line": 562,
+    "owners_raw": "CTRL-X",
+    "tokens": [
+      "CTRL-X"
+    ]
+  },
+  "PRD": {
+    "line": 563,
+    "owners_raw": "PROD-Q",
+    "tokens": [
+      "PROD-Q"
+    ]
+  },
+  "REG": {
+    "line": 564,
+    "owners_raw": "QUAL-X",
+    "tokens": [
+      "QUAL-X"
+    ]
+  },
+  "EVOL": {
+    "line": 565,
+    "owners_raw": "EVOL-X (primary), ENT-AUDIT-X (continuous enforcement), SCENARIO-READINESS-X (scenario onboarding evidence)",
+    "tokens": [
+      "EVOL-X",
+      "ENT-AUDIT-X",
+      "SCENARIO-READINESS-X"
+    ]
+  },
+  "HRN": {
+    "line": 566,
+    "owners_raw": "HARNESS-FINAL",
+    "tokens": [
+      "HARNESS-FINAL"
+    ]
+  },
+  "DOC": {
+    "line": 567,
+    "owners_raw": "EBH-6, ARCH-FREEZE",
+    "tokens": [
+      "EBH-6",
+      "ARCH-FREEZE"
+    ]
+  },
+  "DEBT": {
+    "line": 568,
+    "owners_raw": "ARCH-FREEZE",
+    "tokens": [
+      "ARCH-FREEZE"
+    ]
+  },
+  "FRZ": {
+    "line": 569,
+    "owners_raw": "ARCH-FREEZE",
+    "tokens": [
+      "ARCH-FREEZE"
+    ]
+  },
+  "AUD": {
+    "line": 570,
+    "owners_raw": "ENT-AUDIT-X",
+    "tokens": [
+      "ENT-AUDIT-X"
+    ]
+  },
+  "TEN": {
+    "line": 571,
+    "owners_raw": "TENANT-X (primary), EBH-7 (final convergence), ENT-AUDIT-X (continuous), ARCH-FREEZE (acceptance); supporting: TRACE-X, STATE-X, CONFIG-X, GOV-X2, EBH-4, EBH-5, PROD-Q, QUAL-X",
+    "tokens": [
+      "TENANT-X",
+      "EBH-7",
+      "ENT-AUDIT-X",
+      "ARCH-FREEZE",
+      "TRACE-X",
+      "STATE-X",
+      "CONFIG-X",
+      "GOV-X2",
+      "EBH-4",
+      "EBH-5",
+      "PROD-Q",
+      "QUAL-X"
+    ]
+  }
+}

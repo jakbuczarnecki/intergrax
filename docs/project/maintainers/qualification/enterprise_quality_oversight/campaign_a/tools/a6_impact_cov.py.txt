@@ -1,0 +1,26 @@
+"""A6-T03: which top-level packages are covered by the CHANGED-SINCE impact map (JSON prefixes + PDC domain rules)? Run with the venv python, cwd=WT (read-only import)."""
+import json, sys
+sys.path.insert(0, ".")
+from intergrax.platform.enterprise_audit import impact_map as im
+prefixes = {}
+try:
+    prefixes = {k: frozenset(v) for k, v in json.load(open("intergrax/platform/enterprise_audit/data/changed_since_impact_map.v1.json", encoding="utf-8"))["path_prefix_to_check_ids"].items()}
+except Exception as e:
+    print("json load failed", e)
+for fn in ("load_prefix_map", "path_prefix_to_check_ids", "load_impact_prefixes", "merged_prefix_map"):
+    if hasattr(im, fn):
+        print("has", fn)
+pdc = dict(im.PDC_DOMAIN_IMPACT_RULES)
+allp = dict(prefixes)
+for k, v in pdc.items():
+    allp.setdefault(k, frozenset(v))
+census = [json.loads(l) for l in open(sys.argv[1], encoding="utf-8")]
+res = []
+for c in census:
+    p = c["path"]
+    cov = [k for k in allp if p == k or p.startswith(k + "/")]
+    deeper = [k for k in allp if k.startswith(p + "/")]
+    res.append({"path": p, "covered_by_prefix": cov[:3], "only_deeper_prefixes": len(deeper) if not cov else 0, "uncovered": not cov and not deeper, "py_files": c["py_files"]})
+json.dump({"n_prefixes": len(allp), "n_json": len(prefixes), "n_pdc": len(pdc), "rows": res}, open(sys.argv[2], "w", encoding="utf-8"), indent=1)
+print("prefixes", len(allp), "packages", len(res), "fully covered", sum(1 for r in res if r["covered_by_prefix"]), "only partially (deeper prefixes)",
+      sum(1 for r in res if r["only_deeper_prefixes"]), "uncovered", sum(1 for r in res if r["uncovered"]))

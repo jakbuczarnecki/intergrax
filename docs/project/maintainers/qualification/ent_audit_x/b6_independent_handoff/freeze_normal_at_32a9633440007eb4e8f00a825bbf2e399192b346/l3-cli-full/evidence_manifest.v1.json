@@ -1,0 +1,35 @@
+{
+  "artifacts": [
+    {
+      "path": "enterprise_audit_outcomes.json",
+      "sha256": "3c3aa0527c0e59244be96fd7d68f4e16e82238603632212abba61ae274f68431"
+    },
+    {
+      "path": "enterprise_audit_report.json",
+      "sha256": "e84ec1b86aa897d2722c7cf7c7a79717b292d5173870567b73b33eb34a92c1be"
+    },
+    {
+      "path": "enterprise_audit_report.md",
+      "sha256": "a8184e01e7cd94797b191ed3b40712d85e9efb18932273a73ce34f0f6a1d6f16"
+    },
+    {
+      "path": "frz_coverage.v1.json",
+      "sha256": "ddef45a165fc8623146d83c23af44297f2cf37d60a20f6bae15b582c6f87dfe0"
+    },
+    {
+      "path": "vbn_domains.v1.json",
+      "sha256": "a36b079a810db42882d9b2e15b9a58f5fb32f143796b63dcf1eb934922978ae0"
+    }
+  ],
+  "audit_execution_sha": "32a9633440007eb4e8f00a825bbf2e399192b346",
+  "certifying_run": true,
+  "check_manifest_digest": "0fe966e43a10a561c38222b6cff30269e906633e61862d76aa29c1775e691b8b",
+  "environment_fingerprint": {
+    "implementation": "CPython",
+    "platform": "Windows-11-10.0.26200-SP0",
+    "python_version": "3.12.11"
+  },
+  "qualification_sha": "32a9633440007eb4e8f00a825bbf2e399192b346",
+  "run_id": "ent-w2-freeze",
+  "schema_version": 1
+}

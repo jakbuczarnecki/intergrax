@@ -5,8 +5,9 @@
 from __future__ import annotations
 
 import threading
+from dataclasses import replace
 
-from intergrax.agent_distribution.runtime_revision import RuntimeRevision
+from intergrax.agent_distribution.runtime_revision import RuntimeRevision, RuntimeRevisionState
 from intergrax.agent_distribution.stores import RuntimeRevisionStore
 from intergrax.applications._shared.production_registry_projection_input_bundle import (
     ProductionRegistryProjectionInputError,
@@ -26,6 +27,23 @@ from intergrax.applications._shared.registry_projection_descriptor import (
     RuntimeRegistryProjectionDescriptorStore,
 )
 from intergrax.applications.contracts.manifest import ApplicationManifest
+
+
+def _in_persisted_representation(bundle: RegistryProjectionInputBundle) -> RegistryProjectionInputBundle:
+    """Normalize what legitimately differs between a frozen input and its persisted authority.
+
+    The manifest goes through the JSON round-trip of the persisted descriptor, and the revision
+    lifecycle progress (state, activation time) is neutralized: the frozen inputs of a revision are
+    built while it is validated, the durable authority reports its current state. Digests, roster,
+    manifest content and artifact digest stay compared.
+    """
+    revision = bundle.runtime_revision.model_copy(
+        update={"revision_state": RuntimeRevisionState.VALIDATED, "activated_at": None},
+    )
+    manifest = bundle.manifest
+    if isinstance(manifest, ApplicationManifest):
+        manifest = ApplicationManifest.model_validate_json(manifest.model_dump_json())
+    return replace(bundle, runtime_revision=revision, manifest=manifest)
 
 
 class DescriptorBackedRegistryProjectionInputStore:
@@ -72,9 +90,7 @@ class DescriptorBackedRegistryProjectionInputStore:
             existing = self._fingerprints.get(revision_id)
             if existing is not None:
                 if existing != fingerprint:
-                    raise RegistryProjectionError(
-                        f"conflicting frozen projection inputs for {revision_id!r}"
-                    )
+                    raise RegistryProjectionError(f"conflicting frozen projection inputs for {revision_id!r}")
                 return
         try:
             durable = self._descriptor_store.get_for_revision(
@@ -88,23 +104,23 @@ class DescriptorBackedRegistryProjectionInputStore:
             reconstructed = self._reconstruct_from_durable_authority(revision)
             if reconstructed is None:
                 raise RegistryProjectionError(
-                    f"durable descriptor present but authority incomplete for "
-                    f"{revision_id!r}",
+                    f"durable descriptor present but authority incomplete for {revision_id!r}",
                 )
+            # Compare in the persisted representation (T-IGX-041-A, F-D1-11): the descriptor decodes
+            # integration bindings to slug references, the production builder emits manifest-carrying
+            # bindings. Both sides go through the same JSON round-trip; a different manifest still differs.
             durable_fingerprint = registry_projection_input_semantic_fingerprint(
-                reconstructed,
+                _in_persisted_representation(reconstructed),
             )
-            if durable_fingerprint != fingerprint:
-                raise RegistryProjectionError(
-                    f"durable descriptor authority mismatch for {revision_id!r}"
-                )
+            if durable_fingerprint != registry_projection_input_semantic_fingerprint(
+                _in_persisted_representation(bundle),
+            ):
+                raise RegistryProjectionError(f"durable descriptor authority mismatch for {revision_id!r}")
         with self._lock:
             existing = self._fingerprints.get(revision_id)
             if existing is not None:
                 if existing != fingerprint:
-                    raise RegistryProjectionError(
-                        f"conflicting frozen projection inputs for {revision_id!r}"
-                    )
+                    raise RegistryProjectionError(f"conflicting frozen projection inputs for {revision_id!r}")
                 return
             self._session_bundles[revision_id] = bundle
             self._fingerprints[revision_id] = fingerprint
@@ -136,9 +152,7 @@ class DescriptorBackedRegistryProjectionInputStore:
             raise RegistryProjectionError(str(exc)) from exc
         manifest = descriptor.manifest
         if not isinstance(manifest, ApplicationManifest):
-            raise RegistryProjectionError(
-                "projection descriptor requires ApplicationManifest authority"
-            )
+            raise RegistryProjectionError("projection descriptor requires ApplicationManifest authority")
         roster_contract_authority = self._authority.roster_contract_authority_for(
             resolved=resolved,
             manifest=manifest,

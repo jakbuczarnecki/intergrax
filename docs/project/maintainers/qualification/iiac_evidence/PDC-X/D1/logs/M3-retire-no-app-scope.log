@@ -1,0 +1,7 @@
+..............F
+================================== FAILURES ===================================
+D:\Projekty\_wt\intergrax\ia-d1-mut\tests\qualification\pdc_x\d1\test_d1_adversarial_lifecycle.py:446: Failed: DID NOT RAISE <class 'Exception'>
+=========================== short test summary info ===========================
+FAILED tests/qualification/pdc_x/d1/test_d1_adversarial_lifecycle.py::test_r007_other_application_cannot_see_or_retire_a_slot_it_does_not_own
+!!!!!!!!!!!!!!!!!!!!!!!!!! stopping after 1 failures !!!!!!!!!!!!!!!!!!!!!!!!!!
+1 failed, 14 passed in 3.87s

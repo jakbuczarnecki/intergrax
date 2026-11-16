@@ -1,0 +1,51 @@
+{
+ "A2/B2.findings.jsonl#f3": {
+  "severity": "MEDIUM",
+  "impact_parent_note": "Parent calibration: the leakage sub-claim fails (8 non-test files in agents/ and applications/ import intergrax.integrations._shared.*; gate scans intergrax/ only; code verified by the parent at the baseline), but the imports point downward and EBH-3's central claim (global dependency graph directionality and exactly-one ownership) is not shown to fail, so HIGH is not applied."
+ },
+ "A2/B7.findings.jsonl#f1": {
+  "status": "MERGED",
+  "merged_into": "EQOA-A2-002",
+  "severity": "BLOCKER"
+ },
+ "A4/a4_3.findings.jsonl#f4": {
+  "severity": "MEDIUM",
+  "next_action": "CAMPAIGN_B",
+  "parent_calibration": "Parent verified the code facts at E3 (schemas.py:11 default tenant_id 'default'; fastapi_router.py run_task builds the Task from the unauthenticated body with 'or default'). HIGH is not applied: the application is the local single-tenant workspace product, whether it is inside the FRZ-TEN-10 claim is unresolved, and no runtime reproduction was done (Campaign B)."
+ },
+ "A5/A5-3.findings.jsonl#f1": {
+  "evidence_level": "E4",
+  "evidence": [
+   "tests/qualification/roadmap_replay_x/_prod_delta_disposition.py@258bbf6abb6fdbb92ef0185d058527fbb1e47f04:107",
+   "tests/qualification/roadmap_replay_x/_closure_counters.py@258bbf6abb6fdbb92ef0185d058527fbb1e47f04:91",
+   "tests/qualification/roadmap_replay_x/test_roadmap_replay_x_mechanical_exit_gates.py@258bbf6abb6fdbb92ef0185d058527fbb1e47f04:148",
+   "tests/qualification/roadmap_replay_x/_pre_ent_l3_prod_delta.py@258bbf6abb6fdbb92ef0185d058527fbb1e47f04:9",
+   "ws:tests/logs/T04.log",
+   "ws:logs/A5-007-counters-detail.log",
+   "ws:audit_replay/EQOA_INDEPENDENT_AUDIT_REPORT.md"
+  ],
+  "impact": "Executed at the baseline (budget run T04): tests/qualification/roadmap_replay_x/test_roadmap_replay_x_mechanical_exit_gates.py::test_replay_x_closure_counters_computed FAILS with historical_evidence_invalidated_by_later_changes = 2 (expected 0): non-zero unscoped production delta or invalid scoped disposition since the DUP-X pin. The stage's own closure counter, which ROADMAP-REPLAY-X asserted to be zero for its CLOSED status, is therefore violated at the baseline (E4). The sub-agent's static estimate of about 188 undispositioned paths is superseded by the executed count (2). Corrective loop 1 (AUD-02): the auditor and the executor each re-executed all_counters() directly (no pytest; executor run A5-007-counters): TWO counters are non-zero at the baseline: historical_evidence_invalidated_by_later_changes = 2 (violations named by the auditor: unscoped_prod_delta intergrax/applications/contracts/environment_profile/sub_profiles.py and applications/legal_application/mcp/server.py) and vendor_neutrality_replay_failures = 1 (auditor: unexpected_prod_delta_for_vbn applications/dispute_sim_application/mcp/server.py). The test asserts the counters in sequence, so the first failure masks the second. Severity stays HIGH (first counter E4, second counter E3)."
+ },
+ "A5/A5-2.findings.jsonl#f1": {
+  "severity": "MEDIUM",
+  "parent_calibration": "The independent PDC-X global audit (IA-GLOBAL) rated the same condition G-09 MEDIUM (iiac_audit_global_findings.json:77-83; READ, not reproduced). EQO-A confirmed the code path at E3 (evaluation_wiring.py:60-65, harness_host_runtime.py:518-521) and keeps MEDIUM."
+ },
+ "A5/A5-2.findings.jsonl#f2": {
+  "severity": "LOW",
+  "evidence_level": "E4",
+  "evidence": [
+   "docs/project/maintainers/qualification/ROADMAP_REPLAY_X_QUALIFICATION_EVIDENCE_RECORD.md@258bbf6abb6fdbb92ef0185d058527fbb1e47f04:32",
+   "docs/project/maintainers/qualification/ROADMAP_REPLAY_X_QUALIFICATION_EVIDENCE_RECORD.md@258bbf6abb6fdbb92ef0185d058527fbb1e47f04:33",
+   "tests/qualification/state_x/_state_x_final_r1_closed_world_tests.py@258bbf6abb6fdbb92ef0185d058527fbb1e47f04:157",
+   "tests/qualification/trace_x/test_trace_x_p4_r5_closed_world.py@258bbf6abb6fdbb92ef0185d058527fbb1e47f04:119",
+   "intergrax/applications/_shared/mcp_server_engine.py@258bbf6abb6fdbb92ef0185d058527fbb1e47f04:1",
+   "intergrax/runtime/nexus/artifacts/sqlite_artifact_store.py@258bbf6abb6fdbb92ef0185d058527fbb1e47f04:1",
+   "ws:tests/logs/T06.log"
+  ],
+  "impact": "Both stages certify closed-world coverage (AST discovery, registry parity). The replay passed at 22fbc0e; afterwards PDC added durable scheduler/recurrence rows, a sqlite artifact store and the MCP server ingress. Owners edited the STATE-X classification for the artifact store, which shows maintenance, but no retained log shows either suite executed since. Whether the gates still pass is unknown. Parent update: EQO-A budget run T06 executed the two named closed-world gates (STATE-X test_sxf_r1_q50_discovery_inventory_counts, TRACE-X test_txp4r5_q04_production_composition_registry_parity) at the baseline: both PASS (E4). Only these two named nodes were executed; the STATE-X and TRACE-X suites were not. The drift class stays unrequalified by any recorded independent requalification (AUD-09: wording narrowed)."
+ },
+ "A1/gamma.findings.jsonl#f1": {
+  "arch_freeze_impact": "BLOCKS",
+  "parent_calibration": "AUD-10: aligned with EQOA-A2-001 (same TOOL-LIFE-X label, ARCH-FREEZE impact BLOCKS via EQOA-A2-002); related_findings: EQOA-A2-001, EQOA-A2-002"
+ }
+}

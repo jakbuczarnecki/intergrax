@@ -1,0 +1,7 @@
+
+no tests ran in 2.87s
+
+--- STDERR ---
+ERROR: Unknown config option: cache_dir
+
+

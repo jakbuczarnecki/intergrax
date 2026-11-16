@@ -1,0 +1,57 @@
+"""A2-T03: run the read-only IIAC verifiers on every published manifest at the baseline. Output A2/manifest_checks.jsonl.
+Verifiers: scripts.governance.verify_iiac_audit_manifest <m>, scripts.governance.verify_iiac_role_separation <m> (no --strict-product-diff)."""
+from __future__ import annotations
+
+import os
+import subprocess
+import sys
+import time
+from pathlib import Path
+
+sys.path.insert(0, str(Path(__file__).parent))
+from common import *  # noqa
+
+PY = str(MAIN / ".venv" / "Scripts" / "python.exe")
+
+
+def main():
+    mans = [p for p in git("ls-files").stdout.split("\n") if "iiac_audit_session_manifest" in p and p.endswith(".json")
+            and "schemas/" not in p and "examples/" not in p]
+    before_wt, before_main = git("status", "--porcelain").stdout, git("status", "--porcelain", cwd=MAIN).stdout
+    env = dict(os.environ, PYTHONDONTWRITEBYTECODE="1", PYTHONUTF8="1")
+    out = []
+    t0 = time.time()
+    for m in sorted(mans):
+        rec = {"manifest": m}
+        for name, mod in (("manifest_valid", "scripts.governance.verify_iiac_audit_manifest"), ("role_separation", "scripts.governance.verify_iiac_role_separation")):
+            p = subprocess.run([PY, "-m", mod, m], cwd=str(WT), capture_output=True, env=env, timeout=300)
+            txt = (p.stdout + p.stderr).decode("utf-8", errors="replace")
+            rec[name] = {"exit": p.returncode, "tail": txt.strip()[-300:]}
+        try:
+            d = json.loads(show_text(m))
+            rec["stage_id"] = d.get("stage_id")
+            rec["verdict"] = d.get("verdict")
+            rec["profile"] = d.get("certification_profile")
+            rec["audited_sha"] = d.get("audited_sha") or d.get("audited_head_sha")
+            rec["limitations_n"] = len(d.get("limitations", []) or [])
+            rec["assurance"] = d.get("session_assurance") or d.get("assurance_level")
+        except Exception as e:  # noqa
+            rec["parse_error"] = str(e)
+        out.append(rec)
+        print(m.split("/")[-1], rec["manifest_valid"]["exit"], rec["role_separation"]["exit"], flush=True)
+    write_jsonl(WS / "A2" / "manifest_checks.jsonl", out)
+    after_wt, after_main = git("status", "--porcelain").stdout, git("status", "--porcelain", cwd=MAIN).stdout
+    run = {"run_id": "A2-T03-manifests", "purpose": "A2-T03 IIAC manifest and role-separation verifiers over all published manifests",
+           "command": "python -m scripts.governance.verify_iiac_audit_manifest|verify_iiac_role_separation <manifest> (x%d)" % len(mans), "cwd": str(WT),
+           "baseline_sha_head": git("rev-parse", "HEAD").stdout.strip(), "exit_code": 0, "duration_s": round(time.time() - t0, 1), "start_utc": utc_now(), "end_utc": utc_now(),
+           "log": str(WS / "A2" / "manifest_checks.jsonl"), "log_sha256": sha256_file(WS / "A2" / "manifest_checks.jsonl"),
+           "wt_porcelain_changed": before_wt != after_wt, "main_porcelain_changed": before_main != after_main, "counts_against_test_budget": False}
+    with open(WS / "logs" / "tool_runs.jsonl", "a", encoding="utf-8", newline="\n") as f:
+        f.write(json.dumps(run, ensure_ascii=False) + "\n")
+    from collections import Counter
+    print("valid exit codes", dict(Counter(r["manifest_valid"]["exit"] for r in out)), "role sep", dict(Counter(r["role_separation"]["exit"] for r in out)))
+    print("verdicts", dict(Counter(str(r.get("verdict")) for r in out)))
+
+
+if __name__ == "__main__":
+    main()

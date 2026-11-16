@@ -1,0 +1,32 @@
+{
+  "stage_id": "IIAC-GOV-1",
+  "certification_profile": "iiac-v1",
+  "policy_version": "IIAC-2026-11-05.1",
+  "implementation_session_id": "T-IGX-035-G-MCP-P6-IMPLEMENTER",
+  "implementation_agent_id": "implementer",
+  "auditor_session_id": "b8d2e7f4-1a3c-4f9e-8d62-5c1a0b9e7f3d",
+  "auditor_agent_id": "independent-quality-auditor",
+  "certifier_session_id": "local_7c8553da-3398-4f9b-8fae-c794a63d6cb5",
+  "certifier_agent_id": "certification-governance-agent",
+  "audited_implementation_sha": "5ff8606b089828b334ebac133518ba47c9f6f7ce",
+  "test_execution_sha": "9b8c19d75d5df0f4b7c87d2707811f3715805102",
+  "evidence_publication_sha": "2d3eceb6cf7e93dccd4d96919319a6c969b4444b",
+  "audit_execution_sha": "2d3eceb6cf7e93dccd4d96919319a6c969b4444b",
+  "audit_report_digest": "c405c65faf53243a0511b0b9584a9f3abda4db08c09ee9b9266c86fe9f6b7a4e",
+  "audit_scope_manifest_digest": "e06ce433ac1c260390885e19cc60b0687be9d8908d78bd38ae4fb5f1102fe56f",
+  "test_matrix_digest": "d5028f194bb7917d07e8df5264075952dcf8757503975042988caba6e89a240b",
+  "findings_digest": "df3648f926dad3199ff40c7c83c7fae4ed7a26bd1c67701a355bc7130073f831",
+  "verdict": "PASS",
+  "limitations": [
+    "ACT-N11 activation binding: MCP P6 three-path delta versus pin 8fff85e3b; cumulative 17-path inventory (erratum: not 19 as in earlier drafts)",
+    "Product independent manifest PASS_SCOPED: iiac_audit_session_manifest.MCP-SERVER-X.act_n11_mcp.reaudit_p6.json",
+    "IIAC-GOV-1 governance dossier digests unchanged; MCP product delta audited under MCP-SERVER-X ACT-N11",
+    "F-MCP-P6-GOV-001, F-MCP-P6-GOV-002 and F-MCP-P6-GOV-003 preserved; no retroactive approval of PR #459 or PR #460",
+    "Does not close MCP-SERVER-X, promote FRZ, or authorize P7"
+  ],
+  "certification_publication_sha": "276c64305799fa4d7f1a25018cc1cccf061fbafd",
+  "assurance_level": "process_enforced",
+  "handoff_record_path": "docs/project/maintainers/qualification/iiac_evidence/MCP-SERVER-X/act_n11_mcp_p6/IIAC_SESSION_HANDOFF_RECORD_ACT_N11_MCP_REAUDIT_P6.md",
+  "activation_audit_report_path": "docs/project/maintainers/qualification/iiac_evidence/IIAC-GOV-1/certification/IIAC_ACT01_INDEPENDENT_REAUDIT_DOSSIER.md",
+  "product_session_manifest_path": "docs/project/maintainers/qualification/iiac_evidence/MCP-SERVER-X/act_n11_mcp_p6/iiac_audit_session_manifest.MCP-SERVER-X.act_n11_mcp.reaudit_p6.json"
+}

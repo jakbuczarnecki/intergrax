@@ -1,0 +1,62 @@
+# PDC-X — campaign index (SSOT hub)
+
+**Stage ID:** `PDC-X` (`PLATFORM-DOMAIN-COMPLETENESS-X`)
+**Roadmap status:** `PLANNED / MANDATORY / CURRENT` (roadmap §3, §3.2, §5)
+**Position:** `MCP-SERVER-X` → **`PDC-X`** → `ARCH-FREEZE`
+**Baseline pin:** `a695c9c835bb5b4b206e6e3e00bb2aee23ca7b6b`
+**ROADMAP_AMENDMENT_SHA:** `bc9ef52bd690738e71638a599eec64c76ac356c9` (PR #461 merge; see [`PDC_SHA_LADDER.md`](./PDC_SHA_LADDER.md))
+**Tickets:** P0 [`T-IGX-036-A.md`](../../../../governance/tickets/T-IGX-036-A.md) · P1 [`T-IGX-036-B.md`](../../../../governance/tickets/T-IGX-036-B.md) · P2 [`T-IGX-036-C.md`](../../../../governance/tickets/T-IGX-036-C.md) · P3 [`T-IGX-036-D.md`](../../../../governance/tickets/T-IGX-036-D.md) · P3-08 lock [`T-IGX-036-E.md`](../../../../governance/tickets/T-IGX-036-E.md) · ODs [`T-IGX-036-F.md`](../../../../governance/tickets/T-IGX-036-F.md) · P4 [`T-IGX-036-G.md`](../../../../governance/tickets/T-IGX-036-G.md) · P5-DOC [`T-IGX-036-H.md`](../../../../governance/tickets/T-IGX-036-H.md)
+
+PDC-X is **one** campaign with eight certification workstreams (`PDC-D1`..`PDC-D8`). They are **not** separate roadmap stages.
+
+## Authority map (one SSOT per concern; this dossier links and never duplicates)
+
+| Concern | SSOT artifact |
+| --- | --- |
+| Program sequence, stage status, closure | [`PLATFORM_ENTERPRISE_COMPLETION_ROADMAP.md`](../../plans/PLATFORM_ENTERPRISE_COMPLETION_ROADMAP.md) §3 / §3.2 / §5 |
+| Freeze criteria (225 / 26) | [`PLATFORM_ENTERPRISE_FREEZE_ACCEPTANCE_CHECKLIST.md`](../PLATFORM_ENTERPRISE_FREEZE_ACCEPTANCE_CHECKLIST.md) |
+| Assurance operating protocol | [`ENTERPRISE_CONTINUOUS_ARCHITECTURE_ASSURANCE_PROTOCOL.md`](../ENTERPRISE_CONTINUOUS_ARCHITECTURE_ASSURANCE_PROTOCOL.md) |
+| Independent certification | [`INTEGRAX_INTERNAL_INDEPENDENT_AGENT_CERTIFICATION_PROTOCOL.md`](../INTEGRAX_INTERNAL_INDEPENDENT_AGENT_CERTIFICATION_PROTOCOL.md) + [`IIAC_POLICY_ACTIVATION_RECORD.json`](../IIAC_POLICY_ACTIVATION_RECORD.json); applicability to PDC-X → [`OD-PDC-IIAC-SCOPE`](./operator_decisions/OD-PDC-IIAC-SCOPE.md) |
+| ARCH-FREEZE WBS (successor; 54 tasks preserved) | [`ARCH_FREEZE_WBS_AND_DEPENDENCY_DAG.md`](../ARCH_FREEZE_WBS_AND_DEPENDENCY_DAG.md) |
+| Predecessor campaign | [`mcp_server_x/MCP_SERVER_X_INDEX.md`](../mcp_server_x/MCP_SERVER_X_INDEX.md) |
+
+## Dossier artifacts
+
+| Artifact | Phase | Status |
+| --- | --- | --- |
+| `PDC_MASTER_PLAN` → [`PDC_MASTER_PLAN.md`](./PDC_MASTER_PLAN.md) | P0 | Published (pointer to the approved plan) |
+| `PDC_BASELINE_AND_SCOPE` → [`PDC_BASELINE_AND_SCOPE.md`](./PDC_BASELINE_AND_SCOPE.md) | P0 | Published |
+| `PDC_SHA_LADDER` → [`PDC_SHA_LADDER.md`](./PDC_SHA_LADDER.md) | P0 → P9 | Open |
+| `PDC_OPERATOR_DECISIONS` → [`PDC_OPERATOR_DECISIONS.md`](./PDC_OPERATOR_DECISIONS.md) | P0 → P9 | Open |
+| `PDC_CLOSED_WORLD_INVENTORY` → [`PDC_CLOSED_WORLD_INVENTORY.md`](./PDC_CLOSED_WORLD_INVENTORY.md) + [`.json`](./PDC_CLOSED_WORLD_INVENTORY.json) | P1 | Published (T-IGX-036-B) |
+| `PDC_DOMAIN_REQUIREMENTS_MATRIX` → [`.md`](./PDC_DOMAIN_REQUIREMENTS_MATRIX.md) + [`.json`](./PDC_DOMAIN_REQUIREMENTS_MATRIX.json) | P2 | Published (T-IGX-036-C; generated; **172 rows** per `pdc_x_requirements.py --check`, this index said 168 earlier) |
+| `PDC_GAP_REGISTER` → [`PDC_GAP_REGISTER.md`](./PDC_GAP_REGISTER.md) | P2 | Published (generated) |
+| `PDC_FRZ_COVERAGE_MATRIX` → [`PDC_FRZ_COVERAGE_MATRIX.md`](./PDC_FRZ_COVERAGE_MATRIX.md) | P2 | Published (generated; OD-PDC-FRZ-01 approved) |
+| `PDC_OWNERSHIP_MATRIX` → [`PDC_OWNERSHIP_MATRIX.md`](./PDC_OWNERSHIP_MATRIX.md) | P3 | Locked (OD-PDC-ADR-01 approved; T-IGX-036-E) |
+| `PDC_ARCHITECTURE_DECISIONS` → [`PDC_ARCHITECTURE_DECISIONS.md`](./PDC_ARCHITECTURE_DECISIONS.md) | P3 | Locked (ADR-PDC-01..08 Accepted) |
+| `PDC_IMPLEMENTATION_WBS` → [`PDC_IMPLEMENTATION_WBS.md`](./PDC_IMPLEMENTATION_WBS.md) | P4 | Published (generated; T-IGX-036-G) |
+| `PDC_DEPENDENCY_DAG` → [`PDC_DEPENDENCY_DAG.md`](./PDC_DEPENDENCY_DAG.md) | P4 | Published (generated) |
+| `PDC_CROSS_DOMAIN_TEST_MATRIX` → [`PDC_CROSS_DOMAIN_TEST_MATRIX.md`](./PDC_CROSS_DOMAIN_TEST_MATRIX.md) | P4 | Published (generated) |
+| `PDC_REG_DIAGNOSIS` → [`PDC_REG_DIAGNOSIS.md`](./PDC_REG_DIAGNOSIS.md) | P4 / P5-REG | Published (12 stale gates, 1 product regression) |
+| `PDC_DOMAIN_CERTIFICATION_MATRIX` → [`PDC_DOMAIN_CERTIFICATION_MATRIX.md`](./PDC_DOMAIN_CERTIFICATION_MATRIX.md) | P7 / P8-04 | Published (CERT-PDC consolidation of domain dispositions; no row re-grade; not a stage certification) |
+| `PDC_INDEPENDENT_AUDIT` → [`PDC_INDEPENDENT_AUDIT.md`](./PDC_INDEPENDENT_AUDIT.md) | P8 | Published (IA-GLOBAL; addenda 1-3; final verdict `PASS_SCOPED` at `969cbd964`, with declared exceptions) |
+| `PDC_P8_04_ACTIVATION_CERTIFIER_REPORT` → [`PDC_P8_04_ACTIVATION_CERTIFIER_REPORT.md`](./PDC_P8_04_ACTIVATION_CERTIFIER_REPORT.md), [`PDC_P8_ACTIVATION_RUNBOOK.md`](./PDC_P8_ACTIVATION_RUNBOOK.md) | P8-04 | Published (binding manifest `PASS` scoped; IIAC activation `IN_FORCE`) |
+| `PDC_FINAL_ACCEPTANCE_REPORT` → [`PDC_FINAL_ACCEPTANCE_REPORT.md`](./PDC_FINAL_ACCEPTANCE_REPORT.md) | P9 | **Answers recorded in chat; awaiting the Operator's final confirmation** (lists the decisions to sign; not a closure) |
+| `PDC_ARCH_FREEZE_HANDOFF` → [`PDC_ARCH_FREEZE_HANDOFF.md`](./PDC_ARCH_FREEZE_HANDOFF.md) | P9 | **Answers recorded in chat; awaiting the Operator's final confirmation** (ARCH-FREEZE not entered) |
+| `PDC_EXCEPTION_REGISTER` → [`PDC_EXCEPTION_REGISTER.md`](./PDC_EXCEPTION_REGISTER.md) | P9 | **Answers recorded in chat; awaiting the Operator's final confirmation** |
+| `PDC_DEBT_REGISTER` → [`PDC_DEBT_REGISTER.md`](./PDC_DEBT_REGISTER.md) | P9 | **Answers recorded in chat; awaiting the Operator's final confirmation** |
+| `PDC_FRZ_PROMOTION_PROPOSAL` → [`PDC_FRZ_PROMOTION_PROPOSAL.md`](./PDC_FRZ_PROMOTION_PROPOSAL.md) | P9 | **Answers recorded in chat; awaiting the Operator's final confirmation** (no FRZ status changed; 225 / 26) |
+| `PDC_ROADMAP_CLOSURE_TEXT` → [`PDC_ROADMAP_CLOSURE_TEXT.md`](./PDC_ROADMAP_CLOSURE_TEXT.md) | P9 | **Answers recorded in chat; awaiting the Operator's final confirmation** (roadmap not edited; closure line not written) |
+
+## Workstreams
+
+| ID | Domain |
+| --- | --- |
+| `PDC-D1` | AGENT-LIFECYCLE |
+| `PDC-D2` | CONTEXT-KNOWLEDGE |
+| `PDC-D3` | MODEL-RUNTIME |
+| `PDC-D4` | HOST-RUNTIME |
+| `PDC-D5` | EVALUATION |
+| `PDC-D6` | RUNTIME-SECURITY |
+| `PDC-D7` | BACKGROUND-SCHED |
+| `PDC-D8` | ARTIFACT-LIFECYCLE |

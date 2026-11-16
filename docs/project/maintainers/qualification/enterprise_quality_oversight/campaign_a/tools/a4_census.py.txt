@@ -1,0 +1,57 @@
+"""A4-T02: package census at BASELINE_SHA: top-level packages of intergrax/, intergrax/runtime/, agents/, applications/ with file counts,
+documentation mentions (owner-doc grep) and test mentions. Excludes build/ and applications/*/docker/runtime-context/ (SX-06)."""
+from __future__ import annotations
+
+import re
+import sys
+from collections import Counter, defaultdict
+from pathlib import Path
+
+sys.path.insert(0, str(Path(__file__).parent))
+from common import *  # noqa
+
+ROOTS = ["intergrax", "intergrax/runtime", "agents", "applications"]
+EXCL = re.compile(r"(^|/)build/|applications/[^/]+/docker/runtime-context/|(^|/)__pycache__/")
+
+
+def main():
+    allfiles = [f for f in git("ls-tree", "-r", "--name-only", BASELINE_SHA).stdout.split("\n") if f]
+    py = [f for f in allfiles if f.endswith(".py") and not EXCL.search(f)]
+    tests = [f for f in allfiles if f.startswith("tests/") and f.endswith(".py")]
+    docs = {f: None for f in allfiles if f.startswith("docs/project/architecture/") and f.endswith(".md")}
+    owner_docs = ["docs/project/architecture/DEPENDENCY_OWNERSHIP.md", f"{QUAL}/platform_domain_completeness/PDC_OWNERSHIP_MATRIX.md",
+                  "docs/project/architecture/ARCHITECTURE_OVERVIEW.md", "docs/project/architecture/PLATFORM_FOUNDATION.md"]
+    owner_txt = {p: (show_text(p) or "") for p in owner_docs}
+    for p in owner_docs:
+        log_read(p, note="A4-T02 owner doc grep")
+    arch_txt = {}
+    for f in docs:
+        arch_txt[f] = show_text(f) or ""
+    out = []
+    for root in ROOTS:
+        pkgs = sorted({f[len(root) + 1:].split("/")[0] for f in git("ls-tree", "-d", "--name-only", BASELINE_SHA, root + "/").stdout.split("\n") if f.startswith(root + "/")})
+        for p in pkgs:
+            pref = f"{root}/{p}/"
+            files = [f for f in py if f.startswith(pref)]
+            if root == "intergrax" and p == "runtime":
+                continue  # runtime is censused separately
+            needle = f"{root}/{p}"
+            dotted = needle.replace("/", ".")
+            mentions = {}
+            for path, t in owner_txt.items():
+                c = t.count(needle) + t.count(dotted) + (t.count(f"`{p}`") if root == "intergrax/runtime" else 0)
+                if c:
+                    mentions[Path(path).name] = c
+            arch_hits = sorted(((f, t.count(needle) + t.count(dotted)) for f, t in arch_txt.items() if (needle in t or dotted in t)), key=lambda x: -x[1])[:4]
+            tcount = sum(1 for t in tests if f"/{p}/" in t or f"test_{p}" in t) if root != "applications" else sum(1 for t in tests if f"/{p}" in t)
+            out.append({"root": root, "package": p, "path": needle, "py_files": len(files), "owner_doc_mentions": mentions,
+                        "arch_doc_hits": [{"doc": Path(f).name, "n": n} for f, n in arch_hits], "n_arch_docs": len(arch_hits),
+                        "tests_path_hits": tcount, "unowned_candidate": not mentions and not arch_hits})
+    write_jsonl(WS / "A4" / "package_census.jsonl", out)
+    c = Counter(o["root"] for o in out)
+    print(dict(c), "unowned candidates:", [(o["root"], o["package"]) for o in out if o["unowned_candidate"]])
+    print("total py files in scope", len(py))
+
+
+if __name__ == "__main__":
+    main()

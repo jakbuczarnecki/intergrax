@@ -135,6 +135,12 @@ Examples: `ADR-FLOW-001`, `ADR-LLM-001`, `ADR-ADAPT-001`.
 | [ADR-UCA-6C-DURABLE-SUSPENDED-OPERATION-REENTRY](entries/2026-09-22/ADR-UCA-6C-DURABLE-SUSPENDED-OPERATION-REENTRY.md) | Durable suspended operation & Execution work re-entry (UCA-6C-ADR2) | Accepted (architecture) |
 | [ADR-UCA-6C-AGENT-GOVERNANCE-CANONICAL-HITL-RECONCILIATION](entries/2026-09-23/ADR-UCA-6C-AGENT-GOVERNANCE-CANONICAL-HITL-RECONCILIATION.md) | Agent governance approval vs canonical Execution HITL (UCA-6C-ADR3) | Accepted (architecture) |
 | [ADR-SEF-001](entries/2026-11-05/ADR-SEF-001.md) | Engineering Execution Authority vs Scenario Runtime Plane (Variant C + D-lite) | **Proposed** (OD-SEF-03 prep only) |
+| [ADR-SFX-001](entries/2026-11-12/ADR-SFX-001.md) | Scenario Factory placement and ownership (Option B) | **Proposed** (acceptance: OD-SFX-06) |
+| [ADR-SFX-002](entries/2026-11-12/ADR-SFX-002.md) | SFX contracts, versioning, canonicalization, workspace and persistence mapping | **Proposed** (acceptance: OD-SFX-06) |
+| [ADR-SFX-003](entries/2026-11-12/ADR-SFX-003.md) | Scenario Studio stack, authentication and hosting | **Proposed** (acceptance: OD-SFX-06) |
+| [ADR-SFX-004](entries/2026-11-12/ADR-SFX-004.md) | IDE toolkit, CLI and MCP surface; Studio/CLI/MCP parity contract | **Proposed** (acceptance: OD-SFX-06) |
+| [ADR-SFX-005](entries/2026-11-12/ADR-SFX-005.md) | Scenario catalog sidecar (ApplicationManifest unchanged) | **Proposed** (acceptance: OD-SFX-06) |
+| [ADR-SFX-006](entries/2026-11-12/ADR-SFX-006.md) | Authority levels, engineering modes and admission separation | **Proposed** (acceptance: OD-SFX-06) |
 
 **Consolidation:** platform ownership, lifecycle, and invariants for GEC-0â€¦GEC-6 - [`docs/project/technical/platform/governed_external_execution.md`](../platform/governed_external_execution.md).
 

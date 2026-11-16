@@ -1,0 +1,22 @@
+MCP-SERVER-X / T-IGX-035-F / P5 G6 closeout evidence manifest
+
+Product (historical — not rewritten):
+  pr: 456
+  product_publication_sha: c5989282937f5e592748cb606b2272d04837c601
+  implementation_sha: 8b153422ec1e526c588b7144e934d268055a6df8
+  independent_acceptance_timing: post_merge
+
+G6 independent audit:
+  audit_execution_sha: c5989282937f5e592748cb606b2272d04837c601
+  test_execution_sha: c5989282937f5e592748cb606b2272d04837c601
+  MCP_SERVER_X_P5_INDEPENDENT_AUDIT_DOSSIER.md
+  mcp_p5_g6_findings.json
+  test_matrix_p5_independent.txt
+  audit_session_manifest.T-IGX-035-F.p5_g6.json
+  GOVERNANCE_RECONCILIATION.md
+  P5_G6_CLOSEOUT_HANDOFF.md
+  auditor_p5_qualification_batch.log
+  auditor_p5_supplementary_ticket_contract.log
+
+g6_evidence_publication_sha: 7fd899aaea873aac6ec9ae3fe6ce5e3ef9ec9c8c
+publication_state: published

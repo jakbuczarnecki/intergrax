@@ -4,31 +4,26 @@
 
 from __future__ import annotations
 
-import importlib
 from collections.abc import Iterator
 
 from intergrax.applications.contracts.application_host import ApplicationProfile
 from intergrax.applications.contracts.execution_mode import ExecutionMode
 from intergrax.applications.contracts.manifest import ApplicationManifest
-from intergrax.utils import attribute_access
 
-_PRODUCT_MANIFEST_MODULES: tuple[tuple[str, str, str], ...] = (
-    ("legal", "legal_application.manifest", "LEGAL_APPLICATION_MANIFEST"),
-    ("research", "research_application.manifest", "RESEARCH_APPLICATION_MANIFEST"),
-    ("dispute_sim", "dispute_sim_application.manifest", "DISPUTE_SIM_APPLICATION_MANIFEST"),
-    (
-        "local_workspace",
-        "local_workspace_application.manifest",
-        "LOCAL_WORKSPACE_APPLICATION_MANIFEST",
-    ),
-)
+_REGISTERED: dict[str, ApplicationManifest] = {}
+
+
+def register_product_manifest(product_id: str, manifest: ApplicationManifest) -> None:
+    """Register one shipped product manifest (invoked from Tier-3 catalog wiring only)."""
+    if product_id in _REGISTERED and _REGISTERED[product_id] is not manifest:
+        raise ValueError(f"conflicting manifest registration for product_id={product_id!r}")
+    _REGISTERED[product_id] = manifest
 
 
 def iter_product_manifests() -> Iterator[tuple[str, ApplicationManifest]]:
     """Yield `(product_id, manifest)` for shipped Tier-3 product hosts."""
-    for product_id, module_name, attr in _PRODUCT_MANIFEST_MODULES:
-        module = importlib.import_module(module_name)
-        yield product_id, attribute_access.optional(module, attr)
+    for product_id in sorted(_REGISTERED):
+        yield product_id, _REGISTERED[product_id]
 
 
 def iter_strict_product_manifests() -> Iterator[tuple[str, ApplicationManifest]]:

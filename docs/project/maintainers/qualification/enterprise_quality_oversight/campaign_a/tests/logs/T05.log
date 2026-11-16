@@ -1,0 +1,6 @@
+
+no tests ran in 0.03s
+
+--- STDERR ---
+ERROR: file or directory not found: tests/qualification/state_x/test_sxf_r1_q50_discovery_inventory_counts.py
+

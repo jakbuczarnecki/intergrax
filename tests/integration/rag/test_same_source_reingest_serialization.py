@@ -7,18 +7,17 @@ from pathlib import Path
 
 import numpy as np
 import pytest
-
-from intergrax.integrations.providers.vector_store.inmemory.rag_store import (
-    InMemoryVectorStore,
-)
 from intergrax.distributed.source_operation import (
     DocumentStoreSourceOperationCoordinator,
     InProcessSourceOperationCoordinator,
     RagSourceOperationKey,
-    SourceOperationLease,
     SourceOperationCoordinator,
+    SourceOperationLease,
 )
 from intergrax.integrations._shared.in_memory_document_store import InMemoryDocumentStore
+from intergrax.integrations.providers.vector_store.inmemory.rag_store import (
+    InMemoryVectorStore,
+)
 from intergrax.knowledge.contracts import KnowledgeDocument
 from intergrax.rag.document_splitters.chunk_document import build_derived_chunk
 from intergrax.rag.embedding.contracts.base_embedding_manager import (
@@ -92,10 +91,7 @@ class _Embedding(BaseEmbeddingManager):
 
     def embed_texts(self, texts: Sequence[str]) -> np.ndarray:
         return np.asarray(
-            [
-                [1.0, 0.0] if "T1" in text else [0.0, 1.0]
-                for text in texts
-            ],
+            [[1.0, 0.0] if "T1" in text else [0.0, 1.0] for text in texts],
             dtype=np.float32,
         )
 
@@ -170,12 +166,7 @@ class _GraphRaceSplitter:
 class _GraphRaceEmbedding(_Embedding):
     def embed_texts(self, texts: Sequence[str]) -> np.ndarray:
         return np.asarray(
-            [
-                [1.0, 0.0]
-                if "Old Entity" in text
-                else [0.0, 1.0]
-                for text in texts
-            ],
+            [[1.0, 0.0] if "Old Entity" in text else [0.0, 1.0] for text in texts],
             dtype=np.float32,
         )
 
@@ -280,7 +271,6 @@ def _graph_pipeline(
             fast_retriever_id="graph_rag",
             deep_retriever_id="graph_rag",
             graph_rag_enabled=True,
-            graph_store_backend="inmemory",
             enable_rerank=False,
             route_mode="off",
             native_hybrid_enabled=False,
@@ -337,10 +327,7 @@ def test_same_source_concurrent_reingest_serializes_to_one_version(
         thread.join(timeout=10)
 
     assert len(results) == 2
-    reasons = [
-        result.reason if not isinstance(result, BaseException) else None
-        for result in results
-    ]
+    reasons = [result.reason if not isinstance(result, BaseException) else None for result in results]
     assert reasons.count("ok") == 1
     assert reasons.count("source_ingest_conflict") == 1
     records = [
@@ -367,12 +354,6 @@ def test_stale_inflight_publication_cannot_become_active_after_takeover(
     vectorstore = _BlockingPublicationVectorstore()
     document_store = InMemoryDocumentStore()
     clock = {"now": 100.0}
-    key = RagSourceOperationKey(
-        tenant_id=TENANT_ID,
-        namespace=NAMESPACE,
-        workspace_id=WORKSPACE_ID,
-        source_id=SOURCE_ID,
-    )
     first_coordinator = DocumentStoreSourceOperationCoordinator(
         document_store,
         owner_id="worker-1",
@@ -438,15 +419,19 @@ def test_stale_inflight_publication_cannot_become_active_after_takeover(
         scope=SCOPE,
         top_k=10,
     )
-    source_hits = [
-        hit for hit in hits if str(hit.document.provenance.source_id) == SOURCE_ID
-    ]
+    source_hits = [hit for hit in hits if str(hit.document.provenance.source_id) == SOURCE_ID]
     assert [hit.document.content for hit in source_hits] == ["T2-content"]
+    # The ingest pipeline promotes the publication under a key scoped by the root document id.
+    publication_key = RagSourceOperationKey(
+        tenant_id=TENANT_ID,
+        namespace=NAMESPACE,
+        workspace_id=WORKSPACE_ID,
+        source_id=SOURCE_ID,
+        publication_scope_id=str(source_hits[0].document.identity.root_document_id).strip(),
+    )
     assert (
-        second_coordinator.active_publication_generation(key=key)
-        == source_hits[0].document.metadata[
-            "__intergrax_source_publication_generation"
-        ]
+        second_coordinator.active_publication_generation(key=publication_key)
+        == source_hits[0].document.metadata["__intergrax_source_publication_generation"]
     )
 
 
@@ -537,10 +522,7 @@ def test_stale_graph_topology_is_inactive_after_generation_takeover(
     assert "ent:old_entity" in graph._nodes
     assert graph.node_ids_for_chunks(g1_ids) == set()
     assert graph.find_nodes(label_contains="Old", limit=10) == []
-    assert all(
-        node.id != "ent:old_entity"
-        for node in graph.neighbors("ent:shared_entity", max_hops=1)
-    )
+    assert all(node.id != "ent:old_entity" for node in graph.neighbors("ent:shared_entity", max_hops=1))
 
     retriever = GraphRagRetriever(
         vectorstore,
@@ -610,10 +592,7 @@ def test_source_operation_keys_allow_independent_sources_and_scopes() -> None:
         source_id="source-a",
     )
 
-    leases = [
-        coordinator.acquire(key=key)
-        for key in (source_a, source_b, other_workspace, other_namespace)
-    ]
+    leases = [coordinator.acquire(key=key) for key in (source_a, source_b, other_workspace, other_namespace)]
     assert all(lease is not None for lease in leases)
     assert len({lease.key.storage_id for lease in leases if lease is not None}) == 4
     for lease in leases:

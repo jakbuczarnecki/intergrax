@@ -3,11 +3,12 @@
 
 """Observability vendor integration category contract (INTEGRATIONS-1B)."""
 
-from __future__ import annotations
+from __future__ import annotations  # noqa: I001
 
 from datetime import datetime
 from enum import StrEnum
-from typing import Any, Generic, Literal, Mapping, Self, TypeVar
+from typing import TYPE_CHECKING, Any, Generic, Literal, Self, TypeVar
+from collections.abc import Mapping
 
 from pydantic import BaseModel, ConfigDict, Field
 
@@ -21,10 +22,13 @@ from intergrax.runtime.integrations.contracts import (
 from intergrax.runtime.observability.export_attributes import (
     SanitizedApplicationObservabilityAttributes,
 )
-from intergrax.runtime.observability.export_boundary import (
-    ObservabilityExportEnvelope,
-    envelope_is_content_safe,
-)
+
+if TYPE_CHECKING:
+    # ``export_boundary`` imports the runtime event store at module level, which re-enters this
+    # package through the SQLite integration bundle (``categories`` imports the contract defined
+    # below). Keeping it out of module import time breaks that cycle when the integration
+    # registry is the first import; ``envelope_is_content_safe`` is imported where it is used.
+    from intergrax.runtime.observability.export_boundary import ObservabilityExportEnvelope
 
 OBSERVABILITY_VENDOR_INTEGRATION_CONTRACT_SCHEMA = "observability_vendor_integration_contract.v1"
 OBSERVABILITY_VENDOR_PAYLOAD_SCHEMA = "observability_vendor_payload.v1"
@@ -132,6 +136,8 @@ def require_policy_sanitized_envelope(envelope: ObservabilityExportEnvelope) -> 
     try_export_observability_envelope — never directly from RuntimeEvent or raw builders
     with application_attributes populated.
     """
+    from intergrax.runtime.observability.export_boundary import envelope_is_content_safe
+
     if envelope.application_attributes is not None:
         msg = "raw application_attributes must not be consumed by observability vendor integrations"
         raise ValueError(msg)
@@ -204,7 +210,7 @@ VendorConfigT = TypeVar("VendorConfigT", bound=ObservabilityVendorIntegrationCon
 
 class ObservabilityVendorIntegrationContract(
     PlatformIntegrationContract[VendorConfigT],
-    Generic[VendorConfigT],
+    Generic[VendorConfigT],  # noqa: UP046
 ):
     """
     Category-specific contract for observability vendor integrations.
@@ -236,9 +242,7 @@ class ObservabilityVendorIntegrationContract(
         config: PlatformIntegrationConfig | None = None,
     ) -> Self:
         kind_value = (
-            integration_kind.value
-            if isinstance(integration_kind, PlatformIntegrationKind)
-            else integration_kind
+            integration_kind.value if isinstance(integration_kind, PlatformIntegrationKind) else integration_kind
         )
         if config is None:
             config_field = cls.model_fields["config"]
@@ -288,9 +292,7 @@ class ObservabilityVendorIntegrationContract(
 
     async def deliver_payload(self, payload: ObservabilityVendorPayload) -> None:
         """Send a mapped payload to the vendor backend — override in concrete integrations."""
-        raise NotImplementedError(
-            f"{type(self).__name__} must override deliver_payload() for vendor I/O"
-        )
+        raise NotImplementedError(f"{type(self).__name__} must override deliver_payload() for vendor I/O")
 
     def public_view(self) -> Mapping[str, Any]:
         view = dict(super().public_view())

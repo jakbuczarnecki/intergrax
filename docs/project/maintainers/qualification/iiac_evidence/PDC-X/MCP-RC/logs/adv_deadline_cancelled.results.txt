@@ -1,0 +1,4 @@
+cancelled -> McpError Connection closed
+cancelled elapsed 1.05
+failed -> ToolError: Error calling tool 'run_agent': SECRET-HOST-FAILURE-hunter2
+failed elapsed 1.09

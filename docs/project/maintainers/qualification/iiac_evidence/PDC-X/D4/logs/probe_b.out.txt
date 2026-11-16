@@ -1,0 +1,47 @@
+{
+ "P8_post_runtime_failure_rollback": {
+  "pre": [
+   "core"
+  ],
+  "post": [
+   "post_ok",
+   "post_bad"
+  ],
+  "journal": [
+   "start:core",
+   "start:runtime",
+   "start:post_ok",
+   "start:post_bad",
+   "stop:post_ok",
+   "stop:runtime",
+   "stop:core"
+  ],
+  "result": "startup_error",
+  "state": "failed"
+ },
+ "P9_cancel_during_startup": {
+  "journal": [
+   "start:core",
+   "start:slow"
+  ],
+  "state": "starting",
+  "lease_acquired": true,
+  "lease_released": false,
+  "context_closed": false,
+  "second": "second_engine_rejected:HostedApplicationStartupError"
+ },
+ "P10_cancel_run_until_stopped": {
+  "journal": [
+   "start:core",
+   "start:runtime"
+  ],
+  "state": "ready",
+  "lease_released": false,
+  "context_closed": false
+ },
+ "P11_hanging_metric_exporter_in_stop": {
+  "computed_shutdown_budget_s": 150.0,
+  "waited_s": 60.0,
+  "result": "stop_did_not_return"
+ }
+}

@@ -1,0 +1,37 @@
+{
+  "wave": "W0",
+  "utc": "2026-11-15T17:59:34Z",
+  "baseline_sha": "258bbf6abb6fdbb92ef0185d058527fbb1e47f04",
+  "results": [
+    {
+      "check": "W0-baseline",
+      "pass": true,
+      "message": "BASELINE.json valid, WT HEAD == BASELINE_SHA, porcelain empty"
+    },
+    {
+      "check": "W0-sources",
+      "pass": true,
+      "message": "source registry resolved; linked paths missing=0"
+    },
+    {
+      "check": "W0-extracts",
+      "pass": true,
+      "message": "extracts present"
+    },
+    {
+      "check": "W0-counts",
+      "pass": true,
+      "message": "FRZ unique=225; roadmap unique IDs=292 (S3TABLE=164, ledger-only=97, prose=31)"
+    },
+    {
+      "check": "W0-toolruns",
+      "pass": true,
+      "message": "38 tool runs logged, none changed the worktree"
+    },
+    {
+      "check": "W0-seeds",
+      "pass": true,
+      "message": "20 seeds registered (resolution tracked by C15)"
+    }
+  ]
+}

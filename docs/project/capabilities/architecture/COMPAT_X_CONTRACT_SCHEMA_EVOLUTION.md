@@ -4,6 +4,8 @@
 
 **Production delta:** `0` (architecture + qualification enforcement only).
 
+**Plan pair:** none. No `capabilities/plan/COMPAT_X_CONTRACT_SCHEMA_EVOLUTION.md` exists at baseline; the stage is tracked by the roadmap rows `COMPAT-X` (stage table and ledger), which decide its status.
+
 ## Authority split (normative)
 
 ```text

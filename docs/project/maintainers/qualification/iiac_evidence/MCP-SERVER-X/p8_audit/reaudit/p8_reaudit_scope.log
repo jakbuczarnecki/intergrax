@@ -1,0 +1,30 @@
+command: git diff --name-only eadb1c211 c50547012 (all paths) + product_paths_changed_between(6e53fb36f, c50547012)
+git_head: c50547012c353463e86525411a5a065f43e5bab8
+date_utc: 2026-11-12T11:47:52Z
+docs/project/maintainers/qualification/iiac_evidence/MCP-SERVER-X/p8_audit/EVIDENCE_MANIFEST.txt
+docs/project/maintainers/qualification/iiac_evidence/MCP-SERVER-X/p8_audit/IIAC_SESSION_HANDOFF_RECORD_MCP_P8_AUDIT.md
+docs/project/maintainers/qualification/iiac_evidence/MCP-SERVER-X/p8_audit/audit_scope.json
+docs/project/maintainers/qualification/iiac_evidence/MCP-SERVER-X/p8_audit/iiac_audit_findings_p8.json
+docs/project/maintainers/qualification/iiac_evidence/MCP-SERVER-X/p8_audit/iiac_audit_session_manifest.MCP-SERVER-X.p8_audit.json
+docs/project/maintainers/qualification/iiac_evidence/MCP-SERVER-X/p8_audit/p8_audit_frz_counter_unchanged.log
+docs/project/maintainers/qualification/iiac_evidence/MCP-SERVER-X/p8_audit/p8_audit_product_paths_changed_between.log
+docs/project/maintainers/qualification/iiac_evidence/MCP-SERVER-X/p8_audit/p8_audit_r_p7_02_c59892829.log
+docs/project/maintainers/qualification/iiac_evidence/MCP-SERVER-X/p8_audit/p8_audit_r_p7_02_freeze.log
+docs/project/maintainers/qualification/iiac_evidence/MCP-SERVER-X/p8_audit/p8_audit_replay_consistency.log
+docs/project/maintainers/qualification/iiac_evidence/MCP-SERVER-X/p8_audit/p8_audit_replay_new.log
+docs/project/maintainers/qualification/iiac_evidence/MCP-SERVER-X/p8_audit/p8_audit_replay_regression.log
+docs/project/maintainers/qualification/iiac_evidence/MCP-SERVER-X/p8_audit/p8_audit_scope_product_diff.log
+docs/project/maintainers/qualification/iiac_evidence/MCP-SERVER-X/p8_audit/p8_audit_verify_iiac_require_in_force.log
+docs/project/maintainers/qualification/iiac_evidence/MCP-SERVER-X/p8_audit/p8_audit_verify_manifest.log
+docs/project/maintainers/qualification/iiac_evidence/MCP-SERVER-X/p8_audit/p8_audit_verify_role_separation.log
+docs/project/maintainers/qualification/iiac_evidence/MCP-SERVER-X/p8_audit/test_matrix_p8.txt
+docs/project/maintainers/qualification/mcp_server_x/MCP_SERVER_X_CONTRACT_AND_PROTOCOL_MATRIX.md
+docs/project/maintainers/qualification/mcp_server_x/MCP_SERVER_X_GAP_REGISTER.md
+docs/project/maintainers/qualification/mcp_server_x/MCP_SERVER_X_P7_QUALIFICATION_PACKAGE.md
+docs/project/maintainers/qualification/mcp_server_x/MCP_SERVER_X_P8_CORRECTIONS_RECORD.md
+docs/project/maintainers/qualification/mcp_server_x/MCP_SERVER_X_P8_INDEPENDENT_AUDIT_DOSSIER.md
+--- product_paths_changed_between:
+[]
+[]
+--- non-doc paths changed since eadb1c211 (tests/scripts/governance/.github/product):
+(none above = docs only)

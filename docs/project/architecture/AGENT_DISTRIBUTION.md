@@ -1999,7 +1999,7 @@ Manifest → development registry → host. No production lifecycle requirement.
 ## 35. AC-4 Dynamic Capability Discovery & Acquisition (architecture freeze)
 
 **Program:** AGENT-CONSOLIDATION-4
-**Status:** Phases 1–9 **CLOSED** · Phase 10 **READY_FOR_INDEPENDENT_AUDIT** · **READY_FOR_FINAL_AUDIT** (independent audit required before AC-4 closure)
+**Status:** Phases 1–10 **CLOSED** (final audit 2026-09-06) · **AC-4 closure:** **CLOSED** — verified in [`AGENT_PLATFORM_AC1_AC6_FINAL_ARCHITECTURE_AUDIT.md`](../maintainers/audits/AGENT_PLATFORM_AC1_AC6_FINAL_ARCHITECTURE_AUDIT.md) (audited SHA `67f57331835c247716ff028c0029157ab3f53207`), consistent with the [plan](../maintainers/plans/AGENT_DISTRIBUTION.md) *(PDC-X reconciliation PDC-D1-R009, 2026-11-12; this line previously read "Phase 10 READY_FOR_INDEPENDENT_AUDIT")*
 **AC-3 authority:** [`§20 Activation`](#20-activation-and-rollback-model) · canonical lifecycle E2E · [`§34 Reference production`](#34-reference-production-topology-agent-consolidation-3-arch)
 **Plan chronology:** [maintainers plan § AGENT-CONSOLIDATION-4](../maintainers/plans/AGENT_DISTRIBUTION.md#agent-consolidation-4--dynamic-capability-discovery--acquisition)
 

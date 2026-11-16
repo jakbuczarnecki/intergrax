@@ -1,0 +1,458 @@
+# PDC-X — independent global audit (PDC-P8-02, PDC-P8-03)
+
+| Field | Value |
+| --- | --- |
+| **Record** | `PDC_INDEPENDENT_AUDIT` (PDC-P8-02 / PDC-P8-03) |
+| **Role** | IA-GLOBAL — independent global auditor, new clean session (OD-PDC-IIAC-SCOPE, `IIAC-2026-11-05.1`, profile `iiac-v1`) |
+| **Auditor session** | `PDC-P8-IA-GLOBAL-INDEPENDENT-AUDITOR-6573093f-9178-4c2c-93a3-64b0a5b6c657` (up to four read-only code-reading subagents; the auditor integrated and owns every verdict) |
+| **Date** | 2026-11-15 (Addendums 2 and 3: 2026-11-16) |
+| **Audited SHA (start)** | `cba32d2479cd134911d2fdf4fb1db4587c8a94d8` (`origin/development` at session start; product tree = merge `63005e290` of PR #576; later commits are docs-only) |
+| **Final audit SHA** | `d39a520dda965981a38f8e1a90ec5135ea5d508e` |
+| **Delta audit SHA (Addendum 2)** | `969cbd964c679d563b02e55f065b452d46fdf90b` (repair loop 2, T-IGX-041-P and T-IGX-041-Q; section 14) |
+| **Overall verdict** | **PASS_SCOPED** (IIAC manifest value `PASS_SCOPED`) at `969cbd964` for the scoped rows, only with the Operator-accepted declared exceptions named in section 15; it was PARTIAL at `d39a520dd` (section 13) and at `969cbd964` before the exception record (section 14) |
+| **Nature** | An audit. It is **not** a certification, issues no `Approved:` or activation line, promotes no FRZ status, closes nothing and makes no production-readiness claim. The auditor did not implement, sign, domain-audit or certify anything in PDC-X and changed no product, test, script, governance or ticket file (docs-only deliverable). |
+
+## 1. Verdict and exact blockers
+
+> **Final status (Addendum 3, section 15):** PASS_SCOPED at `969cbd964` for the scoped rows, with the declared exceptions G-05 residual, E1 to E11, G-10 residual (`trace_bridge.v1`) and G-28 accepted by the Operator (`DELEGATION-PDC-EXCEPTIONS`); every residual stays open and visible; not a PASS, not a verdict on B6 or certification. The text of sections 1 to 14 below is the record of the earlier states and is kept unchanged.
+>
+> **Status at the delta audit SHA `969cbd964`** (section 14 supersedes the status below for G-23): G-23 is VERIFIED_FIXED for the in-memory graph store; the Neo4j store keeps the same defect class as a declared residual (G-28); G-24 to G-27, the G-05 residual, E1 to E11 and `trace_bridge.v1` are unchanged; the verdict remains PARTIAL (section 14.6 states what it would be if the Operator accepts the open items).
+>
+> **Status at the final audit SHA `d39a520dd`** (section 13 supersedes the status below): G-01, G-02, G-03 and G-06 are VERIFIED_FIXED; G-04 and G-05 are repaired only in part; the verdict remains PARTIAL. The tables of sections 1 to 12 describe the audit at the start SHA `cba32d247`.
+
+**PARTIAL.** The eight repairs are real: of 76 audited in-scope repair rows, **62 are VERIFIED_FIXED, 14 PARTIALLY_FIXED, 0 NOT_FIXED** (section 5). The Full Platform ECAP run is clean (85/85 checks, 0 findings), DUP-X/EBH-4 gates (130) and TENANT-X (213) are green, the MCP-SERVER-X delta is in the tree untouched, and every red test of the bounded runs is either a classified known red or listed as a finding below. The verdict is not PASS or PASS_SCOPED because the independent pass found **one HIGH and eleven MEDIUM defects or exception-register inaccuracies** that are not covered by an Operator-authorized exclusion (section 7). Exact blockers for one repair loop (proposed scope in section 8):
+
+| Blocker | Sev | Why it blocks |
+| --- | --- | --- |
+| G-01 default document loader cannot be built (`PipelineDocumentHandler` import) | HIGH | Real defect in composed code behind red cited suites (F-D2-08, option B in scope); left open because the file is outside the T-IGX-041-B write set; reproduced here. |
+| G-02 F-D7-02 fix: exception in the eligibility phase ends the recurrence chain with no successor | MEDIUM | The repaired HIGH finding is only PARTIALLY_FIXED; the new window is worse than the old `finally`. |
+| G-03 `workspace.import_artifact` / `workspace.export_artifact` bypass the F-D8-03 storage-key guard | MEDIUM | Same defect class as the repaired finding, two sibling registered tools unguarded. |
+| G-04 F-D2-08 closure is environment-dependent (reds converted to skips; 13 failed + 3 errors where `langchain-core` is installed) and the CI claim is false | MEDIUM | Closure evidence is not what the classification file states. |
+| G-05 ~99 additional red AI-incident scenario tests exceed the Operator-authorized exception (four named tests) | MEDIUM | An exception wider than its authorization. |
+| G-06 XD-12 and two P6-impact gates red: two repaired product modules map to no ENT-AUDIT check | MEDIUM | A cross-domain gate is red at the audited SHA; not in the known-red list (verify against T-IGX-041-K at the final SHA). |
+
+The remaining new findings (G-07..G-12 MEDIUM, LOW and INFO) can be routed to the exception register wording or the debt register without product repair, except where section 8 says otherwise.
+
+## 2. SHAs and ancestry
+
+| Role | SHA | Check |
+| --- | --- | --- |
+| Audit start = `origin/development` | `cba32d2479cd134911d2fdf4fb1db4587c8a94d8` | `git rev-parse origin/development`; worktree clean at this SHA |
+| Product tree | `63005e290` (PR #576, TENANT-X re-pin) | `git log 63005e290..cba32d247 --name-only -- intergrax agents applications` is empty; later commits `664b054ec`, `7857632dd` are docs |
+| P7 audited SHA (D1..D8) | `c08efe46a74a20595468d8d8bf06eab2dca5f573` | the SHA the eight P7 reports audited |
+| Repair merges | #574 `4e0fe053f`, #575 `4a0f2e197`, #569 `58916e145`, #571 `904433080`, #568 `aa3b3e189`, #573 `a2b24bac3`, #570 `996671a05`, #572 `dd58baa4d`, #576 `63005e290` | each is an ancestor of the audit SHA |
+| MCP-SERVER-X RC merge (PR #554) | `61531828f5728acc8f2ed357b4b835d7f5dc4ebc` | ancestor of HEAD (`git merge-base --is-ancestor`) |
+| Base of the D5 comparison | `f87df3b2a` (parent of #568) | scratch worktree, removed after use |
+
+All 45 full SHAs written in `PDC_SHA_LADDER.md` exist and are ancestors of the audit SHA (scripted check). `GLOBAL_AUDITED_SHA` is still `—` in the ladder: it is a P9 task (PDC-P9-02) and is set from the final audit SHA recorded in the addendum (section 11).
+
+## 3. Method and independence
+
+1. Read the master plan P8 rows, `OD-PDC-IIAC-SCOPE.md`, `DELEGATION-PDC-CLOSE.md`, `DELEGATION-PDC-P7-REPAIR.md`, the eight P7 audit reports, tickets `T-IGX-041-A..I` and plans `PLAN_T-IGX-041-A..I`.
+2. For each repair PR the product delta (`git diff <first parent> <merge>`) and the pinned tests were read against the current tree by four read-only subagents (one per two domains: no edits, no test runs). Their notes are committed under `iiac_evidence/PDC-X/global/subagent_notes/`. The pinned tests were treated as leads, not proof: each verdict states whether the test would fail without the change (mutation reasoning from the test text; no mutant was executed, see limitations).
+3. The auditor re-checked the claims that carry the verdict itself: N-03 reproduced by import probe (`adversarial_scripts/probe_n03_default_document_loader.py`), the scheduler eligibility phase (`scheduler.py:207-251`), the workspace tools (`workspace/service.py:132-167`), the lazy stream generator (`provider_stream_admission.py:62-96`), the credential `from None` change, the five D5-contract reds against the pre-repair base, and the A-contract failures against a short `--basetemp`.
+4. PDC-P8-03: one pytest process at a time, sequential, `uv sync --frozen` with the extras of the plan contracts once, then `uv run --no-sync`; logs at the exact SHA in `iiac_evidence/PDC-X/global/logs/`.
+5. Governance checks: `verify_iiac_audit_manifest.py` and `verify_iiac_role_separation.py` on the eight D manifests and P7-00, `verify_iiac_policy_activation.py --require-in-force`, `pdc_x_requirements.py --check`, `pdc_x_wbs.py --check`, SHA-ladder ancestry script.
+
+**Independence.** The auditor session did not implement, sign, plan, domain-audit or certify any PDC-X item. It is a different session from every implementer (`T-IGX-036-*` lanes, `T-IGX-041-*` lanes), every signing delegate, IA-D1..IA-D8 and the orchestrator. Assurance level is `process_enforced`: one git identity signs all commits, so separation rests on session separation and the manifest fields (`verify_iiac_role_separation.py` PASS).
+
+**The "15 checks".** `PLAN_T-IGX-036-A.md` (row PDC-P8-02) names fourteen items in its parenthesis; no other list of fifteen exists in the plan, the master plan or the OD files. This audit checks those fourteen as checks 1–14 and treats requirement-matrix coverage (the row dispositions of `PDC_DOMAIN_REQUIREMENTS_MATRIX`) as check 15.
+
+## 4. PDC-P8-01 — MCP-SERVER-X closure
+
+| Fact | Evidence | Result |
+| --- | --- | --- |
+| Roadmap status | `PLATFORM_ENTERPRISE_COMPLETION_ROADMAP.md` position line: `MCP-SERVER-X = CLOSED — INDEPENDENTLY AUDITED (INTERNAL AGENT CERTIFICATION) — PUBLISHED` (IIAC SCOPED); `PDC-X` current; `ARCH-FREEZE` blocked until PDC-X closed | confirmed |
+| Its P8 certification | `MCP_SERVER_X_FINAL_CLOSURE_REPORT.md` (audit `PASS_SCOPED`, certification `CERTIFIED_PASS_SCOPED`, terminal `P8_TERMINAL_VERIFIED`) | confirmed (scoped, as the roadmap states) |
+| MCP-RC residual campaign | `MCP_SERVER_X_RC_CLOSURE_DOSSIER.md`: terminal verification of PR #554 at `61531828f`; the dossier itself states it is not a closure or certification and records open items F-56 and F-35 (PDC-X) and the strict xfail owner (operator) | confirmed; the dossier makes no closure claim |
+| Product delta in the audit SHA | `61531828f` is an ancestor of `cba32d247`; the 23 MCP-RC product paths (`git diff --name-only 83d939095 61531828f`) have **no overlap** with the 62 product paths changed since (`.tmp` lists, scripted `comm`), so the MCP delta is present and unchanged by the PDC-X repairs | confirmed |
+| Hard gate | P8-01 depends on the roadmap closure and the delta being in the audited SHA; both hold | **PASS** (scoped as the MCP records state) |
+
+## 5. PDC-P8-03 — run record at `cba32d247`
+
+Environment: Windows 11, CPython 3.12.11, uv 0.13.4, `uv sync --frozen` with `dev-ci`, `mcp`, all `llm-*` extras and `integrations-duckdb`; one process at a time; the worktree path is long, so pytest's in-repo `build/pytest` base temp exceeds Windows MAX_PATH for deep fixtures (see run 04A). No Docker, no network, no live provider. Logs and start/end stamps: `iiac_evidence/PDC-X/global/logs/`.
+
+| Step | Command (abridged) | Result | Classification |
+| --- | --- | --- | --- |
+| 01 | `run_enterprise_audit.py run --mode FULL` (ECAP §2.C) | **PASS**, 85/85 checks executed, 0 skipped, 0 failed, 0 findings, 21 min 29 s; report sha256 `5b4e6efb0a54e0962d080a9688697869850bc918f26010d5b7b6e1e2af46b567` (`ecap/enterprise_audit_report.json`) | clean. The P6 FULL run had one failure (`VBN-REACHABILITY`, duplicate `ollama` slug); it is gone at this SHA |
+| 02 | `pytest tests/qualification/pdc_x` | 3 failed, 1428 passed, process exited normally | the 3 are one cause: G-06 (new finding) |
+| 03 | DUP-X + EBH-4 gates (7 paths, one command) | **130 passed** | clean; same count as P6 |
+| 04A | contract of T-IGX-041-A (D1) | 27 failed, 1674 passed; the pytest process did not exit after the summary line and was killed by the auditor (the known non-exiting-process observation R-05) | the 27 are `FileNotFoundError` from MAX_PATH of the long worktree path in two materialization files; rerun of those two files with a short `--basetemp`: **57 passed** (run 07). Environment artifact, not a product defect |
+| 04B | contract of -B (D2) | 13 failed, 3 errors, 2131 passed, 44 skipped | G-04 (new finding); 3 errors are `sentence_transformers` absent (environment) |
+| 04C | contract of -C (D3, llm extras) | 103 failed, 1546 passed, 17 skipped | 4 = declared deviation (`fixture_strict_adapter_parity`); the other 99 scenario tests are G-05 (new finding) |
+| 04D | contract of -D (D4, `mcp` extra) | **491 passed, 3 skipped** | clean |
+| 04E | contract of -E (D5) | 5 failed, 269 passed | the same 5 fail at the pre-repair base `f87df3b2a` (run 08): pre-existing, not caused by #568; unowned (G-10) |
+| 04F | contract of -F (D6) | 9 failed, 548 passed, 11 skipped | 7 COMPAT-X counters (known class, T-IGX-041-L), 2 `test_audit_ideal_depth_gate` (`29_1`, `30_4`): declared by the ticket as pre-existing, unowned (G-10) |
+| 04G | contract of -G (D7) | **159 passed** | clean |
+| 04H | contract of -H (D8) | **272 passed** | clean (the first queue skipped this step by a runner bug, run separately) |
+| 05 | `pytest tests/qualification/tenant_x` | **213 passed** | clean (carrier re-pin 831 holds) |
+| 06 | `ebh_7`, `roadmap_replay_x`, `dist_scale_x`, IIAC activation tests, `compat_x` | 28 failed, 799 passed, 16 skipped, 20 min | all 28 classified below |
+
+Known reds of step 06 (classified, **not** re-reported as findings): IIAC activation staleness (ACT-N11) 2 (`test_iiac_activation_gate`, `test_iiac_negative_guards`; P8-04 rebind) · EBH-7 identity gate and F10 classifier 9 (re-pin pending, T-IGX-041-J/-K) · `roadmap_replay_x` 5 (later changes) · `dist_scale_x` 3 (Docker/C10-C15 freeze, declared) · COMPAT-X counters 10 (7 `event_evolution_r3_r1`, `deprecation_r5_p0`, `versioning_r1_r3`, `versioning_r1_r5`; T-IGX-041-L). The strict xfail `test_scaffold_defaults_mcp_to_opt_in[product]` (T-IGX-039-A, owner: Operator) was not part of the selected paths.
+
+`verify_iiac_policy_activation.py --require-in-force` fails with ACT-N11 "product path changed after the audited SHA" for the 62 repaired paths: known class, rebind in P8-04.
+
+## 6. PDC-P8-02 — the checks
+
+| # | Check | Result | Basis |
+| --- | --- | --- | --- |
+| 1 | Domain dispositions | **PARTIAL** | D1..D8 findings re-verified (section 7): 62 fixed, 14 partial, 0 not fixed. The row dispositions of the eight P7 reports were PARTIAL (D5 FAIL); the global audit replaced the per-domain re-audits (`DELEGATION-PDC-CLOSE.md` decision 2) but no `PDC_DOMAIN_CERTIFICATION_MATRIX` exists (P7-CERT not done; the PDC index lists it "Not started"). New findings G-01..G-06 keep several rows from PASS |
+| 2 | XD cross-domain gates | **PARTIAL** | XD-01..XD-11 green with no mocks on mandatory paths (grep of `xd/` finds no patch/mock use; fakes only for providers); XD-12 red (G-06) |
+| 3 | No duplicate authority | **PASS** | DUP-X/EBH-4 130 passed; ECAP FULL clean; no repair PR adds a registry, scheduler, engine, trust, policy or audit authority (subagent reading; the optional lifecycle sink and the validating port are injection points). INFO: `CanonicalRuntimeEventWriteValidatedPort` is a nominal marker (any subclass claims validation) |
+| 4 | No bypass | **PARTIAL** | G-03 (workspace tools bypass the storage guard); the F-D1-02/03 revocation checks are inert in production because no production composition injects a revocation source (declared exception, not closed end to end); F-D3-01 stream-guard gate covers 4 of 11 adapters (G-16) |
+| 5 | Tenant isolation | **PASS_SCOPED** | TENANT-X 213 passed; tenant fixes of D2 (TASK scope), D5 (registry stamping), D7 (occurrence identity), D8 (read scope) verified. Declared remainders: F-D5-01 remainder with the strict untenanted-host case understated (G-09), F-D8-04 remainder, F-D2-11 tenant part |
+| 6 | Security | **PASS_SCOPED** | D6 repairs 4/5 fixed (F-D6-12 partial, `__context__`); exceptions F-D1-01 (HIGH, attestation never verified in production), F-D6-04 (no production composition), F-D6-02 (no tamper evidence) are declared and truthful |
+| 7 | Contracts | **PARTIAL** | ECAP contract checks clean; public API fingerprint repaired (F-D4-07); COMPAT-X counter gates red pending T-IGX-041-L (known) |
+| 8 | Debt ownership | **PARTIAL** | Every plan exclusion row has a reopen condition (scripted table check; INFO rows may say "none"). Gaps: the residue of F-D2-08 is in no exclusion table (G-01, G-04), the ~99 scenario reds exceed the authorization (G-05), seven red cited tests have no owner (G-10). No P9 exception or debt register exists yet |
+| 9 | FRZ mapping | **PASS** | `PDC_FRZ_COVERAGE_MATRIX.md`: 225 criteria / 26 families, `pdc_x_requirements.py --check` OK (172 rows); the FRZ checklist is byte-identical to the P0 baseline; no status moved |
+| 10 | SHA ladder | **PASS_SCOPED** | 45/45 ladder SHAs exist and are ancestors; rows for the P7 audits, the eight repair publications, the global audit and the closure are `—` (P9 task PDC-P9-02) |
+| 11 | Roadmap dependencies | **PASS** | MCP-SERVER-X CLOSED (scoped), PDC-X current, ARCH-FREEZE blocked until PDC-X closed; `PDC_DEPENDENCY_DAG.md` consistent (`pdc_x_wbs.py --check` OK: 107 rows, 31 batches, no write conflicts) |
+| 12 | IIAC use | **PASS** | Manifests of D1..D8 and P7-00 pass `verify_iiac_audit_manifest.py` and `verify_iiac_role_separation.py`; this audit's manifest is validated the same way (section 12). Activation is stale (known), rebind is P8-04 |
+| 13 | Reproducible ENT audit | **PASS** | ECAP FULL run from a clean worktree at the exact SHA with frozen dependencies, certifying mode, 85/85, report digest recorded. One run only (see limitations) |
+| 14 | ARCH-FREEZE package | **NOT_READY (expected before P9)** | `PDC_ARCH_FREEZE_HANDOFF` and `PDC_FINAL_ACCEPTANCE_REPORT` are "Not started" in the index; the MCP handoff exists. The package is the P9 task; this audit lists its required inputs in section 8 |
+| 15 | Requirement coverage | **PASS_SCOPED** | 172-row matrix valid; rows were not re-certified one by one by this audit (scope: repaired findings and the checks above) |
+
+## 7. Re-verification of the repaired findings (the 76 in-scope rows)
+
+Verdict vocabulary: VERIFIED_FIXED / PARTIALLY_FIXED / NOT_FIXED. Counts: **62 / 14 / 0**. HIGH in-scope rows: F-D1-02 admin path, F-D1-03 authorization, F-D3-01, F-D5-01, F-D7-01 VERIFIED_FIXED; F-D1-02 pipeline path and F-D7-02 PARTIALLY_FIXED. No pinned test was found that passes on the unrepaired code for the behaviour it claims to pin, except where the evidence column says otherwise (characterization and honesty pins are labelled so by the tickets; the D1 durable-projection tamper test, the D3 timeout behaviour tests and the D7 batch-bound tests are weak, see the notes).
+
+| Domain | Finding | Sev | IA-GLOBAL verdict | Evidence (abridged; full text in `subagent_notes/`) |
+| --- | --- | --- | --- | --- |
+| D1 | F-D1-02 admin path (activate / rollback / post-cutover rollback) | HIGH | VERIFIED_FIXED | [service level only] `admin_service.py:1754-1784` `assert_revision_trust_admissible` (roster via `require_for_revision`, every enabled entry through `assert_install_admission`, missing installation/trust record = denial); call sites `:1457` (activate, after `_ |
+| D1 | F-D1-02 second activation path (`run_deploy_and_activate`) | HIGH | PARTIALLY_FIXED | `deploy_activate_pipeline.py:90-93` optional field `revision_trust_admission: ... = None`; `:203-204` call `ctx.revision_trust_admission(validated)` after `_authorize_activation`. Tests: `d1_repair/test_d1_repair_pipeline_hook.py` (hook denies / allows / "limi |
+| D1 | F-D1-03 (authorization part) | HIGH | VERIFIED_FIXED | `admin_service.py:1539-1590`: tenant scope first, `_authorize_rollback` when a prior revision exists, request built only from injected sources; `request`/`revocation_state`/`trust_policy`/`evaluated_at` parameters removed. Tests `test_d1_repair_emergency_autho |
+| D1 | F-D1-05 | MEDIUM | VERIFIED_FIXED | `admin_service.py:627-633` (install into occupied slot) and `:811-815` (upgrade) call `_assert_installation_application_scope` (`:1857-1869`). Tests `test_d1_repair_scope_and_evidence.py` (upgrade by non-owner, install into occupied slot by non-owner, owner st |
+| D1 | F-D1-06 (a) leftover VERIFIED candidate | MEDIUM | VERIFIED_FIXED | `admin_service.py:881-901` try/except around bindings + `_resolve_package_contracts` + `evaluate_agent_upgrade_admission` marks `FAILED_CANDIDATE` (`upgrade_admission_failed`) and re-raises. Test `..._never_leaves_a_verified_candidate` |
+| D1 | F-D1-06 (b) evidence sink | MEDIUM | VERIFIED_FIXED | [inert] `admin_service.py:290,296` optional `lifecycle_event_sink`; `_emit_events` `:1812-1819`; failure transitions now emit (`:871-876`, `:894`, `:931-935`). Tests: sink receives CREATED/VERIFIED/ACTIVATED, failure event with `reason_code`, rejection `reason |
+| D1 | F-D1-11 ACP group (12 tests) | MED | VERIFIED_FIXED | [static] `tests/unit/agents/authoring/conftest.py` non-autouse fixture binding `ActiveExecutionGovernanceIdentity`; 5 test files request it; `d1_repair/test_d1_repair_acp_identity_gate.py` pins unbound refusal, foreign-tenant refusal, matching success |
+| D1 | F-D1-11 architecture gates (3) | MED | VERIFIED_FIXED | [static] `test_ac6_architecture_gates.py`: exact allowlist of the 2 testing_support modules + new staleness test; adr16/adb22 inventories classify `deploy_activate_pipeline.py` and add textual-order assertions (`index("_authorize_activation(") < index(".commit |
+| D1 | F-D1-11 durable CAS e2e (`..._stale_cas_rejects_second_writer`) | MED | PARTIALLY_FIXED | `durable_registry_projection_input_store.py:32-46` `_in_persisted_representation`, applied to BOTH sides at `:109-117`. Tests `d1_repair/test_d1_repair_durable_projection_inputs.py` |
+| D1 | F-D1-11 two stale e2e fixtures | MED | VERIFIED_FIXED | [static] `test_canonical_agent_lifecycle_e2e.py` (adds metadata provider entry + `package_contract_authority`), `test_enterprise_projection_rehydration_e2e.py` (adds authority records, injects revocation source via the service's own attribute). Install admissi |
+| D1 | F-D1-12 by-product (M2, M7, M10) | LOW | VERIFIED_FIXED | `test_deny_boundary_blocks_upgrade_and_retire_without_touching_the_slot` (M2), `test_upgrade_to_the_same_version_is_not_an_upgrade` (M7), `test_rejected_upgrade_event_carries_the_typed_reason_code` (M10) |
+| D1 | F-D1-14 by-product | LOW | VERIFIED_FIXED | `test_registry_rejects_a_second_agent_with_the_same_contract_id` (match "Agent already registered") |
+| D2 | F-D2-01 estimator half | MED | VERIFIED_FIXED | base_llm_adapter.py:650-668 counts `json.dumps(tool_calls, sort_keys, default=str)`, `name`, `tool_call_id`; `json` imported :7. Test `tests/unit/llm_adapters/test_estimate_tokens_tool_calls.py` |
+| D2 | F-D2-01 hard budget counts tool_calls/name/tool_call_id | MEDIUM | VERIFIED_FIXED | New `context/budget/message_token_cost.py` (content + `json.dumps(tool_calls, sort_keys, default=str)` with `str()` fallback + name + tool_call_id; same recipe as `base_llm_adapter.py:632-662`, D3 merged in PR 569). Used by `classify_candidates` (`context_comp |
+| D2 | F-D2-02 + F-D2-14 TASK scope | MEDIUM/LOW | VERIFIED_FIXED | [bounded, latent] `memory_control.py` `TenantBoundMemoryCapability` protocol + `task_namespace_for_tenant` (`f"{len(tenant)}:{tenant}/{ns}"`, injective: decode = digits up to first ':' then exactly len chars then '/'); `default_memory_control_plane.py:378-393, |
+| D2 | F-D2-08 RAG reds | MEDIUM | PARTIALLY_FIXED | `d2_repair/RAG_RED_CLASSIFICATION.md`: 48F/13E -> 8 failed, 50 skipped, 0 collection errors (author-reported, `.tmp/proof` log not committed - not verifiable by me). Stale doubles fixed (`list_source_record_ids(root_document_id=)` etc.), `graph_store_backend=` |
+| D2 | F-D2-09 Neo4j IndentationError | LOW | VERIFIED_FIXED | `test_neo4j_live_qualification.py` re-indented; `test_d2r_test_tree_syntax_gate.py` `ast.parse` over 6 trees + self-test on a broken tmp file |
+| D2 | F-D2-10 stale pre-context gate | LOW | PARTIALLY_FIXED | `pre_context_policy_audit.py:15-36` roots = `intergrax/runtime` and `intergrax/runtime/nexus/uaep`, missing root fails closed; `test_ideal_w2_w2_script_gates` collects all failures; docstring assertion replaced |
+| D2 | F-D2-11 isolation half | LOW | VERIFIED_FIXED | `embedding_version_policy.py:160-175` per-hook try/except, logged with `exc_info`, returns True only if a hook accepted |
+| D2 | F-D2-13 clock + join | LOW | VERIFIED_FIXED | [with residual] `retention_sweep.py:275-320` `_run_with_deadline` (`asyncio.wait` + cancel), join bounded `deadline+5`, daemon thread; `:367-381` `as_of` refused if `> clock()+5min` with `memory_retention_sweep.as_of_out_of_range`; timeout returns typed `memor |
+| D2 | F-D2-17 last-resort drop order | LOW | VERIFIED_FIXED | `context_compiler.py:345` `for index in range(len(working))` |
+| D2 | F-D2-18 weak negative tests | LOW | PARTIALLY_FIXED | `test_d2_compaction_roundtrip.py` (`except ValueError: return` removed; corrupted payload now `pytest.raises(ValueError, match="payload SHA-256 must equal ...")`); `test_d2_context_fidelity.py` (`pytest.raises(ContextBudgetUnsatisfiableError, match="mandatory_ |
+| D3 | F-D3-01 stream paths bypass guard | HIGH | VERIFIED_FIXED | [guard, quota, permit, transport registration); resilience part NOT real, see N-D3-1] All three adapters now go through `_execute_streaming`: openai_responses_adapter.py:708, :824 (new `_responses_stream_opener` :645-663 with ExitStack); gemini_adapter.py:224, |
+| D3 | F-D3-02 refusal / finish normalization | MED | PARTIALLY_FIXED | Producer code present on all plain + stream paths: new `_shared/stream_finish_signal.py` (127 lines), openai_chat :157-170, :296-330, responses :712-733, claude :216-238 (stream_messages only; stream_with_tools builds from `get_final_message`, claude_adapter.p |
+| D3 | F-D3-03 (doc) timeout_sec admission-only | MED | VERIFIED_FIXED | call_config.py docstring now states admission budget, not forwarded; test_d3_f03_timeout_admission.py:73 pins the wording |
+| D3 | F-D3-05 stale / state-dependent unit tests, fixture agent | MED | PARTIALLY_FIXED | Fixed: regex (test_ollama_tool_calling.py), registry TypeError split (test_registry_model_contract.py:110-125), module eviction helper (registry_state_test_support.py `evict_provider_adapter_modules`), `importorskip` for 2 modules, `IncidentInvestigatorAgent.r |
+| D3 | F-D3-07 (defect) substring retry classifier | MED | VERIFIED_FIXED | retry.py:79-90 `_NAME_WORD` / `_has_transient_name`, used at :110. Tests `test_d3_f07_retry_classification.py` (names, statuses, default failover does not forward `GenerateContentError`/`SeparateTenantError`) |
+| D3 | F-D3-08 LangChain Ollama silent re-issue | LOW | VERIFIED_FIXED | ollama_adapter.py:424-430 `except (ExecutionProtectedWorkDeniedError, LLMQuotaExceeded): raise` then `if buf: raise` |
+| D3 | F-D3-13 mutants M12, M03, `_declares_true` | LOW | VERIFIED_FIXED | [mutants); predicate only PARTIALLY tightened] M12: see F-D3-01. M03: `test_d3_f13_failover_precheck.py::test_stream_with_tools_fails_closed...` (single-member chain; the shared selector `_select_declared_adapter_from`, failover_adapter.py:278-293, is the muta |
+| D4 | F-D4-01 cancellation skips rollback | MED | VERIFIED_FIXED | engine.py: `except asyncio.CancelledError` in `start` (~:261-265) -> `_cleanup_after_startup_cancellation`; `stop` wraps `_graceful_stop_sequence` in `_drive_to_completion` (~:303-308); `run_until_stopped` catches cancel -> `_stop_after_cancellation` (~:310-31 |
+| D4 | F-D4-03 test wording | MED | VERIFIED_FIXED | [docstring only] test_d4_crash_restart_subprocess.py header |
+| D4 | F-D4-04 hung `runtime.ready()` | MED | VERIFIED_FIXED | engine.py `_probe_runtime_ready` (~:587-593) `asyncio.wait_for(..., default_blocking_hook_timeout_seconds)` used at the startup call (~:498-508, primary failure `runtime_ready_timeout`) and in `_refresh_health` (~:596-607). Tests `test_d4r_readiness_bound.py`  |
+| D4 | F-D4-05 gate part | MED | VERIFIED_FIXED | [gate only] `test_d4r_composition_root_gate.py`: nine product `host/wiring.py` call `wire_application_environment`; one declared exception (lab `factory.py` imports `wire_lab_tools`, verified: factory.py:50, :225); stale-exception test; synthetic negatives |
+| D4 | F-D4-07 fingerprint blind to contract | MED | VERIFIED_FIXED | public_api.py `_model_contract` (config, field `metadata`, validator names) added to model descriptions; version 1.0.1 with history entry, 1.0.0 entry byte-identical (pinned literal in test). Class name is not part of the description, so the comparison of `_St |
+| D4 | F-D4-09 documentation | MED | VERIFIED_FIXED | [for every line the audit cited] TIER3 architecture (:27, :47, :170-180, :273, :282, :297, :601, :619), plan row :129, satellite rows :11, :12, :60, APPLICATION_HOSTING :25, :41, :314, :327 reconciled. `HostDeploymentProfile` claim "extra=allow ... flat scalar |
+| D4 | F-D4-12 unbounded publishes | LOW | VERIFIED_FIXED | eventing.py:154-176 optional `publish_timeout_seconds`, secondary failure `event_publish_timed_out`; engine passes `default_observer_hook_timeout_seconds` at both dispatcher constructions (engine.py ~:154, ~:238); supervisor.py `_publish_bounded` at all three  |
+| D4 | F-D4-13 metrics export bridge | LOW | VERIFIED_FIXED | [tests + doc] `test_d4r_metrics_bridge.py`; doc note on opt-in (APPLICATION_HOSTING.md :249-250) |
+| D4 | F-D4-19 (b) + POSIX branch | INFO | VERIFIED_FIXED | `_symlink_or_skip` in both unit files (skips on any `OSError`/`NotImplementedError` from creation), stubbed `is_symlink`/`lstat` tests and fake `fcntl` tests in `test_d4r_guard_symlink_and_posix_lock.py`; `_native_lock.py` untouched |
+| D5 | F-D5-01 registry legacy surface (writer/reader) | HIGH | VERIFIED_FIXED | [declared in-scope part] `online_evaluation_registry.py:178-188` (legacy `list_observations` filters `tenant_id is None`; legacy `clear` keeps tenant rows); `:171-176` legacy append keeps an existing stamp; tests `test_d5r_registry_isolation.py::test_legacy_li |
+| D5 | F-D5-01 stamping in `record_user_satisfaction`, `record_shadow_observation` | HIGH | VERIFIED_FIXED | `user_satisfaction.py:43-60` returns `TenantOnlineEvaluationObservation(tenant_id=event.tenant_id)`; `online_evaluation.py:94-118` `tenant_id` param; blank-tenant validator `registry.py:57-62`; tests `test_d5r_tenant_stamping.py` |
+| D5 | F-D5-01 three hosts bind tenant | HIGH | VERIFIED_FIXED | [for the call; behaviour PARTIAL (untenanted fallback] `harness_host_runtime.py:518-521` (`tenant_id` param, blank -> None), `runtime_config_bridge.py:195-198` (`request.tenant_id`), `scenario_runtime_baseline.py:453-456` (`validate_scenario_tenant_id` result, |
+| D5 | F-D5-02 (G0/G2 symbols + `## Approved` anchoring, partial) | MED | VERIFIED_FIXED | [in-scope part] `check_mvp_promotion_gates.py:31-33,70-76,92-96,107-124`; `_defines` is AST module-level (def/class/assign), so a comment cannot satisfy it; tests `test_g0_rejects_hollow_modules`, `test_g2_rejects_hollow_modules`, `test_approved_line_outside_t |
+| D5 | F-D5-03 cert subject binding (partial) | MED | VERIFIED_FIXED | [in-scope part] `agent_promotion.py:56-57` exact (case and whitespace sensitive) id+version compare; `test_certification_of_another_agent_or_version_never_authorizes` (incl. blank and padded ids), `test_matching_certification_still_authorizes` |
+| D5 | F-D5-04 comparison `clean` | MED | VERIFIED_FIXED | [with residual] `eval_comparison.py:103-139 _evidence_breaches`, appended at `:181`; tests `test_empty_runs_do_not_compare_clean`, `test_candidate_missing_a_baseline_scenario_is_not_clean`, `test_candidate_with_pending_human_review_is_not_clean`, `test_identic |
+| D5 | F-D5-04 evidence status | MED | VERIFIED_FIXED | `eval_evidence_contracts.py:241-258` (`error` -> FAILED; no rule outcome / uncovered scenario / pending -> UNAVAILABLE); tests `test_executor_failure_is_failed_evidence_not_passed`, `test_run_without_rule_outcomes_is_unavailable`, `test_scenario_without_rule_o |
+| D5 | F-D5-07 `ExperimentSession.run` NameError + identity | MED | VERIFIED_FIXED | `experiments/workflow.py:14,29-31,165-168` imports `mint_run_id`, passes `admit_certified_internal_harness_root_governance_identity` (fails closed on blank tenant/user: `certified_internal_harness_governance_identity.py:19-26`); `test_d5r_experiment_session.py |
+| D5 | F-D5-08 docs (R017) | MED | VERIFIED_FIXED | `docs/project/architecture/EXPERIMENTATION_AND_DEVELOPER_EXPERIENCE.md` new section "Evaluation boundary and declared exceptions (PDC-D5)"; plan pair updated |
+| D5 | F-D5-11 regex part | LOW | VERIFIED_FIXED | `evaluation_contracts.py:31-32,331,338` (`fullmatch`, `^`/`$` dropped); `test_code_sha_with_trailing_newline_is_rejected` (`\n`, `\r\n`), `test_dataset_digest_with_trailing_newline_is_rejected` |
+| D5 | F-D5-12 id collision (`get_observation`) | LOW | VERIFIED_FIXED | `registry.py:85-100 _resolve_observation` (caller's own row wins; foreign-only -> boundary error; unknown -> KeyError); `test_same_observation_id_in_two_tenants_resolves_per_tenant`, `test_id_held_only_by_another_tenant_is_still_denied` |
+| D6 | F-D6-01 validating port | MED | VERIFIED_FIXED | `security_audit_trail.py:34,164-168` (`as_evidence_persistence_port`; `None` -> TypeError); `append` text and callee `self._evidence.append` unchanged (COMPAT-X F-35 rule still matches; rule files not in the diff); tests `test_d6_f01_audit_trail_validating_por |
+| D6 | F-D6-02 relabel | MED | VERIFIED_FIXED | [named module); PARTIAL across the surface] `multi_region_audit_trail.py:3-9` module doc, `:28-46` report doc and `Field(description=...)`, class doc; tests `test_d6_f02_audit_trail_claims.py` (phrases "in-process", "does not detect", "does not prove"; behavio |
+| D6 | F-D6-05 provenance binding | MED | VERIFIED_FIXED | `core/plugins/admission.py:301-308` (normalized `attestation.distribution` must equal normalized `spec.distribution`, else `PLUGIN_PROVENANCE_INVALID`; reason does not echo attestation content); every entry point goes through `evaluate` (`discovery.py`, `catal |
+| D6 | F-D6-07 sandbox deny test | MED | VERIFIED_FIXED | [test-only root cause] `tests/unit/runtime/sandbox/test_cap_c1c_sandbox_evidence_and_contract_purity.py`: deny test now passes `governance_tenant_id=state.tenant_id` and a principal; new `test_c1c_q_governance_deny_without_active_governance_identity_fails_clos |
+| D6 | F-D6-12 credential error chain | LOW | VERIFIED_FIXED (at `d39a520dd`; PARTIALLY_FIXED at `cba32d247`) | `integrations/credentials/secrets_store_resolver.py:43-48` `except Exception:` ... `from None`; repaired by T-IGX-041-M: the typed errors are raised after the `except` block; test `test_provider_text_is_absent_from_the_whole_error_chain` asserts `__cause__ is None` and a clean rendered traceback |
+| D7 | F-D7-01 batch abort | HIGH | VERIFIED_FIXED | scheduler.py:186-204 (per-claim try, `StaleClaimError` separate, first failure re-raised after batch), tick() 129-143 runs both phases. test_s1_batch_isolation.py: 3 tenants, first raises -> siblings `completed`, failed claim neither completed nor pending; sta |
+| D7 | F-D7-02 chain ends silently | HIGH | PARTIALLY_FIXED | Successor now persisted before execution: scheduler.py:207-232, 267-291; `release_claim`/`skip_claim` store.py:585-643. Tests test_s2_chain_survival.py (real two-process `os._exit` crash via _crash_worker.py; transient `schedule()` error releases claim; dead t |
+| D7 | F-D7-04 occurrence id w/o tenant | MED | VERIFIED_FIXED | recurrence.py:416-424 (tenant digest + task digest, fixed-length), `start_checked` 505-512; validate_occurrence_entry 427-452. test_s3_occurrence_identity.py incl. pinned literal id |
+| D7 | F-D7-06 terminal not sticky | MED | VERIFIED_FIXED | document_store_task_queue.py:376-476 (`_standing_terminal` inside CAS mutate for mark_succeeded/failed/dead_lettered/retry_or_dead_letter), claim path `_claim_mutation` 335-344. test_q1_terminal_sticky.py 12 negative cases + result equality + claim returns [] |
+| D7 | F-D7-07 per-instance lock | MED | PARTIALLY_FIXED | `ConditionalDocumentStore` CAS in `_cas_update` 547-577 and `put_if_absent` reservation `_reserve_idempotency` 164-194. test_q3_conditional_claims.py (40 tasks, two instances, `SlowReadStore`; late terminal write from second instance loses; plain store unchang |
+| D7 | F-D7-08 back-off blocks fresh work | MED | VERIFIED_FIXED | delayed index `_DELAYED_INDEX_PARTITION` document_store_task_queue.py:53-54, 80-83, 289-375, `_after_settle` 508-527; bounded paging 32 pages. test_q2_head_of_line.py (40/200 rows, legacy-index case with ids sorting first, tenant filter, early claim refused) |
+| D7 | F-D7-10 run_at_utc | MED | VERIFIED_FIXED | scheduled_resume.py:30-42, 86-89; store.py:497, 526-541, 651; scheduler `_ensure_utc` :488-491; PG parity postgresql_task_checkpoint_store.py (diff) . test_s4_run_at_utc.py (offset 05:00-05:00 does not fire at 08:30Z, +02:00 fires, non-UTC `now`, malformed leg |
+| D7 | F-D7-11 unbounded recurrence / smuggling | MED | VERIFIED_FIXED | scheduled_resume_metadata.py:24-27, 90-101; scheduler.py:157; scheduled_resume.py:45-56 (`validate_occurrence_entry` on persistence); recurrence.py:92-95, 241-243, 287-301. test_s5_recurrence_bounds.py |
+| D7 | F-D7-12 stale documents | MED | PARTIALLY_FIXED | architecture/BACKGROUND_TASKS.md B.2.1-B.2.3 and plans/BACKGROUND_TASKS.md A.1 rewritten (diff read). Statements about exceptions F-D7-03/05/09 verified true in code (grep: no `HostedApplicationActiveWorkController` implementer; three `DocumentStoreTaskWorker` |
+| D7 | F-D7-13 silent no-op occurrences | MED | VERIFIED_FIXED | scheduler.py:253-265 (`SKIPPED` + WARNING, no successor), `ScheduledResumeStatus.SKIPPED` scheduled_resume.py:69. test_s2: superseded target -> `["completed","skipped"]`, missing target, one-shot keeps `completed` |
+| D7 | F-D7-18 (by-product) | LOW | VERIFIED_FIXED | recurrence.py:287-298 (`10**15` rejected, unsatisfiable cron rejected), `_iter_interval` overflow guard 352-357; test_s5 |
+| D7 | F-D7-21 (by-product) | INFO | VERIFIED_FIXED | recurrence.py:16-24 docstring; test asserts old wording absent and "gap length" present |
+| D8 | F-D8-03 raw storage tools | MED | PARTIALLY_FIXED | [as planned, bounded] storage/service.py:30-52 guard called first in get/put/delete/exists; test_d8r_storage_tools_gate.py (10 key variants, recording double sees no call, AST gate) |
+| D8 | F-D8-04 workspace scope | MED | PARTIALLY_FIXED | [as planned] governed_access.py:283 (stored workspace must equal request), sources.py:77-83, 99-111 (`_require_workspace` on hold/release/delete). test_d8r_read_scope.py: none/other workspace -> `workspace_mismatch` audited; lifecycle ops need matching workspa |
+| D8 | F-D8-05 sweep TOCTOU + audit | MED | VERIFIED_FIXED | store_base.py:29-40, 115-122; sqlite_artifact_store.py:297-316 (check inside `BEGIN IMMEDIATE`), in_memory_artifact_store.py:88-99 (inside lock); retention.py:91-96, 125-150, 232-240. test_d8r_sweep.py both stores: racing store writes v2 after selection, handl |
+| D8 | F-D8-06 expiry at read | MED | VERIFIED_FIXED | sources.py:46-83 (`_is_expired`, `_is_protected`, naive->UTC, boundary `<=`); test_d8r_read_scope.py (not found + audited, boundary, hold/evidence readable, per-version, naive expiry) |
+| D8 | F-D8-07 create_artifact | MED | VERIFIED_FIXED | agent_runtime_context.py:234-248 (tenant from `state.tenant_id`, producer from `request.agent_id`, lineage `run_id`); test_d8r_runtime_gateway.py against real SQLite store incl. cross-tenant `KeyError` and `to_durable_ref()` |
+| D8 | F-D8-08 | LOW | VERIFIED_FIXED | governed_access.py:354-378 returned DENY / REQUIRE_APPROVAL denied |
+| D8 | F-D8-09 (negative limit) | LOW | VERIFIED_FIXED | retention.py:128-129; parametrized 0/-1/-100 on both stores |
+| D8 | F-D8-12 | LOW | VERIFIED_FIXED | governed_access.py:400-404 `backend_error` outcome event with exception type only, then re-raise |
+| D8 | F-D8-16 (hostile source) | LOW | VERIFIED_FIXED | test_d8r_governed_guard.py `_HostileSource` -> `tenant_mismatch` |
+| D8 | F-D8-17 (docs part) | INFO | PARTIALLY_FIXED | ARTIFACT_LIFECYCLE.md (architecture) now says "library behaviour ... no shipped composition", adds a Declared-exceptions table with reopen conditions; plan doc records the repair |
+
+Notes that change how a verdict reads:
+
+- **F-D1-02 / F-D1-03 are fixed at service level only.** `build_production_agent_platform_admin_service` injects no revocation source, no trust coordinator and no pipeline hook, so the revocation re-check, the authorized emergency entry point and the pipeline hook enforce nothing in the shipped composition. This is the declared F-04-family exception; the HIGH finding is therefore not closed end to end and must be registered as "inert in production", not "fixed".
+- **F-D1-11 durable CAS.** The fix normalizes `revision_state`, `activated_at` and manifest integration bindings on both sides; the plan and ticket state the comparison is not weakened, which is not accurate (G-08).
+- **F-D3-05.** Part of the red suites stays red (4 parity tests and ~99 scenario tests, G-05).
+- **F-D5-01 hosts.** The call site binds the tenant; the behaviour with `tenant_id=None` in a strict host stays untenanted (G-09).
+- **F-D7-02, F-D7-07** and **F-D8-03** are PARTIAL for the reasons of G-02, G-07 and G-03.
+
+## 8. Declared exceptions and excluded findings
+
+Reviewed: `DELEGATION-PDC-CLOSE.md` decision 1 and the "Excluded findings" tables of plans A..H. For each, the stated facts were checked in code (grep or read) and the reopen condition read. Result: **the exceptions are truthfully described; none is a missing-wiring item that hides a different bug, except where a row below says so.**
+
+| Exception (authorized by `DELEGATION-PDC-CLOSE.md` unless stated) | Facts checked | Reopen condition | Verdict |
+| --- | --- | --- | --- |
+| F-D1-04 revoked revision without a trusted rollback target | `emergency_revocation_response.py` unchanged; `BLOCKED_NO_SAFE_TARGET` confirmed | Operator decision | truthful; a revoked revision keeps serving (the D1 auditor graded it possibly HIGH) |
+| F-D5-02 remainder (MVP promotion gate semantics) | `T-IGX-036-O.md` still yields GRANTED; statement in plan and doc is true | Operator names the binding | truthful; remains a MEDIUM open defect by design |
+| F-D7-03 graceful shutdown / host drain, row PDC-D7-R014 PASS_SCOPED | no class implements `HostedApplicationActiveWorkController`; closure proof uses a test adapter | Operator commissions the feature | truthful. **F-D7-20** (`DocumentStoreTaskWorker.stop()` abandons a running thread, a later `start()` runs two consumers) is a real bug in production-composed code filed as LOW debt: re-rate MEDIUM and register separately (G-07 and section 8) |
+| "No production composition or caller" family (F-D1-01, -03 trigger, -07, -08; F-D2-06; F-D4-02/-03; F-D5-06; F-D6-04; F-D7-05/-09; F-D8-01/-02) | grep of production callers confirmed for each sampled item | wiring tickets named per row | truthful. The HIGH items F-D1-01 (package attestation never verified before install/upgrade) and F-D8-01 (retention not enforced by any production composition) stay open HIGH by Operator authorization |
+| Missing-feature-versus-claim (F-D2-05, -07; F-D3-03 enforcement, -07 taxonomy; F-D5-05; F-D6-02, -05 digest) | facts confirmed (e.g. `timeout_sec` computed then dropped; no groundedness evaluator) | Operator decisions named | truthful |
+| 4 `fixture_strict_adapter_parity` tests (T-IGX-041-C deviation) | cause confirmed in code (`AgentBinding.reference`, no contract authority passed) | `ManifestAgentContractAuthority` in the scenario composition | truthful for the four, **but the same cause leaves ~99 further scenario tests red, which the authorization does not name** (G-05). The cause is a defect in existing scenario composition, not a missing feature |
+| Not in any table: residue of F-D2-08 | N-03 product defect, three reingest/takeover tests with "root cause not established", FakeVectorstore doubles | none | **hidden defect** (G-01, G-04) |
+| LOW debt: F-D3-12 quota disables itself on a malformed value; F-D6-09, -11; F-D5-12 lock lease; F-D8-14 | read | debt register | correctly debt under option B, but each is a fail-open in composed code: keep owners named in the P9 debt register |
+
+## 9. New findings
+
+Severity as proposed by this audit. "Confirmed" says how: **REPRODUCED** (probe or run by the auditor), **CODE** (the auditor read the cited lines), **READ** (subagent static reading, not re-read or run by the auditor: treat as PLAUSIBLE until a repair ticket reproduces it).
+
+| ID | Sev | Finding | Evidence | Confirmed | Scope |
+| --- | --- | --- | --- | --- | --- |
+| G-01 | **HIGH** | The default document loader cannot be built: `handlers/doc_smart_document_handler.py:9-12` imports `PipelineDocumentHandler` from `contracts/base_document_handler.py`, which does not define it (it lives in `pipeline/document_handler_loading.py:81`). `create_default_documents_loader()` raises `ImportError`; callers include `runtime/nexus/ingestion/ingestion_service.py:127` and `tools/providers/rag/ingest_service.py:50`. `RAG_RED_CLASSIFICATION.md` lists it as "not in the write set"; plan B called it a stale test | `logs/probe_n03.out`; red `test_docx_ingestion`, `test_txt_ingestion` (run 04B) | REPRODUCED | repair (option B, product bug behind a red cited suite); needs a write-set amendment or a new ticket |
+| G-02 | MEDIUM | F-D7-02 regression: `_process_claimed_schedule` runs `_eligible_target` (`scheduler.py:210`, `234-251`) before materialization with no handling. An exception from `get_by_token`, `get_latest` or the terminal-authority read leaves the claim RUNNING and creates no successor (the old `finally` did); `ExecutionTerminalError` becomes "not resumable" and ends the chain as SKIPPED. No test covers it | scheduler.py lines cited | CODE | repair: treat eligibility-phase exceptions like materialization failures (release the claim); distinguish unavailable from not-resumable |
+| G-03 | MEDIUM | `workspace_export_artifact` / `workspace_import_artifact` (`tools/providers/workspace/service.py:132-167`) call `ObjectStorage.put/get` with an arbitrary `storage_key`, bypassing the F-D8-03 guard that only protects the four `storage.*` tools. The guard is also case-sensitive and ignores backend path rules (Windows/macOS filesystem store, trailing dots, drive keys). The service file is not in plan H's write set | service.py lines cited; `storage/service.py:40-52` | CODE | repair (same defect class as the repaired finding) |
+| G-04 | MEDIUM | F-D2-08 closure rests on environment-dependent skips. With `langchain-core` installed (the dev and `llm-langchain-ollama` environments) the D2 contract gives 13 failed + 3 errors, not the 8 stated: 5 `FakeVectorstore` doubles still miss `list_source_record_ids` (`test_indexing_manager_indexes_documents.py`; the PR only added `importorskip`), `InmemoryVectorStoreIntegration.list_collections` is missing, `_KnowledgeDocumentWithParserRuntime` is duplicated, and three reingest/takeover safety tests ("stale in-flight publication cannot become active after takeover") are red with the root cause unestablished. The classification text says the skipped modules run in the CI `rag-guard` profile; that workflow runs only `tests/unit/rag` and `tests/unit/tools/providers/rag` with `-m gate`, and no workflow runs `tests/integration/rag` | run 04B; `.github/workflows/rag-guard.yml`; classification file | REPRODUCED (reds), READ (workflow claim) | repair or explicit exception; the reingest/takeover reds must be root-caused (possible stale-publication defect) |
+| G-05 | MEDIUM | `DELEGATION-PDC-CLOSE.md` authorizes four red tests (`fixture_strict_adapter_parity`). The same defect leaves **103** red tests (4 + ~99 in `tests/unit/platform_proofs/scenarios/ai_incident_investigation`; `ValueError: AgentBinding requires agent_type or import_path`; unit tests are outside the CI selection, so they stay invisible) | run 04C; ticket T-IGX-041-C deviation text | REPRODUCED | Operator to widen the authorization or a small repair (pass a `ManifestAgentContractAuthority`) |
+| G-06 | MEDIUM | `test_xd12_every_pdc_touched_product_module_maps_to_a_domain_check` and two `p6_impact` tests fail: `intergrax/experiments/workflow.py` (D5) and `intergrax/runtime/policy/pre_context_policy_audit.py` (D2) map to no ENT-AUDIT check | run 02 | REPRODUCED | classifier entries (T-IGX-041-K is expected to cover; re-verify at the final SHA) |
+| G-07 | MEDIUM | D7 multi-instance claims exceed the code: `recover_interrupted_running` (`document_store_task_queue.py:579-624`) is not CAS and treats every RUNNING row of a shared store as interrupted (FAILED or requeued), and the orphan-reservation repair cannot tell a crashed reservation from one about to be written, so two tasks can still be created for one idempotency key. Architecture doc B.2.3 states instances do not claim twice or create two tasks per key. Related F-D7-20 (see section 8) | D7_D8 notes NEW-D7-4, -5 | READ | repair or exception wording; docs must state the limits |
+| G-08 | MEDIUM | F-D1-11 durable CAS fix narrows what the durable projection store compares (`durable_registry_projection_input_store.py:32-46`, `109-117`): integration bindings reduced to slug references, `revision_state` and `activated_at` neutralized; plan and ticket say the comparison is not weakened; the tamper test passes with and without the fix | D1_D2 notes | READ | classification: record the narrowing and pin a different-slug refusal |
+| G-09 | MEDIUM | A strict or production harness host built with `tenant_id=None` wires the shared untenanted evaluation registry without failure (`harness_host_runtime.py:518-521`, `evaluation_wiring.py:60-62`); the F-D5-01 exclusion rationale cites only the lab | D5_D6 notes NEW-D5-2 | READ | exception-register wording (name the strict-host case) or fail closed |
+| G-10 | MEDIUM | Seven red tests in cited closure suites have no owner: 5 in the D5 contract (`test_scenario_runtime_baseline` x3, `test_harness_host_runtime_llm` x2; **also red at the pre-repair base `f87df3b2a`**, run 08) and 2 `test_audit_ideal_depth_gate` (`29_1`, `30_4`; named as "known" by ticket F only) | runs 04E, 04F, 08 | REPRODUCED | owner and reopen condition in the P9 register, or repair (option B repairs red cited suites) |
+| G-11 | MEDIUM | Streaming resilience claim: `_execute_streaming` hands `execute_with_resilience` a lazy generator (`provider_stream_admission.py:62-96`), so the circuit breaker records success before any SDK call and retry never sees stream-open errors. The deadline, quota and permit guards do hold. The F-D3-01 plan text claims rate-limit/breaker/retry on streams | base_llm_adapter.py:308-390 | CODE | claim correction or repair |
+| G-12 | MEDIUM | `install_agent` into an occupied slot replaces the active installation with no upgrade-admission check or CAS (`admin_service.py:597-697`): an owner has an ungated second upgrade path (R011 says upgrade is a governed operation) | D1_D2 notes N-01 | READ | owner semantic decision, then repair or register |
+| G-13 | LOW | Pipeline trust hook runs after `persist_candidate_revision`, `mark_validated`, `register`, `prepare_candidate` (`deploy_activate_pipeline.py:155-204`): a refused revision is persisted and its deployment prepared | D1_D2 N-02 | READ | debt |
+| G-14 | LOW | Idempotent-replay branches of `install_agent`/`upgrade_agent` return the installation view before the ownership check; a raising event sink masks the original error or fails a committed transition | D1_D2 N-06, N-07 | READ | debt |
+| G-15 | LOW | Retention sweep keeps running after its deadline fires; the deadline test hangs instead of failing; rollback now fails on aged qualification evidence (availability trade-off); pre-context gate is satisfied by its own marker literals | D1_D2 N-08, N-09, N-10, N-12 | READ | debt |
+| G-16 | LOW | D3: OpenAI Responses refusal text may be duplicated when both delta and terminal part arrive; stream-guard gate drives 4 of 11 adapters and the refusal matrix covers only two methods; LangChain Ollama `raise` clause unpinned; unknown finish reasons map to UNKNOWN | D3_D4 N-D3-2, -3 | READ | debt |
+| G-17 | LOW | D4: cancellation lost in `_drive_to_completion` when it coincides with completion; unbounded publish at `process_bootstrap.py:151`; fingerprint blind to field defaults; timeouts cooperative only | D3_D4 notes | READ | debt |
+| G-18 | LOW | D5: `compare_eval_runs` ignores candidate executor errors (same-scenario failures compare `clean`); F-D5-07 tests are `no_ci`; blank-tenant legacy row makes the registry unreadable on load; stamped satisfaction rows invisible to unscoped trend consumers; hotspot host files carry ~300 lines of format and import churn beyond the named lines | D5_D6 NEW-D5-1,-3,-4,-5 | READ | debt |
+| G-19 | LOW | D6: `from None` leaves `__context__` holding the provider exception text (`secrets_store_resolver.py:43-48`; the test never asserts `__context__`); `check_immutable_security_audit_trail.py` still prints replicate/immutable claims; normalization wraps store errors unpinned | D5_D6 NEW-D6-1..3 | CODE (D6-1), READ | debt |
+| G-20 | LOW | D7: permanent materialization failure releases the claim every tick with no cap; `OverflowError` from `normalize_utc_iso` not mapped; a hand-built row can pre-empt a chain at the port; the overlap test required by the plan and other promised pins are missing | D7_D8 NEW-D7-2,-3,-6..8 | READ | debt |
+| G-21 | LOW | D8: empty producer id accepted; reference tokens carry no workspace, so workspace-scoped artifacts cannot be resolved (XD-09 stores its artifact with `workspace_id=None`); PR #572 touches governance batch files absent from the plan H write set (INFO) | D7_D8 NEW-D8-3..5 | READ | debt |
+| G-22 | INFO | Process and documentation: the P7 certification matrix (`PDC_DOMAIN_CERTIFICATION_MATRIX`) was not produced; `PDC_INDEX.md` still says 168 requirement rows (script: 172) and lists P8/P9 artifacts as not started; the SHA ladder says implementation heads are "not merged" although they are ancestors; the B-D6 commits before the audited SHA carry an AI co-author trailer (history, not rewritten); no AI trailer and a valid `Ref:` trailer on every repair commit since `c08efe46a` | scripted checks | CODE | P9 package |
+
+Process observations: the `pdc_x` process of run 02 exited normally (R-05 did not recur); the D1 contract process (run 04A) did not exit after its summary (R-05 recurred). No repair PR touched `scripts/governance/`, `.github/` or the FRZ checklist; no `xfail` was added; the declared weakenings (`importorskip` in modules, the D4 symlink skip, the registry `TypeError` assertion) are named in the tickets.
+
+## 10. Proposed scope of the one repair loop
+
+For the orchestrator (the audit does not fix or sign anything): **product repair** G-01, G-02, G-03 (with the key-normalization part of G-03), G-04 (doubles, `list_collections`, root cause of the three reingest/takeover reds; or an exception with owner), G-05 (or an Operator extension), G-11 (claim correction), and G-12 after an owner decision; **test/classification** G-06 (K), G-10; **register wording and docs** G-07 (docs limits), G-08, G-09, F-D1-02/03 "inert in production", F-D7-20 re-rated MEDIUM; the rest to the debt register. The P9 package also needs the P7 certification matrix substitute (G-22) and the ladder rows. A further EBH-7 re-pin follows any product change, and the ACT-N11 rebind (P8-04) must be done at the final audit SHA; both stay with the orchestrator.
+
+## 11. Limitations
+
+- Verdicts on the repairs are code reading plus mutation **reasoning**; no mutant was executed and no pinned test was run against the unrepaired code, except by the plans' own red-first records. The four subagents ran nothing.
+- Findings marked READ were not re-derived by the auditor.
+- `uv`, the `rag`/`sentence_transformers` extras and Docker were limited to the plan contracts; step 04B has 3 errors from an absent optional package; PostgreSQL, Cassandra and Mongo store paths were not executed; no live provider or network.
+- Run 04A was killed after its summary by the auditor and its 27 failures were re-run with a short base temp (57 passed): the exit code of that step is not a test result.
+- One ECAP FULL run; reproducibility across two runs was not measured.
+- Not covered: row-by-row re-certification of the 172 requirement rows, mutation testing, MCP exposure security (`fastmcp` absent), the production-readiness question, the freeze-SHA audit and VBN acceptance (ARCH-FREEZE).
+- Product commits after this audit's final SHA void it for the changed paths.
+
+## 12. Evidence and manifest
+
+`iiac_evidence/PDC-X/global/`: `iiac_audit_session_manifest.PDC-X.global.json`, `audit_scope.json`, `iiac_audit_global_findings.json`, `test_matrix.txt`, `EVIDENCE_MANIFEST.txt`, `logs/`, `ecap/`, `adversarial_scripts/`, `subagent_notes/`. Both `verify_iiac_audit_manifest.py` and `verify_iiac_role_separation.py` pass on the manifest. Manifest verdict `CONDITIONAL` is the closest schema value for the report verdict PARTIAL.
+
+## 13. Addendum — delta from the audit start SHA to the frozen SHA
+
+The orchestrator froze the audit on `GLOBAL_AUDITED_SHA` = `d39a520dda965981a38f8e1a90ec5135ea5d508e` (`origin/development` after PR #581 K, #582 L, #583 N, #584 M, #585 O; fast-forward from the audit start; worktree clean). This section supersedes the status columns of sections 1, 5 and 7 where it differs. Sections 1..12 describe the audit at `cba32d247`; the new audit SHA is `d39a520dd`.
+
+### 13.1 Delta `cba32d247..d39a520dd` (117 files)
+
+`git diff --stat cba32d247 d39a520dd`: 117 files, +12215/-413. 13 product paths under `intergrax/`, 2 under `platform_proofs/`, 1 script, 26 test and fixture paths, 12 governance paths (tickets and plans), 4 documentation paths (two architecture notes, WBS, DAG) and 59 files of the auditor's own report and evidence from PR #579. Judgement per group:
+
+| Group | Paths | Judgement |
+| --- | --- | --- |
+| Product, M (#584) RAG loader family | `rag/document_loaders/handlers/doc_smart_document_handler.py`, `contracts/parser_native_handle.py`, `compat/legacy_runtime_document.py`, `integrations/providers/vector_store/inmemory/integration.py` | Correct and minimal. The handler imports `PipelineDocumentHandler` from `pipeline/document_handler_loading.py`; the duplicate `_KnowledgeDocumentWithParserRuntime` is removed (one class, `get_parser_native_handle` moved next to `attach_parser_native_handle`); `list_collections` delegates to the inner store. Probe rerun: `create_default_documents_loader()` builds. Closes G-01. |
+| Product, M scheduler | `runtime/long_running/scheduler.py` | Recurring claims read eligibility (including a probe of the terminal authority) inside a try; any exception releases the claim for retry; a real terminal record still ends the chain. One-shot claims keep the previous behaviour, a permanently failing read retries every tick without a cap (declared E9; documented in `BACKGROUND_TASKS.md`). Closes G-02 for recurrence. |
+| Product, M storage keys | `tools/providers/storage/service.py`, `tools/providers/workspace/service.py`, `integrations/_shared/p3/clients.py` | The shared refusal now compares casefolded segments without trailing dots and spaces and is called first by `workspace.export_artifact` and `workspace.import_artifact`; `FilesystemBlobClient` refuses absolute, drive-qualified and `..` keys. Closes G-03. The tenant or prefix binding of all other keys stays a declared limit (E1). The edit of `clients.py` is mostly import and annotation reformatting; the only behaviour change is `_path_for`. |
+| Product, M credentials | `integrations/credentials/secrets_store_resolver.py` | The typed errors are raised outside the `except` blocks, so the provider exception no longer sits in `__context__`. Closes F-D6-12. |
+| Product, M scenario runtime | `applications/_shared/scenario_runtime_baseline.py` (named hotspot file), `platform_proofs/scenarios/ai_incident_investigation/application/runtime_composition.py`, `runtime/llm/model_call_runtime_evidence_adapter.py` | The composition carries the manifest, the contract authority and the application registry for the rebuild; the incident composition passes a `ManifestAgentContractAuthority`; the evidence adapter delegates `count_messages_tokens`. About 200 lines of the composition file are blank-line reflow. Sound, but only a first layer, see 13.4. |
+| Product, M impact map | `platform/enterprise_audit/impact_map.py`, `data/changed_since_impact_map.v1.json` | Two exact-file entries for `runtime/policy/pre_context_policy_audit.py` and `experiments/workflow.py`. They map the modules to the nearest manifest checks (the comment says that no check executes them): a classification, not coverage, see G-26. Closes G-06. |
+| Scenario proof | `platform_proofs/scenarios/indirect_prompt_injection/proof.json` | `safety_class` `LOCAL_NETWORK` -> `LOCAL_MUTATING` (gate fix of N, pinned by `n_repair`); the stricter class. |
+| Script | `scripts/qualification/pdc_x_wbs.py` | WBS and DAG regeneration for the new batches; no product behaviour. |
+| Tests, K/O | `tests/qualification/ebh_7/_ebh7_f10_canonical_inputs.py`, `test_ebh_7_b6_f10_c4_041k_entries_gates.py`, `..._041o_entries_gates.py` | Classifier entries for the unclassified paths with pinned negatives and positives; gate meaning unchanged. |
+| Tests, L | `tests/fixtures/compat_x/accepted_shim_delta_replay_x_05549f9.json`, `repin_pdc_x_p7_delta.json`, `test_compat_x_pdc_x_p7_repin_delta.py`, `_compat_x_semantic_identity_reconciliation.py` | Counters re-pinned with id-exact evidence (990-line id list) and a guard test; strengthens the pin. With the extras installed all 354 `compat_x` tests pass at the final SHA when run alone. |
+| Tests, N | `tests/qualification/pdc_x/n_repair/*`, `p8_repair/*` (R1..R8), `tests/unit/applications/*`, `tests/unit/platform_proofs/.../test_completion_alignment.py`, `test_diagnostic_platform_integration.py`, `tests/unit/rag/indexing/test_indexing_manager_indexes_documents.py`, `tests/integration/rag/test_same_source_reingest_serialization.py`, `tests/unit/runtime/architecture/test_audit_ideal_depth_gate.py`, `RAG_RED_CLASSIFICATION.md` | Stale doubles and signatures refreshed to the current API (for example `FakeVectorstore.list_source_record_ids`, `critic_verdict_passed`, scoped publication key); the capacity test now asserts the fail-closed refusal (stricter). The classification note corrects the CI claim (G-04). No assertion was weakened. |
+| Docs and governance | tickets J..O, plans, WBS, DAG, `BACKGROUND_TASKS.md`, `ARTIFACT_LIFECYCLE.md` | Documentation of the above; the two architecture notes state the new behaviour and limits truthfully. |
+
+### 13.2 Re-verification of the PARTIAL findings at `d39a520dd`
+
+| Id | Verdict at the final SHA | Evidence |
+| --- | --- | --- |
+| G-01 default document loader | **VERIFIED_FIXED** | Probe `probe_n03_default_document_loader.py` prints `loader built`; R1 tests green in the final run. Residual: three stale tests, see G-25. |
+| G-02 scheduler eligibility phase | **VERIFIED_FIXED** (recurring); F-D7-02 now VERIFIED_FIXED | Code read, R2 tests (get_by_token and get_latest failure, unavailable terminal authority, real terminal still skips, one-shot unchanged) green. Residual LOW: G-27. |
+| G-03 workspace import/export | **VERIFIED_FIXED** | Code read; R3 tests (case and dot aliases, refusal before any storage access, order gate) green. |
+| G-04 F-D2-08 closure | **PARTIALLY_FIXED** | Stale doubles fixed (5 tests green), the CI claim is corrected in `RAG_RED_CLASSIFICATION.md`, the `test_stale_inflight_publication...` red was a stale test (green). The two graph reingest reds remain and are a confirmed product defect, see G-23. |
+| G-05 ~99 scenario reds | **PARTIALLY_FIXED** | 99 -> 77 failed in the directory (22 fixed by the authority, manifest, registry, token layers and N). 59 of the 77 are `IncidentInvestigatorAgent.get_steps() missing ... 'context'`; the rest sit behind it. Not repaired, see 13.4. |
+| G-06 XD-12 and impact reds | **VERIFIED_FIXED** | `tests/qualification/pdc_x` has no red except an artifact of my out-of-tree base temp (see 13.3). |
+| G-10 seven unowned reds | **PARTIALLY_FIXED** | `29_1`, `30_4` and the strict-manifest/host-LLM tests fixed; `test_harness_evaluation_wiring` passes alone (red in the combined run, see G-24); `test_execute_scenario_task_persists_finalized_trace_for_orchestration` still red (`trace_bridge.v1` vs `graph_node.v1`, unowned, E11). |
+| F-D6-12 `from None` | **VERIFIED_FIXED** | Code read (typed error raised after the `except`); R5 green. |
+| F-D1-11 slug refusal | stays **PARTIALLY_FIXED** | The R6 pin covers the slug refusal; the durable compare-and-set narrowing (G-08) is unchanged. |
+| G-07 (docs limit), G-08, G-09, G-11, G-12, F-D3-02, F-D2-10/-18, F-D7-07/-12/-20, F-D8-03 rest, -04, -17 | unchanged, **excluded by T-IGX-041-M E1..E11** | No product delta for them; the only change is the documentation limit of `recover_interrupted_running` (accurate). None is covered by an Operator-authorized exception (decision 1 lists other items). F-D3-02 pins were assigned to N and not delivered. |
+
+Net of the 76 rows: 63 VERIFIED_FIXED, 13 PARTIALLY_FIXED, 0 NOT_FIXED.
+
+### 13.3 Run record at `d39a520dd` (PDC-P8-03 repeat)
+
+One bounded pytest process (log `.tmp/proof/pdc-x-p8/final/final_pytest.log`, command in `cmd.txt`): the union of the contract paths A..H, `pdc_x`, `tenant_x`, DUP-X, EBH-7, ROADMAP-REPLAY-X, DIST-SCALE-X, COMPAT-X, the two IIAC tests and the whole `tests/unit/platform_proofs/scenarios` tree, `-p no:randomly`, base temp under `_wt/intergrax/_scratch`. Result: **118 failed, 7691 passed, 91 skipped, 3 errors in 970 s** (the `-rf` list has 119 FAILED lines). The 3 errors are collection errors for the missing optional `sentence_transformers` extra (environment). The process did not exit after its summary and was killed (R-05). ECAP FULL was not rerun: no ECAP-governed rule changed except the two impact-map entries, which the R4 tests and `pdc_x` cover.
+
+| Class | Count | Disposition |
+| --- | --- | --- |
+| Incident scenario suite | 77 | G-05 residual (59 `get_steps`) |
+| Known classes: EBH-7 9, ROADMAP-REPLAY-X 5, DIST-SCALE-X 3 (PostgreSQL handshake), IIAC activation 2 | 19 | known, classified, not findings |
+| Order-dependent: 14 COMPAT-X, `audit_ideal_13_1`, `test_harness_evaluation_wiring` | 16 | green alone: `compat_x` + `13_1` 354 passed in a separate process, `test_harness_evaluation_wiring` passed in the residual rerun (log `rerun_compat_audit.log`, `rerun_residual.log`); run-order pollution of a global registry (G-24) |
+| `d2r` tree syntax gate | 1 | artifact of my base temp outside the repository (green in the rerun) |
+| Red alone | 6 | G-23 (2 graph reingest), trace_bridge (1), stale tests (3, G-25) |
+
+### 13.4 Judgement of M's declared deviation (G-05)
+
+The deviation text of T-IGX-041-M (P7 time-box, E10) is **truthful**: the first layer behind the repaired three is exactly the `get_steps(self, context)` versus `get_steps()` drift (59 occurrences at the final SHA), M predicted at most 86 failed and the suite shows 77, and the register names the reopen condition. It is **not covered** by `DELEGATION-PDC-CLOSE.md` decision 1: that decision declares four `fixture_strict_adapter_parity` tests, not the incident scenario family, and the plan itself says the exception must be widened by the Operator or the orchestrator ("assigns the `get_steps` contract, or widens the declared exception"). Decision 2 allows one repair loop, which M and N used; a second loop or a widening of the declared exceptions returns to the Operator. So the residual **needs the Operator**, and until then it is an open MEDIUM, not PASS_SCOPED. My observation for the decision: the scenario suite is a proof scenario family (`platform_proofs/`), not a product path; the deciding question is which side of the signature is canonical.
+
+### 13.5 New findings at the final SHA
+
+| Id | Sev | Finding | Confirmation | Fix location |
+| --- | --- | --- | --- | --- |
+| G-23 | MEDIUM | The graph side resolves the active publication generation with a `RagSourceOperationKey` that has no `publication_scope_id`, while ingest promotes under the key scoped by the root document id; after a re-ingest the graph evidence of the source is not visible. Orphaned: N's classification says "owner T-IGX-041-M", M excludes it as E11. | REPRODUCED standalone (`test_graphrag_source_reingest_replaces_vectors_and_graph_safely`: `assert set()`; `test_stale_graph_topology_is_inactive_after_generation_takeover`) and read in code | `intergrax/rag/graph/generation_visibility.py:82-87`, `intergrax/rag/graph/providers/inmemory_graph_store.py:343-348`: pass `publication_scope_id` from the source's root document id (as `ingest_pipeline.py:350` and `vectorstore_manager.py:353` do) |
+| G-24 | LOW | Order-dependent reds: with the contract suites in one process 14 COMPAT-X tests (raw candidate count 7420 vs 7417, schema-id registry mismatch), `audit_ideal_13_1` and `test_harness_evaluation_wiring` (unknown embedding slug `ollama`) fail; all pass alone. A test mutates a global registry and leaks it. | REPRODUCED | find the polluting test (registry or slug registration without restore) |
+| G-25 | INFO | Three red tests are labelled product defects in the RAG classification but are stale: `test_fixture_dataset_ingestion.py` (2, `load_documents()` now needs `tenant_id`) and `test_image_smart_document_handler.py::test_image_handler_builds_parser` (the handler requires `load()`); unowned. | REPRODUCED | the tests and the classification wording (N) |
+| G-26 | INFO | The two new impact-map entries bind modules to checks that do not execute them; honest comment, but the ENT-AUDIT does not cover `pre_context_policy_audit.py` and `experiments/workflow.py`. | CODE | register wording; a real check if coverage is wanted |
+| G-27 | LOW | A one-shot schedule whose terminal authority is unavailable is completed as "not resumable" and never executes (the previous behaviour, documented as unchanged). | CODE | `scheduler.py:219-222`, if a one-shot resume must survive an authority outage |
+
+The unfixed `trace_bridge.v1` mismatch (G-10 residual) is real until its root cause is established: a runtime-event schema guard rejects `step_started` payloads on the finalized-trace path of the scenario runtime; owner needed (`intergrax/runtime/events/payloads/canonical.py:171`, `intergrax/runtime/nexus/tracing/qualification_runtime_trace.py:101`).
+
+### 13.6 Allowlisted pin and records delta after `GLOBAL_AUDITED_SHA`
+
+PR #586 (`docs(pdc): EBH-7 re-pin W1' at P (T-IGX-041-J)`, open, head `22cfef5d91bb97e94c4f4bc92df094e4c4506a75` when read, base `development`) is covered by this note, with the file list of `gh pr diff 586 --name-only` (14 files): `.github/workflows/unit-tests.yml`, `tests/qualification/ebh_7/_constants.py`, `docs/project/maintainers/qualification/EBH_7_B6_F10_ECAP_NORMATIVE_MATRIX.md`, `EBH_7_ECAP_CURRENT_HEAD_AUDIT_REPORT.md`, `EBH_7_SHA_LADDER.md`, `ebh_7_p03_independent_replay/{ARTIFACT_DIGESTS.json, B6_EVIDENCE_CONSISTENCY_MATRIX.md, EBH_7_CLOSURE_EVIDENCE_AUDIT_MATRIX.md, EBH_7_P03_GITHUB_ACTIONS_REPLAY_RECORD.md, L3_REPLAY_RECORD.md, MANIFEST.json}`, `platform_domain_completeness/PDC_REG_DIAGNOSIS.md`, `PDC_SHA_LADDER.md`. Judgement: the workflow and the constants file change only the default `EBH7_TEST_EXECUTION_SHA` and `EBH7_EVIDENCE_PUBLICATION_SHA` from `146e7acf1434` to `d39a520dd`, that is the audited SHA of this report; the docs re-render the F10 matrix and record digests at that pin (the matrix diff is 482 lines of regenerated rows, not reviewed row by row). No product path. A later W2' record and any push to #586 after the head named here are outside this audit; the allowlisted paths are by themselves not product changes, so they do not void this audit for product paths.
+
+### 13.7 Verdict at the final SHA
+
+**PARTIAL** (`PARTIAL_EXACT_BLOCKERS`; IIAC manifest value `CONDITIONAL`) - the HIGH is closed and four of the six original blockers are closed (G-01, G-02, G-03, G-06 verified; G-04 and G-05 only in part), the verdict is not PASS or PASS_SCOPED because:
+
+1. G-23 (MEDIUM): confirmed product defect without an owner (graph reingest visibility), not an Operator-authorized exclusion.
+2. G-05 residual (MEDIUM): 77 incident scenario reds, 59 of them one signature drift; wider than the Operator's four-test exception; needs the Operator (13.4).
+3. The product MEDIUMs M excluded without an Operator authorization (E1 to E11: G-08 durable CAS, G-09 strict host with `tenant_id=None`, G-11 stream resilience claim, G-12 `install_agent` into an occupied slot, F-D3-02 pins) remain open; each has a reopen condition, but only decision 1 items are authorized exceptions.
+4. `trace_bridge.v1` mismatch (G-10 residual) unowned.
+
+If the Operator accepts items 2 to 4 as declared exceptions and G-23 is repaired or declared, the verdict would be PASS_SCOPED for the scoped rows. EBH-7 identity, IIAC activation staleness, ROADMAP-REPLAY-X and DIST-SCALE-X reds are the known classes and unchanged.
+
+## 14. Addendum 2 — delta audit of repair loop 2 at `969cbd964`
+
+Requested by the orchestrator under `operator_decisions/DELEGATION-PDC-LOOP2.md` (including Amendment 1). Binding Operator condition: **only the targeted tests that cover the fixes run**; no broad or long suite, no EBH-7 L3 replay, no repeat of the full global pytest, no ECAP FULL. The auditor is the same IA-GLOBAL session that wrote sections 1 to 13; it did not implement, sign or certify T-IGX-041-P or T-IGX-041-Q. Audited SHA of this addendum: `969cbd964c679d563b02e55f065b452d46fdf90b` (`origin/development`, merge of PR #593; PR #594 merged earlier as `7f1859e0f`). Worktree `D:/Projekty/_wt/intergrax/ia-g-add2`, own branch, docs-only PR, not merged.
+
+### 14.1 Delta `d39a520dd..969cbd964` (414 files)
+
+`git diff --name-only d39a520dd..969cbd964` (list in `logs_addendum2/delta_files.txt`), by category:
+
+| Category | Files | What |
+| --- | --- | --- |
+| Product (`intergrax/`, `agents/`, `applications/`) | **3** | `intergrax/rag/graph/generation_visibility.py`, `intergrax/rag/graph/indexer/heuristic_graph_indexer.py`, `intergrax/rag/graph/providers/inmemory_graph_store.py` (T-IGX-041-P). Nothing under `agents/` or `applications/`. |
+| Tests | 4 | P: `tests/unit/rag/graph/test_graph_publication_scope_visibility.py` (new, 23 tests). Q: `test_ebh_7_b6_f10_c4_041k_entries_gates.py`, `test_ebh_7_b6_f10_c4_041o_entries_gates.py`. Pin: `tests/qualification/ebh_7/_constants.py` (default EBH-7 SHA `146e7acf` to `d39a520dd`, PR #586, allowlisted in 13.6). |
+| CI workflows | 4 | `unit-tests.yml` (EBH-7 default SHA pin, PR #586, plus runner pin), `llm-adapters-guard.yml`, `llm-network-smoke.yml`, `rag-guard.yml` (runner `ubuntu-latest` to `ubuntu-24.04`, PR #592; no test logic changed). |
+| Scripts | 1 | `scripts/qualification/pdc_x_wbs.py`: two WBS batch rows (B-P8-R4, B-P8-R5) for P and Q; data only. |
+| Governance | 4 | `governance/tickets/T-IGX-041-P.md`, `T-IGX-041-Q.md` and their two plans. |
+| Docs | 398 | 371 under `enterprise_quality_oversight/` (EQO-A Campaign A dossier, PR #589, a separate workstream, including `OD_EBH_7.json`), 11 `iiac_evidence/PDC-X/global/` (my own section 13 evidence, PR #588), 7 `platform_domain_completeness/` (this report, the LOOP2 delegation and the P8-ACT record, WBS and DAG, REG diagnosis, SHA ladder), 6 `ebh_7_p03_independent_replay/` and 3 `EBH_7_*` re-renders (PR #586). |
+
+Finding: the claim "only these three files" holds for **product paths** (exactly three, all under `intergrax/rag/graph/`). Besides them the delta holds 13 other non-docs paths (4 tests, 4 workflows, 1 script, 4 tickets and plans); none is under a product tree and none changes product behavior. Because P changes product paths, IIAC activation staleness (ACT-N11) is a known class and is not changed by this addendum.
+
+### 14.2 G-23 (P) — verified from code and by test
+
+Read: the full diff of the three files. The semantic change is small; the rest of `inmemory_graph_store.py` (96 lines) is typing-alias modernization and line reflow (`Dict` to `dict`, `Set` to `set`, one-line expressions), the behavior-neutral style commit `f044fcdfc`, which I read hunk by hunk.
+
+- `generation_visibility.py`: new constant `GRAPH_PUBLICATION_SCOPE_METADATA_KEY = "root_document_id"`; helper `publication_scope_from_metadata` (stripped string or `None`; blank or non-string gives `None`); `resolve_scope_active_generations` and `visibility_query_params` take an optional `publication_scope_ids` mapping (source id to root document id) and put it into the `RagSourceOperationKey` as `publication_scope_id`; a missing, blank or non-string entry keeps the unscoped key.
+- `heuristic_graph_indexer.py`: stamps `root_document_id = str(doc.identity.root_document_id)` on **versioned** evidence only (the branch that already stamps the generation).
+- `inmemory_graph_store.py`: `_evidence` builds the `RagSourceOperationKey` with `publication_scope_id=publication_scope_from_metadata(metadata)`.
+
+Closure: ingest (`ingest_pipeline.py:350`, `vectorstore_manager.py:353`) promotes under the key scoped by the root document id; the graph evidence is now resolved under the identical key, so the active generation is found and the evidence of the active generation is visible after a re-ingest. Both reproductions that failed at `d39a520dd` pass (14.4).
+
+No widening (checked, not assumed):
+
+1. The new input narrows the lookup key. `active_publication_generation` is an exact dictionary lookup on the frozen key (`InProcessSourceOperationCoordinator`, `source_operation.py:175-182`; the durable coordinator reads one publication record per key); there is no fallback to the unscoped key.
+2. Tenant, namespace and workspace still come from the bound `GraphScope`, never from evidence metadata; `source_id` is unchanged. The only new field qualifies the publication inside one tenant, namespace, workspace and source. Whoever can write evidence metadata could already choose `source_id` and the generation; the root document id adds no authority across tenants, namespaces or workspaces.
+3. Failure stays closed: versioned evidence without a valid root id resolves the unscoped key, finds no scoped publication and is hidden; unversioned evidence and unscoped publications behave as before.
+4. Tests of P (all pass; 16 of the 23 fail when the three files are restored to `d39a520dd`, the other 7 are negatives that held before): wrong scope id invisible, missing scope id fails closed, blank or non-string never becomes a key, another source with a borrowed scope id invisible, other tenant, namespace or workspace sees nothing (parametrized), unscoped publication still visible, mapping passthrough, indexer stamps only versioned evidence, indexer evidence visible under its own root and invisible under another.
+5. The only producer of versioned graph evidence is the heuristic indexer (`SOURCE_PUBLICATION_GENERATION_METADATA_KEY` appears in no other indexer); the LLM and community-report indexers write no generation or source metadata, so their evidence stays unversioned and visible, as before.
+
+**G-23: VERIFIED_FIXED for the in-memory graph store.** Residual (new finding G-28): the Cypher/Neo4j store is unchanged on purpose (P's declared residual R1). `cypher_rag_graph_store.py:156-161` calls `visibility_query_params` without `publication_scope_ids`, so with a bound coordinator and a scoped publication its evidence is still resolved under the unscoped key and stays **invisible (fail closed, no leak)** after a re-ingest. Not reproduced (no Neo4j in this environment; READ).
+
+### 14.3 T-IGX-041-Q — verified
+
+Q is two test files only. It adds `_with_paths` (appends only the paths the changed-path range does not already hold) and, per file, a parametrized "removing one entry reopens exactly that path" test, a "reopen check does not depend on the paths being in the range" test and a `_with_paths` unit test. No gate is weakened: the existing assertions stay and the classifier file is untouched. **Mutation (executed)**: in `tests/qualification/ebh_7/_ebh7_f10_canonical_inputs.py` I renamed the real K entry (`secrets_store_resolver.py`) and the real O entry (`p3/clients.py`) to dead paths, ran both gate files, then restored the file. Result: 8 of 19 K tests and 8 of 20 O tests fail, including the "path is classified as documented" and "entry is an exact path with a reason" tests. The gates fail when an entry is really missing and pass when all entries are present (14.4). Not touched: the EBH-7 L3 replay, which stays recorded as failed at `d39a520dd` ("not B6 PASS", LOOP2); I did not run or judge it.
+
+### 14.4 Run record (targeted only; one pytest process at a time)
+
+| Run | Command (abridged; full in `logs_addendum2/cmd.txt`) | Result |
+| --- | --- | --- |
+| 1, at `969cbd964` | `uv run pytest` the two G-23 reproductions (`tests/integration/rag/test_graph_reingest_qualification.py::test_graphrag_source_reingest_replaces_vectors_and_graph_safely`, `tests/integration/rag/test_same_source_reingest_serialization.py::test_stale_graph_topology_is_inactive_after_generation_takeover`), P's new file, the K and O gate files | **64 passed** in 175.6 s, exit 0 (`targeted_pytest.log`) |
+| 2, mutant | the same 64 tests with the three graph files restored to `d39a520dd` and two real classifier entries renamed | 34 failed, 30 passed: both reproductions, 16 of P's 23, 8 of K's 19, 8 of O's 20 (`mutation_pytest.log`); worktree restored, `git status` clean |
+
+Not run, by the Operator's condition: ECAP FULL, the EBH-7 L3 replay, the broad contract suites, the combined global pytest. The base temp of both runs was under `D:/Projekty/_wt/intergrax/_scratch/` (short path, outside the repo).
+
+### 14.5 Findings status at `969cbd964`
+
+| Id | Sev | Status |
+| --- | --- | --- |
+| G-23 | MEDIUM | **VERIFIED_FIXED** (in-memory graph store); see G-28 for the declared Neo4j residual |
+| G-28 (new) | MEDIUM | The Cypher/Neo4j graph store still resolves the active generation under the unscoped key, so graph evidence of a re-ingested (scoped) source stays invisible there; fail closed, declared by P as residual R1, not an Operator-authorized exception. Fix site `cypher_rag_graph_store.py:156-161` (pass the evidence root document ids); needs a Neo4j run to verify. READ, not reproduced. |
+| G-24, G-25, G-26, G-27 | LOW, INFO, INFO, LOW | **Unchanged** (debt register): order-dependent reds, three stale RAG tests, two impact-map entries that do not execute their modules, one-shot schedule on an authority outage. No file of the delta touches them. |
+| G-05 residual | MEDIUM | Unchanged: 77 incident scenario reds (59 `get_steps() missing 'context'`), beyond decision 1; LOOP2: "not approved as exceptions and not repaired". |
+| E1 to E11 (G-08, G-09, G-11, G-12, F-D3-02, ...) | MEDIUM | Unchanged, open, not Operator-authorized. |
+| `trace_bridge.v1` (G-10 residual) | MEDIUM | Unchanged, unowned. |
+
+### 14.6 Verdict at `969cbd964`
+
+**Now: PARTIAL** (`PARTIAL_EXACT_BLOCKERS`; IIAC manifest value `CONDITIONAL`) — unchanged. One blocker is gone (G-23 in the in-memory store) and the same class remains on the Neo4j store (G-28). The verdict is not PASS or PASS_SCOPED because these items are open and none is an Operator-authorized exception: the G-05 residual (77 scenario reds), E1 to E11, `trace_bridge.v1` and G-28. LOOP2 states explicitly that the first three are "not approved as exceptions and not repaired".
+
+**If the Operator accepts those open items as declared exceptions** (the 77 scenario reds, E1 to E11, `trace_bridge.v1`, and the Neo4j residual G-28 with its reopen condition) and keeps G-24 to G-27 in the debt register: **PASS_SCOPED** for the rows in scope of sections 7 and 13, with the scope text naming each accepted item. That conditional rests on the evidence of sections 5 to 13 at `d39a520dd` plus the targeted tests above. ECAP FULL, the contract suites and the combined pytest were **not repeated** at `969cbd964` (Operator condition), so it is not a repeat-run PASS. The EBH-7 identity gate, the failed replay at `d39a520dd` ("not B6 PASS"), IIAC activation staleness (ACT-N11), `roadmap_replay_x` and `dist_scale_x` stay known red classes outside this verdict; nothing here certifies B6, promotes an FRZ status or claims production readiness.
+
+### 14.7 Limitations of this addendum
+
+- Verification of P is code reading, the targeted tests and one executed mutation; the Neo4j path was read, not run.
+- The 3 product files were read in full as a diff. Of the tests, the K gate diff was read in full; the O gate diff (same shape, 48 lines) and P's 390-line test file were checked by test names, helpers, the targeted run and the mutant run, not line by line. The 371 EQO-A files, the EBH-7 re-render files, the workflows' non-pin lines and the ticket and plan files were categorized by path and diff statistics, not reviewed.
+- Any product change after `969cbd964` voids this addendum for the changed paths; the verdict on every other path rests on the `d39a520dd` evidence of section 13.
+
+## 15. Addendum 3 — final verdict at `969cbd964` after the Operator's exception record
+
+Requested by the orchestrator after the Operator accepted the open items as declared exceptions: `operator_decisions/DELEGATION-PDC-EXCEPTIONS.md` (PR #596, head `b0b43e5d68fbe349f2baf308711812d59987cce5`; the auditor read the file at that head; it was not yet merged when this addendum was written). The Operator's answer, as transcribed there: "Yes, all as exceptions". Audited SHA unchanged: `969cbd964c679d563b02e55f065b452d46fdf90b`. No new tests were run; the only re-run is the two IIAC validators (`logs_addendum3/validators.txt`).
+
+### 15.1 What was checked
+
+| Check | Result |
+| --- | --- |
+| The exception record exists and names the four items | Yes: G-05 residual (77 scenario reds), E1 to E11, G-10 residual (`trace_bridge.v1`), G-28 (Cypher store); LOW and INFO findings (G-24 to G-27 and earlier) go to the debt register of the P9 package. |
+| Any change after the audited SHA | `git diff --name-only 969cbd964..origin/development` (tip `4220069c2`) shows docs paths only: the merged addendum 2 and its evidence. No product path, test, workflow, script or ticket changed. |
+| Nothing else invalidates sections 13 and 14 | The G-23 repair and the Q tests were verified (14.2 to 14.4); the evidence of sections 5 to 13 at `d39a520dd` is unchanged; the three graph files are the only product paths after `d39a520dd`. |
+| Scope widened by the record | No. The record names exactly the items listed in 14.5 and 14.6 as the open items and does not touch the exceptions of `DELEGATION-PDC-CLOSE.md` decision 1, B6, certification, FRZ or C10/C15. |
+
+### 15.2 Final verdict
+
+**PASS_SCOPED** at `969cbd964` for the scoped rows of sections 7 and 13, **only** with the exceptions below named in the manifest limitations. This is the vocabulary of `OD-PDC-IIAC-SCOPE.md`; the IIAC manifest value is `PASS_SCOPED`. It is **not** a PASS: the verdict was PARTIAL at `d39a520dd` (section 13) and at `969cbd964` before the exception record (section 14); the only thing that changed is the Operator's acceptance of the items, none of which was repaired or re-measured.
+
+| Open residual | Status | Reopen / owner |
+| --- | --- | --- |
+| G-05 residual: 77 red incident scenario tests (59 `get_steps() missing 'context'`) | declared exception, still red | repair or retire the scenario suite; P9 exception register |
+| E1 to E11: G-08 durable CAS, G-09 strict host with `tenant_id=None`, G-11 stream resilience claim, G-12 `install_agent` into an occupied slot, F-D3-02 pins and the others of T-IGX-041-M | declared exception, still open product MEDIUMs | each has its reopen condition in T-IGX-041-M; P9 exception register |
+| G-10 residual: `trace_bridge.v1` mismatch | declared exception, unowned | `intergrax/runtime/events/payloads/canonical.py:171`, `intergrax/runtime/nexus/tracing/qualification_runtime_trace.py:101` |
+| G-28: Cypher/Neo4j store keeps the unscoped key; fails closed, no leak | declared exception, not reproduced here | `cypher_rag_graph_store.py:156-161`; needs a fourth file and Docker qualification (C10/C15 freeze) |
+| G-24 to G-27 and earlier LOW/INFO | debt register | P9 closure package |
+
+### 15.3 What this verdict is not
+
+- Not a repeat-run PASS: ECAP FULL, the contract suites and the combined pytest were last run at `d39a520dd` (section 13); at `969cbd964` only the targeted tests of 14.4 ran (Operator condition of `DELEGATION-PDC-LOOP2.md`).
+- Not a verdict on B6 or on certification: the EBH-7 L3 replay run 43738431866 stays recorded as failed ("not B6 PASS"); the EBH-7 identity gate, IIAC activation staleness (ACT-N11), `roadmap_replay_x` and `dist_scale_x` stay known red classes outside this verdict.
+- Not a certification of the stage, not an FRZ promotion, not a production-readiness claim, not a closure. The certifier authors any binding manifest.
+- Any product change after `969cbd964` voids this verdict for the changed paths.

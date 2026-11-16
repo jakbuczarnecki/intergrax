@@ -7,6 +7,7 @@ from pathlib import Path
 
 from intergrax.runtime.workspace.execution_port import WorkspaceExecutionPort
 from intergrax.runtime.workspace.models import ShadowArtifact
+from intergrax.tools.providers.storage.service import refuse_governed_content_key
 from intergrax.tools.providers.workspace.contracts import (
     WorkspaceArtifactOutput,
     WorkspaceDeleteFileInput,
@@ -26,7 +27,7 @@ from intergrax.tools.providers.workspace.contracts import (
     WorkspaceSnapshotOutput,
     WorkspaceWriteFileInput,
 )
-from intergrax.tools.providers.workspace.tool_ids import (
+from intergrax.tools.providers.workspace.tool_ids import (  # noqa: F401  (re-exported: bundle, handlers, tests import the ids from here)
     WORKSPACE_DELETE_FILE_TOOL_ID,
     WORKSPACE_EXPORT_ARTIFACT_TOOL_ID,
     WORKSPACE_IMPORT_ARTIFACT_TOOL_ID,
@@ -81,10 +82,7 @@ def workspace_read_file(ctx: ToolWiringContext, params: WorkspaceReadFileInput) 
 
 def workspace_list_files(ctx: ToolWiringContext, params: WorkspaceListFilesInput) -> WorkspaceListFilesOutput:
     workspace = _require_workspace(ctx)
-    artifacts = [
-        _artifact_output(item, workspace_id=workspace.workspace_id)
-        for item in workspace.list_artifacts()
-    ]
+    artifacts = [_artifact_output(item, workspace_id=workspace.workspace_id) for item in workspace.list_artifacts()]
     return WorkspaceListFilesOutput(
         artifacts=artifacts,
         workspace_id=workspace.workspace_id,
@@ -128,6 +126,7 @@ def workspace_export_artifact(
     ctx: ToolWiringContext,
     params: WorkspaceExportArtifactInput,
 ) -> WorkspaceExportArtifactOutput:
+    refuse_governed_content_key(params.storage_key)
     workspace = _require_workspace(ctx)
     object_storage = _require_object_storage(ctx)
     rel = _safe_relative_path(params.path.strip())
@@ -162,6 +161,7 @@ def workspace_import_artifact(
     ctx: ToolWiringContext,
     params: WorkspaceImportArtifactInput,
 ) -> WorkspaceImportArtifactOutput:
+    refuse_governed_content_key(params.storage_key)
     workspace = _require_workspace(ctx)
     object_storage = _require_object_storage(ctx)
     storage_key = params.storage_key.strip()
@@ -202,8 +202,7 @@ def workspace_search(ctx: ToolWiringContext, params: WorkspaceSearchInput) -> Wo
         max_matches=params.max_matches,
     )
     matches = [
-        WorkspaceSearchMatch(path=path, line_number=line_number, line=line)
-        for path, line_number, line in raw_matches
+        WorkspaceSearchMatch(path=path, line_number=line_number, line=line) for path, line_number, line in raw_matches
     ]
     return WorkspaceSearchOutput(
         matches=matches,

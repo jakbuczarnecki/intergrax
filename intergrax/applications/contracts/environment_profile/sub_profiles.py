@@ -2,7 +2,7 @@
 
 """Typed Tier-3 environment sub-profiles (Phase H-APP.1.1 · APP-EVOL-8)."""
 
-from __future__ import annotations
+from __future__ import annotations  # noqa: I001
 
 from enum import Enum
 from pathlib import Path
@@ -12,7 +12,7 @@ from pydantic import BaseModel, ConfigDict, Field, field_validator, model_valida
 
 from intergrax.contracts.platform_plugin_selection import PlatformPluginSelectionRef
 
-from intergrax.applications.contracts.agent_governance import AgentGovernanceProfile
+from intergrax.applications.contracts.agent_governance import AgentGovernanceProfile  # noqa: F401
 from intergrax.applications.contracts.application_recovery_contract import (
     ApplicationRecoveryContract,
 )
@@ -20,12 +20,12 @@ from intergrax.applications.contracts.business_outcome_webhook import (
     BusinessOutcomeWebhookConfig,
 )
 from intergrax.applications.contracts.capability_alias import (
-    CapabilityGovernanceProfile,
+    CapabilityGovernanceProfile,  # noqa: F401
 )
 from intergrax.applications.contracts.intent_route import IntentRoute
 from intergrax.contracts.agent_budget import BudgetReactionProfile
 from intergrax.contracts.autonomy_level import AutonomyLevel
-from intergrax.contracts.sandbox_profile import SandboxProfile
+from intergrax.contracts.sandbox_profile import SandboxProfile  # noqa: F401
 from intergrax.contracts.attempt_lifecycle import AttemptLifecyclePersistenceProvider
 from intergrax.contracts.dependency_concurrency_admission import (
     DependencyConcurrencyAdmissionConfiguration,
@@ -109,9 +109,7 @@ class GuardrailProfile(BaseModel):
     secondary_slug: str | None = None
 
 
-ContextEnginePreset = Literal[
-    "default", "codebase", "regulated_minimal", "explore_child", "custom"
-]
+ContextEnginePreset = Literal["default", "codebase", "regulated_minimal", "explore_child", "custom"]
 
 
 class ContextDecisionProfile(BaseModel):
@@ -140,9 +138,7 @@ class ContextProfile(BaseModel):
 
     model_config = ConfigDict(extra="forbid")
 
-    assembly_options: TaskContextAssemblyOptions = Field(
-        default_factory=TaskContextAssemblyOptions
-    )
+    assembly_options: TaskContextAssemblyOptions = Field(default_factory=TaskContextAssemblyOptions)
     budget_policy: ContextBudgetPolicy | None = None
     decision: ContextDecisionProfile = Field(default_factory=ContextDecisionProfile)
     engine_preset: ContextEnginePreset = "default"
@@ -154,9 +150,7 @@ class ContextProfile(BaseModel):
     drift_alert_threshold: float = Field(default=0.35, ge=0.0, le=2.0)
     optimization_policy: ContextOptimizationPolicy | None = None
     semantic_compression_enabled: bool = False
-    default_history_compression: Literal[
-        "truncate_oldest", "summarize_oldest", "hybrid"
-    ] = "truncate_oldest"
+    default_history_compression: Literal["truncate_oldest", "summarize_oldest", "hybrid"] = "truncate_oldest"
 
     @field_validator("context_plugin_ids")
     @classmethod
@@ -223,28 +217,20 @@ class ReliabilityProfile(BaseModel):
     circuit_breaker_failure_threshold: int = Field(default=5, ge=1)
     checkpoint_interval_steps: int = Field(default=1, ge=1)
     long_running_scheduler_enabled: bool = False
-    resilience_policy: ResiliencePolicy = Field(
-        default_factory=default_resilience_policy
-    )
+    resilience_policy: ResiliencePolicy = Field(default_factory=default_resilience_policy)
     default_autonomy_level: AutonomyLevel = AutonomyLevel.ASK
     tenant_autonomy_ceiling: AutonomyLevel | None = None
     compensation_enabled: bool = False
     partial_results_enabled: bool = False
     middleware_hook_timeout_seconds: float = Field(default=2.0, ge=0.01, le=60.0)
     recovery_contract: ApplicationRecoveryContract | None = None
-    execution_terminal_persistence_provider: (
-        ExecutionTerminalPersistenceProvider | None
-    ) = None
-    attempt_lifecycle_persistence_provider: (
-        AttemptLifecyclePersistenceProvider | None
-    ) = None
-    execution_lineage_persistence_provider: (
-        ExecutionLineagePersistenceProvider | None
-    ) = None
-    delegated_invocation_correlation_durability: DelegatedInvocationCorrelationDurabilityMode = DelegatedInvocationCorrelationDurabilityMode.DISABLED
-    dependency_concurrency_admission: DependencyConcurrencyAdmissionConfiguration | None = (
-        None
+    execution_terminal_persistence_provider: ExecutionTerminalPersistenceProvider | None = None
+    attempt_lifecycle_persistence_provider: AttemptLifecyclePersistenceProvider | None = None
+    execution_lineage_persistence_provider: ExecutionLineagePersistenceProvider | None = None
+    delegated_invocation_correlation_durability: DelegatedInvocationCorrelationDurabilityMode = (
+        DelegatedInvocationCorrelationDurabilityMode.DISABLED
     )
+    dependency_concurrency_admission: DependencyConcurrencyAdmissionConfiguration | None = None
 
 
 class EventSubscriptionSpec(BaseModel):
@@ -278,9 +264,7 @@ class EventSubscriptionSpec(BaseModel):
         return cleaned or None
 
     def has_filter(self) -> bool:
-        return bool(
-            self.kind_prefix or self.categories or self.ops_hints or self.event_types
-        )
+        return bool(self.kind_prefix or self.categories or self.ops_hints or self.event_types)
 
 
 class ObservabilityProfile(BaseModel):
@@ -329,9 +313,7 @@ class ObservabilityProfile(BaseModel):
         seen: set[str] = set()
         for spec in specs:
             if spec.subscription_id in seen:
-                raise ValueError(
-                    f"duplicate event subscription_id: {spec.subscription_id!r}"
-                )
+                raise ValueError(f"duplicate event subscription_id: {spec.subscription_id!r}")
             seen.add(spec.subscription_id)
             if spec.enabled and not spec.has_filter():
                 raise ValueError(
@@ -341,7 +323,7 @@ class ObservabilityProfile(BaseModel):
         return specs
 
 
-class DiagnosticPosture(str, Enum):
+class DiagnosticPosture(str, Enum):  # noqa: UP042
     """Central diagnostic engine composition posture (DIAG-FOUNDATION-1)."""
 
     NOT_REQUIRED = "not_required"
@@ -415,9 +397,7 @@ class DecisionPluginProfile(BaseModel):
     model_config = ConfigDict(extra="forbid")
 
     discover_entry_points: bool = False
-    verification_stage_plugins: list[PlatformPluginSelectionRef] = Field(
-        default_factory=list
-    )
+    verification_stage_plugins: list[PlatformPluginSelectionRef] = Field(default_factory=list)
     strategy_plugins: list[PlatformPluginSelectionRef] = Field(default_factory=list)
     artifact_plugins: list[PlatformPluginSelectionRef] = Field(default_factory=list)
     exposure_selection_strategy_plugin: PlatformPluginSelectionRef | None = None
@@ -524,14 +504,25 @@ class ScalingProfile(BaseModel):
 
 
 class HostDeploymentProfile(BaseModel):
-    """Product host deployment modes (AUDIT-IDEAL-28.3 / 28.4)."""
+    """Generic host deployment posture (AUDIT-IDEAL-28.4, TL-FIX-C).
 
-    model_config = ConfigDict(extra="forbid")
+    This generic profile carries no product vocabulary. Product-owned deployment keys are
+    accepted as flat scalar entries (``extra="allow"``) and are validated and interpreted
+    only by the product wiring that owns them, so the generic contract stays
+    product-neutral while existing callers keep constructing profiles the same way.
+    """
 
-    lkw_hybrid_daemon_enabled: bool = False
-    lkw_daemon_bind_host: str = "127.0.0.1"
-    lkw_daemon_port: int = Field(default=8020, ge=1, le=65535)
+    model_config = ConfigDict(extra="allow")
+
     business_agents_deploy_enabled: bool = False
+
+    @model_validator(mode="after")
+    def _product_owned_keys_are_flat_scalars(self) -> Self:
+        for key, value in (self.model_extra or {}).items():
+            if value is None or isinstance(value, (bool, int, float, str)):
+                continue
+            raise ValueError(f"product-owned deployment key {key!r} must be a flat scalar value")
+        return self
 
 
 class OrchestrationProfile(BaseModel):

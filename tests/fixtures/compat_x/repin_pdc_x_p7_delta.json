@@ -1,0 +1,990 @@
+{
+  "ticket": "T-IGX-041-L",
+  "purpose": "Id-exact evidence for the re-pin of the COMPAT-X counters (debt item Z-D1 of T-IGX-036-Z). Not a certification verdict.",
+  "baseline_lineage_head_sha": "05549f9acb9ecedf910c7470d442bba5d0a27337",
+  "measured_at_sha": "63005e2902ed7724dcafdc036564bcbd9c3deb08",
+  "previous": {
+    "raw_candidates": 7356,
+    "remainder_raw_candidates": 7355,
+    "remainder_fingerprint_sha256": "9dfd146f3b50bd56a8b997664569ac538396d322ceb21eb6682aa75a862716fa",
+    "semantic_surfaces": 2031,
+    "legacy_projected_semantic_surfaces": 1933,
+    "exclusions": 5325,
+    "compat_shim_candidates": 498,
+    "shim_delta_added_paths": [
+      "intergrax/agent_distribution/activation_domain_coordinator.py",
+      "intergrax/agent_distribution/colocated_venv_unit_runtime_binding.py",
+      "intergrax/agent_distribution/sqlite_payload_legacy.py",
+      "intergrax/agent_distribution/venv_bundle_colocated_runtime_deployment_adapter.py",
+      "intergrax/applications/_shared/colocated_serving_runtime_composition.py",
+      "intergrax/applications/_shared/colocated_unit_physical_execution_gate.py",
+      "intergrax/applications/_shared/production_lifecycle.py",
+      "intergrax/applications/_shared/production_process_lifecycle.py",
+      "intergrax/applications/_shared/strict_production_serving_launcher.py",
+      "intergrax/applications/_shared/venv_bundle_colocated_serving_unit_runtime_accessor.py",
+      "intergrax/contracts/governance/history_continuity.py",
+      "intergrax/contracts/governed_external_work_create_follow_on.py",
+      "intergrax/contracts/sanctioned_external_work_operation.py",
+      "intergrax/contracts/structured_inference_pre_model_gate.py",
+      "intergrax/runtime/external_operations/execution_recovery_worker_execution_revocation_supervision.py",
+      "intergrax/runtime/governance/continuity_providers/azure_sdk.py",
+      "intergrax/runtime/governance/continuity_providers/errors.py",
+      "intergrax/runtime/governance/continuity_providers/spanner_sdk.py",
+      "intergrax/runtime/governance/governed_inference_composition.py",
+      "intergrax/runtime/governance/local_history_continuity.py",
+      "intergrax/runtime/governance/structured_inference_pre_model_composition.py",
+      "intergrax/runtime/task_memory/sqlite_row_legacy.py",
+      "intergrax/tools/providers/http/idempotent_post_qual.py",
+      "intergrax/tools/providers/provider_resource_enforcement.py",
+      "intergrax/tools/providers/provider_transport_capabilities.py"
+    ]
+  },
+  "repinned": {
+    "raw_candidates": 7417,
+    "remainder_raw_candidates": 7416,
+    "remainder_fingerprint_sha256": "8461d44eed400e7e51698dfa366fa4caaa9c8247e1cb73e54346805561aec45a",
+    "semantic_surfaces": 2060,
+    "legacy_projected_semantic_surfaces": 1963,
+    "exclusions": 5357,
+    "shim_delta_added_paths": [
+      "intergrax/agent_distribution/activation_domain_coordinator.py",
+      "intergrax/agent_distribution/admin_service.py",
+      "intergrax/agent_distribution/colocated_venv_unit_runtime_binding.py",
+      "intergrax/agent_distribution/runtime_revision.py",
+      "intergrax/agent_distribution/sqlite_payload_legacy.py",
+      "intergrax/agent_distribution/venv_bundle_colocated_runtime_deployment_adapter.py",
+      "intergrax/applications/_shared/colocated_serving_runtime_composition.py",
+      "intergrax/applications/_shared/colocated_unit_physical_execution_gate.py",
+      "intergrax/applications/_shared/mcp_host_mount.py",
+      "intergrax/applications/_shared/production_lifecycle.py",
+      "intergrax/applications/_shared/production_process_lifecycle.py",
+      "intergrax/applications/_shared/strict_production_serving_launcher.py",
+      "intergrax/applications/_shared/venv_bundle_colocated_serving_unit_runtime_accessor.py",
+      "intergrax/contracts/governance/history_continuity.py",
+      "intergrax/contracts/governed_external_work_create_follow_on.py",
+      "intergrax/contracts/sanctioned_external_work_operation.py",
+      "intergrax/contracts/structured_inference_pre_model_gate.py",
+      "intergrax/runtime/external_operations/execution_recovery_worker_execution_revocation_supervision.py",
+      "intergrax/runtime/governance/continuity_providers/azure_sdk.py",
+      "intergrax/runtime/governance/continuity_providers/errors.py",
+      "intergrax/runtime/governance/continuity_providers/spanner_sdk.py",
+      "intergrax/runtime/governance/governed_inference_composition.py",
+      "intergrax/runtime/governance/local_history_continuity.py",
+      "intergrax/runtime/governance/structured_inference_pre_model_composition.py",
+      "intergrax/runtime/security/security_audit_trail.py",
+      "intergrax/runtime/task_memory/sqlite_row_legacy.py",
+      "intergrax/tools/providers/http/idempotent_post_qual.py",
+      "intergrax/tools/providers/provider_resource_enforcement.py",
+      "intergrax/tools/providers/provider_transport_capabilities.py"
+    ]
+  },
+  "evidence_guards": {
+    "unclassified_candidate_ids": 0,
+    "defect_persisted_without_version_candidates": 6,
+    "compat_shim_candidates": 502
+  },
+  "groups": {
+    "D1": "B-D1 bc7739c07 (T-IGX-036-J); B-P6-M 4dbe68452 (T-IGX-036-U); repair f38a91f14 (T-IGX-041-A, PR #574)",
+    "D4": "B-D4 145b49bad (T-IGX-036-R); cc1c0efb6 (T-IGX-036-T)",
+    "D5": "B-D5 85a8c441d (T-IGX-036-O); repair c076c7d0b (T-IGX-041-E, PR #568)",
+    "D6": "B-D6 adaaa374e (T-IGX-036-P); 9ed0ee4f5 (audit trail through a validating port)",
+    "D7": "B-D7 52f35a41f (T-IGX-036-L); repairs f01721ac6 and ce6fbf67c (T-IGX-041-G, PR #570)",
+    "D8": "B-D8 92ee26bf3 (T-IGX-036-Q); 97a5187b2 (T-IGX-036-T); repair 03844eda9 (T-IGX-041-H, PR #572)",
+    "MCP-SERVER-X": "MCP-SERVER-X P2 to P4 and MRC: e21453caf, bee38a76b, a21a6629a, a45d0df1b, 16e376ea8, 88419eb1c, 3ba83b29b, 420f42a6b (T-IGX-038-*)"
+  },
+  "added_candidate_ids": [
+    {
+      "id": "class.intergrax.contracts.artifact_ref.py::DurableArtifactRef.schema_version",
+      "kind": "class.field.version",
+      "group": "D8",
+      "owning_change": "B-D8 92ee26bf3 (T-IGX-036-Q); 97a5187b2 (T-IGX-036-T); repair 03844eda9 (T-IGX-041-H, PR #572)"
+    },
+    {
+      "id": "class.intergrax.contracts.evaluation_contracts.py::EvalComparison.schema_version",
+      "kind": "class.field.version",
+      "group": "D5",
+      "owning_change": "B-D5 85a8c441d (T-IGX-036-O); repair c076c7d0b (T-IGX-041-E, PR #568)"
+    },
+    {
+      "id": "class.intergrax.contracts.evaluation_contracts.py::EvalRun.dataset_version",
+      "kind": "class.field.version",
+      "group": "D5",
+      "owning_change": "B-D5 85a8c441d (T-IGX-036-O); repair c076c7d0b (T-IGX-041-E, PR #568)"
+    },
+    {
+      "id": "class.intergrax.contracts.evaluation_contracts.py::EvalRun.schema_version",
+      "kind": "class.field.version",
+      "group": "D5",
+      "owning_change": "B-D5 85a8c441d (T-IGX-036-O); repair c076c7d0b (T-IGX-041-E, PR #568)"
+    },
+    {
+      "id": "class.intergrax.contracts.mcp_server_definition.py::McpServerDefinition.contract_version",
+      "kind": "class.field.version",
+      "group": "MCP-SERVER-X",
+      "owning_change": "MCP-SERVER-X P2 to P4 and MRC: e21453caf, bee38a76b, a21a6629a, a45d0df1b, 16e376ea8, 88419eb1c, 3ba83b29b, 420f42a6b (T-IGX-038-*)"
+    },
+    {
+      "id": "class.intergrax.core.plugins.admission.py::PluginProvenanceAttestation.package_version",
+      "kind": "class.field.version",
+      "group": "D6",
+      "owning_change": "B-D6 adaaa374e (T-IGX-036-P); 9ed0ee4f5 (audit trail through a validating port)"
+    },
+    {
+      "id": "class.intergrax.runtime.architecture.online_evaluation_registry.py::_TenantRegistryStore.schema_version",
+      "kind": "class.field.version",
+      "group": "D5",
+      "owning_change": "B-D5 85a8c441d (T-IGX-036-O); repair c076c7d0b (T-IGX-041-E, PR #568)"
+    },
+    {
+      "id": "const.intergrax.contracts.evaluation_contracts.py::EVAL_CONTRACT_SCHEMA_VERSION",
+      "kind": "version.constant",
+      "group": "D5",
+      "owning_change": "B-D5 85a8c441d (T-IGX-036-O); repair c076c7d0b (T-IGX-041-E, PR #568)"
+    },
+    {
+      "id": "const.intergrax.contracts.mcp_server_definition.py::MCP_SERVER_DEFINITION_CONTRACT_VERSION",
+      "kind": "version.constant",
+      "group": "MCP-SERVER-X",
+      "owning_change": "MCP-SERVER-X P2 to P4 and MRC: e21453caf, bee38a76b, a21a6629a, a45d0df1b, 16e376ea8, 88419eb1c, 3ba83b29b, 420f42a6b (T-IGX-038-*)"
+    },
+    {
+      "id": "const.intergrax.runtime.nexus.artifacts.sqlite_artifact_store.py::_SCHEMA_VERSION",
+      "kind": "version.constant",
+      "group": "D8",
+      "owning_change": "B-D8 92ee26bf3 (T-IGX-036-Q); 97a5187b2 (T-IGX-036-T); repair 03844eda9 (T-IGX-041-H, PR #572)"
+    },
+    {
+      "id": "export.intergrax.agent_distribution.__init__.py::AgentUpgradeRejectionReason",
+      "kind": "public.export",
+      "group": "D1",
+      "owning_change": "B-D1 bc7739c07 (T-IGX-036-J); B-P6-M 4dbe68452 (T-IGX-036-U); repair f38a91f14 (T-IGX-041-A, PR #574)"
+    },
+    {
+      "id": "export.intergrax.agent_distribution.__init__.py::RetireAgentRequest",
+      "kind": "public.export",
+      "group": "D1",
+      "owning_change": "B-D1 bc7739c07 (T-IGX-036-J); B-P6-M 4dbe68452 (T-IGX-036-U); repair f38a91f14 (T-IGX-041-A, PR #574)"
+    },
+    {
+      "id": "export.intergrax.agent_distribution.__init__.py::RetireAgentResult",
+      "kind": "public.export",
+      "group": "D1",
+      "owning_change": "B-D1 bc7739c07 (T-IGX-036-J); B-P6-M 4dbe68452 (T-IGX-036-U); repair f38a91f14 (T-IGX-041-A, PR #574)"
+    },
+    {
+      "id": "export.intergrax.agent_distribution.__init__.py::UpgradeAdmissionReport",
+      "kind": "public.export",
+      "group": "D1",
+      "owning_change": "B-D1 bc7739c07 (T-IGX-036-J); B-P6-M 4dbe68452 (T-IGX-036-U); repair f38a91f14 (T-IGX-041-A, PR #574)"
+    },
+    {
+      "id": "export.intergrax.agent_distribution.__init__.py::UpgradeAdmissionViolation",
+      "kind": "public.export",
+      "group": "D1",
+      "owning_change": "B-D1 bc7739c07 (T-IGX-036-J); B-P6-M 4dbe68452 (T-IGX-036-U); repair f38a91f14 (T-IGX-041-A, PR #574)"
+    },
+    {
+      "id": "export.intergrax.agent_distribution.__init__.py::UpgradeAgentRequest",
+      "kind": "public.export",
+      "group": "D1",
+      "owning_change": "B-D1 bc7739c07 (T-IGX-036-J); B-P6-M 4dbe68452 (T-IGX-036-U); repair f38a91f14 (T-IGX-041-A, PR #574)"
+    },
+    {
+      "id": "export.intergrax.agent_distribution.__init__.py::UpgradeAgentResult",
+      "kind": "public.export",
+      "group": "D1",
+      "owning_change": "B-D1 bc7739c07 (T-IGX-036-J); B-P6-M 4dbe68452 (T-IGX-036-U); repair f38a91f14 (T-IGX-041-A, PR #574)"
+    },
+    {
+      "id": "export.intergrax.agent_distribution.__init__.py::evaluate_agent_upgrade_admission",
+      "kind": "public.export",
+      "group": "D1",
+      "owning_change": "B-D1 bc7739c07 (T-IGX-036-J); B-P6-M 4dbe68452 (T-IGX-036-U); repair f38a91f14 (T-IGX-041-A, PR #574)"
+    },
+    {
+      "id": "migration.intergrax.agent_distribution.admin_service.py",
+      "kind": "migration.mechanism",
+      "group": "D1",
+      "owning_change": "B-D1 bc7739c07 (T-IGX-036-J); B-P6-M 4dbe68452 (T-IGX-036-U); repair f38a91f14 (T-IGX-041-A, PR #574)"
+    },
+    {
+      "id": "migration.intergrax.agent_distribution.agent_manager_command_facade.py",
+      "kind": "migration.mechanism",
+      "group": "D1",
+      "owning_change": "B-D1 bc7739c07 (T-IGX-036-J); B-P6-M 4dbe68452 (T-IGX-036-U); repair f38a91f14 (T-IGX-041-A, PR #574)"
+    },
+    {
+      "id": "migration.intergrax.agent_distribution.control_plane_governance.py",
+      "kind": "migration.mechanism",
+      "group": "D1",
+      "owning_change": "B-D1 bc7739c07 (T-IGX-036-J); B-P6-M 4dbe68452 (T-IGX-036-U); repair f38a91f14 (T-IGX-041-A, PR #574)"
+    },
+    {
+      "id": "migration.intergrax.agent_distribution.upgrade_admission.py",
+      "kind": "migration.mechanism",
+      "group": "D1",
+      "owning_change": "B-D1 bc7739c07 (T-IGX-036-J); B-P6-M 4dbe68452 (T-IGX-036-U); repair f38a91f14 (T-IGX-041-A, PR #574)"
+    },
+    {
+      "id": "migration.intergrax.applications._shared.mcp_host_mount.py",
+      "kind": "migration.mechanism",
+      "group": "MCP-SERVER-X",
+      "owning_change": "MCP-SERVER-X P2 to P4 and MRC: e21453caf, bee38a76b, a21a6629a, a45d0df1b, 16e376ea8, 88419eb1c, 3ba83b29b, 420f42a6b (T-IGX-038-*)"
+    },
+    {
+      "id": "migration.intergrax.applications._shared.mcp_nexus_server.py",
+      "kind": "migration.mechanism",
+      "group": "MCP-SERVER-X",
+      "owning_change": "MCP-SERVER-X P2 to P4 and MRC: e21453caf, bee38a76b, a21a6629a, a45d0df1b, 16e376ea8, 88419eb1c, 3ba83b29b, 420f42a6b (T-IGX-038-*)"
+    },
+    {
+      "id": "migration.intergrax.applications._shared.mcp_server_engine.py",
+      "kind": "migration.mechanism",
+      "group": "MCP-SERVER-X",
+      "owning_change": "MCP-SERVER-X P2 to P4 and MRC: e21453caf, bee38a76b, a21a6629a, a45d0df1b, 16e376ea8, 88419eb1c, 3ba83b29b, 420f42a6b (T-IGX-038-*)"
+    },
+    {
+      "id": "migration.intergrax.applications._shared.mcp_wire_errors.py",
+      "kind": "migration.mechanism",
+      "group": "MCP-SERVER-X",
+      "owning_change": "MCP-SERVER-X P2 to P4 and MRC: e21453caf, bee38a76b, a21a6629a, a45d0df1b, 16e376ea8, 88419eb1c, 3ba83b29b, 420f42a6b (T-IGX-038-*)"
+    },
+    {
+      "id": "migration.intergrax.contracts.agent_contract_meta.py",
+      "kind": "migration.mechanism",
+      "group": "D1",
+      "owning_change": "B-D1 bc7739c07 (T-IGX-036-J); B-P6-M 4dbe68452 (T-IGX-036-U); repair f38a91f14 (T-IGX-041-A, PR #574)"
+    },
+    {
+      "id": "migration.intergrax.contracts.task_artifacts.py",
+      "kind": "migration.mechanism",
+      "group": "D8",
+      "owning_change": "B-D8 92ee26bf3 (T-IGX-036-Q); 97a5187b2 (T-IGX-036-T); repair 03844eda9 (T-IGX-041-H, PR #572)"
+    },
+    {
+      "id": "migration.intergrax.core.plugins.admission.py",
+      "kind": "migration.mechanism",
+      "group": "D6",
+      "owning_change": "B-D6 adaaa374e (T-IGX-036-P); 9ed0ee4f5 (audit trail through a validating port)"
+    },
+    {
+      "id": "migration.intergrax.runtime.architecture.evaluation_automation.py",
+      "kind": "migration.mechanism",
+      "group": "D5",
+      "owning_change": "B-D5 85a8c441d (T-IGX-036-O); repair c076c7d0b (T-IGX-041-E, PR #568)"
+    },
+    {
+      "id": "migration.intergrax.runtime.architecture.online_evaluation_registry.py",
+      "kind": "migration.mechanism",
+      "group": "D5",
+      "owning_change": "B-D5 85a8c441d (T-IGX-036-O); repair c076c7d0b (T-IGX-041-E, PR #568)"
+    },
+    {
+      "id": "migration.intergrax.runtime.long_running.postgresql_task_checkpoint_store.py",
+      "kind": "migration.mechanism",
+      "group": "D7",
+      "owning_change": "B-D7 52f35a41f (T-IGX-036-L); repairs f01721ac6 and ce6fbf67c (T-IGX-041-G, PR #570)"
+    },
+    {
+      "id": "migration.intergrax.runtime.long_running.scheduled_resume.py",
+      "kind": "migration.mechanism",
+      "group": "D7",
+      "owning_change": "B-D7 52f35a41f (T-IGX-036-L); repairs f01721ac6 and ce6fbf67c (T-IGX-041-G, PR #570)"
+    },
+    {
+      "id": "migration.intergrax.skills.host_lifecycle.py",
+      "kind": "migration.mechanism",
+      "group": "D1",
+      "owning_change": "B-D1 bc7739c07 (T-IGX-036-J); B-P6-M 4dbe68452 (T-IGX-036-U); repair f38a91f14 (T-IGX-041-A, PR #574)"
+    },
+    {
+      "id": "shim.intergrax.agent_distribution.admin_service.py",
+      "kind": "compat.shim",
+      "group": "D1",
+      "owning_change": "B-D1 bc7739c07 (T-IGX-036-J); B-P6-M 4dbe68452 (T-IGX-036-U); repair f38a91f14 (T-IGX-041-A, PR #574)"
+    },
+    {
+      "id": "shim.intergrax.agent_distribution.runtime_revision.py",
+      "kind": "compat.shim",
+      "group": "D1",
+      "owning_change": "B-D1 bc7739c07 (T-IGX-036-J); B-P6-M 4dbe68452 (T-IGX-036-U); repair f38a91f14 (T-IGX-041-A, PR #574)"
+    },
+    {
+      "id": "shim.intergrax.applications._shared.mcp_host_mount.py",
+      "kind": "compat.shim",
+      "group": "MCP-SERVER-X",
+      "owning_change": "MCP-SERVER-X P2 to P4 and MRC: e21453caf, bee38a76b, a21a6629a, a45d0df1b, 16e376ea8, 88419eb1c, 3ba83b29b, 420f42a6b (T-IGX-038-*)"
+    },
+    {
+      "id": "shim.intergrax.runtime.security.security_audit_trail.py",
+      "kind": "compat.shim",
+      "group": "D6",
+      "owning_change": "B-D6 adaaa374e (T-IGX-036-P); 9ed0ee4f5 (audit trail through a validating port)"
+    },
+    {
+      "id": "wire:intergrax/applications/_shared/durable_registry_projection_input_store.py:module_level:model_dump_json:2",
+      "kind": "wire.persistence",
+      "group": "D1",
+      "owning_change": "B-D1 bc7739c07 (T-IGX-036-J); B-P6-M 4dbe68452 (T-IGX-036-U); repair f38a91f14 (T-IGX-041-A, PR #574)"
+    },
+    {
+      "id": "wire:intergrax/applications/_shared/durable_registry_projection_input_store.py:module_level:model_validate_json:1",
+      "kind": "wire.persistence",
+      "group": "D1",
+      "owning_change": "B-D1 bc7739c07 (T-IGX-036-J); B-P6-M 4dbe68452 (T-IGX-036-U); repair f38a91f14 (T-IGX-041-A, PR #574)"
+    },
+    {
+      "id": "wire:intergrax/applications/_shared/lkw_hybrid_daemon_wiring.py:module_level:model_validate:1",
+      "kind": "wire.persistence",
+      "group": "D4",
+      "owning_change": "B-D4 145b49bad (T-IGX-036-R); cc1c0efb6 (T-IGX-036-T)"
+    },
+    {
+      "id": "wire:intergrax/contracts/evaluation_contracts.py:module_level:model_dump:1",
+      "kind": "wire.persistence",
+      "group": "D5",
+      "owning_change": "B-D5 85a8c441d (T-IGX-036-O); repair c076c7d0b (T-IGX-041-E, PR #568)"
+    },
+    {
+      "id": "wire:intergrax/contracts/evaluation_contracts.py:module_level:model_dump:2",
+      "kind": "wire.persistence",
+      "group": "D5",
+      "owning_change": "B-D5 85a8c441d (T-IGX-036-O); repair c076c7d0b (T-IGX-041-E, PR #568)"
+    },
+    {
+      "id": "wire:intergrax/contracts/evaluation_contracts.py:module_level:model_dump:3",
+      "kind": "wire.persistence",
+      "group": "D5",
+      "owning_change": "B-D5 85a8c441d (T-IGX-036-O); repair c076c7d0b (T-IGX-041-E, PR #568)"
+    },
+    {
+      "id": "wire:intergrax/contracts/evaluation_contracts.py:module_level:model_dump:4",
+      "kind": "wire.persistence",
+      "group": "D5",
+      "owning_change": "B-D5 85a8c441d (T-IGX-036-O); repair c076c7d0b (T-IGX-041-E, PR #568)"
+    },
+    {
+      "id": "wire:intergrax/contracts/evaluation_contracts.py:module_level:model_dump:5",
+      "kind": "wire.persistence",
+      "group": "D5",
+      "owning_change": "B-D5 85a8c441d (T-IGX-036-O); repair c076c7d0b (T-IGX-041-E, PR #568)"
+    },
+    {
+      "id": "wire:intergrax/contracts/evaluation_contracts.py:module_level:model_dump:6",
+      "kind": "wire.persistence",
+      "group": "D5",
+      "owning_change": "B-D5 85a8c441d (T-IGX-036-O); repair c076c7d0b (T-IGX-041-E, PR #568)"
+    },
+    {
+      "id": "wire:intergrax/contracts/mcp_server_definition.py:module_level:model_dump:1",
+      "kind": "wire.persistence",
+      "group": "MCP-SERVER-X",
+      "owning_change": "MCP-SERVER-X P2 to P4 and MRC: e21453caf, bee38a76b, a21a6629a, a45d0df1b, 16e376ea8, 88419eb1c, 3ba83b29b, 420f42a6b (T-IGX-038-*)"
+    },
+    {
+      "id": "wire:intergrax/runtime/architecture/online_evaluation_registry.py:module_level:model_dump:1",
+      "kind": "wire.persistence",
+      "group": "D5",
+      "owning_change": "B-D5 85a8c441d (T-IGX-036-O); repair c076c7d0b (T-IGX-041-E, PR #568)"
+    },
+    {
+      "id": "wire:intergrax/runtime/architecture/online_evaluation_registry.py:module_level:model_dump_json:4",
+      "kind": "wire.persistence",
+      "group": "D5",
+      "owning_change": "B-D5 85a8c441d (T-IGX-036-O); repair c076c7d0b (T-IGX-041-E, PR #568)"
+    },
+    {
+      "id": "wire:intergrax/runtime/architecture/online_evaluation_registry.py:module_level:model_validate:2",
+      "kind": "wire.persistence",
+      "group": "D5",
+      "owning_change": "B-D5 85a8c441d (T-IGX-036-O); repair c076c7d0b (T-IGX-041-E, PR #568)"
+    },
+    {
+      "id": "wire:intergrax/runtime/architecture/online_evaluation_registry.py:module_level:model_validate_json:3",
+      "kind": "wire.persistence",
+      "group": "D5",
+      "owning_change": "B-D5 85a8c441d (T-IGX-036-O); repair c076c7d0b (T-IGX-041-E, PR #568)"
+    },
+    {
+      "id": "wire:intergrax/runtime/evidence/eval_evidence_contracts.py:module_level:model_dump_json:3",
+      "kind": "wire.persistence",
+      "group": "D5",
+      "owning_change": "B-D5 85a8c441d (T-IGX-036-O); repair c076c7d0b (T-IGX-041-E, PR #568)"
+    },
+    {
+      "id": "wire:intergrax/runtime/evidence/eval_evidence_contracts.py:module_level:model_dump_json:4",
+      "kind": "wire.persistence",
+      "group": "D5",
+      "owning_change": "B-D5 85a8c441d (T-IGX-036-O); repair c076c7d0b (T-IGX-041-E, PR #568)"
+    },
+    {
+      "id": "wire:intergrax/runtime/evidence/eval_evidence_contracts.py:module_level:model_validate_json:1",
+      "kind": "wire.persistence",
+      "group": "D5",
+      "owning_change": "B-D5 85a8c441d (T-IGX-036-O); repair c076c7d0b (T-IGX-041-E, PR #568)"
+    },
+    {
+      "id": "wire:intergrax/runtime/evidence/eval_evidence_contracts.py:module_level:model_validate_json:2",
+      "kind": "wire.persistence",
+      "group": "D5",
+      "owning_change": "B-D5 85a8c441d (T-IGX-036-O); repair c076c7d0b (T-IGX-041-E, PR #568)"
+    },
+    {
+      "id": "wire:intergrax/runtime/long_running/recurrence.py:module_level:model_dump:3",
+      "kind": "wire.persistence",
+      "group": "D7",
+      "owning_change": "B-D7 52f35a41f (T-IGX-036-L); repairs f01721ac6 and ce6fbf67c (T-IGX-041-G, PR #570)"
+    },
+    {
+      "id": "wire:intergrax/runtime/long_running/recurrence.py:module_level:model_validate:1",
+      "kind": "wire.persistence",
+      "group": "D7",
+      "owning_change": "B-D7 52f35a41f (T-IGX-036-L); repairs f01721ac6 and ce6fbf67c (T-IGX-041-G, PR #570)"
+    },
+    {
+      "id": "wire:intergrax/runtime/long_running/recurrence.py:module_level:model_validate:2",
+      "kind": "wire.persistence",
+      "group": "D7",
+      "owning_change": "B-D7 52f35a41f (T-IGX-036-L); repairs f01721ac6 and ce6fbf67c (T-IGX-041-G, PR #570)"
+    },
+    {
+      "id": "wire:intergrax/runtime/nexus/artifacts/context_reference.py:module_level:model_dump:1",
+      "kind": "wire.persistence",
+      "group": "D8",
+      "owning_change": "B-D8 92ee26bf3 (T-IGX-036-Q); 97a5187b2 (T-IGX-036-T); repair 03844eda9 (T-IGX-041-H, PR #572)"
+    },
+    {
+      "id": "wire:intergrax/runtime/nexus/artifacts/sqlite_artifact_store.py:module_level:model_dump_json:3",
+      "kind": "wire.persistence",
+      "group": "D8",
+      "owning_change": "B-D8 92ee26bf3 (T-IGX-036-Q); 97a5187b2 (T-IGX-036-T); repair 03844eda9 (T-IGX-041-H, PR #572)"
+    },
+    {
+      "id": "wire:intergrax/runtime/nexus/artifacts/sqlite_artifact_store.py:module_level:model_dump_json:4",
+      "kind": "wire.persistence",
+      "group": "D8",
+      "owning_change": "B-D8 92ee26bf3 (T-IGX-036-Q); 97a5187b2 (T-IGX-036-T); repair 03844eda9 (T-IGX-041-H, PR #572)"
+    },
+    {
+      "id": "wire:intergrax/runtime/nexus/artifacts/sqlite_artifact_store.py:module_level:model_validate_json:1",
+      "kind": "wire.persistence",
+      "group": "D8",
+      "owning_change": "B-D8 92ee26bf3 (T-IGX-036-Q); 97a5187b2 (T-IGX-036-T); repair 03844eda9 (T-IGX-041-H, PR #572)"
+    },
+    {
+      "id": "wire:intergrax/runtime/nexus/artifacts/sqlite_artifact_store.py:module_level:model_validate_json:2",
+      "kind": "wire.persistence",
+      "group": "D8",
+      "owning_change": "B-D8 92ee26bf3 (T-IGX-036-Q); 97a5187b2 (T-IGX-036-T); repair 03844eda9 (T-IGX-041-H, PR #572)"
+    }
+  ],
+  "removed_candidate_ids": [
+    {
+      "id": "class.intergrax.applications.contracts.application_artifacts.py::RunArtifactBundle.schema_version",
+      "kind": "class.field.version",
+      "group": "D8",
+      "owning_change": "B-D8 92ee26bf3 (T-IGX-036-Q); 97a5187b2 (T-IGX-036-T); repair 03844eda9 (T-IGX-041-H, PR #572)"
+    },
+    {
+      "id": "wire:intergrax/runtime/architecture/online_evaluation_registry.py:module_level:model_dump_json:2",
+      "kind": "wire.persistence",
+      "group": "D5",
+      "owning_change": "B-D5 85a8c441d (T-IGX-036-O); repair c076c7d0b (T-IGX-041-E, PR #568)"
+    },
+    {
+      "id": "wire:intergrax/runtime/architecture/online_evaluation_registry.py:module_level:model_validate:1",
+      "kind": "wire.persistence",
+      "group": "D5",
+      "owning_change": "B-D5 85a8c441d (T-IGX-036-O); repair c076c7d0b (T-IGX-041-E, PR #568)"
+    }
+  ],
+  "added_surface_ids": [
+    "semantic.class.field:intergrax/contracts/artifact_ref.py:DurableArtifactRef:schema_version",
+    "semantic.class.field:intergrax/contracts/evaluation_contracts.py:EvalComparison:schema_version",
+    "semantic.class.field:intergrax/contracts/evaluation_contracts.py:EvalRun:dataset_version",
+    "semantic.class.field:intergrax/contracts/evaluation_contracts.py:EvalRun:schema_version",
+    "semantic.class.field:intergrax/contracts/mcp_server_definition.py:McpServerDefinition:contract_version",
+    "semantic.class.field:intergrax/core/plugins/admission.py:PluginProvenanceAttestation:package_version",
+    "semantic.class.field:intergrax/runtime/architecture/online_evaluation_registry.py:_TenantRegistryStore:schema_version",
+    "semantic.const:intergrax/contracts/evaluation_contracts.py:EVAL_CONTRACT_SCHEMA_VERSION",
+    "semantic.const:intergrax/contracts/mcp_server_definition.py:MCP_SERVER_DEFINITION_CONTRACT_VERSION",
+    "semantic.const:intergrax/runtime/nexus/artifacts/sqlite_artifact_store.py:_SCHEMA_VERSION",
+    "semantic.migration:intergrax/agent_distribution/admin_service.py",
+    "semantic.migration:intergrax/agent_distribution/agent_manager_command_facade.py",
+    "semantic.migration:intergrax/agent_distribution/control_plane_governance.py",
+    "semantic.migration:intergrax/agent_distribution/upgrade_admission.py",
+    "semantic.migration:intergrax/applications/_shared/mcp_host_mount.py",
+    "semantic.migration:intergrax/applications/_shared/mcp_nexus_server.py",
+    "semantic.migration:intergrax/applications/_shared/mcp_server_engine.py",
+    "semantic.migration:intergrax/applications/_shared/mcp_wire_errors.py",
+    "semantic.migration:intergrax/contracts/agent_contract_meta.py",
+    "semantic.migration:intergrax/contracts/task_artifacts.py",
+    "semantic.migration:intergrax/core/plugins/admission.py",
+    "semantic.migration:intergrax/runtime/architecture/evaluation_automation.py",
+    "semantic.migration:intergrax/runtime/architecture/online_evaluation_registry.py",
+    "semantic.migration:intergrax/runtime/long_running/postgresql_task_checkpoint_store.py",
+    "semantic.migration:intergrax/runtime/long_running/scheduled_resume.py",
+    "semantic.migration:intergrax/skills/host_lifecycle.py",
+    "semantic.shim:intergrax/agent_distribution/admin_service.py",
+    "semantic.shim:intergrax/agent_distribution/runtime_revision.py",
+    "semantic.shim:intergrax/applications/_shared/mcp_host_mount.py",
+    "semantic.shim:intergrax/runtime/security/security_audit_trail.py"
+  ],
+  "removed_surface_ids": [
+    "semantic.class.field:intergrax/applications/contracts/application_artifacts.py:RunArtifactBundle:schema_version"
+  ],
+  "added_exclusion_ids": [
+    {
+      "id": "exclusion.export.intergrax.agent_distribution.__init__.py::AgentUpgradeRejectionReason",
+      "reason": "export_list_requires_semantic_classification"
+    },
+    {
+      "id": "exclusion.export.intergrax.agent_distribution.__init__.py::RetireAgentRequest",
+      "reason": "export_list_requires_semantic_classification"
+    },
+    {
+      "id": "exclusion.export.intergrax.agent_distribution.__init__.py::RetireAgentResult",
+      "reason": "export_list_requires_semantic_classification"
+    },
+    {
+      "id": "exclusion.export.intergrax.agent_distribution.__init__.py::UpgradeAdmissionReport",
+      "reason": "export_list_requires_semantic_classification"
+    },
+    {
+      "id": "exclusion.export.intergrax.agent_distribution.__init__.py::UpgradeAdmissionViolation",
+      "reason": "export_list_requires_semantic_classification"
+    },
+    {
+      "id": "exclusion.export.intergrax.agent_distribution.__init__.py::UpgradeAgentRequest",
+      "reason": "export_list_requires_semantic_classification"
+    },
+    {
+      "id": "exclusion.export.intergrax.agent_distribution.__init__.py::UpgradeAgentResult",
+      "reason": "export_list_requires_semantic_classification"
+    },
+    {
+      "id": "exclusion.export.intergrax.agent_distribution.__init__.py::evaluate_agent_upgrade_admission",
+      "reason": "export_list_requires_semantic_classification"
+    },
+    {
+      "id": "exclusion.wire.intergrax.agent_distribution.admin_models.py::module_level.model_dump:105:1",
+      "reason": "internal_wire_call_not_public_compat_surface"
+    },
+    {
+      "id": "exclusion.wire.intergrax.agent_distribution.admin_models.py::module_level.model_dump:107:2",
+      "reason": "internal_wire_call_not_public_compat_surface"
+    },
+    {
+      "id": "exclusion.wire.intergrax.agent_distribution.admin_models.py::module_level.model_dump:109:3",
+      "reason": "internal_wire_call_not_public_compat_surface"
+    },
+    {
+      "id": "exclusion.wire.intergrax.agent_distribution.runtime_revision_service.py::module_level.model_dump:157:1",
+      "reason": "internal_wire_call_not_public_compat_surface"
+    },
+    {
+      "id": "exclusion.wire.intergrax.agent_distribution.runtime_revision_service.py::module_level.model_dump:158:2",
+      "reason": "internal_wire_call_not_public_compat_surface"
+    },
+    {
+      "id": "exclusion.wire.intergrax.applications._shared.durable_registry_projection_input_store.py::module_level.model_dump_json:45:2",
+      "reason": "internal_wire_call_not_public_compat_surface"
+    },
+    {
+      "id": "exclusion.wire.intergrax.applications._shared.durable_registry_projection_input_store.py::module_level.model_validate_json:45:1",
+      "reason": "internal_wire_call_not_public_compat_surface"
+    },
+    {
+      "id": "exclusion.wire.intergrax.applications._shared.lkw_hybrid_daemon_wiring.py::module_level.model_validate:39:1",
+      "reason": "internal_wire_call_not_public_compat_surface"
+    },
+    {
+      "id": "exclusion.wire.intergrax.applications._shared.mcp_catalog_invocation_bridge.py::module_level.model_dump:307:2",
+      "reason": "internal_wire_call_not_public_compat_surface"
+    },
+    {
+      "id": "exclusion.wire.intergrax.applications._shared.mcp_catalog_invocation_bridge.py::module_level.model_validate:288:1",
+      "reason": "internal_wire_call_not_public_compat_surface"
+    },
+    {
+      "id": "exclusion.wire.intergrax.applications._shared.mcp_nexus_server.py::module_level.model_validate:189:1",
+      "reason": "internal_wire_call_not_public_compat_surface"
+    },
+    {
+      "id": "exclusion.wire.intergrax.contracts.evaluation_contracts.py::module_level.model_dump:347:2",
+      "reason": "internal_wire_call_not_public_compat_surface"
+    },
+    {
+      "id": "exclusion.wire.intergrax.contracts.evaluation_contracts.py::module_level.model_dump:348:3",
+      "reason": "internal_wire_call_not_public_compat_surface"
+    },
+    {
+      "id": "exclusion.wire.intergrax.contracts.evaluation_contracts.py::module_level.model_dump:349:4",
+      "reason": "internal_wire_call_not_public_compat_surface"
+    },
+    {
+      "id": "exclusion.wire.intergrax.contracts.evaluation_contracts.py::module_level.model_dump:350:5",
+      "reason": "internal_wire_call_not_public_compat_surface"
+    },
+    {
+      "id": "exclusion.wire.intergrax.contracts.evaluation_contracts.py::module_level.model_dump:373:6",
+      "reason": "internal_wire_call_not_public_compat_surface"
+    },
+    {
+      "id": "exclusion.wire.intergrax.contracts.evaluation_contracts.py::module_level.model_dump:506:1",
+      "reason": "internal_wire_call_not_public_compat_surface"
+    },
+    {
+      "id": "exclusion.wire.intergrax.contracts.mcp_server_definition.py::module_level.model_dump:184:1",
+      "reason": "internal_wire_call_not_public_compat_surface"
+    },
+    {
+      "id": "exclusion.wire.intergrax.runtime.architecture.evaluation_scenario_loader.py::module_level.model_validate:21:1",
+      "reason": "internal_wire_call_not_public_compat_surface"
+    },
+    {
+      "id": "exclusion.wire.intergrax.runtime.architecture.online_evaluation_registry.py::module_level.model_dump:80:1",
+      "reason": "internal_wire_call_not_public_compat_surface"
+    },
+    {
+      "id": "exclusion.wire.intergrax.runtime.architecture.online_evaluation_registry.py::module_level.model_dump_json:266:4",
+      "reason": "internal_wire_call_not_public_compat_surface"
+    },
+    {
+      "id": "exclusion.wire.intergrax.runtime.architecture.online_evaluation_registry.py::module_level.model_validate:82:2",
+      "reason": "internal_wire_call_not_public_compat_surface"
+    },
+    {
+      "id": "exclusion.wire.intergrax.runtime.architecture.online_evaluation_registry.py::module_level.model_validate_json:262:3",
+      "reason": "internal_wire_call_not_public_compat_surface"
+    },
+    {
+      "id": "exclusion.wire.intergrax.runtime.attestation.host_attestation.py::module_level.model_dump:102:2",
+      "reason": "internal_wire_call_not_public_compat_surface"
+    },
+    {
+      "id": "exclusion.wire.intergrax.runtime.attestation.host_attestation.py::module_level.model_dump:121:1",
+      "reason": "internal_wire_call_not_public_compat_surface"
+    },
+    {
+      "id": "exclusion.wire.intergrax.runtime.attestation.host_attestation.py::module_level.model_validate:148:3",
+      "reason": "internal_wire_call_not_public_compat_surface"
+    },
+    {
+      "id": "exclusion.wire.intergrax.runtime.evidence.eval_evidence_contracts.py::module_level.model_dump_json:280:3",
+      "reason": "internal_wire_call_not_public_compat_surface"
+    },
+    {
+      "id": "exclusion.wire.intergrax.runtime.evidence.eval_evidence_contracts.py::module_level.model_dump_json:305:4",
+      "reason": "internal_wire_call_not_public_compat_surface"
+    },
+    {
+      "id": "exclusion.wire.intergrax.runtime.evidence.eval_evidence_contracts.py::module_level.model_validate_json:348:1",
+      "reason": "internal_wire_call_not_public_compat_surface"
+    },
+    {
+      "id": "exclusion.wire.intergrax.runtime.evidence.eval_evidence_contracts.py::module_level.model_validate_json:361:2",
+      "reason": "internal_wire_call_not_public_compat_surface"
+    },
+    {
+      "id": "exclusion.wire.intergrax.runtime.integrations.observability.py::module_level.model_dump:255:3",
+      "reason": "internal_wire_call_not_public_compat_surface"
+    },
+    {
+      "id": "exclusion.wire.intergrax.runtime.integrations.observability.py::module_level.model_validate:255:2",
+      "reason": "internal_wire_call_not_public_compat_surface"
+    },
+    {
+      "id": "exclusion.wire.intergrax.runtime.integrations.observability.py::module_level.model_validate:258:1",
+      "reason": "internal_wire_call_not_public_compat_surface"
+    },
+    {
+      "id": "exclusion.wire.intergrax.runtime.long_running.postgresql_task_checkpoint_store.py::module_level.model_dump:223:2",
+      "reason": "internal_wire_call_not_public_compat_surface"
+    },
+    {
+      "id": "exclusion.wire.intergrax.runtime.long_running.postgresql_task_checkpoint_store.py::module_level.model_dump:328:3",
+      "reason": "internal_wire_call_not_public_compat_surface"
+    },
+    {
+      "id": "exclusion.wire.intergrax.runtime.long_running.postgresql_task_checkpoint_store.py::module_level.model_validate:787:1",
+      "reason": "internal_wire_call_not_public_compat_surface"
+    },
+    {
+      "id": "exclusion.wire.intergrax.runtime.long_running.recurrence.py::module_level.model_dump:549:3",
+      "reason": "internal_wire_call_not_public_compat_surface"
+    },
+    {
+      "id": "exclusion.wire.intergrax.runtime.long_running.recurrence.py::module_level.model_validate:442:1",
+      "reason": "internal_wire_call_not_public_compat_surface"
+    },
+    {
+      "id": "exclusion.wire.intergrax.runtime.long_running.recurrence.py::module_level.model_validate:537:2",
+      "reason": "internal_wire_call_not_public_compat_surface"
+    },
+    {
+      "id": "exclusion.wire.intergrax.runtime.long_running.scheduled_resume.py::module_level.model_dump:48:2",
+      "reason": "internal_wire_call_not_public_compat_surface"
+    },
+    {
+      "id": "exclusion.wire.intergrax.runtime.long_running.scheduled_resume.py::module_level.model_validate:48:1",
+      "reason": "internal_wire_call_not_public_compat_surface"
+    },
+    {
+      "id": "exclusion.wire.intergrax.runtime.long_running.scheduler.py::module_level.model_validate:362:1",
+      "reason": "internal_wire_call_not_public_compat_surface"
+    },
+    {
+      "id": "exclusion.wire.intergrax.runtime.long_running.store.py::module_level.model_dump:278:2",
+      "reason": "internal_wire_call_not_public_compat_surface"
+    },
+    {
+      "id": "exclusion.wire.intergrax.runtime.long_running.store.py::module_level.model_dump:384:3",
+      "reason": "internal_wire_call_not_public_compat_surface"
+    },
+    {
+      "id": "exclusion.wire.intergrax.runtime.long_running.store.py::module_level.model_validate:862:1",
+      "reason": "internal_wire_call_not_public_compat_surface"
+    },
+    {
+      "id": "exclusion.wire.intergrax.runtime.nexus.artifacts.context_reference.py::module_level.model_dump:126:1",
+      "reason": "internal_wire_call_not_public_compat_surface"
+    },
+    {
+      "id": "exclusion.wire.intergrax.runtime.nexus.artifacts.sqlite_artifact_store.py::module_level.model_dump_json:216:3",
+      "reason": "internal_wire_call_not_public_compat_surface"
+    },
+    {
+      "id": "exclusion.wire.intergrax.runtime.nexus.artifacts.sqlite_artifact_store.py::module_level.model_dump_json:217:4",
+      "reason": "internal_wire_call_not_public_compat_surface"
+    },
+    {
+      "id": "exclusion.wire.intergrax.runtime.nexus.artifacts.sqlite_artifact_store.py::module_level.model_validate_json:183:1",
+      "reason": "internal_wire_call_not_public_compat_surface"
+    },
+    {
+      "id": "exclusion.wire.intergrax.runtime.nexus.artifacts.sqlite_artifact_store.py::module_level.model_validate_json:184:2",
+      "reason": "internal_wire_call_not_public_compat_surface"
+    },
+    {
+      "id": "exclusion.wire.intergrax.runtime.nexus.context.context_compiler.py::module_level.model_validate:44:1",
+      "reason": "internal_wire_call_not_public_compat_surface"
+    },
+    {
+      "id": "exclusion.wire.intergrax.runtime.nexus.context.context_manager.py::module_level.model_dump:418:1",
+      "reason": "internal_wire_call_not_public_compat_surface"
+    },
+    {
+      "id": "exclusion.wire.intergrax.runtime.nexus.context.context_manager.py::module_level.model_dump:419:3",
+      "reason": "internal_wire_call_not_public_compat_surface"
+    },
+    {
+      "id": "exclusion.wire.intergrax.runtime.nexus.context.context_manager.py::module_level.model_dump:423:2",
+      "reason": "internal_wire_call_not_public_compat_surface"
+    },
+    {
+      "id": "exclusion.wire.intergrax.runtime.nexus.context.shared_task_context.py::module_level.model_dump:80:1",
+      "reason": "internal_wire_call_not_public_compat_surface"
+    },
+    {
+      "id": "exclusion.wire.intergrax.runtime.nexus.context.shared_task_context.py::module_level.model_validate:74:2",
+      "reason": "internal_wire_call_not_public_compat_surface"
+    },
+    {
+      "id": "exclusion.wire.intergrax.runtime.nexus.orchestration.run_artifact_bundle_builder.py::module_level.model_validate:57:1",
+      "reason": "internal_wire_call_not_public_compat_surface"
+    },
+    {
+      "id": "exclusion.wire.intergrax.runtime.nexus.tools.invoker.py::module_level.model_dump:1173:2",
+      "reason": "internal_wire_call_not_public_compat_surface"
+    },
+    {
+      "id": "exclusion.wire.intergrax.runtime.nexus.tools.invoker.py::module_level.model_dump_json:2218:1",
+      "reason": "internal_wire_call_not_public_compat_surface"
+    },
+    {
+      "id": "exclusion.wire.intergrax.runtime.observability.export_boundary.py::module_level.model_dump:253:1",
+      "reason": "internal_wire_call_not_public_compat_surface"
+    }
+  ],
+  "removed_exclusion_ids": [
+    {
+      "id": "exclusion.wire.intergrax.agent_distribution.admin_models.py::module_level.model_dump:104:1",
+      "reason": "internal_wire_call_not_public_compat_surface"
+    },
+    {
+      "id": "exclusion.wire.intergrax.agent_distribution.admin_models.py::module_level.model_dump:108:2",
+      "reason": "internal_wire_call_not_public_compat_surface"
+    },
+    {
+      "id": "exclusion.wire.intergrax.agent_distribution.admin_models.py::module_level.model_dump:112:3",
+      "reason": "internal_wire_call_not_public_compat_surface"
+    },
+    {
+      "id": "exclusion.wire.intergrax.agent_distribution.runtime_revision_service.py::module_level.model_dump:137:1",
+      "reason": "internal_wire_call_not_public_compat_surface"
+    },
+    {
+      "id": "exclusion.wire.intergrax.agent_distribution.runtime_revision_service.py::module_level.model_dump:138:2",
+      "reason": "internal_wire_call_not_public_compat_surface"
+    },
+    {
+      "id": "exclusion.wire.intergrax.applications._shared.mcp_catalog_invocation_bridge.py::module_level.model_dump:283:2",
+      "reason": "internal_wire_call_not_public_compat_surface"
+    },
+    {
+      "id": "exclusion.wire.intergrax.applications._shared.mcp_catalog_invocation_bridge.py::module_level.model_validate:264:1",
+      "reason": "internal_wire_call_not_public_compat_surface"
+    },
+    {
+      "id": "exclusion.wire.intergrax.applications._shared.mcp_nexus_server.py::module_level.model_validate:145:1",
+      "reason": "internal_wire_call_not_public_compat_surface"
+    },
+    {
+      "id": "exclusion.wire.intergrax.runtime.architecture.evaluation_scenario_loader.py::module_level.model_validate:20:1",
+      "reason": "internal_wire_call_not_public_compat_surface"
+    },
+    {
+      "id": "exclusion.wire.intergrax.runtime.architecture.online_evaluation_registry.py::module_level.model_dump_json:68:2",
+      "reason": "internal_wire_call_not_public_compat_surface"
+    },
+    {
+      "id": "exclusion.wire.intergrax.runtime.architecture.online_evaluation_registry.py::module_level.model_validate:64:1",
+      "reason": "internal_wire_call_not_public_compat_surface"
+    },
+    {
+      "id": "exclusion.wire.intergrax.runtime.attestation.host_attestation.py::module_level.model_dump:111:1",
+      "reason": "internal_wire_call_not_public_compat_surface"
+    },
+    {
+      "id": "exclusion.wire.intergrax.runtime.attestation.host_attestation.py::module_level.model_dump:92:2",
+      "reason": "internal_wire_call_not_public_compat_surface"
+    },
+    {
+      "id": "exclusion.wire.intergrax.runtime.attestation.host_attestation.py::module_level.model_validate:138:3",
+      "reason": "internal_wire_call_not_public_compat_surface"
+    },
+    {
+      "id": "exclusion.wire.intergrax.runtime.integrations.observability.py::module_level.model_dump:251:3",
+      "reason": "internal_wire_call_not_public_compat_surface"
+    },
+    {
+      "id": "exclusion.wire.intergrax.runtime.integrations.observability.py::module_level.model_validate:251:2",
+      "reason": "internal_wire_call_not_public_compat_surface"
+    },
+    {
+      "id": "exclusion.wire.intergrax.runtime.integrations.observability.py::module_level.model_validate:254:1",
+      "reason": "internal_wire_call_not_public_compat_surface"
+    },
+    {
+      "id": "exclusion.wire.intergrax.runtime.long_running.postgresql_task_checkpoint_store.py::module_level.model_dump:218:2",
+      "reason": "internal_wire_call_not_public_compat_surface"
+    },
+    {
+      "id": "exclusion.wire.intergrax.runtime.long_running.postgresql_task_checkpoint_store.py::module_level.model_dump:323:3",
+      "reason": "internal_wire_call_not_public_compat_surface"
+    },
+    {
+      "id": "exclusion.wire.intergrax.runtime.long_running.postgresql_task_checkpoint_store.py::module_level.model_validate:737:1",
+      "reason": "internal_wire_call_not_public_compat_surface"
+    },
+    {
+      "id": "exclusion.wire.intergrax.runtime.long_running.scheduled_resume.py::module_level.model_dump:29:2",
+      "reason": "internal_wire_call_not_public_compat_surface"
+    },
+    {
+      "id": "exclusion.wire.intergrax.runtime.long_running.scheduled_resume.py::module_level.model_validate:29:1",
+      "reason": "internal_wire_call_not_public_compat_surface"
+    },
+    {
+      "id": "exclusion.wire.intergrax.runtime.long_running.scheduler.py::module_level.model_validate:222:1",
+      "reason": "internal_wire_call_not_public_compat_surface"
+    },
+    {
+      "id": "exclusion.wire.intergrax.runtime.long_running.store.py::module_level.model_dump:283:2",
+      "reason": "internal_wire_call_not_public_compat_surface"
+    },
+    {
+      "id": "exclusion.wire.intergrax.runtime.long_running.store.py::module_level.model_dump:389:3",
+      "reason": "internal_wire_call_not_public_compat_surface"
+    },
+    {
+      "id": "exclusion.wire.intergrax.runtime.long_running.store.py::module_level.model_validate:821:1",
+      "reason": "internal_wire_call_not_public_compat_surface"
+    },
+    {
+      "id": "exclusion.wire.intergrax.runtime.nexus.context.context_compiler.py::module_level.model_validate:42:1",
+      "reason": "internal_wire_call_not_public_compat_surface"
+    },
+    {
+      "id": "exclusion.wire.intergrax.runtime.nexus.context.context_manager.py::module_level.model_dump:420:1",
+      "reason": "internal_wire_call_not_public_compat_surface"
+    },
+    {
+      "id": "exclusion.wire.intergrax.runtime.nexus.context.context_manager.py::module_level.model_dump:422:3",
+      "reason": "internal_wire_call_not_public_compat_surface"
+    },
+    {
+      "id": "exclusion.wire.intergrax.runtime.nexus.context.context_manager.py::module_level.model_dump:427:2",
+      "reason": "internal_wire_call_not_public_compat_surface"
+    },
+    {
+      "id": "exclusion.wire.intergrax.runtime.nexus.context.shared_task_context.py::module_level.model_dump:84:1",
+      "reason": "internal_wire_call_not_public_compat_surface"
+    },
+    {
+      "id": "exclusion.wire.intergrax.runtime.nexus.context.shared_task_context.py::module_level.model_validate:78:2",
+      "reason": "internal_wire_call_not_public_compat_surface"
+    },
+    {
+      "id": "exclusion.wire.intergrax.runtime.nexus.orchestration.run_artifact_bundle_builder.py::module_level.model_validate:50:1",
+      "reason": "internal_wire_call_not_public_compat_surface"
+    },
+    {
+      "id": "exclusion.wire.intergrax.runtime.nexus.tools.invoker.py::module_level.model_dump:1179:2",
+      "reason": "internal_wire_call_not_public_compat_surface"
+    },
+    {
+      "id": "exclusion.wire.intergrax.runtime.nexus.tools.invoker.py::module_level.model_dump_json:2243:1",
+      "reason": "internal_wire_call_not_public_compat_surface"
+    },
+    {
+      "id": "exclusion.wire.intergrax.runtime.observability.export_boundary.py::module_level.model_dump:267:1",
+      "reason": "internal_wire_call_not_public_compat_surface"
+    }
+  ],
+  "shim_heuristic_hits": [
+    {
+      "path": "intergrax/agent_distribution/admin_service.py",
+      "signal": "source.contains:adapter",
+      "class": "TRANSLATION_ONLY",
+      "evidence_line": 194,
+      "evidence_text": "from intergrax.llm_adapters.contracts.llm_profile import LLMProfile",
+      "classification": "heuristic hit, not a compatibility shim"
+    },
+    {
+      "path": "intergrax/agent_distribution/runtime_revision.py",
+      "signal": "source.contains:adapter",
+      "class": "TRANSLATION_ONLY",
+      "evidence_line": 18,
+      "evidence_text": "from intergrax.llm_adapters.contracts.llm_profile import LLMProfile",
+      "classification": "heuristic hit, not a compatibility shim"
+    },
+    {
+      "path": "intergrax/applications/_shared/mcp_host_mount.py",
+      "signal": "source.contains:adapter",
+      "class": "TRANSLATION_ONLY",
+      "evidence_line": 68,
+      "evidence_text": "\"\"\"Mount an already-composed FastMCP via the canonical harness adapter (lifespan supervision P3-03).\"\"\"",
+      "classification": "heuristic hit, not a compatibility shim"
+    },
+    {
+      "path": "intergrax/runtime/security/security_audit_trail.py",
+      "signal": "source.contains:adapter",
+      "class": "TRANSLATION_ONLY",
+      "evidence_line": 34,
+      "evidence_text": "from intergrax.runtime.events.evidence_persistence_adapter import as_evidence_persistence_port",
+      "classification": "heuristic hit, not a compatibility shim"
+    }
+  ]
+}

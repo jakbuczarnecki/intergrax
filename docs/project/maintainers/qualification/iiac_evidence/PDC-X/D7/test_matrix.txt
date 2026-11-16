@@ -1,0 +1,17 @@
+PDC-X / D7 IA-D7 test matrix (audited SHA c08efe46a74a20595468d8d8bf06eab2dca5f573; one pytest command at a time)
+
+cmd: uv run pytest tests/qualification/pdc_x/d7 -q
+result: 52 passed in 28.64s, exit 0                      log: logs/d7_pytest.log
+cmd: uv run pytest tests/qualification/bg_01 tests/qualification/sched_01 -q
+result: 36 passed in 9.44s, exit 0 (bg_01 22 + sched_01 14) log: logs/bg01_sched01_pytest.log
+cmd: uv run pytest tests/qualification/pdc_x/xd/test_xd_05_host_background.py tests/qualification/pdc_x/xd/test_xd_06_background_security.py -q
+result: 9 passed in 9.11s, exit 0                        log: logs/xd05_06_pytest.log
+
+probes (uv run python adversarial_scripts/<name>, read-only against product code):
+probe_sched.py       P1 tenant collision, P2 crash chain, P2b transient failure, P3 non-UTC run_at, P4 unsatisfiable/overflow, P7 DST   -> logs/probe_sched.out
+probe_batch.py       batch abort strands siblings                                                                               -> logs/probe_batch.out
+probe_repause.py     occurrences after the checkpoint advances                                                                  -> logs/probe_repause.out
+probe_meta.py        recurrence smuggled via resume_metadata, catch-up cost                                                     -> logs/probe_meta.out
+probe_queue.py       P5/P5b terminal overwrite, P6 retry window, P9 head-of-line, P10 idempotency/DLQ, P12 tenant isolation, P13 purge -> logs/probe_queue.out
+probe_queue_race.py  two queue instances over one store                                                                         -> logs/probe_queue_race.out
+Probe scripts import tests.qualification.pdc_x.d7._support; run from the repository root.

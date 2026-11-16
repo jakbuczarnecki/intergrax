@@ -36,6 +36,7 @@ Current feature pairs:
 |---------|--------------|------|
 | `TOKEN_OPTIMIZATION` | [`../capabilities/architecture/TOKEN_OPTIMIZATION.md`](../capabilities/architecture/TOKEN_OPTIMIZATION.md) | [`../capabilities/plan/TOKEN_OPTIMIZATION.md`](../capabilities/plan/TOKEN_OPTIMIZATION.md) |
 | `LANGCHAIN_INDEPENDENCE` | [`../capabilities/architecture/LANGCHAIN_INDEPENDENCE.md`](../capabilities/architecture/LANGCHAIN_INDEPENDENCE.md) | [`../capabilities/plan/LANGCHAIN_INDEPENDENCE.md`](../capabilities/plan/LANGCHAIN_INDEPENDENCE.md) |
+| `ARTIFACT_LIFECYCLE` | [`../capabilities/architecture/ARTIFACT_LIFECYCLE.md`](../capabilities/architecture/ARTIFACT_LIFECYCLE.md) | [`../capabilities/plan/ARTIFACT_LIFECYCLE.md`](../capabilities/plan/ARTIFACT_LIFECYCLE.md) |
 
 ---
 
@@ -81,7 +82,7 @@ Every canonical architecture artifact is classified **exactly once**. Do not pro
 |-------|---------|----------|
 | **META_ARCHITECTURE** | Platform-wide architecture governance, canonical cross-domain semantic models, or architecture hubs/indexes - not a 1:1 domain implementation plan | [`INTERGRAX_ARCHITECTURE_PRINCIPLES.md`](INTERGRAX_ARCHITECTURE_PRINCIPLES.md) · [UNIFIED_EXECUTION_ARCHITECTURE.md](UNIFIED_EXECUTION_ARCHITECTURE.md) · this hub |
 | **DOMAIN** | One reusable capability - canonical architecture + implementation plan pair | All rows in [Domain pair index (primary 24)](#domain-pair-index-primary-24) plus additional canonical pairs below |
-| **FEATURE** | Cross-layer coordination - feature architecture/plan pair; domain owners retain runtime semantics | [`../capabilities/README.md`](../capabilities/README.md) · `TOKEN_OPTIMIZATION` · `LANGCHAIN_INDEPENDENCE` |
+| **FEATURE** | Cross-layer coordination - feature architecture/plan pair; domain owners retain runtime semantics | [`../capabilities/README.md`](../capabilities/README.md) · `TOKEN_OPTIMIZATION` · `LANGCHAIN_INDEPENDENCE` · `ARTIFACT_LIFECYCLE` |
 | **SUPPORTING_MODEL / SATELLITE** | Typed model, ADR-backed adjunct, or domain satellite - subordinate to a domain owner | [APPLICATION_RUNTIME_GRAPH_MODEL.md](APPLICATION_RUNTIME_GRAPH_MODEL.md) · [APPLICATION_DEPENDENCY_MODEL.md](APPLICATION_DEPENDENCY_MODEL.md) · domain satellites/ |
 
 **Additional canonical DOMAIN pairs** (not in the primary twenty-four-row table - [`AUDIT-20260818-CROSS_LAYER_ARCHITECTURE-01`](../../audit_results/2026-08-18/CROSS_LAYER_ARCHITECTURE.md)):
@@ -95,6 +96,8 @@ Every canonical architecture artifact is classified **exactly once**. Do not pro
 | `PROOF_RECEIPTS` | [`PROOF_RECEIPTS.md`](PROOF_RECEIPTS.md) | [`../maintainers/plans/PROOF_RECEIPTS.md`](../maintainers/plans/PROOF_RECEIPTS.md) |
 | `AUTONOMOUS_WORK` | [`AUTONOMOUS_WORK.md`](AUTONOMOUS_WORK.md) | [`../maintainers/plans/AUTONOMOUS_WORK.md`](../maintainers/plans/AUTONOMOUS_WORK.md) |
 | `CAPABILITY_CATALOG_AND_DISCOVERY` | [`CAPABILITY_CATALOG_AND_DISCOVERY.md`](CAPABILITY_CATALOG_AND_DISCOVERY.md) | [`../maintainers/plans/CAPABILITY_CATALOG_AND_DISCOVERY.md`](../maintainers/plans/CAPABILITY_CATALOG_AND_DISCOVERY.md) |
+| `BACKGROUND_TASKS` *(PDC-X reconciliation PDC-P1-F01, 2026-11-12)* | [`BACKGROUND_TASKS.md`](BACKGROUND_TASKS.md) | [`../maintainers/plans/BACKGROUND_TASKS.md`](../maintainers/plans/BACKGROUND_TASKS.md) |
+| `COLLABORATIVE_WORK` *(PDC-X reconciliation PDC-P1-F01, 2026-11-12)* | [`COLLABORATIVE_WORK.md`](COLLABORATIVE_WORK.md) | [`../maintainers/plans/COLLABORATIVE_WORK.md`](../maintainers/plans/COLLABORATIVE_WORK.md) |
 | ENTERPRISE_RELIABILITY_LAYER | [ENTERPRISE_RELIABILITY_LAYER.md](ENTERPRISE_RELIABILITY_LAYER.md) | *Implementation plan — NEXT (roadmap step 5; architecture canon only)* |
 
 **Enterprise Reliability Layer subordinate architecture hubs** (subordinate to [ENTERPRISE_RELIABILITY_LAYER.md](ENTERPRISE_RELIABILITY_LAYER.md)):

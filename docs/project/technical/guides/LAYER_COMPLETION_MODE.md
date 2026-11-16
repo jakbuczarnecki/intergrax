@@ -4,7 +4,7 @@
 **Audience:** Maintainers, architects, implementation agents  
 **Related:** [INTERGRAX_DEVELOPMENT_STRATEGY.md](INTERGRAX_DEVELOPMENT_STRATEGY.md) · [`architecture/INTERGRAX_ARCHITECTURE_PRINCIPLES.md`](../../architecture/INTERGRAX_ARCHITECTURE_PRINCIPLES.md) · [SYSTEM_INVARIANTS.md](SYSTEM_INVARIANTS.md) · [MATURITY_TAXONOMY.md](MATURITY_TAXONOMY.md) · [audit_results/AUDIT_PROTOCOL.md](../../../audit_results/AUDIT_PROTOCOL.md) · [EXPERIMENTATION_AND_DEVELOPER_EXPERIENCE.md](../../architecture/EXPERIMENTATION_AND_DEVELOPER_EXPERIENCE.md#architecture-vs-implementation-rules-boundary) (architecture vs implementation rules)
 
-**Cursor iteration (every session):** [`.cursor/rules/intergrax-iteration.mdc`](../../../../.cursor/rules/intergrax-iteration.mdc) - single-item gate maintenance; **this guide** is the extended workflow for **closing an entire harness layer** to architectural maturity.
+**Cursor iteration (every session):** [`agent-env/rules/intergrax-iteration.md`](../../../../agent-env/rules/intergrax-iteration.md) - single-item gate maintenance; **this guide** is the extended workflow for **closing an entire harness layer** to architectural maturity.
 
 ---
 
@@ -22,7 +22,7 @@ The goal is not merely to implement existing architecture. The goal is to bring 
 
 | Instruction | Granularity | When |
 |-------------|-------------|------|
-| [`.cursor/rules/intergrax-iteration.mdc`](../../../../.cursor/rules/intergrax-iteration.mdc) | One coherent plan item | Default Cursor sessions |
+| [`agent-env/rules/intergrax-iteration.md`](../../../../agent-env/rules/intergrax-iteration.md) | One coherent plan item | Default Cursor sessions |
 | **This guide (Layer Completion Mode)** | Full domain layer → maturity | Deep layer closeout (journal: “Layer Completion Mode”) |
 | [audit_results/AUDIT_REMEDIATION_PROTOCOL.md](../../../audit_results/AUDIT_REMEDIATION_PROTOCOL.md) | Remediate accepted audit findings after platform audit | Ad-hoc closeout without audit evidence |
 | [SYSTEM_INVARIANTS.md](SYSTEM_INVARIANTS.md) | Cross-domain never-violate rules | Skim **before every** Step 1 and Step 6 |

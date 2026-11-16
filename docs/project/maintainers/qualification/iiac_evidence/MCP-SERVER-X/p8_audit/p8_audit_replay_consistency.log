@@ -1,0 +1,8 @@
+command: .venv/Scripts/python.exe -m pytest tests/qualification/mcp_server_x/test_mcp_server_x_p7_matrix_consistency.py -q
+cwd: /d/Projekty/_wt/intergrax/p8-audit
+git_head: eadb1c2116feb0a2090b234a36fd4182bd6ace8d
+date_utc: 2026-11-12T11:24:19Z
+..............                                                           [100%]
+14 passed in 0.68s
+exit_code: 0
+date_end_utc: 2026-11-12T11:24:29Z

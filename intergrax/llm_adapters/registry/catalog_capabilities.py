@@ -6,17 +6,21 @@
 from __future__ import annotations
 
 from collections.abc import Iterable, Sequence
-from typing import Optional
 
 from intergrax.llm.messages import ChatMessage
-from intergrax.llm_adapters.contracts.adapter_response import LLMAdapterResponse
-from intergrax.llm_adapters.contracts.llm_adapter import LLMAdapter
 from intergrax.llm_adapters.base.base_llm_adapter import BaseLLMAdapter
-from intergrax.llm_adapters.contracts.strict_tool_arguments import CanonicalFunctionToolDefinition
+from intergrax.llm_adapters.contracts.adapter_response import LLMAdapterResponse
+from intergrax.llm_adapters.contracts.capabilities import (
+    LLMFeature,
+    read_feature_flag,
+    require_declared_features,
+)
+from intergrax.llm_adapters.contracts.llm_adapter import LLMAdapter
 from intergrax.llm_adapters.contracts.llm_provider import LLMProvider
-from intergrax.llm_adapters.contracts.structured_result import LLMStructuredResult, TStructured
-from intergrax.llm_adapters.contracts.stream_event import LLMStreamEvent
 from intergrax.llm_adapters.contracts.native_tool_choice import NativeToolChoice
+from intergrax.llm_adapters.contracts.stream_event import LLMStreamEvent
+from intergrax.llm_adapters.contracts.strict_tool_arguments import CanonicalFunctionToolDefinition
+from intergrax.llm_adapters.contracts.structured_result import LLMStructuredResult, TStructured
 from intergrax.llm_adapters.registry.model_catalog import ModelRecord, lookup_model_record
 
 
@@ -50,6 +54,9 @@ class CatalogCapabilityAdapter(BaseLLMAdapter):
     def supports_streaming(self) -> bool:
         return self._inner.supports_streaming()
 
+    def supports_tool_streaming(self) -> bool:
+        return self.supports_tools() and read_feature_flag(self._inner, LLMFeature.TOOL_STREAMING)
+
     def supports_audio_input(self) -> bool:
         return self._inner.supports_audio_input()
 
@@ -60,9 +67,9 @@ class CatalogCapabilityAdapter(BaseLLMAdapter):
         self,
         messages: Sequence[ChatMessage],
         *,
-        temperature: Optional[float] = None,
-        max_tokens: Optional[int] = None,
-        run_id: Optional[str] = None,
+        temperature: float | None = None,
+        max_tokens: int | None = None,
+        run_id: str | None = None,
     ) -> LLMAdapterResponse:
         return self._inner.generate_messages(
             messages,
@@ -75,9 +82,9 @@ class CatalogCapabilityAdapter(BaseLLMAdapter):
         self,
         messages: Sequence[ChatMessage],
         *,
-        temperature: Optional[float] = None,
-        max_tokens: Optional[int] = None,
-        run_id: Optional[str] = None,
+        temperature: float | None = None,
+        max_tokens: int | None = None,
+        run_id: str | None = None,
     ) -> Iterable[LLMStreamEvent]:
         return self._inner.stream_messages(
             messages,
@@ -91,12 +98,32 @@ class CatalogCapabilityAdapter(BaseLLMAdapter):
         messages: Sequence[ChatMessage],
         tools: Sequence[CanonicalFunctionToolDefinition],
         *,
-        temperature: Optional[float] = None,
-        max_tokens: Optional[int] = None,
+        temperature: float | None = None,
+        max_tokens: int | None = None,
         tool_choice: NativeToolChoice | None = None,
-        run_id: Optional[str] = None,
+        run_id: str | None = None,
     ) -> LLMAdapterResponse:
         return self._inner.generate_with_tools(
+            messages,
+            tools,
+            temperature=temperature,
+            max_tokens=max_tokens,
+            tool_choice=tool_choice,
+            run_id=run_id,
+        )
+
+    def stream_with_tools(
+        self,
+        messages: Sequence[ChatMessage],
+        tools: Sequence[CanonicalFunctionToolDefinition],
+        *,
+        temperature: float | None = None,
+        max_tokens: int | None = None,
+        tool_choice: NativeToolChoice | None = None,
+        run_id: str | None = None,
+    ) -> Iterable[LLMStreamEvent]:
+        require_declared_features(self, LLMFeature.TOOL_STREAMING)
+        return self._inner.stream_with_tools(
             messages,
             tools,
             temperature=temperature,
@@ -110,9 +137,9 @@ class CatalogCapabilityAdapter(BaseLLMAdapter):
         messages: Sequence[ChatMessage],
         output_model: type[TStructured],
         *,
-        temperature: Optional[float] = None,
-        max_tokens: Optional[int] = None,
-        run_id: Optional[str] = None,
+        temperature: float | None = None,
+        max_tokens: int | None = None,
+        run_id: str | None = None,
     ) -> LLMStructuredResult[TStructured]:
         return self._inner.generate_structured(
             messages,

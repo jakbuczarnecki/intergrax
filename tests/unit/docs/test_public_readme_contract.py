@@ -16,16 +16,16 @@ pytestmark = [pytest.mark.unit, pytest.mark.gate]
 
 REPO_ROOT = Path(__file__).resolve().parents[3]
 README_PATH = REPO_ROOT / "README.md"
-PUBLIC_ARCHITECTURE_PATH = REPO_ROOT / "docs" / "project" / "maintainers" / "public-adoption" / "PUBLIC_DOCUMENTATION_ARCHITECTURE.md"
+PUBLIC_ARCHITECTURE_PATH = (
+    REPO_ROOT / "docs" / "project" / "maintainers" / "public-adoption" / "PUBLIC_DOCUMENTATION_ARCHITECTURE.md"
+)
 README_STRATEGIC_ASSETS_DIR = REPO_ROOT / "docs" / "project" / "assets" / "public" / "readme"
 _FULL_SIZE_LINK_LABEL = "View full-size diagram"
 _MIN_STRATEGIC_PNG_WIDTH = 800
 _MIN_STRATEGIC_PNG_HEIGHT = 400
 _MAX_STRATEGIC_ASPECT_RATIO = 6.0
 _MIN_STRATEGIC_ASPECT_RATIO = 1.0 / _MAX_STRATEGIC_ASPECT_RATIO
-_README_STRATEGIC_PNG_STEM = re.compile(
-    r"docs/project/assets/public/readme/([a-z0-9-]+)-(?:light|dark)\.png"
-)
+_README_STRATEGIC_PNG_STEM = re.compile(r"docs/project/assets/public/readme/([a-z0-9-]+)-(?:light|dark)\.png")
 
 
 def _repo_relative_path(path: Path) -> str:
@@ -140,18 +140,16 @@ _STRATEGIC_FULL_SIZE_LINKS = tuple(
         and visual.requires_view_full_size_label
     )
 )
-_STRATEGIC_PNG_PAIRS = tuple(
-    (visual.light_path, visual.dark_path) for visual in _STRATEGIC_README_VISUALS
-)
+_STRATEGIC_PNG_PAIRS = tuple((visual.light_path, visual.dark_path) for visual in _STRATEGIC_README_VISUALS)
 HERO_LIGHT_PATH = REPO_ROOT / "docs" / "project" / "assets" / "public" / "intergrax-hero-light.svg"
 HERO_DARK_PATH = REPO_ROOT / "docs" / "project" / "assets" / "public" / "intergrax-hero-dark.svg"
 LKW_ASSETS_PREFIX = "applications/local_workspace_application/docs/assets/"
 README_STRATEGIC_PREFIX = "docs/project/assets/public/readme/"
-README_UEA_PLATFORM_CORE_PREFIX = (
-    "docs/project/architecture/assets/unified-execution-platform-core-"
-)
+README_SCENARIO_FACTORY_PREFIX = "docs/project/assets/public/scenario-factory/"
+README_UEA_PLATFORM_CORE_PREFIX = "docs/project/architecture/assets/unified-execution-platform-core-"
 _README_VISUAL_OWNERSHIP_ROOTS = (
     REPO_ROOT / "docs" / "project" / "assets" / "public" / "readme",
+    REPO_ROOT / "docs" / "project" / "assets" / "public" / "scenario-factory",
     REPO_ROOT / "applications" / "local_workspace_application" / "docs" / "assets",
 )
 _MIN_README_PICTURES = 8
@@ -210,9 +208,7 @@ _REQUIRED_PUBLIC_LINKS = (
     "LICENSE",
 )
 
-_COMPATIBILITY_ANCHORS = (
-    "start-here",
-)
+_COMPATIBILITY_ANCHORS = ("start-here",)
 
 _FORBIDDEN_SAVINGS_PHRASES = (
     "production-proven savings",
@@ -238,13 +234,9 @@ _PICTURE_BLOCK = re.compile(r"<picture>(.*?)</picture>", re.DOTALL | re.IGNORECA
 _SOURCE_TAG = re.compile(r"<source\b([^>]*)>", re.IGNORECASE)
 _IMG_TAG = re.compile(r"<img\b([^>]*)>", re.IGNORECASE)
 _ATTR_VALUE = re.compile(r'(\w+)="([^"]*)"')
-_LKW_GOVERNED_HERO_LIGHT = (
-    "applications/local_workspace_application/docs/assets/lkw-governed-evidence-gate-light.png"
-)
+_LKW_GOVERNED_HERO_LIGHT = "applications/local_workspace_application/docs/assets/lkw-governed-evidence-gate-light.png"
 _ECOSYSTEM_HERO_LIGHT = "docs/project/assets/public/readme/intergrax-ecosystem-hero-light.png"
-_QUICKSTART_SCRIPT_PATTERN = re.compile(
-    r"run-lkw-product-quickstart-(windows|linux|macos)\.(bat|sh)"
-)
+_QUICKSTART_SCRIPT_PATTERN = re.compile(r"run-lkw-product-quickstart-(windows|linux|macos)\.(bat|sh)")
 
 
 @pytest.fixture(scope="module")
@@ -256,10 +248,7 @@ def test_canonical_positioning(readme_text: str) -> None:
     """Product-first first screen: Intergrax/LKW purpose and reusable foundations."""
     assert "Local Knowledge Workspace" in readme_text
     normalized = re.sub(r"[*_`]", "", readme_text).lower()
-    assert (
-        "primary daily-use conversational interface" in normalized
-        or "try lkw" in normalized
-    )
+    assert "primary daily-use conversational interface" in normalized or "try lkw" in normalized
     assert "reusable" in normalized
     assert "policy" in normalized
     assert "evidence" in normalized
@@ -272,11 +261,7 @@ def test_opening_architecture_differentiator(readme_text: str) -> None:
     normalized = re.sub(r"[*_`]", "", opening).lower()
     assert "policy" in normalized
     assert "evidence" in normalized
-    assert (
-        "allowed to proceed" in normalized
-        or "admissib" in normalized
-        or "determine whether" in normalized
-    )
+    assert "allowed to proceed" in normalized or "admissib" in normalized or "determine whether" in normalized
     assert "instead of leaving" in normalized or "entirely to the model" in normalized
     forbidden = (
         "guaranteed correctness",
@@ -291,7 +276,8 @@ def test_opening_architecture_differentiator(readme_text: str) -> None:
 
 def test_opening_positioning_against_agent_platforms(readme_text: str) -> None:
     """POS-1: opening answers skeptical question without feature-count framing."""
-    opening = readme_text[: readme_text.index("<a href=\"docs/project/assets/public/readme/fullsize/intergrax-ecosystem-hero.md\">")]
+    hero_anchor = '<a href="docs/project/assets/public/readme/fullsize/intergrax-ecosystem-hero.md">'
+    opening = readme_text[: readme_text.index(hero_anchor)]
     normalized = re.sub(r"[*_`]", "", opening).lower()
     assert "agent framework" in normalized or "agent-framework" in normalized
     assert "managed platform" in normalized or "managed agent" in normalized
@@ -326,9 +312,7 @@ def test_hero_graphic_remains_immediately_after_opening_cta(readme_text: str) ->
     assert hero_idx < choose_idx, "Hero must appear before Choose your path"
     pre_hero = readme_text[:hero_idx]
     line_before_hero = pre_hero.count("\n") + 1
-    assert line_before_hero <= 30, (
-        f"Hero displaced too far down README (line {line_before_hero}, max ~30)"
-    )
+    assert line_before_hero <= 30, f"Hero displaced too far down README (line {line_before_hero}, max ~30)"
 
 
 def test_section_order(readme_text: str) -> None:
@@ -358,9 +342,7 @@ def test_featured_incident_scenario_no_stale_logistics_framing(readme_text: str)
     )
     normalized = re.sub(r"[*_`]", "", featured_section).lower()
     for marker in _STALE_INCIDENT_SCENARIO_LOGISTICS_MARKERS:
-        assert marker not in normalized, (
-            f"Stale logistics framing in featured incident scenario: {marker!r}"
-        )
+        assert marker not in normalized, f"Stale logistics framing in featured incident scenario: {marker!r}"
     assert "workload overload" in normalized or "production signals" in normalized
 
 
@@ -440,10 +422,7 @@ def test_governed_evidence_first_contact_projection(readme_text: str) -> None:
     )
     normalized = re.sub(r"[*_`]", "", governed_section).lower()
     assert "controlled live" in normalized
-    assert (
-        "not external saas" in normalized
-        or "not external saas validation" in normalized
-    )
+    assert "not external saas" in normalized or "not external saas validation" in normalized
     assert "four live organizational sources" not in normalized
     assert "external live-provider access" in re.sub(r"[*_`]", "", readme_text).lower()
 
@@ -451,10 +430,7 @@ def test_governed_evidence_first_contact_projection(readme_text: str) -> None:
 def test_lkw_routes_governed_evidence_proof(readme_text: str) -> None:
     routes_section = _section_slice(readme_text, "### LKW routes", "**Core Platform Proof**")
     assert "Governed Evidence Decision Proof" in routes_section
-    assert (
-        "applications/local_workspace_application/docs/proof/GOVERNED_HYBRID_KNOWLEDGE_PROOF.md"
-        in routes_section
-    )
+    assert "applications/local_workspace_application/docs/proof/GOVERNED_HYBRID_KNOWLEDGE_PROOF.md" in routes_section
     product_tour_idx = routes_section.index("Product Tour")
     quick_start_idx = routes_section.index("Quick Start")
     governed_idx = routes_section.index("Governed Evidence Decision Proof")
@@ -650,19 +626,14 @@ def _visual_readme_section(readme_text: str, visual: StrategicReadmeVisual) -> s
 def _assert_readme_picture_contract(readme_text: str, visual: StrategicReadmeVisual) -> None:
     light_ref = _repo_relative_path(visual.light_path)
     dark_ref = _repo_relative_path(visual.dark_path)
-    matching_blocks = [
-        block for block in _extract_picture_blocks(readme_text) if light_ref in block
-    ]
+    matching_blocks = [block for block in _extract_picture_blocks(readme_text) if light_ref in block]
     assert len(matching_blocks) == 1, (
-        f"{visual.logical_name} must appear in exactly one <picture> block; "
-        f"found {len(matching_blocks)}"
+        f"{visual.logical_name} must appear in exactly one <picture> block; found {len(matching_blocks)}"
     )
     parsed = _parse_picture_block(matching_blocks[0])
     assert parsed["light"] == light_ref, f"{visual.logical_name} light source mismatch"
     assert parsed["dark"] == dark_ref, f"{visual.logical_name} dark source mismatch"
-    assert parsed["img_src"] == light_ref, (
-        f"{visual.logical_name} <img src> must match light fallback"
-    )
+    assert parsed["img_src"] == light_ref, f"{visual.logical_name} <img src> must match light fallback"
     assert parsed["img_alt"], f"{visual.logical_name} picture block missing non-empty alt text"
 
 
@@ -722,7 +693,8 @@ def _resolve_approved_readme_visual(path_str: str) -> Path:
 
     raise ValueError(
         "README visual outside approved ownership roots: "
-        f"{path_str!r} (allowed: {README_STRATEGIC_PREFIX!r}, {LKW_ASSETS_PREFIX!r})"
+        f"{path_str!r} (allowed: {README_STRATEGIC_PREFIX!r}, "
+        f"{README_SCENARIO_FACTORY_PREFIX!r}, {LKW_ASSETS_PREFIX!r})"
     )
 
 
@@ -771,9 +743,7 @@ def _assert_full_size_link_after_picture(section: str, preview_ref: str) -> None
     assert link in section, f"Missing full-size link to {preview_ref}"
     picture_end = section.index("</picture>")
     link_idx = section.index(link)
-    assert picture_end < link_idx, (
-        f"Full-size link must immediately follow <picture> block for {preview_ref}"
-    )
+    assert picture_end < link_idx, f"Full-size link must immediately follow <picture> block for {preview_ref}"
 
 
 def test_product_visual_order(readme_text: str) -> None:
@@ -792,9 +762,7 @@ def test_product_visual_order(readme_text: str) -> None:
         block for block in _extract_picture_blocks(readme_text) if _ECOSYSTEM_HERO_LIGHT in block
     ]
     assert len(ecosystem_picture_blocks) == 1, "Ecosystem hero must appear exactly once"
-    lkw_picture_blocks = [
-        block for block in _extract_picture_blocks(readme_text) if _LKW_GOVERNED_HERO_LIGHT in block
-    ]
+    lkw_picture_blocks = [block for block in _extract_picture_blocks(readme_text) if _LKW_GOVERNED_HERO_LIGHT in block]
     assert len(lkw_picture_blocks) == 1, "LKW governed hero must appear exactly once"
 
 
@@ -885,10 +853,7 @@ def test_governed_execution_visual_contract(readme_text: str) -> None:
 
 def test_lkw_visual_contract(readme_text: str) -> None:
     assert _LKW_GOVERNED_HERO_LIGHT in readme_text
-    assert (
-        "applications/local_workspace_application/docs/assets/lkw-governed-evidence-gate-dark.png"
-        in readme_text
-    )
+    assert "applications/local_workspace_application/docs/assets/lkw-governed-evidence-gate-dark.png" in readme_text
     assert "lkw-grounded-result" not in readme_text
     assert 'alt="LKW advanced governed proof' in readme_text
     assert LKW_LIGHT_PATH.is_file(), "LKW governed evidence gate light PNG is missing"
@@ -923,9 +888,7 @@ def test_readme_controlled_multi_visual_contract(readme_text: str) -> None:
 
         for path_str in (parsed["light"], parsed["dark"], parsed["img_src"]):
             normalized = _normalize_visual_path(path_str)
-            assert normalized.endswith((".svg", ".png")), (
-                f"README visual must be local SVG or PNG: {path_str}"
-            )
+            assert normalized.endswith((".svg", ".png")), f"README visual must be local SVG or PNG: {path_str}"
             resolved = _resolve_approved_readme_visual(normalized)
             if normalized.endswith(".svg"):
                 referenced_svgs.add(resolved)
@@ -964,14 +927,10 @@ def test_strategic_readme_png_registry_completeness(readme_text: str) -> None:
     referenced = _collect_readme_strategic_png_stems(readme_text)
     registered = _registered_strategic_png_stems()
     unregistered = referenced - registered
-    assert not unregistered, (
-        "README uses strategic PNGs outside the canonical registry: "
-        f"{sorted(unregistered)}"
-    )
+    assert not unregistered, f"README uses strategic PNGs outside the canonical registry: {sorted(unregistered)}"
     missing_from_readme = registered - referenced
     assert not missing_from_readme, (
-        "Registry lists strategic PNGs not referenced in root README: "
-        f"{sorted(missing_from_readme)}"
+        f"Registry lists strategic PNGs not referenced in root README: {sorted(missing_from_readme)}"
     )
 
 
@@ -1048,10 +1007,7 @@ def test_governed_execution_claim_boundary(readme_text: str) -> None:
     assert "Governed Execution" in readme_text
     assert "IMPLEMENTED CORE — coverage / qualification ongoing" in readme_text
     normalized = re.sub(r"[*_`]", "", readme_text)
-    assert (
-        "complete platform-wide governance and production qualification not established"
-        in normalized
-    )
+    assert "complete platform-wide governance and production qualification not established" in normalized
     lower = readme_text.lower()
     assert "production ready" not in lower
     assert "fully implemented" not in lower
@@ -1092,11 +1048,7 @@ def test_lkw_proof_boundary(readme_text: str) -> None:
     assert "hybrid ask" in lower
     assert "indexed" in lower
     assert "authorized live" in lower or "live evidence" in lower
-    assert (
-        "not complete" in lower
-        or "not yet proven" in lower
-        or "incomplete" in lower
-    )
+    assert "not complete" in lower or "not yet proven" in lower or "incomplete" in lower
     assert "real application code path" in lower or "production code path" in lower
     assert "live_only" in lower
 

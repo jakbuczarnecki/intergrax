@@ -10,12 +10,6 @@ from contextlib import contextmanager
 from unittest.mock import patch
 
 import pytest
-from testing_support.builder import (
-    canonical_governed_execution_scope,
-    canonical_run_id_for_tests,
-)
-from pydantic import BaseModel
-
 from intergrax.applications._shared.policy_wiring import wire_policy_bundle
 from intergrax.applications.contracts.environment_profile import (
     ApplicationEnvironmentProfile,
@@ -62,6 +56,11 @@ from intergrax.tools.execution_models import (
     ToolExecutionResult,
 )
 from intergrax.tools.registry import ToolRegistry
+from pydantic import BaseModel
+from testing_support.builder import (
+    canonical_governed_execution_scope,
+    canonical_run_id_for_tests,
+)
 from tests.unit.runtime.nexus.tools.conftest import FakeRegistry
 
 pytestmark = [pytest.mark.unit, pytest.mark.gate]
@@ -88,7 +87,8 @@ def _side_effect_safety_governed_scope(*, governance_tenant_id: str = "tenant_te
 
 @contextmanager
 def _enforce_allow_side_effect_invoke_scope(
-    *, governance_tenant_id: str = "tenant_test",
+    *,
+    governance_tenant_id: str = "tenant_test",
 ):
     with _side_effect_safety_governed_scope(governance_tenant_id=governance_tenant_id):
         with patch(
@@ -515,7 +515,10 @@ def test_side_effect_timeout_marks_uncertain_and_blocks_replay() -> None:
     result = invoker.invoke(state=state, agent_id="agent", request=request)
     assert result.success is False
     assert result.error is not None
-    assert result.error.error_code == RuntimeErrorCode.TIMEOUT
+    # T-IGX-023-A / OD-TLX-A: admitted side-effecting call that times out -> sanctioned ABANDONED
+    # (roadmap section 3.0.5 "Abandonment"; Batch C a5f813a2c), superseding TIMEOUT.
+    assert result.error.error_code == RuntimeErrorCode.ABANDONED
+    assert result.error.error_message == "abandoned"
     assert store.get_status("tenant_test", "timeout-key") == InvocationStatus.UNCERTAIN
 
     with pytest.raises(InvocationUncertaintyError):
@@ -639,7 +642,9 @@ def test_mapped_validation_error_after_executor_marks_uncertain() -> None:
     result = invoker.invoke(state=state, agent_id="agent", request=request)
     assert result.success is False
     assert result.error is not None
-    assert result.error.error_code == RuntimeErrorCode.VALIDATION_ERROR
+    # T-IGX-023-A / OD-TLX-A: executor raised after effect admission -> sanctioned ABANDONED;
+    # contract error_mapping (VALIDATION_ERROR) is intentionally not surfaced for such calls.
+    assert result.error.error_code == RuntimeErrorCode.ABANDONED
     assert external_effects["n"] == 1
     assert store.get_status("tenant_test", "mapped-validation-key") == InvocationStatus.UNCERTAIN
 
@@ -1231,7 +1236,7 @@ def test_post_claim_success_finalizes_completed_once() -> None:
 
 def test_close_shuts_down_execution_pool() -> None:
     executor = CountingExecutor()
-    invoker, _ = _idempotent_invoker(executor)
+    invoker, store = _idempotent_invoker(executor)
     state = _state_with_enforce_allow()
     request = _request(key="r6a-close-pool")
 
@@ -1247,8 +1252,14 @@ def test_close_shuts_down_execution_pool() -> None:
     )
     assert not after_close.success
     assert after_close.error is not None
-    assert "cannot schedule new futures after shutdown" in after_close.error.error_message
+    # T-IGX-023-A / OD-TLX-C Option A: current conservative fail-closed behaviour for a NEW call
+    # after close() is ABANDONED ("abandoned"), executor never started, key UNCERTAIN (no blind
+    # replay). The ThreadPoolExecutor message ("cannot schedule new futures after shutdown") is an
+    # implementation detail and is intentionally not asserted.
+    assert after_close.error.error_code == RuntimeErrorCode.ABANDONED
+    assert after_close.error.error_message == "abandoned"
     assert executor.calls == 1
+    assert store.get_status("tenant_test", "r6a-close-pool-new") == InvocationStatus.UNCERTAIN
 
 
 def test_active_call_completes_during_close() -> None:
@@ -1312,6 +1323,31 @@ def test_replay_before_close_preserves_exactly_once() -> None:
     )
     assert not after_close.success
     assert after_close.error is not None
-    assert "cannot schedule new futures after shutdown" in after_close.error.error_message
+    # T-IGX-023-A / OD-TLX-C Option A: see test_close_shuts_down_execution_pool; the
+    # ThreadPoolExecutor message substring is intentionally not asserted.
+    assert after_close.error.error_code == RuntimeErrorCode.ABANDONED
+    assert after_close.error.error_message == "abandoned"
     assert executor.calls == 1
+    assert store.get_status("tenant_test", "r6a-replay-before-close-new") == InvocationStatus.UNCERTAIN
 
+
+def test_post_close_uncertain_key_replay_is_blocked_without_executor_call() -> None:
+    # T-IGX-023-A plan N2 (OD-TLX-C Option A): a key left UNCERTAIN by a post-close() call must
+    # not be blindly replayed, also after close(); the executor is never invoked for it.
+    executor = CountingExecutor()
+    invoker, store = _idempotent_invoker(executor)
+    state = _state_with_enforce_allow()
+    request = _request(key="n2-post-close-poisoned")
+
+    invoker.close()
+    first = invoker.invoke(state=state, agent_id="agent", request=request)
+    assert not first.success
+    assert first.error is not None
+    assert first.error.error_code == RuntimeErrorCode.ABANDONED
+    assert store.get_status("tenant_test", "n2-post-close-poisoned") == InvocationStatus.UNCERTAIN
+    assert executor.calls == 0
+
+    with pytest.raises(InvocationUncertaintyError):
+        invoker.invoke(state=state, agent_id="agent", request=request)
+    assert executor.calls == 0
+    assert store.get_status("tenant_test", "n2-post-close-poisoned") == InvocationStatus.UNCERTAIN

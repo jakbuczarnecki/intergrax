@@ -1,0 +1,13 @@
+command: git diff --stat 6e53fb36f eadb1c211 -- FRZ checklist/matrix; FRZ id counts; verify_arch_freeze_plan_traceability
+git_head: eadb1c2116feb0a2090b234a36fd4182bd6ace8d
+date_utc: 2026-11-12T11:24:48Z
+--- diff of FRZ checklist and acceptance matrix between P6 terminal head and freeze SHA:
+(empty above = unchanged)
+--- unique FRZ ids in checklist at freeze SHA:
+235
+--- at 6e53fb36f:
+235
+--- validator:
+[OK] verify_arch_freeze_plan_traceability: all checks passed
+  FRZ=225 families=26 PASS=108 OPEN=109 WBS=54 findings=18 dangling_open_frz=0 semantic_dag=OK
+exit_code: 0

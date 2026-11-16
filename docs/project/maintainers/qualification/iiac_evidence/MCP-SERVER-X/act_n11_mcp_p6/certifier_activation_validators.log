@@ -1,0 +1,11 @@
+# certifier re-validation (certification-governance-agent, session local_7c8553da-3398-4f9b-8fae-c794a63d6cb5)
+# HEAD: d7451dff01d478bc1deba0a81823cb557519a5ef
+# UTC: 2026-11-12T05:57:14Z
+
+# command: python -m scripts.governance.verify_iiac_audit_manifest docs/project/maintainers/qualification/iiac_evidence/MCP-SERVER-X/act_n11_mcp_p6/iiac_audit_session_manifest.MCP-SERVER-X.act_n11_mcp.reaudit_p6.json --repo . --require-handoff-template
+verify_iiac_audit_manifest: PASS
+exit=0
+
+# command: python -m scripts.governance.verify_iiac_role_separation docs/project/maintainers/qualification/iiac_evidence/MCP-SERVER-X/act_n11_mcp_p6/iiac_audit_session_manifest.MCP-SERVER-X.act_n11_mcp.reaudit_p6.json --strict-product-diff --repo .
+verify_iiac_role_separation: PASS
+exit=0

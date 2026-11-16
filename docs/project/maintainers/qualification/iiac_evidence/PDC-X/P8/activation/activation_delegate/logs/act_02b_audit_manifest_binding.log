@@ -1,0 +1,9 @@
+# command: D:/Projekty/intergrax/.venv/Scripts/python.exe -m scripts.governance.verify_iiac_audit_manifest docs/project/maintainers/qualification/iiac_evidence/PDC-X/P8/activation/iiac_audit_session_manifest.IIAC-ACT-N11-PDC-X-P8-04.json --repo . --require-handoff-template
+# HEAD: 3ad1b4363d330d9343618181fdce53a0a1206861
+# UTC start: 2026-11-16T08:06:22Z
+# UTC end: 2026-11-16T08:06:22Z
+# python: D:\Projekty\intergrax\.venv\Scripts\python.exe
+# ---- stdout ----
+verify_iiac_audit_manifest: PASS
+# ---- stderr ----
+# exit code: 0

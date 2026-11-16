@@ -4,12 +4,12 @@
 
 from __future__ import annotations
 
-from typing import Callable, List, Optional, Sequence
+from collections.abc import Callable, Sequence
 
+from intergrax.context.budget.message_token_cost import message_token_cost
 from intergrax.llm.messages import ChatMessage
 from intergrax.llm_adapters.contracts.llm_adapter import LLMAdapter
-from intergrax.runtime.nexus.context.context_budget import estimate_tokens
-from intergrax.runtime.nexus.context.context_budget import resolve_input_budget_tokens
+from intergrax.runtime.nexus.context.context_budget import estimate_tokens, resolve_input_budget_tokens
 from intergrax.runtime.nexus.context.context_compiler_models import ContextPreflightResult
 
 
@@ -28,15 +28,15 @@ def count_message_tokens(
     counter = count_tokens or _default_count_tokens
     total = 0
     for message in messages:
-        total += counter(message.content or "")
+        total += message_token_cost(message, counter)
     return total
 
 
 def verify_context_preflight(
-    messages: List[ChatMessage],
+    messages: list[ChatMessage],
     adapter: LLMAdapter,
     *,
-    max_output_tokens: Optional[int] = None,
+    max_output_tokens: int | None = None,
     margin_tokens: int = 256,
     count_tokens: Callable[[str], int] | None = None,
 ) -> ContextPreflightResult:

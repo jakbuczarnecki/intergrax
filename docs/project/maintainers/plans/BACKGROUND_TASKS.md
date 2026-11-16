@@ -20,6 +20,26 @@
 
 This plan schedules platform implementation phases. **No production WorkerRuntime ships in the architecture-only milestone.**
 
+### A.1 Status reconciliation (PDC-X)
+
+*(PDC-X reconciliation PDC-D7-R023, 2026-11-12.)* The "Planned" track status above and the unmarked BG-TASKS-1..9 phases are historical and predate the code and certifications below. They are kept unchanged; this table records what exists now.
+
+| Phase / item | What exists in code | Certification |
+|--------------|---------------------|---------------|
+| BG-TASKS-1 TaskDefinition / TaskRegistry | [`definition.py`](../../../../intergrax/background_tasks/definition.py) (`TaskDefinition`), [`registry.py`](../../../../intergrax/background_tasks/registry.py) (`TaskRegistry`) | Not separately certified |
+| BG-TASKS-2 WorkerRuntime contract | [`worker_runtime.py`](../../../../intergrax/background_tasks/worker_runtime.py) (`WorkerRuntime`) | Not separately certified |
+| BG-TASKS-3 TaskEvent model | [`events.py`](../../../../intergrax/background_tasks/events.py) (`TaskEvent`, `TaskEventName`) | Not separately certified |
+| BG-TASKS-4 pull inspection (status/result) | [`state_store.py`](../../../../intergrax/background_tasks/state_store.py) (`TaskStateStore`, `TaskResultStore`) | Not separately certified |
+| Background execution identity, idempotent single invocation, redelivery and terminal safety | canonical background bootstrap + host task port | **BG-01 CLOSED** - [`HARNESS_W8_BG_01_CURRENT_HEAD_RECERTIFICATION.md`](../qualification/HARNESS_W8_BG_01_CURRENT_HEAD_RECERTIFICATION.md) |
+| One-shot delayed resume scheduling, two-scheduler claim/fence | `intergrax/runtime/long_running/` | **SCHED-01 CLOSED** - [`HARNESS_RESIDUAL_SCHED_01_CURRENT_HEAD_RECERTIFICATION.md`](../qualification/HARNESS_RESIDUAL_SCHED_01_CURRENT_HEAD_RECERTIFICATION.md) |
+| Recurrence (interval/cron/time zone/misfire) as one-shot occurrences on the scheduler ledger | `intergrax/runtime/long_running/recurrence.py` and `scheduler.py`; successor persisted before the occurrence executes, tenant-qualified occurrence id, UTC-normalized `run_at_utc`, bounded rules | Delivered by PDC-X B-D7 and repaired by T-IGX-041-G; **library capability, NOT wired** into any host composition (declared exception F-D7-05); audit IA-D7 PARTIAL, re-audit pending |
+| Retry budget and dead-letter (DLQ) on the durable queue | `DocumentStoreTaskQueue` / `DocumentStoreTaskWorker(retry_policy=…)`, terminal `DEAD_LETTERED` with a typed reason, sticky terminal states, delayed back-off index | Delivered by PDC-X B-D7 and repaired by T-IGX-041-G; **NOT wired** (no production `retry_policy`, F-D7-05); Celery / Kafka / RabbitMQ DLQ remains declared debt |
+| Full execution identity on enqueue | `TaskRequest.identity` persisted by the DocumentStore provider; quadruple seeded by the worker | **Partly adopted:** no production producer, principal and trace unused (declared exception F-D7-09) |
+| Multi-process fencing | `tests/qualification/pdc_x/d7/test_d7_fencing_two_process.py` | Proven for two OS processes over one SQLite ledger; PostgreSQL / multi-node excluded by the C10/C15 freeze |
+| Graceful worker shutdown with host drain | **Not implemented** (port only; test-side adapter in XD-05) | **Declared exception** (F-D7-03): reopen when the worker-side drain controller is commissioned |
+
+BG-TASKS-5..9 are not reconciled by this note; their status stays as written in §B.
+
 ---
 
 ## B. Phases

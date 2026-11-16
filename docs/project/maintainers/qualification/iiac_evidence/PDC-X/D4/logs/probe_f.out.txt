@@ -1,0 +1,8 @@
+{
+ "ready_before": true,
+ "ready_while_ready_hangs": true,
+ "ready_after_runtime_died_but_ready_hangs": true,
+ "health_evaluation_failed": false,
+ "last_evaluated_at_changed": false,
+ "stop": "returned"
+}

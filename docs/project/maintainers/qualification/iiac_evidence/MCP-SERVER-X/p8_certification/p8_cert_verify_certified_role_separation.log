@@ -1,0 +1,5 @@
+command: D:/Projekty/intergrax/.venv/Scripts/python.exe scripts/governance/verify_iiac_role_separation.py docs/project/maintainers/qualification/iiac_evidence/MCP-SERVER-X/p8_certification/iiac_audit_session_manifest.MCP-SERVER-X.p8_certified.json --strict-product-diff --repo .
+git_head: a618a03a8b245ceefef6ab5a922213aaef46dcd1
+date_utc: 2026-11-12T12:22:07Z
+verify_iiac_role_separation: PASS
+exit_code: 0

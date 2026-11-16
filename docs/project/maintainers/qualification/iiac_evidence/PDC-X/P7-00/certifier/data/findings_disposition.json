@@ -1,0 +1,522 @@
+{
+ "ids_complete": true,
+ "missing": [],
+ "dupes": [],
+ "no_disposition": [],
+ "blocking_open": [],
+ "severity_counts": {
+  "HIGH": 0,
+  "MEDIUM": 7,
+  "LOW": 25,
+  "INFO": 8
+ },
+ "first_counts_claim": {
+  "HIGH": 0,
+  "MEDIUM": 6,
+  "LOW": 22,
+  "INFO": 6,
+  "total": 34
+ },
+ "addendum_counts_claim": {
+  "HIGH": 0,
+  "MEDIUM": 1,
+  "LOW": 3,
+  "INFO": 2,
+  "total": 6
+ },
+ "rows": [
+  {
+   "id": "F-01",
+   "sev": "MEDIUM",
+   "area": "D8 artifact governed read",
+   "title": "Workspace scoping of a governed artifact read is optional",
+   "disposition": "ROUTE_TO_IA-D8; recommend making workspace_id (or a principal/run binding) mandatory in the request or deriving it from the context; no activation blocker (new capability, no previous behaviour regressed)",
+   "category": "ROUTE",
+   "routed_first_audit": [
+    "IA-D8"
+   ],
+   "verification": "PROBE_CONFIRMED"
+  },
+  {
+   "id": "F-02",
+   "sev": "MEDIUM",
+   "area": "D8 retention sweep",
+   "title": "TTL deletions can run without any audit record, and delete_artifact removes versions written after the expiry selection",
+   "disposition": "ROUTE_TO_IA-D8; recommend refusing to build the sweeper without an audit recorder on product profiles and re-checking expiry per version inside the delete",
+   "category": "ROUTE",
+   "routed_first_audit": [
+    "IA-D8"
+   ],
+   "verification": "PROBE_CONFIRMED"
+  },
+  {
+   "id": "F-03",
+   "sev": "MEDIUM",
+   "area": "D7 recurrence",
+   "title": "Recurrence occurrence identity has no tenant component; a conflict is swallowed",
+   "disposition": "ROUTE_TO_IA-D7; recommend tenant-qualified schedule ids and surfacing the conflict instead of returning None",
+   "category": "ROUTE",
+   "routed_first_audit": [
+    "IA-D7"
+   ],
+   "verification": "CODE_READ_BY_AUDITOR + PROBE_CONFIRMED (signature)"
+  },
+  {
+   "id": "F-04",
+   "sev": "MEDIUM",
+   "area": "cross-cutting / claim scope",
+   "title": "Several PDC-X hardening capabilities have no production caller; fail-closed behaviour exists only when a host opts in",
+   "disposition": "ROUTE_TO_IA-D6 (and D1/D5); orchestrator to decide whether host composition wiring is a PDC-X claim; activation not blocked",
+   "category": "ROUTE",
+   "routed_first_audit": [
+    "IA-D6"
+   ],
+   "verification": "CODE_READ_BY_AUDITOR"
+  },
+  {
+   "id": "F-05",
+   "sev": "MEDIUM",
+   "area": "declared open gaps",
+   "title": "The baseline carries six declared-open gaps pinned as strict xfail, including a tenant-isolation gap in the memory plane",
+   "disposition": "ROUTE_TO_IA-D2/D3; keep the xfails strict (they are); orchestrator to track the held write-set amendment",
+   "category": "ROUTE",
+   "routed_first_audit": [
+    "IA-D3"
+   ],
+   "verification": "TEST_RUN"
+  },
+  {
+   "id": "F-06",
+   "sev": "MEDIUM",
+   "area": "test regression",
+   "title": "A previously green EBH-5 gate is red on the baseline (hard-coded SQLite touchpoint count)",
+   "disposition": "TEST_ONLY_FIX (implementer/orchestrator); not an ACT-N11 product-path change",
+   "category": "TEST_ONLY",
+   "routed_first_audit": [],
+   "verification": "TEST_RUN"
+  },
+  {
+   "id": "F-07",
+   "sev": "LOW",
+   "area": "test status",
+   "title": "The new PDC-X inventory tests are red on the baseline (documents added on development are unmapped)",
+   "disposition": "regenerate the inventory (scripts/qualification/pdc_x_inventory.py --write) by the owner",
+   "category": "OTHER",
+   "routed_first_audit": [],
+   "verification": "TEST_RUN"
+  },
+  {
+   "id": "F-08",
+   "sev": "INFO",
+   "area": "test status",
+   "title": "Seven existing failures are not caused by the delta: five README contract tests and two audit-ideal depth gates are red at the pin and on the baseline",
+   "disposition": "ACCEPT_AS_PRE_EXISTING",
+   "category": "ACCEPT",
+   "routed_first_audit": [],
+   "verification": "TEST_RUN"
+  },
+  {
+   "id": "F-09",
+   "sev": "LOW",
+   "area": "test hygiene",
+   "title": "pytest does not exit after its final summary when test_xd_03_agent_governance.py runs",
+   "disposition": "RECOMMEND_FIX (test owner)",
+   "category": "RECOMMEND",
+   "routed_first_audit": [],
+   "verification": "TEST_RUN"
+  },
+  {
+   "id": "F-10",
+   "sev": "LOW",
+   "area": "D8 governed read",
+   "title": "GovernedArtifactReadPort._guard ignores the authorization decision value",
+   "disposition": "RECOMMEND_FIX: check decision.is_allowed in _guard",
+   "category": "RECOMMEND",
+   "routed_first_audit": [
+    "IA-D6"
+   ],
+   "verification": "PROBE_CONFIRMED"
+  },
+  {
+   "id": "F-11",
+   "sev": "LOW",
+   "area": "D1 skill lifecycle",
+   "title": "upgrade_skill restores the previous release only for Exception, not for BaseException",
+   "disposition": "ROUTE_TO_IA-D1",
+   "category": "ROUTE",
+   "routed_first_audit": [
+    "IA-D1"
+   ],
+   "verification": "PROBE_CONFIRMED"
+  },
+  {
+   "id": "F-12",
+   "sev": "LOW",
+   "area": "D1 skill lifecycle",
+   "title": "Skill upgrade ordering ignores pre-release and build tags",
+   "disposition": "ROUTE_TO_IA-D1",
+   "category": "ROUTE",
+   "routed_first_audit": [
+    "IA-D1"
+   ],
+   "verification": "PROBE_CONFIRMED"
+  },
+  {
+   "id": "F-13",
+   "sev": "LOW",
+   "area": "D4 queue recovery",
+   "title": "With a RetryPolicy, crash-interrupted RUNNING tasks are redelivered while the worker still passes idempotency_store=None",
+   "disposition": "ROUTE_TO_IA-D4",
+   "category": "ROUTE",
+   "routed_first_audit": [
+    "IA-D4"
+   ],
+   "verification": "CODE_READ_BY_AUDITOR"
+  },
+  {
+   "id": "F-14",
+   "sev": "LOW",
+   "area": "D7 scheduler",
+   "title": "Recurrence materialization runs in a finally for dead tasks and a materialization failure only logs",
+   "disposition": "ROUTE_TO_IA-D7",
+   "category": "ROUTE",
+   "routed_first_audit": [
+    "IA-D7"
+   ],
+   "verification": "CODE_READ_BY_AUDITOR"
+  },
+  {
+   "id": "F-15",
+   "sev": "LOW",
+   "area": "D2 memory retention",
+   "title": "Retention sweep task trusts producer-controlled as_of and joins a helper thread without timeout",
+   "disposition": "ROUTE_TO_IA-D2",
+   "category": "ROUTE",
+   "routed_first_audit": [
+    "IA-D2"
+   ],
+   "verification": "CODE_READ_BY_AUDITOR"
+  },
+  {
+   "id": "F-16",
+   "sev": "LOW",
+   "area": "D4 hosting",
+   "title": "Lifecycle metric publishes await the exporter without a bound in the shutdown path",
+   "disposition": "ROUTE_TO_IA-D4 (not probed)",
+   "category": "ROUTE",
+   "routed_first_audit": [
+    "IA-D4"
+   ],
+   "verification": "CODE_READ_BY_AUDITOR"
+  },
+  {
+   "id": "F-17",
+   "sev": "LOW",
+   "area": "D2 RAG freshness",
+   "title": "A raising reindex hook turns a successful retrieval into an exception",
+   "disposition": "ROUTE_TO_IA-D2",
+   "category": "ROUTE",
+   "routed_first_audit": [
+    "IA-D2"
+   ],
+   "verification": "PROBE_CONFIRMED (structure) + CODE_READ_BY_AUDITOR"
+  },
+  {
+   "id": "F-18",
+   "sev": "LOW",
+   "area": "D2 RAG freshness",
+   "title": "Freshness identity comes from mutable chunk metadata without tenant; ingest stamps an absolute server path",
+   "disposition": "ROUTE_TO_IA-D2 (verify)",
+   "category": "ROUTE",
+   "routed_first_audit": [
+    "IA-D2"
+   ],
+   "verification": "SUBAGENT_READ_NOT_REPRODUCED"
+  },
+  {
+   "id": "F-19",
+   "sev": "LOW",
+   "area": "D2 context",
+   "title": "Provider egress filtering runs after required-source validation",
+   "disposition": "ROUTE_TO_IA-D2",
+   "category": "ROUTE",
+   "routed_first_audit": [
+    "IA-D2"
+   ],
+   "verification": "CODE_READ_BY_AUDITOR"
+  },
+  {
+   "id": "F-20",
+   "sev": "LOW",
+   "area": "D6 audit trail",
+   "title": "Evidence-plane security audit trail: list_entries returns the oldest 1000 entries, secret values under benign keys are accepted, regions are bookkeeping only",
+   "disposition": "ROUTE_TO_IA-D6",
+   "category": "ROUTE",
+   "routed_first_audit": [
+    "IA-D6"
+   ],
+   "verification": "PROBE_CONFIRMED"
+  },
+  {
+   "id": "F-21",
+   "sev": "LOW",
+   "area": "D6 plugin provenance",
+   "title": "Plugin provenance: attestation lookup is bound to the operator mapping key, not to attestation.distribution; installed file digest is never checked",
+   "disposition": "ROUTE_TO_IA-D6; recommend asserting normalize(attestation.distribution) == normalize(spec.distribution)",
+   "category": "ROUTE",
+   "routed_first_audit": [
+    "IA-D1"
+   ],
+   "verification": "PROBE_CONFIRMED"
+  },
+  {
+   "id": "F-22",
+   "sev": "LOW",
+   "area": "D4 contracts",
+   "title": "HostDeploymentProfile changed from extra='forbid' to extra='allow'; unknown keys and a wide bind host are accepted",
+   "disposition": "ROUTE_TO_IA-D4",
+   "category": "ROUTE",
+   "routed_first_audit": [
+    "IA-D4"
+   ],
+   "verification": "PROBE_CONFIRMED"
+  },
+  {
+   "id": "F-23",
+   "sev": "LOW",
+   "area": "D6 attestation",
+   "title": "Non-strict profiles sign boundary events with the public demo seed when no key is set",
+   "disposition": "ROUTE_TO_IA-D6",
+   "category": "ROUTE",
+   "routed_first_audit": [
+    "IA-D6"
+   ],
+   "verification": "PROBE_CONFIRMED"
+  },
+  {
+   "id": "F-24",
+   "sev": "LOW",
+   "area": "D5 evaluation evidence",
+   "title": "Evaluation evidence digests are verified against digests stored with the payload; promotion comparisons are caller-supplied",
+   "disposition": "ROUTE_TO_IA-D5 (verify)",
+   "category": "ROUTE",
+   "routed_first_audit": [
+    "IA-D5"
+   ],
+   "verification": "SUBAGENT_READ_NOT_REPRODUCED"
+  },
+  {
+   "id": "F-25",
+   "sev": "LOW",
+   "area": "D5 evaluation registry",
+   "title": "Online evaluation registry: cross-tenant observation id existence oracle and lock-file removal after the stale timeout",
+   "disposition": "ROUTE_TO_IA-D5 (verify)",
+   "category": "ROUTE",
+   "routed_first_audit": [
+    "IA-D5"
+   ],
+   "verification": "SUBAGENT_READ_NOT_REPRODUCED"
+  },
+  {
+   "id": "F-26",
+   "sev": "LOW",
+   "area": "D1 upgrade admission",
+   "title": "Agent upgrade admission: 0.x compatibility rule, pre-release ordering, replay paths before authorization, candidate left VERIFIED on an unguarded exception",
+   "disposition": "ROUTE_TO_IA-D1 (verify)",
+   "category": "ROUTE",
+   "routed_first_audit": [
+    "IA-D1"
+   ],
+   "verification": "SUBAGENT_READ_NOT_REPRODUCED"
+  },
+  {
+   "id": "F-27",
+   "sev": "LOW",
+   "area": "D8 bundle builder",
+   "title": "Run artifact bundle builder follows file symlinks under the sandbox root and now publishes a content digest",
+   "disposition": "ROUTE_TO_IA-D8 (verify)",
+   "category": "ROUTE",
+   "routed_first_audit": [
+    "IA-D8"
+   ],
+   "verification": "SUBAGENT_READ_NOT_REPRODUCED"
+  },
+  {
+   "id": "F-28",
+   "sev": "LOW",
+   "area": "D2/D8 stores",
+   "title": "Retention and artifact store edge cases: naive/aware datetime TypeError kills the sweep, one tampered row fails every tenant listing, unaudited store errors after authorization, legal-hold overwrite without ownership, negative sweep limit",
+   "disposition": "ROUTE_TO_IA-D8 (verify)",
+   "category": "ROUTE",
+   "routed_first_audit": [
+    "IA-D2",
+    "IA-D8"
+   ],
+   "verification": "SUBAGENT_READ_NOT_REPRODUCED"
+  },
+  {
+   "id": "F-29",
+   "sev": "LOW",
+   "area": "test strength",
+   "title": "Mutation sample: two redundant tenant checks are not pinned by any PDC-X test",
+   "disposition": "ROUTE_TO_IA-D6/D8: add a hostile-source test",
+   "category": "ROUTE",
+   "routed_first_audit": [
+    "IA-D8"
+   ],
+   "verification": "TEST_RUN"
+  },
+  {
+   "id": "F-30",
+   "sev": "INFO",
+   "area": "D6 secret gate",
+   "title": "raw_secret_gate is a heuristic AST scan with known evasions",
+   "disposition": "ACCEPT",
+   "category": "ACCEPT",
+   "routed_first_audit": [
+    "IA-D6"
+   ],
+   "verification": "PROBE_CONFIRMED"
+  },
+  {
+   "id": "F-31",
+   "sev": "INFO",
+   "area": "contracts",
+   "title": "Behaviour changes that can break callers: sha256 fields now accept only empty or 64 lowercase hex; storage_presigned_url always raises",
+   "disposition": "ACCEPT",
+   "category": "ACCEPT",
+   "routed_first_audit": [],
+   "verification": "PROBE_CONFIRMED"
+  },
+  {
+   "id": "F-32",
+   "sev": "INFO",
+   "area": "test changes",
+   "title": "Existing tests were retargeted rather than removed; two claims in the gate script are not met",
+   "disposition": "ACCEPT; correct the docstring or add symbols",
+   "category": "ACCEPT",
+   "routed_first_audit": [],
+   "verification": "CODE_READ_BY_AUDITOR"
+  },
+  {
+   "id": "F-33",
+   "sev": "INFO",
+   "area": "import boundary",
+   "title": "The import-boundary gate is red on both the pin and the baseline for 12 files the delta did not touch",
+   "disposition": "ACCEPT_AS_PRE_EXISTING; report to the orchestrator",
+   "category": "ACCEPT",
+   "routed_first_audit": [],
+   "verification": "TEST_RUN"
+  },
+  {
+   "id": "F-34",
+   "sev": "INFO",
+   "area": "environment",
+   "title": "The shared .venv lacks tzdata that the baseline pyproject now declares",
+   "disposition": "ACCEPT; note in the activation record",
+   "category": "ACCEPT",
+   "routed_first_audit": [],
+   "verification": "TEST_RUN"
+  },
+  {
+   "id": "F-35",
+   "sev": "MEDIUM",
+   "area": "COMPAT-X / test regression",
+   "title": "Ten COMPAT-X event-evolution gates are red since PDC-X; they are green at the activation pin",
+   "disposition": "TEST_ONLY_FIX / classification by the COMPAT-X owner (add the site to the persistence classification registries); not a product change; to be read together with F-06/F-07 as 'CI contexts red after merge'",
+   "category": "TEST_ONLY",
+   "routed_first_audit": [],
+   "verification": "TEST_RUN"
+  },
+  {
+   "id": "F-36",
+   "sev": "LOW",
+   "area": "memory plane tenant binding (PR #523)",
+   "title": "The tenant-bound memory guard applies only to the shipped UserProfileManagerMemoryCapability",
+   "disposition": "ROUTE_TO_IA-D2; recommend a protocol-level tenant property instead of the isinstance gate",
+   "category": "ROUTE",
+   "routed_first_audit": [],
+   "verification": "PROBE_CONFIRMED"
+  },
+  {
+   "id": "F-37",
+   "sev": "LOW",
+   "area": "model binding (PR #524)",
+   "title": "The LLM profile pin and the required-feature check are opt-in; no production caller uses either",
+   "disposition": "ROUTE_TO_IA-D1/D3; orchestrator to decide whether host composition is a PDC-X claim",
+   "category": "ROUTE",
+   "routed_first_audit": [],
+   "verification": "PROBE_CONFIRMED"
+  },
+  {
+   "id": "F-38",
+   "sev": "LOW",
+   "area": "test isolation",
+   "title": "A COMPAT-X schema-id gate fails in the long combined run but passes in isolation",
+   "disposition": "ROUTE_TO_COMPAT-X owner",
+   "category": "ROUTE",
+   "routed_first_audit": [],
+   "verification": "TEST_RUN"
+  },
+  {
+   "id": "F-39",
+   "sev": "INFO",
+   "area": "regression selection",
+   "title": "Combined regression run: 53 failures, 40 of which are red at the activation pin",
+   "disposition": "ACCEPT_AS_PRE_EXISTING",
+   "category": "ACCEPT",
+   "routed_first_audit": [],
+   "verification": "TEST_RUN"
+  },
+  {
+   "id": "F-40",
+   "sev": "INFO",
+   "area": "delta review",
+   "title": "The six delta paths contain no new import of agents/applications from intergrax/, no credential, endpoint, process, network or dynamic-code surface, and no weakened guard",
+   "disposition": "ACCEPT",
+   "category": "ACCEPT",
+   "routed_first_audit": [],
+   "verification": "CODE_READ_BY_AUDITOR"
+  }
+ ],
+ "category_counts": {
+  "OTHER": 1,
+  "TEST_ONLY": 2,
+  "RECOMMEND": 2,
+  "ACCEPT": 8,
+  "ROUTE": 27
+ },
+ "routed_ids_exist": true,
+ "addendum_status": [
+  {
+   "id": "F-06",
+   "status": "RESOLVED",
+   "evidence": "tests/qualification/ebh_5/test_ebh_5_proof_integrity_gates.py now asserts SQLITE_TOUCHPOINT_COUNT == 39; the three EBH-5 gate files pass in logs/addendum_regression_run.stdout.txt"
+  },
+  {
+   "id": "F-07",
+   "status": "OPEN",
+   "evidence": "tests/unit/governance/test_pdc_x_inventory.py: both tests still fail at 19d552bee (same two nodes as at fa6ff1c96)"
+  },
+  {
+   "id": "F-05",
+   "status": "PARTLY_RESOLVED",
+   "evidence": "xfails for p6_repair item 11 (2), xd_01 FINDING-9 and FINDING-10, xd_02 FINDING-6 are gone and their tests pass; the only remaining declared-open gap is FINDING-8 (xd_12), deferred to the new batch B-P6-G / T-IGX-036-V 'after MCP-SERVER-X P8'; 2 xfailed in the run (that one and the MCP-RC TRANSFERRED xfail)"
+  },
+  {
+   "id": "F-09",
+   "status": "OPEN",
+   "evidence": "the combined run again printed its summary and did not exit; the runner killed it 30 s after the summary (RUNNER status=KILLED_AFTER_SUMMARY)"
+  },
+  {
+   "id": "F-04",
+   "status": "OPEN_EXTENDED",
+   "evidence": "see F-37: the two new mechanisms are also opt-in without a production caller"
+  },
+  {
+   "id": "F-01..F-03, F-08, F-10..F-34 except the above",
+   "status": "UNCHANGED",
+   "evidence": "the six delta paths do not touch the files cited by those findings, except pipeline.py (format/import only) and the three first-audit paths named in audit_scope.json"
+  }
+ ]
+}

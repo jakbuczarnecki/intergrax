@@ -2,6 +2,8 @@
 
 **AUDITED_HEAD:** `a2ed11f0e811446ae67fdfd57b4c4997c546e10f`
 
+> **Historical-record note (non-status annotation; HIST-03 finding F-001).** This reconciliation is **HISTORICAL @ `a2ed11f0`** (95 PASS / 130 OPEN). The `PATH_B` column below is **NOT authoritative**: the live-scoped set is defined only by the Path B table in [`PLATFORM_ENTERPRISE_FREEZE_ACCEPTANCE_CHECKLIST.md`](PLATFORM_ENTERPRISE_FREEZE_ACCEPTANCE_CHECKLIST.md) (section "Path B — architecture-scoped vs live qualification acceptance"). Per-row tags are intentionally not edited. This note changes no `FRZ-*` status.
+
 | Metric | Value |
 | --- | --- |
 | Total IDs | **225** |

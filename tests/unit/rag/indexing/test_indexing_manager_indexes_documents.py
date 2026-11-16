@@ -1,13 +1,15 @@
 # © Artur Czarnecki. All rights reserved.
 # Intergrax framework – proprietary and confidential.
 
-from typing import Optional, Sequence
+
+import pytest
+
+pytest.importorskip(
+    "langchain_core", reason="requires the 'dev-ci-rag' extra (langchain-core); executed by the rag-guard CI profile"
+)
+from collections.abc import Sequence
 
 import numpy as np
-from numpy.typing import NDArray
-import pytest
-from langchain_core.documents import Document
-
 from intergrax.knowledge.contracts import KnowledgeDocument
 from intergrax.rag.embedding.contracts.base_embedding_manager import BaseEmbeddingManager
 from intergrax.rag.embedding.contracts.embedding_result import EmbeddingResult
@@ -22,13 +24,13 @@ from intergrax.rag.vectorstore.contracts.native_vectorstore import (
     VectorStoreRecord,
     VectorStoreScope,
 )
-
+from langchain_core.documents import Document
+from numpy.typing import NDArray
 
 pytestmark = pytest.mark.unit
 
 
 class FakeEmbeddingManager(BaseEmbeddingManager):
-
     def embed_texts(
         self,
         texts: Sequence[str],
@@ -53,7 +55,6 @@ class FakeEmbeddingManager(BaseEmbeddingManager):
 
 
 class FakeVectorstore(BaseVectorstoreManager):
-
     def __init__(self):
         self.records = []
 
@@ -65,18 +66,18 @@ class FakeVectorstore(BaseVectorstoreManager):
     ) -> Sequence[str]:
         self.records.extend(records)
         return [record.vector_id for record in records]
-    
+
     def query(
         self,
         query_embedding: Sequence[float],
         *,
         scope: VectorStoreScope | None = None,
         top_k: int,
-        metadata_filter: Optional[MetadataFilter] = None,
+        metadata_filter: MetadataFilter | None = None,
         include_embeddings: bool = False,
     ) -> Sequence[VectorStoreHit]:
         pass
-    
+
     def delete(
         self,
         ids: Sequence[str],
@@ -84,9 +85,23 @@ class FakeVectorstore(BaseVectorstoreManager):
         scope: VectorStoreScope | None = None,
     ) -> None:
         pass
-    
+
     def count(self, *, scope: VectorStoreScope | None = None) -> int:
         return len(self.records)
+
+    def list_source_record_ids(
+        self,
+        *,
+        source_id: str,
+        scope: VectorStoreScope | None = None,
+        root_document_id: str | None = None,
+    ) -> Sequence[str]:
+        return [
+            record.vector_id
+            for record in self.records
+            if str(record.document.provenance.source_id) == source_id
+            and (root_document_id is None or str(record.document.identity.root_document_id) == root_document_id)
+        ]
 
 
 class CapturingStrategy(IndexStrategy):

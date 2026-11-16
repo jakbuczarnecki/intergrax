@@ -4,17 +4,16 @@
 
 from __future__ import annotations
 
-import pytest
 from pathlib import Path
 
+import pytest
 from intergrax.knowledge.contracts import KnowledgeDocument, KnowledgeDocumentScope
-
 from intergrax.rag.document_loaders.handlers.pdf_smart_document_handler import (
     PdfSmartDocumentHandler,
 )
 
-
 pytestmark = pytest.mark.integration
+
 
 def _create_pdf(path: Path) -> None:
     import fitz
@@ -33,6 +32,8 @@ def _create_pdf(path: Path) -> None:
     ],
 )
 def test_document_handler_contract(tmp_path: Path, handler_cls, extension, creator):
+    if handler_cls.__name__ == "PdfSmartDocumentHandler":
+        pytest.importorskip("fitz", reason="requires the 'parsing-pdf' extra (PyMuPDF)")
 
     file_path = tmp_path / f"sample{extension}"
 

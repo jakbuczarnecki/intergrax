@@ -1,0 +1,31 @@
+{
+  "stage_id": "IIAC-GOV-1",
+  "certification_profile": "iiac-v1",
+  "policy_version": "IIAC-2026-11-05.1",
+  "implementation_session_id": "T-IGX-024-B-ACT-N11-RECOVERY-IMPLEMENTER",
+  "implementation_agent_id": "implementer",
+  "auditor_session_id": "24eaa26b-34d7-451e-8acf-7e4949e5d348",
+  "auditor_agent_id": "independent-quality-auditor",
+  "certifier_session_id": "IIAC-ACT-N11-CERT-2026-11-10",
+  "certifier_agent_id": "certification-governance-agent",
+  "audited_implementation_sha": "03aa10959acf6ec3d81a7a0de8ac8224c8126973",
+  "test_execution_sha": "ebc2f8ba0f92599a1fdde80cde6ad48beab1934f",
+  "evidence_publication_sha": "11ac8ad85f62a6925d25ea840c92d5c6a936cfe4",
+  "audit_execution_sha": "11ac8ad85f62a6925d25ea840c92d5c6a936cfe4",
+  "audit_report_digest": "c405c65faf53243a0511b0b9584a9f3abda4db08c09ee9b9266c86fe9f6b7a4e",
+  "audit_scope_manifest_digest": "e06ce433ac1c260390885e19cc60b0687be9d8908d78bd38ae4fb5f1102fe56f",
+  "test_matrix_digest": "d5028f194bb7917d07e8df5264075952dcf8757503975042988caba6e89a240b",
+  "findings_digest": "df3648f926dad3199ff40c7c83c7fae4ed7a26bd1c67701a355bc7130073f831",
+  "verdict": "PASS",
+  "limitations": [
+    "ACT-N11 activation binding: advances audit_execution_sha after D-IIAC-01=a product PASS_SCOPED evidence",
+    "Product independent manifest remains PASS_SCOPED: iiac_audit_session_manifest.ENT-AUDIT-X.act_n11_session_b.json",
+    "IIAC-GOV-1 governance dossier digest unchanged; product delta audited under ENT-AUDIT-X Session B",
+    "Does not close ENT-AUDIT-X, PRE-ENT Wave 3, or W4-02"
+  ],
+  "certification_publication_sha": "0be70e1506200f2ef074c1e180997d1727709713",
+  "assurance_level": "process_enforced",
+  "handoff_record_path": "docs/project/maintainers/qualification/iiac_evidence/ENT-AUDIT-X/act_n11_recovery/IIAC_SESSION_HANDOFF_RECORD_ACT_N11_SESSION_B.md",
+  "activation_audit_report_path": "docs/project/maintainers/qualification/iiac_evidence/IIAC-GOV-1/certification/IIAC_ACT01_INDEPENDENT_REAUDIT_DOSSIER.md",
+  "product_session_manifest_path": "docs/project/maintainers/qualification/iiac_evidence/ENT-AUDIT-X/act_n11_recovery/iiac_audit_session_manifest.ENT-AUDIT-X.act_n11_session_b.json"
+}

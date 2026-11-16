@@ -1,0 +1,972 @@
+{
+ "workstream": "HIST-03",
+ "baseline_sha": "ba07ebaa34d04633bd60510f68c18346b1ef160d",
+ "generated_utc": "2026-11-08T07:53:24Z",
+ "baseline_check": "40 rows OPEN at baseline (OBS7 SEC10 REL11 PRD12); no divergence from MASTER baseline",
+ "verification_basis": "Document-level inventory + static checks + ONE combined pytest run and 4 isolated reruns on the shared pin (see test_execution). Not exact-SHA audit evidence. Nothing here is a PASS; promotion_allowed_now is false for every row.",
+ "counts_by_classification": {
+  "VALID_SCOPED_PASS_CANDIDATE": 11,
+  "SSOT_DRIFT": 4,
+  "QUALIFICATION_GAP": 18,
+  "EVIDENCE_GAP": 5,
+  "PATH_B_LIVE_DEFERRED": 2
+ },
+ "counts_by_dashboard_state": {
+  "AUDIT_REQUIRED": 16,
+  "QUALIFICATION_REQUIRED": 21,
+  "PATH_B_DEFERRED": 2,
+  "AUTHORITY_REQUIRED": 1
+ },
+ "counts_by_family": {
+  "OBS": 7,
+  "SEC": 10,
+  "REL": 11,
+  "PRD": 12
+ },
+ "rows": [
+  {
+   "frz_id": "FRZ-OBS-01",
+   "criterion": "canonical event/evidence spine",
+   "checklist_ref": "docs/project/maintainers/qualification/PLATFORM_ENTERPRISE_FREEZE_ACCEPTANCE_CHECKLIST.md:L132",
+   "checklist_status_at_baseline": "OPEN",
+   "scope_dimension": "A",
+   "primary_classification": "VALID_SCOPED_PASS_CANDIDATE",
+   "secondary_causes": [],
+   "dashboard_state": "AUDIT_REQUIRED",
+   "architecture_obligation": "Architecture-scoped; Observability non-authoritative invariants.",
+   "live_obligation_path_b": "None.",
+   "evidence_refs": [
+    "HARNESS-W5 @5a87046 (ENTERPRISE_EXECUTION_SCALE_RESILIENCE_W5_PARENT_RECERTIFICATION.md)",
+    "CX-06 (CTRL-X @318a4d83 (CTRL_X_ENTERPRISE_CONTROL_PLANE_RECERTIFICATION.md; own FRZ map = 'candidate only'))"
+   ],
+   "remaining_gap": "No independent PASS at an exact current SHA; evidence is parent-scope contribution only (W5/W6) and logs live in untracked .tmp/session/harness-w5-r1/.",
+   "required_next_action": "Pinned exact-SHA replay of W5-H/W5 matrix + CX-06/CX-07 nodes; independent auditor; then operator promotion (T-B7-PROMOTE-OBS).",
+   "promotion_allowed_now": false,
+   "evidence_route": "PINNED_REPLAY_THEN_INDEPENDENT_AUDIT",
+   "acceptance_rule_unmet": "exact SHA + criterion mapping + static + executed gate output + independent auditor sign-off + operator promotion (ECAP; checklist PASS rule L40-45)",
+   "test_observation": "W5 b2/c/d pass in isolation, fail in combined process (test-isolation, HIST03-F-016); other W5 + CX nodes passed in combined run"
+  },
+  {
+   "frz_id": "FRZ-OBS-02",
+   "criterion": "Observability does not mint execution truth",
+   "checklist_ref": "docs/project/maintainers/qualification/PLATFORM_ENTERPRISE_FREEZE_ACCEPTANCE_CHECKLIST.md:L133",
+   "checklist_status_at_baseline": "OPEN",
+   "scope_dimension": "A",
+   "primary_classification": "VALID_SCOPED_PASS_CANDIDATE",
+   "secondary_causes": [],
+   "dashboard_state": "AUDIT_REQUIRED",
+   "architecture_obligation": "Architecture-scoped; Observability non-authoritative invariants.",
+   "live_obligation_path_b": "None.",
+   "evidence_refs": [
+    "HARNESS-W5 @5a87046 (ENTERPRISE_EXECUTION_SCALE_RESILIENCE_W5_PARENT_RECERTIFICATION.md)",
+    "HARNESS-W6 @846af28 (durable W6 execution-truth store = 0)",
+    "CX-06/CX-07 'Observability->Execution truth creation = 0'"
+   ],
+   "remaining_gap": "No independent PASS at an exact current SHA; evidence is parent-scope contribution only (W5/W6) and logs live in untracked .tmp/session/harness-w5-r1/.",
+   "required_next_action": "Pinned exact-SHA replay of W5-H/W5 matrix + CX-06/CX-07 nodes; independent auditor; then operator promotion (T-B7-PROMOTE-OBS).",
+   "promotion_allowed_now": false,
+   "evidence_route": "PINNED_REPLAY_THEN_INDEPENDENT_AUDIT",
+   "acceptance_rule_unmet": "exact SHA + criterion mapping + static + executed gate output + independent auditor sign-off + operator promotion (ECAP; checklist PASS rule L40-45)",
+   "test_observation": "W5 b2/c/d pass in isolation, fail in combined process (test-isolation, HIST03-F-016); other W5 + CX nodes passed in combined run"
+  },
+  {
+   "frz_id": "FRZ-OBS-03",
+   "criterion": "Diagnostics interprets facts only",
+   "checklist_ref": "docs/project/maintainers/qualification/PLATFORM_ENTERPRISE_FREEZE_ACCEPTANCE_CHECKLIST.md:L134",
+   "checklist_status_at_baseline": "OPEN",
+   "scope_dimension": "A",
+   "primary_classification": "VALID_SCOPED_PASS_CANDIDATE",
+   "secondary_causes": [],
+   "dashboard_state": "AUDIT_REQUIRED",
+   "architecture_obligation": "Architecture-scoped; Observability non-authoritative invariants.",
+   "live_obligation_path_b": "None.",
+   "evidence_refs": [
+    "HARNESS-W5 @5a87046 (ENTERPRISE_EXECUTION_SCALE_RESILIENCE_W5_PARENT_RECERTIFICATION.md)",
+    "HARNESS-W6 @846af28",
+    "CX-07 'Diagnostics->Execution truth creation = 0 (fail-closed)'"
+   ],
+   "remaining_gap": "No independent PASS at an exact current SHA; evidence is parent-scope contribution only (W5/W6) and logs live in untracked .tmp/session/harness-w5-r1/.",
+   "required_next_action": "Pinned exact-SHA replay of W5-H/W5 matrix + CX-06/CX-07 nodes; independent auditor; then operator promotion (T-B7-PROMOTE-OBS).",
+   "promotion_allowed_now": false,
+   "evidence_route": "PINNED_REPLAY_THEN_INDEPENDENT_AUDIT",
+   "acceptance_rule_unmet": "exact SHA + criterion mapping + static + executed gate output + independent auditor sign-off + operator promotion (ECAP; checklist PASS rule L40-45)",
+   "test_observation": "W5 b2/c/d pass in isolation, fail in combined process (test-isolation, HIST03-F-016); other W5 + CX nodes passed in combined run"
+  },
+  {
+   "frz_id": "FRZ-OBS-04",
+   "criterion": "correlation IDs propagated",
+   "checklist_ref": "docs/project/maintainers/qualification/PLATFORM_ENTERPRISE_FREEZE_ACCEPTANCE_CHECKLIST.md:L135",
+   "checklist_status_at_baseline": "OPEN",
+   "scope_dimension": "A",
+   "primary_classification": "SSOT_DRIFT",
+   "secondary_causes": [
+    "INDEPENDENT_AUDIT_GAP"
+   ],
+   "dashboard_state": "AUDIT_REQUIRED",
+   "architecture_obligation": "Architecture-scoped; completeness previously deferred to TRACE-X/CTRL-X.",
+   "live_obligation_path_b": "None.",
+   "evidence_refs": [
+    "HARNESS-W5 @5a87046 (ENTERPRISE_EXECUTION_SCALE_RESILIENCE_W5_PARENT_RECERTIFICATION.md)",
+    "CX-06/CX-07",
+    "FRZ-TRC-12/TRC-01 (TRACE-X-P1/P2) = PASS in checklist (TRACE-X CLOSED)"
+   ],
+   "remaining_gap": "Checklist evidence cell still says full completeness 'remains TRACE-X / CTRL-X' and CTRL-X-D3 defers to TRACE-X, but TRACE-X is CLOSED with FRZ-TRC-01..12 PASS; no stage record maps OBS-04 to TRACE-X closure (roadmap has 0 mentions of FRZ-OBS).",
+   "required_next_action": "Reconcile OBS-04 to the TRACE-X certification evidence (docs patch), then independent audit; do not infer OBS PASS from TRC PASS.",
+   "promotion_allowed_now": false,
+   "evidence_route": "PINNED_REPLAY_THEN_INDEPENDENT_AUDIT (after docs reconciliation to TRACE-X evidence)",
+   "acceptance_rule_unmet": "exact SHA + criterion mapping + static + executed gate output + independent auditor sign-off + operator promotion (ECAP; checklist PASS rule L40-45)",
+   "test_observation": "W5 b2/c/d pass in isolation, fail in combined process (test-isolation, HIST03-F-016); other W5 + CX nodes passed in combined run"
+  },
+  {
+   "frz_id": "FRZ-OBS-05",
+   "criterion": "terminal state observable",
+   "checklist_ref": "docs/project/maintainers/qualification/PLATFORM_ENTERPRISE_FREEZE_ACCEPTANCE_CHECKLIST.md:L136",
+   "checklist_status_at_baseline": "OPEN",
+   "scope_dimension": "A",
+   "primary_classification": "SSOT_DRIFT",
+   "secondary_causes": [
+    "INDEPENDENT_AUDIT_GAP"
+   ],
+   "dashboard_state": "AUDIT_REQUIRED",
+   "architecture_obligation": "Architecture-scoped; completeness previously deferred to TRACE-X/CTRL-X.",
+   "live_obligation_path_b": "None.",
+   "evidence_refs": [
+    "HARNESS-W5 @5a87046 (ENTERPRISE_EXECUTION_SCALE_RESILIENCE_W5_PARENT_RECERTIFICATION.md)",
+    "CX-06/CX-07",
+    "FRZ-TRC-10 (TRACE-X-P6 @a3203d79, terminal producers 50/50) = PASS in checklist (TRACE-X CLOSED)"
+   ],
+   "remaining_gap": "Checklist evidence cell still says full completeness 'remains TRACE-X / CTRL-X' and CTRL-X-D3 defers to TRACE-X, but TRACE-X is CLOSED with FRZ-TRC-01..12 PASS; no stage record maps OBS-05 to TRACE-X closure (roadmap has 0 mentions of FRZ-OBS).",
+   "required_next_action": "Reconcile OBS-05 to the TRACE-X certification evidence (docs patch), then independent audit; do not infer OBS PASS from TRC PASS.",
+   "promotion_allowed_now": false,
+   "evidence_route": "PINNED_REPLAY_THEN_INDEPENDENT_AUDIT (after docs reconciliation to TRACE-X evidence)",
+   "acceptance_rule_unmet": "exact SHA + criterion mapping + static + executed gate output + independent auditor sign-off + operator promotion (ECAP; checklist PASS rule L40-45)",
+   "test_observation": "W5 b2/c/d pass in isolation, fail in combined process (test-isolation, HIST03-F-016); other W5 + CX nodes passed in combined run"
+  },
+  {
+   "frz_id": "FRZ-OBS-06",
+   "criterion": "side-effect paths observable",
+   "checklist_ref": "docs/project/maintainers/qualification/PLATFORM_ENTERPRISE_FREEZE_ACCEPTANCE_CHECKLIST.md:L137",
+   "checklist_status_at_baseline": "OPEN",
+   "scope_dimension": "A",
+   "primary_classification": "SSOT_DRIFT",
+   "secondary_causes": [
+    "INDEPENDENT_AUDIT_GAP"
+   ],
+   "dashboard_state": "AUDIT_REQUIRED",
+   "architecture_obligation": "Architecture-scoped; completeness previously deferred to TRACE-X/CTRL-X.",
+   "live_obligation_path_b": "None.",
+   "evidence_refs": [
+    "HARNESS-W5 @5a87046 (ENTERPRISE_EXECUTION_SCALE_RESILIENCE_W5_PARENT_RECERTIFICATION.md)",
+    "CX-06/CX-07",
+    "FRZ-TRC-06/TRC-03 (TRACE-X-P3) = PASS in checklist (TRACE-X CLOSED)"
+   ],
+   "remaining_gap": "Checklist evidence cell still says full completeness 'remains TRACE-X / CTRL-X' and CTRL-X-D3 defers to TRACE-X, but TRACE-X is CLOSED with FRZ-TRC-01..12 PASS; no stage record maps OBS-06 to TRACE-X closure (roadmap has 0 mentions of FRZ-OBS).",
+   "required_next_action": "Reconcile OBS-06 to the TRACE-X certification evidence (docs patch), then independent audit; do not infer OBS PASS from TRC PASS.",
+   "promotion_allowed_now": false,
+   "evidence_route": "PINNED_REPLAY_THEN_INDEPENDENT_AUDIT (after docs reconciliation to TRACE-X evidence)",
+   "acceptance_rule_unmet": "exact SHA + criterion mapping + static + executed gate output + independent auditor sign-off + operator promotion (ECAP; checklist PASS rule L40-45)",
+   "test_observation": "W5 b2/c/d pass in isolation, fail in combined process (test-isolation, HIST03-F-016); other W5 + CX nodes passed in combined run"
+  },
+  {
+   "frz_id": "FRZ-OBS-07",
+   "criterion": "diagnostic provenance reconstructable",
+   "checklist_ref": "docs/project/maintainers/qualification/PLATFORM_ENTERPRISE_FREEZE_ACCEPTANCE_CHECKLIST.md:L138",
+   "checklist_status_at_baseline": "OPEN",
+   "scope_dimension": "A",
+   "primary_classification": "SSOT_DRIFT",
+   "secondary_causes": [
+    "INDEPENDENT_AUDIT_GAP"
+   ],
+   "dashboard_state": "AUDIT_REQUIRED",
+   "architecture_obligation": "Architecture-scoped; completeness previously deferred to TRACE-X/CTRL-X.",
+   "live_obligation_path_b": "None.",
+   "evidence_refs": [
+    "HARNESS-W5 @5a87046 (ENTERPRISE_EXECUTION_SCALE_RESILIENCE_W5_PARENT_RECERTIFICATION.md)",
+    "CX-06/CX-07",
+    "FRZ-TRC-01/02/11 (TRACE-X-P2, P1, CERT) = PASS in checklist (TRACE-X CLOSED)"
+   ],
+   "remaining_gap": "Checklist evidence cell still says full completeness 'remains TRACE-X / CTRL-X' and CTRL-X-D3 defers to TRACE-X, but TRACE-X is CLOSED with FRZ-TRC-01..12 PASS; no stage record maps OBS-07 to TRACE-X closure (roadmap has 0 mentions of FRZ-OBS).",
+   "required_next_action": "Reconcile OBS-07 to the TRACE-X certification evidence (docs patch), then independent audit; do not infer OBS PASS from TRC PASS.",
+   "promotion_allowed_now": false,
+   "evidence_route": "PINNED_REPLAY_THEN_INDEPENDENT_AUDIT (after docs reconciliation to TRACE-X evidence)",
+   "acceptance_rule_unmet": "exact SHA + criterion mapping + static + executed gate output + independent auditor sign-off + operator promotion (ECAP; checklist PASS rule L40-45)",
+   "test_observation": "W5 b2/c/d pass in isolation, fail in combined process (test-isolation, HIST03-F-016); other W5 + CX nodes passed in combined run"
+  },
+  {
+   "frz_id": "FRZ-SEC-01",
+   "criterion": "tenant isolation proven",
+   "checklist_ref": "docs/project/maintainers/qualification/PLATFORM_ENTERPRISE_FREEZE_ACCEPTANCE_CHECKLIST.md:L218",
+   "checklist_status_at_baseline": "OPEN",
+   "scope_dimension": "A+B",
+   "primary_classification": "QUALIFICATION_GAP",
+   "secondary_causes": [
+    "PATH_B_LIVE_DEFERRED",
+    "IMPLEMENTATION_GAP"
+   ],
+   "dashboard_state": "QUALIFICATION_REQUIRED",
+   "architecture_obligation": "Strict HTTP caller/tenant chain, cross-tenant strict (P3-A, P3-A2), TENANT-X scoped; platform-wide tenant isolation criterion.",
+   "live_obligation_path_b": "Multi-instance (Kubernetes) trust anchor/global first-writer PIS (Decision-03; D03-A Spanner+Azure witness) - infra, not ratified/live.",
+   "evidence_refs": [
+    "PROD-Q-R1-R7-Q-P3 @28c9bc40 (P3-A e24aa42a, P3-A2)",
+    "TENANT-X @5ccb72fc (CLOSED per roadmap L478)",
+    "tests/qualification/prod_q/_p0_frz_reconciliation.py (mechanical PROD-Q-P0 record) (SUPPORTING_HISTORICAL)"
+   ],
+   "remaining_gap": "Checklist cell lists RATIFIED-but-NOT-IMPLEMENTED/QUALIFIED decisions (F02, stable CREATE identity, legacy CREATE admission, GCA SQLite durable recovery, Decision-03); roadmap L2029 LEGACY-HISTORY-TRUST-ANCHOR-GATE 'STOP - ARCHITECTURE DECISION REQUIRED'. Current implementation status UNVERIFIED.",
+   "required_next_action": "Determine which ratified items are architecture-blocking vs infra-live (needs operator ruling for Decision-03/D03-A); verify implementation status of F02/stable CREATE in code; adversarial tenant gates at pinned SHA.",
+   "promotion_allowed_now": false,
+   "evidence_route": "QUALIFICATION_WORK_FIRST_THEN_PINNED_REPLAY_THEN_INDEPENDENT_AUDIT",
+   "acceptance_rule_unmet": "exact SHA + criterion mapping + static + executed gate output + independent auditor sign-off + operator promotion (ECAP; checklist PASS rule L40-45)"
+  },
+  {
+   "frz_id": "FRZ-SEC-02",
+   "criterion": "secrets references / late resolution",
+   "checklist_ref": "docs/project/maintainers/qualification/PLATFORM_ENTERPRISE_FREEZE_ACCEPTANCE_CHECKLIST.md:L219",
+   "checklist_status_at_baseline": "OPEN",
+   "scope_dimension": "A",
+   "primary_classification": "QUALIFICATION_GAP",
+   "secondary_causes": [],
+   "dashboard_state": "QUALIFICATION_REQUIRED",
+   "architecture_obligation": "Secret references only; resolution at the sanctioned late-resolution point.",
+   "live_obligation_path_b": "None (live secret stores are vendor concern).",
+   "evidence_refs": [
+    "CTRL-X @318a4d83 (CTRL_X_ENTERPRISE_CONTROL_PLANE_RECERTIFICATION.md; own FRZ map = 'candidate only') sec-matrix 'raw secrets/references: partial'",
+    "tests/qualification/prod_q/_p0_frz_reconciliation.py (mechanical PROD-Q-P0 record) PARTIAL_CURRENT_HEAD",
+    "Code leads: intergrax/integrations/credentials/secrets_store_resolver.py, integrations/contracts/credential.py"
+   ],
+   "remaining_gap": "Checklist cell empty ('-'); test_sec_ent.py (the only security-wiring gate for encryptor/secrets resolution) is RED at pin (7 failed, F-006; no_ci so CI does not see it); no row-specific gate or negative regression; ARCH-FREEZE matrix: QUALIFICATION_REQUIRED;INDEPENDENT_AUDIT_REQUIRED.",
+   "required_next_action": "Architecture-only matrix + AST/negative gate (no raw secret values in contracts/config/events); targeted tests; independent audit.",
+   "promotion_allowed_now": false,
+   "evidence_route": "QUALIFICATION_WORK_FIRST_THEN_PINNED_REPLAY_THEN_INDEPENDENT_AUDIT",
+   "acceptance_rule_unmet": "exact SHA + criterion mapping + static + executed gate output + independent auditor sign-off + operator promotion (ECAP; checklist PASS rule L40-45)",
+   "test_observation": "test_sec_ent.py 7 failed on pin (HIST03-F-006)"
+  },
+  {
+   "frz_id": "FRZ-SEC-03",
+   "criterion": "raw secrets do not cross unrelated layers",
+   "checklist_ref": "docs/project/maintainers/qualification/PLATFORM_ENTERPRISE_FREEZE_ACCEPTANCE_CHECKLIST.md:L220",
+   "checklist_status_at_baseline": "OPEN",
+   "scope_dimension": "A",
+   "primary_classification": "QUALIFICATION_GAP",
+   "secondary_causes": [],
+   "dashboard_state": "QUALIFICATION_REQUIRED",
+   "architecture_obligation": "No raw secret payload across layer boundaries (HOST-Q5, SEC contracts).",
+   "live_obligation_path_b": "None.",
+   "evidence_refs": [
+    "CTRL-X @318a4d83 (CTRL_X_ENTERPRISE_CONTROL_PLANE_RECERTIFICATION.md; own FRZ map = 'candidate only') sec-matrix",
+    "tests/qualification/prod_q/_p0_frz_reconciliation.py (mechanical PROD-Q-P0 record) PARTIAL_CURRENT_HEAD"
+   ],
+   "remaining_gap": "Checklist cell empty; no consolidated closed-world scan record.",
+   "required_next_action": "Closed-world scan + negative regression; independent audit.",
+   "promotion_allowed_now": false,
+   "evidence_route": "QUALIFICATION_WORK_FIRST_THEN_PINNED_REPLAY_THEN_INDEPENDENT_AUDIT",
+   "acceptance_rule_unmet": "exact SHA + criterion mapping + static + executed gate output + independent auditor sign-off + operator promotion (ECAP; checklist PASS rule L40-45)"
+  },
+  {
+   "frz_id": "FRZ-SEC-04",
+   "criterion": "production auth bypass = 0",
+   "checklist_ref": "docs/project/maintainers/qualification/PLATFORM_ENTERPRISE_FREEZE_ACCEPTANCE_CHECKLIST.md:L221",
+   "checklist_status_at_baseline": "OPEN",
+   "scope_dimension": "A+B",
+   "primary_classification": "QUALIFICATION_GAP",
+   "secondary_causes": [
+    "PATH_B_LIVE_DEFERRED",
+    "IMPLEMENTATION_GAP"
+   ],
+   "dashboard_state": "QUALIFICATION_REQUIRED",
+   "architecture_obligation": "Architecture auth-bypass gates: D4 governance deny/legacy entry blocked, P2-C admission, P3-A2 strict HTTP chain, DIM16 F02.",
+   "live_obligation_path_b": "Operator production profiles (DIM6/DIM17) - Path B live-scoped (checklist L66).",
+   "evidence_refs": [
+    "D4 @0dd51fe (PROD_Q_R1_R7_D4_STRICT_GCA_PRODUCTION_LAUNCHER.md)",
+    "PROD-Q-R1-R7-Q-P2 @8e43b1604",
+    "PROD-Q-R1-R7-Q-P3 @28c9bc40"
+   ],
+   "remaining_gap": "DOWNGRADED: cited P2C-02 admission-DENY proof (test_prod_q_r1_r7_q_p2_c_http_execution_admission.py) is NOT reproducible at ba07ebaa3 (6/7 red in isolation, F-015); AUTH-08 HTTP stale-URL E2E PARTIAL (tracked debt); G-08 async ASGI ContextVar NOT PROVEN (no waiver); DIM16 F02-09 S2b NOT PROVEN; per-kind hook_error/timeout durability debt.",
+   "required_next_action": "Decide whether IG-A01/AUTH-08 HTTP negatives are mandatory for architecture scope (operator); implement/qualify if so; DIM6/DIM17 stay PROD-Q live.",
+   "promotion_allowed_now": false,
+   "evidence_route": "QUALIFICATION_WORK_FIRST_THEN_PINNED_REPLAY_THEN_INDEPENDENT_AUDIT",
+   "acceptance_rule_unmet": "exact SHA + criterion mapping + static + executed gate output + independent auditor sign-off + operator promotion (ECAP; checklist PASS rule L40-45)",
+   "evidence_downgrade": "P2-C HTTP admission evidence not reproducible at ba07ebaa3 (HIST03-F-015)"
+  },
+  {
+   "frz_id": "FRZ-SEC-05",
+   "criterion": "sandbox/isolation boundaries qualified",
+   "checklist_ref": "docs/project/maintainers/qualification/PLATFORM_ENTERPRISE_FREEZE_ACCEPTANCE_CHECKLIST.md:L222",
+   "checklist_status_at_baseline": "OPEN",
+   "scope_dimension": "A",
+   "primary_classification": "QUALIFICATION_GAP",
+   "secondary_causes": [],
+   "dashboard_state": "QUALIFICATION_REQUIRED",
+   "architecture_obligation": "Provider-neutral isolation/egress contract + reference enforcement.",
+   "live_obligation_path_b": "Real provider sandboxes (see SEC-06).",
+   "evidence_refs": [
+    "AW-7C-P0-3B-PHYSQ @deaafee1 (qualified baseline d44a238d; Linux netns+nftables, reference substrate only)"
+   ],
+   "remaining_gap": "Evidence is Linux reference substrate; workstream is frozen on original Windows environment (C10/C15), so no Windows/other-host isolation evidence; scope ruling needed on what 'boundaries qualified' means at architecture level.",
+   "required_next_action": "Operator/certifier scope ruling (contract+reference vs per-host); then qualification statement; independent audit.",
+   "promotion_allowed_now": false,
+   "evidence_route": "QUALIFICATION_WORK_FIRST_THEN_PINNED_REPLAY_THEN_INDEPENDENT_AUDIT",
+   "acceptance_rule_unmet": "exact SHA + criterion mapping + static + executed gate output + independent auditor sign-off + operator promotion (ECAP; checklist PASS rule L40-45)"
+  },
+  {
+   "frz_id": "FRZ-SEC-06",
+   "criterion": "provider/plugin trust qualified",
+   "checklist_ref": "docs/project/maintainers/qualification/PLATFORM_ENTERPRISE_FREEZE_ACCEPTANCE_CHECKLIST.md:L223",
+   "checklist_status_at_baseline": "OPEN",
+   "scope_dimension": "A (live dependency recorded as secondary; MASTER ruling: not in L66, Path B not widened)",
+   "primary_classification": "QUALIFICATION_GAP",
+   "secondary_causes": [
+    "PATH_B_LIVE_DEFERRED"
+   ],
+   "dashboard_state": "QUALIFICATION_REQUIRED",
+   "architecture_obligation": "Plugin-trust architecture obligation: plugin/provider admission contract and trust gates (PLUG-*, PLG rows owned by other workstream) - must reach PASS or N/A-WITH-EVIDENCE at ARCH-FREEZE.",
+   "live_obligation_path_b": "E2B/Modal/Daytona production provider qualification (PROD-Q-P1) - row note says OPEN under PROD-Q.",
+   "evidence_refs": [
+    "Checklist L223 note",
+    "tests/qualification/prod_q/_p0_frz_reconciliation.py (mechanical PROD-Q-P0 record) EXTERNAL_PROVIDER_EVIDENCE_REQUIRED/IN_SCOPE_BLOCKER",
+    "PROD_Q_OPERATOR_SCOPE_CLOSURE_2026_11_02.md (PROD-Q-P1 OPEN)"
+   ],
+   "remaining_gap": "SEC-06 is NOT in checklist L66; MASTER ruling: primary = architecture-side plugin-trust gap; row note makes provider live qualification (PROD-Q-P1) a dependency, recorded as secondary cause only. Row stays OPEN; proposed checklist note/split is an Operator-level SSOT proposal (not applied).",
+   "required_next_action": "Qualify plugin-trust architecture part (admission/trust contract gates, cite PLG evidence from other workstream); provider live part stays with PROD-Q-P1; Operator-level ruling on the L66 note/split via candidate patch P-03.",
+   "promotion_allowed_now": false,
+   "evidence_route": "QUALIFICATION_WORK_FIRST_THEN_PINNED_REPLAY_THEN_INDEPENDENT_AUDIT",
+   "acceptance_rule_unmet": "exact SHA + criterion mapping + static + executed gate output + independent auditor sign-off + operator promotion (ECAP; checklist PASS rule L40-45)"
+  },
+  {
+   "frz_id": "FRZ-SEC-07",
+   "criterion": "security claim bounded by explicit threat model/evidence",
+   "checklist_ref": "docs/project/maintainers/qualification/PLATFORM_ENTERPRISE_FREEZE_ACCEPTANCE_CHECKLIST.md:L224",
+   "checklist_status_at_baseline": "OPEN",
+   "scope_dimension": "A",
+   "primary_classification": "EVIDENCE_GAP",
+   "secondary_causes": [],
+   "dashboard_state": "QUALIFICATION_REQUIRED",
+   "architecture_obligation": "Explicit platform threat-model boundary statement.",
+   "live_obligation_path_b": "None.",
+   "evidence_refs": [
+    "AW-7C-P0-3B ADR + PHYSQ (established / not-established lists)",
+    "P3-A2 ADR Alt A API-key profile threat bounds @413a2c8",
+    "Leads not yet read: EE_B3_A_EXECUTION_SECURITY_BOUNDARY_THREAT_MODEL_CERTIFICATION.md, EE_B3_C_SECURITY_ADVERSARIAL_ABUSE_CERTIFICATION.md"
+   ],
+   "remaining_gap": "Threat-model evidence exists only per scope (AW-7C, P3-A2); no consolidated platform-level claim-boundary record.",
+   "required_next_action": "Consolidate scoped threat models into one bounded claim (docs); independent audit.",
+   "promotion_allowed_now": false,
+   "evidence_route": "AUTHOR_DOCS_RECORD_THEN_INDEPENDENT_AUDIT_ONLY (replay of cited gates optional)",
+   "acceptance_rule_unmet": "exact SHA + criterion mapping + static + executed gate output + independent auditor sign-off + operator promotion (ECAP; checklist PASS rule L40-45)"
+  },
+  {
+   "frz_id": "FRZ-SEC-08",
+   "criterion": "sensitive/tenant data propagation across platform/provider boundaries explicit and qualified",
+   "checklist_ref": "docs/project/maintainers/qualification/PLATFORM_ENTERPRISE_FREEZE_ACCEPTANCE_CHECKLIST.md:L225",
+   "checklist_status_at_baseline": "OPEN",
+   "scope_dimension": "A",
+   "primary_classification": "QUALIFICATION_GAP",
+   "secondary_causes": [],
+   "dashboard_state": "QUALIFICATION_REQUIRED",
+   "architecture_obligation": "Explicit data-flow/propagation boundaries (hook ctx, CE fragment guard, tool/provider payload gateway).",
+   "live_obligation_path_b": "None.",
+   "evidence_refs": [
+    "CTRL-X @318a4d83 (CTRL_X_ENTERPRISE_CONTROL_PLANE_RECERTIFICATION.md; own FRZ map = 'candidate only') sec-matrix 'tenant-sensitive data: partial; provider exposure: partial' (MEM-FINAL-6, CE-Q3, PLUG-03)",
+    "tests/qualification/prod_q/_p0_frz_reconciliation.py (mechanical PROD-Q-P0 record) PARTIAL_CURRENT_HEAD"
+   ],
+   "remaining_gap": "Checklist cell empty; CTRL-X verdict is 'candidate evidence' only; no negative regression specific to cross-boundary propagation.",
+   "required_next_action": "Propagation matrix + negative regression; independent audit.",
+   "promotion_allowed_now": false,
+   "evidence_route": "QUALIFICATION_WORK_FIRST_THEN_PINNED_REPLAY_THEN_INDEPENDENT_AUDIT",
+   "acceptance_rule_unmet": "exact SHA + criterion mapping + static + executed gate output + independent auditor sign-off + operator promotion (ECAP; checklist PASS rule L40-45)"
+  },
+  {
+   "frz_id": "FRZ-SEC-09",
+   "criterion": "retention/deletion/redaction responsibility explicit for platform-owned durable/sensitive data",
+   "checklist_ref": "docs/project/maintainers/qualification/PLATFORM_ENTERPRISE_FREEZE_ACCEPTANCE_CHECKLIST.md:L226",
+   "checklist_status_at_baseline": "OPEN",
+   "scope_dimension": "A",
+   "primary_classification": "QUALIFICATION_GAP",
+   "secondary_causes": [
+    "EVIDENCE_GAP"
+   ],
+   "dashboard_state": "QUALIFICATION_REQUIRED",
+   "architecture_obligation": "Explicit responsibility record for platform-owned durable data (STATE-X checkpoints/evidence/traces).",
+   "live_obligation_path_b": "Operator/infra retention config (not platform).",
+   "evidence_refs": [
+    "CTRL-X @318a4d83 (CTRL_X_ENTERPRISE_CONTROL_PLANE_RECERTIFICATION.md; own FRZ map = 'candidate only') sec-matrix: retention 'N/A infra' citing ADR-SEC-001; deletion/redaction 'partial' (CX-04 eval reports only)"
+   ],
+   "remaining_gap": "Cited ADR-SEC-001 (technical/adr/entries/2026-06-19/ADR-SEC-001.md) contains no retention/deletion text; platform owns durable state so blanket N/A unsupported (see F-003).",
+   "required_next_action": "Responsibility record per durable store (owner, retention, deletion, redaction); qualification; independent audit.",
+   "promotion_allowed_now": false,
+   "evidence_route": "AUTHOR_DOCS_RECORD_THEN_INDEPENDENT_AUDIT_ONLY (replay of cited gates optional)",
+   "acceptance_rule_unmet": "exact SHA + criterion mapping + static + executed gate output + independent auditor sign-off + operator promotion (ECAP; checklist PASS rule L40-45)"
+  },
+  {
+   "frz_id": "FRZ-SEC-10",
+   "criterion": "platform vs infrastructure responsibility for encryption/data residency/provider exposure explicit and evidence-backed",
+   "checklist_ref": "docs/project/maintainers/qualification/PLATFORM_ENTERPRISE_FREEZE_ACCEPTANCE_CHECKLIST.md:L227",
+   "checklist_status_at_baseline": "OPEN",
+   "scope_dimension": "A",
+   "primary_classification": "EVIDENCE_GAP",
+   "secondary_causes": [],
+   "dashboard_state": "QUALIFICATION_REQUIRED",
+   "architecture_obligation": "Responsibility statement; N/A-WITH-EVIDENCE only where platform is not owner.",
+   "live_obligation_path_b": "None.",
+   "evidence_refs": [
+    "CTRL-X @318a4d83 (CTRL_X_ENTERPRISE_CONTROL_PLANE_RECERTIFICATION.md; own FRZ map = 'candidate only') sec-matrix: residency 'N/A' evidence '-'; encryption 'partial' (EncryptionEnforcementMiddleware; ADR-SEC-001: 'not field-level KMS encryption yet')",
+    "tests/qualification/prod_q/_p0_frz_reconciliation.py (mechanical PROD-Q-P0 record) N_A_WITH_EVIDENCE with prose-only ref 'infrastructure operator ownership documented'"
+   ],
+   "remaining_gap": "N/A claims lack a cited document; encryption is platform-partial so full N/A not applicable; ARCH-FREEZE matrix adds EVIDENCE_RECONCILIATION.",
+   "required_next_action": "Write explicit platform/infra responsibility record, cite it; independent audit before any N/A-WITH-EVIDENCE.",
+   "promotion_allowed_now": false,
+   "evidence_route": "AUTHOR_DOCS_RECORD_THEN_INDEPENDENT_AUDIT_ONLY (replay of cited gates optional)",
+   "acceptance_rule_unmet": "exact SHA + criterion mapping + static + executed gate output + independent auditor sign-off + operator promotion (ECAP; checklist PASS rule L40-45)"
+  },
+  {
+   "frz_id": "FRZ-REL-01",
+   "criterion": "timeout ownership explicit",
+   "checklist_ref": "docs/project/maintainers/qualification/PLATFORM_ENTERPRISE_FREEZE_ACCEPTANCE_CHECKLIST.md:L228",
+   "checklist_status_at_baseline": "OPEN",
+   "scope_dimension": "A",
+   "primary_classification": "EVIDENCE_GAP",
+   "secondary_causes": [],
+   "dashboard_state": "QUALIFICATION_REQUIRED",
+   "architecture_obligation": "Explicit owner per timeout (root deadline, attempt boundary, provider).",
+   "live_obligation_path_b": "None.",
+   "evidence_refs": [
+    "TOOL-LIFE-X Batch A (TOOL_LIFE_X_BATCH_A_DEADLINE_HIERARCHY_EVIDENCE.md: TL1/TL2 @693ecafd; 'advanced, not global PASS'). CAUTION: TOOL-LIFE-X is NOT accepted - AUD-TOOLLIFE CONDITIONAL/STOP @15486407 (C-1 four red tests, C-2 F3 cancel), OD-ROUTE-DS3: neither accepted nor waived (CERT_CAMPAIGN_DELEGATED_DECISIONS L291-298); do not rely on its CLOSED ledger label",
+    "CTRL-X @318a4d83 (CTRL_X_ENTERPRISE_CONTROL_PLANE_RECERTIFICATION.md; own FRZ map = 'candidate only') reliability matrix S13 (timeout owner column)",
+    "tests/qualification/prod_q/_p0_frz_reconciliation.py (mechanical PROD-Q-P0 record) attributes to HARNESS-W4 though W4 FRZ list is REL-04..11"
+   ],
+   "remaining_gap": "Checklist cell empty; evidence not mapped to REL-01 by any closure record (see F-005).",
+   "required_next_action": "Map TL1/TL2 + CX reliability matrix to REL-01; pinned replay; independent audit.",
+   "promotion_allowed_now": false,
+   "evidence_route": "MAPPING_THEN_PINNED_REPLAY_THEN_AUDIT (blocked on TOOL-LIFE-X C-1/C-2 correctives for TL evidence)",
+   "acceptance_rule_unmet": "exact SHA + criterion mapping + static + executed gate output + independent auditor sign-off + operator promotion (ECAP; checklist PASS rule L40-45)"
+  },
+  {
+   "frz_id": "FRZ-REL-02",
+   "criterion": "retry ownership explicit",
+   "checklist_ref": "docs/project/maintainers/qualification/PLATFORM_ENTERPRISE_FREEZE_ACCEPTANCE_CHECKLIST.md:L229",
+   "checklist_status_at_baseline": "OPEN",
+   "scope_dimension": "A",
+   "primary_classification": "QUALIFICATION_GAP",
+   "secondary_causes": [
+    "EVIDENCE_GAP"
+   ],
+   "dashboard_state": "QUALIFICATION_REQUIRED",
+   "architecture_obligation": "Explicit retry owner (RetryEngine, tool retry-safety, provider retry budget).",
+   "live_obligation_path_b": "None.",
+   "evidence_refs": [
+    "ADR-CTRL-X-001 L375-380: p0_safety_8 retry tests listed failing (QUAL-X-owned) at ADR time",
+    "CTRL-X @318a4d83 (CTRL_X_ENTERPRISE_CONTROL_PLANE_RECERTIFICATION.md; own FRZ map = 'candidate only') S13",
+    "HARNESS-W4 @f38e455 (ENTERPRISE_EXECUTION_SCALE_RESILIENCE_W4_PARENT_RECERTIFICATION.md)"
+   ],
+   "remaining_gap": "Checklist cell empty; ADR-listed failing tests (test_p0_safety_8_retry_redelivery_authorization.py) have UNVERIFIED current status (see F-006).",
+   "required_next_action": "Run targeted pytest under heavy lock (pending); if red -> corrective test/impl batch; map evidence; independent audit.",
+   "promotion_allowed_now": false,
+   "evidence_route": "TARGETED_RUN_PENDING_THEN_PINNED_REPLAY_THEN_AUDIT",
+   "acceptance_rule_unmet": "exact SHA + criterion mapping + static + executed gate output + independent auditor sign-off + operator promotion (ECAP; checklist PASS rule L40-45)",
+   "test_observation": "test_p0_safety_8_retry_redelivery_authorization.py passed on pin (ADR-listed failure not reproduced); mapping/audit still required"
+  },
+  {
+   "frz_id": "FRZ-REL-03",
+   "criterion": "idempotency ownership explicit",
+   "checklist_ref": "docs/project/maintainers/qualification/PLATFORM_ENTERPRISE_FREEZE_ACCEPTANCE_CHECKLIST.md:L230",
+   "checklist_status_at_baseline": "OPEN",
+   "scope_dimension": "A",
+   "primary_classification": "QUALIFICATION_GAP",
+   "secondary_causes": [
+    "IMPLEMENTATION_GAP"
+   ],
+   "dashboard_state": "QUALIFICATION_REQUIRED",
+   "architecture_obligation": "PIS + GovernedProviderInvocationDispatchGate ownership; stable CREATE identity; F02 durable follow-on.",
+   "live_obligation_path_b": "Multi-instance global first-writer PIS (Decision-03) - infra/live-dependent.",
+   "evidence_refs": [
+    "PROD-Q-R1-DISPATCH-Q1 @f96884fd (scoped operator acceptance)",
+    "IG-F01 @c4dbbe51 (composition-level only)",
+    "STABLE_CREATE_IDENTITY_SCOPED_QUALIFICATION_EVIDENCE.md (not yet read)"
+   ],
+   "remaining_gap": "HTTP re-entry same invocation_id NOT PROVEN (IG-F01); ratified-not-implemented items per checklist cell; implementation status UNVERIFIED.",
+   "required_next_action": "Status check of stable CREATE/F02 implementation; qualification of ownership statement; independent audit.",
+   "promotion_allowed_now": false,
+   "evidence_route": "QUALIFICATION_WORK_FIRST_THEN_PINNED_REPLAY_THEN_INDEPENDENT_AUDIT",
+   "acceptance_rule_unmet": "exact SHA + criterion mapping + static + executed gate output + independent auditor sign-off + operator promotion (ECAP; checklist PASS rule L40-45)"
+  },
+  {
+   "frz_id": "FRZ-REL-04",
+   "criterion": "cancellation propagates correctly",
+   "checklist_ref": "docs/project/maintainers/qualification/PLATFORM_ENTERPRISE_FREEZE_ACCEPTANCE_CHECKLIST.md:L231",
+   "checklist_status_at_baseline": "OPEN",
+   "scope_dimension": "A",
+   "primary_classification": "VALID_SCOPED_PASS_CANDIDATE",
+   "secondary_causes": [],
+   "dashboard_state": "AUDIT_REQUIRED",
+   "architecture_obligation": "Cooperative cancellation, permit cleanup, retry/fan-out cancellation.",
+   "live_obligation_path_b": "None.",
+   "evidence_refs": [
+    "HARNESS-W4 @f38e455 (ENTERPRISE_EXECUTION_SCALE_RESILIENCE_W4_PARENT_RECERTIFICATION.md) W4-A C1-C8 replay PASS",
+    "HARNESS-W4 CLOSED independent exact-SHA (roadmap L1868)"
+   ],
+   "remaining_gap": "Parent-scope contribution only; no current-SHA independent PASS.",
+   "required_next_action": "Pinned replay + independent audit; operator promotion (T-B7-PROMOTE-REL).",
+   "promotion_allowed_now": false,
+   "evidence_route": "PINNED_REPLAY_THEN_INDEPENDENT_AUDIT",
+   "acceptance_rule_unmet": "exact SHA + criterion mapping + static + executed gate output + independent auditor sign-off + operator promotion (ECAP; checklist PASS rule L40-45)",
+   "test_observation": "W4/W2-C/dependency-boundary nodes passed in the combined run on pin (mutable-venv caveat)"
+  },
+  {
+   "frz_id": "FRZ-REL-05",
+   "criterion": "external operation termination semantics explicit",
+   "checklist_ref": "docs/project/maintainers/qualification/PLATFORM_ENTERPRISE_FREEZE_ACCEPTANCE_CHECKLIST.md:L232",
+   "checklist_status_at_baseline": "OPEN",
+   "scope_dimension": "A",
+   "primary_classification": "QUALIFICATION_GAP",
+   "secondary_causes": [
+    "IMPLEMENTATION_GAP"
+   ],
+   "dashboard_state": "QUALIFICATION_REQUIRED",
+   "architecture_obligation": "Intent != physical termination, stable operation identity, CAS, recovery ambiguity; Reflex external-work port (ADR-01).",
+   "live_obligation_path_b": "Provider native termination live behaviour.",
+   "evidence_refs": [
+    "HARNESS-W4 @f38e455 (ENTERPRISE_EXECUTION_SCALE_RESILIENCE_W4_PARENT_RECERTIFICATION.md) W4-C",
+    "P3 IG-F01 (unresolved intent blocks re-dispatch; composition scope)",
+    "Roadmap L2033 Reflex ADR-01 RATIFIED architecture decision"
+   ],
+   "remaining_gap": "Checklist cell: ADR-01/F02/R2 decisions 'implementation and tests NOT PROVEN'; implementation status UNVERIFIED (intergrax/cli/external_work.py and applications/_shared composition reference external_work).",
+   "required_next_action": "Verify implementation vs ADR-01; qualification; independent audit.",
+   "promotion_allowed_now": false,
+   "evidence_route": "QUALIFICATION_WORK_FIRST_THEN_PINNED_REPLAY_THEN_INDEPENDENT_AUDIT",
+   "acceptance_rule_unmet": "exact SHA + criterion mapping + static + executed gate output + independent auditor sign-off + operator promotion (ECAP; checklist PASS rule L40-45)"
+  },
+  {
+   "frz_id": "FRZ-REL-06",
+   "criterion": "provider failure typed",
+   "checklist_ref": "docs/project/maintainers/qualification/PLATFORM_ENTERPRISE_FREEZE_ACCEPTANCE_CHECKLIST.md:L233",
+   "checklist_status_at_baseline": "OPEN",
+   "scope_dimension": "A",
+   "primary_classification": "VALID_SCOPED_PASS_CANDIDATE",
+   "secondary_causes": [],
+   "dashboard_state": "AUDIT_REQUIRED",
+   "architecture_obligation": "Bounded retry/fallback; typed provider failure.",
+   "live_obligation_path_b": "None.",
+   "evidence_refs": [
+    "HARNESS-W4 @f38e455 (ENTERPRISE_EXECUTION_SCALE_RESILIENCE_W4_PARENT_RECERTIFICATION.md) W4-D + W2 replay"
+   ],
+   "remaining_gap": "Supporting evidence only.",
+   "required_next_action": "Pinned replay + independent audit; operator promotion.",
+   "promotion_allowed_now": false,
+   "evidence_route": "PINNED_REPLAY_THEN_INDEPENDENT_AUDIT",
+   "acceptance_rule_unmet": "exact SHA + criterion mapping + static + executed gate output + independent auditor sign-off + operator promotion (ECAP; checklist PASS rule L40-45)",
+   "test_observation": "W4/W2-C/dependency-boundary nodes passed in the combined run on pin (mutable-venv caveat)"
+  },
+  {
+   "frz_id": "FRZ-REL-07",
+   "criterion": "no hidden infinite retry/fallback",
+   "checklist_ref": "docs/project/maintainers/qualification/PLATFORM_ENTERPRISE_FREEZE_ACCEPTANCE_CHECKLIST.md:L234",
+   "checklist_status_at_baseline": "OPEN",
+   "scope_dimension": "A",
+   "primary_classification": "VALID_SCOPED_PASS_CANDIDATE",
+   "secondary_causes": [],
+   "dashboard_state": "AUDIT_REQUIRED",
+   "architecture_obligation": "Bounded retry/fallback; typed provider failure.",
+   "live_obligation_path_b": "None.",
+   "evidence_refs": [
+    "HARNESS-W4 @f38e455 (ENTERPRISE_EXECUTION_SCALE_RESILIENCE_W4_PARENT_RECERTIFICATION.md) (bounded closed-world scan)",
+    "W2-C retry-storm test: bounded-call assertion PASS but 100 PytestUnhandledThreadExceptionWarning (QUAL-X hygiene)"
+   ],
+   "remaining_gap": "Tracked debt: W2-C thread warnings; legacy DeclarativeToolInvoker pool path (TRACKED FUTURE DEBT).",
+   "required_next_action": "Pinned replay + independent audit; operator promotion.",
+   "promotion_allowed_now": false,
+   "evidence_route": "PINNED_REPLAY_THEN_INDEPENDENT_AUDIT",
+   "acceptance_rule_unmet": "exact SHA + criterion mapping + static + executed gate output + independent auditor sign-off + operator promotion (ECAP; checklist PASS rule L40-45)",
+   "test_observation": "W4/W2-C/dependency-boundary nodes passed in the combined run on pin (mutable-venv caveat)"
+  },
+  {
+   "frz_id": "FRZ-REL-08",
+   "criterion": "bounded concurrency and work-admission semantics explicit",
+   "checklist_ref": "docs/project/maintainers/qualification/PLATFORM_ENTERPRISE_FREEZE_ACCEPTANCE_CHECKLIST.md:L235",
+   "checklist_status_at_baseline": "OPEN",
+   "scope_dimension": "A",
+   "primary_classification": "VALID_SCOPED_PASS_CANDIDATE",
+   "secondary_causes": [],
+   "dashboard_state": "AUDIT_REQUIRED",
+   "architecture_obligation": "Strict ToolRuntime typed admission/REJECT/WAIT; retry budget + rate limit + circuit.",
+   "live_obligation_path_b": "Production capacity (see PRD-11).",
+   "evidence_refs": [
+    "HARNESS-W4 @f38e455 (ENTERPRISE_EXECUTION_SCALE_RESILIENCE_W4_PARENT_RECERTIFICATION.md) S9 saturation table",
+    "CTRL-X @318a4d83 (CTRL_X_ENTERPRISE_CONTROL_PLANE_RECERTIFICATION.md; own FRZ map = 'candidate only') S13 (unbounded production concurrency = 0)",
+    "tests/qualification/prod_q/_p0_frz_reconciliation.py (mechanical PROD-Q-P0 record) SUPPORTING_HISTORICAL"
+   ],
+   "remaining_gap": "Scope-bound: strict production tool chain only; legacy DeclarativeToolInvoker path is TRACKED FUTURE DEBT; no current-SHA independent PASS.",
+   "required_next_action": "Pinned replay + independent audit; explicitly state strict-production-only scope in any acceptance.",
+   "promotion_allowed_now": false,
+   "evidence_route": "PINNED_REPLAY_THEN_INDEPENDENT_AUDIT",
+   "acceptance_rule_unmet": "exact SHA + criterion mapping + static + executed gate output + independent auditor sign-off + operator promotion (ECAP; checklist PASS rule L40-45)",
+   "test_observation": "W4/W2-C/dependency-boundary nodes passed in the combined run on pin (mutable-venv caveat)"
+  },
+  {
+   "frz_id": "FRZ-REL-09",
+   "criterion": "queue/backpressure and overload behavior explicit",
+   "checklist_ref": "docs/project/maintainers/qualification/PLATFORM_ENTERPRISE_FREEZE_ACCEPTANCE_CHECKLIST.md:L236",
+   "checklist_status_at_baseline": "OPEN",
+   "scope_dimension": "A",
+   "primary_classification": "VALID_SCOPED_PASS_CANDIDATE",
+   "secondary_causes": [],
+   "dashboard_state": "AUDIT_REQUIRED",
+   "architecture_obligation": "Strict ToolRuntime typed admission/REJECT/WAIT; retry budget + rate limit + circuit.",
+   "live_obligation_path_b": "Production capacity (see PRD-11).",
+   "evidence_refs": [
+    "HARNESS-W4 @f38e455 (ENTERPRISE_EXECUTION_SCALE_RESILIENCE_W4_PARENT_RECERTIFICATION.md) S9 saturation table",
+    "CTRL-X @318a4d83 (CTRL_X_ENTERPRISE_CONTROL_PLANE_RECERTIFICATION.md; own FRZ map = 'candidate only') S13 (unbounded production concurrency = 0)",
+    "tests/qualification/prod_q/_p0_frz_reconciliation.py (mechanical PROD-Q-P0 record) SUPPORTING_HISTORICAL"
+   ],
+   "remaining_gap": "Scope-bound: strict production tool chain only; legacy DeclarativeToolInvoker path is TRACKED FUTURE DEBT; no current-SHA independent PASS.",
+   "required_next_action": "Pinned replay + independent audit; explicitly state strict-production-only scope in any acceptance.",
+   "promotion_allowed_now": false,
+   "evidence_route": "PINNED_REPLAY_THEN_INDEPENDENT_AUDIT",
+   "acceptance_rule_unmet": "exact SHA + criterion mapping + static + executed gate output + independent auditor sign-off + operator promotion (ECAP; checklist PASS rule L40-45)",
+   "test_observation": "W4/W2-C/dependency-boundary nodes passed in the combined run on pin (mutable-venv caveat)"
+  },
+  {
+   "frz_id": "FRZ-REL-10",
+   "criterion": "resource saturation deterministic reject/degrade/fail-closed",
+   "checklist_ref": "docs/project/maintainers/qualification/PLATFORM_ENTERPRISE_FREEZE_ACCEPTANCE_CHECKLIST.md:L237",
+   "checklist_status_at_baseline": "OPEN",
+   "scope_dimension": "A",
+   "primary_classification": "VALID_SCOPED_PASS_CANDIDATE",
+   "secondary_causes": [],
+   "dashboard_state": "AUDIT_REQUIRED",
+   "architecture_obligation": "Strict ToolRuntime typed admission/REJECT/WAIT; retry budget + rate limit + circuit.",
+   "live_obligation_path_b": "Production capacity (see PRD-11).",
+   "evidence_refs": [
+    "HARNESS-W4 @f38e455 (ENTERPRISE_EXECUTION_SCALE_RESILIENCE_W4_PARENT_RECERTIFICATION.md) S9 saturation table",
+    "CTRL-X @318a4d83 (CTRL_X_ENTERPRISE_CONTROL_PLANE_RECERTIFICATION.md; own FRZ map = 'candidate only') S13 (unbounded production concurrency = 0)",
+    "tests/qualification/prod_q/_p0_frz_reconciliation.py (mechanical PROD-Q-P0 record) SUPPORTING_HISTORICAL"
+   ],
+   "remaining_gap": "Scope-bound: strict production tool chain only; legacy DeclarativeToolInvoker path is TRACKED FUTURE DEBT; no current-SHA independent PASS.",
+   "required_next_action": "Pinned replay + independent audit; explicitly state strict-production-only scope in any acceptance.",
+   "promotion_allowed_now": false,
+   "evidence_route": "PINNED_REPLAY_THEN_INDEPENDENT_AUDIT",
+   "acceptance_rule_unmet": "exact SHA + criterion mapping + static + executed gate output + independent auditor sign-off + operator promotion (ECAP; checklist PASS rule L40-45)",
+   "test_observation": "W4/W2-C/dependency-boundary nodes passed in the combined run on pin (mutable-venv caveat)"
+  },
+  {
+   "frz_id": "FRZ-REL-11",
+   "criterion": "provider throttling cannot create unbounded retry/fallback or bypass",
+   "checklist_ref": "docs/project/maintainers/qualification/PLATFORM_ENTERPRISE_FREEZE_ACCEPTANCE_CHECKLIST.md:L238",
+   "checklist_status_at_baseline": "OPEN",
+   "scope_dimension": "A",
+   "primary_classification": "VALID_SCOPED_PASS_CANDIDATE",
+   "secondary_causes": [],
+   "dashboard_state": "AUDIT_REQUIRED",
+   "architecture_obligation": "Strict ToolRuntime typed admission/REJECT/WAIT; retry budget + rate limit + circuit.",
+   "live_obligation_path_b": "Production capacity (see PRD-11).",
+   "evidence_refs": [
+    "HARNESS-W4 @f38e455 (ENTERPRISE_EXECUTION_SCALE_RESILIENCE_W4_PARENT_RECERTIFICATION.md) S9 saturation table",
+    "CTRL-X @318a4d83 (CTRL_X_ENTERPRISE_CONTROL_PLANE_RECERTIFICATION.md; own FRZ map = 'candidate only') S13 (unbounded production concurrency = 0)",
+    "tests/qualification/prod_q/_p0_frz_reconciliation.py (mechanical PROD-Q-P0 record) SUPPORTING_HISTORICAL"
+   ],
+   "remaining_gap": "Scope-bound: strict production tool chain only; legacy DeclarativeToolInvoker path is TRACKED FUTURE DEBT; no current-SHA independent PASS.",
+   "required_next_action": "Pinned replay + independent audit; explicitly state strict-production-only scope in any acceptance.",
+   "promotion_allowed_now": false,
+   "evidence_route": "PINNED_REPLAY_THEN_INDEPENDENT_AUDIT",
+   "acceptance_rule_unmet": "exact SHA + criterion mapping + static + executed gate output + independent auditor sign-off + operator promotion (ECAP; checklist PASS rule L40-45)",
+   "test_observation": "W4/W2-C/dependency-boundary nodes passed in the combined run on pin (mutable-venv caveat)"
+  },
+  {
+   "frz_id": "FRZ-PRD-01",
+   "criterion": "production qualification independent of lab/harness",
+   "checklist_ref": "docs/project/maintainers/qualification/PLATFORM_ENTERPRISE_FREEZE_ACCEPTANCE_CHECKLIST.md:L251",
+   "checklist_status_at_baseline": "OPEN",
+   "scope_dimension": "B",
+   "primary_classification": "PATH_B_LIVE_DEFERRED",
+   "secondary_causes": [],
+   "dashboard_state": "PATH_B_DEFERRED",
+   "architecture_obligation": "None (explicitly live-scoped).",
+   "live_obligation_path_b": "Independent production qualification evidence; acceptance owner PROD-Q live gate / SCENARIO-GATE.",
+   "evidence_refs": [
+    "Checklist L66 + L251 (Path B live-scoped)",
+    "tests/qualification/prod_q/_p0_frz_reconciliation.py (mechanical PROD-Q-P0 record) PARTIAL/IN_SCOPE_BLOCKER"
+   ],
+   "remaining_gap": "Live slice NOT QUALIFIED by design.",
+   "required_next_action": "Remain OPEN; PROD-Q live gate.",
+   "promotion_allowed_now": false,
+   "evidence_route": "NONE_NOW (Path B live; PROD-Q live gate)",
+   "acceptance_rule_unmet": "exact SHA + criterion mapping + static + executed gate output + independent auditor sign-off + operator promotion (ECAP; checklist PASS rule L40-45)"
+  },
+  {
+   "frz_id": "FRZ-PRD-02",
+   "criterion": "provider/plugin qualification enforced",
+   "checklist_ref": "docs/project/maintainers/qualification/PLATFORM_ENTERPRISE_FREEZE_ACCEPTANCE_CHECKLIST.md:L252",
+   "checklist_status_at_baseline": "OPEN",
+   "scope_dimension": "B",
+   "primary_classification": "PATH_B_LIVE_DEFERRED",
+   "secondary_causes": [],
+   "dashboard_state": "PATH_B_DEFERRED",
+   "architecture_obligation": "Structural replaceability (EBH-5/EBH-6) - other workstream.",
+   "live_obligation_path_b": "Per-provider live qualification (PROD-Q-P1, operator profiles).",
+   "evidence_refs": [
+    "Checklist L66 + L252 (Path B live-scoped)",
+    "AW-7C capability qualification does not substitute"
+   ],
+   "remaining_gap": "Live slice NOT QUALIFIED by design.",
+   "required_next_action": "Remain OPEN; PROD-Q-P1.",
+   "promotion_allowed_now": false,
+   "evidence_route": "NONE_NOW (Path B live; PROD-Q live gate)",
+   "acceptance_rule_unmet": "exact SHA + criterion mapping + static + executed gate output + independent auditor sign-off + operator promotion (ECAP; checklist PASS rule L40-45)"
+  },
+  {
+   "frz_id": "FRZ-PRD-03",
+   "criterion": "unsupported production configuration fails closed",
+   "checklist_ref": "docs/project/maintainers/qualification/PLATFORM_ENTERPRISE_FREEZE_ACCEPTANCE_CHECKLIST.md:L253",
+   "checklist_status_at_baseline": "OPEN",
+   "scope_dimension": "A+B",
+   "primary_classification": "QUALIFICATION_GAP",
+   "secondary_causes": [
+    "PATH_B_LIVE_DEFERRED"
+   ],
+   "dashboard_state": "QUALIFICATION_REQUIRED",
+   "architecture_obligation": "Architecture fail-closed mechanisms (D1/D1b validate_colocated_serving_admission_topology, D4-03 legacy entry, P2 ENV-1/2, IG-E01).",
+   "live_obligation_path_b": "Unsupported-config proof for operator production profiles (DIM6/DIM17) - live (checklist L66).",
+   "evidence_refs": [
+    "D1/D1b @5dfefe41 CLOSED SCOPED A1",
+    "D4 @0dd51fe",
+    "P2 @8e43b1604 (P2-C HTTP user-reported partial log)",
+    "P3 IG-E01 @c4dbbe51"
+   ],
+   "remaining_gap": "P2-C HTTP evidence is user-reported with partial log; no pinned exact-SHA replay of the whole chain; architecture/live split not recorded per sub-obligation.",
+   "required_next_action": "Record sub-obligation split; pinned replay of D1/D4/P2/P3 nodes; independent audit.",
+   "promotion_allowed_now": false,
+   "evidence_route": "QUALIFICATION_WORK_FIRST_THEN_PINNED_REPLAY_THEN_INDEPENDENT_AUDIT",
+   "acceptance_rule_unmet": "exact SHA + criterion mapping + static + executed gate output + independent auditor sign-off + operator promotion (ECAP; checklist PASS rule L40-45)"
+  },
+  {
+   "frz_id": "FRZ-PRD-04",
+   "criterion": "startup lifecycle qualified",
+   "checklist_ref": "docs/project/maintainers/qualification/PLATFORM_ENTERPRISE_FREEZE_ACCEPTANCE_CHECKLIST.md:L254",
+   "checklist_status_at_baseline": "OPEN",
+   "scope_dimension": "A+B?",
+   "primary_classification": "QUALIFICATION_GAP",
+   "secondary_causes": [
+    "PATH_B_LIVE_DEFERRED"
+   ],
+   "dashboard_state": "AUTHORITY_REQUIRED",
+   "architecture_obligation": "D2/D4 local launcher ordering, D4-R2 slot release after failed strict session, P2 integrated D2->D4.",
+   "live_obligation_path_b": "Live HTTP/GCA reproduction (R1-SQLITE-ENV-01 / PROD-Q-R1 mandatory child, roadmap places PROD-Q-R1 in live slice).",
+   "evidence_refs": [
+    "D4 @0dd51fe",
+    "P2 @8e43b1604",
+    "tests/qualification/prod_q/_p0_frz_reconciliation.py (mechanical PROD-Q-P0 record) pins PRD-04 = BLOCKER/IN_SCOPE_BLOCKER (R1-SQLITE-ENV-01); test_prod_q_p0_fast.py L71-79",
+    "PROD_Q_PLATFORM L299-306"
+   ],
+   "remaining_gap": "Mechanical record hard-pins BLOCKER; PROD-Q-R1 OPEN/BLOCKED; checklist L66 does NOT list PRD-04 as live-scoped but roadmap L478 places PROD-Q-R1 in the Path B live slice (see F-004).",
+   "required_next_action": "Ruling request (is PRD-04 architecture-scoped?); if yes: executed isolated startup reproduction + update mechanical record; independent audit.",
+   "promotion_allowed_now": false,
+   "evidence_route": "QUALIFICATION_WORK_FIRST_THEN_PINNED_REPLAY_THEN_INDEPENDENT_AUDIT",
+   "acceptance_rule_unmet": "exact SHA + criterion mapping + static + executed gate output + independent auditor sign-off + operator promotion (ECAP; checklist PASS rule L40-45)"
+  },
+  {
+   "frz_id": "FRZ-PRD-05",
+   "criterion": "shutdown/resource cleanup qualified",
+   "checklist_ref": "docs/project/maintainers/qualification/PLATFORM_ENTERPRISE_FREEZE_ACCEPTANCE_CHECKLIST.md:L255",
+   "checklist_status_at_baseline": "OPEN",
+   "scope_dimension": "A",
+   "primary_classification": "QUALIFICATION_GAP",
+   "secondary_causes": [],
+   "dashboard_state": "QUALIFICATION_REQUIRED",
+   "architecture_obligation": "ASGI lifespan + session close; D4-R2 startup-failure cleanup; D1 drain contracts.",
+   "live_obligation_path_b": "None.",
+   "evidence_refs": [
+    "D4/D4-R2 @b4336eb/0dd51fe",
+    "P3-T-06 (static P3-D, no integrated strict-session drain E2E)",
+    "Package D DIM16 @4aeb585e SCOPED/PARTIAL B"
+   ],
+   "remaining_gap": "Integrated strict-session drain E2E not run; DIM16 F02-09 S2b NOT PROVEN.",
+   "required_next_action": "Decide mandatory vs optional (IG-A01-like); qualify; independent audit.",
+   "promotion_allowed_now": false,
+   "evidence_route": "QUALIFICATION_WORK_FIRST_THEN_PINNED_REPLAY_THEN_INDEPENDENT_AUDIT",
+   "acceptance_rule_unmet": "exact SHA + criterion mapping + static + executed gate output + independent auditor sign-off + operator promotion (ECAP; checklist PASS rule L40-45)"
+  },
+  {
+   "frz_id": "FRZ-PRD-06",
+   "criterion": "degraded behavior explicit",
+   "checklist_ref": "docs/project/maintainers/qualification/PLATFORM_ENTERPRISE_FREEZE_ACCEPTANCE_CHECKLIST.md:L256",
+   "checklist_status_at_baseline": "OPEN",
+   "scope_dimension": "A",
+   "primary_classification": "EVIDENCE_GAP",
+   "secondary_causes": [],
+   "dashboard_state": "AUDIT_REQUIRED",
+   "architecture_obligation": "Hosted MARK_DEGRADED semantics and projection; non-hosted -> explicit 'unknown' (degraded=null).",
+   "live_obligation_path_b": "None.",
+   "evidence_refs": [
+    "PROD_Q_PLATFORM_PRODUCTION_QUALIFICATION.md L187 (PROVEN hosted / PARTIAL non-hosted)",
+    "intergrax/hosting/engine/{components,health}.py; tests/unit/hosting/engine/test_health_readiness.py; applications/local_workspace_application/tests/hosting/test_hosted_readiness.py",
+    "tests/qualification/prod_q/_p0_frz_reconciliation.py (mechanical PROD-Q-P0 record) PARTIAL"
+   ],
+   "remaining_gap": "Checklist cell empty; evidence only in PROD-Q-P3 doc (app-scoped paths cited without app prefix); P3 is operator-scoped, no independent per-ID audit.",
+   "required_next_action": "Map P3 operability evidence to PRD-06 in checklist notes; pinned replay; independent audit.",
+   "promotion_allowed_now": false,
+   "evidence_route": "PINNED_REPLAY_THEN_INDEPENDENT_AUDIT",
+   "acceptance_rule_unmet": "exact SHA + criterion mapping + static + executed gate output + independent auditor sign-off + operator promotion (ECAP; checklist PASS rule L40-45)"
+  },
+  {
+   "frz_id": "FRZ-PRD-07",
+   "criterion": "strict vs lab semantics separated",
+   "checklist_ref": "docs/project/maintainers/qualification/PLATFORM_ENTERPRISE_FREEZE_ACCEPTANCE_CHECKLIST.md:L257",
+   "checklist_status_at_baseline": "OPEN",
+   "scope_dimension": "A",
+   "primary_classification": "VALID_SCOPED_PASS_CANDIDATE",
+   "secondary_causes": [],
+   "dashboard_state": "AUDIT_REQUIRED",
+   "architecture_obligation": "Strict external ASGI path vs reference main.run(); no production lab_compat on strict integrated path.",
+   "live_obligation_path_b": "None.",
+   "evidence_refs": [
+    "D4 @0dd51fe independently accepted",
+    "P2 P2-N02 @8e43b1604",
+    "PROD-Q-R1-R7-Q-P1 @aee2e543 static reachability 23/23"
+   ],
+   "remaining_gap": "P2-C HTTP part is user-reported/partial log; P2-B not replayed at HEAD.",
+   "required_next_action": "Pinned replay of D4/P1/P2 nodes; independent audit.",
+   "promotion_allowed_now": false,
+   "evidence_route": "PINNED_REPLAY_THEN_INDEPENDENT_AUDIT",
+   "acceptance_rule_unmet": "exact SHA + criterion mapping + static + executed gate output + independent auditor sign-off + operator promotion (ECAP; checklist PASS rule L40-45)"
+  },
+  {
+   "frz_id": "FRZ-PRD-08",
+   "criterion": "production-only bypass count = 0",
+   "checklist_ref": "docs/project/maintainers/qualification/PLATFORM_ENTERPRISE_FREEZE_ACCEPTANCE_CHECKLIST.md:L258",
+   "checklist_status_at_baseline": "OPEN",
+   "scope_dimension": "A+B",
+   "primary_classification": "QUALIFICATION_GAP",
+   "secondary_causes": [
+    "PATH_B_LIVE_DEFERRED",
+    "IMPLEMENTATION_GAP"
+   ],
+   "dashboard_state": "QUALIFICATION_REQUIRED",
+   "architecture_obligation": "Architecture bypass census (EBH-5/6 other workstream, DUP-X), D1/D1b grant registry absent, P2-C admission, P3 negatives.",
+   "live_obligation_path_b": "Production-graph bypass proof for unqualified operator profiles (live).",
+   "evidence_refs": [
+    "D1/D1b",
+    "P2 @8e43b1604",
+    "P3 @28c9bc40 + DISPATCH-Q1",
+    "tests/qualification/prod_q/_p0_frz_reconciliation.py (mechanical PROD-Q-P0 record) PARTIAL/IN_SCOPE_BLOCKER"
+   ],
+   "remaining_gap": "DOWNGRADED: cited P2-C HTTP admission proof not reproducible at ba07ebaa3 (6/7 red in isolation, F-015); Mechanical P0 record marks IN_SCOPE_BLOCKER; HTTP re-entry NOT PROVEN; ratified-not-implemented decisions listed in the cell; bypass inventory is bounded closed-world only.",
+   "required_next_action": "Refresh closed-world bypass census at pinned SHA; classify residual; independent audit.",
+   "promotion_allowed_now": false,
+   "evidence_route": "QUALIFICATION_WORK_FIRST_THEN_PINNED_REPLAY_THEN_INDEPENDENT_AUDIT",
+   "acceptance_rule_unmet": "exact SHA + criterion mapping + static + executed gate output + independent auditor sign-off + operator promotion (ECAP; checklist PASS rule L40-45)",
+   "evidence_downgrade": "P2-C HTTP admission evidence not reproducible at ba07ebaa3 (HIST03-F-015)"
+  },
+  {
+   "frz_id": "FRZ-PRD-09",
+   "criterion": "production health/readiness/degraded-state semantics qualified",
+   "checklist_ref": "docs/project/maintainers/qualification/PLATFORM_ENTERPRISE_FREEZE_ACCEPTANCE_CHECKLIST.md:L259",
+   "checklist_status_at_baseline": "OPEN",
+   "scope_dimension": "A",
+   "primary_classification": "QUALIFICATION_GAP",
+   "secondary_causes": [
+    "IMPLEMENTATION_GAP"
+   ],
+   "dashboard_state": "QUALIFICATION_REQUIRED",
+   "architecture_obligation": "Readiness struct on strict serving session, unready guard, stale-READY/failed-prepare boundaries.",
+   "live_obligation_path_b": "None.",
+   "evidence_refs": [
+    "D4 @0dd51fe",
+    "P2 P2-N01",
+    "P3-C/IG-E01",
+    "APP-HOST-8B @aacf7f0 (LKW readiness projection)"
+   ],
+   "remaining_gap": "DOWNGRADED: P2-C HTTP admission smoke (P2 doc L291 maps it to PRD-08/PRD-09) cannot build its strict fixture at baseline (F-015); AUTH-08 HTTP stale-URL negative optional/deferred; non-hosted direct Uvicorn degraded=null (unknown).",
+   "required_next_action": "Scope decision on HTTP negatives; qualify; independent audit.",
+   "promotion_allowed_now": false,
+   "evidence_route": "QUALIFICATION_WORK_FIRST_THEN_PINNED_REPLAY_THEN_INDEPENDENT_AUDIT",
+   "acceptance_rule_unmet": "exact SHA + criterion mapping + static + executed gate output + independent auditor sign-off + operator promotion (ECAP; checklist PASS rule L40-45)",
+   "evidence_downgrade": "P2-C HTTP admission evidence not reproducible at ba07ebaa3 (HIST03-F-015)"
+  },
+  {
+   "frz_id": "FRZ-PRD-10",
+   "criterion": "terminal and critical production failures operator-visible and actionable",
+   "checklist_ref": "docs/project/maintainers/qualification/PLATFORM_ENTERPRISE_FREEZE_ACCEPTANCE_CHECKLIST.md:L260",
+   "checklist_status_at_baseline": "OPEN",
+   "scope_dimension": "A",
+   "primary_classification": "QUALIFICATION_GAP",
+   "secondary_causes": [],
+   "dashboard_state": "QUALIFICATION_REQUIRED",
+   "architecture_obligation": "Fail-closed stderr on legacy entry (D4-03), dual-failure ExceptionGroup on cleanup failure (D4-R2-b).",
+   "live_obligation_path_b": "None.",
+   "evidence_refs": [
+    "D4/D4-R2 @b4336eb/0dd51fe",
+    "tests/qualification/prod_q/_p0_frz_reconciliation.py (mechanical PROD-Q-P0 record) PARTIAL"
+   ],
+   "remaining_gap": "Evidence covers launcher entry/cleanup only, not platform-wide terminal/critical failure visibility and actionable classification.",
+   "required_next_action": "Define operator-visible failure classes, map to gates; qualify; independent audit.",
+   "promotion_allowed_now": false,
+   "evidence_route": "QUALIFICATION_WORK_FIRST_THEN_PINNED_REPLAY_THEN_INDEPENDENT_AUDIT",
+   "acceptance_rule_unmet": "exact SHA + criterion mapping + static + executed gate output + independent auditor sign-off + operator promotion (ECAP; checklist PASS rule L40-45)"
+  },
+  {
+   "frz_id": "FRZ-PRD-11",
+   "criterion": "production capacity/overload behavior qualified and bounded",
+   "checklist_ref": "docs/project/maintainers/qualification/PLATFORM_ENTERPRISE_FREEZE_ACCEPTANCE_CHECKLIST.md:L261",
+   "checklist_status_at_baseline": "OPEN",
+   "scope_dimension": "A",
+   "primary_classification": "QUALIFICATION_GAP",
+   "secondary_causes": [],
+   "dashboard_state": "QUALIFICATION_REQUIRED",
+   "architecture_obligation": "Cross-reference CTRL-X/HARNESS-W4 admission/overload evidence.",
+   "live_obligation_path_b": "Load-level capacity of live deployment.",
+   "evidence_refs": [
+    "HARNESS-W4 @f38e455 (ENTERPRISE_EXECUTION_SCALE_RESILIENCE_W4_PARENT_RECERTIFICATION.md)",
+    "CTRL-X @318a4d83 (CTRL_X_ENTERPRISE_CONTROL_PLANE_RECERTIFICATION.md; own FRZ map = 'candidate only') S13",
+    "DIST-SCALE-X operator-scoped closure only (independent acceptance conditional on DS-4/DS-5 routing per HIST-04 note; WL-7 14400 s soak NOT PROVEN, deferred non-blocking)",
+    "tests/qualification/prod_q/_p0_frz_reconciliation.py (mechanical PROD-Q-P0 record) SUPPORTING_HISTORICAL"
+   ],
+   "remaining_gap": "Checklist cell is cross-reference only; no production-level capacity qualification statement; WL-7 4h soak not proven.",
+   "required_next_action": "Capacity statement tied to REL-08..11 candidates; scope decision on WL-7; independent audit.",
+   "promotion_allowed_now": false,
+   "evidence_route": "QUALIFICATION_WORK_FIRST_THEN_PINNED_REPLAY_THEN_INDEPENDENT_AUDIT",
+   "acceptance_rule_unmet": "exact SHA + criterion mapping + static + executed gate output + independent auditor sign-off + operator promotion (ECAP; checklist PASS rule L40-45)"
+  },
+  {
+   "frz_id": "FRZ-PRD-12",
+   "criterion": "critical operational recovery responsibility/procedure explicit",
+   "checklist_ref": "docs/project/maintainers/qualification/PLATFORM_ENTERPRISE_FREEZE_ACCEPTANCE_CHECKLIST.md:L262",
+   "checklist_status_at_baseline": "OPEN",
+   "scope_dimension": "A",
+   "primary_classification": "EVIDENCE_GAP",
+   "secondary_causes": [],
+   "dashboard_state": "QUALIFICATION_REQUIRED",
+   "architecture_obligation": "Explicit recovery responsibility/procedure (restart reconciliation D3, launcher handoff D4, STATE-X recovery).",
+   "live_obligation_path_b": "Operator runbook for live environments.",
+   "evidence_refs": [
+    "D3 CLOSED SCOPED A1 @5dfefe41",
+    "STATE-X bd54941d (REC PASS)",
+    "P2 P2-A02"
+   ],
+   "remaining_gap": "Evidence is code/contract behaviour; no operator-facing responsibility/procedure record located.",
+   "required_next_action": "Author responsibility/procedure record (docs), cite code gates; independent audit.",
+   "promotion_allowed_now": false,
+   "evidence_route": "AUTHOR_DOCS_RECORD_THEN_INDEPENDENT_AUDIT_ONLY (replay of cited gates optional)",
+   "acceptance_rule_unmet": "exact SHA + criterion mapping + static + executed gate output + independent auditor sign-off + operator promotion (ECAP; checklist PASS rule L40-45)"
+  }
+ ],
+ "test_execution": {
+  "checkout": "pin-ba07eba @ba07ebaa34d04633bd60510f68c18346b1ef160d (detached, shared; NOT a clean-room exact-SHA audit run; overlapped HIST-02 rerun in same venv)",
+  "venv": "uv --extra dev-ci (HIST-02 extended shared venv mid-run)",
+  "combined_run": {
+   "paths": 27,
+   "result": "21 failed, 331 passed, 475.37s",
+   "pytest_exit_code": "1 (inferred from summary; wrapper exit file not written)",
+   "log": "hist03/pytest_run1.log"
+  },
+  "isolation_runs": {
+   "w5_b2": "5 passed, exit 0",
+   "w5_c": "6 passed, exit 0",
+   "w5_d": "9 passed, exit 0",
+   "p2_c_http_execution_admission": "6 failed, 1 passed, exit 1"
+  },
+  "pin_integrity_after": "HEAD unchanged ba07ebaa3; no tracked changes (git status --porcelain --untracked-files=no empty)",
+  "caveats": [
+   "not exact-SHA audit evidence",
+   "overlap with HIST-02 rerun; environmental-looking failures excluded from product conclusions",
+   "no row promoted by a green run"
+  ]
+ }
+}

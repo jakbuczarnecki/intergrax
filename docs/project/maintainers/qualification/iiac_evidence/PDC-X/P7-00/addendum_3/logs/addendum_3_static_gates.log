@@ -1,0 +1,31 @@
+== scripts/maintenance/check_agents_no_tier3_imports.py
+exit=0 lines=1 sha256=053cead1e90ffd96
+agents tier-3 import audit: OK
+== scripts/maintenance/check_agents_no_vendor_sdk_imports.py
+exit=0 lines=1 sha256=8d37b53c5a3f614c
+OK: no forbidden vendor SDK imports in agents/
+== scripts/maintenance/check_context_tier0_import_boundary.py
+exit=0 lines=1 sha256=55b1e266823b6985
+context tier-0 import boundary: OK
+== scripts/maintenance/check_immutable_security_audit_trail.py
+exit=0 lines=1 sha256=7fc95fe232e73d6a
+OK: immutable security audit trail (2 regions, durable across restart)
+== scripts/maintenance/check_intergrax_no_applications_imports.py
+exit=1 lines=13 sha256=71313ce06885e930
+Lower layers must not import applications/ or intergrax.applications:
+  - intergrax/runtime/architecture/obs_diag_x3_ast_gates.py
+  - intergrax/runtime/execution/application_environment_context_composition.py
+== scripts/maintenance/check_llm_routing_tier_boundary.py
+exit=0 lines=1 sha256=89784c22b540abc5
+check_llm_routing_tier_boundary: OK
+== uv lock --check
+Using CPython 3.12.11
+Resolved 404 packages in 6ms
+exit=0
+== pyright register.py
+0 errors, 0 warnings, 0 informations
+WARNING: there is a new pyright version available (v1.1.411 -> v1.1.414).
+Please install the new version or set PYRIGHT_PYTHON_FORCE_VERSION to `latest`
+
+md5 of the stdout of check_intergrax_no_applications_imports (comparable with the md5 in addendum_2_static_gates.log: 61159eb9c5e10de4b70f9a7ba4625be9):
+61159eb9c5e10de4b70f9a7ba4625be9 *-

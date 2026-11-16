@@ -1,0 +1,13 @@
+# ent-audit targeted probe: pr-gate files + VBN-REACHABILITY entrypoint file + roadmap_replay_x mechanical gates (FAST manifest nodes)
+# HEAD: fde55618379ff99779172e40214b5879d9d0810d
+# intergrax from: D:\Projekty\intergrax\.claude\worktrees\mcp-rc-certifier-fe2eb3\intergrax\__init__.py
+============================= test session starts =============================
+platform win32 -- Python 3.12.11, pytest-8.4.2, pluggy-1.6.0 -- D:\Projekty\intergrax\.venv\Scripts\python.exe
+cachedir: build\pytest\64392-e8923927\pytest-cache
+rootdir: D:\Projekty\intergrax\.claude\worktrees\mcp-rc-certifier-fe2eb3
+configfile: pyproject.toml
+plugins: anyio-4.12.1, Intergrax-ai-0.1.0, langsmith-0.6.4, asyncio-0.23.8
+asyncio: mode=Mode.AUTO
+collecting ... collected 107 items
+
+tests/qualification/ent_audit_x/unit/test_mechanical_readiness.py::test_mechanical_readiness_script_emits_fail_closed_report 

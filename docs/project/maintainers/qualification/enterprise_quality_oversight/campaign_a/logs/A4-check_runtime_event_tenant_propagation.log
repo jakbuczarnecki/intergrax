@@ -1,0 +1,2 @@
+runtime event tenant propagation audit failed:
+  - missing emitter file: intergrax/agents/uaep.py

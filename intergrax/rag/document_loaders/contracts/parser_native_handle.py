@@ -16,15 +16,19 @@ class _KnowledgeDocumentWithParserRuntime(KnowledgeDocument):
     _parser_native_handle: Any | None = PrivateAttr(default=None)
 
 
+def get_parser_native_handle(document: KnowledgeDocument) -> object | None:
+    if isinstance(document, _KnowledgeDocumentWithParserRuntime):
+        return document._parser_native_handle
+    return None
+
+
 def attach_parser_native_handle(document: KnowledgeDocument, handle: object) -> KnowledgeDocument:
     if isinstance(document, _KnowledgeDocumentWithParserRuntime):
         runtime_doc = document
     else:
-        runtime_doc = _KnowledgeDocumentWithParserRuntime.model_validate(
-            document.model_dump(mode="python")
-        )
+        runtime_doc = _KnowledgeDocumentWithParserRuntime.model_validate(document.model_dump(mode="python"))
     runtime_doc._parser_native_handle = handle
     return runtime_doc
 
 
-__all__ = ["attach_parser_native_handle"]
+__all__ = ["attach_parser_native_handle", "get_parser_native_handle"]

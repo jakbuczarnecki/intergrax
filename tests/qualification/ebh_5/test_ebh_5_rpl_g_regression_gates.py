@@ -47,10 +47,7 @@ def test_ebh5_rpl_g_no_architecture_blocker_without_debt() -> None:
 
 def test_ebh5_rpl_g_tier0_no_agents_import_applications() -> None:
     tier0 = _REPO_ROOT / "intergrax"
-    skip_prefixes = (
-        "intergrax/cli/",
-        "intergrax/integrations/providers/",
-    )
+    skip_prefixes = ("intergrax/integrations/providers/",)
     for path in tier0.rglob("*.py"):
         rel = path.relative_to(_REPO_ROOT).as_posix()
         if rel.startswith(skip_prefixes):

@@ -1,0 +1,68 @@
+PDC-P7-00 ACT-N11 baseline audit - test matrix (auditor runs, Windows, one pytest/python process at a time)
+audited_implementation_sha = test_execution_sha = fa6ff1c9616a6df28c11b087eb3f1b0dc4097b5f (branch mcp-rc; product tree = merge commit 962c1d670)
+activation pin (audit_execution_sha of IIAC-2026-11-05.1) = 2d3eceb6cf7e93dccd4d96919319a6c969b4444b
+interpreter: D:\Projekty\intergrax\.venv (Python 3.12.11, pytest 8.4.2, ruff 0.15.20), PYTHONPATH = auditor checkout
+environment deviation: the shared .venv lacks tzdata (declared by the baseline pyproject); runs that import zoneinfo used PYTHONPATH=<checkout>;<tzdata 2026.3 copied from build/dep2-core-gate>. Nothing was installed.
+
+0. Scope derivation (git only)  [audit_scope.json, adversarial_scripts/derive_audit_scope.py]
+   git diff --name-only 2d3eceb6c fa6ff1c96 -- intergrax agents applications            = 153 paths (24 A, 129 M; none under agents/)
+   git diff --name-only 6a6279a49 b0e19bf61 -- intergrax applications agents            = 23 paths (all inside the 153)
+   git diff b0e19bf61 fa6ff1c96 -- <the 23>                                              = empty (byte-identical)
+   PDC-X paths = 153 - 23 = 130 (+12032 / -3544 lines); 15 non-merge commits touch them, all carry Ref: governance/tickets/T-IGX-036-{J..T}.md
+   result: scope as stated by the orchestrator
+
+1. MCP-RC mandatory contract, regression check only (39 files from MCP_SERVER_X_RC_SELECTION, list passed from Python)
+   result: 481 passed, 1 xfailed (strict, TRANSFERRED: test_scaffold_defaults_mcp_to_opt_in[product]), 103 warnings, exit 0, 975.51 s   [logs/rc_contract_at_fa6ff1c96.log]
+   matches the expected 481 / 1 and the implementer claim (562.72 s). A first start failed at option parsing ("-p no:cacheprovider" vs repo config, exit 4) and was rerun without the flag.
+
+2. PDC-X batches, one bounded pytest process (95 files)  [adversarial_scripts/run_pdc_x_batches.py, logs/pdc_x_run.stdout.txt]
+   files: tests/qualification/pdc_x/** (80 test files), tests/unit/governance/test_pdc_x_{inventory,requirements,wbs}.py,
+          12 existing test files modified between pin and baseline by PDC-X (ebh_5 x3, governance gr12 x1, gr10 x4, public readme contract, beta promotion readiness, beta soak gate, audit-ideal depth gate)
+   result: 10 failed, 1064 passed, 2 skipped, 6 xfailed in 251.15 s; pytest then did NOT exit (killed after ~6 min, see 2d)
+   per directory (bisect run, each its own process, tests/qualification/pdc_x/<dir>):
+     d1 65 passed | d2 41 | d3 154 + 1 skipped | d4 36 | d5 79 | d6 134 | d7 52 | d8 117 | p6_repair 99 + 1 skipped + 2 xfailed | reg_p 3 | xd 76 + 4 xfailed
+   2a. the 10 failures:
+       test_pdc_x_inventory.py::test_committed_inventory_is_current_and_closed_world            red on baseline (3 unmapped documents)      -> F-07
+       test_pdc_x_inventory.py::test_every_item_has_exactly_one_known_category_and_status       red on baseline (same cause)                -> F-07
+       ebh_5/test_ebh_5_proof_integrity_gates.py::test_ebh5_proof_sqlite_closed_world_accountability   39 == 38; GREEN at the pin -> new regression -> F-06
+       test_public_readme_contract.py x5 (multi_visual_contract, public_maturity_boundary, governed_execution_claim_boundary, relative_links, brevity)   RED AT THE PIN too -> F-08
+       test_audit_ideal_depth_gate.py::test_audit_ideal_29_1_live_vision_profile, ::test_audit_ideal_30_4_production_capacity                         RED AT THE PIN too -> F-08
+   2b. the same three existing files re-run at the pin (throw-away detached checkout 2d3eceb6c): 13 failed, 110 passed, 105.19 s
+       (README x5, audit-ideal x6, ebh_5 parity x2 red at the pin; the delta repairs audit-ideal x4 and the two ebh_5 parity tests)   [logs/pin_cmp.stdout.txt]
+   2c. 6 xfailed, all strict and all declared open gaps (F-05): p6_repair item 11 x2, xd_01 FINDING-9, FINDING-10, xd_02 FINDING-6, xd_12 FINDING-8
+   2d. pytest process hang after the final summary: bisect by directory (logs/bisect_exit_hang.stdout.txt) -> xd; by file (logs/bisect_exit_hang_xd_files.stdout.txt) -> test_xd_03_agent_governance.py (9 passed, process alive). Not root-caused. -> F-09
+
+3. Static gates
+   ruff check on the 153 ACT-N11 paths                                  All checks passed   [logs/ruff_check.log]
+   ruff check on pdc_x tests, 3 governance tests, scripts/qualification, 3 gate scripts   All checks passed
+   uv lock --check                                                      exit 0
+   check_agents_no_tier3_imports.py, check_harness_no_getattr.py --smoke, check_agents_no_vendor_sdk_imports.py, check_context_tier0_import_boundary.py,
+   check_integration_vendor_imports.py, check_llm_routing_tier_boundary.py, check_critical_action_signing.py, check_immutable_security_audit_trail.py,
+   scripts/docs/check_docs_domain_pairs.py                              exit 0 each
+   check_intergrax_no_applications_imports.py                           exit 1: 12 intergrax/runtime/** files, output IDENTICAL at the pin and at fa6ff1c96, none changed by the delta -> F-33 (pre-existing)
+   check_architecture_boundary_chaos.py                                 exit 1: wrong script path inside the gate (tooling defect) -> F-33
+   own scan of the added lines of the 130 PDC-X path diffs:             no import of agents/applications from intergrax/ (also lazy imports), no hardcoded credential or vendor endpoint, no subprocess/socket/eval/exec/pickle/importlib surface (only select_entry_points moved inside core/plugins/discovery.py)
+   [logs/boundary_and_maintenance_gates.log]
+
+4. Adversarial probes (throw-away, read-only; 22 probes)  [adversarial_scripts/, logs/probes_*.json, logs/probe_x8_demo_seed.results.json]
+   p7_00_probes_d6_security.py (13): signing fail-closed/os.environ path/disabled flag, strict-config validator, poisoning default matrix, secret-gate evasion matrix,
+        plugin provenance binding and digest, audit-trail truncation/metadata/tenant normalisation, HostDeploymentProfile unknown keys, sha256 validators, durable_refs digest
+   p7_00_probes_cross_batch.py (8): governed read workspace scope, governance port returning DENY, retention sweep without audit + delete race, skill upgrade BaseException,
+        skill semver pre-release, recurrence id tenant, reindex hook, lab demo seed
+   p7_00_probe_x8_demo_seed.py (1)
+   confirmed findings: F-01, F-02, F-03(signature), F-10, F-11, F-12, F-17, F-20, F-21, F-22, F-23, F-30, F-31
+
+5. Mutation sample on 12 PDC-X mutants (scratch detached checkout of fa6ff1c96; targeted tests first, survivors on wider PDC-X suites)  [adversarial_scripts/p7_00_mutation_sample.py]
+   killed 10 / 12: P1 signing blank-secret guard, P2 lab opt-in on product, P3 attested-version check, P4 unsigned-plugin refusal, P5 poisoning default,
+                   P7 tool-input injection guard in the canonical path, P8 implicit demo-seed opt-in (killed by test_d6_amendment1_gap_closures, not by the dedicated demo-seed file),
+                   P10 digest verification in governed read, P11 tenant-scoped evaluation registry read, P12 skill upgrade package-reference check
+   survived 2 / 12 after the wide re-run (d6 + p6_repair + xd without test_xd_03 + d8 without one MAX_PATH-confounded test): P6 audit-trail list tenant re-check, P9 governed-read stored-tenant re-check -> F-29
+   two wide runs were confounded (tzdata missing in the mutation env; Windows MAX_PATH of the scratch checkout, control run logs/mutation_control_unmutated.stdout.txt) and were repeated; the confounded outputs are kept and labelled.
+   claim limit: 12 mutants, not a coverage measurement.
+
+6. Review helpers (read-only subagents, three slices of 34/32/44 files). Their reports are leads. Findings marked CODE_READ_BY_AUDITOR or PROBE_CONFIRMED were verified by the auditor;
+   findings marked SUBAGENT_READ_NOT_REPRODUCED (F-18, F-24..F-28) were not reproduced and are routed to the domain audits.
+
+7. Not run: GitHub Actions contexts, nightly profile, full tests/unit, igx_gov ticket (needs a push range), uv sync, any network test, the eight domain replays, FRZ/P8 checks.
+
+8. verify_iiac_audit_manifest.py and verify_iiac_role_separation.py --strict-product-diff: see logs/verify_iiac_audit_manifest.log and logs/verify_iiac_role_separation.log

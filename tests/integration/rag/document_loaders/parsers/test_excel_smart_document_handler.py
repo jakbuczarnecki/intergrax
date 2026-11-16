@@ -5,6 +5,9 @@
 from __future__ import annotations
 
 import pytest
+
+pytest.importorskip("pandas", reason="requires the 'parsing-office' extra (pandas)")
+
 from pathlib import Path
 
 import pandas as pd

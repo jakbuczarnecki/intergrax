@@ -44,7 +44,7 @@ Canonical exit criteria: roadmap §3.0.5 (items **1–15**, qualification alias 
 
 | Phase | SHA (accepted historical) | Qualification record |
 | --- | --- | --- |
-| **P0** closed-world | `76a98cb3f3e4576ab694f03a5b3e270eb7694f9e` | [TOOL_LIFE_X_P0_CANONICAL_LIFECYCLE_CLOSED_WORLD_PRE_AUDIT.md](TOOL_LIFE_X_P0_CANONICAL_LIFECYCLE_CLOSED_WORLD_PRE_AUDIT.md) |
+| **P0** closed-world | `f5c9330973f7af7ea1d19fbbd2afd13942faac43` | [TOOL_LIFE_X_P0_CANONICAL_LIFECYCLE_CLOSED_WORLD_PRE_AUDIT.md](TOOL_LIFE_X_P0_CANONICAL_LIFECYCLE_CLOSED_WORLD_PRE_AUDIT.md) |
 | **Batch A–E** | per batch evidence docs | `TOOL_LIFE_X_BATCH_*` |
 | **L3** R1/R2, R6–R10, TL11 | per L3 evidence docs | `TOOL_LIFE_X_L3_*`, `TOOL_LIFE_X_TLX_TL11_*` |
 | **R4 F8** implementation | `10804d0e024e446274b60421a84797ec55e52f88` | [TOOL_LIFE_X_R4_FINAL_ROOT_CAUSE_AND_PARENT_ACCEPTANCE_EVIDENCE.md](TOOL_LIFE_X_R4_FINAL_ROOT_CAUSE_AND_PARENT_ACCEPTANCE_EVIDENCE.md) |

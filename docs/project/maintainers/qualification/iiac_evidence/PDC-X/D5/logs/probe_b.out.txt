@@ -1,0 +1,15 @@
+D:\Projekty\intergrax\.claude\worktrees\pdc-x-ia-d5-fb28f3\.tmp\session\ia-d5\probe_b.py:111: PydanticDeprecatedSince211: Accessing the 'model_fields' attribute on the instance is deprecated. Instead, you should access this attribute from the model class. Deprecated in Pydantic V2.11 to be removed in V3.0.
+  p("Q7 queue has tenant field", "tenant_id" in s.model_fields)
+[Q1 tenant_id of user-satisfaction obs written for tenant-a] None
+[Q1 tenant-b scoped view sees tenant-a's satisfaction obs] 0
+[Q1 legacy list_observations() returns rows to any caller] 2
+[Q2 legacy unscoped list sees tenant-a stamped row] [None, None, 'tenant-a']
+[Q3 tenant-b get of tenant-a id] OnlineEvaluationTenantBoundaryError
+[Q3 tenant-b get of unknown id] KeyError
+[Q4 tenant-b get same id (own row exists) ->] OnlineEvaluationTenantBoundaryError
+[Q4 tenant-b list own] 1
+[Q5 critical-section order (overlap if B-in before A-out)] ['A-in', 'B-in', 'A-out', 'B-out']
+[Q6 A-out unlinks B's lock; C enters while B inside] ['A-in', 'B-in', 'A-out', 'C-in', 'C-out', 'B-out']
+[Q7 mark_reviewed with empty reviewer id] True
+[Q7 re-review by other id allowed] anyone
+[Q7 queue has tenant field] False

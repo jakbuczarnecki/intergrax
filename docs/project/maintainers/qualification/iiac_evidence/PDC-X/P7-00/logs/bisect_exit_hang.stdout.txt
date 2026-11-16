@@ -1,0 +1,12 @@
+{"group": "tests/qualification/pdc_x/d1", "status": "EXITED", "exit": 0, "seconds": 21.0, "summary": "65 passed in 12.76s"}
+{"group": "tests/qualification/pdc_x/d2", "status": "EXITED", "exit": 0, "seconds": 13.0, "summary": "41 passed in 4.95s"}
+{"group": "tests/qualification/pdc_x/d3", "status": "EXITED", "exit": 0, "seconds": 13.0, "summary": "154 passed, 1 skipped in 5.22s"}
+{"group": "tests/qualification/pdc_x/d4", "status": "EXITED", "exit": 0, "seconds": 12.0, "summary": "36 passed in 5.44s"}
+{"group": "tests/qualification/pdc_x/d5", "status": "EXITED", "exit": 0, "seconds": 14.0, "summary": "79 passed in 7.12s"}
+{"group": "tests/qualification/pdc_x/d6", "status": "EXITED", "exit": 0, "seconds": 48.0, "summary": "134 passed in 40.85s"}
+{"group": "tests/qualification/pdc_x/d7", "status": "EXITED", "exit": 0, "seconds": 45.0, "summary": "52 passed in 37.20s"}
+{"group": "tests/qualification/pdc_x/d8", "status": "EXITED", "exit": 0, "seconds": 75.1, "summary": "117 passed in 65.87s (0:01:05)"}
+{"group": "tests/qualification/pdc_x/p6_repair", "status": "EXITED", "exit": 0, "seconds": 73.1, "summary": "99 passed, 1 skipped, 2 xfailed in 65.09s (0:01:05)"}
+{"group": "tests/qualification/pdc_x/reg_p", "status": "EXITED", "exit": 0, "seconds": 14.0, "summary": "3 passed in 5.81s"}
+{"group": "tests/qualification/pdc_x/xd", "status": "HANG_AFTER_SUMMARY", "exit": 1, "seconds": 59.7, "summary": "76 passed, 4 xfailed in 21.23s"}
+DONE ["tests/qualification/pdc_x/xd"]

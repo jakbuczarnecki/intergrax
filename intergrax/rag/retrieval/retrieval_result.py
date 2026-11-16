@@ -3,9 +3,10 @@
 from __future__ import annotations
 
 from dataclasses import dataclass, field
-from typing import TYPE_CHECKING, Any, Dict, List, Optional
+from typing import TYPE_CHECKING, Any
 
 if TYPE_CHECKING:
+    from intergrax.rag.governance.source_freshness import RetrievalFreshnessAssessment
     from intergrax.rag.retrieval.citation import Citation
 
 
@@ -16,11 +17,11 @@ class RetrievalChunk:
     score: float
     rank: int = 0
     channel: str = "unknown"
-    vector_id: Optional[str] = None
-    scope: Dict[str, Any] = field(default_factory=dict)
-    provenance: Dict[str, Any] = field(default_factory=dict)
-    user_metadata: Dict[str, Any] = field(default_factory=dict)
-    metadata: Dict[str, Any] = field(default_factory=dict)
+    vector_id: str | None = None
+    scope: dict[str, Any] = field(default_factory=dict)
+    provenance: dict[str, Any] = field(default_factory=dict)
+    user_metadata: dict[str, Any] = field(default_factory=dict)
+    metadata: dict[str, Any] = field(default_factory=dict)
 
     @property
     def source_ref(self) -> str:
@@ -36,38 +37,40 @@ class RetrievalChunk:
 @dataclass
 class RetrievalTrace:
     route_tier: str = "standard"
-    route_classifier: Optional[str] = None
+    route_classifier: str | None = None
     retriever_id: str = ""
-    reranker_id: Optional[str] = None
+    reranker_id: str | None = None
     rerank_enabled: bool = False
     candidates_before_rerank: int = 0
     candidates_after_rerank: int = 0
-    retrieval_latency_ms: Optional[float] = None
-    rerank_latency_ms: Optional[float] = None
-    agentic_iteration: Optional[int] = None
-    agentic_stopped: Optional[str] = None
-    agentic_total_latency_ms: Optional[float] = None
-    agentic_per_iteration_retriever_ids: List[str] = field(default_factory=list)
-    agentic_per_iteration_latency_ms: List[float] = field(default_factory=list)
+    retrieval_latency_ms: float | None = None
+    rerank_latency_ms: float | None = None
+    agentic_iteration: int | None = None
+    agentic_stopped: str | None = None
+    agentic_total_latency_ms: float | None = None
+    agentic_per_iteration_retriever_ids: list[str] = field(default_factory=list)
+    agentic_per_iteration_latency_ms: list[float] = field(default_factory=list)
     agentic_refine_calls: int = 0
-    agentic_latency_budget_ms: Optional[float] = None
+    agentic_latency_budget_ms: float | None = None
     hybrid_used: bool = False
-    recall_at_k: Optional[float] = None
-    attempted_retriever_ids: List[str] = field(default_factory=list)
+    recall_at_k: float | None = None
+    attempted_retriever_ids: list[str] = field(default_factory=list)
     fallback_applied: bool = False
-    retrieval_error_kind: Optional[str] = None
+    retrieval_error_kind: str | None = None
     embedding_version_filtered_count: int = 0
-    embedding_version_warnings: List[str] = field(default_factory=list)
-    channel_contributions: Dict[str, List[str]] = field(default_factory=dict)
-    graph_expanded_node_ids: List[str] = field(default_factory=list)
+    embedding_version_warnings: list[str] = field(default_factory=list)
+    channel_contributions: dict[str, list[str]] = field(default_factory=dict)
+    graph_expanded_node_ids: list[str] = field(default_factory=list)
     graph_provenance_summary: str = ""
-    graph_provenance_records: List[Dict[str, Any]] = field(default_factory=list)
+    graph_provenance_records: list[dict[str, Any]] = field(default_factory=list)
 
 
 @dataclass
 class RetrievalResult:
-    chunks: List[RetrievalChunk]
+    chunks: list[RetrievalChunk]
     used: bool
     reason: str
     trace: RetrievalTrace = field(default_factory=RetrievalTrace)
-    citations: List["Citation"] = field(default_factory=list)
+    citations: list[Citation] = field(default_factory=list)
+    freshness: RetrievalFreshnessAssessment | None = None
+    """Typed source-staleness verdicts; None unless the service has a source observer (PDC-D2-R005)."""

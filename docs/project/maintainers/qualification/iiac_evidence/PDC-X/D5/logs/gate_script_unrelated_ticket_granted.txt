@@ -1,0 +1,5 @@
+G0: OK - scaffold + lab host present
+G1: OK [advisory input] - evaluation control plane present (advisory input)
+G2: OK - resilience + autonomy policy present
+promotion authorization: GRANTED by governance - approved by governance ticket governance/tickets/T-IGX-036-O.md
+mvp promotion readiness G0-G2: OK (advisory; governance owns authorization)

@@ -1,0 +1,7 @@
+command: verify_arch_freeze_plan_traceability + FRZ docs diff vs 6e53fb36f
+git_head: c50547012c353463e86525411a5a065f43e5bab8
+date_utc: 2026-11-12T11:47:58Z
+(empty above = unchanged)
+[OK] verify_arch_freeze_plan_traceability: all checks passed
+  FRZ=225 families=26 PASS=108 OPEN=109 WBS=54 findings=18 dangling_open_frz=0 semantic_dag=OK
+exit_code: 0

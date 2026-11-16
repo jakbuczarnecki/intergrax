@@ -1,0 +1,28 @@
+{
+ "P1_typo_accepted": {
+  "flag": true,
+  "typed_flag_value": false,
+  "extra": {
+   "business_agents_deploy_enabld": true
+  }
+ },
+ "P1_wide_bind": "0.0.0.0",
+ "P1_lkw_typo": "rejected:ValidationError",
+ "P1_nested": "rejected:ValidationError",
+ "P2_same_fingerprint_for_loosened_contract": true,
+ "P2_profile_extra_forbid_to_allow_changes_fingerprint": false,
+ "P3_pid_reuse_prior_metadata_with_live_pid_different_start": "conflict:live_process_metadata",
+ "P5_enabled_bridge_metric_names_to_label": {
+  "start": "lbl",
+  "ready": "lbl",
+  "degraded": "lbl",
+  "drain_duration": "lbl",
+  "restart_count": "lbl",
+  "exit_class": "lbl"
+ },
+ "P6_default_publisher_exported_envelopes": 0,
+ "P7_bounded_phase_swallowed_cancel(outcome,elapsed_s; limit 0.2s)": [
+  "completed",
+  2.22
+ ]
+}

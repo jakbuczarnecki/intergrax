@@ -1,0 +1,14 @@
+PDC-X / P7-D6 (IA-D6) test matrix. Execution HEAD b7889220607b462195308fa186f4ba66fb78f3a8 (product tree == c08efe46a74a20595468d8d8bf06eab2dca5f573). One pytest process at a time.
+
+suite | command path | result | log
+d6 | tests/qualification/pdc_x/d6 | 134 passed, exit 0, 104 s | logs/pytest_d6.log.txt
+xd | tests/qualification/pdc_x/xd/test_xd_02_agent_context.py test_xd_06_background_security.py test_xd_10_artifacts_security.py | 19 passed | logs/pytest_xd.log.txt
+governance | tests/qualification/governance | 403 passed, 139 s | logs/pytest_governance.log.txt
+tenant_x | tests/qualification/tenant_x | 1 failed (carrier count 831 vs 819), 193 passed | logs/pytest_tenant_x.log.txt
+prod_q | tests/qualification/prod_q | 445 passed, 2 skipped; process did not exit after summary (exit 124 by timeout) | logs/pytest_prod_q.log.txt
+sandbox | tests/unit/runtime/sandbox tests/integration/runtime/sandbox/reference_substrate | 1 failed, 157 passed, 11 skipped (Linux/WSL2) | logs/pytest_sandbox.log.txt
+audit_ideal | tests/unit/runtime/architecture/test_audit_ideal_depth_gate.py | 70 passed, 2 failed (29_1, 30_4, known pre-existing) | logs/pytest_audit_ideal.log.txt
+mcp_security | tests/qualification/mcp_server_x/test_mcp_server_x_p7_l2_security_trace.py, ..._l3_invoke_security.py | 2 collection errors (fastmcp not installed) | logs/pytest_mcp_sec.log.txt
+maintenance scripts | scripts/maintenance/check_critical_action_signing.py, check_immutable_security_audit_trail.py, check_tool_injection_defense.py | all OK | (stdout in report section 1)
+mutation | adversarial_scripts/ia_mut.py + run_mutants.sh, 12 in-memory mutants | 12 of 12 killed | logs/mutation_results.txt, logs/mutation_summary.txt
+probes | adversarial_scripts/ia_d6_probes.py, ia_d6_probes2.py, ia_d6_probes3.py (21) + lead reproduction of the P7-00 D6 probes | outputs in logs/*.out.json | logs/

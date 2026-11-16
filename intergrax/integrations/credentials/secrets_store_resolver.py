@@ -30,23 +30,25 @@ class SecretsStoreCredentialResolver:
         context: CredentialResolutionContext,
     ) -> ResolvedCredential:
         self._assert_tenant_scope(ref, context)
+        # The typed errors are raised outside the ``except`` blocks: ``raise ... from None`` only hides the
+        # provider exception from the rendered traceback, ``__context__`` would still hold its text (F-D6-12).
+        value: object = None
+        failure: str | None = None
         try:
             value = self._secrets_store.get_secret(ref.secret_path, version=ref.version)
         except KeyError:
-            raise CredentialNotFoundError(
-                sanitize_credential_error_message(
-                    f"credential not found for provider_id={ref.provider_id}",
-                ),
-            ) from None
+            failure = "not_found"
         except CredentialScopeMismatchError:
             raise
-        except Exception as exc:
+        except Exception:
+            failure = "unavailable"
+        if failure == "unavailable":
             raise CredentialProviderUnavailableError(
                 sanitize_credential_error_message(
                     f"credential provider unavailable for provider_id={ref.provider_id}",
                 ),
-            ) from exc
-        if not isinstance(value, str) or not value.strip():
+            )
+        if failure == "not_found" or not isinstance(value, str) or not value.strip():
             raise CredentialNotFoundError(
                 sanitize_credential_error_message(
                     f"credential not found for provider_id={ref.provider_id}",

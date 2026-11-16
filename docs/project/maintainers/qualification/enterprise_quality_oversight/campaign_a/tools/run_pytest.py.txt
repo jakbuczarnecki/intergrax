@@ -1,0 +1,61 @@
+"""Budgeted bounded pytest runner (OD-EQOA-03): <= 10 runs, explicit node ids/files only, one process, no services.
+Usage: run_pytest.py <slot-id> "<purpose / finding or seed id>" <node-or-file> [<node-or-file> ...]"""
+from __future__ import annotations
+
+import os
+import platform
+import subprocess
+import sys
+import time
+from pathlib import Path
+
+sys.path.insert(0, str(Path(__file__).parent))
+from common import *  # noqa
+
+PY = str(MAIN / ".venv" / "Scripts" / "python.exe")
+SCRATCH = WT.parent / "_scratch" / "eqo-a"
+
+
+def main():
+    slot, purpose, targets = sys.argv[1], sys.argv[2], sys.argv[3:]
+    runs = read_jsonl(WS / "tests" / "test_runs.jsonl")
+    if len(runs) >= 10:
+        raise SystemExit("E2: test budget (10) exhausted")
+    if not targets or any(t.startswith("-") or t in (".", "tests", "tests/") for t in targets):
+        raise SystemExit("targets must be explicit node ids or files")
+    if any("::" not in t and not t.endswith(".py") for t in targets):
+        raise SystemExit("targets must be files or node ids")
+    before = git("status", "--porcelain").stdout
+    env = dict(os.environ)
+    for k in list(env):
+        if k.upper().startswith(("OPENAI", "ANTHROPIC", "AZURE", "GOOGLE_API", "ENT_AUDIT_X_", "INTERGRAX_LIVE")):
+            env.pop(k)
+    env["PYTHONDONTWRITEBYTECODE"] = "1"
+    env["PYTHONUTF8"] = "1"
+    base = SCRATCH / slot
+    base.parent.mkdir(parents=True, exist_ok=True)
+    cmd = [PY, "-m", "pytest", *targets, "-o", f"cache_dir={SCRATCH / (slot + '_cache')}", "--basetemp", str(base), "-q", "-x", "--no-header", "-rA"]
+    start = utc_now()
+    t0 = time.time()
+    p = subprocess.run(cmd, cwd=str(WT), capture_output=True, env=env, timeout=1500)
+    out = p.stdout.decode("utf-8", errors="replace") + ("\n--- STDERR ---\n" + p.stderr.decode("utf-8", errors="replace") if p.stderr else "")
+    log = WS / "tests" / "logs" / f"{slot}.log"
+    log.parent.mkdir(parents=True, exist_ok=True)
+    log.write_text(out, encoding="utf-8")
+    after = git("status", "--porcelain").stdout
+    py = subprocess.run([PY, "--version"], capture_output=True, text=True).stdout.strip()
+    uv = subprocess.run(["uv", "--version"], capture_output=True, text=True).stdout.strip()
+    rec = {"run_id": slot, "purpose": purpose, "command": "python -m pytest " + " ".join(targets) + " -o cache_dir=<scratch>/" + slot + "_cache --basetemp <scratch>/" + slot + " -q -x -rA",
+           "cwd": str(WT), "baseline_sha": git("rev-parse", "HEAD").stdout.strip(), "python": py, "uv": uv,
+           "uv_lock_sha256": sha256_file(WT / "uv.lock"), "os": platform.platform(), "start_utc": start, "end_utc": utc_now(),
+           "duration_s": round(time.time() - t0, 1), "exit_code": p.returncode, "log": str(log), "log_sha256": sha256_file(log),
+           "wt_porcelain_changed": before != after,
+           "runner_note": "main checkout .venv python (same uv.lock) used instead of `uv run`; env vars for live vendors removed"}
+    runs.append(rec)
+    write_jsonl(WS / "tests" / "test_runs.jsonl", runs)
+    print(json.dumps({k: rec[k] for k in ("run_id", "exit_code", "duration_s", "wt_porcelain_changed")}), f"budget used {len(runs)}/10")
+    print("\n".join(out.strip().split("\n")[-25:])[:3500])
+
+
+if __name__ == "__main__":
+    main()

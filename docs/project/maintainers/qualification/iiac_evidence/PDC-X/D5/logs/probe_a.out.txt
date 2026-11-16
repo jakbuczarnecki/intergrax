@@ -1,0 +1,16 @@
+[P1 executor-failed run evidence status] EvalEvidenceStatus.PASSED
+[P1 scenario_successes] {'s1': False}
+[P1 telemetry error] executor failed: RuntimeError
+[P2 empty-vs-empty clean] True
+[P2 good baseline vs empty candidate: clean/regressed] (False, True, ('s-capital', 's-math', 's-tool'))
+[P3 result_digest equal despite telemetry error] True
+[P3 successes good/bad] (3, 2)
+[P3 tampered cost accepted by read_eval_run_evidence] True
+[P4 code_sha with trailing newline accepted] 'abcdef1\n'
+[P4 dataset_digest with trailing newline accepted] True
+[P5 frozen scenario digest changes after in-place mutation] True
+[P5 dataset digest drifts after construction] True
+P6 set-payload digest: sha256:bb453505acb9702e46bc9aa0ea7ca416fe6cb21cf2ab8a941b0e073696543403
+[P7 run with outcome for scenario outside dataset accepted (model_copy skips validation; direct ctor below)] True
+[P7 direct ctor accepted ghost scenario] True
+[P8 approved with free-text refs, mismatched certification agent, unrelated comparison] (True, True)

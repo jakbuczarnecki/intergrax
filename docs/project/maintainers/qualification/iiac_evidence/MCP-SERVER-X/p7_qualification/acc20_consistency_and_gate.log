@@ -1,0 +1,4 @@
+command: pytest tests/qualification/mcp_server_x/test_mcp_server_x_p7_matrix_consistency.py -q (full file, incl. ACC-20) + verify_iiac_policy_activation --require-in-force
+git_head: abbe1525450da77da6801b080619a600c20cd497 (+ uncommitted record files)
+date_utc: 2026-11-12T10:40:17Z
+result: 14 passed in 0.37s; IIAC policy activation: IN_FORCE @ IIAC-2026-11-05.1 from 92ad3555775649742299826e3680ec8ce703cc8a (exit 0)

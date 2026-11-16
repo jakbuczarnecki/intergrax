@@ -1,0 +1,7 @@
+intergrax/llm_adapters/providers/aws_bedrock_adapter.py 918 _CONTEXT_WINDOWS 7
+intergrax/llm_adapters/providers/claude_adapter.py 53 _CLAUDE_CONTEXT_WINDOWS 2
+intergrax/llm_adapters/providers/cohere_native_adapter.py 42 _CONTEXT_WINDOWS 2
+intergrax/llm_adapters/providers/gemini_adapter.py 54 _GEMINI_CONTEXT_WINDOWS 4
+intergrax/llm_adapters/providers/mistral_adapter.py 70 _MISTRAL_CONTEXT_WINDOWS 4
+intergrax/llm_adapters/providers/ollama_adapter.py 81 _OLLAMA_CONTEXT_WINDOWS 22
+intergrax/llm_adapters/providers/openai_responses_adapter.py 482 _OPENAI_CONTEXT_WINDOWS 10

@@ -4,8 +4,10 @@
 
 from __future__ import annotations
 
-from typing import Protocol, Sequence, runtime_checkable
+from collections.abc import Sequence
+from typing import Protocol, runtime_checkable
 
+from intergrax.context.budget.message_token_cost import message_token_cost
 from intergrax.llm.messages import ChatMessage
 
 
@@ -32,4 +34,4 @@ class CharEstimateContextTokenCounter:
         return max(1, len(text or "") // 4) if text else 0
 
     def count_messages(self, messages: Sequence[ChatMessage]) -> int:
-        return sum(self.count_text(message.content or "") for message in messages)
+        return sum(message_token_cost(message, self.count_text) for message in messages)

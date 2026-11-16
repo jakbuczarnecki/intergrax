@@ -63,7 +63,10 @@ def cmd_inventory(_: argparse.Namespace) -> int:
 
 
 def cmd_sync_adapters(_: argparse.Namespace) -> int:
-    print("[INFO] sync-adapters: Cursor MATRIX + advisory Claude/Codex fragments")
+    print("[INFO] sync-adapters: agent-env adapters + Cursor MATRIX + advisory Claude/Codex fragments")
+    code = _run("scripts/governance/sync_agent_env.py")
+    if code != 0:
+        return code
     code = _run("scripts/governance/generate_control_plane_matrix.py")
     if code != 0:
         return code
@@ -87,7 +90,7 @@ def main(argv: list[str] | None = None) -> int:
     sub.add_parser("inventory", help="List DCP components").set_defaults(func=cmd_inventory)
     sub.add_parser(
         "sync-adapters",
-        help="Regenerate Cursor MATRIX + advisory Claude/Codex adapter fragments",
+        help="Regenerate agent-env adapters (.cursor/.claude), Cursor MATRIX + advisory Claude/Codex fragments",
     ).set_defaults(func=cmd_sync_adapters)
 
     args = parser.parse_args(argv)

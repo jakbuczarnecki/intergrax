@@ -1,0 +1,113 @@
+{
+  "path": "docs/project/maintainers/qualification/EBH_7_GAP_REGISTER.md",
+  "tables": [
+    {
+      "header": [
+        "GAP_ID",
+        "Severity",
+        "Owner",
+        "Status",
+        "Wave"
+      ],
+      "rows": [
+        {
+          "line": 5,
+          "GAP_ID": "GAP-TEN-UNK-05",
+          "Severity": "HIGH",
+          "Owner": "Tenant platform",
+          "Status": "STRUCTURAL — N/A with evidence (not E2E)",
+          "Wave": "W6"
+        },
+        {
+          "line": 6,
+          "GAP_ID": "GAP-TEN-SEM-854",
+          "Severity": "MEDIUM",
+          "Owner": "Tenant platform",
+          "Status": "OWNED — non-critical heuristic",
+          "Wave": "W1/W6"
+        },
+        {
+          "line": 7,
+          "GAP_ID": "GAP-RPL-51",
+          "Severity": "HIGH",
+          "Owner": "VBN",
+          "Status": "CLOSED — 56/56 semantic QUALIFIED @ HEAD",
+          "Wave": "W5"
+        },
+        {
+          "line": 8,
+          "GAP_ID": "GAP-NPSC-10",
+          "Severity": "HIGH",
+          "Owner": "Execution",
+          "Status": "CLOSED — gate aligned B4 @ W3",
+          "Wave": "W3"
+        },
+        {
+          "line": 9,
+          "GAP_ID": "GAP-EBH7-TEN-E2E",
+          "Severity": "HIGH",
+          "Owner": "Platform",
+          "Status": "CLOSED — 26/26 EXACT @ disposition SSOT",
+          "Wave": "W6"
+        },
+        {
+          "line": 10,
+          "GAP_ID": "GAP-EBH7-XDM",
+          "Severity": "HIGH",
+          "Owner": "Platform",
+          "Status": "CLOSED — 34/34 EXACT",
+          "Wave": "W7"
+        },
+        {
+          "line": 11,
+          "GAP_ID": "GAP-SEM-AUTO-EXACT",
+          "Severity": "CRITICAL",
+          "Owner": "Qualification",
+          "Status": "CLOSED — fail-closed disposition registry",
+          "Wave": "W8"
+        },
+        {
+          "line": 12,
+          "GAP_ID": "GAP-FRZ-IMPACT",
+          "Severity": "MEDIUM",
+          "Owner": "Program",
+          "Status": "OWNED — impact records only",
+          "Wave": "W8"
+        },
+        {
+          "line": 13,
+          "GAP_ID": "GAP-LOCAL-UNTRACKED",
+          "Severity": "LOW",
+          "Owner": "Operator",
+          "Status": "OPEN — exclude from commits: exports/, platform_proofs/test_*, .cursor/plans/",
+          "Wave": "W0"
+        },
+        {
+          "line": 14,
+          "GAP_ID": "GAP-PROD-Q-LIVE",
+          "Severity": "MEDIUM",
+          "Owner": "PROD-Q",
+          "Status": "DELEGATED — out of EBH-7 closure",
+          "Wave": "EVOL"
+        },
+        {
+          "line": 15,
+          "GAP_ID": "GAP-WL7-4H",
+          "Severity": "LOW",
+          "Owner": "Operator",
+          "Status": "N/A — deferral verified",
+          "Wave": "W8"
+        },
+        {
+          "line": 16,
+          "GAP_ID": "GAP-LAYER-L9",
+          "Severity": "MEDIUM",
+          "Owner": "Architecture",
+          "Status": "OWNED — EBH-6 reuse",
+          "Wave": "W5/W7"
+        }
+      ]
+    }
+  ],
+  "lines": 17
+}

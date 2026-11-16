@@ -2,15 +2,17 @@
 # Intergrax framework – proprietary and confidential.
 
 from __future__ import annotations
-from intergrax.utils import attribute_access
-
-from dataclasses import dataclass
-from typing import Any, Dict, List, Sequence
 
 import pytest
+
+pytest.importorskip(
+    "qdrant_client", reason="requires the 'dev-ci-rag' extra (qdrant-client); executed by the rag-guard CI profile"
+)
+from collections.abc import Sequence
+from dataclasses import dataclass
+from typing import Any
+
 import httpx
-from qdrant_client.http.exceptions import UnexpectedResponse
-from intergrax.knowledge.contracts import KnowledgeDocument
 from intergrax.integrations.providers.vector_store.chroma.rag_store import ChromaConfig, ChromaVectorStore
 from intergrax.integrations.providers.vector_store.inmemory.rag_store import InMemoryVectorStore
 from intergrax.integrations.providers.vector_store.lancedb.bundle import create_lancedb_vector_store
@@ -21,6 +23,7 @@ from intergrax.integrations.providers.vector_store.weaviate.rag_store import (
     WeaviateConfig,
     WeaviateVectorStore,
 )
+from intergrax.knowledge.contracts import KnowledgeDocument
 from intergrax.rag.vectorstore.contracts.native_vectorstore import (
     VectorStoreRecord,
     VectorStoreScope,
@@ -30,6 +33,8 @@ from intergrax.rag.vectorstore.tenant.tenant_isolation_contract import (
     TENANT_ISOLATION_CONTRACT_BACKENDS,
     run_tenant_isolation_contract,
 )
+from intergrax.utils import attribute_access
+from qdrant_client.http.exceptions import UnexpectedResponse
 
 pytestmark = [pytest.mark.unit, pytest.mark.gate, pytest.mark.no_ci]
 
@@ -37,8 +42,8 @@ pytestmark = [pytest.mark.unit, pytest.mark.gate, pytest.mark.no_ci]
 @dataclass
 class _FakeQdrantPoint:
     id: str
-    payload: Dict[str, Any]
-    vector: List[float]
+    payload: dict[str, Any]
+    vector: list[float]
     score: float = 1.0
 
 
@@ -46,7 +51,7 @@ class _FakeQdrantClient:
     """Minimal in-process Qdrant client for tenant isolation contract tests."""
 
     def __init__(self) -> None:
-        self._collections: Dict[str, List[_FakeQdrantPoint]] = {}
+        self._collections: dict[str, list[_FakeQdrantPoint]] = {}
 
     def get_collection(self, collection_name: str) -> dict[str, str]:
         if collection_name not in self._collections:
@@ -83,8 +88,16 @@ class _FakeQdrantClient:
         points = list(self._collections.get(collection_name, []))
         must = attribute_access.optional(query_filter, "must", None) or []
         for condition in must:
-            key = condition.get("key") if isinstance(condition, dict) else attribute_access.optional(condition, "key", None)
-            match = condition.get("match") if isinstance(condition, dict) else attribute_access.optional(condition, "match", None)
+            key = (
+                condition.get("key")
+                if isinstance(condition, dict)
+                else attribute_access.optional(condition, "key", None)
+            )
+            match = (
+                condition.get("match")
+                if isinstance(condition, dict)
+                else attribute_access.optional(condition, "match", None)
+            )
             value = match.get("value") if isinstance(match, dict) else attribute_access.optional(match, "value", None)
             if key:
                 points = [p for p in points if p.payload.get(key) == value]
@@ -118,13 +131,9 @@ class _FakeChromaCollection:
         if not where:
             return True
         if "$and" in where:
-            return all(
-                _FakeChromaCollection._matches(metadata, item)
-                for item in where["$and"]
-            )
+            return all(_FakeChromaCollection._matches(metadata, item) for item in where["$and"])
         return all(
-            metadata.get(key)
-            == (value.get("$eq") if isinstance(value, dict) else value)
+            metadata.get(key) == (value.get("$eq") if isinstance(value, dict) else value)
             for key, value in where.items()
         )
 
@@ -136,9 +145,7 @@ class _FakeChromaCollection:
         metadatas: Sequence[dict[str, Any]],
         documents: Sequence[str],
     ) -> None:
-        for row_id, embedding, metadata, document in zip(
-            ids, embeddings, metadatas, documents
-        ):
+        for row_id, embedding, metadata, document in zip(ids, embeddings, metadatas, documents):
             self.rows[row_id] = {
                 "embedding": list(embedding),
                 "metadata": dict(metadata),
@@ -153,11 +160,9 @@ class _FakeChromaCollection:
         include: Sequence[str],
         **_: Any,
     ) -> dict[str, Any]:
-        selected = [
-            (row_id, row)
-            for row_id, row in self.rows.items()
-            if self._matches(row["metadata"], where)
-        ][:n_results]
+        selected = [(row_id, row) for row_id, row in self.rows.items() if self._matches(row["metadata"], where)][
+            :n_results
+        ]
         result: dict[str, Any] = {
             "ids": [[row_id for row_id, _ in selected]],
             "metadatas": [[row["metadata"] for _, row in selected]],
@@ -174,13 +179,7 @@ class _FakeChromaCollection:
                 del self.rows[row_id]
 
     def get(self, *, where: Any = None, include: Sequence[str]) -> dict[str, Any]:
-        return {
-            "ids": [
-                row_id
-                for row_id, row in self.rows.items()
-                if self._matches(row["metadata"], where)
-            ]
-        }
+        return {"ids": [row_id for row_id, row in self.rows.items() if self._matches(row["metadata"], where)]}
 
 
 class _FakeChromaClient:

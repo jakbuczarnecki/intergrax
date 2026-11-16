@@ -1,0 +1,6 @@
+.....F...........                                                        [100%]
+================================== FAILURES ===================================
+D:\Projekty\_wt\_scratch\p7a3-head\intergrax\integrations\providers\notification_channel\pagerduty\integration.py:57: intergrax.integrations.contracts.base.IntegrationConfigurationError: PagerdutyNotificationChannelIntegration requires a catalog client for operations
+=========================== short test summary info ===========================
+FAILED tests/unit/integrations/test_harness_lab_health.py::test_health_check_harness_m6_p5_probes_covers_catalog_slugs
+1 failed, 16 passed in 35.21s

@@ -1,0 +1,18 @@
+MCP-RC independent audit - test matrix (auditor runs, Windows, one pytest process at a time)
+audited_implementation_sha = test_execution_sha = 93a089d3cca941592f1ad4f65435333c86da82e5
+audit execution base      = f3078b293ecee402583b3d6ad9ef5aaeff0b2d1d (docs-only after the audited SHA)
+
+1. Mandatory contract: PYTHONPATH=<checkout> python -m pytest <MCP_SERVER_X_RC_SELECTION, 38 files> -q --tb=short
+   result: 464 passed, 1 xfailed (strict), exit 0, 455.11 s  [logs/auditor_rc_contract_at_93a089d3c.log]
+   xfail: tests/unit/applications/test_mcp_surface_opt_in.py::test_scaffold_defaults_mcp_to_opt_in[product]
+2. Implementer mutation harness (scripts/qualification/mcp_rc_mutation.py): 8 of 8 killed  [mutation/implementer_harness_rerun.*]
+3. Auditor mutants A1..A13 (+A3b), 14 total: 9 killed, 5 survived (A3, A3b, A11, A12, A13)  [mutation/auditor_mutants_*]
+   A3/A3b re-run with the two cross-loop suites added: still survived
+4. Removed opt-in tests (6a6279a49) re-run at HEAD with --runxfail: 5 failed, 10 passed (non-MCP causes)  [logs/auditor_old_opt_in_vehicle_probe.log]
+5. Throw-away adversarial scripts (adversarial_scripts/, results under logs/):
+   adv_identity.py            real streamable HTTP identity cases (H1..H4)
+   adv_probe3.py/adv_probe4.py catalog discovery gating, unauthenticated initialize/tools-list
+   adv_bounds_deadline.py     bounds, concurrency, deadline wall time (default 30 s drain)
+   adv_deadline_cancelled.py  host ends cancelled / fails after the call bound
+   adv_runagent_leak.py       run_agent host exception text
+6. verify_iiac_audit_manifest.py / verify_iiac_role_separation.py --strict-product-diff on the session manifest (see logs/)

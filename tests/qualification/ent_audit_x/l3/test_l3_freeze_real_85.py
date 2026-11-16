@@ -103,12 +103,21 @@ def test_l3_production_normal_freeze_85_after_od_ent_01(tmp_path) -> None:
 
 
 def test_l3_plain_freeze_blocked_without_baseline(tmp_path) -> None:
+    import shutil
+    import uuid
+
     root = _repo_root()
-    runner = EnterpriseAuditRunner(root, dry_run=True, require_clean_repo=False)
-    _, _, code = runner.run(
-        AuditMode.FREEZE,
-        output_dir=tmp_path / "l3-freeze-blocked",
-        bootstrap_baseline=False,
-        certifying_run=False,
-    )
-    assert code is EnterpriseAuditExitCode.VIOLATION
+    qual = root / "tests" / "qualification" / "ent_audit_x" / ".pytest-baseline" / uuid.uuid4().hex
+    qual.mkdir(parents=True, exist_ok=True)
+    try:
+        runner = EnterpriseAuditRunner(root, dry_run=True, require_clean_repo=False)
+        _, _, code = runner.run(
+            AuditMode.FREEZE,
+            output_dir=tmp_path / "l3-freeze-blocked",
+            baseline_dir=qual,
+            bootstrap_baseline=False,
+            certifying_run=False,
+        )
+        assert code is EnterpriseAuditExitCode.VIOLATION
+    finally:
+        shutil.rmtree(qual, ignore_errors=True)

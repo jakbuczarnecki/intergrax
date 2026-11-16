@@ -1,6 +1,6 @@
 # © Artur Czarnecki. All rights reserved.
 
-"""ROADMAP-REPLAY-X L2 corrective wave — scoped production delta dispositions @ 91649e5 publication lineage."""
+"""ROADMAP-REPLAY-X L2 + PRE-ENT L3 — scoped production delta dispositions."""
 
 from __future__ import annotations
 
@@ -9,12 +9,20 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import Final
 
+from tests.qualification.roadmap_replay_x._pre_ent_l3_prod_delta import (
+    PRE_ENT_L3_PROD_DELTA_BATCHES,
+    PRE_ENT_REPLAY_L3_QUALIFICATION_HEAD,
+)
 from tests.qualification.roadmap_replay_x._scoped_regression_evidence import (
     REPLAY_X_SCOPED_REGRESSION_EVIDENCE,
     scoped_regression_evidence_violations,
 )
 
-REPLAY_X_L2_QUALIFICATION_HEAD: Final[str] = "91649e5d883664a855c02dea1baf14d467052fca"
+REPLAY_X_L2_QUALIFICATION_HEAD: Final[str] = PRE_ENT_REPLAY_L3_QUALIFICATION_HEAD
+_REPLAY_X_L2_CTRL_X_QUALIFICATION_HEAD: Final[str] = "91649e5d883664a855c02dea1baf14d467052fca"
+_ALLOWED_QUALIFICATION_HEADS: Final[frozenset[str]] = frozenset(
+    {REPLAY_X_L2_QUALIFICATION_HEAD, _REPLAY_X_L2_CTRL_X_QUALIFICATION_HEAD}
+)
 _DUP_X_PIN = "a7d83925b375b5f08eb0f175ced2c17fa026bba9"
 
 
@@ -28,12 +36,30 @@ class ProdDeltaDisposition:
 
 _scoped = REPLAY_X_SCOPED_REGRESSION_EVIDENCE[0]
 
+_CTRL_X_L2: Final[ProdDeltaDisposition] = ProdDeltaDisposition(
+    path=_scoped.prod_path,
+    disposition="CTRL-X pyright callback typing + ruff format; admission/shutdown semantics unchanged",
+    regression_evidence=_scoped.regression_test_module,
+    qualification_head_sha=_REPLAY_X_L2_CTRL_X_QUALIFICATION_HEAD,
+)
+
+_PRE_ENT_ROWS: list[ProdDeltaDisposition] = []
+for batch in PRE_ENT_L3_PROD_DELTA_BATCHES:
+    *batch_paths, disposition, regression_evidence = batch
+    for path in batch_paths:
+        if path == _scoped.prod_path:
+            continue
+        _PRE_ENT_ROWS.append(
+            ProdDeltaDisposition(
+                path=path,
+                disposition=disposition,
+                regression_evidence=regression_evidence,
+            )
+        )
+
 REPLAY_X_L2_SCOPED_PROD_DELTA: Final[tuple[ProdDeltaDisposition, ...]] = (
-    ProdDeltaDisposition(
-        path=_scoped.prod_path,
-        disposition="CTRL-X pyright callback typing + ruff format; admission/shutdown semantics unchanged",
-        regression_evidence=_scoped.regression_test_module,
-    ),
+    _CTRL_X_L2,
+    *_PRE_ENT_ROWS,
 )
 
 REPLAY_X_L2_SCOPED_PROD_DELTA_PATHS: Final[frozenset[str]] = frozenset(
@@ -50,16 +76,30 @@ def _prod_diff_paths(repo: Path, *roots: str) -> frozenset[str]:
     return frozenset(n.strip().replace("\\", "/") for n in names if n.strip())
 
 
+def _path_in_tree(repo: Path, rev: str, path: str) -> bool:
+    listed = subprocess.check_output(
+        ["git", "ls-tree", "--name-only", rev, "--", path],
+        cwd=repo,
+        text=True,
+    )
+    return bool(listed.strip())
+
+
+def _is_net_zero_absent(repo: Path, path: str) -> bool:
+    """True only for a path that exists neither at HEAD nor at the DUP-X pin (add + delete, net zero)."""
+    return not _path_in_tree(repo, "HEAD", path) and not _path_in_tree(repo, _DUP_X_PIN, path)
+
+
 def scoped_prod_delta_disposition_violations(repo: Path) -> tuple[str, ...]:
     violations: list[str] = list(scoped_regression_evidence_violations(repo))
     prod_diff = _prod_diff_paths(repo, "intergrax", "agents", "applications")
     for row in REPLAY_X_L2_SCOPED_PROD_DELTA:
         if row.path in prod_diff:
-            if row.qualification_head_sha != REPLAY_X_L2_QUALIFICATION_HEAD:
+            if row.qualification_head_sha not in _ALLOWED_QUALIFICATION_HEADS:
                 violations.append(f"wrong_qualification_head:{row.path}")
             if not row.disposition.strip():
                 violations.append(f"missing_disposition:{row.path}")
-        elif row.path in REPLAY_X_L2_SCOPED_PROD_DELTA_PATHS:
+        elif row.path in REPLAY_X_L2_SCOPED_PROD_DELTA_PATHS and not _is_net_zero_absent(repo, row.path):
             violations.append(f"scoped_path_not_in_prod_diff:{row.path}")
     return tuple(violations)
 

@@ -1,0 +1,54 @@
+"""A7-T01 mechanical extraction: flatten every parsed S13 register row; extract entry id, severity/status columns, owner-ish columns, stage mentions, defer words."""
+from __future__ import annotations
+
+import re
+import sys
+from collections import Counter
+from pathlib import Path
+
+sys.path.insert(0, str(Path(__file__).parent))
+from common import *  # noqa
+
+TOKEN = re.compile(r"\b[A-Z][A-Z0-9]+(?:-[A-Z0-9]+)+\b")
+IDLIKE = re.compile(r"^(?:HIST-F-|F-|R-P7-|OPEN-BP-|OD-|FIND-|PDC-D\d-R|DEBT-|GAP-|VBN-|DUP-|EBH7?-|ENT-|R\d|S\d|C\d|B6-|L\d|P\d)")
+DEFER = re.compile(r"defer|tracked as|tracked in|moves? to|handed? to|owned by|carry|forward|→|->|next stage|successor|re-?open", re.I)
+SEV = re.compile(r"\b(BLOCKER|HIGH|MEDIUM|LOW|CRITICAL|MAJOR|MINOR)\b")
+GROUPS = {"G1": ["ARCH_DEBT", "AF_CLOSED_WORLD_GAP", "AF_B2_DEBT_RECON", "EBH7_GAP", "EBH7_B6_BLOCKER", "ANNEX_F_GAP", "DIAG_GAP_LEDGER", "DUPX_FINDINGS", "EBH6_HARDCODING",
+                  "RRX_HARDCODING", "EBH6_COND_REMEDIATION", "EBH7_CROSS_DOMAIN_RISK"],
+          "G2": ["PDC_GAP", "MCP_GAP", "HIST_RESIDUAL_FINDINGS", "HIST_PATHB_DEFERRED", "HIST_PATHB_RESIDUAL", "HIST_REMAINING_BLOCKERS", "HIST_INDEPENDENT_AUDIT", "HIST_STAGE_SHA"],
+          "G3": ["CERT_DELEGATED_DECISIONS", "AF_OD", "OD_DUP_X", "OD_EBH_5", "OD_EBH_6", "OD_EBH_7", "OD_ROADMAP_REPLAY_X", "EBH7_SKIP_DISPOSITION"]}
+
+
+def main():
+    stage_ids = {r["id"] for r in read_jsonl(WS / "A1" / "stage_rows.jsonl")}
+    roots = {t for i in stage_ids for t in TOKEN.findall(i)}
+    out = []
+    grp_of = {n: g for g, ns in GROUPS.items() for n in ns}
+    for f in sorted((WS / "extracts" / "registers").glob("*.json")):
+        name = f.stem
+        d = read_json(f)
+        for ti, t in enumerate(d["tables"]):
+            hdr = t["header"]
+            for r in t["rows"]:
+                cells = {k: v for k, v in r.items() if k != "line"}
+                text = " | ".join(str(v) for v in cells.values())
+                first = next(iter(cells.values()), "")
+                eid = ""
+                for tok in TOKEN.findall(str(first)) + TOKEN.findall(text)[:2]:
+                    if IDLIKE.match(tok) or tok == (TOKEN.findall(str(first)) or [""])[0]:
+                        eid = tok
+                        break
+                eid = eid or (TOKEN.findall(str(first)) or [str(first)[:40]])[0]
+                stages = sorted({t_ for t_ in TOKEN.findall(text) if t_ in stage_ids or t_ in roots})[:12]
+                sev = sorted(set(SEV.findall(text)))
+                out.append({"register": name, "group": grp_of.get(name, "G3"), "table": ti, "line": r["line"], "entry_id": eid, "header": hdr[:8],
+                            "cells": {k: str(v)[:260] for k, v in list(cells.items())[:9]}, "stage_mentions": stages, "severity_words": sev,
+                            "defer_words": sorted(set(m.lower() for m in DEFER.findall(text)))[:4], "shas": sorted(set(SHA40.findall(text)))[:4]})
+    write_jsonl(WS / "A7" / "register_rows.jsonl", out)
+    print("register rows", len(out), dict(Counter(o["group"] for o in out)))
+    for g in ("G1", "G2", "G3"):
+        write_jsonl(WS / "A7" / f"input_{g}.jsonl", [o for o in out if o["group"] == g])
+
+
+if __name__ == "__main__":
+    main()

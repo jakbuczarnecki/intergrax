@@ -1,0 +1,27 @@
+{
+ "fired": [
+  1,
+  0,
+  0
+ ],
+ "saved_second_checkpoint": true,
+ "executor_calls": 1,
+ "rows": [
+  [
+   "rec_rp_20260301T100000Z",
+   "completed"
+  ],
+  [
+   "rec_rp_20260301T100100Z",
+   "completed"
+  ],
+  [
+   "rec_rp_20260301T100200Z",
+   "completed"
+  ],
+  [
+   "rec_rp_20260301T100300Z",
+   "pending"
+  ]
+ ]
+}

@@ -1,0 +1,27 @@
+command: pytest tests/qualification/mcp_server_x/test_mcp_server_x_p7_l1_contract.py tests/qualification/mcp_server_x/test_mcp_server_x_p7_l2_composition_exposure.py tests/qualification/mcp_server_x/test_mcp_server_x_p7_l2_security_trace.py tests/qualification/mcp_server_x/test_mcp_server_x_p7_l3_publication_discovery.py tests/qualification/mcp_server_x/test_mcp_server_x_p7_l3_invoke_security.py tests/qualification/mcp_server_x/test_mcp_server_x_p7_l3_protocol_subset.py tests/qualification/mcp_server_x/test_mcp_server_x_p7_failure_injection_l2.py tests/qualification/mcp_server_x/test_mcp_server_x_p7_failure_injection_l3.py -q
+cwd: /d/Projekty/_wt/intergrax/p7-replay
+git_head: abbe1525450da77da6801b080619a600c20cd497
+date_utc: 2026-11-12T10:33:53Z
+........................................................................ [ 43%]
+........................................................................ [ 87%]
+....................                                                     [100%]
+============================== warnings summary ===============================
+tests/qualification/mcp_server_x/test_mcp_server_x_p7_l3_publication_discovery.py::test_acc_01_reference_server_exact_tool_set_over_http
+  D:\Projekty\intergrax\.venv\Lib\site-packages\websockets\legacy\__init__.py:6: DeprecationWarning: websockets.legacy is deprecated; see https://websockets.readthedocs.io/en/stable/howto/upgrade.html for upgrade instructions
+    warnings.warn(  # deprecated in 14.0 - 2024-11-09
+
+tests/qualification/mcp_server_x/test_mcp_server_x_p7_l3_publication_discovery.py::test_acc_01_reference_server_exact_tool_set_over_http
+  D:\Projekty\intergrax\.venv\Lib\site-packages\uvicorn\protocols\websockets\websockets_impl.py:17: DeprecationWarning: websockets.server.WebSocketServerProtocol is deprecated
+    from websockets.server import WebSocketServerProtocol
+
+tests/qualification/mcp_server_x/test_mcp_server_x_p7_l3_publication_discovery.py: 18 warnings
+tests/qualification/mcp_server_x/test_mcp_server_x_p7_l3_invoke_security.py: 16 warnings
+tests/qualification/mcp_server_x/test_mcp_server_x_p7_l3_protocol_subset.py: 5 warnings
+tests/qualification/mcp_server_x/test_mcp_server_x_p7_failure_injection_l3.py: 18 warnings
+  C:\Users\XPS\AppData\Roaming\uv\python\cpython-3.12.11-windows-x86_64-none\Lib\contextlib.py:105: DeprecationWarning: Use `streamable_http_client` instead.
+    self.gen = func(*args, **kwds)
+
+-- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html
+164 passed, 59 warnings in 123.53s (0:02:03)
+exit_code: 0
+date_end_utc: 2026-11-12T10:36:12Z

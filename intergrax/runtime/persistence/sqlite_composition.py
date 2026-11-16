@@ -8,10 +8,11 @@ Uses SQLite provider primitives (config, paths, relational integration) and cons
 domain-owned store implementations through existing owner factories.
 """
 
-from __future__ import annotations
+from __future__ import annotations  # noqa: I001
 
 from dataclasses import dataclass
 from pathlib import Path
+from typing import TYPE_CHECKING
 
 from intergrax.contracts.idempotency_store import IdempotencyStore
 from intergrax.experiments.persistence_contract import ExperimentPersistence
@@ -39,6 +40,7 @@ from intergrax.runtime.organization.organization_profile_store import (
     OrganizationProfileStore,
 )
 from intergrax.runtime.persistence.sqlite_opens import (
+    open_artifact_store_at,
     open_experiment_store_at,
     open_human_decision_store_at,
     open_idempotency_store_at,
@@ -51,6 +53,12 @@ from intergrax.runtime.persistence.sqlite_opens import (
     open_user_profile_store_at,
 )
 from intergrax.runtime.task_memory.persistence_contract import TaskMemoryPersistence
+
+
+if TYPE_CHECKING:
+    from intergrax.runtime.execution.agent_runtime_context import ArtifactStore
+
+ARTIFACT_STORE_DB_NAME = "artifacts.sqlite3"
 
 
 @dataclass(frozen=True)
@@ -70,6 +78,7 @@ class SQLiteRuntimePersistenceBundle:
     session_storage: SessionStorage
     organization_profile_store: OrganizationProfileStore
     user_profile_store: UserProfileStore
+    artifact_store: ArtifactStore
 
 
 def resolve_sqlite_config(**overrides: object) -> SQLiteIntegrationConfig:
@@ -112,10 +121,10 @@ def create_sqlite_runtime_persistence(
         experiment_store=open_experiment_store_at(paths.experiments),
         idempotency_store=open_idempotency_store_at(paths.idempotency),
         session_storage=open_session_storage_at(paths.session),
-        organization_profile_store=open_organization_profile_store_at(
-            paths.organization
-        ),
+        organization_profile_store=open_organization_profile_store_at(paths.organization),
         user_profile_store=open_user_profile_store_at(paths.user_profile),
+        # ``SqliteStorePaths`` has no artifact entry; the store lives next to the other stores in the data dir.
+        artifact_store=open_artifact_store_at(paths.data_dir / ARTIFACT_STORE_DB_NAME),
     )
 
 

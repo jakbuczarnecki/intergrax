@@ -1,0 +1,16 @@
+...FFssF..F.F..F..                                                       [100%]
+================================== FAILURES ===================================
+D:\Projekty\intergrax\.claude\worktrees\pdc-x-ia-global-cdaa97\intergrax\runtime\events\schema_guard.py:37: intergrax.runtime.events.schema_guard.RuntimeEventSchemaError: payload_schema_id mismatch for step_started: expected 'graph_node.v1', got 'trace_bridge.v1'
+D:\Projekty\intergrax\.claude\worktrees\pdc-x-ia-global-cdaa97\tests\integration\rag\document_loaders\test_fixture_dataset_ingestion.py:19: TypeError: DocumentsLoader.load_documents() missing 1 required keyword-only argument: 'tenant_id'
+D:\Projekty\intergrax\.claude\worktrees\pdc-x-ia-global-cdaa97\tests\integration\rag\document_loaders\test_fixture_dataset_ingestion.py:69: TypeError: DocumentsLoader.load_documents() missing 1 required keyword-only argument: 'tenant_id'
+D:\Projekty\intergrax\.claude\worktrees\pdc-x-ia-global-cdaa97\intergrax\rag\document_loaders\handlers\image_smart_document_handler.py:60: RuntimeError: ImageSmartDocumentHandler requires scoped load(); build_parsers is not supported
+D:\Projekty\intergrax\.claude\worktrees\pdc-x-ia-global-cdaa97\tests\integration\rag\test_graph_reingest_qualification.py:251: assert set()
+D:\Projekty\intergrax\.claude\worktrees\pdc-x-ia-global-cdaa97\tests\integration\rag\test_same_source_reingest_serialization.py:555: assert False
+=========================== short test summary info ===========================
+FAILED tests/unit/applications/test_scenario_runtime_baseline.py::test_execute_scenario_task_persists_finalized_trace_for_orchestration
+FAILED tests/integration/rag/document_loaders/test_fixture_dataset_ingestion.py::test_docx_ingestion
+FAILED tests/integration/rag/document_loaders/test_fixture_dataset_ingestion.py::test_txt_ingestion
+FAILED tests/integration/rag/document_loaders/parsers/test_image_smart_document_handler.py::test_image_handler_builds_parser
+FAILED tests/integration/rag/test_graph_reingest_qualification.py::test_graphrag_source_reingest_replaces_vectors_and_graph_safely
+FAILED tests/integration/rag/test_same_source_reingest_serialization.py::test_stale_graph_topology_is_inactive_after_generation_takeover
+6 failed, 10 passed, 2 skipped in 2.93s

@@ -1,0 +1,14 @@
+....................................                                     [100%]
+============================ slowest 10 durations =============================
+0.77s call     tests/qualification/pdc_x/d4/test_d4_lifecycle_suite.py::test_r006_instance_held_by_another_os_process_is_rejected
+0.50s setup    tests/qualification/pdc_x/d4/test_d4_crash_restart_subprocess.py::test_r007_killed_worker_process_is_restarted_by_the_supervisor
+0.40s call     tests/qualification/pdc_x/d4/test_xd05_drain_background_work.py::test_xd05_shutdown_drains_in_flight_background_work
+0.31s call     tests/qualification/pdc_x/d4/test_d4_crash_restart_subprocess.py::test_r007_killed_worker_process_is_restarted_by_the_supervisor
+0.31s call     tests/qualification/pdc_x/d4/test_xd05_drain_background_work.py::test_xd05_work_that_outlives_the_drain_budget_is_cancelled_and_reported
+0.30s call     tests/qualification/pdc_x/d4/test_d4_lifecycle_metrics.py::test_r009_engine_emits_start_ready_degraded_and_drain_metrics
+0.29s call     tests/qualification/pdc_x/d4/test_d4_crash_restart_subprocess.py::test_r007_repeated_worker_kills_exhaust_the_restart_budget
+0.23s call     tests/qualification/pdc_x/d4/test_d4_lifecycle_metrics.py::test_r009_forced_exit_class_matches_the_supervisor_classification
+0.10s call     tests/qualification/pdc_x/d4/test_d4_restart_digest.py::test_r010_restart_preserves_the_profile_digest_on_every_instance
+0.09s call     tests/qualification/pdc_x/d4/test_d4_restart_digest.py::test_r010_restart_with_changed_configuration_is_rejected_before_start
+36 passed in 4.70s
+EXIT=0

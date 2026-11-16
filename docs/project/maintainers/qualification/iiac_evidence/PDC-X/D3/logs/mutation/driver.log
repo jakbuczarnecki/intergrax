@@ -1,0 +1,14 @@
+M01_R022_failover_tool_streaming_always_true KILLED 1 failed, 136 passed, 5 skipped in 4.17s
+M02_R006_base_tool_stream_downgrades_to_empty KILLED 1 failed, 11 passed in 1.89s
+M03_R015_failover_falls_back_to_first_member SURVIVED 150 passed, 5 skipped in 3.71s
+M04_R004_failover_passes_chain_twice KILLED 1 failed in 2.60s
+M05_R009_payload_does_not_upgrade_to_refusal KILLED 1 failed, 38 passed in 2.53s
+M06_R011_swap_terminated_transport KILLED 1 failed, 101 passed, 2 skipped in 2.79s
+M07_R023_legacy_table_beats_catalog KILLED 1 failed, 139 passed, 5 skipped in 4.69s
+M08_R015_undeclared_flag_counts_as_supported KILLED 1 failed, 13 passed in 2.16s
+M09_R009_drop_safety_alias KILLED 1 failed, 26 passed in 2.88s
+M10_F49_openai_dispatch_inverted KILLED 1 failed, 7 passed in 2.85s
+M11_F50_openai_enabled_hardwired_true KILLED 1 failed, 12 passed in 4.59s
+M12_R011_stream_registry_not_closed SURVIVED 150 passed, 5 skipped in 4.87s
+M13_R022_stream_flag_false_on_native_ollama KILLED 1 failed, 132 passed, 4 skipped in 4.91s
+M14_R006_catalog_overlay_tool_stream_flag_true KILLED 1 failed, 21 passed in 2.51s

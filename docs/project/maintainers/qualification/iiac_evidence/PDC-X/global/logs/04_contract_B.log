@@ -1,0 +1,187 @@
+........................................................................ [  3%]
+........................................................................ [  6%]
+........................................................................ [  9%]
+........................................................................ [ 13%]
+........................................................................ [ 16%]
+........................................................................ [ 19%]
+........................................................................ [ 23%]
+........................................................................ [ 26%]
+........................................................................ [ 29%]
+........................................................................ [ 33%]
+........................................................................ [ 36%]
+........................................................................ [ 39%]
+........................................................................ [ 42%]
+...................................................................s.... [ 46%]
+........................................................................ [ 49%]
+........................................................................ [ 52%]
+........................................................................ [ 56%]
+........................................................................ [ 59%]
+........................................................................ [ 62%]
+...................................................................F.... [ 66%]
+........................................................................ [ 69%]
+....s...................................................s............... [ 72%]
+........................................................................ [ 75%]
+..........................................FFFFF..........F.............. [ 79%]
+........................................................................ [ 82%]
+........................................................................ [ 85%]
+........................................................................ [ 89%]
+..........................................ss............................ [ 92%]
+................................................s...............s...s..F [ 95%]
+....s........FssF....ssssss.F....sss.ss.FF.....sssssssssssssss.......... [ 99%]
+.....................                                                    [100%]
+=================================== ERRORS ====================================
+_ ERROR collecting tests/integration/rag/embedding/test_hf_embedding_pipeline_integration.py _
+ImportError while importing test module 'D:\Projekty\intergrax\.claude\worktrees\pdc-x-ia-global-cdaa97\tests\integration\rag\embedding\test_hf_embedding_pipeline_integration.py'.
+Hint: make sure your test modules/packages have valid Python names.
+Traceback:
+tests\integration\rag\embedding\test_hf_embedding_pipeline_integration.py:16: in <module>
+    from intergrax.rag.embedding.providers.hf_embedding_provider import HFEmbeddingProvider
+intergrax\rag\embedding\providers\hf_embedding_provider.py:12: in <module>
+    from sentence_transformers import SentenceTransformer
+E   ModuleNotFoundError: No module named 'sentence_transformers'
+_ ERROR collecting tests/integration/rag/retrievers/test_retrieval_integration.py _
+ImportError while importing test module 'D:\Projekty\intergrax\.claude\worktrees\pdc-x-ia-global-cdaa97\tests\integration\rag\retrievers\test_retrieval_integration.py'.
+Hint: make sure your test modules/packages have valid Python names.
+Traceback:
+tests\integration\rag\retrievers\test_retrieval_integration.py:19: in <module>
+    from intergrax.rag.embedding.providers.hf_embedding_provider import HFEmbeddingProvider
+intergrax\rag\embedding\providers\hf_embedding_provider.py:12: in <module>
+    from sentence_transformers import SentenceTransformer
+E   ModuleNotFoundError: No module named 'sentence_transformers'
+_ ERROR collecting tests/integration/rag/retrievers/test_retriever_pipeline_basic.py _
+ImportError while importing test module 'D:\Projekty\intergrax\.claude\worktrees\pdc-x-ia-global-cdaa97\tests\integration\rag\retrievers\test_retriever_pipeline_basic.py'.
+Hint: make sure your test modules/packages have valid Python names.
+Traceback:
+tests\integration\rag\retrievers\test_retriever_pipeline_basic.py:16: in <module>
+    from intergrax.rag.embedding.providers.hf_embedding_provider import HFEmbeddingProvider
+intergrax\rag\embedding\providers\hf_embedding_provider.py:12: in <module>
+    from sentence_transformers import SentenceTransformer
+E   ModuleNotFoundError: No module named 'sentence_transformers'
+================================== FAILURES ===================================
+________ test_handler_attaches_native_handle_as_private_runtime_state _________
+tests\unit\rag\document_loaders\parsers\test_parser_pipeline.py:334: in test_handler_attaches_native_handle_as_private_runtime_state
+    assert get_parser_native_handle(docs[0]) is handle
+E   AssertionError: assert None is {'doc': 1}
+E    +  where None = get_parser_native_handle(_KnowledgeDocumentWithParserRuntime(schema_version=1, identity=KnowledgeDocumentIdentity(document_id='abcd8c3864bf2624...='file', source_parent_id=None, provider_id='tests.dummy', source_revision=None, source_uri='file', content_hash=None)))
+___________________ test_indexing_manager_indexes_documents ___________________
+tests\unit\rag\indexing\test_indexing_manager_indexes_documents.py:114: in test_indexing_manager_indexes_documents
+    store = FakeVectorstore()
+            ^^^^^^^^^^^^^^^^^
+E   TypeError: Can't instantiate abstract class FakeVectorstore without an implementation for abstract method 'list_source_record_ids'
+___ test_indexing_manager_materializes_generator_and_revalidates_documents ____
+tests\unit\rag\indexing\test_indexing_manager_indexes_documents.py:134: in test_indexing_manager_materializes_generator_and_revalidates_documents
+    vectorstore=FakeVectorstore(),
+                ^^^^^^^^^^^^^^^^^
+E   TypeError: Can't instantiate abstract class FakeVectorstore without an implementation for abstract method 'list_source_record_ids'
+_______ test_indexing_manager_rejects_foreign_document_before_strategy ________
+tests\unit\rag\indexing\test_indexing_manager_indexes_documents.py:151: in test_indexing_manager_rejects_foreign_document_before_strategy
+    vectorstore=FakeVectorstore(),
+                ^^^^^^^^^^^^^^^^^
+E   TypeError: Can't instantiate abstract class FakeVectorstore without an implementation for abstract method 'list_source_record_ids'
+__________ test_indexing_manager_empty_input_does_not_call_strategy ___________
+tests\unit\rag\indexing\test_indexing_manager_indexes_documents.py:165: in test_indexing_manager_empty_input_does_not_call_strategy
+    vectorstore=FakeVectorstore(),
+                ^^^^^^^^^^^^^^^^^
+E   TypeError: Can't instantiate abstract class FakeVectorstore without an implementation for abstract method 'list_source_record_ids'
+_____ test_indexing_pipeline_passes_native_sequence_without_revalidation ______
+tests\unit\rag\indexing\test_indexing_manager_indexes_documents.py:182: in test_indexing_pipeline_passes_native_sequence_without_revalidation
+    vectorstore=FakeVectorstore(),
+                ^^^^^^^^^^^^^^^^^
+E   TypeError: Can't instantiate abstract class FakeVectorstore without an implementation for abstract method 'list_source_record_ids'
+__________ test_rag_stack_wires_toc_store_when_hierarchical_enabled ___________
+tests\unit\rag\ingest\test_hierarchical_dual_index_wiring.py:328: in test_rag_stack_wires_toc_store_when_hierarchical_enabled
+    stack = create_default_rag_stack(
+intergrax\rag\bootstrap\rag_stack_bootstrap.py:114: in create_default_rag_stack
+    toc_vectorstore_manager = resolve_toc_vectorstore_for_profile(
+intergrax\rag\bootstrap\hierarchical_bootstrap.py:57: in resolve_toc_vectorstore_for_profile
+    return create_toc_vectorstore_manager(
+intergrax\rag\bootstrap\hierarchical_bootstrap.py:38: in create_toc_vectorstore_manager
+    names = list(chunks_store.list_collections())
+                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+intergrax\rag\vectorstore\vectorstore_manager.py:446: in list_collections
+    return list(self._store.list_collections())
+                ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+.venv\Lib\site-packages\pydantic\main.py:1026: in __getattr__
+    raise AttributeError(f'{type(self).__name__!r} object has no attribute {item!r}')
+E   AttributeError: 'InmemoryVectorStoreIntegration' object has no attribute 'list_collections'
+______________________ test_image_handler_builds_parser _______________________
+tests\integration\rag\document_loaders\parsers\test_image_smart_document_handler.py:55: in test_image_handler_builds_parser
+    parsers = handler.build_parsers()
+              ^^^^^^^^^^^^^^^^^^^^^^^
+intergrax\rag\document_loaders\handlers\image_smart_document_handler.py:60: in build_parsers
+    raise RuntimeError(
+E   RuntimeError: ImageSmartDocumentHandler requires scoped load(); build_parsers is not supported
+_____________________________ test_docx_ingestion _____________________________
+tests\integration\rag\document_loaders\test_fixture_dataset_ingestion.py:17: in test_docx_ingestion
+    loader = create_default_documents_loader()
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+intergrax\rag\document_loaders\bootstrap\default_loader.py:43: in create_default_documents_loader
+    from intergrax.rag.document_loaders.handlers.doc_smart_document_handler import DocSmartDocumentHandler
+intergrax\rag\document_loaders\handlers\doc_smart_document_handler.py:11: in <module>
+    from intergrax.rag.document_loaders.contracts.base_document_handler import (
+E   ImportError: cannot import name 'PipelineDocumentHandler' from 'intergrax.rag.document_loaders.contracts.base_document_handler' (D:\Projekty\intergrax\.claude\worktrees\pdc-x-ia-global-cdaa97\intergrax\rag\document_loaders\contracts\base_document_handler.py)
+_____________________________ test_txt_ingestion ______________________________
+tests\integration\rag\document_loaders\test_fixture_dataset_ingestion.py:67: in test_txt_ingestion
+    loader = create_default_documents_loader()
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+intergrax\rag\document_loaders\bootstrap\default_loader.py:43: in create_default_documents_loader
+    from intergrax.rag.document_loaders.handlers.doc_smart_document_handler import DocSmartDocumentHandler
+intergrax\rag\document_loaders\handlers\doc_smart_document_handler.py:11: in <module>
+    from intergrax.rag.document_loaders.contracts.base_document_handler import (
+E   ImportError: cannot import name 'PipelineDocumentHandler' from 'intergrax.rag.document_loaders.contracts.base_document_handler' (D:\Projekty\intergrax\.claude\worktrees\pdc-x-ia-global-cdaa97\intergrax\rag\document_loaders\contracts\base_document_handler.py)
+_______ test_graphrag_source_reingest_replaces_vectors_and_graph_safely _______
+tests\integration\rag\test_graph_reingest_qualification.py:251: in test_graphrag_source_reingest_replaces_vectors_and_graph_safely
+    assert a_v1_graph_nodes
+E   assert set()
+_____ test_stale_inflight_publication_cannot_become_active_after_takeover _____
+tests\integration\rag\test_same_source_reingest_serialization.py:430: in test_stale_inflight_publication_cannot_become_active_after_takeover
+    assert (
+E   AssertionError: assert None == '2:generation-2-token'
+E    +  where None = active_publication_generation(key=RagSourceOperationKey(tenant_id='same-source-10c-tenant', namespace='same-source-10c', workspace_id='same-source-10c-workspace', source_id='canonical-source-id', publication_scope_id=None))
+E    +    where active_publication_generation = <intergrax.distributed.source_operation.DocumentStoreSourceOperationCoordinator object at 0x000001521C6B1AF0>.active_publication_generation
+_______ test_stale_graph_topology_is_inactive_after_generation_takeover _______
+tests\integration\rag\test_same_source_reingest_serialization.py:553: in test_stale_graph_topology_is_inactive_after_generation_takeover
+    assert any("New Entity" in hit.document.content for hit in new_hits)
+E   assert False
+E    +  where False = any(<generator object test_stale_graph_topology_is_inactive_after_generation_takeover.<locals>.<genexpr> at 0x000001521D6DB030>)
+============================== warnings summary ===============================
+tests/unit/memory/test_mem_depth_modules.py::test_entity_graph_legacy_facade_rejects_ungoverned_access
+  D:\Projekty\intergrax\.claude\worktrees\pdc-x-ia-global-cdaa97\tests\unit\memory\test_mem_depth_modules.py:54: DeprecationWarning: EntityGraphMemoryStore is migration-only; use EntityTemporalMemoryCapability
+    store = EntityGraphMemoryStore(backend=InMemoryEntityTemporalMemoryStore())
+
+tests/unit/memory/test_mem_ent11_platform_boundaries.py::test_entity_graph_legacy_neighbors_blocks_ungoverned_read
+  D:\Projekty\intergrax\.claude\worktrees\pdc-x-ia-global-cdaa97\tests\unit\memory\test_mem_ent11_platform_boundaries.py:221: DeprecationWarning: EntityGraphMemoryStore is migration-only; use EntityTemporalMemoryCapability
+    facade = EntityGraphMemoryStore(backend=InMemoryEntityTemporalMemoryStore())
+
+tests/unit/memory/test_mem_ent11_platform_boundaries.py::test_entity_graph_legacy_facade_blocks_ungoverned_mutations
+  D:\Projekty\intergrax\.claude\worktrees\pdc-x-ia-global-cdaa97\tests\unit\memory\test_mem_ent11_platform_boundaries.py:239: DeprecationWarning: EntityGraphMemoryStore is migration-only; use EntityTemporalMemoryCapability
+    facade = EntityGraphMemoryStore(backend=InMemoryEntityTemporalMemoryStore())
+
+tests/unit/runtime/nexus/context/test_uaep_assemble.py::test_text_from_assembled_messages_rejects_system_context_only
+  tests\unit\runtime\nexus\context\test_uaep_assemble.py:222: PytestWarning: The test <Function test_text_from_assembled_messages_rejects_system_context_only> is marked with '@pytest.mark.asyncio' but it is not an async function. Please remove the asyncio mark. If the test is not marked explicitly, check for global marks applied via 'pytestmark'.
+    def test_text_from_assembled_messages_rejects_system_context_only() -> None:
+
+tests/unit/runtime/nexus/context/test_uaep_assemble.py::test_text_from_assembled_messages_rejects_assistant_without_final_user
+  tests\unit\runtime\nexus\context\test_uaep_assemble.py:230: PytestWarning: The test <Function test_text_from_assembled_messages_rejects_assistant_without_final_user> is marked with '@pytest.mark.asyncio' but it is not an async function. Please remove the asyncio mark. If the test is not marked explicitly, check for global marks applied via 'pytestmark'.
+    def test_text_from_assembled_messages_rejects_assistant_without_final_user() -> None:
+
+tests/unit/runtime/nexus/context/test_uaep_assemble.py::test_text_from_assembled_messages_accepts_context_plus_final_user
+  tests\unit\runtime\nexus\context\test_uaep_assemble.py:239: PytestWarning: The test <Function test_text_from_assembled_messages_accepts_context_plus_final_user> is marked with '@pytest.mark.asyncio' but it is not an async function. Please remove the asyncio mark. If the test is not marked explicitly, check for global marks applied via 'pytestmark'.
+    def test_text_from_assembled_messages_accepts_context_plus_final_user() -> None:
+
+-- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html
+=========================== short test summary info ===========================
+FAILED tests/unit/rag/document_loaders/parsers/test_parser_pipeline.py::test_handler_attaches_native_handle_as_private_runtime_state
+FAILED tests/unit/rag/indexing/test_indexing_manager_indexes_documents.py::test_indexing_manager_indexes_documents
+FAILED tests/unit/rag/indexing/test_indexing_manager_indexes_documents.py::test_indexing_manager_materializes_generator_and_revalidates_documents
+FAILED tests/unit/rag/indexing/test_indexing_manager_indexes_documents.py::test_indexing_manager_rejects_foreign_document_before_strategy
+FAILED tests/unit/rag/indexing/test_indexing_manager_indexes_documents.py::test_indexing_manager_empty_input_does_not_call_strategy
+FAILED tests/unit/rag/indexing/test_indexing_manager_indexes_documents.py::test_indexing_pipeline_passes_native_sequence_without_revalidation
+FAILED tests/unit/rag/ingest/test_hierarchical_dual_index_wiring.py::test_rag_stack_wires_toc_store_when_hierarchical_enabled
+FAILED tests/integration/rag/document_loaders/parsers/test_image_smart_document_handler.py::test_image_handler_builds_parser
+FAILED tests/integration/rag/document_loaders/test_fixture_dataset_ingestion.py::test_docx_ingestion
+FAILED tests/integration/rag/document_loaders/test_fixture_dataset_ingestion.py::test_txt_ingestion
+FAILED tests/integration/rag/test_graph_reingest_qualification.py::test_graphrag_source_reingest_replaces_vectors_and_graph_safely
+FAILED tests/integration/rag/test_same_source_reingest_serialization.py::test_stale_inflight_publication_cannot_become_active_after_takeover
+FAILED tests/integration/rag/test_same_source_reingest_serialization.py::test_stale_graph_topology_is_inactive_after_generation_takeover
+13 failed, 2131 passed, 44 skipped, 6 warnings, 3 errors in 177.76s (0:02:57)

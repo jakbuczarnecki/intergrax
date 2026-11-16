@@ -211,6 +211,8 @@ flowchart LR
 
 Real-user and commercial validation remain **incomplete**.
 
+The planned [Scenario Factory](../overview/SCENARIO_FACTORY.md) is a plan, not proof: it is **not yet implemented**, and no Scenario Proof or claim on this page depends on it.
+
 ---
 
 ## Verification paths

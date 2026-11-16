@@ -1,0 +1,18 @@
+# certifier phase-1 and phase-2 activation validator output (certification-governance-agent, session local_7c8553da-3398-4f9b-8fae-c794a63d6cb5)
+# HEAD: 19c617365cda85d88b474575e77b7d083739b529 (CP2); phase 1 ran at CP1 92ad3555775649742299826e3680ec8ce703cc8a
+# UTC: 2026-11-12T06:05:19Z
+# note: a first local attempt (never pushed) used an LF handoff; test_w4_f01_a_tampered_handoff_still_fails_act_n08_in_every_checkout_mode failed (lf-collapsed no-op), so the handoff was rewritten with CRLF per W4-F01 and Steps B-D were redone from CA.
+
+# phase 1 (CP1 92ad3555775649742299826e3680ec8ce703cc8a; expected FAIL with exactly four errors)
+# command: python -m scripts.governance.verify_iiac_policy_activation --require-in-force
+IIAC policy activation: FAIL
+  - missing activation field: effective_from_sha
+  - missing activation field: policy_activation_sha
+  - effective_from_sha must be a 40-char lowercase git SHA
+  - policy_activation_sha must be a 40-char lowercase git SHA
+exit=1
+
+# phase 2 (CP2 19c617365cda85d88b474575e77b7d083739b529)
+# command: python -m scripts.governance.verify_iiac_policy_activation --require-in-force
+IIAC policy activation: IN_FORCE @ IIAC-2026-11-05.1 from 92ad3555775649742299826e3680ec8ce703cc8a
+exit=0

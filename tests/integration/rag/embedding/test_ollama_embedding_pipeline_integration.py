@@ -2,16 +2,19 @@
 # Intergrax framework – proprietary and confidential.
 # Use, modification, or distribution without written permission is prohibited.
 
+
 import pytest
+
+pytest.importorskip(
+    "langchain_core", reason="requires the 'dev-ci-rag' extra (langchain-core); executed by the rag-guard CI profile"
+)
 import numpy as np
 import requests
-
-from langchain_core.documents import Document
-
 from intergrax.rag.embedding.embedding_manager import EmbeddingManager
-from intergrax.rag.embedding.pipeline.embedding_pipeline import EmbeddingPipeline
 from intergrax.rag.embedding.engine.embedding_engine import EmbeddingEngine
+from intergrax.rag.embedding.pipeline.embedding_pipeline import EmbeddingPipeline
 from intergrax.rag.embedding.providers.ollama_embedding_provider import OllamaEmbeddingProvider
+from langchain_core.documents import Document
 
 pytestmark = pytest.mark.integration
 

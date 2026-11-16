@@ -1,0 +1,484 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "sfx.scenario_lifecycle_record.v1",
+  "title": "ScenarioLifecycleRecord",
+  "description": "SFX-CON-14. One event in the append-only SFX lifecycle stream of a scenario (CW WorkArtifact 'sfx-lifecycle'; each event is a new WorkArtifactVersion published with CAS). The current state is the content of the current version. TRANSITION events must follow master plan R1 §7.9; ARTIFACT_REVISION events keep from == to and record a revision of another artifact (input to G-2 and G-4). Envelope: canonical_digest = sha256(JCS(model_dump without canonical_digest)); see SFX_CANONICALIZATION.md. Persisted as a CW WorkArtifactVersion (ADR-SFX-002 §D5). Status: PROPOSED design draft (T-IGX-037-C); not code.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version",
+    "tenant_id",
+    "workspace_id",
+    "work_item_id",
+    "scenario_id",
+    "artifact_id",
+    "version",
+    "canonical_digest",
+    "created_at",
+    "created_by",
+    "event_kind",
+    "sequence",
+    "previous_record_digest",
+    "from",
+    "to",
+    "actor",
+    "intervention_class",
+    "subject_artifact_ref",
+    "evidence_refs",
+    "decision_binding_ref",
+    "engineering_job_ref",
+    "legacy_lifecycle_projection",
+    "reason"
+  ],
+  "properties": {
+    "schema_version": {
+      "const": "sfx.scenario_lifecycle_record.v1"
+    },
+    "tenant_id": {
+      "$ref": "#/$defs/id"
+    },
+    "workspace_id": {
+      "$ref": "#/$defs/id"
+    },
+    "work_item_id": {
+      "$ref": "#/$defs/id"
+    },
+    "scenario_id": {
+      "$ref": "#/$defs/id"
+    },
+    "artifact_id": {
+      "$ref": "#/$defs/id"
+    },
+    "version": {
+      "type": "integer",
+      "maximum": 9007199254740991,
+      "minimum": 1,
+      "description": "SFX logical version; one CW WorkArtifactVersion per value."
+    },
+    "canonical_digest": {
+      "$ref": "#/$defs/digest"
+    },
+    "created_at": {
+      "$ref": "#/$defs/timestamp"
+    },
+    "created_by": {
+      "$ref": "#/$defs/principal_ref"
+    },
+    "event_kind": {
+      "enum": [
+        "TRANSITION",
+        "ARTIFACT_REVISION"
+      ]
+    },
+    "sequence": {
+      "type": "integer",
+      "maximum": 9007199254740991,
+      "minimum": 1,
+      "description": "Equals version; gap-free."
+    },
+    "previous_record_digest": {
+      "anyOf": [
+        {
+          "$ref": "#/$defs/digest"
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "from": {
+      "anyOf": [
+        {
+          "enum": [
+            "DRAFT",
+            "DISCOVERED",
+            "SPECIFIED",
+            "BLUEPRINTED",
+            "APPROVED",
+            "BUILDING",
+            "BUILT",
+            "SANDBOX_TESTED",
+            "SANDBOX_CERTIFIED",
+            "ADMISSION_DOSSIER_READY"
+          ]
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "to": {
+      "enum": [
+        "DRAFT",
+        "DISCOVERED",
+        "SPECIFIED",
+        "BLUEPRINTED",
+        "APPROVED",
+        "BUILDING",
+        "BUILT",
+        "SANDBOX_TESTED",
+        "SANDBOX_CERTIFIED",
+        "ADMISSION_DOSSIER_READY"
+      ]
+    },
+    "actor": {
+      "$ref": "#/$defs/principal_ref"
+    },
+    "intervention_class": {
+      "enum": [
+        "DESIGNED_ANSWER",
+        "DESIGNED_APPROVAL",
+        "MANUAL_EDIT",
+        "AUTOMATED"
+      ],
+      "description": "G-2 counts MANUAL_EDIT events by HUMAN actors."
+    },
+    "subject_artifact_ref": {
+      "anyOf": [
+        {
+          "$ref": "#/$defs/artifact_version_ref"
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "evidence_refs": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/id"
+      }
+    },
+    "decision_binding_ref": {
+      "anyOf": [
+        {
+          "$ref": "#/$defs/id"
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "engineering_job_ref": {
+      "anyOf": [
+        {
+          "$ref": "#/$defs/artifact_version_ref"
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "legacy_lifecycle_projection": {
+      "anyOf": [
+        {
+          "enum": [
+            "DESIGN",
+            "ACCEPTED_FOR_IMPLEMENTATION",
+            "IMPLEMENTATION_INITIALIZED",
+            "EXECUTABLE",
+            "VERIFIED"
+          ],
+          "description": "Informational projection onto ScenarioLifecycle (scripts/proof/scenario_lifecycle.py:24)."
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "reason": {
+      "anyOf": [
+        {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 2000
+        },
+        {
+          "type": "null"
+        }
+      ]
+    }
+  },
+  "$defs": {
+    "id": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 256,
+      "pattern": "^[A-Za-z0-9][A-Za-z0-9._:/-]*$",
+      "description": "Opaque identifier. Never a secret and never a free-text value."
+    },
+    "digest": {
+      "type": "string",
+      "pattern": "^sha256:[0-9a-f]{64}$",
+      "description": "Platform content digest convention sha256:<64 lowercase hex> (intergrax/contracts/validation.py:13)."
+    },
+    "timestamp": {
+      "type": "string",
+      "pattern": "^[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}:[0-9]{2}:[0-9]{2}\\.[0-9]{6}Z$",
+      "description": "RFC 3339 UTC timestamp with exactly six fractional digits and a Z suffix (SFX_CANONICALIZATION.md, rule CF-5)."
+    },
+    "slug": {
+      "type": "string",
+      "pattern": "^[a-z][a-z0-9_]*$",
+      "maxLength": 64,
+      "description": "Same pattern as SCENARIO_SLUG_PATTERN (scripts/proof/create_scenario_proof.py:19)."
+    },
+    "principal_ref": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "principal_id",
+        "actor_kind"
+      ],
+      "properties": {
+        "principal_id": {
+          "$ref": "#/$defs/id"
+        },
+        "actor_kind": {
+          "enum": [
+            "HUMAN",
+            "AGENT",
+            "SYSTEM"
+          ],
+          "description": "Kind of actor. G-2 counts only HUMAN actors."
+        }
+      },
+      "description": "Harness principal reference."
+    },
+    "artifact_version_ref": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "schema_id",
+        "artifact_id",
+        "version",
+        "canonical_digest"
+      ],
+      "properties": {
+        "schema_id": {
+          "type": "string",
+          "pattern": "^sfx\\.[a-z_]+\\.v[0-9]+$"
+        },
+        "artifact_id": {
+          "$ref": "#/$defs/id"
+        },
+        "version": {
+          "type": "integer",
+          "maximum": 9007199254740991,
+          "minimum": 1
+        },
+        "canonical_digest": {
+          "$ref": "#/$defs/digest"
+        }
+      },
+      "description": "Immutable reference to one SFX artifact version (CW WorkArtifactVersion)."
+    },
+    "secret_ref": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 512,
+      "pattern": "^[a-z][a-z0-9+.-]*:[^\\s]+$",
+      "description": "Reference resolved by the credential broker at run time. Never a secret value."
+    }
+  },
+  "allOf": [
+    {
+      "if": {
+        "properties": {
+          "event_kind": {
+            "const": "TRANSITION"
+          }
+        },
+        "required": [
+          "event_kind"
+        ]
+      },
+      "then": {
+        "anyOf": [
+          {
+            "properties": {
+              "from": {
+                "type": "null"
+              },
+              "to": {
+                "const": "DRAFT"
+              }
+            }
+          },
+          {
+            "properties": {
+              "from": {
+                "const": "DRAFT"
+              },
+              "to": {
+                "const": "DISCOVERED"
+              }
+            }
+          },
+          {
+            "properties": {
+              "from": {
+                "const": "DISCOVERED"
+              },
+              "to": {
+                "const": "SPECIFIED"
+              }
+            }
+          },
+          {
+            "properties": {
+              "from": {
+                "const": "SPECIFIED"
+              },
+              "to": {
+                "const": "BLUEPRINTED"
+              }
+            }
+          },
+          {
+            "properties": {
+              "from": {
+                "const": "BLUEPRINTED"
+              },
+              "to": {
+                "const": "APPROVED"
+              }
+            }
+          },
+          {
+            "properties": {
+              "from": {
+                "const": "APPROVED"
+              },
+              "to": {
+                "const": "BUILDING"
+              }
+            }
+          },
+          {
+            "properties": {
+              "from": {
+                "const": "BUILDING"
+              },
+              "to": {
+                "const": "BUILT"
+              }
+            }
+          },
+          {
+            "properties": {
+              "from": {
+                "const": "BUILDING"
+              },
+              "to": {
+                "const": "APPROVED"
+              }
+            }
+          },
+          {
+            "properties": {
+              "from": {
+                "const": "BUILT"
+              },
+              "to": {
+                "const": "SANDBOX_TESTED"
+              }
+            }
+          },
+          {
+            "properties": {
+              "from": {
+                "const": "SANDBOX_TESTED"
+              },
+              "to": {
+                "const": "SANDBOX_CERTIFIED"
+              }
+            }
+          },
+          {
+            "properties": {
+              "from": {
+                "const": "SANDBOX_CERTIFIED"
+              },
+              "to": {
+                "const": "ADMISSION_DOSSIER_READY"
+              }
+            }
+          },
+          {
+            "properties": {
+              "from": {
+                "const": "SANDBOX_TESTED"
+              },
+              "to": {
+                "const": "BLUEPRINTED"
+              }
+            }
+          }
+        ]
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "event_kind": {
+            "const": "TRANSITION"
+          },
+          "to": {
+            "enum": [
+              "APPROVED",
+              "SANDBOX_CERTIFIED"
+            ]
+          }
+        },
+        "required": [
+          "event_kind",
+          "to"
+        ],
+        "not": {
+          "properties": {
+            "from": {
+              "const": "BUILDING"
+            }
+          },
+          "required": [
+            "from"
+          ]
+        }
+      },
+      "then": {
+        "properties": {
+          "decision_binding_ref": {
+            "$ref": "#/$defs/id"
+          },
+          "actor": {
+            "properties": {
+              "actor_kind": {
+                "const": "HUMAN"
+              }
+            }
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "event_kind": {
+            "const": "ARTIFACT_REVISION"
+          }
+        },
+        "required": [
+          "event_kind"
+        ]
+      },
+      "then": {
+        "properties": {
+          "subject_artifact_ref": {
+            "$ref": "#/$defs/artifact_version_ref"
+          }
+        }
+      }
+    }
+  ]
+}

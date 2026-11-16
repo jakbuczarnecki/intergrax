@@ -1,0 +1,239 @@
+"""W0-T04: parse roadmap S01 at BASELINE_SHA into stage rows (S3TABLE, LEDGER, PROSE). Stdlib only."""
+from __future__ import annotations
+
+import re
+import sys
+from pathlib import Path
+
+sys.path.insert(0, str(Path(__file__).parent))
+from common import *  # noqa
+
+TOKEN = re.compile(r"\b[A-Z][A-Z0-9]+(?:-[A-Z0-9]+)+\b")
+LEDGER_KW = [("FINAL / MANDATORY", "FINAL / MANDATORY"), ("READY FOR INDEPENDENT AUDIT", "READY FOR AUDIT"), ("READY FOR AUDIT", "READY FOR AUDIT"),
+             ("CLOSED", "CLOSED"), ("REJECTED", "REJECTED"), ("SUPERSEDED", "SUPERSEDED"), ("PLANNED", "PLANNED"),
+             ("BLOCKED", "BLOCKED"), ("IN PROGRESS", "IN PROGRESS"), ("CURRENT", "CURRENT"), ("QUEUED", "QUEUED"),
+             ("OPEN", "OPEN"), ("NEXT", "NEXT"), ("HELD", "HELD"), ("CONDITIONAL", "CONDITIONAL"),
+             ("DOCUMENTATION PUBLICATION ONLY", "DOC_ONLY"), ("INDEPENDENTLY", "INDEPENDENTLY")]
+ROLE_HINTS = [("implement", "implementation"), ("audit", "audit"), ("reject", "rejected"), ("supersed", "superseded"),
+              ("publication", "closure_publication"), ("closure", "certification"), ("accepted", "certification"),
+              ("test", "test_execution"), ("tip", "evidence"), ("certif", "certification")]
+
+
+def status_parts(raw: str):
+    txt = clean_cell(raw)
+    cb = None
+    m = re.match(r"^\[( |x|X)\]\s*(.*)$", txt)
+    rest = txt
+    if m:
+        cb = m.group(1).lower() == "x"
+        rest = m.group(2)
+    token = re.split(r"\s+[—–-]\s+|\s*\(|;|\.\s", rest)[0].strip().upper()
+    token = re.sub(r"\s+", " ", token)
+    norm = token if token in ROADMAP_STATUS_VOCAB else "OFF_VOCAB"
+    fam = "CLOSED" if (rest.upper().startswith("CLOSED") or re.search(r"(?<!NOT )CLOSED", rest.upper()[:80]) and not rest.upper().startswith(("PLANNED", "BLOCKED", "FINAL"))) else (token or "EMPTY")
+    return cb, rest, norm, fam
+
+
+def ledger_family(notes: str) -> str:
+    up = clean_cell(notes).upper()
+    best, pos = "UNKNOWN", 10 ** 9
+    for kw, fam in LEDGER_KW:
+        i = up.find(kw)
+        if 0 <= i < pos:
+            best, pos = fam, i
+    return best
+
+
+def sha_refs(text: str):
+    out = []
+    for m in SHA40.finditer(text):
+        ctx = text[max(0, m.start() - 70):m.start()].lower()
+        role = "evidence"
+        for k, r in ROLE_HINTS:
+            if k in ctx:
+                role = r
+        out.append({"sha": m.group(0), "role": role})
+    seen, dedup = set(), []
+    for o in out:
+        if o["sha"] not in seen:
+            seen.add(o["sha"])
+            dedup.append(o)
+    abbr = []
+    for m in re.finditer(r"`([0-9a-f]{7,12})(?:…|\.\.\.)?`", text):
+        abbr.append(m.group(1))
+    return dedup, sorted(set(abbr))
+
+
+def doc_links(text: str):
+    base = Path(ROADMAP).parent
+    out = []
+    for m in re.finditer(r"\]\(([^)\s#]+\.(?:md|json|yaml|yml))(?:#[^)]*)?\)", text):
+        t = m.group(1)
+        if t.startswith("http"):
+            continue
+        p = (base / t)
+        norm = re.sub(r"/[^/]+/\.\./", "/", str(p).replace("\\", "/"))
+        parts = []
+        for seg in str(p).replace("\\", "/").split("/"):
+            if seg == "..":
+                if parts:
+                    parts.pop()
+            elif seg != ".":
+                parts.append(seg)
+        out.append("/".join(parts))
+    return sorted(set(out))
+
+
+def main():
+    txt = show_text(ROADMAP)
+    log_read(ROADMAP, note="W0-T04 parse_roadmap (full parse by script)")
+    lines = txt.split("\n")
+    n = len(lines)
+
+    def find_heading(prefix, start=0):
+        for i in range(start, n):
+            if lines[i].startswith(prefix):
+                return i
+        raise SystemExit(f"heading not found: {prefix}")
+
+    h3 = find_heading("## 3. Canonical ordered roadmap")
+    h4 = find_heading("## 4. ")
+    h5 = find_heading("## 5. Closure evidence ledger")
+    h6 = find_heading("## 6. ")
+
+    rows = []
+    # --- §3 main table: first contiguous table after h3
+    i = h3
+    while i < h4 and not lines[i].startswith("|"):
+        i += 1
+    t_start = i
+    while i < h4 and lines[i].startswith("|"):
+        i += 1
+    t_end = i  # exclusive
+    for ln in range(t_start, t_end):
+        cells = split_row(lines[ln])
+        if len(cells) < 2:
+            continue
+        first = clean_cell(cells[0])
+        if first in ("Stage", "") or set(first) <= set("-: "):
+            continue
+        status_raw = cells[-1]
+        malformed = len(cells) != 4
+        cb, rest, norm, fam = status_parts(status_raw)
+        shas, abbr = sha_refs(lines[ln])
+        rows.append({"id": first, "row_source": "S3TABLE", "line": ln + 1, "what": clean_cell(cells[1]) if len(cells) > 1 else "",
+                     "status_raw": clean_cell(status_raw), "checkbox_checked": cb, "status_text": rest,
+                     "status_normalized": norm, "status_family": fam, "malformed_cells": malformed,
+                     "n_cells": len(cells), "shas": shas, "abbr_shas": abbr, "linked_docs": doc_links(lines[ln]),
+                     "raw_len": len(lines[ln])})
+
+    # --- §5 ledger rows
+    for ln in range(h5, h6):
+        l = lines[ln]
+        if not l.startswith("|"):
+            continue
+        cells = split_row(l)
+        first = clean_cell(cells[0]) if cells else ""
+        if first in ("Etap", "") or set(first) <= set("-: "):
+            continue
+        notes = " | ".join(cells[2:]) if len(cells) > 2 else ""
+        shas, abbr = sha_refs(l)
+        rows.append({"id": first, "row_source": "LEDGER", "line": ln + 1, "evidence_cell": clean_cell(cells[1]) if len(cells) > 1 else "",
+                     "notes": clean_cell(notes)[:1500], "ledger_family": ledger_family(notes),
+                     "ledger_family_evidence_cell": ledger_family(cells[1]) if len(cells) > 1 else "UNKNOWN",
+                     "malformed_cells": len(cells) != 3, "n_cells": len(cells), "shas": shas, "abbr_shas": abbr,
+                     "linked_docs": doc_links(l), "raw_len": len(l)})
+
+    write_json(WS / "extracts" / "roadmap_rows_raw.json", rows)
+
+    # ---- merge into one record per unique ID
+    by_id: dict[str, dict] = {}
+    for r in rows:
+        d = by_id.setdefault(r["id"], {"id": r["id"], "sources": [], "table": None, "ledger": []})
+        d["sources"].append({"row_source": r["row_source"], "line": r["line"]})
+        if r["row_source"] == "S3TABLE":
+            d["table"] = r
+        else:
+            d["ledger"].append(r)
+
+    ids = sorted(by_id)
+    known_tokens = set()
+    for i_ in ids:
+        known_tokens.update(TOKEN.findall(i_))
+    roots = {t.split("-")[0] for t in known_tokens}
+    EXCL = {"FRZ", "OD", "T", "HIST", "PDC", "ADR", "IIAC", "ECAP", "ARCH", "ENT", "MCP", "SFX", "SEF", "NPSC", "LKW", "ACT"}
+    # prose tokens: every token in the whole roadmap text that extends a known stage ID
+    all_tokens = {}
+    for ln, l in enumerate(lines, 1):
+        for t in TOKEN.findall(l):
+            all_tokens.setdefault(t, []).append(ln)
+    prose = {}
+    ordered_ids = sorted(known_tokens, key=len, reverse=True)
+    for t, lns in all_tokens.items():
+        if t in known_tokens:
+            continue
+        parent = next((k for k in ordered_ids if t.startswith(k + "-")), None)
+        last = t.split("-")[-1]
+        if parent and re.match(r"^(?:[A-Z]{1,3}\d+[A-Z0-9]*|FINAL|CERT|CLOSE|GATE|R\d+)$", last):
+            prose[t] = {"id": t, "row_source": "PROSE", "line": lns[0], "n_mentions": len(lns), "extends": parent,
+                        "mention_lines": lns[:12]}
+    prose_rows = sorted(prose.values(), key=lambda d: d["line"])
+
+    # parent assignment
+    all_ids_for_parent = set(ids) | set(prose)
+    def parent_of(i_):
+        toks = TOKEN.findall(i_)
+        base = i_ if i_ in all_ids_for_parent else (toks[0] if toks else i_)
+        parts = base.split("-")
+        for k in range(len(parts) - 1, 0, -1):
+            cand = "-".join(parts[:k])
+            if cand in set(ids):
+                return cand
+        return None
+
+    out = []
+    for i_ in ids:
+        d = by_id[i_]
+        t = d["table"]
+        rec = {"id": i_, "row_source": "S3TABLE" if t else "LEDGER", "line": (t or d["ledger"][0])["line"],
+               "all_sources": d["sources"], "parent_id": parent_of(i_)}
+        if t:
+            rec.update({"status_raw": t["status_raw"], "status_normalized": t["status_normalized"],
+                        "status_family": t["status_family"], "checkbox_checked": t["checkbox_checked"],
+                        "what": t["what"], "malformed_cells": t["malformed_cells"]})
+        else:
+            lg = d["ledger"][0]
+            rec.update({"status_raw": "", "status_normalized": "NO_TABLE_ROW", "status_family": "NO_TABLE_ROW",
+                        "checkbox_checked": None, "what": "", "malformed_cells": lg["malformed_cells"]})
+        rec["ledger_lines"] = [l["line"] for l in d["ledger"]]
+        rec["ledger_families"] = [l["ledger_family"] for l in d["ledger"]]
+        rec["ledger_notes_excerpt"] = [l["notes"][:300] for l in d["ledger"]]
+        shas, abbr, docs = {}, set(), set()
+        for r in ([t] if t else []) + d["ledger"]:
+            for s in r["shas"]:
+                shas.setdefault(s["sha"], s["role"])
+            abbr.update(r["abbr_shas"])
+            docs.update(r["linked_docs"])
+        rec["shas"] = [{"sha": k, "role": v} for k, v in shas.items()]
+        rec["abbr_shas"] = sorted(abbr)
+        rec["linked_docs"] = sorted(docs)
+        out.append(rec)
+    for p in prose_rows:
+        out.append({"id": p["id"], "row_source": "PROSE", "line": p["line"], "all_sources": [{"row_source": "PROSE", "line": p["line"]}],
+                    "parent_id": p["extends"], "status_raw": "", "status_normalized": "PROSE_ONLY", "status_family": "PROSE_ONLY",
+                    "checkbox_checked": None, "what": "", "malformed_cells": False, "n_mentions": p["n_mentions"],
+                    "mention_lines": p["mention_lines"], "ledger_lines": [], "ledger_families": [], "ledger_notes_excerpt": [],
+                    "shas": [], "abbr_shas": [], "linked_docs": []})
+    write_json(WS / "extracts" / "roadmap_rows.json", out)
+    s3 = [r for r in rows if r["row_source"] == "S3TABLE"]
+    lg = [r for r in rows if r["row_source"] == "LEDGER"]
+    print(f"table_lines={t_start + 1}-{t_end} rows={len(s3)} (unique ids={len({r['id'] for r in s3})}); ledger rows={len(lg)} "
+          f"(unique={len({r['id'] for r in lg})}); unique ids total={len(ids)}; prose-only stage-like={len(prose_rows)}; "
+          f"parents(no parent)={sum(1 for r in out if r['row_source']!='PROSE' and r['parent_id'] is None)}; "
+          f"malformed S3={sum(1 for r in s3 if r['malformed_cells'])} ledger={sum(1 for r in lg if r['malformed_cells'])}")
+    from collections import Counter
+    print("status_normalized:", dict(Counter(r["status_normalized"] for r in out if r["row_source"] != "PROSE")))
+
+
+if __name__ == "__main__":
+    main()

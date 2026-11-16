@@ -1,0 +1,37 @@
+{
+  "auditor_session_id": "f7c2a8e1-4b9d-4e6f-9a3c-2d8e5f1a0b7c",
+  "audit_type": "final_hist_scope",
+  "verdict": "PASS",
+  "campaign_terminal_label": "HISTORICAL_CAMPAIGN_PARTIAL_EXACT_BLOCKERS",
+  "pinned_sha_lineage": "087bd17693db5b4b8a14cb618389ee1d6c2aaa3d",
+  "findings": [
+    {
+      "id": "F-HIST-FINAL-01",
+      "severity": "INFO",
+      "summary": "ENT-REACTIVATION-CONSENT absent; documented in blocker dossier; does not fail HIST-scope audit",
+      "disposition": "EXTERNAL"
+    },
+    {
+      "id": "F-HIST-FINAL-02",
+      "severity": "INFO",
+      "summary": "HIST-F-BND-03B and HIST-F-DUR-01 remain OPEN by design",
+      "disposition": "TRACKED_RESIDUAL"
+    },
+    {
+      "id": "F-HIST-FINAL-03",
+      "severity": "INFO",
+      "summary": "C4 CLI host suite PASS_SCOPED only",
+      "disposition": "SCOPE_BOUNDARY"
+    }
+  ],
+  "open_residuals": ["HIST-F-BND-03B", "HIST-F-DUR-01"],
+  "external_blockers": [
+    "ENT-REACTIVATION-CONSENT",
+    "RPL-01",
+    "RPL-02",
+    "RPL-03",
+    "RPL-04",
+    "REG_POPULATION_E",
+    "PATH_B_LIVE"
+  ]
+}

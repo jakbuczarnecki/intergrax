@@ -1,0 +1,9 @@
+HIST P5 IIAC re-activation audit replay
+Auditor session: IIAC-HIST-P5-REAUDIT-2026-11-09 (process_enforced)
+Tree: 0946b11576d2ee617321fb099ed794f8b21bf5ba (read-only; docs publication only)
+Audited product SHA: 3c91694c645ff0d97d104adf0c5a564b9a4c5b3c
+
+uv run python -m scripts.governance.verify_iiac_role_separation.py docs/project/maintainers/qualification/iiac_evidence/HIST-P5-2026-11-09/iiac_audit_session_manifest.HIST-P5.json --strict-product-diff --repo .
+uv run python -m scripts.governance.verify_iiac_audit_manifest.py docs/project/maintainers/qualification/iiac_evidence/HIST-P5-2026-11-09/iiac_audit_session_manifest.HIST-P5.json --repo .
+uv run pytest tests/unit/governance/test_iiac_activation_gate.py tests/unit/governance/test_iiac_negative_guards.py -q
+git diff --name-only 3c91694c645ff0d97d104adf0c5a564b9a4c5b3c 0946b11576d2ee617321fb099ed794f8b21bf5ba -- intergrax agents applications

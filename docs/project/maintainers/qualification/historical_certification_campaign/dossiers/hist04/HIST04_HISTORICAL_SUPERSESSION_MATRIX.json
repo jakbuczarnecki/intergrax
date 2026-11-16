@@ -1,0 +1,206 @@
+{
+  "workstream": "HIST-04",
+  "baseline_sha": "ba07ebaa34d04633bd60510f68c18346b1ef160d",
+  "rows": [
+    {
+      "row_id": "TRACE-X-P5-R2-P3-R1-R1-R1-R1",
+      "roadmap_line": "L392",
+      "current_label_at_baseline": "SUPERSEDED - LINEAGE ONLY (OD-SSOT-D1, delegated; commit e7eabef81)",
+      "classification": "NO_REMAINING_OBLIGATION",
+      "basis": "parent TRACE-X-P5-R2-P3 recorded closed/independently accepted (repo text), blockers 12-23 = 0",
+      "successor_chain": "P3-R2 b7efe6b98 + 5a361688e",
+      "publication_state": "PUBLISHED",
+      "note": "lineage only; not accepted on its own"
+    },
+    {
+      "row_id": "TRACE-X-P5-R2-P3-R1-R1-R1-R1-R1",
+      "roadmap_line": "L393",
+      "current_label_at_baseline": "SUPERSEDED - LINEAGE ONLY (OD-SSOT-D1, delegated; commit e7eabef81)",
+      "classification": "NO_REMAINING_OBLIGATION",
+      "basis": "same",
+      "successor_chain": "same",
+      "publication_state": "PUBLISHED",
+      "note": "lineage only"
+    },
+    {
+      "row_id": "TRACE-X-P5-R2-P3-R1-R1-R1-R1-R1-R1",
+      "roadmap_line": "L394",
+      "current_label_at_baseline": "SUPERSEDED - LINEAGE ONLY (OD-SSOT-D1, delegated; commit e7eabef81)",
+      "classification": "NO_REMAINING_OBLIGATION",
+      "basis": "same",
+      "successor_chain": "same",
+      "publication_state": "PUBLISHED",
+      "note": "lineage only"
+    },
+    {
+      "row_id": "TRACE-X-P5-R2-P4-R1",
+      "roadmap_line": "L399",
+      "current_label_at_baseline": "SUPERSEDED - LINEAGE ONLY (OD-SSOT-D1, delegated; commit e7eabef81)",
+      "classification": "NO_REMAINING_OBLIGATION",
+      "basis": "parent P4 / P4-R2 25df09093 closed, blockers 24-35 = 0",
+      "successor_chain": "P4-R2 25df09093",
+      "publication_state": "PUBLISHED",
+      "note": "lineage only"
+    },
+    {
+      "row_id": "TRACE-X-P5-R2-P4-R1-R1",
+      "roadmap_line": "L400",
+      "current_label_at_baseline": "SUPERSEDED - LINEAGE ONLY (OD-SSOT-D1, delegated; commit e7eabef81)",
+      "classification": "NO_REMAINING_OBLIGATION",
+      "basis": "same",
+      "successor_chain": "same",
+      "publication_state": "PUBLISHED",
+      "note": "lineage only"
+    },
+    {
+      "row_id": "TRACE-X-P5-R2-P4-R1-R1-R1",
+      "roadmap_line": "L401",
+      "current_label_at_baseline": "SUPERSEDED - LINEAGE ONLY (OD-SSOT-D1, delegated; commit e7eabef81)",
+      "classification": "NO_REMAINING_OBLIGATION",
+      "basis": "same",
+      "successor_chain": "same",
+      "publication_state": "PUBLISHED",
+      "note": "lineage only"
+    },
+    {
+      "row_id": "TRACE-X-P5-R2-P4-R1-R1-R1-R1",
+      "roadmap_line": "L402",
+      "current_label_at_baseline": "SUPERSEDED - LINEAGE ONLY (OD-SSOT-D1, delegated; commit e7eabef81)",
+      "classification": "NO_REMAINING_OBLIGATION",
+      "basis": "same",
+      "successor_chain": "same",
+      "publication_state": "PUBLISHED",
+      "note": "lineage only"
+    },
+    {
+      "row_id": "TRACE-X-P5-R2-P4-R1-R1-R1-R1-R1",
+      "roadmap_line": "L403",
+      "current_label_at_baseline": "SUPERSEDED - LINEAGE ONLY (OD-SSOT-D1, delegated; commit e7eabef81)",
+      "classification": "NO_REMAINING_OBLIGATION",
+      "basis": "same",
+      "successor_chain": "same",
+      "publication_state": "PUBLISHED",
+      "note": "lineage only"
+    },
+    {
+      "row_id": "TRACE-X-P5-R2-P3-R1-R1-R1-R1-R1-R1-R1",
+      "roadmap_line": "L395",
+      "current_label_at_baseline": "[ ] READY FOR AUDIT",
+      "classification": "VALID_SCOPED_PASS_CANDIDATE",
+      "basis": "AUD-TRACE-A PASS_SCOPED @ 215f82f855bd6ed5316c1c23f8d35ff076be3526; OD-TRACE-L395-CLOSE SIGNED_WITH_CONDITIONS (C-1 links, C-2 SHA)",
+      "successor_chain": "design lock only; implementation b7efe6b98/5a361688e not accepted by this row",
+      "publication_state": "PUBLICATION_PENDING (SIGN-6, unpublished)",
+      "note": "Not an active unresolved obligation; FRZ-TRC-11 stays OPEN; patch 10 (absorption) must NOT be applied"
+    },
+    {
+      "row_id": "TRACE-X-P5-R2-P4-R1-R1-R1-R1-R1-R1",
+      "roadmap_line": "L404",
+      "current_label_at_baseline": "[ ] READY FOR AUDIT",
+      "classification": "VALID_SCOPED_PASS_CANDIDATE",
+      "basis": "AUD-TRACE-B PASS_SCOPED @ fcfd59e3727163a9e67d61498a293e6002d41159; OD-TRACE-L404-CLOSE SIGNED",
+      "successor_chain": "design lock only; behavioural proof carried by P4-R2 c5e1a8987",
+      "publication_state": "PUBLICATION_PENDING (SIGN-6, unpublished)",
+      "note": "residuals F-1 (placeholder skips), F-2 (sequential race sim), F-3 (Redis/Docker not reproduced)"
+    },
+    {
+      "row_id": "PROD-Q-P0",
+      "roadmap_line": "L466",
+      "current_label_at_baseline": "CLOSED - OPERATOR ACCEPTED / SCOPED PROD-Q-P0",
+      "classification": "INDEPENDENT_AUDIT_GAP",
+      "basis": "B6 2026-10-21 execution 8b3db6763, replay 438/436/2",
+      "successor_chain": "-",
+      "publication_state": "PUBLISHED",
+      "note": "closure-record commit READY FOR INDEPENDENT AUDIT"
+    },
+    {
+      "row_id": "PROD-Q-P0-R1 .. R1^4",
+      "roadmap_line": "L467-L470",
+      "current_label_at_baseline": "[ ] REJECTED / superseded (checkbox unchecked)",
+      "classification": "SSOT_DRIFT",
+      "basis": "patch 08 hygiene SIGNED_WITH_CONDITIONS (SIGN-9) - 4 rows named",
+      "successor_chain": "P0-R1^8 lock 0046075484",
+      "publication_state": "DECISION_UNPUBLISHED",
+      "note": "label hygiene only"
+    },
+    {
+      "row_id": "PROD-Q-P0-R1^8",
+      "roadmap_line": "L474",
+      "current_label_at_baseline": "CLOSED - OPERATOR ACCEPTED (scoped, as implementation evidence of PROD-Q-P0 B6 @ 8b3db676)",
+      "classification": "INDEPENDENT_AUDIT_GAP",
+      "basis": "OD-SSOT-D3: not an audit; audit obligation attached at L466, lock 0046075484, ddc87044, L474",
+      "successor_chain": "ddc87044 corrective READY FOR AUDIT (D-6: retained open)",
+      "publication_state": "PUBLISHED (ba07ebaa3)",
+      "note": "never count as audited evidence"
+    },
+    {
+      "row_id": "PROD-Q-P2 / P3 / PROD-Q",
+      "roadmap_line": "L475, L476, L478",
+      "current_label_at_baseline": "CLOSED BY OPERATOR - SCOPED (live qualification NOT QUALIFIED)",
+      "classification": "PATH_B_LIVE_DEFERRED",
+      "basis": "operator scoped closures; Dimension B live open",
+      "successor_chain": "-",
+      "publication_state": "PUBLISHED",
+      "note": "HIST-03 owns"
+    },
+    {
+      "row_id": "QUAL-X",
+      "roadmap_line": "L480",
+      "current_label_at_baseline": "CLOSED - POPULATION A ONLY (independently accepted, delegated)",
+      "classification": "ACCEPTED_LIMITATION",
+      "basis": "AUD-QUALX PASS_SCOPED @ d9ea0d6e8, 630 passed",
+      "successor_chain": "-",
+      "publication_state": "PUBLISHED (b0286f769)",
+      "note": "not carried past d9ea0d6e8"
+    },
+    {
+      "row_id": "QUAL-X-P0",
+      "roadmap_line": "L479",
+      "current_label_at_baseline": "INDEPENDENTLY VERIFIED - SCOPED (not a stage closure)",
+      "classification": "ACCEPTED_LIMITATION",
+      "basis": "AUD-QUALXP0 PASS_SCOPED @ a70b68cf9; erratum F-00/F-02/F-03",
+      "successor_chain": "-",
+      "publication_state": "PUBLISHED",
+      "note": "not absorbed"
+    },
+    {
+      "row_id": "SKILL-X",
+      "roadmap_line": "L481",
+      "current_label_at_baseline": "CLOSED - INDEPENDENTLY ACCEPTED (conditional on DS-5)",
+      "classification": "VALID_SCOPED_PASS_CANDIDATE",
+      "basis": "AUD-SKILLX PASS_SCOPED @ 552e37984, 117 passed",
+      "successor_chain": "-",
+      "publication_state": "PUBLISHED (756b2d60c)",
+      "note": "DS-5 prerequisite met at baseline"
+    },
+    {
+      "row_id": "TOOL-LIFE-X",
+      "roadmap_line": "L482",
+      "current_label_at_baseline": "CLOSED - INDEPENDENTLY ACCEPTED",
+      "classification": "SSOT_DRIFT",
+      "basis": "audits CONDITIONAL/STOP; no external review",
+      "successor_chain": "re-audit after correctives (OD-ROUTE-DS3)",
+      "publication_state": "PUBLISHED label unchanged",
+      "note": "needs operator label decision (F-H4-08)"
+    },
+    {
+      "row_id": "DIST-SCALE-X",
+      "roadmap_line": "L483",
+      "current_label_at_baseline": "CLOSED - OPERATOR SCOPED ACCEPTANCE",
+      "classification": "INDEPENDENT_AUDIT_GAP",
+      "basis": "G-06 via operator scoped acceptance; WL-7 3600 s substitute; 14400 s NOT PROVEN",
+      "successor_chain": "DS4-authorised audit at 1786a7fc7 (not run)",
+      "publication_state": "PUBLISHED",
+      "note": "ACCEPTED_LIMITATION for 4 h soak"
+    },
+    {
+      "row_id": "EVOL-X",
+      "roadmap_line": "L489 (stale) vs L1565/L561/ladder",
+      "current_label_at_baseline": "stage row: [ ] FORMAL PROTOCOL 03 B6 - PENDING_AUTHORITY (stale)",
+      "classification": "SSOT_DRIFT",
+      "basis": "formal closure be77b3a5f; B6 acceptance 1dd769331; handoff 7a4f279fd",
+      "successor_chain": "-",
+      "publication_state": "PATCH_H4_01 proposed",
+      "note": "AUTHORITY_GAP on signatures is separate (F-H4-01)"
+    }
+  ]
+}

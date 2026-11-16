@@ -1,0 +1,177 @@
+{
+  "checks": 85,
+  "by_category": {
+    "architecture": 63,
+    "tenant": 13,
+    "vbn": 9
+  },
+  "by_kind": {
+    "pytest_nodeid": 52,
+    "python_script": 7,
+    "pytest_file": 26
+  },
+  "by_pg": {
+    "PG-010": 2,
+    "PG-001": 9,
+    "PG-019": 3,
+    "PG-011": 6,
+    "PG-006": 1,
+    "PG-006b": 2,
+    "PG-005": 3,
+    "PG-008": 2,
+    "PG-020": 3,
+    "PG-012": 3,
+    "PG-014": 4,
+    "PG-h01": 7,
+    "PG-003b": 3,
+    "PG-016": 3,
+    "PG-015": 6,
+    "PG-001b": 2,
+    "PG-009": 12,
+    "PG-011b": 1,
+    "PG-003": 2,
+    "PG-004": 2,
+    "PG-007": 3,
+    "PG-intcfg": 1,
+    "PG-trace": 1,
+    "PG-018": 1,
+    "PG-017": 1,
+    "PG-004b": 1,
+    "PG-015b": 1
+  },
+  "by_severity": {
+    "ERROR": 85
+  },
+  "mutating": 0,
+  "env_gated_hint": [],
+  "frz_labels": {
+    "PARTIAL": 165,
+    "NONE": 60
+  },
+  "family_labels": {
+    "BND": {
+      "PARTIAL": 6
+    },
+    "OWN": {
+      "PARTIAL": 5
+    },
+    "CTR": {
+      "PARTIAL": 6
+    },
+    "TYP": {
+      "PARTIAL": 6
+    },
+    "PLG": {
+      "PARTIAL": 8
+    },
+    "RPL": {
+      "PARTIAL": 4
+    },
+    "EXE": {
+      "PARTIAL": 7
+    },
+    "GOV": {
+      "PARTIAL": 10
+    },
+    "OBS": {
+      "PARTIAL": 7
+    },
+    "TRC": {
+      "NONE": 12
+    },
+    "STA": {
+      "PARTIAL": 8
+    },
+    "REC": {
+      "PARTIAL": 10
+    },
+    "CMP": {
+      "PARTIAL": 8
+    },
+    "CFG": {
+      "PARTIAL": 8
+    },
+    "SEC": {
+      "PARTIAL": 10
+    },
+    "REL": {
+      "PARTIAL": 11
+    },
+    "CTL": {
+      "NONE": 12
+    },
+    "PRD": {
+      "PARTIAL": 12
+    },
+    "REG": {
+      "PARTIAL": 10
+    },
+    "EVOL": {
+      "PARTIAL": 10
+    },
+    "HRN": {
+      "NONE": 8
+    },
+    "DOC": {
+      "PARTIAL": 6
+    },
+    "DEBT": {
+      "NONE": 6
+    },
+    "FRZ": {
+      "NONE": 13
+    },
+    "AUD": {
+      "NONE": 9,
+      "PARTIAL": 1
+    },
+    "TEN": {
+      "PARTIAL": 12
+    }
+  },
+  "pass_labels_with_none": [
+    "FRZ-TRC-01",
+    "FRZ-TRC-02",
+    "FRZ-TRC-03",
+    "FRZ-TRC-04",
+    "FRZ-TRC-05",
+    "FRZ-TRC-06",
+    "FRZ-TRC-07",
+    "FRZ-TRC-08",
+    "FRZ-TRC-09",
+    "FRZ-TRC-10",
+    "FRZ-TRC-11",
+    "FRZ-TRC-12",
+    "FRZ-CTL-01",
+    "FRZ-CTL-02",
+    "FRZ-CTL-03",
+    "FRZ-CTL-04",
+    "FRZ-CTL-05",
+    "FRZ-CTL-06",
+    "FRZ-CTL-07",
+    "FRZ-CTL-08",
+    "FRZ-CTL-09",
+    "FRZ-CTL-10",
+    "FRZ-CTL-11",
+    "FRZ-CTL-12",
+    "FRZ-HRN-01",
+    "FRZ-HRN-02",
+    "FRZ-HRN-03",
+    "FRZ-HRN-04",
+    "FRZ-HRN-05",
+    "FRZ-HRN-06",
+    "FRZ-HRN-07",
+    "FRZ-HRN-08",
+    "FRZ-FRZ-11",
+    "FRZ-AUD-01",
+    "FRZ-AUD-02",
+    "FRZ-AUD-04",
+    "FRZ-AUD-05",
+    "FRZ-AUD-06",
+    "FRZ-AUD-07",
+    "FRZ-AUD-08",
+    "FRZ-AUD-09",
+    "FRZ-AUD-10"
+  ],
+  "dry_run_outcomes_keys": "<class 'list'>"
+}

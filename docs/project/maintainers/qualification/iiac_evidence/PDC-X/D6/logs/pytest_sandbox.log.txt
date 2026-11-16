@@ -1,0 +1,72 @@
+........................................F............................... [ 42%]
+..................sssssssssss........................................... [ 85%]
+......................... [100%]
+================================== FAILURES ===================================
+______________ test_c1c_q_governance_deny_zero_physical_execute _______________
+
+sandbox_session = <intergrax.runtime.sandbox.session.SandboxSession object at 0x000002774A26CB90>
+
+ def test_c1c_q_governance_deny_zero_physical_execute(sandbox_session: SandboxSession) -> None:
+ ctx = ToolWiringContext(
+ sandbox_session=sandbox_session,
+ sandbox_isolation_authority=_explicit_authority(),
+ )
+ registry = ToolRegistry()
+ register_sandbox_tools(registry, ctx)
+ invoker = RuntimeToolInvoker(
+ registry=registry,
+ executor=RegistryToolExecutor(registry),
+ sandbox_availability=sandbox_availability_provider(ctx),
+ )
+ state = build_runtime_state_for_tests(run_id="c1c_gov")
+ state = replace(
+ state,
+ context=replace(state.context, config=replace(state.context.config, policy_bundle=_deny_policy_bundle())),
+ )
+ request = ToolExecutionRequest(
+ run_id="c1c_gov",
+ step_id="step/1",
+ tool_id="sandbox.exec",
+ input=SandboxExecInput(operation="echo", payload={"message": "blocked"}),
+ )
+ audit_before = len(sandbox_session.audit_log)
+ with canonical_governed_execution_scope("c1c_gov"):
+ with pytest.raises(DeclarativePolicyViolationError):
+> invoker.invoke(state=state, agent_id="agent", request=request)
+
+tests\unit\runtime\sandbox\test_cap_c1c_sandbox_evidence_and_contract_purity.py:235: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+intergrax\runtime\nexus\tools\invoker.py:318: in invoke
+ preparation = self._prepare_invocation(
+intergrax\runtime\nexus\tools\invoker.py:457: in _prepare_invocation
+ self._require_current_attempt_authorization(
+intergrax\runtime\nexus\tools\invoker.py:749: in _require_current_attempt_authorization
+ record_governance_policy_decision_evidence_for_active_identity(
+intergrax\runtime\governance\governance_policy_decision_evidence_recording.py:211: in record_governance_policy_decision_evidence_for_active_identity
+ identity = require_active_execution_governance_identity()
+ ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+ def require_active_execution_governance_identity() -> ActiveExecutionGovernanceIdentity:
+ identity = peek_active_execution_governance_identity()
+ if identity is None:
+> raise RuntimeError("active execution governance identity required")
+E RuntimeError: active execution governance identity required
+
+intergrax\runtime\governance\active_execution_governance_identity.py:60: RuntimeError
+- generated xml file: D:\Projekty\intergrax\.claude\worktrees\pdc-x-ia-d6-4b65c9\.tmp\session\ia-d6\sandbox.xml -
+=========================== short test summary info ===========================
+SKIPPED [1] tests\integration\runtime\sandbox\reference_substrate\test_reference_physical_egress_qualification.py:83: reference substrate physical qualification requires Linux/WSL2
+SKIPPED [1] tests\integration\runtime\sandbox\reference_substrate\test_reference_physical_egress_qualification.py:94: reference substrate physical qualification requires Linux/WSL2
+SKIPPED [1] tests\integration\runtime\sandbox\reference_substrate\test_reference_physical_egress_qualification.py:103: reference substrate physical qualification requires Linux/WSL2
+SKIPPED [1] tests\integration\runtime\sandbox\reference_substrate\test_reference_physical_egress_qualification.py:109: reference substrate physical qualification requires Linux/WSL2
+SKIPPED [1] tests\integration\runtime\sandbox\reference_substrate\test_reference_physical_egress_qualification.py:116: reference substrate physical qualification requires Linux/WSL2
+SKIPPED [1] tests\integration\runtime\sandbox\reference_substrate\test_reference_physical_egress_qualification.py:125: reference substrate physical qualification requires Linux/WSL2
+SKIPPED [1] tests\integration\runtime\sandbox\reference_substrate\test_reference_physical_egress_qualification.py:138: reference substrate physical qualification requires Linux/WSL2
+SKIPPED [1] tests\integration\runtime\sandbox\reference_substrate\test_reference_physical_egress_qualification.py:149: reference substrate physical qualification requires Linux/WSL2
+SKIPPED [1] tests\integration\runtime\sandbox\reference_substrate\test_reference_physical_egress_qualification.py:189: reference substrate physical qualification requires Linux/WSL2
+SKIPPED [1] tests\integration\runtime\sandbox\reference_substrate\test_reference_physical_egress_qualification.py:200: reference substrate physical qualification requires Linux/WSL2
+SKIPPED [1] tests\integration\runtime\sandbox\reference_substrate\test_reference_physical_egress_qualification.py:222: reference substrate physical qualification requires Linux/WSL2
+FAILED tests/unit/runtime/sandbox/test_cap_c1c_sandbox_evidence_and_contract_purity.py::test_c1c_q_governance_deny_zero_physical_execute
+1 failed, 157 passed, 11 skipped in 2.89s
+EXIT 1

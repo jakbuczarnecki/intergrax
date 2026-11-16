@@ -1,0 +1,6 @@
+## addendum_2 verify_iiac_audit_manifest
+verify_iiac_audit_manifest: PASS
+exit=0
+## addendum_2 verify_iiac_role_separation --strict-product-diff
+verify_iiac_role_separation: PASS
+exit=0

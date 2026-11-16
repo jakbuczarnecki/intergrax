@@ -1,0 +1,124 @@
+"""W0-T04 / R-SHA-2,3: resolve every cited SHA (40-hex and abbreviations) against BASELINE_SHA.
+Output: data/sha_registry.jsonl (one row per distinct 40-hex or abbreviation). Stdlib only, read-only git."""
+from __future__ import annotations
+
+import re
+import subprocess
+import sys
+from pathlib import Path
+
+sys.path.insert(0, str(Path(__file__).parent))
+from common import *  # noqa
+
+_ANC = None
+
+
+def ancestor_set() -> set[str]:
+    global _ANC
+    if _ANC is None:
+        r = git("rev-list", BASELINE_SHA)
+        _ANC = set(r.stdout.split())
+    return _ANC
+
+
+def batch_check(shas: list[str]) -> dict[str, str]:
+    """40-hex -> object type or 'missing'."""
+    inp = "\n".join(shas) + "\n"
+    p = subprocess.run(["git", "-C", str(WT), "cat-file", "--batch-check"], input=inp, capture_output=True, text=True)
+    res = {}
+    for s, line in zip(shas, p.stdout.strip().split("\n")):
+        parts = line.split()
+        res[s] = parts[1] if len(parts) >= 2 and parts[1] != "missing" else "missing"
+    return res
+
+
+def meta(sha: str):
+    r = git("show", "-s", "--format=%cI%x1f%s", sha)
+    if r.returncode != 0:
+        return None, None
+    d, _, s = r.stdout.strip().partition("\x1f")
+    return d, s
+
+
+def expand_abbr(abbr: str):
+    r = git("rev-parse", "--disambiguate=" + abbr)
+    cands = [c for c in r.stdout.split() if len(c) == 40]
+    if not cands:
+        return "UNKNOWN", []
+    types = batch_check(cands)
+    commits = [c for c in cands if types[c] == "commit"]
+    if len(commits) == 1:
+        return "EXPANDED", commits
+    if len(commits) > 1:
+        return "AMBIGUOUS", commits
+    return "UNKNOWN", []
+
+
+def is_hexish(s: str) -> bool:
+    return bool(re.search(r"[0-9]", s)) and bool(re.search(r"[a-f]", s))
+
+
+def collect() -> dict:
+    """returns {key: {'kind': 'full'|'abbr', 'sources': set()}}"""
+    out: dict[str, dict] = {}
+
+    def add(key, kind, src, role=None):
+        d = out.setdefault(key, {"kind": kind, "sources": set(), "roles": set()})
+        d["sources"].add(src)
+        if role:
+            d["roles"].add(role)
+
+    for r in read_json(WS / "extracts" / "roadmap_rows.json"):
+        for s in r.get("shas", []):
+            add(s["sha"], "full", f"roadmap:{r['id']}@L{r['line']}", s["role"])
+        for a in r.get("abbr_shas", []):
+            if is_hexish(a):
+                add(a, "abbr", f"roadmap:{r['id']}@L{r['line']}")
+    for r in read_json(WS / "extracts" / "frz_rows.json"):
+        for s in r["shas"]:
+            add(s, "full", f"frz:{r['frz_id']}@L{r['checklist_line']}")
+        for a in r["abbr_shas"]:
+            if is_hexish(a):
+                add(a, "abbr", f"frz:{r['frz_id']}@L{r['checklist_line']}")
+    for r in read_json(WS / "extracts" / "frz_evidence_log.json"):
+        for s in r["shas"]:
+            add(s, "full", f"frzlog:{r['evidence_id']}@L{r['line']}")
+    # extra sources registered by other tools
+    ex = WS / "extracts" / "extra_shas.json"
+    if ex.exists():
+        for k, v in read_json(ex).items():
+            for src in v["sources"]:
+                add(k, v["kind"], src)
+    return out
+
+
+def main():
+    coll = collect()
+    fulls = sorted(k for k, v in coll.items() if v["kind"] == "full")
+    types = batch_check(fulls)
+    anc = ancestor_set()
+    rows = []
+    for s in fulls:
+        t = types[s]
+        resolves = t == "commit"
+        d, subj = meta(s) if resolves else (None, None)
+        rows.append({"sha": s, "kind": "full", "object_type": t, "resolves": resolves, "ancestor_of_baseline": s in anc,
+                     "commit_date": d, "subject": subj, "roles": sorted(coll[s]["roles"]), "n_sources": len(coll[s]["sources"]),
+                     "sources": sorted(coll[s]["sources"])[:20]})
+    for a in sorted(k for k, v in coll.items() if v["kind"] == "abbr"):
+        status, cands = expand_abbr(a)
+        full = cands[0] if status == "EXPANDED" else None
+        rows.append({"sha": full, "abbr": a, "kind": "abbr", "expansion": status, "candidates": cands,
+                     "resolves": status == "EXPANDED", "ancestor_of_baseline": (full in anc) if full else False,
+                     "n_sources": len(coll[a]["sources"]), "sources": sorted(coll[a]["sources"])[:20]})
+    write_jsonl(WS / "data" / "sha_registry.jsonl", rows)
+    f = [r for r in rows if r["kind"] == "full"]
+    a = [r for r in rows if r["kind"] == "abbr"]
+    print(f"full={len(f)} resolves={sum(r['resolves'] for r in f)} not_resolving={sum(not r['resolves'] for r in f)} "
+          f"not_ancestor={sum(1 for r in f if r['resolves'] and not r['ancestor_of_baseline'])}; abbr={len(a)} "
+          f"expanded={sum(r['expansion']=='EXPANDED' for r in a)} ambiguous={sum(r['expansion']=='AMBIGUOUS' for r in a)} "
+          f"unknown={sum(r['expansion']=='UNKNOWN' for r in a)}")
+
+
+if __name__ == "__main__":
+    main()
