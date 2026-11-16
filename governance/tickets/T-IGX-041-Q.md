@@ -10,6 +10,20 @@ Plan digest: a3a8f5ac133b6b4f32e242a0dee69daf4908579f1582ed33113ddc71f26ffa52
 
 Canonical plan: [`governance/tickets/plans/PLAN_T-IGX-041-Q.md`](plans/PLAN_T-IGX-041-Q.md).
 
+## Approved
+
+Approved: operator-delegate @ 2026-11-16T06:55:00+01:00
+Delegation: docs/project/maintainers/qualification/platform_domain_completeness/operator_decisions/DELEGATION-PDC-LOOP2.md@04a741d47aa10c69cb19cf344338fb2fff09d918
+
+Delegate checks (scope of `DELEGATION-PDC-LOOP2.md`; the record is on `origin/development`, merge commit `04a741d47`, file last changed by `1e68151af`; plan read at commit `951f03f5e` of the branch `pdc-x-plan-041pq`, whose ancestor is `76516c4dd`):
+
+- The plan digest recomputed with `scripts/governance/plan_digest.py` equals the digest above (`a3a8f5ac133b6b4f32e242a0dee69daf4908579f1582ed33113ddc71f26ffa52`).
+- The write set of the plan (2 entries) equals the `writes` tuple of batch `B-P8-R5` in `pdc_x_wbs.py` (compared as lists, equal; `pdc_x_wbs.py --check` OK). It is exactly the two named test files; no product path, nothing under `scripts/governance/` or `.github/`.
+- Measurements and file:line re-run by the delegate: `git diff --name-only 5a3a05347 d39a520dd` lists 3440 paths and each of the six `_EXPECTED` paths occurs exactly once; `git diff --name-only 5a3a05347 146e7acf1` lists 2488 paths and none of the six; `_ebh7_f10_canonical_inputs.py:29, 973, 980, 1029`, `_constants.py:15`, `MANIFEST.json:2` (`d39a520dd...`), `_ebh7_f10_ecap_normative_matrix.py:663-668, 699, 712`; K test `:92, :95, :103, :104`, `_without_entries` `:62-63`; O test `:93, :96, :104, :105`, `_without_entries` `:63-64`; the CI run 43738431866 (`gh run view --log-failed`) shows `2 failed, 720 passed, 9 skipped`, the assertion lines `041k...:103` and `041o...:104`, and `assert 2 == 1`. All true.
+- No gate is weakened or deleted: every assertion of the two tests stays, only the input line changes (append a path only when absent); the classifier, `C4_RULES`, the K and O entries and the replay inputs are not touched; the three new negative tests only add strictness. No registry, scheduler, engine, trust, policy or audit authority is added; the plan states it is not a certification verdict and states the targeted-test condition (the two files only; no `ebh_7` directory run, no `compat_x`, no EBH-7 replay, no new pin).
+- The implementer session and this delegate session are different sessions; the delegate edited nothing except this approval block and the lifecycle state. Not checked by the delegate: the behaviour of the new tests (not written yet) and no pytest was run for Q (it would run the EBH-7 canonical-input build, which the targeted-test condition leaves to the implementer's single run).
+- Merge gate (as the record states): authorizations 1 and 3 of `DELEGATION-PDC-STANDING.md`, green CI with the known red classes only (IIAC activation staleness, EBH-7 identity), head equal to the verified SHA. Write-set amendments are not delegated.
+
 ## Test contract
 
 ```text
@@ -26,4 +40,4 @@ uv run python scripts/qualification/pdc_x_wbs.py --check
 
 ## Lifecycle state
 
-plan_pending
+plan_approved
