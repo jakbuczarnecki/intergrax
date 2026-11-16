@@ -18,7 +18,7 @@ The Operator's answers of 2026-11-16 (O-08, O-09, L-1, merge order B, A, C, F) a
 
 ## Plan digest
 
-Plan digest: 7ea0e20fdf154b78c1b744db9a5824fa5f0fdb7b3659584e3f3ea294002233db
+Plan digest: 475a6642fe356f678c3619abd5551f4fcc55bc80f55a3876406978514b2e0da4
 
 Canonical plan: [`governance/tickets/plans/PLAN_T-IGX-043-C.md`](plans/PLAN_T-IGX-043-C.md). The digest was computed with `scripts/governance/plan_digest.py` on the draft; it must be recomputed after any edit of the plan.
 

@@ -8,7 +8,7 @@ Decided design: DP-31, DP-24, DP-11, DP-44 and the Operator's acceptance of the 
 
 ## Plan digest
 
-Plan digest: a81084209596f8789c465513e8283e6a41ed5fa924fda84195c045b7136d03c4
+Plan digest: de294ab48b9c921aeece98bc33e1935875c72b5ee7afcd59d334b153f20803c2
 
 Canonical plan: [`governance/tickets/plans/PLAN_T-IGX-043-D.md`](plans/PLAN_T-IGX-043-D.md). The digest was computed with `scripts/governance/plan_digest.py` on the draft; it must be recomputed after any edit of the plan.
 

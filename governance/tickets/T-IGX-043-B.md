@@ -10,7 +10,7 @@ Prerequisites before implementation starts: master-plan nodes `SCOPE` (wave scop
 
 ## Plan digest
 
-Plan digest: a675f38ba075fc41b88c2f909211edaccaf6b25d2cd288fd5a7ae7c5e104107d
+Plan digest: 8a9962347f7c7b7042c63fab1d143223d0d76dc0f501098d43fc890bdfdb4ac3
 
 Canonical plan: [`governance/tickets/plans/PLAN_T-IGX-043-B.md`](plans/PLAN_T-IGX-043-B.md). The digest was computed with `scripts/governance/plan_digest.py` on the draft; it must be recomputed after any edit of the plan.
 

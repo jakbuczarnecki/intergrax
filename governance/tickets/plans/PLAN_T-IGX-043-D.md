@@ -302,6 +302,6 @@ Revert the FC-4 commits inside the wave branch before merge, or revert the wave 
 ## 14. Prerequisites before implementation starts
 
 1. Milestone `M1` (PDC P9 closed) and the wave scope freeze `SCOPE` (`DAG.md:67`, `:85`); authorization AR-41 for the product paths (`WP-12/AUTHORIZATION_REQUESTS.md:83`; this directory's `AUTHORIZATION_REQUESTS.md` lists what FC-4 itself needs). State of `M1` at `H`: contradictory; see `FACT_CHECK.md` rows F-31..F-33. The PDC index at `H` still lists the P9 artefacts as "Answers recorded in chat; awaiting the Operator's final confirmation"; this plan does not decide whether P9 is closed.
-2. Operator ticket approval line (written by the Operator or a commissioned session; never by the implementer). Under the fallback (b) of OPEN-ATT-1 the ticket is approvable without a rule on who may attest; that item stays open with the Operator.
+2. Ticket approval line: written by the commissioned signing delegate (form `Approved: operator-delegate @ <timestamp>`, see the `## Approved` section of `T-IGX-043-D`); it approves the plan and is not an implementation go. Under the fallback (b) of OPEN-ATT-1 the ticket is approvable without a rule on who may attest; that item stays open with the Operator.
 3. Nothing further on design: OQ-1..OQ-6 are decided (see `OPEN_QUESTIONS.md`).
 4. Branch creation and the test runs of section 5 (see `AUTHORIZATION_REQUESTS.md`).

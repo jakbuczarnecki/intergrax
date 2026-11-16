@@ -19,7 +19,7 @@ No PASS, closure, FRZ promotion, stage certification or independent verification
 
 ## Plan digest
 
-Plan digest: cbcb726753367061528f069457379d44569fad169ba720fa54441a912a99a1b0
+Plan digest: b270851919da04dcb01f68d8b9b08660507670c776261dd3fceaadcfbce41922
 
 Canonical plan: `governance/tickets/plans/PLAN_T-IGX-043-A.md` (drafted at `.tmp/session/eqo-a-remediation/FC/FC-1/PLAN_T-IGX-043-A.md`; the repository copy under `governance/tickets/plans/` is the canonical plan and has been edited since (status line only)). The digest was computed with `scripts/governance/plan_digest.py` on the draft; it must be recomputed after any edit of the plan.
 
