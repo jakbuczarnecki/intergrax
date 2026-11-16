@@ -12,7 +12,7 @@ Out of scope: every product path (`intergrax/`, `agents/`, `applications/`), `sc
 
 ## Plan digest
 
-Plan digest: 4e881c9b14a58906e7c46fcf721ba541c6cbb1458807ffcc35680109c334a3fa
+Plan digest: 665339fe4868e555ab2bb76b6419709d49e049d6c40ab1a6e17929b5c5ac806f
 
 Canonical plan: [`governance/tickets/plans/PLAN_T-IGX-050-A.md`](plans/PLAN_T-IGX-050-A.md). The digest was computed with `scripts/governance/plan_digest.py`; it must be recomputed after any edit of the plan.
 
