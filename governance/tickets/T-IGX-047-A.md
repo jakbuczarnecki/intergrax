@@ -21,7 +21,8 @@ docs/project/maintainers/qualification/enterprise_debt_register/owner_vocabulary
 
 ## Approved
 
-State: the approval line, if any, is written in this section by the Operator or a commissioned session and never by the implementer; this text deliberately avoids the approval keyword because the ticket validators accept any line that starts with it (finding EQOA-A6-002). Approval of the plan is not an implementation go.
+Approved: operator-delegate @ 2026-11-16T17:45:11+01:00
+Delegation: docs/project/maintainers/qualification/eqo_a_remediation/OPERATOR_ANSWERS_CODE_WAVE_TRANSCRIPTION.md@743087d57c674100dc9119959dc875271f70e72c
 
 ## Test contract
 
@@ -38,4 +39,4 @@ Owner confirmation (DP-47), severity ratings, triage, the consistency script and
 
 ## Lifecycle state
 
-`plan_pending`
+plan_approved
