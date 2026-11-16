@@ -3,12 +3,12 @@
 from __future__ import annotations
 
 from collections import defaultdict, deque
+from collections.abc import Sequence
 from dataclasses import dataclass
-from typing import Dict, List, Sequence, Set
 
 from intergrax.distributed.source_operation import (
-    RagSourceOperationKey,
     SOURCE_PUBLICATION_GENERATION_METADATA_KEY,
+    RagSourceOperationKey,
     SourceOperationCoordinator,
 )
 from intergrax.rag.graph.contracts.graph_store import (
@@ -17,7 +17,10 @@ from intergrax.rag.graph.contracts.graph_store import (
     GraphScope,
     GraphStore,
 )
-from intergrax.rag.graph.generation_visibility import graph_evidence_visible
+from intergrax.rag.graph.generation_visibility import (
+    graph_evidence_visible,
+    publication_scope_from_metadata,
+)
 
 
 @dataclass(frozen=True, slots=True)
@@ -37,8 +40,7 @@ class _ScopedNodeMap(dict):
         if super().__contains__(key):
             return True
         return isinstance(key, str) and any(
-            isinstance(item, tuple) and len(item) == 2 and item[1] == key
-            for item in self
+            isinstance(item, tuple) and len(item) == 2 and item[1] == key for item in self
         )
 
 
@@ -57,23 +59,15 @@ class InMemoryGraphStore(GraphStore):
         if namespace is not None or workspace_id is not None:
             if self._tenant_id is None:
                 raise ValueError("namespace/workspace require tenant_id")
-            self._bound_scope = GraphScope(
-                self._tenant_id, namespace=namespace, workspace_id=workspace_id
-            )
-        self._nodes: Dict[tuple[str, str], GraphNode] = _ScopedNodeMap()
-        self._adj: Dict[tuple[str, str], Set[tuple[str, str]]] = defaultdict(set)
-        self._node_evidence: Dict[
-            tuple[str, str], Set[_GraphEvidence]
-        ] = defaultdict(set)
-        self._edge_keys: Set[tuple[str, str, str, str]] = set()
-        self._edge_evidence: Dict[
-            tuple[str, str, str, str], Set[_GraphEvidence]
-        ] = defaultdict(set)
+            self._bound_scope = GraphScope(self._tenant_id, namespace=namespace, workspace_id=workspace_id)
+        self._nodes: dict[tuple[str, str], GraphNode] = _ScopedNodeMap()
+        self._adj: dict[tuple[str, str], set[tuple[str, str]]] = defaultdict(set)
+        self._node_evidence: dict[tuple[str, str], set[_GraphEvidence]] = defaultdict(set)
+        self._edge_keys: set[tuple[str, str, str, str]] = set()
+        self._edge_evidence: dict[tuple[str, str, str, str], set[_GraphEvidence]] = defaultdict(set)
         self._source_coordinator: SourceOperationCoordinator | None = None
 
-    def set_source_operation_coordinator(
-        self, coordinator: SourceOperationCoordinator | None
-    ) -> None:
+    def set_source_operation_coordinator(self, coordinator: SourceOperationCoordinator | None) -> None:
         self._source_coordinator = coordinator
 
     @property
@@ -94,7 +88,7 @@ class InMemoryGraphStore(GraphStore):
 
     def _scope_for_metadata(
         self,
-        metadata: Dict[str, object] | None = None,
+        metadata: dict[str, object] | None = None,
         scope: GraphScope | None = None,
     ) -> GraphScope:
         values = metadata or {}
@@ -109,18 +103,14 @@ class InMemoryGraphStore(GraphStore):
         else:
             resolved = GraphScope(
                 str(values.get("tenant_id") or self._tenant_id or "__legacy__"),
-                namespace=values.get("namespace")
-                if isinstance(values.get("namespace"), str)
-                else None,
-                workspace_id=values.get("workspace_id")
-                if isinstance(values.get("workspace_id"), str)
-                else None,
+                namespace=values.get("namespace") if isinstance(values.get("namespace"), str) else None,
+                workspace_id=values.get("workspace_id") if isinstance(values.get("workspace_id"), str) else None,
             )
         self.bind_scope(resolved)
         return resolved
 
     @staticmethod
-    def _metadata(metadata: Dict[str, object] | None, scope: GraphScope) -> dict[str, object]:
+    def _metadata(metadata: dict[str, object] | None, scope: GraphScope) -> dict[str, object]:
         result = dict(metadata or {})
         result.update(
             {
@@ -156,8 +146,7 @@ class InMemoryGraphStore(GraphStore):
         )
         source_id = str(metadata.get("source_id") or "__legacy__")
         self._edge_evidence[edge_key].update(
-            self._evidence(chunk_id, metadata, scope, source_id)
-            for chunk_id in chunks
+            self._evidence(chunk_id, metadata, scope, source_id) for chunk_id in chunks
         )
         source_key = self._node_key(edge.source_id, scope)
         target_key = self._node_key(edge.target_id, scope)
@@ -173,11 +162,9 @@ class InMemoryGraphStore(GraphStore):
         node = self._nodes.get(key)
         if node is None:
             return
-        self._node_evidence[key].add(
-            self._evidence(chunk_id, node.metadata, scope, None)
-        )
+        self._node_evidence[key].add(self._evidence(chunk_id, node.metadata, scope, None))
 
-    def neighbors(self, node_id: str, *, max_hops: int = 1) -> List[GraphNode]:
+    def neighbors(self, node_id: str, *, max_hops: int = 1) -> list[GraphNode]:
         scope = self._scope_for_metadata()
         root = self._node_key(node_id, scope)
         if root not in self._nodes or not self._node_visible(root):
@@ -185,7 +172,7 @@ class InMemoryGraphStore(GraphStore):
         hops = max(1, int(max_hops))
         seen = {root}
         queue: deque[tuple[tuple[str, str], int]] = deque([(root, 0)])
-        out: List[GraphNode] = []
+        out: list[GraphNode] = []
         while queue:
             current, depth = queue.popleft()
             if depth >= hops:
@@ -200,10 +187,10 @@ class InMemoryGraphStore(GraphStore):
                 out.append(self._nodes[nxt])
         return out
 
-    def find_nodes(self, *, label_contains: str, limit: int = 20) -> List[GraphNode]:
+    def find_nodes(self, *, label_contains: str, limit: int = 20) -> list[GraphNode]:
         scope = self._scope_for_metadata()
         needle = (label_contains or "").lower()
-        found: List[GraphNode] = []
+        found: list[GraphNode] = []
         for key, node in self._nodes.items():
             if key[0] != scope.key or not self._node_visible(key):
                 continue
@@ -213,9 +200,9 @@ class InMemoryGraphStore(GraphStore):
                 break
         return found
 
-    def chunk_ids_for_nodes(self, node_ids: Set[str]) -> List[str]:
+    def chunk_ids_for_nodes(self, node_ids: set[str]) -> list[str]:
         scope = self._scope_for_metadata()
-        ids: List[str] = []
+        ids: list[str] = []
         for node_id in node_ids:
             key = self._node_key(node_id, scope)
             if key not in self._nodes or not self._node_visible(key):
@@ -229,7 +216,7 @@ class InMemoryGraphStore(GraphStore):
             )
         return ids
 
-    def node_ids_for_chunks(self, chunk_ids: Set[str]) -> Set[str]:
+    def node_ids_for_chunks(self, chunk_ids: set[str]) -> set[str]:
         targets = {cid.strip() for cid in chunk_ids if cid.strip()}
         if not targets:
             return set()
@@ -238,10 +225,7 @@ class InMemoryGraphStore(GraphStore):
             node_id
             for (scope_key, node_id), evidence_set in self._node_evidence.items()
             if scope_key == scope.key
-            and any(
-                evidence.chunk_id in targets and self._evidence_visible(evidence)
-                for evidence in evidence_set
-            )
+            and any(evidence.chunk_id in targets and self._evidence_visible(evidence) for evidence in evidence_set)
         }
 
     def unlink_chunks(self, chunk_ids: Sequence[str]) -> int:
@@ -280,9 +264,7 @@ class InMemoryGraphStore(GraphStore):
         resolved = self._scope_for_metadata(scope=scope)
         removed = self._remove_evidence(
             resolved.key,
-            lambda evidence: (
-                evidence.source_id == source_id and evidence.generation == generation
-            ),
+            lambda evidence: evidence.source_id == source_id and evidence.generation == generation,
         )
         return removed + self._prune(resolved.key)
 
@@ -329,22 +311,20 @@ class InMemoryGraphStore(GraphStore):
     def _evidence(
         self,
         chunk_id: str,
-        metadata: Dict[str, object],
+        metadata: dict[str, object],
         scope: GraphScope,
         source_id: str | None,
     ) -> _GraphEvidence:
         resolved_source = source_id or str(metadata.get("source_id") or "__legacy__")
         generation = metadata.get(SOURCE_PUBLICATION_GENERATION_METADATA_KEY)
         source_key: RagSourceOperationKey | None = None
-        if (
-            isinstance(metadata.get("tenant_id"), str)
-            and isinstance(metadata.get("source_id"), str)
-        ):
+        if isinstance(metadata.get("tenant_id"), str) and isinstance(metadata.get("source_id"), str):
             source_key = RagSourceOperationKey(
                 tenant_id=scope.tenant_id,
                 namespace=scope.namespace,
                 workspace_id=scope.workspace_id,
                 source_id=str(metadata["source_id"]),
+                publication_scope_id=publication_scope_from_metadata(metadata),
             )
         return _GraphEvidence(
             scope_key=scope.key,
@@ -367,9 +347,7 @@ class InMemoryGraphStore(GraphStore):
         evidence = self._node_evidence.get(key)
         return not evidence or any(self._evidence_visible(item) for item in evidence)
 
-    def _has_visible_edge(
-        self, source_key: tuple[str, str], target_key: tuple[str, str]
-    ) -> bool:
+    def _has_visible_edge(self, source_key: tuple[str, str], target_key: tuple[str, str]) -> bool:
         return any(
             edge_key[0] == source_key[0]
             and (
@@ -395,15 +373,11 @@ class InMemoryGraphStore(GraphStore):
         elif tenant_id or self._tenant_id:
             tenant = (tenant_id or self._tenant_id or "").strip()
             scope_keys = {
-                key
-                for key, node in self._nodes
-                if str(self._nodes[(key, node)].metadata.get("tenant_id")) == tenant
+                key for key, node in self._nodes if str(self._nodes[(key, node)].metadata.get("tenant_id")) == tenant
             }
         else:
             scope_keys = {key[0] for key in self._nodes}
-        removed = sum(
-            1 for key in list(self._nodes) if key[0] in scope_keys
-        )
+        removed = sum(1 for key in list(self._nodes) if key[0] in scope_keys)
         for key in list(self._nodes):
             if key[0] in scope_keys:
                 self._nodes.pop(key, None)
