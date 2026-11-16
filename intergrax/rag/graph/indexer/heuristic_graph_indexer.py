@@ -18,6 +18,7 @@ from intergrax.rag.graph.contracts.graph_store import (
     GraphScope,
     GraphStore,
 )
+from intergrax.rag.graph.generation_visibility import GRAPH_PUBLICATION_SCOPE_METADATA_KEY
 from intergrax.rag.graph.indexer.validation import validate_graph_index_batch
 
 _ENTITY_RE = re.compile(r"\b([A-Z][a-z]+(?:\s+[A-Z][a-z]+){0,3})\b")
@@ -84,4 +85,5 @@ class HeuristicGraphIndexer:
             metadata[SOURCE_PUBLICATION_GENERATION_METADATA_KEY] = doc.metadata.get(
                 SOURCE_PUBLICATION_GENERATION_METADATA_KEY
             )
+            metadata[GRAPH_PUBLICATION_SCOPE_METADATA_KEY] = str(doc.identity.root_document_id)
         return metadata

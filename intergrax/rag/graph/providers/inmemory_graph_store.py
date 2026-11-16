@@ -17,7 +17,10 @@ from intergrax.rag.graph.contracts.graph_store import (
     GraphScope,
     GraphStore,
 )
-from intergrax.rag.graph.generation_visibility import graph_evidence_visible
+from intergrax.rag.graph.generation_visibility import (
+    graph_evidence_visible,
+    publication_scope_from_metadata,
+)
 
 
 @dataclass(frozen=True, slots=True)
@@ -321,6 +324,7 @@ class InMemoryGraphStore(GraphStore):
                 namespace=scope.namespace,
                 workspace_id=scope.workspace_id,
                 source_id=str(metadata["source_id"]),
+                publication_scope_id=publication_scope_from_metadata(metadata),
             )
         return _GraphEvidence(
             scope_key=scope.key,

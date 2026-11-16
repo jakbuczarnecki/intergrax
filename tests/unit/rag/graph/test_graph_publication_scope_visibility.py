@@ -123,7 +123,7 @@ def _coordinator() -> InProcessSourceOperationCoordinator:
 
 
 def _is_visible(store: InMemoryGraphStore, label: str, chunk_id: str = "chunk-1") -> bool:
-    found = bool(store.find_nodes(label_contains=label, limit=5))
+    found = any(node.id == label for node in store.find_nodes(label_contains=label, limit=5))
     by_chunk = label in store.node_ids_for_chunks({chunk_id})
     assert found == by_chunk, (label, found, by_chunk)
     return found

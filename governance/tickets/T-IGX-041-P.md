@@ -39,6 +39,15 @@ uv run python scripts/qualification/pdc_x_wbs.py --check
 - The Neo4j/Cypher store (declared residual with its reopen condition in the plan), the other graph indexers, the ingest and vector sides, `intergrax/distributed/`, any new coordinator API.
 - Everything under `intergrax/applications/_shared/`, `intergrax/contracts/`, `scripts/governance/`, `.github/`, `pyproject.toml`, `uv.lock`, every existing test, the other findings of the global audit, the EBH-7 L3 replay and any new EBH-7 pin, the IIAC activation and rebind, FRZ promotion, OD signatures, certification.
 
+## Implementation checkpoint
+
+- Tests first (`d6b8d0593`): `tests/unit/rag/graph/test_graph_publication_scope_visibility.py`, 23 cases. On the unchanged code 16 failed (the positives, the re-ingest case, the other-source and the other-tenant/namespace/workspace cases whose control assertion needs the main store to see its own evidence, the shared-helper cases that call the new keyword, the carrier cases) and 7 passed (wrong, missing and blank scope id, the unscoped compatibility case, the unversioned-carrier case, the scope-id-from-metadata negatives): log `.tmp/proof/pdc-x-041p/red.log` (not committed).
+- Repair: `generation_visibility.py` (constant `GRAPH_PUBLICATION_SCOPE_METADATA_KEY`, helper `publication_scope_from_metadata`, keyword `publication_scope_ids` on `resolve_scope_active_generations` and `visibility_query_params`), `inmemory_graph_store.py` (one keyword in `_evidence`, one import), `heuristic_graph_indexer.py` (one assignment in `_publication_metadata`, one import). The Neo4j/Cypher store and every other file are untouched (residual R1 stays).
+- Green after, one pytest command (the Test contract: the new file and the two reproduction node ids): 25 passed (`.tmp/proof/pdc-x-041p/green.log`). Both reproduction tests (`test_graphrag_source_reingest_replaces_vectors_and_graph_safely`, `test_stale_graph_topology_is_inactive_after_generation_takeover`) pass.
+- ruff check and ruff format --check on the four files of the Write set: clean. pyright: 7 errors, all in lines of `inmemory_graph_store.py` this change does not touch (`_scope_for_metadata`, `_remove_evidence`), present at `origin/development`; none in the changed lines or in the other three files. `pdc_x_wbs.py --check` OK.
+- No other test was run: no existing graph unit test, no integration directory, no EBH-7 replay, no broad suite, no new pin.
+- Deviation from the signed plan (no change of scope, design or write set): the three product files did not pass the pre-commit and push ruff gates at `origin/development` (25 findings in `inmemory_graph_store.py`, format differences in all three; the plan assumed clean files). Commit `f044fcdfc` applies `ruff check --fix` and `ruff format` to exactly those three files (annotations, import order and line wrapping only, no behavior change) before the repair commit; hooks were not skipped. The test file was adjusted once after the red run (an exact-id visibility helper in the other-source negative, because unlinked nodes are visible by the store's existing rule).
+
 ## Lifecycle state
 
 plan_approved
