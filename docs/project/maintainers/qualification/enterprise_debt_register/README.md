@@ -122,3 +122,5 @@ Three draft IIAC audit-session manifests remain in the evidence tree next to val
 - `docs/project/maintainers/qualification/iiac_evidence/EVOL-X-W4-01-REAUDIT/iiac_audit_session_manifest.EVOL-X-W4-01.reaudit_draft.json`
 
 The register is to record them as superseded drafts. This change does not move or edit the files; other records cite their paths. Which certified manifest supersedes each draft is not stated here. Teaching tools to treat these three files as known drafts (a corpus-verifier allowlist) is a script change and is outside this document.
+
+A point-in-time record with the per-draft facts, the validator output, the citations that must keep resolving and the later manifests of the same evidence line is [`ent_audit_x/ENT_AUDIT_X_IIAC_MANIFEST_DRAFT_POINT_IN_TIME_RECORD.md`](../ent_audit_x/ENT_AUDIT_X_IIAC_MANIFEST_DRAFT_POINT_IN_TIME_RECORD.md) (DRAFT, ticket `T-IGX-044-A`). It declares no supersession.

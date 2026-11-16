@@ -1,4 +1,5 @@
 <!-- Draft added by governance/tickets/T-IGX-042-D.md (EQO-A remediation, documentation only). Not adopted until that ticket carries an Operator approval line. -->
+<!-- Sections 7 (ECAP open-question sentence) and 8 were extended by governance/tickets/T-IGX-044-A.md (documentation only; not adopted until that ticket carries an Operator approval line). -->
 <!-- Counts in the body were measured with `git ls-tree` at the EQO-A baseline 258bbf6abb6fdbb92ef0185d058527fbb1e47f04 (re-measured 2026-11-16) unless another SHA is named. -->
 
 # Qualification directory - index
@@ -112,4 +113,13 @@ The Enterprise Continuous Architecture Assurance Protocol ([`ENTERPRISE_CONTINUO
 | Full Platform Current-HEAD Audit (§2.C) | ENT-AUDIT-X `FULL` and `FREEZE` modes (`scripts/enterprise_audit/audit.sh full`, `audit.sh freeze`; `scripts/enterprise_audit/run_enterprise_audit.py`); EBH-7 attestation `scripts/qualification/attest_ebh7_f10_execution.py` |
 | Post-Freeze Change Assurance (§2.D) | No dedicated entrypoint; the ARCH-FREEZE stage is not closed at the baseline |
 
-This index does not decide whether a standalone ECAP executable is required.
+Open question: whether a standalone ECAP executable is required is **not decided** (EQO-A decision DP-54: the Operator decides whether one is required and, if so, names an owner and a ticket; as of 2026-11-16 that answer is still open). This index takes no position and does not decide it. One related document is not an executable: [`EBH_7_ECAP_EXECUTABLE_CHECKLIST.md`](EBH_7_ECAP_EXECUTABLE_CHECKLIST.md) maps the ECAP-§2.C steps to test evidence.
+
+## 8. Draft records added by T-IGX-044-A (EQO-A remediation, as of 2026-11-16)
+
+Both are drafts next to the ENT-AUDIT-X records, added by `governance/tickets/T-IGX-044-A.md`; neither is adopted and neither changes a status.
+
+| Record | What it is |
+|---|---|
+| [`ent_audit_x/ENT_AUDIT_X_IIAC_MANIFEST_DRAFT_POINT_IN_TIME_RECORD.md`](ent_audit_x/ENT_AUDIT_X_IIAC_MANIFEST_DRAFT_POINT_IN_TIME_RECORD.md) | Point-in-time facts about the 3 of 40 IIAC manifests that fail the repository validators (EQOA-A2-006); declares no supersession |
+| [`ent_audit_x/FRZ_AUD_10_LIVE_ENFORCEMENT_AMENDMENT_DRAFT.md`](ent_audit_x/FRZ_AUD_10_LIVE_ENFORCEMENT_AMENDMENT_DRAFT.md) | Proposal text for a future FRZ-AUD-10 live-enforcement amendment; does not change the disposition, the checklist or the roadmap |
