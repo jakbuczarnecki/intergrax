@@ -5,6 +5,6 @@ Index of the records published under ticket [`T-IGX-042-E`](../../../../../gover
 | File | Content |
 |---|---|
 | [`OPERATOR_DECISIONS_EQOA_REMEDIATION.md`](OPERATOR_DECISIONS_EQOA_REMEDIATION.md) | OD-REM-01..08, conditions C1-C10, decision sessions 1-6 (DP-01..DP-68) and a summary of the code-wave acceptances |
-| [`OPERATOR_ANSWERS_CODE_WAVE_TRANSCRIPTION.md`](OPERATOR_ANSWERS_CODE_WAVE_TRANSCRIPTION.md) | The Operator's messages on the code-wave tickets T-IGX-043-A..F, how each item was applied, and the addendum for message 4 with its interpretation marks |
+| [`OPERATOR_ANSWERS_CODE_WAVE_TRANSCRIPTION.md`](OPERATOR_ANSWERS_CODE_WAVE_TRANSCRIPTION.md) | The Operator's messages on the code-wave tickets T-IGX-043-A..F, how each item was applied, and the addenda for messages 4 and 5 with their interpretation marks |
 
 Findings baseline: `258bbf6abb6fdbb92ef0185d058527fbb1e47f04` (Campaign A dossier, PR #589, under [`../enterprise_quality_oversight/campaign_a/`](../enterprise_quality_oversight/campaign_a/)).

@@ -6,7 +6,7 @@ Documentation-only publication of the orchestrator's transcription of the Operat
 
 ## Plan digest
 
-Plan digest: 174a0f81447dc7245f707f58e1849c1d7ce6151558c901e79e04f87c4f673e70
+Plan digest: e84ef302e0f7cab4e90be6fd440cee943babf48cbf2894ece3e17ea94765e0e1
 
 Canonical plan: [`governance/tickets/plans/PLAN_T-IGX-042-E.md`](plans/PLAN_T-IGX-042-E.md). The digest was computed with `scripts/governance/plan_digest.py` on the draft; it must be recomputed after any edit of the plan.
 

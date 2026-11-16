@@ -11,7 +11,7 @@ Publish, as repository documents, the record of the Operator decisions made in c
 | File | Content |
 |---|---|
 | `docs/project/maintainers/qualification/eqo_a_remediation/OPERATOR_DECISIONS_EQOA_REMEDIATION.md` | OD-REM-01..08, conditions C1-C10, decision sessions 1-6 (DP-01..DP-68), summary of the code-wave acceptances |
-| `docs/project/maintainers/qualification/eqo_a_remediation/OPERATOR_ANSWERS_CODE_WAVE_TRANSCRIPTION.md` | The Operator's messages on the code-wave tickets T-IGX-043-A..F, how each item was applied, the addendum for message 4 with its interpretation marks |
+| `docs/project/maintainers/qualification/eqo_a_remediation/OPERATOR_ANSWERS_CODE_WAVE_TRANSCRIPTION.md` | The Operator's messages on the code-wave tickets T-IGX-043-A..F, how each item was applied, the addenda for messages 4 and 5 with their interpretation marks |
 | `docs/project/maintainers/qualification/eqo_a_remediation/README.md` | Short index |
 
 Both records are the orchestrating session's transcription (IIAC Amendment 01 section 1.2). The Operator's chat is the original and was in Polish; the repository holds only English renderings, each labelled as the orchestrator's rendering of a chat message of the given date. The Polish text is not reproduced.

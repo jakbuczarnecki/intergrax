@@ -66,3 +66,17 @@ How the orchestrator applies message 4 (an interpretation; the Operator may corr
 | Publication of this record | AUTHORISED as a docs-only PR (ticket T-IGX-042-E) |
 | GitHub settings (AR-45..AR-53 rulesets) | Treated as covered in principle, but NOT executed by the orchestrator without a named go for the first step, because required checks on `development` can block merges of the concurrent ARCH-FREEZE sessions (#610, #611) |
 | DP-47 owner vocabulary, DP-54 ECAP executable | NOT decided by message 4 |
+
+## Addendum 2: message 5 and the extension of the commission (2026-11-16, later the same day)
+
+5. Orchestrator's English rendering of a chat message of 2026-11-16: "Yes, extend the delegate's commission." Given in answer to the orchestrator's question whether the commission under IIAC Amendment 01 should be extended to the plan approval of the new EQO-A tickets.
+
+How the orchestrator applies message 5 (an interpretation; `Expires`: none stated; the commission stays with the same new, dedicated signing session, for the duration of the delegation). The rows below are the orchestrator's interpretation of message 5, not decisions stated by the Operator:
+
+| Item | Applied as |
+|---|---|
+| Added scope | Approval lines of the tickets T-IGX-042-E, T-IGX-044-A, T-IGX-044-B, T-IGX-044-E, T-IGX-046-A, T-IGX-046-B, T-IGX-046-C and T-IGX-047-A, each only when its plan passes the checks of the delegate checklists and only on the PR branch that carries it |
+| Still excluded | Tickets that change a gate's meaning (T-IGX-043-E, T-IGX-043-F and every ticket of the nodes PT-G01, PT-G02, PT-E03, PT-E02 when it rewrites a validator or a gate) and tickets of the material governance paths (PT-E05, PT-D08): the Operator's personal act or a separate commission |
+| Not changed | The approval of a plan is not an implementation go; product paths stay held until the ARCH-FREEZE gate SCOPE; merges need the Operator's separate order per PR |
+
+Note added at publication: of the ticket ids named in the added scope, only `T-IGX-042-E` is the ticket of the pull request that carries this file; the `T-IGX-044-*`, `T-IGX-046-*` and `T-IGX-047-A` tickets are not on `development` at the time of writing. This file writes no approval line for any of them.
