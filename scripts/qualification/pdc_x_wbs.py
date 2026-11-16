@@ -966,6 +966,40 @@ BATCHES: Final[tuple[Batch, ...]] = (
         "IA-GLOBAL (P8)",
         "tests/qualification/ebh_7/test_ebh_7_b6_f10_c4_041o_entries_gates.py red on the unchanged classifier and green after; the K gates and the whole tests/qualification/compat_x directory green; certify_f10() reports 0 UNKNOWN and C4 PASS over 5a3a05347..HEAD and dc18e36d9..HEAD",
     ),
+    Batch(
+        "B-P8-R4",
+        "P8",
+        "P8 repair loop 2, finding G-23 of the global audit: the GraphRAG evidence of a re-ingested source resolves its active publication generation under the key scoped by the root document id, as ingest and the vector side do (the graph indexer stamps the root document id on versioned evidence, the in-memory graph store and the shared visibility helper use it as publication_scope_id); the Neo4j store stays unchanged as a declared residual",
+        "T-IGX-041-P",
+        "W16",
+        (
+            "intergrax/rag/graph/generation_visibility.py",
+            "intergrax/rag/graph/providers/inmemory_graph_store.py",
+            "intergrax/rag/graph/indexer/heuristic_graph_indexer.py",
+            "tests/unit/rag/graph/test_graph_publication_scope_visibility.py",
+        ),
+        "—",
+        ("B-P7-D2", "B-P8-R1"),
+        GATE_PRODUCT,
+        "Delta audit (DELEGATION-PDC-LOOP2)",
+        "tests/unit/rag/graph/test_graph_publication_scope_visibility.py red on the unchanged code and green after, with negatives for a wrong scope id, a missing scope id, another source and another tenant, namespace or workspace; the two G-23 reproduction tests green; only these tests run (no EBH-7 replay, no broad suite, no new pin)",
+    ),
+    Batch(
+        "B-P8-R5",
+        "P8",
+        "P8 repair loop 2, test hygiene of the two B6-F10 C4 entry gates: the tests that remove the K and O classifier entries append three paths to the canonical changed paths only when the range does not already hold them, so each reason occurs once at the new pin; no gate is weakened",
+        "T-IGX-041-Q",
+        "W16",
+        (
+            "tests/qualification/ebh_7/test_ebh_7_b6_f10_c4_041k_entries_gates.py",
+            "tests/qualification/ebh_7/test_ebh_7_b6_f10_c4_041o_entries_gates.py",
+        ),
+        "—",
+        ("B-P7-F10", "B-P8-R3"),
+        GATE_FREE,
+        "Delta audit (DELEGATION-PDC-LOOP2)",
+        "the two changed removing-the-entries tests red before and green after at the manifest pin, with negatives for one missing entry and for a range that lacks the paths; only the two files run (no EBH-7 replay, no broad suite, no new pin)",
+    ),
 )
 
 # Requirement -> batch overrides where the corrective-task text alone is ambiguous.
@@ -1285,6 +1319,10 @@ def render_dag() -> str:
         "W14c": (
             "after every B-P7 repair batch (W13, W14) and the P8 repair batches B-P8-R1 and B-P8-R2 are merged and the signature of T-IGX-041-O",
             "before the EBH-7 pin P is taken (tests/qualification/ebh_7, tests/qualification/compat_x and tests/fixtures are not on the executable-identity allowlist); test-only pull request",
+        ),
+        "W16": (
+            "after the merge of PR #590 (DELEGATION-PDC-LOOP2) and the signatures of T-IGX-041-P and T-IGX-041-Q",
+            "targeted tests only (DELEGATION-PDC-LOOP2 condition: no EBH-7 replay, no new pin); B-P8-R4 writes a product path (ACT-N11), B-P8-R5 is test-only; the delta audit follows both",
         ),
         "W15": (
             "after every B-P7 repair batch (W13, W14) and the signature of T-IGX-041-J",

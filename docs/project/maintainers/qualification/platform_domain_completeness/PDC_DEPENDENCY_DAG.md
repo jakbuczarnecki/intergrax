@@ -88,6 +88,10 @@ graph LR
   B-P7-CX --> B-P8-R3
   B-P8-R1 --> B-P8-R3
   B-P8-R2 --> B-P8-R3
+  B-P7-D2 --> B-P8-R4
+  B-P8-R1 --> B-P8-R4
+  B-P7-F10 --> B-P8-R5
+  B-P8-R3 --> B-P8-R5
   P4 --> B-D1 & B-D3 & B-D7 & B-REG-P
   GATE -. merges .-> B-D1 & B-D3 & B-D7 & B-REG-P & B-D2 & B-D5 & B-D6 & B-D8 & B-D4
   B-P6 --> ACT{{PDC-P7-00 ACT-N11 activation}} --> P7[PDC-P7: 8 domain audits]
@@ -129,6 +133,7 @@ Wave 3 sets the length of the path. Its three batches run in sequence because th
 | W14b | B-P7-CX | after every B-P7 repair batch (W13, W14) is merged and the signature of T-IGX-041-L | before the EBH-7 pin P is taken (tests/qualification/compat_x and tests/fixtures are not on the executable-identity allowlist); test-only pull request |
 | W14a | B-P8-R1 | after every B-P7 repair batch (W13, W14) is merged and the signature of T-IGX-041-M | before the EBH-7 pin P and before T-IGX-041-L takes the COMPAT-X counters (DELEGATION-PDC-CLOSE decision 2 merge gate; product paths of the P8 repair loop are re-pinned once by the EBH-7 pin) |
 | W14c | B-P8-R3 | after every B-P7 repair batch (W13, W14) and the P8 repair batches B-P8-R1 and B-P8-R2 are merged and the signature of T-IGX-041-O | before the EBH-7 pin P is taken (tests/qualification/ebh_7, tests/qualification/compat_x and tests/fixtures are not on the executable-identity allowlist); test-only pull request |
+| W16 | B-P8-R4, B-P8-R5 | after the merge of PR #590 (DELEGATION-PDC-LOOP2) and the signatures of T-IGX-041-P and T-IGX-041-Q | targeted tests only (DELEGATION-PDC-LOOP2 condition: no EBH-7 replay, no new pin); B-P8-R4 writes a product path (ACT-N11), B-P8-R5 is test-only; the delta audit follows both |
 
 ## Operator gates
 
