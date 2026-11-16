@@ -1,0 +1,9 @@
+# command: D:/Projekty/intergrax/.venv/Scripts/python.exe -m scripts.governance.verify_iiac_policy_activation --require-in-force --repo .
+# HEAD: 293bb5b3ccf5681f3f0f442b2cd608f9629f8919
+# UTC start: 2026-11-16T08:08:25Z
+# UTC end: 2026-11-16T08:08:27Z
+# python: D:\Projekty\intergrax\.venv\Scripts\python.exe
+# ---- stdout ----
+IIAC policy activation: IN_FORCE @ IIAC-2026-11-05.1 from 9f05749bc23592868f3d0a7f505f9edbb2cfd025
+# ---- stderr ----
+# exit code: 0
