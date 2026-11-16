@@ -12,7 +12,8 @@ Canonical plan: [`governance/tickets/plans/PLAN_T-IGX-042-E.md`](plans/PLAN_T-IG
 
 ## Approved
 
-PENDING. The approval line goes here after plan review, written by the Operator or a commissioned session; the implementer never writes it. This placeholder deliberately avoids the approval keyword because the ticket validators accept any line that starts with it (finding EQOA-A6-002).
+Approved: operator-delegate @ 2026-11-16T16:41:51+01:00
+Delegation: docs/project/maintainers/qualification/eqo_a_remediation/OPERATOR_ANSWERS_CODE_WAVE_TRANSCRIPTION.md@0685852d44a64f8c2f523136515df25cb63bd0ca
 
 ## Test contract
 
@@ -28,4 +29,4 @@ Code, tests, scripts, workflows, roadmap, FRZ checklist, PDC-X records, `PDC_IND
 
 ## Lifecycle state
 
-plan_pending
+plan_approved
