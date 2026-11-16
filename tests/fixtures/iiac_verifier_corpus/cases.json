@@ -1,0 +1,933 @@
+{
+  "description": "Cases for the PT-E04 verifiers. Tokens @@NAME@@ are replaced with commit SHAs and digests of a throw-away repository by test_iiac_new_verifiers.py. Every negative case names the weakness it targets.",
+  "cases": [
+    {
+      "id": "m-pos-final",
+      "verifier": "artifacts",
+      "polarity": "positive",
+      "weakness": "",
+      "set": {},
+      "delete": [],
+      "args": [
+        "--profile",
+        "final"
+      ],
+      "expect_exit": 0,
+      "expect_codes": [],
+      "absent_codes": [
+        "PLACEHOLDER",
+        "SHA_MISSING",
+        "DIGEST_MISMATCH"
+      ]
+    },
+    {
+      "id": "m-pos-legacy-draft",
+      "verifier": "artifacts",
+      "polarity": "positive",
+      "weakness": "",
+      "set": {
+        "verdict": "CONDITIONAL",
+        "certification_publication_sha": "@@ZERO@@",
+        "certifier_session_id": "corpus-cert-PENDING",
+        "evidence_publication_sha": "@@C_IMPL@@"
+      },
+      "delete": [
+        "audit_scope_path"
+      ],
+      "args": [
+        "--profile",
+        "legacy"
+      ],
+      "expect_exit": 0,
+      "expect_codes": [
+        "PLACEHOLDER",
+        "VERDICT_NOT_CERTIFYING",
+        "SHA_ORDER"
+      ],
+      "absent_codes": []
+    },
+    {
+      "id": "m-neg-forged-digest",
+      "verifier": "artifacts",
+      "polarity": "negative",
+      "weakness": "Digest fields are only length-checked (iiac_common N-11) and never bound to the file bytes.",
+      "set": {
+        "audit_report_digest": "abababababababababababababababababababababababababababababababab"
+      },
+      "delete": [],
+      "args": [
+        "--profile",
+        "final"
+      ],
+      "expect_exit": 1,
+      "expect_codes": [
+        "DIGEST_MISMATCH"
+      ],
+      "absent_codes": []
+    },
+    {
+      "id": "m-neg-digest-short-16",
+      "verifier": "artifacts",
+      "polarity": "negative",
+      "weakness": "A 16-character digest passes the existing N-11 length rule although it cannot be a sha256.",
+      "set": {
+        "findings_digest": "0123456789abcdef"
+      },
+      "delete": [],
+      "args": [
+        "--profile",
+        "final"
+      ],
+      "expect_exit": 1,
+      "expect_codes": [
+        "DIGEST_FORMAT"
+      ],
+      "absent_codes": []
+    },
+    {
+      "id": "m-neg-digest-unbound",
+      "verifier": "artifacts",
+      "polarity": "negative",
+      "weakness": "A digest with no artifact path (and no --artifact override) can never be checked against any file.",
+      "set": {},
+      "delete": [
+        "test_matrix_path"
+      ],
+      "args": [
+        "--profile",
+        "final"
+      ],
+      "expect_exit": 1,
+      "expect_codes": [
+        "DIGEST_UNBOUND"
+      ],
+      "absent_codes": []
+    },
+    {
+      "id": "m-pos-digest-override",
+      "verifier": "artifacts",
+      "polarity": "positive",
+      "weakness": "",
+      "set": {},
+      "delete": [
+        "test_matrix_path"
+      ],
+      "args": [
+        "--profile",
+        "final",
+        "--artifact",
+        "test_matrix_digest=evidence/matrix.txt"
+      ],
+      "expect_exit": 0,
+      "expect_codes": [],
+      "absent_codes": [
+        "DIGEST_UNBOUND"
+      ]
+    },
+    {
+      "id": "m-neg-artifact-missing",
+      "verifier": "artifacts",
+      "polarity": "negative",
+      "weakness": "The named artifact file may not exist at the cited commit; existing validators never open it.",
+      "set": {
+        "audit_scope_path": "evidence/does_not_exist.json"
+      },
+      "delete": [],
+      "args": [
+        "--profile",
+        "final"
+      ],
+      "expect_exit": 1,
+      "expect_codes": [
+        "DIGEST_ARTIFACT_MISSING"
+      ],
+      "absent_codes": []
+    },
+    {
+      "id": "m-neg-sha-missing-object",
+      "verifier": "artifacts",
+      "polarity": "negative",
+      "weakness": "SHAs are checked for 40-hex syntax only; an object that does not exist in the repository passes.",
+      "set": {
+        "test_execution_sha": "@@MISSING@@"
+      },
+      "delete": [],
+      "args": [
+        "--profile",
+        "final"
+      ],
+      "expect_exit": 1,
+      "expect_codes": [
+        "SHA_MISSING"
+      ],
+      "absent_codes": []
+    },
+    {
+      "id": "m-neg-sha-side-branch",
+      "verifier": "artifacts",
+      "polarity": "negative",
+      "weakness": "Only audited<=audit_execution ancestry is checked; a test SHA on a side branch passes the existing validators.",
+      "set": {
+        "test_execution_sha": "@@C_SIDE@@"
+      },
+      "delete": [],
+      "args": [
+        "--profile",
+        "final"
+      ],
+      "expect_exit": 1,
+      "expect_codes": [
+        "SHA_ORDER"
+      ],
+      "absent_codes": []
+    },
+    {
+      "id": "m-neg-sha-reorder-core",
+      "verifier": "artifacts",
+      "polarity": "negative",
+      "weakness": "test_execution_sha after audit_execution_sha is not checked by the existing validators.",
+      "set": {
+        "test_execution_sha": "@@C_CERT@@"
+      },
+      "delete": [],
+      "args": [
+        "--profile",
+        "legacy"
+      ],
+      "expect_exit": 1,
+      "expect_codes": [
+        "SHA_ORDER"
+      ],
+      "absent_codes": []
+    },
+    {
+      "id": "m-neg-sha-reorder-strict",
+      "verifier": "artifacts",
+      "polarity": "negative",
+      "weakness": "Evidence published before the audit executed is accepted by the existing validators.",
+      "set": {
+        "evidence_publication_sha": "@@C_IMPL@@"
+      },
+      "delete": [],
+      "args": [
+        "--profile",
+        "final"
+      ],
+      "expect_exit": 1,
+      "expect_codes": [
+        "SHA_ORDER"
+      ],
+      "absent_codes": []
+    },
+    {
+      "id": "m-neg-placeholder-pending",
+      "verifier": "artifacts",
+      "polarity": "negative",
+      "weakness": "Free-form identity strings are accepted: a PENDING certifier id passes as a certifier.",
+      "set": {
+        "certifier_session_id": "corpus-cert-PENDING"
+      },
+      "delete": [],
+      "args": [
+        "--profile",
+        "final"
+      ],
+      "expect_exit": 1,
+      "expect_codes": [
+        "PLACEHOLDER"
+      ],
+      "absent_codes": []
+    },
+    {
+      "id": "m-neg-placeholder-zero-sha",
+      "verifier": "artifacts",
+      "polarity": "negative",
+      "weakness": "An all-zero SHA is 40-hex and passes the syntax check as a certification publication SHA.",
+      "set": {
+        "certification_publication_sha": "@@ZERO@@"
+      },
+      "delete": [],
+      "args": [
+        "--profile",
+        "final"
+      ],
+      "expect_exit": 1,
+      "expect_codes": [
+        "PLACEHOLDER"
+      ],
+      "absent_codes": []
+    },
+    {
+      "id": "m-neg-verdict-fail",
+      "verifier": "artifacts",
+      "polarity": "negative",
+      "weakness": "verdict FAIL is a valid format value; a FAIL manifest passes both existing validators and can be cited as certifying.",
+      "set": {
+        "verdict": "FAIL"
+      },
+      "delete": [],
+      "args": [
+        "--profile",
+        "final"
+      ],
+      "expect_exit": 1,
+      "expect_codes": [
+        "VERDICT_NOT_CERTIFYING"
+      ],
+      "absent_codes": []
+    },
+    {
+      "id": "m-neg-verdict-conditional",
+      "verifier": "artifacts",
+      "polarity": "negative",
+      "weakness": "verdict CONDITIONAL is accepted by the existing validators as a certifying manifest.",
+      "set": {
+        "verdict": "CONDITIONAL"
+      },
+      "delete": [],
+      "args": [
+        "--profile",
+        "final"
+      ],
+      "expect_exit": 1,
+      "expect_codes": [
+        "VERDICT_NOT_CERTIFYING"
+      ],
+      "absent_codes": []
+    },
+    {
+      "id": "m-neg-role-same-session",
+      "verifier": "artifacts",
+      "polarity": "negative",
+      "weakness": "Role separation: implementer and auditor session ids are the same (existing N-01, must stay detected).",
+      "set": {
+        "auditor_session_id": "corpus-impl-session-1"
+      },
+      "delete": [],
+      "args": [
+        "--profile",
+        "final"
+      ],
+      "expect_exit": 1,
+      "expect_codes": [
+        "MANIFEST_FORMAT"
+      ],
+      "absent_codes": []
+    },
+    {
+      "id": "m-neg-role-equal-normalized",
+      "verifier": "artifacts",
+      "polarity": "negative",
+      "weakness": "Independence is string inequality: the same session written with other case or spacing passes.",
+      "set": {
+        "auditor_session_id": "Corpus-Impl-Session-1 "
+      },
+      "delete": [],
+      "args": [
+        "--profile",
+        "final"
+      ],
+      "expect_exit": 1,
+      "expect_codes": [
+        "ROLE_EQUAL_NORMALIZED"
+      ],
+      "absent_codes": []
+    },
+    {
+      "id": "m-neg-role-component-overlap",
+      "verifier": "artifacts",
+      "polarity": "negative",
+      "weakness": "A composite implementer id that contains the auditor session id passes string inequality.",
+      "set": {
+        "implementation_session_id": "corpus-impl-session-1+shared-audit-id",
+        "auditor_session_id": "shared-audit-id"
+      },
+      "delete": [],
+      "args": [
+        "--profile",
+        "final"
+      ],
+      "expect_exit": 1,
+      "expect_codes": [
+        "ROLE_COMPONENT_OVERLAP"
+      ],
+      "absent_codes": []
+    },
+    {
+      "id": "m-neg-role-agent-equal",
+      "verifier": "artifacts",
+      "polarity": "negative",
+      "weakness": "The activation gate compares implementer and auditor agent ids (ACT-N10) but the manifest validators do not.",
+      "set": {
+        "auditor_agent_id": "implementer"
+      },
+      "delete": [],
+      "args": [
+        "--profile",
+        "legacy"
+      ],
+      "expect_exit": 1,
+      "expect_codes": [
+        "ROLE_AGENT_EQUAL"
+      ],
+      "absent_codes": []
+    },
+    {
+      "id": "d-pos-good",
+      "verifier": "delegation",
+      "polarity": "positive",
+      "weakness": "",
+      "approval_line": "Approved: operator-delegate signer-one @ 2026-11-16T10:00:00+01:00 | Delegation: delegations/DELEG-GOOD.md@@@C_DELEG@@",
+      "extra_lines": "Implementer session: impl-session-9",
+      "args": [],
+      "expect_exit": 0,
+      "expect_codes": [],
+      "absent_codes": [
+        "DELEGATION_UNRESOLVED",
+        "DELEGATE_IS_IMPLEMENTER",
+        "IMPLEMENTER_UNKNOWN"
+      ]
+    },
+    {
+      "id": "d-pos-personal",
+      "verifier": "delegation",
+      "polarity": "positive",
+      "weakness": "",
+      "approval_line": "Approved: operator @ 2026-11-16T10:00:00+01:00",
+      "extra_lines": "",
+      "args": [],
+      "expect_exit": 0,
+      "expect_codes": [],
+      "absent_codes": []
+    },
+    {
+      "id": "d-pos-unknown-implementer-is-warning",
+      "verifier": "delegation",
+      "polarity": "positive",
+      "weakness": "",
+      "approval_line": "Approved: operator-delegate signer-one @ 2026-11-16T10:00:00+01:00 | Delegation: delegations/DELEG-GOOD.md@@@C_DELEG@@",
+      "extra_lines": "",
+      "args": [],
+      "expect_exit": 0,
+      "expect_codes": [
+        "IMPLEMENTER_UNKNOWN"
+      ],
+      "absent_codes": []
+    },
+    {
+      "id": "d-neg-unknown-implementer-required",
+      "verifier": "delegation",
+      "polarity": "negative",
+      "weakness": "Nothing records who implemented the ticket, so delegate!=implementer cannot be checked at all.",
+      "approval_line": "Approved: operator-delegate signer-one @ 2026-11-16T10:00:00+01:00 | Delegation: delegations/DELEG-GOOD.md@@@C_DELEG@@",
+      "extra_lines": "",
+      "args": [
+        "--require-implementer"
+      ],
+      "expect_exit": 1,
+      "expect_codes": [
+        "IMPLEMENTER_UNKNOWN"
+      ],
+      "absent_codes": []
+    },
+    {
+      "id": "d-neg-path-missing-at-sha",
+      "verifier": "delegation",
+      "polarity": "negative",
+      "weakness": "A delegation reference whose path does not exist at the pinned commit is accepted by any Approved-anything validator.",
+      "approval_line": "Approved: operator-delegate signer-one @ 2026-11-16T10:00:00+01:00 | Delegation: delegations/NOPE.md@@@C_DELEG@@",
+      "extra_lines": "Implementer session: impl-session-9",
+      "args": [],
+      "expect_exit": 1,
+      "expect_codes": [
+        "DELEGATION_UNRESOLVED"
+      ],
+      "absent_codes": []
+    },
+    {
+      "id": "d-neg-sha-not-a-commit",
+      "verifier": "delegation",
+      "polarity": "negative",
+      "weakness": "A delegation reference pinned to a SHA that is not a commit passes the existing validators.",
+      "approval_line": "Approved: operator-delegate signer-one @ 2026-11-16T10:00:00+01:00 | Delegation: delegations/DELEG-GOOD.md@@@MISSING@@",
+      "extra_lines": "Implementer session: impl-session-9",
+      "args": [],
+      "expect_exit": 1,
+      "expect_codes": [
+        "DELEGATION_UNRESOLVED"
+      ],
+      "absent_codes": []
+    },
+    {
+      "id": "d-neg-free-text",
+      "verifier": "delegation",
+      "polarity": "negative",
+      "weakness": "Free text after Delegation: (a chat remark) is accepted as a delegation reference (T-IGX-035-E).",
+      "approval_line": "Approved: operator-delegate signer-one @ 2026-11-16T10:00:00+01:00 | Delegation: MERGE directive (operator chat 2026-11-11)",
+      "extra_lines": "Implementer session: impl-session-9",
+      "args": [],
+      "expect_exit": 1,
+      "expect_codes": [
+        "DELEGATION_NOT_A_PATH"
+      ],
+      "absent_codes": []
+    },
+    {
+      "id": "d-neg-unpinned-path",
+      "verifier": "delegation",
+      "polarity": "negative",
+      "weakness": "A delegation path without a pinned commit can change after the approval (T-IGX-030-A).",
+      "approval_line": "Approved: operator-delegate signer-one @ 2026-11-16T10:00:00+01:00 | Delegation: delegations/DELEG-GOOD.md",
+      "extra_lines": "Implementer session: impl-session-9",
+      "args": [],
+      "expect_exit": 1,
+      "expect_codes": [
+        "DELEGATION_UNPINNED"
+      ],
+      "absent_codes": []
+    },
+    {
+      "id": "d-neg-tmp-path",
+      "verifier": "delegation",
+      "polarity": "negative",
+      "weakness": "A delegation under .tmp/ is never tracked, so nobody else can resolve the reference.",
+      "approval_line": "Approved: operator-delegate signer-one @ 2026-11-16T10:00:00+01:00 | Delegation: .tmp/session/x/DELEG.md@@@C_DELEG@@",
+      "extra_lines": "Implementer session: impl-session-9",
+      "args": [],
+      "expect_exit": 1,
+      "expect_codes": [
+        "DELEGATION_UNTRACKED_PATH"
+      ],
+      "absent_codes": []
+    },
+    {
+      "id": "d-neg-delegation-missing",
+      "verifier": "delegation",
+      "polarity": "negative",
+      "weakness": "A delegate line without any Delegation reference is accepted (63 such lines exist in the ticket set).",
+      "approval_line": "Approved: operator-delegate @ 2026-11-16T10:00:00+01:00",
+      "extra_lines": "Implementer session: impl-session-9",
+      "args": [],
+      "expect_exit": 1,
+      "expect_codes": [
+        "DELEGATION_MISSING",
+        "DELEGATE_LABEL_MISSING"
+      ],
+      "absent_codes": []
+    },
+    {
+      "id": "d-neg-delegate-label-missing",
+      "verifier": "delegation",
+      "polarity": "negative",
+      "weakness": "A delegate line that names no delegate cannot be compared with the implementer.",
+      "approval_line": "Approved: operator-delegate @ 2026-11-16T10:00:00+01:00 | Delegation: delegations/DELEG-GOOD.md@@@C_DELEG@@",
+      "extra_lines": "Implementer session: impl-session-9",
+      "args": [],
+      "expect_exit": 1,
+      "expect_codes": [
+        "DELEGATE_LABEL_MISSING"
+      ],
+      "absent_codes": []
+    },
+    {
+      "id": "d-neg-delegate-is-implementer",
+      "verifier": "delegation",
+      "polarity": "negative",
+      "weakness": "Nothing compares the delegate with the implementer: a session can approve its own plan.",
+      "approval_line": "Approved: operator-delegate signer-one @ 2026-11-16T10:00:00+01:00 | Delegation: delegations/DELEG-GOOD.md@@@C_DELEG@@",
+      "extra_lines": "Implementer session: signer-one",
+      "args": [],
+      "expect_exit": 1,
+      "expect_codes": [
+        "DELEGATE_IS_IMPLEMENTER"
+      ],
+      "absent_codes": []
+    },
+    {
+      "id": "d-neg-delegate-is-implementer-normalized",
+      "verifier": "delegation",
+      "polarity": "negative",
+      "weakness": "Delegate equal to implementer after case and spacing normalisation, or as a component of a composite id.",
+      "approval_line": "Approved: operator-delegate signer-one @ 2026-11-16T10:00:00+01:00 | Delegation: delegations/DELEG-GOOD.md@@@C_DELEG@@",
+      "extra_lines": "Implementer session: other-session+Signer-One",
+      "args": [],
+      "expect_exit": 1,
+      "expect_codes": [
+        "DELEGATE_IS_IMPLEMENTER"
+      ],
+      "absent_codes": []
+    },
+    {
+      "id": "d-neg-not-ancestor",
+      "verifier": "delegation",
+      "polarity": "negative",
+      "weakness": "The delegation commit may live on a side branch and never have been part of the history that carries the approval.",
+      "approval_line": "Approved: operator-delegate signer-one @ 2026-11-16T10:00:00+01:00 | Delegation: delegations/DELEG-SIDE.md@@@C_SIDE@@",
+      "extra_lines": "Implementer session: impl-session-9",
+      "args": [],
+      "expect_exit": 1,
+      "expect_codes": [
+        "DELEGATION_NOT_ANCESTOR"
+      ],
+      "absent_codes": []
+    },
+    {
+      "id": "d-neg-scope-mismatch",
+      "verifier": "delegation",
+      "polarity": "negative",
+      "weakness": "A real delegation record for another ticket is accepted as the delegation of this ticket.",
+      "approval_line": "Approved: operator-delegate signer-one @ 2026-11-16T10:00:00+01:00 | Delegation: delegations/DELEG-OTHER.md@@@C_DELEG@@",
+      "extra_lines": "Implementer session: impl-session-9",
+      "args": [],
+      "expect_exit": 1,
+      "expect_codes": [
+        "DELEGATION_SCOPE_MISMATCH"
+      ],
+      "absent_codes": []
+    },
+    {
+      "id": "d-neg-delegate-not-in-record",
+      "verifier": "delegation",
+      "polarity": "negative",
+      "weakness": "The delegate named on the line need not be the session the record designates.",
+      "approval_line": "Approved: operator-delegate someone-else @ 2026-11-16T10:00:00+01:00 | Delegation: delegations/DELEG-GOOD.md@@@C_DELEG@@",
+      "extra_lines": "Implementer session: impl-session-9",
+      "args": [],
+      "expect_exit": 1,
+      "expect_codes": [
+        "DELEGATE_NOT_IN_RECORD"
+      ],
+      "absent_codes": []
+    },
+    {
+      "id": "d-neg-personal-with-delegation",
+      "verifier": "delegation",
+      "polarity": "negative",
+      "weakness": "The operator line form is identical for personal and delegated lines; a personal line may point at a delegation file.",
+      "approval_line": "Approved: operator @ 2026-11-16T10:00:00+01:00 | Delegation: delegations/DELEG-GOOD.md@@@C_DELEG@@",
+      "extra_lines": "Implementer session: impl-session-9",
+      "args": [],
+      "expect_exit": 1,
+      "expect_codes": [
+        "PERSONAL_WITH_DELEGATION"
+      ],
+      "absent_codes": []
+    },
+    {
+      "id": "d-neg-timestamp-no-offset",
+      "verifier": "delegation",
+      "polarity": "negative",
+      "weakness": "The timestamp is not validated: a time without an offset (or a date only) is accepted.",
+      "approval_line": "Approved: operator-delegate signer-one @ 2026-11-16 | Delegation: delegations/DELEG-GOOD.md@@@C_DELEG@@",
+      "extra_lines": "Implementer session: impl-session-9",
+      "args": [],
+      "expect_exit": 1,
+      "expect_codes": [
+        "APPROVAL_TIMESTAMP"
+      ],
+      "absent_codes": []
+    },
+    {
+      "id": "c-pos-valid-plus-listed-draft",
+      "verifier": "corpus",
+      "polarity": "positive",
+      "weakness": "",
+      "tree": [
+        {
+          "name": "good.json",
+          "set": {}
+        },
+        {
+          "name": "draft.json",
+          "delete": [
+            "audit_scope_manifest_digest"
+          ]
+        }
+      ],
+      "allowlist": [
+        {
+          "name": "draft.json",
+          "reason": "fixture draft",
+          "digest": "auto"
+        }
+      ],
+      "allowlist_raw": null,
+      "mutate_after_listing": null,
+      "certifying": [],
+      "expect_exit": 0,
+      "expect_codes": [],
+      "absent_codes": []
+    },
+    {
+      "id": "c-neg-unlisted-draft",
+      "verifier": "corpus",
+      "polarity": "negative",
+      "weakness": "The N-09 guard silently skips manifests that do not validate, so an invalid draft is tolerated for ever.",
+      "tree": [
+        {
+          "name": "good.json",
+          "set": {}
+        },
+        {
+          "name": "draft.json",
+          "delete": [
+            "audit_scope_manifest_digest"
+          ]
+        }
+      ],
+      "allowlist": [],
+      "allowlist_raw": null,
+      "mutate_after_listing": null,
+      "certifying": [],
+      "expect_exit": 1,
+      "expect_codes": [
+        "MANIFEST_INVALID"
+      ],
+      "absent_codes": []
+    },
+    {
+      "id": "c-neg-unparseable-json",
+      "verifier": "corpus",
+      "polarity": "negative",
+      "weakness": "A manifest that does not even parse is skipped by the existing guard (except ValueError: continue).",
+      "tree": [
+        {
+          "name": "good.json",
+          "set": {}
+        },
+        {
+          "name": "broken.json",
+          "raw": "{ not json"
+        }
+      ],
+      "allowlist": [],
+      "allowlist_raw": null,
+      "mutate_after_listing": null,
+      "certifying": [],
+      "expect_exit": 1,
+      "expect_codes": [
+        "MANIFEST_INVALID"
+      ],
+      "absent_codes": []
+    },
+    {
+      "id": "c-neg-listed-draft-changed",
+      "verifier": "corpus",
+      "polarity": "negative",
+      "weakness": "An allowlisted draft changed after it was listed is no longer the draft the reason was written for.",
+      "tree": [
+        {
+          "name": "good.json",
+          "set": {}
+        },
+        {
+          "name": "draft.json",
+          "delete": [
+            "audit_scope_manifest_digest"
+          ]
+        }
+      ],
+      "allowlist": [
+        {
+          "name": "draft.json",
+          "reason": "fixture draft",
+          "digest": "auto"
+        }
+      ],
+      "allowlist_raw": null,
+      "mutate_after_listing": {
+        "name": "draft.json",
+        "set": {
+          "verdict": "PASS"
+        }
+      },
+      "certifying": [],
+      "expect_exit": 1,
+      "expect_codes": [
+        "ALLOWLIST_STALE_DIGEST"
+      ],
+      "absent_codes": []
+    },
+    {
+      "id": "c-neg-allowlist-orphan-missing-file",
+      "verifier": "corpus",
+      "polarity": "negative",
+      "weakness": "An allowlist entry for a manifest that no longer exists must not stay as a standing excuse.",
+      "tree": [
+        {
+          "name": "good.json",
+          "set": {}
+        }
+      ],
+      "allowlist": [
+        {
+          "name": "gone.json",
+          "reason": "fixture draft",
+          "digest": "0000000000000000000000000000000000000000000000000000000000000000"
+        }
+      ],
+      "allowlist_raw": null,
+      "mutate_after_listing": null,
+      "certifying": [],
+      "expect_exit": 1,
+      "expect_codes": [
+        "ALLOWLIST_ORPHAN"
+      ],
+      "absent_codes": []
+    },
+    {
+      "id": "c-neg-allowlist-orphan-now-valid",
+      "verifier": "corpus",
+      "polarity": "negative",
+      "weakness": "A listed draft that validates now is a stale allowlist entry.",
+      "tree": [
+        {
+          "name": "good.json",
+          "set": {}
+        }
+      ],
+      "allowlist": [
+        {
+          "name": "good.json",
+          "reason": "fixture draft",
+          "digest": "auto"
+        }
+      ],
+      "allowlist_raw": null,
+      "mutate_after_listing": null,
+      "certifying": [],
+      "expect_exit": 1,
+      "expect_codes": [
+        "ALLOWLIST_ORPHAN"
+      ],
+      "absent_codes": []
+    },
+    {
+      "id": "c-neg-allowlist-no-reason",
+      "verifier": "corpus",
+      "polarity": "negative",
+      "weakness": "An allowlist entry without a reason is an unexplained exception.",
+      "tree": [
+        {
+          "name": "good.json",
+          "set": {}
+        },
+        {
+          "name": "draft.json",
+          "delete": [
+            "audit_scope_manifest_digest"
+          ]
+        }
+      ],
+      "allowlist": [
+        {
+          "name": "draft.json",
+          "reason": "",
+          "digest": "auto"
+        }
+      ],
+      "allowlist_raw": null,
+      "mutate_after_listing": null,
+      "certifying": [],
+      "expect_exit": 1,
+      "expect_codes": [
+        "ALLOWLIST_ENTRY_INVALID"
+      ],
+      "absent_codes": []
+    },
+    {
+      "id": "c-neg-allowlist-bad-schema",
+      "verifier": "corpus",
+      "polarity": "negative",
+      "weakness": "An allowlist file of an unknown schema must not be trusted (usage error, exit 2).",
+      "tree": [
+        {
+          "name": "good.json",
+          "set": {}
+        }
+      ],
+      "allowlist": [],
+      "allowlist_raw": {
+        "schema": "something-else",
+        "entries": []
+      },
+      "mutate_after_listing": null,
+      "certifying": [],
+      "expect_exit": 2,
+      "expect_codes": [],
+      "absent_codes": []
+    },
+    {
+      "id": "c-neg-certifying-fail-verdict",
+      "verifier": "corpus",
+      "polarity": "negative",
+      "weakness": "A FAIL-verdict manifest used as the certifying manifest passes both existing validators.",
+      "tree": [
+        {
+          "name": "failed.json",
+          "set": {
+            "verdict": "FAIL"
+          }
+        }
+      ],
+      "allowlist": [],
+      "allowlist_raw": null,
+      "mutate_after_listing": null,
+      "certifying": [
+        "failed.json"
+      ],
+      "expect_exit": 1,
+      "expect_codes": [
+        "CERTIFYING_NOT_FINAL"
+      ],
+      "absent_codes": []
+    },
+    {
+      "id": "c-neg-corpus-missing-sha-object",
+      "verifier": "corpus",
+      "polarity": "negative",
+      "weakness": "A valid-looking manifest cites a commit that does not exist in the repository.",
+      "tree": [
+        {
+          "name": "ghost.json",
+          "set": {
+            "test_execution_sha": "@@MISSING@@"
+          }
+        }
+      ],
+      "allowlist": [],
+      "allowlist_raw": null,
+      "mutate_after_listing": null,
+      "certifying": [],
+      "expect_exit": 1,
+      "expect_codes": [
+        "CORPUS_ARTIFACT_ERROR"
+      ],
+      "absent_codes": []
+    },
+    {
+      "id": "c-neg-corpus-role-overlap",
+      "verifier": "corpus",
+      "polarity": "negative",
+      "weakness": "A manifest of the corpus whose implementer id contains the auditor id.",
+      "tree": [
+        {
+          "name": "overlap.json",
+          "set": {
+            "implementation_session_id": "corpus-impl-session-1+shared-audit-id",
+            "auditor_session_id": "shared-audit-id"
+          }
+        }
+      ],
+      "allowlist": [],
+      "allowlist_raw": null,
+      "mutate_after_listing": null,
+      "certifying": [],
+      "expect_exit": 1,
+      "expect_codes": [
+        "CORPUS_ARTIFACT_ERROR"
+      ],
+      "absent_codes": []
+    }
+  ]
+}
