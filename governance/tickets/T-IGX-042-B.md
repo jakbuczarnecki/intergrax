@@ -6,7 +6,7 @@ Documentation-only changes to 23 domain owner documents (`docs/project/architect
 
 ## Plan digest
 
-Plan digest: 2db181a3ed0321340ed46ee665a57aad7cc0ac4fcf0fb34a04392149c49ecdcf
+Plan digest: 90a0f35d7d8690063df67eea3edd983c9f46cba0471b56b38095829c23f013cb
 
 Canonical plan: [`governance/tickets/plans/PLAN_T-IGX-042-B.md`](plans/PLAN_T-IGX-042-B.md). The digest was computed with `scripts/governance/plan_digest.py`; it must be recomputed after any edit of the plan.
 

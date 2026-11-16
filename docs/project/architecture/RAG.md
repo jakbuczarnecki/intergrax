@@ -178,7 +178,7 @@ Evidence maturity: **E4**
 
 > **Phase vs maturity:** RAG-FINAL / RAG-PROD / RAG-LIVE **Done** and **CLOSED** rows are **delivery and qualification states**, not automatic P5 or domain-wide E5 claims.
 
-> **Scope label (EQO-A remediation note, as of 2026-11-16):** the RAG-FINAL / RAG-PROD / RAG-LIVE / RAG-ENT states and `PRODUCTION_QUALIFIED_WITH_LIMITATIONS` above are domain-ledger / scoped records — feature-local, not IIAC certified; no independent-audit artefact located. Roadmap coverage: stage `EBH-2G` (CLOSED; independent exact-SHA audit accepted at `33175f8e6f48af2f4cfc414247fbbfe15ac77ac3` per the roadmap ledger). Production-qualification criteria FRZ-PRD-01..11 are OPEN in the freeze checklist. Not an ARCH-FREEZE closure.
+> **Scope label (EQO-A remediation note, as of 2026-11-16):** the RAG-FINAL / RAG-PROD / RAG-LIVE / RAG-ENT states and `PRODUCTION_QUALIFIED_WITH_LIMITATIONS` above are domain-ledger / scoped records — feature-local, not IIAC certified; no independent-audit artefact located. Roadmap coverage: stage `EBH-2G` (CLOSED; independent exact-SHA audit accepted at `33175f8e6f48af2f4cfc414247fbbfe15ac77ac3` per the roadmap ledger). Production-qualification criteria FRZ-PRD-01..12 are OPEN in the freeze checklist. Not an ARCH-FREEZE closure.
 
 ### Capability coverage (summary)
 

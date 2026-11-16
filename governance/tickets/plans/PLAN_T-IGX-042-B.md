@@ -54,7 +54,7 @@ One process at a time, under the shared pytest lock, nothing broader:
 
 - Roadmap labels quoted in notes can drift; the roadmap row decides status.
 - The decision record is a session artifact of the EQO-A remediation planning; the documents refer to "the Operator" without citing it until the Operator publishes it.
-- Docs under `docs/project/architecture/` and `docs/project/capabilities/` are outside the EBH-7 allowlist; confirm with the PDC-X session that no new re-pin is required before merge.
+- Docs under `docs/project/architecture/` and `docs/project/capabilities/` are outside the EBH-7 allowlist; confirm with the Operator, as owner of the EBH-7 pin, that no new re-pin is required before merge.
 - A reviewer other than the author must read the owner mappings and the DP-33 / DP-55 / DP-57 wording against the decisions.
 
 ## 8. Rollback
