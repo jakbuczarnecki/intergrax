@@ -1,0 +1,34 @@
+# command: D:/Projekty/intergrax/.venv/Scripts/python.exe docs/project/maintainers/qualification/iiac_evidence/PDC-X/P8/activation/scripts/check_binding_manifest.py
+# HEAD: fd2ad28efde6216be38194b020188d116264adb6
+# UTC start: 2026-11-16T08:01:50Z
+# UTC end: 2026-11-16T08:01:51Z
+# python: D:\Projekty\intergrax\.venv\Scripts\python.exe
+# ---- stdout ----
+[OK  ] gate schema validation (validate_manifest_dict) []
+[OK  ] stage_id IIAC-GOV-1, policy IIAC-2026-11-05.1 
+[OK  ] verdict PASS (ACT-N05) 
+[OK  ] audited_implementation_sha == test_execution_sha == G 
+[OK  ] audit_execution_sha == evidence_publication_sha == E 
+[OK  ] certification_publication_sha != G 
+[OK  ] implementation id != auditor id, agent ids differ (ACT-N10) 
+[OK  ] certifier and auditor ids non-empty (ACT-N17) 
+[OK  ] certifier id differs from implementer and auditor 
+[OK  ] audit_report_digest == sha256(bytes of record audit_report_path) 
+[OK  ] audit_scope_manifest_digest == sha256(bytes of record audit_scope_path) 
+[OK  ] test_matrix_digest == sha256(bytes of record test_matrix_path) 
+[OK  ] findings_digest == sha256(bytes of record findings_path) 
+[OK  ] manifest digests == record bound digests 
+[OK  ] handoff contains policy version 
+[OK  ] handoff contains implementation session id verbatim (ACT-N17) 
+[OK  ] handoff contains auditor session id verbatim (ACT-N17) 
+[OK  ] handoff has CRLF line endings 
+[OK  ] ancestor 2ae101411 -> 969cbd964 
+[OK  ] ancestor 969cbd964 -> a73d15ab3 
+[OK  ] ancestor a73d15ab3 -> HEAD 
+[OK  ] ancestor fd2ad28ef -> HEAD 
+[OK  ] ancestor a73d15ab3 -> fd2ad28ef 
+limitations: 19 manifest sha256: 77fa2babd02df6fbbd2e0d5b34413a769e069ac293e485daf49ec9a779dc476f
+handoff sha256: a36b2ac35eaf0782f4d40ef9b76a4dd745b0c4e70d839e2df2a7fa819b1fd121
+ALL_MANIFEST_CHECKS_OK = True
+# ---- stderr ----
+# exit code: 0

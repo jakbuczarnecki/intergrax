@@ -1,0 +1,136 @@
+# command: D:/Projekty/intergrax/.venv/Scripts/python.exe docs/project/maintainers/qualification/iiac_evidence/PDC-X/P8/activation/scripts/precheck_p8_04.py fd2ad28efde6216be38194b020188d116264adb6
+# HEAD: fd2ad28efde6216be38194b020188d116264adb6
+# UTC start: 2026-11-16T08:00:33Z
+# UTC end: 2026-11-16T08:00:35Z
+# python: D:\Projekty\intergrax\.venv\Scripts\python.exe
+# ---- stdout ----
+HEAD fd2ad28efde6216be38194b020188d116264adb6
+gate module: D:\Projekty\_wt\intergrax\p8-04-rebind\scripts\governance\iiac_activation_gate.py
+[OK  ] gate module resolves inside this checkout 
+[OK  ] 2ae101411 resolves to itself 
+[OK  ] 969cbd964 resolves to itself 
+[OK  ] a73d15ab3 resolves to itself 
+[OK  ] a1b3053b4 resolves to itself 
+[OK  ] 2d3eceb6c resolves to itself 
+[OK  ] fd2ad28ef resolves to itself 
+[OK  ] ancestor 2ae101411 -> 969cbd964 
+[OK  ] ancestor 969cbd964 -> a73d15ab3 
+[OK  ] ancestor a73d15ab3 -> fd2ad28ef 
+[OK  ] ancestor 969cbd964 -> fd2ad28ef 
+[OK  ] ancestor a1b3053b4 -> 969cbd964 
+[OK  ] ancestor 2d3eceb6c -> 969cbd964 
+[OK  ] ancestor a73d15ab3 -> fd2ad28ef 
+[OK  ] ancestor fd2ad28ef -> fd2ad28ef 
+[OK  ] G != C 
+[OK  ] E != C 
+[OK  ] origin/development contains E and G 
+[OK  ] product diff G..E empty n=0 []
+[OK  ] product diff G..C empty n=0 []
+[OK  ] product diff E..HEAD empty n=0 []
+[OK  ] product diff G..HEAD empty n=0 []
+INFO product paths a1b3053b4..G (delta audited since the binding in force): 74
+  delta: intergrax/agent_distribution/admin_service.py
+  delta: intergrax/applications/_shared/deploy_activate_pipeline.py
+  delta: intergrax/applications/_shared/durable_registry_projection_input_store.py
+  delta: intergrax/applications/_shared/harness_host_runtime.py
+  delta: intergrax/applications/_shared/runtime_config_bridge.py
+  delta: intergrax/applications/_shared/scenario_runtime_baseline.py
+  delta: intergrax/context/budget/mandatory_base_messages.py
+  delta: intergrax/context/budget/message_token_cost.py
+  delta: intergrax/context/budget/token_counter.py
+  delta: intergrax/contracts/evaluation_contracts.py
+  delta: intergrax/core/plugins/admission.py
+  delta: intergrax/eval/eval_comparison.py
+  delta: intergrax/experiments/workflow.py
+  delta: intergrax/hosting/engine/engine.py
+  delta: intergrax/hosting/eventing.py
+  delta: intergrax/hosting/public_api.py
+  delta: intergrax/hosting/supervisor/supervisor.py
+  delta: intergrax/integrations/_shared/p3/clients.py
+  delta: intergrax/integrations/credentials/secrets_store_resolver.py
+  delta: intergrax/integrations/providers/vector_store/inmemory/integration.py
+  delta: intergrax/llm_adapters/_shared/openai_completion_mapping.py
+  delta: intergrax/llm_adapters/_shared/retry.py
+  delta: intergrax/llm_adapters/_shared/stream_finish_signal.py
+  delta: intergrax/llm_adapters/base/base_llm_adapter.py
+  delta: intergrax/llm_adapters/contracts/call_config.py
+  delta: intergrax/llm_adapters/providers/aws_bedrock_adapter.py
+  delta: intergrax/llm_adapters/providers/claude_adapter.py
+  delta: intergrax/llm_adapters/providers/cohere_native_adapter.py
+  delta: intergrax/llm_adapters/providers/gemini_adapter.py
+  delta: intergrax/llm_adapters/providers/mistral_adapter.py
+  delta: intergrax/llm_adapters/providers/native_ollama_adapter.py
+  delta: intergrax/llm_adapters/providers/ollama_adapter.py
+  delta: intergrax/llm_adapters/providers/openai_chat_completions_adapter.py
+  delta: intergrax/llm_adapters/providers/openai_responses_adapter.py
+  delta: intergrax/memory/contracts/memory_control.py
+  delta: intergrax/memory/default_memory_control_plane.py
+  delta: intergrax/memory/retention_sweep.py
+  delta: intergrax/platform/enterprise_audit/data/changed_since_impact_map.v1.json
+  delta: intergrax/platform/enterprise_audit/impact_map.py
+  delta: intergrax/queueing/providers/document_store/document_store_task_queue.py
+  delta: intergrax/rag/document_loaders/compat/legacy_runtime_document.py
+  delta: intergrax/rag/document_loaders/contracts/parser_native_handle.py
+  delta: intergrax/rag/document_loaders/handlers/doc_smart_document_handler.py
+  delta: intergrax/rag/governance/embedding_version_policy.py
+  delta: intergrax/rag/graph/generation_visibility.py
+  delta: intergrax/rag/graph/indexer/heuristic_graph_indexer.py
+  delta: intergrax/rag/graph/providers/inmemory_graph_store.py
+  delta: intergrax/runtime/architecture/agent_promotion.py
+  delta: intergrax/runtime/architecture/online_evaluation.py
+  delta: intergrax/runtime/architecture/online_evaluation_registry.py
+  delta: intergrax/runtime/architecture/user_satisfaction.py
+  delta: intergrax/runtime/evidence/eval_evidence_contracts.py
+  delta: intergrax/runtime/execution/agent_runtime_context.py
+  delta: intergrax/runtime/llm/model_call_runtime_evidence_adapter.py
+  delta: intergrax/runtime/long_running/postgresql_task_checkpoint_store.py
+  delta: intergrax/runtime/long_running/recurrence.py
+  delta: intergrax/runtime/long_running/scheduled_resume.py
+  delta: intergrax/runtime/long_running/scheduled_resume_metadata.py
+  delta: intergrax/runtime/long_running/scheduler.py
+  delta: intergrax/runtime/long_running/store.py
+  delta: intergrax/runtime/nexus/artifacts/governed_access.py
+  delta: intergrax/runtime/nexus/artifacts/in_memory_artifact_store.py
+  delta: intergrax/runtime/nexus/artifacts/retention.py
+  delta: intergrax/runtime/nexus/artifacts/sources.py
+  delta: intergrax/runtime/nexus/artifacts/sqlite_artifact_store.py
+  delta: intergrax/runtime/nexus/artifacts/store_base.py
+  delta: intergrax/runtime/nexus/context/context_compiler.py
+  delta: intergrax/runtime/nexus/context/context_preflight.py
+  delta: intergrax/runtime/nexus/context/degradation_ladder.py
+  delta: intergrax/runtime/policy/pre_context_policy_audit.py
+  delta: intergrax/runtime/security/multi_region_audit_trail.py
+  delta: intergrax/runtime/security/security_audit_trail.py
+  delta: intergrax/tools/providers/storage/service.py
+  delta: intergrax/tools/providers/workspace/service.py
+INFO product paths 2d3eceb6c..G (union of all bindings up to G): 192
+INFO delta by root: {'intergrax': 74, 'agents': 0, 'applications': 0}
+[OK  ] no MATERIAL_GOVERNANCE_PATHS change a73d15ab3..HEAD []
+[OK  ] no MATERIAL_GOVERNANCE_PATHS change 969cbd964..HEAD []
+INFO material governance paths changed a1b3053b4..HEAD: []
+[OK  ] protocol last change precedes E 7b1c0a4b7
+INFO non-docs paths G..HEAD: []
+[OK  ] audit_report_path sha256 == expected c405c65faf53
+[OK  ] audit_report_path bytes == bytes at E 
+[OK  ] audit_report_path resolves under iiac_evidence (ACT-N14) 
+[OK  ] audit_scope_path sha256 == expected e06ce433ac1c
+[OK  ] audit_scope_path bytes == bytes at E 
+[OK  ] audit_scope_path resolves under iiac_evidence (ACT-N14) 
+[OK  ] test_matrix_path sha256 == expected d5028f194bb7
+[OK  ] test_matrix_path bytes == bytes at E 
+[OK  ] test_matrix_path resolves under iiac_evidence (ACT-N14) 
+[OK  ] findings_path sha256 == expected df3648f926da
+[OK  ] findings_path bytes == bytes at E 
+[OK  ] findings_path resolves under iiac_evidence (ACT-N14) 
+[OK  ] record digest field == bound report digest 
+[OK  ] findings register passes ACT-N15 [] n=4
+[OK  ] global manifest audit_report_digest == bytes at E (PDC_INDEPENDENT_AUDIT.md) at_E=c56b9a4c3528 manifest=c56b9a4c3528
+[OK  ] global manifest audit_scope_manifest_digest == bytes at E (audit_scope.json) at_E=3bb23cf04825 manifest=3bb23cf04825
+[OK  ] global manifest test_matrix_digest == bytes at E (test_matrix.txt) at_E=4e28d3a3e144 manifest=4e28d3a3e144
+[OK  ] global manifest findings_digest == bytes at E (iiac_audit_global_findings.json) at_E=3fe3c020b673 manifest=3fe3c020b673
+[OK  ] global manifest audited sha == G and audit_execution_sha == G 
+[OK  ] global manifest verdict PASS_SCOPED 
+INFO decision-text rules of runbook 6.1: not applicable here; the OD file and the line belong to the activation delegate
+ALL_PRECHECKS_OK = True
+# ---- stderr ----
+# exit code: 0

@@ -1,0 +1,10 @@
+# command: D:/Projekty/intergrax/.venv/Scripts/python.exe -m pytest tests/unit/governance/test_iiac_activation_gate.py::test_canonical_policy_is_in_force_and_verifies tests/unit/governance/test_iiac_activation_gate.py::test_act_n12_effective_sha_pre_activation_blob tests/unit/governance/test_iiac_activation_gate.py::test_act_n12_self_referential_head tests/unit/governance/test_iiac_negative_guards.py::test_n12_policy_is_in_force_only_with_valid_activation_evidence -q
+# HEAD: 293bb5b3ccf5681f3f0f442b2cd608f9629f8919
+# UTC start: 2026-11-16T08:09:39Z
+# UTC end: 2026-11-16T08:09:54Z
+# python: D:\Projekty\intergrax\.venv\Scripts\python.exe
+# ---- stdout ----
+....                                                                     [100%]
+4 passed in 10.66s
+# ---- stderr ----
+# exit code: 0
