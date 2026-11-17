@@ -33,6 +33,8 @@ CORE_ALLOWLIST: dict[str, str] = {
     "boto3": "CORE_SERVER",
     "numpy": "CORE_FOUNDATION",
     "chardet": "CORE_FOUNDATION",
+    "jsonschema": "CORE_FOUNDATION",
+    "tzdata": "CORE_FOUNDATION",
 }
 
 FORBIDDEN_CORE_NAMES = frozenset(
@@ -168,9 +170,7 @@ def check_project(path: Path = DEFAULT_PROJECT) -> list[str]:
     core_names = [normalize_name(requirement.name) for requirement in core]
     all_requirements = [("core", requirement) for requirement in core]
     all_requirements.extend(
-        (extra, requirement)
-        for extra, requirements in extras.items()
-        for requirement in requirements
+        (extra, requirement) for extra, requirements in extras.items() for requirement in requirements
     )
 
     for name, count in Counter(core_names).items():
@@ -199,15 +199,11 @@ def check_project(path: Path = DEFAULT_PROJECT) -> list[str]:
             if actual == "UNBOUNDED_MAJOR":
                 problems.append(f"UNBOUNDED_MAJOR: {extra}: {requirement}")
             elif expected == "EXACT_PIN" and actual != "EXACT_PIN":
-                problems.append(
-                    f"EXACT_PIN_REQUIRED: {extra}: {requirement} (actual {actual})"
-                )
+                problems.append(f"EXACT_PIN_REQUIRED: {extra}: {requirement} (actual {actual})")
 
     for name, owners in extras_by_name.items():
         if "core" in owners and len(owners) > 1 and name not in INTENTIONAL_CORE_EXTRA_SHARING:
-            problems.append(
-                f"DUPLICATE_CORE_EXTRA_OWNERSHIP: {name}: {', '.join(sorted(owners))}"
-            )
+            problems.append(f"DUPLICATE_CORE_EXTRA_OWNERSHIP: {name}: {', '.join(sorted(owners))}")
 
     llm_all = {normalize_name(requirement.name) for requirement in extras.get("llm-all", [])}
     for name in sorted(llm_all):
