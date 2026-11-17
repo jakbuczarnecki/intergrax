@@ -5,15 +5,12 @@
 
 from __future__ import annotations
 
-from intergrax.applications.contracts.environment_profile import ApplicationEnvironmentProfile
-from intergrax.applications.contracts.execution_mode import ExecutionMode
 from intergrax.context.bootstrap import bootstrap_context_catalog
-from intergrax.context.registry import ContextPluginRegistry, UnknownContextPluginError, get_context_plugin
-from intergrax.contracts.context_budget import ContextBudgetPolicy
-from intergrax.core.plugin_env import discover_plugins_enabled
 from intergrax.context.orchestrator import ContextOrchestrator
 from intergrax.context.protocols import ContextEngine
-from intergrax.contracts.context_assembly import TaskContextAssemblyOptions
+from intergrax.context.registry import ContextPluginRegistry, UnknownContextPluginError, get_context_plugin
+from intergrax.contracts.context_budget import ContextBudgetPolicy
+from intergrax.contracts.host_orchestration_environment import HostContextCompositionSpec
 from intergrax.llm_adapters.contracts.llm_adapter import LLMAdapter
 from intergrax.runtime.events.event_bus import RuntimeEventBus
 from intergrax.runtime.execution.context_engine_resolver import load_context_engine
@@ -28,15 +25,15 @@ from intergrax.runtime.task.task_contract import TaskExecutionOptions
 
 
 def _resolve_context_plugin_registry_from_environment(
-    env: ApplicationEnvironmentProfile,
+    spec: HostContextCompositionSpec,
 ) -> ContextPluginRegistry:
     bootstrap_context_catalog()
-    plugin_ids = env.context_profile.context_plugin_ids or ["intergrax.builtin"]
+    plugin_ids = list(spec.context_plugin_ids) or ["intergrax.builtin"]
     for plugin_id in plugin_ids:
         try:
             get_context_plugin(plugin_id)
         except UnknownContextPluginError:
-            if env.execution_mode != ExecutionMode.STRICT:
+            if not spec.strict:
                 raise
     from intergrax.context.bootstrap import materialize_context_plugin_registry
 
@@ -44,26 +41,26 @@ def _resolve_context_plugin_registry_from_environment(
 
 
 def _resolve_context_budget_policy(
-    env: ApplicationEnvironmentProfile,
+    spec: HostContextCompositionSpec,
     *,
     llm_adapter: LLMAdapter | None = None,
 ) -> ContextBudgetPolicy:
-    budget = env.context_profile.budget_policy
+    budget = spec.budget_policy
     if budget is not None:
         return budget
     if llm_adapter is not None:
         return ContextBudgetPolicy.from_adapter(llm_adapter)
-    assembly = env.context_profile.assembly_options
+    assembly = spec.assembly_options
     return ContextBudgetPolicy(max_chars=max(assembly.max_prior_chars, 4000))
 
 
 def resolve_context_engine_from_environment(
-    env: ApplicationEnvironmentProfile,
+    spec: HostContextCompositionSpec,
 ) -> ContextEngine:
     """Resolve context engine for the environment preset (CE-7.4, CE-8.2)."""
-    registry = _resolve_context_plugin_registry_from_environment(env)
-    engine_ref = env.context_profile.engine_ref
-    preset = env.context_profile.engine_preset
+    registry = _resolve_context_plugin_registry_from_environment(spec)
+    engine_ref = spec.engine_ref
+    preset = spec.engine_preset
     if preset == "custom" and engine_ref:
         return load_context_engine(engine_ref, registry=registry)
     if preset == "codebase":
@@ -76,42 +73,42 @@ def resolve_context_engine_from_environment(
 
 
 def resolve_context_orchestrator_from_environment(
-    env: ApplicationEnvironmentProfile,
+    spec: HostContextCompositionSpec,
     engine: ContextEngine,
 ) -> ContextOrchestrator | None:
     """Return bounded orchestrator for codebase preset only (CE-8.2)."""
-    if env.context_profile.engine_preset != "codebase":
+    if spec.engine_preset != "codebase":
         return None
     return ContextOrchestrator(engine)
 
 
 def resolve_context_engine_for_graph_node(
-    env: ApplicationEnvironmentProfile,
+    spec: HostContextCompositionSpec,
     *,
     has_delegation: bool,
 ) -> ContextEngine:
     """Delegation children use ``explore_child`` preset automatically (CE-8.3)."""
     if has_delegation:
-        registry = _resolve_context_plugin_registry_from_environment(env)
+        registry = _resolve_context_plugin_registry_from_environment(spec)
         return ExploreChildContextEngine(registry=registry)
-    return resolve_context_engine_from_environment(env)
+    return resolve_context_engine_from_environment(spec)
 
 
 def resolve_context_manager_from_environment(
-    env: ApplicationEnvironmentProfile,
+    spec: HostContextCompositionSpec,
     *,
     event_bus: RuntimeEventBus | None = None,
     llm_adapter: LLMAdapter | None = None,
     context_engine: ContextEngine | None = None,
 ) -> ContextManager:
     """Build ``ContextManager`` with environment assembly and budget policies."""
-    assembly = env.context_profile.assembly_options
-    engine = context_engine or resolve_context_engine_from_environment(env)
-    orchestrator = resolve_context_orchestrator_from_environment(env, engine)
+    assembly = spec.assembly_options
+    engine = context_engine or resolve_context_engine_from_environment(spec)
+    orchestrator = resolve_context_orchestrator_from_environment(spec, engine)
     return ContextManager(
         max_prior_chars=assembly.max_prior_chars,
         default_policy=assembly,
-        budget_policy=_resolve_context_budget_policy(env, llm_adapter=llm_adapter),
+        budget_policy=_resolve_context_budget_policy(spec, llm_adapter=llm_adapter),
         event_bus=event_bus,
         context_engine=engine,
         context_orchestrator=orchestrator,
@@ -121,17 +118,16 @@ def resolve_context_manager_from_environment(
 
 def merge_task_context_options_from_environment(
     options: TaskExecutionOptions,
-    env: ApplicationEnvironmentProfile,
+    spec: HostContextCompositionSpec,
 ) -> TaskExecutionOptions:
-    assembly = env.context_profile.assembly_options
-    return options.model_copy(update={"context": assembly})
+    return options.model_copy(update={"context": spec.assembly_options})
 
 
 def default_task_execution_options_for_environment(
-    env: ApplicationEnvironmentProfile,
+    spec: HostContextCompositionSpec,
 ) -> TaskExecutionOptions:
     return TaskExecutionOptions(
-        context=env.context_profile.assembly_options,
+        context=spec.assembly_options,
     )
 
 

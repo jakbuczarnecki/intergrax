@@ -28,7 +28,7 @@ def test_build_harness_host_runtime_does_not_invoke_llm_resolution_without_requi
     manifest = build_lab_manifest(settings)
 
     with patch(
-        "intergrax.runtime.execution.host_orchestration_environment_spec_builder.resolve_environment_llm_adapter",
+        "intergrax.applications._shared.host_orchestration_backend_spec_builder.resolve_environment_llm_adapter",
     ) as resolve_mock:
         runtime = build_harness_host_runtime(
             manifest,
