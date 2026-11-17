@@ -7,7 +7,6 @@ from __future__ import annotations
 import sqlite3
 import threading
 from pathlib import Path
-from typing import Optional
 
 from intergrax.distributed.contracts.kv_store import DistributedKVStore
 
@@ -45,7 +44,7 @@ class SqliteDistributedKVStore(DistributedKVStore):
                     """
                 )
 
-    def get(self, tenant_id: str, key: str) -> Optional[bytes]:
+    def get(self, tenant_id: str, key: str) -> bytes | None:
         with self._lock:
             with self._connect() as conn:
                 row = conn.execute(
@@ -62,7 +61,7 @@ class SqliteDistributedKVStore(DistributedKVStore):
         key: str,
         value: bytes,
         *,
-        ttl_seconds: Optional[int] = None,
+        ttl_seconds: int | None = None,
     ) -> None:
         del ttl_seconds
         with self._lock:
@@ -88,10 +87,10 @@ class SqliteDistributedKVStore(DistributedKVStore):
         self,
         tenant_id: str,
         key: str,
-        expected: Optional[bytes],
+        expected: bytes | None,
         new_value: bytes,
         *,
-        ttl_seconds: Optional[int] = None,
+        ttl_seconds: int | None = None,
     ) -> bool:
         del ttl_seconds
         with self._lock:

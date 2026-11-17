@@ -5,7 +5,7 @@
 from __future__ import annotations
 
 from abc import ABC, abstractmethod
-from typing import Optional, Protocol, runtime_checkable
+from typing import Protocol, runtime_checkable
 
 
 class DistributedKVStore(ABC):
@@ -25,7 +25,7 @@ class DistributedKVStore(ABC):
         self,
         tenant_id: str,
         key: str,
-    ) -> Optional[bytes]:
+    ) -> bytes | None:
         """
         Retrieve value for given tenant and key.
         Returns None if key does not exist.
@@ -39,7 +39,7 @@ class DistributedKVStore(ABC):
         key: str,
         value: bytes,
         *,
-        ttl_seconds: Optional[int] = None,
+        ttl_seconds: int | None = None,
     ) -> None:
         """
         Set value for given tenant and key.
@@ -63,10 +63,10 @@ class DistributedKVStore(ABC):
         self,
         tenant_id: str,
         key: str,
-        expected: Optional[bytes],
+        expected: bytes | None,
         new_value: bytes,
         *,
-        ttl_seconds: Optional[int] = None,
+        ttl_seconds: int | None = None,
     ) -> bool:
         """
         Atomic compare-and-set operation.

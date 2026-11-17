@@ -11,7 +11,7 @@ cache) MUST obtain clients and facades from this module or ``resolve(..., KEY_VA
 from __future__ import annotations
 
 from dataclasses import dataclass
-from typing import TYPE_CHECKING, Optional
+from typing import TYPE_CHECKING
 
 from intergrax.contracts.idempotency_store import IdempotencyStore
 from intergrax.distributed.contracts.execution_semaphore import DistributedExecutionSemaphore
@@ -21,12 +21,14 @@ from intergrax.integrations.contracts.base import IntegrationConfigurationError
 from intergrax.integrations.contracts.key_value_cache import KeyValueCache
 from intergrax.integrations.providers.key_value_cache.redis.integration import (
     REDIS_KEY_VALUE_CACHE_PROVIDER_ID,
+    RedisKeyValueCacheClient,
     RedisKeyValueCacheIntegration,
     RedisKeyValueCacheIntegrationConfig,
-    RedisKeyValueCacheClient,
 )
 
 if TYPE_CHECKING:
+    import redis
+
     from intergrax.distributed.providers.redis_execution_semaphore import RedisExecutionSemaphore
     from intergrax.distributed.providers.redis_idempotency_store import RedisIdempotencyStore
     from intergrax.distributed.providers.redis_rate_limiter import RedisDistributedRateLimiter
@@ -42,7 +44,7 @@ class RedisIntegrationBundle:
     Use ``create_redis_integration()`` — do not construct Redis facades ad hoc elsewhere.
     """
 
-    client: "redis.Redis"
+    client: redis.Redis
     config: RedisIntegrationConfig
     key_value_cache: RedisKeyValueCacheIntegration
     idempotency_store: RedisIdempotencyStore
@@ -57,10 +59,10 @@ class RedisIntegrationBundle:
 
 def create_redis_integration(
     *,
-    url: Optional[str] = None,
-    db: Optional[int] = None,
-    key_prefix: Optional[str] = None,
-    client: Optional["redis.Redis"] = None,
+    url: str | None = None,
+    db: int | None = None,
+    key_prefix: str | None = None,
+    client: redis.Redis | None = None,
     execution_semaphore_ttl_seconds: int = 300,
     **config_overrides: object,
 ) -> RedisIntegrationBundle:
@@ -107,10 +109,10 @@ def create_redis_integration(
 
 def create_redis_key_value_cache(
     *,
-    url: Optional[str] = None,
-    db: Optional[int] = None,
-    key_prefix: Optional[str] = None,
-    client: Optional["redis.Redis"] = None,
+    url: str | None = None,
+    db: int | None = None,
+    key_prefix: str | None = None,
+    client: redis.Redis | None = None,
     **config_overrides: object,
 ) -> KeyValueCache:
     """Catalog factory for ``"redis"`` / ``KEY_VALUE_CACHE``."""
@@ -129,10 +131,10 @@ def create_redis_key_value_cache(
 
 def create_redis_kv_store(
     *,
-    url: Optional[str] = None,
-    db: Optional[int] = None,
-    key_prefix: Optional[str] = None,
-    client: Optional["redis.Redis"] = None,
+    url: str | None = None,
+    db: int | None = None,
+    key_prefix: str | None = None,
+    client: redis.Redis | None = None,
     **config_overrides: object,
 ) -> DistributedKVStore:
     """``DistributedKVStore`` for queueing transport wiring."""
@@ -147,9 +149,9 @@ def create_redis_kv_store(
 
 def create_redis_idempotency_store(
     *,
-    url: Optional[str] = None,
-    db: Optional[int] = None,
-    client: Optional["redis.Redis"] = None,
+    url: str | None = None,
+    db: int | None = None,
+    client: redis.Redis | None = None,
     **config_overrides: object,
 ) -> IdempotencyStore:
     return create_redis_integration(
@@ -162,9 +164,9 @@ def create_redis_idempotency_store(
 
 def create_redis_rate_limiter(
     *,
-    url: Optional[str] = None,
-    db: Optional[int] = None,
-    client: Optional["redis.Redis"] = None,
+    url: str | None = None,
+    db: int | None = None,
+    client: redis.Redis | None = None,
     **config_overrides: object,
 ) -> DistributedRateLimiter:
     return create_redis_integration(
@@ -177,9 +179,9 @@ def create_redis_rate_limiter(
 
 def create_redis_execution_semaphore(
     *,
-    url: Optional[str] = None,
-    db: Optional[int] = None,
-    client: Optional["redis.Redis"] = None,
+    url: str | None = None,
+    db: int | None = None,
+    client: redis.Redis | None = None,
     execution_semaphore_ttl_seconds: int = 300,
     **config_overrides: object,
 ) -> DistributedExecutionSemaphore:
@@ -194,9 +196,9 @@ def create_redis_execution_semaphore(
 
 def create_redis_rerank_cache(
     *,
-    url: Optional[str] = None,
-    db: Optional[int] = None,
-    client: Optional["redis.Redis"] = None,
+    url: str | None = None,
+    db: int | None = None,
+    client: redis.Redis | None = None,
     ttl_seconds: int = 3600,
     key_prefix: str = "rerank",
     **config_overrides: object,
