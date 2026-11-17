@@ -5,9 +5,9 @@ from __future__ import annotations
 import inspect
 
 import pytest
-
 from intergrax.applications._shared.routing_evaluating_adapter import RoutingEvaluatingLLMAdapter
 from intergrax.applications.contracts.environment_profile import ApplicationEnvironmentProfile
+from intergrax.llm.messages import ChatMessage
 from intergrax.llm_adapters.contracts.llm_provider import LLMProvider
 from intergrax.llm_adapters.registry.profile import LLMProfile
 from intergrax.llm_adapters.routing import (
@@ -17,7 +17,6 @@ from intergrax.llm_adapters.routing import (
     routing_evaluation_identity,
 )
 from intergrax.llm_adapters.routing.metering import resolve_metering_adapter, tokens_used_from_adapter
-from intergrax.llm.messages import ChatMessage
 from intergrax.llm_adapters.tracking.llm_usage_track import LLMUsageTracker
 from testing_support.builder import FakeLLMAdapter
 
@@ -81,6 +80,7 @@ def test_usage_tracker_registers_inner_after_swap(monkeypatch: pytest.MonkeyPatc
         _env: object,
         evaluation: object,
         _ctx: object | None = None,
+        **_kwargs: object,
     ) -> FakeLLMAdapter:
         from intergrax.llm_adapters.routing.contracts import RoutingEvaluation
 
@@ -90,7 +90,7 @@ def test_usage_tracker_registers_inner_after_swap(monkeypatch: pytest.MonkeyPatc
         return inner_primary
 
     monkeypatch.setattr(
-        "intergrax.applications._shared.llm_resolver.create_adapter_for_routing_evaluation",
+        "intergrax.runtime.wiring.llm_resolver.create_adapter_for_routing_evaluation",
         _factory,
     )
 

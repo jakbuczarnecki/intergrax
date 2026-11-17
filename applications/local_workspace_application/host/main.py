@@ -6,7 +6,6 @@ import os
 
 from dotenv import load_dotenv
 from fastapi import FastAPI
-
 from intergrax.applications._shared.harness_registry_authority import HarnessHostRegistryAuthorityError
 from intergrax.applications._shared.production_host_composition import (
     StrictProductionAsgiPlaceholder,
@@ -16,23 +15,25 @@ from intergrax.applications._shared.production_process_composition import (
     ProductionProcessComposition,
     create_reference_production_process_composition,
 )
-from intergrax.applications._shared.registry_projection_input_bundle import (
-    reference_admission_mutation_id,
-)
 from intergrax.applications._shared.reference_production_governance_wiring import (
     wire_governed_reference_production_launcher,
 )
 from intergrax.applications._shared.reference_runtime_materialization import (
     prepare_reference_runtime_materialization,
 )
-from local_workspace_application.host.reference_lifecycle_input import (
-    build_local_workspace_reference_lifecycle_input,
+from intergrax.applications._shared.registry_projection_input_bundle import (
+    reference_admission_mutation_id,
 )
+
 from local_workspace_application.host.environment_profile import (
     build_local_workspace_environment_profile,
 )
 from local_workspace_application.host.factory import create_local_workspace_backend_app
+from local_workspace_application.host.reference_lifecycle_input import (
+    build_local_workspace_reference_lifecycle_input,
+)
 from local_workspace_application.host.settings import LocalWorkspaceBackendSettings
+from local_workspace_application.hosting.foreground import run_local_workspace_hosted_application
 from local_workspace_application.manifest import LOCAL_WORKSPACE_APPLICATION_MANIFEST
 
 load_dotenv()
@@ -81,9 +82,12 @@ app = StrictProductionAsgiPlaceholder(application_package="local_workspace_appli
 
 
 def run_reference_production() -> None:
-    """Explicit reference path: lifecycle deploy/activate then serve on one composition."""
-    import uvicorn
+    """Explicit reference path: lifecycle deploy/activate then serve on one composition.
 
+    Serving goes through the hosted application facade (``run_hosted_application``). The bind host
+    comes from ``LOCAL_WORKSPACE_BACKEND_HOST`` and defaults to ``127.0.0.1``; ``0.0.0.0`` is the
+    explicit opt-in.
+    """
     composition = create_reference_production_process_composition()
     projection_input, activation_request = build_local_workspace_reference_lifecycle_input()
     resolved_settings = LocalWorkspaceBackendSettings.from_env()
@@ -98,17 +102,11 @@ def run_reference_production() -> None:
         projection_input,
         activation_request,
         principal=governance.principal,
-        admission_mutation_id=reference_admission_mutation_id(
-            projection_input.runtime_revision.runtime_revision_id
-        ),
+        admission_mutation_id=reference_admission_mutation_id(projection_input.runtime_revision.runtime_revision_id),
     )
-    host = os.environ.get("LOCAL_WORKSPACE_BACKEND_HOST", "0.0.0.0")
-    port = int(os.environ.get("LOCAL_WORKSPACE_BACKEND_PORT", "8020"))
-    uvicorn.run(
-        create_local_workspace_process_app(process_composition=composition),
-        host=host,
-        port=port,
-        reload=False,
+    run_local_workspace_hosted_application(
+        process_composition=composition,
+        settings=resolved_settings,
     )
 
 

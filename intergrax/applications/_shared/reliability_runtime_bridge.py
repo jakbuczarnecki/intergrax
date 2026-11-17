@@ -4,9 +4,9 @@
 
 from __future__ import annotations
 
+from intergrax.applications._shared.runtime_boundary_adapters import RELIABILITY_PROJECTION
 from intergrax.applications.contracts.environment_profile import ApplicationEnvironmentProfile
 from intergrax.contracts.idempotency_store import IdempotencyStore
-from intergrax.contracts.host_profile_slices import ReliabilityProfile
 from intergrax.runtime.execution.host_runtime_config import RuntimeConfig
 from intergrax.runtime.wiring.reliability_runtime_bridge import (
     ReliabilityWiringOptions,
@@ -31,6 +31,6 @@ def apply_reliability_profiles_from_environment(
     """Apply environment-declared reliability profile."""
     return apply_reliability_profile_to_runtime_config(
         config,
-        ReliabilityProfile.model_validate(env.reliability_profile.model_dump(mode="json")),
+        RELIABILITY_PROJECTION.project(env.reliability_profile),
         idempotency_store=idempotency_store,
     )
