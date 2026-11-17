@@ -115,9 +115,14 @@ class DistributedKVStore(ABC):
         ...
 
 
-def kv_store_survives_process_restart(store: object) -> bool:
-    """True only when ``store.survives_process_restart`` is exactly ``True`` (no truthy coercion)."""
-    return getattr(store, "survives_process_restart", False) is True
+def kv_store_survives_process_restart(store: DistributedKVStore) -> bool:
+    """
+    True only for a ``DistributedKVStore`` whose ``survives_process_restart`` is exactly ``True``.
+
+    A duck-typed object that does not subclass the contract is not durable, and a truthy
+    non-bool value is not coerced.
+    """
+    return isinstance(store, DistributedKVStore) and store.survives_process_restart is True
 
 
 @runtime_checkable

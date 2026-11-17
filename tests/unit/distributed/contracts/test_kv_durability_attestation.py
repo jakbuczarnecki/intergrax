@@ -135,4 +135,4 @@ def test_duck_typed_kv_without_member_is_not_durable() -> None:
     class Duck:
         pass
 
-    assert kv_store_survives_process_restart(Duck()) is False
+    assert kv_store_survives_process_restart(Duck()) is False  # type: ignore[arg-type]
