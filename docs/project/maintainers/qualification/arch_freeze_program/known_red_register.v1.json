@@ -468,6 +468,23 @@
       "nodes_enumerated": false,
       "note": "",
       "nodes_kind": "none"
+    },
+    {
+      "id": "KR-28",
+      "name": "M-1 (PT-WB review of PR #654): two `tests/acceptance/llm_routing` nodes patch a name that the train no longer has",
+      "disposition": "FIX",
+      "source": "PT-WB review of PR #654 (M-1) and orchestrator follow-up note of 2026-11-17",
+      "evidence": "Listed as known-red candidates by the independent review of PR #654 (PT-WB) and by the orchestrator: both files patch `intergrax.applications._shared.llm_resolver._create_base_llm_adapter` (`:61` and `:60`), outside PT-WB's write set; neither node is in `expected_red_A01.json` or this register before this row. Static reading, not a run: that name is defined at `origin/development@cb60f683f` and at `arch-freeze/rw-train@05699b633` (after PT-WA) and is absent from the module at `arch-freeze/rw-train@6b94d202f` (after PT-WB, PR #654), so `monkeypatch.setattr` would raise `AttributeError` there. The PR #654 body is quoted as saying the nodes were already red at the train head; the static reading shows the break at `6b94d202f`, so the exact train SHA at which they first went red is not established here. The nodes do not run in the CI jobs of PR #654. On `development` they are not affected.",
+      "owner_node": "PT-G01 (EQO-A node; PT-WB merged without editing the two files)",
+      "how_to_prove_env": "not ENV",
+      "env_proof": "n/a",
+      "nodes": [
+        "tests/acceptance/llm_routing/test_mid_run_budget_routing_e2e.py::test_materialize_runtime_config_wraps_evaluating_adapter",
+        "tests/acceptance/llm_routing/test_production_metering_routing_e2e.py::test_production_metering_mid_run_budget_swap_with_tracker"
+      ],
+      "nodes_enumerated": true,
+      "note": "Registered by T-IGX-050-M. Related residuals of PT-WB that need no node id here: NT-OWN-05-1 guards 1 of 5 responsibilities, and a stale `host/factory.py` entry in the closed provider list (owner PT-G01).",
+      "nodes_kind": "node_ids"
     }
   ]
 }
