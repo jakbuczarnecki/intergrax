@@ -8,6 +8,14 @@ Amended by T-AF2-VALIDATOR-AMEND (ticket T-IGX-050-B, MEP-AF2 v2.1 section C ite
 * every hard DAG rule is kept unchanged; two additive rules and a DAG self-test were added;
 * counters are computed from the files instead of being hard-coded;
 * ``--sync-wbs`` / ``--sync-matrix`` are forbidden (they rewrote rows from hard-coded data).
+
+Amended again by T-AF2-VALIDATOR-FIX (ticket T-IGX-050-L), which fixes the findings of the independent review of the above:
+
+* F1: a malformed task ID (a dependency token or a WBS row) is an error instead of being dropped silently;
+* F2: the plan C.3 edges are rules (active once the post-DAG-REGEN rows exist) with one self-test mutation each;
+* F3: every ``V21_QUALIFICATION`` state must belong to the section C vocabulary;
+* F4: the matrix-vs-checklist cross-check always runs (no opt-in flag that can be absent);
+* F6: an ``authority_ref`` must carry an identifier-like token, not free-text refusals.
 """
 
 from __future__ import annotations
@@ -49,16 +57,55 @@ MIN_QUAL_RUNS = 16
 BASE_WBS_TASKS = 54
 EXTENSION_TASK_PREFIXES = ("T-AF2-", "PT-")
 
-# Word boundary: "PT-Q11" is one ID and is never read as "T-Q11"; "ENT-B6" never yields "T-B6".
-_TASK_ID_RE = re.compile(r"\b(?:T|PT)-[A-Z0-9-]+")
-_MATRIX_CROSSCHECK_FLAG_RE = re.compile(r"^\*\*MATRIX_CHECKLIST_CROSSCHECK:\*\*\s*ENABLED\b", re.M)
+# "PT-Q11" is one ID and is never read as "T-Q11"; "ENT-B6" never yields "T-B6". The lookbehind (instead of \b)
+# also rejects a hyphen before the ID, so "PRE-T-B5-X" never yields "T-B5-X".
+_TASK_ID_RE = re.compile(r"(?<![A-Za-z0-9-])(?:T|PT)-[A-Z0-9-]+")
+# A complete, well-formed task ID: used to validate WBS TASK_ID cells and DEPENDENCIES tokens strictly.
+_TASK_ID_FULL_RE = re.compile(r"(?:T|PT)-[A-Z0-9]+(?:-[A-Z0-9]+)*")
+_DEPENDENCY_SPLIT_RE = re.compile(r"[,\s\[\]]+")
+EMPTY_DEPENDENCY_MARKERS = frozenset({"—"})
 _MATRIX_HEADER_COUNTS_RE = re.compile(r"\*\*Rows:\*\*\s*(\d+)\s*\|\s*\*\*Families:\*\*\s*(\d+)")
 _AUTHORITY_REF_RE = re.compile(r"authority_ref:\s*(.+)$")
 SUPERSEDED_STATE = "SUPERSEDED_BY_CURRENT_AUTHORITY"
+# The V21 qualification states of MEP-AF2 v2.1 section C. TECHNICAL_BLOCKER / EVIDENCE_BLOCKER are tags after the state.
+QUALIFICATION_STATES = frozenset(
+    {
+        "COMPLETED_AND_VALID",
+        "COMPLETED_REQUALIFICATION_REQUIRED",
+        "IMPLEMENTED_NOT_CERTIFIED",
+        "SUPERSEDED",
+        SUPERSEDED_STATE,
+        "OPERATOR_DECISION_REQUIRED",
+        "CURRENTLY_OPEN",
+        "PDC_RESIDUAL_REVIEW_REQUIRED",
+    }
+)
 # authority_ref placeholders are rejected case-insensitively (after stripping punctuation and backticks).
 AUTHORITY_REF_PLACEHOLDERS = frozenset(
-    {"", "-", "—", "?", "??", "???", "NONE", "NULL", "NIL", "N/A", "NA", "TBD", "TODO", "PENDING", "UNKNOWN", "XXX"}
+    {
+        "",
+        "-",
+        "—",
+        "?",
+        "??",
+        "???",
+        "NO",
+        "NONE",
+        "NULL",
+        "NIL",
+        "N/A",
+        "NA",
+        "NOT YET",
+        "SEE BELOW",
+        "TBD",
+        "TODO",
+        "PENDING",
+        "UNKNOWN",
+        "XXX",
+    }
 )
+# A real reference carries an identifier-like token (a SHA, a name, an ID) or a path.
+_AUTHORITY_REF_IDENTIFIER_RE = re.compile(r"[A-Za-z0-9]{6,}|[/\\]")
 
 PROMOTE_FAMS = ("BND", "CTR", "OBS", "OWN", "PLG", "PRD", "REG", "REL", "SEC", "TYP")
 PROMOTE_TASKS = tuple(f"T-B7-PROMOTE-{fam}" for fam in PROMOTE_FAMS)
@@ -98,6 +145,23 @@ REQUIRED_SEMANTIC_TASKS = frozenset(
 # Pre-lock validator ancestors: they stay before the lock and never follow ECAP-2C [PD2-01].
 PRE_LOCK_ANCESTOR_TASKS = ("T-B5-EVOL-FRZ", "T-B6-FRZ-AUD")
 POST_LOCK_TASKS = ("T-B7-ECAP-2C", "T-B7-LOCK-FREEZE-SHA")
+
+# Plan section C.3 "new edges" (applied by DAG-REGEN). They are enforced once any marker row exists in the WBS, so the
+# current 54-row WBS (before DAG-REGEN) stays valid. Like the hard rules they are reachability rules.
+ALL_PROMOTE_TASKS = ("T-B7-PROMOTE-RPL", "T-B7-PROMOTE-DEBT", "T-B7-PROMOTE-DOC") + PROMOTE_TASKS
+REGEN_MARKER_TASKS = ("T-AF2-REQUAL-HIST-PASS", "T-AF2-POST-BASELINE", "T-AF2-W8-INDEP-CONFIRM")
+LOCK_NEW_PREREQ_TASKS = ("T-AF2-ENT-BASELINE-PREFREEZE", "T-AF2-ECAP-REVISION", "T-AF2-MANIFESTS", "PT-Q11")
+REGEN_REQUIRED_TASKS = REGEN_MARKER_TASKS + LOCK_NEW_PREREQ_TASKS + ("PT-Q13",)
+POST_REGEN_EDGES: tuple[tuple[str, str], ...] = (
+    *(("T-B7-LOCK-FREEZE-SHA", prereq) for prereq in LOCK_NEW_PREREQ_TASKS),
+    *((task, "T-B7-ECAP-2C") for task in (*ALL_PROMOTE_TASKS, "T-AF2-REQUAL-HIST-PASS")),
+    ("T-B7-COORD-ARCH-FRZ", "T-AF2-REQUAL-HIST-PASS"),
+    ("T-AF2-POST-BASELINE", "PT-Q13"),
+    ("T-AF2-POST-BASELINE", "T-B7-COORD-ARCH-FRZ"),
+    ("T-AF2-W8-INDEP-CONFIRM", "T-AF2-POST-BASELINE"),
+    ("T-AF2-W8-INDEP-CONFIRM", "T-B7-PFP-VERIFY"),
+    ("T-B7-FRZ-FRZ", "T-AF2-W8-INDEP-CONFIRM"),
+)
 
 
 # --------------------------------------------------------------------------------------
@@ -152,13 +216,29 @@ def _parse_matrix_open_tasks() -> dict[str, str]:
     return {fid: task for fid, (st, task) in _parse_matrix_rows().items() if st == "OPEN"}
 
 
-def _parse_wbs() -> list[dict[str, str]]:
+def _parse_wbs(errors: list[str] | None = None) -> list[dict[str, str]]:
+    """Parse the WBS task table. A row that cannot be a task row is an error, never silently skipped."""
     rows: list[dict[str, str]] = []
+    problems = [] if errors is None else errors
+    in_table = False
     for line in _WBS.read_text(encoding="utf-8").splitlines():
-        if not line.startswith(("| T-", "| PT-")):
+        if not line.startswith("|"):
+            in_table = False
             continue
         parts = [p.strip() for p in line.split("|")[1:-1]]
+        if parts and parts[0] == "TASK_ID":
+            in_table = True
+            continue
+        if not in_table:
+            continue
+        first = parts[0] if parts else ""
+        if first and set(first) <= set("-: "):  # the |---|---| separator row
+            continue
+        if not _TASK_ID_FULL_RE.fullmatch(first):
+            problems.append(f"WBS row with unrecognised TASK_ID {first!r} (expected T-... or PT-...): row dropped")
+            continue
         if len(parts) < 14:
+            problems.append(f"{parts[0]}: WBS row has {len(parts)} columns, expected at least 14")
             continue
         rows.append(
             {
@@ -198,8 +278,20 @@ def _extract_frz_ids(raw: str) -> list[str]:
     return re.findall(r"FRZ-[A-Z]+-\d+", raw)
 
 
-def _extract_task_deps(raw: str) -> list[str]:
-    return _extract_task_ids(raw)
+def _parse_dependencies(task_id: str, cell: str, errors: list[str]) -> list[str]:
+    """Strict DEPENDENCIES parser: every token must be a well-formed task ID, otherwise it is an error.
+
+    ``_extract_task_ids`` alone would drop a mistyped token (``X-B1-INV``, ``t-af2-x``) and lose the edge silently.
+    """
+    deps: list[str] = []
+    for token in _DEPENDENCY_SPLIT_RE.split(cell.strip()):
+        if not token or token in EMPTY_DEPENDENCY_MARKERS:
+            continue
+        if _TASK_ID_FULL_RE.fullmatch(token):
+            deps.append(token)
+        else:
+            errors.append(f"{task_id}: unrecognised dependency token {token!r} (expected T-... or PT-...)")
+    return deps
 
 
 def _extract_findings(raw: str) -> list[str]:
@@ -209,25 +301,35 @@ def _extract_findings(raw: str) -> list[str]:
 def _qualification_state(cell: str) -> tuple[str, str]:
     """Split a V21_QUALIFICATION cell into (state, authority_ref)."""
     text = cell.strip()
-    m = re.match(r"[A-Z][A-Z_]+", text)
+    # The first whole token, case-sensitive: "SUPERSEDED_BY_CURRENT_AUTHORITIES" and "superseded_..." are not states.
+    m = re.match(r"\w+", text)
     state = m.group(0) if m else ""
     ref = _AUTHORITY_REF_RE.search(text)
     return state, (ref.group(1).strip() if ref else "")
 
 
 def _is_placeholder_ref(ref: str) -> bool:
-    return ref.strip().strip("`*_.;:()[]<>\"' ").upper() in AUTHORITY_REF_PLACEHOLDERS
+    cleaned = ref.strip().strip("`*_.;:()[]<>\"' ")
+    return cleaned.upper() in AUTHORITY_REF_PLACEHOLDERS or not _AUTHORITY_REF_IDENTIFIER_RE.search(cleaned)
 
 
 def _check_qualification_states(wbs_rows: list[dict[str, str]], errors: list[str]) -> set[str]:
     """SUPERSEDED_BY_CURRENT_AUTHORITY is a satisfied dependency, but only with a non-empty authority_ref.
 
+    Every row's state must belong to ``QUALIFICATION_STATES``: a typo, a lower-case state or a missing cell would
+    otherwise skip the authority_ref check without any error.
     Returns the set of TASK_IDs that are satisfied by current authority. Such tasks stay DAG nodes:
     every edge through them still counts for reachability (no pruning), so hard rules hold unchanged.
     """
     satisfied: set[str] = set()
     for row in wbs_rows:
         state, ref = _qualification_state(row.get("V21_QUALIFICATION", ""))
+        if state not in QUALIFICATION_STATES:
+            cell = row.get("V21_QUALIFICATION", "").strip()
+            errors.append(
+                f"{row['TASK_ID']}: V21_QUALIFICATION state {state!r} is not a section C state (cell: {cell[:60]!r})"
+            )
+            continue
         if state != SUPERSEDED_STATE:
             continue
         if _is_placeholder_ref(ref):
@@ -359,6 +461,25 @@ def _validate_semantic_dag(graph: dict[str, list[str]], task_ids: set[str], erro
             if post in _ancestors(graph, pre):
                 errors.append(f"PD2-01: {pre} is a pre-lock ancestor and must not follow {post}")
 
+    _validate_post_regen_rules(graph, task_ids, errors)
+
+
+def _validate_post_regen_rules(graph: dict[str, list[str]], task_ids: set[str], errors: list[str]) -> None:
+    """Plan section C.3 new edges [T-AF2-VALIDATOR-FIX, review finding F2].
+
+    Inactive on a WBS that has none of the marker rows (the 54-row WBS before DAG-REGEN). Once any marker row exists
+    the whole regenerated set must exist, and every listed edge must be reachable; a dropped edge is an error.
+    """
+    if not (set(REGEN_MARKER_TASKS) & task_ids):
+        return
+    required: set[str] = set(REGEN_REQUIRED_TASKS)
+    missing = sorted(required - task_ids)
+    if missing:
+        errors.append(f"DAG-REGEN: post-regen rows missing from the WBS: {missing}")
+    for node, prereq in POST_REGEN_EDGES:
+        if node in task_ids and prereq in task_ids and prereq not in _ancestors(graph, node):
+            errors.append(f"DAG-REGEN: {node} must follow {prereq} (MEP-AF2 section C.3)")
+
 
 # --------------------------------------------------------------------------------------
 # DAG self-test: a reference graph, one mutation per rule, all must be rejected
@@ -399,6 +520,26 @@ def _reference_graph() -> dict[str, list[str]]:
     g["T-B7-FRZ-FRZ"] = ["T-B7-COORD-ARCH-FRZ", "T-B7-ECAP-2C", "T-B7-PFP-VERIFY"]
     g["T-B8-ROADMAP"] = ["T-B7-FRZ-FRZ", "T-B7-PFP-VERIFY", "T-B7-COORD-ARCH-FRZ"]
     g["T-B8-ECAP-16"] = ["T-B8-ROADMAP"]
+    return g
+
+
+def _post_regen_reference_graph() -> dict[str, list[str]]:
+    """The reference graph after DAG-REGEN: the base shape plus every section C.3 edge."""
+    g = _reference_graph()
+    g["T-AF2-ENT-BASELINE-PREFREEZE"] = ["T-B4-L3-FULL"]
+    g["T-AF2-ECAP-REVISION"] = []
+    g["T-AF2-MANIFESTS"] = []
+    g["PT-Q11"] = []
+    g["PT-Q13"] = ["T-B4-L3-FULL"]
+    g["T-B7-LOCK-FREEZE-SHA"] = [*g["T-B7-LOCK-FREEZE-SHA"], *LOCK_NEW_PREREQ_TASKS]
+    for task in ALL_PROMOTE_TASKS:
+        if "T-B7-ECAP-2C" not in g[task]:
+            g[task] = [*g[task], "T-B7-ECAP-2C"]
+    g["T-AF2-REQUAL-HIST-PASS"] = ["T-B7-ECAP-2C"]
+    g["T-B7-COORD-ARCH-FRZ"] = [*g["T-B7-COORD-ARCH-FRZ"], "T-AF2-REQUAL-HIST-PASS"]
+    g["T-AF2-POST-BASELINE"] = ["PT-Q13", "T-B7-COORD-ARCH-FRZ"]
+    g["T-AF2-W8-INDEP-CONFIRM"] = ["T-AF2-POST-BASELINE", "T-B7-PFP-VERIFY"]
+    g["T-B7-FRZ-FRZ"] = [*g["T-B7-FRZ-FRZ"], "T-AF2-W8-INDEP-CONFIRM"]
     return g
 
 
@@ -538,6 +679,23 @@ def _self_test_cases() -> list[tuple[str, dict[str, list[str]], str]]:
     )
     cases.extend(hard)
     cases.extend(_extra_self_test_cases(ref))
+    cases.extend(_post_regen_self_test_cases())
+    return cases
+
+
+def _post_regen_self_test_cases() -> list[tuple[str, dict[str, list[str]], str]]:
+    """One mutation per section C.3 edge (the edge dropped from the post-DAG-REGEN shape) plus an incomplete set."""
+    regen = _post_regen_reference_graph()
+    cases: list[tuple[str, dict[str, list[str]], str]] = [
+        (
+            f"DAG-REGEN: {node} without {prereq}",
+            _without_edge(regen, node, prereq),
+            f"DAG-REGEN: {node} must follow {prereq}",
+        )
+        for node, prereq in POST_REGEN_EDGES
+    ]
+    for task in REGEN_REQUIRED_TASKS:
+        cases.append((f"DAG-REGEN: row {task} missing", _removed(regen, task), "DAG-REGEN: post-regen rows missing"))
     return cases
 
 
@@ -611,6 +769,12 @@ def dag_self_test() -> list[str]:
     base_errors = _dag_errors(ref)
     if base_errors:
         failures.append(f"self-test: reference graph violates rules: {base_errors[:3]}")
+    regen = _post_regen_reference_graph()
+    if _find_cycles(regen):
+        failures.append("self-test: post-DAG-REGEN reference graph has a cycle")
+    regen_errors = _dag_errors(regen)
+    if regen_errors:
+        failures.append(f"self-test: post-DAG-REGEN reference graph violates rules: {regen_errors[:3]}")
     for label, graph, expected in _self_test_cases():
         errs = _dag_errors(graph)
         if not any(expected in e for e in errs):
@@ -628,12 +792,8 @@ def dag_self_test() -> list[str]:
 
 
 # --------------------------------------------------------------------------------------
-# Matrix vs checklist cross-check (opt-in via the matrix header flag from T-AF2-SSOT-RECONCILE-B)
+# Matrix vs checklist cross-check (always on; T-AF2-SSOT-RECONCILE-B is merged, so the W0 opt-in is no longer needed)
 # --------------------------------------------------------------------------------------
-
-
-def _matrix_crosscheck_enabled() -> bool:
-    return bool(_MATRIX_CROSSCHECK_FLAG_RE.search(_MATRIX.read_text(encoding="utf-8")))
 
 
 def _matrix_crosscheck(statuses: dict[str, str], errors: list[str]) -> None:
@@ -685,12 +845,11 @@ def collect(errors: list[str] | None = None) -> tuple[list[str], dict[str, objec
         errors.append(f"checklist: unknown FRZ status '{cls}' ({classes[cls]} rows); expected OPEN or PASS*")
     stats.update(frz=len(canonical), families=len(families), passed=pass_n, passed_plain=classes_plain, open=open_n)
 
-    crosscheck = _matrix_crosscheck_enabled()
-    stats["matrix_crosscheck"] = "ENABLED" if crosscheck else "OFF"
-    if crosscheck:
-        _matrix_crosscheck(statuses, errors)
+    # Always on [T-AF2-VALIDATOR-FIX, review finding F4]: there is no header flag that can be absent or deleted.
+    _matrix_crosscheck(statuses, errors)
+    stats["matrix_crosscheck"] = "ENABLED"
 
-    wbs_rows = _parse_wbs()
+    wbs_rows = _parse_wbs(errors)
     task_ids = {r["TASK_ID"] for r in wbs_rows}
     if len(task_ids) != len(wbs_rows):
         errors.append("duplicate WBS TASK_ID")
@@ -750,10 +909,14 @@ def collect(errors: list[str] | None = None) -> tuple[list[str], dict[str, objec
 
     satisfied = _check_qualification_states(wbs_rows, errors)
     stats["superseded_by_authority"] = len(satisfied)
+    state_counts: dict[str, int] = defaultdict(int)
+    for row in wbs_rows:
+        state_counts[_qualification_state(row.get("V21_QUALIFICATION", ""))[0]] += 1
+    stats["qualification_states"] = dict(sorted(state_counts.items()))
 
     graph: dict[str, list[str]] = {}
     for row in wbs_rows:
-        graph[row["TASK_ID"]] = _extract_task_deps(row["DEPENDENCIES"])
+        graph[row["TASK_ID"]] = _parse_dependencies(row["TASK_ID"], row["DEPENDENCIES"], errors)
         for dep in graph[row["TASK_ID"]]:
             if dep not in task_ids:
                 errors.append(f"{row['TASK_ID']} missing dependency {dep}")
@@ -829,6 +992,8 @@ def validate() -> int:
         f"dangling_open_frz={stats['dangling_open_frz']} matrix_crosscheck={stats['matrix_crosscheck']} "
         f"superseded_by_authority={stats['superseded_by_authority']} semantic_dag=OK dag_self_test=OK"
     )
+    states = ", ".join(f"{k}={n}" for k, n in stats["qualification_states"].items())  # type: ignore[attr-defined]
+    print(f"  qualification_states: {states}")
     for inf in stats["info_findings"]:  # type: ignore[attr-defined]
         print(f"  [INFO] {inf}: historical, superseded by the B1 chain (not a blocker)")
     return 0
