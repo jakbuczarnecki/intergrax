@@ -35,7 +35,9 @@ docs/project/maintainers/qualification/enterprise_debt_register/register.jsonl
 
 ## Approved
 
-PENDING.
+Approved: operator-delegate @ 2026-11-17T12:56:23+01:00
+Delegation: docs/project/maintainers/qualification/eqo_a_remediation/OPERATOR_ANSWERS_CODE_WAVE_TRANSCRIPTION.md@6ae045e3ad3717f222dad234af29021a8adeec8f
+Delegate session: local_7b06d036-e322-483f-8e3f-8d2010ae9e29
 
 ## Test contract
 
@@ -53,4 +55,4 @@ Edits of the roadmap, the freeze checklist, PDC-owned records, generated registe
 
 ## Lifecycle state
 
-plan_pending
+plan_approved
