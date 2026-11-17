@@ -8,8 +8,10 @@ import json
 import re
 import uuid
 from abc import ABC, abstractmethod
-from collections.abc import Callable, Iterable, Iterator, Sequence
+from collections.abc import Callable, Iterable, Iterator, Mapping, Sequence
 from contextlib import contextmanager
+from contextvars import ContextVar
+from dataclasses import replace
 from datetime import UTC
 from typing import TYPE_CHECKING, Any, TypeVar
 
@@ -18,7 +20,11 @@ import tiktoken
 from intergrax.llm.messages import ChatMessage
 from intergrax.llm_adapters._shared.call_config import LLMCallConfig, parse_call_config
 from intergrax.llm_adapters._shared.resilience import execute_with_resilience
-from intergrax.llm_adapters._shared.retry import call_with_retry
+from intergrax.llm_adapters._shared.retry import (
+    call_with_retry,
+    extract_retry_after_seconds,
+    is_retriable_provider_error,
+)
 from intergrax.llm_adapters.base.usage_log import LLMAdapterUsageLog, LLMRunStatsReader
 from intergrax.llm_adapters.contracts.adapter_response import LLMAdapterResponse
 from intergrax.llm_adapters.contracts.capabilities import (
@@ -27,6 +33,15 @@ from intergrax.llm_adapters.contracts.capabilities import (
 )
 from intergrax.llm_adapters.contracts.llm_provider import LLMProvider, llm_provider_slug
 from intergrax.llm_adapters.contracts.native_tool_choice import NativeToolChoice
+from intergrax.llm_adapters.contracts.provider_error import (
+    LLMCallTimeoutNotForwardableError,
+    LLMProviderError,
+    LLMProviderErrorCategory,
+    LLMProviderErrorSignal,
+    category_from_class_name,
+    category_from_status,
+    provider_error_class_for,
+)
 from intergrax.llm_adapters.contracts.stream_event import LLMStreamEvent
 from intergrax.llm_adapters.contracts.strict_tool_arguments import CanonicalFunctionToolDefinition
 from intergrax.llm_adapters.contracts.structured_result import LLMStructuredResult, TStructured
@@ -47,6 +62,7 @@ if TYPE_CHECKING:
     from intergrax.llm_adapters._shared.provider_stream_transport_registry import (
         ProviderStreamTransportRegistry,
     )
+    from intergrax.llm_adapters.base.usage_log import LLMCallStats
     from intergrax.runtime.external_operations.admission.execution_gate import (
         ExternalOperationExecutionGate,
     )
@@ -61,6 +77,56 @@ if TYPE_CHECKING:
     )
 
 T = TypeVar("T")
+
+#: Effective call timeout of the physical attempt that is running (EX-D3-01). Set by ``_execute`` /
+#: ``_execute_streaming`` around one attempt and read by provider call sites through
+#: ``BaseLLMAdapter._effective_call_timeout_sec``.
+_EFFECTIVE_CALL_TIMEOUT_SEC: ContextVar[float | None] = ContextVar(
+    "intergrax_llm_effective_call_timeout_sec",
+    default=None,
+)
+
+#: Top-level packages whose exceptions are provider SDK or transport errors. An exception from one of
+#: them that carries no status code and no transient class-name word is typed ``UNKNOWN``; an exception
+#: from elsewhere that carries no provider signal (a local error) passes through unchanged.
+_PROVIDER_SDK_ROOTS: frozenset[str] = frozenset(
+    {
+        "aiohttp",
+        "anthropic",
+        "boto3",
+        "botocore",
+        "cohere",
+        "google",
+        "httpcore",
+        "httpx",
+        "langchain_core",
+        "langchain_ollama",
+        "mistralai",
+        "ollama",
+        "openai",
+        "requests",
+        "urllib3",
+    }
+)
+
+
+def _exception_root_package(exc: BaseException) -> str:
+    module = type(exc).__module__ or ""
+    return module.split(".", 1)[0]
+
+
+def _provider_status_code(exc: BaseException) -> int | None:
+    from intergrax.utils import attribute_access
+
+    status = attribute_access.optional(exc, "status_code", None)
+    if isinstance(status, int) and not isinstance(status, bool):
+        return status
+    response = attribute_access.optional(exc, "response", None)
+    if response is not None and not isinstance(response, Mapping):
+        nested = attribute_access.optional(response, "status_code", None)
+        if isinstance(nested, int) and not isinstance(nested, bool):
+            return nested
+    return None
 
 
 # ============================================================
@@ -270,8 +336,6 @@ class BaseLLMAdapter(ABC):
 
     def _execute(self, fn: Callable[[], T]) -> T:
         """Run a provider SDK call with rate limit, circuit breaker, and optional retry."""
-        from dataclasses import replace
-
         from intergrax.contracts.execution_deadline.admission import (
             ExecutionProtectedWorkAdmissionResult,
         )
@@ -289,30 +353,40 @@ class BaseLLMAdapter(ABC):
             raise ExecutionProtectedWorkDeniedError(
                 ExecutionProtectedWorkAdmissionResult.EXPIRED,
             )
+        self._require_call_timeout_forwarding(effective_timeout)
         check_llm_tenant_quota(get_llm_tenant_id())
         effective_config = self.call_config
         if effective_timeout is not None:
             effective_config = replace(self.call_config, timeout_sec=effective_timeout)
 
         def physical_attempt() -> T:
-            return self._run_physical_provider_attempt(fn)
+            token = _EFFECTIVE_CALL_TIMEOUT_SEC.set(effective_timeout)
+            try:
+                return self._run_physical_provider_attempt(fn)
+            finally:
+                _EFFECTIVE_CALL_TIMEOUT_SEC.reset(token)
 
-        return execute_with_resilience(
-            physical_attempt,
-            provider=self._provider_slug(),
-            config=effective_config,
-            retry_fn=lambda f: call_with_retry(f, config=effective_config),
-            tenant_id=get_llm_tenant_id(),
-        )
+        try:
+            return execute_with_resilience(
+                physical_attempt,
+                provider=self._provider_slug(),
+                config=effective_config,
+                retry_fn=lambda f: call_with_retry(f, config=effective_config),
+                tenant_id=get_llm_tenant_id(),
+            )
+        except Exception as exc:
+            typed = self._typed_provider_error(exc, effective_config)
+            if typed is None:
+                raise
+            raise typed from exc
 
     def _execute_streaming(self, factory: Callable[[], Iterable[T]]) -> Iterable[T]:
         """Acquire permit per creation attempt; hold through stream consumption."""
-        from dataclasses import replace
-
         from intergrax.contracts.execution_deadline.admission import (
             ExecutionProtectedWorkAdmissionResult,
         )
         from intergrax.llm_adapters._shared.provider_stream_admission import (
+            open_primed_stream,
             stream_factory_with_admission,
             stream_with_external_operation_lifecycle,
         )
@@ -334,12 +408,25 @@ class BaseLLMAdapter(ABC):
             raise ExecutionProtectedWorkDeniedError(
                 ExecutionProtectedWorkAdmissionResult.EXPIRED,
             )
+        self._require_call_timeout_forwarding(effective_timeout)
         check_llm_tenant_quota(get_llm_tenant_id())
         effective_config = self.call_config
         if effective_timeout is not None:
             effective_config = replace(self.call_config, timeout_sec=effective_timeout)
 
+        def map_mid_stream_error(exc: Exception) -> BaseException | None:
+            return self._typed_provider_error(exc, effective_config)
+
         def physical_attempt() -> Iterable[T]:
+            # EX-L-08: the stream is opened and its first event pulled inside this attempt, so an open
+            # error fails the attempt (breaker and retry) instead of surfacing after the loop returned.
+            token = _EFFECTIVE_CALL_TIMEOUT_SEC.set(effective_timeout)
+            try:
+                return open_primed_stream(lifecycle_stream())
+            finally:
+                _EFFECTIVE_CALL_TIMEOUT_SEC.reset(token)
+
+        def lifecycle_stream() -> Iterable[T]:
             admission_attempt = self._admit_llm_provider_intent(call_scope="stream")
             ext_op = LlmExternalOperationAttempt(
                 store=self._external_operation_store,
@@ -368,6 +455,7 @@ class BaseLLMAdapter(ABC):
                     ext_op=ext_op,
                     factory=factory,
                     stream_registry=self._external_operation_stream_registry,
+                    map_error=map_mid_stream_error,
                 )
             handle = boundary.acquire(self._provider_dependency_admission_request())
             ext_op.mark_running()
@@ -379,15 +467,120 @@ class BaseLLMAdapter(ABC):
                     factory=factory,
                 ),
                 stream_registry=self._external_operation_stream_registry,
+                map_error=map_mid_stream_error,
             )
 
-        return execute_with_resilience(
-            physical_attempt,
-            provider=self._provider_slug(),
-            config=effective_config,
-            retry_fn=lambda f: call_with_retry(f, config=effective_config),
-            tenant_id=get_llm_tenant_id(),
+        try:
+            return execute_with_resilience(
+                physical_attempt,
+                provider=self._provider_slug(),
+                config=effective_config,
+                retry_fn=lambda f: call_with_retry(f, config=effective_config),
+                tenant_id=get_llm_tenant_id(),
+            )
+        except Exception as exc:
+            typed = self._typed_provider_error(exc, effective_config)
+            if typed is None:
+                raise
+            raise typed from exc
+
+    # ---- Call timeout forwarding (EX-D3-01) ----
+    def supports_call_timeout(self) -> bool:
+        """Whether the adapter passes ``_effective_call_timeout_sec()`` to its SDK call.
+
+        A subclass that cannot forward the timeout returns ``False``; a call that carries an effective
+        timeout (``timeout_sec`` or an active execution deadline) is then refused before the provider is
+        touched (fail closed, Operator ruling Q-RUN-02).
+        """
+        return True
+
+    def _effective_call_timeout_sec(self) -> float | None:
+        """Effective timeout of the physical attempt that is running, or ``None`` when no budget is set."""
+        return _EFFECTIVE_CALL_TIMEOUT_SEC.get()
+
+    def _call_timeout_kwargs(self, key: str = "timeout", *, milliseconds: bool = False) -> dict[str, Any]:
+        """``{key: timeout}`` for the SDK call of this attempt, or ``{}`` when no budget is set."""
+        timeout = self._effective_call_timeout_sec()
+        if timeout is None:
+            return {}
+        if milliseconds:
+            return {key: float(max(1, round(timeout * 1000.0)))}
+        return {key: float(timeout)}
+
+    def _require_call_timeout_forwarding(self, effective_timeout: float | None) -> None:
+        if effective_timeout is None or self.supports_call_timeout():
+            return
+        provider, model = self._adapter_identity()
+        raise LLMCallTimeoutNotForwardableError(provider=provider, model=model)
+
+    # ---- Typed provider-error contract v1 (EX-D3-03) ----
+    def _classify_provider_error(self, exc: Exception) -> LLMProviderErrorSignal | None:
+        """Provider hook: read an SDK error the generic classifier cannot (default: none)."""
+        del exc
+        return None
+
+    def _typed_provider_error(self, exc: Exception, config: LLMCallConfig) -> LLMProviderError | None:
+        """Typed error for ``exc``, or ``None`` when ``exc`` passes through unchanged.
+
+        Pass through: typed errors of this contract, every error defined by the platform itself (the v1
+        members by reference), and a local error that carries no provider signal. Classification: the
+        provider hook, then the transient words of the SDK class name, then the HTTP status; an SDK or
+        transport error without any of them is ``UNKNOWN``.
+        """
+        if isinstance(exc, LLMProviderError):
+            return None
+        root = _exception_root_package(exc)
+        if root == "intergrax":
+            return None
+        signal = self._classify_provider_error(exc)
+        status = _provider_status_code(exc)
+        category: LLMProviderErrorCategory | None = None
+        if signal is not None:
+            category = signal.category
+            if signal.status_code is not None:
+                status = signal.status_code
+        if category is None:
+            category = category_from_class_name(type(exc).__name__)
+        if category is None and status is not None:
+            category = category_from_status(status)
+        if category is None:
+            if status is None and root not in _PROVIDER_SDK_ROOTS:
+                return None
+            category = LLMProviderErrorCategory.UNKNOWN
+        provider, model = self._adapter_identity()
+        typed = provider_error_class_for(category)(
+            provider=provider,
+            model=model,
+            status_code=status,
+            retry_after_seconds=extract_retry_after_seconds(exc),
         )
+        typed.retriable = is_retriable_provider_error(typed, config)
+        return typed
+
+    # ---- Served-model attribution (PDC-D3-R005) ----
+    @staticmethod
+    def _with_served_model(response: LLMAdapterResponse, served_model: object) -> LLMAdapterResponse:
+        """``response`` with ``served_model`` set when the SDK reported a non-empty model name."""
+        if isinstance(served_model, str) and served_model.strip():
+            return replace(response, served_model=served_model.strip())
+        return response
+
+    @staticmethod
+    def _attribute_served_model(call: LLMCallStats, response: LLMAdapterResponse | None) -> None:
+        """Record the served model in the call accounting (``call.model``) when the response has one."""
+        if response is not None and response.served_model:
+            call.model = response.served_model
+
+    def _served_response(
+        self,
+        call: LLMCallStats,
+        response: LLMAdapterResponse,
+        served_model: object = None,
+    ) -> LLMAdapterResponse:
+        """Attach the reported served model (if any) and attribute it to the call accounting."""
+        attributed = self._with_served_model(response, served_model)
+        self._attribute_served_model(call, attributed)
+        return attributed
 
     @contextmanager
     def _provider_dependency_attempt(self) -> Iterator[None]:

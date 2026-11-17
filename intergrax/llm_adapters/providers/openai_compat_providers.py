@@ -133,6 +133,9 @@ class _CompatAdapterBase(OpenAIChatCompletionsAdapter):
             run_id=run_id,
         )
 
+    def supports_call_timeout(self) -> bool:
+        return self._delegate.supports_call_timeout()
+
     def supports_streaming(self) -> bool:
         return self._delegate.supports_streaming()
 

@@ -8,6 +8,7 @@ from collections.abc import Mapping
 from dataclasses import dataclass
 from enum import Enum
 
+from intergrax.llm_adapters.contracts.provider_error import LLMProviderError, LLMProviderErrorCategory
 from intergrax.llm_adapters.routing import RoutingContext, RoutingEvaluation
 
 from model_routing_qualifier.model_routing import (
@@ -133,7 +134,10 @@ class ModelRoutingQualificationResult:
     run_id: str
 
 
+#: Provider SDK errors reach this agent as typed provider errors (``LLMProviderError``, a ``RuntimeError``
+#: subclass, mapped at the adapter boundary); no SDK exception class is imported here (A4-018).
 _PROVIDER_BOUNDARY_EXCEPTIONS: tuple[type[BaseException], ...] = (
+    LLMProviderError,
     RuntimeError,
     ValueError,
     ConnectionError,
@@ -141,19 +145,23 @@ _PROVIDER_BOUNDARY_EXCEPTIONS: tuple[type[BaseException], ...] = (
     OSError,
 )
 
-_OLLAMA_RESPONSE_ERROR: type[BaseException] | None = None
-try:
-    from ollama import ResponseError as _ImportedOllamaResponseError
-
-    _OLLAMA_RESPONSE_ERROR = _ImportedOllamaResponseError
-    _PROVIDER_BOUNDARY_EXCEPTIONS = _PROVIDER_BOUNDARY_EXCEPTIONS + (_ImportedOllamaResponseError,)
-except ImportError:
-    pass
+_TRANSPORT_CATEGORIES: frozenset[LLMProviderErrorCategory] = frozenset(
+    {
+        LLMProviderErrorCategory.TIMEOUT,
+        LLMProviderErrorCategory.CONNECTION,
+        LLMProviderErrorCategory.OVERLOADED,
+        LLMProviderErrorCategory.SERVER_ERROR,
+        LLMProviderErrorCategory.RATE_LIMIT,
+    }
+)
 
 
 def classify_invocation_failure(exc: BaseException) -> InvocationFailureKind:
-    if _OLLAMA_RESPONSE_ERROR is not None and isinstance(exc, _OLLAMA_RESPONSE_ERROR):
-        return InvocationFailureKind.PROVIDER_MODEL_NOT_FOUND
+    if isinstance(exc, LLMProviderError):
+        if exc.category is LLMProviderErrorCategory.MODEL_NOT_FOUND:
+            return InvocationFailureKind.PROVIDER_MODEL_NOT_FOUND
+        if exc.category in _TRANSPORT_CATEGORIES:
+            return InvocationFailureKind.PROVIDER_TRANSPORT_FAILURE
     message = str(exc).lower()
     if isinstance(exc, (ConnectionError, TimeoutError, OSError)):
         return InvocationFailureKind.PROVIDER_TRANSPORT_FAILURE

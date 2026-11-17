@@ -15,10 +15,16 @@ class LLMCallConfig:
 
     Pass via adapter ``**defaults`` or set ``adapter.call_config`` after construction.
 
-    ``timeout_sec`` is an admission budget: it is clamped to the active execution deadline and a call
-    whose effective budget is not positive is rejected before the provider is touched. It is not
-    forwarded to the provider SDK and does not interrupt a call that is already running; a hung call is
-    bounded only by the SDK default or by an outer execution deadline.
+    ``timeout_sec`` is an admission budget and the per-call SDK timeout: it is clamped to the active
+    execution deadline, and a call whose effective budget is not positive is rejected before the provider
+    is touched. The effective value is published for one physical attempt
+    (``BaseLLMAdapter._effective_call_timeout_sec``); the callable passed to ``_execute`` receives no
+    argument, so the value is not forwarded by the base class itself. Each shipped adapter passes it to
+    its SDK call through the mechanism that SDK offers (a per-request ``timeout``, ``timeout_ms``,
+    request options, HTTP options, or a per-call client); an adapter that cannot do so declares
+    ``supports_call_timeout() -> False`` and a call with an effective budget is refused with
+    ``LLMCallTimeoutNotForwardableError`` instead of running without it. No generic wall-clock wrapper is
+    added: the SDK enforces the timeout on its own transport.
     """
 
     temperature: float | None = None
