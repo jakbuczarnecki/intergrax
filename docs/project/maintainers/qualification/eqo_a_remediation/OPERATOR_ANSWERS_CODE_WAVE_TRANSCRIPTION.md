@@ -124,7 +124,7 @@ How the orchestrator applies message 8 (an interpretation limited to the item ab
 
 ## Addendum 6: message 9, the nine held DB-C hunks (2026-11-17)
 
-9. Orchestrator's English rendering of a chat message of 2026-11-17: "Set the recommended options in all four." Given in answer to the orchestrator's four decisions on the nine hunks of batch DB-C that pull request 656 (ticket T-IGX-046-E) held because each needed a fact that no tracked file states. The four decisions and the recommended option of each are in `.tmp/session/eqo-a-remediation/DB_C_HELD_HUNK_FACTS.md` (section D), summarised below. This section is a transcription by the orchestrator under IIAC Amendment 01 section 1.2, not an Operator signature; the Operator may correct any row. `Expires`: none stated. The Polish original is in the chat of that date and is not reproduced here.
+9. Orchestrator's English rendering of a chat message of 2026-11-17: "Set the recommended options in all four." Given in answer to the orchestrator's four decisions on the nine hunks of batch DB-C that pull request 656 (ticket T-IGX-046-E) held because each needed a fact that no tracked file states. The four decisions and the recommended option of each are in `.tmp/session/eqo-a-remediation/DB_C_HELD_HUNK_FACTS.md` (section D; a non-tracked planning note of the orchestrator, not a file in the repository), summarised below. This section is a transcription by the orchestrator under IIAC Amendment 01 section 1.2, not an Operator signature; the Operator may correct any row. `Expires`: none stated. The Polish original is in the chat of that date and is not reproduced here.
 
 How the orchestrator applies message 9 (an interpretation limited to the items below):
 
