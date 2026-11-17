@@ -31,7 +31,11 @@ from intergrax.platform.enterprise_audit.contracts import (
     ManifestCheck,
 )
 from intergrax.platform.enterprise_audit.coverage import compute_coverage_label
-from intergrax.platform.enterprise_audit.digests import frz_coverage_artifact, manifest_digest
+from intergrax.platform.enterprise_audit.digests import (
+    frz_coverage_artifact,
+    frz_default_fallback_check_ids,
+    manifest_digest,
+)
 from intergrax.platform.enterprise_audit.evidence import build_evidence_manifest
 from intergrax.platform.enterprise_audit.manifest import checks_for_mode, load_default_manifest
 from intergrax.platform.enterprise_audit.modes import (
@@ -79,6 +83,7 @@ class EnterpriseAuditRunner:
         bootstrap_baseline: bool = False,
         write_evidence_bundle: bool = False,
         certifying_run: bool = True,
+        selection_notes: tuple[str, ...] = (),
     ) -> tuple[AuditReport, AuditExecutionManifest, EnterpriseAuditExitCode]:
         identity = read_repo_identity(self._repo_root)
         if self._require_clean_repo and identity.dirty:
@@ -95,6 +100,21 @@ class EnterpriseAuditRunner:
                 message="certifying runs forbid --check-id; use --non-certifying for diagnostic filters",
                 certifying_run=certifying_run,
             )
+
+        if effective_certifying:
+            fallthrough = frz_default_fallback_check_ids(self._checks)
+            if fallthrough:
+                return self._blocked_report(
+                    mode,
+                    identity,
+                    output_dir,
+                    finding_id="FRZ:COVERAGE_DEFAULT_FALLBACK",
+                    message=(
+                        "certifying runs forbid checks without an explicit FRZ family attribution: "
+                        + ", ".join(sorted(fallthrough))
+                    ),
+                    certifying_run=certifying_run,
+                )
 
         baseline_root = assert_baseline_dir_jailed(
             baseline_dir or self._default_baseline_dir(),
@@ -263,15 +283,21 @@ class EnterpriseAuditRunner:
         internal_error = any(f.severity.value == "BLOCKER" and f.category.value == "internal" for f in drifted)
         status = aggregate_status(drifted, incomplete=incomplete, internal_error=internal_error)
         exit_code = compute_exit_code(status, outcomes_tuple)
-        if (
-            not effective_certifying
-            and mode is AuditMode.FAST
-            and status is AggregateAuditStatus.PARTIAL
-            and drifted
-            and all(f.severity is AuditSeverity.TRACKED_DEBT for f in drifted if f.drift is not DriftStatus.RESOLVED)
-        ):
+        promoted, tracked_debt_count = _non_certifying_fast_promotion(
+            certifying=effective_certifying,
+            mode=mode,
+            status=status,
+            incomplete=incomplete,
+            findings=drifted,
+        )
+        promotion_notes: tuple[str, ...] = ()
+        if promoted:
             status = AggregateAuditStatus.PASS
             exit_code = EnterpriseAuditExitCode.CLEAN
+            promotion_notes = (
+                "status_promoted_from=PARTIAL: non-certifying FAST run; only TRACKED_DEBT drift remains "
+                f"(tracked_debt_count={tracked_debt_count}); aggregate status raised to PASS, exit code to 0.",
+            )
 
         coverage_label = compute_coverage_label(
             mode,
@@ -307,7 +333,9 @@ class EnterpriseAuditRunner:
             baseline_sha=baseline_sha,
             findings=drifted,
             limitations=default_limitations(mode)
-            + (("dry_run: non-certifying; checks not executed.",) if self._dry_run else ()),
+            + selection_notes
+            + (("dry_run: non-certifying; checks not executed.",) if self._dry_run else ())
+            + promotion_notes,
             coverage_matrix_summary=coverage_summary,
             certifying_run=effective_certifying,
         )
@@ -318,7 +346,7 @@ class EnterpriseAuditRunner:
             manifest,
             outcomes_tuple,
             extra_artifacts={
-                "frz_coverage.v1.json": frz_coverage_artifact(self._checks),
+                "frz_coverage.v1.json": frz_coverage_artifact(self._checks, strict=effective_certifying),
                 "vbn_domains.v1.json": domain_report or rollup,
             },
         )
@@ -385,6 +413,27 @@ class EnterpriseAuditRunner:
 
     def _default_baseline_dir(self) -> Path:
         return self._repo_root / "tests" / "qualification" / "ent_audit_x"
+
+
+def _non_certifying_fast_promotion(
+    *,
+    certifying: bool,
+    mode: AuditMode,
+    status: AggregateAuditStatus,
+    incomplete: bool,
+    findings: tuple[AuditFinding, ...],
+) -> tuple[bool, int]:
+    """Whether a non-certifying FAST PARTIAL run is raised to PASS (only TRACKED_DEBT drift left) and the debt count.
+
+    Never promoted: certifying runs, other modes, and runs whose mandatory floor is incomplete (PARTIAL then means
+    "not everything ran", not "only tracked debt remains").
+    """
+    if certifying or mode is not AuditMode.FAST or incomplete or status is not AggregateAuditStatus.PARTIAL:
+        return False, 0
+    active = tuple(f for f in findings if f.drift is not DriftStatus.RESOLVED)
+    if not active or not all(f.severity is AuditSeverity.TRACKED_DEBT for f in active):
+        return False, 0
+    return True, len(active)
 
 
 def _prerequisite_failed(outcome: CheckRunOutcome) -> bool:
