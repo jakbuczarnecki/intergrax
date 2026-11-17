@@ -9,16 +9,15 @@ from typing import Any, Literal
 
 from pydantic import BaseModel, ConfigDict, Field, field_validator
 
+from intergrax.contracts.adaptive_loop_kind import AdaptiveLoopKind
 from intergrax.contracts.agent_budget import BudgetReactionProfile
 from intergrax.contracts.autonomy_level import AutonomyLevel
 from intergrax.contracts.context_assembly import TaskContextAssemblyOptions
 from intergrax.contracts.context_budget import ContextBudgetPolicy
+from intergrax.contracts.context_optimization_policy import ContextOptimizationPolicy
 from intergrax.contracts.intent_route import IntentRoute
 from intergrax.contracts.resilience_policy import ResiliencePolicy, default_resilience_policy
-from intergrax.llm_adapters.contracts.llm_profile import LLMProfile
 from intergrax.contracts.utility_weights import UtilityWeights
-from intergrax.contracts.adaptive_loop_kind import AdaptiveLoopKind
-from intergrax.contracts.context_optimization_policy import ContextOptimizationPolicy
 
 ContextEnginePreset = Literal[
     "default",
@@ -66,7 +65,7 @@ class ContextDecisionProfile(BaseModel):
 class ContextProfile(BaseModel):
     """Context assembly defaults for Nexus."""
 
-    model_config = ConfigDict(extra="ignore")
+    model_config = ConfigDict(extra="forbid")
 
     assembly_options: TaskContextAssemblyOptions = Field(
         default_factory=TaskContextAssemblyOptions,
@@ -82,9 +81,7 @@ class ContextProfile(BaseModel):
     drift_alert_threshold: float = Field(default=0.35, ge=0.0, le=2.0)
     optimization_policy: ContextOptimizationPolicy | None = None
     semantic_compression_enabled: bool = False
-    default_history_compression: Literal["truncate_oldest", "summarize_oldest", "hybrid"] = (
-        "truncate_oldest"
-    )
+    default_history_compression: Literal["truncate_oldest", "summarize_oldest", "hybrid"] = "truncate_oldest"
 
     @field_validator("context_plugin_ids")
     @classmethod
@@ -103,7 +100,7 @@ class ContextProfile(BaseModel):
 class MemoryProfile(BaseModel):
     """Task/org memory flags for runtime merge."""
 
-    model_config = ConfigDict(extra="ignore")
+    model_config = ConfigDict(extra="forbid")
 
     enable_user_memory: bool = False
     enable_org_memory: bool = False
@@ -114,7 +111,7 @@ class MemoryProfile(BaseModel):
 class CostProfile(BaseModel):
     """Run budget slice for agent session merge."""
 
-    model_config = ConfigDict(extra="ignore")
+    model_config = ConfigDict(extra="forbid")
 
     budget_reaction: BudgetReactionProfile | None = None
     max_total_tokens: int | None = Field(default=None, ge=1)
@@ -123,7 +120,7 @@ class CostProfile(BaseModel):
 class ReliabilityProfile(BaseModel):
     """Idempotency, circuit breaker, checkpoint posture."""
 
-    model_config = ConfigDict(extra="ignore")
+    model_config = ConfigDict(extra="forbid")
 
     idempotency_enabled: bool = True
     circuit_breaker_failure_threshold: int = Field(default=5, ge=1)
