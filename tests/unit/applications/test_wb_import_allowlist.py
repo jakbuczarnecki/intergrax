@@ -5,6 +5,7 @@
 from __future__ import annotations
 
 import importlib
+import json
 from pathlib import Path
 
 import pytest
@@ -14,6 +15,12 @@ from intergrax.applications._shared.import_allowlist import (
     ImportAllowlistRequiredError,
     ImportPathNotAllowedError,
     ImportPrefixAllowlist,
+)
+from intergrax.applications.contracts.application_migration import (
+    ApplicationMigration,
+    MigrationStep,
+    MigrationStepAction,
+    MigrationStepTarget,
 )
 from intergrax.applications.contracts.errors import AgentImportError
 
@@ -116,16 +123,28 @@ def test_nt_wb_21_migration_manifest_outside_allowlist_refused(
     applications_root = tmp_path / "applications"
     migrations = applications_root / "zz_synth_app_application" / "migrations"
     migrations.mkdir(parents=True)
-    (migrations / "0001.json").write_text("{}", encoding="utf-8")
+    migration = ApplicationMigration(
+        migration_id="zz_synth_1_0_to_1_1",
+        from_app_version="1.0.0",
+        to_app_version="1.1.0",
+        steps=[
+            MigrationStep(
+                target=MigrationStepTarget.PROFILE,
+                action=MigrationStepAction.VALIDATE_ONLY,
+            ),
+        ],
+    )
+    (migrations / "zz_synth_1_0_to_1_1.json").write_text(
+        json.dumps(migration.model_dump(mode="json")),
+        encoding="utf-8",
+    )
     violations = migration_wiring.check_application_migrations(
         applications_root,
         allowed_prefixes=allowlist,
         fail_closed=True,
     )
     assert imported == []
-    assert any("migrations present but manifest could not be loaded" in item for item in violations) or any(
-        "invalid migration document" in item for item in violations
-    )
+    assert violations == ["zz_synth_app_application: migrations present but manifest could not be loaded"]
 
 
 def test_nt_wb_22_mcp_builder_outside_allowlist_refused(monkeypatch: pytest.MonkeyPatch) -> None:

@@ -287,10 +287,12 @@ class RuntimeState(RuntimeStateContract):
                 ),
             )
 
+            # The record of this adapter for this run's tenant; a record made without a tenant
+            # (unscoped resolution) belongs to the adapter of this run as well.
             routing_evaluation = consume_routing_evaluation(
                 core_adapter,
                 tenant_id=self.request.tenant_id,
-            )
+            ) or consume_routing_evaluation(core_adapter, tenant_id=None)
             if routing_evaluation is not None:
                 emit_llm_routing_rule_diag(self.trace_event, routing_evaluation)
             self.llm_usage_tracker.register_adapter(meter_target, label="core_adapter")

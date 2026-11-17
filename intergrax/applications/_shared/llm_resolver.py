@@ -5,7 +5,8 @@
 Tier-3 façade over the canonical resolver ``intergrax.runtime.wiring.llm_resolver`` (decision
 DP-16). Every public name is kept; each function delegates and passes the application environment
 profile unchanged. The only Tier-3 addition is the live routing hint port, which binds the AHI live
-routing wiring to the profile. This module creates no adapter and keeps no routing record.
+routing wiring to the profile. This module creates no base adapter and keeps no routing record; it supplies the Tier-3
+wrapper type to the canonical resolver through the ``RoutingAdapterWrapper`` port.
 """
 
 from __future__ import annotations
@@ -26,6 +27,7 @@ from intergrax.llm_adapters.contracts.routing_evaluator import RoutingEvaluator
 from intergrax.llm_adapters.registry.model_router import ModelRoutingDecision
 from intergrax.llm_adapters.registry.profile import LLMProfile
 from intergrax.llm_adapters.routing import RoutingContext, RoutingEvaluation
+from intergrax.llm_adapters.routing.context_bridge import build_routing_context_from_runtime
 from intergrax.runtime.wiring import llm_resolver as _canonical
 from intergrax.runtime.wiring.llm_resolver import LiveRoutingHintProvider, RoutingAdapterWrapper
 
@@ -233,15 +235,19 @@ def resolve_optional_environment_llm_adapter(
     routing_evaluator: RoutingEvaluator | None = None,
 ) -> LLMAdapter | None:
     """Tier-3 helper — resolve adapter only when provider selection is explicit."""
-    return _canonical.resolve_optional_environment_llm_adapter(
-        env,
-        agent_override=agent_override,
+    routing_context = build_routing_context_from_runtime(
         tenant_id=tenant_id,
         agent_id=agent_id,
         metadata=metadata,
+    )
+    return resolve_optional_llm_adapter(
+        env,
+        agent_override=agent_override,
+        routing_context=routing_context,
+        tenant_id=tenant_id,
+        agent_id=agent_id,
+        routing_metadata=metadata,
         routing_evaluator=routing_evaluator,
-        live_routing_hint_provider=_live_routing_hint_provider(env),
-        routing_adapter_wrapper=_routing_adapter_wrapper(env),
     )
 
 
@@ -255,13 +261,17 @@ def resolve_environment_llm_adapter(
     routing_evaluator: RoutingEvaluator | None = None,
 ) -> LLMAdapter:
     """Tier-3 helper — always builds routing context from available host fields (M-LLM-X.11.3)."""
-    return _canonical.resolve_environment_llm_adapter(
-        env,
-        agent_override=agent_override,
+    routing_context = build_routing_context_from_runtime(
         tenant_id=tenant_id,
         agent_id=agent_id,
         metadata=metadata,
+    )
+    return resolve_llm_adapter(
+        env,
+        agent_override=agent_override,
+        routing_context=routing_context,
+        tenant_id=tenant_id,
+        agent_id=agent_id,
+        routing_metadata=metadata,
         routing_evaluator=routing_evaluator,
-        live_routing_hint_provider=_live_routing_hint_provider(env),
-        routing_adapter_wrapper=_routing_adapter_wrapper(env),
     )

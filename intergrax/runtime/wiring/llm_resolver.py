@@ -82,21 +82,31 @@ class LLMResolutionSource(Protocol):
 
 # --- routing record: bound to the resolved adapter object, scoped by tenant -------------------
 
-_records: weakref.WeakKeyDictionary[LLMAdapter, dict[str, RoutingEvaluation]] = weakref.WeakKeyDictionary()
+_records: weakref.WeakKeyDictionary[LLMAdapter, dict[str | None, RoutingEvaluation]] = weakref.WeakKeyDictionary()
 _records_lock = threading.Lock()
 _evaluating_tenant: ContextVar[str | None] = ContextVar("llm_resolver_evaluating_tenant", default=None)
+
+
+_DEFAULT_TENANT: str = RoutingContext.model_fields["tenant_id"].default
+
+
+def _tenant_key(tenant_id: str | None) -> str | None:
+    """Unscoped runs (no tenant, or the routing context default) share the key ``None``."""
+    if tenant_id is None or not tenant_id.strip() or tenant_id == _DEFAULT_TENANT:
+        return None
+    return tenant_id
 
 
 def record_routing_evaluation(
     adapter: LLMAdapter,
     evaluation: RoutingEvaluation,
     *,
-    tenant_id: str,
+    tenant_id: str | None,
 ) -> None:
-    """Record the latest routing evaluation of ``adapter`` for ``tenant_id``."""
+    """Record the latest routing evaluation of ``adapter`` for ``tenant_id`` (``None``: unscoped run)."""
     try:
         with _records_lock:
-            _records.setdefault(adapter, {})[tenant_id] = evaluation
+            _records.setdefault(adapter, {})[_tenant_key(tenant_id)] = evaluation
     except TypeError:
         # Adapter objects that cannot be weakly referenced or hashed carry no record
         # (the consumer then emits nothing, as when no evaluation exists).
@@ -108,15 +118,18 @@ def consume_routing_evaluation(
     *,
     tenant_id: str | None,
 ) -> RoutingEvaluation | None:
-    """Return and clear the evaluation recorded for this adapter and tenant, else ``None``."""
-    if tenant_id is None:
-        return None
+    """Return and clear the evaluation recorded for this adapter and tenant, else ``None``.
+
+    A record for a tenant is never returned to another tenant or to an unscoped consumer; an unscoped
+    record (``tenant_id=None``) is returned only to an unscoped consumer.
+    """
+    key = _tenant_key(tenant_id)
     try:
         with _records_lock:
             tenants = _records.get(adapter)
             if tenants is None:
                 return None
-            evaluation = tenants.pop(tenant_id, None)
+            evaluation = tenants.pop(key, None)
             if not tenants:
                 _records.pop(adapter, None)
             return evaluation

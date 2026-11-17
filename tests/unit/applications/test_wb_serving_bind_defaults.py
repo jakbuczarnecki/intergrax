@@ -5,12 +5,15 @@
 from __future__ import annotations
 
 import ast
+from dataclasses import dataclass
 from pathlib import Path
 from types import SimpleNamespace
 
 import pytest
+from intergrax.applications._shared.production_process_composition import ProductionProcessComposition
 
 from local_workspace_application.host import main as lkw_main
+from local_workspace_application.host.settings import LocalWorkspaceBackendSettings
 from local_workspace_application.hosting.profile import build_local_workspace_hosted_profile
 from research_application.host.settings import ResearchBackendSettings
 
@@ -34,6 +37,12 @@ _DECLARED_DIRECT_UVICORN_SITES = frozenset(
         "intergrax/scaffold/external_project/app.py",
     },
 )
+
+
+@dataclass(frozen=True)
+class _HostedCall:
+    process_composition: ProductionProcessComposition
+    settings: LocalWorkspaceBackendSettings | None
 
 
 def _is_uvicorn_run(node: ast.AST) -> bool:
@@ -71,7 +80,7 @@ def _env_default(function: ast.FunctionDef, variable: str) -> str:
 
 def _run_reference_production_with_capture(
     monkeypatch: pytest.MonkeyPatch,
-) -> tuple[list[dict[str, object]], list[str]]:
+) -> tuple[list[_HostedCall], list[str]]:
     """Run ``run_reference_production`` with the lifecycle seams stubbed and both serving paths observed."""
     monkeypatch.setenv("INTERGRAX_HARNESS_API_KEY", "test-wb-serving-key")
     monkeypatch.setenv("LOCAL_WORKSPACE_INCLUDE_MCP", "false")
@@ -79,7 +88,7 @@ def _run_reference_production_with_capture(
     monkeypatch.setenv("LOCAL_WORKSPACE_INCLUDE_TASK_CONTROL", "false")
     monkeypatch.setenv("LOCAL_WORKSPACE_INCLUDE_INTERACTIONS", "false")
     monkeypatch.setenv("LOCAL_WORKSPACE_VECTOR_STORE", "inmemory")
-    hosted_calls: list[dict[str, object]] = []
+    hosted_calls: list[_HostedCall] = []
     direct_calls: list[str] = []
     composition = SimpleNamespace(agent_platform_runtime=SimpleNamespace(stores=object()))
 
@@ -87,8 +96,13 @@ def _run_reference_production_with_capture(
         def deploy_and_activate(self, *_args: object, **_kwargs: object) -> None:
             return None
 
-    def _capture_hosted(**kwargs: object) -> None:
-        hosted_calls.append(dict(kwargs))
+    def _capture_hosted(
+        *,
+        process_composition: ProductionProcessComposition,
+        settings: LocalWorkspaceBackendSettings | None = None,
+        **_kwargs: object,
+    ) -> None:
+        hosted_calls.append(_HostedCall(process_composition=process_composition, settings=settings))
 
     def _capture_direct(*_args: object, **_kwargs: object) -> None:
         direct_calls.append("uvicorn.run")
@@ -120,10 +134,10 @@ def test_nt_wb_14_lkw_reference_production_hosted_loopback(monkeypatch: pytest.M
     assert direct_calls == []
     assert len(hosted_calls) == 1
     profile = build_local_workspace_hosted_profile(
-        process_composition=hosted_calls[0]["process_composition"],  # type: ignore[arg-type]
-        settings=hosted_calls[0]["settings"],  # type: ignore[arg-type]
+        process_composition=hosted_calls[0].process_composition,
+        settings=hosted_calls[0].settings,
     )
-    assert profile.application_factory.bind_host == "127.0.0.1"  # type: ignore[attr-defined]
+    assert getattr(profile.application_factory, "bind_host") == "127.0.0.1"
 
 
 def test_nt_wb_15_lkw_reference_production_has_no_uvicorn_run() -> None:
@@ -144,10 +158,10 @@ def test_nt_wb_17_explicit_all_interfaces_honoured(monkeypatch: pytest.MonkeyPat
     hosted_calls, direct_calls = _run_reference_production_with_capture(monkeypatch)
     assert direct_calls == []
     profile = build_local_workspace_hosted_profile(
-        process_composition=hosted_calls[0]["process_composition"],  # type: ignore[arg-type]
-        settings=hosted_calls[0]["settings"],  # type: ignore[arg-type]
+        process_composition=hosted_calls[0].process_composition,
+        settings=hosted_calls[0].settings,
     )
-    assert profile.application_factory.bind_host == "0.0.0.0"  # type: ignore[attr-defined]
+    assert getattr(profile.application_factory, "bind_host") == "0.0.0.0"
 
 
 def test_nt_wb_25_uvicorn_run_site_count_record() -> None:

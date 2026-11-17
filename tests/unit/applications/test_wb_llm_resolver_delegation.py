@@ -73,7 +73,10 @@ def test_nt_wb_01_facade_creates_no_adapters() -> None:
     assert public_functions
     for function in public_functions:
         names = {n.id for n in ast.walk(function) if isinstance(n, ast.Name)}
-        assert "_canonical" in names, f"{function.name} does not call the Tier-1 module"
+        # A function either calls the Tier-1 module or calls a sibling public function of this module
+        # (the environment helpers go through the module-level resolver so that patches of it still apply).
+        delegates = "_canonical" in names or bool(names & {"resolve_llm_adapter", "resolve_optional_llm_adapter"})
+        assert delegates, f"{function.name} does not delegate to the Tier-1 module"
 
 
 class _StubAdapter(BaseLLMAdapter):
@@ -98,7 +101,7 @@ class _StubAdapter(BaseLLMAdapter):
         )
 
 
-def test_nt_wb_03_tier3_routing_record_is_consumed(monkeypatch: pytest.MonkeyPatch) -> None:
+def _routing_env_and_stubs(monkeypatch: pytest.MonkeyPatch) -> ApplicationEnvironmentProfile:
     def _fake(profile: LLMProfile, **kwargs: object) -> LLMAdapter:
         del kwargs
         return _StubAdapter(model=profile.model or "solo")
@@ -109,7 +112,7 @@ def test_nt_wb_03_tier3_routing_record_is_consumed(monkeypatch: pytest.MonkeyPat
     primary = LLMProfile(provider=LLMProvider.OPENAI, model="primary")
     economy = LLMProfile(provider=LLMProvider.OPENAI, model="economy")
     env = ApplicationEnvironmentProfile.lab_defaults(profile_id="wb.nt03")
-    env = env.model_copy(
+    return env.model_copy(
         update={
             "llm_profile": primary,
             "llm_routing_profile": LLMRoutingProfile(
@@ -119,12 +122,13 @@ def test_nt_wb_03_tier3_routing_record_is_consumed(monkeypatch: pytest.MonkeyPat
             ),
         },
     )
-    adapter = facade.resolve_llm_adapter(env, tenant_id="tenant-1")
 
+
+def _tracker_steps(adapter: LLMAdapter, *, request_tenant: str) -> list[str]:
     seed = "wb-nt03"
     request = build_runtime_request_for_tests(
         seed=seed,
-        tenant_id="tenant-1",
+        tenant_id=request_tenant,
         agent_id="agent-1",
         session_id="sess-1",
         user_id="user-1",
@@ -148,5 +152,40 @@ def test_nt_wb_03_tier3_routing_record_is_consumed(monkeypatch: pytest.MonkeyPat
     )
     with canonical_execution_identity_scope(seed):
         state.configure_llm_tracker()
-    steps = [event.step for event in state.trace_events]
-    assert "llm_routing_rule" in steps
+    return [event.step for event in state.trace_events]
+
+
+def test_nt_wb_03_tier3_routing_record_is_consumed(monkeypatch: pytest.MonkeyPatch) -> None:
+    env = _routing_env_and_stubs(monkeypatch)
+    adapter = facade.resolve_llm_adapter(env, tenant_id="tenant-1")
+    assert _tracker_steps(adapter, request_tenant="tenant-1").count("llm_routing_rule") == 1
+
+
+def test_unscoped_routing_record_is_consumed_once(monkeypatch: pytest.MonkeyPatch) -> None:
+    """Control: an adapter resolved without a tenant still gets its routing diag event exactly once."""
+    env = _routing_env_and_stubs(monkeypatch)
+    adapter = facade.resolve_llm_adapter(env)
+    assert _tracker_steps(adapter, request_tenant="tenant-1").count("llm_routing_rule") == 1
+
+
+def test_foreign_tenant_run_does_not_receive_the_routing_record(monkeypatch: pytest.MonkeyPatch) -> None:
+    env = _routing_env_and_stubs(monkeypatch)
+    adapter = facade.resolve_llm_adapter(env, tenant_id="tenant-1")
+    assert "llm_routing_rule" not in _tracker_steps(adapter, request_tenant="tenant-2")
+
+
+@pytest.mark.parametrize(
+    ("helper", "resolver"),
+    [
+        ("resolve_environment_llm_adapter", "resolve_llm_adapter"),
+        ("resolve_optional_environment_llm_adapter", "resolve_optional_llm_adapter"),
+    ],
+)
+def test_tier3_environment_resolvers_go_through_the_module_level_resolver(helper: str, resolver: str) -> None:
+    """Patches of the Tier-3 module-level resolvers keep applying to the environment helpers."""
+    tree = ast.parse(_FACADE.read_text(encoding="utf-8"))
+    function = next(node for node in tree.body if isinstance(node, ast.FunctionDef) and node.name == helper)
+    called = {n.func.id for n in ast.walk(function) if isinstance(n, ast.Call) and isinstance(n.func, ast.Name)}
+    names = {n.id for n in ast.walk(function) if isinstance(n, ast.Name)}
+    assert resolver in called
+    assert "_canonical" not in names

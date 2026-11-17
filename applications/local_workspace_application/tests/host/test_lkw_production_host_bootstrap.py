@@ -64,6 +64,7 @@ def test_run_reference_production_activates_composition_before_uvicorn(
     monkeypatch.setenv("LOCAL_WORKSPACE_VECTOR_STORE", "inmemory")
     launcher_calls: list[tuple[object, object]] = []
     served_app: list[FastAPI] = []
+    served_compositions: list[ProductionProcessComposition] = []
     composition_holder: list[ProductionProcessComposition] = []
 
     original_deploy = ReferenceProductionLifecycleLauncher.deploy_and_activate
@@ -88,7 +89,8 @@ def test_run_reference_production_activates_composition_before_uvicorn(
         settings: LocalWorkspaceBackendSettings | None = None,
         **_kwargs: object,
     ) -> None:
-        # The hosted runner serves ``create_local_workspace_process_app`` on the same composition.
+        # The hosted runner must receive the composition that was activated, not another one.
+        served_compositions.append(process_composition)
         served_app.append(
             create_local_workspace_process_app(
                 process_composition=process_composition,
@@ -123,6 +125,8 @@ def test_run_reference_production_activates_composition_before_uvicorn(
     )
     assert resolved.evidence.runtime_revision_id == "local-workspace-reference-runtime-revision"
     assert len(served_app) == 1
+    assert len(served_compositions) == 1
+    assert served_compositions[0] is composition_holder[0]
     assert served_app[0].title
     assert "Local Workspace" in served_app[0].title
 
@@ -138,6 +142,7 @@ def test_run_reference_production_uses_same_composition_stores(
     monkeypatch.setenv("LOCAL_WORKSPACE_VECTOR_STORE", "inmemory")
     composition_holder: list[ProductionProcessComposition] = []
     served_app: list[FastAPI] = []
+    served_compositions: list[ProductionProcessComposition] = []
 
     original_create = create_reference_production_process_composition
 
@@ -152,7 +157,8 @@ def test_run_reference_production_uses_same_composition_stores(
         settings: LocalWorkspaceBackendSettings | None = None,
         **_kwargs: object,
     ) -> None:
-        # The hosted runner serves ``create_local_workspace_process_app`` on the same composition.
+        # The hosted runner must receive the composition that was activated, not another one.
+        served_compositions.append(process_composition)
         served_app.append(
             create_local_workspace_process_app(
                 process_composition=process_composition,
@@ -182,6 +188,8 @@ def test_run_reference_production_uses_same_composition_stores(
     )
     assert resolved.evidence.runtime_revision_id == "local-workspace-reference-runtime-revision"
     assert len(served_app) == 1
+    assert len(served_compositions) == 1
+    assert served_compositions[0] is composition_holder[0]
     assert (
         create_local_workspace_process_app(
             process_composition=composition,
