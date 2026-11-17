@@ -55,6 +55,11 @@ Fleet closure (ACP-LEG-2): `uv run python scripts/gates/check_agent_production_r
 | **IntergraxAssistantAgent** | `platform.assist` | development | `intergrax_assistant_application` | [`intergrax_assistant/`](intergrax_assistant/) |
 | **ProblemRadarAgent** | `problem_radar.scan` | experimental | certified K.1 deploy path | [`problem_radar/`](problem_radar/) |
 | **VendorDiscoveryAgent** | `vendor_discovery.search` | experimental | certified K.2 deploy path | [`vendor_discovery/`](vendor_discovery/) |
+| **BoundaryDemoAgent** | `attestation.demo` | staging | `attestation_demo` | [`boundary_demo/`](boundary_demo/) |
+| **ExternalContractorAdapterAgent** | `external_contractor.adapt` | production | `governed_contractor_application` | [`external_contractor_adapter/`](external_contractor_adapter/) |
+| **ModelRoutingQualifierAgent** | `local.workspace.model_routing_qualification` | staging | `local_workspace_application` | [`model_routing_qualifier/`](model_routing_qualifier/) |
+| **ToolSelectionQualifierAgent** | `local.workspace.tool_selection_qualification` | staging | `local_workspace_application` | [`tool_selection_qualifier/`](tool_selection_qualifier/) |
+| **WebSearchQualifierAgent** | `local.workspace.web_search_qualification` | staging | `local_workspace_application` | [`web_search_qualifier/`](web_search_qualifier/) |
 | **Lab mock agents** | harness fixtures | - | `lab_application` tests | [`lab/mock_agents.py`](lab/mock_agents.py) |
 
 ---
