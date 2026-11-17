@@ -6,7 +6,6 @@ from __future__ import annotations
 
 import json
 from pathlib import Path
-from typing import Any
 
 from intergrax.agents.authoring.runtime_tool_helpers import (
     exec_ctx_from_step,
@@ -14,7 +13,7 @@ from intergrax.agents.authoring.runtime_tool_helpers import (
     request_metadata,
 )
 from intergrax.contracts.agent_step_context import AgentStepContext
-from intergrax.tools.providers.workspace.service import (
+from intergrax.contracts.workspace_tool_ids import (
     WORKSPACE_SEARCH_TOOL_ID,
     WORKSPACE_WRITE_FILE_TOOL_ID,
 )
@@ -24,6 +23,7 @@ from intergrax.runtime.execution.agent_catalog_tool_dispatch import (
     materialize_canonical_tool_definitions_for_llm_dispatch,
 )
 from intergrax.runtime.execution.runtime_state import RuntimeState
+
 from tool_selection_qualifier.tool_functional_evidence import emit_tool_selection_functional_evidence
 from tool_selection_qualifier.tool_selection import (
     DEFAULT_QUALIFICATION_TOOL_IDS,
@@ -42,8 +42,7 @@ _TASK_MESSAGE_KEY = "qualification_task_message"
 
 _DEFAULT_SEARCH_QUERY = "Incident Orion"
 _DEFAULT_TASK = (
-    "Find the workspace document about Incident Orion and report the incident date. "
-    "Use exactly one catalog tool."
+    "Find the workspace document about Incident Orion and report the incident date. Use exactly one catalog tool."
 )
 _DEFAULT_SEED: tuple[tuple[str, str], ...] = (
     (
@@ -61,9 +60,7 @@ _TOOL_SCHEMAS: dict[str, dict[str, object]] = {
         "type": "function",
         "function": {
             "name": WORKSPACE_SEARCH_TOOL_ID,
-            "description": (
-                "Search text files in the shadow workspace for a substring and return matching lines."
-            ),
+            "description": ("Search text files in the shadow workspace for a substring and return matching lines."),
             "parameters": {
                 "type": "object",
                 "properties": {
@@ -227,9 +224,7 @@ async def _decide_tool_with_llm(
     tools_schema = _build_openai_tools(tool_ids, description_overrides=description_overrides)
     if not tools_schema:
         return None
-    canonical_tool_definitions = materialize_canonical_tool_definitions_for_llm_dispatch(
-        tools_schema
-    )
+    canonical_tool_definitions = materialize_canonical_tool_definitions_for_llm_dispatch(tools_schema)
     messages = [
         ChatMessage(role="system", content=system_prompt),
         ChatMessage(role="user", content=task_message),
