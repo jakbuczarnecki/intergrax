@@ -30,18 +30,39 @@ _CONTRACTS_TREE = _REPO / "intergrax" / "applications" / "contracts"
 _SHARED = "intergrax.applications._shared"
 
 
-def _imports_shared(tree: ast.AST) -> list[int]:
-    lines: list[int] = []
+_FORBIDDEN_PREFIXES = ("intergrax.runtime.", "intergrax.applications._shared.")
+_FORBIDDEN_EXACT = frozenset(
+    {"intergrax.agents.agent_contract", "intergrax.rag.bootstrap", "intergrax.fastapi_core.config"}
+)
+_REGISTRY_EXEMPT_PREFIXES = (
+    "intergrax.integrations.contracts.",
+    "intergrax.llm_adapters.contracts.",
+    "intergrax.tools.contracts.",
+    "intergrax.skills.contracts.",
+)
+
+
+def _intergrax_imports(tree: ast.AST) -> list[tuple[int, str]]:
+    """Every ``intergrax.*`` import of the module, function-level and ``TYPE_CHECKING`` included."""
+    hits: list[tuple[int, str]] = []
     for node in ast.walk(tree):
         if isinstance(node, ast.Import):
-            if any(a.name == _SHARED or a.name.startswith(_SHARED + ".") for a in node.names):
-                lines.append(node.lineno)
-        elif isinstance(node, ast.ImportFrom) and node.level == 0 and node.module:
-            if node.module == _SHARED or node.module.startswith(_SHARED + "."):
-                lines.append(node.lineno)
-            elif node.module == "intergrax.applications" and any(a.name == "_shared" for a in node.names):
-                lines.append(node.lineno)
-    return lines
+            hits.extend((node.lineno, a.name) for a in node.names if a.name.startswith("intergrax."))
+        elif isinstance(node, ast.ImportFrom) and node.module and node.module.startswith("intergrax."):
+            hits.append((node.lineno, node.module))
+    return hits
+
+
+def _rule_violations(imported: str) -> list[str]:
+    """The full rule of the KR-18 register node (test_ebh_2d_d_..._recertification)."""
+    problems: list[str] = []
+    if imported.startswith(_FORBIDDEN_PREFIXES):
+        problems.append("forbidden prefix")
+    if ".registry." in f".{imported}." and not imported.startswith(_REGISTRY_EXEMPT_PREFIXES):
+        problems.append("registry edge")
+    if imported in _FORBIDDEN_EXACT or any(imported.startswith(f"{name}.") for name in _FORBIDDEN_EXACT):
+        problems.append("forbidden module")
+    return problems
 
 
 def test_nt_wa_kr18_1_contract_tree_has_no_shared_import() -> None:
@@ -51,8 +72,44 @@ def test_nt_wa_kr18_1_contract_tree_has_no_shared_import() -> None:
     for path in files:
         tree = ast.parse(path.read_text(encoding="utf-8-sig"), filename=str(path))
         rel = path.relative_to(_REPO).as_posix()
-        violations.extend(f"{rel}:{line}" for line in _imports_shared(tree))
+        for line, imported in _intergrax_imports(tree):
+            violations.extend(f"{rel}:{line} -> {imported} ({why})" for why in _rule_violations(imported))
     assert violations == []
+
+
+def test_nt_wa_kr18_3_tool_availability_catalog_import_is_lazy() -> None:
+    path = _REPO / "intergrax" / "tools" / "contracts" / "tool_availability.py"
+    tree = ast.parse(path.read_text(encoding="utf-8"), filename=str(path))
+    module_level = [
+        node.module if isinstance(node, ast.ImportFrom) else alias.name
+        for node in tree.body
+        if isinstance(node, (ast.Import, ast.ImportFrom))
+        for alias in (node.names if isinstance(node, ast.Import) else [None])
+        if (node.module if isinstance(node, ast.ImportFrom) else alias.name)
+    ]
+    assert not [m for m in module_level if m.startswith("intergrax.tools.registry")], module_level
+    function = next(
+        n for n in tree.body if isinstance(n, ast.FunctionDef) and n.name == "available_tool_ids_for_profile"
+    )
+    inner = {node.module for node in ast.walk(function) if isinstance(node, ast.ImportFrom) and node.module}
+    assert {"intergrax.tools.registry.catalog", "intergrax.tools.registry.profile"} <= inner
+    root = (_REPO / "intergrax/applications/contracts/environment_profile/root.py").read_text(encoding="utf-8")
+    assert "from intergrax.tools.contracts.tool_availability import available_tool_ids_for_profile" in root
+
+
+def test_nt_wa_kr18_4_single_definition_and_unchanged_result() -> None:
+    from intergrax.skills.registry import tool_requirements
+    from intergrax.tools.contracts import tool_availability
+    from intergrax.tools.registry.catalog import list_catalog_tool_ids
+
+    assert tool_requirements.available_tool_ids_for_profile is tool_availability.available_tool_ids_for_profile
+    function = tool_availability.available_tool_ids_for_profile
+    assert function(ToolProfile(register_all_catalog_bundles=True)) == tuple(sorted(list_catalog_tool_ids()))
+    explicit = ToolProfile(enabled=[" workspace.search ", "workspace.write_file", ""])
+    assert {"workspace.search", "workspace.write_file"} <= set(function(explicit))
+    assert function(explicit) == tuple(sorted(function(explicit)))
+    lab = ApplicationEnvironmentProfile.lab_defaults(profile_id="wa.kr18.lab").capabilities.tools
+    assert function(lab) == tuple(sorted(set(function(lab))))
 
 
 _TOOL_PROFILES = (

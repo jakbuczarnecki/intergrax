@@ -83,7 +83,7 @@ def _reference_host_tool_dependency_concurrency_admission(
     (parity pinned by NT-WA-KR18-2); kept here so the contract root never imports its own
     composition layer.
     """
-    from intergrax.skills.registry.tool_requirements import available_tool_ids_for_profile
+    from intergrax.tools.contracts.tool_availability import available_tool_ids_for_profile
 
     tool_ids = available_tool_ids_for_profile(tool_profile)
     if not tool_ids:
