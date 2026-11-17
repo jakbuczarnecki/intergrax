@@ -9,12 +9,11 @@ from intergrax.applications._shared.budget_wiring import product_agent_budget_sl
 from intergrax.applications._shared.ownership_wiring import standard_product_operational_ownership
 from intergrax.applications.contracts.environment_profile import ApplicationEnvironmentProfile
 from intergrax.applications.contracts.manifest import AgentBinding, ApplicationManifest
+from intergrax.integrations.contracts.integration_profile import IntegrationProfile
+
 from local_indexer.local_indexer_agent import LocalIndexerAgent
 from local_search.local_search_agent import LocalSearchAgent
 from local_synthesizer.local_synthesizer_agent import LocalSynthesizerAgent
-from tool_selection_qualifier.tool_selection_qualifier_agent import ToolSelectionQualifierAgent
-from web_search_qualifier.web_search_qualifier_agent import WebSearchQualifierAgent
-from model_routing_qualifier.model_routing_qualifier_agent import ModelRoutingQualifierAgent
 from local_workspace_application.host.agent_factories import (
     build_local_workspace_local_indexer_from_context,
     build_local_workspace_local_search_from_context,
@@ -22,63 +21,74 @@ from local_workspace_application.host.agent_factories import (
     build_local_workspace_model_routing_qualifier_from_context,
     build_local_workspace_tool_selection_qualifier_from_context,
     build_local_workspace_web_search_qualifier_from_context,
+    local_workspace_profile_has_search_provider,
 )
 from local_workspace_application.host.environment_profile import (
     build_local_workspace_environment_profile,
     build_local_workspace_integration_profile,
 )
+from model_routing_qualifier.model_routing_qualifier_agent import ModelRoutingQualifierAgent
+from tool_selection_qualifier.tool_selection_qualifier_agent import ToolSelectionQualifierAgent
+from web_search_qualifier.web_search_qualifier_agent import WebSearchQualifierAgent
 
 
-_LOCAL_WORKSPACE_AGENTS = [
-    AgentBinding.mount(
-        LocalIndexerAgent,
-        contract_id="local_indexer",
-        factory=build_local_workspace_local_indexer_from_context,
-        capabilities=["local.workspace.index"],
-        budget_slice=product_agent_budget_slice(),
-    ),
-    AgentBinding.mount(
-        LocalSearchAgent,
-        contract_id="local_search",
-        factory=build_local_workspace_local_search_from_context,
-        capabilities=["local.workspace.search"],
-        default=True,
-        budget_slice=product_agent_budget_slice(),
-    ),
-    AgentBinding.mount(
-        LocalSynthesizerAgent,
-        contract_id="local_synthesizer",
-        factory=build_local_workspace_local_synthesizer_from_context,
-        capabilities=["local.workspace.synthesize"],
-        budget_slice=product_agent_budget_slice(),
-    ),
-    AgentBinding.mount(
-        ToolSelectionQualifierAgent,
-        contract_id="tool_selection_qualifier",
-        factory=build_local_workspace_tool_selection_qualifier_from_context,
-        capabilities=["local.workspace.tool_selection_qualification"],
-        budget_slice=product_agent_budget_slice(),
-    ),
-    AgentBinding.mount(
-        WebSearchQualifierAgent,
-        contract_id="web_search_qualifier",
-        factory=build_local_workspace_web_search_qualifier_from_context,
-        capabilities=["local.workspace.web_search_qualification"],
-        budget_slice=product_agent_budget_slice(),
-    ),
-    AgentBinding.mount(
-        ModelRoutingQualifierAgent,
-        contract_id="model_routing_qualifier",
-        factory=build_local_workspace_model_routing_qualifier_from_context,
-        capabilities=["local.workspace.model_routing_qualification"],
-        budget_slice=product_agent_budget_slice(),
-    ),
-]
+def build_local_workspace_agent_bindings(integration_profile: IntegrationProfile) -> list[AgentBinding]:
+    """Roster of the LKW host; the web-search qualifier is mounted only when the profile has its slot."""
+    return [
+        AgentBinding.mount(
+            LocalIndexerAgent,
+            contract_id="local_indexer",
+            factory=build_local_workspace_local_indexer_from_context,
+            capabilities=["local.workspace.index"],
+            budget_slice=product_agent_budget_slice(),
+        ),
+        AgentBinding.mount(
+            LocalSearchAgent,
+            contract_id="local_search",
+            factory=build_local_workspace_local_search_from_context,
+            capabilities=["local.workspace.search"],
+            default=True,
+            budget_slice=product_agent_budget_slice(),
+        ),
+        AgentBinding.mount(
+            LocalSynthesizerAgent,
+            contract_id="local_synthesizer",
+            factory=build_local_workspace_local_synthesizer_from_context,
+            capabilities=["local.workspace.synthesize"],
+            budget_slice=product_agent_budget_slice(),
+        ),
+        AgentBinding.mount(
+            ToolSelectionQualifierAgent,
+            contract_id="tool_selection_qualifier",
+            factory=build_local_workspace_tool_selection_qualifier_from_context,
+            capabilities=["local.workspace.tool_selection_qualification"],
+            budget_slice=product_agent_budget_slice(),
+        ),
+        AgentBinding.mount(
+            WebSearchQualifierAgent,
+            contract_id="web_search_qualifier",
+            factory=build_local_workspace_web_search_qualifier_from_context,
+            capabilities=["local.workspace.web_search_qualification"],
+            enabled=local_workspace_profile_has_search_provider(integration_profile),
+            budget_slice=product_agent_budget_slice(),
+        ),
+        AgentBinding.mount(
+            ModelRoutingQualifierAgent,
+            contract_id="model_routing_qualifier",
+            factory=build_local_workspace_model_routing_qualifier_from_context,
+            capabilities=["local.workspace.model_routing_qualification"],
+            budget_slice=product_agent_budget_slice(),
+        ),
+    ]
+
+
+_BASE_ENVIRONMENT: ApplicationEnvironmentProfile = build_local_workspace_environment_profile()
+_LOCAL_WORKSPACE_AGENTS = build_local_workspace_agent_bindings(_BASE_ENVIRONMENT.integration_profile)
 
 
 def _local_workspace_environment() -> ApplicationEnvironmentProfile:
     return apply_roster_agent_governance(
-        build_local_workspace_environment_profile(),
+        _BASE_ENVIRONMENT,
         agents=_LOCAL_WORKSPACE_AGENTS,
         app_id="local_workspace",
     )

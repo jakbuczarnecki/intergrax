@@ -4,6 +4,7 @@ from __future__ import annotations
 
 from intergrax.applications.contracts.build_context import ApplicationBuildContext
 from intergrax.applications.contracts.manifest import AgentBinding
+from intergrax.integrations.contracts.integration_profile import IntegrationProfile
 
 from local_indexer.local_indexer_agent import LocalIndexerAgent
 from local_search.local_search_agent import LocalSearchAgent
@@ -65,6 +66,11 @@ def build_local_workspace_tool_selection_qualifier_from_context(
     return ToolSelectionQualifierAgent(llm_adapter=adapter)
 
 
+def local_workspace_profile_has_search_provider(profile: IntegrationProfile) -> bool:
+    """Single source of truth: the profile carries a ``search_provider`` slot (roster enablement and builder)."""
+    return profile.search_provider is not None
+
+
 def _resolve_search_provider_from_profile(ctx: ApplicationBuildContext) -> ResolvedSearchProvider:
     """Resolve the web-search provider from the ``IntegrationProfile`` slot (no ambient credentials)."""
     from intergrax.integrations.contracts.base import (
@@ -78,7 +84,7 @@ def _resolve_search_provider_from_profile(ctx: ApplicationBuildContext) -> Resol
             "web_search_qualifier requires an application environment with an IntegrationProfile",
         )
     profile = ctx.environment.integration_profile
-    if profile.search_provider is None:
+    if not local_workspace_profile_has_search_provider(profile):
         raise IntegrationConfigurationError(
             "web_search_qualifier requires an IntegrationProfile search_provider slot; "
             "ambient credentials never activate a provider",
