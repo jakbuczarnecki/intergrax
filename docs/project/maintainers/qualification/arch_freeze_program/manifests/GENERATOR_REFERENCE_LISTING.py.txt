@@ -1,0 +1,692 @@
+#!/usr/bin/env python
+"""DRAFT generator for the four ARCH-FREEZE manifests (T-AF2-MANIFESTS, ticket T-IGX-050-G).
+
+Reads one checked-out tree (stdlib only, AST based, nothing is imported or
+executed from the tree) and writes four JSON manifests plus SUMMARY.md.
+
+    python -I gen_manifests.py --root <checkout> --out <dir>
+
+Outputs are deterministic: sorted keys, no timestamps, LF newlines. Two runs on
+the same tree give identical bytes. The final manifests are generated from the
+G2 tree in W5 (T-IGX-052-B); this file and its output are DRAFT.
+"""
+
+from __future__ import annotations
+
+import argparse
+import ast
+import hashlib
+import json
+import re
+import subprocess
+import sys
+from pathlib import Path
+
+RESIDUAL_DOC = "docs/project/maintainers/qualification/PDC_TO_ARCH_FREEZE_RESIDUAL_QUALIFICATION.md"
+FRZ_MATRIX_DOC = "docs/project/maintainers/qualification/ARCH_FREEZE_FRZ_ACCEPTANCE_MATRIX.md"
+LAYER_GATE = "scripts/maintenance/check_intergrax_no_applications_imports.py"
+STRICT_ROOTS_FILE = "tests/qualification/prod_q/_prod_q_r1_r7_q_p1_strict_reachability.py"
+CONFIG_X_FILE = "tests/qualification/config_x/_config_x_concern_inventory.py"
+VBN_PLATFORM_FILE = "tests/qualification/ebh_5/_runtime_platform_concerns.py"
+FIXED_SUBSTRATE_FILE = "tests/qualification/ebh_5/_fixed_substrate_registry.py"
+INTEGRATION_BASE_FILE = "intergrax/integrations/contracts/base.py"
+
+PRODUCT_ROOTS = ("intergrax", "agents", "applications")
+CONTRACT_ROOTS = (
+    ("intergrax/contracts", "T0"),
+    ("intergrax/applications/contracts", "T3"),
+)
+# BND-CLOSURE (closed-world RESULT.md section 1.4 B): neutral contracts planned to move to Tier-0.
+PLANNED_MOVES = (
+    ("ApplicationEnvironmentProfile", "intergrax/applications/contracts/environment_profile", "type"),
+    ("ExecutionMode", "intergrax/applications/contracts/execution_mode.py", "type"),
+    ("ApplicationProfile", "intergrax/applications/contracts/application_host.py", "str,Enum"),
+    ("ApplicationGraphSpec", "intergrax/applications/contracts/graph_spec.py", "type"),
+    ("GraphEdgeKind", "intergrax/applications/contracts/graph_spec.py", "str,Enum"),
+    ("ScenarioRuntimeMode", "intergrax/applications/_shared/scenario_runtime_profiles.py", "str,Enum"),
+)
+# OD-AF-18 (packet 1): E2B / Modal / Daytona as production sandbox providers.
+OD_AF_18_PATHS = (
+    "intergrax/integrations/providers/sandbox_host/e2b",
+    "intergrax/integrations/providers/sandbox_host/modal",
+    "intergrax/integrations/providers/sandbox_host/daytona",
+)
+
+
+def sha256_bytes(data: bytes) -> str:
+    return hashlib.sha256(data).hexdigest()
+
+
+def git(root: Path, *args: str) -> str:
+    out = subprocess.run(["git", "-C", str(root), *args], check=True, capture_output=True)
+    return out.stdout.decode("utf-8", "replace")
+
+
+def is_test_path(rel: str) -> bool:
+    parts = rel.split("/")
+    name = parts[-1]
+    return "tests" in parts[:-1] or name.startswith("test_") or name == "conftest.py"
+
+
+def module_of(rel: str) -> str:
+    mod = rel[:-3].replace("/", ".")
+    return mod[: -len(".__init__")] if mod.endswith(".__init__") else mod
+
+
+def tier_of_module(mod: str) -> str | None:
+    if mod == "agents" or mod.startswith("agents."):
+        return "T2"
+    if mod == "applications" or mod.startswith("applications."):
+        return "T3"
+    if mod == "intergrax.applications" or mod.startswith("intergrax.applications."):
+        return "T3"
+    if mod == "intergrax.runtime" or mod.startswith("intergrax.runtime."):
+        return "T1"
+    if mod == "intergrax" or mod.startswith("intergrax."):
+        return "T0"
+    return None
+
+
+def unit_of(rel: str) -> str:
+    parts = rel.split("/")
+    if len(parts) == 1:
+        return rel
+    unit = "/".join(parts[:2])
+    return unit[:-3] if unit.endswith(".py") else unit
+
+
+class Importer(ast.NodeVisitor):
+    def __init__(self) -> None:
+        self.edges: list[tuple[int, str, bool, bool]] = []
+        self._fn = 0
+
+    def _fn_scope(self, node: ast.AST) -> None:
+        self._fn += 1
+        self.generic_visit(node)
+        self._fn -= 1
+
+    visit_FunctionDef = _fn_scope
+    visit_AsyncFunctionDef = _fn_scope
+
+    def visit_Import(self, node: ast.Import) -> None:
+        for a in node.names:
+            self.edges.append((node.lineno, a.name, self._fn > 0, True))
+
+    def visit_ImportFrom(self, node: ast.ImportFrom) -> None:
+        if node.level or not node.module:
+            return
+        self.edges.append((node.lineno, node.module, self._fn > 0, True))
+        for a in node.names:
+            if a.name != "*":
+                self.edges.append((node.lineno, f"{node.module}.{a.name}", self._fn > 0, False))
+
+
+def public_symbols(tree: ast.Module) -> tuple[list[str], str, int, int]:
+    all_names: list[str] | None = None
+    names: list[str] = []
+    classes = functions = 0
+    for node in tree.body:
+        if isinstance(node, ast.ClassDef):
+            classes += 1
+            names.append(node.name)
+        elif isinstance(node, (ast.FunctionDef, ast.AsyncFunctionDef)):
+            functions += 1
+            names.append(node.name)
+        elif isinstance(node, (ast.Assign, ast.AnnAssign, ast.AugAssign)):
+            targets = node.targets if isinstance(node, ast.Assign) else [node.target]
+            for t in targets:
+                if isinstance(t, ast.Name):
+                    if t.id == "__all__" and node.value is not None:
+                        try:
+                            val = ast.literal_eval(node.value)
+                        except (ValueError, SyntaxError):
+                            val = None
+                        if isinstance(val, (list, tuple)):
+                            all_names = (all_names or []) + [str(v) for v in val]
+                    else:
+                        names.append(t.id)
+    if all_names is not None:
+        return sorted(set(all_names)), "__all__", classes, functions
+    return sorted({n for n in names if not n.startswith("_")}), "toplevel", classes, functions
+
+
+def literal(node: ast.AST) -> object:
+    try:
+        return ast.literal_eval(node)
+    except (ValueError, SyntaxError, TypeError):
+        pass
+    if isinstance(node, ast.JoinedStr):
+        return "<template> " + ast.unparse(node)
+    if isinstance(node, (ast.Attribute, ast.Name)):
+        return "ref:" + ast.unparse(node)
+    return "<dynamic> " + ast.unparse(node)
+
+
+def calls_named(tree: ast.Module, names: set[str]) -> list[ast.Call]:
+    out = []
+    for node in ast.walk(tree):
+        if isinstance(node, ast.Call) and isinstance(node.func, ast.Name) and node.func.id in names:
+            out.append(node)
+    return sorted(out, key=lambda c: c.lineno)
+
+
+def kw_record(call: ast.Call) -> dict[str, object]:
+    return {k.arg: literal(k.value) for k in call.keywords if k.arg}
+
+
+def path_tokens(text: str) -> list[str]:
+    toks = re.findall(r"(?<![\w/.-])((?:intergrax|agents|applications|platform_proofs)/[\w./*-]*[\w*/])", text)
+    out = []
+    for t in toks:
+        t = re.sub(r":\d+(-\d+)?$", "", t).rstrip("./,;:")
+        if t and t not in out:
+            out.append(t)
+    return out
+
+
+def path_exists(root: Path, tracked: set[str], tracked_dirs: set[str], p: str) -> bool:
+    p = p.rstrip("/")
+    if "*" in p:
+        pat = re.compile("^" + re.escape(p).replace(r"\*", "[^/]*") + "(/.*)?$")
+        return any(pat.match(f) for f in tracked)
+    return p in tracked or p in tracked_dirs
+
+
+class Ctx:
+    def __init__(self, root: Path) -> None:
+        self.root = root
+        self.sha = git(root, "rev-parse", "HEAD").strip()
+        self.tree_sha = git(root, "rev-parse", "HEAD^{tree}").strip()
+        listing = git(root, "ls-files", "-z").split("\0")
+        self.tracked = {f for f in listing if f}
+        self.dirs = {"/".join(f.split("/")[:i]) for f in self.tracked for i in range(1, len(f.split("/")))}
+        self.inputs: dict[str, str] = {}
+        self.unparsable: list[str] = []
+
+    def read(self, rel: str) -> str:
+        data = (self.root / rel).read_bytes()
+        self.inputs[rel] = sha256_bytes(data)
+        return data.decode("utf-8")
+
+    def parse_input(self, rel: str) -> ast.Module:
+        return ast.parse(self.read(rel))
+
+
+def analyse_tree(ctx: Ctx) -> dict[str, dict]:
+    """Parse every tracked non-test product .py once; return per-file facts."""
+    files: dict[str, dict] = {}
+    for rel in sorted(ctx.tracked):
+        if not rel.endswith(".py") or "/" not in rel or rel.split("/")[0] not in PRODUCT_ROOTS:
+            continue
+        if is_test_path(rel):
+            continue
+        try:
+            tree = ast.parse((ctx.root / rel).read_bytes().decode("utf-8"))
+        except (SyntaxError, UnicodeDecodeError, ValueError):
+            ctx.unparsable.append(rel)
+            continue
+        imp = Importer()
+        imp.visit(tree)
+        files[rel] = {"tree": tree, "edges": imp.edges}
+    return files
+
+
+def gate_scan_roots(ctx: Ctx) -> list[str]:
+    tree = ctx.parse_input(LAYER_GATE)
+    roots: list[str] = []
+    for node in ast.walk(tree):
+        if isinstance(node, ast.Assign) and any(isinstance(t, ast.Name) and t.id == "SCAN_ROOTS" for t in node.targets):
+            for elt in node.value.elts:  # type: ignore[attr-defined]
+                parts: list[str] = []
+                cur = elt
+                while isinstance(cur, ast.BinOp):
+                    if isinstance(cur.right, ast.Constant):
+                        parts.append(str(cur.right.value))
+                    cur = cur.left
+                roots.append("/".join(reversed(parts)))
+    return sorted(roots)
+
+
+# --------------------------------------------------------------------------- layer
+def build_layer(ctx: Ctx, files: dict[str, dict]) -> dict:
+    scan_roots = gate_scan_roots(ctx)
+    units: dict[str, dict] = {}
+    violations: list[dict] = []
+    for rel, facts in files.items():
+        mod = module_of(rel)
+        tier = tier_of_module(mod)
+        unit = unit_of(rel)
+        u = units.setdefault(unit, {"unit": unit, "tier": tier, "files": 0, "forbidden_edges": 0})
+        u["files"] += 1
+        if tier is None:
+            continue
+        for line, target, lazy, primary in facts["edges"]:
+            t_tier = tier_of_module(target)
+            if (primary and rel.startswith("agents/") and rel != "agents/__init__.py"
+                    and target.startswith(("intergrax.integrations.", "intergrax.tools."))):
+                violations.append(
+                    {"file": rel, "line": line, "target": target, "target_tier": t_tier, "importer_tier": tier,
+                     "rule": "R4", "lazy": lazy, "in_rule_gate_scan_roots": True})
+            if t_tier is None:
+                continue
+            rule = None
+            if tier in ("T0", "T1") and t_tier in ("T2", "T3"):
+                rule = "R1"
+            elif tier == "T2" and t_tier == "T3":
+                rule = "R2"
+            if rule:
+                in_scope = any(rel == r or rel.startswith(r + "/") for r in scan_roots)
+                violations.append(
+                    {"file": rel, "line": line, "target": target, "target_tier": t_tier, "importer_tier": tier,
+                     "rule": rule, "lazy": lazy, "in_rule_gate_scan_roots": in_scope})
+                u["forbidden_edges"] += 1
+    # a `from a.b import c` yields both a.b and a.b.c: keep one edge per (file, line, tier-3 module root)
+    seen: set[tuple[str, int, str]] = set()
+    uniq: list[dict] = []
+    for v in sorted(violations, key=lambda v: (v["file"], v["line"], v["target"])):
+        key = (v["file"], v["line"], v["rule"])
+        if key in seen:
+            continue
+        seen.add(key)
+        uniq.append(v)
+    unit_rows = []
+    for name in sorted(units):
+        u = dict(units[name])
+        u["forbidden_edges"] = sum(1 for v in uniq if unit_of(v["file"]) == name)
+        u["forbidden_edges_by_rule"] = {r: sum(1 for v in uniq if unit_of(v["file"]) == name and v["rule"] == r) for r in ("R1", "R2", "R4")}
+        u["tier_basis"] = "PATH_RULE (AGENTS.md tier line)"
+        u["status"] = "DRAFT_CLEAN" if u["forbidden_edges"] == 0 else "DRAFT_HAS_FORBIDDEN_EDGES"
+        unit_rows.append(u)
+    files_in_scope = sorted({v["file"] for v in uniq if v["in_rule_gate_scan_roots"]})
+    files_outside = sorted({v["file"] for v in uniq if not v["in_rule_gate_scan_roots"]})
+    return {
+        "meta": meta(ctx, "af2.manifest.layer.v0-draft", "FRZ-FRZ-06"),
+        "rules": [
+            {"id": "R1", "text": "Tier-0 intergrax/ (including Tier-1 intergrax/runtime/) MUST NOT import from agents/ or applications/",
+             "source": "AGENTS.md hard boundaries"},
+            {"id": "R2", "text": "agents/ MUST NOT import from applications/", "source": "AGENTS.md hard boundaries"},
+            {"id": "R3", "text": "applications/ MAY import from agents/ and intergrax/", "source": "AGENTS.md hard boundaries"},
+            {"id": "R4", "text": "Tier-2 agents/ must not import intergrax.integrations.* or intergrax.tools.* directly (registry bypass); agents/__init__.py is allowlisted",
+             "source": "scripts/maintenance/check_agent_registry_bypass.py (gate-defined; not one of the three AGENTS.md hard boundaries)"},
+        ],
+        "tier_map": [
+            {"tier": "T0", "paths": ["intergrax/** (except runtime/ and applications/)"], "source": "AGENTS.md tier line"},
+            {"tier": "T1", "paths": ["intergrax/runtime/**"], "source": "AGENTS.md tier line"},
+            {"tier": "T2", "paths": ["agents/**"], "source": "AGENTS.md tier line"},
+            {"tier": "T3", "paths": ["applications/**", "intergrax/applications/**"],
+             "source": "AGENTS.md tier line; intergrax/applications/ is Tier-3 composition inside the package (closed-world RESULT.md section 1.1, SYS-INV-01 counts both prefixes)"},
+        ],
+        "open_layer_decisions": [
+            {"id": "LAYER-OPEN-1",
+             "text": "Whether app-facing packages (intergrax/cli, intergrax/harness, intergrax/scaffold, intergrax/debug, intergrax/agent_distribution) are Tier-1 or Tier-3 is not stated by a path rule; the draft keeps the path rule and lists their edges as violations until decided.",
+             "source": "closed-world RESULT.md section 1.6 item 1 (a layer-manifest decision)"},
+        ],
+        "layer_gate_scan_roots": scan_roots,
+        "layer_gate": LAYER_GATE,
+        "units": unit_rows,
+        "violations": uniq,
+        "violation_counts": {
+            "edges": len(uniq),
+            "files": len({v["file"] for v in uniq}),
+            "files_in_rule_gate_scan_roots": len(files_in_scope),
+            "files_outside_rule_gate_scan_roots": len(files_outside),
+            "by_rule": {r: sum(1 for v in uniq if v["rule"] == r) for r in ("R1", "R2", "R4")},
+            "files_by_rule": {r: len({v["file"] for v in uniq if v["rule"] == r}) for r in ("R1", "R2", "R4")},
+        },
+        "unparsable_product_files": sorted(ctx.unparsable),
+    }
+
+
+# ------------------------------------------------------------------------ residual
+def parse_residual(ctx: Ctx) -> list[dict]:
+    text = ctx.read(RESIDUAL_DOC)
+    a = text.index("## 2. Table A")
+    b = text.index("## 3. Table B")
+    cols = ["EXCEPTION_ID", "ORIGINAL_REQUIREMENT", "AFFECTED_PRODUCT_PATH", "ROOT_CAUSE", "CURRENT_STATE",
+            "PRODUCTION_REACHABILITY", "ARCH_FREEZE_IMPACT", "REMEDIATION", "DEFER_ALLOWED", "REOPEN_CONDITION",
+            "OWNER", "AUDITOR", "FINAL_ACCEPTANCE"]
+    rows = []
+    for line in text[a:b].splitlines():
+        if not re.match(r"^\| EX-[A-Z0-9-]+ \|", line):
+            continue
+        cells = line.strip()[1:-1].split(" | ")
+        cells = [c.strip() for c in cells]
+        if len(cells) != len(cols):
+            raise SystemExit(f"residual row column mismatch ({len(cells)}): {line[:60]}")
+        rows.append(dict(zip(cols, cells)))
+    return rows
+
+
+def disposition(row: dict) -> str:
+    m = re.search(r"DS-EXC disposition: ([A-Za-z_ ]+?)(?: \(|\.|:)", row["ARCH_FREEZE_IMPACT"])
+    return m.group(1).strip() if m else "UNSTATED"
+
+
+def resolve(ctx: Ctx, text: str) -> list[dict]:
+    return [{"path": p, "exists_at_baseline": path_exists(ctx.root, ctx.tracked, ctx.dirs, p)} for p in path_tokens(text)]
+
+
+def residual_marks(ctx: Ctx) -> dict[str, list[dict]]:
+    out = {"NOT_COMPOSED": [], "NOT_CLAIMED": [], "OUTSIDE_FROZEN_SCOPE": [], "TRANSFER_TO_LIVE_PROD_Q": [],
+           "BOUNDED_CLAIM": [], "UNMARKED_OPERATOR_DECISION": []}
+    for row in parse_residual(ctx):
+        d = disposition(row)
+        impact = row["ARCH_FREEZE_IMPACT"]
+        base = {
+            "id": row["EXCEPTION_ID"],
+            "affected_paths": resolve(ctx, row["AFFECTED_PRODUCT_PATH"]),
+            "disposition_quoted": impact[:240],
+            "remediation_node_quoted": row["REMEDIATION"][:160],
+            "source": f"{RESIDUAL_DOC} Table A row {row['EXCEPTION_ID']}, column ARCH_FREEZE_IMPACT (quoted DS-EXC disposition)",
+        }
+        if d.startswith("ACCEPTABLE_SCOPED_WITH_EVIDENCE"):
+            out["NOT_COMPOSED"].append({**base, "mark": "NOT_COMPOSED",
+                                        "non_composition_gate": "PENDING (plan section E policy: a fail-closed non-composition gate is required; not built here)"})
+        elif d.startswith("ACCEPTABLE_OUTSIDE_FROZEN_SCOPE"):
+            out["OUTSIDE_FROZEN_SCOPE"].append({**base, "mark": "OUTSIDE_FROZEN_SCOPE"})
+        elif d.startswith("TRANSFER_TO_LIVE_PROD_Q"):
+            out["TRANSFER_TO_LIVE_PROD_Q"].append({**base, "mark": "TRANSFER_TO_LIVE_PROD_Q"})
+        elif d.startswith("Bounded claim"):
+            out["BOUNDED_CLAIM"].append({**base, "mark": "BOUNDED_CLAIM"})
+        elif d.startswith("OPERATOR DECISION"):
+            if "NOT_CLAIMED" in impact or "not claimed" in impact:
+                out["NOT_CLAIMED"].append({**base, "mark": "NOT_CLAIMED"})
+            elif "dormant" in impact:
+                out["NOT_COMPOSED"].append({**base, "mark": "NOT_COMPOSED",
+                                            "non_composition_gate": "PENDING (plan section E: dormant item accepted only with a fail-closed non-composition gate)"})
+            else:
+                out["UNMARKED_OPERATOR_DECISION"].append({**base, "mark": "NONE (draft: no mark derivable)"})
+    return out
+
+
+# --------------------------------------------------------------------------- contract
+def build_contract(ctx: Ctx, files: dict[str, dict], marks: dict[str, list[dict]]) -> dict:
+    modules = []
+    moved_prefixes = ("intergrax/applications/contracts/environment_profile/",)
+    moved_files = {"intergrax/applications/contracts/execution_mode.py",
+                   "intergrax/applications/contracts/application_host.py",
+                   "intergrax/applications/contracts/graph_spec.py"}
+    for root_rel, tier in CONTRACT_ROOTS:
+        for rel in sorted(files):
+            if not rel.startswith(root_rel + "/"):
+                continue
+            inner = rel[len(root_rel) + 1:]
+            parts = inner.split("/")
+            internal = any(p.startswith("_") and p != "__init__.py" for p in parts)
+            syms, basis, ncls, nfn = public_symbols(files[rel]["tree"])
+            planned = rel in moved_files or rel.startswith(moved_prefixes)
+            status = "PLANNED_MOVE (PT-WA)" if planned else ("DRAFT_INTERNAL" if internal else "DRAFT_PUBLIC_CANDIDATE")
+            modules.append({"path": rel, "module": module_of(rel), "tier": tier,
+                            "subpackage": parts[0] if len(parts) > 1 else ".", "visibility_basis": "path component starts with '_' => internal",
+                            "status": status, "symbol_basis": basis, "symbols": syms, "classes": ncls, "functions": nfn})
+    planned_rows = []
+    for sym, rel, kind in PLANNED_MOVES:
+        located = [m["path"] for m in modules if m["path"] == rel or m["path"].startswith(rel + "/")]
+        found = False
+        paths = [rel] if rel.endswith(".py") else sorted(f for f in files if f.startswith(rel + "/"))
+        for p in paths:
+            if p in files and any(isinstance(n, ast.ClassDef) and n.name == sym for n in ast.walk(files[p]["tree"])):
+                found = True
+                break
+        t0 = sorted(f for f in files if f.startswith("intergrax/contracts/")
+                    and any(isinstance(n, ast.ClassDef) and n.name == sym for n in ast.walk(files[f]["tree"])))
+        planned_rows.append({"symbol": sym, "kind": kind, "current_path": rel, "already_defined_at_tier0": t0,
+                             "path_exists_at_baseline": path_exists(ctx.root, ctx.tracked, ctx.dirs, rel),
+                             "class_defined_in_path": found, "mark": "PLANNED_MOVE (PT-WA)",
+                             "planned_target": "intergrax/contracts/ (Tier-0), re-exported from the old path",
+                             "contract_modules_in_manifest": len(located),
+                             "note": ("defined at Tier-0 already; the old path is a re-export, so the planned work for this symbol is repointing importers, not a move"
+                                      if t0 else ""),
+                             "source": "closed-world RESULT.md section 1.4 B (a proposal; the binding scope is T-AF2-RW-PLAN)"})
+    od18 = [{"id": "OD-AF-18", "mark": "NOT_CLAIMED",
+             "subject": "E2B, Modal and Daytona as production sandbox providers: physical egress and live isolation strength (FRZ-SEC-05, FRZ-SEC-06 frozen-scope exclusion)",
+             "paths": [{"path": p, "exists_at_baseline": path_exists(ctx.root, ctx.tracked, ctx.dirs, p)} for p in OD_AF_18_PATHS],
+             "claimed_instead": "the architecture sandbox admission and isolation gates must PASS at M3; logical egress deny-all (plan section D split matrix)",
+             "source": "OD-AF-18 (OPERATOR_PACKET_1: A, frozen-scope exclusion); plan MEP-AF2 v2.1 sections D and M"}]
+    claims = od18 + marks["NOT_CLAIMED"] + marks["OUTSIDE_FROZEN_SCOPE"] + marks["TRANSFER_TO_LIVE_PROD_Q"] + marks["BOUNDED_CLAIM"]
+    by_status: dict[str, int] = {}
+    for m in modules:
+        by_status[m["status"]] = by_status.get(m["status"], 0) + 1
+    return {
+        "meta": meta(ctx, "af2.manifest.contract.v0-draft", "FRZ-FRZ-05"),
+        "public_surface_rule": "No `__all__` manifest exists for the contract roots: a module is DRAFT_PUBLIC_CANDIDATE when no path component below the root starts with '_'; its symbols are `__all__` when literal, else non-underscore top-level names. A hand-reviewed public/internal split is a W5 task (T-IGX-052-B).",
+        "contract_roots": [r for r, _ in CONTRACT_ROOTS],
+        "module_status_counts": dict(sorted(by_status.items())),
+        "modules": modules,
+        "planned_moves": planned_rows,
+        "claim_exclusions": claims,
+        "unmarked_operator_decisions": marks["UNMARKED_OPERATOR_DECISION"],
+    }
+
+
+# --------------------------------------------------------------------------- ownership
+def helper_defs(tree: ast.Module, class_name: str) -> dict[str, list[str]]:
+    out = {}
+    for node in tree.body:
+        if isinstance(node, ast.FunctionDef):
+            for sub in ast.walk(node):
+                if isinstance(sub, ast.Call) and isinstance(sub.func, ast.Name) and sub.func.id == class_name:
+                    out[node.name] = [a.arg for a in node.args.args + node.args.kwonlyargs]
+                    break
+    return out
+
+
+def integration_categories(ctx: Ctx) -> list[str]:
+    tree = ctx.parse_input(INTEGRATION_BASE_FILE)
+    for node in tree.body:
+        if isinstance(node, ast.ClassDef) and node.name == "IntegrationCategory":
+            return sorted(str(literal(n.value)) for n in node.body if isinstance(n, ast.Assign) and isinstance(n.value, ast.Constant))
+    return []
+
+
+def build_ownership(ctx: Ctx) -> dict:
+    cfg_tree = ctx.parse_input(CONFIG_X_FILE)
+    cfg_rows = []
+    for call in calls_named(cfg_tree, {"ConfigConcernRecord"}):
+        rec = kw_record(call)
+        if "concern_id" in rec:
+            cfg_rows.append(rec)
+    cats = integration_categories(ctx)
+    template = next((kw_record(c) for c in calls_named(cfg_tree, {"ConfigConcernRecord"})
+                     if "<template>" in str(kw_record(c).get("concern_id", ""))), {})
+    integ_rows = []
+    for cat in cats:
+        integ_rows.append({"concern_id": f"integration.{cat}", "domain": "INTEGRATIONS",
+                           "composition_owner": "intergrax/integrations/registry/factory.py (resolve_slug / resolve_from_profile)",
+                           "provider_surface": f"intergrax/integrations/providers/{cat}/*",
+                           "basis": "expanded from the _integration_row template in the CONFIG-X inventory (one row per IntegrationCategory member)"})
+    cfg_rows = [r for r in cfg_rows if "<template>" not in str(r.get("concern_id", ""))]
+    for r in cfg_rows + integ_rows:
+        r["paths_checked"] = []
+        for key in ("composition_owner", "provider_surface", "configuration_contract"):
+            for p in path_tokens(str(r.get(key, ""))):
+                r["paths_checked"].append({"field": key, "path": p, "exists_at_baseline": path_exists(ctx.root, ctx.tracked, ctx.dirs, p)})
+    vbn_tree = ctx.parse_input(VBN_PLATFORM_FILE)
+    helpers = helper_defs(vbn_tree, "VendorBackendConcernRecord")
+    vbn_rows = []
+    keep = ("concern_id", "domain", "semantic_owner", "canonical_contract_or_port", "composition_selection_owner",
+            "concrete_implementation", "vendor_code_location", "extensibility_classification", "conclusion")
+    helper_spans = [(n.lineno, n.end_lineno) for n in vbn_tree.body
+                    if isinstance(n, ast.FunctionDef) and n.name in helpers]
+    for call in calls_named(vbn_tree, {"VendorBackendConcernRecord"} | set(helpers)):
+        if any(a <= call.lineno <= b for a, b in helper_spans):
+            continue
+        name = call.func.id  # type: ignore[attr-defined]
+        if name == "VendorBackendConcernRecord":
+            rec = kw_record(call)
+            rec = {k: rec[k] for k in keep if k in rec}
+            rec["record_form"] = "literal"
+        else:
+            params = helpers[name]
+            rec = {"record_form": f"helper {name}"}
+            for i, a in enumerate(call.args):
+                if i < len(params):
+                    rec[params[i]] = literal(a)
+            for k in call.keywords:
+                if k.arg:
+                    rec[k.arg] = literal(k.value)
+            rec = {k: v for k, v in rec.items() if k in keep or k in ("record_form", "owner", "composition_owner", "vendor_path", "impl", "contract")}
+        rec.setdefault("concern_id", "<dynamic>")
+        vbn_rows.append(rec)
+    fs_tree = ctx.parse_input(FIXED_SUBSTRATE_FILE)
+    fixed = []
+    for call in calls_named(fs_tree, {"FixedSubstrateDecisionRecord"}):
+        rec = kw_record(call)
+        if "substrate_id" in rec:
+            rec["scope_paths_checked"] = [{"path": p, "exists_at_baseline": path_exists(ctx.root, ctx.tracked, ctx.dirs, p)}
+                                          for p in path_tokens(str(rec.get("scope_paths", "")))]
+            fixed.append(rec)
+    matrix = ctx.read(FRZ_MATRIX_DOC)
+    gap = ""
+    for line in matrix.splitlines():
+        if line.startswith("| `FRZ-FRZ-07`") and "PC4; delta:" in line:
+            gap = line.split("PC4; delta:")[-1].split("|")[0].strip()
+    return {
+        "meta": meta(ctx, "af2.manifest.ownership.v0-draft", "FRZ-FRZ-07"),
+        "artefact_definition": "Ownership manifest = for each vendor/backend concern and each ratified fixed substrate, the semantic owner, the composition/selection owner and the code surface, as recorded in the three SSOT registers named in `sources`; every path token in those registers is checked against the tree (a drift check). It does not assign path-level owners that no register states.",
+        "sources": [CONFIG_X_FILE, VBN_PLATFORM_FILE, FIXED_SUBSTRATE_FILE, INTEGRATION_BASE_FILE],
+        "known_ownership_gaps_quoted": {"text": gap, "source": f"{FRZ_MATRIX_DOC} row FRZ-FRZ-07, column PASS_condition (quoted)"},
+        "config_x_literal_records": sorted(cfg_rows, key=lambda r: str(r["concern_id"])),
+        "config_x_integration_rows": integ_rows,
+        "vbn_platform_records": sorted(vbn_rows, key=lambda r: str(r.get("concern_id"))),
+        "fixed_substrate_decisions": sorted(fixed, key=lambda r: str(r["substrate_id"])),
+        "counts": {
+            "config_x_literal_records": len(cfg_rows), "config_x_integration_rows": len(integ_rows),
+            "config_x_total": len(cfg_rows) + len(integ_rows),
+            "vbn_platform_records": len(vbn_rows), "fixed_substrate_decisions": len(fixed),
+            "paths_checked_missing": sum(1 for r in cfg_rows + integ_rows for p in r["paths_checked"] if not p["exists_at_baseline"])
+            + sum(1 for r in fixed for p in r["scope_paths_checked"] if not p["exists_at_baseline"]),
+        },
+    }
+
+
+# ------------------------------------------------------------------------- composition
+def build_composition(ctx: Ctx, files: dict[str, dict], marks: dict[str, list[dict]]) -> dict:
+    tree = ctx.parse_input(STRICT_ROOTS_FILE)
+    roots = []
+    for node in tree.body:
+        if isinstance(node, ast.AnnAssign) and getattr(node.target, "id", "") == "STRICT_PRODUCTION_ROOTS":
+            roots = [{"path": p, "symbol": s} for p, s in ast.literal_eval(node.value)]
+    for r in roots:
+        r["exists_at_baseline"] = r["path"] in ctx.tracked
+    suffix_kind = (("_wiring.py", "wiring"), ("_resolver.py", "resolver"), ("_composition.py", "composition"),
+                   ("_launcher.py", "launcher"))
+    modules = []
+    for rel in sorted(files):
+        name = rel.rsplit("/", 1)[-1]
+        in_shared = rel.startswith("intergrax/applications/_shared/")
+        in_host = bool(re.match(r"^applications/[^/]+/host/", rel))
+        kind = next((k for s, k in suffix_kind if name.endswith(s)), None)
+        if in_shared and kind:
+            modules.append({"path": rel, "kind": kind, "area": "intergrax/applications/_shared"})
+        elif in_host and (re.search(r"main\.py$", name) or name in ("factory.py", "wiring.py", "host_runtime_composition.py")
+                          or kind):
+            modules.append({"path": rel, "kind": "host_" + (kind or name[:-3]), "area": "/".join(rel.split("/")[:3])})
+    strict_files = {r["path"] for r in roots}
+    for m in modules:
+        m["is_strict_production_root_file"] = m["path"] in strict_files
+    nc = marks["NOT_COMPOSED"]
+    matrix = ctx.read(FRZ_MATRIX_DOC)
+    open_q = ""
+    for line in matrix.splitlines():
+        if line.startswith("| `FRZ-FRZ-08`") and "PC4; delta:" in line:
+            open_q = line.split("PC4; delta:")[-1].split("|")[0].strip()
+    kinds: dict[str, int] = {}
+    for m in modules:
+        kinds[m["kind"]] = kinds.get(m["kind"], 0) + 1
+    return {
+        "meta": meta(ctx, "af2.manifest.composition.v0-draft", "FRZ-FRZ-08"),
+        "artefact_definition": "Composition manifest = the strict production roots, the composition/wiring/resolver modules of the Tier-3 shared layer and the per-application host entry points found by file pattern, plus the items that are deliberately NOT_COMPOSED. A `NOT_COMPOSED` mark is valid only together with a fail-closed non-composition gate (plan section E policy); every gate here is PENDING.",
+        "selection_rule": "tracked non-test .py under intergrax/applications/_shared/ ending in _wiring/_resolver/_composition/_launcher; applications/<app>/host/ files named *main.py, factory.py, wiring.py, host_runtime_composition.py or with those suffixes. A pattern list, not a reachability proof.",
+        "strict_production_roots": roots,
+        "strict_production_roots_source": STRICT_ROOTS_FILE,
+        "module_kind_counts": dict(sorted(kinds.items())),
+        "composition_modules": modules,
+        "not_composed": nc,
+        "open_composition_questions_quoted": {"text": open_q, "source": f"{FRZ_MATRIX_DOC} row FRZ-FRZ-08, column PASS_condition (quoted)"},
+    }
+
+
+def meta(ctx: Ctx, schema: str, frz_row: str) -> dict:
+    return {
+        "schema": schema, "status": "DRAFT", "frz_row": frz_row,
+        "claims": "none: not frozen, not accepted, no FRZ promotion (generated by an implementer; independent acceptance is a W7 task)",
+        "baseline_commit": ctx.sha, "baseline_tree": ctx.tree_sha,
+        "final_generation": "W5 (T-IGX-052-B) from the G2 tree",
+    }
+
+
+# --------------------------------------------------------------------------- output
+def dumps(obj: dict) -> str:
+    lines = ["{"]
+    keys = sorted(obj)
+    for i, k in enumerate(keys):
+        v = obj[k]
+        comma = "," if i < len(keys) - 1 else ""
+        if isinstance(v, list) and v and isinstance(v[0], dict):
+            body = ",\n".join("  " + json.dumps(x, sort_keys=True, ensure_ascii=True) for x in v)
+            lines.append(f' "{k}": [\n{body}\n ]{comma}')
+        else:
+            lines.append(f' "{k}": {json.dumps(v, sort_keys=True, ensure_ascii=True)}{comma}')
+    lines.append("}")
+    return "\n".join(lines) + "\n"
+
+
+def summary(ctx: Ctx, layer: dict, contract: dict, ownership: dict, composition: dict, gen_sha: str) -> str:
+    vc = layer["violation_counts"]
+    lines = [
+        "# Manifests (DRAFT): generated summary", "",
+        "> DRAFT. Generated; not frozen, not accepted. Do not edit by hand: rerun the generator.", "",
+        f"- Baseline commit: `{ctx.sha}` (tree `{ctx.tree_sha}`)",
+        f"- Generator SHA-256: `{gen_sha}` (the reference listing in this folder has the same content)", "",
+        "## Layer manifest (FRZ-FRZ-06)", "",
+        f"- Units: {len(layer['units'])}; forbidden import edges (R1+R2+R4): {vc['edges']} in {vc['files']} files",
+        f"- Of those files, inside the scan roots of the gate that enforces the rule: {vc['files_in_rule_gate_scan_roots']}; outside: {vc['files_outside_rule_gate_scan_roots']}",
+        f"- Edges by rule: R1 {vc['by_rule']['R1']}, R2 {vc['by_rule']['R2']}, R4 {vc['by_rule']['R4']}; files by rule: R1 {vc['files_by_rule']['R1']}, R2 {vc['files_by_rule']['R2']}, R4 {vc['files_by_rule']['R4']}",
+        f"- Unparsable product files: {len(layer['unparsable_product_files'])}", "",
+        "## Contract manifest (FRZ-FRZ-05)", "",
+        f"- Modules: {len(contract['modules'])}; by status: {json.dumps(contract['module_status_counts'], sort_keys=True)}",
+        f"- Planned moves (PT-WA): {len(contract['planned_moves'])} symbols; claim exclusions: {len(contract['claim_exclusions'])}",
+        f"- Operator-decision items with no derivable mark: {len(contract['unmarked_operator_decisions'])}", "",
+        "## Ownership manifest (FRZ-FRZ-07)", "",
+        f"- CONFIG-X rows: {ownership['counts']['config_x_total']} ({ownership['counts']['config_x_literal_records']} literal + {ownership['counts']['config_x_integration_rows']} integration categories)",
+        f"- VBN platform records: {ownership['counts']['vbn_platform_records']}; fixed substrate decisions: {ownership['counts']['fixed_substrate_decisions']}",
+        f"- Registered paths missing in the tree: {ownership['counts']['paths_checked_missing']}", "",
+        "## Composition manifest (FRZ-FRZ-08)", "",
+        f"- Strict production roots: {len(composition['strict_production_roots'])}; composition modules by pattern: {len(composition['composition_modules'])}",
+        f"- NOT_COMPOSED entries: {len(composition['not_composed'])} (each non-composition gate PENDING)", "",
+    ]
+    return "\n".join(lines)
+
+
+def main() -> int:
+    ap = argparse.ArgumentParser()
+    ap.add_argument("--root", required=True)
+    ap.add_argument("--out", required=True)
+    args = ap.parse_args()
+    root = Path(args.root).resolve()
+    out = Path(args.out).resolve()
+    out.mkdir(parents=True, exist_ok=True)
+    ctx = Ctx(root)
+    files = analyse_tree(ctx)
+    marks = residual_marks(ctx)
+    layer = build_layer(ctx, files)
+    contract = build_contract(ctx, files, marks)
+    ownership = build_ownership(ctx)
+    composition = build_composition(ctx, files, marks)
+    inputs = dict(sorted(ctx.inputs.items()))
+    for doc in (layer, contract, ownership, composition):
+        doc["meta"]["input_files_sha256"] = inputs
+    gen_sha = sha256_bytes(Path(__file__).read_bytes())
+    for name, doc in (("layer_manifest", layer), ("contract_manifest", contract),
+                      ("ownership_manifest", ownership), ("composition_manifest", composition)):
+        with open(out / f"{name}.draft.json", "w", encoding="utf-8", newline="\n") as fh:
+            fh.write(dumps(doc))
+    with open(out / "SUMMARY.md", "w", encoding="utf-8", newline="\n") as fh:
+        fh.write(summary(ctx, layer, contract, ownership, composition, gen_sha))
+    print(f"ok commit={ctx.sha} files_parsed={len(files)} unparsable={len(ctx.unparsable)}")
+    return 0
+
+
+if __name__ == "__main__":
+    sys.exit(main())

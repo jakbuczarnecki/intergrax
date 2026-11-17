@@ -131,6 +131,17 @@ The agent does **not** invoke a Jira client directly.
 4. Catalog **`get_entry(slug)`** validates category membership and invokes the provider **`factory`** (compatibility shim delegating to the Integration class).
 5. Tool handlers receive wired Integration instances through **`ToolWiringContext`** - not through agent code.
 
+### Provider composition roots (Operator ruling DP-18, 2026-11-16 - target state)
+
+Rule decided by the Operator (DP-18): modules that import concrete provider factories or select a vendor from configuration are limited to a **closed, named list of provider composition roots**, recorded in this document and in the seam ledger. Every other module obtains providers through an `IntegrationProfile` (`resolve_from_profile`, see above). The list may not grow; a new root needs a new Operator ruling.
+
+Present state at `origin/development` `2ab57e36d` (inventory only, not a list of sanctioned roots):
+
+- This document does not name any module as a provider composition root, and the seam ledger file does not exist yet. The list itself is therefore not written here; it is recorded when the ledger and its gate are created.
+- 65 files under `intergrax/runtime` contain the text `integrations.providers` - 43 under `intergrax/runtime/vendor_knowledge/` and 22 elsewhere. Which of them are composition roots is not decided by this text.
+
+The ledger, the gate and any code change are not part of this documentation change; the code wave implements them.
+
 ### Agent-side effects
 
 1. Agent proposes tool intent (via Skill bindings and `AgentContract`).
