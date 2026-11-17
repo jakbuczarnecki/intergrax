@@ -19,7 +19,10 @@ from intergrax.applications._shared.memory_observability_wiring import (
     resolve_memory_diagnostic_emitter,
 )
 from intergrax.applications._shared.memory_provider_admission import (
+    MemoryOrgSessionAdmissionError,
+    MemoryOrgSessionAdmissionReason,
     validate_memory_platform_wiring_admission,
+    validate_organization_and_session_admission,
     validate_session_turn_index_store_admission,
 )
 from intergrax.applications._shared.memory_security_governance_wiring import (
@@ -33,6 +36,7 @@ from intergrax.applications._shared.specialized_memory_wiring import (
     SpecializedMemoryCapabilities,
     resolve_specialized_memory_capabilities,
 )
+from intergrax.applications._shared.wiring_posture import wiring_fails_closed
 from intergrax.applications.contracts.environment_profile import (
     ApplicationEnvironmentProfile,
 )
@@ -348,6 +352,12 @@ def _resolve_baseline_memory_platform_wiring(
         document_store_backing = _document_store_backing_provider_id(profile)
         org_store = None
         if env.memory_profile.enable_org_memory:
+            if wiring_fails_closed(env):
+                raise MemoryOrgSessionAdmissionError(
+                    MemoryOrgSessionAdmissionReason.ORG_STORE_UNSUPPORTED_BACKEND,
+                    "organization memory on the document-store (MongoDB) backend has no durable "
+                    "organization store; use the SQLite relational store",
+                )
             from intergrax.runtime.organization.stores.in_memory_organization_profile_store import (
                 InMemoryOrganizationProfileStore,
             )
@@ -499,6 +509,11 @@ def resolve_memory_platform_wiring(
         qualification_evidence_registry=qualification_evidence_registry,
         durability_evidence_registry=durability_evidence_registry,
     )
+    validate_organization_and_session_admission(
+        env,
+        session_storage=wiring.session_storage,
+        organization_profile_store=wiring.organization_profile_store,
+    )
     if memory_store_plugin_catalog is not None:
         wiring = replace(
             wiring,
@@ -538,6 +553,11 @@ def build_session_manager_from_environment(
         user_profile_store_identity=wiring.user_profile_store_identity,
         qualification_evidence_registry=qualification_evidence_registry,
         durability_evidence_registry=durability_evidence_registry,
+    )
+    validate_organization_and_session_admission(
+        env,
+        session_storage=wiring.session_storage,
+        organization_profile_store=wiring.organization_profile_store,
     )
     memory_profile = env.memory_profile
 
