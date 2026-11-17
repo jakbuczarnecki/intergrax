@@ -272,7 +272,7 @@ GOV-X2 = NOT ENTERED
 
 ---
 
-Note (EQO-A remediation, as of 2026-11-17): gap statement only. The record text above is unchanged (append-only note). This note supplies none of the missing facts, adds no acceptance stamp, audit SHA, closure, PASS, verification or independence claim and changes no status; the roadmap remains the status owner. Lines of this record and roadmap rows are cited as they read at `origin/development` `44d1e5d105beb9b62d0a12e693066b0b26c125eb`.
+Note (EQO-A remediation, as of 2026-11-17): gap statement only. The record text above is unchanged (append-only note). This note supplies none of the missing facts, adds no acceptance stamp, audit SHA, closure, PASS, verification or independence claim and changes no status; the roadmap remains the status owner. Lines of this record and roadmap rows are cited as they read at `origin/development` `44d1e5d105beb9b62d0a12e693066b0b26c125eb`. Quotations omit the markdown emphasis of the source.
 
 - Status of this record: L3 reads "READY FOR AUDIT (Cursor session evidence — not closure)".
 - Roadmap (wording quoted, not asserted here): ledger row L1992 (`HARNESS-W7`) reads "CLOSED / independently accepted" with `5d5442dae7769671a7532a973428c8203b492ec6`.

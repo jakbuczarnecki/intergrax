@@ -1,4 +1,4 @@
-# T-IGX-046-F — EQO-A remediation: release of the nine held DB-C hunks as dated gap and custody notes
+# T-IGX-046-F - EQO-A remediation: release of the nine held DB-C hunks as dated gap and custody notes
 
 Implementer session: local_398ae9d6-d95a-48cb-9957-e428fed258e5
 
@@ -14,7 +14,7 @@ Out of scope: the roadmap, the freeze checklist, the FRZ matrices, `PDC_*` recor
 
 ## Plan digest
 
-Plan digest: e480cf87e97c7ecfe6b15e1596f772b8b5406a1c2113d44d700e880487b42760
+Plan digest: a8eef929756b7089ce4fe35dbd416780d4b4269d4ddb007d697c8f67c707fab9
 
 Canonical plan: [`governance/tickets/plans/PLAN_T-IGX-046-F.md`](plans/PLAN_T-IGX-046-F.md). The digest was computed with `scripts/governance/plan_digest.py`; it must be recomputed after any edit of the plan.
 
@@ -38,9 +38,7 @@ docs/project/maintainers/qualification/iiac_evidence/EQO-A-DBC-HELD/logs/pre-ent
 
 ## Approved
 
-Approved: operator-delegate @ 2026-11-17T13:48:51+01:00
-Delegation: docs/project/maintainers/qualification/eqo_a_remediation/OPERATOR_ANSWERS_CODE_WAVE_TRANSCRIPTION.md@cd93d7e2b519bc2d894e2da82f4f8156d281af2d
-Delegate session: local_7b06d036-e322-483f-8e3f-8d2010ae9e29
+PENDING.
 
 ## Test contract
 
@@ -57,4 +55,4 @@ Edits of the roadmap, the freeze checklist, PDC-owned records, generated registe
 
 ## Lifecycle state
 
-plan_approved
+plan_pending
