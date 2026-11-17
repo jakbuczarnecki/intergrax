@@ -9,7 +9,6 @@ import inspect
 from pathlib import Path
 
 import pytest
-
 from intergrax.applications._shared.llm_resolver import resolve_llm_adapter
 from intergrax.applications._shared.routing_evaluating_adapter import RoutingEvaluatingLLMAdapter
 from intergrax.applications.contracts.environment_profile import ApplicationEnvironmentProfile
@@ -97,13 +96,16 @@ def test_ebh_2e_r6_r2_r3_runtime_resolver_propagates_routing_evaluator_param() -
 
 
 def test_ebh_2e_r6_r2_r3_application_resolver_propagates_routing_evaluator_param() -> None:
-    for name in ("resolve_llm_adapter", "_resolve_llm_adapter_impl"):
-        source = _function_source(_APPLICATION_RESOLVER, name)
-        assert "routing_evaluator" in source
-    impl = _function_source(_APPLICATION_RESOLVER, "_resolve_llm_adapter_impl")
+    # The Tier-3 resolver delegates to the canonical Tier-1 resolver (W-B Part A, DP-16): the injected
+    # evaluator is passed through the façade and the canonical implementation hands it to the wrapper.
+    facade = _function_source(_APPLICATION_RESOLVER, "resolve_llm_adapter")
+    assert "routing_evaluator" in facade
+    assert "routing_evaluator=routing_evaluator" in facade
+    impl = _function_source(_RUNTIME_RESOLVER, "_resolve_llm_adapter_impl")
     assert "routing_evaluator=routing_evaluator" in impl
-    assert "wrap_routing_evaluating_adapter" in impl
-    assert impl.count("routing_evaluator=routing_evaluator") >= 2
+    assert "resolve_routing_evaluator(routing_evaluator)" in impl
+    assert "RoutingEvaluatingLLMAdapter" in impl
+    assert impl.count("routing_evaluator") >= 2
 
 
 def test_ebh_2e_r6_r2_r3_public_resolver_signatures_accept_routing_evaluator() -> None:
@@ -116,7 +118,6 @@ def test_ebh_2e_r6_r2_r3_public_resolver_signatures_accept_routing_evaluator() -
         runtime_resolver._resolve_llm_adapter_impl,
         app_resolver.resolve_llm_adapter,
         app_resolver.resolve_optional_llm_adapter,
-        app_resolver._resolve_llm_adapter_impl,
         app_resolver.resolve_environment_llm_adapter,
         app_resolver.resolve_optional_environment_llm_adapter,
     ):
@@ -180,15 +181,16 @@ def test_ebh_2e_r6_r2_r3_application_public_resolver_initial_and_live_share_inje
         _env: object,
         evaluation: RoutingEvaluation,
         _ctx: object | None = None,
+        **_kwargs: object,
     ) -> FakeLLMAdapter:
         return _fake_for_profile(evaluation.selected_profile)
 
     monkeypatch.setattr(
-        "intergrax.applications._shared.llm_resolver.create_adapter_for_routing_evaluation",
+        "intergrax.runtime.wiring.llm_resolver.create_adapter_for_routing_evaluation",
         _fake_create_for_routing,
     )
     monkeypatch.setattr(
-        "intergrax.applications._shared.llm_resolver._create_base_llm_adapter",
+        "intergrax.runtime.wiring.llm_resolver._create_base_llm_adapter",
         lambda _env, profile, hint=None: _fake_for_profile(profile),
     )
 

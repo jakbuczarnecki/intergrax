@@ -287,7 +287,10 @@ class RuntimeState(RuntimeStateContract):
                 ),
             )
 
-            routing_evaluation = consume_routing_evaluation()
+            routing_evaluation = consume_routing_evaluation(
+                core_adapter,
+                tenant_id=self.request.tenant_id,
+            )
             if routing_evaluation is not None:
                 emit_llm_routing_rule_diag(self.trace_event, routing_evaluation)
             self.llm_usage_tracker.register_adapter(meter_target, label="core_adapter")

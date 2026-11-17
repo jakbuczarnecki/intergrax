@@ -5,7 +5,6 @@ from __future__ import annotations
 import threading
 
 import pytest
-
 from intergrax.applications._shared.llm_resolver import resolve_llm_adapter
 from intergrax.applications._shared.routing_evaluating_adapter import RoutingEvaluatingLLMAdapter
 from intergrax.applications.contracts.environment_profile import ApplicationEnvironmentProfile
@@ -42,6 +41,7 @@ def test_parallel_routing_runs_do_not_share_adapter_state(monkeypatch: pytest.Mo
         _env: object,
         evaluation: object,
         _ctx: object | None = None,
+        **_kwargs: object,
     ) -> FakeLLMAdapter:
         from intergrax.llm_adapters.routing.contracts import RoutingEvaluation
 
@@ -51,11 +51,11 @@ def test_parallel_routing_runs_do_not_share_adapter_state(monkeypatch: pytest.Mo
         return inner_primary
 
     monkeypatch.setattr(
-        "intergrax.applications._shared.llm_resolver.create_adapter_for_routing_evaluation",
+        "intergrax.runtime.wiring.llm_resolver.create_adapter_for_routing_evaluation",
         _fake_create,
     )
     monkeypatch.setattr(
-        "intergrax.applications._shared.llm_resolver._create_base_llm_adapter",
+        "intergrax.runtime.wiring.llm_resolver._create_base_llm_adapter",
         lambda _env, _profile, hint=None: inner_primary,
     )
 

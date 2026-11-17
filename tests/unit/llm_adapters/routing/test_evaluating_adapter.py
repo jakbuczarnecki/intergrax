@@ -3,18 +3,17 @@
 from __future__ import annotations
 
 import pytest
-
+from intergrax.applications._shared.routing_evaluating_adapter import RoutingEvaluatingLLMAdapter
 from intergrax.applications.contracts.environment_profile import ApplicationEnvironmentProfile
+from intergrax.llm.messages import ChatMessage
 from intergrax.llm_adapters.contracts.llm_provider import LLMProvider
 from intergrax.llm_adapters.registry.profile import LLMProfile
-from intergrax.applications._shared.routing_evaluating_adapter import RoutingEvaluatingLLMAdapter
 from intergrax.llm_adapters.routing import (
     AllowlistViolationError,
     BudgetBelowRule,
     LLMRoutingProfile,
     RoutingContext,
 )
-from intergrax.llm.messages import ChatMessage
 from testing_support.builder import FakeLLMAdapter
 
 
@@ -40,6 +39,7 @@ def test_evaluating_adapter_swaps_inner_on_budget_change(monkeypatch: pytest.Mon
         _env: object,
         evaluation: object,
         _ctx: object | None = None,
+        **_kwargs: object,
     ) -> FakeLLMAdapter:
         from intergrax.llm_adapters.routing.contracts import RoutingEvaluation
 
@@ -49,7 +49,7 @@ def test_evaluating_adapter_swaps_inner_on_budget_change(monkeypatch: pytest.Mon
         return inner_primary
 
     monkeypatch.setattr(
-        "intergrax.applications._shared.llm_resolver.create_adapter_for_routing_evaluation",
+        "intergrax.runtime.wiring.llm_resolver.create_adapter_for_routing_evaluation",
         _fake_create,
     )
 
