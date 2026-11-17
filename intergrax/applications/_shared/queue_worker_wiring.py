@@ -8,6 +8,8 @@ from dataclasses import dataclass
 
 from intergrax.applications._shared.production_queue_resolver import (
     ProductionQueueBackend,
+    UnsupportedQueueBackendError,
+    UnsupportedQueueBackendReason,
     production_queue_requires_worker,
     resolve_production_queue_backend,
 )
@@ -34,6 +36,7 @@ class QueueWorkerWiring:
 
     execution_adapter: ExecutionAdapter
     celery_app: object | None = None
+    worker_kind: str = "inline"
 
 
 def wire_optional_queue_execution(
@@ -53,9 +56,12 @@ def wire_optional_queue_execution(
     production_mode: bool,
 ) -> QueueWorkerWiring:
     """
-    Return inline host-task adapter or Celery queue adapter.
+    Return inline host-task adapter or an in-process eager Celery queue adapter.
 
-    ``wait_for_result=True`` uses eager Celery — suitable for gate tests and single-process deploys.
+    The Celery worker built here is an in-process eager worker on a memory broker
+    (``worker_kind == "eager_in_process_lab"``). It is refused when ``production_mode`` is
+    true, and Kafka/RabbitMQ are never rewritten to it: no real-broker wiring exists yet
+    (T-IGX-043-B, DP-30).
     """
     backend = queue_backend or resolve_production_queue_backend()
     if not enabled and not production_queue_requires_worker(backend):
@@ -67,8 +73,17 @@ def wire_optional_queue_execution(
         return QueueWorkerWiring(execution_adapter=adapter)
 
     if backend in (ProductionQueueBackend.RABBITMQ, ProductionQueueBackend.KAFKA):
-        # Broker transports require external infra; fall back to eager Celery for harness hosts.
-        backend = ProductionQueueBackend.CELERY
+        raise UnsupportedQueueBackendError(
+            UnsupportedQueueBackendReason.BROKER_WIRING_NOT_BUILT,
+            f"queue backend {backend.value!r} has no Tier-3 broker wiring; "
+            "it is not rewritten to the in-process eager Celery worker",
+        )
+    if production_mode:
+        raise UnsupportedQueueBackendError(
+            UnsupportedQueueBackendReason.EAGER_WORKER_FORBIDDEN_IN_PRODUCTION,
+            "the Tier-3 queue worker is an in-process eager worker on a memory broker "
+            "and is not allowed with production_mode=True",
+        )
 
     from intergrax.queueing.providers.celery.celery_task_queue import CeleryTaskQueue
     from intergrax.runtime.task.worker_bootstrap import create_nexus_celery_worker_app
@@ -103,4 +118,8 @@ def wire_optional_queue_execution(
         run_service,
         wait_for_result=wait_for_result,
     )
-    return QueueWorkerWiring(execution_adapter=adapter, celery_app=worker_app)
+    return QueueWorkerWiring(
+        execution_adapter=adapter,
+        celery_app=worker_app,
+        worker_kind="eager_in_process_lab",
+    )
