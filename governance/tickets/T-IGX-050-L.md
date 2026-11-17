@@ -21,7 +21,9 @@ Canonical plan: [`governance/tickets/plans/PLAN_T-IGX-050-L.md`](plans/PLAN_T-IG
 
 ## Approved
 
-PENDING. <<OPERATOR: the approval line goes here after plan review, written by the Operator or a commissioned session; the implementer never writes it. This placeholder deliberately avoids the approval keyword because the ticket validators accept any line that starts with it (finding EQOA-A6-002).>>
+Approved: operator-delegate @ 2026-11-17T13:17:38+01:00
+Delegation: docs/project/maintainers/qualification/arch_freeze_program/DELEGATION_RECORD_T-IGX-050-L.md@44d1e5d105beb9b62d0a12e693066b0b26c125eb
+Delegate session: local_64ab068c-841e-4021-9874-5d5ba65f95ff
 
 Implementer session: local_5b1805e3-955e-4e76-81a6-c175799d8908
 
@@ -40,4 +42,4 @@ Edits of the WBS, matrix, gap register, checklist or any other document; F7 (doc
 
 ## Lifecycle state
 
-plan_pending
+plan_approved
