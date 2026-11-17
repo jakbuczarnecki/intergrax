@@ -437,10 +437,23 @@ def test_production_mode_requires_durable_pinning() -> None:
 
 
 def test_production_wiring_uses_kv_when_available() -> None:
-    backing = InMemoryKVStore()
+    # T-IGX-043-D: node kept, assertion inverted. An in-memory KV no longer passes the production guard.
+    with pytest.raises(SkillResolutionError, match=DURABLE_SKILL_EXECUTION_PINNING_REQUIRED_MSG):
+        resolve_skill_execution_pinning_wiring(
+            production_mode=True,
+            kv_store=InMemoryKVStore(),
+        )
+
+
+def test_production_wiring_uses_durable_kv_when_available() -> None:
+    class DurableInMemoryKVStore(InMemoryKVStore):
+        @property
+        def survives_process_restart(self) -> bool:
+            return True
+
     wiring = resolve_skill_execution_pinning_wiring(
         production_mode=True,
-        kv_store=backing,
+        kv_store=DurableInMemoryKVStore(),
     )
     assert wiring.pinning_store.is_durable is True
 
