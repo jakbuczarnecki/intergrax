@@ -264,6 +264,19 @@ ENGINE_TREE_IMPACT_RULES: tuple[tuple[str, tuple[str, ...]], ...] = (
 )
 
 
+# Wave-diff mapping (plan 3.6): product packages touched since the PDC baseline that no existing rule covers. The two
+# pinned PDC wave-diff tests require every touched product module to map to a check. Until the owner supplies narrower
+# ids each group maps to EVERY manifest check (explicit FULL): the generator attaches all manifest check ids. One entry
+# per touched package group; re-derive the list at the integrated wave head.
+WAVE_DIFF_FULL_IMPACT_PREFIXES: tuple[str, ...] = (
+    "agents/local_search",  # PT-WA: local search agent steps
+    "agents/tool_selection_qualifier",  # PT-WA: tool selection qualifier agent
+    "agents/web_search_qualifier",  # PT-WA: web search qualifier agent
+    "intergrax/agents/readiness",  # touched since the PDC baseline: readiness scoreboard
+    "intergrax/runtime/wiring",  # touched since the PDC baseline: LLM resolver wiring
+)
+
+
 def fail_closed_prefixes() -> tuple[str, ...]:
     return _FAIL_CLOSED_PREFIXES
 
@@ -350,6 +363,10 @@ def build_impact_map_from_manifest(checks: tuple[ManifestCheck, ...]) -> dict[st
     ):
         for cid in ids:
             add(prefix, cid)
+
+    for prefix in WAVE_DIFF_FULL_IMPACT_PREFIXES:
+        for check in checks:
+            add(prefix, check.check_id)
 
     return {k: frozenset(v) for k, v in mapping.items()}
 
