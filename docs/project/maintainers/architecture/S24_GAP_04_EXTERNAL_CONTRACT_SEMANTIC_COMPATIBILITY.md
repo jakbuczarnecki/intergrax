@@ -735,3 +735,12 @@ P0-R1 architecture lock **PASS** pending independent audit of the committing rev
 ---
 
 > **Independent audit reminder:** Wprowadzona korekta S24-GAP-04-P0-R1 musi zostać niezależnie zaudytowana na podstawie rzeczywistego commitu i aktualnego kodu na GitHub. Raport Cursor AI nie stanowi samodzielnej zgody na rozpoczęcie S24-GAP-04-P1.
+
+---
+
+Note (EQO-A remediation, as of 2026-11-17): cross-reference only. The record text above is unchanged (append-only note). This note adds no acceptance stamp, audit SHA or independence claim and changes no status; the roadmap remains the status owner. Roadmap rows are quoted as they read at `origin/development` `2727a2c2364a97492202b931375772a400279a9b`.
+
+- Status of this record: L14 reads "ARCHITECTURE LOCKED - Class A"; L733 reads "P0-R1 architecture lock PASS pending independent audit of the committing revision"; the closing reminders (L737) state that an independent audit is required before `S24-GAP-04-P1`.
+- Roadmap (wording quoted, not asserted here): row L369 (`INT-EXTCOMP-X`) reads `[x] CLOSED` ("independent exact-SHA audit accepted; combined accepted HEAD `234d3c03dce5708766f8e068afbd2ea496132002`"); ledger row L1966 (`INT-EXTCOMP-X`) reads "CLOSED / independently accepted" and rows L1967-L1973 (`S24-GAP-04-P1-R1` to `S24-GAP-04-CERT`) carry closure or acceptance wording. The ledger has no row named `S24-GAP-04-P0` or `S24-GAP-04-P0-R1`; the P0 lock is cited by the parent row L369 only.
+- Operator decision DP-04 (decision session 1 in [`OPERATOR_DECISIONS_EQOA_REMEDIATION.md`](../qualification/eqo_a_remediation/OPERATOR_DECISIONS_EQOA_REMEDIATION.md), the orchestrator's transcription of the Operator's chat decision, not an Operator signature): a stage with no preserved audit artefact keeps `[x] CLOSED` only with a qualified label that implies no independence (LBL-L or LBL-C). Which form applies to the INT-EXTCOMP-X rows is for the roadmap batch; the roadmap rows are not edited by this change.
+- No audit report or acceptance record for the P0-R1 lock is preserved in the repository at `2727a2c2364a97492202b931375772a400279a9b`; the PASS in L733 is the implementer's statement pending that audit. A search of the whole tree for `234d3c03dce5708766f8e068afbd2ea496132002` finds it only as a pin cited by the roadmap, the freeze checklist, the INT-CONFIG-REAL-X architecture record, the ROADMAP-REPLAY-X historical stage matrix, test data and the Campaign A dossier files; `iiac_evidence/` has no directory for this stage.
