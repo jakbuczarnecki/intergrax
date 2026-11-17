@@ -27,7 +27,7 @@ Conditions of packet 1: Part G of T-IGX-043-H is excluded; PT-WB starts only aft
 
 ## Ancestry rule
 
-The approval commit of each covered ticket must come after the commit that adds this record, so that the `Delegation:` reference (this file at the commit that added it) is a strict ancestor of the approval commit.
+The approval commit of each covered ticket must come after the commit that adds this record, so that the `Delegation:` reference is a strict ancestor of the approval commit. The `Delegation:` sha is the merge commit of PR #643 in `arch-freeze/rw-train`, or a later commit of the train that contains this file unchanged. The intermediate commit `191da2bc9` of the PR branch holds an earlier, wider text and must never be cited.
 
 ## Merge rule
 
@@ -35,4 +35,4 @@ PR #643, which adds this file, merges into the train with a merge commit (not a 
 
 ## Amended plan digests
 
-If an independent review makes a plan amendment necessary, as it did for T-IGX-043-G after the PT-WA review, the amended digest needs a new Operator approval. It is then recorded in a new record file, and the delegate signs that digest only after that file is in the train.
+If an independent review makes a plan amendment necessary, as may happen after a review of an implementation, the amended digest needs a new Operator approval. It is then recorded in a new record file, and the delegate signs that digest only after that file is in the train.
