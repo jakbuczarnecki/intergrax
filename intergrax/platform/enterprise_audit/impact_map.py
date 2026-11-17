@@ -17,6 +17,16 @@ _FAIL_CLOSED_PREFIXES = (
     "scripts/enterprise_audit/",
 )
 
+# CHANGED-SINCE default-deny (T-IGX-043-I, DP-66): a changed path under one of these prefixes must be classified,
+# i.e. covered by a manifest entrypoint, by a map prefix that names at least one manifest check id, or by a rule of
+# ``NO_CHECK_REQUIRED_RULES``. Anything else selects the FULL check set. This is a copy of ``PRODUCT_PATH_PREFIXES`` in
+# ``scripts/governance/iiac_common.py`` (Tier-0 cannot import ``scripts/``); a parity test ties the two tuples.
+PRODUCT_ESCALATION_PREFIXES: tuple[str, ...] = ("intergrax/", "agents/", "applications/")
+
+# Path prefixes that need no check (documentation-like files inside the product tree). Empty by default: every
+# exemption is an explicit, reviewed decision (OPEN_QUESTIONS Q-WD-03).
+NO_CHECK_REQUIRED_RULES: tuple[str, ...] = ()
+
 
 # PDC product-domain prefix -> existing manifest check ids (B-P6-G, T-IGX-036-V). Longest prefix wins, so a more
 # specific prefix repeats the ids of its parent area. Every id exists in the shipped manifest (85 checks); each
@@ -227,28 +237,63 @@ PDC_TIER3_ROOT_IMPACT_RULES: tuple[tuple[str, tuple[str, ...]], ...] = (
 )
 
 
+# evol_x test-support tree (EQOA-A6-003, X-A6-003): the eight files the dossier names (``_constants.py``,
+# ``conftest.py``, six ``adapters/*``) and the rest of the tree are not entrypoints, so the generator never mapped
+# them. They support the EVOL-X gates under ``tests/qualification/evol_x/gates``; each prefix therefore carries the
+# five ids the shipped map already attaches to that ``gates`` directory. Kept apart from ``PDC_DOMAIN_IMPACT_RULES``,
+# whose test requires ``intergrax/`` prefixes.
+_EVOL_X_TREE_CHECK_IDS: tuple[str, ...] = (
+    "ENT-A-EVOL-01",
+    "ENT-A-EVOL-02",
+    "ENT-A-EVOL-03",
+    "ENT-A-INV-01",
+    "ENT-A-REG-02",
+)
+EVOL_X_TREE_IMPACT_RULES: tuple[tuple[str, tuple[str, ...]], ...] = tuple(
+    (f"tests/qualification/evol_x/{name}", _EVOL_X_TREE_CHECK_IDS)
+    for name in ("_constants.py", "adapters", "conftest.py", "data", "experiments", "frz", "metrics")
+)
+
+
+# Engine files that T-IGX-043-I changes and that had no map entry: the two pinned PDC wave-diff tests require every
+# touched product module to map to a check, and the engine tree is fail-closed. The FRZ coverage digest module and its
+# schema are exercised by the FRZ coverage matrix test behind ``ENT-A-INV-02``.
+ENGINE_TREE_IMPACT_RULES: tuple[tuple[str, tuple[str, ...]], ...] = (
+    ("intergrax/platform/enterprise_audit/data/schemas/frz_coverage.v1.schema.json", ("ENT-A-INV-02",)),
+    ("intergrax/platform/enterprise_audit/digests.py", ("ENT-A-INV-02",)),
+)
+
+
 def fail_closed_prefixes() -> tuple[str, ...]:
     return _FAIL_CLOSED_PREFIXES
 
 
-def load_impact_map_from_path(path: Path) -> dict[str, frozenset[str]]:
-    raw = json.loads(path.read_text(encoding="utf-8"))
+def _parse_impact_map(raw: object, *, source: str) -> dict[str, frozenset[str]]:
+    """Parse the impact-map JSON object; every malformed shape raises (fail closed, never an empty map)."""
+    if not isinstance(raw, dict):
+        raise ValueError(f"impact map {source}: top level must be an object")
+    if raw.get("schema_version") != 1:
+        raise ValueError(f"impact map {source}: schema_version must be 1, got {raw.get('schema_version')!r}")
+    table = raw.get("path_prefix_to_check_ids")
+    if not isinstance(table, dict):
+        raise ValueError(f"impact map {source}: path_prefix_to_check_ids must be an object")
     prefixes: dict[str, frozenset[str]] = {}
-    for prefix, ids in raw.get("path_prefix_to_check_ids", {}).items():
+    for prefix, ids in table.items():
+        if not isinstance(ids, list) or not all(isinstance(i, str) for i in ids):
+            raise ValueError(f"impact map {source}: ids of prefix {prefix!r} must be a list of strings")
         normalized = str(prefix).replace("\\", "/").rstrip("/")
-        prefixes[normalized] = frozenset(str(i) for i in ids)
+        prefixes[normalized] = frozenset(ids)
     return prefixes
+
+
+def load_impact_map_from_path(path: Path) -> dict[str, frozenset[str]]:
+    return _parse_impact_map(json.loads(path.read_text(encoding="utf-8")), source=str(path))
 
 
 def load_default_impact_map() -> dict[str, frozenset[str]]:
     pkg = resources.files("intergrax.platform.enterprise_audit")
     text = (pkg / "data" / _IMPACT_RESOURCE).read_text(encoding="utf-8")
-    raw = json.loads(text)
-    prefixes: dict[str, frozenset[str]] = {}
-    for prefix, ids in raw.get("path_prefix_to_check_ids", {}).items():
-        normalized = str(prefix).replace("\\", "/").rstrip("/")
-        prefixes[normalized] = frozenset(str(i) for i in ids)
-    return prefixes
+    return _parse_impact_map(json.loads(text), source=_IMPACT_RESOURCE)
 
 
 def build_impact_map_from_manifest(checks: tuple[ManifestCheck, ...]) -> dict[str, frozenset[str]]:
@@ -297,7 +342,12 @@ def build_impact_map_from_manifest(checks: tuple[ManifestCheck, ...]) -> dict[st
         for cid in ids:
             add(path, cid)
 
-    for prefix, ids in (*PDC_DOMAIN_IMPACT_RULES, *PDC_TIER3_ROOT_IMPACT_RULES):
+    for prefix, ids in (
+        *PDC_DOMAIN_IMPACT_RULES,
+        *PDC_TIER3_ROOT_IMPACT_RULES,
+        *EVOL_X_TREE_IMPACT_RULES,
+        *ENGINE_TREE_IMPACT_RULES,
+    ):
         for cid in ids:
             add(prefix, cid)
 
@@ -329,6 +379,47 @@ def unmapped_fail_closed_paths(
         if check_ids_for_changed_path(path, prefixes):
             continue
         unmapped.add(path)
+    return frozenset(unmapped)
+
+
+def is_product_path(path: str) -> bool:
+    return path.replace("\\", "/").startswith(PRODUCT_ESCALATION_PREFIXES)
+
+
+def requires_classification(path: str) -> bool:
+    """True when a changed path lies in the product tree or in the audit tooling and must be covered by a check."""
+    normalized = path.replace("\\", "/")
+    return is_product_path(normalized) or normalized.startswith(_FAIL_CLOSED_PREFIXES)
+
+
+def _no_check_required(path: str) -> bool:
+    return any(path == rule.rstrip("/") or path.startswith(rule.rstrip("/") + "/") for rule in NO_CHECK_REQUIRED_RULES)
+
+
+def unmapped_product_paths(
+    changed: frozenset[str],
+    *,
+    prefixes: dict[str, frozenset[str]],
+    manifest_check_ids: frozenset[str],
+    entrypoint_covered: frozenset[str],
+) -> frozenset[str]:
+    """Changed product (or audit-tooling) paths that no manifest check covers (default-deny, DP-66).
+
+    A path is covered by a manifest entrypoint, by a map prefix whose ids include at least one *manifest* check id
+    (legacy ``C0xx`` ids are not coverage), or by ``NO_CHECK_REQUIRED_RULES``.
+    """
+    unmapped: set[str] = set()
+    for path in changed:
+        normalized = path.replace("\\", "/")
+        if not requires_classification(normalized):
+            continue
+        if path in entrypoint_covered or normalized in entrypoint_covered:
+            continue
+        if check_ids_for_changed_path(normalized, prefixes) & manifest_check_ids:
+            continue
+        if _no_check_required(normalized):
+            continue
+        unmapped.add(normalized)
     return frozenset(unmapped)
 
 

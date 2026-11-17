@@ -125,6 +125,12 @@
       "C026",
       "C027"
     ],
+    "intergrax/platform/enterprise_audit/data/schemas/frz_coverage.v1.schema.json": [
+      "ENT-A-INV-02"
+    ],
+    "intergrax/platform/enterprise_audit/digests.py": [
+      "ENT-A-INV-02"
+    ],
     "intergrax/platform/enterprise_audit/evidence.py": [
       "C006",
       "C049",
@@ -466,6 +472,48 @@
     "tests/qualification/ent_audit_x/unit/test_report_includes_prod_q_dimension_b_limitation.py": [
       "ENT-A-PRD-03"
     ],
+    "tests/qualification/evol_x/_constants.py": [
+      "ENT-A-EVOL-01",
+      "ENT-A-EVOL-02",
+      "ENT-A-EVOL-03",
+      "ENT-A-INV-01",
+      "ENT-A-REG-02"
+    ],
+    "tests/qualification/evol_x/adapters": [
+      "ENT-A-EVOL-01",
+      "ENT-A-EVOL-02",
+      "ENT-A-EVOL-03",
+      "ENT-A-INV-01",
+      "ENT-A-REG-02"
+    ],
+    "tests/qualification/evol_x/conftest.py": [
+      "ENT-A-EVOL-01",
+      "ENT-A-EVOL-02",
+      "ENT-A-EVOL-03",
+      "ENT-A-INV-01",
+      "ENT-A-REG-02"
+    ],
+    "tests/qualification/evol_x/data": [
+      "ENT-A-EVOL-01",
+      "ENT-A-EVOL-02",
+      "ENT-A-EVOL-03",
+      "ENT-A-INV-01",
+      "ENT-A-REG-02"
+    ],
+    "tests/qualification/evol_x/experiments": [
+      "ENT-A-EVOL-01",
+      "ENT-A-EVOL-02",
+      "ENT-A-EVOL-03",
+      "ENT-A-INV-01",
+      "ENT-A-REG-02"
+    ],
+    "tests/qualification/evol_x/frz": [
+      "ENT-A-EVOL-01",
+      "ENT-A-EVOL-02",
+      "ENT-A-EVOL-03",
+      "ENT-A-INV-01",
+      "ENT-A-REG-02"
+    ],
     "tests/qualification/evol_x/gates": [
       "ENT-A-EVOL-01",
       "ENT-A-EVOL-02",
@@ -483,6 +531,13 @@
     ],
     "tests/qualification/evol_x/gates/test_evol_x_selection_fault_injection.py": [
       "ENT-A-EVOL-02"
+    ],
+    "tests/qualification/evol_x/metrics": [
+      "ENT-A-EVOL-01",
+      "ENT-A-EVOL-02",
+      "ENT-A-EVOL-03",
+      "ENT-A-INV-01",
+      "ENT-A-REG-02"
     ],
     "tests/qualification/existing_capability_configuration": [
       "TEN-PROVIDER"
