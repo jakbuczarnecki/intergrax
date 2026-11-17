@@ -93,9 +93,7 @@ def persistent_canonical_user_profile_memory_required(
     env: ApplicationEnvironmentProfile,
 ) -> bool:
     memory_profile = env.memory_profile
-    return (
-        memory_profile.enable_user_memory or memory_profile.enable_long_term_memory
-    )
+    return memory_profile.enable_user_memory or memory_profile.enable_long_term_memory
 
 
 def session_turn_index_vector_memory_required(
@@ -178,9 +176,7 @@ def validate_memory_platform_wiring_admission(
         durability_registry = admission_evidence.durability_registry
     else:
         registry = qualification_evidence_registry or _EmptyQualificationEvidenceRegistry()
-        durability_registry = (
-            durability_evidence_registry or _EmptyDurabilityEvidenceRegistry()
-        )
+        durability_registry = durability_evidence_registry or _EmptyDurabilityEvidenceRegistry()
 
     if env.application_profile is ApplicationProfile.PRODUCT:
         if user_profile_store_identity is None:
@@ -208,11 +204,7 @@ def validate_memory_platform_wiring_admission(
         if not evaluation.admitted:
             reason = evaluation.reason_code or MemoryProviderAdmissionReasonCode.PROVIDER_MISSING
             declared_id = classification.provider_id
-            trusted_id = (
-                user_profile_store_identity.provider_id
-                if user_profile_store_identity is not None
-                else None
-            )
+            trusted_id = user_profile_store_identity.provider_id if user_profile_store_identity is not None else None
             raise MemoryProviderAdmissionError(
                 capability=classification.capability,
                 execution_mode=env.execution_mode.value,
@@ -299,11 +291,7 @@ def validate_session_turn_index_store_admission(
         trusted_qualification_status=evaluation.trusted_qualification_status,
         reference_only=False,
         qualification_run_id=evaluation.qualification_run_id,
-        trusted_provider_id=(
-            provider_identity.provider_id if provider_identity is not None else None
-        ),
+        trusted_provider_id=(provider_identity.provider_id if provider_identity is not None else None),
         trusted_backing_provider_id=evaluation.backing_provider_id,
-        evidence_backing_provider_id=(
-            evidence.backing_provider_id if evidence is not None else None
-        ),
+        evidence_backing_provider_id=(evidence.backing_provider_id if evidence is not None else None),
     )

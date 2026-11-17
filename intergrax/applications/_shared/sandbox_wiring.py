@@ -31,10 +31,7 @@ def product_requires_sandbox(env: ApplicationEnvironmentProfile) -> bool:
     enabled = set(env.tool_profile.enabled)
     for bundle in env.tool_profile.enabled_bundles:
         enabled.add(bundle)
-    return any(
-        tool_id.startswith(_SIDE_EFFECT_TOOL_PREFIXES) or tool_id == "sandbox.exec"
-        for tool_id in enabled
-    )
+    return any(tool_id.startswith(_SIDE_EFFECT_TOOL_PREFIXES) or tool_id == "sandbox.exec" for tool_id in enabled)
 
 
 def tool_profile_with_sandbox(env: ApplicationEnvironmentProfile) -> ToolProfile:

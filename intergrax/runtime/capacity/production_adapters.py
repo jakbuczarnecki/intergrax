@@ -151,9 +151,7 @@ def apply_production_scale_probe(
     _, celery_target = parse_celery_workers_revision(celery_result.applied_target_revision)
     replicas_ok = True
     if adapters.kubernetes_backend == "in_memory":
-        replicas_ok = (
-            adapters.kubernetes_observation.get_replicas(deployment=deployment) >= k8s_target
-        )
+        replicas_ok = adapters.kubernetes_observation.get_replicas(deployment=deployment) >= k8s_target
     return (
         k8s_result.authorization_evidence.mutation_id == k8s_mutation_id
         and celery_result.authorization_evidence.mutation_id == celery_mutation_id

@@ -24,9 +24,6 @@ from intergrax.contracts.observability_export import (
     OtlpExportConfiguration,
     OtlpTransportPort,
 )
-from intergrax.runtime.observability.exporters.distributed.distributed_configuration import (
-    DistributedTransportConfiguration,
-)
 from intergrax.runtime.events.event_bus import RuntimeEventBus
 from intergrax.runtime.observability.event_delivery import (
     BoundedEventSink,
@@ -36,11 +33,14 @@ from intergrax.runtime.observability.event_delivery import (
 from intergrax.runtime.observability.event_delivery.enterprise_default_event_delivery_admission_policy import (
     enterprise_default_critical_reserved_slots,
 )
+from intergrax.runtime.observability.event_delivery.export_factory import (
+    ObservabilityExportSinkFactory,
+)
 from intergrax.runtime.observability.event_delivery.logging_post_admission_failure_observer import (
     LoggingEventDeliveryPostAdmissionFailureObserver,
 )
-from intergrax.runtime.observability.event_delivery.export_factory import (
-    ObservabilityExportSinkFactory,
+from intergrax.runtime.observability.exporters.distributed.distributed_configuration import (
+    DistributedTransportConfiguration,
 )
 from intergrax.runtime.observability.exporters.otlp.otlp_dependency import (
     require_otlp_observability_dependency_profile,
@@ -61,9 +61,7 @@ def _resolve_otlp_export_configuration(
     profile = env.observability_profile
     endpoint = profile.otlp_export_endpoint.strip()
     timeout_seconds = profile.otlp_export_timeout_seconds
-    if settings is not None and isinstance(
-        settings, _ObservabilityOtlpEndpointSettings
-    ):
+    if settings is not None and isinstance(settings, _ObservabilityOtlpEndpointSettings):
         settings_endpoint = settings.observability_otlp_endpoint.strip()
         if settings_endpoint:
             endpoint = settings_endpoint
@@ -125,8 +123,7 @@ def _create_export_transport(
         config = _resolve_distributed_transport_configuration(env, settings=settings)
         if config is None:
             raise ConfigurationError(
-                "DISTRIBUTED_OTLP requires non-empty otlp_export_endpoint and "
-                "observability_export_service_name",
+                "DISTRIBUTED_OTLP requires non-empty otlp_export_endpoint and observability_export_service_name",
             )
         return CollectorTransport(config)
     return None
@@ -188,9 +185,7 @@ def resolve_application_runtime_event_delivery_wiring(
     critical_reserved = (
         configured_reserve
         if configured_reserve is not None
-        else enterprise_default_critical_reserved_slots(
-            profile.bounded_event_delivery_max_capacity
-        )
+        else enterprise_default_critical_reserved_slots(profile.bounded_event_delivery_max_capacity)
     )
     policy = EventDeliveryPolicy(
         max_capacity=profile.bounded_event_delivery_max_capacity,
