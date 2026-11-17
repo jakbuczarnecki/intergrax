@@ -59,3 +59,17 @@ plan_approved
 ## Implementer session
 
 Implementer session: local_fef955be-cd5d-4896-b9be-84b6f38971bf
+
+## Implementer notes (outside the plan text)
+
+Status of this branch: Parts A, B, C and D and the wave-diff mapping are implemented; Part E (six mapped ENT checks, manifest 85 to 91) is held.
+
+- **Part E blocker (STOP, write set).** Manifest check `ENT-A-DOC-02` (modes CHANGED-SINCE, FAST, FREEZE, FULL) runs `scripts/enterprise_audit/check_manifest_annex_c_alignment.py`, which requires the manifest check ids to equal the ids of `docs/project/maintainers/qualification/ent_audit_x/ANNEX_C_CONTROL_MATRIX.md` (85 rows) and hard-codes 85. With 91 manifest checks the FAST required check `ent-audit-fast` and `tests/qualification/ent_audit_x/unit/test_manifest_annex_c_alignment.py` (required PR job) would go red. The script, the Annex and that test are outside the signed write set; the plan's pinned-count grep did not list them. Decision requested from the orchestrator.
+- **A01 for `applications/`.** The root `applications/` tree has one tree-wide rule (B-P6-J), so a new package there is mapped, not unmapped; test A01 is parametrized over `intergrax/` and `agents/`, and `applications/` is asserted as mapped in the added guard `test_wd_a01b_root_applications_tree_is_mapped_by_its_rule`.
+- **A08.** Non-product paths select the floor plus whatever the shipped map attaches (`scripts/maintenance/` carries `ENT-A-SEC-02`); the test asserts "not FULL and equal to floor plus mapped ids" instead of "floor only".
+- **Test split vs plan.** Guards that must be green at the baseline use only API that exists there (B03, D03 to D06, A02, A08, A09, A14, A16). At the tests-only commit 23 of 39 collected cases fail and 16 pass; Part E tests (E01 to E06) are not written yet.
+- **Part C state.** `stage_gate_only` lists every criterion of the six families as not exercised (no mapped check exists yet); `mapped_check_id` is optional in the schema for Part E. C04 is written for this state and is amended with Part E.
+- **Engine-tree rules.** `digests.py` and `frz_coverage.v1.schema.json` get impact-map rules (`ENT-A-INV-02`), because the engine tree is fail-closed and the pinned PDC wave-diff tests require every touched module to map.
+- **Wave-diff mapping (plan 3.6).** Done at train head `881428fb2` for the five groups the pinned PDC tests found unmapped (`agents/local_search`, `agents/tool_selection_qualifier`, `agents/web_search_qualifier`, `intergrax/agents/readiness`, `intergrax/runtime/wiring`), each mapped to every manifest check. The three PDC wave-diff tests are red at the plain train head (7 modules) and green here. The list must be re-derived at the integrated wave head.
+- **Test process notes.** `test_mechanical_readiness.py::test_mechanical_readiness_script_emits_fail_closed_report` starts a real certifying FREEZE run when the working tree is clean (more than 15 minutes, over the lock budget); the regression was run with an untracked marker file in the tree, which takes the fast dirty-tree path.
+
