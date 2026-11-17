@@ -89,3 +89,13 @@ The closure-sync documentation commit is **not** the semantic W6 implementation 
 ## Recommended state
 
 - **Next mandatory parent:** GOV-X1 (implementation not started by W6 closure-sync)
+
+---
+
+Note (EQO-A remediation, as of 2026-11-17): gap statement only. The record text above is unchanged (append-only note). This note supplies none of the missing facts, adds no acceptance stamp, audit SHA, closure, PASS, verification or independence claim and changes no status; the roadmap remains the status owner. Lines of this record and roadmap rows are cited as they read at `origin/development` `44d1e5d105beb9b62d0a12e693066b0b26c125eb`. Quotations omit the markdown emphasis of the source.
+
+- Status of this record: L5 reads "CLOSED — independent exact-SHA audit accepted"; L8 names the "Audited implementation SHA" `846af28cd8fb6889cece1e8807196014dc89cdfd`.
+- Roadmap (wording quoted, not asserted here): ledger row L1965 (`HARNESS-W6`) quotes "architecture gate = 10/10; combined W6 batch A = 52/52; combined W6 batch B = 52/52".
+- Gap: this record lists its qualification surface (six test files, L58-L65) but contains no run counts, no run command, no SHA of a run and no log reference. No line of it contains "passed", "failed", ".log", "pytest", "10/10" or "52/52"; the only occurrence of the digits "52" is inside the SHA at L10.
+- Related finding: EQOA-A2-044 (EQO-A Campaign A dossier, PR #589), register row `EDER-F-0073` in `docs/project/maintainers/qualification/enterprise_debt_register/register.jsonl` (as the register reads at the head named above: owner_ref `HARNESS`, owner_status `SINGLE_PROPOSED`; the owner vocabulary is confirmed, the row-level owner is not, and no person is assigned).
+- This note does not establish that the counts quoted by the roadmap were produced, by which command, at which commit, or that they hold; the record also does not say that they are roadmap-asserted only. It adds no closure or independence claim.
