@@ -258,10 +258,7 @@ def collect_product_operator_read_adoption_violations(
                 relative_path=relative,
                 line=1,
                 symbol=_PRODUCT_OPERATOR_READ_WIRING_SYMBOL,
-                message=(
-                    "PRODUCT harness host factory must call "
-                    "wire_harness_product_observability_dashboard"
-                ),
+                message=("PRODUCT harness host factory must call wire_harness_product_observability_dashboard"),
             )
         )
     return violations
@@ -275,16 +272,9 @@ def collect_factory_entry_path_violations(repo_root: Path) -> list[str]:
     violations = check_no_ad_hoc_nexus_in_factories(repo_root=repo_root)
     filtered: list[str] = []
     for item in violations:
-        if (
-            "must call build_harness_host_runtime" in item
-            and "local_workspace_application" in item
-        ):
+        if "must call build_harness_host_runtime" in item and "local_workspace_application" in item:
             composition = (
-                repo_root
-                / "applications"
-                / "local_workspace_application"
-                / "host"
-                / "host_runtime_composition.py"
+                repo_root / "applications" / "local_workspace_application" / "host" / "host_runtime_composition.py"
             )
             if composition.is_file():
                 text = composition.read_text(encoding="utf-8")
