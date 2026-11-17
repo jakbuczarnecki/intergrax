@@ -2,8 +2,8 @@
 
 """Strict ticket-approval grammar and delegation-reference resolver (EQO-A PT-E02, finding EQOA-A6-002).
 
-This module is NEW and is used only by ``verify_ticket_approvals.py`` and by the opt-in ``--strict-approval`` flag of
-the two legacy validators. The legacy default (any line starting ``Approved:``) is not changed by this module.
+This module is NEW and is used only by ``verify_ticket_approvals.py``. ``verify_plan_approval.py`` and
+``verify_ticket_lifecycle.py`` do not call it: their legacy default (any line starting ``Approved:``) is unchanged.
 
 What the strict mode checks, mechanically:
 
