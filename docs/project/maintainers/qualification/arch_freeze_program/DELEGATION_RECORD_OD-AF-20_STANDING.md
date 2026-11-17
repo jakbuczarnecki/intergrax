@@ -4,7 +4,7 @@
 
 ## Decision
 
-On 2026-11-16 the Operator chose "Yes, docs/tickets (Recommended)" in a question dialog about a standing authorization for pull requests that change only documentation and ticket files (ARCH-FREEZE session record `OPERATOR_PACKET_2.md`, addendum OD-AF-20, a session artefact under `.tmp/`, not tracked). English rendering: a pull request that changes only documentation and/or ticket files is approved without a separate question once it has an independent review verdict REVIEW_PASS and its CI is green. The approval line is written by a commissioned signing delegate, and the orchestrator merges with a merge commit. The same day the Operator confirmed that they merge READY pull requests by hand where the standing rule does not apply (OD-AF-21a).
+On 2026-11-16 the Operator chose the recommended option "docs and tickets" in a question dialog about a standing authorization for pull requests that change only documentation and ticket files (ARCH-FREEZE session record `OPERATOR_PACKET_2.md`, addendum OD-AF-20, a session artefact under `.tmp/`, not tracked). English rendering: a pull request that changes only documentation and/or ticket files is approved without a separate question once it has an independent review verdict REVIEW_PASS and its CI is green. The approval line is written by a commissioned signing delegate, and the orchestrator merges with a merge commit. The same day the Operator confirmed that they merge READY pull requests by hand where the standing rule does not apply (OD-AF-21a).
 
 ## Scope of this record
 
