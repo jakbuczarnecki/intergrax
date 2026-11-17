@@ -55,3 +55,7 @@ def test_closure_master_plan_exists() -> None:
     qual = root / "docs/project/maintainers/qualification/ent_audit_x"
     path = qual / "ENT_AUDIT_X_POST_IMPLEMENTATION_FINAL_CLOSURE_MASTER_PLAN.md"
     assert path.is_file()
+
+
+def test_trial_n1_deliberate_failure():
+    assert False, "AR-45 trial N1 deliberate failure"
