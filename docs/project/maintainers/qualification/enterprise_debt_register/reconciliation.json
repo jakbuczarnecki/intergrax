@@ -1,5 +1,5 @@
 {
- "status": "INGESTED data; owner vocabulary unconfirmed (DP-47); no row is triaged, closed, accepted or independently verified",
+ "status": "INGESTED data; owner vocabulary confirmed (DP-47 option a, 2026-11-17); no row is triaged, closed, accepted or independently verified",
  "generated_at_head": "2ab57e36d94eae98c962b3d7b09e5a540d8c70d2",
  "baseline": "258bbf6abb6fdbb92ef0185d058527fbb1e47f04",
  "dossier_path": "docs/project/maintainers/qualification/enterprise_quality_oversight/campaign_a",
@@ -188,7 +188,9 @@
  "owner": {
   "vocabulary_ids": 55,
   "vocabulary_file": "owner_vocabulary.proposed.json",
-  "vocabulary_status": "PROPOSED_NOT_CANONICAL; DP-47 confirmation pending",
+  "vocabulary_status": "CONFIRMED (DP-47 option a; addendum 4 of eqo_a_remediation/OPERATOR_ANSWERS_CODE_WAVE_TRANSCRIPTION.md, 2026-11-17)",
+  "vocabulary_confirmation_scope": "vocabulary only; owner_status of every row is unchanged and no row is triaged; accountable_person stays empty (no Operator assignment of a person is published)",
+  "rows_by_owner_vocabulary_status": {"CONFIRMED": 1069},
   "rows_owner_status_confirmed": 0,
   "rows_by_owner_status": {
    "OPERATOR_ONLY": 132,
@@ -202,7 +204,7 @@
   "rows_with_owner_ref": 1024,
   "rows_without_owner_ref": 45,
   "rows_with_accountable_person": 0,
-  "owner_status_note": "the merged schema enum has no value PROPOSED_UNCONFIRMED; SINGLE_PROPOSED / SHARED_UNRESOLVED / OPERATOR_ONLY are its 'proposed' values and every row also carries owner_vocabulary_status=PROPOSED_UNCONFIRMED",
+  "owner_status_note": "the merged schema enum has no value PROPOSED_UNCONFIRMED; SINGLE_PROPOSED / SHARED_UNRESOLVED / OPERATOR_ONLY are its 'proposed' values and every row also carries owner_vocabulary_status (PROPOSED_UNCONFIRMED until 2026-11-17, CONFIRMED after the DP-47 confirmation; the row-level owner_status values are unchanged)",
   "unmapped_owner_raw": [
    "Docs governance / feature owners",
    "Feature doc owners",
@@ -577,5 +579,10 @@
   "blocks_debt_entries_bound": 16,
   "master_rows_path": "ws:WP-12/master_rows.jsonl (not tracked; cited by id)"
  },
- "not_stated": "DP-54 (standalone ECAP executable) is open; no row or file here states a position"
+ "post_ingest_rows": {
+  "note": "Rows raised after the initial ingest (id prefix EDER-N) by ticket T-IGX-050-M; the ingest totals above (rows_total and the rows_by_* counts) describe the initial load and are unchanged.",
+  "rows": ["EDER-N-0001", "EDER-N-0002", "EDER-N-0003", "EDER-N-0004"],
+  "rows_total_after": 1073
+ },
+ "not_stated": "At the ingest this field read: DP-54 (standalone ECAP executable) is open; no row or file here states a position. Since 2026-11-17 DP-54 is decided (option a, executable required) and row EDER-N-0004 records it; the executable does not exist."
 }

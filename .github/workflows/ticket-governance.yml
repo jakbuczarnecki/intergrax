@@ -1,0 +1,60 @@
+# © Artur Czarnecki. All rights reserved.
+# Intergrax framework – proprietary and confidential.
+#
+# ticket-governance (EQO-A PT-E02, ticket T-IGX-044-C, findings EQOA-A6-002 and A2-038):
+#   * strict approval check for tickets added or approval-changed in the pull request range
+#     (scripts/governance/verify_ticket_approvals.py --since), and
+#   * the commit Ref gate in CI mode (skip env ignored, unreadable range is an error, Ref must name a tracked ticket).
+#
+# This job is NOT a required check (Plan A Stage 4 / node PT-S05 is a separate Operator decision). It has no
+# `paths:` filter and no job-level `if:` so that it can become required later without the never-reported hazard.
+
+name: ticket-governance
+
+on:
+  pull_request:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ticket-governance-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
+
+jobs:
+  ticket-governance:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+
+    steps:
+      - name: Checkout (full history for the merge-base and ancestry checks)
+        uses: actions/checkout@v5
+        with:
+          fetch-depth: 0
+          ref: ${{ github.event.pull_request.head.sha }}
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@v6
+        with:
+          enable-cache: true
+          python-version: "3.12"
+
+      - name: Install dependencies (CI minimal)
+        run: uv sync --extra dev-ci --frozen
+
+      - name: Fetch the base branch
+        env:
+          BASE_REF: ${{ github.base_ref }}
+        run: git fetch --no-tags origin "+refs/heads/${BASE_REF}:refs/remotes/origin/${BASE_REF}"
+
+      - name: Strict ticket approval check (tickets added or approval-changed in the range)
+        env:
+          BASE_REF: ${{ github.base_ref }}
+        run: uv run --frozen python scripts/governance/verify_ticket_approvals.py --since "origin/${BASE_REF}"
+
+      - name: Commit Ref gate (CI mode)
+        env:
+          BASE_REF: ${{ github.base_ref }}
+        run: >-
+          uv run --frozen python scripts/governance/verify_commit_ticket_refs.py
+          --ci --mode range --rev-range "origin/${BASE_REF}..HEAD"

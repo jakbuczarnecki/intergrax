@@ -84,18 +84,22 @@ def message_has_valid_ref(message: str, config: CommitRefConfig) -> bool:
     return config.ref_line_regex.match(refs[0]) is not None
 
 
-def commit_touches_product(commit: str, config: CommitRefConfig) -> bool:
+def commit_touches_product(commit: str, config: CommitRefConfig, *, strict: bool = False) -> bool:
     show = _run_git("show", "--name-only", "--format=%H", commit)
     if show.returncode != 0:
+        if strict:
+            raise RuntimeError(f"git show failed for {commit[:12]}")
         return False
     lines = [ln.strip() for ln in show.stdout.splitlines() if ln.strip()]
     paths = [ln for ln in lines if not re.fullmatch(r"[0-9a-f]{40}", ln, flags=re.IGNORECASE)]
     return any(path_touches_product(p, config.product_path_prefixes) for p in paths)
 
 
-def list_commits_in_range(rev_range: str) -> list[str]:
+def list_commits_in_range(rev_range: str, *, strict: bool = False) -> list[str]:
     log = _run_git("log", "--format=%H", rev_range)
     if log.returncode != 0:
+        if strict:
+            raise RuntimeError(f"git log failed for range '{rev_range}' (is the base fetched?)")
         return []
     return [line.strip() for line in log.stdout.splitlines() if line.strip()]
 
@@ -119,10 +123,17 @@ def push_rev_range() -> str:
     return f"{merge_base.stdout.strip()}..HEAD"
 
 
-def verify_range(rev_range: str, config: CommitRefConfig) -> list[str]:
+def _ref_ticket_path(message: str, config: CommitRefConfig) -> str:
+    refs = extract_ref_lines(message, config)
+    return refs[0][len("Ref: ") :] if refs else ""
+
+
+def verify_range(rev_range: str, config: CommitRefConfig, *, strict: bool = False) -> list[str]:
+    """Verify Ref trailers. ``strict`` (CI mode): git failures raise; the Ref must name a ticket tracked at HEAD."""
+
     errors: list[str] = []
-    for commit in list_commits_in_range(rev_range):
-        if not commit_touches_product(commit, config):
+    for commit in list_commits_in_range(rev_range, strict=strict):
+        if not commit_touches_product(commit, config, strict=strict):
             continue
         msg = _run_git("log", "-1", "--format=%B", commit)
         if msg.returncode != 0 or not msg.stdout:
@@ -133,6 +144,10 @@ def verify_range(rev_range: str, config: CommitRefConfig) -> list[str]:
                 f"{commit[:12]}: missing or invalid ticket Ref line "
                 f"(expected exactly one line matching {config.ref_line_prefix}<T-IGX-NNN-L.md>)"
             )
+        elif strict:
+            ticket = _ref_ticket_path(msg.stdout, config)
+            if _run_git("cat-file", "-e", f"HEAD:{ticket}").returncode != 0:
+                errors.append(f"{commit[:12]}: Ref points to {ticket}, which is not a tracked ticket at HEAD")
     return errors
 
 
@@ -145,19 +160,39 @@ def main(argv: list[str] | None = None) -> int:
         help="push=commits since upstream merge-base; range=use --rev-range",
     )
     parser.add_argument("--rev-range", default="", help="Git rev range, e.g. abc..HEAD")
+    parser.add_argument(
+        "--ci",
+        action="store_true",
+        help=(
+            "CI mode (EQO-A PT-E02): the skip env variable is IGNORED, an empty or unreadable range is an error, and "
+            "every Ref must point to a ticket tracked at HEAD. Default behaviour (without --ci) is unchanged."
+        ),
+    )
     args = parser.parse_args(argv)
 
     config = load_config()
     if _truthy_env(config.skip_env):
-        print(f"[WARN] Ticket ref gate skipped ({config.skip_env}).", file=sys.stderr)
-        return 0
+        if not args.ci:
+            print(f"[WARN] Ticket ref gate skipped ({config.skip_env}).", file=sys.stderr)
+            return 0
+        print(f"[WARN] {config.skip_env} is set but IGNORED in --ci mode.", file=sys.stderr)
 
     rev_range = args.rev_range if args.mode == "range" else push_rev_range()
     if not rev_range:
+        if args.ci:
+            print(
+                "[ERROR] ticket-ref --ci: no revision range given (use --mode range --rev-range <base>..HEAD).",
+                file=sys.stderr,
+            )
+            return 1
         print("[INFO] ticket-ref: no commits to verify.")
         return 0
 
-    errors = verify_range(rev_range, config)
+    try:
+        errors = verify_range(rev_range, config, strict=args.ci)
+    except RuntimeError as exc:
+        print(f"[ERROR] ticket-ref --ci: {exc}", file=sys.stderr)
+        return 1
     if errors:
         print("[ERROR] Ticket Ref verification failed:", file=sys.stderr)
         for err in errors:
