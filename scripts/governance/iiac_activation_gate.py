@@ -419,8 +419,10 @@ def _companion_errors(repo: Path, manifest_path: Path) -> list[str]:
             (str(manifest_path), "--repo", str(repo), "--profile", "final" if v2 else "legacy"),
         ),
     ]
-    allowlist = repo / KNOWN_DRAFTS if (repo / KNOWN_DRAFTS).is_file() else SCRIPTS / Path(KNOWN_DRAFTS).name
-    if (repo / CORPUS_ROOT).is_dir():
+    # The corpus is checked against the allowlist the repository under test carries; a repository without one is
+    # not the governed tree (the allowlist is a material path, so deleting it shows up as an ACT-N11 change).
+    allowlist = repo / KNOWN_DRAFTS
+    if allowlist.is_file() and (repo / CORPUS_ROOT).is_dir():
         calls.append(
             (
                 "verify_iiac_manifest_corpus.py",
