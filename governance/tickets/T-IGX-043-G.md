@@ -9,10 +9,12 @@ Product-path ticket of the single integrated remediation wave (DP-11; master-pla
 - Part C (firm): the Tier-2 agent seams. S2d: the environment-credential provider resolver leaves `agents/` for `tests/system`; the web-search qualifier requires an injected provider; the LKW builder resolves it from the `IntegrationProfile` and refuses when absent. S2b and S2c re-point two agent imports to two new neutral contracts (`rag_retrieval_source_scope.py`, `workspace_tool_ids.py`); the five `external_contractor_adapter` files and the contract-leaf `SearchProvider` import need no code change under DP-14.
 - Part D (firm, read-only): the AST census of data-driven imports for A7-021 and its re-scope table; no product edit.
 - Part E (firm, a separable last commit group; question Q-WA-05 is recorded as option A in `OPERATOR_PACKET_3.md`): two LKW production modules routed through registry facades (S8b), with the negative test `NT-RW-WA-01` (A2-009).
-- Part K (firm): KR-18, the contract root `intergrax/applications/contracts/environment_profile/root.py` no longer imports `intergrax.applications._shared`; tests `NT-WA-KR18-1` and `NT-WA-KR18-2`.
+- Part K (firm): KR-18, the contract root `intergrax/applications/contracts/environment_profile/root.py` no longer imports `intergrax.applications._shared` and takes the tool ids from the new `intergrax/tools/contracts/tool_availability.py` (re-exported by `intergrax/skills/registry/tool_requirements.py`); the contract-to-implementation edge is moved by a lazy import, not removed, and is registered as a residual; tests `NT-WA-KR18-1` (full register rule) to `NT-WA-KR18-4`.
+- Amendment 1 part A (firm): `applications/local_workspace_application/manifest.py` mounts the web-search qualifier only when the LKW `IntegrationProfile` has a `search_provider` slot, so the default roster still builds; one derivation function (`local_workspace_profile_has_search_provider` in `host/agent_factories.py`) is used by the manifest and by the builder, the roster is derived from the profile instance of the manifest's own environment, and an invariant test (`NT-WA-25`) fails if enablement and acceptance disagree; tests `NT-WA-23`, `NT-WA-24`, `NT-WA-25`; `host/environment_profile.py` is a conditional path. The Q3 qualification route (an LKW input that sets the slot) is not part of this write set.
+- Decision records DR-1..DR-4 in plan section 7c: Q-WA-09 option P2 supersedes the PACKET_0 default and requires orchestrator acceptance of P2 versus P1 because the lazy import in `tool_availability.py` is invisible to the EBH-2A gate; Appendix A1 needs the five paths of Amendment 1.
 - A4-007 (three dynamic-import seams, confirmed by Campaign B-1 alpha) is owned by `T-IGX-043-H`; the importlib allowlist gate is `PT-G01`. X-A4-004 (ten `agents/` files fail the registry-bypass check at the baseline) is the same census as A4-004 and is closed by the Part C tests, with NT-WA-17 added.
 
-Write set (exact lists in the plan, section 9; it equals `RW_PLAN.md` Appendix A1 block `PT-WA` with the differences listed in `.tmp/session/arch-freeze/w3-packet-0/INPUT_043-G.md`): 42 firm product paths (6 new contracts, 2 new Tier-3 modules, 28 edited with `root.py`, 2 edited for Part E, 4 deleted), nine new and nine edited test or support paths (two of the new ones are relocated support modules), three conditional test paths, seven new test files (20 tests), no docs. No edit of the gate scripts, `.github/`, the F10 inputs, the roadmap, the FRZ checklist, IIAC or PDC-X records. Product commits go only to branch `arch-freeze/rw-train`. The write-set baseline is the 19-module tight set measured by the ARCH-FREEZE session (12 seeds plus 7 Tier-1 callers, `.tmp/session/arch-freeze/closed-world/RESULT.md` section 1, a session artefact; only partly re-verified, plan section 1 and FACT_CHECK F-110..F-113); of the 7 callers only `host_orchestration_loop_init_spec.py` is edited. The 19 directly affected test files and the 417 test files that import the 24 Tier-3 targets are the regression and rebase scope. ACT-N11: every product path above breaks the IIAC activation until the single RB-2 re-pin; this ticket does not perform it and must not merge outside the wave.
+Write set (exact lists in the plan, section 9; it equals `RW_PLAN.md` Appendix A1 block `PT-WA` with the differences listed in `.tmp/session/arch-freeze/w3-packet-0/INPUT_043-G.md` and `INPUT_043-G_AMENDMENT_1.md`): 45 firm product paths (6 new contracts and `tool_availability.py`, 2 new Tier-3 modules, 30 edited with `root.py`, `manifest.py` and `tool_requirements.py`, 2 edited for Part E, 4 deleted) and 1 conditional product path, ten new and nine edited test or support paths (two of the new ones are relocated support modules), three conditional test paths, eight new test files (25 tests), no docs. No edit of the gate scripts, `.github/`, the F10 inputs, the roadmap, the FRZ checklist, IIAC or PDC-X records. Product commits go only to branch `arch-freeze/rw-train`. The write-set baseline is the 19-module tight set measured by the ARCH-FREEZE session (12 seeds plus 7 Tier-1 callers, `.tmp/session/arch-freeze/closed-world/RESULT.md` section 1, a session artefact; only partly re-verified, plan section 1 and FACT_CHECK F-110..F-113); of the 7 callers only `host_orchestration_loop_init_spec.py` is edited. The 19 directly affected test files and the 417 test files that import the 24 Tier-3 targets are the regression and rebase scope. ACT-N11: every product path above breaks the IIAC activation until the single RB-2 re-pin; this ticket does not perform it and must not merge outside the wave.
 
 Dependencies and overlaps stated in the plan: `PT-G01` (registry-bypass gate rewrite and the allowlist gates; the old regex gate stays red on six contract-leaf agent files until it lands), W-B (merge order and the two builder files, question Q-WA-06), FC-1 (spec builder, `harness_host_runtime.py`, loop init spec; FC-1 rebases onto this ticket), FC-3 (shared LKW `host/factory.py` in Part E), `PT-Q04` (F10 C4 rules for the six `agents/` paths, which have no rule today), `PT-G01` (the demo/proof exception list read by `NT-RW-WA-01`, question Q-WA-10).
 
@@ -22,23 +24,24 @@ No PASS, closure, FRZ promotion, stage certification or independent verification
 
 ## Plan digest
 
-Plan digest: 0c0cd5236637c50b7eb5460d09694b1d9d0f29ca19c6dcd729c6e311ed45e714
+Plan digest: 5b7d2827185ae3f06562d5e8d76a4cdec067f26b5283929c0e1ebcc4333ac8d1
 
 Canonical plan: `governance/tickets/plans/PLAN_T-IGX-043-G.md` (drafted at `.tmp/session/eqo-a-remediation/FC/WA/PLAN_T-IGX-043-G.md`; the plan is copied unchanged into `governance/tickets/plans/` when the ticket is committed). The digest was computed with `scripts/governance/plan_digest.py` on the draft; it must be recomputed after any edit of the plan.
 
 ## Approved
 
-Approved: operator-delegate @ 2026-11-17T07:00:21+01:00
-Delegation: docs/project/maintainers/qualification/ARCH_FREEZE_OPERATOR_DECISION_REGISTER.md@24b9c9e72b68de61c36523738e02677d318b1f40
-Packet: .tmp/session/arch-freeze/w3-packet-0/PACKET_0.md (OD-AF-22, OPERATOR_PACKET_3.md)
+Approved: operator-delegate @ 2026-11-17T09:59:28+01:00
+Delegation: docs/project/maintainers/qualification/arch_freeze_program/RW_TRAIN_DELEGATION_RECORD_2.md@c482c4345da1873ec58505c5475150afaeafbb75
+Delegate session: local_64ab068c-841e-4021-9874-5d5ba65f95ff
 
 ## Test contract
 
 Nothing was run when this ticket was drafted. One process at a time, one `uv run pytest` per verification step with multiple paths, under the lock `D:/Projekty/_wt/_locks/pytest.lock`; the exact nodes and files are in plan sections 10 and 11:
 
-- Red-first (S0): the seven new test files (20 tests: 4 refusal tests of configurations that must now be refused, 9 structural, 1 preserved refusal over the new API, 6 controls) on a detached worktree at the pre-change commit; the log is kept for the auditor.
-- After the change (S4): all 20 green (`NT-RW-WA-01` needs the exemption list of question Q-WA-10). The three refusal groups that change behaviour are the S2d ones: an agent constructed without a provider, ambient credentials in the environment that must not activate a provider, and an LKW STRICT profile without a `search_provider` slot.
+- Red-first (S0): the eight new test files (25 tests: 4 refusal tests of configurations that must now be refused, 12 structural, 1 preserved refusal over the new API, 8 controls) on a detached worktree at the pre-change commit; the log is kept for the auditor.
+- After the change (S4): all 25 green (`NT-RW-WA-01` needs the exemption list of question Q-WA-10). The three refusal groups that change behaviour are the S2d ones: an agent constructed without a provider, ambient credentials in the environment that must not activate a provider, and an LKW STRICT profile without a `search_provider` slot.
 - Regression (S1..S3): boundary, inventory and ownership gates (including the EBH-2A contract gate that classifies the six new contract files, the EBH-4 typing gate, the npsc4.2 and DUP-X gates, the harness_01 and QUAL-X inventories), host and scenario composition tests, agent and qualifier tests; about 130 test functions in 17 files whose names were read at the current head, plus whole-file runs of the other listed files.
+- S1 adds the KR-18 register node and the contracts `Any` ratchet measurement; S3d lists five exact LKW host test files as regression scope without a pass claim (they run red at base and head in the development environment: no LLM provider, `ollama` absent).
 - S2b and S7: the 12 further directly affected test files of the ARCH-FREEZE list, and one collection-only check over the 417 test files that import or name the 24 Tier-3 targets (authorization WA-A12).
 - S5: `check_intergrax_no_applications_imports.py` (expected exit 0, the closure condition of A4-003 at an exact SHA, not a claim) and `check_agent_registry_bypass.py` (informational; six contract-leaf files remain until `PT-G01`). S6: `uv run ruff check` and `uv run pyright` on the changed Python files.
 - No broad or diagnostic suite, no Docker, no vendor integration, no live Q3 diagnostics (C10/C15 freeze). The independent audit is a separate session at the exact wave head (node `PT-Q02`), with the mutation checks of plan section 16.
@@ -51,3 +54,7 @@ Nothing was run when this ticket was drafted. One process at a time, one `uv run
 ## Lifecycle state
 
 plan_approved
+
+## Implementer session
+
+local_e87d11d4-fd56-4734-a8fd-46691cb7b3f7 (the PT-WA implementer session; recorded here, outside the plan text).
