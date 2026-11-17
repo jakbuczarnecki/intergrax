@@ -110,12 +110,38 @@ def is_sha40(value: object) -> bool:
     return isinstance(value, str) and bool(_SHA40.match(value))
 
 
-def run_git(repo: Path, *args: str) -> subprocess.CompletedProcess[bytes]:
-    if not args or args[0] not in _READ_ONLY_GIT:
-        raise ValueError(f"git subcommand not allowed (read-only verifier): {args[:1]}")
+def reject_option_like(*operands: str) -> None:
+    """A caller-supplied revision, path or ref must never reach git as an option (for example ``--output=x``)."""
+    for operand in operands:
+        if not isinstance(operand, str) or not operand or operand.startswith("-"):
+            raise ValueError(f"refusing git operand that is empty or starts with '-': {operand!r}")
+
+
+def run_git(
+    repo: Path,
+    subcommand: str,
+    *,
+    options: tuple[str, ...] = (),
+    operands: tuple[str, ...] = (),
+    pathspec: tuple[str, ...] = (),
+) -> subprocess.CompletedProcess[bytes]:
+    """Run one read-only git command.
+
+    ``options`` are fixed flags chosen by the verifier (they must start with '-'); ``operands`` are
+    revisions or ``rev:path`` specs that may come from a manifest, a ticket or the command line, and are
+    refused when they start with '-'; ``pathspec`` follows ``--`` and cannot be read as an option.
+    """
+    if subcommand not in _READ_ONLY_GIT:
+        raise ValueError(f"git subcommand not allowed (read-only verifier): {subcommand!r}")
+    if any(not option.startswith("-") for option in options):
+        raise ValueError("git options must start with '-'")
+    reject_option_like(*operands)
+    argv = [subcommand, *options, *operands]
+    if pathspec:
+        argv += ["--", *pathspec]
     try:
         return subprocess.run(
-            ["git", "-c", "core.autocrlf=false", *args],
+            ["git", "-c", "core.autocrlf=false", *argv],
             cwd=repo,
             capture_output=True,
             check=False,
@@ -125,23 +151,25 @@ def run_git(repo: Path, *args: str) -> subprocess.CompletedProcess[bytes]:
 
 
 def ensure_git_repo(repo: Path) -> None:
-    proc = run_git(repo, "rev-parse", "--git-dir")
+    proc = run_git(repo, "rev-parse", options=("--git-dir",))
     if proc.returncode != 0:
         raise GitUnavailableError(f"not a git repository: {repo}")
 
 
 def commit_exists(repo: Path, sha: str) -> bool:
-    return run_git(repo, "cat-file", "-e", f"{sha}^{{commit}}").returncode == 0
+    return run_git(repo, "cat-file", options=("-e",), operands=(f"{sha}^{{commit}}",)).returncode == 0
 
 
 def is_ancestor_or_equal(repo: Path, ancestor: str, descendant: str) -> bool:
     if ancestor == descendant:
         return True
-    return run_git(repo, "merge-base", "--is-ancestor", ancestor, descendant).returncode == 0
+    reject_option_like(ancestor, descendant)
+    return run_git(repo, "merge-base", options=("--is-ancestor",), operands=(ancestor, descendant)).returncode == 0
 
 
 def show_blob(repo: Path, sha: str, path: str) -> bytes | None:
-    proc = run_git(repo, "show", f"{sha}:{path}")
+    reject_option_like(sha)
+    proc = run_git(repo, "show", operands=(f"{sha}:{path}",))
     return proc.stdout if proc.returncode == 0 else None
 
 

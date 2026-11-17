@@ -97,6 +97,7 @@ def _delegation_ticket(index: int, case: dict[str, Any]) -> tuple[str, str]:
         "## Approved",
         "",
         case["approval_line"],
+        *case.get("after_lines", []),
         "",
     ]
     return ticket_id, "\n".join(lines)
@@ -120,6 +121,7 @@ def world(tmp_path_factory: pytest.TempPathFactory) -> dict[str, Any]:
         {
             "delegations/DELEG-GOOD.md": delegations["DELEG-GOOD.md"],
             "delegations/DELEG-OTHER.md": delegations["DELEG-OTHER.md"],
+            "delegations/DELEG-SUBSTR.md": delegations["DELEG-SUBSTR.md"],
         },
         "delegations",
     )
@@ -138,7 +140,11 @@ def world(tmp_path_factory: pytest.TempPathFactory) -> dict[str, Any]:
     ticket_files: dict[str, bytes] = {}
     delegation_cases = [c for c in _CASES if c["verifier"] == "delegation"]
     for index, case in enumerate(delegation_cases, start=1):
-        case = {**case, "approval_line": _subst(case["approval_line"], tokens)}
+        case = {
+            **case,
+            "approval_line": _subst(case["approval_line"], tokens),
+            "after_lines": _subst(case.get("after_lines", []), tokens),
+        }
         ticket_id, text = _delegation_ticket(index, case)
         ticket_files[f"governance/tickets/{ticket_id}.md"] = text.encode()
         tickets[case["id"]] = repo / f"governance/tickets/{ticket_id}.md"
@@ -394,3 +400,38 @@ def test_git_wrapper_is_read_only() -> None:
     for mutating in ("commit", "add", "checkout", "reset", "push", "fetch", "stash", "worktree", "config", "branch"):
         with pytest.raises(ValueError):
             iiac_verifier_common.run_git(REPO, mutating)
+
+
+@pytest.mark.parametrize("ticket", ["T-IGX-044-A.md", "T-IGX-046-B.md", "T-IGX-042-A.md"])
+def test_replay_of_published_two_line_tickets_resolves_the_documented_form(ticket: str) -> None:
+    """The documented form (governance/tickets/README.md item 3): Approved line, Delegation line directly after."""
+    path = REPO / "governance/tickets" / ticket
+    if not path.is_file():
+        pytest.skip(f"{ticket} not present in this checkout")
+    text = path.read_text(encoding="utf-8")
+    assert re.search(r"^Approved: operator-delegate @ \S+\nDelegation: \S+@[0-9a-f]{40}$", text, re.MULTILINE)
+    rc, output = _run(verify_iiac_delegation_refs.main, [str(path)])
+    assert rc == 0, output
+    assert "DELEGATE_IDENTITY_UNKNOWN" in output  # no label in this form: reported, not hidden
+    assert not re.search(r"ERROR DELEGATION_", output)
+
+
+def test_git_operands_that_look_like_options_are_refused(world: dict[str, Any], tmp_path: Path) -> None:
+    repo = world["repo"]
+    for bad in ("--output=x", "-p", ""):
+        with pytest.raises(ValueError):
+            iiac_verifier_common.run_git(repo, "show", operands=(bad,))
+    with pytest.raises(ValueError):
+        iiac_verifier_common.show_blob(repo, "--output=x", "a")
+    with pytest.raises(ValueError):
+        iiac_verifier_common.is_ancestor_or_equal(repo, "--all", "HEAD")
+    with pytest.raises(ValueError):
+        iiac_verifier_common.run_git(repo, "show", options=("HEAD",))
+    manifest = tmp_path / "m.json"
+    manifest.write_text(json.dumps(_manifest({}, world["tokens"])), encoding="utf-8")
+    rc, output = _run(verify_iiac_manifest_artifacts.main, [str(manifest), "--repo", str(repo), "--at=--output=evil"])
+    assert rc == 2, output
+    assert not (repo / "evil").exists()
+    ticket = next(iter(world["tickets"].values()))
+    rc, output = _run(verify_iiac_delegation_refs.main, [str(ticket), "--repo", str(repo), "--approval-commit=--all"])
+    assert rc == 2, output

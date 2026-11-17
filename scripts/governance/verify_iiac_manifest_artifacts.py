@@ -79,6 +79,9 @@ def main(argv: list[str] | None = None) -> int:
     except GitUnavailableError as exc:
         print(f"{TOOL}: environment error: {exc}", file=sys.stderr)
         return EXIT_USAGE
+    except ValueError as exc:  # option-like git operand, for example --at=--output=x
+        print(f"{TOOL}: usage error: {exc}", file=sys.stderr)
+        return EXIT_USAGE
     return report(TOOL, findings)
 
 

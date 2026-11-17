@@ -378,6 +378,7 @@
       "polarity": "positive",
       "weakness": "",
       "approval_line": "Approved: operator-delegate signer-one @ 2026-11-16T10:00:00+01:00 | Delegation: delegations/DELEG-GOOD.md@@@C_DELEG@@",
+      "after_lines": [],
       "extra_lines": "Implementer session: impl-session-9",
       "args": [],
       "expect_exit": 0,
@@ -394,6 +395,7 @@
       "polarity": "positive",
       "weakness": "",
       "approval_line": "Approved: operator @ 2026-11-16T10:00:00+01:00",
+      "after_lines": [],
       "extra_lines": "",
       "args": [],
       "expect_exit": 0,
@@ -406,6 +408,7 @@
       "polarity": "positive",
       "weakness": "",
       "approval_line": "Approved: operator-delegate signer-one @ 2026-11-16T10:00:00+01:00 | Delegation: delegations/DELEG-GOOD.md@@@C_DELEG@@",
+      "after_lines": [],
       "extra_lines": "",
       "args": [],
       "expect_exit": 0,
@@ -420,6 +423,7 @@
       "polarity": "negative",
       "weakness": "Nothing records who implemented the ticket, so delegate!=implementer cannot be checked at all.",
       "approval_line": "Approved: operator-delegate signer-one @ 2026-11-16T10:00:00+01:00 | Delegation: delegations/DELEG-GOOD.md@@@C_DELEG@@",
+      "after_lines": [],
       "extra_lines": "",
       "args": [
         "--require-implementer"
@@ -436,6 +440,7 @@
       "polarity": "negative",
       "weakness": "A delegation reference whose path does not exist at the pinned commit is accepted by any Approved-anything validator.",
       "approval_line": "Approved: operator-delegate signer-one @ 2026-11-16T10:00:00+01:00 | Delegation: delegations/NOPE.md@@@C_DELEG@@",
+      "after_lines": [],
       "extra_lines": "Implementer session: impl-session-9",
       "args": [],
       "expect_exit": 1,
@@ -450,6 +455,7 @@
       "polarity": "negative",
       "weakness": "A delegation reference pinned to a SHA that is not a commit passes the existing validators.",
       "approval_line": "Approved: operator-delegate signer-one @ 2026-11-16T10:00:00+01:00 | Delegation: delegations/DELEG-GOOD.md@@@MISSING@@",
+      "after_lines": [],
       "extra_lines": "Implementer session: impl-session-9",
       "args": [],
       "expect_exit": 1,
@@ -464,6 +470,7 @@
       "polarity": "negative",
       "weakness": "Free text after Delegation: (a chat remark) is accepted as a delegation reference (T-IGX-035-E).",
       "approval_line": "Approved: operator-delegate signer-one @ 2026-11-16T10:00:00+01:00 | Delegation: MERGE directive (operator chat 2026-11-11)",
+      "after_lines": [],
       "extra_lines": "Implementer session: impl-session-9",
       "args": [],
       "expect_exit": 1,
@@ -478,6 +485,7 @@
       "polarity": "negative",
       "weakness": "A delegation path without a pinned commit can change after the approval (T-IGX-030-A).",
       "approval_line": "Approved: operator-delegate signer-one @ 2026-11-16T10:00:00+01:00 | Delegation: delegations/DELEG-GOOD.md",
+      "after_lines": [],
       "extra_lines": "Implementer session: impl-session-9",
       "args": [],
       "expect_exit": 1,
@@ -492,6 +500,7 @@
       "polarity": "negative",
       "weakness": "A delegation under .tmp/ is never tracked, so nobody else can resolve the reference.",
       "approval_line": "Approved: operator-delegate signer-one @ 2026-11-16T10:00:00+01:00 | Delegation: .tmp/session/x/DELEG.md@@@C_DELEG@@",
+      "after_lines": [],
       "extra_lines": "Implementer session: impl-session-9",
       "args": [],
       "expect_exit": 1,
@@ -506,26 +515,29 @@
       "polarity": "negative",
       "weakness": "A delegate line without any Delegation reference is accepted (63 such lines exist in the ticket set).",
       "approval_line": "Approved: operator-delegate @ 2026-11-16T10:00:00+01:00",
+      "after_lines": [],
       "extra_lines": "Implementer session: impl-session-9",
       "args": [],
       "expect_exit": 1,
       "expect_codes": [
-        "DELEGATION_MISSING",
-        "DELEGATE_LABEL_MISSING"
+        "DELEGATION_MISSING"
       ],
       "absent_codes": []
     },
     {
-      "id": "d-neg-delegate-label-missing",
+      "id": "d-neg-delegate-identity-unknown-required",
       "verifier": "delegation",
       "polarity": "negative",
-      "weakness": "A delegate line that names no delegate cannot be compared with the implementer.",
+      "weakness": "A delegate line that names no delegate cannot be compared with the implementer (identity is not machine-readable).",
       "approval_line": "Approved: operator-delegate @ 2026-11-16T10:00:00+01:00 | Delegation: delegations/DELEG-GOOD.md@@@C_DELEG@@",
+      "after_lines": [],
       "extra_lines": "Implementer session: impl-session-9",
-      "args": [],
+      "args": [
+        "--require-implementer"
+      ],
       "expect_exit": 1,
       "expect_codes": [
-        "DELEGATE_LABEL_MISSING"
+        "DELEGATE_IDENTITY_UNKNOWN"
       ],
       "absent_codes": []
     },
@@ -535,6 +547,7 @@
       "polarity": "negative",
       "weakness": "Nothing compares the delegate with the implementer: a session can approve its own plan.",
       "approval_line": "Approved: operator-delegate signer-one @ 2026-11-16T10:00:00+01:00 | Delegation: delegations/DELEG-GOOD.md@@@C_DELEG@@",
+      "after_lines": [],
       "extra_lines": "Implementer session: signer-one",
       "args": [],
       "expect_exit": 1,
@@ -549,6 +562,7 @@
       "polarity": "negative",
       "weakness": "Delegate equal to implementer after case and spacing normalisation, or as a component of a composite id.",
       "approval_line": "Approved: operator-delegate signer-one @ 2026-11-16T10:00:00+01:00 | Delegation: delegations/DELEG-GOOD.md@@@C_DELEG@@",
+      "after_lines": [],
       "extra_lines": "Implementer session: other-session+Signer-One",
       "args": [],
       "expect_exit": 1,
@@ -563,6 +577,7 @@
       "polarity": "negative",
       "weakness": "The delegation commit may live on a side branch and never have been part of the history that carries the approval.",
       "approval_line": "Approved: operator-delegate signer-one @ 2026-11-16T10:00:00+01:00 | Delegation: delegations/DELEG-SIDE.md@@@C_SIDE@@",
+      "after_lines": [],
       "extra_lines": "Implementer session: impl-session-9",
       "args": [],
       "expect_exit": 1,
@@ -577,6 +592,7 @@
       "polarity": "negative",
       "weakness": "A real delegation record for another ticket is accepted as the delegation of this ticket.",
       "approval_line": "Approved: operator-delegate signer-one @ 2026-11-16T10:00:00+01:00 | Delegation: delegations/DELEG-OTHER.md@@@C_DELEG@@",
+      "after_lines": [],
       "extra_lines": "Implementer session: impl-session-9",
       "args": [],
       "expect_exit": 1,
@@ -591,6 +607,7 @@
       "polarity": "negative",
       "weakness": "The delegate named on the line need not be the session the record designates.",
       "approval_line": "Approved: operator-delegate someone-else @ 2026-11-16T10:00:00+01:00 | Delegation: delegations/DELEG-GOOD.md@@@C_DELEG@@",
+      "after_lines": [],
       "extra_lines": "Implementer session: impl-session-9",
       "args": [],
       "expect_exit": 1,
@@ -605,6 +622,7 @@
       "polarity": "negative",
       "weakness": "The operator line form is identical for personal and delegated lines; a personal line may point at a delegation file.",
       "approval_line": "Approved: operator @ 2026-11-16T10:00:00+01:00 | Delegation: delegations/DELEG-GOOD.md@@@C_DELEG@@",
+      "after_lines": [],
       "extra_lines": "Implementer session: impl-session-9",
       "args": [],
       "expect_exit": 1,
@@ -619,11 +637,203 @@
       "polarity": "negative",
       "weakness": "The timestamp is not validated: a time without an offset (or a date only) is accepted.",
       "approval_line": "Approved: operator-delegate signer-one @ 2026-11-16 | Delegation: delegations/DELEG-GOOD.md@@@C_DELEG@@",
+      "after_lines": [],
       "extra_lines": "Implementer session: impl-session-9",
       "args": [],
       "expect_exit": 1,
       "expect_codes": [
         "APPROVAL_TIMESTAMP"
+      ],
+      "absent_codes": []
+    },
+    {
+      "id": "d2-pos-good",
+      "verifier": "delegation",
+      "polarity": "positive",
+      "weakness": "",
+      "approval_line": "Approved: operator-delegate @ 2026-11-16T10:00:00+01:00",
+      "after_lines": [
+        "Delegation: delegations/DELEG-GOOD.md@@@C_DELEG@@"
+      ],
+      "extra_lines": "Implementer session: impl-session-9",
+      "args": [],
+      "expect_exit": 0,
+      "expect_codes": [
+        "DELEGATE_IDENTITY_UNKNOWN"
+      ],
+      "absent_codes": [
+        "DELEGATION_MISSING",
+        "DELEGATION_NOT_ADJACENT",
+        "DELEGATION_UNRESOLVED",
+        "DELEGATION_SCOPE_MISMATCH"
+      ]
+    },
+    {
+      "id": "d2-neg-missing-delegation-line",
+      "verifier": "delegation",
+      "polarity": "negative",
+      "weakness": "Documented form with the Delegation line missing is accepted by any Approved-anything validator.",
+      "approval_line": "Approved: operator-delegate @ 2026-11-16T10:00:00+01:00",
+      "after_lines": [],
+      "extra_lines": "Implementer session: impl-session-9",
+      "args": [],
+      "expect_exit": 1,
+      "expect_codes": [
+        "DELEGATION_MISSING"
+      ],
+      "absent_codes": []
+    },
+    {
+      "id": "d2-neg-delegation-not-adjacent",
+      "verifier": "delegation",
+      "polarity": "negative",
+      "weakness": "A Delegation line that is not directly after the Approved line cannot be tied to that approval.",
+      "approval_line": "Approved: operator-delegate @ 2026-11-16T10:00:00+01:00",
+      "after_lines": [
+        "",
+        "Delegation: delegations/DELEG-GOOD.md@@@C_DELEG@@"
+      ],
+      "extra_lines": "Implementer session: impl-session-9",
+      "args": [],
+      "expect_exit": 1,
+      "expect_codes": [
+        "DELEGATION_NOT_ADJACENT"
+      ],
+      "absent_codes": []
+    },
+    {
+      "id": "d2-neg-not-ancestor",
+      "verifier": "delegation",
+      "polarity": "negative",
+      "weakness": "Two-line form: the referenced delegation commit lives on a side branch and is not an ancestor of the approval commit.",
+      "approval_line": "Approved: operator-delegate @ 2026-11-16T10:00:00+01:00",
+      "after_lines": [
+        "Delegation: delegations/DELEG-SIDE.md@@@C_SIDE@@"
+      ],
+      "extra_lines": "Implementer session: impl-session-9",
+      "args": [],
+      "expect_exit": 1,
+      "expect_codes": [
+        "DELEGATION_NOT_ANCESTOR"
+      ],
+      "absent_codes": []
+    },
+    {
+      "id": "d2-neg-scope-mismatch",
+      "verifier": "delegation",
+      "polarity": "negative",
+      "weakness": "Two-line form: a record that names another ticket is accepted as the delegation of this ticket.",
+      "approval_line": "Approved: operator-delegate @ 2026-11-16T10:00:00+01:00",
+      "after_lines": [
+        "Delegation: delegations/DELEG-OTHER.md@@@C_DELEG@@"
+      ],
+      "extra_lines": "Implementer session: impl-session-9",
+      "args": [],
+      "expect_exit": 1,
+      "expect_codes": [
+        "DELEGATION_SCOPE_MISMATCH"
+      ],
+      "absent_codes": []
+    },
+    {
+      "id": "d2-neg-unresolved-path",
+      "verifier": "delegation",
+      "polarity": "negative",
+      "weakness": "Two-line form: the path does not exist at the pinned commit.",
+      "approval_line": "Approved: operator-delegate @ 2026-11-16T10:00:00+01:00",
+      "after_lines": [
+        "Delegation: delegations/NOPE.md@@@C_DELEG@@"
+      ],
+      "extra_lines": "Implementer session: impl-session-9",
+      "args": [],
+      "expect_exit": 1,
+      "expect_codes": [
+        "DELEGATION_UNRESOLVED"
+      ],
+      "absent_codes": []
+    },
+    {
+      "id": "d2-neg-free-text",
+      "verifier": "delegation",
+      "polarity": "negative",
+      "weakness": "Two-line form: free text after Delegation: is accepted as a reference.",
+      "approval_line": "Approved: operator-delegate @ 2026-11-16T10:00:00+01:00",
+      "after_lines": [
+        "Delegation: operator said so in chat"
+      ],
+      "extra_lines": "Implementer session: impl-session-9",
+      "args": [],
+      "expect_exit": 1,
+      "expect_codes": [
+        "DELEGATION_NOT_A_PATH"
+      ],
+      "absent_codes": []
+    },
+    {
+      "id": "d2-neg-unpinned",
+      "verifier": "delegation",
+      "polarity": "negative",
+      "weakness": "Two-line form: a path without a pinned commit can change after the approval.",
+      "approval_line": "Approved: operator-delegate @ 2026-11-16T10:00:00+01:00",
+      "after_lines": [
+        "Delegation: delegations/DELEG-GOOD.md"
+      ],
+      "extra_lines": "Implementer session: impl-session-9",
+      "args": [],
+      "expect_exit": 1,
+      "expect_codes": [
+        "DELEGATION_UNPINNED"
+      ],
+      "absent_codes": []
+    },
+    {
+      "id": "d2-neg-identity-unknown-required",
+      "verifier": "delegation",
+      "polarity": "negative",
+      "weakness": "Two-line form has no delegate label, so delegate != implementer is unprovable; a strict run must say so.",
+      "approval_line": "Approved: operator-delegate @ 2026-11-16T10:00:00+01:00",
+      "after_lines": [
+        "Delegation: delegations/DELEG-GOOD.md@@@C_DELEG@@"
+      ],
+      "extra_lines": "Implementer session: impl-session-9",
+      "args": [
+        "--require-implementer"
+      ],
+      "expect_exit": 1,
+      "expect_codes": [
+        "DELEGATE_IDENTITY_UNKNOWN"
+      ],
+      "absent_codes": []
+    },
+    {
+      "id": "d2-neg-personal-two-line",
+      "verifier": "delegation",
+      "polarity": "negative",
+      "weakness": "A personal operator line followed by a Delegation line is indistinguishable from a delegate line to the existing validators.",
+      "approval_line": "Approved: operator @ 2026-11-16T10:00:00+01:00",
+      "after_lines": [
+        "Delegation: delegations/DELEG-GOOD.md@@@C_DELEG@@"
+      ],
+      "extra_lines": "Implementer session: impl-session-9",
+      "args": [],
+      "expect_exit": 1,
+      "expect_codes": [
+        "PERSONAL_WITH_DELEGATION"
+      ],
+      "absent_codes": []
+    },
+    {
+      "id": "d-neg-delegate-token-substring",
+      "verifier": "delegation",
+      "polarity": "negative",
+      "weakness": "Delegate matching by substring: signer-one matched a record that designates signer-one-b.",
+      "approval_line": "Approved: operator-delegate signer-one @ 2026-11-16T10:00:00+01:00 | Delegation: delegations/DELEG-SUBSTR.md@@@C_DELEG@@",
+      "after_lines": [],
+      "extra_lines": "Implementer session: impl-session-9",
+      "args": [],
+      "expect_exit": 1,
+      "expect_codes": [
+        "DELEGATE_NOT_IN_RECORD"
       ],
       "absent_codes": []
     },

@@ -8,14 +8,13 @@ Out of scope: any edit of an existing file under `scripts/` or `tests/`, the fiv
 
 ## Plan digest
 
-Plan digest: 8e32935807802829a1d632ae62ce8a7f7698bda1d056200e7c12d6fed74af5f6
+Plan digest: c95da68be4359ceec0466a305f28782913054d694a704c27a0c6078e25b23f56
 
 Canonical plan: [`governance/tickets/plans/PLAN_T-IGX-044-E.md`](plans/PLAN_T-IGX-044-E.md). The digest is computed with `scripts/governance/plan_digest.py` and must be recomputed after any edit of the plan.
 
 ## Approved
 
-Approved: operator-delegate @ 2026-11-17T08:54:05+01:00
-Delegation: docs/project/maintainers/qualification/eqo_a_remediation/OPERATOR_ANSWERS_CODE_WAVE_TRANSCRIPTION.md@fdeec3a8abce83dc55f287b056b03dcb7e7e6fa3
+PENDING. The approval line is written after plan review by the Operator or a commissioned session; the implementer never writes it. This placeholder deliberately avoids the approval keyword because the ticket validators accept any line that starts with it (finding EQOA-A6-002).
 
 ## Test contract
 
@@ -23,7 +22,7 @@ One process at a time under the shared pytest lock, at most 15 minutes:
 
 - `uv run pytest tests/unit/governance/test_iiac_new_verifiers.py tests/unit/governance/test_iiac_negative_guards.py tests/unit/governance/test_iiac_activation_gate.py tests/unit/governance/test_iiac_g0_inventory.py -o cache_dir=<scratch dir>`
 - `ruff check` and `ruff format --check` over the new Python files.
-- Reviewer check: `git diff --stat origin/development...HEAD` lists exactly the 18 paths of the plan's write set, all added.
+- Reviewer check: `git diff --stat origin/development...HEAD` lists exactly the 19 paths of the plan's write set, all added.
 - Independent audit AUD-ENF-2 at the exact head SHA by a session that did not implement or review it.
 
 ## Out of scope
