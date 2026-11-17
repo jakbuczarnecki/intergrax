@@ -1,4 +1,5 @@
 # © Artur Czarnecki. All rights reserved.
+# ruff: noqa: E402
 
 """DIAG-FUNCTIONAL-Q3 real web-search qualification orchestrator."""
 
@@ -29,7 +30,19 @@ import urllib.request
 from dataclasses import dataclass
 
 from intergrax.contracts.execution_identity import mint_attempt_id, mint_execution_id, validate_run_id, validate_task_id
+from intergrax.contracts.functional_evidence import (
+    PipelineEvidenceKind,
+    PipelineEvidenceScope,
+    PlatformFunctionalEvidence,
+)
 from intergrax.core.qualification.functional_diagnostic_comparator import compare_qualification_case
+from intergrax.core.qualification.functional_diagnostic_expectation import (
+    QualificationCaseComparison,
+    QualificationCaseExpectation,
+    QualificationComparisonResult,
+    QualificationExecutionOutcome,
+    QualificationFunctionalOutcome,
+)
 from intergrax.core.qualification.functional_qualification_attempts import (
     QualificationAttemptPolicy,
     QualificationAttemptRecord,
@@ -38,29 +51,13 @@ from intergrax.core.qualification.functional_qualification_attempts import (
     compute_attempt_metrics,
     execute_bounded_attempts,
 )
-from intergrax.core.qualification.functional_diagnostic_expectation import (
-    QualificationCaseComparison,
-    QualificationCaseExpectation,
-    QualificationComparisonResult,
-    QualificationExecutionOutcome,
-    QualificationFunctionalOutcome,
-)
 from intergrax.integrations.contracts.base import IntegrationConfigurationError
 from intergrax.runtime.diagnostics.diagnostic_assessment import DiagnosticAssessment
 from intergrax.runtime.diagnostics.diagnostic_assessment_composer import DiagnosticAssessmentComposer
-from intergrax.runtime.diagnostics.functional_diagnostic_analyzer import FunctionalDiagnosticAnalyzer
 from intergrax.runtime.diagnostics.functional_diagnostic_analysis import FunctionalDiagnosticCheckStatus
+from intergrax.runtime.diagnostics.functional_diagnostic_analyzer import FunctionalDiagnosticAnalyzer
 from intergrax.runtime.diagnostics.functional_operator_projection import FunctionalOperatorOutcomeStatus
-from intergrax.contracts.functional_evidence import (
-    PipelineEvidenceKind,
-    PipelineEvidenceScope,
-    PipelineOperationStatus,
-    PlatformFunctionalEvidence,
-)
 from intergrax.runtime.diagnostics.functional_validation_lookup import FunctionalValidationEvidenceLookup
-from intergrax.runtime.observability.functional_evidence.in_memory_functional_evidence_persistence import (
-    InMemoryFunctionalEvidencePersistence,
-)
 from intergrax.runtime.diagnostics.specifications.q3_web_search_functional_diagnostic_specification import (
     Q3_WEB_SEARCH_OPERATION_ID,
     build_q3_web_search_functional_diagnostic_specification,
@@ -69,12 +66,12 @@ from intergrax.runtime.observability.functional_evidence_runtime_wiring import (
     wire_in_memory_functional_evidence_runtime,
 )
 from tests.system.functional_diagnostics_q3.cases import (
+    _REPEAT_CASE_ID,
     HEALTHY_TASK,
     MANDATORY_CASES,
     Q3_C_WRONG_SOURCE,
     Q3_G_HEALTHY,
     Q3_G_WRONG_SOURCE,
-    _REPEAT_CASE_ID,
     case_metadata,
 )
 from tests.system.functional_diagnostics_q3.oracle import (
@@ -87,12 +84,13 @@ from tests.system.functional_diagnostics_q3.oracle import (
     official_source_present_in_candidates,
     resolve_expected_official_source_ref,
 )
-from tests.system.unified_execution.proof_runner.contracts import ProofConfig
-from tests.system.unified_execution.proof_runner.lkw_client import LkwClient, LkwClientError, LkwRunResponse
-from web_search_qualifier.search_provider_resolver import (
+from tests.system.functional_diagnostics_q3.search_provider_resolver import (
     preflight_search_provider,
     resolve_qualification_search_provider,
 )
+from tests.system.unified_execution.proof_runner.contracts import ProofConfig
+from tests.system.unified_execution.proof_runner.lkw_client import LkwClient, LkwClientError, LkwRunResponse
+
 from web_search_qualifier.steps.web_search_job import _match_url_from_response
 from web_search_qualifier.url_identity import (
     artifact_ref_for_url,
@@ -197,9 +195,7 @@ class QualificationReport:
     prerequisite_success_rate: float = 100.0
 
 
-_EXPECTATION_BY_CASE_ID: dict[str, QualificationCaseExpectation] = {
-    case.case_id: case for case in MANDATORY_CASES
-}
+_EXPECTATION_BY_CASE_ID: dict[str, QualificationCaseExpectation] = {case.case_id: case for case in MANDATORY_CASES}
 _EXPECTATION_BY_CASE_ID["Q3-G-A"] = Q3_G_HEALTHY
 _EXPECTATION_BY_CASE_ID["Q3-G-B"] = Q3_G_WRONG_SOURCE
 _EXPECTATION_BY_CASE_ID[_REPEAT_CASE_ID] = Q3_C_WRONG_SOURCE
@@ -220,8 +216,7 @@ def _stage_matches(record: QualificationRunRecord, expectation: QualificationCas
 def _functional_failure_detected(record: QualificationRunRecord) -> bool:
     return (
         record.functional_outcome is QualificationFunctionalOutcome.FAILED
-        and record.operator_outcome
-        == FunctionalOperatorOutcomeStatus.PROVEN_FUNCTIONAL_FAILURE.value
+        and record.operator_outcome == FunctionalOperatorOutcomeStatus.PROVEN_FUNCTIONAL_FAILURE.value
     )
 
 
@@ -256,10 +251,7 @@ def _fetch_functional_evidence(
     items = payload.get("items")
     if not isinstance(items, list):
         raise LkwClientError("functional_evidence_items_missing")
-    return tuple(
-        PlatformFunctionalEvidence.model_validate(_normalize_remote_evidence_item(item))
-        for item in items
-    )
+    return tuple(PlatformFunctionalEvidence.model_validate(_normalize_remote_evidence_item(item)) for item in items)
 
 
 def _normalize_remote_evidence_item(item: object) -> object:
@@ -388,9 +380,7 @@ def _evidence_fidelity_snapshot(
         candidate_fidelity_match=provider_candidates == emitted_candidates,
         selection_fidelity_match=actual_selected == emitted_selected,
         extraction_fidelity_match=bounded_actual == bounded_emitted,
-        validation_fidelity_match=(
-            validation_expected == validation_actual_pass if validation_expected else True
-        ),
+        validation_fidelity_match=(validation_expected == validation_actual_pass if validation_expected else True),
         identity_fidelity_match=identity_ok,
         failure_injection_layer=failure_injection_layer,
     )
@@ -704,9 +694,7 @@ def _run_case(
     spec = build_q3_web_search_functional_diagnostic_specification(
         query_validation_id=query_validation.validation_id,
         extraction_validation_id=extraction_validation.validation_id,
-        final_validation_id=(
-            final_validation.validation_id if expectation.include_validation else None
-        ),
+        final_validation_id=(final_validation.validation_id if expectation.include_validation else None),
         include_query_validation=True,
         include_extraction_validation=True,
         include_final_validation=expectation.include_validation,
@@ -785,9 +773,7 @@ def _run_case(
             str(analysis.first_proven_failure) if analysis.first_proven_failure is not None else None
         ),
         operator_outcome=(
-            operator.functional_projection.outcome_status.value
-            if operator.functional_projection is not None
-            else None
+            operator.functional_projection.outcome_status.value if operator.functional_projection is not None else None
         ),
         actual_query=actual_query,
         provider_results=tuple(bounded_provider_results(provider_candidates)),
@@ -861,13 +847,10 @@ def _decision_fidelity_snapshot(
         raw_identity = normalize_url_identity(raw_selector_url)
         actual_identity = _selected_url_identity(actual_selected)
         emitted_identity = _selected_url_identity(emitted_selected)
-        selection_decision_match = (
-            raw_identity == actual_identity and raw_identity == emitted_identity
-        )
+        selection_decision_match = raw_identity == actual_identity and raw_identity == emitted_identity
     elif raw_selector_response and actual_selected:
-        selection_decision_match = (
-            normalize_url_identity(raw_selector_response.strip())
-            == _selected_url_identity(actual_selected)
+        selection_decision_match = normalize_url_identity(raw_selector_response.strip()) == _selected_url_identity(
+            actual_selected
         )
 
     extraction_decision_match = True
@@ -875,9 +858,7 @@ def _decision_fidelity_snapshot(
         bounded_raw = raw_extractor_response.strip()[:200]
         bounded_actual = actual_extracted.strip()[:200]
         bounded_emitted = (emitted_extracted or "").strip()[:200]
-        extraction_decision_match = (
-            bounded_raw == bounded_actual and bounded_raw == bounded_emitted
-        )
+        extraction_decision_match = bounded_raw == bounded_actual and bounded_raw == bounded_emitted
 
     selection_mode = _summary_field(summary, "selection_mode")
     selection_policy_id = _summary_field(summary, "selection_policy_id")
@@ -895,17 +876,16 @@ def _decision_fidelity_snapshot(
     post_decision_forcing = False
     if raw_selector_url is not None and actual_selected is not None:
         actual_url = _selected_url_identity(actual_selected)
-        if (
-            is_expected_python_3120_release_source(raw_selector_url)
-            and not is_expected_python_3120_release_source(actual_url)
+        if is_expected_python_3120_release_source(raw_selector_url) and not is_expected_python_3120_release_source(
+            actual_url
         ):
             post_decision_forcing = True
     if raw_extractor_response and actual_extracted:
         lowered_raw = raw_extractor_response.lower()
-        if any(
-            marker in lowered_raw
-            for marker in ("2023-10-02", "october 2, 2023", "oct. 2, 2023")
-        ) and "2023-10-01" in actual_extracted:
+        if (
+            any(marker in lowered_raw for marker in ("2023-10-02", "october 2, 2023", "oct. 2, 2023"))
+            and "2023-10-01" in actual_extracted
+        ):
             post_decision_forcing = True
 
     return DecisionFidelitySnapshot(
@@ -925,13 +905,7 @@ def _decision_fidelity_snapshot(
 def _post_decision_forcing_static_gate() -> bool:
     import ast
 
-    job_path = (
-        Path(__file__).resolve().parents[3]
-        / "agents"
-        / "web_search_qualifier"
-        / "steps"
-        / "web_search_job.py"
-    )
+    job_path = Path(__file__).resolve().parents[3] / "agents" / "web_search_qualifier" / "steps" / "web_search_job.py"
     tree = ast.parse(job_path.read_text(encoding="utf-8"))
     forbidden = (
         "intergrax.runtime.diagnostics",
@@ -1021,9 +995,7 @@ def run_qualification() -> QualificationReport:
         return _blocked_report(str(exc), provider_id=provider_id, partial_records=records)
 
     wrong_source_records = [
-        record
-        for record in records
-        if record.case_id in {"Q3-C", "Q3-G-B"} or record.repeat_group == _REPEAT_CASE_ID
+        record for record in records if record.case_id in {"Q3-C", "Q3-G-B"} or record.repeat_group == _REPEAT_CASE_ID
     ]
     for record in wrong_source_records:
         if is_expected_python_3120_release_source(record.actual_selected_source or ""):
@@ -1036,10 +1008,7 @@ def run_qualification() -> QualificationReport:
     q3_d_records = [record for record in records if record.case_id == "Q3-D"]
     for record in q3_d_records:
         extracted = (record.actual_extracted_fact or "").lower()
-        if any(
-            marker in extracted
-            for marker in ("2023-10-02", "october 2, 2023", "oct. 2, 2023")
-        ):
+        if any(marker in extracted for marker in ("2023-10-02", "october 2, 2023", "oct. 2, 2023")):
             return _blocked_report(
                 "q3_d_not_inducible:llm_extracted_correct_date_despite_bias",
                 provider_id=provider_id,
@@ -1066,9 +1035,7 @@ def run_qualification() -> QualificationReport:
     )
     decision_independence_pass = _decision_diagnostics_independence_gate()
     selection_decision_fidelity_pass = all(
-        record.decision_fidelity.selection_decision_fidelity_match
-        for record in records
-        if record.case_id != "Q3-F"
+        record.decision_fidelity.selection_decision_fidelity_match for record in records if record.case_id != "Q3-F"
     )
     extraction_decision_fidelity_pass = all(
         record.decision_fidelity.extraction_decision_fidelity_match
@@ -1076,30 +1043,21 @@ def run_qualification() -> QualificationReport:
         if record.actual_extracted_fact
     )
     selection_authority_fidelity_pass = all(
-        record.decision_fidelity.selection_authority_fidelity_match
-        for record in records
-        if record.case_id != "Q3-F"
+        record.decision_fidelity.selection_authority_fidelity_match for record in records if record.case_id != "Q3-F"
     )
-    post_decision_forcing_pass = all(
-        not record.decision_fidelity.post_decision_forcing_detected for record in records
-    )
+    post_decision_forcing_pass = all(not record.decision_fidelity.post_decision_forcing_detected for record in records)
     selection_decision_fidelity_percent = (
         sum(
             1
             for record in records
-            if record.case_id != "Q3-F"
-            and record.decision_fidelity.selection_decision_fidelity_match
+            if record.case_id != "Q3-F" and record.decision_fidelity.selection_decision_fidelity_match
         )
         / max(1, sum(1 for record in records if record.case_id != "Q3-F"))
         * 100.0
     )
     extraction_records = [record for record in records if record.actual_extracted_fact]
     extraction_decision_fidelity_percent = (
-        sum(
-            1
-            for record in extraction_records
-            if record.decision_fidelity.extraction_decision_fidelity_match
-        )
+        sum(1 for record in extraction_records if record.decision_fidelity.extraction_decision_fidelity_match)
         / len(extraction_records)
         * 100.0
         if extraction_records
@@ -1109,8 +1067,7 @@ def run_qualification() -> QualificationReport:
         sum(
             1
             for record in records
-            if record.case_id != "Q3-F"
-            and record.decision_fidelity.selection_authority_fidelity_match
+            if record.case_id != "Q3-F" and record.decision_fidelity.selection_authority_fidelity_match
         )
         / max(1, sum(1 for record in records if record.case_id != "Q3-F"))
         * 100.0
@@ -1119,15 +1076,12 @@ def run_qualification() -> QualificationReport:
 
     matched = sum(1 for item in records if item.comparison.result is QualificationComparisonResult.MATCH)
     mismatched = len(records) - matched
-    stage_matched = sum(
-        1 for item in records if _stage_matches(item, _expectation_for_record(item))
-    )
+    stage_matched = sum(1 for item in records if _stage_matches(item, _expectation_for_record(item)))
     functional_failure_ground_truth = [
         item
         for item in records
         if item.functional_outcome is QualificationFunctionalOutcome.FAILED
-        and _expectation_for_record(item).expected_operator_outcome
-        is not FunctionalOperatorOutcomeStatus.INCONCLUSIVE
+        and _expectation_for_record(item).expected_operator_outcome is not FunctionalOperatorOutcomeStatus.INCONCLUSIVE
     ]
     functional_failure_detected = sum(
         1 for item in functional_failure_ground_truth if _functional_failure_detected(item)
@@ -1146,8 +1100,7 @@ def run_qualification() -> QualificationReport:
         1
         for item in functional_failure_ground_truth
         if not _functional_failure_detected(item)
-        and _expectation_for_record(item).expected_operator_outcome
-        is not FunctionalOperatorOutcomeStatus.INCONCLUSIVE
+        and _expectation_for_record(item).expected_operator_outcome is not FunctionalOperatorOutcomeStatus.INCONCLUSIVE
     )
     inconclusive_correct = sum(
         1
@@ -1345,20 +1298,12 @@ def _write_artifact(
                     "raw_extractor_response": record.decision_fidelity.raw_extractor_response,
                     "extractor_input_modified": record.decision_fidelity.extractor_input_modified,
                     "actual_extracted_fact": record.actual_extracted_fact,
-                    "extraction_decision_fidelity_match": (
-                        record.decision_fidelity.extraction_decision_fidelity_match
-                    ),
-                    "selection_decision_fidelity_match": (
-                        record.decision_fidelity.selection_decision_fidelity_match
-                    ),
-                    "selection_authority_fidelity_match": (
-                        record.decision_fidelity.selection_authority_fidelity_match
-                    ),
+                    "extraction_decision_fidelity_match": (record.decision_fidelity.extraction_decision_fidelity_match),
+                    "selection_decision_fidelity_match": (record.decision_fidelity.selection_decision_fidelity_match),
+                    "selection_authority_fidelity_match": (record.decision_fidelity.selection_authority_fidelity_match),
                     "selection_mode": record.decision_fidelity.selection_mode,
                     "selection_policy_id": record.decision_fidelity.selection_policy_id,
-                    "post_decision_forcing_detected": (
-                        record.decision_fidelity.post_decision_forcing_detected
-                    ),
+                    "post_decision_forcing_detected": (record.decision_fidelity.post_decision_forcing_detected),
                 },
             }
             for record in report.records

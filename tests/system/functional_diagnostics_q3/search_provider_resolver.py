@@ -1,11 +1,13 @@
 # © Artur Czarnecki. All rights reserved.
 
-"""Resolve a production SearchProvider for Q3 qualification from environment credentials."""
+"""Resolve a SearchProvider for Q3 qualification diagnostics from environment credentials.
+
+Qualification tooling only: product and agent code never reads these variables (A4-004).
+"""
 
 from __future__ import annotations
 
 import os
-from dataclasses import dataclass
 
 from intergrax.integrations._shared.p2.factories import create_brave_search_provider
 from intergrax.integrations._shared.p3.factories import (
@@ -14,14 +16,9 @@ from intergrax.integrations._shared.p3.factories import (
     create_tavily_search_provider,
 )
 from intergrax.integrations.contracts.base import IntegrationConfigurationError
-from intergrax.integrations.contracts.search_provider import SearchProvider
 from intergrax.websearch.schemas.search_hit import SearchHit
 
-
-@dataclass(frozen=True, slots=True)
-class ResolvedSearchProvider:
-    provider_id: str
-    provider: SearchProvider
+from web_search_qualifier.steps.web_search_job import ResolvedSearchProvider
 
 
 def _env_nonempty(*names: str) -> bool:
@@ -80,8 +77,7 @@ def resolve_qualification_search_provider() -> ResolvedSearchProvider:
         if resolved is not None:
             return resolved
     raise IntegrationConfigurationError(
-        "No search provider credentials configured "
-        "(tried tavily, brave, google_cse, exa)",
+        "No search provider credentials configured (tried tavily, brave, google_cse, exa)",
     )
 
 
