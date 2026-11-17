@@ -9,6 +9,7 @@ from dataclasses import dataclass
 from enum import Enum
 
 from intergrax.llm_adapters.routing import RoutingContext, RoutingEvaluation
+
 from model_routing_qualifier.model_routing import (
     Q4_PRIMARY_TASK_CLASS,
     artifact_ref_for_profile,
@@ -24,7 +25,7 @@ _SYSTEM_PROMPT_KEY = "qualification_system_prompt"
 _DEFAULT_TASK = "What is 17 + 25? Reply with only the numeric result."
 
 
-class InvocationFailureKind(str, Enum):
+class InvocationFailureKind(str, Enum):  # noqa: UP042 - str-mixin kept for compatibility
     NONE = "none"
     PROVIDER_MODEL_NOT_FOUND = "provider_model_not_found"
     PROVIDER_TRANSPORT_FAILURE = "provider_transport_failure"
@@ -83,16 +84,12 @@ class Q4QualificationRequest:
         elif isinstance(budget_raw, str) and budget_raw.strip():
             budget_ratio = float(budget_raw.strip())
         failure_layer_raw = metadata.get(_FAILURE_LAYER_KEY)
-        failure_layer = (
-            str(failure_layer_raw).strip() if failure_layer_raw is not None else None
-        )
+        failure_layer = str(failure_layer_raw).strip() if failure_layer_raw is not None else None
         task_message = str(metadata.get(_TASK_MESSAGE_KEY) or metadata.get("query") or _DEFAULT_TASK)
         expected_profile_ref = str(metadata.get(_EXPECTED_PROFILE_REF_KEY) or "").strip()
         system_prompt_raw = metadata.get(_SYSTEM_PROMPT_KEY)
         system_prompt = (
-            system_prompt_raw.strip()
-            if isinstance(system_prompt_raw, str) and system_prompt_raw.strip()
-            else None
+            system_prompt_raw.strip() if isinstance(system_prompt_raw, str) and system_prompt_raw.strip() else None
         )
         return Q4QualificationRequest(
             routing_task_class=task_class,

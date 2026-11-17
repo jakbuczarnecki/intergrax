@@ -28,7 +28,7 @@ if TYPE_CHECKING:
 T = TypeVar("T")
 
 
-def admission_bounded_iterable(
+def admission_bounded_iterable[T](
     *,
     boundary: DependencyAttemptExecutionBoundary,
     handle: DependencyAttemptHandle,
@@ -45,7 +45,7 @@ def admission_bounded_iterable(
     return _gen()
 
 
-def stream_factory_with_admission(
+def stream_factory_with_admission[T](
     *,
     boundary: DependencyAttemptExecutionBoundary,
     handle: DependencyAttemptHandle,
@@ -59,7 +59,7 @@ def stream_factory_with_admission(
     return admission_bounded_iterable(boundary=boundary, handle=handle, iterable=stream)
 
 
-def stream_with_external_operation_lifecycle(
+def stream_with_external_operation_lifecycle[T](
     *,
     ext_op: LlmExternalOperationAttempt,
     factory: Callable[[], Iterable[T]],
@@ -79,6 +79,7 @@ def stream_with_external_operation_lifecycle(
         if stream_registry is not None and operation_id is not None:
             close_method = attribute_access.optional(stream, "close", None)
             if callable(close_method):
+
                 def _close_transport() -> None:
                     close_method()
 
