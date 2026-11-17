@@ -6,14 +6,13 @@ Pin the runner and the uv Python in the two ENT-AUDIT-X workflows (`.github/work
 
 ## Plan digest
 
-Plan digest: 09c55957c306a033d170c8b51c084b9fd801b78bd45ed672f0719ad710a35fb2
+Plan digest: 0435eafed6f97cbe2fa7120266b45f5a4999051cb29ba62c0ae93baf1010008d
 
-Canonical plan: [`governance/tickets/plans/PLAN_T-IGX-044-B.md`](plans/PLAN_T-IGX-044-B.md). The digest was computed with `scripts/governance/plan_digest.py` on the draft; it must be recomputed after any edit of the plan.
+Canonical plan: [`governance/tickets/plans/PLAN_T-IGX-044-B.md`](plans/PLAN_T-IGX-044-B.md). The digest was computed with `scripts/governance/plan_digest.py` on the plan text; it must be recomputed after any edit of the plan.
 
 ## Approved
 
-Approved: operator-delegate @ 2026-11-16T16:42:03+01:00
-Delegation: docs/project/maintainers/qualification/eqo_a_remediation/OPERATOR_ANSWERS_CODE_WAVE_TRANSCRIPTION.md@0685852d44a64f8c2f523136515df25cb63bd0ca
+PENDING. The approval line is written by the Operator or a commissioned session after plan review; the implementer never writes it. This placeholder deliberately avoids the approval keyword because the ticket validators accept any line that starts with it (finding EQOA-A6-002).
 
 ## Test contract
 
@@ -30,4 +29,4 @@ Code, tests, scripts, GitHub settings, rulesets, branch protection, auto-merge, 
 
 ## Lifecycle state
 
-plan_approved
+plan_pending

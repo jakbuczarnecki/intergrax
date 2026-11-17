@@ -1,6 +1,6 @@
 # PLAN T-IGX-044-B — EQO-A remediation node PT-E01 (T-ENF-1): workflow prerequisites for the enforcement trial
 
-Status: DRAFT for Operator review. Drafted 2026-11-16 by an implementation session as a draft pull request. Nothing here is approved or audited.
+Status: plan for T-IGX-044-B, drafted 2026-11-16 by an implementation session. The approval state is recorded in the ticket's Approved section and lifecycle state, not in this plan.
 
 ## 1. Purpose
 
@@ -61,7 +61,7 @@ Stability verdict: the script did not fail in any of the 54 executions and the p
 One process at a time, none that runs a workflow:
 
 - Static YAML parse of the three workflows and a check that exactly the intended keys changed (`git diff --stat`, `git diff` review; stdlib-safe `python -I` run of `yaml.safe_load` where PyYAML is present). `actionlint` is not installed and was not used.
-- `python -I scripts/governance/plan_digest.py governance/tickets/plans/PLAN_T-IGX-044-B.md` for the digest recorded in the ticket. `scripts/governance/verify_plan_approval.py` is expected to stop at "ticket missing Approved: line" because the approval is the Operator's and is not written by the implementer; the digest comparison before that line must pass. `igx_gov ticket` (it wraps the fast regression set) is not run by this session.
+- `python -I scripts/governance/plan_digest.py governance/tickets/plans/PLAN_T-IGX-044-B.md` for the digest recorded in the ticket. `scripts/governance/verify_plan_approval.py` compares that digest first; the approval line itself is outside the implementer's remit and its presence is read from the ticket. `igx_gov ticket` (it wraps the fast regression set) is not run by this session.
 - Reviewer check: `git diff --stat origin/development...HEAD` lists exactly the three workflows, this ticket and this plan.
 - CI on the PR itself is the only execution evidence for the pinned runner.
 
