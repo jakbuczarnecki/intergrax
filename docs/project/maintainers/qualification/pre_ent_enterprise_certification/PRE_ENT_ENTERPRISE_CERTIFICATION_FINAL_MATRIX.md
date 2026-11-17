@@ -57,6 +57,8 @@ Operator routing preserved: **D-PREENT-02=defer**, **04=block**, **06=defer**, *
 
 **Silent OPEN:** none — every row is **EXACT_BLOCKER**, **N/A (PRE-ENT)**, or documented **ACCEPT_SCOPED** (predecessors table).
 
+Note (EQO-A remediation, as of 2026-11-17) on row `OD-HIST04-A` (L49): the settlement text above is unchanged (closed record, append-only). The row quotes roadmap section 3 for EVOL-X as `[ ] FORMAL PROTOCOL 03 B6 — PENDING_AUTHORITY`, which was the roadmap text at the W6-G3/W6-G4 settlement (2026-11-10; L7). Commit `e46ddcef1c0d8e9ef6d3f23d971af156713e7fb0` (2026-11-11) replaced that cell; at `origin/development` `2727a2c2364a97492202b931375772a400279a9b` roadmap row L495 reads `[x] CLOSED — INDEPENDENTLY ACCEPTED (AUTOMATION_FIRST SCOPED) — PUBLISHED` (roadmap wording, not asserted here) with `B6_ACCEPTANCE_PUBLICATION_SHA` `1dd769331506149a1ee2f411c2bc62e85e5bbf25` and `FORMAL_CLOSURE_PUBLICATION_SHA` `be77b3a5fb97f10a3bd2df6ee038cb92aad77eca`, and ledger row L2160 records EVOL-X in roadmap section 5. The roadmap is the status owner; this note does not alter the matrix disposition and adds no acceptance or independence claim.
+
 ---
 
 ## 4. §3 roadmap citation notes (status unchanged)

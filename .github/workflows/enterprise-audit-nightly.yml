@@ -16,12 +16,14 @@ on:
 
 jobs:
   ent-audit-nightly:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     steps:
       - uses: actions/checkout@v4
         with:
           fetch-depth: 0
       - uses: astral-sh/setup-uv@v5
+        with:
+          python-version: "3.12"
       - name: Sync dev-ci qualification dependencies
         run: uv sync --frozen --extra dev-ci
       - name: Qualification suite
