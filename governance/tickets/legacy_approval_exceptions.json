@@ -1,0 +1,178 @@
+{
+  "schema": "intergrax.ticket_legacy_approval_exceptions.v1",
+  "purpose": "Closed list of legacy tickets that the strict approval verifier (scripts/governance/verify_ticket_approvals.py) accepts only because they are named here. It is never edited to excuse a new ticket: in --since mode the file is read from the merge-base, and an entry applies only to a ticket that already existed there.",
+  "decision_refs": [
+    "DP-68",
+    "DP-58",
+    "DP-10"
+  ],
+  "finding_ref": "EQOA-A6-002",
+  "baseline_origin_development": "2ab57e36d94eae98c962b3d7b09e5a540d8c70d2",
+  "entries": [
+    {
+      "ticket": "governance/tickets/T-IGX-030-A.md",
+      "kind": "unresolvable_delegation_reference",
+      "finding_ref": "EQOA-A6-002",
+      "decision_ref": "DP-68",
+      "reason": "Delegation reference '.tmp/session/hist-cert-campaign/delegations/DELEG-HIST-030A-2026-11-08.md' is a path under the untracked .tmp/ tree with no commit sha, so it cannot be resolved from a clone.",
+      "approval_block_sha256": "b7c7ae1bb74483bc06d962cc921669f6dc3a6f094d9c48ed9aaa554d09b5a989"
+    },
+    {
+      "ticket": "governance/tickets/T-IGX-034-B.md",
+      "kind": "unresolvable_delegation_reference",
+      "finding_ref": "EQOA-A6-002",
+      "decision_ref": "DP-68",
+      "reason": "Delegation sha 4a932d0cf5487b72e433805e372e3855fcd3d987 is a commit, but the cited record WAVE0_PRESENCE_RECONCILIATION.md does not exist at that sha (it was added later), so the reference does not resolve.",
+      "approval_block_sha256": "bd77704a1e3135b083b4e318d6d9115d8a99192db0c63a8b556f3c634bd5c3ab"
+    },
+    {
+      "ticket": "governance/tickets/T-IGX-035-E.md",
+      "kind": "unresolvable_delegation_reference",
+      "finding_ref": "EQOA-A6-002",
+      "decision_ref": "DP-68",
+      "reason": "Delegation reference is the free text 'MCP-SERVER-X P4 MERGE directive (operator chat 2026-11-11)', not a path@sha; no tracked transcription exists.",
+      "approval_block_sha256": "ee56312ab7cbd362a74febeb0733d2a6b25b59a24ceb180997957b537f3e1e09"
+    },
+    {
+      "ticket": "governance/tickets/T-IGX-035-F.md",
+      "kind": "unresolvable_delegation_reference",
+      "finding_ref": "EQOA-A6-002",
+      "decision_ref": "DP-68",
+      "reason": "Delegation reference is the free text 'MCP-SERVER-X P5 AGENT mandate (operator chat 2026-11-11)' on a separate line, not a path@sha; no tracked transcription exists.",
+      "approval_block_sha256": "76f1e9b18dddc155936f01bf5ca88b018db2a80882617442e971e37223c5ef8c"
+    },
+    {
+      "ticket": "governance/tickets/T-IGX-002-A.md",
+      "kind": "no_approval_line",
+      "finding_ref": "EQOA-A6-002",
+      "decision_ref": "DP-68",
+      "reason": "Legacy ticket in state 'closed' without any 'Approved:' line; the ticket file is left untouched (DP-68). A new approval line added later must validate on its own."
+    },
+    {
+      "ticket": "governance/tickets/T-IGX-005-A.md",
+      "kind": "no_approval_line",
+      "finding_ref": "EQOA-A6-002",
+      "decision_ref": "DP-68",
+      "reason": "Legacy ticket in state 'closed' without any 'Approved:' line; the ticket file is left untouched (DP-68). A new approval line added later must validate on its own."
+    },
+    {
+      "ticket": "governance/tickets/T-IGX-006-A.md",
+      "kind": "no_approval_line",
+      "finding_ref": "EQOA-A6-002",
+      "decision_ref": "DP-68",
+      "reason": "Legacy ticket in state 'closed' without any 'Approved:' line; the ticket file is left untouched (DP-68). A new approval line added later must validate on its own."
+    },
+    {
+      "ticket": "governance/tickets/T-IGX-007-A.md",
+      "kind": "no_approval_line",
+      "finding_ref": "EQOA-A6-002",
+      "decision_ref": "DP-68",
+      "reason": "Legacy ticket in state 'closed' without any 'Approved:' line; the ticket file is left untouched (DP-68). A new approval line added later must validate on its own."
+    },
+    {
+      "ticket": "governance/tickets/T-IGX-008-A.md",
+      "kind": "no_approval_line",
+      "finding_ref": "EQOA-A6-002",
+      "decision_ref": "DP-68",
+      "reason": "Legacy ticket in state 'closed' without any 'Approved:' line; the ticket file is left untouched (DP-68). A new approval line added later must validate on its own."
+    },
+    {
+      "ticket": "governance/tickets/T-IGX-014-A.md",
+      "kind": "no_approval_line",
+      "finding_ref": "EQOA-A6-002",
+      "decision_ref": "DP-68",
+      "reason": "Legacy ticket in state 'draft' without any 'Approved:' line; the ticket file is left untouched (DP-68). A new approval line added later must validate on its own."
+    },
+    {
+      "ticket": "governance/tickets/T-IGX-016-C.md",
+      "kind": "no_approval_line",
+      "finding_ref": "EQOA-A6-002",
+      "decision_ref": "DP-68",
+      "reason": "Legacy ticket in state 'activated_in_force' without any 'Approved:' line; the ticket file is left untouched (DP-68). A new approval line added later must validate on its own."
+    },
+    {
+      "ticket": "governance/tickets/T-IGX-020-A.md",
+      "kind": "no_approval_line",
+      "finding_ref": "EQOA-A6-002",
+      "decision_ref": "DP-68",
+      "reason": "Legacy ticket in state 'draft' without any 'Approved:' line; the ticket file is left untouched (DP-68). A new approval line added later must validate on its own."
+    },
+    {
+      "ticket": "governance/tickets/T-IGX-021-A.md",
+      "kind": "no_approval_line",
+      "finding_ref": "EQOA-A6-002",
+      "decision_ref": "DP-68",
+      "reason": "Legacy ticket in state 'closed' without any 'Approved:' line; the ticket file is left untouched (DP-68). A new approval line added later must validate on its own."
+    },
+    {
+      "ticket": "governance/tickets/T-IGX-022-A.md",
+      "kind": "no_approval_line",
+      "finding_ref": "EQOA-A6-002",
+      "decision_ref": "DP-68",
+      "reason": "Legacy ticket in state 'quality_gate' without any 'Approved:' line; the ticket file is left untouched (DP-68). A new approval line added later must validate on its own."
+    },
+    {
+      "ticket": "governance/tickets/T-IGX-022-B.md",
+      "kind": "no_approval_line",
+      "finding_ref": "EQOA-A6-002",
+      "decision_ref": "DP-68",
+      "reason": "Legacy ticket in state 'ready_for_audit' without any 'Approved:' line; the ticket file is left untouched (DP-68). A new approval line added later must validate on its own."
+    },
+    {
+      "ticket": "governance/tickets/T-IGX-022-B_AUDIT_REPORT.md",
+      "kind": "no_approval_line",
+      "finding_ref": "EQOA-A6-002",
+      "decision_ref": "DP-68",
+      "reason": "Not a ticket: an audit report file that matches the glob governance/tickets/T-*.md. The strict verifier ignores it by file-name rule; it is listed only so that the count of 19 files without an Approved line reconciles with finding EQOA-A6-002."
+    },
+    {
+      "ticket": "governance/tickets/T-IGX-023-A.md",
+      "kind": "no_approval_line",
+      "finding_ref": "EQOA-A6-002",
+      "decision_ref": "DP-68",
+      "reason": "Legacy ticket in state 'quality_gate' without any 'Approved:' line; the ticket file is left untouched (DP-68). A new approval line added later must validate on its own."
+    },
+    {
+      "ticket": "governance/tickets/T-IGX-024-A.md",
+      "kind": "no_approval_line",
+      "finding_ref": "EQOA-A6-002",
+      "decision_ref": "DP-68",
+      "reason": "Legacy ticket in state 'in_progress' without any 'Approved:' line; the ticket file is left untouched (DP-68). A new approval line added later must validate on its own."
+    },
+    {
+      "ticket": "governance/tickets/T-IGX-024-B.md",
+      "kind": "no_approval_line",
+      "finding_ref": "EQOA-A6-002",
+      "decision_ref": "DP-68",
+      "reason": "Legacy ticket in state 'in_progress' without any 'Approved:' line; the ticket file is left untouched (DP-68). A new approval line added later must validate on its own."
+    },
+    {
+      "ticket": "governance/tickets/T-IGX-034-E.md",
+      "kind": "no_approval_line",
+      "finding_ref": "EQOA-A6-002",
+      "decision_ref": "DP-68",
+      "reason": "Legacy ticket in state 'in_progress' without any 'Approved:' line; the ticket file is left untouched (DP-68). A new approval line added later must validate on its own."
+    },
+    {
+      "ticket": "governance/tickets/T-IGX-034-F.md",
+      "kind": "no_approval_line",
+      "finding_ref": "EQOA-A6-002",
+      "decision_ref": "DP-68",
+      "reason": "Legacy ticket in state 'draft' without any 'Approved:' line; the ticket file is left untouched (DP-68). A new approval line added later must validate on its own."
+    },
+    {
+      "ticket": "governance/tickets/T-IGX-034-G.md",
+      "kind": "no_approval_line",
+      "finding_ref": "EQOA-A6-002",
+      "decision_ref": "DP-68",
+      "reason": "Legacy ticket in state 'plan_approved' without any 'Approved:' line; the ticket file is left untouched (DP-68). A new approval line added later must validate on its own."
+    },
+    {
+      "ticket": "governance/tickets/T-IGX-039-A.md",
+      "kind": "no_approval_line",
+      "finding_ref": "EQOA-A6-002",
+      "decision_ref": "DP-68",
+      "reason": "Legacy ticket in state 'draft' without any 'Approved:' line; the ticket file is left untouched (DP-68). A new approval line added later must validate on its own."
+    }
+  ]
+}
