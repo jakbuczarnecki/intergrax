@@ -26,3 +26,13 @@ Sequence recorded by the roadmap: `ENT-AUDIT-X` → `MCP-SERVER-X` → `PDC-X` �
 ## Dependency record for ARCH-FREEZE
 
 The ARCH-FREEZE WBS dependency on `MCP-SERVER-X` is satisfied only by the roadmap status published after the closure PR. This document does not edit `ARCH_FREEZE_WBS_AND_DEPENDENCY_DAG.md`, the freeze checklist or the roadmap; historical COMPLETE tasks stay as they are. The FRZ traceability validator (counter 225) must stay green on every pull request that touches the checklist.
+
+---
+
+Note (EQO-A remediation, as of 2026-11-17): post-MCP-RC status of the residuals named in the "What the freeze must not assume" list (L23). The text above is unchanged (append-only note); it was written at the MCP-SERVER-X closure and is point-in-time. This note adds no acceptance stamp, audit SHA or independence claim and changes no status; the roadmap remains the status owner.
+
+- R-P8-01 (fail-open identity without harness auth): `MCP_SERVER_X_RC_CORRECTIONS_RECORD.md` L19 records G-ID-01 / R-P8-01 as CLOSED_IN_CODE (`McpIdentityMode.HARNESS_BOUND` default). The delta re-audit dossier (`MCP_SERVER_X_RC_INDEPENDENT_REAUDIT_DOSSIER.md` L12-L13 and L17; the first audit dossier is `MCP_SERVER_X_RC_INDEPENDENT_AUDIT_DOSSIER.md`, L94) records the verdict PASS_SCOPED and states that it is not a certification, FRZ closure or stage closure.
+- R-P7-06 (`harness_auth=None`) and R-P7-04 (no server-side deadline): recorded CLOSED_IN_CODE in `MCP_SERVER_X_RC_CORRECTIONS_RECORD.md` L24 and L33; the first audit rated R-P7-04 PARTIAL (`MCP_SERVER_X_RC_INDEPENDENT_AUDIT_DOSSIER.md` L106).
+- `ADR_MCP_RC_01_FAIL_CLOSED_IDENTITY_AND_WIRE_V1_1.md` has status PROPOSED (L5), not yet reviewed by an independent auditor.
+- Not changed by MCP-RC: the live authentication bypass proof and tenant-isolation proof under production conditions stay with PROD-Q Path B (L21 above). This note does not re-run the fail-closed tests.
+- Operator decision DP-45 (decision session 4 in [`OPERATOR_DECISIONS_EQOA_REMEDIATION.md`](../eqo_a_remediation/OPERATOR_DECISIONS_EQOA_REMEDIATION.md), the orchestrator's transcription of the Operator's chat decision, not an Operator signature): the MCP-SERVER-X conditions C5 and C8 are accepted with recorded scope; R-P7-04 and R-P7-06 are carried as limitations; R-P8-01 is treated as closed only after re-verification at the freeze SHA. This note records the decision and does not perform that re-verification.

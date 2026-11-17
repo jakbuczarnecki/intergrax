@@ -65,3 +65,13 @@ NEXT           = INT-EXTCOMP-X (do not start until GOV-X1 independently CLOSED)
 ```
 
 Final **CLOSED** requires independent exact-SHA GitHub audit of the reconciliation commit. Cursor does not self-certify GOV-X1 CLOSED.
+
+---
+
+Note (EQO-A remediation, as of 2026-11-17): cross-reference only. The record text above is unchanged (append-only note). This note adds no acceptance stamp, audit SHA or independence claim and changes no status; the roadmap remains the status owner. Roadmap rows are quoted as they read at `origin/development` `2727a2c2364a97492202b931375772a400279a9b`.
+
+- Status of this record: L62-L63 read `GOV-X1-FINAL = READY FOR AUDIT` and `GOV-X1 = READY FOR AUDIT`; L67 reads that final CLOSED requires an independent exact-SHA GitHub audit of the reconciliation commit.
+- Roadmap (wording quoted, not asserted here): row L368 reads `[x] CLOSED` ("independent exact-SHA audit accepted at `27af801bec916165dab85019c07cf43d18e18551`"); ledger row L2001 (`GOV-X1-FINAL`) reads "GOV-X1 CLOSED / independently accepted".
+- Operator decision DP-04 (decision session 1 in [`OPERATOR_DECISIONS_EQOA_REMEDIATION.md`](eqo_a_remediation/OPERATOR_DECISIONS_EQOA_REMEDIATION.md), the orchestrator's transcription of the Operator's chat decision, not an Operator signature): a stage with no preserved audit artefact keeps `[x] CLOSED` only with a qualified label that implies no independence (LBL-L or LBL-C). For a stage whose own record still reads READY FOR AUDIT or BLOCKED the form is LBL-C: `[x] CLOSED - roadmap-asserted; stage record still READY FOR AUDIT/BLOCKED; acceptance artefact not preserved`. The roadmap row is not edited by this change and keeps the wording quoted above until the roadmap batch is merged.
+- Operator decision DP-09 (same record) names an artefact or an audit as the evidence basis for this stage (GOV-X1 is listed with HARNESS-W7, HARNESS-W8 and SCHED-01).
+- No independent acceptance artefact for this stage is preserved in the repository at `2727a2c2364a97492202b931375772a400279a9b`: a search of the whole tree for `27af801be` finds it only as a pin cited by the roadmap, the freeze checklist, the GOV-X2 record, `GOVERNED_EXECUTION.md`, matrices, replay test data and the Campaign A dossier files, and none of those files is an audit report or acceptance record of this stage; `iiac_evidence/` has no directory for this stage.

@@ -1391,3 +1391,13 @@ Evaluated IDs: FRZ-BND-01…06, FRZ-CTR-01…06, FRZ-EXE-01/02/03/07, FRZ-GOV-01
 `EBH-4-R1-R3-B7/P9 = READY FOR AUDIT` · `EBH-4-R1-R3 = READY FOR AUDIT` · `EBH-4 = READY FOR AUDIT` · **HARNESS-W7 = NEXT / NOT ENTERED**
 
 **Wprowadzone zmiany muszą zostać niezależnie zaudytowane na podstawie kodu z commitu znajdującego się na GitHubie. Raport Cursor AI nie jest podstawą do finalnego zamknięcia zadania.**
+
+---
+
+Note (EQO-A remediation, as of 2026-11-17): cross-reference only. The record text above is unchanged (append-only note). This note adds no acceptance stamp, audit SHA or independence claim and changes no status; the roadmap remains the status owner. Roadmap rows are quoted as they read at `origin/development` `2727a2c2364a97492202b931375772a400279a9b`.
+
+- Status of this record: L15 reads `EBH-4 parent` = **BLOCKED** (pending independent re-audit); L445 and L1391 read `EBH-4 = READY FOR AUDIT`; the last paragraph (L1393) states that the implementer report is not the basis for final closure.
+- Roadmap (wording quoted, not asserted here): row L388 reads `[x] CLOSED` ("independently accepted @ `33490b6aa07fbd6ac9e6d85f9a187be72dd56492`"); ledger row L1991 (`EBH-4`) reads "CLOSED / independently accepted".
+- Operator decision DP-04 (decision session 1 in [`OPERATOR_DECISIONS_EQOA_REMEDIATION.md`](eqo_a_remediation/OPERATOR_DECISIONS_EQOA_REMEDIATION.md), the orchestrator's transcription of the Operator's chat decision, not an Operator signature): a stage with no preserved audit artefact keeps `[x] CLOSED` only with a qualified label that implies no independence (LBL-L or LBL-C). For a stage whose own record still reads READY FOR AUDIT or BLOCKED the form is LBL-C: `[x] CLOSED - roadmap-asserted; stage record still READY FOR AUDIT/BLOCKED; acceptance artefact not preserved`. The roadmap row is not edited by this change and keeps the wording quoted above until the roadmap batch is merged.
+- Operator decision DP-09 (same record) names a ROADMAP-REPLAY-X class-A L2 parent replay as the evidence basis for this stage (listed with HARNESS-W4, INT-CONFIG-REAL-X, AW-7C and EBH-3). This note does not assess that replay and does not treat it as an independent audit.
+- No independent acceptance artefact for this stage is preserved in the repository at `2727a2c2364a97492202b931375772a400279a9b`: a search of the whole tree for `33490b6aa` finds it only as a pin cited by the roadmap, the HARNESS-W7 record, the ROADMAP-REPLAY-X historical stage matrix, replay test data and the Campaign A dossier files, and none of those files is an audit report or acceptance record of this stage; `iiac_evidence/` has no directory for this stage.
