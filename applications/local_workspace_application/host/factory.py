@@ -5,44 +5,49 @@
 from __future__ import annotations
 
 from pathlib import Path
-from typing import Any, Optional, cast
+from typing import Any, cast
 
 from fastapi import FastAPI
-from starlette.middleware.cors import CORSMiddleware
-
-from intergrax.applications._shared.workspace_cleanup_wiring import (
-    apply_factory_lifespans,
-    build_factory_lifespans,
+from intergrax.applications._shared.harness_host_auxiliary_wiring import (
+    wire_harness_host_long_running_scheduler,
 )
-from intergrax.fastapi_core.app_factory import create_app
-from intergrax.fastapi_core.auth.api_key import ApiKeyConfig
-from intergrax.fastapi_core.config import ApiConfig
-from intergrax.applications._shared.registry_projection import MaterializedRegistryProjection
+from intergrax.applications._shared.harness_host_composition import (
+    bootstrap_harness_host_application_plugins,
+    bootstrap_harness_host_platform,
+)
 from intergrax.applications._shared.interaction_wiring import (
     wire_interaction_intake_service,
 )
 from intergrax.applications._shared.plugin_bootstrap import (
     attach_plugin_shutdown,
 )
-from intergrax.runtime.observability.operator_wiring import (
-    ObservabilityExportOperatorConfig,
-)
-from intergrax.applications._shared.harness_host_composition import (
-    bootstrap_harness_host_application_plugins,
-    bootstrap_harness_host_platform,
-)
-from intergrax.applications._shared.harness_host_auxiliary_wiring import (
-    wire_harness_host_long_running_scheduler,
-)
 from intergrax.applications._shared.product_observability_dashboard_wiring import (
     wire_harness_product_observability_dashboard,
 )
+from intergrax.applications._shared.registry_projection import MaterializedRegistryProjection
 from intergrax.applications._shared.task_control_wiring import (
     build_reliability_task_enricher,
     wire_harness_task_control,
 )
+from intergrax.applications._shared.workspace_cleanup_wiring import (
+    apply_factory_lifespans,
+    build_factory_lifespans,
+)
 from intergrax.debug.store import open_default_task_checkpoint_persistence
+from intergrax.fastapi_core.app_factory import create_app
+from intergrax.fastapi_core.auth.api_key import ApiKeyConfig
+from intergrax.fastapi_core.config import ApiConfig
 from intergrax.runtime.interactions.router import create_interaction_intake_router
+from intergrax.runtime.observability.operator_wiring import (
+    ObservabilityExportOperatorConfig,
+)
+from starlette.middleware.cors import CORSMiddleware
+
+from local_workspace_application.host.host_runtime_composition import (
+    LocalWorkspaceHostRuntimeComposition,
+    build_local_workspace_harness_host_runtime,
+    build_local_workspace_host_environment,
+)
 from local_workspace_application.host.lifecycle import (
     LocalWorkspaceHostLifecycle,
     apply_lkw_daemon_lifespan,
@@ -50,27 +55,21 @@ from local_workspace_application.host.lifecycle import (
 from local_workspace_application.host.lkw_task_enricher import (
     build_lkw_combined_task_enricher,
 )
-from local_workspace_application.host.readiness import LocalWorkspaceReadinessProvider
-from local_workspace_application.host.settings import LocalWorkspaceBackendSettings
 from local_workspace_application.host.observability_wiring import (
     build_local_workspace_observability_plugins,
 )
-from local_workspace_application.host.host_runtime_composition import (
-    LocalWorkspaceHostRuntimeComposition,
-    build_local_workspace_harness_host_runtime,
-    build_local_workspace_host_environment,
-)
+from local_workspace_application.host.readiness import LocalWorkspaceReadinessProvider
+from local_workspace_application.host.settings import LocalWorkspaceBackendSettings
 from local_workspace_application.host.task_executor import LocalWorkspaceTaskExecutor
 from local_workspace_application.manifest import LOCAL_WORKSPACE_APPLICATION_MANIFEST
-from local_workspace_application.workspaces.repository import ManagedWorkspaceRepository
 from local_workspace_application.serving.background_task_proof_routes import (
     mount_local_workspace_background_task_proof_routes,
 )
-from local_workspace_application.serving.functional_evidence_qualification_routes import (
-    mount_functional_evidence_qualification_routes,
-)
 from local_workspace_application.serving.fastapi_router import (
     mount_local_workspace_routes,
+)
+from local_workspace_application.serving.functional_evidence_qualification_routes import (
+    mount_functional_evidence_qualification_routes,
 )
 from local_workspace_application.serving.readiness_routes import (
     mount_local_workspace_readiness_routes,
@@ -81,12 +80,13 @@ from local_workspace_application.serving.sentry_proof_routes import (
 from local_workspace_application.serving.workspace_routes import (
     mount_managed_workspace_routes,
 )
+from local_workspace_application.workspaces.repository import ManagedWorkspaceRepository
 
 
 def create_local_workspace_backend_app(
     *,
     registry_projection: MaterializedRegistryProjection,
-    settings: Optional[LocalWorkspaceBackendSettings] = None,
+    settings: LocalWorkspaceBackendSettings | None = None,
     trace_db_path: Path | None = None,
     runtime_events_db_path: Path | None = None,
     observability_export: ObservabilityExportOperatorConfig | None = None,
@@ -101,11 +101,7 @@ def create_local_workspace_backend_app(
     resolved_settings.validate_for_runtime()
     if observability_export is None:
         observability_export = resolved_settings.build_observability_export_config()
-    api_key_config = (
-        ApiKeyConfig(keys=resolved_settings.api_keys_map)
-        if resolved_settings.api_keys_map
-        else None
-    )
+    api_key_config = ApiKeyConfig(keys=resolved_settings.api_keys_map) if resolved_settings.api_keys_map else None
     host_lifecycle: LocalWorkspaceHostLifecycle | None = None
     if host_readiness is None:
         host_lifecycle = LocalWorkspaceHostLifecycle()
@@ -132,7 +128,7 @@ def create_local_workspace_backend_app(
         build_declarative_invoker_for_application_host,
     )
     from intergrax.applications._shared.diagnostic_cursor_secret import resolve_problem_list_cursor_secret
-    from intergrax.integrations._shared.conformance import assert_conditional_document_store
+    from intergrax.integrations.registry.bootstrap_conformance import assert_conditional_document_store
     from intergrax.runtime.observability.functional_evidence_runtime_wiring import (
         functional_evidence_wiring_extra_key,
         wire_functional_evidence_runtime,
@@ -142,13 +138,11 @@ def create_local_workspace_backend_app(
         cursor_secret=resolve_problem_list_cursor_secret(),
         document_store=assert_conditional_document_store(lkw_document_store),
     )
-    runtime.env_wiring.tool_wiring.wiring_context.extras[
-        functional_evidence_wiring_extra_key()
-    ] = functional_evidence_wiring
-    platform = bootstrap_harness_host_platform(runtime)
-    lkw_observability_plugins = build_local_workspace_observability_plugins(
-        observability_export
+    runtime.env_wiring.tool_wiring.wiring_context.extras[functional_evidence_wiring_extra_key()] = (
+        functional_evidence_wiring
     )
+    platform = bootstrap_harness_host_platform(runtime)
+    lkw_observability_plugins = build_local_workspace_observability_plugins(observability_export)
     if lkw_observability_plugins:
         lkw_plugin_bootstrap = bootstrap_harness_host_application_plugins(
             runtime,
@@ -187,12 +181,8 @@ def create_local_workspace_backend_app(
     )
     if host_lifecycle is not None:
         host_lifecycle.set_executor_available(True)
-        host_lifecycle.register_component(
-            "runtime", enabled=True, required=True, healthy=True
-        )
-        host_lifecycle.register_component(
-            "http", enabled=True, required=True, healthy=True
-        )
+        host_lifecycle.register_component("runtime", enabled=True, required=True, healthy=True)
+        host_lifecycle.register_component("http", enabled=True, required=True, healthy=True)
         host_lifecycle.register_component(
             "mcp",
             enabled=resolved_settings.include_mcp,
@@ -204,18 +194,14 @@ def create_local_workspace_backend_app(
             enabled=resolved_settings.include_interaction_routes,
             required=False,
             healthy=True,
-            detail="disabled"
-            if not resolved_settings.include_interaction_routes
-            else "mounted",
+            detail="disabled" if not resolved_settings.include_interaction_routes else "mounted",
         )
         host_lifecycle.register_component(
             "scheduler",
             enabled=resolved_settings.include_scheduler,
             required=False,
             healthy=True,
-            detail="disabled"
-            if not resolved_settings.include_scheduler
-            else "configured",
+            detail="disabled" if not resolved_settings.include_scheduler else "configured",
         )
     scheduler_wiring = wire_harness_host_long_running_scheduler(
         runtime,
@@ -274,22 +260,16 @@ def create_local_workspace_backend_app(
         prefix=resolved_settings.route_prefix,
         vectorstore_manager=runtime.env_wiring.tool_wiring.wiring_context.vectorstore_manager,
         tenant_vectorstore_cache=(
-            runtime.env_wiring.tool_wiring.wiring_context.extras.get(
-                "tenant_vectorstore_managers"
-            )
+            runtime.env_wiring.tool_wiring.wiring_context.extras.get("tenant_vectorstore_managers")
             if isinstance(
-                runtime.env_wiring.tool_wiring.wiring_context.extras.get(
-                    "tenant_vectorstore_managers"
-                ),
+                runtime.env_wiring.tool_wiring.wiring_context.extras.get("tenant_vectorstore_managers"),
                 dict,
             )
             else None
         ),
         integration_profile=runtime.env_wiring.tool_wiring.wiring_context.integration_profile,
         object_storage=runtime.env_wiring.tool_wiring.wiring_context.object_storage,
-        tenant_connection_secrets_store=(
-            runtime.env_wiring.tool_wiring.wiring_context.secrets_store
-        ),
+        tenant_connection_secrets_store=(runtime.env_wiring.tool_wiring.wiring_context.secrets_store),
         ask_service_v2=hybrid_ask_service,
         repository=lkw_managed_workspace_repository,
         host_lifecycle=host_lifecycle,
@@ -308,11 +288,7 @@ def create_local_workspace_backend_app(
         live_state = getattr(getattr(connected_source_readiness, "state", None), "value", "")
         live_enabled = bool(live_state and live_state != "disabled")
         live_healthy = not live_enabled or live_state == "ready"
-        live_detail = (
-            "disabled"
-            if not live_enabled
-            else ("ready" if live_healthy else f"unavailable:{live_state}")
-        )
+        live_detail = "disabled" if not live_enabled else ("ready" if live_healthy else f"unavailable:{live_state}")
         host_lifecycle.register_component(
             "durable_store",
             enabled=True,
@@ -407,6 +383,7 @@ def create_local_workspace_backend_app(
 
         load_mcp_coupling()
         from intergrax.applications._shared.fastapi_mcp import couple_harness_host_fastapi_with_mcp
+
         from local_workspace_application.mcp.server import (
             build_local_workspace_mcp_server,
         )
@@ -430,9 +407,7 @@ def create_local_workspace_backend_app(
             extra_lifespans=extra_lifespans,
         )
     else:
-        apply_factory_lifespans(
-            app, runtime, schedulers=[scheduler] if scheduler else None
-        )
+        apply_factory_lifespans(app, runtime, schedulers=[scheduler] if scheduler else None)
 
     if host_lifecycle is not None:
         apply_lkw_daemon_lifespan(app, host_lifecycle)
