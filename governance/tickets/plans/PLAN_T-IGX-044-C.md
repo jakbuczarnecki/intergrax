@@ -1,6 +1,6 @@
 # Plan T-IGX-044-C - EQO-A node PT-E02 (T-ENF-2): ticket-approval validators, legacy-exceptions file, ticket-governance job, Ref gate CI mode
 
-Sources: WP-7 plan B, section V4, finding EQOA-A6-002 (and the A2-038 identity part that lives in tickets); Operator decisions DP-68, DP-10, DP-58, DP-66 (decision sessions 1 and 6 of 2026-11-16); node row `PT-E02` of the remediation ticket draft. Baseline of this plan: `origin/development` at `2ab57e36d94eae98c962b3d7b09e5a540d8c70d2`. This plan is not a certification verdict and promotes no FRZ status.
+Sources: WP-7 plan B, section V4, finding EQOA-A6-002 (and the A2-038 identity part that lives in tickets); Operator decisions DP-68, DP-10, DP-58, DP-66 (decision sessions 1 and 6 of 2026-11-16); node row `PT-E02` of the remediation ticket table. The validator-code change and the new workflow of this plan were authorised for this ticket only by the Operator on 2026-11-17 (addendum 3 of `OPERATOR_ANSWERS_CODE_WAVE_TRANSCRIPTION.md`); that authorisation does not cover the rows marked NO in section 5. Baseline of this plan: `origin/development` at `2ab57e36d94eae98c962b3d7b09e5a540d8c70d2`. This plan is not a certification verdict and promotes no FRZ status.
 
 ## 1. Problem
 
@@ -41,15 +41,15 @@ Excluded on purpose and checked at `origin/development`: the six `MATERIAL_GOVER
 
 ## 5. Gate-meaning classification
 
-| Part | Changes what a gate accepts or refuses? | Ruled in by | In the first commit |
+| Part | Changes what a gate accepts or refuses? | Basis | In this ticket |
 |---|---|---|---|
-| New strict verifier and library | New tool; no existing gate calls it | DP-68, DP-58 | yes |
-| Legacy-exceptions file | Data for the new tool only | DP-68 (quoted: "legacy exceptions file for the unresolvable delegation references and tickets without an Approved line, tickets untouched") | yes |
-| `verify_commit_ticket_refs.py --ci` | Refuses more, but only when `--ci` is passed; default unchanged | DP-66/DP-58 (enforcement hardening lands before RB-2) read with plan B | yes, opt-in |
-| New workflow job `ticket-governance` | Adds a check that can show red on a pull request; not required, so it blocks no merge | plan row PT-E02 names the job | yes, non-required |
-| Making `ticket-governance` a required check | Yes (Plan A Stage 4, node PT-S05) | not ruled in; Operator authorisation AR-49 | NO, not part of this ticket |
-| Wiring the strict verifier into `igx_gov ticket` (local pre-push) | Yes: a developer push that was accepted would be refused | not ruled in by DP-68/DP-66 | NO: needs the Operator's personal ruling |
-| Flipping the default of `verify_plan_approval.py` / `verify_ticket_lifecycle.py` to the strict grammar | Yes: tickets accepted today would be refused | not ruled in | NO: needs the Operator's personal ruling; both files stay unchanged |
+| New strict verifier and library | New tool; no existing gate calls it | DP-68, DP-58; authorised 2026-11-17 (addendum 3) | yes |
+| Legacy-exceptions file | Data for the new tool only | DP-68 (quoted: "legacy exceptions file for the unresolvable delegation references and tickets without an Approved line, tickets untouched"); authorised 2026-11-17 (addendum 3) | yes |
+| `verify_commit_ticket_refs.py --ci` | Refuses more, but only when `--ci` is passed; default unchanged | DP-66/DP-58 (enforcement hardening lands before RB-2) read with plan B; authorised 2026-11-17 (addendum 3) | yes, opt-in |
+| New workflow job `ticket-governance` | Adds a check that can show red on a pull request; not required, so it blocks no merge | plan row PT-E02 names the job; authorised 2026-11-17 (addendum 3) as drafted | yes, non-required |
+| Making `ticket-governance` a required check | Yes (Plan A Stage 4, node PT-S05) | not covered by the 2026-11-17 authorisation; needs Operator authorisation AR-49 | NO, not part of this ticket |
+| Wiring the strict verifier into `igx_gov ticket` (local pre-push) | Yes: a developer push that was accepted would be refused | not covered by DP-68/DP-66 or the 2026-11-17 authorisation | NO: needs a separate Operator ruling |
+| Flipping the default of `verify_plan_approval.py` / `verify_ticket_lifecycle.py` to the strict grammar | Yes: tickets accepted today would be refused | not covered by the 2026-11-17 authorisation | NO: needs a separate Operator ruling; both files stay unchanged |
 | README statement "not enforced by tooling" (`governance/tickets/README.md`) | Documentation | n/a | NO: outside the write set; follow-up docs change |
 | Operator countersigned handoff and per-role identity in IIAC manifests | Yes, material files | DP-68 for the design | NO: PT-E05 |
 
