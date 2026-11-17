@@ -5,7 +5,37 @@
 from __future__ import annotations
 
 from abc import ABC, abstractmethod
+from dataclasses import dataclass
+from enum import StrEnum
 from typing import Protocol, runtime_checkable
+
+
+class KVDurabilityMechanism(StrEnum):
+    """Closed set of persistence mechanisms an operator may attest for a KV backend."""
+
+    REDIS_AOF_FSYNC_ALWAYS = "redis_aof_fsync_always"
+    REDIS_AOF_FSYNC_EVERYSEC = "redis_aof_fsync_everysec"
+
+
+@dataclass(frozen=True, slots=True)
+class KVDurabilityAttestation:
+    """
+    Typed, explicit, operator-stated claim that a KV backend persists across process restart.
+
+    The claim is declared, not probed: construction checks only the shape of the fields.
+    """
+
+    mechanism: KVDurabilityMechanism
+    attested_by: str
+    procedure_ref: str
+
+    def __post_init__(self) -> None:
+        if not isinstance(self.mechanism, KVDurabilityMechanism):
+            raise ValueError("KVDurabilityAttestation.mechanism must be a KVDurabilityMechanism")
+        if not isinstance(self.attested_by, str) or not self.attested_by.strip():
+            raise ValueError("KVDurabilityAttestation.attested_by must be a non-empty string")
+        if not isinstance(self.procedure_ref, str) or not self.procedure_ref.strip():
+            raise ValueError("KVDurabilityAttestation.procedure_ref must be a non-empty string")
 
 
 class DistributedKVStore(ABC):
@@ -19,6 +49,15 @@ class DistributedKVStore(ABC):
 
     This contract is backend-agnostic (Redis, Dragonfly, etc.).
     """
+
+    @property
+    def survives_process_restart(self) -> bool:
+        """
+        Whether data written through this store survives process restart.
+
+        Default ``False``: a backend must opt in explicitly (fail-closed).
+        """
+        return False
 
     @abstractmethod
     def get(
@@ -74,6 +113,11 @@ class DistributedKVStore(ABC):
         Returns True if update succeeded, False otherwise.
         """
         ...
+
+
+def kv_store_survives_process_restart(store: object) -> bool:
+    """True only when ``store.survives_process_restart`` is exactly ``True`` (no truthy coercion)."""
+    return getattr(store, "survives_process_restart", False) is True
 
 
 @runtime_checkable

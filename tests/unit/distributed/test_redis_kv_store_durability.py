@@ -7,7 +7,9 @@ No live Redis is used; a placeholder client object stands in. The attestation is
 
 from __future__ import annotations
 
-from types import SimpleNamespace
+import sys
+from types import ModuleType, SimpleNamespace
+from unittest.mock import MagicMock
 
 import pytest
 from intergrax.distributed.contracts.kv_store import (
@@ -61,15 +63,27 @@ def test_strict_redis_with_typed_attestation_is_accepted(mechanism: KVDurability
     assert wiring.pinning_store.is_durable is True
 
 
-def test_bundle_composition_root_passes_attestation_through() -> None:
+@pytest.fixture
+def fake_redis_client_module(monkeypatch: pytest.MonkeyPatch) -> None:
+    """Replace the redis client module so the bundle tests need no installed ``redis`` package."""
+    fake = ModuleType("intergrax.integrations.providers.key_value_cache.redis.client")
+    fake.create_redis_client = lambda *, client=None, **_: client  # type: ignore[attr-defined]
+    fake.resolve_redis_config = lambda **_: SimpleNamespace(  # type: ignore[attr-defined]
+        key_prefix="intergrax",
+        model_dump=lambda: {},
+    )
+    monkeypatch.setitem(sys.modules, fake.__name__, fake)
+
+
+def test_bundle_composition_root_passes_attestation_through(fake_redis_client_module: None) -> None:
     attestation = _attestation()
-    client = SimpleNamespace()
+    client = MagicMock()
     bundle = create_redis_integration(client=client, durability_attestation=attestation)  # type: ignore[arg-type]
     assert kv_store_survives_process_restart(bundle.kv_store) is True
     store = create_redis_kv_store(client=client, durability_attestation=attestation)  # type: ignore[arg-type]
     assert kv_store_survives_process_restart(store) is True
 
 
-def test_bundle_composition_root_default_is_not_attested() -> None:
-    store = create_redis_kv_store(client=SimpleNamespace())  # type: ignore[arg-type]
+def test_bundle_composition_root_default_is_not_attested(fake_redis_client_module: None) -> None:
+    store = create_redis_kv_store(client=MagicMock())  # type: ignore[arg-type]
     assert kv_store_survives_process_restart(store) is False

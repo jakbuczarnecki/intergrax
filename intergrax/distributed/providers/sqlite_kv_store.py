@@ -24,6 +24,16 @@ class SqliteDistributedKVStore(DistributedKVStore):
     def db_path(self) -> Path:
         return self._db_path
 
+    @property
+    def survives_process_restart(self) -> bool:
+        """
+        Declares durability of the store type (WAL file, ``synchronous=FULL``).
+
+        The claim holds for a database file that is reused across processes; a caller that
+        passes a fresh path per process does not recover data across a restart.
+        """
+        return True
+
     def _connect(self) -> sqlite3.Connection:
         conn = sqlite3.connect(self._db_path)
         conn.execute("PRAGMA journal_mode=WAL;")

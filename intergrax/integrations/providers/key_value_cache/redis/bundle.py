@@ -15,7 +15,7 @@ from typing import TYPE_CHECKING
 
 from intergrax.contracts.idempotency_store import IdempotencyStore
 from intergrax.distributed.contracts.execution_semaphore import DistributedExecutionSemaphore
-from intergrax.distributed.contracts.kv_store import DistributedKVStore
+from intergrax.distributed.contracts.kv_store import DistributedKVStore, KVDurabilityAttestation
 from intergrax.distributed.contracts.rate_limiter import DistributedRateLimiter
 from intergrax.integrations.contracts.base import IntegrationConfigurationError
 from intergrax.integrations.contracts.key_value_cache import KeyValueCache
@@ -64,6 +64,7 @@ def create_redis_integration(
     key_prefix: str | None = None,
     client: redis.Redis | None = None,
     execution_semaphore_ttl_seconds: int = 300,
+    durability_attestation: KVDurabilityAttestation | None = None,
     **config_overrides: object,
 ) -> RedisIntegrationBundle:
     """
@@ -72,6 +73,9 @@ def create_redis_integration(
     Registered in the integration catalog for ``key_value_cache`` via
     ``create_redis_key_value_cache``; prefer this function when wiring multiple
     Redis-backed components in Tier-3 composition roots.
+
+    ``durability_attestation`` is the operator-stated, typed claim that this Redis deployment
+    persists across restart (declared, not probed). Without it the KV store reports not durable.
     """
     from intergrax.distributed.providers.redis_execution_semaphore import RedisExecutionSemaphore
     from intergrax.distributed.providers.redis_idempotency_store import RedisIdempotencyStore
@@ -91,7 +95,11 @@ def create_redis_integration(
     config = resolve_redis_config(**overrides)
     resolved_client = create_redis_client(client=client, **config.model_dump())
 
-    store = RedisKVStore(client=resolved_client, key_prefix=config.key_prefix)
+    store = RedisKVStore(
+        client=resolved_client,
+        key_prefix=config.key_prefix,
+        durability_attestation=durability_attestation,
+    )
     cache = RedisKeyValueCacheIntegration.from_client(_RedisKeyValueCache(store))
 
     return RedisIntegrationBundle(
@@ -135,6 +143,7 @@ def create_redis_kv_store(
     db: int | None = None,
     key_prefix: str | None = None,
     client: redis.Redis | None = None,
+    durability_attestation: KVDurabilityAttestation | None = None,
     **config_overrides: object,
 ) -> DistributedKVStore:
     """``DistributedKVStore`` for queueing transport wiring."""
@@ -143,6 +152,7 @@ def create_redis_kv_store(
         db=db,
         key_prefix=key_prefix,
         client=client,
+        durability_attestation=durability_attestation,
         **config_overrides,
     ).kv_store
 
