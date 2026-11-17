@@ -1,11 +1,19 @@
 #!/usr/bin/env python3
 # © Artur Czarnecki. All rights reserved.
 # ruff: noqa: E501
-"""Mechanical traceability validator for ARCH-FREEZE planning dossier artifacts."""
+"""Mechanical traceability validator for ARCH-FREEZE planning dossier artifacts.
+
+Amended by T-AF2-VALIDATOR-AMEND (ticket T-IGX-050-B, MEP-AF2 v2.1 section C items 1-4 and C.4):
+
+* every hard DAG rule is kept unchanged; two additive rules and a DAG self-test were added;
+* counters are computed from the files instead of being hard-coded;
+* ``--sync-wbs`` / ``--sync-matrix`` are forbidden (they rewrote rows from hard-coded data).
+"""
 
 from __future__ import annotations
 
 import argparse
+import json
 import re
 import sys
 from collections import defaultdict
@@ -22,18 +30,35 @@ _IIAC_PROTOCOL = _QUAL / "INTEGRAX_INTERNAL_INDEPENDENT_AGENT_CERTIFICATION_PROT
 _IIAC_ACTIVATION = _QUAL / "IIAC_POLICY_ACTIVATION_RECORD.json"
 
 PATH_B_FULL = frozenset({"FRZ-PRD-01", "FRZ-PRD-02"})
+# FIND-PROD-REACH-DEFERRED is historical (superseded by the B1 chain) and is severity INFO, not a blocker.
 BLOCKER_FINDINGS = frozenset(
     {
-        "FIND-PROD-REACH-DEFERRED",
         "FIND-PROD-REACH-CLASSIFICATION",
         "FIND-VBN-PARTIAL",
         "FIND-FORMAL-B6",
         "FIND-ACCEPTED-BASELINE",
     }
 )
-EXPECTED_WBS_TASKS = 54
-EXPECTED_QUAL_RUNS = 16
-AUDIT_BASELINE_SHA = "a0624e28ff77b061e83f3e10aab4c2a9083ee1b4"
+INFO_FINDINGS = frozenset({"FIND-PROD-REACH-DEFERRED"})
+# The FRZ checklist is frozen at 225 criteria in 26 families; deleting or adding a row must fail.
+EXPECTED_FRZ_ROWS = 225
+EXPECTED_FRZ_FAMILIES = 26
+# The qualification plan is append-only: runs may be added, never deleted (16 at AUDIT_BASELINE_2).
+MIN_QUAL_RUNS = 16
+# Historical WBS tasks (the original 54 rows). The WBS total is this number plus the T-AF2-* / PT-* rows.
+BASE_WBS_TASKS = 54
+EXTENSION_TASK_PREFIXES = ("T-AF2-", "PT-")
+
+# Word boundary: "PT-Q11" is one ID and is never read as "T-Q11"; "ENT-B6" never yields "T-B6".
+_TASK_ID_RE = re.compile(r"\b(?:T|PT)-[A-Z0-9-]+")
+_MATRIX_CROSSCHECK_FLAG_RE = re.compile(r"^\*\*MATRIX_CHECKLIST_CROSSCHECK:\*\*\s*ENABLED\b", re.M)
+_MATRIX_HEADER_COUNTS_RE = re.compile(r"\*\*Rows:\*\*\s*(\d+)\s*\|\s*\*\*Families:\*\*\s*(\d+)")
+_AUTHORITY_REF_RE = re.compile(r"authority_ref:\s*(.+)$")
+SUPERSEDED_STATE = "SUPERSEDED_BY_CURRENT_AUTHORITY"
+# authority_ref placeholders are rejected case-insensitively (after stripping punctuation and backticks).
+AUTHORITY_REF_PLACEHOLDERS = frozenset(
+    {"", "-", "—", "?", "??", "???", "NONE", "NULL", "NIL", "N/A", "NA", "TBD", "TODO", "PENDING", "UNKNOWN", "XXX"}
+)
 
 PROMOTE_FAMS = ("BND", "CTR", "OBS", "OWN", "PLG", "PRD", "REG", "REL", "SEC", "TYP")
 PROMOTE_TASKS = tuple(f"T-B7-PROMOTE-{fam}" for fam in PROMOTE_FAMS)
@@ -59,6 +84,25 @@ INDEPENDENT_AUDITOR_TASKS = frozenset(
         "T-B7-VBN-INDEPENDENT-ACCEPT",
     }
 )
+REQUIRED_SEMANTIC_TASKS = frozenset(
+    {
+        "T-B7-COORD-ARCH-FRZ",
+        "T-B7-FRZ-FRZ",
+        "T-B7-PFP-ACTIVATE",
+        "T-B7-PFP-VERIFY",
+        "T-PATHB-EXCL",
+        "T-B8-ROADMAP",
+        "T-B8-ECAP-16",
+    }
+)
+# Pre-lock validator ancestors: they stay before the lock and never follow ECAP-2C [PD2-01].
+PRE_LOCK_ANCESTOR_TASKS = ("T-B5-EVOL-FRZ", "T-B6-FRZ-AUD")
+POST_LOCK_TASKS = ("T-B7-ECAP-2C", "T-B7-LOCK-FREEZE-SHA")
+
+
+# --------------------------------------------------------------------------------------
+# Parsing helpers
+# --------------------------------------------------------------------------------------
 
 
 def _parse_checklist() -> dict[str, str]:
@@ -73,38 +117,129 @@ def _parse_checklist() -> dict[str, str]:
     return statuses
 
 
-def remediation_task(frz_id: str, status: str) -> str:
-    if status != "OPEN":
-        return "T-B7-TEN-REVAL" if frz_id.startswith("FRZ-TEN-") else "—"
-    if frz_id in PATH_B_FULL:
-        return "T-PATHB-EXCL"
-    if frz_id == "FRZ-BND-03":
-        return "T-B2-BND03-RECONCILE"
-    fam = frz_id.split("-")[1]
-    mapping = {
-        "EVOL": "T-B5-EVOL-FRZ",
-        "AUD": "T-B6-FRZ-AUD",
-        "FRZ": "T-B7-FRZ-FRZ",
-        "DEBT": "T-B2-DEBT",
-        "DOC": "T-B3-DOC",
-        "BND": "T-B7-PROMOTE-BND",
-        "OWN": "T-B7-PROMOTE-OWN",
-        "CTR": "T-B7-PROMOTE-CTR",
-        "TYP": "T-B7-PROMOTE-TYP",
-        "PLG": "T-B7-PROMOTE-PLG",
-        "OBS": "T-B7-PROMOTE-OBS",
-        "SEC": "T-B7-PROMOTE-SEC",
-        "REL": "T-B7-PROMOTE-REL",
-        "PRD": "T-B7-PROMOTE-PRD",
-        "REG": "T-B7-PROMOTE-REG",
-        "RPL": "T-B2-VBN",
-    }
-    return mapping.get(fam, f"T-B7-PROMOTE-{fam}")
+def _status_class(status: str) -> str:
+    """Normalise a checklist/matrix status: OPEN, PASS (any PASS variant) or the raw text."""
+    s = status.strip()
+    if s == "OPEN":
+        return "OPEN"
+    if s.startswith("PASS"):
+        return "PASS"
+    return s
 
 
-def _coord_arch_frz_deps() -> str:
-    inner = ",".join(FRZ_FRZ02_PREREQ_TASKS)
-    return f"[{inner}]"
+def _extract_task_ids(raw: str) -> list[str]:
+    return [m.rstrip("-") for m in _TASK_ID_RE.findall(raw)]
+
+
+def _is_extension_task(task_id: str) -> bool:
+    return task_id.startswith(EXTENSION_TASK_PREFIXES)
+
+
+def _parse_matrix_rows() -> dict[str, tuple[str, str]]:
+    """FRZ_ID -> (CURRENT_STATUS, REMEDIATION_TASK) for every matrix row."""
+    rows: dict[str, tuple[str, str]] = {}
+    for line in _MATRIX.read_text(encoding="utf-8").splitlines():
+        if not line.startswith("| FRZ-"):
+            continue
+        parts = [p.strip() for p in line.split("|")]
+        if len(parts) < 12:
+            continue
+        rows[parts[1]] = (parts[2], parts[9])
+    return rows
+
+
+def _parse_matrix_open_tasks() -> dict[str, str]:
+    return {fid: task for fid, (st, task) in _parse_matrix_rows().items() if st == "OPEN"}
+
+
+def _parse_wbs() -> list[dict[str, str]]:
+    rows: list[dict[str, str]] = []
+    for line in _WBS.read_text(encoding="utf-8").splitlines():
+        if not line.startswith(("| T-", "| PT-")):
+            continue
+        parts = [p.strip() for p in line.split("|")[1:-1]]
+        if len(parts) < 14:
+            continue
+        rows.append(
+            {
+                "TASK_ID": parts[0],
+                "REQUIREMENT_IDS": parts[2],
+                "FINDING_IDS": parts[3],
+                "DEPENDENCIES": parts[6],
+                "STATUS": parts[13],
+                "V21_QUALIFICATION": parts[14] if len(parts) > 14 else "",
+            }
+        )
+    return rows
+
+
+def _parse_findings() -> dict[str, str]:
+    """FIND ID -> severity column of the gap register."""
+    found: dict[str, str] = {}
+    for line in _GAPS.read_text(encoding="utf-8").splitlines():
+        m = re.match(r"\| (FIND-[A-Z0-9-]+) \|", line)
+        if m:
+            parts = [p.strip() for p in line.split("|")[1:-1]]
+            found[m.group(1)] = parts[1] if len(parts) > 1 else ""
+    return found
+
+
+def _parse_gap_correction_tasks() -> dict[str, set[str]]:
+    mapping: dict[str, set[str]] = defaultdict(set)
+    for line in _GAPS.read_text(encoding="utf-8").splitlines():
+        m = re.match(r"\| (FIND-[A-Z0-9-]+) \|", line)
+        if not m:
+            continue
+        mapping[m.group(1)].update(_extract_task_ids(line))
+    return mapping
+
+
+def _extract_frz_ids(raw: str) -> list[str]:
+    return re.findall(r"FRZ-[A-Z]+-\d+", raw)
+
+
+def _extract_task_deps(raw: str) -> list[str]:
+    return _extract_task_ids(raw)
+
+
+def _extract_findings(raw: str) -> list[str]:
+    return re.findall(r"FIND-[A-Z0-9-]+", raw)
+
+
+def _qualification_state(cell: str) -> tuple[str, str]:
+    """Split a V21_QUALIFICATION cell into (state, authority_ref)."""
+    text = cell.strip()
+    m = re.match(r"[A-Z][A-Z_]+", text)
+    state = m.group(0) if m else ""
+    ref = _AUTHORITY_REF_RE.search(text)
+    return state, (ref.group(1).strip() if ref else "")
+
+
+def _is_placeholder_ref(ref: str) -> bool:
+    return ref.strip().strip("`*_.;:()[]<>\"' ").upper() in AUTHORITY_REF_PLACEHOLDERS
+
+
+def _check_qualification_states(wbs_rows: list[dict[str, str]], errors: list[str]) -> set[str]:
+    """SUPERSEDED_BY_CURRENT_AUTHORITY is a satisfied dependency, but only with a non-empty authority_ref.
+
+    Returns the set of TASK_IDs that are satisfied by current authority. Such tasks stay DAG nodes:
+    every edge through them still counts for reachability (no pruning), so hard rules hold unchanged.
+    """
+    satisfied: set[str] = set()
+    for row in wbs_rows:
+        state, ref = _qualification_state(row.get("V21_QUALIFICATION", ""))
+        if state != SUPERSEDED_STATE:
+            continue
+        if _is_placeholder_ref(ref):
+            errors.append(f"{row['TASK_ID']}: {SUPERSEDED_STATE} requires a non-empty authority_ref")
+            continue
+        satisfied.add(row["TASK_ID"])
+    return satisfied
+
+
+# --------------------------------------------------------------------------------------
+# DAG rules (hard rules unchanged; see _validate_semantic_dag)
+# --------------------------------------------------------------------------------------
 
 
 def _ancestors(graph: dict[str, list[str]], node: str) -> set[str]:
@@ -119,17 +254,32 @@ def _ancestors(graph: dict[str, list[str]], node: str) -> set[str]:
     return seen
 
 
+def _find_cycles(graph: dict[str, list[str]]) -> list[str]:
+    errors: list[str] = []
+    visiting: set[str] = set()
+    visited: set[str] = set()
+
+    def dfs(node: str) -> None:
+        if node in visiting:
+            msg = f"dependency cycle involving {node}"
+            if msg not in errors:
+                errors.append(msg)
+            return
+        if node in visited:
+            return
+        visiting.add(node)
+        for nxt in graph.get(node, []):
+            dfs(nxt)
+        visiting.remove(node)
+        visited.add(node)
+
+    for tid in list(graph):
+        dfs(tid)
+    return errors
+
+
 def _validate_semantic_dag(graph: dict[str, list[str]], task_ids: set[str], errors: list[str]) -> None:
-    required = {
-        "T-B7-COORD-ARCH-FRZ",
-        "T-B7-FRZ-FRZ",
-        "T-B7-PFP-ACTIVATE",
-        "T-B7-PFP-VERIFY",
-        "T-PATHB-EXCL",
-        "T-B8-ROADMAP",
-        "T-B8-ECAP-16",
-    }
-    missing = required - task_ids
+    missing = REQUIRED_SEMANTIC_TASKS - task_ids
     if missing:
         errors.append(f"semantic DAG missing tasks: {sorted(missing)}")
         return
@@ -202,896 +352,353 @@ def _validate_semantic_dag(graph: dict[str, list[str]], task_ids: set[str], erro
     if "T-B7-L3-FREEZE" not in _ancestors(graph, "T-B7-PFP-VERIFY"):
         errors.append("T-B7-PFP-VERIFY must follow T-B7-L3-FREEZE (verify @ FREEZE_SHA)")
 
-
-def sync_matrix() -> None:
-    lines = _MATRIX.read_text(encoding="utf-8").splitlines()
-    out: list[str] = []
-    for line in lines:
-        if not line.startswith("| FRZ-"):
-            out.append(line)
-            continue
-        parts = [p.strip() for p in line.split("|")]
-        if len(parts) < 12:
-            out.append(line)
-            continue
-        fid = parts[1]
-        st = parts[2]
-        parts[9] = remediation_task(fid, st)
-        out.append("| " + " | ".join(parts[1:-1]) + " |")
-    _MATRIX.write_text("\n".join(out) + "\n", encoding="utf-8")
+    # Additive rule [PD2-01]: the pre-lock ancestors are never placed after ECAP-2C / LOCK.
+    # (ECAP-2C is an ancestor of COORD, and the EVOL chain is an ancestor of LOCK, so such an edge is also a cycle.)
+    for pre in PRE_LOCK_ANCESTOR_TASKS:
+        for post in POST_LOCK_TASKS:
+            if post in _ancestors(graph, pre):
+                errors.append(f"PD2-01: {pre} is a pre-lock ancestor and must not follow {post}")
 
 
-def _open_frz_by_family(statuses: dict[str, str]) -> dict[str, list[str]]:
-    by_fam: dict[str, list[str]] = defaultdict(list)
-    for fid, st in sorted(statuses.items()):
-        if st == "OPEN":
-            by_fam[fid.split("-")[1]].append(fid)
-    return by_fam
+# --------------------------------------------------------------------------------------
+# DAG self-test: a reference graph, one mutation per rule, all must be rejected
+# --------------------------------------------------------------------------------------
 
 
-def _frz_csv(ids: list[str]) -> str:
-    return ",".join(ids)
+def _reference_graph() -> dict[str, list[str]]:
+    """Minimal DAG that satisfies every hard rule (the shape the real WBS must keep)."""
+    g: dict[str, list[str]] = {
+        "T-B4-L3-FULL": [],
+        "T-B5-EVOL-B6": ["T-B4-L3-FULL"],
+        "T-B5-EVOL-FRZ": ["T-B5-EVOL-B6"],
+        "T-B5-EVOL-FORMAL-CLOSURE": ["T-B5-EVOL-B6", "T-B5-EVOL-FRZ"],
+        "T-B6-OD-ENT-00": ["T-B5-EVOL-FORMAL-CLOSURE"],
+        "T-B6-ENT-B6": ["T-B6-OD-ENT-00"],
+        "T-B6-OD-ENT-02": ["T-B6-ENT-B6"],
+        "T-B6-FRZ-AUD": ["T-B6-ENT-B6"],
+        "T-B6-OD-ENT-08": ["T-B6-OD-ENT-02", "T-B6-FRZ-AUD"],
+        "T-B7-PFP-ACTIVATE": ["T-B6-OD-ENT-08"],
+        "T-B7-LOCK-FREEZE-SHA": ["T-B7-PFP-ACTIVATE"],
+        "T-B7-L3-FREEZE": ["T-B7-LOCK-FREEZE-SHA"],
+        "T-B7-VBN-HEAD-DOSSIER": ["T-B4-L3-FULL"],
+        "T-B7-VBN-INDEPENDENT-ACCEPT": ["T-B7-LOCK-FREEZE-SHA", "T-B7-L3-FREEZE", "T-B7-VBN-HEAD-DOSSIER"],
+        "T-B7-ECAP-2C": ["T-B7-L3-FREEZE"],
+        "T-B7-PFP-VERIFY": ["T-B7-PFP-ACTIVATE", "T-B7-L3-FREEZE"],
+        "T-B2-DEBT": ["T-B4-L3-FULL"],
+        "T-B3-DOC": ["T-B4-L3-FULL"],
+        "T-B7-TEN-REVAL": ["T-B7-L3-FREEZE"],
+        "T-B7-CMP-REVAL": ["T-B7-L3-FREEZE"],
+        "T-PATHB-EXCL": ["T-B4-L3-FULL"],
+        "T-B7-PROMOTE-RPL": ["T-B7-VBN-INDEPENDENT-ACCEPT"],
+        "T-B7-PROMOTE-DEBT": ["T-B7-ECAP-2C"],
+        "T-B7-PROMOTE-DOC": ["T-B7-ECAP-2C"],
+    }
+    for task in PROMOTE_TASKS:
+        g[task] = ["T-B7-ECAP-2C"]
+    g["T-B7-COORD-ARCH-FRZ"] = list(FRZ_FRZ02_PREREQ_TASKS)
+    g["T-B7-FRZ-FRZ"] = ["T-B7-COORD-ARCH-FRZ", "T-B7-ECAP-2C", "T-B7-PFP-VERIFY"]
+    g["T-B8-ROADMAP"] = ["T-B7-FRZ-FRZ", "T-B7-PFP-VERIFY", "T-B7-COORD-ARCH-FRZ"]
+    g["T-B8-ECAP-16"] = ["T-B8-ROADMAP"]
+    return g
 
 
-def sync_wbs() -> None:
-    statuses = _parse_checklist()
-    by_fam = _open_frz_by_family(statuses)
-    evol = _frz_csv(by_fam["EVOL"])
-    aud = _frz_csv(by_fam["AUD"])
-    frz = _frz_csv(by_fam["FRZ"])
-    debt = _frz_csv(by_fam["DEBT"])
-    doc = _frz_csv(by_fam["DOC"])
-    rpl = _frz_csv(by_fam["RPL"])
-    ten = _frz_csv([f"FRZ-TEN-{i:02d}" for i in range(1, 13)])
+def _dag_errors(graph: dict[str, list[str]]) -> list[str]:
+    errors = _find_cycles(graph)
+    _validate_semantic_dag(graph, set(graph), errors)
+    return errors
 
-    def promote(fam: str) -> str:
-        return _frz_csv(by_fam[fam])
 
-    rows: list[tuple] = [
-        (
-            "T-R0-WAVE1-SSOT-RECONCILE",
-            "R0",
-            "FRZ-FRZ-04",
-            "FIND-ARTIFACT-CONTRADICTION,FIND-VALIDATOR-WEAK",
-            "implementer",
-            "docs/project/maintainers/qualification/ARCH_FREEZE_*",
-            "[]",
-            "Reconcile SSOT: G6 ACCEPTED @ 950097ea; 54 tasks; SHA ladder; remove AUDIT_PENDING drift",
-            "uv run python scripts/governance/verify_arch_freeze_plan_traceability.py",
-            "ARCH_FREEZE dossier @ 950097ea",
-            "WAVE1 disposition aligned; validator WBS=54",
-            "MED",
-            "no",
-            "COMPLETE @ 950097ea",
-        ),
-        (
-            "T-R0-BASELINE-CLOSURE-HEAD",
-            "R0",
-            "",
-            "FIND-PRECHECKLIST-HEAD",
-            "implementer",
-            "ARCH_FREEZE_PRE_ADMISSION_READINESS_REPORT.md",
-            "[T-R0-WAVE1-SSOT-RECONCILE]",
-            "Close T-B0-001: refresh pre-admission pointer @ CLOSURE_DOC_HEAD; immutable AUDIT_BASELINE_SHA unchanged",
-            "git rev-parse HEAD; doc pointer refresh",
-            "pre-admission dossier @ 950097ea",
-            "pointer current; AUDIT_BASELINE_SHA=a0624e28 locked",
-            "LOW",
-            "yes",
-            "COMPLETE @ 950097ea",
-        ),
-        (
-            "T-B0-001",
-            "B0",
-            "",
-            "FIND-PRECHECKLIST-HEAD",
-            "implementer",
-            "repo-wide",
-            "[]",
-            "Lock baseline; refresh pre-admission dossier pointer",
-            "git merge-base; FRZ mechanical counts",
-            "ARCH_FREEZE_* @ baseline",
-            "225 FRZ / 26 fam verified",
-            "LOW",
-            "yes",
-            "COMPLETE @ 950097ea (superseded ongoing pointer: T-R0-BASELINE-CLOSURE-HEAD)",
-        ),
-        (
-            "T-B0-SSOT-REFRESH",
-            "B0",
-            "FRZ-FRZ-04",
-            "FIND-PRECHECKLIST-HEAD,FIND-BASELINE-SHA-DRIFT,FIND-ARTIFACT-CONTRADICTION,FIND-VALIDATOR-WEAK",
-            "implementer",
-            "docs/project/maintainers/qualification/ARCH_FREEZE_*; scripts/governance/verify_arch_freeze_plan_traceability.py",
-            "[T-B0-001]",
-            f"Lock AUDIT_BASELINE_SHA={AUDIT_BASELINE_SHA}; reconcile SSOT; harden traceability validator",
-            "uv run python scripts/governance/verify_arch_freeze_plan_traceability.py",
-            f"ARCH_FREEZE dossier @ {AUDIT_BASELINE_SHA[:8]}",
-            "SSOT cites HEAD; validator extended",
-            "MED",
-            "no",
-            "PLANNED",
-        ),
-        (
-            "T-B0-TRACE-VALIDATE",
-            "B0",
-            "",
-            "",
-            "implementer",
-            "scripts/governance/verify_arch_freeze_plan_traceability.py",
-            "[T-B0-SSOT-REFRESH]",
-            "Run mechanical dossier traceability validator",
-            "uv run python scripts/governance/verify_arch_freeze_plan_traceability.py",
-            "validator stdout",
-            "exit 0",
-            "LOW",
-            "yes",
-            "PLANNED",
-        ),
-        (
-            "T-B1-INV",
-            "B1",
-            "",
-            "",
-            "implementer",
-            "intergrax/; agents/; applications/",
-            "[T-B0-SSOT-REFRESH]",
-            "Planning-phase ENT manifest 85 checks + 8 anchors",
-            "manifest load; dry-run",
-            "ARCH_FREEZE_ARCHITECTURE_AND_PRODUCTION_SURFACE_INVENTORY.md",
-            "manifest + anchors documented",
-            "MED",
-            "yes",
-            "PLANNED",
-        ),
-        (
-            "T-B1-PROD-REACH-SCAN",
-            "B1",
-            "FRZ-BND-03,FRZ-BND-04,FRZ-CTR-02",
-            "FIND-PROD-REACH-DEFERRED",
-            "implementer",
-            "production Python tree",
-            "[T-B1-INV]",
-            "Full production import/reachability scan (NOT EXECUTED in planning)",
-            "COMPAT-X/PROD-Q inventory patterns",
-            "extended surface inventory",
-            "UNCLASSIFIED=0",
-            "HIGH",
-            "no",
-            "SUPERSEDED @ 18a0f68",
-        ),
-        (
-            "T-B1-ENGINE",
-            "B1",
-            "FRZ-BND-04,FRZ-CTR-02,FRZ-CMP-01",
-            "FIND-PROD-REACH-CLASSIFICATION,FIND-UNKNOWN-HARDCODE,FIND-CW-GATE-FAIL,FIND-B1-EXIT-CODE,FIND-B1-SHA-PAYLOAD",
-            "implementer",
-            "scripts/governance/arch_freeze_b1_closed_world_inventory.py",
-            "[T-B1-INV,T-B0-SSOT-REFRESH]",
-            "Fix classification, UNKNOWN accounting, CW inputs, SHA fields, strict/report CLI",
-            "tests/qualification/evol_x/gates/test_evol_x_closed_world_gates.py",
-            "inventory script diff",
-            "B1 engine complete",
-            "CRIT",
-            "no",
-            "PLANNED",
-        ),
-        (
-            "T-B1-MANDATORY-DISPOSITION",
-            "B1",
-            "FRZ-BND-03,FRZ-CTR-02",
-            "FIND-CW-EXTRACTOR-UNKNOWNS,FIND-CW-UNRESOLVED-IMPORTS",
-            "implementer",
-            "arch_freeze_b1_mandatory_dispositions.json",
-            "[T-B1-ENGINE]",
-            "Disposition mandatory unknowns and unresolved imports",
-            "uv run pytest tests/qualification/evol_x/gates/test_evol_x_closed_world_gates.py -k cw04",
-            "dispositions JSON",
-            "mandatory_undisposed_count=0",
-            "HIGH",
-            "no",
-            "PLANNED",
-        ),
-        (
-            "T-B1-STRICT-QUALIFY",
-            "B1",
-            "FRZ-CMP-01,FRZ-CMP-06",
-            "FIND-CW-GATE-FAIL",
-            "tester",
-            "scripts/governance/arch_freeze_b1_closed_world_inventory.py",
-            "[T-B1-MANDATORY-DISPOSITION]",
-            "B1 pytest + certifying --strict-certify inventory run",
-            "uv run pytest tests/unit/governance/test_arch_freeze_b1_closed_world_inventory.py",
-            ".tmp/session/arch-freeze-b1-cert/",
-            "strict_pass=true",
-            "CRIT",
-            "no",
-            "PLANNED",
-        ),
-        (
-            "T-B1-INDEP-AUDIT-PACKAGE",
-            "B1",
-            "",
-            "",
-            "implementer",
-            "ARCH_FREEZE_B1_INDEPENDENT_AUDIT_HANDOFF.md",
-            "[T-B1-STRICT-QUALIFY]",
-            "Refresh B1 independent audit handoff; external STOP",
-            "uv run python scripts/governance/verify_arch_freeze_plan_traceability.py",
-            "B1 handoff dossier",
-            "replay @ HEAD documented",
-            "CRIT",
-            "no",
-            "PLANNED",
-        ),
-        (
-            "T-B2-BND03-RECONCILE",
-            "B2",
-            "FRZ-BND-03,FRZ-DEBT-03",
-            "FIND-BND03-DEBT-STALE",
-            "implementer",
-            "debug_lab_nexus_loop.py; checklist row",
-            "[T-B1-STRICT-QUALIFY]",
-            "Reconcile checklist vs HEAD; no FRZ status promotion",
-            "test_hardening_3_layer_boundary_gate.py",
-            "gate log",
-            "evidence reconciled",
-            "HIGH",
-            "no",
-            "PLANNED",
-        ),
-        (
-            "T-B2-VBN",
-            "B2",
-            rpl,
-            "FIND-VBN-PARTIAL",
-            "implementer",
-            "enterprise_audit/vbn",
-            "[T-B1-STRICT-QUALIFY]",
-            "Complete VBN artifacts @ current HEAD (roadmap §3.0.8 + VBN §2.1-2.7)",
-            "ENT VBN domain checks",
-            "VBN §2.1-2.7",
-            "prohibited hardcoding=0",
-            "HIGH",
-            "no",
-            "PLANNED",
-        ),
-        (
-            "T-B2-DEBT",
-            "B2",
-            debt,
-            "FIND-DEBT-REG",
-            "implementer",
-            "debt registers",
-            "[T-B2-BND03-RECONCILE]",
-            "Zero unresolved architecture debt in frozen scope",
-            "ENT debt checks",
-            "gap register",
-            "FRZ-DEBT promotion path",
-            "HIGH",
-            "no",
-            "PLANNED",
-        ),
-        (
-            "T-B3-DOC",
-            "B3",
-            doc,
-            "",
-            "implementer",
-            "docs/project manifests",
-            "[T-B1-STRICT-QUALIFY]",
-            "Doc/manifest alignment",
-            "test_replay_x_mandatory_docs_present; check_manifest_annex_c_alignment.py",
-            "ENT-A-DOC outcomes",
-            "FRZ-DOC promotion path",
-            "MED",
-            "yes",
-            "PLANNED",
-        ),
-        (
-            "T-B4-L1",
-            "B4",
-            "",
-            "",
-            "tester",
-            "—",
-            "[T-B0-TRACE-VALIDATE]",
-            "L1 structural validation",
-            "uv run python -m scripts.governance.igx_gov ticket",
-            "L1 log .tmp/session/",
-            "green L1",
-            "LOW",
-            "yes",
-            "PLANNED",
-        ),
-        (
-            "T-B4-L2",
-            "B4",
-            "FRZ-FRZ-03",
-            "",
-            "tester",
-            "tests/qualification/",
-            "[T-B2-DEBT,T-B3-DOC,T-B1-STRICT-QUALIFY]",
-            "Risk-based cross-domain pytest",
-            "uv run pytest (scoped paths)",
-            "pytest log",
-            "no regressions",
-            "MED",
-            "partial",
-            "PLANNED",
-        ),
-        (
-            "T-B4-L3-FULL",
-            "B4",
-            "FRZ-FRZ-03",
-            "",
-            "tester",
-            "scripts/enterprise_audit/",
-            "[T-B4-L2]",
-            "Certifying FULL audit",
-            "uv run python scripts/enterprise_audit/run_enterprise_audit.py run --mode FULL --output-dir .tmp/proof/arch-freeze-full/ --evidence-bundle",
-            "enterprise_audit_report.json",
-            "85/85 PASS",
-            "HIGH",
-            "no",
-            "PLANNED",
-        ),
-        (
-            "T-B5-EVOL-B6",
-            "B5",
-            "",
-            "FIND-FORMAL-B6",
-            "independent_auditor",
-            "evol_x/",
-            "[T-B4-L3-FULL]",
-            "Protocol 03 EVOL B6",
-            "EVOL TES replay",
-            "B6_ACCEPTANCE_PUBLICATION_SHA",
-            "signed B6",
-            "CRIT",
-            "no",
-            "BLOCKED_EXTERNAL",
-        ),
-        (
-            "T-B5-EVOL-FRZ",
-            "B5",
-            evol,
-            "",
-            "operator+auditor",
-            "checklist",
-            "[T-B5-EVOL-B6]",
-            "Promote FRZ-EVOL after EVOL B6",
-            "EVOL qual @ TES",
-            "checklist rows",
-            "10/10 PASS",
-            "CRIT",
-            "no",
-            "BLOCKED_EXTERNAL",
-        ),
-        (
-            "T-B5-EVOL-FORMAL-CLOSURE",
-            "B5",
-            "",
-            "FIND-FORMAL-B6",
-            "operator+auditor",
-            "evol_x/; roadmap §5",
-            "[T-B5-EVOL-B6,T-B5-EVOL-FRZ]",
-            "EVOL-X formal CLOSED: W7-06 publication; reconciliation package; roadmap §5 EVOL row",
-            "L3-EVOL-REPLAY evidence reuse",
-            "FORMAL_CLOSURE_PUBLICATION_SHA",
-            "EVOL CLOSED — INDEPENDENTLY ACCEPTED",
-            "CRIT",
-            "no",
-            "BLOCKED_EXTERNAL",
-        ),
-        (
-            "T-B6-OD-ENT-00",
-            "B6",
-            "",
-            "",
-            "operator",
-            "ENT_EVOL_CROSS_STAGE_DECISION_MATRIX.md",
-            "[T-B5-EVOL-FORMAL-CLOSURE]",
-            "OD-ENT-00 EVOL dependency acceptance",
-            "—",
-            "OD record",
-            "OD-ENT-00 signed",
-            "CRIT",
-            "no",
-            "BLOCKED_EXTERNAL",
-        ),
-        (
-            "T-B6-ENT-B6",
-            "B6",
-            "",
-            "FIND-FORMAL-B6",
-            "independent_auditor",
-            "ent_audit_x/",
-            "[T-B6-OD-ENT-00]",
-            "Protocol 03 ENT B6",
-            "ENT TES replay",
-            "B6 package",
-            "signed ENT B6",
-            "CRIT",
-            "no",
-            "BLOCKED_EXTERNAL",
-        ),
-        (
-            "T-B6-OD-ENT-01",
-            "B6",
-            "",
-            "FIND-ACCEPTED-BASELINE",
-            "operator",
-            "ENT_AUDIT_X_SHA_LADDER.md",
-            "[T-B6-ENT-B6]",
-            "Promote ACCEPTED_BASELINE_SHA",
-            "promote_accepted_baseline CLI",
-            "ladder field",
-            "baseline promoted",
-            "CRIT",
-            "no",
-            "BLOCKED_EXTERNAL",
-        ),
-        (
-            "T-B6-OD-ENT-02",
-            "B6",
-            "",
-            "",
-            "github_admin",
-            ".github/workflows/",
-            "[T-B6-ENT-B6]",
-            "Branch protection + required checks",
-            "enterprise-audit.yml",
-            "OD_ENT_02 packet",
-            "protection live",
-            "CRIT",
-            "no",
-            "BLOCKED_EXTERNAL",
-        ),
-        (
-            "T-B6-FRZ-AUD",
-            "B6",
-            aud,
-            "",
-            "operator+auditor",
-            "checklist",
-            "[T-B6-ENT-B6]",
-            "Promote FRZ-AUD after ENT B6",
-            "ENT runner evidence",
-            "checklist rows",
-            "10/10 PASS",
-            "CRIT",
-            "no",
-            "BLOCKED_EXTERNAL",
-        ),
-        (
-            "T-B6-OD-ENT-08",
-            "B6",
-            "",
-            "",
-            "operator",
-            "roadmap §5",
-            "[T-B6-FRZ-AUD,T-B6-OD-ENT-01,T-B6-OD-ENT-02]",
-            "Formal ENT stage closure OD-ENT-08",
-            "—",
-            "FORMAL_CLOSURE_PUBLICATION_SHA",
-            "ENT CLOSED",
-            "CRIT",
-            "no",
-            "BLOCKED_EXTERNAL",
-        ),
-        (
-            "T-B7-LOCK-FREEZE-SHA",
-            "B7",
-            "FRZ-FRZ-05,FRZ-FRZ-06,FRZ-FRZ-07,FRZ-FRZ-08,FRZ-FRZ-09",
-            "",
-            "implementer+operator",
-            "repo-wide freeze manifest",
-            "[T-B7-PFP-ACTIVATE]",
-            "Single commit FREEZE_CERTIFICATION_SHA (= IMPLEMENTATION_SHA); manifest freeze; no further product edits before L3 FREEZE (post-freeze policy active first)",
-            "git rev-parse; freeze manifest",
-            "FREEZE_CERTIFICATION_SHA",
-            "SHA locked @ admission",
-            "CRIT",
-            "no",
-            "PLANNED",
-        ),
-        (
-            "T-B7-L3-FREEZE",
-            "B7",
-            "FRZ-FRZ-03,FRZ-FRZ-12",
-            "",
-            "tester+auditor",
-            "enterprise_audit",
-            "[T-B7-LOCK-FREEZE-SHA]",
-            "FREEZE mode @ FREEZE_CERTIFICATION_SHA",
-            "run_enterprise_audit.py --mode FREEZE",
-            "FREEZE report",
-            "FREEZE PASS",
-            "CRIT",
-            "no",
-            "PLANNED",
-        ),
-        (
-            "T-B7-VBN-HEAD-DOSSIER",
-            "B7",
-            "FRZ-RPL-01,FRZ-RPL-02,FRZ-RPL-03,FRZ-RPL-04",
-            "FIND-VBN-PARTIAL",
-            "implementer",
-            "ARCH_FREEZE_VBN_FREEZE_SHA_DOSSIER.md; tests/qualification/ebh_5/",
-            "[T-B6-OD-ENT-08]",
-            "VBN §2.1–2.7 SSOT rollup; may prep @ closure baseline HEAD before lock; certifying acceptance remains post-lock",
-            "pytest tests/qualification/ebh_5/ -q",
-            "dossier §2.1–2.7",
-            "prohibited_unresolved=0 frozen scope",
-            "HIGH",
-            "no",
-            "PLANNED",
-        ),
-        (
-            "T-B7-VBN-INDEPENDENT-ACCEPT",
-            "B7",
-            "FRZ-RPL-01,FRZ-RPL-02,FRZ-RPL-03,FRZ-RPL-04",
-            "FIND-VBN-PARTIAL",
-            "independent_auditor",
-            "ARCH_FREEZE_VBN_FREEZE_SHA_DOSSIER.md",
-            "[T-B7-VBN-HEAD-DOSSIER,T-B7-LOCK-FREEZE-SHA]",
-            "Independent replay ENT VBN 12/12 + dossier §2.1–2.7 @ exact FREEZE_SHA; FIND-VBN-PARTIAL disposition",
-            "pytest tests/qualification/ent_audit_x/acceptance/test_ent_a_vbn_*.py -q; ENT_AUDIT_X_SEMANTIC=1",
-            "signed dossier §2.7",
-            "independent sign @ FREEZE_SHA",
-            "CRIT",
-            "no",
-            "BLOCKED_EXTERNAL",
-        ),
-        (
-            "T-B7-ECAP-2C",
-            "B7",
-            "FRZ-FRZ-12",
-            "",
-            "independent_auditor",
-            "ECAP",
-            "[T-B7-L3-FREEZE]",
-            "ECAP §2.C @ freeze SHA",
-            "certifying replay",
-            "§2.C dossier",
-            "independent sign-off",
-            "CRIT",
-            "no",
-            "BLOCKED_EXTERNAL",
-        ),
-        (
-            "T-B7-PFP-ACTIVATE",
-            "B7",
-            "FRZ-FRZ-10",
-            "",
-            "operator",
-            "ECAP §16; CHANGED-SINCE policy",
-            "[T-B6-OD-ENT-08]",
-            "Pre-lock: implement and activate post-freeze change policy before FREEZE_SHA lock",
-            "run_enterprise_audit.py --mode CHANGED-SINCE (dry-run); hooks doc",
-            "policy activation record",
-            "post-freeze policy active",
-            "CRIT",
-            "no",
-            "PLANNED",
-        ),
-        (
-            "T-B7-PFP-VERIFY",
-            "B7",
-            "FRZ-FRZ-10",
-            "",
-            "operator+auditor",
-            "ECAP §16",
-            "[T-B7-PFP-ACTIVATE,T-B7-L3-FREEZE]",
-            "Pre-closure: verify FRZ-FRZ-10 enforcement @ FREEZE_SHA before T-B7-FRZ-FRZ",
-            "certifying CHANGED-SINCE smoke @ freeze SHA",
-            "FRZ-FRZ-10 evidence dossier",
-            "policy verified active",
-            "CRIT",
-            "no",
-            "PLANNED",
-        ),
-        (
-            "T-B7-TEN-REVAL",
-            "B7",
-            ten,
-            "",
-            "independent_auditor",
-            "TENANT_X qual",
-            "[T-B7-L3-FREEZE]",
-            "Revalidate FRZ-TEN @ freeze SHA",
-            "ENT tenant domain checks",
-            "TENANT_X replay",
-            "12/12 confirmed",
-            "HIGH",
-            "no",
-            "PLANNED",
-        ),
-        (
-            "T-PATHB-EXCL",
-            "B7",
-            "FRZ-PRD-01,FRZ-PRD-02",
-            "FIND-PATHB-LIVE",
-            "operator",
-            "checklist Path B",
-            "[T-B7-L3-FREEZE]",
-            "Document Path B permitted OPEN @ freeze (no implicit global PASS)",
-            "—",
-            "Path B table",
-            "exclusions recorded",
-            "LOW",
-            "yes",
-            "PLANNED",
-        ),
-        (
-            "T-B7-CMP-REVAL",
-            "B7",
-            "FRZ-CMP-01,FRZ-CMP-02,FRZ-CMP-03,FRZ-CMP-04,FRZ-CMP-05,FRZ-CMP-06,FRZ-CMP-07,FRZ-CMP-08",
-            "FIND-CW-GATE-FAIL",
-            "independent_auditor",
-            "COMPAT-X",
-            "[T-B1-STRICT-QUALIFY,T-B7-L3-FREEZE]",
-            "Revalidate FRZ-CMP @ FREEZE SHA if B1 digest differs from historical PASS",
-            "uv run pytest tests/qualification/evol_x/gates/test_evol_x_closed_world_gates.py",
-            "CMP reval dossier",
-            "CMP evidence @ FREEZE_SHA",
-            "MED",
-            "no",
-            "PLANNED",
-        ),
-        (
-            "T-B7-PROMOTE-RPL",
-            "B7",
-            rpl,
-            "",
-            "operator+auditor",
-            "checklist",
-            "[T-B7-L3-FREEZE,T-B7-VBN-INDEPENDENT-ACCEPT]",
-            "Promote FRZ-RPL after VBN independent acceptance",
-            "ENT VBN checks",
-            "checklist promotion",
-            "4 criteria",
-            "MED",
-            "no",
-            "PLANNED",
-        ),
-        (
-            "T-B7-PROMOTE-DEBT",
-            "B7",
-            debt,
-            "",
-            "operator+auditor",
-            "checklist",
-            "[T-B7-L3-FREEZE,T-B2-DEBT]",
-            "Promote FRZ-DEBT after debt zero",
-            "ENT debt checks",
-            "checklist promotion",
-            "6 criteria",
-            "MED",
-            "no",
-            "PLANNED",
-        ),
-        (
-            "T-B7-PROMOTE-DOC",
-            "B7",
-            doc,
-            "",
-            "operator+auditor",
-            "checklist",
-            "[T-B7-L3-FREEZE,T-B3-DOC]",
-            "Promote FRZ-DOC after doc alignment",
-            "ENT-A-DOC checks",
-            "checklist promotion",
-            "6 criteria",
-            "MED",
-            "yes",
-            "PLANNED",
-        ),
-        (
-            "T-B7-COORD-ARCH-FRZ",
-            "B7",
-            "FRZ-FRZ-02",
-            "",
-            "operator+auditor",
-            "checklist",
-            _coord_arch_frz_deps(),
-            "Architecture-scoped FRZ PASS/N/A coordination (excl. Path B permitted OPEN)",
-            "ENT FREEZE + promotion ledger",
-            "FRZ-FRZ-02 satisfied",
-            "arch-scoped OPEN=0 or N/A w/ evidence",
-            "HIGH",
-            "partial",
-            "PLANNED",
-        ),
-        (
-            "T-B7-FRZ-FRZ",
-            "B7",
-            frz,
-            "",
-            "operator+auditor",
-            "freeze dossier",
-            "[T-B7-ECAP-2C,T-B7-COORD-ARCH-FRZ,T-B7-PFP-VERIFY]",
-            "ECAP §15 admission + promote FRZ-FRZ suite (authorized only)",
-            "FRZ-FRZ suite",
-            "admission dossier",
-            "13/13 PASS/N/A",
-            "CRIT",
-            "no",
-            "PLANNED",
-        ),
-        (
-            "T-B8-ROADMAP",
-            "B8",
-            "FRZ-FRZ-04",
-            "",
-            "operator",
-            "PLATFORM_ENTERPRISE_COMPLETION_ROADMAP.md §5",
-            "[T-B7-FRZ-FRZ]",
-            "Publish ARCH-FREEZE CLOSED record",
-            "—",
-            "FORMAL_CLOSURE_PUBLICATION_SHA",
-            "roadmap §5 updated",
-            "CRIT",
-            "no",
-            "PLANNED",
-        ),
-        (
-            "T-B8-ECAP-16",
-            "B8",
-            "",
-            "",
-            "operator",
-            "ECAP §16",
-            "[T-B8-ROADMAP]",
-            "Post-closure: ECAP §16 monitoring and operator handoff (policy already active)",
-            "ENT CHANGED-SINCE ongoing runs",
-            "§16 handoff record",
-            "monitoring live",
-            "MED",
-            "yes",
-            "PLANNED",
-        ),
-    ]
-    for fam in ("BND", "CTR", "OBS", "OWN", "PLG", "PRD", "REG", "REL", "SEC", "TYP"):
-        ids = list(by_fam[fam])
-        if fam == "PRD":
-            ids = [i for i in ids if i not in PATH_B_FULL]
-        rows.append(
+def _copy_graph(graph: dict[str, list[str]]) -> dict[str, list[str]]:
+    return {k: list(v) for k, v in graph.items()}
+
+
+def _without_edge(graph: dict[str, list[str]], node: str, dep: str) -> dict[str, list[str]]:
+    g = _copy_graph(graph)
+    g[node] = [d for d in g[node] if d != dep]
+    return g
+
+
+def _isolated(graph: dict[str, list[str]], node: str) -> dict[str, list[str]]:
+    """Cut every edge that points at ``node`` so that it is no longer an ancestor of anything."""
+    return {k: [d for d in v if d != node] for k, v in graph.items()}
+
+
+def _removed(graph: dict[str, list[str]], node: str) -> dict[str, list[str]]:
+    """Delete the task itself (its row) but keep the edges that point at it."""
+    return {k: list(v) for k, v in graph.items() if k != node}
+
+
+def _with_edge(graph: dict[str, list[str]], node: str, dep: str) -> dict[str, list[str]]:
+    g = _copy_graph(graph)
+    g[node].append(dep)
+    return g
+
+
+def _self_test_cases() -> list[tuple[str, dict[str, list[str]], str]]:
+    """(label, mutated graph, substring that must appear in the errors)."""
+    ref = _reference_graph()
+    cases: list[tuple[str, dict[str, list[str]], str]] = []
+    # The 20 COORD prerequisites: a prerequisite that no longer reaches COORD (by any path) must be rejected.
+    for prereq in FRZ_FRZ02_PREREQ_TASKS:
+        cases.append(
             (
-                f"T-B7-PROMOTE-{fam}",
-                "B7",
-                _frz_csv(ids),
-                "",
-                "operator+auditor",
-                "checklist",
-                "[T-B7-L3-FREEZE]",
-                (
-                    f"Promote architecture-scoped OPEN {fam} FRZ rows after FREEZE audit"
-                    if fam == "PRD"
-                    else f"Promote OPEN {fam} FRZ rows after FREEZE audit"
-                ),
-                f"ENT-A-{fam[:3]} checks",
-                "checklist promotion",
-                (f"{len(ids)} criteria; Path B split" if fam == "PRD" else f"{len(by_fam[fam])} criteria"),
-                "MED",
-                "partial",
-                "PLANNED",
+                f"COORD without {prereq}",
+                _isolated(ref, prereq),
+                f"T-B7-COORD-ARCH-FRZ must follow {prereq}",
             )
         )
-    if len(rows) != EXPECTED_WBS_TASKS:
-        raise ValueError(f"WBS row count {len(rows)} != {EXPECTED_WBS_TASKS}")
-    hdr = "| TASK_ID | BATCH | REQUIREMENT_IDS | FINDING_IDS | OWNER | FILES | DEPENDENCIES | IMPLEMENTATION_ACTION | TESTS | EVIDENCE | ACCEPTANCE | RISK | PARALLELISM | STATUS |"
-    lines = [
-        "# ARCH-FREEZE WBS and dependency DAG",
-        "",
-        f"**AUDIT_BASELINE_SHA:** `{AUDIT_BASELINE_SHA}`",
-        f"**Task count:** {EXPECTED_WBS_TASKS} (unique TASK_ID rows below)",
-        "",
-        "**Wave 1 (T-IGX-010-B):** **B0–B4** = **INDEPENDENTLY ACCEPTED (SCOPED)** @ G6 AUDIT `3d96691f1b02b393a4de189139a6e1347db99382` / closure doc `950097ea4bcfd5bba828f663bcd993b8bd1e1d63`; B1 `6bdf78c626bfcb347ad3ad9e3e18b65222f1b169`; B2–B4 `f7ce9daebad35537da974de0dda3962126c6030e`; L3 FULL 85/85; B1 digest `0ffa2676…`. **R0** = **COMPLETE** @ `950097ea4bcfd5bba828f663bcd993b8bd1e1d63` (see the R0 task rows); **R1–R6** = **PLANNED** (`T-IGX-010-C`). Handoff: [`ARCH_FREEZE_EXECUTION_WAVE1_INDEPENDENT_AUDIT_HANDOFF.md`](./ARCH_FREEZE_EXECUTION_WAVE1_INDEPENDENT_AUDIT_HANDOFF.md).",
-        "",
-        hdr,
-        "| --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |",
-    ]
-    for r in rows:
-        lines.append("| {} | {} | {} | {} | {} | {} | {} | {} | {} | {} | {} | {} | {} | {} |".format(*r))
-    lines += [
-        "",
-        "## Critical path",
-        "T-R0-WAVE1-SSOT-RECONCILE → T-R0-BASELINE-CLOSURE-HEAD → T-B0-TRACE-VALIDATE → T-B1-INV → T-B2-* → T-B4-L3-FULL → T-B5-EVOL-B6 → T-B5-EVOL-FRZ → T-B5-EVOL-FORMAL-CLOSURE → T-B6-OD-ENT-00 → T-B6-ENT-B6 → T-B6-OD-ENT-01/02 → T-B6-FRZ-AUD → T-B6-OD-ENT-08 → T-B7-PFP-ACTIVATE → T-B7-LOCK-FREEZE-SHA → T-B7-L3-FREEZE → T-B7-VBN-HEAD-DOSSIER → T-B7-VBN-INDEPENDENT-ACCEPT → (promotions + T-PATHB-EXCL) → T-B7-COORD-ARCH-FRZ → T-B7-ECAP-2C → T-B7-PFP-VERIFY → T-B7-FRZ-FRZ → T-B8-ROADMAP → T-B8-ECAP-16",
-    ]
-    _WBS.write_text("\n".join(lines) + "\n", encoding="utf-8")
+    hard = (
+        (
+            "OD-ENT-08 without OD-ENT-02",
+            _without_edge(ref, "T-B6-OD-ENT-08", "T-B6-OD-ENT-02"),
+            "OD-ENT-08 must follow T-B6-OD-ENT-02",
+        ),
+        (
+            "PFP-ACTIVATE without OD-ENT-08",
+            _without_edge(ref, "T-B7-PFP-ACTIVATE", "T-B6-OD-ENT-08"),
+            "T-B7-PFP-ACTIVATE must follow T-B6-OD-ENT-08",
+        ),
+        (
+            "LOCK without PFP-ACTIVATE",
+            _without_edge(ref, "T-B7-LOCK-FREEZE-SHA", "T-B7-PFP-ACTIVATE"),
+            "T-B7-LOCK-FREEZE-SHA must follow T-B7-PFP-ACTIVATE",
+        ),
+        (
+            "VBN-ACCEPT without LOCK",
+            _without_edge(
+                _without_edge(ref, "T-B7-VBN-INDEPENDENT-ACCEPT", "T-B7-LOCK-FREEZE-SHA"),
+                "T-B7-VBN-INDEPENDENT-ACCEPT",
+                "T-B7-L3-FREEZE",
+            ),
+            "T-B7-VBN-INDEPENDENT-ACCEPT must follow T-B7-LOCK-FREEZE-SHA",
+        ),
+        (
+            "VBN-HEAD depends on LOCK",
+            _with_edge(ref, "T-B7-VBN-HEAD-DOSSIER", "T-B7-LOCK-FREEZE-SHA"),
+            "T-B7-VBN-HEAD-DOSSIER must not require T-B7-LOCK-FREEZE-SHA",
+        ),
+        (
+            "PROMOTE-RPL without VBN-ACCEPT",
+            _without_edge(ref, "T-B7-PROMOTE-RPL", "T-B7-VBN-INDEPENDENT-ACCEPT"),
+            "T-B7-PROMOTE-RPL must follow T-B7-VBN-INDEPENDENT-ACCEPT",
+        ),
+        (
+            "EVOL chain broken (FORMAL-CLOSURE without EVOL-FRZ)",
+            _without_edge(ref, "T-B5-EVOL-FORMAL-CLOSURE", "T-B5-EVOL-FRZ"),
+            "T-B5-EVOL-FORMAL-CLOSURE must follow T-B5-EVOL-FRZ",
+        ),
+        (
+            "EVOL chain broken (OD-ENT-00 without FORMAL-CLOSURE)",
+            _without_edge(ref, "T-B6-OD-ENT-00", "T-B5-EVOL-FORMAL-CLOSURE"),
+            "OD-ENT-00 must follow T-B5-EVOL-FORMAL-CLOSURE",
+        ),
+        (
+            "PFP-ACTIVATE after L3-FREEZE",
+            _with_edge(ref, "T-B7-PFP-ACTIVATE", "T-B7-L3-FREEZE"),
+            "T-B7-PFP-ACTIVATE must precede T-B7-L3-FREEZE",
+        ),
+        (
+            "L3-FREEZE without LOCK",
+            _without_edge(ref, "T-B7-L3-FREEZE", "T-B7-LOCK-FREEZE-SHA"),
+            "T-B7-L3-FREEZE must follow T-B7-LOCK-FREEZE-SHA",
+        ),
+        (
+            "PFP-VERIFY without L3-FREEZE",
+            _without_edge(ref, "T-B7-PFP-VERIFY", "T-B7-L3-FREEZE"),
+            "T-B7-PFP-VERIFY must follow T-B7-L3-FREEZE",
+        ),
+        ("FRZ-FRZ without ECAP-2C", _isolated(ref, "T-B7-ECAP-2C"), "T-B7-FRZ-FRZ must follow T-B7-ECAP-2C"),
+        (
+            "ROADMAP without FRZ-FRZ",
+            _without_edge(ref, "T-B8-ROADMAP", "T-B7-FRZ-FRZ"),
+            "T-B8-ROADMAP must follow T-B7-FRZ-FRZ",
+        ),
+        (
+            "ECAP-16 without ROADMAP",
+            _without_edge(ref, "T-B8-ECAP-16", "T-B8-ROADMAP"),
+            "T-B8-ECAP-16 must follow T-B8-ROADMAP",
+        ),
+        (
+            "Path B: PATHB-EXCL after FRZ-FRZ",
+            _with_edge(ref, "T-PATHB-EXCL", "T-B7-FRZ-FRZ"),
+            "T-PATHB-EXCL must not depend on T-B7-FRZ-FRZ",
+        ),
+        ("cycle", _with_edge(ref, "T-B4-L3-FULL", "T-B8-ECAP-16"), "dependency cycle involving"),
+        # PD2-01 fixture: the edge T-B5-EVOL-FRZ <- T-B7-ECAP-2C (EVOL-FRZ placed after ECAP-2C) must be rejected.
+        (
+            "PD2-01: EVOL-FRZ <- ECAP-2C",
+            _with_edge(ref, "T-B5-EVOL-FRZ", "T-B7-ECAP-2C"),
+            "PD2-01: T-B5-EVOL-FRZ is a pre-lock ancestor and must not follow T-B7-ECAP-2C",
+        ),
+        (
+            "PD2-01: FRZ-AUD <- ECAP-2C",
+            _with_edge(ref, "T-B6-FRZ-AUD", "T-B7-ECAP-2C"),
+            "PD2-01: T-B6-FRZ-AUD is a pre-lock ancestor and must not follow T-B7-ECAP-2C",
+        ),
+    )
+    cases.extend(hard)
+    cases.extend(_extra_self_test_cases(ref))
+    return cases
 
 
-def _parse_matrix_open_tasks() -> dict[str, str]:
-    mapping: dict[str, str] = {}
-    for line in _MATRIX.read_text(encoding="utf-8").splitlines():
-        if not line.startswith("| FRZ-"):
-            continue
-        parts = [p.strip() for p in line.split("|")]
-        if len(parts) < 12:
-            continue
-        fid, st, task = parts[1], parts[2], parts[9]
-        if st == "OPEN":
-            mapping[fid] = task
-    return mapping
+def _extra_self_test_cases(ref: dict[str, list[str]]) -> list[tuple[str, dict[str, list[str]], str]]:
+    """Mutations for the remaining hard rules (required tasks, gates, auditor order, FRZ-FRZ-10, PD2-01 vs LOCK)."""
+    cases: list[tuple[str, dict[str, list[str]], str]] = []
+    for task in sorted(REQUIRED_SEMANTIC_TASKS):
+        cases.append((f"required task {task} missing", _removed(ref, task), "semantic DAG missing tasks"))
+    for task in sorted(INDEPENDENT_AUDITOR_TASKS):
+        cases.append((f"auditor task {task} missing", _removed(ref, task), f"missing independent auditor task {task}"))
+    no_coord = _isolated(ref, "T-B7-COORD-ARCH-FRZ")
+    no_verify = _isolated(ref, "T-B7-PFP-VERIFY")
+    # PFP-VERIFY reaches PFP-ACTIVATE directly and through L3-FREEZE -> LOCK; cut both paths.
+    verify_no_activate = _without_edge(
+        _without_edge(ref, "T-B7-PFP-VERIFY", "T-B7-PFP-ACTIVATE"), "T-B7-L3-FREEZE", "T-B7-LOCK-FREEZE-SHA"
+    )
+    cases.extend(
+        [
+            ("FRZ-FRZ without COORD", no_coord, "T-B7-FRZ-FRZ must follow T-B7-COORD-ARCH-FRZ"),
+            ("FRZ-FRZ without PFP-VERIFY", no_verify, "T-B7-FRZ-FRZ must follow T-B7-PFP-VERIFY"),
+            (
+                "PFP-VERIFY without PFP-ACTIVATE",
+                verify_no_activate,
+                "FRZ-FRZ-10: T-B7-PFP-VERIFY must follow T-B7-PFP-ACTIVATE",
+            ),
+            ("ROADMAP without PFP-VERIFY", no_verify, "Formal closure T-B8-ROADMAP must follow T-B7-PFP-VERIFY"),
+            (
+                "ROADMAP without PFP-VERIFY (FRZ-FRZ-10 message)",
+                no_verify,
+                "FRZ-FRZ-10: post-freeze policy must be verified before T-B8-ROADMAP",
+            ),
+            ("ROADMAP without COORD", no_coord, "Formal closure T-B8-ROADMAP must follow T-B7-COORD-ARCH-FRZ"),
+            (
+                "auditor order: EVOL-B6 not before EVOL-FRZ",
+                _isolated(ref, "T-B5-EVOL-B6"),
+                "EVOL B6 before FRZ-EVOL promotion: T-B5-EVOL-B6 must precede T-B5-EVOL-FRZ",
+            ),
+            (
+                "auditor order: ENT-B6 not before FRZ-AUD",
+                _isolated(ref, "T-B6-ENT-B6"),
+                "ENT B6 before FRZ-AUD promotion: T-B6-ENT-B6 must precede T-B6-FRZ-AUD",
+            ),
+            (
+                "auditor order: ECAP-2C not before FRZ-FRZ",
+                _isolated(ref, "T-B7-ECAP-2C"),
+                "ECAP §2.C before FRZ-FRZ admission: T-B7-ECAP-2C must precede T-B7-FRZ-FRZ",
+            ),
+            (
+                "PD2-01: EVOL-FRZ <- LOCK",
+                _with_edge(ref, "T-B5-EVOL-FRZ", "T-B7-LOCK-FREEZE-SHA"),
+                "PD2-01: T-B5-EVOL-FRZ is a pre-lock ancestor and must not follow T-B7-LOCK-FREEZE-SHA",
+            ),
+            (
+                "PD2-01: FRZ-AUD <- LOCK",
+                _with_edge(ref, "T-B6-FRZ-AUD", "T-B7-LOCK-FREEZE-SHA"),
+                "PD2-01: T-B6-FRZ-AUD is a pre-lock ancestor and must not follow T-B7-LOCK-FREEZE-SHA",
+            ),
+        ]
+    )
+    return cases
 
 
-def _parse_wbs() -> list[dict[str, str]]:
-    rows: list[dict[str, str]] = []
-    for line in _WBS.read_text(encoding="utf-8").splitlines():
-        if not line.startswith("| T-"):
-            continue
-        parts = [p.strip() for p in line.split("|")[1:-1]]
-        if len(parts) < 14:
-            continue
-        rows.append(
-            {
-                "TASK_ID": parts[0],
-                "REQUIREMENT_IDS": parts[2],
-                "FINDING_IDS": parts[3],
-                "DEPENDENCIES": parts[6],
-            }
+def dag_self_test() -> list[str]:
+    """Prove the DAG rules themselves work. Returns a list of self-test failures (empty = pass)."""
+    failures: list[str] = []
+    ref = _reference_graph()
+    if len(FRZ_FRZ02_PREREQ_TASKS) != 20 or len(set(FRZ_FRZ02_PREREQ_TASKS)) != 20:
+        failures.append(f"self-test: COORD must have 20 distinct prerequisites, got {len(FRZ_FRZ02_PREREQ_TASKS)}")
+    if _find_cycles(ref):
+        failures.append("self-test: reference graph has a cycle")
+    base_errors = _dag_errors(ref)
+    if base_errors:
+        failures.append(f"self-test: reference graph violates rules: {base_errors[:3]}")
+    for label, graph, expected in _self_test_cases():
+        errs = _dag_errors(graph)
+        if not any(expected in e for e in errs):
+            failures.append(f"self-test: mutation '{label}' was not rejected (expected '{expected}')")
+    # SUPERSEDED_BY_CURRENT_AUTHORITY: satisfied only with an authority_ref.
+    ok_rows = [{"TASK_ID": "T-X", "V21_QUALIFICATION": f"{SUPERSEDED_STATE} - authority_ref: abc123"}]
+    bad_rows = [{"TASK_ID": "T-X", "V21_QUALIFICATION": SUPERSEDED_STATE}]
+    ok_errs: list[str] = []
+    bad_errs: list[str] = []
+    if _check_qualification_states(ok_rows, ok_errs) != {"T-X"} or ok_errs:
+        failures.append("self-test: SUPERSEDED row with authority_ref was not accepted")
+    if _check_qualification_states(bad_rows, bad_errs) or not bad_errs:
+        failures.append("self-test: SUPERSEDED row without authority_ref was not rejected")
+    return failures
+
+
+# --------------------------------------------------------------------------------------
+# Matrix vs checklist cross-check (opt-in via the matrix header flag from T-AF2-SSOT-RECONCILE-B)
+# --------------------------------------------------------------------------------------
+
+
+def _matrix_crosscheck_enabled() -> bool:
+    return bool(_MATRIX_CROSSCHECK_FLAG_RE.search(_MATRIX.read_text(encoding="utf-8")))
+
+
+def _matrix_crosscheck(statuses: dict[str, str], errors: list[str]) -> None:
+    matrix = _parse_matrix_rows()
+    for fid in sorted(set(statuses) - set(matrix)):
+        errors.append(f"matrix cross-check: {fid} is in the checklist but not in the matrix")
+    for fid in sorted(set(matrix) - set(statuses)):
+        errors.append(f"matrix cross-check: {fid} is in the matrix but not in the checklist")
+    for fid in sorted(set(statuses) & set(matrix)):
+        if _status_class(matrix[fid][0]) != _status_class(statuses[fid]):
+            errors.append(
+                f"matrix cross-check: {fid} status differs (matrix '{matrix[fid][0]}' vs checklist '{statuses[fid]}')"
+            )
+    header = _MATRIX_HEADER_COUNTS_RE.search(_MATRIX.read_text(encoding="utf-8"))
+    families = {fid.split("-")[1] for fid in statuses}
+    if not header:
+        errors.append("matrix cross-check: header '**Rows:** N | **Families:** M' not found")
+    elif (int(header.group(1)), int(header.group(2))) != (len(statuses), len(families)):
+        errors.append(
+            f"matrix cross-check: header declares {header.group(1)} rows / {header.group(2)} families, "
+            f"checklist has {len(statuses)} / {len(families)}"
         )
-    return rows
 
 
-def _parse_findings() -> set[str]:
-    found: set[str] = set()
-    for line in _GAPS.read_text(encoding="utf-8").splitlines():
-        m = re.match(r"\| (FIND-[A-Z0-9-]+) \|", line)
-        if m:
-            found.add(m.group(1))
-    return found
+# --------------------------------------------------------------------------------------
+# Validation
+# --------------------------------------------------------------------------------------
 
 
-def _parse_gap_correction_tasks() -> dict[str, set[str]]:
-    mapping: dict[str, set[str]] = defaultdict(set)
-    for line in _GAPS.read_text(encoding="utf-8").splitlines():
-        m = re.match(r"\| (FIND-[A-Z0-9-]+) \|", line)
-        if not m:
-            continue
-        fid = m.group(1)
-        for task in re.findall(r"T-[A-Z0-9-]+", line):
-            mapping[fid].add(task)
-    return mapping
+def collect(errors: list[str] | None = None) -> tuple[list[str], dict[str, object]]:
+    """Run every check. Returns (errors, computed counters)."""
+    errors = [] if errors is None else errors
+    stats: dict[str, object] = {}
 
-
-def _extract_frz_ids(raw: str) -> list[str]:
-    return re.findall(r"FRZ-[A-Z]+-\d+", raw)
-
-
-def _extract_task_deps(raw: str) -> list[str]:
-    return re.findall(r"T-[A-Z0-9-]+", raw)
-
-
-def _extract_findings(raw: str) -> list[str]:
-    return re.findall(r"FIND-[A-Z0-9-]+", raw)
-
-
-def validate(*, strict_counts: bool = True) -> int:
-    errors: list[str] = []
     statuses = _parse_checklist()
     canonical = set(statuses)
-    if len(canonical) != 225:
-        errors.append(f"FRZ count expected 225 got {len(canonical)}")
     families = {fid.split("-")[1] for fid in canonical}
-    if len(families) != 26:
-        errors.append(f"FRZ families expected 26 got {len(families)}")
-    pass_n = sum(1 for s in statuses.values() if s == "PASS")
-    open_n = sum(1 for s in statuses.values() if s == "OPEN")
-    if strict_counts:
-        if pass_n != 108:
-            errors.append(f"PASS expected 108 got {pass_n}")
-        if open_n != 109:
-            errors.append(f"OPEN expected 109 got {open_n}")
+    if len(canonical) != EXPECTED_FRZ_ROWS:
+        errors.append(f"FRZ count expected {EXPECTED_FRZ_ROWS} got {len(canonical)}")
+    if len(families) != EXPECTED_FRZ_FAMILIES:
+        errors.append(f"FRZ families expected {EXPECTED_FRZ_FAMILIES} got {len(families)}")
+    classes = defaultdict(int)
+    for st in statuses.values():
+        classes[_status_class(st)] += 1
+    pass_n = classes.get("PASS", 0)
+    classes_plain = sum(1 for st in statuses.values() if st == "PASS")
+    open_n = classes.get("OPEN", 0)
+    for cls in sorted(set(classes) - {"PASS", "OPEN"}):
+        errors.append(f"checklist: unknown FRZ status '{cls}' ({classes[cls]} rows); expected OPEN or PASS*")
+    stats.update(frz=len(canonical), families=len(families), passed=pass_n, passed_plain=classes_plain, open=open_n)
+
+    crosscheck = _matrix_crosscheck_enabled()
+    stats["matrix_crosscheck"] = "ENABLED" if crosscheck else "OFF"
+    if crosscheck:
+        _matrix_crosscheck(statuses, errors)
 
     wbs_rows = _parse_wbs()
     task_ids = {r["TASK_ID"] for r in wbs_rows}
     if len(task_ids) != len(wbs_rows):
         errors.append("duplicate WBS TASK_ID")
-    if len(task_ids) != EXPECTED_WBS_TASKS:
-        errors.append(f"WBS task count expected {EXPECTED_WBS_TASKS} got {len(task_ids)}")
+    extension_n = sum(1 for t in task_ids if _is_extension_task(t))
+    base_n = len(task_ids) - extension_n
+    if base_n != BASE_WBS_TASKS:
+        errors.append(f"WBS historical task count expected {BASE_WBS_TASKS} got {base_n}")
+    stats.update(wbs=len(task_ids), wbs_base=base_n, wbs_extension=extension_n)
 
     findings = _parse_findings()
     gap_tasks = _parse_gap_correction_tasks()
@@ -1103,9 +710,16 @@ def validate(*, strict_counts: bool = True) -> int:
         finding_wbs[fid].update(tasks)
 
     open_tasks = _parse_matrix_open_tasks()
-    dangling = [f"{fid}->{task}" for fid, task in open_tasks.items() if task not in task_ids and task != "—"]
+    dangling: list[str] = []
+    for fid, task in open_tasks.items():
+        ids = _extract_task_ids(task)
+        if ids:
+            dangling.extend(f"{fid}->{t}" for t in ids if t not in task_ids)
+        elif task != "—":
+            dangling.append(f"{fid}->{task}")
     if dangling:
         errors.append(f"dangling OPEN FRZ remediation tasks: {len(dangling)} (e.g. {dangling[0]})")
+    stats["dangling_open_frz"] = len(dangling)
 
     for row in wbs_rows:
         tid = row["TASK_ID"]
@@ -1128,6 +742,14 @@ def validate(*, strict_counts: bool = True) -> int:
             errors.append(f"missing BLOCKER finding {bf}")
         elif not finding_wbs.get(bf):
             errors.append(f"BLOCKER {bf} has no mapped WBS/gap task")
+    for inf in INFO_FINDINGS:
+        if inf not in findings:
+            errors.append(f"missing INFO finding {inf}")
+        elif findings[inf].upper() != "INFO":
+            errors.append(f"{inf} must have severity INFO in the gap register, got '{findings[inf]}'")
+
+    satisfied = _check_qualification_states(wbs_rows, errors)
+    stats["superseded_by_authority"] = len(satisfied)
 
     graph: dict[str, list[str]] = {}
     for row in wbs_rows:
@@ -1136,25 +758,9 @@ def validate(*, strict_counts: bool = True) -> int:
             if dep not in task_ids:
                 errors.append(f"{row['TASK_ID']} missing dependency {dep}")
 
-    visiting: set[str] = set()
-    visited: set[str] = set()
-
-    def dfs(node: str) -> None:
-        if node in visiting:
-            errors.append(f"dependency cycle involving {node}")
-            return
-        if node in visited:
-            return
-        visiting.add(node)
-        for nxt in graph.get(node, []):
-            dfs(nxt)
-        visiting.remove(node)
-        visited.add(node)
-
-    for tid in task_ids:
-        dfs(tid)
-
+    errors.extend(_find_cycles(graph))
     _validate_semantic_dag(graph, task_ids, errors)
+    errors.extend(dag_self_test())
 
     for row in wbs_rows:
         if row["TASK_ID"] == "T-B7-PROMOTE-PRD":
@@ -1171,8 +777,6 @@ def validate(*, strict_counts: bool = True) -> int:
     if not _IIAC_PROTOCOL.is_file():
         errors.append("missing IIAC protocol (ARCH-FREEZE predecessor readiness G7)")
     if _IIAC_ACTIVATION.is_file():
-        import json
-
         act = json.loads(_IIAC_ACTIVATION.read_text(encoding="utf-8"))
         if str(act.get("status") or "").upper() == "IN_FORCE":
             if not act.get("effective_from_sha"):
@@ -1185,8 +789,9 @@ def validate(*, strict_counts: bool = True) -> int:
     run_ids = re.findall(r"^\| (L[123]-[A-Z0-9-]+) \|", qual_text, re.M)
     if len(run_ids) != len(set(run_ids)):
         errors.append("duplicate qualification RUN_ID")
-    if len(run_ids) != EXPECTED_QUAL_RUNS:
-        errors.append(f"qual RUN_ID count expected {EXPECTED_QUAL_RUNS} got {len(run_ids)}")
+    if len(set(run_ids)) < MIN_QUAL_RUNS:
+        errors.append(f"qual RUN_ID count must be at least {MIN_QUAL_RUNS} (append-only) got {len(set(run_ids))}")
+    stats["qual_runs"] = len(set(run_ids))
     if re.search(r"^L[123]-", qual_text, re.M):
         errors.append("qual plan contains non-table RUN rows")
 
@@ -1204,6 +809,13 @@ def validate(*, strict_counts: bool = True) -> int:
         if not (_REPO / rel).exists():
             errors.append(f"missing command path {rel}")
 
+    stats["findings"] = len(findings)
+    stats["info_findings"] = sorted(INFO_FINDINGS & set(findings))
+    return errors, stats
+
+
+def validate() -> int:
+    errors, stats = collect()
     if errors:
         for err in errors:
             print(f"[ERROR] {err}", file=sys.stderr)
@@ -1211,21 +823,44 @@ def validate(*, strict_counts: bool = True) -> int:
         return 1
     print("[OK] verify_arch_freeze_plan_traceability: all checks passed")
     print(
-        f"  FRZ=225 families=26 PASS={pass_n} OPEN={open_n} "
-        f"WBS={len(task_ids)} findings={len(findings)} dangling_open_frz=0 semantic_dag=OK"
+        f"  FRZ={stats['frz']} families={stats['families']} PASS={stats['passed']} (plain {stats['passed_plain']}) OPEN={stats['open']} "
+        f"WBS={stats['wbs']} (historical {stats['wbs_base']} + extension {stats['wbs_extension']}) "
+        f"findings={stats['findings']} qual_runs={stats['qual_runs']} "
+        f"dangling_open_frz={stats['dangling_open_frz']} matrix_crosscheck={stats['matrix_crosscheck']} "
+        f"superseded_by_authority={stats['superseded_by_authority']} semantic_dag=OK dag_self_test=OK"
     )
+    for inf in stats["info_findings"]:  # type: ignore[attr-defined]
+        print(f"  [INFO] {inf}: historical, superseded by the B1 chain (not a blocker)")
     return 0
 
 
-def main() -> int:
-    parser = argparse.ArgumentParser()
-    parser.add_argument("--sync-matrix", action="store_true")
-    parser.add_argument("--sync-wbs", action="store_true")
-    args = parser.parse_args()
-    if args.sync_matrix:
-        sync_matrix()
-    if args.sync_wbs:
-        sync_wbs()
+FORBIDDEN_SYNC_MESSAGE = (
+    "{flag} is forbidden: it rewrote WBS/matrix rows from hard-coded data. "
+    "Edit the WBS and the matrix by hand under a ticket; see MEP-AF2 v2.1 section C "
+    "(docs/project/maintainers/qualification/arch_freeze_program/MEP-AF2_v2.1.md, "
+    "'C. 54-task WBS reconciliation')."
+)
+
+
+def main(argv: list[str] | None = None) -> int:
+    parser = argparse.ArgumentParser(description=__doc__.splitlines()[0] if __doc__ else None)
+    parser.add_argument("--sync-matrix", action="store_true", help="forbidden; exits non-zero")
+    parser.add_argument("--sync-wbs", action="store_true", help="forbidden; exits non-zero")
+    parser.add_argument("--self-test", action="store_true", help="run only the DAG self-test")
+    args = parser.parse_args(argv)
+    for flag, used in (("--sync-wbs", args.sync_wbs), ("--sync-matrix", args.sync_matrix)):
+        if used:
+            print(f"[FORBIDDEN] {FORBIDDEN_SYNC_MESSAGE.format(flag=flag)}", file=sys.stderr)
+            return 2
+    if args.self_test:
+        failures = dag_self_test()
+        for failure in failures:
+            print(f"[ERROR] {failure}", file=sys.stderr)
+        if failures:
+            print(f"[FAIL] {len(failures)} DAG self-test failure(s)", file=sys.stderr)
+            return 1
+        print("[OK] DAG self-test passed")
+        return 0
     return validate()
 
 

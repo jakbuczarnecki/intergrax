@@ -615,6 +615,8 @@ Re-validate per [`audit/LLM_ADAPTERS.md`](../../audit_results/2026-08-18/LLM_ADA
 | 4 | Env defaults | `INTERGRAX_LLM_PROVIDER`, `INTERGRAX_LLM_MODEL` via `llm_profile_from_env()` |
 | 5 | Host resolver | `resolve_llm_adapter(env, agent_override)` - agent factory > env profile > platform env |
 
+**Canonical host LLM resolver (Operator ruling DP-16, 2026-11-16 - target state).** The Tier-1 resolver `resolve_llm_adapter` in `intergrax/runtime/wiring/llm_resolver.py` is the canonical host LLM resolver named in step 5; the Tier-3 resolver in `intergrax/applications/_shared/llm_resolver.py` is to delegate to it. Present state at `origin/development` `2ab57e36d`: both modules exist, each defines `resolve_llm_adapter` and its own module-level routing-evaluation record. The consolidation is delivered by the code wave and is not part of this documentation change; until then this text does not claim that a single resolver exists.
+
 ### OpenAI-compatible cluster
 
 Ten slugs share `OpenAIChatCompletionsAdapter` via `create_openai_compat_adapter()`:
