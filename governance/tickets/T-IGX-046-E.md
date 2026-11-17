@@ -13,7 +13,7 @@ Out of scope: the roadmap, the freeze checklist, every file owned by another bat
 
 ## Plan digest
 
-Plan digest: 52f0290f1328279b4c407d3bbce0d9979f9689e2abc27480855b79f660dc262e
+Plan digest: 56cf8ebec2e0cb695ed4a3e4f94cf466a496efae867c9d22149f3c0dec96097c
 
 Canonical plan: [`governance/tickets/plans/PLAN_T-IGX-046-E.md`](plans/PLAN_T-IGX-046-E.md). The digest was computed with `scripts/governance/plan_digest.py`; it must be recomputed after any edit of the plan.
 
@@ -35,9 +35,7 @@ docs/project/maintainers/qualification/enterprise_debt_register/register.jsonl
 
 ## Approved
 
-Approved: operator-delegate @ 2026-11-17T12:49:38+01:00
-Delegation: docs/project/maintainers/qualification/eqo_a_remediation/OPERATOR_ANSWERS_CODE_WAVE_TRANSCRIPTION.md@6ae045e3ad3717f222dad234af29021a8adeec8f
-Delegate session: local_7b06d036-e322-483f-8e3f-8d2010ae9e29
+PENDING.
 
 ## Test contract
 
@@ -55,4 +53,4 @@ Edits of the roadmap, the freeze checklist, PDC-owned records, generated registe
 
 ## Lifecycle state
 
-plan_approved
+plan_pending
