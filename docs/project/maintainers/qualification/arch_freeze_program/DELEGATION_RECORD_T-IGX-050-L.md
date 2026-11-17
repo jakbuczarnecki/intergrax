@@ -4,7 +4,7 @@
 
 ## Decision
 
-On 2026-11-17 the Operator chose "Authorize the delegate (Recommended)" in a question dialog about the approval of ticket T-IGX-050-L. The ticket's pull request touches `scripts/` and `tests/`, which the standing rule OD-AF-20 does not cover, so the delegate needs this one-time authorization. The Operator gave the same kind of one-time authorization for T-IGX-050-B earlier the same day (ARCH-FREEZE session record `OPERATOR_PACKET_2.md`, a session artefact under `.tmp/`, not tracked); that authorization is not widened by this record.
+On 2026-11-17 the Operator chose "Authorize the delegate (Recommended)" in a question dialog about the approval of ticket T-IGX-050-L. The ticket's pull request touches `scripts/` and `tests/`, which the standing rule OD-AF-20 does not cover, so the delegate needs this one-time authorization. The Operator gave the same kind of one-time authorization for T-IGX-050-B on 2026-11-16 (ARCH-FREEZE session record `OPERATOR_PACKET_2.md`, a session artefact under `.tmp/`, not tracked); that authorization is not widened by this record.
 
 ## Ticket and digest covered
 
