@@ -427,7 +427,7 @@ In production mode (STRICT or PRODUCT composition) the skill execution pin store
 - Who may attest Redis durability is an open item owned by the Operator. No authority grant is recorded and this procedure names no authorised role; it states only the attestation shape.
 - The audit reviews each attestation by reading `attested_by` and the document or ticket named in `procedure_ref`, and checks that the mechanism matches the cited configuration.
 
-The sibling stores that still return a literal `True` for `is_durable` (profile resolution, attempt lifecycle, execution terminal, delegated correlation, integration configuration) are not changed by this ticket; they are tracked separately as register rows.
+The sibling stores that still return a literal `True` for `is_durable` (profile resolution, attempt lifecycle, execution terminal, delegated correlation, integration configuration) are not changed by this ticket. A register row is proposed for them in the Enterprise Debt & Exceptions Register (DP-46..DP-53); no such row exists yet.
 
 ## Go deeper
 
