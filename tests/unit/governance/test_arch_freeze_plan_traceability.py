@@ -162,8 +162,8 @@ def test_task_id_regex_uses_word_boundary() -> None:
 
 def test_extension_rows_with_pt_and_t_af2_ids_are_accepted(sandbox: Sandbox) -> None:
     sandbox.add_row("T-AF2-NEW-NODE", "[T-B0-001]")
-    sandbox.add_row("PT-Q11", "[T-AF2-NEW-NODE]")
-    sandbox.set_deps("T-B1-INV", "[T-B0-SSOT-REFRESH,PT-Q11]")
+    sandbox.add_row("PT-Q21", "[T-AF2-NEW-NODE]")
+    sandbox.set_deps("T-B1-INV", "[T-B0-SSOT-REFRESH,PT-Q21]")
     errors, stats = v.collect()
     assert errors == []
     assert stats["wbs"] == 56
@@ -172,8 +172,8 @@ def test_extension_rows_with_pt_and_t_af2_ids_are_accepted(sandbox: Sandbox) -> 
 
 
 def test_pt_dependency_is_not_read_as_t_dependency(sandbox: Sandbox) -> None:
-    sandbox.add_row("PT-Q11")
-    sandbox.set_deps("T-B1-INV", "[T-B0-SSOT-REFRESH,PT-Q11]")
+    sandbox.add_row("PT-Q21")
+    sandbox.set_deps("T-B1-INV", "[T-B0-SSOT-REFRESH,PT-Q21]")
     assert v.collect()[0] == []
     # A PT- dependency without a PT- row is reported as PT-Q99, not as T-Q99.
     sandbox.set_deps("T-B1-INV", "[T-B0-SSOT-REFRESH,PT-Q99]")
@@ -419,8 +419,8 @@ def test_f1_malformed_dependency_token_is_an_error(sandbox: Sandbox, token: str)
 
 
 def test_f1_well_formed_and_empty_dependency_cells_are_accepted(sandbox: Sandbox) -> None:
-    sandbox.add_row("PT-Q11")
-    sandbox.set_deps("T-B1-INV", "[ T-B0-SSOT-REFRESH , PT-Q11 ]")
+    sandbox.add_row("PT-Q21")
+    sandbox.set_deps("T-B1-INV", "[ T-B0-SSOT-REFRESH , PT-Q21 ]")
     assert v.collect()[0] == []
     sandbox.add_row("T-AF2-NEW-NODE", "[]")
     sandbox.add_row("T-AF2-NEW-TWO", "—")
@@ -447,10 +447,12 @@ def test_f1_task_id_regex_rejects_ids_glued_to_a_prefix() -> None:
 
 
 def _apply_post_regen(sandbox: Sandbox) -> None:
-    """Rewrite the sandbox WBS into the shape DAG-REGEN must produce (plan section C.3): 8 new rows and every edge."""
+    """Rewrite the sandbox WBS into the shape DAG-REGEN must produce (plan section C.3): 11 new rows and every edge."""
     sandbox.add_row("T-AF2-ENT-BASELINE-PREFREEZE", "[T-B0-001]")
-    for task in ("T-AF2-ECAP-REVISION", "T-AF2-MANIFESTS", "PT-Q11", "PT-Q13"):
+    for task in ("T-AF2-ECAP-REVISION", "T-AF2-MANIFESTS", "PT-Q11", "PT-Q13", "PT-D05"):
         sandbox.add_row(task, "[]")
+    for task in v.W2_NODES_AFTER_PT_D05:
+        sandbox.add_row(task, "[PT-D05]")
     sandbox.add_row("T-AF2-REQUAL-HIST-PASS", "[T-B7-ECAP-2C]")
     sandbox.add_row("T-AF2-POST-BASELINE", "[PT-Q13,T-B7-COORD-ARCH-FRZ]")
     sandbox.add_row("T-AF2-W8-INDEP-CONFIRM", "[T-AF2-POST-BASELINE,T-B7-PFP-VERIFY]")
@@ -465,14 +467,14 @@ def test_f2_post_regen_shape_is_accepted(sandbox: Sandbox) -> None:
     _apply_post_regen(sandbox)
     errors, stats = v.collect()
     assert errors == []
-    assert stats["wbs"] == 62
-    assert stats["wbs_extension"] == 8
+    assert stats["wbs"] == 65
+    assert stats["wbs_extension"] == 11
 
 
 def test_f2_the_plan_c3_edges_are_all_listed() -> None:
     assert len(v.ALL_PROMOTE_TASKS) == 13  # "T-B7-PROMOTE-* (all 13)"
-    assert len(v.POST_REGEN_EDGES) == 24
-    assert len(set(v.POST_REGEN_EDGES)) == 24
+    assert len(v.POST_REGEN_EDGES) == 26
+    assert len(set(v.POST_REGEN_EDGES)) == 26
     for node, prereq in (
         ("T-B7-LOCK-FREEZE-SHA", "PT-Q11"),
         ("T-B7-LOCK-FREEZE-SHA", "T-AF2-ECAP-REVISION"),
@@ -482,6 +484,8 @@ def test_f2_the_plan_c3_edges_are_all_listed() -> None:
         ("T-AF2-POST-BASELINE", "T-B7-COORD-ARCH-FRZ"),
         ("T-AF2-W8-INDEP-CONFIRM", "T-AF2-POST-BASELINE"),
         ("T-B7-FRZ-FRZ", "T-AF2-W8-INDEP-CONFIRM"),
+        ("T-AF2-SSOT-RECONCILE-B", "PT-D05"),
+        ("T-AF2-FRZ-MATRIX", "PT-D05"),
     ):
         assert (node, prereq) in v.POST_REGEN_EDGES
 
@@ -493,9 +497,19 @@ def test_f2_dropping_a_plan_c3_edge_is_rejected(sandbox: Sandbox, node: str, pre
     assert any(f"DAG-REGEN: {node} must follow {prereq}" in e for e in _errors())
 
 
-def test_f2_incomplete_regen_rows_are_rejected(sandbox: Sandbox) -> None:
-    sandbox.add_row("T-AF2-POST-BASELINE", "[]")
+@pytest.mark.parametrize("task", v.REGEN_REQUIRED_TASKS)
+def test_f2_any_single_regen_row_switches_the_rules_on(sandbox: Sandbox, task: str) -> None:
+    sandbox.add_row(task, "[]")
     assert any("DAG-REGEN: post-regen rows missing" in e for e in _errors())
+
+
+def test_f2_non_marker_rows_without_the_lock_edges_are_rejected(sandbox: Sandbox) -> None:
+    # Review MINOR-1: the five non-marker rows added, LOCK not wired to them, used to exit 0.
+    for task in ("T-AF2-ENT-BASELINE-PREFREEZE", "T-AF2-ECAP-REVISION", "T-AF2-MANIFESTS", "PT-Q11", "PT-Q13"):
+        sandbox.add_row(task, "[]")
+    errs = _errors()
+    assert any("DAG-REGEN: post-regen rows missing" in e for e in errs)
+    assert any("DAG-REGEN: T-B7-LOCK-FREEZE-SHA must follow PT-Q11" in e for e in errs)
 
 
 def test_f2_every_plan_c3_edge_has_a_self_test_mutation() -> None:

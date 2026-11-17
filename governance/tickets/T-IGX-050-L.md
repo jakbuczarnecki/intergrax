@@ -5,7 +5,7 @@
 Fix the findings of the independent review of the validator amended by T-IGX-050-B (review verdict `VALIDATOR_REVIEW_FINDINGS`: 2 MAJOR, 2 MINOR, 3 LOW, 0 BLOCKER), in `scripts/governance/verify_arch_freeze_plan_traceability.py` and `tests/unit/governance/test_arch_freeze_plan_traceability.py`:
 
 - F1: a malformed task ID (a dependency token or a WBS row) is an error instead of being dropped silently;
-- F2: the new edges of MEP-AF2 v2.1 section C.3 are validator rules (active once the post-DAG-REGEN rows exist) with one self-test mutation each;
+- F2: the new edges of MEP-AF2 v2.1 section C.3 are validator rules (26 edges, active once any post-DAG-REGEN row exists) with one self-test mutation each; ROADMAP/ECAP-16/VBN-HEAD edges stay covered by the existing hard rules;
 - F3: every `V21_QUALIFICATION` state must belong to the section C vocabulary;
 - F4: the matrix-vs-checklist cross-check always runs;
 - F6: an `authority_ref` must contain an identifier-like token;
@@ -15,7 +15,7 @@ The change is tooling only. It certifies nothing, promotes no FRZ criterion and 
 
 ## Plan digest
 
-Plan digest: e48bd648ad43924dce5a574134b01c49e841f40c6a9947591122bf61a5ac4185
+Plan digest: 18a38d7170e9fa33f59061a3400466896549707e8664c945f055245fd02d43c6
 
 Canonical plan: [`governance/tickets/plans/PLAN_T-IGX-050-L.md`](plans/PLAN_T-IGX-050-L.md). The digest was computed with `scripts/governance/plan_digest.py`; it must be recomputed after any edit of the plan.
 
@@ -40,4 +40,4 @@ Edits of the WBS, matrix, gap register, checklist or any other document; F7 (doc
 
 ## Lifecycle state
 
-`plan_pending`
+plan_pending

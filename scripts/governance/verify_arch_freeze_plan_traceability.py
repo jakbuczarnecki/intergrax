@@ -146,12 +146,13 @@ REQUIRED_SEMANTIC_TASKS = frozenset(
 PRE_LOCK_ANCESTOR_TASKS = ("T-B5-EVOL-FRZ", "T-B6-FRZ-AUD")
 POST_LOCK_TASKS = ("T-B7-ECAP-2C", "T-B7-LOCK-FREEZE-SHA")
 
-# Plan section C.3 "new edges" (applied by DAG-REGEN). They are enforced once any marker row exists in the WBS, so the
+# Plan section C.3 "new edges" (applied by DAG-REGEN). They are enforced once any regenerated row exists in the WBS, so the
 # current 54-row WBS (before DAG-REGEN) stays valid. Like the hard rules they are reachability rules.
 ALL_PROMOTE_TASKS = ("T-B7-PROMOTE-RPL", "T-B7-PROMOTE-DEBT", "T-B7-PROMOTE-DOC") + PROMOTE_TASKS
 REGEN_MARKER_TASKS = ("T-AF2-REQUAL-HIST-PASS", "T-AF2-POST-BASELINE", "T-AF2-W8-INDEP-CONFIRM")
 LOCK_NEW_PREREQ_TASKS = ("T-AF2-ENT-BASELINE-PREFREEZE", "T-AF2-ECAP-REVISION", "T-AF2-MANIFESTS", "PT-Q11")
-REGEN_REQUIRED_TASKS = REGEN_MARKER_TASKS + LOCK_NEW_PREREQ_TASKS + ("PT-Q13",)
+W2_NODES_AFTER_PT_D05 = ("T-AF2-SSOT-RECONCILE-B", "T-AF2-FRZ-MATRIX")
+REGEN_REQUIRED_TASKS = REGEN_MARKER_TASKS + LOCK_NEW_PREREQ_TASKS + ("PT-Q13", "PT-D05") + W2_NODES_AFTER_PT_D05
 POST_REGEN_EDGES: tuple[tuple[str, str], ...] = (
     *(("T-B7-LOCK-FREEZE-SHA", prereq) for prereq in LOCK_NEW_PREREQ_TASKS),
     *((task, "T-B7-ECAP-2C") for task in (*ALL_PROMOTE_TASKS, "T-AF2-REQUAL-HIST-PASS")),
@@ -161,6 +162,7 @@ POST_REGEN_EDGES: tuple[tuple[str, str], ...] = (
     ("T-AF2-W8-INDEP-CONFIRM", "T-AF2-POST-BASELINE"),
     ("T-AF2-W8-INDEP-CONFIRM", "T-B7-PFP-VERIFY"),
     ("T-B7-FRZ-FRZ", "T-AF2-W8-INDEP-CONFIRM"),
+    *((node, "PT-D05") for node in W2_NODES_AFTER_PT_D05),
 )
 
 
@@ -467,12 +469,12 @@ def _validate_semantic_dag(graph: dict[str, list[str]], task_ids: set[str], erro
 def _validate_post_regen_rules(graph: dict[str, list[str]], task_ids: set[str], errors: list[str]) -> None:
     """Plan section C.3 new edges [T-AF2-VALIDATOR-FIX, review finding F2].
 
-    Inactive on a WBS that has none of the marker rows (the 54-row WBS before DAG-REGEN). Once any marker row exists
-    the whole regenerated set must exist, and every listed edge must be reachable; a dropped edge is an error.
+    Inactive on a WBS that has none of the regenerated rows (the 54-row WBS before DAG-REGEN). Once any of them
+    exists the whole regenerated set must exist, and every listed edge must be reachable; a dropped edge is an error.
     """
-    if not (set(REGEN_MARKER_TASKS) & task_ids):
-        return
     required: set[str] = set(REGEN_REQUIRED_TASKS)
+    if not (required & task_ids):
+        return
     missing = sorted(required - task_ids)
     if missing:
         errors.append(f"DAG-REGEN: post-regen rows missing from the WBS: {missing}")
@@ -540,6 +542,9 @@ def _post_regen_reference_graph() -> dict[str, list[str]]:
     g["T-AF2-POST-BASELINE"] = ["PT-Q13", "T-B7-COORD-ARCH-FRZ"]
     g["T-AF2-W8-INDEP-CONFIRM"] = ["T-AF2-POST-BASELINE", "T-B7-PFP-VERIFY"]
     g["T-B7-FRZ-FRZ"] = [*g["T-B7-FRZ-FRZ"], "T-AF2-W8-INDEP-CONFIRM"]
+    g["PT-D05"] = []
+    for node in W2_NODES_AFTER_PT_D05:
+        g[node] = ["PT-D05"]
     return g
 
 
