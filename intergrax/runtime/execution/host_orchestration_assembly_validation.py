@@ -16,12 +16,21 @@ from intergrax.runtime.execution.environment_orchestration_materialization impor
 )
 
 
+def _require_wiring_port(wiring: HostOrchestrationApplicationWiringPort) -> None:
+    if not isinstance(wiring, HostOrchestrationApplicationWiringPort):
+        raise TypeError(
+            "application wiring must implement HostOrchestrationApplicationWiringPort "
+            f"(apply, assert_assembly, apply_runtime_wiring); got {type(wiring).__name__}",
+        )
+
+
 def assert_host_orchestration_application_assembly(
     materialization: EnvironmentOrchestrationMaterialization,
     *,
     wiring: HostOrchestrationApplicationWiringPort,
 ) -> None:
     """Validate application assembly against the materialized orchestration host."""
+    _require_wiring_port(wiring)
     host = orchestration_backend_for_execution_engine(materialization)
     wiring.assert_assembly(host)
 
@@ -32,6 +41,7 @@ def apply_host_orchestration_application_runtime_wiring(
     wiring: HostOrchestrationApplicationWiringPort,
 ) -> None:
     """Subscribe observability and reliability governance on the private backend."""
+    _require_wiring_port(wiring)
     host = orchestration_backend_for_execution_engine(materialization)
     wiring.apply_runtime_wiring(host, event_bus=materialization.event_bus)
 

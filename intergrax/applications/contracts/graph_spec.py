@@ -4,6 +4,8 @@
 
 from __future__ import annotations
 
+from typing import TYPE_CHECKING
+
 from intergrax.contracts.application_graph_topology import (
     ApplicationGraphTopology,
     CodeCraftGraphBinding,
@@ -12,6 +14,9 @@ from intergrax.contracts.application_graph_topology import (
     GraphNode,
 )
 from intergrax.contracts.evaluator_loop import EvaluatorLoopGraphBinding
+
+if TYPE_CHECKING:
+    from intergrax.applications.contracts.manifest import AgentBinding
 
 
 class ApplicationGraphSpec(ApplicationGraphTopology):
@@ -22,10 +27,8 @@ class ApplicationGraphSpec(ApplicationGraphTopology):
     The topology fields and the unique-node validator live on the neutral Tier-0 base model.
     """
 
-    def validate_against_roster(self, bindings: list[AgentBinding]) -> None:  # noqa: F821
+    def validate_against_roster(self, bindings: list[AgentBinding]) -> None:
         """Raise ``ValueError`` when graph references unknown agents."""
-        from intergrax.applications.contracts.manifest import AgentBinding  # noqa: F401 — roster typing
-
         enabled = [b for b in bindings if b.enabled]
         known: set[str] = set()
         for binding in enabled:

@@ -27,6 +27,7 @@ from intergrax.applications.contracts.environment_profile import (
     ApplicationEnvironmentProfile,
     OrchestrationProfile,
 )
+from intergrax.applications.contracts.execution_mode import ExecutionMode
 from intergrax.applications.contracts.graph_spec import ApplicationGraphSpec, GraphNode
 from intergrax.runtime.execution.environment_orchestration_materialization import (
     EnvironmentOrchestrationMaterialization,
@@ -55,6 +56,7 @@ def _registry() -> AgentRegistry:
 
 def test_wa_05_strict_assembly_refusal_through_port() -> None:
     env = ApplicationEnvironmentProfile.lab_defaults(profile_id="wa.05.strict")
+    env.execution_mode = ExecutionMode.STRICT
     wiring = build_application_host_orchestration_wiring(env)
     assert "TenantSecurityMiddleware" in wiring.security_wiring.enabled_middleware
     bare_host = SimpleNamespace(

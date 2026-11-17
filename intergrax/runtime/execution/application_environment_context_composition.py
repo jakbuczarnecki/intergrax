@@ -132,6 +132,7 @@ def default_task_execution_options_for_environment(
 
 
 __all__ = [
+    "ContextManager",
     "default_task_execution_options_for_environment",
     "merge_task_context_options_from_environment",
     "resolve_context_engine_for_graph_node",

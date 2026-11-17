@@ -234,3 +234,19 @@ def resolve_nexus_task_classifier(
             classifier_prompt_id=spec.classifier_prompt_id,
         )
     raise OrchestrationWiringError(f"Unhandled classifier_kind: {kind.value}")
+
+
+__all__ = [
+    "EngineBackedNexusPlanner",
+    "GraphSpecSeedingPlanner",
+    "NexusClassifierKind",
+    "NexusPlannerKind",
+    "NexusTaskClassifierProtocol",
+    "NexusTaskPlannerProtocol",
+    "OrchestrationRuntimeSettings",
+    "OrchestrationWiringContext",
+    "OrchestrationWiringError",
+    "resolve_nexus_task_classifier",
+    "resolve_nexus_task_planner",
+    "resolve_task_planner",
+]
