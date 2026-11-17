@@ -9,11 +9,14 @@ import json
 from typing import Any
 
 from intergrax.contracts.execution_identity import ExecutionId, validate_execution_id
-from intergrax.distributed.contracts.kv_store import DistributedKVStore
+from intergrax.distributed.contracts.kv_store import DistributedKVStore, kv_store_survives_process_restart
 from intergrax.integrations.contracts.document_store import (
     ConditionalDocumentStore,
     DocumentRecord,
     DocumentStore,
+)
+from intergrax.integrations.contracts.document_store_process_durability import (
+    ProcessRestartDurableDocumentStore,
 )
 from intergrax.skills.contracts.skill_runtime_binding_metadata import (
     SkillRuntimeBindingMetadata,
@@ -271,7 +274,7 @@ class KvSkillExecutionPinningStore:
 
     @property
     def is_durable(self) -> bool:
-        return True
+        return kv_store_survives_process_restart(self._kv_store)
 
     def _idempotent_pin_after_uncertain_write(
         self,
@@ -368,7 +371,10 @@ class DocumentStoreSkillExecutionPinningStore:
 
     @property
     def is_durable(self) -> bool:
-        return True
+        # Strict read: the helper in document_store_process_durability applies bool(...) and would
+        # accept a truthy non-bool, so the capability is read here and must be exactly True.
+        store = self._document_store
+        return isinstance(store, ProcessRestartDurableDocumentStore) and store.survives_process_restart is True
 
     def _idempotent_pin_after_uncertain_document_write(
         self,
