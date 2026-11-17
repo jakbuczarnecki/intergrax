@@ -1,63 +1,38 @@
 # © Artur Czarnecki. All rights reserved.
 
-"""Resolve host orchestration backend construction spec from environment (no Nexus materialization)."""
+"""Build the host orchestration backend construction spec from resolved neutral values.
+
+Tier-3 resolves the environment profile into :class:`HostOrchestrationEnvironment`, the
+planner, the classifier, the context manager and the application wiring; this module keeps
+what is Execution Engine owned (retry, authority, budget, attempt lifecycle, lineage and
+terminal persistence, durable checkpoint gating). It never imports Tier-3 modules.
+"""
 
 from __future__ import annotations
 
 from pathlib import Path
 from typing import TYPE_CHECKING
 
-from intergrax.context.protocols import ContextEngine
-from intergrax.distributed.contracts.kv_store import DistributedKVStore
-from intergrax.integrations.contracts.document_store import DocumentStore
-from intergrax.runtime.task_memory.persistence_contract import TaskMemoryPersistence
-
 from intergrax.agents.persistence.checkpoint_store import AgentCheckpointStore
 from intergrax.agents.persistence.compensation_queue_store import CompensationQueueStore
-from intergrax.applications._shared.adaptive_wiring import ApplicationAdaptiveWiring
+from intergrax.contracts.attempt_lifecycle import AttemptLifecycleStore
 from intergrax.contracts.child_execution_context_inheritance import (
     ChildExecutionContextInheritancePort,
 )
-from intergrax.runtime.execution.application_environment_context_composition import (
-    resolve_context_manager_from_environment,
-)
-from intergrax.applications._shared.decision_wiring import (
-    ApplicationDecisionWiring,
-)
-from intergrax.applications._shared.guardrail_wiring import (
-    ApplicationGuardrailWiring,
-    wire_application_guardrail,
-)
-from intergrax.applications._shared.host_execution_capacity_policy import (
-    validate_strict_host_execution_capacity,
-)
-from intergrax.applications._shared.llm_resolver import resolve_environment_llm_adapter
-from intergrax.applications._shared.orchestration_wiring import (
-    OrchestrationWiringContext,
-    orchestration_requires_llm_adapter,
-    resolve_orchestration_runtime_settings,
-)
-from intergrax.runtime.execution.host_orchestration_planner_classifier_wiring import (
-    resolve_nexus_task_classifier,
-    resolve_nexus_task_planner,
-)
-from intergrax.applications._shared.reasoning_wiring import (
-    resolve_planner_llm_adapter,
-    resolve_planner_model_id,
-)
-from intergrax.applications._shared.security_wiring import (
-    ApplicationSecurityWiring,
-    wire_application_security,
-)
-from intergrax.applications.contracts.environment_profile import (
-    ApplicationEnvironmentProfile,
-)
-from intergrax.contracts.attempt_lifecycle import AttemptLifecycleStore
 from intergrax.contracts.execution_bound_declarative_tool_invocation import (
     ExecutionBoundDeclarativeToolInvoker,
 )
+from intergrax.contracts.execution_mode import ExecutionMode
+from intergrax.contracts.host_orchestration_environment import HostOrchestrationEnvironment
+from intergrax.contracts.host_orchestration_wiring_port import (
+    HostOrchestrationApplicationWiringPort,
+)
 from intergrax.contracts.idempotency_store import IdempotencyStore
-from intergrax.llm_adapters.contracts.llm_adapter import LLMAdapter
+from intergrax.contracts.run_budget import RunBudget
+from intergrax.contracts.run_trace_store import RunTraceWriter
+from intergrax.distributed.contracts.kv_store import DistributedKVStore
+from intergrax.integrations.contracts.document_store import DocumentStore
+from intergrax.runtime.adaptive.signal_collector import SignalCollector
 from intergrax.runtime.events.event_bus import RuntimeEventBus
 from intergrax.runtime.execution.attempt_lifecycle import (
     AttemptLifecycleService,
@@ -78,9 +53,7 @@ from intergrax.runtime.execution.execution_terminal.wiring import (
 from intergrax.runtime.execution.host_orchestration_loop_init_spec import (
     HostOrchestrationLoopInitSpec,
 )
-from intergrax.runtime.execution.host_orchestration_wiring_bundle import (
-    HostOrchestrationApplicationWiringBundle,
-)
+from intergrax.runtime.execution.host_runtime_config import RuntimeConfig
 from intergrax.runtime.execution.lineage.wiring import (
     resolve_execution_lineage_persistence,
 )
@@ -91,22 +64,23 @@ from intergrax.runtime.long_running.notification import NotificationAdapter
 from intergrax.runtime.long_running.persistence_contract import (
     TaskCheckpointPersistence,
 )
-from intergrax.contracts.run_budget import RunBudget
-from intergrax.runtime.execution.host_runtime_config import RuntimeConfig
 from intergrax.runtime.nexus.context.context_manager import ContextManager
+from intergrax.runtime.nexus.planning.nexus_planner_protocol import NexusTaskPlannerProtocol
 from intergrax.runtime.nexus.retry.retry_engine import RetryPolicy
-from intergrax.contracts.run_trace_store import RunTraceWriter
+from intergrax.runtime.nexus.task_classifier_protocol import NexusTaskClassifierProtocol
 from intergrax.runtime.nexus.validation.validation_engine import NexusValidationEngine
-from intergrax.runtime.registry.agent_registry_read import AgentRegistryRead
 from intergrax.runtime.sandbox.manager import SandboxSessionManager
+from intergrax.runtime.task_memory.persistence_contract import TaskMemoryPersistence
 from intergrax.runtime.workspace.manager import ShadowWorkspaceManager
 
 if TYPE_CHECKING:
+    from intergrax.contracts.agent_execution_result import AgentExecutionResult
     from intergrax.contracts.execution_continuation_state_store import (
         ExecutionContinuationStateStore,
     )
     from intergrax.contracts.execution_lineage import ExecutionLineagePersistence
     from intergrax.contracts.execution_terminal import ExecutionTerminalStore
+    from intergrax.runtime.decision_flow import DecisionFlowGate
     from intergrax.runtime.execution.authority.policy import ExecutionAuthorityPolicy
     from intergrax.runtime.execution.budget.ledger import (
         ExecutionBudgetLedger,
@@ -117,10 +91,15 @@ if TYPE_CHECKING:
     )
 
 
-def build_host_orchestration_loop_init_spec_from_environment(
-    registry: AgentRegistryRead,
+def build_host_orchestration_loop_init_spec(
     *,
-    env: ApplicationEnvironmentProfile,
+    environment: HostOrchestrationEnvironment,
+    planner: NexusTaskPlannerProtocol,
+    classifier: NexusTaskClassifierProtocol,
+    context_manager: ContextManager,
+    application_wiring: HostOrchestrationApplicationWiringPort | None,
+    decision_flow_gate: DecisionFlowGate[AgentExecutionResult] | None,
+    signal_collector: SignalCollector | None,
     trace_store: RunTraceWriter | None = None,
     checkpoint_store: TaskCheckpointPersistence | None = None,
     agent_checkpoint_store: AgentCheckpointStore | None = None,
@@ -133,14 +112,7 @@ def build_host_orchestration_loop_init_spec_from_environment(
     task_memory_db_path: Path | None = None,
     shadow_manager: ShadowWorkspaceManager | None = None,
     sandbox_manager: SandboxSessionManager | None = None,
-    llm_adapter: LLMAdapter | None = None,
     runtime_event_bus: RuntimeEventBus | None = None,
-    context_manager: ContextManager | None = None,
-    context_engine: ContextEngine | None = None,
-    security_wiring: ApplicationSecurityWiring | None = None,
-    guardrail_wiring: ApplicationGuardrailWiring | None = None,
-    decision_wiring: ApplicationDecisionWiring | None = None,
-    adaptive_wiring: ApplicationAdaptiveWiring | None = None,
     run_budget: RunBudget | None = None,
     validation_engine: NexusValidationEngine | None = None,
     runtime_config: RuntimeConfig | None = None,
@@ -158,45 +130,20 @@ def build_host_orchestration_loop_init_spec_from_environment(
     governance_evidence_recorder: GovernanceEvidenceRecorder | None = None,
     child_context_inheritance: ChildExecutionContextInheritancePort | None = None,
 ) -> HostOrchestrationLoopInitSpec:
-    """Resolve typed Execution Engine orchestration backend inputs from the environment."""
-    validate_strict_host_execution_capacity(env)
-    orch = env.orchestration_profile
-    reliability = env.reliability_profile
+    """Resolve typed Execution Engine orchestration backend inputs from neutral values."""
     retry_policy = RetryPolicy(max_retries=3)
-    if orch.retry_policy_name == "strict":
+    if environment.retry_policy_name == "strict":
         retry_policy = RetryPolicy(max_retries=1)
 
-    producer_llm = llm_adapter
-    if producer_llm is None and orchestration_requires_llm_adapter(env):
-        producer_llm = resolve_environment_llm_adapter(env)
-    planner_llm = (
-        resolve_planner_llm_adapter(env, producer_adapter=producer_llm)
-        if producer_llm is not None
-        else None
-    )
-    wiring_context = OrchestrationWiringContext(
-        llm_adapter=producer_llm,
-        planner_llm_adapter=planner_llm,
-        planner_parse_retries=env.reasoning_profile.planner_parse_retries,
-    )
-    planner = resolve_nexus_task_planner(env, wiring_context=wiring_context)
-    classifier = resolve_nexus_task_classifier(
-        registry, env, wiring_context=wiring_context
-    )
-    runtime_settings = resolve_orchestration_runtime_settings(env)
     resolved_authority_policy = authority_policy
     if resolved_authority_policy is None and runtime_config is not None:
-        resolved_authority_policy = (
-            resolve_execution_authority_policy_from_runtime_config(
-                runtime_config,
-            )
+        resolved_authority_policy = resolve_execution_authority_policy_from_runtime_config(
+            runtime_config,
         )
     resolved_budget_policy = budget_allocation_policy
     if resolved_budget_policy is None and runtime_config is not None:
-        resolved_budget_policy = (
-            resolve_execution_budget_allocation_policy_from_runtime_config(
-                runtime_config,
-            )
+        resolved_budget_policy = resolve_execution_budget_allocation_policy_from_runtime_config(
+            runtime_config,
         )
     resolved_budget_ledger_factory = execution_budget_ledger_factory
     if resolved_budget_ledger_factory is None:
@@ -205,18 +152,14 @@ def build_host_orchestration_loop_init_spec_from_environment(
                 execution_budget_ledger,
             )
         else:
-            resolved_budget_ledger_factory = create_execution_budget_ledger_factory(
-                run_budget
-            )
+            resolved_budget_ledger_factory = create_execution_budget_ledger_factory(run_budget)
     kv_store = key_value_cache
     doc_store = document_store
     durable_checkpoint_store = (
-        checkpoint_store
-        if checkpoint_store is not None and reliability.long_running_scheduler_enabled
-        else None
+        checkpoint_store if checkpoint_store is not None and environment.long_running_scheduler_enabled else None
     )
     resolved_attempt_lifecycle_store = resolve_attempt_lifecycle_store(
-        provider=reliability.attempt_lifecycle_persistence_provider,
+        provider=environment.attempt_lifecycle_persistence_provider,
         kv_store=kv_store,
         document_store=doc_store,
         explicit_store=attempt_lifecycle_store,
@@ -229,7 +172,7 @@ def build_host_orchestration_loop_init_spec_from_environment(
     resolved_execution_lineage = resolve_execution_lineage_persistence(
         explicit_persistence=execution_lineage_persistence,
         document_store=doc_store,
-        provider=reliability.execution_lineage_persistence_provider,
+        provider=environment.execution_lineage_persistence_provider,
     )
     resolved_execution_terminal = execution_terminal
     if resolved_execution_terminal is None and (
@@ -240,49 +183,29 @@ def build_host_orchestration_loop_init_spec_from_environment(
     ):
         resolved_execution_terminal = ExecutionTerminalService(
             resolve_execution_terminal_store(
-                provider=reliability.execution_terminal_persistence_provider,
+                provider=environment.execution_terminal_persistence_provider,
                 kv_store=kv_store,
                 document_store=doc_store,
                 checkpoint_store=durable_checkpoint_store,
                 execution_terminal_store=execution_terminal_store,
             ),
         )
-    resolved_context_manager = (
-        context_manager
-        or resolve_context_manager_from_environment(
-            env,
-            event_bus=runtime_event_bus,
-            llm_adapter=producer_llm,
-            context_engine=context_engine,
-        )
-    )
-
-    resolved_security = security_wiring or wire_application_security(env)
-    resolved_guardrail = guardrail_wiring or wire_application_guardrail(env)
-    wiring_bundle = HostOrchestrationApplicationWiringBundle(
-        environment=env,
-        security_wiring=resolved_security,
-        guardrail_wiring=resolved_guardrail,
-        decision_wiring=decision_wiring,
-    )
 
     return HostOrchestrationLoopInitSpec(
         classifier=classifier,
         planner=planner,
-        max_parallel_nodes=runtime_settings.max_parallel_nodes,
-        max_inflight_nodes=runtime_settings.max_inflight_nodes,
-        max_delegation_depth=runtime_settings.max_delegation_depth,
-        max_run_retries=runtime_settings.max_run_retries,
-        merge_strategy=runtime_settings.merge_strategy,
-        context_manager=resolved_context_manager,
+        max_parallel_nodes=environment.max_parallel_nodes,
+        max_inflight_nodes=environment.max_inflight_nodes,
+        max_delegation_depth=environment.max_delegation_depth,
+        max_run_retries=environment.max_run_retries,
+        merge_strategy=environment.merge_strategy,
+        context_manager=context_manager,
         event_bus=runtime_event_bus,
         trace_store=trace_store,
         retry_policy=retry_policy,
         shadow_manager=shadow_manager,
         sandbox_manager=sandbox_manager,
-        checkpoint_store=checkpoint_store
-        if reliability.long_running_scheduler_enabled
-        else None,
+        checkpoint_store=checkpoint_store if environment.long_running_scheduler_enabled else None,
         agent_checkpoint_store=agent_checkpoint_store,
         compensation_queue_store=compensation_queue_store,
         idempotency_store=idempotency_store,
@@ -291,14 +214,14 @@ def build_host_orchestration_loop_init_spec_from_environment(
         runtime_events_db_path=runtime_events_db_path,
         task_memory_store=task_memory_store,
         task_memory_db_path=task_memory_db_path,
-        production_mode=env.execution_mode.value == "strict",
-        signal_collector=adaptive_wiring.signal_collector if adaptive_wiring else None,
+        production_mode=environment.execution_mode is ExecutionMode.STRICT,
+        signal_collector=signal_collector,
         run_budget=run_budget,
-        decision_flow_gate=decision_wiring.gate if decision_wiring else None,
-        emit_coordination_advisory=orch.emit_coordination_advisory,
-        allow_dynamic_replan=runtime_settings.allow_dynamic_replan,
-        denied_planner_model_ids=tuple(env.reasoning_profile.denied_planner_model_ids),
-        planner_model_id=resolve_planner_model_id(env),
+        decision_flow_gate=decision_flow_gate,
+        emit_coordination_advisory=environment.emit_coordination_advisory,
+        allow_dynamic_replan=environment.allow_dynamic_replan,
+        denied_planner_model_ids=environment.denied_planner_model_ids,
+        planner_model_id=environment.planner_model_id,
         validation_engine=validation_engine,
         authority_policy=resolved_authority_policy,
         budget_allocation_policy=resolved_budget_policy,
@@ -308,9 +231,9 @@ def build_host_orchestration_loop_init_spec_from_environment(
         execution_lineage_persistence=resolved_execution_lineage,
         execution_continuation_state_store=execution_continuation_state_store,
         governance_evidence_recorder=governance_evidence_recorder,
-        application_wiring=wiring_bundle,
+        application_wiring=application_wiring,
         child_context_inheritance=child_context_inheritance,
     )
 
 
-__all__ = ["build_host_orchestration_loop_init_spec_from_environment"]
+__all__ = ["build_host_orchestration_loop_init_spec"]

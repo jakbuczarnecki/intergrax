@@ -4,24 +4,9 @@
 
 from __future__ import annotations
 
-from typing import Any
+from typing import TYPE_CHECKING, Any
 
 from pydantic import BaseModel, ConfigDict, Field, model_validator
-
-from intergrax.applications.contracts.application_recovery_contract import (
-    standard_strict_product_recovery_contract,
-)
-from intergrax.applications.contracts.execution_mode import ExecutionMode
-from intergrax.applications.contracts.org_policy import OrganizationalPolicyEnvelope
-from intergrax.contracts.agent_budget import BudgetReactionProfile
-from intergrax.contracts.delegated_invocation_correlation import (
-    DelegatedInvocationCorrelationDurabilityMode,
-)
-from intergrax.integrations.contracts.integration_profile import IntegrationProfile
-from intergrax.llm_adapters.contracts.routing_profile import LLMRoutingProfile
-from intergrax.contracts.utility_weights import UtilityWeights
-from intergrax.contracts.adaptive_loop_kind import AdaptiveLoopKind
-from intergrax.contracts.scaling_policy import ScalingPolicy
 
 from intergrax.applications.contracts.environment_profile.bundles import (
     CapabilityBundle,
@@ -51,9 +36,6 @@ from intergrax.applications.contracts.environment_profile.sub_profiles import (
     ContextProfile,
     CostProfile,
     DecisionProfile,
-    DecisionFlowProfile,
-    DecisionPluginProfile,
-    DecisionVerificationProfile,
     DiagnosticProfile,
     EvaluationProfile,
     ExecutionBoundaryExportProfile,
@@ -72,6 +54,56 @@ from intergrax.applications.contracts.environment_profile.sub_profiles import (
     ScalingProfile,
     ShadowWorkspaceProfile,
 )
+from intergrax.applications.contracts.execution_mode import ExecutionMode
+from intergrax.applications.contracts.org_policy import OrganizationalPolicyEnvelope
+from intergrax.contracts.agent_budget import BudgetReactionProfile
+from intergrax.contracts.dependency_concurrency_admission import (
+    DependencyConcurrencyAdmissionConfiguration,
+    DependencyConcurrencyIdentity,
+    DependencyConcurrencyKind,
+    DependencyConcurrencyOverloadMode,
+    DependencyConcurrencyPolicy,
+    DependencyConcurrencyPolicyBinding,
+)
+from intergrax.integrations.contracts.integration_profile import IntegrationProfile
+from intergrax.llm_adapters.contracts.routing_profile import LLMRoutingProfile
+
+if TYPE_CHECKING:
+    from intergrax.tools.contracts.tool_profile import ToolProfile
+
+
+def _reference_host_tool_dependency_concurrency_admission(
+    tool_profile: ToolProfile,
+    *,
+    max_concurrent_calls: int,
+) -> DependencyConcurrencyAdmissionConfiguration | None:
+    """Explicit TOOL admission for reference-host tool availability (contract-local, KR-18).
+
+    Same policy as ``applications._shared.strict_host_dependency_concurrency_admission``
+    (parity pinned by NT-WA-KR18-2); kept here so the contract root never imports its own
+    composition layer.
+    """
+    from intergrax.tools.contracts.tool_availability import available_tool_ids_for_profile
+
+    tool_ids = available_tool_ids_for_profile(tool_profile)
+    if not tool_ids:
+        return None
+    policy = DependencyConcurrencyPolicy(
+        max_concurrent_calls=max_concurrent_calls,
+        overload_mode=DependencyConcurrencyOverloadMode.REJECT,
+    )
+    bindings = tuple(
+        DependencyConcurrencyPolicyBinding(
+            identity=DependencyConcurrencyIdentity(
+                kind=DependencyConcurrencyKind.TOOL,
+                value=tool_id,
+            ),
+            policy=policy,
+        )
+        for tool_id in tool_ids
+        if tool_id
+    )
+    return DependencyConcurrencyAdmissionConfiguration(bindings=bindings)
 
 
 class ApplicationEnvironmentProfile(BaseModel):
@@ -827,13 +859,9 @@ class ApplicationEnvironmentProfile(BaseModel):
             update={"long_running_scheduler_enabled": True},
         )
         if reliability.dependency_concurrency_admission is None:
-            from intergrax.applications._shared.strict_host_dependency_concurrency_admission import (
-                build_reference_host_tool_dependency_concurrency_admission,
-            )
-
             max_inflight = orchestration.max_inflight_nodes
             if max_inflight is not None and max_inflight > 0:
-                admission = build_reference_host_tool_dependency_concurrency_admission(
+                admission = _reference_host_tool_dependency_concurrency_admission(
                     self.capabilities.tools,
                     max_concurrent_calls=max_inflight,
                 )

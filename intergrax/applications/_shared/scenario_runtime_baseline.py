@@ -13,6 +13,9 @@ if TYPE_CHECKING:
     from intergrax.runtime.execution.host_validation_composition import NexusValidationEngine
 
 from intergrax.agents.agent_contract import Agent
+from intergrax.applications._shared.application_host_orchestration_wiring import (
+    build_application_host_orchestration_wiring,
+)
 from intergrax.applications._shared.cost_assembly_resolver import assert_cost_assembly_valid
 from intergrax.applications._shared.cost_wiring import wire_application_cost
 from intergrax.applications._shared.decision_wiring import (
@@ -29,6 +32,9 @@ from intergrax.applications._shared.diagnostic_assembly_resolver import (
 )
 from intergrax.applications._shared.diagnostic_composition import (
     DiagnosticCompositionOverrides,
+)
+from intergrax.applications._shared.diagnostic_runtime_wiring import (
+    wire_terminal_execution_diagnostics,
 )
 from intergrax.applications._shared.environment_wiring import (
     ApplicationEnvironmentWiring,
@@ -105,15 +111,15 @@ from intergrax.runtime.execution.application_host_orchestration_composition impo
 from intergrax.runtime.execution.application_host_orchestration_session import (
     ApplicationHostOrchestrationSession,
 )
+from intergrax.runtime.execution.harness_host_orchestration_wiring import (
+    orchestration_application_wiring_target_from_materialization,
+)
 from intergrax.runtime.execution.host_observability_composition import wire_host_observability
 from intergrax.runtime.execution.host_orchestration_assembly_validation import (
     apply_host_orchestration_application_runtime_wiring,
     assert_host_orchestration_application_assembly,
 )
 from intergrax.runtime.execution.host_task import HostTaskExecutionPort
-from intergrax.runtime.execution.scenario_host_diagnostic_wiring import (
-    wire_scenario_terminal_execution_diagnostics,
-)
 from intergrax.runtime.governance.decision_requirement_policy import (
     PermissiveDecisionRequirementPolicy,
 )
@@ -492,6 +498,12 @@ def build_scenario_runtime_from_environment(
         meaningful_side_effect_authorization=(meaningful_side_effect_wiring.authorization_port),
     )
 
+    application_wiring = build_application_host_orchestration_wiring(
+        effective_environment,
+        security_wiring=security_wiring,
+        guardrail_wiring=guardrail_wiring,
+        decision_wiring=decision_wiring,
+    )
     orchestration_spec = build_host_orchestration_loop_init_spec_from_environment(
         registry,
         env=effective_environment,
@@ -512,6 +524,7 @@ def build_scenario_runtime_from_environment(
         security_wiring=security_wiring,
         guardrail_wiring=guardrail_wiring,
         decision_wiring=decision_wiring,
+        application_wiring=application_wiring,
         run_budget=cost_wiring.run_budget,
         validation_engine=validation_engine,
         document_store=document_store,
@@ -523,29 +536,30 @@ def build_scenario_runtime_from_environment(
     orchestration_session, materialization = compose_application_host_orchestration_session(
         registry,
         orchestration_spec,
-        effective_environment,
+        effective_environment.graph_spec,
         revision_admission=host_profile.revision_admission,
         root_authority_admission=harness_execution_governance.root_authority_admission,
         admit_root_governance_identity=harness_execution_governance.admit_root_governance_identity,
     )
     assert_host_orchestration_application_assembly(
         materialization,
-        env=effective_environment,
-        security_wiring=security_wiring,
-        guardrail_wiring=guardrail_wiring,
+        wiring=application_wiring,
     )
     apply_host_orchestration_application_runtime_wiring(
         materialization,
-        env=effective_environment,
+        wiring=application_wiring,
     )
     host_execution = orchestration_session.host_execution
 
     try:
-        diagnostic_wiring = wire_scenario_terminal_execution_diagnostics(
-            materialization=materialization,
+        orchestration_host = orchestration_application_wiring_target_from_materialization(
+            materialization,
+        )
+        diagnostic_wiring = wire_terminal_execution_diagnostics(
             env=effective_environment,
             env_wiring=env_wiring,
             observability=observability,
+            orchestration_host=orchestration_host,
             scenario_runtime_mode=runtime_mode,
         )
     except DiagnosticAssemblyError as exc:

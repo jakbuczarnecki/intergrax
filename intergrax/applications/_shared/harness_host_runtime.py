@@ -713,7 +713,7 @@ def build_harness_host_runtime(
         )
     execution = build_environment_host_task_execution(
         orchestration,
-        effective_environment,
+        effective_environment.graph_spec,
         revision_admission=resolve_harness_effective_profile_revision_admission(
             EffectiveProfileExecutionPinningDependencies(
                 revision_store=profile_persistence.revision_store,
@@ -753,8 +753,10 @@ def build_harness_host_runtime(
         execution=execution,
         transport_detachment_supervision=transport_detachment_supervision,
         orchestration_topology=orchestration_topology_wiring,
-        _internal_composition=build_harness_host_internal_composition_from_materialization(
-            orchestration,
+        _internal_composition=HarnessHostInternalComposition.from_capabilities(
+            build_harness_host_internal_composition_from_materialization(
+                orchestration,
+            ),
         ),
         application_host=application_host,
         agent_checkpoint_store=resolved_agent_checkpoint_store,

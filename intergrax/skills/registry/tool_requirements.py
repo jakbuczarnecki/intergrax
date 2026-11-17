@@ -4,12 +4,12 @@
 
 from __future__ import annotations
 
+from collections.abc import Collection
 from dataclasses import dataclass
-from typing import Collection
 
 from intergrax.skills.registry.runtime import SkillRegistry
-from intergrax.tools.registry.catalog import list_catalog_tool_ids
-from intergrax.tools.registry.profile import ToolProfile, is_tool_enabled
+from intergrax.tools.contracts.tool_availability import available_tool_ids_for_profile
+from intergrax.tools.contracts.tool_profile import ToolProfile
 
 
 @dataclass(frozen=True, slots=True)
@@ -37,10 +37,7 @@ class SkillToolRequirementError(ValueError):
 
     def __init__(self, resolution: SkillToolRequirementResolution) -> None:
         self.resolution = resolution
-        lines = [
-            f"- {violation.skill_id} -> {violation.tool_id}"
-            for violation in resolution.violations
-        ]
+        lines = [f"- {violation.skill_id} -> {violation.tool_id}" for violation in resolution.violations]
         message = "Skill tool requirements are not satisfied:\n" + "\n".join(lines)
         super().__init__(message)
 
@@ -70,16 +67,12 @@ def resolve_skill_tool_requirements(
                 continue
             required.add(normalized)
             if normalized not in available:
-                violations.append(
-                    SkillToolRequirementViolation(skill_id=skill_id, tool_id=normalized)
-                )
+                violations.append(SkillToolRequirementViolation(skill_id=skill_id, tool_id=normalized))
 
     missing = tuple(sorted({violation.tool_id for violation in violations}))
     required_tuple = tuple(sorted(required))
     satisfied = tuple(sorted(required & available))
-    ordered_violations = tuple(
-        sorted(violations, key=lambda item: (item.tool_id, item.skill_id))
-    )
+    ordered_violations = tuple(sorted(violations, key=lambda item: (item.tool_id, item.skill_id)))
 
     return SkillToolRequirementResolution(
         required_tool_ids=required_tuple,
@@ -89,18 +82,6 @@ def resolve_skill_tool_requirements(
         is_satisfied=not missing,
         violations=ordered_violations,
     )
-
-
-def available_tool_ids_for_profile(tool_profile: ToolProfile) -> tuple[str, ...]:
-    """Canonical host tool availability for composition-time validation."""
-    if tool_profile.register_all_catalog_bundles:
-        return tuple(sorted(list_catalog_tool_ids()))
-
-    available = {tool_id.strip() for tool_id in tool_profile.enabled if tool_id.strip()}
-    for tool_id in list_catalog_tool_ids():
-        if is_tool_enabled(tool_profile, tool_id):
-            available.add(tool_id)
-    return tuple(sorted(available))
 
 
 def assert_skill_tool_requirements_satisfied(

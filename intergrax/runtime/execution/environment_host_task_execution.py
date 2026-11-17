@@ -8,14 +8,18 @@ from __future__ import annotations
 from collections.abc import Callable
 
 from intergrax.agents.persistence.skill_host_wiring import HostSkillCatalogWiring
-from intergrax.applications.contracts.environment_profile import (
-    ApplicationEnvironmentProfile,
-)
 from intergrax.contracts.admitted_root_governance_identity import (
     AdmittedRootGovernanceIdentity,
 )
+from intergrax.contracts.application_graph_topology import ApplicationGraphTopology
+from intergrax.contracts.orchestration_capability_tokens import (
+    orchestration_capabilities_from_triggers,
+)
 from intergrax.contracts.runtime_execution_admission import (
     RootExecutionAuthorityAdmissionPort,
+)
+from intergrax.runtime.execution._orchestration_backend_access import (
+    orchestration_backend_for_execution_engine,
 )
 from intergrax.runtime.execution.effective_profile_revision_admission import (
     EffectiveProfileRevisionAdmissionPort,
@@ -23,14 +27,8 @@ from intergrax.runtime.execution.effective_profile_revision_admission import (
 from intergrax.runtime.execution.environment_orchestration_materialization import (
     EnvironmentOrchestrationMaterialization,
 )
-from intergrax.runtime.execution._orchestration_backend_access import (
-    orchestration_backend_for_execution_engine,
-)
 from intergrax.runtime.execution.host_task import HostTaskExecution
 from intergrax.runtime.execution.nexus_host_execution import build_host_task_execution
-from intergrax.contracts.orchestration_capability_tokens import (
-    orchestration_capabilities_from_triggers,
-)
 from intergrax.runtime.task.task import Task
 
 __all__ = ["build_environment_host_task_execution"]
@@ -38,7 +36,7 @@ __all__ = ["build_environment_host_task_execution"]
 
 def build_environment_host_task_execution(
     orchestration: EnvironmentOrchestrationMaterialization,
-    env: ApplicationEnvironmentProfile,
+    graph_topology: ApplicationGraphTopology | None,
     *,
     orchestration_triggers: frozenset[str] | None = None,
     pipeline_capability_suffix: str | None = None,
@@ -48,24 +46,19 @@ def build_environment_host_task_execution(
     skill_host_wiring: HostSkillCatalogWiring | None = None,
 ) -> HostTaskExecution:
     """Build canonical host task execution from EE-owned orchestration materialization."""
-    graph_spec = env.graph_spec
     return build_host_task_execution(
         orchestration_backend_for_execution_engine(orchestration),
         orchestration_triggers=(
             orchestration_triggers
             if orchestration_triggers is not None
             else orchestration_capabilities_from_triggers(
-                graph_spec.trigger_capabilities if graph_spec is not None else None,
+                graph_topology.trigger_capabilities if graph_topology is not None else None,
             )
         ),
         pipeline_capability_suffix=(
             pipeline_capability_suffix
             if pipeline_capability_suffix is not None
-            else (
-                graph_spec.pipeline_capability_suffix
-                if graph_spec is not None
-                else ".pipeline"
-            )
+            else (graph_topology.pipeline_capability_suffix if graph_topology is not None else ".pipeline")
         ),
         revision_admission=revision_admission,
         root_authority_admission=root_authority_admission,
