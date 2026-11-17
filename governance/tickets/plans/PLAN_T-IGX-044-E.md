@@ -1,6 +1,6 @@
 # PLAN T-IGX-044-E - EQO-A remediation node PT-E04 (T-ENF-4): new IIAC corpus, artifact and delegation verifiers
 
-Status: DRAFT for Operator review. Nothing here is approved, audited, wired into any gate or certified. This plan claims no PASS, closure, FRZ promotion or independent verification.
+Scope statement: this plan describes new files only, wires nothing into any gate, and claims no PASS, closure, FRZ promotion or independent verification. Approval state is recorded only in the ticket's Approved section and lifecycle state.
 
 ## 1. Purpose
 
@@ -87,7 +87,7 @@ One process at a time, under the shared pytest lock, at most 15 minutes:
 
 The plan needs an independent audit at the exact pull-request head SHA by a session that did not implement or review it (WP-12 node PT-Q02; WP-7 package AUD-ENF-2, which feeds the IIAC re-audit). Suggested scope for that auditor: mutate each check (drop the digest comparison, the ancestry test, the placeholder test, the normalised role comparison, the allowlist digest comparison, the approval-commit ancestry) and confirm a named test fails; confirm read-only behaviour on a clean checkout; replay the corpus verifier and the delegation verifier on the head; confirm the six material paths and the five IIAC scripts are byte-identical to `origin/development`. The implementer does not sign or certify anything.
 
-Open points for the Operator (decisions, not assumed): (a) whether the strict SHA chain is the intended rule for new manifests; (b) location of the known-draft allowlist (`scripts/governance/` here, because it must travel with the verifier); (c) the delegation verifier overlaps in intent with the resolver design of PT-E02 (`verify_ticket_approvals.py`, legacy exceptions file) and PT-E05; file names do not collide, and PT-E02 may call or fold it in; (d) whether the supersession record for the three drafts (A2-006) goes into the registers (WP-6), which this ticket does not touch.
+Operator decisions on the open points, recorded 2026-11-17 (addendum 3 of `OPERATOR_ANSWERS_CODE_WAVE_TRANSCRIPTION.md`): (a) the strict SHA chain is the rule for new manifests, in profile `final` only (`legacy` keeps the core chain as errors and the strict chain as warnings); (b) the known-draft allowlist stays in `scripts/governance/`, because it must travel with the verifier; (c) the delegation verifier stays separate; whether PT-E02 or PT-E05 folds it in is decided with PT-E05. Still open: (d) whether the supersession record for the three drafts (A2-006) goes into the registers (WP-6), which this ticket does not touch.
 
 ## 9. Risks and rollback
 

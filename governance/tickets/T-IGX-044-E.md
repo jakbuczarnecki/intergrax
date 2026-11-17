@@ -8,7 +8,7 @@ Out of scope: any edit of an existing file under `scripts/` or `tests/`, the fiv
 
 ## Plan digest
 
-Plan digest: 0a23760bc5cc9948f204ab3c5d76dfaf61b76269c9de7af3138aa9a348b415c3
+Plan digest: 8e32935807802829a1d632ae62ce8a7f7698bda1d056200e7c12d6fed74af5f6
 
 Canonical plan: [`governance/tickets/plans/PLAN_T-IGX-044-E.md`](plans/PLAN_T-IGX-044-E.md). The digest is computed with `scripts/governance/plan_digest.py` and must be recomputed after any edit of the plan.
 
