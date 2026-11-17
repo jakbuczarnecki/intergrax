@@ -294,3 +294,15 @@ new FRZ-TEN PASS = 0
 **HOST-01 local tenant audit:** PASS · **HARNESS local tenant evidence:** ACCEPTED · **global FRZ-TEN PASS delta:** 0 · **TENANT-X:** NOT ENTERED
 
 **Next mandatory stage:** GOV-X2 (implementation not entered)
+
+---
+
+Note (EQO-A remediation, as of 2026-11-17): gap statement only. The record text above is unchanged (append-only note). This note supplies none of the missing facts, adds no acceptance stamp, audit SHA, closure, PASS, verification or independence claim and changes no status; the roadmap remains the status owner. Lines of this record and roadmap rows are cited as they read at `origin/development` `44d1e5d105beb9b62d0a12e693066b0b26c125eb`.
+
+- Status of this record: L3 reads "CLOSED / independently accepted".
+- Row U: the A-Z scorecard row "U Runtime control" (L76) reads "transport parity partial → CTRL-X" with the classification `ENTERPRISE QUALIFIED`; L83 reads "No frozen-scope row uses PARTIAL/GAP/TARGET/DEFERRED/TBD." This record contains no closure record for that parity item, and `CTRL_X_ENTERPRISE_CONTROL_PLANE_RECERTIFICATION.md` contains no occurrence of "transport" or "parity" (case-insensitive search at the head named above).
+- CE-02: L200 reads "CE-02 compaction initiative" as "TRACKED FREEZE DEBT — OWNED BY CE-02" (not a HARNESS-FINAL blocker). The roadmap and the freeze checklist contain no occurrence of "CE-02" at the head named above, so this record does not point to a roadmap or checklist row that classifies or owns that initiative.
+- FRZ-HRN-03..08: the evidence table L186-L193 cites sections of this record only (`§6 + plug qual`, `§7`, `§8`, `§9`) and short statements; none of the rows L188-L193 carries a commit SHA or a test node ID.
+- Whether L76 and L200 conflict with L83 or with the FRZ-HRN-08 row (L193, "No PARTIAL/GAP/TARGET in frozen-scope A–Z") is the subject of the related finding and is not decided here.
+- Related finding: EQOA-A3-017 (EQO-A Campaign A dossier, PR #589), register row `EDER-F-0097` in `docs/project/maintainers/qualification/enterprise_debt_register/register.jsonl` (as the register reads at the head named above: owner_ref `HARNESS`, co_owner_refs `ARCH-FREEZE`, owner_status `SHARED_UNRESOLVED`; the owner vocabulary is confirmed, the row-level owner is not, and no person is assigned).
+- This note does not establish that the parity item is closed or open, who owns the CE-02 initiative, or at which SHA or by which tests FRZ-HRN-03..08 are evidenced. It adds no closure, PASS, FRZ or independence claim.
