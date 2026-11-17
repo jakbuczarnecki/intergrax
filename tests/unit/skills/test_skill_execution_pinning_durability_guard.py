@@ -14,6 +14,7 @@ import pytest
 from intergrax.distributed.contracts.kv_store import DistributedKVStore
 from intergrax.distributed.providers.redis_kv_store import RedisKVStore
 from intergrax.integrations._shared.in_memory_document_store import InMemoryDocumentStore
+from intergrax.skills.execution_binding import InMemorySkillExecutionPinningStore
 from intergrax.skills.execution_pinning_durability import DURABLE_SKILL_EXECUTION_PINNING_REQUIRED_MSG
 from intergrax.skills.execution_pinning_persistence import (
     DocumentStoreSkillExecutionPinningStore,
@@ -193,11 +194,18 @@ def test_strict_durable_kv_double_is_accepted() -> None:
 
 
 def test_lab_mode_still_allows_in_memory_stores() -> None:
-    kv_wiring = resolve_skill_execution_pinning_wiring(production_mode=False, kv_store=InMemoryKV())
-    assert kv_wiring.pinning_store.is_durable is False
-    doc_wiring = resolve_skill_execution_pinning_wiring(
+    kv_store = resolve_skill_execution_pinning_wiring(
+        production_mode=False,
+        kv_store=InMemoryKV(),
+    ).pinning_store
+    assert isinstance(kv_store, KvSkillExecutionPinningStore)
+    assert kv_store.is_durable is False
+    doc_store = resolve_skill_execution_pinning_wiring(
         production_mode=False,
         document_store=InMemoryDocumentStore(),
-    )
-    assert doc_wiring.pinning_store.is_durable is False
-    assert resolve_skill_execution_pinning_wiring(production_mode=False).pinning_store.is_durable is False
+    ).pinning_store
+    assert isinstance(doc_store, DocumentStoreSkillExecutionPinningStore)
+    assert doc_store.is_durable is False
+    default_store = resolve_skill_execution_pinning_wiring(production_mode=False).pinning_store
+    assert isinstance(default_store, InMemorySkillExecutionPinningStore)
+    assert default_store.is_durable is False
