@@ -4,7 +4,7 @@ This ticket certifies nothing, promotes no FRZ criterion, changes no stage statu
 
 ## 1. Purpose
 
-Ticket T-IGX-046-E (PR #656, merged as `cb60f683f409baf2b87c27e31902a14d918e1e0b`) applied 7 of the 16 prepared DB-C notes and held 9, because each needed a fact that no tracked file stated (its plan section 3). The Operator decided on 2026-11-17 how to release them (four decisions, given in chat; the chat is the original, no published record transcribes them yet):
+Ticket T-IGX-046-E (PR #656, merged as `cb60f683f409baf2b87c27e31902a14d918e1e0b`) applied 7 of the 16 prepared DB-C notes and held 9, because each needed a fact that no tracked file stated (its plan section 3). The Operator decided on 2026-11-17 how to release them (four decisions given in chat; the chat is the original, and addendum 6 of `docs/project/maintainers/qualification/eqo_a_remediation/OPERATOR_ANSWERS_CODE_WAVE_TRANSCRIPTION.md`, merged in PR #660 as `cd93d7e2b519bc2d894e2da82f4f8156d281af2d`, is the orchestrator's English rendering of that message and of how the orchestrator applies it):
 
 1. H04, H05, H09: publish the local replay and regression logs under `iiac_evidence/` after a secret and personal-data scan, with the sha256 in the note.
 2. H09: apply the published decision DP-44 on G-SKILL together with SKILL-X (SKILL-X artefact published, G-SKILL a scoped limitation, reconciled with roadmap L499, no independence implied), quoting only the published wording.
@@ -99,7 +99,7 @@ One process at a time, under the shared pytest lock; logs under `.tmp/session/db
 
 - `uv run pytest tests/unit/docs/`
 - `uv run python scripts/docs/check_docs_domain_pairs.py`
-- `python -I scripts/governance/verify_ticket_approvals.py --since origin/development` (a failure for the missing approval line is the only expected finding while the approval line is absent)
+- `python -m scripts.governance.verify_ticket_approvals --since origin/development` (the module form; `python -I` cannot import the `scripts` package)
 - Reviewer check: `git diff --name-only origin/development...HEAD` lists exactly the write set; `git diff --numstat` shows 0 deleted lines for the nine records.
 
 ## 9. Risks
@@ -108,7 +108,7 @@ One process at a time, under the shared pytest lock; logs under `.tmp/session/db
 - The published W5 logs contain checkout paths; the reading that this is not personal data is the author's and is flagged for the reviewer (section 3).
 - The two held T11 logs remain only on the local workstation; their digests recorded in the note and the manifest cannot be checked from the repository.
 - The decision record DP-44 is the orchestrator's transcription of a chat decision, not an Operator signature; the H09 note says so.
-- The four decisions of 2026-11-17 are not yet transcribed in a published record; the plan cites them as given in chat and the notes do not attribute any wording to them.
+- The four decisions of 2026-11-17 are transcribed in addendum 6 of `docs/project/maintainers/qualification/eqo_a_remediation/OPERATOR_ANSWERS_CODE_WAVE_TRANSCRIPTION.md` (merged in PR #660 as `cd93d7e2b519bc2d894e2da82f4f8156d281af2d`), which is the orchestrator's English rendering, not an Operator signature, and which states that the Polish original is in the chat. The notes do not attribute any wording to these decisions; the only decision wording they quote is DP-44.
 
 ## 10. Rollback
 

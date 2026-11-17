@@ -14,7 +14,7 @@ Out of scope: the roadmap, the freeze checklist, the FRZ matrices, `PDC_*` recor
 
 ## Plan digest
 
-Plan digest: f7042232638c390f8888b3ad1fe8db595d3a2529dcb52d06f99338d5913232b1
+Plan digest: e480cf87e97c7ecfe6b15e1596f772b8b5406a1c2113d44d700e880487b42760
 
 Canonical plan: [`governance/tickets/plans/PLAN_T-IGX-046-F.md`](plans/PLAN_T-IGX-046-F.md). The digest was computed with `scripts/governance/plan_digest.py`; it must be recomputed after any edit of the plan.
 
@@ -46,7 +46,7 @@ One process at a time, under the shared pytest lock; logs under `.tmp/session/db
 
 - `uv run pytest tests/unit/docs/`
 - `uv run python scripts/docs/check_docs_domain_pairs.py`
-- `python -I scripts/governance/verify_ticket_approvals.py --since origin/development`
+- `python -m scripts.governance.verify_ticket_approvals --since origin/development`
 - Reviewer check: `git diff --name-only origin/development...HEAD` lists exactly the write set plus this ticket and its plan; `git diff --numstat` shows 0 deleted lines for the nine records; a read-only reviewer confirms that no added sentence adds an independence claim without a preserved artefact, that every cited SHA resolves and that every cited line reads as cited (AR-9-07).
 
 ## Out of scope
