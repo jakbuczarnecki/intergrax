@@ -366,19 +366,16 @@ class BaseLLMAdapter(ABC):
             finally:
                 _EFFECTIVE_CALL_TIMEOUT_SEC.reset(token)
 
-        try:
-            return execute_with_resilience(
+        return self._with_typed_provider_errors(
+            lambda: execute_with_resilience(
                 physical_attempt,
                 provider=self._provider_slug(),
                 config=effective_config,
                 retry_fn=lambda f: call_with_retry(f, config=effective_config),
                 tenant_id=get_llm_tenant_id(),
-            )
-        except Exception as exc:
-            typed = self._typed_provider_error(exc, effective_config)
-            if typed is None:
-                raise
-            raise typed from exc
+            ),
+            effective_config,
+        )
 
     def _execute_streaming(self, factory: Callable[[], Iterable[T]]) -> Iterable[T]:
         """Acquire permit per creation attempt; hold through stream consumption."""
@@ -470,19 +467,16 @@ class BaseLLMAdapter(ABC):
                 map_error=map_mid_stream_error,
             )
 
-        try:
-            return execute_with_resilience(
+        return self._with_typed_provider_errors(
+            lambda: execute_with_resilience(
                 physical_attempt,
                 provider=self._provider_slug(),
                 config=effective_config,
                 retry_fn=lambda f: call_with_retry(f, config=effective_config),
                 tenant_id=get_llm_tenant_id(),
-            )
-        except Exception as exc:
-            typed = self._typed_provider_error(exc, effective_config)
-            if typed is None:
-                raise
-            raise typed from exc
+            ),
+            effective_config,
+        )
 
     # ---- Call timeout forwarding (EX-D3-01) ----
     def supports_call_timeout(self) -> bool:
@@ -514,6 +508,20 @@ class BaseLLMAdapter(ABC):
         raise LLMCallTimeoutNotForwardableError(provider=provider, model=model)
 
     # ---- Typed provider-error contract v1 (EX-D3-03) ----
+    def _with_typed_provider_errors(self, dispatch: Callable[[], T], config: LLMCallConfig) -> T:
+        """Run ``dispatch`` (the resilience loop) and convert an escaping SDK error to its typed error.
+
+        The conversion happens outside the resilience loop, so the circuit breaker and the retry loop
+        keep classifying the SDK exception itself.
+        """
+        try:
+            return dispatch()
+        except Exception as exc:
+            typed = self._typed_provider_error(exc, config)
+            if typed is None:
+                raise
+            raise typed from exc
+
     def _classify_provider_error(self, exc: Exception) -> LLMProviderErrorSignal | None:
         """Provider hook: read an SDK error the generic classifier cannot (default: none)."""
         del exc
