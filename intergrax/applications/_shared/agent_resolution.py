@@ -9,6 +9,11 @@ import importlib.util
 import inspect
 from typing import TypeVar
 
+from intergrax.applications._shared.import_allowlist import (
+    ImportAllowlistError,
+    ImportPrefixAllowlist,
+    require_import_allowed,
+)
 from intergrax.applications.contracts.agent_ref import qualname_for_agent
 from intergrax.applications.contracts.errors import AgentImportError
 from intergrax.applications.contracts.manifest import AgentBinding
@@ -22,13 +27,17 @@ def resolve_agent_type(
     *,
     agent_type: type[Tier2Agent] | None,
     import_path: str | None,
+    allowed_prefixes: ImportPrefixAllowlist | None = None,
+    fail_closed: bool = False,
 ) -> type[Tier2Agent]:
-    """Resolve Tier-2 agent class from typed or serialized binding fields."""
+    """Resolve Tier-2 agent class from typed or serialized binding fields.
+
+    A serialized ``import_path`` is checked against ``allowed_prefixes`` before the import runs;
+    ``fail_closed`` refuses a call that supplies no allowlist (``AgentImportError``).
+    """
     if agent_type is not None:
         if import_path is not None and qualname_for_agent(agent_type) != import_path:
-            raise ValueError(
-                f"agent_type {agent_type!r} does not match import_path {import_path!r}"
-            )
+            raise ValueError(f"agent_type {agent_type!r} does not match import_path {import_path!r}")
         return agent_type
 
     if import_path is None:
@@ -39,18 +48,24 @@ def resolve_agent_type(
         raise ValueError(f"Invalid import_path: {import_path!r}")
 
     try:
+        require_import_allowed(
+            module_path,
+            allowed_prefixes,
+            fail_closed=fail_closed,
+            purpose="resolve_agent_type",
+        )
+    except ImportAllowlistError as exc:
+        raise AgentImportError(str(exc)) from exc
+
+    try:
         module = importlib.import_module(module_path)
     except ModuleNotFoundError as exc:
-        raise AgentImportError(
-            f"Cannot import module {module_path!r} for {import_path!r}"
-        ) from exc
+        raise AgentImportError(f"Cannot import module {module_path!r} for {import_path!r}") from exc
 
     try:
         resolved = getattr(module, class_name)
     except AttributeError as exc:
-        raise AgentImportError(
-            f"Module {module_path!r} has no attribute {class_name!r}"
-        ) from exc
+        raise AgentImportError(f"Module {module_path!r} has no attribute {class_name!r}") from exc
 
     if not isinstance(resolved, type) or not issubclass(resolved, Tier2Agent):
         raise AgentImportError(f"{import_path!r} is not a Tier2Agent subclass")
@@ -75,9 +90,7 @@ def _invoke_build_agent_contract(
         return builder()
     if len(params) == 1:
         return builder(agent_type)
-    raise AgentImportError(
-        "build_agent_contract must accept zero arguments or a single agent type argument"
-    )
+    raise AgentImportError("build_agent_contract must accept zero arguments or a single agent type argument")
 
 
 def resolve_agent_contract_from_binding(binding: AgentBinding) -> AgentContract:
@@ -92,33 +105,25 @@ def resolve_agent_contract_from_binding(binding: AgentBinding) -> AgentContract:
     contract_module_name = f"{package}.contract"
     if importlib.util.find_spec(contract_module_name) is None:
         raise AgentImportError(
-            f"Agent {qualname_for_agent(agent_type)!r} has no declarative contract module "
-            f"{contract_module_name!r}"
+            f"Agent {qualname_for_agent(agent_type)!r} has no declarative contract module {contract_module_name!r}"
         )
     try:
         contract_module = importlib.import_module(contract_module_name)
     except Exception as exc:
-        raise AgentImportError(
-            f"Failed to import declarative contract module {contract_module_name!r}"
-        ) from exc
+        raise AgentImportError(f"Failed to import declarative contract module {contract_module_name!r}") from exc
 
     builder = getattr(contract_module, "build_agent_contract", None)
     if not callable(builder):
-        raise AgentImportError(
-            f"{contract_module_name!r} must define callable build_agent_contract()"
-        )
+        raise AgentImportError(f"{contract_module_name!r} must define callable build_agent_contract()")
 
     try:
         contract = _invoke_build_agent_contract(builder, agent_type)
     except Exception as exc:
-        raise AgentImportError(
-            f"build_agent_contract() failed for {contract_module_name!r}"
-        ) from exc
+        raise AgentImportError(f"build_agent_contract() failed for {contract_module_name!r}") from exc
 
     if not isinstance(contract, AgentContract):
         raise AgentImportError(
-            f"build_agent_contract() for {contract_module_name!r} must return AgentContract, "
-            f"got {type(contract)!r}"
+            f"build_agent_contract() for {contract_module_name!r} must return AgentContract, got {type(contract)!r}"
         )
     return contract
 

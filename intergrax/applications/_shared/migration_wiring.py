@@ -3,13 +3,17 @@
 """Load and validate Tier-3 application migrations (APP-EVOL-2 · APP-EVOL-2b)."""
 
 from __future__ import annotations
-from intergrax.utils import attribute_access
 
 import json
 import re
 from collections.abc import Iterator
 from pathlib import Path
 
+from intergrax.applications._shared.import_allowlist import (
+    ImportAllowlistError,
+    ImportPrefixAllowlist,
+    require_import_allowed,
+)
 from intergrax.applications.contracts.application_migration import (
     ApplicationMigration,
     FieldTransform,
@@ -25,6 +29,7 @@ from intergrax.applications.contracts.environment_profile import (
 )
 from intergrax.applications.contracts.manifest import ApplicationManifest
 from intergrax.runtime.registry.semver_compat import SemVer
+from intergrax.utils import attribute_access
 
 _TYPED_TARGET_ORDER: tuple[MigrationStepTarget, ...] = (
     MigrationStepTarget.PROFILE,
@@ -33,9 +38,7 @@ _TYPED_TARGET_ORDER: tuple[MigrationStepTarget, ...] = (
     MigrationStepTarget.ROSTER,
     MigrationStepTarget.HOOKS,
 )
-_VERSION_RANGE_RE = re.compile(
-    r"^(?P<op>>=|<=|>|<|=)?(?P<version>\d+\.\d+\.\d+(?:[-+].*)?)$"
-)
+_VERSION_RANGE_RE = re.compile(r"^(?P<op>>=|<=|>|<|=)?(?P<version>\d+\.\d+\.\d+(?:[-+].*)?)$")
 
 
 def load_application_migration(path: Path) -> ApplicationMigration:
@@ -138,10 +141,7 @@ def apply_profile_migration(
         meta = lifted.get("meta", {})
         current_spec = str(meta.get("spec_version", "1.0.0")) if isinstance(meta, dict) else "1.0.0"
 
-    if (
-        _profile_spec_major(migration.to_spec_version) == 2
-        and _profile_spec_major(current_spec) < 2
-    ):
+    if _profile_spec_major(migration.to_spec_version) == 2 and _profile_spec_major(current_spec) < 2:
         migrated = migrate_profile_dict_to_spec_v2(payload)
         return ApplicationEnvironmentProfile.model_validate(migrated)
 
@@ -161,9 +161,7 @@ def validate_graph_spec_migration(migration: GraphSpecMigration) -> list[str]:
         SemVer.parse(migration.to_graph_version)
     except ValueError as exc:
         violations.append(f"{migration.migration_id}: invalid graph version — {exc}")
-    if migration.breaking and not (
-        migration.node_renames or migration.edge_rewrites or migration.golden_replay_ref
-    ):
+    if migration.breaking and not (migration.node_renames or migration.edge_rewrites or migration.golden_replay_ref):
         violations.append(
             f"{migration.migration_id}: breaking GraphSpecMigration requires rewrites or golden_replay_ref",
         )
@@ -226,10 +224,7 @@ def validate_application_migration_document(
         if migration.profile_migration.breaking or migration.graph_spec_migration.breaking:
             pass  # order already enforced via steps
     if migration.graph_spec_migration and migration.org_envelope_migration:
-        if (
-            migration.graph_spec_migration.to_graph_version
-            and migration.org_envelope_migration.to_envelope_version
-        ):
+        if migration.graph_spec_migration.to_graph_version and migration.org_envelope_migration.to_envelope_version:
             pass
 
     for step in migration.steps:
@@ -329,12 +324,29 @@ def validate_manifest_migration_coverage(
     return violations
 
 
-def _load_manifest_for_package(package: str) -> ApplicationManifest | None:
+def _load_manifest_for_package(
+    package: str,
+    *,
+    allowed_prefixes: ImportPrefixAllowlist | None = None,
+    fail_closed: bool = False,
+) -> ApplicationManifest | None:
     import importlib
     import inspect
 
+    manifest_module = f"{package}.manifest"
+    if not package.isidentifier():
+        return None
     try:
-        module = importlib.import_module(f"{package}.manifest")
+        require_import_allowed(
+            manifest_module,
+            allowed_prefixes,
+            fail_closed=fail_closed,
+            purpose="application manifest",
+        )
+    except ImportAllowlistError:
+        return None
+    try:
+        module = importlib.import_module(manifest_module)
     except ImportError:
         return None
 
@@ -366,8 +378,16 @@ def _load_manifest_for_package(package: str) -> ApplicationManifest | None:
     return None
 
 
-def check_application_migrations(applications_root: Path) -> list[str]:
-    """Validate all application migration documents and manifest coverage."""
+def check_application_migrations(
+    applications_root: Path,
+    *,
+    allowed_prefixes: ImportPrefixAllowlist | None = None,
+    fail_closed: bool = False,
+) -> list[str]:
+    """Validate all application migration documents and manifest coverage.
+
+    ``allowed_prefixes`` restricts which application packages may be imported for their manifest.
+    """
     violations: list[str] = []
     migrations_by_package: dict[str, list[tuple[Path, ApplicationMigration]]] = {}
 
@@ -385,7 +405,11 @@ def check_application_migrations(applications_root: Path) -> list[str]:
         migrations_by_package.setdefault(package, []).append((path, migration))
 
     for package, entries in sorted(migrations_by_package.items()):
-        manifest = _load_manifest_for_package(package)
+        manifest = _load_manifest_for_package(
+            package,
+            allowed_prefixes=allowed_prefixes,
+            fail_closed=fail_closed,
+        )
         if manifest is None:
             violations.append(f"{package}: migrations present but manifest could not be loaded")
             continue
