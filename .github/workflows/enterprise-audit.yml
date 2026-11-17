@@ -69,7 +69,7 @@ jobs:
           name: ent-audit-pr-${{ github.event.pull_request.number || github.run_id }}
           path: .tmp/proof/ent-audit-x/
 
-  ent-audit-pr-gate:
+  ent-audit-pr-gate-renamed:
     runs-on: ubuntu-24.04
     timeout-minutes: 20
     if: github.event_name == 'pull_request'
