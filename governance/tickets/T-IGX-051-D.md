@@ -60,3 +60,21 @@ plan_approved
 ## Implementer session
 
 Implementer session: local_db61e386-18ef-4102-952a-f87126b440ff
+
+## Implementation record (implementer; not an approval, no PASS)
+
+Step 0, SDK timeout mechanisms (signatures of the SDK versions in `uv.lock`):
+
+| Adapter | Mechanism | Class |
+|---|---|---|
+| OpenAIChatCompletionsAdapter (with Azure and the OpenAI-compatible family) | `chat.completions.create(timeout=)` | PER_CALL |
+| OpenAIChatResponsesAdapter | `responses.create(timeout=)`, `responses.stream(timeout=)` | PER_CALL |
+| ClaudeChatAdapter | `messages.create(timeout=)` | PER_CALL |
+| MistralChatAdapter | `chat.complete(timeout_ms=)` | PER_CALL |
+| CohereNativeChatAdapter | `request_options={"timeout_in_seconds": ...}` | PER_CALL |
+| GeminiChatAdapter (with Vertex) | `GenerateContentConfig(http_options=HttpOptions(timeout=<ms>))` per call | PER_CALL |
+| NativeOllamaAdapter | `ollama.Client(timeout=)` built for the call when the adapter built its client | PER_CALL_DERIVED_CLIENT; NONE for an injected client |
+| LangChainOllamaAdapter | client kwargs at construction only | NONE (fail closed) |
+| BedrockChatAdapter | `botocore.config.Config(read_timeout=)` at construction only | NONE (fail closed) |
+
+Step 0, other records: capability-flag parity (NT-ROW-036) has no mismatch at base, recorded NOT_REPRODUCED; refusal matrix (NT-ROW-106) red at base in 5 cells (Claude `stream_with_tools` x3, Bedrock InvokeModel Mistral length x2); served model reported by OpenAI chat / Responses / Mistral / Anthropic (`model`), Gemini (`model_version`), Ollama (`model`), LangChain Ollama (`response_metadata["model"]`), Bedrock InvokeModel Anthropic body (`model`); not reported by Bedrock Converse and Cohere v2 (`served_model` stays `None`). Red-first and green logs: `.tmp/session/arch-freeze/T-IGX-051-D/` (main checkout).
