@@ -5,12 +5,13 @@
 
 from __future__ import annotations
 
-from collections.abc import Iterator
+from collections.abc import Iterator, Mapping
 from contextlib import contextmanager
 from contextvars import ContextVar, Token
 from dataclasses import dataclass
 from enum import Enum
-from typing import Any
+
+from pydantic import JsonValue
 
 SOURCE_SCOPE_EMPTY = "source_scope_empty"
 SOURCE_SCOPE_BLANK_ONLY = "source_scope_blank_only"
@@ -133,7 +134,7 @@ def invalid_rag_retrieval_source_scope(reason: str) -> RagRetrievalSourceScopeSt
     )
 
 
-def parse_trusted_allowed_source_ids(raw: Any) -> RagRetrievalSourceScopeState:
+def parse_trusted_allowed_source_ids(raw: JsonValue) -> RagRetrievalSourceScopeState:
     if raw is None:
         return invalid_rag_retrieval_source_scope(SOURCE_SCOPE_EMPTY)
     if not isinstance(raw, (list, tuple)):
@@ -154,7 +155,7 @@ def parse_trusted_allowed_source_ids(raw: Any) -> RagRetrievalSourceScopeState:
 
 
 def parse_task_metadata_allowed_source_ids(
-    metadata: dict[str, Any],
+    metadata: Mapping[str, JsonValue],
     *,
     key: str = "allowed_source_ids",
 ) -> RagRetrievalSourceScopeState:
