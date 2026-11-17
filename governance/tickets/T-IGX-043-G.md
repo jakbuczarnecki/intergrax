@@ -57,4 +57,6 @@ plan_approved
 
 ## Implementer session
 
-local_e87d11d4-fd56-4734-a8fd-46691cb7b3f7 (the PT-WA implementer session; recorded here, outside the plan text).
+Implementer session: local_e87d11d4-fd56-4734-a8fd-46691cb7b3f7
+
+(the PT-WA implementer session; recorded here, outside the plan text).
