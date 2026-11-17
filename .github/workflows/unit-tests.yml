@@ -7,8 +7,8 @@
 #   workflow_dispatch (smoke) - same as PR (debug)
 #   workflow_dispatch (ebh7_p3_l3) - Protocol 03 L3 exact-SHA replay (TEST_EXECUTION tree + EVIDENCE MANIFEST profile)
 #
-# pull_request workflows use the file on the repository DEFAULT branch (main).
-# After changing this file on development, merge/sync to main or PR checks keep the old definition.
+# pull_request runs use the workflow file from the PR branch (merge ref), not the default branch (W0 probe PR #609, run 43858457516).
+# A change to this file therefore takes effect on the PR that carries it; no sync to main is needed for that.
 #
 # Feature-branch pushes do not trigger CI (avoids duplicate runs when a PR is open).
 # Full regression: `uv run pytest tests/unit -m "gate and not no_ci"` locally.
