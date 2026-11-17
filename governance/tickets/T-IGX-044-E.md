@@ -1,5 +1,7 @@
 # T-IGX-044-E — EQO-A remediation node PT-E04 (T-ENF-4): new IIAC corpus, artifact and delegation verifiers
 
+Implementer session: local_0f594108-43e2-44f9-833a-5702d7860cf3
+
 ## Scope
 
 Adds NEW files only: three read-only verifiers (`verify_iiac_manifest_corpus.py`, `verify_iiac_manifest_artifacts.py`, `verify_iiac_delegation_refs.py`), one shared helper module, one allowlist of the three published invalid draft manifests, and a corpus of positive and negative example manifests, tickets and delegation references with expected verdicts, plus their tests. Source: EQO-A Campaign A findings A2-038 (part), A2-006, A6-002; WP-7 plan B design V1; decisions DP-58, DP-66, DP-68. Baseline of the findings: `258bbf6abb6fdbb92ef0185d058527fbb1e47f04`.
