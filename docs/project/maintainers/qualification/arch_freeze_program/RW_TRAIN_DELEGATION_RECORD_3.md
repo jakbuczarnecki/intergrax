@@ -4,7 +4,7 @@
 
 ## Decision
 
-On 2026-11-17 the Operator approved wave packet 2 of the RW train under OD-AF-22 (one approval packet per wave, then the signing delegate). The packet is the ARCH-FREEZE session record `w3-packet-2/PACKET_2.md` (a session artefact under `.tmp/`, not tracked). The Operator accepted the recommended answers of the Operator-level open questions of lane 2, and then answered "I approve all five (Recommended)" in a question dialog that named the one point of caution: ticket T-IGX-044-F edits 5 of the 6 IIAC material governance paths.
+On 2026-11-17 the Operator approved wave packet 2 of the RW train under OD-AF-22 (one approval packet per wave, then the signing delegate). The packet is the ARCH-FREEZE session record `w3-packet-2/PACKET_2.md` (a session artefact under `.tmp/`, not tracked). The Operator accepted the recommended answers of the Operator-level open questions of lane 2, and then chose the recommended option to approve all five tickets (English rendering) in a question dialog that named the one point of caution: ticket T-IGX-044-F edits 5 of the 6 IIAC material governance paths.
 
 ## Tickets and digests covered
 
@@ -21,7 +21,7 @@ The delegate signs each ticket only for its digest above. Earlier digests of the
 ## What the delegation does not cover
 
 - Any further amendment of one of these plans: it needs a new approval and a new record file.
-- Tickets of other lanes, any PROD-Q run, and Part G of T-IGX-043-H.
+- Tickets of other lanes, any PROD-Q run, and Part G of the PT-WB ticket.
 - The merge of the train into `development`, the RB-2 re-pin itself and every Operator-only file.
 
 ## Ancestry and merge rule
