@@ -390,14 +390,6 @@ def test_pending_queue_depth_provider() -> None:
     assert pending_queue_depth(kv, "t1", provider="celery") == 1.0
 
 
-def test_resolve_kubernetes_backend_in_memory_by_default(monkeypatch) -> None:
-    from intergrax.runtime.capacity.production_adapters import resolve_kubernetes_backend
-
-    monkeypatch.delenv("INTERGRAX_KUBERNETES_URL", raising=False)
-    _backend, kind = resolve_kubernetes_backend()
-    assert kind == "in_memory"
-
-
 def test_capacity_metrics_export() -> None:
     record_scale_action(target="nexus_host")
     metrics = export_capacity_metrics()

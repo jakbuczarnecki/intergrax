@@ -6,6 +6,7 @@ from __future__ import annotations
 
 import os
 from dataclasses import dataclass, field
+from enum import StrEnum
 from typing import Literal
 
 from intergrax.contracts.agent_run import RequestIdentity
@@ -26,6 +27,24 @@ from intergrax.runtime.governance.control_plane_mutation_authorization import (
 )
 
 KubernetesBackendKind = Literal["live", "in_memory"]
+
+#: The Celery adapter only counts worker scale intents; no live Celery scaler exists.
+CELERY_BACKEND_KIND = "intent_only"
+
+
+class CapacityBackendPosture(StrEnum):
+    """Explicit backend posture for capacity adapter construction (T-IGX-043-B, DP-29).
+
+    ``PRODUCTION`` is the default and never substitutes an in-memory scaler.
+    ``CI_DETERMINISTIC`` is an explicit typed opt-in for tests and harness CI only.
+    """
+
+    PRODUCTION = "production"
+    CI_DETERMINISTIC = "ci_deterministic"
+
+
+class CapacityBackendNotConfiguredError(RuntimeError):
+    """Raised when a production posture has no Kubernetes backend configured."""
 
 
 @dataclass
@@ -77,14 +96,27 @@ class CeleryCapacityObservation:
         return self._backend.get_worker_count()
 
 
-def resolve_kubernetes_backend() -> tuple[InMemoryKubernetesScaler | object, KubernetesBackendKind]:
-    """Use REST K8s client when INTERGRAX_KUBERNETES_URL is configured."""
+def resolve_kubernetes_backend(
+    *,
+    posture: CapacityBackendPosture = CapacityBackendPosture.PRODUCTION,
+) -> tuple[InMemoryKubernetesScaler | object, KubernetesBackendKind]:
+    """Use REST K8s client when INTERGRAX_KUBERNETES_URL is configured.
+
+    Without a cluster URL the default ``PRODUCTION`` posture raises
+    ``CapacityBackendNotConfiguredError``; the in-memory scaler is returned only for the
+    explicit ``CI_DETERMINISTIC`` posture.
+    """
     if os.environ.get("INTERGRAX_KUBERNETES_URL", "").strip():
         from intergrax.integrations.providers.cloud_platform.kubernetes.bundle import (
             create_kubernetes_cloud_platform,
         )
 
         return create_kubernetes_cloud_platform(), "live"
+    if posture is not CapacityBackendPosture.CI_DETERMINISTIC:
+        raise CapacityBackendNotConfiguredError(
+            "kubernetes backend not configured: set INTERGRAX_KUBERNETES_URL "
+            "(the in-memory scaler is available only for CapacityBackendPosture.CI_DETERMINISTIC)",
+        )
     return InMemoryKubernetesScaler(replicas_by_deployment={"nexus-host": 2}), "in_memory"
 
 
@@ -100,9 +132,14 @@ def build_production_capacity_adapters(
     *,
     mutation_boundary: ControlPlaneMutationAuthorizationBoundary | None = None,
     tenant_resolver: EcpResourceTenantResolver | None = None,
+    backend_posture: CapacityBackendPosture = CapacityBackendPosture.PRODUCTION,
 ) -> ProductionCapacityAdapters:
-    """Wire production Celery/K8s adapters behind governed capacity mutation facade."""
-    kubernetes, backend_kind = resolve_kubernetes_backend()
+    """Wire production Celery/K8s adapters behind governed capacity mutation facade.
+
+    The Celery adapter is intent-only (``CELERY_BACKEND_KIND``). Without a cluster URL the
+    default posture raises ``CapacityBackendNotConfiguredError``.
+    """
+    kubernetes, backend_kind = resolve_kubernetes_backend(posture=backend_posture)
     celery = CeleryProductionAdapter(worker_count=2)
     provisioner = ScalingProvisioner(
         kubernetes=kubernetes,
