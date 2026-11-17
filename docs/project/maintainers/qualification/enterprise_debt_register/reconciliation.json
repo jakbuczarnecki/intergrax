@@ -579,5 +579,10 @@
   "blocks_debt_entries_bound": 16,
   "master_rows_path": "ws:WP-12/master_rows.jsonl (not tracked; cited by id)"
  },
- "not_stated": "DP-54 (standalone ECAP executable) is open; no row or file here states a position"
+ "post_ingest_rows": {
+  "note": "Rows raised after the initial ingest (id prefix EDER-N) by ticket T-IGX-050-M; the ingest totals above (rows_total and the rows_by_* counts) describe the initial load and are unchanged.",
+  "rows": ["EDER-N-0001", "EDER-N-0002", "EDER-N-0003", "EDER-N-0004"],
+  "rows_total_after": 1073
+ },
+ "not_stated": "At the ingest this field read: DP-54 (standalone ECAP executable) is open; no row or file here states a position. Since 2026-11-17 DP-54 is decided (option a, executable required) and row EDER-N-0004 records it; the executable does not exist."
 }
