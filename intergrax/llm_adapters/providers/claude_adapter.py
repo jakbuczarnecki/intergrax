@@ -427,7 +427,8 @@ class ClaudeChatAdapter(BaseLLMAdapter):
                     if reported is not None:
                         reported_out_tok = reported
 
-            stream = provider_stream[0] if provider_stream else None
+            # The last opened stream is the one that was consumed (an earlier one failed its attempt).
+            stream = provider_stream[-1] if provider_stream else None
             get_final = attribute_access.optional(stream, "get_final_message", None)
             resp = get_final() if callable(get_final) else None
             if resp is not None:

@@ -651,3 +651,55 @@ def test_every_registered_bedrock_codec_has_invoke_cells() -> None:
     for family in _INVOKE_SIGNALS:
         assert f"bedrock-invoke-{family}/generate_messages" in _PATHS
         assert f"bedrock-invoke-{family}/stream_messages" in _PATHS
+
+
+class _ServiceUnavailable(Exception):
+    """Shape of an SDK status error that the retry module treats as transient (503)."""
+
+    status_code = 503
+
+
+class _FakeMessageStream:
+    """Shape of an Anthropic ``MessageStream``: an iterable of events plus ``get_final_message``."""
+
+    def __init__(self, text: str, *, first_event_fails: bool) -> None:
+        self._text = text
+        self._first_event_fails = first_event_fails
+
+    def __iter__(self) -> Iterator[Any]:
+        if self._first_event_fails:
+            raise _ServiceUnavailable("first event failed")
+        yield SimpleNamespace(type="message_start", message=SimpleNamespace(id="m2", usage=None))
+
+    def get_final_message(self) -> Any:
+        return SimpleNamespace(
+            id="m",
+            model="served",
+            stop_reason="end_turn",
+            content=[SimpleNamespace(type="text", text=self._text)],
+            usage=SimpleNamespace(input_tokens=1, output_tokens=1),
+        )
+
+
+def test_claude_stream_with_tools_reads_the_final_message_of_the_stream_that_was_consumed() -> None:
+    """Review finding L-4 of PR #670: after a retried stream open, the final message comes from the last
+    opened stream, not from the first one whose first event failed."""
+    from intergrax.llm_adapters._shared.call_config import LLMCallConfig
+    from intergrax.llm_adapters._shared.resilience import reset_provider_resilience
+
+    opened = [
+        _FakeMessageStream("from the failed attempt", first_event_fails=True),
+        _FakeMessageStream("from the consumed stream", first_event_fails=False),
+    ]
+    calls: list[int] = []
+
+    def create(**_: Any) -> _FakeMessageStream:
+        calls.append(1)
+        return opened[len(calls) - 1]
+
+    adapter = _claude_adapter(create)
+    adapter.call_config = LLMCallConfig(max_retries=1, retry_backoff_sec=0.0)
+    reset_provider_resilience(adapter._provider_slug())
+    response = _final(list(adapter.stream_with_tools(_USER, [_TOOL])))
+    assert len(calls) == 2
+    assert response.content == "from the consumed stream"
