@@ -49,6 +49,7 @@ from intergrax.runtime.long_running.scheduler_claim import (
     ScheduledResumeClaim,
     SchedulerActionClaim,
 )
+from intergrax.runtime.long_running.uncertain_reconciler import UncertainReconciler
 from intergrax.runtime.task.task import Task, TaskResult
 from intergrax.utils.time_provider import SystemTimeProvider
 
@@ -57,6 +58,8 @@ logger = logging.getLogger(__name__)
 ENV_SCHEDULER_POLL_SECONDS = "INTERGRAX_SCHEDULER_POLL_SECONDS"
 DEFAULT_SCHEDULER_POLL_SECONDS = 30.0
 DEFAULT_SCHEDULER_LEASE_SECONDS = 300.0
+DEFAULT_MAX_CLAIM_RELEASE_ATTEMPTS = 5
+RELEASE_CAP_REACHED_LOG_CODE = "scheduled_resume_release_cap_reached"
 TIMEOUT_LEDGER_PREFIX = "timeout:"
 
 
@@ -88,8 +91,16 @@ class LongRunningScheduler:
         owner_id: str | None = None,
         execution_terminal: ExecutionTerminalService | None = None,
         recurrence: RecurrenceMaterializer | None = None,
+        uncertain_reconciler: UncertainReconciler | None = None,
+        max_claim_release_attempts: int = DEFAULT_MAX_CLAIM_RELEASE_ATTEMPTS,
     ) -> None:
+        if max_claim_release_attempts < 1:
+            raise ValueError("max_claim_release_attempts must be at least 1")
         self._recurrence = recurrence
+        self._uncertain_reconciler = uncertain_reconciler
+        # Consecutive releases per schedule_id (G-20). Process-local: the count is lost on restart.
+        self._max_claim_release_attempts = max_claim_release_attempts
+        self._release_counts: dict[str, int] = {}
         self._checkpoint_store = checkpoint_store
         self._resume_executor = resume_executor
         self._schedule_store = schedule_store
@@ -131,9 +142,13 @@ class LongRunningScheduler:
         current = _ensure_utc(now or SystemTimeProvider.utc_now())
         processed = 0
         failures: list[Exception] = []
-        # Both phases always run; a failure of one never skips the other. The first failure is
+        # Every phase always runs; a failure of one never skips the others. The first failure is
         # re-raised afterwards so callers (and the poll loop) still see that the tick failed.
-        for phase in (self._process_due_schedules, self._process_expired_human_timeouts):
+        for phase in (
+            self._process_due_schedules,
+            self._process_expired_human_timeouts,
+            self._reconcile_uncertain_schedules,
+        ):
             try:
                 processed += await phase(current)
             except Exception as exc:
@@ -171,6 +186,12 @@ class LongRunningScheduler:
             except Exception:
                 logger.exception("long-running scheduler tick failed")
             await asyncio.sleep(self._poll_interval_seconds)
+
+    async def _reconcile_uncertain_schedules(self, now: datetime) -> int:
+        """Resolve UNCERTAIN schedules through the optional reconciler; it never executes a resume."""
+        if self._uncertain_reconciler is not None:
+            self._uncertain_reconciler.reconcile_once(now)
+        return 0
 
     async def _process_due_schedules(self, now: datetime) -> int:
         if self._schedule_store is None:
@@ -278,6 +299,7 @@ class LongRunningScheduler:
     def _end_unexecuted_claim(self, claim: ScheduledResumeClaim, *, recurring: bool) -> None:
         """Finish a claim whose target can no longer be resumed (nothing is executed)."""
         assert self._schedule_store is not None
+        self._release_counts.pop(claim.schedule_id, None)
         if not recurring:
             self._schedule_store.complete_claim(claim)
             return
@@ -304,6 +326,7 @@ class LongRunningScheduler:
                 "invalid recurrence rule for schedule_id=%s; occurrence skipped, nothing executed",
                 claim.schedule_id,
             )
+            self._release_counts.pop(claim.schedule_id, None)
             self._schedule_store.skip_claim(claim)
             return False
         except Exception:
@@ -316,7 +339,24 @@ class LongRunningScheduler:
         return True
 
     def _release_claim(self, claim: ScheduledResumeClaim) -> None:
+        """Hand a claim back for retry, at most ``max_claim_release_attempts`` times in a row (G-20).
+
+        After the cap the claim is skipped (nothing executed, the recurrence chain ends) with one
+        error under ``RELEASE_CAP_REACHED_LOG_CODE`` instead of being retried every tick forever.
+        """
         assert self._schedule_store is not None
+        released = self._release_counts.get(claim.schedule_id, 0)
+        if released >= self._max_claim_release_attempts:
+            self._release_counts.pop(claim.schedule_id, None)
+            logger.error(
+                "%s schedule_id=%s releases=%s; claim skipped, nothing executed",
+                RELEASE_CAP_REACHED_LOG_CODE,
+                claim.schedule_id,
+                released,
+            )
+            self._schedule_store.skip_claim(claim)
+            return
+        self._release_counts[claim.schedule_id] = released + 1
         try:
             self._schedule_store.release_claim(claim)
         except NotImplementedError:
@@ -464,6 +504,7 @@ class LongRunningScheduler:
         )
         result = await self._resume_executor.resume_task(task, checkpoint=checkpoint)
         if schedule_claim is not None and self._schedule_store is not None:
+            self._release_counts.pop(schedule_claim.schedule_id, None)
             self._schedule_store.complete_claim(schedule_claim)
         if action_claim is not None and self._ledger is not None:
             self._ledger.complete_action(action_claim)
