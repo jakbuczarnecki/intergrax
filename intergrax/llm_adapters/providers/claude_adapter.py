@@ -151,6 +151,7 @@ class ClaudeChatAdapter(BaseLLMAdapter):
                     messages=payload_msgs,
                     max_tokens=int(out_tokens),
                     temperature=float(temp) if temp is not None else None,
+                    **self._call_timeout_kwargs(),
                 )
             )
 
@@ -160,7 +161,11 @@ class ClaudeChatAdapter(BaseLLMAdapter):
                 in_tok = int(resp.usage.input_tokens or in_tok)
                 out_tok = int(resp.usage.output_tokens or out_tok)
 
-            response = self._build_response_from_message(resp, content=text, in_tok=in_tok, out_tok=out_tok)
+            response = self._served_response(
+                call,
+                self._build_response_from_message(resp, content=text, in_tok=in_tok, out_tok=out_tok),
+                attribute_access.optional(resp, "model", None),
+            )
             success = True
             return response
 
@@ -193,6 +198,7 @@ class ClaudeChatAdapter(BaseLLMAdapter):
         out_tok = 0
         buf: list[str] = []
         signal = StreamFinishSignal()
+        served_model: object = None
 
         try:
             in_tok = int(self.estimate_tokens_for_messages(messages, model_hint=self.model_name_for_token_estimation))
@@ -211,8 +217,12 @@ class ClaudeChatAdapter(BaseLLMAdapter):
                     max_tokens=int(out_tokens),
                     temperature=float(temp) if temp is not None else None,
                     stream=True,
+                    **self._call_timeout_kwargs(),
                 )
             ):
+                if event.type == "message_start":
+                    served_model = _stream_message_model(event) or served_model
+                    continue
                 if event.type == "message_delta":
                     signal.observe_finish(
                         attribute_access.optional(attribute_access.optional(event, "delta", None), "stop_reason", None)
@@ -232,14 +242,18 @@ class ClaudeChatAdapter(BaseLLMAdapter):
             success = True
             finish, refusal = signal.resolve()
             yield final_stream_event(
-                response=build_adapter_response(
-                    content="".join(buf),
-                    finish_reason=finish,
-                    refusal=refusal,
-                    usage=LLMTokenUsage.from_counts(input_tokens=in_tok, output_tokens=out_tok),
-                    model=self.model,
-                    provider=self._provider_slug(),
-                    provider_extensions=self._estimate_extensions(),
+                response=self._served_response(
+                    call,
+                    build_adapter_response(
+                        content="".join(buf),
+                        finish_reason=finish,
+                        refusal=refusal,
+                        usage=LLMTokenUsage.from_counts(input_tokens=in_tok, output_tokens=out_tok),
+                        model=self.model,
+                        provider=self._provider_slug(),
+                        provider_extensions=self._estimate_extensions(),
+                    ),
+                    served_model,
                 )
             )
 
@@ -304,13 +318,17 @@ class ClaudeChatAdapter(BaseLLMAdapter):
             if tool_choice is not None:
                 kwargs["tool_choice"] = tool_choice
 
-            resp = self._execute(lambda: self.client.messages.create(**kwargs))
+            resp = self._execute(lambda: self.client.messages.create(**kwargs, **self._call_timeout_kwargs()))
             if attribute_access.optional(resp, "usage", None):
                 in_tok = int(resp.usage.input_tokens or in_tok)
                 out_tok = int(resp.usage.output_tokens or 0)
 
             content = extract_anthropic_text(resp)
-            response = self._build_response_from_message(resp, content=content, in_tok=in_tok, out_tok=out_tok)
+            response = self._served_response(
+                call,
+                self._build_response_from_message(resp, content=content, in_tok=in_tok, out_tok=out_tok),
+                attribute_access.optional(resp, "model", None),
+            )
             success = True
             return response
         except Exception as e:
@@ -364,42 +382,103 @@ class ClaudeChatAdapter(BaseLLMAdapter):
                 kwargs["tool_choice"] = tool_choice
 
             provider_stream: list[object] = []
+            signal = StreamFinishSignal()
+            served_model: object = None
+            reported_out_tok: int | None = None
+            tool_blocks: dict[int, dict[str, str]] = {}
 
             def _open_stream() -> object:
-                opened = self.client.messages.create(**kwargs)
+                opened = self.client.messages.create(**kwargs, **self._call_timeout_kwargs())
                 provider_stream.append(opened)
                 return opened
 
             for event in self._execute_streaming(_open_stream):
-                if event.type == "content_block_delta":
-                    delta = event.delta
-                    if attribute_access.optional(delta, "type", None) == "text_delta":
-                        txt = delta.text or ""
+                event_type = attribute_access.optional(event, "type", None)
+                if event_type == "message_start":
+                    served_model = _stream_message_model(event) or served_model
+                    reported_in_tok = _usage_count(attribute_access.optional(event, "message", None), "input_tokens")
+                    if reported_in_tok is not None:
+                        in_tok = reported_in_tok
+                elif event_type == "content_block_start":
+                    block = attribute_access.optional(event, "content_block", None)
+                    if attribute_access.optional(block, "type", None) == "tool_use":
+                        tool_blocks[_block_index(event)] = {
+                            "id": str(attribute_access.optional(block, "id", "") or ""),
+                            "name": str(attribute_access.optional(block, "name", "") or ""),
+                            "arguments": "",
+                        }
+                elif event_type == "content_block_delta":
+                    delta = attribute_access.optional(event, "delta", None)
+                    delta_type = attribute_access.optional(delta, "type", None)
+                    if delta_type == "text_delta":
+                        txt = attribute_access.optional(delta, "text", "") or ""
                         if txt:
                             buf.append(txt)
                             yield partial_stream_event(delta_content=txt)
+                    elif delta_type == "input_json_delta":
+                        pending = tool_blocks.get(_block_index(event))
+                        if pending is not None:
+                            pending["arguments"] += str(attribute_access.optional(delta, "partial_json", "") or "")
+                elif event_type == "message_delta":
+                    signal.observe_finish(
+                        attribute_access.optional(attribute_access.optional(event, "delta", None), "stop_reason", None)
+                    )
+                    reported = _usage_count(event, "output_tokens")
+                    if reported is not None:
+                        reported_out_tok = reported
 
-            stream = provider_stream[0] if provider_stream else None
+            # The last opened stream is the one that was consumed (an earlier one failed its attempt).
+            stream = provider_stream[-1] if provider_stream else None
             get_final = attribute_access.optional(stream, "get_final_message", None)
             resp = get_final() if callable(get_final) else None
-            if resp is None:
-                result = self.generate_with_tools(
-                    messages,
-                    tools_schema,
-                    temperature=temperature,
-                    max_tokens=max_tokens,
-                    tool_choice=tool_choice,
-                    run_id=run_id,
+            if resp is not None:
+                # A ``MessageStream`` (``messages.stream``) assembles the final message itself.
+                if attribute_access.optional(resp, "usage", None):
+                    in_tok = int(resp.usage.input_tokens or in_tok)
+                    out_tok = int(resp.usage.output_tokens or 0)
+                content = extract_anthropic_text(resp) or "".join(buf)
+                response = self._served_response(
+                    call,
+                    self._build_response_from_message(resp, content=content, in_tok=in_tok, out_tok=out_tok),
+                    attribute_access.optional(resp, "model", None) or served_model,
                 )
-                yield final_stream_event(response=result)
+                success = True
+                yield final_stream_event(response=response)
                 return
 
-            if attribute_access.optional(resp, "usage", None):
-                in_tok = int(resp.usage.input_tokens or in_tok)
-                out_tok = int(resp.usage.output_tokens or 0)
-
-            content = extract_anthropic_text(resp) or "".join(buf)
-            response = self._build_response_from_message(resp, content=content, in_tok=in_tok, out_tok=out_tok)
+            # ``messages.create(stream=True)`` yields raw events only: the final response is assembled
+            # from them; the request is not re-issued as a buffered call (PDC-D3 F-D3-02, EX-L-07).
+            tool_calls = tool_calls_from_openai_dicts(
+                [
+                    {
+                        "id": block["id"],
+                        "type": "function",
+                        "function": {"name": block["name"], "arguments": block["arguments"] or "{}"},
+                    }
+                    for _, block in sorted(tool_blocks.items())
+                ]
+            )
+            finish, refusal = signal.resolve(has_tool_calls=bool(tool_calls))
+            if reported_out_tok is not None:
+                out_tok = reported_out_tok
+            else:
+                out_tok = int(
+                    self.estimate_tokens_for_text("".join(buf), model_hint=self.model_name_for_token_estimation)
+                )
+            response = self._served_response(
+                call,
+                build_adapter_response(
+                    content="".join(buf),
+                    finish_reason=finish,
+                    refusal=refusal,
+                    usage=LLMTokenUsage.from_counts(input_tokens=in_tok, output_tokens=out_tok),
+                    model=self.model,
+                    provider=self._provider_slug(),
+                    tool_calls=tool_calls,
+                    provider_extensions=self._estimate_extensions(),
+                ),
+                served_model,
+            )
             success = True
             yield final_stream_event(response=response)
         except Exception as e:
@@ -441,3 +520,20 @@ class ClaudeChatAdapter(BaseLLMAdapter):
         json_str = self._extract_json_object(raw) or raw.strip()
         parsed = self._validate_with_model(output_model, json_str)
         return LLMStructuredResult(parsed=parsed, response=adapter_response)
+
+
+def _stream_message_model(event: object) -> object:
+    """Model reported by a ``message_start`` stream event (``event.message.model``), if any."""
+    return attribute_access.optional(attribute_access.optional(event, "message", None), "model", None)
+
+
+def _usage_count(holder: object, field: str) -> int | None:
+    value = attribute_access.optional(attribute_access.optional(holder, "usage", None), field, None)
+    if isinstance(value, int) and not isinstance(value, bool) and value >= 0:
+        return value
+    return None
+
+
+def _block_index(event: object) -> int:
+    index = attribute_access.optional(event, "index", 0)
+    return index if isinstance(index, int) and not isinstance(index, bool) else 0

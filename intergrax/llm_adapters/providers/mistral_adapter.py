@@ -21,6 +21,7 @@ from intergrax.llm_adapters._shared.adapter_response_builders import (
 from intergrax.llm_adapters._shared.messages import map_chat_completion_messages, split_system_messages
 from intergrax.llm_adapters._shared.openai_completion_mapping import (
     adapter_response_from_openai_chat_completion,
+    reported_served_model,
 )
 from intergrax.llm_adapters._shared.openai_tool_call_interop import tool_calls_from_openai_dicts
 from intergrax.llm_adapters._shared.openai_tool_choice_projection import (
@@ -148,12 +149,17 @@ class MistralChatAdapter(BaseLLMAdapter):
                 stream=False,
             )
 
-            res: ChatCompletionResponse = self._execute(lambda: self.client.chat.complete(**payload))
+            res: ChatCompletionResponse = self._execute(
+                lambda: self.client.chat.complete(**payload, **self._mistral_timeout_kwargs())
+            )
 
-            response = adapter_response_from_openai_chat_completion(
-                res,
-                model=self.model,
-                provider=self._provider_slug(),
+            response = self._served_response(
+                call,
+                adapter_response_from_openai_chat_completion(
+                    res,
+                    model=self.model,
+                    provider=self._provider_slug(),
+                ),
             )
             success = True
             return response
@@ -201,8 +207,12 @@ class MistralChatAdapter(BaseLLMAdapter):
 
             buf: list[str] = []
             signal = StreamFinishSignal()
+            served_model: str | None = None
 
-            for chunk in self._execute_streaming(lambda: self.client.chat.complete(**payload)):
+            for chunk in self._execute_streaming(
+                lambda: self.client.chat.complete(**payload, **self._mistral_timeout_kwargs())
+            ):
+                served_model = reported_served_model(chunk) or served_model
                 if not chunk.choices:
                     continue
                 signal.observe_finish(attribute_access.optional(chunk.choices[0], "finish_reason", None))
@@ -215,13 +225,17 @@ class MistralChatAdapter(BaseLLMAdapter):
             success = True
             finish, refusal = signal.resolve()
             yield final_stream_event(
-                response=build_adapter_response(
-                    content="".join(buf),
-                    finish_reason=finish,
-                    refusal=refusal,
-                    usage=LLMTokenUsage.from_counts(input_tokens=in_tok, output_tokens=out_tok),
-                    model=self.model,
-                    provider=self._provider_slug(),
+                response=self._served_response(
+                    call,
+                    build_adapter_response(
+                        content="".join(buf),
+                        finish_reason=finish,
+                        refusal=refusal,
+                        usage=LLMTokenUsage.from_counts(input_tokens=in_tok, output_tokens=out_tok),
+                        model=self.model,
+                        provider=self._provider_slug(),
+                    ),
+                    served_model,
                 )
             )
 
@@ -248,6 +262,10 @@ class MistralChatAdapter(BaseLLMAdapter):
             model,
             legacy_windows=self._MISTRAL_CONTEXT_WINDOWS,
         )
+
+    def _mistral_timeout_kwargs(self) -> dict[str, Any]:
+        """Per-call ``timeout_ms`` carrying the effective timeout (EX-D3-01), or nothing."""
+        return self._call_timeout_kwargs("timeout_ms", milliseconds=True)
 
     def supports_streaming(self) -> bool:
         return True
@@ -287,11 +305,16 @@ class MistralChatAdapter(BaseLLMAdapter):
                 tools=tools_schema,
                 tool_choice=tool_choice,
             )
-            res: ChatCompletionResponse = self._execute(lambda: self.client.chat.complete(**payload))
-            response = adapter_response_from_openai_chat_completion(
-                res,
-                model=self.model,
-                provider=self._provider_slug(),
+            res: ChatCompletionResponse = self._execute(
+                lambda: self.client.chat.complete(**payload, **self._mistral_timeout_kwargs())
+            )
+            response = self._served_response(
+                call,
+                adapter_response_from_openai_chat_completion(
+                    res,
+                    model=self.model,
+                    provider=self._provider_slug(),
+                ),
             )
             success = True
             return response
@@ -326,6 +349,7 @@ class MistralChatAdapter(BaseLLMAdapter):
         buf: list[str] = []
         signal = StreamFinishSignal()
         tool_calls_acc: list[dict[str, Any]] = []
+        served_model: str | None = None
 
         try:
             in_tok = int(self.estimate_tokens_for_messages(messages, model_hint=self.model_name_for_token_estimation))
@@ -339,7 +363,10 @@ class MistralChatAdapter(BaseLLMAdapter):
                 tools=tools_schema,
                 tool_choice=tool_choice,
             )
-            for chunk in self._execute_streaming(lambda: self.client.chat.complete(**payload)):
+            for chunk in self._execute_streaming(
+                lambda: self.client.chat.complete(**payload, **self._mistral_timeout_kwargs())
+            ):
+                served_model = reported_served_model(chunk) or served_model
                 if not chunk.choices:
                     continue
                 signal.observe_finish(attribute_access.optional(chunk.choices[0], "finish_reason", None))
@@ -369,14 +396,18 @@ class MistralChatAdapter(BaseLLMAdapter):
             out_tok = int(self.estimate_tokens_for_text("".join(buf), model_hint=self.model_name_for_token_estimation))
             success = True
             yield final_stream_event(
-                response=build_adapter_response(
-                    content="".join(buf),
-                    finish_reason=finish,
-                    refusal=refusal,
-                    usage=LLMTokenUsage.from_counts(input_tokens=in_tok, output_tokens=out_tok),
-                    model=self.model,
-                    provider=self._provider_slug(),
-                    tool_calls=tool_calls,
+                response=self._served_response(
+                    call,
+                    build_adapter_response(
+                        content="".join(buf),
+                        finish_reason=finish,
+                        refusal=refusal,
+                        usage=LLMTokenUsage.from_counts(input_tokens=in_tok, output_tokens=out_tok),
+                        model=self.model,
+                        provider=self._provider_slug(),
+                        tool_calls=tool_calls,
+                    ),
+                    served_model,
                 )
             )
         except Exception as e:

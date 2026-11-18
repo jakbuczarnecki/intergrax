@@ -8,7 +8,9 @@ from collections.abc import Mapping
 from dataclasses import dataclass
 from enum import Enum
 
+from intergrax.llm_adapters.contracts.provider_error import LLMProviderError, LLMProviderErrorCategory
 from intergrax.llm_adapters.routing import RoutingContext, RoutingEvaluation
+
 from model_routing_qualifier.model_routing import (
     Q4_PRIMARY_TASK_CLASS,
     artifact_ref_for_profile,
@@ -24,7 +26,7 @@ _SYSTEM_PROMPT_KEY = "qualification_system_prompt"
 _DEFAULT_TASK = "What is 17 + 25? Reply with only the numeric result."
 
 
-class InvocationFailureKind(str, Enum):
+class InvocationFailureKind(str, Enum):  # noqa: UP042 - str-mixin kept for compatibility
     NONE = "none"
     PROVIDER_MODEL_NOT_FOUND = "provider_model_not_found"
     PROVIDER_TRANSPORT_FAILURE = "provider_transport_failure"
@@ -83,16 +85,12 @@ class Q4QualificationRequest:
         elif isinstance(budget_raw, str) and budget_raw.strip():
             budget_ratio = float(budget_raw.strip())
         failure_layer_raw = metadata.get(_FAILURE_LAYER_KEY)
-        failure_layer = (
-            str(failure_layer_raw).strip() if failure_layer_raw is not None else None
-        )
+        failure_layer = str(failure_layer_raw).strip() if failure_layer_raw is not None else None
         task_message = str(metadata.get(_TASK_MESSAGE_KEY) or metadata.get("query") or _DEFAULT_TASK)
         expected_profile_ref = str(metadata.get(_EXPECTED_PROFILE_REF_KEY) or "").strip()
         system_prompt_raw = metadata.get(_SYSTEM_PROMPT_KEY)
         system_prompt = (
-            system_prompt_raw.strip()
-            if isinstance(system_prompt_raw, str) and system_prompt_raw.strip()
-            else None
+            system_prompt_raw.strip() if isinstance(system_prompt_raw, str) and system_prompt_raw.strip() else None
         )
         return Q4QualificationRequest(
             routing_task_class=task_class,
@@ -136,7 +134,10 @@ class ModelRoutingQualificationResult:
     run_id: str
 
 
+#: Provider SDK errors reach this agent as typed provider errors (``LLMProviderError``, a ``RuntimeError``
+#: subclass, mapped at the adapter boundary); no SDK exception class is imported here (A4-018).
 _PROVIDER_BOUNDARY_EXCEPTIONS: tuple[type[BaseException], ...] = (
+    LLMProviderError,
     RuntimeError,
     ValueError,
     ConnectionError,
@@ -144,19 +145,23 @@ _PROVIDER_BOUNDARY_EXCEPTIONS: tuple[type[BaseException], ...] = (
     OSError,
 )
 
-_OLLAMA_RESPONSE_ERROR: type[BaseException] | None = None
-try:
-    from ollama import ResponseError as _ImportedOllamaResponseError
-
-    _OLLAMA_RESPONSE_ERROR = _ImportedOllamaResponseError
-    _PROVIDER_BOUNDARY_EXCEPTIONS = _PROVIDER_BOUNDARY_EXCEPTIONS + (_ImportedOllamaResponseError,)
-except ImportError:
-    pass
+_TRANSPORT_CATEGORIES: frozenset[LLMProviderErrorCategory] = frozenset(
+    {
+        LLMProviderErrorCategory.TIMEOUT,
+        LLMProviderErrorCategory.CONNECTION,
+        LLMProviderErrorCategory.OVERLOADED,
+        LLMProviderErrorCategory.SERVER_ERROR,
+        LLMProviderErrorCategory.RATE_LIMIT,
+    }
+)
 
 
 def classify_invocation_failure(exc: BaseException) -> InvocationFailureKind:
-    if _OLLAMA_RESPONSE_ERROR is not None and isinstance(exc, _OLLAMA_RESPONSE_ERROR):
-        return InvocationFailureKind.PROVIDER_MODEL_NOT_FOUND
+    if isinstance(exc, LLMProviderError):
+        if exc.category is LLMProviderErrorCategory.MODEL_NOT_FOUND:
+            return InvocationFailureKind.PROVIDER_MODEL_NOT_FOUND
+        if exc.category in _TRANSPORT_CATEGORIES:
+            return InvocationFailureKind.PROVIDER_TRANSPORT_FAILURE
     message = str(exc).lower()
     if isinstance(exc, (ConnectionError, TimeoutError, OSError)):
         return InvocationFailureKind.PROVIDER_TRANSPORT_FAILURE
