@@ -30,11 +30,15 @@ from intergrax.runtime.nexus.artifacts.store_base import (
     ArtifactStore,
     ArtifactVersionChanged,
     ArtifactVersionNotFound,
+    LegalHoldRecord,
     protection_reason,
     require_owned_class,
 )
 
 _SCHEMA_VERSION = "execution_artifact.v1"
+
+_LEGAL_HOLD_TABLE = "execution_artifact_legal_holds"
+_LEGAL_HOLD_BACKUP_TABLE = "execution_artifact_legal_holds_v1_backup"
 
 _COLUMNS = (
     "tenant_id, artifact_id, version, run_id, step_id, kind, mime_type, created_at_utc, data, "
@@ -129,18 +133,55 @@ class SQLiteArtifactStore(ArtifactStore):
                 "CREATE INDEX IF NOT EXISTS idx_execution_artifacts_expiry "
                 "ON execution_artifacts (tenant_id, expires_epoch)"
             )
-            conn.execute(
-                """
-                CREATE TABLE IF NOT EXISTS execution_artifact_legal_holds (
-                    tenant_id TEXT NOT NULL,
-                    artifact_id TEXT NOT NULL,
-                    placed_by TEXT NOT NULL,
-                    reason TEXT NOT NULL,
-                    placed_at_utc TEXT NOT NULL,
-                    PRIMARY KEY (tenant_id, artifact_id)
+            self._init_legal_hold_schema(conn)
+
+    @staticmethod
+    def _legal_hold_primary_key(conn: sqlite3.Connection, table: str) -> tuple[str, ...]:
+        rows = conn.execute(f"PRAGMA table_info({table})").fetchall()
+        return tuple(str(row[1]) for row in sorted((r for r in rows if r[5]), key=lambda r: r[5]))
+
+    def _init_legal_hold_schema(self, conn: sqlite3.Connection) -> None:
+        """Holder-keyed hold table (F-D8-14), migrating the (tenant, artifact)-keyed table once.
+
+        The migration runs in one transaction: the old table is renamed to
+        ``execution_artifact_legal_holds_v1_backup`` (kept as the rollback copy), the new table is
+        created and every old row is copied into it. Existing holds survive.
+        """
+        conn.execute("BEGIN IMMEDIATE")
+        try:
+            existing = self._legal_hold_primary_key(conn, _LEGAL_HOLD_TABLE)
+            if existing == ("tenant_id", "artifact_id"):
+                conn.execute(f"ALTER TABLE {_LEGAL_HOLD_TABLE} RENAME TO {_LEGAL_HOLD_BACKUP_TABLE}")
+                existing = ()
+            if not existing:
+                conn.execute(
+                    f"""
+                    CREATE TABLE IF NOT EXISTS {_LEGAL_HOLD_TABLE} (
+                        tenant_id TEXT NOT NULL,
+                        artifact_id TEXT NOT NULL,
+                        placed_by TEXT NOT NULL,
+                        reason TEXT NOT NULL,
+                        placed_at_utc TEXT NOT NULL,
+                        PRIMARY KEY (tenant_id, artifact_id, placed_by)
+                    )
+                    """
                 )
-                """
-            )
+                backup = conn.execute(
+                    "SELECT 1 FROM sqlite_master WHERE type = 'table' AND name = ?",
+                    (_LEGAL_HOLD_BACKUP_TABLE,),
+                ).fetchone()
+                if backup is not None:
+                    conn.execute(
+                        f"INSERT OR IGNORE INTO {_LEGAL_HOLD_TABLE} "
+                        "(tenant_id, artifact_id, placed_by, reason, placed_at_utc) "
+                        "SELECT tenant_id, artifact_id, placed_by, reason, placed_at_utc "
+                        f"FROM {_LEGAL_HOLD_BACKUP_TABLE}"
+                    )
+        except BaseException:
+            conn.execute("ROLLBACK")
+            raise
+        else:
+            conn.execute("COMMIT")
 
     @staticmethod
     def _to_artifact(row: tuple) -> Artifact:
@@ -344,8 +385,10 @@ class SQLiteArtifactStore(ArtifactStore):
             ).fetchone()
             if exists is None:
                 raise KeyError((tenant_id, artifact_id))
+            # A hold is identified by its holder: the same holder keeps its first record, another
+            # holder adds one; nothing is overwritten (F-D8-14).
             conn.execute(
-                "INSERT OR REPLACE INTO execution_artifact_legal_holds "
+                "INSERT OR IGNORE INTO execution_artifact_legal_holds "
                 "(tenant_id, artifact_id, placed_by, reason, placed_at_utc) VALUES (?,?,?,?,?)",
                 (tenant_id, artifact_id, placed_by, reason, datetime.now(UTC).isoformat()),
             )
@@ -366,3 +409,22 @@ class SQLiteArtifactStore(ArtifactStore):
                 ).fetchone()
                 is not None
             )
+
+    def legal_holds(self, tenant_id: str, artifact_id: str) -> tuple[LegalHoldRecord, ...]:
+        """Every hold record of the artifact, oldest first."""
+        with closing(self._connect()) as conn:
+            rows = conn.execute(
+                "SELECT placed_by, reason, placed_at_utc FROM execution_artifact_legal_holds "
+                "WHERE tenant_id = ? AND artifact_id = ? ORDER BY placed_at_utc, placed_by",
+                (tenant_id, artifact_id),
+            ).fetchall()
+        return tuple(
+            LegalHoldRecord(
+                tenant_id=tenant_id,
+                artifact_id=artifact_id,
+                placed_by=str(placed_by),
+                reason=str(reason),
+                placed_at_utc=datetime.fromisoformat(str(placed_at)),
+            )
+            for placed_by, reason, placed_at in rows
+        )

@@ -34,9 +34,11 @@ class RequestIdentity(BaseModel):
     @field_validator("tenant_id")
     @classmethod
     def _tenant_non_empty(cls, value: str) -> str:
-        if not value.strip():
+        # F-D6-11: the tenant is normalised here, the same way the tenant-scope code strips it.
+        stripped = value.strip()
+        if not stripped:
             raise ValueError("tenant_id must be non-empty")
-        return value
+        return stripped
 
 
 def canonical_principal_id_from_request_identity(identity: RequestIdentity) -> str:

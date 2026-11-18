@@ -6,6 +6,7 @@ from __future__ import annotations
 
 from abc import ABC, abstractmethod
 from collections.abc import Iterable
+from dataclasses import dataclass
 from datetime import datetime
 
 from intergrax.contracts.artifact_ref import ArtifactClass, ArtifactRetentionClass
@@ -41,6 +42,21 @@ class ArtifactVersionChanged(RuntimeError):
 
 class ArtifactVersionNotFound(KeyError):
     """The artifact exists (or not) but the requested version does not."""
+
+
+@dataclass(frozen=True, slots=True)
+class LegalHoldRecord:
+    """One legal hold on an artifact, identified by (tenant, artifact, holder) (F-D8-14).
+
+    Placing a hold again by the same holder keeps the first record (original reason and time);
+    a hold by another holder adds a record. An artifact is under legal hold while any record exists.
+    """
+
+    tenant_id: str
+    artifact_id: str
+    placed_by: str
+    reason: str
+    placed_at_utc: datetime
 
 
 def require_owned_class(artifact_class: ArtifactClass) -> None:
@@ -126,10 +142,12 @@ class ArtifactStore(ABC):
         """Delete all artifacts of the run, atomically refusing if any is protected."""
 
     @abstractmethod
-    def place_legal_hold(self, tenant_id: str, artifact_id: str, *, placed_by: str, reason: str) -> None: ...
+    def place_legal_hold(self, tenant_id: str, artifact_id: str, *, placed_by: str, reason: str) -> None:
+        """Add a hold record for ``placed_by``; an existing record of the same holder is kept unchanged."""
 
     @abstractmethod
-    def release_legal_hold(self, tenant_id: str, artifact_id: str) -> None: ...
+    def release_legal_hold(self, tenant_id: str, artifact_id: str) -> None:
+        """Remove every hold record of the artifact (release without a holder)."""
 
     @abstractmethod
     def is_under_legal_hold(self, tenant_id: str, artifact_id: str) -> bool: ...
