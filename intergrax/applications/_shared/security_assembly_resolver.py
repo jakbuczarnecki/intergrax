@@ -20,7 +20,7 @@ from intergrax.contracts.execution_evidence.persistence_port import EvidencePers
 from intergrax.contracts.host_orchestration_application_wiring_target import (
     HostOrchestrationAssemblyInspectionTarget,
 )
-from intergrax.core.plugin_env import discover_plugins_enabled
+from intergrax.core.plugin_env import INTERGRAX_DISCOVER_PLUGINS_ENV
 from intergrax.core.security.security_configuration import (
     AUDIT_REGIONS_INVALID,
     AUDIT_SINK_MISSING,
@@ -209,7 +209,8 @@ def validate_strict_security_configuration(
     Weak or disabled settings are refused: a signing secret shorter than
     ``STRICT_SIGNING_SECRET_MIN_LENGTH`` characters, and critical-action signing, tool-injection
     defense, retrieval-poisoning defense or the immutable audit trail switched off. Plugin
-    entry-point discovery is read from ``INTERGRAX_DISCOVER_PLUGINS`` unless the caller states it.
+    entry-point discovery is read from ``INTERGRAX_DISCOVER_PLUGINS`` in ``environ`` (default: the
+    process environment) unless the caller states it.
     Messages never contain a configured value.
     """
     if env.application_profile is not ApplicationProfile.PRODUCT and env.execution_mode is not ExecutionMode.STRICT:
@@ -310,8 +311,11 @@ def validate_strict_security_configuration(
                 )
             )
 
+    # Read from the validated environment (``environ`` when given), like every other item here.
     discovery_enabled = (
-        discover_plugins_enabled() if plugin_entry_points_enabled is None else plugin_entry_points_enabled
+        source.get(INTERGRAX_DISCOVER_PLUGINS_ENV, "").strip().lower() in {"1", "true", "yes", "on"}
+        if plugin_entry_points_enabled is None
+        else plugin_entry_points_enabled
     )
     if discovery_enabled and plugin_trust_policy is None:
         issues.append(

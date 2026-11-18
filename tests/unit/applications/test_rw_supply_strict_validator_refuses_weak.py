@@ -108,17 +108,27 @@ def test_sup_09c_lab_profile_in_strict_mode_validated(tmp_path: Path) -> None:
 
 def test_sup_09d_plugin_discovery_without_policy_refused(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
     monkeypatch.setenv("INTERGRAX_DISCOVER_PLUGINS", "1")
-    # The caller does not supply the discovery flag: the validator reads it from the environment.
+    monkeypatch.setenv(_SECRET_ENV, _strong_secret())
+    # The caller supplies neither the discovery flag nor ``environ``: the process environment is read.
     issues = validate_strict_security_configuration(
         ApplicationEnvironmentProfile.product_defaults(),
-        environ={_SECRET_ENV: _strong_secret()},
         audit_evidence_persistence=_evidence(tmp_path),
     )
     assert [issue.reason_code for issue in issues] == [PLUGIN_TRUST_POLICY_MISSING]
     accepted = validate_strict_security_configuration(
         ApplicationEnvironmentProfile.product_defaults(),
-        environ={_SECRET_ENV: _strong_secret()},
         audit_evidence_persistence=_evidence(tmp_path),
         plugin_trust_policy=AgentPackageTrustPolicy(),
     )
     assert accepted == ()
+
+
+def test_sup_09e_discovery_flag_read_from_the_passed_environ(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    """Review L-1: an explicit target ``environ`` that enables discovery is validated as such."""
+    monkeypatch.delenv("INTERGRAX_DISCOVER_PLUGINS", raising=False)
+    issues = validate_strict_security_configuration(
+        ApplicationEnvironmentProfile.product_defaults(),
+        environ={_SECRET_ENV: _strong_secret(), "INTERGRAX_DISCOVER_PLUGINS": "1"},
+        audit_evidence_persistence=_evidence(tmp_path),
+    )
+    assert [issue.reason_code for issue in issues] == [PLUGIN_TRUST_POLICY_MISSING]
