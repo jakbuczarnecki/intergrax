@@ -181,12 +181,16 @@ class AgentRunResult(BaseModel):
 
     @model_validator(mode="after")
     def _terminal_reason_required_for_terminal_status(self) -> AgentRunResult:
-        if self.status in {
-            AgentRunStatus.SUCCEEDED,
-            AgentRunStatus.FAILED,
-            AgentRunStatus.PAUSED,
-            AgentRunStatus.CANCELLED,
-        } and self.terminal_reason is None:
+        if (
+            self.status
+            in {
+                AgentRunStatus.SUCCEEDED,
+                AgentRunStatus.FAILED,
+                AgentRunStatus.PAUSED,
+                AgentRunStatus.CANCELLED,
+            }
+            and self.terminal_reason is None
+        ):
             raise ValueError("terminal_reason is required for terminal or paused status")
         return self
 
@@ -204,6 +208,4 @@ def require_user_id_for_user_memory_scope(
 ) -> None:
     """§30.9 gate — user-scoped memory requires authenticated user_id."""
     if memory_scope == "user" and not (identity.user_id or "").strip():
-        raise ValueError(
-            "VALIDATION_FAILED: user_id is required when memory_scope is user"
-        )
+        raise ValueError("VALIDATION_FAILED: user_id is required when memory_scope is user")

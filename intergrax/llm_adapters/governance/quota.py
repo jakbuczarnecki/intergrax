@@ -11,7 +11,6 @@ Configure via ``INTERGRAX_LLM_TENANT_MAX_TOKENS`` (0 = disabled).
 from __future__ import annotations
 
 import os
-from typing import Optional
 
 from intergrax.llm_adapters.tracking.metrics import get_llm_metrics_collector
 
@@ -29,7 +28,7 @@ def _max_tokens_per_tenant() -> int:
 
 
 def check_llm_tenant_quota(
-    tenant_id: Optional[str],
+    tenant_id: str | None,
     *,
     additional_tokens: int = 0,
 ) -> None:
@@ -45,13 +44,7 @@ def check_llm_tenant_quota(
     tenant = (tenant_id or "").strip() or "_platform"
     used = get_llm_metrics_collector().tenant_total_tokens(tenant)
     if used >= limit:
-        raise LLMQuotaExceeded(
-            f"LLM token quota exceeded for tenant='{tenant}': "
-            f"used={used} limit={limit}"
-        )
+        raise LLMQuotaExceeded(f"LLM token quota exceeded for tenant='{tenant}': used={used} limit={limit}")
     projected = used + max(0, int(additional_tokens))
     if projected > limit:
-        raise LLMQuotaExceeded(
-            f"LLM token quota exceeded for tenant='{tenant}': "
-            f"projected={projected} limit={limit}"
-        )
+        raise LLMQuotaExceeded(f"LLM token quota exceeded for tenant='{tenant}': projected={projected} limit={limit}")

@@ -69,9 +69,7 @@ def is_secret_like_key(key: str, *, policy: SecretSafeValidationPolicy) -> bool:
     if any(canonical.endswith(suffix) for suffix in policy.forbidden_key_suffixes):
         return True
     folded = normalize_metadata_key(canonical, normalize_hyphens=policy.normalize_hyphens)
-    if policy.forbidden_key_fragments and any(
-        fragment in folded for fragment in policy.forbidden_key_fragments
-    ):
+    if policy.forbidden_key_fragments and any(fragment in folded for fragment in policy.forbidden_key_fragments):
         return True
     if policy.split_key_segments:
         segments = [segment for segment in folded.split("_") if segment]
@@ -139,11 +137,7 @@ def validate_secret_safe_value(
                     context_label=context_label,
                     message=f"{context_label} contains a forbidden secret-like key at '{label}'",
                 )
-            if (
-                policy.scan_string_values
-                and isinstance(child, str)
-                and is_secret_like_value(child, policy=policy)
-            ):
+            if policy.scan_string_values and isinstance(child, str) and is_secret_like_value(child, policy=policy):
                 _raise(
                     path=label,
                     reason_code=SECRET_LIKE_VALUE,
