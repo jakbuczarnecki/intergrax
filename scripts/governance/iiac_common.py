@@ -190,14 +190,34 @@ def split_ref(ref: object) -> tuple[str, str] | None:
     return path, sha
 
 
-def manifest_countersign_digest(manifest: dict[str, Any]) -> str:
+def _reject_non_integer_numbers(value: Any, where: str = "$") -> None:
+    if isinstance(value, bool) or value is None or isinstance(value, (int, str)):
+        return
+    if isinstance(value, float):
+        raise ValueError(f"float or non-finite number at {where} is not allowed in a countersigned manifest")
+    if isinstance(value, dict):
+        for key, item in value.items():
+            _reject_non_integer_numbers(item, f"{where}.{key}")
+    elif isinstance(value, list):
+        for index, item in enumerate(value):
+            _reject_non_integer_numbers(item, f"{where}[{index}]")
+    else:
+        raise ValueError(f"unsupported JSON value {type(value).__name__} at {where}")
+
+
+def manifest_countersign_digest(manifest: Any) -> str:
     """Digest an operator countersignature binds to.
 
-    It is the sha256 of the canonical JSON of the manifest without ``handoff_record_ref``. That field names the
-    commit holding the countersignature, so hashing it would make the digest depend on itself.
+    It is the sha256 of the canonical JSON (sorted keys, compact separators, UTF-8, no ASCII escaping) of the
+    manifest without its top-level ``handoff_record_ref``. That field names the commit holding the countersignature,
+    so hashing it would make the digest depend on itself. Raises ``ValueError`` for a root that is not an object and
+    for any float or non-finite number (only integers, strings, booleans, null, arrays and objects are allowed).
     """
+    if not isinstance(manifest, dict):
+        raise ValueError("root must be a JSON object")
     body = {key: value for key, value in manifest.items() if key != "handoff_record_ref"}
-    canonical = json.dumps(body, sort_keys=True, separators=(",", ":"), ensure_ascii=False)
+    _reject_non_integer_numbers(body)
+    canonical = json.dumps(body, sort_keys=True, separators=(",", ":"), ensure_ascii=False, allow_nan=False)
     return hashlib.sha256(canonical.encode("utf-8")).hexdigest()
 
 
@@ -299,6 +319,19 @@ def _validate_manifest_v2(manifest: dict[str, Any], errors: list[str]) -> None:
 
 def _git(repo: Path, *args: str) -> subprocess.CompletedProcess[bytes]:
     return subprocess.run(["git", "-c", "core.autocrlf=false", *args], cwd=repo, capture_output=True, check=False)
+
+
+def git_commit_exists(repo: Path, sha: str) -> bool:
+    return _git(repo, "cat-file", "-e", f"{sha}^{{commit}}").returncode == 0
+
+
+def git_show_blob(repo: Path, sha: str, path: str) -> bytes | None:
+    proc = _git(repo, "show", f"{sha}:{path}")
+    return proc.stdout if proc.returncode == 0 else None
+
+
+def git_is_ancestor_or_equal(repo: Path, ancestor: str, descendant: str) -> bool:
+    return _git(repo, "merge-base", "--is-ancestor", ancestor, descendant).returncode == 0
 
 
 def resolve_delegation_ref(

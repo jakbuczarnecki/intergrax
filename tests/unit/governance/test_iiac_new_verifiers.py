@@ -353,12 +353,19 @@ def test_wired_new_files_are_material_and_only_the_gate_names_them() -> None:
         if rel not in wired and rel != gate_rel and any(stem in text for stem in stems)
     }
     assert outside == set(), f"material files other than the gate name PT-E04 modules: {sorted(outside)}"
-    assert {stem for stem in stems if stem in texts[gate_rel]} == {
+    # The MATERIAL_GOVERNANCE_PATHS literal necessarily lists the four wired paths, so it is left out of the scan:
+    # what is constrained is how the code of the gate names PT-E04 modules (two subprocess calls, no import).
+    tree = ast.parse(texts[gate_rel])
+    code = "\n".join(
+        ast.get_source_segment(texts[gate_rel], stmt) or ""
+        for stmt in tree.body
+        if not (isinstance(stmt, ast.Assign) and getattr(stmt.targets[0], "id", "") == "MATERIAL_GOVERNANCE_PATHS")
+    )
+    assert {stem for stem in stems if stem in code} == {
         "verify_iiac_manifest_corpus",
         "verify_iiac_manifest_artifacts",
     }
     # 3. The allowlist path has one spelling, in the material literal and in one module-level assignment.
-    tree = ast.parse(texts[gate_rel])
     homes: dict[str, int] = {}
     for stmt in tree.body:
         hits = [

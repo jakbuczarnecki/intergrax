@@ -400,6 +400,52 @@ def _allowlisted_v2_errors(allowlist: Path, repo: Path) -> list[str]:
     return errors
 
 
+def _corpus_errors(repo: Path) -> list[str]:
+    """Run the PT-E04 corpus verifier once for the evaluated repository (not once per manifest).
+
+    The corpus is checked against the allowlist the repository under test carries; a repository without the
+    allowlist file or without the qualification root is not the governed tree, so nothing is run and nothing is
+    reported (the allowlist is a material path, so deleting it shows up as an ACT-N11 change).
+    """
+    allowlist = repo / KNOWN_DRAFTS
+    if not (allowlist.is_file() and (repo / CORPUS_ROOT).is_dir()):
+        return []
+    errors = _allowlisted_v2_errors(allowlist, repo)
+    proc = subprocess.run(
+        [
+            sys.executable,
+            str(SCRIPTS / "verify_iiac_manifest_corpus.py"),
+            "--repo",
+            str(repo),
+            "--root",
+            CORPUS_ROOT,
+            "--allowlist",
+            str(allowlist),
+        ],
+        cwd=REPO,
+        capture_output=True,
+        text=True,
+        check=False,
+    )
+    if proc.returncode != 0:
+        detail = (proc.stderr or proc.stdout).strip().splitlines()
+        tail = detail[-1] if detail else "no output"
+        errors.append(f"ACT-N10 companion verify_iiac_manifest_corpus.py failed: {tail}")
+    return errors
+
+
+def _manifest_state_errors(manifest: dict[str, Any]) -> list[str]:
+    """A v2 manifest that is not final, or with an unsupported schema marker, cannot back an activation."""
+    errors: list[str] = []
+    if is_v2(manifest) and manifest.get("manifest_state") != "final":
+        errors.append(
+            f"ACT-N20 a v2 manifest that is not final ({manifest.get('manifest_state')!r}) cannot back an activation"
+        )
+    if manifest_schema_version(manifest) is None:
+        errors.append("ACT-N20 unsupported manifest_schema_version")
+    return errors
+
+
 def _companion_errors(repo: Path, manifest_path: Path) -> list[str]:
     errors: list[str] = []
     try:
@@ -407,9 +453,8 @@ def _companion_errors(repo: Path, manifest_path: Path) -> list[str]:
     except (OSError, ValueError):
         loaded = None
     v2 = isinstance(loaded, dict) and "manifest_schema_version" in loaded
-    audit_args = (str(manifest_path), "--repo", str(repo)) + (("--profile", "final") if v2 else ())
     calls: list[tuple[str, tuple[str, ...]]] = [
-        ("verify_iiac_audit_manifest.py", audit_args),
+        ("verify_iiac_audit_manifest.py", (str(manifest_path), "--repo", str(repo))),
         (
             "verify_iiac_role_separation.py",
             (str(manifest_path), "--strict-product-diff", "--repo", str(repo)),
@@ -419,17 +464,6 @@ def _companion_errors(repo: Path, manifest_path: Path) -> list[str]:
             (str(manifest_path), "--repo", str(repo), "--profile", "final" if v2 else "legacy"),
         ),
     ]
-    # The corpus is checked against the allowlist the repository under test carries; a repository without one is
-    # not the governed tree (the allowlist is a material path, so deleting it shows up as an ACT-N11 change).
-    allowlist = repo / KNOWN_DRAFTS
-    if allowlist.is_file() and (repo / CORPUS_ROOT).is_dir():
-        calls.append(
-            (
-                "verify_iiac_manifest_corpus.py",
-                ("--repo", str(repo), "--root", CORPUS_ROOT, "--allowlist", str(allowlist)),
-            )
-        )
-        errors.extend(_allowlisted_v2_errors(allowlist, repo))
     for script, args in calls:
         proc = subprocess.run(
             [sys.executable, str(SCRIPTS / script), *args],
@@ -608,10 +642,7 @@ def evaluate_activation(
                 errors.append("manifest stage_id must be IIAC-GOV-1")
             if str(manifest.get("policy_version") or "") != POLICY_VERSION:
                 errors.append("ACT-N16 manifest policy version mismatch")
-            if is_v2(manifest) and manifest.get("manifest_state") != "final":
-                errors.append("ACT-N20 a v2 manifest that is not final cannot back an activation")
-            if manifest_schema_version(manifest) is None:
-                errors.append("ACT-N20 unsupported manifest_schema_version")
+            errors.extend(_manifest_state_errors(manifest))
             manifest_verdict = str(manifest.get("verdict") or "").upper()
             if manifest_verdict != "PASS":
                 errors.append(_verdict_error(manifest_verdict))
@@ -643,6 +674,7 @@ def evaluate_activation(
                 if sha256_bytes(artifact.read_bytes()) != recorded:
                     errors.append(f"ACT-N08 {field} mismatch")
             errors.extend(_companion_errors(repo, manifest_path))
+            errors.extend(_corpus_errors(repo))
 
     scope_path = artifacts.get("scope")
     matrix_path = artifacts.get("matrix")

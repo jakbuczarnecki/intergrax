@@ -27,6 +27,9 @@ from scripts.governance.iiac_common import (
     PRODUCT_PATH_PREFIXES,
     REPO,
     ROLE_FIELDS,
+    git_commit_exists,
+    git_is_ancestor_or_equal,
+    git_show_blob,
     is_v2,
     is_v2_final,
     normalize_identity,
@@ -35,7 +38,6 @@ from scripts.governance.iiac_common import (
     split_ref,
     validate_manifest_dict,
 )
-from scripts.governance.iiac_verifier_common import commit_exists, is_ancestor_or_equal, show_blob
 
 DEFAULT_CORPUS_ROOT = "docs/project/maintainers/qualification"
 
@@ -54,14 +56,14 @@ def receipt_errors(manifest: dict, repo: Path, audit_exec: str) -> list[str]:
         if ref is None:
             continue
         path, sha = ref
-        if not commit_exists(repo, sha):
+        if not git_commit_exists(repo, sha):
             errors.append(f"{role} host receipt commit {sha[:12]} is not a commit in the repository")
             continue
-        blob = show_blob(repo, sha, path)
+        blob = git_show_blob(repo, sha, path)
         if blob is None:
             errors.append(f"{role} host receipt {path} does not exist at {sha[:12]}")
             continue
-        if audit_exec and commit_exists(repo, audit_exec) and not is_ancestor_or_equal(repo, sha, audit_exec):
+        if audit_exec and git_commit_exists(repo, audit_exec) and not git_is_ancestor_or_equal(repo, sha, audit_exec):
             errors.append(f"{role} host receipt commit {sha[:12]} is not an ancestor of audit_execution_sha")
         uuid = entry.get("session_uuid")
         text = blob.decode("utf-8", errors="replace")
