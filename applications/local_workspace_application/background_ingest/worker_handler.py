@@ -7,9 +7,7 @@ from __future__ import annotations
 import asyncio
 import concurrent.futures
 import json
-from typing import Optional, Protocol
-
-from pydantic import BaseModel, Field
+from typing import Protocol
 
 from intergrax.contracts.execution_identity import AttemptId, RunId
 from intergrax.queueing.contracts.task_queue import TaskRequest, TaskStatus
@@ -18,11 +16,13 @@ from intergrax.runtime.background_execution.bootstrap import BackgroundExecution
 from intergrax.runtime.background_execution.identity_admission import (
     assert_handler_run_id_matches_identity,
 )
-from intergrax.runtime.task.task import Task, TaskResult as RuntimeTaskResult
+from intergrax.runtime.task.task import Task
+from intergrax.runtime.task.task import TaskResult as RuntimeTaskResult
 from intergrax.tools.execution_models import ToolExecutionResult
+from pydantic import BaseModel, Field
+
 from local_workspace_application.background_ingest.contracts import (
     LKW_BACKGROUND_INGEST_TASK_NAME,
-    LkwBackgroundIngestJob,
     background_ingest_idempotency_key,
     decode_background_ingest_job,
 )
@@ -38,8 +38,7 @@ class BackgroundIngestTaskRunner(Protocol):
         *,
         run_id: RunId,
         attempt_id: AttemptId,
-    ) -> RuntimeTaskResult:
-        ...
+    ) -> RuntimeTaskResult: ...
 
 
 class BackgroundIngestWorkerOutput(BaseModel):
@@ -71,7 +70,7 @@ def make_background_ingest_worker_handler(
         tenant_id: str,
         run_id: str,
         payload: bytes,
-        idempotency_key: Optional[str] = None,
+        idempotency_key: str | None = None,
         execution_identity: BackgroundExecutionIdentity,
     ) -> ToolExecutionResult[BackgroundIngestWorkerOutput]:
         try:

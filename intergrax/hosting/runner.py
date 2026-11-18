@@ -307,9 +307,7 @@ def run_hosted_application(
     except RuntimeError:
         pass
     else:
-        raise HostedApplicationConfigurationError(
-            "run_hosted_application() cannot be called from an active event loop"
-        )
+        raise HostedApplicationConfigurationError("run_hosted_application() cannot be called from an active event loop")
 
     factories = _default_runner_factories()
     if event_publisher_factory is not None:

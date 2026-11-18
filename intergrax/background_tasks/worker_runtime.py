@@ -6,7 +6,6 @@ from __future__ import annotations
 
 import base64
 import json
-from typing import Optional
 
 from pydantic import BaseModel
 
@@ -17,12 +16,12 @@ from intergrax.contracts.idempotency_store import IdempotencyStore
 from intergrax.queueing.contracts.task_queue import TaskRequest, TaskResult, TaskStatus
 from intergrax.queueing.worker.execution import execute_logical_task
 from intergrax.queueing.worker.registry import TaskExecutionRegistry
+from intergrax.runtime.background_execution.identity_persistence import (
+    BackgroundExecutionIdentityPersistence,
+)
 from intergrax.runtime.background_execution.reentry_admission import (
     BackgroundExecutionReentryDisposition,
     admit_background_execution_reentry,
-)
-from intergrax.runtime.background_execution.identity_persistence import (
-    BackgroundExecutionIdentityPersistence,
 )
 from intergrax.runtime.background_execution.required_audit_evidence import (
     admit_background_execution_handler,
@@ -40,10 +39,10 @@ from intergrax.tools.execution_models import ToolExecutionResult
 
 class WorkerRuntime:
     """
-    Platform worker runtime for registered background tasks.
+      Platform worker runtime for registered background tasks.
 
-  Consumes TaskRequest envelopes, resolves handlers through TaskRegistry, persists
-  status/result, and emits lifecycle events.
+    Consumes TaskRequest envelopes, resolves handlers through TaskRegistry, persists
+    status/result, and emits lifecycle events.
     """
 
     def __init__(
@@ -54,7 +53,7 @@ class WorkerRuntime:
         result_store: TaskResultStore,
         execution_registry: TaskExecutionRegistry,
         provider: str,
-        idempotency_store: Optional[IdempotencyStore] = None,
+        idempotency_store: IdempotencyStore | None = None,
         event_emitter: TaskEventEmitter | None = None,
         identity_persistence: BackgroundExecutionIdentityPersistence,
         causal_evidence_persistence: CausalEvidencePersistence,
