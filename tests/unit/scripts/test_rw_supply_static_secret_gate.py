@@ -134,3 +134,41 @@ def test_sup_18b_strong_sandbox_accepted(sandbox_gate: ModuleType) -> None:
     env = sandbox_gate.product_exec_profile()
     assert sandbox_gate.isolation_strength_issues(env, sandbox_gate.strong_capabilities()) == ()
     assert sandbox_gate.main() == 0
+
+
+def test_sup_16d_unscannable_source_fails_the_gate(secret_gate: ModuleType, tmp_path: Path) -> None:
+    """Review L-2: a file the gate cannot parse or decode is a finding, never a silent skip."""
+    package = tmp_path / "intergrax"
+    package.mkdir()
+    (package / "broken.py").write_text("def broken(:\n", encoding="utf-8")
+    (package / "binary.py").write_bytes(b"\xff\xfe\x00not-utf8")
+    findings = secret_gate.scan_product_tree(tmp_path, allowlist=())
+    assert {(f.path, f.rule) for f in findings} == {
+        ("intergrax/broken.py", secret_gate.RULE_UNSCANNABLE_SOURCE),
+        ("intergrax/binary.py", secret_gate.RULE_UNSCANNABLE_SOURCE),
+    }
+
+
+def test_sup_16e_allowlist_entry_does_not_cover_a_new_occurrence(secret_gate: ModuleType, tmp_path: Path) -> None:
+    """Review L-3: an allowlist entry covers its counted occurrences only."""
+    package = tmp_path / "intergrax"
+    package.mkdir()
+    module = package / "fallbacks.py"
+    template = (
+        'def {fn}(revision_token=None):\n    revision_token = revision_token or "{value}"\n    return revision_token\n'
+    )
+    one = template.format(fn="a", value="placeholder-1")
+    module.write_text(one, encoding="utf-8")
+    allow = (
+        secret_gate.AllowedFinding(
+            path="intergrax/fallbacks.py",
+            rule=secret_gate.RULE_OR_FALLBACK,
+            name="revision_token",
+            reason="test placeholder",
+            occurrences=1,
+        ),
+    )
+    assert secret_gate.scan_product_tree(tmp_path, allowlist=allow) == ()
+    two = one + template.format(fn="b", value="placeholder-2")
+    module.write_text(two, encoding="utf-8")
+    assert len(secret_gate.scan_product_tree(tmp_path, allowlist=allow)) == 2

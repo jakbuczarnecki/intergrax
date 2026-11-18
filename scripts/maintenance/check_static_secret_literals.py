@@ -44,16 +44,22 @@ RULE_BYTES_LITERAL = "bytes_secret_literal"
 RULE_JOINED_PREFIX = "joined_prefix_literal"
 RULE_OR_FALLBACK = "or_literal_fallback"
 RULE_IF_NOT_FALLBACK = "if_not_literal_fallback"
+RULE_UNSCANNABLE_SOURCE = "unscannable_source"
 
 
 @dataclass(frozen=True, slots=True)
 class AllowedFinding:
-    """One triaged false positive: matched by (path, rule, identifier), with the reason."""
+    """One triaged false positive: matched by (path, rule, identifier), with the reason.
+
+    ``occurrences`` is the number of findings the entry covers; a further occurrence of the same
+    (path, rule, identifier) makes every occurrence of it a finding again.
+    """
 
     path: str
     rule: str
     name: str
     reason: str
+    occurrences: int = 1
 
 
 # Script-owned allowlist of triaged false positives (step S0-10). A true positive is never listed
@@ -156,11 +162,11 @@ def _fallback_literal(node: ast.AST | None) -> str | None:
 
 
 def scan_source_for_evasions(source: str, *, path: str) -> tuple[RawSecretFinding, ...]:
-    """Second pass over one module: the escape shapes; syntax errors yield no findings."""
+    """Second pass over one module: the escape shapes; a module that does not parse is a finding."""
     try:
         tree = ast.parse(source)
-    except SyntaxError:
-        return ()
+    except SyntaxError as exc:
+        return (RawSecretFinding(path=path, line=exc.lineno or 0, rule=RULE_UNSCANNABLE_SOURCE, name="module"),)
     findings: list[RawSecretFinding] = []
 
     def add(node: ast.AST, rule: str, name: str) -> None:
@@ -209,10 +215,20 @@ def scan_source_for_evasions(source: str, *, path: str) -> tuple[RawSecretFindin
     return tuple(findings)
 
 
-def _allowed(finding: RawSecretFinding, allowlist: Sequence[AllowedFinding]) -> bool:
-    return any(
-        item.path == finding.path and item.rule == finding.rule and item.name == finding.name for item in allowlist
-    )
+def _without_allowed(
+    findings: Iterable[RawSecretFinding], allowlist: Sequence[AllowedFinding]
+) -> list[RawSecretFinding]:
+    """Drop allowlisted findings, but only while their count stays within the entry's ``occurrences``."""
+    by_key: dict[tuple[str, str, str], list[RawSecretFinding]] = {}
+    for finding in findings:
+        by_key.setdefault((finding.path, finding.rule, finding.name), []).append(finding)
+    allowed = {(item.path, item.rule, item.name): item.occurrences for item in allowlist}
+    kept: list[RawSecretFinding] = []
+    for key, items in by_key.items():
+        if key in allowed and len(items) <= allowed[key]:
+            continue
+        kept.extend(items)
+    return kept
 
 
 def scan_product_tree(
@@ -231,9 +247,10 @@ def scan_product_tree(
             try:
                 text = file_path.read_text(encoding="utf-8")
             except (OSError, UnicodeDecodeError):
+                findings.add(RawSecretFinding(path=relative, line=0, rule=RULE_UNSCANNABLE_SOURCE, name="module"))
                 continue
             findings.update(scan_source_for_evasions(text, path=relative))
-    kept = [finding for finding in findings if not _allowed(finding, allowlist)]
+    kept = _without_allowed(findings, allowlist)
     return tuple(sorted(kept, key=lambda item: (item.path, item.line, item.rule, item.name)))
 
 
