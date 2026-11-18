@@ -179,3 +179,41 @@ def test_sup_06f_bytecode_cache_is_outside_the_digest(tmp_path: Path) -> None:
     cache.mkdir()
     (cache / "tools.cpython-312.pyc").write_bytes(b"cache")
     assert _admission(tmp_path, attested).evaluate(_spec()) is None
+
+
+def _write_generic_distribution(site: Path, name: str, files: dict[str, bytes]) -> None:
+    """Minimal installed distribution ``name`` 1.0 with exactly ``files`` listed in RECORD."""
+    dist_info = f"{name.replace('-', '_')}-1.0.dist-info"
+    all_files = {**files, f"{dist_info}/METADATA": f"Metadata-Version: 2.1\nName: {name}\nVersion: 1.0\n".encode()}
+    for relative, content in all_files.items():
+        target = site / relative
+        target.parent.mkdir(parents=True, exist_ok=True)
+        target.write_bytes(content)
+    lines = [f"{relative},{_record_hash(content)},{len(content)}" for relative, content in all_files.items()]
+    lines.append(f"{dist_info}/RECORD,,")
+    (site / dist_info / "RECORD").write_text("\n".join(lines) + "\n", encoding="utf-8")
+
+
+def test_sup_06g_package_directory_shadowing_a_single_module_refused(tmp_path: Path) -> None:
+    """Review M-5: a planted ``solo/__init__.py`` is imported instead of the listed ``solo.py``."""
+    _write_generic_distribution(tmp_path, "solo", {"solo.py": b"VALUE = 1\n"})
+    digest_fn = _tree_digest_fn()
+    assert digest_fn("solo", search_path=[str(tmp_path)]) is not None
+    planted = tmp_path / "solo" / "__init__.py"
+    planted.parent.mkdir()
+    planted.write_bytes(b"VALUE = 2\n")
+    with pytest.raises(ValueError, match="RECORD does not list"):
+        digest_fn("solo", search_path=[str(tmp_path)])
+
+
+def test_sup_06h_shared_namespace_distributions_resolve(tmp_path: Path) -> None:
+    """Review L-7: two distributions sharing the PEP 420 namespace ``acme`` both resolve."""
+    _write_generic_distribution(tmp_path, "acme-foo", {"acme/foo/__init__.py": b"A = 1\n"})
+    _write_generic_distribution(tmp_path, "acme-bar", {"acme/bar/__init__.py": b"B = 1\n"})
+    digest_fn = _tree_digest_fn()
+    assert digest_fn("acme-foo", search_path=[str(tmp_path)]) is not None
+    assert digest_fn("acme-bar", search_path=[str(tmp_path)]) is not None
+    # A planted module beside the namespace portion would win over it: refused.
+    (tmp_path / "acme" / "foo.py").write_bytes(b"A = 2\n")
+    with pytest.raises(ValueError, match="RECORD does not list"):
+        digest_fn("acme-foo", search_path=[str(tmp_path)])

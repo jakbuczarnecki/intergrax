@@ -36,36 +36,85 @@ def _is_metadata_dir(name: str) -> bool:
 
 
 def _unlisted_importable_files(root: Path, listed: frozenset[str]) -> list[str]:
-    """Files under the distribution's package directories, or importable siblings of its top-level
-    modules, that RECORD does not list (``__pycache__`` excluded: see the module limit)."""
+    """Entries that RECORD does not list and that could run instead of the verified files.
+
+    In a regular package directory of the distribution (one with a listed ``__init__``) every file and
+    every non-cache sub-directory must be listed; files written there at runtime are therefore refused
+    too. In the site root and in a shared PEP 420 namespace directory only shadowing entries count: an
+    unlisted file or directory with the name of a listed module or package (any import suffix, or a
+    directory holding files), and a planted ``__init__`` in a namespace directory. Other distributions'
+    entries in a shared namespace are not refused. ``__pycache__`` is excluded (see the module limit).
+    """
     from importlib.machinery import EXTENSION_SUFFIXES
 
+    suffixes = (*EXTENSION_SUFFIXES, ".py", ".pyc")
+    paths = {r for r in listed if not r.startswith("..") and not _is_metadata_dir(r.split("/")[0])}
+    levels: set[str] = {""}
+    for relative in paths:
+        parts = relative.split("/")[:-1]
+        for depth in range(1, len(parts) + 1):
+            levels.add("/".join(parts[:depth]))
+    regular = {level for level in levels if level and any(_join(level, f"__init__{s}") in listed for s in suffixes)}
+
     unlisted: list[str] = []
-    package_dirs = sorted(
-        {
-            r.split("/")[0]
-            for r in listed
-            if "/" in r and not r.startswith("..") and not _is_metadata_dir(r.split("/")[0])
-        }
-    )
-    for name in package_dirs:
-        base = root / name
+    for level in sorted(levels):
+        base = root / level if level else root
         if not base.is_dir():
             continue
-        for path in sorted(base.rglob("*")):
-            if not path.is_file():
-                continue
-            relative = path.relative_to(root).as_posix()
-            if "__pycache__" in relative.split("/") or relative in listed:
-                continue
-            unlisted.append(relative)
-    for relative in sorted(r for r in listed if "/" not in r and r.endswith(".py")):
-        stem = relative[: -len(".py")]
-        for suffix in (*EXTENSION_SUFFIXES, ".pyc"):
-            sibling = f"{stem}{suffix}"
-            if sibling not in listed and (root / sibling).is_file():
-                unlisted.append(sibling)
+        if level in regular:
+            # A regular package directory belongs to this distribution: every entry must be listed.
+            for child in sorted(base.iterdir()):
+                relative = _join(level, child.name)
+                if child.is_file():
+                    if relative not in listed:
+                        unlisted.append(relative)
+                elif child.name != "__pycache__" and relative not in levels and _holds_files(child):
+                    unlisted.append(relative + "/")
+            continue
+        # The site root or a namespace directory is shared: check only entries that would shadow a
+        # listed module or package name, and (for a namespace directory) a planted ``__init__``.
+        if level:
+            unlisted.extend(
+                _join(level, f"__init__{s}") for s in suffixes if _unlisted_file(root, level, f"__init__{s}", listed)
+            )
+        names = {_module_stem(name, suffixes) for name in _listed_children(level, paths)} - {None}
+        names |= {child.rsplit("/", 1)[-1] for child in levels if child and _parent(child) == level}
+        for name in sorted(n for n in names if n is not None):
+            unlisted.extend(
+                _join(level, f"{name}{s}") for s in suffixes if _unlisted_file(root, level, f"{name}{s}", listed)
+            )
+            directory = _join(level, name)
+            if directory not in levels and (root / directory).is_dir() and _holds_files(root / directory):
+                unlisted.append(directory + "/")
     return unlisted
+
+
+def _join(level: str, name: str) -> str:
+    return f"{level}/{name}" if level else name
+
+
+def _parent(relative: str) -> str:
+    return relative.rsplit("/", 1)[0] if "/" in relative else ""
+
+
+def _listed_children(level: str, paths: set[str]) -> list[str]:
+    return [p.rsplit("/", 1)[-1] for p in paths if _parent(p) == level]
+
+
+def _module_stem(name: str, suffixes: tuple[str, ...]) -> str | None:
+    for suffix in sorted(suffixes, key=len, reverse=True):
+        if name.endswith(suffix) and len(name) > len(suffix):
+            return name[: -len(suffix)]
+    return None
+
+
+def _unlisted_file(root: Path, level: str, name: str, listed: frozenset[str]) -> bool:
+    relative = _join(level, name)
+    return relative not in listed and (root / relative).is_file()
+
+
+def _holds_files(directory: Path) -> bool:
+    return any(p.is_file() and "__pycache__" not in p.parts for p in directory.rglob("*"))
 
 
 def installed_tree_digest(distribution: str, *, search_path: Sequence[str] | None = None) -> str | None:
