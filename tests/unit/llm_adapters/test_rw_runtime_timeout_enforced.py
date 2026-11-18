@@ -590,6 +590,55 @@ def test_an_adapter_built_client_serves_a_call_without_a_budget_on_the_shared_cl
     assert clients.shared().calls == 1
 
 
+@pytest.mark.parametrize("stream", [False, True], ids=["buffered", "stream"])
+def test_the_bedrock_per_call_client_makes_a_single_attempt(stream: bool, monkeypatch: pytest.MonkeyPatch) -> None:
+    """Review finding L2-2 of PR #670: botocore retries a read or connect timeout by default (legacy mode,
+    5 attempts), so a hung call could take about 5 times the budget. The per-call client makes one attempt;
+    the adapter's own retry loop, which re-reads the remaining budget, owns retries."""
+    import intergrax.llm_adapters.providers.aws_bedrock_adapter as bedrock
+
+    configs: list[Any] = []
+    real_client = bedrock.boto3.client
+
+    def recording_client(**kwargs: Any) -> Any:
+        configs.append(kwargs.get("config"))
+        return real_client(**kwargs)
+
+    monkeypatch.setattr(bedrock.boto3, "client", recording_client)
+    adapter = bedrock.BedrockChatAdapter(
+        model_id="anthropic.claude-3-haiku-20240307-v1:0", region="us-east-1", use_converse=True
+    )
+    converse = MagicMock(return_value={"output": {"message": {"content": [{"text": "x"}]}}, "stopReason": "end_turn"})
+    converse_stream = MagicMock(
+        return_value={
+            "stream": iter(
+                [{"contentBlockDelta": {"delta": {"text": "x"}}}, {"messageStop": {"stopReason": "end_turn"}}]
+            )
+        }
+    )
+    derived: list[Any] = []
+    build = adapter._client_factory
+    assert build is not None
+
+    def capture(timeout: float) -> Any:
+        call_client = build(timeout)
+        derived.append(call_client.client)
+        call_client.client.converse = converse
+        call_client.client.converse_stream = converse_stream
+        return call_client
+
+    adapter._client_factory = capture
+    _with_timeout(adapter)
+    assert _run(adapter, stream).content == "x"
+    assert configs[0] is None, "the long-lived client keeps the SDK default configuration"
+    per_call = [config for config in configs[1:] if config is not None]
+    assert len(per_call) == 1 and len(derived) == 1
+    # botocore adds the retry mode to the dict when it builds the client; the attempt count is ours.
+    assert per_call[0].retries["total_max_attempts"] == 1
+    assert derived[0].meta.config.retries["total_max_attempts"] == 1
+    assert derived[0].meta.config.read_timeout == pytest.approx(_TIMEOUT)
+
+
 def test_a_bedrock_invoke_model_body_is_read_before_the_per_call_client_is_closed(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:

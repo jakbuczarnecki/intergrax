@@ -548,7 +548,14 @@ class BedrockChatAdapter(BaseLLMAdapter):
                     boto3.client(
                         service_name="bedrock-runtime",
                         region_name=resolved_region,
-                        config=Config(connect_timeout=timeout, read_timeout=timeout),
+                        # One attempt per call: botocore would otherwise retry a read or connect timeout
+                        # (legacy mode, 5 attempts) and block for a multiple of the budget; the adapter's
+                        # own retry loop, which re-reads the remaining budget, owns retries.
+                        config=Config(
+                            connect_timeout=timeout,
+                            read_timeout=timeout,
+                            retries={"total_max_attempts": 1},
+                        ),
                     ),
                 )
                 return CallClient[BedrockRuntimeClient](client=built, release=built.close)
