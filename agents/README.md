@@ -40,7 +40,7 @@ Fleet closure (ACP-LEG-2): `uv run python scripts/gates/check_agent_production_r
 | Agent | Capability | Lifecycle | Host application(s) | Docs |
 |-------|------------|-----------|---------------------|------|
 | **EchoAgent** | `echo.basic` | production | `lab_application`, `poc_template_application` | [`echo/`](echo/) |
-| **SignoffProbeAgent** | (harness probe) | staging | `lab_application` | [`signoff_probe/`](signoff_probe/) |
+| **SignoffProbeAgent** | (harness probe) | development | `lab_application` | [`signoff_probe/`](signoff_probe/) |
 | **ResearchAgent** | `research.web_search`, `research.pipeline` | staging | `research_application`, `lab_application` | [`research/`](research/) |
 | **SummaryAgent** | `research.summarize` | staging | `research_application` | [`research/`](research/) |
 | **LegalAgent** | `legal.review` | staging | `legal_application`, `lab_application` | [`legal/`](legal/) |
@@ -51,11 +51,18 @@ Fleet closure (ACP-LEG-2): `uv run python scripts/gates/check_agent_production_r
 | **DisputeAnalystAgent** | `dispute.analyze` | staging | `dispute_sim_application` | [`dispute_analyst/`](dispute_analyst/) |
 | **DisputeStrategistAgent** | `dispute.strategy` | staging | `dispute_sim_application` | [`dispute_strategist/`](dispute_strategist/) |
 | **DisputeScenarioAgent** | `dispute.scenario` | staging | `dispute_sim_application` | [`dispute_scenario/`](dispute_scenario/) |
-| **OrganizationWorkerAgent** | `org.vendor_report` | development | `lab_application` (optional flag) | [`organization_worker/`](organization_worker/) |
+| **OrganizationWorkerAgent** | `org.vendor_report` | staging | `lab_application` (optional flag) | [`organization_worker/`](organization_worker/) |
 | **IntergraxAssistantAgent** | `platform.assist` | development | `intergrax_assistant_application` | [`intergrax_assistant/`](intergrax_assistant/) |
 | **ProblemRadarAgent** | `problem_radar.scan` | experimental | certified K.1 deploy path | [`problem_radar/`](problem_radar/) |
 | **VendorDiscoveryAgent** | `vendor_discovery.search` | experimental | certified K.2 deploy path | [`vendor_discovery/`](vendor_discovery/) |
-| **Lab mock agents** | harness fixtures | - | `lab_application` tests | [`lab/mock_agents.py`](lab/mock_agents.py) |
+| **BoundaryDemoAgent** | `attestation.demo` | staging | `attestation_demo` | [`boundary_demo/`](boundary_demo/) |
+| **ExternalContractorAdapterAgent** | `external_contractor.adapt` | production | `governed_contractor_application` | [`external_contractor_adapter/`](external_contractor_adapter/) |
+| **ModelRoutingQualifierAgent** | `local.workspace.model_routing_qualification` | staging | `local_workspace_application` | [`model_routing_qualifier/`](model_routing_qualifier/) |
+| **ToolSelectionQualifierAgent** | `local.workspace.tool_selection_qualification` | staging | `local_workspace_application` | [`tool_selection_qualifier/`](tool_selection_qualifier/) |
+| **WebSearchQualifierAgent** | `local.workspace.web_search_qualification` | staging | `local_workspace_application` | [`web_search_qualifier/`](web_search_qualifier/) |
+| **Lab mock agents** | harness fixtures | development | `lab_application` tests | [`lab/mock_agents.py`](lab/mock_agents.py) |
+
+Lifecycle = the `lifecycle_state` declared in each agent's `AgentContract`. It is a contract state, not a certification, audit or readiness result.
 
 ---
 
