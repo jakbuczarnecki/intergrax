@@ -42,6 +42,11 @@ from intergrax.llm_adapters.contracts.tool_call import (
 from intergrax.llm_adapters.providers._ollama_schema import (
     prepare_ollama_generation_schema,
 )
+from intergrax.llm_adapters.providers._per_call_client import (
+    CallClient,
+    call_on_client,
+    stream_on_client,
+)
 from intergrax.llm_adapters.providers.ollama_capabilities import (
     OllamaModelCapabilities,
     OllamaModelCapabilityResolver,
@@ -89,7 +94,7 @@ class NativeOllamaAdapter(BaseLLMAdapter):
         self._apply_defaults_call_config(defaults)
 
         resolved_model = model or self.DEFAULT_MODEL
-        client_factory: Callable[[float], _NativeOllamaClient] | None = None
+        client_factory: Callable[[float], CallClient[_NativeOllamaClient]] | None = None
         if client is None:
             try:
                 from ollama import Client
@@ -111,18 +116,18 @@ class NativeOllamaAdapter(BaseLLMAdapter):
                 Client(host=base_url) if base_url else Client(),
             )
 
-            def _client_with_timeout(timeout: float) -> _NativeOllamaClient:
-                return cast(
-                    _NativeOllamaClient,
-                    Client(host=base_url, timeout=timeout) if base_url else Client(timeout=timeout),
-                )
+            def _client_with_timeout(timeout: float) -> CallClient[_NativeOllamaClient]:
+                built = Client(host=base_url, timeout=timeout) if base_url else Client(timeout=timeout)
+                # ``ollama.Client`` has no ``close`` of its own; its ``httpx.Client`` transport is closed.
+                return CallClient(client=cast(_NativeOllamaClient, built), release=built._client.close)
 
             client_factory = _client_with_timeout
 
         self._client = client
         # The official client takes its timeout at construction only, so a call that carries an effective
-        # timeout runs on a client built for that call (EX-D3-01). An injected client cannot be rebuilt.
-        self._client_factory: Callable[[float], _NativeOllamaClient] | None = client_factory
+        # timeout runs on a client built for that call and closed after it (EX-D3-01). An injected client
+        # cannot be rebuilt.
+        self._client_factory: Callable[[float], CallClient[_NativeOllamaClient]] | None = client_factory
         self.defaults = dict(defaults)
         if context_window_tokens is not None and int(context_window_tokens) > 0:
             self.defaults["context_window_tokens"] = int(context_window_tokens)
@@ -305,11 +310,20 @@ class NativeOllamaAdapter(BaseLLMAdapter):
             kwargs["tools"] = tools
         if format is not None:
             kwargs["format"] = format
-        client = self._client
+
+        def _send(client: _NativeOllamaClient) -> object:
+            return client.chat(**kwargs)  # type: ignore[arg-type]
+
         timeout = self._effective_call_timeout_sec()
-        if timeout is not None and self._client_factory is not None:
-            client = self._client_factory(timeout)
-        return client.chat(**kwargs)  # type: ignore[arg-type]
+        if stream:
+            # The per-call client stays open until the stream is exhausted, fails or is closed.
+            return stream_on_client(
+                shared=self._client,
+                derive=self._client_factory,
+                timeout=timeout,
+                open_stream=lambda client: cast(Iterable[object], _send(client)),
+            )
+        return call_on_client(shared=self._client, derive=self._client_factory, timeout=timeout, call=_send)
 
     def supports_call_timeout(self) -> bool:
         """Only an adapter-built client can be rebuilt with the call timeout; an injected one cannot."""

@@ -321,6 +321,7 @@ def _native_ollama_owned_client(
     class _FakeOllamaClient:
         def __init__(self, host: str | None = None, **kwargs: Any) -> None:
             constructed.append({"host": host, **kwargs})
+            self._client = _BuiltClient(kwargs.get("timeout"))
 
         def chat(self, **kwargs: Any) -> Any:
             if kwargs.get("stream"):
@@ -506,9 +507,46 @@ def _langchain_ollama_owned_chat(monkeypatch: pytest.MonkeyPatch) -> tuple[Any, 
     return adapter, clients
 
 
+def _native_ollama_owned_client_records(monkeypatch: pytest.MonkeyPatch) -> tuple[Any, _DerivedClients]:
+    """Review finding L-3 of PR #670: the per-call ``ollama.Client`` must be closed after the call."""
+    clients = _DerivedClients()
+
+    class _FakeOllamaClient:
+        def __init__(self, host: str | None = None, *, timeout: float | None = None) -> None:
+            self._record = _BuiltClient(timeout)
+            # ``ollama.Client`` keeps its ``httpx.Client`` transport in ``_client`` (it has no ``close``).
+            self._client = self._record
+            clients.built.append(self._record)
+
+        def chat(self, **kwargs: Any) -> Any:
+            self._record.calls += 1
+            done = {"message": {"content": ""}, "done": True, "done_reason": "stop", "model": "served"}
+            if not kwargs.get("stream"):
+                return {**done, "message": {"content": "x"}}
+            record = self._record
+
+            def chunks() -> Iterator[Any]:
+                assert not record.closed, "the per-call client was closed before the stream was consumed"
+                yield {"message": {"content": "x"}}
+                yield done
+
+            return chunks()
+
+    fake_module = ModuleType("ollama")
+    fake_module.__dict__["Client"] = _FakeOllamaClient
+    monkeypatch.setitem(sys.modules, "ollama", fake_module)
+    from intergrax.llm_adapters.providers.native_ollama_adapter import NativeOllamaAdapter
+    from intergrax.llm_adapters.providers.ollama_capabilities import OllamaModelCapabilityResolver
+
+    resolver = OllamaModelCapabilityResolver(show_model=lambda _m: SimpleNamespace(capabilities=["completion"]))
+    adapter = NativeOllamaAdapter(model="qwen2.5:14b", capability_resolver=resolver, base_url="http://ollama.test")
+    return adapter, clients
+
+
 _DERIVED_CLIENT_CASES: dict[str, Callable[[pytest.MonkeyPatch], tuple[Any, _DerivedClients]]] = {
     "bedrock": _bedrock_owned_client,
     "langchain-ollama": _langchain_ollama_owned_chat,
+    "native-ollama": _native_ollama_owned_client_records,
 }
 
 
