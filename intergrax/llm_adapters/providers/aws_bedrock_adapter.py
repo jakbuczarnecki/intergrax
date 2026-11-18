@@ -6,12 +6,13 @@ from __future__ import annotations
 
 import json
 import os
-from collections.abc import Iterable, Iterator, Sequence
+from collections.abc import Callable, Iterable, Iterator, Sequence
 from dataclasses import dataclass
 from enum import Enum
 from typing import Any, Protocol
 
 import boto3
+from botocore.config import Config
 
 from intergrax.llm.messages import ChatMessage
 from intergrax.llm_adapters._shared.adapter_response_builders import (
@@ -54,6 +55,11 @@ from intergrax.llm_adapters.contracts.provider_error import (
 from intergrax.llm_adapters.contracts.provider_extensions import LLMProviderExtensions
 from intergrax.llm_adapters.contracts.stream_event import LLMStreamEvent
 from intergrax.llm_adapters.contracts.token_usage import LLMTokenUsage
+from intergrax.llm_adapters.providers._per_call_client import (
+    CallClient,
+    call_on_client,
+    stream_on_client,
+)
 from intergrax.llm_adapters.registry.context_window import (
     init_adapter_context_window_tokens,
     resolve_context_window_tokens,
@@ -517,10 +523,26 @@ class BedrockChatAdapter(BaseLLMAdapter):
                 "Pass family=BedrockModelFamily.<FAMILY> explicitly or register a codec."
             )
 
-        self.client: BedrockRuntimeClient = client or boto3.client(
-            service_name="bedrock-runtime",
-            region_name=resolved_region,
-        )
+        # boto3 takes its timeouts from the client ``Config`` only, so a call that carries an effective
+        # timeout runs on a client built for that call and closed after it (EX-D3-01). An injected client
+        # cannot be rebuilt; with one, a call that carries a timeout is refused (fail closed).
+        self._client_factory: Callable[[float], CallClient[BedrockRuntimeClient]] | None = None
+        if client is None:
+            client = boto3.client(
+                service_name="bedrock-runtime",
+                region_name=resolved_region,
+            )
+
+            def _client_with_timeout(timeout: float) -> CallClient[BedrockRuntimeClient]:
+                built = boto3.client(
+                    service_name="bedrock-runtime",
+                    region_name=resolved_region,
+                    config=Config(connect_timeout=timeout, read_timeout=timeout),
+                )
+                return CallClient(client=built, release=built.close)
+
+            self._client_factory = _client_with_timeout
+        self.client: BedrockRuntimeClient = client
         self.config = BedrockAdapterConfig(
             region=resolved_region,
             model_id=resolved_model_id,
@@ -587,7 +609,7 @@ class BedrockChatAdapter(BaseLLMAdapter):
                     max_tokens=max_tokens,
                     temperature=temp,
                 )
-                resp = self._execute(lambda: self.client.converse(modelId=self.config.model_id, **req))
+                resp = self._execute(lambda: self._call(lambda c: c.converse(modelId=self.config.model_id, **req)))
                 text = extract_converse_text(resp)
                 out_tok = int(self.estimate_tokens_for_text(text, model_hint=self.model_name_for_token_estimation))
                 response = build_adapter_response(
@@ -613,17 +635,18 @@ class BedrockChatAdapter(BaseLLMAdapter):
                 model_id=self.config.model_id,
             )
 
-            res = self._execute(
-                lambda: self.client.invoke_model(
-                    modelId=self.config.model_id,
-                    body=json.dumps(body).encode("utf-8"),
-                    accept="application/json",
-                    contentType="application/json",
+            raw_body = self._execute(
+                lambda: self._call(
+                    lambda c: c.invoke_model(
+                        modelId=self.config.model_id,
+                        body=json.dumps(body).encode("utf-8"),
+                        accept="application/json",
+                        contentType="application/json",
+                    )["body"].read()
                 )
             )
 
-            raw = res["body"].read().decode("utf-8")
-            parsed = json.loads(raw)
+            parsed = json.loads(raw_body.decode("utf-8"))
 
             text = codec.extract_text(parsed)
             out_tok = int(self.estimate_tokens_for_text(text, model_hint=self.model_name_for_token_estimation))
@@ -684,9 +707,12 @@ class BedrockChatAdapter(BaseLLMAdapter):
                 )
 
                 def _converse_body_stream() -> Iterable[object]:
-                    resp = self.client.converse_stream(modelId=self.config.model_id, **req)
-                    stream = resp.get("stream") if isinstance(resp, dict) else resp
-                    return iter_converse_stream_text(_observe_converse_stop(stream, signal))
+                    def _open(c: BedrockRuntimeClient) -> Iterable[object]:
+                        resp = c.converse_stream(modelId=self.config.model_id, **req)
+                        stream = resp.get("stream") if isinstance(resp, dict) else resp
+                        return iter_converse_stream_text(_observe_converse_stop(stream, signal))
+
+                    return self._stream(_open)
 
                 for text in self._execute_streaming(_converse_body_stream):
                     buf.append(text)
@@ -724,13 +750,14 @@ class BedrockChatAdapter(BaseLLMAdapter):
             served_model: object = None
 
             def _invoke_stream_body() -> Iterable[object]:
-                res = self.client.invoke_model_with_response_stream(
-                    modelId=self.config.model_id,
-                    body=json.dumps(body).encode("utf-8"),
-                    accept="application/json",
-                    contentType="application/json",
+                return self._stream(
+                    lambda c: c.invoke_model_with_response_stream(
+                        modelId=self.config.model_id,
+                        body=json.dumps(body).encode("utf-8"),
+                        accept="application/json",
+                        contentType="application/json",
+                    )["body"]
                 )
-                return res["body"]
 
             for event in self._execute_streaming(_invoke_stream_body):
                 chunk = event.get("chunk")
@@ -784,11 +811,30 @@ class BedrockChatAdapter(BaseLLMAdapter):
         return True
 
     def supports_call_timeout(self) -> bool:
-        """boto3 takes its read timeout from the client ``Config`` only; no per-call option (EX-D3-01).
+        """Only an adapter-built client can be rebuilt with the call timeout; an injected one cannot.
 
-        A call that carries an effective timeout is therefore refused before the SDK (fail closed).
+        boto3 takes its connect and read timeouts from the client ``Config`` only (EX-D3-01), so an
+        adapter with an injected client refuses a call that carries an effective timeout (fail closed).
         """
-        return False
+        return self._client_factory is not None
+
+    def _call[R](self, call: Callable[[BedrockRuntimeClient], R]) -> R:
+        """Run ``call`` on the client of this attempt (derived for the effective timeout when one is set)."""
+        return call_on_client(
+            shared=self.client,
+            derive=self._client_factory,
+            timeout=self._effective_call_timeout_sec(),
+            call=call,
+        )
+
+    def _stream[E](self, open_stream: Callable[[BedrockRuntimeClient], Iterable[E]]) -> Iterable[E]:
+        """Open a stream on the client of this attempt; a derived client is closed when the stream ends."""
+        return stream_on_client(
+            shared=self.client,
+            derive=self._client_factory,
+            timeout=self._effective_call_timeout_sec(),
+            open_stream=open_stream,
+        )
 
     def _classify_provider_error(self, exc: Exception) -> LLMProviderErrorSignal | None:
         return _bedrock_error_signal(exc)
@@ -836,7 +882,7 @@ class BedrockChatAdapter(BaseLLMAdapter):
                     temperature=temp,
                     tools=openai_tools_to_bedrock_converse(tools_schema),
                 )
-                resp = self._execute(lambda: self.client.converse(modelId=self.config.model_id, **req))
+                resp = self._execute(lambda: self._call(lambda c: c.converse(modelId=self.config.model_id, **req)))
                 text = extract_converse_text(resp)
                 tool_calls = tool_calls_from_openai_dicts(extract_converse_tool_calls(resp))
                 out_tok = int(self.estimate_tokens_for_text(text, model_hint=self.model_name_for_token_estimation))
@@ -868,15 +914,17 @@ class BedrockChatAdapter(BaseLLMAdapter):
                 tool_choice=tool_choice,
             )
 
-            res = self._execute(
-                lambda: self.client.invoke_model(
-                    modelId=self.config.model_id,
-                    body=json.dumps(body).encode("utf-8"),
-                    accept="application/json",
-                    contentType="application/json",
+            raw_body = self._execute(
+                lambda: self._call(
+                    lambda c: c.invoke_model(
+                        modelId=self.config.model_id,
+                        body=json.dumps(body).encode("utf-8"),
+                        accept="application/json",
+                        contentType="application/json",
+                    )["body"].read()
                 )
             )
-            parsed = json.loads(res["body"].read().decode("utf-8"))
+            parsed = json.loads(raw_body.decode("utf-8"))
             text = codec.extract_text(parsed)
             tool_calls = tool_calls_from_openai_dicts(codec.extract_tool_calls(parsed))
             out_tok = int(self.estimate_tokens_for_text(text, model_hint=self.model_name_for_token_estimation))
@@ -947,9 +995,12 @@ class BedrockChatAdapter(BaseLLMAdapter):
                 )
 
                 def _converse_tool_stream() -> Iterable[object]:
-                    resp = self.client.converse_stream(modelId=self.config.model_id, **req)
-                    stream = resp.get("stream") if isinstance(resp, dict) else resp
-                    return stream
+                    def _open(c: BedrockRuntimeClient) -> Iterable[object]:
+                        resp = c.converse_stream(modelId=self.config.model_id, **req)
+                        stream = resp.get("stream") if isinstance(resp, dict) else resp
+                        return stream
+
+                    return self._stream(_open)
 
                 active_tools: dict[str, dict[str, Any]] = {}
                 for event in self._execute_streaming(_converse_tool_stream):

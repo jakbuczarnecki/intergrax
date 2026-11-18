@@ -5,7 +5,9 @@
 Before the change the effective timeout (``timeout_sec`` clamped by the active execution deadline) was computed
 for admission and then dropped: no provider call site passed it to the SDK. Each shipped adapter must now pass
 it through the mechanism its SDK offers, or declare that it cannot and refuse a call that carries a timeout
-(Operator ruling Q-RUN-02: fail closed). Fake SDK clients only (no network, no credential).
+(Operator ruling Q-RUN-02: fail closed). An SDK that takes its timeout at client construction only (boto3,
+``ollama.Client``, ``ChatOllama``) gets a client built for the call when the adapter built its own client; only
+an adapter with an injected client fails closed. Fake SDK clients only (no network, no credential).
 """
 
 from __future__ import annotations
@@ -45,8 +47,8 @@ _MECHANISMS: dict[str, str] = {
     "CohereNativeChatAdapter": "PER_CALL",
     "GeminiChatAdapter": "PER_CALL",
     "NativeOllamaAdapter": "PER_CALL_DERIVED_CLIENT",
-    "LangChainOllamaAdapter": "NONE",
-    "BedrockChatAdapter": "NONE",
+    "LangChainOllamaAdapter": "PER_CALL_DERIVED_CLIENT",
+    "BedrockChatAdapter": "PER_CALL_DERIVED_CLIENT",
 }
 
 
@@ -321,6 +323,204 @@ def test_native_ollama_forwards_the_timeout_through_a_per_call_client(
     assert forwarded() == pytest.approx(_TIMEOUT)
 
 
+# ---------------------------------------------------------------------------------------------
+# Adapter-built clients of SDKs that take the timeout at construction (H-1 of the PR #670 review)
+# ---------------------------------------------------------------------------------------------
+
+
+class _DerivedClients:
+    """Every client an adapter built, with the timeout it was built with, its SDK calls and its close."""
+
+    def __init__(self) -> None:
+        self.built: list[_BuiltClient] = []
+
+    def with_timeout(self) -> list[_BuiltClient]:
+        return [client for client in self.built if client.timeout is not None]
+
+    def shared(self) -> _BuiltClient:
+        shared = [client for client in self.built if client.timeout is None]
+        assert len(shared) == 1, "the adapter builds exactly one long-lived client"
+        return shared[0]
+
+
+class _BuiltClient:
+    def __init__(self, timeout: float | None) -> None:
+        self.timeout = timeout
+        self.calls = 0
+        self.closed = False
+
+    def close(self) -> None:
+        self.closed = True
+
+
+class _FakeBedrockRuntime:
+    def __init__(self, record: _BuiltClient) -> None:
+        self._record = record
+
+    def converse(self, **_: Any) -> Any:
+        self._record.calls += 1
+        return {"output": {"message": {"content": [{"text": "x"}]}}, "stopReason": "end_turn"}
+
+    def converse_stream(self, **_: Any) -> Any:
+        self._record.calls += 1
+        record = self._record
+
+        def events() -> Iterator[Any]:
+            assert not record.closed, "the per-call client was closed before the stream was consumed"
+            yield {"contentBlockDelta": {"delta": {"text": "x"}}}
+            yield {"messageStop": {"stopReason": "end_turn"}}
+
+        return {"stream": events()}
+
+    def close(self) -> None:
+        self._record.close()
+
+
+def _bedrock_owned_client(monkeypatch: pytest.MonkeyPatch) -> tuple[Any, _DerivedClients]:
+    import intergrax.llm_adapters.providers.aws_bedrock_adapter as bedrock
+
+    clients = _DerivedClients()
+
+    def fake_boto3_client(**kwargs: Any) -> _FakeBedrockRuntime:
+        assert kwargs["service_name"] == "bedrock-runtime"
+        config = kwargs.get("config")
+        timeout = None
+        if config is not None:
+            assert config.connect_timeout == config.read_timeout
+            timeout = config.read_timeout
+        record = _BuiltClient(timeout)
+        clients.built.append(record)
+        return _FakeBedrockRuntime(record)
+
+    monkeypatch.setattr(bedrock.boto3, "client", fake_boto3_client)
+    adapter = bedrock.BedrockChatAdapter(
+        model_id="anthropic.claude-3-haiku-20240307-v1:0", region="us-east-1", use_converse=True
+    )
+    return adapter, clients
+
+
+def _langchain_ollama_owned_chat(monkeypatch: pytest.MonkeyPatch) -> tuple[Any, _DerivedClients]:
+    pytest.importorskip("langchain_core", reason="optional extra llm-langchain-ollama")
+    clients = _DerivedClients()
+
+    class _FakeChatOllama:
+        def __init__(self, *, model: str, client_kwargs: dict[str, Any] | None = None, **_: Any) -> None:
+            self.model = model
+            self._record = _BuiltClient(None if client_kwargs is None else client_kwargs.get("timeout"))
+            # Shape of ``ChatOllama._client`` (an ``ollama.Client``) and its ``httpx.Client`` transport.
+            self._client = SimpleNamespace(_client=self._record)
+            clients.built.append(self._record)
+
+        def invoke(self, *_: Any, **__: Any) -> Any:
+            self._record.calls += 1
+            return SimpleNamespace(content="x", response_metadata={"done_reason": "stop", "model": "served"})
+
+        def stream(self, *_: Any, **__: Any) -> Iterator[Any]:
+            self._record.calls += 1
+            assert not self._record.closed, "the per-call client was closed before the stream was consumed"
+            yield SimpleNamespace(content="x", response_metadata={})
+            yield SimpleNamespace(content="", response_metadata={"done_reason": "stop"})
+
+    fake_module = ModuleType("langchain_ollama")
+    fake_module.__dict__["ChatOllama"] = _FakeChatOllama
+    monkeypatch.setitem(sys.modules, "langchain_ollama", fake_module)
+    from intergrax.llm_adapters.providers.ollama_adapter import LangChainOllamaAdapter
+    from intergrax.llm_adapters.providers.ollama_capabilities import OllamaModelCapabilityResolver
+
+    resolver = OllamaModelCapabilityResolver(show_model=lambda _m: SimpleNamespace(capabilities=["completion"]))
+    adapter = LangChainOllamaAdapter(model="qwen2.5:14b", capability_resolver=resolver)
+    return adapter, clients
+
+
+_DERIVED_CLIENT_CASES: dict[str, Callable[[pytest.MonkeyPatch], tuple[Any, _DerivedClients]]] = {
+    "bedrock": _bedrock_owned_client,
+    "langchain-ollama": _langchain_ollama_owned_chat,
+}
+
+
+@pytest.mark.parametrize("stream", [False, True], ids=["buffered", "stream"])
+@pytest.mark.parametrize("case", sorted(_DERIVED_CLIENT_CASES))
+def test_an_adapter_built_client_gets_the_timeout_through_a_per_call_client_that_is_closed(
+    case: str, stream: bool, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    adapter, clients = _DERIVED_CLIENT_CASES[case](monkeypatch)
+    assert adapter.supports_call_timeout() is True
+    _with_timeout(adapter)
+    assert _run(adapter, stream).content == "x"
+    derived = clients.with_timeout()
+    assert [client.timeout for client in derived] == [pytest.approx(_TIMEOUT)]
+    assert derived[0].calls == 1
+    assert derived[0].closed is True
+    assert clients.shared().calls == 0
+    assert clients.shared().closed is False
+
+
+@pytest.mark.parametrize("case", sorted(_DERIVED_CLIENT_CASES))
+def test_an_adapter_built_client_gets_the_deadline_clamped_timeout(case: str, monkeypatch: pytest.MonkeyPatch) -> None:
+    import intergrax.runtime.execution.deadline_provider_guard as guard
+
+    monkeypatch.setattr(guard, "resolve_active_provider_timeout_seconds", lambda configured: 2.0)
+    adapter, clients = _DERIVED_CLIENT_CASES[case](monkeypatch)
+    _with_timeout(adapter, None)
+    assert adapter.generate_messages(_USER).content == "x"
+    assert [client.timeout for client in clients.with_timeout()] == [pytest.approx(2.0)]
+
+
+@pytest.mark.parametrize("stream", [False, True], ids=["buffered", "stream"])
+@pytest.mark.parametrize("case", sorted(_DERIVED_CLIENT_CASES))
+def test_an_adapter_built_client_serves_a_call_without_a_budget_on_the_shared_client(
+    case: str, stream: bool, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    adapter, clients = _DERIVED_CLIENT_CASES[case](monkeypatch)
+    _with_timeout(adapter, None)
+    assert _run(adapter, stream).content == "x"
+    assert clients.with_timeout() == []
+    assert clients.shared().calls == 1
+
+
+def test_a_bedrock_invoke_model_body_is_read_before_the_per_call_client_is_closed(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    import intergrax.llm_adapters.providers.aws_bedrock_adapter as bedrock
+
+    built: list[_BuiltClient] = []
+
+    class _Body:
+        def __init__(self, record: _BuiltClient) -> None:
+            self._record = record
+
+        def read(self) -> bytes:
+            assert not self._record.closed, "the response body was read after its client was closed"
+            return b'{"content": [{"type": "text", "text": "x"}], "stop_reason": "end_turn"}'
+
+    class _InvokeOnly:
+        def __init__(self, record: _BuiltClient) -> None:
+            self._record = record
+
+        def invoke_model(self, **_: Any) -> Any:
+            self._record.calls += 1
+            return {"body": _Body(self._record)}
+
+        def close(self) -> None:
+            self._record.close()
+
+    def fake_boto3_client(**kwargs: Any) -> _InvokeOnly:
+        config = kwargs.get("config")
+        record = _BuiltClient(None if config is None else config.read_timeout)
+        built.append(record)
+        return _InvokeOnly(record)
+
+    monkeypatch.setattr(bedrock.boto3, "client", fake_boto3_client)
+    adapter = _with_timeout(
+        bedrock.BedrockChatAdapter(model_id="anthropic.claude-3-haiku-20240307-v1:0", region="us-east-1")
+    )
+    assert adapter.generate_messages(_USER).content == "x"
+    derived = [record for record in built if record.timeout is not None]
+    assert len(derived) == 1
+    assert derived[0].calls == 1
+    assert derived[0].closed is True
+
+
 @pytest.mark.parametrize("stream", [False, True], ids=["buffered", "stream"])
 @pytest.mark.parametrize("case", sorted(_PER_CALL_CASES))
 def test_no_timeout_argument_is_sent_when_no_budget_is_set(case: str, stream: bool) -> None:
@@ -364,9 +564,10 @@ def _native_ollama_injected_client() -> tuple[Any, MagicMock]:
     return NativeOllamaAdapter(client=client, model="qwen2.5:14b", capability_resolver=resolver), client.chat
 
 
+#: Adapters with an injected client: the client cannot be rebuilt with the timeout, so they fail closed.
 _NONE_CASES: dict[str, Callable[[], tuple[Any, MagicMock]]] = {
-    "bedrock": _bedrock,
-    "langchain-ollama": _langchain_ollama,
+    "bedrock-injected-client": _bedrock,
+    "langchain-ollama-injected-chat": _langchain_ollama,
     "native-ollama-injected-client": _native_ollama_injected_client,
 }
 

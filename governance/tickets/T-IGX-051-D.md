@@ -74,7 +74,7 @@ Step 0, SDK timeout mechanisms (signatures of the SDK versions in `uv.lock`):
 | CohereNativeChatAdapter | `request_options={"timeout_in_seconds": ...}` | PER_CALL |
 | GeminiChatAdapter (with Vertex) | `GenerateContentConfig(http_options=HttpOptions(timeout=<ms>))` per call | PER_CALL |
 | NativeOllamaAdapter | `ollama.Client(timeout=)` built for the call when the adapter built its client | PER_CALL_DERIVED_CLIENT; NONE for an injected client |
-| LangChainOllamaAdapter | client kwargs at construction only | NONE (fail closed) |
-| BedrockChatAdapter | `botocore.config.Config(read_timeout=)` at construction only | NONE (fail closed) |
+| LangChainOllamaAdapter | `ChatOllama(client_kwargs={"timeout": ...})` built for the call when the adapter built its chat model; its HTTP client is closed after the call | PER_CALL_DERIVED_CLIENT; NONE (fail closed) for an injected `chat` |
+| BedrockChatAdapter | `boto3.client(config=botocore.config.Config(connect_timeout=, read_timeout=))` built for the call when the adapter built its client; closed after the call | PER_CALL_DERIVED_CLIENT; NONE (fail closed) for an injected client |
 
 Step 0, other records: capability-flag parity (NT-ROW-036) has no mismatch at base, recorded NOT_REPRODUCED; refusal matrix (NT-ROW-106) red at base in 5 cells (Claude `stream_with_tools` x3, Bedrock InvokeModel Mistral length x2); served model reported by OpenAI chat / Responses / Mistral / Anthropic (`model`), Gemini (`model_version`), Ollama (`model`), LangChain Ollama (`response_metadata["model"]`), Bedrock InvokeModel Anthropic body (`model`); not reported by Bedrock Converse and Cohere v2 (`served_model` stays `None`). Red-first and green logs: `.tmp/session/arch-freeze/T-IGX-051-D/` (main checkout).
