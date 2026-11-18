@@ -149,3 +149,33 @@ def test_sup_06c_matching_digest_admitted(tmp_path: Path) -> None:
     attested = _intact_digest(tmp_path)
     assert _admission(tmp_path, attested).evaluate(_spec()) is None
     assert _intact_digest(tmp_path) == attested
+
+
+def test_sup_06d_unlisted_extension_module_refused(tmp_path: Path) -> None:
+    """An unlisted ``.pyd``/``.so`` beside a listed module would take import precedence (review M-3)."""
+    _write_distribution(tmp_path)
+    attested = _intact_digest(tmp_path)
+    (tmp_path / "acme_tool_plugin" / "tools.cp312-win_amd64.pyd").write_bytes(b"MZ-planted")
+    rejection = _admission(tmp_path, attested).evaluate(_spec())
+    assert rejection is not None
+    assert rejection.reason_code is PluginAdmissionReasonCode.PLUGIN_PROVENANCE_INVALID
+
+
+def test_sup_06e_unlisted_sourceless_bytecode_refused(tmp_path: Path) -> None:
+    """A sourceless ``.pyc`` outside ``__pycache__`` is importable; it is not in RECORD (review M-3)."""
+    _write_distribution(tmp_path)
+    attested = _intact_digest(tmp_path)
+    (tmp_path / "acme_tool_plugin" / "extra.pyc").write_bytes(b"planted-bytecode")
+    rejection = _admission(tmp_path, attested).evaluate(_spec())
+    assert rejection is not None
+    assert rejection.reason_code is PluginAdmissionReasonCode.PLUGIN_PROVENANCE_INVALID
+
+
+def test_sup_06f_bytecode_cache_is_outside_the_digest(tmp_path: Path) -> None:
+    """Documented limit: ``__pycache__`` files are not covered (install-time artefacts, plan Part D)."""
+    _write_distribution(tmp_path)
+    attested = _intact_digest(tmp_path)
+    cache = tmp_path / "acme_tool_plugin" / "__pycache__"
+    cache.mkdir()
+    (cache / "tools.cpython-312.pyc").write_bytes(b"cache")
+    assert _admission(tmp_path, attested).evaluate(_spec()) is None
