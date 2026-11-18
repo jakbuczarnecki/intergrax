@@ -14,6 +14,7 @@ from intergrax.applications._shared.production_queue_resolver import (
     resolve_production_queue_backend,
 )
 from intergrax.applications._shared.task_control_wiring import TaskEnricher
+from intergrax.background_tasks.active_work import ActiveWorkSource
 from intergrax.distributed.contracts.kv_store import DistributedKVStore
 from intergrax.fastapi_core.execution.adapters.adapter import ExecutionAdapter
 from intergrax.fastapi_core.runs.default_service import DefaultRunService
@@ -32,11 +33,17 @@ from intergrax.runtime.task.queued_host_task_execution_adapter import (
 
 @dataclass(frozen=True, slots=True)
 class QueueWorkerWiring:
-    """Resolved queue worker stack for a product host."""
+    """Resolved queue worker stack for a product host.
+
+    ``active_work_sources`` are the queue consumers a host drain controller
+    (``BackgroundActiveWorkController``) waits for at shutdown. The inline path and the
+    in-process eager Celery path have no queue consumer of their own to drain and leave it empty.
+    """
 
     execution_adapter: ExecutionAdapter
     celery_app: object | None = None
     worker_kind: str = "inline"
+    active_work_sources: tuple[ActiveWorkSource, ...] = ()
 
 
 def wire_optional_queue_execution(

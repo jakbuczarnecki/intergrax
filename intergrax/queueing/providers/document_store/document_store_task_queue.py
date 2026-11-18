@@ -589,7 +589,31 @@ class DocumentStoreTaskQueue(TaskQueue):
         With ``max_retries=None`` (default) interrupted tasks become ``FAILED``. With a
         budget, a crash-looping (poison) task is redelivered until the budget is spent
         and then dead-lettered instead of being retried forever.
+
+        Each row is settled by one compare-and-set against the row read in the same attempt
+        (EX-L-03): a row that is no longer ``RUNNING`` (finished by a concurrent writer, or
+        already recovered by another instance) is left untouched and not reported. Over a
+        plain ``DocumentStore`` the write is an unconditional ``put`` and this stays the
+        single-instance mode of the module docstring. Without a worker lease a crash and a
+        slow writer that is still running are not told apart: this prevents the overwrite of
+        a settled row, it does not fence a live one.
         """
+
+        def _settle(row: dict[str, object]) -> dict[str, object] | None:
+            if TaskStatus(str(row["status"])) is not TaskStatus.RUNNING:
+                return None
+            if max_retries is not None:
+                return self._settled_fields(
+                    row,
+                    error_message=error_message,
+                    max_retries=max_retries,
+                    retry_policy=None,
+                )
+            row["status"] = TaskStatus.FAILED.value
+            row["error_message"] = error_message
+            row["updated_at_epoch"] = time.time()
+            return row
+
         with self._lock:
             interrupted: list[tuple[TaskHandle, TaskRequest]] = []
             running = self._store.query(_RUNNING_INDEX_PARTITION, limit=500)
@@ -603,23 +627,12 @@ class DocumentStoreTaskQueue(TaskQueue):
                     provider=DOCUMENT_STORE_TASK_QUEUE_PROVIDER,
                     tenant_id=tid,
                 )
-                row = self._load(handle)
-                if row is not None and TaskStatus(str(row["status"])) is TaskStatus.RUNNING:
-                    interrupted.append((handle, self._request_from_row(tid, row)))
+                result = self._cas_update(tid, task_id, _settle)
+                if result.kind == "applied" and result.previous is not None and result.updated is not None:
+                    interrupted.append((handle, self._request_from_row(tid, result.previous)))
                     if max_retries is not None:
-                        settled = self._settled_fields(
-                            dict(row),
-                            error_message=error_message,
-                            max_retries=max_retries,
-                            retry_policy=None,
-                        )
-                        self._put(tid, settled)
-                        self._after_settle(tid, settled)
-                    else:
-                        row["status"] = TaskStatus.FAILED.value
-                        row["error_message"] = error_message
-                        row["updated_at_epoch"] = time.time()
-                        self._put(tid, row)
+                        self._after_settle(tid, result.updated)
+                # Applied, missing, or observed in a non-RUNNING state: the index row is stale either way.
                 self._store.delete(_RUNNING_INDEX_PARTITION, _index_row(tid, task_id))
             return interrupted
 
@@ -658,15 +671,6 @@ class DocumentStoreTaskQueue(TaskQueue):
         if record is None:
             return None
         return dict(record.data)
-
-    def _put(self, tenant_id: str, row: dict[str, object]) -> None:
-        self._store.put(
-            DocumentRecord(
-                partition_key=_partition(tenant_id),
-                row_key=str(row["task_id"]),
-                data=row,
-            )
-        )
 
     def _list_task_rows(self, *, tenant_id: str, limit: int) -> list[dict[str, object]]:
         result = self._store.query(_partition(tenant_id), limit=limit)

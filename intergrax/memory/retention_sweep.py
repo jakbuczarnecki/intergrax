@@ -53,7 +53,7 @@ from intergrax.memory.contracts.memory_security_governance import (
 )
 from intergrax.memory.memory_temporal import _parse_iso_timestamp, is_memory_entry_expired
 from intergrax.memory.user_profile_memory import UserProfileMemoryEntry
-from intergrax.queueing.contracts.task_queue import TaskRequest
+from intergrax.queueing.contracts.task_queue import TaskExecutionIdentity, TaskRequest
 from intergrax.utils.time_provider import SystemTimeProvider
 
 __all__ = [
@@ -255,8 +255,13 @@ def memory_retention_sweep_task_request(
     as_of: datetime | None = None,
     batch_limit: int = DEFAULT_SWEEP_BATCH_LIMIT,
     idempotency_key: str | None = None,
+    identity: TaskExecutionIdentity | None = None,
 ) -> TaskRequest:
-    """Build the ``TaskRequest`` that admits a sweep through the existing task queue."""
+    """Build the ``TaskRequest`` that admits a sweep through the existing task queue.
+
+    ``identity`` is the canonical execution identity minted by the enqueuing side; it is carried
+    on the envelope unchanged (EX-D7-03, ADR-PDC-07: the builder never mints one).
+    """
     payload = MemoryRetentionSweepPayload(
         tenant_id=tenant_id,
         user_id=user_id,
@@ -269,6 +274,7 @@ def memory_retention_sweep_task_request(
         task_name=MEMORY_RETENTION_SWEEP_TASK_NAME,
         payload=payload.model_dump_json().encode("utf-8"),
         idempotency_key=idempotency_key,
+        identity=identity,
     )
 
 
