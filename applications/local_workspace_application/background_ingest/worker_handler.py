@@ -10,7 +10,7 @@ import json
 from typing import Protocol
 
 from intergrax.contracts.execution_identity import AttemptId, RunId
-from intergrax.queueing.contracts.task_queue import TaskRequest, TaskStatus
+from intergrax.queueing.contracts.task_queue import TaskExecutionIdentity, TaskRequest, TaskStatus
 from intergrax.queueing.worker.registry import TaskExecutionRegistry
 from intergrax.runtime.background_execution.bootstrap import BackgroundExecutionIdentity
 from intergrax.runtime.background_execution.identity_admission import (
@@ -101,6 +101,13 @@ def make_background_ingest_worker_handler(
                 task_name=LKW_BACKGROUND_INGEST_TASK_NAME,
                 payload=payload,
                 idempotency_key=resolved_idempotency,
+                # Carry the identity the handler already holds and validated above; never mint one.
+                identity=TaskExecutionIdentity(
+                    task_id=execution_identity.task_id,
+                    run_id=execution_identity.run_id,
+                    attempt_id=execution_identity.attempt_id,
+                    execution_id=execution_identity.execution_id,
+                ),
             )
             queue_result = _run_coro_sync(
                 handle_background_ingest_task_request(
