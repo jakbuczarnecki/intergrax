@@ -264,7 +264,7 @@ ENGINE_TREE_IMPACT_RULES: tuple[tuple[str, tuple[str, ...]], ...] = (
 )
 
 
-# Wave-diff mapping (plan 3.6): product packages touched since the PDC baseline that no existing rule covers. The two
+# Wave-diff mapping (plan 3.6): product packages touched since the PDC baseline that no existing rule covers. The three
 # pinned PDC wave-diff tests require every touched product module to map to a check. Until the owner supplies narrower
 # ids each group maps to EVERY manifest check (explicit FULL): the generator attaches all manifest check ids. One entry
 # per touched package group; re-derive the list at the integrated wave head.
@@ -274,6 +274,7 @@ WAVE_DIFF_FULL_IMPACT_PREFIXES: tuple[str, ...] = (
     "agents/web_search_qualifier",  # PT-WA: web search qualifier agent
     "intergrax/agents/readiness",  # touched since the PDC baseline: readiness scoreboard
     "intergrax/runtime/wiring",  # touched since the PDC baseline: LLM resolver wiring
+    "intergrax/distributed",  # PT-FC4: key-value store durability attestation
 )
 
 
