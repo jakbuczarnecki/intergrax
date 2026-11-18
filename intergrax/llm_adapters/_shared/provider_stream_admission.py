@@ -128,27 +128,23 @@ def _close_iterator(iterator: object) -> None:
 class _PrimedStream[S]:
     """An opened stream whose first event was already pulled; ``close`` closes the underlying stream."""
 
-    __slots__ = ("_first", "_iterator", "_pending")
+    __slots__ = ("_head", "_iterator")
 
     def __init__(self, first: S, iterator: Iterator[S]) -> None:
-        self._first: S | None = first
+        # The pulled first event waits here until it is yielded; popping it drops the reference.
+        self._head: list[S] = [first]
         self._iterator = iterator
-        self._pending = True
 
     def __iter__(self) -> _PrimedStream[S]:
         return self
 
     def __next__(self) -> S:
-        if self._pending:
-            self._pending = False
-            first = self._first
-            self._first = None
-            return first  # type: ignore[return-value]
+        if self._head:
+            return self._head.pop()
         return next(self._iterator)
 
     def close(self) -> None:
-        self._pending = False
-        self._first = None
+        self._head.clear()
         _close_iterator(self._iterator)
 
 
