@@ -6,6 +6,7 @@ from __future__ import annotations
 
 import base64
 import json
+import threading
 
 from pydantic import BaseModel
 
@@ -35,6 +36,10 @@ from intergrax.runtime.observability.causal_evidence_persistence import (
     CausalEvidencePersistence,
 )
 from intergrax.tools.execution_models import ToolExecutionResult
+
+
+class WorkerIntakeClosedError(RuntimeError):
+    """``process_request`` refused after ``stop_intake``: nothing was written, the request can be redelivered."""
 
 
 class WorkerRuntime:
@@ -71,6 +76,24 @@ class WorkerRuntime:
         self._causal_evidence_persistence = causal_evidence_persistence
         self._attempt_lifecycle = attempt_lifecycle
         self._execution_terminal = execution_terminal
+        self._intake_open = True
+        self._in_flight = 0
+        self._idle = threading.Condition()
+
+    def stop_intake(self) -> None:
+        """Refuse every later ``process_request`` (drain, EX-D7-01); requests in flight finish."""
+        with self._idle:
+            self._intake_open = False
+
+    def in_flight_count(self) -> int:
+        """Number of ``process_request`` calls that have passed the intake gate and not returned."""
+        with self._idle:
+            return self._in_flight
+
+    def wait_idle(self, timeout_seconds: float) -> bool:
+        """Wait until no request is in flight; True when idle within the timeout."""
+        with self._idle:
+            return self._idle.wait_for(lambda: self._in_flight == 0, timeout=timeout_seconds)
 
     def _emit(
         self,
@@ -107,6 +130,20 @@ class WorkerRuntime:
         )
 
     def process_request(self, request: TaskRequest, *, task_id: str) -> TaskResult:
+        """Run one request; refused with ``WorkerIntakeClosedError`` before any side effect after ``stop_intake``."""
+        with self._idle:
+            if not self._intake_open:
+                raise WorkerIntakeClosedError(f"worker_runtime_intake_closed:{request.task_name}")
+            self._in_flight += 1
+        try:
+            return self._process_admitted_request(request, task_id=task_id)
+        finally:
+            with self._idle:
+                self._in_flight -= 1
+                if self._in_flight == 0:
+                    self._idle.notify_all()
+
+    def _process_admitted_request(self, request: TaskRequest, *, task_id: str) -> TaskResult:
         if not self._registry.has_task(request.task_name):
             raise UnknownTaskError(f"unknown_task_name:{request.task_name}")
 
