@@ -4,6 +4,7 @@
 
 from __future__ import annotations
 
+from dataclasses import replace
 from typing import Any
 
 from openai.types.chat.chat_completion import ChatCompletion
@@ -29,6 +30,14 @@ from intergrax.llm_adapters.contracts.provider_extensions import (
 from intergrax.llm_adapters.contracts.token_usage import LLMTokenUsage, LLMTokenUsageValidationError
 from intergrax.llm_adapters.contracts.tool_call import LLMToolCall
 from intergrax.utils import attribute_access
+
+
+def reported_served_model(response: object) -> str | None:
+    """Model name the SDK response reports as having served the call (``response.model``), if any."""
+    value = attribute_access.optional(response, "model", None)
+    if isinstance(value, str) and value.strip():
+        return value.strip()
+    return None
 
 
 def usage_from_openai_chat_completion(usage: CompletionUsage | None) -> LLMTokenUsage:
@@ -144,16 +153,19 @@ def adapter_response_from_openai_responses(
     if typed_calls and finish == LLMFinishReason.COMPLETED:
         finish = LLMFinishReason.TOOL_CALLS
     extensions = LLMProviderExtensions(usage_source="sdk")
-    return build_adapter_response(
-        content=content or "",
-        finish_reason=finish,
-        usage=usage,
-        model=model,
-        provider=provider,
-        response_id=response_id,
-        refusal=_refusal_from_openai_responses_output(response),
-        tool_calls=typed_calls,
-        provider_extensions=extensions,
+    return replace(
+        build_adapter_response(
+            content=content or "",
+            finish_reason=finish,
+            usage=usage,
+            model=model,
+            provider=provider,
+            response_id=response_id,
+            refusal=_refusal_from_openai_responses_output(response),
+            tool_calls=typed_calls,
+            provider_extensions=extensions,
+        ),
+        served_model=reported_served_model(response),
     )
 
 
@@ -174,16 +186,20 @@ def adapter_response_from_openai_chat_completion(
             usage_source="sdk",
             openai=OpenAIProviderExtensions(system_fingerprint=str(fingerprint) if fingerprint else None),
         )
+    served_model = reported_served_model(res)
     choices = res.choices or []
     if not choices:
-        return build_adapter_response(
-            content="",
-            finish_reason=LLMFinishReason.COMPLETED,
-            usage=usage,
-            model=model,
-            provider=provider,
-            response_id=response_id,
-            provider_extensions=extensions,
+        return replace(
+            build_adapter_response(
+                content="",
+                finish_reason=LLMFinishReason.COMPLETED,
+                usage=usage,
+                model=model,
+                provider=provider,
+                response_id=response_id,
+                provider_extensions=extensions,
+            ),
+            served_model=served_model,
         )
     choice = choices[0]
     msg = choice.message
@@ -191,14 +207,17 @@ def adapter_response_from_openai_chat_completion(
     tool_calls = tool_calls_from_openai_message(msg)
     if tool_calls and finish == LLMFinishReason.COMPLETED:
         finish = LLMFinishReason.TOOL_CALLS
-    return build_adapter_response(
-        content=msg.content or "",
-        finish_reason=finish,
-        usage=usage,
-        model=model,
-        provider=provider,
-        response_id=response_id,
-        refusal=refusal_text(getattr(msg, "refusal", None)),
-        tool_calls=tool_calls,
-        provider_extensions=extensions,
+    return replace(
+        build_adapter_response(
+            content=msg.content or "",
+            finish_reason=finish,
+            usage=usage,
+            model=model,
+            provider=provider,
+            response_id=response_id,
+            refusal=refusal_text(getattr(msg, "refusal", None)),
+            tool_calls=tool_calls,
+            provider_extensions=extensions,
+        ),
+        served_model=served_model,
     )

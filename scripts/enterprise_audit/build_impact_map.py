@@ -13,10 +13,10 @@ from pathlib import Path
 from intergrax.platform.enterprise_audit.changed_since import (
     git_changed_files,
     invariant_floor,
-    select_checks_for_changed_since,
+    plan_changed_since_selection,
     unmapped_evol_changed_paths,
 )
-from intergrax.platform.enterprise_audit.impact_map import build_impact_map_from_manifest
+from intergrax.platform.enterprise_audit.impact_map import build_impact_map_from_manifest, load_default_impact_map
 from intergrax.platform.enterprise_audit.manifest import load_default_manifest
 
 
@@ -51,18 +51,21 @@ def main() -> int:
         print("Provide --since-sha and --output, or --emit-ssot", file=sys.stderr)
         return 2
     try:
-        selected = select_checks_for_changed_since(checks, repo_root=root, since_sha=args.since_sha)
+        selection = plan_changed_since_selection(checks, repo_root=root, since_sha=args.since_sha)
     except ValueError as exc:
         print(str(exc), file=sys.stderr)
         return 1
     changed = git_changed_files(root, args.since_sha)
-    unmapped = unmapped_evol_changed_paths(checks, changed)
+    unmapped = unmapped_evol_changed_paths(checks, changed, prefixes=load_default_impact_map())
     payload = {
         "schema_version": 1,
         "since_sha": args.since_sha,
-        "selected_check_ids": sorted(selected),
+        "selected_check_ids": sorted(selection.check_ids),
         "invariant_floor_ids": sorted(invariant_floor(checks)),
         "unmapped_paths": sorted(unmapped),
+        "escalated_to_full": selection.escalated_to_full,
+        "unmapped_product_paths": list(selection.unmapped_paths),
+        "reasons": list(selection.reasons),
     }
     args.output.parent.mkdir(parents=True, exist_ok=True)
     args.output.write_text(json.dumps(payload, indent=2, sort_keys=True) + "\n", encoding="utf-8")

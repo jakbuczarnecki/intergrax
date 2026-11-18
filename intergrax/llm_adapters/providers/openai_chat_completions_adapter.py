@@ -24,6 +24,7 @@ from intergrax.llm_adapters._shared.adapter_response_builders import (
 from intergrax.llm_adapters._shared.messages import map_chat_completion_messages, split_system_messages
 from intergrax.llm_adapters._shared.openai_completion_mapping import (
     adapter_response_from_openai_chat_completion,
+    reported_served_model,
 )
 from intergrax.llm_adapters._shared.openai_tool_call_interop import tool_calls_from_openai_dicts
 from intergrax.llm_adapters._shared.openai_tool_choice_projection import (
@@ -104,11 +105,16 @@ class OpenAIChatCompletionsAdapter(BaseLLMAdapter):
                 max_tokens=max_tokens,
                 stream=False,
             )
-            res: ChatCompletion = self._execute(lambda: self.client.chat.completions.create(**payload))
-            response = adapter_response_from_openai_chat_completion(
-                res,
-                model=self.model,
-                provider=self._provider_slug(),
+            res: ChatCompletion = self._execute(
+                lambda: self.client.chat.completions.create(**payload, **self._call_timeout_kwargs())
+            )
+            response = self._served_response(
+                call,
+                adapter_response_from_openai_chat_completion(
+                    res,
+                    model=self.model,
+                    provider=self._provider_slug(),
+                ),
             )
             success = True
             return response
@@ -138,6 +144,7 @@ class OpenAIChatCompletionsAdapter(BaseLLMAdapter):
         err_type = None
         buf: list[str] = []
         signal = StreamFinishSignal()
+        served_model: str | None = None
         in_tok = 0
         out_tok = 0
         try:
@@ -150,8 +157,11 @@ class OpenAIChatCompletionsAdapter(BaseLLMAdapter):
                 max_tokens=max_tokens,
                 stream=True,
             )
-            for chunk in self._execute_streaming(lambda: self.client.chat.completions.create(**payload)):
+            for chunk in self._execute_streaming(
+                lambda: self.client.chat.completions.create(**payload, **self._call_timeout_kwargs())
+            ):
                 c: ChatCompletionChunk = chunk
+                served_model = reported_served_model(c) or served_model
                 if not c.choices:
                     continue
                 signal.observe_finish(c.choices[0].finish_reason)
@@ -165,13 +175,17 @@ class OpenAIChatCompletionsAdapter(BaseLLMAdapter):
             success = True
             finish, refusal = signal.resolve()
             yield final_stream_event(
-                response=build_adapter_response(
-                    content="".join(buf),
-                    finish_reason=finish,
-                    refusal=refusal,
-                    usage=LLMTokenUsage.from_counts(input_tokens=in_tok, output_tokens=out_tok),
-                    model=self.model,
-                    provider=self._provider_slug(),
+                response=self._served_response(
+                    call,
+                    build_adapter_response(
+                        content="".join(buf),
+                        finish_reason=finish,
+                        refusal=refusal,
+                        usage=LLMTokenUsage.from_counts(input_tokens=in_tok, output_tokens=out_tok),
+                        model=self.model,
+                        provider=self._provider_slug(),
+                    ),
+                    served_model,
                 )
             )
         except Exception as e:
@@ -233,11 +247,16 @@ class OpenAIChatCompletionsAdapter(BaseLLMAdapter):
                 tools=provider_tools,
                 tool_choice=tool_choice,
             )
-            res: ChatCompletion = self._execute(lambda: self.client.chat.completions.create(**payload))
-            response = adapter_response_from_openai_chat_completion(
-                res,
-                model=self.model,
-                provider=self._provider_slug(),
+            res: ChatCompletion = self._execute(
+                lambda: self.client.chat.completions.create(**payload, **self._call_timeout_kwargs())
+            )
+            response = self._served_response(
+                call,
+                adapter_response_from_openai_chat_completion(
+                    res,
+                    model=self.model,
+                    provider=self._provider_slug(),
+                ),
             )
             if response.tool_calls:
                 enforce_strict_tool_call_conformance(response.tool_calls, tool_definitions)
@@ -276,6 +295,7 @@ class OpenAIChatCompletionsAdapter(BaseLLMAdapter):
         buf: list[str] = []
         signal = StreamFinishSignal()
         tool_calls_acc: list[dict[str, Any]] = []
+        served_model: str | None = None
         in_tok = 0
         out_tok = 0
         try:
@@ -290,7 +310,10 @@ class OpenAIChatCompletionsAdapter(BaseLLMAdapter):
                 tools=provider_tools,
                 tool_choice=tool_choice,
             )
-            for chunk in self._execute_streaming(lambda: self.client.chat.completions.create(**payload)):
+            for chunk in self._execute_streaming(
+                lambda: self.client.chat.completions.create(**payload, **self._call_timeout_kwargs())
+            ):
+                served_model = reported_served_model(chunk) or served_model
                 if not chunk.choices:
                     continue
                 signal.observe_finish(chunk.choices[0].finish_reason)
@@ -322,14 +345,18 @@ class OpenAIChatCompletionsAdapter(BaseLLMAdapter):
             out_tok = int(self.estimate_tokens_for_text("".join(buf), model_hint=self.model_name_for_token_estimation))
             success = True
             yield final_stream_event(
-                response=build_adapter_response(
-                    content="".join(buf),
-                    finish_reason=finish,
-                    refusal=refusal,
-                    usage=LLMTokenUsage.from_counts(input_tokens=in_tok, output_tokens=out_tok),
-                    model=self.model,
-                    provider=self._provider_slug(),
-                    tool_calls=tool_calls,
+                response=self._served_response(
+                    call,
+                    build_adapter_response(
+                        content="".join(buf),
+                        finish_reason=finish,
+                        refusal=refusal,
+                        usage=LLMTokenUsage.from_counts(input_tokens=in_tok, output_tokens=out_tok),
+                        model=self.model,
+                        provider=self._provider_slug(),
+                        tool_calls=tool_calls,
+                    ),
+                    served_model,
                 )
             )
         except Exception as e:
@@ -370,7 +397,7 @@ class OpenAIChatCompletionsAdapter(BaseLLMAdapter):
                 },
             },
         )
-        res = self._execute(lambda: self.client.chat.completions.create(**payload))
+        res = self._execute(lambda: self.client.chat.completions.create(**payload, **self._call_timeout_kwargs()))
         response = adapter_response_from_openai_chat_completion(
             res,
             model=self.model,
