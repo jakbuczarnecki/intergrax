@@ -61,6 +61,11 @@ class SecurityAuditChainReport:
     Honest limit: a hash chain detects a modified or a removed interior entry. It does not detect a
     truncated tail or a rewrite of the whole chain by a writer of the store, because there is no
     external anchor of the head; ``head_digest`` is exposed so that a caller can anchor it elsewhere.
+
+    ``intact`` only says that no chained entry is broken. Entries without digests are counted as
+    ``unchained_count`` (events stored before the chain existed), so a store writer who blanks every
+    digest also yields ``intact`` with ``verified_count == 0``: that is not tamper evidence. Use
+    ``fully_chained`` when every entry must be covered by the chain.
     """
 
     verified_count: int
@@ -73,6 +78,11 @@ class SecurityAuditChainReport:
     @property
     def intact(self) -> bool:
         return self.first_broken_index is None
+
+    @property
+    def fully_chained(self) -> bool:
+        """Intact and no entry outside the chain: every stored entry is tamper-evident."""
+        return self.intact and self.unchained_count == 0
 
 
 class AuditTrailListingTruncated(RuntimeError):
@@ -290,6 +300,10 @@ def _tenant_stream(tenant_id: str) -> _TenantStream:
 
 
 def _entry_from_event(event: RuntimeEvent, tenant: str) -> SecurityAuditEntry:
+    # Assumption (stated for the chain): the evidence port stores ``RuntimeEvent.timestamp`` exactly
+    # (microsecond precision, UTC), as the SQLite and in-memory runtime event stores do. A port that
+    # normalises the timestamp would make every entry an ``entry_digest_mismatch`` (fails closed, but a
+    # false tamper alarm); carrying the canonical instant in the payload is the alternative.
     body = SecurityAuditPayloadV1.from_envelope(event.payload)
     return SecurityAuditEntry(
         entry_id=body.entry_id,

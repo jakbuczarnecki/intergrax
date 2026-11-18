@@ -174,3 +174,23 @@ def test_sup_17c_evidence_plane_value_redacted(tmp_path: Path) -> None:
     assert stored.metadata["count"] == 2
     leaked = any(value in text for _row_id, text in _stored_rows(db_path))
     assert not leaked, "secret-shaped value stored unredacted (value not shown)"
+
+
+def test_sup_07e_stripped_digests_are_not_fully_chained() -> None:
+    """Review L-4: blanking every digest is reported as not fully chained (no false tamper evidence)."""
+    memory = SecurityAuditTrail()
+    _append_three(memory)
+    entries = memory._entries
+    for index, entry in enumerate(entries):
+        entries[index] = dataclasses.replace(entry, prev_digest="", entry_digest="")
+    report = _report(memory)
+    assert getattr(report, "verified_count") == 0
+    assert getattr(report, "unchained_count") == 3
+    assert getattr(report, "fully_chained", True) is False
+    assert getattr(_report(_clean_trail()), "fully_chained", False) is True
+
+
+def _clean_trail() -> SecurityAuditTrail:
+    trail = SecurityAuditTrail()
+    _append_three(trail)
+    return trail
