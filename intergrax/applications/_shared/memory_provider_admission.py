@@ -6,7 +6,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 from enum import StrEnum
-from typing import Protocol
+from typing import TYPE_CHECKING, Protocol
 
 from intergrax.applications._shared.wiring_posture import wiring_fails_closed
 from intergrax.applications.contracts.application_host import ApplicationProfile
@@ -43,6 +43,10 @@ from intergrax.memory.contracts.provider_qualification_evidence import (
     MemoryProviderQualificationEvidenceResolveStatus,
 )
 from intergrax.memory.user_profile_store import UserProfileStore
+
+if TYPE_CHECKING:
+    from intergrax.runtime.execution.session_host_composition import SessionStorage
+    from intergrax.runtime.organization.organization_profile_store import OrganizationProfileStore
 
 
 class _EmptyDurabilityEvidenceRegistry:
@@ -322,14 +326,14 @@ def organization_profile_store_required(env: ApplicationEnvironmentProfile) -> b
     return env.memory_profile.enable_org_memory
 
 
-def _declared_durable(store: object) -> bool:
+def _declared_durable(store: SessionStorage | OrganizationProfileStore) -> bool:
     return (
         isinstance(store, MemoryStoreProviderMetadata)
         and store.memory_provider_durability is MemoryProviderDurability.DURABLE
     )
 
 
-def _organization_store_is_durable(store: object) -> bool:
+def _organization_store_is_durable(store: OrganizationProfileStore) -> bool:
     """Known-ephemeral and unclassifiable stores are not durable; SQLite or declared-durable are."""
     from intergrax.runtime.organization.stores.in_memory_organization_profile_store import (
         InMemoryOrganizationProfileStore,
@@ -345,7 +349,7 @@ def _organization_store_is_durable(store: object) -> bool:
     return _declared_durable(store)
 
 
-def _session_storage_is_durable(storage: object) -> bool:
+def _session_storage_is_durable(storage: SessionStorage) -> bool:
     """SQLite or declared-durable plugin storage only.
 
     ``DocumentStoreSessionStorage`` exposes no public backing-store handle, so its restart
@@ -361,8 +365,8 @@ def _session_storage_is_durable(storage: object) -> bool:
 def validate_organization_and_session_admission(
     env: ApplicationEnvironmentProfile,
     *,
-    session_storage: object,
-    organization_profile_store: object | None,
+    session_storage: SessionStorage,
+    organization_profile_store: OrganizationProfileStore | None,
 ) -> None:
     """Pure admission gate on the final session storage and organization store.
 
