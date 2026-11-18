@@ -7,7 +7,6 @@ from __future__ import annotations
 import sqlite3
 import threading
 from pathlib import Path
-from typing import Optional
 
 from intergrax.distributed.contracts.kv_store import DistributedKVStore
 
@@ -24,6 +23,16 @@ class SqliteDistributedKVStore(DistributedKVStore):
     @property
     def db_path(self) -> Path:
         return self._db_path
+
+    @property
+    def survives_process_restart(self) -> bool:
+        """
+        Declares durability of the store type (WAL file, ``synchronous=FULL``).
+
+        The claim holds for a database file that is reused across processes; a caller that
+        passes a fresh path per process does not recover data across a restart.
+        """
+        return True
 
     def _connect(self) -> sqlite3.Connection:
         conn = sqlite3.connect(self._db_path)
@@ -45,7 +54,7 @@ class SqliteDistributedKVStore(DistributedKVStore):
                     """
                 )
 
-    def get(self, tenant_id: str, key: str) -> Optional[bytes]:
+    def get(self, tenant_id: str, key: str) -> bytes | None:
         with self._lock:
             with self._connect() as conn:
                 row = conn.execute(
@@ -62,7 +71,7 @@ class SqliteDistributedKVStore(DistributedKVStore):
         key: str,
         value: bytes,
         *,
-        ttl_seconds: Optional[int] = None,
+        ttl_seconds: int | None = None,
     ) -> None:
         del ttl_seconds
         with self._lock:
@@ -88,10 +97,10 @@ class SqliteDistributedKVStore(DistributedKVStore):
         self,
         tenant_id: str,
         key: str,
-        expected: Optional[bytes],
+        expected: bytes | None,
         new_value: bytes,
         *,
-        ttl_seconds: Optional[int] = None,
+        ttl_seconds: int | None = None,
     ) -> bool:
         del ttl_seconds
         with self._lock:
