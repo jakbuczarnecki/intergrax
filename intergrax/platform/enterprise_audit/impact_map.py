@@ -275,6 +275,8 @@ WAVE_DIFF_FULL_IMPACT_PREFIXES: tuple[str, ...] = (
     "intergrax/agents/readiness",  # touched since the PDC baseline: readiness scoreboard
     "intergrax/runtime/wiring",  # touched since the PDC baseline: LLM resolver wiring
     "intergrax/distributed",  # PT-FC4: key-value store durability attestation
+    "agents/model_routing_qualifier",  # RW-RUNTIME (PR #670): model routing qualification types
+    "intergrax/multimedia",  # RW-RUNTIME (PR #670): images loader
 )
 
 
