@@ -89,6 +89,8 @@ connection/auth keys follow in the detailed sections.
 | `INTERGRAX_SANDBOX_ROOT` | Sandbox session root | Platform profile: `build/sandbox_sessions` | No |
 | `INTERGRAX_SCHEDULER_POLL_SECONDS` | Long-running scheduler poll interval | Platform profile: none; adapter fallback `30` | No |
 | `INTERGRAX_CELERY_BROKER_URL` | Worker/broker URL | none | Conditional |
+| `INTERGRAX_QUEUE_BACKEND` | Tier-3 queue backend: `inline`, `celery`, `rabbitmq`, `kafka`; the in-process eager worker is refused with `production_mode`, `rabbitmq`/`kafka` raise (no broker wiring yet) | `inline` | No |
+| `INTERGRAX_KUBERNETES_URL` | Kubernetes API origin for production capacity adapters; unset means capacity is reported unqualified and mutations are refused | none | Conditional |
 | `INTERGRAX_EXPORT_JOURNAL` | Export run-journal OTLP snapshot on task completion | Platform profile: enabled (`1`) | No |
 | `INTERGRAX_EXPORT_PARSER_TRACE` | Export document-parser traces to the observability backend | Platform profile: off | No |
 

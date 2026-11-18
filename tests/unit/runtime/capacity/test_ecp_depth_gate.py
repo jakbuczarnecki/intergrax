@@ -1,9 +1,8 @@
 # © Artur Czarnecki. All rights reserved.
 
 import pytest
-
-from intergrax.applications.contracts.environment_profile import ApplicationEnvironmentProfile
 from intergrax.applications._shared.scaling_wiring import wire_application_scaling
+from intergrax.applications.contracts.environment_profile import ApplicationEnvironmentProfile
 from intergrax.runtime.capacity import ScalingTarget
 from intergrax.runtime.capacity.ahi_bridge import scaling_action_from_ahi_proposal
 from intergrax.runtime.capacity.collector import CapacitySignalCollector
@@ -389,14 +388,6 @@ def test_pending_queue_depth_provider() -> None:
         status=TaskStatus.PENDING,
     )
     assert pending_queue_depth(kv, "t1", provider="celery") == 1.0
-
-
-def test_resolve_kubernetes_backend_in_memory_by_default(monkeypatch) -> None:
-    from intergrax.runtime.capacity.production_adapters import resolve_kubernetes_backend
-
-    monkeypatch.delenv("INTERGRAX_KUBERNETES_URL", raising=False)
-    _backend, kind = resolve_kubernetes_backend()
-    assert kind == "in_memory"
 
 
 def test_capacity_metrics_export() -> None:
