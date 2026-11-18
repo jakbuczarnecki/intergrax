@@ -98,10 +98,17 @@ class DeployActivatePipelineContext:
 
 
 class RevisionTrustAdmissionState(StrEnum):
-    """How the deploy/activate pipeline admitted the revision's packages (recorded on the result)."""
+    """How the deploy/activate pipeline admitted the revision's packages (recorded on the result).
+
+    ``COMPOSED_RUNTIME_RECORDS_ONLY``: the composed admin service's ``assert_revision_trust_admissible``
+    re-evaluated the installation trust records (presence, digest, freshness) with the trust sources the
+    admin service was built with. The production factory does not yet inject a revocation-state source
+    or an attestation verifier (EX-D1-02, T-IGX-051-B Parts A/B are not landed), so on that composition
+    the revocation state is empty and no signature is verified: a revoked digest is admitted there.
+    """
 
     CONTEXT_HOOK = "trust_admission_context_hook"
-    COMPOSED_RUNTIME = "trust_admission_composed_runtime"
+    COMPOSED_RUNTIME_RECORDS_ONLY = "trust_admission_composed_runtime_records_only"
     NOT_COMPOSED = "trust_admission_not_composed"
 
 
@@ -114,7 +121,7 @@ def _resolve_revision_trust_admission(
     if capability_runtime is not None:
         return (
             capability_runtime.admin_service.assert_revision_trust_admissible,
-            RevisionTrustAdmissionState.COMPOSED_RUNTIME,
+            RevisionTrustAdmissionState.COMPOSED_RUNTIME_RECORDS_ONLY,
         )
     return None, RevisionTrustAdmissionState.NOT_COMPOSED
 
