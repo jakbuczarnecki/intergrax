@@ -255,7 +255,7 @@ EVOL_X_TREE_IMPACT_RULES: tuple[tuple[str, tuple[str, ...]], ...] = tuple(
 )
 
 
-# Engine files that T-IGX-043-I changes and that had no map entry: the two pinned PDC wave-diff tests require every
+# Engine files that T-IGX-043-I changes and that had no map entry: the three pinned PDC wave-diff tests require every
 # touched product module to map to a check, and the engine tree is fail-closed. The FRZ coverage digest module and its
 # schema are exercised by the FRZ coverage matrix test behind ``ENT-A-INV-02``.
 ENGINE_TREE_IMPACT_RULES: tuple[tuple[str, tuple[str, ...]], ...] = (
