@@ -19,7 +19,11 @@ from scripts.governance.iiac_common import (
     REPO,
     git_merge_base_is_ancestor,
     git_rev_parse,
+    is_v2,
+    manifest_schema_version,
     product_paths_changed_between,
+    resolve_delegation_ref,
+    split_ref,
     validate_manifest_dict,
 )
 
@@ -32,6 +36,16 @@ SCRIPTS = REPO / "scripts/governance"
 _SHA40 = re.compile(r"^[0-9a-f]{40}$")
 _DIGEST64 = re.compile(r"^[0-9a-f]{64}$")
 _SIGNATURE = re.compile(r"^Approved IIAC policy activation IIAC-2026-11-05\.1: operator @ ([0-9T:.+-Z]+)\s*$")
+_SIGNATURE_DELEGATE = re.compile(
+    r"^Approved IIAC policy activation IIAC-2026-11-05\.1: operator-delegate @ ([0-9T:.+-Z]+)\s*$"
+)
+_DELEGATION_LINE = re.compile(r"(?im)^\s*(?:[-*]\s*)?Delegation:\s*(\S.*?)\s*$")
+RECORD_SCHEMA_KEY = "activation_record_schema_version"
+RECORD_SCHEMA_V2 = "v2"
+OPERATOR_LINE_KINDS = ("personal", "delegate")
+DELEGATION_REF_KEY = "operator_delegation_ref"
+CORPUS_ROOT = "docs/project/maintainers/qualification"
+KNOWN_DRAFTS = "scripts/governance/iiac_known_draft_manifests.v1.json"
 _CLOSURE = re.compile(r"(EVOL-X|ENT-AUDIT-X|ARCH-FREEZE).{0,80}\bCLOSED\b", re.IGNORECASE)
 
 INACTIVE_STATUSES = frozenset({"NOT_IN_FORCE", "DRAFT", "PENDING"})
@@ -45,6 +59,11 @@ MATERIAL_GOVERNANCE_PATHS = frozenset(
         "scripts/governance/verify_iiac_audit_manifest.py",
         "scripts/governance/verify_iiac_role_separation.py",
         "docs/project/maintainers/qualification/INTEGRAX_INTERNAL_INDEPENDENT_AGENT_CERTIFICATION_PROTOCOL.md",
+        # The four files the wired corpus and artifact verifiers execute or read (ticket T-IGX-044-F).
+        "scripts/governance/iiac_verifier_common.py",
+        "scripts/governance/verify_iiac_manifest_corpus.py",
+        "scripts/governance/verify_iiac_manifest_artifacts.py",
+        "scripts/governance/iiac_known_draft_manifests.v1.json",
     }
 )
 BINDING_KEYS = (
@@ -256,8 +275,61 @@ def _verdict_error(verdict: str) -> str:
     return f"unsupported verdict {verdict}"
 
 
-def _operator_errors(record: dict[str, Any], text: str, report_digest: str) -> list[str]:
+def _operator_line_kind(record: dict[str, Any], errors: list[str]) -> str | None:
+    """``personal`` or ``delegate``; a record without the field is read as personal unless it is a v2 record."""
+    schema = record.get(RECORD_SCHEMA_KEY)
+    if schema not in (None, RECORD_SCHEMA_V2):
+        errors.append(f"ACT-N19 unsupported {RECORD_SCHEMA_KEY} {schema!r}")
+        return None
+    kind = record.get("operator_line_kind")
+    if kind is None:
+        if schema == RECORD_SCHEMA_V2:
+            errors.append("ACT-N19 a v2 activation record must carry operator_line_kind (personal or delegate)")
+            return None
+        return "personal"
+    if kind not in OPERATOR_LINE_KINDS:
+        errors.append(f"ACT-N19 operator_line_kind must be one of {list(OPERATOR_LINE_KINDS)}, got {kind!r}")
+        return None
+    return str(kind)
+
+
+def _delegation_errors(
+    record: dict[str, Any],
+    text: str,
+    repo: Path | None,
+    head: str,
+    manifest: dict[str, Any] | None,
+) -> list[str]:
+    if repo is None or not head:
+        return ["ACT-N19 delegate operator line needs a repository and HEAD to resolve its delegation record"]
+    ref = str(record.get(DELEGATION_REF_KEY) or "").strip()
+    parsed = split_ref(ref)
+    if parsed is None:
+        return [f"ACT-N19 delegate operator line needs {DELEGATION_REF_KEY} as <repo path>@<40-hex sha>"]
     errors: list[str] = []
+    for pointer in _DELEGATION_LINE.findall(text):
+        if pointer.strip() != ref:
+            errors.append("ACT-N19 the Delegation line of the operator record differs from the record's delegation ref")
+    stage = str((manifest or {}).get("stage_id") or "IIAC-GOV-1")
+    implementer = str((manifest or {}).get("implementation_session_id") or "") or None
+    path, sha = parsed
+    errors.extend(
+        f"ACT-N19 {err}" for err in resolve_delegation_ref(repo, path, sha, head, stage=stage, implementer=implementer)
+    )
+    return errors
+
+
+def _operator_errors(
+    record: dict[str, Any],
+    text: str,
+    report_digest: str,
+    *,
+    repo: Path | None = None,
+    head: str = "",
+    manifest: dict[str, Any] | None = None,
+) -> list[str]:
+    errors: list[str] = []
+    kind = _operator_line_kind(record, errors)
     decision_id = str(record.get("operator_decision_id") or "").strip()
     line = str(record.get("operator_activation_line") or "").strip()
     if not decision_id:
@@ -274,7 +346,13 @@ def _operator_errors(record: dict[str, Any], text: str, report_digest: str) -> l
         errors.append("ACT-N07 decision scope is not IIAC policy activation")
     if f"Audit report digest: {report_digest}" not in text:
         errors.append("ACT-N07 operator record does not cite the independent audit digest")
-    match = _SIGNATURE.fullmatch(line)
+    signature = _SIGNATURE_DELEGATE if kind == "delegate" else _SIGNATURE
+    match = signature.fullmatch(line)
+    explicit_kind = record.get("operator_line_kind") is not None or record.get(RECORD_SCHEMA_KEY) is not None
+    if kind == "personal" and explicit_kind and (record.get(DELEGATION_REF_KEY) or _DELEGATION_LINE.search(text)):
+        errors.append("ACT-N19 a personal-form operator line may not point at a delegation record")
+    if kind == "delegate":
+        errors.extend(_delegation_errors(record, text, repo, head, manifest))
     if line in {"Approved", "Approved:"} or line.startswith("Approved: operator Session A"):
         errors.append("ACT-N07 Session A or bare Approved string is not activation authorization")
     elif not match:
@@ -302,15 +380,90 @@ def _findings_errors(document: dict[str, Any]) -> list[str]:
     return errors
 
 
+def _allowlisted_v2_errors(allowlist: Path, repo: Path) -> list[str]:
+    """The known-draft allowlist is for historical v1 drafts: a v2 manifest listed there would dodge validation."""
+    try:
+        entries = json.loads(allowlist.read_text(encoding="utf-8-sig")).get("entries")
+    except (OSError, ValueError, AttributeError):
+        return []  # an unreadable allowlist is reported by the corpus verifier call
+    errors: list[str] = []
+    for entry in entries if isinstance(entries, list) else []:
+        rel = str(entry.get("path") or "").replace("\\", "/") if isinstance(entry, dict) else ""
+        if not rel:
+            continue
+        try:
+            data = json.loads((repo / rel).read_text(encoding="utf-8-sig"))
+        except (OSError, ValueError):
+            continue
+        if isinstance(data, dict) and "manifest_schema_version" in data:
+            errors.append(f"ACT-N21 known-draft allowlist lists a v2 manifest: {rel}")
+    return errors
+
+
+def _corpus_errors(repo: Path) -> list[str]:
+    """Run the PT-E04 corpus verifier once for the evaluated repository (not once per manifest).
+
+    The corpus is checked against the allowlist the repository under test carries; a repository without the
+    allowlist file or without the qualification root is not the governed tree, so nothing is run and nothing is
+    reported (the allowlist is a material path, so deleting it shows up as an ACT-N11 change).
+    """
+    allowlist = repo / KNOWN_DRAFTS
+    if not (allowlist.is_file() and (repo / CORPUS_ROOT).is_dir()):
+        return []
+    errors = _allowlisted_v2_errors(allowlist, repo)
+    proc = subprocess.run(
+        [
+            sys.executable,
+            str(SCRIPTS / "verify_iiac_manifest_corpus.py"),
+            "--repo",
+            str(repo),
+            "--root",
+            CORPUS_ROOT,
+            "--allowlist",
+            str(allowlist),
+        ],
+        cwd=REPO,
+        capture_output=True,
+        text=True,
+        check=False,
+    )
+    if proc.returncode != 0:
+        detail = (proc.stderr or proc.stdout).strip().splitlines()
+        tail = detail[-1] if detail else "no output"
+        errors.append(f"ACT-N10 companion verify_iiac_manifest_corpus.py failed: {tail}")
+    return errors
+
+
+def _manifest_state_errors(manifest: dict[str, Any]) -> list[str]:
+    """A v2 manifest that is not final, or with an unsupported schema marker, cannot back an activation."""
+    errors: list[str] = []
+    if is_v2(manifest) and manifest.get("manifest_state") != "final":
+        errors.append(
+            f"ACT-N20 a v2 manifest that is not final ({manifest.get('manifest_state')!r}) cannot back an activation"
+        )
+    if manifest_schema_version(manifest) is None:
+        errors.append("ACT-N20 unsupported manifest_schema_version")
+    return errors
+
+
 def _companion_errors(repo: Path, manifest_path: Path) -> list[str]:
     errors: list[str] = []
-    calls = (
+    try:
+        loaded = json.loads(manifest_path.read_text(encoding="utf-8-sig"))
+    except (OSError, ValueError):
+        loaded = None
+    v2 = isinstance(loaded, dict) and "manifest_schema_version" in loaded
+    calls: list[tuple[str, tuple[str, ...]]] = [
         ("verify_iiac_audit_manifest.py", (str(manifest_path), "--repo", str(repo))),
         (
             "verify_iiac_role_separation.py",
             (str(manifest_path), "--strict-product-diff", "--repo", str(repo)),
         ),
-    )
+        (
+            "verify_iiac_manifest_artifacts.py",
+            (str(manifest_path), "--repo", str(repo), "--profile", "final" if v2 else "legacy"),
+        ),
+    ]
     for script, args in calls:
         proc = subprocess.run(
             [sys.executable, str(SCRIPTS / script), *args],
@@ -489,6 +642,7 @@ def evaluate_activation(
                 errors.append("manifest stage_id must be IIAC-GOV-1")
             if str(manifest.get("policy_version") or "") != POLICY_VERSION:
                 errors.append("ACT-N16 manifest policy version mismatch")
+            errors.extend(_manifest_state_errors(manifest))
             manifest_verdict = str(manifest.get("verdict") or "").upper()
             if manifest_verdict != "PASS":
                 errors.append(_verdict_error(manifest_verdict))
@@ -520,6 +674,7 @@ def evaluate_activation(
                 if sha256_bytes(artifact.read_bytes()) != recorded:
                     errors.append(f"ACT-N08 {field} mismatch")
             errors.extend(_companion_errors(repo, manifest_path))
+            errors.extend(_corpus_errors(repo))
 
     scope_path = artifacts.get("scope")
     matrix_path = artifacts.get("matrix")
@@ -561,7 +716,16 @@ def evaluate_activation(
         errors.append("ACT-N06 missing operator activation decision record")
     else:
         operator_text = operator_path.read_text(encoding="utf-8")
-        errors.extend(_operator_errors(record, operator_text, digest if _DIGEST64.fullmatch(digest) else ""))
+        errors.extend(
+            _operator_errors(
+                record,
+                operator_text,
+                digest if _DIGEST64.fullmatch(digest) else "",
+                repo=repo,
+                head=head,
+                manifest=manifest,
+            )
+        )
         errors.extend(closure_conflicts(record, operator_text))
 
     if audit_sha and head:
