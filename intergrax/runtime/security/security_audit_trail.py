@@ -304,12 +304,6 @@ def _entry_from_event(event: RuntimeEvent, tenant: str) -> SecurityAuditEntry:
     )
 
 
-@dataclass(slots=True)
-class _ChainHead:
-    digest: str
-    position: ExecutionEventPosition | None
-
-
 class EvidencePlaneSecurityAuditTrail:
     """Append-only, tenant-scoped security audit trail persisted via ``EvidencePersistencePort``.
 
@@ -335,7 +329,6 @@ class EvidencePlaneSecurityAuditTrail:
             raise TypeError("EvidencePlaneSecurityAuditTrail requires an evidence persistence port")
         self._evidence = port
         self._lock = threading.Lock()
-        self._heads: dict[str, _ChainHead] = {}
 
     def _iter_stream(self, tenant: str, after: ExecutionEventPosition | None) -> list[PositionedRuntimeEvent]:
         """Every stored event of the tenant's stream after ``after``, oldest first (paged)."""
@@ -349,23 +342,24 @@ class EvidencePlaneSecurityAuditTrail:
                 return collected
             cursor = page[-1].position
 
-    def _refresh_head(self, tenant: str) -> _ChainHead:
-        head = self._heads.get(tenant) or _ChainHead(SECURITY_AUDIT_CHAIN_GENESIS, None)
-        for positioned in self._iter_stream(tenant, head.position):
-            head.position = positioned.position
-            event = positioned.event
+    def _stored_head(self, tenant: str) -> str:
+        """Digest of the tenant's last chained entry as stored; pages the stream only when the task listing is full."""
+        events = self._evidence.list_for_task(_tenant_stream(tenant).task_id, tenant_id=tenant, limit=_PAGE_LIMIT)
+        if len(events) >= _PAGE_LIMIT:
+            events = [positioned.event for positioned in self._iter_stream(tenant, None)]
+        head = SECURITY_AUDIT_CHAIN_GENESIS
+        for event in events:
             if event.event_kind != SECURITY_AUDIT_EVENT_KIND or event.tenant_id != tenant:
                 continue
             digest = SecurityAuditPayloadV1.from_envelope(event.payload).entry_digest
             if digest:
-                head.digest = digest
-        self._heads[tenant] = head
+                head = digest
         return head
 
     def head_digest(self, tenant_id: str) -> str:
         """Digest of the tenant's last chained entry as stored (``SECURITY_AUDIT_CHAIN_GENESIS`` when empty)."""
         with self._lock:
-            return self._refresh_head(tenant_id.strip()).digest
+            return self._stored_head(tenant_id.strip())
 
     def append(
         self,
@@ -386,7 +380,7 @@ class EvidencePlaneSecurityAuditTrail:
             context_label="security audit metadata",
         )
         with self._lock:
-            prev = self._refresh_head(tenant).digest
+            prev = self._stored_head(tenant)
             suffix = uuid4().hex
             recorded_at = datetime.now(UTC)
             entry_id = f"audit_{suffix}"
@@ -437,7 +431,6 @@ class EvidencePlaneSecurityAuditTrail:
                 payload=payload.to_envelope(),
             )
             self._evidence.append(event, tenant_id=tenant)
-            self._refresh_head(tenant)
         return entry
 
     def list_entries(self, *, tenant_id: str | None = None) -> tuple[SecurityAuditEntry, ...]:
