@@ -78,6 +78,38 @@ Operator confirms: new chat, roles from registry, implementer chat ID ≠ audito
 
 Ticket handoff may also live under [`governance/tickets/`](../../../../governance/tickets/) with session IDs.
 
+### Manifest v2, identity provenance and countersignature (ticket T-IGX-044-F)
+
+A manifest is **v2** when it carries `manifest_schema_version: "v2"`. A manifest without that marker is a **v1** manifest and keeps exactly the verdict it has today; the stricter rules below apply to v2 manifests and to new activation records only. Any other marker value, any `manifest_state` outside the two values below, and a v2-only field on a manifest without the marker are errors (fail closed).
+
+| Field (v2) | Meaning |
+|-------|---------|
+| `manifest_schema_version` | `v2` |
+| `manifest_state` | `draft` (may carry placeholders, is not certifying, is rejected by the activation gate) or `final` |
+| `identity_provenance` | Per role (`implementer`, `auditor`, `certifier`): `{issuer, session_uuid, started_at_utc, host_receipt_ref}`. `host_receipt_ref` is `<repo path>@<40-hex sha>` of a tracked export of the host session id |
+| `handoff_record_ref` | `<repo path>@<40-hex sha>` of the handoff record that carries the operator countersignature |
+
+A **final** v2 manifest must have: verdict `PASS` or `PASS_SCOPED`; no placeholder string in any identity, SHA or digest field; existing SHAs that follow the chain `audited_implementation_sha` ≤ `test_execution_sha` ≤ `audit_execution_sha` ≤ `evidence_publication_sha` ≤ `certification_publication_sha`; the four digests equal to the bytes of the files they name; three different agent labels. The SHA chain and the digest binding are executed by the activation gate through the PT-E04 artifact verifier in profile `final` (`verify_iiac_manifest_artifacts.py`); `verify_iiac_audit_manifest.py` does not check them, so a procedure that runs only that script on a v2 final manifest must also run the gate (see Validators). Session ids are compared after normalisation (strip, collapse whitespace, case-fold) for v1 and v2, and a session id may not equal the agent label of another role.
+
+**Identity provenance** (`verify_iiac_role_separation.py`): each host receipt exists at its commit, that commit is an ancestor of `audit_execution_sha`, the receipt contains the `session_uuid`, the `session_uuid` equals the role's session id after normalisation, and neither a `session_uuid` nor a receipt path repeats across the three roles or in another v2 manifest of the corpus. For a v2 manifest the auditor write surface is the product paths plus `scripts/governance/`, `tests/unit/governance/` and `docs/project/maintainers/qualification/` between `audited_implementation_sha` and `audit_execution_sha`; a change there fails unless `--allow-product-diff` is given.
+
+**Countersignature** (`verify_iiac_audit_manifest.py`): the handoff record named by `handoff_record_ref` must contain a line
+
+```text
+Countersigned: operator @ <ISO-8601 timestamp> manifest-digest <sha256>
+```
+
+where the digest is the sha256 of the canonical JSON of the manifest (sorted keys, compact separators) without the `handoff_record_ref` field. That field is left out because it names the commit that holds the countersignature; hashing it would make the digest depend on itself. Presence and digest are checked mechanically; authorship is not.
+
+The canonical JSON is `json.dumps(obj, sort_keys=True, separators=(",", ":"), ensure_ascii=False, allow_nan=False)` encoded as UTF-8, where `obj` is the parsed manifest with its top-level key `handoff_record_ref` removed whatever its value. For a v2 final manifest the root must be a JSON object, a duplicate object key at any depth is an error, a float or non-finite number is an error (integers, strings, booleans, null, arrays and objects only), a UTF-8 byte order mark is ignored when reading, and keys are ordered by code point. Normative test vector: the manifest `{"a":1,"b":"é","handoff_record_ref":"p@0000000000000000000000000000000000000000"}` canonicalises to the UTF-8 bytes of `{"a":1,"b":"é"}` and its digest is `09ad9fd2fb648cb2f62141215828ea00a62c299db05d20aa9ade2f527a301cc6`.
+
+**Operator line kinds** (activation record, checked by `iiac_activation_gate.py`): a record without `operator_line_kind` is read as today (`personal`). A new record carries `activation_record_schema_version: "v2"` and must carry `operator_line_kind`:
+
+- `personal`: `Approved IIAC policy activation <version>: operator @ <ts>`. It may not point at a delegation record (no `operator_delegation_ref`, no `Delegation:` line in the operator record).
+- `delegate`: `Approved IIAC policy activation <version>: operator-delegate @ <ts>` plus `operator_delegation_ref` (`<repo path>@<40-hex sha>`) in the record. The gate resolves it read-only: the commit exists, holds the path and is an ancestor of HEAD, the record names the manifest `stage_id` and a `Delegate session:` line, and that delegate is not the implementer session.
+
+**Honest limit.** Without per-role signing keys these checks prove that recorded identifiers are consistent, not who typed them: independence stays `process_enforced`, and every verdict keeps the scoped label "internal agent certification". A v2 marker can be omitted to make a manifest look v1; a cut-over SHA after which the marker is mandatory is not set yet (open question Q-E05-01), so until it is set the marker is not enforced for new manifests by this document alone.
+
 ## Implementation → certification handoff (G2)
 
 1. Implementer completes scope @ `GOVERNANCE_IMPLEMENTATION_SHA` (or stage SHA).
@@ -110,8 +142,10 @@ Evidence used for activation must be published under [`iiac_evidence/`](./iiac_e
 
 | Script | Role |
 |--------|------|
-| `verify_iiac_audit_manifest.py` | Schema + session inequality + SHA ancestry |
-| `verify_iiac_role_separation.py` | Auditor product write-surface |
+| `verify_iiac_audit_manifest.py` | Schema + session inequality + SHA ancestry; v2: marker, state, identity provenance, strict JSON and countersignature only (not the five-SHA chain and not the digest binding, which the gate runs through the artifact verifier) |
+| `verify_iiac_role_separation.py` | Auditor product write-surface; v2: governance write surface and identity provenance |
+| `verify_iiac_manifest_artifacts.py` | Strict SHA chain and binding of the four digests to their file bytes; run by the activation gate per manifest, in profile `final` for a v2 final manifest and `legacy` otherwise |
+| `verify_iiac_manifest_corpus.py` | Corpus check against the known-draft allowlist; run by the activation gate once per evaluation when the allowlist file and the qualification root of the evaluated repository exist |
 | `verify_iiac_policy_activation.py` | Fail-closed activation gate (`--require-in-force`; default rejects inactive policy) |
 | `verify_od_ent_02_compensating_control.py` | Option B package completeness |
 
