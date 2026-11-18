@@ -34,7 +34,7 @@ from intergrax.llm_adapters.contracts.capabilities import (
 from intergrax.llm_adapters.contracts.llm_provider import LLMProvider, llm_provider_slug
 from intergrax.llm_adapters.contracts.native_tool_choice import NativeToolChoice
 from intergrax.llm_adapters.contracts.provider_error import (
-    LLMCallTimeoutNotForwardableError,
+    LLMCallBudgetNotForwardableError,
     LLMProviderError,
     LLMProviderErrorCategory,
     LLMProviderErrorSignal,
@@ -505,7 +505,7 @@ class BaseLLMAdapter(ABC):
         if effective_timeout is None or self.supports_call_timeout():
             return
         provider, model = self._adapter_identity()
-        raise LLMCallTimeoutNotForwardableError(provider=provider, model=model)
+        raise LLMCallBudgetNotForwardableError(provider=provider, model=model)
 
     # ---- Typed provider-error contract v1 (EX-D3-03) ----
     def _with_typed_provider_errors(self, dispatch: Callable[[], T], config: LLMCallConfig) -> T:

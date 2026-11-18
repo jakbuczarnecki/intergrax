@@ -358,3 +358,29 @@ def test_the_contract_module_uses_concrete_types_only() -> None:
     assert "Any" not in names and "Any" not in attributes
     assert "object" not in names
     assert not {"getattr", "setattr", "hasattr", "eval", "exec", "__import__"} & names
+
+
+class _NoTimeoutForwardingProbeAdapter(_ProbeAdapter):
+    def supports_call_timeout(self) -> bool:
+        return False
+
+
+def test_the_fail_closed_timeout_refusal_is_not_retriable_and_stops_failover() -> None:
+    """Review finding L-2 of PR #670: the refusal is deterministic, so retry and failover must not see it as a
+    transient error (they read the transient words of a class name when there is no status code)."""
+    from intergrax.llm_adapters.contracts.failover_policy import FailoverDecision, FailoverProgressionContext
+    from intergrax.llm_adapters.registry.failover_policy import PlatformDefaultFailoverPolicy
+
+    adapter = _NoTimeoutForwardingProbeAdapter()
+    adapter.call_config = LLMCallConfig(timeout_sec=5.0, max_retries=2, retry_backoff_sec=0.0)
+    calls: list[int] = []
+    with pytest.raises(LLMCapabilityMismatchError) as info:
+        adapter._execute(lambda: calls.append(1))
+    refusal = info.value
+    assert calls == [], "the refusal is raised before the provider is touched"
+    assert is_retriable_provider_error(refusal, LLMCallConfig()) is False
+    assert _contract().category_from_class_name(type(refusal).__name__) is None
+    context = FailoverProgressionContext(
+        attempt_index=0, is_last_candidate=False, error=refusal, failover_retry_config=LLMCallConfig()
+    )
+    assert PlatformDefaultFailoverPolicy().decide_after_failure(context) is FailoverDecision.STOP

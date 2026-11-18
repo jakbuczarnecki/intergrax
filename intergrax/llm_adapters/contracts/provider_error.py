@@ -218,11 +218,17 @@ def category_from_status(status_code: int) -> LLMProviderErrorCategory | None:
     return None
 
 
-class LLMCallTimeoutNotForwardableError(LLMCapabilityMismatchError):
+class LLMCallBudgetNotForwardableError(LLMCapabilityMismatchError):
     """An effective call timeout is set but the adapter cannot pass it to its SDK (fail closed, Q-RUN-02).
 
     Raised before the provider is touched. Subclasses ``LLMCapabilityMismatchError`` (no ``LLMFeature``
     member is added, so the declared-capability snapshot is unchanged).
+
+    Not retriable: the refusal is a deterministic capability result, not a transient provider failure. Retry
+    and failover (``llm_adapters._shared.retry``) classify an error without a status code by the
+    transient words of its class name, so this name deliberately carries none of them (``Timeout``,
+    ``Connection``, ``Overloaded``, ``Rate``): retry does not repeat the call and the default failover
+    policy stops instead of moving to the next candidate.
     """
 
     def __init__(self, *, provider: str, model: str) -> None:
@@ -239,7 +245,7 @@ class LLMCallTimeoutNotForwardableError(LLMCapabilityMismatchError):
 
 __all__ = [
     "LLM_PROVIDER_ERROR_CONTRACT_VERSION",
-    "LLMCallTimeoutNotForwardableError",
+    "LLMCallBudgetNotForwardableError",
     "LLMProviderAuthenticationError",
     "LLMProviderConnectionError",
     "LLMProviderError",

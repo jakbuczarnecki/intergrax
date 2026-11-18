@@ -23,7 +23,7 @@ class LLMCallConfig:
     its SDK call through the mechanism that SDK offers (a per-request ``timeout``, ``timeout_ms``,
     request options, HTTP options, or a per-call client); an adapter that cannot do so declares
     ``supports_call_timeout() -> False`` and a call with an effective budget is refused with
-    ``LLMCallTimeoutNotForwardableError`` instead of running without it. No generic wall-clock wrapper is
+    ``LLMCallBudgetNotForwardableError`` instead of running without it. No generic wall-clock wrapper is
     added: the SDK enforces the timeout on its own transport.
     """
 
