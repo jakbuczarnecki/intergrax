@@ -475,7 +475,7 @@ def _bedrock_owned_client(monkeypatch: pytest.MonkeyPatch) -> tuple[Any, _Derive
 
 
 def _langchain_ollama_owned_chat(monkeypatch: pytest.MonkeyPatch) -> tuple[Any, _DerivedClients]:
-    pytest.importorskip("langchain_core", reason="optional extra llm-langchain-ollama")
+    # ``langchain_core`` (message types) is installed by the CI extra ``dev-unit-cert``; no skip.
     clients = _DerivedClients()
 
     class _FakeChatOllama:
