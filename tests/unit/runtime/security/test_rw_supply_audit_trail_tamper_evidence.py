@@ -157,9 +157,10 @@ def test_sup_17b_in_memory_value_redacted() -> None:
     trail = SecurityAuditTrail()
     entry = trail.append(tenant_id=_TENANT, action="a", actor_id="u", resource="r", metadata={"note": value})
     stored = trail.list_entries(tenant_id=_TENANT)[0]
-    assert value not in json.dumps(stored.metadata)
-    assert value not in json.dumps(entry.metadata)
-    assert stored.metadata["note"] == "[REDACTED:secret-shaped]"
+    leaked = value in json.dumps(stored.metadata) or value in json.dumps(entry.metadata)
+    assert not leaked, "secret-shaped value stored unredacted (value not shown)"
+    redacted = stored.metadata["note"] == "[REDACTED:secret-shaped]"
+    assert redacted, "secret-shaped value not replaced by the marker (value not shown)"
 
 
 def test_sup_17c_evidence_plane_value_redacted(tmp_path: Path) -> None:
@@ -168,6 +169,8 @@ def test_sup_17c_evidence_plane_value_redacted(tmp_path: Path) -> None:
     trail = _evidence_trail(db_path)
     trail.append(tenant_id=_TENANT, action="a", actor_id="u", resource="r", metadata={"note": value, "count": 2})
     stored = _evidence_trail(db_path).list_entries(tenant_id=_TENANT)[0]
-    assert stored.metadata["note"] == "[REDACTED:secret-shaped]"
+    redacted = stored.metadata["note"] == "[REDACTED:secret-shaped]"
+    assert redacted, "secret-shaped value not replaced by the marker (value not shown)"
     assert stored.metadata["count"] == 2
-    assert all(value not in text for _row_id, text in _stored_rows(db_path))
+    leaked = any(value in text for _row_id, text in _stored_rows(db_path))
+    assert not leaked, "secret-shaped value stored unredacted (value not shown)"
