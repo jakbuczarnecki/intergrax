@@ -4,11 +4,15 @@ NT-E05-01 is the RW-PLAN row NT-ROW-010 (EQO-A finding A2-038: independence rest
 labels). Every test builds a throw-away git repository in the pytest temp directory, so nothing tracked is written,
 and there is no network. Each test names the weakness it targets and asserts an exit code or an error text.
 
-Groups: role and identity (01-12), manifest (13-18), gate and delegation (19-24), wiring (25-27), controls (C1, C2).
+Groups: role and identity (01-12), manifest (13-18), gate and delegation (19-24), wiring (25-28), controls (C1-C3).
+Helpers that only exist after the change (``iiac_activation_gate._corpus_errors``, ``_manifest_state_errors``,
+``iiac_common.manifest_countersign_digest``) are reached by attribute access inside test bodies, never by a
+module-level import, so that the file collects at the pre-change commit and fails at its own assertions there.
 """
 
 from __future__ import annotations
 
+import ast
 import copy
 import hashlib
 import itertools
@@ -20,7 +24,7 @@ from pathlib import Path
 from typing import Any
 
 import pytest
-from scripts.governance import iiac_activation_gate
+from scripts.governance import iiac_activation_gate, iiac_common
 from scripts.governance.iiac_common import validate_manifest_dict
 
 REPO = Path(__file__).resolve().parents[3]
@@ -78,10 +82,11 @@ def _sha256(data: bytes) -> str:
     return hashlib.sha256(data).hexdigest()
 
 
-def manifest_countersign_digest(manifest: dict[str, Any]) -> str:
+def _independent_countersign_digest(manifest: dict[str, Any]) -> str:
     """The digest a countersignature binds to, written independently of the code under test (see the protocol)."""
     body = {key: value for key, value in manifest.items() if key != "handoff_record_ref"}
-    return _sha256(json.dumps(body, sort_keys=True, separators=(",", ":"), ensure_ascii=False).encode("utf-8"))
+    canonical = json.dumps(body, sort_keys=True, separators=(",", ":"), ensure_ascii=False, allow_nan=False)
+    return _sha256(canonical.encode("utf-8"))
 
 
 def _write_json(path: Path, payload: dict[str, Any]) -> Path:
@@ -187,7 +192,7 @@ def _countersigned(
     rel = f"handoff/handoff_{next(_COUNTER)}.md"
     text = "# Handoff record\n"
     if line:
-        bound = digest or manifest_countersign_digest(manifest)
+        bound = digest or _independent_countersign_digest(manifest)
         text += f"Countersigned: operator @ 2026-11-17T12:00:00+01:00 manifest-digest {bound}\n"
     sha = _commit(repo, {rel: text.encode()}, "handoff record")
     manifest["handoff_record_ref"] = f"{rel}@{sha}"
@@ -337,8 +342,18 @@ def test_nt_e05_10_missing_countersignature(world, tmp_path) -> None:
     assert "Countersigned" in result.stderr
 
 
+VECTOR_DIGEST = "09ad9fd2fb648cb2f62141215828ea00a62c299db05d20aa9ade2f527a301cc6"
+
+
+def _audit_raw(world: dict[str, Any], tmp_path: Path, raw: bytes):
+    path = tmp_path / "raw_manifest.json"
+    path.parent.mkdir(parents=True, exist_ok=True)
+    path.write_bytes(raw)
+    return _run("verify_iiac_audit_manifest.py", str(path), "--repo", str(world["repo"]))
+
+
 def test_nt_e05_11_countersignature_digest_mismatch(world, tmp_path) -> None:
-    """A2-038 operator line: the countersignature must bind to the digest of this manifest."""
+    """A2-038 operator line: the countersignature must bind to the digest of this manifest (and its canonical form)."""
     manifest = _countersigned(world, _fresh(world), digest="0123456789abcdef" * 4)
     result = _audit(world, tmp_path, manifest)
     assert result.returncode == 1
@@ -348,6 +363,26 @@ def test_nt_e05_11_countersignature_digest_mismatch(world, tmp_path) -> None:
     result = _audit(world, tmp_path / "edited", changed)
     assert result.returncode == 1
     assert "does not match the manifest" in result.stderr
+    # The normative test vector of the protocol: the handoff_record_ref is dropped, the rest is canonical JSON.
+    vector = {"a": 1, "b": "\u00e9", "handoff_record_ref": "p@" + "0" * 40}
+    assert _independent_countersign_digest(vector) == VECTOR_DIGEST
+    assert iiac_common.manifest_countersign_digest(vector) == VECTOR_DIGEST
+    # Canonical-JSON rules: duplicate keys, floats, a non-object root and a BOM are handled by stable rules.
+    good = _countersigned(world, _fresh(world))
+    text = json.dumps(good, indent=2, sort_keys=True) + "\n"
+    plain = _audit_raw(world, tmp_path / "plain", text.encode("utf-8"))
+    assert plain.returncode == 0, plain.stderr
+    with_bom = _audit_raw(world, tmp_path / "bom", b"\xef\xbb\xbf" + text.encode("utf-8"))
+    assert with_bom.returncode == plain.returncode, with_bom.stderr
+    duplicate = _audit_raw(world, tmp_path / "dup", text.replace("{", '{"limitations": [], ', 1).encode("utf-8"))
+    assert duplicate.returncode == 1 and "duplicate key" in duplicate.stderr.lower(), duplicate.stderr
+    floaty = dict(good, extra_number=1.5)
+    floated = _audit_raw(world, tmp_path / "float", (json.dumps(floaty, indent=2) + "\n").encode("utf-8"))
+    assert floated.returncode == 1 and "float" in floated.stderr.lower(), floated.stderr
+    rooted = _audit_raw(world, tmp_path / "root", b'["not", "an", "object"]\n')
+    assert rooted.returncode == 1 and "root must be a json object" in rooted.stderr.lower(), rooted.stderr
+    for failing in (duplicate, floated, rooted):
+        assert "Traceback" not in failing.stderr, failing.stderr
 
 
 def _corpus_repo(
@@ -386,12 +421,13 @@ def test_nt_e05_12_v2_manifest_listed_in_the_known_draft_allowlist(world, tmp_pa
     """A2-006: listing a v2 manifest as a known draft would let it dodge placeholder rejection."""
     manifest = _fresh(world)
     manifest["implementation_session_id"] = "HISTORICAL_UNRECORDED_IMPLEMENTER"
+    manifest["findings_digest"] = ""  # invalid under the v1 rules as well: only the allowlist could hide it
     problems: list[str] = []
     validate_manifest_dict(manifest, problems)
     assert problems, "the manifest must be invalid on its own, the allowlist is the only thing that could hide it"
     rel = f"{QUAL_REL}/iiac_audit_session_manifest.v2draft.json"
-    repo, path = _corpus_repo(tmp_path, {rel: manifest}, {rel: None})
-    errors = iiac_activation_gate._companion_errors(repo, path)
+    repo, _path = _corpus_repo(tmp_path, {rel: manifest}, {rel: None})
+    errors = iiac_activation_gate._corpus_errors(repo)
     assert any("ACT-N21" in err and "v2 manifest" in err for err in errors), errors
 
 
@@ -414,18 +450,33 @@ def test_nt_e05_13_unknown_schema_marker_or_state_fails_closed(world, tmp_path) 
     assert result.returncode == 1 and "needs manifest_schema_version" in result.stderr
 
 
+def _gate_call_count(function: str, callee: str) -> int:
+    """How often the body of a function of the gate calls ``callee`` (parsed, so a comment cannot fake it)."""
+    tree = ast.parse((SCRIPTS / "iiac_activation_gate.py").read_text(encoding="utf-8"))
+    for node in ast.walk(tree):
+        if isinstance(node, ast.FunctionDef) and node.name == function:
+            return sum(
+                1
+                for call in ast.walk(node)
+                if isinstance(call, ast.Call) and getattr(call.func, "id", getattr(call.func, "attr", "")) == callee
+            )
+    raise AssertionError(f"function {function} not found in the gate")
+
+
 def test_nt_e05_14_draft_used_as_certifying(world, tmp_path) -> None:
-    """A2-006: a draft may exist but cannot be verified as final or back an activation."""
+    """A2-006: a draft may exist but cannot back an activation (ACT-N20), and the gate calls that check once."""
     manifest = _countersigned(world, _fresh(world))
     manifest["manifest_state"] = "draft"
     manifest.pop("handoff_record_ref")
     accepted = _audit(world, tmp_path / "a", manifest)
     assert accepted.returncode == 0, accepted.stderr
-    as_final = _audit(world, tmp_path / "b", manifest, "--profile", "final")
-    assert as_final.returncode == 1 and "draft" in as_final.stderr
-    path = _write_json(tmp_path / "gate.json", manifest)
-    errors = iiac_activation_gate._companion_errors(world["repo"], path)
-    assert any("verify_iiac_audit_manifest.py failed" in err for err in errors), errors
+    errors = iiac_activation_gate._manifest_state_errors(manifest)
+    assert any("ACT-N20" in err and "draft" in err for err in errors), errors
+    unsupported = dict(manifest, manifest_schema_version="v3", manifest_state="final")
+    errors = iiac_activation_gate._manifest_state_errors(unsupported)
+    assert any("ACT-N20" in err for err in errors), errors
+    assert iiac_activation_gate._manifest_state_errors(dict(manifest, manifest_state="final")) == []
+    assert _gate_call_count("evaluate_activation", "_manifest_state_errors") == 1
 
 
 def test_nt_e05_15_final_with_a_non_passing_verdict(world, tmp_path) -> None:
@@ -448,28 +499,45 @@ def test_nt_e05_16_final_with_a_placeholder_string(world, tmp_path) -> None:
         assert "placeholder" in result.stderr.lower(), f"{field}: {result.stderr}"
 
 
+def _artifact_run(world: dict[str, Any], tmp_path: Path, manifest: dict[str, Any]):
+    path = _write_json(tmp_path / "manifest.json", manifest)
+    args = (str(path), "--repo", str(world["repo"]), "--profile", "final")
+    return path, _run("verify_iiac_manifest_artifacts.py", *args)
+
+
+def _artifact_failures(world: dict[str, Any], path: Path) -> list[str]:
+    errors = iiac_activation_gate._companion_errors(world["repo"], path)
+    return [err for err in errors if "verify_iiac_manifest_artifacts.py failed" in err]
+
+
 def test_nt_e05_17_final_with_a_missing_sha_object_or_a_strict_chain_violation(world, tmp_path) -> None:
     """A2-006: SHAs must be commit objects and follow audited <= test <= audit <= evidence <= certification."""
-    manifest = _countersigned(world, _fresh(world))
-    manifest["certification_publication_sha"] = "ab" * 20
-    result = _audit(world, tmp_path / "a", manifest)
-    assert result.returncode == 1 and "SHA_MISSING" in result.stderr
-    manifest = _countersigned(world, _fresh(world))
-    manifest["evidence_publication_sha"] = world["shas"]["R"]  # before the audit execution commit
-    result = _audit(world, tmp_path / "b", manifest)
-    assert result.returncode == 1 and "SHA_ORDER" in result.stderr
+    for name, field, value, code in (
+        ("missing", "certification_publication_sha", "ab" * 20, "SHA_MISSING"),
+        ("order", "evidence_publication_sha", world["shas"]["R"], "SHA_ORDER"),  # before the audit execution commit
+    ):
+        manifest = _countersigned(world, _fresh(world))
+        manifest[field] = value
+        path, direct = _artifact_run(world, tmp_path / name, manifest)
+        assert _artifact_failures(world, path), f"{name}: the gate must run the artifact verifier and report it"
+        assert direct.returncode == 1 and code in direct.stderr, f"{name}: {direct.stderr}"
+    good = _countersigned(world, _fresh(world))
+    path, _direct = _artifact_run(world, tmp_path / "good", good)
+    assert _artifact_failures(world, path) == []
 
 
 def test_nt_e05_18_final_with_a_digest_not_bound_to_file_bytes(world, tmp_path) -> None:
     """A2-006: the digests are bound to the bytes of the files they name."""
     manifest = _countersigned(world, _fresh(world))
     manifest["audit_report_digest"] = _sha256(b"some other report")
-    result = _audit(world, tmp_path / "a", manifest)
-    assert result.returncode == 1 and "DIGEST_MISMATCH" in result.stderr
+    path, direct = _artifact_run(world, tmp_path / "a", manifest)
+    assert _artifact_failures(world, path), "the gate must run the artifact verifier and report it"
+    assert direct.returncode == 1 and "DIGEST_MISMATCH" in direct.stderr, direct.stderr
     manifest = _countersigned(world, _fresh(world))
     del manifest["findings_path"]
-    result = _audit(world, tmp_path / "b", manifest)
-    assert result.returncode == 1 and "DIGEST_UNBOUND" in result.stderr
+    path, direct = _artifact_run(world, tmp_path / "b", manifest)
+    assert _artifact_failures(world, path), "the gate must run the artifact verifier and report it"
+    assert direct.returncode == 1 and "DIGEST_UNBOUND" in direct.stderr, direct.stderr
 
 
 # --------------------------------------------------------------------------- gate and delegation (6)
@@ -578,26 +646,27 @@ def test_nt_e05_24_delegate_equal_to_the_implementer(deleg) -> None:
     assert any("names the implementer as the delegate" in err for err in errors), errors
 
 
-# --------------------------------------------------------------------------- wiring (3)
+# --------------------------------------------------------------------------- wiring (4)
 
 
-def test_nt_e05_25_unlisted_invalid_manifest_makes_the_gate_companion_fail(world, tmp_path) -> None:
-    """A2-006: the corpus verifier is wired into the gate, so an unlisted invalid manifest fails it."""
+def test_nt_e05_25_unlisted_invalid_manifest_makes_the_corpus_check_fail(world, tmp_path) -> None:
+    """A2-006: the corpus verifier is wired into the gate once, so an unlisted invalid manifest fails it."""
     rel = f"{QUAL_REL}/iiac_audit_session_manifest.invalid.json"
     invalid = {"stage_id": "INVALID-FIXTURE"}
-    repo, path = _corpus_repo(tmp_path / "listed", {rel: invalid}, {rel: None})
-    listed_errors = iiac_activation_gate._companion_errors(repo, path)
+    repo, _path = _corpus_repo(tmp_path / "listed", {rel: invalid}, {rel: None})
+    listed_errors = iiac_activation_gate._corpus_errors(repo)
     assert not any("verify_iiac_manifest_corpus.py failed" in err for err in listed_errors), listed_errors
-    repo, path = _corpus_repo(tmp_path / "unlisted", {rel: invalid}, {})
-    errors = iiac_activation_gate._companion_errors(repo, path)
-    assert any("verify_iiac_manifest_corpus.py failed" in err for err in errors), errors
+    repo, _path = _corpus_repo(tmp_path / "unlisted", {rel: invalid}, {})
+    errors = iiac_activation_gate._corpus_errors(repo)
+    assert any("ACT-N10 companion verify_iiac_manifest_corpus.py failed" in err for err in errors), errors
+    assert _gate_call_count("evaluate_activation", "_corpus_errors") == 1
 
 
-def test_nt_e05_26_changed_known_draft_digest_makes_the_gate_companion_fail(world, tmp_path) -> None:
+def test_nt_e05_26_changed_known_draft_digest_makes_the_corpus_check_fail(world, tmp_path) -> None:
     """A2-006: a listed draft whose bytes changed after it was listed fails the wired corpus call."""
     rel = f"{QUAL_REL}/iiac_audit_session_manifest.invalid.json"
-    repo, path = _corpus_repo(tmp_path, {rel: {"stage_id": "INVALID-FIXTURE"}}, {rel: "f" * 64})
-    errors = iiac_activation_gate._companion_errors(repo, path)
+    repo, _path = _corpus_repo(tmp_path, {rel: {"stage_id": "INVALID-FIXTURE"}}, {rel: "f" * 64})
+    errors = iiac_activation_gate._corpus_errors(repo)
     assert any("verify_iiac_manifest_corpus.py failed" in err for err in errors), errors
 
 
@@ -617,7 +686,26 @@ def test_nt_e05_27_each_wired_file_is_a_material_governance_path() -> None:
     assert len(iiac_activation_gate.MATERIAL_GOVERNANCE_PATHS) == 10
 
 
-# --------------------------------------------------------------------------- controls (2)
+def test_nt_e05_28_companion_errors_alone_runs_no_corpus_check(world, tmp_path) -> None:
+    """Regression guard: the EVOL-X preflight imports _companion_errors, which must not start a corpus run."""
+    rel = f"{QUAL_REL}/iiac_audit_session_manifest.subject.json"
+    other = f"{QUAL_REL}/iiac_audit_session_manifest.unlisted_invalid.json"
+    subject = _v1(_fresh(world))
+    subject["stage_id"] = "SUBJECT"
+    clean_repo, clean_path = _corpus_repo(tmp_path / "clean", {rel: subject}, {})
+    noisy_repo, noisy_path = _corpus_repo(tmp_path / "noisy", {rel: subject, other: {"stage_id": "BROKEN"}}, {})
+    clean = iiac_activation_gate._companion_errors(clean_repo, clean_path)
+    noisy = iiac_activation_gate._companion_errors(noisy_repo, noisy_path)
+    assert not any("verify_iiac_manifest_corpus" in err for err in noisy), noisy
+
+    def normal(errors: list[str], repo: Path, path: Path) -> list[str]:
+        return [e.replace(str(path), "<M>").replace(str(repo), "<R>") for e in errors]
+
+    assert normal(noisy, noisy_repo, noisy_path) == normal(clean, clean_repo, clean_path)
+    assert _gate_call_count("_companion_errors", "_corpus_errors") == 0
+
+
+# --------------------------------------------------------------------------- controls (3)
 
 
 def test_c1_published_manifests_keep_their_verdicts() -> None:
@@ -647,3 +735,27 @@ def test_c2_v1_activation_record_still_passes_its_own_companion_calls() -> None:
     manifest = REPO / record["session_b_manifest_path"]
     assert manifest.is_file()
     assert iiac_activation_gate._companion_errors(REPO, manifest) == []
+    assert iiac_activation_gate._corpus_errors(REPO) == []  # last statement: the live corpus passes the corpus check
+
+
+def test_c3_corpus_check_is_skipped_without_the_allowlist_or_the_qualification_root(tmp_path) -> None:
+    """Control: the corpus verifier runs only when the evaluated repository has its allowlist and its corpus root."""
+    broken = json.dumps({"stage_id": "BROKEN"}).encode()
+    no_allowlist = tmp_path / "no_allowlist"
+    no_allowlist.mkdir()
+    _git(no_allowlist, "init", "-q", "-b", "main")
+    _commit(no_allowlist, {f"{QUAL_REL}/iiac_audit_session_manifest.broken.json": broken}, "no allowlist")
+    assert iiac_activation_gate._corpus_errors(no_allowlist) == []
+    no_root = tmp_path / "no_root"
+    no_root.mkdir()
+    _git(no_root, "init", "-q", "-b", "main")
+    allowlist = json.dumps({"schema": "iiac_known_draft_manifests.v1", "entries": []}).encode()
+    _commit(
+        no_root,
+        {
+            "scripts/governance/iiac_known_draft_manifests.v1.json": allowlist,
+            "elsewhere/iiac_audit_session_manifest.broken.json": broken,
+        },
+        "no qualification root",
+    )
+    assert iiac_activation_gate._corpus_errors(no_root) == []
