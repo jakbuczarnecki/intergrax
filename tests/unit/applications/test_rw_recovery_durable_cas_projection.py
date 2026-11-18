@@ -19,8 +19,12 @@ from pathlib import Path
 
 import pytest
 from intergrax.agent_distribution.sqlite_stores import SqliteAgentDistributionStoreBundle
+from intergrax.applications._shared.durable_agent_platform_runtime import DurableAgentPlatformRuntime
 from intergrax.applications._shared.production_lifecycle import (
     build_descriptor_backed_projection_input_store,
+)
+from intergrax.applications._shared.reference_production_governance_wiring import (
+    ReferenceProductionControlPlaneGovernance,
 )
 from intergrax.applications._shared.registry_projection import (
     RegistryProjectionError,
@@ -41,6 +45,8 @@ _MISMATCH = "durable descriptor authority mismatch"
 
 def _durable_authority(tmp_path: Path) -> tuple[SqliteAgentDistributionStoreBundle, RegistryProjectionInputBundle]:
     launcher, durable, governance = _durable_launcher(tmp_path, tmp_path / "rw-rec-05.db")
+    assert isinstance(durable, DurableAgentPlatformRuntime)
+    assert isinstance(governance, ReferenceProductionControlPlaneGovernance)
     bundle, locator, *_rest = _canonical_bundle(
         tmp_path,
         revision_id="rev-rw-rec-05",

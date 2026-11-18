@@ -59,7 +59,7 @@ class _BlockingHandler:
         payload: bytes,
         idempotency_key: str | None = None,
         execution_identity: BackgroundExecutionIdentity,
-    ) -> ToolExecutionResult[_Out]:
+    ) -> ToolExecutionResult[BaseModel]:
         del tenant_id, run_id, payload, idempotency_key, execution_identity
         with self._lock:
             self.calls += 1
