@@ -72,6 +72,13 @@ class CohereNativeChatAdapter(BaseLLMAdapter):
     def context_window_tokens(self) -> int:
         return self._context_window_tokens
 
+    def _cohere_request_options(self) -> dict[str, Any]:
+        """Per-call ``request_options`` carrying the effective timeout (EX-D3-01), or nothing."""
+        timeout = self._effective_call_timeout_sec()
+        if timeout is None:
+            return {}
+        return {"request_options": {"timeout_in_seconds": float(timeout)}}
+
     def _map_messages(self, messages: Sequence[ChatMessage]) -> list[dict[str, str]]:
         system_text, convo = split_system_messages(messages)
         out: list[dict[str, str]] = []
@@ -126,7 +133,7 @@ class CohereNativeChatAdapter(BaseLLMAdapter):
                 kwargs["temperature"] = float(temperature)
             if max_tokens is not None:
                 kwargs["max_tokens"] = int(max_tokens)
-            resp = self._execute(lambda: self.client.chat(**kwargs))
+            resp = self._execute(lambda: self.client.chat(**kwargs, **self._cohere_request_options()))
             text = ""
             if resp.message and resp.message.content:
                 text = resp.message.content[0].text or ""
@@ -179,7 +186,9 @@ class CohereNativeChatAdapter(BaseLLMAdapter):
                 kwargs["temperature"] = float(temperature)
             if max_tokens is not None:
                 kwargs["max_tokens"] = int(max_tokens)
-            stream = self._execute_streaming(lambda: self.client.chat_stream(**kwargs))
+            stream = self._execute_streaming(
+                lambda: self.client.chat_stream(**kwargs, **self._cohere_request_options())
+            )
             for event in stream:
                 if attribute_access.optional(event, "type", None) == "content-delta":
                     txt = event.delta.message.content.text or ""
@@ -252,7 +261,7 @@ class CohereNativeChatAdapter(BaseLLMAdapter):
                 kwargs["temperature"] = float(temperature)
             if max_tokens is not None:
                 kwargs["max_tokens"] = int(max_tokens)
-            resp = self._execute(lambda: self.client.chat(**kwargs))
+            resp = self._execute(lambda: self.client.chat(**kwargs, **self._cohere_request_options()))
             text = ""
             tool_calls: tuple[LLMToolCall, ...] = ()
             if resp.message and resp.message.content:
@@ -331,7 +340,9 @@ class CohereNativeChatAdapter(BaseLLMAdapter):
             if max_tokens is not None:
                 kwargs["max_tokens"] = int(max_tokens)
 
-            stream = self._execute_streaming(lambda: self.client.chat_stream(**kwargs))
+            stream = self._execute_streaming(
+                lambda: self.client.chat_stream(**kwargs, **self._cohere_request_options())
+            )
             for event in stream:
                 if attribute_access.optional(event, "type", None) == "content-delta":
                     txt = event.delta.message.content.text or ""

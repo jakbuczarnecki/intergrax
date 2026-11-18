@@ -5,7 +5,7 @@
 from __future__ import annotations
 
 import json
-from collections.abc import Iterable, Sequence
+from collections.abc import Callable, Iterable, Sequence
 from typing import Any
 
 from intergrax.llm.messages import ChatMessage
@@ -46,6 +46,11 @@ from intergrax.llm_adapters.providers._langchain_compat import (
 from intergrax.llm_adapters.providers._ollama_schema import prepare_ollama_generation_schema
 from intergrax.llm_adapters.providers._ollama_tool_choice_projection import (
     project_ollama_native_tool_choice,
+)
+from intergrax.llm_adapters.providers._per_call_client import (
+    CallClient,
+    call_on_client,
+    stream_on_client,
 )
 from intergrax.llm_adapters.providers.ollama_capabilities import (
     OllamaModelCapabilities,
@@ -149,7 +154,18 @@ class LangChainOllamaAdapter(BaseLLMAdapter):
         if base_url is not None:
             chat_kwargs["base_url"] = base_url
         chat_type = _load_chat_ollama()
+        # ``ChatOllama`` passes ``client_kwargs`` (the HTTP timeout) to the client it builds at construction,
+        # so a call that carries an effective timeout runs on a ``ChatOllama`` built for that call, whose HTTP
+        # client is closed after it (EX-D3-01). An injected ``chat`` cannot be rebuilt (fail closed).
         self.chat = chat if chat is not None else chat_type(**chat_kwargs)
+        self._chat_factory: Callable[[float], CallClient[Any]] | None = None
+        if chat is None:
+
+            def _chat_with_timeout(timeout: float) -> CallClient[Any]:
+                built = chat_type(**chat_kwargs, client_kwargs={"timeout": timeout})
+                return CallClient(client=built, release=built._client._client.close)
+
+            self._chat_factory = _chat_with_timeout
         self.defaults = defaults
         self._base_url = base_url
         self._capability_resolver = capability_resolver or OllamaModelCapabilityResolver(
@@ -346,16 +362,20 @@ class LangChainOllamaAdapter(BaseLLMAdapter):
             in_tok = int(self.estimate_tokens_for_messages(messages, model_hint=self.model_name_for_token_estimation))
             lc_msgs = self._to_lc_messages(messages)
             kwargs = self._with_ollama_options(self.defaults, temperature=temperature, max_tokens=max_tokens)
-            res = self.chat.invoke(lc_msgs, **kwargs)
+            res = self._execute(lambda: self._on_call_chat(lambda chat: chat.invoke(lc_msgs, **kwargs)))
             text = res.content or str(res)
             out_tok = int(self.estimate_tokens_for_text(text, model_hint=self.model_name_for_token_estimation))
-            response = build_adapter_response(
-                content=text,
-                finish_reason=finish_reason_from_raw(langchain_done_reason(res)),
-                usage=LLMTokenUsage.from_counts(input_tokens=in_tok, output_tokens=out_tok),
-                model=self.model,
-                provider=self._provider_slug(),
-                provider_extensions=LLMProviderExtensions(usage_source="estimate"),
+            response = self._served_response(
+                call,
+                build_adapter_response(
+                    content=text,
+                    finish_reason=finish_reason_from_raw(langchain_done_reason(res)),
+                    usage=LLMTokenUsage.from_counts(input_tokens=in_tok, output_tokens=out_tok),
+                    model=self.model,
+                    provider=self._provider_slug(),
+                    provider_extensions=LLMProviderExtensions(usage_source="estimate"),
+                ),
+                _langchain_reported_model(res),
             )
             success = True
             return response
@@ -394,9 +414,13 @@ class LangChainOllamaAdapter(BaseLLMAdapter):
             kwargs = self._with_ollama_options(self.defaults, temperature=temperature, max_tokens=max_tokens)
             buf: list[str] = []
             signal = StreamFinishSignal()
+            served_model: object = None
 
             try:
-                for chunk in self._execute_streaming(lambda: self.chat.stream(lc_msgs, **kwargs)):
+                for chunk in self._execute_streaming(
+                    lambda: self._stream_on_call_chat(lambda chat: chat.stream(lc_msgs, **kwargs))
+                ):
+                    served_model = _langchain_reported_model(chunk) or served_model
                     signal.observe_finish(langchain_done_reason(chunk))
                     c = chunk.content
                     if c:
@@ -409,14 +433,18 @@ class LangChainOllamaAdapter(BaseLLMAdapter):
                 success = True
                 finish, refusal = signal.resolve()
                 yield final_stream_event(
-                    response=build_adapter_response(
-                        content="".join(buf),
-                        finish_reason=finish,
-                        refusal=refusal,
-                        usage=LLMTokenUsage.from_counts(input_tokens=in_tok, output_tokens=out_tok),
-                        model=self.model,
-                        provider=self._provider_slug(),
-                        provider_extensions=LLMProviderExtensions(usage_source="estimate"),
+                    response=self._served_response(
+                        call,
+                        build_adapter_response(
+                            content="".join(buf),
+                            finish_reason=finish,
+                            refusal=refusal,
+                            usage=LLMTokenUsage.from_counts(input_tokens=in_tok, output_tokens=out_tok),
+                            model=self.model,
+                            provider=self._provider_slug(),
+                            provider_extensions=LLMProviderExtensions(usage_source="estimate"),
+                        ),
+                        served_model,
                     )
                 )
                 return
@@ -427,20 +455,24 @@ class LangChainOllamaAdapter(BaseLLMAdapter):
                 if buf:
                     # Output was already emitted: re-issuing the call would duplicate it and hide the error.
                     raise
-                res = self._execute(lambda: self.chat.invoke(lc_msgs, **kwargs))
+                res = self._execute(lambda: self._on_call_chat(lambda chat: chat.invoke(lc_msgs, **kwargs)))
                 text = res.content or str(res)
                 if text:
                     yield partial_stream_event(delta_content=text)
                 out_tok = int(self.estimate_tokens_for_text(text, model_hint=self.model_name_for_token_estimation))
                 success = True
                 yield final_stream_event(
-                    response=build_adapter_response(
-                        content=text,
-                        finish_reason=finish_reason_from_raw(langchain_done_reason(res)),
-                        usage=LLMTokenUsage.from_counts(input_tokens=in_tok, output_tokens=out_tok),
-                        model=self.model,
-                        provider=self._provider_slug(),
-                        provider_extensions=LLMProviderExtensions(usage_source="estimate"),
+                    response=self._served_response(
+                        call,
+                        build_adapter_response(
+                            content=text,
+                            finish_reason=finish_reason_from_raw(langchain_done_reason(res)),
+                            usage=LLMTokenUsage.from_counts(input_tokens=in_tok, output_tokens=out_tok),
+                            model=self.model,
+                            provider=self._provider_slug(),
+                            provider_extensions=LLMProviderExtensions(usage_source="estimate"),
+                        ),
+                        _langchain_reported_model(res),
                     )
                 )
                 return
@@ -470,6 +502,32 @@ class LangChainOllamaAdapter(BaseLLMAdapter):
 
     def supports_streaming(self) -> bool:
         return True
+
+    def supports_call_timeout(self) -> bool:
+        """Only an adapter-built ``ChatOllama`` can be rebuilt with the call timeout; an injected one cannot.
+
+        ``ChatOllama`` builds its HTTP client at construction and takes no per-call timeout (EX-D3-01), so
+        an adapter with an injected ``chat`` refuses a call that carries an effective timeout (fail closed).
+        """
+        return self._chat_factory is not None
+
+    def _on_call_chat[R](self, call: Callable[[Any], R]) -> R:
+        """Run ``call`` on the chat model of this attempt (built for the effective timeout when one is set)."""
+        return call_on_client(
+            shared=self.chat,
+            derive=self._chat_factory,
+            timeout=self._effective_call_timeout_sec(),
+            call=call,
+        )
+
+    def _stream_on_call_chat[E](self, open_stream: Callable[[Any], Iterable[E]]) -> Iterable[E]:
+        """Open a stream on the chat model of this attempt; a per-call client is closed when it ends."""
+        return stream_on_client(
+            shared=self.chat,
+            derive=self._chat_factory,
+            timeout=self._effective_call_timeout_sec(),
+            open_stream=open_stream,
+        )
 
     def supports_tools(self) -> bool:
         """Native non-streaming tool calling when the installed model declares tools."""
@@ -520,8 +578,11 @@ class LangChainOllamaAdapter(BaseLLMAdapter):
             projected_choice = project_ollama_native_tool_choice(tool_choice)
             if projected_choice is not None:
                 bind_kwargs["tool_choice"] = projected_choice
-            bound_chat = self.chat.bind_tools(provider_tools, **bind_kwargs)
-            result = self._execute(lambda: bound_chat.invoke(lc_msgs, **kwargs))
+            result = self._execute(
+                lambda: self._on_call_chat(
+                    lambda chat: chat.bind_tools(provider_tools, **bind_kwargs).invoke(lc_msgs, **kwargs)
+                )
+            )
 
             invalid_tool_calls = attribute_access.optional(result, "invalid_tool_calls", None) or []
             if invalid_tool_calls:
@@ -539,14 +600,18 @@ class LangChainOllamaAdapter(BaseLLMAdapter):
                     model_hint=self.model_name_for_token_estimation,
                 )
             )
-            response = build_adapter_response(
-                content=content,
-                finish_reason=finish,
-                usage=LLMTokenUsage.from_counts(input_tokens=in_tok, output_tokens=out_tok),
-                model=self.model,
-                provider=self._provider_slug(),
-                tool_calls=tool_calls,
-                provider_extensions=LLMProviderExtensions(usage_source="estimate"),
+            response = self._served_response(
+                call,
+                build_adapter_response(
+                    content=content,
+                    finish_reason=finish,
+                    usage=LLMTokenUsage.from_counts(input_tokens=in_tok, output_tokens=out_tok),
+                    model=self.model,
+                    provider=self._provider_slug(),
+                    tool_calls=tool_calls,
+                    provider_extensions=LLMProviderExtensions(usage_source="estimate"),
+                ),
+                _langchain_reported_model(result),
             )
             success = True
             return response
@@ -651,3 +716,11 @@ class LangChainOllamaAdapter(BaseLLMAdapter):
                 success=success,
                 error_type=err_type,
             )
+
+
+def _langchain_reported_model(message: object) -> object:
+    """Model reported in a LangChain chat message's ``response_metadata`` (``model``), if any."""
+    metadata = attribute_access.optional(message, "response_metadata", None)
+    if isinstance(metadata, dict):
+        return metadata.get("model")
+    return None
