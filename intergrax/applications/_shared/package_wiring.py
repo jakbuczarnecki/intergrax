@@ -7,12 +7,28 @@ from __future__ import annotations
 import json
 from pathlib import Path
 
+from intergrax.applications._shared.capability_graph_wiring import EnvironmentCapabilityGraphView
+from intergrax.applications._shared.environment_snapshot_wiring import stable_digest_hex
+from intergrax.applications._shared.import_policy import import_policy_for_environment
+from intergrax.applications._shared.registry_projection import MaterializedRegistryProjection
+from intergrax.applications._shared.registry_projection_authority_resolver import (
+    RegistryProjectionAuthorityResolver,
+)
+from intergrax.applications._shared.registry_snapshot import HarnessRegistrySnapshot
+from intergrax.applications._shared.roster_agent_contract_authority import (
+    ContractAuthority,
+    RosterAgentContractAuthority,
+    StrictAgentContractAuthorityError,
+    resolve_roster_agent_contract,
+)
+from intergrax.applications._shared.serving_runtime_handoff import (
+    ServingRuntimeHandoff,
+    validate_serving_runtime_handoff_against_projection_evidence,
+)
 from intergrax.applications.contracts.application_capability_projection import (
     resolve_binding_contract_id,
 )
-from intergrax.applications._shared.capability_graph_wiring import EnvironmentCapabilityGraphView
-from intergrax.applications._shared.environment_snapshot_wiring import stable_digest_hex
-from intergrax.applications._shared.registry_snapshot import HarnessRegistrySnapshot
+from intergrax.applications.contracts.application_host import ApplicationProfile
 from intergrax.applications.contracts.application_package import (
     ApplicationDependency,
     ApplicationDependencyKind,
@@ -21,24 +37,9 @@ from intergrax.applications.contracts.application_package import (
     ApplicationPackage,
     ApplicationPackageClosureError,
 )
-from intergrax.applications.contracts.application_host import ApplicationProfile
 from intergrax.applications.contracts.environment_profile import ApplicationEnvironmentProfile
 from intergrax.applications.contracts.execution_mode import ExecutionMode
 from intergrax.applications.contracts.manifest import ApplicationManifest
-from intergrax.applications._shared.roster_agent_contract_authority import (
-    ContractAuthority,
-    RosterAgentContractAuthority,
-    StrictAgentContractAuthorityError,
-    resolve_roster_agent_contract,
-)
-from intergrax.applications._shared.registry_projection import MaterializedRegistryProjection
-from intergrax.applications._shared.registry_projection_authority_resolver import (
-    RegistryProjectionAuthorityResolver,
-)
-from intergrax.applications._shared.serving_runtime_handoff import (
-    ServingRuntimeHandoff,
-    validate_serving_runtime_handoff_against_projection_evidence,
-)
 from intergrax.integrations.registry.profile import IntegrationProfile
 from intergrax.runtime.architecture.capability_graph_applications import application_capability_node_id
 from intergrax.skills.registry.factory import enabled_skill_ids_for_profile
@@ -110,11 +111,14 @@ def collect_application_dependencies(
         and env.execution_mode is ExecutionMode.STRICT
         and env.application_profile is ApplicationProfile.PRODUCT
     )
+    import_policy = import_policy_for_environment(env)
     for binding in manifest.enabled_agents():
         contract = resolve_roster_agent_contract(
             binding,
             contract_authority=contract_authority,
             allow_compatibility_resolver=not requires_revision_authority,
+            allowed_prefixes=import_policy.agent_modules,
+            fail_closed=import_policy.fail_closed,
         )
         contract_ref = contract.id
         version_constraint = f"={contract.version}"
@@ -264,9 +268,7 @@ def validate_application_package_closure(
     if _dependency_keys(package.dependencies) != _dependency_keys(expected):
         violations.append("package.dependencies drift from manifest/environment materialization")
 
-    roster_contract_ids = {
-        resolve_binding_contract_id(binding) for binding in manifest.enabled_agents()
-    }
+    roster_contract_ids = {resolve_binding_contract_id(binding) for binding in manifest.enabled_agents()}
     for dep in package.dependencies:
         if dep.kind is ApplicationDependencyKind.AGENT and dep.ref not in roster_contract_ids:
             violations.append(f"package agent dependency {dep.ref!r} not on enabled roster")
@@ -354,9 +356,7 @@ def build_scaffold_application_package(
 
 
 def _dependency_keys(dependencies: list[ApplicationDependency]) -> frozenset[tuple[str, str, str, bool]]:
-    return frozenset(
-        (dep.kind.value, dep.ref, dep.version_constraint, dep.optional) for dep in dependencies
-    )
+    return frozenset((dep.kind.value, dep.ref, dep.version_constraint, dep.optional) for dep in dependencies)
 
 
 def _integration_slugs(profile: IntegrationProfile) -> frozenset[str]:

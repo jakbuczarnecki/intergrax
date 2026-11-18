@@ -5,9 +5,10 @@
 from __future__ import annotations
 
 from intergrax.agents.agent_contract import Agent
+from intergrax.applications._shared.agent_resolution import resolve_agent_type_from_binding
+from intergrax.applications._shared.import_policy import import_policy_for_environment
 from intergrax.applications.contracts.environment_profile import ApplicationEnvironmentProfile
 from intergrax.applications.contracts.errors import ApplicationManifestConformanceError
-from intergrax.applications._shared.agent_resolution import resolve_agent_type_from_binding
 from intergrax.applications.contracts.manifest import AgentBinding
 from intergrax.contracts.agent_contract_meta import AgentContract
 
@@ -62,24 +63,25 @@ class EnvironmentSkillToolConsistencyCheck:
             # contract-reference bindings intentionally omit importable agent types here.
             return []
 
-        agent_type = resolve_agent_type_from_binding(binding)
+        policy = import_policy_for_environment(env)
+        agent_type = resolve_agent_type_from_binding(
+            binding,
+            allowed_prefixes=policy.agent_modules,
+            fail_closed=policy.fail_closed,
+        )
         contract = _contract_for_agent(agent_type, binding)
         violations: list[str] = []
 
         env_tools = _environment_tool_ids(env)
         for tool_id in contract.allowed_tools:
             if tool_id not in env_tools:
-                violations.append(
-                    f"{binding.display_name()}: allowed_tools {tool_id!r} not in environment"
-                )
+                violations.append(f"{binding.display_name()}: allowed_tools {tool_id!r} not in environment")
 
         env_skills = _environment_skill_ids(env)
         for skill_manifest in contract.skills:
             skill_id = skill_manifest.skill_id
             if skill_id not in env_skills:
-                violations.append(
-                    f"{binding.display_name()}: skill {skill_id!r} not in environment"
-                )
+                violations.append(f"{binding.display_name()}: skill {skill_id!r} not in environment")
 
         if violations and self._fail:
             raise ApplicationManifestConformanceError("; ".join(violations))
@@ -140,10 +142,7 @@ class ProfileInvariantValidator:
                 )
         if env.context_profile.enable_websearch:
             enabled_tools = set(env.tool_profile.enabled)
-            if (
-                "websearch.query" not in enabled_tools
-                and not env.tool_profile.register_all_catalog_bundles
-            ):
+            if "websearch.query" not in enabled_tools and not env.tool_profile.register_all_catalog_bundles:
                 violations.append(
                     "context.enable_websearch=true requires tool_profile websearch.query",
                 )
