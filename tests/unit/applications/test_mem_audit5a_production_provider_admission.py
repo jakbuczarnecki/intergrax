@@ -63,6 +63,10 @@ from intergrax.memory.stores.sqlite_user_profile_store import SQLiteUserProfileS
 from intergrax.memory.user_profile_memory import UserIdentity, UserPreferences, UserProfile
 from intergrax.memory.user_profile_store import UserProfileStore
 from intergrax.runtime.nexus.session.in_memory_session_storage import InMemorySessionStorage
+from tests.fixtures.memory_durable_session_storage import (
+    DurableDeclaredSessionStoragePlugin,
+    with_durable_session_plugin,
+)
 from tests.fixtures.plugin_packages.memory_store_plugin.memory_store_plugin.plugin import (
     ExternalInMemoryUserProfileStorePlugin,
 )
@@ -284,12 +288,13 @@ def test_product_durable_external_plugin_passes_with_trusted_evidence() -> None:
     env.memory_profile = env.memory_profile.model_copy(
         update={"user_profile_store_plugin_id": "test.durable_qualified_user_profile"},
     )
+    env.memory_profile = with_durable_session_plugin(env.memory_profile)
     registry = _evidence_for_provider("test.durable_qualified_user_profile")
     durability_registry = _durability_for_provider("test.durable_qualified_user_profile")
     wiring = resolve_memory_platform_wiring(
         env,
         discover_entry_points=False,
-        explicit_memory_plugins=(_DurableSelfCertifiedUserProfilePlugin,),
+        explicit_memory_plugins=(_DurableSelfCertifiedUserProfilePlugin, DurableDeclaredSessionStoragePlugin),
         qualification_evidence_registry=registry,
         durability_evidence_registry=durability_registry,
     )
@@ -330,8 +335,12 @@ def test_strict_lab_not_product_still_allows_reference() -> None:
     env = ApplicationEnvironmentProfile.lab_defaults(profile_id="mem.audit5a.strict.lab")
     env.integration_profile = IntegrationProfile()
     env.execution_mode = ExecutionMode.STRICT
-    env.memory_profile = _persistent_memory_profile()
-    wiring = resolve_memory_platform_wiring(env)
+    env.memory_profile = with_durable_session_plugin(_persistent_memory_profile())
+    wiring = resolve_memory_platform_wiring(
+        env,
+        discover_entry_points=False,
+        explicit_memory_plugins=(DurableDeclaredSessionStoragePlugin,),
+    )
     assert isinstance(wiring.user_profile_store, InMemoryUserProfileStore)
     assert env.execution_mode is ExecutionMode.STRICT
 

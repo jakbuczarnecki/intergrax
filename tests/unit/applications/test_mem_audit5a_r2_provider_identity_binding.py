@@ -55,6 +55,10 @@ from intergrax.memory.provider_qualification import (
 from intergrax.memory.stores.sqlite_user_profile_store import SQLiteUserProfileStore
 from intergrax.memory.user_profile_memory import UserIdentity, UserPreferences, UserProfile
 from intergrax.memory.user_profile_store import UserProfileStore
+from tests.fixtures.memory_durable_session_storage import (
+    DurableDeclaredSessionStoragePlugin,
+    with_durable_session_plugin,
+)
 from tests.unit.applications.test_mem_audit5a_production_provider_admission import (
     _durability_for_provider,
     _DurableSelfCertifiedUserProfilePlugin,
@@ -149,12 +153,13 @@ def test_legitimate_external_plugin_passes_with_plugin_id_evidence() -> None:
     env.memory_profile = env.memory_profile.model_copy(
         update={"user_profile_store_plugin_id": "test.durable_qualified_user_profile"},
     )
+    env.memory_profile = with_durable_session_plugin(env.memory_profile)
     registry = _evidence_for_provider("test.durable_qualified_user_profile")
     durability_registry = _durability_for_provider("test.durable_qualified_user_profile")
     wiring = resolve_memory_platform_wiring(
         env,
         discover_entry_points=False,
-        explicit_memory_plugins=(_DurableSelfCertifiedUserProfilePlugin,),
+        explicit_memory_plugins=(_DurableSelfCertifiedUserProfilePlugin, DurableDeclaredSessionStoragePlugin),
         qualification_evidence_registry=registry,
         durability_evidence_registry=durability_registry,
     )

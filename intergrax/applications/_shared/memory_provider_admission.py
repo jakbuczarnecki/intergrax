@@ -5,14 +5,17 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
+from enum import StrEnum
 from typing import Protocol
 
+from intergrax.applications._shared.wiring_posture import wiring_fails_closed
 from intergrax.applications.contracts.application_host import ApplicationProfile
 from intergrax.applications.contracts.environment_profile import ApplicationEnvironmentProfile
 from intergrax.memory.contracts.provider_admission import (
     MemoryProviderAdmissionError,
     MemoryProviderAdmissionReasonCode,
     MemoryProviderDurability,
+    MemoryStoreProviderMetadata,
     UserProfileStoreProviderClassification,
     classify_user_profile_store_provider,
     evaluate_production_persistent_user_profile_admission,
@@ -295,3 +298,95 @@ def validate_session_turn_index_store_admission(
         trusted_backing_provider_id=evaluation.backing_provider_id,
         evidence_backing_provider_id=(evidence.backing_provider_id if evidence is not None else None),
     )
+
+
+class MemoryOrgSessionAdmissionReason(StrEnum):
+    """Reason codes of the organization-store and session-storage admission (T-IGX-043-B)."""
+
+    ORG_STORE_UNSUPPORTED_BACKEND = "ORG_STORE_UNSUPPORTED_BACKEND"
+    ORG_STORE_MISSING = "ORG_STORE_MISSING"
+    ORG_STORE_NOT_DURABLE = "ORG_STORE_NOT_DURABLE"
+    SESSION_STORAGE_NOT_DURABLE = "SESSION_STORAGE_NOT_DURABLE"
+
+
+class MemoryOrgSessionAdmissionError(ValueError):
+    """Raised when a fail-closed posture composes an ephemeral or missing org/session store."""
+
+    def __init__(self, reason: MemoryOrgSessionAdmissionReason, message: str) -> None:
+        super().__init__(f"{reason.value}: {message}")
+        self.reason = reason
+
+
+def organization_profile_store_required(env: ApplicationEnvironmentProfile) -> bool:
+    """Organization memory needs an organization profile store."""
+    return env.memory_profile.enable_org_memory
+
+
+def _declared_durable(store: object) -> bool:
+    return (
+        isinstance(store, MemoryStoreProviderMetadata)
+        and store.memory_provider_durability is MemoryProviderDurability.DURABLE
+    )
+
+
+def _organization_store_is_durable(store: object) -> bool:
+    """Known-ephemeral and unclassifiable stores are not durable; SQLite or declared-durable are."""
+    from intergrax.runtime.organization.stores.in_memory_organization_profile_store import (
+        InMemoryOrganizationProfileStore,
+    )
+    from intergrax.runtime.organization.stores.sqlite_organization_profile_store import (
+        SQLiteOrganizationProfileStore,
+    )
+
+    if isinstance(store, InMemoryOrganizationProfileStore):
+        return False
+    if isinstance(store, SQLiteOrganizationProfileStore):
+        return True
+    return _declared_durable(store)
+
+
+def _session_storage_is_durable(storage: object) -> bool:
+    """SQLite or declared-durable plugin storage only.
+
+    ``DocumentStoreSessionStorage`` exposes no public backing-store handle, so its restart
+    durability cannot be established here and it is refused in fail-closed postures.
+    """
+    from intergrax.runtime.nexus.session.sqlite_session_storage import SQLiteSessionStorage
+
+    if isinstance(storage, SQLiteSessionStorage):
+        return True
+    return _declared_durable(storage)
+
+
+def validate_organization_and_session_admission(
+    env: ApplicationEnvironmentProfile,
+    *,
+    session_storage: object,
+    organization_profile_store: object | None,
+) -> None:
+    """Pure admission gate on the final session storage and organization store.
+
+    Applies in PRODUCT or STRICT postures (DP-24). Session storage is checked only when
+    persistent user or long-term memory is required (decision Q2 = A); the organization store
+    only when organization memory is enabled. No provider mutation.
+    """
+    if not wiring_fails_closed(env):
+        return
+    if organization_profile_store_required(env):
+        if organization_profile_store is None:
+            raise MemoryOrgSessionAdmissionError(
+                MemoryOrgSessionAdmissionReason.ORG_STORE_MISSING,
+                "organization memory is enabled but no organization profile store is composed",
+            )
+        if not _organization_store_is_durable(organization_profile_store):
+            raise MemoryOrgSessionAdmissionError(
+                MemoryOrgSessionAdmissionReason.ORG_STORE_NOT_DURABLE,
+                f"organization profile store {type(organization_profile_store).__name__} "
+                "is ephemeral or cannot be classified as durable",
+            )
+    if persistent_canonical_user_profile_memory_required(env) and not _session_storage_is_durable(session_storage):
+        raise MemoryOrgSessionAdmissionError(
+            MemoryOrgSessionAdmissionReason.SESSION_STORAGE_NOT_DURABLE,
+            f"session storage {type(session_storage).__name__} is ephemeral or cannot be "
+            "classified as durable while persistent memory is required",
+        )
