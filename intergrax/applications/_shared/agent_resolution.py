@@ -72,10 +72,18 @@ def resolve_agent_type(
     return resolved
 
 
-def resolve_agent_type_from_binding(binding: AgentBinding) -> type[Tier2Agent]:
+def resolve_agent_type_from_binding(
+    binding: AgentBinding,
+    *,
+    allowed_prefixes: ImportPrefixAllowlist | None = None,
+    fail_closed: bool = False,
+) -> type[Tier2Agent]:
+    """Resolve the binding's agent class; ``allowed_prefixes`` and ``fail_closed`` go to the loader."""
     return resolve_agent_type(
         agent_type=binding.agent_type,
         import_path=binding.import_path,
+        allowed_prefixes=allowed_prefixes,
+        fail_closed=fail_closed,
     )
 
 
@@ -93,14 +101,24 @@ def _invoke_build_agent_contract(
     raise AgentImportError("build_agent_contract must accept zero arguments or a single agent type argument")
 
 
-def resolve_agent_contract_from_binding(binding: AgentBinding) -> AgentContract:
+def resolve_agent_contract_from_binding(
+    binding: AgentBinding,
+    *,
+    allowed_prefixes: ImportPrefixAllowlist | None = None,
+    fail_closed: bool = False,
+) -> AgentContract:
     """
     Resolve agent contract metadata without materializing runtime dependencies.
 
     Requires declarative ``<package>.contract.build_agent_contract`` (zero-arg or
-    single ``agent_type`` argument for multi-agent packages).
+    single ``agent_type`` argument for multi-agent packages). ``allowed_prefixes`` and
+    ``fail_closed`` restrict the class import of a serialized binding.
     """
-    agent_type = resolve_agent_type_from_binding(binding)
+    agent_type = resolve_agent_type_from_binding(
+        binding,
+        allowed_prefixes=allowed_prefixes,
+        fail_closed=fail_closed,
+    )
     package = agent_type.__module__.rsplit(".", 1)[0]
     contract_module_name = f"{package}.contract"
     if importlib.util.find_spec(contract_module_name) is None:
