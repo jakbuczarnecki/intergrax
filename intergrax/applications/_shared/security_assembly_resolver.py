@@ -20,10 +20,12 @@ from intergrax.contracts.execution_evidence.persistence_port import EvidencePers
 from intergrax.contracts.host_orchestration_application_wiring_target import (
     HostOrchestrationAssemblyInspectionTarget,
 )
+from intergrax.core.plugin_env import INTERGRAX_DISCOVER_PLUGINS_ENV
 from intergrax.core.security.security_configuration import (
     AUDIT_REGIONS_INVALID,
     AUDIT_SINK_MISSING,
     DEMO_SEED_FORBIDDEN_IN_STRICT_PROFILE,
+    LAB_OPT_IN_FORBIDDEN_IN_PRODUCT,
     PLUGIN_TRUST_POLICY_MISSING,
     RETRIEVAL_POISONING_PROFILE_MALFORMED,
     SIGNING_SECRET_ENV_INVALID,
@@ -34,6 +36,9 @@ from intergrax.core.security.security_configuration import (
 
 # Environment variable read by ``resolve_host_attestation_sealer_from_env``.
 HOST_ATTESTATION_SIGNING_KEY_ENV = "INTERGRAX_EBE_HOST_SIGNING_KEY"
+
+#: Minimum length of the critical-action signing secret on a strict profile (F-D6-10).
+STRICT_SIGNING_SECRET_MIN_LENGTH = 32
 
 
 @dataclass(frozen=True, slots=True)
@@ -191,21 +196,44 @@ def validate_strict_security_configuration(
     *,
     environ: Mapping[str, str] | None = None,
     audit_evidence_persistence: EvidencePersistencePort | None = None,
-    plugin_entry_points_enabled: bool = False,
+    plugin_entry_points_enabled: bool | None = None,
     plugin_trust_policy: object | None = None,
 ) -> tuple[SecurityConfigurationError, ...]:
-    """Collect missing or malformed security configuration for a product (strict) profile.
+    """Collect missing, malformed, weak or disabled security configuration for a strict profile.
 
     Returns typed issues without raising so that callers can report all of them; use
-    :func:`assert_strict_security_configuration` to fail closed. Lab profiles have no
-    mandatory items here. Nothing is defaulted: each issue is a rejected item.
+    :func:`assert_strict_security_configuration` to fail closed. A product profile and a lab
+    profile in ``ExecutionMode.STRICT`` are validated with the same rules (F-D6-10); other lab
+    profiles have no mandatory items here. Nothing is defaulted: each issue is a rejected item.
+
+    Weak or disabled settings are refused: a signing secret shorter than
+    ``STRICT_SIGNING_SECRET_MIN_LENGTH`` characters, and critical-action signing, tool-injection
+    defense, retrieval-poisoning defense or the immutable audit trail switched off. Plugin
+    entry-point discovery is read from ``INTERGRAX_DISCOVER_PLUGINS`` in ``environ`` (default: the
+    process environment) unless the caller states it.
+    Messages never contain a configured value.
     """
-    if env.application_profile is not ApplicationProfile.PRODUCT:
+    if env.application_profile is not ApplicationProfile.PRODUCT and env.execution_mode is not ExecutionMode.STRICT:
         return ()
     issues: list[SecurityConfigurationError] = []
     source = environ if environ is not None else os.environ
 
     identity = env.identity_profile
+    security = env.security_profile
+    for item, enabled in (
+        ("critical_action_signing", identity.critical_action_signing_enabled),
+        ("tool_injection_defense", security.tool_injection_defense_enabled),
+        ("retrieval_poisoning_defense", security.retrieval_poisoning_defense_enabled),
+        ("security_audit_trail", security.immutable_audit_trail_enabled),
+    ):
+        if enabled is False:
+            issues.append(
+                SecurityConfigurationError(
+                    item=item,
+                    reason_code=LAB_OPT_IN_FORBIDDEN_IN_PRODUCT,
+                    message=f"{item} is disabled; a strict profile requires it enabled",
+                )
+            )
     if identity.critical_action_signing_enabled:
         secret_env = (identity.critical_action_signing_secret_env or "").strip()
         if not secret_env:
@@ -226,8 +254,18 @@ def validate_strict_security_configuration(
                         message=f"signing secret is not set in {secret_env!r}",
                     )
                 )
+            elif len(value.strip()) < STRICT_SIGNING_SECRET_MIN_LENGTH:
+                issues.append(
+                    SecurityConfigurationError(
+                        item="critical_action_signing",
+                        reason_code=SIGNING_SECRET_MISSING,
+                        message=(
+                            f"signing secret in {secret_env!r} is shorter than "
+                            f"{STRICT_SIGNING_SECRET_MIN_LENGTH} characters"
+                        ),
+                    )
+                )
 
-    security = env.security_profile
     if not isinstance(security.retrieval_poisoning_defense_enabled, bool):
         issues.append(
             SecurityConfigurationError(
@@ -273,7 +311,13 @@ def validate_strict_security_configuration(
                 )
             )
 
-    if plugin_entry_points_enabled and plugin_trust_policy is None:
+    # Read from the validated environment (``environ`` when given), like every other item here.
+    discovery_enabled = (
+        source.get(INTERGRAX_DISCOVER_PLUGINS_ENV, "").strip().lower() in {"1", "true", "yes", "on"}
+        if plugin_entry_points_enabled is None
+        else plugin_entry_points_enabled
+    )
+    if discovery_enabled and plugin_trust_policy is None:
         issues.append(
             SecurityConfigurationError(
                 item="plugin_provenance",
@@ -289,7 +333,7 @@ def assert_strict_security_configuration(
     *,
     environ: Mapping[str, str] | None = None,
     audit_evidence_persistence: EvidencePersistencePort | None = None,
-    plugin_entry_points_enabled: bool = False,
+    plugin_entry_points_enabled: bool | None = None,
     plugin_trust_policy: object | None = None,
 ) -> None:
     """Raise the first :class:`SecurityConfigurationError` for a strict profile (fail closed)."""

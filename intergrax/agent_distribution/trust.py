@@ -294,10 +294,7 @@ class AgentPackageTrustDecision:
 
     @property
     def installable(self) -> bool:
-        return (
-            self.outcome is AgentPackageTrustOutcome.ALLOW
-            and self.trust_record is not None
-        )
+        return self.outcome is AgentPackageTrustOutcome.ALLOW and self.trust_record is not None
 
     def to_audit_dict(self) -> dict[str, Any]:
         """Deterministic audit payload — stable across repeated evaluation."""
@@ -311,30 +308,20 @@ class AgentPackageTrustDecision:
             "catalog_source_id": self.catalog_source_id,
             "delivery_source": self.delivery_source.value,
             "policy_profile_ref": self.policy_profile_ref,
-            "policy_fingerprint": (
-                self.trust_record.policy_fingerprint
-                if self.trust_record is not None
-                else None
-            ),
-            "qualification_status": (
-                self.qualification.status.value
-                if self.qualification is not None
-                else None
-            ),
+            "policy_fingerprint": (self.trust_record.policy_fingerprint if self.trust_record is not None else None),
+            "qualification_status": (self.qualification.status.value if self.qualification is not None else None),
             "qualification_qualified_at": (
                 self.qualification.qualified_at.isoformat()
                 if self.qualification is not None
                 else (
                     self.trust_record.qualification_qualified_at.isoformat()
-                    if self.trust_record is not None
-                    and self.trust_record.qualification_qualified_at is not None
+                    if self.trust_record is not None and self.trust_record.qualification_qualified_at is not None
                     else None
                 )
             ),
             "revocation_checked_at": (
                 self.trust_record.revocation_checked_at.isoformat()
-                if self.trust_record is not None
-                and self.trust_record.revocation_checked_at is not None
+                if self.trust_record is not None and self.trust_record.revocation_checked_at is not None
                 else None
             ),
             "trust_evidence_refs": [

@@ -13,6 +13,8 @@ from typing import TYPE_CHECKING, Any, cast
 
 from intergrax.core.distribution.package_identity import normalize_distribution_package_name
 from intergrax.core.plugins.discovery import EntryPointLoadResult, EntryPointSpec
+from intergrax.core.plugins.installed_digest import InstalledDistributionDigestError as InstalledDistributionDigestError
+from intergrax.core.plugins.installed_digest import installed_tree_digest as installed_tree_digest
 
 if TYPE_CHECKING:
     from intergrax.agent_distribution.catalog import CatalogSourceIdentity
@@ -239,8 +241,13 @@ class PluginProvenanceAdmission:
     distribution: ``attestation.distribution`` has to equal ``spec.distribution`` after name
     normalization, otherwise the entry point is rejected.
 
-    The attested digest is bound to the publisher by the signature; this admission does not
-    re-hash the installed files, it checks the installed distribution version instead.
+    The attested digest is bound to the publisher by the signature. ``installed_digest_resolver``
+    (EX-D6-03) re-hashes the installed files: when it is set (a composition passes
+    :func:`installed_tree_digest`), the resolved installed-tree digest must equal the attested
+    ``package_digest``; a mismatch, a missing or an unreadable file is ``PLUGIN_PROVENANCE_INVALID``,
+    and for a strict policy an unresolvable digest is refused too. ``None`` is the explicit
+    'not composed' state: no file is re-hashed and only the installed distribution version is
+    checked, as before. No shipped host composes the resolver yet.
     """
 
     trust_policy: AgentPackageTrustPolicy
@@ -251,6 +258,7 @@ class PluginProvenanceAdmission:
     revocation_state: AgentPackageTrustRevocationState | None = None
     installed_version_resolver: Callable[[str], str | None] = _default_installed_version
     clock: Callable[[], datetime] = _utc_now
+    installed_digest_resolver: Callable[[str], str | None] | None = None
 
     @staticmethod
     def _reject(
@@ -269,6 +277,38 @@ class PluginProvenanceAdmission:
         for key, item in self.attestations.items():
             if _normalized_or_none(key) == wanted:
                 return item
+        return None
+
+    def _installed_digest_rejection(
+        self,
+        spec: EntryPointSpec,
+        attestation: PluginProvenanceAttestation,
+    ) -> PluginAdmissionRejection | None:
+        resolver = self.installed_digest_resolver
+        if resolver is None:
+            return None
+        try:
+            installed_digest = resolver(attestation.distribution)
+        except (OSError, ValueError):
+            return self._reject(
+                spec,
+                PluginAdmissionReasonCode.PLUGIN_PROVENANCE_INVALID,
+                "installed files of the distribution could not be verified against their recorded hashes",
+            )
+        if installed_digest is None:
+            if self.trust_policy.forbid_unsigned_or_unqualified:
+                return self._reject(
+                    spec,
+                    PluginAdmissionReasonCode.PLUGIN_PROVENANCE_INVALID,
+                    "installed-file digest of the distribution could not be resolved",
+                )
+            return None
+        if installed_digest.strip().lower() != attestation.package_digest.strip().lower():
+            return self._reject(
+                spec,
+                PluginAdmissionReasonCode.PLUGIN_PROVENANCE_INVALID,
+                "installed-file digest does not match the attested package digest",
+            )
         return None
 
     def evaluate(self, spec: EntryPointSpec) -> PluginAdmissionRejection | None:
@@ -313,6 +353,9 @@ class PluginProvenanceAdmission:
                 PluginAdmissionReasonCode.PLUGIN_PROVENANCE_INVALID,
                 "installed distribution version does not match the attested version",
             )
+        digest_rejection = self._installed_digest_rejection(spec, attestation)
+        if digest_rejection is not None:
+            return digest_rejection
         try:
             identity = AgentPackageIdentity(
                 distribution_package_id=attestation.distribution,

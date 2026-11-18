@@ -7,7 +7,7 @@ from __future__ import annotations
 import threading
 from collections.abc import Iterable
 from dataclasses import replace
-from datetime import datetime
+from datetime import UTC, datetime
 
 from intergrax.runtime.nexus.artifacts.models import Artifact
 from intergrax.runtime.nexus.artifacts.store_base import (
@@ -15,6 +15,7 @@ from intergrax.runtime.nexus.artifacts.store_base import (
     ArtifactStore,
     ArtifactVersionChanged,
     ArtifactVersionNotFound,
+    LegalHoldRecord,
     protection_reason,
     require_owned_class,
 )
@@ -33,7 +34,8 @@ class InMemoryArtifactStore(ArtifactStore):
 
     def __init__(self) -> None:
         self._versions: dict[tuple[str, str], list[Artifact]] = {}
-        self._holds: set[tuple[str, str]] = set()
+        # (tenant, artifact) -> holder -> record; a hold is identified by its holder (F-D8-14).
+        self._holds: dict[tuple[str, str], dict[str, LegalHoldRecord]] = {}
         self._lock = threading.RLock()
 
     def put(self, artifact: Artifact) -> Artifact:
@@ -82,7 +84,7 @@ class InMemoryArtifactStore(ArtifactStore):
         history = self._versions.get((tenant_id, artifact_id), [])
         return protection_reason(
             (a.retention_class for a in history),
-            legal_hold=(tenant_id, artifact_id) in self._holds,
+            legal_hold=bool(self._holds.get((tenant_id, artifact_id))),
         )
 
     def delete_artifact(self, tenant_id: str, artifact_id: str, *, expected_version: int | None = None) -> None:
@@ -114,12 +116,25 @@ class InMemoryArtifactStore(ArtifactStore):
         with self._lock:
             if (tenant_id, artifact_id) not in self._versions:
                 raise KeyError((tenant_id, artifact_id))
-            self._holds.add((tenant_id, artifact_id))
+            records = self._holds.setdefault((tenant_id, artifact_id), {})
+            if placed_by not in records:
+                records[placed_by] = LegalHoldRecord(
+                    artifact_id=artifact_id,
+                    placed_by=placed_by,
+                    reason=reason,
+                    placed_at_utc=datetime.now(UTC),
+                )
 
     def release_legal_hold(self, tenant_id: str, artifact_id: str) -> None:
         with self._lock:
-            self._holds.discard((tenant_id, artifact_id))
+            self._holds.pop((tenant_id, artifact_id), None)
 
     def is_under_legal_hold(self, tenant_id: str, artifact_id: str) -> bool:
         with self._lock:
-            return (tenant_id, artifact_id) in self._holds
+            return bool(self._holds.get((tenant_id, artifact_id)))
+
+    def legal_holds(self, tenant_id: str, artifact_id: str) -> tuple[LegalHoldRecord, ...]:
+        """Every hold record of the artifact, oldest first."""
+        with self._lock:
+            records = self._holds.get((tenant_id, artifact_id), {})
+            return tuple(sorted(records.values(), key=lambda item: (item.placed_at_utc, item.placed_by)))
