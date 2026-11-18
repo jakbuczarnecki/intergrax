@@ -48,6 +48,11 @@ def receipt_errors(manifest: dict, repo: Path, audit_exec: str) -> list[str]:
     if not isinstance(block, dict):
         return []  # reported by validate_manifest_dict
     errors: list[str] = []
+    exec_is_commit = bool(audit_exec) and git_commit_exists(repo, audit_exec)
+    if not exec_is_commit:
+        errors.append(
+            f"audit_execution_sha {audit_exec[:12]!r} is not a commit; host receipt ancestry cannot be checked"
+        )
     for role in ROLE_FIELDS:
         entry = block.get(role)
         if not isinstance(entry, dict):
@@ -63,7 +68,7 @@ def receipt_errors(manifest: dict, repo: Path, audit_exec: str) -> list[str]:
         if blob is None:
             errors.append(f"{role} host receipt {path} does not exist at {sha[:12]}")
             continue
-        if audit_exec and git_commit_exists(repo, audit_exec) and not git_is_ancestor_or_equal(repo, sha, audit_exec):
+        if exec_is_commit and not git_is_ancestor_or_equal(repo, sha, audit_exec):
             errors.append(f"{role} host receipt commit {sha[:12]} is not an ancestor of audit_execution_sha")
         uuid = entry.get("session_uuid")
         text = blob.decode("utf-8", errors="replace")

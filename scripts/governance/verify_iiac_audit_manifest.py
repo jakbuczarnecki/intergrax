@@ -21,6 +21,7 @@ and names no PT-E04 module and has no ``--profile`` argument.
 from __future__ import annotations
 
 import argparse
+import codecs
 import json
 import re
 import sys
@@ -115,8 +116,10 @@ def main() -> int:
     if not MANIFEST_SCHEMA.is_file():
         errors.append(f"missing schema: {MANIFEST_SCHEMA.relative_to(REPO)}")
 
+    raw = args.manifest.read_bytes()
+    had_bom = raw.startswith(codecs.BOM_UTF8)
     try:
-        manifest, findings = parse_manifest(args.manifest.read_text(encoding="utf-8-sig"))
+        manifest, findings = parse_manifest(raw.decode("utf-8-sig"))
     except ValueError as exc:
         print("verify_iiac_audit_manifest: FAIL", file=sys.stderr)
         print(f"  - manifest is not valid JSON: {exc}", file=sys.stderr)
@@ -146,6 +149,8 @@ def main() -> int:
                 except RuntimeError as exc:
                     errors.append(str(exc))
 
+    if had_bom and not is_v2_final(manifest):
+        errors.append("manifest has a UTF-8 BOM (only a v2 final manifest ignores it; v1 is read as before)")
     if is_v2_final(manifest):
         errors.extend(findings)
         errors.extend(countersignature_errors(manifest, args.repo or REPO))
