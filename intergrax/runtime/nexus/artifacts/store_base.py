@@ -46,13 +46,14 @@ class ArtifactVersionNotFound(KeyError):
 
 @dataclass(frozen=True, slots=True)
 class LegalHoldRecord:
-    """One legal hold on an artifact, identified by (tenant, artifact, holder) (F-D8-14).
+    """One legal hold on an artifact; a hold is identified by (tenant, artifact, holder) (F-D8-14).
+
+    The tenant is the scope of the store call that returned the record and is not repeated here.
 
     Placing a hold again by the same holder keeps the first record (original reason and time);
     a hold by another holder adds a record. An artifact is under legal hold while any record exists.
     """
 
-    tenant_id: str
     artifact_id: str
     placed_by: str
     reason: str

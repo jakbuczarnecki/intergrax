@@ -63,7 +63,6 @@ class SecurityAuditChainReport:
     external anchor of the head; ``head_digest`` is exposed so that a caller can anchor it elsewhere.
     """
 
-    tenant_id: str
     verified_count: int
     head_digest: str
     first_broken_index: int | None = None
@@ -133,23 +132,23 @@ def _digest_of(entry: SecurityAuditEntry) -> str:
     )
 
 
-def _verify_entries(tenant_id: str, entries: list[SecurityAuditEntry]) -> SecurityAuditChainReport:
+def _verify_entries(entries: list[SecurityAuditEntry]) -> SecurityAuditChainReport:
     head = SECURITY_AUDIT_CHAIN_GENESIS
     verified = 0
     unchained = 0
     for index, entry in enumerate(entries):
         if not entry.entry_digest and not entry.prev_digest:
             if verified:
-                return SecurityAuditChainReport(tenant_id, verified, head, index, "unchained_entry_after_chain_start")
+                return SecurityAuditChainReport(verified, head, index, "unchained_entry_after_chain_start")
             unchained += 1
             continue
         if entry.prev_digest != head:
-            return SecurityAuditChainReport(tenant_id, verified, head, index, "prev_digest_mismatch", unchained)
+            return SecurityAuditChainReport(verified, head, index, "prev_digest_mismatch", unchained)
         if _digest_of(entry) != entry.entry_digest:
-            return SecurityAuditChainReport(tenant_id, verified, head, index, "entry_digest_mismatch", unchained)
+            return SecurityAuditChainReport(verified, head, index, "entry_digest_mismatch", unchained)
         head = entry.entry_digest
         verified += 1
-    return SecurityAuditChainReport(tenant_id, verified, head, None, None, unchained)
+    return SecurityAuditChainReport(verified, head, None, None, unchained)
 
 
 @dataclass
@@ -214,7 +213,7 @@ class SecurityAuditTrail:
 
     def verify_chain(self, tenant_id: str) -> SecurityAuditChainReport:
         """Recompute the tenant's chain; report the first modified or missing interior entry."""
-        return _verify_entries(tenant_id, [entry for entry in self._entries if entry.tenant_id == tenant_id])
+        return _verify_entries([entry for entry in self._entries if entry.tenant_id == tenant_id])
 
 
 # ---------------------------------------------------------------------------
@@ -469,4 +468,4 @@ class EvidencePlaneSecurityAuditTrail:
             for positioned in self._iter_stream(tenant, None)
             if positioned.event.event_kind == SECURITY_AUDIT_EVENT_KIND and positioned.event.tenant_id == tenant
         ]
-        return _verify_entries(tenant, entries)
+        return _verify_entries(entries)

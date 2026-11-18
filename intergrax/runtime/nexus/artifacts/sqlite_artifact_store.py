@@ -420,7 +420,6 @@ class SQLiteArtifactStore(ArtifactStore):
             ).fetchall()
         return tuple(
             LegalHoldRecord(
-                tenant_id=tenant_id,
                 artifact_id=artifact_id,
                 placed_by=str(placed_by),
                 reason=str(reason),

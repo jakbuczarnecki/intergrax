@@ -119,7 +119,6 @@ class InMemoryArtifactStore(ArtifactStore):
             records = self._holds.setdefault((tenant_id, artifact_id), {})
             if placed_by not in records:
                 records[placed_by] = LegalHoldRecord(
-                    tenant_id=tenant_id,
                     artifact_id=artifact_id,
                     placed_by=placed_by,
                     reason=reason,
