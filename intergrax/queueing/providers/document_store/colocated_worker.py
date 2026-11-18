@@ -156,57 +156,64 @@ class DocumentStoreTaskWorker:
         if claimed:
             with self._idle:
                 self._in_flight += len(claimed)
-        for handle, request in claimed:
-            try:
+        remaining = len(claimed)
+        try:
+            for handle, request in claimed:
                 try:
-                    transport_ref = BackgroundTransportExecutionRef(
-                        tenant_id=request.tenant_id,
-                        provider=handle.provider,
-                        transport_task_id=handle.task_id,
-                    )
-                    self._seed_carried_identity(transport_ref, request)
-                    reentry = admit_background_execution_reentry(
-                        transport_ref=transport_ref,
-                        identity_persistence=self._identity_persistence,
-                        attempt_lifecycle=self._attempt_lifecycle,
-                        execution_terminal=self._execution_terminal,
-                    )
-                    if reentry.disposition is BackgroundExecutionReentryDisposition.TERMINAL_ALREADY_RECORDED:
-                        self._queue.mark_succeeded(handle, output=None)
-                        continue
-                    execution_identity = reentry.identity
-                    result = admit_background_execution_handler(
-                        transport_ref=transport_ref,
-                        execution_identity=execution_identity,
-                        causal_evidence_persistence=self._causal_evidence_persistence,
-                        handler=lambda: execute_logical_task(
-                            registry=self._registry,
-                            logical_task_name=request.task_name,
-                            tenant_id=execution_identity.tenant_id,
-                            run_id=str(execution_identity.run_id),
-                            payload=request.payload,
-                            idempotency_key=request.idempotency_key,
-                            idempotency_store=None,
+                    try:
+                        transport_ref = BackgroundTransportExecutionRef(
+                            tenant_id=request.tenant_id,
+                            provider=handle.provider,
+                            transport_task_id=handle.task_id,
+                        )
+                        self._seed_carried_identity(transport_ref, request)
+                        reentry = admit_background_execution_reentry(
+                            transport_ref=transport_ref,
+                            identity_persistence=self._identity_persistence,
+                            attempt_lifecycle=self._attempt_lifecycle,
+                            execution_terminal=self._execution_terminal,
+                        )
+                        if reentry.disposition is BackgroundExecutionReentryDisposition.TERMINAL_ALREADY_RECORDED:
+                            self._queue.mark_succeeded(handle, output=None)
+                            continue
+                        execution_identity = reentry.identity
+                        result = admit_background_execution_handler(
+                            transport_ref=transport_ref,
                             execution_identity=execution_identity,
-                        ),
-                    )
-                    if result.success:
-                        output = None
-                        if result.output is not None:
-                            output = result.output.model_dump_json().encode("utf-8")
-                        self._queue.mark_succeeded(handle, output=output)
-                    else:
-                        message = result.error.error_message if result.error is not None else "handler_failed"
-                        self._queue.mark_failed(handle, error_message=message)
-                except Exception as exc:  # noqa: BLE001 - worker plane normalizes failures
-                    logger.exception(
-                        "document_store_task_worker_failed task_id=%s task_name=%s",
-                        handle.task_id,
-                        request.task_name,
-                    )
-                    self._settle_exception(handle, exc)
-            finally:
-                self._settle_in_flight()
+                            causal_evidence_persistence=self._causal_evidence_persistence,
+                            handler=lambda: execute_logical_task(
+                                registry=self._registry,
+                                logical_task_name=request.task_name,
+                                tenant_id=execution_identity.tenant_id,
+                                run_id=str(execution_identity.run_id),
+                                payload=request.payload,
+                                idempotency_key=request.idempotency_key,
+                                idempotency_store=None,
+                                execution_identity=execution_identity,
+                            ),
+                        )
+                        if result.success:
+                            output = None
+                            if result.output is not None:
+                                output = result.output.model_dump_json().encode("utf-8")
+                            self._queue.mark_succeeded(handle, output=output)
+                        else:
+                            message = result.error.error_message if result.error is not None else "handler_failed"
+                            self._queue.mark_failed(handle, error_message=message)
+                    except Exception as exc:  # noqa: BLE001 - worker plane normalizes failures
+                        logger.exception(
+                            "document_store_task_worker_failed task_id=%s task_name=%s",
+                            handle.task_id,
+                            request.task_name,
+                        )
+                        self._settle_exception(handle, exc)
+                finally:
+                    remaining -= 1
+                    self._settle_in_flight(1)
+        finally:
+            # Rows not reached because a settlement raised are not handled here any more: never leak them.
+            if remaining:
+                self._settle_in_flight(remaining)
         return len(claimed)
 
     def _drain_if_open(self, stop_event: threading.Event) -> int:
@@ -220,9 +227,9 @@ class DocumentStoreTaskWorker:
         finally:
             self._settle_in_flight()
 
-    def _settle_in_flight(self) -> None:
+    def _settle_in_flight(self, count: int = 1) -> None:
         with self._idle:
-            self._in_flight -= 1
+            self._in_flight -= count
             if self._in_flight == 0:
                 self._idle.notify_all()
 

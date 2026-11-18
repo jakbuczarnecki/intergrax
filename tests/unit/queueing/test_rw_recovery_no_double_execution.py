@@ -165,3 +165,47 @@ def test_rw_rec_02_recovery_is_compare_and_set() -> None:
     assert interrupted == []
     assert list(store.query(_RUNNING_INDEX, limit=10).documents) == []
     assert queue.recover_interrupted_running() == []
+
+
+class _SettleFailsQueue(DocumentStoreTaskQueue):
+    """Queue whose ``mark_failed`` raises, so settling a failed row escapes ``drain_once``."""
+
+    def mark_failed(self, handle: TaskHandle, *, error_message: str) -> None:
+        del handle, error_message
+        raise RuntimeError("store unavailable while settling")
+
+
+def test_rw_rec_01b_in_flight_count_survives_a_failing_settlement() -> None:
+    store = InMemoryDocumentStore()
+    queue = _SettleFailsQueue(store)
+    registry = TaskExecutionRegistry()
+
+    def _failing_handler(
+        *,
+        tenant_id: str,
+        run_id: str,
+        payload: bytes,
+        idempotency_key: str | None = None,
+        execution_identity: BackgroundExecutionIdentity,
+    ) -> ToolExecutionResult[BaseModel]:
+        del tenant_id, run_id, payload, idempotency_key, execution_identity
+        return ToolExecutionResult.fail("rw_rec_failed", "handler failed")
+
+    registry.register(_TASK_NAME, _failing_handler)
+    admission = wire_background_execution_admission_dependencies(document_store=store)
+    worker = DocumentStoreTaskWorker(
+        queue,
+        registry,
+        identity_persistence=admission.identity_persistence,
+        attempt_lifecycle=admission.attempt_lifecycle,
+        execution_terminal=admission.execution_terminal,
+        causal_evidence_persistence=wire_causal_evidence_persistence(document_store=store),
+    )
+    queue.enqueue(_request())
+    queue.enqueue(TaskRequest(tenant_id=_TENANT, run_id="run-2", task_name=_TASK_NAME, payload=b"{}"))
+
+    with pytest.raises(RuntimeError, match="store unavailable while settling"):
+        worker.drain_once()
+
+    assert worker.in_flight_count() == 0, "an escaped settlement left rows counted as in flight"
+    assert worker.wait_idle(0.01) is True

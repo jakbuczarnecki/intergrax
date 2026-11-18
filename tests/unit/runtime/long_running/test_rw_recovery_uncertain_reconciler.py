@@ -131,8 +131,9 @@ def test_rw_rec_06_uncertain_entries_reconciled_exactly_once() -> None:
 
     second = reconciler.reconcile_once(T0 + timedelta(seconds=30))
 
-    assert [record.schedule_id for record in second] == ["s-partial"], "resolved entries were reconciled twice"
-    assert second[0].resolve_applied is False
+    # Resolved entries are gone; the unproven one was already recorded at this fence and is not re-recorded.
+    assert second == (), "entries were reconciled twice"
+    assert source.rows["s-partial"].status is ScheduledResumeStatus.UNCERTAIN
     assert len(source.resolve_calls) == 2
 
 
@@ -154,6 +155,52 @@ def test_rw_rec_06b_double_execution_is_recorded_and_never_redriven() -> None:
     assert {r.outcome for r in records.values()} == {UncertainOutcome.UNPROVEN}
     assert source.resolve_calls == []
     assert {row.status for row in source.rows.values()} == {ScheduledResumeStatus.UNCERTAIN}
+
+
+def test_rw_rec_06d_unproven_entries_do_not_starve_later_entries() -> None:
+    from intergrax.runtime.long_running.uncertain_reconciler import UncertainOutcome, UncertainReconciler
+
+    unproven = [_uncertain(f"s-unproven-{i}", f"task-unproven-{i}") for i in range(3)]
+    source = _InMemoryUncertainSource([*unproven, _uncertain("s-last", "task-last")])
+    evidence = _Evidence(
+        terminal={**{f"task-unproven-{i}": False for i in range(3)}, "task-last": False},
+        attempts={**{f"task-unproven-{i}": 1 for i in range(3)}, "task-last": 0},
+    )
+    reconciler = UncertainReconciler(source, evidence, batch_limit=2)
+
+    passes = [reconciler.reconcile_once(T0 + timedelta(seconds=n)) for n in range(3)]
+
+    recorded = [record.schedule_id for batch in passes for record in batch]
+    assert sorted(recorded) == ["s-last", "s-unproven-0", "s-unproven-1", "s-unproven-2"]
+    assert len(recorded) == len(set(recorded)), "an unproven entry was recorded more than once"
+    assert source.rows["s-last"].status is ScheduledResumeStatus.PENDING, "rows behind unproven ones were never reached"
+    assert {r.outcome for b in passes for r in b if r.schedule_id != "s-last"} == {UncertainOutcome.UNPROVEN}
+
+
+class _FailingEvidence(_Evidence):
+    def terminal_record_present(self, *, tenant_id: str, task_id: str) -> bool | None:
+        if task_id == "task-broken":
+            raise RuntimeError("terminal authority read failed")
+        return super().terminal_record_present(tenant_id=tenant_id, task_id=task_id)
+
+
+def test_rw_rec_06e_one_failing_entry_does_not_block_the_others() -> None:
+    from intergrax.runtime.long_running.uncertain_reconciler import UncertainOutcome, UncertainReconciler
+
+    source = _InMemoryUncertainSource([_uncertain("s-broken", "task-broken"), _uncertain("s-ok", "task-ok")])
+    reconciler = UncertainReconciler(source, _FailingEvidence(terminal={"task-ok": False}, attempts={"task-ok": 0}))
+
+    records = {r.schedule_id: r for r in reconciler.reconcile_once(T0)}
+
+    assert records["s-broken"].failed is True
+    assert records["s-broken"].outcome is UncertainOutcome.UNPROVEN
+    assert records["s-broken"].resolve_applied is False
+    assert records["s-ok"].failed is False
+    assert records["s-ok"].outcome is UncertainOutcome.NOT_STARTED_PROVEN
+    assert source.rows["s-ok"].status is ScheduledResumeStatus.PENDING
+    assert source.rows["s-broken"].status is ScheduledResumeStatus.UNCERTAIN
+    # A failed entry is not memoized: the next pass tries it again.
+    assert [r.schedule_id for r in reconciler.reconcile_once(T0 + timedelta(seconds=1))] == ["s-broken"]
 
 
 async def test_rw_rec_06c_scheduler_runs_the_reconciler_as_an_isolated_phase(tmp_path: Path) -> None:

@@ -17,6 +17,12 @@ Every entry also gets a double-execution check from the observed attempt count (
 The resolve is a fenced transition of the source, so a second pass over the same row finds it
 already resolved and records nothing for it.
 
+Liveness: each entry is reconciled in isolation (a failing read or resolve is recorded with
+``failed=True`` and the pass goes on; a failed entry is tried again on the next pass). An entry
+recorded ``UNPROVEN`` is remembered with its fence for the life of the process and not recorded
+again until its fence changes; the listing is widened by the remembered entries, so rows behind
+them are still reached. The memory is process-local and pruned to the rows the source still lists.
+
 Limit: the SQLite and PostgreSQL schedule stores do not implement ``UncertainScheduleSource`` yet
 (no listing by status, no resolve transition). Until a store implements the port the reconciler
 reaches only sources that do; for product hosts PDC-D7-R015 is not closed by this module alone.
@@ -66,7 +72,7 @@ class UncertainScheduleSource(Protocol):
     """Schedule rows in ``UNCERTAIN`` and their fenced resolution."""
 
     def list_uncertain(self, limit: int) -> Sequence[ScheduledResume]:
-        """At most ``limit`` rows whose status is ``UNCERTAIN``."""
+        """At most ``limit`` rows whose status is ``UNCERTAIN``, in a stable order (oldest first)."""
         ...
 
     def resolve_uncertain(self, schedule_id: str, *, expected_fence: int, outcome: UncertainOutcome) -> bool:
@@ -100,6 +106,7 @@ class ReconciliationRecord:
     attempts_observed: int | None
     double_execution: DoubleExecutionCheck
     reconciled_at: datetime
+    failed: bool = False
 
 
 class UncertainReconciler:
@@ -117,22 +124,58 @@ class UncertainReconciler:
         self._source = source
         self._evidence = evidence
         self._batch_limit = batch_limit
+        # schedule_id -> fence of entries already recorded UNPROVEN (process-local, pruned per pass).
+        self._recorded_unproven: dict[str, int] = {}
 
     def reconcile_once(self, now: datetime) -> tuple[ReconciliationRecord, ...]:
+        listed = self._source.list_uncertain(self._batch_limit + len(self._recorded_unproven))
+        listed_ids = {entry.schedule_id for entry in listed}
+        self._recorded_unproven = {
+            schedule_id: fence for schedule_id, fence in self._recorded_unproven.items() if schedule_id in listed_ids
+        }
         records: list[ReconciliationRecord] = []
-        for entry in self._source.list_uncertain(self._batch_limit):
-            record = self._reconcile_entry(entry, now)
+        for entry in listed:
+            if len(records) >= self._batch_limit:
+                break
+            if self._recorded_unproven.get(entry.schedule_id) == entry.fence:
+                continue
+            record = self._reconcile_isolated(entry, now)
             records.append(record)
-            logger.warning(
-                "%s schedule_id=%s outcome=%s resolve_applied=%s attempts=%s double_execution=%s",
+            if record.outcome is UncertainOutcome.UNPROVEN and not record.failed:
+                self._recorded_unproven[entry.schedule_id] = entry.fence
+            log = logger.error if record.failed else logger.warning
+            log(
+                "%s schedule_id=%s outcome=%s resolve_applied=%s attempts=%s double_execution=%s failed=%s",
                 UNCERTAIN_RECONCILED_LOG_CODE,
                 record.schedule_id,
                 record.outcome.value,
                 record.resolve_applied,
                 record.attempts_observed,
                 record.double_execution.value,
+                record.failed,
             )
         return tuple(records)
+
+    def _reconcile_isolated(self, entry: ScheduledResume, now: datetime) -> ReconciliationRecord:
+        """One entry; a failure is recorded (fail closed: UNPROVEN, nothing resolved) instead of raised."""
+        try:
+            return self._reconcile_entry(entry, now)
+        except Exception:
+            logger.exception(
+                "%s schedule_id=%s reconciliation failed", UNCERTAIN_RECONCILED_LOG_CODE, entry.schedule_id
+            )
+            return ReconciliationRecord(
+                schedule_id=entry.schedule_id,
+                tenant_id=entry.tenant_id,
+                task_id=entry.task_id,
+                outcome=UncertainOutcome.UNPROVEN,
+                resolve_applied=False,
+                redrive_eligible=False,
+                attempts_observed=None,
+                double_execution=DoubleExecutionCheck.NOT_OBSERVABLE,
+                reconciled_at=now,
+                failed=True,
+            )
 
     def _reconcile_entry(self, entry: ScheduledResume, now: datetime) -> ReconciliationRecord:
         terminal = self._evidence.terminal_record_present(tenant_id=entry.tenant_id, task_id=entry.task_id)
