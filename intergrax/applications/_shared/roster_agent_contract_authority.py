@@ -39,9 +39,7 @@ class ManifestAgentContractAuthority:
         contract_id = resolve_binding_contract_id(binding)
         contract = self.contracts_by_id.get(contract_id)
         if contract is None:
-            raise StrictAgentContractAuthorityError(
-                f"missing manifest contract authority for {contract_id!r}"
-            )
+            raise StrictAgentContractAuthorityError(f"missing manifest contract authority for {contract_id!r}")
         return contract
 
 
@@ -75,9 +73,7 @@ class RosterAgentContractAuthority:
             contract_id = resolve_binding_contract_id(binding)
             prior = digest_by_contract.get(contract_id)
             if prior is not None and prior != entry.package_digest:
-                raise StrictAgentContractAuthorityError(
-                    f"conflicting package digest for contract {contract_id!r}"
-                )
+                raise StrictAgentContractAuthorityError(f"conflicting package digest for contract {contract_id!r}")
             digest_by_contract[contract_id] = entry.package_digest
         return cls(
             _service=AgentPackageContractAuthorityService(artifact_metadata_store),
@@ -88,9 +84,7 @@ class RosterAgentContractAuthority:
         contract_id = resolve_binding_contract_id(binding)
         package_digest = self._package_digest_by_contract_id.get(contract_id)
         if package_digest is None:
-            raise StrictAgentContractAuthorityError(
-                f"contract {contract_id!r} not in revision-bound roster authority"
-            )
+            raise StrictAgentContractAuthorityError(f"contract {contract_id!r} not in revision-bound roster authority")
         try:
             return self._service.resolve_contract(
                 package_digest=package_digest,
@@ -118,9 +112,7 @@ def resolve_roster_agent_contract(
         )
 
         return resolve_agent_contract_from_binding(binding)
-    raise StrictAgentContractAuthorityError(
-        "STRICT agent contract resolution requires revision-bound authority"
-    )
+    raise StrictAgentContractAuthorityError("STRICT agent contract resolution requires revision-bound authority")
 
 
 def materialize_manifest_contract_authority_lab_compat(
