@@ -21,6 +21,15 @@ their identity is preserved): ``LLMRateLimitError`` and ``LLMCircuitOpenError``
 ``LLMCapabilityMismatchError`` (``llm_adapters.contracts.capabilities``) and the dependency-admission
 failures. Every ``BaseException`` that is not an ``Exception`` also passes through unchanged.
 
+Not converted in v1 (deviation from plan T-IGX-051-D section 3.3, which converts every non-typed
+``Exception``): an ``Exception`` defined in ``intergrax``, and an exception from outside the provider SDK and
+transport packages (``BaseLLMAdapter._PROVIDER_SDK_ROOTS``) that carries no provider signal, that is no
+provider-hook category, no HTTP status code and no transient class-name word (for example a ``KeyError``,
+``ValueError`` or ``json.JSONDecodeError`` raised while a response is handled). Such an error reaches the
+caller unchanged, so a consumer that catches only ``LLMProviderError`` does not see it. Reason: existing tests
+outside the ticket's write set raise plain local errors through the adapters and assert their type and
+message. An exception from a provider SDK or transport package without a signal is typed ``UNKNOWN``.
+
 Class names keep the transient-error words that ``llm_adapters._shared.retry`` reads (``Timeout``,
 ``Connection``, ``Overloaded``, ``RateLimit``) and the typed error keeps the status code and the
 ``Retry-After`` hint, so retry and failover classify a typed error as they classified the SDK error.
