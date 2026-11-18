@@ -30,6 +30,15 @@ caller unchanged, so a consumer that catches only ``LLMProviderError`` does not 
 outside the ticket's write set raise plain local errors through the adapters and assert their type and
 message. An exception from a provider SDK or transport package without a signal is typed ``UNKNOWN``.
 
+Builtin compatibility: ``LLMProviderTimeoutError`` also inherits the builtin ``TimeoutError`` and
+``LLMProviderConnectionError`` the builtin ``ConnectionError`` (both ``OSError`` subclasses), so a consumer
+that catches ``TimeoutError``, ``ConnectionError`` or ``OSError`` around an adapter call (for example after
+partial stream output) still catches the typed error, which keeps its typed fields. ``LLMProviderError``
+precedes the builtin base in the method resolution order, so the typed ``__init__`` and message are used;
+``errno`` and ``strerror`` stay ``None``. Retry and failover classification is unchanged (it reads the status
+code and the class-name words, not the builtin base). No other category gains a builtin base, and
+``LLMCallBudgetNotForwardableError`` is not a ``TimeoutError``.
+
 Class names keep the transient-error words that ``llm_adapters._shared.retry`` reads (``Timeout``,
 ``Connection``, ``Overloaded``, ``RateLimit``) and the typed error keeps the status code and the
 ``Retry-After`` hint, so retry and failover classify a typed error as they classified the SDK error.
@@ -88,7 +97,9 @@ class LLMProviderError(RuntimeError):
         )
 
 
-class LLMProviderTimeoutError(LLMProviderError):
+class LLMProviderTimeoutError(LLMProviderError, TimeoutError):
+    """Timeout; also a builtin ``TimeoutError`` so existing ``except TimeoutError`` consumers keep working."""
+
     category: ClassVar[LLMProviderErrorCategory] = LLMProviderErrorCategory.TIMEOUT
 
 
@@ -126,7 +137,9 @@ class LLMProviderServerError(LLMProviderError):
     category: ClassVar[LLMProviderErrorCategory] = LLMProviderErrorCategory.SERVER_ERROR
 
 
-class LLMProviderConnectionError(LLMProviderError):
+class LLMProviderConnectionError(LLMProviderError, ConnectionError):
+    """Connection failure; also a builtin ``ConnectionError`` (backward compatible ``except ConnectionError``)."""
+
     category: ClassVar[LLMProviderErrorCategory] = LLMProviderErrorCategory.CONNECTION
 
 

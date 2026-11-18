@@ -384,3 +384,68 @@ def test_the_fail_closed_timeout_refusal_is_not_retriable_and_stops_failover() -
         attempt_index=0, is_last_candidate=False, error=refusal, failover_retry_config=LLMCallConfig()
     )
     assert PlatformDefaultFailoverPolicy().decide_after_failure(context) is FailoverDecision.STOP
+
+
+# ---------------------------------------------------------------------------------------------
+# Builtin compatibility of the timeout and connection categories (orchestrator decision on the PDC-D3
+# f08 red: ``except ConnectionError`` / ``except TimeoutError`` consumers keep working)
+# ---------------------------------------------------------------------------------------------
+
+#: fixture id -> (typed class name, builtin base the typed error must also be)
+_BUILTIN_COMPATIBLE: dict[str, tuple[str, type[BaseException]]] = {
+    "openai-timeout": ("LLMProviderTimeoutError", TimeoutError),
+    "httpx-read-timeout": ("LLMProviderTimeoutError", TimeoutError),
+    "builtin-timeout": ("LLMProviderTimeoutError", TimeoutError),
+    "openai-connection": ("LLMProviderConnectionError", ConnectionError),
+    "builtin-connection-refused": ("LLMProviderConnectionError", ConnectionError),
+}
+
+
+@pytest.mark.parametrize("fixture_id", sorted(_BUILTIN_COMPATIBLE))
+def test_a_typed_timeout_or_connection_error_is_caught_by_the_builtin_except(fixture_id: str) -> None:
+    contract = _contract()
+    make, category, status, retry_after = _FIXTURES[fixture_id]
+    class_name, builtin = _BUILTIN_COMPATIBLE[fixture_id]
+    raw = make()
+    adapter = _ProbeAdapter()
+
+    def _raise() -> None:
+        raise raw
+
+    with pytest.raises(builtin) as info:
+        adapter._execute(_raise)
+    typed = info.value
+    assert type(typed).__name__ == class_name
+    assert isinstance(typed, contract.LLMProviderError) and isinstance(typed, RuntimeError)
+    assert typed.category.value == category
+    assert (typed.provider, typed.model) == (_PROVIDER, "probe-model")
+    assert typed.status_code == status and typed.retry_after_seconds == retry_after
+    assert typed.__cause__ is raw
+    assert _SECRET not in str(typed)
+    assert str(typed).startswith("LLM provider error category=")
+
+
+def test_the_builtin_bases_keep_the_typed_layout_and_the_retry_classification() -> None:
+    contract = _contract()
+    config = LLMCallConfig()
+    for cls, builtin in (
+        (contract.LLMProviderTimeoutError, TimeoutError),
+        (contract.LLMProviderConnectionError, ConnectionError),
+    ):
+        assert issubclass(cls, builtin) and issubclass(cls, RuntimeError)
+        assert cls.__mro__.index(contract.LLMProviderError) < cls.__mro__.index(builtin)
+        error = cls(provider="p", model="m", status_code=None, retry_after_seconds=1.5, retriable=True)
+        assert (error.provider, error.model, error.status_code, error.retry_after_seconds) == ("p", "m", None, 1.5)
+        assert error.retriable is True
+        assert error.errno is None and error.strerror is None
+        assert error.args == (str(error),)
+        # Same verdict as before the builtin base: transient by class-name word, status-driven when set.
+        assert is_retriable_provider_error(error, config) is True
+        assert is_retriable_provider_error(cls(provider="p", model="m", status_code=503), config) is True
+        assert is_retriable_provider_error(cls(provider="p", model="m", status_code=400), config) is True
+    for other in contract.LLMProviderErrorCategory:
+        cls = contract.provider_error_class_for(other)
+        if other not in (contract.LLMProviderErrorCategory.TIMEOUT, contract.LLMProviderErrorCategory.CONNECTION):
+            assert not issubclass(cls, OSError), f"{cls.__name__} must not gain a builtin OSError base"
+    assert not issubclass(contract.LLMCallBudgetNotForwardableError, OSError)
+    assert not issubclass(contract.LLMCallBudgetNotForwardableError, TimeoutError)
