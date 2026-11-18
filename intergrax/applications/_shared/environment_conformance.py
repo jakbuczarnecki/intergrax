@@ -6,6 +6,7 @@ from __future__ import annotations
 
 from intergrax.agents.agent_contract import Agent
 from intergrax.applications._shared.agent_resolution import resolve_agent_type_from_binding
+from intergrax.applications._shared.import_policy import import_policy_for_environment
 from intergrax.applications.contracts.environment_profile import ApplicationEnvironmentProfile
 from intergrax.applications.contracts.errors import ApplicationManifestConformanceError
 from intergrax.applications.contracts.manifest import AgentBinding
@@ -62,7 +63,12 @@ class EnvironmentSkillToolConsistencyCheck:
             # contract-reference bindings intentionally omit importable agent types here.
             return []
 
-        agent_type = resolve_agent_type_from_binding(binding)
+        policy = import_policy_for_environment(env)
+        agent_type = resolve_agent_type_from_binding(
+            binding,
+            allowed_prefixes=policy.agent_modules,
+            fail_closed=policy.fail_closed,
+        )
         contract = _contract_for_agent(agent_type, binding)
         violations: list[str] = []
 

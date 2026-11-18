@@ -31,6 +31,12 @@ if TYPE_CHECKING:
         RosterAgentContractAuthority,
     )
 from intergrax.applications._shared.import_allowlist import ImportPrefixAllowlist, require_import_allowed
+from intergrax.applications._shared.import_policy import (
+    UNRESTRICTED,
+    ImportPolicy,
+    import_policy_for_environment,
+    import_policy_for_manifest,
+)
 from intergrax.applications.contracts.build_context import ApplicationBuildContext
 from intergrax.applications.contracts.errors import (
     AgentImportError,
@@ -88,11 +94,23 @@ def load_callable(
     return target
 
 
+def _import_policy_for_context(ctx: ApplicationBuildContext) -> ImportPolicy:
+    """Import policy of a build context: its environment when set, else the manifest's resolved one."""
+    if ctx.environment is not None:
+        return import_policy_for_environment(ctx.environment)
+    return import_policy_for_manifest(ctx.manifest)
+
+
 def resolve_builder(
     binding: AgentBinding,
     builders: BuilderMap | None,
+    *,
+    import_policy: ImportPolicy = UNRESTRICTED,
 ) -> CanonicalAgentFactory | None:
-    """Resolve factory: typed callable on binding, then type-keyed, then string key."""
+    """Resolve factory: typed callable on binding, then type-keyed, then string key.
+
+    ``import_policy`` restricts the class import of a serialized binding (A4-007 seam b1).
+    """
     if binding.factory is not None:
         return binding.factory
 
@@ -106,7 +124,11 @@ def resolve_builder(
 
     from intergrax.applications._shared.agent_resolution import resolve_agent_type_from_binding
 
-    agent_type = resolve_agent_type_from_binding(binding)
+    agent_type = resolve_agent_type_from_binding(
+        binding,
+        allowed_prefixes=import_policy.agent_modules,
+        fail_closed=import_policy.fail_closed,
+    )
     typed = builders.get(agent_type)
     if typed is not None:
         return typed
@@ -118,13 +140,19 @@ def _validate_factory_result(
     result: object,
     factory: object,
     binding: AgentBinding,
+    *,
+    import_policy: ImportPolicy = UNRESTRICTED,
 ) -> Tier2Agent:
     if not isinstance(result, Tier2Agent):
         raise AgentImportError(f"Factory {factory!r} must return Tier2Agent, got {type(result)!r}")
     if binding.agent_type is not None or binding.import_path is not None:
         from intergrax.applications._shared.agent_resolution import resolve_agent_type_from_binding
 
-        expected = resolve_agent_type_from_binding(binding)
+        expected = resolve_agent_type_from_binding(
+            binding,
+            allowed_prefixes=import_policy.agent_modules,
+            fail_closed=import_policy.fail_closed,
+        )
         if not isinstance(result, expected):
             raise AgentImportError(
                 f"Factory for {binding.display_name()} returned {type(result)!r}, "
@@ -147,7 +175,7 @@ def invoke_canonical_agent_factory(
     """
     _ = composition
     result = factory(ctx, binding)
-    return _validate_factory_result(result, factory, binding)
+    return _validate_factory_result(result, factory, binding, import_policy=_import_policy_for_context(ctx))
 
 
 def invoke_legacy_compatible_agent_factory(
@@ -179,7 +207,7 @@ def invoke_legacy_compatible_agent_factory(
         except TypeError as exc:
             last_error = exc
             continue
-        return _validate_factory_result(result, factory, binding)
+        return _validate_factory_result(result, factory, binding, import_policy=_import_policy_for_context(ctx))
 
     message = f"Cannot invoke factory for {binding.display_name()!r}"
     if last_error is not None:
@@ -205,18 +233,30 @@ def build_agent_from_binding(
     builders: BuilderMap | None = None,
     composition: ApplicationCompositionContext | None = None,
 ) -> Tier2Agent:
-    """Materialize one agent: typed factory → builders map → serialized path → ctor."""
-    factory = resolve_builder(binding, builders)
+    """Materialize one agent: typed factory → builders map → serialized path → ctor.
+
+    Serialized ``import_path`` / ``factory_path`` imports follow the context's import policy.
+    """
+    policy = _import_policy_for_context(ctx)
+    factory = resolve_builder(binding, builders, import_policy=policy)
     if factory is not None:
         return invoke_canonical_agent_factory(factory, ctx, binding, composition=composition)
 
     if binding.factory_path is not None and binding.factory is None:
-        loaded = load_callable(binding.factory_path)
+        loaded = load_callable(
+            binding.factory_path,
+            allowed_prefixes=policy.factory_modules,
+            fail_closed=policy.fail_closed,
+        )
         return invoke_legacy_compatible_agent_factory(loaded, ctx, binding, composition=composition)
 
     from intergrax.applications._shared.agent_resolution import resolve_agent_type_from_binding
 
-    agent_cls = resolve_agent_type_from_binding(binding)
+    agent_cls = resolve_agent_type_from_binding(
+        binding,
+        allowed_prefixes=policy.agent_modules,
+        fail_closed=policy.fail_closed,
+    )
     try:
         agent = agent_cls()
     except TypeError as exc:

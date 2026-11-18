@@ -14,6 +14,8 @@ from intergrax.agent_distribution.agent_contract_authority import (
 from intergrax.agent_distribution.roster import EffectiveRoster
 from intergrax.agent_distribution.runtime_revision import RuntimeRevision
 from intergrax.agent_distribution.stores import AgentArtifactMetadataStore
+from intergrax.applications._shared.import_allowlist import ImportPrefixAllowlist
+from intergrax.applications._shared.import_policy import import_policy_for_manifest
 from intergrax.applications._shared.wiring import (
     _index_manifest_bindings,
     binding_from_roster_entry,
@@ -102,8 +104,13 @@ def resolve_roster_agent_contract(
     *,
     contract_authority: ContractAuthority | None,
     allow_compatibility_resolver: bool = False,
+    allowed_prefixes: ImportPrefixAllowlist | None = None,
+    fail_closed: bool = False,
 ) -> AgentContract:
-    """Resolve AgentContract for roster governance (STRICT uses authority only)."""
+    """Resolve AgentContract for roster governance (STRICT uses authority only).
+
+    ``allowed_prefixes`` and ``fail_closed`` restrict the class import of the compatibility resolver.
+    """
     if contract_authority is not None:
         return contract_authority.contract_for_binding(binding)
     if allow_compatibility_resolver:
@@ -111,7 +118,11 @@ def resolve_roster_agent_contract(
             resolve_agent_contract_from_binding,
         )
 
-        return resolve_agent_contract_from_binding(binding)
+        return resolve_agent_contract_from_binding(
+            binding,
+            allowed_prefixes=allowed_prefixes,
+            fail_closed=fail_closed,
+        )
     raise StrictAgentContractAuthorityError("STRICT agent contract resolution requires revision-bound authority")
 
 
@@ -123,10 +134,15 @@ def materialize_manifest_contract_authority_lab_compat(
         resolve_agent_contract_from_binding,
     )
 
+    policy = import_policy_for_manifest(manifest)
     contracts: dict[str, AgentContract] = {}
     for binding in manifest.enabled_agents():
         contract_id = resolve_binding_contract_id(binding)
-        contracts[contract_id] = resolve_agent_contract_from_binding(binding)
+        contracts[contract_id] = resolve_agent_contract_from_binding(
+            binding,
+            allowed_prefixes=policy.agent_modules,
+            fail_closed=policy.fail_closed,
+        )
     return ManifestAgentContractAuthority(contracts_by_id=contracts)
 
 

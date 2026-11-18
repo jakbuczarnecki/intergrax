@@ -9,6 +9,7 @@ from pathlib import Path
 
 from intergrax.applications._shared.capability_graph_wiring import EnvironmentCapabilityGraphView
 from intergrax.applications._shared.environment_snapshot_wiring import stable_digest_hex
+from intergrax.applications._shared.import_policy import import_policy_for_environment
 from intergrax.applications._shared.registry_projection import MaterializedRegistryProjection
 from intergrax.applications._shared.registry_projection_authority_resolver import (
     RegistryProjectionAuthorityResolver,
@@ -110,11 +111,14 @@ def collect_application_dependencies(
         and env.execution_mode is ExecutionMode.STRICT
         and env.application_profile is ApplicationProfile.PRODUCT
     )
+    import_policy = import_policy_for_environment(env)
     for binding in manifest.enabled_agents():
         contract = resolve_roster_agent_contract(
             binding,
             contract_authority=contract_authority,
             allow_compatibility_resolver=not requires_revision_authority,
+            allowed_prefixes=import_policy.agent_modules,
+            fail_closed=import_policy.fail_closed,
         )
         contract_ref = contract.id
         version_constraint = f"={contract.version}"
