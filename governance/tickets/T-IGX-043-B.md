@@ -43,8 +43,20 @@ Leg (a) of EQOA-A4-032 (OTLP exporter with an empty endpoint; an open residual, 
 
 ## Lifecycle state
 
-plan_approved
+quality_gate
 
 ## Implementer session
 
 Implementer session: local_809024f4-cd0d-4eb9-82f0-3d232f1c5b79
+
+## Implementation record
+
+Written by the implementer outside the approval lines and outside the plan text.
+
+- Train head merged: `c2a88c344`. The signed ticket and plan were committed on a branch cut from train head `33a91bfdd`, which contains the delegation record commit `881428fb2`.
+- Verification results are in the pull request body. Reds seen in V1, V2 and V5 (16 nodes) are the registered reds that are red at the base too; V8 and V9 end results equal the base results.
+- Deviation from plan section 8 V0 (ii): the reverse-order import of the cleaned product modules exits 1 at the base (circular import `hook_context` / `payloads`, starting from `intergrax.runtime.capacity.production_adapters`), so "all exit 0" does not hold before or after; the exit codes are identical before and after the mechanical commit.
+- MEM-3 isolates the session-storage hole by replacing the user-profile-store admission with a no-op; the plan names the user plugin with trusted evidence for that configuration.
+- No census file needed an edit: the 25 run files show no red beyond the registered `test_package_wiring.py::test_strict_product_package_closure_passes`.
+- Open residuals, not closed by this ticket: A4-032 leg (a) OTLP exporter with an empty endpoint; A4-032 leg (b) and WP2-OBS-02 sandbox composition guard.
+
