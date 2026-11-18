@@ -401,6 +401,34 @@ Retry, failure classification, recovery and HITL semantics beyond what this docu
 
 Skill lifecycle (host-profile scoped installation into the registry projection) is owned by `SkillHostLifecycleService` in `intergrax/skills/host_lifecycle.py`; PDC domain D1 records it as the semantic owner of "Skill lifecycle" in [`PDC_OWNERSHIP_MATRIX.md`](../maintainers/qualification/platform_domain_completeness/PDC_OWNERSHIP_MATRIX.md). Agent distribution consumes skills and does not own them. Catalog, registry and profile roles are described in "SkillCatalog vs SkillRegistry vs SkillProfile" above.
 
+## Execution pin durability and the Redis attestation (T-IGX-043-D)
+
+In production mode (STRICT or PRODUCT composition) the skill execution pin store must be durable. Durability is derived from the backing store, never declared by the pin store itself:
+
+- `DistributedKVStore.survives_process_restart` is a non-abstract property that defaults to `False`. `SqliteDistributedKVStore` declares `True`. This is a claim about the store type and a database file that is reused; the reference composition's default path is a fresh file per process, so recovery across a real restart needs an explicit `db_path` (accepted reference-host limitation).
+- A document store counts as durable only when it implements `ProcessRestartDurableDocumentStore` and its `survives_process_restart` is exactly `True`; a truthy non-bool value does not count.
+- `validate_skill_execution_pinning_durability_for_composition` accepts a pin store only when `is_durable is True`. A KV store that is not durable is refused even when a durable document store is also supplied; there is no silent fallback (KV stays authoritative when both are supplied).
+- `RedisKVStore` reports `survives_process_restart` as `True` only when it was constructed with a typed `KVDurabilityAttestation`. The composition root is `create_redis_integration(..., durability_attestation=...)` (also accepted by `create_redis_kv_store`).
+
+### Attestation shape
+
+`KVDurabilityAttestation` (in `intergrax/distributed/contracts/kv_store.py`) has three fields, all required:
+
+| Field | Meaning |
+|-------|---------|
+| `mechanism` | A `KVDurabilityMechanism` member: `REDIS_AOF_FSYNC_ALWAYS` or `REDIS_AOF_FSYNC_EVERYSEC`. The `everysec` mode can lose up to about one second of acknowledged writes on a crash; that loss window is accepted for pin state only when the attester states this mechanism explicitly. |
+| `attested_by` | Non-empty reference of the party that states persistence is configured on the Redis deployment. |
+| `procedure_ref` | Non-empty repository path or ticket id of the evidence the attester relies on (for example the deployment configuration record showing append-only persistence enabled). |
+
+### Limits of the attestation
+
+- The attestation is a declared claim, not evidence about the Redis server. The code checks the type and that the fields are well formed; it does not contact Redis and does not read the attestation from environment variables or configuration files.
+- No live Redis evidence exists for this claim. Live durability evidence belongs to production qualification and is not produced here.
+- Who may attest Redis durability is an open item owned by the Operator. No authority grant is recorded and this procedure names no authorised role; it states only the attestation shape.
+- The audit reviews each attestation by reading `attested_by` and the document or ticket named in `procedure_ref`, and checks that the mechanism matches the cited configuration.
+
+The sibling stores that still return a literal `True` for `is_durable` (profile resolution, attempt lifecycle, execution terminal, delegated correlation, integration configuration) are not changed by this ticket. A register row is proposed for them in the Enterprise Debt & Exceptions Register (DP-46..DP-53); no such row exists yet.
+
 ## Go deeper
 
 | Depth | Route |
