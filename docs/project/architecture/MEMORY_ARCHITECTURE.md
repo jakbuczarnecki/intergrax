@@ -532,6 +532,8 @@ build_default_memory_control_plane(user_profile_manager=…)
   → DefaultMemoryControlPlane
 ```
 
+**Organization store and session storage admission (PRODUCT or STRICT postures).** `validate_organization_and_session_admission` runs after the user-profile-store admission in `resolve_memory_platform_wiring` and `build_session_manager_from_environment`. Organization memory needs a durable organization profile store: SQLite is admitted; the in-memory store, an unclassifiable store and a missing store are refused (`ORG_STORE_NOT_DURABLE`, `ORG_STORE_MISSING`), and organization memory on the MongoDB document-store branch raises `ORG_STORE_UNSUPPORTED_BACKEND` because no durable document-store organization store exists. Session storage is checked only when persistent user or long-term memory is required: SQLite and plugin storage declaring durable are admitted; in-memory and document-store session storage are refused (`SESSION_STORAGE_NOT_DURABLE`). LAB with BALANCED mode is unchanged. The user-profile-store admission itself stays PRODUCT-only. No trusted qualification evidence is required for organization or session capabilities (limitation, not closure).
+
 Entity temporal, procedural, and long-horizon **default** providers are in-memory reference implementations — **not** durable production stores. Production admission for persistent USER/LTM/STI does not transfer to these specialized surfaces without matrix-backed vendor evidence.
 
 LTM tool: `ltm.write_fact` requires trusted `RequestIdentity` via control plane or explicit extras — **fails closed** without it (`MemoryControlAccessDenied`).

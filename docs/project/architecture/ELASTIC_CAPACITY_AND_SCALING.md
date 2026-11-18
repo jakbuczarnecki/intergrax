@@ -174,13 +174,13 @@ ECP **complements** native autoscalers. It understands harness signals (`GRAPH_B
 
 | Backend | Contract implemented? | Concrete adapter? | Reference `wire_application_scaling()`? | Production evidence? |
 | ------- | --------------------- | ----------------- | --------------------------------------- | ---------------------- |
-| **K8s replicas** | `KubernetesScaler` protocol | `KubernetesDeploymentScaleClient` REST; `InMemoryKubernetesScaler` for CI | **No** - inject via host or `production_adapters_enabled` path | Mock/REST unit tests; live cluster **not** established in public proofs |
-| **Celery workers** | `CeleryScaler` protocol | `CeleryProductionAdapter` (intent counter) | **No** | Gate tests only |
+| **K8s replicas** | `KubernetesScaler` protocol | `KubernetesDeploymentScaleClient` REST; `InMemoryKubernetesScaler` only for the explicit `CapacityBackendPosture.CI_DETERMINISTIC` | **No** - inject via host or `production_adapters_enabled` path | Mock/REST unit tests; live cluster **not** established in public proofs |
+| **Celery workers** | `CeleryScaler` protocol | `CeleryProductionAdapter` (intent counter, reported as `intent_only`; no live Celery scaler exists) | **No** | Gate tests only |
 | **Orchestration ceiling** | `OrchestrationCeilingPatcher` | `BoundedOrchestrationCeilingPatcher` | **Yes** | Gate tests; in-memory only |
 
 **Missing backend behavior:** when `ScalingProvisioner` receives `SCALE_K8S_DEPLOYMENT` or `SCALE_CELERY_WORKERS` without a configured backend, it records failure (`kubernetes backend not configured` / `celery backend not configured`), emits `platform.capacity.scale_failed`, and returns `False` - **no silent success**.
 
-Product hosts may enable `ScalingProfile.production_adapters_enabled` on `ApplicationProfile.PRODUCT` via `resolve_production_capacity_wiring()` - separate from default shared wiring.
+Product hosts may enable `ScalingProfile.production_adapters_enabled` on `ApplicationProfile.PRODUCT` via `resolve_production_capacity_wiring()` - separate from default shared wiring. Without `INTERGRAX_KUBERNETES_URL` the wiring reports `CapacityQualification.UNQUALIFIED_NO_CLUSTER`, builds no adapters and capacity mutations are refused (`GovernedExecutionRequiredError`); the in-memory scaler is selected only through the explicit `CapacityBackendPosture.CI_DETERMINISTIC` and never reports a passed probe. No `CapacityQualification` member claims live Celery scaling; live capacity qualification stays PROD-Q.
 
 ## Scale-down safety (current limitation)
 
@@ -434,8 +434,8 @@ HITL applies when `require_hitl_for_scale_up=true` and plan contains scale-up (`
 | `KubernetesScaler` (Protocol) | Contract in `provisioner.py` |
 | `KubernetesDeploymentScaleClient` | REST GET/PATCH deployment replicas |
 | `KubernetesCloudPlatform` | Integration wrapper |
-| `InMemoryKubernetesScaler` | CI/deterministic when `INTERGRAX_KUBERNETES_URL` unset |
-| `resolve_kubernetes_backend()` | Live when env URL set |
+| `InMemoryKubernetesScaler` | CI/deterministic only for `CapacityBackendPosture.CI_DETERMINISTIC` |
+| `resolve_kubernetes_backend()` | Live when env URL set; raises `CapacityBackendNotConfiguredError` otherwise (default `PRODUCTION` posture) |
 
 #### Celery implementation
 
