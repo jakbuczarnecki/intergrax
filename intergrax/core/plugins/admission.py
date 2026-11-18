@@ -5,15 +5,16 @@
 
 from __future__ import annotations
 
-from collections.abc import Callable, Mapping, Sequence
+from collections.abc import Callable, Mapping
 from dataclasses import dataclass, field
 from datetime import UTC, datetime
 from enum import StrEnum
-from pathlib import Path
 from typing import TYPE_CHECKING, Any, cast
 
 from intergrax.core.distribution.package_identity import normalize_distribution_package_name
 from intergrax.core.plugins.discovery import EntryPointLoadResult, EntryPointSpec
+from intergrax.core.plugins.installed_digest import InstalledDistributionDigestError as InstalledDistributionDigestError
+from intergrax.core.plugins.installed_digest import installed_tree_digest as installed_tree_digest
 
 if TYPE_CHECKING:
     from intergrax.agent_distribution.catalog import CatalogSourceIdentity
@@ -216,72 +217,6 @@ def _default_installed_version(distribution: str) -> str | None:
 
 def _utc_now() -> datetime:
     return datetime.now(UTC)
-
-
-class InstalledDistributionDigestError(ValueError):
-    """An installed file is missing, unreadable or differs from its ``RECORD`` hash (EX-D6-03)."""
-
-
-# ``.dist-info`` files rewritten at install time; compiled caches are never part of the tree digest.
-_INSTALL_TIME_METADATA_FILES = frozenset({"RECORD", "INSTALLER", "REQUESTED", "direct_url.json"})
-
-
-def _excluded_from_tree_digest(relative: str) -> bool:
-    parts = relative.split("/")
-    if "__pycache__" in parts or relative.endswith((".pyc", ".pyo")):
-        return True
-    return len(parts) >= 2 and parts[-2].endswith(".dist-info") and parts[-1] in _INSTALL_TIME_METADATA_FILES
-
-
-def installed_tree_digest(distribution: str, *, search_path: Sequence[str] | None = None) -> str | None:
-    """Deterministic digest of an installed distribution's files, re-hashed from disk (EX-D6-03).
-
-    Every file listed in the distribution's ``RECORD`` (except the install-time metadata files and
-    compiled caches) is read from disk, its sha256 is compared with the ``RECORD`` hash when one is
-    recorded, and the sorted ``relative path`` / ``sha256`` pairs are hashed into one
-    ``sha256:<hex>`` value. This is the packaging convention for the attested ``package_digest`` of a
-    plugin distribution (Q-SUP-04). Returns ``None`` when the distribution is not installed; raises
-    :class:`InstalledDistributionDigestError` for a missing, unreadable or altered file.
-    """
-    import base64
-    import hashlib
-    from importlib.metadata import Distribution
-
-    if search_path is None:
-        found = list(Distribution.discover(name=distribution))
-    else:
-        found = list(Distribution.discover(name=distribution, path=list(search_path)))
-    if not found:
-        return None
-    dist = found[0]
-    files = dist.files
-    if files is None:
-        raise InstalledDistributionDigestError(f"distribution {distribution!r} has no RECORD")
-    lines: list[str] = []
-    for item in files:
-        relative = item.as_posix()
-        if _excluded_from_tree_digest(relative):
-            continue
-        try:
-            content = Path(str(item.locate())).read_bytes()
-        except OSError as exc:
-            raise InstalledDistributionDigestError(
-                f"installed file of {distribution!r} is missing or unreadable: {relative}"
-            ) from exc
-        recorded = item.hash
-        if recorded is not None:
-            if recorded.mode != "sha256":
-                raise InstalledDistributionDigestError(
-                    f"installed file of {distribution!r} has an unsupported RECORD hash: {relative}"
-                )
-            actual = base64.urlsafe_b64encode(hashlib.sha256(content).digest()).rstrip(b"=").decode("ascii")
-            if actual != recorded.value:
-                raise InstalledDistributionDigestError(
-                    f"installed file of {distribution!r} differs from its RECORD hash: {relative}"
-                )
-        lines.append(f"{relative}\0{hashlib.sha256(content).hexdigest()}\n")
-    lines.sort()
-    return "sha256:" + hashlib.sha256("".join(lines).encode("utf-8")).hexdigest()
 
 
 def _normalized_or_none(value: str) -> str | None:
