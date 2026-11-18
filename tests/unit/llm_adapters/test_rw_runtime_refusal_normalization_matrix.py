@@ -12,12 +12,14 @@ because a real SDK stream would have been consumed already. No network, no crede
 from __future__ import annotations
 
 import ast
+import importlib
+import importlib.util
 import io
 import json
 import sys
 from collections.abc import Callable, Iterator
 from pathlib import Path
-from types import SimpleNamespace
+from types import ModuleType, SimpleNamespace
 from typing import Any
 from unittest.mock import MagicMock
 
@@ -51,6 +53,83 @@ def _isolate_provider_modules() -> Iterator[None]:
     for name in set(sys.modules) - before:
         if name.startswith("intergrax.llm_adapters.providers.") and name.endswith("_adapter"):
             sys.modules.pop(name, None)
+
+
+# ------------------------------------------------------------------------------------- optional SDKs
+# CI installs neither ``mistralai`` nor ``cohere`` nor ``google-genai`` nor ``langchain-ollama`` (review finding
+# M-1 of PR #670). The adapters import them at module level (``langchain_ollama`` at construction) and the cells
+# drive them with fake clients, so a missing SDK is replaced by a minimal fake module: the cells run in every
+# profile instead of skipping. With the SDK installed, the real module is used.
+
+
+class _FakeSdkRecord:
+    """Keyword-built stand-in for an SDK model class: fields as attributes, pydantic-style ``model_copy``."""
+
+    def __init__(self, **fields: Any) -> None:
+        self.__dict__.update(fields)
+
+    def model_copy(self, *, update: dict[str, Any]) -> _FakeSdkRecord:
+        return type(self)(**{**self.__dict__, **update})
+
+
+class _FakeSdkPart(_FakeSdkRecord):
+    @classmethod
+    def from_function_call(cls, **fields: Any) -> _FakeSdkPart:
+        return cls(**fields)
+
+    @classmethod
+    def from_function_response(cls, **fields: Any) -> _FakeSdkPart:
+        return cls(**fields)
+
+
+_GENAI_TYPE_NAMES = (
+    "Content",
+    "FunctionDeclaration",
+    "GenerateContentConfig",
+    "HttpOptions",
+    "ModelContent",
+    "Tool",
+    "UserContent",
+)
+
+
+def _fake_sdk_module(name: str, **members: Any) -> ModuleType:
+    module = ModuleType(name)
+    module.__dict__.update(members)
+    return module
+
+
+def _sdk_missing(name: str) -> bool:
+    try:
+        return importlib.util.find_spec(name) is None
+    except (ImportError, ValueError):
+        return True
+
+
+@pytest.fixture(autouse=True)
+def _optional_sdk_fakes(monkeypatch: pytest.MonkeyPatch) -> None:
+    if _sdk_missing("mistralai"):
+        models = _fake_sdk_module("mistralai.models", ChatCompletionResponse=type("ChatCompletionResponse", (), {}))
+        monkeypatch.setitem(
+            sys.modules, "mistralai", _fake_sdk_module("mistralai", Mistral=type("Mistral", (), {}), models=models)
+        )
+        monkeypatch.setitem(sys.modules, "mistralai.models", models)
+    if _sdk_missing("cohere"):
+        monkeypatch.setitem(sys.modules, "cohere", _fake_sdk_module("cohere", ClientV2=type("ClientV2", (), {})))
+    if _sdk_missing("google.genai"):
+        members: dict[str, Any] = {name: type(name, (_FakeSdkRecord,), {}) for name in _GENAI_TYPE_NAMES}
+        genai_types = _fake_sdk_module("google.genai.types", Part=_FakeSdkPart, **members)
+        genai = _fake_sdk_module("google.genai", Client=type("Client", (), {}), types=genai_types)
+        if _sdk_missing("google"):
+            monkeypatch.setitem(sys.modules, "google", _fake_sdk_module("google", genai=genai))
+        else:
+            monkeypatch.setattr(importlib.import_module("google"), "genai", genai, raising=False)
+        monkeypatch.setitem(sys.modules, "google.genai", genai)
+        monkeypatch.setitem(sys.modules, "google.genai.types", genai_types)
+    if _sdk_missing("langchain_ollama"):
+        monkeypatch.setitem(
+            sys.modules, "langchain_ollama", _fake_sdk_module("langchain_ollama", ChatOllama=type("ChatOllama", (), {}))
+        )
 
 
 def _once(value: Any) -> Callable[..., Any]:
@@ -236,7 +315,6 @@ _MISTRAL_FINISH = {"normal": "stop", "length": "length", "content_filter": "cont
 
 
 def _mistral_adapter(complete: Callable[..., Any]) -> Any:
-    pytest.importorskip("mistralai", reason="optional extra llm-mistral")
     from intergrax.llm_adapters.providers.mistral_adapter import MistralChatAdapter
 
     client = MagicMock()
@@ -286,7 +364,6 @@ def _gemini_chunk(signal: str, text: str | None) -> Any:
 
 
 def _gemini_adapter(client: Any) -> Any:
-    pytest.importorskip("google.genai", reason="optional extra llm-gemini")
     from intergrax.llm_adapters.providers.gemini_adapter import GeminiChatAdapter
 
     return GeminiChatAdapter(client=client, model="gemini-2.5-flash")
@@ -312,7 +389,6 @@ _COHERE_FINISH = {"normal": "COMPLETE", "length": "MAX_TOKENS", "content_filter"
 
 
 def _cohere_adapter(client: Any) -> Any:
-    pytest.importorskip("cohere", reason="optional extra llm-cohere-native")
     from intergrax.llm_adapters.providers.cohere_native_adapter import CohereNativeChatAdapter
 
     return CohereNativeChatAdapter(client=client, model="command-r-plus")
