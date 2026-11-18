@@ -9,6 +9,7 @@ In-process fixtures only (in-memory and temporary SQLite stores); no live backen
 from __future__ import annotations
 
 import sqlite3
+from collections.abc import Callable
 from datetime import UTC, datetime
 from pathlib import Path
 
@@ -20,7 +21,7 @@ from intergrax.runtime.nexus.artifacts import retention
 from intergrax.runtime.nexus.artifacts.in_memory_artifact_store import InMemoryArtifactStore
 from intergrax.runtime.nexus.artifacts.models import Artifact
 from intergrax.runtime.nexus.artifacts.sqlite_artifact_store import SQLiteArtifactStore
-from intergrax.runtime.nexus.artifacts.store_base import ArtifactDeletionRefused
+from intergrax.runtime.nexus.artifacts.store_base import ArtifactDeletionRefused, LegalHoldRecord
 
 pytestmark = [pytest.mark.unit]
 
@@ -51,8 +52,8 @@ def _two_holders(store: InMemoryArtifactStore | SQLiteArtifactStore) -> None:
 
 
 def _holders(store: InMemoryArtifactStore | SQLiteArtifactStore) -> dict[str, str]:
-    reader = getattr(store, "legal_holds", None)
-    assert callable(reader), "the store keeps no holder or reason per hold (F-D8-14)"
+    reader: Callable[[str, str], tuple[LegalHoldRecord, ...]] | None = getattr(store, "legal_holds", None)
+    assert reader is not None, "the store keeps no holder or reason per hold (F-D8-14)"
     return {record.placed_by: record.reason for record in reader(_TENANT, "art-1")}
 
 
