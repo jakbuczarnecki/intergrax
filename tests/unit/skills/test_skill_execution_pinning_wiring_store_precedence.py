@@ -102,9 +102,25 @@ class PlainDocumentStore:
         del document
 
 
+class DurableInMemoryKVStore(InMemoryKVStore):
+    """Test-local durable double: declares the process-restart capability (T-IGX-043-D)."""
+
+    @property
+    def survives_process_restart(self) -> bool:
+        return True
+
+
+class DurableInMemoryConditionalDocumentStore(InMemoryConditionalDocumentStore):
+    """Test-local durable double: declares the process-restart capability (T-IGX-043-D)."""
+
+    @property
+    def survives_process_restart(self) -> bool:
+        return True
+
+
 def test_both_backends_resolve_to_kv_store_t1() -> None:
-    kv = InMemoryKVStore()
-    doc = InMemoryConditionalDocumentStore()
+    kv = DurableInMemoryKVStore()
+    doc = DurableInMemoryConditionalDocumentStore()
     wiring = resolve_skill_execution_pinning_wiring(
         production_mode=True,
         kv_store=kv,
@@ -115,7 +131,7 @@ def test_both_backends_resolve_to_kv_store_t1() -> None:
 
 
 def test_both_with_plain_document_store_resolves_to_kv_t2() -> None:
-    kv = InMemoryKVStore()
+    kv = DurableInMemoryKVStore()
     doc = PlainDocumentStore()
     wiring = resolve_skill_execution_pinning_wiring(
         production_mode=True,
@@ -126,8 +142,8 @@ def test_both_with_plain_document_store_resolves_to_kv_t2() -> None:
 
 
 def test_kv_is_write_target_when_both_supplied_t3() -> None:
-    kv = InMemoryKVStore()
-    doc = InMemoryConditionalDocumentStore()
+    kv = DurableInMemoryKVStore()
+    doc = DurableInMemoryConditionalDocumentStore()
     wiring = resolve_skill_execution_pinning_wiring(
         production_mode=True,
         kv_store=kv,
@@ -138,7 +154,7 @@ def test_kv_is_write_target_when_both_supplied_t3() -> None:
 
 
 def test_document_store_only_uses_document_pinning_t4() -> None:
-    doc = InMemoryConditionalDocumentStore()
+    doc = DurableInMemoryConditionalDocumentStore()
     wiring = resolve_skill_execution_pinning_wiring(
         production_mode=True,
         document_store=doc,
@@ -160,9 +176,9 @@ def test_no_stores_in_production_raises_durable_required_t6() -> None:
 
 
 def test_explicit_pinning_store_wins_t7() -> None:
-    explicit = KvSkillExecutionPinningStore(InMemoryKVStore())
-    kv = InMemoryKVStore()
-    doc = InMemoryConditionalDocumentStore()
+    explicit = KvSkillExecutionPinningStore(DurableInMemoryKVStore())
+    kv = DurableInMemoryKVStore()
+    doc = DurableInMemoryConditionalDocumentStore()
     wiring = resolve_skill_execution_pinning_wiring(
         production_mode=True,
         pinning_store=explicit,
