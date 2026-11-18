@@ -157,16 +157,15 @@ class LangChainOllamaAdapter(BaseLLMAdapter):
         # ``ChatOllama`` passes ``client_kwargs`` (the HTTP timeout) to the client it builds at construction,
         # so a call that carries an effective timeout runs on a ``ChatOllama`` built for that call, whose HTTP
         # client is closed after it (EX-D3-01). An injected ``chat`` cannot be rebuilt (fail closed).
+        self.chat = chat if chat is not None else chat_type(**chat_kwargs)
         self._chat_factory: Callable[[float], CallClient[Any]] | None = None
         if chat is None:
-            chat = chat_type(**chat_kwargs)
 
             def _chat_with_timeout(timeout: float) -> CallClient[Any]:
                 built = chat_type(**chat_kwargs, client_kwargs={"timeout": timeout})
                 return CallClient(client=built, release=built._client._client.close)
 
             self._chat_factory = _chat_with_timeout
-        self.chat = chat
         self.defaults = defaults
         self._base_url = base_url
         self._capability_resolver = capability_resolver or OllamaModelCapabilityResolver(

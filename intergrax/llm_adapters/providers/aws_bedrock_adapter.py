@@ -9,7 +9,7 @@ import os
 from collections.abc import Callable, Iterable, Iterator, Sequence
 from dataclasses import dataclass
 from enum import Enum
-from typing import Any, Protocol
+from typing import Any, Protocol, cast
 
 import boto3
 from botocore.config import Config
@@ -144,6 +144,12 @@ class BedrockRuntimeClient(Protocol):
     def converse(self, **kwargs: Any) -> Any: ...
 
     def converse_stream(self, **kwargs: Any) -> Any: ...
+
+
+class _ClosableBedrockRuntimeClient(BedrockRuntimeClient, Protocol):
+    """A Bedrock Runtime client the adapter built itself and closes (a per-call client)."""
+
+    def close(self) -> None: ...
 
 
 class BedrockModelFamily(str, Enum):  # noqa: UP042 - str-mixin kept for compatibility
@@ -528,18 +534,24 @@ class BedrockChatAdapter(BaseLLMAdapter):
         # cannot be rebuilt; with one, a call that carries a timeout is refused (fail closed).
         self._client_factory: Callable[[float], CallClient[BedrockRuntimeClient]] | None = None
         if client is None:
-            client = boto3.client(
-                service_name="bedrock-runtime",
-                region_name=resolved_region,
+            client = cast(
+                BedrockRuntimeClient,
+                boto3.client(
+                    service_name="bedrock-runtime",
+                    region_name=resolved_region,
+                ),
             )
 
             def _client_with_timeout(timeout: float) -> CallClient[BedrockRuntimeClient]:
-                built = boto3.client(
-                    service_name="bedrock-runtime",
-                    region_name=resolved_region,
-                    config=Config(connect_timeout=timeout, read_timeout=timeout),
+                built = cast(
+                    _ClosableBedrockRuntimeClient,
+                    boto3.client(
+                        service_name="bedrock-runtime",
+                        region_name=resolved_region,
+                        config=Config(connect_timeout=timeout, read_timeout=timeout),
+                    ),
                 )
-                return CallClient(client=built, release=built.close)
+                return CallClient[BedrockRuntimeClient](client=built, release=built.close)
 
             self._client_factory = _client_with_timeout
         self.client: BedrockRuntimeClient = client
