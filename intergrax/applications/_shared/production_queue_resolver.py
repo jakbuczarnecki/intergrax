@@ -8,7 +8,7 @@ import os
 from enum import Enum
 
 
-class ProductionQueueBackend(str, Enum):
+class ProductionQueueBackend(str, Enum):  # noqa: UP042
     INLINE = "inline"
     CELERY = "celery"
     RABBITMQ = "rabbitmq"

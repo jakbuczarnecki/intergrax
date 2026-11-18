@@ -1,9 +1,8 @@
 # © Artur Czarnecki. All rights reserved.
 
 import pytest
-
-from intergrax.applications.contracts.environment_profile import ApplicationEnvironmentProfile
 from intergrax.applications._shared.scaling_wiring import wire_application_scaling
+from intergrax.applications.contracts.environment_profile import ApplicationEnvironmentProfile
 from intergrax.runtime.capacity import ScalingTarget
 from intergrax.runtime.capacity.ahi_bridge import scaling_action_from_ahi_proposal
 from intergrax.runtime.capacity.collector import CapacitySignalCollector

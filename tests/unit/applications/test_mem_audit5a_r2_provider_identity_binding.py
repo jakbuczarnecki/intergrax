@@ -7,36 +7,25 @@ from __future__ import annotations
 from pathlib import Path
 
 import pytest
-
 from intergrax.applications._shared.memory_provider_admission import (
     validate_memory_platform_wiring_admission,
 )
 from intergrax.applications._shared.memory_wiring import (
-    MemoryPlatformWiring,
     resolve_memory_platform_wiring,
 )
 from intergrax.applications.contracts.environment_profile import (
     ApplicationEnvironmentProfile,
-    MemoryProfile,
 )
 from intergrax.integrations.registry.profile import IntegrationProfile
+from intergrax.memory.contracts.memory_store_creation_context import (
+    UserProfileStoreCreationContext,
+)
 from intergrax.memory.contracts.provider_admission import (
     MemoryProviderAdmissionError,
     MemoryProviderAdmissionReasonCode,
     MemoryProviderDurability,
-    evaluate_production_persistent_user_profile_admission,
     classify_user_profile_store_provider,
-)
-from intergrax.memory.contracts.provider_identity import (
-    BUILTIN_SQLITE_USER_PROFILE_ID,
-    MemoryProviderIdentity,
-    MemoryProviderIdentitySource,
-    builtin_user_profile_store_identity,
-    plugin_user_profile_store_identity,
-)
-from intergrax.memory.contracts.provider_qualification import (
-    MemoryProviderCapabilityKind,
-    MemoryProviderQualificationStatus,
+    evaluate_production_persistent_user_profile_admission,
 )
 from intergrax.memory.contracts.provider_durability_evidence import (
     MemoryProviderDurabilityEvidence,
@@ -45,26 +34,33 @@ from intergrax.memory.contracts.provider_durability_evidence import (
     MemoryProviderDurabilityProofKind,
     MemoryProviderTrustedDurabilityStatus,
 )
+from intergrax.memory.contracts.provider_identity import (
+    BUILTIN_SQLITE_USER_PROFILE_ID,
+    MemoryProviderIdentity,
+    MemoryProviderIdentitySource,
+    builtin_user_profile_store_identity,
+)
+from intergrax.memory.contracts.provider_qualification import (
+    MemoryProviderCapabilityKind,
+    MemoryProviderQualificationStatus,
+)
 from intergrax.memory.contracts.provider_qualification_evidence import (
     MemoryProviderQualificationEvidence,
-    MemoryProviderQualificationEvidenceLookup,
     MemoryProviderQualificationEvidenceResolveStatus,
 )
-from intergrax.memory.provider_qualification import InMemoryMemoryProviderDurabilityEvidenceRegistry
-from intergrax.memory.provider_qualification import InMemoryMemoryProviderQualificationEvidenceRegistry
+from intergrax.memory.provider_qualification import (
+    InMemoryMemoryProviderDurabilityEvidenceRegistry,
+    InMemoryMemoryProviderQualificationEvidenceRegistry,
+)
 from intergrax.memory.stores.sqlite_user_profile_store import SQLiteUserProfileStore
 from intergrax.memory.user_profile_memory import UserIdentity, UserPreferences, UserProfile
-from intergrax.memory.contracts.memory_store_creation_context import (
-    UserProfileStoreCreationContext,
-)
 from intergrax.memory.user_profile_store import UserProfileStore
-from intergrax.runtime.nexus.session.in_memory_session_storage import InMemorySessionStorage
 from tests.unit.applications.test_mem_audit5a_production_provider_admission import (
-    _DurableSelfCertifiedUserProfilePlugin,
-    _SelfCertifiedDurableUserProfileStore,
     _durability_for_provider,
+    _DurableSelfCertifiedUserProfilePlugin,
     _evidence_for_provider,
     _persistent_memory_profile,
+    _SelfCertifiedDurableUserProfileStore,
 )
 
 pytestmark = [pytest.mark.unit, pytest.mark.gate]
@@ -298,10 +294,7 @@ def test_duplicate_qualification_evidence_is_ambiguous_fail_closed() -> None:
         missing_durability,
     )
     assert not evaluation.admitted
-    assert (
-        evaluation.reason_code
-        is MemoryProviderAdmissionReasonCode.QUALIFICATION_EVIDENCE_MISMATCH
-    )
+    assert evaluation.reason_code is MemoryProviderAdmissionReasonCode.QUALIFICATION_EVIDENCE_MISMATCH
 
 
 def test_overlay_replaces_store_and_identity_together(tmp_path: Path) -> None:

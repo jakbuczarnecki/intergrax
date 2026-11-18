@@ -12,14 +12,14 @@ from intergrax.applications._shared.production_queue_resolver import (
     resolve_production_queue_backend,
 )
 from intergrax.applications._shared.task_control_wiring import TaskEnricher
+from intergrax.distributed.contracts.kv_store import DistributedKVStore
 from intergrax.fastapi_core.execution.adapters.adapter import ExecutionAdapter
 from intergrax.fastapi_core.runs.default_service import DefaultRunService
-from intergrax.distributed.contracts.kv_store import DistributedKVStore
 from intergrax.runtime.execution.host_task import HostTaskExecutionPort
-from intergrax.runtime.registry.agent_registry_read import AgentRegistryRead
 from intergrax.runtime.observability.causal_evidence_persistence import (
     CausalEvidencePersistence,
 )
+from intergrax.runtime.registry.agent_registry_read import AgentRegistryRead
 from intergrax.runtime.task.host_task_execution_run_adapter import (
     HostTaskExecutionRunAdapter,
 )
