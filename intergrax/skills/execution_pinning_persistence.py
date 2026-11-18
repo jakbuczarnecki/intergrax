@@ -9,11 +9,17 @@ import json
 from typing import Any
 
 from intergrax.contracts.execution_identity import ExecutionId, validate_execution_id
-from intergrax.distributed.contracts.kv_store import DistributedKVStore
+from intergrax.distributed.contracts.kv_store import DistributedKVStore, kv_store_survives_process_restart
 from intergrax.integrations.contracts.document_store import (
     ConditionalDocumentStore,
     DocumentRecord,
     DocumentStore,
+)
+from intergrax.integrations.contracts.document_store_process_durability import (
+    ProcessRestartDurableDocumentStore,
+)
+from intergrax.skills.contracts.skill_runtime_binding_metadata import (
+    SkillRuntimeBindingMetadata,
 )
 from intergrax.skills.contribution_provenance import (
     SkillContributionKind,
@@ -25,9 +31,6 @@ from intergrax.skills.core.version_binding import (
     ResolvedSkillRole,
     SkillVersionResolutionMode,
 )
-from intergrax.skills.contracts.skill_runtime_binding_metadata import (
-    SkillRuntimeBindingMetadata,
-)
 from intergrax.skills.execution_binding import (
     BINDING_INTEGRITY_MANIFEST_OBSERVATION_V1,
     SkillExecutionBinding,
@@ -35,7 +38,7 @@ from intergrax.skills.execution_binding import (
     SkillExecutionPinningStorageError,
     bindings_equivalent_for_pinning,
 )
-from intergrax.skills.resolver import ResolvedSkillPack, SkillResolutionError
+from intergrax.skills.resolver import ResolvedSkillPack
 
 _PINNING_KV_PREFIX = "skill_execution_pinning"
 _PINNING_DOCUMENT_PARTITION_PREFIX = "intergrax.skill_execution_pinning.v1"
@@ -138,19 +141,13 @@ def _binding_storage_payload(binding: SkillExecutionBinding) -> dict[str, Any]:
         "execution_id": str(binding.execution_id),
         "configured_skill_ids": list(binding.configured_skill_ids),
         "resolved_pack": _pack_to_dict(binding.resolved_pack),
-        "contribution_provenance": [
-            _provenance_to_dict(item) for item in binding.contribution_provenance
-        ],
-        "observed_manifests": [
-            json.loads(manifest.model_dump_json()) for manifest in binding.observed_manifests
-        ],
+        "contribution_provenance": [_provenance_to_dict(item) for item in binding.contribution_provenance],
+        "observed_manifests": [json.loads(manifest.model_dump_json()) for manifest in binding.observed_manifests],
         "runtime_content_digests": [
-            {"skill_id": skill_id, "content_digest": digest}
-            for skill_id, digest in binding.runtime_content_digests
+            {"skill_id": skill_id, "content_digest": digest} for skill_id, digest in binding.runtime_content_digests
         ],
         "observed_runtime_binding_metadata": [
-            _runtime_binding_metadata_to_dict(item)
-            for item in binding.observed_runtime_binding_metadata
+            _runtime_binding_metadata_to_dict(item) for item in binding.observed_runtime_binding_metadata
         ],
         "binding_integrity_version": binding.binding_integrity_version,
         "content_bound_skill_ids": list(binding.content_bound_skill_ids),
@@ -191,18 +188,11 @@ def decode_skill_execution_binding(raw: bytes) -> SkillExecutionBinding:
         execution_id = validate_execution_id(str(binding_raw["execution_id"]))
         configured_skill_ids = tuple(str(item) for item in binding_raw["configured_skill_ids"])
         resolved_pack = _pack_from_dict(binding_raw["resolved_pack"])
-        provenance = tuple(
-            _provenance_from_dict(item) for item in binding_raw["contribution_provenance"]
-        )
-        manifests = tuple(
-            SkillManifest.model_validate(item) for item in binding_raw["observed_manifests"]
-        )
+        provenance = tuple(_provenance_from_dict(item) for item in binding_raw["contribution_provenance"])
+        manifests = tuple(SkillManifest.model_validate(item) for item in binding_raw["observed_manifests"])
         digest_items = binding_raw.get("runtime_content_digests", [])
         runtime_content_digests = tuple(
-            sorted(
-                (str(item["skill_id"]), str(item["content_digest"]))
-                for item in digest_items
-            ),
+            sorted((str(item["skill_id"]), str(item["content_digest"])) for item in digest_items),
         )
         binding_integrity_version = str(
             binding_raw.get(
@@ -211,17 +201,12 @@ def decode_skill_execution_binding(raw: bytes) -> SkillExecutionBinding:
             ),
         )
         metadata_raw = binding_raw.get("observed_runtime_binding_metadata", [])
-        observed_runtime_binding_metadata = tuple(
-            _runtime_binding_metadata_from_dict(item) for item in metadata_raw
-        )
+        observed_runtime_binding_metadata = tuple(_runtime_binding_metadata_from_dict(item) for item in metadata_raw)
         content_bound_raw = binding_raw.get("content_bound_skill_ids", [])
         content_bound_skill_ids = tuple(str(item) for item in content_bound_raw)
         witness_raw = binding_raw.get("registry_content_witness_digests", [])
         registry_content_witness_digests = tuple(
-            sorted(
-                (str(item["skill_id"]), str(item["content_digest"]))
-                for item in witness_raw
-            ),
+            sorted((str(item["skill_id"]), str(item["content_digest"])) for item in witness_raw),
         )
     except (KeyError, TypeError, ValueError) as exc:
         raise SkillExecutionPinningStorageError(
@@ -289,7 +274,7 @@ class KvSkillExecutionPinningStore:
 
     @property
     def is_durable(self) -> bool:
-        return True
+        return kv_store_survives_process_restart(self._kv_store)
 
     def _idempotent_pin_after_uncertain_write(
         self,
@@ -386,7 +371,10 @@ class DocumentStoreSkillExecutionPinningStore:
 
     @property
     def is_durable(self) -> bool:
-        return True
+        # Strict read: the helper in document_store_process_durability applies bool(...) and would
+        # accept a truthy non-bool, so the capability is read here and must be exactly True.
+        store = self._document_store
+        return isinstance(store, ProcessRestartDurableDocumentStore) and store.survives_process_restart is True
 
     def _idempotent_pin_after_uncertain_document_write(
         self,
