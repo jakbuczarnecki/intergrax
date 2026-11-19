@@ -8,8 +8,6 @@ from dataclasses import dataclass
 from unittest.mock import AsyncMock
 
 import pytest
-
-from testing_support.nexus_handle_task_impl_stubs import with_runtime_event_metric_scope
 from intergrax.contracts.agent_execution_result import (
     AgentExecutionResult,
     AgentExecutionStatus,
@@ -36,18 +34,13 @@ from intergrax.runtime.execution.active_execution_budget import (
 )
 from intergrax.runtime.execution.agentic import AgentExecutor
 from intergrax.runtime.execution.facade import Execution
-from testing_support.inference_governance_wiring import (
-    default_test_inference_evidence_persistence,
-    governed_inference_executor,
-    governed_root_execution_options,
-)
+from intergrax.runtime.execution.identity_authority import RootTaskIdentity
 from intergrax.runtime.execution.orchestration import (
     execute_root_task,
     resolve_root_task_identity,
 )
 from intergrax.runtime.execution.request import ExecutionCapability, ExecutionRequest
 from intergrax.runtime.execution.result import ExecutionResult, ExecutionStatus
-from intergrax.runtime.execution.identity_authority import RootTaskIdentity
 from intergrax.runtime.execution.runtime import (
     ExecutionRuntime,
     RootExecutionContext,
@@ -62,10 +55,16 @@ from intergrax.runtime.nexus.budget.budget_models import RunBudget
 from intergrax.runtime.nexus.nexus_loop import NexusLoop
 from intergrax.runtime.nexus.responses.response_schema import RuntimeRequest
 from intergrax.runtime.registry.agent_registry import AgentRegistry
+from intergrax.runtime.task.task import Task, TaskContext, TaskResult, TaskState
 from intergrax.runtime.task.task_result_authoritative_exposure_defaults import (
     terminal_task_result_exposure_no_decision_gate,
 )
-from intergrax.runtime.task.task import Task, TaskContext, TaskResult, TaskState
+from testing_support.inference_governance_wiring import (
+    default_test_inference_evidence_persistence,
+    governed_inference_executor,
+    governed_root_execution_options,
+)
+from testing_support.nexus_handle_task_impl_stubs import with_runtime_event_metric_scope
 
 pytestmark = pytest.mark.unit
 
@@ -95,14 +94,11 @@ class StructuredProbeAdapter:
 
     def generate_structured(self, messages, output_model, **kwargs):
         self.probe["adapter_run_id"] = kwargs.get("run_id")
-        self.probe["run_id_ctx"], self.probe["attempt_id_ctx"] = (
-            require_active_execution_identity()
-        )
+        self.probe["run_id_ctx"], self.probe["attempt_id_ctx"] = require_active_execution_identity()
         self.probe["execution_id"] = require_active_execution_id()
         self.probe["authority"] = require_active_execution_authority()
         budget = peek_active_execution_budget()
         self.probe["budget"] = budget
-        from intergrax.llm_adapters.contracts.llm_adapter import LLMStructuredResult
         from intergrax.llm_adapters._shared.adapter_response_builders import (
             build_adapter_response,
         )
@@ -110,9 +106,7 @@ class StructuredProbeAdapter:
             LLMStructuredResult,
         )
 
-        return LLMStructuredResult(
-            parsed=self._parsed, response=build_adapter_response(content="")
-        )
+        return LLMStructuredResult(parsed=self._parsed, response=build_adapter_response(content=""))
 
     def generate_with_tools(self, messages, tools_schema, **kwargs):
         raise AssertionError("generate_with_tools must not be called")
@@ -309,7 +303,7 @@ async def test_root_lifecycle_shape_identical_across_strategies() -> None:
         )
 
     parsed = RiskAssessment(risk="low")
-    adapter = StructuredProbeAdapter(parsed)
+    StructuredProbeAdapter(parsed)
 
     class InferenceProbeExecutor:
         async def execute(
@@ -593,9 +587,7 @@ async def test_resume_root_execution_id_matches_identity_through_lifecycle(
     assert historical_root_id != identity.execution_id
     assert task.runtime.orchestration.runtime_checkpoint is not None
     execution_tree = task.runtime.orchestration.runtime_checkpoint.execution_tree
-    root_entries = [
-        entry for entry in execution_tree.entries if entry.parent_execution_id is None
-    ]
+    root_entries = [entry for entry in execution_tree.entries if entry.parent_execution_id is None]
     assert len(root_entries) == 1
     assert root_entries[0].execution_id == identity.execution_id
     assert captured["active_execution_id"] == identity.execution_id

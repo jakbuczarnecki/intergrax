@@ -4,34 +4,30 @@ from __future__ import annotations
 
 import inspect
 from pathlib import Path
-from unittest.mock import AsyncMock, MagicMock, patch
-
-from pathlib import Path
+from unittest.mock import AsyncMock, patch
 
 import pytest
-
-from intergrax.contracts.delegation_authority import ParentExecutionAuthority
 from intergrax.contracts.execution_identity import (
-    mint_attempt_id,
     mint_execution_id,
     mint_run_id,
     mint_task_id,
     validate_execution_id,
 )
 from intergrax.runtime.execution.facade import Execution as ExecutionFacade
+from intergrax.runtime.execution.request import ExecutionCapability, ExecutionRequest
 from intergrax.runtime.execution.strategy import ExecutionStrategy, StrategyResolver
 from intergrax.runtime.execution.strategy_router import StrategyExecutionRouter
-from intergrax.runtime.execution.request import ExecutionCapability, ExecutionRequest
 from intergrax.runtime.execution.task_adapter import TaskExecutionInput
-from tests.fixtures.harness_host_task_execution import (
-    build_harness_environment_host_task_execution,
-)
 from intergrax.runtime.nexus.nexus_loop import NexusLoop
 from intergrax.runtime.registry.agent_registry import AgentRegistry
 from intergrax.runtime.task.task import Task, TaskContext, TaskResult, TaskState
 from intergrax.runtime.task.task_result_authoritative_exposure_defaults import (
     terminal_task_result_exposure_no_decision_gate,
 )
+from tests.fixtures.harness_host_task_execution import (
+    build_harness_environment_host_task_execution,
+)
+
 from local_workspace_application.host.environment_profile import (
     build_local_workspace_environment_profile,
 )
@@ -95,9 +91,7 @@ async def test_lkw_application_root_uses_canonical_execution_facade() -> None:
             await executor.execute(task)
 
     assert facade_calls == 1
-    factory_source = (
-        Path(__file__).resolve().parents[2] / "host" / "factory.py"
-    ).read_text(encoding="utf-8")
+    factory_source = (Path(__file__).resolve().parents[2] / "host" / "factory.py").read_text(encoding="utf-8")
     assert "runtime.execution" in factory_source
     assert "build_lkw_host_task_execution" not in factory_source
     assert "UnifiedTaskRunner" not in factory_source.split("lkw_task_executor", 1)[0]
@@ -146,8 +140,6 @@ async def test_lkw_search_reaches_strategy_router_with_agentic_capability() -> N
         context=TaskContext(capability="local.workspace.search"),
     )
     captured: dict[str, object] = {}
-
-    original_execute = StrategyExecutionRouter.execute
 
     async def _capture_execute(
         self: StrategyExecutionRouter[TaskExecutionInput, TaskResult, TaskResult],
@@ -302,9 +294,7 @@ def test_lkw_task_executor_has_no_nexus_surface() -> None:
 
 @pytest.mark.unit
 def test_lkw_factory_wires_executor_without_nexus_and_router_with_registry() -> None:
-    factory_source = (
-        Path(__file__).resolve().parents[2] / "host" / "factory.py"
-    ).read_text(encoding="utf-8")
+    factory_source = (Path(__file__).resolve().parents[2] / "host" / "factory.py").read_text(encoding="utf-8")
     executor_block = factory_source.split("lkw_task_executor = LocalWorkspaceTaskExecutor", 1)[1]
     assert "nexus_loop=" not in executor_block.split(")", 1)[0]
     router_block = factory_source.split("mount_local_workspace_routes(", 1)[1]

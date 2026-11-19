@@ -14,16 +14,14 @@ from dataclasses import dataclass
 from pathlib import Path
 
 import pytest
-
-from intergrax.runtime.nexus.agents.agent_engine import AgentEngine
 from intergrax.contracts.agent_execution_result import AgentExecutionResult, AgentExecutionStatus
 from intergrax.contracts.decision_checkpoint import (
     DecisionCheckpointState,
     decision_checkpoint_state,
 )
 from intergrax.contracts.decision_finalization import (
-    DecisionFinalizeGuardState,
     DecisionFinalizationKey,
+    DecisionFinalizeGuardState,
     decision_finalization_key,
     initial_decision_finalize_guard,
 )
@@ -73,7 +71,6 @@ from intergrax.runtime.execution.active_execution_work_port import (
 )
 from intergrax.runtime.execution.budget.consumption import consume_llm_call
 from intergrax.runtime.execution.budget.ledger import create_execution_budget_ledger
-from intergrax.runtime.execution.child import ChildExecutionRunner
 from intergrax.runtime.execution.decision_checkpoint_persistence import (
     DecisionCheckpointPersistence,
     load_decision_checkpoint,
@@ -81,6 +78,9 @@ from intergrax.runtime.execution.decision_checkpoint_persistence import (
 )
 from intergrax.runtime.execution.decision_lifecycle_host import CanonicalDecisionLifecycleHost
 from intergrax.runtime.execution.execution_work_port import child_execution_work_port
+from intergrax.runtime.execution.harness_task_execution_port import (
+    build_harness_root_task_execution_port,
+)
 from intergrax.runtime.execution.orchestration import OrchestrationExecutor
 from intergrax.runtime.execution.request import ExecutionRequest as NeutralExecutionRequest
 from intergrax.runtime.execution.runtime import (
@@ -104,6 +104,7 @@ from intergrax.runtime.long_running.execution_tree_checkpoint import (
 from intergrax.runtime.long_running.models import TaskCheckpoint
 from intergrax.runtime.long_running.runtime_checkpoint import RuntimeCheckpoint
 from intergrax.runtime.long_running.store import SQLiteTaskCheckpointStore
+from intergrax.runtime.nexus.agents.agent_engine import AgentEngine
 from intergrax.runtime.nexus.budget.budget_models import RunBudget
 from intergrax.runtime.nexus.execution.execution_graph import (
     ExecutionGraph,
@@ -115,12 +116,9 @@ from intergrax.runtime.nexus.planning.task_planner import NexusPlan, PlanStep
 from intergrax.runtime.nexus.retry.retry_engine import RetryEngine, RetryPolicy
 from intergrax.runtime.nexus.task_classifier import TaskClassification
 from intergrax.runtime.registry.agent_registry import AgentRegistry
+from intergrax.runtime.task.task import Task, TaskContext, TaskResult, TaskState
 from intergrax.runtime.task.task_result_authoritative_exposure_defaults import (
     terminal_task_result_exposure_no_decision_gate,
-)
-from intergrax.runtime.task.task import Task, TaskContext, TaskResult, TaskState
-from intergrax.runtime.execution.harness_task_execution_port import (
-    build_harness_root_task_execution_port,
 )
 from intergrax.runtime.task.unified_task_runner import UnifiedTaskRunner
 from testing_support.admitted_root_governance_identity import (
@@ -220,7 +218,7 @@ class _GatedCountingAgentEngine(AgentEngine):
         agent_id = request.agent_id
         if agent_id in self._counts:
             self._counts[agent_id] += 1
-        execution_id = require_active_execution_id()
+        require_active_execution_id()
         consume_llm_call()
         authority = require_active_execution_authority()
         self._authority_observed.append(authority is not None)
@@ -299,9 +297,7 @@ class _GraphOrchestrationBackend:
         del run_id, attempt_id
         orchestration_child_id = require_active_execution_id()
         self._capture.orchestration_child_execution_id = orchestration_child_id
-        self._capture.authority_observed_during_orchestration = (
-            require_active_execution_authority() is not None
-        )
+        self._capture.authority_observed_during_orchestration = require_active_execution_authority() is not None
         apply_runtime_checkpoint_to_task(
             task,
             RuntimeCheckpoint(
@@ -531,9 +527,7 @@ class _DecisionHostedOrchestrationDelegate:
             TaskResult,
             TaskResult,
         ],
-        checkpoint_access: ActiveDecisionCheckpointPersistenceBinding[
-            _RecordingDecisionCheckpointPersistence
-        ],
+        checkpoint_access: ActiveDecisionCheckpointPersistenceBinding[_RecordingDecisionCheckpointPersistence],
         gate_state: _GateState,
     ) -> None:
         self._task = task
@@ -741,11 +735,7 @@ async def test_decision_orchestration_checkpoint_recovery_participation(
     assert entry_b_after is not None
     assert entry_b_after.execution_id == execution_b_before
 
-    root_entries = [
-        entry
-        for entry in runtime_after.execution_tree.entries
-        if entry.parent_execution_id is None
-    ]
+    root_entries = [entry for entry in runtime_after.execution_tree.entries if entry.parent_execution_id is None]
     assert len(root_entries) == 1
     resumed_root = root_entries[0].execution_id
     assert resumed_root != orchestration_root_before
@@ -775,26 +765,11 @@ async def test_decision_orchestration_checkpoint_recovery_participation(
     assert restored_decision is not None
     assert restored_decision == saved_decision
     assert restored_decision.lifecycle.stage == DecisionLifecycleStage.VERIFICATION
-    assert (
-        restored_decision.lifecycle.identity.decision_id
-        == saved_decision.lifecycle.identity.decision_id
-    )
-    assert (
-        restored_decision.lifecycle.identity.version
-        == saved_decision.lifecycle.identity.version
-    )
-    assert (
-        restored_decision.lifecycle.transition_index
-        == saved_decision.lifecycle.transition_index
-    )
-    assert (
-        restored_decision.lifecycle.identity.execution.execution_id
-        == hosting_root_execution_id
-    )
-    assert (
-        restored_decision.lifecycle.identity.execution.execution_id
-        != resumed_root
-    )
+    assert restored_decision.lifecycle.identity.decision_id == saved_decision.lifecycle.identity.decision_id
+    assert restored_decision.lifecycle.identity.version == saved_decision.lifecycle.identity.version
+    assert restored_decision.lifecycle.transition_index == saved_decision.lifecycle.transition_index
+    assert restored_decision.lifecycle.identity.execution.execution_id == hosting_root_execution_id
+    assert restored_decision.lifecycle.identity.execution.execution_id != resumed_root
 
     _assert_checkpoint_separation(saved_decision, loaded.runtime)
 
@@ -1011,20 +986,26 @@ def test_child_execution_runner_used_by_work_port() -> None:
 def _class_source(tree: ast.Module, class_name: str) -> str:
     for node in tree.body:
         if isinstance(node, ast.ClassDef) and node.name == class_name:
-            return ast.get_source_segment(
-                Path(__file__).read_text(encoding="utf-8"),
-                node,
-            ) or ""
+            return (
+                ast.get_source_segment(
+                    Path(__file__).read_text(encoding="utf-8"),
+                    node,
+                )
+                or ""
+            )
     raise AssertionError(f"class not found: {class_name}")
 
 
 def _function_source(tree: ast.Module, function_name: str) -> str:
     for node in tree.body:
         if isinstance(node, (ast.FunctionDef, ast.AsyncFunctionDef)) and node.name == function_name:
-            return ast.get_source_segment(
-                Path(__file__).read_text(encoding="utf-8"),
-                node,
-            ) or ""
+            return (
+                ast.get_source_segment(
+                    Path(__file__).read_text(encoding="utf-8"),
+                    node,
+                )
+                or ""
+            )
     raise AssertionError(f"function not found: {function_name}")
 
 
@@ -1036,9 +1017,7 @@ def test_main_recovery_proof_avoids_manual_resume_helpers() -> None:
         "test_decision_orchestration_checkpoint_recovery_participation",
     )
     for token in _FORBIDDEN_MAIN_PROOF_RECOVERY_CALLS:
-        assert token not in proof_source, (
-            f"main DS-NEXUS-02 proof must not call {token!r}"
-        )
+        assert token not in proof_source, f"main DS-NEXUS-02 proof must not call {token!r}"
 
 
 def test_decision_facing_code_does_not_invoke_recovery() -> None:
@@ -1050,6 +1029,4 @@ def test_decision_facing_code_does_not_invoke_recovery() -> None:
     ):
         class_source = _class_source(tree, class_name)
         for token in _FORBIDDEN_DECISION_RECOVERY_TOKENS:
-            assert token not in class_source, (
-                f"{class_name} must not reference recovery token {token!r}"
-            )
+            assert token not in class_source, f"{class_name} must not reference recovery token {token!r}"

@@ -9,8 +9,6 @@ import logging
 import os
 from pathlib import Path
 
-logger = logging.getLogger(__name__)
-
 from intergrax.integrations.providers.relational_store.sqlite.paths import (
     DEFAULT_TASK_MEMORY_DB,
     ENV_TASK_MEMORY_DB,
@@ -20,6 +18,8 @@ from intergrax.runtime.task_memory.persistence_contract import TaskMemoryPersist
 from intergrax.runtime.task_memory.stores.sqlite_task_memory_store import (
     SQLiteTaskMemoryStore,
 )
+
+logger = logging.getLogger(__name__)
 
 __all__ = [
     "DEFAULT_TASK_MEMORY_DB",

@@ -6,16 +6,15 @@ import json
 import time
 
 import pytest
-
-pytestmark = pytest.mark.no_ci
 from fastapi.testclient import TestClient
-
 from intergrax.debug.app import create_debug_app
 from intergrax.runtime.interactions.http_intake import parse_inbound_http_body
 from intergrax.runtime.interactions.verification.slack_signature import SlackSignatureVerifier
 from intergrax.runtime.registry.agent_registry import AgentRegistry
 from intergrax.runtime.task.task import TaskState
 from testing_support.uaep_gate_stubs import UaepPipelineStubAgent
+
+pytestmark = pytest.mark.no_ci
 
 
 def _signed_slack_body(*, secret: str, payload: dict) -> tuple[bytes, dict[str, str]]:
@@ -160,17 +159,15 @@ def test_debug_interaction_intake_with_verifier():
     secret = "test_signing_secret"
     verifier = SlackSignatureVerifier(signing_secret=secret, enabled=True)
     from intergrax.debug.interaction_service import DebugInteractionIntakeService
+    from intergrax.runtime.interactions.task_executor import HostTaskExecutionExecutor
+    from intergrax.runtime.nexus.nexus_loop import NexusLoop
     from testing_support.nexus_host_task_execution import (
         build_certified_internal_test_host_task_execution,
     )
-    from intergrax.runtime.interactions.task_executor import HostTaskExecutionExecutor
-    from intergrax.runtime.nexus.nexus_loop import NexusLoop
 
     loop = NexusLoop(registry)
     service = DebugInteractionIntakeService(
-        task_executor=HostTaskExecutionExecutor(
-            build_certified_internal_test_host_task_execution(loop)
-        ),
+        task_executor=HostTaskExecutionExecutor(build_certified_internal_test_host_task_execution(loop)),
         verifier=verifier,
     )
     app = create_debug_app(registry=registry, interaction_service=service, nexus_loop=loop)

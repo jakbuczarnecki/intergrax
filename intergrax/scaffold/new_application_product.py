@@ -17,12 +17,9 @@ def manifest_py(names: ScaffoldApplicationNames, specs: list[ScaffoldAgentSpec])
     short = names.short
     route_prefix = names.route_prefix
     env_prefix_value = names.env_prefix
-    agent_imports = "\n".join(
-        f"from {s.module} import {s.class_name}" for s in specs
-    )
+    agent_imports = "\n".join(f"from {s.module} import {s.class_name}" for s in specs)
     factory_imports = "\n".join(
-        f"from {pkg}.host.agent_factories import build_{short}_{s.slug}_from_context"
-        for s in specs
+        f"from {pkg}.host.agent_factories import build_{short}_{s.slug}_from_context" for s in specs
     )
     mounts = []
     for i, s in enumerate(specs):
@@ -79,10 +76,7 @@ def manifest_py(names: ScaffoldApplicationNames, specs: list[ScaffoldAgentSpec])
         APPLICATION_MANIFEST = build_{short}_manifest()
         '''
     )
-    return (
-        body.replace("# __AGENT_IMPORTS__", agent_imports)
-        .replace("# __FACTORY_IMPORTS__", factory_imports)
-    )
+    return body.replace("# __AGENT_IMPORTS__", agent_imports).replace("# __FACTORY_IMPORTS__", factory_imports)
 
 
 def settings_py(names: ScaffoldApplicationNames) -> str:
@@ -253,9 +247,7 @@ def settings_py(names: ScaffoldApplicationNames) -> str:
 def agent_factories_py(names: ScaffoldApplicationNames, specs: list[ScaffoldAgentSpec]) -> str:
     pkg = names.pkg
     short = names.short
-    agent_imports = "\n".join(
-        f"from {s.module} import {s.class_name}" for s in specs
-    )
+    agent_imports = "\n".join(f"from {s.module} import {s.class_name}" for s in specs)
     builders_const = names.builders_const
     factories = []
     for s in specs:
@@ -275,8 +267,9 @@ def agent_factories_py(names: ScaffoldApplicationNames, specs: list[ScaffoldAgen
             ).strip()
         )
     factories_block = "\n\n\n".join(factories)
-    header = dedent(
-        f"""
+    header = (
+        dedent(
+            f"""
         # © Artur Czarnecki. All rights reserved.
 
         from __future__ import annotations
@@ -288,7 +281,10 @@ def agent_factories_py(names: ScaffoldApplicationNames, specs: list[ScaffoldAgen
 
 
         """
-    ).strip().replace("# __AGENT_IMPORTS__", agent_imports)
+        )
+        .strip()
+        .replace("# __AGENT_IMPORTS__", agent_imports)
+    )
     return header + "\n\n\n" + factories_block + "\n"
 
 
@@ -463,7 +459,6 @@ def host_runtime_composition_py(names: ScaffoldApplicationNames) -> str:
 def orchestration_decision_requirement_policy_py(names: ScaffoldApplicationNames) -> str:
     pkg = names.pkg
     short = names.short
-    pascal = names.pascal
     return dedent(
         f'''\
         # © Artur Czarnecki. All rights reserved.
@@ -772,7 +767,7 @@ def main_py(names: ScaffoldApplicationNames) -> str:
 def schemas_py(names: ScaffoldApplicationNames) -> str:
     pascal = names.pascal
     return dedent(
-        f'''\
+        f"""\
         # © Artur Czarnecki. All rights reserved.
 
         from __future__ import annotations
@@ -798,7 +793,7 @@ def schemas_py(names: ScaffoldApplicationNames) -> str:
             answer: str = ""
             agent_id: Optional[str] = None
             metadata: dict[str, Any] = Field(default_factory=dict)
-        '''
+        """
     )
 
 
@@ -888,7 +883,7 @@ def readme(names: ScaffoldApplicationNames, specs: list[ScaffoldAgentSpec]) -> s
         - Engine: `intergrax/applications/USAGE.md`
         - Layout: `applications/USAGE.md`
         - Full stack (agent + app): `python -m intergrax.scaffold new-stack <slug>`
-        '''
+        '''  # noqa: E501 - generated markdown, long lines are part of the emitted text
     )
 
 
@@ -896,7 +891,7 @@ def smoke_test(names: ScaffoldApplicationNames, specs: list[ScaffoldAgentSpec]) 
     pkg = names.pkg
     short = names.short
     return dedent(
-        f'''\
+        f"""\
         # © Artur Czarnecki. All rights reserved.
 
         from __future__ import annotations
@@ -919,5 +914,5 @@ def smoke_test(names: ScaffoldApplicationNames, specs: list[ScaffoldAgentSpec]) 
         def test_{short}_backend_fails_without_registry_projection():
             with pytest.raises(TypeError):
                 create_{short}_backend_app()  # type: ignore[call-arg]
-        '''
+        """
     )

@@ -8,24 +8,9 @@ import asyncio
 from dataclasses import dataclass, field
 
 import pytest
-
-from intergrax.agent_distribution.multi_agent_coordination import (
-    ChildExecutionFailedError,
-    CoordinationCleanupError,
-    CoordinationDelegation,
-    CoordinationFailureCode,
-    CoordinationId,
-    CoordinationRequest,
-    CoordinationResult,
-    MultiAgentCoordinationService,
-    NoEligibleSpecialistError,
-)
-from intergrax.contracts.orchestration_topology import OrchestrationSlotId
-from intergrax.agent_distribution.delegated_subtasks import (
-    DelegatedSubtaskLifecyclePlan,
-    DelegationId,
-)
 from intergrax.agent_distribution.bounded_multi_agent_fanout import (
+    MAX_FAN_OUT_CONCURRENCY,
+    MAX_FAN_OUT_ITEMS,
     BoundedMultiAgentFanOutService,
     FanOutExecutorContractError,
     FanOutId,
@@ -37,14 +22,21 @@ from intergrax.agent_distribution.bounded_multi_agent_fanout import (
     FanOutOrchestrationPort,
     FanOutRequest,
     InvalidFanOutError,
-    MAX_FAN_OUT_CONCURRENCY,
-    MAX_FAN_OUT_ITEMS,
     validate_fan_out_id,
     validate_fan_out_item_id,
     validate_fan_out_request,
 )
-from intergrax.agent_distribution.task_capability_resolution import (
-    build_task_capability_resolution_request,
+from intergrax.agent_distribution.delegated_subtasks import (
+    DelegatedSubtaskLifecyclePlan,
+    DelegationId,
+)
+from intergrax.agent_distribution.multi_agent_coordination import (
+    CoordinationCleanupError,
+    CoordinationDelegation,
+    CoordinationFailureCode,
+    CoordinationId,
+    MultiAgentCoordinationService,
+    NoEligibleSpecialistError,
 )
 from intergrax.agent_distribution.task_scoped_agents import (
     TaskScopedAgentLeaseId,
@@ -52,19 +44,16 @@ from intergrax.agent_distribution.task_scoped_agents import (
 )
 from intergrax.contracts.delegation_authority import ParentExecutionAuthority
 from intergrax.contracts.execution_identity import (
-    mint_attempt_id,
-    mint_execution_id,
-    mint_run_id,
     mint_task_id,
     require_active_execution_id,
 )
+from intergrax.contracts.orchestration_topology import OrchestrationSlotId
 from intergrax.runtime.execution.active_execution_budget import (
     bind_root_execution_budget,
     reset_active_execution_budget,
 )
 from intergrax.runtime.execution.boundary import (
     ExecutionBoundary,
-    ExecutionIdentityBinding,
 )
 from intergrax.runtime.execution.budget.ledger import create_execution_budget_ledger
 from intergrax.runtime.execution.child import ChildExecutionRunner
@@ -83,26 +72,26 @@ from intergrax.runtime.execution.fan_out_orchestration_adapter import (
 from intergrax.runtime.execution.orchestration_topology_submission import (
     build_lab_orchestration_topology_submission_port,
 )
+from intergrax.runtime.nexus.budget.budget_models import RunBudget
 from intergrax.runtime.nexus.nexus_loop import NexusLoop
 from intergrax.runtime.registry.agent_registry import AgentRegistry
-from intergrax.runtime.nexus.budget.budget_models import RunBudget
 from tests.unit.agent_distribution.test_delegated_subtasks import (
-    OcrRequest,
-    OcrResult,
     _APP,
     _ENV,
     _LEGAL_PACKAGE,
     _OCR_PACKAGE,
+    OcrRequest,
+    OcrResult,
     _discovery_candidate,
     admin_test_principal,
     build_delegated_harness,
 )
-from tests.unit.agent_distribution.test_task_scoped_agents import _task_acquire_request
 from tests.unit.agent_distribution.test_multi_agent_coordination import (
     _build_coordination_service,
     _coordination_request,
     _root_identity,
 )
+from tests.unit.agent_distribution.test_task_scoped_agents import _task_acquire_request
 
 pytestmark = [pytest.mark.unit, pytest.mark.gate]
 
@@ -475,10 +464,8 @@ def test_fan_out_request_rejects_item_count_above_platform_limit() -> None:
 
 @pytest.mark.asyncio
 async def test_fan_out_rejects_item_count_above_limit_before_execution() -> None:
-    harness = build_fan_out_harness(
-        candidates=(
-            _discovery_candidate(_OCR_PACKAGE, capability_ids=("document.ocr",)),
-        ),
+    build_fan_out_harness(
+        candidates=(_discovery_candidate(_OCR_PACKAGE, capability_ids=("document.ocr",)),),
     )
     fan_out = BoundedMultiAgentFanOutService(
         orchestration=_RejectingOrchestrationPort(),
@@ -554,10 +541,8 @@ def _contract_outcome(item_id: str) -> FanOutItemOutcome[OcrResult]:
 
 @pytest.mark.asyncio
 async def test_fan_out_reorders_executor_outcomes_to_request_order() -> None:
-    harness = build_fan_out_harness(
-        candidates=(
-            _discovery_candidate(_OCR_PACKAGE, capability_ids=("document.ocr",)),
-        ),
+    build_fan_out_harness(
+        candidates=(_discovery_candidate(_OCR_PACKAGE, capability_ids=("document.ocr",)),),
     )
     task_scope = mint_task_id()
     items = (
@@ -626,10 +611,8 @@ async def test_fan_out_reorders_executor_outcomes_to_request_order() -> None:
 async def test_fan_out_rejects_invalid_executor_outcomes(
     outcomes: tuple[FanOutItemOutcome[OcrResult], ...],
 ) -> None:
-    harness = build_fan_out_harness(
-        candidates=(
-            _discovery_candidate(_OCR_PACKAGE, capability_ids=("document.ocr",)),
-        ),
+    build_fan_out_harness(
+        candidates=(_discovery_candidate(_OCR_PACKAGE, capability_ids=("document.ocr",)),),
     )
     task_scope = mint_task_id()
     items = (
@@ -697,9 +680,7 @@ class _DelayedOcrDelegate:
 async def test_fan_out_enforces_bounded_concurrency() -> None:
     tracker = _ConcurrencyTracker()
     harness = build_fan_out_harness(
-        candidates=(
-            _discovery_candidate(_OCR_PACKAGE, capability_ids=("document.ocr",)),
-        ),
+        candidates=(_discovery_candidate(_OCR_PACKAGE, capability_ids=("document.ocr",)),),
         specialist_delegate=_DelayedOcrDelegate(tracker=tracker, delay_s=0.05),
     )
     task_scope = mint_task_id()
@@ -754,9 +735,7 @@ class _TrackingOrchestrationPort(FanOutOrchestrationPort[OcrRequest, OcrResult])
 @pytest.mark.asyncio
 async def test_fan_out_uses_coordination_service_not_direct_runner() -> None:
     harness = build_fan_out_harness(
-        candidates=(
-            _discovery_candidate(_OCR_PACKAGE, capability_ids=("document.ocr",)),
-        ),
+        candidates=(_discovery_candidate(_OCR_PACKAGE, capability_ids=("document.ocr",)),),
     )
     inner = _build_coordination_service(harness)
     tracker = _TrackingCoordinationService(inner=inner)
@@ -837,9 +816,7 @@ async def test_fan_out_preserves_request_order_despite_completion_order() -> Non
     }
     delegate = _OrderedCompletionDelegate(release_events=release_events)
     harness = build_fan_out_harness(
-        candidates=(
-            _discovery_candidate(_OCR_PACKAGE, capability_ids=("document.ocr",)),
-        ),
+        candidates=(_discovery_candidate(_OCR_PACKAGE, capability_ids=("document.ocr",)),),
         specialist_delegate=delegate,
     )
     task_scope = mint_task_id()
@@ -910,9 +887,7 @@ class _FailOnDocumentDelegate:
 @pytest.mark.asyncio
 async def test_fan_out_partial_failure_preserves_other_results() -> None:
     harness = build_fan_out_harness(
-        candidates=(
-            _discovery_candidate(_OCR_PACKAGE, capability_ids=("document.ocr",)),
-        ),
+        candidates=(_discovery_candidate(_OCR_PACKAGE, capability_ids=("document.ocr",)),),
         specialist_delegate=_FailOnDocumentDelegate(),
     )
     task_scope = mint_task_id()
@@ -953,10 +928,7 @@ async def test_fan_out_partial_failure_preserves_other_results() -> None:
     assert result.items[0].status is FanOutItemStatus.SUCCESS
     assert result.items[1].status is FanOutItemStatus.FAILURE
     assert result.items[1].failure is not None
-    assert (
-        result.items[1].failure.failure_code
-        is CoordinationFailureCode.CHILD_EXECUTION_FAILED
-    )
+    assert result.items[1].failure.failure_code is CoordinationFailureCode.CHILD_EXECUTION_FAILED
     assert result.items[2].status is FanOutItemStatus.SUCCESS
     assert result.items[0].result is not None
     assert result.items[2].result is not None
@@ -965,9 +937,7 @@ async def test_fan_out_partial_failure_preserves_other_results() -> None:
 @pytest.mark.asyncio
 async def test_fan_out_no_eligible_specialist_is_item_failure_not_operation_error() -> None:
     harness = build_fan_out_harness(
-        candidates=(
-            _discovery_candidate(_LEGAL_PACKAGE, capability_ids=("legal.analysis",)),
-        ),
+        candidates=(_discovery_candidate(_LEGAL_PACKAGE, capability_ids=("legal.analysis",)),),
     )
     task_scope = mint_task_id()
     items = (
@@ -988,18 +958,13 @@ async def test_fan_out_no_eligible_specialist_is_item_failure_not_operation_erro
     )
     assert result.any_failed
     assert result.items[0].failure is not None
-    assert (
-        result.items[0].failure.failure_code
-        is CoordinationFailureCode.NO_ELIGIBLE_SPECIALIST
-    )
+    assert result.items[0].failure.failure_code is CoordinationFailureCode.NO_ELIGIBLE_SPECIALIST
 
 
 @pytest.mark.asyncio
 async def test_fan_out_releases_leases_after_success() -> None:
     harness = build_fan_out_harness(
-        candidates=(
-            _discovery_candidate(_OCR_PACKAGE, capability_ids=("document.ocr",)),
-        ),
+        candidates=(_discovery_candidate(_OCR_PACKAGE, capability_ids=("document.ocr",)),),
     )
     task_scope = mint_task_id()
     items = (
@@ -1035,9 +1000,7 @@ async def test_fan_out_releases_leases_after_success() -> None:
 @pytest.mark.asyncio
 async def test_fan_out_releases_lease_after_child_failure() -> None:
     harness = build_fan_out_harness(
-        candidates=(
-            _discovery_candidate(_OCR_PACKAGE, capability_ids=("document.ocr",)),
-        ),
+        candidates=(_discovery_candidate(_OCR_PACKAGE, capability_ids=("document.ocr",)),),
         specialist_delegate=_FailOnDocumentDelegate(),
     )
     task_scope = mint_task_id()
@@ -1081,9 +1044,7 @@ async def test_fan_out_child_execution_path_preserved() -> None:
             return OcrResult(text=request.document_ref)
 
     harness = build_fan_out_harness(
-        candidates=(
-            _discovery_candidate(_OCR_PACKAGE, capability_ids=("document.ocr",)),
-        ),
+        candidates=(_discovery_candidate(_OCR_PACKAGE, capability_ids=("document.ocr",)),),
         specialist_delegate=LineageDelegate(),
     )
     task_scope = mint_task_id()
@@ -1112,13 +1073,10 @@ async def test_fan_out_child_execution_path_preserved() -> None:
 
 @pytest.mark.asyncio
 async def test_fan_out_budget_escalation_still_blocked() -> None:
-    from intergrax.runtime.execution.budget.models import ExecutionBudgetReservationError
 
     ledger = create_execution_budget_ledger(RunBudget(max_tool_calls=50))
     harness = build_fan_out_harness(
-        candidates=(
-            _discovery_candidate(_OCR_PACKAGE, capability_ids=("document.ocr",)),
-        ),
+        candidates=(_discovery_candidate(_OCR_PACKAGE, capability_ids=("document.ocr",)),),
     )
     harness.service._child_execution = as_child_execution_port(
         ChildExecutionRunner[OcrRequest, OcrResult](ledger=ledger),
@@ -1162,10 +1120,7 @@ async def test_fan_out_budget_escalation_still_blocked() -> None:
             finally:
                 reset_active_execution_budget(budget_token)
             assert result.items[0].failure is not None
-            assert (
-                result.items[0].failure.failure_code
-                is CoordinationFailureCode.CHILD_EXECUTION_FAILED
-            )
+            assert result.items[0].failure.failure_code is CoordinationFailureCode.CHILD_EXECUTION_FAILED
             return OcrResult(text="blocked")
 
     await ExecutionBoundary[OcrRequest, OcrResult](
@@ -1220,9 +1175,7 @@ async def _run_fan_out_with_authority(
 @pytest.mark.asyncio
 async def test_fan_out_permission_escalation_still_blocked() -> None:
     harness = build_fan_out_harness(
-        candidates=(
-            _discovery_candidate(_OCR_PACKAGE, capability_ids=("document.ocr",)),
-        ),
+        candidates=(_discovery_candidate(_OCR_PACKAGE, capability_ids=("document.ocr",)),),
     )
     task_scope = mint_task_id()
     items = (
@@ -1248,10 +1201,7 @@ async def test_fan_out_permission_escalation_still_blocked() -> None:
     )
     assert result.items[0].status is FanOutItemStatus.FAILURE
     assert result.items[0].failure is not None
-    assert (
-        result.items[0].failure.failure_code
-        is CoordinationFailureCode.CHILD_EXECUTION_FAILED
-    )
+    assert result.items[0].failure.failure_code is CoordinationFailureCode.CHILD_EXECUTION_FAILED
 
 
 def test_fan_out_topology_projection_maps_independent_slots() -> None:
@@ -1356,10 +1306,7 @@ async def test_fan_out_slot_executor_preserves_typed_coordination_failure() -> N
     )
     assert outcome.status is FanOutItemStatus.FAILURE
     assert outcome.failure is not None
-    assert (
-        outcome.failure.failure_code
-        is CoordinationFailureCode.NO_ELIGIBLE_SPECIALIST
-    )
+    assert outcome.failure.failure_code is CoordinationFailureCode.NO_ELIGIBLE_SPECIALIST
 
 
 @pytest.mark.asyncio
@@ -1394,10 +1341,7 @@ async def test_fan_out_slot_executor_preserves_cleanup_partial_result() -> None:
     )
     assert outcome.status is FanOutItemStatus.FAILURE
     assert outcome.failure is not None
-    assert (
-        outcome.failure.failure_code
-        is CoordinationFailureCode.LEASE_RELEASE_FAILED
-    )
+    assert outcome.failure.failure_code is CoordinationFailureCode.LEASE_RELEASE_FAILED
     assert outcome.failure.partial_result == partial
 
 
@@ -1439,9 +1383,7 @@ async def test_fan_out_canonical_path_preserves_two_level_child_execution_lineag
             return OcrResult(text=request.document_ref)
 
     harness = build_fan_out_harness(
-        candidates=(
-            _discovery_candidate(_OCR_PACKAGE, capability_ids=("document.ocr",)),
-        ),
+        candidates=(_discovery_candidate(_OCR_PACKAGE, capability_ids=("document.ocr",)),),
         specialist_delegate=LineageDelegate(),
     )
     task_scope = mint_task_id()
@@ -1535,9 +1477,7 @@ async def test_fan_out_canonical_path_preserves_two_level_child_execution_lineag
 @pytest.mark.asyncio
 async def test_npsc5a_single_coordination_regression_unchanged() -> None:
     harness = build_delegated_harness(
-        candidates=(
-            _discovery_candidate(_OCR_PACKAGE, capability_ids=("document.ocr",)),
-        ),
+        candidates=(_discovery_candidate(_OCR_PACKAGE, capability_ids=("document.ocr",)),),
     )
     task_scope = mint_task_id()
     coordination = _build_coordination_service(harness)

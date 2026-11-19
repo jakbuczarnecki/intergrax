@@ -5,36 +5,50 @@
 from __future__ import annotations
 
 from pathlib import Path
-from typing import Optional
 
 from fastapi import FastAPI
-from starlette.middleware.cors import CORSMiddleware
-
-from intergrax.applications._shared.workspace_cleanup_wiring import (
-    apply_factory_lifespans,
-    build_factory_lifespans,
+from intergrax.applications._shared.colocated_serving_unit_task_execution import (
+    ColocatedServingUnitAdmissionTaskExecutionPort,
 )
-from intergrax.applications._shared.harness_host_auxiliary_wiring import HostTaskExecutionExecutor
-from intergrax.applications._shared.interaction_wiring import wire_interaction_intake_service
-from intergrax.fastapi_core.app_factory import create_app
-from intergrax.fastapi_core.auth.api_key import ApiKeyConfig
-from intergrax.fastapi_core.config import ApiConfig
+from intergrax.applications._shared.governed_contractor_orchestration_topology_production import (
+    build_governed_contractor_production_orchestration_topology_submission_port,
+)
+from intergrax.applications._shared.harness_host_auxiliary_wiring import (
+    HostTaskExecutionExecutor,
+    wire_harness_host_long_running_scheduler,
+)
+from intergrax.applications._shared.harness_host_composition import (
+    bootstrap_harness_host_application_plugins,
+    bootstrap_harness_host_platform,
+)
+from intergrax.applications._shared.harness_host_orchestration_topology_wiring import (
+    HarnessHostOrchestrationTopologyReliabilityCompositionError,
+)
 from intergrax.applications._shared.harness_host_runtime import build_harness_host_runtime
+from intergrax.applications._shared.interaction_wiring import wire_interaction_intake_service
+from intergrax.applications._shared.package_wiring import (
+    resolve_strict_package_contract_authority_for_serving_handoff,
+)
+from intergrax.applications._shared.plugin_bootstrap import (
+    attach_plugin_shutdown,
+)
+from intergrax.applications._shared.product_observability_dashboard_wiring import (
+    wire_harness_product_observability_dashboard,
+)
+from intergrax.applications._shared.production_control_plane_governance_wiring import (
+    ProductionControlPlaneGovernance,
+)
 from intergrax.applications._shared.production_platform_persistence import (
     HarnessHostProfilePersistenceKwargs,
     resolve_harness_host_profile_persistence_kwargs_from_composition,
     resolve_reference_production_strict_host_environment,
 )
-from intergrax.contracts.execution_continuation_state_store import (
-    ExecutionContinuationStateStore,
+from intergrax.applications._shared.production_process_composition import (
+    ProductionProcessComposition,
 )
-from intergrax.distributed.contracts.kv_store import DistributedKVStore
-from intergrax.integrations.contracts.document_store import DocumentStore
-from intergrax.applications._shared.colocated_serving_unit_task_execution import (
-    ColocatedServingUnitAdmissionTaskExecutionPort,
-)
-from intergrax.applications._shared.production_control_plane_governance_wiring import (
-    ProductionControlPlaneGovernance,
+from intergrax.applications._shared.registry_projection import MaterializedRegistryProjection
+from intergrax.applications._shared.serving_runtime_handoff import (
+    validate_serving_runtime_handoff_against_projection_evidence,
 )
 from intergrax.applications._shared.strict_production_serving_execution_tenant_authority import (
     resolve_strict_production_serving_execution_tenant_binding,
@@ -45,60 +59,42 @@ from intergrax.applications._shared.strict_production_serving_http_ingress impor
 from intergrax.applications._shared.strict_production_serving_tenant_authority_task_execution import (
     StrictProductionServingTenantAuthorityTaskExecutionPort,
 )
-from governed_contractor_application.host.governed_external_work_host_stores import (
-    GovernedExternalWorkHostStoreBundle,
-)
-from governed_contractor_application.host.strict_sanctioned_follow_on_http_execution_admission import (
-    StrictSanctionedExternalWorkFollowOnExecutionAdmissionPort,
-)
-from intergrax.applications._shared.production_process_composition import (
-    ProductionProcessComposition,
-)
-from intergrax.applications._shared.package_wiring import (
-    resolve_strict_package_contract_authority_for_serving_handoff,
-)
-from intergrax.applications._shared.serving_runtime_handoff import (
-    validate_serving_runtime_handoff_against_projection_evidence,
-)
-from intergrax.applications._shared.registry_projection import MaterializedRegistryProjection
-from intergrax.applications._shared.plugin_bootstrap import (
-    attach_plugin_shutdown,
-)
-from intergrax.runtime.observability.operator_wiring import (
-    ObservabilityExportOperatorConfig,
-    build_observability_export_runtime_plugin,
-)
-from intergrax.runtime.interactions.router import create_interaction_intake_router
-from intergrax.applications._shared.harness_host_auxiliary_wiring import (
-    wire_harness_host_long_running_scheduler,
-)
 from intergrax.applications._shared.task_control_wiring import (
     build_reliability_task_enricher,
     wire_harness_task_control,
 )
-from intergrax.applications._shared.harness_host_composition import (
-    bootstrap_harness_host_application_plugins,
-    bootstrap_harness_host_platform,
-    resolve_harness_host_event_bus,
-    resolve_harness_host_lifecycle_hook_coordinator,
-    resolve_harness_host_middleware_pipeline,
-    resolve_harness_host_runtime_event_persistence,
+from intergrax.applications._shared.workspace_cleanup_wiring import (
+    apply_factory_lifespans,
+    build_factory_lifespans,
 )
-from intergrax.applications._shared.product_observability_dashboard_wiring import (
-    wire_harness_product_observability_dashboard,
+from intergrax.contracts.execution_continuation_state_store import (
+    ExecutionContinuationStateStore,
 )
 from intergrax.debug.store import open_default_task_checkpoint_persistence
-from intergrax.applications._shared.harness_host_orchestration_topology_wiring import (
-    HarnessHostOrchestrationTopologyReliabilityCompositionError,
-)
+from intergrax.distributed.contracts.kv_store import DistributedKVStore
+from intergrax.fastapi_core.app_factory import create_app
+from intergrax.fastapi_core.auth.api_key import ApiKeyConfig
+from intergrax.fastapi_core.config import ApiConfig
+from intergrax.integrations.contracts.document_store import DocumentStore
 from intergrax.runtime.execution.continuation.durability_policy import (
     validate_execution_continuation_for_composition,
 )
-from intergrax.applications._shared.governed_contractor_orchestration_topology_production import (
-    build_governed_contractor_production_orchestration_topology_submission_port,
+from intergrax.runtime.interactions.router import create_interaction_intake_router
+from intergrax.runtime.observability.operator_wiring import (
+    ObservabilityExportOperatorConfig,
+    build_observability_export_runtime_plugin,
 )
+from starlette.middleware.cors import CORSMiddleware
+
+from governed_contractor_application.host.collaborative_work_integration_profile import (
+    resolve_governed_contractor_collaborative_work_integration_profile,
+)
+from governed_contractor_application.host.environment_profile import build_governed_contractor_environment_profile
 from governed_contractor_application.host.governed_contractor_host_runtime_composition import (
     GovernedContractorHostRuntimeComposition,
+)
+from governed_contractor_application.host.governed_external_work_host_stores import (
+    GovernedExternalWorkHostStoreBundle,
 )
 from governed_contractor_application.host.orchestration_decision_requirement_policy import (
     default_governed_contractor_harness_orchestration_decision_requirement_policy,
@@ -106,13 +102,11 @@ from governed_contractor_application.host.orchestration_decision_requirement_pol
 from governed_contractor_application.host.production_external_work_composition import (
     resolve_production_runtime_policy_bundle_evaluator,
 )
-from governed_contractor_application.host.governed_external_work_host_stores import (
-    GovernedExternalWorkHostStoreBundle,
-)
 from governed_contractor_application.host.resolve_strict_external_work_provider_capabilities import (
     StrictExternalWorkProviderResolutionError,
     resolve_strict_external_work_provider_capabilities,
 )
+from governed_contractor_application.host.settings import GovernedContractorBackendSettings
 from governed_contractor_application.host.strict_external_work_host_wiring import (
     attach_sanctioned_external_work_to_host_runtime,
     build_strict_external_work_host_session_resources,
@@ -120,11 +114,9 @@ from governed_contractor_application.host.strict_external_work_host_wiring impor
 from governed_contractor_application.host.strict_sanctioned_external_work_registry_projection import (
     reproject_registry_with_strict_sanctioned_external_work,
 )
-from governed_contractor_application.host.settings import GovernedContractorBackendSettings
-from governed_contractor_application.host.collaborative_work_integration_profile import (
-    resolve_governed_contractor_collaborative_work_integration_profile,
+from governed_contractor_application.host.strict_sanctioned_follow_on_http_execution_admission import (
+    StrictSanctionedExternalWorkFollowOnExecutionAdmissionPort,
 )
-from governed_contractor_application.host.environment_profile import build_governed_contractor_environment_profile
 from governed_contractor_application.manifest import build_governed_contractor_manifest
 from governed_contractor_application.serving.fastapi_router import mount_governed_contractor_routes
 
@@ -134,7 +126,7 @@ def create_governed_contractor_backend_app(
     registry_projection: MaterializedRegistryProjection,
     process_composition: ProductionProcessComposition | None = None,
     production_governance: ProductionControlPlaneGovernance | None = None,
-    settings: Optional[GovernedContractorBackendSettings] = None,
+    settings: GovernedContractorBackendSettings | None = None,
     host_runtime: GovernedContractorHostRuntimeComposition | None = None,
     trace_db_path: Path | None = None,
     runtime_events_db_path: Path | None = None,
@@ -167,15 +159,11 @@ def create_governed_contractor_backend_app(
     resolved_tenant_id = manifest.app_id
     strict_topology_reliability = production_mode and process_composition is not None
     provider_invocation_store = (
-        process_composition.provider_invocation_store
-        if process_composition is not None
-        else None
+        process_composition.provider_invocation_store if process_composition is not None else None
     )
     resolved_execution_continuation_state_store = execution_continuation_state_store
     if process_composition is not None:
-        composition_continuation_store = (
-            process_composition.execution_continuation_state_store
-        )
+        composition_continuation_store = process_composition.execution_continuation_state_store
         if composition_continuation_store is not None:
             if (
                 execution_continuation_state_store is not None
@@ -210,11 +198,9 @@ def create_governed_contractor_backend_app(
             manifest_for_runtime = manifest.model_copy(update={"environment": env})
     collaborative_work_integration_profile = None
     if document_store is not None:
-        collaborative_work_integration_profile = (
-            resolve_governed_contractor_collaborative_work_integration_profile(
-                manifest_for_runtime,
-                trace_db_path=trace_db_path,
-            )
+        collaborative_work_integration_profile = resolve_governed_contractor_collaborative_work_integration_profile(
+            manifest_for_runtime,
+            trace_db_path=trace_db_path,
         )
     if production_mode:
         validate_execution_continuation_for_composition(
@@ -224,21 +210,15 @@ def create_governed_contractor_backend_app(
             continuation_disabled=False,
         )
     strict_serving_tenant_binding = None
-    if (
-        production_mode
-        and process_composition is not None
-        and process_composition.serving_runtime_handoff is not None
-    ):
+    if production_mode and process_composition is not None and process_composition.serving_runtime_handoff is not None:
         if production_governance is None:
             raise HarnessHostOrchestrationTopologyReliabilityCompositionError(
                 "strict governed contractor production host with serving_runtime_handoff "
                 "requires ProductionControlPlaneGovernance",
             )
-        strict_serving_tenant_binding = (
-            resolve_strict_production_serving_execution_tenant_binding(
-                handoff=process_composition.serving_runtime_handoff,
-                governance=production_governance,
-            )
+        strict_serving_tenant_binding = resolve_strict_production_serving_execution_tenant_binding(
+            handoff=process_composition.serving_runtime_handoff,
+            governance=production_governance,
         )
         validate_strict_production_serving_http_ingress_composition(
             binding=strict_serving_tenant_binding,
@@ -259,9 +239,7 @@ def create_governed_contractor_backend_app(
     ):
         execution_tenant_for_external_work = resolved_tenant_id
         if strict_serving_tenant_binding is not None:
-            execution_tenant_for_external_work = (
-                strict_serving_tenant_binding.authoritative_execution_tenant_id
-            )
+            execution_tenant_for_external_work = strict_serving_tenant_binding.authoritative_execution_tenant_id
         if strict_serving_tenant_binding is None:
             raise HarnessHostOrchestrationTopologyReliabilityCompositionError(
                 "strict governed contractor external work requires "
@@ -279,8 +257,7 @@ def create_governed_contractor_backend_app(
             )
         if not isinstance(host_store_bundle, GovernedExternalWorkHostStoreBundle):
             raise HarnessHostOrchestrationTopologyReliabilityCompositionError(
-                "governed_external_work_host_store_bundle must be "
-                "GovernedExternalWorkHostStoreBundle",
+                "governed_external_work_host_store_bundle must be GovernedExternalWorkHostStoreBundle",
             )
         try:
             strict_capabilities = resolve_strict_external_work_provider_capabilities(
@@ -348,19 +325,13 @@ def create_governed_contractor_backend_app(
             "collaborative_work_repositories, active_execution_task_scope, and "
             "settings.runtime_policy_bundle for sanctioned external-work mutations",
         )
-    if (
-        production_mode
-        and process_composition is not None
-        and process_composition.serving_runtime_handoff is not None
-    ):
+    if production_mode and process_composition is not None and process_composition.serving_runtime_handoff is not None:
         package_contract_authority = resolve_strict_package_contract_authority_for_serving_handoff(
             manifest=manifest_for_runtime,
             env=env,
             handoff=process_composition.serving_runtime_handoff,
             registry_projection=registry_projection,
-            registry_projection_authority=(
-                process_composition.agent_platform_runtime.registry_projection_authority
-            ),
+            registry_projection_authority=(process_composition.agent_platform_runtime.registry_projection_authority),
         )
     runtime = build_harness_host_runtime(
         manifest_for_runtime,
@@ -395,10 +366,7 @@ def create_governed_contractor_backend_app(
         strict_production_serving_execution_tenant_binding=strict_serving_tenant_binding,
     )
     host_execution = runtime.execution
-    if (
-        process_composition is not None
-        and process_composition.serving_runtime_handoff is not None
-    ):
+    if process_composition is not None and process_composition.serving_runtime_handoff is not None:
         host_execution = ColocatedServingUnitAdmissionTaskExecutionPort(
             host_execution,
             process_composition.serving_runtime_handoff,
@@ -409,16 +377,13 @@ def create_governed_contractor_backend_app(
             binding=strict_serving_tenant_binding,
         )
         gca_host_stores = (
-            process_composition.governed_external_work_host_store_bundle
-            if process_composition is not None
-            else None
+            process_composition.governed_external_work_host_store_bundle if process_composition is not None else None
         )
         if isinstance(gca_host_stores, GovernedExternalWorkHostStoreBundle):
             host_execution = StrictSanctionedExternalWorkFollowOnExecutionAdmissionPort(
                 host_execution,
                 execution_store=gca_host_stores.execution_store,
             )
-    registry = runtime.registry
     platform = bootstrap_harness_host_platform(runtime)
     if observability_export is not None and observability_export.enabled:
         export_plugin = build_observability_export_runtime_plugin(observability_export)
@@ -505,7 +470,11 @@ def create_governed_contractor_backend_app(
             prefix=settings.interaction_route_prefix,
         )
 
-    app.title = "Intergrax Governed Contractor API" if settings.environment.value == "prod" else "Intergrax Governed Contractor API (dev)"
+    app.title = (
+        "Intergrax Governed Contractor API"
+        if settings.environment.value == "prod"
+        else "Intergrax Governed Contractor API (dev)"
+    )
 
     scheduler = scheduler_wiring.scheduler if scheduler_wiring is not None else None
     if settings.include_mcp:
@@ -513,6 +482,7 @@ def create_governed_contractor_backend_app(
 
         load_mcp_coupling()
         from intergrax.applications._shared.fastapi_mcp import couple_harness_host_fastapi_with_mcp
+
         from governed_contractor_application.mcp.server import build_governed_contractor_mcp_server
 
         mcp = build_governed_contractor_mcp_server(
@@ -540,7 +510,5 @@ def create_governed_contractor_backend_app(
     app.state.harness_runtime = runtime
     app.state.governed_contractor_host_runtime = resolved_host_runtime
     if external_work_session_resources is not None:
-        app.state.governed_external_work_host_session_resources = (
-            external_work_session_resources
-        )
+        app.state.governed_external_work_host_session_resources = external_work_session_resources
     return app
