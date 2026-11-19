@@ -35,7 +35,6 @@ from intergrax.agent_distribution.control_plane_governance import (
 )
 from intergrax.agent_distribution.dependency import RepositoryDependencyDeclaration
 from intergrax.agent_distribution.effective_roster import EffectiveRosterBuilder
-from intergrax.agent_distribution.trust import AgentPackageTrustOutcome
 from intergrax.agent_distribution.in_memory_stores import (
     InMemoryAgentInstallationStore,
     InMemoryApplicationAgentBindingStore,
@@ -56,6 +55,7 @@ from intergrax.agent_distribution.task_capability_resolution import (
     build_deterministic_task_capability_resolver,
     build_task_capability_rule,
 )
+from intergrax.agent_distribution.trust import AgentPackageTrustOutcome
 from intergrax.applications._shared.application_owned_tool_conformance import (
     application_owned_tool_declarations,
 )
@@ -115,9 +115,9 @@ from platform_proofs.scenarios.ai_incident_investigation.application.runtime_com
 )
 from platform_proofs.scenarios.ai_incident_investigation.application.scenario import (
     OUTCOME_RESOLVED,
+    STANDALONE_SCENARIO_TENANT_ID,
     ScenarioExecutionResult,
     ScenarioRuntimeBundle,
-    STANDALONE_SCENARIO_TENANT_ID,
     execute_resolved_skeleton,
 )
 from platform_proofs.scenarios.ai_incident_investigation.application.tools import (
@@ -188,9 +188,7 @@ class _StaticCatalogProvider:
         del filters
         return list(self._entries)
 
-    def resolve_package(
-        self, entry: AgentCatalogEntry, *, version_selector: str
-    ) -> object:
+    def resolve_package(self, entry: AgentCatalogEntry, *, version_selector: str) -> object:
         del entry, version_selector
         raise NotImplementedError
 
@@ -215,10 +213,7 @@ def _assert_canonical_trust_record(
     assert record.policy_fingerprint == expected_policy_fingerprint
     assert record.revocation_checked_at == AIPV_EVALUATED_AT
     assert record.qualification_qualified_at == AIPV_QUALIFIED_AT
-    assert any(
-        ref.kind is AgentQualificationEvidenceKind.SIGNATURE_VERIFICATION
-        for ref in record.trust_evidence_refs
-    )
+    assert any(ref.kind is AgentQualificationEvidenceKind.SIGNATURE_VERIFICATION for ref in record.trust_evidence_refs)
 
 
 class _IncidentInvestigatorVenvBundleMaterializer:
@@ -229,9 +224,7 @@ class _IncidentInvestigatorVenvBundleMaterializer:
     def __init__(self, artifact_root_base: Path) -> None:
         self._artifact_root_base = artifact_root_base
 
-    def materialize(
-        self, materialization_input: MaterializationInput
-    ) -> MaterializationOutput:
+    def materialize(self, materialization_input: MaterializationInput) -> MaterializationOutput:
         revision_id = materialization_input.runtime_revision.runtime_revision_id
         artifact_root = self._artifact_root_base / revision_id
         site_packages = artifact_root / "site-packages"
@@ -325,12 +318,8 @@ def _build_application_composition(
             ),
         ),
         catalog_providers=(catalog_provider,),
-        package_metadata_refs={
-            INCIDENT_INVESTIGATOR_DISTRIBUTION_PACKAGE_ID: INCIDENT_INVESTIGATOR_METADATA_REF
-        },
-        package_logical_agents={
-            INCIDENT_INVESTIGATOR_DISTRIBUTION_PACKAGE_ID: INVESTIGATOR_AGENT_ID
-        },
+        package_metadata_refs={INCIDENT_INVESTIGATOR_DISTRIBUTION_PACKAGE_ID: INCIDENT_INVESTIGATOR_METADATA_REF},
+        package_logical_agents={INCIDENT_INVESTIGATOR_DISTRIBUTION_PACKAGE_ID: INVESTIGATOR_AGENT_ID},
         trust_record_factory=IncidentInvestigatorCanonicalTrustRecordFactory(),
         admin_config=ProductionAgentPlatformAdminConfig(
             metadata_provider=metadata_provider,
@@ -352,12 +341,8 @@ def _build_application_composition(
             application_id=INCIDENT_INVESTIGATOR_APPLICATION_ID,
             application_environment_id=INCIDENT_INVESTIGATOR_ENVIRONMENT_ID,
             application_release_id="rel-ai-incident-aipv1",
-            package_metadata_refs={
-                INCIDENT_INVESTIGATOR_DISTRIBUTION_PACKAGE_ID: INCIDENT_INVESTIGATOR_METADATA_REF
-            },
-            package_logical_agents={
-                INCIDENT_INVESTIGATOR_DISTRIBUTION_PACKAGE_ID: INVESTIGATOR_AGENT_ID
-            },
+            package_metadata_refs={INCIDENT_INVESTIGATOR_DISTRIBUTION_PACKAGE_ID: INCIDENT_INVESTIGATOR_METADATA_REF},
+            package_logical_agents={INCIDENT_INVESTIGATOR_DISTRIBUTION_PACKAGE_ID: INVESTIGATOR_AGENT_ID},
         ),
     )
 
@@ -428,9 +413,7 @@ class IncidentInvestigatorAgentPlatformProofStack:
             metadata_provider,
         )
         base_composition = create_reference_production_process_composition()
-        lifecycle_services = wire_reference_production_lifecycle_services(
-            base_composition
-        )
+        lifecycle_services = wire_reference_production_lifecycle_services(base_composition)
         capability_runtime = build_production_agent_capability_runtime(
             agent_platform_runtime=base_composition.agent_platform_runtime,
             application_composition=application_composition,
@@ -545,18 +528,11 @@ class IncidentInvestigatorAgentPlatformProofStack:
             application_id=INCIDENT_INVESTIGATOR_APPLICATION_ID,
             application_environment_id=INCIDENT_INVESTIGATOR_ENVIRONMENT_ID,
         )
-        entry = next(
-            item
-            for item in roster.entries
-            if item.logical_agent_id == INVESTIGATOR_AGENT_ID
-        )
+        entry = next(item for item in roster.entries if item.logical_agent_id == INVESTIGATOR_AGENT_ID)
         assert entry.installation_slot_id == INCIDENT_INVESTIGATOR_INSTALLATION_SLOT_ID
         assert entry.effective_enablement is True
         assert entry.package_digest == INCIDENT_INVESTIGATOR_PACKAGE_DIGEST
-        assert (
-            entry.distribution_package_id
-            == INCIDENT_INVESTIGATOR_DISTRIBUTION_PACKAGE_ID
-        )
+        assert entry.distribution_package_id == INCIDENT_INVESTIGATOR_DISTRIBUTION_PACKAGE_ID
         return roster
 
     def build_revision(
@@ -639,10 +615,7 @@ class IncidentInvestigatorAgentPlatformProofStack:
             application_environment_id=INCIDENT_INVESTIGATOR_ENVIRONMENT_ID,
             stores=self.composition.agent_platform_runtime.stores,
         )
-        assert (
-            projection.evidence.runtime_revision_id
-            == serving.traffic_serving_revision_id
-        )
+        assert projection.evidence.runtime_revision_id == serving.traffic_serving_revision_id
         return projection
 
     def resolve_registry_read(self) -> AgentRegistryRead:
