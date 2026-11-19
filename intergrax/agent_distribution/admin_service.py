@@ -6,6 +6,7 @@
 from __future__ import annotations
 
 from collections.abc import Callable
+from dataclasses import dataclass
 from datetime import UTC, datetime
 from typing import TYPE_CHECKING, Any
 
@@ -138,6 +139,11 @@ from intergrax.agent_distribution.materialization import (
 from intergrax.agent_distribution.materialization_service import (
     RuntimeMaterializationService,
 )
+from intergrax.agent_distribution.package_attestation import (
+    AgentPackageAttestationAlgorithm,
+    AgentPackageAttestationVerificationRequest,
+    AgentPackageAttestationVerifier,
+)
 from intergrax.agent_distribution.package_trust import AgentPackageTrustCoordinator
 from intergrax.agent_distribution.resolver import DependencyResolver
 from intergrax.agent_distribution.roster import (
@@ -172,9 +178,11 @@ from intergrax.agent_distribution.stores import (
     RuntimeRevisionStore,
 )
 from intergrax.agent_distribution.trust import (
+    AgentInstallationTrustRecord,
     AgentPackageTrustPolicy,
     AgentPackageTrustReasonCode,
     AgentPackageTrustRevocationState,
+    AgentQualificationEvidenceKind,
 )
 from intergrax.agent_distribution.upgrade_admission import (
     evaluate_agent_upgrade_admission,
@@ -192,6 +200,21 @@ from intergrax.runtime.governance.control_plane_mutation_authorization import (
 
 if TYPE_CHECKING:
     from intergrax.llm_adapters.contracts.llm_profile import LLMProfile
+
+
+@dataclass(frozen=True, slots=True)
+class PackageAttestationEnforcement:
+    """Composed attestation enforcement for install and upgrade (T-IGX-051-N Part A, EX-D1-01).
+
+    When an ``AgentPlatformAdminService`` is built with this value, ``install_agent`` and
+    ``upgrade_agent`` verify every attestation material item of the request's trust record for the
+    exact digest-pinned package before anything is written, and a record without verified material is
+    refused when the trust policy forbids unsigned packages. The production factory always composes it.
+    ``None`` on the service is the explicit 'not composed' state of a direct construction: attestation
+    material is then not verified (the behaviour before T-IGX-051-N).
+    """
+
+    verifier: AgentPackageAttestationVerifier
 
 
 def _event_types(*results: TransitionResult[Any]) -> tuple[str, ...]:
@@ -288,10 +311,13 @@ class AgentPlatformAdminService:
         emergency_revocation_service: AgentEmergencyRevocationService | None = None,
         llm_profile_source: Callable[[str, str], LLMProfile | None] | None = None,
         lifecycle_event_sink: Callable[[tuple[AgentDistributionEvent, ...]], None] | None = None,
+        package_attestation_enforcement: PackageAttestationEnforcement | None = None,
     ) -> None:
         # Optional, inert injection point (T-IGX-041-A, F-D1-06): receives the events of every
         # install/upgrade/retire transition, failure paths included. It decides and stores nothing.
         self._lifecycle_event_sink = lifecycle_event_sink
+        # T-IGX-051-N Part A: ``None`` = attestation enforcement not composed (PackageAttestationEnforcement).
+        self._package_attestation_enforcement = package_attestation_enforcement
         self._llm_profile_source = llm_profile_source
         self._installation_store = installation_store
         self._binding_store = binding_store
@@ -651,12 +677,18 @@ class AgentPlatformAdminService:
             operation="install_agent",
         )
 
+        policy = self._package_trust_policy_source()
         self._package_trust_coordinator.assert_install_admission(
             trust_record=request.trust_record,
             package_identity=identity,
             revocation_state=self._package_trust_revocation_state_source(),
-            policy=self._package_trust_policy_source(),
+            policy=policy,
             evaluated_at=self._package_trust_evaluation_time_source(),
+        )
+        self._assert_trust_record_attested(
+            trust_record=request.trust_record,
+            package_identity=identity,
+            policy=policy,
         )
 
         metadata = self._require_install_project_metadata(request)
@@ -692,6 +724,79 @@ class AgentPlatformAdminService:
             installation=_installation_view(promoted.value),
             audit_event_types=self._emit_events(created, verified, promoted),
         )
+
+    def _assert_trust_record_attested(
+        self,
+        *,
+        trust_record: AgentInstallationTrustRecord,
+        package_identity: AgentPackageIdentity,
+        policy: AgentPackageTrustPolicy,
+    ) -> None:
+        """Verify the record's attestation material for the digest-pinned package (T-IGX-051-N Part A).
+
+        Runs only when attestation enforcement is composed, directly after ``assert_install_admission``
+        and before any write of the calling method, so a refused install or upgrade persists nothing.
+        Every material item must name a known algorithm, carry the record's publisher, be named by a
+        signature-verification evidence ref and verify cryptographically; otherwise
+        ``MALFORMED_EVIDENCE``. Under a policy with ``forbid_unsigned_or_unqualified``, a record without
+        verified material is ``UNSIGNED_FORBIDDEN``, and a signature-verification evidence ref that no
+        verified material backs is ``MALFORMED_EVIDENCE``.
+        """
+        enforcement = self._package_attestation_enforcement
+        if enforcement is None:
+            return
+        signature_ref_ids = {
+            ref.evidence_id
+            for ref in trust_record.trust_evidence_refs
+            if ref.kind is AgentQualificationEvidenceKind.SIGNATURE_VERIFICATION
+        }
+        verified_ids: set[str] = set()
+        for item in trust_record.attestation_material:
+            try:
+                algorithm = AgentPackageAttestationAlgorithm(item.algorithm)
+            except ValueError as exc:
+                raise AgentPackageTrustError(
+                    "attestation material names an unsupported algorithm",
+                    reason_code=AgentPackageTrustReasonCode.MALFORMED_EVIDENCE.value,
+                ) from exc
+            if item.publisher_id != trust_record.publisher_identity_ref:
+                raise AgentPackageTrustError(
+                    "attestation material publisher does not match the trust record publisher",
+                    reason_code=AgentPackageTrustReasonCode.MALFORMED_EVIDENCE.value,
+                )
+            if item.attestation_id not in signature_ref_ids:
+                raise AgentPackageTrustError(
+                    "attestation material is not named by a signature verification evidence ref",
+                    reason_code=AgentPackageTrustReasonCode.MALFORMED_EVIDENCE.value,
+                )
+            result = enforcement.verifier.verify(
+                AgentPackageAttestationVerificationRequest(
+                    package_identity=package_identity,
+                    publisher_id=item.publisher_id,
+                    attestation_id=item.attestation_id,
+                    key_id=item.key_id,
+                    algorithm=algorithm,
+                    signature_b64=item.signature_b64,
+                )
+            )
+            if not result.verified or result.publisher_id != trust_record.publisher_identity_ref:
+                raise AgentPackageTrustError(
+                    "attestation material failed verification for the digest-pinned package",
+                    reason_code=AgentPackageTrustReasonCode.MALFORMED_EVIDENCE.value,
+                )
+            verified_ids.add(item.attestation_id)
+        if not policy.forbid_unsigned_or_unqualified:
+            return
+        if not verified_ids:
+            raise AgentPackageTrustError(
+                "the trust policy forbids a package without verified attestation material",
+                reason_code=AgentPackageTrustReasonCode.UNSIGNED_FORBIDDEN.value,
+            )
+        if signature_ref_ids - verified_ids:
+            raise AgentPackageTrustError(
+                "a signature verification evidence ref is not backed by verified attestation material",
+                reason_code=AgentPackageTrustReasonCode.MALFORMED_EVIDENCE.value,
+            )
 
     def _require_install_project_metadata(
         self,
@@ -831,12 +936,18 @@ class AgentPlatformAdminService:
             ),
             operation="upgrade_agent",
         )
+        policy = self._package_trust_policy_source()
         self._package_trust_coordinator.assert_install_admission(
             trust_record=request.trust_record,
             package_identity=identity,
             revocation_state=self._package_trust_revocation_state_source(),
-            policy=self._package_trust_policy_source(),
+            policy=policy,
             evaluated_at=self._package_trust_evaluation_time_source(),
+        )
+        self._assert_trust_record_attested(
+            trust_record=request.trust_record,
+            package_identity=identity,
+            policy=policy,
         )
         metadata = self._require_install_project_metadata(request)
         authority_records = self._validated_install_contract_authority(
