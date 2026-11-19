@@ -9,10 +9,6 @@ from dataclasses import dataclass
 from pathlib import Path
 
 import pytest
-
-from testing_support.orchestration.orchestration_consequential_effect_reliability_doubles import (
-    PassthroughOrchestrationConsequentialEffectReliability,
-)
 from intergrax.contracts.collaborative_work import (
     CollaborativeWorkEnforcementRequest,
     CollaborativeWorkEnforcementResult,
@@ -43,18 +39,21 @@ from intergrax.runtime.execution.active_execution_budget import (
     peek_active_execution_budget,
     reset_active_execution_budget,
 )
-from intergrax.runtime.execution.budget.ledger import create_execution_budget_ledger
 from intergrax.runtime.execution.boundary import ExecutionBoundary, ExecutionIdentityBinding
-from intergrax.runtime.execution.orchestration_topology_submission import (
-    OrchestrationTopologyMseCompositionError,
-    build_lab_orchestration_topology_submission_port,
-    build_production_orchestration_topology_submission_port,
-    build_orchestration_topology_host_task,
+from intergrax.runtime.execution.budget.ledger import create_execution_budget_ledger
+from intergrax.runtime.execution.fan_out_orchestration_adapter import (
+    FanOutCoordinationSlotExecutor as CanonicalFanOutSlotExecutor,
 )
 from intergrax.runtime.execution.orchestration_topology_slot_mse_enforcement import (
     OrchestrationTopologySlotEffectAuthorityOwner,
     build_orchestration_topology_slot_mse_policy,
     prepare_orchestration_topology_slot_executor,
+)
+from intergrax.runtime.execution.orchestration_topology_submission import (
+    OrchestrationTopologyMseCompositionError,
+    build_lab_orchestration_topology_submission_port,
+    build_orchestration_topology_host_task,
+    build_production_orchestration_topology_submission_port,
 )
 from intergrax.runtime.governance.active_execution_governance_identity import (
     ActiveExecutionGovernanceIdentity,
@@ -65,24 +64,18 @@ from intergrax.runtime.governance.active_governed_execution_task import (
     ActiveGovernedExecutionTask,
 )
 from intergrax.runtime.nexus.nexus_loop import NexusLoop
-from intergrax.runtime.execution.fan_out_orchestration_adapter import (
-    FanOutCoordinationSlotExecutor as CanonicalFanOutSlotExecutor,
-)
 from intergrax.runtime.nexus.orchestration.governed_consequential_operation import (
     GovernedOrchestrationSlotExecutor,
 )
 from intergrax.runtime.registry.agent_registry import AgentRegistry
+from testing_support.orchestration.orchestration_consequential_effect_reliability_doubles import (
+    PassthroughOrchestrationConsequentialEffectReliability,
+)
 
 pytestmark = [pytest.mark.unit, pytest.mark.gate]
 
 _REPO_ROOT = Path(__file__).resolve().parents[4]
-_ENFORCEMENT = (
-    _REPO_ROOT
-    / "intergrax"
-    / "runtime"
-    / "execution"
-    / "orchestration_topology_slot_mse_enforcement.py"
-)
+_ENFORCEMENT = _REPO_ROOT / "intergrax" / "runtime" / "execution" / "orchestration_topology_slot_mse_enforcement.py"
 
 
 class _RecordingMsePort:
@@ -327,9 +320,7 @@ async def test_r9_r4_parallel_slots_distinct_mse_scopes(_identity_ctx) -> None:
     assert mse.calls == 2
     assert len(set(mse.scopes)) == 2
     assert inner.calls == 2
-    assert all(
-        outcome.status is OrchestrationSlotStatus.SUCCESS for outcome in result.outcomes
-    )
+    assert all(outcome.status is OrchestrationSlotStatus.SUCCESS for outcome in result.outcomes)
 
 
 def test_r9_r4_authority_module_no_type_name_coupling() -> None:
@@ -351,13 +342,7 @@ def test_r9_r4_authority_module_no_type_name_coupling() -> None:
 def test_r9_r4_prepare_no_policy_none_early_return_in_production_path() -> None:
     source = _ENFORCEMENT.read_text(encoding="utf-8-sig")
     assert "if policy is None:\n        return slot_executor" in source.replace("\r\n", "\n")
-    submission = (
-        _REPO_ROOT
-        / "intergrax"
-        / "runtime"
-        / "execution"
-        / "orchestration_topology_submission.py"
-    )
+    submission = _REPO_ROOT / "intergrax" / "runtime" / "execution" / "orchestration_topology_submission.py"
     sub_source = submission.read_text(encoding="utf-8-sig")
     assert "build_production_orchestration_topology_submission_port" in sub_source
     assert "OrchestrationTopologyMseCompositionError" in sub_source

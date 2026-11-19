@@ -9,7 +9,6 @@ from pathlib import Path
 from typing import Any, cast
 
 import pytest
-
 from intergrax.agent_distribution.bounded_multi_agent_fanout import (
     BoundedMultiAgentFanOutService,
     FanOutItemStatus,
@@ -23,14 +22,14 @@ from intergrax.agent_distribution.delegated_subtasks import (
     DelegatedSubtaskResult,
     DelegationId,
 )
-from intergrax.agent_distribution.task_scoped_agents import TaskScopedAgentLeaseId, TaskScopeId
 from intergrax.agent_distribution.multi_agent_coordination import (
     CoordinationFailureCode,
     GovernanceRequiresHumanError,
 )
-from intergrax.agent_distribution.task_scoped_agents import TaskScopedAgentError
+from intergrax.agent_distribution.task_scoped_agents import TaskScopedAgentError, TaskScopedAgentLeaseId, TaskScopeId
 from intergrax.contracts.delegation_authority import ParentExecutionAuthority
 from intergrax.contracts.execution_identity import mint_task_id
+from intergrax.contracts.governed_continuation_grant import GovernedContinuationApprovalGrant
 from intergrax.contracts.orchestration_topology import (
     OrchestrationSlotContinuationError,
     OrchestrationSlotContinuationRequest,
@@ -71,10 +70,10 @@ from tests.unit.agent_distribution.test_bounded_multi_agent_fanout import (
     _fan_out_item,
 )
 from tests.unit.agent_distribution.test_delegated_subtasks import (
-    OcrRequest,
-    OcrResult,
     _LEGAL_PACKAGE,
     _OCR_PACKAGE,
+    OcrRequest,
+    OcrResult,
     _delegated_request,
     _discovery_candidate,
     _root_identity,
@@ -82,8 +81,8 @@ from tests.unit.agent_distribution.test_delegated_subtasks import (
     build_delegated_harness,
 )
 from tests.unit.agent_distribution.test_physical_delegation_governance_boundary import (
-    _DelegationRequireHumanGovernance,
     _build_instrumented_harness,
+    _DelegationRequireHumanGovernance,
 )
 from tests.unit.runtime.architecture.test_npsc5d_r3_governed_continuation import (
     APPROVER,
@@ -97,7 +96,6 @@ from tests.unit.runtime.architecture.test_npsc5d_r3_governed_continuation import
     _run_governed_fan_out,
     _run_governed_fan_out_resume,
 )
-from intergrax.contracts.governed_continuation_grant import GovernedContinuationApprovalGrant
 
 pytestmark = [pytest.mark.unit, pytest.mark.gate]
 
@@ -112,16 +110,8 @@ _FORBIDDEN_RUNTIME_NAMES = (
 _RESUME_SOURCE_PATHS = (
     _REPO_ROOT / "intergrax" / "agent_distribution" / "delegated_subtasks.py",
     _REPO_ROOT / "intergrax" / "agent_distribution" / "multi_agent_coordination.py",
-    _REPO_ROOT
-    / "intergrax"
-    / "runtime"
-    / "execution"
-    / "fan_out_orchestration_adapter.py",
-    _REPO_ROOT
-    / "intergrax"
-    / "runtime"
-    / "execution"
-    / "orchestration_topology_submission.py",
+    _REPO_ROOT / "intergrax" / "runtime" / "execution" / "fan_out_orchestration_adapter.py",
+    _REPO_ROOT / "intergrax" / "runtime" / "execution" / "orchestration_topology_submission.py",
 )
 
 _NEXUS_CORE_PATHS = (
@@ -329,10 +319,7 @@ async def test_npsc5d_r3_single_hitl_e2e() -> None:
         )
 
     assert result.result.text == "ocr:doc-1"
-    assert (
-        result.selection_provenance_kind
-        is DelegatedSelectionProvenanceKind.PRESERVED_GOVERNED_CONTINUATION
-    )
+    assert result.selection_provenance_kind is DelegatedSelectionProvenanceKind.PRESERVED_GOVERNED_CONTINUATION
     assert result.selection_decision is None
     assert selector.call_count == 1
     assert task_scoped.acquire_count == 1
@@ -492,10 +479,7 @@ async def test_npsc5d_r3_single_escalate_no_acquire() -> None:
             human_request_id=human_request.request_id,
             run_id=RUN_ID,
         )
-        assert (
-            PhysicalDelegationContinuationGrantCoordinator.create_grant_from_approval(task)
-            is None
-        )
+        assert PhysicalDelegationContinuationGrantCoordinator.create_grant_from_approval(task) is None
     assert task_scoped.acquire_count == 0
     assert specialist.call_count == 0
     assert child.call_count == 0
@@ -743,10 +727,7 @@ async def test_npsc5d_r3_fan_out_reject_preserves_siblings() -> None:
             human_request_id=human_request.request_id,
             run_id=RUN_ID,
         )
-        assert (
-            PhysicalDelegationContinuationGrantCoordinator.create_grant_from_approval(task)
-            is None
-        )
+        assert PhysicalDelegationContinuationGrantCoordinator.create_grant_from_approval(task) is None
     assert child.call_count == 2
     assert task_scoped.acquire_count == 2
 
@@ -838,11 +819,11 @@ async def test_npsc5d_r3_multiple_blocked_slot_identity_independent() -> None:
     from intergrax.runtime.execution.fan_out_orchestration_adapter import (
         build_fan_out_orchestration_port,
     )
+    from intergrax.runtime.nexus.nexus_loop import NexusLoop
+    from intergrax.runtime.registry.agent_registry import AgentRegistry
     from testing_support.agent_distribution.multi_agent_coordination_qualification_harness import (
         build_production_representative_orchestration_topology_submission_port,
     )
-    from intergrax.runtime.nexus.nexus_loop import NexusLoop
-    from intergrax.runtime.registry.agent_registry import AgentRegistry
 
     nexus_loop = NexusLoop(AgentRegistry())
     topology_port = cast(
@@ -904,17 +885,17 @@ async def test_npsc5d_r3_one_approval_does_not_authorize_other_slot() -> None:
             delegation_ids=frozenset({"delegation-a", "delegation-b"}),
         ),
     )
-    from tests.unit.agent_distribution.test_multi_agent_coordination import (
-        _build_coordination_service,
-    )
     from intergrax.runtime.execution.fan_out_orchestration_adapter import (
         build_fan_out_orchestration_port,
     )
+    from intergrax.runtime.nexus.nexus_loop import NexusLoop
+    from intergrax.runtime.registry.agent_registry import AgentRegistry
     from testing_support.agent_distribution.multi_agent_coordination_qualification_harness import (
         build_production_representative_orchestration_topology_submission_port,
     )
-    from intergrax.runtime.nexus.nexus_loop import NexusLoop
-    from intergrax.runtime.registry.agent_registry import AgentRegistry
+    from tests.unit.agent_distribution.test_multi_agent_coordination import (
+        _build_coordination_service,
+    )
 
     coordination = _build_coordination_service(harness)
     nexus_loop = NexusLoop(AgentRegistry())
@@ -999,8 +980,8 @@ async def test_npsc5d_r3_decision_backed_path_uses_same_r3_mechanics() -> None:
         bound_governed_host_task,
     )
     from tests.unit.agent_distribution.test_coordination_intent_executor import (
-        _StaticOrchestrationPort,
         _binding,
+        _StaticOrchestrationPort,
     )
     from tests.unit.agent_distribution.test_multi_agent_coordination import (
         _build_coordination_service,

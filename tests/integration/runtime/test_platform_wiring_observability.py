@@ -1,17 +1,16 @@
 # © Artur Czarnecki. All rights reserved.
 
 from __future__ import annotations
-from intergrax.utils import attribute_access
 
 from unittest.mock import MagicMock
 
 import pytest
-
+from intergrax.applications._shared.platform_wiring import bootstrap_nexus_platform
 from intergrax.llm_adapters.tracking.metrics import set_metrics_enabled
 from intergrax.rag.tracking.metrics import set_rag_metrics_enabled
-from intergrax.applications._shared.platform_wiring import bootstrap_nexus_platform
 from intergrax.runtime.nexus.nexus_loop import NexusLoop
 from intergrax.runtime.registry.agent_registry import AgentRegistry
+from intergrax.utils import attribute_access
 
 pytestmark = [pytest.mark.integration, pytest.mark.gate]
 

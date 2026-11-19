@@ -1,8 +1,6 @@
 from __future__ import annotations
 
 import pytest
-
-from intergrax.applications.contracts.environment_profile import ApplicationSecurityProfile
 from intergrax.applications._shared.application_security_wiring import (
     PromptDefenseMiddleware,
     TenantSecurityMiddleware,
@@ -11,12 +9,13 @@ from intergrax.applications._shared.application_security_wiring import (
     default_tool_invocation_policy,
     register_application_security_hooks,
 )
+from intergrax.applications.contracts.environment_profile import ApplicationSecurityProfile
+from intergrax.contracts.execution_phase import ExecutionPhase
 from intergrax.runtime.hooks.hook_context import HookAction, HookContext
 from intergrax.runtime.hooks.hook_point import HookPoint
 from intergrax.runtime.middleware.pipeline import MiddlewarePipeline
 from intergrax.runtime.nexus.nexus_loop import NexusLoop
 from intergrax.runtime.registry.agent_registry import AgentRegistry
-from intergrax.contracts.execution_phase import ExecutionPhase
 
 
 @pytest.mark.asyncio

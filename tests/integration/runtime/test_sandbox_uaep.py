@@ -1,10 +1,12 @@
 # © Artur Czarnecki. All rights reserved.
 
-from intergrax.utils import attribute_access
 import pytest
-
 from intergrax.agents.harness_reference_agent import HarnessReferenceAgent
-from intergrax.runtime.nexus.uaep import UAEPExecutor
+from intergrax.applications._shared.policy_wiring import wire_policy_bundle
+from intergrax.applications.contracts.environment_profile import (
+    ApplicationEnvironmentProfile,
+    PolicyRulesProfile,
+)
 from intergrax.contracts.agent_contract_meta import AgentContract
 from intergrax.contracts.agent_decision import AgentDecision, AgentDecisionType
 from intergrax.contracts.agent_step import AgentStep, StepOutput
@@ -12,20 +14,10 @@ from intergrax.contracts.capability import CapabilityMatchResult
 from intergrax.contracts.runtime_execution_context import RuntimeExecutionContext
 from intergrax.contracts.tool_request import ToolRequest, ToolResponseStatus
 from intergrax.runtime.nexus.config import RuntimeConfig
-from intergrax.tools.registry.profile import ToolProfile
-from intergrax.tools.registry.wiring import ToolWiringContext
 from intergrax.runtime.nexus.engine.runtime_context import RuntimeContext
 from intergrax.runtime.nexus.nexus_loop import NexusLoop
 from intergrax.runtime.nexus.responses.response_schema import RuntimeRequest
-from intergrax.applications._shared.policy_wiring import wire_policy_bundle
-from intergrax.applications.contracts.environment_profile import (
-    ApplicationEnvironmentProfile,
-    PolicyRulesProfile,
-)
-from testing_support.builder import (
-    build_runtime_request_for_tests,
-    canonical_governed_execution_scope,
-)
+from intergrax.runtime.nexus.uaep import UAEPExecutor
 from intergrax.runtime.registry.agent_registry import AgentRegistry
 from intergrax.runtime.sandbox.manager import SandboxSessionManager
 from intergrax.runtime.sandbox.sandbox_runtime import (
@@ -34,9 +26,14 @@ from intergrax.runtime.sandbox.sandbox_runtime import (
     SANDBOX_TOOL_NAME,
 )
 from intergrax.runtime.task.task import Task, TaskContext, TaskState
+from intergrax.tools.registry.profile import ToolProfile
+from intergrax.tools.registry.wiring import ToolWiringContext
+from intergrax.utils import attribute_access
 from testing_support.builder import (
     FakeLLMAdapter,
     build_in_memory_session_manager,
+    build_runtime_request_for_tests,
+    canonical_governed_execution_scope,
 )
 
 pytestmark = pytest.mark.gate
@@ -90,13 +87,9 @@ class _SandboxToolAgent(HarnessReferenceAgent):
         )
 
     def get_steps(self) -> list[AgentStep]:
-        return [
-            AgentStep(step_id="sandbox_write", step_name="sandbox_write", step_index=0)
-        ]
+        return [AgentStep(step_id="sandbox_write", step_name="sandbox_write", step_index=0)]
 
-    async def run_step(
-        self, step: AgentStep, ctx: RuntimeExecutionContext
-    ) -> StepOutput:
+    async def run_step(self, step: AgentStep, ctx: RuntimeExecutionContext) -> StepOutput:
         message = (ctx.request.message if ctx.request else "") or ""
         response = await ctx.invoke_tool(
             ToolRequest(

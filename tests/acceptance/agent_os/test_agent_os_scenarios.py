@@ -7,10 +7,8 @@ Each test maps to a mandatory runtime acceptance criterion.
 """
 
 from __future__ import annotations
-from intergrax.utils import attribute_access
 
 import pytest
-
 from intergrax.agents.harness_reference_agent import HarnessReferenceAgent
 from intergrax.contracts.agent_contract_meta import AgentContract
 from intergrax.contracts.agent_decision import (
@@ -21,12 +19,16 @@ from intergrax.contracts.agent_decision import (
 from intergrax.contracts.agent_execution_result import AgentExecutionStatus
 from intergrax.contracts.agent_step import AgentStep, StepOutput
 from intergrax.contracts.capability import CapabilityMatchResult
+from intergrax.contracts.execution_identity import mint_run_id
 from intergrax.contracts.runtime_execution_context import RuntimeExecutionContext
 from intergrax.contracts.tool_request import ToolRequest
 from intergrax.runtime.events.runtime_event import RuntimeEventType
-from intergrax.runtime.long_running.store import SQLiteTaskCheckpointStore
 from intergrax.runtime.long_running.runtime_checkpoint import UAEP_STEP_CURSOR_KEY
+from intergrax.runtime.long_running.store import SQLiteTaskCheckpointStore
 from intergrax.runtime.nexus.config import RuntimeConfig
+from intergrax.runtime.nexus.context.shared_task_context import (
+    load_shared_task_context_from_metadata,
+)
 from intergrax.runtime.nexus.engine.runtime_context import RuntimeContext
 from intergrax.runtime.nexus.execution.execution_graph import (
     ExecutionGraph,
@@ -36,9 +38,9 @@ from intergrax.runtime.nexus.execution.execution_graph import (
 from intergrax.runtime.nexus.execution.graph_executor import GraphExecutor
 from intergrax.runtime.nexus.nexus_loop import NexusLoop
 from intergrax.runtime.nexus.responses.response_schema import RuntimeRequest
-from intergrax.runtime.registry.agent_registry import AgentRegistry
 from intergrax.runtime.nexus.retry.retry_engine import RetryEngine, RetryPolicy
 from intergrax.runtime.nexus.validation.validation_engine import NexusValidationEngine
+from intergrax.runtime.registry.agent_registry import AgentRegistry
 from intergrax.runtime.sandbox.manager import SandboxSessionManager
 from intergrax.runtime.sandbox.sandbox_runtime import SANDBOX_FLAG, SANDBOX_TOOL_NAME
 from intergrax.runtime.task.task import Task, TaskContext, TaskState
@@ -46,13 +48,9 @@ from intergrax.runtime.task.task_contract import (
     TaskExecutionOptions,
     TaskLongRunningOptions,
 )
-from intergrax.runtime.nexus.context.shared_task_context import (
-    load_shared_task_context_from_metadata,
-)
 from intergrax.runtime.workspace.manager import ShadowWorkspaceManager
 from intergrax.runtime.workspace.shadow_workspace import SHADOW_WORKSPACE_FLAG
-
-from intergrax.contracts.execution_identity import mint_run_id
+from intergrax.utils import attribute_access
 from testing_support.builder import FakeLLMAdapter, build_in_memory_session_manager
 from testing_support.graph_execution_context import bound_graph_execution_context
 from testing_support.nexus_lab_task_execution import (
@@ -100,9 +98,7 @@ class _HitlAcceptanceAgent(HarnessReferenceAgent):
     def get_steps(self) -> list[AgentStep]:
         return [AgentStep(step_id="review", step_name="review", step_index=0)]
 
-    async def run_step(
-        self, step: AgentStep, ctx: RuntimeExecutionContext
-    ) -> StepOutput:
+    async def run_step(self, step: AgentStep, ctx: RuntimeExecutionContext) -> StepOutput:
         _ = ctx
         return StepOutput(step_id=step.step_id, summary="needs approval")
 
@@ -118,9 +114,7 @@ class _HitlAcceptanceAgent(HarnessReferenceAgent):
         return AgentDecision(
             type=AgentDecisionType.REQUEST_HUMAN,
             reason="approval required",
-            human_request=HumanRequest(
-                request_id="hr_acceptance", prompt="Approve?", options=["approve"]
-            ),
+            human_request=HumanRequest(request_id="hr_acceptance", prompt="Approve?", options=["approve"]),
         )
 
 
@@ -164,9 +158,7 @@ class _MidStepAcceptanceAgent(HarnessReferenceAgent):
     def get_steps(self) -> list[AgentStep]:
         return [AgentStep(step_id="process", step_name="process", step_index=0)]
 
-    async def run_step(
-        self, step: AgentStep, ctx: RuntimeExecutionContext
-    ) -> StepOutput:
+    async def run_step(self, step: AgentStep, ctx: RuntimeExecutionContext) -> StepOutput:
         cursor = ctx.metadata.get(UAEP_STEP_CURSOR_KEY)
         if cursor and cursor.get("phase1_done"):
             return StepOutput(step_id=step.step_id, summary="mid-step complete")
@@ -232,9 +224,7 @@ class _RetryPrimaryAgent(HarnessReferenceAgent):
     def get_steps(self) -> list[AgentStep]:
         return [AgentStep(step_id="run", step_name="run", step_index=0)]
 
-    async def run_step(
-        self, step: AgentStep, ctx: RuntimeExecutionContext
-    ) -> StepOutput:
+    async def run_step(self, step: AgentStep, ctx: RuntimeExecutionContext) -> StepOutput:
         _ = ctx
         return StepOutput(step_id=step.step_id, summary="")
 
@@ -284,9 +274,7 @@ class _RetryAlternateAgent(HarnessReferenceAgent):
     def get_steps(self) -> list[AgentStep]:
         return [AgentStep(step_id="run", step_name="run", step_index=0)]
 
-    async def run_step(
-        self, step: AgentStep, ctx: RuntimeExecutionContext
-    ) -> StepOutput:
+    async def run_step(self, step: AgentStep, ctx: RuntimeExecutionContext) -> StepOutput:
         _ = ctx
         return StepOutput(step_id=step.step_id, summary="recovered")
 
@@ -325,9 +313,7 @@ class _MemoryProducerAgent(HarnessReferenceAgent):
     def get_steps(self) -> list[AgentStep]:
         return [AgentStep(step_id="write", step_name="write", step_index=0)]
 
-    async def run_step(
-        self, step: AgentStep, ctx: RuntimeExecutionContext
-    ) -> StepOutput:
+    async def run_step(self, step: AgentStep, ctx: RuntimeExecutionContext) -> StepOutput:
         _ = step
         return StepOutput(step_id=step.step_id, summary="producer summary")
 
@@ -366,9 +352,7 @@ class _MemoryConsumerAgent(HarnessReferenceAgent):
     def get_steps(self) -> list[AgentStep]:
         return [AgentStep(step_id="read", step_name="read", step_index=0)]
 
-    async def run_step(
-        self, step: AgentStep, ctx: RuntimeExecutionContext
-    ) -> StepOutput:
+    async def run_step(self, step: AgentStep, ctx: RuntimeExecutionContext) -> StepOutput:
         _ = step
         shared = load_shared_task_context_from_metadata(ctx.metadata)
         assert shared is not None
@@ -423,9 +407,7 @@ class _SandboxAcceptanceAgent(HarnessReferenceAgent):
     def get_steps(self) -> list[AgentStep]:
         return [AgentStep(step_id="sandbox", step_name="sandbox", step_index=0)]
 
-    async def run_step(
-        self, step: AgentStep, ctx: RuntimeExecutionContext
-    ) -> StepOutput:
+    async def run_step(self, step: AgentStep, ctx: RuntimeExecutionContext) -> StepOutput:
         message = (ctx.request.message if ctx.request else "") or ""
         response = await ctx.invoke_tool(
             ToolRequest(
@@ -486,9 +468,7 @@ class _ShadowAcceptanceAgent(HarnessReferenceAgent):
     def get_steps(self) -> list[AgentStep]:
         return [AgentStep(step_id="shadow", step_name="shadow", step_index=0)]
 
-    async def run_step(
-        self, step: AgentStep, ctx: RuntimeExecutionContext
-    ) -> StepOutput:
+    async def run_step(self, step: AgentStep, ctx: RuntimeExecutionContext) -> StepOutput:
         workspace = ctx.metadata.get("shadow_workspace")
         message = (ctx.request.message if ctx.request else "") or ""
         if workspace is not None:
@@ -527,15 +507,9 @@ async def test_acceptance_02_sequential_multi_agent():
     """Agent A → Agent B → Agent C."""
     UaepPipelineStubAgent.run_log = []
     registry = AgentRegistry()
-    registry.register(
-        UaepPipelineStubAgent(agent_id="a", capability="cap.a", prefix="A")
-    )
-    registry.register(
-        UaepPipelineStubAgent(agent_id="b", capability="cap.b", prefix="B")
-    )
-    registry.register(
-        UaepPipelineStubAgent(agent_id="c", capability="cap.c", prefix="C")
-    )
+    registry.register(UaepPipelineStubAgent(agent_id="a", capability="cap.a", prefix="A"))
+    registry.register(UaepPipelineStubAgent(agent_id="b", capability="cap.b", prefix="B"))
+    registry.register(UaepPipelineStubAgent(agent_id="c", capability="cap.c", prefix="C"))
     task = Task(
         tenant_id="t1",
         user_id="u1",
@@ -547,40 +521,26 @@ async def test_acceptance_02_sequential_multi_agent():
         task_id=task.task_id,
         nodes=[
             ExecutionNode(node_id="n1", agent_id="a", capability="cap.a"),
-            ExecutionNode(
-                node_id="n2", agent_id="b", capability="cap.b", depends_on=["n1"]
-            ),
-            ExecutionNode(
-                node_id="n3", agent_id="c", capability="cap.c", depends_on=["n2"]
-            ),
+            ExecutionNode(node_id="n2", agent_id="b", capability="cap.b", depends_on=["n1"]),
+            ExecutionNode(node_id="n3", agent_id="c", capability="cap.c", depends_on=["n2"]),
         ],
     )
     with bound_graph_execution_context():
-        executions, _, final_graph, _ = await GraphExecutor(registry).execute(
-            graph, task
-        )
+        executions, _, final_graph, _ = await GraphExecutor(registry).execute(graph, task)
     assert len(executions) == 3
     assert executions[0].summary == "A: seq"
     assert "B: seq" in executions[1].summary
     assert "C: seq" in executions[2].summary
-    assert all(
-        node.status == ExecutionNodeStatus.COMPLETED for node in final_graph.nodes
-    )
+    assert all(node.status == ExecutionNodeStatus.COMPLETED for node in final_graph.nodes)
 
 
 @pytest.mark.asyncio
 async def test_acceptance_03_parallel_multi_agent():
     """Agent A, B, C in parallel batch."""
     registry = AgentRegistry()
-    registry.register(
-        UaepPipelineStubAgent(agent_id="pa", capability="cap.pa", prefix="PA")
-    )
-    registry.register(
-        UaepPipelineStubAgent(agent_id="pb", capability="cap.pb", prefix="PB")
-    )
-    registry.register(
-        UaepPipelineStubAgent(agent_id="pc", capability="cap.pc", prefix="PC")
-    )
+    registry.register(UaepPipelineStubAgent(agent_id="pa", capability="cap.pa", prefix="PA"))
+    registry.register(UaepPipelineStubAgent(agent_id="pb", capability="cap.pb", prefix="PB"))
+    registry.register(UaepPipelineStubAgent(agent_id="pc", capability="cap.pc", prefix="PC"))
     task = Task(
         tenant_id="t1",
         user_id="u1",
@@ -601,15 +561,11 @@ async def test_acceptance_03_parallel_multi_agent():
     assert len(batches[0]) == 3
 
     with bound_graph_execution_context():
-        executions, _, final_graph, _ = await GraphExecutor(registry).execute(
-            graph, task
-        )
+        executions, _, final_graph, _ = await GraphExecutor(registry).execute(graph, task)
     assert len(executions) == 3
     summaries = {execution.summary for execution in executions}
     assert summaries == {"PA: parallel", "PB: parallel", "PC: parallel"}
-    assert all(
-        node.status == ExecutionNodeStatus.COMPLETED for node in final_graph.nodes
-    )
+    assert all(node.status == ExecutionNodeStatus.COMPLETED for node in final_graph.nodes)
 
 
 @pytest.mark.asyncio
@@ -736,11 +692,7 @@ async def test_acceptance_06_retry_flow():
     graph = ExecutionGraph(
         graph_id="acceptance_retry",
         task_id=task.task_id,
-        nodes=[
-            ExecutionNode(
-                node_id="n1", agent_id="retry_primary", capability="acceptance.retry"
-            )
-        ],
+        nodes=[ExecutionNode(node_id="n1", agent_id="retry_primary", capability="acceptance.retry")],
     )
     executor = GraphExecutor(
         registry,
@@ -773,14 +725,9 @@ async def test_acceptance_07_partial_results(tmp_path):
     await run_lab_nexus_task(loop, task)
     checkpoints = store.list_for_task(task.task_id, tenant_id="t1")
     assert checkpoints
-    progress_types = {
-        event.event_type
-        for event in loop.event_bus.history
-        if event.task_id == task.task_id
-    }
+    progress_types = {event.event_type for event in loop.event_bus.history if event.task_id == task.task_id}
     assert (
-        RuntimeEventType.TASK_PROGRESS in progress_types
-        or RuntimeEventType.HUMAN_APPROVAL_REQUESTED in progress_types
+        RuntimeEventType.TASK_PROGRESS in progress_types or RuntimeEventType.HUMAN_APPROVAL_REQUESTED in progress_types
     )
 
 
@@ -800,9 +747,7 @@ async def test_acceptance_08_memory_handoff():
         graph_id="acceptance_memory",
         task_id=task.task_id,
         nodes=[
-            ExecutionNode(
-                node_id="n1", agent_id="memory_a", capability="acceptance.memory_a"
-            ),
+            ExecutionNode(node_id="n1", agent_id="memory_a", capability="acceptance.memory_a"),
             ExecutionNode(
                 node_id="n2",
                 agent_id="memory_b",
@@ -812,9 +757,7 @@ async def test_acceptance_08_memory_handoff():
         ],
     )
     with bound_graph_execution_context():
-        executions, _, final_graph, _ = await GraphExecutor(registry).execute(
-            graph, task
-        )
+        executions, _, final_graph, _ = await GraphExecutor(registry).execute(graph, task)
     assert executions[0].summary == "producer summary"
     assert executions[1].summary == "consumer:producer summary"
     shared = load_shared_task_context_from_metadata(task.metadata)

@@ -10,36 +10,35 @@ without embedding orchestration in communication adapters.
 
 from __future__ import annotations
 
-from typing import Optional, Sequence
+from collections.abc import Sequence
 
 from intergrax.agents.authoring.acp_stub_reflex import perceive_run_input, reason_passthrough
 from intergrax.agents.authoring.patterns.reflex import ReflexAgent
 from intergrax.agents.authoring.patterns.types import AgentEvaluation, CognitiveEvaluation
 from intergrax.contracts.agent_contract_meta import AgentContract, AgentRiskLevel
-from intergrax.contracts.agent_lifecycle_state import AgentLifecycleState
 from intergrax.contracts.agent_decision import (
     AgentDecision,
     AgentDecisionType,
     HumanRequest,
     HumanRequestUrgency,
 )
+from intergrax.contracts.agent_lifecycle_state import AgentLifecycleState
 from intergrax.contracts.agent_run_enums import CognitivePattern
 from intergrax.contracts.agent_step import AgentStep, StepOutput
+from intergrax.contracts.agent_step_context import AgentStepContext
 from intergrax.contracts.capability import CapabilityMatchResult
 from intergrax.contracts.runtime_execution_context import RuntimeExecutionContext
-from intergrax.runtime.execution.host_runtime_config import RuntimeConfig
-from intergrax.runtime.execution.agent_runtime_context import RuntimeContext
 from intergrax.contracts.task_envelope import TaskEnvelope, routing_capability_from_envelope
 from intergrax.llm.messages import ChatMessage
 from intergrax.llm_adapters._shared.adapter_response_builders import build_adapter_response
-from intergrax.llm_adapters.contracts.adapter_response import LLMAdapterResponse
-from intergrax.llm_adapters.contracts.llm_adapter import LLMAdapter
 from intergrax.llm_adapters.base.base_llm_adapter import BaseLLMAdapter
-from intergrax.runtime.execution.agent_runtime_io import RuntimeAnswer, RuntimeRequest
+from intergrax.llm_adapters.contracts.adapter_response import LLMAdapterResponse
 from intergrax.runtime.execution.agent_in_memory_session_factory import (
     build_in_memory_session_manager,
 )
-from intergrax.contracts.agent_step_context import AgentStepContext
+from intergrax.runtime.execution.agent_runtime_context import RuntimeContext
+from intergrax.runtime.execution.agent_runtime_io import RuntimeAnswer, RuntimeRequest
+from intergrax.runtime.execution.host_runtime_config import RuntimeConfig
 
 
 class _StubLLMAdapter(BaseLLMAdapter):
@@ -57,9 +56,9 @@ class _StubLLMAdapter(BaseLLMAdapter):
         self,
         messages: Sequence[ChatMessage],
         *,
-        temperature: Optional[float] = None,
-        max_tokens: Optional[int] = None,
-        run_id: Optional[str] = None,
+        temperature: float | None = None,
+        max_tokens: int | None = None,
+        run_id: str | None = None,
     ) -> LLMAdapterResponse:
         _ = messages, temperature, max_tokens, run_id
         return build_adapter_response(content=self._text)
@@ -80,9 +79,7 @@ class OrganizationWorkerAgent(ReflexAgent):
         return AgentContract(
             id="organization_worker",
             name="Organization Worker",
-            description=(
-                "Virtual organizational worker for vendor reports and coordinated reviews (§38)."
-            ),
+            description=("Virtual organizational worker for vendor reports and coordinated reviews (§38)."),
             version="1.0.0",
             capabilities=[ORG_VENDOR_REPORT_CAPABILITY],
             skills=[],
@@ -127,10 +124,7 @@ class OrganizationWorkerAgent(ReflexAgent):
 
     async def act(self, step_ctx: AgentStepContext, reasoning):
         subject = (reasoning.thought or "").strip() or "unspecified vendor"
-        draft = (
-            f"Draft vendor report prepared for: {subject}. "
-            "Pending manager approval before distribution."
-        )
+        draft = f"Draft vendor report prepared for: {subject}. Pending manager approval before distribution."
         return {
             "summary": draft,
             "answer": draft,

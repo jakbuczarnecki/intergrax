@@ -12,12 +12,12 @@ from intergrax.agents.authoring.patterns.types import (
 )
 from intergrax.contracts.agent_step_context import AgentStepContext
 from intergrax.llm_adapters.contracts.llm_adapter import LLMAdapter
-from intergrax.runtime.execution.agent_runtime_context import RuntimeContext
-from intergrax.runtime.execution.agent_runtime_io import RuntimeRequest
-from intergrax.runtime.execution.host_runtime_config import RuntimeConfig
 from intergrax.runtime.execution.agent_in_memory_session_factory import (
     build_in_memory_session_manager,
 )
+from intergrax.runtime.execution.agent_runtime_context import RuntimeContext
+from intergrax.runtime.execution.agent_runtime_io import RuntimeRequest
+from intergrax.runtime.execution.host_runtime_config import RuntimeConfig
 
 
 def perceive_run_input(step_ctx: AgentStepContext, agent: object) -> Observation:

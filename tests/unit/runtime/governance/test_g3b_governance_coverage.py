@@ -3,10 +3,8 @@
 from __future__ import annotations
 
 import pytest
-
-from intergrax.agents.harness_reference_agent import HarnessReferenceAgent
 from intergrax.agents.authoring.llm_router import StepLLMRouter
-from intergrax.runtime.nexus.uaep import UAEPExecutor
+from intergrax.agents.harness_reference_agent import HarnessReferenceAgent
 from intergrax.contracts.agent_contract_meta import AgentContract
 from intergrax.contracts.agent_decision import AgentDecision, AgentDecisionType
 from intergrax.contracts.agent_step import AgentStep, StepOutput
@@ -38,6 +36,7 @@ from intergrax.runtime.nexus.config import RuntimeConfig
 from intergrax.runtime.nexus.engine.runtime_context import RuntimeContext
 from intergrax.runtime.nexus.nexus_loop import NexusLoop
 from intergrax.runtime.nexus.responses.response_schema import RuntimeRequest
+from intergrax.runtime.nexus.uaep import UAEPExecutor
 from intergrax.runtime.policy.agent_decision_enforcement import (
     agent_decision_failure_from_resolution,
 )
@@ -155,9 +154,7 @@ async def test_pre_model_policy_blocks_provider_before_complete() -> None:
     )
 
     class _DenyAgentModelEngine(RuntimePolicyEngine):
-        def evaluate_pre_llm(
-            self, *, tenant_id, principal_id, agent_id=None, message_count, context=None
-        ):
+        def evaluate_pre_llm(self, *, tenant_id, principal_id, agent_id=None, message_count, context=None):
             ctx = context or PreModelPolicyContext()
             if ctx.phase is PreModelPhase.AGENT_STEP and ctx.model_id == "balanced":
                 return PolicyDecision(
@@ -251,9 +248,7 @@ class _UaepDenyBoundaryAgent(HarnessReferenceAgent):
             AgentStep(step_id="s2", step_name="second", step_index=1),
         ]
 
-    async def run_step(
-        self, step: AgentStep, ctx: RuntimeExecutionContext
-    ) -> StepOutput:
+    async def run_step(self, step: AgentStep, ctx: RuntimeExecutionContext) -> StepOutput:
         _ = ctx
         if step.step_id == "s2":
             self.protected_called = True
@@ -298,9 +293,7 @@ async def test_nexus_finish_task_post_run_uses_active_run_id_not_task_id() -> No
         open_runtime_event_metric_scope_for_tests,
     )
 
-    metric_scope = open_runtime_event_metric_scope_for_tests(
-        task_id=task_id, run_id=run_id
-    )
+    metric_scope = open_runtime_event_metric_scope_for_tests(task_id=task_id, run_id=run_id)
     try:
         await loop._finish_task(  # noqa: SLF001
             task,
@@ -365,17 +358,9 @@ async def test_uaep_agent_decision_deny_blocks_subsequent_protected_step() -> No
     assert governance.should_block_execution is True
     assert governance.should_fail is True
     assert agent.protected_called is False
-    step_events = [
-        event
-        for event in bus.history
-        if event.event_type is RuntimeEventType.STEP_STARTED
-    ]
+    step_events = [event for event in bus.history if event.event_type is RuntimeEventType.STEP_STARTED]
     assert len(step_events) == 1
-    decision_events = [
-        event
-        for event in bus.history
-        if event.event_type is RuntimeEventType.DECISION_EMITTED
-    ]
+    decision_events = [event for event in bus.history if event.event_type is RuntimeEventType.DECISION_EMITTED]
     assert len(decision_events) == 1
     assert decision_events[0].payload["policy_action"] == PolicyAction.DENY.value
 

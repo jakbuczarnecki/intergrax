@@ -12,7 +12,6 @@ from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
 from fastapi import Request
-
 from intergrax.applications._shared.async_task_dispatch import (
     InMemoryAsyncTaskIndex,
     run_async_task_executor,
@@ -26,8 +25,6 @@ from intergrax.applications._shared.mcp_nexus_server import (
     task_from_mcp_agent_intake,
 )
 from intergrax.contracts.execution_identity import (
-    AttemptId,
-    ExecutionId,
     RunId,
     TaskId,
     mint_attempt_id,
@@ -305,9 +302,7 @@ def test_host_q4_host_task_uses_execution_runtime() -> None:
 
 def test_host_q5_fastapi_maps_internal_errors_without_secret_leak() -> None:
     secret = "HOST01-SECRET-TOKEN-xyz"
-    error_type, status_code, message = map_exception_to_api_error(
-        RuntimeError(f"boom {secret} traceback")
-    )
+    error_type, status_code, message = map_exception_to_api_error(RuntimeError(f"boom {secret} traceback"))
     assert error_type.value == "internal_error"
     assert status_code == 500
     assert secret not in message

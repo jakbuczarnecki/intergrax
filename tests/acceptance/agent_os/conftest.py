@@ -5,10 +5,10 @@
 from __future__ import annotations
 
 import pytest
-
-from echo.echo_agent import EchoAgent
 from intergrax.runtime.nexus.nexus_loop import NexusLoop
 from intergrax.runtime.registry.agent_registry import AgentRegistry
+
+from echo.echo_agent import EchoAgent
 
 
 @pytest.fixture(autouse=True)

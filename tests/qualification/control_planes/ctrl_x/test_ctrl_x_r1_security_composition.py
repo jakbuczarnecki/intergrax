@@ -7,7 +7,6 @@ from __future__ import annotations
 import inspect
 
 import pytest
-
 from intergrax.applications._shared.application_security_wiring import register_application_security_hooks
 from intergrax.applications._shared.security_assembly_resolver import SecurityAssemblyError
 from intergrax.applications.contracts.environment_profile import ApplicationSecurityProfile

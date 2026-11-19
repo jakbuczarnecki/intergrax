@@ -1,7 +1,6 @@
 # © Artur Czarnecki. All rights reserved.
 
 import pytest
-
 from intergrax.contracts.execution_identity import mint_run_id
 from intergrax.contracts.execution_phase import ExecutionPhase
 from intergrax.runtime.hooks.hook_context import HookAction, HookContext, HookResult

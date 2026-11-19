@@ -1,8 +1,6 @@
 # © Artur Czarnecki. All rights reserved.
 
 import pytest
-
-from echo.echo_agent import EchoAgent
 from intergrax.applications._shared.guardrail_wiring import (
     apply_application_guardrail_wiring,
     wire_application_guardrail,
@@ -17,6 +15,8 @@ from intergrax.runtime.events.runtime_event import RuntimeEventType
 from intergrax.runtime.nexus.nexus_loop import NexusLoop
 from intergrax.runtime.registry.agent_registry import AgentRegistry
 from intergrax.runtime.task.task import Task, TaskContext, TaskState
+
+from echo.echo_agent import EchoAgent
 
 
 @pytest.mark.asyncio
@@ -49,11 +49,7 @@ async def test_nexus_loop_guardrail_blocks_prompt_injection() -> None:
     assert result.state == TaskState.FAILED
     assert result.summary.validation.valid is False
     assert any("graph node failed" in error for error in result.summary.validation.errors)
-    blocked = [
-        event
-        for event in loop.event_bus.history
-        if event.event_type == RuntimeEventType.GUARDRAIL_BLOCKED
-    ]
+    blocked = [event for event in loop.event_bus.history if event.event_type == RuntimeEventType.GUARDRAIL_BLOCKED]
     assert len(blocked) == 1
     assert blocked[0].payload["scan_kind"] == "input"
     assert "llm_guard" in blocked[0].payload["backend_slug"]
@@ -88,9 +84,5 @@ async def test_nexus_loop_guardrail_allows_benign_prompt() -> None:
 
     assert result.state == TaskState.COMPLETED
     assert "hello harness" in (result.answer or "")
-    blocked = [
-        event
-        for event in loop.event_bus.history
-        if event.event_type == RuntimeEventType.GUARDRAIL_BLOCKED
-    ]
+    blocked = [event for event in loop.event_bus.history if event.event_type == RuntimeEventType.GUARDRAIL_BLOCKED]
     assert blocked == []

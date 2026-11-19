@@ -5,50 +5,44 @@
 from __future__ import annotations
 
 from pathlib import Path
-from typing import Optional
 
 from fastapi import FastAPI
-
-from intergrax.applications._shared.workspace_cleanup_wiring import (
-    apply_factory_lifespans,
-    build_factory_lifespans,
-)
-from intergrax.applications._shared.harness_host_runtime import build_harness_host_runtime
-from intergrax.applications._shared.lab_harness_context import lab_harness_context_from_build_context
 from intergrax.applications._shared.harness_host_auxiliary_wiring import (
     HostTaskExecutionExecutor,
     wire_harness_host_long_running_scheduler,
 )
+from intergrax.applications._shared.harness_host_composition import (
+    bootstrap_harness_host_platform,
+)
+from intergrax.applications._shared.harness_host_runtime import build_harness_host_runtime
 from intergrax.applications._shared.interaction_wiring import wire_interaction_intake_service
+from intergrax.applications._shared.lab_harness_context import lab_harness_context_from_build_context
 from intergrax.applications._shared.plugin_bootstrap import attach_plugin_shutdown
 from intergrax.applications._shared.task_control_wiring import (
     build_reliability_task_enricher,
     wire_harness_task_control,
 )
+from intergrax.applications._shared.workspace_cleanup_wiring import (
+    apply_factory_lifespans,
+    build_factory_lifespans,
+)
 from intergrax.debug.app import create_debug_app
 from intergrax.debug.hitl_service import DebugHitlResumeService
 from intergrax.debug.store import open_default_task_checkpoint_persistence
 from intergrax.runtime.interactions.router import create_interaction_intake_router
-from intergrax.applications._shared.harness_host_composition import (
-    bootstrap_harness_host_application_plugins,
-    bootstrap_harness_host_platform,
-    resolve_harness_host_event_bus,
-    resolve_harness_host_lifecycle_hook_coordinator,
-    resolve_harness_host_middleware_pipeline,
-    resolve_harness_host_runtime_event_persistence,
-)
+
 from intergrax_assistant_application.host.agent_builders import (
     build_intergrax_assistant_agent_builders,
 )
-from intergrax_assistant_application.host.settings import IntergraxAssistantApplicationSettings
 from intergrax_assistant_application.host.environment_profile import build_intergrax_assistant_environment_profile
+from intergrax_assistant_application.host.settings import IntergraxAssistantApplicationSettings
 from intergrax_assistant_application.manifest import build_intergrax_assistant_manifest
 from intergrax_assistant_application.serving.fastapi_router import mount_intergrax_assistant_routes
 
 
 def create_intergrax_assistant_application(
     *,
-    settings: Optional[IntergraxAssistantApplicationSettings] = None,
+    settings: IntergraxAssistantApplicationSettings | None = None,
     db_path: Path | None = None,
     experiments_db_path: Path | None = None,
     runtime_events_db_path: Path | None = None,
@@ -146,6 +140,7 @@ def create_intergrax_assistant_application(
 
         load_mcp_coupling()
         from intergrax.applications._shared.fastapi_mcp import couple_harness_host_fastapi_with_mcp
+
         from intergrax_assistant_application.mcp.server import build_intergrax_assistant_mcp_server
 
         tool_registry = runtime.env_wiring.tool_wiring.registry

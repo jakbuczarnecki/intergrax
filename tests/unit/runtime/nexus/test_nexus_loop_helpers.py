@@ -3,7 +3,6 @@
 from __future__ import annotations
 
 import pytest
-
 from intergrax.runtime.human.models import HumanResponseVerdict
 from intergrax.runtime.nexus.nexus_loop import NexusLoop
 from intergrax.runtime.nexus.orchestration.human_response import normalize_human_response
@@ -22,9 +21,7 @@ def _task_with_human_response(text: str) -> Task:
         user_id="user",
         agent_id="agent",
         message="q",
-    ).model_copy(
-        update={"options": TaskExecutionOptions(human=TaskHumanInput(response_text=text))}
-    )
+    ).model_copy(update={"options": TaskExecutionOptions(human=TaskHumanInput(response_text=text))})
 
 
 def test_normalize_human_response_records_verdict() -> None:

@@ -1,8 +1,6 @@
 # © Artur Czarnecki. All rights reserved.
 
 import pytest
-from pydantic import ValidationError
-
 from intergrax.contracts.agent_execution_result import AgentExecutionResult, AgentExecutionStatus
 from intergrax.contracts.execution_identity import (
     bind_active_execution_identity,
@@ -12,6 +10,11 @@ from intergrax.contracts.execution_identity import (
     mint_task_id,
     reset_active_execution_identity,
 )
+from intergrax.contracts.human_approver import local_development_approver_evidence
+from intergrax.runtime.execution.harness_task_execution_port import (
+    build_harness_root_task_execution_port,
+)
+from intergrax.runtime.human.models import HumanResponseVerdict
 from intergrax.runtime.long_running.checkpoint_builder import (
     apply_runtime_checkpoint_to_graph,
     build_runtime_checkpoint,
@@ -23,7 +26,6 @@ from intergrax.runtime.long_running.execution_tree_checkpoint import (
     ExecutionCheckpointEntry,
     ExecutionCheckpointStatus,
     ExecutionPriorOutput,
-    ExecutionTreeRecorder,
     ExecutionTreeSnapshot,
 )
 from intergrax.runtime.long_running.models import TaskCheckpoint
@@ -34,17 +36,13 @@ from intergrax.runtime.long_running.runtime_checkpoint import (
 )
 from intergrax.runtime.nexus.execution.execution_graph import ExecutionGraph, ExecutionNode, ExecutionNodeStatus
 from intergrax.runtime.nexus.planning.task_planner import NexusPlan, PlanStep
-from intergrax.contracts.human_approver import local_development_approver_evidence
-from intergrax.runtime.human.models import HumanResponseVerdict
+from intergrax.runtime.task.task import Task, TaskResult, TaskState
+from intergrax.runtime.task.task_contract import HumanApprovalResolution
 from intergrax.runtime.task.task_result_authoritative_exposure_defaults import (
     terminal_task_result_exposure_no_decision_gate,
 )
-from intergrax.runtime.task.task import Task, TaskResult, TaskState
-from intergrax.runtime.task.task_contract import HumanApprovalResolution
-from intergrax.runtime.execution.harness_task_execution_port import (
-    build_harness_root_task_execution_port,
-)
 from intergrax.runtime.task.unified_task_runner import UnifiedTaskRunner
+from pydantic import ValidationError
 
 
 def _tree(
@@ -361,7 +359,11 @@ async def test_unified_task_runner_resume_preserves_checkpoint_identity(monkeypa
         captured["run_id"] = run_id
         captured["attempt_id"] = attempt_id
         return TaskResult(
-            authoritative_decision_exposure=terminal_task_result_exposure_no_decision_gate(),task_id=task.task_id, run_id=run_id, state=TaskState.COMPLETED)
+            authoritative_decision_exposure=terminal_task_result_exposure_no_decision_gate(),
+            task_id=task.task_id,
+            run_id=run_id,
+            state=TaskState.COMPLETED,
+        )
 
     monkeypatch.setattr(loop, "handle_task", _fake_handle_task)
     runner = UnifiedTaskRunner(build_harness_root_task_execution_port(loop))

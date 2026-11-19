@@ -8,36 +8,36 @@ import ast
 from pathlib import Path
 
 import pytest
-
-from echo.echo_agent import EchoAgent
 from intergrax.applications._shared.diagnostic_assembly_resolver import DiagnosticAssemblyError
 from intergrax.applications._shared.diagnostic_runtime_wiring import wire_terminal_execution_diagnostics
-from intergrax.contracts.host_observability_stores import HostObservabilityStores
 from intergrax.applications.contracts.environment_profile import (
     ApplicationEnvironmentProfile,
     DiagnosticPosture,
     DiagnosticProfile,
 )
-from intergrax.runtime.events.stores.memory_runtime_event_store import InMemoryRuntimeEventStore
-from tests.integration.runtime.test_terminal_diagnostic_production_e2e import _FakeEnvWiring
 from intergrax.contracts.diagnostics.terminal_execution_diagnostic_port import (
     TerminalDiagnosticDispatchResult,
     TerminalDiagnosticDispatchStatus,
     TerminalExecutionDiagnosticRequest,
 )
 from intergrax.contracts.execution_identity import mint_run_id
+from intergrax.contracts.host_observability_stores import HostObservabilityStores
 from intergrax.integrations._shared.in_memory_document_store import InMemoryDocumentStore
+from intergrax.runtime.events.stores.memory_runtime_event_store import InMemoryRuntimeEventStore
+from intergrax.runtime.execution.harness_task_execution_port import (
+    build_harness_root_task_execution_port,
+)
 from intergrax.runtime.nexus.nexus_loop import NexusLoop
 from intergrax.runtime.nexus.observability_wiring import wire_nexus_observability
 from intergrax.runtime.registry.agent_registry import AgentRegistry
 from intergrax.runtime.task.task import Task, TaskContext, TaskState
-from intergrax.runtime.execution.harness_task_execution_port import (
-    build_harness_root_task_execution_port,
-)
 from intergrax.runtime.task.unified_task_runner import UnifiedTaskRunner
 from testing_support.admitted_root_governance_identity import (
     lab_admitted_root_governance_identity_for_task,
 )
+from tests.integration.runtime.test_terminal_diagnostic_production_e2e import _FakeEnvWiring
+
+from echo.echo_agent import EchoAgent
 
 pytestmark = [
     pytest.mark.unit,

@@ -8,43 +8,43 @@ from __future__ import annotations
 import asyncio
 import concurrent.futures
 from collections.abc import Callable
-from typing import Any, Dict, Optional, Protocol, runtime_checkable
+from typing import Any, Protocol, runtime_checkable
 
 from pydantic import BaseModel, Field
 
+from intergrax.contracts.admitted_root_governance_identity import (
+    AdmittedRootGovernanceIdentity,
+)
+from intergrax.contracts.execution_continuation_state_store import (
+    ExecutionContinuationStateStore,
+)
 from intergrax.contracts.execution_identity import AttemptId, TaskId
-from intergrax.runtime.long_running.coordinator import LongRunningCoordinator
-from intergrax.runtime.long_running.models import TaskCheckpoint
-from intergrax.runtime.long_running.resume_planner import (
-    execution_identity_from_checkpoint,
+from intergrax.contracts.host_orchestration_run_retry import HostOrchestrationRunRetrySpec
+from intergrax.contracts.run_budget import RunBudget
+from intergrax.contracts.runtime_execution_admission import (
+    RootExecutionAuthorityAdmissionPort,
 )
 from intergrax.runtime.background_execution.bootstrap import BackgroundExecutionIdentity
 from intergrax.runtime.background_execution.identity_admission import (
     assert_handler_run_id_matches_identity,
     assert_payload_run_id_consistent,
 )
-from intergrax.contracts.admitted_root_governance_identity import (
-    AdmittedRootGovernanceIdentity,
-)
-from intergrax.runtime.execution.host_task import HostTaskExecutionPort
-from intergrax.contracts.execution_continuation_state_store import (
-    ExecutionContinuationStateStore,
-)
-from intergrax.contracts.runtime_execution_admission import (
-    RootExecutionAuthorityAdmissionPort,
-)
-from intergrax.runtime.execution.worker_host_task_execution_composition import (
-    build_worker_host_task_execution_from_registry,
-)
-from intergrax.runtime.long_running.persistence_contract import (
-    TaskCheckpointPersistence,
-)
-from intergrax.contracts.run_budget import RunBudget
-from intergrax.runtime.execution.execution_terminal import ExecutionTerminalService
-from intergrax.contracts.host_orchestration_run_retry import HostOrchestrationRunRetrySpec
 from intergrax.runtime.execution.budget.ledger import ExecutionBudgetLedgerFactory
 from intergrax.runtime.execution.budget.persistence import RunBudgetPersistence
 from intergrax.runtime.execution.deadline_authority import ExecutionDeadlineAuthorityResolver
+from intergrax.runtime.execution.execution_terminal import ExecutionTerminalService
+from intergrax.runtime.execution.host_task import HostTaskExecutionPort
+from intergrax.runtime.execution.worker_host_task_execution_composition import (
+    build_worker_host_task_execution_from_registry,
+)
+from intergrax.runtime.long_running.coordinator import LongRunningCoordinator
+from intergrax.runtime.long_running.models import TaskCheckpoint
+from intergrax.runtime.long_running.persistence_contract import (
+    TaskCheckpointPersistence,
+)
+from intergrax.runtime.long_running.resume_planner import (
+    execution_identity_from_checkpoint,
+)
 from intergrax.runtime.registry.agent_registry import AgentRegistry
 from intergrax.runtime.task.task import Task
 from intergrax.runtime.task.task_run_bridge import (
@@ -71,7 +71,7 @@ def _run_coro_sync(coro):
 class NexusTaskWorkerOutput(BaseModel):
     """Worker handler output returned through Tier-0 queue plane."""
 
-    result_payload: Dict[str, Any] = Field(default_factory=dict)
+    result_payload: dict[str, Any] = Field(default_factory=dict)
     schema_version: str = "nexus_task_worker.v1"
 
 
@@ -81,9 +81,7 @@ class WorkerRunLifecycle(Protocol):
 
     def mark_running(self, run_id: str) -> None: ...
 
-    def mark_completed(
-        self, run_id: str, result_payload: Optional[dict] = None
-    ) -> None: ...
+    def mark_completed(self, run_id: str, result_payload: dict | None = None) -> None: ...
 
     def mark_failed(self, run_id: str, error_type: str, error_message: str) -> None: ...
 
@@ -95,8 +93,8 @@ class NexusWorkerRuntime:
         self,
         host_execution: HostTaskExecutionPort,
         *,
-        checkpoint_store: Optional[TaskCheckpointPersistence] = None,
-        lifecycle: Optional[WorkerRunLifecycle] = None,
+        checkpoint_store: TaskCheckpointPersistence | None = None,
+        lifecycle: WorkerRunLifecycle | None = None,
         task_enricher: TaskEnricher | None = None,
     ) -> None:
         self._host_execution = host_execution
@@ -109,8 +107,8 @@ class NexusWorkerRuntime:
         cls,
         registry: AgentRegistry,
         *,
-        checkpoint_store: Optional[TaskCheckpointPersistence] = None,
-        lifecycle: Optional[WorkerRunLifecycle] = None,
+        checkpoint_store: TaskCheckpointPersistence | None = None,
+        lifecycle: WorkerRunLifecycle | None = None,
         run_budget: RunBudget | None = None,
         run_budget_persistence: RunBudgetPersistence | None = None,
         deadline_authority_resolver: ExecutionDeadlineAuthorityResolver | None = None,
@@ -119,12 +117,9 @@ class NexusWorkerRuntime:
         orchestration_triggers: frozenset[str] = frozenset(),
         pipeline_capability_suffix: str = ".pipeline",
         task_enricher: TaskEnricher | None = None,
-        execution_continuation_state_store: ExecutionContinuationStateStore
-        | None = None,
+        execution_continuation_state_store: ExecutionContinuationStateStore | None = None,
         production_mode: bool,
-        admit_root_governance_identity: Callable[
-            [Task], AdmittedRootGovernanceIdentity
-        ],
+        admit_root_governance_identity: Callable[[Task], AdmittedRootGovernanceIdentity],
         root_authority_admission: RootExecutionAuthorityAdmissionPort,
         retry_policy: HostOrchestrationRunRetrySpec | None = None,
     ) -> NexusWorkerRuntime:
@@ -166,9 +161,7 @@ class NexusWorkerRuntime:
             return execution_identity, None
         run_id, attempt_id = execution_identity_from_checkpoint(restored)
         root_execution_id = next(
-            entry.execution_id
-            for entry in restored.runtime.execution_tree.entries
-            if entry.parent_execution_id is None
+            entry.execution_id for entry in restored.runtime.execution_tree.entries if entry.parent_execution_id is None
         )
         reconciled = BackgroundExecutionIdentity(
             tenant_id=execution_identity.tenant_id,
@@ -190,7 +183,7 @@ class NexusWorkerRuntime:
         tenant_id: str,
         run_id: str,
         execution_identity: BackgroundExecutionIdentity,
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         request = decode_execution_request(payload)
         if request.tenant_id != execution_identity.tenant_id:
             raise ValueError(
@@ -239,9 +232,7 @@ class NexusWorkerRuntime:
             )
             result_payload = task_result_to_payload(result)
             if self._lifecycle is not None:
-                self._lifecycle.mark_completed(
-                    str(resolved_run_id), result_payload=result_payload
-                )
+                self._lifecycle.mark_completed(str(resolved_run_id), result_payload=result_payload)
             return result_payload
         except Exception as exc:
             if self._lifecycle is not None:
@@ -263,7 +254,7 @@ def make_nexus_task_worker_handler(
         tenant_id: str,
         run_id: str,
         payload: bytes,
-        idempotency_key: Optional[str] = None,
+        idempotency_key: str | None = None,
         execution_identity: BackgroundExecutionIdentity,
     ) -> ToolExecutionResult[NexusTaskWorkerOutput]:
         _ = idempotency_key
@@ -274,9 +265,7 @@ def make_nexus_task_worker_handler(
                 run_id=run_id,
                 execution_identity=execution_identity,
             )
-            return ToolExecutionResult.ok(
-                NexusTaskWorkerOutput(result_payload=result_payload)
-            )
+            return ToolExecutionResult.ok(NexusTaskWorkerOutput(result_payload=result_payload))
         except Exception as exc:
             return ToolExecutionResult(
                 success=False,

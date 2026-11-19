@@ -9,7 +9,6 @@ One harness probe per pattern; mock LLM stub inside reference probes (no network
 from __future__ import annotations
 
 import pytest
-
 from intergrax.agents.authoring.patterns.reference import (
     PatternDecompositionProbe,
     PatternPlanExecuteProbe,

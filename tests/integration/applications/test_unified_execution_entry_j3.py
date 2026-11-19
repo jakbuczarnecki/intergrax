@@ -1,28 +1,24 @@
 # © Artur Czarnecki. All rights reserved.
 
 from __future__ import annotations
-from intergrax.utils import attribute_access
 
 import asyncio
 
 import pytest
-from echo.echo_agent import EchoAgent
 from fastapi import BackgroundTasks
-
 from intergrax.fastapi_core.context import RequestContext
 from intergrax.fastapi_core.execution.models import ExecutionRequest
 from intergrax.fastapi_core.runs.default_service import DefaultRunService
 from intergrax.fastapi_core.runs.models import CreateRunRequest, RunStatus
 from intergrax.queueing.providers.celery.celery_task_queue import CeleryTaskQueue
+from intergrax.runtime.observability.memory_causal_evidence_persistence import (
+    InMemoryCausalEvidencePersistence,
+)
 from intergrax.runtime.registry.agent_registry import AgentRegistry
 from intergrax.runtime.task.queued_host_task_execution_adapter import QueuedHostTaskExecutionAdapter
 from intergrax.runtime.task.task import Task, TaskContext, TaskState
 from intergrax.runtime.task.task_run_bridge import task_to_execution_payload
 from intergrax.runtime.task.worker_bootstrap import create_nexus_celery_worker_app
-from intergrax.runtime.observability.memory_causal_evidence_persistence import (
-    InMemoryCausalEvidencePersistence,
-)
-from tests.unit.queueing.worker.dispatcher_test_kv import DispatcherTestKVStore
 from intergrax.runtime.task.worker_payload import (
     decode_execution_request,
     encode_execution_request,
@@ -30,10 +26,13 @@ from intergrax.runtime.task.worker_payload import (
 from testing_support.admitted_root_governance_identity import (
     lab_admitted_root_governance_identity_for_task,
 )
+from testing_support.builder import DummyRunStore
 from testing_support.reference_root_execution_authority_admission import (
     REFERENCE_ROOT_EXECUTION_AUTHORITY_ADMISSION,
 )
-from testing_support.builder import DummyRunStore
+from tests.unit.queueing.worker.dispatcher_test_kv import DispatcherTestKVStore
+
+from echo.echo_agent import EchoAgent
 
 pytestmark = [pytest.mark.integration, pytest.mark.gate]
 
@@ -121,22 +120,21 @@ def test_queued_host_task_execution_adapter_runs_echo_via_celery_eager() -> None
 
 def test_worker_checkpoint_resume_via_queue_payload(tmp_path) -> None:
     from intergrax.contracts.execution_identity import mint_run_id
-    from intergrax.contracts.human_approver import local_development_approver_evidence
-    from intergrax.runtime.long_running.store import SQLiteTaskCheckpointStore
     from intergrax.runtime.execution.continuation.persistence import (
         ExecutionContinuationDurableBacking,
         backing_execution_continuation_state_store,
     )
-    from intergrax.runtime.nexus.nexus_loop import NexusLoop
     from intergrax.runtime.execution.harness_task_execution_port import (
         build_harness_root_task_execution_port,
     )
-    from intergrax.runtime.task.unified_task_runner import UnifiedTaskRunner
+    from intergrax.runtime.long_running.store import SQLiteTaskCheckpointStore
+    from intergrax.runtime.nexus.nexus_loop import NexusLoop
     from intergrax.runtime.task.task_contract import (
         TaskExecutionOptions,
         TaskHumanInput,
         TaskLongRunningOptions,
     )
+    from intergrax.runtime.task.unified_task_runner import UnifiedTaskRunner
     from testing_support.admitted_root_governance_identity import (
         lab_admitted_root_governance_identity_for_task,
     )

@@ -7,23 +7,23 @@ from unittest.mock import AsyncMock, patch
 
 import pytest
 from fastapi import HTTPException
-
 from intergrax.agents.agent_contract import Agent
 from intergrax.contracts.agent_contract_meta import AgentContract
+from intergrax.fastapi_core.context import RequestContext
+from intergrax.runtime.nexus.engine.runtime_context import RuntimeContext
+from intergrax.runtime.nexus.nexus_loop import NexusLoop
+from intergrax.runtime.nexus.responses.response_schema import RuntimeRequest
+from intergrax.runtime.task.task import TaskResult, TaskState
+from testing_support.agent_registry_bootstrap import bootstrap_agent_registry_from_agents
+from tests.fixtures.harness_host_task_execution import (
+    build_harness_host_task_execution,
+)
+
 from legal_application.serving.fastapi_router import (
     DefaultLegalAgentService,
     LegalAgentServingConfig,
 )
 from legal_application.serving.schemas import LegalChatRequestV1
-from intergrax.fastapi_core.context import RequestContext
-from intergrax.runtime.nexus.engine.runtime_context import RuntimeContext
-from tests.fixtures.harness_host_task_execution import (
-    build_harness_host_task_execution,
-)
-from intergrax.runtime.nexus.nexus_loop import NexusLoop
-from intergrax.runtime.nexus.responses.response_schema import RuntimeRequest
-from intergrax.runtime.task.task import TaskResult, TaskState
-from testing_support.agent_registry_bootstrap import bootstrap_agent_registry_from_agents
 
 pytestmark = pytest.mark.unit
 

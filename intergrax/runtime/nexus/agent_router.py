@@ -4,16 +4,15 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
-from typing import Optional
 
-from intergrax.contracts.tier2_agent import Tier2Agent
+from intergrax.contracts.event_severity import EventSeverity
 from intergrax.contracts.execution_identity import (
     require_active_execution_id,
     require_active_execution_identity,
     validate_run_id,
 )
-from intergrax.contracts.event_severity import EventSeverity
 from intergrax.contracts.execution_phase import ExecutionPhase
+from intergrax.contracts.tier2_agent import Tier2Agent
 from intergrax.runtime.events.event_bus import RuntimeEventBus
 from intergrax.runtime.events.payload_registry import runtime_event_with_payload
 from intergrax.runtime.events.payloads import AgentSelectionPayloadV1
@@ -23,8 +22,8 @@ from intergrax.runtime.registry.capability_routing import (
     select_best_capability_match,
     validate_task_for_capability_routing,
 )
-from intergrax.runtime.task.task import Task
 from intergrax.runtime.task.agent_capability_intake import task_envelope_for_agent_capability_match
+from intergrax.runtime.task.task import Task
 
 
 @dataclass(frozen=True)
@@ -47,7 +46,7 @@ class AgentRouter:
         registry: AgentRegistryRead,
         *,
         production_mode: bool = False,
-        event_bus: Optional[RuntimeEventBus] = None,
+        event_bus: RuntimeEventBus | None = None,
     ) -> None:
         self._registry = registry
         self._production_mode = production_mode
@@ -70,9 +69,7 @@ class AgentRouter:
                 task.agent_id,
                 production_mode=self._production_mode,
             ):
-                raise RuntimeError(
-                    f"Requested agent is not routable: {task.agent_id}"
-                )
+                raise RuntimeError(f"Requested agent is not routable: {task.agent_id}")
             agent = self._registry.get(task.agent_id)
             selection = AgentRouteSelection(
                 requested_agent_id=requested,

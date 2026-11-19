@@ -8,12 +8,12 @@ from __future__ import annotations
 import os
 from pathlib import Path
 
+from intergrax.contracts.execution_evidence.persistence_port import EvidencePersistencePort
 from intergrax.integrations.providers.relational_store.sqlite.paths import (
     DEFAULT_RUNTIME_EVENTS_DB,
     ENV_RUNTIME_EVENTS_DB,
     resolve_runtime_events_db_path,
 )
-from intergrax.contracts.execution_evidence.persistence_port import EvidencePersistencePort
 from intergrax.runtime.events.persistence_contract import (
     NullRuntimeEventPersistence,
     RuntimeEventPersistence,

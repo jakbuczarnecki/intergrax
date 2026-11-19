@@ -5,25 +5,25 @@
 from __future__ import annotations
 
 import pytest
-
-from echo.echo_agent import EchoAgent
+from intergrax.contracts.delegation_authority import ParentExecutionAuthority
 from intergrax.runtime.events.runtime_event import RuntimeEventType
+from intergrax.runtime.governance.active_execution_authority import (
+    bind_active_execution_authority,
+    reset_active_execution_authority,
+)
 from intergrax.runtime.hooks.hook_context import HookAction, HookContext, HookResult
 from intergrax.runtime.hooks.hook_point import HookPoint
 from intergrax.runtime.middleware.pipeline import MiddlewarePipeline
 from intergrax.runtime.nexus.nexus_loop import NexusLoop
 from intergrax.runtime.registry.agent_registry import AgentRegistry
 from intergrax.runtime.task.task import TaskContext, TaskState
-from intergrax.contracts.delegation_authority import ParentExecutionAuthority
-from intergrax.runtime.governance.active_execution_authority import (
-    bind_active_execution_authority,
-    reset_active_execution_authority,
-)
 from testing_support.builder import (
     build_task_for_tests,
     canonical_governed_execution_scope,
     canonical_run_id_for_tests,
 )
+
+from echo.echo_agent import EchoAgent
 
 pytestmark = [pytest.mark.unit, pytest.mark.gate]
 

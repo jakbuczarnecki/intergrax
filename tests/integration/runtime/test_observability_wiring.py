@@ -3,21 +3,21 @@
 from __future__ import annotations
 
 import pytest
-
-from echo.echo_agent import EchoAgent
 from intergrax.contracts.delegation_authority import ParentExecutionAuthority
 from intergrax.debug.store import open_trace_reader
 from intergrax.runtime.governance.active_execution_authority import (
     bind_active_execution_authority,
     reset_active_execution_authority,
 )
-from testing_support.builder import canonical_governed_execution_scope
 from intergrax.runtime.nexus.nexus_loop import NexusLoop
 from intergrax.runtime.nexus.observability_wiring import wire_nexus_observability
 from intergrax.runtime.nexus.tracing.in_memory_trace_store import InMemoryRunTraceStore
 from intergrax.runtime.nexus.tracing.sqlite_run_trace_store import SQLiteRunTraceStore
 from intergrax.runtime.registry.agent_registry import AgentRegistry
 from intergrax.runtime.task.task import Task, TaskContext, TaskState
+from testing_support.builder import canonical_governed_execution_scope
+
+from echo.echo_agent import EchoAgent
 
 pytestmark = [pytest.mark.integration, pytest.mark.gate]
 

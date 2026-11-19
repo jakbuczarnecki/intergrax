@@ -6,19 +6,15 @@ from __future__ import annotations
 
 import ast
 from dataclasses import dataclass
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from pathlib import Path
 
 import pytest
-
-from intergrax.applications._shared.governed_contractor_orchestration_topology_production import (
-    build_governed_contractor_production_orchestration_topology_submission_port,
-)
 from applications.governed_contractor_application.host.stores import (
     InMemoryProviderInvocationStore,
 )
-from intergrax.runtime.execution.orchestration_topology_production_composition import (
-    build_strict_production_orchestration_topology_submission_port,
+from intergrax.applications._shared.governed_contractor_orchestration_topology_production import (
+    build_governed_contractor_production_orchestration_topology_submission_port,
 )
 from intergrax.contracts.collaborative_work import (
     CollaborativeWorkEnforcementRequest,
@@ -27,8 +23,8 @@ from intergrax.contracts.collaborative_work import (
 )
 from intergrax.contracts.delegation_authority import ParentExecutionAuthority
 from intergrax.contracts.enterprise_reliability.effect_contract import (
-    ExternalEffectCategory,
     ExternalEffectCapabilitySupport,
+    ExternalEffectCategory,
     ExternalEffectContract,
     ExternalEffectSafetyCapabilities,
 )
@@ -37,10 +33,6 @@ from intergrax.contracts.enterprise_reliability.repeat_eligibility import (
     ExternalEffectRepeatEligibilityRequest,
     ExternalEffectRepeatEligibilityVerdict,
     evaluate_external_effect_repeat_eligibility,
-)
-from intergrax.contracts.provider_invocation import (
-    ProviderInvocation,
-    ProviderInvocationOutcome,
 )
 from intergrax.contracts.execution_identity import (
     bind_active_execution_identity,
@@ -60,7 +52,9 @@ from intergrax.contracts.orchestration_topology import (
     OrchestrationSlotStatus,
     OrchestrationTopology,
 )
-from intergrax.contracts.provider_invocation import ProviderInvocationStatus
+from intergrax.contracts.provider_invocation import (
+    ProviderInvocationStatus,
+)
 from intergrax.contracts.runtime_policy import PolicyAction, PolicyDecision
 from intergrax.runtime.execution.active_execution_budget import (
     bind_root_execution_budget,
@@ -71,6 +65,7 @@ from intergrax.runtime.execution.boundary import ExecutionBoundary, ExecutionIde
 from intergrax.runtime.execution.budget.ledger import create_execution_budget_ledger
 from intergrax.runtime.execution.orchestration_topology_production_composition import (
     build_orchestration_reliability_composition,
+    build_strict_production_orchestration_topology_submission_port,
 )
 from intergrax.runtime.execution.orchestration_topology_submission import (
     build_orchestration_topology_host_task,
@@ -100,20 +95,12 @@ from testing_support.orchestration.orchestration_consequential_effect_reliabilit
 pytestmark = [pytest.mark.unit, pytest.mark.gate]
 
 _REPO_ROOT = Path(__file__).resolve().parents[4]
-_T0 = datetime(2026, 1, 1, tzinfo=timezone.utc)
+_T0 = datetime(2026, 1, 1, tzinfo=UTC)
 _RUNTIME_COMPOSITION = (
-    _REPO_ROOT
-    / "intergrax"
-    / "runtime"
-    / "execution"
-    / "orchestration_topology_production_composition.py"
+    _REPO_ROOT / "intergrax" / "runtime" / "execution" / "orchestration_topology_production_composition.py"
 )
 _GOVERNED_COMPOSITION = (
-    _REPO_ROOT
-    / "intergrax"
-    / "applications"
-    / "_shared"
-    / "governed_contractor_orchestration_topology_production.py"
+    _REPO_ROOT / "intergrax" / "applications" / "_shared" / "governed_contractor_orchestration_topology_production.py"
 )
 _SLOT_IDEMPOTENCY_KEY = "orchestration.graph_slot:slot:slot-a"
 
@@ -190,8 +177,7 @@ class _RecordingMsePort:
             permitted=permitted,
             decision=decision,
             enforcement_result=enforcement_result,
-            requires_governed_continuation=self._action
-            in (PolicyAction.REQUIRE_HUMAN, PolicyAction.ESCALATE),
+            requires_governed_continuation=self._action in (PolicyAction.REQUIRE_HUMAN, PolicyAction.ESCALATE),
             governed_continuation_request=None,
         )
 
@@ -298,6 +284,7 @@ async def test_real_host_success_persists_succeeded(_identity_ctx) -> None:
         user_id="principal-1",
         task_id=mint_task_id(),
     )
+
     class _Delegate:
         async def execute(self, _request: object) -> object:
             governed = ActiveGovernedExecutionTask()

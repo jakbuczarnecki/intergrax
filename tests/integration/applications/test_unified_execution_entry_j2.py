@@ -5,25 +5,25 @@ from __future__ import annotations
 import asyncio
 
 import pytest
-from echo.echo_agent import EchoAgent
 from fastapi import BackgroundTasks
 from fastapi.testclient import TestClient
-
 from intergrax.fastapi_core.app_factory import create_app
 from intergrax.fastapi_core.config import ApiConfig, ApiEnvironment
 from intergrax.fastapi_core.context import RequestContext
 from intergrax.fastapi_core.runs.default_service import DefaultRunService
 from intergrax.fastapi_core.runs.models import CreateRunRequest, RunStatus
-from tests.unit.api.fastapi_core.budget.test_budget_required import AllowAllAuthProvider
 from intergrax.fastapi_core.runs.store_memory import InMemoryRunStore
-from testing_support.nexus_host_task_execution import (
-    build_certified_internal_test_host_task_execution,
-)
 from intergrax.runtime.nexus.nexus_loop import NexusLoop
 from intergrax.runtime.registry.agent_registry import AgentRegistry
 from intergrax.runtime.task.host_task_execution_run_adapter import HostTaskExecutionRunAdapter
 from intergrax.runtime.task.task import Task, TaskContext
 from intergrax.runtime.task.task_run_bridge import task_to_execution_payload
+from testing_support.nexus_host_task_execution import (
+    build_certified_internal_test_host_task_execution,
+)
+from tests.unit.api.fastapi_core.budget.test_budget_required import AllowAllAuthProvider
+
+from echo.echo_agent import EchoAgent
 
 pytestmark = [pytest.mark.integration, pytest.mark.gate]
 

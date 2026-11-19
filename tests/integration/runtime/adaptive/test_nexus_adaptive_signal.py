@@ -5,13 +5,13 @@
 from __future__ import annotations
 
 import pytest
-
-from echo.echo_agent import EchoAgent
 from intergrax.runtime.adaptive.signal_collector import SignalCollector
 from intergrax.runtime.adaptive.signal_store import InMemorySignalStore
 from intergrax.runtime.nexus.nexus_loop import NexusLoop
 from intergrax.runtime.registry.agent_registry import AgentRegistry
 from intergrax.runtime.task.task import Task, TaskContext, TaskState
+
+from echo.echo_agent import EchoAgent
 
 pytestmark = [pytest.mark.asyncio, pytest.mark.integration, pytest.mark.gate]
 

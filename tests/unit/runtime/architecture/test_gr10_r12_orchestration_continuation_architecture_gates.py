@@ -8,8 +8,6 @@ import ast
 from pathlib import Path
 
 import pytest
-
-from testing_support.nexus_loop_from_environment import build_nexus_loop_from_environment
 from intergrax.applications.contracts.environment_profile import ApplicationEnvironmentProfile
 from intergrax.applications.contracts.execution_mode import ExecutionMode
 from intergrax.contracts.execution_continuation import (
@@ -39,6 +37,9 @@ from intergrax.contracts.execution_identity import (
 from intergrax.contracts.governed_continuation import GovernedContinuationRequest
 from intergrax.contracts.governed_continuation_correlation import ContinuationReason
 from intergrax.contracts.human_approver import local_development_approver_evidence
+from intergrax.runtime.execution.attempt_lifecycle import (
+    wire_attempt_lifecycle_store,
+)
 from intergrax.runtime.execution.continuation.composition import (
     wire_execution_engine_continuation_dependencies,
 )
@@ -50,8 +51,8 @@ from intergrax.runtime.execution.continuation.persistence import (
     InMemoryExecutionContinuationStateStore,
     ReconstructedDurableExecutionContinuationStateStore,
     backing_execution_continuation_state_store,
-    export_durable_continuation_state,
     execution_continuation_state_store_from_durable_export,
+    export_durable_continuation_state,
     restore_durable_continuation_backing,
 )
 from intergrax.runtime.human.governed_continuation_bridge import (
@@ -71,9 +72,7 @@ from testing_support.builder import canonical_run_id_for_tests, canonical_task_i
 from testing_support.nexus_host_task_execution import (
     build_certified_internal_test_host_task_execution,
 )
-from intergrax.runtime.execution.attempt_lifecycle import (
-    wire_attempt_lifecycle_store,
-)
+from testing_support.nexus_loop_from_environment import build_nexus_loop_from_environment
 from tests.unit.runtime.background_execution.reentry_admission_doubles import InMemoryKVStore
 
 pytestmark = [pytest.mark.unit, pytest.mark.gate]
@@ -393,6 +392,7 @@ def test_gr10_r12_establish_pause_uses_port_not_task_authority() -> None:
     task.runtime.governance.paused = False
     assert canonical_execution_is_resumed(cap, identity=identity) is False
 
+
 def _empty_durable_store() -> ReconstructedDurableExecutionContinuationStateStore:
     return execution_continuation_state_store_from_durable_export(
         export_durable_continuation_state(ExecutionContinuationDurableBacking()),
@@ -578,9 +578,7 @@ def test_gr10_r12_r1_static_factory_no_implicit_wire() -> None:
         encoding="utf-8",
     )
     assert "wire_execution_continuation_state_store" not in factory
-    policy = (
-        _REPO / "intergrax/runtime/execution/continuation/durability_policy.py"
-    ).read_text(encoding="utf-8")
+    policy = (_REPO / "intergrax/runtime/execution/continuation/durability_policy.py").read_text(encoding="utf-8")
     assert "is_durable" in policy
     assert "isinstance" not in policy
     assert "InMemoryExecutionContinuationStateStore" not in policy
@@ -609,4 +607,3 @@ def test_gr10_r12_r1_plugin_durable_pause_resume() -> None:
         ),
     )
     assert resumed.lifecycle_state is ExecutionContinuationLifecycleState.RESUMED
-

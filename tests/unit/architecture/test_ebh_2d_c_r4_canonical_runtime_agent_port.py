@@ -8,10 +8,8 @@ import ast
 from pathlib import Path
 
 import pytest
-
 from intergrax.applications._shared.wiring import build_manifest_development_registry
 from intergrax.applications.contracts.build_context import ApplicationBuildContext
-from intergrax.applications.contracts.factory import CanonicalAgentFactory
 from intergrax.applications.contracts.manifest import AgentBinding, ApplicationManifest
 from intergrax.contracts.agent_contract_meta import AgentContract
 from intergrax.contracts.agent_run import AgentRunRequest, AgentRunResult

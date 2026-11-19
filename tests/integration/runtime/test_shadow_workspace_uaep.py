@@ -1,12 +1,7 @@
 # © Artur Czarnecki. All rights reserved.
 
-from intergrax.utils import attribute_access
 import pytest
-
-from testing_support.nexus_lab_task_execution import run_lab_nexus_task
-
 from intergrax.agents.harness_reference_agent import HarnessReferenceAgent
-from intergrax.runtime.nexus.uaep import UAEPExecutor
 from intergrax.contracts.agent_contract_meta import AgentContract
 from intergrax.contracts.agent_decision import AgentDecision, AgentDecisionType
 from intergrax.contracts.agent_step import AgentStep, StepOutput
@@ -16,10 +11,7 @@ from intergrax.runtime.nexus.config import RuntimeConfig
 from intergrax.runtime.nexus.engine.runtime_context import RuntimeContext
 from intergrax.runtime.nexus.nexus_loop import NexusLoop
 from intergrax.runtime.nexus.responses.response_schema import RuntimeRequest
-from testing_support.builder import (
-    build_runtime_request_for_tests,
-    canonical_execution_identity_scope,
-)
+from intergrax.runtime.nexus.uaep import UAEPExecutor
 from intergrax.runtime.registry.agent_registry import AgentRegistry
 from intergrax.runtime.task.task import Task, TaskContext, TaskState
 from intergrax.runtime.workspace.manager import ShadowWorkspaceManager
@@ -27,7 +19,14 @@ from intergrax.runtime.workspace.shadow_workspace import (
     SHADOW_WORKSPACE_FLAG,
     SHADOW_WORKSPACE_ID_KEY,
 )
-from testing_support.builder import FakeLLMAdapter, build_in_memory_session_manager
+from intergrax.utils import attribute_access
+from testing_support.builder import (
+    FakeLLMAdapter,
+    build_in_memory_session_manager,
+    build_runtime_request_for_tests,
+    canonical_execution_identity_scope,
+)
+from testing_support.nexus_lab_task_execution import run_lab_nexus_task
 
 pytestmark = pytest.mark.gate
 
@@ -68,9 +67,7 @@ class _ShadowWriteAgent(HarnessReferenceAgent):
     def get_steps(self) -> list[AgentStep]:
         return [AgentStep(step_id="write", step_name="write", step_index=0)]
 
-    async def run_step(
-        self, step: AgentStep, ctx: RuntimeExecutionContext
-    ) -> StepOutput:
+    async def run_step(self, step: AgentStep, ctx: RuntimeExecutionContext) -> StepOutput:
         workspace = ctx.metadata.get("shadow_workspace")
         message = (ctx.request.message if ctx.request else "") or ""
         if workspace is not None:

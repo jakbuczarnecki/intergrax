@@ -1,13 +1,13 @@
 # © Artur Czarnecki. All rights reserved.
 
 import pytest
-
-from echo.echo_agent import EchoAgent
 from intergrax.contracts.execution_identity import mint_run_id
 from intergrax.runtime.events.runtime_event import RuntimeEventType
 from intergrax.runtime.nexus.nexus_loop import NexusLoop
 from intergrax.runtime.registry.agent_registry import AgentRegistry
 from intergrax.runtime.task.task import Task, TaskContext, TaskState
+
+from echo.echo_agent import EchoAgent
 
 
 @pytest.mark.asyncio
@@ -59,11 +59,7 @@ async def test_nexus_loop_echo_emits_lifecycle_trace():
 
     emitter = loop.trace_emitter
     assert emitter is not None
-    lifecycle_states = {
-        event.tags.get("task_state")
-        for event in emitter.events
-        if event.step == "task_lifecycle"
-    }
+    lifecycle_states = {event.tags.get("task_state") for event in emitter.events if event.step == "task_lifecycle"}
     assert TaskState.CLASSIFIED.value in lifecycle_states
     assert TaskState.PLANNED.value in lifecycle_states
     assert TaskState.RUNNING.value in lifecycle_states

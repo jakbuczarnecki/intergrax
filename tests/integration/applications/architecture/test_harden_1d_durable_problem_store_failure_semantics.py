@@ -5,8 +5,6 @@
 from __future__ import annotations
 
 import pytest
-
-from echo.echo_agent import EchoAgent
 from intergrax.applications._shared.application_composition_context import (
     composition_for_factory_context,
 )
@@ -19,10 +17,10 @@ from intergrax.applications.contracts.manifest import AgentBinding, ApplicationM
 from intergrax.contracts.admitted_root_governance_identity import (
     AdmittedRootGovernanceIdentity,
 )
+from intergrax.contracts.execution_identity import mint_run_id
 from intergrax.runtime.diagnostics.central_terminal_execution_diagnostic_port import (
     wrap_terminal_execution_diagnostic_trigger,
 )
-from intergrax.contracts.execution_identity import mint_run_id
 from intergrax.runtime.diagnostics.diagnostic_subsystem_failure_evidence import (
     diagnostic_subsystem_failure_observed_for_run,
     is_diagnostic_subsystem_failure_event,
@@ -32,14 +30,14 @@ from intergrax.runtime.diagnostics.problem_occurrence_persistence import (
 )
 from intergrax.runtime.events.runtime_event import RuntimeEvent, RuntimeEventType
 from intergrax.runtime.events.stores.memory_runtime_event_store import InMemoryRuntimeEventStore
+from intergrax.runtime.execution.harness_task_execution_port import (
+    build_harness_root_task_execution_port,
+)
 from intergrax.runtime.nexus.nexus_loop import NexusLoop
 from intergrax.runtime.nexus.observability_wiring import wire_nexus_observability
 from intergrax.runtime.observability.persistence_conformance import sample_runtime_event
 from intergrax.runtime.registry.agent_registry import AgentRegistry
 from intergrax.runtime.task.task import Task, TaskContext, TaskState
-from intergrax.runtime.execution.harness_task_execution_port import (
-    build_harness_root_task_execution_port,
-)
 from intergrax.runtime.task.unified_task_runner import UnifiedTaskRunner
 from intergrax.tools.registry.wiring import ToolWiringContext
 from testing_support.delegating_failing_conditional_document_store import (
@@ -50,6 +48,8 @@ from testing_support.delegating_failing_conditional_document_store import (
 from testing_support.runtime.diagnostics.problem_persistence_test_support import (
     query_all_problems_for_tenant,
 )
+
+from echo.echo_agent import EchoAgent
 
 pytestmark = [pytest.mark.integration, pytest.mark.gate]
 
@@ -281,10 +281,13 @@ async def test_harden_1d_store_recovery_restores_diagnostic_persistence() -> Non
         run_id=failed_update_run_id,
     )
     assert failed_update.state is TaskState.COMPLETED
-    assert persistence.get(
-        tenant_id=_TENANT,
-        problem_id=problems_after_create[0].problem_id,
-    ) == problems_after_create[0]
+    assert (
+        persistence.get(
+            tenant_id=_TENANT,
+            problem_id=problems_after_create[0].problem_id,
+        )
+        == problems_after_create[0]
+    )
     assert diagnostic_subsystem_failure_observed_for_run(
         runtime_store,
         tenant_id=_TENANT,

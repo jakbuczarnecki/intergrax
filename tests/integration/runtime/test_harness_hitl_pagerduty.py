@@ -4,31 +4,24 @@
 """Harness Tier A — HITL escalation notifies PagerDuty channel via runtime adapter."""
 
 from __future__ import annotations
-from intergrax.utils import attribute_access
 
 from typing import Any
 
 import pytest
-
-from intergrax.contracts.execution_identity import mint_run_id, mint_task_id
-from intergrax.runtime.human.models import HumanResponseVerdict
-from intergrax.runtime.long_running.store import SQLiteTaskCheckpointStore
-from testing_support.nexus_lab_task_execution import (
-    resume_lab_nexus_hitl,
-    run_lab_nexus_task,
-)
-
 from intergrax.agents.harness_reference_agent import HarnessReferenceAgent
 from intergrax.contracts.agent_contract_meta import AgentContract
-from intergrax.contracts.capability import CapabilityMatchResult
 from intergrax.contracts.agent_decision import (
     AgentDecision,
     AgentDecisionType,
     HumanRequest,
 )
 from intergrax.contracts.agent_step import AgentStep, StepOutput
+from intergrax.contracts.capability import CapabilityMatchResult
+from intergrax.contracts.execution_identity import mint_run_id, mint_task_id
 from intergrax.contracts.runtime_execution_context import RuntimeExecutionContext
+from intergrax.runtime.human.models import HumanResponseVerdict
 from intergrax.runtime.human.store import SQLiteHumanDecisionStore
+from intergrax.runtime.long_running.store import SQLiteTaskCheckpointStore
 from intergrax.runtime.nexus.config import RuntimeConfig
 from intergrax.runtime.nexus.engine.runtime_context import RuntimeContext
 from intergrax.runtime.nexus.nexus_loop import NexusLoop
@@ -39,7 +32,12 @@ from intergrax.runtime.task.task_contract import (
     TaskExecutionOptions,
     TaskLongRunningOptions,
 )
+from intergrax.utils import attribute_access
 from testing_support.builder import FakeLLMAdapter, build_in_memory_session_manager
+from testing_support.nexus_lab_task_execution import (
+    resume_lab_nexus_hitl,
+    run_lab_nexus_task,
+)
 
 pytestmark = [pytest.mark.integration, pytest.mark.gate]
 
@@ -71,9 +69,7 @@ class _HitlLongRunningAgent(HarnessReferenceAgent):
                 matched_capabilities=["hitl.lr"],
                 score=1.0,
             )
-        return CapabilityMatchResult(
-            matched=False, rationale="capability not supported"
-        )
+        return CapabilityMatchResult(matched=False, rationale="capability not supported")
 
     def build_context(self, request: RuntimeRequest) -> RuntimeContext:
         config = RuntimeConfig(
@@ -90,9 +86,7 @@ class _HitlLongRunningAgent(HarnessReferenceAgent):
     def get_steps(self) -> list[AgentStep]:
         return [AgentStep(step_id="review", step_name="review", step_index=0)]
 
-    async def run_step(
-        self, step: AgentStep, ctx: RuntimeExecutionContext
-    ) -> StepOutput:
+    async def run_step(self, step: AgentStep, ctx: RuntimeExecutionContext) -> StepOutput:
         return StepOutput(step_id=step.step_id, summary="pending")
 
     def decide_after_step(
@@ -168,7 +162,4 @@ async def test_hitl_escalation_uses_pagerduty_notification_adapter(
     assert escalated.metadata.get("escalation_level") == 1
     assert len(adapter.messages) >= 1
     assert adapter.messages[0].channel == "pagerduty"
-    assert (
-        "Escalation" in adapter.messages[0].subject
-        or "escalat" in adapter.messages[0].body.lower()
-    )
+    assert "Escalation" in adapter.messages[0].subject or "escalat" in adapter.messages[0].body.lower()

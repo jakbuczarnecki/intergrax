@@ -7,17 +7,9 @@ from __future__ import annotations
 import ast
 import inspect
 from pathlib import Path
-from typing import Dict, List, Optional
 from unittest.mock import MagicMock, patch
 
 import pytest
-
-from testing_support.nexus_loop_from_environment import (
-    build_nexus_loop_from_environment,
-)
-from testing_support.reference_root_execution_authority_admission import (
-    REFERENCE_ROOT_EXECUTION_AUTHORITY_ADMISSION,
-)
 from intergrax.applications.contracts.environment_profile import (
     ApplicationEnvironmentProfile,
     OrchestrationProfile,
@@ -30,26 +22,26 @@ from intergrax.contracts.execution_identity import (
     mint_run_id,
     reset_active_execution_identity,
 )
-from intergrax.runtime.persistence.sqlite_composition import (
-    create_sqlite_task_checkpoint_store,
-)
+from intergrax.runtime.events.runtime_event import RuntimeEvent
 from intergrax.runtime.long_running.checkpoint_builder import build_task_checkpoint
-from intergrax.runtime.long_running.coordinator import LongRunningCoordinator
 from intergrax.runtime.long_running.checkpoint_revision import (
     CheckpointIdConflictError,
     CheckpointRevisionRequiredError,
     StaleCheckpointWriteError,
 )
+from intergrax.runtime.long_running.coordinator import LongRunningCoordinator
 from intergrax.runtime.long_running.models import TaskCheckpoint
 from intergrax.runtime.long_running.persistence_contract import (
     TaskCheckpointPersistence,
     TaskCheckpointReader,
 )
-from intergrax.runtime.events.runtime_event import RuntimeEvent, RuntimeEventType
 from intergrax.runtime.nexus.nexus_loop import NexusLoop
 from intergrax.runtime.nexus.orchestration.long_running_bridge import (
     maybe_checkpoint_long_running,
     maybe_restore_long_running,
+)
+from intergrax.runtime.persistence.sqlite_composition import (
+    create_sqlite_task_checkpoint_store,
 )
 from intergrax.runtime.registry.agent_registry import AgentRegistry
 from intergrax.runtime.task.nexus_worker_execution import NexusWorkerRuntime
@@ -57,6 +49,12 @@ from intergrax.runtime.task.task import Task, TaskState
 from intergrax.runtime.task.task_contract import (
     TaskExecutionOptions,
     TaskLongRunningOptions,
+)
+from testing_support.nexus_loop_from_environment import (
+    build_nexus_loop_from_environment,
+)
+from testing_support.reference_root_execution_authority_admission import (
+    REFERENCE_ROOT_EXECUTION_AUTHORITY_ADMISSION,
 )
 
 pytestmark = [pytest.mark.unit, pytest.mark.gate, pytest.mark.no_ci]
@@ -75,12 +73,12 @@ _GENERIC_RUNTIME_FILES = (
 class _FakeCheckpointStore(TaskCheckpointPersistence):
     def __init__(self) -> None:
         self.saved: list[TaskCheckpoint] = []
-        self._by_id: Dict[str, TaskCheckpoint] = {}
-        self._by_token: Dict[tuple[str, str, str], TaskCheckpoint] = {}
-        self._latest: Dict[tuple[str, str], TaskCheckpoint] = {}
+        self._by_id: dict[str, TaskCheckpoint] = {}
+        self._by_token: dict[tuple[str, str, str], TaskCheckpoint] = {}
+        self._latest: dict[tuple[str, str], TaskCheckpoint] = {}
         self._sequence = 0
 
-    def list_for_task(self, task_id: str, tenant_id: str) -> List[TaskCheckpoint]:
+    def list_for_task(self, task_id: str, tenant_id: str) -> list[TaskCheckpoint]:
         return sorted(
             [
                 checkpoint
@@ -90,7 +88,7 @@ class _FakeCheckpointStore(TaskCheckpointPersistence):
             key=lambda checkpoint: checkpoint.revision or 0,
         )
 
-    def get_latest(self, task_id: str, tenant_id: str) -> Optional[TaskCheckpoint]:
+    def get_latest(self, task_id: str, tenant_id: str) -> TaskCheckpoint | None:
         return self._latest.get((task_id, tenant_id))
 
     def get_by_token(
@@ -98,7 +96,7 @@ class _FakeCheckpointStore(TaskCheckpointPersistence):
         task_id: str,
         tenant_id: str,
         resume_token: str,
-    ) -> Optional[TaskCheckpoint]:
+    ) -> TaskCheckpoint | None:
         matches = [
             checkpoint
             for checkpoint in self.saved
@@ -112,7 +110,7 @@ class _FakeCheckpointStore(TaskCheckpointPersistence):
             return None
         return max(matches, key=lambda checkpoint: checkpoint.revision or 0)
 
-    def list_paused(self) -> List[TaskCheckpoint]:
+    def list_paused(self) -> list[TaskCheckpoint]:
         return []
 
     def save(
@@ -289,16 +287,14 @@ def test_a6_worker_bootstrap_contract_accepts_fake_port() -> None:
     assert "SQLiteTaskCheckpointStore" not in source
     assert "TaskCheckpointPersistence" in source
 
-    celery = pytest.importorskip(
-        "celery", reason="celery optional for runtime bootstrap proof"
-    )
+    celery = pytest.importorskip("celery", reason="celery optional for runtime bootstrap proof")
     del celery
-    from testing_support.admitted_root_governance_identity import (
-        lab_admitted_root_governance_identity_for_task,
-    )
     from intergrax.runtime.task.worker_bootstrap import (
         build_nexus_task_execution_registry,
         create_nexus_celery_worker_app,
+    )
+    from testing_support.admitted_root_governance_identity import (
+        lab_admitted_root_governance_identity_for_task,
     )
 
     fake = _FakeCheckpointStore()
@@ -335,9 +331,7 @@ def test_a7_shared_nexus_factory_accepts_fake_port() -> None:
     fake = _FakeCheckpointStore()
     env = ApplicationEnvironmentProfile.lab_defaults().model_copy(
         update={
-            "reliability_profile": ReliabilityProfile(
-                long_running_scheduler_enabled=True
-            ),
+            "reliability_profile": ReliabilityProfile(long_running_scheduler_enabled=True),
             "orchestration_profile": OrchestrationProfile(long_running_enabled=True),
         }
     )
@@ -350,9 +344,7 @@ def test_a7_shared_nexus_factory_accepts_fake_port() -> None:
 
 
 def test_r1_1_long_running_bridge_has_no_sqlite_checkpoint_import() -> None:
-    bridge_path = (
-        _REPO_ROOT / "intergrax/runtime/nexus/orchestration/long_running_bridge.py"
-    )
+    bridge_path = _REPO_ROOT / "intergrax/runtime/nexus/orchestration/long_running_bridge.py"
     source = bridge_path.read_text(encoding="utf-8")
     assert "SQLiteTaskCheckpointStore" not in source
     assert "runtime.long_running.store" not in source

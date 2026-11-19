@@ -1,16 +1,14 @@
 # © Artur Czarnecki. All rights reserved.
 
 import pytest
-
+from intergrax.contracts.delegation_authority import ParentExecutionAuthority
 from intergrax.contracts.execution_identity import (
     bind_active_execution_identity,
     mint_attempt_id,
     mint_execution_id,
     mint_run_id,
-    require_active_execution_id,
     reset_active_execution_identity,
 )
-from intergrax.contracts.delegation_authority import ParentExecutionAuthority
 from intergrax.contracts.validation import ValidationResult
 from intergrax.runtime.execution.active_execution_budget import (
     bind_root_execution_budget,
@@ -26,14 +24,11 @@ from intergrax.runtime.long_running.checkpoint_builder import (
     build_runtime_checkpoint,
 )
 from intergrax.runtime.long_running.store import SQLiteTaskCheckpointStore
-from intergrax.runtime.nexus.config import RuntimeConfig
-from intergrax.runtime.nexus.engine.runtime_context import RuntimeContext
-from intergrax.runtime.nexus.engine.runtime_state import RuntimeState
 from intergrax.runtime.nexus.execution.execution_graph import ExecutionGraph, ExecutionNode, ExecutionNodeStatus
 from intergrax.runtime.nexus.execution.graph_executor import GraphExecutor
+from intergrax.runtime.nexus.nexus_loop import NexusLoop
 from intergrax.runtime.nexus.planning.task_planner import NexusPlan, PlanStep, TaskPlanner
 from intergrax.runtime.nexus.retry.retry_engine import RetryEngine, RetryPolicy
-from intergrax.runtime.nexus.nexus_loop import NexusLoop
 from intergrax.runtime.nexus.validation.validation_engine import NexusValidationEngine
 from intergrax.runtime.registry.agent_registry import AgentRegistry
 from intergrax.runtime.task.task import Task, TaskContext, TaskState
@@ -89,10 +84,7 @@ class _FlakyValidationEngine(NexusValidationEngine):
         capability=None,
         plan_criteria=None,
     ) -> ValidationResult:
-        if (
-            execution.agent_id == "agent_b"
-            and self._agent_b_failures < self._fail_agent_b_times
-        ):
+        if execution.agent_id == "agent_b" and self._agent_b_failures < self._fail_agent_b_times:
             self._agent_b_failures += 1
             return ValidationResult(valid=False, errors=["simulated node failure"])
         return super().validate(
@@ -172,12 +164,8 @@ async def _execute_graph(executor, graph, task, *, run_id, attempt_id):
 async def test_graph_executor_skips_completed_nodes_on_resume():
     UaepPipelineStubAgent.run_count = 0
     registry = AgentRegistry()
-    registry.register(
-        UaepPipelineStubAgent(agent_id="agent_a", capability="graph.recovery", prefix="A")
-    )
-    registry.register(
-        UaepPipelineStubAgent(agent_id="agent_b", capability="graph.recovery", prefix="B")
-    )
+    registry.register(UaepPipelineStubAgent(agent_id="agent_a", capability="graph.recovery", prefix="A"))
+    registry.register(UaepPipelineStubAgent(agent_id="agent_b", capability="graph.recovery", prefix="B"))
 
     task = Task(
         tenant_id="t1",
@@ -249,12 +237,8 @@ async def test_graph_executor_skips_completed_nodes_on_resume():
 async def test_nexus_loop_graph_failure_resume(tmp_path):
     UaepPipelineStubAgent.run_count = 0
     registry = AgentRegistry()
-    registry.register(
-        UaepPipelineStubAgent(agent_id="agent_a", capability="graph.recovery", prefix="A")
-    )
-    registry.register(
-        UaepPipelineStubAgent(agent_id="agent_b", capability="graph.recovery", prefix="B")
-    )
+    registry.register(UaepPipelineStubAgent(agent_id="agent_a", capability="graph.recovery", prefix="A"))
+    registry.register(UaepPipelineStubAgent(agent_id="agent_b", capability="graph.recovery", prefix="B"))
     checkpoint_store = SQLiteTaskCheckpointStore(db_path=tmp_path / "ckpt.db")
     validation = _FlakyValidationEngine(fail_agent_b_times=1)
 

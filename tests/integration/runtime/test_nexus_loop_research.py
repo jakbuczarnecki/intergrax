@@ -1,10 +1,9 @@
 # © Artur Czarnecki. All rights reserved.
 
 import pytest
-
 from intergrax.runtime.nexus.nexus_loop import NexusLoop
-from testing_support.agent_registry_bootstrap import build_research_registry
 from intergrax.runtime.task.task import Task, TaskContext, TaskState
+from testing_support.agent_registry_bootstrap import build_research_registry
 
 
 @pytest.mark.asyncio

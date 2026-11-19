@@ -7,6 +7,12 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 
+from intergrax.contracts.agent_execution_validation_engine import (
+    AgentExecutionValidationEnginePort,
+)
+from intergrax.contracts.deferred_persisted_trace_finalize_port import (
+    DeferredPersistedTraceFinalizePort,
+)
 from intergrax.runtime.events.event_bus import RuntimeEventBus
 from intergrax.runtime.execution.host_orchestration_application_wiring_applier import (
     apply_host_orchestration_application_wiring_bundle,
@@ -15,13 +21,6 @@ from intergrax.runtime.execution.host_orchestration_loop_init_spec import (
     HostOrchestrationLoopInitSpec,
 )
 from intergrax.runtime.nexus.nexus_loop import NexusLoop
-from intergrax.contracts.agent_execution_validation_engine import (
-    AgentExecutionValidationEnginePort,
-)
-from intergrax.contracts.deferred_persisted_trace_finalize_port import (
-    DeferredPersistedTraceFinalizePort,
-)
-from intergrax.runtime.nexus.validation.validation_engine import NexusValidationEngine
 from intergrax.runtime.registry.agent_registry_read import AgentRegistryRead
 
 

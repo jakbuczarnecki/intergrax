@@ -5,14 +5,6 @@
 from __future__ import annotations
 
 import pytest
-
-from intergrax.contracts.execution_identity import mint_run_id
-from testing_support.nexus_lab_task_execution import (
-    resume_lab_nexus_hitl,
-    run_lab_nexus_task,
-)
-from pydantic import BaseModel
-
 from intergrax.agents.harness_reference_agent import HarnessReferenceAgent
 from intergrax.applications._shared.policy_wiring import wire_policy_bundle
 from intergrax.applications.contracts.environment_profile import (
@@ -24,6 +16,7 @@ from intergrax.contracts.agent_decision import AgentDecision, AgentDecisionType
 from intergrax.contracts.agent_execution_result import AgentExecutionStatus
 from intergrax.contracts.agent_step import AgentStep, StepOutput
 from intergrax.contracts.capability import CapabilityMatchResult
+from intergrax.contracts.execution_identity import mint_run_id
 from intergrax.contracts.runtime_execution_context import RuntimeExecutionContext
 from intergrax.contracts.tool_request import ToolRequest
 from intergrax.runtime.long_running.store import SQLiteTaskCheckpointStore
@@ -32,21 +25,26 @@ from intergrax.runtime.nexus.engine.runtime_context import RuntimeContext
 from intergrax.runtime.nexus.nexus_loop import NexusLoop
 from intergrax.runtime.nexus.responses.response_schema import RuntimeRequest
 from intergrax.runtime.nexus.tools.invoker import RuntimeToolInvoker
-from intergrax.runtime.tools.idempotency_pre_effect_coordinator import (
-    IdempotencyPreEffectCoordinator,
-)
-from intergrax.runtime.tools.in_memory_idempotency_store import InMemoryIdempotencyStore
 from intergrax.runtime.registry.agent_registry import AgentRegistry
 from intergrax.runtime.task.task import Task, TaskContext, TaskState
 from intergrax.runtime.task.task_contract import (
     TaskExecutionOptions,
     TaskLongRunningOptions,
 )
-from intergrax.utils import attribute_access
+from intergrax.runtime.tools.idempotency_pre_effect_coordinator import (
+    IdempotencyPreEffectCoordinator,
+)
+from intergrax.runtime.tools.in_memory_idempotency_store import InMemoryIdempotencyStore
 from intergrax.tools.core.contracts import ToolContract, ToolRiskLevel
 from intergrax.tools.execution_models import ToolExecutionRequest
 from intergrax.tools.tool_executor import ToolExecutor
+from intergrax.utils import attribute_access
+from pydantic import BaseModel
 from testing_support.builder import FakeLLMAdapter, build_in_memory_session_manager
+from testing_support.nexus_lab_task_execution import (
+    resume_lab_nexus_hitl,
+    run_lab_nexus_task,
+)
 from tests.unit.runtime.nexus.tools.conftest import FakeRegistry
 
 pytestmark = [pytest.mark.integration, pytest.mark.gate]
@@ -89,9 +87,7 @@ def _policy_bundle() -> object:
     return wire_policy_bundle(env)
 
 
-def _build_runtime_context(
-    request: RuntimeRequest, executor: _CountingExecutor
-) -> RuntimeContext:
+def _build_runtime_context(request: RuntimeRequest, executor: _CountingExecutor) -> RuntimeContext:
     contract = ToolContract(
         tool_id=_TOOL_ID,
         name=_TOOL_ID,
@@ -163,9 +159,7 @@ class _PolicyHitlToolAgent(HarnessReferenceAgent):
     def get_steps(self) -> list[AgentStep]:
         return [AgentStep(step_id="invoke_tool", step_name="invoke", step_index=0)]
 
-    async def run_step(
-        self, step: AgentStep, ctx: RuntimeExecutionContext
-    ) -> StepOutput:
+    async def run_step(self, step: AgentStep, ctx: RuntimeExecutionContext) -> StepOutput:
         await ctx.invoke_tool(
             ToolRequest(
                 tool_name=_TOOL_ID,

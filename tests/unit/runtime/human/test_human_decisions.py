@@ -1,10 +1,9 @@
 # © Artur Czarnecki. All rights reserved.
 
 import pytest
-
 from intergrax.contracts.execution_identity import mint_task_id
-from intergrax.runtime.human.escalation import EscalationRouter, parse_human_response
 from intergrax.contracts.human_approver import local_development_approver_evidence
+from intergrax.runtime.human.escalation import EscalationRouter, parse_human_response
 from intergrax.runtime.human.models import (
     EscalationTarget,
     HumanDecisionRecord,

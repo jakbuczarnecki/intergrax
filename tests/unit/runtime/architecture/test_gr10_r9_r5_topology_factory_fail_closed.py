@@ -8,7 +8,6 @@ import ast
 from pathlib import Path
 
 import pytest
-
 from intergrax.runtime.execution.orchestration_topology_submission import (
     CanonicalOrchestrationTopologySubmissionPort,
     OrchestrationTopologyMseCompositionError,
@@ -23,9 +22,7 @@ from intergrax.runtime.registry.agent_registry import AgentRegistry
 pytestmark = [pytest.mark.unit, pytest.mark.gate]
 
 _REPO_ROOT = Path(__file__).resolve().parents[4]
-_SUBMISSION = (
-    _REPO_ROOT / "intergrax" / "runtime" / "execution" / "orchestration_topology_submission.py"
-)
+_SUBMISSION = _REPO_ROOT / "intergrax" / "runtime" / "execution" / "orchestration_topology_submission.py"
 _INTERGRAX_ROOT = _REPO_ROOT / "intergrax"
 
 

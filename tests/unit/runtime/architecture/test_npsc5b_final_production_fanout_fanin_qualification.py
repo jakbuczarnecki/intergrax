@@ -5,8 +5,8 @@
 from __future__ import annotations
 
 import asyncio
-import pytest
 
+import pytest
 from intergrax.agent_distribution.bounded_multi_agent_fanout import (
     BoundedMultiAgentFanOutService,
     FanOutId,
@@ -41,12 +41,12 @@ from intergrax.runtime.execution.fan_out_orchestration_adapter import (
     build_fan_out_orchestration_port,
     map_orchestration_outcome_to_fan_out,
 )
-from testing_support.agent_distribution.multi_agent_coordination_qualification_harness import (
-    build_production_representative_orchestration_topology_submission_port,
-)
 from intergrax.runtime.nexus.budget.budget_models import RunBudget
 from intergrax.runtime.nexus.nexus_loop import NexusLoop
 from intergrax.runtime.registry.agent_registry import AgentRegistry
+from testing_support.agent_distribution.multi_agent_coordination_qualification_harness import (
+    build_production_representative_orchestration_topology_submission_port,
+)
 from tests.unit.agent_distribution.test_bounded_multi_agent_fanout import (
     _ConcurrencyTracker,
     _DelayedOcrDelegate,
@@ -54,9 +54,9 @@ from tests.unit.agent_distribution.test_bounded_multi_agent_fanout import (
     build_fan_out_harness,
 )
 from tests.unit.agent_distribution.test_delegated_subtasks import (
+    _OCR_PACKAGE,
     OcrRequest,
     OcrResult,
-    _OCR_PACKAGE,
     _discovery_candidate,
     admin_test_principal,
 )
@@ -149,9 +149,7 @@ async def test_npsc5b_final_production_fanout_fanin_e2e_qualification() -> None:
                 await tracker.leave()
 
     harness = build_fan_out_harness(
-        candidates=(
-            _discovery_candidate(_OCR_PACKAGE, capability_ids=("document.ocr",)),
-        ),
+        candidates=(_discovery_candidate(_OCR_PACKAGE, capability_ids=("document.ocr",)),),
         specialist_delegate=_LineageDelayedDelegate(),
     )
     nexus_loop = NexusLoop(AgentRegistry())
@@ -232,10 +230,7 @@ async def test_npsc5b_final_production_fanout_fanin_e2e_qualification() -> None:
     assert len(failures) == 1
     assert failures[0].item_id == FanOutItemId("item-d")
     assert failures[0].failure is not None
-    assert (
-        failures[0].failure.failure_code
-        is CoordinationFailureCode.CHILD_EXECUTION_FAILED
-    )
+    assert failures[0].failure.failure_code is CoordinationFailureCode.CHILD_EXECUTION_FAILED
     for label in ("a", "b", "c", "d"):
         lease = harness.lease_store.get(TaskScopedAgentLeaseId(f"lease-{label}"))
         assert lease is not None
@@ -262,15 +257,11 @@ async def test_npsc5b_concurrent_fan_out_submissions_preserve_independent_limits
     tracker_a = _ConcurrencyTracker()
     tracker_b = _ConcurrencyTracker()
     harness_a = build_fan_out_harness(
-        candidates=(
-            _discovery_candidate(_OCR_PACKAGE, capability_ids=("document.ocr",)),
-        ),
+        candidates=(_discovery_candidate(_OCR_PACKAGE, capability_ids=("document.ocr",)),),
         specialist_delegate=_DelayedOcrDelegate(tracker=tracker_a, delay_s=0.05),
     )
     harness_b = build_fan_out_harness(
-        candidates=(
-            _discovery_candidate(_OCR_PACKAGE, capability_ids=("document.ocr",)),
-        ),
+        candidates=(_discovery_candidate(_OCR_PACKAGE, capability_ids=("document.ocr",)),),
         specialist_delegate=_DelayedOcrDelegate(tracker=tracker_b, delay_s=0.05),
     )
     fan_out_a = _build_shared_fan_out_service(harness_a, nexus_loop=nexus_loop)
@@ -339,9 +330,7 @@ async def test_npsc5b_concurrent_fan_out_submissions_preserve_independent_limits
 async def test_npsc5b_fan_out_platform_cap_limits_concurrency() -> None:
     tracker = _ConcurrencyTracker()
     harness = build_fan_out_harness(
-        candidates=(
-            _discovery_candidate(_OCR_PACKAGE, capability_ids=("document.ocr",)),
-        ),
+        candidates=(_discovery_candidate(_OCR_PACKAGE, capability_ids=("document.ocr",)),),
         specialist_delegate=_DelayedOcrDelegate(tracker=tracker, delay_s=0.05),
     )
     nexus_loop = NexusLoop(AgentRegistry(), max_parallel_nodes=2)
@@ -382,7 +371,4 @@ def test_npsc5b_skipped_orchestration_slot_maps_to_invalid_coordination() -> Non
     )
     assert outcome.status is FanOutItemStatus.FAILURE
     assert outcome.failure is not None
-    assert (
-        outcome.failure.failure_code
-        is CoordinationFailureCode.INVALID_COORDINATION
-    )
+    assert outcome.failure.failure_code is CoordinationFailureCode.INVALID_COORDINATION

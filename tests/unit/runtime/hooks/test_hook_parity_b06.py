@@ -1,8 +1,6 @@
 # © Artur Czarnecki. All rights reserved.
 
 import pytest
-
-from echo.echo_agent import EchoAgent
 from intergrax.runtime.hooks.hook_context import HookAction, HookContext, HookResult
 from intergrax.runtime.hooks.hook_point import HookPoint
 from intergrax.runtime.hooks.parity import HookCoverage, hook_coverage, list_hook_points_by_coverage
@@ -10,6 +8,8 @@ from intergrax.runtime.middleware.pipeline import MiddlewarePipeline
 from intergrax.runtime.nexus.nexus_loop import NexusLoop
 from intergrax.runtime.registry.agent_registry import AgentRegistry
 from intergrax.runtime.task.task import Task, TaskContext, TaskState
+
+from echo.echo_agent import EchoAgent
 
 pytestmark = pytest.mark.unit
 

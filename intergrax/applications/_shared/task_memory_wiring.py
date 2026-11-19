@@ -8,7 +8,6 @@ from __future__ import annotations
 import os
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Optional
 
 from intergrax.applications.contracts.environment_profile import ApplicationEnvironmentProfile
 from intergrax.integrations.providers.relational_store.sqlite.paths import (
@@ -21,8 +20,8 @@ from intergrax.runtime.task_memory.store import resolve_task_memory_persistence
 
 @dataclass(frozen=True)
 class TaskMemoryWiring:
-    store: Optional[TaskMemoryPersistence]
-    db_path: Optional[Path]
+    store: TaskMemoryPersistence | None
+    db_path: Path | None
 
 
 def wire_task_memory(
@@ -41,9 +40,11 @@ def wire_task_memory(
         if warn_if_disabled:
             resolve_task_memory_persistence(warn_if_disabled=True)
         return TaskMemoryWiring(store=None, db_path=None)
-    resolved_path = resolve_task_memory_db_path(db_path) if (
-        db_path is not None or os.environ.get(ENV_TASK_MEMORY_DB, "").strip()
-    ) else None
+    resolved_path = (
+        resolve_task_memory_db_path(db_path)
+        if (db_path is not None or os.environ.get(ENV_TASK_MEMORY_DB, "").strip())
+        else None
+    )
     if enabled is True and resolved_path is None:
         resolved_path = resolve_task_memory_db_path(None)
     store = resolve_task_memory_persistence(

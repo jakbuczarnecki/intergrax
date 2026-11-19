@@ -5,21 +5,21 @@ from __future__ import annotations
 import asyncio
 
 import pytest
-from echo.echo_agent import EchoAgent
 from fastapi import BackgroundTasks
-
 from intergrax.fastapi_core.context import RequestContext
 from intergrax.fastapi_core.execution.models import ExecutionRequest
 from intergrax.fastapi_core.runs.default_service import DefaultRunService
 from intergrax.fastapi_core.runs.models import CreateRunRequest, RunStatus
-from testing_support.nexus_host_task_execution import (
-    build_certified_internal_test_host_task_execution,
-)
 from intergrax.runtime.nexus.nexus_loop import NexusLoop
 from intergrax.runtime.registry.agent_registry import AgentRegistry
 from intergrax.runtime.task.host_task_execution_run_adapter import HostTaskExecutionRunAdapter
 from intergrax.runtime.task.task_run_bridge import task_to_execution_payload
 from testing_support.builder import DummyRunStore, build_task_for_tests, canonical_governed_execution_scope
+from testing_support.nexus_host_task_execution import (
+    build_certified_internal_test_host_task_execution,
+)
+
+from echo.echo_agent import EchoAgent
 
 pytestmark = [pytest.mark.unit, pytest.mark.gate]
 

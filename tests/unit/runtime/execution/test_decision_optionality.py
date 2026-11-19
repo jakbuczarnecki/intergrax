@@ -13,8 +13,6 @@ from dataclasses import dataclass
 from pathlib import Path
 
 import pytest
-
-from testing_support.nexus_handle_task_impl_stubs import with_runtime_event_metric_scope
 from intergrax.contracts.agent_execution_result import (
     AgentExecutionResult,
     AgentExecutionStatus,
@@ -33,9 +31,8 @@ from intergrax.llm.messages import ChatMessage
 from intergrax.llm_adapters._shared.adapter_response_builders import (
     build_adapter_response,
 )
-from intergrax.llm_adapters.contracts.adapter_response import LLMAdapterResponse
-from intergrax.llm_adapters.contracts.llm_adapter import LLMAdapter
 from intergrax.llm_adapters.base.base_llm_adapter import BaseLLMAdapter
+from intergrax.llm_adapters.contracts.adapter_response import LLMAdapterResponse
 from intergrax.llm_adapters.contracts.llm_provider import LLMProvider
 from intergrax.llm_adapters.contracts.structured_result import LLMStructuredResult
 from intergrax.runtime.execution import (
@@ -46,11 +43,6 @@ from intergrax.runtime.execution import (
 )
 from intergrax.runtime.execution.agentic import AgentExecutor
 from intergrax.runtime.execution.facade import Execution
-from testing_support.inference_governance_wiring import (
-    default_test_inference_evidence_persistence,
-    governed_inference_executor,
-    governed_root_execution_options,
-)
 from intergrax.runtime.execution.orchestration import (
     execute_root_task,
     resolve_root_task_identity,
@@ -72,10 +64,16 @@ from intergrax.runtime.execution.task_adapter import (
 from intergrax.runtime.nexus.nexus_loop import NexusLoop
 from intergrax.runtime.nexus.responses.response_schema import RuntimeRequest
 from intergrax.runtime.registry.agent_registry import AgentRegistry
+from intergrax.runtime.task.task import Task, TaskContext, TaskResult, TaskState
 from intergrax.runtime.task.task_result_authoritative_exposure_defaults import (
     terminal_task_result_exposure_no_decision_gate,
 )
-from intergrax.runtime.task.task import Task, TaskContext, TaskResult, TaskState
+from testing_support.inference_governance_wiring import (
+    default_test_inference_evidence_persistence,
+    governed_inference_executor,
+    governed_root_execution_options,
+)
+from testing_support.nexus_handle_task_impl_stubs import with_runtime_event_metric_scope
 
 pytestmark = [pytest.mark.unit, pytest.mark.gate]
 
@@ -348,9 +346,7 @@ def test_ordinary_execution_request_constructible_without_decision_config() -> N
 
     assert request.input is not None
     assert request.output_type is RiskAssessment
-    assert neutral_request.capabilities == frozenset(
-        {ExecutionCapability.ORCHESTRATION}
-    )
+    assert neutral_request.capabilities == frozenset({ExecutionCapability.ORCHESTRATION})
     assert context.run_id == run_id
 
 
@@ -358,18 +354,12 @@ def test_strategy_routing_has_no_global_decision_disable_workaround() -> None:
     for path in _STRATEGY_ROUTING_FILES:
         source = path.read_text(encoding="utf-8")
         for token in _GLOBAL_DECISION_DISABLE_WORKAROUND_TOKENS:
-            assert token not in source, (
-                f"{path} introduces global Decision disable workaround: {token}"
-            )
+            assert token not in source, f"{path} introduces global Decision disable workaround: {token}"
 
 
 def test_strategy_resolver_is_orthogonal_to_decision_strategy() -> None:
-    strategy_source = Path("intergrax/runtime/execution/strategy.py").read_text(
-        encoding="utf-8"
-    )
-    router_source = Path("intergrax/runtime/execution/strategy_router.py").read_text(
-        encoding="utf-8"
-    )
+    strategy_source = Path("intergrax/runtime/execution/strategy.py").read_text(encoding="utf-8")
+    router_source = Path("intergrax/runtime/execution/strategy_router.py").read_text(encoding="utf-8")
 
     for token in (
         "DecisionStrategy",

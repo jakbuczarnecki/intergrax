@@ -9,10 +9,6 @@ from dataclasses import dataclass
 from pathlib import Path
 
 import pytest
-
-from testing_support.orchestration.orchestration_consequential_effect_reliability_doubles import (
-    PassthroughOrchestrationConsequentialEffectReliability,
-)
 from intergrax.contracts.collaborative_work import (
     CollaborativeWorkEnforcementRequest,
     CollaborativeWorkEnforcementResult,
@@ -27,12 +23,6 @@ from intergrax.contracts.execution_identity import (
     mint_task_id,
     reset_active_execution_identity,
 )
-from intergrax.runtime.execution.active_execution_budget import (
-    bind_root_execution_budget,
-    peek_active_execution_budget,
-    reset_active_execution_budget,
-)
-from intergrax.runtime.execution.budget.ledger import create_execution_budget_ledger
 from intergrax.contracts.meaningful_side_effect_authorization import (
     MeaningfulSideEffectAuthorizationPort,
     MeaningfulSideEffectAuthorizationResult,
@@ -40,20 +30,25 @@ from intergrax.contracts.meaningful_side_effect_authorization import (
 from intergrax.contracts.orchestration_topology import (
     OrchestrationSchedulingPolicy,
     OrchestrationSlot,
-    OrchestrationSlotContinuationRequest,
     OrchestrationSlotId,
     OrchestrationSlotRecoveryRequest,
     OrchestrationSlotStatus,
     OrchestrationTopology,
 )
 from intergrax.contracts.runtime_policy import PolicyAction, PolicyDecision
+from intergrax.runtime.execution.active_execution_budget import (
+    bind_root_execution_budget,
+    peek_active_execution_budget,
+    reset_active_execution_budget,
+)
 from intergrax.runtime.execution.boundary import ExecutionBoundary, ExecutionIdentityBinding
+from intergrax.runtime.execution.budget.ledger import create_execution_budget_ledger
+from intergrax.runtime.execution.orchestration_topology_slot_mse_enforcement import (
+    build_orchestration_topology_slot_mse_policy,
+)
 from intergrax.runtime.execution.orchestration_topology_submission import (
     build_orchestration_topology_host_task,
     build_production_orchestration_topology_submission_port,
-)
-from intergrax.runtime.execution.orchestration_topology_slot_mse_enforcement import (
-    build_orchestration_topology_slot_mse_policy,
 )
 from intergrax.runtime.governance.active_execution_governance_identity import (
     ActiveExecutionGovernanceIdentity,
@@ -65,13 +60,14 @@ from intergrax.runtime.governance.active_governed_execution_task import (
 )
 from intergrax.runtime.nexus.nexus_loop import NexusLoop
 from intergrax.runtime.registry.agent_registry import AgentRegistry
+from testing_support.orchestration.orchestration_consequential_effect_reliability_doubles import (
+    PassthroughOrchestrationConsequentialEffectReliability,
+)
 
 pytestmark = [pytest.mark.unit, pytest.mark.gate]
 
 _REPO_ROOT = Path(__file__).resolve().parents[4]
-_SUBMISSION = (
-    _REPO_ROOT / "intergrax" / "runtime" / "execution" / "orchestration_topology_submission.py"
-)
+_SUBMISSION = _REPO_ROOT / "intergrax" / "runtime" / "execution" / "orchestration_topology_submission.py"
 
 
 class _RecordingMsePort:
@@ -107,8 +103,7 @@ class _RecordingMsePort:
             permitted=permitted,
             decision=decision,
             enforcement_result=enforcement_result,
-            requires_governed_continuation=self._action
-            in (PolicyAction.REQUIRE_HUMAN, PolicyAction.ESCALATE),
+            requires_governed_continuation=self._action in (PolicyAction.REQUIRE_HUMAN, PolicyAction.ESCALATE),
             governed_continuation_request=None,
         )
 
@@ -376,6 +371,7 @@ async def test_r9_r3_recovery_fresh_mse_deny_after_prior_allow(_identity_ctx) ->
     )
     topology = _topology()
     from intergrax.contracts.orchestration_topology import OrchestrationSlotExecutionError
+
     class _FailExecutor:
         async def execute_slot(
             self,

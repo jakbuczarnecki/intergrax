@@ -3,7 +3,6 @@
 from __future__ import annotations
 
 import pytest
-
 from intergrax.applications._shared.application_guardrail_middleware import LlmGuardrailMiddleware
 from intergrax.applications._shared.guardrail_assembly_resolver import (
     GuardrailAssemblyError,
@@ -13,23 +12,23 @@ from intergrax.applications._shared.guardrail_wiring import (
     apply_application_guardrail_wiring,
     wire_application_guardrail,
 )
-from testing_support.nexus_loop_from_environment import build_nexus_loop_from_environment
 from intergrax.applications.contracts.environment_profile import (
     ApplicationEnvironmentProfile,
     GuardrailProfile,
 )
+from intergrax.contracts.execution_phase import ExecutionPhase
 from intergrax.integrations.providers.llm_guardrail._factory import create_guardrail_backend
 from intergrax.integrations.providers.llm_guardrail.register_all import register_llm_guardrail_integrations
 from intergrax.integrations.registry.presets import harness_guardrail_stack
-from testing_support.builder import canonical_execution_identity_scope
-from intergrax.runtime.hooks.hook_context import HookAction, HookContext
-from intergrax.runtime.hooks.hook_point import HookPoint
-from intergrax.runtime.middleware.pipeline import MiddlewarePipeline
 from intergrax.runtime.events.event_bus import RuntimeEventBus
 from intergrax.runtime.events.runtime_event import RuntimeEventType
+from intergrax.runtime.hooks.hook_context import HookAction
+from intergrax.runtime.hooks.hook_point import HookPoint
+from intergrax.runtime.middleware.pipeline import MiddlewarePipeline
 from intergrax.runtime.nexus.nexus_loop import NexusLoop
 from intergrax.runtime.registry.agent_registry import AgentRegistry
-from intergrax.contracts.execution_phase import ExecutionPhase
+from testing_support.builder import canonical_execution_identity_scope
+from testing_support.nexus_loop_from_environment import build_nexus_loop_from_environment
 
 pytestmark = [pytest.mark.unit, pytest.mark.gate, pytest.mark.no_ci]
 

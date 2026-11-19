@@ -1,14 +1,14 @@
 # © Artur Czarnecki. All rights reserved.
 
 import pytest
-
-from echo.echo_agent import EchoAgent
-from intergrax.applications.contracts.environment_profile import ApplicationSecurityProfile
 from intergrax.applications._shared.application_security_wiring import register_application_security_hooks
+from intergrax.applications.contracts.environment_profile import ApplicationSecurityProfile
 from intergrax.runtime.nexus.nexus_loop import NexusLoop
 from intergrax.runtime.registry.agent_registry import AgentRegistry
 from intergrax.runtime.security.task_security_context import RESOURCE_TENANT_ID_METADATA_KEY
 from intergrax.runtime.task.task import Task, TaskContext, TaskState
+
+from echo.echo_agent import EchoAgent
 
 
 @pytest.mark.asyncio

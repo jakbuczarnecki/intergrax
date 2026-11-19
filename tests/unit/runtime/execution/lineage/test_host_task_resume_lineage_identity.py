@@ -3,9 +3,7 @@
 from __future__ import annotations
 
 import pytest
-
 from intergrax.contracts.agent_step import AgentStep, StepOutput
-from intergrax.contracts.runtime_execution_context import RuntimeExecutionContext
 from intergrax.contracts.execution_identity import (
     AttemptId,
     ExecutionId,
@@ -21,14 +19,12 @@ from intergrax.contracts.execution_lineage import (
     ExecutionLineageSegmentLifecycle,
     build_execution_lineage_attempt_scope,
 )
+from intergrax.contracts.runtime_execution_context import RuntimeExecutionContext
 from intergrax.runtime.execution.active_execution_resume import (
     peek_active_execution_resume_plan,
 )
 from intergrax.runtime.execution.lineage.persistence import (
     InMemoryExecutionLineagePersistence,
-)
-from testing_support.nexus_host_task_execution import (
-    build_certified_internal_test_host_task_execution,
 )
 from intergrax.runtime.long_running.execution_tree_checkpoint import (
     minimal_runtime_checkpoint,
@@ -37,6 +33,9 @@ from intergrax.runtime.long_running.models import TaskCheckpoint
 from intergrax.runtime.nexus.nexus_loop import NexusLoop
 from intergrax.runtime.registry.agent_registry import AgentRegistry
 from intergrax.runtime.task.task import Task, TaskContext, TaskState
+from testing_support.nexus_host_task_execution import (
+    build_certified_internal_test_host_task_execution,
+)
 from testing_support.runtime.execution.lineage.lineage_test_helpers import register_v1_attempt
 from testing_support.uaep_gate_stubs import UaepPipelineStubAgent
 
@@ -107,9 +106,7 @@ class _LineageIdentityProbeAgent(UaepPipelineStubAgent):
             assert resume_plan is not None
             active_snapshot = resume_plan.plan.active_snapshot
             resume_root = next(
-                entry.execution_id
-                for entry in active_snapshot.entries
-                if entry.parent_execution_id is None
+                entry.execution_id for entry in active_snapshot.entries if entry.parent_execution_id is None
             )
             assert self._persistence is not None
             assert self._task_id is not None
@@ -121,18 +118,12 @@ class _LineageIdentityProbeAgent(UaepPipelineStubAgent):
             )
             attempt_state = self._persistence.read_attempt_lineage_state(attempt_scope)
             assert attempt_state is not None
-            page = self._persistence.list_admissions_for_attempt(
-                attempt_scope, limit=10
-            )
-            root_admissions = [
-                item for item in page.admissions if item.parent_execution_id is None
-            ]
+            page = self._persistence.list_admissions_for_attempt(attempt_scope, limit=10)
+            root_admissions = [item for item in page.admissions if item.parent_execution_id is None]
             assert len(root_admissions) == 1
             self._captured["resume_plan_root"] = resume_root
             self._captured["active_execution_id"] = active_execution_id
-            self._captured["segment_root"] = (
-                attempt_state.active_segment_root_execution_id
-            )
+            self._captured["segment_root"] = attempt_state.active_segment_root_execution_id
             self._captured["root_admission"] = root_admissions[0].execution_id
         else:
             self._captured["active_execution_id"] = active_execution_id
@@ -288,10 +279,7 @@ async def test_host_task_resume_same_attempt_persists_two_segment_roots() -> Non
     second_segment = persistence.open_segment(scope, resume_root, first_root)
     assert second_segment.predecessor_root_execution_id == first_root
     first_segment_after = persistence.open_segment(scope, first_root)
-    assert (
-        first_segment_after.lifecycle
-        is ExecutionLineageSegmentLifecycle.SEGMENT_UNCLEAN
-    )
+    assert first_segment_after.lifecycle is ExecutionLineageSegmentLifecycle.SEGMENT_UNCLEAN
     attempt_state = persistence.read_attempt_lineage_state(scope)
     assert attempt_state is not None
     assert attempt_state.active_segment_root_execution_id == resume_root

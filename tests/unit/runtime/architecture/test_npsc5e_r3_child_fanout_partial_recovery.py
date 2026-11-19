@@ -12,7 +12,6 @@ from dataclasses import dataclass, field
 from pathlib import Path
 
 import pytest
-
 from intergrax.agent_distribution.bounded_multi_agent_fanout import (
     BoundedMultiAgentFanOutService,
     FanOutId,
@@ -59,9 +58,6 @@ from intergrax.runtime.execution.fan_out_partial_recovery import (
 from intergrax.runtime.execution.orchestration_topology_submission import (
     CanonicalOrchestrationTopologySubmissionPort,
 )
-from testing_support.agent_distribution.multi_agent_coordination_qualification_harness import (
-    build_production_representative_orchestration_topology_submission_port,
-)
 from intergrax.runtime.long_running.checkpoint_revision import StaleCheckpointWriteError
 from intergrax.runtime.long_running.execution_tree_checkpoint import (
     minimal_runtime_checkpoint,
@@ -75,14 +71,17 @@ from intergrax.runtime.nexus.budget.budget_models import RunBudget
 from intergrax.runtime.nexus.nexus_loop import NexusLoop
 from intergrax.runtime.registry.agent_registry import AgentRegistry
 from intergrax.runtime.task.task import TaskState
+from testing_support.agent_distribution.multi_agent_coordination_qualification_harness import (
+    build_production_representative_orchestration_topology_submission_port,
+)
 from tests.unit.agent_distribution.test_bounded_multi_agent_fanout import (
     _fan_out_item,
     build_fan_out_harness,
 )
 from tests.unit.agent_distribution.test_delegated_subtasks import (
+    _OCR_PACKAGE,
     OcrRequest,
     OcrResult,
-    _OCR_PACKAGE,
     _discovery_candidate,
     admin_test_principal,
 )
@@ -107,21 +106,15 @@ _FORBIDDEN_RECOVERY_NAMES = (
 _MANDATORY_SUITES: tuple[tuple[str, list[str]], ...] = (
     (
         "R1 Final",
-        [
-            "tests/unit/runtime/architecture/test_npsc5e_r1_final_retry_attempt_qualification.py"
-        ],
+        ["tests/unit/runtime/architecture/test_npsc5e_r1_final_retry_attempt_qualification.py"],
     ),
     (
         "R2 Final",
-        [
-            "tests/unit/runtime/architecture/test_npsc5e_r2_final_checkpoint_durable_resume_qualification.py"
-        ],
+        ["tests/unit/runtime/architecture/test_npsc5e_r2_final_checkpoint_durable_resume_qualification.py"],
     ),
     (
         "P0A",
-        [
-            "tests/unit/runtime/architecture/test_npsc5e_p0a_execution_lineage_baseline_qualification.py"
-        ],
+        ["tests/unit/runtime/architecture/test_npsc5e_p0a_execution_lineage_baseline_qualification.py"],
     ),
     (
         "DG_001",
@@ -132,15 +125,11 @@ _MANDATORY_SUITES: tuple[tuple[str, list[str]], ...] = (
     ),
     (
         "NPSC-5B",
-        [
-            "tests/unit/runtime/architecture/test_npsc5b_final_production_fanout_fanin_qualification.py"
-        ],
+        ["tests/unit/runtime/architecture/test_npsc5b_final_production_fanout_fanin_qualification.py"],
     ),
     (
         "NPSC-5D Final",
-        [
-            "tests/unit/runtime/architecture/test_npsc5d_final_multi_agent_governance_qualification.py"
-        ],
+        ["tests/unit/runtime/architecture/test_npsc5d_final_multi_agent_governance_qualification.py"],
     ),
     (
         "HITL R3",
@@ -167,10 +156,7 @@ class _RecoverableFailDelegate:
 
     async def execute(self, request: OcrRequest) -> OcrResult:
         self._tracker.record(request.document_ref)
-        if (
-            request.document_ref in self._fail_refs
-            and request.document_ref not in self._failed_once
-        ):
+        if request.document_ref in self._fail_refs and request.document_ref not in self._failed_once:
             self._failed_once.add(request.document_ref)
             raise RuntimeError(f"transient failure: {request.document_ref}")
         return OcrResult(text=f"ocr:{request.document_ref}")
@@ -404,9 +390,7 @@ def test_submission_port_exposes_recover_failed_slot() -> None:
 async def test_one_failed_slot_recovery_preserves_siblings(tmp_path: Path) -> None:
     tracker = _InvocationTracker()
     harness = build_fan_out_harness(
-        candidates=(
-            _discovery_candidate(_OCR_PACKAGE, capability_ids=("document.ocr",)),
-        ),
+        candidates=(_discovery_candidate(_OCR_PACKAGE, capability_ids=("document.ocr",)),),
         specialist_delegate=_RecoverableFailDelegate(tracker, frozenset({"doc-b"})),
     )
     fan_out, adapter, submission, recovery, _loop = _build_stack(harness)
@@ -437,9 +421,7 @@ async def test_one_failed_slot_recovery_preserves_siblings(tmp_path: Path) -> No
     store = SQLiteTaskCheckpointStore(db_path=tmp_path / "one-failed.db")
     saved = store.save(checkpoint)
     harness_recover = build_fan_out_harness(
-        candidates=(
-            _discovery_candidate(_OCR_PACKAGE, capability_ids=("document.ocr",)),
-        ),
+        candidates=(_discovery_candidate(_OCR_PACKAGE, capability_ids=("document.ocr",)),),
         specialist_delegate=_RecoverableFailDelegate(tracker, frozenset()),
     )
     harness_recover.task_scope_authority.task_scope_id = task_scope
@@ -480,9 +462,7 @@ async def test_one_failed_slot_recovery_preserves_siblings(tmp_path: Path) -> No
 async def test_all_success_recovery_is_noop(tmp_path: Path) -> None:
     tracker = _InvocationTracker()
     harness = build_fan_out_harness(
-        candidates=(
-            _discovery_candidate(_OCR_PACKAGE, capability_ids=("document.ocr",)),
-        ),
+        candidates=(_discovery_candidate(_OCR_PACKAGE, capability_ids=("document.ocr",)),),
         specialist_delegate=_RecoverableFailDelegate(tracker, frozenset()),
     )
     fan_out, adapter, submission, recovery, _ = _build_stack(harness)
@@ -544,9 +524,7 @@ async def test_result_order_and_cardinality_preserved_after_recovery(
 ) -> None:
     tracker = _InvocationTracker()
     harness = build_fan_out_harness(
-        candidates=(
-            _discovery_candidate(_OCR_PACKAGE, capability_ids=("document.ocr",)),
-        ),
+        candidates=(_discovery_candidate(_OCR_PACKAGE, capability_ids=("document.ocr",)),),
         specialist_delegate=_RecoverableFailDelegate(tracker, frozenset({"doc-b"})),
     )
     fan_out, adapter, submission, recovery, _ = _build_stack(harness)
@@ -575,9 +553,7 @@ async def test_result_order_and_cardinality_preserved_after_recovery(
         ),
     )
     harness_recover = build_fan_out_harness(
-        candidates=(
-            _discovery_candidate(_OCR_PACKAGE, capability_ids=("document.ocr",)),
-        ),
+        candidates=(_discovery_candidate(_OCR_PACKAGE, capability_ids=("document.ocr",)),),
         specialist_delegate=_RecoverableFailDelegate(tracker, frozenset()),
     )
     harness_recover.task_scope_authority.task_scope_id = task_scope
@@ -616,9 +592,7 @@ async def test_result_order_and_cardinality_preserved_after_recovery(
 async def test_cross_process_partial_recovery() -> None:
     tracker = _InvocationTracker()
     harness = build_fan_out_harness(
-        candidates=(
-            _discovery_candidate(_OCR_PACKAGE, capability_ids=("document.ocr",)),
-        ),
+        candidates=(_discovery_candidate(_OCR_PACKAGE, capability_ids=("document.ocr",)),),
         specialist_delegate=_RecoverableFailDelegate(tracker, frozenset({"doc-b"})),
     )
     fan_out, adapter, _, recovery_a, _ = _build_stack(harness)
@@ -652,9 +626,7 @@ async def test_cross_process_partial_recovery() -> None:
     loaded = store_b.get_latest(str(task_scope), _TENANT)
     assert loaded is not None
     harness_b = build_fan_out_harness(
-        candidates=(
-            _discovery_candidate(_OCR_PACKAGE, capability_ids=("document.ocr",)),
-        ),
+        candidates=(_discovery_candidate(_OCR_PACKAGE, capability_ids=("document.ocr",)),),
         specialist_delegate=_RecoverableFailDelegate(tracker, frozenset()),
     )
     _, adapter_b, submission_b, _, _ = _build_stack(harness_b)
@@ -687,20 +659,18 @@ async def test_cross_process_partial_recovery() -> None:
 
 def test_wrong_revision_blocked() -> None:
     harness = build_fan_out_harness(
-        candidates=(
-            _discovery_candidate(_OCR_PACKAGE, capability_ids=("document.ocr",)),
-        ),
+        candidates=(_discovery_candidate(_OCR_PACKAGE, capability_ids=("document.ocr",)),),
     )
     _, adapter, _, recovery, _ = _build_stack(harness)
     task_scope = mint_task_id()
     run_id = mint_run_id()
     attempt_id = mint_attempt_id()
     root = mint_execution_id()
-    from intergrax.runtime.long_running.topology_recovery_snapshot import (
-        TopologyRecoverySnapshot,
-        SlotRecoverySnapshot,
-    )
     from intergrax.contracts.partial_recovery import SlotRecoveryDisposition
+    from intergrax.runtime.long_running.topology_recovery_snapshot import (
+        SlotRecoverySnapshot,
+        TopologyRecoverySnapshot,
+    )
 
     snapshot = TopologyRecoverySnapshot(
         fan_out_id="fan-out-r3",
@@ -757,9 +727,7 @@ def test_wrong_revision_blocked() -> None:
 
 def test_policy_deny_blocked() -> None:
     harness = build_fan_out_harness(
-        candidates=(
-            _discovery_candidate(_OCR_PACKAGE, capability_ids=("document.ocr",)),
-        ),
+        candidates=(_discovery_candidate(_OCR_PACKAGE, capability_ids=("document.ocr",)),),
     )
     _, _, _, recovery, _ = _build_stack(harness)
     task_scope = mint_task_id()
@@ -870,26 +838,20 @@ def test_stale_recovery_writer_blocked(tmp_path: Path) -> None:
 
 
 def test_duplicate_recovery_request_idempotent_via_correlation() -> None:
-    source = (
-        _REPO_ROOT / "intergrax/runtime/execution/orchestration_topology_submission.py"
-    ).read_text(encoding="utf-8")
+    source = (_REPO_ROOT / "intergrax/runtime/execution/orchestration_topology_submission.py").read_text(
+        encoding="utf-8"
+    )
     assert "recovery_results" in source
     assert "cache_key" in source
 
 
 def test_no_direct_child_execution_runner_in_partial_recovery() -> None:
-    source = (
-        _REPO_ROOT / "intergrax/runtime/execution/fan_out_partial_recovery.py"
-    ).read_text(encoding="utf-8")
+    source = (_REPO_ROOT / "intergrax/runtime/execution/fan_out_partial_recovery.py").read_text(encoding="utf-8")
     tree = ast.parse(source)
     for node in ast.walk(tree):
         if isinstance(node, ast.ImportFrom) and node.module:
-            if node.module.endswith("child") and any(
-                alias.name == "ChildExecutionRunner" for alias in node.names
-            ):
-                raise AssertionError(
-                    "ChildExecutionRunner import forbidden in partial recovery"
-                )
+            if node.module.endswith("child") and any(alias.name == "ChildExecutionRunner" for alias in node.names):
+                raise AssertionError("ChildExecutionRunner import forbidden in partial recovery")
 
 
 def test_runtime_checkpoint_topology_recovery_field_compatible_v2() -> None:

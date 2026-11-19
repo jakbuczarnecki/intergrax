@@ -1,12 +1,7 @@
 # © Artur Czarnecki. All rights reserved.
 
-from intergrax.utils import attribute_access
 import pytest
-
-from testing_support.nexus_lab_task_execution import run_lab_nexus_task
-
 from intergrax.agents.harness_reference_agent import HarnessReferenceAgent
-from intergrax.runtime.nexus.uaep import UAEPExecutor
 from intergrax.contracts.agent_contract_meta import AgentContract
 from intergrax.contracts.agent_step import AgentStep, StepOutput
 from intergrax.contracts.capability import CapabilityMatchResult
@@ -21,20 +16,24 @@ from intergrax.runtime.nexus.execution.execution_graph import (
     ExecutionNodeStatus,
 )
 from intergrax.runtime.nexus.execution.graph_executor import GraphExecutor
+from intergrax.runtime.nexus.nexus_loop import NexusLoop
 from intergrax.runtime.nexus.planning.task_planner import (
     NexusPlan,
     PlanStep,
     TaskPlanner,
 )
 from intergrax.runtime.nexus.responses.response_schema import RuntimeRequest
+from intergrax.runtime.nexus.uaep import UAEPExecutor
+from intergrax.runtime.registry.agent_registry import AgentRegistry
+from intergrax.runtime.task.task import Task, TaskContext, TaskState
+from intergrax.utils import attribute_access
 from testing_support.builder import (
+    FakeLLMAdapter,
+    build_in_memory_session_manager,
     build_runtime_request_for_tests,
     canonical_execution_identity_scope,
 )
-from intergrax.runtime.nexus.nexus_loop import NexusLoop
-from intergrax.runtime.registry.agent_registry import AgentRegistry
-from intergrax.runtime.task.task import Task, TaskContext, TaskState
-from testing_support.builder import FakeLLMAdapter, build_in_memory_session_manager
+from testing_support.nexus_lab_task_execution import run_lab_nexus_task
 from testing_support.uaep_gate_stubs import UaepPipelineStubAgent
 
 
@@ -118,9 +117,7 @@ class _MultiStepUaepAgent(HarnessReferenceAgent):
             AgentStep(step_id="s2", step_name="s2", step_index=1),
         ]
 
-    async def run_step(
-        self, step: AgentStep, ctx: RuntimeExecutionContext
-    ) -> StepOutput:
+    async def run_step(self, step: AgentStep, ctx: RuntimeExecutionContext) -> StepOutput:
         _MultiStepUaepAgent.step_runs += 1
         return StepOutput(step_id=step.step_id, summary=f"done:{step.step_id}")
 
@@ -143,12 +140,8 @@ def test_cancellation_coordinator_request_and_clear():
 async def test_graph_executor_cancels_before_second_node():
     UaepPipelineStubAgent.run_count = 0
     registry = AgentRegistry()
-    registry.register(
-        UaepPipelineStubAgent(agent_id="agent_a", capability="graph.cancel", prefix="A")
-    )
-    registry.register(
-        UaepPipelineStubAgent(agent_id="agent_b", capability="graph.cancel", prefix="B")
-    )
+    registry.register(UaepPipelineStubAgent(agent_id="agent_a", capability="graph.cancel", prefix="A"))
+    registry.register(UaepPipelineStubAgent(agent_id="agent_b", capability="graph.cancel", prefix="B"))
 
     task = Task(
         tenant_id="t1",
@@ -191,12 +184,8 @@ async def test_graph_executor_cancels_before_second_node():
 async def test_nexus_loop_graph_cancellation():
     UaepPipelineStubAgent.run_count = 0
     registry = AgentRegistry()
-    registry.register(
-        UaepPipelineStubAgent(agent_id="agent_a", capability="graph.cancel", prefix="A")
-    )
-    registry.register(
-        UaepPipelineStubAgent(agent_id="agent_b", capability="graph.cancel", prefix="B")
-    )
+    registry.register(UaepPipelineStubAgent(agent_id="agent_a", capability="graph.cancel", prefix="A"))
+    registry.register(UaepPipelineStubAgent(agent_id="agent_b", capability="graph.cancel", prefix="B"))
 
     loop = NexusLoop(
         registry,
@@ -215,10 +204,7 @@ async def test_nexus_loop_graph_cancellation():
 
     assert result.state == TaskState.CANCELLED
     assert UaepPipelineStubAgent.run_count == 1
-    assert any(
-        event.event_type == RuntimeEventType.CANCELLED
-        for event in loop.event_bus.history
-    )
+    assert any(event.event_type == RuntimeEventType.CANCELLED for event in loop.event_bus.history)
 
 
 @pytest.mark.asyncio

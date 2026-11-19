@@ -3,11 +3,22 @@
 from __future__ import annotations
 
 from pathlib import Path
-from typing import Optional
 
 from fastapi import FastAPI
-
+from intergrax.applications._shared.harness_host_auxiliary_wiring import (
+    HostTaskExecutionExecutor,
+    wire_harness_host_long_running_scheduler,
+)
+from intergrax.applications._shared.harness_host_composition import (
+    bootstrap_harness_host_platform,
+)
 from intergrax.applications._shared.harness_host_runtime import build_harness_host_runtime
+from intergrax.applications._shared.identity_wiring import wire_application_identity
+from intergrax.applications._shared.interaction_wiring import wire_interaction_intake_service
+from intergrax.applications._shared.plugin_bootstrap import attach_plugin_shutdown
+from intergrax.applications._shared.product_observability_dashboard_wiring import (
+    wire_harness_product_observability_dashboard,
+)
 from intergrax.applications._shared.production_platform_persistence import (
     HarnessHostProfilePersistenceKwargs,
     build_reference_production_platform_persistence,
@@ -18,45 +29,28 @@ from intergrax.applications._shared.production_process_composition import (
     ProductionProcessComposition,
 )
 from intergrax.applications._shared.registry_projection import MaterializedRegistryProjection
-from intergrax.fastapi_core.app_factory import create_app
-from intergrax.fastapi_core.config import ApiConfig, ApiEnvironment
-from intergrax.applications._shared.workspace_cleanup_wiring import (
-    apply_factory_lifespans,
-    build_factory_lifespans,
-)
-from intergrax.applications._shared.identity_wiring import wire_application_identity
-from intergrax.applications._shared.harness_host_auxiliary_wiring import (
-    HostTaskExecutionExecutor,
-    wire_harness_host_long_running_scheduler,
-)
-from intergrax.applications._shared.product_observability_dashboard_wiring import (
-    wire_harness_product_observability_dashboard,
-)
-from intergrax.applications._shared.interaction_wiring import wire_interaction_intake_service
-from intergrax.applications._shared.plugin_bootstrap import attach_plugin_shutdown
 from intergrax.applications._shared.task_control_wiring import (
     build_reliability_task_enricher,
     wire_harness_task_control,
 )
+from intergrax.applications._shared.workspace_cleanup_wiring import (
+    apply_factory_lifespans,
+    build_factory_lifespans,
+)
 from intergrax.debug.store import open_default_task_checkpoint_persistence
+from intergrax.fastapi_core.app_factory import create_app
+from intergrax.fastapi_core.config import ApiConfig, ApiEnvironment
 from intergrax.runtime.interactions.router import create_interaction_intake_router
-from intergrax.applications._shared.harness_host_composition import (
-    bootstrap_harness_host_application_plugins,
-    bootstrap_harness_host_platform,
-    resolve_harness_host_event_bus,
-    resolve_harness_host_lifecycle_hook_coordinator,
-    resolve_harness_host_middleware_pipeline,
-    resolve_harness_host_runtime_event_persistence,
+
+from research_application.host.environment_profile import (
+    build_research_environment_profile,
+    require_research_orchestration_llm_profile,
 )
 from research_application.host.host_runtime_composition import ResearchHostRuntimeComposition
 from research_application.host.orchestration_decision_requirement_policy import (
     resolve_research_harness_orchestration_decision_requirement_policy,
 )
 from research_application.host.settings import ResearchBackendSettings
-from research_application.host.environment_profile import (
-    build_research_environment_profile,
-    require_research_orchestration_llm_profile,
-)
 from research_application.manifest import RESEARCH_APPLICATION_MANIFEST
 from research_application.serving.fastapi_router import mount_research_routes
 
@@ -65,7 +59,7 @@ def create_research_backend_app(
     *,
     registry_projection: MaterializedRegistryProjection,
     process_composition: ProductionProcessComposition | None = None,
-    settings: Optional[ResearchBackendSettings] = None,
+    settings: ResearchBackendSettings | None = None,
     trace_db_path: Path | None = None,
     runtime_events_db_path: Path | None = None,
     host_runtime: ResearchHostRuntimeComposition | None = None,
@@ -86,11 +80,9 @@ def create_research_backend_app(
     if production_mode:
         env = resolve_reference_production_strict_host_environment(env)
     if process_composition is not None:
-        profile_persistence_kwargs = (
-            resolve_harness_host_profile_persistence_kwargs_from_composition(
-                production_mode=production_mode,
-                composition=process_composition,
-            )
+        profile_persistence_kwargs = resolve_harness_host_profile_persistence_kwargs_from_composition(
+            production_mode=production_mode,
+            composition=process_composition,
         )
     else:
         platform = build_reference_production_platform_persistence()
@@ -175,6 +167,7 @@ def create_research_backend_app(
 
         load_mcp_coupling()
         from intergrax.applications._shared.fastapi_mcp import couple_harness_host_fastapi_with_mcp
+
         from research_application.mcp.server import build_research_mcp_server
 
         mcp = build_research_mcp_server(

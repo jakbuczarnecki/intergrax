@@ -5,7 +5,9 @@
 from __future__ import annotations
 
 import pytest
-
+from intergrax.applications._shared.application_security_wiring import (
+    register_application_security_hooks,
+)
 from intergrax.applications._shared.security_assembly_resolver import (
     SecurityAssemblyError,
     assert_security_assembly_valid,
@@ -18,11 +20,13 @@ from intergrax.applications.contracts.environment_profile import (
 )
 from intergrax.applications.contracts.execution_mode import ExecutionMode
 from intergrax.contracts.data_classification import DataClassification
-from intergrax.integrations.registry.presets import harness_defense_stack
 from intergrax.integrations.registry.bootstrap import register_default_integrations
+from intergrax.integrations.registry.presets import harness_defense_stack
 from intergrax.runtime.hooks.hook_context import HookContext
 from intergrax.runtime.hooks.hook_point import HookPoint
 from intergrax.runtime.middleware.pipeline import MiddlewarePipeline
+from intergrax.runtime.nexus.nexus_loop import NexusLoop
+from intergrax.runtime.registry.agent_registry import AgentRegistry
 from intergrax.runtime.security.defense_plugin import (
     PluginSecurityDefenseMiddleware,
     SecurityFailMode,
@@ -36,11 +40,6 @@ from intergrax.runtime.security.defense_registry import (
 )
 from intergrax.runtime.security.encryption_middleware import EncryptionEnforcementMiddleware
 from intergrax.runtime.security.encryption_policy import evaluate_encryption_enforcement
-from intergrax.applications._shared.application_security_wiring import (
-    register_application_security_hooks,
-)
-from intergrax.runtime.nexus.nexus_loop import NexusLoop
-from intergrax.runtime.registry.agent_registry import AgentRegistry
 
 pytestmark = [pytest.mark.unit, pytest.mark.gate, pytest.mark.no_ci]
 
