@@ -7,7 +7,6 @@ from __future__ import annotations
 from dataclasses import dataclass
 
 import pytest
-
 from intergrax.agent_distribution.activation import (
     ActivationService,
     FakeRuntimeServingProjectionCoordinator,
@@ -68,8 +67,8 @@ from intergrax.agent_distribution.runtime_revision_service import RuntimeRevisio
 from intergrax.agent_distribution.task_capability_resolution import (
     build_deterministic_task_capability_resolver,
     build_task_capability_resolution_request,
-    unresolved_agent_distribution_capability_need,
     build_task_capability_rule,
+    unresolved_agent_distribution_capability_need,
 )
 from intergrax.agent_distribution.task_scoped_agents import (
     TaskScopedAgentLeaseId,
@@ -87,13 +86,13 @@ from intergrax.applications._shared.production_agent_capability_runtime import (
     build_delegated_subtask_service_factory,
     build_production_agent_capability_runtime,
 )
+from intergrax.applications._shared.production_agent_platform_runtime import (
+    build_production_agent_platform_runtime,
+)
 from intergrax.applications._shared.production_delegated_subtask_plans import (
     ProductionDelegatedSubtaskPlanConfig,
     derive_production_delegated_binding_id,
     derive_production_delegated_installation_slot,
-)
-from intergrax.applications._shared.production_agent_platform_runtime import (
-    build_production_agent_platform_runtime,
 )
 from intergrax.applications._shared.production_process_composition import (
     ProductionProcessComposition,
@@ -128,15 +127,15 @@ from intergrax.runtime.execution.active_execution_budget import (
     bind_root_execution_budget,
     reset_active_execution_budget,
 )
+from intergrax.runtime.execution.boundary import (
+    ExecutionBoundary,
+    ExecutionIdentityBinding,
+)
 from intergrax.runtime.execution.budget.ledger import create_execution_budget_ledger
 from intergrax.runtime.governance.control_plane_mutation_authorization import (
     ControlPlaneMutationAuthorizationBoundary,
 )
 from intergrax.runtime.nexus.budget.budget_models import RunBudget
-from intergrax.runtime.execution.boundary import (
-    ExecutionBoundary,
-    ExecutionIdentityBinding,
-)
 from intergrax.runtime.task.active_task_registry import ActiveTaskRegistry
 from intergrax.runtime.task.task import Task, TaskContext
 from testing_support.agent_platform_dependency_resolver import (
@@ -275,9 +274,7 @@ def _source() -> CatalogSourceIdentity:
     )
 
 
-def _identity(
-    package_id: str, *, digest: str = _DIGEST
-) -> AgentDiscoveryCandidateIdentity:
+def _identity(package_id: str, *, digest: str = _DIGEST) -> AgentDiscoveryCandidateIdentity:
     return AgentDiscoveryCandidateIdentity(
         source=_source(),
         package=AgentPackageCandidate(
@@ -572,19 +569,12 @@ def _clear_active_task_registry() -> None:
 @pytest.mark.asyncio
 async def test_production_composition_one_admin_universe() -> None:
     harness = build_phase9_harness(
-        candidates=(
-            _discovery_candidate(_PACKAGE_ID, capability_ids=("document.ocr",)),
-        ),
+        candidates=(_discovery_candidate(_PACKAGE_ID, capability_ids=("document.ocr",)),),
     )
     runtime = harness.capability_runtime
     assert runtime.dynamic_acquisition._lifecycle is runtime.admin_service
-    assert (
-        runtime.task_scoped_agents._release_service._lifecycle is runtime.admin_service
-    )
-    assert (
-        runtime.task_scoped_agents._acquisition_service._acquisition
-        is runtime.dynamic_acquisition
-    )
+    assert runtime.task_scoped_agents._release_service._lifecycle is runtime.admin_service
+    assert runtime.task_scoped_agents._acquisition_service._acquisition is runtime.dynamic_acquisition
 
 
 @pytest.mark.asyncio
@@ -600,13 +590,8 @@ async def test_production_composition_delegated_happy_path() -> None:
     assert result.result.text == "ocr:doc-1"
     assert result.selected_identity.package.distribution_package_id == _PACKAGE_ID
     assert result.acquisition_result.resolved_package_identity.package_digest == _DIGEST
-    assert (
-        result.acquisition_result.traffic_serving_revision_id
-        == result.acquisition_result.runtime_revision_id
-    )
-    lease = harness.capability_runtime.lease_store.get(
-        TaskScopedAgentLeaseId("lease-delegate-1")
-    )
+    assert result.acquisition_result.traffic_serving_revision_id == result.acquisition_result.runtime_revision_id
+    lease = harness.capability_runtime.lease_store.get(TaskScopedAgentLeaseId("lease-delegate-1"))
     assert lease is not None
     assert lease.lease_state is TaskScopedAgentLeaseState.RELEASED
 
@@ -614,9 +599,7 @@ async def test_production_composition_delegated_happy_path() -> None:
 @pytest.mark.asyncio
 async def test_production_composition_source_qualified_identity_preserved() -> None:
     harness = build_phase9_harness(
-        candidates=(
-            _discovery_candidate(_PACKAGE_ID, capability_ids=("document.ocr",)),
-        ),
+        candidates=(_discovery_candidate(_PACKAGE_ID, capability_ids=("document.ocr",)),),
     )
     task_scope = mint_task_id()
     result = await _run_delegation(harness, task_scope=task_scope)
@@ -634,11 +617,7 @@ async def test_production_composition_child_execution_lineage() -> None:
 
     class LineageDelegate:
         async def execute(self, request: OcrRequest) -> OcrResult:
-            nonlocal \
-                child_execution_id, \
-                child_parent_execution_id, \
-                child_run_id, \
-                child_attempt_id
+            nonlocal child_execution_id, child_parent_execution_id, child_run_id, child_attempt_id
             child_execution_id = require_active_execution_id()
             child_parent_execution_id = peek_active_parent_execution_id()
             identity = peek_active_execution_identity()
@@ -647,9 +626,7 @@ async def test_production_composition_child_execution_lineage() -> None:
             return OcrResult(text=request.document_ref)
 
     harness = build_phase9_harness(
-        candidates=(
-            _discovery_candidate(_PACKAGE_ID, capability_ids=("document.ocr",)),
-        ),
+        candidates=(_discovery_candidate(_PACKAGE_ID, capability_ids=("document.ocr",)),),
         specialist_delegate=LineageDelegate(),
     )
     root = _root_identity()
@@ -665,9 +642,7 @@ async def test_production_composition_child_execution_lineage() -> None:
 @pytest.mark.asyncio
 async def test_production_composition_no_eligible_agent() -> None:
     harness = build_phase9_harness(
-        candidates=(
-            _discovery_candidate(_LEGAL_PACKAGE, capability_ids=("legal.analysis",)),
-        ),
+        candidates=(_discovery_candidate(_LEGAL_PACKAGE, capability_ids=("legal.analysis",)),),
     )
     task_scope = mint_task_id()
     root = _root_identity()
@@ -693,9 +668,7 @@ async def test_production_composition_no_eligible_agent() -> None:
 @pytest.mark.asyncio
 async def test_production_composition_cross_task_scope_rejected() -> None:
     harness = build_phase9_harness(
-        candidates=(
-            _discovery_candidate(_PACKAGE_ID, capability_ids=("document.ocr",)),
-        ),
+        candidates=(_discovery_candidate(_PACKAGE_ID, capability_ids=("document.ocr",)),),
     )
     active_scope = mint_task_id()
     claimed_scope = mint_task_id()
@@ -722,9 +695,7 @@ async def test_production_composition_cross_task_scope_rejected() -> None:
 @pytest.mark.asyncio
 async def test_production_composition_catalog_provider_coherence() -> None:
     harness = build_phase9_harness(
-        candidates=(
-            _discovery_candidate(_PACKAGE_ID, capability_ids=("document.ocr",)),
-        ),
+        candidates=(_discovery_candidate(_PACKAGE_ID, capability_ids=("document.ocr",)),),
     )
     source_ids = harness.capability_runtime.catalog_registry.registered_source_ids
     assert source_ids == (_SOURCE_ID,)
@@ -734,9 +705,7 @@ async def test_production_composition_catalog_provider_coherence() -> None:
 @pytest.mark.asyncio
 async def test_production_composition_persistent_binding_survives_release() -> None:
     harness = build_phase9_harness(
-        candidates=(
-            _discovery_candidate(_PACKAGE_ID, capability_ids=("document.ocr",)),
-        ),
+        candidates=(_discovery_candidate(_PACKAGE_ID, capability_ids=("document.ocr",)),),
     )
     admin = harness.capability_runtime.admin_service
     principal = admin_test_principal()
@@ -798,16 +767,12 @@ async def test_production_composition_persistent_binding_survives_release() -> N
     assert status.enabled_in_desired_state
 
 
-def test_create_reference_production_process_composition_without_app_is_ac3_only() -> (
-    None
-):
+def test_create_reference_production_process_composition_without_app_is_ac3_only() -> None:
     composition = create_reference_production_process_composition()
     assert composition.agent_capability_runtime is None
 
 
-def test_create_reference_production_process_composition_with_app_wires_capability() -> (
-    None
-):
+def test_create_reference_production_process_composition_with_app_wires_capability() -> None:
     catalog = _Phase9Catalog()
     app = _application_composition(catalog)
     composition = create_reference_production_process_composition(
