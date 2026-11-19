@@ -38,8 +38,20 @@ Every product path (`intergrax/`, `agents/`, `applications/`), every test file, 
 
 ## Lifecycle state
 
-plan_approved
+quality_gate
 
 ## Implementer session
 
 Implementer session: local_76769e42-cc2e-41d7-9cd1-274e79847690
+
+## Implementation record
+
+Written by the implementer outside the approval lines and outside the plan text.
+
+- Branch `af2/pt-fc2-e`, cut from train head `37fd3e984` (contains the delegation record commit `881428fb2`); the signed ticket and plan are the first commit, unchanged apart from this field and section and the lifecycle state.
+- Step 0: `CapacityBackendPosture`, `CapacityQualification` and the `backend_posture` keyword exist in the tree (`production_adapters.py`, `production_capacity_wiring.py`).
+- E-1 (unedited script): exit 1, `ControlPlaneCompositionError` raised by `require_control_plane_mutation_boundary` (pre-existing failure, not caused by FC-2). Log `.tmp/session/pt-fc2-e/e1_unedited.log`.
+- E-2 (edited script): exit 0 and the `OK` line. E-4 `test_audit_ideal_30_4_production_capacity`: 1 passed. ruff 0.15.20 check and format clean on the script. The plan has no S4 lint commit.
+- Write set: the capacity script, this ticket and its plan (3 entries, 1 firm script, 3 negative cases as assertions in the script). No product path, no test file, no other `check_*` script.
+- Not run here: E-3 (mutation check, audit only) and the full runner `check_audit_ideal_gates.py`.
+- Residual: part 2 (`check_sandbox_policy_wiring.py`) is held; owner is the fixer ticket of the sandbox residual.
