@@ -52,3 +52,10 @@ plan_approved
 ## Implementer session
 
 Implementer session: local_b41a9ef4-8b78-425a-af3d-e383b306d2da
+
+## Implementer notes (outside the plan text and the approval block)
+
+Deviations and residuals recorded by the implementer; the plan digest is unchanged.
+
+- D-1 Lint commits S4a and S4b before Part A (approved by the ARCH-FREEZE orchestrator, not a plan amendment). The pre-commit gate runs `ruff check` and `ruff format --check` (ruff 0.15.20) on every staged Python file, and 124 of the 150 existing Python files of the write set failed it (436 findings measured with the repository configuration on exactly those files; 73 files also failed the format check). S4a is the mechanical commit (safe fixes plus format, 113 files); S4b carries the same mechanical fixes for the 11 files that also needed manual edits, with 35 residual findings fixed by hand. No behaviour change; an AST comparison (imports and annotations normalised) shows no difference for the 116 files without manual edits and only the intended removals for the 8 files with manual edits. The only `noqa` added is E501 on the end of two scaffold templates (`new_application.py`, `new_application_product.py`), whose long markdown lines are generated text.
+- D-2 Test reds present at the train head before this ticket and unchanged by S4a and S4b (same result at a detached checkout of `37fd3e984`): `tests/unit/runtime/execution/test_decision_orchestration_recovery.py::test_decision_orchestration_checkpoint_recovery_participation` and `::test_malformed_physical_checkpoint_fails_without_mutating_decision_checkpoint`; `tests/unit/runtime/execution/test_execution_runtime.py::test_resume_root_execution_id_matches_identity_through_lifecycle`; `tests/unit/scaffold/test_npsc2_canonical_scaffold_execution.py::test_scaffold_generators_emit_canonical_execution_surface[lab]` and `[product]`.
