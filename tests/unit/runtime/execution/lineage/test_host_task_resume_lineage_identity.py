@@ -146,7 +146,7 @@ def _build_host_execution(
             capture_resume_details=capture_resume_details,
         ),
     )
-    nexus_loop = NexusLoop(registry, execution_lineage_persistence=persistence)
+    nexus_loop = NexusLoop(registry, execution_lineage_persistence=persistence, production_mode=False)
     return build_certified_internal_test_host_task_execution(nexus_loop)
 
 

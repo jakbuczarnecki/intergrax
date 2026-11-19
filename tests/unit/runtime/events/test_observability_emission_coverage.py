@@ -73,7 +73,7 @@ def test_agent_router_emits_agent_selected() -> None:
     bus = RuntimeEventBus(persistence=store)
     registry = AgentRegistry()
     registry.register(_StubAgent(_contract(id="active")))
-    router = AgentRouter(registry, event_bus=bus)
+    router = AgentRouter(registry, event_bus=bus, production_mode=False)
     task = Task(
         tenant_id="t1",
         user_id="u1",

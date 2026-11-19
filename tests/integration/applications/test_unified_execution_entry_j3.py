@@ -162,6 +162,7 @@ def test_worker_checkpoint_resume_via_queue_payload(tmp_path) -> None:
         registry,
         checkpoint_store=checkpoint_store,
         execution_continuation_state_store=continuation_store,
+        production_mode=False,
     )
     runner = UnifiedTaskRunner(
         build_harness_root_task_execution_port(setup_loop),

@@ -248,6 +248,7 @@ async def test_nexus_loop_graph_failure_resume(tmp_path):
         checkpoint_store=checkpoint_store,
         validation_engine=validation,
         retry_policy=RetryPolicy(max_retries=0),
+        production_mode=False,
     )
     run_id = mint_run_id()
     attempt_id = mint_attempt_id()

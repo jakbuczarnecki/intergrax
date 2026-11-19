@@ -72,7 +72,7 @@ def _pipeline_names(loop: NexusLoop) -> set[str]:
 
 def test_r1_sec_01_canonical_composition_rejects_external_fail_open() -> None:
     register_security_defense_plugin(_FailOpenDefense())
-    loop = NexusLoop(AgentRegistry())
+    loop = NexusLoop(AgentRegistry(), production_mode=False)
     profile = ApplicationSecurityProfile(defense_plugin_ids=["external.fail_open"])
     with pytest.raises(SecurityAssemblyError, match="FAIL_CLOSED"):
         register_application_security_hooks(loop, profile)
@@ -80,7 +80,7 @@ def test_r1_sec_01_canonical_composition_rejects_external_fail_open() -> None:
 
 def test_r1_sec_02_fail_closed_external_defense_accepted() -> None:
     register_security_defense_plugin(_FailClosedDefense())
-    loop = NexusLoop(AgentRegistry())
+    loop = NexusLoop(AgentRegistry(), production_mode=False)
     profile = ApplicationSecurityProfile(defense_plugin_ids=["external.fail_closed"])
     register_application_security_hooks(loop, profile)
     assert "SecurityDefense:external.fail_closed" in _pipeline_names(loop)
@@ -88,7 +88,7 @@ def test_r1_sec_02_fail_closed_external_defense_accepted() -> None:
 
 def test_r1_sec_03_rejected_fail_open_middleware_not_attached() -> None:
     register_security_defense_plugin(_FailOpenDefense())
-    loop = NexusLoop(AgentRegistry())
+    loop = NexusLoop(AgentRegistry(), production_mode=False)
     profile = ApplicationSecurityProfile(defense_plugin_ids=["external.fail_open"])
     with pytest.raises(SecurityAssemblyError):
         register_application_security_hooks(loop, profile)
@@ -98,7 +98,7 @@ def test_r1_sec_03_rejected_fail_open_middleware_not_attached() -> None:
 @pytest.mark.asyncio
 async def test_r1_sec_04_rejected_fail_open_no_protected_hook_effect() -> None:
     register_security_defense_plugin(_FailOpenDefense())
-    loop = NexusLoop(AgentRegistry())
+    loop = NexusLoop(AgentRegistry(), production_mode=False)
     profile = ApplicationSecurityProfile(defense_plugin_ids=["external.fail_open"])
     with pytest.raises(SecurityAssemblyError):
         register_application_security_hooks(loop, profile)

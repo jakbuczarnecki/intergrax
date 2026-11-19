@@ -75,7 +75,7 @@ def test_apply_guardrail_wiring_attaches_middleware() -> None:
         }
     )
     wiring = wire_application_guardrail(env)
-    loop = NexusLoop(AgentRegistry())
+    loop = NexusLoop(AgentRegistry(), production_mode=False)
     apply_application_guardrail_wiring(loop, wiring, env)
     pipeline = loop._middleware  # noqa: SLF001
     assert isinstance(pipeline, MiddlewarePipeline)

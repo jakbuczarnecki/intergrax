@@ -86,7 +86,7 @@ def _bind_nexus_context(*, run_id: str, attempt_id: str, execution_id: str):
 @pytest.mark.asyncio
 async def test_deterministic_concurrent_handle_task_metric_isolation() -> None:
     bus = RuntimeEventBus(history_policy=RuntimeEventHistoryPolicy.bounded(2))
-    loop = NexusLoop(AgentRegistry(), event_bus=bus)
+    loop = NexusLoop(AgentRegistry(), event_bus=bus, production_mode=False)
     run_a = mint_run_id()
     run_b = mint_run_id()
     task_a = Task(
@@ -205,7 +205,7 @@ def test_metric_registry_no_leak_after_many_scopes() -> None:
 @pytest.mark.asyncio
 async def test_metric_scope_cleaned_up_when_handle_task_raises() -> None:
     bus = RuntimeEventBus()
-    loop = NexusLoop(AgentRegistry(), event_bus=bus)
+    loop = NexusLoop(AgentRegistry(), event_bus=bus, production_mode=False)
     run_id = mint_run_id()
     attempt_id = mint_attempt_id()
     execution_id = mint_execution_id()

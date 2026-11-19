@@ -227,7 +227,7 @@ async def test_handle_task_binds_root_execution_budget() -> None:
     from intergrax.runtime.task.unified_task_runner import UnifiedTaskRunner
 
     run_budget = RunBudget(max_total_tokens=42)
-    loop = NexusLoop(AgentRegistry(), run_budget=run_budget)
+    loop = NexusLoop(AgentRegistry(), run_budget=run_budget, production_mode=False)
     observed: list[int | None] = []
 
     async def _fake_impl(task: Task) -> TaskResult:

@@ -45,6 +45,7 @@ async def test_long_running_task_saves_checkpoint_on_pause(tmp_path):
         registry,
         checkpoint_store=store,
         notification_adapter=LoggingNotificationAdapter(),
+        production_mode=False,
     )
     runner = UnifiedTaskRunner(
         build_harness_root_task_execution_port(loop),
@@ -89,6 +90,7 @@ async def test_long_running_task_resumes_with_token(tmp_path):
         registry,
         checkpoint_store=store,
         notification_adapter=LoggingNotificationAdapter(),
+        production_mode=False,
     )
     runner = UnifiedTaskRunner(
         build_harness_root_task_execution_port(loop),

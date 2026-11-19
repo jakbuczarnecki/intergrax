@@ -261,7 +261,7 @@ def test_host_threaded_execution_adapter_not_wired_in_production_composition() -
 @pytest.mark.asyncio
 async def test_host_q2_host_task_roots_on_root_execution_launcher() -> None:
     registry = AgentRegistry()
-    nexus_loop = NexusLoop(registry)
+    nexus_loop = NexusLoop(registry, production_mode=False)
     host_execution = _governed_host_execution(nexus_loop)
     launch_calls = 0
     original_launch = DefaultRootExecutionLauncher.launch
@@ -404,7 +404,7 @@ def test_host_q10_mcp_and_http_harness_map_equivalent_task_semantics() -> None:
 @pytest.mark.asyncio
 async def test_host_q9_single_facade_invoke_per_adapter_path() -> None:
     registry = AgentRegistry()
-    nexus_loop = NexusLoop(registry)
+    nexus_loop = NexusLoop(registry, production_mode=False)
     host_execution = _governed_host_execution(nexus_loop)
     facade_calls = 0
     original_execute = ExecutionFacade.execute

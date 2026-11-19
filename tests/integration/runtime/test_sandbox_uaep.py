@@ -150,7 +150,7 @@ async def test_nexus_loop_exposes_sandbox_session_metadata(tmp_path):
     manager = SandboxSessionManager(root=tmp_path)
     registry = AgentRegistry()
     registry.register(_SandboxToolAgent())
-    loop = NexusLoop(registry, sandbox_manager=manager)
+    loop = NexusLoop(registry, sandbox_manager=manager, production_mode=False)
 
     task = Task(
         tenant_id="t1",

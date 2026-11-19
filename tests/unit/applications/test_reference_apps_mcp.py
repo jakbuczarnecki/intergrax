@@ -47,7 +47,7 @@ def test_research_application_exposes_mcp_mount(
 
     api = FastAPI()
     registry = AgentRegistry()
-    nexus = NexusLoop(registry)
+    nexus = NexusLoop(registry, production_mode=False)
     host_execution = build_harness_host_task_execution(
         nexus,
         orchestration_triggers=frozenset(),

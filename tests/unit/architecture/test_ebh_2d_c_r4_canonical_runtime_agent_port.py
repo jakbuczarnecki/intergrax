@@ -138,7 +138,7 @@ def test_external_structural_agent_registry_read_explicit_route() -> None:
         agent_id="external_routable",
         context=TaskContext(),
     )
-    routed = AgentRouter(read_surface).route(task)
+    routed = AgentRouter(read_surface, production_mode=False).route(task)
     assert type(routed) is ExternalRoutableAgent
     assert isinstance(routed, RoutableTier2Agent)
 
@@ -155,7 +155,7 @@ def test_external_structural_capability_routing() -> None:
     route = select_best_capability_match(registry, task, "external.route")
     assert route.selected is not None
     assert route.selected.get_contract().id == "external_routable"
-    selected = AgentRouter(registry).route(task)
+    selected = AgentRouter(registry, production_mode=False).route(task)
     assert selected.get_contract().id == "external_routable"
 
 

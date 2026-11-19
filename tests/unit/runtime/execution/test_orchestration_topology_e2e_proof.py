@@ -113,7 +113,7 @@ class ProofTopologySlotExecutor:
 @pytest.mark.asyncio
 async def test_canonical_orchestration_topology_submission_proof() -> None:
     registry = AgentRegistry()
-    nexus_loop = NexusLoop(registry)
+    nexus_loop = NexusLoop(registry, production_mode=False)
     submission_port = build_lab_orchestration_topology_submission_port(nexus_loop)
     assert submission_port is not None
     assert nexus_loop.graph_executor is nexus_loop.graph_executor
@@ -180,7 +180,7 @@ async def test_canonical_orchestration_topology_submission_proof() -> None:
 @pytest.mark.asyncio
 async def test_orchestration_topology_deterministic_fan_in_order() -> None:
     registry = AgentRegistry()
-    nexus_loop = NexusLoop(registry)
+    nexus_loop = NexusLoop(registry, production_mode=False)
     submission_port = build_lab_orchestration_topology_submission_port(nexus_loop)
     host_task = build_orchestration_topology_host_task(
         tenant_id="tenant-proof",
@@ -259,7 +259,7 @@ async def test_orchestration_topology_deterministic_fan_in_order() -> None:
 @pytest.mark.asyncio
 async def test_orchestration_topology_bounded_concurrency_enforced_by_graph_executor() -> None:
     registry = AgentRegistry()
-    nexus_loop = NexusLoop(registry)
+    nexus_loop = NexusLoop(registry, production_mode=False)
     submission_port = build_lab_orchestration_topology_submission_port(nexus_loop)
     host_task = build_orchestration_topology_host_task(
         tenant_id="tenant-proof",
@@ -401,7 +401,7 @@ class _TrackedSlotExecutor:
 @pytest.mark.asyncio
 async def test_concurrent_topology_submissions_preserve_independent_scheduling_limits() -> None:
     registry = AgentRegistry()
-    nexus_loop = NexusLoop(registry)
+    nexus_loop = NexusLoop(registry, production_mode=False)
     submission_port = build_lab_orchestration_topology_submission_port(nexus_loop)
     host_task = build_orchestration_topology_host_task(
         tenant_id="tenant-proof",
@@ -463,7 +463,7 @@ async def test_concurrent_topology_submissions_preserve_independent_scheduling_l
 @pytest.mark.asyncio
 async def test_orchestration_topology_global_platform_cap_limits_submission() -> None:
     registry = AgentRegistry()
-    nexus_loop = NexusLoop(registry, max_parallel_nodes=3)
+    nexus_loop = NexusLoop(registry, max_parallel_nodes=3, production_mode=False)
     submission_port = build_lab_orchestration_topology_submission_port(nexus_loop)
     host_task = build_orchestration_topology_host_task(
         tenant_id="tenant-proof",
@@ -488,7 +488,7 @@ async def test_orchestration_topology_global_platform_cap_limits_submission() ->
 @pytest.mark.asyncio
 async def test_orchestration_topology_submission_cap_limits_when_platform_higher() -> None:
     registry = AgentRegistry()
-    nexus_loop = NexusLoop(registry, max_parallel_nodes=10)
+    nexus_loop = NexusLoop(registry, max_parallel_nodes=10, production_mode=False)
     submission_port = build_lab_orchestration_topology_submission_port(nexus_loop)
     host_task = build_orchestration_topology_host_task(
         tenant_id="tenant-proof",
@@ -518,7 +518,7 @@ class _BugWork:
 @pytest.mark.asyncio
 async def test_orchestration_topology_programming_error_propagates_fail_fast() -> None:
     registry = AgentRegistry()
-    nexus_loop = NexusLoop(registry)
+    nexus_loop = NexusLoop(registry, production_mode=False)
     submission_port = build_lab_orchestration_topology_submission_port(nexus_loop)
     host_task = build_orchestration_topology_host_task(
         tenant_id="tenant-proof",
@@ -572,7 +572,7 @@ async def test_orchestration_topology_programming_error_propagates_fail_fast() -
 @pytest.mark.asyncio
 async def test_orchestration_topology_success_with_none_result() -> None:
     registry = AgentRegistry()
-    nexus_loop = NexusLoop(registry)
+    nexus_loop = NexusLoop(registry, production_mode=False)
     submission_port = build_lab_orchestration_topology_submission_port(nexus_loop)
     host_task = build_orchestration_topology_host_task(
         tenant_id="tenant-proof",

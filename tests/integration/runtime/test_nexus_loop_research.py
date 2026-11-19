@@ -10,7 +10,7 @@ from testing_support.agent_registry_bootstrap import build_research_registry
 @pytest.mark.integration
 @pytest.mark.gate
 async def test_nexus_loop_research_pipeline_via_uaep():
-    loop = NexusLoop(build_research_registry())
+    loop = NexusLoop(build_research_registry(), production_mode=False)
     task = Task(
         tenant_id="t1",
         user_id="u1",

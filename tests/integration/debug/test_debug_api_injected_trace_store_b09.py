@@ -20,7 +20,7 @@ async def test_debug_api_reads_injected_trace_store_without_sqlite() -> None:
     trace_store = InMemoryRunTraceStore()
     registry = AgentRegistry()
     registry.register(EchoAgent())
-    nexus_loop = NexusLoop(registry, trace_store=trace_store)
+    nexus_loop = NexusLoop(registry, trace_store=trace_store, production_mode=False)
     app = create_debug_app(
         registry=registry,
         nexus_loop=nexus_loop,

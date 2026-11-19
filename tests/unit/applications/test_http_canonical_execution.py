@@ -102,7 +102,7 @@ _HTTP_EXECUTION_CASES = (
 @pytest.mark.asyncio
 async def test_http_root_uses_canonical_execution_facade(case: _HttpExecutionCase) -> None:
     registry = AgentRegistry()
-    nexus_loop = NexusLoop(registry)
+    nexus_loop = NexusLoop(registry, production_mode=False)
     service = case.build_service(nexus_loop)
     facade_calls = 0
     original_execute = ExecutionFacade.execute
@@ -144,7 +144,7 @@ async def test_http_root_uses_canonical_execution_facade(case: _HttpExecutionCas
 @pytest.mark.asyncio
 async def test_http_request_produces_single_root_execution_invocation(case: _HttpExecutionCase) -> None:
     registry = AgentRegistry()
-    nexus_loop = NexusLoop(registry)
+    nexus_loop = NexusLoop(registry, production_mode=False)
     service = case.build_service(nexus_loop)
     router_calls = 0
     facade_calls = 0
@@ -181,7 +181,7 @@ async def test_http_request_produces_single_root_execution_invocation(case: _Htt
 @pytest.mark.asyncio
 async def test_http_reaches_strategy_router_with_expected_capability(case: _HttpExecutionCase) -> None:
     registry = AgentRegistry()
-    nexus_loop = NexusLoop(registry)
+    nexus_loop = NexusLoop(registry, production_mode=False)
     service = case.build_service(nexus_loop)
     captured: dict[str, object] = {}
 
@@ -209,7 +209,7 @@ async def test_http_reaches_strategy_router_with_expected_capability(case: _Http
 @pytest.mark.asyncio
 async def test_http_agentic_request_does_not_root_call_nexus_handle_task() -> None:
     registry = AgentRegistry()
-    nexus_loop = NexusLoop(registry)
+    nexus_loop = NexusLoop(registry, production_mode=False)
     nexus_loop.handle_task = AsyncMock()  # type: ignore[method-assign]
     service = _build_dispute_service(nexus_loop)
 
@@ -232,7 +232,7 @@ async def test_http_agentic_request_does_not_root_call_nexus_handle_task() -> No
 @pytest.mark.asyncio
 async def test_http_root_execution_id_is_platform_owned() -> None:
     registry = AgentRegistry()
-    nexus_loop = NexusLoop(registry)
+    nexus_loop = NexusLoop(registry, production_mode=False)
     service = _build_dispute_service(nexus_loop)
     caller_execution_id = mint_execution_id()
     observed: dict[str, object] = {}
@@ -270,7 +270,7 @@ async def test_http_root_execution_id_is_platform_owned() -> None:
 @pytest.mark.asyncio
 async def test_http_and_mcp_dispute_capability_resolve_to_same_strategy() -> None:
     registry = AgentRegistry()
-    nexus_loop = NexusLoop(registry)
+    nexus_loop = NexusLoop(registry, production_mode=False)
     env = build_dispute_sim_environment_profile(DisputeSimBackendSettings.from_env())
     build_harness_environment_host_task_execution(nexus_loop, env)
     capability = "dispute.intake"

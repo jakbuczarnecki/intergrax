@@ -18,7 +18,7 @@ async def test_nexus_loop_runs_echo_agent():
     agent = EchoAgent()
     registry.register(agent)
 
-    loop = NexusLoop(registry)
+    loop = NexusLoop(registry, production_mode=False)
     task = Task(
         tenant_id="t1",
         user_id="u1",
@@ -47,7 +47,7 @@ async def test_nexus_loop_runs_echo_agent():
 async def test_nexus_loop_echo_emits_lifecycle_trace():
     registry = AgentRegistry()
     registry.register(EchoAgent())
-    loop = NexusLoop(registry)
+    loop = NexusLoop(registry, production_mode=False)
     task = Task(
         tenant_id="t1",
         user_id="u1",
@@ -77,7 +77,7 @@ async def test_nexus_loop_persists_cost_in_trace(tmp_path):
     trace_store = SQLiteRunTraceStore(db_path=db_path)
     registry = AgentRegistry()
     registry.register(EchoAgent())
-    loop = NexusLoop(registry, trace_store=trace_store)
+    loop = NexusLoop(registry, trace_store=trace_store, production_mode=False)
 
     task = Task(
         tenant_id="t1",

@@ -114,7 +114,7 @@ async def test_external_port_injected_into_nexus_terminal_path() -> None:
     external = _RecordingExternalDiagnosticPort()
     registry = AgentRegistry()
     registry.register(EchoAgent())
-    loop = NexusLoop(registry)
+    loop = NexusLoop(registry, production_mode=False)
     loop.attach_terminal_diagnostic_trigger(external)
     runner = _unified_task_runner(loop)
     run_id = mint_run_id()
@@ -138,7 +138,7 @@ async def test_external_port_injected_into_nexus_terminal_path() -> None:
 async def test_external_port_failure_does_not_change_business_outcome() -> None:
     registry = AgentRegistry()
     registry.register(EchoAgent())
-    loop = NexusLoop(registry)
+    loop = NexusLoop(registry, production_mode=False)
     loop.attach_terminal_diagnostic_trigger(_RaisingExternalDiagnosticPort())
     runner = _unified_task_runner(loop)
 
@@ -170,7 +170,7 @@ def test_production_required_diagnostics_fail_closed_when_port_missing(
     )
     env = ApplicationEnvironmentProfile.lab_defaults(profile_id="obs-diag-port-missing")
     env.diagnostic_profile = DiagnosticProfile(posture=DiagnosticPosture.REQUIRED)
-    nexus_loop = NexusLoop(AgentRegistry())
+    nexus_loop = NexusLoop(AgentRegistry(), production_mode=False)
 
     host_observability = HostObservabilityStores(
         trace_store=stores.trace_store,

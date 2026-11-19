@@ -59,7 +59,7 @@ def _build_executor(nexus_loop: NexusLoop) -> LocalWorkspaceTaskExecutor:
 @pytest.mark.asyncio
 async def test_lkw_application_root_uses_canonical_execution_facade() -> None:
     registry = AgentRegistry()
-    nexus_loop = NexusLoop(registry)
+    nexus_loop = NexusLoop(registry, production_mode=False)
     executor = _build_executor(nexus_loop)
     task = Task(
         task_id=mint_task_id(),
@@ -100,7 +100,7 @@ async def test_lkw_application_root_uses_canonical_execution_facade() -> None:
 @pytest.mark.asyncio
 async def test_lkw_search_does_not_root_call_nexus_handle_task() -> None:
     registry = AgentRegistry()
-    nexus_loop = NexusLoop(registry)
+    nexus_loop = NexusLoop(registry, production_mode=False)
     nexus_loop.handle_task = AsyncMock()  # type: ignore[method-assign]
     executor = _build_executor(nexus_loop)
     task = Task(
@@ -130,7 +130,7 @@ async def test_lkw_search_does_not_root_call_nexus_handle_task() -> None:
 @pytest.mark.asyncio
 async def test_lkw_search_reaches_strategy_router_with_agentic_capability() -> None:
     registry = AgentRegistry()
-    nexus_loop = NexusLoop(registry)
+    nexus_loop = NexusLoop(registry, production_mode=False)
     executor = _build_executor(nexus_loop)
     task = Task(
         task_id=mint_task_id(),
@@ -165,7 +165,7 @@ async def test_lkw_search_reaches_strategy_router_with_agentic_capability() -> N
 @pytest.mark.asyncio
 async def test_lkw_pipeline_reaches_orchestration_strategy() -> None:
     registry = AgentRegistry()
-    nexus_loop = NexusLoop(registry)
+    nexus_loop = NexusLoop(registry, production_mode=False)
     executor = _build_executor(nexus_loop)
     task = Task(
         task_id=mint_task_id(),
@@ -198,7 +198,7 @@ async def test_lkw_pipeline_reaches_orchestration_strategy() -> None:
 @pytest.mark.asyncio
 async def test_lkw_root_execution_id_is_platform_owned() -> None:
     registry = AgentRegistry()
-    nexus_loop = NexusLoop(registry)
+    nexus_loop = NexusLoop(registry, production_mode=False)
     executor = _build_executor(nexus_loop)
     task = Task(
         task_id=mint_task_id(),
@@ -245,7 +245,7 @@ async def test_lkw_root_execution_id_is_platform_owned() -> None:
 @pytest.mark.asyncio
 async def test_lkw_request_produces_single_root_execution_invocation() -> None:
     registry = AgentRegistry()
-    nexus_loop = NexusLoop(registry)
+    nexus_loop = NexusLoop(registry, production_mode=False)
     executor = _build_executor(nexus_loop)
     task = Task(
         task_id=mint_task_id(),

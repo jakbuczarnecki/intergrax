@@ -208,7 +208,7 @@ def _persist_checkpoint_with_active_identity(
 
 def test_a1_nexus_accepts_fake_checkpoint_port() -> None:
     fake = _FakeCheckpointStore()
-    loop = NexusLoop(AgentRegistry(), checkpoint_store=fake)
+    loop = NexusLoop(AgentRegistry(), checkpoint_store=fake, production_mode=False)
     assert loop._checkpoint_store is fake  # noqa: SLF001
 
 

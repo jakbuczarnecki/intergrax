@@ -63,7 +63,7 @@ def _build_host_task_execution(
     terminal_publisher: HostTaskTerminalPublisher | None = None,
 ) -> HostTaskExecution:
     registry = AgentRegistry()
-    nexus_loop = NexusLoop(registry)
+    nexus_loop = NexusLoop(registry, production_mode=False)
     execution = build_harness_host_task_execution(nexus_loop, orchestration_triggers=frozenset())
     if terminal_publisher is None:
         return execution
@@ -224,7 +224,7 @@ async def test_missing_terminal_publisher_executes_without_error() -> None:
 @pytest.mark.asyncio
 async def test_nexus_adapter_delegates_terminal_publication() -> None:
     registry = AgentRegistry()
-    nexus_loop = NexusLoop(registry)
+    nexus_loop = NexusLoop(registry, production_mode=False)
     execution = build_harness_host_task_execution(nexus_loop, orchestration_triggers=frozenset())
     task = _sample_task()
     run_id = mint_run_id()
@@ -261,6 +261,6 @@ async def test_nexus_adapter_delegates_terminal_publication() -> None:
 
 def test_nexus_adapter_is_typed_port_implementation() -> None:
     registry = AgentRegistry()
-    nexus_loop = NexusLoop(registry)
+    nexus_loop = NexusLoop(registry, production_mode=False)
     publisher = build_nexus_host_task_terminal_publisher(nexus_loop)
     assert inspect.iscoroutinefunction(publisher.publish_terminal)

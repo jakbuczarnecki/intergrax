@@ -288,7 +288,7 @@ async def test_orchestration_root_runtime_completes_without_decision(
         answer="ok",
     )
     registry = AgentRegistry()
-    loop = NexusLoop(registry)
+    loop = NexusLoop(registry, production_mode=False)
     request = execution_request_from_task(
         task,
         capabilities=frozenset({ExecutionCapability.ORCHESTRATION}),

@@ -30,4 +30,4 @@ def echo_registry() -> AgentRegistry:
 
 @pytest.fixture
 def echo_loop(echo_registry: AgentRegistry) -> NexusLoop:
-    return NexusLoop(echo_registry)
+    return NexusLoop(echo_registry, production_mode=False)

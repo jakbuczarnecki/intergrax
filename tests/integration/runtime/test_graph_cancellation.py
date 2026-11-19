@@ -191,6 +191,7 @@ async def test_nexus_loop_graph_cancellation():
         registry,
         planner=_TwoStepPlanner(),
         graph_executor=_CancellingGraphExecutor(registry),
+        production_mode=False,
     )
     result = await run_lab_nexus_task(
         loop,

@@ -270,7 +270,7 @@ class _UaepDenyBoundaryAgent(HarnessReferenceAgent):
 @pytest.mark.asyncio
 async def test_nexus_finish_task_post_run_uses_active_run_id_not_task_id() -> None:
     service = _RecordingGovernanceService()
-    loop = NexusLoop(AgentRegistry(), governance_service=service)
+    loop = NexusLoop(AgentRegistry(), governance_service=service, production_mode=False)
     run_id = mint_run_id()
     attempt_id = mint_attempt_id()
     task_id = mint_task_id()

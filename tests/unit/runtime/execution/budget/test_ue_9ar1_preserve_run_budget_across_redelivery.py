@@ -282,6 +282,7 @@ async def test_normal_non_background_run_still_gets_fresh_budget(
         AgentRegistry(),
         execution_budget_ledger_factory=factory,
         run_budget=run_budget,
+        production_mode=False,
     )
     observed: list[int | None] = []
 
@@ -333,6 +334,7 @@ async def test_local_retry_does_not_create_new_ledger(
         AgentRegistry(),
         execution_budget_ledger_factory=factory,
         run_budget=run_budget,
+        production_mode=False,
     )
 
     async def _noop(task: Task) -> TaskResult:

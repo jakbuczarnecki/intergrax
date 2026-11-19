@@ -349,7 +349,7 @@ async def test_unified_task_runner_resume_preserves_checkpoint_identity(monkeypa
     from intergrax.runtime.registry.agent_registry import AgentRegistry
 
     captured: dict[str, object] = {}
-    loop = NexusLoop(AgentRegistry())
+    loop = NexusLoop(AgentRegistry(), production_mode=False)
     run_id = mint_run_id()
     attempt_id = mint_attempt_id()
     task_id = mint_task_id()
@@ -397,7 +397,7 @@ async def test_unified_task_runner_resume_rejects_explicit_run_id_mismatch(monke
     from intergrax.runtime.nexus.nexus_loop import NexusLoop
     from intergrax.runtime.registry.agent_registry import AgentRegistry
 
-    loop = NexusLoop(AgentRegistry())
+    loop = NexusLoop(AgentRegistry(), production_mode=False)
     checkpoint_run_id = mint_run_id()
     checkpoint_attempt_id = mint_attempt_id()
     task_id = mint_task_id()

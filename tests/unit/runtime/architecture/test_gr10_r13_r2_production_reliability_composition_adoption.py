@@ -220,7 +220,7 @@ def _harness_port(
     mse: _RecordingMsePort | None = None,
 ):
     return build_strict_production_orchestration_topology_submission_port(
-        NexusLoop(AgentRegistry()),
+        NexusLoop(AgentRegistry(), production_mode=False),
         provider_invocation_store=store,
         tenant_id=tenant_id,
         clock=lambda: _T0,
@@ -473,7 +473,7 @@ async def test_restart_visibility_across_reconstructed_store() -> None:
 def test_governed_contractor_host_factory_accepts_durable_store() -> None:
     store = DurableTestProviderInvocationStore()
     port = build_governed_contractor_production_orchestration_topology_submission_port(
-        NexusLoop(AgentRegistry()),
+        NexusLoop(AgentRegistry(), production_mode=False),
         provider_invocation_store=store,
         tenant_id="governed-contractor-tenant",
         clock=lambda: _T0,

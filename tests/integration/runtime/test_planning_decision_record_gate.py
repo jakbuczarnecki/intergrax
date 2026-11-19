@@ -19,6 +19,7 @@ async def test_planning_emits_decision_record_event() -> None:
     loop = NexusLoop(
         registry,
         emit_coordination_advisory=True,
+        production_mode=False,
     )
 
     task = Task(

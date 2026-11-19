@@ -167,7 +167,7 @@ def test_router_does_not_reinvoke_can_handle_for_telemetry() -> None:
     agent = _CallCountingRoutableAgent("stateful", capability, [9.0, 1.0])
     registry = AgentRegistry()
     registry.register(agent)
-    router = AgentRouter(registry)
+    router = AgentRouter(registry, production_mode=False)
     task = Task(
         tenant_id="t1",
         user_id="u1",

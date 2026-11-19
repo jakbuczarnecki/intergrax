@@ -246,6 +246,7 @@ def _build_scheduler(tmp_path, agent: Agent) -> tuple[LongRunningScheduler, Nexu
         registry,
         checkpoint_store=store,
         notification_adapter=LoggingNotificationAdapter(),
+        production_mode=False,
     )
     runner = build_lab_unified_task_runner(loop)
     scheduler = LongRunningScheduler(

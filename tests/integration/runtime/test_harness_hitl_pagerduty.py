@@ -123,6 +123,7 @@ async def test_hitl_escalation_uses_pagerduty_notification_adapter(
         human_decision_store=human_store,
         checkpoint_store=checkpoint_store,
         notification_adapter=adapter,
+        production_mode=False,
     )
 
     task_id = mint_task_id()

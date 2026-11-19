@@ -118,7 +118,7 @@ def _fake_impl_factory(
 async def test_handle_task_fails_without_upstream_identity(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
-    loop = NexusLoop(AgentRegistry())
+    loop = NexusLoop(AgentRegistry(), production_mode=False)
     run_id = mint_run_id()
     monkeypatch.setattr(loop, "_handle_task_impl", _fake_impl_factory({}))
     task = Task(tenant_id="t1", user_id="u1", agent_id="agent-1", message="root")
@@ -131,7 +131,7 @@ async def test_handle_task_fails_without_upstream_identity(
 async def test_handle_task_supplied_run_id_path_has_root_execution_id(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
-    loop = NexusLoop(AgentRegistry())
+    loop = NexusLoop(AgentRegistry(), production_mode=False)
     run_id = mint_run_id()
     attempt_id = mint_attempt_id()
     execution_id = mint_execution_id()
@@ -161,7 +161,7 @@ async def test_handle_task_supplied_run_id_path_has_root_execution_id(
 async def test_handle_task_preserves_prebound_root_execution_id(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
-    loop = NexusLoop(AgentRegistry())
+    loop = NexusLoop(AgentRegistry(), production_mode=False)
     run_id = mint_run_id()
     attempt_id = mint_attempt_id()
     execution_id = mint_execution_id()
@@ -191,7 +191,7 @@ async def test_handle_task_preserves_prebound_root_execution_id(
 async def test_handle_task_does_not_reset_upstream_identity(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
-    loop = NexusLoop(AgentRegistry())
+    loop = NexusLoop(AgentRegistry(), production_mode=False)
     run_id = mint_run_id()
     attempt_id = mint_attempt_id()
     execution_id = mint_execution_id()
@@ -220,7 +220,7 @@ async def test_handle_task_does_not_reset_upstream_identity(
 async def test_handle_task_propagates_exception_without_resetting_upstream(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
-    loop = NexusLoop(AgentRegistry())
+    loop = NexusLoop(AgentRegistry(), production_mode=False)
     run_id = mint_run_id()
     attempt_id = mint_attempt_id()
     execution_id = mint_execution_id()
@@ -259,7 +259,7 @@ async def test_handle_task_propagates_exception_without_resetting_upstream(
 async def test_sequential_handle_task_invocations_require_separate_upstream_context(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
-    loop = NexusLoop(AgentRegistry())
+    loop = NexusLoop(AgentRegistry(), production_mode=False)
     seen: list[ExecutionId] = []
 
     async def _capture(

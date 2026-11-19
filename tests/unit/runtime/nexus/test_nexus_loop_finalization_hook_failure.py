@@ -56,7 +56,7 @@ async def test_after_finalization_hook_failure_emits_runtime_event_and_keeps_suc
 
     registry = AgentRegistry()
     registry.register(EchoAgent())
-    loop = NexusLoop(registry, middleware=pipeline)
+    loop = NexusLoop(registry, middleware=pipeline, production_mode=False)
 
     task = build_task_for_tests(
         seed=_FINALIZATION_SEED,
@@ -98,7 +98,7 @@ async def test_before_finalization_hook_failure_emits_runtime_event_and_fails_ta
 
     registry = AgentRegistry()
     registry.register(EchoAgent())
-    loop = NexusLoop(registry, middleware=pipeline)
+    loop = NexusLoop(registry, middleware=pipeline, production_mode=False)
 
     task = build_task_for_tests(
         seed=f"{_FINALIZATION_SEED}-before",

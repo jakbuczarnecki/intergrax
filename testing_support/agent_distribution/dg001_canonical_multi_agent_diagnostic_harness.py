@@ -309,6 +309,7 @@ def build_dg001_canonical_multi_agent_diagnostic_harness(
         trace_store=stores.trace_store,
         runtime_event_store=runtime_store,
         execution_lineage_persistence=lineage,
+        production_mode=False,
     )
     loop.attach_terminal_diagnostic_trigger(
         wrap_terminal_execution_diagnostic_trigger(trigger, event_bus=loop.event_bus),

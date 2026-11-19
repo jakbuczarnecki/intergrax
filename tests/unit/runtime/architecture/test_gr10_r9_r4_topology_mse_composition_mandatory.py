@@ -218,11 +218,11 @@ async def _run_submission(delegate: object, root_execution_id: str) -> object:
 
 def test_r9_r4_production_builder_rejects_missing_policy() -> None:
     with pytest.raises(OrchestrationTopologyMseCompositionError):
-        build_production_orchestration_topology_submission_port(NexusLoop(AgentRegistry()))
+        build_production_orchestration_topology_submission_port(NexusLoop(AgentRegistry(), production_mode=False))
 
 
 def test_r9_r4_lab_builder_allows_missing_policy() -> None:
-    port = build_lab_orchestration_topology_submission_port(NexusLoop(AgentRegistry()))
+    port = build_lab_orchestration_topology_submission_port(NexusLoop(AgentRegistry(), production_mode=False))
     assert port is not None
 
 
@@ -281,7 +281,7 @@ async def test_r9_r4_parallel_slots_distinct_mse_scopes(_identity_ctx) -> None:
         effect_reliability=PassthroughOrchestrationConsequentialEffectReliability(),
     )
     port = build_production_orchestration_topology_submission_port(
-        NexusLoop(AgentRegistry()),
+        NexusLoop(AgentRegistry(), production_mode=False),
         slot_mse_policy=policy,
     )
     inner = _MutatingSlotExecutor()

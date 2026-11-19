@@ -438,7 +438,7 @@ def test_reconcile_task_state_keeps_same_exact_state() -> None:
 
 
 def _nexus_finish_loop(terminal: ExecutionTerminalService) -> NexusLoop:
-    return NexusLoop(AgentRegistry(), execution_terminal=terminal)
+    return NexusLoop(AgentRegistry(), execution_terminal=terminal, production_mode=False)
 
 
 async def _finish_terminal_task(

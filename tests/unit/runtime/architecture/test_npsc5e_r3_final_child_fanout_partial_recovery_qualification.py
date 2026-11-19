@@ -821,7 +821,7 @@ def test_submission_port_exposes_recover_failed_slot() -> None:
     from intergrax.runtime.nexus.nexus_loop import NexusLoop
     from intergrax.runtime.registry.agent_registry import AgentRegistry
 
-    port = build_lab_orchestration_topology_submission_port(NexusLoop(AgentRegistry()))
+    port = build_lab_orchestration_topology_submission_port(NexusLoop(AgentRegistry(), production_mode=False))
     assert isinstance(port, CanonicalOrchestrationTopologySubmissionPort)
     assert inspect.iscoroutinefunction(port.recover_failed_slot)
 

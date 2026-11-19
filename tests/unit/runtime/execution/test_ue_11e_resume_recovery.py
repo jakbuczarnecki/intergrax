@@ -692,7 +692,7 @@ async def test_same_attempt_fresh_root_rebases_execution_tree_through_production
     resume_graph = _sequential_graph(task_id)
     captured_resume_roots: list[ExecutionId] = []
 
-    loop = NexusLoop(registry, graph_executor=resume_executor)
+    loop = NexusLoop(registry, graph_executor=resume_executor, production_mode=False)
 
     async def _handle_task_via_graph(task: Task) -> TaskResult:
         captured_resume_roots.append(require_active_execution_id())

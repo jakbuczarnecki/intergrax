@@ -243,7 +243,7 @@ async def test_orchestration_root_runtime_nexus_receives_active_context(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     registry = AgentRegistry()
-    loop = NexusLoop(registry)
+    loop = NexusLoop(registry, production_mode=False)
     captured: dict[str, object] = {}
 
     async def _fake_impl(task: Task) -> TaskResult:
@@ -373,7 +373,7 @@ async def test_root_lifecycle_shape_identical_across_strategies() -> None:
         agent_context,
     )
 
-    loop = NexusLoop(AgentRegistry())
+    loop = NexusLoop(AgentRegistry(), production_mode=False)
     task = Task(
         task_id=mint_task_id(),
         tenant_id="t1",
@@ -414,7 +414,7 @@ async def test_root_lifecycle_shape_identical_across_strategies() -> None:
 async def test_nexus_without_active_identity_fails(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
-    loop = NexusLoop(AgentRegistry())
+    loop = NexusLoop(AgentRegistry(), production_mode=False)
     monkeypatch.setattr(
         loop,
         "_handle_task_impl",
@@ -446,7 +446,7 @@ async def test_nexus_without_active_authority_fails(
     )
     from intergrax.runtime.execution.budget.ledger import create_execution_budget_ledger
 
-    loop = NexusLoop(AgentRegistry())
+    loop = NexusLoop(AgentRegistry(), production_mode=False)
     monkeypatch.setattr(
         loop,
         "_handle_task_impl",
@@ -490,7 +490,7 @@ async def test_nexus_without_active_budget_fails(
         reset_active_execution_authority,
     )
 
-    loop = NexusLoop(AgentRegistry())
+    loop = NexusLoop(AgentRegistry(), production_mode=False)
     monkeypatch.setattr(
         loop,
         "_handle_task_impl",
@@ -534,7 +534,7 @@ async def test_resume_root_execution_id_matches_identity_through_lifecycle(
     attempt_a1 = mint_attempt_id()
     historical_root_id = mint_execution_id()
     registry = AgentRegistry()
-    loop = NexusLoop(registry)
+    loop = NexusLoop(registry, production_mode=False)
     captured: dict[str, ExecutionId] = {}
 
     async def _fake_impl(task: Task) -> TaskResult:

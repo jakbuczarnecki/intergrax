@@ -30,7 +30,7 @@ _HitlAgent = NexusBasicHitlTestAgent
 async def test_nexus_loop_pauses_for_human_request():
     registry = AgentRegistry()
     registry.register(_HitlAgent())
-    loop = NexusLoop(registry)
+    loop = NexusLoop(registry, production_mode=False)
 
     task = Task(
         tenant_id="t1",
@@ -53,7 +53,7 @@ async def test_nexus_loop_resumes_after_human_approval(tmp_path):
     registry = AgentRegistry()
     registry.register(_HitlAgent())
     checkpoint_store = SQLiteTaskCheckpointStore(db_path=tmp_path / "ckpt.db")
-    loop = NexusLoop(registry, checkpoint_store=checkpoint_store)
+    loop = NexusLoop(registry, checkpoint_store=checkpoint_store, production_mode=False)
     run_id = mint_run_id()
     paused = await run_lab_nexus_task(
         loop,
@@ -126,6 +126,7 @@ async def test_nexus_loop_fails_on_human_rejection(tmp_path):
         registry,
         human_decision_store=human_store,
         checkpoint_store=checkpoint_store,
+        production_mode=False,
     )
 
     run_id = mint_run_id()
@@ -194,6 +195,7 @@ async def test_nexus_loop_escalates_and_persists(tmp_path):
         registry,
         human_decision_store=human_store,
         checkpoint_store=checkpoint_store,
+        production_mode=False,
     )
 
     task_id = mint_task_id()

@@ -42,6 +42,7 @@ async def test_wire_nexus_observability_sqlite_trace_persists(tmp_path) -> None:
         registry,
         trace_store=stores.trace_store,
         runtime_event_store=stores.runtime_event_store,
+        production_mode=False,
     )
     with canonical_governed_execution_scope(
         "observability-wiring",

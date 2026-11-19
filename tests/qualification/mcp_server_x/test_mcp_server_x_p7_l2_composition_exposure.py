@@ -101,7 +101,9 @@ def _completed_result() -> TaskResult:
 
 
 def _real_harness_host(registry: AgentRegistry):  # type: ignore[no-untyped-def]
-    return build_harness_host_task_execution(NexusLoop(registry), orchestration_triggers=frozenset())
+    return build_harness_host_task_execution(
+        NexusLoop(registry, production_mode=False), orchestration_triggers=frozenset()
+    )
 
 
 def _recording_host() -> AsyncMock:

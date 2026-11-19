@@ -29,7 +29,7 @@ def test_bootstrap_registers_llm_and_rag_observability_plugins() -> None:
     set_metrics_enabled(True)
     set_rag_metrics_enabled(True)
     registry = AgentRegistry()
-    nexus = NexusLoop(registry)
+    nexus = NexusLoop(registry, production_mode=False)
     bootstrap_nexus_platform(nexus, trace_store=MagicMock())
     ids = _subscription_ids(nexus.event_bus)
     assert "plugin.llm_metrics_export" in ids

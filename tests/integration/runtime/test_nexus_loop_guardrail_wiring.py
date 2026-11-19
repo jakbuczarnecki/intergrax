@@ -26,7 +26,7 @@ async def test_nexus_loop_guardrail_blocks_prompt_injection() -> None:
     register_llm_guardrail_integrations(override=True)
     registry = AgentRegistry()
     registry.register(EchoAgent())
-    loop = NexusLoop(registry)
+    loop = NexusLoop(registry, production_mode=False)
     env = ApplicationEnvironmentProfile.lab_defaults(profile_id="gr.e2e")
     env = env.model_copy(
         update={
@@ -62,7 +62,7 @@ async def test_nexus_loop_guardrail_allows_benign_prompt() -> None:
     register_llm_guardrail_integrations(override=True)
     registry = AgentRegistry()
     registry.register(EchoAgent())
-    loop = NexusLoop(registry)
+    loop = NexusLoop(registry, production_mode=False)
     env = ApplicationEnvironmentProfile.lab_defaults(profile_id="gr.e2e.ok")
     env = env.model_copy(
         update={

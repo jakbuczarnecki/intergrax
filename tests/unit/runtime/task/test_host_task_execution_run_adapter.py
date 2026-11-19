@@ -27,7 +27,7 @@ pytestmark = [pytest.mark.unit, pytest.mark.gate]
 def _echo_stack() -> tuple[DefaultRunService, HostTaskExecutionRunAdapter, DummyRunStore]:
     registry = AgentRegistry()
     registry.register(EchoAgent())
-    nexus_loop = NexusLoop(registry)
+    nexus_loop = NexusLoop(registry, production_mode=False)
     host_execution = build_certified_internal_test_host_task_execution(nexus_loop)
     adapter = HostTaskExecutionRunAdapter(host_execution)
     store = DummyRunStore()

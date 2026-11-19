@@ -28,7 +28,7 @@ from testing_support.nexus_host_task_execution import (
 @pytest.mark.asyncio
 async def test_build_host_task_execution_wires_lineage_persistence() -> None:
     persistence = InMemoryExecutionLineagePersistence()
-    nexus_loop = NexusLoop(AgentRegistry(), execution_lineage_persistence=persistence)
+    nexus_loop = NexusLoop(AgentRegistry(), execution_lineage_persistence=persistence, production_mode=False)
     host_execution = build_certified_internal_test_host_task_execution(nexus_loop)
     assert host_execution._execution_lineage_persistence is persistence
 
@@ -37,7 +37,7 @@ async def test_build_host_task_execution_wires_lineage_persistence() -> None:
 async def test_host_task_root_admission_exists_before_delegate() -> None:
     persistence = InMemoryExecutionLineagePersistence()
     registry = AgentRegistry()
-    nexus_loop = NexusLoop(registry, execution_lineage_persistence=persistence)
+    nexus_loop = NexusLoop(registry, execution_lineage_persistence=persistence, production_mode=False)
     host_execution = build_certified_internal_test_host_task_execution(nexus_loop)
     task_id = mint_task_id()
     task = Task(

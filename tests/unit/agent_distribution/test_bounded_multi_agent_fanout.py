@@ -184,7 +184,7 @@ def _fan_out_item(
 
 def _build_fan_out_service(harness) -> BoundedMultiAgentFanOutService[OcrRequest, OcrResult]:
     coordination = _build_coordination_service(harness)
-    nexus_loop = NexusLoop(AgentRegistry())
+    nexus_loop = NexusLoop(AgentRegistry(), production_mode=False)
     submission_port = build_lab_orchestration_topology_submission_port(nexus_loop)
     orchestration = build_fan_out_orchestration_port(
         submission_port,
@@ -739,7 +739,7 @@ async def test_fan_out_uses_coordination_service_not_direct_runner() -> None:
     )
     inner = _build_coordination_service(harness)
     tracker = _TrackingCoordinationService(inner=inner)
-    nexus_loop = NexusLoop(AgentRegistry())
+    nexus_loop = NexusLoop(AgentRegistry(), production_mode=False)
     submission_port = build_lab_orchestration_topology_submission_port(nexus_loop)
     orchestration = build_fan_out_orchestration_port(
         submission_port,
@@ -1399,7 +1399,7 @@ async def test_fan_out_canonical_path_preserves_two_level_child_execution_lineag
             document_ref="doc-a",
         ),
     )
-    nexus_loop = NexusLoop(AgentRegistry())
+    nexus_loop = NexusLoop(AgentRegistry(), production_mode=False)
     submission_port = build_lab_orchestration_topology_submission_port(nexus_loop)
     coordination = _build_coordination_service(harness)
 

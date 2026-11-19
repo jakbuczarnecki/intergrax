@@ -45,6 +45,7 @@ async def test_nexus_loop_propagates_human_request_v2_on_pause(tmp_path):
         registry,
         checkpoint_store=store,
         notification_adapter=_RecordingNotificationAdapter(),
+        production_mode=False,
     )
 
     run_id = mint_run_id()

@@ -563,7 +563,7 @@ def _build_governed_fan_out_stack(candidates):
     harness.service._specialist_invocation = specialist
     harness.service._child_execution = child
     coordination = _build_coordination_service(harness)
-    nexus_loop = NexusLoop(AgentRegistry())
+    nexus_loop = NexusLoop(AgentRegistry(), production_mode=False)
     topology_port = build_production_representative_orchestration_topology_submission_port(
         nexus_loop,
     )

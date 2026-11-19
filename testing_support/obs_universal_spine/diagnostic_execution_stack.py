@@ -141,6 +141,7 @@ def build_diagnostic_nexus_loop(
         disable_execution_continuation=disable_execution_continuation,
         execution_continuation_state_store=execution_continuation_state_store,
         policy_engine=PolicyEngine(runtime=_LabObsSpinePolicyRuntime()),
+        production_mode=False,
     )
     loop.attach_terminal_diagnostic_trigger(
         wrap_terminal_execution_diagnostic_trigger(trigger, event_bus=loop.event_bus),

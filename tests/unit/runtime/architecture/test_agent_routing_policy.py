@@ -74,7 +74,7 @@ def test_agent_router_skips_deprecated_agents() -> None:
     registry.register(active)
     registry.register(retired)
 
-    router = AgentRouter(registry)
+    router = AgentRouter(registry, production_mode=False)
     selected = router.route(
         Task(
             tenant_id="t1",
@@ -90,7 +90,7 @@ def test_agent_router_blocks_explicit_retired_agent() -> None:
     registry = AgentRegistry()
     retired = _StubAgent(_contract(id="retired", lifecycle_state=AgentLifecycleState.RETIRED))
     registry.register(retired)
-    router = AgentRouter(registry)
+    router = AgentRouter(registry, production_mode=False)
 
     with pytest.raises(RuntimeError, match="not routable"):
         router.route(

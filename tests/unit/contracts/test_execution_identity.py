@@ -389,7 +389,7 @@ async def test_handle_task_initial_execution_consumes_bound_identity(monkeypatch
 
     captured: dict[str, RunId | AttemptId] = {}
     registry = AgentRegistry()
-    loop = NexusLoop(registry)
+    loop = NexusLoop(registry, production_mode=False)
     run_id = mint_run_id()
     attempt_id = mint_attempt_id()
     execution_id = mint_execution_id()
@@ -437,7 +437,7 @@ async def test_handle_task_resume_preserves_run_and_attempt_id(monkeypatch):
 
     captured: dict[str, RunId | AttemptId] = {}
     registry = AgentRegistry()
-    loop = NexusLoop(registry)
+    loop = NexusLoop(registry, production_mode=False)
     run_id = mint_run_id()
     attempt_id = mint_attempt_id()
 
@@ -481,7 +481,7 @@ async def test_handle_task_resume_does_not_mint_attempt_id(monkeypatch):
     from intergrax.runtime.task.task import TaskResult, TaskState
 
     registry = AgentRegistry()
-    loop = NexusLoop(registry)
+    loop = NexusLoop(registry, production_mode=False)
     run_id = mint_run_id()
     attempt_id = mint_attempt_id()
 
@@ -523,7 +523,7 @@ def test_multi_agent_evaluation_requires_active_run_id():
     from intergrax.runtime.nexus.nexus_loop import NexusLoop
     from intergrax.runtime.registry.agent_registry import AgentRegistry
 
-    loop = NexusLoop(AgentRegistry())
+    loop = NexusLoop(AgentRegistry(), production_mode=False)
     loop._evaluation_registry = InMemoryOnlineEvaluationRegistry()
     execution = AgentExecutionResult(
         agent_id="a1",
@@ -553,7 +553,7 @@ async def test_unified_task_runner_resume_uses_checkpoint_identity(monkeypatch):
 
     captured: dict[str, RunId | AttemptId | None] = {}
     registry = AgentRegistry()
-    loop = NexusLoop(registry)
+    loop = NexusLoop(registry, production_mode=False)
     run_id = mint_run_id()
     attempt_id = mint_attempt_id()
 

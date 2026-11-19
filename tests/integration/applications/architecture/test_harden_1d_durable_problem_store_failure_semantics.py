@@ -140,6 +140,7 @@ def _build_diagnostic_nexus_loop(
         registry,
         trace_store=stores.trace_store,
         runtime_event_store=runtime_store,
+        production_mode=False,
     )
     loop.attach_terminal_diagnostic_trigger(
         wrap_terminal_execution_diagnostic_trigger(trigger, event_bus=loop.event_bus),

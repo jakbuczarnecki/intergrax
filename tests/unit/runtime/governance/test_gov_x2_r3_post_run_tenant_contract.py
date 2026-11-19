@@ -177,7 +177,7 @@ def test_gov_x2_r3_04_blank_tenant_skips_evaluation() -> None:
 @pytest.mark.asyncio
 async def test_gov_x2_r3_02_nexus_finish_task_propagates_task_tenant() -> None:
     service = _RecordingGovernanceService()
-    loop = NexusLoop(AgentRegistry(), governance_service=service)
+    loop = NexusLoop(AgentRegistry(), governance_service=service, production_mode=False)
     run_id = mint_run_id()
     attempt_id = mint_attempt_id()
     task_id = mint_task_id()

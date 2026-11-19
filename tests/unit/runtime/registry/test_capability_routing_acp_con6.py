@@ -104,7 +104,7 @@ def test_select_best_capability_match_prefers_higher_score() -> None:
 def test_agent_router_rejects_class_name_in_task_metadata() -> None:
     registry = AgentRegistry()
     registry.register(_RoutingDemoAgent("routing-demo-a", 1.0))
-    router = AgentRouter(registry)
+    router = AgentRouter(registry, production_mode=False)
     task = Task(
         tenant_id="t1",
         user_id="u1",

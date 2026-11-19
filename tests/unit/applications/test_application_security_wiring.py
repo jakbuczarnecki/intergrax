@@ -102,7 +102,7 @@ async def test_prompt_defense_blocks_before_context_build_without_llm_payload() 
 
 def test_register_application_security_hooks_wires_all_enabled_defenses() -> None:
     registry = AgentRegistry()
-    loop = NexusLoop(registry)
+    loop = NexusLoop(registry, production_mode=False)
     profile = ApplicationSecurityProfile(
         prompt_defense_enabled=True,
         tool_injection_defense_enabled=True,

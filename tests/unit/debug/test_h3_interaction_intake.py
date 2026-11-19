@@ -165,7 +165,7 @@ def test_debug_interaction_intake_with_verifier():
         build_certified_internal_test_host_task_execution,
     )
 
-    loop = NexusLoop(registry)
+    loop = NexusLoop(registry, production_mode=False)
     service = DebugInteractionIntakeService(
         task_executor=HostTaskExecutionExecutor(build_certified_internal_test_host_task_execution(loop)),
         verifier=verifier,

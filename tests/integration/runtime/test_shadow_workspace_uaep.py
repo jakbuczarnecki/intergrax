@@ -117,7 +117,7 @@ async def test_nexus_loop_exposes_shadow_workspace_metadata(tmp_path):
     manager = ShadowWorkspaceManager(root=tmp_path)
     registry = AgentRegistry()
     registry.register(_ShadowWriteAgent())
-    loop = NexusLoop(registry, shadow_manager=manager)
+    loop = NexusLoop(registry, shadow_manager=manager, production_mode=False)
 
     task = Task(
         tenant_id="t1",

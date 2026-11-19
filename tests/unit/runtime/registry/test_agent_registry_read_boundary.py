@@ -83,7 +83,7 @@ def test_materialized_projection_runtime_surface_has_no_register() -> None:
 
 def test_nexus_loop_accepts_read_only_registry_surface() -> None:
     projection = _build_projection()
-    nexus = NexusLoop(projection.agent_registry)
+    nexus = NexusLoop(projection.agent_registry, production_mode=False)
     assert nexus.registry.list_agent_ids() == ["search"]
     assert isinstance(nexus.registry, AgentRegistryRead)
 
@@ -98,7 +98,7 @@ def test_development_agent_registry_is_structural_agent_registry_read() -> None:
     registry = build_manifest_development_registry(manifest, ctx, builders=ECHO_BUILDERS)
     assert isinstance(registry, AgentRegistry)
     assert isinstance(registry, AgentRegistryRead)
-    nexus = NexusLoop(registry)
+    nexus = NexusLoop(registry, production_mode=False)
     assert nexus.registry.list_agent_ids() == ["echo"]
 
 

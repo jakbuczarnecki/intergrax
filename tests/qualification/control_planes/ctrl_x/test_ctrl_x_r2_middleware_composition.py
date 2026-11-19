@@ -172,7 +172,7 @@ def test_r2_mw_05_fail_open_rejected_before_attach() -> None:
 
 
 def test_r2_mw_06_nexus_loop_uses_port_attach_not_concrete_narrowing() -> None:
-    loop = NexusLoop(AgentRegistry())
+    loop = NexusLoop(AgentRegistry(), production_mode=False)
     profile = ApplicationSecurityProfile(prompt_defense_enabled=True)
     register_application_security_hooks(loop, profile)
     assert isinstance(loop.middleware, HostOrchestrationMiddlewarePipelinePort)

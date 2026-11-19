@@ -43,7 +43,7 @@ def pattern_registry() -> AgentRegistry:
 
 @pytest.fixture
 def pattern_nexus_loop(pattern_registry: AgentRegistry) -> NexusLoop:
-    return NexusLoop(pattern_registry)
+    return NexusLoop(pattern_registry, production_mode=False)
 
 
 def _pattern_task(*, capability: str, message: str) -> Task:

@@ -178,7 +178,7 @@ def build_bounded_multi_agent_fan_out_qualification_service(
     harness: DelegatedSubtaskQualificationHarness,
 ) -> BoundedMultiAgentFanOutService[OcrQualificationRequest, OcrQualificationResult]:
     coordination = build_multi_agent_coordination_qualification_service(harness)
-    nexus_loop = NexusLoop(AgentRegistry())
+    nexus_loop = NexusLoop(AgentRegistry(), production_mode=False)
     submission_port = build_production_representative_orchestration_topology_submission_port(
         nexus_loop,
     )

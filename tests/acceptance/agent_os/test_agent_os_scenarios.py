@@ -574,7 +574,7 @@ async def test_acceptance_04_human_approval_flow(tmp_path):
     registry = AgentRegistry()
     registry.register(_HitlAcceptanceAgent())
     store = SQLiteTaskCheckpointStore(db_path=tmp_path / "hitl.db")
-    loop = NexusLoop(registry, checkpoint_store=store)
+    loop = NexusLoop(registry, checkpoint_store=store, production_mode=False)
     task = Task(
         tenant_id="t1",
         user_id="u1",
@@ -605,7 +605,7 @@ async def test_acceptance_05_checkpoint_recovery(tmp_path):
     registry = AgentRegistry()
     registry.register(_HitlAcceptanceAgent())
     store = SQLiteTaskCheckpointStore(db_path=tmp_path / "ckpt.db")
-    loop = NexusLoop(registry, checkpoint_store=store)
+    loop = NexusLoop(registry, checkpoint_store=store, production_mode=False)
     task = Task(
         tenant_id="t1",
         user_id="u1",
@@ -639,7 +639,7 @@ async def test_acceptance_05b_mid_step_uaep_resume(tmp_path):
     registry = AgentRegistry()
     registry.register(_MidStepAcceptanceAgent())
     store = SQLiteTaskCheckpointStore(db_path=tmp_path / "mid_step.db")
-    loop = NexusLoop(registry, checkpoint_store=store)
+    loop = NexusLoop(registry, checkpoint_store=store, production_mode=False)
     task = Task(
         tenant_id="t1",
         user_id="u1",
@@ -714,7 +714,7 @@ async def test_acceptance_07_partial_results(tmp_path):
     registry = AgentRegistry()
     registry.register(_HitlAcceptanceAgent())
     store = SQLiteTaskCheckpointStore(db_path=tmp_path / "progress.db")
-    loop = NexusLoop(registry, checkpoint_store=store)
+    loop = NexusLoop(registry, checkpoint_store=store, production_mode=False)
     task = Task(
         tenant_id="t1",
         user_id="u1",
@@ -771,7 +771,7 @@ async def test_acceptance_09_sandbox_tool_execution(tmp_path):
     registry = AgentRegistry()
     registry.register(_SandboxAcceptanceAgent())
     sandbox_manager = SandboxSessionManager(root=tmp_path)
-    loop = NexusLoop(registry, sandbox_manager=sandbox_manager)
+    loop = NexusLoop(registry, sandbox_manager=sandbox_manager, production_mode=False)
     result = await run_lab_nexus_task(
         loop,
         Task(
@@ -792,7 +792,7 @@ async def test_acceptance_10_shadow_workspace(tmp_path):
     registry = AgentRegistry()
     registry.register(_ShadowAcceptanceAgent())
     shadow_manager = ShadowWorkspaceManager(root=tmp_path)
-    loop = NexusLoop(registry, shadow_manager=shadow_manager)
+    loop = NexusLoop(registry, shadow_manager=shadow_manager, production_mode=False)
     result = await run_lab_nexus_task(
         loop,
         Task(

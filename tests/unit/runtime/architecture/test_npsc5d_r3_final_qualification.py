@@ -825,7 +825,7 @@ async def test_npsc5d_r3_multiple_blocked_slot_identity_independent() -> None:
         build_production_representative_orchestration_topology_submission_port,
     )
 
-    nexus_loop = NexusLoop(AgentRegistry())
+    nexus_loop = NexusLoop(AgentRegistry(), production_mode=False)
     topology_port = cast(
         Any,
         build_production_representative_orchestration_topology_submission_port(nexus_loop),
@@ -898,7 +898,7 @@ async def test_npsc5d_r3_one_approval_does_not_authorize_other_slot() -> None:
     )
 
     coordination = _build_coordination_service(harness)
-    nexus_loop = NexusLoop(AgentRegistry())
+    nexus_loop = NexusLoop(AgentRegistry(), production_mode=False)
     topology_port = cast(
         Any,
         build_production_representative_orchestration_topology_submission_port(nexus_loop),

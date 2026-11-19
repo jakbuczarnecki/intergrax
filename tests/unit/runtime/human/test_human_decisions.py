@@ -119,5 +119,5 @@ def test_persist_human_decision_uses_generic_persistence() -> None:
 
 def test_nexus_loop_accepts_human_decision_persistence() -> None:
     store = InMemoryHumanDecisionPersistence()
-    loop = NexusLoop(AgentRegistry(), human_decision_store=store)
+    loop = NexusLoop(AgentRegistry(), human_decision_store=store, production_mode=False)
     assert loop._human_store is store

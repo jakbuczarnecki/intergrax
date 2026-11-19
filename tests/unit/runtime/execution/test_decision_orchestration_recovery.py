@@ -709,6 +709,7 @@ async def test_decision_orchestration_checkpoint_recovery_participation(
         planner=_DeterministicSequentialPlanner(),
         classifier=_DeterministicClassifier(),
         retry_engine=RetryEngine(registry, policy=RetryPolicy(max_retries=0)),
+        production_mode=False,
     )
     # UE-11E production-path resume: execute_root_task prepares checkpoint + resume plan;
     # graph continuation runs at the orchestration execution boundary (not intake/planning).
@@ -911,7 +912,7 @@ async def test_malformed_physical_checkpoint_fails_without_mutating_decision_che
         message="ds-nexus-02 malformed resume",
         context=TaskContext(capability=_CAPABILITY),
     )
-    loop = NexusLoop(registry)
+    loop = NexusLoop(registry, production_mode=False)
     runner = UnifiedTaskRunner(build_harness_root_task_execution_port(loop))
 
     from intergrax.runtime.long_running.checkpoint_resume_validation import (

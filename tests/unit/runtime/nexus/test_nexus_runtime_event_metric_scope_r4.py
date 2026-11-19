@@ -133,7 +133,7 @@ def test_handle_task_calls_handle_task_impl_with_explicit_metric_scope_kwarg() -
 @pytest.mark.asyncio
 async def test_handle_task_passes_invocation_metric_scope_to_impl() -> None:
     bus = RuntimeEventBus()
-    loop = NexusLoop(AgentRegistry(), event_bus=bus)
+    loop = NexusLoop(AgentRegistry(), event_bus=bus, production_mode=False)
     run_id = mint_run_id()
     attempt_id = mint_attempt_id()
     execution_id = mint_execution_id()

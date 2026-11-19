@@ -17,7 +17,7 @@ from echo.echo_agent import EchoAgent
 async def test_nexus_loop_tenant_security_blocks_cross_tenant_resource_access() -> None:
     registry = AgentRegistry()
     registry.register(EchoAgent())
-    loop = NexusLoop(registry)
+    loop = NexusLoop(registry, production_mode=False)
     register_application_security_hooks(
         loop,
         ApplicationSecurityProfile(
@@ -51,7 +51,7 @@ async def test_nexus_loop_tenant_security_blocks_cross_tenant_resource_access() 
 async def test_nexus_loop_tenant_security_allows_matching_tenant() -> None:
     registry = AgentRegistry()
     registry.register(EchoAgent())
-    loop = NexusLoop(registry)
+    loop = NexusLoop(registry, production_mode=False)
     register_application_security_hooks(
         loop,
         ApplicationSecurityProfile(

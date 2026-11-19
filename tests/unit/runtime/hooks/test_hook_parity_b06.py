@@ -39,7 +39,7 @@ async def test_nexus_loop_lifecycle_hook_blocks_before_planning() -> None:
 
     registry = AgentRegistry()
     registry.register(EchoAgent())
-    loop = NexusLoop(registry, middleware=pipeline)
+    loop = NexusLoop(registry, middleware=pipeline, production_mode=False)
 
     result = await loop.handle_task(
         Task(
@@ -82,7 +82,7 @@ async def test_nexus_loop_emits_intake_and_classification_hooks() -> None:
 
     registry = AgentRegistry()
     registry.register(EchoAgent())
-    loop = NexusLoop(registry, middleware=pipeline)
+    loop = NexusLoop(registry, middleware=pipeline, production_mode=False)
 
     result = await loop.handle_task(
         Task(

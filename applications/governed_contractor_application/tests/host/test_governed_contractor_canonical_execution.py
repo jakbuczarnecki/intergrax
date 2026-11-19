@@ -77,7 +77,7 @@ def _stub_host_llm(monkeypatch: pytest.MonkeyPatch) -> None:
 @pytest.mark.asyncio
 async def test_governed_contractor_root_uses_canonical_execution_facade() -> None:
     registry = AgentRegistry()
-    nexus_loop = NexusLoop(registry)
+    nexus_loop = NexusLoop(registry, production_mode=False)
     service = _build_service(nexus_loop)
     task = Task(
         task_id=mint_task_id(),
@@ -169,7 +169,7 @@ def test_governed_contractor_http_root_uses_canonical_execution_facade(
 @pytest.mark.asyncio
 async def test_governed_contractor_adapt_does_not_root_call_nexus_handle_task() -> None:
     registry = AgentRegistry()
-    nexus_loop = NexusLoop(registry)
+    nexus_loop = NexusLoop(registry, production_mode=False)
     nexus_loop.handle_task = AsyncMock()  # type: ignore[method-assign]
     service = _build_service(nexus_loop)
 
@@ -199,7 +199,7 @@ async def test_governed_contractor_adapt_does_not_root_call_nexus_handle_task() 
 @pytest.mark.asyncio
 async def test_governed_contractor_adapt_reaches_strategy_router_with_agentic_capability() -> None:
     registry = AgentRegistry()
-    nexus_loop = NexusLoop(registry)
+    nexus_loop = NexusLoop(registry, production_mode=False)
     service = _build_service(nexus_loop)
     captured: dict[str, object] = {}
 
@@ -234,7 +234,7 @@ async def test_governed_contractor_adapt_reaches_strategy_router_with_agentic_ca
 @pytest.mark.asyncio
 async def test_governed_contractor_root_execution_id_is_platform_owned() -> None:
     registry = AgentRegistry()
-    nexus_loop = NexusLoop(registry)
+    nexus_loop = NexusLoop(registry, production_mode=False)
     service = _build_service(nexus_loop)
     caller_execution_id = mint_execution_id()
     observed: dict[str, object] = {}
@@ -274,7 +274,7 @@ async def test_governed_contractor_root_execution_id_is_platform_owned() -> None
 @pytest.mark.asyncio
 async def test_governed_contractor_request_produces_single_root_execution_invocation() -> None:
     registry = AgentRegistry()
-    nexus_loop = NexusLoop(registry)
+    nexus_loop = NexusLoop(registry, production_mode=False)
     service = _build_service(nexus_loop)
     router_calls = 0
     facade_calls = 0

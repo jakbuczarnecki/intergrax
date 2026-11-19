@@ -211,7 +211,7 @@ async def test_r9_r3_submit_deny_blocks_inner_executor(_identity_ctx) -> None:
         effect_reliability=PassthroughOrchestrationConsequentialEffectReliability(),
     )
     port = build_production_orchestration_topology_submission_port(
-        NexusLoop(AgentRegistry()),
+        NexusLoop(AgentRegistry(), production_mode=False),
         slot_mse_policy=policy,
     )
     inner = _MutatingSlotExecutor()
@@ -249,7 +249,7 @@ async def test_r9_r3_submit_allow_runs_inner_once(_identity_ctx) -> None:
         effect_reliability=PassthroughOrchestrationConsequentialEffectReliability(),
     )
     port = build_production_orchestration_topology_submission_port(
-        NexusLoop(AgentRegistry()),
+        NexusLoop(AgentRegistry(), production_mode=False),
         slot_mse_policy=policy,
     )
     inner = _MutatingSlotExecutor()
@@ -286,7 +286,7 @@ async def test_r9_r3_submit_missing_mse_port_fail_closed(_identity_ctx) -> None:
         effect_reliability=PassthroughOrchestrationConsequentialEffectReliability(),
     )
     port = build_production_orchestration_topology_submission_port(
-        NexusLoop(AgentRegistry()),
+        NexusLoop(AgentRegistry(), production_mode=False),
         slot_mse_policy=policy,
     )
     inner = _MutatingSlotExecutor()
@@ -360,7 +360,7 @@ async def test_r9_r3_recovery_fresh_mse_deny_after_prior_allow(_identity_ctx) ->
         effect_reliability=PassthroughOrchestrationConsequentialEffectReliability(),
     )
     port = build_production_orchestration_topology_submission_port(
-        NexusLoop(AgentRegistry()),
+        NexusLoop(AgentRegistry(), production_mode=False),
         slot_mse_policy=policy,
     )
     inner = _MutatingSlotExecutor()

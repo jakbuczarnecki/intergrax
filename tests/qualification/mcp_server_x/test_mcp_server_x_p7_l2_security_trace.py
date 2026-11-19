@@ -794,7 +794,9 @@ async def test_acc_17_run_agent_payload_carries_valid_task_and_run_ids() -> None
 @pytest.mark.asyncio
 async def test_acc_17_each_invocation_runs_under_its_own_platform_execution_id() -> None:
     registry = AgentRegistry()
-    host = build_harness_host_task_execution(NexusLoop(registry), orchestration_triggers=frozenset())
+    host = build_harness_host_task_execution(
+        NexusLoop(registry, production_mode=False), orchestration_triggers=frozenset()
+    )
     mcp = build_mcp_server_x_reference_qualification_server(host_execution=host, registry=registry)
     observed: list[tuple[str, str, str]] = []
 

@@ -138,6 +138,7 @@ async def test_debug_api_human_response_resume(tmp_path):
         registry,
         checkpoint_store=checkpoint_store,
         runtime_event_store=event_store,
+        production_mode=False,
     )
     runner = UnifiedTaskRunner(
         build_harness_root_task_execution_port(loop),

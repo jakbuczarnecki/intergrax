@@ -59,7 +59,7 @@ def _service(*, identity_source: str) -> DefaultLegalAgentService:
         registry=registry,
         default_agent_id="legal-test",
         host_execution=build_harness_host_task_execution(
-            NexusLoop(registry),
+            NexusLoop(registry, production_mode=False),
             orchestration_triggers=frozenset(),
         ),
         identity_source=identity_source,  # type: ignore[arg-type]

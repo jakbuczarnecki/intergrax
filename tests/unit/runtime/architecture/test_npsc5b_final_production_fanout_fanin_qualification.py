@@ -152,7 +152,7 @@ async def test_npsc5b_final_production_fanout_fanin_e2e_qualification() -> None:
         candidates=(_discovery_candidate(_OCR_PACKAGE, capability_ids=("document.ocr",)),),
         specialist_delegate=_LineageDelayedDelegate(),
     )
-    nexus_loop = NexusLoop(AgentRegistry())
+    nexus_loop = NexusLoop(AgentRegistry(), production_mode=False)
     submission_port = build_production_representative_orchestration_topology_submission_port(
         nexus_loop,
     )
@@ -253,7 +253,7 @@ async def test_npsc5b_final_production_fanout_fanin_e2e_qualification() -> None:
 
 @pytest.mark.asyncio
 async def test_npsc5b_concurrent_fan_out_submissions_preserve_independent_limits() -> None:
-    nexus_loop = NexusLoop(AgentRegistry())
+    nexus_loop = NexusLoop(AgentRegistry(), production_mode=False)
     tracker_a = _ConcurrencyTracker()
     tracker_b = _ConcurrencyTracker()
     harness_a = build_fan_out_harness(
@@ -333,7 +333,7 @@ async def test_npsc5b_fan_out_platform_cap_limits_concurrency() -> None:
         candidates=(_discovery_candidate(_OCR_PACKAGE, capability_ids=("document.ocr",)),),
         specialist_delegate=_DelayedOcrDelegate(tracker=tracker, delay_s=0.05),
     )
-    nexus_loop = NexusLoop(AgentRegistry(), max_parallel_nodes=2)
+    nexus_loop = NexusLoop(AgentRegistry(), max_parallel_nodes=2, production_mode=False)
     fan_out = _build_shared_fan_out_service(harness, nexus_loop=nexus_loop)
     task_scope = mint_task_id()
     harness.task_scope_authority.task_scope_id = task_scope

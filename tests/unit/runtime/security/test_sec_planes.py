@@ -141,7 +141,7 @@ def test_register_application_security_hooks_attaches_defense_plugin() -> None:
         defense_bundle_ids=["harness.strict_injection"],
     )
     wiring = wire_application_security(env)
-    nexus = NexusLoop(AgentRegistry())
+    nexus = NexusLoop(AgentRegistry(), production_mode=False)
     register_application_security_hooks(nexus, wiring.profile, options=wiring.options)
     pipeline = nexus._middleware  # noqa: SLF001
     assert isinstance(pipeline, MiddlewarePipeline)

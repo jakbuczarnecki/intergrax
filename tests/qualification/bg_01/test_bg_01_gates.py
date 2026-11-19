@@ -322,7 +322,7 @@ def test_bg_q3_tenant_mismatch_blocks_execution() -> None:
 @pytest.mark.asyncio
 async def test_bg_q4_worker_host_stack_uses_root_launcher() -> None:
     registry = AgentRegistry()
-    nexus_loop = NexusLoop(registry)
+    nexus_loop = NexusLoop(registry, production_mode=False)
     host_execution = _governed_host_execution(nexus_loop)
     runtime = NexusWorkerRuntime(host_execution)
     identity = _worker_identity()

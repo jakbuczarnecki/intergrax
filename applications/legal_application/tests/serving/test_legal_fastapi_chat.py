@@ -42,7 +42,7 @@ def client() -> TestClient:
 
     agent = _DummyAgent()
     registry = bootstrap_agent_registry_from_agents({"legal-test": agent})
-    nexus = NexusLoop(registry)
+    nexus = NexusLoop(registry, production_mode=False)
     host_execution = build_harness_host_task_execution(nexus, orchestration_triggers=frozenset())
     mount_legal_agent_routes(
         app,

@@ -25,7 +25,7 @@ async def test_nexus_eval_runner_runs_echo_case():
     registry.register(EchoAgent())
     runner = NexusEvalRunner(
         UnifiedTaskRunner(
-            build_harness_root_task_execution_port(NexusLoop(registry)),
+            build_harness_root_task_execution_port(NexusLoop(registry, production_mode=False)),
             admitted_governance_identity_for_task=lab_admitted_root_governance_identity_for_task,
         )
     )
@@ -59,7 +59,7 @@ async def test_nexus_eval_runner_reports_output_mismatch():
     registry.register(EchoAgent())
     runner = NexusEvalRunner(
         UnifiedTaskRunner(
-            build_harness_root_task_execution_port(NexusLoop(registry)),
+            build_harness_root_task_execution_port(NexusLoop(registry, production_mode=False)),
             admitted_governance_identity_for_task=lab_admitted_root_governance_identity_for_task,
         )
     )

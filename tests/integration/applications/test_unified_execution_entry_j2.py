@@ -31,7 +31,7 @@ pytestmark = [pytest.mark.integration, pytest.mark.gate]
 def _build_run_service() -> DefaultRunService:
     registry = AgentRegistry()
     registry.register(EchoAgent())
-    nexus_loop = NexusLoop(registry)
+    nexus_loop = NexusLoop(registry, production_mode=False)
     host_execution = build_certified_internal_test_host_task_execution(nexus_loop)
     adapter = HostTaskExecutionRunAdapter(host_execution)
     store = InMemoryRunStore()

@@ -187,7 +187,7 @@ async def test_declarative_policy_hitl_nexus_pause_approve_resume(tmp_path) -> N
     registry = AgentRegistry()
     registry.register(_PolicyHitlToolAgent(executor))
     store = SQLiteTaskCheckpointStore(db_path=tmp_path / "hitl_ckpt.db")
-    loop = NexusLoop(registry, checkpoint_store=store)
+    loop = NexusLoop(registry, checkpoint_store=store, production_mode=False)
 
     task = Task(
         tenant_id="t1",
