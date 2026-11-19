@@ -5,7 +5,6 @@
 from __future__ import annotations
 
 import pytest
-
 from intergrax.contracts.runtime_event import parse_runtime_event_payload
 from intergrax.contracts.runtime_event_type import RuntimeEventType
 from intergrax.runtime.events.payload_registry import (
@@ -18,7 +17,6 @@ from intergrax.runtime.events.runtime_event_payload_policy import (
     iter_runtime_event_payload_policies,
 )
 from intergrax.runtime.schema.registry import RUNTIME_SCHEMA_REGISTRY, validate_schema_version
-
 from tests.qualification.compat_x._compat_x_event_evolution_inventory import (
     EventCompatibilityDisposition,
     RuntimeEventCallSiteClassificationEvidence,
@@ -35,7 +33,6 @@ from tests.qualification.compat_x._compat_x_event_evolution_inventory import (
     probe_extension_duplicate_canonical_override,
     registered_canonical_payload_schema_ids,
     synthetic_canonical_composition_raw_store_bypass_probe,
-    synthetic_inventory_missing_classification,
     synthetic_inventory_phantom_schema_id,
     synthetic_inventory_phantom_schema_row_probe,
     synthetic_misleading_audit_append_call_site,
@@ -132,20 +129,14 @@ def test_cx_r3_p0_q8_envelope_matches_runtime_registry() -> None:
     assert current == "runtime_event.v2"
     assert validate_schema_version("runtime_event", current)
     inv = event_evolution_inventory()
-    current_rows = [
-        r for r in inv.envelope_records if r.schema_version == current
-    ]
+    current_rows = [r for r in inv.envelope_records if r.schema_version == current]
     assert len(current_rows) == 1
 
 
 def test_cx_r3_p0_q9_runtime_event_v1_not_supported_read() -> None:
     assert not validate_schema_version("runtime_event", "runtime_event.v1")
     inv = event_evolution_inventory()
-    retired = [
-        r
-        for r in inv.envelope_records
-        if r.schema_version == "runtime_event.v1"
-    ]
+    retired = [r for r in inv.envelope_records if r.schema_version == "runtime_event.v1"]
     assert len(retired) == 1
     assert retired[0].compatibility_disposition == EventCompatibilityDisposition.RETIRED_FAIL_CLOSED
 
@@ -257,9 +248,7 @@ def test_cx_r3_p0_probe_f_runtime_event_v1_fail_closed() -> None:
 
 def test_cx_r3_p0_probe_g_unknown_payload_fail_closed() -> None:
     with pytest.raises(UnknownPayloadSchemaError):
-        validate_payload_envelope(
-            {"payload_schema_id": "nope.v1", "payload_schema_version": 1, "data": {}}
-        )
+        validate_payload_envelope({"payload_schema_id": "nope.v1", "payload_schema_version": 1, "data": {}})
 
 
 def test_cx_r3_p0_probe_h_extension_duplicate_id() -> None:
@@ -299,33 +288,25 @@ def test_cx_r3_p0_mechanical_persistence_discovery_classified() -> None:
     assert validate_production_persistence_call_site_classification(sites) == ()
     assert count_canonical_production_raw_store_bypasses(sites) == 0
     assert count_non_event_append_without_evidence(sites) == 0
-    assert all(
-        site.disposition != RuntimeEventWritePathDisposition.UNCLASSIFIED for site in sites
-    )
+    assert all(site.disposition != RuntimeEventWritePathDisposition.UNCLASSIFIED for site in sites)
     for site in sites:
         if site.disposition == RuntimeEventWritePathDisposition.NON_EVENT_APPEND:
-            assert (
-                site.classification_evidence
-                in {
-                    RuntimeEventCallSiteClassificationEvidence.SECURITY_AUDIT_TRAIL_WIRING_MULTI_REGION,
-                    RuntimeEventCallSiteClassificationEvidence.SECURITY_AUDIT_TRAIL_INNER_PRIMARY_DELEGATE,
-                    RuntimeEventCallSiteClassificationEvidence.PLATFORM_RUNTIME_EVENT_HISTORY_BUFFER,
-                }
-            )
+            assert site.classification_evidence in {
+                RuntimeEventCallSiteClassificationEvidence.SECURITY_AUDIT_TRAIL_WIRING_MULTI_REGION,
+                RuntimeEventCallSiteClassificationEvidence.SECURITY_AUDIT_TRAIL_INNER_PRIMARY_DELEGATE,
+                RuntimeEventCallSiteClassificationEvidence.PLATFORM_RUNTIME_EVENT_HISTORY_BUFFER,
+            }
 
 
 def test_cx_r3_p0_non_event_append_anti_tautology_gate() -> None:
     sites = discover_runtime_event_persistence_call_sites()
-    non_event = [
-        site for site in sites if site.disposition == RuntimeEventWritePathDisposition.NON_EVENT_APPEND
-    ]
+    non_event = [site for site in sites if site.disposition == RuntimeEventWritePathDisposition.NON_EVENT_APPEND]
     assert validate_non_event_append_positive_evidence(sites) == ()
     assert count_non_event_append_without_evidence(sites) == 0
     evidence_backed = sum(
         1
         for site in non_event
-        if site.classification_evidence
-        != RuntimeEventCallSiteClassificationEvidence.UNSPECIFIED
+        if site.classification_evidence != RuntimeEventCallSiteClassificationEvidence.UNSPECIFIED
     )
     assert len(non_event) == evidence_backed
 
