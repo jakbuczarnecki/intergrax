@@ -36,7 +36,6 @@ from intergrax.agent_distribution.delegated_subtasks import (
     DelegatedSubtaskService,
     SpecialistInvocationPort,
 )
-from intergrax.agent_distribution.resolver import DependencyResolver
 from intergrax.agent_distribution.dynamic_acquisition import (
     CatalogSourceProviderRegistry,
     DynamicAgentAcquisitionService,
@@ -50,15 +49,16 @@ from intergrax.agent_distribution.in_memory_stores import (
     InMemoryAgentInstallationStore,
     InMemoryApplicationAgentBindingStore,
 )
-from intergrax.agent_distribution.sqlite_stores import SqliteAgentDistributionStoreBundle
 from intergrax.agent_distribution.installation_service import InstallationService
 from intergrax.agent_distribution.materialization_service import (
     RuntimeMaterializationService,
 )
+from intergrax.agent_distribution.resolver import DependencyResolver
 from intergrax.agent_distribution.runtime_graph_service import (
     CandidateRuntimeGraphBuilder,
 )
 from intergrax.agent_distribution.runtime_revision_service import RuntimeRevisionService
+from intergrax.agent_distribution.sqlite_stores import SqliteAgentDistributionStoreBundle
 from intergrax.agent_distribution.task_capability_resolution import (
     TaskCapabilityResolver,
 )
@@ -277,9 +277,7 @@ def build_production_agent_capability_runtime(
         admin_config=application_composition.admin_config,
         durable_store_bundle=durable_store_bundle,
     )
-    catalog_registry = _build_catalog_registry(
-        application_composition.catalog_providers
-    )
+    catalog_registry = _build_catalog_registry(application_composition.catalog_providers)
     dynamic_acquisition = DynamicAgentAcquisitionService(
         catalog_registry=catalog_registry,
         lifecycle=admin_service,
@@ -300,13 +298,9 @@ def build_production_agent_capability_runtime(
         admin_service=admin_service,
         config=plan_config,
     )
-    selector = (
-        application_composition.selection_strategy
-        or DeterministicIdentitySelectionStrategy()
-    )
+    selector = application_composition.selection_strategy or DeterministicIdentitySelectionStrategy()
     resolved_child_execution = (
-        delegated_subtask_child_execution
-        or build_production_delegated_subtask_child_execution_port()
+        delegated_subtask_child_execution or build_production_delegated_subtask_child_execution_port()
     )
     return ProductionAgentCapabilityRuntime(
         admin_service=admin_service,
