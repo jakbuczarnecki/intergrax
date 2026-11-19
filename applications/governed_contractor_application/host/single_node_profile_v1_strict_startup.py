@@ -5,14 +5,14 @@
 from __future__ import annotations
 
 from intergrax.agent_distribution.deployment import RuntimeDeploymentAdapter
+from intergrax.applications._shared.production_agent_capability_runtime import (
+    AgentCapabilityApplicationComposition,
+)
 from intergrax.applications._shared.production_control_plane_governance_wiring import (
     ProductionControlPlaneGovernance,
 )
 from intergrax.applications._shared.production_execution_continuation_store import (
     MissingContinuationFilePolicy,
-)
-from intergrax.applications._shared.production_agent_capability_runtime import (
-    AgentCapabilityApplicationComposition,
 )
 from intergrax.applications._shared.settings_loader import EnvReader
 from intergrax.applications._shared.single_node_production_profile_v1 import (
@@ -26,6 +26,7 @@ from intergrax.applications._shared.strict_production_serving_launcher import (
     StrictProductionServingEnvironment,
     StrictProductionServingSession,
 )
+
 from governed_contractor_application.host.sqlite_governed_external_work_host_store_bundle import (
     SQLiteGovernedExternalWorkHostStoreBackend,
 )
