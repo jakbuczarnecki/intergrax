@@ -6,7 +6,7 @@
 
 On 2026-11-20 the Operator gave two answers that this record renders for the signing delegate:
 
-- In the ARCH-FREEZE orchestrator chat, the Operator agreed to the standing mandate D1 and the decisions D2 as recommended, and asked for the work to resume (ARCH-FREEZE session record `OPERATOR_PACKET_7.md`, a session artefact under `.tmp/`, not tracked).
+- In the ARCH-FREEZE orchestrator chat, the Operator agreed to the standing mandate D1 and the decisions D2 as recommended (with AR-51, repository auto-merge, not authorised, per the Operator's later wave 0b answer), and asked for the work to resume (ARCH-FREEZE session record `OPERATOR_PACKET_7.md`, a session artefact under `.tmp/`, not tracked).
 - In the EQO-A remediation orchestrator chat, the Operator accepted the recommended option of every group of decision wave 0 (groups A to D) and, in a second dialog, of every item of wave 0b, the ARCH-FREEZE additions (EQO-A session record `WAVE_0_DECISIONS.md`, a session artefact under `.tmp/`, not tracked).
 
 The wave 0b mandate M-1 to M-3 and the packet 7 items D1-1, D1-2 and D1-4 state the same mandate; this record encodes it once. Of the other decisions, it restates only what concerns signing: the extra tickets of wave 0b, the stop conditions (packet 7 and A8) and the gates that stay with the Operator. Merge authority, reporting, session starts, account limits, residual dispositions, GitHub ruleset stages, pins and activations are not restated here.
@@ -20,7 +20,7 @@ This record applies only to approval commits on `arch-freeze/rw-train` made befo
 ## Relation to the earlier records
 
 - The per-wave records 1 to 4 (`RW_TRAIN_DELEGATION_RECORD.md` to `RW_TRAIN_DELEGATION_RECORD_4.md`) and the standing record `RW_TRAIN_STANDING_DELEGATION_RECORD.md` stay valid for the tickets and digests already signed under them. Nothing in this record voids or re-opens those signatures.
-- For a signature made under this record, the conditions below replace the condition of the earlier records that a digest must be listed in an Operator-approved wave packet, the S2 amendment envelope of the standing record, the amendment rule A2 of wave 0, and the rule that a further amendment needs a new Operator approval and a new record file. The rule of the standing record that every new digest of T-IGX-044-F needs the Operator's own decision is replaced by the limits below, in particular the IIAC limit. Every exclusion of the earlier records that this record repeats under "Always the Operator" still applies.
+- From the merge of this record into `arch-freeze/rw-train`, every new approval of a ticket of the named series is made under this record and its `Delegation:` line names this record; the earlier records are not used for new approvals. For those approvals the conditions below replace: the condition that a digest must be listed in an Operator-approved wave packet; the rule of the per-wave records that the delegate signs a ticket only for the digest listed there; the S2 amendment envelope of the standing record; the amendment rule A2 of wave 0; the rule that a further amendment needs a new Operator approval and a new record file; and the rule of the standing record that every new digest of T-IGX-044-F needs the Operator's own decision (replaced by the limits below, in particular the IIAC limit). A digest that an earlier record declares void stays void. Every exclusion of the earlier records that this record repeats under "Always the Operator" still applies.
 
 ## M-1 (D1-1). When the delegate may sign
 
@@ -42,7 +42,7 @@ The delegate recomputes the plan digest from the plan file with `plan_digest.py`
 
 ## M-3 (D1-4). Draft defaults
 
-A plan may settle an Operator-level question by taking the draft default recorded for that question in a session record; the delegate may sign such a digest when the plan names the question and its default. A plan that settles an Operator-level question that has no recorded draft default, or departs from the recorded default, is an Operator stop.
+A plan may settle an Operator-level question by taking the draft default recorded for that question in a session record the Operator read before answering (`DECISION_WAVES.md`, `WAVE_0_DECISIONS.md` or an Operator packet record the Operator answered); the delegate may sign such a digest when the plan names the question, that record and its default, and the independent review verdict for the digest states that the plan takes the default unchanged. A plan that settles an Operator-level question that has no recorded draft default, or departs from the recorded default, is an Operator stop.
 
 ## Extra tickets accepted in wave 0b and wave 0
 
@@ -50,14 +50,14 @@ The Operator accepted the following tickets. Each is signed under M-1 to M-3 lik
 
 - **F-1:** the fixer for EX-D1-07 and G-08 (descriptor edit and PDC-D1 test treatment), which releases part D of the RW-RECOVERY ticket.
 - **B3 and B4:** the two fixers for the A4-032 legs. Leg (a): in PRODUCT or STRICT an enabled OTLP exporter with an empty endpoint fails closed at wiring, with its own fixture and gate plan and a measured list first. Leg (b), with WP2-OBS-02: in PRODUCT or STRICT a composition with side-effect tool ids and no explicit sandbox root is refused and the bundle-only gap is closed; part 2 of T-IGX-043-E (the sandbox script) is released with it. Each is signed only while its plan stays inside that ruling.
-- **F-3:** the test-hygiene ticket for `tests/unit/applications/test_ac3_phase5_production_lifecycle_e2e.py` (tests only). The Operator merges it on `development`; an approval commit that is not on `arch-freeze/rw-train` is outside this record and needs a record on its own branch.
 - **F-4:** T-IGX-043-N, after its independent review.
 - **F-5:** the residuals R-1 to R-8 of the RW-SUPPLY ticket and the two cursor-signing byte labels, with their recorded defaults.
 
-Two accepted items are **not** signed under this record:
+Three accepted items are **not** signed under this record, or only in part:
 
 - **G-9:** ticket 052-E (standalone ECAP) lies outside the named series. It is signed only with its own one-time Operator authorisation, and the Operator merges it.
-- **G-5:** A4-040 and Part G of the PT-WB ticket, accepted for wave 4. This record keeps them excluded (see below); the delegate signs that work only under a later record that names it.
+- **F-3:** the test-hygiene ticket for `tests/unit/applications/test_ac3_phase5_production_lifecycle_e2e.py` (tests only). The Operator merges it on `development`, so its approval is outside the branch bound of this record; it needs a record on its own branch.
+- **G-5:** A4-040 and Part G of the PT-WB ticket, accepted for wave 4. This record is deliberately narrower than G-5 and packet 7 D2-3, which put that work under the mandate: the delegate never signs a digest of the PT-WB ticket whose plan has Part G or A4-040 as in-scope work (see below). A separate ticket of series 051 for that work is signable under M-1 to M-3 only when its gate-meaning changes make checks stricter, as defined under M-1, and an independent review verdict exists for its digest.
 
 ## Always the Operator
 
@@ -67,7 +67,7 @@ The delegate never signs, and the orchestrator stops and asks the Operator, when
 - It touches the IIAC protocol beyond the paths already approved: an IIAC material governance path that is not in the edit scope of a digest the Operator approved for the same ticket in a wave packet, or any change to the IIAC protocol itself beyond those paths.
 - It touches governance under `scripts/` or `.github/` without a reason that the ticket names for that path in its own text.
 - It touches any Operator-only file, including `PLATFORM_ENTERPRISE_COMPLETION_ROADMAP.md` and `PLATFORM_ENTERPRISE_FREEZE_ACCEPTANCE_CHECKLIST.md`.
-- It falls under an exclusion of the standing record: Part G of the PT-WB ticket and A4-040 (the delegate does not sign a PT-WB digest whose plan has Part G as in-scope work), any PROD-Q run, and the RB-2 re-pin.
+- It falls under an exclusion of the standing record: Part G of the PT-WB ticket and A4-040 (the delegate does not sign a digest of the PT-WB ticket whose plan has Part G or A4-040 as in-scope work; a separate series 051 ticket for that work follows the G-5 item above), any PROD-Q run, and the RB-2 re-pin.
 - The Operator's own hard gates: the merge of the train into `development` (FCS), the ENTRY check, and the admission and closure texts OD-ARCH-FREEZE-01, OD-AF-15, OD-AF-16b and DS-ADM EDER-D-0170, EDER-D-0172 and EDER-D-0173.
 
 ## Stop conditions
@@ -78,7 +78,7 @@ The delegate does not sign, and the orchestrator stops and reports to the Operat
 - a BLOCKER in frozen scope that no ticket owns, or a plan defect after 2 amendment rounds;
 - an authority conflict: documents disagree and the resolution changes a verdict;
 - a decision outside these rules;
-- a change of gate meaning or product semantics beyond the approved rulings, or a change that would loosen a gate or needs an Operator-only file;
+- a change of gate meaning or product semantics beyond the approved rulings (a gate-meaning change that makes a check stricter, as defined under M-1, is inside them), or a change that would loosen a gate or needs an Operator-only file;
 - a tenant or security residual with no allowed disposition;
 - secrets in evidence;
 - a tool that writes to tracked paths unexpectedly;
