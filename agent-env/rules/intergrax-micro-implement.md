@@ -20,7 +20,7 @@ Operator prompt should begin with:
 Before any read/edit, perform mandatory preflight from:
 
 ```text
-agent-env/rules/intergrax-token-budget.md
+agent-env/rules/intergrax-core.md
 ```
 
 ## Scope contract
@@ -31,7 +31,7 @@ The operator instruction is the source of truth.
 - Edit only files listed in `edit scope`.
 - Run only commands listed in `tests`.
 - Respect all `Forbidden` paths and commands from the prompt.
-- If another file is needed, **STOP** and ask for exactly one file path; do not read it first.
+- If another file is needed, read only that file (max 3 beyond the listed scope), name it in the report, and continue; an edit outside `edit scope` is escalation E3.
 
 ## Hard limits
 

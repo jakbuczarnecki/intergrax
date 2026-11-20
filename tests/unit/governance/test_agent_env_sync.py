@@ -28,5 +28,7 @@ def test_every_rule_has_loading_mode_and_description() -> None:
     finally:
         sys.path.remove(str(SYNC.parent))
     rules = sync_agent_env.load_rules()
-    assert rules["intergrax-token-budget"]["loading"] == "always"
+    assert rules["intergrax-core"]["loading"] == "always"
+    assert [rid for rid, meta in rules.items() if meta["loading"] == "always"] == ["intergrax-core"]
+    assert sync_agent_env.size_problems() == []
     assert all(meta["loading"] in sync_agent_env.LOADING_MODES for meta in rules.values())
