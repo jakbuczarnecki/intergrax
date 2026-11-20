@@ -36,6 +36,7 @@ from intergrax.runtime.execution.execution_terminal import (
     ExecutionTerminalService,
     InMemoryExecutionTerminalStore,
 )
+from intergrax.runtime.nexus.context.context_manager import ContextManager
 from intergrax.runtime.nexus.nexus_loop import NexusLoop
 from intergrax.runtime.nexus.orchestration.graph_runner import NexusGraphRunner
 from intergrax.runtime.nexus.planning.task_planner import NexusPlan
@@ -48,6 +49,11 @@ from intergrax.runtime.task.task import Task
 from testing_support.runtime_event_metric_scope_for_tests import (
     open_runtime_event_metric_scope_for_tests,
 )
+
+
+def _strict_context_manager() -> ContextManager:
+    """Context manager with engine and adapter doubles: a production_mode loop requires both (FC-1 Part C2)."""
+    return ContextManager(context_engine=MagicMock(), llm_adapter=MagicMock())
 
 
 class _KvStore(DistributedKVStore):
@@ -117,6 +123,10 @@ def test_composition_rejects_production_retry_with_in_memory_store() -> None:
             production_mode=True,
             retry_policy=RetryPolicy(max_retries=1),
             disable_execution_continuation=True,
+            disable_human_decision_persistence=True,
+            disable_task_memory_persistence=True,
+            disable_runtime_event_persistence=True,
+            context_manager=_strict_context_manager(),
         )
 
 
@@ -128,6 +138,10 @@ def test_composition_allows_production_without_retry_capability() -> None:
         retry_policy=RetryPolicy(max_retries=0),
         max_run_retries=0,
         disable_execution_continuation=True,
+        disable_human_decision_persistence=True,
+        disable_task_memory_persistence=True,
+        disable_runtime_event_persistence=True,
+        context_manager=_strict_context_manager(),
     )
     assert loop._attempt_lifecycle.store.is_durable is False  # noqa: SLF001
 
@@ -152,6 +166,10 @@ def test_composition_allows_production_retry_with_kv_store() -> None:
         retry_policy=RetryPolicy(max_retries=1),
         attempt_lifecycle=AttemptLifecycleService(store),
         disable_execution_continuation=True,
+        disable_human_decision_persistence=True,
+        disable_task_memory_persistence=True,
+        disable_runtime_event_persistence=True,
+        context_manager=_strict_context_manager(),
     )
     assert loop._attempt_lifecycle.store.is_durable is True  # noqa: SLF001
 
@@ -165,6 +183,10 @@ def test_composition_allows_production_retry_with_document_store() -> None:
         max_run_retries=1,
         attempt_lifecycle=AttemptLifecycleService(store),
         disable_execution_continuation=True,
+        disable_human_decision_persistence=True,
+        disable_task_memory_persistence=True,
+        disable_runtime_event_persistence=True,
+        context_manager=_strict_context_manager(),
     )
     assert loop._attempt_lifecycle.store.is_durable is True  # noqa: SLF001
 
