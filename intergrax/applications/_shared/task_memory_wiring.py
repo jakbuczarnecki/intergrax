@@ -10,6 +10,7 @@ from dataclasses import dataclass
 from pathlib import Path
 
 from intergrax.applications.contracts.environment_profile import ApplicationEnvironmentProfile
+from intergrax.contracts.execution_mode import ExecutionMode
 from intergrax.integrations.providers.relational_store.sqlite.paths import (
     ENV_TASK_MEMORY_DB,
     resolve_task_memory_db_path,
@@ -60,7 +61,13 @@ def wire_task_memory_from_profile(
     db_path: Path | None = None,
     warn_if_disabled: bool = False,
 ) -> TaskMemoryWiring:
-    """Unify task memory wiring under environment memory profile (H-APP.4.4)."""
+    """
+    Unify task memory wiring under environment memory profile (H-APP.4.4).
+
+    A STRICT host whose profile disables every memory kind passes ``enabled=False``: the ambient
+    ``INTERGRAX_TASK_MEMORY_DB`` variable must not re-enable what the profile turned off. LAB keeps
+    ``None`` (environment-controlled).
+    """
     memory = env.memory_profile
     enabled = (
         memory.enable_task_memory
@@ -68,8 +75,9 @@ def wire_task_memory_from_profile(
         or memory.enable_org_memory
         or memory.enable_long_term_memory
     )
+    disabled_value = False if env.execution_mode is ExecutionMode.STRICT else None
     return wire_task_memory(
         db_path=db_path,
-        enabled=enabled if enabled else None,
+        enabled=True if enabled else disabled_value,
         warn_if_disabled=warn_if_disabled,
     )

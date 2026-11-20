@@ -104,6 +104,7 @@ def create_research_backend_app(
         ),
         document_store=profile_persistence_kwargs.document_store,
         key_value_cache=profile_persistence_kwargs.key_value_cache,
+        disable_human_decision_persistence=True,
     )
     host_execution = runtime.execution
     platform = bootstrap_harness_host_platform(runtime)

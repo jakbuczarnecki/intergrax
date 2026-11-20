@@ -55,14 +55,14 @@ def build_agent_runtime_context(
     *,
     enable_rag: bool = False,
     enable_websearch: bool = False,
+    production_mode: bool = False,
 ) -> RuntimeContext:
-    from intergrax.agents.defaults import harness_production_mode
-
+    """Reference-stub runtime context; ``production_mode`` is the host posture (default: lab/stub)."""
     config = RuntimeConfig(
         llm_adapter=llm_adapter,
         enable_rag=enable_rag,
         enable_websearch=enable_websearch,
-        production_mode=harness_production_mode(),
+        production_mode=production_mode,
         tenant_id=request.tenant_id,
     )
     session_manager = build_in_memory_session_manager()

@@ -37,6 +37,7 @@ from intergrax.runtime.execution.host_task import HostTaskExecutionPort
 from intergrax.runtime.execution.worker_host_task_execution_composition import (
     build_worker_host_task_execution_from_registry,
 )
+from intergrax.runtime.human.persistence_contract import HumanDecisionPersistence
 from intergrax.runtime.long_running.coordinator import LongRunningCoordinator
 from intergrax.runtime.long_running.models import TaskCheckpoint
 from intergrax.runtime.long_running.persistence_contract import (
@@ -119,6 +120,10 @@ class NexusWorkerRuntime:
         task_enricher: TaskEnricher | None = None,
         execution_continuation_state_store: ExecutionContinuationStateStore | None = None,
         production_mode: bool,
+        human_decision_store: HumanDecisionPersistence | None = None,
+        disable_human_decision_persistence: bool = False,
+        disable_task_memory_persistence: bool = False,
+        disable_runtime_event_persistence: bool = False,
         admit_root_governance_identity: Callable[[Task], AdmittedRootGovernanceIdentity],
         root_authority_admission: RootExecutionAuthorityAdmissionPort,
         retry_policy: HostOrchestrationRunRetrySpec | None = None,
@@ -135,6 +140,10 @@ class NexusWorkerRuntime:
             pipeline_capability_suffix=pipeline_capability_suffix,
             execution_continuation_state_store=execution_continuation_state_store,
             production_mode=production_mode,
+            human_decision_store=human_decision_store,
+            disable_human_decision_persistence=disable_human_decision_persistence,
+            disable_task_memory_persistence=disable_task_memory_persistence,
+            disable_runtime_event_persistence=disable_runtime_event_persistence,
             admit_root_governance_identity=admit_root_governance_identity,
             root_authority_admission=root_authority_admission,
             retry_policy=retry_policy,

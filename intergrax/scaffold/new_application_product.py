@@ -577,6 +577,7 @@ def factory_py(names: ScaffoldApplicationNames) -> str:
                         resolved_host_runtime.orchestration_decision_requirement_policy,
                     )
                 ),
+                disable_human_decision_persistence=True,
             )
             host_execution = runtime.execution
             registry = runtime.registry

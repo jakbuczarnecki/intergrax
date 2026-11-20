@@ -12,9 +12,14 @@ from intergrax.contracts.human_approver import HumanApproverEvidence
 __all__ = [
     "HumanDecisionApproverProvenanceError",
     "HumanDecisionPersistenceConflictError",
+    "HumanDecisionPersistenceNotConfiguredError",
     "HumanDecisionPersistenceValidationError",
     "deserialize_persisted_human_approver_evidence",
 ]
+
+
+class HumanDecisionPersistenceNotConfiguredError(RuntimeError):
+    """PRODUCT/STRICT composition has no durable human decision store and no explicit acknowledgement."""
 
 
 class HumanDecisionPersistenceValidationError(ValueError):

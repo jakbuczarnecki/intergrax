@@ -60,6 +60,7 @@ from intergrax.runtime.execution.lineage.wiring import (
 from intergrax.runtime.governance.governance_evidence_recorder import (
     GovernanceEvidenceRecorder,
 )
+from intergrax.runtime.human.persistence_contract import HumanDecisionPersistence
 from intergrax.runtime.long_running.notification import NotificationAdapter
 from intergrax.runtime.long_running.persistence_contract import (
     TaskCheckpointPersistence,
@@ -129,6 +130,10 @@ def build_host_orchestration_loop_init_spec(
     execution_continuation_state_store: ExecutionContinuationStateStore | None = None,
     governance_evidence_recorder: GovernanceEvidenceRecorder | None = None,
     child_context_inheritance: ChildExecutionContextInheritancePort | None = None,
+    human_decision_store: HumanDecisionPersistence | None = None,
+    disable_human_decision_persistence: bool = False,
+    disable_task_memory_persistence: bool = False,
+    disable_runtime_event_persistence: bool = False,
 ) -> HostOrchestrationLoopInitSpec:
     """Resolve typed Execution Engine orchestration backend inputs from neutral values."""
     retry_policy = RetryPolicy(max_retries=3)
@@ -233,6 +238,10 @@ def build_host_orchestration_loop_init_spec(
         governance_evidence_recorder=governance_evidence_recorder,
         application_wiring=application_wiring,
         child_context_inheritance=child_context_inheritance,
+        human_decision_store=human_decision_store,
+        disable_human_decision_persistence=disable_human_decision_persistence,
+        disable_task_memory_persistence=disable_task_memory_persistence,
+        disable_runtime_event_persistence=disable_runtime_event_persistence,
     )
 
 

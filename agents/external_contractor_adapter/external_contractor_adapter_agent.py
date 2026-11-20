@@ -99,12 +99,13 @@ class ExternalContractorAdapterAgent(ReflexAgent):
         return self
 
     def build_context(self, request: RuntimeRequest) -> RuntimeContext:
-        from intergrax.agents.defaults import harness_production_mode
-
+        # Posture comes from the host: the STRICT governed-contractor host injects
+        # ``require_sanctioned_external_work_mutations=True`` (constructor or
+        # ``inject_sanctioned_external_work_host_dependencies``); a bare lab instance stays relaxed.
         config = RuntimeConfig(
             llm_adapter=_ExternalContractorAdapterStubLLM(),
             enable_rag=False,
-            production_mode=harness_production_mode(),
+            production_mode=self._require_sanctioned_external_work_mutations,
             tenant_id=request.tenant_id,
         )
         session_manager = build_in_memory_session_manager()

@@ -29,7 +29,6 @@ from intergrax.runtime.execution.nexus_host_task_terminal import (
     build_nexus_host_task_terminal_publisher,
 )
 from intergrax.runtime.execution.orchestration import OrchestrationExecutor
-from intergrax.runtime.nexus.agent_router import AgentRouter
 from intergrax.runtime.nexus.nexus_loop import NexusLoop
 from intergrax.runtime.task.task import Task
 
@@ -54,10 +53,7 @@ def build_host_task_execution(
         resolved_continuation_store = nexus_loop.execution_continuation_state_store
     return HostTaskExecution(
         _agent_engine=nexus_loop.agent_engine,
-        _agent_router=AgentRouter(
-            nexus_loop.registry,
-            event_bus=nexus_loop.event_bus,
-        ),
+        _agent_router=nexus_loop.agent_router,
         _orchestration_executor=OrchestrationExecutor(nexus_loop),
         _orchestration_triggers=orchestration_triggers,
         _pipeline_capability_suffix=pipeline_capability_suffix,

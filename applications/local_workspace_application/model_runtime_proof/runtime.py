@@ -136,6 +136,7 @@ def build_proof_runtime_session(
         LOCAL_WORKSPACE_APPLICATION_MANIFEST,
         environment_profile,
         settings=settings,
+        disable_human_decision_persistence=True,
     )
     lifecycle = LocalWorkspaceHostLifecycle()
     lifecycle.transition_to_ready()

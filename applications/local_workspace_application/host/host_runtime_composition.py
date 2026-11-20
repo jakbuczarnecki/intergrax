@@ -148,6 +148,7 @@ def build_local_workspace_harness_host_runtime(
                 resolved_host_runtime.orchestration_decision_requirement_policy,
             )
         ),
+        disable_human_decision_persistence=True,
     )
     return LocalWorkspaceHarnessHostRuntimeComposition(
         tenant_binding=resolved_tenant,

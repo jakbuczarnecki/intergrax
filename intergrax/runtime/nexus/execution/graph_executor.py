@@ -254,7 +254,7 @@ class GraphExecutor:
             registry,
             agent_checkpoint_store=agent_checkpoint_store,
         )
-        self._router = router or AgentRouter(registry, event_bus=event_bus)
+        self._router = router or AgentRouter(registry, production_mode=False, event_bus=event_bus)
         self._validation_engine = validation_engine or NexusValidationEngine()
         self._retry_engine = retry_engine or RetryEngine(
             registry,

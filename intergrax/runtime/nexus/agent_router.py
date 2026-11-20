@@ -36,21 +36,40 @@ class AgentRouteSelection:
     fallback_used: bool = False
 
 
+class AgentRoutingError(RuntimeError):
+    """No agent may be selected for the task under the router's posture."""
+
+
 class AgentRouter:
     """
     Select agents from registry using explicit agent_id or capability matching (§10.4, §16).
+
+    ``production_mode`` has no default: every construction states its posture. The
+    first-routable fallback is default-deny; only ``lab_first_routable_fallback=True`` (LAB,
+    never together with ``production_mode=True``) keeps it, and then the selection event
+    carries ``fallback_used=True``.
     """
 
     def __init__(
         self,
         registry: AgentRegistryRead,
         *,
-        production_mode: bool = False,
+        production_mode: bool,
         event_bus: RuntimeEventBus | None = None,
+        lab_first_routable_fallback: bool = False,
     ) -> None:
+        if production_mode and lab_first_routable_fallback:
+            raise ValueError(
+                "lab_first_routable_fallback is a LAB opt-in and cannot be combined with production_mode=True",
+            )
         self._registry = registry
         self._production_mode = production_mode
         self._event_bus = event_bus
+        self._lab_first_routable_fallback = lab_first_routable_fallback
+
+    @property
+    def production_mode(self) -> bool:
+        return self._production_mode
 
     def route(
         self,
@@ -127,9 +146,13 @@ class AgentRouter:
                 selection_reason="registry_best_match",
             )
 
+        if not self._lab_first_routable_fallback:
+            raise AgentRoutingError(
+                "No agent matches the task and the first-routable fallback is not enabled for this router.",
+            )
         ids = self._registry.list_routable_agent_ids(production_mode=self._production_mode)
         if not ids:
-            raise RuntimeError("AgentRegistry has no routable agents.")
+            raise AgentRoutingError("AgentRegistry has no routable agents.")
         agent = self._registry.get(ids[0])
         return agent, AgentRouteSelection(
             requested_agent_id=requested,

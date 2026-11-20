@@ -531,6 +531,10 @@ def build_scenario_runtime_from_environment(
         execution_continuation_state_store=_scenario_execution_continuation_state_store(
             effective_environment,
         ),
+        disable_human_decision_persistence=True,
+        disable_task_memory_persistence=(
+            effective_environment.execution_mode.value == "strict" and task_memory.store is None
+        ),
     )
     harness_execution_governance = build_harness_host_task_execution_governance()
     orchestration_session, materialization = compose_application_host_orchestration_session(

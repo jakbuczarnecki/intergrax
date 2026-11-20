@@ -364,6 +364,7 @@ def create_governed_contractor_backend_app(
         key_value_cache=profile_persistence_kwargs.key_value_cache,
         agent_contract_authority=package_contract_authority,
         strict_production_serving_execution_tenant_binding=strict_serving_tenant_binding,
+        disable_human_decision_persistence=True,
     )
     host_execution = runtime.execution
     if process_composition is not None and process_composition.serving_runtime_handoff is not None:

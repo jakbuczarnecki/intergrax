@@ -175,6 +175,7 @@ class HarnessApplication:
             use_in_memory_trace=use_in_memory_trace,
             application_host=self._host,
             orchestration_decision_requirement_policy=orchestration_decision_requirement_policy,
+            disable_human_decision_persistence=True,
         )
         return self._runtime
 

@@ -35,6 +35,7 @@ from intergrax.runtime.execution.host_orchestration_loop_init_spec import (
 )
 from intergrax.runtime.execution.host_task import HostTaskExecutionPort
 from intergrax.runtime.execution.nexus_host_execution import build_host_task_execution
+from intergrax.runtime.human.persistence_contract import HumanDecisionPersistence
 from intergrax.runtime.long_running.persistence_contract import TaskCheckpointPersistence
 from intergrax.runtime.nexus.budget.budget_models import RunBudget
 from intergrax.runtime.nexus.retry.retry_engine import RetryPolicy
@@ -62,6 +63,10 @@ def build_worker_host_task_execution_from_registry(
     pipeline_capability_suffix: str = ".pipeline",
     execution_continuation_state_store: ExecutionContinuationStateStore | None = None,
     production_mode: bool,
+    human_decision_store: HumanDecisionPersistence | None = None,
+    disable_human_decision_persistence: bool = False,
+    disable_task_memory_persistence: bool = False,
+    disable_runtime_event_persistence: bool = False,
     admit_root_governance_identity: Callable[[Task], AdmittedRootGovernanceIdentity],
     root_authority_admission: RootExecutionAuthorityAdmissionPort,
     retry_policy: HostOrchestrationRunRetrySpec | None = None,
@@ -84,6 +89,10 @@ def build_worker_host_task_execution_from_registry(
         execution_terminal=execution_terminal,
         execution_continuation_state_store=execution_continuation_state_store,
         production_mode=production_mode,
+        human_decision_store=human_decision_store,
+        disable_human_decision_persistence=disable_human_decision_persistence,
+        disable_task_memory_persistence=disable_task_memory_persistence,
+        disable_runtime_event_persistence=disable_runtime_event_persistence,
         max_run_retries=0,
         retry_policy=_nexus_retry_policy(
             retry_policy or HostOrchestrationRunRetrySpec(max_retries=0),

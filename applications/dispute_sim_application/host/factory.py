@@ -90,6 +90,7 @@ def create_dispute_sim_backend_app(
                 resolved_host_runtime.orchestration_decision_requirement_policy,
             )
         ),
+        disable_human_decision_persistence=True,
     )
     host_execution = runtime.execution
     platform = bootstrap_harness_host_platform(runtime)

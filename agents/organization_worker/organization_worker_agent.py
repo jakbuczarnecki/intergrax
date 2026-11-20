@@ -75,6 +75,10 @@ class OrganizationWorkerAgent(ReflexAgent):
     cognitive_pattern = CognitivePattern.REFLEX
     main_step_id = "prepare_vendor_report"
 
+    def __init__(self, *, production_mode: bool = False) -> None:
+        """``production_mode`` is the host posture; the lab roster registers the default (relaxed)."""
+        self._production_mode = production_mode
+
     def get_contract(self) -> AgentContract:
         return AgentContract(
             id="organization_worker",
@@ -108,7 +112,7 @@ class OrganizationWorkerAgent(ReflexAgent):
         config = RuntimeConfig(
             llm_adapter=_StubLLMAdapter(fixed_text="vendor report draft"),
             enable_rag=False,
-            production_mode=False,
+            production_mode=self._production_mode,
             tenant_id=request.tenant_id,
         )
         return RuntimeContext.build(
