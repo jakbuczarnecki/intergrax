@@ -15,7 +15,8 @@
     "deny": [
       "Read(./.env)",
       "Read(./.env.local)",
-      "Read(./.env.production)"
+      "Read(./.env.production)",
+      "Agent(general-purpose)"
     ]
   },
   "skillOverrides": {

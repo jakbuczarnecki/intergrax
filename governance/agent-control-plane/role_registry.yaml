@@ -87,3 +87,20 @@ subagent_role_map:
     max_parallel: 2
     read_only: false
     requires_worktree: true
+  igx-researcher:
+    maps_to: architect-planner
+    max_parallel: 3
+    read_only: true
+  igx-implementer:
+    maps_to: implementer
+    max_parallel: 2
+    read_only: false
+    requires_worktree: true
+  igx-reviewer:
+    maps_to: reviewer
+    max_parallel: 1
+    read_only: true
+  igx-architect:
+    maps_to: architect-planner
+    max_parallel: 1
+    read_only: false
