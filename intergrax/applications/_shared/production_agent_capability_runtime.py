@@ -9,10 +9,15 @@ share the same ``AgentPlatformAdminService`` lifecycle universe as AP-3.
 
 from __future__ import annotations
 
+from collections.abc import Callable
 from dataclasses import dataclass
+from datetime import UTC, datetime
 from typing import TypeVar
 
-from intergrax.agent_distribution.admin_service import AgentPlatformAdminService
+from intergrax.agent_distribution.admin_service import (
+    AgentPlatformAdminService,
+    PackageAttestationEnforcement,
+)
 from intergrax.agent_distribution.agent_discovery import AgentDiscoveryStrategy
 from intergrax.agent_distribution.agent_project_metadata import (
     AgentProjectMetadataProvider,
@@ -40,10 +45,14 @@ from intergrax.agent_distribution.dynamic_acquisition import (
     CatalogSourceProviderRegistry,
     DynamicAgentAcquisitionService,
 )
+from intergrax.agent_distribution.ed25519_package_attestation_verifier import (
+    Ed25519PackageAttestationVerifier,
+)
 from intergrax.agent_distribution.effective_roster import (
     EffectiveRosterBuilder,
     InstalledAgentRequirementSetBuilder,
 )
+from intergrax.agent_distribution.events import AgentDistributionEvent
 from intergrax.agent_distribution.in_memory_stores import (
     InMemoryAgentArtifactMetadataStore,
     InMemoryAgentInstallationStore,
@@ -53,6 +62,8 @@ from intergrax.agent_distribution.installation_service import InstallationServic
 from intergrax.agent_distribution.materialization_service import (
     RuntimeMaterializationService,
 )
+from intergrax.agent_distribution.package_attestation import AgentPackageAttestationVerifier
+from intergrax.agent_distribution.package_trust import AgentPackageTrustCoordinator
 from intergrax.agent_distribution.resolver import DependencyResolver
 from intergrax.agent_distribution.runtime_graph_service import (
     CandidateRuntimeGraphBuilder,
@@ -66,6 +77,10 @@ from intergrax.agent_distribution.task_scoped_agents import (
     InMemoryTaskScopedAgentLeaseStore,
     TaskScopedAgentLeaseStore,
     TaskScopedAgentService,
+)
+from intergrax.agent_distribution.trust import (
+    AgentPackageTrustPolicy,
+    AgentPackageTrustRevocationState,
 )
 from intergrax.applications._shared.production_agent_platform_runtime import (
     ProductionAgentPlatformRuntime,
@@ -92,6 +107,10 @@ from intergrax.runtime.governance.control_plane_mutation_authorization import (
 from intergrax.runtime.governance.physical_delegation_governance import (
     AllowingPhysicalDelegationGovernance,
 )
+from intergrax.runtime.security.security_audit_trail import (
+    SecurityAuditSink,
+    SecurityAuditTrail,
+)
 from intergrax.runtime.task.active_task_registry import (
     ActiveTaskRegistryTaskScopeResolver,
 )
@@ -99,16 +118,133 @@ from intergrax.runtime.task.active_task_registry import (
 RequestT = TypeVar("RequestT")
 ResultT = TypeVar("ResultT")
 
+#: ``actor_id`` of the security audit entries written by the lifecycle evidence consumer.
+LIFECYCLE_EVIDENCE_ACTOR_ID = "agent_distribution.lifecycle"
+
+
+@dataclass(frozen=True, slots=True, kw_only=True)
+class ProductionPackageTrustComposition:
+    """Package trust sources the production admin factory composes (T-IGX-051-N Part B, EX-D1-02).
+
+    Every member is required and keyword-only; ``None`` for any member is a ``ValueError`` naming it.
+    ``is_lab`` has no default: a lab composition (``lab_package_trust_composition``) has an empty
+    revocation state and a policy that admits unsigned packages, and the strict startup refuses it. A
+    non-lab composition whose policy (``policy_source()``, evaluated once here) does not set
+    ``forbid_unsigned_or_unqualified`` is refused.
+
+    Limit: the strength of ``attestation_verifier`` cannot be checked from the outside. A verifier
+    without keys fails every attestation item (unknown key), so under a non-lab policy it refuses
+    rather than admits.
+    """
+
+    attestation_verifier: AgentPackageAttestationVerifier
+    revocation_state_source: Callable[[], AgentPackageTrustRevocationState]
+    policy_source: Callable[[], AgentPackageTrustPolicy]
+    evaluation_time_source: Callable[[], datetime]
+    lifecycle_evidence_trail: SecurityAuditSink
+    is_lab: bool
+
+    def __post_init__(self) -> None:
+        presence: tuple[tuple[str, bool], ...] = (
+            ("attestation_verifier", self.attestation_verifier is not None),
+            ("revocation_state_source", self.revocation_state_source is not None),
+            ("policy_source", self.policy_source is not None),
+            ("evaluation_time_source", self.evaluation_time_source is not None),
+            ("lifecycle_evidence_trail", self.lifecycle_evidence_trail is not None),
+            ("is_lab", self.is_lab is not None),
+        )
+        for name, present in presence:
+            if not present:
+                raise ValueError(f"package_trust composition requires {name}")
+        if self.is_lab:
+            return
+        policy = self.policy_source()
+        if not policy.forbid_unsigned_or_unqualified:
+            raise ValueError(
+                "a non-lab package_trust composition requires a policy with forbid_unsigned_or_unqualified"
+            )
+
+
+def _empty_revocation_state() -> AgentPackageTrustRevocationState:
+    return AgentPackageTrustRevocationState()
+
+
+def _lab_trust_policy() -> AgentPackageTrustPolicy:
+    return AgentPackageTrustPolicy(forbid_unsigned_or_unqualified=False)
+
+
+def _system_clock() -> datetime:
+    return datetime.now(UTC)
+
+
+def lab_package_trust_composition() -> ProductionPackageTrustComposition:
+    """Lab and test trust composition: keyless verifier, empty revocation state, unsigned admitted.
+
+    The policy's ``forbid_unsigned_or_unqualified=False`` is read only by the install/upgrade
+    attestation step; the trail is the in-memory ``SecurityAuditTrail``. Never a strict root.
+    """
+    return ProductionPackageTrustComposition(
+        attestation_verifier=Ed25519PackageAttestationVerifier(),
+        revocation_state_source=_empty_revocation_state,
+        policy_source=_lab_trust_policy,
+        evaluation_time_source=_system_clock,
+        lifecycle_evidence_trail=SecurityAuditTrail(),
+        is_lab=True,
+    )
+
+
+class _LifecycleEvidenceSink:
+    """Production consumer of the admin lifecycle events (T-IGX-051-N Part B, PDC-D1-R017).
+
+    Writes one security audit entry per event to the trail of the tenant that owns the event's
+    application environment. The admin service adds ``application_id`` and
+    ``application_environment_id`` to every event it passes here; an event without them cannot be
+    attributed to a tenant and is refused (``ValueError``; the admin service surfaces it under its
+    sink failure contract).
+    """
+
+    def __init__(
+        self,
+        trail: SecurityAuditSink,
+        environment_tenant_resolver: ApplicationEnvironmentTenantResolver,
+    ) -> None:
+        self._trail = trail
+        self._environment_tenant_resolver = environment_tenant_resolver
+
+    def record_events(self, events: tuple[AgentDistributionEvent, ...]) -> None:
+        for event in events:
+            application_id = event.attributes.get("application_id", "")
+            application_environment_id = event.attributes.get("application_environment_id", "")
+            if not application_id or not application_environment_id:
+                raise ValueError("lifecycle event lacks its application environment; no owning tenant")
+            owner = self._environment_tenant_resolver.resolve_tenant_id(
+                application_id=application_id,
+                application_environment_id=application_environment_id,
+            )
+            self._trail.append(
+                tenant_id=owner,
+                action=event.event_type,
+                actor_id=LIFECYCLE_EVIDENCE_ACTOR_ID,
+                resource="installation:" + event.aggregate_id,
+                metadata=dict(event.attributes),
+            )
+
 
 @dataclass(frozen=True, slots=True)
 class ProductionAgentPlatformAdminConfig:
-    """Explicit admin dependencies for one reference production process."""
+    """Explicit admin dependencies for one reference production process.
+
+    ``package_trust`` is required (T-IGX-051-N Part B): the factory composes the trust coordinator,
+    the attestation enforcement, the revocation, policy and time sources and the lifecycle evidence
+    consumer from it.
+    """
 
     metadata_provider: AgentProjectMetadataProvider
     materialization_service: RuntimeMaterializationService
     dependency_resolver: DependencyResolver
     mutation_authorization_boundary: ControlPlaneMutationAuthorizationBoundary
     environment_tenant_resolver: ApplicationEnvironmentTenantResolver
+    package_trust: ProductionPackageTrustComposition
     graph_builder: CandidateRuntimeGraphBuilder | None = None
     catalog_provider: CatalogSourceProvider | None = None
 
@@ -185,7 +321,11 @@ def build_production_agent_platform_admin_service(
     admin_config: ProductionAgentPlatformAdminConfig,
     durable_store_bundle: SqliteAgentDistributionStoreBundle | None = None,
 ) -> AgentPlatformAdminService:
-    """Construct one admin facade over the canonical process store universe."""
+    """Construct one admin facade over the canonical process store universe.
+
+    The trust sources, the attestation enforcement and the lifecycle evidence consumer always come
+    from ``admin_config.package_trust``.
+    """
     state = agent_platform_runtime.distribution_state
     stores = agent_platform_runtime.stores
     if durable_store_bundle is not None:
@@ -200,6 +340,11 @@ def build_production_agent_platform_admin_service(
     binding_service = BindingService(binding_store, installation_service)
     graph_builder = admin_config.graph_builder or CandidateRuntimeGraphBuilder(
         admin_config.metadata_provider,
+    )
+    trust = admin_config.package_trust
+    evidence_sink = _LifecycleEvidenceSink(
+        trust.lifecycle_evidence_trail,
+        admin_config.environment_tenant_resolver,
     )
     return AgentPlatformAdminService(
         installation_store=installation_store,
@@ -225,6 +370,16 @@ def build_production_agent_platform_admin_service(
         dependency_resolver=admin_config.dependency_resolver,
         mutation_authorization_boundary=admin_config.mutation_authorization_boundary,
         environment_tenant_resolver=admin_config.environment_tenant_resolver,
+        package_trust_coordinator=AgentPackageTrustCoordinator(
+            attestation_verifier=trust.attestation_verifier,
+        ),
+        package_trust_revocation_state_source=trust.revocation_state_source,
+        package_trust_policy_source=trust.policy_source,
+        package_trust_evaluation_time_source=trust.evaluation_time_source,
+        package_attestation_enforcement=PackageAttestationEnforcement(
+            verifier=trust.attestation_verifier,
+        ),
+        lifecycle_event_sink=evidence_sink.record_events,
     )
 
 
@@ -338,8 +493,11 @@ __all__ = [
     "AgentCapabilityApplicationComposition",
     "DelegatedSubtaskServiceFactory",
     "ProductionAgentCapabilityRuntime",
+    "LIFECYCLE_EVIDENCE_ACTOR_ID",
     "ProductionAgentPlatformAdminConfig",
+    "ProductionPackageTrustComposition",
     "build_delegated_subtask_service_factory",
     "build_production_agent_capability_runtime",
     "build_production_agent_platform_admin_service",
+    "lab_package_trust_composition",
 ]

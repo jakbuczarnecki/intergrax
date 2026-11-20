@@ -295,6 +295,7 @@ def test_cx_r3_p0_mechanical_persistence_discovery_classified() -> None:
                 RuntimeEventCallSiteClassificationEvidence.SECURITY_AUDIT_TRAIL_WIRING_MULTI_REGION,
                 RuntimeEventCallSiteClassificationEvidence.SECURITY_AUDIT_TRAIL_INNER_PRIMARY_DELEGATE,
                 RuntimeEventCallSiteClassificationEvidence.PLATFORM_RUNTIME_EVENT_HISTORY_BUFFER,
+                RuntimeEventCallSiteClassificationEvidence.AGENT_DISTRIBUTION_LIFECYCLE_EVIDENCE_SINK,
             }
 
 

@@ -285,7 +285,7 @@ def _upgrade(stack: _FactoryStack, release: h.Release, record: AgentInstallation
 
 def _untyped_replace(value: object, **changes: object) -> object:
     """``dataclasses.replace`` without static checking, to pass the ``None`` a caller could pass."""
-    replace: Callable[..., object] = dataclasses.replace
+    replace = cast("Callable[..., object]", dataclasses.replace)
     return replace(value, **changes)
 
 
@@ -387,8 +387,8 @@ def test_sup_02a_factory_requires_trust_composition() -> None:
 
     complete = _non_lab_trust(_throwaway_signer())
     # called through untyped handles on purpose: these calls omit a required input or pass None
-    build_config: Callable[..., object] = ProductionAgentPlatformAdminConfig
-    build_trust: Callable[..., object] = ProductionPackageTrustComposition
+    build_config = cast("Callable[..., object]", ProductionAgentPlatformAdminConfig)
+    build_trust = cast("Callable[..., object]", ProductionPackageTrustComposition)
     no_trust = _capture(
         lambda: build_config(
             metadata_provider=AgentProjectMetadataTestProvider({}),

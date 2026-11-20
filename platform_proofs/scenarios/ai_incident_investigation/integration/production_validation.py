@@ -63,6 +63,7 @@ from intergrax.applications._shared.production_agent_capability_runtime import (
     AgentCapabilityApplicationComposition,
     ProductionAgentPlatformAdminConfig,
     build_production_agent_capability_runtime,
+    lab_package_trust_composition,
 )
 from intergrax.applications._shared.production_delegated_subtask_plans import (
     ProductionDelegatedSubtaskPlanConfig,
@@ -335,6 +336,7 @@ def _build_application_composition(
             environment_tenant_resolver=StaticApplicationEnvironmentTenantResolver(
                 "tenant-test",
             ),
+            package_trust=lab_package_trust_composition(),
             catalog_provider=catalog_provider,
         ),
         delegated_plan_config=ProductionDelegatedSubtaskPlanConfig(

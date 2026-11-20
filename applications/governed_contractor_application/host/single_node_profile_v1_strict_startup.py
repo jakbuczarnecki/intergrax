@@ -53,7 +53,13 @@ def open_gca_strict_production_serving_session_from_single_node_production_profi
     """
     Load profile v1 from environment, admit CONFIGURED invariants + cross-process writer lock,
     then open the sanctioned GCA strict production serving session.
+
+    A given ``application_composition`` built with a lab package-trust composition
+    (``admin_config.package_trust.is_lab``) is refused before the profile is loaded (T-IGX-051-N
+    Part B); ``None`` (the shipped path) stays accepted.
     """
+    if application_composition is not None and application_composition.admin_config.package_trust.is_lab:
+        raise ValueError("strict production startup refuses a lab package_trust composition")
     config, storage, writer_hold = load_validate_and_admit_single_node_production_profile_v1_from_env(
         env=env,
         acquire_cross_process_writer=True,
