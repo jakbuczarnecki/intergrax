@@ -17,5 +17,28 @@
       "Read(./.env.local)",
       "Read(./.env.production)"
     ]
+  },
+  "skillOverrides": {
+    "sfx-blueprint": "user-invocable-only",
+    "sfx-discover": "user-invocable-only",
+    "sfx-integration-setup": "user-invocable-only",
+    "sfx-present": "user-invocable-only",
+    "sfx-resolve": "user-invocable-only",
+    "sfx-session": "user-invocable-only",
+    "sfx-specify": "user-invocable-only",
+    "sfx-test-plan": "user-invocable-only",
+    "intergrax-scenario-factory": "name-only",
+    "intergrax-independent-audit": "name-only",
+    "intergrax-agent-roles": "name-only",
+    "intergrax-micro-implement": "name-only",
+    "intergrax-hep-step": "name-only",
+    "intergrax-ci-hotfix": "name-only",
+    "intergrax-iteration": "name-only",
+    "intergrax-env-vendor-qualification": "name-only",
+    "igx-devos-github-pr-workflow": "name-only",
+    "igx-devos-ticket-scaffold": "name-only",
+    "igx-devos-role-architect": "name-only",
+    "igx-devos-qc-orchestrator": "name-only",
+    "igx-devos-parallel-orchestration": "name-only"
   }
 }
