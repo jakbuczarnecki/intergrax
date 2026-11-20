@@ -54,7 +54,6 @@ def _complete_context_manager() -> ContextManager:
 def _strict_loop(**overrides: Any) -> NexusLoop:
     """STRICT loop whose every other composition requirement is satisfied."""
     kwargs: dict[str, Any] = {
-        "production_mode": True,
         "retry_policy": RetryPolicy(max_retries=0),
         "max_run_retries": 0,
         "disable_execution_continuation": True,
@@ -63,7 +62,7 @@ def _strict_loop(**overrides: Any) -> NexusLoop:
         "task_memory_store": InMemoryTaskMemoryStore(),
     }
     kwargs.update(overrides)
-    return NexusLoop(AgentRegistry(), **kwargs)
+    return NexusLoop(AgentRegistry(), production_mode=True, **kwargs)
 
 
 def test_strict_loop_refuses_missing_human_decision_store() -> None:

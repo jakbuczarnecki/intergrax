@@ -14,13 +14,12 @@ from intergrax.contracts.agent_lifecycle_state import AgentLifecycleState
 from intergrax.contracts.agent_run import AgentRunRequest, AgentRunResult
 from intergrax.contracts.capability import CapabilityMatchResult
 from intergrax.contracts.task_envelope import TaskEnvelope
-from intergrax.runtime.execution.host_task import HostTaskExecution
+from intergrax.runtime.nexus.agent_router import AgentRoutingError
 from intergrax.runtime.nexus.context.context_manager import ContextManager
 from intergrax.runtime.nexus.nexus_loop import NexusLoop
 from intergrax.runtime.nexus.retry.retry_engine import RetryPolicy
 from intergrax.runtime.registry.agent_assembly_resolver import AgentAssemblyError
 from intergrax.runtime.registry.agent_registry import AgentRegistry
-from intergrax.runtime.task.task import Task, TaskResult, TaskState
 from testing_support.builder import build_task_for_tests, canonical_governed_execution_scope
 from testing_support.nexus_host_task_execution import (
     build_certified_internal_test_host_task_execution,
@@ -75,26 +74,20 @@ def _production_loop(registry: AgentRegistry) -> NexusLoop:
     )
 
 
-async def _execute_without_agent_id(execution: HostTaskExecution, seed: str) -> TaskResult | None:
-    """Run a task with an empty ``agent_id``; a refusal is either an exception or a FAILED result."""
-    task: Task = build_task_for_tests(seed=seed, message="route me")
-    assert not task.agent_id
-    with canonical_governed_execution_scope(seed):
-        try:
-            return await execution.execute(task)
-        except Exception:
-            return None
+def test_host_task_rejects_non_production_state_agent_in_production_loop() -> None:
+    """NT-FC1-01: the host task router enforces the production lifecycle states.
 
-
-@pytest.mark.asyncio
-async def test_host_task_rejects_non_production_state_agent_in_production_loop() -> None:
-    """NT-FC1-01."""
+    At the train base the host execution built a second router without ``production_mode``, so an
+    agent in lifecycle ``development`` was routed on the canonical host path.
+    """
     registry = AgentRegistry()
     agent = _CountingAgent(_contract(lifecycle_state=AgentLifecycleState.DEVELOPMENT))
     registry.register(agent)
     execution = build_certified_internal_test_host_task_execution(_production_loop(registry))
-    result = await _execute_without_agent_id(execution, "fc1-nt01")
-    assert result is None or result.state is not TaskState.COMPLETED
+    task = build_task_for_tests(seed="fc1-nt01", message="route me")
+    assert not task.agent_id
+    with canonical_governed_execution_scope("fc1-nt01"), pytest.raises(AgentRoutingError):
+        execution._agent_router.route(task)  # noqa: SLF001
     assert agent.runs == 0
 
 
