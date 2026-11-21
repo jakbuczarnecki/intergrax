@@ -1,6 +1,6 @@
 ﻿# ARCH-FREEZE continuation checkpoint (development train)
 
-**Updated:** 2026-11-21 (MEP W4/W5/W6/W7 prep; worktrees `af-dev-mep-w4`..`w7`)  
+**Updated:** 2026-11-21 (MEP W4–W7 prep; worktrees `af-dev-mep-w4`..`w7`)  
 **Base branch:** `development` @ `d043a21c67cb57475a4f36a2baff7020718ec7cb` (`d043a21c6`)  
 **Arch-freeze train reference:** `origin/arch-freeze/rw-train` @ `dbaebfa8cd13a6ba8bfa6eef2cdf581216ddb3d2` — PR **#699** **MERGED** (slice do `1cec68222`)
 
@@ -35,10 +35,10 @@ Merge przy czerwonych checkach — zapisany stan; **nie** spełnia OD-AF-AUTO-01
 | G3 | `af-dev-rw-trust` | `af-dev-rw-trust` | T-IGX-051-C | §7 `NT-TRUST-01`..`06` green; FC-3 bundle replay @ `e61e5136a` | **merged** fala 5 |
 | G4 (RC-1) | `af-dev-rc1-docs` | `af-dev-rc1-docs` | ticket-less docs | RC-1 open items + RC-2/3 prep sync | **merged this wave** |
 | G4 (RC-3 prep) | `af-dev-fala6-close` | `af-dev-fala6-close` | ticket-less docs | RC-3 entry prep dossier + gap + G2 draft (TOR C fala 6) | **DONE** fala 6 |
-| G4 (RC-3 exit prep) | `af-dev-mep-w4` | `af-dev-mep-w4` | ticket-less docs | W4 Q02/Q03/FCS/S04 exit prep checklist + G2/RC3 refresh | **IN PROGRESS** W4 |
+| G4 (RC-3 exit prep) | `af-dev-mep-w4` | `af-dev-mep-w4` | ticket-less docs | W4 Q02/Q03/FCS/S04 exit prep checklist + G2/RC3 refresh | **DONE** prep (on `origin`) |
 | G5 | `af-dev-043m` | `af-dev-043m` | T-IGX-043-M | Slices 1–3 + fala 5 close **9 passed**; Part E manifest **BLOCKED** | in_progress |
 | G6 (MEP W5 prep) | `af-dev-mep-w5` | `af-dev-mep-w5` | ticket-less docs | W5 pre-pin dossier + PT-* prep | **DONE** prep |
-| G7 (MEP W6 prep) | `af-dev-mep-w6` | `af-dev-mep-w6` | T-IGX-052-F/G/H | Campaign + requal + M3 prep checklists | **DONE** prep @ merge |
+| G7 (MEP W6 prep) | `af-dev-mep-w6` | `af-dev-mep-w6` | T-IGX-052-F/G/H | Campaign + requal + M3 prep checklists | **DONE** prep @ `156bd6b40` |
 | G8 (MEP W7 prep) | `af-dev-mep-w7` | `af-dev-mep-w7` | ticket-less docs | PT-Q13 / PT-VBN / ENTRY / DS-ADM prep | **DONE** prep |
 
 ## RW-PLAN-AUDIT (`T-AF2-RW-PLAN-AUDIT`)
@@ -64,7 +64,7 @@ Deliverables: `RC3_PREP_DOSSIER.md`, `G2_CHECKLIST_DRAFT.md`, `TRAIN_DEV_GAP.md`
 
 ## G4 — RC-3 exit prep (MEP W4)
 
-Deliverables: `RC3_EXIT_PREP_CHECKLIST.md`; odświeżenie `G2_CHECKLIST_DRAFT.md` i `RC3_PREP_DOSSIER.md` (PT-Q02, PT-Q03, FCS, PT-S04 — prep only). Pin dokumentacyjny: `d043a21c6`. **Nie** G2 PASS, **nie** Q02/FCS/S04 signoff.
+Deliverables: `RC3_EXIT_PREP_CHECKLIST.md`; odświeżenie `G2_CHECKLIST_DRAFT.md` i `RC3_PREP_DOSSIER.md` (PT-Q02, PT-Q03, FCS, PT-S04 — prep only). Pin dokumentacyjny: `ad9094036`. **Nie** G2 PASS, **nie** Q02/FCS/S04 signoff.
 
 ## G5 — W5 pre-pin prep (MEP W5)
 
@@ -72,7 +72,7 @@ Worktree `af-dev-mep-w5` @ `d043a21c6`. Deliverables: [`W5_PREP_DOSSIER.md`](W5_
 
 ## G7 — W6 prep (MEP requal / campaigns / M3 entry)
 
-Deliverables: [`W6_PREP_DOSSIER.md`](W6_PREP_DOSSIER.md), [`W6_CAMPAIGN_PREP_CHECKLIST.md`](W6_CAMPAIGN_PREP_CHECKLIST.md), [`W6_REQUAL_PREP_CHECKLIST.md`](W6_REQUAL_PREP_CHECKLIST.md), [`M3_PREP_CHECKLIST.md`](M3_PREP_CHECKLIST.md); ticket scaffolds `T-IGX-052-F`..`H`. **Nie** M3 pin, **nie** kampanie wykonane.
+Deliverables: [`W6_PREP_DOSSIER.md`](W6_PREP_DOSSIER.md), [`W6_CAMPAIGN_PREP_CHECKLIST.md`](W6_CAMPAIGN_PREP_CHECKLIST.md), [`W6_REQUAL_PREP_CHECKLIST.md`](W6_REQUAL_PREP_CHECKLIST.md), [`M3_PREP_CHECKLIST.md`](M3_PREP_CHECKLIST.md); ticket scaffolds `T-IGX-052-F`..`H`. Dokumentacja prep MEP W6: **DONE** @ `156bd6b40`. **Nie** M3 pin, **nie** kampanie wykonane.
 
 ## G8 — MEP W7 freeze prep (PT-Q13 / VBN / ENTRY / DS-ADM)
 
