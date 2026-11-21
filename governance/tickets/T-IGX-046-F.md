@@ -218,7 +218,8 @@ Operator decision **`waiver_both`** @ **2026-11-21** (coordinator chat): retroac
 | Workstreams | WB01, WB06, WB07, WB10, WB11 @ TRAIN_PIN (`uv sync --all-extras` on `eqo-w3`) |
 | Deliverables | `EQO_WAVE10_MANIFEST.md`, `runs/wbNN/RUN_MANIFEST.json`, `pytest_wbNN_exe.log` |
 | EXE | WB01 `1`; WB06 `0`; WB07/10/11 `1` |
-| PR | _(pending — docs gates `ticket-governance` + `governance-policy-pin`)_ |
+| PR | [#708](https://github.com/jakbuczarnecki/intergrax/pull/708) merged 2026-11-21T09:13:04Z; [#709](https://github.com/jakbuczarnecki/intergrax/pull/709) merged 2026-11-21T09:20:17Z |
+| Merge commit | 8a401496dc3cca7080b9d25fd720e4537beab4c7 (#708); 1cf91738f82602a7a946eb880a7148d2983291e5 (#709) |
 
 ## Lifecycle state
 
