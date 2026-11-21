@@ -28,4 +28,16 @@
 
 **Formal record:** `C04_BLOCKED_RECORD.md` (wave-11).
 
+## Wave-13 doc cross-ref (`EQO-C-04`)
+
+**Land:** `ad9094036` · lane `eqo/wave-13/c04` · **no pytest re-run.**
+
+| Cross-ref | Note |
+|-----------|------|
+| `C04_BLOCKED_RECORD.md` | Authoritative `BLOCKED` disposition; exit `1` on `c04_targeted_replay.log` |
+| `C04_RUN_MANIFEST.json` | Wave-3 execute custody |
+| Matrix C04 | Stays `PARTIALLY_MET` — replay attempted, non-zero exit |
+
+EQO records status only; does not assert green replay or campaign closure.
+
 **Ref:** `governance/tickets/T-IGX-046-F.md`
