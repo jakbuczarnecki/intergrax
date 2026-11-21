@@ -26,7 +26,7 @@
 | PT-FC1 | 043-A | plan_approved | Review #680 / digest — nie nowa implementacja | **STOP** |
 | PT-FC3 | 043-C | plan_approved | Product po FC-2 posture + green gate discipline | **STOP** |
 | PT-WD | 043-I (+043-M) | 043-I train; 043-M in_progress | 043-M Part E **BLOCKED** (RW-PLAN) | **STOP** |
-| PT-WF | 043-J | plan_approved / partial | G-09 done off-pin; E2–E4 **BLOCKED** B-1 | **STOP** |
+| PT-WF | 043-J | plan_approved / partial | G-09 done; E2–E4 anchors documented @ `e69e1ff58` (plan §9); product **BLOCKED** B-1 | **CONTINUE** (docs only) |
 | PT-WF follow-on | **043-N** | **plan_pending** (hardened R1) | Po merge FC-1 authority (#680); plan digest recorded | **STOP** |
 | PT-E05 | 044-F | MERGED_TRAIN | IIAC requal @ Q02 | **STOP** |
 | T-AF2-RW-TRUST | 051-C | implementing / merged off-pin | Trust slice merged fala 5 @ ref `e61e5136a` | **STOP** |

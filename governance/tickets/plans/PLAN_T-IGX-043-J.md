@@ -1,6 +1,6 @@
 # PLAN T-IGX-043-J — PT-WF scaffold (ARCH-FREEZE development tor)
 
-Status: **plan §7 filled (autonomy fala 3, 2026-11-21)**; **§8 fala B2 (2026-11-21)** records E2–E4 noop and harness re-qualification on `af-dev-pt-wf`. Product slices after G-09 may proceed per **OD-AF-AUTO-03**; E2–E4 remain BLOCKED on Campaign B-1. Canonical wave: `WP12_TICKETS_DRAFT.md` row PT-WF; **AR-44**.
+Status: **plan §7 filled (autonomy fala 3, 2026-11-21)**; **§8 fala B2 (2026-11-21)** records E2–E4 noop and harness re-qualification on `af-dev-pt-wf`; **§9 wf-exec (2026-11-21)** documents provisional E2–E4 pytest anchors @ `e69e1ff58` (no product slice). E2–E4 product remains BLOCKED on Campaign B-1. Canonical wave: `WP12_TICKETS_DRAFT.md` row PT-WF; **AR-44**.
 
 ## 1. Purpose
 
@@ -111,3 +111,22 @@ Fala 5 close re-run @ `e61e5136a` on `af-dev-fala5-close` (development tor pin; 
 | E4 | Campaign B-1, MEP §F E4; F-D5-07 | Fill `NT-WF-NEG-E4-01` node id in §7.1 after B-1 |
 
 Cross-ref: `PLAN_T-IGX-043-C` §2 (`SCOPE` includes Campaign B-1/B-2); `PLAN_T-IGX-041-E` (F-D5-07). Owner-repair batch (`tests/unit/applications/test_wf_fail_closed.py`) not started.
+
+## 9. wf-exec continuation (operator UNBLOCK @ `e69e1ff58`, 2026-11-21)
+
+Branch `af-dev-wf-exec` from pin `e69e1ff58` (`ci-smoke` G-09 centralization). **No** product edit on §3 paths E2–E4; Campaign B-1 still gates implementation (§8.2 unchanged).
+
+### 9.1 Documented provisional pytest anchors (not plan closure)
+
+| Node id | Proposed pytest node id @ `e69e1ff58` | Slice |
+|---------|---------------------------------------|-------|
+| NT-WF-NEG-E2-01 | *(negative TBD post B-1)*; anchor `tests/unit/runtime/execution/test_execution_runtime.py::test_inference_root_runtime_binds_identity_authority_budget` | E2 (**BLOCKED**) |
+| NT-WF-NEG-E3-01 | `tests/unit/compat/langchain/test_documents.py::test_from_langchain_rejects_missing_tenant` | E3 (**BLOCKED**) |
+| NT-WF-NEG-E4-01 | `tests/unit/experiments/test_experiment_workflow.py::test_experiment_session_echo_workflow` | E4 (**BLOCKED**) |
+
+SSOT continuation: `docs/project/maintainers/qualification/arch_freeze_program/continuation/WF_E2_E4_STATUS.md`.
+
+### 9.2 Verification (this wave)
+
+- Harness §7.4 command 1: **skipped** — no harness / evaluation_wiring file change (operator: no full 12 unless product touch).
+- Before merge: `uv run python -m scripts.governance.igx_gov ticket` with `Ref: governance/tickets/T-IGX-043-J.md`.
