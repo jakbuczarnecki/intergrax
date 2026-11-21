@@ -37,10 +37,17 @@ All qualification commits carry: `Ref: governance/tickets/T-IGX-046-F.md` (ticke
 | 17 | W3-WB10 pytest EXE→DIS | `4f3e4a7fa170e51a473202202fb7ed4c358e35a6` |
 | 18 | W3-WB11 pytest EXE→DIS | `679c793a9c7b1dff0a7086665f8e50f347e3ef4d` |
 | 19 | W3-WB12 pytest EXE→DIS | `850f6d5a04744845558288e032bdac2d348004f5` |
+| 20 | Wave-1 integration (PR #689) | `44b582a86` |
+| 21 | Wave-2 W4 tranches 05–07 | `eqo/wave-2/w4` lane |
+| 22 | Wave-2 X-01/X-06/X-08 reads | `eqo/wave-2/x` lane |
+| 23 | Wave-2 AUD prep + C-04 prep | `eqo/wave-2/dis` lane |
+| 24 | Wave-2 manifest (this index) | `eqo/wave-2/integ` |
 
 Index maintenance commits on this branch: `15bfc0851`, `3a92440ad` (SHA alignment only).
 
-Worktree evidence runs: `eqo_closure/runs/wb05/`, `runs/wb01/`, `runs/wb02/`. Campaign C memos: `c/A3-004/`, `c/A6-004/`.
+Wave manifests: `EQO_WAVE1_MANIFEST.md`, `EQO_WAVE2_MANIFEST.md`.
+
+Worktree evidence runs: `eqo_closure/runs/wb01`–`wb12/`. Campaign C memos: `c/A3-004/`, `c/A6-004/`; C-04 prep: `runs/c/C04_TARGETED_REPLAY_PREP.md`.
 
 ## Registry inventory (W0)
 

@@ -55,6 +55,22 @@ One process at a time, under the shared pytest lock; logs under `.tmp/session/db
 
 Edits of the roadmap, the freeze checklist, PDC-owned records, generated registers, `scripts/`, `tests/`, product paths, person assignments, row-level owner confirmation, FRZ promotion, Docker, vendor integration, production configuration.
 
+## Checkpoint — EQO wave-2 (2026-11-21)
+
+| Field | Value |
+|-------|-------|
+| Integrator branch | `eqo/wave-2/integ` |
+| Base | `origin/development` `84a7a76ec` |
+| Lanes merged | `eqo/wave-2/w4`, `eqo/wave-2/x`, `eqo/wave-2/dis` |
+| W4-02 | Tranches 05–07 (queue complete outside Campaign B) |
+| X | X-01 / X-06 / X-08 read memos under `eqo_closure/x/` |
+| AUD | Prep checklists only — session E deferred to wave-3 |
+| C-04 | DEFERRED (prep under `runs/c/`) |
+| #680 | Track-only (`pr680_governance_fast.md`) |
+| BLOCKED EXE | WB01,04,06,07,09,10,11 non-zero pytest (manifests retained) |
+
+Post-merge SHA: recorded on PR #690 comment.
+
 ## Lifecycle state
 
 plan_approved
