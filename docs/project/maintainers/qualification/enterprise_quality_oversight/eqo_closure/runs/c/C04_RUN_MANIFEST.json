@@ -11,5 +11,10 @@
   "log_path": "eqo_closure/runs/c/c04_targeted_replay.log",
   "status": "BLOCKED",
   "blockers": ["PYTEST_NON_ZERO_EXIT", "TRACE-X closed-world failures", "MCP P5 batch failure", "docs slice failures on TRAIN_PIN"],
-  "next_action": "Product/train fix or narrow replay slice; no register promotion in wave-3"
+  "next_action": "Product/train fix or narrow replay slice; no register promotion in wave-3",
+  "wave_7_status_refresh_utc": "2026-11-21T08:20:00Z",
+  "wave_7_status_doc": "eqo_closure/runs/c/C04_STATUS.md",
+  "pytest_failed_count": 47,
+  "pytest_passed_count": 395,
+  "wave_7_lane": "eqo/wave-7/c"
 }
