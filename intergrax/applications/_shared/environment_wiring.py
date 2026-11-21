@@ -151,7 +151,7 @@ from intergrax.runtime.workspace.manager import ShadowWorkspaceManager
 from intergrax.skills.execution_binding import InMemorySkillExecutionPinningStore
 from intergrax.tools.providers.websearch.executor_contract import WebSearchQueryExecutor
 from intergrax.tools.registry.runtime import ToolRegistry
-from intergrax.tools.registry.wiring import ToolWiringContext
+from intergrax.tools.registry.wiring import ListStorageAccessAuditSink, ToolWiringContext
 
 
 @dataclass(frozen=True)
@@ -449,6 +449,14 @@ def wire_application_environment(
     wiring_context = wire_session_storage_tool_binding(wiring_context, memory_wiring.session_storage)
     wiring_context = wire_scheduled_notification_tool_binding(wiring_context)
     wiring_context = _merge_integration_read_allowlist_roots(wiring_context, resolved_integration)
+
+    from dataclasses import replace
+
+    wiring_context = replace(
+        wiring_context,
+        tenant_id=normalized_tenant_id,
+        storage_audit_sink=ListStorageAccessAuditSink(),
+    )
 
     hosted_session = None
     if wiring_context.sandbox_session is None and resolved_integration is not None:

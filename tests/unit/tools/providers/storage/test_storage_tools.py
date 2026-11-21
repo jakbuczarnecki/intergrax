@@ -3,16 +3,25 @@
 from __future__ import annotations
 
 import base64
-from typing import Mapping, Optional
+from collections.abc import Mapping
 
 import pytest
-
-from intergrax.integrations.contracts.object_storage import ObjectStorage, StoredObject
+from intergrax.integrations.contracts.object_storage import StoredObject
 from intergrax.tools.providers.storage.contracts import StorageGetInput, StoragePutInput
 from intergrax.tools.providers.storage.service import storage_get, storage_put
-from intergrax.tools.registry.wiring import ToolWiringContext
+from intergrax.tools.registry.wiring import ListStorageAccessAuditSink, ToolWiringContext
 
 pytestmark = pytest.mark.unit
+
+_TENANT = "tenant-tools"
+
+
+def _storage_ctx(storage: InMemoryObjectStorage) -> ToolWiringContext:
+    return ToolWiringContext(
+        object_storage=storage,
+        tenant_id=_TENANT,
+        storage_audit_sink=ListStorageAccessAuditSink(),
+    )
 
 
 class InMemoryObjectStorage:
@@ -25,7 +34,7 @@ class InMemoryObjectStorage:
         body: bytes,
         *,
         content_type: str = "application/octet-stream",
-        metadata: Optional[Mapping[str, str]] = None,
+        metadata: Mapping[str, str] | None = None,
     ) -> None:
         self._objects[key] = StoredObject(
             key=key,
@@ -50,9 +59,10 @@ class InMemoryObjectStorage:
 
 def test_storage_put_and_get() -> None:
     storage = InMemoryObjectStorage()
-    ctx = ToolWiringContext(object_storage=storage)
+    ctx = _storage_ctx(storage)
     body = b"hello blob"
     storage_put(ctx, StoragePutInput(key="docs/a.txt", body_base64=base64.b64encode(body).decode("ascii")))
+    assert "tenants/tenant-tools/docs/a.txt" in storage._objects
     out = storage_get(ctx, StorageGetInput(key="docs/a.txt"))
     assert out.found is True
     assert base64.b64decode(out.body_base64) == body
@@ -60,4 +70,10 @@ def test_storage_put_and_get() -> None:
 
 def test_storage_not_configured() -> None:
     with pytest.raises(RuntimeError, match="object_storage_not_configured"):
-        storage_get(ToolWiringContext(), StorageGetInput(key="missing"))
+        storage_get(
+            ToolWiringContext(
+                tenant_id=_TENANT,
+                storage_audit_sink=ListStorageAccessAuditSink(),
+            ),
+            StorageGetInput(key="missing"),
+        )
