@@ -450,14 +450,13 @@ def wire_application_environment(
     wiring_context = wire_scheduled_notification_tool_binding(wiring_context)
     wiring_context = _merge_integration_read_allowlist_roots(wiring_context, resolved_integration)
 
-    if wiring_context.object_storage is not None:
-        from dataclasses import replace as _replace
+    from dataclasses import replace
 
-        wiring_context = _replace(
-            wiring_context,
-            tenant_id=normalized_tenant_id,
-            storage_audit_sink=ListStorageAccessAuditSink(),
-        )
+    wiring_context = replace(
+        wiring_context,
+        tenant_id=normalized_tenant_id,
+        storage_audit_sink=ListStorageAccessAuditSink(),
+    )
 
     hosted_session = None
     if wiring_context.sandbox_session is None and resolved_integration is not None:
