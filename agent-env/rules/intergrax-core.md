@@ -51,4 +51,8 @@ loading: always
 - Sub-agents end with `DONE: <line>` or `BLOCKED: <type>: <what, options, recommendation>`; the parent decides alone when plan, ADR, rules or code answer it (`/igx-autonomy`).
 - Plan finished: print `PLAN COMPLETE` and a short summary. `/igx-run-plan <file>` enforces this with a Stop hook.
 <!-- igx:authority end -->
+
+## Cursor orchestration
+
+- In Cursor: parent and every `Task` / subagent use **Composer only** (`composer-2.5`, `composer-2.5-fast`, or inherit). Never pass Task `model` with Claude, GPT, Gemini, Grok, or other non-Composer slugs unless the Operator overrides in chat.
 <!-- igx:active:end -->
