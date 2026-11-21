@@ -1,7 +1,7 @@
 {
   "schema": "eqo.development_replay.v1",
   "updated_at": "2026-11-21T18:30:00+00:00",
-  "development_pin": "a922e9e18103dc361153f4454c760174de93d835",
+  "development_pin": "dbaa771ac2e58391dfb0c7c3f4d241b031302b7c",
   "train_evidence_pin": "8e146e21cd8c63a47d621edc05d5f0036ba0c9ee",
   "train_not_ancestor_of_development": false,
   "summary_counts": {
