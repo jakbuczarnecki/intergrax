@@ -55,7 +55,7 @@ Repro (wave-4): `git merge-base --is-ancestor <merge_sha> 28c27cb896d02e0185b9fa
 
 | Item | Status (wave-4) | Status (wave-8) | Status (wave-12) |
 |------|-----------------|-----------------|------------------|
-| PR #680 / T-IGX-043-A | Still **not** ancestor of `TRAIN_PIN`; draft branch `af2/pt-fc1` | **Unchanged** — `git merge-base --is-ancestor` negative @ 2026-11-21 | **Unchanged** — negative ancestor check @ land `292ca3348` (PR #704) |
+| PR #680 / T-IGX-043-A | Still **not** ancestor of `TRAIN_PIN` `28c27cb`; draft branch `af2/pt-fc1` | **Unchanged** @ pin `28c27cb` | Merge `65ef1f196` **is** ancestor of rw-train @ `8e146e21` via `dbaebfa8`; **not** on `development` @ `a0598ba3` |
 | `governance-fast` class | KR-08 / W0-03 | Track-only memo | **Track-only** — `pr680_governance_fast.md`; no merge / waiver |
 | C16 matrix | `#680 open` — no waiver, no merge claim | **Unchanged** — no merge claim | **Unchanged** |
 | New ticket | **None** (operator band D out of EQO write set) | **None** | **None** |
@@ -80,7 +80,7 @@ Repro (wave-8 W2-02): `git cat-file -e 28c27cb896d02e0185b9fa02047411fa152f6469:
 
 | Task | Read focus | Wave-12 disposition |
 |------|------------|---------------------|
-| #680 | `git merge-base --is-ancestor` for PR #680 merge / `af2/pt-fc1` tip vs `TRAIN_PIN` | **Still not on train** — track-only; C16 unchanged |
+| #680 | `git merge-base --is-ancestor 65ef1f196 8e146e21cd8c63a47d621edc05d5f0036ba0c9ee` (neg vs `development` @ `a0598ba3`) | On rw-train @ `8e146e21`; not on `development`; C16 `NOT_VERIFIED` — green replay missing |
 | W2-02 | Post wave-6: `EQO_WAVE6_MANIFEST.md` WB09 EXE exit `0` @ pin | **WB09 SDK slice replayed**; W2-02 tier-boundary import gates (`043-G`/`043-H`) remain **`MERGED_GATE_PENDING`** |
 | W2-02 queue | `runs/wb05/AUD_SESSION_E.md` **BLOCKED**; `x/A4-003/A4_GATE_COUNTER_READ.md` | No promotion; gate replay not closed |
 | W2-02 evidence | Docs-only; no pytest in this lane | No PASS / closure claim |
@@ -91,6 +91,6 @@ Repro (wave-12 #680): `git merge-base --is-ancestor $(git rev-parse af2/pt-fc1) 
 
 ## EQO disposition
 
-- **Train integration:** fourteen merge commits (#642–#677, #679) are ancestors of `TRAIN_PIN`; **#680 is not**.
+- **Train integration @ rw-train `8e146e21`:** #642–#680 (incl. merge `65ef1f196` via `dbaebfa8`) are ancestors; **#680 is not** on `development` @ `a0598ba3`.
 - **Closure:** W2 does not certify findings; it establishes merge presence vs `EQO-W3` replay and `EQO-X` blockers (A4-003/A4-004 gate replay per W2-02).
 - **Exact blockers carried forward:** #680 open; record-2 items not merged; Operator band G items W2-13.

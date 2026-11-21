@@ -1,0 +1,393 @@
+{
+  "schema": "eqo.doc_package_index.v1",
+  "generated_at": "2026-11-21T12:28:44+00:00",
+  "source_artifact": "EQO_REMAINING_OBLIGATION_VIEW.json",
+  "closure_path": "DOCUMENTATION_CORRECTION_REQUIRED",
+  "total_count": 167,
+  "owner_count": 36,
+  "owners": [
+    {
+      "owner_ref": null,
+      "count": 7,
+      "obligation_ids": [
+        "EDER-D-0009",
+        "EDER-D-0010",
+        "EDER-D-0019",
+        "EDER-F-0183",
+        "EDER-F-0232",
+        "EDER-F-0235",
+        "EDER-F-0239"
+      ]
+    },
+    {
+      "owner_ref": "ARCH-FREEZE",
+      "count": 20,
+      "obligation_ids": [
+        "EDER-F-0018",
+        "EDER-F-0029",
+        "EDER-F-0037",
+        "EDER-F-0044",
+        "EDER-F-0045",
+        "EDER-F-0051",
+        "EDER-F-0061",
+        "EDER-F-0081",
+        "EDER-F-0082",
+        "EDER-F-0085",
+        "EDER-F-0086",
+        "EDER-F-0089",
+        "EDER-F-0100",
+        "EDER-F-0108",
+        "EDER-F-0109",
+        "EDER-F-0137",
+        "EDER-F-0142",
+        "EDER-F-0150",
+        "EDER-F-0164",
+        "EDER-F-0181"
+      ]
+    },
+    {
+      "owner_ref": "COMPAT-X",
+      "count": 1,
+      "obligation_ids": [
+        "EDER-F-0227"
+      ]
+    },
+    {
+      "owner_ref": "CTRL-X",
+      "count": 1,
+      "obligation_ids": [
+        "EDER-F-0104"
+      ]
+    },
+    {
+      "owner_ref": "DOMAIN:AGENT-CONTRACTS",
+      "count": 1,
+      "obligation_ids": [
+        "EDER-F-0123"
+      ]
+    },
+    {
+      "owner_ref": "DOMAIN:AW-7C-INTEGRATIONS",
+      "count": 2,
+      "obligation_ids": [
+        "EDER-F-0031",
+        "EDER-F-0040"
+      ]
+    },
+    {
+      "owner_ref": "DOMAIN:GOVERNANCE",
+      "count": 2,
+      "obligation_ids": [
+        "EDER-F-0032",
+        "EDER-F-0119"
+      ]
+    },
+    {
+      "owner_ref": "DOMAIN:INTEGRATIONS",
+      "count": 1,
+      "obligation_ids": [
+        "EDER-F-0042"
+      ]
+    },
+    {
+      "owner_ref": "DOMAIN:MEMORY",
+      "count": 1,
+      "obligation_ids": [
+        "EDER-F-0138"
+      ]
+    },
+    {
+      "owner_ref": "DOMAIN:OBSERVABILITY",
+      "count": 8,
+      "obligation_ids": [
+        "EDER-D-0023",
+        "EDER-D-0024",
+        "EDER-D-0025",
+        "EDER-D-0026",
+        "EDER-D-0029",
+        "EDER-D-0030",
+        "EDER-D-0033",
+        "EDER-D-0034"
+      ]
+    },
+    {
+      "owner_ref": "DOMAIN:PLATFORM-PLUGINS",
+      "count": 1,
+      "obligation_ids": [
+        "EDER-F-0132"
+      ]
+    },
+    {
+      "owner_ref": "DOMAIN:TOOLS",
+      "count": 2,
+      "obligation_ids": [
+        "EDER-F-0131",
+        "EDER-F-0161"
+      ]
+    },
+    {
+      "owner_ref": "DUP-X",
+      "count": 1,
+      "obligation_ids": [
+        "EDER-F-0190"
+      ]
+    },
+    {
+      "owner_ref": "EBH-6",
+      "count": 4,
+      "obligation_ids": [
+        "EDER-F-0027",
+        "EDER-F-0058",
+        "EDER-F-0185",
+        "EDER-F-0211"
+      ]
+    },
+    {
+      "owner_ref": "ENT-AUDIT-X",
+      "count": 8,
+      "obligation_ids": [
+        "EDER-D-0013",
+        "EDER-D-0014",
+        "EDER-D-0015",
+        "EDER-D-0017",
+        "EDER-D-0018",
+        "EDER-D-0020",
+        "EDER-F-0065",
+        "EDER-F-0180"
+      ]
+    },
+    {
+      "owner_ref": "EVOL-X",
+      "count": 2,
+      "obligation_ids": [
+        "EDER-F-0147",
+        "EDER-F-0234"
+      ]
+    },
+    {
+      "owner_ref": "HARNESS",
+      "count": 6,
+      "obligation_ids": [
+        "EDER-F-0017",
+        "EDER-F-0073",
+        "EDER-F-0074",
+        "EDER-F-0075",
+        "EDER-F-0097",
+        "EDER-F-0160"
+      ]
+    },
+    {
+      "owner_ref": "HIST-CAMPAIGN",
+      "count": 5,
+      "obligation_ids": [
+        "EDER-D-0087",
+        "EDER-D-0088",
+        "EDER-D-0089",
+        "EDER-D-0090",
+        "EDER-F-0203"
+      ]
+    },
+    {
+      "owner_ref": "IIAC-GOV-1",
+      "count": 1,
+      "obligation_ids": [
+        "EDER-F-0036"
+      ]
+    },
+    {
+      "owner_ref": "MCP-SERVER-X",
+      "count": 7,
+      "obligation_ids": [
+        "EDER-D-0099",
+        "EDER-D-0104",
+        "EDER-D-0107",
+        "EDER-D-0109",
+        "EDER-D-0110",
+        "EDER-F-0130",
+        "EDER-F-0201"
+      ]
+    },
+    {
+      "owner_ref": "OPERATOR",
+      "count": 23,
+      "obligation_ids": [
+        "EDER-D-0016",
+        "EDER-D-0021",
+        "EDER-D-0091",
+        "EDER-D-0092",
+        "EDER-D-0097",
+        "EDER-F-0009",
+        "EDER-F-0012",
+        "EDER-F-0013",
+        "EDER-F-0014",
+        "EDER-F-0030",
+        "EDER-F-0041",
+        "EDER-F-0062",
+        "EDER-F-0068",
+        "EDER-F-0095",
+        "EDER-F-0205",
+        "EDER-F-0212",
+        "EDER-F-0213",
+        "EDER-F-0214",
+        "EDER-F-0223",
+        "EDER-F-0224",
+        "EDER-F-0225",
+        "EDER-F-0226",
+        "EDER-F-0231"
+      ]
+    },
+    {
+      "owner_ref": "PDC-X",
+      "count": 4,
+      "obligation_ids": [
+        "EDER-F-0028",
+        "EDER-F-0046",
+        "EDER-F-0083",
+        "EDER-F-0191"
+      ]
+    },
+    {
+      "owner_ref": "PDC-X:D1",
+      "count": 8,
+      "obligation_ids": [
+        "EDER-D-0113",
+        "EDER-D-0114",
+        "EDER-D-0115",
+        "EDER-D-0116",
+        "EDER-D-0117",
+        "EDER-D-0152",
+        "EDER-F-0195",
+        "EDER-F-0221"
+      ]
+    },
+    {
+      "owner_ref": "PDC-X:D2",
+      "count": 3,
+      "obligation_ids": [
+        "EDER-D-0118",
+        "EDER-D-0119",
+        "EDER-D-0120"
+      ]
+    },
+    {
+      "owner_ref": "PDC-X:D3",
+      "count": 2,
+      "obligation_ids": [
+        "EDER-D-0121",
+        "EDER-D-0122"
+      ]
+    },
+    {
+      "owner_ref": "PDC-X:D4",
+      "count": 3,
+      "obligation_ids": [
+        "EDER-D-0123",
+        "EDER-D-0124",
+        "EDER-D-0125"
+      ]
+    },
+    {
+      "owner_ref": "PDC-X:D5",
+      "count": 6,
+      "obligation_ids": [
+        "EDER-D-0126",
+        "EDER-D-0127",
+        "EDER-D-0128",
+        "EDER-D-0129",
+        "EDER-D-0130",
+        "EDER-F-0217"
+      ]
+    },
+    {
+      "owner_ref": "PDC-X:D6",
+      "count": 6,
+      "obligation_ids": [
+        "EDER-D-0131",
+        "EDER-D-0132",
+        "EDER-D-0133",
+        "EDER-D-0134",
+        "EDER-D-0135",
+        "EDER-D-0136"
+      ]
+    },
+    {
+      "owner_ref": "PDC-X:D7",
+      "count": 8,
+      "obligation_ids": [
+        "EDER-D-0112",
+        "EDER-D-0137",
+        "EDER-D-0138",
+        "EDER-D-0139",
+        "EDER-D-0140",
+        "EDER-D-0141",
+        "EDER-D-0153",
+        "EDER-D-0154"
+      ]
+    },
+    {
+      "owner_ref": "PDC-X:D8",
+      "count": 11,
+      "obligation_ids": [
+        "EDER-D-0142",
+        "EDER-D-0143",
+        "EDER-D-0144",
+        "EDER-D-0145",
+        "EDER-D-0146",
+        "EDER-D-0147",
+        "EDER-D-0148",
+        "EDER-D-0149",
+        "EDER-D-0150",
+        "EDER-D-0151",
+        "EDER-F-0148"
+      ]
+    },
+    {
+      "owner_ref": "PRE-ENT",
+      "count": 1,
+      "obligation_ids": [
+        "EDER-F-0170"
+      ]
+    },
+    {
+      "owner_ref": "PROD-Q",
+      "count": 3,
+      "obligation_ids": [
+        "EDER-F-0010",
+        "EDER-F-0021",
+        "EDER-F-0022"
+      ]
+    },
+    {
+      "owner_ref": "QUAL-X",
+      "count": 3,
+      "obligation_ids": [
+        "EDER-F-0055",
+        "EDER-F-0103",
+        "EDER-F-0216"
+      ]
+    },
+    {
+      "owner_ref": "SCENARIO-FACTORY-X",
+      "count": 2,
+      "obligation_ids": [
+        "EDER-F-0048",
+        "EDER-F-0156"
+      ]
+    },
+    {
+      "owner_ref": "TOOL-LIFE-X",
+      "count": 1,
+      "obligation_ids": [
+        "EDER-F-0057"
+      ]
+    },
+    {
+      "owner_ref": "TRACE-X",
+      "count": 2,
+      "obligation_ids": [
+        "EDER-F-0011",
+        "EDER-F-0199"
+      ]
+    }
+  ]
+}

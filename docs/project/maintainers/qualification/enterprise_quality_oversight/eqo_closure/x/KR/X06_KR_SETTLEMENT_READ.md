@@ -34,12 +34,12 @@ All 28 KR rows remain non-settled for freeze purposes; no row promoted to green 
 
 **Recorded:** 2026-11-21## Wave-8 read pass (EQO-X-06)
 
-**Land:** 569254840. Settlement counts unchanged (SETTLED 0 / 28); KR-08 still links #680 track-only memo (English refresh this wave).
+**Land:** 569254840. Settlement counts unchanged (SETTLED 0 / 28); KR-08 still links #680 on rw-train @ `8e146e21` (not on `development`); C16 green replay missing.
 
 **Recorded:** 2026-11-21 | lane eqo/wave-8/x | Ref: governance/tickets/T-IGX-046-F.md
 
 ## Wave-12 disposition read (EQO-X-06)
 
-**Land:** `292ca3348`. KR settlement plan unchanged; **#680** remains track-only (C16).
+**Land:** `292ca3348`. KR settlement plan unchanged; **#680** merge `65ef1f196` on rw-train @ `8e146e21`, not on `development` — C16 `NOT_VERIFIED` (green replay missing).
 
 **Recorded:** 2026-11-21 · lane `eqo/wave-12/x` · `Ref: governance/tickets/T-IGX-046-F.md`
