@@ -18,14 +18,11 @@
                                                                                  "06604af53"
                                                                              ],
                                                           "development_branch":  "eqo/dev-a4-027",
-                                                          "development_head":  "a0598ba3e4f4f903eb4da3db8ea012d5cbf71225",
+                                                          "development_head":  "537a06296d40b55458b08878f9180c393b607a07",
                                                           "worktree":  "D:\\Projekty\\_wt\\intergrax\\eqo-dev-a4027",
-                                                          "cherry_pick_result":  "BLOCKED_CHERRY_PICK",
-                                                          "blocked_files":  [
-                                                                                "governance/tickets/T-IGX-052-A.md",
-                                                                                "governance/tickets/T-IGX-055-B.md",
-                                                                                "docs/project/maintainers/qualification/enterprise_quality_oversight/eqo_closure/orchestration/packets/EQO-PKG-A4-027/IMPLEMENTATION_EVIDENCE.md"
-                                                                            ]
+                                                          "cherry_pick_result":  "REPLAYED_BEHAVIOR",
+                                                          "pytest":  "1 passed",
+                                                          "note":  "Cherry-pick of 9c909d96b conflicted on T-IGX-052-A.md. Behavior reapplied on development at 537a06296. Train SHA is not an ancestor."
                                                       },
                                                       {
                                                           "source_branch":  "eqo/w2-a4034",

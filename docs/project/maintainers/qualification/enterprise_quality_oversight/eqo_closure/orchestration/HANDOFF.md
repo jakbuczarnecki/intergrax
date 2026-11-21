@@ -23,7 +23,7 @@ Feature branches are cut from `origin/development` (pin `a0598ba3e4f4f903eb4da3d
 
 | Source branch | Unique commits | Dev branch | HEAD | Cherry-pick |
 |---------------|----------------|------------|------|-------------|
-| `eqo/w2-a4-027` | `9c909d96b`, `06604af53` | `eqo/dev-a4-027` | `a0598ba3e` (unchanged) | **BLOCKED_CHERRY_PICK** — `governance/tickets/T-IGX-052-A.md`, `governance/tickets/T-IGX-055-B.md`, `…/EQO-PKG-A4-027/IMPLEMENTATION_EVIDENCE.md` |
+| `eqo/w2-a4-027` | `9c909d96b`, `06604af53` | `eqo/dev-a4-027` | `537a06296` | **REPLAYED_BEHAVIOR** — pytest 1 passed — `governance/tickets/T-IGX-052-A.md`, `governance/tickets/T-IGX-055-B.md`, `…/EQO-PKG-A4-027/IMPLEMENTATION_EVIDENCE.md` |
 | `eqo/w2-a4034` | `34a0af435` | `eqo/dev-a4-034` | `d1da3b3c1` | CLEAN |
 | `eqo/w2-a6006` | `c5b9648b4` | `eqo/dev-a6-006` | `b02278643` | CLEAN |
 
