@@ -28,9 +28,9 @@
                      "EBH7_TENANT_E2E_NOT_REPLAYED",
                      "PYTEST_SLICE_NON_ZERO_EXIT"
                  ],
-    "executed_utc":  "2026-11-21T09:38:53Z",
+    "executed_utc":  "2026-11-21T09:39:30Z",
     "pytest_exit_code":  1,
-    "pytest_summary":  "2 failed, 72 passed, 1 skipped in 16.05s",
+    "pytest_summary":  "2 failed, 72 passed, 1 skipped in 17.77s",
     "rerun_lane":  "eqo/wave-13/exe-wb02",
     "pytest_env_note":  "uv sync --all-extras on eqo-w3 @ TRAIN_PIN; shared pytest.lock"
 }
