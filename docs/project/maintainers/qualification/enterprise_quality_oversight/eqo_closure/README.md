@@ -55,10 +55,11 @@ All qualification commits carry: `Ref: governance/tickets/T-IGX-046-F.md` (ticke
 | 35 | Wave-11 integration manifest | eqo/wave-11/integ |
 | 36 | Wave-12 W2 #680 track / X disposition / W9-01 C01–C25 sweep | eqo/wave-12/integ |
 | 37 | Wave-9 COR/DRV disposition paths (WB01–12) | eqo/wave-9/integ |
+| 38 | Wave-10 W3 EXE rerun WB01/06/07/10/11 @ TRAIN_PIN (full extras) | eqo/wave-10/integ |
 
 Index maintenance commits on this branch: 15bfc0851, 3a92440ad (SHA alignment only).
 
-Wave manifests: EQO_WAVE1_MANIFEST.md, EQO_WAVE2_MANIFEST.md, EQO_WAVE3_MANIFEST.md, EQO_WAVE4_MANIFEST.md, EQO_WAVE5_MANIFEST.md, EQO_WAVE6_MANIFEST.md, EQO_WAVE7_MANIFEST.md, EQO_WAVE8_MANIFEST.md, EQO_WAVE9_MANIFEST.md, EQO_WAVE11_MANIFEST.md, EQO_WAVE12_MANIFEST.md.
+Wave manifests: EQO_WAVE1_MANIFEST.md, EQO_WAVE2_MANIFEST.md, EQO_WAVE3_MANIFEST.md, EQO_WAVE4_MANIFEST.md, EQO_WAVE5_MANIFEST.md, EQO_WAVE6_MANIFEST.md, EQO_WAVE7_MANIFEST.md, EQO_WAVE8_MANIFEST.md, EQO_WAVE9_MANIFEST.md, EQO_WAVE10_MANIFEST.md, EQO_WAVE11_MANIFEST.md, EQO_WAVE12_MANIFEST.md.
 
 Worktree evidence runs: `eqo_closure/runs/wb01`–`wb12/`. Campaign C: `c/A3-004/`, `c/A6-004/` (`CLOSURE.md`); C-04 `runs/c/C04_BLOCKED_RECORD.md`, `C04_STATUS.md`; C-CLS `c/C_CLS.md` (prep: `c/C_CLS_PREP.md`). W4-CLS: `w4/W4-CLS.md` (prep: `w4/W4-CLS_PREP.md`).
 
