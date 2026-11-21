@@ -9,6 +9,12 @@
 - Merged origin/development into local EQO development at 88c2708c (merge commit with T-IGX-046-F).
 - Re-read all STILL_PRESENT / CHERRY_PICK_CONFLICT rows: **11** became ABSENT_ON_DEVELOPMENT; **0** product ports (MERGE_CONFLICT 0); **7** remain STILL_PRESENT (A2-009, A2-038, A4-017, A4-030, A4-044, A5-001, A6-002).
 - Cherry-pick ports abandoned; train product posture arrives via origin merge, not feature cherry-picks.
+
+## Ticket-delta slice (2026-11-21 evening)
+
+- Re-read the **7** remaining STILL_PRESENT rows against cited ticket closure text (not train blob replay): all **7** → `ALREADY_MATCHES_TICKET` (no product commit).
+- Next roadmap executable (`EQO-PKG-A4-006`): `check_runtime_event_tenant_propagation.py` already references `uaep_executor.py` on this pin — no further file edit without a new ticket row.
+
 ## EXECUTABLE_NOW
 
 - Re-read cited product files on local `development` for all **24** `REPLAY_ONLY` rows in `EQO_NEXT_WAVE_QUEUE.json` and record per-row verdicts in `EQO_DEVELOPMENT_REPLAY.json` (no `register.jsonl`, no `lifecycle_state` CLOSED, no `path_counts` change).
