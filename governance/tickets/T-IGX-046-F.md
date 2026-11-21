@@ -233,8 +233,9 @@ Operator decision **`waiver_both`** @ **2026-11-21** (coordinator chat): retroac
 | Deliverables | `EQO_WAVE13_MANIFEST.md`, README row 39, matrix EXE refresh |
 | EXE exits | WB02 `1`; WB03/05/08/12 `0` |
 | Session E | **unchanged** |
-| Wave 14 | **not started** |
-| PR | _(pending push)_ |
+| Wave 14 | **follow-on #712** |
+| PR | [#711](https://github.com/jakbuczarnecki/intergrax/pull/711) merged 2026-11-21T09:51:01Z |
+| Merge commit | 9a673b1b23ee283d096218146239db9782e1d7ad (#711) |
 
 **Docs gates:** `ticket-governance` + `governance-policy-pin`.
 
