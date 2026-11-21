@@ -71,6 +71,18 @@ Edits of the roadmap, the freeze checklist, PDC-owned records, generated registe
 
 Post-merge SHA: recorded on PR #690 comment.
 
+## Checkpoint — EQO wave-3 (2026-11-21)
+
+| Field | Value |
+|-------|-------|
+| Integrator branch | `eqo/wave-3/integ` |
+| Base | `origin/development` `8631b1e84` (PR #690) |
+| Deliverables | `AUD_PACKET.md` WB01–12, `W4-03_OWNER_DECISION_BATCH.md`, `EQO_WAVE3_MANIFEST.md`, matrix AUD § |
+| AUD verdicts | **none** — packets `PRE_AUD` / `OPEN` only |
+| EQO-C-04 | executed @ TRAIN_PIN — **BLOCKED** (pytest exit 1); `runs/c/C04_RUN_MANIFEST.json` |
+| E-02 apply | out of scope |
+| Session E | separate chat per WB (`EQO_WAVE3_MANIFEST.md`) |
+
 ## Lifecycle state
 
 plan_approved
