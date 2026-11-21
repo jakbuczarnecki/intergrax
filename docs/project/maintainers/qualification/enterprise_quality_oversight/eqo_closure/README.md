@@ -50,12 +50,15 @@ All qualification commits carry: `Ref: governance/tickets/T-IGX-046-F.md` (ticke
 | 30 | Wave-7 W4-CLS prep + W4-03 English owner memo | eqo/wave-7/w4 |
 | 31 | Wave-7 integration manifest | eqo/wave-7/integ |
 | 32 | Wave-6 W3 EXE rerun WB04 / WB06 / WB09 @ TRAIN_PIN | eqo/wave-6/integ |
+| 33 | Wave-11 Campaign C finalize (C-01/02, C-04 blocked, C-CLS) | eqo/wave-11/c |
+| 34 | Wave-11 W4-CLS disposition completeness | eqo/wave-11/w4 |
+| 35 | Wave-11 integration manifest | eqo/wave-11/integ |
 
 Index maintenance commits on this branch: 15bfc0851, 3a92440ad (SHA alignment only).
 
-Wave manifests: EQO_WAVE1_MANIFEST.md, EQO_WAVE2_MANIFEST.md, EQO_WAVE3_MANIFEST.md, EQO_WAVE4_MANIFEST.md, EQO_WAVE5_MANIFEST.md, EQO_WAVE6_MANIFEST.md, EQO_WAVE7_MANIFEST.md, EQO_WAVE8_MANIFEST.md.
+Wave manifests: EQO_WAVE1_MANIFEST.md, EQO_WAVE2_MANIFEST.md, EQO_WAVE3_MANIFEST.md, EQO_WAVE4_MANIFEST.md, EQO_WAVE5_MANIFEST.md, EQO_WAVE6_MANIFEST.md, EQO_WAVE7_MANIFEST.md, EQO_WAVE8_MANIFEST.md, EQO_WAVE11_MANIFEST.md.
 
-Worktree evidence runs: `eqo_closure/runs/wb01`–`wb12/`. Campaign C memos: `c/A3-004/`, `c/A6-004/` (closure band: `CLOSURE.md`); C-04: `runs/c/C04_TARGETED_REPLAY_PREP.md`, `C04_STATUS.md`; C-CLS prep: `c/C_CLS_PREP.md`.
+Worktree evidence runs: `eqo_closure/runs/wb01`–`wb12/`. Campaign C: `c/A3-004/`, `c/A6-004/` (`CLOSURE.md`); C-04 `runs/c/C04_BLOCKED_RECORD.md`, `C04_STATUS.md`; C-CLS `c/C_CLS.md` (prep: `c/C_CLS_PREP.md`). W4-CLS: `w4/W4-CLS.md` (prep: `w4/W4-CLS_PREP.md`).
 
 ## Registry inventory (W0)
 

@@ -81,4 +81,18 @@
 
 **Terminal status:** EQO_NOT_CLOSED_EXACT_BLOCKERS. No EQO_CLOSED claim. Full EQO-W9-01 acceptance waits EQO-W8-CLS per EQO_W7_W8_DEFERRED_BLOCKERS.md.
 
+## Wave-11 Campaign C + W4-CLS (disposition finalize)
+
+**Land:** `origin/development` @ `e1f850bdc` · **lanes:** `eqo/wave-11/c`, `eqo/wave-11/w4`, `eqo/wave-11/integ`.
+
+| Workstream | Artefact | Disposition |
+|------------|----------|-------------|
+| C-01 | `c/A3-004/CLOSURE.md` | `PARTIAL` — implementer band finalized |
+| C-02 | `c/A6-004/CLOSURE.md` | `PARTIAL` — implementer band finalized |
+| C-04 | `runs/c/C04_BLOCKED_RECORD.md` | `BLOCKED` |
+| C-CLS | `c/C_CLS.md` | `BLOCKED` — campaign does not close |
+| W4-CLS | `w4/W4-CLS.md` | `PARTIAL` — 186/186 B-2 rows dispositioned @ registry |
+
+No `EQO_CLOSED` claim. Session E and operator OD routes unchanged.
+
 **Recorded:** Ref: governance/tickets/T-IGX-046-F.md
