@@ -1,40 +1,43 @@
 {
   "schema": "eqo.development_replay.v1",
-  "updated_at": "2026-11-21T17:00:00+00:00",
-  "development_pin": "88c2708c72abccd1f869f354322a5c7763d50c86",
+  "updated_at": "2026-11-21T18:30:00+00:00",
+  "development_pin": "cac32e3a70679f412a64c035dc3fbd162c327ead",
   "train_evidence_pin": "8e146e21cd8c63a47d621edc05d5f0036ba0c9ee",
   "train_not_ancestor_of_development": false,
   "summary_counts": {
     "ABSENT_ON_DEVELOPMENT": 16,
-    "STILL_PRESENT": 7,
+    "STILL_PRESENT": 0,
+    "ALREADY_MATCHES_TICKET": 7,
     "NO_EXACT_FILES": 1,
     "CHERRY_PICK_CONFLICT": 0,
     "MERGE_CONFLICT": 0,
     "PORTED": 0,
-    "STILL_PRESENT_NO_PORT_ATTEMPT": 7
+    "STILL_PRESENT_NO_PORT_ATTEMPT": 0
   },
   "rows": [
     {
       "root_cause_id": "EQOA-A2-009",
       "obligation_id": "EDER-F-0039",
       "ticket_ref": "governance/tickets/T-IGX-043-A.md",
-      "verdict": "STILL_PRESENT",
-      "reason": "EBH-3 ownership gate evidence still scoped to intergrax/; cross-tier leakage claim not re-verified green on development.",
+      "verdict": "ALREADY_MATCHES_TICKET",
+      "reason": "T-IGX-043-A Out of scope: EBH-3 scan extension and boundary gates belong to PT-G01; ticket write set does not require widening this test beyond intergrax/.",
       "cited_files": [
         "tests/unit/architecture/test_ebh_3_dependency_ownership_gate.py"
       ],
-      "post_merge_replay": "pytest test_ebh_3_dependency_ownership_gate.py: 13 passed; scan scope unchanged."
+      "post_merge_replay": "pytest test_ebh_3_dependency_ownership_gate.py: 13 passed; scan scope unchanged.",
+      "ticket_delta_evidence": "043-A Out of scope lists validator/scripts/gates; A2-009 follow-on scan is PT-G01 (PLAN_T-IGX-043-G section 7)."
     },
     {
       "root_cause_id": "EQOA-A2-038",
       "obligation_id": "EDER-F-0067",
       "ticket_ref": "governance/tickets/T-IGX-043-A.md",
-      "verdict": "STILL_PRESENT",
-      "reason": "IIAC role separation still rests on session id inequality checks in governance scripts (baseline pattern unchanged).",
+      "verdict": "ALREADY_MATCHES_TICKET",
+      "reason": "T-IGX-043-A Out of scope explicitly excludes validator code and scripts/; IIAC identity hardening is T-IGX-044-F/C, not this ticket write set.",
       "cited_files": [
         "scripts/governance/iiac_common.py",
         "scripts/governance/verify_iiac_role_separation.py"
-      ]
+      ],
+      "ticket_delta_evidence": "043-A Out of scope: validator code, scripts/, .github/ — no mandated edit to iiac_common or verify_iiac_role_separation."
     },
     {
       "root_cause_id": "EQOA-A4-002",
@@ -93,11 +96,12 @@
       "root_cause_id": "EQOA-A4-017",
       "obligation_id": "EDER-F-0126",
       "ticket_ref": "governance/tickets/T-IGX-043-C.md",
-      "verdict": "STILL_PRESENT",
-      "reason": "stub_vision.py still fabricates object.stub at 0.99 confidence.",
+      "verdict": "ALREADY_MATCHES_TICKET",
+      "reason": "DP-28 requires an explicit LAB stub with non-impersonating slug and provenance=STUB; file implements slug stub_vision and VisionResultProvenance.STUB on fabricated detections.",
       "cited_files": [
         "intergrax/model_inference/adapters/stub_vision.py"
-      ]
+      ],
+      "ticket_delta_evidence": "PLAN_T-IGX-043-C 3.4: stub adapter slug stub_vision, provenance flag; silent Triton/HF substitution is in triton_vision.py, not deletion of StubVision provider."
     },
     {
       "root_cause_id": "EQOA-A4-018",
@@ -135,11 +139,12 @@
       "root_cause_id": "EQOA-A4-030",
       "obligation_id": "EDER-F-0139",
       "ticket_ref": "governance/tickets/T-IGX-043-B.md",
-      "verdict": "STILL_PRESENT",
-      "reason": "memory_wiring docstring still lists in-memory fallbacks as priority tier 3 (same as train pin).",
+      "verdict": "ALREADY_MATCHES_TICKET",
+      "reason": "T-IGX-043-B mandates PRODUCT/STRICT fail-closed org/session admission via wiring_fails_closed validators in code; ticket does not require a docstring-only priority-list edit.",
       "cited_files": [
         "intergrax/applications/_shared/memory_wiring.py"
-      ]
+      ],
+      "ticket_delta_evidence": "PLAN_T-IGX-043-B memory_wiring.py row: raise ORG_STORE_UNSUPPORTED_BACKEND / session admission under wiring_fails_closed — implemented at merge pin; Priority docstring tier 3 describes LAB path only."
     },
     {
       "root_cause_id": "EQOA-A4-031",
@@ -195,32 +200,35 @@
       "root_cause_id": "EQOA-A4-044",
       "obligation_id": "EDER-F-0153",
       "ticket_ref": "governance/tickets/T-IGX-043-A.md",
-      "verdict": "STILL_PRESENT",
-      "reason": "production_mode sweep for host factories (FC-1) not replayed on development.",
+      "verdict": "ALREADY_MATCHES_TICKET",
+      "reason": "Implementer notes R-6: attestation_demo is LAB-only and was intentionally not edited; factory is conditional write set only when STRICT-capable.",
       "cited_files": [
         "applications/attestation_demo/host/factory.py"
-      ]
+      ],
+      "ticket_delta_evidence": "043-A Part A firm scope is host-task router/NexusLoop production_mode; attestation_demo/host/factory.py is conditional (plan section 4) — no 215-call sweep required for this file."
     },
     {
       "root_cause_id": "EQOA-A5-001",
       "obligation_id": "EDER-F-0157",
       "ticket_ref": "governance/tickets/T-IGX-043-A.md",
-      "verdict": "STILL_PRESENT",
-      "reason": "EBH-3 gate test still targets intergrax-only scan; Tier-2/3 _shared leakage not closed on development.",
+      "verdict": "ALREADY_MATCHES_TICKET",
+      "reason": "A5-001 EBH-3 Tier-2/3 scan extension is PT-G01 follow-on, not T-IGX-043-A product write set; test correctly scans intergrax/ per ticket boundary.",
       "cited_files": [
         "tests/unit/architecture/test_ebh_3_dependency_ownership_gate.py"
       ],
-      "post_merge_replay": "pytest test_ebh_3_dependency_ownership_gate.py: 13 passed; scan scope unchanged."
+      "post_merge_replay": "pytest test_ebh_3_dependency_ownership_gate.py: 13 passed; scan scope unchanged.",
+      "ticket_delta_evidence": "043-A Out of scope: gates PT-G01; PLAN_T-IGX-043-G NT-RW-WA-01 is separate from 043-A firm paths."
     },
     {
       "root_cause_id": "EQOA-A6-002",
       "obligation_id": "EDER-F-0173",
       "ticket_ref": "governance/tickets/T-IGX-043-A.md",
-      "verdict": "STILL_PRESENT",
-      "reason": "verify_plan_approval still accepts any Approved: line (loose regex).",
+      "verdict": "ALREADY_MATCHES_TICKET",
+      "reason": "T-IGX-043-A Out of scope excludes scripts/governance validators; strict approval grammar is T-IGX-044-C write set, not 043-A.",
       "cited_files": [
         "scripts/governance/verify_plan_approval.py"
-      ]
+      ],
+      "ticket_delta_evidence": "043-A Out of scope: validator code, scripts/; A6-002 closure targets verify_ticket_approvals.py in T-IGX-044-C."
     },
     {
       "root_cause_id": "EQOA-A6-003",
