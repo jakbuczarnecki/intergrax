@@ -53,6 +53,7 @@ from intergrax.runtime.events.event_bus import RuntimeEventBus
 from intergrax.runtime.events.stores.memory_runtime_event_store import InMemoryRuntimeEventStore
 from intergrax.runtime.execution.boundary import ExecutionIdentityBinding
 from intergrax.runtime.registry.agent_registry import AgentRegistry
+from tests.fixtures.g09_tenant_evaluation_registry import CI_SMOKE_PRODUCT_TENANT
 from tests.unit.applications.scenario_runtime_test_support import (
     MinimalProductionScenarioTestConfig,
     build_valid_minimal_production_scenario_fixture,
@@ -63,7 +64,7 @@ from echo.echo_agent import EchoAgent
 
 pytestmark = [pytest.mark.unit, pytest.mark.gate]
 
-_TENANT = "df5-destructive"
+_TENANT = CI_SMOKE_PRODUCT_TENANT
 
 
 @pytest.fixture(autouse=True)
