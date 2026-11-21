@@ -4,7 +4,7 @@
 
 | Tor | Ref | Uwagi |
 |-----|-----|-------|
-| `development` | `03e7d8c88`+ | merge serial: FC3 regression + 043-M scaffold + plan rev2 WF/TRUST |
+| `development` | `b38251dcc` | merge serial: FC3 regression + 043-M scaffold + plan rev2 WF/TRUST |
 | `arch-freeze/rw-train` | `c443865e9` | #688 merged; merge przy czerwonym `governance-fast` — **NO-OP** |
 | `af-dev-pt-wf` | `d531bb37a` | plan §7; G-09 już na `development` |
 | `af-dev-pt-fc3` | `413fb9186` | regression §8.6 follow-up |
