@@ -1,0 +1,94 @@
+# HEAD: 859d64c084c527d122d7d5a8ab86f77fb9489c87
+# python: D:\Projekty\intergrax\.venv\Scripts\python.exe
+
+# command: D:\Projekty\intergrax\.venv\Scripts\python.exe -m scripts.governance.verify_iiac_audit_manifest docs/project/maintainers/qualification/iiac_evidence/PDC-X/D1/iiac_audit_session_manifest.PDC-X.d1.json --repo . --require-handoff-template
+# UTC start: 2026-11-16T07:57:50Z  end: 2026-11-16T07:57:50Z
+verify_iiac_audit_manifest: PASS
+# exit code: 0
+
+# command: D:\Projekty\intergrax\.venv\Scripts\python.exe -m scripts.governance.verify_iiac_role_separation docs/project/maintainers/qualification/iiac_evidence/PDC-X/D1/iiac_audit_session_manifest.PDC-X.d1.json --strict-product-diff --repo .
+# UTC start: 2026-11-16T07:57:50Z  end: 2026-11-16T07:57:50Z
+verify_iiac_role_separation: PASS
+# exit code: 0
+
+# command: D:\Projekty\intergrax\.venv\Scripts\python.exe -m scripts.governance.verify_iiac_audit_manifest docs/project/maintainers/qualification/iiac_evidence/PDC-X/D2/iiac_audit_session_manifest.PDC-X.d2.json --repo . --require-handoff-template
+# UTC start: 2026-11-16T07:57:50Z  end: 2026-11-16T07:57:51Z
+verify_iiac_audit_manifest: PASS
+# exit code: 0
+
+# command: D:\Projekty\intergrax\.venv\Scripts\python.exe -m scripts.governance.verify_iiac_role_separation docs/project/maintainers/qualification/iiac_evidence/PDC-X/D2/iiac_audit_session_manifest.PDC-X.d2.json --strict-product-diff --repo .
+# UTC start: 2026-11-16T07:57:51Z  end: 2026-11-16T07:57:51Z
+verify_iiac_role_separation: PASS
+# exit code: 0
+
+# command: D:\Projekty\intergrax\.venv\Scripts\python.exe -m scripts.governance.verify_iiac_audit_manifest docs/project/maintainers/qualification/iiac_evidence/PDC-X/D3/iiac_audit_session_manifest.PDC-X.d3.json --repo . --require-handoff-template
+# UTC start: 2026-11-16T07:57:51Z  end: 2026-11-16T07:57:51Z
+verify_iiac_audit_manifest: PASS
+# exit code: 0
+
+# command: D:\Projekty\intergrax\.venv\Scripts\python.exe -m scripts.governance.verify_iiac_role_separation docs/project/maintainers/qualification/iiac_evidence/PDC-X/D3/iiac_audit_session_manifest.PDC-X.d3.json --strict-product-diff --repo .
+# UTC start: 2026-11-16T07:57:51Z  end: 2026-11-16T07:57:51Z
+verify_iiac_role_separation: PASS
+# exit code: 0
+
+# command: D:\Projekty\intergrax\.venv\Scripts\python.exe -m scripts.governance.verify_iiac_audit_manifest docs/project/maintainers/qualification/iiac_evidence/PDC-X/D4/iiac_audit_session_manifest.PDC-X.d4.json --repo . --require-handoff-template
+# UTC start: 2026-11-16T07:57:51Z  end: 2026-11-16T07:57:52Z
+verify_iiac_audit_manifest: PASS
+# exit code: 0
+
+# command: D:\Projekty\intergrax\.venv\Scripts\python.exe -m scripts.governance.verify_iiac_role_separation docs/project/maintainers/qualification/iiac_evidence/PDC-X/D4/iiac_audit_session_manifest.PDC-X.d4.json --strict-product-diff --repo .
+# UTC start: 2026-11-16T07:57:52Z  end: 2026-11-16T07:57:52Z
+verify_iiac_role_separation: PASS
+# exit code: 0
+
+# command: D:\Projekty\intergrax\.venv\Scripts\python.exe -m scripts.governance.verify_iiac_audit_manifest docs/project/maintainers/qualification/iiac_evidence/PDC-X/D5/iiac_audit_session_manifest.PDC-X.p7_d5.json --repo . --require-handoff-template
+# UTC start: 2026-11-16T07:57:52Z  end: 2026-11-16T07:57:52Z
+verify_iiac_audit_manifest: PASS
+# exit code: 0
+
+# command: D:\Projekty\intergrax\.venv\Scripts\python.exe -m scripts.governance.verify_iiac_role_separation docs/project/maintainers/qualification/iiac_evidence/PDC-X/D5/iiac_audit_session_manifest.PDC-X.p7_d5.json --strict-product-diff --repo .
+# UTC start: 2026-11-16T07:57:52Z  end: 2026-11-16T07:57:52Z
+verify_iiac_role_separation: PASS
+# exit code: 0
+
+# command: D:\Projekty\intergrax\.venv\Scripts\python.exe -m scripts.governance.verify_iiac_audit_manifest docs/project/maintainers/qualification/iiac_evidence/PDC-X/D6/iiac_audit_session_manifest.PDC-X.d6.json --repo . --require-handoff-template
+# UTC start: 2026-11-16T07:57:52Z  end: 2026-11-16T07:57:53Z
+verify_iiac_audit_manifest: PASS
+# exit code: 0
+
+# command: D:\Projekty\intergrax\.venv\Scripts\python.exe -m scripts.governance.verify_iiac_role_separation docs/project/maintainers/qualification/iiac_evidence/PDC-X/D6/iiac_audit_session_manifest.PDC-X.d6.json --strict-product-diff --repo .
+# UTC start: 2026-11-16T07:57:53Z  end: 2026-11-16T07:57:53Z
+verify_iiac_role_separation: PASS
+# exit code: 0
+
+# command: D:\Projekty\intergrax\.venv\Scripts\python.exe -m scripts.governance.verify_iiac_audit_manifest docs/project/maintainers/qualification/iiac_evidence/PDC-X/D7/iiac_audit_session_manifest.PDC-X.d7.json --repo . --require-handoff-template
+# UTC start: 2026-11-16T07:57:53Z  end: 2026-11-16T07:57:53Z
+verify_iiac_audit_manifest: PASS
+# exit code: 0
+
+# command: D:\Projekty\intergrax\.venv\Scripts\python.exe -m scripts.governance.verify_iiac_role_separation docs/project/maintainers/qualification/iiac_evidence/PDC-X/D7/iiac_audit_session_manifest.PDC-X.d7.json --strict-product-diff --repo .
+# UTC start: 2026-11-16T07:57:53Z  end: 2026-11-16T07:57:53Z
+verify_iiac_role_separation: PASS
+# exit code: 0
+
+# command: D:\Projekty\intergrax\.venv\Scripts\python.exe -m scripts.governance.verify_iiac_audit_manifest docs/project/maintainers/qualification/iiac_evidence/PDC-X/D8/iiac_audit_session_manifest.PDC-X.d8.json --repo . --require-handoff-template
+# UTC start: 2026-11-16T07:57:53Z  end: 2026-11-16T07:57:53Z
+verify_iiac_audit_manifest: PASS
+# exit code: 0
+
+# command: D:\Projekty\intergrax\.venv\Scripts\python.exe -m scripts.governance.verify_iiac_role_separation docs/project/maintainers/qualification/iiac_evidence/PDC-X/D8/iiac_audit_session_manifest.PDC-X.d8.json --strict-product-diff --repo .
+# UTC start: 2026-11-16T07:57:53Z  end: 2026-11-16T07:57:54Z
+verify_iiac_role_separation: PASS
+# exit code: 0
+
+# command: D:\Projekty\intergrax\.venv\Scripts\python.exe -m scripts.governance.verify_iiac_audit_manifest docs/project/maintainers/qualification/iiac_evidence/PDC-X/global/iiac_audit_session_manifest.PDC-X.global.json --repo . --require-handoff-template
+# UTC start: 2026-11-16T07:57:54Z  end: 2026-11-16T07:57:54Z
+verify_iiac_audit_manifest: PASS
+# exit code: 0
+
+# command: D:\Projekty\intergrax\.venv\Scripts\python.exe -m scripts.governance.verify_iiac_role_separation docs/project/maintainers/qualification/iiac_evidence/PDC-X/global/iiac_audit_session_manifest.PDC-X.global.json --strict-product-diff --repo .
+# UTC start: 2026-11-16T07:57:54Z  end: 2026-11-16T07:57:54Z
+verify_iiac_role_separation: PASS
+# exit code: 0
+
+# overall exit: 0

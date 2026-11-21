@@ -1,5 +1,7 @@
 # Diagnostic Gap Ledger
 
+> **Currency note (EQO-A remediation, as of 2026-11-16).** The DG entries and their `Status` rows are point-in-time and are unchanged. Two entries read open although the domain documents at `258bbf6abb6fdbb92ef0185d058527fbb1e47f04` say otherwise: DG-003 (`Status` L103 "OPEN / architecture review") - `docs/project/architecture/DIAGNOSTICS.md` L441 describes `DiagnosticInvestigationView.operator_story` as a derived Diagnostics read model; DG-005 (`Status` L152 "QUALIFICATION CANDIDATE") - `docs/project/architecture/OBSERVABILITY.md` L954 reads **PROVEN** with `test_obs_dg005_distributed_topology_qualification.py`. The domain documents decide the status. The HARDEN banner below (2026-08-30) concerns the closed qualification program and is unchanged. Line references (L<n>) are to the files at that SHA, before this note was added.
+
 > **HARDEN qualification status (2026-08-30):** Diagnostic hardening **closed**. Matrix M1–M24: **22 PROVEN**, **2 NOT_APPLICABLE** (M21, M22), **0** open P0/P1/P2 qualification gaps. See [`DIAGNOSTIC_HARDENING_CLOSEOUT.md`](DIAGNOSTIC_HARDENING_CLOSEOUT.md) and [`DIAGNOSTIC_E2E_MATRIX_HARDEN_4A.md`](DIAGNOSTIC_E2E_MATRIX_HARDEN_4A.md).
 >
 > **This ledger** remains the **operational** evidence-driven backlog (DG-xxx entries below) for future platform improvements - distinct from the closed HARDEN qualification program.

@@ -1,0 +1,63 @@
+{
+  "auditor": "aud_qualxp0",
+  "audited_sha": "a70b68cf947b77de58bce8df0863d3114991cbd9",
+  "findings": [
+    {
+      "id": "F-00",
+      "severity": "MEDIUM",
+      "title": "Three Q01/Q03-cited architecture gates are RED on the exact P0 tree; P0 inventory is silent on it and labels the surface 'DIRECT' (historical)",
+      "evidence": "Replay at a70b68cf9 (scratch detached worktree), one pytest, 15 modules: 3 failed, 202 passed, 2 skipped (log logs/pytest-p0.log). Failing: test_ebh_2a_public_contract_boundary_gate::test_gate_passes_on_repository_with_registered_debt, test_ebh_2i_final_rescan_gate::test_ebh_2i_public_contract_boundary_gate_passes, test_hardening_3_layer_boundary_gate::test_hardening_3_contracts_do_not_import_runtime_except_allowlist. Real violations: intergrax/contracts/governed_external_work_create_follow_on.py:29 and ..._provider_invocation_identity.py:7 import intergrax.runtime.attestation.canonical_json; intergrax/contracts/tools/qualified_tool_invocation.py:17 imports intergrax.tools.invocation_wiring. Remediated later in the QUAL-X program (9b9a85a98 'correct tool invocation public boundary' 15:51; b74d6383b HARDENING-3 SSOT correction) and green in AUD-QUALX's 630/630 run at d9ea0d6e8. Consistent with P0's own gap statement (no current-HEAD gate rollup) and with package P1, but P0 did not surface it.",
+      "blocking": false,
+      "status": "OPEN as a P0 accuracy erratum; product state remediated by later commits, reproduced green at d9ea0d6e8"
+    },
+    {
+      "id": "F-01",
+      "severity": "MEDIUM",
+      "title": "P0's own stated gate (independent audit before P1) was bypassed; no audit/waiver record existed until this audit",
+      "evidence": "Inventory L76 'Prerequisite: QUAL-X-P0 independent audit'; roadmap L479/L2055 'pending on P0 commit SHA'. First P1 commit 30a3e437e at 2026-10-22T15:40:47 vs P0 a70b68cf9 at 15:30:23; 14 QUAL-X commits a70b68cf9..2f6664d53 all by one git identity; grep of inventory/roadmap/checklist finds no waiver/absorption text for P0.",
+      "blocking": false,
+      "status": "OPEN (process); substance addressed by this audit, procedure not retroactively repairable"
+    },
+    {
+      "id": "F-02",
+      "severity": "MEDIUM",
+      "title": "Q01 cites scripts/maintenance/check_architecture_boundary_chaos.py as a boundary gate, but the script is non-functional at P0 and at base",
+      "evidence": "Reproduced at a70b68cf9: exit=1, 'can't open file scripts/check_intergrax_no_applications_imports.py', 'FAILED: ...'. The child scripts were moved to scripts/maintenance/ by e182e59fd, but the chaos script still joins REPO_ROOT/'scripts'/<name>. File unchanged a70b68cf9..2f6664d53 (empty diff). P0 never executed it (static inventory). Companion check_context_tier0_import_boundary.py exit 0 (OK).",
+      "blocking": false,
+      "status": "OPEN; product/script defect, out of this audit's edit authority; P0 classification of Q01 as DIRECT/HISTORICAL does not depend solely on this script"
+    },
+    {
+      "id": "F-03",
+      "severity": "LOW",
+      "title": "Q03 path error in inventory",
+      "evidence": "Inventory Q03 lists tests/unit/architecture/test_ebh_2f_r2_integration_plugin_contract_typing_gate.py; actual file is tests/unit/runtime/architecture/test_ebh_2f_r2_integration_plugin_contract_typing_gate.py (also how AUD-QUALX targeted it). All other cited gate/test paths resolve.",
+      "blocking": false,
+      "status": "OPEN (doc nit)"
+    },
+    {
+      "id": "F-04",
+      "severity": "LOW",
+      "title": "Roadmap row and inventory header still read 'QUAL-X-P0 READY FOR AUDIT' under a CLOSED (Population A) parent",
+      "evidence": "Roadmap L479 '[ ] READY FOR AUDIT', ledger L2055 'Independent audit: pending'. Honest closure requires an authorized record update citing an auditor record plus Operator decision; this auditor may not edit canonical docs.",
+      "blocking": false,
+      "status": "OPEN pending Operator decision / authorized publisher"
+    },
+    {
+      "id": "F-05",
+      "severity": "INFO",
+      "title": "P0 evidence-strength labels are assertions (pytest@P0 = 0); DIRECT labels were never replayed by P0 itself",
+      "evidence": "Inventory header 'pytest @ P0: not executed'. This audit replayed the Q01/Q02/Q03/Q04 cited gates not already covered by AUD-QUALX at the exact P0 SHA (see AUDIT_REPORT).",
+      "blocking": false,
+      "status": "ADDRESSED by this audit (scoped subset)"
+    },
+    {
+      "id": "F-06",
+      "severity": "INFO",
+      "title": "Inventory scope counts verified",
+      "evidence": "~552 files under tests/qualification: exact 552 at P0 (git ls-files). '~367 *gate*.py': 366 tests/ basenames match gate*.py (437 repo-wide basenames, 475 path matches) - consistent with '~367' for tests/.",
+      "blocking": false,
+      "status": "N/A"
+    }
+  ],
+  "blocking_findings": 0
+}

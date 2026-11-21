@@ -1,0 +1,14 @@
+# HEAD: fd2ad28efde6216be38194b020188d116264adb6
+# python: D:\Projekty\intergrax\.venv\Scripts\python.exe
+
+# command: D:\Projekty\intergrax\.venv\Scripts\python.exe -m scripts.governance.verify_iiac_audit_manifest docs/project/maintainers/qualification/iiac_evidence/PDC-X/P8/activation/iiac_audit_session_manifest.IIAC-ACT-N11-PDC-X-P8-04.json --repo . --require-handoff-template
+# UTC start: 2026-11-16T08:01:30Z  end: 2026-11-16T08:01:30Z
+verify_iiac_audit_manifest: PASS
+# exit code: 0
+
+# command: D:\Projekty\intergrax\.venv\Scripts\python.exe -m scripts.governance.verify_iiac_role_separation docs/project/maintainers/qualification/iiac_evidence/PDC-X/P8/activation/iiac_audit_session_manifest.IIAC-ACT-N11-PDC-X-P8-04.json --strict-product-diff --repo .
+# UTC start: 2026-11-16T08:01:30Z  end: 2026-11-16T08:01:31Z
+verify_iiac_role_separation: PASS
+# exit code: 0
+
+# overall exit: 0

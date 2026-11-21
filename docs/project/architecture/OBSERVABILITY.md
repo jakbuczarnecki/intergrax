@@ -388,6 +388,8 @@ Reference: VPI `platform_proofs/scenarios/verified_product_identification/applic
 
 **Verdict:** **PASS — ENTERPRISE CERTIFIED** on exact committed SHA recorded in [`docs/project/maintainers/qualification/OBS_FINAL_ENTERPRISE_CERTIFICATION.md`](../maintainers/qualification/OBS_FINAL_ENTERPRISE_CERTIFICATION.md).
 
+> **Scope label (EQO-A remediation note, as of 2026-11-16):** domain-ledger / scoped certification — feature-local, not IIAC certified; no independent-audit artefact located (the record itself ends with "OBSERVABILITY ROADMAP = CLOSED (enterprise certification subject to independent audit)"). Roadmap and freeze coverage: stages `HARNESS-W5`, `TRACE-X` and `CTRL-X` (CLOSED in the roadmap ledger); the freeze checklist rows FRZ-OBS-01..07 are OPEN. Not an ARCH-FREEZE closure.
+
 Mandatory proof: OBS architecture gate bundle + `pytest -m obs_coverage_p1` + scoped `obs_diag_conformance` / `obs_trace_1` paths (**0** failed). Full `tests/unit/runtime/architecture/` failures (**38**) contain **no** `test_obs_*` regressions; classified as non–Observability debt in the certification record.
 
 **Conditional (unchanged):** TRACE-ASOF-3 **NOT REQUIRED**; TRACE-ASOF-4 / TRACE-BITEMP-4 **CONDITIONAL**.

@@ -1,0 +1,151 @@
+# Operator answers on the code-wave tickets T-IGX-043-A..F: transcription by the orchestrator
+
+## Status of this record
+
+- **Nature.** Transcribed on 2026-11-16 by the orchestrating session under IIAC Amendment 01 section 1.2 (the orchestrator MAY transcribe a chat commission or decision; see [`IIAC_AMENDMENT_01_OPERATOR_DESIGNATED_SIGNING_SESSION.md`](../IIAC_AMENDMENT_01_OPERATOR_DESIGNATED_SIGNING_SESSION.md)). It is a transcription, not an Operator signature. Publishing it in the repository does not sign it.
+- **Original and language.** The Operator's chat is the original; the messages were in Polish. This file contains only the orchestrator's English rendering of each message, labelled with its date. It is not a verbatim quote and the Polish text is not reproduced.
+- **Purpose of publication.** Finding X-8 of the independent delegate review of the code-wave tickets was that approvals must not rely on a gitignored record. The Operator authorised publishing this transcription as a docs-only pull request (ticket `T-IGX-042-E`).
+- **No closure claim.** Nothing here is a PASS, a closure or an independent verification, and no approval line of any ticket is written by this file.
+- **Ticket ids.** The ticket ids `T-IGX-043-A..F` are used as they appear in the Operator's messages and in the drafts. The ids `T-IGX-043-A` and `T-IGX-043-C` also appear, for different work, on the branches of the open ARCH-FREEZE wave 2 pull requests #611 and #610 at the time of writing; this transcription does not resolve that overlap. The batch tickets `T-IGX-042-A..D` are in draft pull requests #605..#608 at the time of writing.
+
+Companion record: [`OPERATOR_DECISIONS_EQOA_REMEDIATION.md`](OPERATOR_DECISIONS_EQOA_REMEDIATION.md) (index: [`README.md`](README.md)).
+
+## Operator messages (chat, 2026-11-16; orchestrator's English rendering of each)
+
+1. Orchestrator's English rendering of a chat message of 2026-11-16: "I accept the recommended answers to all questions of FC-1..4."
+2. Orchestrator's English rendering of a chat message of 2026-11-16, given as the answer to the question whether the last correction loop should be ordered, with FC-3 restoring option 1 of Q-FC3-02: "Yes, the last loop."
+3. Orchestrator's English rendering of a chat message of 2026-11-16, given after the delegate's final list of what the Operator must still do (items 1-8 of section 5 of the delegate's second delta review of the code-wave tickets; a session artefact, not published): "I accept the recommended answers to all items."
+
+## What message 1 covers (records by content hash)
+
+The recorded questions and the recommended option of each are in four session files (not published; one open-questions file per ticket). The table gives the SHA-256 that the orchestrator recorded for each file when it made this transcription.
+
+| Ticket | Open-questions file | sha256 as recorded at transcription |
+|---|---|---|
+| T-IGX-043-A (FC-1) | FC-1 open questions | `544894ba6131415c1e11d5a4773466fd4b6c24f031c601537562f0b090841f33` |
+| T-IGX-043-B (FC-2) | FC-2 open questions | `3f031b396f65639f4ba5e2ee3f39726215443e6bcfbb920a25dcbd14e3502a72` |
+| T-IGX-043-C (FC-3) | FC-3 open questions | `9c0b21ab796ca7d1d73cb2876d427836c10686ebe49eeb3d27cb9048513c35db` |
+| T-IGX-043-D (FC-4) | FC-4 open questions | `f3e0ef73fbef69bf7a152a653bd3a27693f01d05ae85006cfe7e4bc3fada03d0` |
+
+Verification note added at publication: a re-computation on 2026-11-16 of the SHA-256 of the current question files gave different values for all four tickets. For FC-1 the recorded value matches a preserved copy of the question file as accepted (the copy is a session artefact). For FC-2, FC-3 and FC-4 the recorded values could not be reproduced, and the cause is not established. The recorded values are therefore reproduced here as recorded, and are not verified.
+
+The Operator decision record is [`OPERATOR_DECISIONS_EQOA_REMEDIATION.md`](OPERATOR_DECISIONS_EQOA_REMEDIATION.md).
+
+## What message 3 covers: items 1-8 and how each was applied
+
+Where the delegate's list had a stated recommendation, that option is recorded. Where it had none, the orchestrator applied the answer the ticket's own plan drafts, and says so. The Operator may change any entry.
+
+| # | Item | Recorded answer | Basis |
+|---|---|---|---|
+| 1 | Publish or sign the answers to the FC questions | This transcription is the publication candidate; publication as a docs-only PR or the Operator's signature is still an act to be performed | stated recommendation |
+| 2 | D-FC1-03 and the write-set ceiling of A (S-08) | D-FC1-03 = option D (hosts with HITL inject a store built from the existing SQLite persistence composition; hosts and workers without HITL pass the typed acknowledgement `disable_human_decision_persistence=True`; the check is presence plus not in-memory). The ceiling of up to 21 conditional product paths is accepted | stated recommendation (D) and plan as drafted (ceiling) |
+| 3 | C open items O-08, O-09, L-1 | O-09: option 1, accept 62 product files. O-08: the plan as drafted (option 1: late refusal by the coordinator guard, class BLOCKS kept, the unrefused paths named in the audit; options 2 and 3 not chosen). L-1: the plan as drafted | O-09 stated recommendation; O-08 and L-1 had no stated recommendation, plan as drafted applied |
+| 4 | OPEN-ATT-1 for D (who may attest Redis durability) | Fallback (b): the `SKILLS.md` procedure states the attestation shape only; who may attest stays an open item; D is approvable under (b). No new authority grant is recorded | no stated recommendation; the conservative option applied because it is an authority grant |
+| 5 | Personal rulings on E and F | E: both parts (capacity gate repair, sandbox gate) accepted as drafted; the sandbox part may be ruled out separately without affecting B. F: extend the CONFIG-X scan, scoped to the eight FC-3 paths with a recorded finding per hit outside them (3a), same wave behind T-IGX-043-C, and the scratch measurement F-A2 (non-certifying, one process, read-only) is authorised, to be run before F's approval line. The approval lines of E and F remain the Operator's own and are NOT written by this transcription | F items 3 and 4 stated recommendation; E and F item 1 as drafted |
+| 6 | Merge order | B, then A, then C, then F; D at any time; W-A/W-B before A on `host_orchestration_environment_spec_builder.py`, `harness_host_runtime.py` and `nexus_loop.py` | stated recommendation |
+| 7 | Owners and EDER rows for the accepted residuals; freeze-document exception statements | To be assigned in the Enterprise Debt & Exceptions Register; the owner of each residual is the owner named in the plan until the Operator confirms the 55-ID vocabulary (DP-47); the exception statements (A S-04, B DP-30 text) are written with the freeze documents | stated recommendation |
+| 8 | Milestone M1 and the product-path go | The Operator's go for product-path work (AR-39..AR-44; wave package W-C covers FC-1..FC-4) is recorded as: GRANTED, EFFECTIVE ONLY WHEN M1 (PDC P9 closed) HOLDS. M1 itself is NOT confirmed by this transcription: [`PDC_INDEX.md`](../platform_domain_completeness/PDC_INDEX.md) at `7960ae7f6` lists the P9 artefacts as awaiting the Operator's final confirmation. The approval lines of A-D are to be written through a commissioned non-implementing session (the commission is still to be given in chat with scope and `Expires`) | stated recommendation, M1 left open |
+
+## What is not decided by this file
+
+M1 (PDC P9 closure), the commission of a delegate for the approval lines of A-D, the approval lines of E and F, the publication of this record, the owner vocabulary (DP-47), DP-54, and every authorisation not named above (tests, probes, S1 diagnostics beyond F-A2, GitHub settings).
+
+## Addendum: message 4 and the commission (2026-11-16, after the table above)
+
+4. Orchestrator's English rendering of a chat message of 2026-11-16: "I grant all consents; carry out the full implementation." Given after the orchestrator listed what was still open (M1, the commission for the approval lines, the approval lines of E and F, publication of this record, the scratch measurement F-A2, DP-47, DP-54, GitHub settings).
+
+How the orchestrator applies message 4 (an interpretation; the Operator may correct it at any time; `Expires`: none stated). The rows below are the orchestrator's interpretation of message 4, not decisions stated by the Operator, except where a row says the item is not decided:
+
+| Item | Applied as |
+|---|---|
+| M1 (PDC P9 closed) | Treated as CONFIRMED by the Operator for the purposes of this program. The PDC-owned P9 records and `PDC_INDEX.md` are NOT edited by this program (they remain the PDC session's). Observed at `origin/development` `7960ae7f6`: the index still shows the P9 artefacts as awaiting confirmation; open PRs #610 and #611 (ARCH-FREEZE wave 2, branches `af2/*`) show that the ARCH-FREEZE wave 2 effort is running in parallel |
+| Product-path go (AR-39..AR-44, wave package W-C covers FC-1..FC-4) | GRANTED. Implementation of a ticket still starts only after its plan has an approval line and its ticket is in the repository |
+| Commission under IIAC Amendment 01 (R-1..R-6, chat is sufficient) | GRANTED to ONE new session dedicated solely to writing the approval lines of T-IGX-042-A..D (draft PRs #605..#608 at the time of writing) and, once they are in the repository, T-IGX-043-A..D. It is not an implementation session, not a continuation of any other session, and it writes no line for T-IGX-043-E or T-IGX-043-F |
+| Approval lines of E and F | NOT commissioned: gate-meaning changes are the Operator's personal act under the standing rules; the Operator writes them or states a commission for them |
+| Scratch measurement F-A2 | AUTHORISED (non-certifying, one process, read-only, scratch worktree at the baseline) |
+| Publication of this record | AUTHORISED as a docs-only PR (ticket T-IGX-042-E) |
+| GitHub settings (AR-45..AR-53 rulesets) | Treated as covered in principle, but NOT executed by the orchestrator without a named go for the first step, because required checks on `development` can block merges of the concurrent ARCH-FREEZE sessions (#610, #611) |
+| DP-47 owner vocabulary, DP-54 ECAP executable | NOT decided by message 4 |
+
+## Addendum 2: message 5 and the extension of the commission (2026-11-16, later the same day)
+
+5. Orchestrator's English rendering of a chat message of 2026-11-16: "Yes, extend the delegate's commission." Given in answer to the orchestrator's question whether the commission under IIAC Amendment 01 should be extended to the plan approval of the new EQO-A tickets.
+
+How the orchestrator applies message 5 (an interpretation; `Expires`: none stated; the commission stays with the same new, dedicated signing session, for the duration of the delegation). The rows below are the orchestrator's interpretation of message 5, not decisions stated by the Operator:
+
+| Item | Applied as |
+|---|---|
+| Added scope | Approval lines of the tickets T-IGX-042-E, T-IGX-044-A, T-IGX-044-B, T-IGX-044-E, T-IGX-046-A, T-IGX-046-B, T-IGX-046-C and T-IGX-047-A, each only when its plan passes the checks of the delegate checklists and only on the PR branch that carries it |
+| Still excluded | Tickets that change a gate's meaning (T-IGX-043-E, T-IGX-043-F and every ticket of the nodes PT-G01, PT-G02, PT-E03, PT-E02 when it rewrites a validator or a gate) and tickets of the material governance paths (PT-E05, PT-D08): the Operator's personal act or a separate commission |
+| Not changed | The approval of a plan is not an implementation go; product paths stay held until the ARCH-FREEZE gate SCOPE; merges need the Operator's separate order per PR |
+
+Note added at publication: of the ticket ids named in the added scope, only `T-IGX-042-E` is the ticket of the pull request that carries this file; the `T-IGX-044-*`, `T-IGX-046-*` and `T-IGX-047-A` tickets are not on `development` at the time of writing. This file writes no approval line for any of them.
+
+## Addendum 3: message 6, the pending decisions on three pull requests (2026-11-17)
+
+6. Orchestrator's English rendering of a chat message of 2026-11-17: "Go through these decisions and set the recommended ones." Given after the orchestrator reported that three items waited on the Operator: pull request 616 (ticket T-IGX-044-B, three workflow files under `.github/`), pull request 623 (ticket T-IGX-044-E, new read-only IIAC verifiers under `scripts/` and `tests/`), and the node PT-E02 (ticket T-IGX-044-C, ticket-approval validators, a new workflow, held locally). The Polish original is in the chat of that date and is not reproduced here. This section is a transcription by the orchestrator under IIAC Amendment 01 section 1.2, not an Operator signature; the Operator may correct any row. `Expires`: none stated.
+
+How the orchestrator applies message 6 (an interpretation limited to the three items above; the recommended option of each is the one the orchestrator stated in its reports):
+
+| Item | Recommended option, applied as |
+|---|---|
+| PR 616 (T-IGX-044-B, PT-E01) | Merge after an independent read-only review at the exact head SHA reports PASS and the CI of that head is green. DP-65 ("if stable") is applied: `governance-policy-pin` becomes blocking. Two side questions of the PR body are answered "not now": `harness-release.yml` and `sync-repository-metadata.yml` stay on `ubuntu-latest` and the stale "ADVISORY" step label stays; both may be taken up in a later ticket. No GitHub setting, branch protection or ruleset is changed; the trial ruleset (AR-45/AR-50) still needs its own named go after this PR is merged |
+| PR 623 (T-IGX-044-E, PT-E04) | Design point (a): the strict SHA chain (audited <= test_execution <= audit_execution <= evidence <= certification) is the rule for new manifests, enforced in profile `final` only; `legacy` keeps it a warning. (b): the known-draft allowlist stays at `scripts/governance/iiac_known_draft_manifests.v1.json`. (c): the delegation verifier stays separate from the PT-E02 validators; folding them is decided together with PT-E05. The approval line of T-IGX-044-E is written by the signing delegate (already in its scope, addendum 2). Merge after the independent audit AUD-ENF-2 at the exact head SHA reports PASS and the CI of that head is green. The verifiers stay unwired until PT-E05 |
+| Node PT-E02 (T-IGX-044-C) | The validator-code change is authorised for this ticket only (the separate authorisation required by OD-REM-07), including the new workflow `ticket-governance.yml` as drafted; the job is not made a required check and no branch setting is changed. The delegate's commission (addendum 2) is extended to the approval line of T-IGX-044-C, which addendum 2 had excluded as a validator-rewriting ticket, because the Operator has now decided the matter. The approval line is written only when the plan passes the delegate checklist and the line cites this addendum. Merge after an independent review at the exact head SHA reports PASS and the CI of that head is green |
+| Not changed | Nothing here covers T-IGX-043-E, T-IGX-043-F, T-IGX-050-*, T-IGX-051-*, PT-E03, PT-E05, PT-D08, PT-G01, PT-G02, DP-47, DP-54, the scope ruling on A4-040, or any GitHub setting; those stay as recorded in addenda 1 and 2 and in the ARCH-FREEZE decision register. A merge still needs the order of the Operator, and this message is that order only for the three items above |
+
+## Addendum 4: message 7, recommended options for all remaining decisions (2026-11-17)
+
+7. Orchestrator's English rendering of a chat message of 2026-11-17: "Set the recommended options in all the decisions." Given after the orchestrator listed what was still undecided: DP-47, DP-54, the approval lines of T-IGX-043-E and T-IGX-043-F, the scope ruling on A4-040, and GitHub settings. This section is a transcription by the orchestrator under IIAC Amendment 01 section 1.2, not an Operator signature; the Operator may correct any row. `Expires`: none stated. The Polish original is in the chat of that date and is not reproduced here.
+
+How the orchestrator applies message 7 (the recommended option of each item is the one stated in the decision plans under `.tmp/session/eqo-a-remediation/WP-10/` and in the orchestrator's earlier reports):
+
+| Item | Recommended option, applied as |
+|---|---|
+| DP-47 owner model and vocabulary | Option a: one program or stage level accountable owner per row (one `owner_ref`, optional co-owners) from the proposed 55-ID vocabulary (`enterprise_debt_register/owner_vocabulary.proposed.json`), which is confirmed once by this decision; named persons only where the Operator assigns them. The data flip of `owner_vocabulary_status` from UNCONFIRMED to CONFIRMED is a separate data change and is not made by this file |
+| DP-54 standalone ECAP executable | Option a: a standalone ECAP executable is required. A live owner and a ticket are still to be named: the orchestrator proposes ARCH-FREEZE as owner (the ECAP revision is already its task), the ticket number to be assigned by the ARCH-FREEZE orchestrator. Until then the register row stays open and no text may claim the executable exists |
+| T-IGX-043-E (capacity gate repair, sandbox gate) and T-IGX-043-F (CONFIG-X scan extension) | Approved as drafted, as already ruled in addendum 1 (E: both parts, the sandbox part may be ruled out separately; F: scoped to the eight FC-3 paths with a recorded finding per hit outside them, same wave behind T-IGX-043-C). Because both change what a gate checks, the approval lines are not written by the delegate under addendum 2; they are written through the train approval packet process (OD-AF-22) of the wave that carries PT-FC2-E and PT-FC3-F, which the Operator approves once, or by a commission the Operator states separately. This message does not itself commission the delegate for them |
+| A4-040 scope (direct `uvicorn.run` in seven applications) | Option A of Q4: stays CONDITIONS and out of scope now, as already ruled for wave packet 1 (W-B Part G conditional); no PROD-Q run is authorised; the item is re-decided after the RW-SUPPLY ticket reports on `package_b_strict_production_serving_command.py` |
+| GitHub settings (AR-45..AR-53) | AR-45 (disposable enforcement trial: branch `enforcement-trial/base`, trial PR branches, a ruleset named `TRIAL enforce-checks` on `refs/heads/enforcement-trial/**`, a spoofed status for trial N7, deletion of the ruleset afterwards) and AR-50 (standing rollback authorisation: disable or delete the new ruleset on triggers R1-R4) are authorised. The trial is executed by a session that did not implement the node, and the execution log is kept. NOT authorised by this message: AR-46..AR-49 (each stage of required checks on `development` needs its own authorisation after the previous stage's exit report), AR-51 (repository auto-merge, recommended against), AR-52 (boundary gates as required checks), AR-53 (EBH-7 replay dispatch). No setting on `development` or `main` is changed by AR-45 |
+| Not changed | Everything not named above; in particular the approval of the amended T-IGX-043-G digest, which is recorded in the ARCH-FREEZE decision register and not here |
+
+## Addendum 5: message 8, the batched documentation and data pull request (2026-11-17)
+
+8. Orchestrator's English rendering of a chat message of 2026-11-17: "Yes, prepare this batched PR." Given in answer to the orchestrator's offer to prepare one batched pull request for two nodes that need no further Operator decision: PT-D04 (batch DB-C, append-only dated notes on closed stage records, 16 files) and PT-R03 (owner confirmation in the Enterprise Debt & Exceptions Register data, after DP-47 option a of addendum 4). This section is a transcription by the orchestrator under IIAC Amendment 01 section 1.2, not an Operator signature; the Operator may correct any row. `Expires`: none stated. The Polish original is in the chat of that date and is not reproduced here.
+
+How the orchestrator applies message 8 (an interpretation limited to the item above):
+
+| Item | Applied as |
+|---|---|
+| The batched pull request | One draft pull request into `development` carrying ticket `T-IGX-046-E`, covering PT-D04 and PT-R03 only. Hunks that still need an Operator fact are held and listed, not guessed. No roadmap, FRZ checklist, PDC record or script-generated register is edited by it |
+| Commission under IIAC Amendment 01 | The signing delegate's commission (addenda 1 and 2, extended by addendum 3 to T-IGX-044-C) is extended to the approval line of `T-IGX-046-E`, only when its plan passes the delegate checklist and only on the branch that carries it. Reason: the ticket is documentation and data only, the same class as the tickets of addendum 2 |
+| Review and merge | This message is NOT a merge order: "prepare" authorises preparing the pull request only. The pull request is merged only after an independent read-only review of the exact head reports PASS (including a review that no note adds an independence claim without a preserved artefact and that every cited SHA resolves), the CI of that head is green, and the Operator has given a separate order to merge it (or merged it) |
+| Not changed | Everything not named above. No product path, script, workflow, GitHub setting, gate meaning or `accountable_person` assignment is covered; nothing becomes closed, verified or promoted by this batch |
+
+## Addendum 6: message 9, the nine held DB-C hunks (2026-11-17)
+
+9. Orchestrator's English rendering of a chat message of 2026-11-17: "Set the recommended options in all four." Given in answer to the orchestrator's four decisions on the nine hunks of batch DB-C that pull request 656 (ticket T-IGX-046-E) held because each needed a fact that no tracked file states. The four decisions and the recommended option of each are in `.tmp/session/eqo-a-remediation/DB_C_HELD_HUNK_FACTS.md` (section D; a non-tracked planning note of the orchestrator, not a file in the repository), summarised below. This section is a transcription by the orchestrator under IIAC Amendment 01 section 1.2, not an Operator signature; the Operator may correct any row. `Expires`: none stated. The Polish original is in the chat of that date and is not reproduced here.
+
+How the orchestrator applies message 9 (an interpretation limited to the items below):
+
+| Item | Applied as |
+|---|---|
+| Local logs of hunks H04, H05, H09 (`t11-a.log`, `t11-b.log`, `v11-batch-a.log`, `v12-batch-b.log`, `parent_regression_5gate.log`) | Published unmodified under `iiac_evidence/` after a secret and personal-data scan, with the sha256 in the note. A log that cannot be found, that fails the scan, or that is larger than 2 MB is not published; the note then states that the cited log is not preserved, and the orchestrator reports to the Operator. No log is edited or redacted |
+| H09 G-SKILL decision | The decision of decision session 4 is applied as published (SKILL-X artefact published, G-SKILL a scoped limitation, reconciled with the L499 independence rule, no independence implied); a note quotes only the published wording |
+| H11 designation of the W5 signing session | A gap note: the record does not show a designation covering `ent-sign-w5-od-08-2026-11-11`; the designation `ent-sign-w3-2026-11-09` is not extended by inference. The Operator may re-affirm a W5 designation in chat, which the delegate then transcribes |
+| H03, H06, H07, H08, H12 (owner facts) | Released as dated gap notes that state only what is verifiable in the file and point to the related finding and EDER row; the owner fact itself is not supplied and no claim is added |
+| Pull request and commission | One draft pull request into `development` carrying ticket `T-IGX-046-F`. The signing delegate's commission (addenda 1, 2, 3 and 5) is extended to the approval line of `T-IGX-046-F`, only when its plan passes the delegate checklist and only on the branch that carries it. This message is NOT a merge order: a merge needs an independent read-only review PASS (including AR-9-07: no note adds an independence claim without a preserved artefact, every cited SHA resolves), green CI of the exact head, and a separate order of the Operator |
+| Not changed | Everything not named above: no roadmap, FRZ checklist, PDC record, product path, script, workflow, GitHub setting, gate meaning or `accountable_person` assignment is covered; nothing becomes closed, verified or promoted |
+
+## Addendum 7: message 10, standing rules S1 to S5 (2026-11-17)
+
+10. Orchestrator's English rendering of a chat message of 2026-11-17: "Yes, S1-S5." Given in answer to the orchestrator's list of five proposed standing rules that remove recurring stops in the remediation work (a non-tracked planning note of the orchestrator, `.tmp/session/eqo-a-remediation/REMAINING_STEPS_AND_AUTONOMY_PLAN.md` section 4, not a file in the repository; the rules are stated in full below). This section is a transcription by the orchestrator under IIAC Amendment 01 section 1.2, not an Operator signature; the Operator may correct or withdraw any rule at any time. `Expires`: none stated. The Polish original is in the chat of that date and is not reproduced here.
+
+| Rule | Applied as |
+|---|---|
+| S1 standing merge order, documentation and data only | A pull request of this remediation series that changes only documentation and data (no product path, no `scripts/`, `tests/` or `.github/`, no roadmap, no FRZ checklist, no GitHub setting) is merged by the orchestrator without a separate order when all of the following hold: an independent read-only review of the exact head reports PASS, the CI of that exact head is green, the head has not changed since the review (or the delta was reviewed), a delegate approval line is present where the series requires a ticket, and the Operator has not already merged it. This is the standing rule OD-AF-20 applied to this series. For later pull requests that meet all of S1, this rule replaces the statements "NOT a merge order" of addenda 5 and 6; those statements stay as written and are not rewritten. It is not a merge order for any pull request that touches an excluded category |
+| S2 standing delegate commission | The signing delegate's commission (addenda 1, 2, 3, 5 and 6) is extended, as a standing scope, to tickets `T-IGX-046-*` and `T-IGX-047-*` that are documentation or data only and are neither gate-meaning nor material governance. The delegate still runs its checklist and writes a line only when every check passes, on the branch that carries the ticket. Gate-meaning tickets, material governance tickets and every train ticket under the wave packets are not covered |
+| S3 amendment protocol for signed train tickets | An amendment of a signed train ticket that only adds test, guard or lint files inside the same ticket scope, changes neither a gate's meaning nor product semantics and touches no new material governance path, is re-signed by the delegate with a new delegation record and reported to the Operator, without a new wave packet. Everything else stays an Operator decision. The wave-packet rule OD-AF-22 belongs to the ARCH-FREEZE orchestrator: this rule applies to train tickets only after that orchestrator confirms it. Amendment 1 of `T-IGX-044-F` (a guard test of a material governance ticket) does not qualify and stays an Operator decision |
+| S4 mechanical lint commits | In a ticket's write set, mechanical lint and format fixes may be committed as a separate first commit with the ticket's `Ref` trailer, with a before and after run of the plan's regression nodes and a note in the pull request. Bypassing a hook stays forbidden |
+| S5 authoring by background subagents | Documentation and data authoring may be done by background subagents of the orchestrator instead of dedicated sessions; product-path tickets keep dedicated implementation sessions. When the Operator writes a message, all prepared session cards are started together |
+| Not changed | Everything not named above: no gate meaning, product-path go, GitHub setting, `accountable_person` assignment, wave packet approval or owner decision is covered; nothing becomes closed, verified or promoted |

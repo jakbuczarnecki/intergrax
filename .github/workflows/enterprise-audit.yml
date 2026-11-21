@@ -26,33 +26,42 @@ concurrency:
   group: ent-audit-pr-${{ github.event.pull_request.number || github.run_id }}
   cancel-in-progress: true
 
+permissions:
+  contents: read
+
 jobs:
   ent-audit-fast:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     timeout-minutes: 45
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262  # v4
         with:
           ref: ${{ github.event.pull_request.head.sha || github.sha }}
           fetch-depth: 0
-      - uses: astral-sh/setup-uv@v5
+      - uses: astral-sh/setup-uv@d4b2f3b6ecc6e67c4457f6d3e41ec42d3d0fcb86  # v5
+        with:
+          python-version: "3.12"
       - name: Sync dev-ci qualification dependencies
         run: uv sync --frozen --extra dev-ci
       - name: L1/L2/L3 qualification
         run: uv run pytest tests/qualification/ent_audit_x/unit tests/qualification/ent_audit_x/integration tests/qualification/ent_audit_x/l3 -q
       - name: Enterprise audit CLI (FAST non-certifying real)
+        env:
+          SHA: ${{ github.event.pull_request.head.sha || github.sha }}
+          PR_NUMBER: ${{ github.event.pull_request.number || 'manual' }}
         run: |
-          SHA="${{ github.event.pull_request.head.sha || github.sha }}"
-          OUT=".tmp/proof/ent-audit-x/pr-${{ github.event.pull_request.number || 'manual' }}-${SHA}"
+          OUT=".tmp/proof/ent-audit-x/pr-${PR_NUMBER}-${SHA}"
           uv run python scripts/enterprise_audit/run_enterprise_audit.py run \
             --mode FAST \
             --non-certifying \
             --output-dir "$OUT"
       - name: Job summary
         if: always()
+        env:
+          SHA: ${{ github.event.pull_request.head.sha || github.sha }}
+          PR_NUMBER: ${{ github.event.pull_request.number || 'manual' }}
         run: |
-          SHA="${{ github.event.pull_request.head.sha || github.sha }}"
-          OUT=".tmp/proof/ent-audit-x/pr-${{ github.event.pull_request.number || 'manual' }}-${SHA}"
+          OUT=".tmp/proof/ent-audit-x/pr-${PR_NUMBER}-${SHA}"
           echo "## Enterprise audit FAST (non-certifying)" >> "$GITHUB_STEP_SUMMARY"
           echo "- head SHA: \`${SHA}\`" >> "$GITHUB_STEP_SUMMARY"
           echo "- artifact dir: \`$OUT\`" >> "$GITHUB_STEP_SUMMARY"
@@ -62,21 +71,23 @@ jobs:
           echo "- note: certifying FULL/FREEZE only on nightly / manual qual wave" >> "$GITHUB_STEP_SUMMARY"
       - name: Upload PR audit artifacts
         if: always()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02  # v4
         with:
           name: ent-audit-pr-${{ github.event.pull_request.number || github.run_id }}
           path: .tmp/proof/ent-audit-x/
 
   ent-audit-pr-gate:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     timeout-minutes: 20
     if: github.event_name == 'pull_request'
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262  # v4
         with:
           ref: ${{ github.event.pull_request.head.sha }}
           fetch-depth: 0
-      - uses: astral-sh/setup-uv@v5
+      - uses: astral-sh/setup-uv@d4b2f3b6ecc6e67c4457f6d3e41ec42d3d0fcb86  # v5
+        with:
+          python-version: "3.12"
       - name: Sync dev-ci qualification dependencies
         run: uv sync --frozen --extra dev-ci
       - name: Path-independent PR gate (no skip on docs-only diffs)

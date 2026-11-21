@@ -201,6 +201,20 @@ Group contract dimensions - full field list in [§12](#12-agent-contract).
 
 - `execution_mode`, `max_steps`, `max_duration`, `max_cost`, `risk_level`, `failure_modes`
 
+## Agent contract surfaces
+
+Three agent-facing contract types exist in code. They are layered, not alternatives.
+
+| Surface | Kind | Location | Role |
+| ------- | ---- | -------- | ---- |
+| `Agent` | abstract base class | `intergrax/agents/agent_contract.py` | Framework base for authored agents: abstract `run(AgentRunRequest) -> AgentRunResult`; `get_contract()` raises `NotImplementedError` unless overridden; `can_handle()` defaults to no match; `validate()` has a default |
+| `Tier2Agent` | `runtime_checkable` Protocol | `intergrax/contracts/tier2_agent.py` | Structural contract (`run`, `get_contract`) used by Application manifest bindings (`AgentBinding.agent_type`) and returned by `AgentRouter.route()`; an agent does not need to subclass `Agent` |
+| `RoutableTier2Agent` | `runtime_checkable` Protocol extending `Tier2Agent` | `intergrax/contracts/routable_tier2_agent.py` | Adds `can_handle(TaskEnvelope) -> CapabilityMatchResult`; required for capability-based selection; `require_routable_tier2_agent()` fails closed with `AgentRoutingContractError` |
+
+**Layering.** Both Protocols live in the Tier-0 `intergrax/contracts/` package and import only contract modules (module docstring: no `agents/` import). Explicit-id execution needs `Tier2Agent` only; capability-based routing additionally needs `RoutableTier2Agent`. The canonical factory path accepts both a framework `Agent` subclass and a structural agent that is not an `Agent` subclass.
+
+**Gates.** `tests/unit/architecture/test_ebh_2d_c_r3_tier2_agent_factory_result_contract.py` (factory results are validated against `Tier2Agent`, with no `isinstance(..., Agent)` check on the canonical path) and `tests/unit/architecture/test_ebh_2d_c_r4_canonical_runtime_agent_port.py` (registry read port, registry storage and `AgentRouter` have no concrete `Agent` import; capability routing fails closed without the routable contract). They are evidence relevant to freeze criterion FRZ-CTR-04 (public/internal contracts classified), whose checklist row is OPEN; this section does not close it. FRZ-CTR-04 and FRZ-DOC-05 (public contracts manifest current; also OPEN) are both mapped to requirement PDC-D4-R014 (stable public hosting API declaration) in [`PDC_FRZ_COVERAGE_MATRIX.md`](../maintainers/qualification/platform_domain_completeness/PDC_FRZ_COVERAGE_MATRIX.md). `ApplicationManifest` (`intergrax/applications/contracts/manifest.py`) is the Application binding manifest and is a different artefact from that declaration.
+
 ## Capability model
 
 ```text

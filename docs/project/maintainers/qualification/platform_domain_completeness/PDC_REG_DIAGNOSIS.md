@@ -61,4 +61,4 @@ Chat decisions of the Operator, transcribed in English.
 
 Groups B1 and B2 are being re-pinned under T-IGX-036-W (TEST_EXECUTION_SHA `146e7acf1`); the fresh L3 replay result is pending, so B1/B2 are not resolved by this line. After the re-pin the B6-F10 computed certification (C1 closed downstream stages, C4 unclassified paths, C4-CLASS-contract) is still BLOCKED independently of the pin; by Operator decision it stays red and is not repaired in W1.
 
-Final re-pin (T-IGX-041-J): after all P7 repairs the pin moves from `146e7acf1` to `d39a520dda965981a38f8e1a90ec5135ea5d508e` (W1'); the replay result is recorded by W2' and is not a B6 PASS.
+Final re-pin (T-IGX-041-J): after all P7 repairs the pin moves from `146e7acf1` to `d39a520dda965981a38f8e1a90ec5135ea5d508e` (W1'); the replay, run `43738431866`, failed (2 failed / 720 passed / 9 skipped; strict JUnit summary FAIL on a duplicate testcase) and is recorded by W2'. It is not a B6 PASS and not evidence of a green L3. The two failures are test defects fixed by T-IGX-041-Q (PR #593); there is no re-run and no new pin (Operator condition).

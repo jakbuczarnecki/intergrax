@@ -6,6 +6,21 @@
 
 > **Orchestration defines HOW work is structured. Nexus decides WHAT EXECUTES NEXT. Unified Execution Runtime owns HOW each Execution behaves.**
 
+> **Owner mapping (EQO-A remediation note, as of 2026-11-16; assignment to existing owners decided by the Operator):** Nexus is a private sub-runtime of the Execution plane, not a peer domain: all 74 Python files outside `intergrax/runtime/nexus/` that import it (a `from`/`import intergrax.runtime.nexus...` statement; tests, docs and notebooks excluded) are under `intergrax/runtime/execution/`; four other files (`reference_harness.py`, `default_inventory.py`, `isolation_gate.py`, `legal_application/serving/schemas.py`) mention it only in docstrings or string literals. The closure owners for the plane are the freeze-checklist rows FRZ-EXE-01..07 and the roadmap stages `GOV-X2`, `HARNESS-FINAL` and `EBH-4`. This is an assignment to existing owners, not a new stage or FRZ family, and it is not a coverage proof: whether those records cover the paths below at the current head is established only by replay evidence.
+
+| `intergrax/runtime/nexus/` sub-package | Python files | Owner document |
+| -------------------------------------- | ------------ | -------------- |
+| `tools` | 64 | [`TOOLS.md`](TOOLS.md) |
+| `tracing` | 74 | [`OBSERVABILITY.md`](OBSERVABILITY.md) |
+| `context` | 38 | [`CONTEXT_ENGINEERING.md`](CONTEXT_ENGINEERING.md) |
+| `orchestration` | 21 | [`ORCHESTRATION.md`](ORCHESTRATION.md) |
+| `agents` | 15 | [`AGENT_CONTRACTS_AND_ASSEMBLY.md`](AGENT_CONTRACTS_AND_ASSEMBLY.md) (assigned by subject; no document names this path) |
+| `session` | 12 | [`MEMORY.md`](MEMORY.md) |
+| `artifacts` | 11 | [`ARTIFACT_LIFECYCLE.md`](../capabilities/architecture/ARTIFACT_LIFECYCLE.md) |
+| `planning` | 10 | [`REASONING_AND_COGNITION.md`](REASONING_AND_COGNITION.md) |
+
+The "Owner document" column is a mapping by subject drafted from the code layout; the owner documents have not confirmed it. Other sub-packages (for example `execution`, `errors`, `budget`, `engine`, `run_factory`, `retry`) are not mapped by this table.
+
 **Semantic authority:** Subordinate to frozen [`UNIFIED_EXECUTION_ARCHITECTURE.md`](UNIFIED_EXECUTION_ARCHITECTURE.md) (UEA). Where Nexus docs and UEA conflict, **UEA wins**.
 
 **Contract-first consumer rule:** External platform consumers **MUST** bind to Execution-owned contracts and the public execution boundary — **not** to `NexusLoop`, `GraphExecutor`, or other Nexus implementation types. Dependency direction:

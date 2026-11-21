@@ -7,6 +7,8 @@
 
 **Status:** Domain registered — **AW-0 CLOSED / FROZEN** (canonical documentation independently accepted; runtime implementation NOT STARTED)
 
+> **EQO-A remediation note, as of 2026-11-16:** the status line above describes the AW-0 registration. Implementation progress is tracked in the phase table below (AW-1..AW-7 DONE or IN PROGRESS; AW-8..AW-14 NOT STARTED) and the roadmap records stage `AW-7C` as CLOSED; "runtime implementation NOT STARTED" in the line above is therefore the AW-0 position, not the current one.
+
 ---
 
 ## Cursor read scope (token budget)
@@ -66,6 +68,8 @@ Delivery rule:
 | AW-14 | Final documentation and architecture audit | NOT STARTED |
 
 **Final acceptance sequence:** AW-12 → AW-13 → AW-14 → **AUTONOMOUS WORK FINAL ACCEPTANCE**
+
+> **EQO-A remediation note, as of 2026-11-16:** the phrase "independently verified" for AW-7B-GATE and AW-7B in the roadmap table above (and in the AW-7 sections below) cites commits `2f8bc019a11de01f21498f952343e70f0cf3e369` and `95e74a42af34fd66f83f5c78374e0efdb84230b9` (code commits dated 2026-09-07). No preserved independent-audit artefact was located by static review under `docs/project/maintainers/qualification/`; the independence statement is **UNVERIFIED** until the Operator names an artefact.
 
 ---
 

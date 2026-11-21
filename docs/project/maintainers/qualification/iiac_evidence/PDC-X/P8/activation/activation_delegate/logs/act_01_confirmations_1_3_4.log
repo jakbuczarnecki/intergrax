@@ -1,0 +1,58 @@
+# command: D:/Projekty/intergrax/.venv/Scripts/python.exe docs/project/maintainers/qualification/iiac_evidence/PDC-X/P8/activation/activation_delegate/scripts/confirm_p8_04_act.py
+# HEAD: 3ad1b4363d330d9343618181fdce53a0a1206861
+# UTC start: 2026-11-16T08:06:13Z
+# UTC end: 2026-11-16T08:06:14Z
+# python: D:\Projekty\intergrax\.venv\Scripts\python.exe
+# ---- stdout ----
+HEAD 3ad1b4363d330d9343618181fdce53a0a1206861
+gate module: D:\Projekty\_wt\intergrax\p8-04-act\scripts\governance\iiac_activation_gate.py
+[OK  ] gate module resolves inside this checkout 
+
+== Confirmation 1: ACT-N11 product delta and material governance paths ==
+[OK  ] 969cbd964 resolves to itself 
+[OK  ] a73d15ab3 resolves to itself 
+[OK  ] fd2ad28ef resolves to itself 
+[OK  ] ancestor 969cbd964 -> a73d15ab3 
+[OK  ] ancestor a73d15ab3 -> fd2ad28ef 
+[OK  ] ancestor fd2ad28ef -> 3ad1b4363 
+[OK  ] ancestor 969cbd964 -> 3ad1b4363 
+[OK  ] product diff G..E empty (gate helper product_paths_changed_between) n=0 []
+[OK  ] product diff G..C empty (gate helper product_paths_changed_between) n=0 []
+[OK  ] product diff E..HEAD empty (gate helper product_paths_changed_between) n=0 []
+[OK  ] product diff G..HEAD empty (gate helper product_paths_changed_between) n=0 []
+MATERIAL_GOVERNANCE_PATHS (gate):
+   docs/project/maintainers/qualification/INTEGRAX_INTERNAL_INDEPENDENT_AGENT_CERTIFICATION_PROTOCOL.md
+   scripts/governance/iiac_activation_gate.py
+   scripts/governance/iiac_common.py
+   scripts/governance/verify_iiac_audit_manifest.py
+   scripts/governance/verify_iiac_policy_activation.py
+   scripts/governance/verify_iiac_role_separation.py
+[OK  ] six material governance paths in the gate 
+[OK  ] no MATERIAL_GOVERNANCE_PATHS change E..HEAD (gate helper _material_changes) []
+[OK  ] no MATERIAL_GOVERNANCE_PATHS change G..HEAD (gate helper _material_changes) []
+
+== Confirmation 3: global audit published, binding manifest verdict ==
+[OK  ] PDC_INDEPENDENT_AUDIT.md section 15.2 final verdict is PASS_SCOPED 'PASS_SCOPED'
+[OK  ] audit file is in origin/development (published) 
+[OK  ] binding manifest verdict is PASS 'PASS'
+[OK  ] manifest audited_implementation_sha == G 
+[OK  ] manifest audit_execution_sha == evidence_publication_sha == E 
+[OK  ] manifest certification_publication_sha == C 
+[OK  ] manifest audit_report_digest is c405c65f...7a4e 
+binding manifest sha256 77fa2babd02df6fbbd2e0d5b34413a769e069ac293e485daf49ec9a779dc476f
+handoff sha256         a36b2ac35eaf0782f4d40ef9b76a4dd745b0c4e70d839e2df2a7fa819b1fd121
+[OK  ] manifest digest equals the certifier report 
+[OK  ] handoff digest equals the certifier report 
+
+== Confirmation 4: protocol and Amendment 01 permit a delegated activation line ==
+[OK  ] DELEGATION-PDC-P8-ACT part (c) names the plain form written by the activation delegate 
+[OK  ] Amendment 01 section 0: S-3 STRUCK, IIAC policy activation not excluded 
+[OK  ] Amendment 01 S-2: plain form allowed if the commission names it 
+[OK  ] Amendment 01 R-6: the operator may commission a separate session to certify in the operator name 
+[OK  ] Amendment 01 6a(a): who writes the line is invisible to the gate 
+[OK  ] protocol Policy activation item 3 states the plain operator-form line 
+[OK  ] protocol text has no ban on a commissioned writer 
+
+RESULT: ALL CONFIRMATIONS OK
+# ---- stderr ----
+# exit code: 0

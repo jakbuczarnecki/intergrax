@@ -1,6 +1,6 @@
 # PDC-X — ownership matrix (PDC-P3-01)
 
-**Ticket:** T-IGX-036-D · **Status:** draft for architecture lock (OD-PDC-ADR-01 pending).
+**Ticket:** T-IGX-036-D · **Status:** Locked (OD-PDC-ADR-01 approved 2026-11-12, T-IGX-036-E; earlier text: draft for architecture lock, OD-PDC-ADR-01 pending).
 
 Rule: every PDC concern has **exactly one semantic owner** and **one composition root** (FRZ-OWN-01..05). Rows marked *decided here* resolve dual-owner findings from P2. Every resolution was checked against DUP-X; DUP-X records **no** disposition for any of them, so none overrides a certified decision.
 
@@ -32,6 +32,8 @@ Rule: every PDC concern has **exactly one semantic owner** and **one composition
 | D8 | Temporary tool output | tool runtime (spill-to-reference, ADR-PDC-08) | tool invocation composition | — |
 | D8 | Task artifact contracts | `contracts/task_artifacts.py` (*decided here*, PDC-D8-R017) | — | `applications/contracts/application_artifacts.py` is removed under COMPAT-X R5 (0 production importers) |
 | D8 | `ArtifactRef` name | `contracts/artifact_ref.ArtifactRef` (*decided here*, PDC-D8-R018) | — | `TraceArtifactRef` keeps its own name; the `ArtifactRef` aliases in `runtime/nexus/artifacts/models.py` and `runtime/nexus/tracing/trace_models.py` are removed |
+
+Note (EQO-A remediation, as of 2026-11-16): the last cell of the D8 row "Task artifact contracts" says `applications/contracts/application_artifacts.py` "is removed under COMPAT-X R5". At `2ab57e36d94eae98c962b3d7b09e5a540d8c70d2` the file `intergrax/applications/contracts/application_artifacts.py` still exists as a pure re-export shim of `intergrax/contracts/task_artifacts.py` (it defines no class; `tests/qualification/pdc_x/d8/test_d8_dedupe_and_aliases.py::test_application_artifacts_is_a_pure_reexport_shim`). The class definitions are removed; the module is kept for compatibility. It has no production importer: the only `import` statements of it under `*.py` are in three unit tests (`tests/unit/applications/test_environment_state_and_artifacts.py`, `tests/unit/applications/test_run_artifact_bundle_builder.py`, `tests/unit/runtime/nexus/orchestration/test_task_finisher_artifact_bundle.py`) and in the PDC D8 test; `intergrax/contracts/task_artifacts.py` L5 names it in a docstring only.
 
 ## Composition roots (no new roots introduced)
 

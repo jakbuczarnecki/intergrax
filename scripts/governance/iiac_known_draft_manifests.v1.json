@@ -1,0 +1,24 @@
+{
+  "schema": "iiac_known_draft_manifests.v1",
+  "description": "Published IIAC manifests that do not validate. They are listed, never edited: moving or editing them breaks recorded digests and preflight references (plan WP-7 V1). An entry is stale as soon as the file's bytes change or the file starts to validate. Written for T-IGX-044-E; supersession is recorded separately in the registers (not by this file).",
+  "entries": [
+    {
+      "path": "docs/project/maintainers/qualification/iiac_evidence/EVOL-X-W4-01-REAUDIT/iiac_audit_session_manifest.EVOL-X-W4-01.reaudit_draft.json",
+      "sha256": "9fb61fe4173c9b3948775f7a63a2db311e931477585b5dabc84eff3dce664a9f",
+      "reason": "EVOL-X W4-01 re-audit draft: certifier session, evidence and certification SHAs and the scope digest were never filled in; kept as published because the preflight and the evidence index cite its bytes.",
+      "supersession_register_ref": null
+    },
+    {
+      "path": "docs/project/maintainers/qualification/iiac_evidence/EVOL-X/audit/iiac_audit_session_manifest.EVOL-X.auditor_draft.json",
+      "sha256": "eef9ed1b2460eff9c2d0c2ce15b7b2e77412ea3a407c71a6c5c92acfb5fc0d0d",
+      "reason": "EVOL-X auditor draft: certification_publication_sha is a placeholder (certifier had not published); kept as published because evol_x_closure_publication_preflight.py cites it (REL_AUDITOR_DRAFT).",
+      "supersession_register_ref": null
+    },
+    {
+      "path": "docs/project/maintainers/qualification/iiac_evidence/EVOL-X/b4_reaudit/iiac_audit_session_manifest.EVOL-X-B4.reaudit_draft.json",
+      "sha256": "83db6500965e3ed55b4d0b5a397470312f013ecadd2090f95e792cd85a43b129",
+      "reason": "EVOL-X B4 re-audit draft: evidence and certification SHAs are placeholders; superseded by the b4_delta_reaudit manifest; kept as published because the evidence index cites its digest.",
+      "supersession_register_ref": null
+    }
+  ]
+}

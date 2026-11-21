@@ -29,7 +29,7 @@ PDC-X is **one** campaign with eight certification workstreams (`PDC-D1`..`PDC-D
 | `PDC_SHA_LADDER` → [`PDC_SHA_LADDER.md`](./PDC_SHA_LADDER.md) | P0 → P9 | Open |
 | `PDC_OPERATOR_DECISIONS` → [`PDC_OPERATOR_DECISIONS.md`](./PDC_OPERATOR_DECISIONS.md) | P0 → P9 | Open |
 | `PDC_CLOSED_WORLD_INVENTORY` → [`PDC_CLOSED_WORLD_INVENTORY.md`](./PDC_CLOSED_WORLD_INVENTORY.md) + [`.json`](./PDC_CLOSED_WORLD_INVENTORY.json) | P1 | Published (T-IGX-036-B) |
-| `PDC_DOMAIN_REQUIREMENTS_MATRIX` → [`.md`](./PDC_DOMAIN_REQUIREMENTS_MATRIX.md) + [`.json`](./PDC_DOMAIN_REQUIREMENTS_MATRIX.json) | P2 | Published (T-IGX-036-C; 168 rows, generated) |
+| `PDC_DOMAIN_REQUIREMENTS_MATRIX` → [`.md`](./PDC_DOMAIN_REQUIREMENTS_MATRIX.md) + [`.json`](./PDC_DOMAIN_REQUIREMENTS_MATRIX.json) | P2 | Published (T-IGX-036-C; generated; **172 rows** per `pdc_x_requirements.py --check`, this index said 168 earlier) |
 | `PDC_GAP_REGISTER` → [`PDC_GAP_REGISTER.md`](./PDC_GAP_REGISTER.md) | P2 | Published (generated) |
 | `PDC_FRZ_COVERAGE_MATRIX` → [`PDC_FRZ_COVERAGE_MATRIX.md`](./PDC_FRZ_COVERAGE_MATRIX.md) | P2 | Published (generated; OD-PDC-FRZ-01 approved) |
 | `PDC_OWNERSHIP_MATRIX` → [`PDC_OWNERSHIP_MATRIX.md`](./PDC_OWNERSHIP_MATRIX.md) | P3 | Locked (OD-PDC-ADR-01 approved; T-IGX-036-E) |
@@ -38,10 +38,15 @@ PDC-X is **one** campaign with eight certification workstreams (`PDC-D1`..`PDC-D
 | `PDC_DEPENDENCY_DAG` → [`PDC_DEPENDENCY_DAG.md`](./PDC_DEPENDENCY_DAG.md) | P4 | Published (generated) |
 | `PDC_CROSS_DOMAIN_TEST_MATRIX` → [`PDC_CROSS_DOMAIN_TEST_MATRIX.md`](./PDC_CROSS_DOMAIN_TEST_MATRIX.md) | P4 | Published (generated) |
 | `PDC_REG_DIAGNOSIS` → [`PDC_REG_DIAGNOSIS.md`](./PDC_REG_DIAGNOSIS.md) | P4 / P5-REG | Published (12 stale gates, 1 product regression) |
-| `PDC_DOMAIN_CERTIFICATION_MATRIX` | P7 | Not started |
-| `PDC_INDEPENDENT_AUDIT` | P8 | Not started |
-| `PDC_FINAL_ACCEPTANCE_REPORT` | P9 | Not started |
-| `PDC_ARCH_FREEZE_HANDOFF` | P9 | Not started |
+| `PDC_DOMAIN_CERTIFICATION_MATRIX` → [`PDC_DOMAIN_CERTIFICATION_MATRIX.md`](./PDC_DOMAIN_CERTIFICATION_MATRIX.md) | P7 / P8-04 | Published (CERT-PDC consolidation of domain dispositions; no row re-grade; not a stage certification) |
+| `PDC_INDEPENDENT_AUDIT` → [`PDC_INDEPENDENT_AUDIT.md`](./PDC_INDEPENDENT_AUDIT.md) | P8 | Published (IA-GLOBAL; addenda 1-3; final verdict `PASS_SCOPED` at `969cbd964`, with declared exceptions) |
+| `PDC_P8_04_ACTIVATION_CERTIFIER_REPORT` → [`PDC_P8_04_ACTIVATION_CERTIFIER_REPORT.md`](./PDC_P8_04_ACTIVATION_CERTIFIER_REPORT.md), [`PDC_P8_ACTIVATION_RUNBOOK.md`](./PDC_P8_ACTIVATION_RUNBOOK.md) | P8-04 | Published (binding manifest `PASS` scoped; IIAC activation `IN_FORCE`) |
+| `PDC_FINAL_ACCEPTANCE_REPORT` → [`PDC_FINAL_ACCEPTANCE_REPORT.md`](./PDC_FINAL_ACCEPTANCE_REPORT.md) | P9 | **Answers recorded in chat; awaiting the Operator's final confirmation** (lists the decisions to sign; not a closure) |
+| `PDC_ARCH_FREEZE_HANDOFF` → [`PDC_ARCH_FREEZE_HANDOFF.md`](./PDC_ARCH_FREEZE_HANDOFF.md) | P9 | **Answers recorded in chat; awaiting the Operator's final confirmation** (ARCH-FREEZE not entered) |
+| `PDC_EXCEPTION_REGISTER` → [`PDC_EXCEPTION_REGISTER.md`](./PDC_EXCEPTION_REGISTER.md) | P9 | **Answers recorded in chat; awaiting the Operator's final confirmation** |
+| `PDC_DEBT_REGISTER` → [`PDC_DEBT_REGISTER.md`](./PDC_DEBT_REGISTER.md) | P9 | **Answers recorded in chat; awaiting the Operator's final confirmation** |
+| `PDC_FRZ_PROMOTION_PROPOSAL` → [`PDC_FRZ_PROMOTION_PROPOSAL.md`](./PDC_FRZ_PROMOTION_PROPOSAL.md) | P9 | **Answers recorded in chat; awaiting the Operator's final confirmation** (no FRZ status changed; 225 / 26) |
+| `PDC_ROADMAP_CLOSURE_TEXT` → [`PDC_ROADMAP_CLOSURE_TEXT.md`](./PDC_ROADMAP_CLOSURE_TEXT.md) | P9 | **Answers recorded in chat; awaiting the Operator's final confirmation** (roadmap not edited; closure line not written) |
 
 ## Workstreams
 

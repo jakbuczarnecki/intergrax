@@ -18,3 +18,4 @@
 | [OD-PDC-ADR-01](./operator_decisions/OD-PDC-ADR-01.md) | Acceptance of ADR-PDC-01..08 (architecture lock, PDC-P3-08) | P3 | **APPROVED — Option A** (2026-11-12, T-IGX-036-E) |
 | [DELEGATION-PDC-P1-P3](./operator_decisions/DELEGATION-PDC-P1-P3.md) | Commission for delegate plan-approval signing (T-IGX-036-B/C/D) | P1 | RECORDED (Operator, 2026-11-12) |
 | [DELEGATION-PDC-STANDING](./operator_decisions/DELEGATION-PDC-STANDING.md) | Standing authorizations for the remainder of PDC-X (docs merges, product merges after MCP P8, delegate signing limits, IIAC activation delegate, auditors, GitHub Actions replay) | P5-P9 | RECORDED (Operator, 2026-11-13) |
+| [OD-PDC-X-CLOSE](./operator_decisions/OD-PDC-X-CLOSE.md) | Single-signature answers of the closing wave (outcome A, exceptions, debt rows, FRZ option N, limitations, handoff) | P9 | **ANSWERS RECORDED FROM CHAT (2026-11-16); awaiting the Operator's final confirmation; unsigned** |
