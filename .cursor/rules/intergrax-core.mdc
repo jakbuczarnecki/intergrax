@@ -47,4 +47,8 @@ alwaysApply: true
 - Plan finished: print `PLAN COMPLETE` and a short summary. `/igx-run-plan <file>` enforces this with a Stop hook.
 <!-- igx:authority end -->
 
+## Cursor orchestration
+
+- In Cursor: parent and every `Task` / subagent use **Composer only** (`composer-2.5`, `composer-2.5-fast`, or inherit). Never pass Task `model` with Claude, GPT, Gemini, Grok, or other non-Composer slugs unless the Operator overrides in chat.
+
 Canonical rule (SSOT): `agent-env/rules/intergrax-core.md`. Read it only when editing rules or when a section outside this extract is needed.

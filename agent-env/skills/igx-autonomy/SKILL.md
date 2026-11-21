@@ -41,3 +41,11 @@ Per item: the problem, the options, a recommendation, the consequence and the co
 - Sub-agents never launch sub-agents and never message the Operator; they report to the parent.
 - Typed agents: `igx-researcher` (read-only), `igx-implementer` (worktree), `igx-reviewer` (no shell), `igx-architect` (plans only). `general-purpose` is denied.
 - One `uv run pytest` at a time; the parent verifies a sub-agent's `DONE` against git before ticking the step.
+
+## Cursor — Composer-only models (operator policy)
+
+In Cursor, the parent and every `Task` / subagent call use **Composer only** (`composer-2.5`, `composer-2.5-fast`, or the parent's active Composer model).
+
+- Do **not** pass the Task tool `model` argument with `claude-*`, `gpt-*`, `gemini-*`, `grok-*`, `deepseek-*`, or any slug outside the Composer family.
+- Do **not** select `claude-sonnet-5-5-high`, `claude-opus-*`, or other listed non-Composer subagent models unless the Operator explicitly overrides in that chat.
+- Default: omit `model` so the subagent inherits the parent Composer model.
