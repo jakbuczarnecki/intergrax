@@ -1,8 +1,8 @@
 # ARCH-FREEZE continuation checkpoint (development train)
 
-**Updated:** 2026-11-21 (autonomy fala 2)  
-**Base branch:** `origin/development` @ post-merge `af-dev-merge` (FC3 regression + 043-M scaffold + plan rev2)  
-**Arch-freeze train reference:** `origin/arch-freeze/rw-train` @ `ca72197700b29b7b236e705fd4e3169f62db8a48` (operator pin `711ee4a11` is an ancestor on the train line, not on `development`)
+**Updated:** 2026-11-21 (autonomy fala 5)  
+**Base branch:** `origin/development` @ `af-dev-merge` (FC-3 + G-09 + trust 1–2 + fala 5 docs)  
+**Arch-freeze train reference:** `origin/arch-freeze/rw-train` @ `c443865e9` — cherry-pick **QUEUED**, merge **STOP** do green `governance-fast`
 
 ## Parallel workstreams (development tor)
 
@@ -11,8 +11,8 @@
 | G1 | `af-dev-pt-fc3` | `af-dev-pt-fc3` | T-IGX-043-C | Regression §8.6 follow-up merged (`413fb9186`) | Merged fala 2 |
 | G2 | `af-dev-pt-wf` | `af-dev-pt-wf` | T-IGX-043-J | Plan §7; G-09 merged; product blocked do NT-WF-* | plan_approved |
 | G3 | `af-dev-rw-trust` | `af-dev-rw-trust` | T-IGX-051-C | Plan §7 rev-2 minimum; product **BLOCKED** | plan_approved |
-| G4 | (this commit) | `af-dev-rc1-docs` | ticket-less docs | RC-1 continuation checkpoint + RW-PLAN-AUDIT status | In progress |
-| G5 | `af-dev-043m` | `af-dev-043m` | T-IGX-043-M | Ticket + plan scaffold (`1431015a8`); Part E recovery | draft |
+| G4 | (this commit) | `af-dev-rc1-docs` | ticket-less docs | RC-2 exit checklist + train queue (`RC2_EXIT_CHECKLIST.md`) | Done (fala 5) |
+| G5 | `af-dev-043m` | `af-dev-043m` | T-IGX-043-M | Smoke green → `in_progress`; Part E manifest **BLOCKED** | in_progress |
 
 ## RW-PLAN-AUDIT (`T-AF2-RW-PLAN-AUDIT`)
 

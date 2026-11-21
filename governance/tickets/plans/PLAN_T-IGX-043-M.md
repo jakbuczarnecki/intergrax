@@ -56,6 +56,10 @@ uv run python -m pytest tests/qualification/ent_audit_x/unit/test_changed_since_
 
 Logs: `.tmp/session/arch-freeze/REGRESSION-78-fala4/` (with FC-3 core bundle).
 
+### 7.1b Smoke re-run (fala 5)
+
+Same command; **3 passed** on 2026-11-21 @ `af-dev-merge` → ticket lifecycle `in_progress` (manifest Part E unchanged BLOCKED).
+
 ### 7.3 Out of scope (unchanged)
 
 Manifest growth 85→91, baseline promotion, train merge — `T-IGX-043-I` Part E on train only until OD allows development product batch.
