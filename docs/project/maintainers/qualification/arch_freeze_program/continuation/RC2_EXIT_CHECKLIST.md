@@ -38,7 +38,7 @@
 |----|-----------|-------------|
 | RC2-C1 | `CONTINUATION_AUTONOMY_CHECKPOINT.md` zaktualizowany (fala 5) | [x] |
 | RC2-C2 | `CHECKPOINT.md` — G4 RC-1 → RC-2 checklist done | [x] |
-| RC2-C3 | Push `origin/development` | [x] | `e4f7c4999` |
+| RC2-C3 | Push `origin/development` | [x] | `61516a7cf` |
 
 ## Werdykt RC-2 (fala 5)
 
