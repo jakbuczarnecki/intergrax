@@ -203,6 +203,7 @@ def create_legal_backend_app(
 
     if settings.include_interaction_routes:
         interaction_service = wire_interaction_intake_service(
+            env=env,
             interaction_surface=settings.interaction_surface,
             task_executor=HostTaskExecutionExecutor(host_execution),
             task_enricher=task_enricher,

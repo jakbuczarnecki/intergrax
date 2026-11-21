@@ -97,8 +97,8 @@ def wire_harness_host_interaction_intake(
     task_enricher: TaskEnricher | None = None,
 ) -> InteractionIntakeService:
     """Inbound interaction intake routed through canonical host execution."""
-    _ = runtime
     return wire_interaction_intake_service(
+        env=runtime.environment,
         task_executor=HostTaskExecutionExecutor(host_execution, task_enricher=task_enricher),
         interaction_surface=interaction_surface,
         task_enricher=task_enricher,
