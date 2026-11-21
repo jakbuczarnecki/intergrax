@@ -15,7 +15,7 @@
 
 Prereg SHA256: `51d8f0b813cc4721650d73a3eab662433b00b9cf7d96ac1ab7607c34376ca38e` (`DES_PREREG.json`).
 
-**Result:** 1 error in 0.88s (exit 4).
+**Wave-6 rerun (2026-11-21):** 1 failed, 31 passed in 21.09s (exit 1). CONFIG-X qualification and adversarial gates green; `test_unresolved_capabilities_fail_closed` fails closed on missing optional extra `llm-langchain-ollama` (environment probe, not in prereg sync set).
 
 ## Disposition (pre-AUD)
 

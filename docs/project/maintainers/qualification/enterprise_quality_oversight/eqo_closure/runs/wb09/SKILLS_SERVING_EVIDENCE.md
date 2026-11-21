@@ -14,13 +14,13 @@
 
 Prereg SHA256: `a9361ab1914706309bc7081f553d335b021854a2a2f808233efc1ba7f0461030` (`DES_PREREG.json`).
 
-**Result:** 1 failed, 65 passed in 11.30s (exit 1).
+**Wave-6 rerun (2026-11-21):** 66 passed in 66.86s (exit 0). Prior wave-1 slice (exit 1) superseded by this log under pytest lock with dev-unit-cert sync.
 
 ## Disposition (pre-AUD)
 
 | Finding | DIS (interim) |
 |---------|----------------|
-| A2-027 | `BLOCKED — pytest slice failed on TRAIN_PIN; hypothesis remains open pending triage` |
-| A4-040 | `BLOCKED — pytest slice failed on TRAIN_PIN; hypothesis remains open pending triage` |
+| A2-027 | `NOT_VERIFIED` — skills + PROD-Q serving slice green; post-acceptance drift hypothesis open for session E |
+| A4-040 | `NOT_VERIFIED` — wiring gate green; uvicorn direct-start inventory not replayed in slice |
 
 Evidence log: `pytest_wb09_exe.log`. AUD session E pending for all rows.

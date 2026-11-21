@@ -15,14 +15,14 @@
 
 Prereg SHA256: `8b732ccd149bc1b02f63f7ebde4c5ec64add50a2c975f1a732c6c1935781d00a` (`DES_PREREG.json`).
 
-**Result:** 1 failed, 12 passed in 26.70s (exit 1).
+**Wave-6 rerun (2026-11-21):** 13 passed in 79.41s (exit 0). Prior wave-1 slice (exit 1) superseded by this log under pytest lock with dev-unit-cert sync.
 
 ## Disposition (pre-AUD)
 
 | Finding | DIS (interim) |
 |---------|----------------|
-| A2-047 | `BLOCKED — pytest slice failed on TRAIN_PIN; hypothesis remains open pending triage` |
-| A7-013 | `BLOCKED — pytest slice failed on TRAIN_PIN; hypothesis remains open pending triage` |
-| A5-015 | `BLOCKED — pytest slice failed on TRAIN_PIN; hypothesis remains open pending triage` |
+| A2-047 | `NOT_VERIFIED` — prereg pytest slice green; FRZ vs QUAL-X security backlog hypothesis open for session E |
+| A7-013 | `NOT_VERIFIED` — MCP P5 batch green on pin; stage-closure narrative not replayed in this slice |
+| A5-015 | `NOT_VERIFIED` — ENT-AUDIT temporal gap hypothesis; no full cert replay in slice |
 
 Evidence log: `pytest_wb04_exe.log`. AUD session E pending for all rows.
