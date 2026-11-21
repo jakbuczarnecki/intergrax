@@ -122,6 +122,18 @@
 
 **Werdykt J4 (Runda 1):** **BLOCKED** — Q02 + governance-fast stale pin `969cbd964`.
 
+
+### RC3-J5 — FCS merge train → `development`
+
+| Step | Rola | Artefakt / komenda | Bramka | Stan |
+|------|------|-------------------|--------|------|
+| RC3-J5-1 | architect | Rung `R`: `git diff G2 R` — wyłącznie `docs/` | Wymaga G2 | BLOCKED |
+| RC3-J5-2 | operator | Mandat **T-AF2-RW-MERGE**; product tree ≡ G2 po FCS | **D8=STOP** | BLOCKED |
+| RC3-J5-3 | orchestrator | Klasyfikacja **12-commit** `development` (MEP N2) przed merge | RC3X-C3 | OPEN |
+| RC3-J5-4 | implementer | PR / merge `arch-freeze/rw-train` → `development` | Train green + Q02 | BLOCKED |
+
+**Werdykt J5 (Runda 1):** **BLOCKED** — **nie FCS**.
+
 ## Werdykt (exit prep only)
 
 | Warstwa | Werdykt |
