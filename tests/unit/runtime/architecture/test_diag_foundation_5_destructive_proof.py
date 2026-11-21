@@ -266,6 +266,7 @@ def test_df5_case_d_production_scenario_without_diagnostics_fails(
     tmp_path: Path,
     monkeypatch: pytest.MonkeyPatch,
     _stub_llm: None,
+    df5_production_memory_tenant_binding: None,
 ) -> None:
     monkeypatch.setattr(
         "intergrax.applications._shared.diagnostic_runtime_wiring.try_build_terminal_execution_diagnostic_port",
@@ -286,6 +287,7 @@ def test_df5_case_d_production_scenario_without_diagnostics_fails(
 def test_df5_case_d_production_scenario_with_diagnostics_attaches(
     tmp_path: Path,
     _stub_llm: None,
+    df5_production_memory_tenant_binding: None,
 ) -> None:
     composition = build_valid_minimal_production_scenario_fixture(
         tmp_path,
