@@ -5,14 +5,22 @@
 
 from __future__ import annotations
 
+from collections.abc import Mapping
 from dataclasses import dataclass, field
-from typing import TYPE_CHECKING, Any, Mapping, Optional, cast
+from enum import StrEnum
+from typing import TYPE_CHECKING, Any, Protocol, cast
 
+from intergrax.contracts.execution_environment_isolation import (
+    ProfileSandboxIsolationSource,
+)
 from intergrax.integrations.contracts.billing_meter import BillingMeterBackend
 from intergrax.integrations.contracts.browser_automation import BrowserAutomation
-from intergrax.integrations.contracts.cloud_platform import CloudPlatform
 from intergrax.integrations.contracts.ci_cd import CiCdBackend
+from intergrax.integrations.contracts.cloud_platform import CloudPlatform
 from intergrax.integrations.contracts.collaboration_suite import CollaborationSuite
+from intergrax.integrations.contracts.configured_relational_store_execution import (
+    ConfiguredRelationalStoreExecutionPort,
+)
 from intergrax.integrations.contracts.crm import CrmBackend
 from intergrax.integrations.contracts.document_parser import DocumentParser
 from intergrax.integrations.contracts.document_store import DocumentStore
@@ -27,16 +35,9 @@ from intergrax.integrations.contracts.message_bus import MessageBus
 from intergrax.integrations.contracts.notification_channel import NotificationChannel
 from intergrax.integrations.contracts.object_storage import ObjectStorage
 from intergrax.integrations.contracts.observability_backend import ObservabilityBackend
-from intergrax.integrations.contracts.configured_relational_store_execution import (
-    ConfiguredRelationalStoreExecutionPort,
-)
 from intergrax.integrations.contracts.relational_store import RelationalStore
-from intergrax.integrations.relational_store_execution_adapter import (
-    RelationalStoreExecutionAdapter,
-)
 from intergrax.integrations.contracts.sandbox_host import SandboxHostBackend
 from intergrax.integrations.contracts.search_provider import SearchProvider
-from intergrax.tools.providers.websearch.executor_contract import WebSearchQueryExecutor
 from intergrax.integrations.contracts.secrets_store import SecretsStore
 from intergrax.integrations.contracts.security_scanner import SecurityScannerBackend
 from intergrax.integrations.contracts.speech_provider import SpeechProviderBackend
@@ -44,11 +45,12 @@ from intergrax.integrations.contracts.wiki_knowledge import WikiKnowledge
 from intergrax.integrations.contracts.workflow_orchestrator import (
     WorkflowOrchestratorBackend,
 )
-from intergrax.contracts.execution_environment_isolation import (
-    ProfileSandboxIsolationSource,
+from intergrax.integrations.relational_store_execution_adapter import (
+    RelationalStoreExecutionAdapter,
 )
 from intergrax.model_inference.media_boundary import RemoteMediaEgressPolicy
 from intergrax.runtime.workspace.execution_port import WorkspaceExecutionPort
+from intergrax.tools.providers.websearch.executor_contract import WebSearchQueryExecutor
 from intergrax.tools.registry.runtime_bindings import (
     AgentRegistryBinding,
     HumanDecisionStoreBinding,
@@ -63,6 +65,34 @@ from intergrax.tools.registry.runtime_bindings import (
 
 if TYPE_CHECKING:
     from intergrax.distributed.source_operation import SourceOperationCoordinator
+
+
+class StorageAccessOutcome(StrEnum):
+    ALLOWED = "allowed"
+    DENIED = "denied"
+
+
+@dataclass(frozen=True)
+class StorageAccessAuditEvent:
+    tenant_id: str
+    tool_id: str
+    outcome: StorageAccessOutcome
+    key_digest: str
+    reason_code: str
+
+
+class StorageAccessAuditSink(Protocol):
+    def record(self, event: StorageAccessAuditEvent) -> None: ...
+
+
+@dataclass
+class ListStorageAccessAuditSink:
+    """In-process collector for storage tool access audit events (tests and host wiring)."""
+
+    events: list[StorageAccessAuditEvent] = field(default_factory=list)
+
+    def record(self, event: StorageAccessAuditEvent) -> None:
+        self.events.append(event)
 
 
 @dataclass(frozen=True)
@@ -89,12 +119,12 @@ class ToolWiringContext:
     wiki_knowledge: WikiKnowledge | None = None
     notification_channel: NotificationChannel | None = None
     observability_backend: ObservabilityBackend | None = None
-    observability_backends: dict[str, ObservabilityBackend] = field(
-        default_factory=dict
-    )
+    observability_backends: dict[str, ObservabilityBackend] = field(default_factory=dict)
     observability_role_backends: ObservabilityRoleBackends = field(
         default_factory=ObservabilityRoleBackends,
     )
+    tenant_id: str | None = None
+    storage_audit_sink: StorageAccessAuditSink | None = None
     object_storage: ObjectStorage | None = None
     relational_store: RelationalStore | None = None
     relational_store_execution: ConfiguredRelationalStoreExecutionPort | None = None
@@ -162,7 +192,7 @@ class ToolWiringContext:
         rag_profile: Any | None = None,
         retrieval_service: Any | None = None,
         websearch_executor: WebSearchQueryExecutor | None = None,
-        extras: Optional[Mapping[str, Any]] = None,
+        extras: Mapping[str, Any] | None = None,
     ) -> ToolWiringContext:
         """
         Resolve common integration contract slots from an ``IntegrationProfile``.
@@ -173,11 +203,11 @@ class ToolWiringContext:
             IntegrationCategory,
             UnknownIntegrationError,
         )
-        from intergrax.integrations.registry.catalog import get_entry
         from intergrax.integrations.contracts.binding import IntegrationBinding
         from intergrax.integrations.contracts.prebuilt_category_guard import (
             validated_prebuilt_instance_for_category,
         )
+        from intergrax.integrations.registry.catalog import get_entry
         from intergrax.integrations.registry.factory import (
             resolve,
             resolve_from_profile,
@@ -255,9 +285,7 @@ class ToolWiringContext:
 
         relational_store = _optional(IntegrationCategory.RELATIONAL_STORE)
         relational_store_execution = (
-            RelationalStoreExecutionAdapter(relational_store)
-            if relational_store is not None
-            else None
+            RelationalStoreExecutionAdapter(relational_store) if relational_store is not None else None
         )
 
         return cls(

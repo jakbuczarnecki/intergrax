@@ -28,7 +28,7 @@ from intergrax.platform.enterprise_audit.runner import EnterpriseAuditRunner
 
 _CLI = Path(__file__).resolve().parent / "run_enterprise_audit.py"
 
-_SEMANTIC_CHECK_COUNT = 85
+_SEMANTIC_CHECK_COUNT = 91
 _ENT_A_SEMANTIC_COUNT = 63
 _ENT_A_ACCEPTANCE_GLOB = "tests/qualification/ent_audit_x/acceptance/test_ent_a_ent_a_*.py"
 _TEN_ACCEPTANCE_GLOB = "tests/qualification/ent_audit_x/acceptance/test_ent_a_ten_*.py"
@@ -212,8 +212,8 @@ def validate_full_artifacts(output_dir: Path, expected_sha: str) -> tuple[bool, 
         return False, f"report current_sha != {expected_sha}"
     if em.get("qualification_sha") != expected_sha:
         return False, "manifest qualification_sha mismatch"
-    if em.get("checks_planned") != 85 or em.get("checks_executed") != 85:
-        return False, "checks_planned/executed not 85/85"
+    if em.get("checks_planned") != 91 or em.get("checks_executed") != 91:
+        return False, "checks_planned/executed not 91/91"
     if em.get("checks_skipped", 1) != 0:
         return False, "checks_skipped must be 0"
     if em.get("coverage_label") != "FULL":
@@ -238,7 +238,7 @@ def validate_full_artifacts(output_dir: Path, expected_sha: str) -> tuple[bool, 
 
     if not verify_evidence_manifest(output_dir):
         return False, "evidence_manifest verification failed"
-    return True, "FULL 85/85 + evidence integrity validated"
+    return True, "FULL 91/91 + evidence integrity validated"
 
 
 _QUAL_WAVE_RUNS_REL = Path("tests/qualification/ent_audit_x/baselines/qual_wave_runs")
@@ -313,8 +313,8 @@ def run_first_freeze_candidate(root: Path, wave_output: Path) -> tuple[int, str]
         )
         if code is not EnterpriseAuditExitCode.CLEAN:
             return int(code), f"FREEZE candidate exit {code}"
-        if manifest.checks_executed != 85 or manifest.checks_skipped != 0:
-            return 1, f"FREEZE candidate {manifest.checks_executed}/85 skipped={manifest.checks_skipped}"
+        if manifest.checks_executed != 91 or manifest.checks_skipped != 0:
+            return 1, f"FREEZE candidate {manifest.checks_executed}/91 skipped={manifest.checks_skipped}"
         cand = candidate_baseline_path(baseline_dir)
         if not cand.is_file():
             return 1, "candidate baseline file missing"

@@ -29,7 +29,7 @@ NO_CHECK_REQUIRED_RULES: tuple[str, ...] = ()
 
 
 # PDC product-domain prefix -> existing manifest check ids (B-P6-G, T-IGX-036-V). Longest prefix wins, so a more
-# specific prefix repeats the ids of its parent area. Every id exists in the shipped manifest (85 checks); each
+# specific prefix repeats the ids of its parent area. Every id exists in the shipped manifest (91 checks); each
 # rule names the entrypoint that already exercises the area.
 PDC_DOMAIN_IMPACT_RULES: tuple[tuple[str, tuple[str, ...]], ...] = (
     # ebh_3 dependency ownership gate + ebh_5 factory/plugin one-pass + hardening_3 layer boundary gate.
@@ -261,6 +261,7 @@ EVOL_X_TREE_IMPACT_RULES: tuple[tuple[str, tuple[str, ...]], ...] = tuple(
 ENGINE_TREE_IMPACT_RULES: tuple[tuple[str, tuple[str, ...]], ...] = (
     ("intergrax/platform/enterprise_audit/data/schemas/frz_coverage.v1.schema.json", ("ENT-A-INV-02",)),
     ("intergrax/platform/enterprise_audit/digests.py", ("ENT-A-INV-02",)),
+    ("intergrax/platform/enterprise_audit/manifest.py", ("ENT-A-INV-02",)),
 )
 
 
@@ -269,14 +270,23 @@ ENGINE_TREE_IMPACT_RULES: tuple[tuple[str, tuple[str, ...]], ...] = (
 # ids each group maps to EVERY manifest check (explicit FULL): the generator attaches all manifest check ids. One entry
 # per touched package group; re-derive the list at the integrated wave head.
 WAVE_DIFF_FULL_IMPACT_PREFIXES: tuple[str, ...] = (
+    # Slice 1 — remediation-wave groups touched on `development` since PDC baseline (no domain rule).
+    "intergrax/debug",
+    "intergrax/lab",
+    "intergrax/model_inference",
+    "intergrax/runtime/interactions",
+    "intergrax/runtime/notifications",
+    # Slice 2 — train-parity wave head + KNOWN_RED residuals (background_tasks, sandbox); manifest Part E BLOCKED.
     "agents/local_search",  # PT-WA: local search agent steps
     "agents/tool_selection_qualifier",  # PT-WA: tool selection qualifier agent
     "agents/web_search_qualifier",  # PT-WA: web search qualifier agent
+    "agents/model_routing_qualifier",  # RW-RUNTIME (PR #670): model routing qualification types
     "intergrax/agents/readiness",  # touched since the PDC baseline: readiness scoreboard
     "intergrax/runtime/wiring",  # touched since the PDC baseline: LLM resolver wiring
     "intergrax/distributed",  # PT-FC4: key-value store durability attestation
-    "agents/model_routing_qualifier",  # RW-RUNTIME (PR #670): model routing qualification types
     "intergrax/multimedia",  # RW-RUNTIME (PR #670): images loader
+    "intergrax/background_tasks",
+    "intergrax/runtime/sandbox",
 )
 
 

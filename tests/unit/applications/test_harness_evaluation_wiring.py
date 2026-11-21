@@ -4,6 +4,8 @@
 
 from __future__ import annotations
 
+from dataclasses import replace
+
 import pytest
 from intergrax.applications._shared.evaluation_assembly_resolver import (
     EvaluationAssemblyError,
@@ -111,6 +113,57 @@ def test_validate_evaluation_wiring_strict_online_registry_requires_tenant() -> 
     assert any("G-09" in error for error in result.errors)
     with pytest.raises(EvaluationAssemblyError):
         assert_evaluation_assembly_valid(wiring, env)
+
+
+def test_validate_evaluation_wiring_product_profile_online_registry_requires_tenant() -> None:
+    """G-09 follow-up: PRODUCT application profile is fail-closed without tenant scope."""
+    env = ApplicationEnvironmentProfile.product_defaults(profile_id="eval.g09.product")
+    env = env.model_copy(
+        update={
+            "evaluation_profile": env.evaluation_profile.model_copy(
+                update={"online_registry_enabled": True, "shadow_eval_enabled": True}
+            )
+        }
+    )
+    wiring = wire_application_evaluation(env, tenant_id=None)
+    result = validate_evaluation_wiring(wiring, env)
+    assert not result.valid
+    assert any("G-09" in error for error in result.errors)
+
+
+def test_validate_evaluation_wiring_strict_online_registry_whitespace_tenant_rejected() -> None:
+    """G-09 follow-up: whitespace-only tenant_id is treated as unscoped."""
+    env = ApplicationEnvironmentProfile.lab_defaults(profile_id="eval.g09.ws")
+    env = env.model_copy(update={"execution_mode": ExecutionMode.STRICT})
+    env = env.model_copy(
+        update={
+            "evaluation_profile": env.evaluation_profile.model_copy(
+                update={"online_registry_enabled": True, "shadow_eval_enabled": True}
+            )
+        }
+    )
+    wiring = replace(
+        wire_application_evaluation(env, tenant_id="tenant-placeholder"),
+        tenant_id="   ",
+    )
+    result = validate_evaluation_wiring(wiring, env)
+    assert not result.valid
+    assert any("G-09" in error for error in result.errors)
+
+
+def test_validate_evaluation_wiring_strict_online_registry_accepts_scoped_tenant() -> None:
+    """G-09 follow-up: STRICT hosts pass when the evaluation registry is tenant-scoped."""
+    env = ApplicationEnvironmentProfile.lab_defaults(profile_id="eval.g09.ok")
+    env = env.model_copy(update={"execution_mode": ExecutionMode.STRICT})
+    env = env.model_copy(
+        update={
+            "evaluation_profile": env.evaluation_profile.model_copy(
+                update={"online_registry_enabled": True, "shadow_eval_enabled": True}
+            )
+        }
+    )
+    wiring = wire_application_evaluation(env, tenant_id="tenant-eval-1")
+    assert_evaluation_assembly_valid(wiring, env)
 
 
 def test_validate_evaluation_wiring_rejects_baseline_without_trend() -> None:
