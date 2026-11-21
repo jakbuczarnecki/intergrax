@@ -1,7 +1,7 @@
 # EQO orchestration handoff (F1 bookkeeping)
 
-**Generated:** 2026-11-21T11:36:30+00:00  
-**Branch:** `eqo/w1-f1-view` @ `a0598ba3e4f4`  
+**Generated:** 2026-11-21T12:30:00+00:00  
+**Branch:** `eqo/w1-f1-view`  
 **Ticket:** `governance/tickets/T-IGX-046-F.md` (F1 view slice)
 
 ## Verified audit facts (2026-11-21)
@@ -9,10 +9,12 @@
 | Ref | SHA | Role |
 |-----|-----|------|
 | `origin/development` | `a0598ba3e4f4f903eb4da3db8ea012d5cbf71225` | F1 projection evidence SHA |
-| `origin/arch-freeze/rw-train` | `8e146e21cd8c63a47d621edc05d5f0036ba0c9ee` | Train pin (not necessarily local) |
+| `origin/arch-freeze/rw-train` | `8e146e21cd8c63a47d621edc05d5f0036ba0c9ee` | Train pin |
 | PR #680 merge | `65ef1f196` | On train via parent `dbaebfa8`; **not** on `development` |
 
 `IIAC_POLICY_ACTIVATION_RECORD.json` remains `IN_FORCE` globally. That is **not** EQO certification and **not** FRZ promotion.
+
+**Integration:** not done. **Push** and **PR** are operator actions only. **FCS**, **PT-Q**, and **M3** are not executed by EQO.
 
 ## 1029 obligation paths (section 2 first-match)
 
@@ -35,27 +37,71 @@ OWNER_DECISION_REQUIRED=313;UNRESOLVED_EXACT_BLOCKER=310;DOCUMENTATION_CORRECTIO
 | `FORMAL_ACCEPTED_LIMITATION` | 0 |
 | `DUPLICATE_OR_INDEX_ONLY` | 0 |
 
-## Waves
+## FORMAL_REQUALIFICATION_REQUIRED currency (165 rows)
 
-### WAVE-01 — EQO-PKG-A4-006 (not F1)
+Artifact: `EQO_REQUAL_CURRENCY.json` (register-sourced SHA fields; view blanket `evidence_sha` not copied).
 
-- **Status:** NOT_STARTED — owned by separate implementer on `eqo/w1-a4-006`.
-- **Base:** `origin/development` @ `a0598ba3…`.
-- F1 does not write `orchestration/packets/EQO-PKG-A4-006/`.
+| Currency | Count |
+|----------|------:|
+| `CURRENT` (matches `development` or train pin) | 0 |
+| `STALE` (missing or other SHA) | 165 |
 
-### WAVE-02 — train fail-closed cluster
+No register row `lifecycle_state` set to `CLOSED` in this slice.
 
-- **Status:** NOT_STARTED — blocked until:
-  1. Local object `8e146e21cd8c63a47d621edc05d5f0036ba0c9ee` exists.
-  2. Operator write-set line for `applications/research_application/serving/schemas.py` and `fastapi_router.py`.
-  3. `T-IGX-043-C` implementation go (existing AR-41 / SCOPE — not invented here).
+## Package and replay facts (verified, not pushed unless noted)
+
+### WAVE-01 — EQO-PKG-A4-006
+
+| Field | Value |
+|-------|-------|
+| Branch | `eqo/w1-a4-006` |
+| Commit | `960205aaaf7adf8c8bfd7075e9bfd60031b76417` |
+| pytest | 3 passed |
+| Technical verdict | `PASS_WITH_SCOPED_LIMITATIONS` |
+| Pushed | no |
+| Trailer | `Co-authored-by Cursor` present — **strip before any push** |
+
+### WAVE-02 — EQO-PKG-A4-027
+
+| Field | Value |
+|-------|-------|
+| Branch | `eqo/w2-a4-027` |
+| Commit | `06604af5347883dd26c98d54e72e49f2f6f58013` |
+| Ticket | `T-IGX-055-B` |
+| pytest | 1 passed |
+| Technical verdict | `PASS_WITH_SCOPED_LIMITATIONS` |
+| Pushed | no |
+| Tip | `T-IGX-052-A` absent at branch tip |
+
+### Train replays @ `8e146e21cd8c63a47d621edc05d5f0036ba0c9ee`
+
+| Cluster | pytest |
+|---------|--------|
+| A4-026 | 12 passed |
+| A4-017 | 11 passed |
+| FC-3 / FC-1 files | 54 passed |
+| FC-2 queue worker | 5 passed (`--extra dev-ci`) |
+
+`test_fc1_host_task_routing_posture.py` is **absent** at `8e146e21`.
+
+**REPLAY_ONLY** (zero new commits): FC-1, FC-2, FC-3, and the fifteen-id pass  
+(A4-002, A4-004, A4-005, A4-018, A2-009, A2-038, A5-001, A6-002, A6-003, A6-005, A6-007, A6-008).
+
+**Not closed:** A4-034, A6-006, A6-001.
+
+## F1 view bookkeeping commit
+
+| Field | Value |
+|-------|-------|
+| Prior F1 view commit | `321957488fcc0c6c65f9172f9de9b2b062ff3720` |
+| Trailer | `Co-authored-by Cursor` on that commit — strip before any push |
 
 ## Artefacts
 
 - `EQO_REMAINING_OBLIGATION_VIEW.json` — 1029-row projection (`lifecycle_state` stays INGESTED; no CLOSED).
-- `EQO_ORCHESTRATION_STATE.json` — wave map + counters.
-- `EQO_MASTER_CLOSURE_MATRIX.md` — factual #680 / IIAC sentence corrections only; C16 remains `NOT_VERIFIED`; no C* → `FULLY_MET`.
+- `EQO_REQUAL_CURRENCY.json` — 165-row register-backed currency vs development/train pins.
+- `EQO_ORCHESTRATION_STATE.json` — wave map, package SHAs, counters.
 
 ## Forbidden this slice
 
-FRZ promotion, `EQO_CLOSED`, editing `IIAC_POLICY_ACTIVATION_RECORD.json`, `orchestration/packets/` writes.
+FRZ promotion, `EQO_CLOSED`, editing `IIAC_POLICY_ACTIVATION_RECORD.json`, editing `register.jsonl`, `orchestration/packets/` writes, setting any lifecycle to `CLOSED`.
