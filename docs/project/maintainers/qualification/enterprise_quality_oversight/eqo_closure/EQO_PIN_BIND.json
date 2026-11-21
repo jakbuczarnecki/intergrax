@@ -1,0 +1,17 @@
+{
+  "generated_utc": "2026-11-21T05:40:00Z",
+  "fetch_verified": true,
+  "DOC_PIN": {
+    "expected": "8cee3c5a913f234e8fb65053b6ab4f34ed78249b",
+    "actual": "8cee3c5a913f234e8fb65053b6ab4f34ed78249b",
+    "match": true
+  },
+  "TRAIN_PIN": {
+    "expected": "28c27cb896d02e0185b9fa02047411fa152f6469",
+    "actual": "28c27cb896d02e0185b9fa02047411fa152f6469",
+    "match": true
+  },
+  "A_BASELINE": "258bbf6abb6fdbb92ef0185d058527fbb1e47f04",
+  "PR680_TIP": "a6999e97bb46561e1ba578c9364c13ed310f1d54",
+  "note": "Pins unchanged since EQO-CLOSURE v2 plan; re-run EQO-W0-01 after fetch if HEAD moves."
+}

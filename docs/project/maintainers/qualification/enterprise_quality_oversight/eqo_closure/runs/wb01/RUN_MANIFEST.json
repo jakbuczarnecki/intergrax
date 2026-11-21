@@ -1,0 +1,14 @@
+{
+  "schema": "eqo_w3_run_manifest.v1",
+  "workstream": "WB01",
+  "mode": "READ_ONLY_PLUS_ISOLATED_PYTEST",
+  "evidence_pin": "28c27cb896d02e0185b9fa02047411fa152f6469",
+  "executed_utc": "2026-11-21T05:55:00Z",
+  "pytest_command": "uv run pytest tests/unit/governance/test_iiac_activation_gate.py -q --tb=line",
+  "pytest_exit_code": 1,
+  "pytest_summary": "1 failed, 23 passed, 1 skipped",
+  "primary_failure": "test_canonical_policy_is_in_force_and_verifies",
+  "log_path": "eqo_closure/runs/wb01/pytest_wb01_readonly.log",
+  "cross_refs": ["EQO-W2-01", "EQO-W2-08", "pr680_governance_fast.md"],
+  "blockers": ["PR680_NOT_ON_TRAIN_PIN", "IIAC_NOT_IN_FORCE"]
+}
