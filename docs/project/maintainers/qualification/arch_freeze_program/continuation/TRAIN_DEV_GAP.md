@@ -7,7 +7,8 @@
 
 | Ref | SHA (40) | Krótki |
 |-----|----------|--------|
-| `origin/development` | `e61e5136aa0617eea69b97ceedd8da38a4d0e796` | `e61e5136a` |
+| `development` (MEP W4) | `d043a21c67cb57475a4f36a2baff7020718ec7cb` | `d043a21c6` |
+| TOR C snapshot (historyczny) | `e61e5136aa0617eea69b97ceedd8da38a4d0e796` | `e61e5136a` |
 | `origin/arch-freeze/rw-train` | `dbaebfa8cd13a6ba8bfa6eef2cdf581216ddb3d2` | `dbaebfa8` |
 | Merge-base dev ↔ train | `70d73f0f08325a39c6b2fd0e3b00f4cab7e83033` | `70d73f0f0` |
 | Slice tip (cherry-pick na PR) | `1cec68222751a128feab00e7b80063a09983296e` | `1cec68222` |
@@ -17,9 +18,9 @@
 | Kierunek | Commity | Znaczenie |
 |----------|---------|-----------|
 | `rw-train` … not in `development` | **217** | Historia train / EQO — poza merge mandate |
-| `development` … not in `rw-train` | **286** | Remediacja product + docs na torze primary — **do cherry-pick** / cite |
+| `development` … not in `rw-train` | **320** @ `d043a21c6` | Remediacja product + docs na torze primary — **do cherry-pick** / cite |
 
-Polecenie SSOT: `git log --oneline 70d73f0f0..e61e5136a` (dev-only); `git log --oneline 70d73f0f0..dbaebfa8` (train-only).
+Polecenie SSOT: `git log --oneline 70d73f0f0..d043a21c6` (dev-only); `git log --oneline 70d73f0f0..dbaebfa8` (train-only).
 
 Product na `development` musi **cherry-pick/rebase** z trainu tam, gdzie slice już istnieje na trainie — **nie** pełny merge `rw-train` bez mandatu operatora (`CHECKPOINT.md`, OD-AF-AUTO-01).
 
@@ -33,7 +34,7 @@ Product na `development` musi **cherry-pick/rebase** z trainu tam, gdzie slice j
 |----------|------|-------|
 | `governance-fast` @ merge **#699** / train HEAD `dbaebfa8` | **FAILURE (ACT-N11)** | RC2-B2 / replay — **OPEN**; product paths @ train HEAD |
 | `ci-smoke` / `rag-gate` | **red** @ merge PR | zapisany stan checków merge |
-| `governance-fast` @ `development` | **BLOCKED** | [`IIIC_GOVERNANCE_FAST_BLOCKED.md`](IIIC_GOVERNANCE_FAST_BLOCKED.md) — stale pin `969cbd964` vs drzewo (RB-2 re-pin poza autonomią docs) |
+| `governance-fast` @ `development` | **BLOCKED** | [`IIAC_GOVERNANCE_FAST_BLOCKED.md`](IIAC_GOVERNANCE_FAST_BLOCKED.md) — stale pin `969cbd964` vs drzewo (RB-2 re-pin poza autonomią docs) |
 
 **Werdykt:** cherry-pick seria 1–4 — **on train**; formalny green `governance-fast` @ train — **STOP** (nie RC-2 B2–B3 PASS).
 

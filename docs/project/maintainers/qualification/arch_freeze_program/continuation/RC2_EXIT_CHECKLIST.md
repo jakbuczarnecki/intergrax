@@ -40,6 +40,7 @@
 | RC2-C2 | `CHECKPOINT.md` — G4 RC-1 → RC-2 checklist done | [x] |
 | RC2-C3 | Push `origin/development` | [x] | `61516a7cf` |
 | RC2-C4 | RC-3 prep dossier + G2 draft + train-dev gap (TOR C fala 6) | [x] | `RC3_PREP_DOSSIER.md`, fala 6 **DONE** @ `e61e5136a` |
+| RC2-C5 | RC-3 exit prep W4 (Q02/Q03/FCS/S04 docs) | [x] prep | `RC3_EXIT_PREP_CHECKLIST.md` @ `d043a21c6` — **nie** RC-3 exit |
 
 ## Werdykt RC-2 (fala 5)
 

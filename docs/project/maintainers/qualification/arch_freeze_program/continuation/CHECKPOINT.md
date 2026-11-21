@@ -1,7 +1,7 @@
 # ARCH-FREEZE continuation checkpoint (development train)
 
-**Updated:** 2026-11-21 (fala 6 close / TOR C, worktree `af-dev-fala6-close`)  
-**Base branch:** `origin/development` @ `e61e5136aa0617eea69b97ceedd8da38a4d0e796` (`e61e5136a`)  
+**Updated:** 2026-11-21 (MEP W4 RC-3 exit prep, worktree `af-dev-mep-w4`)  
+**Base branch:** `development` @ `d043a21c67cb57475a4f36a2baff7020718ec7cb` (`d043a21c6`)  
 **Arch-freeze train reference:** `origin/arch-freeze/rw-train` @ `dbaebfa8cd13a6ba8bfa6eef2cdf581216ddb3d2` — PR **#699** **MERGED** (slice do `1cec68222`)
 
 ## Train merge — fakt operatora / automation
@@ -34,7 +34,8 @@ Merge przy czerwonych checkach — zapisany stan; **nie** spełnia OD-AF-AUTO-01
 | G2 | `af-dev-pt-wf` | `af-dev-pt-wf` | T-IGX-043-J | Plan §7; G-09 merged; WF E2–E4 product **BLOCKED** | merged @ `dc083f6ea` |
 | G3 | `af-dev-rw-trust` | `af-dev-rw-trust` | T-IGX-051-C | §7 `NT-TRUST-01`..`06` green; FC-3 bundle replay @ `e61e5136a` | **merged** fala 5 |
 | G4 (RC-1) | `af-dev-rc1-docs` | `af-dev-rc1-docs` | ticket-less docs | RC-1 open items + RC-2/3 prep sync | **merged this wave** |
-| G4 (RC-3 prep) | `af-dev-fala6-close` | `af-dev-fala6-close` | ticket-less docs | RC-3 prep dossier + gap + G2 draft (TOR C fala 6) | **DONE** fala 6 |`r`n| G5 | `af-dev-043m` | `af-dev-043m` | T-IGX-043-M | Slices 1–3 + fala 5 close **9 passed**; Part E manifest **BLOCKED** | in_progress |`r`n
+| G4 (RC-3 prep) | `af-dev-fala6-close` | `af-dev-fala6-close` | ticket-less docs | RC-3 entry prep dossier + gap + G2 draft (TOR C fala 6) | **DONE** fala 6 |
+| G4 (RC-3 exit prep) | `af-dev-mep-w4` | `af-dev-mep-w4` | ticket-less docs | W4 Q02/Q03/FCS/S04 exit prep checklist + G2/RC3 refresh | **IN PROGRESS** W4 |`r`n| G5 | `af-dev-043m` | `af-dev-043m` | T-IGX-043-M | Slices 1–3 + fala 5 close **9 passed**; Part E manifest **BLOCKED** | in_progress |`r`n
 ## RW-PLAN-AUDIT (`T-AF2-RW-PLAN-AUDIT`)
 
 **Status: BLOCKED** — brak niezależnej sesji audytora i werdyktu PASS w repozytorium (plan sekcja A.3). To twardy przodek `SCOPE` / G2 na trainie; na torze `development` dokumentujemy stan, nie implementujemy audytu w tej sesji.
@@ -54,4 +55,8 @@ Po merge **#699** train zawiera slice FC-3 / G-09 / trust, ale **nie** pełny `d
 
 ## G4 — RC-3 prep (fala 6)
 
-Deliverables: `RC3_PREP_DOSSIER.md`, `G2_CHECKLIST_DRAFT.md`, `TRAIN_DEV_GAP.md`; checkpointy w tym katalogu. TOR C fala 6 dokumentacja prep: **DONE** @ `e61e5136a`. Werdykt RC-3 exit (W4): **DRAFT / NOT STARTED** — nie wyjście RC-3.
+Deliverables: `RC3_PREP_DOSSIER.md`, `G2_CHECKLIST_DRAFT.md`, `TRAIN_DEV_GAP.md`; checkpointy w tym katalogu. TOR C fala 6 entry prep: **DONE** @ `e61e5136a`. Werdykt RC-3 exit (W4 gates): **DRAFT / NOT STARTED** — nie wyjście RC-3.
+
+## G4 — RC-3 exit prep (MEP W4)
+
+Deliverables: `RC3_EXIT_PREP_CHECKLIST.md`; odświeżenie `G2_CHECKLIST_DRAFT.md` i `RC3_PREP_DOSSIER.md` (PT-Q02, PT-Q03, FCS, PT-S04 — prep only). Pin dokumentacyjny: `d043a21c6`. **Nie** G2 PASS, **nie** Q02/FCS/S04 signoff.
