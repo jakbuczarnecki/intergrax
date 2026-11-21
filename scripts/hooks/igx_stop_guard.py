@@ -15,8 +15,9 @@ Hook mode (no arguments, Claude Code ``Stop`` event or Cursor native ``stop``, J
 * otherwise continue with the next open step.
 
 Claude-shaped input (non-empty ``last_assistant_message``) continues with ``decision: block`` and
-``reason`` only. Cursor-native input (no such message) continues with ``followup_message`` only.
-The two keys are never emitted together. ``.cursor/hooks.json`` registers ``stop`` with
+``reason`` only. Cursor-native input (no such message) is decided by ``igx_cursor_stop.py`` (plan
+ownership, end markers, stall states) and continues with ``followup_message`` only; it also reads
+Cursor plan files with frontmatter ``todos:``. ``.cursor/hooks.json`` registers ``stop`` with
 ``loop_limit: null`` so a plan that keeps ticking steps is not cut at Cursor's default of 5.
 A numeric ``loop_limit`` that drops further follow-ups leaves the plan active; that is not
 ``PLAN COMPLETE``.
@@ -217,6 +218,16 @@ def _event_key(data: dict, signature: str) -> str:
     )
 
 
+def _cursor_module():
+    """Import the Cursor adapter; the script may run through ``runpy.run_path`` without its dir on sys.path."""
+    here = str(Path(__file__).resolve().parent)
+    if here not in sys.path:
+        sys.path.insert(0, here)
+    import igx_cursor_stop
+
+    return igx_cursor_stop
+
+
 def decide(root: Path, data: dict) -> dict | None:
     """Hook decision as a JSON-able dict, or None to allow silently."""
     if not isinstance(data, dict):
@@ -224,6 +235,12 @@ def decide(root: Path, data: dict) -> dict | None:
     loaded = read_plan(root)
     if loaded is None:
         return None
+    if _native_cursor(data):
+        plan, steps = loaded
+        result, clear = _cursor_module().decide_cursor(root, data, plan, steps, root / ACTIVE, MAX_BLOCKS)
+        if clear:
+            _clear(root)
+        return result
     status = str(data.get("status") or "")
     if status.strip().lower() in ("error", "aborted"):
         return None
@@ -274,7 +291,10 @@ def hook() -> int:
         if not isinstance(data, dict):
             return 0
         _note_keys(data)
-        root = find_root(Path(str(data.get("cwd"))) if data.get("cwd") else None)
+        start = str(data.get("cwd") or "")
+        if not start and isinstance(data.get("workspace_roots"), list):
+            start = next((r for r in data["workspace_roots"] if isinstance(r, str) and r.strip()), "")
+        root = find_root(Path(start) if start else None)
         if root is None:
             return 0
         result = decide(root, data)
@@ -319,10 +339,16 @@ def cli(argv: list[str]) -> int:
 
 def _steps_of(plan: Path) -> list[tuple[bool, str]]:
     out = []
-    for line in plan.read_text(encoding="utf-8").splitlines():
+    text = plan.read_text(encoding="utf-8")
+    for line in text.splitlines():
         m = _STEP.match(line)
         if m:
             out.append((m.group(1) != " ", m.group(2)))
+    if not out:
+        try:
+            return _cursor_module().frontmatter_todos(text)
+        except ImportError:
+            return []
     return out
 
 
