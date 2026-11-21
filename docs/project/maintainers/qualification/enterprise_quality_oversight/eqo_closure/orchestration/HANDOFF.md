@@ -15,6 +15,9 @@
 `IIAC_POLICY_ACTIVATION_RECORD.json` remains `IN_FORCE` globally. That is **not** EQO certification and **not** FRZ promotion.
 
 **Integration:** not done. **Push** and **PR** are operator actions only. **FCS**, **PT-Q**, and **M3** are not executed by EQO.
+## Operator merge rule (2026-11-21)
+
+Feature branches are cut from `origin/development` (pin `a0598ba3e4f4f903eb4da3db8ea012d5cbf71225`) and integrate **only** to `development`. No feature-to-feature merge; no merge target `arch-freeze/rw-train` or another `eqo/*` branch; no sub-branch whose parent is `eqo/*`. Branches already based on `8e146e21` (`origin/arch-freeze/rw-train`) are **train-line evidence** only. Merging that line into `development` or cherry-picking train commits into `development` is the **FCS** boundary — not performed in this EQO session. Recorded in `EQO_ORCHESTRATION_STATE.json` → `operator_merge_rule`.
 
 ## 1029 obligation paths (section 2 first-match)
 
