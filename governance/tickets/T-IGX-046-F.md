@@ -87,6 +87,12 @@ Edits of the roadmap, the freeze checklist, PDC-owned records, generated registe
 
 **Operator merge policy correction:** After incident PR #690, an autonomous agent MUST NOT run `gh pr merge` unless required docs gates are green (`ticket-governance` minimum) and operator `merge_on_green` applies to the full required check set, or an explicit operator waiver is documented in the ticket or PR thread. Ref: T-IGX-046-F.
 
+## Operator waiver — docs merge platform CI
+
+Operator decision **`waiver_both`** @ **2026-11-21** (coordinator chat): retroactive acceptance of docs/ticket merges **[#690](https://github.com/jakbuczarnecki/intergrax/pull/690)** (EQO wave-2 integration) and **[#691](https://github.com/jakbuczarnecki/intergrax/pull/691)** (wave-2 checkpoint + CI triage on this ticket) despite **red platform CI** on `development` at merge time (`ci-smoke`, `governance-fast`, `ent-audit-fast`). Docs gates were **green**: `ticket-governance`, `governance-policy-pin`.
+
+**Going forward (docs-only integrator PRs under T-IGX-046-F / same merge-policy pattern):** merge when **`ticket-governance`** + **`governance-policy-pin`** pass; **do not** block on full `ci-smoke` / `governance-fast` / `ent-audit-fast` green when failure is acknowledged pre-existing platform drift outside the PR write set. Autonomous `gh pr merge` still requires either that docs gate pair green **or** a fresh operator waiver line on this ticket (see merge policy correction above). PR [#692](https://github.com/jakbuczarnecki/intergrax/pull/692) thread noted `AWAITING_OPERATOR_WAIVER` — resolved by this section.
+
 ## Lifecycle state
 
 plan_approved
