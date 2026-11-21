@@ -2,9 +2,10 @@
 
 **Banner:** Przygotowanie dokumentacyjne wyjścia RC-3 / wejścia fali **W4** (PT-Q02 → PT-Q03 → FCS → PT-S04). **Nie** oznacza RC-3 CLOSED, **nie** PT-Q02 PASS, **nie** FCS, **nie** aktywacji RB-2 ani Stage 3.
 
-**Data:** 2026-11-21 (MEP W4, worktree `af-dev-mep-w4`)  
-**Pin development (lokalny tor):** `d043a21c67cb57475a4f36a2baff7020718ec7cb` (`d043a21c6`)  
+**Data:** 2026-11-21 (MEP W4 + Runda 1 **RC3-RUNBOOK**, worktree `af-dev-rc3-exec-prep`)  
+**Pin development (lokalny tor):** `c207e6ad3c01221e1e5867adaa21e0e5b038adc4` (`c207e6ad3`)  
 **Pin train:** `dbaebfa8cd13a6ba8bfa6eef2cdf581216ddb3d2` (`dbaebfa8`)  
+**Operator (Runda 1):** **D2=STOP** · **D6=BLOCKED** · **D8=STOP** — [`OPERATOR_DECISIONS_AUTONOMY.md`](OPERATOR_DECISIONS_AUTONOMY.md)  
 **Poprzednik:** TOR C fala 6 — RC-3 **entry prep** @ `e61e5136a` ([`RC3_PREP_DOSSIER.md`](RC3_PREP_DOSSIER.md))
 
 ## Legenda
@@ -66,6 +67,26 @@
 | RC3X-E2 | G2 readiness draft | [x] prep | [`G2_CHECKLIST_DRAFT.md`](G2_CHECKLIST_DRAFT.md) — **nie pin G2** |
 | RC3X-E3 | RC-3 exit prep checklist (ten plik) | [x] | MEP W4 @ `d043a21c6` |
 | RC3X-E4 | `CHECKPOINT.md` — G4 W4 row | [x] | `CHECKPOINT.md` — MEP W4 |
+
+## F. RC3-J1..J7 — kroki wykonawcze (Runda 1)
+
+**Banner:** Runbook operatora / orchestratora dla drabiny [`RC3_PREP_DOSSIER.md`](RC3_PREP_DOSSIER.md) §J. Status kroku: **OPEN** lub **BLOCKED** wyłącznie — **bez** PASS, **bez** G2, **bez** FCS, **bez** ARCH_FREEZE CLOSED.
+
+| Stan kroku | Znaczenie |
+|------------|-----------|
+| OPEN | Do wykonania lub monitorowania; dowód w repo dopiero po osobnej sesji |
+| BLOCKED | Twardy przodek lub decyzja operatora (D6, D8, …) |
+
+### RC3-J1 — RW train kompletny (W3); head train = kandydat G2
+
+| Step | Rola | Artefakt / komenda | Bramka | Stan |
+|------|------|-------------------|--------|------|
+| RC3-J1-1 | orchestrator | `git fetch origin arch-freeze/rw-train`; `git rev-parse origin/arch-freeze/rw-train` → oczekiwane `dbaebfa8` | SSOT po merge **#699** | OPEN |
+| RC3-J1-2 | orchestrator | Porównaj liczniki w [`TRAIN_DEV_GAP.md`](TRAIN_DEV_GAP.md) @ pin `c207e6ad3` | Luka dev↔train udokumentowana | OPEN |
+| RC3-J1-3 | operator | [`TRAIN_CHERRY_PICK_STATUS.md`](TRAIN_CHERRY_PICK_STATUS.md) — slice 1–4 **done**; następny slice **STOP** | **D2=STOP** | OPEN |
+| RC3-J1-4 | architect | Zapis runga **G2** (SHA kandydata na trainie) w ladder / dossier | Brak G2 na `development` | BLOCKED |
+
+**Werdykt J1 (Runda 1):** **OPEN** — train HEAD na pinie slice; rung G2 **nie** zapisany.
 
 ## Werdykt (exit prep only)
 
