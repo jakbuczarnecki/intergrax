@@ -26,7 +26,7 @@ All qualification commits carry: `Ref: governance/tickets/T-IGX-046-F.md` (ticke
 | 6 | E-02 triage report | `d6c9ba5fc8892b137fb81897c14c64b3ea00bd98` |
 | 7 | KR settlement X-06 | `dbe5ba1ce2d7755946370008bf2c3d050e08673f` |
 | 8 | W7/W8 deferred | `23b0a66a189da28a1190948d44e2da88e5a933bf` |
-| 9 | README index (this file) | `a4ab0dcc87c0db9daa91a0438efdb9980bd69f35` |
+| 9 | README index (this file) | `234d3c70efeebbcde2d72e8b2ce6ffd5d64b941f` |
 
 Worktree evidence runs: `eqo_closure/runs/wb05/`, `runs/wb01/`. Campaign C memos: `c/A3-004/`, `c/A6-004/`.
 
