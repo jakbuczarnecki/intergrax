@@ -1,4 +1,4 @@
-# RC-3 prep dossier (tor `development`) — **prep only, not RC-3 exit**
+﻿# RC-3 prep dossier (tor `development`) — **prep only, not RC-3 exit**
 
 **Data:** 2026-11-21 (autonomia fala 6 / TOR C, worktree `af-dev-rc3-prep`)  
 **Werdykt tego dokumentu:** **DRAFT / NOT STARTED** — nie jest pinem G2, nie jest wyjściem RC-3, nie ogłasza FCS ani ARCH_FREEZE CLOSED.
@@ -16,7 +16,8 @@ RC-3 **nie rozpoczęto** — ten dossier mapuje wejście (W3→W4 / G2 readiness
 
 | Ref | SHA (40) | Krótki |
 |-----|----------|--------|
-| `origin/development` (tor TOR C) | `dc083f6eadf0f7dbe501fbcf93659e2dd158b825` | `dc083f6ea` |
+| `origin/development` (fetch / TOR C) | `f551abb495ad2316a4b5ca0a90dd9aef2a4f28d9` | `f551abb49` |
+| Pin sesji G4 / fala 6 parallel | `dc083f6eadf0f7dbe501fbcf93659e2dd158b825` | `dc083f6ea` |
 | `origin/arch-freeze/rw-train` | `dbaebfa8cd13a6ba8bfa6eef2cdf581216ddb3d2` | `dbaebfa8` |
 | Merge-base dev ↔ train | `70d73f0f08325a39c6b2fd0e3b00f4cab7e83033` | `70d73f0f0` |
 

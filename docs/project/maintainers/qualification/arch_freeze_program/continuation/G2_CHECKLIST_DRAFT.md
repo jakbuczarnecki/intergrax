@@ -1,10 +1,10 @@
-# G2 readiness checklist (draft) — **nie pin G2, nie Q02 PASS**
+﻿# G2 readiness checklist (draft) — **nie pin G2, nie Q02 PASS**
 
 **Banner:** To jest **robocza** lista gotowości do runga `G2` (MEP-AF2 W3 exit → W4 entry). **Nie** oznacza G2 PASS, **nie** zastępuje PT-Q02, **nie** aktywuje RB-2 ani FCS.
 
-**Data:** 2026-11-21 (fala 6 / TOR C)  
-**Pin development:** `dc083f6eadf0f7dbe501fbcf93659e2dd158b825` (`dc083f6ea`)  
-**Pin train:** `dbaebfa8cd13a6ba8bfa6eef2cdf581216ddb3d2` (`dbaebfa8`)
+**Data:** 2026-11-21 (G4 fala 5–6; fala 6 / TOR C)  
+**Pin development (fetch):** `f551abb495ad2316a4b5ca0a90dd9aef2a4f28d9` (`f551abb49`; G4 sesja parallel `dc083f6ea`)  
+**Pin train:** `dbaebfa8cd13a6ba8bfa6eef2cdf581216ddb3d2` (`dbaebfa8`; post #699)
 
 ## Legenda
 
@@ -22,7 +22,7 @@
 | G2-A2 | RW head train zamrożony jako kandydat G2 | [ ] | Brak rekordu G2 w ladder |
 | G2-A3 | Train CI green poza **exact expected-red** set | [ ] | KR-08 / known-red — nie zwalidowano @ G2 |
 | G2-A4 | SCOPE + T-AF2-RW-PLAN na trainie (W2 exit) | BLOCKED | W2 poza torrem development-only |
-| G2-A5 | Cherry-pick slice z `development` (FC-3, G-09, trust) | [x] | PR **#699** merged; replay CI **STOP** |
+| G2-A5 | Cherry-pick slice z `development` (FC-3, G-09, trust) | [x] partial | PR **#699** **MERGED** @ `dbaebfa8`; replay `governance-fast` **OPEN** / CI **STOP** (ACT-N11) |
 
 ## B. W2 gates (PT-G01 / PT-G02) — na trainie
 
