@@ -3,6 +3,7 @@
 **Baza train (po landingu):** `origin/arch-freeze/rw-train` @ `dbaebfa8cd13a6ba8bfa6eef2cdf581216ddb3d2` (merge PR **#699**, 2026-11-21)  
 **Baza train (przed slice):** `c443865e9129300a7bbb71abf65dee246f747794`  
 **Baza development (docs pin Runda 1):** `origin/development` @ `c207e6ad3c01221e1e5867adaa21e0e5b038adc4` (`c207e6ad3`)  
+**Baza development (docs pin Runda 2):** `origin/development` @ `4e911556b4669dd1f9bf7efc9e18b73ded508648` (`4e911556b`)  
 **Baza development (MEP W3 pin historyczny):** `d043a21c67cb57475a4f36a2baff7020718ec7cb` (`d043a21c6`)  
 **Norma bramki (OD-AF-AUTO-01 / KR-08):** `governance-fast` **green** na HEAD PR przed merge (ACT-N11 na product paths **nie** jest bypassem). **Operator STOP:** bez green **nie** wykonywać kolejnego cherry-pick ani train merge.
 
@@ -30,6 +31,19 @@
 | Cherry-pick kolejnych slice | **SKIP** — tabela „Proponowane slice” bez wykonania |
 | Train merge | **STOP** — bez PR `development` → `rw-train` |
 
+## Runda 2 — replay CI @ train pin (D1=A, D2=STOP, `gh`)
+
+| Parametr | Wartość |
+|----------|---------|
+| Worktree | `af-dev-train-replay` |
+| Źródło checków | PR **#699** `statusCheckRollup` (merge @ `dbaebfa8`; brak osobnych runów na `gh run list --branch arch-freeze/rw-train`) |
+| `governance-fast` | run **44883349765** — **FAILURE** |
+| `ci-smoke` | run **44883349765** — **FAILURE** |
+| `rag-gate` | run **44883349736** — **FAILURE** |
+| Cherry-pick / train merge | **SKIP** / **STOP** (**D2=STOP**) |
+| RC2-B2 | **`[ ]` OPEN** — brak green; dowód w [`RC2_EXIT_CHECKLIST.md`](RC2_EXIT_CHECKLIST.md) |
+
+
 ## Proponowane slice (product + tests, topologicznie)
 
 | Kolejność | Commit (skrót) | Slice | Uwagi |
@@ -50,4 +64,4 @@
 
 ## Stan MEP W3 / Runda 1 (prep @ `c207e6ad3` docs)
 
-Train HEAD **`dbaebfa8`**; slice 11 commitów na `arch-freeze/rw-train`. Tor primary na pinie MEP W3 jest współliniowy z merge-base `70d73f0f0` (0 commitów product/docs poza base — patrz `TRAIN_DEV_GAP.md`). RC-2 / green `governance-fast` (+ `ci-smoke`, `rag-gate`) na train pin — **Runda 2** po operator green signal; **nie** claim w tej aktualizacji Runda 1.
+Train HEAD **`dbaebfa8`**; slice 11 commitów na `arch-freeze/rw-train`. Tor primary na pinie MEP W3 jest współliniowy z merge-base `70d73f0f0` (0 commitów product/docs poza base — patrz `TRAIN_DEV_GAP.md`). RC-2 / green `governance-fast` (+ `ci-smoke`, `rag-gate`) na train pin — **Runda 2 wykonana** @ `4e911556b`: nadal **red** (run id jak wyżej); **nie** RC2-B2 PASS.
