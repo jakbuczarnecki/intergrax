@@ -17,12 +17,12 @@
 | C13 | NOT_VERIFIED |  |
 | C14 | PARTIALLY_MET | KR-01..28 classified; none RESOLVED at M3 |
 | C15 | NOT_VERIFIED |  |
-| C16 | NOT_VERIFIED | #680 open |
+| C16 | NOT_VERIFIED | Green replay missing; PR #680 (65ef1f196) on `origin/arch-freeze/rw-train` @ 8e146e21 via dbaebfa8, not on `development` @ a0598ba3 |
 | C17 | NOT_VERIFIED |  |
 | C18 | PARTIALLY_MET | owners proposed not confirmed |
-| C19 | PARTIALLY_MET | A audit yes; IIAC IN_FORCE no |
+| C19 | PARTIALLY_MET | A audit yes; `IIAC_POLICY_ACTIVATION_RECORD.json` IN_FORCE (not EQO certification, not FRZ promotion) |
 | C20 | PARTIALLY_MET | A reproducible; B/C/D not |
-| C21 | PARTIALLY_MET | W2 verify @ 28c27cb: #642–#679 merged; #680 not on train |
+| C21 | PARTIALLY_MET | W2 verify @ 28c27cb: #642–#679 merged; #680 (65ef1f196) on rw-train @ 8e146e21 via dbaebfa8, not on development @ a0598ba3 |
 | C22 | NOT_VERIFIED |  |
 | C23 | PARTIALLY_MET | WBS maps to train tickets |
 | C24 | NOT_MET |  |
@@ -57,7 +57,7 @@
 
 | Workstream | CLS artefact | Status |
 |------------|--------------|--------|
-| W2 | `EQO_W2_TRAIN_VERIFICATION.md` W2-02..11 wave-4 read | `PARTIAL` — #680 track-only |
+| W2 | `EQO_W2_TRAIN_VERIFICATION.md` W2-02..11 wave-4 read | `PARTIAL` — #680 on rw-train @ 8e146e21; absent from development @ a0598ba3 |
 | W4-04 | `w4/W4-04_REQUALIFY_BATCH.md` | `STARTED` — five REQUALIFY rows linked to C-03 layers |
 | W4-05 | `w4/W4-05_NONE_JUSTIFICATION.md` | `STARTED` — five NONE rows justified |
 | W4-02 | tranches 01–07 | `QUEUE_COMPLETE` (prior waves) |
@@ -80,9 +80,9 @@
 |-----|-------------|
 | C01-C06 | Status column unchanged this wave; disposition still incomplete |
 | C07 | Open BLOCKER severity (A2-002, A4-003) NOT_MET |
-| C16 | #680 track-only; English memo refresh in eqo/wave-8/x |
-| C19 | IIAC not IN_FORCE unchanged |
-| C21 | W2 train verify partial; see eqo/wave-8/w2 W2-02 wave-8 read |
+| C16 | #680 on rw-train @ 8e146e21 via dbaebfa8; not on development; green replay still missing |
+| C19 | IIAC record IN_FORCE (not EQO certification); unchanged as closure fact |
+| C21 | W2 train verify partial; #680 on rw-train, not on development — see eqo/wave-8/w2 W2-02 wave-8 read |
 | C24-C25 | NOT_MET; FCS/M3 absent |
 
 **Terminal status:** EQO_NOT_CLOSED_EXACT_BLOCKERS. No EQO_CLOSED claim. Full EQO-W9-01 acceptance waits EQO-W8-CLS per EQO_W7_W8_DEFERRED_BLOCKERS.md.
@@ -122,12 +122,12 @@ No `EQO_CLOSED` claim. Session E and operator OD routes unchanged.
 | C13 | NOT_VERIFIED | No new evidence this wave |
 | C14 | PARTIALLY_MET | KR settlement classified; none RESOLVED @ M3 |
 | C15 | NOT_VERIFIED |  |
-| C16 | NOT_VERIFIED | #680 track-only — `eqo/wave-12/w2` negative ancestor @ pin |
+| C16 | NOT_VERIFIED | #680 on rw-train @ 8e146e21; not ancestor of development @ a0598ba3 — green replay missing |
 | C17 | NOT_VERIFIED |  |
 | C18 | PARTIALLY_MET | Proposed owners not confirmed |
-| C19 | PARTIALLY_MET | IIAC not `IN_FORCE` |
+| C19 | PARTIALLY_MET | IIAC record `IN_FORCE` (not EQO certification / not FRZ promotion) |
 | C20 | PARTIALLY_MET | Reproducibility partial |
-| C21 | PARTIALLY_MET | W2 train verify; #680 not on train |
+| C21 | PARTIALLY_MET | W2 train verify; #680 on rw-train @ 8e146e21, not on development @ a0598ba3 |
 | C22 | NOT_VERIFIED |  |
 | C23 | PARTIALLY_MET | WBS ↔ train ticket map |
 | C24 | NOT_MET | Program closure band blocked |
@@ -174,12 +174,12 @@ No `EQO_CLOSED` claim. Session E and operator OD routes unchanged.
 | C13 | NOT_VERIFIED | No new evidence |
 | C14 | PARTIALLY_MET | KR settlement unchanged |
 | C15 | NOT_VERIFIED | |
-| C16 | NOT_VERIFIED | #680 track-only |
+| C16 | NOT_VERIFIED | #680 on rw-train @ 8e146e21 via dbaebfa8; not on development @ a0598ba3 |
 | C17 | NOT_VERIFIED | |
 | C18 | PARTIALLY_MET | Proposed owners not confirmed |
-| C19 | PARTIALLY_MET | IIAC not `IN_FORCE` |
+| C19 | PARTIALLY_MET | IIAC record `IN_FORCE` (not EQO certification / not FRZ promotion) |
 | C20 | PARTIALLY_MET | Reproducibility partial |
-| C21 | PARTIALLY_MET | W2 train verify |
+| C21 | PARTIALLY_MET | W2 train verify; #680 on rw-train, not on development |
 | C22 | NOT_VERIFIED | |
 | C23 | PARTIALLY_MET | WBS ↔ train map |
 | C24 | NOT_MET | Program closure blocked |

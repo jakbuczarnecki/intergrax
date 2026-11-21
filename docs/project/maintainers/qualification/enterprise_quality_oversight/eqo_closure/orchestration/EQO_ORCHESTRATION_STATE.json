@@ -1,0 +1,65 @@
+{
+  "schema": "eqo.orchestration_state.v1",
+  "updated_at": "2026-11-21T11:36:30+00:00",
+  "eqo_terminal_status": "EQO_NOT_CLOSED_EXACT_BLOCKERS",
+  "capability_gate": "PARTIAL_ORCHESTRATION_AVAILABLE",
+  "pinned_shas": {
+    "origin_development": "a0598ba3e4f4f903eb4da3db8ea012d5cbf71225",
+    "origin_arch_freeze_rw_train": "8e146e21cd8c63a47d621edc05d5f0036ba0c9ee",
+    "pr_680_merge": "65ef1f196",
+    "train_parent_dbaebfa8": "dbaebfa8cd13a6ba8bfa6eef2cdf581216ddb3d2"
+  },
+  "f1_bookkeeping": {
+    "task": "EQO-F1-VIEW",
+    "path_rule": "plan_section_2_first_match",
+    "path_count_checksum": "a11375e09b251be364151547d9dc3450402f6662dad5a7f3fda896459e95e27a",
+    "false_blocker_corrections": [
+      "PR #680 (65ef1f196) is ancestor of origin/arch-freeze/rw-train @ 8e146e21 via parent dbaebfa8; not ancestor of development @ a0598ba3",
+      "IIAC_POLICY_ACTIVATION_RECORD.json status IN_FORCE is not EQO certification and not FRZ promotion"
+    ]
+  },
+  "waves": {
+    "WAVE-01": {
+      "status": "NOT_STARTED",
+      "package_id": "EQO-PKG-A4-006",
+      "owner_agent": "separate_igx-implementer",
+      "worktree": "D:\\Projekty\\_wt\\intergrax\\eqo-w1-a4006",
+      "branch": "eqo/w1-a4-006",
+      "base_sha": "a0598ba3e4f4f903eb4da3db8ea012d5cbf71225",
+      "note": "A4-006 gate script package; not owned by F1 slice"
+    },
+    "WAVE-02": {
+      "status": "NOT_STARTED",
+      "blocked_until": [
+        "local git object 8e146e21cd8c63a47d621edc05d5f0036ba0c9ee exists",
+        "operator write-set authorization for applications/research_application/serving/schemas.py and fastapi_router.py (A4-027)",
+        "T-IGX-043-C implementation go (AR-41 / SCOPE)"
+      ],
+      "base_sha": "8e146e21cd8c63a47d621edc05d5f0036ba0c9ee",
+      "candidate_packages": [
+        "EQO-PKG-A4-027",
+        "EQO-PKG-A4-026",
+        "EQO-PKG-A4-017"
+      ]
+    }
+  },
+  "counters": {
+    "TOTAL_UNRESOLVED": 1073,
+    "CONTENT_UNRESOLVED": 1029,
+    "VERIFIED_CLOSED": 0,
+    "path_counts": {
+      "OWNER_DECISION_REQUIRED": 313,
+      "UNRESOLVED_EXACT_BLOCKER": 310,
+      "DOCUMENTATION_CORRECTION_REQUIRED": 167,
+      "FORMAL_REQUALIFICATION_REQUIRED": 165,
+      "EXISTING_IMPLEMENTATION_REQUIRES_REPLAY": 40,
+      "NEW_IMPLEMENTATION_REQUIRED": 33,
+      "EXTERNAL_ARCH_FREEZE_DEPENDENCY": 1,
+      "EXISTING_VERIFIED_EVIDENCE": 0,
+      "FORMAL_ACCEPTED_LIMITATION": 0,
+      "DUPLICATE_OR_INDEX_ONLY": 0
+    }
+  },
+  "operator_decisions_open": 8,
+  "implementation_root_causes_open": 33
+}
