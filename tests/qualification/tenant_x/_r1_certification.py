@@ -11,6 +11,7 @@ from tests.qualification.tenant_x._authority_semantics import (
     build_authority_review_metrics,
 )
 from tests.qualification.tenant_x._r1_authority_resolutions import (
+    R1_P0_AUTHORITY_MECHANISM_COUNT,
     build_r1_authority_resolutions,
     build_r1_overlay_mechanisms,
     build_r1_scoped_duplicate_authority_review,
@@ -24,14 +25,14 @@ from tests.qualification.tenant_x._r1_capability_routing_consumers import (
     capability_routing_consumer_unknown_count,
     routing_sentinel_direct_authority_escape_paths,
 )
+from tests.qualification.tenant_x._r1_critical_boundaries import (
+    R1_CRITICAL_BOUNDARY_FAMILIES,
+    r1_owned_critical_boundary_missing_or_invalid,
+)
 from tests.qualification.tenant_x._r1_cross_tenant_inventory import (
     build_r1_cross_tenant_inventory,
     legal_cross_tenant_mechanism_count,
     r1_cross_tenant_unknown_critical,
-)
-from tests.qualification.tenant_x._r1_critical_boundaries import (
-    R1_CRITICAL_BOUNDARY_FAMILIES,
-    r1_owned_critical_boundary_missing_or_invalid,
 )
 from tests.qualification.tenant_x._r1_propagation_proofs import (
     certify_r1_propagation_edges,
@@ -88,8 +89,7 @@ def _scope_unresolved(resolutions: tuple) -> int:
     return sum(
         1
         for r in resolutions
-        if r.scope_evidence
-        in {TenantAuthorityScopeEvidence.DOMAIN_FALLBACK, TenantAuthorityScopeEvidence.UNKNOWN}
+        if r.scope_evidence in {TenantAuthorityScopeEvidence.DOMAIN_FALLBACK, TenantAuthorityScopeEvidence.UNKNOWN}
     )
 
 
@@ -138,11 +138,7 @@ def build_r1_qualification_report(
         remediation.append("TENANT-X-R1-R1 - R1-owned critical boundary families missing/invalid")
     if r1_critical_scope_unresolved(resolutions) or r1_critical_owner_unresolved(resolutions):
         remediation.append("TENANT-X-R1-R2 - critical authority scope/owner reconciliation")
-    if (
-        dup_confirmed
-        or dup_unresolved
-        or scoped_duplicate.unknown_participation_ids
-    ):
+    if dup_confirmed or dup_unresolved or scoped_duplicate.unknown_participation_ids:
         remediation.append("TENANT-X-R1-R3 - duplicate authority reconciliation")
     if r1_owned_propagation_missing():
         remediation.append("TENANT-X-R1-R4 - missing R1-owned structural provenance")
@@ -170,7 +166,7 @@ def build_r1_qualification_report(
         and not r1_illegal_root_selectors(root_inventory)
         and not r1_critical_unknown_root_selectors(root_inventory)
         and not r1_cross_tenant_unknown_critical(build_r1_cross_tenant_inventory(inventory))
-        and len(resolutions) == 22
+        and len(resolutions) == R1_P0_AUTHORITY_MECHANISM_COUNT
         and capability_routing_consumer_unknown_count() == 0
         and not routing_sentinel_direct_authority_escape_paths()
     )
@@ -189,13 +185,9 @@ def build_r1_qualification_report(
         critical_authority_participants=len(scoped_duplicate.critical_authority_participant_ids),
         non_authority_duplicate_participants=len(scoped_duplicate.non_authority_participant_ids),
         unknown_authority_participation=len(scoped_duplicate.unknown_participation_ids),
-        non_critical_owner_scope_uncertainty=len(
-            scoped_duplicate.non_critical_owner_scope_uncertainty_ids
-        ),
+        non_critical_owner_scope_uncertainty=len(scoped_duplicate.non_critical_owner_scope_uncertainty_ids),
         root_tenant_selectors=root_selectors,
-        legal_cross_tenant_mechanisms=legal_cross_tenant_mechanism_count(
-            build_r1_cross_tenant_inventory(inventory)
-        ),
+        legal_cross_tenant_mechanisms=legal_cross_tenant_mechanism_count(build_r1_cross_tenant_inventory(inventory)),
         critical_unknown_substitutions=critical_unknown,
         illegal_critical_substitutions=illegal_critical,
         proven_current_head_edges=proven,
