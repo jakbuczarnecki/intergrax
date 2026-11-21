@@ -19,9 +19,19 @@ from intergrax.tools.providers.storage.contracts import (
     StorageGetInput,
     StoragePutInput,
 )
-from intergrax.tools.registry.wiring import ToolWiringContext
+from intergrax.tools.registry.wiring import ListStorageAccessAuditSink, ToolWiringContext
 
 pytestmark = pytest.mark.unit
+_TENANT = "tenant-d8r"
+
+
+def _tool_ctx(storage: _RecordingStorage) -> ToolWiringContext:
+    return ToolWiringContext(
+        object_storage=storage,
+        tenant_id=_TENANT,
+        storage_audit_sink=ListStorageAccessAuditSink(),
+    )
+
 
 REPO_ROOT = Path(__file__).resolve().parents[4]
 GUARDED_PREFIX = "intergrax/collaborative-work/artifact-content/"
@@ -88,7 +98,7 @@ def _variants() -> list[str]:
 @pytest.mark.parametrize("key", _variants())
 def test_every_raw_storage_tool_refuses_collaborative_work_content_keys(key: str) -> None:
     storage = _RecordingStorage()
-    ctx = ToolWiringContext(object_storage=storage)
+    ctx = _tool_ctx(storage)
     for call in _calls(ctx, key):
         with pytest.raises(service.GovernedStorageKeyError):
             call()
@@ -97,7 +107,7 @@ def test_every_raw_storage_tool_refuses_collaborative_work_content_keys(key: str
 
 def test_ordinary_keys_are_unaffected() -> None:
     storage = _RecordingStorage()
-    ctx = ToolWiringContext(object_storage=storage)
+    ctx = _tool_ctx(storage)
     for call in _calls(ctx, "docs/a.txt"):
         call()
     assert [name for name, _ in storage.calls] == ["get", "put", "delete", "get"]
