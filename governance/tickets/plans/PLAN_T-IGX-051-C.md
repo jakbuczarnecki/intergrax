@@ -34,3 +34,15 @@ Same as ticket.
 ## 6. Next steps
 
 Architect session fills node ids, regression command, and digest; operator approval; then implementation in `af-dev-rw-trust`.
+
+## 7. Revision 2 queue (autonomy fala 2 — ticket-scaffold minimum)
+
+| Cluster | PDC ref | Indicative negative tests (names only) | Regression source |
+|---------|---------|----------------------------------------|---------------------|
+| System role injection | EX-D2-01 | `NT-TRUST-01` message graph assembly | PDC table A + `tests/unit/llm/` census |
+| Egress / sensitivity default | EX-D2-02 | `NT-TRUST-02` context fragment class | `intergrax/context/` unit gates |
+| Planner ledger sizing | EX-D2-05 | `NT-TRUST-03` planner token envelope | context planner tests |
+| Orphan tool_call_id | EX-D2-07 | `NT-TRUST-04` STRICT correlation | ACP iterative path tests |
+| RAG trust boundary | EX-L-05, D2-R004 | `NT-TRUST-05` extras-profile reds | `tests/unit/rag/` (extras profile) |
+
+**Product remains BLOCKED** until a single regression command with verified node ids is appended here and the plan digest on the ticket is recomputed.

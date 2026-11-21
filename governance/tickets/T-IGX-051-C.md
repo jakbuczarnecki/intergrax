@@ -34,4 +34,4 @@ TENANT **051-A**, GATES **051-F**, SUPPLY **051-B/N**, merge to `rw-train`, FRZ 
 
 ## Lifecycle state
 
-`plan_approved` (product BLOCKED: plan revision 2 lacks node ids and write-set diffs — architect pass required before commits)
+`plan_approved` (product BLOCKED: plan §7 rev-2 queue added fala 2; still lacks verified regression node ids — architect pass required before commits)
