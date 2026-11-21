@@ -1,7 +1,8 @@
-................s...............................F.........               [100%]
-================================== FAILURES ===================================
-D:\Projekty\_wt\intergrax\eqo-w3\tests\qualification\harness_01\test_harness_01_gates.py:502: AssertionError: Higher-layer Nexus importers must be explicitly classified:
-=========================== short test summary info ===========================
-SKIPPED [1] tests\qualification\trace_x\test_trace_x_p6_adversarial_bundle.py:69: adversarial bundle session manifest missing; rerun qualification batch with TRACE_X_P6_PASS1=1 including all P6-A..H tests
-FAILED tests/qualification/harness_01/test_harness_01_gates.py::test_harness_01_higher_layer_nexus_imports_are_classified
-1 failed, 56 passed, 1 skipped in 69.73s (0:01:09)
+................s...............................F.........               [100%]
+================================== FAILURES ===================================
+D:\Projekty\_wt\intergrax\eqo-w3\tests\qualification\harness_01\test_harness_01_gates.py:502: AssertionError: Higher-layer Nexus importers must be explicitly classified:
+=========================== short test summary info ===========================
+SKIPPED [1] tests\qualification\trace_x\test_trace_x_p6_adversarial_bundle.py:69: adversarial bundle session manifest missing; rerun qualification batch with TRACE_X_P6_PASS1=1 including all P6-A..H tests
+FAILED tests/qualification/harness_01/test_harness_01_gates.py::test_harness_01_higher_layer_nexus_imports_are_classified
+1 failed, 56 passed, 1 skipped in 107.04s (0:01:47)
+EXIT_CODE=1
