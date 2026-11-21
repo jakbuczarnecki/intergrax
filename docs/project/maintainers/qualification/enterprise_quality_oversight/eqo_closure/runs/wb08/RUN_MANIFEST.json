@@ -7,17 +7,16 @@
                  ],
     "evidence_pin":  "28c27cb896d02e0185b9fa02047411fa152f6469",
     "worktree":  "d:/Projekty/_wt/intergrax/eqo-w3",
-    "executed_utc":  "2026-11-21T09:44:04Z",
     "pytest_command_sha256":  "536729a678d94f95c543e4f187b143695af01c159480c9b9c048da91d3711999",
     "pytest_command":  "uv run pytest tests/integration/context/test_mem_xint6_cross_layer_e2e_certification.py tests/qualification/pdc_x/d2/test_d2_context_fidelity.py tests/qualification/pdc_x/d2/test_d2_compaction_roundtrip.py tests/qualification/pdc_x/xd/test_xd_02_agent_context.py -q --tb=line",
-    "pytest_exit_code":  0,
-    "pytest_summary":  "44 passed in 7.93s",
     "log_path":  "eqo_closure/runs/wb08/pytest_wb08_exe.log",
     "des_path":  "eqo_closure/runs/wb08/DES_PREREG.json",
-    "rerun_lane":  "eqo/wave-13/exe-wb08",
-    "pytest_env_note":  "uv sync --all-extras on eqo-w3 @ TRAIN_PIN; shared pytest.lock",
     "blockers":  {
 
-                 }
+                 },
+    "executed_utc":  "2026-11-21T09:46:00Z",
+    "pytest_exit_code":  0,
+    "pytest_summary":  "44 passed in 7.33s",
+    "rerun_lane":  "eqo/wave-13/exe-wb08",
+    "pytest_env_note":  "uv sync --all-extras on eqo-w3 @ TRAIN_PIN; shared pytest.lock"
 }
-
