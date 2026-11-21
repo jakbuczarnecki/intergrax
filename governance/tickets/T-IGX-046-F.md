@@ -194,6 +194,17 @@ Operator decision **`waiver_both`** @ **2026-11-21** (coordinator chat): retroac
 
 **Docs gate policy:** merge when `ticket-governance` + `governance-policy-pin` pass (waiver pattern above).
 
+
+## Checkpoint — EQO wave-9 (2026-11-21)
+
+| Field | Value |
+|-------|-------|
+| Integrator branch | `eqo/wave-9/integ` |
+| Base | `origin/development` `2b5c3aec6` (rebased pre-PR) |
+| Lanes | `eqo/wave-9/cor-wb01` … `cor-wb12` (12 worktrees `eqo-w9-cor-wbNN`) |
+| Deliverables | `runs/wbNN/COR_DRV.md`, `EQO_WAVE9_MANIFEST.md`, matrix §, README index row 36 |
+| Scope | Docs disposition paths from `AUD_SESSION_E.md`; no product CL-01 |
+| PR | _(pending push — docs gates `ticket-governance` + `governance-policy-pin`)_ |
 ## Lifecycle state
 
 plan_approved
