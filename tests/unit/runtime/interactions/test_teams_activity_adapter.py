@@ -3,10 +3,8 @@
 import base64
 import hashlib
 import hmac
-import json
 
 import pytest
-
 from intergrax.integrations.providers.notification_channel.teams.adapter import _TeamsInteractionAdapter
 from intergrax.runtime.interactions.factory import create_interaction_adapter, resolve_interaction_settings
 from intergrax.runtime.interactions.metadata_keys import INTERACTION_CHANNEL_KEY
@@ -14,7 +12,10 @@ from intergrax.runtime.interactions.parsers.teams_activity import (
     parse_teams_activity_text,
     strip_teams_mentions,
 )
-from intergrax.runtime.interactions.verification.factory import create_inbound_verifier, resolve_inbound_verifier_settings
+from intergrax.runtime.interactions.verification.factory import (
+    create_inbound_verifier,
+    resolve_inbound_verifier_settings,
+)
 from intergrax.runtime.interactions.verification.teams_signature import TeamsSignatureVerifier
 
 
@@ -100,9 +101,7 @@ def test_teams_signature_verifier_rejects_invalid_signature():
 def test_teams_signature_verifier_accepts_valid_hmac():
     token = "teams_security_token"
     body = b'{"text":"echo.basic hello"}'
-    digest = base64.b64encode(
-        hmac.new(token.encode("utf-8"), body, hashlib.sha256).digest()
-    ).decode("utf-8")
+    digest = base64.b64encode(hmac.new(token.encode("utf-8"), body, hashlib.sha256).digest()).decode("utf-8")
     verifier = TeamsSignatureVerifier(security_token=token, enabled=True)
     verifier.verify(headers={"Authorization": digest}, body=body)
 
@@ -114,8 +113,8 @@ def test_create_inbound_verifier_teams_mode():
         resolve_inbound_verifier_settings(
             mode="teams",
             teams_security_token="secret",
-            teams_verify_enabled=False,
+            teams_verify_enabled=True,
         )
     )
     assert isinstance(verifier, TeamsSignatureVerifier)
-    assert verifier.enabled is False
+    assert verifier.enabled is True
