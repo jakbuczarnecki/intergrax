@@ -36,3 +36,15 @@ Same as ticket `T-IGX-043-J.md`.
 1. Expand sections 3–4 with file-level diffs and node ids (delegate or architect session).
 2. Record plan digest in the ticket; move lifecycle to `plan_pending`.
 3. Operator or delegate approval line; then `plan_approved` and product work in `af-dev-pt-wf`.
+
+## 7. Revision 2 queue (autonomy fala 2 — architect minimum)
+
+| Slice | Node / finding | Status | Blocker |
+|-------|----------------|--------|---------|
+| G-09 | EX-L-09 / FRZ-TEN-01 | **MERGED** @ `aac4b083b` (`evaluation_assembly_resolver`) | — |
+| E2 | Campaign B-1 runtime path | **BLOCKED** | B-1 confirmation + file diffs |
+| E3 | LangChain document compat | **BLOCKED** | node ids TBD |
+| E4 | experiments workflow | **BLOCKED** | node ids TBD |
+| Owner repairs | FRZ rows WP-4 §C (OWN/CTR/PLG/…) | **BLOCKED** | regression node census from `rows.jsonl` |
+
+No further product commits until this section lists named `NT-WF-*` tests and a pytest command with verified node ids.

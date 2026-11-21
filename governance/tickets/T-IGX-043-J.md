@@ -32,4 +32,4 @@ TENANT **T-IGX-051-A**, FC-1/FC-3 file overlap without declared merge order, `sc
 
 ## Lifecycle state
 
-`plan_approved` (G-09 slice in progress; full PT-WF scope pending plan revision 2)
+`plan_approved` (G-09 slice merged; full PT-WF scope pending plan §7 architect fill — no product until NT-WF-* ids listed)
