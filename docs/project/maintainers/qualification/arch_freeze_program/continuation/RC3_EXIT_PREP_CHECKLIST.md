@@ -1,10 +1,11 @@
-# RC-3 exit prep checklist (MEP W4) — **nie RC-3 exit, nie G2 PASS**
+﻿# RC-3 exit prep checklist (MEP W4) — **nie RC-3 exit, nie G2 PASS**
 
 **Banner:** Przygotowanie dokumentacyjne wyjścia RC-3 / wejścia fali **W4** (PT-Q02 → PT-Q03 → FCS → PT-S04). **Nie** oznacza RC-3 CLOSED, **nie** PT-Q02 PASS, **nie** FCS, **nie** aktywacji RB-2 ani Stage 3.
 
-**Data:** 2026-11-21 (MEP W4, worktree `af-dev-mep-w4`)  
-**Pin development (lokalny tor):** `d043a21c67cb57475a4f36a2baff7020718ec7cb` (`d043a21c6`)  
+**Data:** 2026-11-21 (MEP W4 + Runda 1 **RC3-RUNBOOK**, worktree `af-dev-rc3-exec-prep`)  
+**Pin development (lokalny tor):** `c207e6ad3c01221e1e5867adaa21e0e5b038adc4` (`c207e6ad3`)  
 **Pin train:** `dbaebfa8cd13a6ba8bfa6eef2cdf581216ddb3d2` (`dbaebfa8`)  
+**Operator (Runda 1):** **D2=STOP** · **D6=BLOCKED** · **D8=STOP** — [`OPERATOR_DECISIONS_AUTONOMY.md`](OPERATOR_DECISIONS_AUTONOMY.md)  
 **Poprzednik:** TOR C fala 6 — RC-3 **entry prep** @ `e61e5136a` ([`RC3_PREP_DOSSIER.md`](RC3_PREP_DOSSIER.md))
 
 ## Legenda
@@ -64,14 +65,102 @@
 |----|-----------|---------|-------|
 | RC3X-E1 | RC-3 entry prep (fala 6) | [x] | `RC3_PREP_DOSSIER.md` @ `e61e5136a` |
 | RC3X-E2 | G2 readiness draft | [x] prep | [`G2_CHECKLIST_DRAFT.md`](G2_CHECKLIST_DRAFT.md) — **nie pin G2** |
-| RC3X-E3 | RC-3 exit prep checklist (ten plik) | [x] | MEP W4 @ `d043a21c6` |
+| RC3X-E3 | RC-3 exit prep checklist (ten plik) | [x] prep | MEP W4 + §F RC3-J @ `c207e6ad3` (Runda 1 runbook) |
 | RC3X-E4 | `CHECKPOINT.md` — G4 W4 row | [x] | `CHECKPOINT.md` — MEP W4 |
+
+## F. RC3-J1..J7 — kroki wykonawcze (Runda 1)
+
+**Banner:** Runbook operatora / orchestratora dla drabiny [`RC3_PREP_DOSSIER.md`](RC3_PREP_DOSSIER.md) §J. Status kroku: **OPEN** lub **BLOCKED** wyłącznie — **bez** PASS, **bez** G2, **bez** FCS, **bez** ARCH_FREEZE CLOSED.
+
+| Stan kroku | Znaczenie |
+|------------|-----------|
+| OPEN | Do wykonania lub monitorowania; dowód w repo dopiero po osobnej sesji |
+| BLOCKED | Twardy przodek lub decyzja operatora (D6, D8, …) |
+
+### RC3-J1 — RW train kompletny (W3); head train = kandydat G2
+
+| Step | Rola | Artefakt / komenda | Bramka | Stan |
+|------|------|-------------------|--------|------|
+| RC3-J1-1 | orchestrator | `git fetch origin arch-freeze/rw-train`; `git rev-parse origin/arch-freeze/rw-train` → oczekiwane `dbaebfa8` | SSOT po merge **#699** | OPEN |
+| RC3-J1-2 | orchestrator | Porównaj liczniki w [`TRAIN_DEV_GAP.md`](TRAIN_DEV_GAP.md) @ pin `c207e6ad3` | Luka dev↔train udokumentowana | OPEN |
+| RC3-J1-3 | operator | [`TRAIN_CHERRY_PICK_STATUS.md`](TRAIN_CHERRY_PICK_STATUS.md) — slice 1–4 **done**; następny slice **STOP** | **D2=STOP** | OPEN |
+| RC3-J1-4 | architect | Zapis runga **G2** (SHA kandydata na trainie) w ladder / dossier | Brak G2 na `development` | BLOCKED |
+
+**Werdykt J1 (Runda 1):** **OPEN** — train HEAD na pinie slice; rung G2 **nie** zapisany.
+
+### RC3-J2 — Train CI green (poza mechanicznie oczekiwanym red set)
+
+| Step | Rola | Artefakt / komenda | Bramka | Stan |
+|------|------|-------------------|--------|------|
+| RC3-J2-1 | operator | `gh run list --branch arch-freeze/rw-train --limit 20` — workflow **Regression gate** + **rag-guard** | read-only @ `dbaebfa8` | OPEN |
+| RC3-J2-2 | operator | Werdykt jobów `governance-fast`, `ci-smoke`, `rag-gate` na HEAD train | OD-AF-AUTO-01 / KR-08 | OPEN |
+| RC3-J2-3 | orchestrator | [`RC2_EXIT_CHECKLIST.md`](RC2_EXIT_CHECKLIST.md) RC2-B2 — aktualizacja **tylko** przy green + run id | **D1=A** (Runda 2) | OPEN |
+| RC3-J2-4 | implementer | Kolejny merge / cherry-pick na train | **D2=STOP** | BLOCKED |
+
+**Werdykt J2 (Runda 1):** **OPEN** — merge **#699** przy red CI; green replay **nie** zadeklarowany.
+
+### RC3-J3 — PT-Q02 niezależny wave audit @ G2 (RB-2 delta)
+
+| Step | Rola | Artefakt / komenda | Bramka | Stan |
+|------|------|-------------------|--------|------|
+| RC3-J3-1 | architect | Zapis SHA runga **G2** (= audytowany RW head) | RC3-J1-4 **BLOCKED** | BLOCKED |
+| RC3-J3-2 | independent_auditor | Nowa sesja (AR-58); worktree read-only @ G2 | ≠ implementer / reviewer | OPEN |
+| RC3-J3-3 | independent_auditor | Pakiet delta IIAC `a73d15ab3..G2` + AUD-ENF-2/3 evidence | §A RC3X-A3–A5 | OPEN |
+| RC3-J3-4 | orchestrator | Werdykt wave audit w repo (evidence index) | **bez** słowa PASS w Runda 1 | BLOCKED |
+
+**Werdykt J3 (Runda 1):** **OPEN** — sesja Q02 **nie** rozpoczęta; G2 **pending**.
+
+
+### RC3-J4 — PT-Q03 / RB-2 re-pin IIAC @ FCS
+
+| Step | Rola | Artefakt / komenda | Bramka | Stan |
+|------|------|-------------------|--------|------|
+| RC3-J4-1 | certifier | Sesja certifier + manifest RB-2 (osobna sesja) | PT-Q02 outcome | BLOCKED |
+| RC3-J4-2 | operator | Activation delegate (DP-08); **nie** edycja rekordu bez mandatu | OD-AF-12 / IIIC | BLOCKED |
+| RC3-J4-3 | tester | `uv run python -m scripts.governance.verify_iiac_policy_activation --require-in-force` @ FCS | [`IIAC_GOVERNANCE_FAST_BLOCKED.md`](IIAC_GOVERNANCE_FAST_BLOCKED.md) | BLOCKED |
+| RC3-J4-4 | orchestrator | Odświeżenie pakietu certifier DRAFT (cite-only, **D7**) | **nie** activation | OPEN |
+
+**Werdykt J4 (Runda 1):** **BLOCKED** — Q02 + governance-fast stale pin `969cbd964`.
+
+
+### RC3-J5 — FCS merge train → `development`
+
+| Step | Rola | Artefakt / komenda | Bramka | Stan |
+|------|------|-------------------|--------|------|
+| RC3-J5-1 | architect | Rung `R`: `git diff G2 R` — wyłącznie `docs/` | Wymaga G2 | BLOCKED |
+| RC3-J5-2 | operator | Mandat **T-AF2-RW-MERGE**; product tree ≡ G2 po FCS | **D8=STOP** | BLOCKED |
+| RC3-J5-3 | orchestrator | Klasyfikacja **12-commit** `development` (MEP N2) przed merge | RC3X-C3 | OPEN |
+| RC3-J5-4 | implementer | PR / merge `arch-freeze/rw-train` → `development` | Train green + Q02 | BLOCKED |
+
+**Werdykt J5 (Runda 1):** **BLOCKED** — **nie FCS**.
+
+
+### RC3-J6 — `governance-fast` green @ G2/FCS (N9)
+
+| Step | Rola | Artefakt / komenda | Bramka | Stan |
+|------|------|-------------------|--------|------|
+| RC3-J6-1 | tester | CI `governance-fast` na pinie `development` @ `c207e6ad3` | ACT-N11 | BLOCKED |
+| RC3-J6-2 | orchestrator | [`IIAC_GOVERNANCE_FAST_BLOCKED.md`](IIAC_GOVERNANCE_FAST_BLOCKED.md) — root cause + remediation path | RB-2 re-pin | OPEN |
+| RC3-J6-3 | tester | Powtórka po RB-2 re-pin @ FCS | RC3-J4-3 | BLOCKED |
+
+**Werdykt J6 (Runda 1):** **BLOCKED** — stale activation SHA.
+
+
+### RC3-J7 — T-AF2-RW-PLAN-AUDIT niezależny werdykt
+
+| Step | Rola | Artefakt / komenda | Bramka | Stan |
+|------|------|-------------------|--------|------|
+| RC3-J7-1 | independent_auditor | Sesja review Appendix C + macierz AF-RC (plan kontynuacji) | **D6=BLOCKED** | BLOCKED |
+| RC3-J7-2 | orchestrator | [`RW_PLAN_AUDIT_STATUS.md`](RW_PLAN_AUDIT_STATUS.md) — status bez PASS | RC1-J1 | OPEN |
+| RC3-J7-3 | architect | SCOPE train → `DONE_REQUALIFICATION_REQUIRED` po audycie | Po J7-1 | BLOCKED |
+
+**Werdykt J7 (Runda 1):** **BLOCKED** — brak niezależnej sesji audytora.
 
 ## Werdykt (exit prep only)
 
 | Warstwa | Werdykt |
 |---------|---------|
-| MEP W4 dokumentacja exit prep | **IN PROGRESS** — checklisty bez claimów zamknięcia |
-| RC-3 exit / program W4 gates | **DRAFT / NOT STARTED** — A1–D4 otwarte lub **BLOCKED** |
+| MEP W4 dokumentacja exit prep | **IN PROGRESS** — §F runbook RC3-J1..J7 @ Runda 1 |
+| RC-3 exit / program W4 gates | **DRAFT / NOT STARTED** — A1–D4 + **F (RC3-J1..J7)** OPEN/BLOCKED — **bez** PASS |
 
 Zgodnie z **OD-AF-AUTO-05**: brak G2 PASS, Q02 PASS, FCS, RB-2 activation, PT-S04 LIVE, `ARCH_FREEZE CLOSED`.
