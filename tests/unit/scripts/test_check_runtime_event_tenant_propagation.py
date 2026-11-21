@@ -43,6 +43,11 @@ def test_missing_emitter_path_is_violation() -> None:
     assert violations == ["missing emitter file: intergrax/agents/uaep.py"]
 
 
+def test_emitter_files_includes_uaep_executor() -> None:
+    uaep_path = REPO_ROOT / "intergrax/runtime/nexus/uaep/uaep_executor.py"
+    assert uaep_path in EMITTER_FILES
+
+
 def test_configured_emitter_paths_exist_and_main_exits_zero() -> None:
     for path in EMITTER_FILES:
         assert path.is_file(), f"configured emitter missing: {path}"

@@ -13,6 +13,7 @@
 
 - `EMITTER_FILES`: removed stale `intergrax/agents/uaep.py`; added `intergrax/runtime/nexus/uaep/uaep_executor.py`; retained `intergrax/runtime/middleware/trace_middleware.py`.
 - Missing configured emitter path still returns exit code 1 (fail closed).
+- Unit test `test_emitter_files_includes_uaep_executor` pins `EMITTER_FILES` to `intergrax/runtime/nexus/uaep/uaep_executor.py` (not a swappable peer path).
 - `RuntimeEvent(` without `tenant_id=` within the 600-character window still returns exit code 1.
 
 ## Scoped limitation
