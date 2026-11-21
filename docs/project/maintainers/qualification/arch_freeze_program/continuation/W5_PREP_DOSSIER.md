@@ -1,6 +1,6 @@
 # W5 pre-pin prep dossier (WP-12) — **prep only, not pin**
 
-**Data:** 2026-11-21 (MEP W5 prep + exec tor ticketów, worktree `af-dev-w5-exec`)  
+**Data:** 2026-11-21 (MEP W5 prep + exec tor ticketów, worktrees `af-dev-w5-exec` / `af-dev-w5-product`)  
 **Werdykt programu W5 (węzły):** **DRAFT / NOT STARTED** — nie EBH-7 pin, nie M3, nie `FREEZE_CERTIFICATION_SHA`, nie `ARCH_FREEZE CLOSED`.  
 **Werdykt dokumentacji prep MEP W5:** **DONE** — dziewięć węzłów WP-12 W5 pod `continuation/w5/*_PREP.md`.  
 **Tor mapy ticketów W5:** **IN_PROGRESS** — [`w5/WP12_W5_PT_TICKETS_STATUS.md`](w5/WP12_W5_PT_TICKETS_STATUS.md) @ `e69e1ff58`.
@@ -38,7 +38,7 @@
 
 ## MEP W5 poza zakresem tej fali (cite only)
 
-Plan [`MEP-AF2_v2.1.md`](MEP-AF2_v2.1.md) W5 dodaje m.in. `T-B7-PFP-ACTIVATE`, `T-AF2-MANIFESTS` (final / 052-B), `T-AF2-ECAP-REVISION` (052-D), `T-AF2-VBN-DOSSIER` (052-C), `T-AF2-ENT-BASELINE-PREFREEZE` (052-A) — **nie** wdrożone w tej sesji; brak ticketów `T-IGX-052-*` w `governance/tickets/` @ pin.
+Plan [`MEP-AF2_v2.1.md`](MEP-AF2_v2.1.md) W5 dodaje m.in. `T-B7-PFP-ACTIVATE` (ticket **unallocated**), `T-AF2-MANIFESTS` (**T-IGX-052-B**), `T-AF2-ECAP-REVISION` (**052-D**), `T-AF2-VBN-DOSSIER` (**052-C**), `T-AF2-ENT-BASELINE-PREFREEZE` (**052-A**), `T-AF2-ECAP-EXEC` (**052-E**). Macierz PT-*: [`WP12_W5_PT_TICKETS_PREP.md`](WP12_W5_PT_TICKETS_PREP.md) — scaffolds **`draft`** @ `e69e1ff58`; **nie** FCS / pin.
 
 ## Werdykt
 
@@ -46,6 +46,6 @@ Plan [`MEP-AF2_v2.1.md`](MEP-AF2_v2.1.md) W5 dodaje m.in. `T-B7-PFP-ACTIVATE`, `
 |---------|---------|
 | MEP W5 prep dokumentacja (9× PT-*) | **DONE** @ `e69e1ff58` |
 | Mapa statusów ticketów PT-* | **IN PROGRESS** — `w5/WP12_W5_PT_TICKETS_STATUS.md` |
-| W5 programowe (wykonanie węzłów) | **NOT STARTED** — FCS i autoryzacje otwarte |
+| W5 programowe (wykonanie węzłów) | **IN_PROGRESS** (governance) — ticket scaffolds; product **BLOCKED** @ FCS |
 
 Zgodnie z **OD-AF-AUTO-05**: bez pinu, bez M3, bez PASS audytów, bez Stage 4/5 LIVE.

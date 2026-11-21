@@ -22,7 +22,7 @@
 | Id | Kryterium | Stan | Uwagi |
 |----|-----------|------|-------|
 | W5X-D11-1 | AUD-DOC complete | [ ] |  |
-| W5X-D11-2 | Hand-edit forbidden | [x] | WP12 node table |
+| W5X-D11-2 | Hand-edit forbidden | [x] | `T-IGX-053-G` scaffold `draft` |
 | W5X-D11-3 | ECAP / roadmap ordering (G-08) | [ ] | ECAP_REVISION_DRAFT |
 | W5X-D11-4 | F10 STALE at baseline (S1) | [ ] | RM499-M18 cite |
 

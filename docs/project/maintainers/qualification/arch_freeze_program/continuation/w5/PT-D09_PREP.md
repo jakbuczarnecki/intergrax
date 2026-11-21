@@ -22,7 +22,7 @@
 | Id | Kryterium | Stan | Uwagi |
 |----|-----------|------|-------|
 | W5X-D09-1 | FCS | BLOCKED |  |
-| W5X-D09-2 | 36 hunks / 27 certification statements mapped | [ ] | WP12_TICKETS_DRAFT |
+| W5X-D09-2 | 36 hunks / 27 certification statements mapped | [x] | `T-IGX-053-D` scaffold `draft` |
 | W5X-D09-3 | PT-AUD-DOC before F10 / pin | [ ] | AR-12-03 |
 | W5X-D09-4 | Targeted F10 dry-run (AR-9-02) | [ ] |  |
 | W5X-D09-5 | Operator-only file — implementer nie edytuje bez mandatu | [x] | MEP-AF2 K |

@@ -23,7 +23,7 @@
 |----|-----------|------|-------|
 | W5X-S06-1 | PT-S04 | BLOCKED |  |
 | W5X-S06-2 | AR-26 fixes landed (DP-10) | [ ] | verify at FCS pin |
-| W5X-S06-3 | ENT baseline prefreeze after S06 | [ ] | T-AF2-ENT-BASELINE-PREFREEZE / 052-A |
+| W5X-S06-3 | ENT baseline prefreeze after S06 | [x] | `T-IGX-052-A` + `T-IGX-053-I` scaffold `draft` |
 | W5X-S06-4 | No ruleset bypass | [x] | plan K |
 
 ## Status ticketu
