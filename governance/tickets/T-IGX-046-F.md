@@ -144,6 +144,17 @@ Operator decision **`waiver_both`** @ **2026-11-21** (coordinator chat): retroac
 
 **Going forward (docs-only integrator PRs under T-IGX-046-F / same merge-policy pattern):** merge when **`ticket-governance`** + **`governance-policy-pin`** pass; **do not** block on full `ci-smoke` / `governance-fast` / `ent-audit-fast` green when failure is acknowledged pre-existing platform drift outside the PR write set. Autonomous `gh pr merge` still requires either that docs gate pair green **or** a fresh operator waiver line on this ticket (see merge policy correction above). PR [#692](https://github.com/jakbuczarnecki/intergrax/pull/692) thread noted `AWAITING_OPERATOR_WAIVER` — resolved by this section.
 
+## Checkpoint — EQO wave-8 (2026-11-21)
+
+| Field | Value |
+|-------|-------|
+| Integrator branch | `eqo/wave-8/integ` |
+| Base | `origin/development` `569254840` (PR #698) |
+| Lanes | `eqo/wave-8/w2` `a8fde582c`, `eqo/wave-8/x` `fe3a92adc`, `eqo/wave-8/w9` `b53793858` |
+| Deliverables | W2-02 replay read; X memos English; W9-01 matrix prep (`EQO_NOT_CLOSED_EXACT_BLOCKERS`) |
+| #680 | Track-only (no merge claim) |
+| PR | _(pending push — docs gates `ticket-governance` + `governance-policy-pin`)_ |
+
 ## Lifecycle state
 
 plan_approved
