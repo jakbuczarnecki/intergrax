@@ -48,7 +48,7 @@ PDC / MEP rows: EX-D2-01, EX-D2-02, EX-D2-05, EX-D2-07, EX-L-05, D2-R004. Cross-
 | NT-TRUST-03 | EX-D2-02 | Formatter tags fragment source in system block | `tests/unit/context/test_context_formatter.py::test_formatter_emits_source_tagged_blocks` | **green** |
 | NT-TRUST-04 | EX-D2-07 | invalid `tool_call_id` on envelope build fails closed | `tests/unit/context/test_trust_fail_closed.py::test_nt_trust_04_whitespace_tool_call_id_rejected` | **green** (fala 4 slice 2) |
 | NT-TRUST-05 | EX-D2-05 | planner tool-group ledger includes tool payload tokens | `tests/unit/context/test_trust_fail_closed.py::test_nt_trust_05_planner_ledger_includes_tool_payload_tokens` | **green** (fala 4 slice 2) |
-| NT-TRUST-06 | EX-L-05 / D2-R004 | tenant-scoped vectorstore resolution | `tests/unit/tools/providers/rag/test_rag_scope.py::test_resolve_tenant_scoped_vectorstore_fails_closed_without_tenant` | **collect** (needs `langchain-core`; see §7.3) |
+| NT-TRUST-06 | EX-L-05 / D2-R004 | tenant-scoped vectorstore resolution | `tests/unit/tools/providers/rag/test_rag_scope.py::test_resolve_tenant_scoped_vectorstore_fails_closed_without_tenant` | **green** (fala 4 slice 3; `uv sync --extra dev-ci-rag`) |
 
 Red-first package (new file, fala 3 slice 1): `tests/unit/context/test_trust_fail_closed.py` (`NT-TRUST-01`).
 
@@ -62,7 +62,7 @@ Plus FC-3 regression bundle from `PLAN_T-IGX-043-J` §7.2 (`regression_scope_fc3
 
 ### 7.3 ENV
 
-`uv sync --extra dev-ci`; when `test_rag_scope.py` fails collect with `langchain_core`, add project RAG extra per `pyproject.toml` (record in session log).
+`uv sync --extra dev-ci --extra dev-ci-rag` for NT-TRUST-06 (`langchain-core`); pytest without `-p no:cacheprovider` (use `-o cache_dir=<scratch>` — repo temp plugin sets `cache_dir`).
 
 ### 7.4 Push
 
