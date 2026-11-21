@@ -8,4 +8,4 @@
 
 **Nie jest blokadą implementacji równoległej na rozłącznych write setach (G1 embedding, G3 trust, …),** ale formalny `SCOPE` na trainie pozostaje `DONE_REQUALIFICATION_REQUIRED` do czasu PASS.
 
-**Data:** 2026-11-21
+**Data:** 2026-11-21 (odświeżenie pin development `4889fc859` — werdykt bez zmian)
