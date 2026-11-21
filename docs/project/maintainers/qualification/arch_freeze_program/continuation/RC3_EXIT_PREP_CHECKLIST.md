@@ -36,7 +36,7 @@
 |----|----------------|---------|----------------|
 | RC3X-B1 | PT-Q02 **PASS** (twardy przodek) | BLOCKED | Q02 otwarte |
 | RC3X-B2 | Certifier session + manifest (osobna sesja) | [ ] | [`IIAC_SESSION_HANDOFF_RECORD_ARCH_FREEZE_RB2_CERTIFIER_DRAFT.md`](../../iiac_evidence/ARCH-FREEZE/RB-2/certifier/IIAC_SESSION_HANDOFF_RECORD_ARCH_FREEZE_RB2_CERTIFIER_DRAFT.md) — **DRAFT / NOT PASS** |
-| RC3X-B3 | Activation delegate (DP-08); **nie** edycja rekordu bez delegacji | [ ] | — |
+| RC3X-B3 | Activation delegate (DP-08); **nie** edycja rekordu bez delegacji | [x] prep | [`IIAC_SESSION_HANDOFF_RECORD_ARCH_FREEZE_RB2_ACTIVATION_PREP_DRAFT.md`](../../iiac_evidence/ARCH-FREEZE/RB-2/activation/IIAC_SESSION_HANDOFF_RECORD_ARCH_FREEZE_RB2_ACTIVATION_PREP_DRAFT.md) — **PREP / NOT ACTIVATED** |
 | RC3X-B4 | `verify_iiac_policy_activation --require-in-force` @ FCS | BLOCKED | [`IIAC_GOVERNANCE_FAST_BLOCKED.md`](IIAC_GOVERNANCE_FAST_BLOCKED.md) |
 
 ## C. FCS — `T-AF2-RW-MERGE` (MEP W4)

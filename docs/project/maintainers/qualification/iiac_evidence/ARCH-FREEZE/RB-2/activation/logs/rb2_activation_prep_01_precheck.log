@@ -1,0 +1,30 @@
+# command: python docs/project/maintainers/qualification/iiac_evidence/ARCH-FREEZE/RB-2/activation/scripts/precheck_rb2_activation_prep.py
+# HEAD: e69e1ff5819b98c316377bcadf749f61fe00abc2
+# UTC start: 2026-11-21T10:43:45Z
+# UTC end: 2026-11-21T10:43:48Z
+# python: C:\Python313\python.exe
+# ---- stdout ----
+HEAD e69e1ff5819b98c316377bcadf749f61fe00abc2
+gate module: D:\Projekty\_wt\intergrax\af-dev-iiac-exec\scripts\governance\iiac_activation_gate.py
+[OK  ] gate module resolves inside this checkout 
+[OK  ] 969cbd964 resolves to itself 
+[OK  ] a73d15ab3 resolves to itself 
+[OK  ] c207e6ad3 resolves to itself 
+[OK  ] ancestor 969cbd964 -> a73d15ab3 
+[OK  ] ancestor a73d15ab3 -> c207e6ad3 
+[OK  ] ancestor 969cbd964 -> c207e6ad3 
+[OK  ] mechanical E..G2 product delta count == 76 n=76
+[OK  ] delta_files.txt line count == 76 n=76
+[OK  ] delta_files.txt matches mechanical E..G2 
+[OK  ] certifier draft manifest_status 
+[OK  ] certifier draft verdict DRAFT 
+[OK  ] certifier audited_implementation_sha == G2 
+[OK  ] prior binding verdict PASS 
+[OK  ] prior audited sha == G0 
+[OK  ] OD-AF-12 OPEN in operator register 
+INFO product paths G0..HEAD @ prep pin: n=76 (ACT-N11 stale until RB-2)
+INFO material governance paths changed E..HEAD: []
+[OK  ] no edit to IIAC_POLICY_ACTIVATION_RECORD in this worktree diff 
+ALL_PREP_PRECHECKS_OK = True
+# ---- stderr ----
+# exit code: 0
