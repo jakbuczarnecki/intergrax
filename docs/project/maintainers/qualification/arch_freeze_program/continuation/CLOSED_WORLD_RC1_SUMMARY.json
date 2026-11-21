@@ -1,0 +1,20 @@
+{
+  "package": "T-AF2-CLOSED-WORLD",
+  "source_head": "28c27cb896d02e0185b9fa02047411fa152f6469",
+  "execution_sha": "4ee0de46e4acae2ff9ba355144c95e9559f46f01",
+  "command": "uv run python scripts/governance/arch_freeze_b1_closed_world_inventory.py --report-only --output-dir .tmp/session/arch-freeze/continuation/rc1/closed-world",
+  "audit_baseline_sha": "a0624e28ff77b061e83f3e10aab4c2a9083ee1b4",
+  "inventory_implementation_sha": "7274f537c16faa9ca9dc2870ed4bc26c1f7c9f3c",
+  "inventory_digest": "cc0a0b9a2d5161fdbc114b9aed53709942294205fd281b13014b5d7e81a0a603",
+  "strict_certify_flag": false,
+  "strict_pass_reported": true,
+  "closed_world_gates_pass": true,
+  "mandatory_undisposed_count": 7,
+  "extractor_unknown_nodes": 21,
+  "classification_counts": {
+    "LAB_ONLY": 673,
+    "PRODUCTION_ELIGIBLE_UNVERIFIED": 8422,
+    "PRODUCTION_EFFECTIVE": 12
+  },
+  "note": "Diagnostic replay at RC-1. Not T-AF2-CLOSED-WORLD PASS, not G2, not PT-Q02. Full jsonl remains under .tmp/ (gitignored)."
+}
