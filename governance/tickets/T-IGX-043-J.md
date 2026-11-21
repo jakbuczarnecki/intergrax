@@ -14,7 +14,7 @@ This scaffold records scope only. No PASS, FRZ promotion, or independent-verific
 
 ## Plan digest
 
-Plan digest: 5b6a2fb26889aaadbc763ff10f66247b1076ab372b223d59ca5742f9f32559c8
+Plan digest: e33f62a5420e3f6a8db529dff98d61b33e2cc902f56514171d7b5c1142df2c38
 
 Canonical plan: [`governance/tickets/plans/PLAN_T-IGX-043-J.md`](plans/PLAN_T-IGX-043-J.md).
 
@@ -24,7 +24,14 @@ Approved: operator (OD-AF-AUTO-03, autonomy session 2026-11-21; digest verified 
 
 ## Test contract
 
-Defined in the plan (red-first negative tests, regression node list, `uv run python -m scripts.governance.igx_gov ticket` before push). No test run at scaffold time.
+Defined in the plan (red-first negative tests, regression node list, `uv run python -m scripts.governance.igx_gov ticket` before push). Harness qualification re-run: plan §8.1 — **12 passed** on `test_harness_evaluation_wiring.py` (2026-11-21, `af-dev-pt-wf` @ `bab8114d8`).
+
+## Implementation record (fala B2)
+
+| Step | Evidence |
+|------|----------|
+| G-09 harness noop | plan §8.1 — **12 passed**; no E2–E4 product paths touched |
+| E2–E4 | **BLOCKED** on Campaign B-1 (continuation cross-ref plan §8.2) |
 
 ## Out of scope
 
@@ -32,4 +39,4 @@ TENANT **T-IGX-051-A**, FC-1/FC-3 file overlap without declared merge order, `sc
 
 ## Lifecycle state
 
-`plan_approved` (§7 filled fala 3; G-09 green; E2–E4 BLOCKED on B-1; owner batch not started)
+`in_progress` (§7 G-09 green; fala B2 harness re-run recorded; E2–E4 BLOCKED on B-1; owner batch not started)
