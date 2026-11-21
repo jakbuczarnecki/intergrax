@@ -27,11 +27,11 @@
 | PT-FC3 | 043-C | plan_approved | Product po FC-2 posture + green gate discipline | **STOP** |
 | PT-WD | 043-I (+043-M) | 043-I train; 043-M in_progress | 043-M Part E **BLOCKED** (RW-PLAN) | **STOP** |
 | PT-WF | 043-J | plan_approved / partial | G-09 done off-pin; E2–E4 **BLOCKED** B-1 | **STOP** |
-| PT-WF follow-on | **043-N** | **draft** (nowy) | Po merge FC-1 authority (#680) | **STOP** |
+| PT-WF follow-on | **043-N** | **plan_pending** (hardened R1) | Po merge FC-1 authority (#680); plan digest recorded | **STOP** |
 | PT-E05 | 044-F | MERGED_TRAIN | IIAC requal @ Q02 | **STOP** |
 | T-AF2-RW-TRUST | 051-C | implementing / merged off-pin | Trust slice merged fala 5 @ ref `e61e5136a` | **STOP** |
-| T-AF2-RW-SUPPLY A/B | **051-N** | **draft** (review) | Branch `d5d54710` — review digest, **nie** rewrite | **STOP** |
-| T-AF2-RW-TENANT | **051-A** | **draft** | **BLOCKED** OD-AF-AUTO-04/05; po #680 + FC3+WF+TRUST | **STOP** |
+| T-AF2-RW-SUPPLY A/B | **051-N** | **plan_pending** (hardened R1) | Import review @ `d5d54710`; plan `PLAN_T-IGX-051-N.md` on `development` | **STOP** |
+| T-AF2-RW-TENANT | **051-A** | **draft** (unchanged R1) | **BLOCKED** D5 / OD-AF-AUTO-04/05; po #680 + FC3+WF+TRUST | **STOP** |
 | T-AF2-RW-GATES | 051-F | brak ticketu | Alloc `T-IGX-051-F` — poza tym batch | — |
 | T-AF2-RW-TYP | 051-G | brak ticketu | Po TYP-MEASURE / OD-AF-11 | — |
 | PT-T01 | brak | — | Alloc ticket; NT-01..16 red-first | — |
@@ -52,6 +52,8 @@
 | `governance/tickets/T-IGX-043-N.md` | PT-FC1 follow-on |
 | `governance/tickets/T-IGX-051-N.md` | T-AF2-RW-SUPPLY |
 | `governance/tickets/T-IGX-051-A.md` | T-AF2-RW-TENANT |
+
+**Runda 1 (autonomia @ `c207e6ad3`, fala TICKET-SCAFFOLD):** utwardzono **043-N** i **051-N** (`plan_pending`, plany kanoniczne + digest); **051-A** pominięty (D5 BLOCKED).
 
 ## STOP (fala MEP W3)
 
