@@ -7,7 +7,7 @@ from pathlib import Path
 
 from intergrax.runtime.workspace.execution_port import WorkspaceExecutionPort
 from intergrax.runtime.workspace.models import ShadowArtifact
-from intergrax.tools.providers.storage.service import refuse_governed_content_key
+from intergrax.tools.providers.storage.service import _resolve_scoped_storage_key
 from intergrax.tools.providers.workspace.contracts import (
     WorkspaceArtifactOutput,
     WorkspaceDeleteFileInput,
@@ -126,7 +126,6 @@ def workspace_export_artifact(
     ctx: ToolWiringContext,
     params: WorkspaceExportArtifactInput,
 ) -> WorkspaceExportArtifactOutput:
-    refuse_governed_content_key(params.storage_key)
     workspace = _require_workspace(ctx)
     object_storage = _require_object_storage(ctx)
     rel = _safe_relative_path(params.path.strip())
@@ -145,7 +144,12 @@ def workspace_export_artifact(
             content_type = artifact.content_type
             break
     storage_key = params.storage_key.strip()
-    object_storage.put(storage_key, body, content_type=content_type)
+    physical_key = _resolve_scoped_storage_key(
+        ctx,
+        tool_id=WORKSPACE_EXPORT_ARTIFACT_TOOL_ID,
+        logical_key=storage_key,
+    )
+    object_storage.put(physical_key, body, content_type=content_type)
     return WorkspaceExportArtifactOutput(
         exported=True,
         path=rel.as_posix(),
@@ -161,11 +165,15 @@ def workspace_import_artifact(
     ctx: ToolWiringContext,
     params: WorkspaceImportArtifactInput,
 ) -> WorkspaceImportArtifactOutput:
-    refuse_governed_content_key(params.storage_key)
     workspace = _require_workspace(ctx)
     object_storage = _require_object_storage(ctx)
     storage_key = params.storage_key.strip()
-    stored = object_storage.get(storage_key)
+    physical_key = _resolve_scoped_storage_key(
+        ctx,
+        tool_id=WORKSPACE_IMPORT_ARTIFACT_TOOL_ID,
+        logical_key=storage_key,
+    )
+    stored = object_storage.get(physical_key)
     if stored is None:
         return WorkspaceImportArtifactOutput(
             imported=False,

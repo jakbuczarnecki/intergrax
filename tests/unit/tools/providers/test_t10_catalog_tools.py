@@ -6,7 +6,6 @@ import json
 from pathlib import Path
 
 import pytest
-
 from intergrax.integrations.contracts.object_storage import StoredObject
 from intergrax.runtime.architecture.online_evaluation_models import OnlineEvaluationMode, OnlineEvaluationObservation
 from intergrax.runtime.workspace.shadow_workspace import ShadowWorkspace
@@ -37,9 +36,20 @@ from intergrax.tools.providers.workspace.service import (
     workspace_write_file,
 )
 from intergrax.tools.registry.scheduled_notification_binding import InMemoryScheduledNotificationStore
-from intergrax.tools.registry.wiring import ToolWiringContext
+from intergrax.tools.registry.wiring import ListStorageAccessAuditSink, ToolWiringContext
 
 pytestmark = pytest.mark.unit
+
+_STORAGE_TENANT = "tenant-t10"
+
+
+def _storage_tool_ctx(*, shadow_workspace=None, object_storage=None) -> ToolWiringContext:
+    return ToolWiringContext(
+        shadow_workspace=shadow_workspace,
+        object_storage=object_storage,
+        tenant_id=_STORAGE_TENANT,
+        storage_audit_sink=ListStorageAccessAuditSink(),
+    )
 
 
 @pytest.fixture
@@ -171,23 +181,23 @@ class FakePagerDutyChannel:
 
 def test_workspace_export_and_import(shadow_workspace: ShadowWorkspace) -> None:
     storage = FakeObjectStorage()
-    ctx = ToolWiringContext(shadow_workspace=shadow_workspace, object_storage=storage)
+    ctx = _storage_tool_ctx(shadow_workspace=shadow_workspace, object_storage=storage)
     workspace_write_file(ctx, WorkspaceWriteFileInput(path="out/report.txt", content="payload"))
     exported = workspace_export_artifact(
         ctx,
         WorkspaceExportArtifactInput(path="out/report.txt", storage_key="exports/report.txt"),
     )
     assert exported.exported is True
-    assert exported.size_bytes == len("payload".encode())
+    assert exported.size_bytes == len(b"payload")
 
     other = ShadowWorkspace.create(shadow_workspace.root.parent, tenant_id="tenant-2", task_id="task-2")
-    import_ctx = ToolWiringContext(shadow_workspace=other, object_storage=storage)
+    import_ctx = _storage_tool_ctx(shadow_workspace=other, object_storage=storage)
     imported = workspace_import_artifact(
         import_ctx,
         WorkspaceImportArtifactInput(storage_key="exports/report.txt", path="in/report.txt"),
     )
     assert imported.imported is True
-    assert imported.size_bytes == len("payload".encode())
+    assert imported.size_bytes == len(b"payload")
 
 
 def test_notify_schedule() -> None:
@@ -224,8 +234,8 @@ def test_eval_export_observations() -> None:
 
 def test_storage_exists() -> None:
     storage = FakeObjectStorage()
-    storage.put("obj-1", b"abc", content_type="text/plain")
-    ctx = ToolWiringContext(object_storage=storage)
+    storage.put("tenants/tenant-t10/obj-1", b"abc", content_type="text/plain")
+    ctx = _storage_tool_ctx(object_storage=storage)
     missing = storage_exists(ctx, StorageExistsInput(key="missing"))
     assert missing.exists is False
     found = storage_exists(ctx, StorageExistsInput(key="obj-1"))
