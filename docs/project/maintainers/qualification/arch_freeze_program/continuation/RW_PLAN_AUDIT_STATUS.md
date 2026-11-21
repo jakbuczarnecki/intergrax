@@ -8,6 +8,6 @@
 
 **Nie jest blokadą implementacji równoległej na rozłącznych write setach (G1 embedding, G3 trust, …),** ale formalny `SCOPE` na trainie pozostaje `DONE_REQUALIFICATION_REQUIRED` do czasu PASS.
 
-**Data:** 2026-11-21 (G4 fala 5–6; odświeżenie pin development ``e61e5136a`` — TOR C fala 6; werdykt **BLOCKED** bez zmian)
+**Data:** 2026-11-21 (prep fala `af-dev-rw-plan` @ `e69e1ff5819b98c316377bcadf749f61fe00abc2`; werdykt **BLOCKED** bez zmian; wejście sesji: [`RW_PLAN_AUDIT_PREP_DOSSIER.md`](RW_PLAN_AUDIT_PREP_DOSSIER.md); ticket **T-IGX-050-N**)
 
 **Otwarte pozycje RC-1:** [`RC1_OPEN_ITEMS_DEV.md`](RC1_OPEN_ITEMS_DEV.md) (RC1-J1).

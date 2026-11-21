@@ -42,6 +42,7 @@ Merge przy czerwonych checkach — zapisany stan; **nie** spełnia OD-AF-AUTO-01
 | G7 (MEP W6 prep) | `af-dev-mep-w6` | `af-dev-mep-w6` | T-IGX-052-F/G/H | Campaign + requal + M3 prep checklists | **DONE** prep @ `156bd6b40` |
 | G8 (MEP W7 prep) | `af-dev-mep-w7` | `af-dev-mep-w7` | ticket-less docs | PT-Q13 / PT-VBN / ENTRY / DS-ADM prep | **DONE** prep |
 | G9 (MEP W8 closure prep) | `af-dev-mep-w8` | `af-dev-mep-w8` | ticket-less docs | W8 dossier + w8 checklists | **DONE** prep |
+| G4 (RW-PLAN-AUDIT prep) | `af-dev-rw-plan` | `af-dev-rw-plan` | T-IGX-050-N | `RW_PLAN_AUDIT_PREP_DOSSIER.md` + status pin @ `e69e1ff58` | **DONE** prep |
 
 ## RW-PLAN-AUDIT (`T-AF2-RW-PLAN-AUDIT`)
 
