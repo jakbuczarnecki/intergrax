@@ -1165,6 +1165,9 @@
       "ENT-A-EVOL-02",
       "ENT-A-EVOL-03"
     ],
+    "intergrax/platform/enterprise_audit/manifest.py": [
+      "ENT-A-INV-02"
+    ],
     "intergrax/platform/enterprise_audit/modes.py": [
       "C011",
       "C067",

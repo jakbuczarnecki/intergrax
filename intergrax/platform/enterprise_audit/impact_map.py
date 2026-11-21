@@ -261,6 +261,7 @@ EVOL_X_TREE_IMPACT_RULES: tuple[tuple[str, tuple[str, ...]], ...] = tuple(
 ENGINE_TREE_IMPACT_RULES: tuple[tuple[str, tuple[str, ...]], ...] = (
     ("intergrax/platform/enterprise_audit/data/schemas/frz_coverage.v1.schema.json", ("ENT-A-INV-02",)),
     ("intergrax/platform/enterprise_audit/digests.py", ("ENT-A-INV-02",)),
+    ("intergrax/platform/enterprise_audit/manifest.py", ("ENT-A-INV-02",)),
 )
 
 
