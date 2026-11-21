@@ -134,6 +134,17 @@
 
 **Werdykt J5 (Runda 1):** **BLOCKED** — **nie FCS**.
 
+
+### RC3-J6 — `governance-fast` green @ G2/FCS (N9)
+
+| Step | Rola | Artefakt / komenda | Bramka | Stan |
+|------|------|-------------------|--------|------|
+| RC3-J6-1 | tester | CI `governance-fast` na pinie `development` @ `c207e6ad3` | ACT-N11 | BLOCKED |
+| RC3-J6-2 | orchestrator | [`IIAC_GOVERNANCE_FAST_BLOCKED.md`](IIAC_GOVERNANCE_FAST_BLOCKED.md) — root cause + remediation path | RB-2 re-pin | OPEN |
+| RC3-J6-3 | tester | Powtórka po RB-2 re-pin @ FCS | RC3-J4-3 | BLOCKED |
+
+**Werdykt J6 (Runda 1):** **BLOCKED** — stale activation SHA.
+
 ## Werdykt (exit prep only)
 
 | Warstwa | Werdykt |
