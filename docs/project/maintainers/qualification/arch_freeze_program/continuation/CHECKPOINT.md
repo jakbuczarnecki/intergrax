@@ -1,8 +1,19 @@
-# ARCH-FREEZE continuation checkpoint (development train)
+﻿# ARCH-FREEZE continuation checkpoint (development train)
 
-**Updated:** 2026-11-21 (autonomy fala 6 / TOR C)  
-**Base branch:** `origin/development` @ `4889fc85907d3da3eb4bd75d1d0c8f2475e09ee1`  
-**Arch-freeze train reference:** `origin/arch-freeze/rw-train` @ `c443865e9129300a7bbb71abf65dee246f747794` — cherry-pick **QUEUED**, merge **STOP** do green `governance-fast`
+**Updated:** 2026-11-21 (docs — fakt merge PR #699)  
+**Base branch:** `origin/development` @ `292ca33480528b78a34fedf87f4789d7708f34cb` (przed commitem docs tej fali)  
+**Arch-freeze train reference:** `origin/arch-freeze/rw-train` @ `dbaebfa8cd13a6ba8bfa6eef2cdf581216ddb3d2` — PR **#699** **MERGED** 2026-11-21 (slice `1cec68222`)
+
+## Train merge — fakt operatora / automation
+
+| Pole | Wartość |
+|------|---------|
+| PR | **#699** `af-dev-train-sync` → `arch-freeze/rw-train` |
+| Merge SHA | `dbaebfa8cd13a6ba8bfa6eef2cdf581216ddb3d2` |
+| CI przy merge | `governance-fast` **FAILURE (ACT-N11)**; `ci-smoke` **red**; `rag-gate` **red** |
+| SSOT slice | `TRAIN_CHERRY_PICK_STATUS.md` |
+
+Merge przy czerwonych checkach — zapisany stan; **nie** spełnia OD-AF-AUTO-01 jako dowód green gate. **RC-2** pozostaje **PARTIAL** (`RC2_EXIT_CHECKLIST.md` — B2–B3 nadal zależne od replay `governance-fast`).
 
 ## Parallel workstreams (development tor)
 
@@ -11,7 +22,7 @@
 | G1 | `af-dev-pt-fc3` | `af-dev-pt-fc3` | T-IGX-043-C | Regression §8.6 follow-up merged (`413fb9186`) | Merged fala 2 |
 | G2 | `af-dev-pt-wf` | `af-dev-pt-wf` | T-IGX-043-J | Plan §7; G-09 merged; product blocked do NT-WF-* | plan_approved |
 | G3 | `af-dev-rw-trust` | `af-dev-rw-trust` | T-IGX-051-C | Plan §7 rev-2 minimum; product **BLOCKED** | plan_approved |
-| G4 | (this commit) | `af-dev-rc1-docs` | ticket-less docs | RC-3 prep dossier + G2 draft + train-dev gap | In progress (fala 6) |
+| G4 | (this commit) | `af-dev-rc1-docs` | ticket-less docs | RC-3 prep + odzwierciedlenie merge #699 | In progress |
 | G5 | `af-dev-043m` | `af-dev-043m` | T-IGX-043-M | Smoke green → `in_progress`; Part E manifest **BLOCKED** | in_progress |
 
 ## RW-PLAN-AUDIT (`T-AF2-RW-PLAN-AUDIT`)
@@ -20,7 +31,7 @@
 
 ## Divergence warning
 
-Merge-base `development` ↔ `rw-train`: `70d73f0f08325a39c6b2fd0e3b00f4cab7e83033`. Approximately **205** commits on `rw-train` not in `development`, **185** on `development` not in `rw-train` (snapshot 2026-11-21, `TRAIN_DEV_GAP.md`). Product remediation on `development` must **rebase/cherry-pick** from train (np. FC-3 @ `1b46b0a3d`, `1ac145981`), not merge `rw-train` without operator mandate.
+Po merge **#699** train zawiera slice FC-3 / G-09 / trust, ale **nie** pełny `development`. Szczegóły i liczniki — `TRAIN_DEV_GAP.md` (może wymagać odświeżenia SHAs po `dbaebfa8`). Product remediation on `development` nadal **rebase/cherry-pick** z train tam, gdzie slice się rozjechał — **nie** merge `rw-train` bez mandatu operatora.
 
 ## Dependency notes (G1)
 
@@ -28,4 +39,4 @@ Merge-base `development` ↔ `rw-train`: `70d73f0f08325a39c6b2fd0e3b00f4cab7e830
 
 ## STOP / out of scope
 
-- `ARCH_FREEZE_CLOSED`, FCS bez operatora, merge `rw-train` bez mandatu, TENANT 051-A bez FC3+WF+TRUST+approval.
+- `ARCH_FREEZE_CLOSED`, FCS bez operatora, **RC-2 CLOSED**, G2 PASS, merge `rw-train` bez mandatu, TENANT 051-A bez FC3+WF+TRUST+approval.
