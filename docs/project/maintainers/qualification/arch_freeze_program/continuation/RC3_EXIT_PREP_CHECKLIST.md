@@ -1,4 +1,4 @@
-# RC-3 exit prep checklist (MEP W4) — **nie RC-3 exit, nie G2 PASS**
+﻿# RC-3 exit prep checklist (MEP W4) — **nie RC-3 exit, nie G2 PASS**
 
 **Banner:** Przygotowanie dokumentacyjne wyjścia RC-3 / wejścia fali **W4** (PT-Q02 → PT-Q03 → FCS → PT-S04). **Nie** oznacza RC-3 CLOSED, **nie** PT-Q02 PASS, **nie** FCS, **nie** aktywacji RB-2 ani Stage 3.
 
@@ -109,6 +109,18 @@
 | RC3-J3-4 | orchestrator | Werdykt wave audit w repo (evidence index) | **bez** słowa PASS w Runda 1 | BLOCKED |
 
 **Werdykt J3 (Runda 1):** **OPEN** — sesja Q02 **nie** rozpoczęta; G2 **pending**.
+
+
+### RC3-J4 — PT-Q03 / RB-2 re-pin IIAC @ FCS
+
+| Step | Rola | Artefakt / komenda | Bramka | Stan |
+|------|------|-------------------|--------|------|
+| RC3-J4-1 | certifier | Sesja certifier + manifest RB-2 (osobna sesja) | PT-Q02 outcome | BLOCKED |
+| RC3-J4-2 | operator | Activation delegate (DP-08); **nie** edycja rekordu bez mandatu | OD-AF-12 / IIIC | BLOCKED |
+| RC3-J4-3 | tester | `uv run python -m scripts.governance.verify_iiac_policy_activation --require-in-force` @ FCS | [`IIAC_GOVERNANCE_FAST_BLOCKED.md`](IIAC_GOVERNANCE_FAST_BLOCKED.md) | BLOCKED |
+| RC3-J4-4 | orchestrator | Odświeżenie pakietu certifier DRAFT (cite-only, **D7**) | **nie** activation | OPEN |
+
+**Werdykt J4 (Runda 1):** **BLOCKED** — Q02 + governance-fast stale pin `969cbd964`.
 
 ## Werdykt (exit prep only)
 
