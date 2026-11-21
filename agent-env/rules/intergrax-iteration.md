@@ -7,7 +7,7 @@ loading: explicit
 
 Implement **Intergrax Harness AI / Agent OS**. Root `AGENTS.md` = stub (~350 tok). Full reference: `@docs/project/technical/guides/AGENT_INSTRUCTIONS.md`. Symbol lookup: `@docs/project/technical/guides/SYMBOL_INDEX.md`.
 
-**I1/O1:** always-on `intergrax-token-budget.md` - input/output token budget.
+**I1/O1:** always-on `intergrax-core.md` (section Token use) - input/output token budget.
 
 ## F3 - session
 
@@ -15,7 +15,7 @@ Implement **Intergrax Harness AI / Agent OS**. Root `AGENTS.md` = stub (~350 tok
 ONE DOMAIN = ONE NEW CHAT
 ```
 
-Audit / implement / closeout: one domain pair per chat. **Delivery batch:** track work in `governance/tickets/T-IGX-*.md`; F3 still means one domain pair per chat for architecture/plan hubs. HEP steps: `@docs/project/maintainers/bootstrap/hep_step.txt`. Platform audit: `@docs/audit_results/AUDIT_PROTOCOL.md` only when operator requests audit. HEP steps: `@docs/project/maintainers/bootstrap/hep_step.txt`. Platform audit: `@docs/audit_results/AUDIT_PROTOCOL.md` only when operator requests audit.
+Audit / implement / closeout: one domain pair per chat. **Delivery batch:** track work in `governance/tickets/T-IGX-*.md`; F3 still means one domain pair per chat for architecture/plan hubs. HEP steps: `@docs/project/maintainers/bootstrap/hep_step.txt`. Platform audit: `@docs/audit_results/AUDIT_PROTOCOL.md` only when operator requests audit.
 
 ## Domain read scope (when I1 allows load)
 
@@ -32,6 +32,6 @@ intergrax/ ↛ agents/|applications/   agents/ ↛ applications/
 
 Default scope: gate maintenance `docs/project/maintainers/plans/PLATFORM_FOUNDATION.md` hub. Phase K / §6.3 only with explicit operator approval.
 
-Repository artifacts: English. Operator chat: session language. **Do not commit** unless asked.
+Repository artifacts: English. Operator chat: session language. Commit and integrate inside the ticket scope without asking; push, PR and merge only as the ticket or the operator pre-authorized (otherwise escalate: forbidden action, `/intergrax-core`).
 
 Verification / ADR / routing: `@docs/project/technical/guides/AGENT_INSTRUCTIONS.md` when needed.
