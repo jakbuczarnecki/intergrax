@@ -29,6 +29,21 @@ Feature branches are cut from `origin/development` (pin `a0598ba3e4f4f903eb4da3d
 
 Worktrees: `eqo-dev-a4027`, `eqo-dev-a4034`, `eqo-dev-a6006` under `D:\Projekty\_wt\intergrax`. Verified: `8e146e21` is not an ancestor of any new dev branch.
 
+
+### Development merge + replay (2026-11-21, f-dev-merge)
+
+| Field | Value |
+|-------|-------|
+| Worktree | D:\Projekty\_wt\intergrax\af-dev-merge |
+| development HEAD | 88c2708c72abccd1f869f354322a5c7763d50c86 |
+| origin/development | merged via first-parent merge commit (Ref T-IGX-046-F) |
+| origin/development ancestor of HEAD | yes |
+| 8e146e21 ancestor of HEAD | yes (via origin merge — not a direct FCS merge of train) |
+| Rows → ABSENT_ON_DEVELOPMENT | 11 (from prior STILL_PRESENT/CHERRY_PICK_CONFLICT) |
+| Product ports this slice | 0 (MERGE_CONFLICT 0) |
+| Remaining STILL_PRESENT | 7 |
+| pytest replay | 	est_ebh_3_dependency_ownership_gate.py 13 passed; 	est_dependency_governance.py 6 passed; 	est_ticket_ref_ci_mode.py 8 passed; igx_gov ticket PASS |
+
 ## 1029 obligation paths (section 2 first-match)
 
 Checksum: `a11375e09b251be364151547d9dc3450402f6662dad5a7f3fda896459e95e27a`
