@@ -1,55 +1,36 @@
-﻿# CONTINUATION_AUTONOMY_CHECKPOINT — po fali 6 TOR C + archiwum C2/B2 (2026-11-21)
+# CONTINUATION_AUTONOMY_CHECKPOINT — po fali 5 PARTIAL (2026-11-21)
 
-## SHA (pin fala 6 TOR C)
+## SHA
 
 | Tor | Ref | Uwagi |
 |-----|-----|-------|
-| `development` | `dc083f6eadf0f7dbe501fbcf93659e2dd158b825` | merge `af-dev-pt-wf` (B2 WF docs `T-IGX-043-J`) — **bez** push w tej sesji |
-| `arch-freeze/rw-train` | `dbaebfa8cd13a6ba8bfa6eef2cdf581216ddb3d2` | PR **#699** **MERGED** |
-| Worktree docs | `af-dev-rc3-prep` | ticket-less; bazuje na `dc083f6ea` |
+| `development` | `1f6a591760574d8db165400749c196149dd6ed26` | tip pin `1f6a59176`; RC-3 prep landed @ `f551abb49` |
+| `arch-freeze/rw-train` | `dbaebfa8cd13a6ba8bfa6eef2cdf581216ddb3d2` | PR **#699** **MERGED**; formalny cherry-pick gate **OPEN** |
+| `af-dev-merge` | `1f6a59176` | worktree serial merge @ `origin/development` |
 
-## Fala 6 — RC-3 prep (TOR C docs)
-
-| Krok | Status | Dowód |
-|------|--------|-------|
-| `RC3_PREP_DOSSIER.md` | **DRAFT / NOT STARTED** | prep only — nie RC-3 exit |
-| `G2_CHECKLIST_DRAFT.md` | **DRAFT** | nie pin G2; **nie Q02 PASS** |
-| `TRAIN_DEV_GAP.md` | odświeżony | merge-base `70d73f0f0`; 241 dev-only / 217 train-only |
-| `CHECKPOINT.md` G4 | RC-3 prep | branch `af-dev-rc3-prep` |
-| `RW_PLAN_AUDIT_STATUS.md` | **BLOCKED** | werdykt bez zmian |
-| `governance-fast` / ACT-N11 | **bez PASS w repo** | OD-AF-AUTO-01 |
-
-## Fala równoległa C2 — wynik (archiwum)
-
-| Tor | Krok | Status | Dowód |
-|-----|------|--------|-------|
-| **B** | Cherry-pick FC-3 / G-09 / trust → `af-dev-train-sync` | **DONE** | HEAD slice `1cec68222` |
-| **B** | PR **#699** → `arch-freeze/rw-train` | **MERGED** | `dbaebfa8cd13a6ba8bfa6eef2cdf581216ddb3d2` |
-| **B** | Docs status (merge-gate) | **DONE** | `TRAIN_CHERRY_PICK_STATUS.md` — CI red przy merge |
-| — | `governance-fast` replay @ train | **OPEN** | RC2-B2 / RC2-B3 **PARTIAL** |
-
-## Fala B2 — TRUST (`T-IGX-051-C`) (archiwum)
+## Fala 5 — wynik (**PARTIAL**)
 
 | Krok | Status | Dowód |
 |------|--------|-------|
-| Plan §7.2 trust bundle | w toku na torze | slice 4 merged przed pinem TOR C według historii `development` |
-| `NT-TRUST-06` | **SKIP** (slice) | dokumentacja trust — patrz tickety |
-
-## Fala 5 — wynik (archiwum)
-
-| Krok | Status | Dowód |
-|------|--------|-------|
+| RC-3 prep merge (TOR C) | **DONE** | `f551abb495ad2316a4b5ca0a90dd9aef2a4f28d9` — merge `af-dev-rc3-prep` |
+| T-IGX-043-M slice 3 | **DONE** | product `548f14b5a`; plan §8.3 `e119fe147` |
+| Trust slice 3+ (`NT-TRUST-06`) | **DONE** | merge `50e5d918d` / verify `6f77946e5` (`T-IGX-051-C`) |
+| G4 RC-1 docs | **DONE** | `f5442d783`; merge `1f6a59176` (`af-dev-rc1-docs`) |
 | RC-2 exit checklist | **DONE** (docs) | `RC2_EXIT_CHECKLIST.md` — werdykt **PARTIAL** |
-| WF E2–E4 | **BLOCKED** (udokumentowane) | `WF_E2_E4_STATUS.md` — brak product slice |
-| T-IGX-043-M smoke → `in_progress` | **DONE** | fala 5 smoke |
-| Push `origin/development` | historyczny | przed pinem `dc083f6ea` w tej sesji docs |
+| Train cherry-pick / RC2-B2 replay | **BLOCKED** | `TRAIN_CHERRY_PICK_STATUS.md` — `governance-fast` replay **OPEN** |
+| T-IGX-043-M Part E manifest | **BLOCKED** | wave-packet / RW-PLAN; poza slice 3 |
+| WF E2–E4 | **BLOCKED** | `WF_E2_E4_STATUS.md` — brak product slice (B-1) |
+| RW-PLAN-AUDIT | **BLOCKED** | `RW_PLAN_AUDIT_STATUS.md` |
+| IIAC / RB-2 re-pin | **BLOCKED** | `IIAC_GOVERNANCE_FAST_BLOCKED.md` |
+| `051-A` TENANT | **BLOCKED** | OD-AF-AUTO-04..05 — bez zmian |
+| Push `origin/development` | operator | tip `1f6a59176` (pre-checkpoint); po merge tego commitu |
 
-## Następne kroki (wskazówka, nie mandate)
+## Fala 6 — wskazówka
 
-1. RB-2 re-pin IIIC (sesja certifier) — poza autonomią docs; prerequisite `governance-fast`.
-2. Serial merge `af-dev-rc3-prep` → `development` przez `af-dev-merge` (operator).
-3. Niezależna sesja RW-PLAN-AUDIT przed formalnym SCOPE/G2 na trainie.
+1. TOR C RC-3 prep dossier / `G2_CHECKLIST_DRAFT.md` — kontynuacja poza tym pinem.
+2. Train: **green** `governance-fast` na pinie train przed traktowaniem RC2-B2 jako zamknięte.
+3. RB-2 IIIC (sesja certifier) — prerequisite formalnego G2 / Q02.
 
 ## STOP / bez zmian
 
-- `051-A` TENANT, FCS, **G2 PASS**, **ARCH_FREEZE CLOSED**, RW-PLAN-AUDIT simulation.
+- FCS, **G2 PASS**, **ARCH_FREEZE CLOSED**, RW-PLAN-AUDIT simulation (OD-AF-AUTO-06).
