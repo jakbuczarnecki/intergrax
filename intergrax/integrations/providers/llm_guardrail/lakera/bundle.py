@@ -4,8 +4,8 @@
 
 from __future__ import annotations
 
-from intergrax.integrations.providers.llm_guardrail.bundles.http_guardrail import create_lakera_backend
 from intergrax.integrations.contracts.llm_guardrail import LlmGuardrailBackend
+from intergrax.integrations.providers.llm_guardrail.bundles.http_guardrail import create_lakera_backend
 from intergrax.integrations.providers.llm_guardrail.lakera.integration import (
     LAKERA_PROVIDER_ID,
     LakeraLlmGuardrailIntegration,
