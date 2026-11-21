@@ -8,13 +8,14 @@ from typing import Any
 from unittest.mock import MagicMock
 
 import pytest
-from langchain_core.documents import Document
-
-from intergrax.knowledge.contracts.document import KnowledgeDocument
 from intergrax.integrations.providers.vector_store.inmemory.rag_store import InMemoryVectorStore
 from intergrax.integrations.registry.profile import IntegrationProfile
-from intergrax.rag.vectorstore.vectorstore_manager import VectorstoreManager
+from intergrax.knowledge.contracts.document import KnowledgeDocument
+from intergrax.rag.profiles.rag_profile import RagProfile
+from intergrax.rag.retrievers.bootstrap.retriever_bootstrap import create_default_retriever_manager
 from intergrax.rag.vectorstore.contracts.native_vectorstore import VectorStoreScope
+from intergrax.rag.vectorstore.vectorstore_manager import VectorstoreManager
+from intergrax.tools.providers.rag.contracts import RagRetrieveInput
 from intergrax.tools.providers.rag.ingest_contracts import RagIngestInput
 from intergrax.tools.providers.rag.ingest_service import perform_rag_ingest
 from intergrax.tools.providers.rag.scope import (
@@ -25,14 +26,12 @@ from intergrax.tools.providers.rag.scope import (
     vectorstore_tenant_id,
 )
 from intergrax.tools.providers.rag.service import perform_rag_retrieve
+from intergrax.tools.registry.wiring import ToolWiringContext
+from langchain_core.documents import Document
 from testing_support.builder import (
     build_runtime_execution_context_for_tests,
     build_runtime_request_for_tests,
 )
-from intergrax.tools.providers.rag.contracts import RagRetrieveInput
-from intergrax.rag.retrievers.bootstrap.retriever_bootstrap import create_default_retriever_manager
-from intergrax.rag.profiles.rag_profile import RagProfile
-from intergrax.tools.registry.wiring import ToolWiringContext
 
 pytestmark = [pytest.mark.unit, pytest.mark.gate]
 
@@ -154,6 +153,7 @@ def test_resolve_tenant_scoped_vectorstore_bootstraps_and_isolates_tenants(
 
 
 def test_resolve_tenant_scoped_vectorstore_fails_closed_without_tenant() -> None:
+    """NT-TRUST-06 (EX-L-05 / D2-R004): missing tenant_id does not bind a vectorstore."""
     ctx = ToolWiringContext(
         vectorstore_manager=VectorstoreManager(_StoreStub("wired")),
         integration_profile=IntegrationProfile(),
@@ -200,16 +200,16 @@ def test_vectorstore_tenant_id_unwraps_integration_adapter() -> None:
 
 
 def test_vectorstore_tenant_id_reads_qdrant_integration_bridge() -> None:
-    from intergrax.integrations.providers.vector_store.qdrant.integration import QdrantVectorStoreIntegration
     from intergrax.integrations.providers.vector_store.qdrant.config import QdrantIntegrationConfig
+    from intergrax.integrations.providers.vector_store.qdrant.integration import QdrantVectorStoreIntegration
 
     bridge = QdrantVectorStoreIntegration.from_store(
         QdrantIntegrationConfig(collection_name="local_workspace", tenant_id="lkw-smoke"),
         _StoreStub("default"),
     )
-    assert vectorstore_tenant_id(
-        VectorstoreManager(bridge, scope=VectorStoreScope(tenant_id="lkw-smoke"))
-    ) == "lkw-smoke"
+    assert (
+        vectorstore_tenant_id(VectorstoreManager(bridge, scope=VectorStoreScope(tenant_id="lkw-smoke"))) == "lkw-smoke"
+    )
 
 
 class _FakeEmbeddingManager:
@@ -479,9 +479,7 @@ def test_tenant_scoped_ingest_and_retrieve_round_trip(
 
     monkeypatch.setattr(
         "intergrax.tools.providers.rag.scope.create_vectorstore_manager",
-        lambda *, tenant_id, profile, **_: (
-            scoped_manager if tenant_id == "lkw-smoke" else default_manager
-        ),
+        lambda *, tenant_id, profile, **_: scoped_manager if tenant_id == "lkw-smoke" else default_manager,
     )
 
     embedding = _FakeEmbeddingManager()

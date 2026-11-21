@@ -58,8 +58,8 @@ def _validate_manifest(checks: tuple[ManifestCheck, ...]) -> None:
     ids = [c.check_id for c in checks]
     if len(ids) != len(set(ids)):
         raise ValueError("duplicate check_id in enterprise audit manifest")
-    if len(checks) != 85:
-        raise ValueError(f"enterprise audit manifest must contain 85 checks, got {len(checks)}")
+    if len(checks) != 91:
+        raise ValueError(f"enterprise audit manifest must contain 91 checks, got {len(checks)}")
 
 
 def checks_for_mode(
