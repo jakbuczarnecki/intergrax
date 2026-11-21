@@ -1,57 +1,55 @@
-﻿# CONTINUATION_AUTONOMY_CHECKPOINT — po fali równoległej C2 + B2 trust slice 4 (2026-11-21)
+﻿# CONTINUATION_AUTONOMY_CHECKPOINT — po fali 6 TOR C + archiwum C2/B2 (2026-11-21)
 
-## SHA
+## SHA (pin fala 6 TOR C)
 
 | Tor | Ref | Uwagi |
 |-----|-----|-------|
-| `development` | `e1f850bdc834c8b4e5333fd3a38419d000ceacb9` | RB-2 certifier delta merge; trust §7.2 replay 64 passed @ `ec2957a56` (`T-IGX-051-C` slice 4, bez NT-TRUST-06) |
-| `arch-freeze/rw-train` | `dbaebfa8cd13a6ba8bfa6eef2cdf581216ddb3d2` | PR **#699** **MERGED** (tor B) |
-| `af-dev-merge` | serial merge tor | push `origin/development` po commicie `af-dev-rw-trust` (B2) |
+| `development` | `dc083f6eadf0f7dbe501fbcf93659e2dd158b825` | merge `af-dev-pt-wf` (B2 WF docs `T-IGX-043-J`) — **bez** push w tej sesji |
+| `arch-freeze/rw-train` | `dbaebfa8cd13a6ba8bfa6eef2cdf581216ddb3d2` | PR **#699** **MERGED** |
+| Worktree docs | `af-dev-rc3-prep` | ticket-less; bazuje na `dc083f6ea` |
 
-## Fala B2 — TRUST (`T-IGX-051-C`)
+## Fala 6 — RC-3 prep (TOR C docs)
 
 | Krok | Status | Dowód |
 |------|--------|-------|
-| Plan §7.2 trust bundle | **DONE** | 64 passed (`test_trust_fail_closed` + formatter + `test_messages`); pin `ec2957a56` |
-| `NT-TRUST-06` | **SKIP** (slice) | merged slice 3; B2 slice excludes RAG node |
+| `RC3_PREP_DOSSIER.md` | **DRAFT / NOT STARTED** | prep only — nie RC-3 exit |
+| `G2_CHECKLIST_DRAFT.md` | **DRAFT** | nie pin G2; **nie Q02 PASS** |
+| `TRAIN_DEV_GAP.md` | odświeżony | merge-base `70d73f0f0`; 241 dev-only / 217 train-only |
+| `CHECKPOINT.md` G4 | RC-3 prep | branch `af-dev-rc3-prep` |
+| `RW_PLAN_AUDIT_STATUS.md` | **BLOCKED** | werdykt bez zmian |
+| `governance-fast` / ACT-N11 | **bez PASS w repo** | OD-AF-AUTO-01 |
 
-## Fala równoległa C2 — wynik
+## Fala równoległa C2 — wynik (archiwum)
 
 | Tor | Krok | Status | Dowód |
 |-----|------|--------|-------|
 | **B** | Cherry-pick FC-3 / G-09 / trust → `af-dev-train-sync` | **DONE** | HEAD slice `1cec68222` |
 | **B** | PR **#699** → `arch-freeze/rw-train` | **MERGED** | `dbaebfa8cd13a6ba8bfa6eef2cdf581216ddb3d2` |
-| **B** | Docs status (snapshot merge-gate) | **DONE** | `ec2957a568ba3a5994b39bd1a6ddf1c415387f1c` — `TRAIN_CHERRY_PICK_STATUS.md`, `TRAIN_DEV_GAP.md` |
-| **C** | Checkpoint ciągłości (ten commit) | **DONE** | niniejszy plik |
-| — | `governance-fast` / ACT-N11 | **bez werdyktu PASS w repo** | OD-AF-AUTO-01; brak symulacji audytu |
+| **B** | Docs status (merge-gate) | **DONE** | `TRAIN_CHERRY_PICK_STATUS.md` — CI red przy merge |
+| — | `governance-fast` replay @ train | **OPEN** | RC2-B2 / RC2-B3 **PARTIAL** |
 
-## Fala 6 — wynik (TOR C docs, archiwum)
+## Fala B2 — TRUST (`T-IGX-051-C`) (archiwum)
 
 | Krok | Status | Dowód |
 |------|--------|-------|
-| RC-3 prep dossier | **DRAFT** | `RC3_PREP_DOSSIER.md` — **NOT STARTED** (nie RC-3 exit) |
-| G2 readiness checklist (robocza) | **DRAFT** | `G2_CHECKLIST_DRAFT.md` — **nie pin G2, nie Q02 PASS** |
-| Train ↔ development gap | odświeżony tor B | `TRAIN_DEV_GAP.md` @ `ec2957a56`; train HEAD po `#699` |
-| RC-2 exit checklist | bez zmian werdyktu | `RC2_EXIT_CHECKLIST.md` — **PARTIAL** |
-| RW-PLAN-AUDIT | **BLOCKED** | `RW_PLAN_AUDIT_STATUS.md` |
-| Push `origin/development` | **DONE** | `e1f850bdc` via `af-dev-merge` (RB-2 certifier) |
+| Plan §7.2 trust bundle | w toku na torze | slice 4 merged przed pinem TOR C według historii `development` |
+| `NT-TRUST-06` | **SKIP** (slice) | dokumentacja trust — patrz tickety |
 
 ## Fala 5 — wynik (archiwum)
 
 | Krok | Status | Dowód |
 |------|--------|-------|
-| Train slice kolejka | superseded C2-B | merge `#699`; patrz tabela C2 |
 | RC-2 exit checklist | **DONE** (docs) | `RC2_EXIT_CHECKLIST.md` — werdykt **PARTIAL** |
-| WF E2–E4 | **BLOCKED** (udokumentowane) | `WF_E2_E4_STATUS.md` |
-| T-IGX-043-M smoke → `in_progress` | **DONE** | 3 passed `test_changed_since_impact_map.py` (fala 5) |
-| Push `origin/development` | **DONE** | historyczny `61516a7cf` |
+| WF E2–E4 | **BLOCKED** (udokumentowane) | `WF_E2_E4_STATUS.md` — brak product slice |
+| T-IGX-043-M smoke → `in_progress` | **DONE** | fala 5 smoke |
+| Push `origin/development` | historyczny | przed pinem `dc083f6ea` w tej sesji docs |
 
-## Fala 7 — wskazówka
+## Następne kroki (wskazówka, nie mandate)
 
 1. RB-2 re-pin IIIC (sesja certifier) — poza autonomią docs; prerequisite `governance-fast`.
-2. Zaktualizuj `TRAIN_DEV_GAP.md` i `CHECKPOINT.md` względem pinu train `dbaebfa8c` jeśli rozjazd z `development`.
-3. Niezależna sesja RW-PLAN-AUDIT (T-AF2-RW-PLAN-AUDIT) przed formalnym SCOPE/G2 na trainie.
+2. Serial merge `af-dev-rc3-prep` → `development` przez `af-dev-merge` (operator).
+3. Niezależna sesja RW-PLAN-AUDIT przed formalnym SCOPE/G2 na trainie.
 
 ## STOP / bez zmian
 
-- `051-A` TENANT, FCS, **G2 PASS**, CLOSED, RW-PLAN-AUDIT simulation.
+- `051-A` TENANT, FCS, **G2 PASS**, **ARCH_FREEZE CLOSED**, RW-PLAN-AUDIT simulation.
