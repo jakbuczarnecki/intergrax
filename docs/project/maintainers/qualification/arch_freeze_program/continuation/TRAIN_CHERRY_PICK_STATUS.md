@@ -2,7 +2,8 @@
 
 **Baza train (po landingu):** `origin/arch-freeze/rw-train` @ `dbaebfa8cd13a6ba8bfa6eef2cdf581216ddb3d2` (merge PR **#699**, 2026-11-21)  
 **Baza train (przed slice):** `c443865e9129300a7bbb71abf65dee246f747794`  
-**Baza development (MEP W3 pin):** `origin/development` @ `d043a21c67cb57475a4f36a2baff7020718ec7cb` (`d043a21c6`)  
+**Baza development (docs pin Runda 1):** `origin/development` @ `c207e6ad3c01221e1e5867adaa21e0e5b038adc4` (`c207e6ad3`)  
+**Baza development (MEP W3 pin historyczny):** `d043a21c67cb57475a4f36a2baff7020718ec7cb` (`d043a21c6`)  
 **Norma bramki (OD-AF-AUTO-01 / KR-08):** `governance-fast` **green** na HEAD PR przed merge (ACT-N11 na product paths **nie** jest bypassem). **Operator STOP:** bez green **nie** wykonywać kolejnego cherry-pick ani train merge.
 
 ## Snapshot CI / PR (2026-11-21)
@@ -18,7 +19,16 @@
 
 **Fakt operatora / automation (2026-11-21):** merge PR **#699** wykonany przy **czerwonym** `governance-fast`, `ci-smoke` i `rag-gate` na HEAD PR. To rejestr zdarzenia — **nie** oznacza spełnienia OD-AF-AUTO-01 ani zamknięcia RC-2.
 
-**Werdykt dokumentacyjny (MEP W3):** cherry-pick slice **MERGED** na train; **replay** `governance-fast` na pinie train i RC2-B2 / RC2-B3 — **OPEN** (RC-2 **PARTIAL**, nie CLOSED). **Następny cherry-pick / train sync:** **STOP** do green `governance-fast` @ train HEAD.
+**Werdykt dokumentacyjny (MEP W3):** cherry-pick slice **MERGED** na train; **replay** `governance-fast` / `ci-smoke` / `rag-gate` na pinie train i RC2-B2 / RC2-B3 — **OPEN** (RC-2 **PARTIAL**, nie CLOSED). **Następny cherry-pick / train sync:** **STOP** (**D2=STOP**); procedura replay: [`TRAIN_CI_REPLAY_PLAYBOOK.md`](TRAIN_CI_REPLAY_PLAYBOOK.md).
+
+## Runda 1 — autonomia (D1=A, D2=STOP, SKIP cherry-pick)
+
+| Parametr | Wartość |
+|----------|---------|
+| Worktree | `af-dev-train-ci-doc` |
+| Zakres | Playbook replay + piny w tym pliku i `RC2_EXIT_CHECKLIST.md` |
+| Cherry-pick kolejnych slice | **SKIP** — tabela „Proponowane slice” bez wykonania |
+| Train merge | **STOP** — bez PR `development` → `rw-train` |
 
 ## Proponowane slice (product + tests, topologicznie)
 
@@ -38,6 +48,6 @@
 3. Targeted pytest: G-09 harness + `test_trust_fail_closed.py` + FC-3 bundle subset — operator / CI PR.
 4. PR **#699** → base `arch-freeze/rw-train` — **MERGED** @ `dbaebfa8` (2026-11-21); CI na merge: **red** (`governance-fast` / `ci-smoke` / `rag-gate`).
 
-## Stan MEP W3 (prep @ `d043a21c6`)
+## Stan MEP W3 / Runda 1 (prep @ `c207e6ad3` docs)
 
-Train HEAD **`dbaebfa8`**; slice 11 commitów na `arch-freeze/rw-train`. Tor primary na pinie MEP W3 jest współliniowy z merge-base `70d73f0f0` (0 commitów product/docs poza base — patrz `TRAIN_DEV_GAP.md`). RC-2 / green `governance-fast` na train pin — **następny krok**, **nie** claim w tej aktualizacji.
+Train HEAD **`dbaebfa8`**; slice 11 commitów na `arch-freeze/rw-train`. Tor primary na pinie MEP W3 jest współliniowy z merge-base `70d73f0f0` (0 commitów product/docs poza base — patrz `TRAIN_DEV_GAP.md`). RC-2 / green `governance-fast` (+ `ci-smoke`, `rag-gate`) na train pin — **Runda 2** po operator green signal; **nie** claim w tej aktualizacji Runda 1.
