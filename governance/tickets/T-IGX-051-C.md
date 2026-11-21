@@ -34,4 +34,4 @@ TENANT **051-A**, GATES **051-F**, SUPPLY **051-B/N**, merge to `rw-train`, FRZ 
 
 ## Lifecycle state
 
-`implementing` (§7 fala 4; slices 1–3 `NT-TRUST-01`..`06` green; `dev-ci-rag` for RAG scope node; merge pending serial `af-dev-merge`)
+`implementing` (§7 fala B2 slice 4: §7.2 trust bundle **64 passed** @ `ec2957a56`; `NT-TRUST-01`..`05` + control nodes; slice 3 `NT-TRUST-06` merged earlier — out of scope this slice; FC-3 bundle queued pre-merge)
