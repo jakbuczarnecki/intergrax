@@ -44,22 +44,16 @@ _BUDGET = "tests/unit/runtime/execution/budget/test_execution_budget_ledger.py"
 _ADV_EVAL = "tests/unit/runtime/token_optimization/test_advisory_evaluation.py"
 _DS_MIG = "tests/unit/runtime/architecture/test_ds_mig_04_critic_runtime_deleted.py"
 _DV = "tests/unit/runtime/test_decision_verification_composition.py"
-_W5H = (
-    "tests/unit/runtime/observability/test_enterprise_scale_resilience_w5_h_final_qualification.py"
-)
+_W5H = "tests/unit/runtime/observability/test_enterprise_scale_resilience_w5_h_final_qualification.py"
 _DIAG = "tests/unit/runtime/diagnostics/test_diagnostic_subsystem_failure_evidence.py"
 _GOV_TOOL = "tests/qualification/governance/test_governance_e2e_pluginability.py"
-_W4_TOOL = (
-    "tests/unit/runtime/nexus/tools/test_harness_w4_r1_production_tool_admission_behavior.py"
-)
+_W4_TOOL = "tests/unit/runtime/nexus/tools/test_harness_w4_r1_production_tool_admission_behavior.py"
 _REG = "tests/unit/runtime/registry/test_agent_registry_read_boundary.py"
 _CAP = "tests/unit/applications/test_capability_graph_deploy_gate.py"
 _CE01 = "tests/qualification/ce_01/test_ce_01_gates.py"
 _MEM_SEC = "tests/qualification/memory_behavior/test_mem_final_audit_6_security_behavior.py"
 _W4_ARCH = "tests/unit/runtime/architecture/test_harness_w4_r1_production_tool_boundedness_gate.py"
-_GR12 = (
-    "tests/qualification/governance/gr12/test_gr12_final_control_plane_qualification.py"
-)
+_GR12 = "tests/qualification/governance/gr12/test_gr12_final_control_plane_qualification.py"
 _CP_MUT = "tests/unit/runtime/governance/test_control_plane_mutation_approval.py"
 _R1_SEC = "tests/qualification/control_planes/ctrl_x/test_ctrl_x_r1_security_composition.py"
 _R1_EVAL = "tests/qualification/control_planes/ctrl_x/test_ctrl_x_r1_evaluation_plane.py"
@@ -139,10 +133,10 @@ CTRL_X_PLANE_CATALOG: tuple[CtrlXPlaneEvidence, ...] = (
             _nid(_R1_EVAL, "test_r1_eval_07_evaluation_observation_host_scoped_not_cross_run"),
             _nid(_R2_EVAL, "test_r2_eval_02_promotion_consumer_requires_separate_gate_evidence"),
             _nid(_R2_EVAL, "test_r2_eval_04_decision_verification_distinct_from_evaluation_registry"),
-            _nid(_R2_EVAL, "test_r2_eval_05_tenant_verdict_not_tenant_aware_at_this_stage"),
+            _nid(_R2_EVAL, "test_r2_eval_05_base_observation_tenant_id_contract"),
         ),
         ("Offline RAG evaluation harness — product scope; not runtime permission",),
-        notes="OnlineEvaluationObservation is run/host-scoped; TENANT-X debt on tenant_id surface.",
+        notes="OnlineEvaluationObservation carries optional tenant_id; blank values are rejected at construction.",
     ),
     CtrlXPlaneEvidence(
         "CX-05",

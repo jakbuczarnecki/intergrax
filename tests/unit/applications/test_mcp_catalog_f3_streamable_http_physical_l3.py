@@ -163,7 +163,7 @@ def _build_http_mcp_app(
     invoker: _RecordingCatalogInvoker,
 ) -> FastAPI:
     registry = AgentRegistry()
-    nexus = NexusLoop(registry)
+    nexus = NexusLoop(registry, production_mode=False)
     child_port = build_production_catalog_tool_child_execution_port()
     ingress = RootExecutionChildWorkIngress(
         catalog_child_execution=child_port,

@@ -5,14 +5,10 @@
 from __future__ import annotations
 
 import pytest
-
 from intergrax.applications._shared.orchestration_wiring import (
     OrchestrationWiringContext,
     OrchestrationWiringError,
     resolve_max_parallel_nodes,
-)
-from intergrax.runtime.execution.host_orchestration_planner_classifier_wiring import (
-    GraphSpecSeedingPlanner,
     resolve_nexus_task_classifier,
     resolve_nexus_task_planner,
 )
@@ -22,11 +18,15 @@ from intergrax.applications.contracts.environment_profile import (
 )
 from intergrax.applications.contracts.graph_spec import ApplicationGraphSpec, GraphNode
 from intergrax.applications.contracts.intent_route import IntentRoute
-from intergrax.runtime.nexus.planning.task_planner import TaskPlanner
+from intergrax.runtime.execution.host_orchestration_planner_classifier_wiring import (
+    GraphSpecSeedingPlanner,
+)
 from intergrax.runtime.nexus.llm_task_classifier import LlmTaskClassifier
+from intergrax.runtime.nexus.planning.task_planner import TaskPlanner
 from intergrax.runtime.nexus.rules_task_classifier import RulesTaskClassifier
 from intergrax.runtime.nexus.task_classifier import ClassifyingTaskClassifier
 from intergrax.runtime.registry.agent_registry import AgentRegistry
+
 from echo.echo_agent import EchoAgent
 
 pytestmark = [pytest.mark.unit, pytest.mark.gate]

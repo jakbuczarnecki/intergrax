@@ -14,7 +14,7 @@ from intergrax.platform.enterprise_audit.baseline import (
     assert_baseline_dir_jailed,
     promote_accepted_baseline,
 )
-from intergrax.platform.enterprise_audit.changed_since import select_checks_for_changed_since
+from intergrax.platform.enterprise_audit.changed_since import plan_changed_since_selection
 from intergrax.platform.enterprise_audit.contracts import AuditMode, EnterpriseAuditExitCode
 from intergrax.platform.enterprise_audit.manifest import load_default_manifest
 from intergrax.platform.enterprise_audit.report_summary import print_run_summary
@@ -39,15 +39,20 @@ def _cmd_run(args: argparse.Namespace) -> int:
         print("certifying runs require --non-certifying when using --check-id", file=sys.stderr)
         return int(EnterpriseAuditExitCode.VIOLATION)
     changed: frozenset[str] | None = None
+    selection_notes: tuple[str, ...] = ()
     if mode is AuditMode.CHANGED_SINCE:
         if not args.since_sha:
             print("CHANGED-SINCE requires --since-sha", file=sys.stderr)
             return int(EnterpriseAuditExitCode.INTERNAL)
         try:
-            changed = select_checks_for_changed_since(checks, repo_root=root, since_sha=args.since_sha)
+            selection = plan_changed_since_selection(checks, repo_root=root, since_sha=args.since_sha)
         except ValueError as exc:
             print(str(exc), file=sys.stderr)
             return int(EnterpriseAuditExitCode.INTERNAL)
+        changed = selection.check_ids
+        selection_notes = selection.reasons
+        for note in selection_notes:
+            print(f"NOTICE: {note}", file=sys.stderr)
     check_filter = frozenset(args.check_ids) if args.check_ids else None
     bootstrap = args.bootstrap_candidate or args.bootstrap_baseline
     runner = EnterpriseAuditRunner(
@@ -64,6 +69,7 @@ def _cmd_run(args: argparse.Namespace) -> int:
         bootstrap_baseline=bootstrap,
         write_evidence_bundle=args.evidence_bundle,
         certifying_run=certifying_run,
+        selection_notes=selection_notes,
     )
     duration_ms = int((time.monotonic() - started) * 1000)
     if args.print_summary:

@@ -16,7 +16,7 @@ from intergrax.platform.enterprise_audit.modes import aggregate_status, compute_
 
 def test_manifest_has_eighty_five_checks() -> None:
     checks = load_default_manifest()
-    assert len(checks) == 85
+    assert len(checks) == 91
 
 
 def test_fast_mode_skips_nothing_when_all_executable() -> None:
@@ -46,6 +46,7 @@ def test_resolved_drift_does_not_block_aggregate() -> None:
 
 
 def test_manifest_json_matches_annex_g2_row_count() -> None:
+    assert len(load_default_manifest()) == 91
     root = Path(__file__).resolve().parents[4]
     g2 = root / "docs/project/maintainers/qualification/ent_audit_x/ANNEX_G2_CONTROL_GATE_MAPPING.md"
     rows = sum(

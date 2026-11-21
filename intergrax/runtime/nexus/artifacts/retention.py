@@ -8,6 +8,11 @@ The sweep is a handler on the existing canonical background registry
 (``TaskExecutionRegistry``), run by ``execute_logical_task`` like any other background work. This
 module adds no scheduler and no registry. Audit evidence and artifacts under legal hold are never
 deleted by TTL: the sweeper skips them and the store refuses them as well.
+
+EX-D8-01: ``produce_audit_evidence_artifact`` is the producer of ``AUDIT_EVIDENCE`` artifacts and
+``require_retention_composition`` is the fail-closed composition gate a production root calls (the
+store, the audit recorder and the sweep registration must all be present). No shipped root calls the
+gate yet; wiring it into the worker root is outside this module.
 """
 
 from __future__ import annotations
@@ -21,7 +26,7 @@ from typing import TYPE_CHECKING
 from pydantic import BaseModel
 
 from intergrax.contracts.agent_runtime_governance import ToolAuthorizationDecisionState
-from intergrax.contracts.artifact_ref import ArtifactRetentionClass
+from intergrax.contracts.artifact_ref import ArtifactClass, ArtifactRetentionClass
 from intergrax.contracts.task_artifacts import ArtifactRetentionPolicy
 from intergrax.contracts.tool_execution_outcome import ToolExecutionResult
 from intergrax.queueing.worker.registry import BackgroundTaskHandler, TaskExecutionRegistry
@@ -31,6 +36,7 @@ from intergrax.runtime.nexus.artifacts.governed_access import (
     ArtifactAccessContext,
     ArtifactOperationAuditor,
 )
+from intergrax.runtime.nexus.artifacts.models import Artifact
 from intergrax.runtime.nexus.artifacts.store_base import (
     ArtifactDeletionRefused,
     ArtifactStore,
@@ -253,3 +259,88 @@ def make_retention_sweep_handler(sweeper: ArtifactRetentionSweeper) -> Backgroun
 def register_retention_sweep(registry: TaskExecutionRegistry, sweeper: ArtifactRetentionSweeper) -> None:
     """Admit the sweep as background work on the existing registry (one canonical handler)."""
     registry.register(ARTIFACT_RETENTION_SWEEP_TASK_NAME, make_retention_sweep_handler(sweeper))
+
+
+# ---------------------------------------------------------------------------
+# EX-D8-01 - AUDIT_EVIDENCE producer and the retention composition gate
+# ---------------------------------------------------------------------------
+
+
+class RetentionCompositionError(ValueError):
+    """A production composition lacks a retention input; raised at composition, never at first use."""
+
+    def __init__(self, missing: tuple[str, ...]) -> None:
+        super().__init__("production retention composition is incomplete; missing: " + ", ".join(missing))
+        self.missing = missing
+
+
+def produce_audit_evidence_artifact(
+    store: ArtifactStore,
+    *,
+    tenant_id: str,
+    run_id: str,
+    artifact_id: str,
+    evidence_kind: str,
+    data: bytes,
+    mime_type: str = "application/json",
+    step_id: str | None = None,
+    clock: Callable[[], datetime] | None = None,
+) -> Artifact:
+    """Write one audit evidence artifact (class ``AUDIT_EVIDENCE``: never expires, never deletable)."""
+    for name, value in (
+        ("tenant_id", tenant_id),
+        ("run_id", run_id),
+        ("artifact_id", artifact_id),
+        ("evidence_kind", evidence_kind),
+    ):
+        if not value.strip():
+            raise ValueError(f"audit evidence requires a non-blank {name}")
+    now = (clock or SystemTimeProvider.utc_now)()
+    artifact = Artifact(
+        tenant_id=tenant_id.strip(),
+        artifact_id=artifact_id.strip(),
+        run_id=run_id.strip(),
+        step_id=step_id,
+        kind=evidence_kind.strip(),
+        mime_type=mime_type,
+        created_at_utc=now,
+        data=data,
+        size_bytes=len(data),
+        artifact_class=ArtifactClass.EXECUTION_EVIDENCE,
+        retention_class=ArtifactRetentionClass.AUDIT_EVIDENCE,
+        expires_at_utc=resolve_expiry(now, retention_class=ArtifactRetentionClass.AUDIT_EVIDENCE),
+    )
+    return store.put(artifact)
+
+
+def _sweep_registered(registry: TaskExecutionRegistry) -> bool:
+    try:
+        registry.get_handler(ARTIFACT_RETENTION_SWEEP_TASK_NAME)
+    except ValueError:
+        return False
+    return True
+
+
+def require_retention_composition(
+    *,
+    production_mode: bool,
+    artifact_store: ArtifactStore | None,
+    audit: GovernanceAuditRecorder | None,
+    sweep_registry: TaskExecutionRegistry | None,
+) -> None:
+    """Fail closed when a production root lacks the store, the audit recorder or the sweep registration.
+
+    A non-production root may compose any subset (lab and unit hosts). For production the sweep
+    handler must be registered on ``sweep_registry`` under ``ARTIFACT_RETENTION_SWEEP_TASK_NAME``.
+    """
+    if not production_mode:
+        return
+    missing: list[str] = []
+    if artifact_store is None:
+        missing.append("artifact_store")
+    if audit is None:
+        missing.append("audit_recorder")
+    if sweep_registry is None or not _sweep_registered(sweep_registry):
+        missing.append("retention_sweep_registration")
+    if missing:
+        raise RetentionCompositionError(tuple(missing))

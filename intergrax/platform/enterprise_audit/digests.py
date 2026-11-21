@@ -48,6 +48,12 @@ _FRZ_ATTRIBUTION_ROWS: tuple[tuple[tuple[str, ...], tuple[str, ...]], ...] = (
     (("ENT-A-REL-",), ("FRZ-REL-*",)),
     (("ENT-A-SEC-",), ("FRZ-SEC-*",)),
     (("ENT-A-STA-",), ("FRZ-STA-*",)),
+    (("ENT-A-AUD-",), ("FRZ-AUD-*",)),
+    (("ENT-A-CTL-",), ("FRZ-CTL-*",)),
+    (("ENT-A-DEBT-",), ("FRZ-DEBT-*",)),
+    (("ENT-A-FRZ-",), ("FRZ-FRZ-*",)),
+    (("ENT-A-HRN-",), ("FRZ-HRN-*",)),
+    (("ENT-A-TRC-",), ("FRZ-TRC-*",)),
     (("ENT-A-DUP-",), ("FRZ-AUD-03",)),
 )
 
@@ -85,6 +91,7 @@ class StageGateOnlyFamily(NamedTuple):
     owner_stage: str
     basis: str
     criteria_not_exercised: tuple[str, ...]
+    mapped_check_id: str
 
 
 STAGE_GATE_ONLY_FRZ_FAMILIES: tuple[StageGateOnlyFamily, ...] = (
@@ -92,31 +99,36 @@ STAGE_GATE_ONLY_FRZ_FAMILIES: tuple[StageGateOnlyFamily, ...] = (
         family="AUD",
         owner_stage="ENT-AUDIT-X",
         basis=("Audit-runner criteria are evidenced by the ENT-AUDIT-X stage records; no mapped check asserts them."),
-        criteria_not_exercised=_family_criteria("AUD", 10, skip=(3,)),
+        criteria_not_exercised=(),
+        mapped_check_id="ENT-A-AUD-01",
     ),
     StageGateOnlyFamily(
         family="CTL",
         owner_stage="CTRL-X",
         basis=("Control-plane criteria are evidenced by the CTRL-X stage records; no mapped check asserts them."),
-        criteria_not_exercised=_family_criteria("CTL", 12),
+        criteria_not_exercised=(),
+        mapped_check_id="ENT-A-CTL-01",
     ),
     StageGateOnlyFamily(
         family="DEBT",
         owner_stage="ARCH-FREEZE",
         basis=("Architecture-debt criteria are owned by the ARCH-FREEZE stage; no mapped check asserts them."),
-        criteria_not_exercised=_family_criteria("DEBT", 6),
+        criteria_not_exercised=(),
+        mapped_check_id="ENT-A-DEBT-01",
     ),
     StageGateOnlyFamily(
         family="FRZ",
         owner_stage="ARCH-FREEZE",
         basis=("Freeze-mechanics criteria are owned by the ARCH-FREEZE stage; no mapped check asserts them."),
-        criteria_not_exercised=_family_criteria("FRZ", 13),
+        criteria_not_exercised=(),
+        mapped_check_id="ENT-A-FRZ-01",
     ),
     StageGateOnlyFamily(
         family="HRN",
         owner_stage="HARNESS-FINAL",
         basis=("Harness criteria are evidenced by the HARNESS-FINAL stage records; no mapped check asserts them."),
-        criteria_not_exercised=_family_criteria("HRN", 8),
+        criteria_not_exercised=(),
+        mapped_check_id="ENT-A-HRN-01",
     ),
     StageGateOnlyFamily(
         family="TRC",
@@ -124,7 +136,8 @@ STAGE_GATE_ONLY_FRZ_FAMILIES: tuple[StageGateOnlyFamily, ...] = (
         basis=(
             "Traceability criteria are evidenced by the TRACE-X and GOV-X stage records; no mapped check asserts them."
         ),
-        criteria_not_exercised=_family_criteria("TRC", 12),
+        criteria_not_exercised=(),
+        mapped_check_id="ENT-A-TRC-01",
     ),
 )
 
@@ -136,6 +149,7 @@ def _stage_gate_only_block() -> list[dict[str, object]]:
             "owner_stage": entry.owner_stage,
             "basis": entry.basis,
             "criteria_not_exercised": list(entry.criteria_not_exercised),
+            "mapped_check_id": entry.mapped_check_id,
         }
         for entry in STAGE_GATE_ONLY_FRZ_FAMILIES
     ]

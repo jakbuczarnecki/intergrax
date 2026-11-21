@@ -7,13 +7,13 @@ from unittest.mock import AsyncMock, patch
 
 import pytest
 from fastapi.testclient import TestClient
-
 from intergrax.contracts.execution_identity import (
     mint_execution_id,
     mint_run_id,
     mint_task_id,
     validate_execution_id,
 )
+from intergrax.integrations._shared.in_memory_document_store import InMemoryDocumentStore
 from intergrax.runtime.execution.facade import Execution as ExecutionFacade
 from intergrax.runtime.execution.request import ExecutionCapability, ExecutionRequest
 from intergrax.runtime.execution.strategy import ExecutionStrategy, StrategyResolver
@@ -25,11 +25,13 @@ from intergrax.runtime.task.task import Task, TaskContext, TaskResult, TaskState
 from intergrax.runtime.task.task_result_authoritative_exposure_defaults import (
     terminal_task_result_exposure_no_decision_gate,
 )
-from governed_contractor_application.host.environment_profile import (
-    build_governed_contractor_environment_profile,
-)
+from testing_support.builder import MeteringFakeLLMAdapter
 from tests.fixtures.harness_host_task_execution import (
     build_harness_environment_host_task_execution,
+)
+
+from governed_contractor_application.host.environment_profile import (
+    build_governed_contractor_environment_profile,
 )
 from governed_contractor_application.host.factory import create_governed_contractor_backend_app
 from governed_contractor_application.host.settings import GovernedContractorBackendSettings
@@ -37,8 +39,6 @@ from governed_contractor_application.serving.fastapi_router import GovernedContr
 from governed_contractor_application.tests.governed_contractor_ac3_projection import (
     build_governed_contractor_test_registry_projection,
 )
-from intergrax.integrations._shared.in_memory_document_store import InMemoryDocumentStore
-from testing_support.builder import MeteringFakeLLMAdapter
 
 pytestmark = [pytest.mark.unit]
 
@@ -77,7 +77,7 @@ def _stub_host_llm(monkeypatch: pytest.MonkeyPatch) -> None:
 @pytest.mark.asyncio
 async def test_governed_contractor_root_uses_canonical_execution_facade() -> None:
     registry = AgentRegistry()
-    nexus_loop = NexusLoop(registry)
+    nexus_loop = NexusLoop(registry, production_mode=False)
     service = _build_service(nexus_loop)
     task = Task(
         task_id=mint_task_id(),
@@ -117,9 +117,7 @@ async def test_governed_contractor_root_uses_canonical_execution_facade() -> Non
             )
 
     assert facade_calls == 1
-    factory_source = (
-        Path(__file__).resolve().parents[2] / "host" / "factory.py"
-    ).read_text(encoding="utf-8")
+    factory_source = (Path(__file__).resolve().parents[2] / "host" / "factory.py").read_text(encoding="utf-8")
     assert "runtime.execution" in factory_source
     assert "build_governed_contractor_host_task_execution" not in factory_source
     assert "UnifiedTaskRunner" not in factory_source
@@ -171,7 +169,7 @@ def test_governed_contractor_http_root_uses_canonical_execution_facade(
 @pytest.mark.asyncio
 async def test_governed_contractor_adapt_does_not_root_call_nexus_handle_task() -> None:
     registry = AgentRegistry()
-    nexus_loop = NexusLoop(registry)
+    nexus_loop = NexusLoop(registry, production_mode=False)
     nexus_loop.handle_task = AsyncMock()  # type: ignore[method-assign]
     service = _build_service(nexus_loop)
 
@@ -201,7 +199,7 @@ async def test_governed_contractor_adapt_does_not_root_call_nexus_handle_task() 
 @pytest.mark.asyncio
 async def test_governed_contractor_adapt_reaches_strategy_router_with_agentic_capability() -> None:
     registry = AgentRegistry()
-    nexus_loop = NexusLoop(registry)
+    nexus_loop = NexusLoop(registry, production_mode=False)
     service = _build_service(nexus_loop)
     captured: dict[str, object] = {}
 
@@ -236,7 +234,7 @@ async def test_governed_contractor_adapt_reaches_strategy_router_with_agentic_ca
 @pytest.mark.asyncio
 async def test_governed_contractor_root_execution_id_is_platform_owned() -> None:
     registry = AgentRegistry()
-    nexus_loop = NexusLoop(registry)
+    nexus_loop = NexusLoop(registry, production_mode=False)
     service = _build_service(nexus_loop)
     caller_execution_id = mint_execution_id()
     observed: dict[str, object] = {}
@@ -276,7 +274,7 @@ async def test_governed_contractor_root_execution_id_is_platform_owned() -> None
 @pytest.mark.asyncio
 async def test_governed_contractor_request_produces_single_root_execution_invocation() -> None:
     registry = AgentRegistry()
-    nexus_loop = NexusLoop(registry)
+    nexus_loop = NexusLoop(registry, production_mode=False)
     service = _build_service(nexus_loop)
     router_calls = 0
     facade_calls = 0

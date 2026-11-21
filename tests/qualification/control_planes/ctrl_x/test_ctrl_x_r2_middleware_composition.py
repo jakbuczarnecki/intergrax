@@ -10,7 +10,6 @@ from dataclasses import dataclass, field
 from pathlib import Path
 
 import pytest
-
 from intergrax.applications._shared.application_security_wiring import register_application_security_hooks
 from intergrax.applications._shared.security_assembly_resolver import SecurityAssemblyError
 from intergrax.applications.contracts.environment_profile import ApplicationSecurityProfile
@@ -25,8 +24,7 @@ from intergrax.contracts.host_orchestration_wiring_capabilities import (
 )
 from intergrax.contracts.middleware_hook_point import HookPoint
 from intergrax.runtime.events.event_bus import RuntimeEventBus
-from intergrax.runtime.hooks.hook_context import HookContext, HookResult
-from intergrax.runtime.middleware.base import RuntimeMiddleware
+from intergrax.runtime.hooks.hook_context import HookContext
 from intergrax.runtime.middleware.pipeline import MiddlewarePipeline
 from intergrax.runtime.nexus.nexus_loop import NexusLoop
 from intergrax.runtime.registry.agent_registry import AgentRegistry
@@ -174,7 +172,7 @@ def test_r2_mw_05_fail_open_rejected_before_attach() -> None:
 
 
 def test_r2_mw_06_nexus_loop_uses_port_attach_not_concrete_narrowing() -> None:
-    loop = NexusLoop(AgentRegistry())
+    loop = NexusLoop(AgentRegistry(), production_mode=False)
     profile = ApplicationSecurityProfile(prompt_defense_enabled=True)
     register_application_security_hooks(loop, profile)
     assert isinstance(loop.middleware, HostOrchestrationMiddlewarePipelinePort)

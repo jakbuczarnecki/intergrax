@@ -1,15 +1,15 @@
 # © Artur Czarnecki. All rights reserved.
 
 import pytest
-
-from intergrax.runtime.long_running.notification import LoggingNotificationAdapter
-from intergrax.runtime.long_running.store import SQLiteTaskCheckpointStore
 from intergrax.contracts.execution_identity import mint_run_id
-from intergrax.runtime.nexus.nexus_loop import NexusLoop
+from intergrax.runtime.events.runtime_event import RuntimeEventType
 from intergrax.runtime.execution.harness_task_execution_port import (
     build_harness_root_task_execution_port,
 )
-from intergrax.runtime.task.unified_task_runner import UnifiedTaskRunner
+from intergrax.runtime.human.models import HumanResponseVerdict
+from intergrax.runtime.long_running.notification import LoggingNotificationAdapter
+from intergrax.runtime.long_running.store import SQLiteTaskCheckpointStore
+from intergrax.runtime.nexus.nexus_loop import NexusLoop
 from intergrax.runtime.nexus.task_classifier import TaskClassification
 from intergrax.runtime.registry.agent_registry import AgentRegistry
 from intergrax.runtime.task.task import Task, TaskContext, TaskState
@@ -18,11 +18,10 @@ from intergrax.runtime.task.task_contract import (
     TaskHumanInput,
     TaskLongRunningOptions,
 )
-from intergrax.runtime.events.runtime_event import RuntimeEventType
+from intergrax.runtime.task.unified_task_runner import UnifiedTaskRunner
 from testing_support.admitted_root_governance_identity import (
     lab_admitted_root_governance_identity_for_task,
 )
-from intergrax.runtime.human.models import HumanResponseVerdict
 from testing_support.nexus_hitl_test_agent import (
     NexusBasicHitlTestAgent,
     prepare_nexus_hitl_resume_task,
@@ -46,6 +45,7 @@ async def test_long_running_task_saves_checkpoint_on_pause(tmp_path):
         registry,
         checkpoint_store=store,
         notification_adapter=LoggingNotificationAdapter(),
+        production_mode=False,
     )
     runner = UnifiedTaskRunner(
         build_harness_root_task_execution_port(loop),
@@ -75,9 +75,7 @@ async def test_long_running_task_saves_checkpoint_on_pause(tmp_path):
     assert checkpoints[0].runtime.uaep_step_index == 0
     assert checkpoints[0].runtime.last_step_output is not None
     assert NexusBasicHitlTestAgent.step_run_count == 1
-    assert any(
-        e.event_type == RuntimeEventType.PAUSED for e in loop.event_bus.history
-    )
+    assert any(e.event_type == RuntimeEventType.PAUSED for e in loop.event_bus.history)
 
 
 @pytest.mark.asyncio
@@ -92,6 +90,7 @@ async def test_long_running_task_resumes_with_token(tmp_path):
         registry,
         checkpoint_store=store,
         notification_adapter=LoggingNotificationAdapter(),
+        production_mode=False,
     )
     runner = UnifiedTaskRunner(
         build_harness_root_task_execution_port(loop),
@@ -148,9 +147,7 @@ async def test_long_running_task_resumes_with_token(tmp_path):
 
     assert completed.state == TaskState.COMPLETED
     assert NexusBasicHitlTestAgent.step_run_count == 1
-    assert any(
-        e.event_type == RuntimeEventType.RESUMED for e in loop.event_bus.history
-    )
+    assert any(e.event_type == RuntimeEventType.RESUMED for e in loop.event_bus.history)
 
 
 @pytest.mark.unit

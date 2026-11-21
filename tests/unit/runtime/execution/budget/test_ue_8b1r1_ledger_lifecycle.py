@@ -7,11 +7,6 @@ from __future__ import annotations
 from dataclasses import dataclass
 
 import pytest
-
-from testing_support.nexus_handle_task_impl_stubs import with_runtime_event_metric_scope
-from testing_support.nexus_loop_from_environment import (
-    build_nexus_loop_from_environment,
-)
 from intergrax.applications.contracts.environment_profile import (
     ApplicationEnvironmentProfile,
 )
@@ -38,10 +33,14 @@ from intergrax.runtime.execution.child import ChildExecutionRunner
 from intergrax.runtime.nexus.budget.budget_models import RunBudget
 from intergrax.runtime.nexus.nexus_loop import NexusLoop
 from intergrax.runtime.registry.agent_registry import AgentRegistry
+from intergrax.runtime.task.task import Task, TaskResult, TaskState
 from intergrax.runtime.task.task_result_authoritative_exposure_defaults import (
     terminal_task_result_exposure_no_decision_gate,
 )
-from intergrax.runtime.task.task import Task, TaskResult, TaskState
+from testing_support.nexus_handle_task_impl_stubs import with_runtime_event_metric_scope
+from testing_support.nexus_loop_from_environment import (
+    build_nexus_loop_from_environment,
+)
 
 pytestmark = [pytest.mark.unit, pytest.mark.gate]
 
@@ -151,12 +150,8 @@ async def test_same_run_children_share_ledger_instance() -> None:
 
     class RootDelegate:
         async def execute(self, request: Ping) -> Pong:
-            await child_runner.execute(
-                request=Ping(value="a"), delegate=ChildDelegate()
-            )
-            await child_runner.execute(
-                request=Ping(value="b"), delegate=ChildDelegate()
-            )
+            await child_runner.execute(request=Ping(value="a"), delegate=ChildDelegate())
+            await child_runner.execute(request=Ping(value="b"), delegate=ChildDelegate())
             return Pong(value="ok")
 
     root_id = mint_execution_id()
@@ -193,9 +188,7 @@ async def test_nested_same_run_reuses_canonical_ledger() -> None:
     class ChildDelegate:
         async def execute(self, request: Ping) -> Pong:
             nested_ledgers.append(require_active_execution_budget().ledger)
-            return await child_runner.execute(
-                request=request, delegate=GrandchildDelegate()
-            )
+            return await child_runner.execute(request=request, delegate=GrandchildDelegate())
 
     class RootDelegate:
         async def execute(self, request: Ping) -> Pong:
@@ -234,7 +227,7 @@ async def test_handle_task_binds_root_execution_budget() -> None:
     from intergrax.runtime.task.unified_task_runner import UnifiedTaskRunner
 
     run_budget = RunBudget(max_total_tokens=42)
-    loop = NexusLoop(AgentRegistry(), run_budget=run_budget)
+    loop = NexusLoop(AgentRegistry(), run_budget=run_budget, production_mode=False)
     observed: list[int | None] = []
 
     async def _fake_impl(task: Task) -> TaskResult:
@@ -258,7 +251,6 @@ async def test_handle_task_binds_root_execution_budget() -> None:
     from intergrax.runtime.execution.harness_task_execution_port import (
         build_harness_root_task_execution_port,
     )
-    from intergrax.runtime.task.unified_task_runner import UnifiedTaskRunner
 
     runner = UnifiedTaskRunner(
         build_harness_root_task_execution_port(loop, run_budget=run_budget),

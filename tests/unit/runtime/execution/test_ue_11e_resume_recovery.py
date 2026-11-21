@@ -9,9 +9,6 @@ from dataclasses import dataclass
 from pathlib import Path
 
 import pytest
-
-from testing_support.nexus_handle_task_impl_stubs import with_runtime_event_metric_scope
-from intergrax.runtime.nexus.agents.agent_engine import AgentEngine
 from intergrax.contracts.agent_execution_result import (
     AgentExecutionResult,
     AgentExecutionStatus,
@@ -42,15 +39,18 @@ from intergrax.runtime.execution.active_execution_resume import (
     peek_active_execution_resume_plan,
     reset_active_execution_resume_plan,
 )
-from intergrax.runtime.governance.active_execution_authority import (
-    peek_active_execution_authority,
-)
 from intergrax.runtime.execution.boundary import (
     ExecutionBoundary,
     ExecutionIdentityBinding,
 )
 from intergrax.runtime.execution.budget.consumption import consume_llm_call
 from intergrax.runtime.execution.budget.ledger import create_execution_budget_ledger
+from intergrax.runtime.execution.harness_task_execution_port import (
+    build_harness_root_task_execution_port,
+)
+from intergrax.runtime.governance.active_execution_authority import (
+    peek_active_execution_authority,
+)
 from intergrax.runtime.long_running.checkpoint_builder import (
     apply_runtime_checkpoint_to_task,
     build_runtime_checkpoint,
@@ -65,24 +65,23 @@ from intergrax.runtime.long_running.execution_tree_checkpoint import (
 from intergrax.runtime.long_running.models import TaskCheckpoint
 from intergrax.runtime.long_running.runtime_checkpoint import RuntimeCheckpoint
 from intergrax.runtime.long_running.store import SQLiteTaskCheckpointStore
+from intergrax.runtime.nexus.agents.agent_engine import AgentEngine
 from intergrax.runtime.nexus.budget.budget_models import RunBudget
-from intergrax.runtime.nexus.nexus_loop import NexusLoop
 from intergrax.runtime.nexus.execution.execution_graph import (
     ExecutionGraph,
     ExecutionNode,
     ExecutionNodeStatus,
 )
 from intergrax.runtime.nexus.execution.graph_executor import GraphExecutor
+from intergrax.runtime.nexus.nexus_loop import NexusLoop
 from intergrax.runtime.nexus.retry.retry_engine import RetryEngine, RetryPolicy
 from intergrax.runtime.registry.agent_registry import AgentRegistry
+from intergrax.runtime.task.task import Task, TaskContext, TaskResult, TaskState
 from intergrax.runtime.task.task_result_authoritative_exposure_defaults import (
     terminal_task_result_exposure_no_decision_gate,
 )
-from intergrax.runtime.task.task import Task, TaskContext, TaskResult, TaskState
-from intergrax.runtime.execution.harness_task_execution_port import (
-    build_harness_root_task_execution_port,
-)
 from intergrax.runtime.task.unified_task_runner import UnifiedTaskRunner
+from testing_support.nexus_handle_task_impl_stubs import with_runtime_event_metric_scope
 from testing_support.uaep_gate_stubs import UaepPipelineStubAgent
 
 pytestmark = [pytest.mark.unit, pytest.mark.asyncio]
@@ -304,9 +303,7 @@ async def test_ue_11e_resume_execution_tree_continuity(tmp_path: Path) -> None:
         root_execution_id=root_before,
     )
     counts_after_interrupt = engine.snapshot_counts()
-    assert counts_after_interrupt == _NodeInvocationCounts(
-        agent_a=1, agent_b=1, agent_c=1, agent_d=0
-    )
+    assert counts_after_interrupt == _NodeInvocationCounts(agent_a=1, agent_b=1, agent_c=1, agent_d=0)
 
     runtime_before = resolve_task_runtime_checkpoint(task_a)
     assert runtime_before is not None
@@ -407,11 +404,7 @@ async def test_ue_11e_resume_execution_tree_continuity(tmp_path: Path) -> None:
     assert entry_b_after is not None
     assert entry_b_after.execution_id == execution_b_before
 
-    root_entries = [
-        entry
-        for entry in runtime_after.execution_tree.entries
-        if entry.parent_execution_id is None
-    ]
+    root_entries = [entry for entry in runtime_after.execution_tree.entries if entry.parent_execution_id is None]
     assert len(root_entries) == 1
     assert root_entries[0].execution_id == resumed_root
 
@@ -654,9 +647,7 @@ async def test_same_attempt_fresh_root_rebases_execution_tree_through_production
         root_execution_id=root_before,
     )
     counts_after_interrupt = engine.snapshot_counts()
-    assert counts_after_interrupt == _NodeInvocationCounts(
-        agent_a=1, agent_b=1, agent_c=1, agent_d=0
-    )
+    assert counts_after_interrupt == _NodeInvocationCounts(agent_a=1, agent_b=1, agent_c=1, agent_d=0)
 
     runtime_before = resolve_task_runtime_checkpoint(task_a)
     assert runtime_before is not None
@@ -701,7 +692,7 @@ async def test_same_attempt_fresh_root_rebases_execution_tree_through_production
     resume_graph = _sequential_graph(task_id)
     captured_resume_roots: list[ExecutionId] = []
 
-    loop = NexusLoop(registry, graph_executor=resume_executor)
+    loop = NexusLoop(registry, graph_executor=resume_executor, production_mode=False)
 
     async def _handle_task_via_graph(task: Task) -> TaskResult:
         captured_resume_roots.append(require_active_execution_id())
@@ -748,11 +739,7 @@ async def test_same_attempt_fresh_root_rebases_execution_tree_through_production
     assert entry_b_after is not None
     assert entry_b_after.execution_id == execution_b_before
 
-    root_entries = [
-        entry
-        for entry in runtime_after.execution_tree.entries
-        if entry.parent_execution_id is None
-    ]
+    root_entries = [entry for entry in runtime_after.execution_tree.entries if entry.parent_execution_id is None]
     assert len(root_entries) == 1
     assert root_entries[0].execution_id == resumed_root
     assert root_entries[0].execution_id != root_before

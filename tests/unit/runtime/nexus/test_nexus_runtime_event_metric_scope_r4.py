@@ -8,7 +8,7 @@ import ast
 from pathlib import Path
 
 import pytest
-
+from intergrax.contracts.delegation_authority import ParentExecutionAuthority
 from intergrax.contracts.execution_identity import (
     AttemptId,
     ExecutionId,
@@ -41,14 +41,13 @@ from intergrax.runtime.nexus.execution.execution_graph import (
 from intergrax.runtime.nexus.nexus_loop import NexusLoop
 from intergrax.runtime.nexus.orchestration.graph_runner import NexusGraphRunner
 from intergrax.runtime.nexus.planning.task_planner import NexusPlan
-from intergrax.runtime.task.task_lifecycle import TaskLifecycle
-from intergrax.runtime.task.task_trace import TaskTraceEmitter
 from intergrax.runtime.registry.agent_registry import AgentRegistry
 from intergrax.runtime.task.task import Task, TaskResult, TaskState
+from intergrax.runtime.task.task_lifecycle import TaskLifecycle
 from intergrax.runtime.task.task_result_authoritative_exposure_defaults import (
     terminal_task_result_exposure_no_decision_gate,
 )
-from intergrax.contracts.delegation_authority import ParentExecutionAuthority
+from intergrax.runtime.task.task_trace import TaskTraceEmitter
 
 _NEXUS_LOOP_PATH = Path("intergrax/runtime/nexus/nexus_loop.py")
 
@@ -107,9 +106,7 @@ def test_handle_task_metric_propagation_has_no_signature_inspection() -> None:
 def test_handle_task_calls_handle_task_impl_with_explicit_metric_scope_kwarg() -> None:
     tree = ast.parse(_NEXUS_LOOP_PATH.read_text(encoding="utf-8"))
     handle_task = next(
-        node
-        for node in ast.walk(tree)
-        if isinstance(node, ast.AsyncFunctionDef) and node.name == "handle_task"
+        node for node in ast.walk(tree) if isinstance(node, ast.AsyncFunctionDef) and node.name == "handle_task"
     )
     found_explicit_call = False
     for child in ast.walk(handle_task):
@@ -136,7 +133,7 @@ def test_handle_task_calls_handle_task_impl_with_explicit_metric_scope_kwarg() -
 @pytest.mark.asyncio
 async def test_handle_task_passes_invocation_metric_scope_to_impl() -> None:
     bus = RuntimeEventBus()
-    loop = NexusLoop(AgentRegistry(), event_bus=bus)
+    loop = NexusLoop(AgentRegistry(), event_bus=bus, production_mode=False)
     run_id = mint_run_id()
     attempt_id = mint_attempt_id()
     execution_id = mint_execution_id()
@@ -218,9 +215,7 @@ async def test_graph_failure_finalization_passes_authoritative_metric_scope() ->
         attempt_lifecycle=MagicMock(),
         execution_terminal=MagicMock(),
     )
-    task = Task(
-        tenant_id="t1", user_id="u1", agent_id="a1", message="m", task_id=task_id
-    )
+    task = Task(tenant_id="t1", user_id="u1", agent_id="a1", message="m", task_id=task_id)
     task.state = TaskState.RUNNING
     plan = NexusPlan(
         plan_id="plan-1",

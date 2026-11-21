@@ -7,6 +7,12 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 
+from intergrax.contracts.agent_execution_validation_engine import (
+    AgentExecutionValidationEnginePort,
+)
+from intergrax.contracts.deferred_persisted_trace_finalize_port import (
+    DeferredPersistedTraceFinalizePort,
+)
 from intergrax.runtime.events.event_bus import RuntimeEventBus
 from intergrax.runtime.execution.host_orchestration_application_wiring_applier import (
     apply_host_orchestration_application_wiring_bundle,
@@ -15,13 +21,6 @@ from intergrax.runtime.execution.host_orchestration_loop_init_spec import (
     HostOrchestrationLoopInitSpec,
 )
 from intergrax.runtime.nexus.nexus_loop import NexusLoop
-from intergrax.contracts.agent_execution_validation_engine import (
-    AgentExecutionValidationEnginePort,
-)
-from intergrax.contracts.deferred_persisted_trace_finalize_port import (
-    DeferredPersistedTraceFinalizePort,
-)
-from intergrax.runtime.nexus.validation.validation_engine import NexusValidationEngine
 from intergrax.runtime.registry.agent_registry_read import AgentRegistryRead
 
 
@@ -102,6 +101,10 @@ def materialize_host_orchestration_backend(
         execution_continuation_state_store=spec.execution_continuation_state_store,
         governance_evidence_recorder=spec.governance_evidence_recorder,
         child_context_inheritance=spec.child_context_inheritance,
+        human_decision_store=spec.human_decision_store,
+        disable_human_decision_persistence=spec.disable_human_decision_persistence,
+        disable_task_memory_persistence=spec.disable_task_memory_persistence,
+        disable_runtime_event_persistence=spec.disable_runtime_event_persistence,
     )
     if spec.application_wiring is not None:
         apply_host_orchestration_application_wiring_bundle(backend, spec.application_wiring)

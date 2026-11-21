@@ -5,7 +5,7 @@
 
 from __future__ import annotations
 
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from pathlib import Path
 from typing import TYPE_CHECKING
 
@@ -14,40 +14,40 @@ from intergrax.agents.persistence.compensation_queue_store import CompensationQu
 from intergrax.contracts.child_execution_context_inheritance import (
     ChildExecutionContextInheritancePort,
 )
-from intergrax.runtime.execution.host_orchestration_wiring_bundle import (
-    HostOrchestrationApplicationWiringBundle,
+from intergrax.contracts.execution_bound_declarative_tool_invocation import (
+    ExecutionBoundDeclarativeToolInvoker,
 )
 from intergrax.contracts.execution_continuation_state_store import (
     ExecutionContinuationStateStore,
 )
-from intergrax.contracts.idempotency_store import IdempotencyStore
-from intergrax.contracts.execution_bound_declarative_tool_invocation import (
-    ExecutionBoundDeclarativeToolInvoker,
+from intergrax.contracts.host_orchestration_wiring_port import (
+    HostOrchestrationApplicationWiringPort,
 )
+from intergrax.contracts.idempotency_store import IdempotencyStore
+from intergrax.runtime.adaptive.signal_collector import SignalCollector
 from intergrax.runtime.events.event_bus import RuntimeEventBus
+from intergrax.runtime.human.persistence_contract import HumanDecisionPersistence
 from intergrax.runtime.long_running.notification import NotificationAdapter
 from intergrax.runtime.long_running.persistence_contract import TaskCheckpointPersistence
 from intergrax.runtime.nexus.budget.budget_models import RunBudget
 from intergrax.runtime.nexus.context.context_manager import ContextManager
-from intergrax.runtime.nexus.nexus_loop import NexusLoop
 from intergrax.runtime.nexus.retry.retry_engine import RetryPolicy
 from intergrax.runtime.nexus.tracing.persistence_models import RunTraceWriter
-from intergrax.runtime.adaptive.signal_collector import SignalCollector
 from intergrax.runtime.nexus.validation.validation_engine import NexusValidationEngine
-from intergrax.runtime.registry.agent_registry_read import AgentRegistryRead
 from intergrax.runtime.sandbox.manager import SandboxSessionManager
 from intergrax.runtime.task_memory.persistence_contract import TaskMemoryPersistence
 from intergrax.runtime.workspace.manager import ShadowWorkspaceManager
 
 if TYPE_CHECKING:
-    from intergrax.runtime.decision_flow import DecisionFlowGate
     from intergrax.contracts.agent_execution_result import AgentExecutionResult
+    from intergrax.contracts.execution_lineage import ExecutionLineagePersistence
+    from intergrax.contracts.orchestration_enums import MergeStrategy
+    from intergrax.runtime.decision_flow import DecisionFlowGate
     from intergrax.runtime.execution.attempt_lifecycle import AttemptLifecycleService
     from intergrax.runtime.execution.authority.policy import ExecutionAuthorityPolicy
     from intergrax.runtime.execution.budget.ledger import ExecutionBudgetLedgerFactory
     from intergrax.runtime.execution.budget.policy import ExecutionBudgetAllocationPolicy
     from intergrax.runtime.execution.execution_terminal import ExecutionTerminalService
-    from intergrax.contracts.execution_lineage import ExecutionLineagePersistence
     from intergrax.runtime.governance.governance_evidence_recorder import (
         GovernanceEvidenceRecorder,
     )
@@ -57,7 +57,6 @@ if TYPE_CHECKING:
     from intergrax.runtime.nexus.task_classifier_protocol import (
         NexusTaskClassifierProtocol,
     )
-    from intergrax.contracts.orchestration_enums import MergeStrategy
 
 
 @dataclass(frozen=True, slots=True)
@@ -85,7 +84,7 @@ class HostOrchestrationLoopInitSpec:
     runtime_events_db_path: Path | None = None
     task_memory_store: TaskMemoryPersistence | None = None
     task_memory_db_path: Path | None = None
-    production_mode: bool = False
+    production_mode: bool = field(kw_only=True)
     signal_collector: SignalCollector | None = None
     run_budget: RunBudget | None = None
     decision_flow_gate: DecisionFlowGate[AgentExecutionResult] | None = None
@@ -103,8 +102,12 @@ class HostOrchestrationLoopInitSpec:
     execution_continuation_state_store: ExecutionContinuationStateStore | None = None
     governance_evidence_recorder: GovernanceEvidenceRecorder | None = None
     event_bus: RuntimeEventBus | None = None
-    application_wiring: HostOrchestrationApplicationWiringBundle | None = None
+    application_wiring: HostOrchestrationApplicationWiringPort | None = None
     child_context_inheritance: ChildExecutionContextInheritancePort | None = None
+    human_decision_store: HumanDecisionPersistence | None = None
+    disable_human_decision_persistence: bool = False
+    disable_task_memory_persistence: bool = False
+    disable_runtime_event_persistence: bool = False
 
 
 __all__ = [

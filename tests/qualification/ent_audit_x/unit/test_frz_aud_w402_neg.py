@@ -14,14 +14,14 @@ def test_ent_audit_runner_missing_neg(tmp_path: Path) -> None:
     """Fail-closed when the check manifest is empty (runner would have zero checks)."""
     manifest_path = tmp_path / "enterprise_audit_check_manifest.v1.json"
     manifest_path.write_text(json.dumps({"checks": []}), encoding="utf-8")
-    with pytest.raises(ValueError, match="85 checks"):
+    with pytest.raises(ValueError, match="91 checks"):
         load_manifest_from_path(manifest_path)
 
 
 def test_ent_audit_monolith_script_neg() -> None:
     checks = load_default_manifest()
     entrypoints = {c.entrypoint for c in checks}
-    assert len(checks) == 85
+    assert len(checks) == 91
     assert len(entrypoints) > 1
     monolith = "scripts/enterprise_audit/run_enterprise_audit.py"
     assert sum(1 for c in checks if c.entrypoint == monolith) < len(checks)

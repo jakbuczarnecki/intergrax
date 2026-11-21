@@ -7,8 +7,6 @@ from __future__ import annotations
 from pathlib import Path
 
 import pytest
-
-from echo.echo_agent import EchoAgent
 from intergrax.applications._shared.application_runtime_graph import list_application_projects
 from intergrax.applications._shared.diagnostic_assembly_resolver import (
     DiagnosticAssemblyError,
@@ -16,11 +14,11 @@ from intergrax.applications._shared.diagnostic_assembly_resolver import (
     assert_diagnostic_assembly_valid,
     resolve_central_diagnostics_required,
 )
-from intergrax.applications._shared.scenario_runtime_profiles import ScenarioRuntimeMode
 from intergrax.applications._shared.harness_host_runtime import build_harness_host_runtime
 from intergrax.applications._shared.harness_registry_authority import RegistryAssemblyMode
-from intergrax.applications._shared.scenario_runtime_baseline import ScenarioRuntimeBuildError
-from intergrax.applications._shared.scenario_runtime_profiles import build_scenario_production_runtime
+from intergrax.applications._shared.scenario_runtime_profiles import (
+    ScenarioRuntimeMode,
+)
 from intergrax.applications.contracts.environment_profile import ApplicationEnvironmentProfile
 from intergrax.applications.contracts.execution_mode import ExecutionMode
 from intergrax.applications.contracts.manifest import AgentBinding, ApplicationManifest
@@ -47,6 +45,8 @@ from scripts.proof.scenario_lifecycle import (
     ScenarioLifecycleMetadata,
     write_scenario_spec_frontmatter,
 )
+
+from echo.echo_agent import EchoAgent
 
 pytestmark = [pytest.mark.unit, pytest.mark.gate, pytest.mark.ci_smoke]
 
@@ -121,7 +121,7 @@ def _stub_llm(monkeypatch: pytest.MonkeyPatch) -> None:
 
 
 def test_all_application_factories_use_harness_host_runtime_spine() -> None:
-    from intergrax.runtime.architecture.obs_diag_x3_ast_gates import (
+    from testing_support.architecture.obs_diag_x3_ast_gates import (
         collect_factory_entry_path_violations,
     )
 
@@ -256,17 +256,15 @@ def test_destructive_case_c_manual_nexus_bypass_detected_by_production_gate(
     factory_dir.mkdir(parents=True)
     (app_dir / "manifest.py").write_text("# contract\n", encoding="utf-8")
     (factory_dir / "factory.py").write_text(
-        "from intergrax.runtime.nexus.nexus_loop import NexusLoop\n\n"
-        "def create_app():\n"
-        "    return NexusLoop()\n",
+        "from intergrax.runtime.nexus.nexus_loop import NexusLoop\n\ndef create_app():\n    return NexusLoop()\n",
         encoding="utf-8",
     )
     (applications_root / "bypass_demo" / "pyproject.toml").write_text(
         (
             "[project]\n"
-            "name = \"intergrax-bypass-demo\"\n"
-            "version = \"0.1.0\"\n"
-            "requires-python = \">=3.12,<3.13\"\n"
+            'name = "intergrax-bypass-demo"\n'
+            'version = "0.1.0"\n'
+            'requires-python = ">=3.12,<3.13"\n'
             "dependencies = []\n"
         ),
         encoding="utf-8",

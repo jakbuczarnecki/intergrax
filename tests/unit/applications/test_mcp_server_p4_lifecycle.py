@@ -51,7 +51,9 @@ async def test_exposure_disabled_composes_without_tools() -> None:
     )
     registry = AgentRegistry()
     deps = McpServerCompositionDeps(
-        host_execution=build_harness_host_task_execution(NexusLoop(registry), orchestration_triggers=frozenset()),
+        host_execution=build_harness_host_task_execution(
+            NexusLoop(registry, production_mode=False), orchestration_triggers=frozenset()
+        ),
         registry=registry,
     )
     mcp = compose_mcp_server_from_definition(definition, deps)

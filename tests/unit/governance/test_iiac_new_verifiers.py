@@ -330,19 +330,68 @@ def test_replay_of_published_tickets_reproduces_the_known_delegation_defects(
 # --------------------------------------------------------------------------- scope guarantees
 
 
-def test_new_files_are_not_material_and_not_imported_by_the_activation_gate() -> None:
-    for rel in NEW_PATHS:
-        assert rel not in iiac_activation_gate.MATERIAL_GOVERNANCE_PATHS
-    module_names = [Path(n).stem for n in NEW_SCRIPTS]
-    for material in sorted(iiac_activation_gate.MATERIAL_GOVERNANCE_PATHS):
-        path = REPO / material
-        if path.suffix != ".py":
+def test_wired_new_files_are_material_and_only_the_gate_names_them() -> None:
+    """T-IGX-044-F inverts the PT-E04 scope guard: four PT-E04 files are wired through the gate (plan section 2a)."""
+    gate_rel = "scripts/governance/iiac_activation_gate.py"
+    allowlist_rel = "scripts/governance/iiac_known_draft_manifests.v1.json"
+    wired = {
+        "scripts/governance/iiac_verifier_common.py",
+        "scripts/governance/verify_iiac_manifest_corpus.py",
+        "scripts/governance/verify_iiac_manifest_artifacts.py",
+        allowlist_rel,
+    }
+    material = set(iiac_activation_gate.MATERIAL_GOVERNANCE_PATHS)
+    # 1. Material set: exactly four PT-E04 paths are members; the delegation verifier is not.
+    assert {rel for rel in NEW_PATHS if rel in material} == wired
+    assert "scripts/governance/verify_iiac_delegation_refs.py" not in material
+    # 2. Exact sets of names.
+    stems = [Path(n).stem for n in NEW_SCRIPTS]
+    texts = {rel: (REPO / rel).read_text(encoding="utf-8") for rel in material if rel.endswith(".py")}
+    outside = {
+        rel
+        for rel, text in texts.items()
+        if rel not in wired and rel != gate_rel and any(stem in text for stem in stems)
+    }
+    assert outside == set(), f"material files other than the gate name PT-E04 modules: {sorted(outside)}"
+    # The MATERIAL_GOVERNANCE_PATHS literal necessarily lists the four wired paths, so it is left out of the scan:
+    # what is constrained is how the code of the gate names PT-E04 modules (two subprocess calls, no import).
+    tree = ast.parse(texts[gate_rel])
+    excluded = [
+        stmt
+        for stmt in tree.body
+        if isinstance(stmt, ast.Assign) and getattr(stmt.targets[0], "id", "") == "MATERIAL_GOVERNANCE_PATHS"
+    ]
+    # Pin the shape of the one excluded statement: ``MATERIAL_GOVERNANCE_PATHS = frozenset({<string constants>})``,
+    # so that no other expression can hide a PT-E04 name inside it.
+    assert len(excluded) == 1 and len(excluded[0].targets) == 1
+    value = excluded[0].value
+    assert isinstance(value, ast.Call) and getattr(value.func, "id", "") == "frozenset" and len(value.args) == 1
+    assert not value.keywords and isinstance(value.args[0], ast.Set)
+    assert all(isinstance(el, ast.Constant) and isinstance(el.value, str) for el in value.args[0].elts)
+    code = "\n".join(ast.get_source_segment(texts[gate_rel], stmt) or "" for stmt in tree.body if stmt not in excluded)
+    assert {stem for stem in stems if stem in code} == {
+        "verify_iiac_manifest_corpus",
+        "verify_iiac_manifest_artifacts",
+    }
+    # 3. The allowlist path has one spelling, in the material literal and in one module-level assignment.
+    homes: dict[str, int] = {}
+    for stmt in tree.body:
+        hits = [
+            node.value
+            for node in ast.walk(stmt)
+            if isinstance(node, ast.Constant)
+            and isinstance(node.value, str)
+            and "iiac_known_draft_manifests" in node.value
+        ]
+        if not hits:
             continue
-        text = path.read_text(encoding="utf-8")
-        for name in module_names:
-            assert name not in text, f"{material} references new module {name}"
-    gate_text = (SCRIPTS / "iiac_activation_gate.py").read_text(encoding="utf-8")
-    assert "iiac_known_draft_manifests" not in gate_text
+        assert set(hits) == {allowlist_rel}, hits
+        target = stmt.targets[0] if isinstance(stmt, ast.Assign) else getattr(stmt, "target", None)
+        name = getattr(target, "id", type(stmt).__name__)
+        homes[name] = len(hits)
+        if name != "MATERIAL_GOVERNANCE_PATHS":
+            assert isinstance(stmt, ast.Assign) and isinstance(stmt.value, ast.Constant), name
+    assert len(homes) == 2 and homes.pop("MATERIAL_GOVERNANCE_PATHS") == 1 and set(homes.values()) == {1}, homes
 
 
 def _call_names(tree: ast.AST) -> set[str]:

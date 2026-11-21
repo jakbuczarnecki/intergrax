@@ -15,7 +15,7 @@ from intergrax.platform.enterprise_audit.baseline import (
 )
 from intergrax.platform.enterprise_audit.digests import manifest_digest
 
-_DIGEST = "0fe966e43a10a561c38222b6cff30269e906633e61862d76aa29c1775e691b8b"
+_DIGEST = "81c2635edb720399cb3607ad3a50ebb30c0f5ddece276236cb60587681f1d7ab"
 _SHA = "f" * 40
 
 

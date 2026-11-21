@@ -44,6 +44,22 @@ def _renamed_manifest() -> tuple:
     return (renamed, *_MANIFEST[1:])
 
 
+@pytest.mark.parametrize(
+    ("check_id", "family"),
+    [
+        ("ENT-A-AUD-01", "AUD"),
+        ("ENT-A-CTL-01", "CTL"),
+        ("ENT-A-DEBT-01", "DEBT"),
+        ("ENT-A-FRZ-01", "FRZ"),
+        ("ENT-A-HRN-01", "HRN"),
+        ("ENT-A-TRC-01", "TRC"),
+    ],
+)
+def test_wd_mapped_stage_gate_check_attribution(check_id: str, family: str) -> None:
+    check = next(c for c in _MANIFEST if c.check_id == check_id)
+    assert _frz_for_check(check) == (f"FRZ-{family}-*",)
+
+
 def test_wd_c01_no_check_uses_the_default_fallthrough() -> None:
     assert digests.frz_default_fallback_check_ids(_MANIFEST) == ()
     for family in _NINE_FAMILIES:
@@ -51,6 +67,10 @@ def test_wd_c01_no_check_uses_the_default_fallthrough() -> None:
         assert len(checks) == 3, family
         for check in checks:
             assert _frz_for_check(check) == (f"FRZ-{family}-*",), check.check_id
+    for family in _DECLARED_FAMILIES:
+        checks = [c for c in _MANIFEST if c.check_id.startswith(f"ENT-A-{family}-")]
+        assert len(checks) == 1, family
+        assert _frz_for_check(checks[0]) == (f"FRZ-{family}-*",), checks[0].check_id
 
 
 def test_wd_c02_strict_artifact_refuses_unattributed_check() -> None:
@@ -90,19 +110,23 @@ def test_wd_c04_artifact_declares_only_what_the_new_checks_do_not_exercise() -> 
         family = entry["family"]
         assert entry["owner_stage"] and entry["basis"]
         declared = set(entry["criteria_not_exercised"])
-        assert declared, family
+        mapped = entry.get("mapped_check_id")
+        if mapped is None:
+            assert declared, family
         assert declared <= set(criteria[family]), family
         assert "FRZ-AUD-03" not in declared
-        mapped = entry.get("mapped_check_id")
         exercised = set(criteria[family]) - declared - {"FRZ-AUD-03"}
         if mapped is None:
             assert exercised == set(), family
+        else:
+            assert mapped == f"ENT-A-{family}-01", family
     assert block == [
         {
             "family": e.family,
             "owner_stage": e.owner_stage,
             "basis": e.basis,
             "criteria_not_exercised": list(e.criteria_not_exercised),
+            "mapped_check_id": e.mapped_check_id,
         }
         for e in digests.STAGE_GATE_ONLY_FRZ_FAMILIES
     ]

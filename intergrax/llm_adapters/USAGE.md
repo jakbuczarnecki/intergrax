@@ -26,7 +26,7 @@ if completion.usage:
     print(completion.usage.total_tokens)
 ```
 
-**Tier-3 hosts:** prefer `resolve_llm_adapter(env)` from `intergrax.applications._shared.llm_resolver` (agent override → env profile → `INTERGRAX_LLM_*`).
+**Hosts:** `resolve_llm_adapter(env)` from `intergrax.runtime.wiring.llm_resolver` is the one canonical resolver (agent override → env profile → `INTERGRAX_LLM_*`). The Tier-3 module `intergrax.applications._shared.llm_resolver` keeps the same names for application hosts and only delegates to it.
 
 ---
 
@@ -341,7 +341,7 @@ Export: `BUILTIN_ROUTING_RULE_TYPES` from `intergrax.llm_adapters.routing`.
 
 ```python
 from intergrax.applications.contracts.environment_profile import ApplicationEnvironmentProfile
-from intergrax.applications._shared.llm_resolver import resolve_llm_adapter
+from intergrax.runtime.wiring.llm_resolver import resolve_llm_adapter
 from intergrax.llm_adapters.contracts.llm_provider import LLMProvider
 from intergrax.llm_adapters.registry.profile import LLMProfile
 from intergrax.llm_adapters.routing import (
@@ -427,7 +427,7 @@ env.llm_routing_profile = LLMRoutingProfile(
 - [x] CI gate `check_llm_routing_context_wiring.py`
 - [x] CI gate `check_llm_routing_tier_boundary.py`
 
-**Mid-run routing:** when `llm_routing_profile` is set, `resolve_llm_adapter()` wraps the core adapter in `RoutingEvaluatingLLMAdapter` (Tier-3). `RuntimeConfig.llm_routing_snapshot` is refreshed via `sync_llm_routing_snapshot_for_state()` before each UAEP step, and via `sync_routing_before_llm_call()` on graph/CE paths.
+**Mid-run routing:** when `llm_routing_profile` is set, the canonical `resolve_llm_adapter()` wraps the core adapter in `RoutingEvaluatingLLMAdapter`; the routing evaluation made at resolution is recorded per adapter and tenant (`consume_routing_evaluation(adapter, tenant_id=...)`). `RuntimeConfig.llm_routing_snapshot` is refreshed via `sync_llm_routing_snapshot_for_state()` before each UAEP step, and via `sync_routing_before_llm_call()` on graph/CE paths.
 
 **Post-L5 polish (M-LLM-X.13 - Done, LLM-AUDIT-20):**
 

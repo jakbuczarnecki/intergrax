@@ -21,6 +21,7 @@ from intergrax.queueing.worker.retry_policy import RetryPolicy
 from intergrax.contracts.execution_continuation_state_store import (
     ExecutionContinuationStateStore,
 )
+from intergrax.runtime.human.persistence_contract import HumanDecisionPersistence
 from intergrax.runtime.long_running.persistence_contract import (
     TaskCheckpointPersistence,
 )
@@ -73,6 +74,10 @@ def build_nexus_task_execution_registry(
     pipeline_capability_suffix: str = ".pipeline",
     task_enricher=None,
     production_mode: bool,
+    human_decision_store: HumanDecisionPersistence | None = None,
+    disable_human_decision_persistence: bool = False,
+    disable_task_memory_persistence: bool = False,
+    disable_runtime_event_persistence: bool = False,
     root_authority_admission: RootExecutionAuthorityAdmissionPort | None = None,
     artifact_store: ArtifactStore | None = None,
     artifact_governance: AgentRuntimeGovernancePort | None = None,
@@ -118,6 +123,10 @@ def build_nexus_task_execution_registry(
             admit_root_governance_identity=admit_root_governance_identity,
             root_authority_admission=root_authority_admission,
             production_mode=production_mode,
+            human_decision_store=human_decision_store,
+            disable_human_decision_persistence=disable_human_decision_persistence,
+            disable_task_memory_persistence=disable_task_memory_persistence,
+            disable_runtime_event_persistence=disable_runtime_event_persistence,
         )
     else:
         raise ValueError(
@@ -163,6 +172,10 @@ def create_nexus_celery_worker_app(
     pipeline_capability_suffix: str = ".pipeline",
     task_enricher=None,
     production_mode: bool,
+    human_decision_store: HumanDecisionPersistence | None = None,
+    disable_human_decision_persistence: bool = False,
+    disable_task_memory_persistence: bool = False,
+    disable_runtime_event_persistence: bool = False,
     root_authority_admission: RootExecutionAuthorityAdmissionPort | None = None,
     artifact_store: ArtifactStore | None = None,
     artifact_governance: AgentRuntimeGovernancePort | None = None,
@@ -194,6 +207,10 @@ def create_nexus_celery_worker_app(
         pipeline_capability_suffix=pipeline_capability_suffix,
         task_enricher=task_enricher,
         production_mode=production_mode,
+        human_decision_store=human_decision_store,
+        disable_human_decision_persistence=disable_human_decision_persistence,
+        disable_task_memory_persistence=disable_task_memory_persistence,
+        disable_runtime_event_persistence=disable_runtime_event_persistence,
         root_authority_admission=root_authority_admission,
         artifact_store=artifact_store,
         artifact_governance=artifact_governance,

@@ -5,8 +5,8 @@
 from __future__ import annotations
 
 import pytest
-
 from intergrax.llm_adapters.contracts.llm_adapter import LLMAdapter
+
 from testing_support.builder import FakeLLMAdapter
 
 
@@ -30,7 +30,7 @@ def stub_environment_llm_adapter(
         _resolve,
     )
     monkeypatch.setattr(
-        "intergrax.runtime.execution.host_orchestration_environment_spec_builder.resolve_environment_llm_adapter",
+        "intergrax.applications._shared.host_orchestration_backend_spec_builder.resolve_environment_llm_adapter",
         _resolve,
     )
     monkeypatch.setattr(
