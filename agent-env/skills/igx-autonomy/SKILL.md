@@ -50,11 +50,15 @@ Per item: the problem, the options, a recommendation, the consequence and the co
 
 ## Cursor — background task lifecycle
 
-`run_in_background: true` returns after spawn. The result arrives as the completion notification once the parent ends its turn. That receive is not polling.
+`run_in_background: true` returns after spawn. Cursor delivers the result as a new user turn ("Perform any necessary follow-up actions in response to the subagent completion above") once the parent has ended its turn. That completion turn is the receive; it is not polling and it is not the stop hook.
 
-`SPAWN` (Task) → end the turn or do other independent work → `RECEIVE` (the completion notification, or the foreground tool result) → `REVIEW` (check `DONE` against git) → `RESUME/CORRECT` (`resume` with the decision, or a new launch) → `NEXT TASK`.
+`SPAWN` (Task, independent tasks in one message) → other independent work, then end the turn with `WAITING: <task ids>` → `RECEIVE` (the completion turn, or the foreground tool result) → `REVIEW` (check `DONE` against git: branch, sha, tests) → `RESUME/CORRECT` (`resume` with the decision, or one new launch) → `NEXT TASK`.
 
-Do not `AwaitShell`, poll, or sleep-loop for a background task. Foreground Task (`run_in_background` false) blocks until the result and is also a receive.
+- End a turn with background workers outstanding only with a `WAITING:` line naming them. Under `/igx-run-plan` the stop hook lets that stop through; any other ending while a step is open gets a follow-up.
+- At most one correction or relaunch per worker per step. A second failure is `ESCALATION:` with the worker report.
+- A worker that ends with neither `DONE:` nor `BLOCKED:` counts as failed.
+- Do not `AwaitShell`, poll, or sleep-loop for a background task. Foreground Task (`run_in_background` false) blocks until the result and is also a receive.
+- Read-only search uses `explore` or `igx-researcher`. `generalPurpose` is denied by the `subagentStart` hook.
 
 ## Commit ownership
 

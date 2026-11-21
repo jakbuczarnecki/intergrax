@@ -11,10 +11,10 @@ before. No edits under `intergrax/`, `agents/`, `applications/`, `.claude/settin
 ## Checklist
 
 - [x] W0 baseline and dossier (this file)
-- [ ] W1 Cursor stop adapter (`scripts/hooks/igx_cursor_stop.py`, dispatch in `igx_stop_guard.py`, tests)
-- [ ] W2 Cursor contract docs (`igx-run-plan`, `igx-autonomy`, `PARALLEL-EXECUTION.md`)
-- [ ] W3 local integrator proposal (approval-gated, not applied)
-- [ ] W4 regression, sync check, policy pin, live probe or `CURSOR_LIVE_E2E_NOT_EXECUTED`
+- [x] W1 Cursor stop adapter (`scripts/hooks/igx_cursor_stop.py`, dispatch in `igx_stop_guard.py`, tests)
+- [x] W2 Cursor contract docs (`igx-run-plan`, `igx-autonomy`, `PARALLEL-EXECUTION.md`)
+- [x] W3 local integrator proposal (approval-gated, not applied)
+- [x] W4 regression, sync check, policy pin, live probe or `CURSOR_LIVE_E2E_NOT_EXECUTED`
 - [ ] W5 independent review and commit set
 
 ## W0 dossier (evidence, 2026-11-21)
@@ -80,6 +80,24 @@ Output is only ever `{"followup_message": ...}` or nothing. State lives in
 - `igx-autonomy` (Cursor sections): `WAITING: <task ids>` when ending a turn with background workers
   outstanding; the completion turn is the receive; at most one retry per worker before `ESCALATION`.
 - `PARALLEL-EXECUTION.md`: read-only search is `explore` / `igx-researcher`; `generalPurpose` is denied.
+
+## W4 evidence (2026-11-21, proof under `.tmp/proof/cursor-orch-corrective/`, not tracked)
+
+- `sync_agent_env.py --check` OK (70 adapters); `verify_trusted_policy_pin.py` OK; ruff clean.
+- pytest (ticket contract): stop/cursor/subagent guard tests pass; `test_agent_env_sync.py` has 3 failures that
+  pre-exist at base `ac0c0b753` (`.cursor/rules/intergrax-core.mdc` extract lost `git push` after the
+  a058cee19 core rewrite). This branch changes no rule file; fixing it touches the Claude-loaded core rule and
+  is left to a separate change.
+- Live probe: headless `cursor-agent -p` (2026.11.19, `composer-2.5`, scratch worktree) ran `start` and step 1,
+  then ended; it never invoked the project `stop` hook (no `stop-last-keys.json`). Launched from Git Bash, the
+  CLI evaluates its PowerShell hook wrapper with `bash eval` and blocks every hooked tool; launch it from
+  PowerShell.
+- Offline replay of the real CLI transcript with a live-shaped `stop` payload: owner follow-up names step 2,
+  duplicate event replays, another conversation is allowed, 2nd stop stall warning, 3rd allowed + stalled.
+- IDE live E2E (hook-delivered `followup_message` in the Cursor editor): `CURSOR_LIVE_E2E_NOT_EXECUTED`.
+  Procedure: in the Cursor IDE open the checkout, run `/igx-run-plan .tmp/probe/plan.md` with two steps, let the
+  agent finish step 1 and end its turn, then check that a follow-up turn naming step 2 appears and
+  `.tmp/session/autonomy/cursor-stop-last.json` shows `"reason": "followup"`.
 
 ## W3 local integrator (proposal, not applied)
 
