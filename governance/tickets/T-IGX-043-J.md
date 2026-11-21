@@ -14,13 +14,13 @@ This scaffold records scope only. No PASS, FRZ promotion, or independent-verific
 
 ## Plan digest
 
-Plan digest: dcb6ddb240e6c909dc9251b7c4edf83d1138ea88854303ed0c13c12c33216fd1
+Plan digest: 6337b92300eaa3783f4d19c8ad48ba1ca91afbabd1e1523017648a0ba9fa61b8
 
 Canonical plan: [`governance/tickets/plans/PLAN_T-IGX-043-J.md`](plans/PLAN_T-IGX-043-J.md).
 
 ## Approved
 
-PENDING. Approval line is added after the plan is reviewed (`Approved: operator` or commissioned delegate form per `governance/tickets/README.md`).
+Approved: operator (OD-AF-AUTO-03, autonomy session 2026-11-21; digest verified against canonical plan file).
 
 ## Test contract
 
@@ -32,4 +32,4 @@ TENANT **T-IGX-051-A**, FC-1/FC-3 file overlap without declared merge order, `sc
 
 ## Lifecycle state
 
-`draft`
+`plan_approved` (G-09 slice in progress; full PT-WF scope pending plan revision 2)
