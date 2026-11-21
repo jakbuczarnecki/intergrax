@@ -1,6 +1,6 @@
 ﻿# RC-3 prep dossier (tor `development`) — **prep only, not RC-3 exit**
 
-**Data:** 2026-11-21 (autonomia fala 6 / TOR C, worktree `af-dev-rc3-prep`)  
+**Data:** 2026-11-21 (autonomia fala 6 / TOR C — G4, worktree `af-dev-rc1-docs`)  
 **Werdykt tego dokumentu:** **DRAFT / NOT STARTED** — nie jest pinem G2, nie jest wyjściem RC-3, nie ogłasza FCS ani ARCH_FREEZE CLOSED.
 
 ## Poprzednik
@@ -47,7 +47,7 @@ Szczegółowa checklista robocza: [`G2_CHECKLIST_DRAFT.md`](G2_CHECKLIST_DRAFT.m
 |------|------|
 | [`TRAIN_DEV_GAP.md`](TRAIN_DEV_GAP.md) | Luka train ↔ development + kolejka slice |
 | [`TRAIN_CHERRY_PICK_STATUS.md`](TRAIN_CHERRY_PICK_STATUS.md) | SSOT kolejki (nie zmieniana w TOR C) |
-| [`IIIC_GOVERNANCE_FAST_BLOCKED.md`](IIIC_GOVERNANCE_FAST_BLOCKED.md) | governance-fast / RB-2 |
+| [`IIAC_GOVERNANCE_FAST_BLOCKED.md`](IIAC_GOVERNANCE_FAST_BLOCKED.md) | governance-fast / RB-2 |
 | [`RC2_EXIT_CHECKLIST.md`](RC2_EXIT_CHECKLIST.md) | Poprzednik PARTIAL |
 | [`CONTINUATION_AUTONOMY_CHECKPOINT.md`](CONTINUATION_AUTONOMY_CHECKPOINT.md) | Fala 6 SHA |
 | [`OPERATOR_DECISIONS_AUTONOMY.md`](OPERATOR_DECISIONS_AUTONOMY.md) | OD-AF-AUTO-04..05 — bez CLOSED / G2 w autonomii |
