@@ -3,25 +3,32 @@ from __future__ import annotations
 from types import SimpleNamespace
 
 import pytest
-
+from intergrax.integrations.contracts.base import IntegrationConfigurationError, LabSelectorOptIn
+from intergrax.integrations.providers.vector_store.inmemory.rag_store import (
+    InMemoryVectorStore,
+)
 from intergrax.integrations.registry.catalog_manifests import INMEMORY
 from intergrax.integrations.registry.profile import IntegrationProfile
 from intergrax.rag.vectorstore.bootstrap.integration_vectorstore import (
     create_default_vectorstore_manager,
     create_vectorstore_manager,
+    lab_inmemory_vector_store_slug,
 )
 from intergrax.rag.vectorstore.contracts.native_vectorstore import (
     VectorStoreContractError,
     VectorStoreScope,
 )
 from intergrax.rag.vectorstore.vectorstore_manager import VectorstoreManager
-from intergrax.integrations.providers.vector_store.inmemory.rag_store import (
-    InMemoryVectorStore,
-)
 
 
-def test_explicit_tenant_binds_in_memory_fallback() -> None:
-    manager = create_default_vectorstore_manager(tenant_id="tenant-explicit")
+def test_explicit_tenant_binds_in_memory_lab_opt_in() -> None:
+    manager = create_default_vectorstore_manager(
+        tenant_id="tenant-explicit",
+        lab_opt_in=LabSelectorOptIn(
+            selector=lab_inmemory_vector_store_slug(),
+            reason="vectorstore scope unit test",
+        ),
+    )
 
     assert isinstance(manager, VectorstoreManager)
     assert manager._bound_scope == VectorStoreScope(tenant_id="tenant-explicit")
@@ -80,7 +87,7 @@ def test_explicit_and_configured_tenant_mismatch_fails_closed() -> None:
 
 
 def test_missing_tenant_does_not_create_default_scope() -> None:
-    with pytest.raises(ValueError, match="explicit tenant_id"):
+    with pytest.raises(IntegrationConfigurationError, match="vector_store slug"):
         create_vectorstore_manager(profile=IntegrationProfile())
 
 
@@ -91,9 +98,7 @@ def test_missing_tenant_does_not_create_default_scope() -> None:
 def test_config_only_provider_tenant_does_not_bind_manager(
     config_attribute: str,
 ) -> None:
-    store = SimpleNamespace(
-        **{config_attribute: SimpleNamespace(tenant_id="tenant-config-only")}
-    )
+    store = SimpleNamespace(**{config_attribute: SimpleNamespace(tenant_id="tenant-config-only")})
 
     with pytest.raises(ValueError, match="explicit scope or a tenant-bound provider"):
         VectorstoreManager(store)
@@ -123,7 +128,13 @@ def test_provider_scope_mismatch_fails_closed() -> None:
 
 
 def test_bound_manager_rejects_unrelated_operation_tenant() -> None:
-    manager = create_vectorstore_manager(tenant_id="tenant-a")
+    manager = create_vectorstore_manager(
+        tenant_id="tenant-a",
+        profile=IntegrationProfile(
+            vector_store=INMEMORY,
+            options={INMEMORY.slug: {"tenant_id": "tenant-a"}},
+        ),
+    )
 
     with pytest.raises(VectorStoreContractError, match="differs from bound scope"):
         manager.count(scope=VectorStoreScope(tenant_id="tenant-b"))
