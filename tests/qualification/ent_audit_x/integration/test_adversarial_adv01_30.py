@@ -6,7 +6,7 @@ from intergrax.platform.enterprise_audit.manifest import load_default_manifest
 
 
 def test_adv01_manifest_has_eighty_five_checks() -> None:
-    assert len(load_default_manifest()) == 85
+    assert len(load_default_manifest()) == 91
 
 
 def test_adv02_duplicate_check_id_rejected() -> None:
@@ -240,7 +240,7 @@ def test_adv23_frz_coverage_artifact() -> None:
     from intergrax.platform.enterprise_audit.manifest import load_default_manifest
 
     art = frz_coverage_artifact(load_default_manifest())
-    assert art["row_count"] == 85
+    assert art["row_count"] == 91
 
 
 def test_adv24_bootstrap_policy_integration_test_exists() -> None:
