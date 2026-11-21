@@ -1,7 +1,8 @@
 ﻿# RC-3 prep dossier (tor `development`) — **prep only, not RC-3 exit**
 
-**Data:** 2026-11-21 (autonomia fala 6 / TOR C — G4, worktree `af-dev-rc1-docs`)  
-**Werdykt tego dokumentu:** **DRAFT / NOT STARTED** — nie jest pinem G2, nie jest wyjściem RC-3, nie ogłasza FCS ani ARCH_FREEZE CLOSED.
+**Data:** 2026-11-21 (autonomia fala 6 / TOR C, worktree `af-dev-fala6-close`)  
+**Werdykt RC-3 (program W4):** **DRAFT / NOT STARTED** — nie jest pinem G2, nie jest wyjściem RC-3, nie ogłasza FCS ani ARCH_FREEZE CLOSED.  
+**Werdykt TOR C fala 6 (dokumentacja prep):** **DONE** @ `e61e5136aa0617eea69b97ceedd8da38a4d0e796` — dostarczone: ten dossier, `G2_CHECKLIST_DRAFT.md`, `TRAIN_DEV_GAP.md`, sekcja G4 w `CHECKPOINT.md`; bez claim G2 / Q02 / FCS.
 
 ## Poprzednik
 
@@ -10,14 +11,13 @@
 | RC-2 exit | **PARTIAL** | [`RC2_EXIT_CHECKLIST.md`](RC2_EXIT_CHECKLIST.md) — A1–A5 spełnione; B2–B3 **STOP** (governance-fast) |
 | RC-1 checkpoint | Done (fala 5) | [`CHECKPOINT.md`](CHECKPOINT.md) G4 |
 
-RC-3 **nie rozpoczęto** — ten dossier mapuje wejście (W3→W4 / G2 readiness) bez uznania spełnienia kryteriów wyjścia.
+RC-3 **nie rozpoczęto** (wyjście W4) — ten dossier mapuje wejście (W3→W4 / G2 readiness) bez uznania spełnienia kryteriów wyjścia.
 
 ## Pin snapshot (2026-11-21)
 
 | Ref | SHA (40) | Krótki |
 |-----|----------|--------|
-| `origin/development` (fetch / TOR C) | `f551abb495ad2316a4b5ca0a90dd9aef2a4f28d9` | `f551abb49` |
-| Pin sesji G4 / fala 6 parallel | `dc083f6eadf0f7dbe501fbcf93659e2dd158b825` | `dc083f6ea` |
+| `origin/development` (tor TOR C) | `e61e5136aa0617eea69b97ceedd8da38a4d0e796` | `e61e5136a` |
 | `origin/arch-freeze/rw-train` | `dbaebfa8cd13a6ba8bfa6eef2cdf581216ddb3d2` | `dbaebfa8` |
 | Merge-base dev ↔ train | `70d73f0f08325a39c6b2fd0e3b00f4cab7e83033` | `70d73f0f0` |
 
@@ -47,11 +47,16 @@ Szczegółowa checklista robocza: [`G2_CHECKLIST_DRAFT.md`](G2_CHECKLIST_DRAFT.m
 |------|------|
 | [`TRAIN_DEV_GAP.md`](TRAIN_DEV_GAP.md) | Luka train ↔ development + kolejka slice |
 | [`TRAIN_CHERRY_PICK_STATUS.md`](TRAIN_CHERRY_PICK_STATUS.md) | SSOT kolejki (nie zmieniana w TOR C) |
-| [`IIAC_GOVERNANCE_FAST_BLOCKED.md`](IIAC_GOVERNANCE_FAST_BLOCKED.md) | governance-fast / RB-2 |
+| [`IIIC_GOVERNANCE_FAST_BLOCKED.md`](IIIC_GOVERNANCE_FAST_BLOCKED.md) | governance-fast / RB-2 |
 | [`RC2_EXIT_CHECKLIST.md`](RC2_EXIT_CHECKLIST.md) | Poprzednik PARTIAL |
-| [`CONTINUATION_AUTONOMY_CHECKPOINT.md`](CONTINUATION_AUTONOMY_CHECKPOINT.md) | Fala 6 SHA |
+| [`CONTINUATION_AUTONOMY_CHECKPOINT.md`](CONTINUATION_AUTONOMY_CHECKPOINT.md) | Fala SHA (Sesja A) |
 | [`OPERATOR_DECISIONS_AUTONOMY.md`](OPERATOR_DECISIONS_AUTONOMY.md) | OD-AF-AUTO-04..05 — bez CLOSED / G2 w autonomii |
 
 ## Werdykt RC-3 prep (fala 6)
 
-**DRAFT / NOT STARTED** — dokumentacja wejścia; wszystkie twarde bramki W4 pozostają otwarte lub BLOCKED. Zgodnie z **OD-AF-AUTO-05**: brak ogłoszenia ARCH_FREEZE CLOSED, FCS, G2 PASS ani symulacji RW-PLAN-AUDIT.
+| Warstwa | Werdykt |
+|---------|---------|
+| TOR C dokumentacja (fala 6) | **DONE** — zamknięcie deliverables planu prep; pin `e61e5136a` |
+| RC-3 exit / wejście W4 | **DRAFT / NOT STARTED** — wszystkie twarde bramki W4 otwarte lub **BLOCKED** |
+
+Zgodnie z **OD-AF-AUTO-05**: brak ogłoszenia ARCH_FREEZE CLOSED, FCS, G2 PASS ani symulacji RW-PLAN-AUDIT.

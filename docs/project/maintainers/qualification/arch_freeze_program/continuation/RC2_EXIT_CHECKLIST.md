@@ -39,6 +39,7 @@
 | RC2-C1 | `CONTINUATION_AUTONOMY_CHECKPOINT.md` zaktualizowany (fala 5) | [x] |
 | RC2-C2 | `CHECKPOINT.md` — G4 RC-1 → RC-2 checklist done | [x] |
 | RC2-C3 | Push `origin/development` | [x] | `61516a7cf` |
+| RC2-C4 | RC-3 prep dossier + G2 draft + train-dev gap (TOR C fala 6) | [x] | `RC3_PREP_DOSSIER.md`, fala 6 **DONE** @ `e61e5136a` |
 
 ## Werdykt RC-2 (fala 5)
 

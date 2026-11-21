@@ -2,9 +2,9 @@
 
 **Banner:** To jest **robocza** lista gotowości do runga `G2` (MEP-AF2 W3 exit → W4 entry). **Nie** oznacza G2 PASS, **nie** zastępuje PT-Q02, **nie** aktywuje RB-2 ani FCS.
 
-**Data:** 2026-11-21 (G4 fala 5–6; fala 6 / TOR C)  
-**Pin development (fetch):** `f551abb495ad2316a4b5ca0a90dd9aef2a4f28d9` (`f551abb49`; G4 sesja parallel `dc083f6ea`)  
-**Pin train:** `dbaebfa8cd13a6ba8bfa6eef2cdf581216ddb3d2` (`dbaebfa8`; post #699)
+**Data:** 2026-11-21 (fala 6 / TOR C, worktree `af-dev-fala6-close`)  
+**Pin development:** `e61e5136aa0617eea69b97ceedd8da38a4d0e796` (`e61e5136a`)  
+**Pin train:** `dbaebfa8cd13a6ba8bfa6eef2cdf581216ddb3d2` (`dbaebfa8`)
 
 ## Legenda
 
@@ -18,7 +18,7 @@
 
 | Id | Kryterium (MEP W3) | Stan fala 6 | Dowód |
 |----|-------------------|-------------|-------|
-| G2-A1 | Wszystkie tickety W3 train zmergowane na `arch-freeze/rw-train` | [ ] | `TRAIN_DEV_GAP.md` — **241** commitów dev-only |
+| G2-A1 | Wszystkie tickety W3 train zmergowane na `arch-freeze/rw-train` | [ ] | `TRAIN_DEV_GAP.md` — **286** commitów dev-only od merge-base |
 | G2-A2 | RW head train zamrożony jako kandydat G2 | [ ] | Brak rekordu G2 w ladder |
 | G2-A3 | Train CI green poza **exact expected-red** set | [ ] | KR-08 / known-red — nie zwalidowano @ G2 |
 | G2-A4 | SCOPE + T-AF2-RW-PLAN na trainie (W2 exit) | BLOCKED | W2 poza torrem development-only |
@@ -51,7 +51,8 @@
 | G2-D1 | RC-2 tor development A1–A5 | [x] | `RC2_EXIT_CHECKLIST.md` |
 | G2-D2 | RW-PLAN-AUDIT BLOCKED bez zmian | BLOCKED | `RW_PLAN_AUDIT_STATUS.md` |
 | G2-D3 | `051-A`, ARCH_FREEZE CLOSED — STOP | [x] | `OPERATOR_DECISIONS_AUTONOMY.md` OD-AF-AUTO-04..05 |
+| G2-D4 | TOR C fala 6 — RC-3 **prep docs** (nie exit) | [x] | `RC3_PREP_DOSSIER.md` — prep **DONE** @ `e61e5136a` |
 
 ## Werdykt (draft)
 
-Wszystkie pozycje A2–C7 otwarte lub **BLOCKED** (poza A5 landing slice i D1/D3). **Nie** utworzono G2. **Nie** ogłoszono Q02 PASS, FCS ani **ARCH_FREEZE CLOSED**.
+Wszystkie pozycje A2–C7 otwarte lub **BLOCKED** (poza A5 landing slice, D1/D3/D4). **Nie** utworzono G2. **Nie** ogłoszono Q02 PASS, FCS ani **ARCH_FREEZE CLOSED**.

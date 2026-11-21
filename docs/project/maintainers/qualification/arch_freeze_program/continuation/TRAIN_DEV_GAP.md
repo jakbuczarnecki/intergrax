@@ -7,8 +7,7 @@
 
 | Ref | SHA (40) | Krótki |
 |-----|----------|--------|
-| `origin/development` (fetch) | `f551abb495ad2316a4b5ca0a90dd9aef2a4f28d9` | `f551abb49` |
-| Pin sesji G4 / fala 6 parallel | `dc083f6eadf0f7dbe501fbcf93659e2dd158b825` | `dc083f6ea` |
+| `origin/development` | `e61e5136aa0617eea69b97ceedd8da38a4d0e796` | `e61e5136a` |
 | `origin/arch-freeze/rw-train` | `dbaebfa8cd13a6ba8bfa6eef2cdf581216ddb3d2` | `dbaebfa8` |
 | Merge-base dev ↔ train | `70d73f0f08325a39c6b2fd0e3b00f4cab7e83033` | `70d73f0f0` |
 | Slice tip (cherry-pick na PR) | `1cec68222751a128feab00e7b80063a09983296e` | `1cec68222` |
@@ -18,9 +17,9 @@
 | Kierunek | Commity | Znaczenie |
 |----------|---------|-----------|
 | `rw-train` … not in `development` | **217** | Historia train / EQO — poza merge mandate |
-| `development` … not in `rw-train` | **241** | Remediacja product + docs na torze primary — **do cherry-pick** / cite |
+| `development` … not in `rw-train` | **286** | Remediacja product + docs na torze primary — **do cherry-pick** / cite |
 
-Polecenie SSOT: `git log --oneline 70d73f0f0..dc083f6ea` (dev-only); `git log --oneline 70d73f0f0..dbaebfa8` (train-only).
+Polecenie SSOT: `git log --oneline 70d73f0f0..e61e5136a` (dev-only); `git log --oneline 70d73f0f0..dbaebfa8` (train-only).
 
 Product na `development` musi **cherry-pick/rebase** z trainu tam, gdzie slice już istnieje na trainie — **nie** pełny merge `rw-train` bez mandatu operatora (`CHECKPOINT.md`, OD-AF-AUTO-01).
 
@@ -49,7 +48,7 @@ Product na `development` musi **cherry-pick/rebase** z trainu tam, gdzie slice j
 
 **Wyłączone z train PR:** `agent-env/*`, `docs/eqo_closure/*`, czyste checkpointy `continuation/*` (w tym ten plik) — cite only na trainie.
 
-### Commity dev-only (klasa, nie pełna lista 241)
+### Commity dev-only (klasa, nie pełna lista 286)
 
 | Klasa | Przykłady na torze `development` | Train |
 |-------|-----------------------------------|-------|
@@ -66,8 +65,4 @@ Product na `development` musi **cherry-pick/rebase** z trainu tam, gdzie slice j
 
 ## Stan fala 6 (TOR C)
 
-Worktree **`af-dev-rc3-prep`** @ `dc083f6ea`; docs odzwierciedlają merge **#699** i luki 241/217 — **bez** claim G2, FCS ani green governance-fast.
-
-## Stan G4 (fala 5–6; RC-1)
-
-Worktree **`af-dev-rc1-docs`** @ pin sesji `dc083f6ea`; dokumentacja odzwierciedla merge **#699** bez claim RC-2 CLOSED.
+Worktree **`af-dev-fala6-close`** @ `e61e5136a`; dokumentacja prep **DONE** — merge **#699**, luki **286**/**217**; **bez** claim G2, FCS ani green `governance-fast`.
