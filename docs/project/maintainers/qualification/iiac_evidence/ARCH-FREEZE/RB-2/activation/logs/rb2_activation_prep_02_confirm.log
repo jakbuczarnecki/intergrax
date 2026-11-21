@@ -1,0 +1,33 @@
+# command: python docs/project/maintainers/qualification/iiac_evidence/ARCH-FREEZE/RB-2/activation/scripts/confirm_rb2_activation_prep.py
+# HEAD: e69e1ff5819b98c316377bcadf749f61fe00abc2
+# UTC start: 2026-11-21T10:43:49Z
+# UTC end: 2026-11-21T10:43:51Z
+# python: C:\Python313\python.exe
+# ---- stdout ----
+HEAD e69e1ff5819b98c316377bcadf749f61fe00abc2
+
+== Confirmation 1: delta and material governance (prep) ==
+[OK  ] 969cbd964 resolves 
+[OK  ] a73d15ab3 resolves 
+[OK  ] c207e6ad3 resolves 
+[OK  ] E..G2 product delta count == 76 n=76
+[OK  ] no MATERIAL_GOVERNANCE_PATHS change E..HEAD at prep pin []
+
+== Confirmation 2: certifier package still DRAFT (not activation-ready) ==
+[OK  ] draft manifest not PASS 'DRAFT'
+[OK  ] evidence_publication_sha pending 
+[OK  ] certifier_session_id pending 
+
+== Confirmation 3: prep handoff exists; no binding manifest for RB-2 yet ==
+[OK  ] prep handoff file exists 
+[OK  ] no RB-2 activation binding manifest (expected at prep) []
+
+== Confirmation 4: protocol still permits future delegated activation (not exercised) ==
+[OK  ] Amendment 01 S-3 STRUCK 
+[OK  ] protocol plain operator-form line documented 
+[OK  ] no protocol ban on commissioned writer 
+[OK  ] ancestor G0 -> G2 for future FCS tree 
+
+RESULT: ALL PREP CONFIRMATIONS OK
+# ---- stderr ----
+# exit code: 0
