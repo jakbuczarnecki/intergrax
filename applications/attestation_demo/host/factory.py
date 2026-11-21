@@ -5,35 +5,28 @@
 from __future__ import annotations
 
 from pathlib import Path
-from typing import Optional
 
 from fastapi import FastAPI
-
 from intergrax.applications._shared.attestation_runtime_bridge import build_boundary_event_buffer
+from intergrax.applications._shared.harness_host_composition import (
+    bootstrap_harness_host_platform,
+)
 from intergrax.applications._shared.harness_host_runtime import build_harness_host_runtime
 from intergrax.applications._shared.lab_harness_context import lab_harness_context_from_build_context
-from intergrax.applications._shared.workspace_cleanup_wiring import (
-    apply_factory_lifespans,
-    build_factory_lifespans,
-)
 from intergrax.applications._shared.plugin_bootstrap import attach_plugin_shutdown
 from intergrax.applications._shared.task_control_wiring import (
     build_reliability_task_enricher,
     wire_harness_task_control,
+)
+from intergrax.applications._shared.workspace_cleanup_wiring import (
+    apply_factory_lifespans,
 )
 from intergrax.debug.app import create_debug_app
 from intergrax.debug.hitl_service import DebugHitlResumeService
 from intergrax.debug.store import open_default_task_checkpoint_persistence
 from intergrax.integrations._shared.in_memory_document_store import InMemoryDocumentStore
 from intergrax.runtime.attestation.buffer import BoundaryEventBuffer
-from intergrax.applications._shared.harness_host_composition import (
-    bootstrap_harness_host_application_plugins,
-    bootstrap_harness_host_platform,
-    resolve_harness_host_event_bus,
-    resolve_harness_host_lifecycle_hook_coordinator,
-    resolve_harness_host_middleware_pipeline,
-    resolve_harness_host_runtime_event_persistence,
-)
+
 from attestation_demo.host.agent_builders import build_attestation_demo_agent_builders
 from attestation_demo.host.integration_wiring import wire_attestation_demo_integrations
 from attestation_demo.host.settings import AttestationDemoSettings
@@ -43,7 +36,7 @@ from attestation_demo.serving.fastapi_router import mount_attestation_demo_route
 
 def create_attestation_demo_application(
     *,
-    settings: Optional[AttestationDemoSettings] = None,
+    settings: AttestationDemoSettings | None = None,
     db_path: Path | None = None,
     runtime_events_db_path: Path | None = None,
     checkpoints_db_path: Path | None = None,

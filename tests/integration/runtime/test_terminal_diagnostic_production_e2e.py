@@ -9,8 +9,6 @@ import concurrent.futures
 from dataclasses import replace
 
 import pytest
-
-from echo.echo_agent import EchoAgent
 from intergrax.applications._shared.application_composition_context import (
     composition_for_factory_context,
 )
@@ -22,20 +20,11 @@ from intergrax.applications._shared.diagnostic_runtime_wiring import (
     build_terminal_execution_diagnostic_trigger,
     resolve_host_diagnostic_runtime_dependencies,
 )
-from intergrax.applications.contracts.build_context import ApplicationBuildContext
-from intergrax.applications.contracts.manifest import AgentBinding, ApplicationManifest
-from intergrax.tools.registry.wiring import ToolWiringContext
-from intergrax.runtime.diagnostics.central_terminal_execution_diagnostic_port import (
-    CentralTerminalExecutionDiagnosticPort,
-    wrap_terminal_execution_diagnostic_trigger,
-)
-from intergrax.runtime.diagnostics.terminal_execution_diagnostic_trigger import (
-    TerminalExecutionDiagnosticTrigger,
-)
-from intergrax.applications._shared.harness_host_runtime import build_harness_host_runtime
 from intergrax.applications._shared.product_observability_dashboard_wiring import (
     _build_diagnostic_operations_pane,
 )
+from intergrax.applications.contracts.build_context import ApplicationBuildContext
+from intergrax.applications.contracts.manifest import AgentBinding, ApplicationManifest
 from intergrax.contracts.execution_identity import (
     bind_active_execution_identity,
     mint_attempt_id,
@@ -52,10 +41,20 @@ from intergrax.runtime.background_execution.required_audit_evidence import (
     admit_background_execution_handler,
 )
 from intergrax.runtime.background_execution.transport_ref import BackgroundTransportExecutionRef
+from intergrax.runtime.diagnostics.central_terminal_execution_diagnostic_port import (
+    CentralTerminalExecutionDiagnosticPort,
+    wrap_terminal_execution_diagnostic_trigger,
+)
 from intergrax.runtime.diagnostics.in_memory_problem_persistence import InMemoryProblemPersistence
 from intergrax.runtime.diagnostics.persistence_conformance import query_all_problems_for_tenant
+from intergrax.runtime.diagnostics.terminal_execution_diagnostic_trigger import (
+    TerminalExecutionDiagnosticTrigger,
+)
 from intergrax.runtime.events.runtime_event import RuntimeEvent, RuntimeEventType
 from intergrax.runtime.events.stores.memory_runtime_event_store import InMemoryRuntimeEventStore
+from intergrax.runtime.execution.harness_task_execution_port import (
+    build_harness_root_task_execution_port,
+)
 from intergrax.runtime.nexus.nexus_loop import NexusLoop
 from intergrax.runtime.nexus.observability_wiring import wire_nexus_observability
 from intergrax.runtime.observability.memory_causal_evidence_persistence import (
@@ -64,24 +63,19 @@ from intergrax.runtime.observability.memory_causal_evidence_persistence import (
 from intergrax.runtime.observability.persistence_conformance import sample_runtime_event
 from intergrax.runtime.registry.agent_registry import AgentRegistry
 from intergrax.runtime.task.task import Task, TaskContext, TaskState
-from intergrax.runtime.execution.harness_task_execution_port import (
-    build_harness_root_task_execution_port,
-)
 from intergrax.runtime.task.unified_task_runner import UnifiedTaskRunner
 from intergrax.tools.execution_models import ToolExecutionResult
-from governed_contractor_application.host.environment_profile import (
-    build_governed_contractor_environment_profile,
-)
-from governed_contractor_application.host.settings import GovernedContractorBackendSettings
-from governed_contractor_application.manifest import build_governed_contractor_manifest
-from governed_contractor_application.tests.governed_contractor_ac3_projection import (
-    build_governed_contractor_test_registry_projection,
-)
+from intergrax.tools.registry.wiring import ToolWiringContext
 from testing_support.admitted_root_governance_identity import (
     lab_admitted_root_governance_identity_for_task,
 )
 from tests.unit.applications.test_product_observability_dashboard_wiring import (
     _product_env,
+)
+
+from echo.echo_agent import EchoAgent
+from governed_contractor_application.tests.governed_contractor_ac3_projection import (
+    build_governed_contractor_test_registry_projection,
 )
 
 pytestmark = [
@@ -207,6 +201,7 @@ def _build_diagnostic_nexus_loop(
         registry,
         trace_store=stores.trace_store,
         runtime_event_store=runtime_store,
+        production_mode=False,
     )
     loop.attach_terminal_diagnostic_trigger(
         wrap_terminal_execution_diagnostic_trigger(trigger, event_bus=loop.event_bus),
@@ -760,10 +755,6 @@ def test_harness_host_runtime_wires_terminal_diagnostic_trigger(
         _resolve,
     )
 
-    from governed_contractor_application.host.factory import (
-        create_governed_contractor_backend_app,
-    )
-
     from intergrax.applications._shared.production_platform_persistence import (
         build_reference_production_platform_persistence,
     )
@@ -772,6 +763,10 @@ def test_harness_host_runtime_wires_terminal_diagnostic_trigger(
         backing_execution_continuation_state_store,
         execution_continuation_state_store_from_durable_export,
         export_durable_continuation_state,
+    )
+
+    from governed_contractor_application.host.factory import (
+        create_governed_contractor_backend_app,
     )
 
     document_store = InMemoryDocumentStore()

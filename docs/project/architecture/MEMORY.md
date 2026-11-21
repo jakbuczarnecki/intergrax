@@ -407,7 +407,7 @@ Canon §27 type              Runtime implementation
 | Store | Scope key | Module | Agent access | Default persistence |
 |-------|-----------|--------|--------------|---------------------|
 | **Session (STM)** | `session_id` | `runtime/nexus/session` | Via Nexus history steps only | SQLite bundle, in-memory fallback, or Mongo `DocumentStoreSessionStorage` (MEM-DEPTH-2.1) |
-| **Task KV** | `tenant_id` + `task_id` + namespace | `runtime/task_memory` | `memory.*` tools via `MemoryView` | SQLite (`INTERGRAX_TASK_MEMORY_DB`) |
+| **Task KV** | `tenant_id` + `task_id` + namespace | `runtime/task_memory` | `memory.*` tools via `MemoryView` | SQLite (`INTERGRAX_TASK_MEMORY_DB`; LAB only: with `production_mode=True` the variable is never read and a missing store needs `disable_task_memory_persistence=True`, otherwise `TaskMemoryPersistenceNotConfiguredError`) |
 | **User LTM** | `tenant_id` + `user_id` | `intergrax/memory` | Nexus `UserLongtermMemoryStep` | SQLite bundle / Mongo document_store |
 | **Org profile** | `org_id` | `runtime/organization` | Nexus profile steps | SQLite bundle |
 | **Shared handoff** | `task_id` | `SharedTaskContext` | `ContextManager` | Task metadata + KV bridge |

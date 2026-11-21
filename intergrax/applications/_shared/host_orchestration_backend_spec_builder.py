@@ -75,6 +75,7 @@ from intergrax.runtime.execution.host_validation_composition import NexusValidat
 from intergrax.runtime.governance.governance_evidence_recorder import (
     GovernanceEvidenceRecorder,
 )
+from intergrax.runtime.human.persistence_contract import HumanDecisionPersistence
 from intergrax.runtime.long_running.notification import NotificationAdapter
 from intergrax.runtime.long_running.persistence_contract import (
     TaskCheckpointPersistence,
@@ -141,6 +142,10 @@ def build_host_orchestration_loop_init_spec_from_environment(
     execution_continuation_state_store: ExecutionContinuationStateStore | None = None,
     governance_evidence_recorder: GovernanceEvidenceRecorder | None = None,
     child_context_inheritance: ChildExecutionContextInheritancePort | None = None,
+    human_decision_store: HumanDecisionPersistence | None = None,
+    disable_human_decision_persistence: bool = False,
+    disable_task_memory_persistence: bool = False,
+    disable_runtime_event_persistence: bool = False,
 ) -> HostOrchestrationLoopInitSpec:
     """Resolve typed Execution Engine orchestration backend inputs from the environment."""
     validate_strict_host_execution_capacity(env)
@@ -206,6 +211,10 @@ def build_host_orchestration_loop_init_spec_from_environment(
         execution_continuation_state_store=execution_continuation_state_store,
         governance_evidence_recorder=governance_evidence_recorder,
         child_context_inheritance=child_context_inheritance,
+        human_decision_store=human_decision_store,
+        disable_human_decision_persistence=disable_human_decision_persistence,
+        disable_task_memory_persistence=disable_task_memory_persistence,
+        disable_runtime_event_persistence=disable_runtime_event_persistence,
     )
 
 

@@ -1,14 +1,14 @@
 # © Artur Czarnecki. All rights reserved.
 
 import pytest
-
-from echo.echo_agent import EchoAgent
-from intergrax.applications.contracts.environment_profile import ApplicationSecurityProfile
 from intergrax.applications._shared.application_security_wiring import register_application_security_hooks
+from intergrax.applications.contracts.environment_profile import ApplicationSecurityProfile
 from intergrax.runtime.nexus.nexus_loop import NexusLoop
 from intergrax.runtime.registry.agent_registry import AgentRegistry
 from intergrax.runtime.security.task_security_context import RESOURCE_TENANT_ID_METADATA_KEY
 from intergrax.runtime.task.task import Task, TaskContext, TaskState
+
+from echo.echo_agent import EchoAgent
 
 
 @pytest.mark.asyncio
@@ -17,7 +17,7 @@ from intergrax.runtime.task.task import Task, TaskContext, TaskState
 async def test_nexus_loop_tenant_security_blocks_cross_tenant_resource_access() -> None:
     registry = AgentRegistry()
     registry.register(EchoAgent())
-    loop = NexusLoop(registry)
+    loop = NexusLoop(registry, production_mode=False)
     register_application_security_hooks(
         loop,
         ApplicationSecurityProfile(
@@ -51,7 +51,7 @@ async def test_nexus_loop_tenant_security_blocks_cross_tenant_resource_access() 
 async def test_nexus_loop_tenant_security_allows_matching_tenant() -> None:
     registry = AgentRegistry()
     registry.register(EchoAgent())
-    loop = NexusLoop(registry)
+    loop = NexusLoop(registry, production_mode=False)
     register_application_security_hooks(
         loop,
         ApplicationSecurityProfile(

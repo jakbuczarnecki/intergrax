@@ -9,8 +9,6 @@ import logging
 import os
 from pathlib import Path
 
-logger = logging.getLogger(__name__)
-
 from intergrax.integrations.providers.relational_store.sqlite.paths import (
     DEFAULT_TASK_MEMORY_DB,
     ENV_TASK_MEMORY_DB,
@@ -21,13 +19,20 @@ from intergrax.runtime.task_memory.stores.sqlite_task_memory_store import (
     SQLiteTaskMemoryStore,
 )
 
+logger = logging.getLogger(__name__)
+
 __all__ = [
     "DEFAULT_TASK_MEMORY_DB",
     "ENV_TASK_MEMORY_DB",
     "resolve_task_memory_db_path",
     "open_task_memory_store",
     "resolve_task_memory_persistence",
+    "TaskMemoryPersistenceNotConfiguredError",
 ]
+
+
+class TaskMemoryPersistenceNotConfiguredError(RuntimeError):
+    """PRODUCT/STRICT composition has neither a TaskMemory store, a path nor the explicit acknowledgement."""
 
 
 def open_task_memory_store(db_path: Path | None = None) -> SQLiteTaskMemoryStore:
@@ -46,6 +51,8 @@ def resolve_task_memory_persistence(
     db_path: Path | None = None,
     implementation: TaskMemoryPersistence | None = None,
     warn_if_disabled: bool = False,
+    production_mode: bool = False,
+    disabled: bool = False,
 ) -> TaskMemoryPersistence | None:
     """
     Resolve TaskMemory for composition roots (debug app, NexusLoop, tests).
@@ -53,9 +60,22 @@ def resolve_task_memory_persistence(
     Priority: explicit ``implementation`` > SQLite at ``db_path``/env path.
     Pass ``implementation=InMemoryTaskMemoryStore()`` in unit tests.
     Pass ``implementation=None`` and omit path to disable persistence.
+
+    With ``production_mode=True`` the ambient ``ENV_TASK_MEMORY_DB`` is never read: without an
+    ``implementation`` or ``db_path`` the call raises :class:`TaskMemoryPersistenceNotConfiguredError`
+    unless the caller states ``disabled=True`` (typed acknowledgement, result ``None``).
     """
     if implementation is not None:
         return implementation
+    if production_mode:
+        if db_path is not None:
+            return open_task_memory_store(db_path)
+        if disabled:
+            return None
+        raise TaskMemoryPersistenceNotConfiguredError(
+            "production_mode requires a TaskMemory store or db_path, or an explicit disable acknowledgement; "
+            "the ambient environment variable is not read.",
+        )
     if db_path is None and not os.environ.get(ENV_TASK_MEMORY_DB, "").strip():
         if warn_if_disabled:
             logger.warning(

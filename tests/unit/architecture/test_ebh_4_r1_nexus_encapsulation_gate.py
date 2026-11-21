@@ -55,15 +55,11 @@ def _in_ee_zone(path: Path) -> bool:
 def _imports_nexus_module(tree: ast.AST) -> bool:
     for node in ast.walk(tree):
         if isinstance(node, ast.ImportFrom) and node.module:
-            if node.module == "intergrax.runtime.nexus" or node.module.startswith(
-                "intergrax.runtime.nexus."
-            ):
+            if node.module == "intergrax.runtime.nexus" or node.module.startswith("intergrax.runtime.nexus."):
                 return True
         if isinstance(node, ast.Import):
             for alias in node.names:
-                if alias.name == "intergrax.runtime.nexus" or alias.name.startswith(
-                    "intergrax.runtime.nexus."
-                ):
+                if alias.name == "intergrax.runtime.nexus" or alias.name.startswith("intergrax.runtime.nexus."):
                     return True
     return False
 

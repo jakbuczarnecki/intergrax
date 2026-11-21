@@ -10,9 +10,8 @@ from pathlib import Path
 from unittest.mock import AsyncMock, patch
 
 import pytest
-
-from tests.fixtures.harness_host_task_execution import (
-    build_harness_host_task_execution,
+from intergrax.applications._shared.harness_admitted_root_governance_identity import (
+    admit_harness_root_governance_identity,
 )
 from intergrax.applications._shared.host_task_execution_wiring import (
     build_nexus_host_task_terminal_publisher,
@@ -26,17 +25,17 @@ from intergrax.contracts.execution_identity import (
     mint_task_id,
     validate_execution_id,
 )
-from intergrax.applications._shared.harness_admitted_root_governance_identity import (
-    admit_harness_root_governance_identity,
-)
 from intergrax.runtime.execution.host_task import HostTaskExecution
 from intergrax.runtime.execution.host_task_terminal_publisher import HostTaskTerminalPublisher
 from intergrax.runtime.nexus.nexus_loop import NexusLoop
 from intergrax.runtime.registry.agent_registry import AgentRegistry
+from intergrax.runtime.task.task import Task, TaskContext, TaskResult, TaskState
 from intergrax.runtime.task.task_result_authoritative_exposure_defaults import (
     terminal_task_result_exposure_no_decision_gate,
 )
-from intergrax.runtime.task.task import Task, TaskContext, TaskResult, TaskState
+from tests.fixtures.harness_host_task_execution import (
+    build_harness_host_task_execution,
+)
 
 pytestmark = [pytest.mark.unit, pytest.mark.gate]
 
@@ -64,7 +63,7 @@ def _build_host_task_execution(
     terminal_publisher: HostTaskTerminalPublisher | None = None,
 ) -> HostTaskExecution:
     registry = AgentRegistry()
-    nexus_loop = NexusLoop(registry)
+    nexus_loop = NexusLoop(registry, production_mode=False)
     execution = build_harness_host_task_execution(nexus_loop, orchestration_triggers=frozenset())
     if terminal_publisher is None:
         return execution
@@ -225,7 +224,7 @@ async def test_missing_terminal_publisher_executes_without_error() -> None:
 @pytest.mark.asyncio
 async def test_nexus_adapter_delegates_terminal_publication() -> None:
     registry = AgentRegistry()
-    nexus_loop = NexusLoop(registry)
+    nexus_loop = NexusLoop(registry, production_mode=False)
     execution = build_harness_host_task_execution(nexus_loop, orchestration_triggers=frozenset())
     task = _sample_task()
     run_id = mint_run_id()
@@ -262,6 +261,6 @@ async def test_nexus_adapter_delegates_terminal_publication() -> None:
 
 def test_nexus_adapter_is_typed_port_implementation() -> None:
     registry = AgentRegistry()
-    nexus_loop = NexusLoop(registry)
+    nexus_loop = NexusLoop(registry, production_mode=False)
     publisher = build_nexus_host_task_terminal_publisher(nexus_loop)
     assert inspect.iscoroutinefunction(publisher.publish_terminal)

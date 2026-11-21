@@ -6,13 +6,11 @@ from __future__ import annotations
 
 import ast
 import importlib
+from collections.abc import Callable
 from pathlib import Path
-from typing import Callable, Optional
 from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
-from pydantic import BaseModel
-
 from intergrax.contracts.execution_identity import (
     AttemptId,
     ExecutionId,
@@ -30,16 +28,15 @@ from intergrax.queueing.contracts.task_queue import (
     TaskHandle,
     TaskQueue,
     TaskRequest,
-    TaskResult as QueueTaskResult,
     TaskStatus,
+)
+from intergrax.queueing.contracts.task_queue import (
+    TaskResult as QueueTaskResult,
 )
 from intergrax.queueing.worker.execution import execute_logical_task
 from intergrax.queueing.worker.registry import TaskExecutionRegistry
 from intergrax.queueing.worker.result_codec import encode_logical_task_result
 from intergrax.runtime.background_execution.bootstrap import BackgroundExecutionIdentity
-from intergrax.runtime.background_execution.identity_persistence import (
-    KvBackgroundExecutionIdentityPersistence,
-)
 from intergrax.runtime.background_execution.reentry_admission import (
     BackgroundExecutionReentryDisposition,
     admit_background_execution_reentry,
@@ -59,16 +56,18 @@ from intergrax.runtime.task.task_run_bridge import task_to_execution_payload
 from intergrax.runtime.task.worker_payload import encode_execution_request
 from intergrax.runtime.tools.in_memory_idempotency_store import InMemoryIdempotencyStore
 from intergrax.tools.execution_models import ToolExecutionResult
-from governed_contractor_application.host.environment_profile import (
-    build_governed_contractor_environment_profile,
-)
-from governed_contractor_application.host.settings import GovernedContractorBackendSettings
+from pydantic import BaseModel
 from tests.fixtures.harness_host_task_execution import (
     build_harness_environment_host_task_execution,
 )
 from tests.unit.runtime.background_execution.reentry_admission_doubles import (
     make_kv_admission_dependencies,
 )
+
+from governed_contractor_application.host.environment_profile import (
+    build_governed_contractor_environment_profile,
+)
+from governed_contractor_application.host.settings import GovernedContractorBackendSettings
 
 pytestmark = [pytest.mark.unit, pytest.mark.gate]
 
@@ -243,19 +242,15 @@ def test_bg_q1_worker_invokes_host_task_execution_port() -> None:
 
 def test_bg_q1_production_background_execution_surfaces_use_host_port() -> None:
     """Active production composition roots converge host-task workloads to HostTaskExecutionPort."""
-    queue_wiring = (
-        _REPO_ROOT / "intergrax" / "applications" / "_shared" / "queue_worker_wiring.py"
-    ).read_text(encoding="utf-8-sig")
+    queue_wiring = (_REPO_ROOT / "intergrax" / "applications" / "_shared" / "queue_worker_wiring.py").read_text(
+        encoding="utf-8-sig"
+    )
     lkw_factory = (
-        _REPO_ROOT
-        / "applications"
-        / "local_workspace_application"
-        / "host"
-        / "background_worker_factory.py"
+        _REPO_ROOT / "applications" / "local_workspace_application" / "host" / "background_worker_factory.py"
     ).read_text(encoding="utf-8-sig")
-    worker_bootstrap = (
-        _REPO_ROOT / "intergrax" / "runtime" / "task" / "worker_bootstrap.py"
-    ).read_text(encoding="utf-8-sig")
+    worker_bootstrap = (_REPO_ROOT / "intergrax" / "runtime" / "task" / "worker_bootstrap.py").read_text(
+        encoding="utf-8-sig"
+    )
     assert "QueuedHostTaskExecutionAdapter" in queue_wiring
     assert "create_nexus_celery_worker_app" in queue_wiring
     assert "HostTaskExecution" in lkw_factory
@@ -327,7 +322,7 @@ def test_bg_q3_tenant_mismatch_blocks_execution() -> None:
 @pytest.mark.asyncio
 async def test_bg_q4_worker_host_stack_uses_root_launcher() -> None:
     registry = AgentRegistry()
-    nexus_loop = NexusLoop(registry)
+    nexus_loop = NexusLoop(registry, production_mode=False)
     host_execution = _governed_host_execution(nexus_loop)
     runtime = NexusWorkerRuntime(host_execution)
     identity = _worker_identity()
@@ -393,9 +388,7 @@ def test_bg_q5_idempotent_logical_task_single_handler_invoke() -> None:
 
 
 def test_bg_q6_transport_retry_separate_from_attempt_lifecycle() -> None:
-    dispatcher_source = (
-        _REPO_ROOT / "intergrax" / "queueing" / "worker" / "dispatcher.py"
-    ).read_text(encoding="utf-8")
+    dispatcher_source = (_REPO_ROOT / "intergrax" / "queueing" / "worker" / "dispatcher.py").read_text(encoding="utf-8")
     assert "RetryPolicy" in dispatcher_source
     assert "self.retry" in dispatcher_source
     assert "AttemptLifecycleService" in dispatcher_source
@@ -481,7 +474,7 @@ class _FakeTaskQueue(TaskQueue):
             return TaskStatus.PENDING
         return result.status
 
-    def get_result(self, handle: TaskHandle) -> Optional[QueueTaskResult]:
+    def get_result(self, handle: TaskHandle) -> QueueTaskResult | None:
         return self._results.get(handle.task_id)
 
 
@@ -501,9 +494,7 @@ async def test_bg_q8_custom_task_queue_plugin() -> None:
             run_id=request.run_id,
             execution_identity=identity,
         )
-        return encode_logical_task_result(
-            ToolExecutionResult.ok(NexusTaskWorkerOutput(result_payload=payload))
-        )
+        return encode_logical_task_result(ToolExecutionResult.ok(NexusTaskWorkerOutput(result_payload=payload)))
 
     queue = _FakeTaskQueue(_worker)
     run_service = MagicMock()
@@ -545,9 +536,7 @@ def test_bg_q9_background_intake_import_layer_gate() -> None:
 
 
 def test_bg_q10_resume_path_uses_host_execution() -> None:
-    source = (
-        _REPO_ROOT / "intergrax" / "runtime" / "task" / "nexus_worker_execution.py"
-    ).read_text(encoding="utf-8")
+    source = (_REPO_ROOT / "intergrax" / "runtime" / "task" / "nexus_worker_execution.py").read_text(encoding="utf-8")
     assert "_reconcile_resume_identity" in source
     assert "resume_checkpoint" in source
     assert "self._host_execution.execute" in source
@@ -585,13 +574,11 @@ async def test_bg_q10_resume_checkpoint_forwarded_to_host_execute() -> None:
 
 
 def test_bg_q11_no_transport_lease_as_execution_timeout() -> None:
-    worker_source = (
-        _REPO_ROOT / "intergrax" / "runtime" / "task" / "nexus_worker_execution.py"
-    ).read_text(encoding="utf-8")
+    worker_source = (_REPO_ROOT / "intergrax" / "runtime" / "task" / "nexus_worker_execution.py").read_text(
+        encoding="utf-8"
+    )
     assert "visibility_timeout" not in worker_source
-    execution_source = (
-        _REPO_ROOT / "intergrax" / "queueing" / "worker" / "execution.py"
-    ).read_text(encoding="utf-8")
+    execution_source = (_REPO_ROOT / "intergrax" / "queueing" / "worker" / "execution.py").read_text(encoding="utf-8")
     assert "lease_seconds" in execution_source
     assert "execution_deadline" not in execution_source
 

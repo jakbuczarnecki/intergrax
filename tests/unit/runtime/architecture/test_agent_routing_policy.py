@@ -1,16 +1,14 @@
 from __future__ import annotations
 
 import pytest
-
 from intergrax.contracts.agent_contract_meta import AgentContract
-from intergrax.contracts.agent_contract_meta import AgentContract
-from intergrax.contracts.agent_run import AgentRunRequest, AgentRunResult
 from intergrax.contracts.agent_lifecycle_state import AgentLifecycleState
+from intergrax.contracts.agent_run import AgentRunRequest, AgentRunResult
 from intergrax.contracts.capability import CapabilityMatchResult
 from intergrax.contracts.task_envelope import TaskEnvelope, routing_capability_from_envelope
-from intergrax.runtime.registry.agent_routing_policy import evaluate_agent_routing
-from intergrax.runtime.registry.agent_registry import AgentRegistry
 from intergrax.runtime.nexus.agent_router import AgentRouter
+from intergrax.runtime.registry.agent_registry import AgentRegistry
+from intergrax.runtime.registry.agent_routing_policy import evaluate_agent_routing
 from intergrax.runtime.task.task import Task, TaskContext
 
 
@@ -72,13 +70,11 @@ def test_production_mode_requires_owner_for_production_eligible_agent() -> None:
 def test_agent_router_skips_deprecated_agents() -> None:
     registry = AgentRegistry()
     active = _StubAgent(_contract(id="active"))
-    retired = _StubAgent(
-        _contract(id="retired", lifecycle_state=AgentLifecycleState.RETIRED)
-    )
+    retired = _StubAgent(_contract(id="retired", lifecycle_state=AgentLifecycleState.RETIRED))
     registry.register(active)
     registry.register(retired)
 
-    router = AgentRouter(registry)
+    router = AgentRouter(registry, production_mode=False)
     selected = router.route(
         Task(
             tenant_id="t1",
@@ -92,11 +88,9 @@ def test_agent_router_skips_deprecated_agents() -> None:
 
 def test_agent_router_blocks_explicit_retired_agent() -> None:
     registry = AgentRegistry()
-    retired = _StubAgent(
-        _contract(id="retired", lifecycle_state=AgentLifecycleState.RETIRED)
-    )
+    retired = _StubAgent(_contract(id="retired", lifecycle_state=AgentLifecycleState.RETIRED))
     registry.register(retired)
-    router = AgentRouter(registry)
+    router = AgentRouter(registry, production_mode=False)
 
     with pytest.raises(RuntimeError, match="not routable"):
         router.route(

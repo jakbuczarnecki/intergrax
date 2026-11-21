@@ -8,7 +8,6 @@ import ast
 from pathlib import Path
 
 import pytest
-
 from intergrax.runtime.execution.orchestration_topology_submission import (
     CanonicalOrchestrationTopologySubmissionPort,
     OrchestrationTopologyMseCompositionError,
@@ -23,9 +22,7 @@ from intergrax.runtime.registry.agent_registry import AgentRegistry
 pytestmark = [pytest.mark.unit, pytest.mark.gate]
 
 _REPO_ROOT = Path(__file__).resolve().parents[4]
-_SUBMISSION = (
-    _REPO_ROOT / "intergrax" / "runtime" / "execution" / "orchestration_topology_submission.py"
-)
+_SUBMISSION = _REPO_ROOT / "intergrax" / "runtime" / "execution" / "orchestration_topology_submission.py"
 _INTERGRAX_ROOT = _REPO_ROOT / "intergrax"
 
 
@@ -50,21 +47,21 @@ def _canonical_factory_calls_lab_builder(name: str, lab_builder: str) -> bool:
 
 def test_r9_r5_canonical_submission_missing_policy_fail_closed() -> None:
     with pytest.raises(OrchestrationTopologyMseCompositionError):
-        build_orchestration_topology_submission_port(NexusLoop(AgentRegistry()))
+        build_orchestration_topology_submission_port(NexusLoop(AgentRegistry(), production_mode=False))
 
 
 def test_r9_r5_canonical_continuation_missing_policy_fail_closed() -> None:
     with pytest.raises(OrchestrationTopologyMseCompositionError):
-        build_orchestration_topology_continuation_port(NexusLoop(AgentRegistry()))
+        build_orchestration_topology_continuation_port(NexusLoop(AgentRegistry(), production_mode=False))
 
 
 def test_r9_r5_lab_submission_allows_missing_policy() -> None:
-    port = build_lab_orchestration_topology_submission_port(NexusLoop(AgentRegistry()))
+    port = build_lab_orchestration_topology_submission_port(NexusLoop(AgentRegistry(), production_mode=False))
     assert port is not None
 
 
 def test_r9_r5_lab_continuation_allows_missing_policy() -> None:
-    port = build_lab_orchestration_topology_continuation_port(NexusLoop(AgentRegistry()))
+    port = build_lab_orchestration_topology_continuation_port(NexusLoop(AgentRegistry(), production_mode=False))
     assert port is not None
 
 
@@ -83,7 +80,7 @@ def test_r9_r5_no_implicit_lab_fallback_in_canonical_continuation_factory() -> N
 
 
 def test_r9_r5_direct_production_construction_rejects_missing_policy() -> None:
-    graph_executor = NexusLoop(AgentRegistry()).graph_executor
+    graph_executor = NexusLoop(AgentRegistry(), production_mode=False).graph_executor
     with pytest.raises(OrchestrationTopologyMseCompositionError):
         CanonicalOrchestrationTopologySubmissionPort(
             _graph_executor=graph_executor,

@@ -7,12 +7,9 @@ from __future__ import annotations
 import inspect
 
 import pytest
-
 from intergrax.contracts.agent_contract_meta import AgentContract
 from intergrax.contracts.agent_run import AgentRunRequest, AgentRunResult
-from intergrax.contracts.agent_lifecycle_state import AgentLifecycleState
 from intergrax.contracts.capability import CapabilityMatchResult
-from intergrax.contracts.task_envelope import TaskEnvelope, routing_capability_from_envelope
 from intergrax.contracts.execution_identity import (
     bind_active_execution_identity,
     mint_attempt_id,
@@ -21,6 +18,7 @@ from intergrax.contracts.execution_identity import (
     mint_task_id,
     reset_active_execution_identity,
 )
+from intergrax.contracts.task_envelope import TaskEnvelope, routing_capability_from_envelope
 from intergrax.runtime.events.event_bus import RuntimeEventBus
 from intergrax.runtime.events.runtime_event import RuntimeEventType
 from intergrax.runtime.events.stores.memory_runtime_event_store import InMemoryRuntimeEventStore
@@ -75,7 +73,7 @@ def test_agent_router_emits_agent_selected() -> None:
     bus = RuntimeEventBus(persistence=store)
     registry = AgentRegistry()
     registry.register(_StubAgent(_contract(id="active")))
-    router = AgentRouter(registry, event_bus=bus)
+    router = AgentRouter(registry, event_bus=bus, production_mode=False)
     task = Task(
         tenant_id="t1",
         user_id="u1",

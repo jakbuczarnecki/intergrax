@@ -5,7 +5,7 @@
 
 from __future__ import annotations
 
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from pathlib import Path
 from typing import TYPE_CHECKING
 
@@ -26,6 +26,7 @@ from intergrax.contracts.host_orchestration_wiring_port import (
 from intergrax.contracts.idempotency_store import IdempotencyStore
 from intergrax.runtime.adaptive.signal_collector import SignalCollector
 from intergrax.runtime.events.event_bus import RuntimeEventBus
+from intergrax.runtime.human.persistence_contract import HumanDecisionPersistence
 from intergrax.runtime.long_running.notification import NotificationAdapter
 from intergrax.runtime.long_running.persistence_contract import TaskCheckpointPersistence
 from intergrax.runtime.nexus.budget.budget_models import RunBudget
@@ -83,7 +84,7 @@ class HostOrchestrationLoopInitSpec:
     runtime_events_db_path: Path | None = None
     task_memory_store: TaskMemoryPersistence | None = None
     task_memory_db_path: Path | None = None
-    production_mode: bool = False
+    production_mode: bool = field(kw_only=True)
     signal_collector: SignalCollector | None = None
     run_budget: RunBudget | None = None
     decision_flow_gate: DecisionFlowGate[AgentExecutionResult] | None = None
@@ -103,6 +104,10 @@ class HostOrchestrationLoopInitSpec:
     event_bus: RuntimeEventBus | None = None
     application_wiring: HostOrchestrationApplicationWiringPort | None = None
     child_context_inheritance: ChildExecutionContextInheritancePort | None = None
+    human_decision_store: HumanDecisionPersistence | None = None
+    disable_human_decision_persistence: bool = False
+    disable_task_memory_persistence: bool = False
+    disable_runtime_event_persistence: bool = False
 
 
 __all__ = [

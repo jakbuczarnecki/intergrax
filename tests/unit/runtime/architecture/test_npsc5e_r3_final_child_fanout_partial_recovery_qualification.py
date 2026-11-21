@@ -11,7 +11,6 @@ from dataclasses import replace
 from pathlib import Path
 
 import pytest
-
 from intergrax.agent_distribution.bounded_multi_agent_fanout import (
     FanOutId,
     FanOutItemId,
@@ -42,8 +41,8 @@ from intergrax.contracts.partial_recovery import (
     evaluate_slot_recovery_policy,
 )
 from intergrax.runtime.execution.fan_out_partial_recovery import FanOutPartialRecoveryService
-from intergrax.runtime.long_running.execution_tree_checkpoint import minimal_runtime_checkpoint
 from intergrax.runtime.long_running.checkpoint_revision import StaleCheckpointWriteError
+from intergrax.runtime.long_running.execution_tree_checkpoint import minimal_runtime_checkpoint
 from intergrax.runtime.long_running.runtime_checkpoint import (
     CANONICAL_RUNTIME_CHECKPOINT_SCHEMA_VERSION,
     RuntimeCheckpoint,
@@ -53,6 +52,9 @@ from intergrax.runtime.long_running.topology_recovery_snapshot import (
     FanOutItemOutcomeSnapshot,
     SlotRecoverySnapshot,
     TopologyRecoverySnapshot,
+)
+from testing_support.execution_qualification.catalog.mandatory_sources import (
+    NPSC5E_R3_FINAL_MANDATORY,
 )
 from tests.unit.agent_distribution.test_bounded_multi_agent_fanout import (
     _fan_out_item,
@@ -65,20 +67,17 @@ from tests.unit.agent_distribution.test_delegated_subtasks import (
 from tests.unit.agent_distribution.test_physical_delegation_governance_boundary import (
     _CountingSelector,
 )
-from testing_support.execution_qualification.catalog.mandatory_sources import (
-    NPSC5E_R3_FINAL_MANDATORY,
-)
 from tests.unit.runtime.architecture.npsc5e_r3_final_execution_qualification import (
     run_npsc5e_r3_mandatory_qualification,
 )
 from tests.unit.runtime.architecture.test_npsc5e_r3_child_fanout_partial_recovery import (
     _FORBIDDEN_RECOVERY_NAMES,
-    _InvocationTracker,
     _REFLECTION_PATTERN,
-    _RecoverableFailDelegate,
     _TENANT,
     _build_stack,
     _checkpoint_with_topology,
+    _InvocationTracker,
+    _RecoverableFailDelegate,
     _run_partial_fan_out,
     _run_recovery_under_root,
     _three_item_request,
@@ -245,7 +244,10 @@ async def test_final_single_failure_four_slot_recover_c_only(tmp_path: Path) -> 
     items = _four_item_request(task_scope)
     harness.task_scope_authority.task_scope_id = task_scope
     request, partial, execution_id, identity = await _run_partial_fan_out(
-        fan_out, adapter, items=items, task_scope=task_scope,
+        fan_out,
+        adapter,
+        items=items,
+        task_scope=task_scope,
     )
     assert partial.items[0].status is FanOutItemStatus.SUCCESS
     assert partial.items[1].status is FanOutItemStatus.SUCCESS
@@ -254,7 +256,9 @@ async def test_final_single_failure_four_slot_recover_c_only(tmp_path: Path) -> 
     from intergrax.runtime.long_running.topology_recovery_snapshot import capture_topology_recovery_snapshot
 
     snapshot = capture_topology_recovery_snapshot(
-        request=request, result=partial, topology_execution_id=execution_id,
+        request=request,
+        result=partial,
+        topology_execution_id=execution_id,
     )
     store = SQLiteTaskCheckpointStore(db_path=tmp_path / "abcd.db")
     saved = store.save(
@@ -318,12 +322,17 @@ async def test_final_multiple_failure_recover_b_and_c(tmp_path: Path) -> None:
     items = _four_item_request(task_scope)
     harness.task_scope_authority.task_scope_id = task_scope
     request, partial, execution_id, identity = await _run_partial_fan_out(
-        fan_out, adapter, items=items, task_scope=task_scope,
+        fan_out,
+        adapter,
+        items=items,
+        task_scope=task_scope,
     )
     from intergrax.runtime.long_running.topology_recovery_snapshot import capture_topology_recovery_snapshot
 
     snapshot = capture_topology_recovery_snapshot(
-        request=request, result=partial, topology_execution_id=execution_id,
+        request=request,
+        result=partial,
+        topology_execution_id=execution_id,
     )
     store = SQLiteTaskCheckpointStore(db_path=tmp_path / "bc.db")
     saved = store.save(
@@ -388,12 +397,17 @@ async def test_final_same_slot_recovery_idempotent(tmp_path: Path) -> None:
     items = _three_item_request(task_scope)
     harness.task_scope_authority.task_scope_id = task_scope
     request, partial, execution_id, identity = await _run_partial_fan_out(
-        fan_out, adapter, items=items, task_scope=task_scope,
+        fan_out,
+        adapter,
+        items=items,
+        task_scope=task_scope,
     )
     from intergrax.runtime.long_running.topology_recovery_snapshot import capture_topology_recovery_snapshot
 
     snapshot = capture_topology_recovery_snapshot(
-        request=request, result=partial, topology_execution_id=execution_id,
+        request=request,
+        result=partial,
+        topology_execution_id=execution_id,
     )
     store = SQLiteTaskCheckpointStore(db_path=tmp_path / "idem.db")
     saved = store.save(
@@ -491,7 +505,10 @@ async def test_final_no_discovery_on_exact_slot_recovery(tmp_path: Path) -> None
     items = _three_item_request(task_scope)
     harness.task_scope_authority.task_scope_id = task_scope
     request, partial, execution_id, identity = await _run_partial_fan_out(
-        fan_out, adapter, items=items, task_scope=task_scope,
+        fan_out,
+        adapter,
+        items=items,
+        task_scope=task_scope,
     )
     initial_discovery = discovery_count
     initial_matching = matcher_count
@@ -499,7 +516,9 @@ async def test_final_no_discovery_on_exact_slot_recovery(tmp_path: Path) -> None
     from intergrax.runtime.long_running.topology_recovery_snapshot import capture_topology_recovery_snapshot
 
     snapshot = capture_topology_recovery_snapshot(
-        request=request, result=partial, topology_execution_id=execution_id,
+        request=request,
+        result=partial,
+        topology_execution_id=execution_id,
     )
     store = SQLiteTaskCheckpointStore(db_path=tmp_path / "noselect.db")
     saved = store.save(
@@ -570,13 +589,15 @@ def test_final_parent_cancel_blocked() -> None:
             ),
             fan_out_request=FanOutRequest(
                 fan_out_id=FanOutId("fan-out-r3"),
-                items=(_fan_out_item(
-                    item_id="item-b",
-                    task_scope=task_scope,
-                    coordination_id="c",
-                    delegation_id="d",
-                    lease_id="l",
-                ),),
+                items=(
+                    _fan_out_item(
+                        item_id="item-b",
+                        task_scope=task_scope,
+                        coordination_id="c",
+                        delegation_id="d",
+                        lease_id="l",
+                    ),
+                ),
                 max_concurrency=1,
             ),
             checkpoint=checkpoint,
@@ -678,13 +699,15 @@ def test_final_wrong_root_topology_slot_attempt_revision_blocked() -> None:
     )
     fan_out_request = FanOutRequest(
         fan_out_id=FanOutId("fan-out-r3"),
-        items=(_fan_out_item(
-            item_id="item-b",
-            task_scope=task_scope,
-            coordination_id="c",
-            delegation_id="d",
-            lease_id="l",
-        ),),
+        items=(
+            _fan_out_item(
+                item_id="item-b",
+                task_scope=task_scope,
+                coordination_id="c",
+                delegation_id="d",
+                lease_id="l",
+            ),
+        ),
         max_concurrency=1,
     )
     with pytest.raises(PartialRecoveryError) as exc:
@@ -782,15 +805,11 @@ def test_no_reflection_in_r3_production_surface() -> None:
 
 
 def test_no_direct_child_execution_runner_in_partial_recovery() -> None:
-    source = (
-        _REPO_ROOT / "intergrax/runtime/execution/fan_out_partial_recovery.py"
-    ).read_text(encoding="utf-8")
+    source = (_REPO_ROOT / "intergrax/runtime/execution/fan_out_partial_recovery.py").read_text(encoding="utf-8")
     tree = ast.parse(source)
     for node in ast.walk(tree):
         if isinstance(node, ast.ImportFrom) and node.module:
-            if node.module.endswith("child") and any(
-                alias.name == "ChildExecutionRunner" for alias in node.names
-            ):
+            if node.module.endswith("child") and any(alias.name == "ChildExecutionRunner" for alias in node.names):
                 raise AssertionError("ChildExecutionRunner import forbidden in partial recovery")
 
 
@@ -802,7 +821,7 @@ def test_submission_port_exposes_recover_failed_slot() -> None:
     from intergrax.runtime.nexus.nexus_loop import NexusLoop
     from intergrax.runtime.registry.agent_registry import AgentRegistry
 
-    port = build_lab_orchestration_topology_submission_port(NexusLoop(AgentRegistry()))
+    port = build_lab_orchestration_topology_submission_port(NexusLoop(AgentRegistry(), production_mode=False))
     assert isinstance(port, CanonicalOrchestrationTopologySubmissionPort)
     assert inspect.iscoroutinefunction(port.recover_failed_slot)
 

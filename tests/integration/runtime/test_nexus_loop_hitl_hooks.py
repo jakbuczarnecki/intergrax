@@ -1,7 +1,6 @@
 # © Artur Czarnecki. All rights reserved.
 
 import pytest
-
 from intergrax.contracts.execution_identity import mint_run_id
 from intergrax.contracts.execution_phase import ExecutionPhase
 from intergrax.runtime.hooks.hook_context import HookAction, HookContext, HookResult
@@ -82,7 +81,7 @@ async def test_nexus_loop_emits_hitl_hooks_on_pause_and_resume(tmp_path):
     registry = AgentRegistry()
     registry.register(_HitlAgent())
     store = SQLiteTaskCheckpointStore(db_path=tmp_path / "hitl_hooks.db")
-    loop = NexusLoop(registry, middleware=pipeline, checkpoint_store=store)
+    loop = NexusLoop(registry, middleware=pipeline, checkpoint_store=store, production_mode=False)
     run_id = mint_run_id()
 
     paused = await run_lab_nexus_task(
@@ -135,7 +134,7 @@ async def test_nexus_loop_resume_not_blocked_by_allow_hooks(tmp_path):
     registry = AgentRegistry()
     registry.register(_HitlAgent())
     store = SQLiteTaskCheckpointStore(db_path=tmp_path / "hitl_allow.db")
-    loop = NexusLoop(registry, middleware=pipeline, checkpoint_store=store)
+    loop = NexusLoop(registry, middleware=pipeline, checkpoint_store=store, production_mode=False)
     run_id = mint_run_id()
 
     paused = await run_lab_nexus_task(

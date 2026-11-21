@@ -9,8 +9,6 @@ from dataclasses import dataclass
 from unittest.mock import MagicMock
 
 import pytest
-
-from testing_support.nexus_handle_task_impl_stubs import with_runtime_event_metric_scope
 from intergrax.contracts.delegation_authority import ParentExecutionAuthority
 from intergrax.contracts.execution_identity import (
     AttemptId,
@@ -51,10 +49,11 @@ from intergrax.runtime.governance.active_execution_authority import (
 from intergrax.runtime.nexus.budget.budget_models import RunBudget
 from intergrax.runtime.nexus.nexus_loop import NexusLoop
 from intergrax.runtime.registry.agent_registry import AgentRegistry
+from intergrax.runtime.task.task import Task, TaskResult, TaskState
 from intergrax.runtime.task.task_result_authoritative_exposure_defaults import (
     terminal_task_result_exposure_no_decision_gate,
 )
-from intergrax.runtime.task.task import Task, TaskResult, TaskState
+from testing_support.nexus_handle_task_impl_stubs import with_runtime_event_metric_scope
 
 pytestmark = [pytest.mark.unit, pytest.mark.gate]
 
@@ -126,9 +125,7 @@ def _consume_root_pool(
     ledger.grant_child_budget(
         execution_id=child_id,
         parent_execution_id=root_execution_id,
-        decision=ChildBudgetAllocationDecision(
-            mode=ExecutionBudgetAllocationMode.SHARED
-        ),
+        decision=ChildBudgetAllocationDecision(mode=ExecutionBudgetAllocationMode.SHARED),
     )
     ledger.consume_budget(child_id, BudgetUsageTotals(total_tokens=amount))
     ledger.release_child_budget(child_id)
@@ -139,11 +136,9 @@ async def test_upstream_execution_with_active_ledger_does_not_call_factory(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     ledger = create_execution_budget_ledger(RunBudget(max_total_tokens=100))
-    inner_factory = create_execution_budget_ledger_factory(
-        RunBudget(max_total_tokens=100)
-    )
+    inner_factory = create_execution_budget_ledger_factory(RunBudget(max_total_tokens=100))
     factory = MagicMock(spec=ExecutionBudgetLedgerFactory, wraps=inner_factory)
-    loop = NexusLoop(AgentRegistry(), execution_budget_ledger_factory=factory)
+    loop = NexusLoop(AgentRegistry(), execution_budget_ledger_factory=factory, production_mode=False)
     run_id = mint_run_id()
     attempt_id = mint_attempt_id()
     execution_id = mint_execution_id()
@@ -184,7 +179,7 @@ async def test_same_ledger_visible_upstream_nexus_and_nested_children(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     ledger = create_execution_budget_ledger(RunBudget(max_tool_calls=50))
-    loop = NexusLoop(AgentRegistry(), run_budget=RunBudget(max_tool_calls=50))
+    loop = NexusLoop(AgentRegistry(), run_budget=RunBudget(max_tool_calls=50), production_mode=False)
     run_id = mint_run_id()
     attempt_id = mint_attempt_id()
     execution_id = mint_execution_id()
@@ -207,9 +202,7 @@ async def test_same_ledger_visible_upstream_nexus_and_nested_children(
                     delegate=GrandchildDelegate(),
                 )
 
-        await child_runner.execute(
-            request=Ping(value="nexus"), delegate=ChildDelegate()
-        )
+        await child_runner.execute(request=Ping(value="nexus"), delegate=ChildDelegate())
         return TaskResult(
             authoritative_decision_exposure=terminal_task_result_exposure_no_decision_gate(),
             task_id=task.task_id,
@@ -246,7 +239,7 @@ async def test_upstream_partial_consumption_visible_inside_nexus(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     ledger = create_execution_budget_ledger(RunBudget(max_total_tokens=100))
-    loop = NexusLoop(AgentRegistry(), run_budget=RunBudget(max_total_tokens=100))
+    loop = NexusLoop(AgentRegistry(), run_budget=RunBudget(max_total_tokens=100), production_mode=False)
     run_id = mint_run_id()
     attempt_id = mint_attempt_id()
     execution_id = mint_execution_id()
@@ -254,11 +247,7 @@ async def test_upstream_partial_consumption_visible_inside_nexus(
     observed: list[int | None] = []
 
     async def _observe(task: Task) -> TaskResult:
-        observed.append(
-            require_active_execution_budget()
-            .ledger.snapshot_root_available()
-            .max_total_tokens
-        )
+        observed.append(require_active_execution_budget().ledger.snapshot_root_available().max_total_tokens)
         return TaskResult(
             authoritative_decision_exposure=terminal_task_result_exposure_no_decision_gate(),
             task_id=task.task_id,
@@ -310,7 +299,7 @@ async def test_upstream_reserved_context_backed_by_same_ledger_in_nexus_children
             )
         ),
     )
-    loop = NexusLoop(AgentRegistry(), run_budget=RunBudget(max_tool_calls=100))
+    loop = NexusLoop(AgentRegistry(), run_budget=RunBudget(max_tool_calls=100), production_mode=False)
     child_runner = _child_runner(loop)
     child_ledgers: list[ExecutionBudgetLedger] = []
 
@@ -330,9 +319,7 @@ async def test_upstream_reserved_context_backed_by_same_ledger_in_nexus_children
                 )
                 return Pong(value=request.value)
 
-        await child_runner.execute(
-            request=Ping(value="reserved"), delegate=ChildDelegate()
-        )
+        await child_runner.execute(request=Ping(value="reserved"), delegate=ChildDelegate())
         return TaskResult(
             authoritative_decision_exposure=terminal_task_result_exposure_no_decision_gate(),
             task_id=task.task_id,
@@ -374,15 +361,14 @@ async def test_factory_call_count_root_nexus_one_upstream_zero(
 ) -> None:
     from intergrax.runtime.task.unified_task_runner import UnifiedTaskRunner
 
-    inner_factory = create_execution_budget_ledger_factory(
-        RunBudget(max_total_tokens=100)
-    )
+    inner_factory = create_execution_budget_ledger_factory(RunBudget(max_total_tokens=100))
     factory = MagicMock(spec=ExecutionBudgetLedgerFactory, wraps=inner_factory)
     run_budget = RunBudget(max_total_tokens=100)
     loop = NexusLoop(
         AgentRegistry(),
         execution_budget_ledger_factory=factory,
         run_budget=run_budget,
+        production_mode=False,
     )
 
     async def _noop(task: Task) -> TaskResult:
@@ -445,7 +431,7 @@ async def test_factory_call_count_root_nexus_one_upstream_zero(
 async def test_active_execution_without_budget_context_fails_closed(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
-    loop = NexusLoop(AgentRegistry(), run_budget=RunBudget(max_total_tokens=100))
+    loop = NexusLoop(AgentRegistry(), run_budget=RunBudget(max_total_tokens=100), production_mode=False)
     run_id = mint_run_id()
     attempt_id = mint_attempt_id()
     execution_id = mint_execution_id()
@@ -489,7 +475,7 @@ async def test_nexus_exception_preserves_upstream_budget_context(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     ledger = create_execution_budget_ledger(RunBudget(max_total_tokens=100))
-    loop = NexusLoop(AgentRegistry(), run_budget=RunBudget(max_total_tokens=100))
+    loop = NexusLoop(AgentRegistry(), run_budget=RunBudget(max_total_tokens=100), production_mode=False)
     run_id = mint_run_id()
     attempt_id = mint_attempt_id()
     execution_id = mint_execution_id()
@@ -531,7 +517,7 @@ async def test_nexus_return_restores_upstream_budget_state_unchanged(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     ledger = create_execution_budget_ledger(RunBudget(max_total_tokens=100))
-    loop = NexusLoop(AgentRegistry(), run_budget=RunBudget(max_total_tokens=100))
+    loop = NexusLoop(AgentRegistry(), run_budget=RunBudget(max_total_tokens=100), production_mode=False)
     run_id = mint_run_id()
     attempt_id = mint_attempt_id()
     execution_id = mint_execution_id()
@@ -582,7 +568,7 @@ async def test_fresh_root_nexus_run_still_creates_one_ledger(
     from intergrax.runtime.task.unified_task_runner import UnifiedTaskRunner
 
     run_budget = RunBudget(max_total_tokens=42)
-    loop = NexusLoop(AgentRegistry(), run_budget=run_budget)
+    loop = NexusLoop(AgentRegistry(), run_budget=run_budget, production_mode=False)
     observed: list[int | None] = []
 
     async def _observe(task: Task) -> TaskResult:

@@ -4,11 +4,12 @@
 from __future__ import annotations
 
 import asyncio
+from collections.abc import Awaitable, Callable
 from dataclasses import dataclass
-from typing import TYPE_CHECKING, Awaitable, Callable, Dict, Generic, List, Optional, TypeVar
+from typing import TYPE_CHECKING, TypeVar
 
 from intergrax.agents.agent_contract import Agent
-from intergrax.runtime.nexus.agents.agent_engine import AgentEngine
+from intergrax.agents.persistence.checkpoint_store import AgentCheckpointStore
 from intergrax.agents.persistence.checkpoint_wiring import inject_acp_checkpoint_metadata
 from intergrax.agents.persistence.compensation_queue_store import CompensationQueueStore
 from intergrax.agents.persistence.compensation_queue_wiring import (
@@ -17,11 +18,40 @@ from intergrax.agents.persistence.compensation_queue_wiring import (
 from intergrax.agents.persistence.idempotency_store_wiring import (
     inject_acp_idempotency_store_metadata,
 )
+from intergrax.agents.persistence.tool_invoker_wiring import inject_acp_tool_invoker_metadata
+from intergrax.contracts.agent_execution_result import AgentExecutionResult, AgentExecutionStatus
+from intergrax.contracts.agent_execution_validation_engine import (
+    AgentExecutionValidationEnginePort,
+)
+from intergrax.contracts.agent_handoff import AgentHandoff, resolve_handoff_from_execution
+from intergrax.contracts.child_execution_context_inheritance import (
+    ChildExecutionContextInheritancePort,
+)
+from intergrax.contracts.delegation_authority import (
+    EFFECTIVE_DELEGATION_AUTHORITY_NODE_KEY,
+    EFFECTIVE_PERMISSION_SCOPES_METADATA_KEY,
+    REQUESTED_PERMISSION_SCOPES_METADATA_KEY,
+    DelegationAuthorityError,
+    EffectiveDelegationAuthority,
+    ParentExecutionAuthority,
+    validate_effective_delegation_metadata_assertions,
+    validate_execution_authority_metadata_assertions,
+)
 from intergrax.contracts.execution_bound_declarative_tool_invocation import (
     ExecutionBoundDeclarativeToolInvoker,
 )
-from intergrax.agents.persistence.tool_invoker_wiring import inject_acp_tool_invoker_metadata
-from intergrax.agents.persistence.checkpoint_store import AgentCheckpointStore
+from intergrax.contracts.execution_identity import (
+    ActiveExecutionIdentity,
+    AttemptId,
+    RunId,
+    peek_active_execution_identity,
+    peek_active_parent_execution_id,
+    require_active_execution_id,
+    require_active_execution_identity,
+    validate_task_id,
+)
+from intergrax.contracts.execution_phase import ExecutionPhase
+from intergrax.contracts.idempotency_store import IdempotencyStore
 from intergrax.contracts.orchestration_topology import (
     OrchestrationResult,
     OrchestrationSchedulingPolicy,
@@ -35,22 +65,18 @@ from intergrax.contracts.orchestration_topology import (
     validate_orchestration_scheduling_policy,
     validate_orchestration_topology,
 )
-from intergrax.contracts.idempotency_store import IdempotencyStore
-from intergrax.contracts.execution_identity import (
-    ActiveExecutionIdentity,
-    AttemptId,
-    ExecutionId,
-    RunId,
-    peek_active_execution_id,
-    peek_active_parent_execution_id,
-    peek_active_execution_identity,
-    require_active_execution_id,
-    require_active_execution_identity,
-    validate_task_id,
-)
+from intergrax.contracts.validation import ValidationResult
+from intergrax.runtime.architecture.multi_agent_coordination import CoordinationPattern
+from intergrax.runtime.cancellation.coordinator import CancellationCoordinator
+from intergrax.runtime.events.event_bus import RuntimeEventBus
+from intergrax.runtime.events.runtime_event import RuntimeEvent, RuntimeEventType
 from intergrax.runtime.execution.active_execution_resume import (
     peek_active_execution_resume_plan,
 )
+from intergrax.runtime.execution.agentic import AgentExecutor
+from intergrax.runtime.execution.child import ChildExecutionRunner
+from intergrax.runtime.execution.request import ExecutionCapability, ExecutionRequest
+from intergrax.runtime.execution.strategy_router import StrategyExecutionRouter
 from intergrax.runtime.governance.active_execution_authority import (
     peek_active_effective_delegation,
     require_active_execution_authority,
@@ -58,26 +84,8 @@ from intergrax.runtime.governance.active_execution_authority import (
 from intergrax.runtime.governance.active_governed_execution_task import (
     ActiveGovernedExecutionTask,
 )
-from intergrax.contracts.delegation_authority import (
-    EFFECTIVE_DELEGATION_AUTHORITY_NODE_KEY,
-    EFFECTIVE_PERMISSION_SCOPES_METADATA_KEY,
-    REQUESTED_PERMISSION_SCOPES_METADATA_KEY,
-    DelegationAuthorityError,
-    EffectiveDelegationAuthority,
-    ParentExecutionAuthority,
-    validate_effective_delegation_metadata_assertions,
-    validate_execution_authority_metadata_assertions,
-)
-from intergrax.contracts.agent_handoff import AgentHandoff, resolve_handoff_from_execution
-from intergrax.contracts.agent_execution_result import AgentExecutionResult, AgentExecutionStatus
-from intergrax.contracts.execution_phase import ExecutionPhase
-from intergrax.contracts.validation import ValidationResult
-from intergrax.runtime.cancellation.coordinator import CancellationCoordinator
-from intergrax.runtime.events.event_bus import RuntimeEventBus
-from intergrax.runtime.events.runtime_event import RuntimeEvent, RuntimeEventType
 from intergrax.runtime.hooks.hook_context import HookAction, HookContext
 from intergrax.runtime.hooks.hook_point import HookPoint
-from intergrax.runtime.middleware.pipeline import MiddlewarePipeline
 from intergrax.runtime.long_running.checkpoint_builder import (
     apply_runtime_checkpoint_to_graph,
     record_graph_node_completion,
@@ -91,22 +99,16 @@ from intergrax.runtime.long_running.execution_tree_checkpoint import (
     ExecutionTreeRecorder,
 )
 from intergrax.runtime.long_running.runtime_checkpoint import RuntimeCheckpoint
-from intergrax.runtime.architecture.multi_agent_coordination import CoordinationPattern
+from intergrax.runtime.middleware.pipeline import MiddlewarePipeline
 from intergrax.runtime.nexus.agent_router import AgentRouter
-from intergrax.runtime.nexus.orchestration.swarm_policy import (
-    SwarmCoordinationError,
-    validate_swarm_parallel_batch,
-)
+from intergrax.runtime.nexus.agents.agent_engine import AgentEngine
+from intergrax.runtime.nexus.budget.budget_models import RunBudget
 from intergrax.runtime.nexus.context.context_manager import ContextManager
 from intergrax.runtime.nexus.context.metadata_keys import HANDOFF_STRUCTURED_OUTPUT_PREFIX
-from intergrax.runtime.nexus.handoff.coordinator import HandoffCoordinator
 from intergrax.runtime.nexus.execution.evaluator_loop_metadata import (
     current_evaluator_loop_iteration,
     evaluator_loop_spec_from_node,
     set_evaluator_loop_iteration,
-)
-from intergrax.runtime.observability.qualification_runtime_trace import (
-    RuntimeDiagnosticTracePort,
 )
 from intergrax.runtime.nexus.execution.execution_graph import (
     ExecutionGraph,
@@ -117,19 +119,16 @@ from intergrax.runtime.nexus.execution.execution_graph import (
 from intergrax.runtime.nexus.execution.orchestration_node_execution import (
     OrchestrationNodeExecutionPort,
 )
+from intergrax.runtime.nexus.handoff.coordinator import HandoffCoordinator
+from intergrax.runtime.nexus.orchestration.swarm_policy import (
+    SwarmCoordinationError,
+    validate_swarm_parallel_batch,
+)
 from intergrax.runtime.nexus.retry.retry_engine import RetryEngine, RetryPolicy, RetryRecord
-from intergrax.contracts.agent_execution_validation_engine import (
-    AgentExecutionValidationEnginePort,
-)
 from intergrax.runtime.nexus.validation.validation_engine import NexusValidationEngine
-from intergrax.runtime.execution.agentic import AgentExecutor
-from intergrax.contracts.child_execution_context_inheritance import (
-    ChildExecutionContextInheritancePort,
+from intergrax.runtime.observability.qualification_runtime_trace import (
+    RuntimeDiagnosticTracePort,
 )
-from intergrax.runtime.execution.child import ChildExecutionRunner
-from intergrax.runtime.execution.request import ExecutionCapability, ExecutionRequest
-from intergrax.runtime.execution.strategy_router import StrategyExecutionRouter
-from intergrax.runtime.nexus.budget.budget_models import RunBudget
 from intergrax.runtime.registry.agent_registry_read import AgentRegistryRead
 from intergrax.runtime.task.task import Task
 from intergrax.runtime.task_memory.delegation_memory import TaskMemoryMetadataKey
@@ -150,17 +149,17 @@ ResultT = TypeVar("ResultT")
 
 
 @dataclass(frozen=True, slots=True)
-class _OrchestrationWorkChildRequest(Generic[PayloadT, ResultT]):
+class _OrchestrationWorkChildRequest[PayloadT, ResultT]:
     node: ExecutionNode
     node_execution: OrchestrationNodeExecutionPort[PayloadT, ResultT]
 
 
 @dataclass(frozen=True, slots=True)
-class _OrchestrationWorkChildResult(Generic[ResultT]):
+class _OrchestrationWorkChildResult[ResultT]:
     outcome: OrchestrationSlotOutcome[ResultT]
 
 
-class _OrchestrationWorkChildDelegate(Generic[PayloadT, ResultT]):
+class _OrchestrationWorkChildDelegate[PayloadT, ResultT]:
     __slots__ = ()
 
     async def execute(
@@ -179,11 +178,11 @@ class _GraphNodeChildRequest:
     graph: ExecutionGraph
     task: Task
     node: ExecutionNode
-    prior_outputs: Dict[str, AgentExecutionResult]
-    runtime_ckpt: Optional[RuntimeCheckpoint]
-    plan_criteria: Optional[List[str]]
-    on_retry: Optional[RetryCallback]
-    on_node_complete: Optional[Callable[[ExecutionNode], None]]
+    prior_outputs: dict[str, AgentExecutionResult]
+    runtime_ckpt: RuntimeCheckpoint | None
+    plan_criteria: list[str] | None
+    on_retry: RetryCallback | None
+    on_node_complete: Callable[[ExecutionNode], None] | None
     root_execution_authority: ParentExecutionAuthority
     agent: Agent
     node_task: Task
@@ -192,10 +191,10 @@ class _GraphNodeChildRequest:
 @dataclass(frozen=True, slots=True)
 class _GraphNodeChildResult:
     execution: AgentExecutionResult
-    retries: List[RetryRecord]
+    retries: list[RetryRecord]
     failed: bool
     cancelled: bool
-    handoff_extras: List[HandoffExtra]
+    handoff_extras: list[HandoffExtra]
 
 
 class _GraphNodeChildDelegate:
@@ -217,23 +216,23 @@ class GraphExecutor:
         self,
         registry: AgentRegistryRead,
         *,
-        engine: Optional[AgentEngine] = None,
-        router: Optional[AgentRouter] = None,
-        validation_engine: Optional[AgentExecutionValidationEnginePort] = None,
-        retry_engine: Optional[RetryEngine] = None,
-        context_manager: Optional[ContextManager] = None,
-        handoff_coordinator: Optional[HandoffCoordinator] = None,
-        event_bus: Optional[RuntimeEventBus] = None,
-        middleware: Optional[MiddlewarePipeline] = None,
+        engine: AgentEngine | None = None,
+        router: AgentRouter | None = None,
+        validation_engine: AgentExecutionValidationEnginePort | None = None,
+        retry_engine: RetryEngine | None = None,
+        context_manager: ContextManager | None = None,
+        handoff_coordinator: HandoffCoordinator | None = None,
+        event_bus: RuntimeEventBus | None = None,
+        middleware: MiddlewarePipeline | None = None,
         max_parallel_nodes: int | None = None,
         max_inflight_nodes: int | None = None,
         max_delegation_depth: int | None = None,
-        decision_flow_gate: Optional["DecisionFlowGate[AgentExecutionResult]"] = None,
+        decision_flow_gate: DecisionFlowGate[AgentExecutionResult] | None = None,
         agent_checkpoint_store: AgentCheckpointStore | None = None,
         compensation_queue_store: CompensationQueueStore | None = None,
         idempotency_store: IdempotencyStore | None = None,
         declarative_tool_invoker: ExecutionBoundDeclarativeToolInvoker | None = None,
-        runtime_config: Optional["RuntimeConfig"] = None,
+        runtime_config: RuntimeConfig | None = None,
         execution_identity: ActiveExecutionIdentity | None = None,
         authority_policy: ExecutionAuthorityPolicy | None = None,
         budget_allocation_policy: ExecutionBudgetAllocationPolicy | None = None,
@@ -255,7 +254,7 @@ class GraphExecutor:
             registry,
             agent_checkpoint_store=agent_checkpoint_store,
         )
-        self._router = router or AgentRouter(registry, event_bus=event_bus)
+        self._router = router or AgentRouter(registry, production_mode=False, event_bus=event_bus)
         self._validation_engine = validation_engine or NexusValidationEngine()
         self._retry_engine = retry_engine or RetryEngine(
             registry,
@@ -320,7 +319,7 @@ class GraphExecutor:
     def _resolve_historical_checkpoint_entry(
         self,
         graph_node_id: str,
-        runtime_ckpt: Optional[RuntimeCheckpoint],
+        runtime_ckpt: RuntimeCheckpoint | None,
     ) -> ExecutionCheckpointEntry | None:
         resume_binding = peek_active_execution_resume_plan()
         if resume_binding is not None:
@@ -342,14 +341,14 @@ class GraphExecutor:
 
     def apply_decision_flow_gate(
         self,
-        gate: Optional["DecisionFlowGate[AgentExecutionResult]"],
+        gate: DecisionFlowGate[AgentExecutionResult] | None,
     ) -> None:
         """Attach or clear the reusable Decision flow authority gate."""
         self._decision_flow_gate = gate
 
     def peek_decision_flow_gate(
         self,
-    ) -> Optional["DecisionFlowGate[AgentExecutionResult]"]:
+    ) -> DecisionFlowGate[AgentExecutionResult] | None:
         """Return wired Decision flow gate when application decision wiring is active."""
         return self._decision_flow_gate
 
@@ -361,12 +360,12 @@ class GraphExecutor:
         graph: ExecutionGraph,
         task: Task,
         *,
-        plan_criteria: Optional[List[str]] = None,
-        on_retry: Optional[RetryCallback] = None,
-        on_node_start: Optional[Callable[[ExecutionNode], None]] = None,
-        on_node_complete: Optional[Callable[[ExecutionNode], None]] = None,
+        plan_criteria: list[str] | None = None,
+        on_retry: RetryCallback | None = None,
+        on_node_start: Callable[[ExecutionNode], None] | None = None,
+        on_node_complete: Callable[[ExecutionNode], None] | None = None,
         runtime_diagnostic_trace_port: RuntimeDiagnosticTracePort | None = None,
-    ) -> tuple[List[AgentExecutionResult], List[RetryRecord], ExecutionGraph, bool]:
+    ) -> tuple[list[AgentExecutionResult], list[RetryRecord], ExecutionGraph, bool]:
         previous_port = self._runtime_diagnostic_trace_port
         self._runtime_diagnostic_trace_port = runtime_diagnostic_trace_port
         try:
@@ -386,14 +385,14 @@ class GraphExecutor:
         graph: ExecutionGraph,
         task: Task,
         *,
-        plan_criteria: Optional[List[str]] = None,
-        on_retry: Optional[RetryCallback] = None,
-        on_node_start: Optional[Callable[[ExecutionNode], None]] = None,
-        on_node_complete: Optional[Callable[[ExecutionNode], None]] = None,
-    ) -> tuple[List[AgentExecutionResult], List[RetryRecord], ExecutionGraph, bool]:
-        prior_outputs: Dict[str, AgentExecutionResult] = {}
-        all_executions: List[AgentExecutionResult] = []
-        all_retries: List[RetryRecord] = []
+        plan_criteria: list[str] | None = None,
+        on_retry: RetryCallback | None = None,
+        on_node_start: Callable[[ExecutionNode], None] | None = None,
+        on_node_complete: Callable[[ExecutionNode], None] | None = None,
+    ) -> tuple[list[AgentExecutionResult], list[RetryRecord], ExecutionGraph, bool]:
+        prior_outputs: dict[str, AgentExecutionResult] = {}
+        all_executions: list[AgentExecutionResult] = []
+        all_retries: list[RetryRecord] = []
 
         active_run_id, active_attempt_id = require_active_execution_identity()
         runtime_ckpt = resolve_task_runtime_checkpoint(task)
@@ -412,9 +411,7 @@ class GraphExecutor:
                         graph_node.status = ExecutionNodeStatus.PENDING
                         graph_node.execution_result = None
                         prior_outputs.pop(graph_node.node_id, None)
-            self._execution_tree_recorder = ExecutionTreeRecorder.from_snapshot(
-                runtime_ckpt.execution_tree
-            )
+            self._execution_tree_recorder = ExecutionTreeRecorder.from_snapshot(runtime_ckpt.execution_tree)
         else:
             self._execution_tree_recorder = ExecutionTreeRecorder.start_root(
                 task_id=validate_task_id(task.task_id),
@@ -424,7 +421,7 @@ class GraphExecutor:
             )
 
         try:
-            batches = graph.batches()
+            graph.batches()
         except ExecutionGraphCycleError as exc:
             failed = AgentExecutionResult(
                 agent_id="",
@@ -471,16 +468,16 @@ class GraphExecutor:
         graph: ExecutionGraph,
         task: Task,
         *,
-        prior_outputs: Dict[str, AgentExecutionResult],
-        all_executions: List[AgentExecutionResult],
-        all_retries: List[RetryRecord],
-        runtime_ckpt: Optional[RuntimeCheckpoint],
-        plan_criteria: Optional[List[str]],
-        on_retry: Optional[RetryCallback],
-        on_node_start: Optional[Callable[[ExecutionNode], None]],
-        on_node_complete: Optional[Callable[[ExecutionNode], None]],
+        prior_outputs: dict[str, AgentExecutionResult],
+        all_executions: list[AgentExecutionResult],
+        all_retries: list[RetryRecord],
+        runtime_ckpt: RuntimeCheckpoint | None,
+        plan_criteria: list[str] | None,
+        on_retry: RetryCallback | None,
+        on_node_start: Callable[[ExecutionNode], None] | None,
+        on_node_complete: Callable[[ExecutionNode], None] | None,
         root_execution_authority: ParentExecutionAuthority,
-    ) -> tuple[List[AgentExecutionResult], List[RetryRecord], ExecutionGraph, bool]:
+    ) -> tuple[list[AgentExecutionResult], list[RetryRecord], ExecutionGraph, bool]:
         for batch in graph.batches():
             if CancellationCoordinator.is_requested(task.metadata):
                 CancellationCoordinator.mark_pending_graph_nodes_cancelled(graph)
@@ -562,20 +559,20 @@ class GraphExecutor:
         *,
         graph: ExecutionGraph,
         task: Task,
-        prior_outputs: Dict[str, AgentExecutionResult],
-        runtime_ckpt: Optional[RuntimeCheckpoint],
-        plan_criteria: Optional[List[str]],
-        on_retry: Optional[RetryCallback],
-        on_node_start: Optional[Callable[[ExecutionNode], None]],
-        on_node_complete: Optional[Callable[[ExecutionNode], None]],
+        prior_outputs: dict[str, AgentExecutionResult],
+        runtime_ckpt: RuntimeCheckpoint | None,
+        plan_criteria: list[str] | None,
+        on_retry: RetryCallback | None,
+        on_node_start: Callable[[ExecutionNode], None] | None,
+        on_node_complete: Callable[[ExecutionNode], None] | None,
         root_execution_authority: ParentExecutionAuthority,
     ) -> list[
         tuple[
             AgentExecutionResult,
-            List[RetryRecord],
+            list[RetryRecord],
             bool,
             bool,
-            List[HandoffExtra],
+            list[HandoffExtra],
         ]
     ]:
         if self._inflight_semaphore is None and self._max_inflight_nodes is not None:
@@ -609,10 +606,10 @@ class GraphExecutor:
             node: ExecutionNode,
         ) -> tuple[
             AgentExecutionResult,
-            List[RetryRecord],
+            list[RetryRecord],
             bool,
             bool,
-            List[HandoffExtra],
+            list[HandoffExtra],
         ]:
             inflight = self._inflight_semaphore
             if inflight is not None and inflight.locked():
@@ -652,15 +649,15 @@ class GraphExecutor:
         graph: ExecutionGraph,
         task: Task,
         node: ExecutionNode,
-        prior_outputs: Dict[str, AgentExecutionResult],
+        prior_outputs: dict[str, AgentExecutionResult],
         *,
-        runtime_ckpt: Optional[RuntimeCheckpoint] = None,
-        plan_criteria: Optional[List[str]],
-        on_retry: Optional[Callable[[RetryRecord], None]],
-        on_node_start: Optional[Callable[[ExecutionNode], None]],
-        on_node_complete: Optional[Callable[[ExecutionNode], None]],
+        runtime_ckpt: RuntimeCheckpoint | None = None,
+        plan_criteria: list[str] | None,
+        on_retry: Callable[[RetryRecord], None] | None,
+        on_node_start: Callable[[ExecutionNode], None] | None,
+        on_node_complete: Callable[[ExecutionNode], None] | None,
         root_execution_authority: ParentExecutionAuthority,
-    ) -> tuple[AgentExecutionResult, List[RetryRecord], bool, bool, List[HandoffExtra]]:
+    ) -> tuple[AgentExecutionResult, list[RetryRecord], bool, bool, list[HandoffExtra]]:
         if should_skip_graph_node(
             node,
             checkpoint=runtime_ckpt,
@@ -724,9 +721,7 @@ class GraphExecutor:
                 on_node_complete(node)
             return failed, [], True, False, []
 
-        bundle = await self._context_manager.build_agent_context_async(
-            task, node, prior_outputs
-        )
+        bundle = await self._context_manager.build_agent_context_async(task, node, prior_outputs)
         node_task = self._context_manager.apply_to_task(task, bundle)
         if node.agent_id:
             node_task = node_task.model_copy(update={"agent_id": node.agent_id})
@@ -795,10 +790,7 @@ class GraphExecutor:
         requested_budget: RunBudget | None = None
         if node.delegation is not None:
             requested_permission_scopes = node.delegation.permission_scopes
-            if (
-                node.delegation.max_llm_calls is not None
-                or node.delegation.max_tool_calls is not None
-            ):
+            if node.delegation.max_llm_calls is not None or node.delegation.max_tool_calls is not None:
                 requested_budget = RunBudget(
                     max_llm_calls=node.delegation.max_llm_calls,
                     max_tool_calls=node.delegation.max_tool_calls,
@@ -848,18 +840,14 @@ class GraphExecutor:
         node_task = child_request.node_task
         active_node_task = node_task
         loop_spec = evaluator_loop_spec_from_node(node)
-        accumulated_retries: List[RetryRecord] = []
+        accumulated_retries: list[RetryRecord] = []
         child_execution_id = require_active_execution_id()
         parent_execution_id = peek_active_parent_execution_id()
         historical_entry = self._resolve_historical_checkpoint_entry(
             node.node_id,
             runtime_ckpt,
         )
-        if (
-            parent_execution_id is not None
-            and self._execution_tree_recorder is not None
-            and historical_entry is None
-        ):
+        if parent_execution_id is not None and self._execution_tree_recorder is not None and historical_entry is None:
             self._execution_tree_recorder.record_child_started(
                 execution_id=child_execution_id,
                 parent_execution_id=parent_execution_id,
@@ -869,8 +857,7 @@ class GraphExecutor:
             parent_execution_id is not None
             and self._execution_tree_recorder is not None
             and historical_entry is not None
-            and historical_entry.status
-            is not ExecutionCheckpointStatus.COMPLETED
+            and historical_entry.status is not ExecutionCheckpointStatus.COMPLETED
         ):
             self._execution_tree_recorder.record_child_started(
                 execution_id=child_execution_id,
@@ -882,9 +869,7 @@ class GraphExecutor:
         if node.delegation is not None:
             effective_authority = peek_active_effective_delegation()
             if effective_authority is None:
-                raise RuntimeError(
-                    "effective delegation evidence required for delegated node execution"
-                )
+                raise RuntimeError("effective delegation evidence required for delegated node execution")
             node.metadata[EFFECTIVE_DELEGATION_AUTHORITY_NODE_KEY] = effective_authority
             parent_agent_id = task.agent_id or node.agent_id or agent.get_contract().id
             await self._emit_delegation_granted(
@@ -917,9 +902,7 @@ class GraphExecutor:
                 DeclarativeHitlGrantCoordinator,
             )
 
-            request = DeclarativeHitlGrantCoordinator.transfer_persisted_grant_for_resume(
-                task, request
-            )
+            request = DeclarativeHitlGrantCoordinator.transfer_persisted_grant_for_resume(task, request)
             inject_acp_checkpoint_metadata(
                 request.metadata,
                 store=self._agent_checkpoint_store,
@@ -1040,7 +1023,7 @@ class GraphExecutor:
                 task.runtime.orchestration.runtime_checkpoint = request.runtime_checkpoint
             return execution_result.output
 
-        handoff_extras: List[HandoffExtra] = []
+        handoff_extras: list[HandoffExtra] = []
         failed = True
         execution: AgentExecutionResult
         validation = ValidationResult(valid=False, errors=["not executed"])
@@ -1169,15 +1152,15 @@ class GraphExecutor:
         task: Task,
         node: ExecutionNode,
         execution: AgentExecutionResult,
-        prior_outputs: Dict[str, AgentExecutionResult],
+        prior_outputs: dict[str, AgentExecutionResult],
         *,
-        runtime_ckpt: Optional[RuntimeCheckpoint],
-        plan_criteria: Optional[List[str]],
-        on_retry: Optional[Callable[[RetryRecord], None]],
-        on_node_start: Optional[Callable[[ExecutionNode], None]],
-        on_node_complete: Optional[Callable[[ExecutionNode], None]],
+        runtime_ckpt: RuntimeCheckpoint | None,
+        plan_criteria: list[str] | None,
+        on_retry: Callable[[RetryRecord], None] | None,
+        on_node_start: Callable[[ExecutionNode], None] | None,
+        on_node_complete: Callable[[ExecutionNode], None] | None,
         root_execution_authority: ParentExecutionAuthority,
-    ) -> List[HandoffExtra]:
+    ) -> list[HandoffExtra]:
         handoff = resolve_handoff_from_execution(execution)
         if handoff is None:
             return []
@@ -1264,7 +1247,7 @@ class GraphExecutor:
             hook_ctx.model_copy(update={"agent_id": validation.resolved_agent_id}),
         )
 
-        extras: List[HandoffExtra] = [(handoff_node.node_id, handoff_execution)]
+        extras: list[HandoffExtra] = [(handoff_node.node_id, handoff_execution)]
         extras.extend(nested_extras)
         return extras
 
@@ -1287,12 +1270,8 @@ class GraphExecutor:
             "child_agent_id": child_agent_id,
             "node_id": node.node_id,
             "rationale": delegation.objective,
-            "requested_permission_scopes": list(
-                effective_authority.requested_permission_scopes
-            ),
-            "effective_permission_scopes": list(
-                effective_authority.effective_permission_scopes
-            ),
+            "requested_permission_scopes": list(effective_authority.requested_permission_scopes),
+            "effective_permission_scopes": list(effective_authority.effective_permission_scopes),
             "permission_scopes": list(effective_authority.effective_permission_scopes),
         }
         await self._event_bus.publish(
@@ -1314,7 +1293,7 @@ class GraphExecutor:
         *,
         from_node_id: str,
         to_agent_id: str,
-        handoff_node_id: Optional[str] = None,
+        handoff_node_id: str | None = None,
     ) -> None:
         if self._event_bus is None:
             return
@@ -1373,10 +1352,7 @@ class GraphExecutor:
         if self._max_delegation_depth is not None:
             depth = self._delegation_depth(graph, node)
             if depth > self._max_delegation_depth:
-                return (
-                    f"max_delegation_depth exceeded: depth={depth} "
-                    f"limit={self._max_delegation_depth}"
-                )
+                return f"max_delegation_depth exceeded: depth={depth} limit={self._max_delegation_depth}"
         delegation = node.delegation
         if delegation.max_llm_calls is not None and delegation.max_llm_calls < 1:
             return "delegation_budget_llm_calls_exhausted"
@@ -1432,11 +1408,7 @@ class GraphExecutor:
         require_active_execution_id()
 
         node = next(
-            (
-                candidate
-                for candidate in graph.nodes
-                if candidate.orchestration_slot_id == slot_id
-            ),
+            (candidate for candidate in graph.nodes if candidate.orchestration_slot_id == slot_id),
             None,
         )
         if node is None:
@@ -1507,15 +1479,11 @@ class GraphExecutor:
             outcomes.update(batch_outcomes)
 
         expected_slot_ids = {
-            node.orchestration_slot_id
-            for node in graph.nodes
-            if node.orchestration_slot_id is not None
+            node.orchestration_slot_id for node in graph.nodes if node.orchestration_slot_id is not None
         }
         missing = expected_slot_ids - outcomes.keys()
         if missing:
-            raise RuntimeError(
-                f"orchestration topology missing outcomes for slots: {sorted(missing)!r}"
-            )
+            raise RuntimeError(f"orchestration topology missing outcomes for slots: {sorted(missing)!r}")
         return outcomes
 
     async def _execute_orchestration_work_parallel_batch(
@@ -1626,4 +1594,3 @@ class GraphExecutor:
         else:
             node.status = ExecutionNodeStatus.FAILED
         return outcome
-

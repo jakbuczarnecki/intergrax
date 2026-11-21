@@ -22,6 +22,7 @@ from intergrax.applications.contracts.environment_profile import ApplicationEnvi
 from intergrax.applications.contracts.manifest import ApplicationManifest
 from intergrax.contracts.decision_requirement_policy import DecisionRequirementPolicy
 from intergrax.integrations.contracts.document_store import DocumentStore
+
 from local_workspace_application.host.environment_profile import (
     build_local_workspace_environment_profile,
 )
@@ -98,12 +99,8 @@ def resolve_local_workspace_host_tenant_binding(
     if len(tenant_ids) == 1:
         return LocalWorkspaceHostTenantBinding(tenant_id=tenant_ids[0])
     if len(tenant_ids) > 1:
-        raise LocalWorkspaceHostRuntimeAuthorityError(
-            "local_workspace_host_tenant_authority_ambiguous"
-        )
-    raise LocalWorkspaceHostRuntimeAuthorityError(
-        "local_workspace_host_tenant_authority_missing"
-    )
+        raise LocalWorkspaceHostRuntimeAuthorityError("local_workspace_host_tenant_authority_ambiguous")
+    raise LocalWorkspaceHostRuntimeAuthorityError("local_workspace_host_tenant_authority_missing")
 
 
 def build_local_workspace_harness_host_runtime(
@@ -127,17 +124,13 @@ def build_local_workspace_harness_host_runtime(
     resolved_manifest = manifest or LOCAL_WORKSPACE_APPLICATION_MANIFEST
     resolved_environment = environment or build_local_workspace_host_environment(settings)
     resolved_document_store = (
-        document_store
-        if document_store is not None
-        else resolve_lkw_runtime_document_store(settings)
+        document_store if document_store is not None else resolve_lkw_runtime_document_store(settings)
     )
     resolved_tenant = tenant_binding or resolve_local_workspace_host_tenant_binding(
         settings,
     )
     resolved_idempotency = (
-        idempotency_db_path
-        if idempotency_db_path is not None
-        else Path(settings.idempotency_db_path)
+        idempotency_db_path if idempotency_db_path is not None else Path(settings.idempotency_db_path)
     )
     resolved_host_runtime = host_runtime or LocalWorkspaceHostRuntimeComposition()
     runtime = build_harness_host_runtime(
@@ -155,6 +148,7 @@ def build_local_workspace_harness_host_runtime(
                 resolved_host_runtime.orchestration_decision_requirement_policy,
             )
         ),
+        disable_human_decision_persistence=True,
     )
     return LocalWorkspaceHarnessHostRuntimeComposition(
         tenant_binding=resolved_tenant,

@@ -220,6 +220,7 @@ from intergrax.runtime.governance.orchestration_governance_evidence_composition 
     build_orchestration_governance_evidence_recorder,
     require_strict_orchestration_governance_evidence_persistence,
 )
+from intergrax.runtime.human.persistence_contract import HumanDecisionPersistence
 from intergrax.runtime.long_running.persistence_contract import (
     TaskCheckpointPersistence,
 )
@@ -228,6 +229,7 @@ from intergrax.runtime.registry.agent_registry import AgentRegistry
 from intergrax.runtime.registry.agent_registry_read import AgentRegistryRead
 from intergrax.skills.execution_binding import SkillExecutionPinningStore
 from intergrax.skills.registry.runtime import SkillRegistry
+from intergrax.tools.providers.hitl.bundle import HITL_BUNDLE_ID, HITL_TOOL_IDS
 from intergrax.tools.registry.runtime import ToolRegistry
 
 __all__ = [
@@ -338,6 +340,8 @@ def build_harness_host_runtime(
     agent_contract_authority: ContractAuthority | None = None,
     strict_production_serving_execution_tenant_binding: (StrictProductionServingExecutionTenantBinding | None) = None,
     tool_life_durable_db_path: Path | None = None,
+    human_decision_store: HumanDecisionPersistence | None = None,
+    disable_human_decision_persistence: bool = False,
 ) -> HarnessHostRuntime:
     """
     Single H-APP path: environment → platform composition → canonical execution.
@@ -406,6 +410,18 @@ def build_harness_host_runtime(
         resolve_skill_execution_pinning_wiring,
     )
 
+    if (
+        production_mode
+        and disable_human_decision_persistence
+        and env_wiring.tool_wiring.profile.should_register_bundle(
+            HITL_BUNDLE_ID,
+            tool_ids=HITL_TOOL_IDS,
+        )
+    ):
+        raise ValueError(
+            "disable_human_decision_persistence cannot be combined with an enabled HITL tool bundle: "
+            "the hitl.* tools read the human decision store; wire a durable store instead.",
+        )
     skill_pinning_wiring = resolve_skill_execution_pinning_wiring(
         production_mode=production_mode,
         kv_store=kv_store,
@@ -617,6 +633,9 @@ def build_harness_host_runtime(
         key_value_cache=key_value_cache,
         document_store=document_store,
         execution_continuation_state_store=execution_continuation_state_store,
+        human_decision_store=human_decision_store,
+        disable_human_decision_persistence=disable_human_decision_persistence,
+        disable_task_memory_persistence=production_mode and task_memory.store is None,
     )
     orchestration = materialize_host_orchestration_backend(
         resolved_registry,

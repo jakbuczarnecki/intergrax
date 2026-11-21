@@ -120,6 +120,7 @@ def create_lab_application(
         checkpoint_store=integrations.checkpoint_store,
         agent_checkpoint_store=integrations.agent_checkpoint_store,
         notification_adapter=integrations.notification_adapter,
+        disable_human_decision_persistence=True,
     )
     host_execution = runtime.execution
     resolved_registry = runtime.registry
