@@ -200,11 +200,26 @@ Operator decision **`waiver_both`** @ **2026-11-21** (coordinator chat): retroac
 | Field | Value |
 |-------|-------|
 | Integrator branch | `eqo/wave-9/integ` |
-| Base | `origin/development` `2b5c3aec6` (rebased pre-PR) |
-| Lanes | `eqo/wave-9/cor-wb01` … `cor-wb12` (12 worktrees `eqo-w9-cor-wbNN`) |
-| Deliverables | `runs/wbNN/COR_DRV.md`, `EQO_WAVE9_MANIFEST.md`, matrix §, README index row 36 |
+| Base | `origin/development` `00ec80d3e` (post PR #706 wave-12) |
+| Lanes | `eqo/wave-9/cor-wb01` … `cor-wb12` (12 worktrees `eqo-w9-cor-wbNN`; missing origin lanes pushed at integrator close) |
+| Deliverables | `runs/wbNN/COR_DRV.md`, `EQO_WAVE9_MANIFEST.md`, matrix §, README index row 37 |
 | Scope | Docs disposition paths from `AUD_SESSION_E.md`; no product CL-01 |
-| PR | _(pending push — docs gates `ticket-governance` + `governance-policy-pin`)_ |
+| PR | [#707](https://github.com/jakbuczarnecki/intergrax/pull/707) merged |
+| Integrator tip | `4e3b9c0a03736db5ba0b3030f23541926b2f4e8a` |
+| Merge commit | `6b01b63f6264ec62602ba6349d532686dbf8c54c` |
+
+## Checkpoint — EQO wave-10 (2026-11-21)
+
+| Field | Value |
+|-------|-------|
+| Integrator branch | `eqo/wave-10/integ` |
+| Base | `origin/development` `e61e5136a` (includes wave-9 `6b01b63f`) |
+| EXE lane | `eqo/wave-10/exe` @ `7b5f9efc7` |
+| Workstreams | WB01, WB06, WB07, WB10, WB11 @ TRAIN_PIN (`uv sync --all-extras` on `eqo-w3`) |
+| Deliverables | `EQO_WAVE10_MANIFEST.md`, `runs/wbNN/RUN_MANIFEST.json`, `pytest_wbNN_exe.log` |
+| EXE | WB01 `1`; WB06 `0`; WB07/10/11 `1` |
+| PR | _(pending — docs gates `ticket-governance` + `governance-policy-pin`)_ |
+
 ## Lifecycle state
 
 plan_approved

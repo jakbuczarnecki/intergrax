@@ -14,8 +14,8 @@
 
 ## EXE @ TRAIN_PIN
 
+**Wave-10 rerun (2026-11-21):** 1 failed, 56 passed, 1 skipped in 107.04s (0:01:47) (exit 1). Primary failure: `test_harness_01_higher_layer_nexus_imports_are_classified`.
 Prereg SHA256: `cf4a7b80c122e4fe960ee810731ae2ed13245e185da032b56e07744a3862d605` (`DES_PREREG.json`).
-
 **Result:** 1 failed, 56 passed, 1 skipped in 69.73s (0:01:09) (exit 1).
 
 ## Disposition (pre-AUD)
