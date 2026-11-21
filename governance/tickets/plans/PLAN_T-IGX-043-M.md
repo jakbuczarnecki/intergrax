@@ -107,3 +107,35 @@ Command (with NT-043M-S1..S3):
 ```text
 uv run python -m pytest tests/qualification/ent_audit_x/unit/test_changed_since_impact_map.py tests/qualification/pdc_x/xd/test_xd_12_evol_ent_audit.py -q
 ```
+
+## 8.4 Product slice 4 (operator unblock — manifest 85→91, development tor)
+
+**Operator unblock (2026-11-21):** D3 Part E manifest batch allowed on development tor (f-dev-043m-parte). Gate-meaning write set follows ruling Q-RW-04 and sibling split PLAN_T-IGX-043-I.md section 3.3a (train pin c2a88c344, read-only). No baseline promotion, no train merge, no PASS claim.
+
+**Prerequisite on development:** Parts A–D engine fixes of T-IGX-043-I (FRZ attribution / STAGE_GATE_ONLY_FRZ_FAMILIES, runner FAST disclosure) must be present or ported before manifest edits; development tor completed wave-diff slices 1–3 only (sections 8–8.3).
+
+| Phase | Write set (indicative) | Node ids |
+|-------|------------------------|----------|
+| E0 | Port or reconcile digests.py, 
+unner.py, data/schemas/frz_coverage.v1.schema.json, 	est_wd_frz_family_attribution.py from 043-I pin | NT-043M-S5a |
+| E1 | enterprise_audit_check_manifest.v1.json: +6 checks (AUD, CTL, DEBT, FRZ, HRN, TRC); manifest.py / evidence.py consumers | NT-043M-S5b |
+| E2 | digests.py mapped_check_id rows; impact_map.py final wave-diff + regen JSON; alignment / readiness / qual_wave_lib.py | NT-043M-S5c |
+| E3 | Acceptance wrappers + pinned tests per 043-I consumers list; replay section 8.3 command | NT-043M-S5d |
+
+### 8.4.1 Test contract (max 9 nodes per verify step)
+
+With NT-043M-S1..S4:
+
+`	ext
+uv run python -m pytest tests/qualification/ent_audit_x/unit/test_changed_since_impact_map.py tests/qualification/pdc_x/xd/test_xd_12_evol_ent_audit.py -q
+`
+
+After E0:
+
+`	ext
+uv run python -m pytest tests/qualification/ent_audit_x/unit/test_wd_frz_family_attribution.py -q
+`
+
+After E1–E3: extend with 	est_manifest_annex_c_alignment.py / mechanical readiness slices as listed in 043-I section 3.3a (scoped; no FC-3 260 bundle).
+
+uv run python -m scripts.governance.igx_gov ticket before merge.
