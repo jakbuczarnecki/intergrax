@@ -33,10 +33,10 @@ Merge przy czerwonych checkach — zapisany stan; **nie** spełnia OD-AF-AUTO-01
 |-------|-----------------|--------|--------|------------|--------|
 | G1 | `af-dev-pt-fc3` | `af-dev-pt-fc3` | T-IGX-043-C | Regression §8.6 follow-up merged (`413fb9186`) | Merged fala 2 |
 | G2 | `af-dev-pt-wf` | `af-dev-pt-wf` | T-IGX-043-J | Plan §7; G-09 merged; WF E2–E4 product **BLOCKED** | merged @ `dc083f6ea` |
-| G3 | `af-dev-rw-trust` | `af-dev-rw-trust` | T-IGX-051-C | Plan §7 rev-2 minimum; product **BLOCKED** | plan_approved |
+| G3 | `af-dev-rw-trust` | `af-dev-rw-trust` | T-IGX-051-C | §7 `NT-TRUST-01`..`06` green; FC-3 bundle replay @ `e61e5136a` | **merged** fala 5 |
 | G4 (RC-1) | `af-dev-rc1-docs` | `af-dev-rc1-docs` | ticket-less docs | RC-1 open items + RC-2/3 prep sync | **merged this wave** |
 | G4 (RC-3 prep) | `af-dev-rc3-prep` | `af-dev-rc3-prep` | ticket-less docs | RC-3 prep dossier + gap + G2 draft (TOR C fala 6) | landed fala 6 |
-| G5 | `af-dev-043m` | `af-dev-043m` | T-IGX-043-M | Smoke green → `in_progress`; Part E manifest **BLOCKED** | in_progress |
+| G5 | `af-dev-043m` | `af-dev-043m` | T-IGX-043-M | Slices 1–3 + fala 5 close **9 passed**; Part E manifest **BLOCKED** | in_progress |
 
 ## RW-PLAN-AUDIT (`T-AF2-RW-PLAN-AUDIT`)
 
