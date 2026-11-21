@@ -38,3 +38,9 @@ Command: `uv run python -c "… all_counters() …"` (wave-1/x session, 2026-11-
 `NOT_CLOSED` — evidence read captured; counter remediation owned by ARCH-FREEZE **PT-Q05** after FCS.
 
 **Audit:** session E pending.
+
+## Wave-4 refresh
+
+`ROADMAP-REPLAY-X` layer remains `NO_PRODUCT_DELTA` on both pins; counter read idempotent @ wave-4 pins.
+
+**Recorded:** 2026-11-21 · lane `eqo/wave-4/x`

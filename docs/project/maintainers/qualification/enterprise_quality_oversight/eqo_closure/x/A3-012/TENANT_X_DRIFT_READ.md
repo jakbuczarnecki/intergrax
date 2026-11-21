@@ -36,3 +36,9 @@ Campaign A title: TENANT-X global tenant-isolation PASS not maintained after cer
 `NOT_CLOSED` — C-03 row + WB02 slice linked; full tenant requalification owned by **PT-Q07**. EQO does not assert INDEPENDENTLY ACCEPTED.
 
 **Audit:** session E pending.
+
+## Wave-4 refresh
+
+Cross-check against `runs/wb02/AUD_PACKET.md` (`PRE_AUD`, exit 0): mechanical `NO_PRODUCT_DELTA` unchanged; A3-012 certification drift claim still routes PT-Q07 post-FCS.
+
+**Recorded:** 2026-11-21 · lane `eqo/wave-4/x`
