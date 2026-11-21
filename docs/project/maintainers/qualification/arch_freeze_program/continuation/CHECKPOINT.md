@@ -55,3 +55,7 @@ Po merge **#699** train zawiera slice FC-3 / G-09 / trust, ale **nie** pełny `d
 ## G4 — RC-3 prep (fala 6)
 
 Deliverables: `RC3_PREP_DOSSIER.md`, `G2_CHECKLIST_DRAFT.md`, `TRAIN_DEV_GAP.md`; checkpointy w tym katalogu. TOR C fala 6 dokumentacja prep: **DONE** @ `e61e5136a`. Werdykt RC-3 exit (W4): **DRAFT / NOT STARTED** — nie wyjście RC-3.
+
+## G6 — W5 pre-pin prep (MEP W5)
+
+Worktree `af-dev-mep-w5` @ `d043a21c6`. Deliverables: [`W5_PREP_DOSSIER.md`](W5_PREP_DOSSIER.md) + `continuation/w5/PT-*_PREP.md` (9 węzłów WP-12). Dokumentacja prep MEP W5: **DONE** (bez claim pin / M3 / FCS). Werdykt fali W5 programowej: **NOT STARTED** — FCS i AR otwarte.
