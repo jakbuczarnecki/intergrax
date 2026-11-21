@@ -25,9 +25,9 @@
     "blockers":  [
 
                  ],
-    "executed_utc":  "2026-11-21T09:44:04Z",
+    "executed_utc":  "2026-11-21T09:46:00Z",
     "pytest_exit_code":  0,
-    "pytest_summary":  "33 passed, 1 skipped in 64.44s (0:01:04)",
+    "pytest_summary":  "33 passed, 1 skipped in 48.97s",
     "rerun_lane":  "eqo/wave-13/exe-wb12",
     "pytest_env_note":  "uv sync --all-extras on eqo-w3 @ TRAIN_PIN; shared pytest.lock"
 }
