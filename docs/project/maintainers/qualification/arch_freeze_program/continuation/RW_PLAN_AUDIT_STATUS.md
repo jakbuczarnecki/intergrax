@@ -8,4 +8,6 @@
 
 **Nie jest blokadą implementacji równoległej na rozłącznych write setach (G1 embedding, G3 trust, …),** ale formalny `SCOPE` na trainie pozostaje `DONE_REQUALIFICATION_REQUIRED` do czasu PASS.
 
-**Data:** 2026-11-21 (odświeżenie pin development `dc083f6ea` — TOR C fala 6; werdykt **BLOCKED** bez zmian)
+**Data:** 2026-11-21 (G4 fala 5–6; odświeżenie pin development `dc083f6ea` — TOR C fala 6; werdykt **BLOCKED** bez zmian)
+
+**Otwarte pozycje RC-1:** [`RC1_OPEN_ITEMS_DEV.md`](RC1_OPEN_ITEMS_DEV.md) (RC1-J1).

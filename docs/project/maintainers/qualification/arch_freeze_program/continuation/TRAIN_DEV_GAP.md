@@ -1,18 +1,19 @@
-﻿# Train ↔ development gap (TOR C fala 6)
+# Train ↔ development gap (TOR C — po merge #699; fala 6)
 
 **Snapshot:** 2026-11-21  
-**Disposition:** **QUEUED / STOP** — PR **#699** (`af-dev-train-sync` → `rw-train`) **MERGED** @ `dbaebfa8`; replay `governance-fast` na train pin pozostaje **OPEN** (ACT-N11 **red** na merge — patrz `TRAIN_CHERRY_PICK_STATUS.md`). Merge mandate OD-AF-AUTO-01 **nie** spełniony na zielonym checku.
+**Disposition:** **MERGED / replay OPEN (QUEUED / STOP)** — PR **#699** (`af-dev-train-sync` → `rw-train`) **MERGED** @ `dbaebfa8cd13a6ba8bfa6eef2cdf581216ddb3d2`; replay `governance-fast` (oraz `ci-smoke` / `rag-gate`) na train pin pozostaje **OPEN** (ACT-N11 **red** na merge — patrz `TRAIN_CHERRY_PICK_STATUS.md`). Merge mandate OD-AF-AUTO-01 **nie** spełniony na zielonym checku.
 
 ## Piny
 
 | Ref | SHA (40) | Krótki |
 |-----|----------|--------|
-| `origin/development` | `dc083f6eadf0f7dbe501fbcf93659e2dd158b825` | `dc083f6ea` |
+| `origin/development` (fetch) | `f551abb495ad2316a4b5ca0a90dd9aef2a4f28d9` | `f551abb49` |
+| Pin sesji G4 / fala 6 parallel | `dc083f6eadf0f7dbe501fbcf93659e2dd158b825` | `dc083f6ea` |
 | `origin/arch-freeze/rw-train` | `dbaebfa8cd13a6ba8bfa6eef2cdf581216ddb3d2` | `dbaebfa8` |
 | Merge-base dev ↔ train | `70d73f0f08325a39c6b2fd0e3b00f4cab7e83033` | `70d73f0f0` |
 | Slice tip (cherry-pick na PR) | `1cec68222751a128feab00e7b80063a09983296e` | `1cec68222` |
 
-## Liczniki divergence (od merge-base)
+## Liczniki divergence (od merge-base `70d73f0f0`)
 
 | Kierunek | Commity | Znaczenie |
 |----------|---------|-----------|
@@ -23,16 +24,17 @@ Polecenie SSOT: `git log --oneline 70d73f0f0..dc083f6ea` (dev-only); `git log --
 
 Product na `development` musi **cherry-pick/rebase** z trainu tam, gdzie slice już istnieje na trainie — **nie** pełny merge `rw-train` bez mandatu operatora (`CHECKPOINT.md`, OD-AF-AUTO-01).
 
-## Kolejka slice (z `TRAIN_CHERRY_PICK_STATUS.md`)
+## Kolejka slice (SSOT narracji)
 
-SSOT narracji slice — poniżej landing + bramka CI po merge **#699**.
+[`TRAIN_CHERRY_PICK_STATUS.md`](TRAIN_CHERRY_PICK_STATUS.md) — cherry-pick seria 1–4 **done**; merge **#699** **MERGED** 2026-11-21. Poniżej landing + bramka CI po merge **#699**.
 
-### Bramka CI
+### Bramka CI (następny krok)
 
 | Workflow | Stan | Uwagi |
 |----------|------|-------|
-| `governance-fast` @ merge **#699** | **FAILURE (ACT-N11)** | product paths @ train HEAD `dbaebfa8` |
-| `governance-fast` @ `development` | **BLOCKED** | [`IIIC_GOVERNANCE_FAST_BLOCKED.md`](IIIC_GOVERNANCE_FAST_BLOCKED.md) — stale pin `969cbd964` vs drzewo |
+| `governance-fast` @ merge **#699** / train HEAD `dbaebfa8` | **FAILURE (ACT-N11)** | RC2-B2 / replay — **OPEN**; product paths @ train HEAD |
+| `ci-smoke` / `rag-gate` | **red** @ merge PR | zapisany stan checków merge |
+| `governance-fast` @ `development` | **BLOCKED** | [`IIIC_GOVERNANCE_FAST_BLOCKED.md`](IIIC_GOVERNANCE_FAST_BLOCKED.md) — stale pin `969cbd964` vs drzewo (RB-2 re-pin poza autonomią docs) |
 
 **Werdykt:** cherry-pick seria 1–4 — **on train**; formalny green `governance-fast` @ train — **STOP** (nie RC-2 B2–B3 PASS).
 
@@ -57,10 +59,15 @@ SSOT narracji slice — poniżej landing + bramka CI po merge **#699**.
 
 ## Wykonanie (następny operator)
 
-1. Replay `governance-fast` (i ewentualnie `ci-smoke` / `rag-gate`) na pinie train `dbaebfa8`.
+1. **Replay** `governance-fast` (i ewentualnie `ci-smoke` / `rag-gate`) na pinie train `dbaebfa8`.
 2. RB-2 re-pin IIIC poza autonomią docs — prerequisite dla zielonego ACT-N11 na `development`.
-3. Kolejne slice dev-only — nowa kolejka w `TRAIN_CHERRY_PICK_STATUS.md`, nie merge całego `development`.
+3. RC-2 exit B2–B3 — [`RC2_EXIT_CHECKLIST.md`](RC2_EXIT_CHECKLIST.md) (**PARTIAL**; B3 = merge fact, B2 = green replay).
+4. Kolejne slice dev-only — nowa kolejka w `TRAIN_CHERRY_PICK_STATUS.md`, nie merge całego `development`.
 
 ## Stan fala 6 (TOR C)
 
 Worktree **`af-dev-rc3-prep`** @ `dc083f6ea`; docs odzwierciedlają merge **#699** i luki 241/217 — **bez** claim G2, FCS ani green governance-fast.
+
+## Stan G4 (fala 5–6; RC-1)
+
+Worktree **`af-dev-rc1-docs`** @ pin sesji `dc083f6ea`; dokumentacja odzwierciedla merge **#699** bez claim RC-2 CLOSED.

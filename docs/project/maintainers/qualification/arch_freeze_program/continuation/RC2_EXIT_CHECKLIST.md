@@ -1,4 +1,4 @@
-# RC-2 exit checklist (tor `development`) — nie CLOSED
+﻿# RC-2 exit checklist (tor `development`) — nie CLOSED
 
 **Data:** 2026-11-21 (autonomia fala 5)  
 **Poprzednik:** RC-1 (`G4` / `CHECKPOINT.md`, `RW_PLAN_AUDIT_STATUS.md`)  
@@ -29,8 +29,8 @@
 | Id | Kryterium | Stan fala 5 | Dowód |
 |----|-----------|---------------|-------|
 | RC2-B1 | Kolejka slice: FC-3 delta, G-09, trust (commit list) zapisana | [x] | `TRAIN_CHERRY_PICK_STATUS.md` |
-| RC2-B2 | Merge train **tylko** przy zielonym `governance-fast` **lub** wąskim ACT-N11 (OD-AF-AUTO-01 / KR-08) | [ ] | CI: `Regression gate` na `development` — **STOP** do green |
-| RC2-B3 | PR `development` → `rw-train` utworzony i zmergowany | [ ] | Nie wykonano w fali 5 (bramka RC2-B2) |
+| RC2-B2 | Merge train **tylko** przy zielonym `governance-fast` **lub** wąskim ACT-N11 (OD-AF-AUTO-01 / KR-08) | [ ] | Merge **#699** przy red CI — **replay green** na `dbaebfa8c` **OPEN** |
+| RC2-B3 | PR `development` → `rw-train` utworzony i zmergowany | [x] partial | PR **#699** **MERGED** @ `dbaebfa8c` (2026-11-21); **nie** spełnia OD-AF-AUTO-01 jako green gate |
 
 ## C. Dokumentacja i pin
 
