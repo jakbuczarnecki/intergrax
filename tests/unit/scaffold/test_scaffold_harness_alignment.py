@@ -5,7 +5,6 @@
 from __future__ import annotations
 
 import pytest
-
 from intergrax.scaffold.new_application import create_application
 
 pytestmark = [pytest.mark.unit, pytest.mark.gate, pytest.mark.no_ci]

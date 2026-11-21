@@ -6,68 +6,61 @@
 from __future__ import annotations
 
 from pathlib import Path
-from typing import Optional
 
 from fastapi import FastAPI
-from starlette.middleware.cors import CORSMiddleware
-
-from legal_application.serving.fastapi_router import mount_legal_agent_routes
+from intergrax.applications._shared.harness_host_auxiliary_wiring import (
+    HostTaskExecutionExecutor,
+    wire_harness_host_long_running_scheduler,
+)
+from intergrax.applications._shared.harness_host_composition import (
+    bootstrap_harness_host_platform,
+)
+from intergrax.applications._shared.harness_host_runtime import build_harness_host_runtime
+from intergrax.applications._shared.host_queue_execution_wiring import (
+    apply_queue_worker_environment_profile,
+    resolve_host_queue_execution_dependencies,
+)
+from intergrax.applications._shared.identity_wiring import wire_application_identity
+from intergrax.applications._shared.interaction_wiring import wire_interaction_intake_service
+from intergrax.applications._shared.plugin_bootstrap import attach_plugin_shutdown
+from intergrax.applications._shared.product_observability_dashboard_wiring import (
+    wire_harness_product_observability_dashboard,
+)
+from intergrax.applications._shared.queue_worker_wiring import wire_optional_queue_execution
+from intergrax.applications._shared.registry_projection import MaterializedRegistryProjection
+from intergrax.applications._shared.task_control_wiring import (
+    build_reliability_task_enricher,
+    wire_harness_task_control,
+)
+from intergrax.applications._shared.workspace_cleanup_wiring import (
+    apply_factory_lifespans,
+    build_factory_lifespans,
+)
+from intergrax.applications.contracts.execution_mode import ExecutionMode
+from intergrax.contracts.orchestration_capability_tokens import orchestration_capabilities_from_triggers
+from intergrax.debug.store import open_default_task_checkpoint_persistence
 from intergrax.fastapi_core.app_factory import create_app
 from intergrax.fastapi_core.auth.api_key import ApiKeyConfig
 from intergrax.fastapi_core.config import ApiConfig, ApiEnvironment
 from intergrax.fastapi_core.runs.default_service import DefaultRunService
 from intergrax.fastapi_core.runs.store_memory import InMemoryRunStore
-from intergrax.applications._shared.harness_host_runtime import build_harness_host_runtime
-from intergrax.applications._shared.registry_projection import MaterializedRegistryProjection
-from intergrax.runtime.task.host_task_execution_run_adapter import HostTaskExecutionRunAdapter
-from intergrax.contracts.orchestration_capability_tokens import orchestration_capabilities_from_triggers
-
-from intergrax.applications._shared.workspace_cleanup_wiring import (
-    apply_factory_lifespans,
-    build_factory_lifespans,
-)
-from intergrax.applications._shared.identity_wiring import wire_application_identity
-from intergrax.applications._shared.harness_host_auxiliary_wiring import HostTaskExecutionExecutor
-from intergrax.applications._shared.interaction_wiring import wire_interaction_intake_service
-from intergrax.applications._shared.plugin_bootstrap import attach_plugin_shutdown
-from intergrax.applications._shared.host_queue_execution_wiring import (
-    apply_queue_worker_environment_profile,
-    resolve_host_queue_execution_dependencies,
-)
-from intergrax.applications._shared.queue_worker_wiring import wire_optional_queue_execution
-from intergrax.applications.contracts.execution_mode import ExecutionMode
-from intergrax.applications._shared.harness_host_auxiliary_wiring import (
-    wire_harness_host_long_running_scheduler,
-)
-from intergrax.applications._shared.product_observability_dashboard_wiring import (
-    wire_harness_product_observability_dashboard,
-)
-from intergrax.applications._shared.task_control_wiring import (
-    build_reliability_task_enricher,
-    wire_harness_task_control,
-)
-from intergrax.debug.store import open_default_task_checkpoint_persistence
 from intergrax.runtime.interactions.router import create_interaction_intake_router
-from intergrax.applications._shared.harness_host_composition import (
-    bootstrap_harness_host_application_plugins,
-    bootstrap_harness_host_platform,
-    resolve_harness_host_event_bus,
-    resolve_harness_host_lifecycle_hook_coordinator,
-    resolve_harness_host_middleware_pipeline,
-    resolve_harness_host_runtime_event_persistence,
-)
+from intergrax.runtime.task.host_task_execution_run_adapter import HostTaskExecutionRunAdapter
+from starlette.middleware.cors import CORSMiddleware
+
 from legal_application.host.host_runtime_composition import LegalHostRuntimeComposition
 from legal_application.host.orchestration_decision_requirement_policy import (
     resolve_legal_harness_orchestration_decision_requirement_policy,
 )
 from legal_application.host.settings import LegalBackendSettings
 from legal_application.host.wiring import build_legal_environment_profile, build_legal_manifest
+from legal_application.serving.fastapi_router import mount_legal_agent_routes
 
 
 def create_legal_backend_app(
     *,
     registry_projection: MaterializedRegistryProjection,
-    settings: Optional[LegalBackendSettings] = None,
+    settings: LegalBackendSettings | None = None,
     trace_db_path: Path | None = None,
     runtime_events_db_path: Path | None = None,
     document_store: object | None = None,
@@ -106,6 +99,7 @@ def create_legal_backend_app(
                 resolved_host_runtime.orchestration_decision_requirement_policy,
             )
         ),
+        disable_human_decision_persistence=True,
     )
     host_execution = runtime.execution
     registry = runtime.registry
@@ -122,9 +116,7 @@ def create_legal_backend_app(
     orchestration_triggers = orchestration_capabilities_from_triggers(
         graph_spec.trigger_capabilities if graph_spec is not None else None,
     )
-    pipeline_capability_suffix = (
-        graph_spec.pipeline_capability_suffix if graph_spec is not None else ".pipeline"
-    )
+    pipeline_capability_suffix = graph_spec.pipeline_capability_suffix if graph_spec is not None else ".pipeline"
     scheduler_wiring = wire_harness_host_long_running_scheduler(
         runtime,
         checkpoint_store=checkpoint_store,
@@ -234,6 +226,7 @@ def create_legal_backend_app(
 
         load_mcp_coupling()
         from intergrax.applications._shared.fastapi_mcp import couple_harness_host_fastapi_with_mcp
+
         from legal_application.mcp.server import build_legal_mcp_server
 
         mcp = build_legal_mcp_server(

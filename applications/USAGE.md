@@ -196,7 +196,7 @@ from intergrax.runtime.plugins.default_plugins import default_lab_plugins
 def create_my_lab_application():
     settings = MyLabSettings.from_env()
     registry = build_my_lab_registry(settings=settings)
-    nexus_loop = NexusLoop(registry, ...)
+    nexus_loop = NexusLoop(registry, production_mode=False, ...)
     bootstrap_application_plugins(
         default_lab_plugins(trace_store=nexus_loop.trace_store),
         nexus_loop=nexus_loop,

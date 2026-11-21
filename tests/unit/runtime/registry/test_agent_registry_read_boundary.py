@@ -5,8 +5,6 @@
 from __future__ import annotations
 
 import pytest
-
-from echo.echo_agent import EchoAgent
 from intergrax.applications._shared.harness_registry_authority import (
     HarnessHostRegistryAuthorityError,
     RegistryAssemblyMode,
@@ -29,19 +27,21 @@ from intergrax.runtime.registry.agent_registry_read_view import (
     AgentRegistryReadView,
     freeze_agent_registry,
 )
-from legal_application.serving.fastapi_router import LegalAgentServingConfig
 from tests.unit.applications.test_registry_projection_ap10 import (
-    ECHO_BUILDERS,
     _ARTIFACT,
     _ENV,
     _ROSTER_A,
+    ECHO_BUILDERS,
     _echo_factory,
     _entry,
     _manifest,
-    _revision,
     _resolver_from_roster,
+    _revision,
     _roster,
 )
+
+from echo.echo_agent import EchoAgent
+from legal_application.serving.fastapi_router import LegalAgentServingConfig
 
 pytestmark = [pytest.mark.unit, pytest.mark.gate]
 
@@ -83,7 +83,7 @@ def test_materialized_projection_runtime_surface_has_no_register() -> None:
 
 def test_nexus_loop_accepts_read_only_registry_surface() -> None:
     projection = _build_projection()
-    nexus = NexusLoop(projection.agent_registry)
+    nexus = NexusLoop(projection.agent_registry, production_mode=False)
     assert nexus.registry.list_agent_ids() == ["search"]
     assert isinstance(nexus.registry, AgentRegistryRead)
 
@@ -98,7 +98,7 @@ def test_development_agent_registry_is_structural_agent_registry_read() -> None:
     registry = build_manifest_development_registry(manifest, ctx, builders=ECHO_BUILDERS)
     assert isinstance(registry, AgentRegistry)
     assert isinstance(registry, AgentRegistryRead)
-    nexus = NexusLoop(registry)
+    nexus = NexusLoop(registry, production_mode=False)
     assert nexus.registry.list_agent_ids() == ["echo"]
 
 

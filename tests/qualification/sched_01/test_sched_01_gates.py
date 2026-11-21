@@ -5,13 +5,11 @@
 from __future__ import annotations
 
 import ast
-from datetime import datetime, timedelta, timezone
+from datetime import UTC, datetime, timedelta
 from pathlib import Path
-from typing import List
 from unittest.mock import AsyncMock
 
 import pytest
-
 from intergrax.contracts.execution_identity import (
     mint_attempt_id,
     mint_execution_id,
@@ -20,25 +18,25 @@ from intergrax.contracts.execution_identity import (
     validate_attempt_id,
     validate_run_id,
 )
+from intergrax.runtime.execution.host_task import HostTaskExecutionPort
 from intergrax.runtime.long_running.execution_tree_checkpoint import (
     ExecutionCheckpointEntry,
     ExecutionCheckpointStatus,
     ExecutionTreeSnapshot,
 )
-from intergrax.runtime.long_running.runtime_checkpoint import RuntimeCheckpoint
-from intergrax.runtime.execution.host_task import HostTaskExecutionPort
 from intergrax.runtime.long_running.models import TaskCheckpoint
-from intergrax.runtime.long_running.scheduler import (
-    HostTaskResumeExecutor,
-    LongRunningScheduler,
-)
-from intergrax.runtime.long_running.scheduler_claim import ScheduledResumeClaim
+from intergrax.runtime.long_running.runtime_checkpoint import RuntimeCheckpoint
 from intergrax.runtime.long_running.scheduled_resume import (
     ScheduledResume,
     ScheduledResumePersistence,
     ScheduledResumeStatus,
     validate_scheduled_resume_for_persistence,
 )
+from intergrax.runtime.long_running.scheduler import (
+    HostTaskResumeExecutor,
+    LongRunningScheduler,
+)
+from intergrax.runtime.long_running.scheduler_claim import ScheduledResumeClaim
 from intergrax.runtime.long_running.store import SQLiteTaskCheckpointStore
 from intergrax.runtime.long_running.wiring import wire_long_running_scheduler_with_host_execution
 from intergrax.runtime.task.task import Task, TaskResult, TaskState
@@ -151,7 +149,7 @@ class _MemoryScheduleStore(ScheduledResumePersistence):
         self._rows[validated.schedule_id] = validated
         return validated
 
-    def list_due(self, *, before_utc_iso: str, limit: int = 100) -> List[ScheduledResume]:
+    def list_due(self, *, before_utc_iso: str, limit: int = 100) -> list[ScheduledResume]:
         pending = [
             row
             for row in self._rows.values()
@@ -167,8 +165,8 @@ class _MemoryScheduleStore(ScheduledResumePersistence):
         owner_id: str,
         lease_seconds: int,
         limit: int = 100,
-    ) -> List[ScheduledResumeClaim]:
-        now = datetime.now(timezone.utc)
+    ) -> list[ScheduledResumeClaim]:
+        now = datetime.now(UTC)
         lease_expires_at = now + timedelta(seconds=lease_seconds)
         claims: list[ScheduledResumeClaim] = []
         for schedule_id in list(self._rows):
@@ -233,7 +231,7 @@ async def test_sched_q1_due_occurrence_invokes_host_execution_port(tmp_path) -> 
     scheduler, store, port = _build_scheduler_with_store(tmp_path)
     checkpoint = _paused_checkpoint()
     store.save(checkpoint)
-    due_at = datetime.now(timezone.utc) - timedelta(seconds=30)
+    due_at = datetime.now(UTC) - timedelta(seconds=30)
     store.schedule(
         ScheduledResume(
             task_id=checkpoint.task_id,
@@ -242,7 +240,7 @@ async def test_sched_q1_due_occurrence_invokes_host_execution_port(tmp_path) -> 
             run_at_utc=due_at.isoformat(),
         ),
     )
-    assert await scheduler.tick(now=datetime.now(timezone.utc)) == 1
+    assert await scheduler.tick(now=datetime.now(UTC)) == 1
     port.execute.assert_awaited_once()
     kwargs = port.execute.await_args.kwargs
     assert kwargs.get("resume_checkpoint") is not None
@@ -257,12 +255,12 @@ async def test_sched_q2_schedule_survives_store_reopen(tmp_path) -> None:
             task_id="task-1",
             tenant_id="t1",
             resume_token="tok",
-            run_at_utc=(datetime.now(timezone.utc) + timedelta(hours=1)).isoformat(),
+            run_at_utc=(datetime.now(UTC) + timedelta(hours=1)).isoformat(),
         ),
     )
     store_b = SQLiteTaskCheckpointStore(db_path=db)
     due_list = store_b.list_due(
-        before_utc_iso=(datetime.now(timezone.utc) + timedelta(hours=2)).isoformat(),
+        before_utc_iso=(datetime.now(UTC) + timedelta(hours=2)).isoformat(),
     )
     assert any(row.schedule_id == entry.schedule_id for row in due_list)
 
@@ -272,7 +270,7 @@ async def test_sched_q3_tenant_mismatch_blocks_resume(tmp_path) -> None:
     scheduler, store, port = _build_scheduler_with_store(tmp_path)
     checkpoint = _paused_checkpoint(tenant_id="tenant-a")
     store.save(checkpoint)
-    due_at = datetime.now(timezone.utc) - timedelta(seconds=5)
+    due_at = datetime.now(UTC) - timedelta(seconds=5)
     store.schedule(
         ScheduledResume(
             task_id=checkpoint.task_id,
@@ -281,14 +279,14 @@ async def test_sched_q3_tenant_mismatch_blocks_resume(tmp_path) -> None:
             run_at_utc=due_at.isoformat(),
         ),
     )
-    assert await scheduler.tick(now=datetime.now(timezone.utc)) == 0
+    assert await scheduler.tick(now=datetime.now(UTC)) == 0
     port.execute.assert_not_awaited()
 
 
 @pytest.mark.asyncio
 async def test_sched_q4_schedule_id_stable_across_reads(tmp_path) -> None:
     store = SQLiteTaskCheckpointStore(db_path=tmp_path / "id.db")
-    run_at = datetime.now(timezone.utc) + timedelta(minutes=5)
+    run_at = datetime.now(UTC) + timedelta(minutes=5)
     entry = store.schedule(
         ScheduledResume(
             task_id="task-1",
@@ -309,7 +307,7 @@ async def test_sched_q7_misfire_late_due_fires_once(tmp_path) -> None:
     scheduler, store, port = _build_scheduler_with_store(tmp_path)
     checkpoint = _paused_checkpoint()
     store.save(checkpoint)
-    due_at = datetime.now(timezone.utc) - timedelta(minutes=15)
+    due_at = datetime.now(UTC) - timedelta(minutes=15)
     store.schedule(
         ScheduledResume(
             task_id=checkpoint.task_id,
@@ -318,10 +316,10 @@ async def test_sched_q7_misfire_late_due_fires_once(tmp_path) -> None:
             run_at_utc=due_at.isoformat(),
         ),
     )
-    assert await scheduler.tick(now=datetime.now(timezone.utc)) == 1
+    assert await scheduler.tick(now=datetime.now(UTC)) == 1
     port.execute.assert_awaited_once()
     port.execute.reset_mock()
-    assert await scheduler.tick(now=datetime.now(timezone.utc)) == 0
+    assert await scheduler.tick(now=datetime.now(UTC)) == 0
     port.execute.assert_not_awaited()
 
 
@@ -330,7 +328,7 @@ async def test_sched_q8_scheduler_retry_preserves_checkpoint_identity(tmp_path) 
     scheduler, store, port = _build_scheduler_with_store(tmp_path)
     checkpoint = _paused_checkpoint()
     store.save(checkpoint)
-    due_at = datetime.now(timezone.utc) - timedelta(seconds=1)
+    due_at = datetime.now(UTC) - timedelta(seconds=1)
     store.schedule(
         ScheduledResume(
             task_id=checkpoint.task_id,
@@ -339,14 +337,14 @@ async def test_sched_q8_scheduler_retry_preserves_checkpoint_identity(tmp_path) 
             run_at_utc=due_at.isoformat(),
         ),
     )
-    await scheduler.tick(now=datetime.now(timezone.utc))
+    await scheduler.tick(now=datetime.now(UTC))
     call_kwargs = port.execute.await_args.kwargs
     run_id = call_kwargs["run_id"]
     attempt_id = call_kwargs["attempt_id"]
     validate_run_id(run_id)
     validate_attempt_id(attempt_id)
     port.execute.reset_mock()
-    await scheduler.tick(now=datetime.now(timezone.utc))
+    await scheduler.tick(now=datetime.now(UTC))
     port.execute.assert_not_awaited()
 
 
@@ -359,7 +357,7 @@ async def test_sched_q10_custom_schedule_store_provider(tmp_path) -> None:
     )
     checkpoint = _paused_checkpoint()
     store.save(checkpoint)
-    due_at = datetime.now(timezone.utc) - timedelta(seconds=2)
+    due_at = datetime.now(UTC) - timedelta(seconds=2)
     memory_store.schedule(
         ScheduledResume(
             task_id=checkpoint.task_id,
@@ -368,7 +366,7 @@ async def test_sched_q10_custom_schedule_store_provider(tmp_path) -> None:
             run_at_utc=due_at.isoformat(),
         ),
     )
-    assert await scheduler.tick(now=datetime.now(timezone.utc)) == 1
+    assert await scheduler.tick(now=datetime.now(UTC)) == 1
     port.execute.assert_awaited_once()
 
 
@@ -377,7 +375,7 @@ async def test_sched_q11_fake_clock_boundaries(tmp_path) -> None:
     scheduler, store, port = _build_scheduler_with_store(tmp_path)
     checkpoint = _paused_checkpoint()
     store.save(checkpoint)
-    run_at = datetime(2026, 9, 17, 12, 0, 0, tzinfo=timezone.utc)
+    run_at = datetime(2026, 9, 17, 12, 0, 0, tzinfo=UTC)
     store.schedule(
         ScheduledResume(
             task_id=checkpoint.task_id,
@@ -397,7 +395,7 @@ async def test_sched_q12_cancelled_pending_not_dispatched(tmp_path) -> None:
     scheduler, store, port = _build_scheduler_with_store(tmp_path)
     checkpoint = _paused_checkpoint()
     store.save(checkpoint)
-    due_at = datetime.now(timezone.utc) - timedelta(seconds=3)
+    due_at = datetime.now(UTC) - timedelta(seconds=3)
     entry = store.schedule(
         ScheduledResume(
             task_id=checkpoint.task_id,
@@ -407,7 +405,7 @@ async def test_sched_q12_cancelled_pending_not_dispatched(tmp_path) -> None:
         ),
     )
     store.cancel(entry.schedule_id)
-    assert await scheduler.tick(now=datetime.now(timezone.utc)) == 0
+    assert await scheduler.tick(now=datetime.now(UTC)) == 0
     port.execute.assert_not_awaited()
 
 
@@ -427,7 +425,7 @@ async def test_sched_q13_production_wiring_resumes_through_host_task_execution_p
     scheduler = wiring.scheduler
     checkpoint = _paused_checkpoint()
     store.save(checkpoint)
-    due_at = datetime.now(timezone.utc) - timedelta(seconds=30)
+    due_at = datetime.now(UTC) - timedelta(seconds=30)
     store.schedule(
         ScheduledResume(
             task_id=checkpoint.task_id,
@@ -436,7 +434,7 @@ async def test_sched_q13_production_wiring_resumes_through_host_task_execution_p
             run_at_utc=due_at.isoformat(),
         ),
     )
-    assert await scheduler.tick(now=datetime.now(timezone.utc)) == 1
+    assert await scheduler.tick(now=datetime.now(UTC)) == 1
     port.execute.assert_awaited_once()
     kwargs = port.execute.await_args.kwargs
     resumed = kwargs["resume_checkpoint"]

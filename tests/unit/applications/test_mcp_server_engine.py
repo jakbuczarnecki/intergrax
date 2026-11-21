@@ -65,7 +65,7 @@ def _register_tool(registry: ToolRegistry, tool_id: str) -> None:
 
 def test_compose_minimal_host_tools() -> None:
     registry = AgentRegistry()
-    nexus_loop = NexusLoop(registry)
+    nexus_loop = NexusLoop(registry, production_mode=False)
     host_execution = build_harness_host_task_execution(nexus_loop, orchestration_triggers=frozenset())
 
     definition = build_mcp_server_definition(
@@ -90,7 +90,7 @@ def test_compose_minimal_host_tools() -> None:
 @pytest.mark.asyncio
 async def test_build_nexus_facade_still_exposes_core_tools() -> None:
     registry = AgentRegistry()
-    nexus_loop = NexusLoop(registry)
+    nexus_loop = NexusLoop(registry, production_mode=False)
     host_execution = build_harness_host_task_execution(nexus_loop, orchestration_triggers=frozenset())
     mcp = build_nexus_mcp_server(
         identity_mode=McpIdentityMode.LOCAL_DEV_EXPLICIT,
@@ -162,7 +162,7 @@ def test_nexus_legacy_definition_includes_catalog_surface_when_registry_present(
 
 def test_compose_with_catalog_registry_filters_allowlist() -> None:
     registry = AgentRegistry()
-    nexus_loop = NexusLoop(registry)
+    nexus_loop = NexusLoop(registry, production_mode=False)
     host_execution = build_harness_host_task_execution(nexus_loop, orchestration_triggers=frozenset())
     tool_registry = ToolRegistry()
     _register_tool(tool_registry, "tool.keep")
@@ -217,7 +217,7 @@ def asyncio_run(coro):  # type: ignore[no-untyped-def]
 @pytest.mark.asyncio
 async def test_host_custom_tool_compose_discover_and_invoke() -> None:
     registry = AgentRegistry()
-    nexus_loop = NexusLoop(registry)
+    nexus_loop = NexusLoop(registry, production_mode=False)
     host_execution = build_harness_host_task_execution(nexus_loop, orchestration_triggers=frozenset())
     calls: list[tuple[str, str]] = []
 
@@ -255,7 +255,7 @@ async def test_host_custom_tool_compose_discover_and_invoke() -> None:
 @pytest.mark.asyncio
 async def test_multiple_host_custom_tools_invoke_distinct_handlers() -> None:
     registry = AgentRegistry()
-    nexus_loop = NexusLoop(registry)
+    nexus_loop = NexusLoop(registry, production_mode=False)
     host_execution = build_harness_host_task_execution(nexus_loop, orchestration_triggers=frozenset())
 
     async def alpha_tool(message: str) -> dict[str, object]:
@@ -292,7 +292,7 @@ async def test_multiple_host_custom_tools_invoke_distinct_handlers() -> None:
 @pytest.mark.asyncio
 async def test_host_custom_tool_rejects_kwargs_handlers() -> None:
     registry = AgentRegistry()
-    nexus_loop = NexusLoop(registry)
+    nexus_loop = NexusLoop(registry, production_mode=False)
     host_execution = build_harness_host_task_execution(nexus_loop, orchestration_triggers=frozenset())
 
     async def bad_tool(**kwargs: object) -> dict[str, object]:
@@ -317,7 +317,7 @@ async def test_host_custom_tool_rejects_kwargs_handlers() -> None:
 @pytest.mark.asyncio
 async def test_host_custom_tool_rejects_missing_required_argument() -> None:
     registry = AgentRegistry()
-    nexus_loop = NexusLoop(registry)
+    nexus_loop = NexusLoop(registry, production_mode=False)
     host_execution = build_harness_host_task_execution(nexus_loop, orchestration_triggers=frozenset())
 
     async def alpha_tool(message: str) -> dict[str, object]:

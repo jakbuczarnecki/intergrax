@@ -4,8 +4,6 @@ import re
 from pathlib import Path
 
 import pytest
-
-from testing_support.nexus_handle_task_impl_stubs import with_runtime_event_metric_scope
 from intergrax.contracts.execution_identity import (
     AttemptId,
     ExecutionId,
@@ -27,19 +25,20 @@ from intergrax.contracts.execution_identity import (
     validate_run_id,
     validate_task_id,
 )
+from intergrax.runtime.execution.harness_task_execution_port import (
+    build_harness_root_task_execution_port,
+)
 from intergrax.runtime.nexus.responses.response_schema import RuntimeRequest
+from intergrax.runtime.task.task import Task
 from intergrax.runtime.task.task_result_authoritative_exposure_defaults import (
     terminal_task_result_exposure_no_decision_gate,
 )
-from intergrax.runtime.task.task import Task
 from intergrax.runtime.task.task_run_bridge import (
     new_run_id,
     task_from_runtime_request,
 )
-from intergrax.runtime.execution.harness_task_execution_port import (
-    build_harness_root_task_execution_port,
-)
 from intergrax.runtime.task.unified_task_runner import UnifiedTaskRunner
+from testing_support.nexus_handle_task_impl_stubs import with_runtime_event_metric_scope
 
 _CANONICAL_ID = re.compile(r"^(task|run|attempt|exec|evt)_[0-9a-f]{32}$")
 
@@ -280,13 +279,9 @@ def test_new_run_id_mints_independent_run_id():
 @pytest.mark.unit
 @pytest.mark.gate
 def test_task_run_bridge_has_no_intake_execution_identity_helper() -> None:
-    source = (
-        Path(__file__).resolve().parents[3]
-        / "intergrax"
-        / "runtime"
-        / "task"
-        / "task_run_bridge.py"
-    ).read_text(encoding="utf-8")
+    source = (Path(__file__).resolve().parents[3] / "intergrax" / "runtime" / "task" / "task_run_bridge.py").read_text(
+        encoding="utf-8"
+    )
     assert "mint_intake_execution_identity" not in source
 
 
@@ -394,7 +389,7 @@ async def test_handle_task_initial_execution_consumes_bound_identity(monkeypatch
 
     captured: dict[str, RunId | AttemptId] = {}
     registry = AgentRegistry()
-    loop = NexusLoop(registry)
+    loop = NexusLoop(registry, production_mode=False)
     run_id = mint_run_id()
     attempt_id = mint_attempt_id()
     execution_id = mint_execution_id()
@@ -442,7 +437,7 @@ async def test_handle_task_resume_preserves_run_and_attempt_id(monkeypatch):
 
     captured: dict[str, RunId | AttemptId] = {}
     registry = AgentRegistry()
-    loop = NexusLoop(registry)
+    loop = NexusLoop(registry, production_mode=False)
     run_id = mint_run_id()
     attempt_id = mint_attempt_id()
 
@@ -486,7 +481,7 @@ async def test_handle_task_resume_does_not_mint_attempt_id(monkeypatch):
     from intergrax.runtime.task.task import TaskResult, TaskState
 
     registry = AgentRegistry()
-    loop = NexusLoop(registry)
+    loop = NexusLoop(registry, production_mode=False)
     run_id = mint_run_id()
     attempt_id = mint_attempt_id()
 
@@ -528,7 +523,7 @@ def test_multi_agent_evaluation_requires_active_run_id():
     from intergrax.runtime.nexus.nexus_loop import NexusLoop
     from intergrax.runtime.registry.agent_registry import AgentRegistry
 
-    loop = NexusLoop(AgentRegistry())
+    loop = NexusLoop(AgentRegistry(), production_mode=False)
     loop._evaluation_registry = InMemoryOnlineEvaluationRegistry()
     execution = AgentExecutionResult(
         agent_id="a1",
@@ -558,7 +553,7 @@ async def test_unified_task_runner_resume_uses_checkpoint_identity(monkeypatch):
 
     captured: dict[str, RunId | AttemptId | None] = {}
     registry = AgentRegistry()
-    loop = NexusLoop(registry)
+    loop = NexusLoop(registry, production_mode=False)
     run_id = mint_run_id()
     attempt_id = mint_attempt_id()
 
@@ -836,8 +831,8 @@ def test_trace_bridge_preserves_active_attempt_id() -> None:
 @pytest.mark.unit
 @pytest.mark.gate
 def test_emitter_tags_cannot_override_canonical_task_id() -> None:
-    from intergrax.runtime.observability.emitter import ObservabilityEmitter
     from intergrax.runtime.nexus.tracing.trace_models import TraceComponent, TraceLevel
+    from intergrax.runtime.observability.emitter import ObservabilityEmitter
 
     task_id = mint_task_id()
     run_id = mint_run_id()

@@ -7,7 +7,6 @@ from __future__ import annotations
 from unittest.mock import AsyncMock, MagicMock
 
 import pytest
-
 from intergrax.contracts.attempt_lifecycle import (
     AttemptLifecycleError,
 )
@@ -37,11 +36,9 @@ from intergrax.runtime.execution.execution_terminal import (
     ExecutionTerminalService,
     InMemoryExecutionTerminalStore,
 )
+from intergrax.runtime.nexus.context.context_manager import ContextManager
 from intergrax.runtime.nexus.nexus_loop import NexusLoop
 from intergrax.runtime.nexus.orchestration.graph_runner import NexusGraphRunner
-from testing_support.runtime_event_metric_scope_for_tests import (
-    open_runtime_event_metric_scope_for_tests,
-)
 from intergrax.runtime.nexus.planning.task_planner import NexusPlan
 from intergrax.runtime.nexus.response.final_response_composer import (
     FinalResponseComposer,
@@ -49,6 +46,14 @@ from intergrax.runtime.nexus.response.final_response_composer import (
 from intergrax.runtime.nexus.retry.retry_engine import RetryPolicy
 from intergrax.runtime.registry.agent_registry import AgentRegistry
 from intergrax.runtime.task.task import Task
+from testing_support.runtime_event_metric_scope_for_tests import (
+    open_runtime_event_metric_scope_for_tests,
+)
+
+
+def _strict_context_manager() -> ContextManager:
+    """Context manager with engine and adapter doubles: a production_mode loop requires both (FC-1 Part C2)."""
+    return ContextManager(context_engine=MagicMock(), llm_adapter=MagicMock())
 
 
 class _KvStore(DistributedKVStore):
@@ -112,14 +117,16 @@ def _build_runner(
 
 @pytest.mark.unit
 def test_composition_rejects_production_retry_with_in_memory_store() -> None:
-    with pytest.raises(
-        AttemptLifecycleError, match=DURABLE_ATTEMPT_LIFECYCLE_REQUIRED_MSG
-    ):
+    with pytest.raises(AttemptLifecycleError, match=DURABLE_ATTEMPT_LIFECYCLE_REQUIRED_MSG):
         NexusLoop(
             AgentRegistry(),
             production_mode=True,
             retry_policy=RetryPolicy(max_retries=1),
             disable_execution_continuation=True,
+            disable_human_decision_persistence=True,
+            disable_task_memory_persistence=True,
+            disable_runtime_event_persistence=True,
+            context_manager=_strict_context_manager(),
         )
 
 
@@ -131,6 +138,10 @@ def test_composition_allows_production_without_retry_capability() -> None:
         retry_policy=RetryPolicy(max_retries=0),
         max_run_retries=0,
         disable_execution_continuation=True,
+        disable_human_decision_persistence=True,
+        disable_task_memory_persistence=True,
+        disable_runtime_event_persistence=True,
+        context_manager=_strict_context_manager(),
     )
     assert loop._attempt_lifecycle.store.is_durable is False  # noqa: SLF001
 
@@ -155,6 +166,10 @@ def test_composition_allows_production_retry_with_kv_store() -> None:
         retry_policy=RetryPolicy(max_retries=1),
         attempt_lifecycle=AttemptLifecycleService(store),
         disable_execution_continuation=True,
+        disable_human_decision_persistence=True,
+        disable_task_memory_persistence=True,
+        disable_runtime_event_persistence=True,
+        context_manager=_strict_context_manager(),
     )
     assert loop._attempt_lifecycle.store.is_durable is True  # noqa: SLF001
 
@@ -168,6 +183,10 @@ def test_composition_allows_production_retry_with_document_store() -> None:
         max_run_retries=1,
         attempt_lifecycle=AttemptLifecycleService(store),
         disable_execution_continuation=True,
+        disable_human_decision_persistence=True,
+        disable_task_memory_persistence=True,
+        disable_runtime_event_persistence=True,
+        context_manager=_strict_context_manager(),
     )
     assert loop._attempt_lifecycle.store.is_durable is True  # noqa: SLF001
 
@@ -181,9 +200,7 @@ def test_runtime_gate_rejects_production_transition_with_in_memory_store() -> No
         attempt_id=attempt_a1,
         execution_id=mint_execution_id(),
     )
-    task = Task(
-        task_id=mint_task_id(), tenant_id="tenant-a", user_id="user", message="hello"
-    )
+    task = Task(task_id=mint_task_id(), tenant_id="tenant-a", user_id="user", message="hello")
     lifecycle_service = AttemptLifecycleService(InMemoryAttemptLifecycleStore())
     lifecycle_service.record_initial_attempt(
         tenant_id=task.tenant_id,
@@ -192,9 +209,7 @@ def test_runtime_gate_rejects_production_transition_with_in_memory_store() -> No
     )
     runner = _build_runner(lifecycle_service, production_mode=True)
     try:
-        with pytest.raises(
-            AttemptLifecycleError, match=DURABLE_ATTEMPT_LIFECYCLE_REQUIRED_MSG
-        ):
+        with pytest.raises(AttemptLifecycleError, match=DURABLE_ATTEMPT_LIFECYCLE_REQUIRED_MSG):
             runner._transition_attempt_for_retry(
                 task,
                 run_id=run_id,
@@ -221,9 +236,7 @@ def test_dev_runtime_transition_allows_in_memory_store() -> None:
         attempt_id=attempt_a1,
         execution_id=mint_execution_id(),
     )
-    task = Task(
-        task_id=mint_task_id(), tenant_id="tenant-a", user_id="user", message="hello"
-    )
+    task = Task(task_id=mint_task_id(), tenant_id="tenant-a", user_id="user", message="hello")
     lifecycle_service = AttemptLifecycleService(InMemoryAttemptLifecycleStore())
     lifecycle_service.record_initial_attempt(
         tenant_id=task.tenant_id,
@@ -253,9 +266,7 @@ async def test_dynamic_graph_retry_denied_before_executor_rerun() -> None:
         attempt_id=attempt_a1,
         execution_id=mint_execution_id(),
     )
-    task = Task(
-        task_id=mint_task_id(), tenant_id="tenant-a", user_id="user", message="hello"
-    )
+    task = Task(task_id=mint_task_id(), tenant_id="tenant-a", user_id="user", message="hello")
     lifecycle_service = AttemptLifecycleService(InMemoryAttemptLifecycleStore())
     lifecycle_service.record_initial_attempt(
         tenant_id=task.tenant_id,
@@ -302,18 +313,14 @@ async def test_dynamic_graph_retry_denied_before_executor_rerun() -> None:
         production_mode=True,
     )
     runner.events.publish = AsyncMock()
-    plan = NexusPlan(
-        task_id=task.task_id, classification="test", graph_retry_on_error=1
-    )
+    plan = NexusPlan(task_id=task.task_id, classification="test", graph_retry_on_error=1)
 
     metric_scope = open_runtime_event_metric_scope_for_tests(
         task_id=task.task_id,
         run_id=run_id,
     )
     try:
-        with pytest.raises(
-            AttemptLifecycleError, match=DURABLE_ATTEMPT_LIFECYCLE_REQUIRED_MSG
-        ):
+        with pytest.raises(AttemptLifecycleError, match=DURABLE_ATTEMPT_LIFECYCLE_REQUIRED_MSG):
             await runner.run(
                 task,
                 plan=plan,
@@ -352,11 +359,7 @@ def test_validate_durable_attempt_lifecycle_uses_is_durable_capability() -> None
 
 
 @pytest.mark.unit
-def test_attempt_lifecycle_service_require_durable_raises_for_non_durable_store() -> (
-    None
-):
+def test_attempt_lifecycle_service_require_durable_raises_for_non_durable_store() -> None:
     service = AttemptLifecycleService(InMemoryAttemptLifecycleStore())
-    with pytest.raises(
-        AttemptLifecycleError, match=DURABLE_ATTEMPT_LIFECYCLE_REQUIRED_MSG
-    ):
+    with pytest.raises(AttemptLifecycleError, match=DURABLE_ATTEMPT_LIFECYCLE_REQUIRED_MSG):
         service.require_durable()

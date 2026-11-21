@@ -5,7 +5,6 @@ from __future__ import annotations
 from unittest.mock import AsyncMock
 
 import pytest
-
 from intergrax.contracts.agent_execution_result import (
     AgentExecutionResult,
     AgentExecutionStatus,
@@ -15,21 +14,21 @@ from intergrax.contracts.execution_identity import (
     require_active_execution_identity,
 )
 from intergrax.contracts.execution_lineage import build_execution_lineage_attempt_scope
-from testing_support.nexus_host_task_execution import (
-    build_certified_internal_test_host_task_execution,
-)
 from intergrax.runtime.execution.lineage.persistence import (
     InMemoryExecutionLineagePersistence,
 )
 from intergrax.runtime.nexus.nexus_loop import NexusLoop
 from intergrax.runtime.registry.agent_registry import AgentRegistry
 from intergrax.runtime.task.task import Task, TaskContext, TaskState
+from testing_support.nexus_host_task_execution import (
+    build_certified_internal_test_host_task_execution,
+)
 
 
 @pytest.mark.asyncio
 async def test_build_host_task_execution_wires_lineage_persistence() -> None:
     persistence = InMemoryExecutionLineagePersistence()
-    nexus_loop = NexusLoop(AgentRegistry(), execution_lineage_persistence=persistence)
+    nexus_loop = NexusLoop(AgentRegistry(), execution_lineage_persistence=persistence, production_mode=False)
     host_execution = build_certified_internal_test_host_task_execution(nexus_loop)
     assert host_execution._execution_lineage_persistence is persistence
 
@@ -38,7 +37,7 @@ async def test_build_host_task_execution_wires_lineage_persistence() -> None:
 async def test_host_task_root_admission_exists_before_delegate() -> None:
     persistence = InMemoryExecutionLineagePersistence()
     registry = AgentRegistry()
-    nexus_loop = NexusLoop(registry, execution_lineage_persistence=persistence)
+    nexus_loop = NexusLoop(registry, execution_lineage_persistence=persistence, production_mode=False)
     host_execution = build_certified_internal_test_host_task_execution(nexus_loop)
     task_id = mint_task_id()
     task = Task(

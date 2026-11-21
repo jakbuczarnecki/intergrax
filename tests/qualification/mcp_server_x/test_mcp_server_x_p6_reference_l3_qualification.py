@@ -57,7 +57,7 @@ def _uvicorn_base_url(app: FastAPI) -> Iterator[str]:
 
 def _harness_host_with_reference_mcp() -> FastAPI:
     registry = AgentRegistry()
-    nexus = NexusLoop(registry)
+    nexus = NexusLoop(registry, production_mode=False)
     host_execution = build_harness_host_task_execution(nexus, orchestration_triggers=frozenset())
     mcp = build_mcp_server_x_reference_qualification_server(
         host_execution=host_execution,

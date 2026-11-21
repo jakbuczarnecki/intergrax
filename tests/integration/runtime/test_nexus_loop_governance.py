@@ -1,8 +1,8 @@
 # © Artur Czarnecki. All rights reserved.
 
 import pytest
-
 from intergrax.contracts.execution_identity import mint_run_id, mint_task_id
+from intergrax.runtime.events.runtime_event import RuntimeEventType
 from intergrax.runtime.human.models import HumanResponseVerdict
 from intergrax.runtime.human.pause import HumanPauseCoordinator
 from intergrax.runtime.human.store import SQLiteHumanDecisionStore
@@ -15,7 +15,6 @@ from intergrax.runtime.task.task_contract import (
     TaskHumanInput,
     TaskLongRunningOptions,
 )
-from intergrax.runtime.events.runtime_event import RuntimeEventType
 from testing_support.nexus_hitl_test_agent import (
     NexusBasicHitlTestAgent,
     prepare_nexus_hitl_resume_task,
@@ -31,7 +30,7 @@ _HitlAgent = NexusBasicHitlTestAgent
 async def test_nexus_loop_pauses_for_human_request():
     registry = AgentRegistry()
     registry.register(_HitlAgent())
-    loop = NexusLoop(registry)
+    loop = NexusLoop(registry, production_mode=False)
 
     task = Task(
         tenant_id="t1",
@@ -44,10 +43,7 @@ async def test_nexus_loop_pauses_for_human_request():
 
     assert result.state == TaskState.WAITING_FOR_HUMAN
     assert result.metadata.get("governance_human_request") is not None
-    assert any(
-        e.event_type == RuntimeEventType.HUMAN_APPROVAL_REQUESTED
-        for e in loop.event_bus.history
-    )
+    assert any(e.event_type == RuntimeEventType.HUMAN_APPROVAL_REQUESTED for e in loop.event_bus.history)
 
 
 @pytest.mark.asyncio
@@ -57,7 +53,7 @@ async def test_nexus_loop_resumes_after_human_approval(tmp_path):
     registry = AgentRegistry()
     registry.register(_HitlAgent())
     checkpoint_store = SQLiteTaskCheckpointStore(db_path=tmp_path / "ckpt.db")
-    loop = NexusLoop(registry, checkpoint_store=checkpoint_store)
+    loop = NexusLoop(registry, checkpoint_store=checkpoint_store, production_mode=False)
     run_id = mint_run_id()
     paused = await run_lab_nexus_task(
         loop,
@@ -84,9 +80,7 @@ async def test_nexus_loop_resumes_after_human_approval(tmp_path):
         context=TaskContext(capability="hitl.basic"),
         task_id=paused.task_id,
         options=TaskExecutionOptions(
-            long_running=TaskLongRunningOptions(
-                enabled=True, resume_token=resume_token
-            ),
+            long_running=TaskLongRunningOptions(enabled=True, resume_token=resume_token),
             human=TaskHumanInput(
                 response_text="approve",
                 verdict=HumanResponseVerdict.APPROVE,
@@ -132,6 +126,7 @@ async def test_nexus_loop_fails_on_human_rejection(tmp_path):
         registry,
         human_decision_store=human_store,
         checkpoint_store=checkpoint_store,
+        production_mode=False,
     )
 
     run_id = mint_run_id()
@@ -160,9 +155,7 @@ async def test_nexus_loop_fails_on_human_rejection(tmp_path):
         context=TaskContext(capability="hitl.basic"),
         task_id=paused.task_id,
         options=TaskExecutionOptions(
-            long_running=TaskLongRunningOptions(
-                enabled=True, resume_token=resume_token
-            ),
+            long_running=TaskLongRunningOptions(enabled=True, resume_token=resume_token),
             human=TaskHumanInput(
                 response_text="reject",
                 verdict=HumanResponseVerdict.REJECT,
@@ -202,6 +195,7 @@ async def test_nexus_loop_escalates_and_persists(tmp_path):
         registry,
         human_decision_store=human_store,
         checkpoint_store=checkpoint_store,
+        production_mode=False,
     )
 
     task_id = mint_task_id()
@@ -232,9 +226,7 @@ async def test_nexus_loop_escalates_and_persists(tmp_path):
         context=TaskContext(capability="hitl.basic"),
         task_id=task_id,
         options=TaskExecutionOptions(
-            long_running=TaskLongRunningOptions(
-                enabled=True, resume_token=resume_token
-            ),
+            long_running=TaskLongRunningOptions(enabled=True, resume_token=resume_token),
             human=TaskHumanInput(
                 response_text="escalate",
                 verdict=HumanResponseVerdict.ESCALATE,
@@ -253,10 +245,7 @@ async def test_nexus_loop_escalates_and_persists(tmp_path):
     )
     assert escalated.state == TaskState.WAITING_FOR_HUMAN
     assert escalated.metadata.get("escalation_level") == 1
-    assert any(
-        e.event_type == RuntimeEventType.INTERRUPT_ESCALATED
-        for e in loop.event_bus.history
-    )
+    assert any(e.event_type == RuntimeEventType.INTERRUPT_ESCALATED for e in loop.event_bus.history)
     records = human_store.list_for_task(task_id, "t1")
     assert len(records) == 1
     assert records[0].verdict == HumanResponseVerdict.ESCALATE

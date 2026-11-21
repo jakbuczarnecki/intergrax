@@ -5,7 +5,6 @@
 from __future__ import annotations
 
 import pytest
-
 from intergrax.agents.harness_reference_agent import HarnessReferenceAgent
 from intergrax.contracts.agent_contract_meta import AgentContract
 from intergrax.contracts.agent_decision import AgentDecision, AgentDecisionType
@@ -36,7 +35,7 @@ from intergrax.runtime.policy.policy_engine import PolicyEngine
 from intergrax.runtime.registry.agent_registry import AgentRegistry
 from intergrax.runtime.replay.metrics import ExecutionMetrics
 from intergrax.runtime.replay.models import ReconstructedRun
-from intergrax.runtime.replay.policy import ExecutionPolicyEngine, PolicyDecisionType
+from intergrax.runtime.replay.policy import ExecutionPolicyEngine
 from intergrax.runtime.replay.policy_config import ExecutionPolicyConfig
 from intergrax.runtime.replay.regression import RegressionSignals
 from intergrax.runtime.task.task import Task
@@ -114,7 +113,6 @@ class _EmptyHistoryEvaluator:
         return RegressionSignals()
 
 
-
 class _EmptyMetricsStore:
     def get_recent(self, agent_id: str, limit: int) -> list[object]:
         _ = agent_id, limit
@@ -179,7 +177,7 @@ def test_gov_x2_r3_04_blank_tenant_skips_evaluation() -> None:
 @pytest.mark.asyncio
 async def test_gov_x2_r3_02_nexus_finish_task_propagates_task_tenant() -> None:
     service = _RecordingGovernanceService()
-    loop = NexusLoop(AgentRegistry(), governance_service=service)
+    loop = NexusLoop(AgentRegistry(), governance_service=service, production_mode=False)
     run_id = mint_run_id()
     attempt_id = mint_attempt_id()
     task_id = mint_task_id()
@@ -200,9 +198,7 @@ async def test_gov_x2_r3_02_nexus_finish_task_propagates_task_tenant() -> None:
         open_runtime_event_metric_scope_for_tests,
     )
 
-    metric_scope = open_runtime_event_metric_scope_for_tests(
-        task_id=task_id, run_id=run_id
-    )
+    metric_scope = open_runtime_event_metric_scope_for_tests(task_id=task_id, run_id=run_id)
     try:
         await loop._finish_task(  # noqa: SLF001
             task,
@@ -247,9 +243,7 @@ class _UaepPostRunTenantAgent(HarnessReferenceAgent):
     def get_steps(self) -> list[AgentStep]:
         return [AgentStep(step_id="s1", step_name="only", step_index=0)]
 
-    async def run_step(
-        self, step: AgentStep, ctx: RuntimeExecutionContext
-    ) -> StepOutput:
+    async def run_step(self, step: AgentStep, ctx: RuntimeExecutionContext) -> StepOutput:
         _ = ctx
         return StepOutput(step_id=step.step_id, summary="out")
 

@@ -1,10 +1,9 @@
 # © Artur Czarnecki. All rights reserved.
 
 import pytest
-
 from intergrax.contracts.execution_identity import mint_task_id
-from intergrax.runtime.human.escalation import EscalationRouter, parse_human_response
 from intergrax.contracts.human_approver import local_development_approver_evidence
+from intergrax.runtime.human.escalation import EscalationRouter, parse_human_response
 from intergrax.runtime.human.models import (
     EscalationTarget,
     HumanDecisionRecord,
@@ -120,5 +119,5 @@ def test_persist_human_decision_uses_generic_persistence() -> None:
 
 def test_nexus_loop_accepts_human_decision_persistence() -> None:
     store = InMemoryHumanDecisionPersistence()
-    loop = NexusLoop(AgentRegistry(), human_decision_store=store)
+    loop = NexusLoop(AgentRegistry(), human_decision_store=store, production_mode=False)
     assert loop._human_store is store
