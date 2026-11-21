@@ -17,7 +17,17 @@
 **Integration:** not done. **Push** and **PR** are operator actions only. **FCS**, **PT-Q**, and **M3** are not executed by EQO.
 ## Operator merge rule (2026-11-21)
 
-Feature branches are cut from `origin/development` (pin `a0598ba3e4f4f903eb4da3db8ea012d5cbf71225`) and integrate **only** to `development`. No feature-to-feature merge; no merge target `arch-freeze/rw-train` or another `eqo/*` branch; no sub-branch whose parent is `eqo/*`. Branches already based on `8e146e21` (`origin/arch-freeze/rw-train`) are **train-line evidence** only. Merging that line into `development` or cherry-picking train commits into `development` is the **FCS** boundary — not performed in this EQO session. Recorded in `EQO_ORCHESTRATION_STATE.json` → `operator_merge_rule`.
+Feature branches are cut from `origin/development` (pin `a0598ba3e4f4f903eb4da3db8ea012d5cbf71225`) and integrate **only** to `development` (operator push/PR). No feature-to-feature merge; no merge target `arch-freeze/rw-train` or another `eqo/*` branch. Unique commits that had been made on train-based `eqo/*` branches are replayed onto **development-based** branches (cherry-pick of feature commits only); the train line (`8e146e21`) itself is **not** merged into `development` (FCS). Train branches with zero unique commits stay replay evidence only. Recorded in `EQO_ORCHESTRATION_STATE.json` → `operator_merge_rule` and `development_branch_replay`.
+
+### Development-based replay (2026-11-21)
+
+| Source branch | Unique commits | Dev branch | HEAD | Cherry-pick |
+|---------------|----------------|------------|------|-------------|
+| `eqo/w2-a4-027` | `9c909d96b`, `06604af53` | `eqo/dev-a4-027` | `a0598ba3e` (unchanged) | **BLOCKED_CHERRY_PICK** — `governance/tickets/T-IGX-052-A.md`, `governance/tickets/T-IGX-055-B.md`, `…/EQO-PKG-A4-027/IMPLEMENTATION_EVIDENCE.md` |
+| `eqo/w2-a4034` | `34a0af435` | `eqo/dev-a4-034` | `d1da3b3c1` | CLEAN |
+| `eqo/w2-a6006` | `c5b9648b4` | `eqo/dev-a6-006` | `b02278643` | CLEAN |
+
+Worktrees: `eqo-dev-a4027`, `eqo-dev-a4034`, `eqo-dev-a6006` under `D:\Projekty\_wt\intergrax`. Verified: `8e146e21` is not an ancestor of any new dev branch.
 
 ## 1029 obligation paths (section 2 first-match)
 

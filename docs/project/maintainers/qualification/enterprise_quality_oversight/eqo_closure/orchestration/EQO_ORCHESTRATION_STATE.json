@@ -1,11 +1,66 @@
 {
     "schema":  "eqo.orchestration_state.v1",
-    "updated_at":  "2026-11-21T14:00:00+00:00",
+    "updated_at":  "2026-11-21T15:05:00+00:00",
     "operator_merge_rule":  {
-                                "recorded_at":  "2026-11-21T14:00:00+00:00",
+                                "recorded_at":  "2026-11-21T15:05:00+00:00",
                                 "development_pin":  "a0598ba3e4f4f903eb4da3db8ea012d5cbf71225",
-                                "text":  "Feature branches are cut from origin/development and integrate only to development. Do not merge a feature branch into another feature branch, into eqo/*, or into arch-freeze/rw-train. Do not create a sub-branch whose parent is an eqo/* branch. Branches already based on 8e146e21 (origin/arch-freeze/rw-train) are train-line evidence only; merging them into development or cherry-picking train commits into development is the FCS boundary and is not performed by EQO orchestration in this session."
+                                "text":  "Feature branches are cut from origin/development (a0598ba3) and integrate only to development via operator push/PR. Do not merge feature branches into each other, into other eqo/* branches, or into arch-freeze/rw-train (8e146e21). Unique commits that were made on train-based eqo/* branches are replayed onto new development-based branches (cherry-pick of feature commits only); the train line itself is not merged into development (FCS). Train-based branches with zero unique commits remain replay evidence only."
                             },
+    "development_branch_replay":  {
+                                      "recorded_at":  "2026-11-21T15:05:00+00:00",
+                                      "development_pin":  "a0598ba3e4f4f903eb4da3db8ea012d5cbf71225",
+                                      "train_pin_excluded":  "8e146e21cd8c63a47d621edc05d5f0036ba0c9ee",
+                                      "replays":  [
+                                                      {
+                                                          "source_branch":  "eqo/w2-a4-027",
+                                                          "unique_commits":  [
+                                                                                 "9c909d96b",
+                                                                                 "06604af53"
+                                                                             ],
+                                                          "development_branch":  "eqo/dev-a4-027",
+                                                          "development_head":  "a0598ba3e4f4f903eb4da3db8ea012d5cbf71225",
+                                                          "worktree":  "D:\\Projekty\\_wt\\intergrax\\eqo-dev-a4027",
+                                                          "cherry_pick_result":  "BLOCKED_CHERRY_PICK",
+                                                          "blocked_files":  [
+                                                                                "governance/tickets/T-IGX-052-A.md",
+                                                                                "governance/tickets/T-IGX-055-B.md",
+                                                                                "docs/project/maintainers/qualification/enterprise_quality_oversight/eqo_closure/orchestration/packets/EQO-PKG-A4-027/IMPLEMENTATION_EVIDENCE.md"
+                                                                            ]
+                                                      },
+                                                      {
+                                                          "source_branch":  "eqo/w2-a4034",
+                                                          "unique_commits":  [
+                                                                                 "34a0af435"
+                                                                             ],
+                                                          "development_branch":  "eqo/dev-a4-034",
+                                                          "development_head":  "d1da3b3c10a8d3610af5158c1c65cc8ba4b73728",
+                                                          "worktree":  "D:\\Projekty\\_wt\\intergrax\\eqo-dev-a4034",
+                                                          "cherry_pick_result":  "CLEAN"
+                                                      },
+                                                      {
+                                                          "source_branch":  "eqo/w2-a6006",
+                                                          "unique_commits":  [
+                                                                                 "c5b9648b4"
+                                                                             ],
+                                                          "development_branch":  "eqo/dev-a6-006",
+                                                          "development_head":  "b0227864377244555cccb4182287e4820fc7759a",
+                                                          "worktree":  "D:\\Projekty\\_wt\\intergrax\\eqo-dev-a6006",
+                                                          "cherry_pick_result":  "CLEAN"
+                                                      }
+                                                  ],
+                                      "train_evidence_unchanged":  [
+                                                                       "eqo/w2-a4-017",
+                                                                       "eqo/w2-a4-026",
+                                                                       "eqo/w2-fc1",
+                                                                       "eqo/w2-fc2",
+                                                                       "eqo/w2-fc3",
+                                                                       "eqo/w2-rest"
+                                                                   ],
+                                      "development_only_unchanged":  [
+                                                                         "eqo/w1-f1-view",
+                                                                         "eqo/w1-a4-006"
+                                                                     ]
+                                  },
     "eqo_terminal_status":  "EQO_NOT_CLOSED_EXACT_BLOCKERS",
     "capability_gate":  "PARTIAL_ORCHESTRATION_AVAILABLE",
     "integration_status":  "NOT_DONE",
