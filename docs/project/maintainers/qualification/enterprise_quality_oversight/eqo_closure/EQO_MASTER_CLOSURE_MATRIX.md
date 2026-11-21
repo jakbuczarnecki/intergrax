@@ -60,7 +60,11 @@
 | W4-05 | `w4/W4-05_NONE_JUSTIFICATION.md` | `STARTED` — five NONE rows justified |
 | W4-02 | tranches 01–07 | `QUEUE_COMPLETE` (prior waves) |
 | X-01..03,05,07,08 | `eqo_closure/x/**` wave-4 reads | `PARTIAL` — memos refreshed; BLOCKER/BLOCKED unchanged |
-| W3 AUD (WB01–12) | `AUD_SESSION_E.md` + `CLS_PRE.md` + `W3_CLS.md` (WB08 deferred) | `PARTIAL` — wave-5 disposition published; terminal CLS not claimed |
+| W3 AUD (WB01–12) | `AUD_SESSION_E.md` + `CLS_PRE.md` + `W3_CLS.md` + `COR_DRV.md` | `PARTIAL` — wave-5 CLS + wave-9 docs disposition paths; terminal CLS not claimed |
+
+## Wave-9 COR/DRV (docs disposition only)
+
+**Land:** integrator `eqo/wave-9/integ` (rebased on `origin/development`). **Artefact:** `runs/wbNN/COR_DRV.md` routes session E FAIL/BLOCKED rows to documentation disposition paths; product CL-01 deferred (wave 10+). **COR outcome:** `NOT_APPLICABLE_WITH_EVIDENCE` for product in this wave.
 
 ## Wave-5 W3 CLS (disposition only)
 
