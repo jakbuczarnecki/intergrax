@@ -9,11 +9,13 @@
   ],
   "evidence_pin": "28c27cb896d02e0185b9fa02047411fa152f6469",
   "worktree": "d:/Projekty/_wt/intergrax/eqo-w3",
-  "executed_utc": "2026-11-21T06:22:05Z",
+  "executed_utc": "2026-11-21T08:29:40Z",
+  "rerun_lane": "eqo/wave-6/exe-docs",
   "pytest_command_sha256": "a9361ab1914706309bc7081f553d335b021854a2a2f808233efc1ba7f0461030",
   "pytest_command": "uv run pytest tests/unit/skills/test_skill_x_batch_c_versioning_provenance_recovery.py tests/unit/skills/test_skill_host_lifecycle_batch_a.py tests/qualification/mcp_server_x/test_mcp_server_x_p5_qualification_batch.py tests/qualification/prod_q/test_prod_q_r1_r7_q_package_b_strict_serving_wiring_gate.py -q --tb=line",
-  "pytest_exit_code": 1,
-  "pytest_summary": "1 failed, 65 passed in 11.30s",
+  "pytest_exit_code": 0,
+  "pytest_summary": "66 passed in 66.86s",
+  "pytest_env_note": "uv sync --extra dev --extra dev-ci --extra dev-unit-cert",
   "finding_ids": [
     "EQOA-A2-027",
     "EQOA-A4-040"
@@ -21,7 +23,5 @@
   "log_path": "eqo_closure/runs/wb09/pytest_wb09_exe.log",
   "des_path": "eqo_closure/runs/wb09/DES_PREREG.json",
   "disposition_path": "eqo_closure/runs/wb09/SKILLS_SERVING_EVIDENCE.md",
-  "blockers": [
-    "PYTEST_SLICE_NON_ZERO_EXIT"
-  ]
+  "blockers": []
 }
