@@ -29,7 +29,7 @@ NO_CHECK_REQUIRED_RULES: tuple[str, ...] = ()
 
 
 # PDC product-domain prefix -> existing manifest check ids (B-P6-G, T-IGX-036-V). Longest prefix wins, so a more
-# specific prefix repeats the ids of its parent area. Every id exists in the shipped manifest (85 checks); each
+# specific prefix repeats the ids of its parent area. Every id exists in the shipped manifest (91 checks); each
 # rule names the entrypoint that already exercises the area.
 PDC_DOMAIN_IMPACT_RULES: tuple[tuple[str, tuple[str, ...]], ...] = (
     # ebh_3 dependency ownership gate + ebh_5 factory/plugin one-pass + hardening_3 layer boundary gate.
@@ -286,6 +286,17 @@ WAVE_DIFF_FULL_IMPACT_PREFIXES: tuple[str, ...] = (
     "intergrax/multimedia",  # RW-RUNTIME (PR #670): images loader
     "intergrax/background_tasks",
     "intergrax/runtime/sandbox",
+    # Part E final wave-diff @ af-w3/impact head: residual PDC-touched groups (xd_12).
+    "agents/external_contractor_adapter",
+    "agents/organization_worker",
+    "intergrax/agents",
+    "intergrax/scaffold",
+    "intergrax/harness",
+    "intergrax/runtime/nexus",
+    "intergrax/runtime/task_memory",
+    "intergrax/runtime/human",
+    "intergrax/runtime/events",
+    "intergrax/runtime/capacity",
 )
 
 
