@@ -1,4 +1,4 @@
-# Train ↔ development gap (TOR C — po merge #699; fala 6)
+﻿# Train ↔ development gap (TOR C — po merge #699; fala 6)
 
 **Snapshot:** 2026-11-21  
 **Disposition:** **MERGED / replay OPEN (QUEUED / STOP)** — PR **#699** (`af-dev-train-sync` → `rw-train`) **MERGED** @ `dbaebfa8cd13a6ba8bfa6eef2cdf581216ddb3d2`; replay `governance-fast` (oraz `ci-smoke` / `rag-gate`) na train pin pozostaje **OPEN** (ACT-N11 **red** na merge — patrz `TRAIN_CHERRY_PICK_STATUS.md`). Merge mandate OD-AF-AUTO-01 **nie** spełniony na zielonym checku.
