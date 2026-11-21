@@ -77,10 +77,17 @@ def test_single_ollama_row_carries_model_serving_and_embedding_contribution(fres
 
 
 def test_default_embedding_manager_builds_on_fresh_catalog(fresh_catalog: None) -> None:
+    from intergrax.integrations.contracts.base import LabSelectorOptIn
     from intergrax.rag.embedding.bootstrap.default_embedding_engine import (
         create_default_embedding_manager,
     )
+    from intergrax.rag.embedding.registry.provider_authority import lab_embedding_provider_slug
 
-    manager = create_default_embedding_manager()
+    manager = create_default_embedding_manager(
+        lab_opt_in=LabSelectorOptIn(
+            selector=lab_embedding_provider_slug(),
+            reason="PDC-X reg_p ollama single row",
+        ),
+    )
 
     assert manager is not None
