@@ -7,18 +7,19 @@ from __future__ import annotations
 import inspect
 
 import pytest
-
+from intergrax.runtime.architecture.agent_certification import AgentCertificationEvaluation
 from intergrax.runtime.architecture.agent_promotion import (
     PromotionEvidenceBundle,
     PromotionStage,
     evaluate_agent_promotion,
 )
-from intergrax.runtime.architecture.agent_certification import AgentCertificationEvaluation
 from intergrax.runtime.architecture.online_evaluation import record_shadow_observation
 from intergrax.runtime.architecture.online_evaluation_models import OnlineEvaluationMode
 from intergrax.runtime.architecture.online_evaluation_registry import InMemoryOnlineEvaluationRegistry
-from intergrax.runtime.decision_verification_composition import build_decision_verification_pipeline
-from intergrax.runtime.decision_verification_composition import DecisionVerificationPipelineBuildSpec
+from intergrax.runtime.decision_verification_composition import (
+    DecisionVerificationPipelineBuildSpec,
+    build_decision_verification_pipeline,
+)
 
 pytestmark = [pytest.mark.unit, pytest.mark.gate]
 
@@ -75,11 +76,21 @@ def test_r2_eval_04_decision_verification_distinct_from_evaluation_registry() ->
     assert not hasattr(pipeline, "append_observation")
 
 
-def test_r2_eval_05_tenant_verdict_not_tenant_aware_at_this_stage() -> None:
+def test_r2_eval_05_base_observation_tenant_id_contract() -> None:
     from intergrax.runtime.architecture.online_evaluation_models import OnlineEvaluationObservation
 
-    field_names = OnlineEvaluationObservation.model_fields.keys()
-    assert "tenant_id" not in field_names
+    assert "tenant_id" in OnlineEvaluationObservation.model_fields
+    with pytest.raises(ValueError, match="tenant_id"):
+        OnlineEvaluationObservation(
+            observation_id="obs-ctrl",
+            run_id="run-a",
+            agent_id="agent-1",
+            mode=OnlineEvaluationMode.SHADOW,
+            scenario_id="scenario-a",
+            passed=True,
+            score=1.0,
+            tenant_id="",
+        )
     registry = InMemoryOnlineEvaluationRegistry()
     record_shadow_observation(
         run_id="run-a",
@@ -88,9 +99,10 @@ def test_r2_eval_05_tenant_verdict_not_tenant_aware_at_this_stage() -> None:
         passed=True,
         score=1.0,
         registry=registry,
+        tenant_id="tenant-ctrl",
     )
-    # run_id scoping is host/run identity only — not tenant isolation (TRACKED TENANT-X debt).
     assert all(obs.run_id == "run-a" for obs in registry.list_observations())
+    assert all(getattr(obs, "tenant_id", None) == "tenant-ctrl" for obs in registry.list_observations())
 
 
 def test_r2_eval_06_shadow_mode_remains_non_authoritative() -> None:
