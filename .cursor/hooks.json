@@ -1,0 +1,12 @@
+{
+  "version": 1,
+  "hooks": {
+    "subagentStart": [
+      {
+        "command": "python scripts/hooks/igx_subagent_guard.py",
+        "matcher": "^generalPurpose$",
+        "failClosed": true
+      }
+    ]
+  }
+}

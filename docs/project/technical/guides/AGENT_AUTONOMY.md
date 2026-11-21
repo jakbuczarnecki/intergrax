@@ -28,16 +28,18 @@ How agents execute an approved plan without go-ahead questions and come back to 
 
 ## What the Stop hook does
 
-`scripts/hooks/igx_stop_guard.py`, registered for `Stop` in `.claude/settings.json`, stdlib only, fails open on any error, `IGX_HOOKS=off` disables it. Without an active plan it allows every stop. With one it reads the last assistant message:
+`scripts/hooks/igx_stop_guard.py`, registered for `Stop` in `.claude/settings.json`, stdlib only, fails open on any error, `IGX_HOOKS=off` disables it. Without an active plan it allows every stop. With one it checks, in this order:
 
-| Last message | Result |
-|--------------|--------|
+| Input | Result |
+|-------|--------|
+| `status` is `error` or `aborted` (Cursor native payload) | allowed, plan kept |
+| no non-empty `last_assistant_message` (the Cursor native payload has none) | allowed, an escalation cannot be told apart |
 | starts `ESCALATION:` | allowed |
 | starts `PLAN COMPLETE` | allowed, active plan cleared |
 | no open step left | allowed, active plan cleared |
 | anything else, open step remains | blocked; the reason names the next open step |
 
-Loop limit: the third consecutive block without a checkbox change lets one stop through with a warning, then the counter restarts, so a stuck session cannot spin forever. `stop_hook_active` turns are counted by the same limit instead of being allowed outright (that would block only once).
+The block output is `decision: block` + `reason` only. Cursor maps that to a single continuation itself, so the guard never emits `followup_message` and `.cursor/hooks.json` has no `stop` entry (a second channel would double the follow-up). Loop limit: the third consecutive block without a checkbox change lets one stop through with a warning, then the counter restarts, so a stuck session cannot spin forever. `stop_hook_active` turns are counted by the same limit instead of being allowed outright (that would block only once).
 
 Verified with real `claude -p` runs (model sonnet): with two open steps and a first reply that was only a question, the hook blocked it, the agent created both files, ticked both steps and ended with `PLAN COMPLETE`; a plan whose first step needed `git push` ended with `ESCALATION: forbidden action needed` and was not blocked. Evidence under `.tmp/session/token-diet/stoprun_*.jsonl` of the session that built it.
 
@@ -52,9 +54,20 @@ Skill `/igx-autonomy` (name-only) holds the protocol. Sub-agents (`igx-researche
 | core rule (no questions, `ESCALATION:`, `PLAN COMPLETE`) | yes | yes, via `.cursor/rules/intergrax-core.mdc` |
 | typed agents with `DONE:`/`BLOCKED:` | yes | yes, via `.cursor/agents/` |
 | `/igx-run-plan`, `/igx-autonomy` skills | yes | generated into `.cursor/skills/`, not exercised |
-| Stop hook that blocks questions | yes | no: a first-reply question ended the run |
+| Stop hook that blocks questions | yes (`Stop`, `decision: block`) | `PARTIAL`: Cursor documents mapping `decision: block` to one continuation, but an earlier CLI run showed a first-reply question ending the run; execution and stdin shape in the current version are `NOT_VERIFIED` |
+| `generalPurpose` denied | `permissions.deny` | `PARTIAL`: `.cursor/hooks.json` `subagentStart` (`^generalPurpose$`, `failClosed`) runs `igx_subagent_guard.py`; whether the event fires is `NOT_VERIFIED` (earlier CLI check: native hooks did not fire) |
 
-In Cursor the rule is text only, so an agent can still ask a question; use `/igx-run-plan` from Claude Code for runs that must not stop.
+`PARTIAL` and `NOT_VERIFIED` stay until a probe shows the hook call, exactly one follow-up and no continuation after `ESCALATION:`, `error` or `aborted`. A missing probe is neither parity nor a failure; the text rules (Autonomy) apply either way and never allow asking for permission to take the next step.
+
+In Cursor the rule is text first (inlined into `.cursor/rules/intergrax-core.mdc`), so an agent can still ask a question when no hook starts; use `/igx-run-plan` from Claude Code for runs that must not stop.
+
+### Shared and per-tool
+
+- **Shared:** the `agent-env/` SSOT, the same skill and role ids, the same guard scripts, Autonomy text, ticket `Ref` trailers, no push / PR / merge without escalation.
+- **Claude Code only:** expanded `@` imports in `CLAUDE.md`, model slugs, `tools` / `effort` / `maxTurns` / `isolation: worktree`, `permissions.deny`, `skillOverrides`.
+- **Cursor only:** the inlined `.mdc` body, `readonly` and `model: inherit` in agents, the `subagentStart` entry in `.cursor/hooks.json`, scanning `.claude/skills` next to `.cursor/skills`.
+- **Not enforced in Cursor until a probe says otherwise:** `permissions.deny`, worktree isolation of the implementer, per-role model choice, a live stop hook, a live `subagentStart`.
+- **Text only:** escalation, edit scope, English-only VCS text, independence of the G6 audit.
 
 ## Nothing to install
 

@@ -4,12 +4,17 @@
 The active plan is named in the one-line file ``.tmp/session/autonomy/active-plan`` (a path to a
 markdown plan with ``- [ ]`` / ``- [x]`` step lists). Without that file the hook allows every stop.
 
-Hook mode (no arguments, Claude Code ``Stop`` event, JSON on stdin):
+Hook mode (no arguments, Claude Code ``Stop`` event or Cursor native ``stop``, JSON on stdin):
 
+* allow when ``status`` is ``error`` or ``aborted`` (a failed or cancelled run is never continued);
+* allow when the payload has no non-empty ``last_assistant_message`` (an escalation cannot be told apart);
 * allow when the last assistant message starts with ``ESCALATION:``;
 * allow and clear the active plan when it starts with ``PLAN COMPLETE``;
 * allow when no open step is left (the active plan is cleared);
 * otherwise block with the next open step and "continue; stop only with ESCALATION:".
+
+The block output is ``decision: block`` + ``reason`` only. Cursor maps it to one continuation itself, so
+no ``followup_message`` key and no second ``stop`` hook may be added (that would double the follow-up).
 
 Loop limit: the third consecutive block without any checkbox change is allowed once with a warning
 (and the counter resets), so the hook can never spin forever. ``stop_hook_active`` marks a turn that
@@ -99,13 +104,17 @@ def _emit(payload: dict) -> int:
     return 0
 
 
-def decide(root: Path, message: str) -> dict | None:
+def decide(root: Path, message: str, status: str = "") -> dict | None:
     """Hook decision as a JSON-able dict, or None to allow silently."""
     loaded = read_plan(root)
     if loaded is None:
         return None
-    plan, steps = loaded
+    if status.strip().lower() in ("error", "aborted"):
+        return None
     text = (message or "").strip()
+    if not text:
+        return None
+    plan, steps = loaded
     if text.startswith("ESCALATION:"):
         _save_state(root, {})
         return None
@@ -144,7 +153,7 @@ def hook() -> int:
         root = find_root(Path(str(data.get("cwd"))) if isinstance(data, dict) and data.get("cwd") else None)
         if root is None or not isinstance(data, dict):
             return 0
-        result = decide(root, str(data.get("last_assistant_message") or ""))
+        result = decide(root, str(data.get("last_assistant_message") or ""), str(data.get("status") or ""))
         return _emit(result) if result else 0
     except Exception:  # noqa: BLE001 - fail open: a broken guard must never trap a session
         return 0

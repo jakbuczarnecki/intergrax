@@ -22,3 +22,5 @@ The plan is a markdown file with `- [ ]` / `- [x]` step lines. Tick a step (`- [
 `/igx-run-plan stop` runs `python scripts/hooks/igx_stop_guard.py stop`. `status` prints the next open step.
 
 The Stop hook blocks any other stop while a step is open; after three blocks without a checkbox change it lets one stop through with a warning. `IGX_HOOKS=off` disables it.
+
+Cursor: it maps the existing `decision: block` + `reason` to one continuation itself, so do not add a `followup_message` or a second stop hook. When the hook does not start, the Autonomy rule still applies: never ask for permission to take the next step.
