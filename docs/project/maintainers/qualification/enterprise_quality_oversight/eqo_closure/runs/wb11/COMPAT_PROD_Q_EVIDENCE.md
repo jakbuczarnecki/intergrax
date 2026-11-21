@@ -20,8 +20,8 @@
 
 ## EXE @ TRAIN_PIN
 
+**Wave-10 rerun (2026-11-21):** 1 failed, 68 passed in 188.10s (0:03:08) (exit 1). Primary failure: `test_xd12_every_pdc_touched_product_module_maps_to_a_domain_check`.
 Prereg SHA256: `088a4be905ca5dfbd81a39aa1b86c853d37d346cc4698e37b9342318bcffb9ef` (`DES_PREREG.json`).
-
 **Result:** 1 failed, 68 passed in 150.74s (0:02:30) (exit 1).
 
 ## Disposition (pre-AUD)

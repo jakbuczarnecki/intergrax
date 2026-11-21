@@ -19,6 +19,10 @@
 2. **T-IGX-044-F / #673** merge `9b7eca0e9` is on pin (W2-08); material-governance validators exist under `scripts/governance/` and `tests/unit/governance/test_iiac_*.py`.
 3. **IIAC activation:** `pytest tests/unit/governance/test_iiac_activation_gate.py` → **1 failed** (`test_canonical_policy_is_in_force_and_verifies`), 23 passed, 1 skipped. Failure: `IIAC policy activation: FAIL` — consistent with EQOA-A0-007 / X-03 (`NOT_IN_FORCE` on train tree).
 
+## EXE @ TRAIN_PIN
+
+**Wave-10 rerun (2026-11-21):** 1 failed, 23 passed, 1 skipped in 314.65s (exit 1). Probe unchanged; IIAC canonical policy still FAIL @ TRAIN_PIN.
+
 ## Disposition (pre-AUD)
 
 | Finding | DIS (interim) |
@@ -27,4 +31,4 @@
 | A1-021, A5-003, A7-030 | `ACCEPTED_SCOPED_LIMITATION` pending session E — doc/dossier gap |
 | IIAC cluster (A0-007 related) | `BLOCKED` pasmo G — RB-2 before IN_FORCE |
 
-Evidence log: `pytest_wb01_readonly.log`.
+Evidence logs: `pytest_wb01_exe.log` (wave-10), `pytest_wb01_readonly.log` (prior read-only run).

@@ -13,8 +13,8 @@
 
 ## EXE @ TRAIN_PIN
 
+**Wave-10 rerun (2026-11-21):** 6 failed, 66 passed, 1 skipped in 98.73s (0:01:38) (exit 1). TRACE-X closed-world and ROADMAP-REPLAY mechanical exit gates still red on TRAIN_PIN.
 Prereg SHA256: `e70afb0eeecc8a182df8e993afb77c4e84140c5889ad6350a761770ea5150d64` (`DES_PREREG.json`).
-
 **Result:** 6 failed, 66 passed, 1 skipped in 80.56s (0:01:20) (exit 1).
 
 ## Disposition (pre-AUD)

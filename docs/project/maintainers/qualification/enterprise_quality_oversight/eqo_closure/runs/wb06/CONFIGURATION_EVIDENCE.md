@@ -13,8 +13,9 @@
 
 ## EXE @ TRAIN_PIN
 
-Prereg SHA256: `51d8f0b813cc4721650d73a3eab662433b00b9cf7d96ac1ab7607c34376ca38e` (`DES_PREREG.json`).
+**Wave-10 rerun (2026-11-21):** 32 passed in 188.25s (0:03:08) (exit 0). Full extras sync; Ollama adapter probe now exercises LangChain surface.
 
+Prereg SHA256: `51d8f0b813cc4721650d73a3eab662433b00b9cf7d96ac1ab7607c34376ca38e` (`DES_PREREG.json`).
 **Wave-6 rerun (2026-11-21):** 1 failed, 31 passed in 21.09s (exit 1). CONFIG-X qualification and adversarial gates green; `test_unresolved_capabilities_fail_closed` fails closed on missing optional extra `llm-langchain-ollama` (environment probe, not in prereg sync set).
 
 ## Disposition (pre-AUD)
