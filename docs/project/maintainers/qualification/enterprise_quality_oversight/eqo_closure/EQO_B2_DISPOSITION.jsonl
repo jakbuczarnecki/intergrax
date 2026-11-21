@@ -1,0 +1,186 @@
+{"finding_id": "EQOA-A0-001", "assigned_task_id": "EQO-W4-03", "next_action_source": "OWNER_DECISION", "severity": "MEDIUM", "owner": "Operator"}
+{"finding_id": "EQOA-A0-002", "assigned_task_id": "EQO-W4-03", "next_action_source": "OWNER_DECISION", "severity": "MEDIUM", "owner": "Operator"}
+{"finding_id": "EQOA-A0-003", "assigned_task_id": "EQO-W4-03", "next_action_source": "OWNER_DECISION", "severity": "MEDIUM", "owner": "Operator"}
+{"finding_id": "EQOA-A0-004", "assigned_task_id": "EQO-W4-03", "next_action_source": "OWNER_DECISION", "severity": "LOW", "owner": "Operator"}
+{"finding_id": "EQOA-A0-005", "assigned_task_id": "EQO-W4-03", "next_action_source": "OWNER_DECISION", "severity": "LOW", "owner": "ARCH-FREEZE"}
+{"finding_id": "EQOA-A0-006", "assigned_task_id": "EQO-W4-03", "next_action_source": "OWNER_DECISION", "severity": "LOW", "owner": "ENT-AUDIT-X"}
+{"finding_id": "EQOA-A0-007", "assigned_task_id": "EQO-X-03", "next_action_source": "OWNER_DECISION", "severity": "HIGH", "owner": "PDC-X / IIAC-GOV-1"}
+{"finding_id": "EQOA-A0-008", "assigned_task_id": "EQO-W4-04", "next_action_source": "REQUALIFY", "severity": "MEDIUM", "owner": "PDC-X (T-IGX-041-J EBH-7 re-pin)"}
+{"finding_id": "EQOA-A1-001", "assigned_task_id": "EQO-W4-02", "next_action_source": "DOC_FIX_BY_OWNER", "severity": "MEDIUM", "owner": "Roadmap owner (Operator)"}
+{"finding_id": "EQOA-A1-002", "assigned_task_id": "EQO-W4-02", "next_action_source": "DOC_FIX_BY_OWNER", "severity": "MEDIUM", "owner": "Roadmap owner (Operator) / PROD-Q"}
+{"finding_id": "EQOA-A1-003", "assigned_task_id": "EQO-W4-02", "next_action_source": "DOC_FIX_BY_OWNER", "severity": "MEDIUM", "owner": "TRACE-X / PROD-Q owners"}
+{"finding_id": "EQOA-A1-004", "assigned_task_id": "EQO-W4-02", "next_action_source": "DOC_FIX_BY_OWNER", "severity": "MEDIUM", "owner": "Roadmap owner (Operator)"}
+{"finding_id": "EQOA-A1-005", "assigned_task_id": "EQO-W4-02", "next_action_source": "DOC_FIX_BY_OWNER", "severity": "LOW", "owner": "Roadmap owner (Operator)"}
+{"finding_id": "EQOA-A1-006", "assigned_task_id": "EQO-W4-02", "next_action_source": "DOC_FIX_BY_OWNER", "severity": "MEDIUM", "owner": "Roadmap owner (Operator)"}
+{"finding_id": "EQOA-A1-007", "assigned_task_id": "EQO-W4-05", "next_action_source": "NONE", "severity": "INFO", "owner": "Roadmap owner (Operator)"}
+{"finding_id": "EQOA-A1-009", "assigned_task_id": "EQO-W4-02", "next_action_source": "DOC_FIX_BY_OWNER", "severity": "MEDIUM", "owner": "HARNESS residual owner (Harness AI program) / ARCH-FREEZE"}
+{"finding_id": "EQOA-A1-010", "assigned_task_id": "EQO-W4-02", "next_action_source": "DOC_FIX_BY_OWNER", "severity": "MEDIUM", "owner": "ARCH-FREEZE / TRACE-X SSOT owner (SIGN-6_TRACE publication)"}
+{"finding_id": "EQOA-A1-011", "assigned_task_id": "EQO-W4-03", "next_action_source": "OWNER_DECISION", "severity": "MEDIUM", "owner": "ARCH-FREEZE"}
+{"finding_id": "EQOA-A1-013", "assigned_task_id": "EQO-W4-02", "next_action_source": "DOC_FIX_BY_OWNER", "severity": "MEDIUM", "owner": "Roadmap S01 maintainers (PROD-Q stage owner)"}
+{"finding_id": "EQOA-A1-014", "assigned_task_id": "EQO-W4-02", "next_action_source": "DOC_FIX_BY_OWNER", "severity": "MEDIUM", "owner": "PROD-Q stage owner (roadmap S01)"}
+{"finding_id": "EQOA-A1-016", "assigned_task_id": "EQO-W4-05", "next_action_source": "NONE", "severity": "INFO", "owner": "Operator / ARCH-FREEZE"}
+{"finding_id": "EQOA-A1-017", "assigned_task_id": "EQO-X-08", "next_action_source": "OWNER_DECISION", "severity": "MEDIUM", "owner": "Operator (roadmap status) / TOOL-LIFE-X stage owner"}
+{"finding_id": "EQOA-A1-018", "assigned_task_id": "EQO-W4-03", "next_action_source": "OWNER_DECISION", "severity": "MEDIUM", "owner": "Operator / DIST-SCALE-X stage owner"}
+{"finding_id": "EQOA-A1-019", "assigned_task_id": "EQO-W4-02", "next_action_source": "DOC_FIX_BY_OWNER", "severity": "LOW", "owner": "Roadmap maintainers (EBH-6 stage owner)"}
+{"finding_id": "EQOA-A1-020", "assigned_task_id": "EQO-W4-02", "next_action_source": "DOC_FIX_BY_OWNER", "severity": "MEDIUM", "owner": "PDC-X program owner"}
+{"finding_id": "EQOA-A1-022", "assigned_task_id": "EQO-W4-02", "next_action_source": "DOC_FIX_BY_OWNER", "severity": "INFO", "owner": "Roadmap maintainers"}
+{"finding_id": "EQOA-A1-023", "assigned_task_id": "EQO-W4-02", "next_action_source": "DOC_FIX_BY_OWNER", "severity": "MEDIUM", "owner": "Autonomous Work / Integrations (AW-7C)"}
+{"finding_id": "EQOA-A1-024", "assigned_task_id": "EQO-W4-02", "next_action_source": "DOC_FIX_BY_OWNER", "severity": "LOW", "owner": "Governance domain"}
+{"finding_id": "EQOA-A2-001", "assigned_task_id": "EQO-X-02", "next_action_source": "OWNER_DECISION", "severity": "HIGH", "owner": "TOOL-LIFE-X / Roadmap owner (Operator)"}
+{"finding_id": "EQOA-A2-002", "assigned_task_id": "EQO-X-02", "next_action_source": "OWNER_DECISION", "severity": "BLOCKER", "owner": "ARCH-FREEZE / Operator"}
+{"finding_id": "EQOA-A2-004", "assigned_task_id": "EQO-W4-03", "next_action_source": "OWNER_DECISION", "severity": "MEDIUM", "owner": "HIST campaign / TOOL-LIFE-X owner"}
+{"finding_id": "EQOA-A2-006", "assigned_task_id": "EQO-W4-02", "next_action_source": "DOC_FIX_BY_OWNER", "severity": "LOW", "owner": "IIAC-GOV-1 / EVOL-X owners"}
+{"finding_id": "EQOA-A2-007", "assigned_task_id": "EQO-W4-02", "next_action_source": "DOC_FIX_BY_OWNER", "severity": "MEDIUM", "owner": "Stage owners / ARCH-FREEZE"}
+{"finding_id": "EQOA-A2-008", "assigned_task_id": "EQO-W4-03", "next_action_source": "OWNER_DECISION", "severity": "MEDIUM", "owner": "Operator"}
+{"finding_id": "EQOA-A2-010", "assigned_task_id": "EQO-W4-02", "next_action_source": "DOC_FIX_BY_OWNER", "severity": "MEDIUM", "owner": "Autonomous Work / Integrations"}
+{"finding_id": "EQOA-A2-011", "assigned_task_id": "EQO-W4-02", "next_action_source": "DOC_FIX_BY_OWNER", "severity": "LOW", "owner": "Roadmap owner"}
+{"finding_id": "EQOA-A2-012", "assigned_task_id": "EQO-W4-02", "next_action_source": "DOC_FIX_BY_OWNER", "severity": "LOW", "owner": "Integrations domain"}
+{"finding_id": "EQOA-A2-013", "assigned_task_id": "EQO-W4-05", "next_action_source": "NONE", "severity": "INFO", "owner": "HARNESS program"}
+{"finding_id": "EQOA-A2-014", "assigned_task_id": "EQO-W4-02", "next_action_source": "DOC_FIX_BY_OWNER", "severity": "MEDIUM", "owner": "ARCH-FREEZE"}
+{"finding_id": "EQOA-A2-015", "assigned_task_id": "EQO-W4-02", "next_action_source": "DOC_FIX_BY_OWNER", "severity": "MEDIUM", "owner": "ARCH-FREEZE"}
+{"finding_id": "EQOA-A2-016", "assigned_task_id": "EQO-W4-02", "next_action_source": "DOC_FIX_BY_OWNER", "severity": "MEDIUM", "owner": "PDC-X"}
+{"finding_id": "EQOA-A2-017", "assigned_task_id": "EQO-X-08", "next_action_source": "OWNER_DECISION", "severity": "INFO", "owner": "PDC-X"}
+{"finding_id": "EQOA-A2-018", "assigned_task_id": "EQO-W4-02", "next_action_source": "DOC_FIX_BY_OWNER", "severity": "LOW", "owner": "SCENARIO-FACTORY-X"}
+{"finding_id": "EQOA-A2-020", "assigned_task_id": "EQO-W4-03", "next_action_source": "OWNER_DECISION", "severity": "MEDIUM", "owner": "ARCH-FREEZE"}
+{"finding_id": "EQOA-A2-021", "assigned_task_id": "EQO-W4-02", "next_action_source": "DOC_FIX_BY_OWNER", "severity": "LOW", "owner": "ARCH-FREEZE"}
+{"finding_id": "EQOA-A2-022", "assigned_task_id": "EQO-W4-03", "next_action_source": "OWNER_DECISION", "severity": "MEDIUM", "owner": "ARCH-FREEZE"}
+{"finding_id": "EQOA-A2-026", "assigned_task_id": "EQO-W4-02", "next_action_source": "DOC_FIX_BY_OWNER", "severity": "MEDIUM", "owner": "QUAL-X / SKILL-X / TOOL-LIFE-X owners"}
+{"finding_id": "EQOA-A2-028", "assigned_task_id": "EQO-W4-02", "next_action_source": "DOC_FIX_BY_OWNER", "severity": "LOW", "owner": "TOOL-LIFE-X"}
+{"finding_id": "EQOA-A2-029", "assigned_task_id": "EQO-W4-02", "next_action_source": "DOC_FIX_BY_OWNER", "severity": "MEDIUM", "owner": "EBH-6 stage owner / Operator"}
+{"finding_id": "EQOA-A2-032", "assigned_task_id": "EQO-W4-02", "next_action_source": "DOC_FIX_BY_OWNER", "severity": "MEDIUM", "owner": "ARCH-FREEZE"}
+{"finding_id": "EQOA-A2-033", "assigned_task_id": "EQO-W4-02", "next_action_source": "DOC_FIX_BY_OWNER", "severity": "LOW", "owner": "Stage owners"}
+{"finding_id": "EQOA-A2-034", "assigned_task_id": "EQO-W4-03", "next_action_source": "OWNER_DECISION", "severity": "MEDIUM", "owner": "Operator"}
+{"finding_id": "EQOA-A2-035", "assigned_task_id": "EQO-W4-04", "next_action_source": "REQUALIFY", "severity": "MEDIUM", "owner": "PDC-X"}
+{"finding_id": "EQOA-A2-036", "assigned_task_id": "EQO-W4-02", "next_action_source": "DOC_FIX_BY_OWNER", "severity": "MEDIUM", "owner": "ENT-AUDIT-X"}
+{"finding_id": "EQOA-A2-037", "assigned_task_id": "EQO-W4-03", "next_action_source": "OWNER_DECISION", "severity": "MEDIUM", "owner": "Operator"}
+{"finding_id": "EQOA-A2-038", "assigned_task_id": "EQO-W4-03", "next_action_source": "OWNER_DECISION", "severity": "MEDIUM", "owner": "ARCH-FREEZE"}
+{"finding_id": "EQOA-A2-039", "assigned_task_id": "EQO-W4-02", "next_action_source": "DOC_FIX_BY_OWNER", "severity": "LOW", "owner": "Roadmap owner"}
+{"finding_id": "EQOA-A2-040", "assigned_task_id": "EQO-W4-03", "next_action_source": "OWNER_DECISION", "severity": "LOW", "owner": "Operator"}
+{"finding_id": "EQOA-A2-041", "assigned_task_id": "EQO-W4-03", "next_action_source": "OWNER_DECISION", "severity": "MEDIUM", "owner": "ARCH-FREEZE"}
+{"finding_id": "EQOA-A2-042", "assigned_task_id": "EQO-W4-03", "next_action_source": "OWNER_DECISION", "severity": "MEDIUM", "owner": "ARCH-FREEZE (HARNESS program)"}
+{"finding_id": "EQOA-A2-044", "assigned_task_id": "EQO-W4-02", "next_action_source": "DOC_FIX_BY_OWNER", "severity": "LOW", "owner": "HARNESS program"}
+{"finding_id": "EQOA-A2-045", "assigned_task_id": "EQO-W4-02", "next_action_source": "DOC_FIX_BY_OWNER", "severity": "MEDIUM", "owner": "Harness program owner"}
+{"finding_id": "EQOA-A2-046", "assigned_task_id": "EQO-W4-02", "next_action_source": "DOC_FIX_BY_OWNER", "severity": "MEDIUM", "owner": "Harness program owner"}
+{"finding_id": "EQOA-A2-048", "assigned_task_id": "EQO-W4-03", "next_action_source": "OWNER_DECISION", "severity": "LOW", "owner": "ARCH-FREEZE"}
+{"finding_id": "EQOA-A2-050", "assigned_task_id": "EQO-W4-03", "next_action_source": "OWNER_DECISION", "severity": "MEDIUM", "owner": "ARCH-FREEZE"}
+{"finding_id": "EQOA-A3-001", "assigned_task_id": "EQO-W4-02", "next_action_source": "DOC_FIX_BY_OWNER", "severity": "MEDIUM", "owner": "FRZ checklist owner (Operator)"}
+{"finding_id": "EQOA-A3-002", "assigned_task_id": "EQO-W4-02", "next_action_source": "DOC_FIX_BY_OWNER", "severity": "MEDIUM", "owner": "ARCH-FREEZE"}
+{"finding_id": "EQOA-A3-003", "assigned_task_id": "EQO-W4-02", "next_action_source": "DOC_FIX_BY_OWNER", "severity": "LOW", "owner": "PDC-X"}
+{"finding_id": "EQOA-A3-005", "assigned_task_id": "EQO-W4-02", "next_action_source": "DOC_FIX_BY_OWNER", "severity": "LOW", "owner": "FRZ checklist owner (Operator)"}
+{"finding_id": "EQOA-A3-006", "assigned_task_id": "EQO-W4-02", "next_action_source": "DOC_FIX_BY_OWNER", "severity": "LOW", "owner": "FRZ checklist owner (Operator)"}
+{"finding_id": "EQOA-A3-007", "assigned_task_id": "EQO-W4-03", "next_action_source": "OWNER_DECISION", "severity": "INFO", "owner": "ARCH-FREEZE"}
+{"finding_id": "EQOA-A3-008", "assigned_task_id": "EQO-W4-03", "next_action_source": "OWNER_DECISION", "severity": "MEDIUM", "owner": "ARCH-FREEZE"}
+{"finding_id": "EQOA-A3-009", "assigned_task_id": "EQO-W4-02", "next_action_source": "DOC_FIX_BY_OWNER", "severity": "LOW", "owner": "ARCH-FREEZE"}
+{"finding_id": "EQOA-A3-010", "assigned_task_id": "EQO-W4-03", "next_action_source": "OWNER_DECISION", "severity": "MEDIUM", "owner": "Operator"}
+{"finding_id": "EQOA-A3-012", "assigned_task_id": "EQO-X-05", "next_action_source": "REQUALIFY", "severity": "HIGH", "owner": "TENANT-X / PDC-X D2"}
+{"finding_id": "EQOA-A3-013", "assigned_task_id": "EQO-W4-04", "next_action_source": "REQUALIFY", "severity": "MEDIUM", "owner": "TENANT-X / ARCH-FREEZE"}
+{"finding_id": "EQOA-A3-014", "assigned_task_id": "EQO-W4-03", "next_action_source": "OWNER_DECISION", "severity": "MEDIUM", "owner": "COMPAT-X / STATE-X / PDC-X D8"}
+{"finding_id": "EQOA-A3-015", "assigned_task_id": "EQO-W4-02", "next_action_source": "DOC_FIX_BY_OWNER", "severity": "LOW", "owner": "Operator"}
+{"finding_id": "EQOA-A3-016", "assigned_task_id": "EQO-W4-03", "next_action_source": "OWNER_DECISION", "severity": "MEDIUM", "owner": "CTRL-X / ARCH-FREEZE"}
+{"finding_id": "EQOA-A3-017", "assigned_task_id": "EQO-W4-02", "next_action_source": "DOC_FIX_BY_OWNER", "severity": "MEDIUM", "owner": "HARNESS-FINAL owner / ARCH-FREEZE"}
+{"finding_id": "EQOA-A3-018", "assigned_task_id": "EQO-W4-02", "next_action_source": "DOC_FIX_BY_OWNER", "severity": "LOW", "owner": "STATE-X owner"}
+{"finding_id": "EQOA-A3-020", "assigned_task_id": "EQO-W4-02", "next_action_source": "DOC_FIX_BY_OWNER", "severity": "LOW", "owner": "Checklist maintainer"}
+{"finding_id": "EQOA-A3-021", "assigned_task_id": "EQO-X-08", "next_action_source": "OWNER_DECISION", "severity": "MEDIUM", "owner": "ARCH-FREEZE / PDC-X"}
+{"finding_id": "EQOA-A3-022", "assigned_task_id": "EQO-W4-03", "next_action_source": "OWNER_DECISION", "severity": "MEDIUM", "owner": "ARCH-FREEZE"}
+{"finding_id": "EQOA-A3-023", "assigned_task_id": "EQO-W4-02", "next_action_source": "DOC_FIX_BY_OWNER", "severity": "LOW", "owner": "QUAL-X / TOOL-LIFE-X stage owners"}
+{"finding_id": "EQOA-A3-024", "assigned_task_id": "EQO-W4-02", "next_action_source": "DOC_FIX_BY_OWNER", "severity": "LOW", "owner": "CTRL-X / QUAL-X / PDC-X D6"}
+{"finding_id": "EQOA-A3-025", "assigned_task_id": "EQO-W4-03", "next_action_source": "OWNER_DECISION", "severity": "MEDIUM", "owner": "PROD-Q / ARCH-FREEZE"}
+{"finding_id": "EQOA-A3-026", "assigned_task_id": "EQO-W4-03", "next_action_source": "OWNER_DECISION", "severity": "MEDIUM", "owner": "ARCH-FREEZE B7 (T-B7-PROMOTE-BND)"}
+{"finding_id": "EQOA-A3-028", "assigned_task_id": "EQO-W4-02", "next_action_source": "DOC_FIX_BY_OWNER", "severity": "LOW", "owner": "ARCH-FREEZE B7 (T-B7-PROMOTE-BND)"}
+{"finding_id": "EQOA-A3-029", "assigned_task_id": "EQO-W4-02", "next_action_source": "DOC_FIX_BY_OWNER", "severity": "LOW", "owner": "ARCH-FREEZE"}
+{"finding_id": "EQOA-A3-030", "assigned_task_id": "EQO-W4-04", "next_action_source": "REQUALIFY", "severity": "MEDIUM", "owner": "ARCH-FREEZE"}
+{"finding_id": "EQOA-A4-002", "assigned_task_id": "EQO-W4-03", "next_action_source": "OWNER_DECISION", "severity": "MEDIUM", "owner": "SKILL-X / durability owner"}
+{"finding_id": "EQOA-A4-003", "assigned_task_id": "EQO-W2-02", "next_action_source": "OWNER_DECISION", "severity": "BLOCKER", "owner": "ARCH-FREEZE (FRZ-BND-03 owner)"}
+{"finding_id": "EQOA-A4-004", "assigned_task_id": "EQO-W2-02", "next_action_source": "OWNER_DECISION", "severity": "HIGH", "owner": "ARCH-FREEZE / Tier-2 agents owners"}
+{"finding_id": "EQOA-A4-005", "assigned_task_id": "EQO-W4-02", "next_action_source": "DOC_FIX_BY_OWNER", "severity": "MEDIUM", "owner": "Dependency governance owner (DEP4)"}
+{"finding_id": "EQOA-A4-008", "assigned_task_id": "EQO-W4-05", "next_action_source": "NONE", "severity": "INFO", "owner": "EQO-A executor / Operator"}
+{"finding_id": "EQOA-A4-009", "assigned_task_id": "EQO-W4-03", "next_action_source": "OWNER_DECISION", "severity": "LOW", "owner": "Nexus/Execution owner"}
+{"finding_id": "EQOA-A4-010", "assigned_task_id": "EQO-W4-02", "next_action_source": "DOC_FIX_BY_OWNER", "severity": "MEDIUM", "owner": "Governance domain owner; EBH-6 / FRZ-DOC rows"}
+{"finding_id": "EQOA-A4-011", "assigned_task_id": "EQO-W4-03", "next_action_source": "OWNER_DECISION", "severity": "MEDIUM", "owner": "Platform Foundation domain owner; ARCH-FREEZE"}
+{"finding_id": "EQOA-A4-012", "assigned_task_id": "EQO-W4-03", "next_action_source": "OWNER_DECISION", "severity": "MEDIUM", "owner": "ARCH-FREEZE / roadmap owner"}
+{"finding_id": "EQOA-A4-013", "assigned_task_id": "EQO-W4-03", "next_action_source": "OWNER_DECISION", "severity": "MEDIUM", "owner": "ARCH-FREEZE / roadmap owner"}
+{"finding_id": "EQOA-A4-014", "assigned_task_id": "EQO-W4-02", "next_action_source": "DOC_FIX_BY_OWNER", "severity": "LOW", "owner": "Agent contracts domain owner"}
+{"finding_id": "EQOA-A4-016", "assigned_task_id": "EQO-W4-03", "next_action_source": "OWNER_DECISION", "severity": "MEDIUM", "owner": "LLM domain owner (EBH-2E) / ARCH-FREEZE"}
+{"finding_id": "EQOA-A4-017", "assigned_task_id": "EQO-W4-03", "next_action_source": "OWNER_DECISION", "severity": "MEDIUM", "owner": "Modality / model_inference owner (PDC-X D3 MODEL-RUNTIME)"}
+{"finding_id": "EQOA-A4-018", "assigned_task_id": "EQO-W4-02", "next_action_source": "DOC_FIX_BY_OWNER", "severity": "MEDIUM", "owner": "LLM domain owner (EBH-2E) / Modality owner"}
+{"finding_id": "EQOA-A4-019", "assigned_task_id": "EQO-W4-03", "next_action_source": "OWNER_DECISION", "severity": "MEDIUM", "owner": "CONFIG-X / RAG / Notifications owners"}
+{"finding_id": "EQOA-A4-021", "assigned_task_id": "EQO-W4-02", "next_action_source": "DOC_FIX_BY_OWNER", "severity": "LOW", "owner": "MCP-SERVER-X owner"}
+{"finding_id": "EQOA-A4-022", "assigned_task_id": "EQO-W4-02", "next_action_source": "DOC_FIX_BY_OWNER", "severity": "LOW", "owner": "Tools domain owner"}
+{"finding_id": "EQOA-A4-023", "assigned_task_id": "EQO-W4-02", "next_action_source": "DOC_FIX_BY_OWNER", "severity": "LOW", "owner": "Tools / Marketplace / Platform Plugins owners"}
+{"finding_id": "EQOA-A4-024", "assigned_task_id": "EQO-W4-03", "next_action_source": "OWNER_DECISION", "severity": "MEDIUM", "owner": "STATE-X owner / CONFIG-X owner"}
+{"finding_id": "EQOA-A4-028", "assigned_task_id": "EQO-W4-02", "next_action_source": "DOC_FIX_BY_OWNER", "severity": "LOW", "owner": "ARCH-FREEZE"}
+{"finding_id": "EQOA-A4-029", "assigned_task_id": "EQO-W4-02", "next_action_source": "DOC_FIX_BY_OWNER", "severity": "LOW", "owner": "Memory domain owner"}
+{"finding_id": "EQOA-A4-030", "assigned_task_id": "EQO-W4-03", "next_action_source": "OWNER_DECISION", "severity": "LOW", "owner": "Memory domain owner"}
+{"finding_id": "EQOA-A4-032", "assigned_task_id": "EQO-W4-03", "next_action_source": "OWNER_DECISION", "severity": "LOW", "owner": "PROD-Q"}
+{"finding_id": "EQOA-A4-033", "assigned_task_id": "EQO-W4-02", "next_action_source": "DOC_FIX_BY_OWNER", "severity": "MEDIUM", "owner": "ARCH-FREEZE"}
+{"finding_id": "EQOA-A4-035", "assigned_task_id": "EQO-W4-03", "next_action_source": "OWNER_DECISION", "severity": "MEDIUM", "owner": "PROD-Q"}
+{"finding_id": "EQOA-A4-036", "assigned_task_id": "EQO-W4-03", "next_action_source": "OWNER_DECISION", "severity": "MEDIUM", "owner": "PROD-Q"}
+{"finding_id": "EQOA-A4-038", "assigned_task_id": "EQO-W4-02", "next_action_source": "DOC_FIX_BY_OWNER", "severity": "LOW", "owner": "EVOL-X / ENT-AUDIT-X / PDC-X owners (ARCH-FREEZE documentation)"}
+{"finding_id": "EQOA-A4-041", "assigned_task_id": "EQO-W4-02", "next_action_source": "DOC_FIX_BY_OWNER", "severity": "LOW", "owner": "ARCH-FREEZE documentation; QUAL-X owner"}
+{"finding_id": "EQOA-A4-043", "assigned_task_id": "EQO-W4-03", "next_action_source": "OWNER_DECISION", "severity": "LOW", "owner": "PROOF_RECEIPTS owner / LKW-PROOF-04..05"}
+{"finding_id": "EQOA-A4-046", "assigned_task_id": "EQO-W4-03", "next_action_source": "OWNER_DECISION", "severity": "LOW", "owner": "ARCH-FREEZE"}
+{"finding_id": "EQOA-A5-001", "assigned_task_id": "EQO-W4-03", "next_action_source": "OWNER_DECISION", "severity": "LOW", "owner": "Integrations owner / ARCH-FREEZE"}
+{"finding_id": "EQOA-A5-004", "assigned_task_id": "EQO-W4-02", "next_action_source": "DOC_FIX_BY_OWNER", "severity": "LOW", "owner": "Harness / TOOL-LIFE-X owner"}
+{"finding_id": "EQOA-A5-005", "assigned_task_id": "EQO-W4-02", "next_action_source": "DOC_FIX_BY_OWNER", "severity": "INFO", "owner": "Tools domain owner"}
+{"finding_id": "EQOA-A5-006", "assigned_task_id": "EQO-W4-03", "next_action_source": "OWNER_DECISION", "severity": "INFO", "owner": "ARCH-FREEZE"}
+{"finding_id": "EQOA-A5-007", "assigned_task_id": "EQO-X-04", "next_action_source": "REQUALIFY", "severity": "HIGH", "owner": "ROADMAP-REPLAY-X / PDC-X"}
+{"finding_id": "EQOA-A5-008", "assigned_task_id": "EQO-W4-02", "next_action_source": "DOC_FIX_BY_OWNER", "severity": "MEDIUM", "owner": "ARCH-FREEZE"}
+{"finding_id": "EQOA-A5-009", "assigned_task_id": "EQO-W4-03", "next_action_source": "OWNER_DECISION", "severity": "MEDIUM", "owner": "DIST-SCALE-X"}
+{"finding_id": "EQOA-A5-011", "assigned_task_id": "EQO-W4-04", "next_action_source": "REQUALIFY", "severity": "MEDIUM", "owner": "TENANT-X stage owner / ARCH-FREEZE"}
+{"finding_id": "EQOA-A5-013", "assigned_task_id": "EQO-W4-05", "next_action_source": "NONE", "severity": "INFO", "owner": "PDC-X D6 / TENANT-X owner"}
+{"finding_id": "EQOA-A5-014", "assigned_task_id": "EQO-W4-02", "next_action_source": "DOC_FIX_BY_OWNER", "severity": "LOW", "owner": "PRE-ENT campaign owner (T-IGX-034-A) / Operator"}
+{"finding_id": "EQOA-A6-001", "assigned_task_id": "EQO-W4-03", "next_action_source": "OWNER_DECISION", "severity": "MEDIUM", "owner": "ENT-AUDIT-X"}
+{"finding_id": "EQOA-A6-002", "assigned_task_id": "EQO-W4-03", "next_action_source": "OWNER_DECISION", "severity": "MEDIUM", "owner": "Delivery DevOS / IIAC-GOV-1"}
+{"finding_id": "EQOA-A6-003", "assigned_task_id": "EQO-W4-02", "next_action_source": "DOC_FIX_BY_OWNER", "severity": "LOW", "owner": "ENT-AUDIT-X"}
+{"finding_id": "EQOA-A6-005", "assigned_task_id": "EQO-W4-02", "next_action_source": "DOC_FIX_BY_OWNER", "severity": "MEDIUM", "owner": "ENT-AUDIT-X"}
+{"finding_id": "EQOA-A6-006", "assigned_task_id": "EQO-W4-03", "next_action_source": "OWNER_DECISION", "severity": "MEDIUM", "owner": "ENT-AUDIT-X"}
+{"finding_id": "EQOA-A6-008", "assigned_task_id": "EQO-W4-02", "next_action_source": "DOC_FIX_BY_OWNER", "severity": "LOW", "owner": "ENT-AUDIT-X"}
+{"finding_id": "EQOA-A7-001", "assigned_task_id": "EQO-W4-02", "next_action_source": "DOC_FIX_BY_OWNER", "severity": "MEDIUM", "owner": "ENT-AUDIT-X"}
+{"finding_id": "EQOA-A7-002", "assigned_task_id": "EQO-W4-02", "next_action_source": "DOC_FIX_BY_OWNER", "severity": "LOW", "owner": "ARCH-FREEZE / Observability / platform"}
+{"finding_id": "EQOA-A7-004", "assigned_task_id": "EQO-W4-02", "next_action_source": "DOC_FIX_BY_OWNER", "severity": "LOW", "owner": "platform"}
+{"finding_id": "EQOA-A7-005", "assigned_task_id": "EQO-X-08", "next_action_source": "OWNER_DECISION", "severity": "INFO", "owner": "ARCH-FREEZE"}
+{"finding_id": "EQOA-A7-006", "assigned_task_id": "EQO-W4-02", "next_action_source": "DOC_FIX_BY_OWNER", "severity": "MEDIUM", "owner": "EBH-6 owner"}
+{"finding_id": "EQOA-A7-008", "assigned_task_id": "EQO-W4-03", "next_action_source": "OWNER_DECISION", "severity": "MEDIUM", "owner": "EBH-7 owner / Operator"}
+{"finding_id": "EQOA-A7-010", "assigned_task_id": "EQO-W4-03", "next_action_source": "OWNER_DECISION", "severity": "LOW", "owner": "EBH-7 / DUP-X owners"}
+{"finding_id": "EQOA-A7-011", "assigned_task_id": "EQO-W4-02", "next_action_source": "DOC_FIX_BY_OWNER", "severity": "LOW", "owner": "DUP-X / EBH-6 owners"}
+{"finding_id": "EQOA-A7-012", "assigned_task_id": "EQO-W4-02", "next_action_source": "DOC_FIX_BY_OWNER", "severity": "MEDIUM", "owner": "PDC-X"}
+{"finding_id": "EQOA-A7-014", "assigned_task_id": "EQO-W4-03", "next_action_source": "OWNER_DECISION", "severity": "MEDIUM", "owner": "PDC-X"}
+{"finding_id": "EQOA-A7-015", "assigned_task_id": "EQO-W4-03", "next_action_source": "OWNER_DECISION", "severity": "MEDIUM", "owner": "Operator"}
+{"finding_id": "EQOA-A7-016", "assigned_task_id": "EQO-W4-02", "next_action_source": "DOC_FIX_BY_OWNER", "severity": "LOW", "owner": "PDC-X D1/D2/D6/D7/D8"}
+{"finding_id": "EQOA-A7-017", "assigned_task_id": "EQO-W4-03", "next_action_source": "OWNER_DECISION", "severity": "MEDIUM", "owner": "Operator"}
+{"finding_id": "EQOA-A7-018", "assigned_task_id": "EQO-W4-03", "next_action_source": "OWNER_DECISION", "severity": "MEDIUM", "owner": "ARCH-FREEZE"}
+{"finding_id": "EQOA-A7-019", "assigned_task_id": "EQO-W4-03", "next_action_source": "OWNER_DECISION", "severity": "MEDIUM", "owner": "ARCH-FREEZE"}
+{"finding_id": "EQOA-A7-020", "assigned_task_id": "EQO-W4-02", "next_action_source": "DOC_FIX_BY_OWNER", "severity": "MEDIUM", "owner": "TRACE-X / roadmap owner"}
+{"finding_id": "EQOA-A7-022", "assigned_task_id": "EQO-W4-02", "next_action_source": "DOC_FIX_BY_OWNER", "severity": "LOW", "owner": "MCP-SERVER-X"}
+{"finding_id": "EQOA-A7-023", "assigned_task_id": "EQO-W4-03", "next_action_source": "OWNER_DECISION", "severity": "LOW", "owner": "ARCH-FREEZE"}
+{"finding_id": "EQOA-A7-024", "assigned_task_id": "EQO-W4-02", "next_action_source": "DOC_FIX_BY_OWNER", "severity": "LOW", "owner": "HIST campaign / roadmap owner"}
+{"finding_id": "EQOA-A7-025", "assigned_task_id": "EQO-W4-03", "next_action_source": "OWNER_DECISION", "severity": "MEDIUM", "owner": "Operator"}
+{"finding_id": "EQOA-A7-026", "assigned_task_id": "EQO-W4-02", "next_action_source": "DOC_FIX_BY_OWNER", "severity": "MEDIUM", "owner": "Operator / ticket owners"}
+{"finding_id": "EQOA-A7-027", "assigned_task_id": "EQO-W4-03", "next_action_source": "OWNER_DECISION", "severity": "MEDIUM", "owner": "Operator"}
+{"finding_id": "EQOA-A7-029", "assigned_task_id": "EQO-X-08", "next_action_source": "OWNER_DECISION", "severity": "INFO", "owner": "ARCH-FREEZE"}
+{"finding_id": "EQOA-A7-032", "assigned_task_id": "EQO-W4-02", "next_action_source": "DOC_FIX_BY_OWNER", "severity": "LOW", "owner": "EBH-6 / DUP-X"}
+{"finding_id": "EQOA-A7-033", "assigned_task_id": "EQO-W4-02", "next_action_source": "DOC_FIX_BY_OWNER", "severity": "LOW", "owner": "Register owners (Operator)"}
+{"finding_id": "EQOA-A7-034", "assigned_task_id": "EQO-W4-02", "next_action_source": "DOC_FIX_BY_OWNER", "severity": "MEDIUM", "owner": "Register owners (Operator)"}
+{"finding_id": "EQOA-A7-035", "assigned_task_id": "EQO-W4-02", "next_action_source": "DOC_FIX_BY_OWNER", "severity": "MEDIUM", "owner": "Register owners (Operator)"}
+{"finding_id": "EQOA-A7-036", "assigned_task_id": "EQO-W4-03", "next_action_source": "OWNER_DECISION", "severity": "MEDIUM", "owner": "Roadmap owner / PDC-X"}
+{"finding_id": "EQOA-A8-001", "assigned_task_id": "EQO-W4-02", "next_action_source": "DOC_FIX_BY_OWNER", "severity": "LOW", "owner": "PDC-X D5 (reconciliation PDC-D5-R016)"}
+{"finding_id": "EQOA-A8-002", "assigned_task_id": "EQO-W4-03", "next_action_source": "OWNER_DECISION", "severity": "MEDIUM", "owner": "ARCH-FREEZE"}
+{"finding_id": "EQOA-A8-003", "assigned_task_id": "EQO-W4-03", "next_action_source": "OWNER_DECISION", "severity": "MEDIUM", "owner": "ARCH-FREEZE (DUP-X scope)"}
+{"finding_id": "EQOA-A8-004", "assigned_task_id": "EQO-W4-03", "next_action_source": "OWNER_DECISION", "severity": "MEDIUM", "owner": "ARCH-FREEZE"}
+{"finding_id": "EQOA-A8-005", "assigned_task_id": "EQO-W4-02", "next_action_source": "DOC_FIX_BY_OWNER", "severity": "LOW", "owner": "PDC-X D1/D2 and domain owners"}
+{"finding_id": "EQOA-A8-007", "assigned_task_id": "EQO-W4-02", "next_action_source": "DOC_FIX_BY_OWNER", "severity": "LOW", "owner": "Domain owners"}
+{"finding_id": "EQOA-A8-008", "assigned_task_id": "EQO-W4-02", "next_action_source": "DOC_FIX_BY_OWNER", "severity": "MEDIUM", "owner": "Stage owner (AW / Capability Catalog)"}
+{"finding_id": "EQOA-A8-009", "assigned_task_id": "EQO-W4-02", "next_action_source": "DOC_FIX_BY_OWNER", "severity": "MEDIUM", "owner": "AW stage owner"}
+{"finding_id": "EQOA-A8-010", "assigned_task_id": "EQO-W4-02", "next_action_source": "DOC_FIX_BY_OWNER", "severity": "MEDIUM", "owner": "ERL stage owner / C17"}
+{"finding_id": "EQOA-A8-011", "assigned_task_id": "EQO-W4-02", "next_action_source": "DOC_FIX_BY_OWNER", "severity": "LOW", "owner": "COMPAT-X owner"}
+{"finding_id": "EQOA-A8-012", "assigned_task_id": "EQO-W4-03", "next_action_source": "OWNER_DECISION", "severity": "LOW", "owner": "PROOF_RECEIPTS owner"}
+{"finding_id": "EQOA-A8-013", "assigned_task_id": "EQO-W4-03", "next_action_source": "OWNER_DECISION", "severity": "MEDIUM", "owner": "ARCH-FREEZE"}
+{"finding_id": "EQOA-A8-014", "assigned_task_id": "EQO-W4-03", "next_action_source": "OWNER_DECISION", "severity": "LOW", "owner": "A4 / Operator"}
+{"finding_id": "EQOA-A8-015", "assigned_task_id": "EQO-W4-02", "next_action_source": "DOC_FIX_BY_OWNER", "severity": "LOW", "owner": "Domain owners"}
+{"finding_id": "EQOA-A8-016", "assigned_task_id": "EQO-W4-02", "next_action_source": "DOC_FIX_BY_OWNER", "severity": "LOW", "owner": "PLATFORM_PLUGINS owner"}
+{"finding_id": "EQOA-A8-017", "assigned_task_id": "EQO-W4-03", "next_action_source": "OWNER_DECISION", "severity": "MEDIUM", "owner": "PDC-X D8"}
+{"finding_id": "EQOA-A8-018", "assigned_task_id": "EQO-W4-02", "next_action_source": "DOC_FIX_BY_OWNER", "severity": "MEDIUM", "owner": "EVOL-X / MCP-SERVER-X / SFX / PDC-X doc owners"}
+{"finding_id": "EQOA-A8-019", "assigned_task_id": "EQO-W4-02", "next_action_source": "DOC_FIX_BY_OWNER", "severity": "LOW", "owner": "Docs governance / feature owners"}
+{"finding_id": "EQOA-A8-021", "assigned_task_id": "EQO-W4-03", "next_action_source": "OWNER_DECISION", "severity": "MEDIUM", "owner": "Operator / roadmap owner"}
+{"finding_id": "EQOA-A8-022", "assigned_task_id": "EQO-W4-03", "next_action_source": "OWNER_DECISION", "severity": "LOW", "owner": "MCP-SERVER-X owner / PROD-Q"}
+{"finding_id": "EQOA-A8-023", "assigned_task_id": "EQO-W4-02", "next_action_source": "DOC_FIX_BY_OWNER", "severity": "LOW", "owner": "Feature doc owners"}

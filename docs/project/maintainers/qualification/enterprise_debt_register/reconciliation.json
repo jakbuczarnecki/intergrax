@@ -1,0 +1,590 @@
+{
+ "status": "INGESTED data; owner vocabulary confirmed (DP-47 option a, 2026-11-17); no row is triaged, closed, accepted or independently verified",
+ "generated_at_head": "2ab57e36d94eae98c962b3d7b09e5a540d8c70d2",
+ "baseline": "258bbf6abb6fdbb92ef0185d058527fbb1e47f04",
+ "dossier_path": "docs/project/maintainers/qualification/enterprise_quality_oversight/campaign_a",
+ "inputs": {
+  "findings_in_file": 240,
+  "findings_open": 239,
+  "findings_merged": [
+   "EQOA-A2-025"
+  ],
+  "a7_entries_total": 1480,
+  "a7_not_an_entry": 182,
+  "a7_real_entries": 1298,
+  "a7_real_by_currency": {
+   "RESOLVED": 99,
+   "OPEN": 442,
+   "UNKNOWN": 163,
+   "ACCEPTED": 456,
+   "SUPERSEDED": 28,
+   "CLOSED": 84,
+   "DEFERRED": 26
+  },
+  "a7_not_an_entry_by_currency": {
+   "UNKNOWN": 155,
+   "ACCEPTED": 2,
+   "RESOLVED": 25
+  },
+  "a7_open_or_unknown_incl_not_an_entry": 760
+ },
+ "equations": {
+  "open_unknown_split": "605 real OPEN/UNKNOWN entries + 155 NOT_AN_ENTRY rows with currency OPEN/UNKNOWN = 760 (605 + 155 = 760)",
+  "a7_entries_total": "1480 = 605 ingested OPEN/UNKNOWN + 26 ingested DEFERRED + 456 accepted (155 A2/register rows + 301 IIAC limitations covered by 39 pointer rows) + 211 resolved/closed/superseded not ingested + 182 not-an-entry rows (155 excluded as OPEN/UNKNOWN, 27 other)",
+  "register_rows": "1069 rows = 239 findings + 605 OPEN/UNKNOWN entries + 26 DEFERRED entries + 155 accepted A2/register EXCEPTION rows + 39 IIAC pointer rows + 5 category rows (4 skip, 1 N/A)",
+  "eder_total_with_post_ingest": "1073 = 1069 (initial ingest per rows_by_basis below) + 4 POST_INGEST rows EDER-N-0001..EDER-N-0004 in register.jsonl (ingest_basis=POST_INGEST_REGISTER_ITEM); EQO-E-01"
+ },
+ "rows_total": 1073,
+ "rows_by_basis": {
+  "FINDING_OPEN_239": 239,
+  "A7_OPEN_UNKNOWN": 605,
+  "A7_DEFERRED_EXTENSION": 26,
+  "A7_ACCEPTED_A2_REGISTER": 155,
+  "IIAC_MANIFEST_POINTER": 39,
+  "SKIP_CATEGORY": 4,
+  "NA_CATEGORY": 1,
+  "POST_INGEST_EDER_N": 4
+ },
+ "rows_by_record_type": {
+  "FINDING": 239,
+  "DEBT_ENTRY": 640,
+  "EXCEPTION": 194
+ },
+ "rows_by_register_class": {
+  "EVIDENCE_GAP": 157,
+  "GOVERNANCE_DEBT": 79,
+  "ARCH_RISK": 22,
+  "CERT_DRIFT": 32,
+  "UNVERIFIED": 19,
+  "EXCEPTION_CANDIDATE": 332,
+  "DEFECT": 9,
+  "DEBT": 354,
+  "DECISION_PENDING": 60,
+  "SKIP_CATEGORY": 4,
+  "NA_DECISION": 1
+ },
+ "rows_by_id_prefix": {
+  "EDER-F": 239,
+  "EDER-D": 786,
+  "EDER-X": 44
+ },
+ "exclusions": {
+  "not_an_entry_open_unknown": 155,
+  "file": "exclusions.jsonl",
+  "resolved_closed_superseded_not_ingested": {
+   "RESOLVED": 99,
+   "CLOSED": 84,
+   "SUPERSEDED": 28
+  },
+  "resolved_closed_superseded_total": 211,
+  "iiac_limitations_covered_by_pointer_rows": 301,
+  "iiac_pointer_rows": 39
+ },
+ "accepted": {
+  "accepted_real_entries": 456,
+  "by_source": {
+   "register": 77,
+   "A2:limitations": 78,
+   "IIAC manifest limitations": 301
+  },
+  "exception_rows_a2_register": 155,
+  "a2_register_by_impact": {
+   "CONDITIONS": 111,
+   "NONE": 41,
+   "UNKNOWN": 3
+  },
+  "iiac_by_impact": {
+   "UNKNOWN": 301
+  },
+  "a2_register_stale_true": 4
+ },
+ "findings": {
+  "rows": 239,
+  "by_track": {
+   "DOC_PATCH": 111,
+   "DECISION": 43,
+   "REQUALIFY": 20,
+   "ACCEPTED_LIMITATION": 5,
+   "VERIFY_TEST": 31,
+   "CODE_FIX": 29
+  },
+  "by_effective_impact": {
+   "NONE": 56,
+   "CONDITIONS": 62,
+   "UNKNOWN": 25,
+   "BLOCKS": 96
+  },
+  "by_finding_level_impact": {
+   "NONE": 77,
+   "CONDITIONS": 127,
+   "UNKNOWN": 14,
+   "BLOCKS": 21
+  },
+  "by_dossier_impact": {
+   "NONE": 81,
+   "CONDITIONS": 110,
+   "UNKNOWN": 40,
+   "BLOCKS": 8
+  },
+  "by_severity": {
+   "MEDIUM": 138,
+   "LOW": 82,
+   "HIGH": 5,
+   "INFO": 12,
+   "BLOCKER": 2
+  },
+  "by_audit_need": {
+   "no": 73,
+   "yes": 147,
+   "tbd": 19
+  },
+  "severity_proposals": [
+   "EQOA-A4-016"
+  ],
+  "iiac_sensitive_corrected_vs_dossier": [
+   "EQOA-A2-038",
+   "EQOA-A3-008",
+   "EQOA-A3-016",
+   "EQOA-A3-018",
+   "EQOA-A4-006",
+   "EQOA-A4-031",
+   "EQOA-A4-034",
+   "EQOA-A4-042",
+   "EQOA-A6-003",
+   "EQOA-A6-004",
+   "EQOA-A6-005",
+   "EQOA-A6-007",
+   "EQOA-A6-008"
+  ]
+ },
+ "stale_snapshot": {
+  "stale_reverify_rows": 33,
+  "by_snapshot_currency": {
+   "OPEN": 30,
+   "DEFERRED": 1,
+   "UNKNOWN": 2
+  },
+  "by_register": {
+   "AF_CLOSED_WORLD_GAP": 2,
+   "ARCH_DEBT": 1,
+   "DIAG_GAP_LEDGER": 4,
+   "EBH6_HARDCODING": 3,
+   "HIST_REMAINING_BLOCKERS": 11,
+   "HIST_RESIDUAL_FINDINGS": 1,
+   "HIST_STAGE_SHA": 4,
+   "MCP_GAP": 4,
+   "PDC_GAP": 1,
+   "CERT_DELEGATED_DECISIONS": 2
+  },
+  "stale_true_all_real_entries": 122,
+  "stale_true_by_currency": {
+   "OPEN": 30,
+   "SUPERSEDED": 18,
+   "RESOLVED": 67,
+   "DEFERRED": 1,
+   "ACCEPTED": 4,
+   "UNKNOWN": 2
+  },
+  "closed_rows": 0
+ },
+ "owner": {
+  "vocabulary_ids": 55,
+  "vocabulary_file": "owner_vocabulary.proposed.json",
+  "vocabulary_status": "CONFIRMED (DP-47 option a; addendum 4 of eqo_a_remediation/OPERATOR_ANSWERS_CODE_WAVE_TRANSCRIPTION.md, 2026-11-17)",
+  "vocabulary_confirmation_scope": "vocabulary only; owner_status of every row is unchanged and no row is triaged; accountable_person stays empty (no Operator assignment of a person is published)",
+  "rows_by_owner_vocabulary_status": {"CONFIRMED": 1069},
+  "rows_owner_status_confirmed": 0,
+  "rows_by_owner_status": {
+   "OPERATOR_ONLY": 132,
+   "SINGLE_PROPOSED": 817,
+   "SHARED_UNRESOLVED": 75,
+   "UNMAPPED": 14,
+   "GENERIC_NOT_AN_OWNER": 4,
+   "MISSING": 15,
+   "ROLE_NOT_OWNER": 12
+  },
+  "rows_with_owner_ref": 1024,
+  "rows_without_owner_ref": 45,
+  "rows_with_accountable_person": 0,
+  "owner_status_note": "the merged schema enum has no value PROPOSED_UNCONFIRMED; SINGLE_PROPOSED / SHARED_UNRESOLVED / OPERATOR_ONLY are its 'proposed' values and every row also carries owner_vocabulary_status (PROPOSED_UNCONFIRMED until 2026-11-17, CONFIRMED after the DP-47 confirmation; the row-level owner_status values are unchanged)",
+  "unmapped_owner_raw": [
+   "Docs governance / feature owners",
+   "Feature doc owners",
+   "Governance + Execution owners",
+   "PLATFORM_PLUGINS owner",
+   "RAG / LCI owner; Token Optimization owner",
+   "Replaceability and vendor/backend program - docs/project/maintainers/qualification/VENDOR_BACKEND_NEUTRALITY_AND_REPLACEABILITY_EVIDENCE.md; stage record docs/project/maintainers/qualification/EBH_5_IMPLEMENTATION_WAVE_RECONCILIATION.md",
+   "github_admin"
+  ]
+ },
+ "triage": {
+  "rows_by_severity": {
+   "MEDIUM": 151,
+   "LOW": 93,
+   "HIGH": 14,
+   "INFO": 121,
+   "BLOCKER": 6,
+   "UNRATED": 684
+  },
+  "rows_by_impact": {
+   "NONE": 147,
+   "CONDITIONS": 325,
+   "UNKNOWN": 485,
+   "BLOCKS": 112
+  },
+  "rows_by_priority": {
+   "P2": 377,
+   "P4": 104,
+   "P1": 124,
+   "P3": 464
+  },
+  "rows_by_disposition": {
+   "DOC_PATCH_PENDING": 178,
+   "DECISION_PENDING": 74,
+   "REQUALIFY_PENDING": 20,
+   "ACCEPTED_AS_STATED_RECORD_REQUIRED": 199,
+   "VERIFICATION_PENDING": 40,
+   "FIX_PENDING_AFTER_PDC": 29,
+   "CURRENCY_UNVERIFIED": 161,
+   "STALE_SNAPSHOT_REVERIFY": 33,
+   "DEFERRED_AS_STATED_IMPACT_CLASS_REQUIRED": 2,
+   "DEFERRED_AS_STATED": 23,
+   "TRIAGE_PENDING": 310
+  },
+  "rows_by_next_track": {
+   "DOC_PATCH": 222,
+   "DECISION": 130,
+   "REQUALIFY": 20,
+   "ACCEPTED_LIMITATION": 199,
+   "VERIFY_TEST": 41,
+   "CODE_FIX": 29,
+   "UNCLASSIFIED": 428
+  },
+  "rows_by_audit_need": {
+   "no": 417,
+   "yes": 174,
+   "tbd": 478
+  },
+  "rows_by_lifecycle": {
+   "INGESTED": 1069
+  },
+  "rows_by_current_head_status": {
+   "UNKNOWN": 218,
+   "CHANGED": 491,
+   "UNCHANGED": 360
+  }
+ },
+ "iiac_pointer_rows": [
+  {
+   "reg_id": "EDER-X-0001",
+   "manifest": "docs/project/maintainers/qualification/iiac_evidence/ENT-AUDIT-X/act_n11_recovery/iiac_audit_session_manifest.ENT-AUDIT-X.act_n11_session_b.json",
+   "covered": 7,
+   "impact": "UNKNOWN"
+  },
+  {
+   "reg_id": "EDER-X-0002",
+   "manifest": "docs/project/maintainers/qualification/iiac_evidence/ENT-AUDIT-X/act_n11_recovery/iiac_audit_session_manifest.IIAC-ACT-N11-ACTIVATION.json",
+   "covered": 4,
+   "impact": "UNKNOWN"
+  },
+  {
+   "reg_id": "EDER-X-0003",
+   "manifest": "docs/project/maintainers/qualification/iiac_evidence/ENT-AUDIT-X/audit/w3_dc778d/iiac_audit_session_manifest.ENT-AUDIT-X.w3_dc778d.json",
+   "covered": 7,
+   "impact": "UNKNOWN"
+  },
+  {
+   "reg_id": "EDER-X-0004",
+   "manifest": "docs/project/maintainers/qualification/iiac_evidence/ENT-AUDIT-X/certification/iiac_audit_session_manifest.ENT-AUDIT-X.json",
+   "covered": 5,
+   "impact": "UNKNOWN"
+  },
+  {
+   "reg_id": "EDER-X-0005",
+   "manifest": "docs/project/maintainers/qualification/iiac_evidence/ENT-AUDIT-X/certification/w4_dc778d/iiac_audit_session_manifest.ENT-AUDIT-X.w4_dc778d.json",
+   "covered": 8,
+   "impact": "UNKNOWN"
+  },
+  {
+   "reg_id": "EDER-X-0006",
+   "manifest": "docs/project/maintainers/qualification/iiac_evidence/EVOL-X-W4-01-REAUDIT/iiac_audit_session_manifest.EVOL-X-W4-01.reaudit_draft.json",
+   "covered": 5,
+   "impact": "UNKNOWN"
+  },
+  {
+   "reg_id": "EDER-X-0007",
+   "manifest": "docs/project/maintainers/qualification/iiac_evidence/EVOL-X/audit/iiac_audit_session_manifest.EVOL-X.auditor_draft.json",
+   "covered": 11,
+   "impact": "UNKNOWN"
+  },
+  {
+   "reg_id": "EDER-X-0008",
+   "manifest": "docs/project/maintainers/qualification/iiac_evidence/EVOL-X/b4_delta_reaudit/iiac_audit_session_manifest.EVOL-X.b4_reaudit.json",
+   "covered": 8,
+   "impact": "UNKNOWN"
+  },
+  {
+   "reg_id": "EDER-X-0009",
+   "manifest": "docs/project/maintainers/qualification/iiac_evidence/EVOL-X/b4_reaudit/iiac_audit_session_manifest.EVOL-X-B4.reaudit_draft.json",
+   "covered": 4,
+   "impact": "UNKNOWN"
+  },
+  {
+   "reg_id": "EDER-X-0010",
+   "manifest": "docs/project/maintainers/qualification/iiac_evidence/EVOL-X/certification/iiac_audit_session_manifest.EVOL-X.json",
+   "covered": 14,
+   "impact": "UNKNOWN"
+  },
+  {
+   "reg_id": "EDER-X-0011",
+   "manifest": "docs/project/maintainers/qualification/iiac_evidence/HIST-P5-2026-11-09/iiac_audit_session_manifest.HIST-P5.json",
+   "covered": 5,
+   "impact": "UNKNOWN"
+  },
+  {
+   "reg_id": "EDER-X-0012",
+   "manifest": "docs/project/maintainers/qualification/iiac_evidence/IIAC-GOV-1/certification/iiac_audit_session_manifest.IIAC-GOV-1.json",
+   "covered": 4,
+   "impact": "UNKNOWN"
+  },
+  {
+   "reg_id": "EDER-X-0013",
+   "manifest": "docs/project/maintainers/qualification/iiac_evidence/IIAC-GOV-1/historical_session_b/iiac_audit_session_manifest.IIAC-GOV-1.json",
+   "covered": 4,
+   "impact": "UNKNOWN"
+  },
+  {
+   "reg_id": "EDER-X-0014",
+   "manifest": "docs/project/maintainers/qualification/iiac_evidence/IIAC-GOV-1/reaudit/iiac_audit_session_manifest.IIAC-GOV-1.json",
+   "covered": 6,
+   "impact": "UNKNOWN"
+  },
+  {
+   "reg_id": "EDER-X-0015",
+   "manifest": "docs/project/maintainers/qualification/iiac_evidence/MCP-SERVER-X/act_n11_mcp/iiac_audit_session_manifest.IIAC-ACT-N11-MCP-ACTIVATION.json",
+   "covered": 5,
+   "impact": "UNKNOWN"
+  },
+  {
+   "reg_id": "EDER-X-0016",
+   "manifest": "docs/project/maintainers/qualification/iiac_evidence/MCP-SERVER-X/act_n11_mcp/iiac_audit_session_manifest.MCP-SERVER-X.act_n11_mcp.json",
+   "covered": 6,
+   "impact": "UNKNOWN"
+  },
+  {
+   "reg_id": "EDER-X-0017",
+   "manifest": "docs/project/maintainers/qualification/iiac_evidence/MCP-SERVER-X/act_n11_mcp/iiac_audit_session_manifest.MCP-SERVER-X.act_n11_mcp.reaudit_p4.json",
+   "covered": 7,
+   "impact": "UNKNOWN"
+  },
+  {
+   "reg_id": "EDER-X-0018",
+   "manifest": "docs/project/maintainers/qualification/iiac_evidence/MCP-SERVER-X/act_n11_mcp_p6/iiac_audit_session_manifest.IIAC-ACT-N11-MCP-P6-ACTIVATION.json",
+   "covered": 5,
+   "impact": "UNKNOWN"
+  },
+  {
+   "reg_id": "EDER-X-0019",
+   "manifest": "docs/project/maintainers/qualification/iiac_evidence/MCP-SERVER-X/act_n11_mcp_p6/iiac_audit_session_manifest.MCP-SERVER-X.act_n11_mcp.reaudit_p6.json",
+   "covered": 6,
+   "impact": "UNKNOWN"
+  },
+  {
+   "reg_id": "EDER-X-0020",
+   "manifest": "docs/project/maintainers/qualification/iiac_evidence/MCP-SERVER-X/p8_audit/iiac_audit_session_manifest.MCP-SERVER-X.p8_audit.json",
+   "covered": 7,
+   "impact": "UNKNOWN"
+  },
+  {
+   "reg_id": "EDER-X-0021",
+   "manifest": "docs/project/maintainers/qualification/iiac_evidence/MCP-SERVER-X/p8_certification/iiac_audit_session_manifest.MCP-SERVER-X.p8_certified.json",
+   "covered": 19,
+   "impact": "UNKNOWN"
+  },
+  {
+   "reg_id": "EDER-X-0022",
+   "manifest": "docs/project/maintainers/qualification/iiac_evidence/PDC-X/D1/iiac_audit_session_manifest.PDC-X.d1.json",
+   "covered": 9,
+   "impact": "UNKNOWN"
+  },
+  {
+   "reg_id": "EDER-X-0023",
+   "manifest": "docs/project/maintainers/qualification/iiac_evidence/PDC-X/D2/iiac_audit_session_manifest.PDC-X.d2.json",
+   "covered": 8,
+   "impact": "UNKNOWN"
+  },
+  {
+   "reg_id": "EDER-X-0024",
+   "manifest": "docs/project/maintainers/qualification/iiac_evidence/PDC-X/D3/iiac_audit_session_manifest.PDC-X.d3.json",
+   "covered": 8,
+   "impact": "UNKNOWN"
+  },
+  {
+   "reg_id": "EDER-X-0025",
+   "manifest": "docs/project/maintainers/qualification/iiac_evidence/PDC-X/D4/iiac_audit_session_manifest.PDC-X.d4.json",
+   "covered": 9,
+   "impact": "UNKNOWN"
+  },
+  {
+   "reg_id": "EDER-X-0026",
+   "manifest": "docs/project/maintainers/qualification/iiac_evidence/PDC-X/D5/iiac_audit_session_manifest.PDC-X.p7_d5.json",
+   "covered": 9,
+   "impact": "UNKNOWN"
+  },
+  {
+   "reg_id": "EDER-X-0027",
+   "manifest": "docs/project/maintainers/qualification/iiac_evidence/PDC-X/D6/iiac_audit_session_manifest.PDC-X.d6.json",
+   "covered": 7,
+   "impact": "UNKNOWN"
+  },
+  {
+   "reg_id": "EDER-X-0028",
+   "manifest": "docs/project/maintainers/qualification/iiac_evidence/PDC-X/D7/iiac_audit_session_manifest.PDC-X.d7.json",
+   "covered": 8,
+   "impact": "UNKNOWN"
+  },
+  {
+   "reg_id": "EDER-X-0029",
+   "manifest": "docs/project/maintainers/qualification/iiac_evidence/PDC-X/D8/iiac_audit_session_manifest.PDC-X.d8.json",
+   "covered": 9,
+   "impact": "UNKNOWN"
+  },
+  {
+   "reg_id": "EDER-X-0030",
+   "manifest": "docs/project/maintainers/qualification/iiac_evidence/PDC-X/MCP-RC/activation/iiac_audit_session_manifest.IIAC-ACT-N11-MCP-RC-ACTIVATION.json",
+   "covered": 10,
+   "impact": "UNKNOWN"
+  },
+  {
+   "reg_id": "EDER-X-0031",
+   "manifest": "docs/project/maintainers/qualification/iiac_evidence/PDC-X/MCP-RC/activation/repin_2/iiac_audit_session_manifest.IIAC-ACT-N11-MCP-RC-ACTIVATION-REPIN-2.json",
+   "covered": 11,
+   "impact": "UNKNOWN"
+  },
+  {
+   "reg_id": "EDER-X-0032",
+   "manifest": "docs/project/maintainers/qualification/iiac_evidence/PDC-X/MCP-RC/iiac_audit_session_manifest.PDC-X.mcp_rc.json",
+   "covered": 6,
+   "impact": "UNKNOWN"
+  },
+  {
+   "reg_id": "EDER-X-0033",
+   "manifest": "docs/project/maintainers/qualification/iiac_evidence/PDC-X/MCP-RC/reaudit/iiac_audit_session_manifest.PDC-X.mcp_rc_reaudit.json",
+   "covered": 6,
+   "impact": "UNKNOWN"
+  },
+  {
+   "reg_id": "EDER-X-0034",
+   "manifest": "docs/project/maintainers/qualification/iiac_evidence/PDC-X/P7-00/addendum_1/iiac_audit_session_manifest.PDC-X.p7_00.addendum_1.json",
+   "covered": 9,
+   "impact": "UNKNOWN"
+  },
+  {
+   "reg_id": "EDER-X-0035",
+   "manifest": "docs/project/maintainers/qualification/iiac_evidence/PDC-X/P7-00/addendum_2/iiac_audit_session_manifest.PDC-X.p7_00.addendum_2.json",
+   "covered": 9,
+   "impact": "UNKNOWN"
+  },
+  {
+   "reg_id": "EDER-X-0036",
+   "manifest": "docs/project/maintainers/qualification/iiac_evidence/PDC-X/P7-00/addendum_3/iiac_audit_session_manifest.PDC-X.p7_00.addendum_3.json",
+   "covered": 9,
+   "impact": "UNKNOWN"
+  },
+  {
+   "reg_id": "EDER-X-0037",
+   "manifest": "docs/project/maintainers/qualification/iiac_evidence/PDC-X/P7-00/addendum_4/iiac_audit_session_manifest.PDC-X.p7_00.addendum_4.json",
+   "covered": 9,
+   "impact": "UNKNOWN"
+  },
+  {
+   "reg_id": "EDER-X-0038",
+   "manifest": "docs/project/maintainers/qualification/iiac_evidence/PDC-X/P7-00/iiac_audit_session_manifest.PDC-X.p7_00.json",
+   "covered": 9,
+   "impact": "UNKNOWN"
+  },
+  {
+   "reg_id": "EDER-X-0039",
+   "manifest": "docs/project/maintainers/qualification/iiac_evidence/PDC-X/global/iiac_audit_session_manifest.PDC-X.global.json",
+   "covered": 9,
+   "impact": "UNKNOWN"
+  }
+ ],
+ "skip_categories": [
+  {
+   "reg_id": "EDER-X-0040",
+   "category": "SKIP-CATEGORY:no_ci",
+   "total": 284,
+   "high_surface": 13,
+   "in_ebh7_register_files": 0,
+   "markers": [
+    "pytest.mark.no_ci"
+   ]
+  },
+  {
+   "reg_id": "EDER-X-0041",
+   "category": "SKIP-CATEGORY:optional-dependency",
+   "total": 69,
+   "high_surface": 17,
+   "in_ebh7_register_files": 0,
+   "markers": [
+    "importorskip"
+   ]
+  },
+  {
+   "reg_id": "EDER-X-0042",
+   "category": "SKIP-CATEGORY:environment-gated",
+   "total": 330,
+   "high_surface": 150,
+   "in_ebh7_register_files": 4,
+   "markers": [
+    "pytest.mark.skipif",
+    "pytest.skip("
+   ]
+  },
+  {
+   "reg_id": "EDER-X-0043",
+   "category": "SKIP-CATEGORY:unconditional-skip-xfail",
+   "total": 8,
+   "high_surface": 1,
+   "in_ebh7_register_files": 0,
+   "markers": [
+    "pytest.mark.skip",
+    "pytest.mark.xfail"
+   ]
+  }
+ ],
+ "skip_scan": {
+  "total_hits": 691,
+  "by_marker": {
+   "pytest.skip(": 259,
+   "pytest.mark.no_ci": 284,
+   "pytest.mark.skipif": 71,
+   "importorskip": 69,
+   "pytest.mark.xfail": 2,
+   "pytest.mark.skip": 6
+  },
+  "per_marker_rows": 0
+ },
+ "na_decisions": {
+  "mentions": 558,
+  "files": 147
+ },
+ "carry_forward": {
+  "chains_total": 285,
+  "bouncing_chains": 45,
+  "bouncing_uids_in_rows": 31
+ },
+ "entry_id_duplicates_in_rows": 14,
+ "plan_bindings": {
+  "master_rows_findings": 239,
+  "blocks_debt_entries_bound": 16,
+  "master_rows_path": "ws:WP-12/master_rows.jsonl (not tracked; cited by id)"
+ },
+ "post_ingest_rows": {
+  "note": "Rows raised after the initial ingest (id prefix EDER-N) by ticket T-IGX-050-M; the ingest totals above (rows_total and the rows_by_* counts) describe the initial load and are unchanged.",
+  "rows": ["EDER-N-0001", "EDER-N-0002", "EDER-N-0003", "EDER-N-0004"],
+  "rows_total_after": 1073
+ },
+ "not_stated": "At the ingest this field read: DP-54 (standalone ECAP executable) is open; no row or file here states a position. Since 2026-11-17 DP-54 is decided (option a, executable required) and row EDER-N-0004 records it; the executable does not exist."
+}
