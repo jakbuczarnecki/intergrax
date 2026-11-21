@@ -36,7 +36,7 @@
 
 ### OD-AF-AUTO-04 — T-IGX-051-A (TENANT)
 
-**Nie ruszać** w tej sesji.
+**Approved** (OPERATOR UNBLOCK wave 2026-11-21) — implementacja product na `af-dev-051-tenant` od pinu `e69e1ff58`; bez FCS/G2/CLOSED (OD-AF-AUTO-05).
 
 ### OD-AF-AUTO-05 — FCS / G2 / CLOSED
 

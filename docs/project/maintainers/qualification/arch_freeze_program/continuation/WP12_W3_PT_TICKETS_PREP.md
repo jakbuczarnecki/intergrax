@@ -31,7 +31,7 @@
 | PT-E05 | 044-F | MERGED_TRAIN | IIAC requal @ Q02 | **STOP** |
 | T-AF2-RW-TRUST | 051-C | implementing / merged off-pin | Trust slice merged fala 5 @ ref `e61e5136a` | **STOP** |
 | T-AF2-RW-SUPPLY A/B | **051-N** | **plan_pending** (hardened R1) | Import review @ `d5d54710`; plan `PLAN_T-IGX-051-N.md` on `development` | **STOP** |
-| T-AF2-RW-TENANT | **051-A** | **draft** (unchanged R1) | **BLOCKED** D5 / OD-AF-AUTO-04/05; po #680 + FC3+WF+TRUST | **STOP** |
+| T-AF2-RW-TENANT | **051-A** | **in_progress** (Part A @ `af-dev-051-tenant`) | OD-AF-AUTO-04 **Approved** 2026-11-21 UNBLOCK; plan `PLAN_T-IGX-051-A.md` | product wave |
 | T-AF2-RW-GATES | 051-F | brak ticketu | Alloc `T-IGX-051-F` — poza tym batch | — |
 | T-AF2-RW-TYP | 051-G | brak ticketu | Po TYP-MEASURE / OD-AF-11 | — |
 | PT-T01 | brak | — | Alloc ticket; NT-01..16 red-first | — |
