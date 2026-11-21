@@ -152,3 +152,39 @@ No `EQO_CLOSED` claim. Session E and operator OD routes unchanged.
 **Doc lanes:** C-04 `BLOCKED` status cross-ref; EDER E-03 memos (no apply); W4-03 `WAIT_FOR_OPERATOR`.
 
 **Recorded:** 2026-11-21 · `Ref: governance/tickets/T-IGX-046-F.md`
+
+## Wave-14 W3 CLS terminal + W9-01 sweep (post wave-13 EXE)
+
+**Land:** `9a673b1b` · integrator `eqo/wave-14/integ` · **Session E:** unchanged · **0 PASS** @ pin.
+
+| ID | Status | Wave-14 sweep note |
+|----|--------|-------------------|
+| C01 | PARTIALLY_MET | B-2 registry complete; terminal WB CLS band does not promote C-01 |
+| C02 | PARTIALLY_MET | All 12 `W3_CLS.md` terminal `DISPOSITIONED_NOT_CLOSED`; AUD column unchanged |
+| C03 | PARTIALLY_MET | Wave-13 EXE refresh WB02/03/05/08/12 logged; no FULLY_MET promotion |
+| C04 | PARTIALLY_MET | BLOCKED replay unchanged; status cross-ref from wave 13 |
+| C05 | PARTIALLY_MET | E-02 report only; register apply blocked |
+| C06 | PARTIALLY_MET | FRZ open count unchanged |
+| C07 | NOT_MET | Blocker pair unchanged |
+| C08 | PARTIALLY_MET | Wave-13: WB02 exit `1`; WB03/05/08/12 exit `0`; prior wave-6/10 logs for other WBs — partial only |
+| C09 | NOT_MET | FCS/M3 deferred (`EQO_W7_W8_DEFERRED_BLOCKERS.md`) |
+| C10 | NOT_MET | Train delta replay incomplete |
+| C11 | PARTIALLY_MET | Dossier A pinned |
+| C12 | PARTIALLY_MET | PASS_SCOPED documented |
+| C13 | NOT_VERIFIED | No new evidence |
+| C14 | PARTIALLY_MET | KR settlement unchanged |
+| C15 | NOT_VERIFIED | |
+| C16 | NOT_VERIFIED | #680 track-only |
+| C17 | NOT_VERIFIED | |
+| C18 | PARTIALLY_MET | Proposed owners not confirmed |
+| C19 | PARTIALLY_MET | IIAC not `IN_FORCE` |
+| C20 | PARTIALLY_MET | Reproducibility partial |
+| C21 | PARTIALLY_MET | W2 train verify |
+| C22 | NOT_VERIFIED | |
+| C23 | PARTIALLY_MET | WBS ↔ train map |
+| C24 | NOT_MET | Program closure blocked |
+| C25 | NOT_MET | Terminal criterion not met |
+
+**EQO-W9-01:** matrix refresh only — **no** row `FULLY_MET`, **no** `EQO_CLOSED`.
+
+**Recorded:** 2026-11-21 · lane `eqo/wave-14/w9` · `Ref: governance/tickets/T-IGX-046-F.md`
