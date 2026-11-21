@@ -4,7 +4,7 @@
 
 | Tor | Ref | Uwagi |
 |-----|-----|-------|
-| `development` | `1d3aaa239` | guardrail e2e + trust slice 2 + 043-M §7 + regression 260/260 core |
+| `development` | `7b1818f5f` | guardrail e2e + trust slice 2 + 043-M §7 + regression 260/260 core |
 | `arch-freeze/rw-train` | `c443865e9` | bez merge train w fali 4 |
 | `af-dev-merge` | serial merge tor | |
 
@@ -16,7 +16,7 @@
 | Trust slice 2 (`NT-TRUST-04`, `NT-TRUST-05`) | **DONE** | `tests/unit/context/test_trust_fail_closed.py` |
 | T-IGX-043-M Part E | **SMOKE** | plan §7 minimal; `test_changed_since_impact_map.py` 3 passed |
 | Regression FC-3 core bundle | **PASS** | `.tmp/session/arch-freeze/REGRESSION-78-fala4/` — **260 passed**, 3 skipped |
-| Push `origin/development` | **VERIFY** | lokalny tor może być `ahead`/`behind` względem `origin/development` — operator decyduje o rebase/merge |
+| Push `origin/development` | **DONE** | `7b1818f5f` na `origin/development` (rebase po `019be9c71`) |
 
 ## Fala 5 — następna (wskazówka)
 
