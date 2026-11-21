@@ -7,7 +7,7 @@ description: When to use Task subagents vs worktrees for parallel InterGRAX deli
 
 | Situation | Action |
 |-----------|--------|
-| Read-only exploration | `explore` / `generalPurpose`, max 2–3 parallel |
+| Read-only exploration | `Explore` / `igx-researcher`, max 2–3 parallel |
 | Isolated code attempts | `best-of-n-runner` or separate git worktree |
 | Single batch | One agent in ticket scope |
 
@@ -23,7 +23,7 @@ Remaining DCP work is sequenced in [`governance/DCP-CLOSURE-BACKLOG.md`](../../.
 
 When executing closure waves:
 
-- Prefer **orchestrator** + parallel `explore` / `generalPurpose` for read-only gap analysis across governance vs CI vs docs trees.
+- Prefer **orchestrator** + parallel `Explore` / `igx-researcher` for read-only gap analysis across governance vs CI vs docs trees.
 - Use **best-of-n-runner** or a dedicated worktree per ticket (`T-IGX-005-A` … `008-A`); do not parallelize edits to the same manifest or registry file.
 - One `uv run pytest` (or `igx_gov doctor`) per verification step; parent merges and commits with `Ref:`.
 - W7 (branch protection) and W8 (G6) are operator / independent-session boundaries — no subagent may declare PASS or flip manifest certification flags.

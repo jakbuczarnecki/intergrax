@@ -27,7 +27,7 @@ Before reading/editing, state:
 - **edit scope:**
 - **tests:**
 
-If more files are needed than listed → **STOP** and ask.
+If more files are needed than listed: read the minimum (max 3), note why in the report, and continue; an edit outside `edit scope` is a scope change: escalate (`/intergrax-core`).
 
 ## Allowed verification
 

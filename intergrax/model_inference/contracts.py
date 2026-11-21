@@ -5,13 +5,13 @@
 from __future__ import annotations
 
 from abc import ABC, abstractmethod
-from enum import Enum
+from enum import StrEnum
 from pathlib import Path
 
 from pydantic import BaseModel, Field
 
 
-class ModelArtifactFormat(str, Enum):
+class ModelArtifactFormat(StrEnum):
     ONNX = "onnx"
     SKLEARN = "sklearn"
     ULTRALYTICS = "ultralytics"
@@ -41,12 +41,31 @@ class VisionDetection(BaseModel):
     bbox: VisionBoundingBox
 
 
-class MediaSourceKind(str, Enum):
+class MediaSourceKind(StrEnum):
     LOCAL_FILE = "local_file"
 
 
 class MediaAuthorizationError(ValueError):
     """Raised when caller media is not authorized for inference access."""
+
+
+class VisionBackendUnconfiguredError(ValueError):
+    """Raised when a vision backend is invoked without required configuration."""
+
+
+class VisionAdapterCapabilityError(ValueError):
+    """Raised when a vision adapter lacks extended segment/OCR operations."""
+
+
+class VisionResultProvenance(StrEnum):
+    ENGINE = "engine"
+    STUB = "stub"
+
+
+def require_extended_vision_adapter(adapter: VisionInferenceAdapter) -> ExtendedVisionInferenceAdapter:
+    if isinstance(adapter, ExtendedVisionInferenceAdapter):
+        return adapter
+    raise VisionAdapterCapabilityError(f"vision adapter {adapter.slug!r} does not support extended operations")
 
 
 class AuthorizedLocalMedia(BaseModel):
@@ -69,6 +88,7 @@ class VisionInferenceResult(BaseModel):
     request_id: str
     artifact_id: str
     detections: list[VisionDetection] = Field(default_factory=list)
+    provenance: VisionResultProvenance = VisionResultProvenance.ENGINE
 
 
 class VisionSegment(BaseModel):
@@ -81,6 +101,7 @@ class VisionSegmentationResult(BaseModel):
     request_id: str
     artifact_id: str
     segments: list[VisionSegment] = Field(default_factory=list)
+    provenance: VisionResultProvenance = VisionResultProvenance.ENGINE
 
 
 class VisionOcrRegion(BaseModel):
@@ -93,6 +114,7 @@ class VisionOcrResult(BaseModel):
     request_id: str
     artifact_id: str
     regions: list[VisionOcrRegion] = Field(default_factory=list)
+    provenance: VisionResultProvenance = VisionResultProvenance.ENGINE
 
 
 class InferenceRequest(BaseModel):

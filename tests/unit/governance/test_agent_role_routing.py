@@ -25,6 +25,10 @@ _EXPECTED_SUBAGENTS: dict[str, dict[str, object]] = {
         "read_only": False,
         "requires_worktree": True,
     },
+    "igx-researcher": {"maps_to": "architect-planner", "max_parallel": 3, "read_only": True},
+    "igx-implementer": {"maps_to": "implementer", "max_parallel": 2, "read_only": False, "requires_worktree": True},
+    "igx-reviewer": {"maps_to": "reviewer", "max_parallel": 1, "read_only": True},
+    "igx-architect": {"maps_to": "architect-planner", "max_parallel": 1, "read_only": False},
 }
 
 
@@ -85,3 +89,17 @@ def test_verify_ticket_lifecycle_rejects_missing_approved(tmp_path: Path) -> Non
         check=False,
     )
     assert completed.returncode == 1
+
+
+def test_igx_agent_tools_and_denies() -> None:
+    agents = ROOT / "agent-env" / "agents"
+
+    def tools(name: str) -> set[str]:
+        text = (agents / f"{name}.md").read_text(encoding="utf-8")
+        meta = yaml.safe_load(text.split("---", 2)[1])
+        return {t.strip() for t in str(meta["tools"]).split(",")}
+
+    assert "Bash" not in tools("igx-reviewer")
+    assert tools("igx-researcher") == {"Read", "Grep", "Glob"}
+    settings = (ROOT / ".claude" / "settings.json").read_text(encoding="utf-8")
+    assert "Agent(general-purpose)" in yaml.safe_load(settings)["permissions"]["deny"]
