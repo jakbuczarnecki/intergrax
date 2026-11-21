@@ -1,6 +1,6 @@
-﻿# ARCH-FREEZE continuation checkpoint (development train)
+# ARCH-FREEZE continuation checkpoint (development train)
 
-**Updated:** 2026-11-21 (MEP W4–W7 prep; worktrees `af-dev-mep-w4`..`w7`)  
+**Updated:** 2026-11-21 (MEP W4–W8 prep; worktrees `af-dev-mep-w4`..`w8`)  
 **Base branch:** `development` @ `d043a21c67cb57475a4f36a2baff7020718ec7cb` (`d043a21c6`)  
 **Arch-freeze train reference:** `origin/arch-freeze/rw-train` @ `dbaebfa8cd13a6ba8bfa6eef2cdf581216ddb3d2` — PR **#699** **MERGED** (slice do `1cec68222`)
 
@@ -40,6 +40,7 @@ Merge przy czerwonych checkach — zapisany stan; **nie** spełnia OD-AF-AUTO-01
 | G6 (MEP W5 prep) | `af-dev-mep-w5` | `af-dev-mep-w5` | ticket-less docs | W5 pre-pin dossier + PT-* prep | **DONE** prep |
 | G7 (MEP W6 prep) | `af-dev-mep-w6` | `af-dev-mep-w6` | T-IGX-052-F/G/H | Campaign + requal + M3 prep checklists | **DONE** prep @ `156bd6b40` |
 | G8 (MEP W7 prep) | `af-dev-mep-w7` | `af-dev-mep-w7` | ticket-less docs | PT-Q13 / PT-VBN / ENTRY / DS-ADM prep | **DONE** prep |
+| G9 (MEP W8 closure prep) | `af-dev-mep-w8` | `af-dev-mep-w8` | ticket-less docs | W8 dossier + w8 checklists | **DONE** prep |
 
 ## RW-PLAN-AUDIT (`T-AF2-RW-PLAN-AUDIT`)
 
@@ -77,3 +78,6 @@ Deliverables: [`W6_PREP_DOSSIER.md`](W6_PREP_DOSSIER.md), [`W6_CAMPAIGN_PREP_CHE
 ## G8 — MEP W7 freeze prep (PT-Q13 / VBN / ENTRY / DS-ADM)
 
 Deliverables (prep only): `W7_PT_Q13_PREP_DOSSIER.md`, `W7_PT_VBN_PREP_DOSSIER.md`, `W7_ENTRY_PREP_DOSSIER.md`, `W7_DS_ADM_PREP_DOSSIER.md`. Werdykt wykonania węzłów W7: **NOT STARTED** / **BLOCKED** (brak M3, brak PT-Q13 PASS). **Nie** M3, **nie** L499 entry PASS.
+## G9 — W8 closure prep (MEP W8)
+
+Deliverables: [W8_PREP_DOSSIER.md](W8_PREP_DOSSIER.md), katalog [w8/](w8/) (8 checklist §J). Pin dokumentacyjny: d043a21c6. Werdykt W8 program: **DRAFT / NOT STARTED** — **nie** ARCH_FREEZE_CLOSED, **nie** W8-INDEP-CONFIRM PASS.
