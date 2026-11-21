@@ -6,12 +6,17 @@ import inspect
 from pathlib import Path
 
 import pytest
-
+from intergrax.integrations.contracts.base import LabSelectorOptIn
 from intergrax.runtime.interactions.intake_service import InteractionIntakeService
+from intergrax.runtime.task.task import Task, TaskResult, TaskState
 from intergrax.runtime.task.task_result_authoritative_exposure_defaults import (
     terminal_task_result_exposure_no_decision_gate,
 )
-from intergrax.runtime.task.task import Task, TaskContext, TaskResult, TaskState
+
+_LAB_OPT_IN = LabSelectorOptIn(
+    selector="none",
+    reason="interaction intake unit tests positive control",
+)
 
 
 class _RecordingExecutor:
@@ -22,9 +27,7 @@ class _RecordingExecutor:
 
     def prepare(self, task: Task) -> Task:
         self.prepare_calls += 1
-        prepared = task.model_copy(
-            update={"context": task.context.model_copy(update={"capability": "prepared.cap"})}
-        )
+        prepared = task.model_copy(update={"context": task.context.model_copy(update={"capability": "prepared.cap"})})
         self.last_task = prepared
         return prepared
 
@@ -33,7 +36,11 @@ class _RecordingExecutor:
         prepared = self.prepare(task)
         self.last_task = prepared
         return TaskResult(
-            authoritative_decision_exposure=terminal_task_result_exposure_no_decision_gate(),task_id=prepared.task_id, state=TaskState.COMPLETED, answer="ok")
+            authoritative_decision_exposure=terminal_task_result_exposure_no_decision_gate(),
+            task_id=prepared.task_id,
+            state=TaskState.COMPLETED,
+            answer="ok",
+        )
 
 
 class _RejectingVerifier:
@@ -52,7 +59,11 @@ class _CountingExecutor:
     async def execute(self, task: Task) -> TaskResult:
         self.execute_calls += 1
         return TaskResult(
-            authoritative_decision_exposure=terminal_task_result_exposure_no_decision_gate(),task_id=task.task_id, state=TaskState.COMPLETED, answer="ok")
+            authoritative_decision_exposure=terminal_task_result_exposure_no_decision_gate(),
+            task_id=task.task_id,
+            state=TaskState.COMPLETED,
+            answer="ok",
+        )
 
 
 def test_interaction_intake_service_signature_has_no_nexus_loop() -> None:
@@ -61,7 +72,7 @@ def test_interaction_intake_service_signature_has_no_nexus_loop() -> None:
 
 
 def test_interaction_intake_service_does_not_store_nexus_loop() -> None:
-    service = InteractionIntakeService()
+    service = InteractionIntakeService(lab_opt_in=_LAB_OPT_IN)
     assert not hasattr(service, "_nexus_loop")
 
 
@@ -93,7 +104,7 @@ def test_interaction_intake_service_source_has_no_strategy_selection() -> None:
 @pytest.mark.asyncio
 async def test_interaction_intake_uses_task_executor_when_execute_true() -> None:
     executor = _RecordingExecutor()
-    service = InteractionIntakeService(task_executor=executor)
+    service = InteractionIntakeService(task_executor=executor, lab_opt_in=_LAB_OPT_IN)
     intake = await service.intake_payload(
         {"message": "hello", "capability": "echo.basic", "user_id": "u1"},
         tenant_id="t1",
@@ -109,7 +120,7 @@ async def test_interaction_intake_uses_task_executor_when_execute_true() -> None
 @pytest.mark.asyncio
 async def test_interaction_intake_does_not_execute_when_execute_false() -> None:
     executor = _RecordingExecutor()
-    service = InteractionIntakeService(task_executor=executor)
+    service = InteractionIntakeService(task_executor=executor, lab_opt_in=_LAB_OPT_IN)
     intake = await service.intake_payload(
         {"message": "hello", "capability": "echo.basic", "user_id": "u1"},
         tenant_id="t1",
@@ -128,11 +139,9 @@ async def test_interaction_intake_execute_false_enriches_once_without_executor()
     def enricher(task: Task) -> Task:
         nonlocal enricher_calls
         enricher_calls += 1
-        return task.model_copy(
-            update={"context": task.context.model_copy(update={"capability": "enriched.cap"})}
-        )
+        return task.model_copy(update={"context": task.context.model_copy(update={"capability": "enriched.cap"})})
 
-    service = InteractionIntakeService(task_enricher=enricher)
+    service = InteractionIntakeService(task_enricher=enricher, lab_opt_in=_LAB_OPT_IN)
     intake = await service.intake_payload(
         {"message": "hello", "capability": "echo.basic", "user_id": "u1"},
         tenant_id="t1",
@@ -145,7 +154,7 @@ async def test_interaction_intake_execute_false_enriches_once_without_executor()
 
 @pytest.mark.asyncio
 async def test_interaction_intake_requires_executor_for_execute_true() -> None:
-    service = InteractionIntakeService()
+    service = InteractionIntakeService(lab_opt_in=_LAB_OPT_IN)
     with pytest.raises(ValueError, match="Task executor is not configured"):
         await service.intake_payload(
             {"message": "hello", "user_id": "u1"},

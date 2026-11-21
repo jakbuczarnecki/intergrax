@@ -4,14 +4,18 @@ from concurrent.futures import ThreadPoolExecutor
 from unittest.mock import MagicMock
 
 import pytest
-
-from intergrax.model_inference.contracts import ModelArtifact, ModelArtifactFormat, VisionInferenceRequest
+from intergrax.model_inference.contracts import (
+    AuthorizedLocalMedia,
+    ModelArtifact,
+    ModelArtifactFormat,
+    VisionInferenceRequest,
+)
 from intergrax.model_inference.execution.in_process_executor import InProcessModalityInferenceExecutor
 from intergrax.model_inference.execution.profile import ModalityExecutionMode, ModalityExecutionProfile
 from intergrax.model_inference.execution.thread_pool_executor import ThreadPoolModalityInferenceExecutor
 from intergrax.model_inference.registry import ModelInferenceRegistry
-from intergrax.tools.providers.vision.inference_support import assert_media_within_limit
 from intergrax.runtime.modality.modality_profile import ModalityProfile
+from intergrax.tools.providers.vision.inference_support import assert_media_within_limit
 
 
 def test_thread_pool_offloads_heavy_slug_only() -> None:
@@ -59,5 +63,6 @@ def test_assert_media_within_limit_rejects_large_file(tmp_path) -> None:
     target = tmp_path / "big.bin"
     target.write_bytes(b"x" * 200)
     profile = ModalityProfile(profile_id="t", max_media_bytes=100)
+    authorized = AuthorizedLocalMedia(resolved_path=target.resolve(), remote_egress_permitted=False)
     with pytest.raises(ValueError, match="max_media_bytes"):
-        assert_media_within_limit(profile, target.resolve().as_uri())
+        assert_media_within_limit(profile, authorized)
