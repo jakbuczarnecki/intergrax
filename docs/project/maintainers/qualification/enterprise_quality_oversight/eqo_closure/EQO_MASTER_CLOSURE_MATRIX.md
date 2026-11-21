@@ -15,7 +15,7 @@
 | C11 | PARTIALLY_MET | Dossier A pinned; train evidence partial |
 | C12 | PARTIALLY_MET | PASS_SCOPED scope documented |
 | C13 | NOT_VERIFIED |  |
-| C14 | NOT_MET | KR-28 + #680 red |
+| C14 | PARTIALLY_MET | KR-01..28 classified; none RESOLVED at M3 |
 | C15 | NOT_VERIFIED |  |
 | C16 | NOT_VERIFIED | #680 open |
 | C17 | NOT_VERIFIED |  |
