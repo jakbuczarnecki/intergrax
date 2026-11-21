@@ -46,3 +46,9 @@ EQO does not re-litigate Q-WA-03; it records path presence at the bound pins.
 `NOT_CLOSED` — row stays `INGESTED`; EQO documents E-03 handoff only. No PASS, no FRZ promotion.
 
 **Audit:** session E pending.
+
+## Wave-4 refresh
+
+E-03 route unchanged; no `register.jsonl` apply (E-02 out of scope wave-4).
+
+**Recorded:** 2026-11-21 · lane `eqo/wave-4/x`

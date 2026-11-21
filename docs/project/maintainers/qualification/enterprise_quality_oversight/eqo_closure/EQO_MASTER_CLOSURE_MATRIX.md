@@ -47,3 +47,16 @@
 | WB11 | 1 | `OPEN` | queued (OPEN — EXE/DIS caveats) |
 | WB12 | 0 | `PRE_AUD` | queued |
 
+## Wave-4 partial CLS (non-AUD)
+
+**Land:** wave-3 integrator `2a1d84fb5` · **AUD verdict column unchanged** — session E deferred.
+
+| Workstream | CLS artefact | Status |
+|------------|--------------|--------|
+| W2 | `EQO_W2_TRAIN_VERIFICATION.md` W2-02..11 wave-4 read | `PARTIAL` — #680 track-only |
+| W4-04 | `w4/W4-04_REQUALIFY_BATCH.md` | `STARTED` — five REQUALIFY rows linked to C-03 layers |
+| W4-05 | `w4/W4-05_NONE_JUSTIFICATION.md` | `STARTED` — five NONE rows justified |
+| W4-02 | tranches 01–07 | `QUEUE_COMPLETE` (prior waves) |
+| X-01..03,05,07,08 | `eqo_closure/x/**` wave-4 reads | `PARTIAL` — memos refreshed; BLOCKER/BLOCKED unchanged |
+| AUD (all WB) | `AUD_PACKET.md` | **unchanged** — no PASS/FAIL in wave-4 |
+
