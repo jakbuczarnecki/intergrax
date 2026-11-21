@@ -6,7 +6,7 @@
 
 ## EQO-C-03 layer row (TENANT-X)
 
-From `EQO_C_DRIFT.jsonl` @ branch tip:
+From `EQO_C_DRIFT.jsonl` @ wave-1/x merge base (read-only):
 
 | Field | Value |
 |-------|-------|

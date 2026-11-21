@@ -13,27 +13,28 @@
 
 ## Method
 
-Read-only `compute_historical_evidence_invalidated()` and sibling counters from  
-`tests/qualification/roadmap_replay_x/_closure_counters.py` (no pytest EXE in this pass).
+Read-only `all_counters()` from `tests/qualification/roadmap_replay_x/_closure_counters.py` (no pytest EXE).
 
-- TRAIN: worktree `eqo-par-s3` @ `28c27cb`
-- DOC: detached scratch worktree `@ 8cee3c5` (no tracked edits)
+- TRAIN: worktree `eqo-w3` @ `28c27cb`
+- DOC: worktree `_wt/intergrax/_scratch/s3-docpin` @ `8cee3c5`
 
-## Results (2026-11-21)
+Command: `uv run python -c "… all_counters() …"` (wave-1/x session, 2026-11-21).
+
+## Results (2026-11-21, refreshed)
 
 | Counter | DOC_PIN | TRAIN_PIN |
 |---------|--------:|----------:|
-| `historical_evidence_invalidated_by_later_changes` | **2** | **2** |
+| `historical_evidence_invalidated_by_later_changes` | **2** | **3** |
 | `reopened_historical_stages` | 0 | 0 |
 | `unresolved_replay_blockers` | 0 | 0 |
 | `roadmap_drift` | 0 | 0 |
 | `unclassified_replay_findings` | 0 | 0 |
 | `vendor_neutrality_replay_failures` | 1 | 1 |
 
-**Interpretation:** Both pins agree — the own-invalidation counter is **non-zero** (2), consistent with dossier A5-007. EQO records the read; it does **not** claim closure or PT-Q05 completion.
+**Interpretation:** Both pins remain **non-zero** on own-invalidation and vendor-neutrality counters; pins **differ** on invalidation count (2 vs 3). Consistent with open A5-007 / PT-Q05 ownership. EQO records the read only.
 
 ## Disposition (interim)
 
-`NOT_CLOSED` — evidence read captured; full requalification and counter remediation owned by ARCH-FREEZE **PT-Q05** after FCS.
+`NOT_CLOSED` — evidence read captured; counter remediation owned by ARCH-FREEZE **PT-Q05** after FCS.
 
 **Audit:** session E pending.
