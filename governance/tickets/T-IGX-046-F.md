@@ -221,6 +221,22 @@ Operator decision **`waiver_both`** @ **2026-11-21** (coordinator chat): retroac
 | PR | [#708](https://github.com/jakbuczarnecki/intergrax/pull/708) merged 2026-11-21T09:13:04Z; [#709](https://github.com/jakbuczarnecki/intergrax/pull/709) merged 2026-11-21T09:20:17Z |
 | Merge commit | 8a401496dc3cca7080b9d25fd720e4537beab4c7 (#708); 1cf91738f82602a7a946eb880a7148d2983291e5 (#709) |
 
+
+## Checkpoint — EQO wave-13 (2026-11-21)
+
+| Field | Value |
+|-------|-------|
+| Integrator branch | `eqo/wave-13/integ` |
+| Base | `origin/development` `ad9094036` |
+| EXE lanes | `eqo/wave-13/exe-wb02` … `exe-wb12` @ TRAIN_PIN |
+| Doc lanes | `eqo/wave-13/e`, `c04`, `w4` |
+| Deliverables | `EQO_WAVE13_MANIFEST.md`, README row 39, matrix EXE refresh |
+| EXE exits | WB02 `1`; WB03/05/08/12 `0` |
+| Session E | **unchanged** |
+| Wave 14 | **not started** |
+| PR | _(pending push)_ |
+
+**Docs gates:** `ticket-governance` + `governance-policy-pin`.
 ## Lifecycle state
 
 plan_approved
