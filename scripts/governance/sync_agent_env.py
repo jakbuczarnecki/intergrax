@@ -148,6 +148,26 @@ def load_agents() -> dict[str, str]:
     return out
 
 
+_WRITE_TOOLS = {"Edit", "Write", "Bash", "NotebookEdit"}
+
+
+def _cursor_agent(path: Path) -> str:
+    """Cursor subagent adapter: documented keys only; readonly is derived from the Claude tool list."""
+    meta = _frontmatter(path)
+    tools = {part.strip() for part in str(meta.get("tools", "")).split(",") if part.strip()}
+    text = _read(path)
+    body = text[_FRONTMATTER.match(text).end() :]  # type: ignore[union-attr]
+    return (
+        "---\n"
+        f"name: {path.stem}\n"
+        f"description: {_yaml_scalar(str(meta.get('description', '')))}\n"
+        "model: inherit\n"
+        f"readonly: {'false' if tools & _WRITE_TOOLS else 'true'}\n"
+        "---\n"
+        f"<!-- {GENERATED} from agent-env/agents/{path.name} - do not edit. -->\n" + body
+    )
+
+
 def _claude_md_block(rules: dict[str, dict[str, str]]) -> str:
     always = [rid for rid, meta in rules.items() if meta["loading"] == "always"]
     on_demand = [rid for rid, meta in rules.items() if meta["loading"] != "always"]
@@ -204,7 +224,8 @@ def expected_files() -> dict[Path, str]:
     skills = load_skills()
     out: dict[Path, str] = {}
     for rid, meta in rules.items():
-        out[_CURSOR / "rules" / f"{rid}.mdc"] = _cursor_rule(rid, meta)
+        if meta["loading"] != "retired":  # tombstones add a listed rule description for nothing
+            out[_CURSOR / "rules" / f"{rid}.mdc"] = _cursor_rule(rid, meta)
         if meta["loading"] not in ("always", "retired"):
             out[_CLAUDE / "skills" / rid / "SKILL.md"] = _skill_adapter(
                 rid,
@@ -221,6 +242,8 @@ def expected_files() -> dict[Path, str]:
             )
     for aid, text in load_agents().items():
         out[_CLAUDE / "agents" / f"{aid}.md"] = text
+    for path in sorted(_AGENTS.glob(f"{AGENT_PREFIX}*.md")):
+        out[_CURSOR / "agents" / path.name] = _cursor_agent(path)
     return out
 
 
@@ -232,6 +255,7 @@ def _generated_on_disk() -> set[Path]:
         *_CURSOR.glob("skills/*/SKILL.md"),
         *_CLAUDE.glob("skills/*/SKILL.md"),
         *_CLAUDE.glob("agents/*.md"),
+        *_CURSOR.glob("agents/*.md"),
     ]
     for path in candidates:
         if GENERATED in _read(path):
