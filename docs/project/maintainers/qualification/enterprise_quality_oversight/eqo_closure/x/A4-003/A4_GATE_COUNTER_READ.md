@@ -42,3 +42,8 @@ Post wave-3 AUD packets: gate replay still tied to `EQO-W2-02` + queued session 
 **Land:** `569254840`. `MERGED_TO_TRAIN` fact for A4-003 @ `TRAIN_PIN` **unchanged**; tier-boundary replay still blocked on WB05 (`AUD_SESSION_E` **BLOCKED**). W2-02 `MERGED_GATE_PENDING` carries forward.
 
 **Recorded:** 2026-11-21 · lane `eqo/wave-8/x`
+## Wave-12 disposition read (EQO-X-01)
+
+**Land:** `292ca3348` (PR #704). `MERGED_TO_TRAIN` for A4-003 @ `TRAIN_PIN` **unchanged**. Wave-6 WB09 pytest exit `0` does **not** satisfy W2-02 tier-boundary gate replay; WB05 session E remains **BLOCKED**.
+
+**Recorded:** 2026-11-21 · lane `eqo/wave-12/x` · `Ref: governance/tickets/T-IGX-046-F.md`

@@ -30,3 +30,9 @@
 **Land:** 569254840. English pr680_governance_fast.md refresh; IIAC not IN_FORCE on train unchanged. #680 remains track-only (C16).
 
 **Recorded:** 2026-11-21 | lane eqo/wave-8/x
+
+## Wave-12 disposition read (EQO-X-03)
+
+**Land:** `292ca3348`. IIAC **not** `IN_FORCE` on train; RB-2 / FCS preconditions in `EQO_W7_W8_DEFERRED_BLOCKERS.md` unchanged.
+
+**Recorded:** 2026-11-21 · lane `eqo/wave-12/x` · `Ref: governance/tickets/T-IGX-046-F.md`

@@ -48,3 +48,8 @@ Cross-check against `runs/wb02/AUD_PACKET.md` (`PRE_AUD`, exit 0): mechanical `N
 **Land:** `569254840`. AUD-1 `runs/wb02/AUD_SESSION_E.md` **FAIL** — drift cluster still routes PT-Q07; no RESOLVED claim.
 
 **Recorded:** 2026-11-21 · lane `eqo/wave-8/x` · `Ref: governance/tickets/T-IGX-046-F.md`
+## Wave-12 disposition read
+
+**Land:** `292ca3348`. Tenant drift facts @ pin unchanged; AUD-1 WB02 **FAIL** not reversed.
+
+**Recorded:** 2026-11-21 · lane `eqo/wave-12/x` · `Ref: governance/tickets/T-IGX-046-F.md`
