@@ -202,6 +202,7 @@ def _require_storage(ctx: ToolWiringContext) -> ObjectStorage:
 
 
 def storage_get(ctx: ToolWiringContext, params: StorageGetInput) -> StorageGetOutput:
+    _refuse_governed_content_key(params.key)
     physical_key = _resolve_scoped_storage_key(ctx, tool_id=STORAGE_GET_TOOL_ID, logical_key=params.key)
     stored = _require_storage(ctx).get(physical_key)
     logical = params.key.strip()
@@ -217,6 +218,7 @@ def storage_get(ctx: ToolWiringContext, params: StorageGetInput) -> StorageGetOu
 
 
 def storage_put(ctx: ToolWiringContext, params: StoragePutInput) -> StoragePutOutput:
+    _refuse_governed_content_key(params.key)
     physical_key = _resolve_scoped_storage_key(ctx, tool_id=STORAGE_PUT_TOOL_ID, logical_key=params.key)
     body = base64.b64decode(params.body_base64)
     _require_storage(ctx).put(
@@ -255,12 +257,14 @@ def storage_presigned_url(ctx: ToolWiringContext, params: StoragePresignedUrlInp
 
 
 def storage_delete(ctx: ToolWiringContext, params: StorageDeleteInput) -> StorageDeleteOutput:
+    _refuse_governed_content_key(params.key)
     physical_key = _resolve_scoped_storage_key(ctx, tool_id=STORAGE_DELETE_TOOL_ID, logical_key=params.key)
     _require_storage(ctx).delete(physical_key)
     return StorageDeleteOutput(key=params.key.strip(), deleted=True)
 
 
 def storage_exists(ctx: ToolWiringContext, params: StorageExistsInput) -> StorageExistsOutput:
+    _refuse_governed_content_key(params.key)
     physical_key = _resolve_scoped_storage_key(ctx, tool_id=STORAGE_EXISTS_TOOL_ID, logical_key=params.key)
     stored = _require_storage(ctx).get(physical_key)
     logical = params.key.strip()

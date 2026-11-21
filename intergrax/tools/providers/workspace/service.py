@@ -7,7 +7,10 @@ from pathlib import Path
 
 from intergrax.runtime.workspace.execution_port import WorkspaceExecutionPort
 from intergrax.runtime.workspace.models import ShadowArtifact
-from intergrax.tools.providers.storage.service import _resolve_scoped_storage_key
+from intergrax.tools.providers.storage.service import (
+    _resolve_scoped_storage_key,
+    refuse_governed_content_key,
+)
 from intergrax.tools.providers.workspace.contracts import (
     WorkspaceArtifactOutput,
     WorkspaceDeleteFileInput,
@@ -126,6 +129,7 @@ def workspace_export_artifact(
     ctx: ToolWiringContext,
     params: WorkspaceExportArtifactInput,
 ) -> WorkspaceExportArtifactOutput:
+    refuse_governed_content_key(params.storage_key)
     workspace = _require_workspace(ctx)
     object_storage = _require_object_storage(ctx)
     rel = _safe_relative_path(params.path.strip())
@@ -165,6 +169,7 @@ def workspace_import_artifact(
     ctx: ToolWiringContext,
     params: WorkspaceImportArtifactInput,
 ) -> WorkspaceImportArtifactOutput:
+    refuse_governed_content_key(params.storage_key)
     workspace = _require_workspace(ctx)
     object_storage = _require_object_storage(ctx)
     storage_key = params.storage_key.strip()
