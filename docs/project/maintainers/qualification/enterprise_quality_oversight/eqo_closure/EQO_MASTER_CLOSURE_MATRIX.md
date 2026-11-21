@@ -35,17 +35,17 @@
 | WB | EXE exit | AUD packet | Session E |
 |----|---------:|------------|-----------|
 | WB01 | 1 | `OPEN` | queued (OPEN — EXE/DIS caveats) |
-| WB02 | 0 | `PRE_AUD` | queued |
-| WB03 | 0 | `PRE_AUD` | queued |
+| WB02 | 0 | `PRE_AUD` | **`FAIL`** (AUD-1, PR #695, `runs/wb02/AUD_SESSION_E.md`) |
+| WB03 | 0 | `PRE_AUD` | **`FAIL`** (AUD-1, PR #695, `runs/wb03/AUD_SESSION_E.md`) |
 | WB04 | 1 | `OPEN` | queued (OPEN — EXE/DIS caveats) |
-| WB05 | 0 | `PRE_AUD` | queued |
+| WB05 | 0 | `PRE_AUD` | **`BLOCKED`** (AUD-1, PR #695, `runs/wb05/AUD_SESSION_E.md`) |
 | WB06 | 4 | `OPEN` | queued (OPEN — EXE/DIS caveats) |
 | WB07 | 1 | `OPEN` | queued (OPEN — EXE/DIS caveats) |
 | WB08 | — | `OPEN` | queued (OPEN — EXE/DIS caveats) |
 | WB09 | 1 | `OPEN` | queued (OPEN — EXE/DIS caveats) |
 | WB10 | 1 | `OPEN` | queued (OPEN — EXE/DIS caveats) |
 | WB11 | 1 | `OPEN` | queued (OPEN — EXE/DIS caveats) |
-| WB12 | 0 | `PRE_AUD` | queued |
+| WB12 | 0 | `PRE_AUD` | **`BLOCKED`** (AUD-1, PR #695, `runs/wb12/AUD_SESSION_E.md`) |
 
 ## Wave-4 partial CLS (non-AUD)
 
