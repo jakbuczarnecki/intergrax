@@ -80,10 +80,32 @@ Edits of the roadmap, the freeze checklist, PDC-owned records, generated registe
 | Integrator branch | `eqo/wave-3/integ` |
 | Base | `origin/development` `8631b1e84` (PR #690) |
 | Deliverables | `AUD_PACKET.md` WB01–12, `W4-03_OWNER_DECISION_BATCH.md`, `EQO_WAVE3_MANIFEST.md`, matrix AUD § |
+| PR | [#692](https://github.com/jakbuczarnecki/intergrax/pull/692) merged `b533ed051` |
+| `development` head | `b533ed0510ee3b6eef88e5a19249404540064937` (merge commit) |
 | AUD verdicts | **none** — packets `PRE_AUD` / `OPEN` only |
 | EQO-C-04 | executed @ TRAIN_PIN — **BLOCKED** (pytest exit 1); `runs/c/C04_RUN_MANIFEST.json` |
 | E-02 apply | out of scope |
-| Session E | separate chat per WB (`EQO_WAVE3_MANIFEST.md`) |
+| Session E — **PRE_AUD** | WB02, WB03, WB05, WB12 |
+| Session E — **OPEN** | WB01, WB04, WB06, WB07, WB08, WB09, WB10, WB11 |
+
+**AUD packet summary** (from `EQO_WAVE3_MANIFEST.md`; entry path `eqo_closure/runs/wbNN/AUD_PACKET.md`):
+
+| WB | Packet status | EXE exit |
+|----|---------------|---------:|
+| WB01 | OPEN | 1 |
+| WB02 | PRE_AUD | 0 |
+| WB03 | PRE_AUD | 0 |
+| WB04 | OPEN | 1 |
+| WB05 | PRE_AUD | 0 |
+| WB06 | OPEN | 4 |
+| WB07 | OPEN | 1 |
+| WB08 | OPEN | — |
+| WB09 | OPEN | 1 |
+| WB10 | OPEN | 1 |
+| WB11 | OPEN | 1 |
+| WB12 | PRE_AUD | 0 |
+
+Session E: separate chat per WB; implementer must not self-PASS (`EQO_WAVE3_MANIFEST.md`).
 
 **Operator merge policy correction:** After incident PR #690, an autonomous agent MUST NOT run `gh pr merge` unless required docs gates are green (`ticket-governance` minimum) and operator `merge_on_green` applies to the full required check set, or an explicit operator waiver is documented in the ticket or PR thread. Ref: T-IGX-046-F.
 
