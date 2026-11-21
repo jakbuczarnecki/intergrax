@@ -1,7 +1,7 @@
 # ARCH-FREEZE continuation checkpoint (development train)
 
-**Updated:** 2026-11-21  
-**Base branch:** `origin/development` @ `717b2dc277271a2b3b4b245fe2c54a01abf4356d`  
+**Updated:** 2026-11-21 (autonomy fala 1)  
+**Base branch:** `origin/development` @ post-merge `af-dev-merge` (FC3 + PT-WF G-09 slice)  
 **Arch-freeze train reference:** `origin/arch-freeze/rw-train` @ `ca72197700b29b7b236e705fd4e3169f62db8a48` (operator pin `711ee4a11` is an ancestor on the train line, not on `development`)
 
 ## Parallel workstreams (development tor)
@@ -9,8 +9,8 @@
 | Group | Slug / worktree | Branch | Ticket | First step | Status |
 |-------|-----------------|--------|--------|------------|--------|
 | G1 | `af-dev-pt-fc3` | `af-dev-pt-fc3` | T-IGX-043-C | Foundation + Part A (embedding fail-closed) cherry-picked from `af2/pt-fc3` | Pushed; merge to `development` pending serial queue |
-| G2 | `af-dev-pt-wf` | `af-dev-pt-wf` | T-IGX-043-J (brak pliku) | **BLOCKED** — ticket/plan scaffold required before product commits | Not started |
-| G3 | `af-dev-rw-trust` | `af-dev-rw-trust` | T-IGX-051-C (brak pliku) | **BLOCKED** — ticket/plan scaffold required | Not started |
+| G2 | `af-dev-pt-wf` | `af-dev-pt-wf` | T-IGX-043-J | G-09 product slice merged; pełny PT-WF czeka na plan rev 2 | In progress |
+| G3 | `af-dev-rw-trust` | `af-dev-rw-trust` | T-IGX-051-C | Plan approved; product **BLOCKED** (brak node ids w planie) | plan_approved |
 | G4 | (this commit) | `af-dev-rc1-docs` | ticket-less docs | RC-1 continuation checkpoint + RW-PLAN-AUDIT status | In progress |
 | G5 | — | — | T-IGX-043-M | **QUEUED** — zero file overlap with G1–G3 confirmed; start after G1 FC-3 foundation dependency (`wiring_posture` from 043-B) lands on `development` | Not started |
 
