@@ -2,7 +2,7 @@
 {"artifact_id": "T-IGX-043-F", "classification": "PUBLISHED_CANONICAL", "path": "governance/tickets/T-IGX-043-F.md", "doc_pin": true, "train_pin": true}
 {"artifact_id": "T-IGX-043-J", "classification": "ABSENT", "path": "governance/tickets/T-IGX-043-J.md", "doc_pin": false, "train_pin": false}
 {"artifact_id": "T-IGX-043-L", "classification": "ABSENT", "path": "governance/tickets/T-IGX-043-L.md", "doc_pin": false, "train_pin": false}
-{"artifact_id": "T-IGX-043-M", "classification": "ABSENT", "path": "governance/tickets/T-IGX-043-M.md", "doc_pin": false, "train_pin": false}
+{"artifact_id": "T-IGX-043-M", "classification": "PRESENT_DRAFT", "path": "governance/tickets/T-IGX-043-M.md", "doc_pin": true, "train_pin": false, "note": "development tor scaffold fala 2 2026-11-21"}
 {"artifact_id": "T-IGX-043-N", "classification": "ABSENT", "path": "governance/tickets/T-IGX-043-N.md", "doc_pin": false, "train_pin": false}
 {"artifact_id": "T-IGX-051-A", "classification": "ABSENT", "path": "governance/tickets/T-IGX-051-A.md", "doc_pin": false, "train_pin": false}
 {"artifact_id": "T-IGX-051-C", "classification": "ABSENT", "path": "governance/tickets/T-IGX-051-C.md", "doc_pin": false, "train_pin": false}
