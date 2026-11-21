@@ -5,6 +5,7 @@
 
 from __future__ import annotations
 
+import threading
 from collections.abc import Callable
 from dataclasses import dataclass, replace
 from datetime import UTC, datetime
@@ -408,6 +409,17 @@ class AgentPlatformAdminService:
             package_trust_coordinator=self._package_trust_coordinator,
             activation_service=activation_service,
         )
+        self._install_slot_lock_registry = threading.Lock()
+        self._install_slot_locks: dict[tuple[str, str], threading.RLock] = {}
+
+    def _install_slot_lock(self, *, application_environment_id: str, installation_slot_id: str) -> threading.RLock:
+        key = (application_environment_id, installation_slot_id)
+        with self._install_slot_lock_registry:
+            slot_lock = self._install_slot_locks.get(key)
+            if slot_lock is None:
+                slot_lock = threading.RLock()
+                self._install_slot_locks[key] = slot_lock
+            return slot_lock
 
     def list_catalog(
         self,
@@ -690,95 +702,121 @@ class AgentPlatformAdminService:
                 )
             raise InstallationSlotConflict("installation id already used with different identity")
 
-        active_for_slot = self._installation_service.resolve_active_for_slot(
-            application_environment_id,
-            request.installation_slot_id,
-        )
-        if active_for_slot is None:
-            current_revision = installation_absent_token(
-                installation_slot_id=request.installation_slot_id,
-            )
-        else:
-            # An occupied slot belongs to the application that bound it (T-IGX-041-A, F-D1-05);
-            # an unoccupied slot has no owner yet, ownership is created by the later binding.
-            self._assert_installation_application_scope(
-                application_id=application_id,
-                application_environment_id=application_environment_id,
-                record=active_for_slot,
-            )
-            current_revision = installation_state_token(
-                installation_slot_id=active_for_slot.installation_slot_id,
-                installation_id=active_for_slot.installation_id,
-                installation_state=active_for_slot.installation_state.value,
-                package_digest=active_for_slot.package_identity.package_digest,
-            )
-        self._authorize_desired_state_mutation(
-            build_install_agent_mutation_request(
-                principal=principal,
-                application_id=application_id,
-                application_environment_id=application_environment_id,
-                mutation_id=request.mutation_id,
-                installation_slot_id=request.installation_slot_id,
-                installation_id=request.installation_id,
-                package_digest=identity.package_digest,
-                current_revision=current_revision,
-            ),
-            operation="install_agent",
-        )
-
-        policy = self._package_trust_policy_source()
-        self._package_trust_coordinator.assert_install_admission(
-            trust_record=request.trust_record,
-            package_identity=identity,
-            revocation_state=self._package_trust_revocation_state_source(),
-            policy=policy,
-            evaluated_at=self._package_trust_evaluation_time_source(),
-        )
-        self._assert_trust_record_attested(
-            trust_record=request.trust_record,
-            package_identity=identity,
-            policy=policy,
-        )
-
-        metadata = self._require_install_project_metadata(request)
-        authority_records = self._validated_install_contract_authority(
-            request=request,
-            identity=identity,
-            metadata=metadata,
-        )
-        self._artifact_metadata_store.persist_metadata(
-            AgentArtifactMetadata(
-                package_digest=identity.package_digest,
-                artifact_store_ref=request.artifact_store_ref,
-                distribution_package_id=identity.distribution_package_id,
-                agent_project_metadata_ref=request.agent_project_metadata_ref,
-            )
-        )
-        for record in authority_records:
-            self._package_contract_authority_service.persist_authority_record(record)
-
-        created = self._installation_service.create_candidate_installation(
-            installation_id=request.installation_id,
+        slot_lock = self._install_slot_lock(
+            application_environment_id=application_environment_id,
             installation_slot_id=request.installation_slot_id,
-            environment_id=application_environment_id,
-            package_identity=identity,
         )
-        verified = self._installation_service.mark_verified(
-            request.installation_id,
-            artifact_store_ref=request.artifact_store_ref,
-            trust_record=request.trust_record,
-        )
-        promoted = self._installation_service.promote_verified_to_active(request.installation_id)
-        return InstallationMutationResult(
-            installation=_installation_view(promoted.value),
-            audit_event_types=self._emit_events(
-                created,
-                verified,
-                promoted,
-                application_id=application_id,
-                application_environment_id=application_environment_id,
-            ),
-        )
+        with slot_lock:
+            existing = self._installation_store.get_installation(request.installation_id)
+            if existing is not None:
+                if (
+                    existing.installation_slot_id == request.installation_slot_id
+                    and existing.environment_id == application_environment_id
+                    and existing.package_identity == identity
+                ):
+                    metadata = self._require_install_project_metadata(request)
+                    self._assert_idempotent_install_contract_authority(
+                        package_digest=identity.package_digest,
+                        metadata=metadata,
+                        records=request.package_contract_authority,
+                    )
+                    return InstallationMutationResult(
+                        installation=_installation_view(existing),
+                        audit_event_types=(),
+                    )
+                raise InstallationSlotConflict("installation id already used with different identity")
+
+            active_for_slot = self._installation_service.resolve_active_for_slot(
+                application_environment_id,
+                request.installation_slot_id,
+            )
+            if active_for_slot is not None and active_for_slot.installation_id != request.installation_id:
+                raise InstallationSlotConflict("slot occupied: use upgrade_agent with the expected active installation")
+            if active_for_slot is None:
+                current_revision = installation_absent_token(
+                    installation_slot_id=request.installation_slot_id,
+                )
+            else:
+                # An occupied slot belongs to the application that bound it (T-IGX-041-A, F-D1-05);
+                # an unoccupied slot has no owner yet, ownership is created by the later binding.
+                self._assert_installation_application_scope(
+                    application_id=application_id,
+                    application_environment_id=application_environment_id,
+                    record=active_for_slot,
+                )
+                current_revision = installation_state_token(
+                    installation_slot_id=active_for_slot.installation_slot_id,
+                    installation_id=active_for_slot.installation_id,
+                    installation_state=active_for_slot.installation_state.value,
+                    package_digest=active_for_slot.package_identity.package_digest,
+                )
+            self._authorize_desired_state_mutation(
+                build_install_agent_mutation_request(
+                    principal=principal,
+                    application_id=application_id,
+                    application_environment_id=application_environment_id,
+                    mutation_id=request.mutation_id,
+                    installation_slot_id=request.installation_slot_id,
+                    installation_id=request.installation_id,
+                    package_digest=identity.package_digest,
+                    current_revision=current_revision,
+                ),
+                operation="install_agent",
+            )
+
+            policy = self._package_trust_policy_source()
+            self._package_trust_coordinator.assert_install_admission(
+                trust_record=request.trust_record,
+                package_identity=identity,
+                revocation_state=self._package_trust_revocation_state_source(),
+                policy=policy,
+                evaluated_at=self._package_trust_evaluation_time_source(),
+            )
+            self._assert_trust_record_attested(
+                trust_record=request.trust_record,
+                package_identity=identity,
+                policy=policy,
+            )
+
+            metadata = self._require_install_project_metadata(request)
+            authority_records = self._validated_install_contract_authority(
+                request=request,
+                identity=identity,
+                metadata=metadata,
+            )
+            self._artifact_metadata_store.persist_metadata(
+                AgentArtifactMetadata(
+                    package_digest=identity.package_digest,
+                    artifact_store_ref=request.artifact_store_ref,
+                    distribution_package_id=identity.distribution_package_id,
+                    agent_project_metadata_ref=request.agent_project_metadata_ref,
+                )
+            )
+            for record in authority_records:
+                self._package_contract_authority_service.persist_authority_record(record)
+
+            created = self._installation_service.create_candidate_installation(
+                installation_id=request.installation_id,
+                installation_slot_id=request.installation_slot_id,
+                environment_id=application_environment_id,
+                package_identity=identity,
+            )
+            verified = self._installation_service.mark_verified(
+                request.installation_id,
+                artifact_store_ref=request.artifact_store_ref,
+                trust_record=request.trust_record,
+            )
+            promoted = self._installation_service.promote_verified_to_active(request.installation_id)
+            return InstallationMutationResult(
+                installation=_installation_view(promoted.value),
+                audit_event_types=self._emit_events(
+                    created,
+                    verified,
+                    promoted,
+                    application_id=application_id,
+                    application_environment_id=application_environment_id,
+                ),
+            )
 
     def _assert_trust_record_attested(
         self,
