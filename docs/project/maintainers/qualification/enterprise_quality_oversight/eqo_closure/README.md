@@ -27,8 +27,8 @@ All qualification commits carry: `Ref: governance/tickets/T-IGX-046-F.md` (ticke
 | 7 | KR settlement X-06 | `dbe5ba1ce2d7755946370008bf2c3d050e08673f` |
 | 8 | W7/W8 deferred | `23b0a66a189da28a1190948d44e2da88e5a933bf` |
 | 9 | README index (this file) | `234d3c70efeebbcde2d72e8b2ce6ffd5d64b941f` |
-| 10 | merge development + reconciliation 1073 | `89d302ed3d94eae98c962b3d7b09e5a540d8c70d2` (pending push) |
-| 11 | W3-WB02 tenant isolation DES→DIS | (this commit) |
+| 10 | merge development + reconciliation 1073 | `89d302ed39ea18d9c2e9e97f50b1c04993bdda7c` |
+| 11 | W3-WB02 tenant isolation DES→DIS | `2d760433d1f6f46e0252711aeb64fc01c7c8ea8d` |
 
 Index maintenance commits on this branch: `15bfc0851`, `3a92440ad` (SHA alignment only).
 
