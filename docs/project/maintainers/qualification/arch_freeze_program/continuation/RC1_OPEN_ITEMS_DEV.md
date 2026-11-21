@@ -16,7 +16,7 @@
 
 | Id | Kryterium | Stan na `development` | Dowód / następny krok |
 |----|-----------|------------------------|------------------------|
-| RC1-J1 | `T-AF2-RW-PLAN-AUDIT` — niezależny PASS | BLOCKED | [`RW_PLAN_AUDIT_STATUS.md`](RW_PLAN_AUDIT_STATUS.md) |
+| RC1-J1 | `T-AF2-RW-PLAN-AUDIT` — niezależny PASS | BLOCKED | [`RW_PLAN_AUDIT_STATUS.md`](RW_PLAN_AUDIT_STATUS.md); prep [`RW_PLAN_AUDIT_PREP_DOSSIER.md`](RW_PLAN_AUDIT_PREP_DOSSIER.md) (**T-IGX-050-N**) |
 | RC1-J2 | PT-G01 / PT-G02 — merged lub PR | [ ] OPEN | Szkice na trainie (`T-IGX-046-F`/`G` w `36c470249` — **train PT-G01/G02**, nie EQO-A) |
 | RC1-J3 | `OD-AF-RC-KR08` — mandat tak/nie | [ ] PENDING | [`OD-AF-RC-KR08.md`](OD-AF-RC-KR08.md); OD-AF-AUTO-01 częściowo na dev |
 | RC1-J4 | EDER-DEC map | [ ] cite train | `EDER_DECISION_MAP.json` @ `36c470249` (brak kopii na dev) |

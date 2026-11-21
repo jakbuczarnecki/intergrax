@@ -31,7 +31,7 @@
 |----|-----------|---------|-------|
 | G2-B1 | PT-G01 (BND reconciliation) | [ ] | MEP §G — train backlog |
 | G2-B2 | PT-G02 (ownership / STATE-X handoffs) | [ ] | MEP §G |
-| G2-B3 | T-AF2-RW-PLAN published + **T-AF2-RW-PLAN-AUDIT** | BLOCKED | `RW_PLAN_AUDIT_STATUS.md` — **nie** PASS |
+| G2-B3 | T-AF2-RW-PLAN published + **T-AF2-RW-PLAN-AUDIT** | BLOCKED | `RW_PLAN_AUDIT_STATUS.md` — **nie** PASS; prep `RW_PLAN_AUDIT_PREP_DOSSIER.md` |
 
 ## C. W4 — wave audit, RB-2, FCS, Stage 3
 
