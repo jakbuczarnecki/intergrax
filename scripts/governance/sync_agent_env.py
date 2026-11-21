@@ -52,6 +52,10 @@ AGENT_BODY_MAX_LINES = 40
 AGENT_PREFIX = "igx-"  # sfx-* personas stay declarative briefs (not synced)
 
 _FRONTMATTER = re.compile(r"\A---\n(.*?)\n---\n", re.DOTALL)
+ACTIVE_START = "<!-- igx:active:start -->"
+ACTIVE_END = "<!-- igx:active:end -->"
+ALWAYS_INLINE_MAX_LINES = 20
+_ACTIVE_BLOCK = re.compile(re.escape(ACTIVE_START) + r"\n(.*?)\n" + re.escape(ACTIVE_END), re.DOTALL)
 
 
 def _read(path: Path) -> str:
@@ -96,8 +100,8 @@ def load_rules(*, include_retired: bool = False) -> dict[str, dict[str, str]]:
     return rules
 
 
-def load_skills() -> dict[str, dict[str, str]]:
-    skills: dict[str, dict[str, str]] = {}
+def load_skills() -> dict[str, dict[str, object]]:
+    skills: dict[str, dict[str, object]] = {}
     for path in sorted(_SKILLS.glob("*/SKILL.md")):
         meta = _frontmatter(path)
         skill_id = path.parent.name
@@ -106,18 +110,44 @@ def load_skills() -> dict[str, dict[str, str]]:
             raise ValueError(f"{_rel(path)}: frontmatter name must equal directory {skill_id!r}")
         if not description:
             raise ValueError(f"{path.relative_to(_REPO).as_posix()}: frontmatter needs 'description'")
-        skills[skill_id] = {"description": description}
+        skills[skill_id] = {
+            "description": description,
+            "explicit_only": meta.get("disable-model-invocation") is True,
+        }
     return skills
 
 
+def _always_extract(rule_id: str) -> str:
+    """Normative text of an always-on rule: its ``igx:active`` blocks, or the whole short body."""
+    body = _FRONTMATTER.sub("", _read(_RULES / f"{rule_id}.md"), count=1).strip("\n")
+    blocks = [match.group(1).strip("\n") for match in _ACTIVE_BLOCK.finditer(body)]
+    if blocks:
+        return "\n\n".join(blocks)
+    if len(body.splitlines()) <= ALWAYS_INLINE_MAX_LINES:
+        return body
+    raise ValueError(
+        f"agent-env/rules/{rule_id}.md: always-on rule body is over {ALWAYS_INLINE_MAX_LINES} lines "
+        f"and has no {ACTIVE_START} ... {ACTIVE_END} block"
+    )
+
+
 def _cursor_rule(rule_id: str, meta: dict[str, str]) -> str:
-    return (
+    head = (
         "---\n"
         f"description: {_yaml_scalar(meta['description'])}\n"
         f"alwaysApply: {'true' if meta['loading'] == 'always' else 'false'}\n"
         "---\n"
         f"<!-- {GENERATED} from agent-env/rules/{rule_id}.md - do not edit. -->\n"
-        f"Canonical rule (SSOT): @agent-env/rules/{rule_id}.md\n"
+    )
+    if meta["loading"] != "always":
+        return head + f"Canonical rule (SSOT): @agent-env/rules/{rule_id}.md\n"
+    # Cursor does not expand "@" inside a rule body: the normative text must be inlined here.
+    return (
+        head
+        + _always_extract(rule_id)
+        + "\n\n"
+        + f"Canonical rule (SSOT): `agent-env/rules/{rule_id}.md`. Read it only when editing rules "
+        + "or when a section outside this extract is needed.\n"
     )
 
 
@@ -238,7 +268,11 @@ def expected_files() -> dict[Path, str]:
         canonical = f"agent-env/skills/{sid}/SKILL.md"
         for tool_dir in (_CURSOR, _CLAUDE):
             out[tool_dir / "skills" / sid / "SKILL.md"] = _skill_adapter(
-                sid, meta["description"], canonical=canonical, kind="skill", explicit_only=False
+                sid,
+                str(meta["description"]),
+                canonical=canonical,
+                kind="skill",
+                explicit_only=bool(meta["explicit_only"]),
             )
     for aid, text in load_agents().items():
         out[_CLAUDE / "agents" / f"{aid}.md"] = text

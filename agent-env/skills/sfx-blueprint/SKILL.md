@@ -1,6 +1,7 @@
 ---
 name: sfx-blueprint
 description: SFX Design step, part 2, and Improve - composes scenario_blueprint.v1.json and blueprint_notes.md under .tmp/sfx/<slug>/ from resolved platform capabilities only, LAB profile, deterministic steps first; on Improve writes a new version and blueprint_diff.md (proposal-only, L1).
+disable-model-invocation: true
 ---
 
 # SFX blueprint (Design, part 2 · Improve)

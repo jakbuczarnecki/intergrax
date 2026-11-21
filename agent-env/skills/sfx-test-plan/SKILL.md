@@ -1,6 +1,7 @@
 ---
 name: sfx-test-plan
 description: SFX Test step (plan only) - drafts scenario_test_plan.v1.json and test_plan_notes.md under .tmp/sfx/<slug>/ with positive, negative, security and adversarial cases and dataset needs; never runs a test (proposal-only, L1).
+disable-model-invocation: true
 ---
 
 # SFX test plan (Test, plan only)
