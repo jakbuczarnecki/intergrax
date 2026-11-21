@@ -73,6 +73,20 @@ Edits of the roadmap, the freeze checklist, PDC-owned records, generated registe
 | CI at merge | Red on required contexts — pre-existing on `development`, outside EQO wave-2 write set: `ci-smoke` (DF5 `vector_store` config), `governance-fast` (ACT-N11 / IIAC activation drift), `ent-audit-fast` cascade (`ENT-A-PRD-01/02`, `ENT-A-REG-03`). Triage: subagent session `41aa0042`. |
 | CI record | PR #690 conversation comment «CI triage (post-`gh pr checks 690 --watch`)»; completion table in «EQO wave-2 completion signal». |
 
+## Checkpoint — EQO wave-3 (2026-11-21)
+
+| Field | Value |
+|-------|-------|
+| Integrator branch | `eqo/wave-3/integ` |
+| Base | `origin/development` `8631b1e84` (PR #690) |
+| Deliverables | `AUD_PACKET.md` WB01–12, `W4-03_OWNER_DECISION_BATCH.md`, `EQO_WAVE3_MANIFEST.md`, matrix AUD § |
+| AUD verdicts | **none** — packets `PRE_AUD` / `OPEN` only |
+| EQO-C-04 | executed @ TRAIN_PIN — **BLOCKED** (pytest exit 1); `runs/c/C04_RUN_MANIFEST.json` |
+| E-02 apply | out of scope |
+| Session E | separate chat per WB (`EQO_WAVE3_MANIFEST.md`) |
+
+**Operator merge policy correction:** After incident PR #690, an autonomous agent MUST NOT run `gh pr merge` unless required docs gates are green (`ticket-governance` minimum) and operator `merge_on_green` applies to the full required check set, or an explicit operator waiver is documented in the ticket or PR thread. Ref: T-IGX-046-F.
+
 ## Lifecycle state
 
 plan_approved

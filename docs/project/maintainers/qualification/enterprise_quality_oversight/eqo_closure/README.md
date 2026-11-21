@@ -42,10 +42,11 @@ All qualification commits carry: `Ref: governance/tickets/T-IGX-046-F.md` (ticke
 | 22 | Wave-2 X-01/X-06/X-08 reads | `eqo/wave-2/x` lane |
 | 23 | Wave-2 AUD prep + C-04 prep | `eqo/wave-2/dis` lane |
 | 24 | Wave-2 manifest (this index) | `eqo/wave-2/integ` |
+| 25 | Wave-3 AUD packets + W4-03 draft + C-04 replay | `eqo/wave-3/integ` |
 
 Index maintenance commits on this branch: `15bfc0851`, `3a92440ad` (SHA alignment only).
 
-Wave manifests: `EQO_WAVE1_MANIFEST.md`, `EQO_WAVE2_MANIFEST.md`.
+Wave manifests: `EQO_WAVE1_MANIFEST.md`, `EQO_WAVE2_MANIFEST.md`, `EQO_WAVE3_MANIFEST.md`.
 
 Worktree evidence runs: `eqo_closure/runs/wb01`–`wb12/`. Campaign C memos: `c/A3-004/`, `c/A6-004/`; C-04 prep: `runs/c/C04_TARGETED_REPLAY_PREP.md`.
 
