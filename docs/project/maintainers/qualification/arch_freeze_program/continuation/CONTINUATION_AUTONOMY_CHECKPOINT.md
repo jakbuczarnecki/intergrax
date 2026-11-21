@@ -4,7 +4,7 @@
 
 | Tor | Ref | Uwagi |
 |-----|-----|-------|
-| `development` | (po push fali 5) | bazowa fala 4: `7b1818f5f`; pin fala 4: `c6ce2a364` |
+| `development` | `e4f7c4999` | fala 5 docs; bazowa product fala 4: `7b1818f5f` |
 | `arch-freeze/rw-train` | `c443865e9` | cherry-pick **STOP** — `TRAIN_CHERRY_PICK_STATUS.md` |
 | `af-dev-merge` | serial merge tor | |
 
@@ -17,7 +17,7 @@
 | WF E2–E4 | **BLOCKED** (udokumentowane) | `WF_E2_E4_STATUS.md` |
 | T-IGX-043-M smoke → `in_progress` | **DONE** | 3 passed `test_changed_since_impact_map.py` (fala 5) |
 | Trust slice 3 (`NT-TRUST-06`) | **DEFER** | collect/langchain-core — bez minimal slice w fali 5 |
-| Push `origin/development` | **pending** | commit fali 5 |
+| Push `origin/development` | **DONE** | `e4f7c4999` |
 
 ## Fala 6 — wskazówka
 
