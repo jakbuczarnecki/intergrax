@@ -65,7 +65,7 @@
 |----|-----------|---------|-------|
 | RC3X-E1 | RC-3 entry prep (fala 6) | [x] | `RC3_PREP_DOSSIER.md` @ `e61e5136a` |
 | RC3X-E2 | G2 readiness draft | [x] prep | [`G2_CHECKLIST_DRAFT.md`](G2_CHECKLIST_DRAFT.md) — **nie pin G2** |
-| RC3X-E3 | RC-3 exit prep checklist (ten plik) | [x] | MEP W4 @ `d043a21c6` |
+| RC3X-E3 | RC-3 exit prep checklist (ten plik) | [x] prep | MEP W4 + §F RC3-J @ `c207e6ad3` (Runda 1 runbook) |
 | RC3X-E4 | `CHECKPOINT.md` — G4 W4 row | [x] | `CHECKPOINT.md` — MEP W4 |
 
 ## F. RC3-J1..J7 — kroki wykonawcze (Runda 1)
@@ -145,11 +145,22 @@
 
 **Werdykt J6 (Runda 1):** **BLOCKED** — stale activation SHA.
 
+
+### RC3-J7 — T-AF2-RW-PLAN-AUDIT niezależny werdykt
+
+| Step | Rola | Artefakt / komenda | Bramka | Stan |
+|------|------|-------------------|--------|------|
+| RC3-J7-1 | independent_auditor | Sesja review Appendix C + macierz AF-RC (plan kontynuacji) | **D6=BLOCKED** | BLOCKED |
+| RC3-J7-2 | orchestrator | [`RW_PLAN_AUDIT_STATUS.md`](RW_PLAN_AUDIT_STATUS.md) — status bez PASS | RC1-J1 | OPEN |
+| RC3-J7-3 | architect | SCOPE train → `DONE_REQUALIFICATION_REQUIRED` po audycie | Po J7-1 | BLOCKED |
+
+**Werdykt J7 (Runda 1):** **BLOCKED** — brak niezależnej sesji audytora.
+
 ## Werdykt (exit prep only)
 
 | Warstwa | Werdykt |
 |---------|---------|
-| MEP W4 dokumentacja exit prep | **IN PROGRESS** — checklisty bez claimów zamknięcia |
-| RC-3 exit / program W4 gates | **DRAFT / NOT STARTED** — A1–D4 otwarte lub **BLOCKED** |
+| MEP W4 dokumentacja exit prep | **IN PROGRESS** — §F runbook RC3-J1..J7 @ Runda 1 |
+| RC-3 exit / program W4 gates | **DRAFT / NOT STARTED** — A1–D4 + **F (RC3-J1..J7)** OPEN/BLOCKED — **bez** PASS |
 
 Zgodnie z **OD-AF-AUTO-05**: brak G2 PASS, Q02 PASS, FCS, RB-2 activation, PT-S04 LIVE, `ARCH_FREEZE CLOSED`.
