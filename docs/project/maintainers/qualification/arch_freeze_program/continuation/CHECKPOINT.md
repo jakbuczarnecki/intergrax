@@ -71,7 +71,7 @@ Deliverables: `RC3_PREP_DOSSIER.md`, `G2_CHECKLIST_DRAFT.md`, `TRAIN_DEV_GAP.md`
 
 ## G4 — RC-3 exit prep (MEP W4)
 
-Deliverables: `RC3_EXIT_PREP_CHECKLIST.md`; odświeżenie `G2_CHECKLIST_DRAFT.md` i `RC3_PREP_DOSSIER.md` (PT-Q02, PT-Q03, FCS, PT-S04 — prep only). Pin dokumentacyjny: `ad9094036`. **Nie** G2 PASS, **nie** Q02/FCS/S04 signoff.
+Deliverables: `RC3_EXIT_PREP_CHECKLIST.md`; odświeżenie `G2_CHECKLIST_DRAFT.md` i `RC3_PREP_DOSSIER.md` (PT-Q02, PT-Q03, FCS, PT-S04 — prep only). Tip pin development: `e69e1ff58` (`af-dev-rc3-pin`). **Nie** G2 PASS, **nie** Q02/FCS/S04 signoff.
 
 ## G5 — W5 pre-pin prep (MEP W5)
 
