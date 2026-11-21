@@ -32,4 +32,8 @@ EQO records the read only — **no** G-band downgrade without operator OD packet
 
 **Audit:** session E pending.
 
-**Recorded:** 2026-11-21
+## Wave-4 refresh
+
+Five IDs unchanged `BLOCKS_ARCH_FREEZE` / `BLOCKED`; owner batch remains `W4-03_OWNER_DECISION_BATCH.md` (not reopened in wave-4).
+
+**Recorded:** 2026-11-21 · lane `eqo/wave-4/x`
