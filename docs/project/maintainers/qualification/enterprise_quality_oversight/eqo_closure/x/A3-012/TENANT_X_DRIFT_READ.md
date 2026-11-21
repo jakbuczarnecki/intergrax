@@ -42,3 +42,9 @@ Campaign A title: TENANT-X global tenant-isolation PASS not maintained after cer
 Cross-check against `runs/wb02/AUD_PACKET.md` (`PRE_AUD`, exit 0): mechanical `NO_PRODUCT_DELTA` unchanged; A3-012 certification drift claim still routes PT-Q07 post-FCS.
 
 **Recorded:** 2026-11-21 · lane `eqo/wave-4/x`
+
+## Wave-8 read pass (`EQO-X-05`)
+
+**Land:** `569254840`. AUD-1 `runs/wb02/AUD_SESSION_E.md` **FAIL** — drift cluster still routes PT-Q07; no RESOLVED claim.
+
+**Recorded:** 2026-11-21 · lane `eqo/wave-8/x` · `Ref: governance/tickets/T-IGX-046-F.md`

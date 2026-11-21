@@ -6,7 +6,7 @@
 
 ## Classification (plan §12, 11 reasons)
 
-**Primary:** **2 — Regresja wprowadzona przez aktualne zmiany** (w kontekście oczekiwanego stanu IIAC przed RB-2).
+**Primary:** **2 — Regression introduced by the current changes** (relative to the expected IIAC state before RB-2).
 
 Failures are dominated by IIAC activation and EVOL-X fresh-clone tests asserting **policy IN_FORCE** while **ACT-N11** reports stale audit after material governance / product-path changes on the PR branch, for example:
 
@@ -28,10 +28,12 @@ This PR failure pattern is **consistent with KR-08** (governance-fast + ACT-N11 
 ## Secondary hypotheses (not primary)
 
 - **8 — Stale gate expectation:** tests assume IIAC IN_FORCE on `development` while train remediation has not merged (FCS/RB-2 pending).
-- **11 — Nieustalona:** full node list vs KR-08 inventory not reconciled in this pass.
+- **11 — Undetermined:** full node list vs KR-08 inventory not reconciled in this pass.
 
 ## Evidence requirement
 
-Re-run `governance-fast` at merge commit **after** RB-2 / IIAC activation (pasmo G) OR record exact blocker if red persists with IN_FORCE.
+Re-run `governance-fast` at merge commit **after** RB-2 / IIAC activation (band G) OR record exact blocker if red persists with IN_FORCE.
 
-**W0-03 verdict:** regresja względem oczekiwanego stanu aktywacji IIAC na gałęzi PR; powiązanie z EQOA-A0-007 i X-03.
+**W0-03 verdict:** regression vs expected IIAC activation on the PR branch; links EQOA-A0-007 and X-03.
+
+**Wave-8:** English-only refresh · lane `eqo/wave-8/x` · land `569254840` · `Ref: governance/tickets/T-IGX-046-F.md`
