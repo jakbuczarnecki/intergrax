@@ -1,7 +1,7 @@
 # EQO roadmap — remaining executable vs hard stop
 
-**Development pin:** `f88e17c53bcb318076f9324382f848bb5c5d88a7` (local `development`, `8e146e21` not an ancestor).  
-**Generated:** 2026-11-21 orchestration slice (Composer implementer).
+**Development pin:** `a922e9e18103dc361153f4454c760174de93d835` (local `development`; `8e146e21` and `origin/development` are ancestors).  
+**Generated:** 2026-11-21 ticket-delta slice (Composer implementer).
 
 
 ## Post-merge replay slice (2026-11-21)
