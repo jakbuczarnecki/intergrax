@@ -59,13 +59,13 @@ Generated from the same `agent-env/` sources by `sync_agent_env.py`: `.cursor/ru
 |------|---------------|
 | `igx-*` agents visible to the Task tool, `readonly` as generated | yes |
 | `.claude/settings.json` hooks (read and shell guards) | run, and deny (large `Read`, `cat` of a 307 KB file) |
-| `.cursor/hooks.json` native hooks | did not fire in the CLI, so none is shipped |
+| `.cursor/hooks.json` native hooks | earlier CLI check: did not fire. CURSOR-OPT-PARITY ships one entry, `subagentStart` for `^generalPurpose$` (`failClosed`); its execution is `NOT_VERIFIED` until a probe logs it (no `stop` entry: Cursor maps `decision: block` itself) |
 | `permissions.deny Agent(general-purpose)` | not enforced; a `generalPurpose` subagent still launched |
 | `effortLevel`, compaction window, `bashOutputMaxChars`, `skillOverrides` | no effect (Cursor selects the model and context itself) |
 
 Hooks run in Cursor without `CLAUDE_PROJECT_DIR`, so the commands in `.claude/settings.json` find `scripts/hooks` from that variable, the current directory or a parent and do nothing when it is missing (an unresolved variable once made every Read and shell call fail).
 
-First turn in Cursor (`cursor-agent -p --mode ask --model composer-2.5`, input + cache read): baseline 17.7k, now 18.1k to 18.5k; run-to-run noise is about 0.4k, so there is **no measurable change**. The repository controls only about 2k of it (`AGENTS.md`/`CLAUDE.md` about 1.2k, rules about 0.6k, skills about 0.3k); the rest is Cursor's own prompt. The saving shows when an agent follows the `@agent-env/rules/...` pointer: `intergrax-core.md` is 3.5 KB instead of 13 KB of old always-on rules.
+First turn in Cursor (`cursor-agent -p --mode ask --model composer-2.5`, input + cache read): baseline 17.7k, now 18.1k to 18.5k; run-to-run noise is about 0.4k, so there is **no measurable change**. The repository controls only about 2k of it (`AGENTS.md`/`CLAUDE.md` about 1.2k, rules about 0.6k, skills about 0.3k); the rest is Cursor's own prompt. The old `.mdc` held only an `@agent-env/rules/...` pointer, which Cursor does not expand, so the invariants were not in context. CURSOR-OPT-PARITY (`T-IGX-054-A`) inlines the `igx:active` extract of `intergrax-core.md` and the English-only rule into the always-on `.mdc` files (about 3.4 KB + 0.5 KB, limit 6 KB) and hides `igx-run-plan` and the eight `sfx-*` skills from the model (`disable-model-invocation`). Expected first-turn effect: a small increase for the extract, a small decrease for the skill listing, both inside the 0.4k noise band, so no saving is claimed. `FUNCTIONAL_PARITY` and `TOKEN_ECONOMY` are separate verdicts (record: `.tmp/proof/cursor-opt-parity/README.md`); a first-turn number alone never earns `TOKEN_ECONOMY_PASS`.
 
 Per-agent models in Cursor are left at `inherit` (slugs differ per account; see `cursor-agent --list-models`). To make `igx-researcher` cheap, add a model slug for it in `_cursor_agent` in `sync_agent_env.py` (generated files are not edited by hand).
 

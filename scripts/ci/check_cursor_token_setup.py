@@ -36,6 +36,20 @@ AGENTS_STUB = ROOT / "AGENTS.md"
 ITERATION_RULE = ROOT / "agent-env" / "rules" / "intergrax-iteration.md"
 TOKEN_BUDGET_RULE = ROOT / "agent-env" / "rules" / "intergrax-token-budget.md"
 CURSOR_RULES = ROOT / ".cursor" / "rules"
+RULES_DIR = ROOT / "agent-env" / "rules"
+ALWAYS_RULES = ("intergrax-core", "intergrax-english-only-commits")
+ALWAYS_MDC_MAX_BYTES = 6 * 1024
+CORE_EXTRACT_PHRASES = (
+    "Default branch",
+    "ESCALATION:",
+    "max 3 files",
+    "git push",
+    ".tmp/",
+    "uv run pytest",
+    "sleep loops",
+)
+SETUP_REQUIRED_PHRASES = ("intergrax-core", "ESCALATION:")
+SETUP_STALE_PHRASES = ("Only `intergrax-token-budget.md` is always-on", "STOP and ask")
 PLAN_READ_SCOPE_MARKER = "## Cursor read scope (token budget)"
 PLAN_DIR = ROOT / "docs" / "project" / "maintainers" / "plans"
 SKIP_PLAN_HUBS = frozenset({"AUDIT_IDEAL_2026.md", "IDEAL_HARNESS_L3.md"})
@@ -82,15 +96,86 @@ def _check_broad_access_phrases(errors: list[str]) -> None:
                     errors.append(f"{candidate.relative_to(ROOT)}: forbidden broad Cursor access phrase: {phrase!r}")
 
 
+def _frontmatter_value(text: str, key: str) -> str:
+    head = text.replace("\r\n", "\n").split("---\n", 2)
+    if len(head) < 3 or head[0] != "":
+        return ""
+    for line in head[1].splitlines():
+        if line.startswith(f"{key}:"):
+            return line.split(":", 1)[1].strip()
+    return ""
+
+
+def _mdc_body(text: str) -> str:
+    parts = text.replace("\r\n", "\n").split("---\n", 2)
+    return parts[2] if len(parts) == 3 else ""
+
+
+def _check_always_on_rules(errors: list[str]) -> None:
+    """Always-on set is exactly core + English-only; each ``.mdc`` carries the extract, not a pointer."""
+    always = sorted(
+        path.stem
+        for path in RULES_DIR.glob("*.md")
+        if _frontmatter_value(path.read_text("utf-8"), "loading") == "always"
+    )
+    if always != sorted(ALWAYS_RULES):
+        errors.append(f"agent-env rules with loading: always must be exactly {sorted(ALWAYS_RULES)}, found {always}")
+    for rule_id in ALWAYS_RULES:
+        adapter = CURSOR_RULES / f"{rule_id}.mdc"
+        if not adapter.is_file():
+            errors.append(f".cursor/rules/{rule_id}.mdc missing (run sync_agent_env.py)")
+            continue
+        text = adapter.read_text(encoding="utf-8")
+        if _frontmatter_value(text, "alwaysApply") != "true":
+            errors.append(f".cursor/rules/{rule_id}.mdc must have alwaysApply: true")
+        if "@agent-env" in _mdc_body(text):
+            errors.append(
+                f".cursor/rules/{rule_id}.mdc must inline the rule text, not an unexpanded @agent-env pointer"
+            )
+    core = CURSOR_RULES / "intergrax-core.mdc"
+    if core.is_file():
+        body = _mdc_body(core.read_text(encoding="utf-8"))
+        for phrase in CORE_EXTRACT_PHRASES:
+            if phrase not in body:
+                errors.append(f".cursor/rules/intergrax-core.mdc extract lost required text {phrase!r}")
+    english = CURSOR_RULES / "intergrax-english-only-commits.mdc"
+    if english.is_file() and "English only" not in _mdc_body(english.read_text(encoding="utf-8")):
+        errors.append(".cursor/rules/intergrax-english-only-commits.mdc must contain 'English only'")
+    total = sum(
+        len(_mdc_body((CURSOR_RULES / f"{rid}.mdc").read_text(encoding="utf-8")).encode("utf-8"))
+        for rid in ALWAYS_RULES
+        if (CURSOR_RULES / f"{rid}.mdc").is_file()
+    )
+    if total > ALWAYS_MDC_MAX_BYTES:
+        errors.append(f"always-on .mdc bodies are {total} bytes, max {ALWAYS_MDC_MAX_BYTES}")
+
+
+def _check_retired_token_budget(errors: list[str]) -> None:
+    if not TOKEN_BUDGET_RULE.is_file():
+        errors.append("missing agent-env/rules/intergrax-token-budget.md (retired tombstone)")
+    elif _frontmatter_value(TOKEN_BUDGET_RULE.read_text("utf-8"), "loading") != "retired":
+        errors.append("intergrax-token-budget.md must have loading: retired (content lives in intergrax-core.md)")
+    if (CURSOR_RULES / "intergrax-token-budget.mdc").exists():
+        errors.append(".cursor/rules/intergrax-token-budget.mdc must not exist (retired rule has no adapter)")
+
+
 def main() -> int:
     errors: list[str] = []
 
     if not CURSOR_SETUP.is_file():
         errors.append("missing docs/project/technical/guides/CURSOR_TOKEN_SETUP.md")
-    elif "O1" not in CURSOR_SETUP.read_text(encoding="utf-8"):
-        errors.append("CURSOR_TOKEN_SETUP.md must document O1 terse output policy")
-    elif I1_MARKER not in CURSOR_SETUP.read_text(encoding="utf-8"):
-        errors.append("CURSOR_TOKEN_SETUP.md must document I1 input token budget")
+    else:
+        setup = CURSOR_SETUP.read_text(encoding="utf-8")
+        if "O1" not in setup:
+            errors.append("CURSOR_TOKEN_SETUP.md must document O1 terse output policy")
+        if I1_MARKER not in setup:
+            errors.append("CURSOR_TOKEN_SETUP.md must document I1 input token budget")
+        for required in SETUP_REQUIRED_PHRASES:
+            if required not in setup:
+                errors.append(f"CURSOR_TOKEN_SETUP.md must mention {required!r}")
+        for stale in SETUP_STALE_PHRASES:
+            if stale in setup:
+                errors.append(f"CURSOR_TOKEN_SETUP.md still carries the retired wording {stale!r}")
 
     if not CURSORIGNORE.is_file():
         errors.append("missing .cursorignore")
@@ -140,24 +225,8 @@ def main() -> int:
         if "## Task routing" in stub or "## Verification" in stub:
             errors.append("AGENTS.md stub must not contain full routing/verification sections")
 
-    if not TOKEN_BUDGET_RULE.is_file():
-        errors.append("missing agent-env/rules/intergrax-token-budget.md (I1/O1 always-on)")
-    else:
-        token_budget = TOKEN_BUDGET_RULE.read_text(encoding="utf-8")
-        if "loading: always" not in token_budget:
-            errors.append("intergrax-token-budget.md must have loading: always")
-        adapter = CURSOR_RULES / "intergrax-token-budget.mdc"
-        if not adapter.is_file() or "alwaysApply: true" not in adapter.read_text(encoding="utf-8"):
-            errors.append(
-                ".cursor/rules/intergrax-token-budget.mdc adapter must exist with alwaysApply: true "
-                "(run sync_agent_env.py)"
-            )
-        if I1_MARKER not in token_budget:
-            errors.append("intergrax-token-budget.md must include I1 input token budget")
-        if O1_MARKER not in token_budget or "terse" not in token_budget.lower():
-            errors.append("intergrax-token-budget.md must include O1 terse output policy")
-        if "intergrax-ci-hotfix" not in token_budget:
-            errors.append("intergrax-token-budget.md must reference intergrax-ci-hotfix.md")
+    _check_always_on_rules(errors)
+    _check_retired_token_budget(errors)
 
     if not CI_HOTFIX_RULE.is_file():
         errors.append("missing agent-env/rules/intergrax-ci-hotfix.md (CI hotfix mode)")
@@ -175,8 +244,10 @@ def main() -> int:
         errors.append("intergrax-iteration.md must include F3 session protocol")
     if "SYMBOL_INDEX" not in iteration:
         errors.append("intergrax-iteration.md must reference SYMBOL_INDEX.md (F5)")
-    if "intergrax-token-budget" not in iteration:
-        errors.append("intergrax-iteration.md must reference intergrax-token-budget.md (I1/O1)")
+    if "intergrax-core" not in iteration:
+        errors.append("intergrax-iteration.md must point to intergrax-core.md (I1/O1 live in core, section Token use)")
+    if "intergrax-token-budget" in iteration:
+        errors.append("intergrax-iteration.md must not point to the retired intergrax-token-budget.md")
 
     plan_gen = ROOT / "scripts" / "docs" / "generate_plan_read_scopes.py"
     if not plan_gen.is_file():

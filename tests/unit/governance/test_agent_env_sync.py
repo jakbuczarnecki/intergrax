@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import importlib.util
 import re
 import subprocess
 import sys
@@ -150,3 +151,49 @@ def test_generator_rejects_long_always_rule_without_active_block(tmp_path: Path,
         assert "igx:active" in str(exc)
     else:
         raise AssertionError("expected ValueError for a long always-on rule without igx:active block")
+
+
+CHECKER = ROOT / "scripts" / "ci" / "check_cursor_token_setup.py"
+
+
+def test_cursor_token_setup_checker_passes() -> None:
+    completed = subprocess.run([sys.executable, str(CHECKER)], cwd=ROOT, check=False, capture_output=True, text=True)
+    assert completed.returncode == 0, completed.stderr
+
+
+def _load_checker():
+    spec = importlib.util.spec_from_file_location("check_cursor_token_setup_under_test", CHECKER)
+    module = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(module)
+    return module
+
+
+def test_checker_fails_when_token_budget_is_always_on_again(tmp_path: Path, monkeypatch) -> None:
+    checker = _load_checker()
+    rules = tmp_path / "rules"
+    rules.mkdir()
+    for rule_id in (*checker.ALWAYS_RULES, "intergrax-token-budget"):
+        (rules / f"{rule_id}.md").write_text("---\ndescription: x\nloading: always\n---\nbody\n", encoding="utf-8")
+    monkeypatch.setattr(checker, "RULES_DIR", rules)
+    monkeypatch.setattr(checker, "TOKEN_BUDGET_RULE", rules / "intergrax-token-budget.md")
+    errors: list[str] = []
+    checker._check_always_on_rules(errors)
+    checker._check_retired_token_budget(errors)
+    assert any("must be exactly" in e for e in errors)
+    assert any("loading: retired" in e for e in errors)
+
+
+def test_checker_fails_when_core_mdc_is_a_pointer(tmp_path: Path, monkeypatch) -> None:
+    checker = _load_checker()
+    cursor_rules = tmp_path / "cursor-rules"
+    cursor_rules.mkdir()
+    for rule_id in checker.ALWAYS_RULES:
+        (cursor_rules / f"{rule_id}.mdc").write_text(
+            f"---\ndescription: x\nalwaysApply: true\n---\nCanonical rule (SSOT): @agent-env/rules/{rule_id}.md\n",
+            encoding="utf-8",
+        )
+    monkeypatch.setattr(checker, "CURSOR_RULES", cursor_rules)
+    errors: list[str] = []
+    checker._check_always_on_rules(errors)
+    assert any("@agent-env" in e for e in errors)
+    assert any("lost required text" in e for e in errors)

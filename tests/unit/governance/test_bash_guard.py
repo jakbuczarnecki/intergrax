@@ -54,3 +54,30 @@ def test_other_commands_untouched(tmp_path: Path) -> None:
 def test_kill_switch(tmp_path: Path) -> None:
     (tmp_path / "big.txt").write_text("x" * 90_000)
     assert not _denied(_run("cat big.txt", tmp_path, IGX_HOOKS="off"))
+
+
+def test_powershell_get_content_of_large_file_denied(tmp_path: Path) -> None:
+    (tmp_path / "big.txt").write_text("x" * 90_000)
+    assert _denied(_run('powershell -Command "Get-Content big.txt"', tmp_path))
+    assert _denied(
+        _run('powershell.exe -NoProfile -Command "Get-Content -Path big.txt | Select-Object -First 5"', tmp_path)
+    )
+    assert _denied(_run("pwsh -c 'gc big.txt'", tmp_path))
+    assert _denied(_run('pwsh -NoProfile -Command "type .\\big.txt"', tmp_path))
+    assert _denied(_run("git status && powershell -Command \"Get-Content 'big.txt'\"", tmp_path))
+    assert _denied(_run(f'pwsh -Command "Get-Content {tmp_path / "big.txt"}"', tmp_path))
+
+
+def test_powershell_other_commands_and_small_files_allowed(tmp_path: Path) -> None:
+    (tmp_path / "big.txt").write_text("x" * 90_000)
+    (tmp_path / "small.txt").write_text("x")
+    assert not _denied(_run('powershell -Command "Get-ChildItem big.txt"', tmp_path))
+    assert not _denied(_run('pwsh -Command "Get-ChildItem -Recurse"', tmp_path))
+    assert not _denied(_run('powershell -Command "Get-Content small.txt"', tmp_path))
+    assert not _denied(_run("pwsh -File script.ps1", tmp_path))
+    assert not _denied(_run('powershell -Command "Select-String foo big.txt"', tmp_path))
+
+
+def test_powershell_kill_switch(tmp_path: Path) -> None:
+    (tmp_path / "big.txt").write_text("x" * 90_000)
+    assert not _denied(_run('powershell -Command "Get-Content big.txt"', tmp_path, IGX_HOOKS="off"))

@@ -13,7 +13,7 @@ policies:
     id: POL-I1-O1
     enforcement: procedural
     artifacts:
-      - agent-env/rules/intergrax-token-budget.md
+      - agent-env/rules/intergrax-core.md
     description: Input/output token budget; subagent exception when control plane active.
 
   ticket-first:

@@ -33,6 +33,20 @@ def _stop(root: Path, message: str, *, cwd: Path | None = None, **env: str) -> d
     return json.loads(done.stdout) if done.stdout.strip() else {}
 
 
+def _stop_raw(root: Path, payload: dict) -> dict:
+    done = subprocess.run(
+        [sys.executable, str(HOOK)],
+        input=json.dumps(payload),
+        capture_output=True,
+        text=True,
+        cwd=root,
+        env=_env(),
+        check=False,
+    )
+    assert done.returncode == 0, done.stderr
+    return json.loads(done.stdout) if done.stdout.strip() else {}
+
+
 def _cli(root: Path, *args: str) -> subprocess.CompletedProcess[str]:
     return subprocess.run(
         [sys.executable, str(HOOK), *args], capture_output=True, text=True, cwd=root, env=_env(), check=False
@@ -148,3 +162,30 @@ def test_hook_is_fast(root: Path) -> None:
     start = time.perf_counter()
     _stop(root, "q")
     assert time.perf_counter() - start < 1.0  # generous: process start on a loaded Windows host
+
+
+def test_block_output_has_only_decision_and_reason_no_followup_message(root: Path) -> None:
+    out = _stop(root, "Do you want me to continue?")
+    assert _blocked(out)
+    assert set(out) == {"decision", "reason"}
+    assert "followup_message" not in out
+
+
+def test_native_cursor_payload_without_message_is_allowed(root: Path) -> None:
+    assert _stop_raw(root, {"status": "completed", "loop_count": 0}) == {}
+    assert _stop_raw(root, {"status": "completed", "loop_count": 0, "last_assistant_message": "  "}) == {}
+
+
+@pytest.mark.parametrize("status", ["error", "aborted", "ERROR", "Aborted"])
+def test_error_and_aborted_status_never_continue(root: Path, status: str) -> None:
+    assert _stop_raw(root, {"status": status, "loop_count": 0}) == {}
+    assert _stop_raw(root, {"status": status, "last_assistant_message": "Do you want me to continue?"}) == {}
+    assert (root / ACTIVE).is_file()
+
+
+def test_completed_status_with_visible_message_still_blocks(root: Path) -> None:
+    assert _blocked(_stop_raw(root, {"status": "completed", "last_assistant_message": "q"}))
+
+
+def test_visible_escalation_is_allowed_with_native_status(root: Path) -> None:
+    assert _stop_raw(root, {"status": "completed", "last_assistant_message": "ESCALATION: forbidden action"}) == {}
