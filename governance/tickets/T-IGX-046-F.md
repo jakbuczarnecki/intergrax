@@ -252,7 +252,8 @@ Operator decision **`waiver_both`** @ **2026-11-21** (coordinator chat): retroac
 | Session E | **unchanged** |
 | Aggregate | **0 PASS** @ pin |
 | Terminal | **No** `EQO_CLOSED` |
-| PR | _(pending push)_ |
+| PR | [#712](https://github.com/jakbuczarnecki/intergrax/pull/712) merged 2026-11-21T10:19:19Z |
+| Merge commit | `a69272aa06fa54b5532344100de66b302d917523` (#712) |
 
 **Docs gates:** `ticket-governance` + `governance-policy-pin`.
 
