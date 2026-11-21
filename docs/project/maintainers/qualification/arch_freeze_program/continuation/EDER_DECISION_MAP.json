@@ -1,0 +1,2072 @@
+{
+  "package": "EDER-DEC",
+  "source_head": "28c27cb896d02e0185b9fa02047411fa152f6469",
+  "row_count": 141,
+  "status_counts": {
+    "MAPPED_PUBLISHED_DP_OD": 34,
+    "OPEN_NEEDS_OPERATOR": 107
+  },
+  "note": "Uses plan_decisions_waiting to map to published DP/OD (#615).",
+  "rows": [
+    {
+      "reg_id": "EDER-F-0005",
+      "eqoa_id": "EQOA-A0-005",
+      "title": "No import-linter configuration; tier boundaries enforced by AST gates in tests and scripts/maintenance/check_*.py",
+      "frz_arch_freeze_impact": "NONE",
+      "plan_decisions_waiting": [
+        "DP-22"
+      ],
+      "mapped_dp": [
+        "DP-22"
+      ],
+      "mapped_od": [],
+      "waiting_unpublished": [],
+      "plan_nodes": [
+        "DS-2"
+      ],
+      "package_status": "MAPPED_PUBLISHED_DP_OD"
+    },
+    {
+      "reg_id": "EDER-F-0006",
+      "eqoa_id": "EQOA-A0-006",
+      "title": "No standalone ECAP executable",
+      "frz_arch_freeze_impact": "NONE",
+      "plan_decisions_waiting": [
+        "DP-54"
+      ],
+      "mapped_dp": [
+        "DP-54"
+      ],
+      "mapped_od": [],
+      "waiting_unpublished": [],
+      "plan_nodes": [
+        "DS-5"
+      ],
+      "package_status": "MAPPED_PUBLISHED_DP_OD"
+    },
+    {
+      "reg_id": "EDER-F-0019",
+      "eqoa_id": "EQOA-A1-011",
+      "title": "Live Redis behavioral matrix for the idempotency ledger is a self-declared freeze debt with no owner stage",
+      "frz_arch_freeze_impact": "BLOCKS",
+      "plan_decisions_waiting": [],
+      "mapped_dp": [],
+      "mapped_od": [],
+      "waiting_unpublished": [],
+      "plan_nodes": [
+        "DS-4"
+      ],
+      "package_status": "OPEN_NEEDS_OPERATOR"
+    },
+    {
+      "reg_id": "EDER-F-0026",
+      "eqoa_id": "EQOA-A1-018",
+      "title": "DIST-SCALE-X closed on operator-only scoped acceptance while SCENARIO-GATE demands independent SHA evidence for every mandatory row",
+      "frz_arch_freeze_impact": "CONDITIONS",
+      "plan_decisions_waiting": [
+        "DP-12",
+        "DP-42",
+        "DP-62"
+      ],
+      "mapped_dp": [
+        "DP-12",
+        "DP-42",
+        "DP-62"
+      ],
+      "mapped_od": [],
+      "waiting_unpublished": [],
+      "plan_nodes": [
+        "DS-1",
+        "DS-4",
+        "DS-6"
+      ],
+      "package_status": "MAPPED_PUBLISHED_DP_OD"
+    },
+    {
+      "reg_id": "EDER-F-0034",
+      "eqoa_id": "EQOA-A2-002",
+      "title": "ARCH-FREEZE entry condition L499 ('independent exact-SHA evidence' for SKILL-X, TOOL-LIFE-X and DIST-SCALE-X) is not met by the recorded evi",
+      "frz_arch_freeze_impact": "BLOCKS",
+      "plan_decisions_waiting": [
+        "DP-04",
+        "DP-12",
+        "DP-42",
+        "DP-43",
+        "DP-62"
+      ],
+      "mapped_dp": [
+        "DP-04",
+        "DP-12",
+        "DP-42",
+        "DP-43",
+        "DP-62"
+      ],
+      "mapped_od": [],
+      "waiting_unpublished": [],
+      "plan_nodes": [
+        "PT-Q08",
+        "PT-Q09",
+        "PT-D09",
+        "DS-1",
+        "DS-4",
+        "DS-6"
+      ],
+      "package_status": "MAPPED_PUBLISHED_DP_OD"
+    },
+    {
+      "reg_id": "EDER-F-0052",
+      "eqoa_id": "EQOA-A2-022",
+      "title": "PROD-Q parent [x] CLOSED contradicts roadmap 2.0.3 and ARCH-FREEZE exception wording; open mandatory children have no stage rows",
+      "frz_arch_freeze_impact": "CONDITIONS",
+      "plan_decisions_waiting": [
+        "DP-41"
+      ],
+      "mapped_dp": [
+        "DP-41"
+      ],
+      "mapped_od": [],
+      "waiting_unpublished": [],
+      "plan_nodes": [
+        "DS-4"
+      ],
+      "package_status": "MAPPED_PUBLISHED_DP_OD"
+    },
+    {
+      "reg_id": "EDER-F-0063",
+      "eqoa_id": "EQOA-A2-034",
+      "title": "MCP-SERVER-X formal closure took effect without a recorded operator ruling on conditions C5 and C8",
+      "frz_arch_freeze_impact": "CONDITIONS",
+      "plan_decisions_waiting": [
+        "DP-45"
+      ],
+      "mapped_dp": [
+        "DP-45"
+      ],
+      "mapped_od": [],
+      "waiting_unpublished": [],
+      "plan_nodes": [
+        "DS-4"
+      ],
+      "package_status": "MAPPED_PUBLISHED_DP_OD"
+    },
+    {
+      "reg_id": "EDER-F-0066",
+      "eqoa_id": "EQOA-A2-037",
+      "title": "Compensating control behind FRZ-AUD-10 is repeatedly bypassed after ENT-AUDIT-X closure (OPEN-BP-01)",
+      "frz_arch_freeze_impact": "CONDITIONS",
+      "plan_decisions_waiting": [
+        "DP-58",
+        "DP-64",
+        "DP-65",
+        "DP-67"
+      ],
+      "mapped_dp": [
+        "DP-58",
+        "DP-64",
+        "DP-65",
+        "DP-67"
+      ],
+      "mapped_od": [],
+      "waiting_unpublished": [],
+      "plan_nodes": [
+        "PT-S02",
+        "DS-6"
+      ],
+      "package_status": "MAPPED_PUBLISHED_DP_OD"
+    },
+    {
+      "reg_id": "EDER-F-0071",
+      "eqoa_id": "EQOA-A2-042",
+      "title": "HARNESS-W4 closure contradicts its own cited record (READY FOR AUDIT, not CLOSED)",
+      "frz_arch_freeze_impact": "CONDITIONS",
+      "plan_decisions_waiting": [],
+      "mapped_dp": [],
+      "mapped_od": [],
+      "waiting_unpublished": [],
+      "plan_nodes": [
+        "DS-4"
+      ],
+      "package_status": "OPEN_NEEDS_OPERATOR"
+    },
+    {
+      "reg_id": "EDER-F-0079",
+      "eqoa_id": "EQOA-A2-050",
+      "title": "Independent acceptance of CONFIG-X, COMPAT-X and TENANT-X (and their children) is asserted only in implementer-authored records; no auditor,",
+      "frz_arch_freeze_impact": "BLOCKS",
+      "plan_decisions_waiting": [
+        "DP-04",
+        "DP-09"
+      ],
+      "mapped_dp": [
+        "DP-04",
+        "DP-09"
+      ],
+      "mapped_od": [],
+      "waiting_unpublished": [],
+      "plan_nodes": [
+        "PT-Q07",
+        "PT-Q12",
+        "DS-1"
+      ],
+      "package_status": "MAPPED_PUBLISHED_DP_OD"
+    },
+    {
+      "reg_id": "EDER-F-0087",
+      "eqoa_id": "EQOA-A3-007",
+      "title": "Accepted scoped limitations behind PASS rows: no live branch protection (FRZ-AUD-10), qualification-layer-only deploy/rollback (FRZ-EVOL-07)",
+      "frz_arch_freeze_impact": "CONDITIONS",
+      "plan_decisions_waiting": [
+        "DP-64"
+      ],
+      "mapped_dp": [
+        "DP-64"
+      ],
+      "mapped_od": [],
+      "waiting_unpublished": [],
+      "plan_nodes": [
+        "DS-6"
+      ],
+      "package_status": "MAPPED_PUBLISHED_DP_OD"
+    },
+    {
+      "reg_id": "EDER-F-0090",
+      "eqoa_id": "EQOA-A3-010",
+      "title": "Q2-D2 typing debt: checklist says resolve before EBH-6, EBH-6 closed with the debt ratified and Path B not triggered",
+      "frz_arch_freeze_impact": "BLOCKS",
+      "plan_decisions_waiting": [
+        "DP-01",
+        "DP-36"
+      ],
+      "mapped_dp": [
+        "DP-01",
+        "DP-36"
+      ],
+      "mapped_od": [],
+      "waiting_unpublished": [],
+      "plan_nodes": [
+        "PT-G02",
+        "PT-D10",
+        "PT-Q12",
+        "DS-1",
+        "DS-4"
+      ],
+      "package_status": "MAPPED_PUBLISHED_DP_OD"
+    },
+    {
+      "reg_id": "EDER-F-0102",
+      "eqoa_id": "EQOA-A3-022",
+      "title": "SEC rows that depend on PROD-Q live qualification are not in the Path B live-scoped list and cannot meet the architecture-scoped PASS rule",
+      "frz_arch_freeze_impact": "BLOCKS",
+      "plan_decisions_waiting": [
+        "DP-01",
+        "DP-34",
+        "DP-35"
+      ],
+      "mapped_dp": [
+        "DP-01",
+        "DP-34",
+        "DP-35"
+      ],
+      "mapped_od": [],
+      "waiting_unpublished": [],
+      "plan_nodes": [
+        "PT-WF",
+        "PT-D10",
+        "PT-Q12",
+        "DS-1",
+        "DS-4"
+      ],
+      "package_status": "MAPPED_PUBLISHED_DP_OD"
+    },
+    {
+      "reg_id": "EDER-F-0105",
+      "eqoa_id": "EQOA-A3-025",
+      "title": "Architecture-scoped FRZ-PRD-04/05/06/07/09/10/11/12 are OPEN with PROD-Q as sole closing stage; PRD-06 and PRD-11 cite no PROD-Q evidence de",
+      "frz_arch_freeze_impact": "BLOCKS",
+      "plan_decisions_waiting": [
+        "DP-01",
+        "DP-34",
+        "DP-35"
+      ],
+      "mapped_dp": [
+        "DP-01",
+        "DP-34",
+        "DP-35"
+      ],
+      "mapped_od": [],
+      "waiting_unpublished": [],
+      "plan_nodes": [
+        "PT-WF",
+        "PT-D10",
+        "PT-Q12",
+        "DS-1",
+        "DS-4"
+      ],
+      "package_status": "MAPPED_PUBLISHED_DP_OD"
+    },
+    {
+      "reg_id": "EDER-F-0117",
+      "eqoa_id": "EQOA-A4-008",
+      "title": "The 24-concern skeleton leaves 12 documented domains outside any concern (autonomous work, collaborative work, codecraft, reasoning/cognitio",
+      "frz_arch_freeze_impact": "NONE",
+      "plan_decisions_waiting": [
+        "DP-56",
+        "DP-57"
+      ],
+      "mapped_dp": [
+        "DP-56",
+        "DP-57"
+      ],
+      "mapped_od": [],
+      "waiting_unpublished": [],
+      "plan_nodes": [
+        "DS-5"
+      ],
+      "package_status": "MAPPED_PUBLISHED_DP_OD"
+    },
+    {
+      "reg_id": "EDER-F-0122",
+      "eqoa_id": "EQOA-A4-013",
+      "title": "Decision System has no roadmap stage, PDC workstream or FRZ family despite a QUALIFIED WITH OBSERVATIONS claim",
+      "frz_arch_freeze_impact": "BLOCKS",
+      "plan_decisions_waiting": [
+        "DP-48",
+        "DP-55"
+      ],
+      "mapped_dp": [
+        "DP-48",
+        "DP-55"
+      ],
+      "mapped_od": [],
+      "waiting_unpublished": [],
+      "plan_nodes": [
+        "DS-5"
+      ],
+      "package_status": "MAPPED_PUBLISHED_DP_OD"
+    },
+    {
+      "reg_id": "EDER-F-0125",
+      "eqoa_id": "EQOA-A4-016",
+      "title": "Two parallel host LLM resolvers (runtime.wiring and applications._shared) with divergent routing semantics; owner doc names only resolve_llm",
+      "frz_arch_freeze_impact": "BLOCKS",
+      "plan_decisions_waiting": [
+        "DP-11",
+        "DP-16"
+      ],
+      "mapped_dp": [
+        "DP-11",
+        "DP-16"
+      ],
+      "mapped_od": [],
+      "waiting_unpublished": [],
+      "plan_nodes": [
+        "PT-WB",
+        "PT-G01",
+        "DS-1",
+        "DS-2"
+      ],
+      "package_status": "MAPPED_PUBLISHED_DP_OD"
+    },
+    {
+      "reg_id": "EDER-F-0129",
+      "eqoa_id": "EQOA-A4-020",
+      "title": "Concrete integration providers are imported and selected by enum/string switches in Tier-1 runtime and Tier-3 application code, beside Integ",
+      "frz_arch_freeze_impact": "BLOCKS",
+      "plan_decisions_waiting": [
+        "DP-18"
+      ],
+      "mapped_dp": [
+        "DP-18"
+      ],
+      "mapped_od": [],
+      "waiting_unpublished": [],
+      "plan_nodes": [
+        "PT-B02",
+        "PT-WB",
+        "PT-B2W",
+        "DS-2"
+      ],
+      "package_status": "MAPPED_PUBLISHED_DP_OD"
+    },
+    {
+      "reg_id": "EDER-F-0133",
+      "eqoa_id": "EQOA-A4-024",
+      "title": "Tier-1 NexusLoop selects concrete TaskMemory and runtime-event SQLite stores from ambient env vars and silently runs with persistence disabl",
+      "frz_arch_freeze_impact": "BLOCKS",
+      "plan_decisions_waiting": [
+        "DP-18",
+        "DP-25"
+      ],
+      "mapped_dp": [
+        "DP-18",
+        "DP-25"
+      ],
+      "mapped_od": [],
+      "waiting_unpublished": [],
+      "plan_nodes": [
+        "PT-WB",
+        "PT-FC1",
+        "DS-2",
+        "DS-3"
+      ],
+      "package_status": "MAPPED_PUBLISHED_DP_OD"
+    },
+    {
+      "reg_id": "EDER-F-0149",
+      "eqoa_id": "EQOA-A4-040",
+      "title": "Most Tier-3 application entrypoints start serving with direct uvicorn.run instead of the hosting lifecycle engine",
+      "frz_arch_freeze_impact": "BLOCKS",
+      "plan_decisions_waiting": [
+        "DP-19"
+      ],
+      "mapped_dp": [
+        "DP-19"
+      ],
+      "mapped_od": [],
+      "waiting_unpublished": [],
+      "plan_nodes": [
+        "PT-G01",
+        "PT-B02",
+        "PT-WB",
+        "PT-B2W",
+        "DS-2"
+      ],
+      "package_status": "MAPPED_PUBLISHED_DP_OD"
+    },
+    {
+      "reg_id": "EDER-F-0152",
+      "eqoa_id": "EQOA-A4-043",
+      "title": "ProofReceipt provenance invariants (source revision, dirty state, environment fingerprint) are documented as not implemented",
+      "frz_arch_freeze_impact": "CONDITIONS",
+      "plan_decisions_waiting": [
+        "DP-05"
+      ],
+      "mapped_dp": [
+        "DP-05"
+      ],
+      "mapped_od": [],
+      "waiting_unpublished": [],
+      "plan_nodes": [
+        "DS-1"
+      ],
+      "package_status": "MAPPED_PUBLISHED_DP_OD"
+    },
+    {
+      "reg_id": "EDER-F-0162",
+      "eqoa_id": "EQOA-A5-006",
+      "title": "Closed stages leave no re-open trail: EBH-4 R1 gate was red after closure and 14 of 23 stages had no machine-readable surface",
+      "frz_arch_freeze_impact": "NONE",
+      "plan_decisions_waiting": [],
+      "mapped_dp": [],
+      "mapped_od": [],
+      "waiting_unpublished": [],
+      "plan_nodes": [
+        "DS-4"
+      ],
+      "package_status": "OPEN_NEEDS_OPERATOR"
+    },
+    {
+      "reg_id": "EDER-F-0163",
+      "eqoa_id": "EQOA-A5-007",
+      "title": "ROADMAP-REPLAY-X own invalidation counter is non-zero at baseline: unscoped product delta since the DUP-X pin",
+      "frz_arch_freeze_impact": "BLOCKS",
+      "plan_decisions_waiting": [
+        "DP-08",
+        "DP-12",
+        "DP-60",
+        "DP-61",
+        "DP-63"
+      ],
+      "mapped_dp": [
+        "DP-08",
+        "DP-12",
+        "DP-60",
+        "DP-61",
+        "DP-63"
+      ],
+      "mapped_od": [],
+      "waiting_unpublished": [],
+      "plan_nodes": [
+        "PT-Q05",
+        "PT-PB",
+        "PT-Q04",
+        "DS-1",
+        "DS-6"
+      ],
+      "package_status": "MAPPED_PUBLISHED_DP_OD"
+    },
+    {
+      "reg_id": "EDER-F-0165",
+      "eqoa_id": "EQOA-A5-009",
+      "title": "DIST-SCALE-X envelopes measured on queue/scheduler code that has since changed substantially; input flagged zero drift",
+      "frz_arch_freeze_impact": "CONDITIONS",
+      "plan_decisions_waiting": [
+        "DP-42",
+        "DP-62"
+      ],
+      "mapped_dp": [
+        "DP-42",
+        "DP-62"
+      ],
+      "mapped_od": [],
+      "waiting_unpublished": [],
+      "plan_nodes": [
+        "DS-4",
+        "DS-6"
+      ],
+      "package_status": "MAPPED_PUBLISHED_DP_OD"
+    },
+    {
+      "reg_id": "EDER-F-0175",
+      "eqoa_id": "EQOA-A6-004",
+      "title": "The enterprise audit system maps no check to 60 of 225 FRZ criteria (families AUD, CTL, DEBT, FRZ, HRN, TRC); 42 of them are PASS in the che",
+      "frz_arch_freeze_impact": "CONDITIONS",
+      "plan_decisions_waiting": [
+        "DP-58",
+        "DP-66"
+      ],
+      "mapped_dp": [
+        "DP-58",
+        "DP-66"
+      ],
+      "mapped_od": [],
+      "waiting_unpublished": [],
+      "plan_nodes": [
+        "PT-WD",
+        "DS-6"
+      ],
+      "package_status": "MAPPED_PUBLISHED_DP_OD"
+    },
+    {
+      "reg_id": "EDER-F-0184",
+      "eqoa_id": "EQOA-A7-005",
+      "title": "Open entries inside ARCH-FREEZE scope (expected entry conditions, listed for the exception graph)",
+      "frz_arch_freeze_impact": "BLOCKS",
+      "plan_decisions_waiting": [],
+      "mapped_dp": [],
+      "mapped_od": [],
+      "waiting_unpublished": [],
+      "plan_nodes": [
+        "PT-VBN",
+        "PT-R01",
+        "DS-5"
+      ],
+      "package_status": "OPEN_NEEDS_OPERATOR"
+    },
+    {
+      "reg_id": "EDER-F-0187",
+      "eqoa_id": "EQOA-A7-008",
+      "title": "Open owned gaps without closure criterion inside frozen scope (EBH-7 gap register)",
+      "frz_arch_freeze_impact": "UNKNOWN",
+      "plan_decisions_waiting": [],
+      "mapped_dp": [],
+      "mapped_od": [],
+      "waiting_unpublished": [],
+      "plan_nodes": [
+        "DS-5"
+      ],
+      "package_status": "OPEN_NEEDS_OPERATOR"
+    },
+    {
+      "reg_id": "EDER-F-0189",
+      "eqoa_id": "EQOA-A7-010",
+      "title": "Delegated or deferred EBH-7 obligations lack evidenced acceptance by the target owner",
+      "frz_arch_freeze_impact": "UNKNOWN",
+      "plan_decisions_waiting": [],
+      "mapped_dp": [],
+      "mapped_od": [],
+      "waiting_unpublished": [],
+      "plan_nodes": [
+        "DS-5"
+      ],
+      "package_status": "OPEN_NEEDS_OPERATOR"
+    },
+    {
+      "reg_id": "EDER-F-0193",
+      "eqoa_id": "EQOA-A7-014",
+      "title": "43 PDC gap rows are still OPEN at the baseline while PDC-X P8 is PARTIAL_EXACT_BLOCKERS; they sit in the ARCH-FREEZE precondition",
+      "frz_arch_freeze_impact": "CONDITIONS",
+      "plan_decisions_waiting": [
+        "DP-49",
+        "DP-52"
+      ],
+      "mapped_dp": [
+        "DP-49",
+        "DP-52"
+      ],
+      "mapped_od": [],
+      "waiting_unpublished": [],
+      "plan_nodes": [
+        "DS-5"
+      ],
+      "package_status": "MAPPED_PUBLISHED_DP_OD"
+    },
+    {
+      "reg_id": "EDER-F-0194",
+      "eqoa_id": "EQOA-A7-015",
+      "title": "Exception- or scope-terminated deferral chains without a stage owner: host drain, DIST-SCALE-X, Collaborative Work hard delete, TENANT-X/CTR",
+      "frz_arch_freeze_impact": "CONDITIONS",
+      "plan_decisions_waiting": [
+        "DP-49",
+        "DP-52"
+      ],
+      "mapped_dp": [
+        "DP-49",
+        "DP-52"
+      ],
+      "mapped_od": [],
+      "waiting_unpublished": [],
+      "plan_nodes": [
+        "DS-5"
+      ],
+      "package_status": "MAPPED_PUBLISHED_DP_OD"
+    },
+    {
+      "reg_id": "EDER-F-0196",
+      "eqoa_id": "EQOA-A7-017",
+      "title": "HIST open-decision register contradicted by later campaign addendum; answers are delegated, not Operator-signed",
+      "frz_arch_freeze_impact": "CONDITIONS",
+      "plan_decisions_waiting": [
+        "DP-03",
+        "DP-07"
+      ],
+      "mapped_dp": [
+        "DP-03",
+        "DP-07"
+      ],
+      "mapped_od": [],
+      "waiting_unpublished": [],
+      "plan_nodes": [
+        "DS-1"
+      ],
+      "package_status": "MAPPED_PUBLISHED_DP_OD"
+    },
+    {
+      "reg_id": "EDER-F-0197",
+      "eqoa_id": "EQOA-A7-018",
+      "title": "Queued HIST work is owned by the ENT-AUDIT-X stream, which is CLOSED at baseline",
+      "frz_arch_freeze_impact": "CONDITIONS",
+      "plan_decisions_waiting": [
+        "DP-49"
+      ],
+      "mapped_dp": [
+        "DP-49"
+      ],
+      "mapped_od": [],
+      "waiting_unpublished": [],
+      "plan_nodes": [
+        "DS-5"
+      ],
+      "package_status": "MAPPED_PUBLISHED_DP_OD"
+    },
+    {
+      "reg_id": "EDER-F-0198",
+      "eqoa_id": "EQOA-A7-019",
+      "title": "Path B deferral chains: architecture-scoped FRZ rows deferred to live-scoped, infra or ownerless targets",
+      "frz_arch_freeze_impact": "BLOCKS",
+      "plan_decisions_waiting": [
+        "DP-01",
+        "DP-34"
+      ],
+      "mapped_dp": [
+        "DP-01",
+        "DP-34"
+      ],
+      "mapped_od": [],
+      "waiting_unpublished": [],
+      "plan_nodes": [
+        "PT-D10",
+        "PT-PB",
+        "PT-Q12",
+        "DS-1",
+        "DS-4"
+      ],
+      "package_status": "MAPPED_PUBLISHED_DP_OD"
+    },
+    {
+      "reg_id": "EDER-F-0202",
+      "eqoa_id": "EQOA-A7-023",
+      "title": "Open or deferred entries with no owner, ticket or justification",
+      "frz_arch_freeze_impact": "BLOCKS",
+      "plan_decisions_waiting": [],
+      "mapped_dp": [],
+      "mapped_od": [],
+      "waiting_unpublished": [],
+      "plan_nodes": [
+        "PT-R01",
+        "PT-R03",
+        "DS-5"
+      ],
+      "package_status": "OPEN_NEEDS_OPERATOR"
+    },
+    {
+      "reg_id": "EDER-F-0204",
+      "eqoa_id": "EQOA-A7-025",
+      "title": "Delegated certification decisions rest on a gitignored delegation record that does not resolve at the baseline",
+      "frz_arch_freeze_impact": "CONDITIONS",
+      "plan_decisions_waiting": [
+        "DP-03",
+        "DP-07"
+      ],
+      "mapped_dp": [
+        "DP-03",
+        "DP-07"
+      ],
+      "mapped_od": [],
+      "waiting_unpublished": [],
+      "plan_nodes": [
+        "DS-1"
+      ],
+      "package_status": "MAPPED_PUBLISHED_DP_OD"
+    },
+    {
+      "reg_id": "EDER-F-0206",
+      "eqoa_id": "EQOA-A7-027",
+      "title": "Open or merely recommended operator decisions persist inside closed SCOPED stages (EBH-5, DUP-X, EBH-6)",
+      "frz_arch_freeze_impact": "BLOCKS",
+      "plan_decisions_waiting": [],
+      "mapped_dp": [],
+      "mapped_od": [],
+      "waiting_unpublished": [],
+      "plan_nodes": [
+        "PT-R01",
+        "PT-VBN",
+        "DS-5"
+      ],
+      "package_status": "OPEN_NEEDS_OPERATOR"
+    },
+    {
+      "reg_id": "EDER-F-0208",
+      "eqoa_id": "EQOA-A7-029",
+      "title": "ARCH-FREEZE operator decision register: seven decisions on the admission path are open (one BLOCKED_EXTERNAL); register is not table-formatt",
+      "frz_arch_freeze_impact": "BLOCKS",
+      "plan_decisions_waiting": [],
+      "mapped_dp": [],
+      "mapped_od": [],
+      "waiting_unpublished": [],
+      "plan_nodes": [
+        "DS-Q",
+        "PT-R01",
+        "DS-ADM",
+        "DS-5"
+      ],
+      "package_status": "OPEN_NEEDS_OPERATOR"
+    },
+    {
+      "reg_id": "EDER-F-0212",
+      "eqoa_id": "EQOA-A7-033",
+      "title": "14 register or limitation entries have no owner (OWNER_MISSING)",
+      "frz_arch_freeze_impact": "BLOCKS",
+      "plan_decisions_waiting": [
+        "DP-34",
+        "DP-39",
+        "DP-47",
+        "DP-48"
+      ],
+      "mapped_dp": [
+        "DP-34",
+        "DP-39",
+        "DP-47",
+        "DP-48"
+      ],
+      "mapped_od": [],
+      "waiting_unpublished": [],
+      "plan_nodes": [
+        "PT-R01",
+        "PT-R03",
+        "DS-4",
+        "DS-5"
+      ],
+      "package_status": "MAPPED_PUBLISHED_DP_OD"
+    },
+    {
+      "reg_id": "EDER-F-0215",
+      "eqoa_id": "EQOA-A7-036",
+      "title": "45 obligation carry-forward chains are longer than one hop or end at a CLOSED / post-freeze stage ('bouncing obligations')",
+      "frz_arch_freeze_impact": "CONDITIONS",
+      "plan_decisions_waiting": [
+        "DP-49"
+      ],
+      "mapped_dp": [
+        "DP-49"
+      ],
+      "mapped_od": [],
+      "waiting_unpublished": [],
+      "plan_nodes": [
+        "DS-5"
+      ],
+      "package_status": "MAPPED_PUBLISHED_DP_OD"
+    },
+    {
+      "reg_id": "EDER-F-0219",
+      "eqoa_id": "EQOA-A8-003",
+      "title": "Eleven profile models are mirrored between Tier-0 host_profile_slices.py and Tier-3 sub_profiles.py; five have diverged field sets and no pa",
+      "frz_arch_freeze_impact": "CONDITIONS",
+      "plan_decisions_waiting": [
+        "DP-13",
+        "DP-17"
+      ],
+      "mapped_dp": [
+        "DP-13",
+        "DP-17"
+      ],
+      "mapped_od": [],
+      "waiting_unpublished": [],
+      "plan_nodes": [
+        "PT-G01",
+        "PT-WB",
+        "DS-2"
+      ],
+      "package_status": "MAPPED_PUBLISHED_DP_OD"
+    },
+    {
+      "reg_id": "EDER-F-0233",
+      "eqoa_id": "EQOA-A8-017",
+      "title": "ARTIFACT_LIFECYCLE declared exceptions: runtime dormant in shipped hosts, retention not enforced, tenant-wide capabilities",
+      "frz_arch_freeze_impact": "BLOCKS",
+      "plan_decisions_waiting": [
+        "DP-57"
+      ],
+      "mapped_dp": [
+        "DP-57"
+      ],
+      "mapped_od": [],
+      "waiting_unpublished": [],
+      "plan_nodes": [
+        "DS-5"
+      ],
+      "package_status": "MAPPED_PUBLISHED_DP_OD"
+    },
+    {
+      "reg_id": "EDER-F-0237",
+      "eqoa_id": "EQOA-A8-021",
+      "title": "Feature-local certification claims (Multiplayer, LangChain Independence, Token Optimization, Proof Data) are not reconciled with roadmap, FR",
+      "frz_arch_freeze_impact": "UNKNOWN",
+      "plan_decisions_waiting": [
+        "DP-05",
+        "DP-57"
+      ],
+      "mapped_dp": [
+        "DP-05",
+        "DP-57"
+      ],
+      "mapped_od": [],
+      "waiting_unpublished": [],
+      "plan_nodes": [
+        "DS-1",
+        "DS-5"
+      ],
+      "package_status": "MAPPED_PUBLISHED_DP_OD"
+    },
+    {
+      "reg_id": "EDER-F-0238",
+      "eqoa_id": "EQOA-A8-022",
+      "title": "MCP-SERVER-X is closed with no FRZ mapping and open scoped limitations on identity and reliability",
+      "frz_arch_freeze_impact": "BLOCKS",
+      "plan_decisions_waiting": [
+        "DP-45"
+      ],
+      "mapped_dp": [
+        "DP-45"
+      ],
+      "mapped_od": [],
+      "waiting_unpublished": [],
+      "plan_nodes": [
+        "PT-B01",
+        "PT-Q07",
+        "DS-4"
+      ],
+      "package_status": "MAPPED_PUBLISHED_DP_OD"
+    },
+    {
+      "reg_id": "EDER-D-0038",
+      "eqoa_id": "G1b-0071",
+      "title": "GAP-TEN-SEM-854: tenant semantic heuristic non-critical, OWNED (W1/W6)",
+      "frz_arch_freeze_impact": "UNKNOWN",
+      "plan_decisions_waiting": [],
+      "mapped_dp": [],
+      "mapped_od": [],
+      "waiting_unpublished": [],
+      "plan_nodes": null,
+      "package_status": "OPEN_NEEDS_OPERATOR"
+    },
+    {
+      "reg_id": "EDER-D-0039",
+      "eqoa_id": "G1b-0077",
+      "title": "GAP-FRZ-IMPACT: FRZ impact records only, OWNED (W8)",
+      "frz_arch_freeze_impact": "CONDITIONS",
+      "plan_decisions_waiting": [],
+      "mapped_dp": [],
+      "mapped_od": [],
+      "waiting_unpublished": [],
+      "plan_nodes": null,
+      "package_status": "OPEN_NEEDS_OPERATOR"
+    },
+    {
+      "reg_id": "EDER-D-0040",
+      "eqoa_id": "G1b-0078",
+      "title": "GAP-LOCAL-UNTRACKED: keep exports/, platform_proofs/test_*, .cursor/plans/ out of commits",
+      "frz_arch_freeze_impact": "NONE",
+      "plan_decisions_waiting": [],
+      "mapped_dp": [],
+      "mapped_od": [],
+      "waiting_unpublished": [],
+      "plan_nodes": null,
+      "package_status": "OPEN_NEEDS_OPERATOR"
+    },
+    {
+      "reg_id": "EDER-D-0041",
+      "eqoa_id": "G1b-0079",
+      "title": "GAP-PROD-Q-LIVE: live production qualification delegated to PROD-Q, out of EBH-7 closure",
+      "frz_arch_freeze_impact": "UNKNOWN",
+      "plan_decisions_waiting": [],
+      "mapped_dp": [],
+      "mapped_od": [],
+      "waiting_unpublished": [],
+      "plan_nodes": null,
+      "package_status": "OPEN_NEEDS_OPERATOR"
+    },
+    {
+      "reg_id": "EDER-D-0042",
+      "eqoa_id": "G1b-0081",
+      "title": "GAP-LAYER-L9: layer L9 attestation OWNED, reuse of EBH-6 evidence (W5/W7)",
+      "frz_arch_freeze_impact": "CONDITIONS",
+      "plan_decisions_waiting": [],
+      "mapped_dp": [],
+      "mapped_od": [],
+      "waiting_unpublished": [],
+      "plan_nodes": null,
+      "package_status": "OPEN_NEEDS_OPERATOR"
+    },
+    {
+      "reg_id": "EDER-D-0043",
+      "eqoa_id": "G2a-0013",
+      "title": "FRZ-PRD-01: Independent production qualification evidence; acceptance owner PROD-Q live gate / SCENARIO-GATE.",
+      "frz_arch_freeze_impact": "NONE",
+      "plan_decisions_waiting": [],
+      "mapped_dp": [],
+      "mapped_od": [],
+      "waiting_unpublished": [],
+      "plan_nodes": null,
+      "package_status": "OPEN_NEEDS_OPERATOR"
+    },
+    {
+      "reg_id": "EDER-D-0044",
+      "eqoa_id": "G2a-0014",
+      "title": "FRZ-PRD-02: Per-provider live qualification (PROD-Q-P1, operator profiles).",
+      "frz_arch_freeze_impact": "NONE",
+      "plan_decisions_waiting": [],
+      "mapped_dp": [],
+      "mapped_od": [],
+      "waiting_unpublished": [],
+      "plan_nodes": null,
+      "package_status": "OPEN_NEEDS_OPERATOR"
+    },
+    {
+      "reg_id": "EDER-D-0045",
+      "eqoa_id": "G2a-0015",
+      "title": "FRZ-REG-08: build_r1_sqlite_disposition for live HTTP / GCA is NOT_EXECUTED and owned by PROD-Q Dimension B (recorded dependency; REG-08 is ",
+      "frz_arch_freeze_impact": "CONDITIONS",
+      "plan_decisions_waiting": [],
+      "mapped_dp": [],
+      "mapped_od": [],
+      "waiting_unpublished": [],
+      "plan_nodes": null,
+      "package_status": "OPEN_NEEDS_OPERATOR"
+    },
+    {
+      "reg_id": "EDER-D-0046",
+      "eqoa_id": "G2a-0016",
+      "title": "FRZ-SEC-01: Multi-instance (Kubernetes) trust anchor/global first-writer PIS (Decision-03; D03-A Spanner+Azure witness) - infra, not ratifie",
+      "frz_arch_freeze_impact": "CONDITIONS",
+      "plan_decisions_waiting": [],
+      "mapped_dp": [],
+      "mapped_od": [],
+      "waiting_unpublished": [],
+      "plan_nodes": null,
+      "package_status": "OPEN_NEEDS_OPERATOR"
+    },
+    {
+      "reg_id": "EDER-D-0047",
+      "eqoa_id": "G2a-0017",
+      "title": "FRZ-SEC-04: Operator production profiles (DIM6/DIM17) - Path B live-scoped (checklist L66).",
+      "frz_arch_freeze_impact": "NONE",
+      "plan_decisions_waiting": [],
+      "mapped_dp": [],
+      "mapped_od": [],
+      "waiting_unpublished": [],
+      "plan_nodes": null,
+      "package_status": "OPEN_NEEDS_OPERATOR"
+    },
+    {
+      "reg_id": "EDER-D-0048",
+      "eqoa_id": "G2a-0018",
+      "title": "FRZ-SEC-05: Real provider sandboxes (see SEC-06).",
+      "frz_arch_freeze_impact": "CONDITIONS",
+      "plan_decisions_waiting": [],
+      "mapped_dp": [],
+      "mapped_od": [],
+      "waiting_unpublished": [],
+      "plan_nodes": null,
+      "package_status": "OPEN_NEEDS_OPERATOR"
+    },
+    {
+      "reg_id": "EDER-D-0049",
+      "eqoa_id": "G2a-0019",
+      "title": "FRZ-SEC-06: E2B/Modal/Daytona production provider qualification (PROD-Q-P1) - row note says OPEN under PROD-Q.",
+      "frz_arch_freeze_impact": "CONDITIONS",
+      "plan_decisions_waiting": [],
+      "mapped_dp": [],
+      "mapped_od": [],
+      "waiting_unpublished": [],
+      "plan_nodes": null,
+      "package_status": "OPEN_NEEDS_OPERATOR"
+    },
+    {
+      "reg_id": "EDER-D-0050",
+      "eqoa_id": "G2a-0020",
+      "title": "FRZ-SEC-09: Operator/infra retention config (not platform).",
+      "frz_arch_freeze_impact": "CONDITIONS",
+      "plan_decisions_waiting": [],
+      "mapped_dp": [],
+      "mapped_od": [],
+      "waiting_unpublished": [],
+      "plan_nodes": null,
+      "package_status": "OPEN_NEEDS_OPERATOR"
+    },
+    {
+      "reg_id": "EDER-D-0051",
+      "eqoa_id": "G2a-0021",
+      "title": "FRZ-REL-03: Multi-instance global first-writer PIS (Decision-03) - infra/live-dependent.",
+      "frz_arch_freeze_impact": "CONDITIONS",
+      "plan_decisions_waiting": [],
+      "mapped_dp": [],
+      "mapped_od": [],
+      "waiting_unpublished": [],
+      "plan_nodes": null,
+      "package_status": "OPEN_NEEDS_OPERATOR"
+    },
+    {
+      "reg_id": "EDER-D-0052",
+      "eqoa_id": "G2a-0022",
+      "title": "FRZ-REL-05: Provider native termination live behaviour.",
+      "frz_arch_freeze_impact": "CONDITIONS",
+      "plan_decisions_waiting": [],
+      "mapped_dp": [],
+      "mapped_od": [],
+      "waiting_unpublished": [],
+      "plan_nodes": null,
+      "package_status": "OPEN_NEEDS_OPERATOR"
+    },
+    {
+      "reg_id": "EDER-D-0053",
+      "eqoa_id": "G2a-0023",
+      "title": "FRZ-REL-08: Production capacity (see PRD-11).",
+      "frz_arch_freeze_impact": "CONDITIONS",
+      "plan_decisions_waiting": [],
+      "mapped_dp": [],
+      "mapped_od": [],
+      "waiting_unpublished": [],
+      "plan_nodes": null,
+      "package_status": "OPEN_NEEDS_OPERATOR"
+    },
+    {
+      "reg_id": "EDER-D-0054",
+      "eqoa_id": "G2a-0024",
+      "title": "FRZ-REL-09: Production capacity (see PRD-11).",
+      "frz_arch_freeze_impact": "CONDITIONS",
+      "plan_decisions_waiting": [],
+      "mapped_dp": [],
+      "mapped_od": [],
+      "waiting_unpublished": [],
+      "plan_nodes": null,
+      "package_status": "OPEN_NEEDS_OPERATOR"
+    },
+    {
+      "reg_id": "EDER-D-0055",
+      "eqoa_id": "G2a-0025",
+      "title": "FRZ-REL-10: Production capacity (see PRD-11).",
+      "frz_arch_freeze_impact": "CONDITIONS",
+      "plan_decisions_waiting": [],
+      "mapped_dp": [],
+      "mapped_od": [],
+      "waiting_unpublished": [],
+      "plan_nodes": null,
+      "package_status": "OPEN_NEEDS_OPERATOR"
+    },
+    {
+      "reg_id": "EDER-D-0056",
+      "eqoa_id": "G2a-0026",
+      "title": "FRZ-REL-11: Production capacity (see PRD-11).",
+      "frz_arch_freeze_impact": "CONDITIONS",
+      "plan_decisions_waiting": [],
+      "mapped_dp": [],
+      "mapped_od": [],
+      "waiting_unpublished": [],
+      "plan_nodes": null,
+      "package_status": "OPEN_NEEDS_OPERATOR"
+    },
+    {
+      "reg_id": "EDER-D-0057",
+      "eqoa_id": "G2a-0027",
+      "title": "FRZ-PRD-03: Unsupported-config proof for operator production profiles (DIM6/DIM17) - live (checklist L66).",
+      "frz_arch_freeze_impact": "NONE",
+      "plan_decisions_waiting": [],
+      "mapped_dp": [],
+      "mapped_od": [],
+      "waiting_unpublished": [],
+      "plan_nodes": null,
+      "package_status": "OPEN_NEEDS_OPERATOR"
+    },
+    {
+      "reg_id": "EDER-D-0058",
+      "eqoa_id": "G2a-0028",
+      "title": "FRZ-PRD-04: Live HTTP/GCA reproduction (R1-SQLITE-ENV-01 / PROD-Q-R1 mandatory child, roadmap places PROD-Q-R1 in live slice).",
+      "frz_arch_freeze_impact": "CONDITIONS",
+      "plan_decisions_waiting": [],
+      "mapped_dp": [],
+      "mapped_od": [],
+      "waiting_unpublished": [],
+      "plan_nodes": null,
+      "package_status": "OPEN_NEEDS_OPERATOR"
+    },
+    {
+      "reg_id": "EDER-D-0059",
+      "eqoa_id": "G2a-0029",
+      "title": "FRZ-PRD-08: Production-graph bypass proof for unqualified operator profiles (live).",
+      "frz_arch_freeze_impact": "NONE",
+      "plan_decisions_waiting": [],
+      "mapped_dp": [],
+      "mapped_od": [],
+      "waiting_unpublished": [],
+      "plan_nodes": null,
+      "package_status": "OPEN_NEEDS_OPERATOR"
+    },
+    {
+      "reg_id": "EDER-D-0060",
+      "eqoa_id": "G2a-0030",
+      "title": "FRZ-PRD-11: Load-level capacity of live deployment.",
+      "frz_arch_freeze_impact": "CONDITIONS",
+      "plan_decisions_waiting": [],
+      "mapped_dp": [],
+      "mapped_od": [],
+      "waiting_unpublished": [],
+      "plan_nodes": null,
+      "package_status": "OPEN_NEEDS_OPERATOR"
+    },
+    {
+      "reg_id": "EDER-D-0061",
+      "eqoa_id": "G2a-0031",
+      "title": "FRZ-PRD-12: Operator runbook for live environments.",
+      "frz_arch_freeze_impact": "CONDITIONS",
+      "plan_decisions_waiting": [],
+      "mapped_dp": [],
+      "mapped_od": [],
+      "waiting_unpublished": [],
+      "plan_nodes": null,
+      "package_status": "OPEN_NEEDS_OPERATOR"
+    },
+    {
+      "reg_id": "EDER-D-0062",
+      "eqoa_id": "G2a-0034",
+      "title": "FRZ-PRD-01 Live production qualification: OPEN, live deferred to PROD-Q",
+      "frz_arch_freeze_impact": "NONE",
+      "plan_decisions_waiting": [],
+      "mapped_dp": [],
+      "mapped_od": [],
+      "waiting_unpublished": [],
+      "plan_nodes": null,
+      "package_status": "OPEN_NEEDS_OPERATOR"
+    },
+    {
+      "reg_id": "EDER-D-0063",
+      "eqoa_id": "G2a-0035",
+      "title": "FRZ-PRD-02 Live provider qualification: OPEN, live deferred to PROD-Q",
+      "frz_arch_freeze_impact": "NONE",
+      "plan_decisions_waiting": [],
+      "mapped_dp": [],
+      "mapped_od": [],
+      "waiting_unpublished": [],
+      "plan_nodes": null,
+      "package_status": "OPEN_NEEDS_OPERATOR"
+    },
+    {
+      "reg_id": "EDER-D-0064",
+      "eqoa_id": "G2a-0036",
+      "title": "FRZ-REG-08 (live) Population B / live slice: OPEN, live deferred to PROD-Q",
+      "frz_arch_freeze_impact": "CONDITIONS",
+      "plan_decisions_waiting": [],
+      "mapped_dp": [],
+      "mapped_od": [],
+      "waiting_unpublished": [],
+      "plan_nodes": null,
+      "package_status": "OPEN_NEEDS_OPERATOR"
+    },
+    {
+      "reg_id": "EDER-D-0065",
+      "eqoa_id": "G2a-0037",
+      "title": "OD-HIST04-A: Ratify or re-sign the EVOL-X delegated plain-form signature lines (P3, PRE-P3, B6-ACCEPT, OD-EVOL-12, OD-EVOLX-08); campaign de",
+      "frz_arch_freeze_impact": "CONDITIONS",
+      "plan_decisions_waiting": [],
+      "mapped_dp": [],
+      "mapped_od": [],
+      "waiting_unpublished": [],
+      "plan_nodes": null,
+      "package_status": "OPEN_NEEDS_OPERATOR"
+    },
+    {
+      "reg_id": "EDER-D-0066",
+      "eqoa_id": "G2a-0038",
+      "title": "OD-HIST04-B: Resolve IIAC Amendment 01 status contradiction (header IN FORCE vs SS5.3/SS6 PROPOSED) and S-1..S-3 / OQ-1..4; mechanical enfor",
+      "frz_arch_freeze_impact": "CONDITIONS",
+      "plan_decisions_waiting": [],
+      "mapped_dp": [],
+      "mapped_od": [],
+      "waiting_unpublished": [],
+      "plan_nodes": null,
+      "package_status": "OPEN_NEEDS_OPERATOR"
+    },
+    {
+      "reg_id": "EDER-D-0067",
+      "eqoa_id": "G2a-0039",
+      "title": "OD-HIST04-C: TOOL-LIFE-X roadmap L482 label decision (B1 option A/B)",
+      "frz_arch_freeze_impact": "CONDITIONS",
+      "plan_decisions_waiting": [],
+      "mapped_dp": [],
+      "mapped_od": [],
+      "waiting_unpublished": [],
+      "plan_nodes": null,
+      "package_status": "OPEN_NEEDS_OPERATOR"
+    },
+    {
+      "reg_id": "EDER-D-0068",
+      "eqoa_id": "G2a-0040",
+      "title": "OD-HIST02-A: FRZ-BND-03: a Tier-0 module (intergrax/) imports a Tier-3 demo fixture (CLI demo composition), treated as 'ratified tier except",
+      "frz_arch_freeze_impact": "CONDITIONS",
+      "plan_decisions_waiting": [],
+      "mapped_dp": [],
+      "mapped_od": [],
+      "waiting_unpublished": [],
+      "plan_nodes": null,
+      "package_status": "OPEN_NEEDS_OPERATOR"
+    },
+    {
+      "reg_id": "EDER-D-0069",
+      "eqoa_id": "G2a-0041",
+      "title": "OD-HIST03-A: HIST-03 consolidated rulings: P-03 (SEC-06 split note: plugin-trust architecture part vs provider-live part; not on checklist L",
+      "frz_arch_freeze_impact": "CONDITIONS",
+      "plan_decisions_waiting": [],
+      "mapped_dp": [],
+      "mapped_od": [],
+      "waiting_unpublished": [],
+      "plan_nodes": null,
+      "package_status": "OPEN_NEEDS_OPERATOR"
+    },
+    {
+      "reg_id": "EDER-D-0070",
+      "eqoa_id": "G2a-0042",
+      "title": "OD-HIST03-B: HIST03-F-015 (IMPLEMENTATION_GAP, HIGH; PRD/SEC/REL rows relying on PROD-Q P2-C HTTP admission): tests/qualification/prod_q/tes",
+      "frz_arch_freeze_impact": "CONDITIONS",
+      "plan_decisions_waiting": [],
+      "mapped_dp": [],
+      "mapped_od": [],
+      "waiting_unpublished": [],
+      "plan_nodes": null,
+      "package_status": "OPEN_NEEDS_OPERATOR"
+    },
+    {
+      "reg_id": "EDER-D-0071",
+      "eqoa_id": "G2a-0043",
+      "title": "OD-HIST01-B: Scope of promotion for FRZ-REG rows (H01-F013): (a) only on ENT-AUDIT-X Pop. E rollup, (b) Pop. A-D at pinned current SHA with ",
+      "frz_arch_freeze_impact": "CONDITIONS",
+      "plan_decisions_waiting": [],
+      "mapped_dp": [],
+      "mapped_od": [],
+      "waiting_unpublished": [],
+      "plan_nodes": null,
+      "package_status": "OPEN_NEEDS_OPERATOR"
+    },
+    {
+      "reg_id": "EDER-D-0072",
+      "eqoa_id": "G2a-0044",
+      "title": "H01-F015: Asymmetric error handling between the two branches of RuntimeToolInvoker._execute_once, undetected by the Batch A-E L2 sets.",
+      "frz_arch_freeze_impact": "CONDITIONS",
+      "plan_decisions_waiting": [],
+      "mapped_dp": [],
+      "mapped_od": [],
+      "waiting_unpublished": [],
+      "plan_nodes": null,
+      "package_status": "OPEN_NEEDS_OPERATOR"
+    },
+    {
+      "reg_id": "EDER-D-0073",
+      "eqoa_id": "G2a-0045",
+      "title": "HIST02-F-013: Worker thesis (not independently audited): TOOL-LIFE-X recovery code in runtime/tools imports the Nexus error-code enum. Likel",
+      "frz_arch_freeze_impact": "CONDITIONS",
+      "plan_decisions_waiting": [],
+      "mapped_dp": [],
+      "mapped_od": [],
+      "waiting_unpublished": [],
+      "plan_nodes": null,
+      "package_status": "OPEN_NEEDS_OPERATOR"
+    },
+    {
+      "reg_id": "EDER-D-0075",
+      "eqoa_id": "G2a-0047",
+      "title": "F-H4-03: Operator-written authorship is only process_enforced; mechanical enforcement (T-IGX-021-B) was specified but never implemented.",
+      "frz_arch_freeze_impact": "CONDITIONS",
+      "plan_decisions_waiting": [],
+      "mapped_dp": [],
+      "mapped_od": [],
+      "waiting_unpublished": [],
+      "plan_nodes": null,
+      "package_status": "OPEN_NEEDS_OPERATOR"
+    },
+    {
+      "reg_id": "EDER-D-0076",
+      "eqoa_id": "G2a-0048",
+      "title": "Q-03: Fresh independent auditor for DIST-SCALE-X per OD-ROUTE-DS4 (never run)",
+      "frz_arch_freeze_impact": "UNKNOWN",
+      "plan_decisions_waiting": [],
+      "mapped_dp": [],
+      "mapped_od": [],
+      "waiting_unpublished": [],
+      "plan_nodes": null,
+      "package_status": "OPEN_NEEDS_OPERATOR"
+    },
+    {
+      "reg_id": "EDER-D-0078",
+      "eqoa_id": "G2a-0050",
+      "title": "Q-07: FRESH independent auditor session: TOOL-LIFE-X re-audit per OD-ROUTE-DS3 on the Q-06 implementation SHA (read-only audited surface, ex",
+      "frz_arch_freeze_impact": "UNKNOWN",
+      "plan_decisions_waiting": [],
+      "mapped_dp": [],
+      "mapped_od": [],
+      "waiting_unpublished": [],
+      "plan_nodes": null,
+      "package_status": "OPEN_NEEDS_OPERATOR"
+    },
+    {
+      "reg_id": "EDER-D-0079",
+      "eqoa_id": "G2a-0051",
+      "title": "Q-09: Optional: separate implementer/auditor for QUAL-X chaos-script defect (hist01 F-02 / N7)",
+      "frz_arch_freeze_impact": "UNKNOWN",
+      "plan_decisions_waiting": [],
+      "mapped_dp": [],
+      "mapped_od": [],
+      "waiting_unpublished": [],
+      "plan_nodes": null,
+      "package_status": "OPEN_NEEDS_OPERATOR"
+    },
+    {
+      "reg_id": "EDER-D-0082",
+      "eqoa_id": "G2a-0054",
+      "title": "Q-12: Align validators with the updated delegation rule: (1) intergrax/platform/enterprise_audit/baseline.py + scripts/enterprise_audit/iiac",
+      "frz_arch_freeze_impact": "UNKNOWN",
+      "plan_decisions_waiting": [],
+      "mapped_dp": [],
+      "mapped_od": [],
+      "waiting_unpublished": [],
+      "plan_nodes": null,
+      "package_status": "OPEN_NEEDS_OPERATOR"
+    },
+    {
+      "reg_id": "EDER-D-0083",
+      "eqoa_id": "G2a-0055",
+      "title": "HK-01: Hung process tree from an aborted worker run (bash 65368 -> uv -> pytest); termination was denied by the auto-mode classifier and lef",
+      "frz_arch_freeze_impact": "NONE",
+      "plan_decisions_waiting": [],
+      "mapped_dp": [],
+      "mapped_od": [],
+      "waiting_unpublished": [],
+      "plan_nodes": null,
+      "package_status": "OPEN_NEEDS_OPERATOR"
+    },
+    {
+      "reg_id": "EDER-D-0155",
+      "eqoa_id": "G3-0008",
+      "title": "SIGN-3_CTENT: OD-CTENT01/02-PLAN signed with conditions, bound to T-IGX-022-A/B plan-approval lines",
+      "frz_arch_freeze_impact": "UNKNOWN",
+      "plan_decisions_waiting": [],
+      "mapped_dp": [],
+      "mapped_od": [],
+      "waiting_unpublished": [],
+      "plan_nodes": null,
+      "package_status": "OPEN_NEEDS_OPERATOR"
+    },
+    {
+      "reg_id": "EDER-D-0156",
+      "eqoa_id": "G3-0009",
+      "title": "SIGN-4_TLX: OD-TLX-A..D, OD-TLXCORR-A/B signed; OD-TLXCORR-C-PLAN REFUSED; bound to T-IGX-023-A/B",
+      "frz_arch_freeze_impact": "UNKNOWN",
+      "plan_decisions_waiting": [],
+      "mapped_dp": [],
+      "mapped_od": [],
+      "waiting_unpublished": [],
+      "plan_nodes": null,
+      "package_status": "OPEN_NEEDS_OPERATOR"
+    },
+    {
+      "reg_id": "EDER-D-0157",
+      "eqoa_id": "G3-0033",
+      "title": "OD-DUPX-01: authorize production remediation (Wave B+)",
+      "frz_arch_freeze_impact": "NONE",
+      "plan_decisions_waiting": [],
+      "mapped_dp": [],
+      "mapped_od": [],
+      "waiting_unpublished": [],
+      "plan_nodes": null,
+      "package_status": "OPEN_NEEDS_OPERATOR"
+    },
+    {
+      "reg_id": "EDER-D-0158",
+      "eqoa_id": "G3-0034",
+      "title": "OD-DUPX-03..07: Class C architecture reopen (per finding)",
+      "frz_arch_freeze_impact": "CONDITIONS",
+      "plan_decisions_waiting": [],
+      "mapped_dp": [],
+      "mapped_od": [],
+      "waiting_unpublished": [],
+      "plan_nodes": null,
+      "package_status": "OPEN_NEEDS_OPERATOR"
+    },
+    {
+      "reg_id": "EDER-D-0159",
+      "eqoa_id": "G3-0048",
+      "title": "OD-EBH5-03: allow L4 physical/live vendor tests",
+      "frz_arch_freeze_impact": "CONDITIONS",
+      "plan_decisions_waiting": [],
+      "mapped_dp": [],
+      "mapped_od": [],
+      "waiting_unpublished": [],
+      "plan_nodes": null,
+      "package_status": "OPEN_NEEDS_OPERATOR"
+    },
+    {
+      "reg_id": "EDER-D-0160",
+      "eqoa_id": "G3-0053",
+      "title": "OD-EBH5-05: accept DIST-SCALE historical vendor proofs @ scoped SHA (RECOMMENDED only)",
+      "frz_arch_freeze_impact": "CONDITIONS",
+      "plan_decisions_waiting": [],
+      "mapped_dp": [],
+      "mapped_od": [],
+      "waiting_unpublished": [],
+      "plan_nodes": null,
+      "package_status": "OPEN_NEEDS_OPERATOR"
+    },
+    {
+      "reg_id": "EDER-D-0161",
+      "eqoa_id": "G3-0054",
+      "title": "OD-EBH5-06: PROD-Q F02-14 helper isinstance debt disposition (tracked debt)",
+      "frz_arch_freeze_impact": "CONDITIONS",
+      "plan_decisions_waiting": [],
+      "mapped_dp": [],
+      "mapped_od": [],
+      "waiting_unpublished": [],
+      "plan_nodes": null,
+      "package_status": "OPEN_NEEDS_OPERATOR"
+    },
+    {
+      "reg_id": "EDER-D-0162",
+      "eqoa_id": "G3-0060",
+      "title": "OD-EBH6-ADR-*: finding REQUIRES ARCHITECTURE DECISION without an ADR (tracked, blocks P3 remediation)",
+      "frz_arch_freeze_impact": "CONDITIONS",
+      "plan_decisions_waiting": [],
+      "mapped_dp": [],
+      "mapped_od": [],
+      "waiting_unpublished": [],
+      "plan_nodes": null,
+      "package_status": "OPEN_NEEDS_OPERATOR"
+    },
+    {
+      "reg_id": "EDER-D-0163",
+      "eqoa_id": "G3-0092",
+      "title": "W1-PROD-DELTA: invoker tenant guard @ 5df074fcb retained pending architectural reconciliation (interim fail-closed)",
+      "frz_arch_freeze_impact": "CONDITIONS",
+      "plan_decisions_waiting": [],
+      "mapped_dp": [],
+      "mapped_od": [],
+      "waiting_unpublished": [],
+      "plan_nodes": null,
+      "package_status": "OPEN_NEEDS_OPERATOR"
+    },
+    {
+      "reg_id": "EDER-D-0164",
+      "eqoa_id": "G3-0093",
+      "title": "W1-PROD-ADR: targeted architecture review / minimal remediation authorized",
+      "frz_arch_freeze_impact": "CONDITIONS",
+      "plan_decisions_waiting": [],
+      "mapped_dp": [],
+      "mapped_od": [],
+      "waiting_unpublished": [],
+      "plan_nodes": null,
+      "package_status": "OPEN_NEEDS_OPERATOR"
+    },
+    {
+      "reg_id": "EDER-D-0165",
+      "eqoa_id": "G3-0094",
+      "title": "RPL-REL-SQLITE-DUCKDB: sanctioned registry sqlite + duckdb qualification authorized",
+      "frz_arch_freeze_impact": "CONDITIONS",
+      "plan_decisions_waiting": [],
+      "mapped_dp": [],
+      "mapped_od": [],
+      "waiting_unpublished": [],
+      "plan_nodes": null,
+      "package_status": "OPEN_NEEDS_OPERATOR"
+    },
+    {
+      "reg_id": "EDER-D-0166",
+      "eqoa_id": "G3-0097",
+      "title": "OD-EBH7-SCOPE-RESIDUAL: scoped CLOSED with documented non-PROHIBITED residuals",
+      "frz_arch_freeze_impact": "CONDITIONS",
+      "plan_decisions_waiting": [],
+      "mapped_dp": [],
+      "mapped_od": [],
+      "waiting_unpublished": [],
+      "plan_nodes": null,
+      "package_status": "OPEN_NEEDS_OPERATOR"
+    },
+    {
+      "reg_id": "EDER-D-0167",
+      "eqoa_id": "G3-0106",
+      "title": "Appoint EVOL auditor (enables EVOL B6)",
+      "frz_arch_freeze_impact": "BLOCKS",
+      "plan_decisions_waiting": [],
+      "mapped_dp": [],
+      "mapped_od": [],
+      "waiting_unpublished": [],
+      "plan_nodes": [
+        "DS-Q"
+      ],
+      "package_status": "OPEN_NEEDS_OPERATOR"
+    },
+    {
+      "reg_id": "EDER-D-0168",
+      "eqoa_id": "G3-0107",
+      "title": "EVOL stage closure publication (after FRZ-EVOL; before OD-ENT-00)",
+      "frz_arch_freeze_impact": "BLOCKS",
+      "plan_decisions_waiting": [],
+      "mapped_dp": [],
+      "mapped_od": [],
+      "waiting_unpublished": [],
+      "plan_nodes": [
+        "DS-Q"
+      ],
+      "package_status": "OPEN_NEEDS_OPERATOR"
+    },
+    {
+      "reg_id": "EDER-D-0169",
+      "eqoa_id": "G3-0108",
+      "title": "EVOL dependency for ENT (T-B5-EVOL-FORMAL-CLOSURE)",
+      "frz_arch_freeze_impact": "BLOCKS",
+      "plan_decisions_waiting": [],
+      "mapped_dp": [],
+      "mapped_od": [],
+      "waiting_unpublished": [],
+      "plan_nodes": [
+        "DS-Q"
+      ],
+      "package_status": "OPEN_NEEDS_OPERATOR"
+    },
+    {
+      "reg_id": "EDER-D-0170",
+      "eqoa_id": "G3-0109",
+      "title": "Promote accepted baseline (ENT B6; FREEZE mode)",
+      "frz_arch_freeze_impact": "BLOCKS",
+      "plan_decisions_waiting": [],
+      "mapped_dp": [],
+      "mapped_od": [],
+      "waiting_unpublished": [],
+      "plan_nodes": [
+        "DS-ADM"
+      ],
+      "package_status": "OPEN_NEEDS_OPERATOR"
+    },
+    {
+      "reg_id": "EDER-D-0171",
+      "eqoa_id": "G3-0110",
+      "title": "Branch protection (CI enforcement)",
+      "frz_arch_freeze_impact": "BLOCKS",
+      "plan_decisions_waiting": [],
+      "mapped_dp": [],
+      "mapped_od": [],
+      "waiting_unpublished": [],
+      "plan_nodes": [
+        "DS-Q"
+      ],
+      "package_status": "OPEN_NEEDS_OPERATOR"
+    },
+    {
+      "reg_id": "EDER-D-0172",
+      "eqoa_id": "G3-0111",
+      "title": "ENT stage closure (FRZ-AUD + OD-ENT-01 + OD-ENT-02; pre FREEZE lock)",
+      "frz_arch_freeze_impact": "BLOCKS",
+      "plan_decisions_waiting": [],
+      "mapped_dp": [],
+      "mapped_od": [],
+      "waiting_unpublished": [],
+      "plan_nodes": [
+        "DS-ADM"
+      ],
+      "package_status": "OPEN_NEEDS_OPERATOR"
+    },
+    {
+      "reg_id": "EDER-D-0173",
+      "eqoa_id": "G3-0112",
+      "title": "ARCH-FREEZE admission (ECAP section 15, admission dossier; post section 2.C)",
+      "frz_arch_freeze_impact": "BLOCKS",
+      "plan_decisions_waiting": [],
+      "mapped_dp": [],
+      "mapped_od": [],
+      "waiting_unpublished": [],
+      "plan_nodes": [
+        "DS-ADM"
+      ],
+      "package_status": "OPEN_NEEDS_OPERATOR"
+    },
+    {
+      "reg_id": "EDER-D-0597",
+      "eqoa_id": "G4-0802",
+      "title": "DECISION-PDC-F56",
+      "frz_arch_freeze_impact": "UNKNOWN",
+      "plan_decisions_waiting": [],
+      "mapped_dp": [],
+      "mapped_od": [],
+      "waiting_unpublished": [],
+      "plan_nodes": null,
+      "package_status": "OPEN_NEEDS_OPERATOR"
+    },
+    {
+      "reg_id": "EDER-D-0598",
+      "eqoa_id": "G4-0803",
+      "title": "DELEGATION-PDC-CLOSE",
+      "frz_arch_freeze_impact": "UNKNOWN",
+      "plan_decisions_waiting": [],
+      "mapped_dp": [],
+      "mapped_od": [],
+      "waiting_unpublished": [],
+      "plan_nodes": null,
+      "package_status": "OPEN_NEEDS_OPERATOR"
+    },
+    {
+      "reg_id": "EDER-D-0599",
+      "eqoa_id": "G4-0804",
+      "title": "DELEGATION-PDC-F56-F35",
+      "frz_arch_freeze_impact": "UNKNOWN",
+      "plan_decisions_waiting": [],
+      "mapped_dp": [],
+      "mapped_od": [],
+      "waiting_unpublished": [],
+      "plan_nodes": null,
+      "package_status": "OPEN_NEEDS_OPERATOR"
+    },
+    {
+      "reg_id": "EDER-D-0600",
+      "eqoa_id": "G4-0805",
+      "title": "DELEGATION-PDC-P1-P3",
+      "frz_arch_freeze_impact": "UNKNOWN",
+      "plan_decisions_waiting": [],
+      "mapped_dp": [],
+      "mapped_od": [],
+      "waiting_unpublished": [],
+      "plan_nodes": null,
+      "package_status": "OPEN_NEEDS_OPERATOR"
+    },
+    {
+      "reg_id": "EDER-D-0601",
+      "eqoa_id": "G4-0806",
+      "title": "DELEGATION-PDC-P6-ECAPFIX",
+      "frz_arch_freeze_impact": "UNKNOWN",
+      "plan_decisions_waiting": [],
+      "mapped_dp": [],
+      "mapped_od": [],
+      "waiting_unpublished": [],
+      "plan_nodes": null,
+      "package_status": "OPEN_NEEDS_OPERATOR"
+    },
+    {
+      "reg_id": "EDER-D-0602",
+      "eqoa_id": "G4-0807",
+      "title": "DELEGATION-PDC-P6-IMPACT",
+      "frz_arch_freeze_impact": "UNKNOWN",
+      "plan_decisions_waiting": [],
+      "mapped_dp": [],
+      "mapped_od": [],
+      "waiting_unpublished": [],
+      "plan_nodes": null,
+      "package_status": "OPEN_NEEDS_OPERATOR"
+    },
+    {
+      "reg_id": "EDER-D-0603",
+      "eqoa_id": "G4-0808",
+      "title": "DELEGATION-PDC-P6-MODEL",
+      "frz_arch_freeze_impact": "UNKNOWN",
+      "plan_decisions_waiting": [],
+      "mapped_dp": [],
+      "mapped_od": [],
+      "waiting_unpublished": [],
+      "plan_nodes": null,
+      "package_status": "OPEN_NEEDS_OPERATOR"
+    },
+    {
+      "reg_id": "EDER-D-0604",
+      "eqoa_id": "G4-0809",
+      "title": "DELEGATION-PDC-P6-REPAIR",
+      "frz_arch_freeze_impact": "UNKNOWN",
+      "plan_decisions_waiting": [],
+      "mapped_dp": [],
+      "mapped_od": [],
+      "waiting_unpublished": [],
+      "plan_nodes": null,
+      "package_status": "OPEN_NEEDS_OPERATOR"
+    },
+    {
+      "reg_id": "EDER-D-0605",
+      "eqoa_id": "G4-0810",
+      "title": "DELEGATION-PDC-P6-REPIN",
+      "frz_arch_freeze_impact": "UNKNOWN",
+      "plan_decisions_waiting": [],
+      "mapped_dp": [],
+      "mapped_od": [],
+      "waiting_unpublished": [],
+      "plan_nodes": null,
+      "package_status": "OPEN_NEEDS_OPERATOR"
+    },
+    {
+      "reg_id": "EDER-D-0606",
+      "eqoa_id": "G4-0811",
+      "title": "DELEGATION-PDC-P7-ACT",
+      "frz_arch_freeze_impact": "UNKNOWN",
+      "plan_decisions_waiting": [],
+      "mapped_dp": [],
+      "mapped_od": [],
+      "waiting_unpublished": [],
+      "plan_nodes": null,
+      "package_status": "OPEN_NEEDS_OPERATOR"
+    },
+    {
+      "reg_id": "EDER-D-0607",
+      "eqoa_id": "G4-0812",
+      "title": "DELEGATION-PDC-P7-REPAIR",
+      "frz_arch_freeze_impact": "UNKNOWN",
+      "plan_decisions_waiting": [],
+      "mapped_dp": [],
+      "mapped_od": [],
+      "waiting_unpublished": [],
+      "plan_nodes": null,
+      "package_status": "OPEN_NEEDS_OPERATOR"
+    },
+    {
+      "reg_id": "EDER-D-0608",
+      "eqoa_id": "G4-0813",
+      "title": "DELEGATION-PDC-P7-REPIN",
+      "frz_arch_freeze_impact": "UNKNOWN",
+      "plan_decisions_waiting": [],
+      "mapped_dp": [],
+      "mapped_od": [],
+      "waiting_unpublished": [],
+      "plan_nodes": null,
+      "package_status": "OPEN_NEEDS_OPERATOR"
+    },
+    {
+      "reg_id": "EDER-D-0609",
+      "eqoa_id": "G4-0814",
+      "title": "DELEGATION-PDC-RC-HANDOFF",
+      "frz_arch_freeze_impact": "UNKNOWN",
+      "plan_decisions_waiting": [],
+      "mapped_dp": [],
+      "mapped_od": [],
+      "waiting_unpublished": [],
+      "plan_nodes": null,
+      "package_status": "OPEN_NEEDS_OPERATOR"
+    },
+    {
+      "reg_id": "EDER-D-0610",
+      "eqoa_id": "G4-0815",
+      "title": "DELEGATION-PDC-STANDING",
+      "frz_arch_freeze_impact": "UNKNOWN",
+      "plan_decisions_waiting": [],
+      "mapped_dp": [],
+      "mapped_od": [],
+      "waiting_unpublished": [],
+      "plan_nodes": null,
+      "package_status": "OPEN_NEEDS_OPERATOR"
+    },
+    {
+      "reg_id": "EDER-D-0611",
+      "eqoa_id": "G4-0816",
+      "title": "DELEGATION-PDC-WAVE-1",
+      "frz_arch_freeze_impact": "UNKNOWN",
+      "plan_decisions_waiting": [],
+      "mapped_dp": [],
+      "mapped_od": [],
+      "waiting_unpublished": [],
+      "plan_nodes": null,
+      "package_status": "OPEN_NEEDS_OPERATOR"
+    },
+    {
+      "reg_id": "EDER-D-0612",
+      "eqoa_id": "G4-0817",
+      "title": "DELEGATION-PDC-WAVE-2",
+      "frz_arch_freeze_impact": "UNKNOWN",
+      "plan_decisions_waiting": [],
+      "mapped_dp": [],
+      "mapped_od": [],
+      "waiting_unpublished": [],
+      "plan_nodes": null,
+      "package_status": "OPEN_NEEDS_OPERATOR"
+    },
+    {
+      "reg_id": "EDER-D-0613",
+      "eqoa_id": "G4-0818",
+      "title": "DELEGATION-PDC-WAVE-3A",
+      "frz_arch_freeze_impact": "UNKNOWN",
+      "plan_decisions_waiting": [],
+      "mapped_dp": [],
+      "mapped_od": [],
+      "waiting_unpublished": [],
+      "plan_nodes": null,
+      "package_status": "OPEN_NEEDS_OPERATOR"
+    },
+    {
+      "reg_id": "EDER-D-0614",
+      "eqoa_id": "G4-0819",
+      "title": "DELEGATION-PDC-WAVE-3B",
+      "frz_arch_freeze_impact": "UNKNOWN",
+      "plan_decisions_waiting": [],
+      "mapped_dp": [],
+      "mapped_od": [],
+      "waiting_unpublished": [],
+      "plan_nodes": null,
+      "package_status": "OPEN_NEEDS_OPERATOR"
+    },
+    {
+      "reg_id": "EDER-D-0615",
+      "eqoa_id": "G4-0820",
+      "title": "DELEGATION-PDC-WAVE-3C",
+      "frz_arch_freeze_impact": "UNKNOWN",
+      "plan_decisions_waiting": [],
+      "mapped_dp": [],
+      "mapped_od": [],
+      "waiting_unpublished": [],
+      "plan_nodes": null,
+      "package_status": "OPEN_NEEDS_OPERATOR"
+    },
+    {
+      "reg_id": "EDER-D-0616",
+      "eqoa_id": "G4-0821",
+      "title": "DELEGATION-PDC-WAVE-A",
+      "frz_arch_freeze_impact": "UNKNOWN",
+      "plan_decisions_waiting": [],
+      "mapped_dp": [],
+      "mapped_od": [],
+      "waiting_unpublished": [],
+      "plan_nodes": null,
+      "package_status": "OPEN_NEEDS_OPERATOR"
+    },
+    {
+      "reg_id": "EDER-D-0617",
+      "eqoa_id": "G4-0822",
+      "title": "DELEGATION-PDC-WAVE-B",
+      "frz_arch_freeze_impact": "UNKNOWN",
+      "plan_decisions_waiting": [],
+      "mapped_dp": [],
+      "mapped_od": [],
+      "waiting_unpublished": [],
+      "plan_nodes": null,
+      "package_status": "OPEN_NEEDS_OPERATOR"
+    },
+    {
+      "reg_id": "EDER-D-0618",
+      "eqoa_id": "G4-0823",
+      "title": "DELEGATION-PDC-WAVE2",
+      "frz_arch_freeze_impact": "UNKNOWN",
+      "plan_decisions_waiting": [],
+      "mapped_dp": [],
+      "mapped_od": [],
+      "waiting_unpublished": [],
+      "plan_nodes": null,
+      "package_status": "OPEN_NEEDS_OPERATOR"
+    },
+    {
+      "reg_id": "EDER-D-0619",
+      "eqoa_id": "G4-0824",
+      "title": "OD-PDC-ADR-01",
+      "frz_arch_freeze_impact": "UNKNOWN",
+      "plan_decisions_waiting": [],
+      "mapped_dp": [],
+      "mapped_od": [],
+      "waiting_unpublished": [],
+      "plan_nodes": null,
+      "package_status": "OPEN_NEEDS_OPERATOR"
+    },
+    {
+      "reg_id": "EDER-D-0620",
+      "eqoa_id": "G4-0825",
+      "title": "OD-PDC-ARCHF-01",
+      "frz_arch_freeze_impact": "UNKNOWN",
+      "plan_decisions_waiting": [],
+      "mapped_dp": [],
+      "mapped_od": [],
+      "waiting_unpublished": [],
+      "plan_nodes": null,
+      "package_status": "OPEN_NEEDS_OPERATOR"
+    },
+    {
+      "reg_id": "EDER-D-0621",
+      "eqoa_id": "G4-0826",
+      "title": "OD-PDC-FRZ-01",
+      "frz_arch_freeze_impact": "UNKNOWN",
+      "plan_decisions_waiting": [],
+      "mapped_dp": [],
+      "mapped_od": [],
+      "waiting_unpublished": [],
+      "plan_nodes": null,
+      "package_status": "OPEN_NEEDS_OPERATOR"
+    },
+    {
+      "reg_id": "EDER-D-0622",
+      "eqoa_id": "G4-0827",
+      "title": "OD-PDC-IIAC-SCOPE",
+      "frz_arch_freeze_impact": "UNKNOWN",
+      "plan_decisions_waiting": [],
+      "mapped_dp": [],
+      "mapped_od": [],
+      "waiting_unpublished": [],
+      "plan_nodes": null,
+      "package_status": "OPEN_NEEDS_OPERATOR"
+    },
+    {
+      "reg_id": "EDER-D-0623",
+      "eqoa_id": "G4-0828",
+      "title": "OD-PDC-PATHB-01",
+      "frz_arch_freeze_impact": "UNKNOWN",
+      "plan_decisions_waiting": [],
+      "mapped_dp": [],
+      "mapped_od": [],
+      "waiting_unpublished": [],
+      "plan_nodes": null,
+      "package_status": "OPEN_NEEDS_OPERATOR"
+    },
+    {
+      "reg_id": "EDER-D-0624",
+      "eqoa_id": "G4-0829",
+      "title": "OD-PDC-SCOPE-01",
+      "frz_arch_freeze_impact": "UNKNOWN",
+      "plan_decisions_waiting": [],
+      "mapped_dp": [],
+      "mapped_od": [],
+      "waiting_unpublished": [],
+      "plan_nodes": null,
+      "package_status": "OPEN_NEEDS_OPERATOR"
+    },
+    {
+      "reg_id": "EDER-D-0625",
+      "eqoa_id": "G4-0830",
+      "title": "OD-PDC-SCOPE-02",
+      "frz_arch_freeze_impact": "UNKNOWN",
+      "plan_decisions_waiting": [],
+      "mapped_dp": [],
+      "mapped_od": [],
+      "waiting_unpublished": [],
+      "plan_nodes": null,
+      "package_status": "OPEN_NEEDS_OPERATOR"
+    },
+    {
+      "reg_id": "EDER-D-0626",
+      "eqoa_id": "G4-0831",
+      "title": "OD-PDC-SCOPE-03",
+      "frz_arch_freeze_impact": "UNKNOWN",
+      "plan_decisions_waiting": [],
+      "mapped_dp": [],
+      "mapped_od": [],
+      "waiting_unpublished": [],
+      "plan_nodes": null,
+      "package_status": "OPEN_NEEDS_OPERATOR"
+    },
+    {
+      "reg_id": "EDER-D-0627",
+      "eqoa_id": "G4-0832",
+      "title": "OD-PDC-SCOPE-04",
+      "frz_arch_freeze_impact": "UNKNOWN",
+      "plan_decisions_waiting": [],
+      "mapped_dp": [],
+      "mapped_od": [],
+      "waiting_unpublished": [],
+      "plan_nodes": null,
+      "package_status": "OPEN_NEEDS_OPERATOR"
+    },
+    {
+      "reg_id": "EDER-D-0628",
+      "eqoa_id": "G4-0833",
+      "title": "OD-PDC-SCOPE-05",
+      "frz_arch_freeze_impact": "UNKNOWN",
+      "plan_decisions_waiting": [],
+      "mapped_dp": [],
+      "mapped_od": [],
+      "waiting_unpublished": [],
+      "plan_nodes": null,
+      "package_status": "OPEN_NEEDS_OPERATOR"
+    },
+    {
+      "reg_id": "EDER-D-0629",
+      "eqoa_id": "G4-0834",
+      "title": "OD-PDC-SCOPE-06",
+      "frz_arch_freeze_impact": "UNKNOWN",
+      "plan_decisions_waiting": [],
+      "mapped_dp": [],
+      "mapped_od": [],
+      "waiting_unpublished": [],
+      "plan_nodes": null,
+      "package_status": "OPEN_NEEDS_OPERATOR"
+    },
+    {
+      "reg_id": "EDER-D-0630",
+      "eqoa_id": "G4-0835",
+      "title": "OD-PDC-SCOPE-07",
+      "frz_arch_freeze_impact": "UNKNOWN",
+      "plan_decisions_waiting": [],
+      "mapped_dp": [],
+      "mapped_od": [],
+      "waiting_unpublished": [],
+      "plan_nodes": null,
+      "package_status": "OPEN_NEEDS_OPERATOR"
+    },
+    {
+      "reg_id": "EDER-D-0631",
+      "eqoa_id": "G4-0836",
+      "title": "OD-PDC-SEQ-01",
+      "frz_arch_freeze_impact": "UNKNOWN",
+      "plan_decisions_waiting": [],
+      "mapped_dp": [],
+      "mapped_od": [],
+      "waiting_unpublished": [],
+      "plan_nodes": null,
+      "package_status": "OPEN_NEEDS_OPERATOR"
+    },
+    {
+      "reg_id": "EDER-N-0001",
+      "eqoa_id": "Q-WA-03",
+      "title": "Retrieval source scope (S2b) was relocated to intergrax/contracts/rag_retrieval_source_scope.py by T-IGX-043-G without deciding who may bind",
+      "frz_arch_freeze_impact": "UNKNOWN",
+      "plan_decisions_waiting": [],
+      "mapped_dp": [],
+      "mapped_od": [],
+      "waiting_unpublished": [],
+      "plan_nodes": null,
+      "package_status": "OPEN_NEEDS_OPERATOR"
+    },
+    {
+      "reg_id": "EDER-N-0002",
+      "eqoa_id": "Q-WA-07",
+      "title": "DUP-X item: duplicate orchestration enums exist in both tiers (Tier-1 runtime and Tier-3 application wiring); T-IGX-043-G leaves them in pla",
+      "frz_arch_freeze_impact": "UNKNOWN",
+      "plan_decisions_waiting": [],
+      "mapped_dp": [],
+      "mapped_od": [],
+      "waiting_unpublished": [],
+      "plan_nodes": null,
+      "package_status": "OPEN_NEEDS_OPERATOR"
+    }
+  ]
+}

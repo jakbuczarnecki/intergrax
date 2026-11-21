@@ -1,0 +1,126 @@
+{
+  "package": "KR-UNKNOWN",
+  "source_head": "28c27cb896d02e0185b9fa02047411fa152f6469",
+  "proposals": [
+    {
+      "id": "KR-01",
+      "current_owner_node": "UNASSIGNED (CI workflow sync line; not decided here)",
+      "proposed_owner_node": "PT-R03 owner-confirmation wave (EDER-OWNER-1)",
+      "gate": "per plan section G",
+      "note": "Proposal only; known_red_register.v1.json not edited in RC-1."
+    },
+    {
+      "id": "KR-02",
+      "current_owner_node": "UNASSIGNED (CI workflow sync line; not decided here)",
+      "proposed_owner_node": "PT-R03 owner-confirmation wave (EDER-OWNER-1)",
+      "gate": "per plan section G",
+      "note": "Proposal only; known_red_register.v1.json not edited in RC-1."
+    },
+    {
+      "id": "KR-05",
+      "current_owner_node": "UNASSIGNED (secret provisioning is an Operator or repo-admin matter)",
+      "proposed_owner_node": "PT-R03 owner-confirmation wave (EDER-OWNER-1)",
+      "gate": "per plan section G",
+      "note": "Proposal only; known_red_register.v1.json not edited in RC-1."
+    },
+    {
+      "id": "KR-06",
+      "current_owner_node": "UNASSIGNED",
+      "proposed_owner_node": "PT-Q06 (trace/OTEL; ENV proving if collector missing)",
+      "gate": "M3",
+      "note": "Proposal only; known_red_register.v1.json not edited in RC-1."
+    },
+    {
+      "id": "KR-07",
+      "current_owner_node": "UNASSIGNED",
+      "proposed_owner_node": "PT-R03 owner-confirmation wave (EDER-OWNER-1)",
+      "gate": "per plan section G",
+      "note": "Proposal only; known_red_register.v1.json not edited in RC-1."
+    },
+    {
+      "id": "KR-12",
+      "current_owner_node": "PT-Q09 (DIST-SCALE-X scoped envelope)",
+      "proposed_owner_node": "PT-R03 owner-confirmation wave (EDER-OWNER-1)",
+      "gate": "per plan section G",
+      "note": "Proposal only; known_red_register.v1.json not edited in RC-1."
+    },
+    {
+      "id": "KR-15",
+      "current_owner_node": "UNASSIGNED for the polluter hunt (plan CMP row: T-AF2-RED-CLASSES registers it; T-B7-CMP-REVAL requalifies)",
+      "proposed_owner_node": "PT-R03 owner-confirmation wave (EDER-OWNER-1)",
+      "gate": "per plan section G",
+      "note": "Proposal only; known_red_register.v1.json not edited in RC-1."
+    },
+    {
+      "id": "KR-16",
+      "current_owner_node": "UNASSIGNED (debt register: DEBT)",
+      "proposed_owner_node": "PT-R03 owner-confirmation wave (EDER-OWNER-1)",
+      "gate": "per plan section G",
+      "note": "Proposal only; known_red_register.v1.json not edited in RC-1."
+    },
+    {
+      "id": "KR-17",
+      "current_owner_node": "UNASSIGNED (a product-path change needs the RW train and the development hold lifted)",
+      "proposed_owner_node": "T-IGX-051-D (single product ticket; not split with WB)",
+      "gate": "G2",
+      "note": "Proposal only; known_red_register.v1.json not edited in RC-1."
+    },
+    {
+      "id": "KR-18",
+      "current_owner_node": "UNASSIGNED (product path; RW train)",
+      "proposed_owner_node": "PT-R03 owner-confirmation wave (EDER-OWNER-1)",
+      "gate": "per plan section G",
+      "note": "Proposal only; known_red_register.v1.json not edited in RC-1."
+    },
+    {
+      "id": "KR-19",
+      "current_owner_node": "UNASSIGNED (product path)",
+      "proposed_owner_node": "PT-WB or T-IGX-051-F after node-id read (default PT-WB)",
+      "gate": "G2",
+      "note": "Proposal only; known_red_register.v1.json not edited in RC-1."
+    },
+    {
+      "id": "KR-20",
+      "current_owner_node": "UNASSIGNED",
+      "proposed_owner_node": "PT-Q06 + PT-Q04 (trace_x surface classification pack)",
+      "gate": "M3",
+      "note": "Proposal only; known_red_register.v1.json not edited in RC-1."
+    },
+    {
+      "id": "KR-22",
+      "current_owner_node": "UNASSIGNED",
+      "proposed_owner_node": "PT-Q13 (qualification timeout, not skip)",
+      "gate": "M3",
+      "note": "Proposal only; known_red_register.v1.json not edited in RC-1."
+    },
+    {
+      "id": "KR-23",
+      "current_owner_node": "T-AF2-RED-CLASSES registers (plan section E, Other handoffs); fixes UNASSIGNED",
+      "proposed_owner_node": "PT-R03 owner-confirmation wave (EDER-OWNER-1)",
+      "gate": "per plan section G",
+      "note": "Proposal only; known_red_register.v1.json not edited in RC-1."
+    },
+    {
+      "id": "KR-24",
+      "current_owner_node": "UNASSIGNED",
+      "proposed_owner_node": "T-IGX-043-C if same write set as FC3 strict xfail, else T-IGX-051-F",
+      "gate": "G2",
+      "note": "Proposal only; known_red_register.v1.json not edited in RC-1."
+    },
+    {
+      "id": "KR-26",
+      "current_owner_node": "T-AF2-RED-CLASSES (plan section E) registers it; disposition UNASSIGNED",
+      "proposed_owner_node": "T-AF2-RED-CLASSES / PT-Q07 delta MCP",
+      "gate": "per plan section G",
+      "note": "Proposal only; known_red_register.v1.json not edited in RC-1."
+    },
+    {
+      "id": "KR-27",
+      "current_owner_node": "UNASSIGNED",
+      "proposed_owner_node": "VBN-REACHABILITY → CTR-02 / T-IGX-051-D residual",
+      "gate": "per plan section G",
+      "note": "Proposal only; known_red_register.v1.json not edited in RC-1."
+    }
+  ],
+  "note": "RC-1 owner proposals for KR rows with UNKNOWN disposition or UNASSIGNED owner_node. Register not mutated."
+}
