@@ -360,6 +360,7 @@ def create_local_workspace_backend_app(
 
     if resolved_settings.include_interaction_routes:
         interaction_service = wire_interaction_intake_service(
+            env=env,
             interaction_surface=resolved_settings.interaction_surface,
             task_executor=lkw_task_executor,
         )

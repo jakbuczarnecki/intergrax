@@ -88,6 +88,7 @@ def create_intergrax_assistant_application(
         enabled=settings.include_scheduler,
     )
     interaction_service = wire_interaction_intake_service(
+        env=env,
         interaction_surface=settings.interaction_surface,
         task_executor=HostTaskExecutionExecutor(host_execution),
         task_enricher=task_enricher,
