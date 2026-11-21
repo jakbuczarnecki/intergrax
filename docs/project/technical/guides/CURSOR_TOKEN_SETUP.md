@@ -198,7 +198,7 @@ uv run python scripts/ci/check_cursor_token_setup.py
 
 ## Cursor hooks and parity limits
 
-- **`.cursor/hooks.json`** registers one event: `subagentStart` with matcher `^generalPurpose$`, `failClosed: true`, script `scripts/hooks/igx_subagent_guard.py` (denies `generalPurpose`, allows `explore` and the `igx-*` roles). There is no `stop` entry on purpose: Cursor maps the existing `decision: block` + `reason` of `igx_stop_guard.py` (loaded from `.claude/settings.json`) to one continuation; a second `followup_message` or `stop` hook would double it.
+- **`.cursor/hooks.json`** registers one event: `subagentStart` with matcher `^generalPurpose$`, `failClosed: true`, script `scripts/hooks/igx_subagent_guard.py` (denies `generalPurpose`, allows `explore` and the `igx-*` roles). It also registers `stop` on `scripts/hooks/igx_stop_guard.py` with `loop_limit: null`. Native Cursor input continues with `followup_message` only; a Claude-shaped `last_assistant_message` still uses `decision: block` and `reason`. The script never emits both keys.
 - The stop guard continues only when a plan is active, `status` is not `error` / `aborted`, a non-empty last assistant message is visible and it does not start with `ESCALATION:`.
 - The bash guard also checks `Get-Content` / `gc` / `type` inside `powershell` / `pwsh` `-Command` strings (files over 80 KiB).
 - `IGX_HOOKS=off` disables every igx guard, including in Cursor (`subagentStart` then answers `allow`). After a sync restart the session; hook calls appear in the Hooks output.

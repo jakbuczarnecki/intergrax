@@ -42,10 +42,24 @@ Per item: the problem, the options, a recommendation, the consequence and the co
 - Typed agents: `igx-researcher` (read-only), `igx-implementer` (worktree), `igx-reviewer` (no shell), `igx-architect` (plans only). `general-purpose` is denied.
 - One `uv run pytest` at a time; the parent verifies a sub-agent's `DONE` against git before ticking the step.
 
-## Cursor — Composer-only models (operator policy)
+## Cursor — parent and workers
 
-In Cursor, the parent and every `Task` / subagent call use **Composer only** (`composer-2.5`, `composer-2.5-fast`, or the parent's active Composer model).
+- The parent orchestrator in Cursor may be Grok.
+- The default worker is Composer 2.5. Pass Task `model` `composer-2.5` or `composer-2.5-fast` on every worker. Do not omit `model` (that inherits the parent).
+- Claude, GPT, Gemini, DeepSeek, or a Grok worker needs an Operator override in that chat. IIAC and G6 independence are unchanged: a reviewer still does not declare G6 PASS.
 
-- Do **not** pass the Task tool `model` argument with `claude-*`, `gpt-*`, `gemini-*`, `grok-*`, `deepseek-*`, or any slug outside the Composer family.
-- Do **not** select `claude-sonnet-5-5-high`, `claude-opus-*`, or other listed non-Composer subagent models unless the Operator explicitly overrides in that chat.
-- Default: omit `model` so the subagent inherits the parent Composer model.
+## Cursor — background task lifecycle
+
+`run_in_background: true` returns after spawn. The result arrives as the completion notification once the parent ends its turn. That receive is not polling.
+
+`SPAWN` (Task) → end the turn or do other independent work → `RECEIVE` (the completion notification, or the foreground tool result) → `REVIEW` (check `DONE` against git) → `RESUME/CORRECT` (`resume` with the decision, or a new launch) → `NEXT TASK`.
+
+Do not `AwaitShell`, poll, or sleep-loop for a background task. Foreground Task (`run_in_background` false) blocks until the result and is also a receive.
+
+## Commit ownership
+
+SSOT: `may_commit` in `governance/agent-control-plane/role_registry.yaml`.
+
+- `implementer` (`igx-implementer`, `best-of-n-runner`) may commit only on the branch in its own worktree, with `Ref: governance/tickets/T-IGX-<NN>-<L>.md` and no AI attribution.
+- `orchestrator` may not commit, merge, push, or open a pull request. Integrating a worker branch into the operator branch is a human action: escalate.
+- A subagent commits only when its `maps_to` role has `may_commit: true`. Read-only roles never commit. No subagent closes a batch or declares G6 PASS.

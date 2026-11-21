@@ -26,6 +26,10 @@ git -C "$MAIN" worktree add --detach "$WT_BASE/<slug>" <sha>                  # 
 - If the parent of the main checkout is itself inside a git repository, or `MAIN` cannot be resolved, escalate (missing access) and create nothing.
 - Scratch and temporary test directories (for example `pytest --basetemp`) go under `<wt-base>/_scratch/<slug>`: short paths, outside the repo, create the parent first.
 
+## Approved plan
+
+Creating this worktree is allowed when the active plan and its write set name the slug. `git worktree add -b <branch>` and `git worktree add --detach` do that without switching the main checkout. Branch safety still forbids `git checkout -b`, `git switch -c`, `git switch --detach`, and `git checkout <sha>` in the main checkout.
+
 ## Working rules
 
 - Scope Grep, Glob and `find` to the directory you need. Never recurse across worktrees, `.claude/`, `.tmp/` or `_wt`.

@@ -7,19 +7,24 @@ markdown plan with ``- [ ]`` / ``- [x]`` step lists). Without that file the hook
 Hook mode (no arguments, Claude Code ``Stop`` event or Cursor native ``stop``, JSON on stdin):
 
 * allow when ``status`` is ``error`` or ``aborted`` (a failed or cancelled run is never continued);
-* allow when the payload has no non-empty ``last_assistant_message`` (an escalation cannot be told apart);
-* allow when the last assistant message starts with ``ESCALATION:``;
+* allow when no visible assistant text exists (payload or transcript tail), because an escalation
+  cannot be told apart from an ordinary stop;
+* allow when that text starts with ``ESCALATION:``;
 * allow and clear the active plan when it starts with ``PLAN COMPLETE``;
 * allow when no open step is left (the active plan is cleared);
-* otherwise block with the next open step and "continue; stop only with ESCALATION:".
+* otherwise continue with the next open step.
 
-The block output is ``decision: block`` + ``reason`` only. Cursor maps it to one continuation itself, so
-no ``followup_message`` key and no second ``stop`` hook may be added (that would double the follow-up).
+Claude-shaped input (non-empty ``last_assistant_message``) continues with ``decision: block`` and
+``reason`` only. Cursor-native input (no such message) continues with ``followup_message`` only.
+The two keys are never emitted together. ``.cursor/hooks.json`` registers ``stop`` with
+``loop_limit: null`` so a plan that keeps ticking steps is not cut at Cursor's default of 5.
+A numeric ``loop_limit`` that drops further follow-ups leaves the plan active; that is not
+``PLAN COMPLETE``.
 
 Loop limit: the third consecutive block without any checkbox change is allowed once with a warning
-(and the counter resets), so the hook can never spin forever. ``stop_hook_active`` marks a turn that
-already continues after a block; it is bounded by this counter instead of being allowed outright,
-which would make the hook block only once. Any error allows the stop. ``IGX_HOOKS=off`` disables it.
+(and the counter resets), so the hook can never spin forever. A second delivery of the same
+``conversation_id`` and ``generation_id`` does not advance the counter. Any error allows the stop.
+``IGX_HOOKS=off`` disables it.
 
 CLI mode (used by the ``/igx-run-plan`` skill)::
 
@@ -38,7 +43,9 @@ from pathlib import Path
 
 ACTIVE = Path(".tmp") / "session" / "autonomy" / "active-plan"
 STATE = Path(".tmp") / "session" / "autonomy" / "stop-state.json"
+KEYS = Path(".tmp") / "session" / "autonomy" / "stop-last-keys.json"
 MAX_BLOCKS = 3
+_TAIL_BYTES = 65536
 _STEP = re.compile(r"^\s*[-*]\s+\[( |x|X)\]\s+(.*\S)\s*$")
 
 
@@ -104,14 +111,123 @@ def _emit(payload: dict) -> int:
     return 0
 
 
-def decide(root: Path, message: str, status: str = "") -> dict | None:
+def _note_keys(data: dict) -> None:
+    """Record stdin key names only, under ``.tmp``, so a live stop can be checked without polling."""
+    try:
+        root = project_root()
+        path = root / KEYS
+        path.parent.mkdir(parents=True, exist_ok=True)
+        payload = {
+            "keys": sorted(str(key) for key in data),
+            "status": data.get("status") if isinstance(data.get("status"), str) else None,
+            "loop_count": data.get("loop_count") if isinstance(data.get("loop_count"), int) else None,
+            "hook_event_name": data.get("hook_event_name") if isinstance(data.get("hook_event_name"), str) else None,
+            "has_transcript": bool(data.get("transcript_path")),
+            "has_message": bool(str(data.get("last_assistant_message") or "").strip()),
+        }
+        path.write_text(json.dumps(payload), encoding="utf-8")
+    except (OSError, TypeError):
+        pass
+
+
+def _content_text(content: object) -> str:
+    if isinstance(content, str):
+        return content.strip()
+    if isinstance(content, list):
+        parts: list[str] = []
+        for item in content:
+            if isinstance(item, str):
+                parts.append(item)
+            elif isinstance(item, dict):
+                text = item.get("text") if isinstance(item.get("text"), str) else item.get("content")
+                if isinstance(text, str):
+                    parts.append(text)
+                elif text is not None:
+                    parts.append(_content_text(text))
+        return "\n".join(part for part in parts if part).strip()
+    if isinstance(content, dict):
+        nested = content.get("text") if isinstance(content.get("text"), str) else content.get("content")
+        return _content_text(nested)
+    return ""
+
+
+def _assistant_text(obj: object) -> str:
+    if not isinstance(obj, dict):
+        return ""
+    message = obj.get("message")
+    role = str(obj.get("role") or obj.get("type") or "")
+    if role.lower() == "assistant":
+        content = obj.get("content")
+        if content is None and isinstance(message, dict):
+            content = message.get("content")
+        if content is None:
+            content = obj.get("text")
+        return _content_text(content)
+    if isinstance(message, dict) and str(message.get("role") or "").lower() == "assistant":
+        return _content_text(message.get("content"))
+    return ""
+
+
+def _tail_assistant(path: Path) -> str:
+    try:
+        raw = path.read_bytes()
+    except OSError:
+        return ""
+    chunk = raw[-_TAIL_BYTES:]
+    text = ""
+    for line in chunk.decode("utf-8", errors="ignore").splitlines():
+        line = line.strip()
+        if not line:
+            continue
+        try:
+            found = _assistant_text(json.loads(line))
+        except ValueError:
+            continue
+        if found:
+            text = found
+    return text
+
+
+def _visible_message(data: dict) -> str:
+    raw = data.get("last_assistant_message")
+    if isinstance(raw, str) and raw.strip():
+        return raw.strip()
+    transcript = data.get("transcript_path")
+    if isinstance(transcript, str) and transcript.strip():
+        return _tail_assistant(Path(transcript))
+    return ""
+
+
+def _native_cursor(data: dict) -> bool:
+    raw = data.get("last_assistant_message")
+    if isinstance(raw, str) and raw.strip():
+        return False
+    return "loop_count" in data or data.get("hook_event_name") == "stop"
+
+
+def _event_key(data: dict, signature: str) -> str:
+    loop = data.get("loop_count")
+    return "|".join(
+        (
+            str(data.get("conversation_id") or ""),
+            str(data.get("generation_id") or ""),
+            str(loop if loop is not None else ""),
+            signature,
+        )
+    )
+
+
+def decide(root: Path, data: dict) -> dict | None:
     """Hook decision as a JSON-able dict, or None to allow silently."""
+    if not isinstance(data, dict):
+        return None
     loaded = read_plan(root)
     if loaded is None:
         return None
+    status = str(data.get("status") or "")
     if status.strip().lower() in ("error", "aborted"):
         return None
-    text = (message or "").strip()
+    text = _visible_message(data)
     if not text:
         return None
     plan, steps = loaded
@@ -121,28 +237,33 @@ def decide(root: Path, message: str, status: str = "") -> dict | None:
     if text.startswith("PLAN COMPLETE"):
         _clear(root)
         return None
-    open_steps = [s for done, s in steps if not done]
+    open_steps = [step for done, step in steps if not done]
     if not open_steps:
         _clear(root)
         return None
     signature = f"{plan}|{sum(1 for done, _ in steps if done)}|{len(open_steps)}"
     state = _load_state(root)
+    event = _event_key(data, signature)
+    tracked = bool(data.get("conversation_id") or data.get("generation_id"))
+    if tracked and state.get("last_event") == event and isinstance(state.get("last_result"), dict):
+        return state["last_result"]
     blocks = int(state.get("blocks", 0)) + 1 if state.get("signature") == signature else 1
     if blocks >= MAX_BLOCKS:
-        _save_state(root, {})
-        return {
+        result = {
             "systemMessage": (
                 f"igx stop guard: {MAX_BLOCKS} blocks without progress on '{open_steps[0][:80]}'; "
                 "allowing this stop once. The plan is still active (`/igx-run-plan stop` ends it)."
             )
         }
-    _save_state(root, {"signature": signature, "blocks": blocks})
-    return {
-        "decision": "block",
-        "reason": (
-            f"Open plan step: {open_steps[0][:160]}. Continue; stop only with ESCALATION: <type> or PLAN COMPLETE."
-        ),
-    }
+        _save_state(root, {"last_event": event, "last_result": result} if tracked else {})
+        return result
+    reason = f"Open plan step: {open_steps[0][:160]}. Continue; stop only with ESCALATION: <type> or PLAN COMPLETE."
+    result = {"followup_message": reason} if _native_cursor(data) else {"decision": "block", "reason": reason}
+    _save_state(
+        root,
+        {"signature": signature, "blocks": blocks, "last_event": event, "last_result": result},
+    )
+    return result
 
 
 def hook() -> int:
@@ -150,10 +271,13 @@ def hook() -> int:
         return 0
     try:
         data = json.loads(sys.stdin.read() or "{}")
-        root = find_root(Path(str(data.get("cwd"))) if isinstance(data, dict) and data.get("cwd") else None)
-        if root is None or not isinstance(data, dict):
+        if not isinstance(data, dict):
             return 0
-        result = decide(root, str(data.get("last_assistant_message") or ""), str(data.get("status") or ""))
+        _note_keys(data)
+        root = find_root(Path(str(data.get("cwd"))) if data.get("cwd") else None)
+        if root is None:
+            return 0
+        result = decide(root, data)
         return _emit(result) if result else 0
     except Exception:  # noqa: BLE001 - fail open: a broken guard must never trap a session
         return 0
