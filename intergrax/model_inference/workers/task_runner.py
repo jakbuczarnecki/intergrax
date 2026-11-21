@@ -6,9 +6,8 @@ from __future__ import annotations
 
 import json
 
-from intergrax.model_inference.adapters.stub_vision import StubVisionInferenceAdapter
 from intergrax.model_inference.bootstrap import build_harness_model_inference_registry
-from intergrax.model_inference.contracts import ExtendedVisionInferenceAdapter
+from intergrax.model_inference.contracts import require_extended_vision_adapter
 from intergrax.model_inference.execution.in_process_executor import InProcessModalityInferenceExecutor
 from intergrax.model_inference.execution.jobs import (
     ModalityDetectJob,
@@ -34,14 +33,18 @@ def run_modality_job(payload_json: str) -> str:
 
 
 def _execute_detect(job: ModalityDetectJob) -> ModalityJobResult:
-    return _run_vision(lambda executor, registry, adapter, artifact: ModalityJobResult(
-        detect=executor.run_detect(registry=registry, adapter=adapter, artifact=artifact, request=job.request)
-    ), job.adapter_slug, job.artifact_id)
+    return _run_vision(
+        lambda executor, registry, adapter, artifact: ModalityJobResult(
+            detect=executor.run_detect(registry=registry, adapter=adapter, artifact=artifact, request=job.request)
+        ),
+        job.adapter_slug,
+        job.artifact_id,
+    )
 
 
 def _execute_segment(job: ModalitySegmentJob) -> ModalityJobResult:
     def _run(executor, registry, adapter, artifact):
-        extended = adapter if isinstance(adapter, ExtendedVisionInferenceAdapter) else StubVisionInferenceAdapter()
+        extended = require_extended_vision_adapter(adapter)
         return ModalityJobResult(
             segment=executor.run_segment(
                 registry=registry,
@@ -56,7 +59,7 @@ def _execute_segment(job: ModalitySegmentJob) -> ModalityJobResult:
 
 def _execute_ocr(job: ModalityOcrJob) -> ModalityJobResult:
     def _run(executor, registry, adapter, artifact):
-        extended = adapter if isinstance(adapter, ExtendedVisionInferenceAdapter) else StubVisionInferenceAdapter()
+        extended = require_extended_vision_adapter(adapter)
         return ModalityJobResult(
             ocr=executor.run_ocr_regions(
                 registry=registry,
