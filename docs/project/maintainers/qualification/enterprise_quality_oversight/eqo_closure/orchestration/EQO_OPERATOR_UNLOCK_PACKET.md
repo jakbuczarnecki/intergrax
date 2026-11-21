@@ -1,57 +1,75 @@
-# EQO operator unlock packet
+# EQO pre-publication audit
 
-**Fetched:** 2026-11-21. Code evidence SHA `1183221658cdba9d0c1e466b053b18d45c998f08`. `origin/development` `17fc79228eb0b46880ecad17ff52354622a81e9e`. Worktree `D:/Projekty/_wt/intergrax/af-dev-merge`, branch `development`. Publish `HEAD` after the commit that adds this packet. Not pushed. Not `EQO_CLOSED`. A4-006 and A4-027 are not formally settled.
+Audited tip: `c089f134739a161439d52ae8e3db60ecdf6dac7b`. `origin/development`: `17fc79228eb0b46880ecad17ff52354622a81e9e`. 42 commits ahead, 0 behind, at audit time. Worktree: `D:/Projekty/_wt/intergrax/af-dev-merge`. This file correction is a later docs commit. **Do not publish `c089f1347`.** No as-is exception exists.
 
-## Publication
+## Commit audit
 
-Product diff versus origin is seven paths: `applications/research_application/serving/fastapi_router.py`, `schemas.py`, `scripts/maintenance/check_runtime_event_tenant_propagation.py`, the two named unit tests, `governance/tickets/T-IGX-055-A.md`, `governance/tickets/T-IGX-055-B.md`. No secret-like strings in that diff. The rest of the 36-file delta is EQO bookkeeping. Reviewed behavior: missing and whitespace-only `tenant_id` fail closed; the gate lists `uaep_executor.py`. Pytest on the pre-publication SHA: A4-027 3 passed, A4-006 4 passed, integration 19 passed. That is `TECHNICAL_REVIEW_PASS` only.
+42 commits. 40 carry `Ref: governance/tickets/`. Missing `Ref:`: merge `6fa8f2955` and `d1da3b3c1` (A4-034 block record). Eleven commits contain `Co-authored-by: Cursor <cursoragent@cursor.com>`: `5cceebb69`, `537a06296`, `5e9496611`, `b02278643`, `d1da3b3c1`, `c600f79a6`, `c15588151`, `ffec97177`, `531b4e323`, `960205aaa`, `321957488`. High-signal secret scan of the full diff: no private-key block and no `AKIA` id. Product behavior under test was not changed after `84fc00a16`; later commits are docs plus the already-merged PR #738 test fixture (`g09_tenant_evaluation_registry.py`, two architecture test lines).
 
-Eleven unpublished commits carry `Co-authored-by: Cursor <cursoragent@cursor.com>`: `5cceebb69`, `537a06296`, `5e9496611`, `b02278643`, `d1da3b3c1`, `c600f79a6`, `c15588151`, `ffec97177`, `531b4e323`, `960205aaa`, `321957488`. Two commits lack `Ref:`: merge `6fa8f2955` and docs commit `d1da3b3c1`. History was not rewritten.
+Scope besides EQO bookkeeping and tickets `T-IGX-055-A` / `T-IGX-055-B`:
 
-**OD-PUB (required before any further SHA-bound settlement).** Recommended: publish as-is. Do not rebase. From the development worktree:
+- Product: `fastapi_router.py`, `schemas.py`, `check_runtime_event_tenant_propagation.py`, two unit tests.
+- Side docs: `CRITIC_VERIFICATION.md` stub (5 lines), roadmap §3.0.6 status line, freeze checklist FRZ-CTL-05 label, `AGENT_INSTRUCTIONS.md` critic link.
 
-```text
-git fetch origin
-git rev-list --left-right --count origin/development...HEAD
-git push -u origin HEAD:eqo/recovery-publication
-gh pr create --repo jakbuczarnecki/intergrax --base development --head eqo/recovery-publication --title "Publish EQO recovery fixes and bookkeeping" --body "Technical review only. No EQO closure. Code evidence SHA 118322165."
-```
+`intergrax-core.md` Attribution forbids a tool `Co-Authored-By`. Human `Co-Authored-By` is allowed only on request. No exception mechanism authorizes these eleven tool trailers. Publishing as-is is not offered.
 
-Do not push `development` directly. Do not merge a red required check. The alternate, not recommended, is an explicit rewrite authorization for the eleven trailers before push.
+## Evidence SHAs (not a formal settlement)
 
-## Formal settlement still missing for A4-006 and A4-027
+| Blob | SHA | What it proves |
+|------|-----|----------------|
+| Missing-tenant behavior | `537a06296` | Has a forbidden tool trailer |
+| Whitespace fail-closed | `1aa91803b` | No tool trailer |
+| Gate rebind | `960205aaa` | Has a forbidden tool trailer |
+| UAEP path assertion | `f3371ca6f` | No tool trailer |
+| Pytest of the two files plus A4-026 file | `84fc00a16` | 19 passed. Not re-run on `c089f1347` |
+| Named replay / governance | `84fc00a16` | 64 passed and 27 passed |
 
-`TECHNICAL_REVIEW_PASS` does not settle `EDER-F-0115` / `T-IGX-055-A` or `EDER-F-0136` / `T-IGX-055-B`.
+A4-006 and A4-027 stay `TECHNICAL_REVIEW_PASS` only. Formal settlement still requires a clean published SHA, a re-run of the two test files on that SHA, and an independent certifier. No `CLOSED`, `FULLY_MET`, or FRZ-TEN-10.
 
-1. OD-PUB lands on `origin/development`.
-2. Orchestrator re-runs the two named test files on that SHA.
-3. An independent certifier, not the Composer implementer and not this technical review, records the WB02 / WB row against that SHA.
-4. Nobody sets `CLOSED`, `FULLY_MET`, or FRZ-TEN-10 from these commits. A4-027 does not cover MCP `research-user` or API-key tenant `default`.
+## OD-EQO-09 does not authorize A4-042
 
-## One decision set
+`EQO_OPERATOR_DECISION_PACKET.md` defines OD-EQO-09 as "Confirm proposed EDER owners / One batch approval". It does not mention `intergrax/globals` or locale defaults. WB06 follow-up 2 still asks the operator to assign an owner and choose stay, configuration, or neutral. No record shows that choice was made. A4-042 code is not READY.
 
-Accepting a row authorizes the package. Rejecting it leaves the blocker.
+## A4-031 and A4-037
 
-| ID | Block | Existing authority | Recommended resolution | Write set after acceptance | Acceptance test | Composer package |
-|----|-------|--------------------|------------------------|----------------------------|-----------------|------------------|
-| OD-040 | A4-040 direct `uvicorn.run` on reference apps | OD-EQO-04, open | Scoped exception for reference Tier-3 apps, with a reopen condition if one becomes a production entry. Not a hosting-engine migration. | `eqo_closure/` exception record only | Record cites the five entry files and the reopen condition | `EQO-PKG-A4-040-RECORD` |
-| OD-042 | A4-042 Poland defaults in `intergrax/globals/settings.py` | OD-EQO-09, open | Neutral defaults (`en`, `UTC`); env override stays. Assign `intergrax/globals` as owner. | `intergrax/globals/settings.py` plus one unit test | Import-time defaults are not `pl` / `Europe/Warsaw` unless env sets them | `EQO-PKG-A4-042` |
-| OD-031 | A4-031 UAEP skips assembly when context engine or adapter is None | T-IGX-043-A implementation go, open | Fail closed on that path. No silent skip. | `intergrax/runtime/nexus/uaep/uaep_executor.py` plus a negative test | Unset engine or adapter raises; the configured path stays covered | `EQO-PKG-A4-031` |
-| OD-037 | A4-037 `human_store is None` returns | T-IGX-043-A implementation go, open | Fail closed outside an explicit lab opt-in. Do not invent a new store. | `intergrax/runtime/nexus/orchestration/human_response.py` and the loop call site that passes None, plus a negative test | Production construction without a store fails; lab opt-in still returns | `EQO-PKG-A4-037` |
-| OD-034 | A4-034 five retry budgets, no owner sentence | `EQO-PKG-A4-034/IMPLEMENTATION_BLOCKED.md`, FRZ-REL-02 | Sanction, do not delete: inline budget is the LLM default; `LocalProviderRetryBudget` stays unwired; `StepRetryBudget` stays the step-layer owner and unwired. | `eqo_closure/` sanction record only. No `intergrax/` edit. No FRZ edit. | Record quotes the three mechanisms and forbids deletion | `EQO-PKG-A4-034-RECORD` |
-| OD-006 | A6-006 semantic skip | `EQO-PKG-A6-006/EXACT_BLOCKER.md`, ENT-AUDIT-X contract | Accept `ENT_AUDIT_X_SEMANTIC` skip as by-design. No gate retune. | `eqo_closure/` acceptance record only | Record cites the contract; the skip remains | `EQO-PKG-A6-006-RECORD` |
-| OD-034N | 34 `NO_NAMED_TEST` rows | `EQO_REPLAY_REST.json` `remainder_batch` | Do not invent tests. They stay blocked until FCS / EQO-REPLAY-FCS. | None | None until that gate | none |
+A4-031: `uaep_executor.py:386` skips `assemble_uaep_session_messages` when `context_engine` or `llm_adapter` is None, and the call continues. Both dependencies default to unset. Fail-closed would stop every UAEP execution that does not inject both, including current partial and lab wiring. Not authorized.
 
-## Who acts
+Negative tests, to be written only if fail-closed is chosen (they would be red today):
 
-Operator only: OD-PUB and the seven rows above. Orchestrator after acceptance, without another continue order: spawn the authorized Composer packages on disjoint worktrees, review, test one `uv` at a time, merge locally, do not push. Doc-only packages (`040`, `034`, `006`) may run beside code packages. `031`, `037`, and `042` are disjoint code and may run together. Orchestrator does not edit FRZ, IIAC, `register.jsonl`, or set `CLOSED`.
+- engine None, adapter set: raise, do not assemble.
+- adapter None, engine set: raise, do not assemble.
+- both None: raise.
+- both set: assembly still runs.
 
-Already inside the mandate and done: technical review, the two fixes, named-test replay. Nothing else in Q1–Q5 is READY before these decisions.
+A4-037: `nexus_loop.py:334` already raises `HumanDecisionPersistenceNotConfiguredError` in `production_mode` when the store is missing and `disable_human_decision_persistence` is false, and when the store is in-memory. `persist_human_decision` (`human_response.py:91`) still returns when the store is None. That return is the lab path and the explicit acknowledgement path. Raising there would close both. Not authorized.
 
-## Next waves
+Negative tests that match the current guard (green if added; not added in this audit):
 
-1. **PUB** — operator procedure above. No Composer.
-2. **F2 unlock** — only the rows accepted above. Code packages first, then their tests, then local merge.
-3. **F3 / F4** — B-2 owner PRs and the 34-row replay stay closed until W4-03 / FCS. No wave is started for them by this packet.
+- `production_mode`, store None, acknowledgement false: `HumanDecisionPersistenceNotConfiguredError`.
+- `production_mode`, in-memory store: same error.
+- `production_mode`, acknowledgement true: construction succeeds; `persist_human_decision` returns without writing.
+- not `production_mode`, store None: `persist_human_decision` returns.
 
-Resume condition: OD-PUB result SHA, plus which OD rows were accepted. Rejected rows stay blocked.
+## Deferral bases (not closure)
+
+A decision here does not close the row and does not start a Composer.
+
+| ID | Basis | Allowed next state |
+|----|-------|--------------------|
+| A4-034 | FRZ-REL-02 has no sentence that names one qualified LLM owner across the inline budget, unwired `LocalProviderRetryBudget`, and `StepRetryBudget`. Deletion is forbidden. | Stay `EXACT_BLOCKER` until that sentence exists outside this packet. |
+| A6-006 | `ENT_AUDIT_X_SEMANTIC` skip is the qualification contract, not a product defect. | Stay deferred. No gate edit. Not closed. |
+| EDER-F-0016, F-0020, F-0023, F-0059, F-0076, F-0080, F-0084, F-0091, F-0107, F-0116, F-0124, F-0154, F-0158, F-0171, F-0182, F-0186, F-0188, F-0192, F-0200, F-0207, F-0209, F-0210, F-0222, F-0236 | Each register row has no explicit `tests/*.py` path. | Requalify only when FCS names a test. No invented test. |
+| EDER-D-0001, D-0002, D-0003, D-0004, D-0005, D-0006, D-0007, D-0008, D-0085 | Same: no explicit test path. | Same. |
+| EDER-D-0086 | Cited path is an ellipsis, not a file. | Same. Not promotable to a named test. |
+
+## Decisions that unblock work
+
+| ID | Choice required | READY after that choice |
+|----|-----------------|-------------------------|
+| OD-REWRITE | Separate consent to rewrite the eleven tool trailers and to add `Ref:` on `d1da3b3c1` before any push. No as-is alternative. | Orchestrator rewrites only the unpublished stack, re-checks trailers, then gives the operator the new tip and the push commands. No push in this session. |
+| OD-042 | Explicit choice: keep Poland defaults, move them to configuration, or make them neutral. OD-EQO-09 is not this choice. | Composer edits `intergrax/globals/settings.py` only for the chosen option, plus one unit test. |
+| OD-031 | Explicit fail-closed on the unset UAEP assembly path, knowing partial hosts will stop. | Composer changes `uaep_executor.py` and adds the four tests above. |
+| OD-037-GUARD | Authorize tests that lock the existing `production_mode` guard. No change to `persist_human_decision`. | Composer adds the four tests above. No production edit. |
+| OD-037-PERSIST | Only if the acknowledgement and lab return must also raise. | Separate package. Not recommended on the current code. |
+
+A4-040 / OD-EQO-04 stays open and is not READY. A4-034, A6-006, and the 34 rows do not become READY by confirming this table.
