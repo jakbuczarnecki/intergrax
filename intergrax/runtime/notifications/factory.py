@@ -5,8 +5,10 @@
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, Callable, Optional
+from collections.abc import Callable
+from typing import TYPE_CHECKING
 
+from intergrax.integrations.contracts.base import IntegrationConfigurationError, LabSelectorOptIn
 from intergrax.runtime.notifications.adapter_contract import NotificationAdapter
 from intergrax.runtime.notifications.backend_contract import (
     ENV_NOTIFICATION_BACKEND,
@@ -39,12 +41,13 @@ __all__ = [
 
 
 def create_notification_adapter(
-    settings: Optional[NotificationSettings] = None,
+    settings: NotificationSettings | None = None,
     *,
-    implementation: Optional[NotificationAdapter] = None,
-    factory: Optional[NotificationAdapterFactory] = None,
-    delivery: Optional[NotificationDelivery] = None,
-    formatter: "NotificationPayloadFormatter | None" = None,
+    implementation: NotificationAdapter | None = None,
+    factory: NotificationAdapterFactory | None = None,
+    delivery: NotificationDelivery | None = None,
+    formatter: NotificationPayloadFormatter | None = None,
+    lab_opt_in: LabSelectorOptIn | None = None,
 ) -> NotificationAdapter:
     """
     Build a notification adapter.
@@ -56,7 +59,7 @@ def create_notification_adapter(
     if factory is not None:
         return factory()
 
-    resolved = settings or resolve_notification_settings()
+    resolved = settings or resolve_notification_settings(lab_opt_in=lab_opt_in)
     backend = resolved.backend
     if backend == NotificationBackend.LOG:
         from intergrax.integrations.providers.notification_channel.log.bundle import create_log_notification_channel
@@ -81,41 +84,55 @@ def create_notification_adapter(
 
     if backend == NotificationBackend.WEBHOOK:
         from intergrax.integrations.providers.notification_channel.webhook.config import WebhookIntegrationConfig
-        from intergrax.integrations.providers.notification_channel.webhook.opens import open_webhook_notification_channel
+        from intergrax.integrations.providers.notification_channel.webhook.opens import (
+            open_webhook_notification_channel,
+        )
 
         config = WebhookIntegrationConfig.from_env(webhook_url=resolved.webhook_url)
         return open_webhook_notification_channel(config, delivery=delivery, formatter=formatter)
 
     if backend == NotificationBackend.PAGERDUTY:
-        from intergrax.integrations.providers.notification_channel.pagerduty.bundle import create_pagerduty_notification_channel
+        from intergrax.integrations.providers.notification_channel.pagerduty.bundle import (
+            create_pagerduty_notification_channel,
+        )
 
         return create_pagerduty_notification_channel()
 
     if backend == NotificationBackend.OPSGENIE:
-        from intergrax.integrations.providers.notification_channel.opsgenie.bundle import create_opsgenie_notification_channel
+        from intergrax.integrations.providers.notification_channel.opsgenie.bundle import (
+            create_opsgenie_notification_channel,
+        )
 
         return create_opsgenie_notification_channel()
-    return create_log_notification_channel()
+
+    raise IntegrationConfigurationError(f"unsupported notification backend {backend!r}")
 
 
 def resolve_notification_adapter(
-    channel: Optional[str],
+    channel: str | None,
     *,
-    settings: Optional[NotificationSettings] = None,
-    delivery: Optional[NotificationDelivery] = None,
+    settings: NotificationSettings | None = None,
+    delivery: NotificationDelivery | None = None,
+    lab_opt_in: LabSelectorOptIn | None = None,
 ) -> NotificationAdapter:
     """
     Resolve adapter by task notify channel (long-running / HITL).
-
-    Channel names map to backends; falls back to log when URL is not configured.
     """
-    normalized = (channel or "log").strip().lower()
+    if channel is None or not str(channel).strip():
+        if lab_opt_in is None:
+            raise IntegrationConfigurationError("notify_channel is unset and no notification adapter was configured")
+        return create_notification_adapter(
+            resolve_notification_settings(lab_opt_in=lab_opt_in),
+            delivery=delivery,
+        )
+
+    normalized = str(channel).strip().lower()
     try:
         backend = NotificationBackend(normalized)
-    except ValueError:
-        backend = NotificationBackend.LOG
+    except ValueError as exc:
+        raise IntegrationConfigurationError(f"unknown notification channel {normalized!r}") from exc
 
-    base = settings or resolve_notification_settings()
+    base = settings or resolve_notification_settings(lab_opt_in=lab_opt_in)
     merged = NotificationSettings(
         backend=backend,
         webhook_url=base.webhook_url,
