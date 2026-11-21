@@ -16,13 +16,13 @@ Scaffold only — no product commits, no PASS claim.
 
 ## Plan digest
 
-Plan digest: e871de56efe9d9b98c1ebd62587824bfc8556c64eed15374360a6b0c8a5647ef
+Plan digest: 64bc4f2a757136f10d1c7bce491e76826673adc4ca85dc9f314ecd217c92ca0f
 
 Canonical plan: [`governance/tickets/plans/PLAN_T-IGX-051-C.md`](plans/PLAN_T-IGX-051-C.md).
 
 ## Approved
 
-PENDING.
+Approved: operator (OD-AF-AUTO-03, autonomy session 2026-11-21; digest verified against canonical plan file).
 
 ## Test contract
 
@@ -34,4 +34,4 @@ TENANT **051-A**, GATES **051-F**, SUPPLY **051-B/N**, merge to `rw-train`, FRZ 
 
 ## Lifecycle state
 
-`draft`
+`plan_approved` (product BLOCKED: plan revision 2 lacks node ids and write-set diffs — architect pass required before commits)
