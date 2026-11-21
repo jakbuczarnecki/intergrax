@@ -164,6 +164,18 @@ Operator decision **`waiver_both`** @ **2026-11-21** (coordinator chat): retroac
 | Lane merged | `eqo/wave-6/exe-docs` — WB04 `2ab004c37`, WB06 `949a76b76`, WB09 `a13958b49` |
 | Deliverables | EXE logs + `RUN_MANIFEST.json` refresh; `EQO_WAVE6_MANIFEST.md`; README index row 32 |
 | WB06 | Non-zero pytest exit recorded; does **not** assert EQO closure |
+| PR | [#704](https://github.com/jakbuczarnecki/intergrax/pull/704) merged `2026-11-21` |
+
+## Checkpoint — EQO wave-12 (2026-11-21)
+
+| Field | Value |
+|-------|-------|
+| Integrator branch | `eqo/wave-12/integ` |
+| Base | `origin/development` `292ca3348` (PR #704) |
+| Lanes | `eqo/wave-12/w2` `a4fd55ade`, `eqo/wave-12/x` `feabdfc70`, `eqo/wave-12/w9` `23bbead01` |
+| Deliverables | #680 track; X disposition reads; W9-01 C01–C25 sweep (`EQO_WAVE12_MANIFEST.md`) |
+| #680 | Track-only (no merge claim) |
+| Terminal | **No** `EQO_CLOSED` |
 | PR | _(pending push — docs gates `ticket-governance` + `governance-policy-pin`)_ |
 
 ## Checkpoint — EQO wave-11 (2026-11-21)
