@@ -44,15 +44,17 @@ All qualification commits carry: `Ref: governance/tickets/T-IGX-046-F.md` (ticke
 | 24 | Wave-2 manifest (this index) | `eqo/wave-2/integ` |
 | 25 | Wave-3 AUD packets + W4-03 draft + C-04 replay | `eqo/wave-3/integ` |
 | 26 | Wave-4 W2 read / W4-04+05 / X reads / partial CLS | `eqo/wave-4/integ` |
-| 27 | Wave-8 W2-02 / X reads English / W9-01 matrix prep | `eqo/wave-8/integ` |
+| 27 | Wave-8 W2-02 / X reads English / W9-01 matrix prep | eqo/wave-8/integ |
 | 28 | Wave-5 W3 CLS disposition (WB01-07,09-12; WB08 deferred) | eqo/wave-5/integ |
+| 29 | Wave-7 Campaign C closure band + C-04 status + C-CLS prep | eqo/wave-7/c |
+| 30 | Wave-7 W4-CLS prep + W4-03 English owner memo | eqo/wave-7/w4 |
+| 31 | Wave-7 integration manifest | eqo/wave-7/integ |
 
-Index maintenance commits on this branch: `15bfc0851`, `3a92440ad` (SHA alignment only).
+Index maintenance commits on this branch: 15bfc0851, 3a92440ad (SHA alignment only).
 
+Wave manifests: EQO_WAVE1_MANIFEST.md, EQO_WAVE2_MANIFEST.md, EQO_WAVE3_MANIFEST.md, EQO_WAVE4_MANIFEST.md, EQO_WAVE5_MANIFEST.md, EQO_WAVE7_MANIFEST.md, EQO_WAVE8_MANIFEST.md.
 
-Wave manifests: EQO_WAVE1_MANIFEST.md … EQO_WAVE5_MANIFEST.md, EQO_WAVE8_MANIFEST.md.
-
-Worktree evidence runs: `eqo_closure/runs/wb01`–`wb12/`. Campaign C memos: `c/A3-004/`, `c/A6-004/`; C-04 prep: `runs/c/C04_TARGETED_REPLAY_PREP.md`.
+Worktree evidence runs: `eqo_closure/runs/wb01`–`wb12/`. Campaign C memos: `c/A3-004/`, `c/A6-004/` (closure band: `CLOSURE.md`); C-04: `runs/c/C04_TARGETED_REPLAY_PREP.md`, `C04_STATUS.md`; C-CLS prep: `c/C_CLS_PREP.md`.
 
 ## Registry inventory (W0)
 

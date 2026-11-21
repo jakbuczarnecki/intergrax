@@ -2,7 +2,8 @@
 
 **Parent:** `EQO-W4-03` · **Source reads:** `eqo_closure/x/X-08/BLOCKS_IMPACT_READ.md` @ DOC_PIN  
 **Disposition registry:** `EQO_B2_DISPOSITION.jsonl` (69 rows with `next_action_source=OWNER_DECISION` excluding the five X-08 IDs handled below)  
-**Status:** `WAIT_FOR_OPERATOR` — draft only; no OD addendum append in this wave.
+**Status:** `WAIT_FOR_OPERATOR` — draft only; no OD addendum append in this wave.  
+**Wave-7 steward memo:** `W4-03_OWNER_BATCH_ENGLISH_MEMO.md` (English operator batch).
 
 ## Pins
 
