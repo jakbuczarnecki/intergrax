@@ -5,6 +5,7 @@
 
 from __future__ import annotations
 
+import os
 from collections.abc import Callable
 from typing import TYPE_CHECKING
 
@@ -132,11 +133,18 @@ def resolve_notification_adapter(
     except ValueError as exc:
         raise IntegrationConfigurationError(f"unknown notification channel {normalized!r}") from exc
 
-    base = settings or resolve_notification_settings(lab_opt_in=lab_opt_in)
-    merged = NotificationSettings(
-        backend=backend,
-        webhook_url=base.webhook_url,
-        slack_webhook_url=base.slack_webhook_url,
-        teams_webhook_url=base.teams_webhook_url,
-    )
+    if settings is not None:
+        merged = NotificationSettings(
+            backend=backend,
+            webhook_url=settings.webhook_url,
+            slack_webhook_url=settings.slack_webhook_url,
+            teams_webhook_url=settings.teams_webhook_url,
+        )
+    else:
+        merged = NotificationSettings(
+            backend=backend,
+            webhook_url=os.environ.get(ENV_WEBHOOK_URL, "").strip(),
+            slack_webhook_url=os.environ.get(ENV_SLACK_WEBHOOK_URL, "").strip(),
+            teams_webhook_url=os.environ.get(ENV_TEAMS_WEBHOOK_URL, "").strip(),
+        )
     return create_notification_adapter(merged, delivery=delivery)

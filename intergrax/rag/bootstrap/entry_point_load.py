@@ -21,6 +21,10 @@ from intergrax.core.plugins.discovery import (
     register_plugins_with_report,
 )
 from intergrax.llm_adapters.contracts.llm_adapter import LLMAdapter
+from intergrax.rag.bootstrap.laboratory_selector_opt_in import (
+    RAG_PLUGIN_EVIDENCE_EMBEDDING_OPT_IN,
+    RAG_PLUGIN_EVIDENCE_VECTORSTORE_OPT_IN,
+)
 from intergrax.rag.document_splitters.contracts.base_chunking_strategy import (
     BaseChunkingStrategy,
 )
@@ -72,10 +76,7 @@ def register_rag_chunker_entry_points(
         spec: EntryPointSpec,
     ) -> tuple[bool, PluginAdmissionRejection | None]:
         if not issubclass(plugin_type, BaseChunkingStrategy):
-            message = (
-                f"RAG chunker entry point {spec.name!r} must subclass "
-                f"BaseChunkingStrategy: {plugin_type!r}"
-            )
+            message = f"RAG chunker entry point {spec.name!r} must subclass BaseChunkingStrategy: {plugin_type!r}"
             return False, PluginAdmissionRejection(
                 spec=spec,
                 reason_code=PluginAdmissionReasonCode.INVALID_TARGET_TYPE,
@@ -119,10 +120,7 @@ def register_rag_retriever_entry_points(
         elif issubclass(plugin_type, BaseRetriever):
             retriever = plugin_type()
         else:
-            message = (
-                "RAG retriever entry point must subclass BaseRetriever or "
-                f"BaseRetrieverPlugin: {plugin_type!r}"
-            )
+            message = f"RAG retriever entry point must subclass BaseRetriever or BaseRetrieverPlugin: {plugin_type!r}"
             return False, PluginAdmissionRejection(
                 spec=spec,
                 reason_code=PluginAdmissionReasonCode.INVALID_TARGET_TYPE,
@@ -130,10 +128,7 @@ def register_rag_retriever_entry_points(
                 fail_closed=True,
             )
         if not isinstance(retriever, BaseRetriever):
-            message = (
-                f"RAG retriever plugin factory must return BaseRetriever: "
-                f"{plugin_type!r}"
-            )
+            message = f"RAG retriever plugin factory must return BaseRetriever: {plugin_type!r}"
             return False, PluginAdmissionRejection(
                 spec=spec,
                 reason_code=PluginAdmissionReasonCode.INVALID_TARGET_TYPE,
@@ -165,10 +160,7 @@ def register_rag_reranker_entry_points(
         elif issubclass(plugin_type, BaseReranker):
             reranker = plugin_type()
         else:
-            message = (
-                "RAG reranker entry point must subclass BaseReranker or "
-                f"BaseRerankerPlugin: {plugin_type!r}"
-            )
+            message = f"RAG reranker entry point must subclass BaseReranker or BaseRerankerPlugin: {plugin_type!r}"
             return False, PluginAdmissionRejection(
                 spec=spec,
                 reason_code=PluginAdmissionReasonCode.INVALID_TARGET_TYPE,
@@ -176,10 +168,7 @@ def register_rag_reranker_entry_points(
                 fail_closed=True,
             )
         if not isinstance(reranker, BaseReranker):
-            message = (
-                f"RAG reranker plugin factory must return BaseReranker: "
-                f"{plugin_type!r}"
-            )
+            message = f"RAG reranker plugin factory must return BaseReranker: {plugin_type!r}"
             return False, PluginAdmissionRejection(
                 spec=spec,
                 reason_code=PluginAdmissionReasonCode.INVALID_TARGET_TYPE,
@@ -278,9 +267,12 @@ def collect_rag_plugin_load_evidence(
     if not discover_entry_points:
         return empty_rag_plugin_load_evidence()
 
-    embedding_manager = create_default_embedding_manager()
+    embedding_manager = create_default_embedding_manager(
+        lab_opt_in=RAG_PLUGIN_EVIDENCE_EMBEDDING_OPT_IN,
+    )
     vector_store = create_default_vectorstore_manager(
         tenant_id="__platform_plugin_evidence__",
+        lab_opt_in=RAG_PLUGIN_EVIDENCE_VECTORSTORE_OPT_IN,
     )
     return bootstrap_rag_plugin_load_evidence_for_host_context(
         discover_entry_points=True,

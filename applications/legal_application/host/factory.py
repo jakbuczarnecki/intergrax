@@ -22,6 +22,7 @@ from intergrax.applications._shared.host_queue_execution_wiring import (
 )
 from intergrax.applications._shared.identity_wiring import wire_application_identity
 from intergrax.applications._shared.interaction_wiring import wire_interaction_intake_service
+from intergrax.applications._shared.notification_wiring import resolve_host_notification_adapter
 from intergrax.applications._shared.plugin_bootstrap import attach_plugin_shutdown
 from intergrax.applications._shared.product_observability_dashboard_wiring import (
     wire_harness_product_observability_dashboard,
@@ -85,6 +86,10 @@ def create_legal_backend_app(
     env = manifest.environment or build_legal_environment_profile(settings)
     if settings.include_queue_worker and document_store is None and key_value_cache is None:
         env = apply_queue_worker_environment_profile(env)
+    host_notification_adapter = resolve_host_notification_adapter(
+        env,
+        integration_profile=env.integration_profile,
+    )
     runtime = build_harness_host_runtime(
         manifest,
         env,
@@ -99,6 +104,8 @@ def create_legal_backend_app(
                 resolved_host_runtime.orchestration_decision_requirement_policy,
             )
         ),
+        notification_adapter=host_notification_adapter,
+        disable_human_decision_persistence=True,
     )
     host_execution = runtime.execution
     registry = runtime.registry
@@ -121,7 +128,7 @@ def create_legal_backend_app(
         checkpoint_store=checkpoint_store,
         host_execution=host_execution,
         task_enricher=task_enricher,
-        notification_adapter=None,
+        notification_adapter=host_notification_adapter,
         poll_interval_seconds=settings.scheduler_poll_seconds,
         enabled=settings.include_scheduler,
     )

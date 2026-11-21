@@ -18,6 +18,7 @@ from intergrax.applications._shared.harness_host_composition import (
 from intergrax.applications._shared.interaction_wiring import (
     wire_interaction_intake_service,
 )
+from intergrax.applications._shared.notification_wiring import resolve_host_notification_adapter
 from intergrax.applications._shared.plugin_bootstrap import (
     attach_plugin_shutdown,
 )
@@ -111,6 +112,10 @@ def create_local_workspace_backend_app(
 
     manifest = LOCAL_WORKSPACE_APPLICATION_MANIFEST
     env = build_local_workspace_host_environment(resolved_settings)
+    host_notification_adapter = resolve_host_notification_adapter(
+        env,
+        integration_profile=env.integration_profile,
+    )
     harness_host_runtime = build_local_workspace_harness_host_runtime(
         settings=resolved_settings,
         registry_projection=registry_projection,
@@ -119,6 +124,7 @@ def create_local_workspace_backend_app(
         trace_db_path=trace_db_path,
         runtime_events_db_path=runtime_events_db_path,
         host_runtime=host_runtime,
+        notification_adapter=host_notification_adapter,
     )
     lkw_document_store = harness_host_runtime.document_store
     host_tenant_id = harness_host_runtime.tenant_binding.tenant_id
@@ -208,7 +214,7 @@ def create_local_workspace_backend_app(
         checkpoint_store=checkpoint_store,
         host_execution=lkw_host_execution,
         task_enricher=lkw_task_enricher,
-        notification_adapter=None,
+        notification_adapter=host_notification_adapter,
         poll_interval_seconds=resolved_settings.scheduler_poll_seconds,
         enabled=resolved_settings.include_scheduler,
     )
