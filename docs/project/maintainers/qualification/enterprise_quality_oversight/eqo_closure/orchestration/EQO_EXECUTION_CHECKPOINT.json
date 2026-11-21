@@ -1,20 +1,25 @@
 {
   "schema": "eqo.execution_checkpoint.v1",
-  "updated_at": "2026-11-21T16:55:00+01:00",
+  "updated_at": "2026-11-21T17:15:00+01:00",
   "ticket_ref": "governance/tickets/T-IGX-046-F.md",
   "fetched_shas": {
-    "local_development_before_merge": "6b264d360350a7179e226b70fa998572bfe36e9e",
+    "local_development_before_wave": "1a8b989d478983746274b5aa9f237012225affd4",
     "origin_development": "3132a81e4e3d86a15df52b17ce148f3d38270102",
     "origin_arch_freeze_rw_train": "68db9c0ef6207b023388eecc460644698a92b895",
-    "development_after_slice": "c49e20e6d5aebd9b3ed4dc5693e9e917bd17c100"
+    "development_after_wave": "5996db0e87ed7d78bd6783514f12795883bc7742"
   },
   "merge_origin_development": {
-    "performed": true,
-    "merge_commit": "c49e20e6d5aebd9b3ed4dc5693e9e917bd17c100",
-    "conflicts": false,
-    "product_files_touched_by_merge": [
-      "applications/research_application/tenants/tenant_x/_replay_x_carrier_reconciliation.py"
-    ]
+    "performed": false,
+    "reason": "origin/development is ancestor of local development; merge reported already up to date."
+  },
+  "train_delta": {
+    "verdict": "TRAIN_DELTA_NONE",
+    "cited_files_compared": 27,
+    "files_differing_from_train": [
+      "intergrax/applications/_shared/memory_wiring.py"
+    ],
+    "differing_file_disposition": "EQOA-A4-030 ALREADY_MATCHES_TICKET on development; train-side delta is not a ticket-mandated missing behavior — no port.",
+    "ports_qualifying": 0
   },
   "capability": {
     "composer_subagents": "available",
@@ -25,7 +30,7 @@
   },
   "path_counts_checksum_unchanged": "313+310+167+165+40+33+1=1029",
   "READY_TASKS": [],
-  "ready_rationale": "All seven STILL_PRESENT rows are ALREADY_MATCHES_TICKET on development pin; EQO-PKG-A4-006 write set already satisfied; twenty-four REPLAY_ONLY rows defer product ports (train evidence / ABSENT_ON_DEVELOPMENT via merge); no disjoint product write set with ticket go and missing implementation remains.",
+  "ready_rationale": "Prior empty READY scan retained; train pin unchanged at 68db9c0e; one cited file differs (memory_wiring.py) but verdict ALREADY_MATCHES_TICKET; twenty-four REPLAY_ONLY rows unchanged; no disjoint product write set with ticket go and missing implementation.",
   "BLOCKED_TASKS": [
     {
       "id": "EQOA-A4-034",
@@ -83,6 +88,10 @@
     }
   ],
   "packages_merged_this_slice": [],
-  "pytest_this_slice": "none (no READY product package)",
+  "pytest_this_slice": "none (TRAIN_DELTA_NONE)",
+  "ancestor_checks_at_wave_end": {
+    "8e146e21cd8c63a47d621edc05d5f0036ba0c9ee": "ancestor_of_development",
+    "68db9c0ef6207b023388eecc460644698a92b895": "ancestor_of_development"
+  },
   "next_wave_rule": "Select at most one to three packages from NEW_IMPLEMENTATION_REQUIRED (33) in EQO_NEXT_WAVE_QUEUE.json only when an existing ticket names exact files and required behavior, development tree lacks that behavior, write sets are pairwise disjoint, status is not REPLAY_ONLY/BLOCKED_EXACT_REASON/SKIP_NO_GO/ALREADY_DONE/ALREADY_MATCHES_TICKET; cut eqo/dev-<id> from current development; one English commit with ticket Ref; merge --no-ff into af-dev-merge development; one uv run --extra dev-ci pytest <named file> per port."
 }
