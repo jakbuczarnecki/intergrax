@@ -1,0 +1,4684 @@
+{
+  "schema": "eqo_master_completion_wbs.v1",
+  "plan_ref": "eqo_closure_master_7499b85e.plan.md",
+  "doc_pin": "8cee3c5a913f234e8fb65053b6ab4f34ed78249b",
+  "train_pin": "28c27cb896d02e0185b9fa02047411fa152f6469",
+  "task_count": 151,
+  "tasks": [
+    {
+      "TASK_ID": "EQO-W0-01",
+      "Parent": "EQO-W0",
+      "Workstream": "W0",
+      "Objective": "Fetch and compare pins",
+      "Preconditions": [
+        "DOC_PIN=8cee3c5a913f234e8fb65053b6ab4f34ed78249b",
+        "TRAIN_PIN=28c27cb896d02e0185b9fa02047411fa152f6469"
+      ],
+      "Dependencies": [],
+      "Eligibility": "EXECUTABLE_NOW",
+      "Owner role": "EQO orchestrator",
+      "Ticket refs": [],
+      "Acceptance": "SHA and fetch date in EQO_PIN_BIND.json",
+      "Evidence": "Artifact for EQO-W0-01",
+      "Audit": "none",
+      "Write set": [
+        "eqo_closure/EQO_PIN_BIND.json"
+      ],
+      "Read set": [
+        "git show 8cee3c5a913f234e8fb65053b6ab4f34ed78249b:<path>",
+        "git show 28c27cb896d02e0185b9fa02047411fa152f6469:<path>",
+        "docs/project/maintainers/qualification/enterprise_quality_oversight/campaign_a/findings/FINDINGS.jsonl",
+        "eqo_closure_master_7499b85e.plan.md"
+      ]
+    },
+    {
+      "TASK_ID": "EQO-W0-02",
+      "Parent": "EQO-W0",
+      "Workstream": "W0",
+      "Objective": "Census ticket IDs without file on both pins",
+      "Preconditions": [
+        "DOC_PIN=8cee3c5a913f234e8fb65053b6ab4f34ed78249b",
+        "TRAIN_PIN=28c27cb896d02e0185b9fa02047411fa152f6469"
+      ],
+      "Dependencies": [],
+      "Eligibility": "EXECUTABLE_NOW",
+      "Owner role": "EQO orchestrator",
+      "Ticket refs": [],
+      "Acceptance": "Each ID class PUBLISHED_ON_TRAIN/DEV/LOCAL_ONLY/ABSENT",
+      "Evidence": "Artifact for EQO-W0-02",
+      "Audit": "none",
+      "Write set": [
+        "eqo_closure/EQO_ARTIFACT_RECOVERY_REGISTRY.jsonl"
+      ],
+      "Read set": [
+        "git show 8cee3c5a913f234e8fb65053b6ab4f34ed78249b:<path>",
+        "git show 28c27cb896d02e0185b9fa02047411fa152f6469:<path>",
+        "docs/project/maintainers/qualification/enterprise_quality_oversight/campaign_a/findings/FINDINGS.jsonl",
+        "eqo_closure_master_7499b85e.plan.md"
+      ]
+    },
+    {
+      "TASK_ID": "EQO-W0-03",
+      "Parent": "EQO-W0",
+      "Workstream": "W0",
+      "Objective": "Classify governance-fast FAILURE #680 vs KR-08",
+      "Preconditions": [
+        "DOC_PIN=8cee3c5a913f234e8fb65053b6ab4f34ed78249b",
+        "TRAIN_PIN=28c27cb896d02e0185b9fa02047411fa152f6469"
+      ],
+      "Dependencies": [],
+      "Eligibility": "EXECUTABLE_NOW",
+      "Owner role": "EQO tester",
+      "Ticket refs": [
+        "T-IGX-043-A"
+      ],
+      "Acceptance": "One of 11 operator reason classes in pr680_governance_fast.md",
+      "Evidence": "Artifact for EQO-W0-03",
+      "Audit": "none",
+      "Write set": [
+        "eqo_closure/pr680_governance_fast.md"
+      ],
+      "Read set": [
+        "git show 8cee3c5a913f234e8fb65053b6ab4f34ed78249b:<path>",
+        "git show 28c27cb896d02e0185b9fa02047411fa152f6469:<path>",
+        "docs/project/maintainers/qualification/enterprise_quality_oversight/campaign_a/findings/FINDINGS.jsonl",
+        "eqo_closure_master_7499b85e.plan.md"
+      ]
+    },
+    {
+      "TASK_ID": "EQO-W0-04",
+      "Parent": "EQO-W0",
+      "Workstream": "W0",
+      "Objective": "EDER-N-0003 / EQOA-A4-007 vs merge #675",
+      "Preconditions": [
+        "DOC_PIN=8cee3c5a913f234e8fb65053b6ab4f34ed78249b",
+        "TRAIN_PIN=28c27cb896d02e0185b9fa02047411fa152f6469"
+      ],
+      "Dependencies": [],
+      "Eligibility": "EXECUTABLE_NOW",
+      "Owner role": "EQO tester",
+      "Ticket refs": [
+        "T-IGX-051-I"
+      ],
+      "Acceptance": "MERGED_TO_TRAIN + negative test cite or named callsite gap",
+      "Evidence": "Artifact for EQO-W0-04",
+      "Audit": "none",
+      "Write set": [
+        "eqo_closure finding matrix row"
+      ],
+      "Read set": [
+        "git show 8cee3c5a913f234e8fb65053b6ab4f34ed78249b:<path>",
+        "git show 28c27cb896d02e0185b9fa02047411fa152f6469:<path>",
+        "docs/project/maintainers/qualification/enterprise_quality_oversight/campaign_a/findings/FINDINGS.jsonl",
+        "eqo_closure_master_7499b85e.plan.md"
+      ]
+    },
+    {
+      "TASK_ID": "EQO-W0-05",
+      "Parent": "EQO-W0",
+      "Workstream": "W0",
+      "Objective": "Publish plan §2–4 inventory to eqo_closure/",
+      "Preconditions": [
+        "DOC_PIN=8cee3c5a913f234e8fb65053b6ab4f34ed78249b",
+        "TRAIN_PIN=28c27cb896d02e0185b9fa02047411fa152f6469"
+      ],
+      "Dependencies": [],
+      "Eligibility": "EXECUTABLE_NOW",
+      "Owner role": "EQO steward",
+      "Ticket refs": [],
+      "Acceptance": "File counters equal plan section 2",
+      "Evidence": "Artifact for EQO-W0-05",
+      "Audit": "none",
+      "Write set": [
+        "docs/project/maintainers/qualification/enterprise_quality_oversight/eqo_closure/",
+        "eqo_closure/runs/"
+      ],
+      "Read set": [
+        "git show 8cee3c5a913f234e8fb65053b6ab4f34ed78249b:<path>",
+        "git show 28c27cb896d02e0185b9fa02047411fa152f6469:<path>",
+        "docs/project/maintainers/qualification/enterprise_quality_oversight/campaign_a/findings/FINDINGS.jsonl",
+        "eqo_closure_master_7499b85e.plan.md"
+      ]
+    },
+    {
+      "TASK_ID": "EQO-W2-01",
+      "Parent": "EQO-W2",
+      "Workstream": "W2",
+      "Objective": "Verify train ticket T-IGX-043-A",
+      "Preconditions": [
+        "EQO-W0-01"
+      ],
+      "Dependencies": [
+        "EQO-W0-03"
+      ],
+      "Eligibility": "WAIT_FOR_INTEGRATION",
+      "Owner role": "EQO verifier (no train write set)",
+      "Ticket refs": [
+        "T-IGX-043-A"
+      ],
+      "Acceptance": "merge #680 or W0-03 blocker",
+      "Evidence": "EQO-W2-01 verification log",
+      "Audit": "ticket reviewer",
+      "Write set": [],
+      "Read set": [
+        "git show 8cee3c5a913f234e8fb65053b6ab4f34ed78249b:<path>",
+        "git show 28c27cb896d02e0185b9fa02047411fa152f6469:<path>",
+        "docs/project/maintainers/qualification/enterprise_quality_oversight/campaign_a/findings/FINDINGS.jsonl",
+        "eqo_closure_master_7499b85e.plan.md",
+        "governance/tickets/"
+      ]
+    },
+    {
+      "TASK_ID": "EQO-W2-02",
+      "Parent": "EQO-W2",
+      "Workstream": "W2",
+      "Objective": "Verify train ticket T-IGX-043-G",
+      "Preconditions": [
+        "EQO-W0-01"
+      ],
+      "Dependencies": [
+        "EQO-W0-01"
+      ],
+      "Eligibility": "EXECUTABLE_NOW",
+      "Owner role": "EQO verifier (no train write set)",
+      "Ticket refs": [
+        "T-IGX-043-G"
+      ],
+      "Acceptance": "Tier-0 import gate on TRAIN_PIN",
+      "Evidence": "EQO-W2-02 verification log",
+      "Audit": "ticket reviewer",
+      "Write set": [],
+      "Read set": [
+        "git show 8cee3c5a913f234e8fb65053b6ab4f34ed78249b:<path>",
+        "git show 28c27cb896d02e0185b9fa02047411fa152f6469:<path>",
+        "docs/project/maintainers/qualification/enterprise_quality_oversight/campaign_a/findings/FINDINGS.jsonl",
+        "eqo_closure_master_7499b85e.plan.md",
+        "governance/tickets/"
+      ]
+    },
+    {
+      "TASK_ID": "EQO-W2-03",
+      "Parent": "EQO-W2",
+      "Workstream": "W2",
+      "Objective": "Verify train ticket T-IGX-043-H",
+      "Preconditions": [
+        "EQO-W0-01"
+      ],
+      "Dependencies": [],
+      "Eligibility": "EXECUTABLE_NOW",
+      "Owner role": "EQO verifier (no train write set)",
+      "Ticket refs": [
+        "T-IGX-043-H"
+      ],
+      "Acceptance": "diff excludes Part G and A4-040",
+      "Evidence": "EQO-W2-03 verification log",
+      "Audit": "ticket reviewer",
+      "Write set": [],
+      "Read set": [
+        "git show 8cee3c5a913f234e8fb65053b6ab4f34ed78249b:<path>",
+        "git show 28c27cb896d02e0185b9fa02047411fa152f6469:<path>",
+        "docs/project/maintainers/qualification/enterprise_quality_oversight/campaign_a/findings/FINDINGS.jsonl",
+        "eqo_closure_master_7499b85e.plan.md",
+        "governance/tickets/"
+      ]
+    },
+    {
+      "TASK_ID": "EQO-W2-04",
+      "Parent": "EQO-W2",
+      "Workstream": "W2",
+      "Objective": "Verify train ticket T-IGX-043-D",
+      "Preconditions": [
+        "EQO-W0-01"
+      ],
+      "Dependencies": [],
+      "Eligibility": "EXECUTABLE_NOW",
+      "Owner role": "EQO verifier (no train write set)",
+      "Ticket refs": [
+        "T-IGX-043-D"
+      ],
+      "Acceptance": "pin tests + LIVE_QUALIFICATION_ONLY class",
+      "Evidence": "EQO-W2-04 verification log",
+      "Audit": "ticket reviewer",
+      "Write set": [],
+      "Read set": [
+        "git show 8cee3c5a913f234e8fb65053b6ab4f34ed78249b:<path>",
+        "git show 28c27cb896d02e0185b9fa02047411fa152f6469:<path>",
+        "docs/project/maintainers/qualification/enterprise_quality_oversight/campaign_a/findings/FINDINGS.jsonl",
+        "eqo_closure_master_7499b85e.plan.md",
+        "governance/tickets/"
+      ]
+    },
+    {
+      "TASK_ID": "EQO-W2-05",
+      "Parent": "EQO-W2",
+      "Workstream": "W2",
+      "Objective": "Verify train ticket T-IGX-043-I",
+      "Preconditions": [
+        "EQO-W0-01"
+      ],
+      "Dependencies": [
+        "EQO-W0-02"
+      ],
+      "Eligibility": "EXECUTABLE_NOW",
+      "Owner role": "EQO verifier (no train write set)",
+      "Ticket refs": [
+        "T-IGX-043-I"
+      ],
+      "Acceptance": "TRAIN_PIN checks vs manifest claim",
+      "Evidence": "EQO-W2-05 verification log",
+      "Audit": "ticket reviewer",
+      "Write set": [],
+      "Read set": [
+        "git show 8cee3c5a913f234e8fb65053b6ab4f34ed78249b:<path>",
+        "git show 28c27cb896d02e0185b9fa02047411fa152f6469:<path>",
+        "docs/project/maintainers/qualification/enterprise_quality_oversight/campaign_a/findings/FINDINGS.jsonl",
+        "eqo_closure_master_7499b85e.plan.md",
+        "governance/tickets/"
+      ]
+    },
+    {
+      "TASK_ID": "EQO-W2-06",
+      "Parent": "EQO-W2",
+      "Workstream": "W2",
+      "Objective": "Verify train ticket T-IGX-051-D",
+      "Preconditions": [
+        "EQO-W0-01"
+      ],
+      "Dependencies": [],
+      "Eligibility": "EXECUTABLE_NOW",
+      "Owner role": "EQO verifier (no train write set)",
+      "Ticket refs": [
+        "T-IGX-051-D"
+      ],
+      "Acceptance": "stream/non-stream parity evidence",
+      "Evidence": "EQO-W2-06 verification log",
+      "Audit": "ticket reviewer",
+      "Write set": [],
+      "Read set": [
+        "git show 8cee3c5a913f234e8fb65053b6ab4f34ed78249b:<path>",
+        "git show 28c27cb896d02e0185b9fa02047411fa152f6469:<path>",
+        "docs/project/maintainers/qualification/enterprise_quality_oversight/campaign_a/findings/FINDINGS.jsonl",
+        "eqo_closure_master_7499b85e.plan.md",
+        "governance/tickets/"
+      ]
+    },
+    {
+      "TASK_ID": "EQO-W2-07",
+      "Parent": "EQO-W2",
+      "Workstream": "W2",
+      "Objective": "Verify train ticket T-IGX-043-B/E",
+      "Preconditions": [
+        "EQO-W0-01"
+      ],
+      "Dependencies": [],
+      "Eligibility": "EXECUTABLE_NOW",
+      "Owner role": "EQO verifier (no train write set)",
+      "Ticket refs": [
+        "T-IGX-043-B/E"
+      ],
+      "Acceptance": "fail-closed part1; sandbox part2 status",
+      "Evidence": "EQO-W2-07 verification log",
+      "Audit": "ticket reviewer",
+      "Write set": [],
+      "Read set": [
+        "git show 8cee3c5a913f234e8fb65053b6ab4f34ed78249b:<path>",
+        "git show 28c27cb896d02e0185b9fa02047411fa152f6469:<path>",
+        "docs/project/maintainers/qualification/enterprise_quality_oversight/campaign_a/findings/FINDINGS.jsonl",
+        "eqo_closure_master_7499b85e.plan.md",
+        "governance/tickets/"
+      ]
+    },
+    {
+      "TASK_ID": "EQO-W2-08",
+      "Parent": "EQO-W2",
+      "Workstream": "W2",
+      "Objective": "Verify train ticket T-IGX-044-F",
+      "Preconditions": [
+        "EQO-W0-01"
+      ],
+      "Dependencies": [],
+      "Eligibility": "EXECUTABLE_NOW",
+      "Owner role": "EQO verifier (no train write set)",
+      "Ticket refs": [
+        "T-IGX-044-F"
+      ],
+      "Acceptance": "validator on material paths TRAIN_PIN",
+      "Evidence": "EQO-W2-08 verification log",
+      "Audit": "ticket reviewer",
+      "Write set": [],
+      "Read set": [
+        "git show 8cee3c5a913f234e8fb65053b6ab4f34ed78249b:<path>",
+        "git show 28c27cb896d02e0185b9fa02047411fa152f6469:<path>",
+        "docs/project/maintainers/qualification/enterprise_quality_oversight/campaign_a/findings/FINDINGS.jsonl",
+        "eqo_closure_master_7499b85e.plan.md",
+        "governance/tickets/"
+      ]
+    },
+    {
+      "TASK_ID": "EQO-W2-09",
+      "Parent": "EQO-W2",
+      "Workstream": "W2",
+      "Objective": "Verify train ticket T-IGX-051-E",
+      "Preconditions": [
+        "EQO-W0-01"
+      ],
+      "Dependencies": [],
+      "Eligibility": "EXECUTABLE_NOW",
+      "Owner role": "EQO verifier (no train write set)",
+      "Ticket refs": [
+        "T-IGX-051-E"
+      ],
+      "Acceptance": "drain/CAS/UNCERTAIN present",
+      "Evidence": "EQO-W2-09 verification log",
+      "Audit": "ticket reviewer",
+      "Write set": [],
+      "Read set": [
+        "git show 8cee3c5a913f234e8fb65053b6ab4f34ed78249b:<path>",
+        "git show 28c27cb896d02e0185b9fa02047411fa152f6469:<path>",
+        "docs/project/maintainers/qualification/enterprise_quality_oversight/campaign_a/findings/FINDINGS.jsonl",
+        "eqo_closure_master_7499b85e.plan.md",
+        "governance/tickets/"
+      ]
+    },
+    {
+      "TASK_ID": "EQO-W2-10",
+      "Parent": "EQO-W2",
+      "Workstream": "W2",
+      "Objective": "Verify train ticket T-IGX-051-I",
+      "Preconditions": [
+        "EQO-W0-01"
+      ],
+      "Dependencies": [
+        "EQO-W0-04"
+      ],
+      "Eligibility": "EXECUTABLE_NOW",
+      "Owner role": "EQO verifier (no train write set)",
+      "Ticket refs": [
+        "T-IGX-051-I"
+      ],
+      "Acceptance": "acceptance equals W0-04",
+      "Evidence": "EQO-W2-10 verification log",
+      "Audit": "ticket reviewer",
+      "Write set": [],
+      "Read set": [
+        "git show 8cee3c5a913f234e8fb65053b6ab4f34ed78249b:<path>",
+        "git show 28c27cb896d02e0185b9fa02047411fa152f6469:<path>",
+        "docs/project/maintainers/qualification/enterprise_quality_oversight/campaign_a/findings/FINDINGS.jsonl",
+        "eqo_closure_master_7499b85e.plan.md",
+        "governance/tickets/"
+      ]
+    },
+    {
+      "TASK_ID": "EQO-W2-11",
+      "Parent": "EQO-W2",
+      "Workstream": "W2",
+      "Objective": "Verify train ticket T-IGX-051-B",
+      "Preconditions": [
+        "EQO-W0-01"
+      ],
+      "Dependencies": [],
+      "Eligibility": "EXECUTABLE_NOW",
+      "Owner role": "EQO verifier (no train write set)",
+      "Ticket refs": [
+        "T-IGX-051-B"
+      ],
+      "Acceptance": "Parts C–I merged; F-5 residue tracked",
+      "Evidence": "EQO-W2-11 verification log",
+      "Audit": "ticket reviewer",
+      "Write set": [],
+      "Read set": [
+        "git show 8cee3c5a913f234e8fb65053b6ab4f34ed78249b:<path>",
+        "git show 28c27cb896d02e0185b9fa02047411fa152f6469:<path>",
+        "docs/project/maintainers/qualification/enterprise_quality_oversight/campaign_a/findings/FINDINGS.jsonl",
+        "eqo_closure_master_7499b85e.plan.md",
+        "governance/tickets/"
+      ]
+    },
+    {
+      "TASK_ID": "EQO-W2-12",
+      "Parent": "EQO-W2",
+      "Workstream": "W2",
+      "Objective": "Verify train ticket record-2 residua",
+      "Preconditions": [
+        "EQO-W0-01"
+      ],
+      "Dependencies": [
+        "EQO-W0-02"
+      ],
+      "Eligibility": "WAIT_FOR_OPERATOR|D",
+      "Owner role": "EQO verifier (no train write set)",
+      "Ticket refs": [
+        "record-2 residua"
+      ],
+      "Acceptance": "merge or exact blocker each",
+      "Evidence": "EQO-W2-12 verification log",
+      "Audit": "ticket reviewer",
+      "Write set": [],
+      "Read set": [
+        "git show 8cee3c5a913f234e8fb65053b6ab4f34ed78249b:<path>",
+        "git show 28c27cb896d02e0185b9fa02047411fa152f6469:<path>",
+        "docs/project/maintainers/qualification/enterprise_quality_oversight/campaign_a/findings/FINDINGS.jsonl",
+        "eqo_closure_master_7499b85e.plan.md",
+        "governance/tickets/"
+      ]
+    },
+    {
+      "TASK_ID": "EQO-W2-13",
+      "Parent": "EQO-W2",
+      "Workstream": "W2",
+      "Objective": "Verify train ticket F-3/G-9/Part G",
+      "Preconditions": [
+        "EQO-W0-01"
+      ],
+      "Dependencies": [],
+      "Eligibility": "WAIT_FOR_OPERATOR",
+      "Owner role": "EQO verifier (no train write set)",
+      "Ticket refs": [
+        "F-3/G-9/Part G"
+      ],
+      "Acceptance": "OD-EQO-04 status only",
+      "Evidence": "EQO-W2-13 verification log",
+      "Audit": "ticket reviewer",
+      "Write set": [],
+      "Read set": [
+        "git show 8cee3c5a913f234e8fb65053b6ab4f34ed78249b:<path>",
+        "git show 28c27cb896d02e0185b9fa02047411fa152f6469:<path>",
+        "docs/project/maintainers/qualification/enterprise_quality_oversight/campaign_a/findings/FINDINGS.jsonl",
+        "eqo_closure_master_7499b85e.plan.md",
+        "governance/tickets/"
+      ]
+    },
+    {
+      "TASK_ID": "EQO-W3-WB01-DES",
+      "Parent": "EQO-W3",
+      "Workstream": "WB01",
+      "Objective": "Preregister SHA256 before EXE — Governance and execution authority",
+      "Preconditions": [
+        "TRAIN_PIN=28c27cb896d02e0185b9fa02047411fa152f6469",
+        "Domains: Governance, Execution Authority"
+      ],
+      "Dependencies": [
+        "EQO-W0-01"
+      ],
+      "Eligibility": "EXECUTABLE_IN_PARALLEL",
+      "Owner role": "EQO tester",
+      "Ticket refs": [
+        "T-IGX-043-A",
+        "T-IGX-044-F"
+      ],
+      "Acceptance": "Preregister SHA256 before EXE",
+      "Evidence": "['A1-021', 'A4-015', 'A4-044', 'A5-003', 'A7-030']",
+      "Audit": "none",
+      "Write set": [
+        "docs/project/maintainers/qualification/enterprise_quality_oversight/eqo_closure/",
+        "eqo_closure/runs/"
+      ],
+      "Read set": [
+        "git show 8cee3c5a913f234e8fb65053b6ab4f34ed78249b:<path>",
+        "git show 28c27cb896d02e0185b9fa02047411fa152f6469:<path>",
+        "docs/project/maintainers/qualification/enterprise_quality_oversight/campaign_a/findings/FINDINGS.jsonl",
+        "eqo_closure_master_7499b85e.plan.md",
+        "findings assigned: ['A1-021', 'A4-015', 'A4-044', 'A5-003', 'A7-030']"
+      ]
+    },
+    {
+      "TASK_ID": "EQO-W3-WB01-EXE",
+      "Parent": "EQO-W3",
+      "Workstream": "WB01",
+      "Objective": "Band-C isolated probe on TRAIN_PIN — Governance and execution authority",
+      "Preconditions": [
+        "TRAIN_PIN=28c27cb896d02e0185b9fa02047411fa152f6469",
+        "Domains: Governance, Execution Authority"
+      ],
+      "Dependencies": [
+        "EQO-W0-01",
+        "EQO-W3-WB01-DES"
+      ],
+      "Eligibility": "EXECUTABLE_IN_PARALLEL",
+      "Owner role": "EQO tester",
+      "Ticket refs": [
+        "T-IGX-043-A",
+        "T-IGX-044-F"
+      ],
+      "Acceptance": "Band-C isolated probe on TRAIN_PIN",
+      "Evidence": "runs/wb01/",
+      "Audit": "none",
+      "Write set": [
+        "docs/project/maintainers/qualification/enterprise_quality_oversight/eqo_closure/",
+        "eqo_closure/runs/"
+      ],
+      "Read set": [
+        "git show 8cee3c5a913f234e8fb65053b6ab4f34ed78249b:<path>",
+        "git show 28c27cb896d02e0185b9fa02047411fa152f6469:<path>",
+        "docs/project/maintainers/qualification/enterprise_quality_oversight/campaign_a/findings/FINDINGS.jsonl",
+        "eqo_closure_master_7499b85e.plan.md",
+        "findings assigned: ['A1-021', 'A4-015', 'A4-044', 'A5-003', 'A7-030']"
+      ]
+    },
+    {
+      "TASK_ID": "EQO-W3-WB01-EVD",
+      "Parent": "EQO-W3",
+      "Workstream": "WB01",
+      "Objective": "Manifest under eqo_closure/runs/ — Governance and execution authority",
+      "Preconditions": [
+        "TRAIN_PIN=28c27cb896d02e0185b9fa02047411fa152f6469",
+        "Domains: Governance, Execution Authority"
+      ],
+      "Dependencies": [
+        "EQO-W0-01",
+        "EQO-W3-WB01-EXE"
+      ],
+      "Eligibility": "serial",
+      "Owner role": "EQO tester",
+      "Ticket refs": [
+        "T-IGX-043-A",
+        "T-IGX-044-F"
+      ],
+      "Acceptance": "Manifest under eqo_closure/runs/",
+      "Evidence": "runs/wb01/",
+      "Audit": "none",
+      "Write set": [
+        "docs/project/maintainers/qualification/enterprise_quality_oversight/eqo_closure/",
+        "eqo_closure/runs/"
+      ],
+      "Read set": [
+        "git show 8cee3c5a913f234e8fb65053b6ab4f34ed78249b:<path>",
+        "git show 28c27cb896d02e0185b9fa02047411fa152f6469:<path>",
+        "docs/project/maintainers/qualification/enterprise_quality_oversight/campaign_a/findings/FINDINGS.jsonl",
+        "eqo_closure_master_7499b85e.plan.md",
+        "findings assigned: ['A1-021', 'A4-015', 'A4-044', 'A5-003', 'A7-030']"
+      ]
+    },
+    {
+      "TASK_ID": "EQO-W3-WB01-DIS",
+      "Parent": "EQO-W3",
+      "Workstream": "WB01",
+      "Objective": "Disposition per assigned finding — Governance and execution authority",
+      "Preconditions": [
+        "TRAIN_PIN=28c27cb896d02e0185b9fa02047411fa152f6469",
+        "Domains: Governance, Execution Authority"
+      ],
+      "Dependencies": [
+        "EQO-W0-01",
+        "EQO-W3-WB01-EVD"
+      ],
+      "Eligibility": "serial",
+      "Owner role": "EQO tester",
+      "Ticket refs": [
+        "T-IGX-043-A",
+        "T-IGX-044-F"
+      ],
+      "Acceptance": "Disposition per assigned finding",
+      "Evidence": "['A1-021', 'A4-015', 'A4-044', 'A5-003', 'A7-030']",
+      "Audit": "none",
+      "Write set": [
+        "docs/project/maintainers/qualification/enterprise_quality_oversight/eqo_closure/",
+        "eqo_closure/runs/"
+      ],
+      "Read set": [
+        "git show 8cee3c5a913f234e8fb65053b6ab4f34ed78249b:<path>",
+        "git show 28c27cb896d02e0185b9fa02047411fa152f6469:<path>",
+        "docs/project/maintainers/qualification/enterprise_quality_oversight/campaign_a/findings/FINDINGS.jsonl",
+        "eqo_closure_master_7499b85e.plan.md",
+        "findings assigned: ['A1-021', 'A4-015', 'A4-044', 'A5-003', 'A7-030']"
+      ]
+    },
+    {
+      "TASK_ID": "EQO-W3-WB01-AUD",
+      "Parent": "EQO-W3",
+      "Workstream": "WB01",
+      "Objective": "Independent session E same SHA — Governance and execution authority",
+      "Preconditions": [
+        "TRAIN_PIN=28c27cb896d02e0185b9fa02047411fa152f6469",
+        "Domains: Governance, Execution Authority"
+      ],
+      "Dependencies": [
+        "EQO-W0-01",
+        "EQO-W3-WB01-EVD"
+      ],
+      "Eligibility": "serial",
+      "Owner role": "independent auditor",
+      "Ticket refs": [
+        "T-IGX-043-A",
+        "T-IGX-044-F"
+      ],
+      "Acceptance": "Independent session E same SHA",
+      "Evidence": "['A1-021', 'A4-015', 'A4-044', 'A5-003', 'A7-030']",
+      "Audit": "session E",
+      "Write set": [
+        "docs/project/maintainers/qualification/enterprise_quality_oversight/eqo_closure/",
+        "eqo_closure/runs/"
+      ],
+      "Read set": [
+        "git show 8cee3c5a913f234e8fb65053b6ab4f34ed78249b:<path>",
+        "git show 28c27cb896d02e0185b9fa02047411fa152f6469:<path>",
+        "docs/project/maintainers/qualification/enterprise_quality_oversight/campaign_a/findings/FINDINGS.jsonl",
+        "eqo_closure_master_7499b85e.plan.md",
+        "findings assigned: ['A1-021', 'A4-015', 'A4-044', 'A5-003', 'A7-030']"
+      ]
+    },
+    {
+      "TASK_ID": "EQO-W3-WB01-COR",
+      "Parent": "EQO-W3",
+      "Workstream": "WB01",
+      "Objective": "CL-01 if defect else NOT_APPLICABLE_WITH_EVIDENCE — Governance and execution authority",
+      "Preconditions": [
+        "TRAIN_PIN=28c27cb896d02e0185b9fa02047411fa152f6469",
+        "Domains: Governance, Execution Authority"
+      ],
+      "Dependencies": [
+        "EQO-W0-01"
+      ],
+      "Eligibility": "serial",
+      "Owner role": "EQO orchestrator",
+      "Ticket refs": [
+        "T-IGX-043-A",
+        "T-IGX-044-F"
+      ],
+      "Acceptance": "CL-01 if defect else NOT_APPLICABLE_WITH_EVIDENCE",
+      "Evidence": "['A1-021', 'A4-015', 'A4-044', 'A5-003', 'A7-030']",
+      "Audit": "none",
+      "Write set": [
+        "docs/project/maintainers/qualification/enterprise_quality_oversight/eqo_closure/",
+        "eqo_closure/runs/"
+      ],
+      "Read set": [
+        "git show 8cee3c5a913f234e8fb65053b6ab4f34ed78249b:<path>",
+        "git show 28c27cb896d02e0185b9fa02047411fa152f6469:<path>",
+        "docs/project/maintainers/qualification/enterprise_quality_oversight/campaign_a/findings/FINDINGS.jsonl",
+        "eqo_closure_master_7499b85e.plan.md",
+        "findings assigned: ['A1-021', 'A4-015', 'A4-044', 'A5-003', 'A7-030']"
+      ]
+    },
+    {
+      "TASK_ID": "EQO-W3-WB01-DRV",
+      "Parent": "EQO-W3",
+      "Workstream": "WB01",
+      "Objective": "EQO-RV-01 if pin moves — Governance and execution authority",
+      "Preconditions": [
+        "TRAIN_PIN=28c27cb896d02e0185b9fa02047411fa152f6469",
+        "Domains: Governance, Execution Authority"
+      ],
+      "Dependencies": [
+        "EQO-W0-01"
+      ],
+      "Eligibility": "serial",
+      "Owner role": "EQO orchestrator",
+      "Ticket refs": [
+        "T-IGX-043-A",
+        "T-IGX-044-F"
+      ],
+      "Acceptance": "EQO-RV-01 if pin moves",
+      "Evidence": "['A1-021', 'A4-015', 'A4-044', 'A5-003', 'A7-030']",
+      "Audit": "none",
+      "Write set": [
+        "docs/project/maintainers/qualification/enterprise_quality_oversight/eqo_closure/",
+        "eqo_closure/runs/"
+      ],
+      "Read set": [
+        "git show 8cee3c5a913f234e8fb65053b6ab4f34ed78249b:<path>",
+        "git show 28c27cb896d02e0185b9fa02047411fa152f6469:<path>",
+        "docs/project/maintainers/qualification/enterprise_quality_oversight/campaign_a/findings/FINDINGS.jsonl",
+        "eqo_closure_master_7499b85e.plan.md",
+        "findings assigned: ['A1-021', 'A4-015', 'A4-044', 'A5-003', 'A7-030']"
+      ]
+    },
+    {
+      "TASK_ID": "EQO-W3-WB01-CLS",
+      "Parent": "EQO-W3",
+      "Workstream": "WB01",
+      "Objective": "DIS and AUD complete or exact blocker — Governance and execution authority",
+      "Preconditions": [
+        "TRAIN_PIN=28c27cb896d02e0185b9fa02047411fa152f6469",
+        "Domains: Governance, Execution Authority"
+      ],
+      "Dependencies": [
+        "EQO-W0-01",
+        "EQO-W3-WB01-DIS",
+        "EQO-W3-WB01-AUD"
+      ],
+      "Eligibility": "serial",
+      "Owner role": "EQO orchestrator",
+      "Ticket refs": [
+        "T-IGX-043-A",
+        "T-IGX-044-F"
+      ],
+      "Acceptance": "DIS and AUD complete or exact blocker",
+      "Evidence": "['A1-021', 'A4-015', 'A4-044', 'A5-003', 'A7-030']",
+      "Audit": "none",
+      "Write set": [
+        "docs/project/maintainers/qualification/enterprise_quality_oversight/eqo_closure/",
+        "eqo_closure/runs/"
+      ],
+      "Read set": [
+        "git show 8cee3c5a913f234e8fb65053b6ab4f34ed78249b:<path>",
+        "git show 28c27cb896d02e0185b9fa02047411fa152f6469:<path>",
+        "docs/project/maintainers/qualification/enterprise_quality_oversight/campaign_a/findings/FINDINGS.jsonl",
+        "eqo_closure_master_7499b85e.plan.md",
+        "findings assigned: ['A1-021', 'A4-015', 'A4-044', 'A5-003', 'A7-030']"
+      ]
+    },
+    {
+      "TASK_ID": "EQO-W3-WB02-DES",
+      "Parent": "EQO-W3",
+      "Workstream": "WB02",
+      "Objective": "Preregister SHA256 before EXE — Tenant isolation",
+      "Preconditions": [
+        "TRAIN_PIN=28c27cb896d02e0185b9fa02047411fa152f6469",
+        "Domains: Tenant Isolation"
+      ],
+      "Dependencies": [
+        "EQO-W0-01"
+      ],
+      "Eligibility": "EXECUTABLE_IN_PARALLEL",
+      "Owner role": "EQO tester",
+      "Ticket refs": [],
+      "Acceptance": "Preregister SHA256 before EXE",
+      "Evidence": "['A4-006', 'A4-027', 'A7-009', 'A7-028', 'A7-031', 'A8-006']",
+      "Audit": "none",
+      "Write set": [
+        "docs/project/maintainers/qualification/enterprise_quality_oversight/eqo_closure/",
+        "eqo_closure/runs/"
+      ],
+      "Read set": [
+        "git show 8cee3c5a913f234e8fb65053b6ab4f34ed78249b:<path>",
+        "git show 28c27cb896d02e0185b9fa02047411fa152f6469:<path>",
+        "docs/project/maintainers/qualification/enterprise_quality_oversight/campaign_a/findings/FINDINGS.jsonl",
+        "eqo_closure_master_7499b85e.plan.md",
+        "findings assigned: ['A4-006', 'A4-027', 'A7-009', 'A7-028', 'A7-031', 'A8-006']"
+      ]
+    },
+    {
+      "TASK_ID": "EQO-W3-WB02-EXE",
+      "Parent": "EQO-W3",
+      "Workstream": "WB02",
+      "Objective": "Band-C isolated probe on TRAIN_PIN — Tenant isolation",
+      "Preconditions": [
+        "TRAIN_PIN=28c27cb896d02e0185b9fa02047411fa152f6469",
+        "Domains: Tenant Isolation"
+      ],
+      "Dependencies": [
+        "EQO-W0-01",
+        "EQO-W3-WB02-DES"
+      ],
+      "Eligibility": "EXECUTABLE_IN_PARALLEL",
+      "Owner role": "EQO tester",
+      "Ticket refs": [],
+      "Acceptance": "Band-C isolated probe on TRAIN_PIN",
+      "Evidence": "runs/wb02/",
+      "Audit": "none",
+      "Write set": [
+        "docs/project/maintainers/qualification/enterprise_quality_oversight/eqo_closure/",
+        "eqo_closure/runs/"
+      ],
+      "Read set": [
+        "git show 8cee3c5a913f234e8fb65053b6ab4f34ed78249b:<path>",
+        "git show 28c27cb896d02e0185b9fa02047411fa152f6469:<path>",
+        "docs/project/maintainers/qualification/enterprise_quality_oversight/campaign_a/findings/FINDINGS.jsonl",
+        "eqo_closure_master_7499b85e.plan.md",
+        "findings assigned: ['A4-006', 'A4-027', 'A7-009', 'A7-028', 'A7-031', 'A8-006']"
+      ]
+    },
+    {
+      "TASK_ID": "EQO-W3-WB02-EVD",
+      "Parent": "EQO-W3",
+      "Workstream": "WB02",
+      "Objective": "Manifest under eqo_closure/runs/ — Tenant isolation",
+      "Preconditions": [
+        "TRAIN_PIN=28c27cb896d02e0185b9fa02047411fa152f6469",
+        "Domains: Tenant Isolation"
+      ],
+      "Dependencies": [
+        "EQO-W0-01",
+        "EQO-W3-WB02-EXE"
+      ],
+      "Eligibility": "serial",
+      "Owner role": "EQO tester",
+      "Ticket refs": [],
+      "Acceptance": "Manifest under eqo_closure/runs/",
+      "Evidence": "runs/wb02/",
+      "Audit": "none",
+      "Write set": [
+        "docs/project/maintainers/qualification/enterprise_quality_oversight/eqo_closure/",
+        "eqo_closure/runs/"
+      ],
+      "Read set": [
+        "git show 8cee3c5a913f234e8fb65053b6ab4f34ed78249b:<path>",
+        "git show 28c27cb896d02e0185b9fa02047411fa152f6469:<path>",
+        "docs/project/maintainers/qualification/enterprise_quality_oversight/campaign_a/findings/FINDINGS.jsonl",
+        "eqo_closure_master_7499b85e.plan.md",
+        "findings assigned: ['A4-006', 'A4-027', 'A7-009', 'A7-028', 'A7-031', 'A8-006']"
+      ]
+    },
+    {
+      "TASK_ID": "EQO-W3-WB02-DIS",
+      "Parent": "EQO-W3",
+      "Workstream": "WB02",
+      "Objective": "Disposition per assigned finding — Tenant isolation",
+      "Preconditions": [
+        "TRAIN_PIN=28c27cb896d02e0185b9fa02047411fa152f6469",
+        "Domains: Tenant Isolation"
+      ],
+      "Dependencies": [
+        "EQO-W0-01",
+        "EQO-W3-WB02-EVD"
+      ],
+      "Eligibility": "serial",
+      "Owner role": "EQO tester",
+      "Ticket refs": [],
+      "Acceptance": "Disposition per assigned finding",
+      "Evidence": "['A4-006', 'A4-027', 'A7-009', 'A7-028', 'A7-031', 'A8-006']",
+      "Audit": "none",
+      "Write set": [
+        "docs/project/maintainers/qualification/enterprise_quality_oversight/eqo_closure/",
+        "eqo_closure/runs/"
+      ],
+      "Read set": [
+        "git show 8cee3c5a913f234e8fb65053b6ab4f34ed78249b:<path>",
+        "git show 28c27cb896d02e0185b9fa02047411fa152f6469:<path>",
+        "docs/project/maintainers/qualification/enterprise_quality_oversight/campaign_a/findings/FINDINGS.jsonl",
+        "eqo_closure_master_7499b85e.plan.md",
+        "findings assigned: ['A4-006', 'A4-027', 'A7-009', 'A7-028', 'A7-031', 'A8-006']"
+      ]
+    },
+    {
+      "TASK_ID": "EQO-W3-WB02-AUD",
+      "Parent": "EQO-W3",
+      "Workstream": "WB02",
+      "Objective": "Independent session E same SHA — Tenant isolation",
+      "Preconditions": [
+        "TRAIN_PIN=28c27cb896d02e0185b9fa02047411fa152f6469",
+        "Domains: Tenant Isolation"
+      ],
+      "Dependencies": [
+        "EQO-W0-01",
+        "EQO-W3-WB02-EVD"
+      ],
+      "Eligibility": "serial",
+      "Owner role": "independent auditor",
+      "Ticket refs": [],
+      "Acceptance": "Independent session E same SHA",
+      "Evidence": "['A4-006', 'A4-027', 'A7-009', 'A7-028', 'A7-031', 'A8-006']",
+      "Audit": "session E",
+      "Write set": [
+        "docs/project/maintainers/qualification/enterprise_quality_oversight/eqo_closure/",
+        "eqo_closure/runs/"
+      ],
+      "Read set": [
+        "git show 8cee3c5a913f234e8fb65053b6ab4f34ed78249b:<path>",
+        "git show 28c27cb896d02e0185b9fa02047411fa152f6469:<path>",
+        "docs/project/maintainers/qualification/enterprise_quality_oversight/campaign_a/findings/FINDINGS.jsonl",
+        "eqo_closure_master_7499b85e.plan.md",
+        "findings assigned: ['A4-006', 'A4-027', 'A7-009', 'A7-028', 'A7-031', 'A8-006']"
+      ]
+    },
+    {
+      "TASK_ID": "EQO-W3-WB02-COR",
+      "Parent": "EQO-W3",
+      "Workstream": "WB02",
+      "Objective": "CL-01 if defect else NOT_APPLICABLE_WITH_EVIDENCE — Tenant isolation",
+      "Preconditions": [
+        "TRAIN_PIN=28c27cb896d02e0185b9fa02047411fa152f6469",
+        "Domains: Tenant Isolation"
+      ],
+      "Dependencies": [
+        "EQO-W0-01"
+      ],
+      "Eligibility": "serial",
+      "Owner role": "EQO orchestrator",
+      "Ticket refs": [],
+      "Acceptance": "CL-01 if defect else NOT_APPLICABLE_WITH_EVIDENCE",
+      "Evidence": "['A4-006', 'A4-027', 'A7-009', 'A7-028', 'A7-031', 'A8-006']",
+      "Audit": "none",
+      "Write set": [
+        "docs/project/maintainers/qualification/enterprise_quality_oversight/eqo_closure/",
+        "eqo_closure/runs/"
+      ],
+      "Read set": [
+        "git show 8cee3c5a913f234e8fb65053b6ab4f34ed78249b:<path>",
+        "git show 28c27cb896d02e0185b9fa02047411fa152f6469:<path>",
+        "docs/project/maintainers/qualification/enterprise_quality_oversight/campaign_a/findings/FINDINGS.jsonl",
+        "eqo_closure_master_7499b85e.plan.md",
+        "findings assigned: ['A4-006', 'A4-027', 'A7-009', 'A7-028', 'A7-031', 'A8-006']"
+      ]
+    },
+    {
+      "TASK_ID": "EQO-W3-WB02-DRV",
+      "Parent": "EQO-W3",
+      "Workstream": "WB02",
+      "Objective": "EQO-RV-01 if pin moves — Tenant isolation",
+      "Preconditions": [
+        "TRAIN_PIN=28c27cb896d02e0185b9fa02047411fa152f6469",
+        "Domains: Tenant Isolation"
+      ],
+      "Dependencies": [
+        "EQO-W0-01"
+      ],
+      "Eligibility": "serial",
+      "Owner role": "EQO orchestrator",
+      "Ticket refs": [],
+      "Acceptance": "EQO-RV-01 if pin moves",
+      "Evidence": "['A4-006', 'A4-027', 'A7-009', 'A7-028', 'A7-031', 'A8-006']",
+      "Audit": "none",
+      "Write set": [
+        "docs/project/maintainers/qualification/enterprise_quality_oversight/eqo_closure/",
+        "eqo_closure/runs/"
+      ],
+      "Read set": [
+        "git show 8cee3c5a913f234e8fb65053b6ab4f34ed78249b:<path>",
+        "git show 28c27cb896d02e0185b9fa02047411fa152f6469:<path>",
+        "docs/project/maintainers/qualification/enterprise_quality_oversight/campaign_a/findings/FINDINGS.jsonl",
+        "eqo_closure_master_7499b85e.plan.md",
+        "findings assigned: ['A4-006', 'A4-027', 'A7-009', 'A7-028', 'A7-031', 'A8-006']"
+      ]
+    },
+    {
+      "TASK_ID": "EQO-W3-WB02-CLS",
+      "Parent": "EQO-W3",
+      "Workstream": "WB02",
+      "Objective": "DIS and AUD complete or exact blocker — Tenant isolation",
+      "Preconditions": [
+        "TRAIN_PIN=28c27cb896d02e0185b9fa02047411fa152f6469",
+        "Domains: Tenant Isolation"
+      ],
+      "Dependencies": [
+        "EQO-W0-01",
+        "EQO-W3-WB02-DIS",
+        "EQO-W3-WB02-AUD"
+      ],
+      "Eligibility": "serial",
+      "Owner role": "EQO orchestrator",
+      "Ticket refs": [],
+      "Acceptance": "DIS and AUD complete or exact blocker",
+      "Evidence": "['A4-006', 'A4-027', 'A7-009', 'A7-028', 'A7-031', 'A8-006']",
+      "Audit": "none",
+      "Write set": [
+        "docs/project/maintainers/qualification/enterprise_quality_oversight/eqo_closure/",
+        "eqo_closure/runs/"
+      ],
+      "Read set": [
+        "git show 8cee3c5a913f234e8fb65053b6ab4f34ed78249b:<path>",
+        "git show 28c27cb896d02e0185b9fa02047411fa152f6469:<path>",
+        "docs/project/maintainers/qualification/enterprise_quality_oversight/campaign_a/findings/FINDINGS.jsonl",
+        "eqo_closure_master_7499b85e.plan.md",
+        "findings assigned: ['A4-006', 'A4-027', 'A7-009', 'A7-028', 'A7-031', 'A8-006']"
+      ]
+    },
+    {
+      "TASK_ID": "EQO-W3-WB03-DES",
+      "Parent": "EQO-W3",
+      "Workstream": "WB03",
+      "Objective": "Preregister SHA256 before EXE — Fail-closed",
+      "Preconditions": [
+        "TRAIN_PIN=28c27cb896d02e0185b9fa02047411fa152f6469",
+        "Domains: Fail-Closed, HITL"
+      ],
+      "Dependencies": [
+        "EQO-W0-01"
+      ],
+      "Eligibility": "EXECUTABLE_IN_PARALLEL",
+      "Owner role": "EQO tester",
+      "Ticket refs": [
+        "T-IGX-043-A",
+        "T-IGX-043-B",
+        "T-IGX-043-E"
+      ],
+      "Acceptance": "Preregister SHA256 before EXE",
+      "Evidence": "['A4-026', 'A4-031', 'A4-037', 'A3-027']",
+      "Audit": "none",
+      "Write set": [
+        "docs/project/maintainers/qualification/enterprise_quality_oversight/eqo_closure/",
+        "eqo_closure/runs/"
+      ],
+      "Read set": [
+        "git show 8cee3c5a913f234e8fb65053b6ab4f34ed78249b:<path>",
+        "git show 28c27cb896d02e0185b9fa02047411fa152f6469:<path>",
+        "docs/project/maintainers/qualification/enterprise_quality_oversight/campaign_a/findings/FINDINGS.jsonl",
+        "eqo_closure_master_7499b85e.plan.md",
+        "findings assigned: ['A4-026', 'A4-031', 'A4-037', 'A3-027']"
+      ]
+    },
+    {
+      "TASK_ID": "EQO-W3-WB03-EXE",
+      "Parent": "EQO-W3",
+      "Workstream": "WB03",
+      "Objective": "Band-C isolated probe on TRAIN_PIN — Fail-closed",
+      "Preconditions": [
+        "TRAIN_PIN=28c27cb896d02e0185b9fa02047411fa152f6469",
+        "Domains: Fail-Closed, HITL"
+      ],
+      "Dependencies": [
+        "EQO-W0-01",
+        "EQO-W3-WB03-DES"
+      ],
+      "Eligibility": "EXECUTABLE_IN_PARALLEL",
+      "Owner role": "EQO tester",
+      "Ticket refs": [
+        "T-IGX-043-A",
+        "T-IGX-043-B",
+        "T-IGX-043-E"
+      ],
+      "Acceptance": "Band-C isolated probe on TRAIN_PIN",
+      "Evidence": "runs/wb03/",
+      "Audit": "none",
+      "Write set": [
+        "docs/project/maintainers/qualification/enterprise_quality_oversight/eqo_closure/",
+        "eqo_closure/runs/"
+      ],
+      "Read set": [
+        "git show 8cee3c5a913f234e8fb65053b6ab4f34ed78249b:<path>",
+        "git show 28c27cb896d02e0185b9fa02047411fa152f6469:<path>",
+        "docs/project/maintainers/qualification/enterprise_quality_oversight/campaign_a/findings/FINDINGS.jsonl",
+        "eqo_closure_master_7499b85e.plan.md",
+        "findings assigned: ['A4-026', 'A4-031', 'A4-037', 'A3-027']"
+      ]
+    },
+    {
+      "TASK_ID": "EQO-W3-WB03-EVD",
+      "Parent": "EQO-W3",
+      "Workstream": "WB03",
+      "Objective": "Manifest under eqo_closure/runs/ — Fail-closed",
+      "Preconditions": [
+        "TRAIN_PIN=28c27cb896d02e0185b9fa02047411fa152f6469",
+        "Domains: Fail-Closed, HITL"
+      ],
+      "Dependencies": [
+        "EQO-W0-01",
+        "EQO-W3-WB03-EXE"
+      ],
+      "Eligibility": "serial",
+      "Owner role": "EQO tester",
+      "Ticket refs": [
+        "T-IGX-043-A",
+        "T-IGX-043-B",
+        "T-IGX-043-E"
+      ],
+      "Acceptance": "Manifest under eqo_closure/runs/",
+      "Evidence": "runs/wb03/",
+      "Audit": "none",
+      "Write set": [
+        "docs/project/maintainers/qualification/enterprise_quality_oversight/eqo_closure/",
+        "eqo_closure/runs/"
+      ],
+      "Read set": [
+        "git show 8cee3c5a913f234e8fb65053b6ab4f34ed78249b:<path>",
+        "git show 28c27cb896d02e0185b9fa02047411fa152f6469:<path>",
+        "docs/project/maintainers/qualification/enterprise_quality_oversight/campaign_a/findings/FINDINGS.jsonl",
+        "eqo_closure_master_7499b85e.plan.md",
+        "findings assigned: ['A4-026', 'A4-031', 'A4-037', 'A3-027']"
+      ]
+    },
+    {
+      "TASK_ID": "EQO-W3-WB03-DIS",
+      "Parent": "EQO-W3",
+      "Workstream": "WB03",
+      "Objective": "Disposition per assigned finding — Fail-closed",
+      "Preconditions": [
+        "TRAIN_PIN=28c27cb896d02e0185b9fa02047411fa152f6469",
+        "Domains: Fail-Closed, HITL"
+      ],
+      "Dependencies": [
+        "EQO-W0-01",
+        "EQO-W3-WB03-EVD"
+      ],
+      "Eligibility": "serial",
+      "Owner role": "EQO tester",
+      "Ticket refs": [
+        "T-IGX-043-A",
+        "T-IGX-043-B",
+        "T-IGX-043-E"
+      ],
+      "Acceptance": "Disposition per assigned finding",
+      "Evidence": "['A4-026', 'A4-031', 'A4-037', 'A3-027']",
+      "Audit": "none",
+      "Write set": [
+        "docs/project/maintainers/qualification/enterprise_quality_oversight/eqo_closure/",
+        "eqo_closure/runs/"
+      ],
+      "Read set": [
+        "git show 8cee3c5a913f234e8fb65053b6ab4f34ed78249b:<path>",
+        "git show 28c27cb896d02e0185b9fa02047411fa152f6469:<path>",
+        "docs/project/maintainers/qualification/enterprise_quality_oversight/campaign_a/findings/FINDINGS.jsonl",
+        "eqo_closure_master_7499b85e.plan.md",
+        "findings assigned: ['A4-026', 'A4-031', 'A4-037', 'A3-027']"
+      ]
+    },
+    {
+      "TASK_ID": "EQO-W3-WB03-AUD",
+      "Parent": "EQO-W3",
+      "Workstream": "WB03",
+      "Objective": "Independent session E same SHA — Fail-closed",
+      "Preconditions": [
+        "TRAIN_PIN=28c27cb896d02e0185b9fa02047411fa152f6469",
+        "Domains: Fail-Closed, HITL"
+      ],
+      "Dependencies": [
+        "EQO-W0-01",
+        "EQO-W3-WB03-EVD"
+      ],
+      "Eligibility": "serial",
+      "Owner role": "independent auditor",
+      "Ticket refs": [
+        "T-IGX-043-A",
+        "T-IGX-043-B",
+        "T-IGX-043-E"
+      ],
+      "Acceptance": "Independent session E same SHA",
+      "Evidence": "['A4-026', 'A4-031', 'A4-037', 'A3-027']",
+      "Audit": "session E",
+      "Write set": [
+        "docs/project/maintainers/qualification/enterprise_quality_oversight/eqo_closure/",
+        "eqo_closure/runs/"
+      ],
+      "Read set": [
+        "git show 8cee3c5a913f234e8fb65053b6ab4f34ed78249b:<path>",
+        "git show 28c27cb896d02e0185b9fa02047411fa152f6469:<path>",
+        "docs/project/maintainers/qualification/enterprise_quality_oversight/campaign_a/findings/FINDINGS.jsonl",
+        "eqo_closure_master_7499b85e.plan.md",
+        "findings assigned: ['A4-026', 'A4-031', 'A4-037', 'A3-027']"
+      ]
+    },
+    {
+      "TASK_ID": "EQO-W3-WB03-COR",
+      "Parent": "EQO-W3",
+      "Workstream": "WB03",
+      "Objective": "CL-01 if defect else NOT_APPLICABLE_WITH_EVIDENCE — Fail-closed",
+      "Preconditions": [
+        "TRAIN_PIN=28c27cb896d02e0185b9fa02047411fa152f6469",
+        "Domains: Fail-Closed, HITL"
+      ],
+      "Dependencies": [
+        "EQO-W0-01"
+      ],
+      "Eligibility": "serial",
+      "Owner role": "EQO orchestrator",
+      "Ticket refs": [
+        "T-IGX-043-A",
+        "T-IGX-043-B",
+        "T-IGX-043-E"
+      ],
+      "Acceptance": "CL-01 if defect else NOT_APPLICABLE_WITH_EVIDENCE",
+      "Evidence": "['A4-026', 'A4-031', 'A4-037', 'A3-027']",
+      "Audit": "none",
+      "Write set": [
+        "docs/project/maintainers/qualification/enterprise_quality_oversight/eqo_closure/",
+        "eqo_closure/runs/"
+      ],
+      "Read set": [
+        "git show 8cee3c5a913f234e8fb65053b6ab4f34ed78249b:<path>",
+        "git show 28c27cb896d02e0185b9fa02047411fa152f6469:<path>",
+        "docs/project/maintainers/qualification/enterprise_quality_oversight/campaign_a/findings/FINDINGS.jsonl",
+        "eqo_closure_master_7499b85e.plan.md",
+        "findings assigned: ['A4-026', 'A4-031', 'A4-037', 'A3-027']"
+      ]
+    },
+    {
+      "TASK_ID": "EQO-W3-WB03-DRV",
+      "Parent": "EQO-W3",
+      "Workstream": "WB03",
+      "Objective": "EQO-RV-01 if pin moves — Fail-closed",
+      "Preconditions": [
+        "TRAIN_PIN=28c27cb896d02e0185b9fa02047411fa152f6469",
+        "Domains: Fail-Closed, HITL"
+      ],
+      "Dependencies": [
+        "EQO-W0-01"
+      ],
+      "Eligibility": "serial",
+      "Owner role": "EQO orchestrator",
+      "Ticket refs": [
+        "T-IGX-043-A",
+        "T-IGX-043-B",
+        "T-IGX-043-E"
+      ],
+      "Acceptance": "EQO-RV-01 if pin moves",
+      "Evidence": "['A4-026', 'A4-031', 'A4-037', 'A3-027']",
+      "Audit": "none",
+      "Write set": [
+        "docs/project/maintainers/qualification/enterprise_quality_oversight/eqo_closure/",
+        "eqo_closure/runs/"
+      ],
+      "Read set": [
+        "git show 8cee3c5a913f234e8fb65053b6ab4f34ed78249b:<path>",
+        "git show 28c27cb896d02e0185b9fa02047411fa152f6469:<path>",
+        "docs/project/maintainers/qualification/enterprise_quality_oversight/campaign_a/findings/FINDINGS.jsonl",
+        "eqo_closure_master_7499b85e.plan.md",
+        "findings assigned: ['A4-026', 'A4-031', 'A4-037', 'A3-027']"
+      ]
+    },
+    {
+      "TASK_ID": "EQO-W3-WB03-CLS",
+      "Parent": "EQO-W3",
+      "Workstream": "WB03",
+      "Objective": "DIS and AUD complete or exact blocker — Fail-closed",
+      "Preconditions": [
+        "TRAIN_PIN=28c27cb896d02e0185b9fa02047411fa152f6469",
+        "Domains: Fail-Closed, HITL"
+      ],
+      "Dependencies": [
+        "EQO-W0-01",
+        "EQO-W3-WB03-DIS",
+        "EQO-W3-WB03-AUD"
+      ],
+      "Eligibility": "serial",
+      "Owner role": "EQO orchestrator",
+      "Ticket refs": [
+        "T-IGX-043-A",
+        "T-IGX-043-B",
+        "T-IGX-043-E"
+      ],
+      "Acceptance": "DIS and AUD complete or exact blocker",
+      "Evidence": "['A4-026', 'A4-031', 'A4-037', 'A3-027']",
+      "Audit": "none",
+      "Write set": [
+        "docs/project/maintainers/qualification/enterprise_quality_oversight/eqo_closure/",
+        "eqo_closure/runs/"
+      ],
+      "Read set": [
+        "git show 8cee3c5a913f234e8fb65053b6ab4f34ed78249b:<path>",
+        "git show 28c27cb896d02e0185b9fa02047411fa152f6469:<path>",
+        "docs/project/maintainers/qualification/enterprise_quality_oversight/campaign_a/findings/FINDINGS.jsonl",
+        "eqo_closure_master_7499b85e.plan.md",
+        "findings assigned: ['A4-026', 'A4-031', 'A4-037', 'A3-027']"
+      ]
+    },
+    {
+      "TASK_ID": "EQO-W3-WB04-DES",
+      "Parent": "EQO-W3",
+      "Workstream": "WB04",
+      "Objective": "Preregister SHA256 before EXE — Security",
+      "Preconditions": [
+        "TRAIN_PIN=28c27cb896d02e0185b9fa02047411fa152f6469",
+        "Domains: Security"
+      ],
+      "Dependencies": [
+        "EQO-W0-01"
+      ],
+      "Eligibility": "EXECUTABLE_IN_PARALLEL",
+      "Owner role": "EQO tester",
+      "Ticket refs": [
+        "T-IGX-051-B"
+      ],
+      "Acceptance": "Preregister SHA256 before EXE",
+      "Evidence": "['A2-047', 'A7-013', 'A5-015']",
+      "Audit": "none",
+      "Write set": [
+        "docs/project/maintainers/qualification/enterprise_quality_oversight/eqo_closure/",
+        "eqo_closure/runs/"
+      ],
+      "Read set": [
+        "git show 8cee3c5a913f234e8fb65053b6ab4f34ed78249b:<path>",
+        "git show 28c27cb896d02e0185b9fa02047411fa152f6469:<path>",
+        "docs/project/maintainers/qualification/enterprise_quality_oversight/campaign_a/findings/FINDINGS.jsonl",
+        "eqo_closure_master_7499b85e.plan.md",
+        "findings assigned: ['A2-047', 'A7-013', 'A5-015']"
+      ]
+    },
+    {
+      "TASK_ID": "EQO-W3-WB04-EXE",
+      "Parent": "EQO-W3",
+      "Workstream": "WB04",
+      "Objective": "Band-C isolated probe on TRAIN_PIN — Security",
+      "Preconditions": [
+        "TRAIN_PIN=28c27cb896d02e0185b9fa02047411fa152f6469",
+        "Domains: Security"
+      ],
+      "Dependencies": [
+        "EQO-W0-01",
+        "EQO-W3-WB04-DES"
+      ],
+      "Eligibility": "EXECUTABLE_IN_PARALLEL",
+      "Owner role": "EQO tester",
+      "Ticket refs": [
+        "T-IGX-051-B"
+      ],
+      "Acceptance": "Band-C isolated probe on TRAIN_PIN",
+      "Evidence": "runs/wb04/",
+      "Audit": "none",
+      "Write set": [
+        "docs/project/maintainers/qualification/enterprise_quality_oversight/eqo_closure/",
+        "eqo_closure/runs/"
+      ],
+      "Read set": [
+        "git show 8cee3c5a913f234e8fb65053b6ab4f34ed78249b:<path>",
+        "git show 28c27cb896d02e0185b9fa02047411fa152f6469:<path>",
+        "docs/project/maintainers/qualification/enterprise_quality_oversight/campaign_a/findings/FINDINGS.jsonl",
+        "eqo_closure_master_7499b85e.plan.md",
+        "findings assigned: ['A2-047', 'A7-013', 'A5-015']"
+      ]
+    },
+    {
+      "TASK_ID": "EQO-W3-WB04-EVD",
+      "Parent": "EQO-W3",
+      "Workstream": "WB04",
+      "Objective": "Manifest under eqo_closure/runs/ — Security",
+      "Preconditions": [
+        "TRAIN_PIN=28c27cb896d02e0185b9fa02047411fa152f6469",
+        "Domains: Security"
+      ],
+      "Dependencies": [
+        "EQO-W0-01",
+        "EQO-W3-WB04-EXE"
+      ],
+      "Eligibility": "serial",
+      "Owner role": "EQO tester",
+      "Ticket refs": [
+        "T-IGX-051-B"
+      ],
+      "Acceptance": "Manifest under eqo_closure/runs/",
+      "Evidence": "runs/wb04/",
+      "Audit": "none",
+      "Write set": [
+        "docs/project/maintainers/qualification/enterprise_quality_oversight/eqo_closure/",
+        "eqo_closure/runs/"
+      ],
+      "Read set": [
+        "git show 8cee3c5a913f234e8fb65053b6ab4f34ed78249b:<path>",
+        "git show 28c27cb896d02e0185b9fa02047411fa152f6469:<path>",
+        "docs/project/maintainers/qualification/enterprise_quality_oversight/campaign_a/findings/FINDINGS.jsonl",
+        "eqo_closure_master_7499b85e.plan.md",
+        "findings assigned: ['A2-047', 'A7-013', 'A5-015']"
+      ]
+    },
+    {
+      "TASK_ID": "EQO-W3-WB04-DIS",
+      "Parent": "EQO-W3",
+      "Workstream": "WB04",
+      "Objective": "Disposition per assigned finding — Security",
+      "Preconditions": [
+        "TRAIN_PIN=28c27cb896d02e0185b9fa02047411fa152f6469",
+        "Domains: Security"
+      ],
+      "Dependencies": [
+        "EQO-W0-01",
+        "EQO-W3-WB04-EVD"
+      ],
+      "Eligibility": "serial",
+      "Owner role": "EQO tester",
+      "Ticket refs": [
+        "T-IGX-051-B"
+      ],
+      "Acceptance": "Disposition per assigned finding",
+      "Evidence": "['A2-047', 'A7-013', 'A5-015']",
+      "Audit": "none",
+      "Write set": [
+        "docs/project/maintainers/qualification/enterprise_quality_oversight/eqo_closure/",
+        "eqo_closure/runs/"
+      ],
+      "Read set": [
+        "git show 8cee3c5a913f234e8fb65053b6ab4f34ed78249b:<path>",
+        "git show 28c27cb896d02e0185b9fa02047411fa152f6469:<path>",
+        "docs/project/maintainers/qualification/enterprise_quality_oversight/campaign_a/findings/FINDINGS.jsonl",
+        "eqo_closure_master_7499b85e.plan.md",
+        "findings assigned: ['A2-047', 'A7-013', 'A5-015']"
+      ]
+    },
+    {
+      "TASK_ID": "EQO-W3-WB04-AUD",
+      "Parent": "EQO-W3",
+      "Workstream": "WB04",
+      "Objective": "Independent session E same SHA — Security",
+      "Preconditions": [
+        "TRAIN_PIN=28c27cb896d02e0185b9fa02047411fa152f6469",
+        "Domains: Security"
+      ],
+      "Dependencies": [
+        "EQO-W0-01",
+        "EQO-W3-WB04-EVD"
+      ],
+      "Eligibility": "serial",
+      "Owner role": "independent auditor",
+      "Ticket refs": [
+        "T-IGX-051-B"
+      ],
+      "Acceptance": "Independent session E same SHA",
+      "Evidence": "['A2-047', 'A7-013', 'A5-015']",
+      "Audit": "session E",
+      "Write set": [
+        "docs/project/maintainers/qualification/enterprise_quality_oversight/eqo_closure/",
+        "eqo_closure/runs/"
+      ],
+      "Read set": [
+        "git show 8cee3c5a913f234e8fb65053b6ab4f34ed78249b:<path>",
+        "git show 28c27cb896d02e0185b9fa02047411fa152f6469:<path>",
+        "docs/project/maintainers/qualification/enterprise_quality_oversight/campaign_a/findings/FINDINGS.jsonl",
+        "eqo_closure_master_7499b85e.plan.md",
+        "findings assigned: ['A2-047', 'A7-013', 'A5-015']"
+      ]
+    },
+    {
+      "TASK_ID": "EQO-W3-WB04-COR",
+      "Parent": "EQO-W3",
+      "Workstream": "WB04",
+      "Objective": "CL-01 if defect else NOT_APPLICABLE_WITH_EVIDENCE — Security",
+      "Preconditions": [
+        "TRAIN_PIN=28c27cb896d02e0185b9fa02047411fa152f6469",
+        "Domains: Security"
+      ],
+      "Dependencies": [
+        "EQO-W0-01"
+      ],
+      "Eligibility": "serial",
+      "Owner role": "EQO orchestrator",
+      "Ticket refs": [
+        "T-IGX-051-B"
+      ],
+      "Acceptance": "CL-01 if defect else NOT_APPLICABLE_WITH_EVIDENCE",
+      "Evidence": "['A2-047', 'A7-013', 'A5-015']",
+      "Audit": "none",
+      "Write set": [
+        "docs/project/maintainers/qualification/enterprise_quality_oversight/eqo_closure/",
+        "eqo_closure/runs/"
+      ],
+      "Read set": [
+        "git show 8cee3c5a913f234e8fb65053b6ab4f34ed78249b:<path>",
+        "git show 28c27cb896d02e0185b9fa02047411fa152f6469:<path>",
+        "docs/project/maintainers/qualification/enterprise_quality_oversight/campaign_a/findings/FINDINGS.jsonl",
+        "eqo_closure_master_7499b85e.plan.md",
+        "findings assigned: ['A2-047', 'A7-013', 'A5-015']"
+      ]
+    },
+    {
+      "TASK_ID": "EQO-W3-WB04-DRV",
+      "Parent": "EQO-W3",
+      "Workstream": "WB04",
+      "Objective": "EQO-RV-01 if pin moves — Security",
+      "Preconditions": [
+        "TRAIN_PIN=28c27cb896d02e0185b9fa02047411fa152f6469",
+        "Domains: Security"
+      ],
+      "Dependencies": [
+        "EQO-W0-01"
+      ],
+      "Eligibility": "serial",
+      "Owner role": "EQO orchestrator",
+      "Ticket refs": [
+        "T-IGX-051-B"
+      ],
+      "Acceptance": "EQO-RV-01 if pin moves",
+      "Evidence": "['A2-047', 'A7-013', 'A5-015']",
+      "Audit": "none",
+      "Write set": [
+        "docs/project/maintainers/qualification/enterprise_quality_oversight/eqo_closure/",
+        "eqo_closure/runs/"
+      ],
+      "Read set": [
+        "git show 8cee3c5a913f234e8fb65053b6ab4f34ed78249b:<path>",
+        "git show 28c27cb896d02e0185b9fa02047411fa152f6469:<path>",
+        "docs/project/maintainers/qualification/enterprise_quality_oversight/campaign_a/findings/FINDINGS.jsonl",
+        "eqo_closure_master_7499b85e.plan.md",
+        "findings assigned: ['A2-047', 'A7-013', 'A5-015']"
+      ]
+    },
+    {
+      "TASK_ID": "EQO-W3-WB04-CLS",
+      "Parent": "EQO-W3",
+      "Workstream": "WB04",
+      "Objective": "DIS and AUD complete or exact blocker — Security",
+      "Preconditions": [
+        "TRAIN_PIN=28c27cb896d02e0185b9fa02047411fa152f6469",
+        "Domains: Security"
+      ],
+      "Dependencies": [
+        "EQO-W0-01",
+        "EQO-W3-WB04-DIS",
+        "EQO-W3-WB04-AUD"
+      ],
+      "Eligibility": "serial",
+      "Owner role": "EQO orchestrator",
+      "Ticket refs": [
+        "T-IGX-051-B"
+      ],
+      "Acceptance": "DIS and AUD complete or exact blocker",
+      "Evidence": "['A2-047', 'A7-013', 'A5-015']",
+      "Audit": "none",
+      "Write set": [
+        "docs/project/maintainers/qualification/enterprise_quality_oversight/eqo_closure/",
+        "eqo_closure/runs/"
+      ],
+      "Read set": [
+        "git show 8cee3c5a913f234e8fb65053b6ab4f34ed78249b:<path>",
+        "git show 28c27cb896d02e0185b9fa02047411fa152f6469:<path>",
+        "docs/project/maintainers/qualification/enterprise_quality_oversight/campaign_a/findings/FINDINGS.jsonl",
+        "eqo_closure_master_7499b85e.plan.md",
+        "findings assigned: ['A2-047', 'A7-013', 'A5-015']"
+      ]
+    },
+    {
+      "TASK_ID": "EQO-W3-WB05-DES",
+      "Parent": "EQO-W3",
+      "Workstream": "WB05",
+      "Objective": "Preregister SHA256 before EXE — Architecture boundaries",
+      "Preconditions": [
+        "TRAIN_PIN=28c27cb896d02e0185b9fa02047411fa152f6469",
+        "Domains: Architecture Boundaries"
+      ],
+      "Dependencies": [
+        "EQO-W0-01"
+      ],
+      "Eligibility": "EXECUTABLE_IN_PARALLEL",
+      "Owner role": "EQO tester",
+      "Ticket refs": [
+        "T-IGX-043-G",
+        "T-IGX-043-H",
+        "T-IGX-051-I"
+      ],
+      "Acceptance": "Preregister SHA256 before EXE",
+      "Evidence": "['A2-009', 'A4-007', 'A4-020', 'A3-011', 'A7-021']",
+      "Audit": "none",
+      "Write set": [
+        "docs/project/maintainers/qualification/enterprise_quality_oversight/eqo_closure/",
+        "eqo_closure/runs/"
+      ],
+      "Read set": [
+        "git show 8cee3c5a913f234e8fb65053b6ab4f34ed78249b:<path>",
+        "git show 28c27cb896d02e0185b9fa02047411fa152f6469:<path>",
+        "docs/project/maintainers/qualification/enterprise_quality_oversight/campaign_a/findings/FINDINGS.jsonl",
+        "eqo_closure_master_7499b85e.plan.md",
+        "findings assigned: ['A2-009', 'A4-007', 'A4-020', 'A3-011', 'A7-021']"
+      ]
+    },
+    {
+      "TASK_ID": "EQO-W3-WB05-EXE",
+      "Parent": "EQO-W3",
+      "Workstream": "WB05",
+      "Objective": "Band-C isolated probe on TRAIN_PIN — Architecture boundaries",
+      "Preconditions": [
+        "TRAIN_PIN=28c27cb896d02e0185b9fa02047411fa152f6469",
+        "Domains: Architecture Boundaries"
+      ],
+      "Dependencies": [
+        "EQO-W0-01",
+        "EQO-W3-WB05-DES"
+      ],
+      "Eligibility": "EXECUTABLE_IN_PARALLEL",
+      "Owner role": "EQO tester",
+      "Ticket refs": [
+        "T-IGX-043-G",
+        "T-IGX-043-H",
+        "T-IGX-051-I"
+      ],
+      "Acceptance": "Band-C isolated probe on TRAIN_PIN",
+      "Evidence": "runs/wb05/",
+      "Audit": "none",
+      "Write set": [
+        "docs/project/maintainers/qualification/enterprise_quality_oversight/eqo_closure/",
+        "eqo_closure/runs/"
+      ],
+      "Read set": [
+        "git show 8cee3c5a913f234e8fb65053b6ab4f34ed78249b:<path>",
+        "git show 28c27cb896d02e0185b9fa02047411fa152f6469:<path>",
+        "docs/project/maintainers/qualification/enterprise_quality_oversight/campaign_a/findings/FINDINGS.jsonl",
+        "eqo_closure_master_7499b85e.plan.md",
+        "findings assigned: ['A2-009', 'A4-007', 'A4-020', 'A3-011', 'A7-021']"
+      ]
+    },
+    {
+      "TASK_ID": "EQO-W3-WB05-EVD",
+      "Parent": "EQO-W3",
+      "Workstream": "WB05",
+      "Objective": "Manifest under eqo_closure/runs/ — Architecture boundaries",
+      "Preconditions": [
+        "TRAIN_PIN=28c27cb896d02e0185b9fa02047411fa152f6469",
+        "Domains: Architecture Boundaries"
+      ],
+      "Dependencies": [
+        "EQO-W0-01",
+        "EQO-W3-WB05-EXE"
+      ],
+      "Eligibility": "serial",
+      "Owner role": "EQO tester",
+      "Ticket refs": [
+        "T-IGX-043-G",
+        "T-IGX-043-H",
+        "T-IGX-051-I"
+      ],
+      "Acceptance": "Manifest under eqo_closure/runs/",
+      "Evidence": "runs/wb05/",
+      "Audit": "none",
+      "Write set": [
+        "docs/project/maintainers/qualification/enterprise_quality_oversight/eqo_closure/",
+        "eqo_closure/runs/"
+      ],
+      "Read set": [
+        "git show 8cee3c5a913f234e8fb65053b6ab4f34ed78249b:<path>",
+        "git show 28c27cb896d02e0185b9fa02047411fa152f6469:<path>",
+        "docs/project/maintainers/qualification/enterprise_quality_oversight/campaign_a/findings/FINDINGS.jsonl",
+        "eqo_closure_master_7499b85e.plan.md",
+        "findings assigned: ['A2-009', 'A4-007', 'A4-020', 'A3-011', 'A7-021']"
+      ]
+    },
+    {
+      "TASK_ID": "EQO-W3-WB05-DIS",
+      "Parent": "EQO-W3",
+      "Workstream": "WB05",
+      "Objective": "Disposition per assigned finding — Architecture boundaries",
+      "Preconditions": [
+        "TRAIN_PIN=28c27cb896d02e0185b9fa02047411fa152f6469",
+        "Domains: Architecture Boundaries"
+      ],
+      "Dependencies": [
+        "EQO-W0-01",
+        "EQO-W3-WB05-EVD"
+      ],
+      "Eligibility": "serial",
+      "Owner role": "EQO tester",
+      "Ticket refs": [
+        "T-IGX-043-G",
+        "T-IGX-043-H",
+        "T-IGX-051-I"
+      ],
+      "Acceptance": "Disposition per assigned finding",
+      "Evidence": "['A2-009', 'A4-007', 'A4-020', 'A3-011', 'A7-021']",
+      "Audit": "none",
+      "Write set": [
+        "docs/project/maintainers/qualification/enterprise_quality_oversight/eqo_closure/",
+        "eqo_closure/runs/"
+      ],
+      "Read set": [
+        "git show 8cee3c5a913f234e8fb65053b6ab4f34ed78249b:<path>",
+        "git show 28c27cb896d02e0185b9fa02047411fa152f6469:<path>",
+        "docs/project/maintainers/qualification/enterprise_quality_oversight/campaign_a/findings/FINDINGS.jsonl",
+        "eqo_closure_master_7499b85e.plan.md",
+        "findings assigned: ['A2-009', 'A4-007', 'A4-020', 'A3-011', 'A7-021']"
+      ]
+    },
+    {
+      "TASK_ID": "EQO-W3-WB05-AUD",
+      "Parent": "EQO-W3",
+      "Workstream": "WB05",
+      "Objective": "Independent session E same SHA — Architecture boundaries",
+      "Preconditions": [
+        "TRAIN_PIN=28c27cb896d02e0185b9fa02047411fa152f6469",
+        "Domains: Architecture Boundaries"
+      ],
+      "Dependencies": [
+        "EQO-W0-01",
+        "EQO-W3-WB05-EVD"
+      ],
+      "Eligibility": "serial",
+      "Owner role": "independent auditor",
+      "Ticket refs": [
+        "T-IGX-043-G",
+        "T-IGX-043-H",
+        "T-IGX-051-I"
+      ],
+      "Acceptance": "Independent session E same SHA",
+      "Evidence": "['A2-009', 'A4-007', 'A4-020', 'A3-011', 'A7-021']",
+      "Audit": "session E",
+      "Write set": [
+        "docs/project/maintainers/qualification/enterprise_quality_oversight/eqo_closure/",
+        "eqo_closure/runs/"
+      ],
+      "Read set": [
+        "git show 8cee3c5a913f234e8fb65053b6ab4f34ed78249b:<path>",
+        "git show 28c27cb896d02e0185b9fa02047411fa152f6469:<path>",
+        "docs/project/maintainers/qualification/enterprise_quality_oversight/campaign_a/findings/FINDINGS.jsonl",
+        "eqo_closure_master_7499b85e.plan.md",
+        "findings assigned: ['A2-009', 'A4-007', 'A4-020', 'A3-011', 'A7-021']"
+      ]
+    },
+    {
+      "TASK_ID": "EQO-W3-WB05-COR",
+      "Parent": "EQO-W3",
+      "Workstream": "WB05",
+      "Objective": "CL-01 if defect else NOT_APPLICABLE_WITH_EVIDENCE — Architecture boundaries",
+      "Preconditions": [
+        "TRAIN_PIN=28c27cb896d02e0185b9fa02047411fa152f6469",
+        "Domains: Architecture Boundaries"
+      ],
+      "Dependencies": [
+        "EQO-W0-01"
+      ],
+      "Eligibility": "serial",
+      "Owner role": "EQO orchestrator",
+      "Ticket refs": [
+        "T-IGX-043-G",
+        "T-IGX-043-H",
+        "T-IGX-051-I"
+      ],
+      "Acceptance": "CL-01 if defect else NOT_APPLICABLE_WITH_EVIDENCE",
+      "Evidence": "['A2-009', 'A4-007', 'A4-020', 'A3-011', 'A7-021']",
+      "Audit": "none",
+      "Write set": [
+        "docs/project/maintainers/qualification/enterprise_quality_oversight/eqo_closure/",
+        "eqo_closure/runs/"
+      ],
+      "Read set": [
+        "git show 8cee3c5a913f234e8fb65053b6ab4f34ed78249b:<path>",
+        "git show 28c27cb896d02e0185b9fa02047411fa152f6469:<path>",
+        "docs/project/maintainers/qualification/enterprise_quality_oversight/campaign_a/findings/FINDINGS.jsonl",
+        "eqo_closure_master_7499b85e.plan.md",
+        "findings assigned: ['A2-009', 'A4-007', 'A4-020', 'A3-011', 'A7-021']"
+      ]
+    },
+    {
+      "TASK_ID": "EQO-W3-WB05-DRV",
+      "Parent": "EQO-W3",
+      "Workstream": "WB05",
+      "Objective": "EQO-RV-01 if pin moves — Architecture boundaries",
+      "Preconditions": [
+        "TRAIN_PIN=28c27cb896d02e0185b9fa02047411fa152f6469",
+        "Domains: Architecture Boundaries"
+      ],
+      "Dependencies": [
+        "EQO-W0-01"
+      ],
+      "Eligibility": "serial",
+      "Owner role": "EQO orchestrator",
+      "Ticket refs": [
+        "T-IGX-043-G",
+        "T-IGX-043-H",
+        "T-IGX-051-I"
+      ],
+      "Acceptance": "EQO-RV-01 if pin moves",
+      "Evidence": "['A2-009', 'A4-007', 'A4-020', 'A3-011', 'A7-021']",
+      "Audit": "none",
+      "Write set": [
+        "docs/project/maintainers/qualification/enterprise_quality_oversight/eqo_closure/",
+        "eqo_closure/runs/"
+      ],
+      "Read set": [
+        "git show 8cee3c5a913f234e8fb65053b6ab4f34ed78249b:<path>",
+        "git show 28c27cb896d02e0185b9fa02047411fa152f6469:<path>",
+        "docs/project/maintainers/qualification/enterprise_quality_oversight/campaign_a/findings/FINDINGS.jsonl",
+        "eqo_closure_master_7499b85e.plan.md",
+        "findings assigned: ['A2-009', 'A4-007', 'A4-020', 'A3-011', 'A7-021']"
+      ]
+    },
+    {
+      "TASK_ID": "EQO-W3-WB05-CLS",
+      "Parent": "EQO-W3",
+      "Workstream": "WB05",
+      "Objective": "DIS and AUD complete or exact blocker — Architecture boundaries",
+      "Preconditions": [
+        "TRAIN_PIN=28c27cb896d02e0185b9fa02047411fa152f6469",
+        "Domains: Architecture Boundaries"
+      ],
+      "Dependencies": [
+        "EQO-W0-01",
+        "EQO-W3-WB05-DIS",
+        "EQO-W3-WB05-AUD"
+      ],
+      "Eligibility": "serial",
+      "Owner role": "EQO orchestrator",
+      "Ticket refs": [
+        "T-IGX-043-G",
+        "T-IGX-043-H",
+        "T-IGX-051-I"
+      ],
+      "Acceptance": "DIS and AUD complete or exact blocker",
+      "Evidence": "['A2-009', 'A4-007', 'A4-020', 'A3-011', 'A7-021']",
+      "Audit": "none",
+      "Write set": [
+        "docs/project/maintainers/qualification/enterprise_quality_oversight/eqo_closure/",
+        "eqo_closure/runs/"
+      ],
+      "Read set": [
+        "git show 8cee3c5a913f234e8fb65053b6ab4f34ed78249b:<path>",
+        "git show 28c27cb896d02e0185b9fa02047411fa152f6469:<path>",
+        "docs/project/maintainers/qualification/enterprise_quality_oversight/campaign_a/findings/FINDINGS.jsonl",
+        "eqo_closure_master_7499b85e.plan.md",
+        "findings assigned: ['A2-009', 'A4-007', 'A4-020', 'A3-011', 'A7-021']"
+      ]
+    },
+    {
+      "TASK_ID": "EQO-W3-WB06-DES",
+      "Parent": "EQO-W3",
+      "Workstream": "WB06",
+      "Objective": "Preregister SHA256 before EXE — Configuration and neutrality",
+      "Preconditions": [
+        "TRAIN_PIN=28c27cb896d02e0185b9fa02047411fa152f6469",
+        "Domains: Configuration"
+      ],
+      "Dependencies": [
+        "EQO-W0-01"
+      ],
+      "Eligibility": "EXECUTABLE_IN_PARALLEL",
+      "Owner role": "EQO tester",
+      "Ticket refs": [
+        "T-IGX-043-H"
+      ],
+      "Acceptance": "Preregister SHA256 before EXE",
+      "Evidence": "['A4-025', 'A4-042', 'A5-002']",
+      "Audit": "none",
+      "Write set": [
+        "docs/project/maintainers/qualification/enterprise_quality_oversight/eqo_closure/",
+        "eqo_closure/runs/"
+      ],
+      "Read set": [
+        "git show 8cee3c5a913f234e8fb65053b6ab4f34ed78249b:<path>",
+        "git show 28c27cb896d02e0185b9fa02047411fa152f6469:<path>",
+        "docs/project/maintainers/qualification/enterprise_quality_oversight/campaign_a/findings/FINDINGS.jsonl",
+        "eqo_closure_master_7499b85e.plan.md",
+        "findings assigned: ['A4-025', 'A4-042', 'A5-002']"
+      ]
+    },
+    {
+      "TASK_ID": "EQO-W3-WB06-EXE",
+      "Parent": "EQO-W3",
+      "Workstream": "WB06",
+      "Objective": "Band-C isolated probe on TRAIN_PIN — Configuration and neutrality",
+      "Preconditions": [
+        "TRAIN_PIN=28c27cb896d02e0185b9fa02047411fa152f6469",
+        "Domains: Configuration"
+      ],
+      "Dependencies": [
+        "EQO-W0-01",
+        "EQO-W3-WB06-DES"
+      ],
+      "Eligibility": "EXECUTABLE_IN_PARALLEL",
+      "Owner role": "EQO tester",
+      "Ticket refs": [
+        "T-IGX-043-H"
+      ],
+      "Acceptance": "Band-C isolated probe on TRAIN_PIN",
+      "Evidence": "runs/wb06/",
+      "Audit": "none",
+      "Write set": [
+        "docs/project/maintainers/qualification/enterprise_quality_oversight/eqo_closure/",
+        "eqo_closure/runs/"
+      ],
+      "Read set": [
+        "git show 8cee3c5a913f234e8fb65053b6ab4f34ed78249b:<path>",
+        "git show 28c27cb896d02e0185b9fa02047411fa152f6469:<path>",
+        "docs/project/maintainers/qualification/enterprise_quality_oversight/campaign_a/findings/FINDINGS.jsonl",
+        "eqo_closure_master_7499b85e.plan.md",
+        "findings assigned: ['A4-025', 'A4-042', 'A5-002']"
+      ]
+    },
+    {
+      "TASK_ID": "EQO-W3-WB06-EVD",
+      "Parent": "EQO-W3",
+      "Workstream": "WB06",
+      "Objective": "Manifest under eqo_closure/runs/ — Configuration and neutrality",
+      "Preconditions": [
+        "TRAIN_PIN=28c27cb896d02e0185b9fa02047411fa152f6469",
+        "Domains: Configuration"
+      ],
+      "Dependencies": [
+        "EQO-W0-01",
+        "EQO-W3-WB06-EXE"
+      ],
+      "Eligibility": "serial",
+      "Owner role": "EQO tester",
+      "Ticket refs": [
+        "T-IGX-043-H"
+      ],
+      "Acceptance": "Manifest under eqo_closure/runs/",
+      "Evidence": "runs/wb06/",
+      "Audit": "none",
+      "Write set": [
+        "docs/project/maintainers/qualification/enterprise_quality_oversight/eqo_closure/",
+        "eqo_closure/runs/"
+      ],
+      "Read set": [
+        "git show 8cee3c5a913f234e8fb65053b6ab4f34ed78249b:<path>",
+        "git show 28c27cb896d02e0185b9fa02047411fa152f6469:<path>",
+        "docs/project/maintainers/qualification/enterprise_quality_oversight/campaign_a/findings/FINDINGS.jsonl",
+        "eqo_closure_master_7499b85e.plan.md",
+        "findings assigned: ['A4-025', 'A4-042', 'A5-002']"
+      ]
+    },
+    {
+      "TASK_ID": "EQO-W3-WB06-DIS",
+      "Parent": "EQO-W3",
+      "Workstream": "WB06",
+      "Objective": "Disposition per assigned finding — Configuration and neutrality",
+      "Preconditions": [
+        "TRAIN_PIN=28c27cb896d02e0185b9fa02047411fa152f6469",
+        "Domains: Configuration"
+      ],
+      "Dependencies": [
+        "EQO-W0-01",
+        "EQO-W3-WB06-EVD"
+      ],
+      "Eligibility": "serial",
+      "Owner role": "EQO tester",
+      "Ticket refs": [
+        "T-IGX-043-H"
+      ],
+      "Acceptance": "Disposition per assigned finding",
+      "Evidence": "['A4-025', 'A4-042', 'A5-002']",
+      "Audit": "none",
+      "Write set": [
+        "docs/project/maintainers/qualification/enterprise_quality_oversight/eqo_closure/",
+        "eqo_closure/runs/"
+      ],
+      "Read set": [
+        "git show 8cee3c5a913f234e8fb65053b6ab4f34ed78249b:<path>",
+        "git show 28c27cb896d02e0185b9fa02047411fa152f6469:<path>",
+        "docs/project/maintainers/qualification/enterprise_quality_oversight/campaign_a/findings/FINDINGS.jsonl",
+        "eqo_closure_master_7499b85e.plan.md",
+        "findings assigned: ['A4-025', 'A4-042', 'A5-002']"
+      ]
+    },
+    {
+      "TASK_ID": "EQO-W3-WB06-AUD",
+      "Parent": "EQO-W3",
+      "Workstream": "WB06",
+      "Objective": "Independent session E same SHA — Configuration and neutrality",
+      "Preconditions": [
+        "TRAIN_PIN=28c27cb896d02e0185b9fa02047411fa152f6469",
+        "Domains: Configuration"
+      ],
+      "Dependencies": [
+        "EQO-W0-01",
+        "EQO-W3-WB06-EVD"
+      ],
+      "Eligibility": "serial",
+      "Owner role": "independent auditor",
+      "Ticket refs": [
+        "T-IGX-043-H"
+      ],
+      "Acceptance": "Independent session E same SHA",
+      "Evidence": "['A4-025', 'A4-042', 'A5-002']",
+      "Audit": "session E",
+      "Write set": [
+        "docs/project/maintainers/qualification/enterprise_quality_oversight/eqo_closure/",
+        "eqo_closure/runs/"
+      ],
+      "Read set": [
+        "git show 8cee3c5a913f234e8fb65053b6ab4f34ed78249b:<path>",
+        "git show 28c27cb896d02e0185b9fa02047411fa152f6469:<path>",
+        "docs/project/maintainers/qualification/enterprise_quality_oversight/campaign_a/findings/FINDINGS.jsonl",
+        "eqo_closure_master_7499b85e.plan.md",
+        "findings assigned: ['A4-025', 'A4-042', 'A5-002']"
+      ]
+    },
+    {
+      "TASK_ID": "EQO-W3-WB06-COR",
+      "Parent": "EQO-W3",
+      "Workstream": "WB06",
+      "Objective": "CL-01 if defect else NOT_APPLICABLE_WITH_EVIDENCE — Configuration and neutrality",
+      "Preconditions": [
+        "TRAIN_PIN=28c27cb896d02e0185b9fa02047411fa152f6469",
+        "Domains: Configuration"
+      ],
+      "Dependencies": [
+        "EQO-W0-01"
+      ],
+      "Eligibility": "serial",
+      "Owner role": "EQO orchestrator",
+      "Ticket refs": [
+        "T-IGX-043-H"
+      ],
+      "Acceptance": "CL-01 if defect else NOT_APPLICABLE_WITH_EVIDENCE",
+      "Evidence": "['A4-025', 'A4-042', 'A5-002']",
+      "Audit": "none",
+      "Write set": [
+        "docs/project/maintainers/qualification/enterprise_quality_oversight/eqo_closure/",
+        "eqo_closure/runs/"
+      ],
+      "Read set": [
+        "git show 8cee3c5a913f234e8fb65053b6ab4f34ed78249b:<path>",
+        "git show 28c27cb896d02e0185b9fa02047411fa152f6469:<path>",
+        "docs/project/maintainers/qualification/enterprise_quality_oversight/campaign_a/findings/FINDINGS.jsonl",
+        "eqo_closure_master_7499b85e.plan.md",
+        "findings assigned: ['A4-025', 'A4-042', 'A5-002']"
+      ]
+    },
+    {
+      "TASK_ID": "EQO-W3-WB06-DRV",
+      "Parent": "EQO-W3",
+      "Workstream": "WB06",
+      "Objective": "EQO-RV-01 if pin moves — Configuration and neutrality",
+      "Preconditions": [
+        "TRAIN_PIN=28c27cb896d02e0185b9fa02047411fa152f6469",
+        "Domains: Configuration"
+      ],
+      "Dependencies": [
+        "EQO-W0-01"
+      ],
+      "Eligibility": "serial",
+      "Owner role": "EQO orchestrator",
+      "Ticket refs": [
+        "T-IGX-043-H"
+      ],
+      "Acceptance": "EQO-RV-01 if pin moves",
+      "Evidence": "['A4-025', 'A4-042', 'A5-002']",
+      "Audit": "none",
+      "Write set": [
+        "docs/project/maintainers/qualification/enterprise_quality_oversight/eqo_closure/",
+        "eqo_closure/runs/"
+      ],
+      "Read set": [
+        "git show 8cee3c5a913f234e8fb65053b6ab4f34ed78249b:<path>",
+        "git show 28c27cb896d02e0185b9fa02047411fa152f6469:<path>",
+        "docs/project/maintainers/qualification/enterprise_quality_oversight/campaign_a/findings/FINDINGS.jsonl",
+        "eqo_closure_master_7499b85e.plan.md",
+        "findings assigned: ['A4-025', 'A4-042', 'A5-002']"
+      ]
+    },
+    {
+      "TASK_ID": "EQO-W3-WB06-CLS",
+      "Parent": "EQO-W3",
+      "Workstream": "WB06",
+      "Objective": "DIS and AUD complete or exact blocker — Configuration and neutrality",
+      "Preconditions": [
+        "TRAIN_PIN=28c27cb896d02e0185b9fa02047411fa152f6469",
+        "Domains: Configuration"
+      ],
+      "Dependencies": [
+        "EQO-W0-01",
+        "EQO-W3-WB06-DIS",
+        "EQO-W3-WB06-AUD"
+      ],
+      "Eligibility": "serial",
+      "Owner role": "EQO orchestrator",
+      "Ticket refs": [
+        "T-IGX-043-H"
+      ],
+      "Acceptance": "DIS and AUD complete or exact blocker",
+      "Evidence": "['A4-025', 'A4-042', 'A5-002']",
+      "Audit": "none",
+      "Write set": [
+        "docs/project/maintainers/qualification/enterprise_quality_oversight/eqo_closure/",
+        "eqo_closure/runs/"
+      ],
+      "Read set": [
+        "git show 8cee3c5a913f234e8fb65053b6ab4f34ed78249b:<path>",
+        "git show 28c27cb896d02e0185b9fa02047411fa152f6469:<path>",
+        "docs/project/maintainers/qualification/enterprise_quality_oversight/campaign_a/findings/FINDINGS.jsonl",
+        "eqo_closure_master_7499b85e.plan.md",
+        "findings assigned: ['A4-025', 'A4-042', 'A5-002']"
+      ]
+    },
+    {
+      "TASK_ID": "EQO-W3-WB07-DES",
+      "Parent": "EQO-W3",
+      "Workstream": "WB07",
+      "Objective": "Preregister SHA256 before EXE — Recovery and durable execution",
+      "Preconditions": [
+        "TRAIN_PIN=28c27cb896d02e0185b9fa02047411fa152f6469",
+        "Domains: Recovery, Durable execution"
+      ],
+      "Dependencies": [
+        "EQO-W0-01"
+      ],
+      "Eligibility": "EXECUTABLE_IN_PARALLEL",
+      "Owner role": "EQO tester",
+      "Ticket refs": [
+        "T-IGX-051-E"
+      ],
+      "Acceptance": "Preregister SHA256 before EXE",
+      "Evidence": "['A2-043', 'A2-049', 'A4-034', 'A4-045']",
+      "Audit": "none",
+      "Write set": [
+        "docs/project/maintainers/qualification/enterprise_quality_oversight/eqo_closure/",
+        "eqo_closure/runs/"
+      ],
+      "Read set": [
+        "git show 8cee3c5a913f234e8fb65053b6ab4f34ed78249b:<path>",
+        "git show 28c27cb896d02e0185b9fa02047411fa152f6469:<path>",
+        "docs/project/maintainers/qualification/enterprise_quality_oversight/campaign_a/findings/FINDINGS.jsonl",
+        "eqo_closure_master_7499b85e.plan.md",
+        "findings assigned: ['A2-043', 'A2-049', 'A4-034', 'A4-045']"
+      ]
+    },
+    {
+      "TASK_ID": "EQO-W3-WB07-EXE",
+      "Parent": "EQO-W3",
+      "Workstream": "WB07",
+      "Objective": "Band-C isolated probe on TRAIN_PIN — Recovery and durable execution",
+      "Preconditions": [
+        "TRAIN_PIN=28c27cb896d02e0185b9fa02047411fa152f6469",
+        "Domains: Recovery, Durable execution"
+      ],
+      "Dependencies": [
+        "EQO-W0-01",
+        "EQO-W3-WB07-DES"
+      ],
+      "Eligibility": "EXECUTABLE_IN_PARALLEL",
+      "Owner role": "EQO tester",
+      "Ticket refs": [
+        "T-IGX-051-E"
+      ],
+      "Acceptance": "Band-C isolated probe on TRAIN_PIN",
+      "Evidence": "runs/wb07/",
+      "Audit": "none",
+      "Write set": [
+        "docs/project/maintainers/qualification/enterprise_quality_oversight/eqo_closure/",
+        "eqo_closure/runs/"
+      ],
+      "Read set": [
+        "git show 8cee3c5a913f234e8fb65053b6ab4f34ed78249b:<path>",
+        "git show 28c27cb896d02e0185b9fa02047411fa152f6469:<path>",
+        "docs/project/maintainers/qualification/enterprise_quality_oversight/campaign_a/findings/FINDINGS.jsonl",
+        "eqo_closure_master_7499b85e.plan.md",
+        "findings assigned: ['A2-043', 'A2-049', 'A4-034', 'A4-045']"
+      ]
+    },
+    {
+      "TASK_ID": "EQO-W3-WB07-EVD",
+      "Parent": "EQO-W3",
+      "Workstream": "WB07",
+      "Objective": "Manifest under eqo_closure/runs/ — Recovery and durable execution",
+      "Preconditions": [
+        "TRAIN_PIN=28c27cb896d02e0185b9fa02047411fa152f6469",
+        "Domains: Recovery, Durable execution"
+      ],
+      "Dependencies": [
+        "EQO-W0-01",
+        "EQO-W3-WB07-EXE"
+      ],
+      "Eligibility": "serial",
+      "Owner role": "EQO tester",
+      "Ticket refs": [
+        "T-IGX-051-E"
+      ],
+      "Acceptance": "Manifest under eqo_closure/runs/",
+      "Evidence": "runs/wb07/",
+      "Audit": "none",
+      "Write set": [
+        "docs/project/maintainers/qualification/enterprise_quality_oversight/eqo_closure/",
+        "eqo_closure/runs/"
+      ],
+      "Read set": [
+        "git show 8cee3c5a913f234e8fb65053b6ab4f34ed78249b:<path>",
+        "git show 28c27cb896d02e0185b9fa02047411fa152f6469:<path>",
+        "docs/project/maintainers/qualification/enterprise_quality_oversight/campaign_a/findings/FINDINGS.jsonl",
+        "eqo_closure_master_7499b85e.plan.md",
+        "findings assigned: ['A2-043', 'A2-049', 'A4-034', 'A4-045']"
+      ]
+    },
+    {
+      "TASK_ID": "EQO-W3-WB07-DIS",
+      "Parent": "EQO-W3",
+      "Workstream": "WB07",
+      "Objective": "Disposition per assigned finding — Recovery and durable execution",
+      "Preconditions": [
+        "TRAIN_PIN=28c27cb896d02e0185b9fa02047411fa152f6469",
+        "Domains: Recovery, Durable execution"
+      ],
+      "Dependencies": [
+        "EQO-W0-01",
+        "EQO-W3-WB07-EVD"
+      ],
+      "Eligibility": "serial",
+      "Owner role": "EQO tester",
+      "Ticket refs": [
+        "T-IGX-051-E"
+      ],
+      "Acceptance": "Disposition per assigned finding",
+      "Evidence": "['A2-043', 'A2-049', 'A4-034', 'A4-045']",
+      "Audit": "none",
+      "Write set": [
+        "docs/project/maintainers/qualification/enterprise_quality_oversight/eqo_closure/",
+        "eqo_closure/runs/"
+      ],
+      "Read set": [
+        "git show 8cee3c5a913f234e8fb65053b6ab4f34ed78249b:<path>",
+        "git show 28c27cb896d02e0185b9fa02047411fa152f6469:<path>",
+        "docs/project/maintainers/qualification/enterprise_quality_oversight/campaign_a/findings/FINDINGS.jsonl",
+        "eqo_closure_master_7499b85e.plan.md",
+        "findings assigned: ['A2-043', 'A2-049', 'A4-034', 'A4-045']"
+      ]
+    },
+    {
+      "TASK_ID": "EQO-W3-WB07-AUD",
+      "Parent": "EQO-W3",
+      "Workstream": "WB07",
+      "Objective": "Independent session E same SHA — Recovery and durable execution",
+      "Preconditions": [
+        "TRAIN_PIN=28c27cb896d02e0185b9fa02047411fa152f6469",
+        "Domains: Recovery, Durable execution"
+      ],
+      "Dependencies": [
+        "EQO-W0-01",
+        "EQO-W3-WB07-EVD"
+      ],
+      "Eligibility": "serial",
+      "Owner role": "independent auditor",
+      "Ticket refs": [
+        "T-IGX-051-E"
+      ],
+      "Acceptance": "Independent session E same SHA",
+      "Evidence": "['A2-043', 'A2-049', 'A4-034', 'A4-045']",
+      "Audit": "session E",
+      "Write set": [
+        "docs/project/maintainers/qualification/enterprise_quality_oversight/eqo_closure/",
+        "eqo_closure/runs/"
+      ],
+      "Read set": [
+        "git show 8cee3c5a913f234e8fb65053b6ab4f34ed78249b:<path>",
+        "git show 28c27cb896d02e0185b9fa02047411fa152f6469:<path>",
+        "docs/project/maintainers/qualification/enterprise_quality_oversight/campaign_a/findings/FINDINGS.jsonl",
+        "eqo_closure_master_7499b85e.plan.md",
+        "findings assigned: ['A2-043', 'A2-049', 'A4-034', 'A4-045']"
+      ]
+    },
+    {
+      "TASK_ID": "EQO-W3-WB07-COR",
+      "Parent": "EQO-W3",
+      "Workstream": "WB07",
+      "Objective": "CL-01 if defect else NOT_APPLICABLE_WITH_EVIDENCE — Recovery and durable execution",
+      "Preconditions": [
+        "TRAIN_PIN=28c27cb896d02e0185b9fa02047411fa152f6469",
+        "Domains: Recovery, Durable execution"
+      ],
+      "Dependencies": [
+        "EQO-W0-01"
+      ],
+      "Eligibility": "serial",
+      "Owner role": "EQO orchestrator",
+      "Ticket refs": [
+        "T-IGX-051-E"
+      ],
+      "Acceptance": "CL-01 if defect else NOT_APPLICABLE_WITH_EVIDENCE",
+      "Evidence": "['A2-043', 'A2-049', 'A4-034', 'A4-045']",
+      "Audit": "none",
+      "Write set": [
+        "docs/project/maintainers/qualification/enterprise_quality_oversight/eqo_closure/",
+        "eqo_closure/runs/"
+      ],
+      "Read set": [
+        "git show 8cee3c5a913f234e8fb65053b6ab4f34ed78249b:<path>",
+        "git show 28c27cb896d02e0185b9fa02047411fa152f6469:<path>",
+        "docs/project/maintainers/qualification/enterprise_quality_oversight/campaign_a/findings/FINDINGS.jsonl",
+        "eqo_closure_master_7499b85e.plan.md",
+        "findings assigned: ['A2-043', 'A2-049', 'A4-034', 'A4-045']"
+      ]
+    },
+    {
+      "TASK_ID": "EQO-W3-WB07-DRV",
+      "Parent": "EQO-W3",
+      "Workstream": "WB07",
+      "Objective": "EQO-RV-01 if pin moves — Recovery and durable execution",
+      "Preconditions": [
+        "TRAIN_PIN=28c27cb896d02e0185b9fa02047411fa152f6469",
+        "Domains: Recovery, Durable execution"
+      ],
+      "Dependencies": [
+        "EQO-W0-01"
+      ],
+      "Eligibility": "serial",
+      "Owner role": "EQO orchestrator",
+      "Ticket refs": [
+        "T-IGX-051-E"
+      ],
+      "Acceptance": "EQO-RV-01 if pin moves",
+      "Evidence": "['A2-043', 'A2-049', 'A4-034', 'A4-045']",
+      "Audit": "none",
+      "Write set": [
+        "docs/project/maintainers/qualification/enterprise_quality_oversight/eqo_closure/",
+        "eqo_closure/runs/"
+      ],
+      "Read set": [
+        "git show 8cee3c5a913f234e8fb65053b6ab4f34ed78249b:<path>",
+        "git show 28c27cb896d02e0185b9fa02047411fa152f6469:<path>",
+        "docs/project/maintainers/qualification/enterprise_quality_oversight/campaign_a/findings/FINDINGS.jsonl",
+        "eqo_closure_master_7499b85e.plan.md",
+        "findings assigned: ['A2-043', 'A2-049', 'A4-034', 'A4-045']"
+      ]
+    },
+    {
+      "TASK_ID": "EQO-W3-WB07-CLS",
+      "Parent": "EQO-W3",
+      "Workstream": "WB07",
+      "Objective": "DIS and AUD complete or exact blocker — Recovery and durable execution",
+      "Preconditions": [
+        "TRAIN_PIN=28c27cb896d02e0185b9fa02047411fa152f6469",
+        "Domains: Recovery, Durable execution"
+      ],
+      "Dependencies": [
+        "EQO-W0-01",
+        "EQO-W3-WB07-DIS",
+        "EQO-W3-WB07-AUD"
+      ],
+      "Eligibility": "serial",
+      "Owner role": "EQO orchestrator",
+      "Ticket refs": [
+        "T-IGX-051-E"
+      ],
+      "Acceptance": "DIS and AUD complete or exact blocker",
+      "Evidence": "['A2-043', 'A2-049', 'A4-034', 'A4-045']",
+      "Audit": "none",
+      "Write set": [
+        "docs/project/maintainers/qualification/enterprise_quality_oversight/eqo_closure/",
+        "eqo_closure/runs/"
+      ],
+      "Read set": [
+        "git show 8cee3c5a913f234e8fb65053b6ab4f34ed78249b:<path>",
+        "git show 28c27cb896d02e0185b9fa02047411fa152f6469:<path>",
+        "docs/project/maintainers/qualification/enterprise_quality_oversight/campaign_a/findings/FINDINGS.jsonl",
+        "eqo_closure_master_7499b85e.plan.md",
+        "findings assigned: ['A2-043', 'A2-049', 'A4-034', 'A4-045']"
+      ]
+    },
+    {
+      "TASK_ID": "EQO-W3-WB08-DES",
+      "Parent": "EQO-W3",
+      "Workstream": "WB08",
+      "Objective": "Preregister SHA256 before EXE — Model, context, memory",
+      "Preconditions": [
+        "TRAIN_PIN=28c27cb896d02e0185b9fa02047411fa152f6469",
+        "Domains: Cross-domain context/memory"
+      ],
+      "Dependencies": [
+        "EQO-W0-01"
+      ],
+      "Eligibility": "EXECUTABLE_IN_PARALLEL",
+      "Owner role": "EQO tester",
+      "Ticket refs": [
+        "T-IGX-043-A",
+        "T-IGX-043-B"
+      ],
+      "Acceptance": "Preregister SHA256 before EXE",
+      "Evidence": "[]",
+      "Audit": "none",
+      "Write set": [
+        "docs/project/maintainers/qualification/enterprise_quality_oversight/eqo_closure/",
+        "eqo_closure/runs/"
+      ],
+      "Read set": [
+        "git show 8cee3c5a913f234e8fb65053b6ab4f34ed78249b:<path>",
+        "git show 28c27cb896d02e0185b9fa02047411fa152f6469:<path>",
+        "docs/project/maintainers/qualification/enterprise_quality_oversight/campaign_a/findings/FINDINGS.jsonl",
+        "eqo_closure_master_7499b85e.plan.md",
+        "findings assigned: []"
+      ]
+    },
+    {
+      "TASK_ID": "EQO-W3-WB08-EXE",
+      "Parent": "EQO-W3",
+      "Workstream": "WB08",
+      "Objective": "Band-C isolated probe on TRAIN_PIN — Model, context, memory",
+      "Preconditions": [
+        "TRAIN_PIN=28c27cb896d02e0185b9fa02047411fa152f6469",
+        "Domains: Cross-domain context/memory"
+      ],
+      "Dependencies": [
+        "EQO-W0-01",
+        "EQO-W3-WB08-DES"
+      ],
+      "Eligibility": "EXECUTABLE_IN_PARALLEL",
+      "Owner role": "EQO tester",
+      "Ticket refs": [
+        "T-IGX-043-A",
+        "T-IGX-043-B"
+      ],
+      "Acceptance": "Band-C isolated probe on TRAIN_PIN",
+      "Evidence": "runs/wb08/",
+      "Audit": "none",
+      "Write set": [
+        "docs/project/maintainers/qualification/enterprise_quality_oversight/eqo_closure/",
+        "eqo_closure/runs/"
+      ],
+      "Read set": [
+        "git show 8cee3c5a913f234e8fb65053b6ab4f34ed78249b:<path>",
+        "git show 28c27cb896d02e0185b9fa02047411fa152f6469:<path>",
+        "docs/project/maintainers/qualification/enterprise_quality_oversight/campaign_a/findings/FINDINGS.jsonl",
+        "eqo_closure_master_7499b85e.plan.md",
+        "findings assigned: []"
+      ]
+    },
+    {
+      "TASK_ID": "EQO-W3-WB08-EVD",
+      "Parent": "EQO-W3",
+      "Workstream": "WB08",
+      "Objective": "Manifest under eqo_closure/runs/ — Model, context, memory",
+      "Preconditions": [
+        "TRAIN_PIN=28c27cb896d02e0185b9fa02047411fa152f6469",
+        "Domains: Cross-domain context/memory"
+      ],
+      "Dependencies": [
+        "EQO-W0-01",
+        "EQO-W3-WB08-EXE"
+      ],
+      "Eligibility": "serial",
+      "Owner role": "EQO tester",
+      "Ticket refs": [
+        "T-IGX-043-A",
+        "T-IGX-043-B"
+      ],
+      "Acceptance": "Manifest under eqo_closure/runs/",
+      "Evidence": "runs/wb08/",
+      "Audit": "none",
+      "Write set": [
+        "docs/project/maintainers/qualification/enterprise_quality_oversight/eqo_closure/",
+        "eqo_closure/runs/"
+      ],
+      "Read set": [
+        "git show 8cee3c5a913f234e8fb65053b6ab4f34ed78249b:<path>",
+        "git show 28c27cb896d02e0185b9fa02047411fa152f6469:<path>",
+        "docs/project/maintainers/qualification/enterprise_quality_oversight/campaign_a/findings/FINDINGS.jsonl",
+        "eqo_closure_master_7499b85e.plan.md",
+        "findings assigned: []"
+      ]
+    },
+    {
+      "TASK_ID": "EQO-W3-WB08-DIS",
+      "Parent": "EQO-W3",
+      "Workstream": "WB08",
+      "Objective": "Disposition per assigned finding — Model, context, memory",
+      "Preconditions": [
+        "TRAIN_PIN=28c27cb896d02e0185b9fa02047411fa152f6469",
+        "Domains: Cross-domain context/memory"
+      ],
+      "Dependencies": [
+        "EQO-W0-01",
+        "EQO-W3-WB08-EVD"
+      ],
+      "Eligibility": "serial",
+      "Owner role": "EQO tester",
+      "Ticket refs": [
+        "T-IGX-043-A",
+        "T-IGX-043-B"
+      ],
+      "Acceptance": "Disposition per assigned finding",
+      "Evidence": "[]",
+      "Audit": "none",
+      "Write set": [
+        "docs/project/maintainers/qualification/enterprise_quality_oversight/eqo_closure/",
+        "eqo_closure/runs/"
+      ],
+      "Read set": [
+        "git show 8cee3c5a913f234e8fb65053b6ab4f34ed78249b:<path>",
+        "git show 28c27cb896d02e0185b9fa02047411fa152f6469:<path>",
+        "docs/project/maintainers/qualification/enterprise_quality_oversight/campaign_a/findings/FINDINGS.jsonl",
+        "eqo_closure_master_7499b85e.plan.md",
+        "findings assigned: []"
+      ]
+    },
+    {
+      "TASK_ID": "EQO-W3-WB08-AUD",
+      "Parent": "EQO-W3",
+      "Workstream": "WB08",
+      "Objective": "Independent session E same SHA — Model, context, memory",
+      "Preconditions": [
+        "TRAIN_PIN=28c27cb896d02e0185b9fa02047411fa152f6469",
+        "Domains: Cross-domain context/memory"
+      ],
+      "Dependencies": [
+        "EQO-W0-01",
+        "EQO-W3-WB08-EVD"
+      ],
+      "Eligibility": "serial",
+      "Owner role": "independent auditor",
+      "Ticket refs": [
+        "T-IGX-043-A",
+        "T-IGX-043-B"
+      ],
+      "Acceptance": "Independent session E same SHA",
+      "Evidence": "[]",
+      "Audit": "session E",
+      "Write set": [
+        "docs/project/maintainers/qualification/enterprise_quality_oversight/eqo_closure/",
+        "eqo_closure/runs/"
+      ],
+      "Read set": [
+        "git show 8cee3c5a913f234e8fb65053b6ab4f34ed78249b:<path>",
+        "git show 28c27cb896d02e0185b9fa02047411fa152f6469:<path>",
+        "docs/project/maintainers/qualification/enterprise_quality_oversight/campaign_a/findings/FINDINGS.jsonl",
+        "eqo_closure_master_7499b85e.plan.md",
+        "findings assigned: []"
+      ]
+    },
+    {
+      "TASK_ID": "EQO-W3-WB08-COR",
+      "Parent": "EQO-W3",
+      "Workstream": "WB08",
+      "Objective": "CL-01 if defect else NOT_APPLICABLE_WITH_EVIDENCE — Model, context, memory",
+      "Preconditions": [
+        "TRAIN_PIN=28c27cb896d02e0185b9fa02047411fa152f6469",
+        "Domains: Cross-domain context/memory"
+      ],
+      "Dependencies": [
+        "EQO-W0-01"
+      ],
+      "Eligibility": "serial",
+      "Owner role": "EQO orchestrator",
+      "Ticket refs": [
+        "T-IGX-043-A",
+        "T-IGX-043-B"
+      ],
+      "Acceptance": "CL-01 if defect else NOT_APPLICABLE_WITH_EVIDENCE",
+      "Evidence": "[]",
+      "Audit": "none",
+      "Write set": [
+        "docs/project/maintainers/qualification/enterprise_quality_oversight/eqo_closure/",
+        "eqo_closure/runs/"
+      ],
+      "Read set": [
+        "git show 8cee3c5a913f234e8fb65053b6ab4f34ed78249b:<path>",
+        "git show 28c27cb896d02e0185b9fa02047411fa152f6469:<path>",
+        "docs/project/maintainers/qualification/enterprise_quality_oversight/campaign_a/findings/FINDINGS.jsonl",
+        "eqo_closure_master_7499b85e.plan.md",
+        "findings assigned: []"
+      ]
+    },
+    {
+      "TASK_ID": "EQO-W3-WB08-DRV",
+      "Parent": "EQO-W3",
+      "Workstream": "WB08",
+      "Objective": "EQO-RV-01 if pin moves — Model, context, memory",
+      "Preconditions": [
+        "TRAIN_PIN=28c27cb896d02e0185b9fa02047411fa152f6469",
+        "Domains: Cross-domain context/memory"
+      ],
+      "Dependencies": [
+        "EQO-W0-01"
+      ],
+      "Eligibility": "serial",
+      "Owner role": "EQO orchestrator",
+      "Ticket refs": [
+        "T-IGX-043-A",
+        "T-IGX-043-B"
+      ],
+      "Acceptance": "EQO-RV-01 if pin moves",
+      "Evidence": "[]",
+      "Audit": "none",
+      "Write set": [
+        "docs/project/maintainers/qualification/enterprise_quality_oversight/eqo_closure/",
+        "eqo_closure/runs/"
+      ],
+      "Read set": [
+        "git show 8cee3c5a913f234e8fb65053b6ab4f34ed78249b:<path>",
+        "git show 28c27cb896d02e0185b9fa02047411fa152f6469:<path>",
+        "docs/project/maintainers/qualification/enterprise_quality_oversight/campaign_a/findings/FINDINGS.jsonl",
+        "eqo_closure_master_7499b85e.plan.md",
+        "findings assigned: []"
+      ]
+    },
+    {
+      "TASK_ID": "EQO-W3-WB08-CLS",
+      "Parent": "EQO-W3",
+      "Workstream": "WB08",
+      "Objective": "DIS and AUD complete or exact blocker — Model, context, memory",
+      "Preconditions": [
+        "TRAIN_PIN=28c27cb896d02e0185b9fa02047411fa152f6469",
+        "Domains: Cross-domain context/memory"
+      ],
+      "Dependencies": [
+        "EQO-W0-01",
+        "EQO-W3-WB08-DIS",
+        "EQO-W3-WB08-AUD"
+      ],
+      "Eligibility": "serial",
+      "Owner role": "EQO orchestrator",
+      "Ticket refs": [
+        "T-IGX-043-A",
+        "T-IGX-043-B"
+      ],
+      "Acceptance": "DIS and AUD complete or exact blocker",
+      "Evidence": "[]",
+      "Audit": "none",
+      "Write set": [
+        "docs/project/maintainers/qualification/enterprise_quality_oversight/eqo_closure/",
+        "eqo_closure/runs/"
+      ],
+      "Read set": [
+        "git show 8cee3c5a913f234e8fb65053b6ab4f34ed78249b:<path>",
+        "git show 28c27cb896d02e0185b9fa02047411fa152f6469:<path>",
+        "docs/project/maintainers/qualification/enterprise_quality_oversight/campaign_a/findings/FINDINGS.jsonl",
+        "eqo_closure_master_7499b85e.plan.md",
+        "findings assigned: []"
+      ]
+    },
+    {
+      "TASK_ID": "EQO-W3-WB09-DES",
+      "Parent": "EQO-W3",
+      "Workstream": "WB09",
+      "Objective": "Preregister SHA256 before EXE — MCP, tools, skills",
+      "Preconditions": [
+        "TRAIN_PIN=28c27cb896d02e0185b9fa02047411fa152f6469",
+        "Domains: MCP, Tools, Skills"
+      ],
+      "Dependencies": [
+        "EQO-W0-01"
+      ],
+      "Eligibility": "EXECUTABLE_IN_PARALLEL",
+      "Owner role": "EQO tester",
+      "Ticket refs": [
+        "T-IGX-043-D",
+        "T-IGX-051-D"
+      ],
+      "Acceptance": "Preregister SHA256 before EXE",
+      "Evidence": "['A2-027', 'A4-040']",
+      "Audit": "none",
+      "Write set": [
+        "docs/project/maintainers/qualification/enterprise_quality_oversight/eqo_closure/",
+        "eqo_closure/runs/"
+      ],
+      "Read set": [
+        "git show 8cee3c5a913f234e8fb65053b6ab4f34ed78249b:<path>",
+        "git show 28c27cb896d02e0185b9fa02047411fa152f6469:<path>",
+        "docs/project/maintainers/qualification/enterprise_quality_oversight/campaign_a/findings/FINDINGS.jsonl",
+        "eqo_closure_master_7499b85e.plan.md",
+        "findings assigned: ['A2-027', 'A4-040']"
+      ]
+    },
+    {
+      "TASK_ID": "EQO-W3-WB09-EXE",
+      "Parent": "EQO-W3",
+      "Workstream": "WB09",
+      "Objective": "Band-C isolated probe on TRAIN_PIN — MCP, tools, skills",
+      "Preconditions": [
+        "TRAIN_PIN=28c27cb896d02e0185b9fa02047411fa152f6469",
+        "Domains: MCP, Tools, Skills"
+      ],
+      "Dependencies": [
+        "EQO-W0-01",
+        "EQO-W3-WB09-DES"
+      ],
+      "Eligibility": "EXECUTABLE_IN_PARALLEL",
+      "Owner role": "EQO tester",
+      "Ticket refs": [
+        "T-IGX-043-D",
+        "T-IGX-051-D"
+      ],
+      "Acceptance": "Band-C isolated probe on TRAIN_PIN",
+      "Evidence": "runs/wb09/",
+      "Audit": "none",
+      "Write set": [
+        "docs/project/maintainers/qualification/enterprise_quality_oversight/eqo_closure/",
+        "eqo_closure/runs/"
+      ],
+      "Read set": [
+        "git show 8cee3c5a913f234e8fb65053b6ab4f34ed78249b:<path>",
+        "git show 28c27cb896d02e0185b9fa02047411fa152f6469:<path>",
+        "docs/project/maintainers/qualification/enterprise_quality_oversight/campaign_a/findings/FINDINGS.jsonl",
+        "eqo_closure_master_7499b85e.plan.md",
+        "findings assigned: ['A2-027', 'A4-040']"
+      ]
+    },
+    {
+      "TASK_ID": "EQO-W3-WB09-EVD",
+      "Parent": "EQO-W3",
+      "Workstream": "WB09",
+      "Objective": "Manifest under eqo_closure/runs/ — MCP, tools, skills",
+      "Preconditions": [
+        "TRAIN_PIN=28c27cb896d02e0185b9fa02047411fa152f6469",
+        "Domains: MCP, Tools, Skills"
+      ],
+      "Dependencies": [
+        "EQO-W0-01",
+        "EQO-W3-WB09-EXE"
+      ],
+      "Eligibility": "serial",
+      "Owner role": "EQO tester",
+      "Ticket refs": [
+        "T-IGX-043-D",
+        "T-IGX-051-D"
+      ],
+      "Acceptance": "Manifest under eqo_closure/runs/",
+      "Evidence": "runs/wb09/",
+      "Audit": "none",
+      "Write set": [
+        "docs/project/maintainers/qualification/enterprise_quality_oversight/eqo_closure/",
+        "eqo_closure/runs/"
+      ],
+      "Read set": [
+        "git show 8cee3c5a913f234e8fb65053b6ab4f34ed78249b:<path>",
+        "git show 28c27cb896d02e0185b9fa02047411fa152f6469:<path>",
+        "docs/project/maintainers/qualification/enterprise_quality_oversight/campaign_a/findings/FINDINGS.jsonl",
+        "eqo_closure_master_7499b85e.plan.md",
+        "findings assigned: ['A2-027', 'A4-040']"
+      ]
+    },
+    {
+      "TASK_ID": "EQO-W3-WB09-DIS",
+      "Parent": "EQO-W3",
+      "Workstream": "WB09",
+      "Objective": "Disposition per assigned finding — MCP, tools, skills",
+      "Preconditions": [
+        "TRAIN_PIN=28c27cb896d02e0185b9fa02047411fa152f6469",
+        "Domains: MCP, Tools, Skills"
+      ],
+      "Dependencies": [
+        "EQO-W0-01",
+        "EQO-W3-WB09-EVD"
+      ],
+      "Eligibility": "serial",
+      "Owner role": "EQO tester",
+      "Ticket refs": [
+        "T-IGX-043-D",
+        "T-IGX-051-D"
+      ],
+      "Acceptance": "Disposition per assigned finding",
+      "Evidence": "['A2-027', 'A4-040']",
+      "Audit": "none",
+      "Write set": [
+        "docs/project/maintainers/qualification/enterprise_quality_oversight/eqo_closure/",
+        "eqo_closure/runs/"
+      ],
+      "Read set": [
+        "git show 8cee3c5a913f234e8fb65053b6ab4f34ed78249b:<path>",
+        "git show 28c27cb896d02e0185b9fa02047411fa152f6469:<path>",
+        "docs/project/maintainers/qualification/enterprise_quality_oversight/campaign_a/findings/FINDINGS.jsonl",
+        "eqo_closure_master_7499b85e.plan.md",
+        "findings assigned: ['A2-027', 'A4-040']"
+      ]
+    },
+    {
+      "TASK_ID": "EQO-W3-WB09-AUD",
+      "Parent": "EQO-W3",
+      "Workstream": "WB09",
+      "Objective": "Independent session E same SHA — MCP, tools, skills",
+      "Preconditions": [
+        "TRAIN_PIN=28c27cb896d02e0185b9fa02047411fa152f6469",
+        "Domains: MCP, Tools, Skills"
+      ],
+      "Dependencies": [
+        "EQO-W0-01",
+        "EQO-W3-WB09-EVD"
+      ],
+      "Eligibility": "serial",
+      "Owner role": "independent auditor",
+      "Ticket refs": [
+        "T-IGX-043-D",
+        "T-IGX-051-D"
+      ],
+      "Acceptance": "Independent session E same SHA",
+      "Evidence": "['A2-027', 'A4-040']",
+      "Audit": "session E",
+      "Write set": [
+        "docs/project/maintainers/qualification/enterprise_quality_oversight/eqo_closure/",
+        "eqo_closure/runs/"
+      ],
+      "Read set": [
+        "git show 8cee3c5a913f234e8fb65053b6ab4f34ed78249b:<path>",
+        "git show 28c27cb896d02e0185b9fa02047411fa152f6469:<path>",
+        "docs/project/maintainers/qualification/enterprise_quality_oversight/campaign_a/findings/FINDINGS.jsonl",
+        "eqo_closure_master_7499b85e.plan.md",
+        "findings assigned: ['A2-027', 'A4-040']"
+      ]
+    },
+    {
+      "TASK_ID": "EQO-W3-WB09-COR",
+      "Parent": "EQO-W3",
+      "Workstream": "WB09",
+      "Objective": "CL-01 if defect else NOT_APPLICABLE_WITH_EVIDENCE — MCP, tools, skills",
+      "Preconditions": [
+        "TRAIN_PIN=28c27cb896d02e0185b9fa02047411fa152f6469",
+        "Domains: MCP, Tools, Skills"
+      ],
+      "Dependencies": [
+        "EQO-W0-01"
+      ],
+      "Eligibility": "serial",
+      "Owner role": "EQO orchestrator",
+      "Ticket refs": [
+        "T-IGX-043-D",
+        "T-IGX-051-D"
+      ],
+      "Acceptance": "CL-01 if defect else NOT_APPLICABLE_WITH_EVIDENCE",
+      "Evidence": "['A2-027', 'A4-040']",
+      "Audit": "none",
+      "Write set": [
+        "docs/project/maintainers/qualification/enterprise_quality_oversight/eqo_closure/",
+        "eqo_closure/runs/"
+      ],
+      "Read set": [
+        "git show 8cee3c5a913f234e8fb65053b6ab4f34ed78249b:<path>",
+        "git show 28c27cb896d02e0185b9fa02047411fa152f6469:<path>",
+        "docs/project/maintainers/qualification/enterprise_quality_oversight/campaign_a/findings/FINDINGS.jsonl",
+        "eqo_closure_master_7499b85e.plan.md",
+        "findings assigned: ['A2-027', 'A4-040']"
+      ]
+    },
+    {
+      "TASK_ID": "EQO-W3-WB09-DRV",
+      "Parent": "EQO-W3",
+      "Workstream": "WB09",
+      "Objective": "EQO-RV-01 if pin moves — MCP, tools, skills",
+      "Preconditions": [
+        "TRAIN_PIN=28c27cb896d02e0185b9fa02047411fa152f6469",
+        "Domains: MCP, Tools, Skills"
+      ],
+      "Dependencies": [
+        "EQO-W0-01"
+      ],
+      "Eligibility": "serial",
+      "Owner role": "EQO orchestrator",
+      "Ticket refs": [
+        "T-IGX-043-D",
+        "T-IGX-051-D"
+      ],
+      "Acceptance": "EQO-RV-01 if pin moves",
+      "Evidence": "['A2-027', 'A4-040']",
+      "Audit": "none",
+      "Write set": [
+        "docs/project/maintainers/qualification/enterprise_quality_oversight/eqo_closure/",
+        "eqo_closure/runs/"
+      ],
+      "Read set": [
+        "git show 8cee3c5a913f234e8fb65053b6ab4f34ed78249b:<path>",
+        "git show 28c27cb896d02e0185b9fa02047411fa152f6469:<path>",
+        "docs/project/maintainers/qualification/enterprise_quality_oversight/campaign_a/findings/FINDINGS.jsonl",
+        "eqo_closure_master_7499b85e.plan.md",
+        "findings assigned: ['A2-027', 'A4-040']"
+      ]
+    },
+    {
+      "TASK_ID": "EQO-W3-WB09-CLS",
+      "Parent": "EQO-W3",
+      "Workstream": "WB09",
+      "Objective": "DIS and AUD complete or exact blocker — MCP, tools, skills",
+      "Preconditions": [
+        "TRAIN_PIN=28c27cb896d02e0185b9fa02047411fa152f6469",
+        "Domains: MCP, Tools, Skills"
+      ],
+      "Dependencies": [
+        "EQO-W0-01",
+        "EQO-W3-WB09-DIS",
+        "EQO-W3-WB09-AUD"
+      ],
+      "Eligibility": "serial",
+      "Owner role": "EQO orchestrator",
+      "Ticket refs": [
+        "T-IGX-043-D",
+        "T-IGX-051-D"
+      ],
+      "Acceptance": "DIS and AUD complete or exact blocker",
+      "Evidence": "['A2-027', 'A4-040']",
+      "Audit": "none",
+      "Write set": [
+        "docs/project/maintainers/qualification/enterprise_quality_oversight/eqo_closure/",
+        "eqo_closure/runs/"
+      ],
+      "Read set": [
+        "git show 8cee3c5a913f234e8fb65053b6ab4f34ed78249b:<path>",
+        "git show 28c27cb896d02e0185b9fa02047411fa152f6469:<path>",
+        "docs/project/maintainers/qualification/enterprise_quality_oversight/campaign_a/findings/FINDINGS.jsonl",
+        "eqo_closure_master_7499b85e.plan.md",
+        "findings assigned: ['A2-027', 'A4-040']"
+      ]
+    },
+    {
+      "TASK_ID": "EQO-W3-WB10-DES",
+      "Parent": "EQO-W3",
+      "Workstream": "WB10",
+      "Objective": "Preregister SHA256 before EXE — Trace and evidence",
+      "Preconditions": [
+        "TRAIN_PIN=28c27cb896d02e0185b9fa02047411fa152f6469",
+        "Domains: Trace, Evidence"
+      ],
+      "Dependencies": [
+        "EQO-W0-01"
+      ],
+      "Eligibility": "EXECUTABLE_IN_PARALLEL",
+      "Owner role": "EQO tester",
+      "Ticket refs": [],
+      "Acceptance": "Preregister SHA256 before EXE",
+      "Evidence": "['A2-019', 'A2-030', 'A5-012']",
+      "Audit": "none",
+      "Write set": [
+        "docs/project/maintainers/qualification/enterprise_quality_oversight/eqo_closure/",
+        "eqo_closure/runs/"
+      ],
+      "Read set": [
+        "git show 8cee3c5a913f234e8fb65053b6ab4f34ed78249b:<path>",
+        "git show 28c27cb896d02e0185b9fa02047411fa152f6469:<path>",
+        "docs/project/maintainers/qualification/enterprise_quality_oversight/campaign_a/findings/FINDINGS.jsonl",
+        "eqo_closure_master_7499b85e.plan.md",
+        "findings assigned: ['A2-019', 'A2-030', 'A5-012']"
+      ]
+    },
+    {
+      "TASK_ID": "EQO-W3-WB10-EXE",
+      "Parent": "EQO-W3",
+      "Workstream": "WB10",
+      "Objective": "Band-C isolated probe on TRAIN_PIN — Trace and evidence",
+      "Preconditions": [
+        "TRAIN_PIN=28c27cb896d02e0185b9fa02047411fa152f6469",
+        "Domains: Trace, Evidence"
+      ],
+      "Dependencies": [
+        "EQO-W0-01",
+        "EQO-W3-WB10-DES"
+      ],
+      "Eligibility": "EXECUTABLE_IN_PARALLEL",
+      "Owner role": "EQO tester",
+      "Ticket refs": [],
+      "Acceptance": "Band-C isolated probe on TRAIN_PIN",
+      "Evidence": "runs/wb10/",
+      "Audit": "none",
+      "Write set": [
+        "docs/project/maintainers/qualification/enterprise_quality_oversight/eqo_closure/",
+        "eqo_closure/runs/"
+      ],
+      "Read set": [
+        "git show 8cee3c5a913f234e8fb65053b6ab4f34ed78249b:<path>",
+        "git show 28c27cb896d02e0185b9fa02047411fa152f6469:<path>",
+        "docs/project/maintainers/qualification/enterprise_quality_oversight/campaign_a/findings/FINDINGS.jsonl",
+        "eqo_closure_master_7499b85e.plan.md",
+        "findings assigned: ['A2-019', 'A2-030', 'A5-012']"
+      ]
+    },
+    {
+      "TASK_ID": "EQO-W3-WB10-EVD",
+      "Parent": "EQO-W3",
+      "Workstream": "WB10",
+      "Objective": "Manifest under eqo_closure/runs/ — Trace and evidence",
+      "Preconditions": [
+        "TRAIN_PIN=28c27cb896d02e0185b9fa02047411fa152f6469",
+        "Domains: Trace, Evidence"
+      ],
+      "Dependencies": [
+        "EQO-W0-01",
+        "EQO-W3-WB10-EXE"
+      ],
+      "Eligibility": "serial",
+      "Owner role": "EQO tester",
+      "Ticket refs": [],
+      "Acceptance": "Manifest under eqo_closure/runs/",
+      "Evidence": "runs/wb10/",
+      "Audit": "none",
+      "Write set": [
+        "docs/project/maintainers/qualification/enterprise_quality_oversight/eqo_closure/",
+        "eqo_closure/runs/"
+      ],
+      "Read set": [
+        "git show 8cee3c5a913f234e8fb65053b6ab4f34ed78249b:<path>",
+        "git show 28c27cb896d02e0185b9fa02047411fa152f6469:<path>",
+        "docs/project/maintainers/qualification/enterprise_quality_oversight/campaign_a/findings/FINDINGS.jsonl",
+        "eqo_closure_master_7499b85e.plan.md",
+        "findings assigned: ['A2-019', 'A2-030', 'A5-012']"
+      ]
+    },
+    {
+      "TASK_ID": "EQO-W3-WB10-DIS",
+      "Parent": "EQO-W3",
+      "Workstream": "WB10",
+      "Objective": "Disposition per assigned finding — Trace and evidence",
+      "Preconditions": [
+        "TRAIN_PIN=28c27cb896d02e0185b9fa02047411fa152f6469",
+        "Domains: Trace, Evidence"
+      ],
+      "Dependencies": [
+        "EQO-W0-01",
+        "EQO-W3-WB10-EVD"
+      ],
+      "Eligibility": "serial",
+      "Owner role": "EQO tester",
+      "Ticket refs": [],
+      "Acceptance": "Disposition per assigned finding",
+      "Evidence": "['A2-019', 'A2-030', 'A5-012']",
+      "Audit": "none",
+      "Write set": [
+        "docs/project/maintainers/qualification/enterprise_quality_oversight/eqo_closure/",
+        "eqo_closure/runs/"
+      ],
+      "Read set": [
+        "git show 8cee3c5a913f234e8fb65053b6ab4f34ed78249b:<path>",
+        "git show 28c27cb896d02e0185b9fa02047411fa152f6469:<path>",
+        "docs/project/maintainers/qualification/enterprise_quality_oversight/campaign_a/findings/FINDINGS.jsonl",
+        "eqo_closure_master_7499b85e.plan.md",
+        "findings assigned: ['A2-019', 'A2-030', 'A5-012']"
+      ]
+    },
+    {
+      "TASK_ID": "EQO-W3-WB10-AUD",
+      "Parent": "EQO-W3",
+      "Workstream": "WB10",
+      "Objective": "Independent session E same SHA — Trace and evidence",
+      "Preconditions": [
+        "TRAIN_PIN=28c27cb896d02e0185b9fa02047411fa152f6469",
+        "Domains: Trace, Evidence"
+      ],
+      "Dependencies": [
+        "EQO-W0-01",
+        "EQO-W3-WB10-EVD"
+      ],
+      "Eligibility": "serial",
+      "Owner role": "independent auditor",
+      "Ticket refs": [],
+      "Acceptance": "Independent session E same SHA",
+      "Evidence": "['A2-019', 'A2-030', 'A5-012']",
+      "Audit": "session E",
+      "Write set": [
+        "docs/project/maintainers/qualification/enterprise_quality_oversight/eqo_closure/",
+        "eqo_closure/runs/"
+      ],
+      "Read set": [
+        "git show 8cee3c5a913f234e8fb65053b6ab4f34ed78249b:<path>",
+        "git show 28c27cb896d02e0185b9fa02047411fa152f6469:<path>",
+        "docs/project/maintainers/qualification/enterprise_quality_oversight/campaign_a/findings/FINDINGS.jsonl",
+        "eqo_closure_master_7499b85e.plan.md",
+        "findings assigned: ['A2-019', 'A2-030', 'A5-012']"
+      ]
+    },
+    {
+      "TASK_ID": "EQO-W3-WB10-COR",
+      "Parent": "EQO-W3",
+      "Workstream": "WB10",
+      "Objective": "CL-01 if defect else NOT_APPLICABLE_WITH_EVIDENCE — Trace and evidence",
+      "Preconditions": [
+        "TRAIN_PIN=28c27cb896d02e0185b9fa02047411fa152f6469",
+        "Domains: Trace, Evidence"
+      ],
+      "Dependencies": [
+        "EQO-W0-01"
+      ],
+      "Eligibility": "serial",
+      "Owner role": "EQO orchestrator",
+      "Ticket refs": [],
+      "Acceptance": "CL-01 if defect else NOT_APPLICABLE_WITH_EVIDENCE",
+      "Evidence": "['A2-019', 'A2-030', 'A5-012']",
+      "Audit": "none",
+      "Write set": [
+        "docs/project/maintainers/qualification/enterprise_quality_oversight/eqo_closure/",
+        "eqo_closure/runs/"
+      ],
+      "Read set": [
+        "git show 8cee3c5a913f234e8fb65053b6ab4f34ed78249b:<path>",
+        "git show 28c27cb896d02e0185b9fa02047411fa152f6469:<path>",
+        "docs/project/maintainers/qualification/enterprise_quality_oversight/campaign_a/findings/FINDINGS.jsonl",
+        "eqo_closure_master_7499b85e.plan.md",
+        "findings assigned: ['A2-019', 'A2-030', 'A5-012']"
+      ]
+    },
+    {
+      "TASK_ID": "EQO-W3-WB10-DRV",
+      "Parent": "EQO-W3",
+      "Workstream": "WB10",
+      "Objective": "EQO-RV-01 if pin moves — Trace and evidence",
+      "Preconditions": [
+        "TRAIN_PIN=28c27cb896d02e0185b9fa02047411fa152f6469",
+        "Domains: Trace, Evidence"
+      ],
+      "Dependencies": [
+        "EQO-W0-01"
+      ],
+      "Eligibility": "serial",
+      "Owner role": "EQO orchestrator",
+      "Ticket refs": [],
+      "Acceptance": "EQO-RV-01 if pin moves",
+      "Evidence": "['A2-019', 'A2-030', 'A5-012']",
+      "Audit": "none",
+      "Write set": [
+        "docs/project/maintainers/qualification/enterprise_quality_oversight/eqo_closure/",
+        "eqo_closure/runs/"
+      ],
+      "Read set": [
+        "git show 8cee3c5a913f234e8fb65053b6ab4f34ed78249b:<path>",
+        "git show 28c27cb896d02e0185b9fa02047411fa152f6469:<path>",
+        "docs/project/maintainers/qualification/enterprise_quality_oversight/campaign_a/findings/FINDINGS.jsonl",
+        "eqo_closure_master_7499b85e.plan.md",
+        "findings assigned: ['A2-019', 'A2-030', 'A5-012']"
+      ]
+    },
+    {
+      "TASK_ID": "EQO-W3-WB10-CLS",
+      "Parent": "EQO-W3",
+      "Workstream": "WB10",
+      "Objective": "DIS and AUD complete or exact blocker — Trace and evidence",
+      "Preconditions": [
+        "TRAIN_PIN=28c27cb896d02e0185b9fa02047411fa152f6469",
+        "Domains: Trace, Evidence"
+      ],
+      "Dependencies": [
+        "EQO-W0-01",
+        "EQO-W3-WB10-DIS",
+        "EQO-W3-WB10-AUD"
+      ],
+      "Eligibility": "serial",
+      "Owner role": "EQO orchestrator",
+      "Ticket refs": [],
+      "Acceptance": "DIS and AUD complete or exact blocker",
+      "Evidence": "['A2-019', 'A2-030', 'A5-012']",
+      "Audit": "none",
+      "Write set": [
+        "docs/project/maintainers/qualification/enterprise_quality_oversight/eqo_closure/",
+        "eqo_closure/runs/"
+      ],
+      "Read set": [
+        "git show 8cee3c5a913f234e8fb65053b6ab4f34ed78249b:<path>",
+        "git show 28c27cb896d02e0185b9fa02047411fa152f6469:<path>",
+        "docs/project/maintainers/qualification/enterprise_quality_oversight/campaign_a/findings/FINDINGS.jsonl",
+        "eqo_closure_master_7499b85e.plan.md",
+        "findings assigned: ['A2-019', 'A2-030', 'A5-012']"
+      ]
+    },
+    {
+      "TASK_ID": "EQO-W3-WB11-DES",
+      "Parent": "EQO-W3",
+      "Workstream": "WB11",
+      "Objective": "Preregister SHA256 before EXE — Assurance engine",
+      "Preconditions": [
+        "TRAIN_PIN=28c27cb896d02e0185b9fa02047411fa152f6469",
+        "Domains: Assurance"
+      ],
+      "Dependencies": [
+        "EQO-W0-01"
+      ],
+      "Eligibility": "EXECUTABLE_IN_PARALLEL",
+      "Owner role": "EQO tester",
+      "Ticket refs": [
+        "T-IGX-043-I"
+      ],
+      "Acceptance": "Preregister SHA256 before EXE",
+      "Evidence": "['A6-007', 'A7-037', 'A1-008', 'A1-012', 'A1-015', 'A2-023', 'A2-024', 'A2-051', 'A7-003', 'A7-007']",
+      "Audit": "none",
+      "Write set": [
+        "docs/project/maintainers/qualification/enterprise_quality_oversight/eqo_closure/",
+        "eqo_closure/runs/"
+      ],
+      "Read set": [
+        "git show 8cee3c5a913f234e8fb65053b6ab4f34ed78249b:<path>",
+        "git show 28c27cb896d02e0185b9fa02047411fa152f6469:<path>",
+        "docs/project/maintainers/qualification/enterprise_quality_oversight/campaign_a/findings/FINDINGS.jsonl",
+        "eqo_closure_master_7499b85e.plan.md",
+        "findings assigned: ['A6-007', 'A7-037', 'A1-008', 'A1-012', 'A1-015', 'A2-023', 'A2-024', 'A2-051', 'A7-003', 'A7-007']"
+      ]
+    },
+    {
+      "TASK_ID": "EQO-W3-WB11-EXE",
+      "Parent": "EQO-W3",
+      "Workstream": "WB11",
+      "Objective": "Band-C isolated probe on TRAIN_PIN — Assurance engine",
+      "Preconditions": [
+        "TRAIN_PIN=28c27cb896d02e0185b9fa02047411fa152f6469",
+        "Domains: Assurance"
+      ],
+      "Dependencies": [
+        "EQO-W0-01",
+        "EQO-W3-WB11-DES"
+      ],
+      "Eligibility": "EXECUTABLE_IN_PARALLEL",
+      "Owner role": "EQO tester",
+      "Ticket refs": [
+        "T-IGX-043-I"
+      ],
+      "Acceptance": "Band-C isolated probe on TRAIN_PIN",
+      "Evidence": "runs/wb11/",
+      "Audit": "none",
+      "Write set": [
+        "docs/project/maintainers/qualification/enterprise_quality_oversight/eqo_closure/",
+        "eqo_closure/runs/"
+      ],
+      "Read set": [
+        "git show 8cee3c5a913f234e8fb65053b6ab4f34ed78249b:<path>",
+        "git show 28c27cb896d02e0185b9fa02047411fa152f6469:<path>",
+        "docs/project/maintainers/qualification/enterprise_quality_oversight/campaign_a/findings/FINDINGS.jsonl",
+        "eqo_closure_master_7499b85e.plan.md",
+        "findings assigned: ['A6-007', 'A7-037', 'A1-008', 'A1-012', 'A1-015', 'A2-023', 'A2-024', 'A2-051', 'A7-003', 'A7-007']"
+      ]
+    },
+    {
+      "TASK_ID": "EQO-W3-WB11-EVD",
+      "Parent": "EQO-W3",
+      "Workstream": "WB11",
+      "Objective": "Manifest under eqo_closure/runs/ — Assurance engine",
+      "Preconditions": [
+        "TRAIN_PIN=28c27cb896d02e0185b9fa02047411fa152f6469",
+        "Domains: Assurance"
+      ],
+      "Dependencies": [
+        "EQO-W0-01",
+        "EQO-W3-WB11-EXE"
+      ],
+      "Eligibility": "serial",
+      "Owner role": "EQO tester",
+      "Ticket refs": [
+        "T-IGX-043-I"
+      ],
+      "Acceptance": "Manifest under eqo_closure/runs/",
+      "Evidence": "runs/wb11/",
+      "Audit": "none",
+      "Write set": [
+        "docs/project/maintainers/qualification/enterprise_quality_oversight/eqo_closure/",
+        "eqo_closure/runs/"
+      ],
+      "Read set": [
+        "git show 8cee3c5a913f234e8fb65053b6ab4f34ed78249b:<path>",
+        "git show 28c27cb896d02e0185b9fa02047411fa152f6469:<path>",
+        "docs/project/maintainers/qualification/enterprise_quality_oversight/campaign_a/findings/FINDINGS.jsonl",
+        "eqo_closure_master_7499b85e.plan.md",
+        "findings assigned: ['A6-007', 'A7-037', 'A1-008', 'A1-012', 'A1-015', 'A2-023', 'A2-024', 'A2-051', 'A7-003', 'A7-007']"
+      ]
+    },
+    {
+      "TASK_ID": "EQO-W3-WB11-DIS",
+      "Parent": "EQO-W3",
+      "Workstream": "WB11",
+      "Objective": "Disposition per assigned finding — Assurance engine",
+      "Preconditions": [
+        "TRAIN_PIN=28c27cb896d02e0185b9fa02047411fa152f6469",
+        "Domains: Assurance"
+      ],
+      "Dependencies": [
+        "EQO-W0-01",
+        "EQO-W3-WB11-EVD"
+      ],
+      "Eligibility": "serial",
+      "Owner role": "EQO tester",
+      "Ticket refs": [
+        "T-IGX-043-I"
+      ],
+      "Acceptance": "Disposition per assigned finding",
+      "Evidence": "['A6-007', 'A7-037', 'A1-008', 'A1-012', 'A1-015', 'A2-023', 'A2-024', 'A2-051', 'A7-003', 'A7-007']",
+      "Audit": "none",
+      "Write set": [
+        "docs/project/maintainers/qualification/enterprise_quality_oversight/eqo_closure/",
+        "eqo_closure/runs/"
+      ],
+      "Read set": [
+        "git show 8cee3c5a913f234e8fb65053b6ab4f34ed78249b:<path>",
+        "git show 28c27cb896d02e0185b9fa02047411fa152f6469:<path>",
+        "docs/project/maintainers/qualification/enterprise_quality_oversight/campaign_a/findings/FINDINGS.jsonl",
+        "eqo_closure_master_7499b85e.plan.md",
+        "findings assigned: ['A6-007', 'A7-037', 'A1-008', 'A1-012', 'A1-015', 'A2-023', 'A2-024', 'A2-051', 'A7-003', 'A7-007']"
+      ]
+    },
+    {
+      "TASK_ID": "EQO-W3-WB11-AUD",
+      "Parent": "EQO-W3",
+      "Workstream": "WB11",
+      "Objective": "Independent session E same SHA — Assurance engine",
+      "Preconditions": [
+        "TRAIN_PIN=28c27cb896d02e0185b9fa02047411fa152f6469",
+        "Domains: Assurance"
+      ],
+      "Dependencies": [
+        "EQO-W0-01",
+        "EQO-W3-WB11-EVD"
+      ],
+      "Eligibility": "serial",
+      "Owner role": "independent auditor",
+      "Ticket refs": [
+        "T-IGX-043-I"
+      ],
+      "Acceptance": "Independent session E same SHA",
+      "Evidence": "['A6-007', 'A7-037', 'A1-008', 'A1-012', 'A1-015', 'A2-023', 'A2-024', 'A2-051', 'A7-003', 'A7-007']",
+      "Audit": "session E",
+      "Write set": [
+        "docs/project/maintainers/qualification/enterprise_quality_oversight/eqo_closure/",
+        "eqo_closure/runs/"
+      ],
+      "Read set": [
+        "git show 8cee3c5a913f234e8fb65053b6ab4f34ed78249b:<path>",
+        "git show 28c27cb896d02e0185b9fa02047411fa152f6469:<path>",
+        "docs/project/maintainers/qualification/enterprise_quality_oversight/campaign_a/findings/FINDINGS.jsonl",
+        "eqo_closure_master_7499b85e.plan.md",
+        "findings assigned: ['A6-007', 'A7-037', 'A1-008', 'A1-012', 'A1-015', 'A2-023', 'A2-024', 'A2-051', 'A7-003', 'A7-007']"
+      ]
+    },
+    {
+      "TASK_ID": "EQO-W3-WB11-COR",
+      "Parent": "EQO-W3",
+      "Workstream": "WB11",
+      "Objective": "CL-01 if defect else NOT_APPLICABLE_WITH_EVIDENCE — Assurance engine",
+      "Preconditions": [
+        "TRAIN_PIN=28c27cb896d02e0185b9fa02047411fa152f6469",
+        "Domains: Assurance"
+      ],
+      "Dependencies": [
+        "EQO-W0-01"
+      ],
+      "Eligibility": "serial",
+      "Owner role": "EQO orchestrator",
+      "Ticket refs": [
+        "T-IGX-043-I"
+      ],
+      "Acceptance": "CL-01 if defect else NOT_APPLICABLE_WITH_EVIDENCE",
+      "Evidence": "['A6-007', 'A7-037', 'A1-008', 'A1-012', 'A1-015', 'A2-023', 'A2-024', 'A2-051', 'A7-003', 'A7-007']",
+      "Audit": "none",
+      "Write set": [
+        "docs/project/maintainers/qualification/enterprise_quality_oversight/eqo_closure/",
+        "eqo_closure/runs/"
+      ],
+      "Read set": [
+        "git show 8cee3c5a913f234e8fb65053b6ab4f34ed78249b:<path>",
+        "git show 28c27cb896d02e0185b9fa02047411fa152f6469:<path>",
+        "docs/project/maintainers/qualification/enterprise_quality_oversight/campaign_a/findings/FINDINGS.jsonl",
+        "eqo_closure_master_7499b85e.plan.md",
+        "findings assigned: ['A6-007', 'A7-037', 'A1-008', 'A1-012', 'A1-015', 'A2-023', 'A2-024', 'A2-051', 'A7-003', 'A7-007']"
+      ]
+    },
+    {
+      "TASK_ID": "EQO-W3-WB11-DRV",
+      "Parent": "EQO-W3",
+      "Workstream": "WB11",
+      "Objective": "EQO-RV-01 if pin moves — Assurance engine",
+      "Preconditions": [
+        "TRAIN_PIN=28c27cb896d02e0185b9fa02047411fa152f6469",
+        "Domains: Assurance"
+      ],
+      "Dependencies": [
+        "EQO-W0-01"
+      ],
+      "Eligibility": "serial",
+      "Owner role": "EQO orchestrator",
+      "Ticket refs": [
+        "T-IGX-043-I"
+      ],
+      "Acceptance": "EQO-RV-01 if pin moves",
+      "Evidence": "['A6-007', 'A7-037', 'A1-008', 'A1-012', 'A1-015', 'A2-023', 'A2-024', 'A2-051', 'A7-003', 'A7-007']",
+      "Audit": "none",
+      "Write set": [
+        "docs/project/maintainers/qualification/enterprise_quality_oversight/eqo_closure/",
+        "eqo_closure/runs/"
+      ],
+      "Read set": [
+        "git show 8cee3c5a913f234e8fb65053b6ab4f34ed78249b:<path>",
+        "git show 28c27cb896d02e0185b9fa02047411fa152f6469:<path>",
+        "docs/project/maintainers/qualification/enterprise_quality_oversight/campaign_a/findings/FINDINGS.jsonl",
+        "eqo_closure_master_7499b85e.plan.md",
+        "findings assigned: ['A6-007', 'A7-037', 'A1-008', 'A1-012', 'A1-015', 'A2-023', 'A2-024', 'A2-051', 'A7-003', 'A7-007']"
+      ]
+    },
+    {
+      "TASK_ID": "EQO-W3-WB11-CLS",
+      "Parent": "EQO-W3",
+      "Workstream": "WB11",
+      "Objective": "DIS and AUD complete or exact blocker — Assurance engine",
+      "Preconditions": [
+        "TRAIN_PIN=28c27cb896d02e0185b9fa02047411fa152f6469",
+        "Domains: Assurance"
+      ],
+      "Dependencies": [
+        "EQO-W0-01",
+        "EQO-W3-WB11-DIS",
+        "EQO-W3-WB11-AUD"
+      ],
+      "Eligibility": "serial",
+      "Owner role": "EQO orchestrator",
+      "Ticket refs": [
+        "T-IGX-043-I"
+      ],
+      "Acceptance": "DIS and AUD complete or exact blocker",
+      "Evidence": "['A6-007', 'A7-037', 'A1-008', 'A1-012', 'A1-015', 'A2-023', 'A2-024', 'A2-051', 'A7-003', 'A7-007']",
+      "Audit": "none",
+      "Write set": [
+        "docs/project/maintainers/qualification/enterprise_quality_oversight/eqo_closure/",
+        "eqo_closure/runs/"
+      ],
+      "Read set": [
+        "git show 8cee3c5a913f234e8fb65053b6ab4f34ed78249b:<path>",
+        "git show 28c27cb896d02e0185b9fa02047411fa152f6469:<path>",
+        "docs/project/maintainers/qualification/enterprise_quality_oversight/campaign_a/findings/FINDINGS.jsonl",
+        "eqo_closure_master_7499b85e.plan.md",
+        "findings assigned: ['A6-007', 'A7-037', 'A1-008', 'A1-012', 'A1-015', 'A2-023', 'A2-024', 'A2-051', 'A7-003', 'A7-007']"
+      ]
+    },
+    {
+      "TASK_ID": "EQO-W3-WB12-DES",
+      "Parent": "EQO-W3",
+      "Workstream": "WB12",
+      "Objective": "Preregister SHA256 before EXE — Cross-domain",
+      "Preconditions": [
+        "TRAIN_PIN=28c27cb896d02e0185b9fa02047411fa152f6469",
+        "Domains: Cross-domain invariants"
+      ],
+      "Dependencies": [
+        "EQO-W0-01"
+      ],
+      "Eligibility": "EXECUTABLE_IN_PARALLEL",
+      "Owner role": "EQO tester",
+      "Ticket refs": [],
+      "Acceptance": "Preregister SHA256 before EXE",
+      "Evidence": "['A3-019', 'A4-039', 'A4-047', 'A5-010', 'A8-020', 'A2-031']",
+      "Audit": "none",
+      "Write set": [
+        "docs/project/maintainers/qualification/enterprise_quality_oversight/eqo_closure/",
+        "eqo_closure/runs/"
+      ],
+      "Read set": [
+        "git show 8cee3c5a913f234e8fb65053b6ab4f34ed78249b:<path>",
+        "git show 28c27cb896d02e0185b9fa02047411fa152f6469:<path>",
+        "docs/project/maintainers/qualification/enterprise_quality_oversight/campaign_a/findings/FINDINGS.jsonl",
+        "eqo_closure_master_7499b85e.plan.md",
+        "findings assigned: ['A3-019', 'A4-039', 'A4-047', 'A5-010', 'A8-020', 'A2-031']"
+      ]
+    },
+    {
+      "TASK_ID": "EQO-W3-WB12-EXE",
+      "Parent": "EQO-W3",
+      "Workstream": "WB12",
+      "Objective": "Band-C isolated probe on TRAIN_PIN — Cross-domain",
+      "Preconditions": [
+        "TRAIN_PIN=28c27cb896d02e0185b9fa02047411fa152f6469",
+        "Domains: Cross-domain invariants"
+      ],
+      "Dependencies": [
+        "EQO-W0-01",
+        "EQO-W3-WB12-DES"
+      ],
+      "Eligibility": "EXECUTABLE_IN_PARALLEL",
+      "Owner role": "EQO tester",
+      "Ticket refs": [],
+      "Acceptance": "Band-C isolated probe on TRAIN_PIN",
+      "Evidence": "runs/wb12/",
+      "Audit": "none",
+      "Write set": [
+        "docs/project/maintainers/qualification/enterprise_quality_oversight/eqo_closure/",
+        "eqo_closure/runs/"
+      ],
+      "Read set": [
+        "git show 8cee3c5a913f234e8fb65053b6ab4f34ed78249b:<path>",
+        "git show 28c27cb896d02e0185b9fa02047411fa152f6469:<path>",
+        "docs/project/maintainers/qualification/enterprise_quality_oversight/campaign_a/findings/FINDINGS.jsonl",
+        "eqo_closure_master_7499b85e.plan.md",
+        "findings assigned: ['A3-019', 'A4-039', 'A4-047', 'A5-010', 'A8-020', 'A2-031']"
+      ]
+    },
+    {
+      "TASK_ID": "EQO-W3-WB12-EVD",
+      "Parent": "EQO-W3",
+      "Workstream": "WB12",
+      "Objective": "Manifest under eqo_closure/runs/ — Cross-domain",
+      "Preconditions": [
+        "TRAIN_PIN=28c27cb896d02e0185b9fa02047411fa152f6469",
+        "Domains: Cross-domain invariants"
+      ],
+      "Dependencies": [
+        "EQO-W0-01",
+        "EQO-W3-WB12-EXE"
+      ],
+      "Eligibility": "serial",
+      "Owner role": "EQO tester",
+      "Ticket refs": [],
+      "Acceptance": "Manifest under eqo_closure/runs/",
+      "Evidence": "runs/wb12/",
+      "Audit": "none",
+      "Write set": [
+        "docs/project/maintainers/qualification/enterprise_quality_oversight/eqo_closure/",
+        "eqo_closure/runs/"
+      ],
+      "Read set": [
+        "git show 8cee3c5a913f234e8fb65053b6ab4f34ed78249b:<path>",
+        "git show 28c27cb896d02e0185b9fa02047411fa152f6469:<path>",
+        "docs/project/maintainers/qualification/enterprise_quality_oversight/campaign_a/findings/FINDINGS.jsonl",
+        "eqo_closure_master_7499b85e.plan.md",
+        "findings assigned: ['A3-019', 'A4-039', 'A4-047', 'A5-010', 'A8-020', 'A2-031']"
+      ]
+    },
+    {
+      "TASK_ID": "EQO-W3-WB12-DIS",
+      "Parent": "EQO-W3",
+      "Workstream": "WB12",
+      "Objective": "Disposition per assigned finding — Cross-domain",
+      "Preconditions": [
+        "TRAIN_PIN=28c27cb896d02e0185b9fa02047411fa152f6469",
+        "Domains: Cross-domain invariants"
+      ],
+      "Dependencies": [
+        "EQO-W0-01",
+        "EQO-W3-WB12-EVD"
+      ],
+      "Eligibility": "serial",
+      "Owner role": "EQO tester",
+      "Ticket refs": [],
+      "Acceptance": "Disposition per assigned finding",
+      "Evidence": "['A3-019', 'A4-039', 'A4-047', 'A5-010', 'A8-020', 'A2-031']",
+      "Audit": "none",
+      "Write set": [
+        "docs/project/maintainers/qualification/enterprise_quality_oversight/eqo_closure/",
+        "eqo_closure/runs/"
+      ],
+      "Read set": [
+        "git show 8cee3c5a913f234e8fb65053b6ab4f34ed78249b:<path>",
+        "git show 28c27cb896d02e0185b9fa02047411fa152f6469:<path>",
+        "docs/project/maintainers/qualification/enterprise_quality_oversight/campaign_a/findings/FINDINGS.jsonl",
+        "eqo_closure_master_7499b85e.plan.md",
+        "findings assigned: ['A3-019', 'A4-039', 'A4-047', 'A5-010', 'A8-020', 'A2-031']"
+      ]
+    },
+    {
+      "TASK_ID": "EQO-W3-WB12-AUD",
+      "Parent": "EQO-W3",
+      "Workstream": "WB12",
+      "Objective": "Independent session E same SHA — Cross-domain",
+      "Preconditions": [
+        "TRAIN_PIN=28c27cb896d02e0185b9fa02047411fa152f6469",
+        "Domains: Cross-domain invariants"
+      ],
+      "Dependencies": [
+        "EQO-W0-01",
+        "EQO-W3-WB12-EVD"
+      ],
+      "Eligibility": "serial",
+      "Owner role": "independent auditor",
+      "Ticket refs": [],
+      "Acceptance": "Independent session E same SHA",
+      "Evidence": "['A3-019', 'A4-039', 'A4-047', 'A5-010', 'A8-020', 'A2-031']",
+      "Audit": "session E",
+      "Write set": [
+        "docs/project/maintainers/qualification/enterprise_quality_oversight/eqo_closure/",
+        "eqo_closure/runs/"
+      ],
+      "Read set": [
+        "git show 8cee3c5a913f234e8fb65053b6ab4f34ed78249b:<path>",
+        "git show 28c27cb896d02e0185b9fa02047411fa152f6469:<path>",
+        "docs/project/maintainers/qualification/enterprise_quality_oversight/campaign_a/findings/FINDINGS.jsonl",
+        "eqo_closure_master_7499b85e.plan.md",
+        "findings assigned: ['A3-019', 'A4-039', 'A4-047', 'A5-010', 'A8-020', 'A2-031']"
+      ]
+    },
+    {
+      "TASK_ID": "EQO-W3-WB12-COR",
+      "Parent": "EQO-W3",
+      "Workstream": "WB12",
+      "Objective": "CL-01 if defect else NOT_APPLICABLE_WITH_EVIDENCE — Cross-domain",
+      "Preconditions": [
+        "TRAIN_PIN=28c27cb896d02e0185b9fa02047411fa152f6469",
+        "Domains: Cross-domain invariants"
+      ],
+      "Dependencies": [
+        "EQO-W0-01"
+      ],
+      "Eligibility": "serial",
+      "Owner role": "EQO orchestrator",
+      "Ticket refs": [],
+      "Acceptance": "CL-01 if defect else NOT_APPLICABLE_WITH_EVIDENCE",
+      "Evidence": "['A3-019', 'A4-039', 'A4-047', 'A5-010', 'A8-020', 'A2-031']",
+      "Audit": "none",
+      "Write set": [
+        "docs/project/maintainers/qualification/enterprise_quality_oversight/eqo_closure/",
+        "eqo_closure/runs/"
+      ],
+      "Read set": [
+        "git show 8cee3c5a913f234e8fb65053b6ab4f34ed78249b:<path>",
+        "git show 28c27cb896d02e0185b9fa02047411fa152f6469:<path>",
+        "docs/project/maintainers/qualification/enterprise_quality_oversight/campaign_a/findings/FINDINGS.jsonl",
+        "eqo_closure_master_7499b85e.plan.md",
+        "findings assigned: ['A3-019', 'A4-039', 'A4-047', 'A5-010', 'A8-020', 'A2-031']"
+      ]
+    },
+    {
+      "TASK_ID": "EQO-W3-WB12-DRV",
+      "Parent": "EQO-W3",
+      "Workstream": "WB12",
+      "Objective": "EQO-RV-01 if pin moves — Cross-domain",
+      "Preconditions": [
+        "TRAIN_PIN=28c27cb896d02e0185b9fa02047411fa152f6469",
+        "Domains: Cross-domain invariants"
+      ],
+      "Dependencies": [
+        "EQO-W0-01"
+      ],
+      "Eligibility": "serial",
+      "Owner role": "EQO orchestrator",
+      "Ticket refs": [],
+      "Acceptance": "EQO-RV-01 if pin moves",
+      "Evidence": "['A3-019', 'A4-039', 'A4-047', 'A5-010', 'A8-020', 'A2-031']",
+      "Audit": "none",
+      "Write set": [
+        "docs/project/maintainers/qualification/enterprise_quality_oversight/eqo_closure/",
+        "eqo_closure/runs/"
+      ],
+      "Read set": [
+        "git show 8cee3c5a913f234e8fb65053b6ab4f34ed78249b:<path>",
+        "git show 28c27cb896d02e0185b9fa02047411fa152f6469:<path>",
+        "docs/project/maintainers/qualification/enterprise_quality_oversight/campaign_a/findings/FINDINGS.jsonl",
+        "eqo_closure_master_7499b85e.plan.md",
+        "findings assigned: ['A3-019', 'A4-039', 'A4-047', 'A5-010', 'A8-020', 'A2-031']"
+      ]
+    },
+    {
+      "TASK_ID": "EQO-W3-WB12-CLS",
+      "Parent": "EQO-W3",
+      "Workstream": "WB12",
+      "Objective": "DIS and AUD complete or exact blocker — Cross-domain",
+      "Preconditions": [
+        "TRAIN_PIN=28c27cb896d02e0185b9fa02047411fa152f6469",
+        "Domains: Cross-domain invariants"
+      ],
+      "Dependencies": [
+        "EQO-W0-01",
+        "EQO-W3-WB12-DIS",
+        "EQO-W3-WB12-AUD"
+      ],
+      "Eligibility": "serial",
+      "Owner role": "EQO orchestrator",
+      "Ticket refs": [],
+      "Acceptance": "DIS and AUD complete or exact blocker",
+      "Evidence": "['A3-019', 'A4-039', 'A4-047', 'A5-010', 'A8-020', 'A2-031']",
+      "Audit": "none",
+      "Write set": [
+        "docs/project/maintainers/qualification/enterprise_quality_oversight/eqo_closure/",
+        "eqo_closure/runs/"
+      ],
+      "Read set": [
+        "git show 8cee3c5a913f234e8fb65053b6ab4f34ed78249b:<path>",
+        "git show 28c27cb896d02e0185b9fa02047411fa152f6469:<path>",
+        "docs/project/maintainers/qualification/enterprise_quality_oversight/campaign_a/findings/FINDINGS.jsonl",
+        "eqo_closure_master_7499b85e.plan.md",
+        "findings assigned: ['A3-019', 'A4-039', 'A4-047', 'A5-010', 'A8-020', 'A2-031']"
+      ]
+    },
+    {
+      "TASK_ID": "EQO-W4-01",
+      "Parent": "EQO-W4",
+      "Workstream": "W4",
+      "Objective": "Generate B-2 disposition",
+      "Preconditions": [
+        "EQO-W0-05"
+      ],
+      "Dependencies": [
+        "EQO-W0-05"
+      ],
+      "Eligibility": "EXECUTABLE_NOW",
+      "Owner role": "EQO steward",
+      "Ticket refs": [],
+      "Acceptance": "186 rows in EQO_B2_DISPOSITION.jsonl",
+      "Evidence": "EQO-W4-01",
+      "Audit": "none",
+      "Write set": [
+        "docs/project/maintainers/qualification/enterprise_quality_oversight/eqo_closure/",
+        "eqo_closure/runs/"
+      ],
+      "Read set": [
+        "git show 8cee3c5a913f234e8fb65053b6ab4f34ed78249b:<path>",
+        "git show 28c27cb896d02e0185b9fa02047411fa152f6469:<path>",
+        "docs/project/maintainers/qualification/enterprise_quality_oversight/campaign_a/findings/FINDINGS.jsonl",
+        "eqo_closure_master_7499b85e.plan.md"
+      ]
+    },
+    {
+      "TASK_ID": "EQO-W4-02",
+      "Parent": "EQO-W4",
+      "Workstream": "W4",
+      "Objective": "DOC_FIX_BY_OWNER batch",
+      "Preconditions": [
+        "EQO-W0-05"
+      ],
+      "Dependencies": [
+        "EQO-W4-01"
+      ],
+      "Eligibility": "EXECUTABLE_NOW",
+      "Owner role": "EQO steward",
+      "Ticket refs": [],
+      "Acceptance": "doc PR or BLOCKED",
+      "Evidence": "EQO-W4-02",
+      "Audit": "none",
+      "Write set": [
+        "docs/project/maintainers/qualification/enterprise_quality_oversight/eqo_closure/",
+        "eqo_closure/runs/"
+      ],
+      "Read set": [
+        "git show 8cee3c5a913f234e8fb65053b6ab4f34ed78249b:<path>",
+        "git show 28c27cb896d02e0185b9fa02047411fa152f6469:<path>",
+        "docs/project/maintainers/qualification/enterprise_quality_oversight/campaign_a/findings/FINDINGS.jsonl",
+        "eqo_closure_master_7499b85e.plan.md"
+      ]
+    },
+    {
+      "TASK_ID": "EQO-W4-03",
+      "Parent": "EQO-W4",
+      "Workstream": "W4",
+      "Objective": "OWNER_DECISION batch",
+      "Preconditions": [
+        "EQO-W0-05"
+      ],
+      "Dependencies": [
+        "EQO-W4-01"
+      ],
+      "Eligibility": "EXECUTABLE_NOW",
+      "Owner role": "EQO steward",
+      "Ticket refs": [],
+      "Acceptance": "OD-EQO grouped decisions",
+      "Evidence": "EQO-W4-03",
+      "Audit": "none",
+      "Write set": [
+        "docs/project/maintainers/qualification/enterprise_quality_oversight/eqo_closure/",
+        "eqo_closure/runs/"
+      ],
+      "Read set": [
+        "git show 8cee3c5a913f234e8fb65053b6ab4f34ed78249b:<path>",
+        "git show 28c27cb896d02e0185b9fa02047411fa152f6469:<path>",
+        "docs/project/maintainers/qualification/enterprise_quality_oversight/campaign_a/findings/FINDINGS.jsonl",
+        "eqo_closure_master_7499b85e.plan.md"
+      ]
+    },
+    {
+      "TASK_ID": "EQO-W4-04",
+      "Parent": "EQO-W4",
+      "Workstream": "W4",
+      "Objective": "REQUALIFY batch",
+      "Preconditions": [
+        "EQO-W0-05"
+      ],
+      "Dependencies": [
+        "EQO-W4-01"
+      ],
+      "Eligibility": "EXECUTABLE_NOW",
+      "Owner role": "EQO steward",
+      "Ticket refs": [],
+      "Acceptance": "tied to EQO-C layers",
+      "Evidence": "EQO-W4-04",
+      "Audit": "none",
+      "Write set": [
+        "docs/project/maintainers/qualification/enterprise_quality_oversight/eqo_closure/",
+        "eqo_closure/runs/"
+      ],
+      "Read set": [
+        "git show 8cee3c5a913f234e8fb65053b6ab4f34ed78249b:<path>",
+        "git show 28c27cb896d02e0185b9fa02047411fa152f6469:<path>",
+        "docs/project/maintainers/qualification/enterprise_quality_oversight/campaign_a/findings/FINDINGS.jsonl",
+        "eqo_closure_master_7499b85e.plan.md"
+      ]
+    },
+    {
+      "TASK_ID": "EQO-W4-05",
+      "Parent": "EQO-W4",
+      "Workstream": "W4",
+      "Objective": "NONE batch",
+      "Preconditions": [
+        "EQO-W0-05"
+      ],
+      "Dependencies": [
+        "EQO-W4-01"
+      ],
+      "Eligibility": "EXECUTABLE_NOW",
+      "Owner role": "EQO steward",
+      "Ticket refs": [],
+      "Acceptance": "matrix justification",
+      "Evidence": "EQO-W4-05",
+      "Audit": "none",
+      "Write set": [
+        "docs/project/maintainers/qualification/enterprise_quality_oversight/eqo_closure/",
+        "eqo_closure/runs/"
+      ],
+      "Read set": [
+        "git show 8cee3c5a913f234e8fb65053b6ab4f34ed78249b:<path>",
+        "git show 28c27cb896d02e0185b9fa02047411fa152f6469:<path>",
+        "docs/project/maintainers/qualification/enterprise_quality_oversight/campaign_a/findings/FINDINGS.jsonl",
+        "eqo_closure_master_7499b85e.plan.md"
+      ]
+    },
+    {
+      "TASK_ID": "EQO-W4-CLS",
+      "Parent": "EQO-W4",
+      "Workstream": "W4",
+      "Objective": "Close Campaign B-2",
+      "Preconditions": [
+        "EQO-W0-05"
+      ],
+      "Dependencies": [
+        "EQO-W4-01",
+        "EQO-W4-02",
+        "EQO-W4-03",
+        "EQO-W4-04",
+        "EQO-W4-05"
+      ],
+      "Eligibility": "EXECUTABLE_NOW",
+      "Owner role": "EQO steward",
+      "Ticket refs": [],
+      "Acceptance": "every non-B/C finding dispositioned",
+      "Evidence": "EQO-W4-CLS",
+      "Audit": "none",
+      "Write set": [
+        "docs/project/maintainers/qualification/enterprise_quality_oversight/eqo_closure/",
+        "eqo_closure/runs/"
+      ],
+      "Read set": [
+        "git show 8cee3c5a913f234e8fb65053b6ab4f34ed78249b:<path>",
+        "git show 28c27cb896d02e0185b9fa02047411fa152f6469:<path>",
+        "docs/project/maintainers/qualification/enterprise_quality_oversight/campaign_a/findings/FINDINGS.jsonl",
+        "eqo_closure_master_7499b85e.plan.md"
+      ]
+    },
+    {
+      "TASK_ID": "EQO-C-01",
+      "Parent": "EQO-C",
+      "Workstream": "C",
+      "Objective": "EQOA-A3-004 HIST-85",
+      "Preconditions": [
+        "Plan pin binds: DOC_PIN TRAIN_PIN"
+      ],
+      "Dependencies": [
+        "EQO-W0-01"
+      ],
+      "Eligibility": "EXECUTABLE_NOW",
+      "Owner role": "EQO orchestrator",
+      "Ticket refs": [],
+      "Acceptance": "eqo_closure/c/A3-004/",
+      "Evidence": "eqo_closure/c/A3-004/",
+      "Audit": "session E when verdict required",
+      "Write set": [
+        "docs/project/maintainers/qualification/enterprise_quality_oversight/eqo_closure/",
+        "eqo_closure/runs/"
+      ],
+      "Read set": [
+        "git show 8cee3c5a913f234e8fb65053b6ab4f34ed78249b:<path>",
+        "git show 28c27cb896d02e0185b9fa02047411fa152f6469:<path>",
+        "docs/project/maintainers/qualification/enterprise_quality_oversight/campaign_a/findings/FINDINGS.jsonl",
+        "eqo_closure_master_7499b85e.plan.md"
+      ]
+    },
+    {
+      "TASK_ID": "EQO-C-02",
+      "Parent": "EQO-C",
+      "Workstream": "C",
+      "Objective": "EQOA-A6-004 manifest cross",
+      "Preconditions": [
+        "Plan pin binds: DOC_PIN TRAIN_PIN"
+      ],
+      "Dependencies": [
+        "EQO-W2-05"
+      ],
+      "Eligibility": "EXECUTABLE_NOW",
+      "Owner role": "EQO orchestrator",
+      "Ticket refs": [],
+      "Acceptance": "eqo_closure/c/A6-004/",
+      "Evidence": "eqo_closure/c/A6-004/",
+      "Audit": "session E when verdict required",
+      "Write set": [
+        "docs/project/maintainers/qualification/enterprise_quality_oversight/eqo_closure/",
+        "eqo_closure/runs/"
+      ],
+      "Read set": [
+        "git show 8cee3c5a913f234e8fb65053b6ab4f34ed78249b:<path>",
+        "git show 28c27cb896d02e0185b9fa02047411fa152f6469:<path>",
+        "docs/project/maintainers/qualification/enterprise_quality_oversight/campaign_a/findings/FINDINGS.jsonl",
+        "eqo_closure_master_7499b85e.plan.md"
+      ]
+    },
+    {
+      "TASK_ID": "EQO-C-03",
+      "Parent": "EQO-C",
+      "Workstream": "C",
+      "Objective": "18-layer drift",
+      "Preconditions": [
+        "Plan pin binds: DOC_PIN TRAIN_PIN"
+      ],
+      "Dependencies": [
+        "EQO-W0-01"
+      ],
+      "Eligibility": "EXECUTABLE_NOW",
+      "Owner role": "EQO orchestrator",
+      "Ticket refs": [],
+      "Acceptance": "EQO_C_DRIFT.jsonl",
+      "Evidence": "EQO_C_DRIFT.jsonl",
+      "Audit": "session E when verdict required",
+      "Write set": [
+        "docs/project/maintainers/qualification/enterprise_quality_oversight/eqo_closure/",
+        "eqo_closure/runs/"
+      ],
+      "Read set": [
+        "git show 8cee3c5a913f234e8fb65053b6ab4f34ed78249b:<path>",
+        "git show 28c27cb896d02e0185b9fa02047411fa152f6469:<path>",
+        "docs/project/maintainers/qualification/enterprise_quality_oversight/campaign_a/findings/FINDINGS.jsonl",
+        "eqo_closure_master_7499b85e.plan.md"
+      ]
+    },
+    {
+      "TASK_ID": "EQO-C-04",
+      "Parent": "EQO-C",
+      "Workstream": "C",
+      "Objective": "TARGETED_REPLAY",
+      "Preconditions": [
+        "Plan pin binds: DOC_PIN TRAIN_PIN"
+      ],
+      "Dependencies": [
+        "EQO-C-03"
+      ],
+      "Eligibility": "EXECUTABLE_NOW",
+      "Owner role": "EQO orchestrator",
+      "Ticket refs": [],
+      "Acceptance": "run logs",
+      "Evidence": "run logs",
+      "Audit": "session E when verdict required",
+      "Write set": [
+        "docs/project/maintainers/qualification/enterprise_quality_oversight/eqo_closure/",
+        "eqo_closure/runs/"
+      ],
+      "Read set": [
+        "git show 8cee3c5a913f234e8fb65053b6ab4f34ed78249b:<path>",
+        "git show 28c27cb896d02e0185b9fa02047411fa152f6469:<path>",
+        "docs/project/maintainers/qualification/enterprise_quality_oversight/campaign_a/findings/FINDINGS.jsonl",
+        "eqo_closure_master_7499b85e.plan.md"
+      ]
+    },
+    {
+      "TASK_ID": "EQO-C-05",
+      "Parent": "EQO-C",
+      "Workstream": "C",
+      "Objective": "Bind PT-Q05..Q10",
+      "Preconditions": [
+        "Plan pin binds: DOC_PIN TRAIN_PIN"
+      ],
+      "Dependencies": [
+        "EQO-C-03"
+      ],
+      "Eligibility": "EXECUTABLE_NOW",
+      "Owner role": "EQO orchestrator",
+      "Ticket refs": [],
+      "Acceptance": "ARCH-FREEZE SHA refs",
+      "Evidence": "ARCH-FREEZE SHA refs",
+      "Audit": "session E when verdict required",
+      "Write set": [
+        "docs/project/maintainers/qualification/enterprise_quality_oversight/eqo_closure/",
+        "eqo_closure/runs/"
+      ],
+      "Read set": [
+        "git show 8cee3c5a913f234e8fb65053b6ab4f34ed78249b:<path>",
+        "git show 28c27cb896d02e0185b9fa02047411fa152f6469:<path>",
+        "docs/project/maintainers/qualification/enterprise_quality_oversight/campaign_a/findings/FINDINGS.jsonl",
+        "eqo_closure_master_7499b85e.plan.md"
+      ]
+    },
+    {
+      "TASK_ID": "EQO-C-CLS",
+      "Parent": "EQO-C",
+      "Workstream": "C",
+      "Objective": "Close Campaign C",
+      "Preconditions": [
+        "Plan pin binds: DOC_PIN TRAIN_PIN"
+      ],
+      "Dependencies": [
+        "EQO-C-01",
+        "EQO-C-02",
+        "EQO-C-03"
+      ],
+      "Eligibility": "EXECUTABLE_NOW",
+      "Owner role": "EQO orchestrator",
+      "Ticket refs": [],
+      "Acceptance": "C-03 no UNKNOWN",
+      "Evidence": "C-03 no UNKNOWN",
+      "Audit": "session E when verdict required",
+      "Write set": [
+        "docs/project/maintainers/qualification/enterprise_quality_oversight/eqo_closure/",
+        "eqo_closure/runs/"
+      ],
+      "Read set": [
+        "git show 8cee3c5a913f234e8fb65053b6ab4f34ed78249b:<path>",
+        "git show 28c27cb896d02e0185b9fa02047411fa152f6469:<path>",
+        "docs/project/maintainers/qualification/enterprise_quality_oversight/campaign_a/findings/FINDINGS.jsonl",
+        "eqo_closure_master_7499b85e.plan.md"
+      ]
+    },
+    {
+      "TASK_ID": "EQO-E-01",
+      "Parent": "EQO-E",
+      "Workstream": "E",
+      "Objective": "1073=1069+4 reconciliation",
+      "Preconditions": [
+        "Plan pin binds: DOC_PIN TRAIN_PIN"
+      ],
+      "Dependencies": [
+        "EQO-W0-02"
+      ],
+      "Eligibility": "EXECUTABLE_NOW",
+      "Owner role": "EQO orchestrator",
+      "Ticket refs": [],
+      "Acceptance": "reconciliation.json update via docs ticket",
+      "Evidence": "reconciliation.json update via docs ticket",
+      "Audit": "session E when verdict required",
+      "Write set": [
+        "docs/project/maintainers/qualification/enterprise_quality_oversight/eqo_closure/",
+        "eqo_closure/runs/"
+      ],
+      "Read set": [
+        "git show 8cee3c5a913f234e8fb65053b6ab4f34ed78249b:<path>",
+        "git show 28c27cb896d02e0185b9fa02047411fa152f6469:<path>",
+        "docs/project/maintainers/qualification/enterprise_quality_oversight/campaign_a/findings/FINDINGS.jsonl",
+        "eqo_closure_master_7499b85e.plan.md"
+      ]
+    },
+    {
+      "TASK_ID": "EQO-E-02",
+      "Parent": "EQO-E",
+      "Workstream": "E",
+      "Objective": "Mechanical classification",
+      "Preconditions": [
+        "Plan pin binds: DOC_PIN TRAIN_PIN"
+      ],
+      "Dependencies": [
+        "EQO-E-01"
+      ],
+      "Eligibility": "EXECUTABLE_NOW",
+      "Owner role": "EQO orchestrator",
+      "Ticket refs": [],
+      "Acceptance": "register.jsonl steward PR",
+      "Evidence": "register.jsonl steward PR",
+      "Audit": "session E when verdict required",
+      "Write set": [
+        "docs/project/maintainers/qualification/enterprise_quality_oversight/eqo_closure/",
+        "eqo_closure/runs/"
+      ],
+      "Read set": [
+        "git show 8cee3c5a913f234e8fb65053b6ab4f34ed78249b:<path>",
+        "git show 28c27cb896d02e0185b9fa02047411fa152f6469:<path>",
+        "docs/project/maintainers/qualification/enterprise_quality_oversight/campaign_a/findings/FINDINGS.jsonl",
+        "eqo_closure_master_7499b85e.plan.md"
+      ]
+    },
+    {
+      "TASK_ID": "EQO-E-03",
+      "Parent": "EQO-E",
+      "Workstream": "E",
+      "Objective": "Owner OD-EQO-09",
+      "Preconditions": [
+        "Plan pin binds: DOC_PIN TRAIN_PIN"
+      ],
+      "Dependencies": [
+        "EQO-E-02"
+      ],
+      "Eligibility": "EXECUTABLE_NOW",
+      "Owner role": "EQO orchestrator",
+      "Ticket refs": [],
+      "Acceptance": "five owner-gap lists",
+      "Evidence": "five owner-gap lists",
+      "Audit": "session E when verdict required",
+      "Write set": [
+        "docs/project/maintainers/qualification/enterprise_quality_oversight/eqo_closure/",
+        "eqo_closure/runs/"
+      ],
+      "Read set": [
+        "git show 8cee3c5a913f234e8fb65053b6ab4f34ed78249b:<path>",
+        "git show 28c27cb896d02e0185b9fa02047411fa152f6469:<path>",
+        "docs/project/maintainers/qualification/enterprise_quality_oversight/campaign_a/findings/FINDINGS.jsonl",
+        "eqo_closure_master_7499b85e.plan.md"
+      ]
+    },
+    {
+      "TASK_ID": "EQO-E-04",
+      "Parent": "EQO-E",
+      "Workstream": "E",
+      "Objective": "147 independent_audit_ref",
+      "Preconditions": [
+        "Plan pin binds: DOC_PIN TRAIN_PIN"
+      ],
+      "Dependencies": [
+        "EQO-E-02"
+      ],
+      "Eligibility": "EXECUTABLE_NOW",
+      "Owner role": "EQO orchestrator",
+      "Ticket refs": [],
+      "Acceptance": "WB-AUD linkage",
+      "Evidence": "WB-AUD linkage",
+      "Audit": "session E when verdict required",
+      "Write set": [
+        "docs/project/maintainers/qualification/enterprise_quality_oversight/eqo_closure/",
+        "eqo_closure/runs/"
+      ],
+      "Read set": [
+        "git show 8cee3c5a913f234e8fb65053b6ab4f34ed78249b:<path>",
+        "git show 28c27cb896d02e0185b9fa02047411fa152f6469:<path>",
+        "docs/project/maintainers/qualification/enterprise_quality_oversight/campaign_a/findings/FINDINGS.jsonl",
+        "eqo_closure_master_7499b85e.plan.md"
+      ]
+    },
+    {
+      "TASK_ID": "EQO-E-05",
+      "Parent": "EQO-E",
+      "Workstream": "E",
+      "Objective": "OD-EQO-10 impact/exceptions",
+      "Preconditions": [
+        "Plan pin binds: DOC_PIN TRAIN_PIN"
+      ],
+      "Dependencies": [
+        "EQO-E-02"
+      ],
+      "Eligibility": "EXECUTABLE_NOW",
+      "Owner role": "EQO orchestrator",
+      "Ticket refs": [],
+      "Acceptance": "operator package",
+      "Evidence": "operator package",
+      "Audit": "session E when verdict required",
+      "Write set": [
+        "docs/project/maintainers/qualification/enterprise_quality_oversight/eqo_closure/",
+        "eqo_closure/runs/"
+      ],
+      "Read set": [
+        "git show 8cee3c5a913f234e8fb65053b6ab4f34ed78249b:<path>",
+        "git show 28c27cb896d02e0185b9fa02047411fa152f6469:<path>",
+        "docs/project/maintainers/qualification/enterprise_quality_oversight/campaign_a/findings/FINDINGS.jsonl",
+        "eqo_closure_master_7499b85e.plan.md"
+      ]
+    },
+    {
+      "TASK_ID": "EQO-E-CLS",
+      "Parent": "EQO-E",
+      "Workstream": "E",
+      "Objective": "EDER disposition complete",
+      "Preconditions": [
+        "Plan pin binds: DOC_PIN TRAIN_PIN"
+      ],
+      "Dependencies": [
+        "EQO-E-01",
+        "EQO-E-02"
+      ],
+      "Eligibility": "EXECUTABLE_NOW",
+      "Owner role": "EQO orchestrator",
+      "Ticket refs": [],
+      "Acceptance": "1073 rows dispositioned",
+      "Evidence": "1073 rows dispositioned",
+      "Audit": "session E when verdict required",
+      "Write set": [
+        "docs/project/maintainers/qualification/enterprise_quality_oversight/eqo_closure/",
+        "eqo_closure/runs/"
+      ],
+      "Read set": [
+        "git show 8cee3c5a913f234e8fb65053b6ab4f34ed78249b:<path>",
+        "git show 28c27cb896d02e0185b9fa02047411fa152f6469:<path>",
+        "docs/project/maintainers/qualification/enterprise_quality_oversight/campaign_a/findings/FINDINGS.jsonl",
+        "eqo_closure_master_7499b85e.plan.md"
+      ]
+    },
+    {
+      "TASK_ID": "EQO-X-01",
+      "Parent": "EQO-X",
+      "Workstream": "X",
+      "Objective": "A4-003/A4-004 gate closure",
+      "Preconditions": [
+        "Plan pin binds: DOC_PIN TRAIN_PIN"
+      ],
+      "Dependencies": [
+        "EQO-W2-02"
+      ],
+      "Eligibility": "EXECUTABLE_NOW",
+      "Owner role": "EQO orchestrator",
+      "Ticket refs": [],
+      "Acceptance": "X-01 matrix",
+      "Evidence": "X-01 matrix",
+      "Audit": "session E when verdict required",
+      "Write set": [
+        "docs/project/maintainers/qualification/enterprise_quality_oversight/eqo_closure/",
+        "eqo_closure/runs/"
+      ],
+      "Read set": [
+        "git show 8cee3c5a913f234e8fb65053b6ab4f34ed78249b:<path>",
+        "git show 28c27cb896d02e0185b9fa02047411fa152f6469:<path>",
+        "docs/project/maintainers/qualification/enterprise_quality_oversight/campaign_a/findings/FINDINGS.jsonl",
+        "eqo_closure_master_7499b85e.plan.md"
+      ]
+    },
+    {
+      "TASK_ID": "EQO-X-02",
+      "Parent": "EQO-X",
+      "Workstream": "X",
+      "Objective": "L499 evidence currency",
+      "Preconditions": [
+        "Plan pin binds: DOC_PIN TRAIN_PIN"
+      ],
+      "Dependencies": [
+        "EQO-W0-01"
+      ],
+      "Eligibility": "EXECUTABLE_NOW",
+      "Owner role": "EQO orchestrator",
+      "Ticket refs": [],
+      "Acceptance": "ledger read DOC_PIN",
+      "Evidence": "ledger read DOC_PIN",
+      "Audit": "session E when verdict required",
+      "Write set": [
+        "docs/project/maintainers/qualification/enterprise_quality_oversight/eqo_closure/",
+        "eqo_closure/runs/"
+      ],
+      "Read set": [
+        "git show 8cee3c5a913f234e8fb65053b6ab4f34ed78249b:<path>",
+        "git show 28c27cb896d02e0185b9fa02047411fa152f6469:<path>",
+        "docs/project/maintainers/qualification/enterprise_quality_oversight/campaign_a/findings/FINDINGS.jsonl",
+        "eqo_closure_master_7499b85e.plan.md"
+      ]
+    },
+    {
+      "TASK_ID": "EQO-X-03",
+      "Parent": "EQO-X",
+      "Workstream": "X",
+      "Objective": "IIAC A0-007",
+      "Preconditions": [
+        "Plan pin binds: DOC_PIN TRAIN_PIN"
+      ],
+      "Dependencies": [
+        "EQO-W0-01"
+      ],
+      "Eligibility": "EXECUTABLE_NOW",
+      "Owner role": "EQO orchestrator",
+      "Ticket refs": [],
+      "Acceptance": "BLOCKED until RB-2",
+      "Evidence": "BLOCKED until RB-2",
+      "Audit": "session E when verdict required",
+      "Write set": [
+        "docs/project/maintainers/qualification/enterprise_quality_oversight/eqo_closure/",
+        "eqo_closure/runs/"
+      ],
+      "Read set": [
+        "git show 8cee3c5a913f234e8fb65053b6ab4f34ed78249b:<path>",
+        "git show 28c27cb896d02e0185b9fa02047411fa152f6469:<path>",
+        "docs/project/maintainers/qualification/enterprise_quality_oversight/campaign_a/findings/FINDINGS.jsonl",
+        "eqo_closure_master_7499b85e.plan.md"
+      ]
+    },
+    {
+      "TASK_ID": "EQO-X-04",
+      "Parent": "EQO-X",
+      "Workstream": "X",
+      "Objective": "RRX counter read",
+      "Preconditions": [
+        "Plan pin binds: DOC_PIN TRAIN_PIN"
+      ],
+      "Dependencies": [
+        "EQO-W0-01"
+      ],
+      "Eligibility": "EXECUTABLE_NOW",
+      "Owner role": "EQO orchestrator",
+      "Ticket refs": [],
+      "Acceptance": "both pins",
+      "Evidence": "both pins",
+      "Audit": "session E when verdict required",
+      "Write set": [
+        "docs/project/maintainers/qualification/enterprise_quality_oversight/eqo_closure/",
+        "eqo_closure/runs/"
+      ],
+      "Read set": [
+        "git show 8cee3c5a913f234e8fb65053b6ab4f34ed78249b:<path>",
+        "git show 28c27cb896d02e0185b9fa02047411fa152f6469:<path>",
+        "docs/project/maintainers/qualification/enterprise_quality_oversight/campaign_a/findings/FINDINGS.jsonl",
+        "eqo_closure_master_7499b85e.plan.md"
+      ]
+    },
+    {
+      "TASK_ID": "EQO-X-05",
+      "Parent": "EQO-X",
+      "Workstream": "X",
+      "Objective": "TENANT-X dryf",
+      "Preconditions": [
+        "Plan pin binds: DOC_PIN TRAIN_PIN"
+      ],
+      "Dependencies": [
+        "EQO-C-03"
+      ],
+      "Eligibility": "EXECUTABLE_NOW",
+      "Owner role": "EQO orchestrator",
+      "Ticket refs": [],
+      "Acceptance": "C-03 + WB02",
+      "Evidence": "C-03 + WB02",
+      "Audit": "session E when verdict required",
+      "Write set": [
+        "docs/project/maintainers/qualification/enterprise_quality_oversight/eqo_closure/",
+        "eqo_closure/runs/"
+      ],
+      "Read set": [
+        "git show 8cee3c5a913f234e8fb65053b6ab4f34ed78249b:<path>",
+        "git show 28c27cb896d02e0185b9fa02047411fa152f6469:<path>",
+        "docs/project/maintainers/qualification/enterprise_quality_oversight/campaign_a/findings/FINDINGS.jsonl",
+        "eqo_closure_master_7499b85e.plan.md"
+      ]
+    },
+    {
+      "TASK_ID": "EQO-X-06",
+      "Parent": "EQO-X",
+      "Workstream": "X",
+      "Objective": "KR-01..28 classify",
+      "Preconditions": [
+        "Plan pin binds: DOC_PIN TRAIN_PIN"
+      ],
+      "Dependencies": [
+        "EQO-W0-01"
+      ],
+      "Eligibility": "EXECUTABLE_NOW",
+      "Owner role": "EQO orchestrator",
+      "Ticket refs": [],
+      "Acceptance": "EQO_TEST_RED_GREEN_SETTLEMENT_PLAN.md",
+      "Evidence": "EQO_TEST_RED_GREEN_SETTLEMENT_PLAN.md",
+      "Audit": "session E when verdict required",
+      "Write set": [
+        "docs/project/maintainers/qualification/enterprise_quality_oversight/eqo_closure/",
+        "eqo_closure/runs/"
+      ],
+      "Read set": [
+        "git show 8cee3c5a913f234e8fb65053b6ab4f34ed78249b:<path>",
+        "git show 28c27cb896d02e0185b9fa02047411fa152f6469:<path>",
+        "docs/project/maintainers/qualification/enterprise_quality_oversight/campaign_a/findings/FINDINGS.jsonl",
+        "eqo_closure_master_7499b85e.plan.md"
+      ]
+    },
+    {
+      "TASK_ID": "EQO-X-07",
+      "Parent": "EQO-X",
+      "Workstream": "X",
+      "Objective": "EDER-N-0001/0002",
+      "Preconditions": [
+        "Plan pin binds: DOC_PIN TRAIN_PIN"
+      ],
+      "Dependencies": [
+        "EQO-W0-01"
+      ],
+      "Eligibility": "EXECUTABLE_NOW",
+      "Owner role": "EQO orchestrator",
+      "Ticket refs": [],
+      "Acceptance": "E-03 route",
+      "Evidence": "E-03 route",
+      "Audit": "session E when verdict required",
+      "Write set": [
+        "docs/project/maintainers/qualification/enterprise_quality_oversight/eqo_closure/",
+        "eqo_closure/runs/"
+      ],
+      "Read set": [
+        "git show 8cee3c5a913f234e8fb65053b6ab4f34ed78249b:<path>",
+        "git show 28c27cb896d02e0185b9fa02047411fa152f6469:<path>",
+        "docs/project/maintainers/qualification/enterprise_quality_oversight/campaign_a/findings/FINDINGS.jsonl",
+        "eqo_closure_master_7499b85e.plan.md"
+      ]
+    },
+    {
+      "TASK_ID": "EQO-X-08",
+      "Parent": "EQO-X",
+      "Workstream": "X",
+      "Objective": "impact BLOCKS verify",
+      "Preconditions": [
+        "Plan pin binds: DOC_PIN TRAIN_PIN"
+      ],
+      "Dependencies": [
+        "EQO-W0-01"
+      ],
+      "Eligibility": "EXECUTABLE_NOW",
+      "Owner role": "EQO orchestrator",
+      "Ticket refs": [],
+      "Acceptance": "five finding IDs",
+      "Evidence": "five finding IDs",
+      "Audit": "session E when verdict required",
+      "Write set": [
+        "docs/project/maintainers/qualification/enterprise_quality_oversight/eqo_closure/",
+        "eqo_closure/runs/"
+      ],
+      "Read set": [
+        "git show 8cee3c5a913f234e8fb65053b6ab4f34ed78249b:<path>",
+        "git show 28c27cb896d02e0185b9fa02047411fa152f6469:<path>",
+        "docs/project/maintainers/qualification/enterprise_quality_oversight/campaign_a/findings/FINDINGS.jsonl",
+        "eqo_closure_master_7499b85e.plan.md"
+      ]
+    },
+    {
+      "TASK_ID": "EQO-CL-01",
+      "Parent": "EQO-CL",
+      "Workstream": "CL",
+      "Objective": "Correction batch",
+      "Preconditions": [
+        "Plan pin binds: DOC_PIN TRAIN_PIN"
+      ],
+      "Dependencies": [],
+      "Eligibility": "EXECUTABLE_NOW",
+      "Owner role": "EQO orchestrator",
+      "Ticket refs": [],
+      "Acceptance": "eqo_closure CL log",
+      "Evidence": "eqo_closure CL log",
+      "Audit": "session E when verdict required",
+      "Write set": [
+        "docs/project/maintainers/qualification/enterprise_quality_oversight/eqo_closure/",
+        "eqo_closure/runs/"
+      ],
+      "Read set": [
+        "git show 8cee3c5a913f234e8fb65053b6ab4f34ed78249b:<path>",
+        "git show 28c27cb896d02e0185b9fa02047411fa152f6469:<path>",
+        "docs/project/maintainers/qualification/enterprise_quality_oversight/campaign_a/findings/FINDINGS.jsonl",
+        "eqo_closure_master_7499b85e.plan.md"
+      ]
+    },
+    {
+      "TASK_ID": "EQO-RV-01",
+      "Parent": "EQO-RV",
+      "Workstream": "RV",
+      "Objective": "SHA revalidation",
+      "Preconditions": [
+        "Plan pin binds: DOC_PIN TRAIN_PIN"
+      ],
+      "Dependencies": [],
+      "Eligibility": "EXECUTABLE_NOW",
+      "Owner role": "EQO orchestrator",
+      "Ticket refs": [],
+      "Acceptance": "EQO_SHA_REVALIDATION.jsonl",
+      "Evidence": "EQO_SHA_REVALIDATION.jsonl",
+      "Audit": "session E when verdict required",
+      "Write set": [
+        "docs/project/maintainers/qualification/enterprise_quality_oversight/eqo_closure/",
+        "eqo_closure/runs/"
+      ],
+      "Read set": [
+        "git show 8cee3c5a913f234e8fb65053b6ab4f34ed78249b:<path>",
+        "git show 28c27cb896d02e0185b9fa02047411fa152f6469:<path>",
+        "docs/project/maintainers/qualification/enterprise_quality_oversight/campaign_a/findings/FINDINGS.jsonl",
+        "eqo_closure_master_7499b85e.plan.md"
+      ]
+    },
+    {
+      "TASK_ID": "EQO-W7-01",
+      "Parent": "EQO-W7",
+      "Workstream": "W7",
+      "Objective": "FCS definition check",
+      "Preconditions": [
+        "Plan pin binds: DOC_PIN TRAIN_PIN"
+      ],
+      "Dependencies": [
+        "FCS"
+      ],
+      "Eligibility": "WAIT_FOR_INTEGRATION",
+      "Owner role": "EQO orchestrator",
+      "Ticket refs": [],
+      "Acceptance": "exact blocker if not MEP FCS",
+      "Evidence": "exact blocker if not MEP FCS",
+      "Audit": "session E when verdict required",
+      "Write set": [
+        "docs/project/maintainers/qualification/enterprise_quality_oversight/eqo_closure/",
+        "eqo_closure/runs/"
+      ],
+      "Read set": [
+        "git show 8cee3c5a913f234e8fb65053b6ab4f34ed78249b:<path>",
+        "git show 28c27cb896d02e0185b9fa02047411fa152f6469:<path>",
+        "docs/project/maintainers/qualification/enterprise_quality_oversight/campaign_a/findings/FINDINGS.jsonl",
+        "eqo_closure_master_7499b85e.plan.md"
+      ]
+    },
+    {
+      "TASK_ID": "EQO-W7-02",
+      "Parent": "EQO-W7",
+      "Workstream": "W7",
+      "Objective": "12-commit dev delta",
+      "Preconditions": [
+        "Plan pin binds: DOC_PIN TRAIN_PIN"
+      ],
+      "Dependencies": [
+        "EQO-W7-01"
+      ],
+      "Eligibility": "EXECUTABLE_NOW",
+      "Owner role": "EQO orchestrator",
+      "Ticket refs": [],
+      "Acceptance": "replay list",
+      "Evidence": "replay list",
+      "Audit": "session E when verdict required",
+      "Write set": [
+        "docs/project/maintainers/qualification/enterprise_quality_oversight/eqo_closure/",
+        "eqo_closure/runs/"
+      ],
+      "Read set": [
+        "git show 8cee3c5a913f234e8fb65053b6ab4f34ed78249b:<path>",
+        "git show 28c27cb896d02e0185b9fa02047411fa152f6469:<path>",
+        "docs/project/maintainers/qualification/enterprise_quality_oversight/campaign_a/findings/FINDINGS.jsonl",
+        "eqo_closure_master_7499b85e.plan.md"
+      ]
+    },
+    {
+      "TASK_ID": "EQO-W7-03",
+      "Parent": "EQO-W7",
+      "Workstream": "W7",
+      "Objective": "Evidence reconciliation",
+      "Preconditions": [
+        "Plan pin binds: DOC_PIN TRAIN_PIN"
+      ],
+      "Dependencies": [
+        "EQO-W7-02"
+      ],
+      "Eligibility": "EXECUTABLE_NOW",
+      "Owner role": "EQO orchestrator",
+      "Ticket refs": [],
+      "Acceptance": "INVALIDATED flags",
+      "Evidence": "INVALIDATED flags",
+      "Audit": "session E when verdict required",
+      "Write set": [
+        "docs/project/maintainers/qualification/enterprise_quality_oversight/eqo_closure/",
+        "eqo_closure/runs/"
+      ],
+      "Read set": [
+        "git show 8cee3c5a913f234e8fb65053b6ab4f34ed78249b:<path>",
+        "git show 28c27cb896d02e0185b9fa02047411fa152f6469:<path>",
+        "docs/project/maintainers/qualification/enterprise_quality_oversight/campaign_a/findings/FINDINGS.jsonl",
+        "eqo_closure_master_7499b85e.plan.md"
+      ]
+    },
+    {
+      "TASK_ID": "EQO-W7-04",
+      "Parent": "EQO-W7",
+      "Workstream": "W7",
+      "Objective": "Cite PT-Q nodes",
+      "Preconditions": [
+        "Plan pin binds: DOC_PIN TRAIN_PIN"
+      ],
+      "Dependencies": [
+        "EQO-W7-01"
+      ],
+      "Eligibility": "EXECUTABLE_NOW",
+      "Owner role": "EQO orchestrator",
+      "Ticket refs": [],
+      "Acceptance": "blocker if node missing",
+      "Evidence": "blocker if node missing",
+      "Audit": "session E when verdict required",
+      "Write set": [
+        "docs/project/maintainers/qualification/enterprise_quality_oversight/eqo_closure/",
+        "eqo_closure/runs/"
+      ],
+      "Read set": [
+        "git show 8cee3c5a913f234e8fb65053b6ab4f34ed78249b:<path>",
+        "git show 28c27cb896d02e0185b9fa02047411fa152f6469:<path>",
+        "docs/project/maintainers/qualification/enterprise_quality_oversight/campaign_a/findings/FINDINGS.jsonl",
+        "eqo_closure_master_7499b85e.plan.md"
+      ]
+    },
+    {
+      "TASK_ID": "EQO-W8-01",
+      "Parent": "EQO-W8",
+      "Workstream": "W8",
+      "Objective": "Campaign D challenge",
+      "Preconditions": [
+        "Plan pin binds: DOC_PIN TRAIN_PIN"
+      ],
+      "Dependencies": [
+        "M3"
+      ],
+      "Eligibility": "EXECUTABLE_NOW",
+      "Owner role": "EQO orchestrator",
+      "Ticket refs": [],
+      "Acceptance": "exact blockers report",
+      "Evidence": "exact blockers report",
+      "Audit": "session E when verdict required",
+      "Write set": [
+        "docs/project/maintainers/qualification/enterprise_quality_oversight/eqo_closure/",
+        "eqo_closure/runs/"
+      ],
+      "Read set": [
+        "git show 8cee3c5a913f234e8fb65053b6ab4f34ed78249b:<path>",
+        "git show 28c27cb896d02e0185b9fa02047411fa152f6469:<path>",
+        "docs/project/maintainers/qualification/enterprise_quality_oversight/campaign_a/findings/FINDINGS.jsonl",
+        "eqo_closure_master_7499b85e.plan.md"
+      ]
+    },
+    {
+      "TASK_ID": "EQO-W8-02",
+      "Parent": "EQO-W8",
+      "Workstream": "W8",
+      "Objective": "Campaign D fix loop",
+      "Preconditions": [
+        "Plan pin binds: DOC_PIN TRAIN_PIN"
+      ],
+      "Dependencies": [
+        "EQO-W8-01"
+      ],
+      "Eligibility": "EXECUTABLE_NOW",
+      "Owner role": "EQO orchestrator",
+      "Ticket refs": [],
+      "Acceptance": "CL-01",
+      "Evidence": "CL-01",
+      "Audit": "session E when verdict required",
+      "Write set": [
+        "docs/project/maintainers/qualification/enterprise_quality_oversight/eqo_closure/",
+        "eqo_closure/runs/"
+      ],
+      "Read set": [
+        "git show 8cee3c5a913f234e8fb65053b6ab4f34ed78249b:<path>",
+        "git show 28c27cb896d02e0185b9fa02047411fa152f6469:<path>",
+        "docs/project/maintainers/qualification/enterprise_quality_oversight/campaign_a/findings/FINDINGS.jsonl",
+        "eqo_closure_master_7499b85e.plan.md"
+      ]
+    },
+    {
+      "TASK_ID": "EQO-W8-CLS",
+      "Parent": "EQO-W8",
+      "Workstream": "W8",
+      "Objective": "Campaign D close",
+      "Preconditions": [
+        "Plan pin binds: DOC_PIN TRAIN_PIN"
+      ],
+      "Dependencies": [
+        "EQO-W8-01"
+      ],
+      "Eligibility": "EXECUTABLE_NOW",
+      "Owner role": "EQO orchestrator",
+      "Ticket refs": [],
+      "Acceptance": "D verdict",
+      "Evidence": "D verdict",
+      "Audit": "session E when verdict required",
+      "Write set": [
+        "docs/project/maintainers/qualification/enterprise_quality_oversight/eqo_closure/",
+        "eqo_closure/runs/"
+      ],
+      "Read set": [
+        "git show 8cee3c5a913f234e8fb65053b6ab4f34ed78249b:<path>",
+        "git show 28c27cb896d02e0185b9fa02047411fa152f6469:<path>",
+        "docs/project/maintainers/qualification/enterprise_quality_oversight/campaign_a/findings/FINDINGS.jsonl",
+        "eqo_closure_master_7499b85e.plan.md"
+      ]
+    },
+    {
+      "TASK_ID": "EQO-W9-01",
+      "Parent": "EQO-W9",
+      "Workstream": "W9",
+      "Objective": "C01–C25 matrix",
+      "Preconditions": [
+        "Plan pin binds: DOC_PIN TRAIN_PIN"
+      ],
+      "Dependencies": [
+        "EQO-W8-CLS"
+      ],
+      "Eligibility": "EXECUTABLE_NOW",
+      "Owner role": "EQO orchestrator",
+      "Ticket refs": [],
+      "Acceptance": "EQO_MASTER_CLOSURE_MATRIX.md",
+      "Evidence": "EQO_MASTER_CLOSURE_MATRIX.md",
+      "Audit": "session E when verdict required",
+      "Write set": [
+        "docs/project/maintainers/qualification/enterprise_quality_oversight/eqo_closure/",
+        "eqo_closure/runs/"
+      ],
+      "Read set": [
+        "git show 8cee3c5a913f234e8fb65053b6ab4f34ed78249b:<path>",
+        "git show 28c27cb896d02e0185b9fa02047411fa152f6469:<path>",
+        "docs/project/maintainers/qualification/enterprise_quality_oversight/campaign_a/findings/FINDINGS.jsonl",
+        "eqo_closure_master_7499b85e.plan.md"
+      ]
+    },
+    {
+      "TASK_ID": "EQO-W9-02",
+      "Parent": "EQO-W9",
+      "Workstream": "W9",
+      "Objective": "Publish dossier PR",
+      "Preconditions": [
+        "Plan pin binds: DOC_PIN TRAIN_PIN"
+      ],
+      "Dependencies": [
+        "EQO-W9-01",
+        "FCS ancestry"
+      ],
+      "Eligibility": "EXECUTABLE_NOW",
+      "Owner role": "EQO orchestrator",
+      "Ticket refs": [],
+      "Acceptance": "development PR band F",
+      "Evidence": "development PR band F",
+      "Audit": "session E when verdict required",
+      "Write set": [
+        "docs/project/maintainers/qualification/enterprise_quality_oversight/eqo_closure/",
+        "eqo_closure/runs/"
+      ],
+      "Read set": [
+        "git show 8cee3c5a913f234e8fb65053b6ab4f34ed78249b:<path>",
+        "git show 28c27cb896d02e0185b9fa02047411fa152f6469:<path>",
+        "docs/project/maintainers/qualification/enterprise_quality_oversight/campaign_a/findings/FINDINGS.jsonl",
+        "eqo_closure_master_7499b85e.plan.md"
+      ]
+    }
+  ]
+}

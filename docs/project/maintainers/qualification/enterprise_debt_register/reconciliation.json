@@ -31,9 +31,10 @@
  "equations": {
   "open_unknown_split": "605 real OPEN/UNKNOWN entries + 155 NOT_AN_ENTRY rows with currency OPEN/UNKNOWN = 760 (605 + 155 = 760)",
   "a7_entries_total": "1480 = 605 ingested OPEN/UNKNOWN + 26 ingested DEFERRED + 456 accepted (155 A2/register rows + 301 IIAC limitations covered by 39 pointer rows) + 211 resolved/closed/superseded not ingested + 182 not-an-entry rows (155 excluded as OPEN/UNKNOWN, 27 other)",
-  "register_rows": "1069 rows = 239 findings + 605 OPEN/UNKNOWN entries + 26 DEFERRED entries + 155 accepted A2/register EXCEPTION rows + 39 IIAC pointer rows + 5 category rows (4 skip, 1 N/A)"
+  "register_rows": "1069 rows = 239 findings + 605 OPEN/UNKNOWN entries + 26 DEFERRED entries + 155 accepted A2/register EXCEPTION rows + 39 IIAC pointer rows + 5 category rows (4 skip, 1 N/A)",
+  "eder_total_with_post_ingest": "1073 = 1069 (initial ingest per rows_by_basis below) + 4 POST_INGEST rows EDER-N-0001..EDER-N-0004 in register.jsonl (ingest_basis=POST_INGEST_REGISTER_ITEM); EQO-E-01"
  },
- "rows_total": 1069,
+ "rows_total": 1073,
  "rows_by_basis": {
   "FINDING_OPEN_239": 239,
   "A7_OPEN_UNKNOWN": 605,
@@ -41,11 +42,12 @@
   "A7_ACCEPTED_A2_REGISTER": 155,
   "IIAC_MANIFEST_POINTER": 39,
   "SKIP_CATEGORY": 4,
-  "NA_CATEGORY": 1
+  "NA_CATEGORY": 1,
+  "POST_INGEST_EDER_N": 4
  },
  "rows_by_record_type": {
   "FINDING": 239,
-  "DEBT_ENTRY": 636,
+  "DEBT_ENTRY": 640,
   "EXCEPTION": 194
  },
  "rows_by_register_class": {

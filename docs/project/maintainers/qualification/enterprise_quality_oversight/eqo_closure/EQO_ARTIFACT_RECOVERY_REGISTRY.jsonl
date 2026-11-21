@@ -1,0 +1,13 @@
+{"artifact_id": "T-IGX-043-C", "classification": "PUBLISHED_CANONICAL", "path": "governance/tickets/T-IGX-043-C.md", "doc_pin": true, "train_pin": true}
+{"artifact_id": "T-IGX-043-F", "classification": "PUBLISHED_CANONICAL", "path": "governance/tickets/T-IGX-043-F.md", "doc_pin": true, "train_pin": true}
+{"artifact_id": "T-IGX-043-J", "classification": "ABSENT", "path": "governance/tickets/T-IGX-043-J.md", "doc_pin": false, "train_pin": false}
+{"artifact_id": "T-IGX-043-L", "classification": "ABSENT", "path": "governance/tickets/T-IGX-043-L.md", "doc_pin": false, "train_pin": false}
+{"artifact_id": "T-IGX-043-M", "classification": "ABSENT", "path": "governance/tickets/T-IGX-043-M.md", "doc_pin": false, "train_pin": false}
+{"artifact_id": "T-IGX-043-N", "classification": "ABSENT", "path": "governance/tickets/T-IGX-043-N.md", "doc_pin": false, "train_pin": false}
+{"artifact_id": "T-IGX-051-A", "classification": "ABSENT", "path": "governance/tickets/T-IGX-051-A.md", "doc_pin": false, "train_pin": false}
+{"artifact_id": "T-IGX-051-C", "classification": "ABSENT", "path": "governance/tickets/T-IGX-051-C.md", "doc_pin": false, "train_pin": false}
+{"artifact_id": "T-IGX-051-F", "classification": "ABSENT", "path": "governance/tickets/T-IGX-051-F.md", "doc_pin": false, "train_pin": false}
+{"artifact_id": "T-IGX-051-G", "classification": "ABSENT", "path": "governance/tickets/T-IGX-051-G.md", "doc_pin": false, "train_pin": false}
+{"artifact_id": "T-IGX-051-M", "classification": "ABSENT", "path": "governance/tickets/T-IGX-051-M.md", "doc_pin": false, "train_pin": false}
+{"artifact_id": "T-IGX-052-E", "classification": "ABSENT", "path": "governance/tickets/T-IGX-052-E.md", "doc_pin": false, "train_pin": false}
+{"artifact_id": "session_eqo-b", "classification": "LOCAL_EVIDENCE_ONLY", "path": "D:\\Projekty\\intergrax\\.tmp\\session\\eqo-b", "baseline_sha": "2727a2c2364a97492202b931375772a400279a9b", "note": "Hypotheses only; not evidence on TRAIN_PIN."}
