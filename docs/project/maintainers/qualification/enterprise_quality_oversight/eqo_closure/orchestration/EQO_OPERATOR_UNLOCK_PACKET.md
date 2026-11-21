@@ -1,6 +1,6 @@
 # EQO operator unlock packet
 
-**Fetched:** 2026-11-21. Local `development` `1183221658cdba9d0c1e466b053b18d45c998f08`. `origin/development` `17fc79228eb0b46880ecad17ff52354622a81e9e`. Ahead 40, behind 0. Worktree `D:/Projekty/_wt/intergrax/af-dev-merge`. Clean. Not pushed. Not `EQO_CLOSED`. A4-006 and A4-027 are not formally settled.
+**Fetched:** 2026-11-21. Code evidence SHA `1183221658cdba9d0c1e466b053b18d45c998f08`. `origin/development` `17fc79228eb0b46880ecad17ff52354622a81e9e`. Worktree `D:/Projekty/_wt/intergrax/af-dev-merge`, branch `development`. Publish `HEAD` after the commit that adds this packet. Not pushed. Not `EQO_CLOSED`. A4-006 and A4-027 are not formally settled.
 
 ## Publication
 
@@ -14,7 +14,7 @@ Eleven unpublished commits carry `Co-authored-by: Cursor <cursoragent@cursor.com
 git fetch origin
 git rev-list --left-right --count origin/development...HEAD
 git push -u origin HEAD:eqo/recovery-publication
-gh pr create --repo jakbuczarnecki/intergrax --base development --head eqo/recovery-publication --title "Publish EQO recovery fixes and bookkeeping" --body "Local development stack through 118322165. Technical review only. No EQO closure."
+gh pr create --repo jakbuczarnecki/intergrax --base development --head eqo/recovery-publication --title "Publish EQO recovery fixes and bookkeeping" --body "Technical review only. No EQO closure. Code evidence SHA 118322165."
 ```
 
 Do not push `development` directly. Do not merge a red required check. The alternate, not recommended, is an explicit rewrite authorization for the eleven trailers before push.
