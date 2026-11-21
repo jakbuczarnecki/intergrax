@@ -1,7 +1,7 @@
 # ARCH-FREEZE continuation checkpoint (development train)
 
-**Updated:** 2026-11-21 (fala 6 close / TOR C, worktree `af-dev-fala6-close`)  
-**Base branch:** `origin/development` @ `e61e5136aa0617eea69b97ceedd8da38a4d0e796` (`e61e5136a`)  
+**Updated:** 2026-11-21 (MEP W8 closure prep, worktree `af-dev-mep-w8`)  
+**Base branch:** `development` @ `d043a21c67cb57475a4f36a2baff7020718ec7cb` (`d043a21c6`)  
 **Arch-freeze train reference:** `origin/arch-freeze/rw-train` @ `dbaebfa8cd13a6ba8bfa6eef2cdf581216ddb3d2` — PR **#699** **MERGED** (slice do `1cec68222`)
 
 ## Train merge — fakt operatora / automation
@@ -55,3 +55,7 @@ Po merge **#699** train zawiera slice FC-3 / G-09 / trust, ale **nie** pełny `d
 ## G4 — RC-3 prep (fala 6)
 
 Deliverables: `RC3_PREP_DOSSIER.md`, `G2_CHECKLIST_DRAFT.md`, `TRAIN_DEV_GAP.md`; checkpointy w tym katalogu. TOR C fala 6 dokumentacja prep: **DONE** @ `e61e5136a`. Werdykt RC-3 exit (W4): **DRAFT / NOT STARTED** — nie wyjście RC-3.
+
+## G8 — W8 closure prep (MEP W8)
+
+Deliverables: `W8_PREP_DOSSIER.md`, katalog `w8/` (8 checklist §J). Pin dokumentacyjny: `d043a21c6`. Werdykt W8 program: **DRAFT / NOT STARTED** — **nie** `ARCH_FREEZE_CLOSED`, **nie** `W8-INDEP-CONFIRM` PASS.
