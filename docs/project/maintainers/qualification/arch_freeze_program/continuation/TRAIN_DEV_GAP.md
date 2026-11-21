@@ -1,66 +1,67 @@
-# Train ↔ development gap (TOR C fala 6)
+﻿# Train ↔ development gap (TOR C fala 6)
 
 **Snapshot:** 2026-11-21  
-**Disposition:** **QUEUED / STOP** — merge train i PR `development` → `rw-train` **nie** wykonane do green `governance-fast`.
+**Disposition:** **IN FLIGHT / STOP merge** — PR **#699** (`af-dev-train-sync` → `rw-train`) **open**; merge **STOP** do green `governance-fast` (ACT-N11 **red** na HEAD `1cec68222`).
 
 ## Piny
 
 | Ref | SHA (40) | Krótki |
 |-----|----------|--------|
-| `origin/development` | `4889fc85907d3da3eb4bd75d1d0c8f2475e09ee1` | `4889fc859` |
+| `origin/development` | `e0d75042f2c2c72d2b8eb7df3a52e12509a00bac` | `e0d75042f` |
 | `origin/arch-freeze/rw-train` | `c443865e9129300a7bbb71abf65dee246f747794` | `c443865e9` |
 | Merge-base | `70d73f0f08325a39c6b2fd0e3b00f4cab7e83033` | `70d73f0f0` |
+| HEAD PR train slice | `1cec68222751a128feab00e7b80063a09983296e` | `1cec68222` |
 
 ## Liczniki divergence
 
 | Kierunek | Commity | Znaczenie |
 |----------|---------|-----------|
 | `rw-train` … not in `development` | **205** | Historia train / EQO — poza merge mandate |
-| `development` … not in `rw-train` | **185** | Remediacja product + docs na torze primary — **do cherry-pick** |
+| `development` … not in `rw-train` | **194** | Remediacja product + docs na torze primary — **do cherry-pick** |
 
 Product na `development` musi **cherry-pick/rebase** z trainu tam, gdzie slice już istnieje na trainie — nie merge `rw-train` bez mandatu operatora (`CHECKPOINT.md`, OD-AF-AUTO-01).
 
 ## Kolejka slice (z `TRAIN_CHERRY_PICK_STATUS.md`)
 
-Narracja SSOT fala 5 — **bez zmiany semantyki** w tym pliku; poniżej kopia robocza + mapowanie landingu.
+SSOT narracji slice — poniżej stan landingu + PR **#699**.
 
 ### Bramka CI
 
-| Workflow | Stan fala 6 | Uwagi |
-|----------|-------------|-------|
-| `governance-fast` | **BLOCKED** | [`IIAC_GOVERNANCE_FAST_BLOCKED.md`](IIAC_GOVERNANCE_FAST_BLOCKED.md) — RB-2 re-pin, nie docs bypass |
-| Regression gate (fala 5 pin) | `ci-smoke` remediated @ `2100a85f9`; governance-fast FAIL expected | run `44880866642` (historyczny) |
+| Workflow | Stan | Uwagi |
+|----------|------|-------|
+| `governance-fast` @ PR **#699** | **FAILURE (ACT-N11)** | product paths; merge **STOP** (OD-AF-AUTO-01) |
+| `governance-fast` @ `development` | poza tym batch docs | [`IIIC_GOVERNANCE_FAST_BLOCKED.md`](IIIC_GOVERNANCE_FAST_BLOCKED.md) — RB-2 re-pin |
 
-**Werdykt:** PR/cherry-pick merge train — **STOP** (RC2-B2 / OD-AF-AUTO-01). Kolejka = gotowość, nie merge.
+**Werdykt:** cherry-pick na `af-dev-train-sync` **done**; merge train — **STOP** do **green** `governance-fast` na `1cec68222`.
 
 ### Proponowane slice (product + tests)
 
 | Kolejność | Commit (skrót) | Slice | Ląduje na train? | Pozostaje dev-only? |
 |-----------|----------------|-------|------------------|---------------------|
 | 1 | `60aa5282c` | FC-2 `wiring_posture` | Tak (jeśli brak na train) | — |
-| 2 | `d00d0e29b` … `413fb9186` | FC-3 delta (#688) | **Tak** (seria A–F) | tylko do zsynchronizowania |
-| 3 | `aac4b083b` | PT-WF G-09 | **Tak** | — |
-| 4 | `a667e6dd7`, `7b1818f5f` | trust slice 1–2 + guardrail e2e | **Tak** | trust slice 3 DEFER |
+| 2 | `d00d0e29b` … `413fb9186` | FC-3 delta (#688) | **Tak** — na `#699` | — |
+| 3 | `aac4b083b` / `e6b1d97f7` | PT-WF G-09 | **Tak** — na `#699` | — |
+| 4 | `a667e6dd7`, `7b1818f5f`, `1cec68222` | trust + guardrail e2e | **Tak** — na `#699` | trust slice 3 DEFER na `development` |
 
-**Wyłączone z train PR (ta fala):** `agent-env/*`, `docs/eqo_closure/*`, czyste checkpointy qualification (`continuation/*`) — dokumentacja toru `development` **nie** idzie na train w tym batchu.
+**Wyłączone z train PR (ta fala):** `agent-env/*`, `docs/eqo_closure/*`, czyste checkpointy qualification (`continuation/*`) — ten commit docs **nie** idzie na train.
 
-### Commity dev-only (klasa, nie pełna lista 185)
+### Commity dev-only (klasa, nie pełna lista 194)
 
-| Klasa | Przykłady na HEAD `development` | Train |
+| Klasa | Przykłady na torze `development` | Train |
 |-------|-----------------------------------|-------|
-| EQO AUD wave-2 docs | `cd73ad88e`, `d57c5e62c`, … | **Nie** — osobny tor EQO |
-| ARCH-FREEZE continuation fala 5 | `61516a7cf` (historyczny), RC-2 artifacts | **Nie** — cite only |
-| Product remediacja FC-3/G-09/trust | `7b1818f5f`, `413fb9186`, … | **Tak** — w kolejce slice |
+| EQO AUD wave-2 / matrix docs | `569254840`, `cd73ad88e`, … | **Nie** — osobny tor EQO |
+| ARCH-FREEZE continuation | RC-2 / RC-3 prep (`continuation/*`) | **Nie** — cite only |
+| Product remediacja FC-3/G-09/trust | już na `af-dev-train-sync` | **Tak** — PR **#699** |
 
-Pełna lista 185 commitów: `git log --oneline 70d73f0f0..4889fc859` (operator / następna fala train).
+Pełna lista 194 commitów: `git log --oneline 70d73f0f0..e0d75042f` (operator).
 
-## Wykonanie (gdy governance-fast green)
+## Wykonanie (gdy governance-fast green na `#699`)
 
-1. Worktree od `origin/arch-freeze/rw-train`, branch np. `af-dev-train-slice6`.
-2. Cherry-pick seria 1–4 (konflikty tylko w scope slice).
-3. Targeted pytest: G-09 harness + `test_trust_fail_closed.py` + FC-3 bundle subset.
-4. `gh pr create` → base `arch-freeze/rw-train`; merge **tylko** przy green `governance-fast`.
+1. Branch `af-dev-train-sync` @ `1cec68222` — **gotowy**.
+2. Cherry-pick seria 1–4 — **done** na branchu PR.
+3. Targeted pytest — replay na HEAD PR po green CI.
+4. Merge PR **#699** → `arch-freeze/rw-train` **tylko** przy **green** `governance-fast`.
 
 ## Stan fala 6
 
-Branch train slice **nie** utworzony. Operator: ponowić po green `governance-fast` na HEAD `development` po RB-2 / IIAC remediation (poza autonomią docs TOR C).
+Worktree **`af-dev-train-sync`**; PR **#699** **open**, checks **red** (`governance-fast` ACT-N11). Operator: merge train po green; docs TOR C tylko odzwierciedlają stan (bez bypass).
