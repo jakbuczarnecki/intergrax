@@ -1,13 +1,13 @@
-﻿# Train ↔ development gap (MEP W3 — pin `d043a21c6`)
+﻿# Train ↔ development gap (docs pin `e69e1ff58`)
 
-**Snapshot:** 2026-11-21 (worktree `af-dev-mep-w3`, fala MEP W3; serial merge W4–W8 na `development` **poza** pinem liczników poniżej)  
+**Snapshot:** 2026-11-21 (worktree `af-dev-docs-pin` @ `e69e1ff58` — ci-smoke G-09 tenant registry; liczniki gap @ pin poniżej)  
 **Disposition:** **MERGED / replay OPEN (QUEUED / STOP)** — PR **#699** **MERGED** @ `dbaebfa8`; replay `governance-fast` na train pin **OPEN**. **Operator STOP:** bez green `governance-fast` — **brak** kolejnego cherry-pick / merge train.
 
-## Piny (MEP W3)
+## Piny (docs @ `e69e1ff58`)
 
 | Ref | SHA (40) | Krótki |
 |-----|----------|--------|
-| `origin/development` (MEP W3) | `d043a21c67cb57475a4f36a2baff7020718ec7cb` | `d043a21c6` |
+| `origin/development` (docs pin) | `e69e1ff5819b98c316377bcadf749f61fe00abc2` | `e69e1ff58` |
 | TOR C snapshot (historyczny) | `e61e5136aa0617eea69b97ceedd8da38a4d0e796` | `e61e5136a` |
 | `origin/arch-freeze/rw-train` | `dbaebfa8cd13a6ba8bfa6eef2cdf581216ddb3d2` | `dbaebfa8` |
 | Merge-base dev ↔ train | `70d73f0f08325a39c6b2fd0e3b00f4cab7e83033` | `70d73f0f0` |
@@ -15,14 +15,14 @@
 
 ## Liczniki divergence (od merge-base `70d73f0f0`)
 
-| Kierunek | @ `d043a21c6` | @ `e61e5136a` (referencja) | Znaczenie |
+| Kierunek | @ `e69e1ff58` | @ `e61e5136a` (referencja) | Znaczenie |
 |----------|---------------|---------------------------|-----------|
 | `rw-train` … not in `development` | **217** | **217** | Historia train / EQO — poza merge mandate |
-| `development` … not in `rw-train` | **0** | **286** | Remediacja na torze primary — cherry-pick / cite |
+| `development` … not in `rw-train` | **451** | **286** | Remediacja na torze primary — cherry-pick / cite |
 
-Polecenie SSOT: `git rev-list --count 70d73f0f0..<dev-pin>`; train-only: `git rev-list --count 70d73f0f0..dbaebfa8`.
+Polecenie SSOT: dev-not-in-train `git rev-list --count dbaebfa8..<dev-pin>`; od merge-base na dev: `git rev-list --count 70d73f0f0..<dev-pin>`; train-only: `git rev-list --count 70d73f0f0..dbaebfa8`.
 
-Na pinie MEP W3 tor `development` **nie wyprzedza** merge-base — późniejsze commity remediacji (do `e61e5136a` i dalsze MEP W4–W8 na serial `af-dev-merge`) są **poza** tym pinem i nie zmieniają faktu merge #699 na trainie.
+Na pinie `e69e1ff58` tor `development` wyprzedza train o **451** commitów (product, EQO, MEP W4–W8 prep na serial `af-dev-merge`) — merge **#699** na trainie **nie** zmienia tego faktu.
 
 Product na `development` musi **cherry-pick/rebase** z trainu tam, gdzie slice już istnieje — **nie** pełny merge `rw-train` bez mandatu operatora (`CHECKPOINT.md`, OD-AF-AUTO-01).
 
@@ -66,6 +66,6 @@ Product na `development` musi **cherry-pick/rebase** z trainu tam, gdzie slice j
 3. RC-2 exit B2–B3 — [`RC2_EXIT_CHECKLIST.md`](RC2_EXIT_CHECKLIST.md) (**PARTIAL**; B3 = merge fact, B2 = green replay).
 4. Kolejne slice dev-only — nowa kolejka w `TRAIN_CHERRY_PICK_STATUS.md`, nie merge całego `development`.
 
-## Stan MEP W3
+## Stan docs pin
 
-Worktree **`af-dev-mep-w3`** @ `d043a21c6`; aktualizacja SSOT gap + cherry status + WP12 prep matrix — **bez** claim G2, FCS, green `governance-fast`, **bez** train merge w tej fali.
+Worktree **`af-dev-docs-pin`** @ `e69e1ff58`; odświeżenie SSOT liczników gap — **bez** claim G2, FCS, green `governance-fast`, **bez** train merge w tej fali.
