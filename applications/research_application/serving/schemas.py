@@ -6,8 +6,8 @@ from pydantic import BaseModel, Field
 
 
 class ResearchRunRequestV1(BaseModel):
-    tenant_id: str = "research-tenant"
-    user_id: str = "research-user"
+    tenant_id: str = Field(..., min_length=1)
+    user_id: str = Field(..., min_length=1)
     message: str = Field(..., min_length=1)
     session_id: str | None = None
 
