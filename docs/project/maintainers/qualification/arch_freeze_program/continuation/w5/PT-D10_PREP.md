@@ -26,11 +26,20 @@
 | W5X-D10-3 | PT-AUD-DOC | [ ] |  |
 | W5X-D10-4 | Before PT-D11 F10 render | [ ] | ECAP_REVISION_DRAFT G-08 |
 
+## Status ticketu
+
+| Pole | Wartość |
+|------|---------|
+| Mandat / ticket | PT-FRZ-RR + AR |
+| Lifecycle @ pin | NOT STARTED |
+| Tor exec (mapa) | **IN_PROGRESS** — [WP12_W5_PT_TICKETS_STATUS.md](WP12_W5_PT_TICKETS_STATUS.md) |
+
 ## Werdykt (prep dokumentacji)
 
 | Warstwa | Werdykt |
 |---------|---------|
 | MEP W5 prep PT-D10 | **DOCUMENTED** — brak claimów wykonania / pin / PASS |
+| Tor mapy ticketów W5 | **IN_PROGRESS** @ e69e1ff58 |
 | Węzeł programowy | **NOT STARTED** — wymaga FCS i autoryzacji |
 
 OD-AF-AUTO-05: bez M3, bez pinu EBH-7, bez FRZ promotion.

@@ -26,11 +26,20 @@
 | W5X-S05-3 | DP-64 direct-push rule | [ ] |  |
 | W5X-S05-4 | Separate operator authorisation | [ ] | C9 |
 
+## Status ticketu
+
+| Pole | Wartość |
+|------|---------|
+| Mandat / ticket | AR-49 (C9) |
+| Lifecycle @ pin | NOT STARTED |
+| Tor exec (mapa) | **IN_PROGRESS** — [WP12_W5_PT_TICKETS_STATUS.md](WP12_W5_PT_TICKETS_STATUS.md) |
+
 ## Werdykt (prep dokumentacji)
 
 | Warstwa | Werdykt |
 |---------|---------|
 | MEP W5 prep PT-S05 | **DOCUMENTED** — brak claimów wykonania / pin / PASS |
+| Tor mapy ticketów W5 | **IN_PROGRESS** @ e69e1ff58 |
 | Węzeł programowy | **NOT STARTED** — wymaga FCS i autoryzacji |
 
 OD-AF-AUTO-05: bez M3, bez pinu EBH-7, bez FRZ promotion.

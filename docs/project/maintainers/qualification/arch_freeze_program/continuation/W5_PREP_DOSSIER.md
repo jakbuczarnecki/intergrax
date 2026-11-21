@@ -1,14 +1,15 @@
 # W5 pre-pin prep dossier (WP-12) — **prep only, not pin**
 
-**Data:** 2026-11-21 (MEP W5, worktree `af-dev-mep-w5`)  
-**Werdykt programu W5:** **DRAFT / NOT STARTED** — nie EBH-7 pin, nie M3, nie `FREEZE_CERTIFICATION_SHA`, nie `ARCH_FREEZE CLOSED`.  
-**Werdykt dokumentacji prep MEP W5:** **DONE** — dziewięć węzłów WP-12 W5 zmapowanych pod `continuation/w5/*_PREP.md`.
+**Data:** 2026-11-21 (MEP W5 prep + exec tor ticketów, worktree `af-dev-w5-exec`)  
+**Werdykt programu W5 (węzły):** **DRAFT / NOT STARTED** — nie EBH-7 pin, nie M3, nie `FREEZE_CERTIFICATION_SHA`, nie `ARCH_FREEZE CLOSED`.  
+**Werdykt dokumentacji prep MEP W5:** **DONE** — dziewięć węzłów WP-12 W5 pod `continuation/w5/*_PREP.md`.  
+**Tor mapy ticketów W5:** **IN_PROGRESS** — [`w5/WP12_W5_PT_TICKETS_STATUS.md`](w5/WP12_W5_PT_TICKETS_STATUS.md) @ `e69e1ff58`.
 
 ## Poprzednik
 
 | Runda | Stan | Dowód |
 |-------|------|-------|
-| RC-3 exit prep (MEP W4) | **IN PROGRESS** | [`RC3_EXIT_PREP_CHECKLIST.md`](RC3_EXIT_PREP_CHECKLIST.md) @ `d043a21c6` (w toku w `af-dev-mep-w4`) |
+| RC-3 exit prep (MEP W4) | **IN PROGRESS** | [`RC3_EXIT_PREP_CHECKLIST.md`](RC3_EXIT_PREP_CHECKLIST.md) @ `c207e6ad3` lineage (`af-dev-rc3-exec-prep`) |
 | RC-3 entry prep (fala 6) | **DONE** (prep) | [`RC3_PREP_DOSSIER.md`](RC3_PREP_DOSSIER.md) @ `e61e5136a` |
 | FCS | **nie osiągnięty** | Brak rungu FCS na `development` @ ten pin |
 
@@ -16,7 +17,7 @@
 
 | Ref | SHA (40) | Krótki |
 |-----|----------|--------|
-| Tor merge / development | `d043a21c67cb57475a4f36a2baff7020718ec7cb` | `d043a21c6` |
+| Tor merge / development | `e69e1ff5819b98c316377bcadf749f61fe00abc2` | `e69e1ff58` |
 | `origin/arch-freeze/rw-train` | `dbaebfa8cd13a6ba8bfa6eef2cdf581216ddb3d2` | `dbaebfa8` |
 
 ## Węzły WP-12 W5 (9)
@@ -43,7 +44,8 @@ Plan [`MEP-AF2_v2.1.md`](MEP-AF2_v2.1.md) W5 dodaje m.in. `T-B7-PFP-ACTIVATE`, `
 
 | Warstwa | Werdykt |
 |---------|---------|
-| MEP W5 prep dokumentacja (9× PT-*) | **DONE** @ `d043a21c6` base |
+| MEP W5 prep dokumentacja (9× PT-*) | **DONE** @ `e69e1ff58` |
+| Mapa statusów ticketów PT-* | **IN PROGRESS** — `w5/WP12_W5_PT_TICKETS_STATUS.md` |
 | W5 programowe (wykonanie węzłów) | **NOT STARTED** — FCS i autoryzacje otwarte |
 
 Zgodnie z **OD-AF-AUTO-05**: bez pinu, bez M3, bez PASS audytów, bez Stage 4/5 LIVE.
