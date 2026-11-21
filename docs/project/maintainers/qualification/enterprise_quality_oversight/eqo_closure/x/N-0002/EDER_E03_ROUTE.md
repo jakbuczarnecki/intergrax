@@ -40,3 +40,9 @@ This memo does **not** name enums or re-diff tiers at the pins (per plan §EQO-X
 `NOT_CLOSED` — conscious residual after 043-G; full disposition owned by DUP-X + Operator package when TRIAGED.
 
 **Audit:** session E pending.
+
+## Wave-4 refresh
+
+E-03 route unchanged; DUP-X owner proposal idempotent @ DOC_PIN.
+
+**Recorded:** 2026-11-21 · lane `eqo/wave-4/x`

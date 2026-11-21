@@ -31,4 +31,8 @@ Read-only inspection of published closure artefacts — **no** product replay, *
 
 **Audit:** session E pending (wave-3).
 
-**Recorded:** 2026-11-21 · `Ref: governance/tickets/T-IGX-046-F.md`
+## Wave-4 refresh
+
+Post wave-3 AUD packets: gate replay still tied to `EQO-W2-02` + queued session E for WB05 tier-boundary slice; no change to `MERGED_TO_TRAIN` fact for A4-003 @ `TRAIN_PIN`.
+
+**Recorded:** 2026-11-21 · `Ref: governance/tickets/T-IGX-046-F.md` · lane `eqo/wave-4/x`

@@ -32,6 +32,34 @@ git log -1 --format=%H 28c27cb896d02e0185b9fa02047411fa152f6469
 git cat-file -e 28c27cb896d02e0185b9fa02047411fa152f6469:governance/tickets/T-IGX-043-G.md
 ```
 
+## Wave-4 read pass (W2-02..W2-11, docs-only)
+
+**Executed:** 2026-11-21 (lane `eqo/wave-4/w2`) · re-read ticket paths on `TRAIN_PIN` only; no pytest, no train write set.
+
+| Task | Read focus | Wave-4 disposition |
+|------|------------|-------------------|
+| W2-02 | T-IGX-043-G/H merge SHAs on pin; tier-boundary scope | Unchanged `MERGED_GATE_PENDING`; ties `EQO-X-01` replay queue (AUD session E) |
+| W2-03 | #654 scope note; Part G held | `SCOPE_OK`; W2-13 still `WAIT_FOR_OPERATOR` |
+| W2-04 | T-IGX-043-D / #668 | `MERGED_UNREPLAYED`; skill durability → WB09/W4-04 REQUALIFY links |
+| W2-05 | T-IGX-043-I / #669 Parts A–D | `MERGED_PARTIAL`; Part E absent (W0-02) |
+| W2-06 | T-IGX-051-D / #670 | `MERGED_UNREPLAYED`; WB09 SDK slice |
+| W2-07 | T-IGX-043-B/E #672/#677 | `MERGED_PARTIAL`; B4 part 2 `NOT_STARTED` |
+| W2-08 | T-IGX-044-F / #673 | `MERGED_UNREPLAYED`; WB01 governance slice |
+| W2-09 | T-IGX-051-E / #674 | `MERGED_PARTIAL`; F-1 residual W2-12 |
+| W2-10 | T-IGX-051-I / #675 | `MERGED_PARTIAL` @ `4c49cf877e65`; A4-007 tests on pin; EDER-N-0003 residual (W0-04) |
+| W2-11 | T-IGX-051-B / #676 | `MERGED_PARTIAL` @ `37fd3e984`; Parts C–I on pin; A/B + F-5 R-1..R-8 absent |
+
+Repro (wave-4): `git merge-base --is-ancestor <merge_sha> 28c27cb896d02e0185b9fa02047411fa152f6469` for rows above.
+
+## #680 gap track (no new ticket)
+
+| Item | Status (wave-4) |
+|------|-----------------|
+| PR #680 / T-IGX-043-A | Still **not** ancestor of `TRAIN_PIN`; draft branch `af2/pt-fc1` |
+| EQO posture | **Track-only** per `pr680_governance_fast.md`; KR-08 / W0-03 class |
+| C16 matrix | `#680 open` — no waiver, no merge claim |
+| New ticket | **None** (operator band D out of EQO write set) |
+
 ## EQO disposition
 
 - **Train integration:** fourteen merge commits (#642–#677, #679) are ancestors of `TRAIN_PIN`; **#680 is not**.
