@@ -26,4 +26,6 @@
 
 **Matrix:** row C04 remains `PARTIALLY_MET` (replay attempted, non-zero exit).
 
+**Formal record:** `C04_BLOCKED_RECORD.md` (wave-11).
+
 **Ref:** `governance/tickets/T-IGX-046-F.md`

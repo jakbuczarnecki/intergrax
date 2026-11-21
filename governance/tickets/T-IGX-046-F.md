@@ -166,6 +166,22 @@ Operator decision **`waiver_both`** @ **2026-11-21** (coordinator chat): retroac
 | WB06 | Non-zero pytest exit recorded; does **not** assert EQO closure |
 | PR | _(pending push — docs gates `ticket-governance` + `governance-policy-pin`)_ |
 
+## Checkpoint — EQO wave-11 (2026-11-21)
+
+| Field | Value |
+|-------|-------|
+| Integrator branch | `eqo/wave-11/integ` |
+| Base | `origin/development` `e1f850bdc` |
+| Lanes merged | `eqo/wave-11/c`, `eqo/wave-11/w4` |
+| C-01 / C-02 | Closure band finalized — `DISPOSITIONED_NOT_CLOSED` |
+| C-04 | Formal `BLOCKED` record — `runs/c/C04_BLOCKED_RECORD.md` |
+| C-CLS | `BLOCKED` disposition — `c/C_CLS.md` |
+| W4-CLS | Registry 186/186 — `w4/W4-CLS.md` |
+| Deliverables | `EQO_WAVE11_MANIFEST.md`, README phases 33–35, matrix § |
+| pytest | out of scope |
+
+**Docs gate policy:** merge when `ticket-governance` + `governance-policy-pin` pass (waiver pattern above).
+
 ## Lifecycle state
 
 plan_approved
