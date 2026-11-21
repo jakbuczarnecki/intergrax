@@ -5,13 +5,13 @@
 from __future__ import annotations
 
 from abc import ABC, abstractmethod
-from enum import Enum
+from enum import StrEnum
 from pathlib import Path
 
 from pydantic import BaseModel, Field
 
 
-class ModelArtifactFormat(str, Enum):
+class ModelArtifactFormat(StrEnum):
     ONNX = "onnx"
     SKLEARN = "sklearn"
     ULTRALYTICS = "ultralytics"
@@ -41,12 +41,16 @@ class VisionDetection(BaseModel):
     bbox: VisionBoundingBox
 
 
-class MediaSourceKind(str, Enum):
+class MediaSourceKind(StrEnum):
     LOCAL_FILE = "local_file"
 
 
 class MediaAuthorizationError(ValueError):
     """Raised when caller media is not authorized for inference access."""
+
+
+class VisionBackendUnconfiguredError(ValueError):
+    """Raised when a vision backend is invoked without required configuration."""
 
 
 class AuthorizedLocalMedia(BaseModel):
