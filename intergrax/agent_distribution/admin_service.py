@@ -6,8 +6,9 @@
 from __future__ import annotations
 
 from collections.abc import Callable
+from dataclasses import dataclass, replace
 from datetime import UTC, datetime
-from typing import TYPE_CHECKING, Any
+from typing import TYPE_CHECKING, Any, Final
 
 from intergrax.agent_distribution.activation import ActivationService, RollbackResult
 from intergrax.agent_distribution.admin_models import (
@@ -106,8 +107,11 @@ from intergrax.agent_distribution.emergency_revocation_response import (
     AgentEmergencyRevocationRequest,
     AgentEmergencyRevocationResponse,
     AgentEmergencyRevocationService,
+    EmergencyTrustResponseAction,
+    EmergencyTrustResponseReasonCode,
 )
 from intergrax.agent_distribution.errors import (
+    AgentDistributionError,
     AgentDistributionNotFoundError,
     AgentPackageTrustError,
     BindingRevisionConflict,
@@ -122,7 +126,11 @@ from intergrax.agent_distribution.errors import (
     RuntimeRevisionConflict,
     RuntimeRollbackError,
 )
-from intergrax.agent_distribution.events import AgentDistributionEvent, TransitionResult
+from intergrax.agent_distribution.events import (
+    AgentDistributionEvent,
+    TransitionResult,
+    distribution_event,
+)
 from intergrax.agent_distribution.identity import AgentPackageIdentity
 from intergrax.agent_distribution.installation import (
     AgentInstallationRecord,
@@ -137,6 +145,11 @@ from intergrax.agent_distribution.materialization import (
 )
 from intergrax.agent_distribution.materialization_service import (
     RuntimeMaterializationService,
+)
+from intergrax.agent_distribution.package_attestation import (
+    AgentPackageAttestationAlgorithm,
+    AgentPackageAttestationVerificationRequest,
+    AgentPackageAttestationVerifier,
 )
 from intergrax.agent_distribution.package_trust import AgentPackageTrustCoordinator
 from intergrax.agent_distribution.resolver import DependencyResolver
@@ -172,9 +185,11 @@ from intergrax.agent_distribution.stores import (
     RuntimeRevisionStore,
 )
 from intergrax.agent_distribution.trust import (
+    AgentInstallationTrustRecord,
     AgentPackageTrustPolicy,
     AgentPackageTrustReasonCode,
     AgentPackageTrustRevocationState,
+    AgentQualificationEvidenceKind,
 )
 from intergrax.agent_distribution.upgrade_admission import (
     evaluate_agent_upgrade_admission,
@@ -192,6 +207,58 @@ from intergrax.runtime.governance.control_plane_mutation_authorization import (
 
 if TYPE_CHECKING:
     from intergrax.llm_adapters.contracts.llm_profile import LLMProfile
+
+
+@dataclass(frozen=True, slots=True)
+class PackageAttestationEnforcement:
+    """Composed attestation enforcement for install and upgrade (T-IGX-051-N Part A, EX-D1-01).
+
+    When an ``AgentPlatformAdminService`` is built with this value, ``install_agent`` and
+    ``upgrade_agent`` verify every attestation material item of the request's trust record for the
+    exact digest-pinned package before anything is written, and a record without verified material is
+    refused when the trust policy forbids unsigned packages. The production factory always composes it.
+    ``None`` on the service is the explicit 'not composed' state of a direct construction: attestation
+    material is then not verified (the behaviour before T-IGX-051-N).
+    """
+
+    verifier: AgentPackageAttestationVerifier
+
+
+#: Explicit audit event of the no-safe-target serving stop (T-IGX-051-N Part B, EX-D1-04).
+EVENT_EMERGENCY_SERVING_STOPPED: Final = "agent_trust.emergency_serving_stopped"
+#: The serving revision changed after the emergency response: no stop (a newer state exists).
+EVENT_EMERGENCY_SERVING_STOP_SUPERSEDED: Final = "agent_trust.emergency_serving_stop_superseded"
+#: ``instance_state`` attribute value when the serving revision has no deployment instance record.
+EMERGENCY_STOP_INSTANCE_ABSENT: Final = "absent"
+
+# Q-AB-04: the blocked outcomes that stop serving. SERVING_POINTER_MISMATCH and ROLLBACK_CONFLICT
+# never stop (a newer serving state exists).
+_EMERGENCY_SERVING_STOP_REASONS: Final = frozenset(
+    {
+        EmergencyTrustResponseReasonCode.NO_PRIOR_REVISION,
+        EmergencyTrustResponseReasonCode.ROLLBACK_TARGET_UNTRUSTED,
+        EmergencyTrustResponseReasonCode.ACTIVE_TRUST_EVIDENCE_UNAVAILABLE,
+        EmergencyTrustResponseReasonCode.ROLLBACK_FAILED,
+    }
+)
+
+
+class LifecycleEvidenceSinkError(AgentDistributionError):
+    """The lifecycle event sink failed after a successful transition (T-IGX-051-N, Q-AB-13).
+
+    Raised on success paths only: the store writes that preceded the sink call are committed and stay
+    committed, the caller sees this error and the transition exists. The sink error is ``__cause__``.
+    On failure paths the original error is raised instead, with the sink error as its ``__cause__``.
+    No sink error is swallowed.
+    """
+
+
+def _requires_emergency_serving_stop(response: AgentEmergencyRevocationResponse) -> bool:
+    return (
+        response.action is EmergencyTrustResponseAction.BLOCKED_NO_SAFE_TARGET
+        and bool(response.impacts)
+        and response.response_reason_code in _EMERGENCY_SERVING_STOP_REASONS
+    )
 
 
 def _event_types(*results: TransitionResult[Any]) -> tuple[str, ...]:
@@ -288,10 +355,13 @@ class AgentPlatformAdminService:
         emergency_revocation_service: AgentEmergencyRevocationService | None = None,
         llm_profile_source: Callable[[str, str], LLMProfile | None] | None = None,
         lifecycle_event_sink: Callable[[tuple[AgentDistributionEvent, ...]], None] | None = None,
+        package_attestation_enforcement: PackageAttestationEnforcement | None = None,
     ) -> None:
         # Optional, inert injection point (T-IGX-041-A, F-D1-06): receives the events of every
         # install/upgrade/retire transition, failure paths included. It decides and stores nothing.
         self._lifecycle_event_sink = lifecycle_event_sink
+        # T-IGX-051-N Part A: ``None`` = attestation enforcement not composed (PackageAttestationEnforcement).
+        self._package_attestation_enforcement = package_attestation_enforcement
         self._llm_profile_source = llm_profile_source
         self._installation_store = installation_store
         self._binding_store = binding_store
@@ -589,6 +659,11 @@ class AgentPlatformAdminService:
         request: InstallAgentRequest,
         principal: RequestIdentity,
     ) -> InstallationMutationResult:
+        """Governed INSTALL of one slot.
+
+        Sink failure contract (T-IGX-051-N): a raising lifecycle event sink after the install raises
+        ``LifecycleEvidenceSinkError``; the installation is committed and stays committed.
+        """
         self._require_environment_tenant_scope(
             principal=principal,
             application_id=application_id,
@@ -651,12 +726,18 @@ class AgentPlatformAdminService:
             operation="install_agent",
         )
 
+        policy = self._package_trust_policy_source()
         self._package_trust_coordinator.assert_install_admission(
             trust_record=request.trust_record,
             package_identity=identity,
             revocation_state=self._package_trust_revocation_state_source(),
-            policy=self._package_trust_policy_source(),
+            policy=policy,
             evaluated_at=self._package_trust_evaluation_time_source(),
+        )
+        self._assert_trust_record_attested(
+            trust_record=request.trust_record,
+            package_identity=identity,
+            policy=policy,
         )
 
         metadata = self._require_install_project_metadata(request)
@@ -690,8 +771,87 @@ class AgentPlatformAdminService:
         promoted = self._installation_service.promote_verified_to_active(request.installation_id)
         return InstallationMutationResult(
             installation=_installation_view(promoted.value),
-            audit_event_types=self._emit_events(created, verified, promoted),
+            audit_event_types=self._emit_events(
+                created,
+                verified,
+                promoted,
+                application_id=application_id,
+                application_environment_id=application_environment_id,
+            ),
         )
+
+    def _assert_trust_record_attested(
+        self,
+        *,
+        trust_record: AgentInstallationTrustRecord,
+        package_identity: AgentPackageIdentity,
+        policy: AgentPackageTrustPolicy,
+    ) -> None:
+        """Verify the record's attestation material for the digest-pinned package (T-IGX-051-N Part A).
+
+        Runs only when attestation enforcement is composed, directly after ``assert_install_admission``
+        and before any write of the calling method, so a refused install or upgrade persists nothing.
+        Every material item must name a known algorithm, carry the record's publisher, be named by a
+        signature-verification evidence ref and verify cryptographically; otherwise
+        ``MALFORMED_EVIDENCE``. Under a policy with ``forbid_unsigned_or_unqualified``, a record without
+        verified material is ``UNSIGNED_FORBIDDEN``, and a signature-verification evidence ref that no
+        verified material backs is ``MALFORMED_EVIDENCE``.
+        """
+        enforcement = self._package_attestation_enforcement
+        if enforcement is None:
+            return
+        signature_ref_ids = {
+            ref.evidence_id
+            for ref in trust_record.trust_evidence_refs
+            if ref.kind is AgentQualificationEvidenceKind.SIGNATURE_VERIFICATION
+        }
+        verified_ids: set[str] = set()
+        for item in trust_record.attestation_material:
+            try:
+                algorithm = AgentPackageAttestationAlgorithm(item.algorithm)
+            except ValueError as exc:
+                raise AgentPackageTrustError(
+                    "attestation material names an unsupported algorithm",
+                    reason_code=AgentPackageTrustReasonCode.MALFORMED_EVIDENCE.value,
+                ) from exc
+            if item.publisher_id != trust_record.publisher_identity_ref:
+                raise AgentPackageTrustError(
+                    "attestation material publisher does not match the trust record publisher",
+                    reason_code=AgentPackageTrustReasonCode.MALFORMED_EVIDENCE.value,
+                )
+            if item.attestation_id not in signature_ref_ids:
+                raise AgentPackageTrustError(
+                    "attestation material is not named by a signature verification evidence ref",
+                    reason_code=AgentPackageTrustReasonCode.MALFORMED_EVIDENCE.value,
+                )
+            result = enforcement.verifier.verify(
+                AgentPackageAttestationVerificationRequest(
+                    package_identity=package_identity,
+                    publisher_id=item.publisher_id,
+                    attestation_id=item.attestation_id,
+                    key_id=item.key_id,
+                    algorithm=algorithm,
+                    signature_b64=item.signature_b64,
+                )
+            )
+            if not result.verified or result.publisher_id != trust_record.publisher_identity_ref:
+                raise AgentPackageTrustError(
+                    "attestation material failed verification for the digest-pinned package",
+                    reason_code=AgentPackageTrustReasonCode.MALFORMED_EVIDENCE.value,
+                )
+            verified_ids.add(item.attestation_id)
+        if not policy.forbid_unsigned_or_unqualified:
+            return
+        if not verified_ids:
+            raise AgentPackageTrustError(
+                "the trust policy forbids a package without verified attestation material",
+                reason_code=AgentPackageTrustReasonCode.UNSIGNED_FORBIDDEN.value,
+            )
+        if signature_ref_ids - verified_ids:
+            raise AgentPackageTrustError(
+                "a signature verification evidence ref is not backed by verified attestation material",
+                reason_code=AgentPackageTrustReasonCode.MALFORMED_EVIDENCE.value,
+            )
 
     def _require_install_project_metadata(
         self,
@@ -776,6 +936,10 @@ class AgentPlatformAdminService:
         -> compatibility check against the bound configuration -> promote. A failed check
         leaves the previous revision ``installed_active`` and records a typed rejection
         (candidate ``failed_candidate`` plus ``installation.failed_candidate`` evidence).
+
+        Sink failure contract (T-IGX-051-N): a raising lifecycle event sink after a successful or
+        rejected upgrade raises ``LifecycleEvidenceSinkError`` with the store writes committed; on a
+        failure path the original error is raised with the sink error as its ``__cause__``.
         """
         self._require_environment_tenant_scope(
             principal=principal,
@@ -831,12 +995,18 @@ class AgentPlatformAdminService:
             ),
             operation="upgrade_agent",
         )
+        policy = self._package_trust_policy_source()
         self._package_trust_coordinator.assert_install_admission(
             trust_record=request.trust_record,
             package_identity=identity,
             revocation_state=self._package_trust_revocation_state_source(),
-            policy=self._package_trust_policy_source(),
+            policy=policy,
             evaluated_at=self._package_trust_evaluation_time_source(),
+        )
+        self._assert_trust_record_attested(
+            trust_record=request.trust_record,
+            package_identity=identity,
+            policy=policy,
         )
         metadata = self._require_install_project_metadata(request)
         authority_records = self._validated_install_contract_authority(
@@ -867,12 +1037,18 @@ class AgentPlatformAdminService:
                 artifact_store_ref=request.artifact_store_ref,
                 trust_record=request.trust_record,
             )
-        except Exception:
+        except Exception as original:
             failed = self._installation_service.mark_failed_candidate(
                 request.installation_id,
                 reason_code="trust_verification_failed",
             )
-            self._emit_events(created, failed)
+            self._emit_events(
+                created,
+                failed,
+                application_id=application_id,
+                application_environment_id=application_environment_id,
+                failure=original,
+            )
             raise
 
         try:
@@ -891,13 +1067,20 @@ class AgentPlatformAdminService:
                 candidate_contracts={record.contract_id: record.contract for record in authority_records},
                 bindings=bindings,
             )
-        except Exception:
+        except Exception as original:
             # T-IGX-041-A (F-D1-06): a verified candidate must never be left behind.
             failed = self._installation_service.mark_failed_candidate(
                 request.installation_id,
                 reason_code="upgrade_admission_failed",
             )
-            self._emit_events(created, verified, failed)
+            self._emit_events(
+                created,
+                verified,
+                failed,
+                application_id=application_id,
+                application_environment_id=application_environment_id,
+                failure=original,
+            )
             raise
         if not report.admitted:
             reason = report.primary_reason
@@ -919,7 +1102,13 @@ class AgentPlatformAdminService:
                     )
                     for item in report.violations
                 ),
-                audit_event_types=self._emit_events(created, verified, failed),
+                audit_event_types=self._emit_events(
+                    created,
+                    verified,
+                    failed,
+                    application_id=application_id,
+                    application_environment_id=application_environment_id,
+                ),
             )
 
         try:
@@ -927,12 +1116,19 @@ class AgentPlatformAdminService:
                 request.installation_id,
                 expected_active_installation_id=active.installation_id,
             )
-        except Exception:
+        except Exception as original:
             failed = self._installation_service.mark_failed_candidate(
                 request.installation_id,
                 reason_code="promotion_failed",
             )
-            self._emit_events(created, verified, failed)
+            self._emit_events(
+                created,
+                verified,
+                failed,
+                application_id=application_id,
+                application_environment_id=application_environment_id,
+                failure=original,
+            )
             raise
         refreshed = self._binding_service.refresh_active_installation_for_slot(
             request.installation_slot_id,
@@ -945,7 +1141,14 @@ class AgentPlatformAdminService:
             active_installation=_installation_view(promoted.value),
             previous_installation_id=active.installation_id,
             refreshed_binding_ids=tuple(item.value.application_binding_id for item in refreshed),
-            audit_event_types=self._emit_events(created, verified, promoted, *refreshed),
+            audit_event_types=self._emit_events(
+                created,
+                verified,
+                promoted,
+                *refreshed,
+                application_id=application_id,
+                application_environment_id=application_environment_id,
+            ),
         )
 
     def retire_agent(
@@ -1037,7 +1240,12 @@ class AgentPlatformAdminService:
             installation=_installation_view(outcome.value),
             disabled_binding_ids=tuple(item.value.application_binding_id for item in disabled),
             affected_logical_agent_ids=tuple(sorted({binding.logical_agent_id for binding in slot_bindings})),
-            audit_event_types=self._emit_events(*disabled, outcome),
+            audit_event_types=self._emit_events(
+                *disabled,
+                outcome,
+                application_id=application_id,
+                application_environment_id=application_environment_id,
+            ),
         )
 
     def _resolve_package_contracts(
@@ -1551,6 +1759,16 @@ class AgentPlatformAdminService:
         with the same boundary and evidence shape as ``rollback_revision``. The revocation
         snapshot, trust policy and evaluation time come only from the injected sources: a caller
         can no longer substitute them.
+
+        No-safe-target stop (T-IGX-051-N Part B, EX-D1-04, Q-AB-04): when the response is
+        ``BLOCKED_NO_SAFE_TARGET`` with impacts for ``NO_PRIOR_REVISION``,
+        ``ROLLBACK_TARGET_UNTRUSTED``, ``ACTIVE_TRUST_EVIDENCE_UNAVAILABLE`` or ``ROLLBACK_FAILED``,
+        the serving revision's deployment instance is marked failed through the governed
+        post-cutover failure primitive and ``agent_trust.emergency_serving_stopped`` is emitted and
+        added to ``audit_event_types``; action, reason and the serving pointer are unchanged. This
+        applies to every construction: without a mutation boundary or tenant resolver a stop reason
+        raises instead of returning the report. If the serving revision changed after the response,
+        ``agent_trust.emergency_serving_stop_superseded`` is emitted and nothing is stopped.
         """
         self._require_environment_tenant_scope(
             principal=principal,
@@ -1587,7 +1805,133 @@ class AgentPlatformAdminService:
             revocation_state=self._package_trust_revocation_state_source(),
             trust_policy=self._package_trust_policy_source(),
         )
-        return self._emergency_revocation_service.respond_to_current_revocation(effective_request)
+        response = self._emergency_revocation_service.respond_to_current_revocation(effective_request)
+        if not _requires_emergency_serving_stop(response):
+            return response
+        return self._stop_serving_without_safe_target(
+            principal=principal,
+            application_id=application_id,
+            application_environment_id=application_environment_id,
+            response=response,
+        )
+
+    def _stop_serving_without_safe_target(
+        self,
+        *,
+        principal: RequestIdentity,
+        application_id: str,
+        application_environment_id: str,
+        response: AgentEmergencyRevocationResponse,
+    ) -> AgentEmergencyRevocationResponse:
+        """Stop the revoked serving revision that has no trusted way back (EX-D1-04).
+
+        Event attributes (both events, plus the ``application_id`` and ``application_environment_id``
+        that ``_emit_events`` adds): ``runtime_revision_id``, ``reason_code`` (the response reason) and
+        ``instance_state`` (``failed`` after the mark, ``absent`` without an instance record, or the
+        state read before the stop for the superseded event); the stop event also carries
+        ``failure_evidence_ref`` (``emergency-revocation:<reason>``). A ``RuntimeActivationConflict``
+        from the mark propagates (fail closed; the caller retries); a governance denial raises.
+        """
+        # Fail closed for every construction: a stop needs the governed mutation path.
+        self._require_environment_tenant_resolver()
+        self._require_mutation_authorization_boundary()
+        reason = response.response_reason_code.value
+        failure_evidence_ref = f"emergency-revocation:{reason}"
+        revision_id = response.observed_serving_revision_id
+        if revision_id is None:
+            raise RuntimeActivationError("emergency serving stop requires the observed serving revision")
+        instance = self._deployment_instance_store.get_instance(
+            application_id,
+            application_environment_id,
+            revision_id,
+        )
+        observed_state = instance.instance_state.value if instance is not None else EMERGENCY_STOP_INSTANCE_ABSENT
+        serving = self._serving_store.get_serving_record(application_id, application_environment_id)
+        if serving is None or serving.traffic_serving_revision_id != revision_id:
+            return self._report_emergency_stop_superseded(
+                response=response,
+                revision_id=revision_id,
+                observed_state=observed_state,
+                application_id=application_id,
+                application_environment_id=application_environment_id,
+            )
+        stopped_state = EMERGENCY_STOP_INSTANCE_ABSENT
+        if instance is not None:
+            self._authorize_mark_post_cutover_failure(
+                principal=principal,
+                application_id=application_id,
+                application_environment_id=application_environment_id,
+                mutation_id=f"emergency-revocation-stop:{revision_id}:{serving.serving_pointer_revision}",
+                runtime_revision_id=revision_id,
+                record_revision=instance.record_revision,
+                current_instance_state=instance.instance_state.value,
+            )
+            try:
+                marked = self._activation_service.mark_post_cutover_failure(
+                    application_id=application_id,
+                    application_environment_id=application_environment_id,
+                    runtime_revision_id=revision_id,
+                    failure_evidence_ref=failure_evidence_ref,
+                    expected_record_revision=instance.record_revision,
+                )
+            except RuntimeActivationConflict:
+                raise
+            except RuntimeActivationError:
+                # The serving revision changed after the response: the revoked revision no longer serves.
+                return self._report_emergency_stop_superseded(
+                    response=response,
+                    revision_id=revision_id,
+                    observed_state=observed_state,
+                    application_id=application_id,
+                    application_environment_id=application_environment_id,
+                )
+            if marked.value is not None:
+                stopped_state = marked.value.instance_state.value
+        stop_types = self._emit_events(
+            TransitionResult(
+                value=None,
+                events=(
+                    distribution_event(
+                        EVENT_EMERGENCY_SERVING_STOPPED,
+                        revision_id,
+                        runtime_revision_id=revision_id,
+                        reason_code=reason,
+                        failure_evidence_ref=failure_evidence_ref,
+                        instance_state=stopped_state,
+                    ),
+                ),
+            ),
+            application_id=application_id,
+            application_environment_id=application_environment_id,
+        )
+        return response.model_copy(update={"audit_event_types": response.audit_event_types + stop_types})
+
+    def _report_emergency_stop_superseded(
+        self,
+        *,
+        response: AgentEmergencyRevocationResponse,
+        revision_id: str,
+        observed_state: str,
+        application_id: str,
+        application_environment_id: str,
+    ) -> AgentEmergencyRevocationResponse:
+        superseded_types = self._emit_events(
+            TransitionResult(
+                value=None,
+                events=(
+                    distribution_event(
+                        EVENT_EMERGENCY_SERVING_STOP_SUPERSEDED,
+                        revision_id,
+                        runtime_revision_id=revision_id,
+                        reason_code=response.response_reason_code.value,
+                        instance_state=observed_state,
+                    ),
+                ),
+            ),
+            application_id=application_id,
+            application_environment_id=application_environment_id,
+        )
+        return response.model_copy(update={"audit_event_types": response.audit_event_types + superseded_types})
 
     def complete_revision_drain(
         self,
@@ -1809,14 +2153,61 @@ class AgentPlatformAdminService:
                 evaluated_at=evaluated_at,
             )
 
-    def _emit_events(self, *results: TransitionResult[Any]) -> tuple[str, ...]:
-        """Deliver the events of lifecycle transitions to the optional sink; return their types."""
-        sink = self._lifecycle_event_sink
-        if sink is not None:
-            events = tuple(event for result in results for event in result.events)
-            if events:
-                sink(events)
+    def _emit_events(
+        self,
+        *results: TransitionResult[Any],
+        application_id: str,
+        application_environment_id: str,
+        failure: Exception | None = None,
+    ) -> tuple[str, ...]:
+        """Deliver the events of lifecycle transitions to the optional sink; return their types.
+
+        The sink receives copies of the events with ``application_id`` and
+        ``application_environment_id`` added. Sink failure contract (T-IGX-051-N, Q-AB-13): on a
+        success path (``failure`` is ``None``) a raising sink is re-raised as
+        ``LifecycleEvidenceSinkError`` (cause chained) and the preceding store writes stay committed;
+        on a failure path the caller passes its original error as ``failure``, which is raised with the
+        sink error as its ``__cause__`` (the original error is never replaced). Nothing is swallowed.
+        """
+        sink_error = self._deliver_to_lifecycle_sink(
+            tuple(event for result in results for event in result.events),
+            application_id=application_id,
+            application_environment_id=application_environment_id,
+        )
+        if sink_error is not None:
+            if failure is not None:
+                raise failure from sink_error
+            raise LifecycleEvidenceSinkError(
+                "lifecycle event sink failed after the transition was committed"
+            ) from sink_error
         return _event_types(*results)
+
+    def _deliver_to_lifecycle_sink(
+        self,
+        events: tuple[AgentDistributionEvent, ...],
+        *,
+        application_id: str,
+        application_environment_id: str,
+    ) -> Exception | None:
+        sink = self._lifecycle_event_sink
+        if sink is None or not events:
+            return None
+        with_context = tuple(
+            replace(
+                event,
+                attributes={
+                    **event.attributes,
+                    "application_id": application_id,
+                    "application_environment_id": application_environment_id,
+                },
+            )
+            for event in events
+        )
+        try:
+            sink(with_context)
+        except Exception as exc:  # returned to _emit_events, which raises it (never swallowed)
+            return exc
+        return None
 
     def _resolve_install_identity(self, request: InstallAgentRequest) -> AgentPackageIdentity:
         if request.catalog_entry_id is None:

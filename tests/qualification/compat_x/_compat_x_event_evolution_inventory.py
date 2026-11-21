@@ -119,6 +119,7 @@ class RuntimeEventCallSiteClassificationEvidence(str, Enum):
     EVIDENCE_PERSISTENCE_ADAPTER_INNER_DELEGATE = "evidence_persistence_adapter_inner_delegate"
     PERSISTENCE_CONFORMANCE_LAB_HARNESS = "persistence_conformance_lab_harness"
     LAB_OR_POC_APPLICATION_SCOPE = "lab_or_poc_application_scope"
+    AGENT_DISTRIBUTION_LIFECYCLE_EVIDENCE_SINK = "agent_distribution_lifecycle_evidence_sink"
 
 
 _NON_EVENT_APPEND_EVIDENCE: Final = frozenset(
@@ -126,6 +127,7 @@ _NON_EVENT_APPEND_EVIDENCE: Final = frozenset(
         RuntimeEventCallSiteClassificationEvidence.SECURITY_AUDIT_TRAIL_WIRING_MULTI_REGION,
         RuntimeEventCallSiteClassificationEvidence.SECURITY_AUDIT_TRAIL_INNER_PRIMARY_DELEGATE,
         RuntimeEventCallSiteClassificationEvidence.PLATFORM_RUNTIME_EVENT_HISTORY_BUFFER,
+        RuntimeEventCallSiteClassificationEvidence.AGENT_DISTRIBUTION_LIFECYCLE_EVIDENCE_SINK,
     }
 )
 
@@ -602,6 +604,18 @@ def classify_runtime_event_append_call_site(
         return RuntimeEventAppendCallSiteClassification(
             RuntimeEventWritePathDisposition.NON_EVENT_APPEND,
             RuntimeEventCallSiteClassificationEvidence.SECURITY_AUDIT_TRAIL_INNER_PRIMARY_DELEGATE,
+        )
+    # T-IGX-051-N (PDC-D1-R017, GM-AB-1): the lifecycle evidence consumer delegates to an injected
+    # SecurityAuditSink, whose evidence-plane ``append`` is classified above; bound to path, qualname
+    # and callee (by analogy with the security audit trail wiring row).
+    if (
+        path.endswith("applications/_shared/production_agent_capability_runtime.py")
+        and qualname == "record_events"
+        and callee_expr == "self._trail.append"
+    ):
+        return RuntimeEventAppendCallSiteClassification(
+            RuntimeEventWritePathDisposition.NON_EVENT_APPEND,
+            RuntimeEventCallSiteClassificationEvidence.AGENT_DISTRIBUTION_LIFECYCLE_EVIDENCE_SINK,
         )
     return RuntimeEventAppendCallSiteClassification(
         RuntimeEventWritePathDisposition.UNCLASSIFIED,

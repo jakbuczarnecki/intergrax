@@ -100,15 +100,19 @@ class DeployActivatePipelineContext:
 class RevisionTrustAdmissionState(StrEnum):
     """How the deploy/activate pipeline admitted the revision's packages (recorded on the result).
 
-    ``COMPOSED_RUNTIME_RECORDS_ONLY``: the composed admin service's ``assert_revision_trust_admissible``
-    re-evaluated the installation trust records (presence, digest, freshness) with the trust sources the
-    admin service was built with. The production factory does not yet inject a revocation-state source
-    or an attestation verifier (EX-D1-02, T-IGX-051-B Parts A/B are not landed), so on that composition
-    the revocation state is empty and no signature is verified: a revoked digest is admitted there.
+    ``COMPOSED_RUNTIME``: the composed admin service's ``assert_revision_trust_admissible`` re-evaluated
+    the installation trust records of every enabled roster entry (presence, digest, revocation, policy,
+    freshness) against the revocation, policy and time sources of the composition's ``package_trust``
+    (T-IGX-051-N Part B). Attestation material is verified at install and upgrade (Part A), not here.
+    A lab composition (``package_trust.is_lab``, ``lab_package_trust_composition``) has an empty
+    revocation state and admits unsigned packages, so on a lab composition nothing is revoked here.
+
+    ``NOT_COMPOSED``: no capability runtime is composed (for example the shipped GCA strict path); the
+    pipeline passes through without a trust check.
     """
 
     CONTEXT_HOOK = "trust_admission_context_hook"
-    COMPOSED_RUNTIME_RECORDS_ONLY = "trust_admission_composed_runtime_records_only"
+    COMPOSED_RUNTIME = "trust_admission_composed_runtime"
     NOT_COMPOSED = "trust_admission_not_composed"
 
 
@@ -121,7 +125,7 @@ def _resolve_revision_trust_admission(
     if capability_runtime is not None:
         return (
             capability_runtime.admin_service.assert_revision_trust_admissible,
-            RevisionTrustAdmissionState.COMPOSED_RUNTIME_RECORDS_ONLY,
+            RevisionTrustAdmissionState.COMPOSED_RUNTIME,
         )
     return None, RevisionTrustAdmissionState.NOT_COMPOSED
 

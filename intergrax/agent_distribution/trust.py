@@ -128,12 +128,40 @@ class AgentPackageQualificationResult:
         return self.status is QualificationStatus.PRODUCTION_QUALIFIED
 
 
+class AgentTrustAttestationMaterial(BaseModel):
+    """Package attestation material carried by an installation trust record (T-IGX-051-N Part A, EX-D1-01).
+
+    One signed attestation statement over the digest-pinned package. The admin service verifies it at
+    install and upgrade when attestation enforcement is composed. ``algorithm`` is a plain string here
+    (``package_attestation.py`` imports this module, so its enum cannot be used); an unknown value is
+    refused as malformed evidence. The signature is public attestation material, not a secret.
+    """
+
+    model_config = ConfigDict(extra="forbid", frozen=True)
+
+    attestation_id: str = _NON_EMPTY
+    key_id: str = _NON_EMPTY
+    algorithm: str = _NON_EMPTY
+    publisher_id: str = _NON_EMPTY
+    signature_b64: str = _NON_EMPTY
+
+    @field_validator("attestation_id", "key_id", "algorithm", "publisher_id", "signature_b64")
+    @classmethod
+    def _strip(cls, value: str) -> str:
+        return _strip_required(value)
+
+
 class AgentInstallationTrustRecord(BaseModel):
-    """Trust evidence references persisted on installation records (§10.3)."""
+    """Trust evidence references persisted on installation records (§10.3).
+
+    ``attestation_material`` (T-IGX-051-N Part A) defaults to empty, so records stored before the
+    field existed still parse.
+    """
 
     model_config = ConfigDict(extra="forbid", frozen=True)
 
     trust_evidence_refs: tuple[AgentTrustEvidenceRef, ...] = ()
+    attestation_material: tuple[AgentTrustAttestationMaterial, ...] = ()
     qualification_status: QualificationStatus
     package_digest: str = _NON_EMPTY
     publisher_identity_ref: str = _NON_EMPTY
