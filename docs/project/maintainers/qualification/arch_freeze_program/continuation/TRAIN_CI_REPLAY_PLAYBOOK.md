@@ -1,4 +1,4 @@
-# TRAIN CI replay playbook — Runda 1 (D1=A, D2=STOP)
+﻿# TRAIN CI replay playbook — Runda 1 (D1=A, D2=STOP)
 
 **Tor:** `arch-freeze/rw-train` — **tylko monitoring / dokumentacja**; **bez** merge train, **bez** cherry-pick (SKIP).  
 **Decyzje operatora:** **D1=A** (po green CI — replay + dokumentacja RC-2 B2) · **D2=STOP** (kolejny merge train zabroniony do green wszystkich required checks).  
@@ -52,3 +52,29 @@
 ## Werdykt playbook (Runda 1 @ docs `c207e6ad3`)
 
 **OPEN** — procedura replay udokumentowana; formalny green @ train pin **nie** zadeklarowany w tej fali.
+---
+
+# TRAIN CI replay — Runda 2 (D1=A, D2=STOP)
+
+**Tor:** `arch-freeze/rw-train` @ merge **#699** — **tylko monitoring / dokumentacja**; **bez** merge train, **bez** cherry-pick (SKIP).  
+**Worktree:** `af-dev-train-replay` · branch od `origin/development` @ `4e911556b4669dd1f9bf7efc9e18b73ded508648` (`4e911556b`).  
+**Decyzje operatora:** **D1=A** · **D2=STOP** (bez kolejnego train merge do green wszystkich trzech jobów).
+
+## Kroki wykonane (Runda 2, read-only `gh`)
+
+1. **Pin train:** `git rev-parse origin/arch-freeze/rw-train` → `dbaebfa8cd13a6ba8bfa6eef2cdf581216ddb3d2` (**OK**).
+2. **Runy na branchu train @ HEAD:** `gh run list --branch arch-freeze/rw-train` → **brak** runów (merge commit nie uruchomił osobnego push workflow na branchu).
+3. **Checki @ train pin (SSOT merge PR #699, HEAD slice `1cec68222`):** `gh pr view 699 --json statusCheckRollup` + commit status API @ `dbaebfa8` (`state: pending`, `total_count: 0` — brak osobnych statusów na merge SHA; cytujemy runy z PR **#699**).
+
+| Job | Workflow | Run id | Conclusion @ 2026-11-21 |
+|-----|----------|--------|-------------------------|
+| `governance-fast` | Regression gate (`unit-tests.yml`) | [44883349765](https://github.com/jakbuczarnecki/intergrax/actions/runs/44883349765) | **FAILURE** (ACT-N11) |
+| `ci-smoke` | Regression gate (`unit-tests.yml`) | [44883349765](https://github.com/jakbuczarnecki/intergrax/actions/runs/44883349765) | **FAILURE** |
+| `rag-gate` | RAG guard (`rag-guard.yml`) | [44883349736](https://github.com/jakbuczarnecki/intergrax/actions/runs/44883349736) | **FAILURE** |
+
+4. **Green gate:** **nie** — RC2-B2 pozostaje `[ ]` (aktualizacja dowodu w `RC2_EXIT_CHECKLIST.md`, **bez** `[x]`).
+5. **STOP:** **D2=STOP** — brak PR `development` → `rw-train`, brak cherry-pick kolejnych slice.
+
+## Werdykt playbook (Runda 2 @ docs `4e911556b`)
+
+**OPEN (red)** — formalny replay z `gh` potwierdza **FAILURE** na wszystkich trzech wymaganych jobach @ train pin; RC-2 **PARTIAL**.
