@@ -8,7 +8,7 @@ enforcement: advisory
 algorithm: sha256-git-head-blob
 pins:
   governance/GOVERNANCE-MANIFEST.yaml: ca2d6f694ca2e756a36e309a3c40076a8db874e94507978698d95d4e8300bbb0
-  governance/policy-registry.yaml: 14692b2ce6c6252c6f5faa059e16f098cb997e8d3a09f42286dc422b0573506a
+  governance/policy-registry.yaml: d676336c7a6ad1fdba07041cdd903cbbfa151cc23e4b1330e4016f2c72003022
   governance/dcp-commit-ref-config.yaml: 0f8ebbb34c6b88f52610281ef1cdf70718c6e8bd6a6a89a63bd9fee1be22859b
   governance/agent-control-plane/role_registry.yaml: dd5d85e4a1f6d3d926b11bd88bf473c16bdb807bb0c38f4d42b5737d0b669ddd
   governance/agent-control-plane/skill_routing_registry.yaml: f3661e4b48382a48bb0216aa39f76d4416d3715cdc8d984581aafcf4b70bd313
