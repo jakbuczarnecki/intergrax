@@ -71,5 +71,12 @@
   "view_and_register_confirmation": {
     "all_34_present_in_EQO_REMAINING_OBLIGATION_VIEW": true,
     "all_34_present_in_register_jsonl": true
+  },
+  "development_named_replay": {
+    "recorded_at": "2026-11-21T18:05:00+01:00",
+    "development_sha": "e0e19a332cbb7b376caf2491edebcf5aba5151d3",
+    "six_file_replay": "64 passed, exit 0",
+    "governance_replay": "27 passed, exit 0",
+    "lifecycle_unchanged": true
   }
 }

@@ -6,7 +6,9 @@
     "local_development_before_wave": "1a8b989d478983746274b5aa9f237012225affd4",
     "origin_development": "3132a81e4e3d86a15df52b17ce148f3d38270102",
     "origin_arch_freeze_rw_train": "68db9c0ef6207b023388eecc460644698a92b895",
-    "development_after_wave": "5996db0e87ed7d78bd6783514f12795883bc7742"
+    "development_after_wave": "5996db0e87ed7d78bd6783514f12795883bc7742",
+    "origin_development_fetched": "17fc79228eb0b46880ecad17ff52354622a81e9e",
+    "development_after_recovery_w1": "e0e19a332cbb7b376caf2491edebcf5aba5151d3"
   },
   "merge_origin_development": {
     "performed": false,
@@ -18,7 +20,7 @@
     "files_differing_from_train": [
       "intergrax/applications/_shared/memory_wiring.py"
     ],
-    "differing_file_disposition": "EQOA-A4-030 ALREADY_MATCHES_TICKET on development; train-side delta is not a ticket-mandated missing behavior — no port.",
+    "differing_file_disposition": "EQOA-A4-030 ALREADY_MATCHES_TICKET on development; train-side delta is not a ticket-mandated missing behavior \u2014 no port.",
     "ports_qualifying": 0
   },
   "capability": {
@@ -76,7 +78,7 @@
     },
     {
       "id": "EXISTING_IMPLEMENTATION_REQUIRES_REPLAY_NO_NAMED_TEST_34",
-      "unlock": "ARCH-FREEZE chain FCS, PT-Q02–Q13, M3, EQO-REPLAY-FCS before invented tests."
+      "unlock": "ARCH-FREEZE chain FCS, PT-Q02\u2013Q13, M3, EQO-REPLAY-FCS before invented tests."
     },
     {
       "id": "OWNER_DECISION_REQUIRED_313",
@@ -84,7 +86,7 @@
     },
     {
       "id": "EQO_TERMINAL",
-      "unlock": "Certifier/operator: EQO_CLOSED_INDEPENDENTLY_VERIFIED, C01–C25, FRZ promotion, register lifecycle CLOSED — forbidden to agents."
+      "unlock": "Certifier/operator: EQO_CLOSED_INDEPENDENTLY_VERIFIED, C01\u2013C25, FRZ promotion, register lifecycle CLOSED \u2014 forbidden to agents."
     }
   ],
   "packages_merged_this_slice": [],
@@ -93,5 +95,14 @@
     "8e146e21cd8c63a47d621edc05d5f0036ba0c9ee": "ancestor_of_development",
     "68db9c0ef6207b023388eecc460644698a92b895": "ancestor_of_development"
   },
-  "next_wave_rule": "Select at most one to three packages from NEW_IMPLEMENTATION_REQUIRED (33) in EQO_NEXT_WAVE_QUEUE.json only when an existing ticket names exact files and required behavior, development tree lacks that behavior, write sets are pairwise disjoint, status is not REPLAY_ONLY/BLOCKED_EXACT_REASON/SKIP_NO_GO/ALREADY_DONE/ALREADY_MATCHES_TICKET; cut eqo/dev-<id> from current development; one English commit with ticket Ref; merge --no-ff into af-dev-merge development; one uv run --extra dev-ci pytest <named file> per port."
+  "next_wave_rule": "Select at most one to three packages from NEW_IMPLEMENTATION_REQUIRED (33) in EQO_NEXT_WAVE_QUEUE.json only when an existing ticket names exact files and required behavior, development tree lacks that behavior, write sets are pairwise disjoint, status is not REPLAY_ONLY/BLOCKED_EXACT_REASON/SKIP_NO_GO/ALREADY_DONE/ALREADY_MATCHES_TICKET; cut eqo/dev-<id> from current development; one English commit with ticket Ref; merge --no-ff into af-dev-merge development; one uv run --extra dev-ci pytest <named file> per port.",
+  "recovery_w1": {
+    "technical_review": "TECHNICAL_REVIEW_PASS",
+    "not_iiac_pass": true,
+    "a4_027_commit": "1aa91803b902531dbc4304e53bbbb80a86cfc93e",
+    "a4_006_commit": "f3371ca6f14b36364592585de09197306b1656d5",
+    "pytest": "A4-027 3 passed; A4-006 4 passed; integration 19 passed; named replay 64 passed; governance 27 passed",
+    "q4": "BLOCKED_EXACT_REASON",
+    "next_ready_queue": "none in Q1-Q5 without a new operator decision or a named test"
+  }
 }
