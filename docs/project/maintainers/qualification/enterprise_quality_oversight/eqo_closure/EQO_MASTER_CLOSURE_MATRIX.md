@@ -22,7 +22,7 @@
 | C18 | PARTIALLY_MET | owners proposed not confirmed |
 | C19 | PARTIALLY_MET | A audit yes; IIAC IN_FORCE no |
 | C20 | PARTIALLY_MET | A reproducible; B/C/D not |
-| C21 | PARTIALLY_MET | Train PRs merged; not on development |
+| C21 | PARTIALLY_MET | W2 verify @ 28c27cb: #642–#679 merged; #680 not on train |
 | C22 | NOT_VERIFIED |  |
 | C23 | PARTIALLY_MET | WBS maps to train tickets |
 | C24 | NOT_MET |  |
