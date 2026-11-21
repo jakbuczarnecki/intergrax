@@ -17,6 +17,7 @@ from intergrax.applications._shared.harness_host_composition import (
 from intergrax.applications._shared.harness_host_runtime import build_harness_host_runtime
 from intergrax.applications._shared.interaction_wiring import wire_interaction_intake_service
 from intergrax.applications._shared.lab_harness_context import lab_harness_context_from_build_context
+from intergrax.applications._shared.notification_wiring import resolve_host_notification_adapter
 from intergrax.applications._shared.plugin_bootstrap import attach_plugin_shutdown
 from intergrax.applications._shared.task_control_wiring import (
     build_reliability_task_enricher,
@@ -51,6 +52,10 @@ def create_intergrax_assistant_application(
     settings = settings or IntergraxAssistantApplicationSettings.from_env()
     manifest = build_intergrax_assistant_manifest(settings)
     env = manifest.environment or build_intergrax_assistant_environment_profile(settings)
+    host_notification_adapter = resolve_host_notification_adapter(
+        env,
+        integration_profile=env.integration_profile,
+    )
     runtime = build_harness_host_runtime(
         manifest,
         env,
@@ -67,6 +72,7 @@ def create_intergrax_assistant_application(
                 tool_registry=composition.tool_registry,
             ),
         ),
+        notification_adapter=host_notification_adapter,
     )
     host_execution = runtime.execution
     resolved_registry = runtime.registry
@@ -83,7 +89,7 @@ def create_intergrax_assistant_application(
         checkpoint_store=checkpoint_store,
         host_execution=host_execution,
         task_enricher=task_enricher,
-        notification_adapter=None,
+        notification_adapter=host_notification_adapter,
         poll_interval_seconds=settings.scheduler_poll_seconds,
         enabled=settings.include_scheduler,
     )

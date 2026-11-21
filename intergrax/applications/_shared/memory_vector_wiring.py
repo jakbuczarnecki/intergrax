@@ -7,17 +7,18 @@ from __future__ import annotations
 from collections.abc import Sequence
 from typing import TYPE_CHECKING, cast
 
+from intergrax.applications._shared.memory_provider_admission import (
+    validate_session_turn_index_store_admission,
+)
+from intergrax.applications._shared.session_turn_index_rag_adapters import (
+    build_session_turn_index_creation_context,
+)
 from intergrax.applications.contracts.application_host import ApplicationProfile
 from intergrax.applications.contracts.environment_profile import (
     ApplicationEnvironmentProfile,
 )
-from intergrax.applications._shared.memory_provider_admission import (
-    validate_session_turn_index_store_admission,
-)
-from intergrax.memory.memory_vector_errors import MemoryVectorBackendUnavailableError
-from intergrax.applications._shared.session_turn_index_rag_adapters import (
-    build_session_turn_index_creation_context,
-)
+from intergrax.integrations.contracts.integration_profile import IntegrationProfile
+from intergrax.llm_adapters.contracts.llm_adapter import LLMAdapter
 from intergrax.memory.contracts.provider_identity import (
     BUILTIN_VECTOR_SESSION_TURN_INDEX_ID,
     MemoryProviderIdentity,
@@ -28,6 +29,7 @@ from intergrax.memory.contracts.session_turn_index import (
     SessionTurnIndexStore,
     SessionTurnIndexStorePlugin,
 )
+from intergrax.memory.memory_vector_errors import MemoryVectorBackendUnavailableError
 from intergrax.memory.resolver.classifier import (
     ClassifiedMemoryStorePlugin,
     MemoryStorePluginKind,
@@ -39,11 +41,9 @@ from intergrax.memory.resolver.discovery import (
 )
 from intergrax.memory.resolver.errors import MemoryStorePluginResolutionError
 from intergrax.memory.session_turn_index_service import VectorSessionTurnIndexStore
-from intergrax.memory.user_profile_manager import UserProfileManager
 from intergrax.memory.user_profile_ltm_vector_projection import UserProfileLtmVectorProjection
+from intergrax.memory.user_profile_manager import UserProfileManager
 from intergrax.memory.user_profile_store import UserProfileStore
-from intergrax.integrations.contracts.integration_profile import IntegrationProfile
-from intergrax.llm_adapters.contracts.llm_adapter import LLMAdapter
 from intergrax.rag.embedding.contracts.base_embedding_manager import BaseEmbeddingManager
 from intergrax.rag.profiles.rag_profile import RagProfile
 from intergrax.rag.retrieval.retrieval_service import RetrievalService
@@ -125,20 +125,14 @@ def _select_session_turn_index_plugin(
     index_classified_memory_store_plugins(records)
     if len(records) > 1:
         plugin_ids = ", ".join(sorted(record.plugin_id for record in records))
-        raise MemoryStorePluginResolutionError(
-            f"Ambiguous session turn index plugin selection: {plugin_ids}"
-        )
+        raise MemoryStorePluginResolutionError(f"Ambiguous session turn index plugin selection: {plugin_ids}")
     return records[0]
 
 
 def _session_turn_index_plugins_from_catalog(
     catalog: MemoryStorePluginCatalog,
 ) -> tuple[ClassifiedMemoryStorePlugin, ...]:
-    records = [
-        item
-        for item in catalog.index.values()
-        if item.kind is MemoryStorePluginKind.SESSION_TURN_INDEX
-    ]
+    records = [item for item in catalog.index.values() if item.kind is MemoryStorePluginKind.SESSION_TURN_INDEX]
     return tuple(sorted(records, key=lambda record: record.plugin_id))
 
 
@@ -157,11 +151,7 @@ def _discover_classified_session_turn_index_plugins(
     discovery = discover_classified_memory_store_plugins(
         discover_entry_points=discover_entry_points,
     )
-    records = [
-        item
-        for item in discovery.plugins
-        if item.kind is MemoryStorePluginKind.SESSION_TURN_INDEX
-    ]
+    records = [item for item in discovery.plugins if item.kind is MemoryStorePluginKind.SESSION_TURN_INDEX]
     if records:
         index_classified_memory_store_plugins(records)
     return tuple(records)
@@ -174,10 +164,7 @@ def _require_runtime_tenant(tenant_id: str | None) -> str:
 
 
 def _product_session_turn_index_enabled(env: ApplicationEnvironmentProfile) -> bool:
-    return (
-        env.application_profile is ApplicationProfile.PRODUCT
-        and env.memory_profile.enable_session_vector_index
-    )
+    return env.application_profile is ApplicationProfile.PRODUCT and env.memory_profile.enable_session_vector_index
 
 
 def resolve_rag_stack_for_memory_wiring(
@@ -202,12 +189,17 @@ def resolve_rag_stack_for_memory_wiring(
             integration_profile=integration_profile,
             llm_adapter=llm_adapter,
         )
+    from intergrax.applications._shared.rag_lab_opt_in import resolve_rag_bootstrap_lab_opt_ins
+
     profile = integration_profile or env.integration_profile
     resolved_tenant_id = _require_runtime_tenant(tenant_id)
+    embedding_opt, vector_opt = resolve_rag_bootstrap_lab_opt_ins(env, profile)
     return create_default_rag_stack(
         integration_profile=profile,
         tenant_id=resolved_tenant_id,
         llm_for_contextual=llm_adapter,
+        embedding_lab_opt_in=embedding_opt,
+        vectorstore_lab_opt_in=vector_opt,
     )
 
 

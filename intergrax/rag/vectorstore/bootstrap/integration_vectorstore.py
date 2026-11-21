@@ -98,6 +98,11 @@ def _scope_from_integration_config(
 _LAB_INMEMORY_VECTOR_STORE_SLUG = "inmemory"
 
 
+def lab_inmemory_vector_store_slug() -> str:
+    """Named laboratory in-memory vector store slug (explicit opt-in only)."""
+    return _LAB_INMEMORY_VECTOR_STORE_SLUG
+
+
 def _resolve_lab_inmemory_slug(lab_opt_in: LabSelectorOptIn) -> str:
     slug = lab_opt_in.selector.strip().lower()
     if slug != _LAB_INMEMORY_VECTOR_STORE_SLUG:

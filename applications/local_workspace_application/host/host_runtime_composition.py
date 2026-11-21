@@ -22,6 +22,7 @@ from intergrax.applications.contracts.environment_profile import ApplicationEnvi
 from intergrax.applications.contracts.manifest import ApplicationManifest
 from intergrax.contracts.decision_requirement_policy import DecisionRequirementPolicy
 from intergrax.integrations.contracts.document_store import DocumentStore
+from intergrax.runtime.notifications.adapter_contract import NotificationAdapter
 
 from local_workspace_application.host.environment_profile import (
     build_local_workspace_environment_profile,
@@ -115,6 +116,7 @@ def build_local_workspace_harness_host_runtime(
     runtime_events_db_path: Path | None = None,
     idempotency_db_path: Path | None = None,
     host_runtime: LocalWorkspaceHostRuntimeComposition | None = None,
+    notification_adapter: NotificationAdapter | None = None,
 ) -> LocalWorkspaceHarnessHostRuntimeComposition:
     """Compose harness host runtime with one tenant authority and configured providers."""
     if registry_projection is None:
@@ -148,6 +150,7 @@ def build_local_workspace_harness_host_runtime(
                 resolved_host_runtime.orchestration_decision_requirement_policy,
             )
         ),
+        notification_adapter=notification_adapter,
         disable_human_decision_persistence=True,
     )
     return LocalWorkspaceHarnessHostRuntimeComposition(
