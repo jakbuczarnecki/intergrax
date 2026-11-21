@@ -63,3 +63,11 @@ E-03 route unchanged; no `register.jsonl` apply (E-02 out of scope wave-4).
 **Land:** `292ca3348`. E-02 mechanical apply still blocked; route memo unchanged.
 
 **Recorded:** 2026-11-21 · lane `eqo/wave-12/x` · `Ref: governance/tickets/T-IGX-046-F.md`
+
+## Wave-13 E-03 route refresh (`EQO-E-03`)
+
+**Land:** `ad9094036` · lane `eqo/wave-13/e` · **no** `register.jsonl` / `reconciliation.json` apply (E-02 guard).
+
+E-03 routing unchanged: steward batch + `WAIT_FOR_OPERATOR` until TRIAGED. EQO documents handoff only.
+
+**Recorded:** 2026-11-21 · `Ref: governance/tickets/T-IGX-046-F.md`

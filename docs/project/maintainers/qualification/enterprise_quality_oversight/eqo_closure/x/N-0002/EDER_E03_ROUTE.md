@@ -57,3 +57,11 @@ E-03 route unchanged; DUP-X owner proposal idempotent @ DOC_PIN.
 **Land:** `292ca3348`. E-02 mechanical apply still blocked; route memo unchanged.
 
 **Recorded:** 2026-11-21 · lane `eqo/wave-12/x` · `Ref: governance/tickets/T-IGX-046-F.md`
+
+## Wave-13 E-03 route refresh (`EQO-E-03`)
+
+**Land:** `ad9094036` · lane `eqo/wave-13/e` · **no** register apply.
+
+Paired N-0002 route memo refreshed; mechanical E-02 apply remains blocked.
+
+**Recorded:** 2026-11-21 · `Ref: governance/tickets/T-IGX-046-F.md`

@@ -35,17 +35,19 @@
 | WB | EXE exit | AUD packet | Session E | Partial W3 CLS (`runs/wbNN/CLS_PRE.md`) |
 |----|---------:|------------|-----------|----------------------------------------|
 | WB01 | 1 | `OPEN` | **`FAIL`** (AUD-2, PR #696, `runs/wb01/AUD_SESSION_E.md`) | `PARTIAL` — finding routes open; no terminal WB closure |
-| WB02 | 0 | `PRE_AUD` | **`FAIL`** (AUD-1, PR #695, `runs/wb02/AUD_SESSION_E.md`) | `PARTIAL` — tenant slice @ pin; AUD FAIL |
-| WB03 | 0 | `PRE_AUD` | **`FAIL`** (AUD-1, PR #695, `runs/wb03/AUD_SESSION_E.md`) | `PARTIAL` — ADV matrix row AUD FAIL |
+| WB02 | 1† | `PRE_AUD` | **`FAIL`** (AUD-1, PR #695, `runs/wb02/AUD_SESSION_E.md`) | `PARTIAL` — tenant slice @ pin; AUD FAIL |
+| WB03 | 0† | `PRE_AUD` | **`FAIL`** (AUD-1, PR #695, `runs/wb03/AUD_SESSION_E.md`) | `PARTIAL` — ADV matrix row AUD FAIL |
 | WB04 | 1 | `OPEN` | **`BLOCKED`** (AUD-2, PR #696, `runs/wb04/AUD_SESSION_E.md`) | `PARTIAL` — optional-deps EXE re-run deferred |
-| WB05 | 0 | `PRE_AUD` | **`BLOCKED`** (AUD-1, PR #695, `runs/wb05/AUD_SESSION_E.md`) | `PARTIAL` — PRE_AUD slice; AUD BLOCKED |
+| WB05 | 0† | `PRE_AUD` | **`BLOCKED`** (AUD-1, PR #695, `runs/wb05/AUD_SESSION_E.md`) | `PARTIAL` — PRE_AUD slice; AUD BLOCKED |
 | WB06 | 4 | `OPEN` | **`FAIL`** (AUD-2, PR #696, `runs/wb06/AUD_SESSION_E.md`) | `PARTIAL` — EXE env BLOCKED (`mcp` / `llm-langchain-ollama`); docs note only |
 | WB07 | 1 | `OPEN` | **`FAIL`** (AUD-2, PR #696, `runs/wb07/AUD_SESSION_E.md`) | `PARTIAL` — governance slice AUD FAIL |
-| WB08 | — | `OPEN` | **`BLOCKED`** (AUD-2, PR #696, `runs/wb08/AUD_SESSION_E.md`) | `PARTIAL` — no EXE log @ pin; AUD BLOCKED |
+| WB08 | 0† | `OPEN` | **`BLOCKED`** (AUD-2, PR #696, `runs/wb08/AUD_SESSION_E.md`) | `PARTIAL` — EXE log @ pin (wave-13); Session E unchanged |
 | WB09 | 1 | `OPEN` | **`FAIL`** (AUD-2, PR #696, `runs/wb09/AUD_SESSION_E.md`) | `PARTIAL` — partial optional stack; AUD FAIL |
 | WB10 | 1 | `OPEN` | **`FAIL`** (AUD-2, PR #696, `runs/wb10/AUD_SESSION_E.md`) | `PARTIAL` — qualification slice AUD FAIL |
 | WB11 | 1 | `OPEN` | **`FAIL`** (AUD-2, PR #696, `runs/wb11/AUD_SESSION_E.md`) | `PARTIAL` — qualification slice AUD FAIL |
-| WB12 | 0 | `PRE_AUD` | **`BLOCKED`** (AUD-1, PR #695, `runs/wb12/AUD_SESSION_E.md`) | `PARTIAL` — PRE_AUD slice; AUD BLOCKED |
+| WB12 | 0† | `PRE_AUD` | **`BLOCKED`** (AUD-1, PR #695, `runs/wb12/AUD_SESSION_E.md`) | `PARTIAL` — PRE_AUD slice; AUD BLOCKED |
+
+† **EXE column (wave-13):** fresh `pytest_wbNN_exe.log` @ TRAIN_PIN (`eqo/wave-13/exe-wbNN`); Session E verdict column **unchanged** — implementer does not upgrade AUD outcomes.
 
 **Aggregate session E @ pin:** 0 `PASS`, 8 `FAIL` (WB01–03, WB06–07, WB09–11), 4 `BLOCKED` (WB04–05, WB08, WB12). No `EQO_CLOSED` / G6 / IIAC / FRZ claim in this integrator.
 
@@ -134,3 +136,19 @@ No `EQO_CLOSED` claim. Session E and operator OD routes unchanged.
 **EQO-W9-01 acceptance:** matrix row refresh only — **no** `EQO_CLOSED` / `EQO_CLOSED_INDEPENDENTLY_VERIFIED` / G6 / IIAC IN_FORCE claim.
 
 **Recorded:** 2026-11-21 · lane `eqo/wave-12/w9` · `Ref: governance/tickets/T-IGX-046-F.md`
+
+## Wave-13 W3 EXE refresh (pre-FCS fast path)
+
+**Land:** `ad9094036` · integrator `eqo/wave-13/integ` · **Session E:** no verdict changes.
+
+| WB | Wave-13 EXE exit | Custody |
+|----|-----------------:|---------|
+| WB02 | `1` | `runs/wb02/RUN_MANIFEST.json` — vectorstore slice non-zero |
+| WB03 | `0` | Fail-closed / interaction slice refresh |
+| WB05 | `0` | Architecture boundary gates refresh |
+| WB08 | `0` | First EXE @ pin (`DES_PREREG` → `RUN_MANIFEST`) |
+| WB12 | `0` | DUP / proof scenario slice refresh |
+
+**Doc lanes:** C-04 `BLOCKED` status cross-ref; EDER E-03 memos (no apply); W4-03 `WAIT_FOR_OPERATOR`.
+
+**Recorded:** 2026-11-21 · `Ref: governance/tickets/T-IGX-046-F.md`

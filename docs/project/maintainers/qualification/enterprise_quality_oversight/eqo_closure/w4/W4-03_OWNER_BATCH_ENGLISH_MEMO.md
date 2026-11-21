@@ -32,4 +32,14 @@ EQO batches **69** findings with `next_action_source=OWNER_DECISION` from `EQO_B
 - Impact matrix: `EQO_ARCH_FREEZE_IMPACT_MATRIX.jsonl`  
 - B-2 plan: `EQO_B2_REMAINING_INVARIANTS_PLAN.md` §EQO-W4-03
 
+## Wave-13 steward refresh (`EQO-W4-03`)
+
+**Land:** `ad9094036` · lane `eqo/wave-13/w4` · **Status:** `WAIT_FOR_OPERATOR` (unchanged).
+
+| Item | Wave-13 note |
+|------|----------------|
+| B-2 registry | `186/186` @ wave-11 — no new row assignments |
+| Matrix W4-CLS | `PARTIAL` — registry complete; operator OD still required |
+| EQO action | English memo only; no `OWNER_DECISION` append |
+
 **Ref:** `governance/tickets/T-IGX-046-F.md`
