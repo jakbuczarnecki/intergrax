@@ -9,7 +9,7 @@ loading: always
 
 - Default branch `development`; stay on the operator-named branch.
 - Without operator approval: no `git checkout <sha>`, `git switch --detach`, `git checkout -b`, `git switch -c`; never end a session detached.
-- Pinned SHA: `git fetch origin development`, then `git merge-base --is-ancestor <SHA> HEAD`. If it fails, escalate (contradiction) and do not check out the pin. Record `git rev-parse HEAD`.
+- Pinned SHA: fetch `development`; `merge-base --is-ancestor <SHA> HEAD` must pass else escalate; record HEAD.
 - Before ending: `git symbolic-ref HEAD` must succeed.
 
 ## Attribution
@@ -29,7 +29,7 @@ loading: always
 
 - Before an implementation step state: read scope, edit scope, tests. Reading beyond the listed scope: take the minimum needed (max 3 files), note why, continue. Editing outside the edit scope is a scope change: escalate.
 - Read with `offset`/`limit` or grep first. `AGENT_INSTRUCTIONS.md`, the iteration rule, plan/arch hubs and domain guides load only when the task lists them. CI/test hotfix: `/intergrax-ci-hotfix`.
-- Replies: terse (<= 12 lines: outcome, paths, tests, blockers); `terse` <= 6 lines; full report only on `full report`.
+- Replies: terse (<= 12 lines); `terse` <= 6; full report only on request.
 
 ## No polling
 
@@ -43,7 +43,7 @@ loading: always
 ## Autonomy
 
 - Execute the approved plan step by step. Never ask for a go-ahead, and never ask whether to continue, commit, run tests, retry or start the next step: decide from the plan, ADRs, repo rules or existing code.
-- Stop only with a message starting `ESCALATION: <type>`, type one of: unplanned architectural problem; decision that changes scope or cost or is hard to reverse; contradiction between plan and code or rules; forbidden action needed; missing access. One batched message: per item the options, a recommendation, the consequence and the cost.
+- Stop only with `ESCALATION: <type>` (unplanned architecture; scope/cost/reversibility decision; plan/rules/code contradiction; forbidden action; missing access). One batched message with options, recommendation, consequence, cost.
 - Agents commit on a branch and prepare the PR text; `git push`, PR creation, merge and GitHub settings are the human's (forbidden action: escalate, do not try).
 - Sub-agents end with `DONE: <line>` or `BLOCKED: <type>: <what, options, recommendation>`; the parent decides alone when plan, ADR, rules or code answer it (`/igx-autonomy`).
 - Plan finished: print `PLAN COMPLETE` and a short summary. `/igx-run-plan <file>` enforces this with a Stop hook.

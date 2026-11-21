@@ -16,11 +16,11 @@ agents/ MUST NOT import from applications/
 applications/ MAY import from agents/ and intergrax/
 ```
 
-**Documentation pairs:** domain-layer `docs/project/architecture/<DOMAIN>.md` ↔ `docs/project/maintainers/plans/<DOMAIN>.md` (+ `satellites/` per tier, `.cursorignore`); multi-layer feature `docs/project/capabilities/architecture/<FEATURE>.md` ↔ `docs/project/capabilities/plan/<FEATURE>.md` (+ matching `satellites/` under each tier) - hub [`docs/project/capabilities/README.md`](docs/project/capabilities/README.md). Feature docs coordinate cross-layer delivery; domain ownership remains authoritative.
+**Doc pairs:** `docs/project/architecture/<DOMAIN>.md` ↔ `docs/project/maintainers/plans/<DOMAIN>.md`; capability features under `docs/project/capabilities/` (hub [`README.md`](docs/project/capabilities/README.md)).
 
 ## Rule loading (Cursor · Claude Code)
 
-**Single source of truth:** [`agent-env/`](agent-env/README.md) - rules, skills, plans. `.cursor/` and `.claude/` hold only generated adapters (`uv run python scripts/governance/sync_agent_env.py`). **Always-on:** [`intergrax-core.md`](agent-env/rules/intergrax-core.md) - branch safety, attribution, artifacts, test and token budget, autonomy.
+**Single source of truth:** [`agent-env/`](agent-env/README.md) - rules, skills, plans. `.cursor/` and `.claude/` hold only generated adapters (`uv run python scripts/governance/sync_agent_env.py`). **Always-on:** [`intergrax-core.md`](agent-env/rules/intergrax-core.md), [`intergrax-english-only-commits.md`](agent-env/rules/intergrax-english-only-commits.md).
 
 **On demand only** - load only when explicitly referenced (Cursor `@file`, Claude Code `/<rule-id>`) or operator asks for that mode:
 
@@ -32,7 +32,7 @@ applications/ MAY import from agents/ and intergrax/
 | [`AGENT_INSTRUCTIONS.md`](docs/project/technical/guides/AGENT_INSTRUCTIONS.md) | Full routing, verification, ADR, Full O1 report |
 | [`hep_step.txt`](docs/project/maintainers/bootstrap/hep_step.txt) | HEP step bootstrap (with operator step prompt) |
 
-**Default behavior:** do not auto-load iteration rule, AGENT_INSTRUCTIONS, plan/arch hubs, or domain guides. If more files are needed than the operator listed, read the minimum (max 3), note why and continue (edit outside scope = escalate, see `intergrax-core.md`). **Quality workflow (hooks + CI):** [`ENTERPRISE_QUALITY_WORKFLOW.md`](docs/project/technical/guides/ENTERPRISE_QUALITY_WORKFLOW.md) - `uv run python scripts/dev/install_git_hooks.py`. **Cursor token setup:** [`CURSOR_TOKEN_SETUP.md`](docs/project/technical/guides/CURSOR_TOKEN_SETUP.md). **Do not delete this file via Cursor Settings.**
+**Default:** load on-demand rules only when referenced; max 3 extra reads with reason; out-of-scope edit = escalate (`intergrax-core.md`). Hooks/CI: [`ENTERPRISE_QUALITY_WORKFLOW.md`](docs/project/technical/guides/ENTERPRISE_QUALITY_WORKFLOW.md). Token setup: [`CURSOR_TOKEN_SETUP.md`](docs/project/technical/guides/CURSOR_TOKEN_SETUP.md).
 
 ## Delivery DevOS (ticket-first)
 
