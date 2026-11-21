@@ -4,7 +4,9 @@
 
 from __future__ import annotations
 
-from intergrax.integrations.providers.llm_guardrail.azure_content_safety.bundle import create_azure_content_safety_llm_guardrail
+from intergrax.integrations.providers.llm_guardrail.azure_content_safety.bundle import (
+    create_azure_content_safety_llm_guardrail,
+)
 from intergrax.integrations.providers.llm_guardrail.azure_content_safety.contract_spec import CONTRACT_SPECS
 from intergrax.integrations.providers.llm_guardrail.azure_content_safety.manifest import MANIFEST
 from intergrax.integrations.registry.plugin_register import register_from_manifest

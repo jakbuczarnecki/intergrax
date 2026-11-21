@@ -3,7 +3,6 @@
 from __future__ import annotations
 
 from intergrax.integrations.contracts.llm_guardrail import GuardrailContext, GuardrailScanResult, LlmGuardrailBackend
-from intergrax.integrations.providers.llm_guardrail._pattern_scanner import scan_patterns
 from intergrax.integrations.providers.llm_guardrail._vendor_opens import presidio_scan_text
 from intergrax.integrations.providers.llm_guardrail.bundles._base import BaseGuardrailAdapter
 
@@ -13,7 +12,7 @@ class PresidioAdapter(BaseGuardrailAdapter):
         vendor = presidio_scan_text(text)
         if vendor is not None:
             return vendor
-        return scan_patterns(text, mode="input", slug=self._slug)
+        return self._pattern_fallback(text, mode="input")
 
     def scan_output(
         self,
@@ -25,5 +24,5 @@ class PresidioAdapter(BaseGuardrailAdapter):
         return self.scan_input(text, context=context)
 
 
-def create_presidio_backend() -> LlmGuardrailBackend:
-    return PresidioAdapter(slug="presidio")
+def create_presidio_backend(*, allow_pattern_fallback: bool = False) -> LlmGuardrailBackend:
+    return PresidioAdapter(slug="presidio", allow_pattern_fallback=allow_pattern_fallback)

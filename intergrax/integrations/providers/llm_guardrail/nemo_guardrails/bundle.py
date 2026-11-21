@@ -7,8 +7,8 @@ from __future__ import annotations
 from collections.abc import Mapping
 from typing import Any
 
-from intergrax.integrations.providers.llm_guardrail.bundles.nemo_guardrails import create_nemo_guardrails_backend
 from intergrax.integrations.contracts.llm_guardrail import LlmGuardrailBackend
+from intergrax.integrations.providers.llm_guardrail.bundles.nemo_guardrails import create_nemo_guardrails_backend
 from intergrax.integrations.providers.llm_guardrail.nemo_guardrails.integration import (
     NEMO_GUARDRAILS_PROVIDER_ID,
     NemoGuardrailsLlmGuardrailIntegration,
