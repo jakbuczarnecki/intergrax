@@ -1,29 +1,30 @@
-# CONTINUATION_AUTONOMY_CHECKPOINT — po fali 4 (2026-11-21)
+# CONTINUATION_AUTONOMY_CHECKPOINT — po fali 5 (2026-11-21)
 
 ## SHA
 
 | Tor | Ref | Uwagi |
 |-----|-----|-------|
-| `development` | `7b1818f5f` | guardrail e2e + trust slice 2 + 043-M §7 + regression 260/260 core |
-| `arch-freeze/rw-train` | `c443865e9` | bez merge train w fali 4 |
+| `development` | `61516a7cf` | fala 5 docs (`e4f7c4999`); bazowa product fala 4: `7b1818f5f` |
+| `arch-freeze/rw-train` | `c443865e9` | cherry-pick **STOP** — `TRAIN_CHERRY_PICK_STATUS.md` |
 | `af-dev-merge` | serial merge tor | |
 
-## Fala 4 — wynik
+## Fala 5 — wynik
 
 | Krok | Status | Dowód |
 |------|--------|-------|
-| Guardrail e2e (3 FAIL) | **DONE** | `run_id`/`task_id` + `run_lab_nexus_task`; log `REGRESSION-78-fala4/` |
-| Trust slice 2 (`NT-TRUST-04`, `NT-TRUST-05`) | **DONE** | `tests/unit/context/test_trust_fail_closed.py` |
-| T-IGX-043-M Part E | **SMOKE** | plan §7 minimal; `test_changed_since_impact_map.py` 3 passed |
-| Regression FC-3 core bundle | **PASS** | `.tmp/session/arch-freeze/REGRESSION-78-fala4/` — **260 passed**, 3 skipped |
-| Push `origin/development` | **DONE** | `7b1818f5f` na `origin/development` (rebase po `019be9c71`) |
+| Train cherry-pick kolejka FC-3 / G-09 / trust | **QUEUED** | `TRAIN_CHERRY_PICK_STATUS.md`; merge **STOP** (governance-fast) |
+| RC-2 exit checklist | **DONE** (docs) | `RC2_EXIT_CHECKLIST.md` — werdykt **PARTIAL** |
+| WF E2–E4 | **BLOCKED** (udokumentowane) | `WF_E2_E4_STATUS.md` |
+| T-IGX-043-M smoke → `in_progress` | **DONE** | 3 passed `test_changed_since_impact_map.py` (fala 5) |
+| Trust slice 3 (`NT-TRUST-06`) | **DEFER** | collect/langchain-core — bez minimal slice w fali 5 |
+| Push `origin/development` | **DONE** | `61516a7cf` |
 
-## Fala 5 — następna (wskazówka)
+## Fala 6 — wskazówka
 
-1. T-IGX-043-M product manifest (train Part E) po wave approval.
-2. Trust slices 3+ (RAG extras `NT-TRUST-06`).
-3. Train cherry-pick po zielonym governance + regression core.
+1. Ponów train PR po **green** `governance-fast` na HEAD `development`.
+2. T-IGX-043-M Part E manifest — nadal BLOCKED do wave-packet / RW-PLAN; tylko smoke + `in_progress`.
+3. B-1 → node ids dla WF E2–E4.
 
 ## STOP / bez zmian
 
-- `051-A` TENANT, FCS, G2, CLOSED, RW-PLAN-AUDIT (OD-AF-AUTO-04..06).
+- `051-A` TENANT, FCS, G2 PASS, CLOSED, RW-PLAN-AUDIT simulation.

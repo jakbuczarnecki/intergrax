@@ -32,6 +32,14 @@ Defined in the plan (ENT-AUDIT unit suite + regression node list). Not run at sc
 
 Train-only baseline promotion (`T-AF2-ENT-BASELINE-PREFREEZE`), merge to `arch-freeze/rw-train`, FRZ promotion, FCS, TENANT 051-A, RW-PLAN-AUDIT simulation.
 
+## Implementation record (fala 5)
+
+| Step | Evidence |
+|------|----------|
+| NT-043M-S1 smoke | `pytest tests/qualification/ent_audit_x/unit/test_changed_since_impact_map.py` — **3 passed** (2026-11-21, tor `af-dev-merge`) |
+
+Part E manifest / consumer write set remains **BLOCKED** (RW-PLAN-AUDIT, wave-packet).
+
 ## Lifecycle state
 
-`plan_pending` (§7 fala 4 minimal smoke; Part E product manifest remains BLOCKED per RW-PLAN-AUDIT)
+`in_progress` (smoke OK fala 5; product manifest Part E **BLOCKED**)
