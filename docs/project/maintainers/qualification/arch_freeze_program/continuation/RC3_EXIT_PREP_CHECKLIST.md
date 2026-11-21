@@ -99,6 +99,17 @@
 
 **Werdykt J2 (Runda 1):** **OPEN** — merge **#699** przy red CI; green replay **nie** zadeklarowany.
 
+### RC3-J3 — PT-Q02 niezależny wave audit @ G2 (RB-2 delta)
+
+| Step | Rola | Artefakt / komenda | Bramka | Stan |
+|------|------|-------------------|--------|------|
+| RC3-J3-1 | architect | Zapis SHA runga **G2** (= audytowany RW head) | RC3-J1-4 **BLOCKED** | BLOCKED |
+| RC3-J3-2 | independent_auditor | Nowa sesja (AR-58); worktree read-only @ G2 | ≠ implementer / reviewer | OPEN |
+| RC3-J3-3 | independent_auditor | Pakiet delta IIAC `a73d15ab3..G2` + AUD-ENF-2/3 evidence | §A RC3X-A3–A5 | OPEN |
+| RC3-J3-4 | orchestrator | Werdykt wave audit w repo (evidence index) | **bez** słowa PASS w Runda 1 | BLOCKED |
+
+**Werdykt J3 (Runda 1):** **OPEN** — sesja Q02 **nie** rozpoczęta; G2 **pending**.
+
 ## Werdykt (exit prep only)
 
 | Warstwa | Werdykt |
