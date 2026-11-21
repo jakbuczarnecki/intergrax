@@ -1,4 +1,4 @@
-﻿applications/dispute_sim_application/host/factory.py
+applications/dispute_sim_application/host/factory.py
 applications/governed_contractor_application/host/factory.py
 applications/intergrax_assistant_application/host/factory.py
 applications/lab_application/host/factory.py
@@ -54,6 +54,8 @@ intergrax/model_inference/adapters/stub_vision.py
 intergrax/model_inference/adapters/triton_vision.py
 intergrax/model_inference/contracts.py
 intergrax/model_inference/workers/task_runner.py
+intergrax/platform/enterprise_audit/data/changed_since_impact_map.v1.json
+intergrax/platform/enterprise_audit/impact_map.py
 intergrax/rag/bootstrap/entry_point_load.py
 intergrax/rag/bootstrap/hierarchical_bootstrap.py
 intergrax/rag/bootstrap/laboratory_selector_opt_in.py
