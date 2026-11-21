@@ -6,5 +6,6 @@ Rules, skills and plans live in [`agent-env/`](agent-env/README.md) (single sour
 
 <!-- BEGIN agent-env:generated (scripts/governance/sync_agent_env.py) - do not edit; edit agent-env/rules/ and re-run -->
 @agent-env/rules/intergrax-core.md
+@agent-env/rules/intergrax-english-only-commits.md
 On-demand rules (skills, canonical text in `agent-env/rules/`): `/intergrax-agent-roles`, `/intergrax-ci-hotfix`, `/intergrax-env-vendor-qualification`, `/intergrax-hep-step`, `/intergrax-independent-audit`, `/intergrax-iteration`, `/intergrax-micro-implement`, `/intergrax-scenario-factory`
 <!-- END agent-env:generated -->
