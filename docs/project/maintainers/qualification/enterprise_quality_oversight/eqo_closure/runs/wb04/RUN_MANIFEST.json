@@ -9,11 +9,13 @@
   ],
   "evidence_pin": "28c27cb896d02e0185b9fa02047411fa152f6469",
   "worktree": "d:/Projekty/_wt/intergrax/eqo-w3",
-  "executed_utc": "2026-11-21T06:19:43Z",
+  "executed_utc": "2026-11-21T08:27:50Z",
+  "rerun_lane": "eqo/wave-6/exe-docs",
   "pytest_command_sha256": "8b732ccd149bc1b02f63f7ebde4c5ec64add50a2c975f1a732c6c1935781d00a",
   "pytest_command": "uv run pytest tests/qualification/control_planes/ctrl_x/test_ctrl_x_qualification_batch.py tests/qualification/control_planes/ctrl_x/test_ctrl_x_r1_security_composition.py tests/qualification/mcp_server_x/test_mcp_server_x_p5_qualification_batch.py -q --tb=line",
-  "pytest_exit_code": 1,
-  "pytest_summary": "1 failed, 12 passed in 26.70s",
+  "pytest_exit_code": 0,
+  "pytest_summary": "13 passed in 79.41s",
+  "pytest_env_note": "uv sync --extra dev --extra dev-ci --extra dev-unit-cert",
   "finding_ids": [
     "EQOA-A2-047",
     "EQOA-A7-013",
@@ -22,7 +24,5 @@
   "log_path": "eqo_closure/runs/wb04/pytest_wb04_exe.log",
   "des_path": "eqo_closure/runs/wb04/DES_PREREG.json",
   "disposition_path": "eqo_closure/runs/wb04/SECURITY_CTRL_EVIDENCE.md",
-  "blockers": [
-    "PYTEST_SLICE_NON_ZERO_EXIT"
-  ]
+  "blockers": []
 }

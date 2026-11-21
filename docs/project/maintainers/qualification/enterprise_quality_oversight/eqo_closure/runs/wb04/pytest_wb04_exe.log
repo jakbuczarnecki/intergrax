@@ -1,6 +1,4 @@
-............F                                                            [100%]
-================================== FAILURES ===================================
-D:\Projekty\_wt\intergrax\eqo-w3\tests\qualification\mcp_server_x\test_mcp_server_x_p5_qualification_batch.py:28: AssertionError: P5 target failed: tests/unit/applications/test_mcp_trust_a_principal_binding.py (exit=2)
-=========================== short test summary info ===========================
-FAILED tests/qualification/mcp_server_x/test_mcp_server_x_p5_qualification_batch.py::test_mcp_server_x_p5_consolidated_batch_passes
-1 failed, 12 passed in 26.70s
+=== EQO wave-6 EXE rerun 2026-11-21T08:29:40Z UTC ===
+
+.............                                                            [100%]
+13 passed in 79.41s (0:01:19)
