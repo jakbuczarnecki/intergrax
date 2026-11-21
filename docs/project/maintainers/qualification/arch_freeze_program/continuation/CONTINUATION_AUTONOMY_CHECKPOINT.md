@@ -1,12 +1,19 @@
-# CONTINUATION_AUTONOMY_CHECKPOINT — po fali równoległej C2 (2026-11-21)
+﻿# CONTINUATION_AUTONOMY_CHECKPOINT — po fali równoległej C2 + B2 trust slice 4 (2026-11-21)
 
 ## SHA
 
 | Tor | Ref | Uwagi |
 |-----|-----|-------|
-| `development` | `98b218d8fad05de228c8bd059fb1375d97fcf187` | `98b218d8f` (C2 checkpoint); tor B docs `ec2957a56` w historii |
+| `development` | `e1f850bdc834c8b4e5333fd3a38419d000ceacb9` | RB-2 certifier delta merge; trust §7.2 replay 64 passed @ `ec2957a56` (`T-IGX-051-C` slice 4, bez NT-TRUST-06) |
 | `arch-freeze/rw-train` | `dbaebfa8cd13a6ba8bfa6eef2cdf581216ddb3d2` | PR **#699** **MERGED** (tor B) |
-| `af-dev-merge` | serial merge tor | push `origin/development` po commicie `af-dev-rc1-docs` (C2) |
+| `af-dev-merge` | serial merge tor | push `origin/development` po commicie `af-dev-rw-trust` (B2) |
+
+## Fala B2 — TRUST (`T-IGX-051-C`)
+
+| Krok | Status | Dowód |
+|------|--------|-------|
+| Plan §7.2 trust bundle | **DONE** | 64 passed (`test_trust_fail_closed` + formatter + `test_messages`); pin `ec2957a56` |
+| `NT-TRUST-06` | **SKIP** (slice) | merged slice 3; B2 slice excludes RAG node |
 
 ## Fala równoległa C2 — wynik
 
@@ -27,7 +34,7 @@
 | Train ↔ development gap | odświeżony tor B | `TRAIN_DEV_GAP.md` @ `ec2957a56`; train HEAD po `#699` |
 | RC-2 exit checklist | bez zmian werdyktu | `RC2_EXIT_CHECKLIST.md` — **PARTIAL** |
 | RW-PLAN-AUDIT | **BLOCKED** | `RW_PLAN_AUDIT_STATUS.md` |
-| Push `origin/development` | **DONE** | `98b218d8f` via `af-dev-merge` |
+| Push `origin/development` | **DONE** | `e1f850bdc` via `af-dev-merge` (RB-2 certifier) |
 
 ## Fala 5 — wynik (archiwum)
 
