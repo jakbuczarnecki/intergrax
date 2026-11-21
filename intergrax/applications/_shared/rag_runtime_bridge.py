@@ -6,16 +6,14 @@ from __future__ import annotations
 
 from dataclasses import replace
 
+from intergrax.applications._shared.rag_lab_opt_in import resolve_rag_bootstrap_lab_opt_ins
+from intergrax.applications.contracts.application_host import ApplicationProfile
 from intergrax.applications.contracts.environment_profile import (
     ApplicationEnvironmentProfile,
 )
 from intergrax.integrations.contracts.base import IntegrationCategory
 from intergrax.integrations.contracts.integration_profile import IntegrationProfile
 from intergrax.llm_adapters.contracts.llm_adapter import LLMAdapter
-from intergrax.applications.contracts.application_host import ApplicationProfile
-from intergrax.rag.profiles.tool_wiring_runtime_sync import (
-    apply_rag_from_tool_wiring_context,
-)
 from intergrax.rag.bootstrap.rag_stack_bootstrap import (
     RagStack,
     create_default_rag_stack,
@@ -27,6 +25,9 @@ from intergrax.rag.profiles.rag_profile import (
     validate_graph_rag_production_wiring,
 )
 from intergrax.rag.profiles.runtime_rag_sync import sync_rag_profile_from_runtime_config
+from intergrax.rag.profiles.tool_wiring_runtime_sync import (
+    apply_rag_from_tool_wiring_context,
+)
 from intergrax.runtime.execution.host_runtime_config import RuntimeConfig
 from intergrax.tools.registry.wiring import ToolWiringContext
 
@@ -93,11 +94,14 @@ def resolve_rag_stack_for_environment(
         return None
     profile = integration_profile or env.integration_profile
     rag_profile = resolve_rag_profile_for_environment(env, integration_profile=profile)
+    embedding_opt, vector_opt = resolve_rag_bootstrap_lab_opt_ins(env, profile)
     return create_default_rag_stack(
         integration_profile=profile,
         tenant_id=tenant_id,
         llm_for_contextual=llm_adapter,
         profile=rag_profile,
+        embedding_lab_opt_in=embedding_opt,
+        vectorstore_lab_opt_in=vector_opt,
     )
 
 
@@ -114,10 +118,7 @@ def apply_rag_for_environment(
     """
     if not config.enable_rag:
         return config
-    if (
-        tool_wiring_context is not None
-        and tool_wiring_context.vectorstore_manager is not None
-    ):
+    if tool_wiring_context is not None and tool_wiring_context.vectorstore_manager is not None:
         return apply_rag_from_tool_wiring_context(config, tool_wiring_context)
     stack = resolve_rag_stack_for_environment(
         env,

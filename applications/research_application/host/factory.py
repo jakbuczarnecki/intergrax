@@ -15,6 +15,7 @@ from intergrax.applications._shared.harness_host_composition import (
 from intergrax.applications._shared.harness_host_runtime import build_harness_host_runtime
 from intergrax.applications._shared.identity_wiring import wire_application_identity
 from intergrax.applications._shared.interaction_wiring import wire_interaction_intake_service
+from intergrax.applications._shared.notification_wiring import resolve_host_notification_adapter
 from intergrax.applications._shared.plugin_bootstrap import attach_plugin_shutdown
 from intergrax.applications._shared.product_observability_dashboard_wiring import (
     wire_harness_product_observability_dashboard,
@@ -79,6 +80,10 @@ def create_research_backend_app(
     production_mode = env.execution_mode.value == "strict"
     if production_mode:
         env = resolve_reference_production_strict_host_environment(env)
+    host_notification_adapter = resolve_host_notification_adapter(
+        env,
+        integration_profile=env.integration_profile,
+    )
     if process_composition is not None:
         profile_persistence_kwargs = resolve_harness_host_profile_persistence_kwargs_from_composition(
             production_mode=production_mode,
@@ -104,6 +109,8 @@ def create_research_backend_app(
         ),
         document_store=profile_persistence_kwargs.document_store,
         key_value_cache=profile_persistence_kwargs.key_value_cache,
+        notification_adapter=host_notification_adapter,
+        disable_human_decision_persistence=True,
     )
     host_execution = runtime.execution
     platform = bootstrap_harness_host_platform(runtime)
@@ -120,7 +127,7 @@ def create_research_backend_app(
         checkpoint_store=checkpoint_store,
         host_execution=host_execution,
         task_enricher=task_enricher,
-        notification_adapter=None,
+        notification_adapter=host_notification_adapter,
         poll_interval_seconds=settings.scheduler_poll_seconds,
         enabled=settings.include_scheduler,
     )

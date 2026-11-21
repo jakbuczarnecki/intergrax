@@ -26,6 +26,7 @@ from intergrax.applications._shared.harness_host_orchestration_topology_wiring i
 )
 from intergrax.applications._shared.harness_host_runtime import build_harness_host_runtime
 from intergrax.applications._shared.interaction_wiring import wire_interaction_intake_service
+from intergrax.applications._shared.notification_wiring import resolve_host_notification_adapter
 from intergrax.applications._shared.package_wiring import (
     resolve_strict_package_contract_authority_for_serving_handoff,
 )
@@ -333,6 +334,10 @@ def create_governed_contractor_backend_app(
             registry_projection=registry_projection,
             registry_projection_authority=(process_composition.agent_platform_runtime.registry_projection_authority),
         )
+    host_notification_adapter = resolve_host_notification_adapter(
+        env,
+        integration_profile=env.integration_profile,
+    )
     runtime = build_harness_host_runtime(
         manifest_for_runtime,
         env,
@@ -364,6 +369,8 @@ def create_governed_contractor_backend_app(
         key_value_cache=profile_persistence_kwargs.key_value_cache,
         agent_contract_authority=package_contract_authority,
         strict_production_serving_execution_tenant_binding=strict_serving_tenant_binding,
+        notification_adapter=host_notification_adapter,
+        disable_human_decision_persistence=True,
     )
     host_execution = runtime.execution
     if process_composition is not None and process_composition.serving_runtime_handoff is not None:
@@ -400,7 +407,7 @@ def create_governed_contractor_backend_app(
         checkpoint_store=checkpoint_store,
         host_execution=host_execution,
         task_enricher=task_enricher,
-        notification_adapter=None,
+        notification_adapter=host_notification_adapter,
         poll_interval_seconds=settings.scheduler_poll_seconds,
         enabled=settings.include_scheduler,
     )
