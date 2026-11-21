@@ -11,13 +11,15 @@ RAG Tier-0 code should prefer these factories over direct imports of
 
 from __future__ import annotations
 
-from typing import Optional
-
-from intergrax.integrations.contracts.base import IntegrationCategory
+from intergrax.integrations.contracts.base import (
+    IntegrationCategory,
+    IntegrationConfigurationError,
+    LabSelectorOptIn,
+)
+from intergrax.integrations.contracts.integration_profile import IntegrationProfile
 from intergrax.integrations.contracts.vector_store import VectorStore
 from intergrax.integrations.registry.bootstrap import register_default_integrations
 from intergrax.integrations.registry.factory import build_profile_from_env, resolve
-from intergrax.integrations.contracts.integration_profile import IntegrationProfile
 from intergrax.rag.vectorstore.contracts.base_vectorstore_manager import BaseVectorstoreManager
 from intergrax.rag.vectorstore.contracts.native_vectorstore import VectorStoreScope
 from intergrax.rag.vectorstore.vectorstore_manager import VectorstoreManager
@@ -41,9 +43,7 @@ def _resolve_tenant_id(
         ("integration override", override_tenant_id),
     )
     resolved: list[tuple[str, str]] = [
-        (source, _validated_tenant_id(value, source=source))
-        for source, value in candidates
-        if value is not None
+        (source, _validated_tenant_id(value, source=source)) for source, value in candidates if value is not None
     ]
     if not resolved:
         return None
@@ -95,16 +95,31 @@ def _scope_from_integration_config(
     )
 
 
+_LAB_INMEMORY_VECTOR_STORE_SLUG = "inmemory"
+
+
+def _resolve_lab_inmemory_slug(lab_opt_in: LabSelectorOptIn) -> str:
+    slug = lab_opt_in.selector.strip().lower()
+    if slug != _LAB_INMEMORY_VECTOR_STORE_SLUG:
+        raise IntegrationConfigurationError(
+            f"lab vector store opt-in selector {slug!r} is not the in-memory laboratory default "
+            f"{_LAB_INMEMORY_VECTOR_STORE_SLUG!r}"
+        )
+    return slug
+
+
 def create_vectorstore_from_integration(
     *,
-    profile: Optional[IntegrationProfile] = None,
-    tenant_id: Optional[str] = None,
+    profile: IntegrationProfile | None = None,
+    tenant_id: str | None = None,
+    lab_opt_in: LabSelectorOptIn | None = None,
     **config_overrides: object,
 ) -> VectorStore:
     """
     Resolve ``IntegrationCategory.VECTOR_STORE`` from profile/env.
 
-    Falls back to ``InMemoryVectorStore`` when no vector_store slug is configured.
+    Without an explicit slug, refuses unless ``lab_opt_in`` selects the laboratory
+    in-memory default.
     """
     register_default_integrations()
     resolved_profile = profile or build_profile_from_env()
@@ -118,6 +133,11 @@ def create_vectorstore_from_integration(
         override_tenant_id=config_overrides.get("tenant_id"),
     )
     if not slug:
+        if lab_opt_in is None:
+            raise IntegrationConfigurationError(
+                "vector_store slug is not configured in IntegrationProfile or environment"
+            )
+        _resolve_lab_inmemory_slug(lab_opt_in)
         from intergrax.integrations.providers.vector_store.inmemory.bundle import create_inmemory_vector_store
 
         if resolved_tenant_id is None:
@@ -143,8 +163,9 @@ def create_vectorstore_from_integration(
 
 def create_vectorstore_manager(
     *,
-    tenant_id: Optional[str] = None,
-    profile: Optional[IntegrationProfile] = None,
+    tenant_id: str | None = None,
+    profile: IntegrationProfile | None = None,
+    lab_opt_in: LabSelectorOptIn | None = None,
     **config_overrides: object,
 ) -> BaseVectorstoreManager:
     """Composition root for RAG — wraps catalog-resolved store in ``VectorstoreManager``."""
@@ -162,6 +183,7 @@ def create_vectorstore_manager(
     store = create_vectorstore_from_integration(
         profile=resolved_profile,
         tenant_id=resolved_tenant_id,
+        lab_opt_in=lab_opt_in,
         **config_overrides,
     )
     scope = _scope_from_integration_config(
@@ -173,10 +195,15 @@ def create_vectorstore_manager(
     return VectorstoreManager(store=store, scope=scope)
 
 
-def create_default_vectorstore_manager(*, tenant_id: Optional[str] = None) -> BaseVectorstoreManager:
+def create_default_vectorstore_manager(
+    *,
+    tenant_id: str | None = None,
+    lab_opt_in: LabSelectorOptIn | None = None,
+) -> BaseVectorstoreManager:
     """
     Backward-compatible alias.
 
-    Uses ``IntegrationProfile`` / env when ``vector_store`` is set; otherwise in-memory.
+    Uses ``IntegrationProfile`` / env when ``vector_store`` is set; otherwise requires
+    an explicit ``lab_opt_in`` for the in-memory laboratory default.
     """
-    return create_vectorstore_manager(tenant_id=tenant_id)
+    return create_vectorstore_manager(tenant_id=tenant_id, lab_opt_in=lab_opt_in)

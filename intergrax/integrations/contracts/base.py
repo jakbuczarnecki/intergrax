@@ -5,19 +5,21 @@
 
 from __future__ import annotations
 
+from collections.abc import Sequence
 from dataclasses import dataclass
-from enum import Enum
+from enum import StrEnum
+
 from intergrax.integrations.contracts.catalog_factory import IntegrationFactory
 from intergrax.integrations.contracts.contract_spec import IntegrationContractSpec
 
 
-class IntegrationStatus(str, Enum):
+class IntegrationStatus(StrEnum):
     STABLE = "stable"
     BETA = "beta"
     DEPRECATED = "deprecated"
 
 
-class IntegrationCategory(str, Enum):
+class IntegrationCategory(StrEnum):
     RELATIONAL_STORE = "relational_store"
     DOCUMENT_STORE = "document_store"
     KEY_VALUE_CACHE = "key_value_cache"
@@ -111,11 +113,29 @@ class IntegrationConfigurationError(IntegrationError):
     """Profile/env does not specify a slug for a requested category."""
 
 
+@dataclass(frozen=True, slots=True)
+class LabSelectorOptIn:
+    """Named, explicit lab opt-in for a vendor/backend selector default.
+
+    Only honoured on laboratory entry paths that derive or pass this value
+    deliberately. ``selector`` names the slug or backend being accepted;
+    ``reason`` is recorded for operators and must be non-empty. An invalid
+    selector value is never legitimised by an opt-in.
+    """
+
+    selector: str
+    reason: str
+
+    def __post_init__(self) -> None:
+        if not self.selector.strip():
+            raise ValueError("LabSelectorOptIn.selector must be non-empty")
+        if not self.reason.strip():
+            raise ValueError("LabSelectorOptIn.reason must be non-empty")
+
+
 class IntegrationCategoryMismatchError(IntegrationError):
     def __init__(self, slug: str, category: str) -> None:
-        super().__init__(
-            f"Integration '{slug}' is not registered for category '{category}'."
-        )
+        super().__init__(f"Integration '{slug}' is not registered for category '{category}'.")
         self.slug = slug
         self.category = category
 
@@ -185,9 +205,5 @@ def normalize_category(category: str | IntegrationCategory) -> IntegrationCatego
 
 
 def categories_for_profile_field(field_name: str) -> Sequence[IntegrationCategory]:
-    matched = [
-        IntegrationCategory(key)
-        for key, value in PROFILE_FIELD_BY_CATEGORY.items()
-        if value == field_name
-    ]
+    matched = [IntegrationCategory(key) for key, value in PROFILE_FIELD_BY_CATEGORY.items() if value == field_name]
     return matched
