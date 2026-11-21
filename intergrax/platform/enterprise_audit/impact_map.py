@@ -227,6 +227,18 @@ PDC_TIER3_ROOT_IMPACT_RULES: tuple[tuple[str, tuple[str, ...]], ...] = (
 )
 
 
+# Development-tor wave-diff (T-IGX-043-M, slice 1): package groups touched since the PDC baseline on `development`
+# that no PDC/domain rule covers. Each prefix maps to every manifest check id (explicit FULL escalation). Train Part E
+# manifest and `arch-freeze/rw-train` merge remain out of scope.
+WAVE_DIFF_FULL_IMPACT_PREFIXES: tuple[str, ...] = (
+    "intergrax/debug",
+    "intergrax/lab",
+    "intergrax/model_inference",
+    "intergrax/runtime/interactions",
+    "intergrax/runtime/notifications",
+)
+
+
 def fail_closed_prefixes() -> tuple[str, ...]:
     return _FAIL_CLOSED_PREFIXES
 
@@ -300,6 +312,10 @@ def build_impact_map_from_manifest(checks: tuple[ManifestCheck, ...]) -> dict[st
     for prefix, ids in (*PDC_DOMAIN_IMPACT_RULES, *PDC_TIER3_ROOT_IMPACT_RULES):
         for cid in ids:
             add(prefix, cid)
+
+    for prefix in WAVE_DIFF_FULL_IMPACT_PREFIXES:
+        for check in checks:
+            add(prefix, check.check_id)
 
     return {k: frozenset(v) for k, v in mapping.items()}
 
