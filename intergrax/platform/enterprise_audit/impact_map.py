@@ -231,11 +231,23 @@ PDC_TIER3_ROOT_IMPACT_RULES: tuple[tuple[str, tuple[str, ...]], ...] = (
 # that no PDC/domain rule covers. Each prefix maps to every manifest check id (explicit FULL escalation). Train Part E
 # manifest and `arch-freeze/rw-train` merge remain out of scope.
 WAVE_DIFF_FULL_IMPACT_PREFIXES: tuple[str, ...] = (
+    # Slice 1 — remediation-wave groups touched on `development` since PDC baseline (no domain rule).
     "intergrax/debug",
     "intergrax/lab",
     "intergrax/model_inference",
     "intergrax/runtime/interactions",
     "intergrax/runtime/notifications",
+    # Slice 2 — train-parity wave head + KNOWN_RED residuals (background_tasks, sandbox); manifest Part E BLOCKED.
+    "agents/local_search",
+    "agents/tool_selection_qualifier",
+    "agents/web_search_qualifier",
+    "agents/model_routing_qualifier",
+    "intergrax/agents/readiness",
+    "intergrax/runtime/wiring",
+    "intergrax/distributed",
+    "intergrax/multimedia",
+    "intergrax/background_tasks",
+    "intergrax/runtime/sandbox",
 )
 
 

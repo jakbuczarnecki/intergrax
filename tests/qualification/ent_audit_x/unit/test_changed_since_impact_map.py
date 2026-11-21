@@ -27,6 +27,23 @@ def test_unknown_platform_path_fail_closed() -> None:
     assert fake_path in unmapped
 
 
+def test_development_wave_diff_residual_modules_map_to_manifest_ids() -> None:
+    """NT-043M-S3: slice-2 wave-diff prefixes cover KNOWN_RED / train-parity residual groups."""
+    prefixes = load_default_impact_map()
+    manifest_ids = frozenset(check.check_id for check in load_default_manifest())
+    samples = (
+        "intergrax/background_tasks/worker_runtime.py",
+        "intergrax/runtime/sandbox/runtime.py",
+        "intergrax/runtime/wiring/llm_resolver.py",
+        "agents/local_search/steps.py",
+    )
+    for path in samples:
+        ids = check_ids_for_changed_path(path, prefixes)
+        assert ids, path
+        assert ids <= manifest_ids
+        assert len(ids) == len(manifest_ids), path
+
+
 def test_development_wave_diff_touched_modules_map_to_manifest_ids() -> None:
     """NT-043M-S2: development-tor wave-diff prefixes cover remediation-wave touched modules."""
     prefixes = load_default_impact_map()

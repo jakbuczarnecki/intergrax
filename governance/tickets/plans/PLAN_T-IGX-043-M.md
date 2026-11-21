@@ -77,3 +77,18 @@ Command (with NT-043M-S1):
 ```text
 uv run python -m pytest tests/qualification/ent_audit_x/unit/test_changed_since_impact_map.py -q
 ```
+
+## 8.2 Product slice 2 (fala B2 — train-parity wave-diff residuals, no manifest)
+
+Manifest Part E remains **BLOCKED**. Slice 2 extends `WAVE_DIFF_FULL_IMPACT_PREFIXES` with train-head parity groups and development residuals (`intergrax/background_tasks`, `intergrax/runtime/sandbox`, agent qualifier packages); regenerate SSOT.
+
+| Node id | Assertion | Pytest |
+|---------|-----------|--------|
+| NT-043M-S3 | residual / train-parity prefixes escalate FULL | `tests/qualification/ent_audit_x/unit/test_changed_since_impact_map.py::test_development_wave_diff_residual_modules_map_to_manifest_ids` |
+
+Command (with NT-043M-S1..S2):
+
+```text
+uv run python -m pytest tests/qualification/ent_audit_x/unit/test_changed_since_impact_map.py tests/qualification/pdc_x/xd/test_xd_12_evol_ent_audit.py -q
+```
+

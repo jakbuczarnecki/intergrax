@@ -16,7 +16,7 @@ Scaffold only — no PASS, FRZ promotion, or independent-verification claim.
 
 ## Plan digest
 
-Plan digest: 7adc8b90477fd807178c1e77699057a754e8a2c30e9e3f00141833a08403b4c4
+Plan digest: 5c4e1204635992b9872522905ce71e93081fefb96b0f834c4af8c8762aa8a923
 
 Canonical plan: [`governance/tickets/plans/PLAN_T-IGX-043-M.md`](plans/PLAN_T-IGX-043-M.md).
 
@@ -38,6 +38,7 @@ Train-only baseline promotion (`T-AF2-ENT-BASELINE-PREFREEZE`), merge to `arch-f
 |------|----------|
 | NT-043M-S1 smoke | `pytest tests/qualification/ent_audit_x/unit/test_changed_since_impact_map.py` — **3 passed** (2026-11-21, tor `af-dev-merge`) |
 | NT-043M-S2 wave-diff slice 1 | development `WAVE_DIFF_FULL_IMPACT_PREFIXES` + SSOT regen; **4 passed** (fala 6, `af-dev-043m`) |
+| NT-043M-S3 wave-diff slice 2 | train-parity + residual prefixes; **8 passed** (5 unit + 3 xd_12, fala B2) |
 
 Part E manifest / consumer write set remains **BLOCKED** (RW-PLAN-AUDIT, wave-packet).
 
