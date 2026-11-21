@@ -7,7 +7,11 @@ from __future__ import annotations
 from dataclasses import dataclass
 from typing import Any
 
+from intergrax.applications._shared.wiring_posture import wiring_fails_closed
+from intergrax.applications.contracts.application_host import ApplicationProfile
 from intergrax.applications.contracts.environment_profile import ApplicationEnvironmentProfile
+from intergrax.core.security.security_configuration import LAB_OPT_IN_FORBIDDEN_IN_PRODUCT, SecurityConfigurationError
+from intergrax.integrations.contracts.base import IntegrationConfigurationError, LabSelectorOptIn
 from intergrax.integrations.contracts.llm_guardrail import LlmGuardrailBackend
 from intergrax.integrations.providers.llm_guardrail._factory import (
     create_chained_guardrail_backend,
@@ -52,11 +56,39 @@ def _resolve_secondary_slug(
     return None
 
 
-def resolve_guardrail_backend(env: ApplicationEnvironmentProfile) -> LlmGuardrailBackend | None:
+def _resolve_lab_opt_in(
+    env: ApplicationEnvironmentProfile,
+    primary_slug: str,
+    lab_opt_in: LabSelectorOptIn | None,
+) -> LabSelectorOptIn | None:
+    if wiring_fails_closed(env):
+        if lab_opt_in is not None:
+            if env.application_profile is ApplicationProfile.PRODUCT:
+                raise SecurityConfigurationError(
+                    item="lab_opt_in",
+                    reason_code=LAB_OPT_IN_FORBIDDEN_IN_PRODUCT,
+                    message="laboratory opt-in is forbidden for PRODUCT application profile",
+                )
+            raise IntegrationConfigurationError("laboratory guardrail opt-in is forbidden under strict wiring posture")
+        return None
+    if lab_opt_in is not None:
+        return lab_opt_in
+    return LabSelectorOptIn(
+        selector=primary_slug,
+        reason="derived laboratory guardrail pattern fallback for non-strict host wiring",
+    )
+
+
+def resolve_guardrail_backend(
+    env: ApplicationEnvironmentProfile,
+    *,
+    lab_opt_in: LabSelectorOptIn | None = None,
+) -> LlmGuardrailBackend | None:
     wiring = resolve_guardrail_wiring_options(env)
     if not wiring.enabled or wiring.backend_slug is None:
         return None
     primary_slug = wiring.backend_slug
+    effective_opt_in = _resolve_lab_opt_in(env, primary_slug, lab_opt_in)
     secondary_slug = _resolve_secondary_slug(env, primary_slug)
     if secondary_slug:
         return create_chained_guardrail_backend(
@@ -66,10 +98,12 @@ def resolve_guardrail_backend(env: ApplicationEnvironmentProfile) -> LlmGuardrai
                 primary_slug: _provider_options_for_slug(env, primary_slug),
                 secondary_slug: _provider_options_for_slug(env, secondary_slug),
             },
+            lab_opt_in=effective_opt_in,
         )
     return create_guardrail_backend(
         primary_slug,
         provider_options=_provider_options_for_slug(env, primary_slug),
+        lab_opt_in=effective_opt_in,
     )
 
 

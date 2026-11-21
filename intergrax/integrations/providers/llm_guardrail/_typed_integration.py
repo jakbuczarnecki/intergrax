@@ -4,16 +4,15 @@
 
 from __future__ import annotations
 
-from pydantic import PrivateAttr
-
 from intergrax.integrations.contracts.base import IntegrationConfigurationError
 from intergrax.integrations.contracts.llm_guardrail import (
     GuardrailContext,
     GuardrailScanResult,
     LlmGuardrailBackend,
 )
-from intergrax.runtime.integrations.categories.ai import LlmGuardrailIntegrationContract
 from intergrax.runtime.integrations.categories._base import CategoryIntegrationConfig
+from intergrax.runtime.integrations.categories.ai import LlmGuardrailIntegrationContract
+from pydantic import PrivateAttr
 
 
 class GuardrailTypedIntegration(LlmGuardrailIntegrationContract):

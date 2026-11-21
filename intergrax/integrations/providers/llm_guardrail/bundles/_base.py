@@ -14,8 +14,20 @@ class BaseGuardrailAdapter:
         self,
         *,
         slug: str,
+        allow_pattern_fallback: bool = False,
     ) -> None:
         self._slug = slug
+        self._allow_pattern_fallback = allow_pattern_fallback
+
+    def _pattern_fallback(self, text: str, *, mode: str):
+        from intergrax.integrations.providers.llm_guardrail._pattern_policy import pattern_fallback_scan
+
+        return pattern_fallback_scan(
+            text,
+            mode=mode,
+            slug=self._slug,
+            allow_pattern_fallback=self._allow_pattern_fallback,
+        )
 
     @property
     def slug(self) -> str:

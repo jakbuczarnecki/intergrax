@@ -5,9 +5,12 @@
 
 from __future__ import annotations
 
+from collections.abc import Callable, Mapping
 from dataclasses import dataclass
-from typing import Callable, Mapping, Optional, Protocol, runtime_checkable
+from typing import Protocol, runtime_checkable
 
+from intergrax.core.security.security_configuration import INBOUND_VERIFIER_MISSING, SecurityConfigurationError
+from intergrax.integrations.contracts.base import LabSelectorOptIn
 from intergrax.runtime.interactions.adapter_contract import InteractionAdapter
 from intergrax.runtime.interactions.factory import create_interaction_adapter, intake_payload_to_task
 from intergrax.runtime.interactions.http_intake import parse_inbound_http_body
@@ -19,15 +22,14 @@ from intergrax.runtime.task.task import Task, TaskResult
 
 @runtime_checkable
 class TaskPreparationExecutor(TaskExecutor, Protocol):
-    def prepare(self, task: Task) -> Task:
-        ...
+    def prepare(self, task: Task) -> Task: ...
 
 
 @dataclass(frozen=True)
 class InteractionIntakeResult:
     task: Task
     executed: bool
-    result: Optional[TaskResult] = None
+    result: TaskResult | None = None
 
 
 class InteractionIntakeService:
@@ -36,13 +38,23 @@ class InteractionIntakeService:
     def __init__(
         self,
         *,
-        task_executor: Optional[TaskExecutor] = None,
-        adapter: Optional[InteractionAdapter] = None,
-        verifier: Optional[InboundRequestVerifier] = None,
-        task_enricher: Optional[Callable[[Task], Task]] = None,
+        task_executor: TaskExecutor | None = None,
+        adapter: InteractionAdapter | None = None,
+        verifier: InboundRequestVerifier | None = None,
+        task_enricher: Callable[[Task], Task] | None = None,
+        lab_opt_in: LabSelectorOptIn | None = None,
     ) -> None:
         self._adapter = adapter or create_interaction_adapter()
-        self._verifier = verifier or NullInboundRequestVerifier()
+        if verifier is None:
+            if lab_opt_in is None:
+                raise SecurityConfigurationError(
+                    item="inbound_verifier",
+                    reason_code=INBOUND_VERIFIER_MISSING,
+                    message="inbound request verifier is required",
+                )
+            self._verifier = NullInboundRequestVerifier()
+        else:
+            self._verifier = verifier
         self._task_executor = task_executor
         self._task_enricher = task_enricher
 
