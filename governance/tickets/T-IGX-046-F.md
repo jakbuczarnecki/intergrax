@@ -155,6 +155,17 @@ Operator decision **`waiver_both`** @ **2026-11-21** (coordinator chat): retroac
 | #680 | Track-only (no merge claim) |
 | PR | _(pending push — docs gates `ticket-governance` + `governance-policy-pin`)_ |
 
+## Checkpoint — EQO wave-6 (2026-11-21)
+
+| Field | Value |
+|-------|-------|
+| Integrator branch | `eqo/wave-6/integ` |
+| Base | `origin/development` `2061c6d3a` (post #700) |
+| Lane merged | `eqo/wave-6/exe-docs` — WB04 `2ab004c37`, WB06 `949a76b76`, WB09 `a13958b49` |
+| Deliverables | EXE logs + `RUN_MANIFEST.json` refresh; `EQO_WAVE6_MANIFEST.md`; README index row 32 |
+| WB06 | Non-zero pytest exit recorded; does **not** assert EQO closure |
+| PR | _(pending push — docs gates `ticket-governance` + `governance-policy-pin`)_ |
+
 ## Lifecycle state
 
 plan_approved
