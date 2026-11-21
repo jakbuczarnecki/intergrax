@@ -15,7 +15,7 @@
 
 | Lane | Branch | Worktree | Deliverable | Commit |
 |------|--------|----------|-------------|--------|
-| **G-W2** | `eqo/wave-8/w2` | `eqo-w8-w2` | W2-02 replay doc read; #680 track-only | `a8fde582c` |
+| **G-W2** | `eqo/wave-8/w2` | `eqo-w8-w2` | W2-02 replay doc read; #680 on rw-train, not on `development` | `a8fde582c` |
 | **G-X** | `eqo/wave-8/x` | `eqo-w8-x` | X WBS read memos English refresh | `fe3a92adc` |
 | **G-W9** | `eqo/wave-8/w9` | `eqo-w8-w9` | C01–C25 partial; W9-01 prep (no `EQO_CLOSED`) | `b53793858` |
 | **G-INT** | `eqo/wave-8/integ` | `eqo-wv-w8-integ` | This manifest, README index, lane merges, PR → `development` |

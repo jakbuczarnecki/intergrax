@@ -1,0 +1,1021 @@
+{
+  "schema": "eqo.doc_correction_log.v1",
+  "generated_at": "2026-11-21T12:50:06+00:00",
+  "development_pin": "a0598ba3e4f4f903eb4da3db8ea012d5cbf71225",
+  "train_pin": "8e146e21cd8c63a47d621edc05d5f0036ba0c9ee",
+  "total_count": 167,
+  "edited_count": 2,
+  "skipped_count": 165,
+  "entries": [
+    {
+      "obligation_id": "EDER-D-0009",
+      "owner_ref": null,
+      "outcome": "SKIP",
+      "reason": "cited doc paths present but factual correction not derivable from row text at development pin without owner reconciliation"
+    },
+    {
+      "obligation_id": "EDER-D-0010",
+      "owner_ref": null,
+      "outcome": "SKIP",
+      "reason": "cited doc paths present but factual correction not derivable from row text at development pin without owner reconciliation"
+    },
+    {
+      "obligation_id": "EDER-D-0013",
+      "owner_ref": "ENT-AUDIT-X",
+      "outcome": "SKIP",
+      "reason": "cited doc paths present but factual correction not derivable from row text at development pin without owner reconciliation"
+    },
+    {
+      "obligation_id": "EDER-D-0014",
+      "owner_ref": "ENT-AUDIT-X",
+      "outcome": "SKIP",
+      "reason": "cited doc paths present but factual correction not derivable from row text at development pin without owner reconciliation"
+    },
+    {
+      "obligation_id": "EDER-D-0015",
+      "owner_ref": "ENT-AUDIT-X",
+      "outcome": "SKIP",
+      "reason": "cited doc paths present but factual correction not derivable from row text at development pin without owner reconciliation"
+    },
+    {
+      "obligation_id": "EDER-D-0016",
+      "owner_ref": "OPERATOR",
+      "outcome": "SKIP",
+      "reason": "cited doc paths present but factual correction not derivable from row text at development pin without owner reconciliation"
+    },
+    {
+      "obligation_id": "EDER-D-0017",
+      "owner_ref": "ENT-AUDIT-X",
+      "outcome": "SKIP",
+      "reason": "cited doc paths present but factual correction not derivable from row text at development pin without owner reconciliation"
+    },
+    {
+      "obligation_id": "EDER-D-0018",
+      "owner_ref": "ENT-AUDIT-X",
+      "outcome": "SKIP",
+      "reason": "cited doc paths present but factual correction not derivable from row text at development pin without owner reconciliation"
+    },
+    {
+      "obligation_id": "EDER-D-0019",
+      "owner_ref": null,
+      "outcome": "SKIP",
+      "reason": "cited doc paths present but factual correction not derivable from row text at development pin without owner reconciliation"
+    },
+    {
+      "obligation_id": "EDER-D-0020",
+      "owner_ref": "ENT-AUDIT-X",
+      "outcome": "SKIP",
+      "reason": "cited doc paths present but factual correction not derivable from row text at development pin without owner reconciliation"
+    },
+    {
+      "obligation_id": "EDER-D-0021",
+      "owner_ref": "OPERATOR",
+      "outcome": "SKIP",
+      "reason": "cited doc paths present but factual correction not derivable from row text at development pin without owner reconciliation"
+    },
+    {
+      "obligation_id": "EDER-D-0023",
+      "owner_ref": "DOMAIN:OBSERVABILITY",
+      "outcome": "SKIP",
+      "reason": "cited doc paths present but factual correction not derivable from row text at development pin without owner reconciliation"
+    },
+    {
+      "obligation_id": "EDER-D-0024",
+      "owner_ref": "DOMAIN:OBSERVABILITY",
+      "outcome": "SKIP",
+      "reason": "cited doc paths present but factual correction not derivable from row text at development pin without owner reconciliation"
+    },
+    {
+      "obligation_id": "EDER-D-0025",
+      "owner_ref": "DOMAIN:OBSERVABILITY",
+      "outcome": "SKIP",
+      "reason": "cited doc paths present but factual correction not derivable from row text at development pin without owner reconciliation"
+    },
+    {
+      "obligation_id": "EDER-D-0026",
+      "owner_ref": "DOMAIN:OBSERVABILITY",
+      "outcome": "SKIP",
+      "reason": "cited doc paths present but factual correction not derivable from row text at development pin without owner reconciliation"
+    },
+    {
+      "obligation_id": "EDER-D-0029",
+      "owner_ref": "DOMAIN:OBSERVABILITY",
+      "outcome": "SKIP",
+      "reason": "cited doc paths present but factual correction not derivable from row text at development pin without owner reconciliation"
+    },
+    {
+      "obligation_id": "EDER-D-0030",
+      "owner_ref": "DOMAIN:OBSERVABILITY",
+      "outcome": "SKIP",
+      "reason": "cited doc paths present but factual correction not derivable from row text at development pin without owner reconciliation"
+    },
+    {
+      "obligation_id": "EDER-D-0033",
+      "owner_ref": "DOMAIN:OBSERVABILITY",
+      "outcome": "SKIP",
+      "reason": "cited doc paths present but factual correction not derivable from row text at development pin without owner reconciliation"
+    },
+    {
+      "obligation_id": "EDER-D-0034",
+      "owner_ref": "DOMAIN:OBSERVABILITY",
+      "outcome": "SKIP",
+      "reason": "cited doc paths present but factual correction not derivable from row text at development pin without owner reconciliation"
+    },
+    {
+      "obligation_id": "EDER-D-0087",
+      "owner_ref": "HIST-CAMPAIGN",
+      "outcome": "SKIP",
+      "reason": "cited doc paths present but factual correction not derivable from row text at development pin without owner reconciliation"
+    },
+    {
+      "obligation_id": "EDER-D-0088",
+      "owner_ref": "HIST-CAMPAIGN",
+      "outcome": "SKIP",
+      "reason": "cited doc paths present but factual correction not derivable from row text at development pin without owner reconciliation"
+    },
+    {
+      "obligation_id": "EDER-D-0089",
+      "owner_ref": "HIST-CAMPAIGN",
+      "outcome": "SKIP",
+      "reason": "cited doc paths present but factual correction not derivable from row text at development pin without owner reconciliation"
+    },
+    {
+      "obligation_id": "EDER-D-0090",
+      "owner_ref": "HIST-CAMPAIGN",
+      "outcome": "SKIP",
+      "reason": "cited doc paths present but factual correction not derivable from row text at development pin without owner reconciliation"
+    },
+    {
+      "obligation_id": "EDER-D-0091",
+      "owner_ref": "OPERATOR",
+      "outcome": "SKIP",
+      "reason": "cited doc paths present but factual correction not derivable from row text at development pin without owner reconciliation"
+    },
+    {
+      "obligation_id": "EDER-D-0092",
+      "owner_ref": "OPERATOR",
+      "outcome": "SKIP",
+      "reason": "cited doc paths present but factual correction not derivable from row text at development pin without owner reconciliation"
+    },
+    {
+      "obligation_id": "EDER-D-0097",
+      "owner_ref": "OPERATOR",
+      "outcome": "SKIP",
+      "reason": "cited doc paths present but factual correction not derivable from row text at development pin without owner reconciliation"
+    },
+    {
+      "obligation_id": "EDER-D-0099",
+      "owner_ref": "MCP-SERVER-X",
+      "outcome": "SKIP",
+      "reason": "cited doc paths present but factual correction not derivable from row text at development pin without owner reconciliation"
+    },
+    {
+      "obligation_id": "EDER-D-0104",
+      "owner_ref": "MCP-SERVER-X",
+      "outcome": "SKIP",
+      "reason": "cited doc paths present but factual correction not derivable from row text at development pin without owner reconciliation"
+    },
+    {
+      "obligation_id": "EDER-D-0107",
+      "owner_ref": "MCP-SERVER-X",
+      "outcome": "SKIP",
+      "reason": "cited doc paths present but factual correction not derivable from row text at development pin without owner reconciliation"
+    },
+    {
+      "obligation_id": "EDER-D-0109",
+      "owner_ref": "MCP-SERVER-X",
+      "outcome": "SKIP",
+      "reason": "cited doc paths present but factual correction not derivable from row text at development pin without owner reconciliation"
+    },
+    {
+      "obligation_id": "EDER-D-0110",
+      "owner_ref": "MCP-SERVER-X",
+      "outcome": "SKIP",
+      "reason": "cited doc paths present but factual correction not derivable from row text at development pin without owner reconciliation"
+    },
+    {
+      "obligation_id": "EDER-D-0112",
+      "owner_ref": "PDC-X:D7",
+      "outcome": "SKIP",
+      "reason": "cited doc paths present but factual correction not derivable from row text at development pin without owner reconciliation"
+    },
+    {
+      "obligation_id": "EDER-D-0113",
+      "owner_ref": "PDC-X:D1",
+      "outcome": "SKIP",
+      "reason": "cited doc paths present but factual correction not derivable from row text at development pin without owner reconciliation"
+    },
+    {
+      "obligation_id": "EDER-D-0114",
+      "owner_ref": "PDC-X:D1",
+      "outcome": "SKIP",
+      "reason": "cited doc paths present but factual correction not derivable from row text at development pin without owner reconciliation"
+    },
+    {
+      "obligation_id": "EDER-D-0115",
+      "owner_ref": "PDC-X:D1",
+      "outcome": "SKIP",
+      "reason": "cited doc paths present but factual correction not derivable from row text at development pin without owner reconciliation"
+    },
+    {
+      "obligation_id": "EDER-D-0116",
+      "owner_ref": "PDC-X:D1",
+      "outcome": "SKIP",
+      "reason": "cited doc paths present but factual correction not derivable from row text at development pin without owner reconciliation"
+    },
+    {
+      "obligation_id": "EDER-D-0117",
+      "owner_ref": "PDC-X:D1",
+      "outcome": "SKIP",
+      "reason": "cited doc paths present but factual correction not derivable from row text at development pin without owner reconciliation"
+    },
+    {
+      "obligation_id": "EDER-D-0118",
+      "owner_ref": "PDC-X:D2",
+      "outcome": "SKIP",
+      "reason": "cited doc paths present but factual correction not derivable from row text at development pin without owner reconciliation"
+    },
+    {
+      "obligation_id": "EDER-D-0119",
+      "owner_ref": "PDC-X:D2",
+      "outcome": "SKIP",
+      "reason": "cited doc paths present but factual correction not derivable from row text at development pin without owner reconciliation"
+    },
+    {
+      "obligation_id": "EDER-D-0120",
+      "owner_ref": "PDC-X:D2",
+      "outcome": "SKIP",
+      "reason": "cited doc paths present but factual correction not derivable from row text at development pin without owner reconciliation"
+    },
+    {
+      "obligation_id": "EDER-D-0121",
+      "owner_ref": "PDC-X:D3",
+      "outcome": "SKIP",
+      "reason": "cited doc paths present but factual correction not derivable from row text at development pin without owner reconciliation"
+    },
+    {
+      "obligation_id": "EDER-D-0122",
+      "owner_ref": "PDC-X:D3",
+      "outcome": "SKIP",
+      "reason": "cited doc paths present but factual correction not derivable from row text at development pin without owner reconciliation"
+    },
+    {
+      "obligation_id": "EDER-D-0123",
+      "owner_ref": "PDC-X:D4",
+      "outcome": "SKIP",
+      "reason": "cited doc paths present but factual correction not derivable from row text at development pin without owner reconciliation"
+    },
+    {
+      "obligation_id": "EDER-D-0124",
+      "owner_ref": "PDC-X:D4",
+      "outcome": "SKIP",
+      "reason": "cited doc paths present but factual correction not derivable from row text at development pin without owner reconciliation"
+    },
+    {
+      "obligation_id": "EDER-D-0125",
+      "owner_ref": "PDC-X:D4",
+      "outcome": "SKIP",
+      "reason": "cited doc paths present but factual correction not derivable from row text at development pin without owner reconciliation"
+    },
+    {
+      "obligation_id": "EDER-D-0126",
+      "owner_ref": "PDC-X:D5",
+      "outcome": "SKIP",
+      "reason": "cited doc paths present but factual correction not derivable from row text at development pin without owner reconciliation"
+    },
+    {
+      "obligation_id": "EDER-D-0127",
+      "owner_ref": "PDC-X:D5",
+      "outcome": "SKIP",
+      "reason": "cited doc paths present but factual correction not derivable from row text at development pin without owner reconciliation"
+    },
+    {
+      "obligation_id": "EDER-D-0128",
+      "owner_ref": "PDC-X:D5",
+      "outcome": "SKIP",
+      "reason": "cited doc paths present but factual correction not derivable from row text at development pin without owner reconciliation"
+    },
+    {
+      "obligation_id": "EDER-D-0129",
+      "owner_ref": "PDC-X:D5",
+      "outcome": "SKIP",
+      "reason": "cited doc paths present but factual correction not derivable from row text at development pin without owner reconciliation"
+    },
+    {
+      "obligation_id": "EDER-D-0130",
+      "owner_ref": "PDC-X:D5",
+      "outcome": "SKIP",
+      "reason": "cited doc paths present but factual correction not derivable from row text at development pin without owner reconciliation"
+    },
+    {
+      "obligation_id": "EDER-D-0131",
+      "owner_ref": "PDC-X:D6",
+      "outcome": "SKIP",
+      "reason": "cited doc paths present but factual correction not derivable from row text at development pin without owner reconciliation"
+    },
+    {
+      "obligation_id": "EDER-D-0132",
+      "owner_ref": "PDC-X:D6",
+      "outcome": "SKIP",
+      "reason": "cited doc paths present but factual correction not derivable from row text at development pin without owner reconciliation"
+    },
+    {
+      "obligation_id": "EDER-D-0133",
+      "owner_ref": "PDC-X:D6",
+      "outcome": "SKIP",
+      "reason": "cited doc paths present but factual correction not derivable from row text at development pin without owner reconciliation"
+    },
+    {
+      "obligation_id": "EDER-D-0134",
+      "owner_ref": "PDC-X:D6",
+      "outcome": "SKIP",
+      "reason": "cited doc paths present but factual correction not derivable from row text at development pin without owner reconciliation"
+    },
+    {
+      "obligation_id": "EDER-D-0135",
+      "owner_ref": "PDC-X:D6",
+      "outcome": "SKIP",
+      "reason": "cited doc paths present but factual correction not derivable from row text at development pin without owner reconciliation"
+    },
+    {
+      "obligation_id": "EDER-D-0136",
+      "owner_ref": "PDC-X:D6",
+      "outcome": "SKIP",
+      "reason": "cited doc paths present but factual correction not derivable from row text at development pin without owner reconciliation"
+    },
+    {
+      "obligation_id": "EDER-D-0137",
+      "owner_ref": "PDC-X:D7",
+      "outcome": "SKIP",
+      "reason": "cited doc paths present but factual correction not derivable from row text at development pin without owner reconciliation"
+    },
+    {
+      "obligation_id": "EDER-D-0138",
+      "owner_ref": "PDC-X:D7",
+      "outcome": "SKIP",
+      "reason": "cited doc paths present but factual correction not derivable from row text at development pin without owner reconciliation"
+    },
+    {
+      "obligation_id": "EDER-D-0139",
+      "owner_ref": "PDC-X:D7",
+      "outcome": "SKIP",
+      "reason": "cited doc paths present but factual correction not derivable from row text at development pin without owner reconciliation"
+    },
+    {
+      "obligation_id": "EDER-D-0140",
+      "owner_ref": "PDC-X:D7",
+      "outcome": "SKIP",
+      "reason": "cited doc paths present but factual correction not derivable from row text at development pin without owner reconciliation"
+    },
+    {
+      "obligation_id": "EDER-D-0141",
+      "owner_ref": "PDC-X:D7",
+      "outcome": "SKIP",
+      "reason": "cited doc paths present but factual correction not derivable from row text at development pin without owner reconciliation"
+    },
+    {
+      "obligation_id": "EDER-D-0142",
+      "owner_ref": "PDC-X:D8",
+      "outcome": "SKIP",
+      "reason": "cited doc paths present but factual correction not derivable from row text at development pin without owner reconciliation"
+    },
+    {
+      "obligation_id": "EDER-D-0143",
+      "owner_ref": "PDC-X:D8",
+      "outcome": "SKIP",
+      "reason": "cited doc paths present but factual correction not derivable from row text at development pin without owner reconciliation"
+    },
+    {
+      "obligation_id": "EDER-D-0144",
+      "owner_ref": "PDC-X:D8",
+      "outcome": "SKIP",
+      "reason": "cited doc paths present but factual correction not derivable from row text at development pin without owner reconciliation"
+    },
+    {
+      "obligation_id": "EDER-D-0145",
+      "owner_ref": "PDC-X:D8",
+      "outcome": "SKIP",
+      "reason": "cited doc paths present but factual correction not derivable from row text at development pin without owner reconciliation"
+    },
+    {
+      "obligation_id": "EDER-D-0146",
+      "owner_ref": "PDC-X:D8",
+      "outcome": "SKIP",
+      "reason": "cited doc paths present but factual correction not derivable from row text at development pin without owner reconciliation"
+    },
+    {
+      "obligation_id": "EDER-D-0147",
+      "owner_ref": "PDC-X:D8",
+      "outcome": "SKIP",
+      "reason": "cited doc paths present but factual correction not derivable from row text at development pin without owner reconciliation"
+    },
+    {
+      "obligation_id": "EDER-D-0148",
+      "owner_ref": "PDC-X:D8",
+      "outcome": "SKIP",
+      "reason": "cited doc paths present but factual correction not derivable from row text at development pin without owner reconciliation"
+    },
+    {
+      "obligation_id": "EDER-D-0149",
+      "owner_ref": "PDC-X:D8",
+      "outcome": "SKIP",
+      "reason": "cited doc paths present but factual correction not derivable from row text at development pin without owner reconciliation"
+    },
+    {
+      "obligation_id": "EDER-D-0150",
+      "owner_ref": "PDC-X:D8",
+      "outcome": "SKIP",
+      "reason": "cited doc paths present but factual correction not derivable from row text at development pin without owner reconciliation"
+    },
+    {
+      "obligation_id": "EDER-D-0151",
+      "owner_ref": "PDC-X:D8",
+      "outcome": "SKIP",
+      "reason": "cited doc paths present but factual correction not derivable from row text at development pin without owner reconciliation"
+    },
+    {
+      "obligation_id": "EDER-D-0152",
+      "owner_ref": "PDC-X:D1",
+      "outcome": "SKIP",
+      "reason": "cited doc paths present but factual correction not derivable from row text at development pin without owner reconciliation"
+    },
+    {
+      "obligation_id": "EDER-D-0153",
+      "owner_ref": "PDC-X:D7",
+      "outcome": "SKIP",
+      "reason": "cited doc paths present but factual correction not derivable from row text at development pin without owner reconciliation"
+    },
+    {
+      "obligation_id": "EDER-D-0154",
+      "owner_ref": "PDC-X:D7",
+      "outcome": "SKIP",
+      "reason": "cited doc paths present but factual correction not derivable from row text at development pin without owner reconciliation"
+    },
+    {
+      "obligation_id": "EDER-F-0009",
+      "owner_ref": "OPERATOR",
+      "outcome": "EDIT",
+      "reason": "factual correction applied at development pin",
+      "files_touched": [
+        "docs/project/maintainers/plans/PLATFORM_ENTERPRISE_COMPLETION_ROADMAP.md"
+      ]
+    },
+    {
+      "obligation_id": "EDER-F-0010",
+      "owner_ref": "PROD-Q",
+      "outcome": "SKIP",
+      "reason": "closure_condition does not name a concrete repo file"
+    },
+    {
+      "obligation_id": "EDER-F-0011",
+      "owner_ref": "TRACE-X",
+      "outcome": "SKIP",
+      "reason": "cited doc paths present but factual correction not derivable from row text at development pin without owner reconciliation"
+    },
+    {
+      "obligation_id": "EDER-F-0012",
+      "owner_ref": "OPERATOR",
+      "outcome": "SKIP",
+      "reason": "cited doc paths present but factual correction not derivable from row text at development pin without owner reconciliation"
+    },
+    {
+      "obligation_id": "EDER-F-0013",
+      "owner_ref": "OPERATOR",
+      "outcome": "SKIP",
+      "reason": "cited doc paths present but factual correction not derivable from row text at development pin without owner reconciliation"
+    },
+    {
+      "obligation_id": "EDER-F-0014",
+      "owner_ref": "OPERATOR",
+      "outcome": "SKIP",
+      "reason": "cited doc paths present but factual correction not derivable from row text at development pin without owner reconciliation"
+    },
+    {
+      "obligation_id": "EDER-F-0017",
+      "owner_ref": "HARNESS",
+      "outcome": "SKIP",
+      "reason": "closure_condition does not name a concrete repo file"
+    },
+    {
+      "obligation_id": "EDER-F-0018",
+      "owner_ref": "ARCH-FREEZE",
+      "outcome": "SKIP",
+      "reason": "closure_condition does not name a concrete repo file"
+    },
+    {
+      "obligation_id": "EDER-F-0021",
+      "owner_ref": "PROD-Q",
+      "outcome": "SKIP",
+      "reason": "cited doc paths present but factual correction not derivable from row text at development pin without owner reconciliation"
+    },
+    {
+      "obligation_id": "EDER-F-0022",
+      "owner_ref": "PROD-Q",
+      "outcome": "SKIP",
+      "reason": "cited doc paths present but factual correction not derivable from row text at development pin without owner reconciliation"
+    },
+    {
+      "obligation_id": "EDER-F-0027",
+      "owner_ref": "EBH-6",
+      "outcome": "SKIP",
+      "reason": "cited doc paths present but factual correction not derivable from row text at development pin without owner reconciliation"
+    },
+    {
+      "obligation_id": "EDER-F-0028",
+      "owner_ref": "PDC-X",
+      "outcome": "SKIP",
+      "reason": "cited doc paths present but factual correction not derivable from row text at development pin without owner reconciliation"
+    },
+    {
+      "obligation_id": "EDER-F-0029",
+      "owner_ref": "ARCH-FREEZE",
+      "outcome": "SKIP",
+      "reason": "closure_condition does not name a concrete repo file"
+    },
+    {
+      "obligation_id": "EDER-F-0030",
+      "owner_ref": "OPERATOR",
+      "outcome": "SKIP",
+      "reason": "cited doc paths present but factual correction not derivable from row text at development pin without owner reconciliation"
+    },
+    {
+      "obligation_id": "EDER-F-0031",
+      "owner_ref": "DOMAIN:AW-7C-INTEGRATIONS",
+      "outcome": "SKIP",
+      "reason": "required change would add new design or Campaign B artefact"
+    },
+    {
+      "obligation_id": "EDER-F-0032",
+      "owner_ref": "DOMAIN:GOVERNANCE",
+      "outcome": "SKIP",
+      "reason": "cited doc paths present but factual correction not derivable from row text at development pin without owner reconciliation"
+    },
+    {
+      "obligation_id": "EDER-F-0036",
+      "owner_ref": "IIAC-GOV-1",
+      "outcome": "SKIP",
+      "reason": "required allowlist/index change is governance script policy, not a single factual doc line"
+    },
+    {
+      "obligation_id": "EDER-F-0037",
+      "owner_ref": "ARCH-FREEZE",
+      "outcome": "SKIP",
+      "reason": "cited doc paths present but factual correction not derivable from row text at development pin without owner reconciliation"
+    },
+    {
+      "obligation_id": "EDER-F-0040",
+      "owner_ref": "DOMAIN:AW-7C-INTEGRATIONS",
+      "outcome": "SKIP",
+      "reason": "cited doc paths present but factual correction not derivable from row text at development pin without owner reconciliation"
+    },
+    {
+      "obligation_id": "EDER-F-0041",
+      "owner_ref": "OPERATOR",
+      "outcome": "SKIP",
+      "reason": "cited doc paths present but factual correction not derivable from row text at development pin without owner reconciliation"
+    },
+    {
+      "obligation_id": "EDER-F-0042",
+      "owner_ref": "DOMAIN:INTEGRATIONS",
+      "outcome": "SKIP",
+      "reason": "no concrete repo file in closure_condition or source_evidence"
+    },
+    {
+      "obligation_id": "EDER-F-0044",
+      "owner_ref": "ARCH-FREEZE",
+      "outcome": "SKIP",
+      "reason": "cited doc paths present but factual correction not derivable from row text at development pin without owner reconciliation"
+    },
+    {
+      "obligation_id": "EDER-F-0045",
+      "owner_ref": "ARCH-FREEZE",
+      "outcome": "SKIP",
+      "reason": "closure_condition does not name a concrete repo file"
+    },
+    {
+      "obligation_id": "EDER-F-0046",
+      "owner_ref": "PDC-X",
+      "outcome": "SKIP",
+      "reason": "cited doc paths present but factual correction not derivable from row text at development pin without owner reconciliation"
+    },
+    {
+      "obligation_id": "EDER-F-0048",
+      "owner_ref": "SCENARIO-FACTORY-X",
+      "outcome": "SKIP",
+      "reason": "cited doc paths present but factual correction not derivable from row text at development pin without owner reconciliation"
+    },
+    {
+      "obligation_id": "EDER-F-0051",
+      "owner_ref": "ARCH-FREEZE",
+      "outcome": "SKIP",
+      "reason": "cited doc paths present but factual correction not derivable from row text at development pin without owner reconciliation"
+    },
+    {
+      "obligation_id": "EDER-F-0055",
+      "owner_ref": "QUAL-X",
+      "outcome": "SKIP",
+      "reason": "closure_condition does not name a concrete repo file"
+    },
+    {
+      "obligation_id": "EDER-F-0057",
+      "owner_ref": "TOOL-LIFE-X",
+      "outcome": "SKIP",
+      "reason": "cited doc paths present but factual correction not derivable from row text at development pin without owner reconciliation"
+    },
+    {
+      "obligation_id": "EDER-F-0058",
+      "owner_ref": "EBH-6",
+      "outcome": "SKIP",
+      "reason": "closure_condition does not name a concrete repo file"
+    },
+    {
+      "obligation_id": "EDER-F-0061",
+      "owner_ref": "ARCH-FREEZE",
+      "outcome": "SKIP",
+      "reason": "cited doc paths present but factual correction not derivable from row text at development pin without owner reconciliation"
+    },
+    {
+      "obligation_id": "EDER-F-0062",
+      "owner_ref": "OPERATOR",
+      "outcome": "SKIP",
+      "reason": "cited doc paths present but factual correction not derivable from row text at development pin without owner reconciliation"
+    },
+    {
+      "obligation_id": "EDER-F-0065",
+      "owner_ref": "ENT-AUDIT-X",
+      "outcome": "SKIP",
+      "reason": "cited doc paths present but factual correction not derivable from row text at development pin without owner reconciliation"
+    },
+    {
+      "obligation_id": "EDER-F-0068",
+      "owner_ref": "OPERATOR",
+      "outcome": "SKIP",
+      "reason": "cited doc paths present but factual correction not derivable from row text at development pin without owner reconciliation"
+    },
+    {
+      "obligation_id": "EDER-F-0073",
+      "owner_ref": "HARNESS",
+      "outcome": "SKIP",
+      "reason": "cited doc paths present but factual correction not derivable from row text at development pin without owner reconciliation"
+    },
+    {
+      "obligation_id": "EDER-F-0074",
+      "owner_ref": "HARNESS",
+      "outcome": "SKIP",
+      "reason": "cited doc paths present but factual correction not derivable from row text at development pin without owner reconciliation"
+    },
+    {
+      "obligation_id": "EDER-F-0075",
+      "owner_ref": "HARNESS",
+      "outcome": "SKIP",
+      "reason": "cited doc paths present but factual correction not derivable from row text at development pin without owner reconciliation"
+    },
+    {
+      "obligation_id": "EDER-F-0081",
+      "owner_ref": "ARCH-FREEZE",
+      "outcome": "SKIP",
+      "reason": "cited doc paths present but factual correction not derivable from row text at development pin without owner reconciliation"
+    },
+    {
+      "obligation_id": "EDER-F-0082",
+      "owner_ref": "ARCH-FREEZE",
+      "outcome": "SKIP",
+      "reason": "cited doc paths present but factual correction not derivable from row text at development pin without owner reconciliation"
+    },
+    {
+      "obligation_id": "EDER-F-0083",
+      "owner_ref": "PDC-X",
+      "outcome": "SKIP",
+      "reason": "cited doc paths present but factual correction not derivable from row text at development pin without owner reconciliation"
+    },
+    {
+      "obligation_id": "EDER-F-0085",
+      "owner_ref": "ARCH-FREEZE",
+      "outcome": "SKIP",
+      "reason": "cited doc paths present but factual correction not derivable from row text at development pin without owner reconciliation"
+    },
+    {
+      "obligation_id": "EDER-F-0086",
+      "owner_ref": "ARCH-FREEZE",
+      "outcome": "SKIP",
+      "reason": "cited doc paths present but factual correction not derivable from row text at development pin without owner reconciliation"
+    },
+    {
+      "obligation_id": "EDER-F-0089",
+      "owner_ref": "ARCH-FREEZE",
+      "outcome": "SKIP",
+      "reason": "cited doc paths present but factual correction not derivable from row text at development pin without owner reconciliation"
+    },
+    {
+      "obligation_id": "EDER-F-0095",
+      "owner_ref": "OPERATOR",
+      "outcome": "SKIP",
+      "reason": "cited doc paths present but factual correction not derivable from row text at development pin without owner reconciliation"
+    },
+    {
+      "obligation_id": "EDER-F-0097",
+      "owner_ref": "HARNESS",
+      "outcome": "SKIP",
+      "reason": "cited doc paths present but factual correction not derivable from row text at development pin without owner reconciliation"
+    },
+    {
+      "obligation_id": "EDER-F-0100",
+      "owner_ref": "ARCH-FREEZE",
+      "outcome": "SKIP",
+      "reason": "cited doc paths present but factual correction not derivable from row text at development pin without owner reconciliation"
+    },
+    {
+      "obligation_id": "EDER-F-0103",
+      "owner_ref": "QUAL-X",
+      "outcome": "SKIP",
+      "reason": "cited doc paths present but factual correction not derivable from row text at development pin without owner reconciliation"
+    },
+    {
+      "obligation_id": "EDER-F-0104",
+      "owner_ref": "CTRL-X",
+      "outcome": "SKIP",
+      "reason": "cited doc paths present but factual correction not derivable from row text at development pin without owner reconciliation"
+    },
+    {
+      "obligation_id": "EDER-F-0108",
+      "owner_ref": "ARCH-FREEZE",
+      "outcome": "SKIP",
+      "reason": "cited doc paths present but factual correction not derivable from row text at development pin without owner reconciliation"
+    },
+    {
+      "obligation_id": "EDER-F-0109",
+      "owner_ref": "ARCH-FREEZE",
+      "outcome": "SKIP",
+      "reason": "cited doc paths present but factual correction not derivable from row text at development pin without owner reconciliation"
+    },
+    {
+      "obligation_id": "EDER-F-0119",
+      "owner_ref": "DOMAIN:GOVERNANCE",
+      "outcome": "SKIP",
+      "reason": "cited doc paths present but factual correction not derivable from row text at development pin without owner reconciliation"
+    },
+    {
+      "obligation_id": "EDER-F-0123",
+      "owner_ref": "DOMAIN:AGENT-CONTRACTS",
+      "outcome": "SKIP",
+      "reason": "closure_condition does not name a concrete repo file"
+    },
+    {
+      "obligation_id": "EDER-F-0130",
+      "owner_ref": "MCP-SERVER-X",
+      "outcome": "SKIP",
+      "reason": "cited doc paths present but factual correction not derivable from row text at development pin without owner reconciliation"
+    },
+    {
+      "obligation_id": "EDER-F-0131",
+      "owner_ref": "DOMAIN:TOOLS",
+      "outcome": "SKIP",
+      "reason": "cited doc paths present but factual correction not derivable from row text at development pin without owner reconciliation"
+    },
+    {
+      "obligation_id": "EDER-F-0132",
+      "owner_ref": "DOMAIN:PLATFORM-PLUGINS",
+      "outcome": "SKIP",
+      "reason": "closure_condition does not name a concrete repo file"
+    },
+    {
+      "obligation_id": "EDER-F-0137",
+      "owner_ref": "ARCH-FREEZE",
+      "outcome": "SKIP",
+      "reason": "closure_condition does not name a concrete repo file"
+    },
+    {
+      "obligation_id": "EDER-F-0138",
+      "owner_ref": "DOMAIN:MEMORY",
+      "outcome": "SKIP",
+      "reason": "closure_condition does not name a concrete repo file"
+    },
+    {
+      "obligation_id": "EDER-F-0142",
+      "owner_ref": "ARCH-FREEZE",
+      "outcome": "SKIP",
+      "reason": "closure_condition does not name a concrete repo file"
+    },
+    {
+      "obligation_id": "EDER-F-0147",
+      "owner_ref": "EVOL-X",
+      "outcome": "SKIP",
+      "reason": "closure_condition does not name a concrete repo file"
+    },
+    {
+      "obligation_id": "EDER-F-0148",
+      "owner_ref": "PDC-X:D8",
+      "outcome": "SKIP",
+      "reason": "closure_condition does not name a concrete repo file"
+    },
+    {
+      "obligation_id": "EDER-F-0150",
+      "owner_ref": "ARCH-FREEZE",
+      "outcome": "SKIP",
+      "reason": "closure_condition does not name a concrete repo file"
+    },
+    {
+      "obligation_id": "EDER-F-0156",
+      "owner_ref": "SCENARIO-FACTORY-X",
+      "outcome": "SKIP",
+      "reason": "required change would add new design or Campaign B artefact"
+    },
+    {
+      "obligation_id": "EDER-F-0160",
+      "owner_ref": "HARNESS",
+      "outcome": "SKIP",
+      "reason": "cited doc paths present but factual correction not derivable from row text at development pin without owner reconciliation"
+    },
+    {
+      "obligation_id": "EDER-F-0161",
+      "owner_ref": "DOMAIN:TOOLS",
+      "outcome": "SKIP",
+      "reason": "no concrete repo file in closure_condition or source_evidence"
+    },
+    {
+      "obligation_id": "EDER-F-0164",
+      "owner_ref": "ARCH-FREEZE",
+      "outcome": "SKIP",
+      "reason": "no concrete repo file in closure_condition or source_evidence"
+    },
+    {
+      "obligation_id": "EDER-F-0170",
+      "owner_ref": "PRE-ENT",
+      "outcome": "SKIP",
+      "reason": "cited doc paths present but factual correction not derivable from row text at development pin without owner reconciliation"
+    },
+    {
+      "obligation_id": "EDER-F-0180",
+      "owner_ref": "ENT-AUDIT-X",
+      "outcome": "SKIP",
+      "reason": "closure_condition does not name a concrete repo file"
+    },
+    {
+      "obligation_id": "EDER-F-0181",
+      "owner_ref": "ARCH-FREEZE",
+      "outcome": "SKIP",
+      "reason": "closure_condition does not name a concrete repo file"
+    },
+    {
+      "obligation_id": "EDER-F-0183",
+      "owner_ref": null,
+      "outcome": "SKIP",
+      "reason": "closure_condition does not name a concrete repo file"
+    },
+    {
+      "obligation_id": "EDER-F-0185",
+      "owner_ref": "EBH-6",
+      "outcome": "SKIP",
+      "reason": "closure_condition does not name a concrete repo file"
+    },
+    {
+      "obligation_id": "EDER-F-0190",
+      "owner_ref": "DUP-X",
+      "outcome": "SKIP",
+      "reason": "closure_condition does not name a concrete repo file"
+    },
+    {
+      "obligation_id": "EDER-F-0191",
+      "owner_ref": "PDC-X",
+      "outcome": "SKIP",
+      "reason": "closure_condition requires operator batch, register refresh, or new design"
+    },
+    {
+      "obligation_id": "EDER-F-0195",
+      "owner_ref": "PDC-X:D1",
+      "outcome": "SKIP",
+      "reason": "closure_condition requires operator batch, register refresh, or new design"
+    },
+    {
+      "obligation_id": "EDER-F-0199",
+      "owner_ref": "TRACE-X",
+      "outcome": "SKIP",
+      "reason": "closure_condition does not name a concrete repo file"
+    },
+    {
+      "obligation_id": "EDER-F-0201",
+      "owner_ref": "MCP-SERVER-X",
+      "outcome": "SKIP",
+      "reason": "closure_condition does not name a concrete repo file"
+    },
+    {
+      "obligation_id": "EDER-F-0203",
+      "owner_ref": "HIST-CAMPAIGN",
+      "outcome": "SKIP",
+      "reason": "closure_condition does not name a concrete repo file"
+    },
+    {
+      "obligation_id": "EDER-F-0205",
+      "owner_ref": "OPERATOR",
+      "outcome": "SKIP",
+      "reason": "closure_condition does not name a concrete repo file"
+    },
+    {
+      "obligation_id": "EDER-F-0211",
+      "owner_ref": "EBH-6",
+      "outcome": "SKIP",
+      "reason": "closure_condition does not name a concrete repo file"
+    },
+    {
+      "obligation_id": "EDER-F-0212",
+      "owner_ref": "OPERATOR",
+      "outcome": "SKIP",
+      "reason": "closure_condition requires operator batch, register refresh, or new design"
+    },
+    {
+      "obligation_id": "EDER-F-0213",
+      "owner_ref": "OPERATOR",
+      "outcome": "SKIP",
+      "reason": "closure_condition requires operator batch, register refresh, or new design"
+    },
+    {
+      "obligation_id": "EDER-F-0214",
+      "owner_ref": "OPERATOR",
+      "outcome": "SKIP",
+      "reason": "closure_condition requires operator batch, register refresh, or new design"
+    },
+    {
+      "obligation_id": "EDER-F-0216",
+      "owner_ref": "QUAL-X",
+      "outcome": "SKIP",
+      "reason": "closure_condition requires operator batch, register refresh, or new design"
+    },
+    {
+      "obligation_id": "EDER-F-0217",
+      "owner_ref": "PDC-X:D5",
+      "outcome": "EDIT",
+      "reason": "factual correction applied at development pin",
+      "files_touched": [
+        "docs/project/maintainers/qualification/PLATFORM_ENTERPRISE_FREEZE_ACCEPTANCE_CHECKLIST.md",
+        "docs/project/architecture/CRITIC_VERIFICATION.md",
+        "docs/project/technical/guides/AGENT_INSTRUCTIONS.md"
+      ]
+    },
+    {
+      "obligation_id": "EDER-F-0221",
+      "owner_ref": "PDC-X:D1",
+      "outcome": "SKIP",
+      "reason": "cited doc paths present but factual correction not derivable from row text at development pin without owner reconciliation"
+    },
+    {
+      "obligation_id": "EDER-F-0223",
+      "owner_ref": "OPERATOR",
+      "outcome": "SKIP",
+      "reason": "cited doc paths present but factual correction not derivable from row text at development pin without owner reconciliation"
+    },
+    {
+      "obligation_id": "EDER-F-0224",
+      "owner_ref": "OPERATOR",
+      "outcome": "SKIP",
+      "reason": "closure_condition does not name a concrete repo file"
+    },
+    {
+      "obligation_id": "EDER-F-0225",
+      "owner_ref": "OPERATOR",
+      "outcome": "SKIP",
+      "reason": "closure_condition does not name a concrete repo file"
+    },
+    {
+      "obligation_id": "EDER-F-0226",
+      "owner_ref": "OPERATOR",
+      "outcome": "SKIP",
+      "reason": "closure_condition does not name a concrete repo file"
+    },
+    {
+      "obligation_id": "EDER-F-0227",
+      "owner_ref": "COMPAT-X",
+      "outcome": "SKIP",
+      "reason": "closure_condition does not name a concrete repo file"
+    },
+    {
+      "obligation_id": "EDER-F-0231",
+      "owner_ref": "OPERATOR",
+      "outcome": "SKIP",
+      "reason": "closure_condition does not name a concrete repo file"
+    },
+    {
+      "obligation_id": "EDER-F-0232",
+      "owner_ref": null,
+      "outcome": "SKIP",
+      "reason": "closure_condition does not name a concrete repo file"
+    },
+    {
+      "obligation_id": "EDER-F-0234",
+      "owner_ref": "EVOL-X",
+      "outcome": "SKIP",
+      "reason": "closure_condition does not name a concrete repo file"
+    },
+    {
+      "obligation_id": "EDER-F-0235",
+      "owner_ref": null,
+      "outcome": "SKIP",
+      "reason": "closure_condition does not name a concrete repo file"
+    },
+    {
+      "obligation_id": "EDER-F-0239",
+      "owner_ref": null,
+      "outcome": "SKIP",
+      "reason": "closure_condition does not name a concrete repo file"
+    }
+  ]
+}

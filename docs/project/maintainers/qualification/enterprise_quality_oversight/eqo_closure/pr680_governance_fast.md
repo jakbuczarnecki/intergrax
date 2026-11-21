@@ -38,4 +38,4 @@ Re-run `governance-fast` at merge commit **after** RB-2 / IIAC activation (band 
 
 **Wave-8:** English-only refresh · lane `eqo/wave-8/x` · land `569254840` · `Ref: governance/tickets/T-IGX-046-F.md`
 
-**Wave-12:** track-only refresh · land `292ca3348` (PR #704) · #680 still not on `TRAIN_PIN` · lane `eqo/wave-12/x` · `Ref: governance/tickets/T-IGX-046-F.md`
+**Wave-12:** docs refresh · land `292ca3348` (PR #704) · #680 merge `65ef1f196` ancestor of `origin/arch-freeze/rw-train` @ `8e146e21` via `dbaebfa8`; not on `development` @ `a0598ba3` · lane `eqo/wave-12/x` · `Ref: governance/tickets/T-IGX-046-F.md`

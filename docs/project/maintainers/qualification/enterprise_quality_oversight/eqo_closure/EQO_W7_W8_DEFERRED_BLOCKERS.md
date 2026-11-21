@@ -25,9 +25,9 @@
 
 ## Exact blockers for program closure
 
-1. #680 / T-IGX-043-A not on train (`EQO-W2-01`).  
+1. #680 merge `65ef1f196` on `origin/arch-freeze/rw-train` @ `8e146e21` via parent `dbaebfa8`; not on `development` @ `a0598ba3` — C16 `NOT_VERIFIED` (green replay still missing).  
 2. Severity BLOCKER open: A2-002, A4-003 (`EQO-X-01/02`).  
-3. IIAC not `IN_FORCE` on train (`WB01` pytest, `X-03`).  
+3. `IIAC_POLICY_ACTIVATION_RECORD.json` is `IN_FORCE` (not EQO certification, not FRZ promotion); EQO-X-03 / WB01 pytest downgrade path still `BLOCKED` until RB-2.  
 4. Campaign B DIS/AUD incomplete (WB02–WB12).  
 5. EDER mechanical triage not applied (`EQO-E-02` report only).
 

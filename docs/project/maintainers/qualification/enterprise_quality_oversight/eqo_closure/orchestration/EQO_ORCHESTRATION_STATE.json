@@ -1,0 +1,246 @@
+{
+    "schema":  "eqo.orchestration_state.v1",
+    "updated_at":  "2026-11-21T14:25:00+00:00",
+    "operator_merge_rule":  {
+                                "recorded_at":  "2026-11-21T15:05:00+00:00",
+                                "development_pin":  "a0598ba3e4f4f903eb4da3db8ea012d5cbf71225",
+                                "text":  "Feature branches are cut from origin/development (a0598ba3) and integrate only to development via operator push/PR. Do not merge feature branches into each other, into other eqo/* branches, or into arch-freeze/rw-train (8e146e21). Unique commits that were made on train-based eqo/* branches are replayed onto new development-based branches (cherry-pick of feature commits only); the train line itself is not merged into development (FCS). Train-based branches with zero unique commits remain replay evidence only."
+                            },
+    "development_branch_replay":  {
+                                      "recorded_at":  "2026-11-21T15:05:00+00:00",
+                                      "development_pin":  "a0598ba3e4f4f903eb4da3db8ea012d5cbf71225",
+                                      "train_pin_excluded":  "8e146e21cd8c63a47d621edc05d5f0036ba0c9ee",
+                                      "replays":  [
+                                                      {
+                                                          "source_branch":  "eqo/w2-a4-027",
+                                                          "unique_commits":  [
+                                                                                 "9c909d96b",
+                                                                                 "06604af53"
+                                                                             ],
+                                                          "development_branch":  "eqo/dev-a4-027",
+                                                          "development_head":  "537a06296d40b55458b08878f9180c393b607a07",
+                                                          "worktree":  "D:\\Projekty\\_wt\\intergrax\\eqo-dev-a4027",
+                                                          "cherry_pick_result":  "REPLAYED_BEHAVIOR",
+                                                          "pytest":  "1 passed",
+                                                          "note":  "Cherry-pick of 9c909d96b conflicted on T-IGX-052-A.md. Behavior reapplied on development at 537a06296. Train SHA is not an ancestor."
+                                                      },
+                                                      {
+                                                          "source_branch":  "eqo/w2-a4034",
+                                                          "unique_commits":  [
+                                                                                 "34a0af435"
+                                                                             ],
+                                                          "development_branch":  "eqo/dev-a4-034",
+                                                          "development_head":  "d1da3b3c10a8d3610af5158c1c65cc8ba4b73728",
+                                                          "worktree":  "D:\\Projekty\\_wt\\intergrax\\eqo-dev-a4034",
+                                                          "cherry_pick_result":  "CLEAN"
+                                                      },
+                                                      {
+                                                          "source_branch":  "eqo/w2-a6006",
+                                                          "unique_commits":  [
+                                                                                 "c5b9648b4"
+                                                                             ],
+                                                          "development_branch":  "eqo/dev-a6-006",
+                                                          "development_head":  "b0227864377244555cccb4182287e4820fc7759a",
+                                                          "worktree":  "D:\\Projekty\\_wt\\intergrax\\eqo-dev-a6006",
+                                                          "cherry_pick_result":  "CLEAN"
+                                                      }
+                                                  ],
+                                      "train_evidence_unchanged":  [
+                                                                       "eqo/w2-a4-017",
+                                                                       "eqo/w2-a4-026",
+                                                                       "eqo/w2-fc1",
+                                                                       "eqo/w2-fc2",
+                                                                       "eqo/w2-fc3",
+                                                                       "eqo/w2-rest"
+                                                                   ],
+                                      "development_only_unchanged":  [
+                                                                         "eqo/w1-f1-view",
+                                                                         "eqo/w1-a4-006"
+                                                                     ]
+                                  },
+    "eqo_terminal_status":  "EQO_NOT_CLOSED_EXACT_BLOCKERS",
+    "capability_gate":  "PARTIAL_ORCHESTRATION_AVAILABLE",
+    "integration_status":  "NOT_DONE",
+    "pinned_shas":  {
+                        "origin_development":  "a0598ba3e4f4f903eb4da3db8ea012d5cbf71225",
+                        "origin_arch_freeze_rw_train":  "8e146e21cd8c63a47d621edc05d5f0036ba0c9ee",
+                        "pr_680_merge":  "65ef1f196",
+                        "train_parent_dbaebfa8":  "dbaebfa8cd13a6ba8bfa6eef2cdf581216ddb3d2"
+                    },
+    "f1_bookkeeping":  {
+                           "task":  "EQO-F1-VIEW",
+                           "path_rule":  "plan_section_2_first_match",
+                           "path_count_checksum":  "a11375e09b251be364151547d9dc3450402f6662dad5a7f3fda896459e95e27a",
+                           "f1_view_commit":  "321957488fcc0c6c65f9172f9de9b2b062ff3720",
+                           "f1_view_commit_note":  "Commit trailer contains Co-authored-by Cursor; strip before any push.",
+                           "requal_currency_artifact":  "EQO_REQUAL_CURRENCY.json",
+                           "requal_currency_counts":  {
+                                                          "FORMAL_REQUALIFICATION_REQUIRED":  165,
+                                                          "CURRENT":  0,
+                                                          "STALE":  165
+                                                      },
+                           "false_blocker_corrections":  [
+                                                             "PR #680 (65ef1f196) is ancestor of origin/arch-freeze/rw-train @ 8e146e21 via parent dbaebfa8; not ancestor of development @ a0598ba3",
+                                                             "IIAC_POLICY_ACTIVATION_RECORD.json status IN_FORCE is not EQO certification and not FRZ promotion"
+                                                         ],
+                           "operator_actions_only":  [
+                                                         "git push",
+                                                         "pull request create/merge"
+                                                     ],
+                           "not_executed_by_eqo":  [
+                                                       "FCS",
+                                                       "PT-Q",
+                                                       "M3",
+                                                       "RB-2",
+                                                       "G2",
+                                                       "FRZ_promotion",
+                                                       "C01-C25_promotion"
+                                                   ],
+                           "replay_rest_remainder":  {
+                                                         "artifact":  "EQO_REPLAY_REST.json",
+                                                         "pin_sha":  "8e146e21cd8c63a47d621edc05d5f0036ba0c9ee",
+                                                         "named_test_green":  6,
+                                                         "named_test_passed":  64,
+                                                         "no_named_test":  34,
+                                                         "pytest_ran_this_slice":  false
+                                                     }
+                       },
+    "remaining_non_executable_stops":  [
+                                           "Plan §5: EQO-PKG-A4-006, A4-027, A4-026 already committed locally; no fourth bounded package named in §5.",
+                                           "Plan §10: Operator decisions 1–8 (implementation go T-IGX-043-A/B/C/D, A4-027 write set, A4-006 ticket if needed, OD-EQO-04, OD-EQO-09, A4-042 default, push/PR, Composer session open).",
+                                           "Plan §12 NEXT_WAVE_TRIGGER: next wave picks further root causes from NEW_IMPLEMENTATION_REQUIRED (33) only when write sets are disjoint and implementation go exists; not specified as a single package here.",
+                                           "ARCH-FREEZE chain: FCS, PT-Q02–Q13, M3, EQO-REPLAY-FCS for 34 NO_NAMED_TEST replay rows.",
+                                           "Hard stop: A4-034 (LocalProviderRetryBudget/StepRetryBudget), A6-006 (ENT_AUDIT_X_SEMANTIC skip), A4-040/OD-EQO-04, Poland-default package, EDER-N-0003/0004.",
+                                           "Hard stop: 313 OWNER_DECISION_REQUIRED, 165 requalification not marked CURRENT, 305 TRIAGE_PENDING not reclassified, accepted-limitation records not invented."
+                                       ],
+    "packages":  {
+                     "EQO-PKG-A4-006":  {
+                                            "finding_id":  "EQOA-A4-006",
+                                            "branch":  "eqo/w1-a4-006",
+                                            "commit_sha":  "960205aaaf7adf8c8bfd7075e9bfd60031b76417",
+                                            "pytest":  "3 passed",
+                                            "technical_verdict":  "PASS_WITH_SCOPED_LIMITATIONS",
+                                            "pushed":  false,
+                                            "commit_trailer_note":  "Co-authored-by Cursor present; strip before any push."
+                                        },
+                     "EQO-PKG-A4-027":  {
+                                            "finding_id":  "EQOA-A4-027",
+                                            "branch":  "eqo/w2-a4-027",
+                                            "commit_sha":  "06604af5347883dd26c98d54e72e49f2f6f58013",
+                                            "ticket_ref":  "governance/tickets/T-IGX-055-B.md",
+                                            "pytest":  "1 passed",
+                                            "technical_verdict":  "PASS_WITH_SCOPED_LIMITATIONS",
+                                            "pushed":  false,
+                                            "tip_note":  "T-IGX-052-A absent at branch tip."
+                                        },
+                     "REPLAY_ONLY":  {
+                                         "replay_sha":  "8e146e21cd8c63a47d621edc05d5f0036ba0c9ee",
+                                         "new_commits":  0,
+                                         "clusters":  [
+                                                          "FC-1",
+                                                          "FC-2",
+                                                          "FC-3",
+                                                          "fifteen_id_pass"
+                                                      ],
+                                         "fifteen_id_pass_finding_ids":  [
+                                                                             "EQOA-A4-002",
+                                                                             "EQOA-A4-004",
+                                                                             "EQOA-A4-005",
+                                                                             "EQOA-A4-018",
+                                                                             "EQOA-A2-009",
+                                                                             "EQOA-A2-038",
+                                                                             "EQOA-A5-001",
+                                                                             "EQOA-A6-002",
+                                                                             "EQOA-A6-003",
+                                                                             "EQOA-A6-005",
+                                                                             "EQOA-A6-007",
+                                                                             "EQOA-A6-008"
+                                                                         ]
+                                     }
+                 },
+    "train_replays_verified":  {
+                                   "base_sha":  "8e146e21cd8c63a47d621edc05d5f0036ba0c9ee",
+                                   "EQOA-A4-026":  "12 passed",
+                                   "EQOA-A4-017":  "11 passed",
+                                   "FC-3_FC-1_files":  "54 passed",
+                                   "FC-2_queue_worker":  "5 passed (uv sync --extra dev-ci)",
+                                   "absent_at_train":  [
+                                                           "tests/.../test_fc1_host_task_routing_posture.py"
+                                                       ]
+                               },
+    "not_closed_findings":  [
+                                "EQOA-A4-034",
+                                "EQOA-A6-006",
+                                "EQOA-A6-001"
+                            ],
+    "waves":  {
+                  "WAVE-01":  {
+                                  "status":  "PACKAGE_COMMITTED_NOT_PUSHED",
+                                  "package_id":  "EQO-PKG-A4-006",
+                                  "owner_agent":  "separate_igx-implementer",
+                                  "worktree":  "D:\\Projekty\\_wt\\intergrax\\eqo-w1-a4006",
+                                  "branch":  "eqo/w1-a4-006",
+                                  "commit_sha":  "960205aaaf7adf8c8bfd7075e9bfd60031b76417",
+                                  "base_sha":  "a0598ba3e4f4f903eb4da3db8ea012d5cbf71225",
+                                  "pytest":  "3 passed",
+                                  "technical_verdict":  "PASS_WITH_SCOPED_LIMITATIONS"
+                              },
+                  "WAVE-02":  {
+                                  "status":  "PARTIAL_PACKAGE_COMMITTED_NOT_PUSHED",
+                                  "blocked_until":  [
+                                                        "operator write-set authorization for applications/research_application/serving/schemas.py and fastapi_router.py (A4-027)",
+                                                        "T-IGX-043-C implementation go (AR-41 / SCOPE)"
+                                                    ],
+                                  "base_sha":  "8e146e21cd8c63a47d621edc05d5f0036ba0c9ee",
+                                  "candidate_packages":  [
+                                                             "EQO-PKG-A4-027",
+                                                             "EQO-PKG-A4-026",
+                                                             "EQO-PKG-A4-017"
+                                                         ],
+                                  "EQO-PKG-A4-027":  {
+                                                         "commit_sha":  "06604af5347883dd26c98d54e72e49f2f6f58013",
+                                                         "branch":  "eqo/w2-a4-027",
+                                                         "pytest":  "1 passed",
+                                                         "technical_verdict":  "PASS_WITH_SCOPED_LIMITATIONS"
+                                                     },
+                                  "replay_only_at_train":  [
+                                                               "EQO-PKG-A4-026",
+                                                               "EQO-PKG-A4-017",
+                                                               "FC-1",
+                                                               "FC-2",
+                                                               "FC-3"
+                                                           ]
+                              }
+              },
+    "counters":  {
+                     "TOTAL_UNRESOLVED":  1073,
+                     "CONTENT_UNRESOLVED":  1029,
+                     "VERIFIED_CLOSED":  0,
+                     "path_counts":  {
+                                         "OWNER_DECISION_REQUIRED":  313,
+                                         "UNRESOLVED_EXACT_BLOCKER":  310,
+                                         "DOCUMENTATION_CORRECTION_REQUIRED":  167,
+                                         "FORMAL_REQUALIFICATION_REQUIRED":  165,
+                                         "EXISTING_IMPLEMENTATION_REQUIRES_REPLAY":  40,
+                                         "NEW_IMPLEMENTATION_REQUIRED":  33,
+                                         "EXTERNAL_ARCH_FREEZE_DEPENDENCY":  1,
+                                         "EXISTING_VERIFIED_EVIDENCE":  0,
+                                         "FORMAL_ACCEPTED_LIMITATION":  0,
+                                         "DUPLICATE_OR_INDEX_ONLY":  0
+                                     }
+                 },
+    "operator_decisions_open":  8,
+    "implementation_root_causes_open":  33,
+    "next_wave_queue":  {
+                            "artifact":  "EQO_NEXT_WAVE_QUEUE.json",
+                            "slice_completed_at":  "2026-11-21T14:25:00+00:00",
+                            "status_counts":  {
+                                                  "ALREADY_DONE":  2,
+                                                  "REPLAY_ONLY":  24,
+                                                  "BLOCKED_EXACT_REASON":  2,
+                                                  "SKIP_NO_GO":  5,
+                                                  "IMPLEMENTED_THIS_SLICE":  0
+                                              },
+                            "note":  "All 33 NEW_IMPLEMENTATION_REQUIRED rows dispositioned; no new development-based product commits this slice."
+                        }
+}

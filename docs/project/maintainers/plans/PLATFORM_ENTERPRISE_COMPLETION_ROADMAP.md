@@ -960,7 +960,7 @@ Do not certify lifecycle correctness through mocks alone where real behavior mat
 
 ### 3.0.6 `DIST-SCALE-X` — Data-Intensive Distributed Systems Scale & Resilience Certification
 
-**Status:** **`IN PROGRESS`** — **`TOOL-LIFE-X` = CLOSED — INDEPENDENTLY ACCEPTED** @ `1548640708c850b3fbfca3f2db0e5ecfee4274dd` (prerequisite satisfied). **P1/P2/P3/P4** = scoped accepted ([`DIST_SCALE_X_P3_FORMAL_CLOSURE_RECONCILIATION.md`](../qualification/DIST_SCALE_X_P3_FORMAL_CLOSURE_RECONCILIATION.md), [`DIST_SCALE_X_P4_FORMAL_CLOSURE_RECONCILIATION.md`](../qualification/DIST_SCALE_X_P4_FORMAL_CLOSURE_RECONCILIATION.md)); **P5** = **NEXT** (planning — I/J/L per readiness plan; **not entered**). Parent **OPEN** — not CLOSED until L9 + formal parent reconciliation.
+**Status:** **`CLOSED — OPERATOR SCOPED ACCEPTANCE`** (`OPERATOR APPROVED — DIST-SCALE-X FORMAL PARENT CLOSURE (SCOPED — WL-7 4H DEFERRED)`, 2026-10-28); reconciliation [`DIST_SCALE_X_PARENT_FORMAL_CLOSURE_RECONCILIATION.md`](../qualification/DIST_SCALE_X_PARENT_FORMAL_CLOSURE_RECONCILIATION.md) @ **`OPERATOR_SCOPED_ACCEPTANCE_BASELINE_SHA`** `df485a962688c4fdc4c4e95fea4005d614578c2d`; **pytest @ publication = 0**; **new global FRZ PASS = 0**. Aligns with §3 stage table and §5 ledger (`DIST-SCALE-X` row).
 
 **Position:** after **`TOOL-LIFE-X`**, before **`EBH-5`**. Mandatory before final enterprise architecture freeze / release certification (`EBH-7`, `EVOL-X`, `ENT-AUDIT-X`, `ARCH-FREEZE`).
 

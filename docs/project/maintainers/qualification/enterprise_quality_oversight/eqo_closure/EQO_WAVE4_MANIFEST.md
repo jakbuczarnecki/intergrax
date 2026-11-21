@@ -15,7 +15,7 @@
 
 | Lane | Branch | Worktree | Deliverable |
 |------|--------|----------|-------------|
-| **G-W2** | `eqo/wave-4/w2` | `eqo-w4-w2` | W2-02..11 wave-4 read; `#680` track-only |
+| **G-W2** | `eqo/wave-4/w2` | `eqo-w4-w2` | W2-02..11 wave-4 read; #680 on rw-train @ `8e146e21`, not on `development` |
 | **G-W4** | `eqo/wave-4/w4` | `eqo-w4-w4` | `W4-04_REQUALIFY_BATCH.md`, `W4-05_NONE_JUSTIFICATION.md` |
 | **G-X** | `eqo/wave-4/x` | `eqo-w4-x` | X-01,02,03,05,07,08 read memos / refreshes |
 | **G-MATRIX** | `eqo/wave-4/matrix` | `eqo-w4-matrix` | Partial CLS § in `EQO_MASTER_CLOSURE_MATRIX.md` (no AUD verdicts) |
