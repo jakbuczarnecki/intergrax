@@ -1,6 +1,6 @@
 # PLAN T-IGX-043-J — PT-WF scaffold (ARCH-FREEZE development tor)
 
-Status: **plan §7 filled (autonomy fala 3, 2026-11-21)**. Product slices after G-09 may proceed per **OD-AF-AUTO-03**. Canonical wave: `WP12_TICKETS_DRAFT.md` row PT-WF; **AR-44**.
+Status: **plan §7 filled (autonomy fala 3, 2026-11-21)**; **§8 fala B2 (2026-11-21)** records E2–E4 noop and harness re-qualification on `af-dev-pt-wf`. Product slices after G-09 may proceed per **OD-AF-AUTO-03**; E2–E4 remain BLOCKED on Campaign B-1. Canonical wave: `WP12_TICKETS_DRAFT.md` row PT-WF; **AR-44**.
 
 ## 1. Purpose
 
@@ -83,3 +83,29 @@ ENV (fala 3): `uv sync --extra dev-ci` plus `langchain-core` / modality extras a
 1. G-09 / harness regression: `uv run pytest tests/unit/applications/test_harness_evaluation_wiring.py -p no:cacheprovider`
 2. FC-3 batch bundle: command in §7.2
 3. Before push: `uv run python -m scripts.governance.igx_gov ticket` with `Ref: governance/tickets/T-IGX-043-J.md`
+
+## 8. Continuation cross-ref (fala B2 — E2–E4 deferred, harness noop)
+
+No product edit on paths in §3 rows **E2–E4** in this wave (Campaign **B-1** not confirmed; `SCOPE` / `T-AF2-RW-PLAN-AUDIT` remain open per §2).
+
+### 8.1 Harness re-qualification (G-09)
+
+Re-run §7.4 command 1 at head `bab8114d8` on branch `af-dev-pt-wf` (includes G-09 follow-up qualification from slice 1).
+
+```text
+uv run python -m pytest tests/unit/applications/test_harness_evaluation_wiring.py -q -o cache_dir=<scratch>/pt-wf-b2/cache --basetemp=<scratch>/pt-wf-b2/bt
+```
+
+(`-p no:cacheprovider` aborts in this repo; use explicit `cache_dir` / `basetemp` per `PLAN_T-IGX-044-A` DEV-03 note.)
+
+**12 passed** (2026-11-21). Logs: `.tmp/session/arch-freeze/REGRESSION-78-falaB2/` (optional).
+
+### 8.2 E2–E4 continuation (status unchanged)
+
+| Slice | Gate | Continuation |
+|-------|------|----------------|
+| E2 | Campaign B-1, MEP §F E2 | Fill `NT-WF-NEG-E2-01` node id in §7.1 after B-1 |
+| E3 | Campaign B-1, MEP §F E3 | Fill `NT-WF-NEG-E3-01` node id in §7.1 after B-1 |
+| E4 | Campaign B-1, MEP §F E4; F-D5-07 | Fill `NT-WF-NEG-E4-01` node id in §7.1 after B-1 |
+
+Cross-ref: `PLAN_T-IGX-043-C` §2 (`SCOPE` includes Campaign B-1/B-2); `PLAN_T-IGX-041-E` (F-D5-07). Owner-repair batch (`tests/unit/applications/test_wf_fail_closed.py`) not started.
