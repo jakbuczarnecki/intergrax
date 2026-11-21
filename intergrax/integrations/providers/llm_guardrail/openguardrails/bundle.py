@@ -4,8 +4,8 @@
 
 from __future__ import annotations
 
-from intergrax.integrations.providers.llm_guardrail.bundles.http_guardrail import create_openguardrails_backend
 from intergrax.integrations.contracts.llm_guardrail import LlmGuardrailBackend
+from intergrax.integrations.providers.llm_guardrail.bundles.http_guardrail import create_openguardrails_backend
 from intergrax.integrations.providers.llm_guardrail.openguardrails.integration import (
     OPENGUARDRAILS_PROVIDER_ID,
     OpenguardrailsLlmGuardrailIntegration,

@@ -53,6 +53,21 @@ class VisionBackendUnconfiguredError(ValueError):
     """Raised when a vision backend is invoked without required configuration."""
 
 
+class VisionAdapterCapabilityError(ValueError):
+    """Raised when a vision adapter lacks extended segment/OCR operations."""
+
+
+class VisionResultProvenance(StrEnum):
+    ENGINE = "engine"
+    STUB = "stub"
+
+
+def require_extended_vision_adapter(adapter: VisionInferenceAdapter) -> ExtendedVisionInferenceAdapter:
+    if isinstance(adapter, ExtendedVisionInferenceAdapter):
+        return adapter
+    raise VisionAdapterCapabilityError(f"vision adapter {adapter.slug!r} does not support extended operations")
+
+
 class AuthorizedLocalMedia(BaseModel):
     """Resolved local media authorized through ToolWiringContext read roots."""
 
@@ -73,6 +88,7 @@ class VisionInferenceResult(BaseModel):
     request_id: str
     artifact_id: str
     detections: list[VisionDetection] = Field(default_factory=list)
+    provenance: VisionResultProvenance = VisionResultProvenance.ENGINE
 
 
 class VisionSegment(BaseModel):
@@ -85,6 +101,7 @@ class VisionSegmentationResult(BaseModel):
     request_id: str
     artifact_id: str
     segments: list[VisionSegment] = Field(default_factory=list)
+    provenance: VisionResultProvenance = VisionResultProvenance.ENGINE
 
 
 class VisionOcrRegion(BaseModel):
@@ -97,6 +114,7 @@ class VisionOcrResult(BaseModel):
     request_id: str
     artifact_id: str
     regions: list[VisionOcrRegion] = Field(default_factory=list)
+    provenance: VisionResultProvenance = VisionResultProvenance.ENGINE
 
 
 class InferenceRequest(BaseModel):

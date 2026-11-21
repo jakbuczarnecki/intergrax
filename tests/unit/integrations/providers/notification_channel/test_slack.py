@@ -8,7 +8,6 @@ from __future__ import annotations
 from unittest.mock import AsyncMock, MagicMock
 
 import pytest
-
 from intergrax.integrations._shared.conformance import (
     assert_interaction_surface,
     assert_notification_channel,
@@ -155,11 +154,18 @@ def test_long_running_resolve_notification_delegates_slack(monkeypatch: pytest.M
 
 def test_inbound_verifier_slack_mode_uses_integration() -> None:
     from intergrax.integrations.providers.notification_channel.slack.adapter import SlackInteractionAdapter
-    from intergrax.runtime.interactions.verification.factory import create_inbound_verifier, resolve_inbound_verifier_settings
+    from intergrax.runtime.interactions.verification.factory import (
+        create_inbound_verifier,
+        resolve_inbound_verifier_settings,
+    )
     from intergrax.runtime.interactions.verification.slack_signature import SlackSignatureVerifier
 
     verifier = create_inbound_verifier(
-        resolve_inbound_verifier_settings(mode="slack", slack_signing_secret="secret"),
+        resolve_inbound_verifier_settings(
+            mode="slack",
+            slack_signing_secret="secret",
+            slack_verify_enabled=True,
+        ),
     )
     assert isinstance(verifier, SlackSignatureVerifier)
 

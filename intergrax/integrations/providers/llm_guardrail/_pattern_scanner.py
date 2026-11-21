@@ -63,6 +63,7 @@ def scan_patterns(
         matched_rules=tuple(matched_rules),
         sanitized_text=text if not blocked else None,
         detail=f"{slug} pattern scan ({mode})",
+        engine_degraded=True,
         audit_payload={"engine": "pattern", "slug": slug, "mode": mode},
     )
 

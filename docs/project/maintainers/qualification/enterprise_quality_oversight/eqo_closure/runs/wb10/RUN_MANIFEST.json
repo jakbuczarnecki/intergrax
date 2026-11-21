@@ -1,0 +1,28 @@
+{
+  "schema": "eqo_w3_run_manifest.v1",
+  "workstream": "WB10",
+  "task_ids": [
+    "EQO-W3-WB10-DES",
+    "EQO-W3-WB10-EXE",
+    "EQO-W3-WB10-EVD",
+    "EQO-W3-WB10-DIS"
+  ],
+  "evidence_pin": "28c27cb896d02e0185b9fa02047411fa152f6469",
+  "worktree": "d:/Projekty/_wt/intergrax/eqo-w3",
+  "executed_utc": "2026-11-21T06:24:57Z",
+  "pytest_command_sha256": "e70afb0eeecc8a182df8e993afb77c4e84140c5889ad6350a761770ea5150d64",
+  "pytest_command": "uv run pytest tests/qualification/trace_x/test_trace_x_p6_adversarial_bundle.py tests/qualification/trace_x/test_trace_x_p6_closed_world_gates.py tests/qualification/state_x/test_state_x_p0_baseline.py tests/qualification/roadmap_replay_x/test_roadmap_replay_x_mechanical_exit_gates.py -q --tb=line",
+  "pytest_exit_code": 1,
+  "pytest_summary": "6 failed, 66 passed, 1 skipped in 80.56s (0:01:20)",
+  "finding_ids": [
+    "EQOA-A2-019",
+    "EQOA-A2-030",
+    "EQOA-A5-012"
+  ],
+  "log_path": "eqo_closure/runs/wb10/pytest_wb10_exe.log",
+  "des_path": "eqo_closure/runs/wb10/DES_PREREG.json",
+  "disposition_path": "eqo_closure/runs/wb10/TRACE_STATE_REPLAY_EVIDENCE.md",
+  "blockers": [
+    "PYTEST_SLICE_NON_ZERO_EXIT"
+  ]
+}

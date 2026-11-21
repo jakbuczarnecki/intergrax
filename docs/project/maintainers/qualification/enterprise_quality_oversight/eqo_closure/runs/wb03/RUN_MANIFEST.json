@@ -1,0 +1,27 @@
+{
+  "schema": "eqo_w3_run_manifest.v1",
+  "workstream": "WB03",
+  "task_ids": [
+    "EQO-W3-WB03-DES",
+    "EQO-W3-WB03-EXE",
+    "EQO-W3-WB03-EVD",
+    "EQO-W3-WB03-DIS"
+  ],
+  "evidence_pin": "28c27cb896d02e0185b9fa02047411fa152f6469",
+  "worktree": "d:/Projekty/_wt/intergrax/eqo-w3",
+  "executed_utc": "2026-11-21T06:18:56Z",
+  "pytest_command_sha256": "dcab81279fde5468ab5890e5423861ac7cdc95a843dc92cc8793d8c599318fcb",
+  "pytest_command": "uv run pytest tests/unit/runtime/interactions/test_interaction_intake_service.py tests/integration/runtime/test_nexus_loop_governance.py tests/integration/context/test_mem_xint6_cross_layer_e2e_certification.py::test_fail_closed_without_context_engine_when_sources_active tests/qualification/pdc_x/d2_repair/test_d2r_pre_context_policy_gate.py::test_f_d2_10_markers_without_the_relocated_uaep_root_fail_closed tests/qualification/pdc_x/d1/test_d1_adversarial_lifecycle.py -q --tb=line",
+  "pytest_exit_code": 0,
+  "pytest_summary": "39 passed in 92.18s (0:01:32)",
+  "finding_ids": [
+    "EQOA-A4-026",
+    "EQOA-A4-031",
+    "EQOA-A4-037",
+    "EQOA-A3-027"
+  ],
+  "log_path": "eqo_closure/runs/wb03/pytest_wb03_exe.log",
+  "des_path": "eqo_closure/runs/wb03/DES_PREREG.json",
+  "disposition_path": "eqo_closure/runs/wb03/FAIL_CLOSED_HITL_EVIDENCE.md",
+  "blockers": []
+}

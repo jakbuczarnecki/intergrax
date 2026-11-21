@@ -63,9 +63,16 @@ from intergrax.integrations.registry.bootstrap import register_default_integrati
 from intergrax.integrations.registry.profile import IntegrationProfile
 from intergrax.rag.embedding.registry.profile import EmbeddingProfile
 from intergrax.rag.embedding.runtime.resolver import bind_embedding_provider
+from intergrax.integrations.contracts.base import LabSelectorOptIn
+from intergrax.rag.embedding.registry.provider_authority import lab_embedding_provider_slug
 
 register_default_integrations(preset="full")
-manager = create_default_embedding_manager()
+manager = create_default_embedding_manager(
+    lab_opt_in=LabSelectorOptIn(
+        selector=lab_embedding_provider_slug(),
+        reason="dep1 dependency foundation subprocess test",
+    ),
+)
 before = {
     name: name in sys.modules
     for name in ("torch", "sentence_transformers", "transformers")
@@ -175,7 +182,4 @@ def test_core_dependency_inventory_has_no_langchain_runtime() -> None:
         project = tomllib.load(stream)["project"]
 
     dependencies = project["dependencies"]
-    assert not any(
-        dependency.startswith(("langchain", "langgraph"))
-        for dependency in dependencies
-    )
+    assert not any(dependency.startswith(("langchain", "langgraph")) for dependency in dependencies)
