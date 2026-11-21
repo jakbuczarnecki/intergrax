@@ -4,10 +4,11 @@
 
 from __future__ import annotations
 
+from collections.abc import Sequence
 from dataclasses import dataclass
-from typing import Sequence
 
 from intergrax.applications._shared.evaluation_wiring import ApplicationEvaluationWiring
+from intergrax.applications._shared.wiring_posture import wiring_fails_closed
 from intergrax.applications.contracts.environment_profile import ApplicationEnvironmentProfile
 
 
@@ -46,6 +47,9 @@ def validate_evaluation_wiring(
 
     if profile.online_registry_enabled and wiring.registry is None:
         errors.append("online_registry_enabled requires evaluation registry")
+
+    if wiring_fails_closed(env) and profile.online_registry_enabled and not (wiring.tenant_id or "").strip():
+        errors.append("online_registry_enabled in PRODUCT/STRICT requires tenant-scoped evaluation registry (G-09)")
 
     if profile.shadow_eval_enabled and profile.online_registry_enabled and wiring.registry is None:
         errors.append("shadow_eval_enabled with online_registry_enabled requires evaluation registry")
