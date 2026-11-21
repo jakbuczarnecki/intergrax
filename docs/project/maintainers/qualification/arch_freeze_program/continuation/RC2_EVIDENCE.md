@@ -1,6 +1,6 @@
 # RC-2 evidence dossier (in progress)
 
-Worktree `D:/Projekty/_wt/intergrax/af-rc2`, branch `af2/rc2-continuation`. Base includes RC-1 checkpoint `36c470249`.
+Worktree `D:/Projekty/_wt/intergrax/af-rc2b`, branch `af2/rc2b-continuation`. Train tip `711ee4a11` (includes #685 dossier merge on prior rc2 branch).
 
 `OD-AF-RC-KR08` = **GRANTED** (2026-11-21, narrow #680). No G2 declaration.
 
@@ -17,8 +17,9 @@ Worktree `D:/Projekty/_wt/intergrax/af-rc2`, branch `af2/rc2-continuation`. Base
 | PR | Branch | Head | Train base | governance-fast | Action |
 | --- | --- | --- | --- | --- | --- |
 | #680 | `af2/pt-fc1` | `a6999e97` | merged into branch | **FAILURE** (KR-08 ACT-N11) | **merge authorized** under OD-AF-RC-KR08 |
-| #683 | `af2/rc1-continuation` | `36c470249` | atop `28c27cb` | not required for docs | open |
-| 051-N PR | `af2/rw-supply-ab` | `df476721` | merged `28c27cb` | await CI | opened this package; merge gated like #680 |
+| #683 | `af2/rc1-continuation` | `36c470249` | atop `28c27cb` | not required for docs | **merged** |
+| #684 | `af2/rw-supply-ab` | `c9545ba1f` | operator manual merge | confirm CI log | **merged** to `711ee4a11` |
+| #681 | `af2/rc0-continuation` | — | docs | — | **merged** |
 
 ## #680 digest review (read-only)
 
@@ -50,10 +51,12 @@ Merge other red-governance train PRs without their own operator mandate. FCS / G
 | Method | `gh pr merge 680 --merge --admin` after `OD-AF-RC-KR08` grant |
 | Ticket | `T-IGX-043-A` (PT-FC1) |
 
-Train fetched in worktree `af-rc2`: `origin/arch-freeze/rw-train` → `65ef1f196`.
+Train fetched (`2026-11-21`): `origin/arch-freeze/rw-train` → `711ee4a11bf540efe9b5077faa6b8e42791cc033`.
 
-**#684 (`af2/rw-supply-ab`, T-IGX-051-N):** left **open** — no merge (mandate excluded; `governance-fast` outcome must be confirmed green or KR-08-class expected-red with separate operator grant). CI re-triggered against updated train base (`2026-11-21`).
+**#684 (`T-IGX-051-N`):** merged by operator (`2026-11-21T05:50:55Z`); **not** re-merged in this session.
 
-**#681 / #683 (RC-0/RC-1 docs):** not merged in this step (optional per plan after #680).
+**Serialization note (051-A plan):** TENANT implementation starts after PT-FC3, PT-WF, TRUST and predecessors on train; #680 and #684 satisfy FC1 and SUPPLY-AB.
+
+**Next product slice:** `T-IGX-043-C` (PT-FC3) per plan B.2 / critical path group 2.
 
 RC-2 exit criteria unchanged; RC-3+ not started.
