@@ -1,4 +1,4 @@
-# T-IGX-043-M — ARCH-FREEZE ENT-AUDIT-X Part E (manifest consumers and wave-diff completion)
+﻿# T-IGX-043-M — ARCH-FREEZE ENT-AUDIT-X Part E (manifest consumers and wave-diff completion)
 
 ## Scope
 
@@ -16,7 +16,7 @@ Scaffold only — no PASS, FRZ promotion, or independent-verification claim.
 
 ## Plan digest
 
-Plan digest: 5c4e1204635992b9872522905ce71e93081fefb96b0f834c4af8c8762aa8a923
+Plan digest: d13757d0b4ae6d1ea2374b1f6312cf44249f6c53a39ca891b2c7e38e60ca20f3
 
 Canonical plan: [`governance/tickets/plans/PLAN_T-IGX-043-M.md`](plans/PLAN_T-IGX-043-M.md).
 
@@ -39,6 +39,7 @@ Train-only baseline promotion (`T-AF2-ENT-BASELINE-PREFREEZE`), merge to `arch-f
 | NT-043M-S1 smoke | `pytest tests/qualification/ent_audit_x/unit/test_changed_since_impact_map.py` — **3 passed** (2026-11-21, tor `af-dev-merge`) |
 | NT-043M-S2 wave-diff slice 1 | development `WAVE_DIFF_FULL_IMPACT_PREFIXES` + SSOT regen; **4 passed** (fala 6, `af-dev-043m`) |
 | NT-043M-S3 wave-diff slice 2 | train-parity + residual prefixes; **8 passed** (5 unit + 3 xd_12, fala B2) |
+| NT-043M-S4 wave-diff slice 3 | PDC-range fail-closed closure; **9 passed** (6 unit + 3 xd_12, fala 5B, `af-dev-043m`) |
 
 Part E manifest / consumer write set remains **BLOCKED** (RW-PLAN-AUDIT, wave-packet).
 

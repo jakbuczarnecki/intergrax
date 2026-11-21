@@ -1,4 +1,4 @@
-# PLAN T-IGX-043-M — ENT-AUDIT Part E scaffold (ARCH-FREEZE development tor)
+﻿# PLAN T-IGX-043-M — ENT-AUDIT Part E scaffold (ARCH-FREEZE development tor)
 
 Status: **plan §7 filled (autonomy fala 4, 2026-11-21)** — minimal development tor; train manifest work remains OUT. SSOT pointer: sibling **T-IGX-043-I** on `arch-freeze/rw-train` (Parts A–D); this ticket is the **ABSENT** Part E recovery named in `EQO_ARTIFACT_RECOVERY_REGISTRY.jsonl`.
 
@@ -92,3 +92,16 @@ Command (with NT-043M-S1..S2):
 uv run python -m pytest tests/qualification/ent_audit_x/unit/test_changed_since_impact_map.py tests/qualification/pdc_x/xd/test_xd_12_evol_ent_audit.py -q
 ```
 
+## 8.3 Governance slice 3 (fala 5B — development tor wave-diff closure, no manifest)
+
+Manifest Part E remains **BLOCKED**. Slice 3 records CHANGED-SINCE fail-closed cleanliness over the PDC campaign range at the current development worktree head; no further `WAVE_DIFF_FULL_IMPACT_PREFIXES` entries on this tor until OD allows manifest Part E.
+
+| Node id | Assertion | Pytest |
+|---------|-----------|--------|
+| NT-043M-S4 | PDC-range CHANGED-SINCE does not fail closed | `tests/qualification/ent_audit_x/unit/test_changed_since_impact_map.py::test_development_tor_pdc_changed_since_is_fail_closed_clean` |
+
+Command (with NT-043M-S1..S3):
+
+```text
+uv run python -m pytest tests/qualification/ent_audit_x/unit/test_changed_since_impact_map.py tests/qualification/pdc_x/xd/test_xd_12_evol_ent_audit.py -q
+```
