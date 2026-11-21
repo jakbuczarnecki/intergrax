@@ -1,15 +1,15 @@
-# EQO master closure matrix (C01–C25)
+﻿# EQO master closure matrix (C01–C25)
 
 | ID | Status | Note |
 |----|--------|------|
 | C01 | PARTIALLY_MET | 240 IDs enumerated; disposition incomplete |
-| C02 | PARTIALLY_MET | WB01–12 session E @ TRAIN_PIN `28c27cb` complete (#695–#697); **0 PASS / 8 FAIL / 4 BLOCKED** |
+| C02 | PARTIALLY_MET | WB01-07,09-12 W3_CLS.md @ wave-5; WB08 deferred; session E @ pin 0 PASS / 8 FAIL / 4 BLOCKED |
 | C03 | PARTIALLY_MET | WB05 EXE @ 28c27cb (14 passed); DIS/AUD open |
 | C04 | PARTIALLY_MET | C-04 replay BLOCKED @ TRAIN_PIN (wave-3 log retained) |
 | C05 | PARTIALLY_MET | E-02 report @ DOC_PIN; register edit blocked |
 | C06 | PARTIALLY_MET | 225 FRZ counted; 109 OPEN |
 | C07 | NOT_MET | 2 open BLOCKER severity |
-| C08 | PARTIALLY_MET | WB02 mechanical pass @ TRAIN_PIN; AUD-1 FAIL certification drift |
+| C08 | PARTIALLY_MET | WB02 tenant pytest @ TRAIN_PIN (66 pass); WB03–12 open |
 | C09 | NOT_MET | FCS/M3 not reached |
 | C10 | NOT_MET | Train delta not fully replayed |
 | C11 | PARTIALLY_MET | Dossier A pinned; train evidence partial |
@@ -60,7 +60,11 @@
 | W4-05 | `w4/W4-05_NONE_JUSTIFICATION.md` | `STARTED` — five NONE rows justified |
 | W4-02 | tranches 01–07 | `QUEUE_COMPLETE` (prior waves) |
 | X-01..03,05,07,08 | `eqo_closure/x/**` wave-4 reads | `PARTIAL` — memos refreshed; BLOCKER/BLOCKED unchanged |
-| W3 AUD (WB01–12) | `AUD_SESSION_E.md` + `CLS_PRE.md` | `PARTIAL` — session E complete; terminal CLS not claimed |
+| W3 AUD (WB01–12) | `AUD_SESSION_E.md` + `CLS_PRE.md` + `W3_CLS.md` (WB08 deferred) | `PARTIAL` — wave-5 disposition published; terminal CLS not claimed |
+
+## Wave-5 W3 CLS (disposition only)
+
+**Land:** `origin/development` @ `569254840` · **integrator:** `eqo/wave-5/integ`. **Artefact:** `runs/wbNN/W3_CLS.md` composed from `AUD_SESSION_E.md` + `CLS_PRE.md`. **WB08:** `CLS_PRE` only — no EXE log @ pin; lane deferred per `EQO_WAVE5_MANIFEST.md`.
 
 ## Wave-8 W9-01 prep (partial C01-C25)
 
