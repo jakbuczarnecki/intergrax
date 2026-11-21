@@ -269,14 +269,23 @@ ENGINE_TREE_IMPACT_RULES: tuple[tuple[str, tuple[str, ...]], ...] = (
 # ids each group maps to EVERY manifest check (explicit FULL): the generator attaches all manifest check ids. One entry
 # per touched package group; re-derive the list at the integrated wave head.
 WAVE_DIFF_FULL_IMPACT_PREFIXES: tuple[str, ...] = (
+    # Slice 1 — remediation-wave groups touched on `development` since PDC baseline (no domain rule).
+    "intergrax/debug",
+    "intergrax/lab",
+    "intergrax/model_inference",
+    "intergrax/runtime/interactions",
+    "intergrax/runtime/notifications",
+    # Slice 2 — train-parity wave head + KNOWN_RED residuals (background_tasks, sandbox); manifest Part E BLOCKED.
     "agents/local_search",  # PT-WA: local search agent steps
     "agents/tool_selection_qualifier",  # PT-WA: tool selection qualifier agent
     "agents/web_search_qualifier",  # PT-WA: web search qualifier agent
+    "agents/model_routing_qualifier",  # RW-RUNTIME (PR #670): model routing qualification types
     "intergrax/agents/readiness",  # touched since the PDC baseline: readiness scoreboard
     "intergrax/runtime/wiring",  # touched since the PDC baseline: LLM resolver wiring
     "intergrax/distributed",  # PT-FC4: key-value store durability attestation
-    "agents/model_routing_qualifier",  # RW-RUNTIME (PR #670): model routing qualification types
     "intergrax/multimedia",  # RW-RUNTIME (PR #670): images loader
+    "intergrax/background_tasks",
+    "intergrax/runtime/sandbox",
 )
 
 
