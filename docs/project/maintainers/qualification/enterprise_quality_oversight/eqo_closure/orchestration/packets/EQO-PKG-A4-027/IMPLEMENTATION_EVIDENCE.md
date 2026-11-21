@@ -13,11 +13,11 @@
 - `applications/research_application/serving/schemas.py` — required `tenant_id` and `user_id` (no defaults).
 - `applications/research_application/serving/fastapi_router.py` — unauthenticated path does not imply a tenant.
 - `tests/unit/applications/test_research_run_request_missing_tenant_id_eqo_a4_027.py`
-- `governance/tickets/T-IGX-052-A.md`
+- `governance/tickets/T-IGX-055-B.md`
 
 ## Ticket
 
-`governance/tickets/T-IGX-052-A.md`
+`governance/tickets/T-IGX-055-B.md`
 
 ## Pytest
 
