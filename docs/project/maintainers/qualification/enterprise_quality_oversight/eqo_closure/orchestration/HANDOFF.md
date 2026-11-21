@@ -122,11 +122,26 @@ Evidence does not change `closure_path` or the 1029 path checksum.
 | Prior F1 view commit | `321957488fcc0c6c65f9172f9de9b2b062ff3720` |
 | Trailer | `Co-authored-by Cursor` on that commit — strip before any push |
 
+## NEW_IMPLEMENTATION_REQUIRED queue (33 rows, 2026-11-21)
+
+Artifact: EQO_NEXT_WAVE_QUEUE.json on eqo/w1-f1-view. No new development-based product commits in this slice.
+
+| Status | Count |
+|--------|------:|
+| ALREADY_DONE | 2 |
+| REPLAY_ONLY | 24 |
+| BLOCKED_EXACT_REASON | 2 |
+| SKIP_NO_GO | 5 |
+| IMPLEMENTED_THIS_SLICE | 0 |
+
+SKIP_NO_GO: EQOA-A3-008, EQOA-A3-018 (no implementation go ticket at development pin); EQOA-A6-001 (evidence-gap hard stop); EDER-N-0003 / A4-007-b1b2; EDER-N-0004 / DP-54 (T-IGX-052-E awaiting mandate).
+
 ## Artefacts
 
 - `EQO_REMAINING_OBLIGATION_VIEW.json` — 1029-row projection (`lifecycle_state` stays INGESTED; no CLOSED).
 - `EQO_REQUAL_CURRENCY.json` — 165-row register-backed currency vs development/train pins.
 - `EQO_ORCHESTRATION_STATE.json` — wave map, package SHAs, counters, `remaining_non_executable_stops`.
+- `EQO_NEXT_WAVE_QUEUE.json` — per-row disposition for all 33 `NEW_IMPLEMENTATION_REQUIRED` obligations.
 - `EQO_REPLAY_REST.json` — named-test replay facts and 34× `NO_NAMED_TEST`.
 
 ## Forbidden this slice
