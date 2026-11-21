@@ -40,6 +40,7 @@ Train-only baseline promotion (`T-AF2-ENT-BASELINE-PREFREEZE`), merge to `arch-f
 | NT-043M-S2 wave-diff slice 1 | development `WAVE_DIFF_FULL_IMPACT_PREFIXES` + SSOT regen; **4 passed** (fala 6, `af-dev-043m`) |
 | NT-043M-S3 wave-diff slice 2 | train-parity + residual prefixes; **8 passed** (5 unit + 3 xd_12, fala B2) |
 | NT-043M-S4 wave-diff slice 3 | PDC-range fail-closed closure; **9 passed** (6 unit + 3 xd_12, fala 5B, `af-dev-043m`) |
+| Fala 5 close verification | plan §8.3 command replay @ `e61e5136a` — **9 passed** (no manifest; next slice n/a until Part E OD) |
 
 Part E manifest / consumer write set remains **BLOCKED** (RW-PLAN-AUDIT, wave-packet).
 

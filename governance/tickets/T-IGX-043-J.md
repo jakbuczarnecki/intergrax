@@ -31,6 +31,7 @@ Defined in the plan (red-first negative tests, regression node list, `uv run pyt
 | Step | Evidence |
 |------|----------|
 | G-09 harness noop | plan §8.1 — **12 passed**; no E2–E4 product paths touched |
+| G-09 fala 5 close | plan §8.1 re-run @ `e61e5136a` — **12 passed** (development tor; E2–E4 untouched) |
 | E2–E4 | **BLOCKED** on Campaign B-1 (continuation cross-ref plan §8.2) |
 
 ## Out of scope

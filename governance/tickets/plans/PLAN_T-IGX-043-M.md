@@ -92,6 +92,8 @@ Command (with NT-043M-S1..S2):
 uv run python -m pytest tests/qualification/ent_audit_x/unit/test_changed_since_impact_map.py tests/qualification/pdc_x/xd/test_xd_12_evol_ent_audit.py -q
 ```
 
+Fala 5 close: same command — **9 passed** @ `e61e5136a` (2026-11-21; no §8.4 slice — manifest Part E **BLOCKED**).
+
 ## 8.3 Governance slice 3 (fala 5B — development tor wave-diff closure, no manifest)
 
 Manifest Part E remains **BLOCKED**. Slice 3 records CHANGED-SINCE fail-closed cleanliness over the PDC campaign range at the current development worktree head; no further `WAVE_DIFF_FULL_IMPACT_PREFIXES` entries on this tor until OD allows manifest Part E.
