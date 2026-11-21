@@ -20,6 +20,10 @@ class LLMAdapterResponse:
     ``content`` holds the primary assistant text. Additional production fields
     (usage, finish reason, tool calls, provider metadata) travel with the same
     object so callers do not rely on side channels.
+
+    ``model`` is the model the adapter requested. ``served_model`` is the model the
+    provider reported as having served the call, when the SDK reports one; it is
+    ``None`` when the SDK reports nothing (never filled with the requested model).
     """
 
     content: str
@@ -31,6 +35,7 @@ class LLMAdapterResponse:
     refusal: str | None = None
     tool_calls: tuple[LLMToolCall, ...] = ()
     provider_extensions: LLMProviderExtensions | None = None
+    served_model: str | None = None
 
     @property
     def text(self) -> str:

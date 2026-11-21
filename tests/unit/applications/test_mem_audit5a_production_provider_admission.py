@@ -8,7 +8,6 @@ import inspect
 from pathlib import Path
 
 import pytest
-
 from intergrax.applications._shared.memory_provider_admission import (
     validate_memory_platform_wiring_admission,
 )
@@ -23,10 +22,18 @@ from intergrax.applications.contracts.environment_profile import (
 )
 from intergrax.applications.contracts.execution_mode import ExecutionMode
 from intergrax.integrations.registry.profile import IntegrationProfile
+from intergrax.memory.contracts.memory_store_creation_context import (
+    UserProfileStoreCreationContext,
+)
 from intergrax.memory.contracts.provider_admission import (
     MemoryProviderAdmissionError,
     MemoryProviderAdmissionReasonCode,
     MemoryProviderDurability,
+)
+from intergrax.memory.contracts.provider_durability_evidence import (
+    MemoryProviderDurabilityEvidence,
+    MemoryProviderDurabilityProofKind,
+    MemoryProviderTrustedDurabilityStatus,
 )
 from intergrax.memory.contracts.provider_identity import (
     MemoryProviderIdentity,
@@ -43,11 +50,6 @@ from intergrax.memory.contracts.provider_qualification_evidence import (
     MemoryProviderQualificationEvidence,
     qualification_evidence_from_result,
 )
-from intergrax.memory.contracts.provider_durability_evidence import (
-    MemoryProviderDurabilityEvidence,
-    MemoryProviderDurabilityProofKind,
-    MemoryProviderTrustedDurabilityStatus,
-)
 from intergrax.memory.provider_qualification import (
     InMemoryMemoryProviderDurabilityEvidenceRegistry,
     InMemoryMemoryProviderQualificationEvidenceRegistry,
@@ -59,11 +61,12 @@ from intergrax.memory.resolver import MemoryStorePluginResolutionError
 from intergrax.memory.stores.in_memory_user_profile_store import InMemoryUserProfileStore
 from intergrax.memory.stores.sqlite_user_profile_store import SQLiteUserProfileStore
 from intergrax.memory.user_profile_memory import UserIdentity, UserPreferences, UserProfile
-from intergrax.memory.contracts.memory_store_creation_context import (
-    UserProfileStoreCreationContext,
-)
 from intergrax.memory.user_profile_store import UserProfileStore
 from intergrax.runtime.nexus.session.in_memory_session_storage import InMemorySessionStorage
+from tests.fixtures.memory_durable_session_storage import (
+    DurableDeclaredSessionStoragePlugin,
+    with_durable_session_plugin,
+)
 from tests.fixtures.plugin_packages.memory_store_plugin.memory_store_plugin.plugin import (
     ExternalInMemoryUserProfileStorePlugin,
 )
@@ -228,10 +231,7 @@ def test_product_sqlite_without_trusted_evidence_fails(tmp_path: Path) -> None:
     }
     with pytest.raises(MemoryProviderAdmissionError) as exc_info:
         resolve_memory_platform_wiring(env)
-    assert (
-        exc_info.value.reason_code
-        is MemoryProviderAdmissionReasonCode.QUALIFICATION_EVIDENCE_MISSING
-    )
+    assert exc_info.value.reason_code is MemoryProviderAdmissionReasonCode.QUALIFICATION_EVIDENCE_MISSING
 
 
 def test_product_sqlite_with_trusted_evidence_passes(tmp_path: Path) -> None:
@@ -264,10 +264,7 @@ def test_product_external_reference_plugin_rejected() -> None:
             discover_entry_points=False,
             explicit_memory_plugins=(ExternalInMemoryUserProfileStorePlugin,),
         )
-    assert (
-        exc_info.value.reason_code
-        is MemoryProviderAdmissionReasonCode.REFERENCE_PROVIDER_NOT_ADMISSIBLE
-    )
+    assert exc_info.value.reason_code is MemoryProviderAdmissionReasonCode.REFERENCE_PROVIDER_NOT_ADMISSIBLE
 
 
 def test_product_durable_external_plugin_rejected_without_evidence() -> None:
@@ -282,10 +279,7 @@ def test_product_durable_external_plugin_rejected_without_evidence() -> None:
             discover_entry_points=False,
             explicit_memory_plugins=(_DurableSelfCertifiedUserProfilePlugin,),
         )
-    assert (
-        exc_info.value.reason_code
-        is MemoryProviderAdmissionReasonCode.QUALIFICATION_EVIDENCE_MISSING
-    )
+    assert exc_info.value.reason_code is MemoryProviderAdmissionReasonCode.QUALIFICATION_EVIDENCE_MISSING
 
 
 def test_product_durable_external_plugin_passes_with_trusted_evidence() -> None:
@@ -294,12 +288,13 @@ def test_product_durable_external_plugin_passes_with_trusted_evidence() -> None:
     env.memory_profile = env.memory_profile.model_copy(
         update={"user_profile_store_plugin_id": "test.durable_qualified_user_profile"},
     )
+    env.memory_profile = with_durable_session_plugin(env.memory_profile)
     registry = _evidence_for_provider("test.durable_qualified_user_profile")
     durability_registry = _durability_for_provider("test.durable_qualified_user_profile")
     wiring = resolve_memory_platform_wiring(
         env,
         discover_entry_points=False,
-        explicit_memory_plugins=(_DurableSelfCertifiedUserProfilePlugin,),
+        explicit_memory_plugins=(_DurableSelfCertifiedUserProfilePlugin, DurableDeclaredSessionStoragePlugin),
         qualification_evidence_registry=registry,
         durability_evidence_registry=durability_registry,
     )
@@ -340,8 +335,12 @@ def test_strict_lab_not_product_still_allows_reference() -> None:
     env = ApplicationEnvironmentProfile.lab_defaults(profile_id="mem.audit5a.strict.lab")
     env.integration_profile = IntegrationProfile()
     env.execution_mode = ExecutionMode.STRICT
-    env.memory_profile = _persistent_memory_profile()
-    wiring = resolve_memory_platform_wiring(env)
+    env.memory_profile = with_durable_session_plugin(_persistent_memory_profile())
+    wiring = resolve_memory_platform_wiring(
+        env,
+        discover_entry_points=False,
+        explicit_memory_plugins=(DurableDeclaredSessionStoragePlugin,),
+    )
     assert isinstance(wiring.user_profile_store, InMemoryUserProfileStore)
     assert env.execution_mode is ExecutionMode.STRICT
 
@@ -491,7 +490,4 @@ def test_product_sqlite_with_behavioral_only_fails_without_durability_evidence(
             env,
             qualification_evidence_registry=registry,
         )
-    assert (
-        exc_info.value.reason_code
-        is MemoryProviderAdmissionReasonCode.DURABILITY_EVIDENCE_MISSING
-    )
+    assert exc_info.value.reason_code is MemoryProviderAdmissionReasonCode.DURABILITY_EVIDENCE_MISSING

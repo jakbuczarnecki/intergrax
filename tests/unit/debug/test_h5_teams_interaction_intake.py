@@ -6,15 +6,14 @@ import hmac
 import json
 
 import pytest
-
-pytestmark = pytest.mark.no_ci
 from fastapi.testclient import TestClient
-
 from intergrax.debug.app import create_debug_app
 from intergrax.runtime.interactions.verification.teams_signature import TeamsSignatureVerifier
 from intergrax.runtime.registry.agent_registry import AgentRegistry
 from intergrax.runtime.task.task import TaskState
 from testing_support.uaep_gate_stubs import UaepPipelineStubAgent
+
+pytestmark = pytest.mark.no_ci
 
 
 def _echo_stub() -> UaepPipelineStubAgent:
@@ -49,9 +48,7 @@ def _teams_activity_payload(*, text: str) -> dict:
 
 def _signed_teams_body(*, token: str, payload: dict) -> tuple[bytes, dict[str, str]]:
     body = json.dumps(payload).encode("utf-8")
-    digest = base64.b64encode(
-        hmac.new(token.encode("utf-8"), body, hashlib.sha256).digest()
-    ).decode("utf-8")
+    digest = base64.b64encode(hmac.new(token.encode("utf-8"), body, hashlib.sha256).digest()).decode("utf-8")
     headers = {
         "Content-Type": "application/json",
         "Authorization": digest,
@@ -109,17 +106,15 @@ def test_debug_interaction_intake_with_teams_verifier():
     token = "teams_test_security_token"
     verifier = TeamsSignatureVerifier(security_token=token, enabled=True)
     from intergrax.debug.interaction_service import DebugInteractionIntakeService
+    from intergrax.runtime.interactions.task_executor import HostTaskExecutionExecutor
+    from intergrax.runtime.nexus.nexus_loop import NexusLoop
     from testing_support.nexus_host_task_execution import (
         build_certified_internal_test_host_task_execution,
     )
-    from intergrax.runtime.interactions.task_executor import HostTaskExecutionExecutor
-    from intergrax.runtime.nexus.nexus_loop import NexusLoop
 
-    loop = NexusLoop(registry)
+    loop = NexusLoop(registry, production_mode=False)
     service = DebugInteractionIntakeService(
-        task_executor=HostTaskExecutionExecutor(
-            build_certified_internal_test_host_task_execution(loop)
-        ),
+        task_executor=HostTaskExecutionExecutor(build_certified_internal_test_host_task_execution(loop)),
         verifier=verifier,
     )
     app = create_debug_app(registry=registry, interaction_service=service, nexus_loop=loop)

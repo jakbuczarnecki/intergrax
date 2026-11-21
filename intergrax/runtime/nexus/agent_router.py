@@ -4,16 +4,15 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
-from typing import Optional
 
-from intergrax.contracts.tier2_agent import Tier2Agent
+from intergrax.contracts.event_severity import EventSeverity
 from intergrax.contracts.execution_identity import (
     require_active_execution_id,
     require_active_execution_identity,
     validate_run_id,
 )
-from intergrax.contracts.event_severity import EventSeverity
 from intergrax.contracts.execution_phase import ExecutionPhase
+from intergrax.contracts.tier2_agent import Tier2Agent
 from intergrax.runtime.events.event_bus import RuntimeEventBus
 from intergrax.runtime.events.payload_registry import runtime_event_with_payload
 from intergrax.runtime.events.payloads import AgentSelectionPayloadV1
@@ -23,8 +22,8 @@ from intergrax.runtime.registry.capability_routing import (
     select_best_capability_match,
     validate_task_for_capability_routing,
 )
-from intergrax.runtime.task.task import Task
 from intergrax.runtime.task.agent_capability_intake import task_envelope_for_agent_capability_match
+from intergrax.runtime.task.task import Task
 
 
 @dataclass(frozen=True)
@@ -37,21 +36,40 @@ class AgentRouteSelection:
     fallback_used: bool = False
 
 
+class AgentRoutingError(RuntimeError):
+    """No agent may be selected for the task under the router's posture."""
+
+
 class AgentRouter:
     """
     Select agents from registry using explicit agent_id or capability matching (§10.4, §16).
+
+    ``production_mode`` has no default: every construction states its posture. The
+    first-routable fallback is default-deny; only ``lab_first_routable_fallback=True`` (LAB,
+    never together with ``production_mode=True``) keeps it, and then the selection event
+    carries ``fallback_used=True``.
     """
 
     def __init__(
         self,
         registry: AgentRegistryRead,
         *,
-        production_mode: bool = False,
-        event_bus: Optional[RuntimeEventBus] = None,
+        production_mode: bool,
+        event_bus: RuntimeEventBus | None = None,
+        lab_first_routable_fallback: bool = False,
     ) -> None:
+        if production_mode and lab_first_routable_fallback:
+            raise ValueError(
+                "lab_first_routable_fallback is a LAB opt-in and cannot be combined with production_mode=True",
+            )
         self._registry = registry
         self._production_mode = production_mode
         self._event_bus = event_bus
+        self._lab_first_routable_fallback = lab_first_routable_fallback
+
+    @property
+    def production_mode(self) -> bool:
+        return self._production_mode
 
     def route(
         self,
@@ -70,9 +88,7 @@ class AgentRouter:
                 task.agent_id,
                 production_mode=self._production_mode,
             ):
-                raise RuntimeError(
-                    f"Requested agent is not routable: {task.agent_id}"
-                )
+                raise RuntimeError(f"Requested agent is not routable: {task.agent_id}")
             agent = self._registry.get(task.agent_id)
             selection = AgentRouteSelection(
                 requested_agent_id=requested,
@@ -130,9 +146,13 @@ class AgentRouter:
                 selection_reason="registry_best_match",
             )
 
+        if not self._lab_first_routable_fallback:
+            raise AgentRoutingError(
+                "No agent matches the task and the first-routable fallback is not enabled for this router.",
+            )
         ids = self._registry.list_routable_agent_ids(production_mode=self._production_mode)
         if not ids:
-            raise RuntimeError("AgentRegistry has no routable agents.")
+            raise AgentRoutingError("AgentRegistry has no routable agents.")
         agent = self._registry.get(ids[0])
         return agent, AgentRouteSelection(
             requested_agent_id=requested,

@@ -1,4 +1,5 @@
 # © Artur Czarnecki. All rights reserved.
+# ruff: noqa: E402
 
 from __future__ import annotations
 
@@ -13,13 +14,11 @@ Invariant (HARNESS-01 internal-only Nexus):
 """
 
 HARNESS_01_NEXUS_INTERNAL_ONLY_INVARIANT: str = (
-    "Nexus is internal to Execution Runtime. "
-    "No public contract or extension surface may depend on Nexus."
+    "Nexus is internal to Execution Runtime. No public contract or extension surface may depend on Nexus."
 )
 
 from dataclasses import dataclass
 from typing import Literal
-
 
 Harness01OwnerLayer = Literal[
     "PUBLIC_CONTRACT",
@@ -64,9 +63,7 @@ class Harness01HigherLayerNexusImporter:
 
 
 # Paths that are unconditional Nexus hard-violations (layer rule; inventory cannot override).
-HARNESS_01_NEXUS_HARD_VIOLATION_PREFIXES: tuple[str, ...] = (
-    "intergrax/contracts/",
-)
+HARNESS_01_NEXUS_HARD_VIOLATION_PREFIXES: tuple[str, ...] = ("intergrax/contracts/",)
 
 HARNESS_01_NEXUS_HARD_VIOLATION_EXACT: frozenset[str] = frozenset(
     {
@@ -75,9 +72,7 @@ HARNESS_01_NEXUS_HARD_VIOLATION_EXACT: frozenset[str] = frozenset(
     }
 )
 
-HARNESS_01_PUBLIC_EXTENSION_SURFACE_PREFIXES: tuple[str, ...] = (
-    "intergrax/applications/contracts/",
-)
+HARNESS_01_PUBLIC_EXTENSION_SURFACE_PREFIXES: tuple[str, ...] = ("intergrax/applications/contracts/",)
 
 HARNESS_01_PUBLIC_EXTENSION_SURFACE_EXACT: frozenset[str] = frozenset(
     {
@@ -96,9 +91,7 @@ def path_is_hard_nexus_violation(path: str) -> bool:
         return True
     if any(path.startswith(prefix) for prefix in HARNESS_01_PUBLIC_EXTENSION_SURFACE_PREFIXES):
         return True
-    if "/contracts/" in path and (
-        path.startswith("applications/") or path.startswith("intergrax/applications/")
-    ):
+    if "/contracts/" in path and (path.startswith("applications/") or path.startswith("intergrax/applications/")):
         return True
     return False
 
@@ -108,36 +101,27 @@ def path_is_public_extension_surface(path: str) -> bool:
         return True
     if any(path.startswith(prefix) for prefix in HARNESS_01_PUBLIC_EXTENSION_SURFACE_PREFIXES):
         return True
-    if "/contracts/" in path and (
-        path.startswith("applications/") or path.startswith("intergrax/applications/")
-    ):
+    if "/contracts/" in path and (path.startswith("applications/") or path.startswith("intergrax/applications/")):
         return True
     return False
 
 
 _EVIDENCE_CLASSIFIED = (
-    "tests/qualification/harness_01/test_harness_01_gates.py::"
-    "test_harness_01_higher_layer_nexus_imports_are_classified"
+    "tests/qualification/harness_01/test_harness_01_gates.py::test_harness_01_higher_layer_nexus_imports_are_classified"
 )
 _EVIDENCE_LAYER = (
     "tests/qualification/harness_01/test_harness_01_gates.py::"
     "test_harness_01_layer_rules_reject_contract_and_public_nexus_imports"
 )
 _EVIDENCE_EE = (
-    "docs/project/architecture/UNIFIED_EXECUTION_ARCHITECTURE.md"
-    " (Nexus private/internal to Execution Engine)"
+    "docs/project/architecture/UNIFIED_EXECUTION_ARCHITECTURE.md (Nexus private/internal to Execution Engine)"
 )
 _EVIDENCE_HOST = (
     "docs/project/architecture/UNIFIED_EXECUTION_ARCHITECTURE.md"
     " (RuntimeConfig → build_nexus_loop_from_environment host composition)"
 )
-_EVIDENCE_TOPOLOGY = (
-    "tests/unit/runtime/architecture/"
-    "test_gr10_r9_r4_topology_mse_composition_mandatory.py"
-)
-_EVIDENCE_MATERIALIZER = (
-    "tests/unit/architecture/test_ebh_2b_agent_nexus_contract_separation.py"
-)
+_EVIDENCE_TOPOLOGY = "tests/unit/runtime/architecture/test_gr10_r9_r4_topology_mse_composition_mandatory.py"
+_EVIDENCE_MATERIALIZER = "tests/unit/architecture/test_ebh_2b_agent_nexus_contract_separation.py"
 _EVIDENCE_SUSPENDED = (
     "tests/unit/runtime/architecture/test_uca6c_r6_architecture_gates.py"
     " (Execution-owned suspended-operation / reentry; Nexus-internal imports)"
@@ -150,11 +134,7 @@ def _rule_classify(path: str) -> Harness01HigherLayerNexusImporter:
             path=path,
             owner_layer="PUBLIC_CONTRACT"
             if path.startswith("intergrax/contracts/")
-            else (
-                "AGENT_PUBLIC"
-                if path.startswith("intergrax/agents/")
-                else "APPLICATION_CONTRACT"
-            ),
+            else ("AGENT_PUBLIC" if path.startswith("intergrax/agents/") else "APPLICATION_CONTRACT"),
             classification="VIOLATION",
             reason=(
                 "Layer rule: public/domain/application contracts and public agent surfaces "
@@ -273,9 +253,7 @@ def _rule_classify(path: str) -> Harness01HigherLayerNexusImporter:
             boundary_status="DEBT",
         )
 
-    if path.startswith("intergrax/runtime/task/") or path.startswith(
-        "intergrax/runtime/agent_governance/"
-    ):
+    if path.startswith("intergrax/runtime/task/") or path.startswith("intergrax/runtime/agent_governance/"):
         return Harness01HigherLayerNexusImporter(
             path=path,
             owner_layer="PLATFORM_RUNTIME",
@@ -299,10 +277,7 @@ def _rule_classify(path: str) -> Harness01HigherLayerNexusImporter:
         if path.endswith("runtime_answer_mapping.py"):
             classification = "AGENT_EXECUTION_BRIDGE"
             status = "LEGAL"
-            reason = (
-                "Canonical Nexus RuntimeAnswer → AgentExecutionResult adapter "
-                "(moved out of intergrax.contracts)."
-            )
+            reason = "Canonical Nexus RuntimeAnswer → AgentExecutionResult adapter (moved out of intergrax.contracts)."
         return Harness01HigherLayerNexusImporter(
             path=path,
             owner_layer="AGENT_INTERNAL",
@@ -371,10 +346,13 @@ def _rule_classify(path: str) -> Harness01HigherLayerNexusImporter:
             boundary_status="DEBT",
         )
 
-    if path.startswith("intergrax/eval/") or path.startswith("intergrax/debug/") or path.startswith(
-        "intergrax/lab/"
-    ) or path.startswith("intergrax/cli/") or path.startswith("intergrax/experiments/") or path.startswith(
-        "intergrax/fastapi_core/"
+    if (
+        path.startswith("intergrax/eval/")
+        or path.startswith("intergrax/debug/")
+        or path.startswith("intergrax/lab/")
+        or path.startswith("intergrax/cli/")
+        or path.startswith("intergrax/experiments/")
+        or path.startswith("intergrax/fastapi_core/")
     ):
         return Harness01HigherLayerNexusImporter(
             path=path,
@@ -455,7 +433,6 @@ _PATHS: tuple[str, ...] = (
     "intergrax/runtime/execution/run_trace_store_factories.py",
     "intergrax/runtime/execution/runtime.py",
     "intergrax/runtime/execution/runtime_state.py",
-    "intergrax/runtime/execution/scenario_host_diagnostic_wiring.py",
     "intergrax/runtime/execution/session_host_composition.py",
     "intergrax/runtime/execution/suspended_operation/agent_governance_reentry_grant.py",
     "intergrax/runtime/execution/suspended_operation/authority_sequential_pause.py",

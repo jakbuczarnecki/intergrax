@@ -6,6 +6,7 @@ from __future__ import annotations
 
 from collections.abc import Callable
 from dataclasses import dataclass
+from enum import StrEnum
 from typing import TYPE_CHECKING
 
 from intergrax.agent_distribution.admin_models import ActivateRuntimeRevisionRequest
@@ -56,6 +57,7 @@ class ReferenceProductionLifecycleResult:
     application_environment_id: str
     serving_pointer_revision: int
     resolved_projection: MaterializedRegistryProjection
+    trust_admission_state: RevisionTrustAdmissionState | None = None
 
 
 class ReferenceProductionLifecycleError(ValueError):
@@ -87,10 +89,45 @@ class DeployActivatePipelineContext:
     services: ReferenceProductionLifecycleServices
     mutation_authorization_boundary: ControlPlaneMutationAuthorizationBoundary
     environment_tenant_resolver: ApplicationEnvironmentTenantResolver
-    # Optional trust re-check of the revision about to be activated (T-IGX-041-A, F-D1-02), e.g.
+    # Optional trust re-check of the revision (T-IGX-041-A, F-D1-02), e.g.
     # ``AgentPlatformAdminService.assert_revision_trust_admissible``. It must raise to refuse.
-    # ``None`` keeps the previous behaviour; the production launchers do not pass it yet.
+    # ``None`` resolves the check from the composed capability runtime's admin service; a
+    # composition without a capability runtime is an explicit pass-through
+    # (``RevisionTrustAdmissionState.NOT_COMPOSED``, T-IGX-051-B Part B/C).
     revision_trust_admission: Callable[[RuntimeRevision], None] | None = None
+
+
+class RevisionTrustAdmissionState(StrEnum):
+    """How the deploy/activate pipeline admitted the revision's packages (recorded on the result).
+
+    ``COMPOSED_RUNTIME``: the composed admin service's ``assert_revision_trust_admissible`` re-evaluated
+    the installation trust records of every enabled roster entry (presence, digest, revocation, policy,
+    freshness) against the revocation, policy and time sources of the composition's ``package_trust``
+    (T-IGX-051-N Part B). Attestation material is verified at install and upgrade (Part A), not here.
+    A lab composition (``package_trust.is_lab``, ``lab_package_trust_composition``) has an empty
+    revocation state and admits unsigned packages, so on a lab composition nothing is revoked here.
+
+    ``NOT_COMPOSED``: no capability runtime is composed (for example the shipped GCA strict path); the
+    pipeline passes through without a trust check.
+    """
+
+    CONTEXT_HOOK = "trust_admission_context_hook"
+    COMPOSED_RUNTIME = "trust_admission_composed_runtime"
+    NOT_COMPOSED = "trust_admission_not_composed"
+
+
+def _resolve_revision_trust_admission(
+    ctx: DeployActivatePipelineContext,
+) -> tuple[Callable[[RuntimeRevision], None] | None, RevisionTrustAdmissionState]:
+    if ctx.revision_trust_admission is not None:
+        return ctx.revision_trust_admission, RevisionTrustAdmissionState.CONTEXT_HOOK
+    capability_runtime = ctx.composition.agent_capability_runtime
+    if capability_runtime is not None:
+        return (
+            capability_runtime.admin_service.assert_revision_trust_admissible,
+            RevisionTrustAdmissionState.COMPOSED_RUNTIME,
+        )
+    return None, RevisionTrustAdmissionState.NOT_COMPOSED
 
 
 def run_deploy_and_activate(
@@ -171,6 +208,11 @@ def run_deploy_and_activate(
             "materialization_artifact_digest": artifact_digest,
         },
     )
+    # A-01: the trust admission runs before any store write; a refused revision is not
+    # persisted, validated, registered or prepared. One check, one place.
+    trust_admission, trust_admission_state = _resolve_revision_trust_admission(ctx)
+    if trust_admission is not None:
+        trust_admission(candidate)
     revision_service.persist_candidate_revision(candidate)
     validated = candidate.model_copy(
         update={"revision_state": RuntimeRevisionState.VALIDATED},
@@ -200,8 +242,6 @@ def run_deploy_and_activate(
         current_serving_pointer_revision=current_pointer_revision,
         target_runtime_revision_id=runtime_revision_id,
     )
-    if ctx.revision_trust_admission is not None:
-        ctx.revision_trust_admission(validated)
     materialization_store = ctx.composition.agent_platform_runtime.stores.materialization_store
     materialization = materialization_store.get_by_revision(runtime_revision_id)
     if materialization is None:
@@ -245,6 +285,7 @@ def run_deploy_and_activate(
         application_environment_id=application_environment_id,
         serving_pointer_revision=serving_record.serving_pointer_revision,
         resolved_projection=resolved,
+        trust_admission_state=trust_admission_state,
     )
 
 
@@ -337,5 +378,6 @@ __all__ = [
     "ReferenceProductionLifecycleError",
     "ReferenceProductionLifecycleGovernanceBlockedError",
     "ReferenceProductionLifecycleResult",
+    "RevisionTrustAdmissionState",
     "run_deploy_and_activate",
 ]

@@ -3,12 +3,9 @@
 from __future__ import annotations
 
 from typing import TYPE_CHECKING
-
 from unittest.mock import AsyncMock, MagicMock
 
 import pytest
-
-from testing_support.nexus_handle_task_impl_stubs import with_runtime_event_metric_scope
 from intergrax.contracts.execution_identity import (
     AttemptId,
     ExecutionId,
@@ -22,6 +19,9 @@ from intergrax.contracts.execution_identity import (
     require_active_execution_identity,
     reset_active_execution_identity,
     validate_execution_id,
+)
+from intergrax.runtime.execution.harness_task_execution_port import (
+    build_harness_root_task_execution_port,
 )
 from intergrax.runtime.execution.orchestration import (
     OrchestrationExecutor,
@@ -38,14 +38,12 @@ from intergrax.runtime.execution.task_adapter import (
 )
 from intergrax.runtime.nexus.nexus_loop import NexusLoop
 from intergrax.runtime.registry.agent_registry import AgentRegistry
+from intergrax.runtime.task.task import Task, TaskContext, TaskResult, TaskState
 from intergrax.runtime.task.task_result_authoritative_exposure_defaults import (
     terminal_task_result_exposure_no_decision_gate,
 )
-from intergrax.runtime.task.task import Task, TaskContext, TaskResult, TaskState
-from intergrax.runtime.execution.harness_task_execution_port import (
-    build_harness_root_task_execution_port,
-)
 from intergrax.runtime.task.unified_task_runner import UnifiedTaskRunner
+from testing_support.nexus_handle_task_impl_stubs import with_runtime_event_metric_scope
 
 if TYPE_CHECKING:
     from intergrax.runtime.long_running.models import TaskCheckpoint
@@ -54,9 +52,7 @@ pytestmark = pytest.mark.unit
 
 
 @pytest.mark.asyncio
-async def test_orchestration_executor_invokes_handle_task_once_with_active_identity() -> (
-    None
-):
+async def test_orchestration_executor_invokes_handle_task_once_with_active_identity() -> None:
     task = Task(
         task_id=mint_task_id(),
         tenant_id="tenant-1",
@@ -95,9 +91,7 @@ async def test_orchestration_executor_invokes_handle_task_once_with_active_ident
 
 
 @pytest.mark.asyncio
-async def test_orchestration_router_resolves_orchestration_request_with_real_resolver() -> (
-    None
-):
+async def test_orchestration_router_resolves_orchestration_request_with_real_resolver() -> None:
     task = Task(
         task_id=mint_task_id(),
         tenant_id="tenant-1",
@@ -153,9 +147,7 @@ async def test_orchestration_router_resolves_orchestration_request_with_real_res
 
 
 @pytest.mark.asyncio
-async def test_orchestration_router_fails_closed_when_strategy_is_not_orchestration() -> (
-    None
-):
+async def test_orchestration_router_fails_closed_when_strategy_is_not_orchestration() -> None:
     task = Task(
         task_id=mint_task_id(),
         tenant_id="tenant-1",
@@ -202,7 +194,7 @@ async def test_nexus_preserves_boundary_execution_id(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     registry = AgentRegistry()
-    loop = NexusLoop(registry)
+    loop = NexusLoop(registry, production_mode=False)
     run_id = mint_run_id()
     attempt_id = mint_attempt_id()
     captured: dict[str, RunId | AttemptId | ExecutionId] = {}
@@ -262,7 +254,7 @@ async def test_nexus_does_not_rebind_when_boundary_execution_id_active(
     monkeypatch.setattr(boundary_module, "bind_active_execution_identity", _spy_bind)
 
     registry = AgentRegistry()
-    loop = NexusLoop(registry)
+    loop = NexusLoop(registry, production_mode=False)
     run_id = mint_run_id()
     attempt_id = mint_attempt_id()
 
@@ -291,7 +283,7 @@ async def test_direct_legacy_nexus_call_fails_without_upstream_context(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     registry = AgentRegistry()
-    loop = NexusLoop(registry)
+    loop = NexusLoop(registry, production_mode=False)
     run_id = mint_run_id()
 
     async def _fake_impl(task: Task) -> TaskResult:
@@ -318,7 +310,7 @@ async def test_nexus_fails_closed_on_active_identity_mismatch(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     registry = AgentRegistry()
-    loop = NexusLoop(registry)
+    loop = NexusLoop(registry, production_mode=False)
     run_id = mint_run_id()
     other_run_id = mint_run_id()
     attempt_id = mint_attempt_id()
@@ -356,7 +348,7 @@ async def test_unified_task_runner_mints_root_execution_id_per_invocation(
 ) -> None:
     captured: dict[str, ExecutionId | AttemptId | RunId] = {}
     registry = AgentRegistry()
-    loop = NexusLoop(registry)
+    loop = NexusLoop(registry, production_mode=False)
 
     async def _fake_impl(task: Task) -> TaskResult:
         run_id, attempt_id = require_active_execution_identity()
@@ -389,7 +381,7 @@ async def test_unified_task_runner_passes_same_concrete_attempt_to_nexus(
 ) -> None:
     seen_attempt_ids: list[AttemptId | None] = []
     registry = AgentRegistry()
-    loop = NexusLoop(registry)
+    loop = NexusLoop(registry, production_mode=False)
 
     original_handle_task = loop.handle_task
 
@@ -441,7 +433,7 @@ async def test_resume_checkpoint_preserves_attempt_mints_fresh_execution_id(
     attempt_id = mint_attempt_id()
     seen_execution_ids: list[ExecutionId] = []
     registry = AgentRegistry()
-    loop = NexusLoop(registry)
+    loop = NexusLoop(registry, production_mode=False)
 
     async def _fake_impl(task: Task) -> TaskResult:
         active_run_id, active_attempt_id = require_active_execution_identity()
@@ -532,9 +524,7 @@ def test_resolve_root_task_identity_mints_new_root_on_checkpoint_resume() -> Non
     assert identity.execution_id != checkpoint_root
 
 
-def test_resolve_root_task_identity_allows_matching_explicit_checkpoint_identity() -> (
-    None
-):
+def test_resolve_root_task_identity_allows_matching_explicit_checkpoint_identity() -> None:
     run_id = mint_run_id()
     attempt_id = mint_attempt_id()
     task_id = mint_task_id()

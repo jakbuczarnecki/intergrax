@@ -8,10 +8,7 @@ import ast
 from pathlib import Path
 
 import pytest
-
-from echo.echo_agent import EchoAgent
 from intergrax.agents.harness_reference_agent import HarnessReferenceAgent
-from intergrax.runtime.nexus.uaep import UAEPBlockedError
 from intergrax.contracts.agent_contract_meta import AgentContract
 from intergrax.contracts.agent_step import AgentStep, StepOutput
 from intergrax.contracts.capability import CapabilityMatchResult
@@ -24,6 +21,9 @@ from intergrax.contracts.execution_identity import (
     require_active_execution_identity,
 )
 from intergrax.contracts.runtime_execution_context import RuntimeExecutionContext
+from intergrax.runtime.diagnostics.central_terminal_execution_diagnostic_port import (
+    CentralTerminalExecutionDiagnosticPort,
+)
 from intergrax.runtime.diagnostics.deterministic_problem_grouping import (
     DeterministicProblemGroupingStrategy,
 )
@@ -39,7 +39,6 @@ from intergrax.runtime.diagnostics.diagnostic_orchestrator import DiagnosticOrch
 from intergrax.runtime.diagnostics.diagnostic_problem_grouping_feature_projector import (
     DiagnosticProblemGroupingFeatureProjector,
 )
-from intergrax.runtime.observability.reconstruction import ExecutionReconstructor
 from intergrax.runtime.diagnostics.in_memory_problem_persistence import (
     InMemoryProblemPersistence,
 )
@@ -49,9 +48,6 @@ from intergrax.runtime.diagnostics.problem_grouping import (
     ProblemGroupingStrategyRegistry,
 )
 from intergrax.runtime.diagnostics.problem_lifecycle import ProblemLifecycleEngine
-from testing_support.runtime.diagnostics.problem_persistence_test_support import (
-    lifecycle_engine_for_tests,
-)
 from intergrax.runtime.diagnostics.terminal_execution_diagnostic_trigger import (
     TerminalExecutionDiagnosticTrigger,
 )
@@ -64,17 +60,21 @@ from intergrax.runtime.nexus.engine.runtime_context import RuntimeContext
 from intergrax.runtime.nexus.nexus_loop import NexusLoop
 from intergrax.runtime.nexus.observability_wiring import wire_nexus_observability
 from intergrax.runtime.nexus.responses.response_schema import RuntimeRequest
+from intergrax.runtime.nexus.uaep import UAEPBlockedError
 from intergrax.runtime.observability.memory_causal_evidence_persistence import (
     InMemoryCausalEvidencePersistence,
 )
 from intergrax.runtime.observability.persistence_conformance import sample_runtime_event
+from intergrax.runtime.observability.reconstruction import ExecutionReconstructor
 from intergrax.runtime.registry.agent_registry import AgentRegistry
 from intergrax.runtime.task.task import Task, TaskContext, TaskState
-from intergrax.runtime.diagnostics.central_terminal_execution_diagnostic_port import (
-    CentralTerminalExecutionDiagnosticPort,
-)
-from testing_support.nexus_lab_task_execution import build_lab_unified_task_runner
 from testing_support.builder import FakeLLMAdapter, build_in_memory_session_manager
+from testing_support.nexus_lab_task_execution import build_lab_unified_task_runner
+from testing_support.runtime.diagnostics.problem_persistence_test_support import (
+    lifecycle_engine_for_tests,
+)
+
+from echo.echo_agent import EchoAgent
 
 pytestmark = [pytest.mark.unit, pytest.mark.gate]
 
@@ -154,9 +154,7 @@ class RecordingDiagnosticOrchestrator(DiagnosticOrchestrator):
         self.recorded_requests: list[DiagnosticOrchestrationRequest] = []
         self.recorded_results: list[DiagnosticOrchestrationResult] = []
 
-    def run(
-        self, request: DiagnosticOrchestrationRequest
-    ) -> DiagnosticOrchestrationResult:
+    def run(self, request: DiagnosticOrchestrationRequest) -> DiagnosticOrchestrationResult:
         self.recorded_requests.append(request)
         result = super().run(request)
         self.recorded_results.append(result)
@@ -208,9 +206,7 @@ class _DeterministicTerminalFailureAgent(HarnessReferenceAgent):
             )
         ]
 
-    async def run_step(
-        self, step: AgentStep, ctx: RuntimeExecutionContext
-    ) -> StepOutput:
+    async def run_step(self, step: AgentStep, ctx: RuntimeExecutionContext) -> StepOutput:
         del step, ctx
         require_active_execution_identity()
         require_active_execution_id()
@@ -340,10 +336,7 @@ def _event_index(events: tuple[RuntimeEvent, ...]) -> dict[EventId, RuntimeEvent
 
 def _is_terminal_publish_marker(event: RuntimeEvent) -> bool:
     payload = event.payload or {}
-    return (
-        payload.get("source") == "task_lifecycle"
-        and payload.get("message") == "task terminal"
-    )
+    return payload.get("source") == "task_lifecycle" and payload.get("message") == "task terminal"
 
 
 def _operational_terminal_failure_events(
@@ -352,15 +345,12 @@ def _operational_terminal_failure_events(
     return tuple(
         event
         for event in events
-        if event.event_type is RuntimeEventType.TASK_FAILED
-        and not _is_terminal_publish_marker(event)
+        if event.event_type is RuntimeEventType.TASK_FAILED and not _is_terminal_publish_marker(event)
     )
 
 
 def _terminal_completed_event(events: tuple[RuntimeEvent, ...]) -> RuntimeEvent:
-    completed = tuple(
-        event for event in events if event.event_type is RuntimeEventType.TASK_COMPLETED
-    )
+    completed = tuple(event for event in events if event.event_type is RuntimeEventType.TASK_COMPLETED)
     assert completed
     return completed[-1]
 
@@ -384,12 +374,8 @@ def _assert_supporting_events_match_source_identity(
 
 
 @pytest.mark.asyncio
-async def test_ue_11f_diagnostics_consumes_execution_identity_from_observability_evidence() -> (
-    None
-):
-    loop, runtime_store, orchestrator, reconstructor = (
-        _build_ue_11f_anomaly_nexus_stack()
-    )
+async def test_ue_11f_diagnostics_consumes_execution_identity_from_observability_evidence() -> None:
+    loop, runtime_store, orchestrator, reconstructor = _build_ue_11f_anomaly_nexus_stack()
     runner = build_lab_unified_task_runner(loop)
     run_id = mint_run_id()
 
@@ -407,14 +393,10 @@ async def test_ue_11f_diagnostics_consumes_execution_identity_from_observability
     assert len(orchestrator.recorded_requests) >= 1
     assert len(orchestrator.recorded_results) >= 1
 
-    persisted_events = tuple(
-        runtime_store.list_for_task(result.task_id, tenant_id=_TENANT)
-    )
+    persisted_events = tuple(runtime_store.list_for_task(result.task_id, tenant_id=_TENANT))
     terminal_event = _terminal_completed_event(persisted_events)
     violation_events = tuple(
-        event
-        for event in persisted_events
-        if event.event_type is RuntimeEventType.RETRY_SCHEDULED
+        event for event in persisted_events if event.event_type is RuntimeEventType.RETRY_SCHEDULED
     )
     assert violation_events
 
@@ -442,9 +424,7 @@ async def test_ue_11f_diagnostics_consumes_execution_identity_from_observability
     assert scope.run_id == source_run_id
 
     assert len(reconstructor.invocations) >= 1
-    reconstructed_tenant, reconstructed_task_id, reconstructed_run_id = (
-        reconstructor.invocations[0]
-    )
+    reconstructed_tenant, reconstructed_task_id, reconstructed_run_id = reconstructor.invocations[0]
     assert reconstructed_tenant == source_tenant_id
     assert reconstructed_task_id == result.task_id
     assert reconstructed_run_id == source_run_id
@@ -479,8 +459,7 @@ async def test_ue_11f_diagnostics_consumes_execution_identity_from_observability
 
     assert referenced_event_ids
     reconstruction_by_id = {
-        positioned.event.event_id: positioned.event
-        for positioned in reconstruction.positioned_events
+        positioned.event.event_id: positioned.event for positioned in reconstruction.positioned_events
     }
     for event_id in referenced_event_ids:
         reconstructed_event = reconstruction_by_id[event_id]
@@ -488,12 +467,8 @@ async def test_ue_11f_diagnostics_consumes_execution_identity_from_observability
 
 
 @pytest.mark.asyncio
-async def test_ue_11f_real_terminal_failure_correlates_execution_identity_through_obs_evidence() -> (
-    None
-):
-    loop, runtime_store, orchestrator, reconstructor = (
-        _build_ue_11f_real_failure_nexus_stack()
-    )
+async def test_ue_11f_real_terminal_failure_correlates_execution_identity_through_obs_evidence() -> None:
+    loop, runtime_store, orchestrator, reconstructor = _build_ue_11f_real_failure_nexus_stack()
     runner = build_lab_unified_task_runner(loop)
     run_id = mint_run_id()
 
@@ -511,9 +486,7 @@ async def test_ue_11f_real_terminal_failure_correlates_execution_identity_throug
     assert len(orchestrator.recorded_requests) >= 1
     assert len(orchestrator.recorded_results) >= 1
 
-    persisted_events = tuple(
-        runtime_store.list_for_task(result.task_id, tenant_id=_TENANT)
-    )
+    persisted_events = tuple(runtime_store.list_for_task(result.task_id, tenant_id=_TENANT))
     operational_failures = _operational_terminal_failure_events(persisted_events)
     assert len(operational_failures) == 1
     failure_event = operational_failures[0]
@@ -528,8 +501,7 @@ async def test_ue_11f_real_terminal_failure_correlates_execution_identity_throug
     terminal_publish_events = tuple(
         event
         for event in persisted_events
-        if event.event_type is RuntimeEventType.TASK_FAILED
-        and _is_terminal_publish_marker(event)
+        if event.event_type is RuntimeEventType.TASK_FAILED and _is_terminal_publish_marker(event)
     )
     assert len(terminal_publish_events) >= 1
     terminal_publish_event = terminal_publish_events[0]
@@ -547,9 +519,7 @@ async def test_ue_11f_real_terminal_failure_correlates_execution_identity_throug
     assert scope.run_id == source_run_id
 
     assert len(reconstructor.invocations) >= 1
-    reconstructed_tenant, reconstructed_task_id, reconstructed_run_id = (
-        reconstructor.invocations[0]
-    )
+    reconstructed_tenant, reconstructed_task_id, reconstructed_run_id = reconstructor.invocations[0]
     assert reconstructed_tenant == source_tenant_id
     assert reconstructed_task_id == result.task_id
     assert reconstructed_run_id == source_run_id
@@ -560,8 +530,7 @@ async def test_ue_11f_real_terminal_failure_correlates_execution_identity_throug
         source_run_id,
     )
     reconstruction_by_id = {
-        positioned.event.event_id: positioned.event
-        for positioned in reconstruction.positioned_events
+        positioned.event.event_id: positioned.event for positioned in reconstruction.positioned_events
     }
     assert failure_event.event_id in reconstruction_by_id
     reconstructed_failure = reconstruction_by_id[failure_event.event_id]
@@ -631,14 +600,8 @@ def test_ue_11f_diagnostics_has_no_execution_lifecycle_ownership() -> None:
     violations: list[str] = []
     for path in sorted(_DIAGNOSTICS_ROOT.rglob("*.py")):
         rel = path.relative_to(_REPO_ROOT).as_posix()
-        violations.extend(
-            _collect_forbidden_calls(path, _FORBIDDEN_LIFECYCLE_OWNERSHIP_CALLS)
-        )
-        bind_violations = _collect_forbidden_calls(
-            path, frozenset({"bind_active_execution_identity"})
-        )
+        violations.extend(_collect_forbidden_calls(path, _FORBIDDEN_LIFECYCLE_OWNERSHIP_CALLS))
+        bind_violations = _collect_forbidden_calls(path, frozenset({"bind_active_execution_identity"}))
         if rel not in _BIND_ACTIVE_EXECUTION_IDENTITY_ALLOWLIST:
             violations.extend(bind_violations)
-    assert violations == [], (
-        "Diagnostics must not own execution lifecycle: " + ", ".join(violations)
-    )
+    assert violations == [], "Diagnostics must not own execution lifecycle: " + ", ".join(violations)

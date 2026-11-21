@@ -10,18 +10,23 @@ from enum import Enum
 from intergrax.applications.contracts.environment_profile import ApplicationEnvironmentProfile
 from intergrax.contracts.orchestration_enums import MergeStrategy, MultiAgentOrder
 from intergrax.llm_adapters.contracts.llm_adapter import LLMAdapter
+from intergrax.runtime.execution.host_orchestration_planner_classifier_wiring import (
+    NexusTaskClassifierProtocol,
+    NexusTaskPlannerProtocol,
+)
+from intergrax.runtime.registry.agent_registry import AgentRegistry
 
 
 class OrchestrationWiringError(ValueError):
     """Raised when orchestration profile kinds cannot be resolved."""
 
 
-class NexusPlannerKind(str, Enum):
+class NexusPlannerKind(str, Enum):  # noqa: UP042
     DEFAULT = "default"
     ENGINE = "engine"
 
 
-class NexusClassifierKind(str, Enum):
+class NexusClassifierKind(str, Enum):  # noqa: UP042
     DEFAULT = "default"
     RULES = "rules"
     LLM = "llm"
@@ -115,3 +120,34 @@ def resolve_max_parallel_nodes(env: ApplicationEnvironmentProfile) -> int | None
 
 def resolve_max_inflight_nodes(env: ApplicationEnvironmentProfile) -> int | None:
     return env.orchestration_profile.max_inflight_nodes
+
+
+def resolve_nexus_task_planner(
+    env: ApplicationEnvironmentProfile,
+    *,
+    wiring_context: OrchestrationWiringContext | None = None,
+) -> NexusTaskPlannerProtocol:
+    """Map ``OrchestrationProfile.planner_kind`` to a planner (Tier-3 entry over the Tier-1 resolver)."""
+    from intergrax.applications._shared.host_orchestration_environment_resolution import (
+        resolve_nexus_task_planner_from_profile,
+    )
+
+    return resolve_nexus_task_planner_from_profile(env, wiring_context=wiring_context)
+
+
+def resolve_nexus_task_classifier(
+    registry: AgentRegistry,
+    env: ApplicationEnvironmentProfile,
+    *,
+    wiring_context: OrchestrationWiringContext | None = None,
+) -> NexusTaskClassifierProtocol:
+    """Map ``OrchestrationProfile.classifier_kind`` to a classifier (Tier-3 entry over Tier-1)."""
+    from intergrax.applications._shared.host_orchestration_environment_resolution import (
+        resolve_nexus_task_classifier_from_profile,
+    )
+
+    return resolve_nexus_task_classifier_from_profile(
+        registry,
+        env,
+        wiring_context=wiring_context,
+    )

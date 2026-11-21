@@ -16,5 +16,5 @@
     "PRODUCTION_ELIGIBLE_UNVERIFIED": 8422,
     "PRODUCTION_EFFECTIVE": 12
   },
-  "note": "Diagnostic replay at RC-1 (train package 36c470249). Not T-AF2-CLOSED-WORLD PASS, not G2, not PT-Q02. Full jsonl under .tmp/ (gitignored). Copied to development tor G4 for cite-only."
+  "note": "Diagnostic replay at RC-1 (train package 36c470249). Not T-AF2-CLOSED-WORLD PASS, not G2, not PT-Q02. Full jsonl under .tmp/ (gitignored). Copied to development tor G4 for cite-only. Not T-AF2-CLOSED-WORLD PASS, not G2, not PT-Q02. Full jsonl remains under .tmp/ (gitignored)."
 }

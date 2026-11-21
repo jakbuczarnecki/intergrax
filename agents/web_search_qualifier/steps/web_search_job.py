@@ -13,7 +13,7 @@ from intergrax.llm.messages import ChatMessage
 from intergrax.llm_adapters.contracts.llm_adapter import LLMAdapter
 from intergrax.runtime.execution.runtime_state import RuntimeState
 from intergrax.websearch.schemas.search_hit import SearchHit
-from web_search_qualifier.search_provider_resolver import ResolvedSearchProvider
+
 from web_search_qualifier.source_selection.composition import (
     build_web_search_source_selection_composition,
     reorder_candidates_for_llm_bias,
@@ -25,15 +25,13 @@ from web_search_qualifier.web_functional_evidence import emit_web_search_functio
 from web_search_qualifier.web_search import WebSearchCandidate, candidates_from_hits
 
 WEB_SEARCH_STEP_ID = "web_search_qualifier_step"
+SEARCH_PROVIDER_NOT_CONFIGURED = "search_provider_not_configured"
 _FAILURE_LAYER_KEY = "qualification_failure_injection_layer"
 _TASK_MESSAGE_KEY = "qualification_task_message"
 _SEARCH_LIMIT_KEY = "qualification_search_limit"
 _PROVIDER_ID_KEY = "qualification_search_provider_id"
 
-_DEFAULT_TASK = (
-    "When was Python 3.12.0 released according to the official Python website? "
-    "Report the release date."
-)
+_DEFAULT_TASK = "When was Python 3.12.0 released according to the official Python website? Report the release date."
 _DEFAULT_SEARCH_LIMIT = 8
 
 _HEALTHY_QUERY_SYSTEM = (
@@ -67,14 +65,21 @@ _CORRECT_RELEASE_DATE_MARKERS: tuple[str, ...] = (
     "Oct. 2, 2023",
 )
 _HEALTHY_SYNTHESIS_SYSTEM = (
-    "Answer the user question using the extracted fact. "
-    "Reply in one short sentence including the release date."
+    "Answer the user question using the extracted fact. Reply in one short sentence including the release date."
 )
 _WRONG_SYNTHESIS_SYSTEM = (
     "Answer the user question in one short sentence. "
     "Always state that Python 3.12.0 was released on 2020-01-01 "
     "even if the extracted fact says otherwise."
 )
+
+
+@dataclass(frozen=True, slots=True)
+class ResolvedSearchProvider:
+    """Search provider injected by the composition root (the agent never resolves one)."""
+
+    provider_id: str
+    provider: SearchProvider
 
 
 def _failure_output(*, run_id: str, reason: str, **extra: object) -> dict[str, object]:
@@ -161,9 +166,7 @@ def _select_source(
         failure_layer=failure_layer,
     )
     llm_candidates = (
-        reorder_candidates_for_llm_bias(candidates)
-        if composition.highlight_top_rank_for_llm
-        else candidates
+        reorder_candidates_for_llm_bias(candidates) if composition.highlight_top_rank_for_llm else candidates
     )
     engine_decision = composition.engine.select(
         run_id=run_id,
@@ -176,18 +179,10 @@ def _select_source(
     raw_response = engine_decision.provenance.raw_llm_response or ""
     if engine_decision.provenance.selection_mode is SourceSelectionMode.POLICY:
         raw_response = engine_decision.selected_url or ""
-    if (
-        failure_layer == "source_selection_bias"
-        and selected_url is None
-        and engine_decision.ordered_candidates
-    ):
+    if failure_layer == "source_selection_bias" and selected_url is None and engine_decision.ordered_candidates:
         selected_url = engine_decision.ordered_candidates[0].url
         raw_response = raw_response or selected_url
-    policy_id = (
-        engine_decision.provenance.policy_id.value
-        if engine_decision.provenance.policy_id is not None
-        else None
-    )
+    policy_id = engine_decision.provenance.policy_id.value if engine_decision.provenance.policy_id is not None else None
     return _SelectionDecision(
         selected_url=selected_url,
         raw_response=raw_response,
@@ -237,11 +232,7 @@ def _extract_fact(
     snippet: str,
     failure_layer: str | None,
 ) -> _ExtractionDecision:
-    system = (
-        _WRONG_EXTRACTION_SYSTEM
-        if failure_layer == "extraction_bias"
-        else _HEALTHY_EXTRACTION_SYSTEM
-    )
+    system = _WRONG_EXTRACTION_SYSTEM if failure_layer == "extraction_bias" else _HEALTHY_EXTRACTION_SYSTEM
     extractor_input, provider_snippet, input_modified = _build_extractor_input_context(
         selected_url=selected_url,
         snippet=snippet,
@@ -270,11 +261,7 @@ def _synthesize_answer(
     extracted_fact: str,
     failure_layer: str | None,
 ) -> str:
-    system = (
-        _WRONG_SYNTHESIS_SYSTEM
-        if failure_layer == "synthesis_bias"
-        else _HEALTHY_SYNTHESIS_SYSTEM
-    )
+    system = _WRONG_SYNTHESIS_SYSTEM if failure_layer == "synthesis_bias" else _HEALTHY_SYNTHESIS_SYSTEM
     return _llm_text(
         adapter,
         system=system,
@@ -293,7 +280,7 @@ def _snippet_for_url(candidates: tuple[WebSearchCandidate, ...], url: str) -> st
 async def run_web_search_job(
     step_ctx: AgentStepContext,
     *,
-    resolved_provider: ResolvedSearchProvider | None = None,
+    resolved_provider: ResolvedSearchProvider | None,
 ) -> dict[str, object]:
     exec_ctx = exec_ctx_from_step(step_ctx)
     metadata = request_metadata(exec_ctx, step_ctx)
@@ -310,9 +297,7 @@ async def run_web_search_job(
         return _failure_output(run_id=step_ctx.run_id, reason="llm_adapter_not_available")
 
     if resolved_provider is None:
-        from web_search_qualifier.search_provider_resolver import resolve_qualification_search_provider
-
-        resolved_provider = resolve_qualification_search_provider()
+        return _failure_output(run_id=step_ctx.run_id, reason=SEARCH_PROVIDER_NOT_CONFIGURED)
 
     provider: SearchProvider = resolved_provider.provider
     actual_query = _construct_query(
@@ -372,9 +357,7 @@ async def run_web_search_job(
         selected_url=selected_url,
         extracted_fact=extracted_fact,
         selection_mode=(
-            selection_decision.selection_mode.value
-            if selection_decision.selection_mode is not None
-            else None
+            selection_decision.selection_mode.value if selection_decision.selection_mode is not None else None
         ),
         policy_id=selection_decision.policy_id,
         raw_selector_response=selection_decision.raw_response,
@@ -406,14 +389,10 @@ async def run_web_search_job(
         "selected_artifact_ref": artifact_ref_for_url(selected_url) if selected_url else None,
         "extracted_fact": extracted_fact,
         "candidate_urls": [candidate.url for candidate in candidates],
-        "ordered_candidate_urls": [
-            candidate.url for candidate in selection_decision.ordered_candidates
-        ],
+        "ordered_candidate_urls": [candidate.url for candidate in selection_decision.ordered_candidates],
         "raw_selector_response": selection_decision.raw_response,
         "selection_mode": (
-            selection_decision.selection_mode.value
-            if selection_decision.selection_mode is not None
-            else None
+            selection_decision.selection_mode.value if selection_decision.selection_mode is not None else None
         ),
         "selection_policy_id": selection_decision.policy_id,
         "raw_extractor_response": raw_extractor_response,
@@ -432,4 +411,11 @@ async def run_web_search_job(
 
 _match_url_from_response = match_url_from_response
 
-__all__ = ["WEB_SEARCH_STEP_ID", "run_web_search_job", "_match_url_from_response", "_select_source"]
+__all__ = [
+    "SEARCH_PROVIDER_NOT_CONFIGURED",
+    "WEB_SEARCH_STEP_ID",
+    "ResolvedSearchProvider",
+    "run_web_search_job",
+    "_match_url_from_response",
+    "_select_source",
+]

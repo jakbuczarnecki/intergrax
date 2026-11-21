@@ -4,13 +4,13 @@ from __future__ import annotations
 
 import pytest
 from fastapi.testclient import TestClient
-
-from echo.echo_agent import EchoAgent
 from intergrax.debug.app import create_debug_app
 from intergrax.runtime.nexus.nexus_loop import NexusLoop
 from intergrax.runtime.nexus.tracing.in_memory_trace_store import InMemoryRunTraceStore
 from intergrax.runtime.registry.agent_registry import AgentRegistry
 from intergrax.runtime.task.task import Task, TaskContext, TaskState
+
+from echo.echo_agent import EchoAgent
 
 pytestmark = [pytest.mark.integration, pytest.mark.gate]
 
@@ -20,7 +20,7 @@ async def test_debug_api_reads_injected_trace_store_without_sqlite() -> None:
     trace_store = InMemoryRunTraceStore()
     registry = AgentRegistry()
     registry.register(EchoAgent())
-    nexus_loop = NexusLoop(registry, trace_store=trace_store)
+    nexus_loop = NexusLoop(registry, trace_store=trace_store, production_mode=False)
     app = create_debug_app(
         registry=registry,
         nexus_loop=nexus_loop,

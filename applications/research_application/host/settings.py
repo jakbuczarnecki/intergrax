@@ -11,13 +11,14 @@ from intergrax.applications._shared.settings_loader import (
 )
 from intergrax.applications.contracts.settings import IntergraxApplicationSettingsBase
 
+
 @dataclass(frozen=True, kw_only=True)
 class ResearchBackendSettings(ApplicationSettingsEnvHost, IntergraxApplicationSettingsBase):
     """Environment for research_application (scaffolded lab profile)."""
 
     env_prefix: ClassVar[str] = "RESEARCH_"
     route_prefix: str = "/v1/research"
-    backend_host: str = "0.0.0.0"
+    backend_host: str = "127.0.0.1"
     backend_port: int = 8010
     include_queue_worker: bool = False
     use_nexus_loop: bool = True
@@ -48,9 +49,7 @@ class ResearchBackendSettings(ApplicationSettingsEnvHost, IntergraxApplicationSe
     @classmethod
     def _load_app_env(cls, env: EnvReader) -> dict[str, object]:
         extra_tools_raw = env.optional_str("ENABLED_TOOLS")
-        extra_tools = tuple(
-            part.strip() for part in (extra_tools_raw or "").split(",") if part.strip()
-        )
+        extra_tools = tuple(part.strip() for part in (extra_tools_raw or "").split(",") if part.strip())
         return {
             "use_nexus_loop": env.bool("USE_NEXUS_LOOP", default=True),
             "interaction_execute_default": env.bool("INTERACTION_EXECUTE_DEFAULT", default=True),

@@ -13,15 +13,16 @@ from intergrax.contracts.agent_run import AgentRunResult
 from intergrax.contracts.agent_run_enums import CognitivePattern
 from intergrax.contracts.agent_step_context import AgentStepContext
 from intergrax.contracts.capability import CapabilityMatchResult
+from intergrax.contracts.task_envelope import TaskEnvelope, routing_capability_from_envelope
+from intergrax.contracts.tracing import DiagnosticPayload
 from intergrax.llm_adapters.contracts.llm_adapter import LLMAdapter
 from intergrax.runtime.execution.agent_runtime_context import RuntimeContext
 from intergrax.runtime.execution.agent_runtime_io import RuntimeRequest
-from intergrax.contracts.tracing import DiagnosticPayload
-from intergrax.contracts.task_envelope import TaskEnvelope, routing_capability_from_envelope
+
 from web_search_qualifier.capabilities import CAPABILITIES
 from web_search_qualifier.contract import build_agent_contract
 from web_search_qualifier.diagnostics import web_search_diagnostic_from_output
-from web_search_qualifier.steps.web_search_job import run_web_search_job
+from web_search_qualifier.steps.web_search_job import ResolvedSearchProvider, run_web_search_job
 
 
 class WebSearchQualifierAgent(DiagnosticReflexAgent):
@@ -32,8 +33,13 @@ class WebSearchQualifierAgent(DiagnosticReflexAgent):
     cognitive_pattern = CognitivePattern.REFLEX
     main_step_id = "web_search_qualifier_step"
 
-    def __init__(self, llm_adapter: LLMAdapter) -> None:
+    def __init__(
+        self,
+        llm_adapter: LLMAdapter,
+        search_provider: ResolvedSearchProvider,
+    ) -> None:
         self._llm_adapter = llm_adapter
+        self._search_provider = search_provider
 
     def get_contract(self):
         return build_agent_contract()
@@ -62,7 +68,7 @@ class WebSearchQualifierAgent(DiagnosticReflexAgent):
 
     async def act(self, step_ctx: AgentStepContext, reasoning):
         _ = reasoning
-        return await run_web_search_job(step_ctx)
+        return await run_web_search_job(step_ctx, resolved_provider=self._search_provider)
 
     def evaluate(self, step_ctx: AgentStepContext, output: dict[str, object]):
         return evaluate_complete(step_ctx, output, reason="web_search_qualification_complete")

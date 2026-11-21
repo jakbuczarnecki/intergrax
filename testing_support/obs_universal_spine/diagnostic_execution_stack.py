@@ -6,31 +6,32 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING
 
-from echo.echo_agent import EchoAgent
 from intergrax.applications._shared.diagnostic_composition import DiagnosticCompositionOverrides
 from intergrax.applications._shared.diagnostic_read_wiring import HostDiagnosticReadDependencies
 from intergrax.applications._shared.diagnostic_runtime_wiring import (
     build_terminal_execution_diagnostic_trigger,
     resolve_host_diagnostic_runtime_dependencies,
 )
+from intergrax.contracts.runtime_policy import PolicyAction, PolicyDecision
 from intergrax.integrations._shared.in_memory_document_store import InMemoryDocumentStore
 from intergrax.runtime.diagnostics.central_terminal_execution_diagnostic_port import (
     wrap_terminal_execution_diagnostic_trigger,
 )
 from intergrax.runtime.events.runtime_event import RuntimeEvent, RuntimeEventType
 from intergrax.runtime.events.stores.memory_runtime_event_store import InMemoryRuntimeEventStore
-from intergrax.runtime.long_running.persistence_contract import TaskCheckpointPersistence
-from intergrax.contracts.runtime_policy import PolicyAction, PolicyDecision
-from intergrax.runtime.policy.policy_engine import PolicyEngine
-from intergrax.runtime.policy.runtime_policy_engine import RuntimePolicyEngine
-from intergrax.runtime.nexus.nexus_loop import NexusLoop
-from intergrax.runtime.nexus.observability_wiring import wire_nexus_observability
-from intergrax.runtime.observability.persistence_conformance import sample_runtime_event
-from intergrax.runtime.registry.agent_registry import AgentRegistry
 from intergrax.runtime.execution.harness_task_execution_port import (
     build_harness_root_task_execution_port,
 )
+from intergrax.runtime.long_running.persistence_contract import TaskCheckpointPersistence
+from intergrax.runtime.nexus.nexus_loop import NexusLoop
+from intergrax.runtime.nexus.observability_wiring import wire_nexus_observability
+from intergrax.runtime.observability.persistence_conformance import sample_runtime_event
+from intergrax.runtime.policy.policy_engine import PolicyEngine
+from intergrax.runtime.policy.runtime_policy_engine import RuntimePolicyEngine
+from intergrax.runtime.registry.agent_registry import AgentRegistry
 from intergrax.runtime.task.unified_task_runner import UnifiedTaskRunner
+
+from echo.echo_agent import EchoAgent
 
 if TYPE_CHECKING:
     from intergrax.agents.agent_contract import Agent
@@ -140,6 +141,7 @@ def build_diagnostic_nexus_loop(
         disable_execution_continuation=disable_execution_continuation,
         execution_continuation_state_store=execution_continuation_state_store,
         policy_engine=PolicyEngine(runtime=_LabObsSpinePolicyRuntime()),
+        production_mode=False,
     )
     loop.attach_terminal_diagnostic_trigger(
         wrap_terminal_execution_diagnostic_trigger(trigger, event_bus=loop.event_bus),

@@ -8,22 +8,24 @@ import ast
 import importlib
 import textwrap
 from pathlib import Path
+from types import SimpleNamespace
 
 import pytest
-
 from intergrax.applications._shared.agent_resolution import resolve_agent_contract_from_binding
 from intergrax.applications.contracts.errors import AgentImportError
 from intergrax.applications.contracts.manifest import AgentBinding
 from intergrax.contracts.agent_contract_meta import AgentContract
 from intergrax.contracts.tier2_agent import Tier2Agent
 from intergrax.llm_adapters.contracts.llm_adapter import LLMAdapter
-from model_routing_qualifier.model_routing_qualifier_agent import ModelRoutingQualifierAgent
-from tool_selection_qualifier.tool_selection_qualifier_agent import ToolSelectionQualifierAgent
-from web_search_qualifier.web_search_qualifier_agent import WebSearchQualifierAgent
 from tests.unit.architecture.ebh_2e_external_structural_llm_adapter import (
     ExternalStructuralAdapter,
     assert_external_structural_llm_adapter,
 )
+
+from model_routing_qualifier.model_routing_qualifier_agent import ModelRoutingQualifierAgent
+from tool_selection_qualifier.tool_selection_qualifier_agent import ToolSelectionQualifierAgent
+from web_search_qualifier.steps.web_search_job import ResolvedSearchProvider
+from web_search_qualifier.web_search_qualifier_agent import WebSearchQualifierAgent
 
 pytestmark = [pytest.mark.unit, pytest.mark.gate]
 
@@ -52,14 +54,22 @@ def test_ebh_2e_r4_r1_external_adapter_does_not_use_base_llm_adapter() -> None:
             pytest.fail("ExternalStructuralAdapter must not import BaseLLMAdapter")
 
 
-@pytest.mark.parametrize("agent_cls", [WebSearchQualifierAgent, ToolSelectionQualifierAgent, ModelRoutingQualifierAgent])
+@pytest.mark.parametrize(
+    "agent_cls", [WebSearchQualifierAgent, ToolSelectionQualifierAgent, ModelRoutingQualifierAgent]
+)
 def test_ebh_2e_r4_r1_qualifier_accepts_structural_adapter(agent_cls: type) -> None:
     from intergrax.contracts.execution_identity import mint_run_id, mint_task_id
     from intergrax.runtime.nexus.responses.response_schema import RuntimeRequest
 
     adapter = ExternalStructuralAdapter()
     assert isinstance(adapter, LLMAdapter)
-    agent = agent_cls(llm_adapter=adapter)
+    if agent_cls is WebSearchQualifierAgent:
+        agent = agent_cls(
+            llm_adapter=adapter,
+            search_provider=ResolvedSearchProvider(provider_id="stub", provider=SimpleNamespace()),  # type: ignore[arg-type]
+        )
+    else:
+        agent = agent_cls(llm_adapter=adapter)
     runtime = agent.build_context(
         RuntimeRequest(
             agent_id="qualifier",

@@ -8,7 +8,6 @@ import threading
 from unittest.mock import AsyncMock, MagicMock
 
 import pytest
-
 from intergrax.contracts.execution_identity import (
     bind_active_execution_identity,
     mint_attempt_id,
@@ -23,6 +22,7 @@ from intergrax.contracts.execution_terminal import (
     ExecutionTerminalOutcome,
     ExecutionTerminalRecord,
 )
+from intergrax.contracts.validation import ValidationResult
 from intergrax.runtime.cancellation.resume_admission import (
     CheckpointNotResumableError,
     assert_checkpoint_resumable,
@@ -38,18 +38,17 @@ from intergrax.runtime.execution.execution_terminal.persistence import (
     normalize_terminal_record,
     reconcile_task_state_with_terminal_outcome,
 )
-from intergrax.runtime.nexus.nexus_loop import NexusLoop
-from intergrax.runtime.registry.agent_registry import AgentRegistry
 from intergrax.runtime.long_running.execution_tree_checkpoint import minimal_runtime_checkpoint
 from intergrax.runtime.long_running.models import TaskCheckpoint
 from intergrax.runtime.long_running.scheduler import LongRunningScheduler, UnifiedTaskResumeExecutor
 from intergrax.runtime.long_running.store import SQLiteTaskCheckpointStore
-from intergrax.contracts.validation import ValidationResult
 from intergrax.runtime.nexus.errors.error_codes import RuntimeErrorCode
+from intergrax.runtime.nexus.nexus_loop import NexusLoop
 from intergrax.runtime.nexus.retry.coordinator import RetryCoordinator
-from intergrax.runtime.task.task_trace import TaskTraceEmitter
+from intergrax.runtime.registry.agent_registry import AgentRegistry
 from intergrax.runtime.task.task import Task, TaskState
 from intergrax.runtime.task.task_contract import TaskExecutionOptions, TaskLongRunningOptions
+from intergrax.runtime.task.task_trace import TaskTraceEmitter
 
 pytestmark = [pytest.mark.unit, pytest.mark.gate]
 
@@ -439,7 +438,7 @@ def test_reconcile_task_state_keeps_same_exact_state() -> None:
 
 
 def _nexus_finish_loop(terminal: ExecutionTerminalService) -> NexusLoop:
-    return NexusLoop(AgentRegistry(), execution_terminal=terminal)
+    return NexusLoop(AgentRegistry(), execution_terminal=terminal, production_mode=False)
 
 
 async def _finish_terminal_task(
@@ -533,9 +532,7 @@ async def test_finish_reconciles_failed_to_canonical_completed() -> None:
     result = await _finish_terminal_task(loop, task, run_id=run_id, attempt_id=attempt_id)
     assert task.state is TaskState.COMPLETED
     assert result.state is TaskState.COMPLETED
-    assert not any(
-        event.event_type is RuntimeEventType.TASK_FAILED for event in loop.event_bus.history
-    )
+    assert not any(event.event_type is RuntimeEventType.TASK_FAILED for event in loop.event_bus.history)
 
 
 @pytest.mark.asyncio

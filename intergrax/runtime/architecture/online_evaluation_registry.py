@@ -20,6 +20,9 @@ Concurrency semantics (PDC-D5-R018, DX-07) of ``FileOnlineEvaluationRegistry``:
 - a writer that cannot acquire the lock within ``lock_timeout_seconds`` is **rejected**
   with ``OnlineEvaluationRegistryBusyError``; nothing is written;
 - a lock file older than ``stale_lock_seconds`` is treated as abandoned and removed;
+- the lock file carries a per-acquisition owner token; a writer removes it on release only while
+  it still carries its own token, so a writer whose lock was taken over never deletes the new
+  owner's lock (F-D5-12; it emits ``OnlineEvaluationRegistryLockOwnershipWarning`` instead);
 - the registry file is replaced atomically (temp file + ``os.replace``), so a crashed
   writer never leaves a truncated registry.
 """
@@ -28,8 +31,10 @@ from __future__ import annotations
 
 import contextlib
 import os
+import secrets
 import threading
 import time
+import warnings
 from collections.abc import Iterator, Sequence
 from pathlib import Path
 from typing import Protocol
@@ -43,6 +48,10 @@ from intergrax.runtime.architecture.online_evaluation_models import (
 
 class OnlineEvaluationTenantBoundaryError(PermissionError):
     """A tenant tried to read or write another tenant's (or an untenanted) observation."""
+
+
+class OnlineEvaluationRegistryLockOwnershipWarning(RuntimeWarning):
+    """Release found a foreign owner token on the lock file; the lock was left in place."""
 
 
 class OnlineEvaluationRegistryBusyError(RuntimeError):
@@ -219,18 +228,19 @@ class FileOnlineEvaluationRegistry:
     def _exclusive(self) -> Iterator[None]:
         with self._thread_lock:
             self._path.parent.mkdir(parents=True, exist_ok=True)
-            self._acquire_file_lock()
+            token = self._acquire_file_lock()
             try:
                 yield
             finally:
-                with contextlib.suppress(OSError):
-                    self._lock_path.unlink()
+                self._release_file_lock(token)
 
     def _busy(self) -> OnlineEvaluationRegistryBusyError:
         return OnlineEvaluationRegistryBusyError(f"evaluation registry is locked by another writer: {self._path.name}")
 
-    def _acquire_file_lock(self) -> None:
+    def _acquire_file_lock(self) -> str:
+        """Create the lock file with a per-acquisition owner token (F-D5-12) and return the token."""
         deadline = time.monotonic() + self._lock_timeout
+        token = f"{os.getpid()}:{secrets.token_hex(16)}"
         while True:
             try:
                 fd = os.open(self._lock_path, os.O_CREAT | os.O_EXCL | os.O_WRONLY)
@@ -241,10 +251,37 @@ class FileOnlineEvaluationRegistry:
                     raise self._busy() from None
                 time.sleep(0.005)
                 continue
-            with contextlib.suppress(OSError):
-                os.write(fd, str(os.getpid()).encode("ascii"))
-            os.close(fd)
+            try:
+                os.write(fd, token.encode("ascii"))
+            finally:
+                os.close(fd)
+            return token
+
+    def _read_lock_token(self) -> str | None:
+        try:
+            return self._lock_path.read_text(encoding="ascii")
+        except (OSError, UnicodeDecodeError):
+            return None
+
+    def _release_file_lock(self, token: str) -> None:
+        """Remove the lock file only while it still carries this writer's token.
+
+        A writer whose lock was taken over (for example after a stale-lock removal) finds a foreign
+        token and leaves the new owner's lock in place; it reports that with a typed warning.
+        """
+        current = self._read_lock_token()
+        if current is None:
             return
+        if current != token:
+            warnings.warn(
+                OnlineEvaluationRegistryLockOwnershipWarning(
+                    f"evaluation registry lock was taken over by another writer; not released: {self._path.name}"
+                ),
+                stacklevel=3,
+            )
+            return
+        with contextlib.suppress(OSError):
+            self._lock_path.unlink()
 
     def _remove_if_stale(self) -> None:
         try:

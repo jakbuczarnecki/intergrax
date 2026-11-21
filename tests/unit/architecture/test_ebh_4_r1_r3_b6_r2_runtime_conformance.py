@@ -7,7 +7,6 @@ from __future__ import annotations
 from dataclasses import dataclass
 
 import pytest
-
 from intergrax.contracts.agent_contract_meta import AgentContract
 from intergrax.contracts.agent_execution_result import AgentExecutionResult
 from intergrax.contracts.agent_execution_validation_engine import (
@@ -20,10 +19,7 @@ from intergrax.contracts.decision_exposure_selection import (
     DecisionExposureSelectionHostBinding,
     DecisionExposureSelectionStrategy,
     DecisionExposureSelectionSuccessReason,
-    HostPublicationClass,
 )
-from intergrax.contracts.decision_authoritative_exposure import DecisionEvaluationScope
-from intergrax.contracts.decision_identity import DecisionExecutionLineage, DecisionScope
 from intergrax.contracts.host_orchestration_wiring_capabilities import (
     HostOrchestrationMiddlewarePipelinePort,
     HostOrchestrationRuntimeEventPort,
@@ -94,7 +90,7 @@ def test_custom_validation_port_accepted_by_nexus_wiring() -> None:
     custom = _CustomValidationEngine()
     assert not isinstance(custom, NexusValidationEngine)
     _accept_validation_port(custom)
-    loop = NexusLoop(AgentRegistry())
+    loop = NexusLoop(AgentRegistry(), production_mode=False)
     loop.apply_validation_engine(custom)
     assert loop._validation_engine is custom  # noqa: SLF001
     executor = GraphExecutor(AgentRegistry())
@@ -105,7 +101,7 @@ def test_custom_validation_port_accepted_by_nexus_wiring() -> None:
 def test_custom_exposure_binding_accepted_without_composition_identity() -> None:
     binding = _FakeExposureBinding(strategy=_FakeExposureStrategy())
     _accept_exposure_binding(binding)
-    loop = NexusLoop(AgentRegistry())
+    loop = NexusLoop(AgentRegistry(), production_mode=False)
     loop.apply_decision_exposure_selection(binding)
     assert loop._decision_exposure_selection is binding  # noqa: SLF001
 

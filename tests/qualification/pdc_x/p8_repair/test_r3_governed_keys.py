@@ -24,9 +24,11 @@ from intergrax.tools.providers.storage.contracts import (
 )
 from intergrax.tools.providers.workspace import service as workspace_service
 from intergrax.tools.providers.workspace.contracts import WorkspaceExportArtifactInput, WorkspaceImportArtifactInput
-from intergrax.tools.registry.wiring import ToolWiringContext
+from intergrax.tools.registry.wiring import ListStorageAccessAuditSink, ToolWiringContext
 
 pytestmark = [pytest.mark.unit, pytest.mark.gate]
+
+_TENANT = "tenant-r3"
 
 REPO_ROOT = Path(__file__).resolve().parents[4]
 WORKSPACE_SERVICE = REPO_ROOT / "intergrax" / "tools" / "providers" / "workspace" / "service.py"
@@ -94,7 +96,12 @@ def _alias_variants() -> list[str]:
 def _workspace_ctx(tmp_path: Path, storage: _RecordingStorage) -> ToolWiringContext:
     workspace = ShadowWorkspace.create(tmp_path, tenant_id="tenant-1", task_id="task-1")
     workspace.write_text("out/report.txt", "payload", content_type="text/plain")
-    return ToolWiringContext(shadow_workspace=workspace, object_storage=storage)
+    return ToolWiringContext(
+        shadow_workspace=workspace,
+        object_storage=storage,
+        tenant_id=_TENANT,
+        storage_audit_sink=ListStorageAccessAuditSink(),
+    )
 
 
 @pytest.mark.parametrize("key", _governed_variants() + _alias_variants())
@@ -135,7 +142,11 @@ def test_the_shared_refusal_and_the_raw_tools_cover_case_and_dot_aliases(key: st
     with pytest.raises(storage_service.GovernedStorageKeyError):
         storage_service.refuse_governed_content_key(key)  # type: ignore[attr-defined]
     storage = _RecordingStorage()
-    ctx = ToolWiringContext(object_storage=storage)
+    ctx = ToolWiringContext(
+        object_storage=storage,
+        tenant_id=_TENANT,
+        storage_audit_sink=ListStorageAccessAuditSink(),
+    )
     body = base64.b64encode(b"x").decode("ascii")
     for call in (
         lambda: storage_service.storage_get(ctx, StorageGetInput(key=key)),

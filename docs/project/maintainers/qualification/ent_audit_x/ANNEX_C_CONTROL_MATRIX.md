@@ -51,6 +51,12 @@ Each row: **Miss** = ENT `AuditCheck` adapter; **Technique** = RO pytest/script 
 
 | Check ID | Requirement | Owner | Gate (representative) | FRZ families |
 | --- | --- | --- | --- | --- |
+| ENT-A-AUD-01 | FRZ AUD family stage-gate attribution | ENT-AUDIT-X | 	est_wd_frz_family_attribution | FRZ-AUD-* |
+| ENT-A-CTL-01 | FRZ CTL family stage-gate attribution | CTRL-X | 	est_wd_frz_family_attribution | FRZ-CTL-* |
+| ENT-A-DEBT-01 | FRZ DEBT family stage-gate attribution | ARCH-FREEZE | 	est_wd_frz_family_attribution | FRZ-DEBT-* |
+| ENT-A-FRZ-01 | FRZ FRZ family stage-gate attribution | ARCH-FREEZE | 	est_wd_frz_family_attribution | FRZ-FRZ-* |
+| ENT-A-HRN-01 | FRZ HRN family stage-gate attribution | HARNESS-FINAL | 	est_wd_frz_family_attribution | FRZ-HRN-* |
+| ENT-A-TRC-01 | FRZ TRC family stage-gate attribution | TRACE-X / GOV-X | 	est_wd_frz_family_attribution | FRZ-TRC-* |
 | ENT-A-BND-01 | Illegal tier imports absent | EBH-3 / BND | `test_hardening_3_layer_boundary_gate` | FRZ-BND-* |
 | ENT-A-BND-02 | Reverse dependency scan | EBH-3 | layer boundary gate | FRZ-BND-* |
 | ENT-A-BND-03 | Agents/apps boundary | EBH-3 | tier import gates | FRZ-BND-* |
@@ -123,4 +129,4 @@ Each row: **Miss** = ENT `AuditCheck` adapter; **Technique** = RO pytest/script 
 
 - Roadmap §3.1 categories → area + TEN + VBN rows above.  
 - Unmapped mandatory TEN = 0; VBN = 0; areas A–U = 21×3.  
-- **Total inventoried checks = 85.**
+- **Total inventoried checks = 91.**

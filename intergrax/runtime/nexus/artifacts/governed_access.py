@@ -19,6 +19,7 @@ from __future__ import annotations
 from collections.abc import Callable, Mapping
 from dataclasses import dataclass
 from datetime import datetime, timedelta
+from enum import StrEnum
 from typing import TYPE_CHECKING, Protocol, runtime_checkable
 
 from intergrax.contracts.agent_runtime_governance import (
@@ -103,6 +104,21 @@ class ArtifactDownloadUnavailable(ArtifactAccessError):
 # ---------------------------------------------------------------------------- value types
 
 
+class ArtifactReadBinding(StrEnum):
+    """How tightly a governed read or download is tied to the caller's execution."""
+
+    RUN_BOUND = "run_bound"
+    TENANT_SWEEP = "tenant_sweep"
+
+
+@dataclass(frozen=True)
+class ArtifactCrossRunGrant:
+    """Explicit permission for one run to read artifacts produced under another run."""
+
+    artifact_ids: tuple[str, ...]
+    reader_run_id: RunId
+
+
 @dataclass(frozen=True)
 class ArtifactAccessContext:
     """Who is accessing, and in which execution (the evidence anchor of every operation)."""
@@ -112,6 +128,7 @@ class ArtifactAccessContext:
     run_id: RunId
     attempt_id: AttemptId
     execution_id: ExecutionId | None = None
+    read_binding: ArtifactReadBinding = ArtifactReadBinding.RUN_BOUND
 
     @property
     def tenant_id(self) -> str:
@@ -126,6 +143,7 @@ class ArtifactAccessContext:
             run_id=identity.run_id,
             attempt_id=identity.attempt_id,
             execution_id=identity.execution_id,
+            read_binding=ArtifactReadBinding.TENANT_SWEEP,
         )
 
 
@@ -273,7 +291,13 @@ class GovernedArtifactReadPort:
 
     # ---- operations -------------------------------------------------------
 
-    def read(self, context: ArtifactAccessContext, request: ArtifactReadRequest) -> GovernedArtifactContent:
+    def read(
+        self,
+        context: ArtifactAccessContext,
+        request: ArtifactReadRequest,
+        *,
+        cross_run_grant: ArtifactCrossRunGrant | None = None,
+    ) -> GovernedArtifactContent:
         def action(source: ArtifactReadSource) -> tuple[GovernedArtifactContent, str]:
             found = source.read(request)
             if found is None:
@@ -282,6 +306,12 @@ class GovernedArtifactReadPort:
                 raise ArtifactAccessDenied("tenant_mismatch", request.artifact_id, "stored tenant differs")
             if found.ref.scope.workspace_id is not None and found.ref.scope.workspace_id != request.workspace_id:
                 raise ArtifactAccessDenied("workspace_mismatch", request.artifact_id, "stored workspace differs")
+            self._enforce_run_binding(
+                context,
+                request.artifact_id,
+                found.ref.lineage.run_id,
+                cross_run_grant,
+            )
             found.ref.verify_content(found.content)
             return found, (
                 f"class={request.artifact_class.value};version={found.ref.version};digest={found.ref.content_digest}"
@@ -295,6 +325,7 @@ class GovernedArtifactReadPort:
         request: ArtifactReadRequest,
         *,
         ttl_seconds: int,
+        cross_run_grant: ArtifactCrossRunGrant | None = None,
     ) -> GovernedDownloadGrant:
         if ttl_seconds < 1:
             raise ValueError("ttl_seconds must be positive")
@@ -303,6 +334,15 @@ class GovernedArtifactReadPort:
         def action(source: ArtifactReadSource) -> tuple[GovernedDownloadGrant, str]:
             if self._download_issuer is None or not isinstance(source, ArtifactDownloadSource):
                 raise ArtifactDownloadUnavailable(request.artifact_id)
+            preview = source.read(request)
+            if preview is None:
+                raise ArtifactNotFound(request.artifact_id)
+            self._enforce_run_binding(
+                context,
+                request.artifact_id,
+                preview.ref.lineage.run_id,
+                cross_run_grant,
+            )
             key = source.download_key(request)
             if key is None:
                 raise ArtifactNotFound(request.artifact_id)
@@ -339,6 +379,23 @@ class GovernedArtifactReadPort:
             return None, "deleted"
 
         self._guard(context, request, CAPABILITY_DELETE, action)
+
+    def _enforce_run_binding(
+        self,
+        context: ArtifactAccessContext,
+        artifact_id: str,
+        stored_run_id: str,
+        cross_run_grant: ArtifactCrossRunGrant | None,
+    ) -> None:
+        if context.read_binding is not ArtifactReadBinding.RUN_BOUND:
+            return
+        if str(context.run_id) == stored_run_id:
+            return
+        if cross_run_grant is not None and (
+            artifact_id in cross_run_grant.artifact_ids and str(context.run_id) == str(cross_run_grant.reader_run_id)
+        ):
+            return
+        raise ArtifactAccessDenied("run_mismatch", artifact_id, "stored run differs from caller run")
 
     # ---- the single gate ----------------------------------------------------
 

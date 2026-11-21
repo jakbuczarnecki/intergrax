@@ -5,7 +5,37 @@
 from __future__ import annotations
 
 from abc import ABC, abstractmethod
-from typing import Optional, Protocol, runtime_checkable
+from dataclasses import dataclass
+from enum import StrEnum
+from typing import Protocol, runtime_checkable
+
+
+class KVDurabilityMechanism(StrEnum):
+    """Closed set of persistence mechanisms an operator may attest for a KV backend."""
+
+    REDIS_AOF_FSYNC_ALWAYS = "redis_aof_fsync_always"
+    REDIS_AOF_FSYNC_EVERYSEC = "redis_aof_fsync_everysec"
+
+
+@dataclass(frozen=True, slots=True)
+class KVDurabilityAttestation:
+    """
+    Typed, explicit, operator-stated claim that a KV backend persists across process restart.
+
+    The claim is declared, not probed: construction checks only the shape of the fields.
+    """
+
+    mechanism: KVDurabilityMechanism
+    attested_by: str
+    procedure_ref: str
+
+    def __post_init__(self) -> None:
+        if not isinstance(self.mechanism, KVDurabilityMechanism):
+            raise ValueError("KVDurabilityAttestation.mechanism must be a KVDurabilityMechanism")
+        if not isinstance(self.attested_by, str) or not self.attested_by.strip():
+            raise ValueError("KVDurabilityAttestation.attested_by must be a non-empty string")
+        if not isinstance(self.procedure_ref, str) or not self.procedure_ref.strip():
+            raise ValueError("KVDurabilityAttestation.procedure_ref must be a non-empty string")
 
 
 class DistributedKVStore(ABC):
@@ -20,12 +50,21 @@ class DistributedKVStore(ABC):
     This contract is backend-agnostic (Redis, Dragonfly, etc.).
     """
 
+    @property
+    def survives_process_restart(self) -> bool:
+        """
+        Whether data written through this store survives process restart.
+
+        Default ``False``: a backend must opt in explicitly (fail-closed).
+        """
+        return False
+
     @abstractmethod
     def get(
         self,
         tenant_id: str,
         key: str,
-    ) -> Optional[bytes]:
+    ) -> bytes | None:
         """
         Retrieve value for given tenant and key.
         Returns None if key does not exist.
@@ -39,7 +78,7 @@ class DistributedKVStore(ABC):
         key: str,
         value: bytes,
         *,
-        ttl_seconds: Optional[int] = None,
+        ttl_seconds: int | None = None,
     ) -> None:
         """
         Set value for given tenant and key.
@@ -63,10 +102,10 @@ class DistributedKVStore(ABC):
         self,
         tenant_id: str,
         key: str,
-        expected: Optional[bytes],
+        expected: bytes | None,
         new_value: bytes,
         *,
-        ttl_seconds: Optional[int] = None,
+        ttl_seconds: int | None = None,
     ) -> bool:
         """
         Atomic compare-and-set operation.
@@ -74,6 +113,16 @@ class DistributedKVStore(ABC):
         Returns True if update succeeded, False otherwise.
         """
         ...
+
+
+def kv_store_survives_process_restart(store: DistributedKVStore) -> bool:
+    """
+    True only for a ``DistributedKVStore`` whose ``survives_process_restart`` is exactly ``True``.
+
+    A duck-typed object that does not subclass the contract is not durable, and a truthy
+    non-bool value is not coerced.
+    """
+    return isinstance(store, DistributedKVStore) and store.survives_process_restart is True
 
 
 @runtime_checkable

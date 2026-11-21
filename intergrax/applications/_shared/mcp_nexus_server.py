@@ -11,7 +11,10 @@ import re
 from fastmcp import FastMCP
 
 from intergrax.agents.tool_enablement import ToolEnablementProfile
-from intergrax.applications._shared.mcp_harness_principal import resolve_mcp_run_agent_identity
+from intergrax.applications._shared.mcp_harness_principal import (
+    assert_mcp_identity_composition,
+    resolve_mcp_run_agent_identity,
+)
 from intergrax.applications._shared.mcp_host_execution_transport_cancel import (
     McpHostExecutionDeadlineExceeded,
     McpHostExecutionTransportCancelContext,
@@ -210,6 +213,7 @@ async def execute_mcp_agent_task_with_resolved_identity(
     default_tenant_id: str,
     default_user_id: str,
     identity_mode: McpIdentityMode | str | None = None,
+    fails_closed: bool = False,
     session_id: str | None = None,
     intent: str | None = None,
     task_control_mutation_boundary: ControlPlaneMutationAuthorizationBoundary | None = None,
@@ -228,6 +232,7 @@ async def execute_mcp_agent_task_with_resolved_identity(
         default_tenant_id=default_tenant_id,
         default_user_id=default_user_id,
         identity_mode=coerce_mcp_identity_mode(identity_mode),
+        fails_closed=fails_closed,
     )
     return await execute_mcp_agent_task(
         host_execution,
@@ -272,12 +277,19 @@ def build_nexus_mcp_server(
     enable_cross_loop_catalog_child: bool = False,
     identity_mode: McpIdentityMode | str | None = None,
     max_call_seconds: float | None = None,
+    fails_closed: bool = False,
 ) -> FastMCP:
     """
     Register ``list_agents`` and ``run_agent`` on a FastMCP instance.
 
     Compatibility facade (OD-MCP-05-A) over :func:`compose_mcp_server_from_definition`.
     """
+    coerced_mode = coerce_mcp_identity_mode(identity_mode)
+    assert_mcp_identity_composition(
+        identity_mode=coerced_mode,
+        harness_auth=None,
+        fails_closed=fails_closed,
+    )
     catalog_tool_ids: list[str] = []
     if tool_registry is not None:
         catalog_tool_ids = [item.contract.tool_id for item in tool_registry.list()]
@@ -303,7 +315,7 @@ def build_nexus_mcp_server(
         auto_wire_catalog_transport_supervision=auto_wire_catalog_transport_supervision,
         catalog_root_child_work_ingress=catalog_root_child_work_ingress,
         enable_cross_loop_catalog_child=enable_cross_loop_catalog_child,
-        identity_mode=coerce_mcp_identity_mode(identity_mode),
+        identity_mode=coerced_mode,
         max_call_seconds=max_call_seconds,
     )
     return compose_mcp_server_from_definition(definition, deps)

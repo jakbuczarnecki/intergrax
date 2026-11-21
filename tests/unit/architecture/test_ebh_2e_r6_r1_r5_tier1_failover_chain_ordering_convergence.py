@@ -8,8 +8,6 @@ import ast
 from pathlib import Path
 
 import pytest
-
-from intergrax.applications._shared.llm_resolver import _create_base_llm_adapter
 from intergrax.applications.contracts.environment_profile import ApplicationEnvironmentProfile
 from intergrax.contracts.runtime_environment import RuntimeEnvironmentProfile
 from intergrax.llm.messages import ChatMessage
@@ -22,10 +20,14 @@ from intergrax.llm_adapters.contracts.llm_provider import LLMProvider
 from intergrax.llm_adapters.contracts.token_usage import LLMTokenUsage
 from intergrax.llm_adapters.registry.failover_adapter import FailoverLLMAdapter
 from intergrax.llm_adapters.registry.model_router import ModelRouter
+from intergrax.llm_adapters.registry.profile import create_adapter_with_failover
 from intergrax.llm_adapters.routing import LLMRoutingProfile
 from intergrax.llm_adapters.routing.evaluator import profile_identity
-from intergrax.llm_adapters.registry.profile import create_adapter_with_failover
-from intergrax.runtime.wiring.llm_resolver import _resolve_llm_adapter_impl, resolve_llm_adapter
+from intergrax.runtime.wiring.llm_resolver import (
+    _create_base_llm_adapter,
+    _resolve_llm_adapter_impl,
+    resolve_llm_adapter,
+)
 
 pytestmark = [pytest.mark.unit, pytest.mark.gate]
 
@@ -223,10 +225,13 @@ def test_r5_tier1_resolver_does_not_pre_order_before_failover_factory() -> None:
     impl_source = ""
     for node in tree.body:
         if isinstance(node, ast.FunctionDef) and node.name == "_resolve_llm_adapter_impl":
-            impl_source = ast.get_source_segment(
-                _TIER1_RESOLVER.read_text(encoding="utf-8"),
-                node,
-            ) or ""
+            impl_source = (
+                ast.get_source_segment(
+                    _TIER1_RESOLVER.read_text(encoding="utf-8"),
+                    node,
+                )
+                or ""
+            )
             break
     assert "ordered_profiles()[0]" not in impl_source
     assert "ModelRouter" not in impl_source

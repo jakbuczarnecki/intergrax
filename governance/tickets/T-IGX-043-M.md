@@ -48,3 +48,5 @@ Part E manifest / consumer write set: **UNBLOCKED** (operator D3); implementatio
 ## Lifecycle state
 
 `in_progress` (smoke OK fala 5; product manifest Part E **BLOCKED**)
+(development tor); train scaffold: plan_pending
+

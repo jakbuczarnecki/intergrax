@@ -5,14 +5,22 @@ from __future__ import annotations
 from typing import Any
 
 import pytest
+from intergrax.applications._shared.environment_wiring import wire_application_environment
 from intergrax.applications._shared.sandbox_host_wiring import resolve_hosted_sandbox_session
+from intergrax.applications.contracts.environment_profile import ApplicationEnvironmentProfile
+from intergrax.applications.contracts.environment_profile.sub_profiles import MemoryProfile
+from intergrax.applications.contracts.execution_mode import ExecutionMode
 from intergrax.integrations.providers.sandbox_host.e2b.bundle import create_e2b_sandbox_host
 from intergrax.integrations.registry.profile import IntegrationProfile
 from intergrax.runtime.sandbox.hosted_session import (
     LAB_ONLY_HOSTED_SANDBOX_TASK_ID,
     LAB_ONLY_HOSTED_SANDBOX_TENANT_ID,
     HostedSandboxSession,
+    HostedSandboxTenantRequiredError,
 )
+
+from lab_application.host.settings import LabApplicationSettings
+from lab_application.manifest import build_lab_manifest
 
 pytestmark = pytest.mark.unit
 
@@ -34,6 +42,35 @@ class _FakeSandboxHost:
 
     def health(self) -> bool:
         return True
+
+
+def test_ten_01c_strict_host_without_tenant_refused() -> None:
+    settings = LabApplicationSettings.from_env()
+    manifest = build_lab_manifest(settings)
+    env = ApplicationEnvironmentProfile.lab_defaults(profile_id="tenant.01c.strict")
+    env = env.model_copy(
+        update={
+            "meta": env.meta.model_copy(update={"execution_mode": ExecutionMode.STRICT}),
+            "context_profile": env.context_profile.model_copy(
+                update={"enable_rag": False, "enable_websearch": False},
+            ),
+            "memory_profile": MemoryProfile(
+                enable_user_memory=False,
+                enable_org_memory=False,
+                enable_long_term_memory=False,
+                enable_task_memory=False,
+            ),
+        },
+    )
+    profile = IntegrationProfile(sandbox_host=create_e2b_sandbox_host(client=_FakeSandboxHost()))
+    with pytest.raises(HostedSandboxTenantRequiredError, match="host tenant"):
+        wire_application_environment(
+            manifest,
+            env,
+            integration_profile=profile,
+            tenant_id=None,
+            conformance_check=False,
+        )
 
 
 def test_ten_01d_blank_labels_refused() -> None:
