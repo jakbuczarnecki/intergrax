@@ -5,6 +5,7 @@ loading: always
 
 # Intergrax core (L0)
 
+<!-- igx:active:start -->
 ## Branch safety
 
 - Default branch `development`; stay on the operator-named branch.
@@ -38,7 +39,9 @@ loading: always
 ## Environment (C10/C15)
 
 - Operator freeze: original Windows environment; no Docker migration, no new vendor integrations, no production configuration; no secrets in source, argv or logs. Details: `/intergrax-env-vendor-qualification`.
+<!-- igx:active:end -->
 
+<!-- igx:active:start -->
 <!-- igx:authority begin -->
 ## Autonomy
 
@@ -48,3 +51,4 @@ loading: always
 - Sub-agents end with `DONE: <line>` or `BLOCKED: <type>: <what, options, recommendation>`; the parent decides alone when plan, ADR, rules or code answer it (`/igx-autonomy`).
 - Plan finished: print `PLAN COMPLETE` and a short summary. `/igx-run-plan <file>` enforces this with a Stop hook.
 <!-- igx:authority end -->
+<!-- igx:active:end -->

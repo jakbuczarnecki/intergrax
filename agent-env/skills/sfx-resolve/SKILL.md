@@ -1,6 +1,7 @@
 ---
 name: sfx-resolve
 description: SFX Design step, part 1 - closed-world mapping of every specification requirement to an existing platform capability with its owner path, drafting capability_resolution_report.v1.json and resolution_notes.md under .tmp/sfx/<slug>/ (proposal-only, L1).
+disable-model-invocation: true
 ---
 
 # SFX resolve (Design, part 1)

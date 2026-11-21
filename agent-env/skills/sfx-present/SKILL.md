@@ -1,6 +1,7 @@
 ---
 name: sfx-present
 description: SFX Present step - reviews the full draft set with the sfx-critic persona and writes presentation.md under .tmp/sfx/<slug>/, a plain summary of the proposal, its gaps and the next human decision; claims no approval, run result or value (proposal-only, L1).
+disable-model-invocation: true
 ---
 
 # SFX present (Present)

@@ -1,6 +1,7 @@
 ---
 name: sfx-discover
 description: SFX Describe and Discover step - adaptive interview, one question at a time with a stated reason, that drafts business_problem_statement.v1.json, discovery_record.v1.json and open_questions.md under .tmp/sfx/<slug>/ (proposal-only, L1).
+disable-model-invocation: true
 ---
 
 # SFX discover (Describe + Discover)

@@ -1,6 +1,7 @@
 ---
 name: sfx-specify
 description: SFX Understand step - turns the discovery record into business_scenario_specification.v1.json under .tmp/sfx/<slug>/, deterministic rules first and every field traced to discovery (proposal-only, L1).
+disable-model-invocation: true
 ---
 
 # SFX specify (Understand)

@@ -1,6 +1,7 @@
 ---
 name: sfx-session
 description: SFX guided session - runs the Scenario Factory lifecycle step by step with the user, one question at a time, resuming from .tmp/sfx/<slug>/sfx_session_state.v1.json; writes proposal-only L1 drafts and explains which steps are not available before SFX-P5.
+disable-model-invocation: true
 ---
 
 # SFX session (full lifecycle, IDE toolkit v0)

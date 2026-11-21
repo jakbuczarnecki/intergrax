@@ -1,6 +1,7 @@
 ---
 name: igx-run-plan
 description: Operator command - run an approved plan to the end without questions; a Stop hook keeps the session working while plan steps are open
+disable-model-invocation: true
 ---
 
 # igx-run-plan
