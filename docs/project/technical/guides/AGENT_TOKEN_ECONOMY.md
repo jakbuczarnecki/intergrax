@@ -51,6 +51,24 @@ Method: headless `claude -p "Reply with the single word: ok" --output-format jso
 
 Total tracked: 58.9k to 46.2k (-12.7k, -21.6 %). An empty directory with no project at all measures 45.1k, so the repository now adds about 1k above the Claude Code floor. A model swap is not counted anywhere in this table.
 
+## Cursor
+
+Generated from the same `agent-env/` sources by `sync_agent_env.py`: `.cursor/rules/intergrax-core.mdc` (always on), `.cursor/skills/*`, `.cursor/agents/igx-*.md` (keys `name`, `description`, `model: inherit`, `readonly` derived from the tool list). Verified with `cursor-agent` 2026.11.05 on 2026-11-21:
+
+| Item | Cursor result |
+|------|---------------|
+| `igx-*` agents visible to the Task tool, `readonly` as generated | yes |
+| `.claude/settings.json` hooks (read and shell guards) | run, and deny (large `Read`, `cat` of a 307 KB file) |
+| `.cursor/hooks.json` native hooks | did not fire in the CLI, so none is shipped |
+| `permissions.deny Agent(general-purpose)` | not enforced; a `generalPurpose` subagent still launched |
+| `effortLevel`, compaction window, `bashOutputMaxChars`, `skillOverrides` | no effect (Cursor selects the model and context itself) |
+
+Hooks run in Cursor without `CLAUDE_PROJECT_DIR`, so the commands in `.claude/settings.json` find `scripts/hooks` from that variable, the current directory or a parent and do nothing when it is missing (an unresolved variable once made every Read and shell call fail).
+
+First turn in Cursor (`cursor-agent -p --mode ask --model composer-2.5`, input + cache read): baseline 17.7k, now 18.1k to 18.5k; run-to-run noise is about 0.4k, so there is **no measurable change**. The repository controls only about 2k of it (`AGENTS.md`/`CLAUDE.md` about 1.2k, rules about 0.6k, skills about 0.3k); the rest is Cursor's own prompt. The saving shows when an agent follows the `@agent-env/rules/...` pointer: `intergrax-core.md` is 3.5 KB instead of 13 KB of old always-on rules.
+
+Per-agent models in Cursor are left at `inherit` (slugs differ per account; see `cursor-agent --list-models`). To make `igx-researcher` cheap, add a model slug for it in `_cursor_agent` in `sync_agent_env.py` (generated files are not edited by hand).
+
 ## Old rule to new section (nothing lost)
 
 | Old always-on rule | Now |
