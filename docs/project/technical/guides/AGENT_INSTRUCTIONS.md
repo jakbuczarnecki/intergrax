@@ -158,7 +158,7 @@ applications/    MAY import from agents/ and intergrax/
 | Reliability / HITL | [RELIABILITY_FAILURE_AND_HITL.md](../../architecture/RELIABILITY_FAILURE_AND_HITL.md) · [plan/RELIABILITY_FAILURE_AND_HITL.md](../../maintainers/plans/RELIABILITY_FAILURE_AND_HITL.md) |
 | L4 adaptive harness | [ADAPTIVE_HARNESS_INTELLIGENCE.md](../../architecture/ADAPTIVE_HARNESS_INTELLIGENCE.md) · [plan/ADAPTIVE_HARNESS_INTELLIGENCE.md](../../maintainers/plans/ADAPTIVE_HARNESS_INTELLIGENCE.md) |
 | Elastic capacity / platform scaling | [ELASTIC_CAPACITY_AND_SCALING.md](../../architecture/ELASTIC_CAPACITY_AND_SCALING.md) · [plan/ELASTIC_CAPACITY_AND_SCALING.md](../../maintainers/plans/ELASTIC_CAPACITY_AND_SCALING.md) |
-| Critic / verification | [CRITIC_VERIFICATION.md](../../architecture/CRITIC_VERIFICATION.md) · [plan/CRITIC_VERIFICATION.md](../../maintainers/plans/CRITIC_VERIFICATION.md) |
+| Critic / verification (legacy lineage) | [CRITIC_VERIFICATION.md](../../architecture/CRITIC_VERIFICATION.md) (historical stub) · [DECISION_VERIFICATION.md](../../architecture/DECISION_VERIFICATION.md) · [plan/CRITIC_VERIFICATION.md](../../maintainers/plans/CRITIC_VERIFICATION.md) |
 | DX / evaluation / gates | [EXPERIMENTATION_AND_DEVELOPER_EXPERIENCE.md](../../architecture/EXPERIMENTATION_AND_DEVELOPER_EXPERIENCE.md) · [plan/EXPERIMENTATION_AND_DEVELOPER_EXPERIENCE.md](../../maintainers/plans/EXPERIMENTATION_AND_DEVELOPER_EXPERIENCE.md) |
 | Platform ladder / product backlog | [PLATFORM_FOUNDATION.md](../../architecture/PLATFORM_FOUNDATION.md) · [plan/PLATFORM_FOUNDATION.md](../../maintainers/plans/PLATFORM_FOUNDATION.md) |
 | Available agents (roster) | [agents/README.md](../../../../agents/README.md) |
