@@ -61,6 +61,7 @@ uv run pytest tests/unit/context/test_trust_fail_closed.py tests/unit/context/te
 | Slice | Scope | Status |
 |-------|--------|--------|
 | fala B2 slice 4 | §7.2 trust bundle only (excludes `NT-TRUST-06` / RAG collect path) | **green** — 64 passed @ `ec2957a56` (2026-11-21) |
+| fala 5A slice 3+ | `NT-TRUST-06` + tenant-scope pytest (`dev-ci-rag`) | **green** — 1 + 11 passed @ `dc083f6ea` (2026-11-21) |
 
 Plus FC-3 regression bundle from `PLAN_T-IGX-043-J` §7.2 (`regression_scope_fc3_bundle.txt`) before merge (serial `af-dev-merge`).
 
