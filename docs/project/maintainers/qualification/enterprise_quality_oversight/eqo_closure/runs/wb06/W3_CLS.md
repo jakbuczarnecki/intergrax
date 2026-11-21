@@ -1,8 +1,9 @@
-# EQO-W3-WB06 — W3 CLS disposition (wave 5)
+# EQO-W3-WB06 — W3 CLS terminal disposition (wave 14)
 
 **Task ID:** `EQO-W3-WB06-CLS`
-**Disposition:** PARTIAL — not EQO_CLOSED.
+**Disposition:** `DISPOSITIONED_NOT_CLOSED` — not PASS; campaign aggregate remains **0 PASS** @ pin.
 **AUD session E (aggregate):** `FAIL` (AUD-2, `runs/wb06/AUD_SESSION_E.md`)
+**Wave-13 / latest EXE:** exit `0` (32 passed in 188.25s (0:03:08)) — `runs/wb06/pytest_wb06_exe.log`, `RUN_MANIFEST.json` (`rerun_lane`: `eqo/wave-10/exe`); latest EXE @ pin (pre wave-14 CLS).
 **Evidence pin:** TRAIN_PIN `28c27cb896d02e0185b9fa02047411fa152f6469`
 **Ref:** `governance/tickets/T-IGX-046-F.md`
 
@@ -11,19 +12,22 @@
 | Artefact | Role |
 |----------|------|
 | `runs/wb06/CLS_PRE.md` | Partial pre-close memo (post-AUD integrator) |
-| `runs/wb06/AUD_SESSION_E.md` | Independent session E verdict |
+| `runs/wb06/AUD_SESSION_E.md` | Independent session E verdict (**unchanged**) |
+| `runs/wb06/pytest_wb06_exe.log` | Latest EXE @ pin |
+| `runs/wb06/RUN_MANIFEST.json` | EXE custody record |
+| `runs/wb06/W3_CLS.md` | Wave-5 partial; superseded by this wave-14 terminal band |
 
 ## AUD packet binding
 
-**Packet:** `AUD_PACKET.md` (`OPEN`, land SHA `8631b1e8459e096b74d1c80247d3e432b44fff30`)
+**Packet:** `AUD_PACKET.md` (`PRE_AUD`, land SHA `8631b1e8459e096b74d1c80247d3e432b44fff30`)
 
-## Pre-close note (CLS_PRE)
+## Pre-close composition (wave 14)
 
-EXE env BLOCKED for optional stack (mcp, llm-langchain-ollama) — documented only; no EXE fix this wave. Terminal EQO-W3-WB06-CLS deferred.
+Terminal EQO-W3-WB06-CLS: compose session E + latest EXE @ pin. **Session E verdict not upgraded** by implementer.
 
-## Aggregate rationale (session E)
+## Aggregate rationale (session E + EXE)
 
-`FAIL` because A4-042 is confirmed by source at the pin and the slice gives it no coverage. A4-025 is not decidable without a working slice. A5-002 is supported by source.
+Session E aggregate **`FAIL`** stands @ pin. Latest EXE log does **not** upgrade session E and does **not** assert PASS for this WB.
 
 ## Required follow-up routes
 
@@ -34,6 +38,7 @@ EXE env BLOCKED for optional stack (mcp, llm-langchain-ollama) — documented on
 
 ## Limits and non-claims
 
-- This verdict is based on the AUD packet, the files it lists, and read-only inspection of the source at TRAIN_PIN. Pytest was not re-executed by this session.
+- This verdict is based on the AUD packet, the files it lists, and read-only inspection of the source at TRAIN_PIN. Wave-14 compose cites pytest logs @ pin; implementer does not upgrade session E.
 - This is a per-WB closure-evidence verdict only. It makes no claim of G6 closure, IIAC, certification, FRZ promotion or FCS readiness, and it does not set `IIAC_POLICY_ACTIVATION_RECORD.json`.
 - No product code was changed.
+- Wave-14 terminal CLS band: **no PASS**, **no** `EQO_CLOSED`.
