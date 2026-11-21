@@ -9,7 +9,7 @@
   ],
   "evidence_pin": "28c27cb896d02e0185b9fa02047411fa152f6469",
   "worktree": "d:/Projekty/_wt/intergrax/eqo-w3",
-  "executed_utc": "2026-11-21T09:07:53Z",
+  "executed_utc": "2026-11-21T09:28:00Z",
   "pytest_command_sha256": "e70afb0eeecc8a182df8e993afb77c4e84140c5889ad6350a761770ea5150d64",
   "pytest_command": "uv run pytest tests/qualification/trace_x/test_trace_x_p6_adversarial_bundle.py tests/qualification/trace_x/test_trace_x_p6_closed_world_gates.py tests/qualification/state_x/test_state_x_p0_baseline.py tests/qualification/roadmap_replay_x/test_roadmap_replay_x_mechanical_exit_gates.py -q --tb=line",
   "pytest_exit_code": 1,
@@ -26,5 +26,5 @@
     "PYTEST_SLICE_NON_ZERO_EXIT"
   ],
   "rerun_lane": "eqo/wave-10/exe",
-  "pytest_env_note": "uv sync --all-extras on eqo-w3 @ TRAIN_PIN (includes llm-langchain-ollama per pyproject)"
+  "pytest_env_note": "uv sync --all-extras on eqo-w3 @ TRAIN_PIN; shared pytest.lock"
 }
