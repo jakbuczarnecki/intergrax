@@ -42,8 +42,8 @@ def main() -> int:
         extra = manifest_ids - annex_ids
         print(f"manifest/annex mismatch missing={missing} extra={extra}", file=sys.stderr)
         return 1
-    if len(manifest_ids) != 85:
-        print(f"expected 85 checks, got {len(manifest_ids)}", file=sys.stderr)
+    if len(manifest_ids) != 91:
+        print(f"expected 91 checks, got {len(manifest_ids)}", file=sys.stderr)
         return 1
     return 0
 

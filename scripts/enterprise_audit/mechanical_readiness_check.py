@@ -398,7 +398,7 @@ def _verify_frz_mappings(l3_dir: Path | None) -> tuple[bool, str]:
         payload = json.loads(path.read_text(encoding="utf-8"))
         row_count = int(payload.get("row_count", 0))
         rows = payload.get("rows", [])
-        if row_count != 85 or len(rows) != 85:
+        if row_count != 91 or len(rows) != 91:
             return False, f"frz row_count={row_count} rows={len(rows)}"
         return True, ""
     except (json.JSONDecodeError, TypeError, ValueError) as exc:
@@ -450,7 +450,7 @@ def main() -> int:
             manifest_exec = int(manifest.get("checks_executed", 0))
             manifest_planned = int(manifest.get("checks_planned", 0))
             coverage_label = str(manifest.get("coverage_label", ""))
-            l3_ok = manifest_exec == 85 and manifest_planned == 85 and coverage_label == "FULL"
+            l3_ok = manifest_exec == 91 and manifest_planned == 91 and coverage_label == "FULL"
             if not l3_ok:
                 l3_detail = f"L3 manifest {manifest_exec}/{manifest_planned} coverage={coverage_label or '?'}"
             else:

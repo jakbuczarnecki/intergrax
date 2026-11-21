@@ -10,7 +10,6 @@ from pathlib import Path
 from unittest.mock import patch
 
 import pytest
-
 from intergrax.applications._shared.rag_runtime_bridge import resolve_rag_profile_for_environment
 from intergrax.applications.contracts.environment_profile import (
     ApplicationEnvironmentProfile,
@@ -25,6 +24,7 @@ from intergrax.rag.bootstrap.rag_stack_bootstrap import create_default_rag_stack
 from intergrax.rag.graph.providers.cypher_rag_graph_store import CypherRagGraphStore
 from intergrax.rag.graph.providers.inmemory_graph_store import InMemoryGraphStore
 from intergrax.rag.profiles.rag_profile import RagProfile
+from tests.fixtures.fc3_vector_store_profile import ensure_inmemory_vector_store_slug
 from tests.unit.rag.graph.fixtures.fake_cypher_graph_integration import FakeCypherGraphIntegration
 
 pytestmark = [pytest.mark.unit, pytest.mark.gate]
@@ -33,9 +33,7 @@ _REPO_ROOT = Path(__file__).resolve().parents[4]
 _RAG_GRAPH_BOOTSTRAP = _REPO_ROOT / "intergrax" / "rag" / "graph" / "bootstrap"
 _RAG_STACK_BOOTSTRAP = _REPO_ROOT / "intergrax" / "rag" / "bootstrap" / "rag_stack_bootstrap.py"
 _RAG_RUNTIME_BRIDGE = _REPO_ROOT / "intergrax" / "applications" / "_shared" / "rag_runtime_bridge.py"
-_CYPHER_ADAPTER = (
-    _REPO_ROOT / "intergrax" / "rag" / "graph" / "providers" / "cypher_rag_graph_store.py"
-)
+_CYPHER_ADAPTER = _REPO_ROOT / "intergrax" / "rag" / "graph" / "providers" / "cypher_rag_graph_store.py"
 _RAG_PROFILE = _REPO_ROOT / "intergrax" / "rag" / "profiles" / "rag_profile.py"
 
 
@@ -50,6 +48,12 @@ def _parse(path: Path) -> ast.Module:
 @pytest.fixture(autouse=True)
 def _register_integrations() -> None:
     register_default_integrations(override=True)
+
+
+@pytest.fixture(autouse=True)
+def _fc3_embedding_provider(monkeypatch: pytest.MonkeyPatch) -> None:
+    """RAG stack bootstrap requires an explicit embedding selector (FC-3 fail-closed)."""
+    monkeypatch.setenv("INTERGRAX_EMBEDDING_PROVIDER", "ollama")
 
 
 def test_rag_profile_has_no_graph_store_backend_field() -> None:
@@ -87,9 +91,7 @@ def test_rag_stack_bootstrap_uses_resolve_from_profile() -> None:
 
 def test_cypher_rag_graph_store_constructor_not_any() -> None:
     tree = _parse(_CYPHER_ADAPTER)
-    cls = next(
-        node for node in tree.body if isinstance(node, ast.ClassDef) and node.name == "CypherRagGraphStore"
-    )
+    cls = next(node for node in tree.body if isinstance(node, ast.ClassDef) and node.name == "CypherRagGraphStore")
     init = next(node for node in cls.body if isinstance(node, ast.FunctionDef) and node.name == "__init__")
     for arg in init.args.args:
         if arg.arg == "integration_store" and arg.annotation is not None:
@@ -115,8 +117,10 @@ def test_case_a_neo4j_slug_uses_integration_resolver(monkeypatch: pytest.MonkeyP
         side_effect=_spy,
     ):
         stack = create_default_rag_stack(
-            integration_profile=IntegrationProfile(
-                graph_store=IntegrationBinding.from_slug("neo4j"),
+            integration_profile=ensure_inmemory_vector_store_slug(
+                IntegrationProfile(
+                    graph_store=IntegrationBinding.from_slug("neo4j"),
+                ),
             ),
             profile=RagProfile(graph_rag_enabled=True),
             tenant_id="gate-a",
@@ -132,8 +136,10 @@ def test_case_b_resolution_error_no_inmemory_fallback() -> None:
     ):
         with pytest.raises(RuntimeError, match="resolution_failed"):
             create_default_rag_stack(
-                integration_profile=IntegrationProfile(
-                    graph_store=IntegrationBinding.from_slug("neo4j"),
+                integration_profile=ensure_inmemory_vector_store_slug(
+                    IntegrationProfile(
+                        graph_store=IntegrationBinding.from_slug("neo4j"),
+                    ),
                 ),
                 profile=RagProfile(graph_rag_enabled=True),
                 tenant_id="gate-b",
@@ -143,8 +149,10 @@ def test_case_b_resolution_error_no_inmemory_fallback() -> None:
 def test_case_c_prebuilt_integration_instance_adapted() -> None:
     integration = Neo4jGraphStoreIntegration.from_client(FakeCypherGraphIntegration())
     stack = create_default_rag_stack(
-        integration_profile=IntegrationProfile(
-            graph_store=IntegrationBinding.from_instance(integration),
+        integration_profile=ensure_inmemory_vector_store_slug(
+            IntegrationProfile(
+                graph_store=IntegrationBinding.from_instance(integration),
+            ),
         ),
         profile=RagProfile(graph_rag_enabled=True),
         tenant_id="gate-c",
@@ -154,6 +162,7 @@ def test_case_c_prebuilt_integration_instance_adapted() -> None:
 
 def test_case_d_harness_without_integration_uses_inmemory() -> None:
     stack = create_default_rag_stack(
+        integration_profile=ensure_inmemory_vector_store_slug(),
         profile=RagProfile(graph_rag_enabled=True),
         tenant_id="gate-d",
     )
@@ -171,8 +180,10 @@ def test_case_e_injected_graph_store_skips_resolution(monkeypatch: pytest.Monkey
         side_effect=_fail,
     ):
         stack = create_default_rag_stack(
-            integration_profile=IntegrationProfile(
-                graph_store=IntegrationBinding.from_slug("neo4j"),
+            integration_profile=ensure_inmemory_vector_store_slug(
+                IntegrationProfile(
+                    graph_store=IntegrationBinding.from_slug("neo4j"),
+                ),
             ),
             profile=RagProfile(graph_rag_enabled=True),
             graph_store=injected,
