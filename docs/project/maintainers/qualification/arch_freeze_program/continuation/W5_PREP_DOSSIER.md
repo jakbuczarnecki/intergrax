@@ -8,7 +8,7 @@
 
 | Runda | Stan | Dowód |
 |-------|------|-------|
-| RC-3 exit prep (MEP W4) | **IN PROGRESS** | [`RC3_EXIT_PREP_CHECKLIST.md`](RC3_EXIT_PREP_CHECKLIST.md) @ `d043a21c6` (w toku w `af-dev-mep-w4`) |
+| RC-3 exit prep (MEP W4) | **IN PROGRESS** | [`RC3_EXIT_PREP_CHECKLIST.md`](RC3_EXIT_PREP_CHECKLIST.md) @ `e69e1ff58` (tip pin; worktree `af-dev-rc3-pin`) |
 | RC-3 entry prep (fala 6) | **DONE** (prep) | [`RC3_PREP_DOSSIER.md`](RC3_PREP_DOSSIER.md) @ `e61e5136a` |
 | FCS | **nie osiągnięty** | Brak rungu FCS na `development` @ ten pin |
 

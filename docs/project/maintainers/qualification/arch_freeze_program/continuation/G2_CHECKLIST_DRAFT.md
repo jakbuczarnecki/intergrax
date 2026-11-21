@@ -2,8 +2,8 @@
 
 **Banner:** To jest **robocza** lista gotowości do runga `G2` (MEP-AF2 W3 exit → W4 entry). **Nie** oznacza G2 PASS, **nie** zastępuje PT-Q02, **nie** aktywuje RB-2 ani FCS.
 
-**Data:** 2026-11-21 (MEP W4, worktree `af-dev-mep-w4`)  
-**Pin development:** `d043a21c67cb57475a4f36a2baff7020718ec7cb` (`d043a21c6`)  
+**Data:** 2026-11-21 (MEP W4, worktree `af-dev-rc3-pin`)  
+**Pin development:** `e69e1ff5819b98c316377bcadf749f61fe00abc2` (`e69e1ff58`)  
 **Pin train:** `dbaebfa8cd13a6ba8bfa6eef2cdf581216ddb3d2` (`dbaebfa8`)  
 **Exit prep:** [`RC3_EXIT_PREP_CHECKLIST.md`](RC3_EXIT_PREP_CHECKLIST.md) (W4 PT-Q02/Q03/FCS/S04 — **nie** exit)
 
@@ -19,7 +19,7 @@
 
 | Id | Kryterium (MEP W3) | Stan W4 | Dowód |
 |----|-------------------|---------|-------|
-| G2-A1 | Wszystkie tickety W3 train zmergowane na `arch-freeze/rw-train` | [ ] | `TRAIN_DEV_GAP.md` — **320** commitów dev-only od merge-base |
+| G2-A1 | Wszystkie tickety W3 train zmergowane na `arch-freeze/rw-train` | [ ] | `TRAIN_DEV_GAP.md` — **451** commitów dev-only @ pin `e69e1ff58` |
 | G2-A2 | RW head train zamrożony jako kandydat G2 | [ ] | Brak rekordu G2 w ladder |
 | G2-A3 | Train CI green poza **exact expected-red** set | [ ] | KR-08 / known-red — nie zwalidowano @ G2 |
 | G2-A4 | SCOPE + T-AF2-RW-PLAN na trainie (W2 exit) | BLOCKED | W2 poza torrem development-only |
@@ -56,7 +56,7 @@ Szczegół exit prep: `RC3_EXIT_PREP_CHECKLIST.md` §A–D.
 | G2-D2 | RW-PLAN-AUDIT BLOCKED bez zmian | BLOCKED | `RW_PLAN_AUDIT_STATUS.md` |
 | G2-D3 | `051-A`, ARCH_FREEZE CLOSED — STOP | [x] | `OPERATOR_DECISIONS_AUTONOMY.md` OD-AF-AUTO-04..05 |
 | G2-D4 | TOR C fala 6 — RC-3 **entry prep** (nie exit) | [x] | `RC3_PREP_DOSSIER.md` — prep **DONE** @ `e61e5136a` |
-| G2-D5 | MEP W4 — RC-3 **exit prep** checklist | [x] prep | `RC3_EXIT_PREP_CHECKLIST.md` @ `d043a21c6` |
+| G2-D5 | MEP W4 — RC-3 **exit prep** checklist | [x] prep | `RC3_EXIT_PREP_CHECKLIST.md` @ `e69e1ff58` — **nie** exit |
 
 ## Werdykt (draft)
 
