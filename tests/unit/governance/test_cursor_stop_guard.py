@@ -88,8 +88,8 @@ class Session:
         return send(self.root, self.payload(**over))
 
 
-def send(root: Path, payload: dict) -> dict:
-    other = root.parent / "elsewhere"
+def send(root: Path, payload: dict, cwd: Path | None = None) -> dict:
+    other = cwd or root.parent / "elsewhere"
     other.mkdir(exist_ok=True)
     done = subprocess.run(
         [sys.executable, str(HOOK)],
@@ -371,3 +371,103 @@ def test_runpy_invocation_with_native_payload(root: Path, monkeypatch: pytest.Mo
     out = ns["decide"](root, sess.payload())
     assert out is not None and set(out) == {"followup_message"}
     monkeypatch.delitem(sys.modules, "igx_cursor_stop", raising=False)
+
+
+def test_owner_is_not_claimed_by_start_phrase_in_plain_text(sess: Session, root: Path) -> None:
+    sess.write(
+        _user(f"please run {START_CMD}"),
+        _assistant(f"I read the skill: {START_CMD}"),
+        _assistant("done for now"),
+    )
+    assert sess.stop() == {}
+    assert _diag(root)["reason"] == "not_owner"
+    assert not (root / STATE).exists()
+    sess.write(_user("go"), _assistant("", SHELL_START), _assistant("working"))
+    assert set(sess.stop()) == {"followup_message"}
+    assert _state(root)["owner"] == "c1"
+
+
+def test_escalation_placeholder_is_an_ordinary_stop(sess: Session, root: Path) -> None:
+    sess.turn("Rules say: end with\nESCALATION: <type>")
+    out = sess.stop()
+    assert set(out) == {"followup_message"}
+    assert _diag(root)["reason"] == "followup"
+
+
+def test_waiting_with_background_false_is_a_followup(sess: Session, root: Path) -> None:
+    fg = {"name": "Task", "input": {"prompt": "work", "run_in_background": False}}
+    sess.turn("Spawned.\nWAITING: task-1", extra=(_assistant("", fg),))
+    out = sess.stop()
+    assert "background worker" in out["followup_message"]
+    assert _diag(root)["reason"] == "waiting_unbacked"
+
+
+def test_waiting_and_plan_complete_together_is_premature(sess: Session, root: Path) -> None:
+    sess.turn("WAITING: task-1\nPLAN COMPLETE", extra=(_assistant("", SPAWN),))
+    out = sess.stop()
+    assert "premature" in out["followup_message"]
+    assert _diag(root)["reason"] == "premature_complete"
+    assert (root / ACTIVE).is_file()
+
+
+def test_plan_file_deleted_after_start_is_allowed(sess: Session, root: Path) -> None:
+    sess.turn("working")
+    (root / "plan.md").unlink()
+    assert sess.stop() == {}
+
+
+def test_claude_payload_with_cwd_still_blocks(root: Path) -> None:
+    payload = {"cwd": str(root), "last_assistant_message": "still working", "hook_event_name": "Stop"}
+    out = send(root, payload)
+    assert out["decision"] == "block" and "step two" in out["reason"]
+    assert "followup_message" not in out
+
+
+def test_root_discovery_from_uri_style_workspace_root(sess: Session, root: Path) -> None:
+    sess.turn("working")
+    assert set(sess.stop(workspace_roots=[root.as_uri()])) == {"followup_message"}
+
+
+def test_root_discovery_tries_later_workspace_roots(sess: Session, root: Path) -> None:
+    empty = root.parent / "empty-root"
+    empty.mkdir()
+    sess.turn("working")
+    assert set(sess.stop(workspace_roots=[str(empty), str(root)])) == {"followup_message"}
+
+
+def test_root_discovery_falls_back_to_process_cwd(sess: Session, root: Path) -> None:
+    empty = root.parent / "empty-root"
+    empty.mkdir()
+    sess.turn("working")
+    out = send(root, sess.payload(workspace_roots=[str(empty)]), cwd=root)
+    assert set(out) == {"followup_message"}
+
+
+def test_root_discovery_without_any_match_allows(sess: Session, root: Path) -> None:
+    empty = root.parent / "empty-root"
+    empty.mkdir()
+    sess.turn("working")
+    assert sess.stop(workspace_roots=[str(empty)]) == {}
+
+
+def _parser() -> object:
+    spec = importlib.util.spec_from_file_location("igx_cursor_stop_p", CURSOR)
+    assert spec and spec.loader
+    mod = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(mod)
+    return mod
+
+
+def test_frontmatter_bom_crlf_block_scalars_and_nested_keys() -> None:
+    mod = _parser()
+    text = (
+        "\ufeff---\r\ntodos:\r\n  - id: a\r\n    content: >-\r\n      first part\r\n      second part\r\n"
+        "    status: pending\r\n  - id: b\r\n    content: |\r\n      literal one\r\n      literal two\r\n"
+        "    status: completed\r\n    deps:\r\n      - id: nested\r\n        content: not a todo\r\n"
+        "  - id: c\r\n    content: plain\r\nname: x\r\n---\r\n"
+    )
+    assert mod.frontmatter_todos(text) == [  # type: ignore[attr-defined]
+        (False, "first part second part"),
+        (True, "literal one literal two"),
+        (False, "plain"),
+    ]

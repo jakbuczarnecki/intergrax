@@ -193,14 +193,30 @@ def test_visible_escalation_is_allowed_with_native_status(root: Path) -> None:
 
 def test_native_transcript_escalation_is_allowed(root: Path) -> None:
     transcript = root / "esc.jsonl"
-    transcript.write_text(
-        json.dumps(
-            {"message": {"role": "assistant", "content": [{"type": "text", "text": "ESCALATION: missing access"}]}}
-        )
-        + "\n",
-        encoding="utf-8",
-    )
-    payload = {"status": "completed", "loop_count": 0, "cwd": str(root), "transcript_path": str(transcript)}
+    lines = [
+        {"role": "user", "message": {"content": [{"type": "text", "text": "go"}]}},
+        {
+            "role": "assistant",
+            "message": {
+                "content": [
+                    {
+                        "type": "tool_use",
+                        "name": "Shell",
+                        "input": {"command": "python scripts/hooks/igx_stop_guard.py start plan.md"},
+                    }
+                ]
+            },
+        },
+        {"role": "assistant", "message": {"content": [{"type": "text", "text": "ESCALATION: missing access"}]}},
+    ]
+    transcript.write_text("\n".join(json.dumps(x) for x in lines) + "\n", encoding="utf-8")
+    payload = {
+        "status": "completed",
+        "conversation_id": "c1",
+        "loop_count": 0,
+        "cwd": str(root),
+        "transcript_path": str(transcript),
+    }
     assert _stop_raw(root, payload) == {}
     assert (root / ACTIVE).is_file()
 

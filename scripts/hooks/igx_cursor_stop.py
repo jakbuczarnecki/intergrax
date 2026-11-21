@@ -32,7 +32,7 @@ STATE = Path(".tmp") / "session" / "autonomy" / "cursor-stop-state.json"
 DIAG = Path(".tmp") / "session" / "autonomy" / "cursor-stop-last.json"
 _TURN_TAIL = 64 * 1024
 _SCAN_TAIL = 16 * 1024 * 1024
-_MARKER = re.compile(r"^[ \t>*_#-]*(ESCALATION:|PLAN COMPLETE\b|WAITING:)", re.M)
+_MARKER = re.compile(r"^[ \t>*_#-]*(ESCALATION:(?![ \t]*<)|PLAN COMPLETE\b|WAITING:)", re.M)
 _BACKGROUND = re.compile(r'"run_in_background"\s*:\s*true')
 _START = "igx_stop_guard.py start"
 _DONE_STATUS = ("completed", "cancelled")
@@ -40,7 +40,7 @@ _DONE_STATUS = ("completed", "cancelled")
 
 def frontmatter_todos(text: str) -> list[tuple[bool, str]]:
     """Cursor plan todos from the YAML frontmatter as ``(done, content)``; ``[]`` when there are none."""
-    lines = text.splitlines()
+    lines = text.lstrip("\ufeff").splitlines()
     if not lines or lines[0].strip() != "---":
         return []
     end = next((i for i in range(1, len(lines)) if lines[i].strip() == "---"), None)
@@ -51,18 +51,43 @@ def frontmatter_todos(text: str) -> list[tuple[bool, str]]:
     if start is None:
         return []
     items: list[dict[str, str]] = []
+    item_indent: int | None = None
+    field_indent = 0
+    pending: tuple[dict[str, str], str, int] | None = None  # (item, key, indent) of an open block scalar
+    folded: list[str] = []
+
+    def flush() -> None:
+        nonlocal pending, folded
+        if pending is not None:
+            pending[0][pending[1]] = " ".join(folded)
+        pending, folded = None, []
+
     for line in block[start + 1 :]:
         if not line.strip():
             continue
+        indent = len(line) - len(line.lstrip())
+        if pending is not None:
+            if indent > pending[2]:
+                folded.append(line.strip())
+                continue
+            flush()
         if not line[0].isspace() and not line.startswith("-"):
             break
         item_start = re.match(r"^\s*-\s+(\w+):\s*(.*?)\s*$", line)
-        if item_start:
-            items.append({item_start.group(1): item_start.group(2)})
-            continue
-        field = re.match(r"^\s+(\w+):\s*(.*?)\s*$", line)
-        if field and items:
-            items[-1][field.group(1)] = field.group(2)
+        if item_start and (item_indent is None or indent <= item_indent):
+            item_indent = indent
+            field_indent = line.index(item_start.group(1))
+            key, value = item_start.group(1), item_start.group(2)
+            items.append({key: value})
+        else:
+            field = re.match(r"^\s+(\w+):\s*(.*?)\s*$", line)
+            if item_start or not (field and items) or indent > field_indent:
+                continue
+            key, value = field.group(1), field.group(2)
+            items[-1][key] = value
+        if value in (">", ">-", "|", "|-"):
+            pending = (items[-1], key, indent)
+    flush()
     out: list[tuple[bool, str]] = []
     for item in items:
         content = _unquote(item.get("content") or item.get("id") or "")
@@ -132,6 +157,25 @@ def turn_text(path: Path) -> str:
     return text
 
 
+def _claims_start(path: Path) -> bool:
+    """True when an assistant ``tool_use`` input holds the start command (plain text does not claim)."""
+    for line in _tail(path, _SCAN_TAIL).splitlines():
+        if _START not in line:
+            continue
+        try:
+            obj = json.loads(line)
+        except ValueError:
+            continue
+        if not isinstance(obj, dict) or _role(obj) != "assistant":
+            continue
+        message = obj.get("message")
+        content = message.get("content") if isinstance(message, dict) else obj.get("content")
+        for item in content if isinstance(content, list) else []:
+            if isinstance(item, dict) and item.get("type") == "tool_use" and _START in json.dumps(item.get("input")):
+                return True
+    return False
+
+
 def _markers(text: str) -> set[str]:
     return {found.rstrip(":") for found in _MARKER.findall(text)}
 
@@ -197,12 +241,12 @@ def decide_cursor(
         activation = f"{plan}|{active_path.stat().st_mtime_ns}"
     except OSError:
         return allow("no_activation")
-    state = _load(root)
+    state: dict[str, object] = _load(root)
     if state.get("activation") != activation:
         state = {"activation": activation}
     owner = state.get("owner")
     if not owner:
-        if _START not in _tail(path, _SCAN_TAIL):
+        if not _claims_start(path):
             return allow("not_owner")
         state["owner"] = conversation
         _save(root, state)
@@ -237,11 +281,11 @@ def decide_cursor(
 
     step = open_steps[0]
     if state.get("signature") == signature:
-        count = int(state.get("n", 0)) + 1
+        count = int(str(state.get("n", 0))) + 1
     else:
         count = 1
         state["stalled"] = False
-    followups = int(state.get("followups", 0))
+    followups = int(str(state.get("followups", 0)))
     state.update({"signature": signature, "n": count, "followups": followups, "last_event": event})
 
     def finish(result: dict | None, reason: str) -> tuple[dict | None, bool]:

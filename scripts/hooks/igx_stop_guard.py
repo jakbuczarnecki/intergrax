@@ -41,6 +41,7 @@ import os
 import re
 import sys
 from pathlib import Path
+from urllib.parse import unquote
 
 ACTIVE = Path(".tmp") / "session" / "autonomy" / "active-plan"
 STATE = Path(".tmp") / "session" / "autonomy" / "stop-state.json"
@@ -283,6 +284,30 @@ def decide(root: Path, data: dict) -> dict | None:
     return result
 
 
+def _root_path(value: str) -> Path:
+    """Workspace root string to a path; URI-style Windows roots (``/d:/x``, ``file:///d:/x``) become ``D:/x``."""
+    text = value.strip()
+    if text.lower().startswith("file://"):
+        text = unquote(text[7:])
+    drive = re.match(r"^/([A-Za-z]):[/\\]", text)
+    if drive:
+        text = drive.group(1).upper() + text[2:]
+    return Path(text)
+
+
+def _discover_root(data: dict) -> Path | None:
+    start = str(data.get("cwd") or "")
+    if start:
+        return find_root(Path(start))
+    roots = data.get("workspace_roots")
+    for value in roots if isinstance(roots, list) else []:
+        if isinstance(value, str) and value.strip():
+            found = find_root(_root_path(value))
+            if found is not None:
+                return found
+    return find_root(None)
+
+
 def hook() -> int:
     if os.environ.get("IGX_HOOKS", "").strip().lower() == "off":
         return 0
@@ -291,10 +316,7 @@ def hook() -> int:
         if not isinstance(data, dict):
             return 0
         _note_keys(data)
-        start = str(data.get("cwd") or "")
-        if not start and isinstance(data.get("workspace_roots"), list):
-            start = next((r for r in data["workspace_roots"] if isinstance(r, str) and r.strip()), "")
-        root = find_root(Path(start) if start else None)
+        root = _discover_root(data)
         if root is None:
             return 0
         result = decide(root, data)
