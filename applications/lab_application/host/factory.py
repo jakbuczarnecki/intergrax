@@ -37,12 +37,13 @@ from intergrax.applications._shared.workspace_cleanup_wiring import (
 from intergrax.debug.app import create_debug_app
 from intergrax.debug.hitl_service import DebugHitlResumeService
 from intergrax.debug.interaction_service import DebugInteractionIntakeService
+from intergrax.integrations.contracts.base import LabSelectorOptIn
 from intergrax.llm_adapters.tracking.exposition import register_llm_metrics_routes
 from intergrax.runtime.adaptive.proposal_store import SQLiteProposalStore
 from intergrax.runtime.adaptive.signal_store import SQLiteSignalStore
 from intergrax.runtime.interactions.router import create_interaction_intake_router
 from intergrax.runtime.interactions.task_executor import HostTaskExecutionExecutor
-from intergrax.runtime.interactions.verification.factory import create_inbound_verifier
+from intergrax.runtime.interactions.verification.factory import InboundVerifierMode, create_inbound_verifier
 
 from lab_application.host.agent_builders import build_lab_agent_builders
 from lab_application.host.integration_wiring import LabIntegrationWiring
@@ -51,6 +52,11 @@ from lab_application.host.tool_wiring import wire_lab_tools
 from lab_application.host.wiring import bootstrap_lab_integration_wiring
 from lab_application.manifest import build_lab_manifest
 from lab_application.serving.fastapi_router import mount_lab_routes
+
+_LAB_APPLICATION_INBOUND_VERIFIER_OPT_IN = LabSelectorOptIn(
+    selector=InboundVerifierMode.NONE.value,
+    reason="laboratory application host inbound verifier",
+)
 
 
 def _lab_adaptive_store_paths(integrations: LabIntegrationWiring) -> tuple[Path, Path]:
@@ -152,7 +158,7 @@ def create_lab_application(
     interaction_service = DebugInteractionIntakeService(
         task_executor=HostTaskExecutionExecutor(host_execution, task_enricher=task_enricher),
         adapter=integrations.interaction_adapter,
-        verifier=create_inbound_verifier(),
+        verifier=create_inbound_verifier(lab_opt_in=_LAB_APPLICATION_INBOUND_VERIFIER_OPT_IN),
         task_enricher=task_enricher,
     )
     hitl_service = DebugHitlResumeService(
