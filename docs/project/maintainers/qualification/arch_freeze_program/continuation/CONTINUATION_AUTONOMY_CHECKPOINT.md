@@ -4,7 +4,7 @@
 
 | Tor | Ref | Uwagi |
 |-----|-----|-------|
-| `development` | `292ca33480528b78a34fedf87f4789d7708f34cb` | `292ca3348`; tor B docs `ec2957a56` w historii |
+| `development` | `98b218d8fad05de228c8bd059fb1375d97fcf187` | `98b218d8f` (C2 checkpoint); tor B docs `ec2957a56` w historii |
 | `arch-freeze/rw-train` | `dbaebfa8cd13a6ba8bfa6eef2cdf581216ddb3d2` | PR **#699** **MERGED** (tor B) |
 | `af-dev-merge` | serial merge tor | push `origin/development` po commicie `af-dev-rc1-docs` (C2) |
 
@@ -27,7 +27,7 @@
 | Train ↔ development gap | odświeżony tor B | `TRAIN_DEV_GAP.md` @ `ec2957a56`; train HEAD po `#699` |
 | RC-2 exit checklist | bez zmian werdyktu | `RC2_EXIT_CHECKLIST.md` — **PARTIAL** |
 | RW-PLAN-AUDIT | **BLOCKED** | `RW_PLAN_AUDIT_STATUS.md` |
-| Push `origin/development` | po merge C2 | `af-dev-merge` |
+| Push `origin/development` | **DONE** | `98b218d8f` via `af-dev-merge` |
 
 ## Fala 5 — wynik (archiwum)
 
