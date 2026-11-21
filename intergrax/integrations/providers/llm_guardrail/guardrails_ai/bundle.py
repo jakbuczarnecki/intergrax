@@ -4,8 +4,8 @@
 
 from __future__ import annotations
 
-from intergrax.integrations.providers.llm_guardrail.bundles.guardrails_ai import create_guardrails_ai_backend
 from intergrax.integrations.contracts.llm_guardrail import LlmGuardrailBackend
+from intergrax.integrations.providers.llm_guardrail.bundles.guardrails_ai import create_guardrails_ai_backend
 from intergrax.integrations.providers.llm_guardrail.guardrails_ai.integration import (
     GUARDRAILS_AI_PROVIDER_ID,
     GuardrailsAiLlmGuardrailIntegration,

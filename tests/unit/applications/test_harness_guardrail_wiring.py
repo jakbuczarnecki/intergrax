@@ -17,6 +17,7 @@ from intergrax.applications.contracts.environment_profile import (
     GuardrailProfile,
 )
 from intergrax.contracts.execution_phase import ExecutionPhase
+from intergrax.integrations.contracts.base import LabSelectorOptIn
 from intergrax.integrations.providers.llm_guardrail._factory import create_guardrail_backend
 from intergrax.integrations.providers.llm_guardrail.register_all import register_llm_guardrail_integrations
 from intergrax.integrations.registry.presets import harness_guardrail_stack
@@ -30,12 +31,17 @@ from intergrax.runtime.registry.agent_registry import AgentRegistry
 from testing_support.builder import canonical_execution_identity_scope
 from testing_support.nexus_loop_from_environment import build_nexus_loop_from_environment
 
+_HARNESS_LLM_GUARD_OPT_IN = LabSelectorOptIn(
+    selector="llm_guard",
+    reason="harness guardrail middleware unit test",
+)
+
 pytestmark = [pytest.mark.unit, pytest.mark.gate, pytest.mark.no_ci]
 
 
 @pytest.mark.asyncio
 async def test_llm_guardrail_middleware_blocks_injection_pattern() -> None:
-    backend = create_guardrail_backend("llm_guard")
+    backend = create_guardrail_backend("llm_guard", lab_opt_in=_HARNESS_LLM_GUARD_OPT_IN)
     middleware = LlmGuardrailMiddleware(
         backend,
         GuardrailProfile(enabled=True, scan_input=True),
@@ -99,7 +105,7 @@ def test_assert_guardrail_assembly_valid_with_nexus() -> None:
 
 @pytest.mark.asyncio
 async def test_llm_guardrail_middleware_emits_blocked_event() -> None:
-    backend = create_guardrail_backend("llm_guard")
+    backend = create_guardrail_backend("llm_guard", lab_opt_in=_HARNESS_LLM_GUARD_OPT_IN)
     bus = RuntimeEventBus()
     middleware = LlmGuardrailMiddleware(
         backend,

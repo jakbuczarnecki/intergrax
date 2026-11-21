@@ -88,7 +88,7 @@ def presidio_scan_text(text: str) -> GuardrailScanResult | None:
 def guardrails_ai_validate(text: str) -> GuardrailScanResult | None:
     try:
         from guardrails import Guard
-        from guardrails.hub import ToxicLanguage, DetectPII
+        from guardrails.hub import DetectPII, ToxicLanguage
     except ImportError:
         return None
 
@@ -152,3 +152,39 @@ def http_guardrail_scan(
         detail=f"{slug} http scan",
         audit_payload={"engine": slug, "response": body},
     )
+
+
+def vendor_engine_ready(slug: str) -> bool:
+    """Return True when the primary vendor engine is configured/importable for ``slug``."""
+    if slug == "llm_guard":
+        try:
+            import llm_guard  # noqa: F401
+        except ImportError:
+            return False
+        return True
+    if slug == "presidio":
+        try:
+            import presidio_analyzer  # noqa: F401
+        except ImportError:
+            return False
+        return True
+    if slug == "guardrails_ai":
+        try:
+            import guardrails  # noqa: F401
+        except ImportError:
+            return False
+        return True
+    if slug == "bedrock_guardrails":
+        return bool(os.environ.get("INTERGRAX_BEDROCK_GUARDRAIL_POLICY_ID", "").strip())
+    if slug == "nemo_guardrails":
+        return bool(os.environ.get("INTERGRAX_NEMO_COLANG_CONFIG_PATH", "").strip())
+    if slug == "llama_guard":
+        return bool(os.environ.get("INTERGRAX_LLAMA_GUARD_INFERENCE_URL", "").strip())
+    if slug in {"openguardrails", "lakera", "azure_content_safety"}:
+        prefix = {
+            "openguardrails": "INTERGRAX_OPENGUARDRAILS",
+            "lakera": "INTERGRAX_LAKERA",
+            "azure_content_safety": "INTERGRAX_AZURE_CONTENT_SAFETY",
+        }[slug]
+        return bool(os.environ.get(f"{prefix}_API_KEY", "").strip() or os.environ.get(f"{prefix}_BASE_URL", "").strip())
+    return True

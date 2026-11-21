@@ -4,13 +4,13 @@
 
 from __future__ import annotations
 
-from intergrax.integrations.providers.llm_guardrail.bundles.http_guardrail import create_azure_content_safety_backend
 from intergrax.integrations.contracts.llm_guardrail import LlmGuardrailBackend
 from intergrax.integrations.providers.llm_guardrail.azure_content_safety.integration import (
     AZURE_CONTENT_SAFETY_PROVIDER_ID,
     AzureContentSafetyLlmGuardrailIntegration,
     AzureContentSafetyLlmGuardrailIntegrationConfig,
 )
+from intergrax.integrations.providers.llm_guardrail.bundles.http_guardrail import create_azure_content_safety_backend
 
 __all__ = [
     "create_azure_content_safety_llm_guardrail",
