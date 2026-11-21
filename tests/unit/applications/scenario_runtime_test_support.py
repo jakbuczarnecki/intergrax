@@ -7,7 +7,6 @@ from __future__ import annotations
 from dataclasses import dataclass
 from pathlib import Path
 
-from echo.echo_agent import EchoAgent
 from intergrax.applications._shared.scenario_runtime_baseline import (
     ScenarioRuntimeComposition,
     build_scenario_runtime_from_environment,
@@ -20,10 +19,15 @@ from intergrax.applications.contracts.environment_profile import ApplicationEnvi
 from intergrax.applications.contracts.execution_mode import ExecutionMode
 from intergrax.applications.contracts.manifest import AgentBinding, ApplicationManifest
 from intergrax.integrations._shared.in_memory_document_store import InMemoryDocumentStore
+from intergrax.integrations.contracts.base import IntegrationCategory
+from intergrax.integrations.contracts.integration_profile import IntegrationProfile
+from intergrax.integrations.contracts.shipped_manifests import INMEMORY
 from intergrax.runtime.registry.agent_registry import AgentRegistry
 from testing_support.dependency_concurrency_admission_config import (
     tool_dependency_concurrency_admission_configuration,
 )
+
+from echo.echo_agent import EchoAgent
 
 
 @dataclass(frozen=True, slots=True)
@@ -74,6 +78,9 @@ def production_attached_environment(profile_id: str) -> ApplicationEnvironmentPr
                 ),
             },
         )
+    profile = environment.integration_profile or IntegrationProfile()
+    if profile.slug_for_category(IntegrationCategory.VECTOR_STORE) is None:
+        environment.integration_profile = profile.model_copy(update={"vector_store": INMEMORY})
     return environment
 
 
