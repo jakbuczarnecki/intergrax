@@ -31,7 +31,11 @@ from intergrax.platform.enterprise_audit.contracts import (
     ManifestCheck,
 )
 from intergrax.platform.enterprise_audit.coverage import compute_coverage_label
-from intergrax.platform.enterprise_audit.digests import frz_coverage_artifact, manifest_digest
+from intergrax.platform.enterprise_audit.digests import (
+    frz_coverage_artifact,
+    frz_default_fallback_check_ids,
+    manifest_digest,
+)
 from intergrax.platform.enterprise_audit.evidence import build_evidence_manifest
 from intergrax.platform.enterprise_audit.manifest import checks_for_mode, load_default_manifest
 from intergrax.platform.enterprise_audit.modes import (
@@ -130,6 +134,21 @@ class EnterpriseAuditRunner:
                     message=str(exc),
                     certifying_run=certifying_run,
                     baseline_sha=baseline.accepted_baseline_sha,
+                )
+
+        if effective_certifying:
+            fallthrough = frz_default_fallback_check_ids(self._checks)
+            if fallthrough:
+                return self._blocked_report(
+                    mode,
+                    identity,
+                    output_dir,
+                    finding_id="FRZ:COVERAGE_DEFAULT_FALLBACK",
+                    message=(
+                        "certifying runs forbid checks without an explicit FRZ family attribution: "
+                        + ", ".join(sorted(fallthrough))
+                    ),
+                    certifying_run=certifying_run,
                 )
 
         planned_all = checks_for_mode(self._checks, mode, changed_check_ids=changed_check_ids)
@@ -318,7 +337,7 @@ class EnterpriseAuditRunner:
             manifest,
             outcomes_tuple,
             extra_artifacts={
-                "frz_coverage.v1.json": frz_coverage_artifact(self._checks),
+                "frz_coverage.v1.json": frz_coverage_artifact(self._checks, strict=effective_certifying),
                 "vbn_domains.v1.json": domain_report or rollup,
             },
         )

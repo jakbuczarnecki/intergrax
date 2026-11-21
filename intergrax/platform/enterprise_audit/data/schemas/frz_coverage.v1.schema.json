@@ -7,6 +7,24 @@
   "properties": {
     "schema_version": { "type": "integer" },
     "row_count": { "type": "integer" },
+    "stage_gate_only": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["family", "owner_stage", "basis", "criteria_not_exercised"],
+        "additionalProperties": false,
+        "properties": {
+          "family": { "type": "string", "minLength": 1 },
+          "owner_stage": { "type": "string", "minLength": 1 },
+          "basis": { "type": "string", "minLength": 1 },
+          "criteria_not_exercised": {
+            "type": "array",
+            "items": { "type": "string" }
+          },
+          "mapped_check_id": { "type": "string" }
+        }
+      }
+    },
     "rows": {
       "type": "array",
       "items": {
