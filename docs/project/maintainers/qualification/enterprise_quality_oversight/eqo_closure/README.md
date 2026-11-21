@@ -29,6 +29,14 @@ All qualification commits carry: `Ref: governance/tickets/T-IGX-046-F.md` (ticke
 | 9 | README index (this file) | `234d3c70efeebbcde2d72e8b2ce6ffd5d64b941f` |
 | 10 | merge development + reconciliation 1073 | `89d302ed39ea18d9c2e9e97f50b1c04993bdda7c` |
 | 11 | W3-WB02 tenant isolation DES→DIS | `2d760433d1f6f46e0252711aeb64fc01c7c8ea8d` |
+| 12 | W3-WB03 pytest EXE→DIS | `ad41dba1a3c76532f2ba5a974a19c51c2f883eb3` |
+| 13 | W3-WB04 pytest EXE→DIS | `9f82851dd4d182c813b75f3e4b316db4f0c0d882` |
+| 14 | W3-WB06 pytest EXE→DIS | `8c1f8bab3d4048a2195ba7c37072ff0350b1f598` |
+| 15 | W3-WB07 pytest EXE→DIS | `e8180f04458852203e3cd51fb39b3149bda920fa` |
+| 16 | W3-WB09 pytest EXE→DIS | `ced358de5e72ce6a0dcb01184fed321fffa794e8` |
+| 17 | W3-WB10 pytest EXE→DIS | `4f3e4a7fa170e51a473202202fb7ed4c358e35a6` |
+| 18 | W3-WB11 pytest EXE→DIS | `679c793a9c7b1dff0a7086665f8e50f347e3ef4d` |
+| 19 | W3-WB12 pytest EXE→DIS | `850f6d5a04744845558288e032bdac2d348004f5` |
 
 Index maintenance commits on this branch: `15bfc0851`, `3a92440ad` (SHA alignment only).
 
