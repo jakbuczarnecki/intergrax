@@ -43,3 +43,8 @@ Five IDs unchanged `BLOCKS_ARCH_FREEZE` / `BLOCKED`; owner batch remains `W4-03_
 **Land:** `569254840`. ARCH-FREEZE impact bands for open BLOCKERs unchanged; `EQO_W7_W8_DEFERRED_BLOCKERS.md` still governs W8-CLS deferral.
 
 **Recorded:** 2026-11-21 · lane `eqo/wave-8/x` · `Ref: governance/tickets/T-IGX-046-F.md`
+## Wave-12 disposition read (EQO-X-08)
+
+**Land:** `292ca3348`. ARCH-FREEZE impact rows unchanged; BLOCKER set still blocks program closure.
+
+**Recorded:** 2026-11-21 · lane `eqo/wave-12/x` · `Ref: governance/tickets/T-IGX-046-F.md`

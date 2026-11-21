@@ -58,3 +58,8 @@ E-03 route unchanged; no `register.jsonl` apply (E-02 out of scope wave-4).
 **Land:** `569254840`. E-02 mechanical triage route unchanged; register edit still out of EQO write set.
 
 **Recorded:** 2026-11-21 · lane `eqo/wave-8/x`
+## Wave-12 disposition read
+
+**Land:** `292ca3348`. E-02 mechanical apply still blocked; route memo unchanged.
+
+**Recorded:** 2026-11-21 · lane `eqo/wave-12/x` · `Ref: governance/tickets/T-IGX-046-F.md`

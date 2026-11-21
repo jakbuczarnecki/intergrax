@@ -48,3 +48,9 @@ Command: `uv run python -c "… all_counters() …"` (wave-1/x session, 2026-11-
 **Land:** 569254840. Counter read method unchanged; historical_evidence_invalidated_by_later_changes remains non-zero on both pins. PT-Q05 post-FCS counter zeroing not claimed.
 
 **Recorded:** 2026-11-21 | lane eqo/wave-8/x | Ref: governance/tickets/T-IGX-046-F.md
+
+## Wave-12 disposition read
+
+**Land:** `292ca3348`. ROADMAP-REPLAY counter disposition unchanged (read-only).
+
+**Recorded:** 2026-11-21 · lane `eqo/wave-12/x` · `Ref: governance/tickets/T-IGX-046-F.md`
