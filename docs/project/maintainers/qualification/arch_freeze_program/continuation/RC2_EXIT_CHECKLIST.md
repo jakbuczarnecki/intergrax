@@ -1,6 +1,7 @@
 ﻿# RC-2 exit checklist (tor `development`) — nie CLOSED
 
-**Data:** 2026-11-21 (autonomia fala 5)  
+**Data:** 2026-11-21 (autonomia fala 5; Runda 1 playbook @ `c207e6ad3`)  
+**Operator (Runda 1):** **D1=A** · **D2=STOP** — replay CI + docs only; patrz [`TRAIN_CI_REPLAY_PLAYBOOK.md`](TRAIN_CI_REPLAY_PLAYBOOK.md).  
 **Poprzednik:** RC-1 (`G4` / `CHECKPOINT.md`, `RW_PLAN_AUDIT_STATUS.md`)  
 **Cel:** warunki wyjścia z rundy kontynuacji RC-2 na torze `development` bez ogłaszania ARCH-FREEZE CLOSED, FCS ani G2 PASS.
 
@@ -29,7 +30,7 @@
 | Id | Kryterium | Stan fala 5 | Dowód |
 |----|-----------|---------------|-------|
 | RC2-B1 | Kolejka slice: FC-3 delta, G-09, trust (commit list) zapisana | [x] | `TRAIN_CHERRY_PICK_STATUS.md` |
-| RC2-B2 | Merge train **tylko** przy zielonym `governance-fast` **lub** wąskim ACT-N11 (OD-AF-AUTO-01 / KR-08) | [ ] | Merge **#699** przy red CI — **replay green** na `dbaebfa8c` **OPEN** |
+| RC2-B2 | Merge train **tylko** przy zielonym `governance-fast` **lub** wąskim ACT-N11 (OD-AF-AUTO-01 / KR-08) | [ ] | Merge **#699** przy red CI — replay `governance-fast` / `ci-smoke` / `rag-gate` @ `dbaebfa8` **OPEN**; playbook Runda 1 **DONE** (monitoring only) |
 | RC2-B3 | PR `development` → `rw-train` utworzony i zmergowany | [x] partial | PR **#699** **MERGED** @ `dbaebfa8c` (2026-11-21); **nie** spełnia OD-AF-AUTO-01 jako green gate |
 
 ## C. Dokumentacja i pin
@@ -41,7 +42,8 @@
 | RC2-C3 | Push `origin/development` | [x] | `61516a7cf` |
 | RC2-C4 | RC-3 prep dossier + G2 draft + train-dev gap (TOR C fala 6) | [x] | `RC3_PREP_DOSSIER.md`, fala 6 **DONE** @ `e61e5136a` |
 | RC2-C5 | RC-3 exit prep W4 (Q02/Q03/FCS/S04 docs) | [x] prep | `RC3_EXIT_PREP_CHECKLIST.md` @ `d043a21c6` — **nie** RC-3 exit |
+| RC2-C6 | Train CI replay playbook (Runda 1, D1=A / D2=STOP) | [x] | `TRAIN_CI_REPLAY_PLAYBOOK.md` @ `c207e6ad3` — **bez** train merge / cherry-pick |
 
-## Werdykt RC-2 (fala 5)
+## Werdykt RC-2 (fala 5 + Runda 1 playbook)
 
-**PARTIAL** — tor `development` spełnia A1–A5 i A7; formalny „exit” RC-2 na trainie (**B2–B3**) czeka na zielony `governance-fast`. To **nie** jest zamknięcie programu ARCH-FREEZE.
+**PARTIAL** — tor `development` spełnia A1–A5 i A7; formalny „exit” RC-2 na trainie (**B2–B3**) czeka na **green** replay @ `dbaebfa8` (`governance-fast` + powiązane joby). Playbook Runda 1 **nie** zamyka B2. To **nie** jest zamknięcie programu ARCH-FREEZE.
