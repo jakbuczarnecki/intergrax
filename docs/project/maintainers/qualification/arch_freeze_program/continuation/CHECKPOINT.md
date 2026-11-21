@@ -1,7 +1,7 @@
 # ARCH-FREEZE continuation checkpoint (development train)
 
-**Updated:** 2026-11-21 (MEP W4–W8 prep; worktrees `af-dev-mep-w4`..`w8`)  
-**Base branch:** `development` @ `d043a21c67cb57475a4f36a2baff7020718ec7cb` (`d043a21c6`)  
+**Updated:** 2026-11-21 (MEP W3 train SSOT + W4–W8 prep; serial `af-dev-merge`)  
+**Base branch (pin dokumentacyjny):** `d043a21c67cb57475a4f36a2baff7020718ec7cb` (`d043a21c6`) — liczniki gap @ [`TRAIN_DEV_GAP.md`](TRAIN_DEV_GAP.md)  
 **Arch-freeze train reference:** `origin/arch-freeze/rw-train` @ `dbaebfa8cd13a6ba8bfa6eef2cdf581216ddb3d2` — PR **#699** **MERGED** (slice do `1cec68222`)
 
 ## Train merge — fakt operatora / automation
@@ -35,7 +35,8 @@ Merge przy czerwonych checkach — zapisany stan; **nie** spełnia OD-AF-AUTO-01
 | G3 | `af-dev-rw-trust` | `af-dev-rw-trust` | T-IGX-051-C | §7 `NT-TRUST-01`..`06` green; FC-3 bundle replay @ `e61e5136a` | **merged** fala 5 |
 | G4 (RC-1) | `af-dev-rc1-docs` | `af-dev-rc1-docs` | ticket-less docs | RC-1 open items + RC-2/3 prep sync | **merged this wave** |
 | G4 (RC-3 prep) | `af-dev-fala6-close` | `af-dev-fala6-close` | ticket-less docs | RC-3 entry prep dossier + gap + G2 draft (TOR C fala 6) | **DONE** fala 6 |
-| G4 (RC-3 exit prep) | `af-dev-mep-w4` | `af-dev-mep-w4` | ticket-less docs | W4 Q02/Q03/FCS/S04 exit prep checklist + G2/RC3 refresh | **DONE** prep (on `origin`) |
+| G3-train (MEP W3) | `af-dev-mep-w3` | `af-dev-mep-w3` | T-IGX-043-N / 051-A/N scaffolds | Gap + cherry-pick status + WP12 W3 prep matrix | **merged** @ `2ee71f3a8` |
+| G4 (RC-3 exit prep) | `af-dev-mep-w4` | `af-dev-mep-w4` | ticket-less docs | W4 Q02/Q03/FCS/S04 exit prep checklist + G2/RC3 refresh | **DONE** prep @ `a399ed2d1` |
 | G5 | `af-dev-043m` | `af-dev-043m` | T-IGX-043-M | Slices 1–3 + fala 5 close **9 passed**; Part E manifest **BLOCKED** | in_progress |
 | G6 (MEP W5 prep) | `af-dev-mep-w5` | `af-dev-mep-w5` | ticket-less docs | W5 pre-pin dossier + PT-* prep | **DONE** prep |
 | G7 (MEP W6 prep) | `af-dev-mep-w6` | `af-dev-mep-w6` | T-IGX-052-F/G/H | Campaign + requal + M3 prep checklists | **DONE** prep @ `156bd6b40` |
@@ -48,7 +49,7 @@ Merge przy czerwonych checkach — zapisany stan; **nie** spełnia OD-AF-AUTO-01
 
 ## Divergence warning
 
-Po merge **#699** train zawiera slice FC-3 / G-09 / trust, ale **nie** pełny `development` (**286** dev-only / **217** train-only od merge-base `70d73f0f0`). Szczegóły — [`TRAIN_DEV_GAP.md`](TRAIN_DEV_GAP.md). Product remediation on `development` nadal **cherry-pick** / rebase z train tam, gdzie slice się rozjechał — **nie** merge `rw-train` bez mandatu operatora.
+Po merge **#699** train zawiera slice FC-3 / G-09 / trust, ale **nie** pełny `development` (**286** dev-only @ referencji `e61e5136a` / **217** train-only od merge-base `70d73f0f0`; pin W3 `d043a21c6` — **0** dev-only @ pinie). Szczegóły — [`TRAIN_DEV_GAP.md`](TRAIN_DEV_GAP.md). Product remediation on `development` nadal **cherry-pick** / rebase z train tam, gdzie slice się rozjechał — **nie** merge `rw-train` bez mandatu operatora.
 
 ## Dependency notes (G1)
 
@@ -58,6 +59,10 @@ Po merge **#699** train zawiera slice FC-3 / G-09 / trust, ale **nie** pełny `d
 
 - `ARCH_FREEZE_CLOSED`, FCS bez operatora, **RC-2 CLOSED**, G2 PASS, merge `rw-train` bez mandatu, TENANT 051-A bez FC3+WF+TRUST+approval.
 - Edycja `CONTINUATION_AUTONOMY_CHECKPOINT.md` — **inny tor** (poza G4 tą falą).
+
+## G3-train — MEP W3 train / gap SSOT
+
+Deliverables: `TRAIN_DEV_GAP.md`, `TRAIN_CHERRY_PICK_STATUS.md`, `WP12_W3_PT_TICKETS_PREP.md`; scaffolds `T-IGX-043-N`, `T-IGX-051-A`, `T-IGX-051-N`. Pin gap **`d043a21c6`**. **Nie** kolejny cherry-pick / train merge; **nie** green `governance-fast`; **nie** G2 / FCS.
 
 ## G4 — RC-3 prep (fala 6)
 
