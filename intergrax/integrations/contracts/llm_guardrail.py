@@ -4,13 +4,13 @@
 
 from __future__ import annotations
 
-from enum import Enum
+from enum import StrEnum
 from typing import Any, Protocol, runtime_checkable
 
 from pydantic import BaseModel, ConfigDict, Field
 
 
-class GuardrailRiskLevel(str, Enum):
+class GuardrailRiskLevel(StrEnum):
     LOW = "low"
     MEDIUM = "medium"
     HIGH = "high"
@@ -50,6 +50,7 @@ class GuardrailScanResult(BaseModel):
     matched_rules: tuple[str, ...] = ()
     sanitized_text: str | None = None
     detail: str = ""
+    engine_degraded: bool = False
     audit_payload: dict[str, Any] = Field(default_factory=dict)
 
     @property

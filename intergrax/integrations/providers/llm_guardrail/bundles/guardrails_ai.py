@@ -3,7 +3,6 @@
 from __future__ import annotations
 
 from intergrax.integrations.contracts.llm_guardrail import GuardrailContext, GuardrailScanResult, LlmGuardrailBackend
-from intergrax.integrations.providers.llm_guardrail._pattern_scanner import scan_patterns
 from intergrax.integrations.providers.llm_guardrail._vendor_opens import guardrails_ai_validate
 from intergrax.integrations.providers.llm_guardrail.bundles._base import BaseGuardrailAdapter
 
@@ -13,7 +12,7 @@ class GuardrailsAiAdapter(BaseGuardrailAdapter):
         vendor = guardrails_ai_validate(text)
         if vendor is not None:
             return vendor
-        return scan_patterns(text, mode="input", slug=self._slug)
+        return self._pattern_fallback(text, mode="input")
 
     def scan_output(
         self,
@@ -25,8 +24,8 @@ class GuardrailsAiAdapter(BaseGuardrailAdapter):
         vendor = guardrails_ai_validate(text)
         if vendor is not None:
             return vendor
-        return scan_patterns(text, mode="output", slug=self._slug)
+        return self._pattern_fallback(text, mode="output")
 
 
-def create_guardrails_ai_backend() -> LlmGuardrailBackend:
-    return GuardrailsAiAdapter(slug="guardrails_ai")
+def create_guardrails_ai_backend(*, allow_pattern_fallback: bool = False) -> LlmGuardrailBackend:
+    return GuardrailsAiAdapter(slug="guardrails_ai", allow_pattern_fallback=allow_pattern_fallback)
