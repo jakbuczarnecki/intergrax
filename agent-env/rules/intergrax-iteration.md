@@ -32,6 +32,6 @@ intergrax/ ↛ agents/|applications/   agents/ ↛ applications/
 
 Default scope: gate maintenance `docs/project/maintainers/plans/PLATFORM_FOUNDATION.md` hub. Phase K / §6.3 only with explicit operator approval.
 
-Repository artifacts: English. Operator chat: session language. Commit and integrate inside the ticket scope without asking; push, PR and merge only as the ticket or the operator pre-authorized (E7, `/intergrax-core`).
+Repository artifacts: English. Operator chat: session language. Commit and integrate inside the ticket scope without asking; push, PR and merge only as the ticket or the operator pre-authorized (otherwise escalate: forbidden action, `/intergrax-core`).
 
 Verification / ADR / routing: `@docs/project/technical/guides/AGENT_INSTRUCTIONS.md` when needed.

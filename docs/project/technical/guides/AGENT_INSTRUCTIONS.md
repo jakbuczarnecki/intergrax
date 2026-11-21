@@ -69,7 +69,7 @@ Include **only**:
 8. Remaining risks
 9. Out-of-scope findings
 10. Suggested next step (one line)
-11. One-line commit message (English); commit inside ticket scope, push/PR/merge only as pre-authorized (E7)
+11. One-line commit message (English); commit inside ticket scope, push/PR/merge only as pre-authorized
 
 ---
 

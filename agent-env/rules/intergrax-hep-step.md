@@ -16,5 +16,5 @@ Use only when operator explicitly asks for a HEP / EVID implementation step.
 - No subagents.
 - No full test suite unless operator lists it.
 - No `AGENT_INSTRUCTIONS.md` unless explicitly requested.
-- If more context is needed: read the exact file (max 3 beyond the listed scope), name it in the report, and continue; an edit outside scope is escalation E3.
+- If more context is needed: read the exact file (max 3 beyond the listed scope), name it in the report, and continue; an edit outside scope is a scope change: escalate (`/intergrax-core`).
 - Final report: paths, tests, status, blockers; token usage only if available from Cursor (no guesses).

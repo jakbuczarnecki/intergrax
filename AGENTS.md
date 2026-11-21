@@ -32,7 +32,7 @@ applications/ MAY import from agents/ and intergrax/
 | [`AGENT_INSTRUCTIONS.md`](docs/project/technical/guides/AGENT_INSTRUCTIONS.md) | Full routing, verification, ADR, Full O1 report |
 | [`hep_step.txt`](docs/project/maintainers/bootstrap/hep_step.txt) | HEP step bootstrap (with operator step prompt) |
 
-**Default behavior:** do not auto-load iteration rule, AGENT_INSTRUCTIONS, plan/arch hubs, or domain guides. If more files are needed than the operator listed, read the minimum (max 3), note why and continue (edit outside scope = E3, see `intergrax-core.md`). **Quality workflow (hooks + CI):** [`ENTERPRISE_QUALITY_WORKFLOW.md`](docs/project/technical/guides/ENTERPRISE_QUALITY_WORKFLOW.md) - `uv run python scripts/dev/install_git_hooks.py`. **Cursor token setup:** [`CURSOR_TOKEN_SETUP.md`](docs/project/technical/guides/CURSOR_TOKEN_SETUP.md). **Do not delete this file via Cursor Settings.**
+**Default behavior:** do not auto-load iteration rule, AGENT_INSTRUCTIONS, plan/arch hubs, or domain guides. If more files are needed than the operator listed, read the minimum (max 3), note why and continue (edit outside scope = escalate, see `intergrax-core.md`). **Quality workflow (hooks + CI):** [`ENTERPRISE_QUALITY_WORKFLOW.md`](docs/project/technical/guides/ENTERPRISE_QUALITY_WORKFLOW.md) - `uv run python scripts/dev/install_git_hooks.py`. **Cursor token setup:** [`CURSOR_TOKEN_SETUP.md`](docs/project/technical/guides/CURSOR_TOKEN_SETUP.md). **Do not delete this file via Cursor Settings.**
 
 ## Delivery DevOS (ticket-first)
 

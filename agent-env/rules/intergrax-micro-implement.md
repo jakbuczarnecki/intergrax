@@ -31,7 +31,7 @@ The operator instruction is the source of truth.
 - Edit only files listed in `edit scope`.
 - Run only commands listed in `tests`.
 - Respect all `Forbidden` paths and commands from the prompt.
-- If another file is needed, read only that file (max 3 beyond the listed scope), name it in the report, and continue; an edit outside `edit scope` is escalation E3.
+- If another file is needed, read only that file (max 3 beyond the listed scope), name it in the report, and continue; an edit outside `edit scope` is a scope change: escalate (`/intergrax-core`).
 
 ## Hard limits
 

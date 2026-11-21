@@ -9,8 +9,7 @@ Worktrees live in ONE place **outside the repository**, never inside it, inside 
 
 ## Layout
 
-- **Agent root** (campaign runs, `igx-agent` profile): `<agent-root>/repo` is the main clone, `<agent-root>/wt/<slug>` the worktrees, `<agent-root>/inbox` the inbox. Use `git -C <agent-root>/wt/<slug> <command>`; the campaign tooling creates these worktrees itself.
-- **Developer checkout** (no agent root): `<parent-of-main-checkout>/_wt/<repo-name>/<slug>`:
+- Location: `<parent-of-main-checkout>/_wt/<repo-name>/<slug>`:
 
 ```bash
 MAIN="$(dirname "$(git rev-parse --path-format=absolute --git-common-dir)")"   # main checkout root, also inside a worktree
@@ -22,9 +21,9 @@ git -C "$MAIN" worktree add --detach "$WT_BASE/<slug>" <sha>                  # 
 
 ## Rules
 
-- `<slug>`: lowercase `[a-z0-9-]`, max 24 chars, named after the ticket or packet (`t-igx-019-r3`, `w1-p01`).
+- `<slug>`: lowercase `[a-z0-9-]`, max 24 chars, named after the ticket or task (`t-igx-019-r3`).
 - Keep the full path under ~60 characters (Windows MAX_PATH is 260 and fixtures nest deeply); shorten the slug.
-- If the parent of the main checkout is itself inside a git repository, or `MAIN` cannot be resolved, report `ESCALATION E6:` (missing resource) and create nothing.
+- If the parent of the main checkout is itself inside a git repository, or `MAIN` cannot be resolved, escalate (missing access) and create nothing.
 - Scratch and temporary test directories (for example `pytest --basetemp`) go under `<wt-base>/_scratch/<slug>`: short paths, outside the repo, create the parent first.
 
 ## Working rules
