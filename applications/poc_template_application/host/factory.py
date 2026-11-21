@@ -16,6 +16,7 @@ from intergrax.applications._shared.harness_host_composition import (
 )
 from intergrax.applications._shared.harness_host_runtime import build_harness_host_runtime
 from intergrax.applications._shared.interaction_wiring import wire_interaction_intake_service
+from intergrax.applications._shared.notification_wiring import resolve_host_notification_adapter
 from intergrax.applications._shared.plugin_bootstrap import attach_plugin_shutdown
 from intergrax.applications._shared.task_control_wiring import (
     build_reliability_task_enricher,
@@ -47,6 +48,10 @@ def create_poc_template_application(
     settings = settings or PocTemplateApplicationSettings.from_env()
     manifest = build_poc_template_manifest()
     env = manifest.resolved_environment()
+    host_notification_adapter = resolve_host_notification_adapter(
+        env,
+        integration_profile=env.integration_profile,
+    )
     runtime = build_harness_host_runtime(
         manifest.model_copy(update={"environment": env}),
         env,
@@ -56,6 +61,7 @@ def create_poc_template_application(
         use_in_memory_trace=db_path is None,
         checkpoints_db_path=checkpoints_db_path,
         builders=POC_TEMPLATE_AGENT_BUILDERS,
+        notification_adapter=host_notification_adapter,
     )
     host_execution = runtime.execution
     resolved_registry = runtime.registry
@@ -72,7 +78,7 @@ def create_poc_template_application(
         checkpoint_store=checkpoint_store,
         host_execution=host_execution,
         task_enricher=task_enricher,
-        notification_adapter=None,
+        notification_adapter=host_notification_adapter,
         poll_interval_seconds=settings.scheduler_poll_seconds,
         enabled=settings.include_scheduler,
     )
