@@ -2,30 +2,36 @@
 
 ## Scope
 
-Delivery ticket for master-plan node **PT-FC1** follow-on (**standing F-4** in continuation plan A.4): close **NT-FC1-26 case 2** — wire human decision store through `ToolWiringContext` without a second authority store on the host path.
+Delivery ticket for master-plan node **PT-FC1** follow-on (**standing F-4** in continuation plan A.4): close **NT-FC1-26 case 2** — wire the harness-injected human decision store through `ToolWiringContext` without a second authority store on the host path.
 
-Prerequisite: **T-IGX-043-A** (FC-1) landed or reviewed on `development` (PR **#680** / digest @ `a6999e97`); do not duplicate FC-1 Part B work already in 043-A.
+Prerequisite: **T-IGX-043-A** (FC-1) landed or reviewed on `development` (PR **#680** / digest @ `a6999e97`); do not duplicate FC-1 Part B work already in 043-A (`nexus_loop.py`, `build_harness_host_runtime` composition guards).
 
-Tor: `development` only. Overlaps **T-IGX-043-J** and **T-IGX-051-A** on `harness_host_runtime.py` — serialize per [`WP12_W3_PT_TICKETS_PREP.md`](../../docs/project/maintainers/qualification/arch_freeze_program/continuation/WP12_W3_PT_TICKETS_PREP.md).
+Primary write set: `intergrax/applications/_shared/tool_wiring.py` and harness-path callers that materialize `ApplicationToolWiring` (enumerated in the plan). Disjoint from trust/supply (**051-N**) and from TENANT (**051-A**).
 
-Scaffold only — no PASS, FRZ promotion, or independent-verification claim.
+Tor: `development` only. Overlaps **T-IGX-043-J** on workflow files — **not** `harness_host_runtime.py` in this ticket. Serialize per [`WP12_W3_PT_TICKETS_PREP.md`](../../docs/project/maintainers/qualification/arch_freeze_program/continuation/WP12_W3_PT_TICKETS_PREP.md).
+
+**Runda 1 operator defaults:** **D3** (043-M Part E), **D4** (WF E2–E4), **D5** (051-A) **BLOCKED** — no product work on those rows in this wave.
+
+Scaffold hardened from MEP W3 prep — no PASS, FRZ promotion, or independent-verification claim.
 
 ## Plan digest
 
-PENDING — plan file not attached at scaffold time (`plan_pending`).
+Plan digest: 0c20182b43e9bb7abbb7cd94c08c6028ba741d3b3ee77935bf745d38802a9916
+
+Canonical plan: [`governance/tickets/plans/PLAN_T-IGX-043-N.md`](plans/PLAN_T-IGX-043-N.md).
 
 ## Approved
 
-PENDING — requires wave-packet approval after **T-IGX-043-A** review closes.
+PENDING — wave-packet approval after **T-IGX-043-A** review closes on `development`.
 
 ## Test contract
 
-To be defined with plan: red-first **NT-FC1-26** case 2 at baseline SHA; regression nodes from FC-1 bundle; `uv run python -m scripts.governance.igx_gov ticket` before push when product paths change.
+Per plan §4: red-first **NT-FC1-26 case 2** (`test_fc1_harness_strict_persistence_wiring.py`, second sub-case); case 1 remains **043-A** regression. FC-1 harness persistence slice after FC-1 lands; `uv run python -m scripts.governance.igx_gov ticket` before push when product paths change.
 
 ## Out of scope
 
-Full FC-1 rewrite, TENANT **051-A**, train merge, FRZ promotion, FCS, `ARCH_FREEZE_CLOSED`.
+Full FC-1 rewrite, **T-IGX-043-M** Part E, **043-J** E2–E4 (D4 BLOCKED), TENANT **051-A** (D5 BLOCKED), train merge, FRZ promotion, FCS, `ARCH_FREEZE_CLOSED`.
 
 ## Lifecycle state
 
-draft
+`plan_pending`
