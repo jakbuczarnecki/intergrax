@@ -1,0 +1,18 @@
+{
+  "schema": "eqo_w3_des_prereg.v1",
+  "workstream": "WB09",
+  "task_id": "EQO-W3-WB09-DES",
+  "evidence_pin": "28c27cb896d02e0185b9fa02047411fa152f6469",
+  "preregistered_utc": "2026-11-21T06:15:00Z",
+  "pytest_command_sha256": "a9361ab1914706309bc7081f553d335b021854a2a2f808233efc1ba7f0461030",
+  "pytest_command": "uv run pytest tests/unit/skills/test_skill_x_batch_c_versioning_provenance_recovery.py tests/unit/skills/test_skill_host_lifecycle_batch_a.py tests/qualification/mcp_server_x/test_mcp_server_x_p5_qualification_batch.py tests/qualification/prod_q/test_prod_q_r1_r7_q_package_b_strict_serving_wiring_gate.py -q --tb=line",
+  "finding_ids": [
+    "EQOA-A2-027",
+    "EQOA-A4-040"
+  ],
+  "hypotheses": {
+    "EQOA-A2-027": "SKILL-X certified surface changed after acceptance; F-04 scope note obsolete and a PROD-Q regression from Batch C escaped acceptance",
+    "EQOA-A4-040": "Most Tier-3 application entrypoints start serving with direct uvicorn.run instead of the hosting lifecycle engine"
+  },
+  "write_set_note": "Band C DES only (parallel S2); EXE deferred — shared pytest lock"
+}

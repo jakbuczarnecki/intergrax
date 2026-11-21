@@ -1,0 +1,20 @@
+{
+  "schema": "eqo_w3_des_prereg.v1",
+  "workstream": "WB10",
+  "task_id": "EQO-W3-WB10-DES",
+  "evidence_pin": "28c27cb896d02e0185b9fa02047411fa152f6469",
+  "preregistered_utc": "2026-11-21T06:16:00Z",
+  "pytest_command_sha256": "e70afb0eeecc8a182df8e993afb77c4e84140c5889ad6350a761770ea5150d64",
+  "pytest_command": "uv run pytest tests/qualification/trace_x/test_trace_x_p6_adversarial_bundle.py tests/qualification/trace_x/test_trace_x_p6_closed_world_gates.py tests/qualification/state_x/test_state_x_p0_baseline.py tests/qualification/roadmap_replay_x/test_roadmap_replay_x_mechanical_exit_gates.py -q --tb=line",
+  "finding_ids": [
+    "EQOA-A2-019",
+    "EQOA-A2-030",
+    "EQOA-A5-012"
+  ],
+  "hypotheses": {
+    "EQOA-A2-019": "TRACE-X-P6 certified restart/resume surface changed after the accepted evidence SHA with no TRACE-X requalification",
+    "EQOA-A2-030": "DUP-X, ROADMAP-REPLAY-X (and EBH-7 GHA run) acceptance rests on auditor log inspection of artefacts absent from the repo",
+    "EQOA-A5-012": "STATE-X and TRACE-X closed-world gates were not executed after the 2026-10-30 replay although 274 product files changed (70 added, 204 modified), including new durable stores and a new MCP ingress"
+  },
+  "write_set_note": "Band C DES only (parallel S2); EXE deferred — shared pytest lock"
+}
