@@ -37,3 +37,9 @@ EQO records the read only — **no** G-band downgrade without operator OD packet
 Five IDs unchanged `BLOCKS_ARCH_FREEZE` / `BLOCKED`; owner batch remains `W4-03_OWNER_DECISION_BATCH.md` (not reopened in wave-4).
 
 **Recorded:** 2026-11-21 · lane `eqo/wave-4/x`
+
+## Wave-8 read pass (`EQO-X-08`)
+
+**Land:** `569254840`. ARCH-FREEZE impact bands for open BLOCKERs unchanged; `EQO_W7_W8_DEFERRED_BLOCKERS.md` still governs W8-CLS deferral.
+
+**Recorded:** 2026-11-21 · lane `eqo/wave-8/x` · `Ref: governance/tickets/T-IGX-046-F.md`

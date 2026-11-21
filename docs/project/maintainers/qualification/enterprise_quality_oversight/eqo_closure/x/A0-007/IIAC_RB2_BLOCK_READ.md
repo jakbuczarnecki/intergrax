@@ -25,4 +25,8 @@
 
 **Audit:** session E pending.
 
-**Recorded:** 2026-11-21 · lane `eqo/wave-4/x` · `Ref: governance/tickets/T-IGX-046-F.md`
+**Recorded:** 2026-11-21 · lane `eqo/wave-4/x` · `Ref: governance/tickets/T-IGX-046-F.md`## Wave-8 read pass (EQO-X-03)
+
+**Land:** 569254840. English pr680_governance_fast.md refresh; IIAC not IN_FORCE on train unchanged. #680 remains track-only (C16).
+
+**Recorded:** 2026-11-21 | lane eqo/wave-8/x

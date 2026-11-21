@@ -43,4 +43,8 @@ Command: `uv run python -c "… all_counters() …"` (wave-1/x session, 2026-11-
 
 `ROADMAP-REPLAY-X` layer remains `NO_PRODUCT_DELTA` on both pins; counter read idempotent @ wave-4 pins.
 
-**Recorded:** 2026-11-21 · lane `eqo/wave-4/x`
+**Recorded:** 2026-11-21 · lane `eqo/wave-4/x`## Wave-8 read pass (EQO-X-04)
+
+**Land:** 569254840. Counter read method unchanged; historical_evidence_invalidated_by_later_changes remains non-zero on both pins. PT-Q05 post-FCS counter zeroing not claimed.
+
+**Recorded:** 2026-11-21 | lane eqo/wave-8/x | Ref: governance/tickets/T-IGX-046-F.md
