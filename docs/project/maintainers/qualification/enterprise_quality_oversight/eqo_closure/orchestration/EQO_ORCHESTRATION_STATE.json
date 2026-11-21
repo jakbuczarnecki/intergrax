@@ -1,6 +1,6 @@
 {
   "schema": "eqo.orchestration_state.v1",
-  "updated_at": "2026-11-21T12:30:00+00:00",
+  "updated_at": "2026-11-21T13:00:00+00:00",
   "eqo_terminal_status": "EQO_NOT_CLOSED_EXACT_BLOCKERS",
   "capability_gate": "PARTIAL_ORCHESTRATION_AVAILABLE",
   "integration_status": "NOT_DONE",
@@ -33,9 +33,29 @@
     "not_executed_by_eqo": [
       "FCS",
       "PT-Q",
-      "M3"
-    ]
+      "M3",
+      "RB-2",
+      "G2",
+      "FRZ_promotion",
+      "C01-C25_promotion"
+    ],
+    "replay_rest_remainder": {
+      "artifact": "EQO_REPLAY_REST.json",
+      "pin_sha": "8e146e21cd8c63a47d621edc05d5f0036ba0c9ee",
+      "named_test_green": 6,
+      "named_test_passed": 64,
+      "no_named_test": 34,
+      "pytest_ran_this_slice": false
+    }
   },
+  "remaining_non_executable_stops": [
+    "Plan §5: EQO-PKG-A4-006, A4-027, A4-026 already committed locally; no fourth bounded package named in §5.",
+    "Plan §10: Operator decisions 1–8 (implementation go T-IGX-043-A/B/C/D, A4-027 write set, A4-006 ticket if needed, OD-EQO-04, OD-EQO-09, A4-042 default, push/PR, Composer session open).",
+    "Plan §12 NEXT_WAVE_TRIGGER: next wave picks further root causes from NEW_IMPLEMENTATION_REQUIRED (33) only when write sets are disjoint and implementation go exists; not specified as a single package here.",
+    "ARCH-FREEZE chain: FCS, PT-Q02–Q13, M3, EQO-REPLAY-FCS for 34 NO_NAMED_TEST replay rows.",
+    "Hard stop: A4-034 (LocalProviderRetryBudget/StepRetryBudget), A6-006 (ENT_AUDIT_X_SEMANTIC skip), A4-040/OD-EQO-04, Poland-default package, EDER-N-0003/0004.",
+    "Hard stop: 313 OWNER_DECISION_REQUIRED, 165 requalification not marked CURRENT, 305 TRIAGE_PENDING not reclassified, accepted-limitation records not invented."
+  ],
   "packages": {
     "EQO-PKG-A4-006": {
       "finding_id": "EQOA-A4-006",

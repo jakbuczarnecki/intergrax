@@ -1,6 +1,6 @@
 # EQO orchestration handoff (F1 bookkeeping)
 
-**Generated:** 2026-11-21T12:30:00+00:00  
+**Generated:** 2026-11-21T13:00:00+00:00  
 **Branch:** `eqo/w1-f1-view`  
 **Ticket:** `governance/tickets/T-IGX-046-F.md` (F1 view slice)
 
@@ -87,6 +87,19 @@ No register row `lifecycle_state` set to `CLOSED` in this slice.
 **REPLAY_ONLY** (zero new commits): FC-1, FC-2, FC-3, and the fifteen-id pass  
 (A4-002, A4-004, A4-005, A4-018, A2-009, A2-038, A5-001, A6-002, A6-003, A6-005, A6-007, A6-008).
 
+### EXISTING_IMPLEMENTATION_REQUIRES_REPLAY remainder @ train pin
+
+Artifact: `EQO_REPLAY_REST.json`.
+
+| Slice | Result |
+|-------|--------|
+| Six named `tests/*.py` files | 64 passed, exit 0 (prior run; not re-run this slice) |
+| Rows with named files | EDER-F-0054, -0060, -0078, -0112, -0134, -0159 |
+| Remaining 34 obligation IDs | **NO_NAMED_TEST** (no explicit `tests/…/*.py` in register text; EDER-D-0086 has ellipsis path only) |
+| pytest this slice | not run (zero new explicit files) |
+
+Evidence does not change `closure_path` or the 1029 path checksum.
+
 **Not closed:** A4-034, A6-006, A6-001.
 
 ## F1 view bookkeeping commit
@@ -100,7 +113,8 @@ No register row `lifecycle_state` set to `CLOSED` in this slice.
 
 - `EQO_REMAINING_OBLIGATION_VIEW.json` — 1029-row projection (`lifecycle_state` stays INGESTED; no CLOSED).
 - `EQO_REQUAL_CURRENCY.json` — 165-row register-backed currency vs development/train pins.
-- `EQO_ORCHESTRATION_STATE.json` — wave map, package SHAs, counters.
+- `EQO_ORCHESTRATION_STATE.json` — wave map, package SHAs, counters, `remaining_non_executable_stops`.
+- `EQO_REPLAY_REST.json` — named-test replay facts and 34× `NO_NAMED_TEST`.
 
 ## Forbidden this slice
 

@@ -47,9 +47,21 @@ Artefakt: `EQO_DOC_PACKAGE_INDEX.json` · commit `531b4e323`
 | `EQO-PKG-A6-006` | `c5b9648b4` | `BLOCKED` |
 | `EQO-PKG-A6-001` | — | open evidence gap |
 
+## EXISTING_IMPLEMENTATION_REQUIRES_REPLAY — remainder (train pin)
+
+| Fact | Value |
+|------|--------|
+| Pin | `8e146e21` |
+| Named tests (6 files) | 64 passed (prior green; not re-run) |
+| Other 34 IDs | `NO_NAMED_TEST` |
+| pytest this slice | not run |
+| Artifact | `EQO_REPLAY_REST.json` |
+
+Path checksum **unchanged** (still 40 × `EXISTING_IMPLEMENTATION_REQUIRES_REPLAY` in the 1029 view).
+
 ## Poza tą sesją
 
-Nie wykonywane w tej sesji EQO: `git push`, `FCS`, `PT-Q`, `M3`, `RB-2`, certyfikacja `IIAC`.
+Nie wykonywane w tej sesji EQO: `git push`, `FCS`, `PT-Q`, `M3`, `RB-2`, certyfikacja `IIAC`. Następna fala kodu wg planu §12 wymaga rozłącznego write setu i implementation go — zatrzymania w `EQO_ORCHESTRATION_STATE.json` → `remaining_non_executable_stops`.
 
 ## Uwaga push (atrybucja)
 
