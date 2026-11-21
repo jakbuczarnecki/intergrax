@@ -5,7 +5,6 @@
 from __future__ import annotations
 
 import pytest
-
 from intergrax.applications._shared.scenario_runtime_baseline import (
     ScenarioExecutionRequest,
     build_scenario_runtime_from_environment,
@@ -30,28 +29,29 @@ from intergrax.contracts.execution_identity import (
     reset_active_execution_identity,
     validate_execution_id,
 )
+from intergrax.runtime.events.runtime_event_metric_scope import RuntimeEventMetricScope
+from intergrax.runtime.execution.active_execution_budget import (
+    bind_root_execution_budget,
+    reset_active_execution_budget,
+)
 from intergrax.runtime.execution.boundary import (
     ExecutionBoundary,
     ExecutionIdentityBinding,
 )
 from intergrax.runtime.execution.budget.ledger import create_execution_budget_ledger
 from intergrax.runtime.execution.child import ChildExecutionRunner
-from intergrax.runtime.execution.active_execution_budget import (
-    bind_root_execution_budget,
-    reset_active_execution_budget,
-)
 from intergrax.runtime.governance.active_execution_authority import (
     bind_active_execution_authority,
     reset_active_execution_authority,
 )
-from intergrax.runtime.events.runtime_event_metric_scope import RuntimeEventMetricScope
 from intergrax.runtime.nexus.budget.budget_models import RunBudget
 from intergrax.runtime.nexus.nexus_loop import NexusLoop
 from intergrax.runtime.registry.agent_registry import AgentRegistry
+from intergrax.runtime.task.task import Task, TaskResult, TaskState
 from intergrax.runtime.task.task_result_authoritative_exposure_defaults import (
     terminal_task_result_exposure_no_decision_gate,
 )
-from intergrax.runtime.task.task import Task, TaskResult, TaskState
+
 from echo.echo_agent import EchoAgent
 
 _UNLIMITED_LEDGER = create_execution_budget_ledger(RunBudget())
@@ -118,7 +118,7 @@ def _fake_impl_factory(
 async def test_handle_task_fails_without_upstream_identity(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
-    loop = NexusLoop(AgentRegistry())
+    loop = NexusLoop(AgentRegistry(), production_mode=False)
     run_id = mint_run_id()
     monkeypatch.setattr(loop, "_handle_task_impl", _fake_impl_factory({}))
     task = Task(tenant_id="t1", user_id="u1", agent_id="agent-1", message="root")
@@ -131,7 +131,7 @@ async def test_handle_task_fails_without_upstream_identity(
 async def test_handle_task_supplied_run_id_path_has_root_execution_id(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
-    loop = NexusLoop(AgentRegistry())
+    loop = NexusLoop(AgentRegistry(), production_mode=False)
     run_id = mint_run_id()
     attempt_id = mint_attempt_id()
     execution_id = mint_execution_id()
@@ -161,7 +161,7 @@ async def test_handle_task_supplied_run_id_path_has_root_execution_id(
 async def test_handle_task_preserves_prebound_root_execution_id(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
-    loop = NexusLoop(AgentRegistry())
+    loop = NexusLoop(AgentRegistry(), production_mode=False)
     run_id = mint_run_id()
     attempt_id = mint_attempt_id()
     execution_id = mint_execution_id()
@@ -191,7 +191,7 @@ async def test_handle_task_preserves_prebound_root_execution_id(
 async def test_handle_task_does_not_reset_upstream_identity(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
-    loop = NexusLoop(AgentRegistry())
+    loop = NexusLoop(AgentRegistry(), production_mode=False)
     run_id = mint_run_id()
     attempt_id = mint_attempt_id()
     execution_id = mint_execution_id()
@@ -220,7 +220,7 @@ async def test_handle_task_does_not_reset_upstream_identity(
 async def test_handle_task_propagates_exception_without_resetting_upstream(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
-    loop = NexusLoop(AgentRegistry())
+    loop = NexusLoop(AgentRegistry(), production_mode=False)
     run_id = mint_run_id()
     attempt_id = mint_attempt_id()
     execution_id = mint_execution_id()
@@ -259,7 +259,7 @@ async def test_handle_task_propagates_exception_without_resetting_upstream(
 async def test_sequential_handle_task_invocations_require_separate_upstream_context(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
-    loop = NexusLoop(AgentRegistry())
+    loop = NexusLoop(AgentRegistry(), production_mode=False)
     seen: list[ExecutionId] = []
 
     async def _capture(
@@ -353,13 +353,12 @@ async def test_execute_scenario_task_reaches_graph_executor_with_execution_id(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     from pathlib import Path
+
     from testing_support.builder import MeteringFakeLLMAdapter
 
     adapter = MeteringFakeLLMAdapter()
 
-    def _resolve(
-        env: object, agent_override: object | None = None, **_: object
-    ) -> object:
+    def _resolve(env: object, agent_override: object | None = None, **_: object) -> object:
         del env
         return agent_override or adapter
 
@@ -374,19 +373,13 @@ async def test_execute_scenario_task_reaches_graph_executor_with_execution_id(
 
     registry = AgentRegistry()
     registry.register(EchoAgent())
-    environment = ApplicationEnvironmentProfile.lab_defaults(
-        profile_id="scenario.platform.5d"
-    )
+    environment = ApplicationEnvironmentProfile.lab_defaults(profile_id="scenario.platform.5d")
     manifest = ApplicationManifest.lab(
         app_id="scenario_platform_5d",
         name="Scenario Platform 5D",
         route_prefix="/v1/scenario_platform_5d",
         env_prefix="SCENARIO_PLATFORM_5D_",
-        agents=[
-            AgentBinding.mount(
-                EchoAgent, contract_id="echo", capabilities=["echo.basic"]
-            )
-        ],
+        agents=[AgentBinding.mount(EchoAgent, contract_id="echo", capabilities=["echo.basic"])],
         environment=environment,
     )
     path = Path(str(tmp_path))

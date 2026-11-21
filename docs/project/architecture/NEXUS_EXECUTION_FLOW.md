@@ -657,6 +657,7 @@ All three converge through `ToolRuntime` for side effects and `PolicyEngine` for
 |-----------|------------------------------------------------------|-------------------------------------|
 | `production_mode` on Nexus | `False` | `True` |
 | Agent routability | Relaxed (experimental agents allowed) | `AgentRegistry.is_routable` enforced |
+| Routing posture and fallback | `AgentRouter(production_mode=...)` and `NexusLoop(production_mode=...)` state the posture explicitly (no default); the host task execution reuses the loop's router. The first-routable fallback is default-deny (`AgentRoutingError`); only the typed LAB opt-in `lab_first_routable_fallback=True` keeps it and the selection event then carries `fallback_used=True`. The opt-in cannot be combined with `production_mode=True` | Same router, `production_mode=True`; no fallback, no opt-in |
 | Policy / security | `harness_lab.yaml`, relaxed bundles | Full `RuntimePolicyBundle` + V-SEC middleware |
 | HITL | Debug APIs, manual resume | Operator queue + audit trail |
 | Evaluation | `shadow_eval_enabled=True`, observe-only adaptive | `require_baseline_for_release`, trend gates (when CI enforced) |

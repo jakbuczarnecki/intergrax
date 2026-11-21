@@ -4,6 +4,8 @@
 
 from __future__ import annotations
 
+from datetime import UTC
+
 from intergrax.agent_distribution.bounded_multi_agent_fanout import (
     BoundedMultiAgentFanOutService,
 )
@@ -152,7 +154,7 @@ def build_production_representative_orchestration_topology_submission_port(
     clock=None,
 ):
     """Production-representative topology port for agent-distribution qualification proofs."""
-    from datetime import datetime, timezone
+    from datetime import datetime
 
     from intergrax.runtime.execution.orchestration_topology_production_composition import (
         build_strict_production_orchestration_topology_submission_port,
@@ -162,7 +164,7 @@ def build_production_representative_orchestration_topology_submission_port(
     )
 
     store = provider_invocation_store or DurableTestProviderInvocationStore()
-    resolved_clock = clock or (lambda: datetime.now(timezone.utc))
+    resolved_clock = clock or (lambda: datetime.now(UTC))
     return build_strict_production_orchestration_topology_submission_port(
         nexus_loop,
         provider_invocation_store=store,
@@ -176,7 +178,7 @@ def build_bounded_multi_agent_fan_out_qualification_service(
     harness: DelegatedSubtaskQualificationHarness,
 ) -> BoundedMultiAgentFanOutService[OcrQualificationRequest, OcrQualificationResult]:
     coordination = build_multi_agent_coordination_qualification_service(harness)
-    nexus_loop = NexusLoop(AgentRegistry())
+    nexus_loop = NexusLoop(AgentRegistry(), production_mode=False)
     submission_port = build_production_representative_orchestration_topology_submission_port(
         nexus_loop,
     )

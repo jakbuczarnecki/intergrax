@@ -239,7 +239,7 @@ def build_my_registry(*, settings: MyAppSettings | None = None) -> AgentRegistry
 
 ```python
 registry = build_my_registry(settings)
-nexus_loop = NexusLoop(registry, trace_store=..., ...)
+nexus_loop = NexusLoop(registry, production_mode=False, trace_store=..., ...)
 app = create_fastapi_app(nexus_loop, ...)
 ```
 

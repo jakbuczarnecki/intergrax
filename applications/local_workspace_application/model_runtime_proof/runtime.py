@@ -15,14 +15,6 @@ from intergrax.applications._shared.harness_host_runtime import (
     build_harness_host_runtime,
 )
 from intergrax.applications._shared.llm_resolver import resolve_llm_adapter
-from intergrax.applications._shared.harness_host_composition import (
-    bootstrap_harness_host_application_plugins,
-    bootstrap_harness_host_platform,
-    resolve_harness_host_event_bus,
-    resolve_harness_host_lifecycle_hook_coordinator,
-    resolve_harness_host_middleware_pipeline,
-    resolve_harness_host_runtime_event_persistence,
-)
 from intergrax.integrations._shared.in_memory_document_store import (
     InMemoryDocumentStore,
 )
@@ -130,14 +122,11 @@ def build_proof_runtime_session(
     os.environ["INTERGRAX_SHADOW_ROOT"] = str(shadow_dir)
     os.environ["INTERGRAX_ALLOWED_READ_ROOTS"] = str(user_docs.resolve())
     os.environ["INTERGRAX_QDRANT_URL"] = (
-        os.environ.get("LKW_MODEL_RUNTIME_PROOF_QDRANT_URL", "").strip()
-        or "http://127.0.0.1:6333"
+        os.environ.get("LKW_MODEL_RUNTIME_PROOF_QDRANT_URL", "").strip() or "http://127.0.0.1:6333"
     )
 
     store = document_store or InMemoryDocumentStore()
-    settings = cast(
-        LocalWorkspaceBackendSettings, LocalWorkspaceBackendSettings.from_env()
-    )
+    settings = cast(LocalWorkspaceBackendSettings, LocalWorkspaceBackendSettings.from_env())
     environment_profile = build_local_workspace_environment_profile(settings)
     llm_adapter: LLMAdapter | None = None
     if provider is not None:
@@ -147,6 +136,7 @@ def build_proof_runtime_session(
         LOCAL_WORKSPACE_APPLICATION_MANIFEST,
         environment_profile,
         settings=settings,
+        disable_human_decision_persistence=True,
     )
     lifecycle = LocalWorkspaceHostLifecycle()
     lifecycle.transition_to_ready()

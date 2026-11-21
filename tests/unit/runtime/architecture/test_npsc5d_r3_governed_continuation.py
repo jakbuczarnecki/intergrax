@@ -4,12 +4,11 @@
 
 from __future__ import annotations
 
+from collections.abc import Iterator
 from contextlib import contextmanager
 from pathlib import Path
-from typing import Iterator
 
 import pytest
-
 from intergrax.agent_distribution.bounded_multi_agent_fanout import (
     BoundedMultiAgentFanOutService,
     FanOutId,
@@ -27,6 +26,8 @@ from intergrax.agent_distribution.delegated_subtasks import (
 from intergrax.agent_distribution.multi_agent_coordination import (
     CoordinationFailureCode,
 )
+from intergrax.agent_distribution.task_scoped_agents import TaskScopedAgentError
+from intergrax.contracts.delegation_authority import ParentExecutionAuthority
 from intergrax.contracts.execution_identity import (
     TaskId,
     mint_execution_id,
@@ -34,40 +35,32 @@ from intergrax.contracts.execution_identity import (
     mint_task_id,
     require_active_execution_id,
 )
+from intergrax.contracts.execution_interrupt import InterruptType
+from intergrax.contracts.governed_continuation import ContinuationReason
+from intergrax.contracts.human_approver import local_development_approver_evidence
 from intergrax.contracts.orchestration_topology import (
     OrchestrationSlotContinuationError,
     OrchestrationSlotContinuationRequest,
     OrchestrationSlotId,
 )
-from intergrax.runtime.execution.active_execution_budget import (
-    bind_root_execution_budget,
-    reset_active_execution_budget,
-)
-from intergrax.runtime.execution.fan_out_orchestration_adapter import (
-    FanOutCoordinationSlotExecutor,
-    FanOutGovernedSlotContinuationContext,
-    build_fan_out_orchestration_port,
-)
-from testing_support.agent_distribution.multi_agent_coordination_qualification_harness import (
-    build_production_representative_orchestration_topology_submission_port,
-)
-from intergrax.runtime.nexus.budget.budget_models import RunBudget
-from intergrax.runtime.nexus.nexus_loop import NexusLoop
-from intergrax.runtime.execution.budget.ledger import create_execution_budget_ledger
-from intergrax.runtime.registry.agent_registry import AgentRegistry
-from intergrax.agent_distribution.task_scoped_agents import TaskScopedAgentError
-from intergrax.contracts.delegation_authority import ParentExecutionAuthority
-from intergrax.runtime.execution.boundary import (
-    ExecutionBoundary,
-    ExecutionIdentityBinding,
-)
-from intergrax.contracts.execution_interrupt import InterruptType
-from intergrax.contracts.governed_continuation import ContinuationReason
-from intergrax.contracts.human_approver import local_development_approver_evidence
 from intergrax.contracts.physical_delegation_governance import (
     PhysicalDelegationContinuationApprovalGrant,
     grant_matches_physical_delegation_continuation,
     physical_delegation_governed_continuation_digest,
+)
+from intergrax.runtime.execution.active_execution_budget import (
+    bind_root_execution_budget,
+    reset_active_execution_budget,
+)
+from intergrax.runtime.execution.boundary import (
+    ExecutionBoundary,
+    ExecutionIdentityBinding,
+)
+from intergrax.runtime.execution.budget.ledger import create_execution_budget_ledger
+from intergrax.runtime.execution.fan_out_orchestration_adapter import (
+    FanOutCoordinationSlotExecutor,
+    FanOutGovernedSlotContinuationContext,
+    build_fan_out_orchestration_port,
 )
 from intergrax.runtime.governance.physical_delegation_governance import (
     DenyingPhysicalDelegationGovernance,
@@ -85,16 +78,26 @@ from intergrax.runtime.human.physical_delegation_governed_continuation_bridge im
     apply_physical_delegation_governed_continuation_pause,
     project_physical_delegation_to_governed_continuation_request,
 )
+from intergrax.runtime.nexus.budget.budget_models import RunBudget
+from intergrax.runtime.nexus.nexus_loop import NexusLoop
+from intergrax.runtime.registry.agent_registry import AgentRegistry
 from intergrax.runtime.task.task import Task
 from testing_support.agent_distribution.coordination_governance import (
     bound_governed_host_task,
     require_human_physical_delegation_governance,
 )
+from testing_support.agent_distribution.multi_agent_coordination_qualification_harness import (
+    build_production_representative_orchestration_topology_submission_port,
+)
+from tests.unit.agent_distribution.test_bounded_multi_agent_fanout import (
+    _fan_out_item,
+    build_fan_out_harness,
+)
 from tests.unit.agent_distribution.test_delegated_subtasks import (
-    OcrRequest,
-    OcrResult,
     _LEGAL_PACKAGE,
     _OCR_PACKAGE,
+    OcrRequest,
+    OcrResult,
     _delegated_request,
     _discovery_candidate,
     _root_identity,
@@ -102,18 +105,14 @@ from tests.unit.agent_distribution.test_delegated_subtasks import (
     admin_test_principal,
     build_delegated_harness,
 )
-from tests.unit.agent_distribution.test_bounded_multi_agent_fanout import (
-    _fan_out_item,
-    build_fan_out_harness,
-)
 from tests.unit.agent_distribution.test_multi_agent_coordination import (
     _build_coordination_service,
 )
 from tests.unit.agent_distribution.test_physical_delegation_governance_boundary import (
+    _build_instrumented_harness,
     _CountingSelector,
     _CountingTaskScopedAgents,
     _DelegationRequireHumanGovernance,
-    _build_instrumented_harness,
 )
 from tests.unit.runtime.human.test_g5b_hitl_resolution import (
     ATTEMPT_ID,
@@ -124,9 +123,7 @@ from tests.unit.runtime.human.test_g5b_hitl_resolution import (
 pytestmark = [pytest.mark.unit, pytest.mark.gate]
 
 _REPO_ROOT = Path(__file__).resolve().parents[4]
-_DELEGATED_SOURCE = (
-    _REPO_ROOT / "intergrax" / "agent_distribution" / "delegated_subtasks.py"
-)
+_DELEGATED_SOURCE = _REPO_ROOT / "intergrax" / "agent_distribution" / "delegated_subtasks.py"
 
 RUN_ID = mint_run_id()
 SOURCE_AGENT = "agent-coordinator"
@@ -174,10 +171,7 @@ def _approve_physical_continuation(
     assert pause_record is not None
     assert human_request is not None
     assert task.runtime.governance.execution_interrupt is not None
-    assert (
-        task.runtime.governance.execution_interrupt.interrupt_type
-        is InterruptType.HUMAN_JUDGMENT_REQUIRED
-    )
+    assert task.runtime.governance.execution_interrupt.interrupt_type is InterruptType.HUMAN_JUDGMENT_REQUIRED
     HumanPauseCoordinator.resolve_human_response(
         task,
         HumanResponseVerdict.APPROVE,
@@ -186,9 +180,7 @@ def _approve_physical_continuation(
         human_request_id=human_request.request_id,
         run_id=run_id,
     )
-    grant = PhysicalDelegationContinuationGrantCoordinator.create_grant_from_approval(
-        task
-    )
+    grant = PhysicalDelegationContinuationGrantCoordinator.create_grant_from_approval(task)
     assert grant is not None
     return grant
 
@@ -241,9 +233,7 @@ async def _require_human_continuation(harness, *, task_scope) -> object:
 @pytest.mark.asyncio
 async def test_projection_preserves_physical_delegation_identity() -> None:
     harness, _, _, _, _, _ = _build_instrumented_harness(
-        candidates=(
-            _discovery_candidate(_OCR_PACKAGE, capability_ids=("document.ocr",)),
-        ),
+        candidates=(_discovery_candidate(_OCR_PACKAGE, capability_ids=("document.ocr",)),),
         governance=require_human_physical_delegation_governance(),
     )
     task_scope = harness.task_scope_authority.task_scope_id
@@ -267,9 +257,7 @@ async def test_projection_preserves_physical_delegation_identity() -> None:
 @pytest.mark.asyncio
 async def test_require_human_canonical_pause_no_acquire() -> None:
     harness, _, task_scoped, specialist, child, _ = _build_instrumented_harness(
-        candidates=(
-            _discovery_candidate(_OCR_PACKAGE, capability_ids=("document.ocr",)),
-        ),
+        candidates=(_discovery_candidate(_OCR_PACKAGE, capability_ids=("document.ocr",)),),
         governance=require_human_physical_delegation_governance(),
     )
     task_scope = harness.task_scope_authority.task_scope_id
@@ -315,10 +303,7 @@ async def test_single_e2e_resume_exact_specialist() -> None:
     assert specialist.call_count == 1
     assert child.call_count == 1
     assert task_scoped.release_count == 1
-    assert (
-        result.selection_provenance_kind
-        is DelegatedSelectionProvenanceKind.PRESERVED_GOVERNED_CONTINUATION
-    )
+    assert result.selection_provenance_kind is DelegatedSelectionProvenanceKind.PRESERVED_GOVERNED_CONTINUATION
     assert result.selection_decision is None
 
 
@@ -384,9 +369,7 @@ async def test_no_discovery_on_resume() -> None:
 @pytest.mark.asyncio
 async def test_wrong_grant_id_fail_closed() -> None:
     harness, _, task_scoped, _, _, _ = _build_instrumented_harness(
-        candidates=(
-            _discovery_candidate(_OCR_PACKAGE, capability_ids=("document.ocr",)),
-        ),
+        candidates=(_discovery_candidate(_OCR_PACKAGE, capability_ids=("document.ocr",)),),
         governance=require_human_physical_delegation_governance(),
     )
     task_scope = harness.task_scope_authority.task_scope_id
@@ -396,9 +379,7 @@ async def test_wrong_grant_id_fail_closed() -> None:
         with pytest.raises(DelegatedSubtaskContinuationGrantError):
             await harness.service.continue_governed_delegation(
                 _delegated_request(task_scope=task_scope),
-                invocation=DelegatedSubtaskInvocation(
-                    payload=OcrRequest(document_ref="doc-1")
-                ),
+                invocation=DelegatedSubtaskInvocation(payload=OcrRequest(document_ref="doc-1")),
                 continuation=continuation,
                 principal=admin_test_principal(),
                 task=task,
@@ -410,9 +391,7 @@ async def test_wrong_grant_id_fail_closed() -> None:
 @pytest.mark.asyncio
 async def test_grant_at_most_once() -> None:
     harness, _, task_scoped, _, _, _ = _build_instrumented_harness(
-        candidates=(
-            _discovery_candidate(_OCR_PACKAGE, capability_ids=("document.ocr",)),
-        ),
+        candidates=(_discovery_candidate(_OCR_PACKAGE, capability_ids=("document.ocr",)),),
         governance=require_human_physical_delegation_governance(),
     )
     task_scope = harness.task_scope_authority.task_scope_id
@@ -429,9 +408,7 @@ async def test_grant_at_most_once() -> None:
         with pytest.raises(DelegatedSubtaskContinuationGrantError):
             await harness.service.continue_governed_delegation(
                 _delegated_request(task_scope=task_scope),
-                invocation=DelegatedSubtaskInvocation(
-                    payload=OcrRequest(document_ref="doc-1")
-                ),
+                invocation=DelegatedSubtaskInvocation(payload=OcrRequest(document_ref="doc-1")),
                 continuation=continuation,
                 principal=admin_test_principal(),
                 task=task,
@@ -443,9 +420,7 @@ async def test_grant_at_most_once() -> None:
 @pytest.mark.asyncio
 async def test_reject_no_acquire() -> None:
     harness, _, task_scoped, specialist, child, _ = _build_instrumented_harness(
-        candidates=(
-            _discovery_candidate(_OCR_PACKAGE, capability_ids=("document.ocr",)),
-        ),
+        candidates=(_discovery_candidate(_OCR_PACKAGE, capability_ids=("document.ocr",)),),
         governance=require_human_physical_delegation_governance(),
     )
     task_scope = harness.task_scope_authority.task_scope_id
@@ -469,12 +444,7 @@ async def test_reject_no_acquire() -> None:
             human_request_id=human_request.request_id,
             run_id=RUN_ID,
         )
-        assert (
-            PhysicalDelegationContinuationGrantCoordinator.create_grant_from_approval(
-                task
-            )
-            is None
-        )
+        assert PhysicalDelegationContinuationGrantCoordinator.create_grant_from_approval(task) is None
     assert task_scoped.acquire_count == 0
     assert specialist.call_count == 0
     assert child.call_count == 0
@@ -493,9 +463,7 @@ async def test_policy_deny_after_approval() -> None:
             return DenyingPhysicalDelegationGovernance().evaluate(request)
 
     harness, _, task_scoped, _, _, _ = _build_instrumented_harness(
-        candidates=(
-            _discovery_candidate(_OCR_PACKAGE, capability_ids=("document.ocr",)),
-        ),
+        candidates=(_discovery_candidate(_OCR_PACKAGE, capability_ids=("document.ocr",)),),
         governance=_FlipDenyGovernance(),
     )
     task_scope = harness.task_scope_authority.task_scope_id
@@ -505,9 +473,7 @@ async def test_policy_deny_after_approval() -> None:
         with pytest.raises(DelegatedSubtaskGovernanceDenied):
             await harness.service.continue_governed_delegation(
                 _delegated_request(task_scope=task_scope),
-                invocation=DelegatedSubtaskInvocation(
-                    payload=OcrRequest(document_ref="doc-1")
-                ),
+                invocation=DelegatedSubtaskInvocation(payload=OcrRequest(document_ref="doc-1")),
                 continuation=continuation,
                 principal=admin_test_principal(),
                 task=task,
@@ -519,9 +485,7 @@ async def test_policy_deny_after_approval() -> None:
 @pytest.mark.asyncio
 async def test_ac3_deny_after_approval() -> None:
     harness, _, task_scoped, _, _, _ = _build_instrumented_harness(
-        candidates=(
-            _discovery_candidate(_OCR_PACKAGE, capability_ids=("document.ocr",)),
-        ),
+        candidates=(_discovery_candidate(_OCR_PACKAGE, capability_ids=("document.ocr",)),),
         governance=require_human_physical_delegation_governance(),
     )
     inner = harness.task_scoped
@@ -551,9 +515,7 @@ async def test_ac3_deny_after_approval() -> None:
 @pytest.mark.asyncio
 async def test_grant_creation_wrong_pause_fail_closed() -> None:
     harness, _, _, _, _, _ = _build_instrumented_harness(
-        candidates=(
-            _discovery_candidate(_OCR_PACKAGE, capability_ids=("document.ocr",)),
-        ),
+        candidates=(_discovery_candidate(_OCR_PACKAGE, capability_ids=("document.ocr",)),),
         governance=require_human_physical_delegation_governance(),
     )
     task_scope = harness.task_scope_authority.task_scope_id
@@ -601,7 +563,7 @@ def _build_governed_fan_out_stack(candidates):
     harness.service._specialist_invocation = specialist
     harness.service._child_execution = child
     coordination = _build_coordination_service(harness)
-    nexus_loop = NexusLoop(AgentRegistry())
+    nexus_loop = NexusLoop(AgentRegistry(), production_mode=False)
     topology_port = build_production_representative_orchestration_topology_submission_port(
         nexus_loop,
     )
@@ -658,10 +620,8 @@ async def test_fan_out_e2e_resume_exact_blocked_slot_without_sibling_rerun() -> 
         _discovery_candidate(_OCR_PACKAGE, capability_ids=("document.ocr",)),
         _discovery_candidate(_LEGAL_PACKAGE, capability_ids=("document.ocr",)),
     )
-    harness, selector, task_scoped, _, child, adapter, fan_out = (
-        _build_governed_fan_out_stack(
-            candidates,
-        )
+    harness, selector, task_scoped, _, child, adapter, fan_out = _build_governed_fan_out_stack(
+        candidates,
     )
     task_scope = mint_task_id()
     items = (
@@ -702,10 +662,7 @@ async def test_fan_out_e2e_resume_exact_blocked_slot_without_sibling_rerun() -> 
     assert initial[0].status is FanOutItemStatus.SUCCESS
     assert initial[1].status is FanOutItemStatus.FAILURE
     assert initial[1].failure is not None
-    assert (
-        initial[1].failure.failure_code
-        is CoordinationFailureCode.GOVERNANCE_REQUIRES_HUMAN
-    )
+    assert initial[1].failure.failure_code is CoordinationFailureCode.GOVERNANCE_REQUIRES_HUMAN
     assert initial[1].failure.continuation is not None
     assert initial[2].status is FanOutItemStatus.SUCCESS
     assert child.call_count == 2
@@ -952,9 +909,7 @@ async def test_fan_out_duplicate_resume_blocked() -> None:
 @pytest.mark.asyncio
 async def test_grant_matches_wrong_delegation_blocked() -> None:
     harness, _, _, _, _, _ = _build_instrumented_harness(
-        candidates=(
-            _discovery_candidate(_OCR_PACKAGE, capability_ids=("document.ocr",)),
-        ),
+        candidates=(_discovery_candidate(_OCR_PACKAGE, capability_ids=("document.ocr",)),),
         governance=require_human_physical_delegation_governance(),
     )
     task_scope = harness.task_scope_authority.task_scope_id
@@ -962,9 +917,7 @@ async def test_grant_matches_wrong_delegation_blocked() -> None:
     wrong = continuation.model_copy(update={"delegation_id": "delegation-other"})
     grant = PhysicalDelegationContinuationApprovalGrant(
         grant_id="pdcg_test",
-        continuation_digest=physical_delegation_governed_continuation_digest(
-            continuation
-        ),
+        continuation_digest=physical_delegation_governed_continuation_digest(continuation),
         continuation_request_id="gcr_test",
         delegation_id=continuation.delegation_id,
         task_scope_id=continuation.task_scope_id,

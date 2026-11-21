@@ -130,7 +130,11 @@ from intergrax.runtime.human.hitl_hooks import (
     HumanApprovalHookCoordinator,
 )
 from intergrax.runtime.human.models import HumanResponseVerdict
-from intergrax.runtime.human.persistence_contract import HumanDecisionPersistence
+from intergrax.runtime.human.persistence_contract import (
+    HumanDecisionPersistence,
+    InMemoryHumanDecisionPersistence,
+)
+from intergrax.runtime.human.persistence_errors import HumanDecisionPersistenceNotConfiguredError
 from intergrax.runtime.interrupts.handler import ExecutionInterruptHandler
 from intergrax.runtime.long_running.notification import NotificationAdapter
 from intergrax.runtime.long_running.persistence_contract import (
@@ -212,6 +216,10 @@ if TYPE_CHECKING:
     )
 
 
+class ProductionContextCompositionError(RuntimeError):
+    """A production_mode NexusLoop was composed without a context engine or an LLM adapter."""
+
+
 class NexusLoop:
     """
     Global Nexus loop (§9.1, §41).
@@ -252,7 +260,8 @@ class NexusLoop:
         declarative_tool_invoker: ExecutionBoundDeclarativeToolInvoker | None = None,
         notification_adapter: NotificationAdapter | None = None,
         middleware: MiddlewarePipeline | None = None,
-        production_mode: bool = False,
+        production_mode: bool,
+        lab_first_routable_fallback: bool = False,
         runtime_event_store: EvidencePersistencePort | RuntimeEventPersistence | None = None,
         runtime_events_db_path: Path | None = None,
         task_memory_store: TaskMemoryPersistence | None = None,
@@ -278,16 +287,24 @@ class NexusLoop:
         continuation_lifecycle_driver: ExecutionContinuationLifecycleDriver | None = None,
         execution_continuation_state_store: ExecutionContinuationStateStore | None = None,
         disable_execution_continuation: bool = False,
+        disable_human_decision_persistence: bool = False,
+        disable_task_memory_persistence: bool = False,
+        disable_runtime_event_persistence: bool = False,
         child_context_inheritance: ChildExecutionContextInheritancePort | None = None,
     ) -> None:
         self._registry = registry
+        bus_persists = event_bus is not None and event_bus.persistence is not None
         self._runtime_event_store = resolve_runtime_event_persistence(
             db_path=runtime_events_db_path,
             implementation=runtime_event_store,
+            production_mode=production_mode,
+            disabled=disable_runtime_event_persistence or bus_persists,
         )
         self._task_memory_store = resolve_task_memory_persistence(
             db_path=task_memory_db_path,
             implementation=task_memory_store,
+            production_mode=production_mode,
+            disabled=disable_task_memory_persistence,
         )
         self._event_bus = event_bus or RuntimeEventBus(persistence=self._runtime_event_store)
         if event_bus is not None and self._runtime_event_store is not None:
@@ -314,6 +331,17 @@ class NexusLoop:
         )
         self._shadow_manager = shadow_manager or ShadowWorkspaceManager()
         self._sandbox_manager = sandbox_manager or SandboxSessionManager()
+        if production_mode:
+            if human_decision_store is None:
+                if not disable_human_decision_persistence:
+                    raise HumanDecisionPersistenceNotConfiguredError(
+                        "production_mode requires a durable human_decision_store or the explicit "
+                        "disable_human_decision_persistence acknowledgement.",
+                    )
+            elif isinstance(human_decision_store, InMemoryHumanDecisionPersistence):
+                raise HumanDecisionPersistenceNotConfiguredError(
+                    "production_mode refuses an in-memory human decision store.",
+                )
         self._human_store = human_decision_store
         self._escalation_router = escalation_router or EscalationRouter()
         self._checkpoint_store = checkpoint_store
@@ -331,6 +359,12 @@ class NexusLoop:
         else:
             self._context_manager = context_manager
             self._context_manager.use_execution_identity(self._execution_identity)
+        if production_mode and (
+            self._context_manager.context_engine is None or self._context_manager.llm_adapter is None
+        ):
+            raise ProductionContextCompositionError(
+                "production_mode requires a context manager with a context engine and an LLM adapter.",
+            )
         self._engine = AgentEngine(
             registry,
             production_mode=production_mode,
@@ -362,6 +396,7 @@ class NexusLoop:
             registry,
             production_mode=production_mode,
             event_bus=self._event_bus,
+            lab_first_routable_fallback=lab_first_routable_fallback,
         )
         self._context_manager.bind_middleware(self._middleware)
         self._graph_executor = graph_executor or GraphExecutor(
@@ -576,6 +611,15 @@ class NexusLoop:
     @property
     def agent_engine(self) -> AgentEngine:
         return self._engine
+
+    @property
+    def agent_router(self) -> AgentRouter:
+        """The single routing authority of this loop (host task execution reuses it)."""
+        return self._router
+
+    @property
+    def production_mode(self) -> bool:
+        return self._production_mode
 
     @property
     def declarative_tool_invoker(self) -> ExecutionBoundDeclarativeToolInvoker | None:

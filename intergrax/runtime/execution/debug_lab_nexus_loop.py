@@ -5,10 +5,10 @@
 
 from __future__ import annotations
 
+from intergrax.contracts.execution_evidence.persistence_port import EvidencePersistencePort
 from intergrax.contracts.host_orchestration_application_wiring_target import (
     HostOrchestrationApplicationWiringTarget,
 )
-from intergrax.contracts.execution_evidence.persistence_port import EvidencePersistencePort
 from intergrax.contracts.run_trace_store import RunTraceReader
 from intergrax.runtime.long_running.notification import NotificationAdapter
 from intergrax.runtime.long_running.persistence_contract import TaskCheckpointPersistence
@@ -28,6 +28,8 @@ def build_debug_minimal_nexus_loop(
         checkpoint_store=checkpoint_store,
         trace_store=trace_store,
         runtime_event_store=runtime_event_store,
+        production_mode=False,
+        lab_first_routable_fallback=True,
     )
 
 
@@ -41,6 +43,8 @@ def build_lab_organization_nexus_loop(
         registry,
         checkpoint_store=checkpoint_store,
         notification_adapter=notification_adapter,
+        production_mode=False,
+        lab_first_routable_fallback=True,
     )
 
 

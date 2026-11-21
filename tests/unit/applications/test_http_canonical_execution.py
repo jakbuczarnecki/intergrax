@@ -2,15 +2,11 @@
 
 from __future__ import annotations
 
+from collections.abc import Awaitable, Callable
 from dataclasses import dataclass
-from typing import Awaitable, Callable
 from unittest.mock import AsyncMock, patch
 
 import pytest
-
-from tests.fixtures.harness_host_task_execution import (
-    build_harness_environment_host_task_execution,
-)
 from intergrax.contracts.execution_identity import (
     mint_execution_id,
     mint_run_id,
@@ -24,16 +20,20 @@ from intergrax.runtime.execution.strategy_router import StrategyExecutionRouter
 from intergrax.runtime.execution.task_adapter import TaskExecutionInput
 from intergrax.runtime.nexus.nexus_loop import NexusLoop
 from intergrax.runtime.registry.agent_registry import AgentRegistry
+from intergrax.runtime.task.task import Task, TaskContext, TaskResult, TaskState
 from intergrax.runtime.task.task_result_authoritative_exposure_defaults import (
     terminal_task_result_exposure_no_decision_gate,
 )
-from intergrax.runtime.task.task import Task, TaskContext, TaskResult, TaskState
+from tests.fixtures.harness_host_task_execution import (
+    build_harness_environment_host_task_execution,
+)
+
 from dispute_sim_application.host.environment_profile import build_dispute_sim_environment_profile
 from dispute_sim_application.host.settings import DisputeSimBackendSettings
 from dispute_sim_application.serving.fastapi_router import DisputeSimRunService
 from dispute_sim_application.serving.schemas import DisputeSimRunRequestV1
-from research_application.host.wiring import build_research_environment_profile
 from research_application.host.settings import ResearchBackendSettings
+from research_application.host.wiring import build_research_environment_profile
 from research_application.serving.fastapi_router import ResearchRunService
 from research_application.serving.schemas import ResearchRunRequestV1
 
@@ -61,9 +61,7 @@ def _build_dispute_service(nexus_loop: NexusLoop) -> DisputeSimRunService:
 
 async def _invoke_dispute(service: object) -> object:
     assert isinstance(service, DisputeSimRunService)
-    return await service.run_task(
-        DisputeSimRunRequestV1(message="http proof", capability="dispute.intake")
-    )
+    return await service.run_task(DisputeSimRunRequestV1(message="http proof", capability="dispute.intake"))
 
 
 def _build_research_service(nexus_loop: NexusLoop) -> ResearchRunService:
@@ -104,7 +102,7 @@ _HTTP_EXECUTION_CASES = (
 @pytest.mark.asyncio
 async def test_http_root_uses_canonical_execution_facade(case: _HttpExecutionCase) -> None:
     registry = AgentRegistry()
-    nexus_loop = NexusLoop(registry)
+    nexus_loop = NexusLoop(registry, production_mode=False)
     service = case.build_service(nexus_loop)
     facade_calls = 0
     original_execute = ExecutionFacade.execute
@@ -146,7 +144,7 @@ async def test_http_root_uses_canonical_execution_facade(case: _HttpExecutionCas
 @pytest.mark.asyncio
 async def test_http_request_produces_single_root_execution_invocation(case: _HttpExecutionCase) -> None:
     registry = AgentRegistry()
-    nexus_loop = NexusLoop(registry)
+    nexus_loop = NexusLoop(registry, production_mode=False)
     service = case.build_service(nexus_loop)
     router_calls = 0
     facade_calls = 0
@@ -183,7 +181,7 @@ async def test_http_request_produces_single_root_execution_invocation(case: _Htt
 @pytest.mark.asyncio
 async def test_http_reaches_strategy_router_with_expected_capability(case: _HttpExecutionCase) -> None:
     registry = AgentRegistry()
-    nexus_loop = NexusLoop(registry)
+    nexus_loop = NexusLoop(registry, production_mode=False)
     service = case.build_service(nexus_loop)
     captured: dict[str, object] = {}
 
@@ -211,7 +209,7 @@ async def test_http_reaches_strategy_router_with_expected_capability(case: _Http
 @pytest.mark.asyncio
 async def test_http_agentic_request_does_not_root_call_nexus_handle_task() -> None:
     registry = AgentRegistry()
-    nexus_loop = NexusLoop(registry)
+    nexus_loop = NexusLoop(registry, production_mode=False)
     nexus_loop.handle_task = AsyncMock()  # type: ignore[method-assign]
     service = _build_dispute_service(nexus_loop)
 
@@ -234,7 +232,7 @@ async def test_http_agentic_request_does_not_root_call_nexus_handle_task() -> No
 @pytest.mark.asyncio
 async def test_http_root_execution_id_is_platform_owned() -> None:
     registry = AgentRegistry()
-    nexus_loop = NexusLoop(registry)
+    nexus_loop = NexusLoop(registry, production_mode=False)
     service = _build_dispute_service(nexus_loop)
     caller_execution_id = mint_execution_id()
     observed: dict[str, object] = {}
@@ -272,7 +270,7 @@ async def test_http_root_execution_id_is_platform_owned() -> None:
 @pytest.mark.asyncio
 async def test_http_and_mcp_dispute_capability_resolve_to_same_strategy() -> None:
     registry = AgentRegistry()
-    nexus_loop = NexusLoop(registry)
+    nexus_loop = NexusLoop(registry, production_mode=False)
     env = build_dispute_sim_environment_profile(DisputeSimBackendSettings.from_env())
     build_harness_environment_host_task_execution(nexus_loop, env)
     capability = "dispute.intake"
@@ -298,9 +296,7 @@ async def test_http_and_mcp_dispute_capability_resolve_to_same_strategy() -> Non
     orchestration_triggers = orchestration_capabilities_from_triggers(
         graph_spec.trigger_capabilities if graph_spec is not None else None,
     )
-    pipeline_suffix = (
-        graph_spec.pipeline_capability_suffix if graph_spec is not None else ".pipeline"
-    )
+    pipeline_suffix = graph_spec.pipeline_capability_suffix if graph_spec is not None else ".pipeline"
     http_caps = resolve_task_execution_capabilities(
         http_task,
         orchestration_triggers=orchestration_triggers,

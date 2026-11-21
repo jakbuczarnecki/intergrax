@@ -1,17 +1,16 @@
 # © Artur Czarnecki. All rights reserved.
 
 import pytest
-
 from intergrax.runtime.nexus.nexus_loop import NexusLoop
-from testing_support.agent_registry_bootstrap import build_research_registry
 from intergrax.runtime.task.task import Task, TaskContext, TaskState
+from testing_support.agent_registry_bootstrap import build_research_registry
 
 
 @pytest.mark.asyncio
 @pytest.mark.integration
 @pytest.mark.gate
 async def test_nexus_loop_research_pipeline_via_uaep():
-    loop = NexusLoop(build_research_registry())
+    loop = NexusLoop(build_research_registry(), production_mode=False)
     task = Task(
         tenant_id="t1",
         user_id="u1",

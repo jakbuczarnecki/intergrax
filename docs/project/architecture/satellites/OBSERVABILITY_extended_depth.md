@@ -230,7 +230,7 @@ Canonical payload families (canon §42.23.1):
 | Store | Env variable | Interface | Content |
 |-------|--------------|-----------|---------|
 | Run trace | `INTERGRAX_TRACE_DB` | `RunTraceWriter` | `TraceEvent` sequence + `RunMetadata` |
-| Runtime events | `INTERGRAX_RUNTIME_EVENTS_DB` | `RuntimeEventPersistence` | `RuntimeEvent` journal |
+| Runtime events | `INTERGRAX_RUNTIME_EVENTS_DB` (LAB only; with `production_mode=True` the variable is never read: a persisting bus, an explicit store or path, or `disable_runtime_event_persistence=True` is required, otherwise `RuntimeEventPersistenceNotConfiguredError`) | `RuntimeEventPersistence` | `RuntimeEvent` journal |
 | Checkpoints | `INTERGRAX_CHECKPOINTS_DB` | `TaskCheckpointReader` | Long-running state |
 | Task memory | `INTERGRAX_TASK_MEMORY_DB` | `TaskMemoryPersistence` | KV memory |
 

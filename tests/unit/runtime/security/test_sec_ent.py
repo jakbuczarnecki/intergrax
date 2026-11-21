@@ -245,7 +245,7 @@ def test_resolve_encryptor_uses_secrets_store_when_resolvable() -> None:
 def test_register_security_hooks_wires_spine_subscriber() -> None:
     from intergrax.runtime.events.event_bus import RuntimeEventBus
 
-    nexus = NexusLoop(AgentRegistry(), event_bus=RuntimeEventBus())
+    nexus = NexusLoop(AgentRegistry(), event_bus=RuntimeEventBus(), production_mode=False)
     env = ApplicationEnvironmentProfile.lab_defaults(profile_id="sec.ent.hooks")
     env.security_profile = SecurityEnvelope.production().application_security
     env.integration_profile = harness_defense_stack()
