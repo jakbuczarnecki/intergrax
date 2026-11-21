@@ -1,0 +1,214 @@
+{
+  "schema": "eqo.development_replay.v1",
+  "updated_at": "2026-11-21T16:30:00+00:00",
+  "development_pin": "f88e17c53bcb318076f9324382f848bb5c5d88a7",
+  "train_evidence_pin": "8e146e21cd8c63a47d621edc05d5f0036ba0c9ee",
+  "train_not_ancestor_of_development": true,
+  "summary_counts": {
+    "ABSENT_ON_DEVELOPMENT": 3,
+    "STILL_PRESENT": 16,
+    "NO_EXACT_FILES": 1,
+    "CHERRY_PICK_CONFLICT": 2,
+    "STILL_PRESENT_NO_PORT_ATTEMPT": 0
+  },
+  "rows": [
+    {
+      "root_cause_id": "EQOA-A2-009",
+      "obligation_id": "EDER-F-0039",
+      "ticket_ref": "governance/tickets/T-IGX-043-A.md",
+      "verdict": "STILL_PRESENT",
+      "reason": "EBH-3 ownership gate evidence still scoped to intergrax/; cross-tier leakage claim not re-verified green on development.",
+      "cited_files": ["tests/unit/architecture/test_ebh_3_dependency_ownership_gate.py"]
+    },
+    {
+      "root_cause_id": "EQOA-A2-038",
+      "obligation_id": "EDER-F-0067",
+      "ticket_ref": "governance/tickets/T-IGX-043-A.md",
+      "verdict": "STILL_PRESENT",
+      "reason": "IIAC role separation still rests on session id inequality checks in governance scripts (baseline pattern unchanged).",
+      "cited_files": ["scripts/governance/iiac_common.py", "scripts/governance/verify_iiac_role_separation.py"]
+    },
+    {
+      "root_cause_id": "EQOA-A4-002",
+      "obligation_id": "EDER-F-0111",
+      "ticket_ref": "governance/tickets/T-IGX-043-D.md",
+      "verdict": "CHERRY_PICK_CONFLICT",
+      "reason": "Pin stores still expose literal is_durable=True; cherry-pick 69ca445ee conflicted in execution_pinning_persistence.py.",
+      "cited_files": ["intergrax/skills/execution_pinning_persistence.py"],
+      "port_commit_attempted": "69ca445ee"
+    },
+    {
+      "root_cause_id": "EQOA-A4-004",
+      "obligation_id": "EDER-F-0113",
+      "ticket_ref": "governance/tickets/T-IGX-043-C.md",
+      "verdict": "ABSENT_ON_DEVELOPMENT",
+      "reason": "No agents/* direct import of intergrax.integrations.tools at development pin (bypass predicate absent in tree).",
+      "cited_files": ["scripts/maintenance/check_agent_registry_bypass.py"]
+    },
+    {
+      "root_cause_id": "EQOA-A4-005",
+      "obligation_id": "EDER-F-0114",
+      "ticket_ref": "governance/tickets/T-IGX-043-B.md",
+      "verdict": "STILL_PRESENT",
+      "reason": "Dependency ownership gate and unit tests for CORE ownership remain; finding predicate not replayed green here.",
+      "cited_files": ["scripts/maintenance/check_dependency_ownership.py", "tests/unit/test_dependency_governance.py"]
+    },
+    {
+      "root_cause_id": "EQOA-A4-009",
+      "obligation_id": "EDER-F-0118",
+      "ticket_ref": "governance/tickets/T-IGX-043-A.md",
+      "verdict": "CHERRY_PICK_CONFLICT",
+      "reason": "AgentRouter still silent first-routable fallback; cherry-pick 8d4b5b37f conflicted on agent_router.py.",
+      "cited_files": ["intergrax/runtime/nexus/agent_router.py"],
+      "port_commit_attempted": "8d4b5b37f"
+    },
+    {
+      "root_cause_id": "EQOA-A4-011",
+      "obligation_id": "EDER-F-0120",
+      "ticket_ref": "governance/tickets/T-IGX-043-A.md",
+      "verdict": "NO_EXACT_FILES",
+      "reason": "CERT_DRIFT finding is documentation ownership split; no single product write set in ticket for this slice.",
+      "cited_files": ["docs/project/architecture/PLATFORM_FOUNDATION.md"]
+    },
+    {
+      "root_cause_id": "EQOA-A4-017",
+      "obligation_id": "EDER-F-0126",
+      "ticket_ref": "governance/tickets/T-IGX-043-C.md",
+      "verdict": "STILL_PRESENT",
+      "reason": "stub_vision.py still fabricates object.stub at 0.99 confidence.",
+      "cited_files": ["intergrax/model_inference/adapters/stub_vision.py"]
+    },
+    {
+      "root_cause_id": "EQOA-A4-018",
+      "obligation_id": "EDER-F-0127",
+      "ticket_ref": "governance/tickets/T-IGX-043-C.md",
+      "verdict": "STILL_PRESENT",
+      "reason": "Direct ollama SDK import remains in intergrax/multimedia/images_loader.py.",
+      "cited_files": ["intergrax/multimedia/images_loader.py"]
+    },
+    {
+      "root_cause_id": "EQOA-A4-019",
+      "obligation_id": "EDER-F-0128",
+      "ticket_ref": "governance/tickets/T-IGX-043-F.md",
+      "verdict": "ABSENT_ON_DEVELOPMENT",
+      "reason": "Cited embedding/vector/notification registries lack silent ollama/in-memory/log string defaults at development pin.",
+      "cited_files": [
+        "intergrax/rag/embedding/registry.py",
+        "intergrax/rag/vector_store/registry.py",
+        "intergrax/notifications/backend_registry.py"
+      ]
+    },
+    {
+      "root_cause_id": "EQOA-A4-026",
+      "obligation_id": "EDER-F-0135",
+      "ticket_ref": "governance/tickets/T-IGX-043-C.md",
+      "verdict": "ABSENT_ON_DEVELOPMENT",
+      "reason": "Inbound verifier factory is fail-closed (no silent map to NONE on unset/invalid).",
+      "cited_files": ["intergrax/runtime/interactions/verification/factory.py"]
+    },
+    {
+      "root_cause_id": "EQOA-A4-030",
+      "obligation_id": "EDER-F-0139",
+      "ticket_ref": "governance/tickets/T-IGX-043-B.md",
+      "verdict": "STILL_PRESENT",
+      "reason": "memory_wiring.py still documents in-memory fallbacks on Mongo/no-backend branches.",
+      "cited_files": ["intergrax/applications/_shared/memory_wiring.py"]
+    },
+    {
+      "root_cause_id": "EQOA-A4-031",
+      "obligation_id": "EDER-F-0140",
+      "ticket_ref": "governance/tickets/T-IGX-043-A.md",
+      "verdict": "STILL_PRESENT",
+      "reason": "UAEP executor still allows context assembly when context_engine unset (FC-1 posture not on development).",
+      "cited_files": ["intergrax/runtime/nexus/uaep/uaep_executor.py"]
+    },
+    {
+      "root_cause_id": "EQOA-A4-032",
+      "obligation_id": "EDER-F-0141",
+      "ticket_ref": "governance/tickets/T-IGX-043-B.md",
+      "verdict": "STILL_PRESENT",
+      "reason": "Cited observability/sandbox/guardrail wiring paths not replay-verified; train FC-2 evidence not ported.",
+      "cited_files": ["intergrax/applications/_shared/runtime_event_delivery_wiring.py"]
+    },
+    {
+      "root_cause_id": "EQOA-A4-035",
+      "obligation_id": "EDER-F-0144",
+      "ticket_ref": "governance/tickets/T-IGX-043-B.md",
+      "verdict": "STILL_PRESENT",
+      "reason": "FC-2 queue-worker fail-closed posture exists on train pin only.",
+      "cited_files": ["intergrax/runtime/task/queue_worker.py"]
+    },
+    {
+      "root_cause_id": "EQOA-A4-036",
+      "obligation_id": "EDER-F-0145",
+      "ticket_ref": "governance/tickets/T-IGX-043-B.md",
+      "verdict": "STILL_PRESENT",
+      "reason": "FC-2 degraded-default finding not absent on development without ported train diff.",
+      "cited_files": ["intergrax/runtime/observability/event_delivery.py"]
+    },
+    {
+      "root_cause_id": "EQOA-A4-037",
+      "obligation_id": "EDER-F-0146",
+      "ticket_ref": "governance/tickets/T-IGX-043-A.md",
+      "verdict": "STILL_PRESENT",
+      "reason": "Human-decision persistence production guard from FC-1 not present at development pin.",
+      "cited_files": ["intergrax/runtime/nexus/orchestration/human_response.py"]
+    },
+    {
+      "root_cause_id": "EQOA-A4-044",
+      "obligation_id": "EDER-F-0153",
+      "ticket_ref": "governance/tickets/T-IGX-043-A.md",
+      "verdict": "STILL_PRESENT",
+      "reason": "production_mode sweep for host factories (FC-1) not replayed on development.",
+      "cited_files": ["applications/attestation_demo/host/factory.py"]
+    },
+    {
+      "root_cause_id": "EQOA-A5-001",
+      "obligation_id": "EDER-F-0157",
+      "ticket_ref": "governance/tickets/T-IGX-043-A.md",
+      "verdict": "STILL_PRESENT",
+      "reason": "EBH-3 gate test still targets intergrax-only scan; Tier-2/3 _shared leakage not closed on development.",
+      "cited_files": ["tests/unit/architecture/test_ebh_3_dependency_ownership_gate.py"]
+    },
+    {
+      "root_cause_id": "EQOA-A6-002",
+      "obligation_id": "EDER-F-0173",
+      "ticket_ref": "governance/tickets/T-IGX-043-A.md",
+      "verdict": "STILL_PRESENT",
+      "reason": "verify_plan_approval still accepts any Approved: line (loose regex).",
+      "cited_files": ["scripts/governance/verify_plan_approval.py"]
+    },
+    {
+      "root_cause_id": "EQOA-A6-003",
+      "obligation_id": "EDER-F-0174",
+      "ticket_ref": "governance/tickets/T-IGX-043-A.md",
+      "verdict": "STILL_PRESENT",
+      "reason": "Fifteen-id train pass not replayed on development pin (governance consistency row).",
+      "cited_files": ["scripts/governance/igx_gov.py"]
+    },
+    {
+      "root_cause_id": "EQOA-A6-005",
+      "obligation_id": "EDER-F-0176",
+      "ticket_ref": "governance/tickets/T-IGX-043-A.md",
+      "verdict": "STILL_PRESENT",
+      "reason": "Train-verified pytest evidence not re-run on development for this row.",
+      "cited_files": ["tests/unit/governance/test_ticket_ref_trailer.py"]
+    },
+    {
+      "root_cause_id": "EQOA-A6-007",
+      "obligation_id": "EDER-F-0178",
+      "ticket_ref": "governance/tickets/T-IGX-043-A.md",
+      "verdict": "STILL_PRESENT",
+      "reason": "Attribution / trust slice fix from train fifteen-id cluster not on development.",
+      "cited_files": ["intergrax/agent_distribution/trust.py"]
+    },
+    {
+      "root_cause_id": "EQOA-A6-008",
+      "obligation_id": "EDER-F-0179",
+      "ticket_ref": "governance/tickets/T-IGX-043-A.md",
+      "verdict": "STILL_PRESENT",
+      "reason": "Admin service fail-closed posture from train evidence not replayed on development.",
+      "cited_files": ["intergrax/agent_distribution/admin_service.py"]
+    }
+  ]
+}

@@ -1,6 +1,6 @@
 {
     "schema":  "eqo.orchestration_state.v1",
-    "updated_at":  "2026-11-21T14:25:00+00:00",
+    "updated_at":  "2026-11-21T16:30:00+00:00",
     "operator_merge_rule":  {
                                 "recorded_at":  "2026-11-21T15:05:00+00:00",
                                 "development_pin":  "a0598ba3e4f4f903eb4da3db8ea012d5cbf71225",
@@ -233,7 +233,7 @@
     "implementation_root_causes_open":  33,
     "next_wave_queue":  {
                             "artifact":  "EQO_NEXT_WAVE_QUEUE.json",
-                            "slice_completed_at":  "2026-11-21T14:25:00+00:00",
+                            "slice_completed_at":  "2026-11-21T16:30:00+00:00",
                             "status_counts":  {
                                                   "ALREADY_DONE":  2,
                                                   "REPLAY_ONLY":  24,
@@ -241,6 +241,31 @@
                                                   "SKIP_NO_GO":  5,
                                                   "IMPLEMENTED_THIS_SLICE":  0
                                               },
-                            "note":  "All 33 NEW_IMPLEMENTATION_REQUIRED rows dispositioned; no new development-based product commits this slice."
-                        }
+                            "note":  "Development replay recorded in EQO_DEVELOPMENT_REPLAY.json; cherry-pick ports aborted on product conflict."
+                        },
+    "development_replay":  {
+                               "recorded_at":  "2026-11-21T16:30:00+00:00",
+                               "development_pin":  "f88e17c53bcb318076f9324382f848bb5c5d88a7",
+                               "artifact":  "EQO_DEVELOPMENT_REPLAY.json",
+                               "roadmap_remaining":  "EQO_ROADMAP_REMAINING.md",
+                               "summary_counts":  {
+                                                      "ABSENT_ON_DEVELOPMENT":  3,
+                                                      "STILL_PRESENT":  16,
+                                                      "CHERRY_PICK_CONFLICT":  2,
+                                                      "NO_EXACT_FILES":  1
+                                                  },
+                               "cherry_pick_conflicts":  [
+                                                             {
+                                                                 "root_cause_id":  "EQOA-A4-002",
+                                                                 "commit":  "69ca445ee"
+                                                             },
+                                                             {
+                                                                 "root_cause_id":  "EQOA-A4-009",
+                                                                 "commit":  "8d4b5b37f"
+                                                             }
+                                                         ],
+                               "product_merges_to_development":  [
+
+                                                                 ]
+                           }
 }

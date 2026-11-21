@@ -1,8 +1,9 @@
 {
   "schema": "eqo.next_wave_queue.v1",
-  "updated_at": "2026-11-21T13:22:53+00:00",
+  "updated_at": "2026-11-21T16:30:00+00:00",
   "slice": "NEW_IMPLEMENTATION_REQUIRED_all_33",
-  "development_pin": "a0598ba3e4f4f903eb4da3db8ea012d5cbf71225",
+  "development_pin": "f88e17c53bcb318076f9324382f848bb5c5d88a7",
+  "development_replay_artifact": "EQO_DEVELOPMENT_REPLAY.json",
   "train_replay_pin": "8e146e21cd8c63a47d621edc05d5f0036ba0c9ee",
   "ticket_ref_bookkeeping": "governance/tickets/T-IGX-046-F.md",
   "status_counts": {
