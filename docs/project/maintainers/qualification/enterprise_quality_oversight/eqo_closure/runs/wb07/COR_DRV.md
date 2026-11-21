@@ -36,6 +36,22 @@ Session E aggregate **`FAIL`** — corrective product work is explicitly out of 
 - After #680 / train pin advances: execute `EQO-W3-WB07-DRV` (`RV-01`); do not open a new EQO campaign.
 - Product fixes and pytest replays: wave 10+ lanes per `EQO_WAVE9_MANIFEST.md`.
 
+
+
+## DRV disposition (wave 14, docs-only)
+
+**Task ID:** `EQO-W3-WB07-DRV`
+**Outcome:** `DISPOSITIONED_NOT_CLOSED` — open `DOC_PATCH` / `OWNER_DECISION_RECORD` routes satisfied with documented deferral only; **no** product DRV replay @ pin.
+**Lane:** `eqo/wave-14/drv`
+
+| Route class | Wave-14 status |
+|-------------|----------------|
+| `DOC_PATCH` | Open — train ticket or post-FCS CL-01; cross-ref `COR_DRV` finding table |
+| `OWNER_DECISION_RECORD` | `WAIT_FOR_OPERATOR` — `w4/W4-03_OWNER_DECISION_BATCH.md` |
+| Product / pytest DRV | `DEFERRED` — `RV-01` on pin advance; not executed in wave 14 |
+
+Session E verdict **unchanged**. No pytest in this lane.
+
 ## Limits and non-claims
 
 - Derived from `AUD_SESSION_E.md` and existing DIS artefacts only; no pytest re-run in this lane.
