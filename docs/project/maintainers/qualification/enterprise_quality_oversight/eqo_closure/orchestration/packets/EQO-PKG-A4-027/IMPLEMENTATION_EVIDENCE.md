@@ -1,4 +1,4 @@
-# EQO-PKG-A4-027 — implementation evidence
+﻿# EQO-PKG-A4-027 — implementation evidence
 
 ## Base SHA
 
@@ -6,12 +6,12 @@
 
 ## Root cause
 
-`EQOA-A4-027` / `EDER-F-0136`: missing `tenant_id` on research serving was filled with `research-tenant`.
+`EQOA-A4-027` / `EDER-F-0136`: missing `tenant_id` on research serving was filled with `research-tenant`. Follow-up: whitespace-only `tenant_id` passed `Field(min_length=1)` and `if not body.tenant_id` in the unauthenticated router path.
 
 ## Write set
 
-- `applications/research_application/serving/schemas.py` — required `tenant_id` and `user_id` (no defaults).
-- `applications/research_application/serving/fastapi_router.py` — unauthenticated path does not imply a tenant.
+- `applications/research_application/serving/schemas.py` — required `tenant_id` and `user_id` (no defaults); `tenant_id` rejected when blank after strip.
+- `applications/research_application/serving/fastapi_router.py` — unauthenticated path strips `tenant_id` and returns `tenant_id_required` when empty (including `model_construct` bypass).
 - `tests/unit/applications/test_research_run_request_missing_tenant_id_eqo_a4_027.py`
 - `governance/tickets/T-IGX-055-B.md`
 
