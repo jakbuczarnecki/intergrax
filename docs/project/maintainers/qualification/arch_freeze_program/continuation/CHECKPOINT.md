@@ -1,6 +1,6 @@
 ﻿# ARCH-FREEZE continuation checkpoint (development train)
 
-**Updated:** 2026-11-21 (MEP W4 RC-3 exit prep + MEP W7 freeze prep; worktrees `af-dev-mep-w4`, `af-dev-mep-w7`)  
+**Updated:** 2026-11-21 (MEP W4/W5/W6/W7 prep; worktrees `af-dev-mep-w4`..`w7`)  
 **Base branch:** `development` @ `d043a21c67cb57475a4f36a2baff7020718ec7cb` (`d043a21c6`)  
 **Arch-freeze train reference:** `origin/arch-freeze/rw-train` @ `dbaebfa8cd13a6ba8bfa6eef2cdf581216ddb3d2` — PR **#699** **MERGED** (slice do `1cec68222`)
 
@@ -70,6 +70,10 @@ Deliverables: `RC3_EXIT_PREP_CHECKLIST.md`; odświeżenie `G2_CHECKLIST_DRAFT.md
 
 Worktree `af-dev-mep-w5` @ `d043a21c6`. Deliverables: [`W5_PREP_DOSSIER.md`](W5_PREP_DOSSIER.md) + `continuation/w5/PT-*_PREP.md` (9 węzłów WP-12). Dokumentacja prep MEP W5: **DONE** @ `64a786a93` (bez claim pin / M3 / FCS). Werdykt fali W5 programowej: **NOT STARTED** — FCS i AR otwarte.
 
-## G6 — MEP W7 freeze prep (PT-Q13 / VBN / ENTRY / DS-ADM)
+## G7 — W6 prep (MEP requal / campaigns / M3 entry)
 
-Deliverables (prep only): `W7_PT_Q13_PREP_DOSSIER.md`, `W7_PT_VBN_PREP_DOSSIER.md`, `W7_ENTRY_PREP_DOSSIER.md`, `W7_DS_ADM_PREP_DOSSIER.md`. Werdykt wykonania węzłów W7: **NOT STARTED** / **BLOCKED** (brak M3, brak PT-Q13 PASS, brak VBN accept, brak ENTRY, brak DS-ADM). **Nie** M3, **nie** L499 entry PASS, **nie** §15 admission.
+Deliverables: [`W6_PREP_DOSSIER.md`](W6_PREP_DOSSIER.md), [`W6_CAMPAIGN_PREP_CHECKLIST.md`](W6_CAMPAIGN_PREP_CHECKLIST.md), [`W6_REQUAL_PREP_CHECKLIST.md`](W6_REQUAL_PREP_CHECKLIST.md), [`M3_PREP_CHECKLIST.md`](M3_PREP_CHECKLIST.md); ticket scaffolds `T-IGX-052-F`..`H`. **Nie** M3 pin, **nie** kampanie wykonane.
+
+## G8 — MEP W7 freeze prep (PT-Q13 / VBN / ENTRY / DS-ADM)
+
+Deliverables (prep only): `W7_PT_Q13_PREP_DOSSIER.md`, `W7_PT_VBN_PREP_DOSSIER.md`, `W7_ENTRY_PREP_DOSSIER.md`, `W7_DS_ADM_PREP_DOSSIER.md`. Werdykt wykonania węzłów W7: **NOT STARTED** / **BLOCKED** (brak M3, brak PT-Q13 PASS). **Nie** M3, **nie** L499 entry PASS.
