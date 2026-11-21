@@ -6,16 +6,14 @@ import os
 from collections.abc import Mapping
 from typing import Any
 
-from pydantic import BaseModel, ConfigDict
-
 from intergrax.integrations.contracts.llm_guardrail import (
     GuardrailContext,
     GuardrailRiskLevel,
     GuardrailScanResult,
     LlmGuardrailBackend,
 )
-from intergrax.integrations.providers.llm_guardrail._pattern_scanner import scan_patterns
 from intergrax.integrations.providers.llm_guardrail.bundles._base import BaseGuardrailAdapter
+from pydantic import BaseModel, ConfigDict
 
 
 class BedrockGuardrailOptions(BaseModel):
@@ -79,8 +77,9 @@ class BedrockGuardrailsAdapter(BaseGuardrailAdapter):
         *,
         slug: str,
         bedrock_options: BedrockGuardrailOptions,
+        allow_pattern_fallback: bool = False,
     ) -> None:
-        super().__init__(slug=slug)
+        super().__init__(slug=slug, allow_pattern_fallback=allow_pattern_fallback)
         self._bedrock_options = bedrock_options
 
     def scan_input(self, text: str, *, context: GuardrailContext | None = None) -> GuardrailScanResult:
@@ -91,7 +90,7 @@ class BedrockGuardrailsAdapter(BaseGuardrailAdapter):
         )
         if vendor is not None:
             return vendor
-        return scan_patterns(text, mode="input", slug=self._slug)
+        return self._pattern_fallback(text, mode="input")
 
     def scan_output(
         self,
@@ -107,14 +106,16 @@ class BedrockGuardrailsAdapter(BaseGuardrailAdapter):
         )
         if vendor is not None:
             return vendor
-        return scan_patterns(text, mode="output", slug=self._slug)
+        return self._pattern_fallback(text, mode="output")
 
 
 def create_bedrock_guardrails_backend(
     *,
     provider_options: Mapping[str, Any] | None = None,
+    allow_pattern_fallback: bool = False,
 ) -> LlmGuardrailBackend:
     return BedrockGuardrailsAdapter(
         slug="bedrock_guardrails",
         bedrock_options=_parse_bedrock_options(provider_options),
+        allow_pattern_fallback=allow_pattern_fallback,
     )
