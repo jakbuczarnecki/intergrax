@@ -100,6 +100,8 @@ uv run python -m pytest tests/unit/applications/test_harness_evaluation_wiring.p
 
 **12 passed** (2026-11-21). Logs: `.tmp/session/arch-freeze/REGRESSION-78-falaB2/` (optional).
 
+Fala 5 close re-run @ `e61e5136a` on `af-dev-fala5-close` (development tor pin; E2–E4 untouched): same command — **12 passed** (2026-11-21).
+
 ### 8.2 E2–E4 continuation (status unchanged)
 
 | Slice | Gate | Continuation |
