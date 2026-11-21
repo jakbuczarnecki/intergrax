@@ -52,3 +52,8 @@ E-03 route unchanged; DUP-X owner proposal idempotent @ DOC_PIN.
 **Land:** `569254840`. Paired N-0002 route unchanged vs wave-4 read.
 
 **Recorded:** 2026-11-21 · lane `eqo/wave-8/x`
+## Wave-12 disposition read
+
+**Land:** `292ca3348`. E-02 mechanical apply still blocked; route memo unchanged.
+
+**Recorded:** 2026-11-21 · lane `eqo/wave-12/x` · `Ref: governance/tickets/T-IGX-046-F.md`
