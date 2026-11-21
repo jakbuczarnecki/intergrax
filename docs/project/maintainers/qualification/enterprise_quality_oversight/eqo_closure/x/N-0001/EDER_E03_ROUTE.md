@@ -52,3 +52,9 @@ EQO does not re-litigate Q-WA-03; it records path presence at the bound pins.
 E-03 route unchanged; no `register.jsonl` apply (E-02 out of scope wave-4).
 
 **Recorded:** 2026-11-21 · lane `eqo/wave-4/x`
+
+## Wave-8 read pass (`EQO-X-07`)
+
+**Land:** `569254840`. E-02 mechanical triage route unchanged; register edit still out of EQO write set.
+
+**Recorded:** 2026-11-21 · lane `eqo/wave-8/x`

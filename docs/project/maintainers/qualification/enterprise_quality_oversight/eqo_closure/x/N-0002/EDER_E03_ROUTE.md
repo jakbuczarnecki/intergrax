@@ -46,3 +46,9 @@ This memo does **not** name enums or re-diff tiers at the pins (per plan §EQO-X
 E-03 route unchanged; DUP-X owner proposal idempotent @ DOC_PIN.
 
 **Recorded:** 2026-11-21 · lane `eqo/wave-4/x`
+
+## Wave-8 read pass (`EQO-X-07`)
+
+**Land:** `569254840`. Paired N-0002 route unchanged vs wave-4 read.
+
+**Recorded:** 2026-11-21 · lane `eqo/wave-8/x`

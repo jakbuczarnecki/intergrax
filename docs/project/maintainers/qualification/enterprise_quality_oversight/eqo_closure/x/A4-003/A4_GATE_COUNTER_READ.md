@@ -36,3 +36,9 @@ Read-only inspection of published closure artefacts — **no** product replay, *
 Post wave-3 AUD packets: gate replay still tied to `EQO-W2-02` + queued session E for WB05 tier-boundary slice; no change to `MERGED_TO_TRAIN` fact for A4-003 @ `TRAIN_PIN`.
 
 **Recorded:** 2026-11-21 · `Ref: governance/tickets/T-IGX-046-F.md` · lane `eqo/wave-4/x`
+
+## Wave-8 read pass (`EQO-X-01`)
+
+**Land:** `569254840`. `MERGED_TO_TRAIN` fact for A4-003 @ `TRAIN_PIN` **unchanged**; tier-boundary replay still blocked on WB05 (`AUD_SESSION_E` **BLOCKED**). W2-02 `MERGED_GATE_PENDING` carries forward.
+
+**Recorded:** 2026-11-21 · lane `eqo/wave-8/x`

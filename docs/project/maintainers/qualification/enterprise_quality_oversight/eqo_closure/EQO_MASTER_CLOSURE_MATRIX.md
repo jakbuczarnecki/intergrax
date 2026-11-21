@@ -9,7 +9,7 @@
 | C05 | PARTIALLY_MET | E-02 report @ DOC_PIN; register edit blocked |
 | C06 | PARTIALLY_MET | 225 FRZ counted; 109 OPEN |
 | C07 | NOT_MET | 2 open BLOCKER severity |
-| C08 | PARTIALLY_MET | WB02 tenant pytest @ TRAIN_PIN (66 pass); WB03–12 open |
+| C08 | PARTIALLY_MET | WB02 mechanical pass @ TRAIN_PIN; AUD-1 FAIL certification drift |
 | C09 | NOT_MET | FCS/M3 not reached |
 | C10 | NOT_MET | Train delta not fully replayed |
 | C11 | PARTIALLY_MET | Dossier A pinned; train evidence partial |
@@ -62,3 +62,19 @@
 | X-01..03,05,07,08 | `eqo_closure/x/**` wave-4 reads | `PARTIAL` — memos refreshed; BLOCKER/BLOCKED unchanged |
 | W3 AUD (WB01–12) | `AUD_SESSION_E.md` + `CLS_PRE.md` | `PARTIAL` — session E complete; terminal CLS not claimed |
 
+## Wave-8 W9-01 prep (partial C01-C25)
+
+**Land:** 569254840 (PR #698) | lane eqo/wave-8/w9 | task EQO-W9-01 prep only.
+
+| Row | Wave-8 note |
+|-----|-------------|
+| C01-C06 | Status column unchanged this wave; disposition still incomplete |
+| C07 | Open BLOCKER severity (A2-002, A4-003) NOT_MET |
+| C16 | #680 track-only; English memo refresh in eqo/wave-8/x |
+| C19 | IIAC not IN_FORCE unchanged |
+| C21 | W2 train verify partial; see eqo/wave-8/w2 W2-02 wave-8 read |
+| C24-C25 | NOT_MET; FCS/M3 absent |
+
+**Terminal status:** EQO_NOT_CLOSED_EXACT_BLOCKERS. No EQO_CLOSED claim. Full EQO-W9-01 acceptance waits EQO-W8-CLS per EQO_W7_W8_DEFERRED_BLOCKERS.md.
+
+**Recorded:** Ref: governance/tickets/T-IGX-046-F.md

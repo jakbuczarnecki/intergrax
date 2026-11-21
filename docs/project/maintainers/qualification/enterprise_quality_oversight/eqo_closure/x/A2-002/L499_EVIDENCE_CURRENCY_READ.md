@@ -28,3 +28,9 @@ Closure waits **PT-Q08/Q09** (`WAIT_FOR_INTEGRATION`) post-FCS; pre-FCS EQO reco
 **Audit:** session E pending (no PASS).
 
 **Recorded:** 2026-11-21 · lane `eqo/wave-4/x` · `Ref: governance/tickets/T-IGX-046-F.md`
+
+## Wave-8 read pass (`EQO-X-02`)
+
+**Land:** `569254840` (PR #698). Ledger rows for EQOA-A2-001 / A2-002 remain **`BLOCKED`** / `BLOCKS_ARCH_FREEZE`; no register edit. AUD-1 did not PASS this cluster (WB02 **FAIL** documents tenant drift adjacent band).
+
+**Recorded:** 2026-11-21 · lane `eqo/wave-8/x`

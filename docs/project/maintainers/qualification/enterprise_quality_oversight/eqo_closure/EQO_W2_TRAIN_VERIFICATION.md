@@ -53,12 +53,26 @@ Repro (wave-4): `git merge-base --is-ancestor <merge_sha> 28c27cb896d02e0185b9fa
 
 ## #680 gap track (no new ticket)
 
-| Item | Status (wave-4) |
-|------|-----------------|
-| PR #680 / T-IGX-043-A | Still **not** ancestor of `TRAIN_PIN`; draft branch `af2/pt-fc1` |
-| EQO posture | **Track-only** per `pr680_governance_fast.md`; KR-08 / W0-03 class |
-| C16 matrix | `#680 open` — no waiver, no merge claim |
-| New ticket | **None** (operator band D out of EQO write set) |
+| Item | Status (wave-4) | Status (wave-8) |
+|------|-----------------|-----------------|
+| PR #680 / T-IGX-043-A | Still **not** ancestor of `TRAIN_PIN`; draft branch `af2/pt-fc1` | **Unchanged** — `git merge-base --is-ancestor` negative @ 2026-11-21 |
+| EQO posture | **Track-only** per `pr680_governance_fast.md`; KR-08 / W0-03 class | Track-only; English memo refresh in lane `eqo/wave-8/x` |
+| C16 matrix | `#680 open` — no waiver, no merge claim | **Unchanged** — no merge claim |
+| New ticket | **None** (operator band D out of EQO write set) | **None** |
+
+## Wave-8 read pass (W2-02 replay doc, docs-only)
+
+**Executed:** 2026-11-21 · lane `eqo/wave-8/w2` · **Land:** `569254840` (`origin/development`, PR #698). Pins unchanged (`TRAIN_PIN` `28c27cb`, `DOC_PIN` `8cee3c5`).
+
+| Task | Read focus | Wave-8 disposition |
+|------|------------|-------------------|
+| W2-02 | `T-IGX-043-G.md` / `T-IGX-043-H.md` present on `TRAIN_PIN`; merge SHAs `05699b633cdb`, `6b94d202fb79` | **`MERGED_GATE_PENDING`** — tier-boundary import gates not replayed on pin |
+| W2-02 replay queue | `runs/wb05/AUD_SESSION_E.md` (AUD-1 **BLOCKED**); `x/A4-003/A4_GATE_COUNTER_READ.md` | Gate replay still **queued**; ties `EQO-X-01` + session E WB05 — not closed |
+| W2-02 evidence | No pytest EXE this wave; read-only ticket paths on pin | No status promotion; blocker class unchanged |
+
+Repro (wave-8 W2-02): `git cat-file -e 28c27cb896d02e0185b9fa02047411fa152f6469:governance/tickets/T-IGX-043-G.md` and ancestor check for merge SHAs above.
+
+**Recorded:** lane `eqo/wave-8/w2` · `Ref: governance/tickets/T-IGX-046-F.md`
 
 ## EQO disposition
 
