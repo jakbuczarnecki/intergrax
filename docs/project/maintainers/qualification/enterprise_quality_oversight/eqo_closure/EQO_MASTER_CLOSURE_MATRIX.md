@@ -82,3 +82,39 @@
 **Terminal status:** EQO_NOT_CLOSED_EXACT_BLOCKERS. No EQO_CLOSED claim. Full EQO-W9-01 acceptance waits EQO-W8-CLS per EQO_W7_W8_DEFERRED_BLOCKERS.md.
 
 **Recorded:** Ref: governance/tickets/T-IGX-046-F.md
+
+## Wave-12 W9-01 prep (C01–C25 sweep)
+
+**Land:** `292ca3348` (PR #704) · lane `eqo/wave-12/w9` · parallel lanes w2/x merged on integrator · task **EQO-W9-01 prep only** (not terminal W9-02).
+
+| ID | Status (unchanged unless noted) | Wave-12 sweep note |
+|----|--------------------------------|--------------------|
+| C01 | PARTIALLY_MET | Finding enumeration stable; owner disposition still incomplete |
+| C02 | PARTIALLY_MET | W3_CLS band from wave-5; session E column fixed @ AUD-1/2 — no terminal WB CLS |
+| C03 | PARTIALLY_MET | WB05 EXE @ pin unchanged; wave-6 reran WB04/WB06/WB09 logs only — C03 note not promoted |
+| C04 | PARTIALLY_MET | C-04 BLOCKED replay log retained; wave-7 prep artefacts on development |
+| C05 | PARTIALLY_MET | E-02 report only; register edit blocked |
+| C06 | PARTIALLY_MET | FRZ open count unchanged |
+| C07 | NOT_MET | BLOCKER pair A2-002 / A4-003 — see `eqo/wave-12/x` disposition reads |
+| C08 | PARTIALLY_MET | Wave-6: WB04/WB09 pytest exit `0`; WB06 exit `1`; WB02 tenant slice prior pass — **partial replay only** |
+| C09 | NOT_MET | FCS/M3 not reached (`EQO_W7_W8_DEFERRED_BLOCKERS.md`) |
+| C10 | NOT_MET | Train delta replay incomplete |
+| C11 | PARTIALLY_MET | Dossier A pinned |
+| C12 | PARTIALLY_MET | PASS_SCOPED documented |
+| C13 | NOT_VERIFIED | No new evidence this wave |
+| C14 | PARTIALLY_MET | KR settlement classified; none RESOLVED @ M3 |
+| C15 | NOT_VERIFIED |  |
+| C16 | NOT_VERIFIED | #680 track-only — `eqo/wave-12/w2` negative ancestor @ pin |
+| C17 | NOT_VERIFIED |  |
+| C18 | PARTIALLY_MET | Proposed owners not confirmed |
+| C19 | PARTIALLY_MET | IIAC not `IN_FORCE` |
+| C20 | PARTIALLY_MET | Reproducibility partial |
+| C21 | PARTIALLY_MET | W2 train verify; #680 not on train |
+| C22 | NOT_VERIFIED |  |
+| C23 | PARTIALLY_MET | WBS ↔ train ticket map |
+| C24 | NOT_MET | Program closure band blocked |
+| C25 | NOT_MET | Terminal criterion not met |
+
+**EQO-W9-01 acceptance:** matrix row refresh only — **no** `EQO_CLOSED` / `EQO_CLOSED_INDEPENDENTLY_VERIFIED` / G6 / IIAC IN_FORCE claim.
+
+**Recorded:** 2026-11-21 · lane `eqo/wave-12/w9` · `Ref: governance/tickets/T-IGX-046-F.md`
