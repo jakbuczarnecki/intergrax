@@ -3,10 +3,15 @@ from __future__ import annotations
 from unittest.mock import MagicMock, patch
 
 import pytest
-
 from intergrax.model_inference.adapters.huggingface_inference_vision import HuggingFaceInferenceVisionAdapter
 from intergrax.model_inference.adapters.triton_vision import TritonVisionServingAdapter
-from intergrax.model_inference.contracts import AuthorizedLocalMedia, ModelArtifact, ModelArtifactFormat, VisionInferenceRequest
+from intergrax.model_inference.contracts import (
+    AuthorizedLocalMedia,
+    ModelArtifact,
+    ModelArtifactFormat,
+    VisionBackendUnconfiguredError,
+    VisionInferenceRequest,
+)
 
 
 @pytest.fixture()
@@ -18,19 +23,19 @@ def artifact() -> ModelArtifact:
     )
 
 
-def test_triton_without_url_falls_back_to_stub(artifact: ModelArtifact, tmp_path) -> None:
+def test_triton_without_url_fails_closed(artifact: ModelArtifact, tmp_path) -> None:
     image = tmp_path / "x.png"
     image.write_bytes(b"\x89PNG\r\n\x1a\n")
     adapter = TritonVisionServingAdapter(base_url="")
-    result = adapter.detect(
-        VisionInferenceRequest(
-            request_id="r1",
-            artifact_id=artifact.artifact_id,
-            media_uri=image.resolve().as_uri(),
-        ),
-        artifact=artifact,
-    )
-    assert result.detections[0].label == "object.stub"
+    with pytest.raises(VisionBackendUnconfiguredError):
+        adapter.detect(
+            VisionInferenceRequest(
+                request_id="r1",
+                artifact_id=artifact.artifact_id,
+                media_uri=image.resolve().as_uri(),
+            ),
+            artifact=artifact,
+        )
 
 
 def test_triton_http_parses_detections(artifact: ModelArtifact, tmp_path) -> None:
@@ -39,7 +44,9 @@ def test_triton_http_parses_detections(artifact: ModelArtifact, tmp_path) -> Non
     mock_response = MagicMock()
     mock_response.raise_for_status = MagicMock()
     mock_response.json.return_value = {
-        "outputs": [{"label": "person", "confidence": 0.88, "bbox": {"x_min": 0.1, "y_min": 0.2, "x_max": 0.5, "y_max": 0.7}}]
+        "outputs": [
+            {"label": "person", "confidence": 0.88, "bbox": {"x_min": 0.1, "y_min": 0.2, "x_max": 0.5, "y_max": 0.7}}
+        ]
     }
     mock_client = MagicMock()
     mock_client.__enter__.return_value = mock_client
@@ -63,16 +70,16 @@ def test_triton_http_parses_detections(artifact: ModelArtifact, tmp_path) -> Non
     assert result.detections[0].label == "person"
 
 
-def test_hf_without_key_falls_back(artifact: ModelArtifact, tmp_path) -> None:
+def test_hf_without_key_fails_closed(artifact: ModelArtifact, tmp_path) -> None:
     image = tmp_path / "x.png"
     image.write_bytes(b"data")
     adapter = HuggingFaceInferenceVisionAdapter(api_key="")
-    result = adapter.detect(
-        VisionInferenceRequest(
-            request_id="r3",
-            artifact_id=artifact.artifact_id,
-            media_uri=image.resolve().as_uri(),
-        ),
-        artifact=artifact,
-    )
-    assert result.detections[0].label == "object.stub"
+    with pytest.raises(VisionBackendUnconfiguredError):
+        adapter.detect(
+            VisionInferenceRequest(
+                request_id="r3",
+                artifact_id=artifact.artifact_id,
+                media_uri=image.resolve().as_uri(),
+            ),
+            artifact=artifact,
+        )
