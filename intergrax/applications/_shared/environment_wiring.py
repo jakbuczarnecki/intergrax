@@ -209,6 +209,25 @@ def _assert_strict_security_bootstrap_acceptable(
     raise SecurityAssemblyError(_security_plugin_bootstrap_errors(security_result.load_report))
 
 
+def _normalize_host_tenant_id(tenant_id: str | None) -> str | None:
+    if tenant_id is None:
+        return None
+    stripped = tenant_id.strip()
+    return stripped or None
+
+
+def _integration_sandbox_host_configured(integration_profile: Any) -> bool:
+    from intergrax.integrations.contracts.base import IntegrationCategory
+    from intergrax.integrations.registry.profile import IntegrationProfile
+
+    if not isinstance(integration_profile, IntegrationProfile):
+        return False
+    return (
+        integration_profile.instance_for_category(IntegrationCategory.SANDBOX_HOST) is not None
+        or integration_profile.slug_for_category(IntegrationCategory.SANDBOX_HOST) is not None
+    )
+
+
 def _merge_integration_read_allowlist_roots(
     wiring_context: ToolWiringContext,
     resolved_integration: Any,
@@ -257,6 +276,7 @@ def wire_application_environment(
 
     Replaces scattered per-host wiring sequences (lab/legal/research/poc).
     """
+    normalized_tenant_id = _normalize_host_tenant_id(tenant_id)
     bootstrap_application_integration_catalog()
     security_bootstrap = _bootstrap_application_security_providers()
     _assert_strict_security_bootstrap_acceptable(env, security_bootstrap)
@@ -435,12 +455,28 @@ def wire_application_environment(
         from intergrax.applications._shared.sandbox_host_wiring import (
             resolve_hosted_sandbox_session,
         )
-
-        hosted_session = resolve_hosted_sandbox_session(
-            resolved_integration,
-            tenant_id="harness",
-            task_id="bootstrap",
+        from intergrax.runtime.sandbox.hosted_session import (
+            LAB_ONLY_HOSTED_SANDBOX_TASK_ID,
+            LAB_ONLY_HOSTED_SANDBOX_TENANT_ID,
+            HostedSandboxTenantRequiredError,
         )
+
+        if normalized_tenant_id is not None:
+            hosted_session = resolve_hosted_sandbox_session(
+                resolved_integration,
+                tenant_id=normalized_tenant_id,
+                task_id=manifest.app_id,
+            )
+        elif wiring_fails_closed(env) and _integration_sandbox_host_configured(resolved_integration):
+            raise HostedSandboxTenantRequiredError(
+                "hosted sandbox session requires a host tenant when sandbox_host is configured"
+            )
+        else:
+            hosted_session = resolve_hosted_sandbox_session(
+                resolved_integration,
+                tenant_id=LAB_ONLY_HOSTED_SANDBOX_TENANT_ID,
+                task_id=LAB_ONLY_HOSTED_SANDBOX_TASK_ID,
+            )
 
     tool_wiring = build_application_tool_wiring(
         tool_profile,
