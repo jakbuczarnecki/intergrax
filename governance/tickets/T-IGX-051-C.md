@@ -34,4 +34,4 @@ TENANT **051-A**, GATES **051-F**, SUPPLY **051-B/N**, merge to `rw-train`, FRZ 
 
 ## Lifecycle state
 
-`implementing` (§7 fala 3; slice 1 `NT-TRUST-01` in `test_trust_fail_closed.py`)
+`implementing` (§7 fala 4; slices 1–2 `NT-TRUST-01`..`05` in `test_trust_fail_closed.py`; guardrail e2e identity fixed in regression bundle)

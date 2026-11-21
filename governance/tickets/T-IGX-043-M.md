@@ -34,4 +34,4 @@ Train-only baseline promotion (`T-AF2-ENT-BASELINE-PREFREEZE`), merge to `arch-f
 
 ## Lifecycle state
 
-`draft` (ticket recovery scaffold; move to `plan_pending` after plan digest + architect node ids)
+`plan_pending` (§7 fala 4 minimal smoke; Part E product manifest remains BLOCKED per RW-PLAN-AUDIT)

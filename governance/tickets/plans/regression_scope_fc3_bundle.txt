@@ -23,5 +23,7 @@ tests/unit/debug/test_h3_interaction_intake.py
 tests/unit/debug/test_h5_teams_interaction_intake.py
 tests/unit/runtime/test_guardrail_runtime_bridge.py
 tests/unit/integrations/test_llm_guardrail_contract.py
-# harness + integration guardrail e2e: known 3 FAIL @ 2c521ccd (run_id / identity); slice in follow-up
+tests/unit/applications/test_harness_guardrail_wiring.py
+tests/integration/runtime/test_nexus_loop_guardrail_wiring.py
+tests/unit/context/test_trust_fail_closed.py
 tests/qualification/config_x

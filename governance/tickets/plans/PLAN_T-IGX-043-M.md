@@ -1,6 +1,6 @@
 # PLAN T-IGX-043-M — ENT-AUDIT Part E scaffold (ARCH-FREEZE development tor)
 
-Status: **draft scaffold rev 1** (2026-11-21, autonomy fala 2). SSOT pointer: sibling **T-IGX-043-I** on `arch-freeze/rw-train` (Parts A–D); this ticket is the **ABSENT** Part E recovery named in `EQO_ARTIFACT_RECOVERY_REGISTRY.jsonl`.
+Status: **plan §7 filled (autonomy fala 4, 2026-11-21)** — minimal development tor; train manifest work remains OUT. SSOT pointer: sibling **T-IGX-043-I** on `arch-freeze/rw-train` (Parts A–D); this ticket is the **ABSENT** Part E recovery named in `EQO_ARTIFACT_RECOVERY_REGISTRY.jsonl`.
 
 ## 1. Purpose
 
@@ -37,3 +37,25 @@ Check manifest rewrite, IIAC baseline promotion, train merge, FRZ promotion.
 1. Copy Part E section from train plan `PLAN_T-IGX-043-I.md` (when published on development) into rev 2 with file-level diffs.
 2. Record plan digest; `plan_pending` → operator/delegate approval.
 3. Implement in worktree `af-dev-043m` after FC-3 regression fala 2 is green.
+
+## 7. Test contract (fala 4 — minimal smoke, development tor)
+
+Part E product/manifest write set stays **BLOCKED** until wave-packet approval (RW-PLAN-AUDIT). Fala 4 records regression smoke only (no manifest edit):
+
+### 7.1 Smoke (verified collect)
+
+| Node id | Assertion | Pytest |
+|---------|-----------|--------|
+| NT-043M-S1 | impact map invariants at current development head | `tests/qualification/ent_audit_x/unit/test_changed_since_impact_map.py` |
+
+### 7.2 Command
+
+```text
+uv run python -m pytest tests/qualification/ent_audit_x/unit/test_changed_since_impact_map.py -q
+```
+
+Logs: `.tmp/session/arch-freeze/REGRESSION-78-fala4/` (with FC-3 core bundle).
+
+### 7.3 Out of scope (unchanged)
+
+Manifest growth 85→91, baseline promotion, train merge — `T-IGX-043-I` Part E on train only until OD allows development product batch.
