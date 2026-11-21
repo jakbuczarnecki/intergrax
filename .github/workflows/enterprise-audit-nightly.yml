@@ -14,14 +14,17 @@ on:
           - FULL
           - FREEZE
 
+permissions:
+  contents: read
+
 jobs:
   ent-audit-nightly:
     runs-on: ubuntu-24.04
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262  # v4
         with:
           fetch-depth: 0
-      - uses: astral-sh/setup-uv@v5
+      - uses: astral-sh/setup-uv@d4b2f3b6ecc6e67c4457f6d3e41ec42d3d0fcb86  # v5
         with:
           python-version: "3.12"
       - name: Sync dev-ci qualification dependencies
@@ -29,8 +32,9 @@ jobs:
       - name: Qualification suite
         run: uv run pytest tests/qualification/ent_audit_x -q
       - name: Enterprise audit run (${{ github.event.inputs.mode || 'FULL' }} real)
+        env:
+          MODE: ${{ github.event.inputs.mode || 'FULL' }}
         run: |
-          MODE="${{ github.event.inputs.mode || 'FULL' }}"
           OUT=".tmp/proof/ent-audit-x/nightly-${MODE}"
           uv run python scripts/enterprise_audit/run_enterprise_audit.py \
             --mode "$MODE" \
@@ -38,7 +42,7 @@ jobs:
           # Operator-only: FREEZE bootstrap / evidence bundle (C007) — not on scheduled nightly.
       - name: Upload audit artifacts
         if: always()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02  # v4
         with:
           name: ent-audit-nightly-${{ github.event.inputs.mode || 'FULL' }}
           path: .tmp/proof/ent-audit-x/

@@ -6,19 +6,22 @@ on:
     tags:
       - "v*"
 
+permissions:
+  contents: read
+
 jobs:
   ops-evidence:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v5
-      - uses: astral-sh/setup-uv@v6
+      - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09  # v5
+      - uses: astral-sh/setup-uv@d0cc045d04ccac9d8b7881df0226f9e82c39688e  # v6
         with:
           python-version: "3.12"
       - run: uv sync --extra dev-ci --frozen
       - name: Environment conformance (CI profile)
         run: uv run --frozen python scripts/maintenance/check_environment_conformance.py --profile ci
       - name: Install Trivy
-        uses: aquasecurity/setup-trivy@v0.2.2
+        uses: aquasecurity/setup-trivy@3fb12ec12f41e471780db15c232d5dd185dcb514  # v0.2.6 (was v0.2.2: that tag no longer exists upstream)
       - name: Install Semgrep
         run: uv pip install semgrep
       - name: V-SEC STABLE promote gate (CLI scan)
