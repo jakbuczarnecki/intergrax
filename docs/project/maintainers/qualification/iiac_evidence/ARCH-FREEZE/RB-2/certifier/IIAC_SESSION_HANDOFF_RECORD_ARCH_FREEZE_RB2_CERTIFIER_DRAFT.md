@@ -6,7 +6,7 @@
 
 **Verdict:** `DRAFT` — **NOT PASS** (no auditor manifest; certifier fields `PENDING_CERTIFIER`)  
 **Policy:** `IIAC-2026-11-05.1`  
-**Target audited tree (G2):** `d2d5f4fe4bfc507c82da948757796106e3a95fc0` (`origin/development` product tip)  
+**Target audited tree (G2):** `c207e6ad3c01221e1e5867adaa21e0e5b038adc4` (`origin/development` product tip)  
 **Prior evidence publication (E):** `a73d15ab341b30e9748aad03894f6faa75ad4e09`  
 **Prior in-force product tree:** `969cbd964c679d563b02e55f065b452d46fdf90b` (`IIAC_POLICY_ACTIVATION_RECORD.json`, unchanged by this session)
 
@@ -23,7 +23,7 @@
 | PT-WF | `T-IGX-043-J` | Workflow / harness product paths in the wave (plan §7) |
 | RW-TRUST | `T-IGX-051-C` | Trust-wave product paths (plan §7 rev-2 minimum) |
 
-The mechanical product-path set for RB-2 input is **76** paths from `a73d15ab3..d2d5f4fe4`, UTF-8 list in `delta_files.txt` (gate helper `product_paths_changed_between`; prefix filter `intergrax/`, `agents/`, `applications/`). This session does not claim the list matches any future auditor scope manifest until an auditor publishes one.
+The mechanical product-path set for RB-2 input is **76** paths from `a73d15ab3..c207e6ad3`, UTF-8 list in `delta_files.txt` (gate helper `product_paths_changed_between`; prefix filter `intergrax/`, `agents/`, `applications/`). This session does not claim the list matches any future auditor scope manifest until an auditor publishes one.
 
 ## Binding (draft only)
 
