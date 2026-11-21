@@ -122,9 +122,17 @@ Evidence does not change `closure_path` or the 1029 path checksum.
 | Prior F1 view commit | `321957488fcc0c6c65f9172f9de9b2b062ff3720` |
 | Trailer | `Co-authored-by Cursor` on that commit — strip before any push |
 
+## Development replay (24 REPLAY_ONLY rows, 2026-11-21)
+
+**Development pin:** `f88e17c53bcb318076f9324382f848bb5c5d88a7`. **Train pin:** `8e146e21` — verified **not** an ancestor of development.
+
+Artifact: `EQO_DEVELOPMENT_REPLAY.json`. Summary: **3** `ABSENT_ON_DEVELOPMENT`, **16** `STILL_PRESENT`, **2** `CHERRY_PICK_CONFLICT` (A4-002 `69ca445ee`, A4-009 `8d4b5b37f`), **1** `NO_EXACT_FILES` (A4-011). No product merge landed (cherry-picks aborted on conflict).
+
+Roadmap lists: `EQO_ROADMAP_REMAINING.md`.
+
 ## NEW_IMPLEMENTATION_REQUIRED queue (33 rows, 2026-11-21)
 
-Artifact: EQO_NEXT_WAVE_QUEUE.json on eqo/w1-f1-view. No new development-based product commits in this slice.
+Artifact: EQO_NEXT_WAVE_QUEUE.json (development pin updated). Orchestration-only commit this replay slice.
 
 | Status | Count |
 |--------|------:|
@@ -143,6 +151,8 @@ SKIP_NO_GO: EQOA-A3-008, EQOA-A3-018 (no implementation go ticket at development
 - `EQO_ORCHESTRATION_STATE.json` — wave map, package SHAs, counters, `remaining_non_executable_stops`.
 - `EQO_NEXT_WAVE_QUEUE.json` — per-row disposition for all 33 `NEW_IMPLEMENTATION_REQUIRED` obligations.
 - `EQO_REPLAY_REST.json` — named-test replay facts and 34× `NO_NAMED_TEST`.
+- `EQO_DEVELOPMENT_REPLAY.json` — per-row development-pin replay verdicts for 24 `REPLAY_ONLY` rows.
+- `EQO_ROADMAP_REMAINING.md` — EXECUTABLE_NOW vs HARD_STOP lists for orchestration.
 
 ## Forbidden this slice
 
