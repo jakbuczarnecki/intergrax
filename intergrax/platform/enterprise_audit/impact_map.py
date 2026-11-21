@@ -29,7 +29,7 @@ NO_CHECK_REQUIRED_RULES: tuple[str, ...] = ()
 
 
 # PDC product-domain prefix -> existing manifest check ids (B-P6-G, T-IGX-036-V). Longest prefix wins, so a more
-# specific prefix repeats the ids of its parent area. Every id exists in the shipped manifest (85 checks); each
+# specific prefix repeats the ids of its parent area. Every id exists in the shipped manifest (91 checks); each
 # rule names the entrypoint that already exercises the area.
 PDC_DOMAIN_IMPACT_RULES: tuple[tuple[str, tuple[str, ...]], ...] = (
     # ebh_3 dependency ownership gate + ebh_5 factory/plugin one-pass + hardening_3 layer boundary gate.
@@ -261,6 +261,7 @@ EVOL_X_TREE_IMPACT_RULES: tuple[tuple[str, tuple[str, ...]], ...] = tuple(
 ENGINE_TREE_IMPACT_RULES: tuple[tuple[str, tuple[str, ...]], ...] = (
     ("intergrax/platform/enterprise_audit/data/schemas/frz_coverage.v1.schema.json", ("ENT-A-INV-02",)),
     ("intergrax/platform/enterprise_audit/digests.py", ("ENT-A-INV-02",)),
+    ("intergrax/platform/enterprise_audit/manifest.py", ("ENT-A-INV-02",)),
 )
 
 
