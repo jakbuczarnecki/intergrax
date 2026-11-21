@@ -16,7 +16,7 @@ from intergrax.platform.enterprise_audit.modes import aggregate_status, compute_
 
 def test_manifest_has_eighty_five_checks() -> None:
     checks = load_default_manifest()
-    assert len(checks) == 85
+    assert len(checks) == 91
 
 
 def test_fast_mode_skips_nothing_when_all_executable() -> None:
@@ -53,4 +53,4 @@ def test_manifest_json_matches_annex_g2_row_count() -> None:
         for line in g2.read_text(encoding="utf-8").splitlines()
         if line.startswith("| ENT-") or line.startswith("| TEN-") or line.startswith("| VBN-")
     )
-    assert rows == 85
+    assert rows == 91
