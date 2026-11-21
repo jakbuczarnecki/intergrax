@@ -286,17 +286,6 @@ WAVE_DIFF_FULL_IMPACT_PREFIXES: tuple[str, ...] = (
     "intergrax/multimedia",  # RW-RUNTIME (PR #670): images loader
     "intergrax/background_tasks",
     "intergrax/runtime/sandbox",
-    # Part E final wave-diff @ af-w3/impact head: residual PDC-touched groups (xd_12).
-    "agents/external_contractor_adapter",
-    "agents/organization_worker",
-    "intergrax/agents",
-    "intergrax/scaffold",
-    "intergrax/harness",
-    "intergrax/runtime/nexus",
-    "intergrax/runtime/task_memory",
-    "intergrax/runtime/human",
-    "intergrax/runtime/events",
-    "intergrax/runtime/capacity",
 )
 
 
