@@ -1,34 +1,32 @@
-# CONTINUATION_AUTONOMY_CHECKPOINT — po fali 2 (2026-11-21)
+# CONTINUATION_AUTONOMY_CHECKPOINT — po fali 3 (2026-11-21)
 
 ## SHA
 
 | Tor | Ref | Uwagi |
 |-----|-----|-------|
-| `development` | `b38251dcc` | merge serial: FC3 regression + 043-M scaffold + plan rev2 WF/TRUST |
-| `arch-freeze/rw-train` | `c443865e9` | #688 merged; merge przy czerwonym `governance-fast` — **NO-OP** |
-| `af-dev-pt-wf` | `d531bb37a` | plan §7; G-09 już na `development` |
-| `af-dev-pt-fc3` | `413fb9186` | regression §8.6 follow-up |
-| `af-dev-043m` | `1431015a8` | ticket **T-IGX-043-M** scaffold |
-| `af-dev-rw-trust` | `e866ebf47` | plan §7 rev-2 minimum |
+| `development` | *(post fala 3 commit)* | §7 WF/TRUST + trust slice 1 + regression bundle |
+| `arch-freeze/rw-train` | `c443865e9` | bez merge train w fali 3 |
+| `af-dev-merge` | serial merge tor | |
 
-## Fala 2 — wynik
+## Fala 3 — wynik
 
 | Krok | Status | Dowód |
 |------|--------|-------|
-| Regression 78 (7 FAIL) | **PASS** | poprawki testów FC3 §8.6 — `af-dev-pt-fc3` `413fb9186`; log `.tmp/session/arch-freeze/REGRESSION-78-fala2/pytest_regression78_fala2_core.log` (171 pass) |
-| ENV collect celery / langchain | **BLOCKED** | `.tmp/session/arch-freeze/REGRESSION-78-fala2/env_collect_blocked.md` |
-| T-IGX-043-M | **SCAFFOLD** | `governance/tickets/T-IGX-043-M.md` + plan; worktree `af-dev-043m` |
-| T-IGX-043-J | **PARTIAL** | G-09 merged; plan §7 — product **BLOCKED** do NT-WF-* |
-| T-IGX-051-C | **BLOCKED (product)** | plan §7 NT-TRUST placeholders; brak regression node ids |
-| Merge `development` | **DONE** | `af-dev-merge` serial |
+| Plan §7 `T-IGX-043-J` (`NT-WF-*`) | **DONE** | `PLAN_T-IGX-043-J.md` §7.1–7.4 |
+| Plan §7 `T-IGX-051-C` (`NT-TRUST-*`) | **DONE** | `PLAN_T-IGX-051-C.md` §7 |
+| Trust product slice 1 | **DONE** | `tests/unit/context/test_trust_fail_closed.py` (`NT-TRUST-01`) |
+| Regression FC-3 bundle | **PASS core** | `.tmp/session/arch-freeze/REGRESSION-78-fala3/` — 249 passed, 3 skipped; `regression_scope_fc3_bundle.txt` |
+| ENV langchain | **UNBLOCKED** | `uv sync --extra dev-ci --extra llm-langchain-ollama` |
+| E2–E4 / owner batch WF | **BLOCKED** | B-1 / FRZ owner planning |
+| Guardrail e2e (3 FAIL) | **OPEN** | rozszerzony zestaw; poza core bundle |
 
-## Fala 3 — następna
+## Fala 4 — następna
 
-1. Architect: wypełnienie node ids w planach 043-J / 051-C rev 2.
-2. T-IGX-043-M `plan_pending` po skopiowaniu Part E z train.
-3. Regression pełny batch 78 po `uv sync` extras (celery, langchain) lub CI profile.
-4. Cherry-pick train ← development gdy regression + governance zielone.
+1. Guardrail harness `run_id` / identity — 3 FAIL z rozszerzonego zestawu.
+2. Trust slice 2 (`NT-TRUST-04` iterative orphan, `NT-TRUST-05` planner ledger).
+3. T-IGX-043-M Part E z train.
+4. Train cherry-pick po zielonym governance + regression core.
 
 ## STOP / bez zmian
 
-- 051-A TENANT, FCS, G2 freeze, CLOSED, RW-PLAN-AUDIT symulacja (OD-AF-AUTO-04..06).
+- `051-A` TENANT, FCS, G2, CLOSED, RW-PLAN-AUDIT (OD-AF-AUTO-04..06).

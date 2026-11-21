@@ -16,7 +16,7 @@ Scaffold only — no product commits, no PASS claim.
 
 ## Plan digest
 
-Plan digest: 64bc4f2a757136f10d1c7bce491e76826673adc4ca85dc9f314ecd217c92ca0f
+Plan digest: c91d7ca4c3d970908b9bb4c76a88213175accb880a61f5bc8248fd3a08dfa1c9
 
 Canonical plan: [`governance/tickets/plans/PLAN_T-IGX-051-C.md`](plans/PLAN_T-IGX-051-C.md).
 
@@ -34,4 +34,4 @@ TENANT **051-A**, GATES **051-F**, SUPPLY **051-B/N**, merge to `rw-train`, FRZ 
 
 ## Lifecycle state
 
-`plan_approved` (product BLOCKED: plan §7 rev-2 queue added fala 2; still lacks verified regression node ids — architect pass required before commits)
+`implementing` (§7 fala 3; slice 1 `NT-TRUST-01` in `test_trust_fail_closed.py`)

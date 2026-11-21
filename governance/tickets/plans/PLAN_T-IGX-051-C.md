@@ -1,6 +1,6 @@
 # PLAN T-IGX-051-C — T-AF2-RW-TRUST scaffold (ARCH-FREEZE development tor)
 
-Status: **draft scaffold** (2026-11-21). Source: `MEP-AF2_v2.1.md` row T-AF2-RW-TRUST; ticket id **T-IGX-051-C** in WP-12 tables.
+Status: **plan §7 filled (autonomy fala 3, 2026-11-21)**. Source: `MEP-AF2_v2.1.md` row T-AF2-RW-TRUST; **OD-AF-AUTO-03** product go after digest refresh.
 
 ## 1. Purpose
 
@@ -35,14 +35,35 @@ Same as ticket.
 
 Architect session fills node ids, regression command, and digest; operator approval; then implementation in `af-dev-rw-trust`.
 
-## 7. Revision 2 queue (autonomy fala 2 — ticket-scaffold minimum)
+## 7. Test contract (fala 3 — verified node ids)
 
-| Cluster | PDC ref | Indicative negative tests (names only) | Regression source |
-|---------|---------|----------------------------------------|---------------------|
-| System role injection | EX-D2-01 | `NT-TRUST-01` message graph assembly | PDC table A + `tests/unit/llm/` census |
-| Egress / sensitivity default | EX-D2-02 | `NT-TRUST-02` context fragment class | `intergrax/context/` unit gates |
-| Planner ledger sizing | EX-D2-05 | `NT-TRUST-03` planner token envelope | context planner tests |
-| Orphan tool_call_id | EX-D2-07 | `NT-TRUST-04` STRICT correlation | ACP iterative path tests |
-| RAG trust boundary | EX-L-05, D2-R004 | `NT-TRUST-05` extras-profile reds | `tests/unit/rag/` (extras profile) |
+PDC / MEP rows: EX-D2-01, EX-D2-02, EX-D2-05, EX-D2-07, EX-L-05, D2-R004. Cross-ref PLAN_T-IGX-043-C §5 naming (`NT-FC3-*` style). Logs: `.tmp/session/arch-freeze/REGRESSION-78-fala3/`.
 
-**Product remains BLOCKED** until a single regression command with verified node ids is appended here and the plan digest on the ticket is recomputed.
+### 7.1 Negative tests (`NT-TRUST-*`)
+
+| Node id | PDC | Assertion | Pytest node id (verified collect) | Status |
+|---------|-----|-----------|-------------------------------------|--------|
+| NT-TRUST-01 | EX-D2-01 | RAG/workspace fragments never bare `role=system` without `[context:` prefix | `tests/unit/context/test_trust_fail_closed.py::test_nt_trust_01_rag_fragment_uses_context_prefix` | **green** (formatter contract) |
+| NT-TRUST-02 | EX-D2-01 | plain `system` without `[context:` forces structured transport | `tests/unit/llm/test_messages.py::test_structured_transport_detection` | **green** (control) |
+| NT-TRUST-03 | EX-D2-02 | Formatter tags fragment source in system block | `tests/unit/context/test_context_formatter.py::test_formatter_emits_source_tagged_blocks` | **green** |
+| NT-TRUST-04 | EX-D2-07 | invalid `tool_call_id` on envelope build fails closed | `tests/unit/llm/test_messages.py::test_build_model_input_messages_envelope_rejects_invalid_entry_id_container` | **green** (slice 2: iterative orphan correlation) |
+| NT-TRUST-05 | EX-D2-05 | Fragment merge keeps user turn last | `tests/unit/context/test_context_formatter.py::test_merge_fragment_messages_before_last_user` | **green** (planner ledger slice 2) |
+| NT-TRUST-06 | EX-L-05 / D2-R004 | tenant-scoped vectorstore resolution | `tests/unit/tools/providers/rag/test_rag_scope.py::test_resolve_tenant_scoped_vectorstore_fails_closed_without_tenant` | **collect** (needs `langchain-core`; see §7.3) |
+
+Red-first package (new file, fala 3 slice 1): `tests/unit/context/test_trust_fail_closed.py` (`NT-TRUST-01`).
+
+### 7.2 Regression command (trust + FC-3 bundle)
+
+```text
+uv run pytest tests/unit/context/test_trust_fail_closed.py tests/unit/context/test_context_formatter.py tests/unit/llm/test_messages.py -p no:cacheprovider
+```
+
+Plus FC-3 regression bundle from `PLAN_T-IGX-043-J` §7.2 (`regression_scope_fc3_bundle.txt`) before merge.
+
+### 7.3 ENV
+
+`uv sync --extra dev-ci`; when `test_rag_scope.py` fails collect with `langchain_core`, add project RAG extra per `pyproject.toml` (record in session log).
+
+### 7.4 Push
+
+`uv run python -m scripts.governance.igx_gov ticket` with `Ref: governance/tickets/T-IGX-051-C.md`.
