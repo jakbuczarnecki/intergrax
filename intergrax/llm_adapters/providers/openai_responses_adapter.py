@@ -24,6 +24,7 @@ from intergrax.llm_adapters._shared.adapter_response_builders import (
 )
 from intergrax.llm_adapters._shared.openai_completion_mapping import (
     adapter_response_from_openai_responses,
+    reported_served_model,
     responses_refusal,
     responses_stop_signal,
 )
@@ -616,15 +617,18 @@ class OpenAIChatResponsesAdapter(BaseLLMAdapter):
                 payload["max_output_tokens"] = max_tokens
 
             api_response: Response = self._execute(
-                lambda: self.client.responses.create(**payload, **self.request_defaults)
+                lambda: self.client.responses.create(**payload, **self.request_defaults, **self._call_timeout_kwargs())
             )
 
             output_text = self._collect_output_text(api_response)
-            response = adapter_response_from_openai_responses(
-                api_response,
-                model=self.model,
-                provider=self._provider_slug(),
-                content=output_text,
+            response = self._served_response(
+                call,
+                adapter_response_from_openai_responses(
+                    api_response,
+                    model=self.model,
+                    provider=self._provider_slug(),
+                    content=output_text,
+                ),
             )
             success = True
             return response
@@ -656,7 +660,9 @@ class OpenAIChatResponsesAdapter(BaseLLMAdapter):
         """
 
         def _open() -> Any:
-            stream = stack.enter_context(self.client.responses.stream(**payload, **self.request_defaults))
+            stream = stack.enter_context(
+                self.client.responses.stream(**payload, **self.request_defaults, **self._call_timeout_kwargs())
+            )
             if opened is not None:
                 opened.append(stream)
             return stream
@@ -703,6 +709,7 @@ class OpenAIChatResponsesAdapter(BaseLLMAdapter):
             stack = ExitStack()
             opened: list[Any] = []
             signal = StreamFinishSignal()
+            served_model: str | None = None
             try:
                 open_stream = self._responses_stream_opener(stack, payload, opened)
                 for ev in self._execute_streaming(open_stream):
@@ -718,6 +725,7 @@ class OpenAIChatResponsesAdapter(BaseLLMAdapter):
                         if terminal is not None:
                             signal.observe_finish(responses_stop_signal(terminal))
                             signal.observe_refusal(responses_refusal(terminal))
+                            served_model = reported_served_model(terminal) or served_model
             finally:
                 stack.close()
 
@@ -726,13 +734,17 @@ class OpenAIChatResponsesAdapter(BaseLLMAdapter):
             success = True
             finish, refusal = signal.resolve()
             yield final_stream_event(
-                response=build_adapter_response(
-                    content=full_text,
-                    finish_reason=finish,
-                    refusal=refusal,
-                    usage=LLMTokenUsage.from_counts(input_tokens=in_tok, output_tokens=out_tok),
-                    model=self.model,
-                    provider=self._provider_slug(),
+                response=self._served_response(
+                    call,
+                    build_adapter_response(
+                        content=full_text,
+                        finish_reason=finish,
+                        refusal=refusal,
+                        usage=LLMTokenUsage.from_counts(input_tokens=in_tok, output_tokens=out_tok),
+                        model=self.model,
+                        provider=self._provider_slug(),
+                    ),
+                    served_model,
                 )
             )
 
@@ -840,12 +852,15 @@ class OpenAIChatResponsesAdapter(BaseLLMAdapter):
                     tool_definitions=tool_definitions,
                 )
                 final_content = self._collect_output_text(resp) or "".join(buf)
-                final_response = adapter_response_from_openai_responses(
-                    resp,
-                    model=self.model,
-                    provider=self._provider_slug(),
-                    content=final_content,
-                    tool_calls=tool_calls_from_openai_dicts(native_tool_calls),
+                final_response = self._served_response(
+                    call,
+                    adapter_response_from_openai_responses(
+                        resp,
+                        model=self.model,
+                        provider=self._provider_slug(),
+                        content=final_content,
+                        tool_calls=tool_calls_from_openai_dicts(native_tool_calls),
+                    ),
                 )
                 if resp.usage:
                     in_tok = int(resp.usage.input_tokens or in_tok)
@@ -944,14 +959,17 @@ class OpenAIChatResponsesAdapter(BaseLLMAdapter):
                 payload["max_output_tokens"] = max_tokens
 
             api_response: Response = self._execute(
-                lambda: self.client.responses.create(**payload, **self.request_defaults)
+                lambda: self.client.responses.create(**payload, **self.request_defaults, **self._call_timeout_kwargs())
             )
             raw = self._collect_output_text(api_response)
-            response = adapter_response_from_openai_responses(
-                api_response,
-                model=self.model,
-                provider=self._provider_slug(),
-                content=raw,
+            response = self._served_response(
+                call,
+                adapter_response_from_openai_responses(
+                    api_response,
+                    model=self.model,
+                    provider=self._provider_slug(),
+                    content=raw,
+                ),
             )
             json_str = self._extract_json_object(raw) or raw.strip()
             parsed = self._validate_with_model(output_model, json_str)
@@ -1016,7 +1034,7 @@ class OpenAIChatResponsesAdapter(BaseLLMAdapter):
                 payload["max_output_tokens"] = max_tokens
 
             api_response: Response = self._execute(
-                lambda: self.client.responses.create(**payload, **self.request_defaults)
+                lambda: self.client.responses.create(**payload, **self.request_defaults, **self._call_timeout_kwargs())
             )
 
             content = self._collect_output_text(api_response)
@@ -1025,12 +1043,15 @@ class OpenAIChatResponsesAdapter(BaseLLMAdapter):
                 tool_name_mapping,
                 tool_definitions=tool_definitions,
             )
-            response = adapter_response_from_openai_responses(
-                api_response,
-                model=self.model,
-                provider=self._provider_slug(),
-                content=content or "",
-                tool_calls=tool_calls_from_openai_dicts(native_tool_calls),
+            response = self._served_response(
+                call,
+                adapter_response_from_openai_responses(
+                    api_response,
+                    model=self.model,
+                    provider=self._provider_slug(),
+                    content=content or "",
+                    tool_calls=tool_calls_from_openai_dicts(native_tool_calls),
+                ),
             )
             success = True
             return response

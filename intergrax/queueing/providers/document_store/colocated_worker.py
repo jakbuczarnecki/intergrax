@@ -45,6 +45,10 @@ logger = logging.getLogger(__name__)
 InterruptedHandler = Callable[[TaskHandle, TaskRequest], None]
 
 
+class DocumentStoreTaskWorkerStillRunning(RuntimeError):
+    """``start()`` refused: the consumer of an earlier run has not ended after ``stop()`` (EX-L-06)."""
+
+
 class DocumentStoreTaskWorker:
     """Platform consumer for durable DocumentStore-backed MessageBus tasks."""
 
@@ -76,10 +80,24 @@ class DocumentStoreTaskWorker:
         self._execution_terminal = execution_terminal
         self._stop = threading.Event()
         self._thread: threading.Thread | None = None
+        self._in_flight = 0
+        self._idle = threading.Condition()
 
     def start(self) -> None:
-        if self._thread is not None and self._thread.is_alive():
-            return
+        """Recover interrupted rows, then start one consumer thread.
+
+        A no-op while the current consumer runs. Raises ``DocumentStoreTaskWorkerStillRunning`` when a
+        previous ``stop()`` timed out and its consumer is still inside a handler (EX-L-06): starting
+        another consumer next to it would run two consumers over one queue.
+        """
+        thread = self._thread
+        if thread is not None and thread.is_alive():
+            if not self._stop.is_set():
+                return
+            raise DocumentStoreTaskWorkerStillRunning(
+                "document_store_task_worker_still_running: the previous consumer has not ended after stop()",
+            )
+        self._thread = None
         recovery_budget = self._retry_policy.max_retries if self._retry_policy is not None else None
         for handle, request in self._queue.recover_interrupted_running(
             max_retries=recovery_budget,
@@ -92,72 +110,128 @@ class DocumentStoreTaskWorker:
                         "document_store_task_worker_interrupt_hook_failed task_id=%s",
                         handle.task_id,
                     )
-        self._stop.clear()
+        # A fresh event per run: a late consumer of an earlier run can never observe a cleared event.
+        stop_event = threading.Event()
+        self._stop = stop_event
         self._thread = threading.Thread(
             target=self._run_loop,
+            args=(stop_event,),
             name="intergrax-document-store-task-worker",
             daemon=True,
         )
         self._thread.start()
 
-    def stop(self, *, timeout_seconds: float = 10.0) -> None:
-        self._stop.set()
+    def stop(self, *, timeout_seconds: float = 10.0) -> bool:
+        """Close intake and join the consumer; True when it has ended.
+
+        When the join times out the consumer is still referenced (False is returned), so a later
+        ``start()`` refuses instead of starting a second consumer next to it.
+        """
+        self.stop_intake()
         thread = self._thread
         if thread is not None and thread.is_alive():
             thread.join(timeout=timeout_seconds)
+        if thread is not None and thread.is_alive():
+            return False
         self._thread = None
+        return True
+
+    def stop_intake(self) -> None:
+        """Stop claiming new rows without joining; rows already claimed are still handled."""
+        with self._idle:
+            self._stop.set()
+
+    def in_flight_count(self) -> int:
+        """Claimed rows not settled yet, plus a claim of the consumer loop that is in progress."""
+        with self._idle:
+            return self._in_flight
+
+    def wait_idle(self, timeout_seconds: float) -> bool:
+        """Wait until no claimed row is being handled; True when idle within the timeout."""
+        with self._idle:
+            return self._idle.wait_for(lambda: self._in_flight == 0, timeout=timeout_seconds)
 
     def drain_once(self) -> int:
         claimed = self._queue.claim_pending(limit=self._claim_limit)
-        for handle, request in claimed:
-            try:
-                transport_ref = BackgroundTransportExecutionRef(
-                    tenant_id=request.tenant_id,
-                    provider=handle.provider,
-                    transport_task_id=handle.task_id,
-                )
-                self._seed_carried_identity(transport_ref, request)
-                reentry = admit_background_execution_reentry(
-                    transport_ref=transport_ref,
-                    identity_persistence=self._identity_persistence,
-                    attempt_lifecycle=self._attempt_lifecycle,
-                    execution_terminal=self._execution_terminal,
-                )
-                if reentry.disposition is BackgroundExecutionReentryDisposition.TERMINAL_ALREADY_RECORDED:
-                    self._queue.mark_succeeded(handle, output=None)
-                    continue
-                execution_identity = reentry.identity
-                result = admit_background_execution_handler(
-                    transport_ref=transport_ref,
-                    execution_identity=execution_identity,
-                    causal_evidence_persistence=self._causal_evidence_persistence,
-                    handler=lambda: execute_logical_task(
-                        registry=self._registry,
-                        logical_task_name=request.task_name,
-                        tenant_id=execution_identity.tenant_id,
-                        run_id=str(execution_identity.run_id),
-                        payload=request.payload,
-                        idempotency_key=request.idempotency_key,
-                        idempotency_store=None,
-                        execution_identity=execution_identity,
-                    ),
-                )
-                if result.success:
-                    output = None
-                    if result.output is not None:
-                        output = result.output.model_dump_json().encode("utf-8")
-                    self._queue.mark_succeeded(handle, output=output)
-                else:
-                    message = result.error.error_message if result.error is not None else "handler_failed"
-                    self._queue.mark_failed(handle, error_message=message)
-            except Exception as exc:  # noqa: BLE001 - worker plane normalizes failures
-                logger.exception(
-                    "document_store_task_worker_failed task_id=%s task_name=%s",
-                    handle.task_id,
-                    request.task_name,
-                )
-                self._settle_exception(handle, exc)
+        if claimed:
+            with self._idle:
+                self._in_flight += len(claimed)
+        remaining = len(claimed)
+        try:
+            for handle, request in claimed:
+                try:
+                    try:
+                        transport_ref = BackgroundTransportExecutionRef(
+                            tenant_id=request.tenant_id,
+                            provider=handle.provider,
+                            transport_task_id=handle.task_id,
+                        )
+                        self._seed_carried_identity(transport_ref, request)
+                        reentry = admit_background_execution_reentry(
+                            transport_ref=transport_ref,
+                            identity_persistence=self._identity_persistence,
+                            attempt_lifecycle=self._attempt_lifecycle,
+                            execution_terminal=self._execution_terminal,
+                        )
+                        if reentry.disposition is BackgroundExecutionReentryDisposition.TERMINAL_ALREADY_RECORDED:
+                            self._queue.mark_succeeded(handle, output=None)
+                            continue
+                        execution_identity = reentry.identity
+                        result = admit_background_execution_handler(
+                            transport_ref=transport_ref,
+                            execution_identity=execution_identity,
+                            causal_evidence_persistence=self._causal_evidence_persistence,
+                            handler=lambda: execute_logical_task(
+                                registry=self._registry,
+                                logical_task_name=request.task_name,
+                                tenant_id=execution_identity.tenant_id,
+                                run_id=str(execution_identity.run_id),
+                                payload=request.payload,
+                                idempotency_key=request.idempotency_key,
+                                idempotency_store=None,
+                                execution_identity=execution_identity,
+                            ),
+                        )
+                        if result.success:
+                            output = None
+                            if result.output is not None:
+                                output = result.output.model_dump_json().encode("utf-8")
+                            self._queue.mark_succeeded(handle, output=output)
+                        else:
+                            message = result.error.error_message if result.error is not None else "handler_failed"
+                            self._queue.mark_failed(handle, error_message=message)
+                    except Exception as exc:  # noqa: BLE001 - worker plane normalizes failures
+                        logger.exception(
+                            "document_store_task_worker_failed task_id=%s task_name=%s",
+                            handle.task_id,
+                            request.task_name,
+                        )
+                        self._settle_exception(handle, exc)
+                finally:
+                    remaining -= 1
+                    self._settle_in_flight(1)
+        finally:
+            # Rows not reached because a settlement raised are not handled here any more: never leak them.
+            if remaining:
+                self._settle_in_flight(remaining)
         return len(claimed)
+
+    def _drain_if_open(self, stop_event: threading.Event) -> int:
+        """One loop iteration; intake check and claim slot are taken under one lock (no drain race)."""
+        with self._idle:
+            if stop_event.is_set():
+                return 0
+            self._in_flight += 1  # the claim in progress counts as active work
+        try:
+            return self.drain_once()
+        finally:
+            self._settle_in_flight()
+
+    def _settle_in_flight(self, count: int = 1) -> None:
+        with self._idle:
+            self._in_flight -= count
+            if self._in_flight == 0:
+                self._idle.notify_all()
 
     def _seed_carried_identity(
         self,
@@ -194,7 +268,7 @@ class DocumentStoreTaskWorker:
             return
         self._queue.mark_failed(handle, error_message=str(exc))
 
-    def _run_loop(self) -> None:
+    def _run_loop(self, stop_event: threading.Event) -> None:
         delay_raw = (os.environ.get("INTERGRAX_DOCUMENT_STORE_TASK_WORKER_START_DELAY_SECONDS") or "").strip()
         if delay_raw:
             try:
@@ -202,12 +276,12 @@ class DocumentStoreTaskWorker:
             except ValueError:
                 delay = 0.0
             if delay > 0:
-                if self._stop.wait(delay):
+                if stop_event.wait(delay):
                     return
-        while not self._stop.is_set():
-            processed = self.drain_once()
+        while not stop_event.is_set():
+            processed = self._drain_if_open(stop_event)
             if processed == 0:
-                self._stop.wait(self._poll_interval_seconds)
+                stop_event.wait(self._poll_interval_seconds)
 
 
 def _is_retryable(policy: RetryPolicy, exc: Exception) -> bool:

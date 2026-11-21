@@ -6,7 +6,6 @@ import os
 
 from dotenv import load_dotenv
 from fastapi import FastAPI
-
 from intergrax.applications._shared.harness_registry_authority import HarnessHostRegistryAuthorityError
 from intergrax.applications._shared.production_host_composition import (
     StrictProductionAsgiPlaceholder,
@@ -16,18 +15,19 @@ from intergrax.applications._shared.production_process_composition import (
     ProductionProcessComposition,
     create_reference_production_process_composition,
 )
-from intergrax.applications._shared.registry_projection_input_bundle import (
-    reference_admission_mutation_id,
-)
 from intergrax.applications._shared.reference_production_governance_wiring import (
     wire_governed_reference_production_launcher,
 )
 from intergrax.applications._shared.reference_runtime_materialization import (
     prepare_reference_runtime_materialization,
 )
+from intergrax.applications._shared.registry_projection_input_bundle import (
+    reference_admission_mutation_id,
+)
+
+from research_application.host.environment_profile import build_research_environment_profile
 from research_application.host.factory import create_research_backend_app
 from research_application.host.reference_lifecycle_input import build_research_reference_lifecycle_input
-from research_application.host.environment_profile import build_research_environment_profile
 from research_application.host.settings import ResearchBackendSettings
 from research_application.manifest import RESEARCH_APPLICATION_MANIFEST
 
@@ -79,7 +79,6 @@ def run_reference_production() -> None:
 
     composition = create_reference_production_process_composition()
     projection_input, activation_request = build_research_reference_lifecycle_input()
-    manifest = RESEARCH_APPLICATION_MANIFEST
     settings = ResearchBackendSettings.from_env()
     env = build_research_environment_profile(settings)
     launcher, governance = wire_governed_reference_production_launcher(composition, env)
@@ -92,11 +91,9 @@ def run_reference_production() -> None:
         projection_input,
         activation_request,
         principal=governance.principal,
-        admission_mutation_id=reference_admission_mutation_id(
-            projection_input.runtime_revision.runtime_revision_id
-        ),
+        admission_mutation_id=reference_admission_mutation_id(projection_input.runtime_revision.runtime_revision_id),
     )
-    host = os.environ.get("RESEARCH_BACKEND_HOST", "0.0.0.0")
+    host = os.environ.get("RESEARCH_BACKEND_HOST", "127.0.0.1")
     port = int(os.environ.get("RESEARCH_BACKEND_PORT", "8010"))
     uvicorn.run(
         create_research_process_app(process_composition=composition),

@@ -120,8 +120,8 @@ def test_semantic_stage_fails_on_skipped_summary(tmp_path: Path, monkeypatch: py
 
 def test_semantic_matrix_fails_on_84_of_85(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
     def fake_pytest(*args, **kwargs):
-        if kwargs.get("expected_passed") == 85:
-            return 1, "passed 84 != expected 85", qw.PytestSummary(passed=84)
+        if kwargs.get("expected_passed") == 91:
+            return 1, "passed 90 != expected 91", qw.PytestSummary(passed=90)
         return 0, "ok", qw.PytestSummary(passed=kwargs.get("expected_passed") or 1)
 
     monkeypatch.setattr(qw, "git_head", lambda _r: "e" * 40)

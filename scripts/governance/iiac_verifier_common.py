@@ -1,8 +1,10 @@
 """Shared read-only helpers for the PT-E04 IIAC corpus, artifact and delegation verifiers.
 
-Scope (ticket T-IGX-044-E, node PT-E04 / T-ENF-4): NEW files only. This module is not on
-``MATERIAL_GOVERNANCE_PATHS`` of ``iiac_activation_gate.py`` and nothing in the activation
-gate imports it. It only *reads* ``iiac_common`` (format validation), so the verifiers agree
+Scope (ticket T-IGX-044-E, node PT-E04 / T-ENF-4): NEW files only when it was added. Since ticket
+T-IGX-044-F (node PT-E05) this module is on ``MATERIAL_GOVERNANCE_PATHS`` of
+``iiac_activation_gate.py``, because the gate runs the artifact and corpus verifiers that import
+it (as subprocesses; the gate itself imports nothing from it). It only *reads* ``iiac_common``
+(format validation), so the verifiers agree
 with the existing validators on what a well-formed manifest is, and then add the checks the
 existing validators lack.
 

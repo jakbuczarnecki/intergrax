@@ -3,11 +3,10 @@
 from __future__ import annotations
 
 import pytest
-
+from intergrax.agents.reference_harness import default_reference_harness
 from intergrax.applications._shared.llm_routing_runtime_bridge import maybe_wrap_secondary_routing_adapter
 from intergrax.applications._shared.routing_evaluating_adapter import RoutingEvaluatingLLMAdapter
 from intergrax.applications._shared.runtime_config_bridge import materialize_runtime_config
-from intergrax.agents.reference_harness import default_reference_harness
 from intergrax.applications.contracts.environment_profile import ApplicationEnvironmentProfile
 from intergrax.llm_adapters.contracts.llm_provider import LLMProvider
 from intergrax.llm_adapters.registry.profile import LLMProfile
@@ -63,7 +62,7 @@ def test_materialize_runtime_wraps_tool_planner_when_secondary_flag_set(
     env.llm_routing_evaluating_secondary = True
 
     monkeypatch.setattr(
-        "intergrax.applications._shared.llm_resolver._create_base_llm_adapter",
+        "intergrax.runtime.wiring.llm_resolver._create_base_llm_adapter",
         lambda _env, _profile, hint=None: FakeLLMAdapter(fixed_text="core"),
     )
 

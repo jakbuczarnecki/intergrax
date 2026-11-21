@@ -2,9 +2,8 @@
 
 from __future__ import annotations
 
-from typing import Optional, Sequence
+from collections.abc import Sequence
 
-from external_contractor_adapter.capabilities import CAPABILITIES
 from intergrax.agents.authoring.patterns.reflex import ReflexAgent
 from intergrax.agents.authoring.patterns.types import (
     AgentEvaluation,
@@ -14,24 +13,25 @@ from intergrax.agents.authoring.patterns.types import (
 )
 from intergrax.contracts.agent_contract_meta import AgentRiskLevel
 from intergrax.contracts.agent_step_context import AgentStepContext
-from intergrax.integrations.contracts.external_work import ExternalWorkIntegration
 from intergrax.contracts.sanctioned_external_work_operation import (
     SanctionedExternalWorkOperationPort,
 )
-from intergrax.runtime.policy.meaningful_side_effect_authorization import (
-    MeaningfulSideEffectAuthorizationBoundary,
-)
+from intergrax.integrations.contracts.external_work import ExternalWorkIntegration
 from intergrax.llm_adapters._shared.adapter_response_builders import build_adapter_response
-from intergrax.llm_adapters.contracts.adapter_response import LLMAdapterResponse
-from intergrax.llm_adapters.contracts.llm_adapter import LLMAdapter
 from intergrax.llm_adapters.base.base_llm_adapter import BaseLLMAdapter
+from intergrax.llm_adapters.contracts.adapter_response import LLMAdapterResponse
 from intergrax.memory.conversational_memory import ChatMessage
-from intergrax.runtime.execution.host_runtime_config import RuntimeConfig
-from intergrax.runtime.execution.agent_runtime_context import RuntimeContext
-from intergrax.runtime.execution.agent_runtime_io import RuntimeRequest
 from intergrax.runtime.execution.agent_in_memory_session_factory import (
     build_in_memory_session_manager,
 )
+from intergrax.runtime.execution.agent_runtime_context import RuntimeContext
+from intergrax.runtime.execution.agent_runtime_io import RuntimeRequest
+from intergrax.runtime.execution.host_runtime_config import RuntimeConfig
+from intergrax.runtime.policy.meaningful_side_effect_authorization import (
+    MeaningfulSideEffectAuthorizationBoundary,
+)
+
+from external_contractor_adapter.capabilities import CAPABILITIES
 
 # LLM / catalog (Tier-3 host): intergrax/llm_adapters/USAGE.md — LLMProfile, ModelCatalog,
 # optional LLMRoutingProfile on ApplicationEnvironmentProfile; agents use stub LLM below only in tests.
@@ -49,9 +49,9 @@ class _ExternalContractorAdapterStubLLM(BaseLLMAdapter):
         self,
         messages: Sequence[ChatMessage],
         *,
-        temperature: Optional[float] = None,
-        max_tokens: Optional[int] = None,
-        run_id: Optional[str] = None,
+        temperature: float | None = None,
+        max_tokens: int | None = None,
+        run_id: str | None = None,
     ) -> LLMAdapterResponse:
         for msg in reversed(messages):
             if msg.content:
@@ -65,9 +65,7 @@ class ExternalContractorAdapterAgent(ReflexAgent):
     contract_id = "external_contractor_adapter"
     capabilities = tuple(CAPABILITIES)
     agent_name = "ExternalContractorAdapterAgent"
-    agent_description = (
-        "Tier-2 adapter for governed external contractor agents (GEC)"
-    )
+    agent_description = "Tier-2 adapter for governed external contractor agents (GEC)"
     risk_level = AgentRiskLevel.LOW
     max_steps = 10
 
@@ -83,9 +81,7 @@ class ExternalContractorAdapterAgent(ReflexAgent):
         self._external_work = external_work
         self._authorization_boundary = authorization_boundary
         self._sanctioned_operation_port = sanctioned_operation_port
-        self._require_sanctioned_external_work_mutations = (
-            require_sanctioned_external_work_mutations
-        )
+        self._require_sanctioned_external_work_mutations = require_sanctioned_external_work_mutations
 
     def inject_sanctioned_external_work_host_dependencies(
         self,
@@ -99,18 +95,17 @@ class ExternalContractorAdapterAgent(ReflexAgent):
         self._external_work = external_work
         self._authorization_boundary = authorization_boundary
         self._sanctioned_operation_port = sanctioned_operation_port
-        self._require_sanctioned_external_work_mutations = (
-            require_sanctioned_external_work_mutations
-        )
+        self._require_sanctioned_external_work_mutations = require_sanctioned_external_work_mutations
         return self
 
     def build_context(self, request: RuntimeRequest) -> RuntimeContext:
-        from intergrax.agents.defaults import harness_production_mode
-
+        # Posture comes from the host: the STRICT governed-contractor host injects
+        # ``require_sanctioned_external_work_mutations=True`` (constructor or
+        # ``inject_sanctioned_external_work_host_dependencies``); a bare lab instance stays relaxed.
         config = RuntimeConfig(
             llm_adapter=_ExternalContractorAdapterStubLLM(),
             enable_rag=False,
-            production_mode=harness_production_mode(),
+            production_mode=self._require_sanctioned_external_work_mutations,
             tenant_id=request.tenant_id,
         )
         session_manager = build_in_memory_session_manager()
@@ -119,11 +114,7 @@ class ExternalContractorAdapterAgent(ReflexAgent):
     async def perceive(self, step_ctx: AgentStepContext) -> Observation:
         has_integration = self._external_work is not None
         return Observation(
-            summary=(
-                "external_work_ready"
-                if has_integration
-                else "external_work_integration_missing"
-            ),
+            summary=("external_work_ready" if has_integration else "external_work_integration_missing"),
             data={
                 "task_id": step_ctx.task_id,
                 "run_id": step_ctx.run_id,
@@ -152,9 +143,7 @@ class ExternalContractorAdapterAgent(ReflexAgent):
             external_work=self._external_work,
             authorization_boundary=self._authorization_boundary,
             sanctioned_operation_port=self._sanctioned_operation_port,
-            require_sanctioned_external_work_mutations=(
-                self._require_sanctioned_external_work_mutations
-            ),
+            require_sanctioned_external_work_mutations=(self._require_sanctioned_external_work_mutations),
         )
 
     def evaluate(
@@ -172,5 +161,3 @@ class ExternalContractorAdapterAgent(ReflexAgent):
             reason=reason,
             confidence=0.9,
         )
-
-

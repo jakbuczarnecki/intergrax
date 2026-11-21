@@ -18,7 +18,10 @@ from intergrax.applications._shared.mcp_engine_concurrency import (
     McpEngineConcurrentCallAdmission,
     optional_mcp_call_admission,
 )
-from intergrax.applications._shared.mcp_harness_principal import require_mcp_caller_principal
+from intergrax.applications._shared.mcp_harness_principal import (
+    assert_mcp_identity_composition,
+    require_mcp_caller_principal,
+)
 from intergrax.applications._shared.mcp_identity_mode import McpIdentityMode
 from intergrax.applications._shared.mcp_wire_errors import bound_mcp_result_or_raise, sanitized_tool_errors
 from intergrax.tools.exporters.mcp import to_mcp_tools
@@ -43,6 +46,7 @@ def mount_catalog_tools_on_mcp(
     catalog_invocation: McpCatalogInvocationComposition | None = None,
     identity_mode: McpIdentityMode = McpIdentityMode.HARNESS_BOUND,
     call_admission: McpEngineConcurrentCallAdmission | None = None,
+    fails_closed: bool = False,
 ) -> None:
     """
     Register catalog tool schemas on an MCP server.
@@ -54,6 +58,11 @@ def mount_catalog_tools_on_mcp(
     the host-injected
     :class:`~intergrax.contracts.execution_bound_catalog_tool_invocation.ExecutionBoundCatalogToolInvoker`.
     """
+    assert_mcp_identity_composition(
+        identity_mode=identity_mode,
+        harness_auth=None,
+        fails_closed=fails_closed,
+    )
     if include_invoke_stub:
 
         @mcp.tool

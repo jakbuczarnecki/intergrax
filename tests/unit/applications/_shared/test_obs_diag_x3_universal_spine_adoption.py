@@ -7,7 +7,6 @@ from __future__ import annotations
 from pathlib import Path
 
 import pytest
-
 from intergrax.applications._shared.execution_surface_discovery import (
     discover_worker_execution_surfaces,
     iter_worker_execution_surface_python_paths,
@@ -25,16 +24,16 @@ from intergrax.applications._shared.obs_diag_surface_qualification import (
     iter_obs_diag_surface_descriptor,
     validate_obs_diag_surface_registry_integrity,
 )
-from intergrax.runtime.architecture.obs_diag_x3_ast_gates import (
-    collect_factory_entry_path_violations,
-    collect_obs_diag_x3_production_layer_violations,
-    collect_product_operator_read_adoption_violations,
-)
+from scripts.maintenance.check_harness_registry_resolution import check_host_wiring_adoption
 from scripts.proof.scenario_architecture_conformance import (
     assert_all_initialized_scenario_architectures,
     discover_initialized_scenario_slugs,
 )
-from scripts.maintenance.check_harness_registry_resolution import check_host_wiring_adoption
+from testing_support.architecture.obs_diag_x3_ast_gates import (
+    collect_factory_entry_path_violations,
+    collect_obs_diag_x3_production_layer_violations,
+    collect_product_operator_read_adoption_violations,
+)
 
 pytestmark = [pytest.mark.unit, pytest.mark.gate, pytest.mark.obs_diag_conformance]
 
@@ -114,13 +113,7 @@ def test_x3_product_application_factories_use_harness_runtime_marker() -> None:
         if descriptor.kind is ObsDiagSurfaceKind.LAB_APPLICATION:
             continue
         factory = _REPO_ROOT / "applications" / app_id / "host" / "factory.py"
-        composition = (
-            _REPO_ROOT
-            / "applications"
-            / app_id
-            / "host"
-            / "host_runtime_composition.py"
-        )
+        composition = _REPO_ROOT / "applications" / app_id / "host" / "host_runtime_composition.py"
         if factory.is_file():
             text = factory.read_text(encoding="utf-8")
             if "build_harness_host_runtime" in text:
@@ -139,13 +132,7 @@ def test_x3_no_illegal_local_diagnostic_authority_in_production_layers() -> None
 
 
 def test_x3_native_read_product_host_wires_diagnostic_read_service() -> None:
-    wiring_path = (
-        _REPO_ROOT
-        / "intergrax"
-        / "applications"
-        / "_shared"
-        / "product_observability_dashboard_wiring.py"
-    )
+    wiring_path = _REPO_ROOT / "intergrax" / "applications" / "_shared" / "product_observability_dashboard_wiring.py"
     source = wiring_path.read_text(encoding="utf-8")
     assert "DiagnosticReadService" in source
     assert "resolve_host_diagnostic_read_service" in source
@@ -167,19 +154,12 @@ def test_x3a_worker_discovery_uses_bootstrap_surface_marker_not_filename() -> No
     surfaces = discover_worker_execution_surfaces(_REPO_ROOT)
     surface_ids = {surface.surface_id for surface in surfaces}
     assert "worker:local_workspace_application.background" in surface_ids
-    assert all(
-        path.is_file()
-        for surface in surfaces
-        for path in surface.entry_paths
-    )
+    assert all(path.is_file() for surface in surfaces for path in surface.entry_paths)
 
 
 def test_x3a_ast_worker_scan_matches_discovery_paths() -> None:
-    discovered_paths = {
-        path.resolve()
-        for path in iter_worker_execution_surface_python_paths(_REPO_ROOT)
-    }
-    from intergrax.runtime.architecture.obs_diag_x3_ast_gates import _iter_worker_entry_python
+    discovered_paths = {path.resolve() for path in iter_worker_execution_surface_python_paths(_REPO_ROOT)}
+    from testing_support.architecture.obs_diag_x3_ast_gates import _iter_worker_entry_python
 
     ast_paths = {path.resolve() for path in _iter_worker_entry_python(_REPO_ROOT)}
     assert ast_paths == discovered_paths
@@ -200,9 +180,7 @@ def test_x3a_new_worker_outside_local_workspace_fails_until_qualified(tmp_path: 
         encoding="utf-8",
     )
     (host_dir / "queue_consumer_main.py").write_text(
-        '_QUEUE_PROCESS_ROLE = "background_worker"\n'
-        "def main():\n"
-        "    BootstrapSurfaceKind.WORKER_BACKGROUND\n",
+        '_QUEUE_PROCESS_ROLE = "background_worker"\ndef main():\n    BootstrapSurfaceKind.WORKER_BACKGROUND\n',
         encoding="utf-8",
     )
     worker_ids = discover_worker_surface_ids(tmp_path)

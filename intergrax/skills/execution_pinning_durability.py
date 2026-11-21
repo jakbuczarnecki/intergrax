@@ -16,7 +16,12 @@ DURABLE_SKILL_EXECUTION_PINNING_REQUIRED_MSG = (
 class DurableSkillPinningCapability(Protocol):
     @property
     def is_durable(self) -> bool:
-        """Whether pinning state survives process restart."""
+        """
+        Whether pinning state survives process restart.
+
+        The value is derived from the backing store's capability, not declared by the pin store.
+        The production guard accepts only ``True`` (leaf default is deny).
+        """
 
 
 def validate_skill_execution_pinning_durability_for_composition(
@@ -26,7 +31,7 @@ def validate_skill_execution_pinning_durability_for_composition(
 ) -> None:
     if not production_mode:
         return
-    if not pinning_store.is_durable:
+    if getattr(pinning_store, "is_durable", False) is not True:
         raise SkillResolutionError(DURABLE_SKILL_EXECUTION_PINNING_REQUIRED_MSG)
 
 

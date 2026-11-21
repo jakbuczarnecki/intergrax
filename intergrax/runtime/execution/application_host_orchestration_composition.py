@@ -7,10 +7,10 @@ from __future__ import annotations
 
 from collections.abc import Callable
 
-from intergrax.applications.contracts.environment_profile import ApplicationEnvironmentProfile
 from intergrax.contracts.admitted_root_governance_identity import (
     AdmittedRootGovernanceIdentity,
 )
+from intergrax.contracts.application_graph_topology import ApplicationGraphTopology
 from intergrax.contracts.runtime_execution_admission import (
     RootExecutionAuthorityAdmissionPort,
 )
@@ -41,7 +41,7 @@ from intergrax.runtime.task.task import Task
 def compose_application_host_orchestration_session(
     registry: AgentRegistryRead,
     spec: HostOrchestrationLoopInitSpec,
-    env: ApplicationEnvironmentProfile,
+    graph_topology: ApplicationGraphTopology | None,
     *,
     root_authority_admission: RootExecutionAuthorityAdmissionPort,
     admit_root_governance_identity: Callable[[Task], AdmittedRootGovernanceIdentity],
@@ -59,7 +59,7 @@ def compose_application_host_orchestration_session(
     backend = orchestration_backend_for_execution_engine(materialization)
     host_execution = build_environment_host_task_execution(
         materialization,
-        env,
+        graph_topology,
         orchestration_triggers=orchestration_triggers,
         pipeline_capability_suffix=pipeline_capability_suffix,
         revision_admission=revision_admission,

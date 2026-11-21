@@ -1,0 +1,1043 @@
+{
+  "source": "docs/project/maintainers/qualification/enterprise_debt_register/register.jsonl",
+  "source_head": "28c27cb896d02e0185b9fa02047411fa152f6469",
+  "source_sha256": "f4949fbeb115b2892b8d04a3cc4b6bd0ebfa7d398dd65463bda055df2234555b",
+  "source_bytes": 3377921,
+  "row_count": 1073,
+  "field_mapping": {
+    "impact": "frz_arch_freeze_impact",
+    "disposition": "disposition",
+    "next_track": "next_track",
+    "plan_nodes": "plan_nodes",
+    "owner": "owner_ref"
+  },
+  "note": "The register has no disposition token UNCLASSIFIED. EDER-CLASS-1 is the 61 rows with frz_arch_freeze_impact=CONDITIONS, disposition=TRIAGE_PENDING and next_track=UNCLASSIFIED. That next_track value is the plan's UNCLASSIFIED label. Prose occurrences of the word UNCLASSIFIED are not a status. No owner was assigned and no ticket was created.",
+  "impact_totals": [
+    {
+      "key": {
+        "frz_arch_freeze_impact": "UNKNOWN"
+      },
+      "count": 489
+    },
+    {
+      "key": {
+        "frz_arch_freeze_impact": "CONDITIONS"
+      },
+      "count": 325
+    },
+    {
+      "key": {
+        "frz_arch_freeze_impact": "NONE"
+      },
+      "count": 147
+    },
+    {
+      "key": {
+        "frz_arch_freeze_impact": "BLOCKS"
+      },
+      "count": 112
+    }
+  ],
+  "packages": [
+    {
+      "package": "EDER-CLASS-1",
+      "definition": "frz_arch_freeze_impact=CONDITIONS and disposition=TRIAGE_PENDING",
+      "count": 61,
+      "by_impact": [
+        {
+          "key": {
+            "frz_arch_freeze_impact": "CONDITIONS"
+          },
+          "count": 61
+        }
+      ],
+      "by_disposition": [
+        {
+          "key": {
+            "disposition": "TRIAGE_PENDING"
+          },
+          "count": 61
+        }
+      ],
+      "by_next_track": [
+        {
+          "key": {
+            "next_track": "UNCLASSIFIED"
+          },
+          "count": 61
+        }
+      ],
+      "by_owner_ref": [
+        {
+          "key": {
+            "owner_ref": "DOMAIN:TOOLS"
+          },
+          "count": 10
+        },
+        {
+          "key": {
+            "owner_ref": "MCP-SERVER-X"
+          },
+          "count": 7
+        },
+        {
+          "key": {
+            "owner_ref": "TENANT-X"
+          },
+          "count": 5
+        },
+        {
+          "key": {
+            "owner_ref": "DIST-SCALE-X"
+          },
+          "count": 5
+        },
+        {
+          "key": {
+            "owner_ref": "EBH-6"
+          },
+          "count": 5
+        },
+        {
+          "key": {
+            "owner_ref": "EBH-7"
+          },
+          "count": 5
+        },
+        {
+          "key": {
+            "owner_ref": "ROADMAP-REPLAY-X"
+          },
+          "count": 4
+        },
+        {
+          "key": {
+            "owner_ref": "DOMAIN:LLM-BOUNDARY"
+          },
+          "count": 3
+        },
+        {
+          "key": {
+            "owner_ref": "DOMAIN:INTEGRATIONS"
+          },
+          "count": 3
+        },
+        {
+          "key": {
+            "owner_ref": "DOMAIN:RAG"
+          },
+          "count": 3
+        },
+        {
+          "key": {
+            "owner_ref": "DOMAIN:MEMORY"
+          },
+          "count": 3
+        },
+        {
+          "key": {
+            "owner_ref": "HARNESS"
+          },
+          "count": 3
+        },
+        {
+          "key": {
+            "owner_ref": "TRACE-X"
+          },
+          "count": 3
+        },
+        {
+          "key": {
+            "owner_ref": "EBH"
+          },
+          "count": 2
+        }
+      ],
+      "by_plan_nodes": [
+        {
+          "key": {
+            "plan_nodes": "<empty>"
+          },
+          "count": 61
+        }
+      ],
+      "by_impact_disposition_next_track": [
+        {
+          "key": {
+            "frz_arch_freeze_impact": "CONDITIONS",
+            "disposition": "TRIAGE_PENDING",
+            "next_track": "UNCLASSIFIED"
+          },
+          "count": 61
+        }
+      ]
+    },
+    {
+      "package": "EDER-CLASS-UNKNOWN",
+      "definition": "frz_arch_freeze_impact=UNKNOWN",
+      "count": 489,
+      "by_impact": [
+        {
+          "key": {
+            "frz_arch_freeze_impact": "UNKNOWN"
+          },
+          "count": 489
+        }
+      ],
+      "by_disposition": [
+        {
+          "key": {
+            "disposition": "TRIAGE_PENDING"
+          },
+          "count": 251
+        },
+        {
+          "key": {
+            "disposition": "CURRENCY_UNVERIFIED"
+          },
+          "count": 154
+        },
+        {
+          "key": {
+            "disposition": "ACCEPTED_AS_STATED_RECORD_REQUIRED"
+          },
+          "count": 42
+        },
+        {
+          "key": {
+            "disposition": "DOC_PATCH_PENDING"
+          },
+          "count": 17
+        },
+        {
+          "key": {
+            "disposition": "DECISION_PENDING"
+          },
+          "count": 10
+        },
+        {
+          "key": {
+            "disposition": "STALE_SNAPSHOT_REVERIFY"
+          },
+          "count": 6
+        },
+        {
+          "key": {
+            "disposition": "VERIFICATION_PENDING"
+          },
+          "count": 3
+        },
+        {
+          "key": {
+            "disposition": "REQUALIFY_PENDING"
+          },
+          "count": 2
+        },
+        {
+          "key": {
+            "disposition": "FIX_PENDING_AFTER_PDC"
+          },
+          "count": 2
+        },
+        {
+          "key": {
+            "disposition": "DEFERRED_AS_STATED_IMPACT_CLASS_REQUIRED"
+          },
+          "count": 2
+        }
+      ],
+      "by_next_track": [
+        {
+          "key": {
+            "next_track": "UNCLASSIFIED"
+          },
+          "count": 367
+        },
+        {
+          "key": {
+            "next_track": "DECISION"
+          },
+          "count": 46
+        },
+        {
+          "key": {
+            "next_track": "ACCEPTED_LIMITATION"
+          },
+          "count": 42
+        },
+        {
+          "key": {
+            "next_track": "DOC_PATCH"
+          },
+          "count": 24
+        },
+        {
+          "key": {
+            "next_track": "VERIFY_TEST"
+          },
+          "count": 4
+        },
+        {
+          "key": {
+            "next_track": "CODE_FIX"
+          },
+          "count": 4
+        },
+        {
+          "key": {
+            "next_track": "REQUALIFY"
+          },
+          "count": 2
+        }
+      ],
+      "by_owner_ref": [
+        {
+          "key": {
+            "owner_ref": "PROD-Q"
+          },
+          "count": 142
+        },
+        {
+          "key": {
+            "owner_ref": "OPERATOR"
+          },
+          "count": 54
+        },
+        {
+          "key": {
+            "owner_ref": "ARCH-FREEZE"
+          },
+          "count": 26
+        },
+        {
+          "key": {
+            "owner_ref": "PDC-X"
+          },
+          "count": 21
+        },
+        {
+          "key": {
+            "owner_ref": "QUAL-X"
+          },
+          "count": 18
+        },
+        {
+          "key": {
+            "owner_ref": "HARNESS"
+          },
+          "count": 18
+        },
+        {
+          "key": {
+            "owner_ref": "ENT-AUDIT-X"
+          },
+          "count": 15
+        },
+        {
+          "key": {
+            "owner_ref": "SCENARIO-FACTORY-X"
+          },
+          "count": 14
+        },
+        {
+          "key": {
+            "owner_ref": "DOMAIN:TOOLS"
+          },
+          "count": 13
+        },
+        {
+          "key": {
+            "owner_ref": "PRE-ENT"
+          },
+          "count": 12
+        },
+        {
+          "key": {
+            "owner_ref": "DOMAIN:AW-7C-INTEGRATIONS"
+          },
+          "count": 11
+        },
+        {
+          "key": {
+            "owner_ref": "EVOL-X"
+          },
+          "count": 11
+        },
+        {
+          "key": {
+            "owner_ref": "TRACE-X"
+          },
+          "count": 11
+        },
+        {
+          "key": {
+            "owner_ref": "DOMAIN:GOVERNANCE"
+          },
+          "count": 10
+        },
+        {
+          "key": {
+            "owner_ref": "COMPAT-X"
+          },
+          "count": 9
+        },
+        {
+          "key": {
+            "owner_ref": "MCP-SERVER-X"
+          },
+          "count": 9
+        },
+        {
+          "key": {
+            "owner_ref": "IIAC-GOV-1"
+          },
+          "count": 9
+        },
+        {
+          "key": {
+            "owner_ref": "EBH-3/4"
+          },
+          "count": 8
+        },
+        {
+          "key": {
+            "owner_ref": "DUP-X"
+          },
+          "count": 7
+        },
+        {
+          "key": {
+            "owner_ref": "<empty>"
+          },
+          "count": 7
+        },
+        {
+          "key": {
+            "owner_ref": "DOMAIN:INTEGRATIONS"
+          },
+          "count": 7
+        },
+        {
+          "key": {
+            "owner_ref": "TENANT-X"
+          },
+          "count": 6
+        },
+        {
+          "key": {
+            "owner_ref": "CONFIG-X"
+          },
+          "count": 5
+        },
+        {
+          "key": {
+            "owner_ref": "DIST-SCALE-X"
+          },
+          "count": 5
+        },
+        {
+          "key": {
+            "owner_ref": "DOMAIN:CONTEXT-ENGINEERING"
+          },
+          "count": 5
+        },
+        {
+          "key": {
+            "owner_ref": "DOMAIN:BACKGROUND-EXECUTION"
+          },
+          "count": 5
+        },
+        {
+          "key": {
+            "owner_ref": "DOMAIN:SKILLS"
+          },
+          "count": 5
+        },
+        {
+          "key": {
+            "owner_ref": "EBH-7"
+          },
+          "count": 4
+        },
+        {
+          "key": {
+            "owner_ref": "DOMAIN:MEMORY"
+          },
+          "count": 3
+        },
+        {
+          "key": {
+            "owner_ref": "EBH-6"
+          },
+          "count": 3
+        },
+        {
+          "key": {
+            "owner_ref": "CTRL-X"
+          },
+          "count": 3
+        },
+        {
+          "key": {
+            "owner_ref": "DOMAIN:RAG"
+          },
+          "count": 3
+        },
+        {
+          "key": {
+            "owner_ref": "ROADMAP-REPLAY-X"
+          },
+          "count": 3
+        },
+        {
+          "key": {
+            "owner_ref": "STATE-X"
+          },
+          "count": 3
+        },
+        {
+          "key": {
+            "owner_ref": "EBH-2G"
+          },
+          "count": 1
+        },
+        {
+          "key": {
+            "owner_ref": "SKILL-X"
+          },
+          "count": 1
+        },
+        {
+          "key": {
+            "owner_ref": "PDC-X:D6"
+          },
+          "count": 1
+        },
+        {
+          "key": {
+            "owner_ref": "DOMAIN:APPLICATION-HOSTING"
+          },
+          "count": 1
+        }
+      ],
+      "by_plan_nodes": [
+        {
+          "key": {
+            "plan_nodes": "<empty>"
+          },
+          "count": 464
+        },
+        {
+          "key": {
+            "plan_nodes": "PT-D07"
+          },
+          "count": 6
+        },
+        {
+          "key": {
+            "plan_nodes": "PT-B02|PT-B2W"
+          },
+          "count": 3
+        },
+        {
+          "key": {
+            "plan_nodes": "PT-D09"
+          },
+          "count": 3
+        },
+        {
+          "key": {
+            "plan_nodes": "PT-D10"
+          },
+          "count": 2
+        },
+        {
+          "key": {
+            "plan_nodes": "DS-5"
+          },
+          "count": 2
+        },
+        {
+          "key": {
+            "plan_nodes": "PT-B02|PT-B2W|PT-D09"
+          },
+          "count": 1
+        },
+        {
+          "key": {
+            "plan_nodes": "PT-Q06"
+          },
+          "count": 1
+        },
+        {
+          "key": {
+            "plan_nodes": "PT-FC4"
+          },
+          "count": 1
+        },
+        {
+          "key": {
+            "plan_nodes": "PT-D02"
+          },
+          "count": 1
+        },
+        {
+          "key": {
+            "plan_nodes": "PT-FC2"
+          },
+          "count": 1
+        },
+        {
+          "key": {
+            "plan_nodes": "PT-B02|PT-B2W|PT-Q05"
+          },
+          "count": 1
+        },
+        {
+          "key": {
+            "plan_nodes": "PT-D03"
+          },
+          "count": 1
+        },
+        {
+          "key": {
+            "plan_nodes": "PT-D01"
+          },
+          "count": 1
+        },
+        {
+          "key": {
+            "plan_nodes": "DS-1|DS-5"
+          },
+          "count": 1
+        }
+      ],
+      "by_impact_disposition_next_track": [
+        {
+          "key": {
+            "frz_arch_freeze_impact": "UNKNOWN",
+            "disposition": "TRIAGE_PENDING",
+            "next_track": "UNCLASSIFIED"
+          },
+          "count": 249
+        },
+        {
+          "key": {
+            "frz_arch_freeze_impact": "UNKNOWN",
+            "disposition": "CURRENCY_UNVERIFIED",
+            "next_track": "UNCLASSIFIED"
+          },
+          "count": 118
+        },
+        {
+          "key": {
+            "frz_arch_freeze_impact": "UNKNOWN",
+            "disposition": "ACCEPTED_AS_STATED_RECORD_REQUIRED",
+            "next_track": "ACCEPTED_LIMITATION"
+          },
+          "count": 42
+        },
+        {
+          "key": {
+            "frz_arch_freeze_impact": "UNKNOWN",
+            "disposition": "CURRENCY_UNVERIFIED",
+            "next_track": "DECISION"
+          },
+          "count": 35
+        },
+        {
+          "key": {
+            "frz_arch_freeze_impact": "UNKNOWN",
+            "disposition": "DOC_PATCH_PENDING",
+            "next_track": "DOC_PATCH"
+          },
+          "count": 17
+        },
+        {
+          "key": {
+            "frz_arch_freeze_impact": "UNKNOWN",
+            "disposition": "DECISION_PENDING",
+            "next_track": "DECISION"
+          },
+          "count": 10
+        },
+        {
+          "key": {
+            "frz_arch_freeze_impact": "UNKNOWN",
+            "disposition": "STALE_SNAPSHOT_REVERIFY",
+            "next_track": "DOC_PATCH"
+          },
+          "count": 6
+        },
+        {
+          "key": {
+            "frz_arch_freeze_impact": "UNKNOWN",
+            "disposition": "VERIFICATION_PENDING",
+            "next_track": "VERIFY_TEST"
+          },
+          "count": 3
+        },
+        {
+          "key": {
+            "frz_arch_freeze_impact": "UNKNOWN",
+            "disposition": "REQUALIFY_PENDING",
+            "next_track": "REQUALIFY"
+          },
+          "count": 2
+        },
+        {
+          "key": {
+            "frz_arch_freeze_impact": "UNKNOWN",
+            "disposition": "FIX_PENDING_AFTER_PDC",
+            "next_track": "CODE_FIX"
+          },
+          "count": 2
+        },
+        {
+          "key": {
+            "frz_arch_freeze_impact": "UNKNOWN",
+            "disposition": "TRIAGE_PENDING",
+            "next_track": "CODE_FIX"
+          },
+          "count": 2
+        },
+        {
+          "key": {
+            "frz_arch_freeze_impact": "UNKNOWN",
+            "disposition": "CURRENCY_UNVERIFIED",
+            "next_track": "VERIFY_TEST"
+          },
+          "count": 1
+        },
+        {
+          "key": {
+            "frz_arch_freeze_impact": "UNKNOWN",
+            "disposition": "DEFERRED_AS_STATED_IMPACT_CLASS_REQUIRED",
+            "next_track": "DECISION"
+          },
+          "count": 1
+        },
+        {
+          "key": {
+            "frz_arch_freeze_impact": "UNKNOWN",
+            "disposition": "DEFERRED_AS_STATED_IMPACT_CLASS_REQUIRED",
+            "next_track": "DOC_PATCH"
+          },
+          "count": 1
+        }
+      ]
+    },
+    {
+      "package": "EDER-OWNER-1",
+      "definition": "owner_ref missing or blank",
+      "count": 45,
+      "by_impact": [
+        {
+          "key": {
+            "frz_arch_freeze_impact": "CONDITIONS"
+          },
+          "count": 21
+        },
+        {
+          "key": {
+            "frz_arch_freeze_impact": "NONE"
+          },
+          "count": 10
+        },
+        {
+          "key": {
+            "frz_arch_freeze_impact": "BLOCKS"
+          },
+          "count": 7
+        },
+        {
+          "key": {
+            "frz_arch_freeze_impact": "UNKNOWN"
+          },
+          "count": 7
+        }
+      ],
+      "by_disposition": [
+        {
+          "key": {
+            "disposition": "DEFERRED_AS_STATED"
+          },
+          "count": 11
+        },
+        {
+          "key": {
+            "disposition": "DECISION_PENDING"
+          },
+          "count": 7
+        },
+        {
+          "key": {
+            "disposition": "DOC_PATCH_PENDING"
+          },
+          "count": 6
+        },
+        {
+          "key": {
+            "disposition": "CURRENCY_UNVERIFIED"
+          },
+          "count": 6
+        },
+        {
+          "key": {
+            "disposition": "STALE_SNAPSHOT_REVERIFY"
+          },
+          "count": 6
+        },
+        {
+          "key": {
+            "disposition": "ACCEPTED_AS_STATED_RECORD_REQUIRED"
+          },
+          "count": 4
+        },
+        {
+          "key": {
+            "disposition": "VERIFICATION_PENDING"
+          },
+          "count": 3
+        },
+        {
+          "key": {
+            "disposition": "DEFERRED_AS_STATED_IMPACT_CLASS_REQUIRED"
+          },
+          "count": 1
+        },
+        {
+          "key": {
+            "disposition": "TRIAGE_PENDING"
+          },
+          "count": 1
+        }
+      ],
+      "by_next_track": [
+        {
+          "key": {
+            "next_track": "DECISION"
+          },
+          "count": 18
+        },
+        {
+          "key": {
+            "next_track": "DOC_PATCH"
+          },
+          "count": 14
+        },
+        {
+          "key": {
+            "next_track": "UNCLASSIFIED"
+          },
+          "count": 5
+        },
+        {
+          "key": {
+            "next_track": "VERIFY_TEST"
+          },
+          "count": 4
+        },
+        {
+          "key": {
+            "next_track": "ACCEPTED_LIMITATION"
+          },
+          "count": 4
+        }
+      ],
+      "by_owner_ref": [
+        {
+          "key": {
+            "owner_ref": "<empty>"
+          },
+          "count": 45
+        }
+      ],
+      "by_plan_nodes": [
+        {
+          "key": {
+            "plan_nodes": "<empty>"
+          },
+          "count": 35
+        },
+        {
+          "key": {
+            "plan_nodes": "PT-D07"
+          },
+          "count": 3
+        },
+        {
+          "key": {
+            "plan_nodes": "DS-Q"
+          },
+          "count": 2
+        },
+        {
+          "key": {
+            "plan_nodes": "PT-B01|PT-FC1|PT-B1W|PT-BA"
+          },
+          "count": 1
+        },
+        {
+          "key": {
+            "plan_nodes": "PT-D05"
+          },
+          "count": 1
+        },
+        {
+          "key": {
+            "plan_nodes": "PT-B01|PT-B1W|PT-BA"
+          },
+          "count": 1
+        },
+        {
+          "key": {
+            "plan_nodes": "PT-R01|PT-D02|PT-G02|PT-WF|PT-D10|PT-Q12"
+          },
+          "count": 1
+        },
+        {
+          "key": {
+            "plan_nodes": "PT-VBN"
+          },
+          "count": 1
+        }
+      ],
+      "by_impact_disposition_next_track": [
+        {
+          "key": {
+            "frz_arch_freeze_impact": "CONDITIONS",
+            "disposition": "DEFERRED_AS_STATED",
+            "next_track": "DECISION"
+          },
+          "count": 11
+        },
+        {
+          "key": {
+            "frz_arch_freeze_impact": "NONE",
+            "disposition": "STALE_SNAPSHOT_REVERIFY",
+            "next_track": "DOC_PATCH"
+          },
+          "count": 5
+        },
+        {
+          "key": {
+            "frz_arch_freeze_impact": "CONDITIONS",
+            "disposition": "DECISION_PENDING",
+            "next_track": "DECISION"
+          },
+          "count": 5
+        },
+        {
+          "key": {
+            "frz_arch_freeze_impact": "UNKNOWN",
+            "disposition": "CURRENCY_UNVERIFIED",
+            "next_track": "UNCLASSIFIED"
+          },
+          "count": 4
+        },
+        {
+          "key": {
+            "frz_arch_freeze_impact": "CONDITIONS",
+            "disposition": "ACCEPTED_AS_STATED_RECORD_REQUIRED",
+            "next_track": "ACCEPTED_LIMITATION"
+          },
+          "count": 4
+        },
+        {
+          "key": {
+            "frz_arch_freeze_impact": "NONE",
+            "disposition": "DOC_PATCH_PENDING",
+            "next_track": "DOC_PATCH"
+          },
+          "count": 3
+        },
+        {
+          "key": {
+            "frz_arch_freeze_impact": "BLOCKS",
+            "disposition": "DOC_PATCH_PENDING",
+            "next_track": "DOC_PATCH"
+          },
+          "count": 3
+        },
+        {
+          "key": {
+            "frz_arch_freeze_impact": "BLOCKS",
+            "disposition": "VERIFICATION_PENDING",
+            "next_track": "VERIFY_TEST"
+          },
+          "count": 2
+        },
+        {
+          "key": {
+            "frz_arch_freeze_impact": "BLOCKS",
+            "disposition": "DECISION_PENDING",
+            "next_track": "DECISION"
+          },
+          "count": 2
+        },
+        {
+          "key": {
+            "frz_arch_freeze_impact": "UNKNOWN",
+            "disposition": "CURRENCY_UNVERIFIED",
+            "next_track": "VERIFY_TEST"
+          },
+          "count": 1
+        },
+        {
+          "key": {
+            "frz_arch_freeze_impact": "NONE",
+            "disposition": "CURRENCY_UNVERIFIED",
+            "next_track": "DOC_PATCH"
+          },
+          "count": 1
+        },
+        {
+          "key": {
+            "frz_arch_freeze_impact": "CONDITIONS",
+            "disposition": "STALE_SNAPSHOT_REVERIFY",
+            "next_track": "DOC_PATCH"
+          },
+          "count": 1
+        },
+        {
+          "key": {
+            "frz_arch_freeze_impact": "NONE",
+            "disposition": "VERIFICATION_PENDING",
+            "next_track": "VERIFY_TEST"
+          },
+          "count": 1
+        },
+        {
+          "key": {
+            "frz_arch_freeze_impact": "UNKNOWN",
+            "disposition": "DEFERRED_AS_STATED_IMPACT_CLASS_REQUIRED",
+            "next_track": "DOC_PATCH"
+          },
+          "count": 1
+        },
+        {
+          "key": {
+            "frz_arch_freeze_impact": "UNKNOWN",
+            "disposition": "TRIAGE_PENDING",
+            "next_track": "UNCLASSIFIED"
+          },
+          "count": 1
+        }
+      ]
+    }
+  ],
+  "owner1_existing_fallback_census": {
+    "counts": {
+      "plan_owner_text_only": 6,
+      "neither_accountable_nor_plan_owner_text": 39
+    },
+    "neither_but_linked_finding_ids": 31,
+    "operator_decision_not_taken": true
+  },
+  "code_fix_stays_on_existing_w3_tickets": {
+    "BLOCKS_FIX_PENDING_AFTER_PDC": 19,
+    "CONDITIONS_FIX_PENDING_AFTER_PDC": 6,
+    "new_tickets_created": 0
+  }
+}

@@ -12,9 +12,9 @@ from intergrax.applications.contracts.environment_profile import (
     ApplicationEnvironmentProfile,
 )
 from intergrax.applications.contracts.execution_mode import ExecutionMode
-from intergrax.core.plugins.admission import DomainPluginLoadReport
 from intergrax.core.catalog_bootstrap import CatalogBootstrapResult, bootstrap_catalogs
 from intergrax.core.plugin_env import discover_plugins_enabled
+from intergrax.core.plugins.admission import DomainPluginLoadReport
 from intergrax.integrations.registry.profile import IntegrationProfile
 from intergrax.tools.providers.websearch.executor_contract import WebSearchQueryExecutor
 from intergrax.tools.registry import ToolProfile, ToolRegistry
@@ -42,8 +42,7 @@ def tool_plugin_bootstrap_errors(report: DomainPluginLoadReport) -> tuple[str, .
     for item in report.rejected:
         if item.fail_closed:
             errors.append(
-                "tool plugin admission rejected: "
-                f"{item.spec.name}: {item.reason_code.value}",
+                f"tool plugin admission rejected: {item.spec.name}: {item.reason_code.value}",
             )
     if not errors:
         errors.append("tool plugin bootstrap admission is not acceptable")
@@ -88,9 +87,7 @@ def build_application_tool_wiring(
     ``ToolWiringContext`` from integrations + runtime managers, then enable tools via
     ``ToolProfile``.
     """
-    tool_bundle_ids = (
-        tuple(profile.enabled_bundles) if profile.enabled_bundles else None
-    )
+    tool_bundle_ids = tuple(profile.enabled_bundles) if profile.enabled_bundles else None
     if catalog_bootstrap is None:
         bootstrap_catalogs(
             register_shipped=True,

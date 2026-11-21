@@ -6,7 +6,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 
-from intergrax.tools.providers.workspace.service import (
+from intergrax.contracts.workspace_tool_ids import (
     WORKSPACE_SEARCH_TOOL_ID,
     WORKSPACE_WRITE_FILE_TOOL_ID,
 )
@@ -28,10 +28,7 @@ def artifact_ref_for_tool(tool_id: str) -> str:
 
 
 def candidates_from_tool_ids(tool_ids: tuple[str, ...]) -> tuple[ToolSelectionCandidate, ...]:
-    return tuple(
-        ToolSelectionCandidate(tool_id=tool_id, rank=index)
-        for index, tool_id in enumerate(tool_ids, start=1)
-    )
+    return tuple(ToolSelectionCandidate(tool_id=tool_id, rank=index) for index, tool_id in enumerate(tool_ids, start=1))
 
 
 __all__ = [

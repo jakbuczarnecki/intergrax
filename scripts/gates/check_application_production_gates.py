@@ -227,9 +227,15 @@ def check_capability_alias_registry() -> list[str]:
 
 
 def check_application_migrations() -> list[str]:
+    from intergrax.applications._shared.import_policy import guarded_import_policy
     from intergrax.applications._shared.migration_wiring import check_application_migrations as _check
 
-    return _check(APPLICATIONS_ROOT)
+    policy = guarded_import_policy()
+    return _check(
+        APPLICATIONS_ROOT,
+        allowed_prefixes=policy.application_packages,
+        fail_closed=policy.fail_closed,
+    )
 
 
 def check_tier3_scenario_matrix() -> list[str]:

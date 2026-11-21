@@ -207,6 +207,45 @@ def layer_register_status_for_layer(layer: str) -> FindingStatus:
     raise KeyError(layer)
 
 
+def _provider_default_model_record(
+    slug: str,
+    file_name: str,
+    class_name: str,
+    value: str,
+) -> HardcodingFindingRecord:
+    """VBN row for one provider adapter ``DEFAULT_MODEL`` constant (PDC-D3-R019, T-IGX-051-D)."""
+    return HardcodingFindingRecord(
+        finding_id=f"EBH6-VBN-PROVIDER-DEFAULT-{slug}",
+        layer="integrations",
+        detection_class=HardcodingDetectionClass.G,
+        classification=HardcodingFindingClassification.ALLOWED_ADAPTER,
+        location=f"intergrax/llm_adapters/providers/{file_name}::{class_name}.DEFAULT_MODEL = {value!r}",
+        production_effective=ProductionEffective.YES,
+        concern_ids=(),
+        violated_invariant="FRZ-CFG-06 / PDC-D3-R019 - provider default model inside the adapter boundary",
+        remediation_class=RemediationClass.RATIFY_FIXED,
+        status=FindingStatus.CANDIDATE_RESOLVED,
+        evidence_sha=evidence_git_head_sha(),
+        notes=(
+            "Provider-owned fallback used only when no model is configured; the constant lives in the provider "
+            "adapter (allowed boundary), not in core selection. Draft classification by T-IGX-051-D; the final "
+            "VBN dossier text belongs to T-AF2-VBN-DOSSIER - not RESOLVED."
+        ),
+    )
+
+
+_PROVIDER_DEFAULT_MODEL_ROWS: Final[tuple[tuple[str, str, str, str], ...]] = (
+    ("CLAUDE", "claude_adapter.py", "ClaudeChatAdapter", "claude-3-5-sonnet-latest"),
+    ("COHERE-NATIVE", "cohere_native_adapter.py", "CohereNativeChatAdapter", "command-r-plus-08-2024"),
+    ("GEMINI", "gemini_adapter.py", "GeminiChatAdapter", "gemini-2.5-flash"),
+    ("MISTRAL", "mistral_adapter.py", "MistralChatAdapter", "mistral-large-latest"),
+    ("OLLAMA-NATIVE", "native_ollama_adapter.py", "NativeOllamaAdapter", "llama3.1:latest"),
+    ("OLLAMA-LANGCHAIN", "ollama_adapter.py", "LangChainOllamaAdapter", "llama3.1:latest"),
+    ("OPENAI-RESPONSES", "openai_responses_adapter.py", "OpenAIChatResponsesAdapter", "gpt-5-mini"),
+    ("VERTEX-GEMINI", "vertex_gemini_adapter.py", "VertexGeminiChatAdapter", "gemini-2.5-flash"),
+)
+
+
 _TRACKED_DEBT: Final[tuple[HardcodingFindingRecord, ...]] = (
     HardcodingFindingRecord(
         finding_id="EBH6-DEBT-Q2-D2",
@@ -256,6 +295,7 @@ _TRACKED_DEBT: Final[tuple[HardcodingFindingRecord, ...]] = (
         evidence_sha=evidence_git_head_sha(),
         notes="EBH-5 inventory unclassified=0 replay @ HEAD; EBH-6 append-only delta",
     ),
+    *(_provider_default_model_record(*row) for row in _PROVIDER_DEFAULT_MODEL_ROWS),
 )
 
 

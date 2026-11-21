@@ -4,78 +4,31 @@
 
 from __future__ import annotations
 
-from enum import Enum
+from typing import TYPE_CHECKING
 
-from pydantic import BaseModel, ConfigDict, Field, model_validator
-
+from intergrax.contracts.application_graph_topology import (
+    ApplicationGraphTopology,
+    CodeCraftGraphBinding,
+    GraphEdge,
+    GraphEdgeKind,
+    GraphNode,
+)
 from intergrax.contracts.evaluator_loop import EvaluatorLoopGraphBinding
 
-
-class GraphEdgeKind(str, Enum):
-    DEPENDS_ON = "depends_on"
-    DELEGATES_TO = "delegates_to"
+if TYPE_CHECKING:
+    from intergrax.applications.contracts.manifest import AgentBinding
 
 
-class GraphEdge(BaseModel):
-    model_config = ConfigDict(extra="forbid")
-
-    source_agent_id: str
-    target_agent_id: str
-    kind: GraphEdgeKind = GraphEdgeKind.DEPENDS_ON
-
-
-class GraphNode(BaseModel):
-    model_config = ConfigDict(extra="forbid")
-
-    agent_id: str
-    contract_id: str | None = None
-
-
-class CodeCraftGraphBinding(BaseModel):
-    """Optional code craft node in application graph specs (ECC-5)."""
-
-    model_config = ConfigDict(extra="forbid")
-
-    agent_id: str
-    goal_template: str = "Synthesize helper for task"
-    max_iterations: int = Field(default=8, ge=1, le=64)
-    promote_on_success: bool = True
-
-
-class ApplicationGraphSpec(BaseModel):
+class ApplicationGraphSpec(ApplicationGraphTopology):
     """
     Validated application graph — nodes must exist on the manifest roster.
 
     Used by host orchestration backend spec resolution for Execution Engine materialization.
+    The topology fields and the unique-node validator live on the neutral Tier-0 base model.
     """
 
-    model_config = ConfigDict(extra="forbid")
-
-    nodes: list[GraphNode] = Field(default_factory=list)
-    edges: list[GraphEdge] = Field(default_factory=list)
-    retry_on_error: int | None = Field(default=None, ge=0, le=32)
-    trigger_capabilities: list[str] = Field(
-        default_factory=list,
-        description=(
-            "When non-empty, graph seeding applies only for these task capabilities. "
-            "When empty, seeding uses pipeline_capability_suffix convention (ORCH-CONFIG.2)."
-        ),
-    )
-    pipeline_capability_suffix: str = Field(
-        default=".pipeline",
-        min_length=1,
-        description="Capability suffix that triggers graph seed when trigger_capabilities is empty.",
-    )
-    evaluator_loop: EvaluatorLoopGraphBinding | None = None
-    codecraft_node: CodeCraftGraphBinding | None = None
-
-    def roster_agent_ids(self) -> frozenset[str]:
-        return frozenset(node.agent_id for node in self.nodes)
-
-    def validate_against_roster(self, bindings: list["AgentBinding"]) -> None:
+    def validate_against_roster(self, bindings: list[AgentBinding]) -> None:
         """Raise ``ValueError`` when graph references unknown agents."""
-        from intergrax.applications.contracts.manifest import AgentBinding  # noqa: F401 — roster typing
-
         enabled = [b for b in bindings if b.enabled]
         known: set[str] = set()
         for binding in enabled:
@@ -88,29 +41,22 @@ class ApplicationGraphSpec(BaseModel):
                 known.add(binding.import_path.rsplit(".", 1)[-1])
 
         for node in self.nodes:
-            if node.agent_id not in known and (
-                node.contract_id is None or node.contract_id not in known
-            ):
-                raise ValueError(
-                    f"ApplicationGraphSpec node {node.agent_id!r} not found on manifest roster"
-                )
+            if node.agent_id not in known and (node.contract_id is None or node.contract_id not in known):
+                raise ValueError(f"ApplicationGraphSpec node {node.agent_id!r} not found on manifest roster")
 
         roster_ids = self.roster_agent_ids()
         for edge in self.edges:
             if edge.source_agent_id not in roster_ids:
-                raise ValueError(
-                    f"Graph edge source {edge.source_agent_id!r} missing from nodes"
-                )
+                raise ValueError(f"Graph edge source {edge.source_agent_id!r} missing from nodes")
             if edge.target_agent_id not in roster_ids:
-                raise ValueError(
-                    f"Graph edge target {edge.target_agent_id!r} missing from nodes"
-                )
+                raise ValueError(f"Graph edge target {edge.target_agent_id!r} missing from nodes")
 
-    @model_validator(mode="after")
-    def _unique_nodes(self) -> ApplicationGraphSpec:
-        seen: set[str] = set()
-        for node in self.nodes:
-            if node.agent_id in seen:
-                raise ValueError(f"duplicate graph node agent_id: {node.agent_id!r}")
-            seen.add(node.agent_id)
-        return self
+
+__all__ = [
+    "ApplicationGraphSpec",
+    "CodeCraftGraphBinding",
+    "EvaluatorLoopGraphBinding",
+    "GraphEdge",
+    "GraphEdgeKind",
+    "GraphNode",
+]

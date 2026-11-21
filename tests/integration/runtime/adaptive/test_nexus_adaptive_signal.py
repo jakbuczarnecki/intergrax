@@ -5,13 +5,13 @@
 from __future__ import annotations
 
 import pytest
-
-from echo.echo_agent import EchoAgent
 from intergrax.runtime.adaptive.signal_collector import SignalCollector
 from intergrax.runtime.adaptive.signal_store import InMemorySignalStore
 from intergrax.runtime.nexus.nexus_loop import NexusLoop
 from intergrax.runtime.registry.agent_registry import AgentRegistry
 from intergrax.runtime.task.task import Task, TaskContext, TaskState
+
+from echo.echo_agent import EchoAgent
 
 pytestmark = [pytest.mark.asyncio, pytest.mark.integration, pytest.mark.gate]
 
@@ -21,7 +21,7 @@ async def test_nexus_loop_emits_adaptive_outcome_signal_on_completion() -> None:
     registry.register(EchoAgent())
     store = InMemorySignalStore()
     collector = SignalCollector(store, application_id="integration.lab")
-    loop = NexusLoop(registry, signal_collector=collector)
+    loop = NexusLoop(registry, signal_collector=collector, production_mode=False)
 
     task = Task(
         tenant_id="t-adapt",

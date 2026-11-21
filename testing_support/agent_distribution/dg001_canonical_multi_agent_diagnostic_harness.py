@@ -4,30 +4,25 @@
 
 from __future__ import annotations
 
+from collections.abc import Sequence
 from dataclasses import dataclass, replace
 
 from intergrax.agents.authoring.patterns.reflex import ReflexAgent
-from intergrax.agents.reference_harness import (
-    default_reference_harness,
-)
-from intergrax.runtime.nexus.agents.reference_harness_runtime import (
-    build_lab_agent_runtime_context,
-)
 from intergrax.agents.authoring.patterns.types import (
     AgentEvaluation,
     CognitiveEvaluation,
     Observation,
     ReasoningResult,
 )
-from intergrax.applications._shared.diagnostic_read_wiring import (
-    HostDiagnosticReadDependencies,
-    build_diagnostic_read_service,
-)
-from intergrax.runtime.diagnostics.central_terminal_execution_diagnostic_port import (
-    wrap_terminal_execution_diagnostic_trigger,
+from intergrax.agents.reference_harness import (
+    default_reference_harness,
 )
 from intergrax.applications._shared.application_composition_context import (
     composition_for_factory_context,
+)
+from intergrax.applications._shared.diagnostic_read_wiring import (
+    HostDiagnosticReadDependencies,
+    build_diagnostic_read_service,
 )
 from intergrax.applications._shared.diagnostic_runtime_wiring import (
     build_terminal_execution_diagnostic_trigger,
@@ -35,22 +30,10 @@ from intergrax.applications._shared.diagnostic_runtime_wiring import (
 )
 from intergrax.applications.contracts.build_context import ApplicationBuildContext
 from intergrax.applications.contracts.manifest import AgentBinding, ApplicationManifest
-from intergrax.tools.registry.wiring import ToolWiringContext
 from intergrax.contracts.agent_contract_meta import AgentContract, AgentRiskLevel
 from intergrax.contracts.agent_run_enums import CognitivePattern
 from intergrax.contracts.agent_step_context import AgentStepContext
 from intergrax.contracts.capability import CapabilityMatchResult
-from intergrax.runtime.nexus.engine.runtime_context import RuntimeContext
-from intergrax.runtime.nexus.responses.response_schema import RuntimeRequest
-from intergrax.llm_adapters._shared.adapter_response_builders import (
-    build_adapter_response,
-)
-from intergrax.llm_adapters.contracts.adapter_response import LLMAdapterResponse
-from intergrax.llm_adapters.contracts.llm_adapter import LLMAdapter
-from intergrax.llm_adapters.base.base_llm_adapter import BaseLLMAdapter
-from intergrax.llm.messages import ChatMessage
-from intergrax.runtime.task.task import TaskContext
-from typing import Optional, Sequence
 from intergrax.contracts.decision_coordination import (
     DecisionCoordinationContribution,
     DecisionCoordinationShape,
@@ -59,34 +42,45 @@ from intergrax.contracts.execution_identity import (
     require_active_execution_identity,
     validate_task_id,
 )
-from intergrax.runtime.task.active_task_registry import ActiveTaskRegistry
 from intergrax.integrations._shared.in_memory_document_store import (
     InMemoryDocumentStore,
+)
+from intergrax.llm.messages import ChatMessage
+from intergrax.llm_adapters._shared.adapter_response_builders import (
+    build_adapter_response,
+)
+from intergrax.llm_adapters.base.base_llm_adapter import BaseLLMAdapter
+from intergrax.llm_adapters.contracts.adapter_response import LLMAdapterResponse
+from intergrax.runtime.diagnostics.central_terminal_execution_diagnostic_port import (
+    wrap_terminal_execution_diagnostic_trigger,
 )
 from intergrax.runtime.diagnostics.diagnostic_read_service import DiagnosticReadService
 from intergrax.runtime.events.stores.memory_runtime_event_store import (
     InMemoryRuntimeEventStore,
 )
-from intergrax.runtime.execution.lineage.persistence import (
-    InMemoryExecutionLineagePersistence,
-)
-from intergrax.runtime.nexus.nexus_loop import NexusLoop
-from intergrax.runtime.nexus.observability_wiring import wire_nexus_observability
-from intergrax.runtime.registry.agent_registry import AgentRegistry
 from intergrax.runtime.execution.harness_task_execution_port import (
     build_harness_root_task_execution_port,
 )
+from intergrax.runtime.execution.lineage.persistence import (
+    InMemoryExecutionLineagePersistence,
+)
+from intergrax.runtime.nexus.agents.reference_harness_runtime import (
+    build_lab_agent_runtime_context,
+)
+from intergrax.runtime.nexus.engine.runtime_context import RuntimeContext
+from intergrax.runtime.nexus.nexus_loop import NexusLoop
+from intergrax.runtime.nexus.observability_wiring import wire_nexus_observability
+from intergrax.runtime.nexus.responses.response_schema import RuntimeRequest
+from intergrax.runtime.registry.agent_registry import AgentRegistry
+from intergrax.runtime.task.active_task_registry import ActiveTaskRegistry
+from intergrax.runtime.task.task import TaskContext
 from intergrax.runtime.task.unified_task_runner import UnifiedTaskRunner
+from intergrax.tools.registry.wiring import ToolWiringContext
 from testing_support.admitted_root_governance_identity import (
     lab_admitted_root_governance_identity_for_task,
 )
 from testing_support.agent_distribution.coordination_governance import (
     bound_governed_host_task,
-)
-from testing_support.agent_distribution.delegated_subtask_qualification_harness import (
-    OCR_QUALIFICATION_PACKAGE_ID,
-    OcrQualificationRequest,
-    build_ocr_qualification_discovery_candidate,
 )
 from testing_support.agent_distribution.decision_coordination_qualification import (
     DecisionCoordinationExecutorFixture,
@@ -95,6 +89,11 @@ from testing_support.agent_distribution.decision_coordination_qualification impo
     coordination_binding,
     decision_contribution,
     project_accepted_decision,
+)
+from testing_support.agent_distribution.delegated_subtask_qualification_harness import (
+    OCR_QUALIFICATION_PACKAGE_ID,
+    OcrQualificationRequest,
+    build_ocr_qualification_discovery_candidate,
 )
 from testing_support.agent_platform_admin_harness import admin_test_principal
 
@@ -147,9 +146,9 @@ class _Dg001StubLlmAdapter(BaseLLMAdapter):
         self,
         messages: Sequence[ChatMessage],
         *,
-        temperature: Optional[float] = None,
-        max_tokens: Optional[int] = None,
-        run_id: Optional[str] = None,
+        temperature: float | None = None,
+        max_tokens: int | None = None,
+        run_id: str | None = None,
     ) -> LLMAdapterResponse:
         _ = temperature, max_tokens, run_id, messages
         return build_adapter_response(content="dg001-stub")
@@ -210,9 +209,7 @@ class Dg001CoordinationRootAgent(ReflexAgent):
                 score=1.0,
                 rationale="dg001 qualification root",
             )
-        return CapabilityMatchResult(
-            matched=False, rationale="capability not supported"
-        )
+        return CapabilityMatchResult(matched=False, rationale="capability not supported")
 
     def build_context(self, request: RuntimeRequest) -> RuntimeContext:
         return build_lab_agent_runtime_context(
@@ -259,9 +256,7 @@ class Dg001CoordinationRootAgent(ReflexAgent):
         output: dict[str, object],
     ) -> AgentEvaluation:
         _ = step_ctx, output
-        return AgentEvaluation(
-            verdict=CognitiveEvaluation.COMPLETE, reason="dg001_root"
-        )
+        return AgentEvaluation(verdict=CognitiveEvaluation.COMPLETE, reason="dg001_root")
 
 
 def build_dg001_canonical_multi_agent_diagnostic_harness(
@@ -270,14 +265,10 @@ def build_dg001_canonical_multi_agent_diagnostic_harness(
     specialist_delegate: object | None = None,
     fan_out: bool = False,
     shape: DecisionCoordinationShape = DecisionCoordinationShape.SINGLE,
-    contributions: (
-        tuple[DecisionCoordinationContribution[OcrQualificationRequest], ...] | None
-    ) = None,
+    contributions: (tuple[DecisionCoordinationContribution[OcrQualificationRequest], ...] | None) = None,
     contribution_lease_pairs: tuple[tuple[str, str], ...] | None = None,
 ) -> Dg001CanonicalMultiAgentDiagnosticHarness:
-    resolved_contributions = contributions or (
-        decision_contribution("contrib-a", document_ref="doc-single"),
-    )
+    resolved_contributions = contributions or (decision_contribution("contrib-a", document_ref="doc-single"),)
     resolved_pairs = contribution_lease_pairs or (("contrib-a", "lease-a"),)
     fixture = build_decision_coordination_executor_fixture(
         candidates=(
@@ -318,6 +309,7 @@ def build_dg001_canonical_multi_agent_diagnostic_harness(
         trace_store=stores.trace_store,
         runtime_event_store=runtime_store,
         execution_lineage_persistence=lineage,
+        production_mode=False,
     )
     loop.attach_terminal_diagnostic_trigger(
         wrap_terminal_execution_diagnostic_trigger(trigger, event_bus=loop.event_bus),

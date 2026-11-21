@@ -318,6 +318,8 @@ Direct inference or agentic Executions may use HITL without Nexus. Agents use `A
 
 `HumanResponseVerdict`: `approve`, `reject`, `escalate`. Store: `SQLiteHumanDecisionStore` (durable records; **not** a full production operator workflow or distributed queue).
 
+Composition posture (FC-1): a `production_mode=True` `NexusLoop` is refused (`HumanDecisionPersistenceNotConfiguredError`) unless it receives a durable `human_decision_store` (an in-memory store is refused) or the explicit `disable_human_decision_persistence=True` acknowledgement; the acknowledgement is refused by the harness while the HITL tool bundle is enabled. `persist_human_decision` itself stays tolerant; the guard is at composition. LAB behavior is unchanged.
+
 Checkpoints (`checkpoint_on_pause`) support resume - distinct from a durable async scheduler. Human decision is **not** a retry, new Attempt, new Run, or automatic authority expansion.
 
 ---

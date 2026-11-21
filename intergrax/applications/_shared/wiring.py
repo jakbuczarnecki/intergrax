@@ -10,35 +10,42 @@ Manifest roster + :class:`ApplicationBuildContext` + typed factories/builders.
 from __future__ import annotations
 
 import importlib
-from collections.abc import Mapping
-from typing import Any, Callable, TypeVar, Union, TYPE_CHECKING
+from collections.abc import Callable, Mapping
+from typing import TYPE_CHECKING, Any, TypeVar
 
-from intergrax.agents.agent_contract import Agent
 from intergrax.agent_distribution._immutable_json import DistributionJsonValue
 from intergrax.agent_distribution.binding import AgentBindingFactoryReference
 from intergrax.agent_distribution.roster import EffectiveRoster, EffectiveRosterEntry
 from intergrax.agent_distribution.runtime_revision import RuntimeRevision
+from intergrax.agents.agent_contract import Agent
+from intergrax.applications._shared.application_composition_context import (
+    ApplicationCompositionContext,
+)
 from intergrax.applications._shared.runtime_agent_factory_resolver import (
     RuntimeAgentFactoryResolutionError,
     RuntimeAgentFactoryResolver,
-)
-from intergrax.applications._shared.application_composition_context import (
-    ApplicationCompositionContext,
 )
 
 if TYPE_CHECKING:
     from intergrax.applications._shared.roster_agent_contract_authority import (
         RosterAgentContractAuthority,
     )
+from intergrax.applications._shared.import_allowlist import ImportPrefixAllowlist, require_import_allowed
+from intergrax.applications._shared.import_policy import (
+    UNRESTRICTED,
+    ImportPolicy,
+    import_policy_for_environment,
+    import_policy_for_manifest,
+)
 from intergrax.applications.contracts.build_context import ApplicationBuildContext
-from intergrax.applications.contracts.factory import CanonicalAgentFactory
-from intergrax.contracts.tier2_agent import Tier2Agent
 from intergrax.applications.contracts.errors import (
     AgentImportError,
     ApplicationManifestConformanceError,
 )
+from intergrax.applications.contracts.factory import CanonicalAgentFactory
 from intergrax.applications.contracts.manifest import AgentBinding, ApplicationManifest
 from intergrax.contracts.agent_contract_meta import AgentContract
+from intergrax.contracts.tier2_agent import Tier2Agent
 from intergrax.runtime.registry.agent_registry import AgentRegistry
 from intergrax.skills.registry.bootstrap import register_default_skills
 from intergrax.skills.registry.factory import build_registry_from_profile
@@ -48,24 +55,34 @@ LegacyAgentFactoryCallable = Callable[..., Tier2Agent]
 
 TBuildSettings = TypeVar("TBuildSettings")
 
-BuilderMap = Union[
-    Mapping[type[Agent], CanonicalAgentFactory],
-    Mapping[str, CanonicalAgentFactory],
-]
+BuilderMap = Mapping[type[Agent], CanonicalAgentFactory] | Mapping[str, CanonicalAgentFactory]
 
 
-def load_callable(import_path: str) -> Callable[..., Any]:
-    """Resolve ``package.module.function`` to a callable (serialized manifests)."""
+def load_callable(
+    import_path: str,
+    *,
+    allowed_prefixes: ImportPrefixAllowlist | None = None,
+    fail_closed: bool = False,
+) -> Callable[..., Any]:
+    """Resolve ``package.module.function`` to a callable (serialized manifests).
+
+    ``allowed_prefixes`` restricts the importable packages (checked before the import runs);
+    ``fail_closed`` refuses a call that supplies no allowlist.
+    """
     module_path, _, attr_name = import_path.rpartition(".")
     if not module_path or not attr_name:
         raise AgentImportError(f"Invalid callable path: {import_path!r}")
+    require_import_allowed(
+        module_path,
+        allowed_prefixes,
+        fail_closed=fail_closed,
+        purpose="load_callable",
+    )
 
     try:
         module = importlib.import_module(module_path)
     except ModuleNotFoundError as exc:
-        raise AgentImportError(
-            f"Cannot import module {module_path!r} for {import_path!r}"
-        ) from exc
+        raise AgentImportError(f"Cannot import module {module_path!r} for {import_path!r}") from exc
 
     namespace = vars(module)
     if attr_name not in namespace:
@@ -77,11 +94,23 @@ def load_callable(import_path: str) -> Callable[..., Any]:
     return target
 
 
+def _import_policy_for_context(ctx: ApplicationBuildContext) -> ImportPolicy:
+    """Import policy of a build context: its environment when set, else the manifest's resolved one."""
+    if ctx.environment is not None:
+        return import_policy_for_environment(ctx.environment)
+    return import_policy_for_manifest(ctx.manifest)
+
+
 def resolve_builder(
     binding: AgentBinding,
     builders: BuilderMap | None,
+    *,
+    import_policy: ImportPolicy = UNRESTRICTED,
 ) -> CanonicalAgentFactory | None:
-    """Resolve factory: typed callable on binding, then type-keyed, then string key."""
+    """Resolve factory: typed callable on binding, then type-keyed, then string key.
+
+    ``import_policy`` restricts the class import of a serialized binding (A4-007 seam b1).
+    """
     if binding.factory is not None:
         return binding.factory
 
@@ -95,7 +124,11 @@ def resolve_builder(
 
     from intergrax.applications._shared.agent_resolution import resolve_agent_type_from_binding
 
-    agent_type = resolve_agent_type_from_binding(binding)
+    agent_type = resolve_agent_type_from_binding(
+        binding,
+        allowed_prefixes=import_policy.agent_modules,
+        fail_closed=import_policy.fail_closed,
+    )
     typed = builders.get(agent_type)
     if typed is not None:
         return typed
@@ -107,15 +140,19 @@ def _validate_factory_result(
     result: object,
     factory: object,
     binding: AgentBinding,
+    *,
+    import_policy: ImportPolicy = UNRESTRICTED,
 ) -> Tier2Agent:
     if not isinstance(result, Tier2Agent):
-        raise AgentImportError(
-            f"Factory {factory!r} must return Tier2Agent, got {type(result)!r}"
-        )
+        raise AgentImportError(f"Factory {factory!r} must return Tier2Agent, got {type(result)!r}")
     if binding.agent_type is not None or binding.import_path is not None:
         from intergrax.applications._shared.agent_resolution import resolve_agent_type_from_binding
 
-        expected = resolve_agent_type_from_binding(binding)
+        expected = resolve_agent_type_from_binding(
+            binding,
+            allowed_prefixes=import_policy.agent_modules,
+            fail_closed=import_policy.fail_closed,
+        )
         if not isinstance(result, expected):
             raise AgentImportError(
                 f"Factory for {binding.display_name()} returned {type(result)!r}, "
@@ -138,7 +175,7 @@ def invoke_canonical_agent_factory(
     """
     _ = composition
     result = factory(ctx, binding)
-    return _validate_factory_result(result, factory, binding)
+    return _validate_factory_result(result, factory, binding, import_policy=_import_policy_for_context(ctx))
 
 
 def invoke_legacy_compatible_agent_factory(
@@ -170,7 +207,7 @@ def invoke_legacy_compatible_agent_factory(
         except TypeError as exc:
             last_error = exc
             continue
-        return _validate_factory_result(result, factory, binding)
+        return _validate_factory_result(result, factory, binding, import_policy=_import_policy_for_context(ctx))
 
     message = f"Cannot invoke factory for {binding.display_name()!r}"
     if last_error is not None:
@@ -186,9 +223,7 @@ def invoke_agent_factory(
     composition: ApplicationCompositionContext | None = None,
 ) -> Tier2Agent:
     """Backward-compatible alias for :func:`invoke_legacy_compatible_agent_factory`."""
-    return invoke_legacy_compatible_agent_factory(
-        factory, ctx, binding, composition=composition
-    )
+    return invoke_legacy_compatible_agent_factory(factory, ctx, binding, composition=composition)
 
 
 def build_agent_from_binding(
@@ -198,22 +233,30 @@ def build_agent_from_binding(
     builders: BuilderMap | None = None,
     composition: ApplicationCompositionContext | None = None,
 ) -> Tier2Agent:
-    """Materialize one agent: typed factory → builders map → serialized path → ctor."""
-    factory = resolve_builder(binding, builders)
+    """Materialize one agent: typed factory → builders map → serialized path → ctor.
+
+    Serialized ``import_path`` / ``factory_path`` imports follow the context's import policy.
+    """
+    policy = _import_policy_for_context(ctx)
+    factory = resolve_builder(binding, builders, import_policy=policy)
     if factory is not None:
-        return invoke_canonical_agent_factory(
-            factory, ctx, binding, composition=composition
-        )
+        return invoke_canonical_agent_factory(factory, ctx, binding, composition=composition)
 
     if binding.factory_path is not None and binding.factory is None:
-        loaded = load_callable(binding.factory_path)
-        return invoke_legacy_compatible_agent_factory(
-            loaded, ctx, binding, composition=composition
+        loaded = load_callable(
+            binding.factory_path,
+            allowed_prefixes=policy.factory_modules,
+            fail_closed=policy.fail_closed,
         )
+        return invoke_legacy_compatible_agent_factory(loaded, ctx, binding, composition=composition)
 
     from intergrax.applications._shared.agent_resolution import resolve_agent_type_from_binding
 
-    agent_cls = resolve_agent_type_from_binding(binding)
+    agent_cls = resolve_agent_type_from_binding(
+        binding,
+        allowed_prefixes=policy.agent_modules,
+        fail_closed=policy.fail_closed,
+    )
     try:
         agent = agent_cls()
     except TypeError as exc:
@@ -222,9 +265,7 @@ def build_agent_from_binding(
             f"or a builders entry (zero-arg construction failed)"
         ) from exc
     if not isinstance(agent, agent_cls):
-        raise AgentImportError(
-            f"{binding.display_name()}: constructor did not return {agent_cls.__name__}"
-        )
+        raise AgentImportError(f"{binding.display_name()}: constructor did not return {agent_cls.__name__}")
     return agent
 
 
@@ -247,10 +288,7 @@ def validate_manifest_wiring(manifest: ApplicationManifest) -> list[str]:
         prior = seen_contract_ids.get(contract_id)
         label = binding.display_name()
         if prior is not None:
-            errors.append(
-                f"{manifest.app_id}: duplicate contract_id {contract_id!r} "
-                f"({prior} and {label})"
-            )
+            errors.append(f"{manifest.app_id}: duplicate contract_id {contract_id!r} ({prior} and {label})")
         else:
             seen_contract_ids[contract_id] = label
 
@@ -385,8 +423,7 @@ def factory_reference_for_roster_entry(
     binding = _resolve_manifest_binding_for_entry(entry, manifest_bindings)
     if binding is None:
         raise RuntimeAgentFactoryResolutionError(
-            f"operator-added agent {entry.logical_agent_id!r} requires "
-            "immutable factory_reference authority"
+            f"operator-added agent {entry.logical_agent_id!r} requires immutable factory_reference authority"
         )
     builder_key = binding.builder_key
     if builder_key is not None:
@@ -411,13 +448,9 @@ def _register_binding(
     roster_contract_authority: RosterAgentContractAuthority | None = None,
 ) -> None:
     if resolved_factory is not None:
-        agent = invoke_canonical_agent_factory(
-            resolved_factory, ctx, binding, composition=composition
-        )
+        agent = invoke_canonical_agent_factory(resolved_factory, ctx, binding, composition=composition)
     else:
-        agent = build_agent_from_binding(
-            binding, ctx, builders=builders, composition=composition
-        )
+        agent = build_agent_from_binding(binding, ctx, builders=builders, composition=composition)
     active = composition
     tool_registry = active.tool_registry if active is not None else None
     tool_profile = active.tool_profile if active is not None else None
@@ -427,11 +460,7 @@ def _register_binding(
         contract = roster_contract_authority.contract_for_binding(binding)
     else:
         contract = contract_for_binding(agent, binding)
-    if (
-        composition is not None
-        and contract.skills
-        and skill_profile is None
-    ):
+    if composition is not None and contract.skills and skill_profile is None:
         raise ApplicationManifestConformanceError(
             "skill_profile required when registering skill-bearing agents with "
             "ApplicationCompositionContext; use manifest-only registry assembly "
@@ -523,20 +552,12 @@ def build_application_registry(
             f"does not match manifest {manifest.app_id!r}"
         )
 
-    enabled_entries = [
-        entry for entry in effective_roster.entries if entry.effective_enablement
-    ]
+    enabled_entries = [entry for entry in effective_roster.entries if entry.effective_enablement]
     if require_enabled and not enabled_entries:
-        raise ApplicationManifestConformanceError(
-            f"{manifest.app_id}: effective roster has no enabled agents"
-        )
-    default_entries = [
-        entry for entry in enabled_entries if entry.effective_default_agent
-    ]
+        raise ApplicationManifestConformanceError(f"{manifest.app_id}: effective roster has no enabled agents")
+    default_entries = [entry for entry in enabled_entries if entry.effective_default_agent]
     if len(default_entries) > 1:
-        raise ApplicationManifestConformanceError(
-            f"{manifest.app_id}: multiple default agents in effective roster"
-        )
+        raise ApplicationManifestConformanceError(f"{manifest.app_id}: multiple default agents in effective roster")
 
     revision_bound_resolver: RuntimeAgentFactoryResolver | None = None
     if runtime_revision is not None:
@@ -585,7 +606,7 @@ def build_application_registry(
     return registry
 
 
-def build_registry_from_manifest(
+def build_registry_from_manifest(  # noqa: UP047 - source pinned by test_production_factory_invocation_ac5
     manifest: ApplicationManifest,
     *,
     settings: TBuildSettings | None = None,

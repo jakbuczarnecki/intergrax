@@ -43,6 +43,10 @@ class SecurityDefenseAdmissionPolicy:
     ``provenance`` (PDC-D6-R016) enforces publisher attestation per entry point before the
     target is imported, reusing the agent package trust mechanism. ``None`` keeps the
     structural-only admission (lab); strict hosts pass a ``PluginProvenanceAdmission``.
+
+    ``require_provenance`` (FRZ-SEC-06) is set by a strict or product root: discovery without a
+    ``provenance`` admission is then refused with ``PLUGIN_TRUST_POLICY_MISSING`` before any entry
+    point is loaded, the same rule ``register_plugins_with_report`` applies to plugin groups.
     """
 
     ep_name_conflict: ConflictPolicy = "error"
@@ -50,6 +54,7 @@ class SecurityDefenseAdmissionPolicy:
     shipped_id_override: ShippedIdOverride = "error"
     on_load_failure: LoadIsolation = "isolate"
     provenance: PluginProvenanceAdmission | None = None
+    require_provenance: bool = False
 
 
 # OAD-002: production default is fail-closed ``error``. Explicit opt-in restores
@@ -71,6 +76,17 @@ def load_security_defense_plugin_report(
     policy = admission if admission is not None else SecurityDefenseAdmissionPolicy()
     if not discover_entry_points:
         return DomainPluginLoadReport.empty(EP_SECURITY_DEFENSES)
+    if policy.require_provenance and policy.provenance is None:
+        from intergrax.core.security.security_configuration import (
+            PLUGIN_TRUST_POLICY_MISSING,
+            SecurityConfigurationError,
+        )
+
+        raise SecurityConfigurationError(
+            item="plugin_provenance",
+            reason_code=PLUGIN_TRUST_POLICY_MISSING,
+            message=f"entry-point discovery for {EP_SECURITY_DEFENSES!r} requires a PluginProvenanceAdmission",
+        )
 
     accepted_by_id: dict[str, EntryPointSpec] = {}
     rejected: list[PluginAdmissionRejection] = []

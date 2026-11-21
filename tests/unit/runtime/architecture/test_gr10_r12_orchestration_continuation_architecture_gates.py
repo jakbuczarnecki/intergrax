@@ -6,10 +6,9 @@ from __future__ import annotations
 
 import ast
 from pathlib import Path
+from unittest.mock import MagicMock
 
 import pytest
-
-from testing_support.nexus_loop_from_environment import build_nexus_loop_from_environment
 from intergrax.applications.contracts.environment_profile import ApplicationEnvironmentProfile
 from intergrax.applications.contracts.execution_mode import ExecutionMode
 from intergrax.contracts.execution_continuation import (
@@ -39,6 +38,9 @@ from intergrax.contracts.execution_identity import (
 from intergrax.contracts.governed_continuation import GovernedContinuationRequest
 from intergrax.contracts.governed_continuation_correlation import ContinuationReason
 from intergrax.contracts.human_approver import local_development_approver_evidence
+from intergrax.runtime.execution.attempt_lifecycle import (
+    wire_attempt_lifecycle_store,
+)
 from intergrax.runtime.execution.continuation.composition import (
     wire_execution_engine_continuation_dependencies,
 )
@@ -50,13 +52,14 @@ from intergrax.runtime.execution.continuation.persistence import (
     InMemoryExecutionContinuationStateStore,
     ReconstructedDurableExecutionContinuationStateStore,
     backing_execution_continuation_state_store,
-    export_durable_continuation_state,
     execution_continuation_state_store_from_durable_export,
+    export_durable_continuation_state,
     restore_durable_continuation_backing,
 )
 from intergrax.runtime.human.governed_continuation_bridge import (
     apply_governed_continuation_pause,
 )
+from intergrax.runtime.nexus.context.context_manager import ContextManager
 from intergrax.runtime.nexus.nexus_loop import NexusLoop
 from intergrax.runtime.nexus.orchestration.internal_continuation_orchestration import (
     InternalHitlContinuationCapabilityError,
@@ -71,10 +74,14 @@ from testing_support.builder import canonical_run_id_for_tests, canonical_task_i
 from testing_support.nexus_host_task_execution import (
     build_certified_internal_test_host_task_execution,
 )
-from intergrax.runtime.execution.attempt_lifecycle import (
-    wire_attempt_lifecycle_store,
-)
+from testing_support.nexus_loop_from_environment import build_nexus_loop_from_environment
 from tests.unit.runtime.background_execution.reentry_admission_doubles import InMemoryKVStore
+
+
+def _strict_context_manager() -> ContextManager:
+    """Context manager with engine and adapter doubles: a production_mode loop requires both (FC-1 Part C2)."""
+    return ContextManager(context_engine=MagicMock(), llm_adapter=MagicMock())
+
 
 pytestmark = [pytest.mark.unit, pytest.mark.gate]
 
@@ -158,6 +165,10 @@ def test_gr10_r12_production_nexus_rejects_silent_lab_store() -> None:
             production_mode=True,
             max_run_retries=0,
             retry_policy=RetryPolicy(max_retries=0),
+            disable_human_decision_persistence=True,
+            disable_task_memory_persistence=True,
+            disable_runtime_event_persistence=True,
+            context_manager=_strict_context_manager(),
         )
     assert exc.value.code is ExecutionContinuationErrorCode.NON_DURABLE_CONTINUATION_STORE
 
@@ -171,6 +182,10 @@ def test_gr10_r12_production_nexus_rejects_explicit_non_durable_store() -> None:
             max_run_retries=0,
             retry_policy=RetryPolicy(max_retries=0),
             execution_continuation_state_store=store,
+            disable_human_decision_persistence=True,
+            disable_task_memory_persistence=True,
+            disable_runtime_event_persistence=True,
+            context_manager=_strict_context_manager(),
         )
     assert exc.value.code is ExecutionContinuationErrorCode.NON_DURABLE_CONTINUATION_STORE
     assert "not durable" in str(exc.value).lower() or "is_durable" in str(exc.value)
@@ -187,6 +202,10 @@ def test_gr10_r12_production_nexus_accepts_durable_store() -> None:
         max_run_retries=0,
         retry_policy=RetryPolicy(max_retries=0),
         execution_continuation_state_store=store,
+        disable_human_decision_persistence=True,
+        disable_task_memory_persistence=True,
+        disable_runtime_event_persistence=True,
+        context_manager=_strict_context_manager(),
     )
     assert loop.execution_continuation_state_store is store
 
@@ -393,6 +412,7 @@ def test_gr10_r12_establish_pause_uses_port_not_task_authority() -> None:
     task.runtime.governance.paused = False
     assert canonical_execution_is_resumed(cap, identity=identity) is False
 
+
 def _empty_durable_store() -> ReconstructedDurableExecutionContinuationStateStore:
     return execution_continuation_state_store_from_durable_export(
         export_durable_continuation_state(ExecutionContinuationDurableBacking()),
@@ -421,6 +441,10 @@ def test_gr10_r12_r1_production_rejects_backing_non_durable() -> None:
             max_run_retries=0,
             retry_policy=RetryPolicy(max_retries=0),
             execution_continuation_state_store=store,
+            disable_human_decision_persistence=True,
+            disable_task_memory_persistence=True,
+            disable_runtime_event_persistence=True,
+            context_manager=_strict_context_manager(),
         )
     assert exc.value.code is ExecutionContinuationErrorCode.NON_DURABLE_CONTINUATION_STORE
 
@@ -438,6 +462,10 @@ def test_gr10_r12_r1_custom_durable_provider_accepted() -> None:
         max_run_retries=0,
         retry_policy=RetryPolicy(max_retries=0),
         execution_continuation_state_store=store,
+        disable_human_decision_persistence=True,
+        disable_task_memory_persistence=True,
+        disable_runtime_event_persistence=True,
+        context_manager=_strict_context_manager(),
     )
     assert loop.execution_continuation_state_store is store
 
@@ -451,6 +479,10 @@ def test_gr10_r12_r1_custom_non_durable_provider_rejected() -> None:
             max_run_retries=0,
             retry_policy=RetryPolicy(max_retries=0),
             execution_continuation_state_store=store,
+            disable_human_decision_persistence=True,
+            disable_task_memory_persistence=True,
+            disable_runtime_event_persistence=True,
+            context_manager=_strict_context_manager(),
         )
     assert exc.value.code is ExecutionContinuationErrorCode.NON_DURABLE_CONTINUATION_STORE
 
@@ -462,6 +494,10 @@ def test_gr10_r12_r1_strict_factory_fails_without_durable_store() -> None:
             AgentRegistry(),
             env=_strict_env(),
             attempt_lifecycle_store=attempt_store,
+            disable_human_decision_persistence=True,
+            disable_task_memory_persistence=True,
+            disable_runtime_event_persistence=True,
+            context_manager=_strict_context_manager(),
         )
     assert exc.value.code is ExecutionContinuationErrorCode.NON_DURABLE_CONTINUATION_STORE
 
@@ -474,6 +510,10 @@ def test_gr10_r12_r1_strict_factory_accepts_durable_store() -> None:
         env=_strict_env(),
         execution_continuation_state_store=store,
         attempt_lifecycle_store=attempt_store,
+        disable_human_decision_persistence=True,
+        disable_task_memory_persistence=True,
+        disable_runtime_event_persistence=True,
+        context_manager=_strict_context_manager(),
     )
     assert loop.execution_continuation_state_store is store
 
@@ -494,6 +534,10 @@ def test_gr10_r12_r1_host_shares_nexus_store_identity() -> None:
         max_run_retries=0,
         retry_policy=RetryPolicy(max_retries=0),
         execution_continuation_state_store=store,
+        disable_human_decision_persistence=True,
+        disable_task_memory_persistence=True,
+        disable_runtime_event_persistence=True,
+        context_manager=_strict_context_manager(),
     )
     host = build_certified_internal_test_host_task_execution(loop)
     assert loop.execution_continuation_state_store is store
@@ -510,6 +554,10 @@ def test_gr10_r12_r1_explicit_port_uses_service_store_durability() -> None:
         retry_policy=RetryPolicy(max_retries=0),
         execution_continuation=deps.continuation,
         continuation_lifecycle_driver=deps.lifecycle_driver,
+        disable_human_decision_persistence=True,
+        disable_task_memory_persistence=True,
+        disable_runtime_event_persistence=True,
+        context_manager=_strict_context_manager(),
     )
     assert loop.execution_continuation_state_store is store
 
@@ -540,6 +588,10 @@ def test_gr10_r12_r1_custom_port_without_store_fail_closed() -> None:
             retry_policy=RetryPolicy(max_retries=0),
             execution_continuation=_OpaquePort(),  # type: ignore[arg-type]
             continuation_lifecycle_driver=deps.lifecycle_driver,
+            disable_human_decision_persistence=True,
+            disable_task_memory_persistence=True,
+            disable_runtime_event_persistence=True,
+            context_manager=_strict_context_manager(),
         )
     assert exc.value.code is ExecutionContinuationErrorCode.NON_DURABLE_CONTINUATION_STORE
 
@@ -578,9 +630,7 @@ def test_gr10_r12_r1_static_factory_no_implicit_wire() -> None:
         encoding="utf-8",
     )
     assert "wire_execution_continuation_state_store" not in factory
-    policy = (
-        _REPO / "intergrax/runtime/execution/continuation/durability_policy.py"
-    ).read_text(encoding="utf-8")
+    policy = (_REPO / "intergrax/runtime/execution/continuation/durability_policy.py").read_text(encoding="utf-8")
     assert "is_durable" in policy
     assert "isinstance" not in policy
     assert "InMemoryExecutionContinuationStateStore" not in policy
@@ -609,4 +659,3 @@ def test_gr10_r12_r1_plugin_durable_pause_resume() -> None:
         ),
     )
     assert resumed.lifecycle_state is ExecutionContinuationLifecycleState.RESUMED
-

@@ -50,11 +50,7 @@ _FORBIDDEN_LIFECYCLE_MUTATIONS: tuple[tuple[str, str], ...] = (
 
 
 def _proof_files() -> tuple[Path, ...]:
-    return tuple(
-        path
-        for path in PROOF_DIR.glob("test_*.py")
-        if path.name != GATE_FILE
-    )
+    return tuple(path for path in PROOF_DIR.glob("test_*.py") if path.name != GATE_FILE)
 
 
 def _gate_targets() -> tuple[Path, ...]:

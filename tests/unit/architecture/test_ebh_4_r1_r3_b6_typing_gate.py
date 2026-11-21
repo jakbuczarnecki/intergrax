@@ -14,32 +14,26 @@ pytestmark = [pytest.mark.unit, pytest.mark.gate]
 _REPO = Path(__file__).resolve().parents[3]
 _INTERGRAX = _REPO / "intergrax"
 
-_SCENARIO_DIAG = _INTERGRAX / "runtime" / "execution" / "scenario_host_diagnostic_wiring.py"
-_DIAG_WIRING = (
-    _INTERGRAX / "applications" / "_shared" / "diagnostic_runtime_wiring.py"
-)
+_SCENARIO_DIAG = _INTERGRAX / "applications" / "_shared" / "scenario_runtime_baseline.py"
+_DIAG_WIRING = _INTERGRAX / "applications" / "_shared" / "diagnostic_runtime_wiring.py"
 _ACP_HOST = _INTERGRAX / "agents" / "authoring" / "acp_session_host.py"
 _STEP_KERNEL = _INTERGRAX / "runtime" / "kernel" / "step_kernel.py"
-_HOST_CONTRACT = (
-    _INTERGRAX / "contracts" / "host_orchestration_application_wiring_target.py"
-)
+_HOST_CONTRACT = _INTERGRAX / "contracts" / "host_orchestration_application_wiring_target.py"
 _NEXUS_LOOP = _INTERGRAX / "runtime" / "nexus" / "nexus_loop.py"
 
 _EE_CONTRACT_CONCRETE_LOCK_FORBIDDEN = (
     ("isinstance(validation_engine, NexusValidationEngine)", _NEXUS_LOOP),
     ("type(selection) is not DecisionExposureSelectionComposition", _NEXUS_LOOP),
 )
-_HOST_BUILDER = (
-    _INTERGRAX
-    / "runtime"
-    / "execution"
-    / "host_orchestration_environment_spec_builder.py"
-)
+_HOST_BUILDER = _INTERGRAX / "runtime" / "execution" / "host_orchestration_environment_spec_builder.py"
+
+_TIER3_HOST_BUILDER = _INTERGRAX / "applications" / "_shared" / "host_orchestration_backend_spec_builder.py"
 
 _B6_SEMANTIC_TYPE_IGNORE_FORBIDDEN = (
     _SCENARIO_DIAG,
     _DIAG_WIRING,
     _HOST_BUILDER,
+    _TIER3_HOST_BUILDER,
 )
 
 _ACP_CAPABILITY_FIELDS = (

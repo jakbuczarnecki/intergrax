@@ -53,8 +53,37 @@ def _agent_class_name(agent_py: Path) -> str | None:
     return None
 
 
-def _load_agent_instance(agent_module: str, agent_py: Path) -> Any:
-    module = importlib.import_module(_import_path_from_module(agent_module))
+def _inventoried_agent_packages(inventory: dict[str, Any]) -> frozenset[str]:
+    """Top-level Tier-2 packages named by the fleet inventory (the registered source)."""
+    packages: set[str] = set()
+    for row in inventory.get("agents", []):
+        module = str(row.get("agent_module", ""))
+        if module.startswith("agents."):
+            packages.add(_import_path_from_module(module).split(".", 1)[0])
+    return frozenset(packages)
+
+
+def _require_inventoried_module(agent_module: str, inventory: dict[str, Any]) -> str:
+    """Return the import path of ``agent_module`` or raise before any import runs."""
+    import_path = _import_path_from_module(agent_module)
+    if not agent_module.startswith("agents.") or not all(part.isidentifier() for part in import_path.split(".")):
+        raise RuntimeError(f"Agent module {agent_module!r} is not an inventoried agents.* module")
+    if import_path.split(".", 1)[0] not in _inventoried_agent_packages(inventory):
+        raise RuntimeError(f"Agent module {agent_module!r} is not in the fleet inventory")
+    return import_path
+
+
+def _load_agent_instance(
+    agent_module: str,
+    agent_py: Path,
+    *,
+    inventory: dict[str, Any] | None = None,
+) -> Any:
+    import_path = _require_inventoried_module(
+        agent_module,
+        inventory if inventory is not None else load_fleet_inventory(),
+    )
+    module = importlib.import_module(import_path)
     class_name = _agent_class_name(agent_py)
     if class_name is None:
         raise RuntimeError(f"No Agent class in {agent_py}")
@@ -383,7 +412,7 @@ def build_agent_readiness_report(
 ) -> AgentProductionReadinessReport:
     inventory = inventory or load_fleet_inventory()
     row = _inventory_row(inventory, agent_id)
-    agent = _load_agent_instance(agent_module, agent_py)
+    agent = _load_agent_instance(agent_module, agent_py, inventory=inventory)
     contract = agent.get_contract()
     dimensions = [
         _score_contract(contract),
@@ -444,9 +473,7 @@ def build_roster_readiness_report(
         for report in reports
         if report.dimension_score(AgentReadinessDimension.RUNTIME) is not None
     ]
-    fleet_complete = int(inventory.get("legacy_count", 1)) == 0 and all(
-        pct >= 100.0 for pct in runtime_values
-    )
+    fleet_complete = int(inventory.get("legacy_count", 1)) == 0 and all(pct >= 100.0 for pct in runtime_values)
     mean_overall = round(sum(overall_values) / len(overall_values), 2) if overall_values else 0.0
     mean_runtime = round(sum(runtime_values) / len(runtime_values), 2) if runtime_values else 0.0
     return AgentProductionReadinessRosterReport(

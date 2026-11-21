@@ -8,7 +8,6 @@ import ast
 from pathlib import Path
 
 import pytest
-
 from intergrax.contracts.agent_contract_meta import AgentContract
 from intergrax.contracts.agent_run import AgentRunRequest, AgentRunResult
 from intergrax.contracts.capability import CapabilityMatchResult
@@ -16,7 +15,6 @@ from intergrax.contracts.task_envelope import TaskEnvelope
 from intergrax.runtime.nexus.agent_router import AgentRouter
 from intergrax.runtime.registry.agent_registry import AgentRegistry
 from intergrax.runtime.registry.capability_routing import select_best_capability_match
-from intergrax.runtime.task.agent_capability_intake import task_envelope_for_agent_capability_match
 from intergrax.runtime.task.task import Task, TaskContext
 
 pytestmark = [pytest.mark.unit, pytest.mark.gate]
@@ -169,7 +167,7 @@ def test_router_does_not_reinvoke_can_handle_for_telemetry() -> None:
     agent = _CallCountingRoutableAgent("stateful", capability, [9.0, 1.0])
     registry = AgentRegistry()
     registry.register(agent)
-    router = AgentRouter(registry)
+    router = AgentRouter(registry, production_mode=False)
     task = Task(
         tenant_id="t1",
         user_id="u1",

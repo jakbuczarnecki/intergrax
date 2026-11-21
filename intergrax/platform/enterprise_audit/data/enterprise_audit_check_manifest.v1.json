@@ -1367,6 +1367,96 @@
       "mutating": false,
       "pg_id": "PG-018",
       "severity_default": "ERROR"
+    },
+    {
+      "category": "architecture",
+      "check_id": "ENT-A-AUD-01",
+      "entrypoint": "tests/qualification/ent_audit_x/unit/test_wd_frz_family_attribution.py::test_wd_mapped_stage_gate_check_attribution[ENT-A-AUD-01-AUD]",
+      "entrypoint_kind": "pytest_nodeid",
+      "modes": [
+        "CHANGED-SINCE",
+        "FAST",
+        "FULL",
+        "FREEZE"
+      ],
+      "mutating": false,
+      "pg_id": "PG-001",
+      "severity_default": "ERROR"
+    },
+    {
+      "category": "architecture",
+      "check_id": "ENT-A-CTL-01",
+      "entrypoint": "tests/qualification/ent_audit_x/unit/test_wd_frz_family_attribution.py::test_wd_mapped_stage_gate_check_attribution[ENT-A-CTL-01-CTL]",
+      "entrypoint_kind": "pytest_nodeid",
+      "modes": [
+        "CHANGED-SINCE",
+        "FAST",
+        "FULL",
+        "FREEZE"
+      ],
+      "mutating": false,
+      "pg_id": "PG-001",
+      "severity_default": "ERROR"
+    },
+    {
+      "category": "architecture",
+      "check_id": "ENT-A-DEBT-01",
+      "entrypoint": "tests/qualification/ent_audit_x/unit/test_wd_frz_family_attribution.py::test_wd_mapped_stage_gate_check_attribution[ENT-A-DEBT-01-DEBT]",
+      "entrypoint_kind": "pytest_nodeid",
+      "modes": [
+        "CHANGED-SINCE",
+        "FAST",
+        "FULL",
+        "FREEZE"
+      ],
+      "mutating": false,
+      "pg_id": "PG-001",
+      "severity_default": "ERROR"
+    },
+    {
+      "category": "architecture",
+      "check_id": "ENT-A-FRZ-01",
+      "entrypoint": "tests/qualification/ent_audit_x/unit/test_wd_frz_family_attribution.py::test_wd_mapped_stage_gate_check_attribution[ENT-A-FRZ-01-FRZ]",
+      "entrypoint_kind": "pytest_nodeid",
+      "modes": [
+        "CHANGED-SINCE",
+        "FAST",
+        "FULL",
+        "FREEZE"
+      ],
+      "mutating": false,
+      "pg_id": "PG-001",
+      "severity_default": "ERROR"
+    },
+    {
+      "category": "architecture",
+      "check_id": "ENT-A-HRN-01",
+      "entrypoint": "tests/qualification/ent_audit_x/unit/test_wd_frz_family_attribution.py::test_wd_mapped_stage_gate_check_attribution[ENT-A-HRN-01-HRN]",
+      "entrypoint_kind": "pytest_nodeid",
+      "modes": [
+        "CHANGED-SINCE",
+        "FAST",
+        "FULL",
+        "FREEZE"
+      ],
+      "mutating": false,
+      "pg_id": "PG-001",
+      "severity_default": "ERROR"
+    },
+    {
+      "category": "architecture",
+      "check_id": "ENT-A-TRC-01",
+      "entrypoint": "tests/qualification/ent_audit_x/unit/test_wd_frz_family_attribution.py::test_wd_mapped_stage_gate_check_attribution[ENT-A-TRC-01-TRC]",
+      "entrypoint_kind": "pytest_nodeid",
+      "modes": [
+        "CHANGED-SINCE",
+        "FAST",
+        "FULL",
+        "FREEZE"
+      ],
+      "mutating": false,
+      "pg_id": "PG-001",
+      "severity_default": "ERROR"
     }
   ],
   "version": 1

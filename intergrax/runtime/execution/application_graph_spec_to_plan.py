@@ -1,19 +1,19 @@
 # © Artur Czarnecki. All rights reserved.
 
-"""Convert Tier-3 ``ApplicationGraphSpec`` into a Nexus plan (Phase ORCH-2, FLOW-2/14)."""
+"""Convert a neutral ``ApplicationGraphTopology`` into a Nexus plan (Phase ORCH-2, FLOW-2/14)."""
 
 from __future__ import annotations
 
 from collections import defaultdict
 from uuid import uuid4
 
-from intergrax.applications._shared.delegation_budget_wiring import (
+from intergrax.contracts.application_graph_topology import (
+    ApplicationGraphTopology,
+    GraphEdgeKind,
+)
+from intergrax.contracts.delegation_budget_policy import (
     DelegationBudgetPolicy,
     apply_delegation_budget_to_subtask,
-)
-from intergrax.applications.contracts.graph_spec import (
-    ApplicationGraphSpec,
-    GraphEdgeKind,
 )
 from intergrax.contracts.subtask_contract import SubtaskContract
 from intergrax.runtime.nexus.planning.task_planner import NexusPlan, PlanStep
@@ -26,7 +26,7 @@ def _step_id_for_agent(agent_id: str) -> str:
 
 
 def application_graph_spec_to_nexus_plan(
-    spec: ApplicationGraphSpec,
+    spec: ApplicationGraphTopology,
     task: Task,
     *,
     classification: str,
@@ -102,7 +102,7 @@ def application_graph_spec_to_nexus_plan(
     )
 
 
-def should_seed_plan_from_graph_spec(task: Task, spec: ApplicationGraphSpec) -> bool:
+def should_seed_plan_from_graph_spec(task: Task, spec: ApplicationGraphTopology) -> bool:
     """
     True when the task has no pre-built plan id and capability matches graph seed rules.
 

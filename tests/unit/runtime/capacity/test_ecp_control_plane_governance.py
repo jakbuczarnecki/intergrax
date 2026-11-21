@@ -5,10 +5,11 @@
 from __future__ import annotations
 
 from dataclasses import dataclass, field, fields
+from datetime import UTC
+from typing import TYPE_CHECKING
 from unittest.mock import patch
 
 import pytest
-
 from intergrax.applications._shared.control_plane_composition import ControlPlaneCompositionError
 from intergrax.applications._shared.production_capacity_governance_wiring import (
     ProductionCapacityGovernance,
@@ -16,7 +17,6 @@ from intergrax.applications._shared.production_capacity_governance_wiring import
 )
 from intergrax.applications._shared.production_capacity_wiring import resolve_production_capacity_wiring
 from intergrax.applications.contracts.environment_profile import ApplicationEnvironmentProfile
-
 from intergrax.contracts.agent_run import RequestIdentity
 from intergrax.contracts.agent_run_enums import PrincipalType
 from intergrax.contracts.control_plane_mutation import (
@@ -24,21 +24,21 @@ from intergrax.contracts.control_plane_mutation import (
     control_plane_mutation_request_digest,
 )
 from intergrax.contracts.runtime_policy import PolicyAction, PolicyDecision
+from intergrax.runtime.capacity.contracts import ScalingAction, ScalingActionKind, ScalingTarget
 from intergrax.runtime.capacity.control_plane_governance import (
     CELERY_POOL_RESOURCE_TYPE,
-    EcpGovernanceBlockedError,
     K8S_DEPLOYMENT_RESOURCE_TYPE,
     MUTATION_TYPE_SCALE_CELERY_WORKERS,
     MUTATION_TYPE_SCALE_K8S_DEPLOYMENT,
+    EcpGovernanceBlockedError,
     StaticEcpResourceTenantResolver,
-    build_scale_celery_workers_mutation_request,
     build_scale_k8s_deployment_mutation_request,
     celery_workers_revision_token,
     k8s_replicas_revision_token,
 )
 from intergrax.runtime.capacity.governed_capacity_mutation import GovernedCapacityMutationExecutor
-from intergrax.runtime.capacity.contracts import ScalingAction, ScalingActionKind, ScalingTarget
 from intergrax.runtime.capacity.production_adapters import (
+    CapacityBackendPosture,
     CeleryProductionAdapter,
     ProductionCapacityAdapters,
     apply_production_scale_probe,
@@ -53,6 +53,13 @@ from intergrax.runtime.capacity.provisioner import (
 from intergrax.runtime.governance.control_plane_mutation_authorization import (
     ControlPlaneMutationAuthorizationBoundary,
 )
+
+if TYPE_CHECKING:
+    from intergrax.runtime.capacity.approval_queue import CapacityApprovalQueue
+    from intergrax.runtime.capacity.scheduler import CapacityScheduler
+    from intergrax.runtime.governance.control_plane_mutation_approval import (
+        ControlPlaneMutationApprovalCoordinator,
+    )
 
 pytestmark = [pytest.mark.unit, pytest.mark.gate]
 
@@ -80,9 +87,7 @@ class _RecordingK8s:
 
 @dataclass
 class _RecordingEvaluator:
-    decision: PolicyDecision = field(
-        default_factory=lambda: PolicyDecision(action=PolicyAction.ALLOW, reason="ok")
-    )
+    decision: PolicyDecision = field(default_factory=lambda: PolicyDecision(action=PolicyAction.ALLOW, reason="ok"))
     calls: list[ControlPlaneMutationRequest] = field(default_factory=list)
 
     def evaluate(self, request: ControlPlaneMutationRequest) -> PolicyDecision:
@@ -262,9 +267,7 @@ def test_ecp_cpm7_current_target_binding_changes_digest() -> None:
         current_replicas=5,
         target_replicas=6,
     )
-    assert control_plane_mutation_request_digest(request_a) != control_plane_mutation_request_digest(
-        request_b
-    )
+    assert control_plane_mutation_request_digest(request_a) != control_plane_mutation_request_digest(request_b)
 
 
 @dataclass
@@ -349,6 +352,7 @@ def test_ecp_cpm10_deny_celery_zero_worker_mutation() -> None:
 def test_ecp_cpm11_production_probe_uses_governed_facade() -> None:
     recording = _RecordingEvaluator()
     adapters = build_production_capacity_adapters(
+        backend_posture=CapacityBackendPosture.CI_DETERMINISTIC,
         mutation_boundary=ControlPlaneMutationAuthorizationBoundary(evaluator=recording),
         tenant_resolver=StaticEcpResourceTenantResolver(tenant_id=_TENANT),
     )
@@ -370,6 +374,7 @@ def test_ecp_cpm11_production_probe_uses_governed_facade() -> None:
 
 def test_ecp_cpm12_production_adapters_expose_governed_executor_only() -> None:
     adapters = build_production_capacity_adapters(
+        backend_posture=CapacityBackendPosture.CI_DETERMINISTIC,
         mutation_boundary=ControlPlaneMutationAuthorizationBoundary(
             evaluator=_RecordingEvaluator(),
         ),
@@ -435,7 +440,11 @@ def test_ecp_cpm15_production_supplied_deny_policy_zero_provider_effect() -> Non
             evaluator=deny_evaluator,
         ),
     )
-    wiring = resolve_production_capacity_wiring(env, governance=governance)
+    wiring = resolve_production_capacity_wiring(
+        env,
+        governance=governance,
+        backend_posture=CapacityBackendPosture.CI_DETERMINISTIC,
+    )
     assert wiring.enabled is True
     assert wiring.adapters is not None
     assert wiring.probe_passed is False
@@ -461,7 +470,11 @@ def test_ecp_gr12_r2_resolve_production_capacity_wiring_consumes_supplied_bounda
         mutation_authorization_boundary=supplied,
     )
     assert governance.mutation_authorization_boundary is supplied
-    wiring = resolve_production_capacity_wiring(env, governance=governance)
+    wiring = resolve_production_capacity_wiring(
+        env,
+        governance=governance,
+        backend_posture=CapacityBackendPosture.CI_DETERMINISTIC,
+    )
     assert wiring.enabled is True
     assert wiring.adapters is not None
     assert len(recording.calls) >= 1
@@ -480,7 +493,11 @@ def test_ecp_gr12_r2_production_wiring_passes_supplied_boundary_to_adapter_build
         "intergrax.applications._shared.production_capacity_wiring.build_production_capacity_adapters",
         wraps=build_production_capacity_adapters,
     ) as build_adapters:
-        wiring = resolve_production_capacity_wiring(env, governance=governance)
+        wiring = resolve_production_capacity_wiring(
+            env,
+            governance=governance,
+            backend_posture=CapacityBackendPosture.CI_DETERMINISTIC,
+        )
     assert build_adapters.call_args is not None
     assert build_adapters.call_args.kwargs["mutation_boundary"] is supplied
     assert wiring.enabled is True
@@ -495,7 +512,11 @@ def test_ecp_gr12_r2_external_evaluator_receives_composition_probe_mutations() -
         env,
         mutation_authorization_boundary=supplied,
     )
-    wiring = resolve_production_capacity_wiring(env, governance=governance)
+    wiring = resolve_production_capacity_wiring(
+        env,
+        governance=governance,
+        backend_posture=CapacityBackendPosture.CI_DETERMINISTIC,
+    )
     assert wiring.enabled is True
     assert len(recording.calls) >= 1
     mutation_types = {call.mutation_type for call in recording.calls}
@@ -506,7 +527,7 @@ def test_ecp_gr12_r2_external_evaluator_receives_composition_probe_mutations() -
 
 
 def _bundle_backed_boundary(*, effect: str) -> ControlPlaneMutationAuthorizationBoundary:
-    from datetime import datetime, timezone
+    from datetime import datetime
 
     from intergrax.contracts.runtime_policy_bundle import (
         PolicyBundleRule,
@@ -529,7 +550,7 @@ def _bundle_backed_boundary(*, effect: str) -> ControlPlaneMutationAuthorization
                 effect=effect,
             ),
         ),
-        issued_at=datetime(2026, 8, 24, 0, 0, 0, tzinfo=timezone.utc),
+        issued_at=datetime(2026, 8, 24, 0, 0, 0, tzinfo=UTC),
     )
     return ControlPlaneMutationAuthorizationBoundary(
         evaluator=bundle_backed_control_plane_mutation_evaluator(
@@ -589,6 +610,7 @@ def test_ecp_r1_standalone_k8s_deny_without_execution_identity() -> None:
 
 def test_ecp_cpm17_production_adapters_block_raw_exact_target_mutation() -> None:
     adapters = build_production_capacity_adapters(
+        backend_posture=CapacityBackendPosture.CI_DETERMINISTIC,
         mutation_boundary=ControlPlaneMutationAuthorizationBoundary(
             evaluator=_RecordingEvaluator(),
         ),
@@ -645,13 +667,12 @@ def _build_governed_scheduler(
     governed_executor: GovernedCapacityMutationExecutor | None = None,
     requires_governed: bool = True,
 ) -> tuple[
-    "CapacityScheduler",
+    CapacityScheduler,
     _RecordingK8s,
     CeleryProductionAdapter,
     GovernedCapacityMutationExecutor,
     _RecordingEvaluator,
 ]:
-    import asyncio
 
     from intergrax.runtime.capacity.collector import CapacitySignalCollector
     from intergrax.runtime.capacity.contracts import ScalingPolicy, ScalingRule
@@ -747,9 +768,7 @@ def test_ecp_cpm21_automatic_scheduler_celery_allow() -> None:
     )
     plan = ScalingActionPlan(actions=(action,), evaluation_status="planned")
     asyncio.run(scheduler._apply_plan(plan))
-    celery_calls = [
-        call for call in recording.calls if call.mutation_type == MUTATION_TYPE_SCALE_CELERY_WORKERS
-    ]
+    celery_calls = [call for call in recording.calls if call.mutation_type == MUTATION_TYPE_SCALE_CELERY_WORKERS]
     assert len(celery_calls) == 1
     assert celery_calls[0].principal.principal_type is PrincipalType.SERVICE
     assert celery.worker_count == 3
@@ -876,10 +895,7 @@ def test_ecp_cpm28_ceiling_automatic_mutation_fail_closed() -> None:
     asyncio.run(scheduler._apply_plan(plan))
     assert patcher.max_inflight_nodes == 10
     assert executor.scheduler_applied_actions == ()
-    assert any(
-        "ECP_SCHEDULER_CEILING_UNSUPPORTED" in failure
-        for failure in executor.scheduler_recorded_failures
-    )
+    assert any("ECP_SCHEDULER_CEILING_UNSUPPORTED" in failure for failure in executor.scheduler_recorded_failures)
 
 
 def test_ecp_cpm29_require_human_scheduler_preserves_governance_outcome() -> None:
@@ -1026,15 +1042,14 @@ def _build_hitl_governed_scheduler(
     tenant_id: str = _TENANT,
     require_hitl_policy: bool = False,
 ) -> tuple[
-    "CapacityScheduler",
+    CapacityScheduler,
     _RecordingK8s,
     CeleryProductionAdapter,
     GovernedCapacityMutationExecutor,
     _RecordingEvaluator,
-    "CapacityApprovalQueue",
-    "ControlPlaneMutationApprovalCoordinator",
+    CapacityApprovalQueue,
+    ControlPlaneMutationApprovalCoordinator,
 ]:
-    import asyncio
 
     from intergrax.runtime.capacity.approval_queue import CapacityApprovalQueue
     from intergrax.runtime.capacity.collector import CapacitySignalCollector
@@ -1113,8 +1128,8 @@ def test_ecp_cpm33_require_human_k8s_pending_preserves_scope() -> None:
             policy_rule_id="rule.hitl",
         ),
     )
-    scheduler, k8s, _celery, executor, _recording, queue, _coordinator = (
-        _build_hitl_governed_scheduler(evaluator=evaluator)
+    scheduler, k8s, _celery, executor, _recording, queue, _coordinator = _build_hitl_governed_scheduler(
+        evaluator=evaluator
     )
     scheduler._collector.record_backpressure()
     asyncio.run(scheduler.tick())
@@ -1138,8 +1153,8 @@ def test_ecp_cpm34_human_approve_k8s_resume_exact_target_once() -> None:
             policy_rule_id="rule.hitl",
         ),
     )
-    scheduler, k8s, _celery, executor, _recording, queue, coordinator = (
-        _build_hitl_governed_scheduler(evaluator=evaluator)
+    scheduler, k8s, _celery, executor, _recording, queue, coordinator = _build_hitl_governed_scheduler(
+        evaluator=evaluator
     )
     scheduler._collector.record_backpressure()
     asyncio.run(scheduler.tick())
@@ -1162,8 +1177,8 @@ def test_ecp_cpm35_human_deny_zero_provider_effect() -> None:
             policy_rule_id="rule.hitl",
         ),
     )
-    scheduler, k8s, _celery, executor, _recording, queue, coordinator = (
-        _build_hitl_governed_scheduler(evaluator=evaluator)
+    scheduler, k8s, _celery, executor, _recording, queue, coordinator = _build_hitl_governed_scheduler(
+        evaluator=evaluator
     )
     scheduler._collector.record_backpressure()
     asyncio.run(scheduler.tick())
@@ -1187,8 +1202,8 @@ def test_ecp_cpm36_wrong_approver_tenant_fail_closed() -> None:
             policy_rule_id="rule.hitl",
         ),
     )
-    scheduler, k8s, _celery, executor, _recording, queue, _coordinator = (
-        _build_hitl_governed_scheduler(evaluator=evaluator)
+    scheduler, k8s, _celery, executor, _recording, queue, _coordinator = _build_hitl_governed_scheduler(
+        evaluator=evaluator
     )
     scheduler._collector.record_backpressure()
     asyncio.run(scheduler.tick())
@@ -1200,9 +1215,6 @@ def test_ecp_cpm36_wrong_approver_tenant_fail_closed() -> None:
 
 
 def test_ecp_cpm37_wrong_mutation_approval_cannot_resume_other_action() -> None:
-    import asyncio
-
-    from intergrax.runtime.capacity.contracts import ScalingActionPlan
 
     evaluator = _RecordingEvaluator(
         decision=PolicyDecision(
@@ -1211,8 +1223,8 @@ def test_ecp_cpm37_wrong_mutation_approval_cannot_resume_other_action() -> None:
             policy_rule_id="rule.hitl",
         ),
     )
-    scheduler, k8s, _celery, executor, _recording, queue, coordinator = (
-        _build_hitl_governed_scheduler(evaluator=evaluator)
+    scheduler, k8s, _celery, executor, _recording, queue, coordinator = _build_hitl_governed_scheduler(
+        evaluator=evaluator
     )
     action_a = ScalingAction(
         action_id="hitl-action-a",
@@ -1285,8 +1297,8 @@ def test_ecp_cpm38_resource_mismatch_k8s_approval_not_celery() -> None:
             policy_rule_id="rule.hitl",
         ),
     )
-    scheduler, k8s, celery, executor, _recording, queue, _coordinator = (
-        _build_hitl_governed_scheduler(evaluator=evaluator)
+    scheduler, k8s, celery, executor, _recording, queue, _coordinator = _build_hitl_governed_scheduler(
+        evaluator=evaluator
     )
     k8s_action = ScalingAction(
         action_id="hitl-k8s-only",
@@ -1325,8 +1337,8 @@ def test_ecp_cpm39_stale_current_after_approval_no_provider_write() -> None:
         ),
     )
     flaky = _FlakyK8s()
-    scheduler, k8s, _celery, executor, _recording, queue, _coordinator = (
-        _build_hitl_governed_scheduler(evaluator=evaluator, k8s=flaky)
+    scheduler, k8s, _celery, executor, _recording, queue, _coordinator = _build_hitl_governed_scheduler(
+        evaluator=evaluator, k8s=flaky
     )
     scheduler._collector.record_backpressure()
     asyncio.run(scheduler.tick())
@@ -1346,8 +1358,8 @@ def test_ecp_cpm40_target_mismatch_cannot_execute() -> None:
             policy_rule_id="rule.hitl",
         ),
     )
-    scheduler, k8s, _celery, executor, _recording, queue, coordinator = (
-        _build_hitl_governed_scheduler(evaluator=evaluator)
+    scheduler, k8s, _celery, executor, _recording, queue, coordinator = _build_hitl_governed_scheduler(
+        evaluator=evaluator
     )
     action = ScalingAction(
         action_id="target-mismatch",
@@ -1404,8 +1416,8 @@ def test_ecp_cpm41_double_drain_cannot_execute_twice() -> None:
             policy_rule_id="rule.hitl",
         ),
     )
-    scheduler, k8s, _celery, executor, _recording, queue, _coordinator = (
-        _build_hitl_governed_scheduler(evaluator=evaluator)
+    scheduler, k8s, _celery, executor, _recording, queue, _coordinator = _build_hitl_governed_scheduler(
+        evaluator=evaluator
     )
     scheduler._collector.record_backpressure()
     asyncio.run(scheduler.tick())
@@ -1417,7 +1429,6 @@ def test_ecp_cpm41_double_drain_cannot_execute_twice() -> None:
 
 
 def test_ecp_cpm42_missing_approval_dependency_fail_closed() -> None:
-    import asyncio
 
     from intergrax.runtime.capacity.approval_queue import CapacityResumableMutation
 
@@ -1428,8 +1439,8 @@ def test_ecp_cpm42_missing_approval_dependency_fail_closed() -> None:
             policy_rule_id="rule.hitl",
         ),
     )
-    scheduler, k8s, _celery, executor, _recording, queue, _coordinator = (
-        _build_hitl_governed_scheduler(evaluator=evaluator)
+    scheduler, k8s, _celery, executor, _recording, queue, _coordinator = _build_hitl_governed_scheduler(
+        evaluator=evaluator
     )
     action = ScalingAction(
         action_id="missing-approval",
@@ -1469,8 +1480,8 @@ def test_ecp_cpm43_multi_action_per_action_approval_scope() -> None:
             policy_rule_id="rule.hitl",
         ),
     )
-    scheduler, k8s, celery, executor, _recording, queue, _coordinator = (
-        _build_hitl_governed_scheduler(evaluator=evaluator)
+    scheduler, k8s, celery, executor, _recording, queue, _coordinator = _build_hitl_governed_scheduler(
+        evaluator=evaluator
     )
     k8s_action = ScalingAction(
         action_id="multi-k8s",
@@ -1503,8 +1514,8 @@ def test_ecp_cpm44_local_hitl_flag_does_not_bypass_canonical_governance() -> Non
     evaluator = _RecordingEvaluator(
         decision=PolicyDecision(action=PolicyAction.ALLOW, reason="ok"),
     )
-    scheduler, k8s, _celery, executor, _recording, queue, _coordinator = (
-        _build_hitl_governed_scheduler(evaluator=evaluator, require_hitl_policy=True)
+    scheduler, k8s, _celery, executor, _recording, queue, _coordinator = _build_hitl_governed_scheduler(
+        evaluator=evaluator, require_hitl_policy=True
     )
     scheduler._collector.record_backpressure()
     asyncio.run(scheduler.tick())
@@ -1529,8 +1540,8 @@ def test_ecp_cpm45_scheduler_require_human_routable_to_pending_flow() -> None:
             policy_rule_id="rule.hitl",
         ),
     )
-    scheduler, k8s, _celery, executor, _recording, queue, _coordinator = (
-        _build_hitl_governed_scheduler(evaluator=evaluator)
+    scheduler, k8s, _celery, executor, _recording, queue, _coordinator = _build_hitl_governed_scheduler(
+        evaluator=evaluator
     )
     action = ScalingAction(
         action_id="route-hitl-action",
@@ -1558,8 +1569,8 @@ def test_ecp_cpm46_plan_approve_without_approver_cannot_authorize() -> None:
             policy_rule_id="rule.hitl",
         ),
     )
-    scheduler, k8s, _celery, executor, _recording, queue, _coordinator = (
-        _build_hitl_governed_scheduler(evaluator=evaluator)
+    scheduler, k8s, _celery, executor, _recording, queue, _coordinator = _build_hitl_governed_scheduler(
+        evaluator=evaluator
     )
     scheduler._collector.record_backpressure()
     asyncio.run(scheduler.tick())
@@ -1572,6 +1583,7 @@ def test_ecp_cpm46_plan_approve_without_approver_cannot_authorize() -> None:
 
 def test_ecp_cpm47_production_adapters_do_not_expose_k8s_mutation_surface() -> None:
     adapters = build_production_capacity_adapters(
+        backend_posture=CapacityBackendPosture.CI_DETERMINISTIC,
         mutation_boundary=ControlPlaneMutationAuthorizationBoundary(
             evaluator=_RecordingEvaluator(),
         ),
@@ -1585,6 +1597,7 @@ def test_ecp_cpm47_production_adapters_do_not_expose_k8s_mutation_surface() -> N
 
 def test_ecp_cpm48_production_adapters_do_not_expose_celery_mutation_surface() -> None:
     adapters = build_production_capacity_adapters(
+        backend_posture=CapacityBackendPosture.CI_DETERMINISTIC,
         mutation_boundary=ControlPlaneMutationAuthorizationBoundary(
             evaluator=_RecordingEvaluator(),
         ),
@@ -1599,6 +1612,7 @@ def test_ecp_cpm48_production_adapters_do_not_expose_celery_mutation_surface() -
 def test_ecp_cpm49_production_probe_verifies_without_raw_provider_access() -> None:
     recording = _RecordingEvaluator()
     adapters = build_production_capacity_adapters(
+        backend_posture=CapacityBackendPosture.CI_DETERMINISTIC,
         mutation_boundary=ControlPlaneMutationAuthorizationBoundary(evaluator=recording),
         tenant_resolver=StaticEcpResourceTenantResolver(tenant_id=_TENANT),
     )
@@ -1663,6 +1677,7 @@ def _build_production_scaling_wiring(
         ),
     )
     adapters = build_production_capacity_adapters(
+        backend_posture=CapacityBackendPosture.CI_DETERMINISTIC,
         mutation_boundary=governance.mutation_authorization_boundary,
         tenant_resolver=governance.tenant_resolver,
     )
@@ -1731,9 +1746,10 @@ def test_ecp_cpm53_live_kubernetes_backend_only_behind_governed_write_path(
 
     monkeypatch.setattr(
         "intergrax.runtime.capacity.production_adapters.resolve_kubernetes_backend",
-        lambda: (_LiveLikeKubernetes(), "live"),
+        lambda **_kwargs: (_LiveLikeKubernetes(), "live"),
     )
     adapters = build_production_capacity_adapters(
+        backend_posture=CapacityBackendPosture.CI_DETERMINISTIC,
         mutation_boundary=ControlPlaneMutationAuthorizationBoundary(
             evaluator=_RecordingEvaluator(),
         ),
@@ -1759,6 +1775,7 @@ def test_ecp_cpm54_governed_executor_public_api_does_not_expose_scaling_provisio
 
     recording = _RecordingEvaluator()
     adapters = build_production_capacity_adapters(
+        backend_posture=CapacityBackendPosture.CI_DETERMINISTIC,
         mutation_boundary=ControlPlaneMutationAuthorizationBoundary(
             evaluator=recording,
         ),
@@ -1827,6 +1844,7 @@ def test_ecp_cpm57_production_scheduler_celery_through_governed_executor() -> No
 def test_ecp_cpm58_read_only_observation_still_works_after_provisioner_surface_closure() -> None:
     recording = _RecordingEvaluator()
     adapters = build_production_capacity_adapters(
+        backend_posture=CapacityBackendPosture.CI_DETERMINISTIC,
         mutation_boundary=ControlPlaneMutationAuthorizationBoundary(evaluator=recording),
         tenant_resolver=StaticEcpResourceTenantResolver(tenant_id=_TENANT),
     )
@@ -1845,6 +1863,7 @@ def test_ecp_cpm58_read_only_observation_still_works_after_provisioner_surface_c
 
 def test_ecp_cpm59_governed_only_remains_fail_closed_for_legacy_apply_path() -> None:
     adapters = build_production_capacity_adapters(
+        backend_posture=CapacityBackendPosture.CI_DETERMINISTIC,
         mutation_boundary=ControlPlaneMutationAuthorizationBoundary(
             evaluator=_RecordingEvaluator(),
         ),

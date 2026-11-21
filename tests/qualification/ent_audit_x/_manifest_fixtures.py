@@ -11,8 +11,8 @@ def sample_full_execution_manifest(
     include_closed_world_outcomes: bool = True,
 ) -> AuditExecutionManifest:
     outcomes: tuple[CheckRunOutcome, ...] = ()
-    planned = 85
-    executed = 85
+    planned = 91
+    executed = 91
     if include_closed_world_outcomes:
         checks = load_default_manifest()
         outcomes = tuple(

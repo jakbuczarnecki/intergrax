@@ -12,15 +12,14 @@ from fastapi import FastAPI
 from intergrax.agents.agent_contract import Agent
 from intergrax.applications.contracts.environment_profile import ApplicationEnvironmentProfile
 from intergrax.applications.contracts.execution_mode import ExecutionMode
-from intergrax.contracts.decision_requirement_policy import DecisionRequirementPolicy
 from intergrax.applications.contracts.graph_builder import AgentGraph
 from intergrax.applications.contracts.manifest import AgentBinding, ApplicationManifest
+from intergrax.contracts.decision_requirement_policy import DecisionRequirementPolicy
 from intergrax.harness.application_host import ApplicationHost
 from intergrax.harness.yaml_loader import merge_manifest_with_files
 from intergrax.integrations.registry.profile import IntegrationProfile
 from intergrax.llm_adapters.registry.profile import LLMProfile
 from intergrax.runtime.registry.agent_registry import AgentRegistry
-from intergrax.integrations.registry.presets import lab_stack
 
 if TYPE_CHECKING:
     from intergrax.applications._shared.harness_host_runtime import HarnessHostRuntime
@@ -176,6 +175,7 @@ class HarnessApplication:
             use_in_memory_trace=use_in_memory_trace,
             application_host=self._host,
             orchestration_decision_requirement_policy=orchestration_decision_requirement_policy,
+            disable_human_decision_persistence=True,
         )
         return self._runtime
 

@@ -26,7 +26,7 @@ def test_l3_clean_checkout_full_dry_plan(tmp_path: Path) -> None:
     root = Path(__file__).resolve().parents[4]
     runner = EnterpriseAuditRunner(root, dry_run=True)
     _, manifest, code = runner.run(AuditMode.FULL, output_dir=tmp_path / "l3-full")
-    assert manifest.checks_planned == 85
+    assert manifest.checks_planned == 91
     assert code.value in {0, 2}
 
 

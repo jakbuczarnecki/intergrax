@@ -14,14 +14,21 @@ for path in (REPO_ROOT, APPLICATIONS_ROOT, REPO_ROOT / "agents"):
     text = str(path)
     if text not in sys.path:
         sys.path.insert(0, text)
-
+from intergrax.applications._shared.import_policy import guarded_import_policy  # noqa: E402
 from intergrax.applications._shared.migration_wiring import (  # noqa: E402
     check_application_migrations,
 )
 
+import shipped_product_manifest_catalog  # noqa: E402, F401
+
 
 def main() -> int:
-    violations = check_application_migrations(APPLICATIONS_ROOT)
+    policy = guarded_import_policy()
+    violations = check_application_migrations(
+        APPLICATIONS_ROOT,
+        allowed_prefixes=policy.application_packages,
+        fail_closed=policy.fail_closed,
+    )
     if violations:
         print("application migrations gate: FAILED")
         for item in sorted(violations):

@@ -134,7 +134,7 @@ def create_local_workspace_backend_app(
         build_declarative_invoker_for_application_host,
     )
     from intergrax.applications._shared.diagnostic_cursor_secret import resolve_problem_list_cursor_secret
-    from intergrax.integrations._shared.conformance import assert_conditional_document_store
+    from intergrax.integrations.registry.bootstrap_conformance import assert_conditional_document_store
     from intergrax.runtime.observability.functional_evidence_runtime_wiring import (
         functional_evidence_wiring_extra_key,
         wire_functional_evidence_runtime,
