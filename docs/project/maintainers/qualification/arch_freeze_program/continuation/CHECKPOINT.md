@@ -1,7 +1,7 @@
 # ARCH-FREEZE continuation checkpoint (development train)
 
-**Updated:** 2026-11-21 (MEP W3 train SSOT + W4–W8 prep; serial `af-dev-merge`)  
-**Base branch (pin dokumentacyjny):** `d043a21c67cb57475a4f36a2baff7020718ec7cb` (`d043a21c6`) — liczniki gap @ [`TRAIN_DEV_GAP.md`](TRAIN_DEV_GAP.md)  
+**Updated:** 2026-11-21 (docs pin sync `e69e1ff58`; serial `af-dev-merge`)  
+**Base branch (pin dokumentacyjny):** `e69e1ff5819b98c316377bcadf749f61fe00abc2` (`e69e1ff58`) — liczniki gap @ [`TRAIN_DEV_GAP.md`](TRAIN_DEV_GAP.md)  
 **Arch-freeze train reference:** `origin/arch-freeze/rw-train` @ `dbaebfa8cd13a6ba8bfa6eef2cdf581216ddb3d2` — PR **#699** **MERGED** (slice do `1cec68222`)
 
 ## Train merge — fakt operatora / automation
@@ -49,7 +49,7 @@ Merge przy czerwonych checkach — zapisany stan; **nie** spełnia OD-AF-AUTO-01
 
 ## Divergence warning
 
-Po merge **#699** train zawiera slice FC-3 / G-09 / trust, ale **nie** pełny `development` (**286** dev-only @ referencji `e61e5136a` / **217** train-only od merge-base `70d73f0f0`; pin W3 `d043a21c6` — **0** dev-only @ pinie). Szczegóły — [`TRAIN_DEV_GAP.md`](TRAIN_DEV_GAP.md). Product remediation on `development` nadal **cherry-pick** / rebase z train tam, gdzie slice się rozjechał — **nie** merge `rw-train` bez mandatu operatora.
+Po merge **#699** train zawiera slice FC-3 / G-09 / trust, ale **nie** pełny `development` (**286** dev-only @ referencji `e61e5136a` / **217** train-only od merge-base `70d73f0f0`; pin docs `e69e1ff58` — **451** dev-only @ pinie). Szczegóły — [`TRAIN_DEV_GAP.md`](TRAIN_DEV_GAP.md). Product remediation on `development` nadal **cherry-pick** / rebase z train tam, gdzie slice się rozjechał — **nie** merge `rw-train` bez mandatu operatora.
 
 ## Dependency notes (G1)
 
@@ -62,7 +62,7 @@ Po merge **#699** train zawiera slice FC-3 / G-09 / trust, ale **nie** pełny `d
 
 ## G3-train — MEP W3 train / gap SSOT
 
-Deliverables: `TRAIN_DEV_GAP.md`, `TRAIN_CHERRY_PICK_STATUS.md`, `WP12_W3_PT_TICKETS_PREP.md`; scaffolds `T-IGX-043-N`, `T-IGX-051-A`, `T-IGX-051-N`. Pin gap **`d043a21c6`**. **Nie** kolejny cherry-pick / train merge; **nie** green `governance-fast`; **nie** G2 / FCS.
+Deliverables: `TRAIN_DEV_GAP.md`, `TRAIN_CHERRY_PICK_STATUS.md`, `WP12_W3_PT_TICKETS_PREP.md`; scaffolds `T-IGX-043-N`, `T-IGX-051-A`, `T-IGX-051-N`. Pin gap liczników **`e69e1ff58`** (historyczny W3 pin `d043a21c6` — cite only). **Nie** kolejny cherry-pick / train merge; **nie** green `governance-fast`; **nie** G2 / FCS.
 
 ## G4 — RC-3 prep (fala 6)
 
