@@ -4,7 +4,7 @@
 
 ## Status
 
-`BLOCKED` — wave-3 executed targeted replay @ TRAIN_PIN (lock acquired); pytest exit **1**. See `C04_RUN_MANIFEST.json` and `c04_targeted_replay.log`. No product fix in this ticket.
+`BLOCKED` — wave-3 executed targeted replay @ TRAIN_PIN (lock acquired); pytest exit **1** (`47 failed, 395 passed` per log). Wave-7: log-derived status in `C04_STATUS.md`; manifest refresh in `C04_RUN_MANIFEST.json`. No re-run and no product fix in this ticket.
 
 ## Prep checklist
 
