@@ -26,7 +26,7 @@
 | W5X-Q04-3 | ROADMAP-REPLAY-X dispositions / re-pin (DP-60) | [ ] | KR-10; RM499-M17/M21 — [KNOWN_RED_REGISTER.md](../KNOWN_RED_REGISTER.md) |
 | W5X-Q04-4 | TENANT-X delta gate + carrier (DP-59) | [ ] | Węzeł PT-Q07 zależny |
 | W5X-Q04-5 | DUP-X / COMPAT/STATE classification | [ ] | S1 counters — cite only |
-| W5X-Q04-6 | Ticket `Approved:` + AR-34 | [ ] | Operator |
+| W5X-Q04-6 | Ticket `Approved:` + AR-34 | [x] | `T-IGX-053-A` scaffold `draft` @ `e69e1ff58` |
 
 ## Status ticketu
 

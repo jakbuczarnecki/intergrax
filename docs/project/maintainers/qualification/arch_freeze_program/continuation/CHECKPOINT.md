@@ -38,8 +38,9 @@ Merge przy czerwonych checkach — zapisany stan; **nie** spełnia OD-AF-AUTO-01
 | G3-train (MEP W3) | `af-dev-mep-w3` | `af-dev-mep-w3` | T-IGX-043-N / 051-A/N scaffolds | Gap + cherry-pick status + WP12 W3 prep matrix | **merged** @ `2ee71f3a8` |
 | G4 (RC-3 exit prep) | `af-dev-mep-w4` | `af-dev-mep-w4` | ticket-less docs | W4 Q02/Q03/FCS/S04 exit prep checklist + G2/RC3 refresh | **DONE** prep @ `a399ed2d1` |
 | G5 | `af-dev-043m` | `af-dev-043m` | T-IGX-043-M | Slices 1–3 + fala 5 close **9 passed**; Part E manifest **BLOCKED** | in_progress |
-| G6 (MEP W5 prep) | `af-dev-mep-w5` | `af-dev-mep-w5` | ticket-less docs | W5 pre-pin dossier + PT-* prep | **DONE** prep |
+| G6 (MEP W5 prep) | `af-dev-mep-w5` | `af-dev-mep-w5` | ticket-less docs | W5 pre-pin dossier + PT-* prep | **DONE** prep @ `64a786a93` |
 | G6-exec (W5 tickets) | `af-dev-w5-exec` | `af-dev-w5-exec` | ticket-less docs | `w5/WP12_W5_PT_TICKETS_STATUS.md` + PT-* ticket rows | **IN_PROGRESS** @ `e69e1ff58` |
+| G6b (MEP W5 exec) | `af-dev-w5-product` | `af-dev-w5-product` | T-IGX-052-A..E, 053-A,C..J | WP12 W5 ticket matrix + scaffolds | **IN_PROGRESS** @ `e69e1ff58` |
 | G7 (MEP W6 prep) | `af-dev-mep-w6` | `af-dev-mep-w6` | T-IGX-052-F/G/H | Campaign + requal + M3 prep checklists | **DONE** prep @ `156bd6b40` |
 | G8 (MEP W7 prep) | `af-dev-mep-w7` | `af-dev-mep-w7` | ticket-less docs | PT-Q13 / PT-VBN / ENTRY / DS-ADM prep | **DONE** prep |
 | G9 (MEP W8 closure prep) | `af-dev-mep-w8` | `af-dev-mep-w8` | ticket-less docs | W8 dossier + w8 checklists | **DONE** prep |
@@ -76,7 +77,7 @@ Deliverables: `RC3_EXIT_PREP_CHECKLIST.md`; odświeżenie `G2_CHECKLIST_DRAFT.md
 
 ## G5 — W5 pre-pin prep (MEP W5)
 
-Worktree `af-dev-mep-w5` @ `d043a21c6`. Deliverables: [`W5_PREP_DOSSIER.md`](W5_PREP_DOSSIER.md) + `continuation/w5/PT-*_PREP.md` (9 węzłów WP-12). Dokumentacja prep MEP W5: **DONE** @ `64a786a93` (bez claim pin / M3 / FCS). Werdykt fali W5 programowej: **NOT STARTED** — FCS i AR otwarte.
+Worktree `af-dev-mep-w5` @ `d043a21c6`. Deliverables: [`W5_PREP_DOSSIER.md`](W5_PREP_DOSSIER.md) + `continuation/w5/PT-*_PREP.md` (9 węzłów WP-12). Dokumentacja prep MEP W5: **DONE** @ `64a786a93`. W5 execution (`af-dev-w5-product` @ `e69e1ff58`): [`WP12_W5_PT_TICKETS_PREP.md`](WP12_W5_PT_TICKETS_PREP.md) + `T-IGX-052-A`..`E`, `T-IGX-053-A,C`..`J` scaffolds — **nie** FCS, **nie** heavy FC-3/trust bundles.
 
 ## G6-exec — W5 ticket status (tor exec)
 

@@ -22,7 +22,7 @@
 | Id | Kryterium | Stan | Uwagi |
 |----|-----------|------|-------|
 | W5X-PB-1 | FCS | BLOCKED |  |
-| W5X-PB-2 | 33 rows carry B; 20 architecture rows | [ ] | WP12-Q15 |
+| W5X-PB-2 | 33 rows carry B; 20 architecture rows | [x] | `T-IGX-053-C` scaffold `draft` |
 | W5X-PB-3 | Gate-meaning change — brak delegacji | [x] | udokumentowane |
 | W5X-PB-4 | Must precede pin + PT-Q05 | [ ] | DAG |
 | W5X-PB-5 | Independent audit inside RQ-1 | [ ] | PT-Q05 |
