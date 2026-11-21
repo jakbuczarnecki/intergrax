@@ -172,3 +172,17 @@ SKIP_NO_GO: EQOA-A3-008, EQOA-A3-018 (no implementation go ticket at development
 ## Forbidden this slice
 
 FRZ promotion, `EQO_CLOSED`, editing `IIAC_POLICY_ACTIVATION_RECORD.json`, editing `register.jsonl`, `orchestration/packets/` writes, setting any lifecycle to `CLOSED`.
+
+## EQO-RECOVERY-W1 (2026-11-21)
+
+Local `development` HEAD `84fc00a16edf1f1c50934cee53dcaff113b0df4a`. `origin/development` `44e33070397f10f55936b670cffdcfb5200db143` (PR #737) merged as `5c5f0cdd9`. The prior 32 commits were not reset.
+
+| Worker | ID | Result |
+|--------|----|--------|
+| reviewer A4-006/A4-027 | `76c55cca-f02d-44d8-9b51-cae9fa12f881` | `CORRECTIVE_ACTION_REQUIRED` |
+| classifier | `8702e401-b5f8-45f7-8730-29d7f5068264` | classes recorded in the checkpoint |
+| doc batch | `8b5a5373-f03a-4213-a3f6-7cfe7d1e1269` | `BLOCKED_EXACT_REASON` |
+| implementer A4-027 | `1a5669b7-47ac-445a-98cb-a2bbad07b387` | `1aa91803b` |
+| implementer A4-006 | `5fa871bb-a6df-4228-b850-5f06ad65f1a5` | `f3371ca6f` |
+
+Technical review of those two diffs: `TECHNICAL_REVIEW_PASS`. Not an IIAC PASS. Pytest on this HEAD: A4-027 3 passed, A4-006 4 passed, A4-026 file 12 passed inside a 19-passed integration run, six named replay files 64 passed, three governance files 27 passed. No lifecycle set to `CLOSED`.
