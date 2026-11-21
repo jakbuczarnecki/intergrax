@@ -9,15 +9,16 @@ from typing import Any
 
 import httpx
 
-from intergrax.model_inference.adapters.stub_vision import StubVisionInferenceAdapter
 from intergrax.model_inference.contracts import (
     MediaAuthorizationError,
     ModelArtifact,
+    VisionBackendUnconfiguredError,
     VisionBoundingBox,
     VisionDetection,
     VisionInferenceAdapter,
     VisionInferenceRequest,
     VisionInferenceResult,
+    VisionResultProvenance,
 )
 from intergrax.model_inference.media_boundary import require_remote_egress_bytes
 
@@ -42,11 +43,15 @@ class HuggingFaceInferenceVisionAdapter(VisionInferenceAdapter):
         self._api_key = resolved_key
         self._model_id = (model_id or os.getenv(self.ENV_MODEL) or self.DEFAULT_MODEL).strip()
         self._timeout = timeout
-        self._fallback = fallback or StubVisionInferenceAdapter()
+        self._fallback = fallback
 
     def detect(self, request: VisionInferenceRequest, *, artifact: ModelArtifact) -> VisionInferenceResult:
         if not self._api_key:
-            return self._fallback.detect(request, artifact=artifact)
+            if self._fallback is not None:
+                return self._fallback.detect(request, artifact=artifact)
+            raise VisionBackendUnconfiguredError(
+                f"{self.slug!r} is not configured (set {self.ENV_API_KEY} or pass api_key=)"
+            )
         try:
             raw = require_remote_egress_bytes(request)
         except MediaAuthorizationError:
@@ -59,11 +64,19 @@ class HuggingFaceInferenceVisionAdapter(VisionInferenceAdapter):
             body = response.json()
         detections = _parse_hf_detections(body, top_k=request.top_k)
         if not detections:
-            return self._fallback.detect(request, artifact=artifact)
+            if self._fallback is not None:
+                return self._fallback.detect(request, artifact=artifact)
+            return VisionInferenceResult(
+                request_id=request.request_id,
+                artifact_id=artifact.artifact_id,
+                detections=[],
+                provenance=VisionResultProvenance.ENGINE,
+            )
         return VisionInferenceResult(
             request_id=request.request_id,
             artifact_id=artifact.artifact_id,
             detections=detections,
+            provenance=VisionResultProvenance.ENGINE,
         )
 
 

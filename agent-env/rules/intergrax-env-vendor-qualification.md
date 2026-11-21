@@ -1,6 +1,6 @@
 ---
 description: Environment configuration and vendor integration qualification guardrails
-loading: always
+loading: auto
 ---
 
 # Intergrax — env config & vendor qualification
@@ -28,5 +28,5 @@ Until explicitly lifted by operator roadmap/qualification update — **do not ch
 
 - Preserve the **original Windows** execution environment for this workstream.
 - **No Docker migration**, **no new vendor integrations**, **no production configuration** changes.
-- **Diagnostic pytest** (broad/unbounded suites, harness replay): requires **separate operator authorization**; respect [intergrax-test-process-budget.md](intergrax-test-process-budget.md).
+- **Diagnostic pytest** (broad/unbounded suites, harness replay): requires **separate operator authorization**; respect the Test budget section of [intergrax-core.md](intergrax-core.md).
 - **R7-Q**, **PROD-Q**, and global **`FRZ-*` statuses** remain unchanged by Cursor rule or tooling edits alone — gate plan: [`PROD_Q_R1_R7_Q_QUALIFICATION_INVENTORY_AND_GATE_PLAN.md`](../../docs/project/maintainers/qualification/PROD_Q_R1_R7_Q_QUALIFICATION_INVENTORY_AND_GATE_PLAN.md).

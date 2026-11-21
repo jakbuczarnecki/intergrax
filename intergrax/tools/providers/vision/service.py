@@ -60,7 +60,11 @@ def vision_detect(ctx: ToolWiringContext, payload: VisionDetectInput) -> VisionD
         ),
     )
     record_inference_ms(ctx, int((time.perf_counter() - started) * 1000), vision_invocation=True)
-    return VisionDetectOutput(request_id=result.request_id, detections=result.detections)
+    return VisionDetectOutput(
+        request_id=result.request_id,
+        detections=result.detections,
+        provenance=result.provenance,
+    )
 
 
 def vision_segment(ctx: ToolWiringContext, payload: VisionSegmentInput) -> VisionSegmentOutput:
