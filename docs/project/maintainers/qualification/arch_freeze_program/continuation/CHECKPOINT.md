@@ -2,7 +2,7 @@
 
 Date: 2026-11-21. Package: RC-2 train completion started.
 
-Does not declare G2, FCS, M3, or ARCH_FREEZE_CLOSED. `OD-AF-RC-KR08` remains `PENDING_OPERATOR`. PR #680 not merged.
+Does not declare G2, FCS, M3, or ARCH_FREEZE_CLOSED. `OD-AF-RC-KR08` = **GRANTED**; **PR #680 merged** to train (`65ef1f196`).
 
 ## Head
 
@@ -10,7 +10,7 @@ Does not declare G2, FCS, M3, or ARCH_FREEZE_CLOSED. `OD-AF-RC-KR08` remains `PE
 | --- | --- |
 | Worktree | `D:/Projekty/_wt/intergrax/af-rc2` |
 | Branch | `af2/rc2-continuation` |
-| Train `origin/arch-freeze/rw-train` | `28c27cb896d02e0185b9fa02047411fa152f6469` |
+| Train `origin/arch-freeze/rw-train` | `65ef1f196d38d673436667230bb59b92158714a2` (post-#680) |
 | RC-1 commit | `36c470249` (PR #683) |
 
 ## This package
@@ -23,10 +23,10 @@ Does not declare G2, FCS, M3, or ARCH_FREEZE_CLOSED. `OD-AF-RC-KR08` remains `PE
 
 | Blocker | Notes |
 | --- | --- |
-| `OD-AF-RC-KR08` | Operator must answer before #680 / red-governance train merges |
+| `OD-AF-RC-KR08` | **Resolved (TAK, #680 only)** — other reds need own mandate |
 | PT-G01/G02 | draft tickets; no product PR |
 | B.2 backlog | 043-M, FC3, TENANT, … not started in this session |
 
 ## Next
 
-Operator: `OD-AF-RC-KR08` (TAK/NIE). Then merge or hold #680 and 051-N per mandate. Continue B.2 implementation tickets with approved plans.
+#680 on train. Next: await #684 CI; B.2 W3 backlog per plan; RC-2 exit before RC-3+.

@@ -42,4 +42,18 @@ Merge other red-governance train PRs without their own operator mandate. FCS / G
 
 ## Post-merge (#680)
 
-_(filled after merge commit below)_
+| Field | Value |
+| --- | --- |
+| Merged at (GitHub) | `2026-11-21T05:48:53Z` |
+| Merge commit on `arch-freeze/rw-train` | `65ef1f196d38d673436667230bb59b92158714a2` |
+| Prior train pin | `28c27cb896d02e0185b9fa02047411fa152f6469` |
+| Method | `gh pr merge 680 --merge --admin` after `OD-AF-RC-KR08` grant |
+| Ticket | `T-IGX-043-A` (PT-FC1) |
+
+Train fetched in worktree `af-rc2`: `origin/arch-freeze/rw-train` → `65ef1f196`.
+
+**#684 (`af2/rw-supply-ab`, T-IGX-051-N):** left **open** — no merge (mandate excluded; `governance-fast` outcome must be confirmed green or KR-08-class expected-red with separate operator grant). CI re-triggered against updated train base (`2026-11-21`).
+
+**#681 / #683 (RC-0/RC-1 docs):** not merged in this step (optional per plan after #680).
+
+RC-2 exit criteria unchanged; RC-3+ not started.
