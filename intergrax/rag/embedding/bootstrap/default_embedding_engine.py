@@ -4,12 +4,10 @@
 
 from __future__ import annotations
 
-from typing import Optional
-
-from intergrax.integrations.contracts.base import IntegrationCategory
-from intergrax.integrations.registry.catalog import list_slugs
+from intergrax.integrations.contracts.base import IntegrationCategory, LabSelectorOptIn
 from intergrax.integrations.contracts.integration_profile import IntegrationProfile
 from intergrax.integrations.contracts.ref import normalize_integration_binding
+from intergrax.integrations.registry.catalog import list_slugs
 from intergrax.rag.embedding.contracts.base_embedding_manager import BaseEmbeddingManager
 from intergrax.rag.embedding.contracts.embedding_provider import EmbeddingProvider
 from intergrax.rag.embedding.embedding_manager import EmbeddingManager
@@ -31,19 +29,27 @@ def _ensure_embedding_catalog_registered() -> None:
     register_default_integrations(preset="full")
 
 
-def create_default_embedding_manager() -> BaseEmbeddingManager:
-    pipeline = create_default_embedding_pipeline()
+def create_default_embedding_manager(
+    *,
+    integration_profile: IntegrationProfile | None = None,
+    lab_opt_in: LabSelectorOptIn | None = None,
+) -> BaseEmbeddingManager:
+    pipeline = create_default_embedding_pipeline(
+        integration_profile=integration_profile,
+        lab_opt_in=lab_opt_in,
+    )
     return EmbeddingManager(pipeline=pipeline)
 
 
 def create_default_embedding_engine(
-    provider_id: Optional[str] = None,
-    embedding_model: Optional[str] = None,
+    provider_id: str | None = None,
+    embedding_model: str | None = None,
     *,
     provider: EmbeddingProvider | None = None,
     integration_profile: IntegrationProfile | None = None,
     embedding_profile: EmbeddingProfile | None = None,
     execution_config: EmbeddingProviderExecutionConfig | None = None,
+    lab_opt_in: LabSelectorOptIn | None = None,
 ) -> EmbeddingEngine:
     """Create EmbeddingEngine with Integrations-backed provider binding."""
     if provider is not None:
@@ -51,13 +57,16 @@ def create_default_embedding_engine(
 
     _ensure_embedding_catalog_registered()
 
-    compat_profile = embedding_profile or embedding_profile_from_env()
+    compat_profile = embedding_profile
+    if compat_profile is None:
+        compat_profile = embedding_profile_from_env(lab_opt_in=lab_opt_in)
     resolved_model = embedding_model if embedding_model is not None else compat_profile.model
     resolved_profile = EmbeddingProfile(
         provider=resolve_embedding_provider_slug(
             integration_profile=integration_profile,
             provider_id=provider_id,
             embedding_profile=compat_profile,
+            lab_opt_in=lab_opt_in,
         ),
         model=resolved_model,
     )
@@ -72,17 +81,19 @@ def create_default_embedding_engine(
         provider_id=provider_id,
         embedding_profile=resolved_profile,
         execution_config=execution_config,
+        lab_opt_in=lab_opt_in,
     )
     return EmbeddingEngine(provider=bound_provider)
 
 
 def create_default_embedding_pipeline(
-    provider_id: Optional[str] = None,
-    embedding_model: Optional[str] = None,
+    provider_id: str | None = None,
+    embedding_model: str | None = None,
     *,
     integration_profile: IntegrationProfile | None = None,
     embedding_profile: EmbeddingProfile | None = None,
     execution_config: EmbeddingProviderExecutionConfig | None = None,
+    lab_opt_in: LabSelectorOptIn | None = None,
 ) -> EmbeddingPipeline:
     """Create EmbeddingPipeline using canonical Integrations-backed runtime binding."""
     engine = create_default_embedding_engine(
@@ -91,5 +102,6 @@ def create_default_embedding_pipeline(
         integration_profile=integration_profile,
         embedding_profile=embedding_profile,
         execution_config=execution_config,
+        lab_opt_in=lab_opt_in,
     )
     return EmbeddingPipeline(engine=engine)

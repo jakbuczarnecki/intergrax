@@ -28,9 +28,14 @@ CLAUDE.md                  Claude-only rules + generated import block
 
 | Rule | `loading` |
 |------|-----------|
-| `intergrax-token-budget`, `intergrax-test-process-budget`, `intergrax-session-artifacts`, `intergrax-git-branch-safety`, `intergrax-env-vendor-qualification`, `intergrax-no-ai-attribution` | always |
+| `intergrax-core` | always |
 | `intergrax-iteration`, `intergrax-hep-step`, `intergrax-ci-hotfix`, `intergrax-micro-implement` | explicit |
-| `intergrax-agent-roles`, `intergrax-independent-audit` | auto |
+| `intergrax-agent-roles`, `intergrax-independent-audit`, `intergrax-env-vendor-qualification`, `intergrax-scenario-factory` | auto |
+| `loading: retired` (tombstone, no adapters) | `intergrax-token-budget`, `intergrax-test-process-budget`, `intergrax-session-artifacts`, `intergrax-git-branch-safety`, `intergrax-no-ai-attribution` |
+
+**Old rule -> new section (W1-P01):** token-budget -> core "Token use"; test-process-budget -> core "Test budget"; session-artifacts -> core "Session artifacts"; git-branch-safety -> core "Branch safety"; no-ai-attribution -> core "Attribution"; env-vendor-qualification -> on-demand skill, core "Environment (C10/C15)" keeps a 2-line note. Worktree rules from `CLAUDE.md` -> skill `igx-worktree`.
+
+**Size gates** (`sync_agent_env.py --check`): L0 (CLAUDE.md + AGENTS.md + always-on rules) <= 8 KB, CLAUDE.md <= 25 lines, AGENTS.md <= 60 lines, descriptions <= 300 chars, skill body <= 120 lines unless listed in `size_exemptions.yaml`.
 
 Skills (`igx-devos-*`) are routed to roles by [`governance/agent-control-plane/skill_routing_registry.yaml`](../governance/agent-control-plane/skill_routing_registry.yaml) and exist in both tools under the same id.
 
