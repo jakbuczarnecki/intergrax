@@ -1,8 +1,7 @@
 # ARCH-FREEZE continuation checkpoint (development train)
 
-**Updated:** 2026-11-21 (G4 RC-1 open items + fala 6 / TOR C; merge wave `af-dev-rc1-docs` → `development`)  
-**Base branch (fetch):** `origin/development` @ `f551abb495ad2316a4b5ca0a90dd9aef2a4f28d9` (`f551abb49`)  
-**Pin sesji parallel G4 / fala 6:** `dc083f6eadf0f7dbe501fbcf93659e2dd158b825` (`dc083f6ea`)  
+**Updated:** 2026-11-21 (fala 6 close / TOR C, worktree `af-dev-fala6-close`)  
+**Base branch:** `origin/development` @ `e61e5136aa0617eea69b97ceedd8da38a4d0e796` (`e61e5136a`)  
 **Arch-freeze train reference:** `origin/arch-freeze/rw-train` @ `dbaebfa8cd13a6ba8bfa6eef2cdf581216ddb3d2` — PR **#699** **MERGED** (slice do `1cec68222`)
 
 ## Train merge — fakt operatora / automation
@@ -35,7 +34,7 @@ Merge przy czerwonych checkach — zapisany stan; **nie** spełnia OD-AF-AUTO-01
 | G2 | `af-dev-pt-wf` | `af-dev-pt-wf` | T-IGX-043-J | Plan §7; G-09 merged; WF E2–E4 product **BLOCKED** | merged @ `dc083f6ea` |
 | G3 | `af-dev-rw-trust` | `af-dev-rw-trust` | T-IGX-051-C | Plan §7 rev-2 minimum; product **BLOCKED** | plan_approved |
 | G4 (RC-1) | `af-dev-rc1-docs` | `af-dev-rc1-docs` | ticket-less docs | RC-1 open items + RC-2/3 prep sync | **merged this wave** |
-| G4 (RC-3 prep) | `af-dev-rc3-prep` | `af-dev-rc3-prep` | ticket-less docs | RC-3 prep dossier + gap + G2 draft (TOR C fala 6) | landed fala 6 |
+| G4 (RC-3 prep) | `af-dev-fala6-close` | `af-dev-fala6-close` | ticket-less docs | RC-3 prep dossier + gap + G2 draft (TOR C fala 6) | **DONE** fala 6 |
 | G5 | `af-dev-043m` | `af-dev-043m` | T-IGX-043-M | Smoke green → `in_progress`; Part E manifest **BLOCKED** | in_progress |
 
 ## RW-PLAN-AUDIT (`T-AF2-RW-PLAN-AUDIT`)
@@ -44,7 +43,7 @@ Merge przy czerwonych checkach — zapisany stan; **nie** spełnia OD-AF-AUTO-01
 
 ## Divergence warning
 
-Po merge **#699** train zawiera slice FC-3 / G-09 / trust, ale **nie** pełny `development` (**241** dev-only / **217** train-only od merge-base `70d73f0f0`). Szczegóły — [`TRAIN_DEV_GAP.md`](TRAIN_DEV_GAP.md). Product remediation on `development` nadal **cherry-pick** / rebase z train tam, gdzie slice się rozjechał — **nie** merge `rw-train` bez mandatu operatora.
+Po merge **#699** train zawiera slice FC-3 / G-09 / trust, ale **nie** pełny `development` (**286** dev-only / **217** train-only od merge-base `70d73f0f0`). Szczegóły — [`TRAIN_DEV_GAP.md`](TRAIN_DEV_GAP.md). Product remediation on `development` nadal **cherry-pick** / rebase z train tam, gdzie slice się rozjechał — **nie** merge `rw-train` bez mandatu operatora.
 
 ## Dependency notes (G1)
 
@@ -57,4 +56,4 @@ Po merge **#699** train zawiera slice FC-3 / G-09 / trust, ale **nie** pełny `d
 
 ## G4 — RC-3 prep (fala 6)
 
-Deliverables: `RC3_PREP_DOSSIER.md`, `G2_CHECKLIST_DRAFT.md`, `TRAIN_DEV_GAP.md`; checkpointy w tym katalogu. Werdykt RC-3 prep: **DRAFT / NOT STARTED** — nie wyjście RC-3.
+Deliverables: `RC3_PREP_DOSSIER.md`, `G2_CHECKLIST_DRAFT.md`, `TRAIN_DEV_GAP.md`; checkpointy w tym katalogu. TOR C fala 6 dokumentacja prep: **DONE** @ `e61e5136a`. Werdykt RC-3 exit (W4): **DRAFT / NOT STARTED** — nie wyjście RC-3.
