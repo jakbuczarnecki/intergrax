@@ -5,53 +5,67 @@
 
 from __future__ import annotations
 
-from typing import Optional
-
+from intergrax.contracts.agent_execution_result import AgentExecutionResult
 from intergrax.contracts.execution_capacity_admission import (
     ExecutionCapacityAdmissionPort,
     ExecutionCapacityPermit,
 )
 from intergrax.contracts.execution_identity import AttemptId, ExecutionId, RunId, TaskId
+from intergrax.contracts.execution_lineage import ExecutionLineagePersistence
 from intergrax.contracts.recovery_admission import (
     RecoveryAdmissionPort,
     RecoveryAdmissionRequest,
     RecoveryKind,
 )
-from intergrax.runtime.human.models import EscalationOutcome
-from intergrax.contracts.execution_lineage import ExecutionLineagePersistence
 from intergrax.contracts.runtime_policy import PolicyDecision
+from intergrax.integrations.contracts.base import IntegrationConfigurationError
 from intergrax.runtime.cancellation.resume_admission import assert_checkpoint_resumable
-from intergrax.runtime.long_running.checkpoint_resume_validation import (
-    assert_checkpoint_persistable,
-    assert_checkpoint_resume_eligible,
-    resolve_resume_execution_authority,
-)
+from intergrax.runtime.execution.checkpoint_execution_graph_bridge import ExecutionGraph, NexusPlan
 from intergrax.runtime.execution.execution_terminal.service import ExecutionTerminalService
+from intergrax.runtime.human.models import EscalationOutcome
 from intergrax.runtime.long_running.checkpoint_builder import (
     apply_runtime_checkpoint_to_task,
     build_runtime_checkpoint,
     build_task_checkpoint,
 )
+from intergrax.runtime.long_running.checkpoint_resume_validation import (
+    assert_checkpoint_persistable,
+    assert_checkpoint_resume_eligible,
+    resolve_resume_execution_authority,
+)
 from intergrax.runtime.long_running.models import TaskCheckpoint
+from intergrax.runtime.long_running.notification import NotificationAdapter, resolve_notification_adapter
 from intergrax.runtime.long_running.persistence_contract import (
     TaskCheckpointPersistence,
     TaskCheckpointReader,
 )
 from intergrax.runtime.notifications.models import NotificationMessage
-from intergrax.runtime.long_running.notification import NotificationAdapter, resolve_notification_adapter
 from intergrax.runtime.notifications.templates.escalation import build_escalation_notification_message
 from intergrax.runtime.notifications.templates.hitl import build_hitl_pause_notification_message
 from intergrax.runtime.notifications.templates.partial_result import (
     build_partial_result_notification_message,
 )
-from intergrax.runtime.execution.checkpoint_execution_graph_bridge import ExecutionGraph
-from intergrax.runtime.execution.checkpoint_execution_graph_bridge import NexusPlan
-from intergrax.contracts.agent_execution_result import AgentExecutionResult
 from intergrax.runtime.resilience.task_resume_recovery_handoff import (
     handoff_task_resume_recovery_start,
 )
 from intergrax.runtime.task.task import Task, TaskState
 from intergrax.runtime.task.task_metadata_keys import TaskMetadataKey
+
+
+def _resolve_long_running_notifier(
+    *,
+    adapter: NotificationAdapter | None,
+    channel: str | None,
+) -> tuple[NotificationAdapter, str]:
+    if adapter is not None:
+        label = (channel or "log").strip().lower() or "log"
+        return adapter, label
+    if channel is None or not str(channel).strip():
+        raise IntegrationConfigurationError(
+            "long-running notification requires an injected adapter or explicit notify_channel"
+        )
+    normalized = str(channel).strip().lower()
+    return resolve_notification_adapter(normalized), normalized
 
 
 def _wants_human_resume(task: Task) -> bool:
@@ -114,10 +128,7 @@ class LongRunningCoordinator:
 
     @staticmethod
     def should_checkpoint(task: Task) -> bool:
-        return (
-            LongRunningCoordinator.is_long_running(task)
-            and task.options.long_running.checkpoint_on_pause
-        )
+        return LongRunningCoordinator.is_long_running(task) and task.options.long_running.checkpoint_on_pause
 
     @staticmethod
     def restore_if_resuming(
@@ -128,7 +139,7 @@ class LongRunningCoordinator:
         execution_lineage_persistence: ExecutionLineagePersistence | None = None,
         require_durable_lineage: bool = False,
         policy_decision: PolicyDecision | None = None,
-    ) -> Optional[TaskCheckpoint]:
+    ) -> TaskCheckpoint | None:
         if not LongRunningCoordinator.is_long_running(task):
             if not _wants_human_resume(task):
                 return None
@@ -141,7 +152,7 @@ class LongRunningCoordinator:
             raw = task.metadata.get(TaskMetadataKey.RESUME_TOKEN)
             token = str(raw) if raw else None
 
-        checkpoint: Optional[TaskCheckpoint] = None
+        checkpoint: TaskCheckpoint | None = None
         if token:
             checkpoint = store.get_by_token(task.task_id, task.tenant_id, token)
         elif _wants_human_resume(task):
@@ -203,9 +214,9 @@ class LongRunningCoordinator:
         run_id: str,
         attempt_id: str,
         progress_message: str = "",
-        plan: Optional[NexusPlan] = None,
-        graph: Optional[ExecutionGraph] = None,
-        last_execution: Optional[AgentExecutionResult] = None,
+        plan: NexusPlan | None = None,
+        graph: ExecutionGraph | None = None,
+        last_execution: AgentExecutionResult | None = None,
     ) -> TaskCheckpoint:
         runtime = build_runtime_checkpoint(
             task,
@@ -241,13 +252,15 @@ class LongRunningCoordinator:
         *,
         subject: str,
         body: str,
-        adapter: Optional[NotificationAdapter] = None,
-        extra: Optional[dict] = None,
+        adapter: NotificationAdapter | None = None,
+        extra: dict | None = None,
     ) -> None:
         if not LongRunningCoordinator.is_long_running(task):
             return
-        channel = task.options.long_running.notify_channel or "log"
-        notifier = adapter or resolve_notification_adapter(channel)
+        notifier, channel = _resolve_long_running_notifier(
+            adapter=adapter,
+            channel=task.options.long_running.notify_channel,
+        )
         await notifier.notify(
             NotificationMessage(
                 channel=channel,
@@ -269,14 +282,16 @@ class LongRunningCoordinator:
         task: Task,
         *,
         progress_message: str,
-        partial_payload: Optional[dict] = None,
-        last_step_summary: Optional[str] = None,
-        adapter: Optional[NotificationAdapter] = None,
+        partial_payload: dict | None = None,
+        last_step_summary: str | None = None,
+        adapter: NotificationAdapter | None = None,
     ) -> None:
         if not LongRunningCoordinator.is_long_running(task):
             return
-        channel = task.options.long_running.notify_channel or "log"
-        notifier = adapter or resolve_notification_adapter(channel)
+        notifier, channel = _resolve_long_running_notifier(
+            adapter=adapter,
+            channel=task.options.long_running.notify_channel,
+        )
         message = build_partial_result_notification_message(
             task,
             progress_message=progress_message,
@@ -291,12 +306,14 @@ class LongRunningCoordinator:
         task: Task,
         *,
         progress_message: str,
-        adapter: Optional[NotificationAdapter] = None,
+        adapter: NotificationAdapter | None = None,
     ) -> None:
         if not LongRunningCoordinator.is_long_running(task):
             return
-        channel = task.options.long_running.notify_channel or "log"
-        notifier = adapter or resolve_notification_adapter(channel)
+        notifier, channel = _resolve_long_running_notifier(
+            adapter=adapter,
+            channel=task.options.long_running.notify_channel,
+        )
         message = build_hitl_pause_notification_message(
             task,
             progress_message=progress_message,
@@ -310,12 +327,14 @@ class LongRunningCoordinator:
         *,
         outcome: EscalationOutcome,
         progress_message: str,
-        adapter: Optional[NotificationAdapter] = None,
+        adapter: NotificationAdapter | None = None,
     ) -> None:
         if not LongRunningCoordinator.is_long_running(task):
             return
-        channel = task.options.long_running.notify_channel or "log"
-        notifier = adapter or resolve_notification_adapter(channel)
+        notifier, channel = _resolve_long_running_notifier(
+            adapter=adapter,
+            channel=task.options.long_running.notify_channel,
+        )
         message = build_escalation_notification_message(
             task,
             outcome=outcome,
