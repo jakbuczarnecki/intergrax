@@ -37,7 +37,9 @@ Merge przy czerwonych checkach — zapisany stan; **nie** spełnia OD-AF-AUTO-01
 | G4 (RC-3 prep) | `af-dev-fala6-close` | `af-dev-fala6-close` | ticket-less docs | RC-3 entry prep dossier + gap + G2 draft (TOR C fala 6) | **DONE** fala 6 |
 | G4 (RC-3 exit prep) | `af-dev-mep-w4` | `af-dev-mep-w4` | ticket-less docs | W4 Q02/Q03/FCS/S04 exit prep checklist + G2/RC3 refresh | **IN PROGRESS** W4 |
 | G5 | `af-dev-043m` | `af-dev-043m` | T-IGX-043-M | Slices 1–3 + fala 5 close **9 passed**; Part E manifest **BLOCKED** | in_progress |
-| G6 (MEP W7 prep) | `af-dev-mep-w7` | `af-dev-mep-w7` | ticket-less docs | PT-Q13 / PT-VBN / ENTRY / DS-ADM prep dossiers | **DONE** (merge fali) |
+| G6 (MEP W5 prep) | `af-dev-mep-w5` | `af-dev-mep-w5` | ticket-less docs | W5 pre-pin dossier + PT-* prep | **DONE** prep |
+| G7 (MEP W6 prep) | `af-dev-mep-w6` | `af-dev-mep-w6` | T-IGX-052-F/G/H | Campaign + requal + M3 prep checklists | **DONE** prep @ merge |
+| G8 (MEP W7 prep) | `af-dev-mep-w7` | `af-dev-mep-w7` | ticket-less docs | PT-Q13 / PT-VBN / ENTRY / DS-ADM prep | **DONE** prep |
 
 ## RW-PLAN-AUDIT (`T-AF2-RW-PLAN-AUDIT`)
 
@@ -63,6 +65,10 @@ Deliverables: `RC3_PREP_DOSSIER.md`, `G2_CHECKLIST_DRAFT.md`, `TRAIN_DEV_GAP.md`
 ## G4 — RC-3 exit prep (MEP W4)
 
 Deliverables: `RC3_EXIT_PREP_CHECKLIST.md`; odświeżenie `G2_CHECKLIST_DRAFT.md` i `RC3_PREP_DOSSIER.md` (PT-Q02, PT-Q03, FCS, PT-S04 — prep only). Pin dokumentacyjny: `d043a21c6`. **Nie** G2 PASS, **nie** Q02/FCS/S04 signoff.
+
+## G5 — W5 pre-pin prep (MEP W5)
+
+Worktree `af-dev-mep-w5` @ `d043a21c6`. Deliverables: [`W5_PREP_DOSSIER.md`](W5_PREP_DOSSIER.md) + `continuation/w5/PT-*_PREP.md` (9 węzłów WP-12). Dokumentacja prep MEP W5: **DONE** @ `64a786a93` (bez claim pin / M3 / FCS). Werdykt fali W5 programowej: **NOT STARTED** — FCS i AR otwarte.
 
 ## G6 — MEP W7 freeze prep (PT-Q13 / VBN / ENTRY / DS-ADM)
 
