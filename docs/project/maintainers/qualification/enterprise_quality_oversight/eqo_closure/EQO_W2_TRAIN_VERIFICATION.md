@@ -53,12 +53,12 @@ Repro (wave-4): `git merge-base --is-ancestor <merge_sha> 28c27cb896d02e0185b9fa
 
 ## #680 gap track (no new ticket)
 
-| Item | Status (wave-4) | Status (wave-8) |
-|------|-----------------|-----------------|
-| PR #680 / T-IGX-043-A | Still **not** ancestor of `TRAIN_PIN`; draft branch `af2/pt-fc1` | **Unchanged** — `git merge-base --is-ancestor` negative @ 2026-11-21 |
-| EQO posture | **Track-only** per `pr680_governance_fast.md`; KR-08 / W0-03 class | Track-only; English memo refresh in lane `eqo/wave-8/x` |
-| C16 matrix | `#680 open` — no waiver, no merge claim | **Unchanged** — no merge claim |
-| New ticket | **None** (operator band D out of EQO write set) | **None** |
+| Item | Status (wave-4) | Status (wave-8) | Status (wave-12) |
+|------|-----------------|-----------------|------------------|
+| PR #680 / T-IGX-043-A | Still **not** ancestor of `TRAIN_PIN`; draft branch `af2/pt-fc1` | **Unchanged** — `git merge-base --is-ancestor` negative @ 2026-11-21 | **Unchanged** — negative ancestor check @ land `292ca3348` (PR #704) |
+| `governance-fast` class | KR-08 / W0-03 | Track-only memo | **Track-only** — `pr680_governance_fast.md`; no merge / waiver |
+| C16 matrix | `#680 open` — no waiver, no merge claim | **Unchanged** — no merge claim | **Unchanged** |
+| New ticket | **None** (operator band D out of EQO write set) | **None** | **None** |
 
 ## Wave-8 read pass (W2-02 replay doc, docs-only)
 
@@ -73,6 +73,21 @@ Repro (wave-4): `git merge-base --is-ancestor <merge_sha> 28c27cb896d02e0185b9fa
 Repro (wave-8 W2-02): `git cat-file -e 28c27cb896d02e0185b9fa02047411fa152f6469:governance/tickets/T-IGX-043-G.md` and ancestor check for merge SHAs above.
 
 **Recorded:** lane `eqo/wave-8/w2` · `Ref: governance/tickets/T-IGX-046-F.md`
+
+## Wave-12 read pass (#680 track + W2-02, docs-only)
+
+**Executed:** 2026-11-21 · lane `eqo/wave-12/w2` · **Land:** `292ca3348` (`origin/development`, PR #704). Pins unchanged (`TRAIN_PIN` `28c27cb`, `DOC_PIN` `8cee3c5`).
+
+| Task | Read focus | Wave-12 disposition |
+|------|------------|---------------------|
+| #680 | `git merge-base --is-ancestor` for PR #680 merge / `af2/pt-fc1` tip vs `TRAIN_PIN` | **Still not on train** — track-only; C16 unchanged |
+| W2-02 | Post wave-6: `EQO_WAVE6_MANIFEST.md` WB09 EXE exit `0` @ pin | **WB09 SDK slice replayed**; W2-02 tier-boundary import gates (`043-G`/`043-H`) remain **`MERGED_GATE_PENDING`** |
+| W2-02 queue | `runs/wb05/AUD_SESSION_E.md` **BLOCKED**; `x/A4-003/A4_GATE_COUNTER_READ.md` | No promotion; gate replay not closed |
+| W2-02 evidence | Docs-only; no pytest in this lane | No PASS / closure claim |
+
+Repro (wave-12 #680): `git merge-base --is-ancestor $(git rev-parse af2/pt-fc1) 28c27cb896d02e0185b9fa02047411fa152f6469` → exit 1.
+
+**Recorded:** lane `eqo/wave-12/w2` · `Ref: governance/tickets/T-IGX-046-F.md`
 
 ## EQO disposition
 
