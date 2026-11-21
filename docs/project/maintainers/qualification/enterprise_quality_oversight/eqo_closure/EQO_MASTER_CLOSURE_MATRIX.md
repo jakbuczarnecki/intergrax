@@ -3,13 +3,13 @@
 | ID | Status | Note |
 |----|--------|------|
 | C01 | PARTIALLY_MET | 240 IDs enumerated; disposition incomplete |
-| C02 | NOT_MET | 51 B assigned to WB; DIS/AUD not run |
+| C02 | PARTIALLY_MET | WB01+WB02+WB05 EXE/DIS interim; AUD open for 51 B |
 | C03 | PARTIALLY_MET | WB05 EXE @ 28c27cb (14 passed); DIS/AUD open |
 | C04 | PARTIALLY_MET | C-03 drift_class filled; C-01/C-02 in progress |
 | C05 | PARTIALLY_MET | E-02 report @ DOC_PIN; register edit blocked |
 | C06 | PARTIALLY_MET | 225 FRZ counted; 109 OPEN |
 | C07 | NOT_MET | 2 open BLOCKER severity |
-| C08 | NOT_VERIFIED | Pre-FCS challenge pending |
+| C08 | PARTIALLY_MET | WB02 tenant pytest @ TRAIN_PIN (66 pass); WB03–12 open |
 | C09 | NOT_MET | FCS/M3 not reached |
 | C10 | NOT_MET | Train delta not fully replayed |
 | C11 | PARTIALLY_MET | Dossier A pinned; train evidence partial |

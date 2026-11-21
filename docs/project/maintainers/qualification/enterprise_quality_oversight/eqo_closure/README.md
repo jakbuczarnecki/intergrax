@@ -27,10 +27,12 @@ All qualification commits carry: `Ref: governance/tickets/T-IGX-046-F.md` (ticke
 | 7 | KR settlement X-06 | `dbe5ba1ce2d7755946370008bf2c3d050e08673f` |
 | 8 | W7/W8 deferred | `23b0a66a189da28a1190948d44e2da88e5a933bf` |
 | 9 | README index (this file) | `234d3c70efeebbcde2d72e8b2ce6ffd5d64b941f` |
+| 10 | merge development + reconciliation 1073 | `89d302ed3d94eae98c962b3d7b09e5a540d8c70d2` (pending push) |
+| 11 | W3-WB02 tenant isolation DES→DIS | (this commit) |
 
 Index maintenance commits on this branch: `15bfc0851`, `3a92440ad` (SHA alignment only).
 
-Worktree evidence runs: `eqo_closure/runs/wb05/`, `runs/wb01/`. Campaign C memos: `c/A3-004/`, `c/A6-004/`.
+Worktree evidence runs: `eqo_closure/runs/wb05/`, `runs/wb01/`, `runs/wb02/`. Campaign C memos: `c/A3-004/`, `c/A6-004/`.
 
 ## Registry inventory (W0)
 
