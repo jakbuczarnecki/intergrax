@@ -88,6 +88,17 @@
 
 **Werdykt J1 (Runda 1):** **OPEN** — train HEAD na pinie slice; rung G2 **nie** zapisany.
 
+### RC3-J2 — Train CI green (poza mechanicznie oczekiwanym red set)
+
+| Step | Rola | Artefakt / komenda | Bramka | Stan |
+|------|------|-------------------|--------|------|
+| RC3-J2-1 | operator | `gh run list --branch arch-freeze/rw-train --limit 20` — workflow **Regression gate** + **rag-guard** | read-only @ `dbaebfa8` | OPEN |
+| RC3-J2-2 | operator | Werdykt jobów `governance-fast`, `ci-smoke`, `rag-gate` na HEAD train | OD-AF-AUTO-01 / KR-08 | OPEN |
+| RC3-J2-3 | orchestrator | [`RC2_EXIT_CHECKLIST.md`](RC2_EXIT_CHECKLIST.md) RC2-B2 — aktualizacja **tylko** przy green + run id | **D1=A** (Runda 2) | OPEN |
+| RC3-J2-4 | implementer | Kolejny merge / cherry-pick na train | **D2=STOP** | BLOCKED |
+
+**Werdykt J2 (Runda 1):** **OPEN** — merge **#699** przy red CI; green replay **nie** zadeklarowany.
+
 ## Werdykt (exit prep only)
 
 | Warstwa | Werdykt |
