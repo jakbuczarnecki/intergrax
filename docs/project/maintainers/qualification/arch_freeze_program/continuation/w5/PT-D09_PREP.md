@@ -27,11 +27,20 @@
 | W5X-D09-4 | Targeted F10 dry-run (AR-9-02) | [ ] |  |
 | W5X-D09-5 | Operator-only file — implementer nie edytuje bez mandatu | [x] | MEP-AF2 K |
 
+## Status ticketu
+
+| Pole | Wartość |
+|------|---------|
+| Mandat / ticket | AR-19 |
+| Lifecycle @ pin | NOT STARTED |
+| Tor exec (mapa) | **IN_PROGRESS** — [WP12_W5_PT_TICKETS_STATUS.md](WP12_W5_PT_TICKETS_STATUS.md) |
+
 ## Werdykt (prep dokumentacji)
 
 | Warstwa | Werdykt |
 |---------|---------|
 | MEP W5 prep PT-D09 | **DOCUMENTED** — brak claimów wykonania / pin / PASS |
+| Tor mapy ticketów W5 | **IN_PROGRESS** @ e69e1ff58 |
 | Węzeł programowy | **NOT STARTED** — wymaga FCS i autoryzacji |
 
 OD-AF-AUTO-05: bez M3, bez pinu EBH-7, bez FRZ promotion.

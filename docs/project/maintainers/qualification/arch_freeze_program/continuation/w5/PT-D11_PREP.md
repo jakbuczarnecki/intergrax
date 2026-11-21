@@ -26,11 +26,20 @@
 | W5X-D11-3 | ECAP / roadmap ordering (G-08) | [ ] | ECAP_REVISION_DRAFT |
 | W5X-D11-4 | F10 STALE at baseline (S1) | [ ] | RM499-M18 cite |
 
+## Status ticketu
+
+| Pole | Wartość |
+|------|---------|
+| Mandat / ticket | render @ FCS trail |
+| Lifecycle @ pin | NOT STARTED |
+| Tor exec (mapa) | **IN_PROGRESS** — [WP12_W5_PT_TICKETS_STATUS.md](WP12_W5_PT_TICKETS_STATUS.md) |
+
 ## Werdykt (prep dokumentacji)
 
 | Warstwa | Werdykt |
 |---------|---------|
 | MEP W5 prep PT-D11 | **DOCUMENTED** — brak claimów wykonania / pin / PASS |
+| Tor mapy ticketów W5 | **IN_PROGRESS** @ e69e1ff58 |
 | Węzeł programowy | **NOT STARTED** — wymaga FCS i autoryzacji |
 
 OD-AF-AUTO-05: bez M3, bez pinu EBH-7, bez FRZ promotion.

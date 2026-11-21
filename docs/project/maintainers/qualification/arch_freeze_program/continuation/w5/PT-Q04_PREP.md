@@ -21,18 +21,27 @@
 
 | Id | Kryterium | Stan | Uwagi |
 |----|-----------|------|-------|
-| W5X-Q04-1 | Twardy przodek FCS | BLOCKED | FCS nie istnieje @ d043a21c6 |
+| W5X-Q04-1 | Twardy przodek FCS | BLOCKED | FCS nie istnieje @ e69e1ff58 |
 | W5X-Q04-2 | RB-2 / Q03 complete (AR-34) | BLOCKED | W4 otwarte — patrz RC3_EXIT_PREP_CHECKLIST |
 | W5X-Q04-3 | ROADMAP-REPLAY-X dispositions / re-pin (DP-60) | [ ] | KR-10; RM499-M17/M21 — [KNOWN_RED_REGISTER.md](../KNOWN_RED_REGISTER.md) |
 | W5X-Q04-4 | TENANT-X delta gate + carrier (DP-59) | [ ] | Węzeł PT-Q07 zależny |
 | W5X-Q04-5 | DUP-X / COMPAT/STATE classification | [ ] | S1 counters — cite only |
 | W5X-Q04-6 | Ticket `Approved:` + AR-34 | [ ] | Operator |
 
+## Status ticketu
+
+| Pole | Wartość |
+|------|---------|
+| Mandat / ticket | AR-34; ticket TBD pre-pin |
+| Lifecycle @ pin | NOT STARTED |
+| Tor exec (mapa) | **IN_PROGRESS** — [WP12_W5_PT_TICKETS_STATUS.md](WP12_W5_PT_TICKETS_STATUS.md) |
+
 ## Werdykt (prep dokumentacji)
 
 | Warstwa | Werdykt |
 |---------|---------|
 | MEP W5 prep PT-Q04 | **DOCUMENTED** — brak claimów wykonania / pin / PASS |
+| Tor mapy ticketów W5 | **IN_PROGRESS** @ e69e1ff58 |
 | Węzeł programowy | **NOT STARTED** — wymaga FCS i autoryzacji |
 
 OD-AF-AUTO-05: bez M3, bez pinu EBH-7, bez FRZ promotion.
