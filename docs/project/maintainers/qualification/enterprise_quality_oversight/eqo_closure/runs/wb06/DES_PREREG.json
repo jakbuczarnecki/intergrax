@@ -1,0 +1,20 @@
+{
+  "schema": "eqo_w3_des_prereg.v1",
+  "workstream": "WB06",
+  "task_id": "EQO-W3-WB06-DES",
+  "evidence_pin": "28c27cb896d02e0185b9fa02047411fa152f6469",
+  "preregistered_utc": "2026-11-21T06:12:00Z",
+  "pytest_command_sha256": "51d8f0b813cc4721650d73a3eab662433b00b9cf7d96ac1ab7607c34376ca38e",
+  "pytest_command": "uv run pytest tests/qualification/config_x/test_config_x_qualification_gates.py tests/qualification/config_x/test_config_x_adversarial_cx_gates.py tests/unit/llm_adapters/test_ollama_tool_calling.py::test_unresolved_capabilities_fail_closed -q --tb=line",
+  "finding_ids": [
+    "EQOA-A4-025",
+    "EQOA-A4-042",
+    "EQOA-A5-002"
+  ],
+  "hypotheses": {
+    "EQOA-A4-025": "CONFIG-X closed-world env scan is limited to inventoried surfaces; about 25 ambient environment reads in intergrax/runtime are outside its stated scope",
+    "EQOA-A4-042": "intergrax/globals has no owner and hardcodes Poland-specific import-time defaults",
+    "EQOA-A5-002": "EBH-2E cert-time gap: Gemini, OpenAI Responses and LangChain Ollama stream paths bypassed the provider guard (later PDC D3 HIGH, repaired)"
+  },
+  "write_set_note": "Band C DES only (parallel S1); EXE deferred — shared pytest lock"
+}

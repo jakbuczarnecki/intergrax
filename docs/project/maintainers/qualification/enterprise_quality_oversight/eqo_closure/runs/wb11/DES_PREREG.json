@@ -1,0 +1,34 @@
+{
+  "schema": "eqo_w3_des_prereg.v1",
+  "workstream": "WB11",
+  "task_id": "EQO-W3-WB11-DES",
+  "evidence_pin": "28c27cb896d02e0185b9fa02047411fa152f6469",
+  "preregistered_utc": "2026-11-21T06:17:00Z",
+  "pytest_command_sha256": "088a4be905ca5dfbd81a39aa1b86c853d37d346cc4698e37b9342318bcffb9ef",
+  "pytest_command": "uv run pytest tests/qualification/pdc_x/xd/test_xd_12_evol_ent_audit.py tests/qualification/ent_audit_x/integration/test_ent_audit_cannot_exit_clean_with_skipped_mandatory.py tests/qualification/compat_x/test_compat_x_inventory_gates.py tests/qualification/compat_x/test_compat_x_persisted_r2_final_gates.py tests/qualification/prod_q/test_prod_q_r1_durable_seal_store.py tests/qualification/ebh_7/test_ebh_7_w4_gov_dup_gates.py -q --tb=line",
+  "finding_ids": [
+    "EQOA-A6-007",
+    "EQOA-A7-037",
+    "EQOA-A1-008",
+    "EQOA-A1-012",
+    "EQOA-A1-015",
+    "EQOA-A2-023",
+    "EQOA-A2-024",
+    "EQOA-A2-051",
+    "EQOA-A7-003",
+    "EQOA-A7-007"
+  ],
+  "hypotheses": {
+    "EQOA-A6-007": "CHANGED-SINCE is fail-closed only for the audit tooling prefixes; a new product package path outside the impact map selects no mapped check (only the 31-id invariant floor runs)",
+    "EQOA-A7-037": "164 skip/xfail markers in qualification and architecture test trees are not in the EBH-7 skip disposition register; 15 markers carry no reason; no repo-wide N/A register exists",
+    "EQOA-A1-008": "Roadmap-declared FRZ closing links for older stages are not reflected in the FRZ checklist rows",
+    "EQOA-A1-012": "COMPAT-X-R5 closure rests on a single gate; full COMPAT suite declared NOT RUN",
+    "EQOA-A1-015": "PROD-Q-P0 replay result (438/436/0/2) rests on an untracked .tmp log; P2/P3 closed with no replay",
+    "EQOA-A2-023": "P0/P2/P3 B6 closures, P0-R1 x8 row and Path B amendment lack independent exact-SHA audit; B6 replay log not in tree",
+    "EQOA-A2-024": "P0 closed-world inventory gate not replayed after 202 product-path commits since its B6 replay",
+    "EQOA-A2-051": "COMPAT-X-R2-P0-R2 was accepted with 47 failed / 1633 passed in its targeted run recorded as 'mandatory future debt'; no later disposition exists and the log is untracked",
+    "EQOA-A7-003": "FRZ-DEBT-04/05 reconciliation proves 'no new' rows, not a zero inventory of existing PARTIAL/DEFERRED entries",
+    "EQOA-A7-007": "Zero-PROHIBITED and zero-duplicate counts in hardcoding/DUP-X registers are pinned to pre-baseline HEADs with 275 product files changed since"
+  },
+  "write_set_note": "Band C DES only (parallel S2); EXE deferred — shared pytest lock"
+}

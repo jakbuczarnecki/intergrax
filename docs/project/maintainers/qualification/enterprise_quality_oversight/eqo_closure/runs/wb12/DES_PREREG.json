@@ -1,0 +1,26 @@
+{
+  "schema": "eqo_w3_des_prereg.v1",
+  "workstream": "WB12",
+  "task_id": "EQO-W3-WB12-DES",
+  "evidence_pin": "28c27cb896d02e0185b9fa02047411fa152f6469",
+  "preregistered_utc": "2026-11-21T06:18:00Z",
+  "pytest_command_sha256": "cee7f64c024da3331c708a8f6482e8317f79709c9af49bae9a32ae81b3c400ea",
+  "pytest_command": "uv run pytest tests/qualification/ent_audit_x/acceptance/test_ent_a_ent_a_dup_01.py tests/qualification/dup_x/test_dup_x_closed_world_integrity.py tests/qualification/dup_x/test_dup_x_wave_b_authority_gates.py tests/unit/proofs/receipts/test_proof_receipts_contract.py tests/qualification/pdc_x/p6_repair/test_p6r_trace_alias_callers.py -q --tb=line",
+  "finding_ids": [
+    "EQOA-A3-019",
+    "EQOA-A4-039",
+    "EQOA-A4-047",
+    "EQOA-A5-010",
+    "EQOA-A8-020",
+    "EQOA-A2-031"
+  ],
+  "hypotheses": {
+    "EQOA-A3-019": "Row-level PASS evidence for EXE/GOV/CTL/REC/HRN is tied to certification-time SHAs; substantial production code changed afterwards and only a SCOPED replay revalidated it",
+    "EQOA-A4-039": "Two unrelated ProofReceipt models and two ProofReceiptStore definitions share names across platform and Tier-3",
+    "EQOA-A4-047": "Scenario-facing contracts have no single semantic owner: four scenario mechanisms with overlapping names and no mapping to the SFX closed-world resolver",
+    "EQOA-A5-010": "DUP-X duplicate-mechanism freedom not re-examined for 70 product modules added since the acceptance pin",
+    "EQOA-A8-020": "Accepted Protocol-v2 remediation (LCI trusted tenant scope, Token Optimization receipt identity) is planned only and not tracked by roadmap or FRZ",
+    "EQOA-A2-031": "NPSC-4.2 allowlist 'FAIL retained' text vs allowlist gate refreshed under EBH-7 W3 without recorded result"
+  },
+  "write_set_note": "Band C DES only (parallel S2); EXE deferred — shared pytest lock"
+}

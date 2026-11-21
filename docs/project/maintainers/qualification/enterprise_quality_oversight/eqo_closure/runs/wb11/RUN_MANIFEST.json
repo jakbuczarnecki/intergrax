@@ -1,0 +1,35 @@
+{
+  "schema": "eqo_w3_run_manifest.v1",
+  "workstream": "WB11",
+  "task_ids": [
+    "EQO-W3-WB11-DES",
+    "EQO-W3-WB11-EXE",
+    "EQO-W3-WB11-EVD",
+    "EQO-W3-WB11-DIS"
+  ],
+  "evidence_pin": "28c27cb896d02e0185b9fa02047411fa152f6469",
+  "worktree": "d:/Projekty/_wt/intergrax/eqo-w3",
+  "executed_utc": "2026-11-21T06:27:35Z",
+  "pytest_command_sha256": "088a4be905ca5dfbd81a39aa1b86c853d37d346cc4698e37b9342318bcffb9ef",
+  "pytest_command": "uv run pytest tests/qualification/pdc_x/xd/test_xd_12_evol_ent_audit.py tests/qualification/ent_audit_x/integration/test_ent_audit_cannot_exit_clean_with_skipped_mandatory.py tests/qualification/compat_x/test_compat_x_inventory_gates.py tests/qualification/compat_x/test_compat_x_persisted_r2_final_gates.py tests/qualification/prod_q/test_prod_q_r1_durable_seal_store.py tests/qualification/ebh_7/test_ebh_7_w4_gov_dup_gates.py -q --tb=line",
+  "pytest_exit_code": 1,
+  "pytest_summary": "1 failed, 68 passed in 150.74s (0:02:30)",
+  "finding_ids": [
+    "EQOA-A6-007",
+    "EQOA-A7-037",
+    "EQOA-A1-008",
+    "EQOA-A1-012",
+    "EQOA-A1-015",
+    "EQOA-A2-023",
+    "EQOA-A2-024",
+    "EQOA-A2-051",
+    "EQOA-A7-003",
+    "EQOA-A7-007"
+  ],
+  "log_path": "eqo_closure/runs/wb11/pytest_wb11_exe.log",
+  "des_path": "eqo_closure/runs/wb11/DES_PREREG.json",
+  "disposition_path": "eqo_closure/runs/wb11/COMPAT_PROD_Q_EVIDENCE.md",
+  "blockers": [
+    "PYTEST_SLICE_NON_ZERO_EXIT"
+  ]
+}
