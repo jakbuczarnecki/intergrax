@@ -1,6 +1,6 @@
 # © Artur Czarnecki. All rights reserved.
 
-"""TENANT-X-R1 authority mechanism reconciliation (22 P0 mechanisms → semantic scope + owner)."""
+"""TENANT-X-R1 authority mechanism reconciliation (frozen P0 mechanisms → semantic scope + owner)."""
 
 from __future__ import annotations
 
@@ -30,14 +30,70 @@ from tests.qualification.tenant_x._types import (
     TenantSurfaceRecord,
 )
 
+# Part A (T-IGX-051-A) removed harness literal mint from environment_wiring; retired id kept for audit trail.
+R1_RETIRED_P0_AUTHORITY_MECHANISM_IDS: Final[tuple[str, ...]] = (
+    "EXECUTION|ROOT_TENANT_SELECTION|domain:runtime_request_execution|"
+    "intergrax/applications/_shared/environment_wiring.py::literal_rewrite::wire_application_environment",
+)
+
+R1_FROZEN_P0_AUTHORITY_MECHANISM_IDS: Final[tuple[str, ...]] = (
+    "AGENTS_RUNTIME|DEFAULT_SUBSTITUTION|domain:background_work|"
+    "agents/external_contractor_adapter/external_work_adapter.py::default_substitution",
+    "APPLICATION_BOUNDARY|TENANT_SCOPE_REWRITE|domain:external_operations|"
+    "applications/governed_contractor_application/host/cli_commands.py::literal_rewrite::_retry_attestation",
+    "APPLICATION_BOUNDARY|TENANT_SCOPE_REWRITE|domain:external_operations|"
+    "applications/governed_contractor_application/host/offline_demo.py::literal_rewrite::_acceptance",
+    "APPLICATION_BOUNDARY|TENANT_SCOPE_REWRITE|domain:external_operations|"
+    "applications/governed_contractor_application/host/offline_demo.py::literal_rewrite::"
+    "run_offline_governed_contractor_demo",
+    "APPLICATION_BOUNDARY|TENANT_SCOPE_REWRITE|domain:external_operations|"
+    "applications/lab_application/host/tool_wiring.py::literal_rewrite::wire_lab_tools",
+    "APPLICATION_BOUNDARY|TENANT_SCOPE_REWRITE|domain:external_operations|"
+    "applications/local_workspace_application/serving/workspace_routes.py::scope_widening",
+    "EXECUTION|ROOT_TENANT_SELECTION|domain:runtime_request_execution|"
+    "intergrax/applications/_shared/agent_platform_admin_routes.py::"
+    "literal_rewrite::resolve_agent_platform_admin_request_identity",
+    "EXECUTION|ROOT_TENANT_SELECTION|domain:runtime_request_execution|"
+    "intergrax/runtime/execution/decision_finalization_conformance.py::"
+    "literal_rewrite::assert_concurrent_finalization_race",
+    "EXECUTION|ROOT_TENANT_SELECTION|domain:runtime_request_execution|"
+    "intergrax/runtime/execution/decision_finalization_conformance.py::"
+    "literal_rewrite::assert_concurrent_idempotent_replay",
+    "EXECUTION|ROOT_TENANT_SELECTION|domain:runtime_request_execution|"
+    "intergrax/runtime/execution/decision_finalization_conformance.py::"
+    "literal_rewrite::assert_decision_finalization_persistence_conformance",
+    "EXECUTION|ROOT_TENANT_SELECTION|domain:runtime_request_execution|"
+    "intergrax/runtime/task/agent_capability_intake.py::literal_rewrite::task_envelope_from_task_context",
+    "INTEGRATIONS|TENANT_SCOPE_REWRITE|domain:integration_resolution|"
+    "intergrax/integrations/_shared/p8/factories.py::scope_widening",
+    "INTEGRATIONS|TENANT_SCOPE_REWRITE|domain:integration_resolution|"
+    "intergrax/integrations/providers/vector_store/lancedb/opens.py::scope_widening",
+    "INTEGRATIONS|TENANT_SCOPE_REWRITE|domain:provider_extensions|"
+    "intergrax/fastapi_core/auth/providers/allow_all.py::literal_rewrite::authenticate",
+    "PLATFORM_CORE|DEFAULT_SUBSTITUTION|domain:diagnostics|"
+    "intergrax/llm_adapters/tracking/observability_bridge.py::default_substitution",
+    "PLATFORM_CORE|DEFAULT_SUBSTITUTION|domain:rag|"
+    "intergrax/rag/tracking/observability_bridge.py::default_substitution",
+    "PLATFORM_CORE|TENANT_SCOPE_REWRITE|domain:rag|"
+    "intergrax/rag/bootstrap/entry_point_load.py::literal_rewrite::collect_rag_plugin_load_evidence",
+    "PLATFORM_CORE|TENANT_SCOPE_REWRITE|domain:rag|"
+    "intergrax/rag/evaluation/load_soak.py::literal_rewrite::build_soak_retrieval_service",
+    "PLATFORM_CORE|TENANT_SCOPE_REWRITE|domain:rag|"
+    "intergrax/rag/evaluation/load_soak.py::literal_rewrite::run_retrieval_load_soak",
+    "TRACEABILITY|TENANT_SCOPE_REWRITE|domain:evidence|"
+    "intergrax/runtime/adaptive/l4_runtime_evidence.py::literal_rewrite::build_harness_baseline_signals",
+    "TRACEABILITY|TENANT_SCOPE_REWRITE|domain:evidence|"
+    "intergrax/runtime/architecture/maturity_gate_evidence.py::literal_rewrite::_evaluate_security_harness_baseline",
+)
+
+R1_P0_AUTHORITY_MECHANISM_COUNT: Final[int] = len(R1_FROZEN_P0_AUTHORITY_MECHANISM_IDS)
+
 
 def _p0_mint_surfaces(inventory: tuple[TenantSurfaceRecord, ...]) -> tuple[TenantSurfaceRecord, ...]:
     out: list[TenantSurfaceRecord] = []
     for record in inventory:
         role = record.authority_semantic_role
-        if role == TenantAuthoritySemanticRole.MINT_OR_REWRITE_AUTHORITY and is_positive_mint_rewrite(
-            role, record
-        ):
+        if role == TenantAuthoritySemanticRole.MINT_OR_REWRITE_AUTHORITY and is_positive_mint_rewrite(role, record):
             out.append(record)
     return tuple(out)
 
@@ -58,9 +114,7 @@ def _resolution_for(mechanism: TenantAuthorityMechanism) -> R1AuthorityMechanism
             canonical_contract="agents/external_contractor_adapter/external_work_adapter.py",
             notes="Default substitution for adapter telemetry — not production tenant admission",
             owner_evidence=("production_composition_boundary: agents tier-2 adapter telemetry only",),
-            scope_evidence_refs=(
-                "structural: default label on observability path — no admission authority",
-            ),
+            scope_evidence_refs=("structural: default label on observability path — no admission authority",),
             production_classification_evidence=(
                 "not reachable as canonical root tenant admission — observability-only contract",
             ),
@@ -97,7 +151,7 @@ def _resolution_for(mechanism: TenantAuthorityMechanism) -> R1AuthorityMechanism
             scope_evidence_refs=("explicit: conformance factory tenant-a/b fixtures",),
             production_classification_evidence=("conformance-only entrypoint — not production root",),
         )
-    if "environment_wiring.py" in mid or "agent_platform_admin_routes.py" in mid:
+    if "agent_platform_admin_routes.py" in mid:
         return R1AuthorityMechanismResolution(
             mechanism_id=mid,
             decision_kind=decision,
@@ -106,10 +160,10 @@ def _resolution_for(mechanism: TenantAuthorityMechanism) -> R1AuthorityMechanism
             scope_evidence=TenantAuthorityScopeEvidence.EXPLICIT_CONTRACT,
             owner_disposition=TenantAuthorityOwnerDisposition.OWNER_CONFIRMED,
             authority_class=R1MechanismAuthorityClass.APPLICATION_LOCAL_INGRESS,
-            canonical_contract="intergrax/applications/_shared/*",
-            notes="Harness/application environment wiring — bounded Tier-3 ingress",
+            canonical_contract="intergrax/applications/_shared/agent_platform_admin_routes.py",
+            notes="Application admin ingress — bounded Tier-3 request identity",
             owner_evidence=("production_composition_boundary: intergrax/applications/_shared",),
-            scope_evidence_refs=("explicit: environment binding for application harness",),
+            scope_evidence_refs=("explicit: admin route request identity binding",),
             production_classification_evidence=("application Tier-3 boundary outside platform root",),
         )
     if "intergrax/cli/external_work.py" in mid:
@@ -401,9 +455,7 @@ def build_r1_scoped_duplicate_authority_review(
         unknown_participation_ids=tuple(sorted(unknown_ids)),
         critical_duplicate_confirmed_ids=duplicate_review.confirmed_duplicate_mechanism_ids,
         critical_duplicate_unresolved_ids=duplicate_review.unresolved_duplicate_mechanism_ids,
-        non_critical_owner_scope_uncertainty_ids=_non_critical_owner_scope_uncertainty(
-            resolutions, participation
-        ),
+        non_critical_owner_scope_uncertainty_ids=_non_critical_owner_scope_uncertainty(resolutions, participation),
     )
 
 
@@ -431,8 +483,7 @@ def r1_critical_scope_unresolved(
     return tuple(
         r.mechanism_id
         for r in resolutions
-        if r.scope_evidence
-        in {TenantAuthorityScopeEvidence.DOMAIN_FALLBACK, TenantAuthorityScopeEvidence.UNKNOWN}
+        if r.scope_evidence in {TenantAuthorityScopeEvidence.DOMAIN_FALLBACK, TenantAuthorityScopeEvidence.UNKNOWN}
         and r.authority_class == R1MechanismAuthorityClass.SANCTIONED_SEMANTIC_AUTHORITY
     )
 
