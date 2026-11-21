@@ -4,7 +4,13 @@
 
 from __future__ import annotations
 
-from intergrax.model_inference.contracts import AuthorizedLocalMedia, MediaAuthorizationError, ExtendedVisionInferenceAdapter, VisionInferenceAdapter
+from intergrax.model_inference.contracts import (
+    AuthorizedLocalMedia,
+    ExtendedVisionInferenceAdapter,
+    MediaAuthorizationError,
+    VisionInferenceAdapter,
+    require_extended_vision_adapter,
+)
 from intergrax.model_inference.execution import (
     MODALITY_EXECUTOR_EXTRA_KEY,
     ModalityInferenceExecutor,
@@ -17,7 +23,6 @@ from intergrax.model_inference.media_boundary import (
     resolve_authorized_local_media,
 )
 from intergrax.model_inference.registry import ModelInferenceRegistry
-from intergrax.model_inference.adapters.stub_vision import StubVisionInferenceAdapter
 from intergrax.runtime.modality.modality_profile import MODALITY_PROFILE_EXTRA_KEY, ModalityProfile
 from intergrax.tools.providers.speech.backends import MODEL_INFERENCE_REGISTRY_EXTRA_KEY
 from intergrax.tools.registry.wiring import ToolWiringContext
@@ -100,9 +105,7 @@ def assert_media_within_limit(profile: ModalityProfile | None, media: Authorized
     if size <= 0:
         return
     if size > profile.max_media_bytes:
-        raise ValueError(
-            f"media size {size} bytes exceeds ModalityProfile max_media_bytes={profile.max_media_bytes}"
-        )
+        raise ValueError(f"media size {size} bytes exceeds ModalityProfile max_media_bytes={profile.max_media_bytes}")
 
 
 def prepare_authorized_vision_media(
@@ -118,9 +121,7 @@ def prepare_authorized_vision_media(
 
 
 def as_extended_adapter(adapter: VisionInferenceAdapter) -> ExtendedVisionInferenceAdapter:
-    if isinstance(adapter, ExtendedVisionInferenceAdapter):
-        return adapter
-    return StubVisionInferenceAdapter()
+    return require_extended_vision_adapter(adapter)
 
 
 __all__ = [
