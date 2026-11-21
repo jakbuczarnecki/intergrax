@@ -10,15 +10,16 @@ from typing import Any
 
 import httpx
 
-from intergrax.model_inference.adapters.stub_vision import StubVisionInferenceAdapter
 from intergrax.model_inference.contracts import (
     MediaAuthorizationError,
     ModelArtifact,
+    VisionBackendUnconfiguredError,
     VisionBoundingBox,
     VisionDetection,
     VisionInferenceAdapter,
     VisionInferenceRequest,
     VisionInferenceResult,
+    VisionResultProvenance,
 )
 from intergrax.model_inference.media_boundary import require_remote_egress_bytes
 
@@ -27,7 +28,7 @@ class TritonVisionServingAdapter(VisionInferenceAdapter):
     """
     HTTP client for Triton inference server (v2 infer API subset).
 
-    Falls back to stub detections when ``INTERGRAX_TRITON_URL`` is unset.
+    Raises when ``INTERGRAX_TRITON_URL`` is unset unless an explicit LAB fallback is injected.
     """
 
     slug = "vision_serving"
@@ -45,11 +46,15 @@ class TritonVisionServingAdapter(VisionInferenceAdapter):
         self._base_url = (base_url or os.getenv(self.ENV_URL) or "").strip().rstrip("/")
         self._model_name = (model_name or os.getenv(self.ENV_MODEL) or "yolo").strip()
         self._timeout = timeout
-        self._fallback = fallback or StubVisionInferenceAdapter()
+        self._fallback = fallback
 
     def detect(self, request: VisionInferenceRequest, *, artifact: ModelArtifact) -> VisionInferenceResult:
         if not self._base_url:
-            return self._fallback.detect(request, artifact=artifact)
+            if self._fallback is not None:
+                return self._fallback.detect(request, artifact=artifact)
+            raise VisionBackendUnconfiguredError(
+                f"{self.slug!r} is not configured (set {self.ENV_URL} or pass base_url=)"
+            )
         try:
             raw = require_remote_egress_bytes(request)
         except MediaAuthorizationError:
@@ -72,11 +77,19 @@ class TritonVisionServingAdapter(VisionInferenceAdapter):
             body = response.json()
         detections = _parse_triton_detections(body, top_k=request.top_k)
         if not detections:
-            return self._fallback.detect(request, artifact=artifact)
+            if self._fallback is not None:
+                return self._fallback.detect(request, artifact=artifact)
+            return VisionInferenceResult(
+                request_id=request.request_id,
+                artifact_id=artifact.artifact_id,
+                detections=[],
+                provenance=VisionResultProvenance.ENGINE,
+            )
         return VisionInferenceResult(
             request_id=request.request_id,
             artifact_id=artifact.artifact_id,
             detections=detections,
+            provenance=VisionResultProvenance.ENGINE,
         )
 
 
