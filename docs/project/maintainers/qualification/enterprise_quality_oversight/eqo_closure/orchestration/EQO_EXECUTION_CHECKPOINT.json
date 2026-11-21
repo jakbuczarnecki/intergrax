@@ -1,0 +1,88 @@
+{
+  "schema": "eqo.execution_checkpoint.v1",
+  "updated_at": "2026-11-21T16:55:00+01:00",
+  "ticket_ref": "governance/tickets/T-IGX-046-F.md",
+  "fetched_shas": {
+    "local_development_before_merge": "6b264d360350a7179e226b70fa998572bfe36e9e",
+    "origin_development": "3132a81e4e3d86a15df52b17ce148f3d38270102",
+    "origin_arch_freeze_rw_train": "68db9c0ef6207b023388eecc460644698a92b895",
+    "development_after_slice": "c49e20e6d5aebd9b3ed4dc5693e9e917bd17c100"
+  },
+  "merge_origin_development": {
+    "performed": true,
+    "merge_commit": "c49e20e6d5aebd9b3ed4dc5693e9e917bd17c100",
+    "conflicts": false,
+    "product_files_touched_by_merge": [
+      "applications/research_application/tenants/tenant_x/_replay_x_carrier_reconciliation.py"
+    ]
+  },
+  "capability": {
+    "composer_subagents": "available",
+    "git_push": "not_available_operator_only",
+    "gh_pr": "not_available_operator_only",
+    "pytest": "one_named_file_lock_per_slice",
+    "worktree_root": "D:\\Projekty\\_wt\\intergrax"
+  },
+  "path_counts_checksum_unchanged": "313+310+167+165+40+33+1=1029",
+  "READY_TASKS": [],
+  "ready_rationale": "All seven STILL_PRESENT rows are ALREADY_MATCHES_TICKET on development pin; EQO-PKG-A4-006 write set already satisfied; twenty-four REPLAY_ONLY rows defer product ports (train evidence / ABSENT_ON_DEVELOPMENT via merge); no disjoint product write set with ticket go and missing implementation remains.",
+  "BLOCKED_TASKS": [
+    {
+      "id": "EQOA-A4-034",
+      "package_id": "EQO-PKG-A4-034",
+      "unlock": "Operator closes FRZ-REL-02 measured-behavior gap on eqo/dev-a4-034 @ d1da3b3c1; do not delete LocalProviderRetryBudget/StepRetryBudget modules."
+    },
+    {
+      "id": "EQOA-A6-006",
+      "package_id": "EQO-PKG-A6-006",
+      "unlock": "Explicit operator acceptance of ENT_AUDIT_X_SEMANTIC skip at eqo/dev-a6-006 @ b02278643; agents must not remove the skip."
+    },
+    {
+      "id": "EQOA-A4-040",
+      "unlock": "Operator decision OD-EQO-04; no A4-040 implementation in this orchestration slice."
+    },
+    {
+      "id": "EQOA-A4-042",
+      "unlock": "Operator decision on Poland-default package (OD-EQO-09); do not invent locale default."
+    },
+    {
+      "id": "EDER-N-0003",
+      "unlock": "Operator mandate for A4-007 b1/b2 seams (T-IGX-051-I); hard stop until go."
+    },
+    {
+      "id": "EDER-N-0004",
+      "unlock": "Operator DP-54 implementation mandate (T-IGX-052-E)."
+    },
+    {
+      "id": "EQOA-A3-008",
+      "unlock": "Ticket at development pin naming product write set and implementation go."
+    },
+    {
+      "id": "EQOA-A3-018",
+      "unlock": "Ticket at development pin naming product write set and implementation go."
+    },
+    {
+      "id": "EQOA-A6-001",
+      "unlock": "Ticket go naming exact file change without removing ENT_AUDIT_X semantic skip."
+    },
+    {
+      "id": "REPLAY_ONLY_24",
+      "unlock": "Bookkeeping replay verdicts per EQO_ROADMAP_REMAINING EXECUTABLE_NOW; product cherry-pick only on STILL_PRESENT with ticket write set; never merge arch-freeze/rw-train into development (FCS)."
+    },
+    {
+      "id": "EXISTING_IMPLEMENTATION_REQUIRES_REPLAY_NO_NAMED_TEST_34",
+      "unlock": "ARCH-FREEZE chain FCS, PT-Q02–Q13, M3, EQO-REPLAY-FCS before invented tests."
+    },
+    {
+      "id": "OWNER_DECISION_REQUIRED_313",
+      "unlock": "Operator decisions; no invented OWNER_DECISION rows."
+    },
+    {
+      "id": "EQO_TERMINAL",
+      "unlock": "Certifier/operator: EQO_CLOSED_INDEPENDENTLY_VERIFIED, C01–C25, FRZ promotion, register lifecycle CLOSED — forbidden to agents."
+    }
+  ],
+  "packages_merged_this_slice": [],
+  "pytest_this_slice": "none (no READY product package)",
+  "next_wave_rule": "Select at most one to three packages from NEW_IMPLEMENTATION_REQUIRED (33) in EQO_NEXT_WAVE_QUEUE.json only when an existing ticket names exact files and required behavior, development tree lacks that behavior, write sets are pairwise disjoint, status is not REPLAY_ONLY/BLOCKED_EXACT_REASON/SKIP_NO_GO/ALREADY_DONE/ALREADY_MATCHES_TICKET; cut eqo/dev-<id> from current development; one English commit with ticket Ref; merge --no-ff into af-dev-merge development; one uv run --extra dev-ci pytest <named file> per port."
+}
