@@ -86,7 +86,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "python \"$CLAUDE_PROJECT_DIR/scripts/hooks/igx_read_guard.py\""
+            "command": "python -c \"import os,sys,runpy,pathlib;c=pathlib.Path.cwd();n='igx_read_guard.py';p=next((q for q in [os.path.join(x,'scripts','hooks',n) for x in [os.environ.get('CLAUDE_PROJECT_DIR') or '.',*map(str,[c,*c.parents])]] if os.path.isfile(q)),None);p and (sys.argv.__setitem__(0,p),runpy.run_path(p,run_name='__main__'))\""
           }
         ]
       },
@@ -95,7 +95,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "python \"$CLAUDE_PROJECT_DIR/scripts/hooks/igx_bash_guard.py\""
+            "command": "python -c \"import os,sys,runpy,pathlib;c=pathlib.Path.cwd();n='igx_bash_guard.py';p=next((q for q in [os.path.join(x,'scripts','hooks',n) for x in [os.environ.get('CLAUDE_PROJECT_DIR') or '.',*map(str,[c,*c.parents])]] if os.path.isfile(q)),None);p and (sys.argv.__setitem__(0,p),runpy.run_path(p,run_name='__main__'))\""
           }
         ]
       }
@@ -106,7 +106,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "python \"$CLAUDE_PROJECT_DIR/scripts/hooks/igx_read_guard.py\" epoch"
+            "command": "python -c \"import os,sys,runpy,pathlib;c=pathlib.Path.cwd();n='igx_read_guard.py';p=next((q for q in [os.path.join(x,'scripts','hooks',n) for x in [os.environ.get('CLAUDE_PROJECT_DIR') or '.',*map(str,[c,*c.parents])]] if os.path.isfile(q)),None);p and (sys.argv.__setitem__(0,p),runpy.run_path(p,run_name='__main__'))\" epoch"
           }
         ]
       }
@@ -116,7 +116,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "python \"$CLAUDE_PROJECT_DIR/scripts/hooks/igx_read_guard.py\" epoch"
+            "command": "python -c \"import os,sys,runpy,pathlib;c=pathlib.Path.cwd();n='igx_read_guard.py';p=next((q for q in [os.path.join(x,'scripts','hooks',n) for x in [os.environ.get('CLAUDE_PROJECT_DIR') or '.',*map(str,[c,*c.parents])]] if os.path.isfile(q)),None);p and (sys.argv.__setitem__(0,p),runpy.run_path(p,run_name='__main__'))\" epoch"
           }
         ]
       }
