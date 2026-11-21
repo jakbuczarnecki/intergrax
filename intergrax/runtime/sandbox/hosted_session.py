@@ -22,6 +22,21 @@ from intergrax.runtime.sandbox.models import SandboxAuditEntry, SandboxExecution
 from intergrax.runtime.sandbox.sandbox_runtime import DEFAULT_SANDBOX_OPERATIONS
 from intergrax.utils.time_provider import SystemTimeProvider
 
+# Lab-only defaults for non-strict hosts without a composition tenant (Q-TEN-12).
+LAB_ONLY_HOSTED_SANDBOX_TENANT_ID = "harness"
+LAB_ONLY_HOSTED_SANDBOX_TASK_ID = "bootstrap"
+
+
+class HostedSandboxTenantRequiredError(ValueError):
+    """Raised when a fail-closed host must not open an untenanted hosted sandbox session."""
+
+
+def _require_non_blank_label(value: str, *, field_name: str) -> str:
+    stripped = value.strip()
+    if not stripped:
+        raise ValueError(f"{field_name} must be a non-blank string")
+    return stripped
+
 
 class HostedSandboxSession:
     """
@@ -41,8 +56,8 @@ class HostedSandboxSession:
         security_capabilities: SandboxSecurityCapabilities | None = None,
     ) -> None:
         self.session_id = session_id
-        self.tenant_id = tenant_id
-        self.task_id = task_id
+        self.tenant_id = _require_non_blank_label(tenant_id, field_name="tenant_id")
+        self.task_id = _require_non_blank_label(task_id, field_name="task_id")
         self._backend = backend
         self._allowed_operations = allowed_operations or DEFAULT_SANDBOX_OPERATIONS
         self._security_capabilities = security_capabilities
@@ -60,6 +75,8 @@ class HostedSandboxSession:
         security_requirements: SandboxSecurityRequirements | None = None,
     ) -> HostedSandboxSession | None:
         """Open a hosted session; return ``None`` when allowlist policy cannot be admitted."""
+        tenant_id = _require_non_blank_label(tenant_id, field_name="tenant_id")
+        task_id = _require_non_blank_label(task_id, field_name="task_id")
         security_capabilities: SandboxSecurityCapabilities | None = None
         if security_requirements is not None and security_requirements.network_egress == "allowlist":
             if not isinstance(backend, SandboxSecurityConfigurable):
@@ -100,14 +117,8 @@ class HostedSandboxSession:
             enforced_network_hosts=None,
             supports_sandboxed_exec=exec_supported,
             supports_workspace_write=workspace_write,
-            filesystem_access=(
-                FilesystemAccess.WORKSPACE_WRITE
-                if workspace_write
-                else FilesystemAccess.READ_ONLY
-            ),
-            process_execution=(
-                ProcessExecution.SANDBOXED if exec_supported else ProcessExecution.DENIED
-            ),
+            filesystem_access=(FilesystemAccess.WORKSPACE_WRITE if workspace_write else FilesystemAccess.READ_ONLY),
+            process_execution=(ProcessExecution.SANDBOXED if exec_supported else ProcessExecution.DENIED),
         )
 
     def cancel(self) -> None:
