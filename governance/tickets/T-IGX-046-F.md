@@ -68,8 +68,10 @@ Edits of the roadmap, the freeze checklist, PDC-owned records, generated registe
 | C-04 | DEFERRED (prep under `runs/c/`) |
 | #680 | Track-only (`pr680_governance_fast.md`) |
 | BLOCKED EXE | WB01,04,06,07,09,10,11 non-zero pytest (manifests retained) |
-
-Post-merge SHA: recorded on PR #690 comment.
+| PR | [#690](https://github.com/jakbuczarnecki/intergrax/pull/690) merged `2026-11-21T06:45:59Z` |
+| `development` head | `8631b1e8459e096b74d1c80247d3e432b44fff30` (merge commit; integrator tip `eb15b8a36`) |
+| CI at merge | Red on required contexts — pre-existing on `development`, outside EQO wave-2 write set: `ci-smoke` (DF5 `vector_store` config), `governance-fast` (ACT-N11 / IIAC activation drift), `ent-audit-fast` cascade (`ENT-A-PRD-01/02`, `ENT-A-REG-03`). Triage: subagent session `41aa0042`. |
+| CI record | PR #690 conversation comment «CI triage (post-`gh pr checks 690 --watch`)»; completion table in «EQO wave-2 completion signal». |
 
 ## Lifecycle state
 
