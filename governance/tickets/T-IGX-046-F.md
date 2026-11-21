@@ -134,6 +134,10 @@ Session E verdicts @ TRAIN_PIN `28c27cb` (`runs/wbNN/AUD_SESSION_E.md`): WB02 FA
 
 Session E verdicts @ TRAIN_PIN `28c27cb` (`runs/wbNN/AUD_SESSION_E.md`): WB01 FAIL, WB04 BLOCKED, WB06 FAIL, WB07 FAIL, WB08 BLOCKED, WB09 FAIL, WB10 FAIL, WB11 FAIL; integrator `eqo/aud/wave-2-integ`; read-only source inspection, pytest not re-run; no product change, no G6/IIAC/FRZ claim. WB04, WB06, WB08 and parts of WB09 need an EXE re-run with the optional extras (`mcp`, `llm-langchain-ollama`).
 
+## Checkpoint — EQO post-AUD integrator (2026-11-21)
+
+AUD waves 1–2 merged on `development` ([#695](https://github.com/jakbuczarnecki/intergrax/pull/695), [#696](https://github.com/jakbuczarnecki/intergrax/pull/696), [#697](https://github.com/jakbuczarnecki/intergrax/pull/697)); matrix AUD column WB01–12 + partial W3 `CLS_PRE.md`; session E aggregate **8 FAIL / 4 BLOCKED / 0 PASS**; integrator `eqo/post-aud/matrix-cls`; docs only — no `EQO_CLOSED`, pytest not re-run, no product change.
+
 ## Operator waiver — docs merge platform CI
 
 Operator decision **`waiver_both`** @ **2026-11-21** (coordinator chat): retroactive acceptance of docs/ticket merges **[#690](https://github.com/jakbuczarnecki/intergrax/pull/690)** (EQO wave-2 integration) and **[#691](https://github.com/jakbuczarnecki/intergrax/pull/691)** (wave-2 checkpoint + CI triage on this ticket) despite **red platform CI** on `development` at merge time (`ci-smoke`, `governance-fast`, `ent-audit-fast`). Docs gates were **green**: `ticket-governance`, `governance-policy-pin`.
