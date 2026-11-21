@@ -63,3 +63,17 @@ Same command; **3 passed** on 2026-11-21 @ `af-dev-merge` → ticket lifecycle `
 ### 7.3 Out of scope (unchanged)
 
 Manifest growth 85→91, baseline promotion, train merge — `T-IGX-043-I` Part E on train only until OD allows development product batch.
+
+## 8. Product slice 1 (fala 6 — development tor wave-diff, no manifest)
+
+Manifest Part E remains **BLOCKED**. Slice 1 maps package groups touched on `development` since PDC baseline `a695c9c8…` that had no impact-map rule, using explicit FULL (all 85 manifest ids per prefix). SSOT: `WAVE_DIFF_FULL_IMPACT_PREFIXES` in `impact_map.py`; regenerate `changed_since_impact_map.v1.json`.
+
+| Node id | Assertion | Pytest |
+|---------|-----------|--------|
+| NT-043M-S2 | development wave-diff prefixes cover remediation-wave modules | `tests/qualification/ent_audit_x/unit/test_changed_since_impact_map.py::test_development_wave_diff_touched_modules_map_to_manifest_ids` |
+
+Command (with NT-043M-S1):
+
+```text
+uv run python -m pytest tests/qualification/ent_audit_x/unit/test_changed_since_impact_map.py -q
+```
