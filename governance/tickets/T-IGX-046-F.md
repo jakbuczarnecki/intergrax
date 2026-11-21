@@ -237,6 +237,24 @@ Operator decision **`waiver_both`** @ **2026-11-21** (coordinator chat): retroac
 | PR | _(pending push)_ |
 
 **Docs gates:** `ticket-governance` + `governance-policy-pin`.
+
+## Checkpoint — EQO wave-14 (2026-11-21)
+
+| Field | Value |
+|-------|-------|
+| Integrator branch | `eqo/wave-14/integ` |
+| Base | `origin/development` `9a673b1b2` (post wave-13 #711) |
+| CLS lanes | `eqo/wave-14/cls-wb01` … `cls-wb12` — terminal `W3_CLS.md` |
+| DRV lane | `eqo/wave-14/drv` — doc-only DRV deferrals |
+| W9 lane | `eqo/wave-14/w9` — C01–C25 sweep (no `FULLY_MET`) |
+| Deliverables | `EQO_WAVE14_MANIFEST.md`, README row 40 |
+| Session E | **unchanged** |
+| Aggregate | **0 PASS** @ pin |
+| Terminal | **No** `EQO_CLOSED` |
+| PR | _(pending push)_ |
+
+**Docs gates:** `ticket-governance` + `governance-policy-pin`.
+
 ## Lifecycle state
 
 plan_approved
