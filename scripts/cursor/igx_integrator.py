@@ -7,6 +7,7 @@ and merge only exact-SHA, reviewed, scoped PRs. No unrestricted git/gh proxy.
 from __future__ import annotations
 
 import argparse
+import base64
 import hashlib
 import json
 import re
@@ -118,9 +119,20 @@ def verify_evidence(p: dict[str, Any], checkout: Path) -> None:
 
 def check_ticket(p: dict[str, Any], checkout: Path) -> None:
     ticket = (checkout / p["ticket"]).resolve()
-    if checkout.resolve() not in ticket.parents or not ticket.is_file():
-        raise Blocked("approved ticket missing")
-    text = ticket.read_text(encoding="utf-8")
+    if checkout.resolve() not in ticket.parents:
+        raise Blocked("ticket path escaped repository")
+    if ticket.is_file():
+        text = ticket.read_text(encoding="utf-8")
+    else:
+        # RW train may predate development-only approved ticket records.
+        # Read the canonical published ticket; never forge/stage approvals.
+        record = gh_api(f"contents/{p['ticket']}?ref=development")
+        if not isinstance(record, dict) or record.get("encoding") != "base64":
+            raise Blocked("approved ticket not found in worktree or canonical development")
+        try:
+            text = base64.b64decode(record["content"]).decode("utf-8")
+        except (KeyError, UnicodeError, ValueError) as exc:
+            raise Blocked("canonical ticket could not be decoded") from exc
     if not re.search(r"(?m)^Approved: .+", text):
         raise Blocked("ticket lacks Approved line")
     if not re.search(r"(?m)^## Lifecycle state\s*\n\s*(plan_approved|in_progress|quality_gate|ready_for_audit|closed)\s*$", text):
