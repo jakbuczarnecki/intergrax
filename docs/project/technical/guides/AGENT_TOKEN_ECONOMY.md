@@ -53,13 +53,13 @@ Total tracked: 58.9k to 46.2k (-12.7k, -21.6 %). An empty directory with no proj
 
 ## Cursor
 
-Generated from the same `agent-env/` sources by `sync_agent_env.py`: `.cursor/rules/intergrax-core.mdc` (always on), `.cursor/skills/*`, `.cursor/agents/igx-*.md` (keys `name`, `description`, `model: inherit`, `readonly` derived from the tool list). Verified with `cursor-agent` 2026.11.05 on 2026-11-21:
+Generated from the same `agent-env/` sources by `sync_agent_env.py`: `.cursor/rules/intergrax-core.mdc` (always on), `.cursor/skills/*`, `.cursor/agents/igx-*.md` (keys `name`, `description`, `model: composer-2.5`, `readonly` derived from the tool list). Verified with `cursor-agent` 2026.11.05 on 2026-11-21:
 
 | Item | Cursor result |
 |------|---------------|
 | `igx-*` agents visible to the Task tool, `readonly` as generated | yes |
 | `.claude/settings.json` hooks (read and shell guards) | run, and deny (large `Read`, `cat` of a 307 KB file) |
-| `.cursor/hooks.json` native hooks | earlier CLI check: did not fire. CURSOR-OPT-PARITY ships one entry, `subagentStart` for `^generalPurpose$` (`failClosed`); its execution is `NOT_VERIFIED` until a probe logs it (no `stop` entry: Cursor maps `decision: block` itself) |
+| `.cursor/hooks.json` native hooks | earlier CLI check: did not fire. CURSOR-OPT-PARITY ships one entry, `subagentStart` for `^generalPurpose$` (`failClosed`); its execution is `NOT_VERIFIED` until a probe logs it (`stop` runs `igx_stop_guard.py` with `loop_limit: null`; native output is `followup_message` only) |
 | `permissions.deny Agent(general-purpose)` | not enforced; a `generalPurpose` subagent still launched |
 | `effortLevel`, compaction window, `bashOutputMaxChars`, `skillOverrides` | no effect (Cursor selects the model and context itself) |
 

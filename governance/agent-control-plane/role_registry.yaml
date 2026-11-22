@@ -1,4 +1,9 @@
 # InterGRAX agent role registry (Delivery DevOS control plane)
+# Commit SSOT: may_commit on the role. implementer=true (own worktree branch, Ref: trailer only).
+# orchestrator=false: no commit, no branch integration, no push, no pull request, no merge.
+# A subagent may commit only when maps_to has may_commit true. Push, PR, and merge stay human.
+# igx-implementer and best-of-n-runner max_parallel stays 2 until a recorded resource benchmark.
+# uv/pytest stay serial. A 3-4 worker target is not authorized here.
 
 version: "1.0"
 default_role: orchestrator

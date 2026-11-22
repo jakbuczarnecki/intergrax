@@ -7,6 +7,12 @@
         "matcher": "^generalPurpose$",
         "failClosed": true
       }
+    ],
+    "stop": [
+      {
+        "command": "python scripts/hooks/igx_stop_guard.py",
+        "loop_limit": null
+      }
     ]
   }
 }

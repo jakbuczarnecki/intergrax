@@ -61,13 +61,15 @@ def test_kill_switch_allows_every_spawn() -> None:
     assert _run("not json", IGX_HOOKS="off") == {"permission": "allow"}
 
 
-def test_hooks_json_registers_only_a_fail_closed_subagent_start() -> None:
+def test_hooks_json_registers_subagent_start_and_native_stop() -> None:
     config = json.loads(HOOKS_JSON.read_text(encoding="utf-8"))
     assert config["version"] == 1
-    assert list(config["hooks"]) == ["subagentStart"]
-    assert "stop" not in config["hooks"]
+    assert set(config["hooks"]) == {"subagentStart", "stop"}
     (entry,) = config["hooks"]["subagentStart"]
     assert entry["failClosed"] is True
     assert entry["matcher"] == "^generalPurpose$"
     assert entry["command"] == "python scripts/hooks/igx_subagent_guard.py"
-    assert (ROOT / "scripts" / "hooks" / "igx_subagent_guard.py").is_file()
+    (stop,) = config["hooks"]["stop"]
+    assert stop["command"] == "python scripts/hooks/igx_stop_guard.py"
+    assert stop.get("loop_limit") is None
+    assert (ROOT / "scripts" / "hooks" / "igx_stop_guard.py").is_file()

@@ -6,7 +6,8 @@ alwaysApply: true
 ## Branch safety
 
 - Default branch `development`; stay on the operator-named branch.
-- Without operator approval: no `git checkout <sha>`, `git switch --detach`, `git checkout -b`, `git switch -c`; never end a session detached.
+- Without operator approval: no `git checkout <sha>`, `git switch --detach`, `git checkout -b`, `git switch -c` on the main checkout; never end that checkout detached.
+- Approved plan: `git worktree add` (`-b` or `--detach`) per `/igx-worktree` only. Do not alter another worktree or the main checkout.
 - Pinned SHA: fetch `development`; `merge-base --is-ancestor <SHA> HEAD` must pass else escalate; record HEAD.
 - Before ending: `git symbolic-ref HEAD` must succeed.
 
@@ -40,15 +41,15 @@ alwaysApply: true
 <!-- igx:authority begin -->
 ## Autonomy
 
-- Execute the approved plan step by step. Never ask for a go-ahead, and never ask whether to continue, commit, run tests, retry or start the next step: decide from the plan, ADRs, repo rules or existing code.
+- Execute the approved plan step by step. Never ask for a go-ahead or whether to continue, commit, run tests, retry or start the next step: decide from the plan, ADRs, repo rules or existing code.
 - Stop only with `ESCALATION: <type>` (unplanned architecture; scope/cost/reversibility decision; plan/rules/code contradiction; forbidden action; missing access). One batched message with options, recommendation, consequence, cost.
-- Agents commit on a branch and prepare the PR text; `git push`, PR creation, merge and GitHub settings are the human's (forbidden action: escalate, do not try).
+- `may_commit` in `governance/agent-control-plane/role_registry.yaml` is the only commit right. Implementer: its worktree branch and the `Ref:` trailer. Orchestrator: no commit. `git push`, PR creation, merge, branch integration and GitHub settings stay human (forbidden action: escalate, do not try).
 - Sub-agents end with `DONE: <line>` or `BLOCKED: <type>: <what, options, recommendation>`; the parent decides alone when plan, ADR, rules or code answer it (`/igx-autonomy`).
-- Plan finished: print `PLAN COMPLETE` and a short summary. `/igx-run-plan <file>` enforces this with a Stop hook.
+- Plan finished: print `PLAN COMPLETE` and a short summary (`/igx-run-plan` enforces it via Stop hook).
 <!-- igx:authority end -->
 
 ## Cursor orchestration
 
-- In Cursor: parent and every `Task` / subagent use **Composer only** (`composer-2.5`, `composer-2.5-fast`, or inherit). Never pass Task `model` with Claude, GPT, Gemini, Grok, or other non-Composer slugs unless the Operator overrides in chat.
+- Cursor parent may be Grok. Workers: Task `model` `composer-2.5` or `composer-2.5-fast` (do not omit `model`). Any other worker model needs an Operator override in that chat. IIAC and G6 are unchanged.
 
 Canonical rule (SSOT): `agent-env/rules/intergrax-core.md`. Read it only when editing rules or when a section outside this extract is needed.

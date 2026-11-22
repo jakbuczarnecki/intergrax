@@ -6,13 +6,13 @@ InterGRAX uses **procedural fencing** and git worktrees — not a gateway Postgr
 
 1. **One ticket = one executor = one worktree** (branch `feat/T-IGX-NN-x`).
 2. Second agent on the same ticket → STOP; record `Lease holder:` in ticket or use advisory `ticket_lock.py`.
-3. Subagents **must not** commit, close batches, or declare G6 PASS — parent synthesizes and runs `igx_gov ticket`.
+3. Commit rights are `may_commit` in [`role_registry.yaml`](../../../../governance/agent-control-plane/role_registry.yaml). The implementer may commit on its own worktree branch with `Ref:`. The orchestrator does not commit, merge, push, or open a PR. No subagent closes a batch or declares G6 PASS. The parent reviews `DONE` against git. `igx_gov ticket` is a verification command, not a commit, and it does not grant the orchestrator `may_commit`.
 
 ## Decision tree
 
 | Need | Mechanism |
 |------|-----------|
-| Read-only search | `explore` / `generalPurpose` (max 2–3 parallel) |
+| Read-only search | `explore` / `igx-researcher` (max 2–3 parallel); `generalPurpose` is denied by the Cursor `subagentStart` hook |
 | Isolated code tries | `best-of-n-runner` or new worktree |
 | Single change set | One implementer in ticket scope |
 

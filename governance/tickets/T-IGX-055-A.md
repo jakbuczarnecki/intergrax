@@ -1,28 +1,35 @@
-# T-IGX-055-A — EQO A4-006: rebind RuntimeEvent tenant propagation gate emitters
+# T-IGX-055-A — CURSOR-ORCH-CORRECTIVE: Cursor stop adapter, worker lifecycle contract, integrator proposal
 
 ## Scope
 
-Repair `EQOA-A4-006` / `EDER-F-0115`: the maintenance gate `scripts/maintenance/check_runtime_event_tenant_propagation.py` still listed the removed `intergrax/agents/uaep.py` path and failed closed on a missing file. Rebind the UAEP emitter to `intergrax/runtime/nexus/uaep/uaep_executor.py`; keep `intergrax/runtime/middleware/trace_middleware.py`. Add a focused unit test and EQO packet evidence for WAVE-01 (`EQO-PKG-A4-006`). Package reference: approved plan `eqo_completion_orchestration_67c47aad.plan.md` @ `a0598ba3e4f4f903eb4da3db8ea012d5cbf71225`.
+Cursor-only correction of Grok parent / Composer worker orchestration: new `scripts/hooks/igx_cursor_stop.py`,
+Cursor dispatch, root discovery and Cursor plan todos in `scripts/hooks/igx_stop_guard.py`, tests under
+`tests/unit/governance/`, Cursor sections of `agent-env/skills/igx-run-plan/SKILL.md` and
+`agent-env/skills/igx-autonomy/SKILL.md`, `docs/project/technical/devos/PARALLEL-EXECUTION.md`, campaign plan
+the approval-gated integrator proposal and the live E2E procedure `agent-env/plans/cursor-live-e2e-procedure.md` under `agent-env/plans/`.
 
-## Write set
+Also in scope: `agent-env/rules/intergrax-core.md` and the generated `.cursor/rules/intergrax-core.mdc` - restores the `git push` / GitHub-settings prohibition dropped in a058cee19; required by `CORE_EXTRACT_PHRASES`; meaning unchanged or stricter for Claude Code.
 
-```text
-scripts/maintenance/check_runtime_event_tenant_propagation.py
-tests/unit/scripts/test_check_runtime_event_tenant_propagation.py
-docs/project/maintainers/qualification/enterprise_quality_oversight/eqo_closure/orchestration/packets/EQO-PKG-A4-006/
-governance/tickets/T-IGX-055-A.md
-```
+Campaign plan: `agent-env/plans/cursor-orch-corrective.md`. Branch `fix/cursor-orch-corrective`, stacked on
+PR #742 (`ac0c0b753`). No PASS, G6, IIAC or qualification claim.
+
+## Approved
+
+_(awaiting operator `Approved:` line; the implementer does not write it)_
 
 ## Test contract
 
-```text
-uv run pytest tests/unit/scripts/test_check_runtime_event_tenant_propagation.py -q --basetemp=D:/Projekty/_wt/intergrax/_scratch/eqo-w1-a4006/pytest
-```
+- `uv run python scripts/governance/sync_agent_env.py --check`
+- `uv run python scripts/governance/verify_trusted_policy_pin.py`
+- `uv run pytest tests/unit/governance/test_stop_guard.py tests/unit/governance/test_cursor_stop_guard.py tests/unit/governance/test_subagent_guard.py tests/unit/governance/test_agent_env_sync.py -q`
+- Live Cursor probe recorded under `.tmp/proof/cursor-orch-corrective/` or `CURSOR_LIVE_E2E_NOT_EXECUTED`
 
 ## Out of scope
 
-FRZ checklist, roadmap, `IIAC_POLICY_ACTIVATION_RECORD.json`, `EQO_MASTER_CLOSURE_MATRIX.md` status promotions, `EQO_CLOSED`, any other `RuntimeEvent` call site census, host factories, `applications/`, EDER `register.jsonl`, obligation view JSON, `eqo_closure/orchestration/*.json`, `HANDOFF.md`.
+`intergrax/**`, `agents/**`, `applications/**`, `.claude/settings.json`, `CLAUDE.md`,
+`governance/agent-control-plane/*.yaml`, `governance/TRUSTED_POLICY_PIN.yaml`, model routing for Claude Code,
+`max_parallel` caps, IIAC and G6 gates, git push / PR / merge.
 
 ## Lifecycle state
 
-in_progress
+plan_pending

@@ -7,7 +7,7 @@
 | Base SHA | `a0598ba3e4f4f903eb4da3db8ea012d5cbf71225` (`origin/development`) |
 | Branch | `eqo/w1-a4-006` |
 | Worktree | `D:\Projekty\_wt\intergrax\eqo-w1-a4006` |
-| Ticket | `governance/tickets/T-IGX-055-A.md` |
+| Ticket | `governance/tickets/T-IGX-056-A.md` |
 
 ## Change summary
 

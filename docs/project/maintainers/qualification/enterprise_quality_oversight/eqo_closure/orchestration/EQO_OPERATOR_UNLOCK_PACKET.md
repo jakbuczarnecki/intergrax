@@ -6,7 +6,7 @@ Audited tip: `c089f134739a161439d52ae8e3db60ecdf6dac7b`. `origin/development`: `
 
 42 commits. 40 carry `Ref: governance/tickets/`. Missing `Ref:`: merge `6fa8f2955` and `d1da3b3c1` (A4-034 block record). Eleven commits contain `Co-authored-by: Cursor <cursoragent@cursor.com>`: `5cceebb69`, `537a06296`, `5e9496611`, `b02278643`, `d1da3b3c1`, `c600f79a6`, `c15588151`, `ffec97177`, `531b4e323`, `960205aaa`, `321957488`. High-signal secret scan of the full diff: no private-key block and no `AKIA` id. Product behavior under test was not changed after `84fc00a16`; later commits are docs plus the already-merged PR #738 test fixture (`g09_tenant_evaluation_registry.py`, two architecture test lines).
 
-Scope besides EQO bookkeeping and tickets `T-IGX-055-A` / `T-IGX-055-B`:
+Scope besides EQO bookkeeping and tickets `T-IGX-056-A` / `T-IGX-055-B`:
 
 - Product: `fastapi_router.py`, `schemas.py`, `check_runtime_event_tenant_propagation.py`, two unit tests.
 - Side docs: `CRITIC_VERIFICATION.md` stub (5 lines), roadmap §3.0.6 status line, freeze checklist FRZ-CTL-05 label, `AGENT_INSTRUCTIONS.md` critic link.

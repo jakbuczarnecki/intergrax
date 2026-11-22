@@ -191,7 +191,7 @@ def _cursor_agent(path: Path) -> str:
         "---\n"
         f"name: {path.stem}\n"
         f"description: {_yaml_scalar(str(meta.get('description', '')))}\n"
-        "model: inherit\n"
+        "model: composer-2.5\n"
         f"readonly: {'false' if tools & _WRITE_TOOLS else 'true'}\n"
         "---\n"
         f"<!-- {GENERATED} from agent-env/agents/{path.name} - do not edit. -->\n" + body

@@ -9,7 +9,7 @@ How agents execute an approved plan without go-ahead questions and come back to 
 - Execute the approved plan step by step. Never ask "shall I continue / commit / run tests / start the next step". Decide from the plan, ADRs, repository rules or existing code.
 - Stop only with a message that starts `ESCALATION: <type>` (types below), batching all open items with options, a recommendation, the consequence and the cost.
 - When the plan is finished print `PLAN COMPLETE` and a short summary.
-- Agents commit on a branch and prepare the PR text. `git push`, PR creation, merge and GitHub settings stay with the human.
+- Commit rights are `may_commit` in `governance/agent-control-plane/role_registry.yaml`. The implementer commits on its worktree branch. The orchestrator does not. `git push`, PR creation, merge, and integrating a worker branch stay with the human.
 
 ## Escalation types
 
@@ -39,7 +39,7 @@ How agents execute an approved plan without go-ahead questions and come back to 
 | no open step left | allowed, active plan cleared |
 | anything else, open step remains | blocked; the reason names the next open step |
 
-The block output is `decision: block` + `reason` only. Cursor maps that to a single continuation itself, so the guard never emits `followup_message` and `.cursor/hooks.json` has no `stop` entry (a second channel would double the follow-up). Loop limit: the third consecutive block without a checkbox change lets one stop through with a warning, then the counter restarts, so a stuck session cannot spin forever. `stop_hook_active` turns are counted by the same limit instead of being allowed outright (that would block only once).
+Claude Code output is `decision: block` + `reason` only. Cursor native `stop` is registered in `.cursor/hooks.json` and emits `followup_message` only, never both keys. Loop limit: the third consecutive block without a checkbox change lets one stop through with a warning, then the counter restarts, so a stuck session cannot spin forever. `stop_hook_active` turns are counted by the same limit instead of being allowed outright (that would block only once).
 
 Verified with real `claude -p` runs (model sonnet): with two open steps and a first reply that was only a question, the hook blocked it, the agent created both files, ticked both steps and ended with `PLAN COMPLETE`; a plan whose first step needed `git push` ended with `ESCALATION: forbidden action needed` and was not blocked. Evidence under `.tmp/session/token-diet/stoprun_*.jsonl` of the session that built it.
 
@@ -54,7 +54,7 @@ Skill `/igx-autonomy` (name-only) holds the protocol. Sub-agents (`igx-researche
 | core rule (no questions, `ESCALATION:`, `PLAN COMPLETE`) | yes | yes, via `.cursor/rules/intergrax-core.mdc` |
 | typed agents with `DONE:`/`BLOCKED:` | yes | yes, via `.cursor/agents/` |
 | `/igx-run-plan`, `/igx-autonomy` skills | yes | generated into `.cursor/skills/`, not exercised |
-| Stop hook that blocks questions | yes (`Stop`, `decision: block`) | `PARTIAL`: Cursor documents mapping `decision: block` to one continuation, but an earlier CLI run showed a first-reply question ending the run; execution and stdin shape in the current version are `NOT_VERIFIED` |
+| Stop hook that blocks questions | yes (`Stop`, `decision: block`) | registered `stop` in `.cursor/hooks.json`; native continuation is `followup_message` only. Live firing in this Cursor build stays `NOT_VERIFIED` until a session probe shows one follow-up and no continuation after `ESCALATION:` |
 | `generalPurpose` denied | `permissions.deny` | `PARTIAL`: `.cursor/hooks.json` `subagentStart` (`^generalPurpose$`, `failClosed`) runs `igx_subagent_guard.py`; whether the event fires is `NOT_VERIFIED` (earlier CLI check: native hooks did not fire) |
 
 `PARTIAL` and `NOT_VERIFIED` stay until a probe shows the hook call, exactly one follow-up and no continuation after `ESCALATION:`, `error` or `aborted`. A missing probe is neither parity nor a failure; the text rules (Autonomy) apply either way and never allow asking for permission to take the next step.
@@ -65,7 +65,7 @@ In Cursor the rule is text first (inlined into `.cursor/rules/intergrax-core.mdc
 
 - **Shared:** the `agent-env/` SSOT, the same skill and role ids, the same guard scripts, Autonomy text, ticket `Ref` trailers, no push / PR / merge without escalation.
 - **Claude Code only:** expanded `@` imports in `CLAUDE.md`, model slugs, `tools` / `effort` / `maxTurns` / `isolation: worktree`, `permissions.deny`, `skillOverrides`.
-- **Cursor only:** the inlined `.mdc` body, `readonly` and `model: inherit` in agents, the `subagentStart` entry in `.cursor/hooks.json`, scanning `.claude/skills` next to `.cursor/skills`.
+- **Cursor only:** the inlined `.mdc` body, `readonly` and `model: composer-2.5` in agents, the `subagentStart` and `stop` entries in `.cursor/hooks.json`, scanning `.claude/skills` next to `.cursor/skills`.
 - **Not enforced in Cursor until a probe says otherwise:** `permissions.deny`, worktree isolation of the implementer, per-role model choice, a live stop hook, a live `subagentStart`.
 - **Text only:** escalation, edit scope, English-only VCS text, independence of the G6 audit.
 
