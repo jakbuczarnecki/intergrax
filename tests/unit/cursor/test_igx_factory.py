@@ -197,6 +197,8 @@ def test_launch_prints_self_contained_brief(repo: Path, capsys) -> None:
         "igx_test_lock.py --log .tmp/factory/myplan/S1/tests.log",
         "uv run pytest tests/a tests/b -q --basetemp=",
         "DONE: <branch> <sha>",
+        "Co-authored-by: Cursor",
+        "git log -1 --format=%B",
         "BLOCKED:",
         "git push",
     ):
@@ -426,3 +428,27 @@ def test_tests_argv_is_a_list() -> None:
     argv = factory.tests_argv(state, "S1", "log.txt")
     assert isinstance(argv, list) and argv[argv.index("--") + 1 :][:3] == ["uv", "run", "pytest"]
     assert "tests/a" in argv and "tests/b" in argv
+
+
+def test_start_warns_when_cursor_attributes_commits(repo: Path, capsys, tmp_path: Path, monkeypatch) -> None:
+    home = tmp_path / "home"
+    (home / ".cursor").mkdir(parents=True)
+    cfg = home / ".cursor" / "cli-config.json"
+    cfg.write_text(json.dumps({"attribution": {"attributeCommitsToAgent": True}}), encoding="utf-8")
+    monkeypatch.setattr(Path, "home", classmethod(lambda cls: home))
+    before = cfg.read_text(encoding="utf-8")
+    code, out = jrun(capsys, "start", str(write_plan(repo, plan_text(step("S1")))))
+    assert code == 0 and "attributeCommitsToAgent" in out["warnings"][0]
+    assert cfg.read_text(encoding="utf-8") == before
+
+
+def test_attribution_warning_tolerates_missing_invalid_or_false(tmp_path: Path, monkeypatch) -> None:
+    home = tmp_path / "h"
+    monkeypatch.setattr(Path, "home", classmethod(lambda cls: home))
+    assert factory.attribution_warnings() == []
+    (home / ".cursor").mkdir(parents=True)
+    cfg = home / ".cursor" / "cli-config.json"
+    cfg.write_text("{not json", encoding="utf-8")
+    assert factory.attribution_warnings() == []
+    cfg.write_text(json.dumps({"attribution": {"attributeCommitsToAgent": False}}), encoding="utf-8")
+    assert factory.attribution_warnings() == []

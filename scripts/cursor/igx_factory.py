@@ -278,6 +278,22 @@ def tests_command(state: dict[str, Any], sid: str, log: str) -> str:
     return " ".join(argv)
 
 
+def attribution_warnings() -> list[str]:
+    """Non-fatal: the Cursor CLI appends a co-author trailer when this user setting is on. Never edits the file."""
+    try:
+        cfg = json.loads((Path.home() / ".cursor" / "cli-config.json").read_text(encoding="utf-8"))
+        attr = cfg.get("attribution") if isinstance(cfg, dict) else None
+        if isinstance(attr, dict) and attr.get("attributeCommitsToAgent") is True:
+            return [
+                "~/.cursor/cli-config.json has attribution.attributeCommitsToAgent=true: Cursor appends a "
+                "'Co-authored-by: Cursor' trailer to worker commits and receive rejects them. "
+                "Operator: set it to false."
+            ]
+    except (OSError, ValueError):
+        pass
+    return []
+
+
 def build_brief(state: dict[str, Any], sid: str, findings: str | None = None) -> str:
     s = state["steps"][sid]
     log = f".tmp/factory/{state['plan_id']}/{sid}/tests.log"
@@ -295,6 +311,9 @@ def build_brief(state: dict[str, Any], sid: str, findings: str | None = None) ->
         "COMMIT RULES: commit on the worker branch; English message; message body ends with the trailer line",
         f"  Ref: {s['ticket']}",
         "  No AI attribution: no Co-Authored-By naming a tool, no 'Generated with' footer.",
+        "  Cursor may append a 'Co-authored-by: Cursor ...' trailer to your commit automatically. Before reporting",
+        "  DONE run `git log -1 --format=%B`; if any AI co-author or 'Generated' trailer is present, amend that commit",
+        "  with the message rewritten without it (keep the Ref trailer), then re-check with `git log -1 --format=%B`.",
         "FORBIDDEN: git push, gh, PR creation, merge, git reset --hard, --no-verify, touching the main checkout or",
         "  other worktrees, spawning subagents.",
         "DECIDE ALONE: when the plan, ADRs, repo rules or existing code answer a question, decide and continue;",
@@ -364,7 +383,17 @@ def cmd_start(plan_arg: str, cwd: Path) -> dict[str, Any]:
             "park": None,
         }
     save_state(state)
-    return {"ok": True, "plan_id": plan_id, "base_sha": base, "int_branch": state["int_branch"], "steps": len(steps)}
+    result: dict[str, Any] = {
+        "ok": True,
+        "plan_id": plan_id,
+        "base_sha": base,
+        "int_branch": state["int_branch"],
+        "steps": len(steps),
+    }
+    warnings = attribution_warnings()
+    if warnings:
+        result["warnings"] = warnings
+    return result
 
 
 def deps_integrated(state: dict[str, Any], sid: str) -> bool:

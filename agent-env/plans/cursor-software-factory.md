@@ -50,14 +50,14 @@ Cursor-only branches in `sync_agent_env.py`.
 
 ## Checklist
 
-- [ ] F0 Ticket, worktree, baseline (record base SHA, `sync --check`, current tests green)
-- [ ] F1 Factory plan format + `scripts/cursor/igx_factory.py` state machine
-- [ ] F2 Local integration + test lock + worker briefs
-- [ ] F3 State-file `stop` hook for the Cursor IDE
-- [ ] F4 Headless supervisor + `.cursor/cli.json` permissions
-- [ ] F5 Cursor rule, skill, agent and generator cleanup (single protocol)
-- [ ] F6 Tests (factory + Claude-surface regression) and docs
-- [ ] F7 Headless E2E demo run, independent review, commit set
+- [x] F0 Ticket, worktree, baseline (record base SHA, `sync --check`, current tests green)
+- [x] F1 Factory plan format + `scripts/cursor/igx_factory.py` state machine
+- [x] F2 Local integration + test lock + worker briefs
+- [x] F3 State-file `stop` hook for the Cursor IDE
+- [x] F4 Headless supervisor + `.cursor/cli.json` permissions
+- [x] F5 Cursor rule, skill, agent and generator cleanup (single protocol)
+- [x] F6 Tests (factory + Claude-surface regression) and docs
+- [x] F7 Headless E2E demo run, independent review, commit set
 
 ## F1 Factory plan format and state machine
 
@@ -212,3 +212,16 @@ Docs:
 6. The Operator runs the same demo inside the Cursor IDE with `/igx-native-run-plan`. Until then the status is
    `CURSOR_IDE_E2E_PENDING_OPERATOR`. The agent cannot drive the IDE.
 7. Before the commit set, run an independent `igx-reviewer` pass over the diff against this plan.
+
+## Outcome
+
+- Headless E2E 2026-11-22. Run A (S1, S2||S3, S4; parent grok-4.7-high, workers composer-2.5): `PLAN COMPLETE` in 1
+  supervisor iteration, 1556 s, zero human input; integration SHA `937440217966abec0ca5167f161260e49a479f06`; demo tests
+  12 passed. Run B (S3 impossible): `PLAN COMPLETE WITH ESCALATIONS` in 1 iteration, 1203 s; S1, S2 integrated (SHA
+  `cfe43cf27cf6a1e19013eadecbcd680cc2d77983`); S3 parked, S4 parked transitively; exit 3. Proof in
+  `.tmp/proof/cursor-factory/run-a/` and `run-b/` (untracked).
+- Independent `igx-reviewer`: REJECT with 15 findings; fixed in `49f9a7fce`, 2 documented, 1 false positive
+  (out-of-workspace writes verified working with `--trust`), 1 follow-up outside scope (shell guard literal match).
+- Defect found: Cursor CLI co-author trailer from user setting `attributeCommitsToAgent`; mitigated by brief
+  instruction and `start` warning.
+- In-IDE run: `CURSOR_IDE_E2E_PENDING_OPERATOR`.

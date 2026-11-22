@@ -69,4 +69,4 @@ configuration, product code, CI workflows.
 
 ## Lifecycle state
 
-in_progress
+quality_gate

@@ -13,6 +13,14 @@ locally into `factory/<plan-id>/int` by `igx-integrator`. Nothing is pushed.
 
 Protocol for the agent: `.cursor/rules/igx-factory.mdc` (always on) and `/igx-native-run-plan`.
 
+## Prerequisites
+
+- Cursor CLI user setting: set `"attribution": {"attributeCommitsToAgent": false}` in `~/.cursor/cli-config.json`.
+  Otherwise Cursor appends `Co-authored-by: Cursor <cursoragent@cursor.com>` to every worker commit; `receive` rejects
+  it and each step burns a correction. `start` prints a non-fatal `warnings` entry when the setting is on. The briefs also
+  tell workers to amend such a trailer away, but the factory never edits user configuration.
+- Headless runs need workspace trust; the supervisor passes `--trust` itself (see below).
+
 ## Plan format
 
 See [templates/FACTORY_PLAN_TEMPLATE.md](./templates/FACTORY_PLAN_TEMPLATE.md). One checkbox line per step
@@ -72,6 +80,20 @@ first failed validation or rejection parks the step). A worker that vanished wit
 - Known gap: the shell guard `igx_cursor_integration_guard.py` matches only `git push` / `git reset --hard` literally
   (`git -C x push` passes). It is owned by OD-AF-INT A and is a follow-up, not changed here.
 - In factory runs only local integration applies; the OD-AF-INT A remote runner is outside the factory loop.
+
+## Verified
+
+- Run A, 2026-11-22 (headless; plan S1, S2 and S3 in parallel, S4; parent grok-4.7-high, workers composer-2.5):
+  `PLAN COMPLETE` in 1 supervisor iteration, 1556 s, zero human input; integration SHA
+  `937440217966abec0ca5167f161260e49a479f06`; demo tests 12 passed on the integration branch.
+- Run B, 2026-11-22 (S3 impossible: required `pyproject.toml` edit outside its write set): `PLAN COMPLETE WITH
+  ESCALATIONS` in 1 iteration, 1203 s; S1 and S2 integrated (SHA `cfe43cf27cf6a1e19013eadecbcd680cc2d77983`); S3 parked as
+  plan/rules/code contradiction with options and recommendation; S4 parked transitively; supervisor exit 3.
+- Defect seen in both runs: the Cursor CLI co-author trailer (see Prerequisites); mitigated by the brief and the
+  `start` warning.
+- In-IDE run: `CURSOR_IDE_E2E_PENDING_OPERATOR`.
+- Known follow-up: shell guard `igx_cursor_integration_guard.py` matches only literal `git push` / `git reset --hard`
+  (owned by OD-AF-INT A).
 
 ## Completion report
 
