@@ -34,15 +34,16 @@ def _start(subagent_type: object, **env: str) -> dict:
     return _run(json.dumps({"hook_event_name": "subagentStart", "subagent_type": subagent_type}), **env)
 
 
-def test_general_purpose_is_denied_and_names_the_roles() -> None:
-    out = _start("generalPurpose")
+@pytest.mark.parametrize("generic", ["generalPurpose", "general-purpose", "GeneralPurpose" ])
+def test_general_purpose_is_denied_and_names_the_roles(generic: str) -> None:
+    out = _start(generic)
     assert out["permission"] == "deny"
     for role in ROLES:
         assert role in out["user_message"]
 
 
-@pytest.mark.parametrize("subagent_type", [*ROLES, "explore", "general-purpose", "GeneralPurpose"])
-def test_other_types_are_allowed(subagent_type: str) -> None:
+@pytest.mark.parametrize("subagent_type", [*ROLES, "explore"])
+def test_typed_roles_are_allowed(subagent_type: str) -> None:
     assert _start(subagent_type) == {"permission": "allow"}
 
 
@@ -67,7 +68,7 @@ def test_hooks_json_registers_subagent_start_and_native_stop() -> None:
     assert set(config["hooks"]) == {"subagentStart", "stop"}
     (entry,) = config["hooks"]["subagentStart"]
     assert entry["failClosed"] is True
-    assert entry["matcher"] == "^generalPurpose$"
+    assert entry["matcher"] == "^(generalPurpose|general-purpose|GeneralPurpose)$"
     assert entry["command"] == "python scripts/hooks/igx_subagent_guard.py"
     (stop,) = config["hooks"]["stop"]
     assert stop["command"] == "python scripts/hooks/igx_stop_guard.py"

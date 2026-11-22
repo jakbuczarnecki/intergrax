@@ -38,7 +38,7 @@ _SCAN_TAIL = 16 * 1024 * 1024
 _MARKER = re.compile(r"^[ \t>*_#-]*(ESCALATION:(?![ \t]*<)|PLAN COMPLETE\b|WAITING:)", re.M)
 _BACKGROUND = re.compile(r'"run_in_background"\s*:\s*true')
 _START = "igx_stop_guard.py start"
-_DONE_STATUS = ("completed", "cancelled")
+_DONE_STATUS = ("completed",)  # Cancelled steps remain open until explicitly resolved.
 
 
 def frontmatter_todos(text: str) -> list[tuple[bool, str]]:

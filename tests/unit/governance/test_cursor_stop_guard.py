@@ -355,9 +355,24 @@ def test_frontmatter_todos_parser() -> None:
         "  - id: b\n    content: done one\n    status: cancelled\n  - id: c\n    content: no status\n"
         "other: 1\n---\n- [ ] ignored by the parser\n"
     )
-    assert mod.frontmatter_todos(text) == [(False, "single: quoted"), (True, "done one"), (False, "no status")]
+    assert mod.frontmatter_todos(text) == [(False, "single: quoted"), (False, "done one"), (False, "no status")]
     assert mod.frontmatter_todos("# no frontmatter\n- [ ] x\n") == []
     assert mod.frontmatter_todos("---\nname: x\n---\n") == []
+
+
+
+def test_cursor_cancelled_todo_does_not_complete_plan(sess: Session, root: Path) -> None:
+    plan = root / "cancelled.plan.md"
+    plan.write_text(
+        "---\ntodos:\n  - id: cancelled-task\n    content: Review the cancelled worker and reschedule\n    status: cancelled\n---\n",
+        encoding="utf-8",
+    )
+    assert _cli(root, "start", str(plan)).returncode == 0
+    sess.turn("PLAN COMPLETE")
+    result = sess.stop()
+    assert "premature" in result["followup_message"]
+    assert "Review the cancelled worker" in result["followup_message"]
+    assert (root / ACTIVE).is_file()
 
 
 def test_checkbox_plan_still_parses_as_before(root: Path) -> None:
