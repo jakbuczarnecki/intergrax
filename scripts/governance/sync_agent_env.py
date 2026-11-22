@@ -135,17 +135,37 @@ _CORE_PLAN_DONE = (
     "Plan finished: print `PLAN COMPLETE` and a short summary (`/igx-run-plan` enforces it via Stop hook)."
 )
 _CURSOR_PLAN_DONE = "Plan finished: Cursor lifecycle and completion per `.cursor/rules/igx-factory.mdc`."
+_CORE_STOP = "Stop only with `ESCALATION: <type>` ("
+_CURSOR_STOP = (
+    "Stop only with `ESCALATION: <type>` (in a Cursor factory run: `igx_factory.py park`, continue the other "
+    "READY steps, one batched report from `igx_factory.py complete`) ("
+)
+_CORE_HUMAN_GIT = (
+    "`git push`, PR creation, merge, branch integration and GitHub settings stay human "
+    "(forbidden action: escalate, do not try)."
+)
+_CURSOR_HUMAN_GIT = (
+    "`git push`, PR creation, remote merge, integration into `development` or operator branches and GitHub "
+    "settings stay human (forbidden action: escalate, do not try). Allowed in Cursor: local integration of an "
+    "approved factory run into `factory/<plan-id>/int` by `igx-integrator` per `.cursor/rules/igx-factory.mdc`."
+)
+# (canonical sentence, Cursor replacement, what drifted) - each canonical sentence must occur exactly once.
+_CURSOR_CORE_SUBSTITUTIONS = (
+    (_CORE_PLAN_DONE, _CURSOR_PLAN_DONE, "PLAN COMPLETE / Stop hook"),
+    (_CORE_STOP, _CURSOR_STOP, "Stop only with ESCALATION"),
+    (_CORE_HUMAN_GIT, _CURSOR_HUMAN_GIT, "push / merge / branch integration stay human"),
+)
 
 
 def _cursor_core_text(rule_id: str, text: str) -> str:
-    """Cursor-only substitution in the always-on core extract; fails loudly when the source drifts."""
+    """Cursor-only substitutions in the always-on core extract; fails loudly when the source drifts."""
     if rule_id != "intergrax-core":
         return text
-    if text.count(_CORE_PLAN_DONE) != 1:
-        raise ValueError(
-            "intergrax-core Autonomy sentence about PLAN COMPLETE / Stop hook changed: update the Cursor adapter"
-        )
-    return text.replace(_CORE_PLAN_DONE, _CURSOR_PLAN_DONE)
+    for canonical, cursor, label in _CURSOR_CORE_SUBSTITUTIONS:
+        if text.count(canonical) != 1:
+            raise ValueError(f"intergrax-core Autonomy sentence about {label} changed: update the Cursor adapter")
+        text = text.replace(canonical, cursor)
+    return text
 
 
 def _cursor_rule(rule_id: str, meta: dict[str, str]) -> str:

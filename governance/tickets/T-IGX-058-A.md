@@ -73,6 +73,12 @@ merge.
 - Not covered (follow-up candidates): other remote `gh pr` mutations (`close`, `edit`, `review`, `ready`, `comment`)
   are only blocked by the `.cursor/cli.json` `Shell(gh)` prefix rule; `igx_gov ticket` not run (no push in this ticket).
 
+## Closeout
+
+2026-11-22: `uv run python -m scripts.governance.igx_gov ticket` PASS before push; merged into `development` via
+PR #750 (merge commit `7bd4558b5`). Final readiness audit on that commit: 317 passed (factory contract plus this
+ticket's guard tests). The `gh pr` mutation follow-ups above remain covered only by `.cursor/cli.json`.
+
 ## Lifecycle state
 
-in_progress
+closed

@@ -237,6 +237,18 @@ def test_cursor_core_points_to_factory_and_claude_core_is_unchanged() -> None:
     assert "@agent-env/rules/intergrax-core.md" in claude_md
 
 
+def test_cursor_core_allows_local_factory_integration_and_parking() -> None:
+    sync = _load_sync()
+    cursor_core = sync.expected_files()[ROOT / ".cursor" / "rules" / "intergrax-core.mdc"]
+    assert "merge, branch integration and GitHub settings stay human" not in cursor_core
+    assert "integration into `development` or operator branches" in cursor_core
+    assert "`factory/<plan-id>/int` by `igx-integrator`" in cursor_core
+    assert "`igx_factory.py park`, continue the other READY steps" in cursor_core
+    source = (ROOT / "agent-env" / "rules" / "intergrax-core.md").read_text(encoding="utf-8")
+    for canonical, _cursor, _label in sync._CURSOR_CORE_SUBSTITUTIONS:
+        assert source.count(canonical) == 1  # Claude keeps the canonical wording
+
+
 def test_cursor_core_transform_fails_loudly_on_source_drift() -> None:
     import pytest
 

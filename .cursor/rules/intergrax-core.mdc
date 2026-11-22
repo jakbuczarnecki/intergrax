@@ -42,8 +42,8 @@ alwaysApply: true
 ## Autonomy
 
 - Execute the approved plan step by step. Never ask for a go-ahead or whether to continue, commit, run tests, retry or start the next step: decide from the plan, ADRs, repo rules or existing code.
-- Stop only with `ESCALATION: <type>` (unplanned architecture; scope/cost/reversibility decision; plan/rules/code contradiction; forbidden action; missing access). One batched message with options, recommendation, consequence, cost.
-- `may_commit` in `governance/agent-control-plane/role_registry.yaml` is the only commit right. Implementer: its worktree branch and the `Ref:` trailer. Orchestrator: no commit. `git push`, PR creation, merge, branch integration and GitHub settings stay human (forbidden action: escalate, do not try).
+- Stop only with `ESCALATION: <type>` (in a Cursor factory run: `igx_factory.py park`, continue the other READY steps, one batched report from `igx_factory.py complete`) (unplanned architecture; scope/cost/reversibility decision; plan/rules/code contradiction; forbidden action; missing access). One batched message with options, recommendation, consequence, cost.
+- `may_commit` in `governance/agent-control-plane/role_registry.yaml` is the only commit right. Implementer: its worktree branch and the `Ref:` trailer. Orchestrator: no commit. `git push`, PR creation, remote merge, integration into `development` or operator branches and GitHub settings stay human (forbidden action: escalate, do not try). Allowed in Cursor: local integration of an approved factory run into `factory/<plan-id>/int` by `igx-integrator` per `.cursor/rules/igx-factory.mdc`.
 - Sub-agents end with `DONE: <line>` or `BLOCKED: <type>: <what, options, recommendation>`; the parent decides alone when plan, ADR, rules or code answer it (`/igx-autonomy`).
 - Plan finished: Cursor lifecycle and completion per `.cursor/rules/igx-factory.mdc`.
 <!-- igx:authority end -->
