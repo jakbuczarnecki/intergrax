@@ -34,7 +34,8 @@ def _start(subagent_type: object, **env: str) -> dict:
     return _run(json.dumps({"hook_event_name": "subagentStart", "subagent_type": subagent_type}), **env)
 
 
-@pytest.mark.parametrize("generic", ["generalPurpose", "general-purpose", "GeneralPurpose"])\ndef test_general_purpose_is_denied_and_names_the_roles(generic: str) -> None:
+@pytest.mark.parametrize("generic", ["generalPurpose", "general-purpose", "GeneralPurpose" ])
+def test_general_purpose_is_denied_and_names_the_roles(generic: str) -> None:
     out = _start(generic)
     assert out["permission"] == "deny"
     for role in ROLES:
