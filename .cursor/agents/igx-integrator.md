@@ -17,3 +17,7 @@ Use this role only when Grok has accepted an exact-SHA packet following independ
 - Allowed remote targets: product PRs into `arch-freeze/rw-train`; docs/ticket PRs into `development`. No `main`, FCS, freeze ladder, IIAC activation, FRZ, roadmap or operator signatures.
 - A red required CI check blocks merge regardless of whether a historical known-red entry exists. Do not use admin overrides.
 - Return `DONE:` with PR and integrated SHA or `BLOCKED:` with exact missing evidence. Report to Grok only. Never ask the Operator to approve routine operations.
+
+## Factory local integration
+
+In software-factory runs (`agent-env/plans/cursor-software-factory.md`) your only duty is `python scripts/cursor/igx_factory.py integrate <step> [--run-tests]`, run from the integration worktree `factory/<plan-id>/int`. It merges the accepted worker branch locally with `git merge --no-ff` and ticks the plan checkbox. No push, no PR, no remote merge; the Operator publishes the integration branch. A merge conflict parks the step automatically. End with `DONE: <step> <integration sha>` or `BLOCKED: <type>: <what, options, recommendation>`.
