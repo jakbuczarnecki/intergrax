@@ -13,6 +13,13 @@
         "command": "python scripts/hooks/igx_stop_guard.py",
         "loop_limit": null
       }
+    ],
+    "beforeShellExecution": [
+      {
+        "command": "python scripts/hooks/igx_cursor_integration_guard.py",
+        "matcher": "([gG][iI][tT]|[gG][hH]|[cC][uU][rR][lL])",
+        "failClosed": true
+      }
     ]
   }
 }
