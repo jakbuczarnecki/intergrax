@@ -287,6 +287,19 @@ WAVE_DIFF_FULL_IMPACT_PREFIXES: tuple[str, ...] = (
     "intergrax/multimedia",  # RW-RUNTIME (PR #670): images loader
     "intergrax/background_tasks",
     "intergrax/runtime/sandbox",
+    # Slice 3 (043-M Part E): PDC-touched residuals — FULL impact (all manifest ids per prefix).
+    "agents/boundary_demo",
+    "agents/external_contractor_adapter",
+    "agents/lab",
+    "agents/organization_worker",
+    "intergrax/agents",
+    "intergrax/harness",
+    "intergrax/runtime/capacity",
+    "intergrax/runtime/events",
+    "intergrax/runtime/human",
+    "intergrax/runtime/nexus",
+    "intergrax/runtime/task_memory",
+    "intergrax/scaffold",
 )
 
 
