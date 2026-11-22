@@ -160,23 +160,29 @@ def turn_text(path: Path) -> str:
     return text
 
 
-def _is_start_claim(line: str) -> bool:
+def _tool_use_inputs(line: str) -> list[str]:
+    """Serialised ``input`` of every assistant ``tool_use`` item on a transcript line."""
     try:
         obj = json.loads(line)
     except ValueError:
-        return False
+        return []
     if not isinstance(obj, dict) or _role(obj) != "assistant":
-        return False
+        return []
     message = obj.get("message")
     content = message.get("content") if isinstance(message, dict) else obj.get("content")
-    for item in content if isinstance(content, list) else []:
-        if isinstance(item, dict) and item.get("type") == "tool_use" and _START in json.dumps(item.get("input")):
-            return True
-    return False
+    return [
+        json.dumps(item.get("input"))
+        for item in (content if isinstance(content, list) else [])
+        if isinstance(item, dict) and item.get("type") == "tool_use"
+    ]
+
+
+def _is_start_claim(line: str) -> bool:
+    return any(_START in text for text in _tool_use_inputs(line))
 
 
 def _is_background(line: str) -> bool:
-    return bool(_BACKGROUND.search(line))
+    return any(_BACKGROUND.search(text) for text in _tool_use_inputs(line))
 
 
 def _find_line(path: Path, needle: str, accept: Callable[[str], bool]) -> bool:
@@ -189,7 +195,7 @@ def _find_line(path: Path, needle: str, accept: Callable[[str], bool]) -> bool:
     key = needle.encode()
     with path.open("rb") as handle:
         for raw in handle:
-            if key in raw and accept(raw.decode("utf-8", errors="ignore")):
+            if len(raw) <= _SCAN_TAIL and key in raw and accept(raw.decode("utf-8", errors="ignore")):
                 return True
     return False
 

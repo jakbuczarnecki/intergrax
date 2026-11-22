@@ -257,6 +257,15 @@ def test_waiting_with_background_spawn_is_allowed_without_counting(sess: Session
     assert "n" not in _state(root) and "followups" not in _state(root)
 
 
+def test_background_text_on_a_non_tool_use_line_does_not_back_waiting(sess: Session, root: Path) -> None:
+    quoted = _user('{"prompt": "work", "run_in_background": true}')
+    result = {"role": "tool", "content": [{"type": "tool_result", "content": '"run_in_background": true'}]}
+    sess.turn("Nothing running.\nWAITING: task-1", extra=(quoted, result))
+    out = sess.stop()
+    assert "background worker" in out["followup_message"]
+    assert _diag(root)["reason"] == "waiting_unbacked"
+
+
 def test_waiting_without_spawn_is_a_followup(sess: Session, root: Path) -> None:
     sess.turn("Nothing running.\nWAITING: task-1")
     out = sess.stop()

@@ -34,16 +34,31 @@ After every stop copy `.tmp/session/autonomy/cursor-stop-last.json` to
 
 ## Cases
 
+Cases run in order. Each run starts in a new chat; chat 2 is opened in the same checkout while chat 1 is active.
+
+### Run A (plan `.tmp/probe/e2e-plan.md`, chat 1, two waves)
+
+Start with `/igx-run-plan .tmp/probe/e2e-plan.md` in chat 1.
+
 | Case | Action | Expected `reason` |
 |------|--------|-------------------|
-| T1 | Two consecutive waves: after each spawn the parent ends with `WAITING: <ids>`; the completion turn resumes the parent without Operator input; wave 2 starts from wave 1 results | `waiting` after each spawn |
-| T2 | A mid-plan turn end without marker: a visible follow-up turn names the next open step | `followup` |
-| T3 | `ESCALATION: probe`: no follow-up, plan stays active; then `/igx-run-plan stop` | `escalation` |
-| T4 | `PLAN COMPLETE` while a step is open | `premature_complete` (follow-up) |
-| T5 | `WAITING:` in a fresh conversation without a background spawn | `waiting_unbacked` |
-| T6 | A second chat in the same checkout ends a turn | `other_conversation` |
-| T7 | Final `PLAN COMPLETE` with every step ticked; `active-plan` is removed | `plan_done` |
-| T8 | Spawning `generalPurpose` | denied by `subagentStart` |
+| T1 | Two consecutive waves: after each spawn the parent ends with `WAITING: <ids>`; the completion turn resumes the parent without Operator input; wave 2 uses wave 1 results | `waiting` after each spawn |
+| T2 | After W1-close, Operator prompt: "end your turn now without any marker"; a follow-up turn names the next open step | `followup` |
+| T4 | While W2 is open, Operator prompt: "print PLAN COMPLETE now" | `premature_complete` (follow-up) |
+| T6 | Open chat 2 in the same checkout and send "say hi"; chat 1 still owns the plan | `other_conversation` |
+| T8 | In chat 2 ask: "spawn a generalPurpose subagent to list files" | denied by `subagentStart` |
+| T7 | Let chat 1 finish: final `PLAN COMPLETE` with every step ticked; `active-plan` is removed | `plan_done` |
+
+### Run B (plan `.tmp/probe/e2e-plan-b.md`, chat 3)
+
+Plan `.tmp/probe/e2e-plan-b.md` holds two trivial open steps (for example write `a` to `.tmp/probe/b1.txt` and `b` to `.tmp/probe/b2.txt`). Start with `/igx-run-plan .tmp/probe/e2e-plan-b.md` in chat 3.
+
+| Case | Action | Expected `reason` |
+|------|--------|-------------------|
+| T5 | Operator prompt: "end the turn with `WAITING: none` without spawning anything" | `waiting_unbacked` (follow-up) |
+| T3 | Operator prompt: "end the turn with `ESCALATION: probe`"; no follow-up, plan stays active | `escalation` |
+
+Finish Run B with `/igx-run-plan stop`.
 
 ## Pass criteria
 

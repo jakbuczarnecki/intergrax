@@ -15,7 +15,7 @@ before. No edits under `intergrax/`, `agents/`, `applications/`, `.claude/settin
 - [x] W2 Cursor contract docs (`igx-run-plan`, `igx-autonomy`, `PARALLEL-EXECUTION.md`)
 - [x] W3 local integrator proposal (approval-gated, not applied)
 - [x] W4 regression, sync check, policy pin, live probe or `CURSOR_LIVE_E2E_NOT_EXECUTED`
-- [ ] W5 independent review and commit set
+- [x] W5 independent review and commit set
 
 ## W0 dossier (evidence, 2026-11-21)
 
@@ -102,6 +102,13 @@ commit authority to `governance/agent-control-plane/role_registry.yaml` (a pinne
 
 - Core push-ban restore: `agent-env/rules/intergrax-core.md` Autonomy line names `git push` and GitHub settings again.
 - 16 MiB fix: the owner claim and the WAITING background check scan the tail first and fall back to a full streaming
-  scan; the owner is claimed on a stop of any status (measured largest local Cursor transcript 5.14 MB of 7274).
+  scan; the owner is claimed on a stop of any status (largest local Cursor transcript for this repo 5,389,233 bytes (5.14 MiB) of 7274 files, measured 2026-11-22; proof `.tmp/proof/cursor-orch-corrective/transcript-sizes.txt`, local and untracked).
 - `generalPurpose` registry entry split into a separate decision in the integrator proposal.
 - Live E2E procedure: `agent-env/plans/cursor-live-e2e-procedure.md`.
+
+Review: independent review of 8475dcbd4 ACCEPT_WITH_FINDINGS (6 minor/nit, no blocker; #1 #2 #3 #4 #6 fixed in this
+commit, #5 nit accepted as meaning-identical). Requalification of 8475dcbd4: sync --check OK, pin OK, token setup OK,
+pytest 126 passed 1 deselected (the deselected test is the base copy of the Cursor-native test whose contract F01/F02
+intentionally changed), ruff clean. Status `READY_FOR_PUBLICATION`, live status `CURSOR_LIVE_E2E_NOT_EXECUTED`.
+Final commit set (this commit): sync --check OK, pin OK, token setup OK, pytest 127 passed 1 deselected (same
+deselect), ruff check and format clean; proof `.tmp/proof/cursor-orch-corrective/w5-final2-tests.txt`.
