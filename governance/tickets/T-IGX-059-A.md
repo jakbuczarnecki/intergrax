@@ -53,6 +53,12 @@ items left open: tree-hash pin in `test_claude_surface_unchanged.py`, `cli.json`
 `checkout`/`switch`/`restore`/`stash`, E501 in `scripts/cursor/igx_integrator.py`, in-IDE E2E
 (`CURSOR_IDE_E2E_PENDING_OPERATOR`).
 
+## Closeout
+
+2026-11-22: merged into `development` via PR #751 (merge commit `68479a683`). Verification before push:
+ticket test contract 318 passed, `sync_agent_env.py --check` OK, `igx_gov ticket` OK. The audit items left open here are
+handled by `governance/tickets/T-IGX-060-A.md`.
+
 ## Lifecycle state
 
-in_progress
+closed

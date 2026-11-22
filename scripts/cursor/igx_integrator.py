@@ -4,6 +4,7 @@
 Claude Code does not use this command. The authorized Cursor worker can publish
 and merge only exact-SHA, reviewed, scoped PRs. No unrestricted git/gh proxy.
 """
+
 from __future__ import annotations
 
 import argparse
@@ -23,16 +24,27 @@ SHA = re.compile(r"^[0-9a-f]{40}$")
 BRANCH = re.compile(r"^(?:af2|integ|feat|fix)/[A-Za-z0-9._/-]{1,110}$")
 TICKET = re.compile(r"^governance/tickets/T-IGX-\d{3}-[A-Z]\.md$")
 PROTECTED = (
-    ".claude/", "agent-env/", ".cursor/", "governance/agent-control-plane/",
-    "scripts/cursor/", "scripts/hooks/", "scripts/governance/",
-    "governance/TRUSTED_POLICY_PIN.yaml", "CLAUDE.md",
+    ".claude/",
+    "agent-env/",
+    ".cursor/",
+    "governance/agent-control-plane/",
+    "scripts/cursor/",
+    "scripts/hooks/",
+    "scripts/governance/",
+    "governance/TRUSTED_POLICY_PIN.yaml",
+    "CLAUDE.md",
     "docs/project/maintainers/qualification/ARCH_FREEZE_SHA_LADDER.md",
     "docs/project/maintainers/qualification/PLATFORM_ENTERPRISE_FREEZE_ACCEPTANCE_CHECKLIST.md",
     "docs/project/maintainers/qualification/ARCH_FREEZE_FRZ_ACCEPTANCE_MATRIX.md",
 )
 PROTECTED_DOC_NAMES = (
-    "ROADMAP", "OPERATOR_DECISION", "FRZ_ACCEPTANCE", "IIAC_POLICY_ACTIVATION",
-    "FREEZE_CERTIFICATION", "ARCH_FREEZE_SHA_LADDER", "ARCH_FREEZE_CLOSED",
+    "ROADMAP",
+    "OPERATOR_DECISION",
+    "FRZ_ACCEPTANCE",
+    "IIAC_POLICY_ACTIVATION",
+    "FREEZE_CERTIFICATION",
+    "ARCH_FREEZE_SHA_LADDER",
+    "ARCH_FREEZE_CLOSED",
 )
 DOC_ROOTS = ("docs/", "governance/tickets/")
 PRODUCT_ROOTS = ("intergrax/", "agents/", "applications/", "tests/", "scripts/")
@@ -94,7 +106,8 @@ def validate_packet(p: dict[str, Any]) -> None:
         raise Blocked("independent reviewer ACCEPT required")
     if p.get("review_head_sha") != p["head_sha"]:
         raise Blocked("review not bound to candidate SHA")
-    if not isinstance(p.get("review_report_sha256"), str) or not re.fullmatch(r"[0-9a-f]{64}", p["review_report_sha256"]):
+    digest = p.get("review_report_sha256")
+    if not isinstance(digest, str) or not re.fullmatch(r"[0-9a-f]{64}", digest):
         raise Blocked("missing review report digest")
     if not isinstance(p.get("review_report_file"), str) or not p["review_report_file"].startswith(".tmp/proof/"):
         raise Blocked("review report must be under .tmp/proof")
@@ -111,9 +124,10 @@ def verify_evidence(p: dict[str, Any], checkout: Path) -> None:
         record = json.loads(proof.read_text(encoding="utf-8"))
     except (OSError, ValueError) as exc:
         raise Blocked("review evidence must be JSON") from exc
-    if any(record.get(k) != p.get(key) for k, key in (
-        ("head_sha", "head_sha"), ("reviewer", "reviewer"), ("verdict", "review_verdict")
-    )):
+    if any(
+        record.get(k) != p.get(key)
+        for k, key in (("head_sha", "head_sha"), ("reviewer", "reviewer"), ("verdict", "review_verdict"))
+    ):
         raise Blocked("review record not bound to candidate and reviewer")
 
 
@@ -135,7 +149,8 @@ def check_ticket(p: dict[str, Any], checkout: Path) -> None:
             raise Blocked("canonical ticket could not be decoded") from exc
     if not re.search(r"(?m)^Approved: .+", text):
         raise Blocked("ticket lacks Approved line")
-    if not re.search(r"(?m)^## Lifecycle state\s*\n\s*(plan_approved|in_progress|quality_gate|ready_for_audit|closed)\s*$", text):
+    lifecycle = r"(plan_approved|in_progress|quality_gate|ready_for_audit|closed)"
+    if not re.search(rf"(?m)^## Lifecycle state\s*\n\s*{lifecycle}\s*$", text):
         raise Blocked("ticket lifecycle does not authorize execution")
 
 
@@ -229,8 +244,24 @@ def publish(p: dict[str, Any], checkout: Path) -> None:
     if (checkout / ".tmp/proof").resolve() not in path.parents or not path.is_file():
         raise Blocked("PR body file missing")
     command(["git", "push", "origin", f"{p['head_sha']}:refs/heads/{p['branch']}"], cwd=checkout)
-    command(["gh", "pr", "create", "-R", REPO, "--base", p["target"],
-             "--head", p["branch"], "--title", title, "--body-file", str(path)], cwd=checkout)
+    command(
+        [
+            "gh",
+            "pr",
+            "create",
+            "-R",
+            REPO,
+            "--base",
+            p["target"],
+            "--head",
+            p["branch"],
+            "--title",
+            title,
+            "--body-file",
+            str(path),
+        ],
+        cwd=checkout,
+    )
 
 
 def merge(p: dict[str, Any]) -> None:
@@ -240,8 +271,7 @@ def merge(p: dict[str, Any]) -> None:
     verify_pr(p, number)
     required_checks(number)
     verify_pr(p, number)  # Detect changed base/head after required checks were queried.
-    command(["gh", "pr", "merge", str(number), "--merge",
-             "--match-head-commit", p["head_sha"], "-R", REPO])
+    command(["gh", "pr", "merge", str(number), "--merge", "--match-head-commit", p["head_sha"], "-R", REPO])
     final = gh_api(f"pulls/{number}")
     merged_sha = final.get("merge_commit_sha")
     if not final.get("merged") or not isinstance(merged_sha, str) or not SHA.fullmatch(merged_sha):

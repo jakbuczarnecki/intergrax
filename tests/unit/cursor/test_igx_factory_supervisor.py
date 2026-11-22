@@ -188,6 +188,16 @@ def test_cli_json_is_valid_and_denies_push() -> None:
     assert "Shell(git push)" not in cfg["permissions"]["allow"]
 
 
+def test_cli_json_allows_worktree_git_and_keeps_shared_state_commands_denied() -> None:
+    perms = json.loads((ROOT / ".cursor/cli.json").read_text(encoding="utf-8"))["permissions"]
+    for token in ("Shell(git checkout)", "Shell(git switch)", "Shell(git restore)", "Shell(git merge)"):
+        assert token in perms["allow"]
+    assert "Shell(git stash)" in perms["deny"]  # the stash stack is shared by every worktree
+    assert not set(perms["allow"]) & set(perms["deny"])
+    for entry in perms["allow"]:
+        assert not any(word in entry for word in ("push", "reset", "stash", "Shell(gh", "curl"))
+
+
 def test_prompts_are_single_line_without_cmd_metacharacters(tmp_path: Path) -> None:
     prompts = [sup.first_prompt(tmp_path / "plan.md"), sup.CONTINUE_PROMPT]
     for text in prompts:
