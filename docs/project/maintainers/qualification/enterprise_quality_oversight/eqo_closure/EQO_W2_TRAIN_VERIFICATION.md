@@ -94,3 +94,9 @@ Repro (wave-12 #680): `git merge-base --is-ancestor $(git rev-parse af2/pt-fc1) 
 - **Train integration @ rw-train `8e146e21`:** #642–#680 (incl. merge `65ef1f196` via `dbaebfa8`) are ancestors; **#680 is not** on `development` @ `a0598ba3`.
 - **Closure:** W2 does not certify findings; it establishes merge presence vs `EQO-W3` replay and `EQO-X` blockers (A4-003/A4-004 gate replay per W2-02).
 - **Exact blockers carried forward:** #680 open; record-2 items not merged; Operator band G items W2-13.
+
+## Revalidation 2026-11-22
+
+Pin: `origin/development` `fc2ccb73dea161156d067019548f88e08f033fd9`. Train tip `68db9c0ef6207b023388eecc460644698a92b895` is an ancestor of that pin. Merge `65ef1f196d38d673436667230bb59b92158714a2` is an ancestor of both. The disposition line above that says `#680` is not on `development` at `a0598ba3` is historical.
+
+Independent review `0c881507-f68c-432b-8af3-4d78a8a32636` accepted 8 of 13 W2 rows and rejected 5 labels that said `PRESENT_AND_VERIFIED` while pytest was not run. The corrected states are in `.tmp/session/eqo-f01/F01_STATE_CORRECTION.md`. No row is a test pass, a C16 promotion, or a finding closure.

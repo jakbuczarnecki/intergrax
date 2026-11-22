@@ -1,6 +1,6 @@
 {
   "schema": "eqo.execution_checkpoint.v1",
-  "updated_at": "2026-11-21T17:15:00+01:00",
+  "updated_at": "2026-11-22T17:55:00+01:00",
   "ticket_ref": "governance/tickets/T-IGX-046-F.md",
   "fetched_shas": {
     "local_development_before_wave": "1a8b989d478983746274b5aa9f237012225affd4",
@@ -20,7 +20,7 @@
     "files_differing_from_train": [
       "intergrax/applications/_shared/memory_wiring.py"
     ],
-    "differing_file_disposition": "EQOA-A4-030 ALREADY_MATCHES_TICKET on development; train-side delta is not a ticket-mandated missing behavior \u2014 no port.",
+    "differing_file_disposition": "EQOA-A4-030 ALREADY_MATCHES_TICKET on development; train-side delta is not a ticket-mandated missing behavior — no port.",
     "ports_qualifying": 0
   },
   "capability": {
@@ -78,7 +78,7 @@
     },
     {
       "id": "EXISTING_IMPLEMENTATION_REQUIRES_REPLAY_NO_NAMED_TEST_34",
-      "unlock": "ARCH-FREEZE chain FCS, PT-Q02\u2013Q13, M3, EQO-REPLAY-FCS before invented tests."
+      "unlock": "ARCH-FREEZE chain FCS, PT-Q02–Q13, M3, EQO-REPLAY-FCS before invented tests."
     },
     {
       "id": "OWNER_DECISION_REQUIRED_313",
@@ -86,7 +86,7 @@
     },
     {
       "id": "EQO_TERMINAL",
-      "unlock": "Certifier/operator: EQO_CLOSED_INDEPENDENTLY_VERIFIED, C01\u2013C25, FRZ promotion, register lifecycle CLOSED \u2014 forbidden to agents."
+      "unlock": "Certifier/operator: EQO_CLOSED_INDEPENDENTLY_VERIFIED, C01–C25, FRZ promotion, register lifecycle CLOSED — forbidden to agents."
     }
   ],
   "packages_merged_this_slice": [],
@@ -104,5 +104,598 @@
     "pytest": "A4-027 3 passed; A4-006 4 passed; integration 19 passed; named replay 64 passed; governance 27 passed",
     "q4": "BLOCKED_EXACT_REASON",
     "next_ready_queue": "none in Q1-Q5 without a new operator decision or a named test"
+  },
+  "session_2026_11_22": {
+    "schema": "eqo.execution_checkpoint.session.v1",
+    "operational_state": "BLOCKED_AWAITING_EXTERNAL_FCS",
+    "formal_status": "EQO_EXECUTION_BLOCKED_WITH_EXACT_REASONS",
+    "not_plan_complete": true,
+    "not_eqo_closed": true,
+    "recorded_at": "2026-11-22T10:55:00+01:00",
+    "operator_decision": "Accepted the blocked report. FCS (B1) is the first critical-path dependency. This decision does not change Enterprise policy, execute FCS or M3, or certify IIAC. ARCH-FREEZE remains a separate program.",
+    "plan": "c:/Users/XPS/.cursor/plans/eqo_terminal_closure_00c606dc.plan.md",
+    "baseline": {
+      "branch": "development",
+      "sha": "f9344015b0259640b069542472764d8e10e3a2d0",
+      "plan_pin_455c564772293954d15ac7a53fbb9a564d7315a8": "ancestor_of_head",
+      "origin_development": "ancestor_of_head",
+      "ancestors_not_fcs": [
+        "65ef1f196",
+        "28c27cb896d02e0185b9fa02047411fa152f6469",
+        "8e146e21cd8c63a47d621edc05d5f0036ba0c9ee",
+        "68db9c0ef6207b023388eecc460644698a92b895"
+      ]
+    },
+    "queues": {
+      "Q1": "READY empty. No authorized product write. A4-006 and A4-027 stay TECHNICAL_REVIEW_PASS and are not reopened.",
+      "Q2": "Technical evidence only. 110 passed, 0 failed, exit 0, 1 DeprecationWarning. Not CURRENT.",
+      "Q3": "Wave A/B review ACCEPT (reviewer 4d91b523). No new product diff.",
+      "Q4": "BLOCKED. No Approved ticket for register or matrix writes.",
+      "Q5": "BLOCKED. 165 rows remain STALE. The Q2 run is not formal requalification.",
+      "Q6": "B1-B5 remain open. Operator confirmed B1 as first dependency and did not grant B2-B5.",
+      "Q7": "BLOCKED_AWAITING_EXTERNAL_FCS. ARCH-FREEZE stays a separate program.",
+      "Q8": "BLOCKED. Campaign D, IIAC and C01-C25 wait on M3 and a separate certifier session."
+    },
+    "q2_evidence": {
+      "worker": "1a2ff192-b977-4c27-8b8f-979fb19ff344",
+      "passed": 110,
+      "failed": 0,
+      "exit_code": 0,
+      "log": ".tmp/session/eqo-recovery/f9344015/pytest-q2.log"
+    },
+    "live_orchestration": "CURSOR_ORCHESTRATION_LIVE_PASS",
+    "waves": {
+      "A": "11de6bfb DONE 13/4/1/0",
+      "B": "7f0307ed corrected DONE 0/11/0/0",
+      "review": "4d91b523 ACCEPT"
+    },
+    "held_without_new_question": [
+      "A6-006 deferred",
+      "A4-034 exact blocker; do not delete budget modules",
+      "no history rewrite",
+      "train ancestry is not FCS",
+      "no new WB campaign",
+      "no A4-006 or A4-027 reimplementation",
+      "no further pytest while waiting"
+    ],
+    "blockers": {
+      "B1": "FCS record. Unlocks only EQO-W7-01 after resume checks.",
+      "B2": "M3 record. Unlocks EQO-W8-01, EQO-W8-02, EQO-W8-CLS, then EQO-W9-01.",
+      "B3": "Separate certifier session. Unlocks twelve *-AUD, then twelve *-CLS, then the terminal verdict.",
+      "B4": "New Approved ticket, not T-IGX-046-F. Unlocks EQO-W0-05 and the C16/C21 sentence correction.",
+      "B5": "Human push or PR. Unlocks EQO-W9-02 only after EQO-W9-01."
+    },
+    "fcs_unlocks": {
+      "first_task": "EQO-W7-01",
+      "objective": "FCS definition check",
+      "then_after_w7_01_pass": [
+        "EQO-W7-02",
+        "EQO-W7-04"
+      ],
+      "after_w7_02_pass": [
+        "EQO-W7-03"
+      ],
+      "not_unlocked_by_fcs_alone": [
+        "EQO-C-05 depends on EQO-C-03",
+        "EQO-W8-01 requires M3",
+        "product writes under MEP",
+        "34 NO_NAMED_TEST until FCS names a test file"
+      ]
+    },
+    "resume": "On a valid FCS record: re-read this checkpoint, verify development SHA and ancestry, recompute Q1-Q8, then delegate EQO-W7-01 only. Do not replan EQO. Do not run agents while B1 is absent."
+  },
+  "session_eqo_runbook_f00": {
+    "schema": "eqo.execution_checkpoint.session.v1",
+    "operational_state": "NO_EXECUTABLE_AUTHORIZED_TASK",
+    "not_eqo_closed": true,
+    "not_certified": true,
+    "development_sha": "fc2ccb73dea161156d067019548f88e08f033fd9",
+    "train_sha": "68db9c0ef6207b023388eecc460644698a92b895",
+    "fcs": null,
+    "m3": null,
+    "orchestrator_git_recheck": {
+      "pin_shas_match_dossier": true,
+      "diff_stats_match_dossier": true,
+      "pr680_ancestor_of_development": true,
+      "pr680_ancestor_of_train": true,
+      "historical_doc_pin_ancestor_of_head": true,
+      "historical_train_pin_ancestor_of_train": true,
+      "pr675_4c49cf877e65_ancestor_of_development_and_train": true,
+      "pin_bind_not_modified": true
+    },
+    "tasks": {
+      "EQO-W0-01": "REVIEW_ACCEPT_PIN_BIND_UPDATED",
+      "EQO-W0-02": "REVIEW_ACCEPT",
+      "EQO-W0-03": "REVIEW_ACCEPT_EVIDENCE_ONLY",
+      "EQO-W0-04": "REVIEW_ACCEPT_EVIDENCE_ONLY_NOT_A_FIX",
+      "EQO-RV-01": "REVIEW_ACCEPT_TARGETED_MISSING_IMPACT_MAP",
+      "EQO-W0-05": "PREPARE_AUTHORITY_BATCH",
+      "F00-07": "OPEN_DECISIONS_LISTED_NONE_SELECTED"
+    },
+    "evidence": [
+      ".tmp/session/eqo-f00/git/EQO-W0-01.json",
+      ".tmp/session/eqo-f00/git/EQO-W0-03.md",
+      ".tmp/session/eqo-f00/git/EQO_SHA_REVALIDATION.jsonl",
+      ".tmp/session/eqo-f00/evidence/EQO_ARTIFACT_RECOVERY_REGISTRY.jsonl",
+      ".tmp/session/eqo-f00/evidence/EQO-W0-04.md"
+    ],
+    "resume": "Re-enter only when a named blocker clears: Approved COR ticket, Approved W0-05 publication ticket, FCS record, or M3 record. Then run only the unlocked task. Do not rerun WB01-WB12. Do not recount 151. Do not declare EQO_CLOSED.",
+    "review": {
+      "agent_id": "eebcde4f-c30f-45ab-ae3c-4cac79079c1c",
+      "verdict": "ACCEPT",
+      "tasks": [
+        "EQO-W0-01",
+        "EQO-W0-02",
+        "EQO-W0-03",
+        "EQO-W0-04",
+        "EQO-RV-01"
+      ],
+      "w0_04_caveat": "Label MERGED_TO_TRAIN_WITH_NEGATIVE_TEST is evidence of merge plus named test files. Pytest was not run. Finding stays open. Not a fix."
+    },
+    "integrated": [
+      "EQO_PIN_BIND.json",
+      "pr680_governance_fast.md revalidation note"
+    ],
+    "not_integrated": [
+      "canonical inventory publish EQO-W0-05",
+      "remote push"
+    ],
+    "f01_v_a": {
+      "agent_id": "ff8914ed-3f1d-468a-a56b-d816643b4cdb",
+      "dossier": ".tmp/session/eqo-f01/v-a.md",
+      "source_sha": "fc2ccb73dea161156d067019548f88e08f033fd9",
+      "orchestrator_recheck": {
+        "pr680_ancestor": true,
+        "pr673_9b7eca0e_ancestor": true,
+        "import_gate_script_present": true,
+        "runtime_applications_imports": 0,
+        "gca_hosting_absent": true,
+        "uvicorn_run_line": 159
+      },
+      "worker_states": {
+        "EQO-W2-01": "EXACT_BLOCKER",
+        "EQO-W2-02": "PRESENT_AND_VERIFIED",
+        "EQO-W2-03": "WAIT_OPERATOR",
+        "EQO-W2-08": "EXACT_BLOCKER"
+      },
+      "orchestrator_disposition": {
+        "EQO-W2-02": "FILE_WITNESS_ONLY. Static scan found no intergrax.applications imports under intergrax/runtime. Named gate test was NOT_RUN, so PRESENT_AND_VERIFIED is not accepted as a test result."
+      },
+      "review": "PENDING",
+      "shared_w2_doc_updated": false
+    },
+    "f01_v_b": {
+      "agent_id": "4c991dd4-f095-45ee-a8e2-bc899d51f990",
+      "dossier": ".tmp/session/eqo-f01/v-b.md",
+      "orchestrator_recheck": {
+        "manifest_checks_at_fc2ccb73": 91,
+        "ticket_T_IGX_043_I_claims": 85,
+        "merge_c2a88c344_ancestor": true,
+        "merge_cc5d2d0bd_ancestor": true,
+        "load_agent_class_calls_resolve_without_allowlist": true
+      },
+      "orchestrator_disposition": {
+        "EQO-W2-04": "FILE_AND_CLASSIFICATION_WITNESS_ONLY. Pytest not run, so PRESENT_AND_VERIFIED is not a test result.",
+        "EQO-W2-05": "EXACT_BLOCKER MANIFEST_CLAIM_VS_ACTUAL_AT_PIN confirmed 91 vs 85",
+        "EQO-W2-06": "EXACT_BLOCKER NO_REPLAY_AT_PIN",
+        "EQO-W2-10": "EXACT_BLOCKER NO_REPLAY_AT_PIN; residual wiring.py:644-648; not a fix"
+      }
+    },
+    "f01_v_c": {
+      "agent_id": "1a7322f3-6214-45a2-b9ba-d4da833fc417",
+      "dossier": ".tmp/session/eqo-f01/v-c.md",
+      "orchestrator_recheck": {
+        "f5_test_file_present": true
+      },
+      "orchestrator_disposition": {
+        "EQO-W2-07": "Part labels that say PRESENT_AND_VERIFIED are not test results; pytest was not run.",
+        "EQO-W2-09": "EXACT_BLOCKER NO_REPLAY_AT_PIN",
+        "EQO-W2-12": "ABSENT_TICKET",
+        "EQO-W2-13": "WAIT_OPERATOR OD-EQO-04"
+      }
+    },
+    "f01_review_agent": "0c881507-f68c-432b-8af3-4d78a8a32636",
+    "shared_w2_doc_updated": false,
+    "f01_review": {
+      "agent_id": "0c881507-f68c-432b-8af3-4d78a8a32636",
+      "accept": [
+        "EQO-W2-01",
+        "EQO-W2-03",
+        "EQO-W2-05",
+        "EQO-W2-06",
+        "EQO-W2-08",
+        "EQO-W2-09",
+        "EQO-W2-10",
+        "EQO-W2-12",
+        "EQO-W2-13"
+      ],
+      "reject_corrected": [
+        "EQO-W2-02",
+        "EQO-W2-04",
+        "EQO-W2-07",
+        "EQO-W2-11"
+      ],
+      "correction": ".tmp/session/eqo-f01/F01_STATE_CORRECTION.md",
+      "canonical_addendum": "EQO_W2_TRAIN_VERIFICATION.md#Revalidation 2026-11-22"
+    },
+    "catalog": {
+      "rows": 151,
+      "note": "SUMMARY.md counts disagree with the jsonl. W0-03 relabeled BLOCKED_EXACT. Catalog is not a canonical publish and not reviewed.",
+      "path": ".tmp/session/eqo-f00/catalog/EQO_F00_STATUS.jsonl"
+    },
+    "f01_correction_review": {
+      "agent_id": "f0f6af9d-8a3b-47a3-a2e5-1b5a9fa1a60c",
+      "verdict": "ACCEPT",
+      "not_certification": true,
+      "not_c16": true
+    },
+    "f01_current_states": ".tmp/session/eqo-f01/F01_STATE_CORRECTION.md",
+    "catalog_overlay": {
+      "rows": 151,
+      "ready_authorized": 0,
+      "blocked_exact": 14,
+      "prepare_authority_batch": 1,
+      "ready_after_dependency_not_a_dispatch": 122,
+      "source": "integrator_after_f01_accept"
+    },
+    "b1_currency": {
+      "rows": 12,
+      "stale_pin": 12,
+      "current": 0,
+      "evidence_pin": "28c27cb896d02e0185b9fa02047411fa152f6469",
+      "orchestrator_mismatch": 0,
+      "replay_scheduled": false,
+      "agent_id": "ecb070e4-b000-489a-8835-70f1e6034dfe"
+    },
+    "catalog_overlay_review": {
+      "agent_id": "b2b8bb01-74d0-4acd-b9da-b41a6a142896",
+      "verdict": "ACCEPT",
+      "blocked_exact_rows": 14,
+      "ready_authorized": 0,
+      "not_eqo_closed": true
+    },
+    "not_dispatched": [
+      "122 READY_AFTER_DEPENDENCY",
+      "14 BLOCKED_EXACT",
+      "W0-05 canonical publish",
+      "F07 until FCS",
+      "F08 until M3",
+      "B-1 replay until impact map"
+    ],
+    "b1_currency_review": {
+      "agent_id": "8a9f4350-04b8-4eef-a59e-0299ed0c3fbd",
+      "verdict": "ACCEPT",
+      "stale_pin": 12,
+      "current": 0,
+      "replay_scheduled": false,
+      "not_b1_closure": true
+    },
+    "b2_meta_observed": {
+      "path": "EQO_B2_DISPOSITION.meta.json",
+      "b2_row_count": 186,
+      "doc_pin": "8cee3c5a913f234e8fb65053b6ab4f34ed78249b",
+      "meta_verification_means": "classification count only, not resolution",
+      "currency": "STALE_PIN_NOT_RECOUNTED"
+    },
+    "readiness_recompute": {
+      "path": ".tmp/session/eqo-r2/READINESS.jsonl",
+      "rows": 151,
+      "READY_AUTHORIZED": 21,
+      "READY_AFTER_DEPENDENCY": 74,
+      "BLOCKED_EXACT": 30,
+      "ALREADY_ACCEPTED": 16,
+      "WAIT_FCS": 4,
+      "WAIT_M3": 5,
+      "PREPARE_AUTHORITY_BATCH": 1,
+      "not_a_global_f00_block": true
+    },
+    "running": [
+      "e1040d78-0bb6-47cb-9751-91f8ccf04ef6",
+      "9d4f4a6f-b0e8-4bfa-9da6-3741eef95ed2",
+      "b26c349f-b27b-485b-9516-cb61e7164e21",
+      "4016211f-71c5-4465-bb64-d0bf50f22c75",
+      "21a3b900-7ff0-4162-87de-17a804863ffd",
+      "333626ff-1d8b-444d-a9db-b6eadb765082"
+    ],
+    "des_prereg": {
+      "verified": 12,
+      "source_sha": "fc2ccb73dea161156d067019548f88e08f033fd9",
+      "pytest_not_run": true,
+      "old_des_prereg_untouched": true
+    },
+    "stopped_by_operator": [
+      "333626ff-1d8b-444d-a9db-b6eadb765082"
+    ],
+    "not_restarted": [
+      "EQO-E-01",
+      "EQO-X-02",
+      "EQO-X-04",
+      "EQO-X-06",
+      "EQO-X-07",
+      "EQO-X-08"
+    ],
+    "des_wb07_09": {
+      "agent_id": "b26c349f-b27b-485b-9516-cb61e7164e21",
+      "included_in_twelve_file_recheck": true,
+      "review_agent": "04adb191-5db4-4671-bbe4-b8370400496c"
+    },
+    "des_review": {
+      "agent_id": "04adb191-5db4-4671-bbe4-b8370400496c",
+      "verdict": "ACCEPT",
+      "files": 12
+    },
+    "exe_serial": {
+      "started": "NONE",
+      "command": "uv run pytest tests/unit/governance/test_iiac_activation_gate.py -q --tb=line",
+      "others": "not started",
+      "uv_on_path": false,
+      "runner": ".venv/Scripts/python.exe -m pytest",
+      "note": "uv executable not found; same named test module via project venv",
+      "wb01": "exit 1 recorded",
+      "completed": 12,
+      "mutex": "FREE",
+      "queue": "WB01-WB12 EXE received at fc2ccb73. WB09 exit 0 / 66 passed. No further WB EXE.",
+      "c04": "not started; named modules already executed as WB01-WB12"
+    },
+    "c03": {
+      "rows": 18,
+      "status": "BLOCKED_EXACT",
+      "blocker": "MISSING_SURFACE",
+      "not_c_cls": true
+    },
+    "c_review": {
+      "agent_id": "560363df-7e7e-4da2-a974-909e6b7a16d6",
+      "verdict": "ACCEPT",
+      "c03": "BLOCKED_EXACT MISSING_SURFACE",
+      "not_c_cls": true,
+      "not_eqo_closed": true
+    },
+    "uv_pytest_attempt": {
+      "shell": "443916",
+      "result": "FileNotFoundError uv",
+      "retried_as": "venv python -m pytest WB01 only"
+    },
+    "wb01_exe": {
+      "exit_code": 1,
+      "verdict": "FAIL_AT_PIN",
+      "failed": "test_canonical_policy_is_in_force_and_verifies",
+      "not_c16": true
+    },
+    "wb02_exe": {
+      "exit_code": 1,
+      "verdict": "FAIL_AT_PIN",
+      "failed": 2,
+      "not_c16": true
+    },
+    "wb03_exe": {
+      "exit_code": 1,
+      "historical_exit_code": 0,
+      "verdict": "FAIL_AT_PIN",
+      "failed": 4,
+      "not_c16": true
+    },
+    "wb04_exe": {
+      "exit_code": 0,
+      "verdict": "EXIT_0_AT_PIN",
+      "passed": 13,
+      "not_c16": true
+    },
+    "wb05_exe": {
+      "exit_code": 1,
+      "historical_exit_code": 0,
+      "verdict": "FAIL_AT_PIN",
+      "failed": "test_nt_bnd_05_2_provider_imports_stay_on_the_closed_list",
+      "not_c16": true
+    },
+    "wb06_exe": {
+      "exit_code": 1,
+      "historical_exit_code": 0,
+      "verdict": "FAIL_AT_PIN",
+      "failed": "test_unresolved_capabilities_fail_closed",
+      "not_c16": true
+    },
+    "wb07_exe": {
+      "exit_code": 1,
+      "verdict": "FAIL_AT_PIN",
+      "failed": "test_harness_01_higher_layer_nexus_imports_are_classified",
+      "not_c16": true
+    },
+    "wb08_exe": {
+      "exit_code": 1,
+      "historical_exit_code": 0,
+      "verdict": "FAIL_AT_PIN",
+      "failed": "test_xd02_revoked_agent_loses_context_access_and_the_denial_is_audited",
+      "not_c16": true
+    },
+    "wb09_exe": {
+      "exit_code": 0,
+      "verdict": "EXIT_0_AT_PIN",
+      "passed": 66,
+      "not_c16": true
+    },
+    "wb10_exe": {
+      "exit_code": 1,
+      "verdict": "FAIL_AT_PIN",
+      "failed": 6,
+      "not_c16": true
+    },
+    "wb11_exe": {
+      "exit_code": 1,
+      "verdict": "FAIL_AT_PIN",
+      "failed": 2,
+      "not_c16": true
+    },
+    "wb12_exe": {
+      "exit_code": 1,
+      "verdict": "FAIL_AT_PIN",
+      "failed": 2,
+      "passed": 31,
+      "skipped": 1,
+      "not_c16": true
+    },
+    "scoreboard": {
+      "exit_0": [
+        "WB04",
+        "WB09"
+      ],
+      "fail_matching_historical": [
+        "WB01",
+        "WB02",
+        "WB07",
+        "WB10",
+        "WB11"
+      ],
+      "fail_was_historical_0": [
+        "WB03",
+        "WB05",
+        "WB06",
+        "WB08",
+        "WB12"
+      ]
+    },
+    "evd": {
+      "files": 12,
+      "checked_against_exe": true,
+      "agent_id": "38ecc8f8-93f0-4bb8-a10d-ef39a3a90841"
+    },
+    "evd_review": {
+      "agent_id": "9fee067e-a324-4556-bd25-65cdeacb21f9",
+      "verdict": "ACCEPT"
+    },
+    "integrated_local": {
+      "pin": "fc2ccb73dea161156d067019548f88e08f033fd9",
+      "b1_index": ".tmp/session/eqo-r2/b1/B1_INDEX.json",
+      "b1_rows": 12,
+      "eder_register_nonempty": 1073,
+      "eder_equation": "MATCH",
+      "eder_register_write": "WAIT_AUTHORIZATION",
+      "eder_dir": ".tmp/session/eqo-r2/eder/",
+      "x_dir": ".tmp/session/eqo-r2/x/",
+      "c04": "REUSED_WB_EXE_AT_SAME_PIN",
+      "c_cls": "NOT_CLOSED",
+      "w4_rows": 186,
+      "w4_histogram": "MISMATCH owner 79 vs 69, requalify 7 vs 5",
+      "w4_canonical_cls": false,
+      "w0_05": "NOT_PUBLISHED",
+      "wb10_aud": "AUDIT_FAIL",
+      "wb12_aud": "AUDIT_FAIL"
+    },
+    "dis": {
+      "files": 12,
+      "agent_id": "9042f584-2c71-4c04-ae9c-48e376fef976",
+      "checked": true
+    },
+    "dis_review": {
+      "agent_id": "c7903cc2-afaf-4f3a-9f64-02e73fbac21d",
+      "verdict": "ACCEPT",
+      "findings_closed": false
+    },
+    "aud_received": {
+      "WB01": "AUDIT_FAIL",
+      "WB02": "AUDIT_FAIL ENV_PROVEN",
+      "WB03": "AUDIT_FAIL",
+      "WB04": "EVIDENCE_ACCEPT_NOT_CLOSURE",
+      "WB05": "AUDIT_FAIL",
+      "WB06": "AUDIT_FAIL ENV_PROVEN missing llm-langchain-ollama",
+      "WB07": "AUDIT_FAIL",
+      "WB08": "AUDIT_FAIL",
+      "WB09": "EVIDENCE_ACCEPT_NOT_CLOSURE 66 passed",
+      "WB10": "AUDIT_FAIL",
+      "WB11": "AUDIT_FAIL MIXED",
+      "WB12": "AUDIT_FAIL"
+    },
+    "aud_still_out": [],
+    "aud": {
+      "files": 12,
+      "agent_id": "b0809f4d-e6d0-424d-b2ac-c198e33f5dea",
+      "aggregates": {
+        "DEFECT_STILL_OBSERVED": 11,
+        "NO_CITED_TEXT_FOUND": 1,
+        "NOT_RECHECKED": 0,
+        "other": 0
+      },
+      "formal_session_e": false,
+      "review_agent": "af107c16-6a1a-4887-bb7c-0068177e82e7"
+    },
+    "w2_followup": "NO_W2_ROW_CLEARED. WB04 and WB09 passes are not the F01 named replays. W2-01..13 stay as F01_STATE_CORRECTION.md.",
+    "aud_review": {
+      "agent_id": "af107c16-6a1a-4887-bb7c-0068177e82e7",
+      "verdict": "ACCEPT_AFTER_WB08_REPAIR",
+      "repair_review": "aa806133-4a2e-49f3-9a23-b8b9fe05907d",
+      "formal_session_e": false
+    },
+    "x01": {
+      "path": ".tmp/session/eqo-r2/x/X-01.md",
+      "status": "EXACT_BLOCKER",
+      "w2_02": "NO_REPLAY_AT_PIN",
+      "wb05": "AUDIT_FAIL"
+    },
+    "x05": {
+      "path": ".tmp/session/eqo-r2/x/X-05.md",
+      "status": "BLOCKED_EXACT",
+      "blocker": "MISSING_SURFACE",
+      "wb02": "ENV_PROVEN"
+    },
+    "exact_blockers": [
+      "COR product patches WAIT_AUTHORITY",
+      "WB02 tenant env and WB06 llm-langchain-ollama extra WAIT_AUTHORITY; do not install",
+      "W0-05 catalog publication has no Approved ticket",
+      "register.jsonl and EQO_MASTER_CLOSURE_MATRIX.md have no steward write ticket",
+      "C-CLS open: 18 MISSING_SURFACE; TOOL-LIFE-X, DIST-SCALE-X, CODEOWNERS_DELTA, EBH-6 have NO_NAMED_TEST",
+      "C-05 and W7 wait for an external FCS record",
+      "W8 waits for an external M3 record",
+      "W9 and EQO_CLOSED wait for a separate certifier",
+      "W4 canonical CLS blocked on publication; local histogram mismatch owner 79 vs 69 and requalify 7 vs 5",
+      "W2-01..13 unchanged; WB04 and WB09 passes are not those replays"
+    ],
+    "cls": {
+      "files": 12,
+      "agent_id": "9e2eff8d-346f-4219-bfa6-e916d22d1bb2",
+      "status": "DISPOSITIONED_WITH_BLOCKER",
+      "checked_against_dis_aud": true
+    },
+    "cls_review": {
+      "agent_id": "899365ce-88b5-49e7-b986-fa71b9dac6ea",
+      "verdict": "ACCEPT",
+      "status": "DISPOSITIONED_WITH_BLOCKER",
+      "not_c16": true
+    },
+    "readiness_after_cls": {
+      "accepted": 78,
+      "blocked_exact": 33,
+      "executed": 12,
+      "ready_after": 11,
+      "stopped_by_operator": 6,
+      "wait_m3": 5,
+      "wait_fcs": 4,
+      "prepare": 1,
+      "ready_authorized": [
+        "EQO-C-CLS"
+      ]
+    },
+    "c_cls": {
+      "agent_id": "9a73adb7-72d9-4e3b-85b0-81c922202548",
+      "path": ".tmp/session/eqo-r2/c/C-CLS.md",
+      "status": "DISPOSITIONED_WITH_BLOCKER"
+    },
+    "c_cls_review": {
+      "agent_id": "33c5a249-f929-4a2c-9527-07d26429e146",
+      "verdict": "ACCEPT",
+      "campaign_c_closed": false
+    },
+    "readiness_after_c_cls": {
+      "accepted": 79,
+      "executed": 12,
+      "blocked_exact": 33,
+      "ready_after": 11,
+      "stopped_by_operator": 6,
+      "wait_m3": 5,
+      "wait_fcs": 4,
+      "prepare": 1,
+      "ready_authorized": 0
+    },
+    "blocker_matrix": ".tmp/session/eqo-r2/BLOCKER_MATRIX.md",
+    "operator_packet": ".tmp/session/eqo-r2/OPERATOR_DECISION_PACKET.md",
+    "eqo_closed": false
   }
 }

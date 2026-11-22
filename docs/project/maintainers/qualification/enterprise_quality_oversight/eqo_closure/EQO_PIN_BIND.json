@@ -1,17 +1,48 @@
 {
-  "generated_utc": "2026-11-21T05:40:00Z",
+  "generated_utc": "2026-11-22T15:56:00Z",
   "fetch_verified": true,
+  "fetch_provenance": "git fetch origin --prune in the EQO orchestrator session on 2026-11-22, before the F00 workers. Integrated after independent review eebcde4f-c30f-45ab-ae3c-4cac79079c1c. Not a publication and not a certification.",
   "DOC_PIN": {
     "expected": "8cee3c5a913f234e8fb65053b6ab4f34ed78249b",
-    "actual": "8cee3c5a913f234e8fb65053b6ab4f34ed78249b",
-    "match": true
+    "actual": "fc2ccb73dea161156d067019548f88e08f033fd9",
+    "match": false,
+    "actual_ref": "HEAD and origin/development"
   },
   "TRAIN_PIN": {
     "expected": "28c27cb896d02e0185b9fa02047411fa152f6469",
-    "actual": "28c27cb896d02e0185b9fa02047411fa152f6469",
-    "match": true
+    "actual": "68db9c0ef6207b023388eecc460644698a92b895",
+    "match": false,
+    "actual_ref": "origin/arch-freeze/rw-train"
   },
+  "historical_bind_2026_11_21": {
+    "generated_utc": "2026-11-21T05:40:00Z",
+    "DOC_PIN": "8cee3c5a913f234e8fb65053b6ab4f34ed78249b",
+    "TRAIN_PIN": "28c27cb896d02e0185b9fa02047411fa152f6469",
+    "match_at_generation": true,
+    "historical_pins_are_ancestors_of_live_refs": true
+  },
+  "sha_ladder": {
+    "source_sha": "fc2ccb73dea161156d067019548f88e08f033fd9",
+    "execution_sha": "fc2ccb73dea161156d067019548f88e08f033fd9",
+    "evidence_sha": "fc2ccb73dea161156d067019548f88e08f033fd9",
+    "publication_sha": null
+  },
+  "FCS": null,
+  "M3": null,
   "A_BASELINE": "258bbf6abb6fdbb92ef0185d058527fbb1e47f04",
   "PR680_TIP": "a6999e97bb46561e1ba578c9364c13ed310f1d54",
-  "note": "Pins unchanged since EQO-CLOSURE v2 plan; re-run EQO-W0-01 after fetch if HEAD moves."
+  "PR680_MERGE": {
+    "sha": "65ef1f196d38d673436667230bb59b92158714a2",
+    "ancestor_of_origin_development": true,
+    "ancestor_of_origin_arch_freeze_rw_train": true,
+    "not_fcs": true,
+    "not_c16_pass": true
+  },
+  "rv01": {
+    "artifact": ".tmp/session/eqo-f00/git/EQO_SHA_REVALIDATION.jsonl",
+    "disposition": "TARGETED",
+    "blocker_id": "MISSING_IMPACT_MAP",
+    "replay_scheduled": false
+  },
+  "note": "Live refs have moved past the 2026-11-21 bind. Train ancestry is not FCS and not M3. publication_sha is null because this file update is a local evidence record, not a remote publish."
 }

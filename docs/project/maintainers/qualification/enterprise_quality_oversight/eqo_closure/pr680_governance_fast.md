@@ -39,3 +39,11 @@ Re-run `governance-fast` at merge commit **after** RB-2 / IIAC activation (band 
 **Wave-8:** English-only refresh · lane `eqo/wave-8/x` · land `569254840` · `Ref: governance/tickets/T-IGX-046-F.md`
 
 **Wave-12:** docs refresh · land `292ca3348` (PR #704) · #680 merge `65ef1f196` ancestor of `origin/arch-freeze/rw-train` @ `8e146e21` via `dbaebfa8`; not on `development` @ `a0598ba3` · lane `eqo/wave-12/x` · `Ref: governance/tickets/T-IGX-046-F.md`
+
+## Revalidation 2026-11-22
+
+At `origin/development` `fc2ccb73dea161156d067019548f88e08f033fd9` and `origin/arch-freeze/rw-train` `68db9c0ef6207b023388eecc460644698a92b895`, merge `65ef1f196d38d673436667230bb59b92158714a2` is an ancestor of both. The Wave-12 sentence that `#680` was absent from `development` at `a0598ba3` is historical and is not the current ancestry fact.
+
+No new class number is assigned (`MISSING_TAXONOMY`: the verbatim list of 11 reason classes was not found). No `governance-fast` replay was run at `fc2ccb73` (`NO_NAMED_REPLAY_COMMAND`). Historical run `44690933116` remains a failure at `a6999e97`. This note does not raise C16 and is not a PASS.
+
+Review: `eebcde4f-c30f-45ab-ae3c-4cac79079c1c` ACCEPT for EQO-W0-03. Dossier: `.tmp/session/eqo-f00/git/EQO-W0-03.md`.
