@@ -60,6 +60,38 @@ def discover_root(payload: dict[str, Any]) -> Path | None:
     return top
 
 
+def _toplevel(path: str) -> Path | None:
+    done = subprocess.run(
+        ["git", "rev-parse", "--show-toplevel"],
+        cwd=path,
+        text=True,
+        capture_output=True,
+        encoding="utf-8",
+        errors="replace",
+        check=False,
+    )
+    if done.returncode == 0 and done.stdout.strip():
+        return Path(done.stdout.strip())
+    return None
+
+
+def may_claim(payload: dict[str, Any], root: Path) -> bool:
+    """Claim an unowned run only from a workspace root that is the run's state root.
+
+    A factory worktree (``f-<plan>-*`` or one with a ``.tmp/factory_root`` pointer) never claims.
+    """
+    for raw in payload.get("workspace_roots") or []:
+        try:
+            top = _toplevel(str(raw))
+            if top is None or (top / ".tmp" / "factory_root").is_file() or top.name.startswith("f-"):
+                continue
+            if top.resolve() == root.resolve():
+                return True
+        except OSError:
+            continue
+    return False
+
+
 def followup_text(nxt: dict[str, Any]) -> str:
     parts = [f"FACTORY CONTINUE: run {NEXT_CMD}"]
     if nxt["ready"]:
@@ -79,7 +111,8 @@ def decide(payload: dict[str, Any], factory: Any, root: Path) -> str | None:
         return None
     runs = factory.find_active_runs(root)
     mine = [r for r in runs if r.get("owner_conversation") == conv]
-    state = mine[0] if mine else next((r for r in runs if r.get("owner_conversation") is None), None)
+    unowned = [r for r in runs if r.get("owner_conversation") is None]
+    state = mine[0] if mine else (unowned[0] if unowned and may_claim(payload, root) else None)
     if state is None:
         return None
     if state.get("owner_conversation") is None:

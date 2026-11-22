@@ -174,3 +174,24 @@ def test_root_discovery_from_subdirectory_and_pointer(repo: Path, tmp_path: Path
     pointer.parent.mkdir(parents=True)
     pointer.write_text(str(repo), encoding="utf-8")
     assert fire(payload(other))[1]
+
+
+def test_unowned_run_is_not_claimed_from_foreign_or_factory_worktree(repo: Path, tmp_path: Path) -> None:
+    make_state(repo, {"S1": mk_step()})
+    other = tmp_path / "elsewhere"
+    other.mkdir()
+    subprocess.run(["git", "init", "-q", str(other)], check=True)
+    foreign = payload(other, conv="x")
+    foreign["cwd"] = str(repo)  # cwd resolves the state root, but no workspace root is the state root
+    assert fire(foreign) == (0, "")
+    assert stored(repo)["owner_conversation"] is None
+    wt = tmp_path / "f-p-s1"
+    wt.mkdir()
+    subprocess.run(["git", "init", "-q", str(wt)], check=True)
+    pointer = wt / ".tmp" / "factory_root"
+    pointer.parent.mkdir(parents=True)
+    pointer.write_text(str(repo), encoding="utf-8")
+    assert fire(payload(wt, conv="y")) == (0, "")
+    assert stored(repo)["owner_conversation"] is None
+    assert fire(payload(repo, conv="z"))[1]
+    assert stored(repo)["owner_conversation"] == "z"

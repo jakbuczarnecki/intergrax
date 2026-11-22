@@ -13,6 +13,7 @@ Supersedes the Stop-hook, `active-plan` and `WAITING:` mechanics in shared `inte
 - Never ask the Operator for a go-ahead. Decide alone when plan, ADR, rules or code answer it.
 - Real blocker: `igx_factory.py park` with one of the five escalation types (unplanned architecture; scope/cost/reversibility decision; plan/rules/code contradiction; forbidden action; missing access), then continue with the other READY steps (park and continue).
 - Local integration only (OD-AF-INT A "accepted worker-branch local integration", ticket T-IGX-055-C): `igx-integrator` merges worker branches into `factory/<plan-id>/int`. Push, PR, remote merge and integration into `development` or operator branches stay human.
+- Precedence: the OD-AF-INT A remote runner (`igx_integrator.py`, PR/merge targets) is outside the factory loop; inside a factory run only local integration applies.
 - The parent never commits product code; implementers commit on their worker branch with the `Ref:` trailer.
 - Print `PLAN COMPLETE` or `PLAN COMPLETE WITH ESCALATIONS` only as printed by `igx_factory.py complete`.
 - Subagents may not inherit rules: briefs are self-contained; do not paraphrase them.

@@ -34,6 +34,10 @@ elif mode == "parked":
     for s in steps.values():
         s["status"] = "parked"
         s["park"] = {"type": "missing access", "reason": "r", "options": "o", "recommendation": "x"}
+elif mode == "fail":
+    print("boom-out")
+    print("boom-err", file=sys.stderr)
+    sys.exit(1)
 elif mode == "progress":
     for s in steps.values():
         if s["status"] == "pending":
@@ -119,7 +123,8 @@ def test_complete_exits_zero_and_prints_complete_output(env: dict[str, Any], mon
     assert run(env) == 0
     assert "PLAN COMPLETE" in capsys.readouterr().out
     argv = calls(env)[0]
-    assert argv[:5] == ["-p", "--model", "m1", "--output-format", "json"] and "--resume" not in argv
+    assert argv[:6] == ["-p", "--model", "m1", "--output-format", "json", "--trust"] and "--resume" not in argv
+    assert "--force" not in argv and "--yolo" not in argv
     assert "FACTORY CONTINUE" in argv[-1]
     log = (env["state_file"].parent / "supervisor.log").read_text(encoding="utf-8").splitlines()
     record = json.loads(log[0])
@@ -181,3 +186,29 @@ def test_cli_json_is_valid_and_denies_push() -> None:
     for token in ("Shell(git reset)", "Shell(gh)", "Shell(curl)"):
         assert token in cfg["permissions"]["deny"]
     assert "Shell(git push)" not in cfg["permissions"]["allow"]
+
+
+def test_prompts_are_single_line_without_cmd_metacharacters(tmp_path: Path) -> None:
+    prompts = [sup.first_prompt(tmp_path / "plan.md"), sup.CONTINUE_PROMPT]
+    for text in prompts:
+        assert "\n" not in text and "\r" not in text
+        assert not any(ch in text for ch in '|&%^<>"')
+        assert "/igx-native-run-plan" in text and "complete" in text and "foreground" in text
+    assert "igx_factory.py start" in prompts[0] and "igx_factory.py next" in prompts[1]
+
+
+def test_failing_agent_logs_tails_and_exits_six(env: dict[str, Any], monkeypatch) -> None:
+    seed(env, "pending")
+    monkeypatch.setenv("FAKE_MODE", "fail")
+    assert run(env, "--max-iterations", "10") == 6
+    assert len(calls(env)) == 3
+    record = json.loads((env["state_file"].parent / "supervisor.log").read_text(encoding="utf-8").splitlines()[0])
+    assert record["exit_code"] == 1
+    assert "boom-out" in record["stdout_tail"] and "boom-err" in record["stderr_tail"]
+
+
+def test_running_step_does_not_count_as_stalled(env: dict[str, Any], monkeypatch) -> None:
+    seed(env, "running")
+    monkeypatch.setenv("FAKE_MODE", "noop")
+    assert run(env, "--max-iterations", "5") == 5
+    assert len(calls(env)) == 5

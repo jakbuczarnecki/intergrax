@@ -5,6 +5,7 @@ from __future__ import annotations
 import importlib.util
 import json
 import subprocess
+import sys
 from pathlib import Path
 
 import pytest
@@ -259,7 +260,7 @@ def test_correction_budget_relaunch_then_park(repo: Path, capsys) -> None:
         statuses.append(out["status"])
         if out["status"] == "parked":
             break
-    assert statuses == ["correction", "correction", "relaunch", "correction", "correction", "parked"]
+    assert statuses == ["correction", "correction", "relaunch", "parked"]
     st = state_of(repo)
     assert st["steps"]["S1"]["park"]["type"] == "scope/cost/reversibility decision"
     assert st["steps"]["S2"]["park"]["reason"] == "blocked by S1"
@@ -331,3 +332,97 @@ def test_progress_signature_changes_with_status(repo: Path, capsys) -> None:
     run(capsys, "launch", "S1")
     assert factory.progress_signature(state_of(repo)) != before
     assert len(factory.find_active_runs(repo)) == 1
+
+
+# ------------------------------------------- tip binding, independence, recovery
+def received(repo: Path, capsys, sid: str = "S1", worker: str = "w") -> dict:
+    run(capsys, "launch", sid)
+    st = state_of(repo)["steps"][sid]
+    worker_commit(st)
+    write_log(st, sid)
+    assert jrun(capsys, "receive", sid, "--agent-id", worker)[0] == 0
+    return state_of(repo)["steps"][sid]
+
+
+def test_receive_stores_tip_and_integrate_refuses_moved_branch(repo: Path, capsys) -> None:
+    started(repo, capsys)
+    st = received(repo, capsys)
+    assert st["tip"] == sh(repo, "rev-parse", st["worker_branch"])
+    assert jrun(capsys, "review", "S1", "--agent-id", "r", "--verdict", "ACCEPT")[0] == 0
+    worker_commit(st, fname="src/a/g.txt", message=f"more\n\nRef: {T1}")
+    code, out = jrun(capsys, "integrate", "S1")
+    assert code == 1 and "receive again" in out["errors"][0]
+    assert state_of(repo)["steps"]["S1"]["status"] == "accepted"
+    assert not (Path(state_of(repo)["int_worktree"]) / "src/a/f.txt").exists()
+
+
+def test_review_refuses_moved_branch_and_same_agent(repo: Path, capsys) -> None:
+    started(repo, capsys)
+    st = received(repo, capsys, worker="w")
+    code, out = jrun(capsys, "review", "S1", "--agent-id", "w", "--verdict", "ACCEPT")
+    assert code == 1 and "independent" in out["errors"][0]
+    worker_commit(st, fname="src/a/g.txt", message=f"more\n\nRef: {T1}")
+    code, out = jrun(capsys, "review", "S1", "--agent-id", "r", "--verdict", "ACCEPT")
+    assert code == 1 and "receive again" in out["errors"][0]
+    assert state_of(repo)["steps"]["S1"]["status"] == "received"
+
+
+def test_fresh_worker_first_failure_parks(repo: Path, capsys) -> None:
+    started(repo, capsys)
+    outs = []
+    for _ in range(4):
+        run(capsys, "launch", "S1")
+        outs.append(jrun(capsys, "receive", "S1", "--agent-id", "w")[1]["status"])
+        if outs[-1] == "parked":
+            break
+    assert outs == ["correction", "correction", "relaunch", "parked"]
+
+
+def test_lost_worker_relaunches_without_consuming_a_correction(repo: Path, capsys) -> None:
+    started(repo, capsys)
+    run(capsys, "launch", "S1")
+    code, out = jrun(capsys, "receive", "S1", "--agent-id", "lost")
+    st = state_of(repo)["steps"]["S1"]
+    assert out["status"] == "relaunch" and st["corrections"] == 0 and st["relaunches"] == 0
+    run(capsys, "launch", "S1")
+    st2 = state_of(repo)["steps"]["S1"]
+    assert st2["worker_branch"] != st["worker_branch"] and st2["status"] == "running"
+    worker_commit(st2)
+    write_log(st2, "S1")
+    assert jrun(capsys, "receive", "S1", "--agent-id", "lost")[0] == 0  # commits exist: normal validation
+
+
+def test_integrate_tests_run_without_shell_and_revert_blocks_remerge(repo: Path, capsys, monkeypatch) -> None:
+    started(repo, capsys)
+    received(repo, capsys)
+    jrun(capsys, "review", "S1", "--agent-id", "r", "--verdict", "ACCEPT")
+    monkeypatch.setattr(factory, "tests_argv", lambda *_a: [sys.executable, "-c", "import sys; sys.exit(1)"])
+    seen: list[tuple[object, bool]] = []
+    real = factory.subprocess.run
+
+    def spy(cmd, *a, **kw):
+        if cmd and cmd[0] != "git":
+            seen.append((cmd, kw.get("shell", False)))
+        return real(cmd, *a, **kw)
+
+    monkeypatch.setattr(factory.subprocess, "run", spy)
+    code, out = jrun(capsys, "integrate", "S1", "--run-tests")
+    assert code == 1 and out["reason"] == "integration tests failed"
+    assert len(seen) == 1 and isinstance(seen[0][0], list) and seen[0][1] is False
+    st = state_of(repo)["steps"]["S1"]
+    assert st["reverted_tips"] == [st["worker_branch"]]
+    # a re-merge of the reverted branch would lose changes: integrate detects it and parks with a reason
+    st_all = state_of(repo)
+    st_all["steps"]["S1"]["status"] = "accepted"
+    st_all["steps"]["S1"]["park"] = None
+    factory.save_state(st_all)
+    code, out = jrun(capsys, "integrate", "S1")
+    assert code == 1 and out["reason"] == "branch already merged"
+    assert "relaunch" in state_of(repo)["steps"]["S1"]["park"]["reason"]
+
+
+def test_tests_argv_is_a_list() -> None:
+    state = {"main_root": "/m/r", "plan_id": "p", "steps": {"S1": {"tests": "tests/a tests/b"}}}
+    argv = factory.tests_argv(state, "S1", "log.txt")
+    assert isinstance(argv, list) and argv[argv.index("--") + 1 :][:3] == ["uv", "run", "pytest"]
+    assert "tests/a" in argv and "tests/b" in argv
