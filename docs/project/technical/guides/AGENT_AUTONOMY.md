@@ -53,20 +53,20 @@ Skill `/igx-autonomy` (name-only) holds the protocol. Sub-agents (`igx-researche
 |-------|-------------|--------------------------------------|
 | core rule (no questions, `ESCALATION:`, `PLAN COMPLETE`) | yes | yes, via `.cursor/rules/intergrax-core.mdc` |
 | typed agents with `DONE:`/`BLOCKED:` | yes | yes, via `.cursor/agents/` |
-| `/igx-run-plan`, `/igx-autonomy` skills | yes | generated into `.cursor/skills/`, not exercised |
-| Stop hook that blocks questions | yes (`Stop`, `decision: block`) | registered `stop` in `.cursor/hooks.json`; native continuation is `followup_message` only. Live firing in this Cursor build stays `NOT_VERIFIED` until a session probe shows one follow-up and no continuation after `ESCALATION:` |
+| `/igx-run-plan`, `/igx-autonomy` skills | yes | Cursor: `/igx-run-plan` aliases `/igx-native-run-plan` (software factory runbook); `/igx-autonomy` is a generated stub to the canonical skill. Not exercised in the IDE: `NOT_VERIFIED` |
+| Stop hook that blocks questions | yes (`Stop`, `decision: block`) | `stop` in `.cursor/hooks.json` runs `scripts/hooks/igx_factory_stop.py`: it reads only the factory `state.json` (never the transcript) and emits `followup_message` while READY or pending steps exist (`loop_limit` 50). Continuation = native Task completion turn + this stop hook + the headless `igx_factory_supervisor.py`. Live firing in the IDE stays `NOT_VERIFIED` (`CURSOR_IDE_E2E_PENDING_OPERATOR`) until the Operator E2E |
 | `generalPurpose` denied | `permissions.deny` | `PARTIAL`: `.cursor/hooks.json` `subagentStart` (`^generalPurpose$`, `failClosed`) runs `igx_subagent_guard.py`; whether the event fires is `NOT_VERIFIED` (earlier CLI check: native hooks did not fire) |
 
 `PARTIAL` and `NOT_VERIFIED` stay until a probe shows the hook call, exactly one follow-up and no continuation after `ESCALATION:`, `error` or `aborted`. A missing probe is neither parity nor a failure; the text rules (Autonomy) apply either way and never allow asking for permission to take the next step.
 
-In Cursor the rule is text first (inlined into `.cursor/rules/intergrax-core.mdc`), so an agent can still ask a question when no hook starts; use `/igx-run-plan` from Claude Code for runs that must not stop.
+In Cursor the lifecycle is `.cursor/rules/igx-factory.mdc` plus `/igx-native-run-plan`; the Stop-hook text in `intergrax-core` is replaced by a pointer for Cursor only. See [CURSOR_SOFTWARE_FACTORY.md](../devos/CURSOR_SOFTWARE_FACTORY.md). The Claude `igx_stop_guard.py` and everything above is unchanged.
 
 ### Shared and per-tool
 
 - **Shared:** the `agent-env/` SSOT, the same skill and role ids, the same guard scripts, Autonomy text, ticket `Ref` trailers, no push / PR / merge without escalation.
 - **Claude Code only:** expanded `@` imports in `CLAUDE.md`, model slugs, `tools` / `effort` / `maxTurns` / `isolation: worktree`, `permissions.deny`, `skillOverrides`.
 - **Cursor only:** the inlined `.mdc` body, `readonly` and `model: composer-2.5` in agents, the `subagentStart` and `stop` entries in `.cursor/hooks.json`, scanning `.claude/skills` next to `.cursor/skills`.
-- **Not enforced in Cursor until a probe says otherwise:** `permissions.deny`, worktree isolation of the implementer, per-role model choice, a live stop hook, a live `subagentStart`.
+- **Not enforced in Cursor until a probe says otherwise:** `permissions.deny`, worktree isolation of the implementer, per-role model choice, a live stop hook (`igx_factory_stop.py`), a live `subagentStart`.
 - **Text only:** escalation, edit scope, English-only VCS text, independence of the G6 audit.
 
 ## Nothing to install

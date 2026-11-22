@@ -48,6 +48,7 @@ tests/unit/governance/test_agent_env_sync.py
 docs/project/technical/devos/CURSOR_SOFTWARE_FACTORY.md
 docs/project/technical/devos/templates/FACTORY_PLAN_TEMPLATE.md
 docs/project/technical/devos/CURSOR_OD_AF_INT_A.md          (superseded pointer)
+docs/project/technical/devos/README.md                      (hub link)
 docs/project/technical/guides/AGENT_AUTONOMY.md             (Cursor column)
 agent-env/plans/cursor-software-factory.md
 agent-env/plans/cursor-orch-corrective.md                   (superseded pointer)

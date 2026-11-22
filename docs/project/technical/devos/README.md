@@ -11,6 +11,7 @@ Delivery Quality / DevOS (DCP) layers:
 | [INDEPENDENT-REVIEW-HANDOFF.md](./INDEPENDENT-REVIEW-HANDOFF.md) | G6 handoff |
 | [EVIDENCE-AND-CERTIFICATION.md](./EVIDENCE-AND-CERTIFICATION.md) | SHA ladder, manifest flags |
 | [OPERATIONS-AND-RECOVERY.md](./OPERATIONS-AND-RECOVERY.md) | Locks, bypass, recovery |
+| [CURSOR_SOFTWARE_FACTORY.md](./CURSOR_SOFTWARE_FACTORY.md) | Cursor autonomous software factory runbook |
 | [DCP closure backlog](../../../../governance/DCP-CLOSURE-BACKLOG.md) | W1–W8 closure program, agent protocol |
 
 SSOT paths:

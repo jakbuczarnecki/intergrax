@@ -1,3 +1,5 @@
+> Superseded by [CURSOR_SOFTWARE_FACTORY.md](./CURSOR_SOFTWARE_FACTORY.md) for the execution loop.
+
 # Cursor-only integrator — OD-AF-INT A
 
 **Authority:** operator-supplied `Approved: OD-AF-INT A` (2026-11-22). This is **not** a certification verdict or permission to change Claude Code.
@@ -61,7 +63,7 @@ Run the targeted unit suite and role/pin verifiers. Then execute `agent-env/plan
 The legacy `stop` hook that read the conversation transcript and auto-submitted `followup_message` is **disabled in Cursor only**. It is not an orchestration engine and its synthetic continuation created fragile protocol dependencies. The shared `scripts/hooks/igx_stop_guard.py`, `agent-env/skills/igx-run-plan/SKILL.md`, and Claude's `.claude/settings.json` Stop hook are left unchanged.
 
 - Cursor configuration: `.cursor/hooks.json` retains only permission hooks (`subagentStart`, `beforeShellExecution`); it has **no** `stop` registration.
-- Cursor-local policy: `.cursor/rules/cursor-native-orchestration.mdc` and `.cursor/skills/igx-native-run-plan/SKILL.md`.
+- Cursor-local policy: `.cursor/rules/igx-factory.mdc` and `.cursor/skills/igx-native-run-plan/SKILL.md`.
 - Legacy Cursor `/igx-run-plan` is an automatically generated **alias** to the native skill; the Claude alias still points to the canonical `agent-env/` implementation.
 - Grok uses native typed Tasks with explicit `composer-2.5`, foreground for dependencies, parallel background for independent tasks, then consumes the parent-session completion events, verifies results and advances to the next READY node.
 - OD-AF-INT A and its exact-SHA, ticket, reviewer, CI and protected-target restrictions remain unchanged. No new authority is granted.
