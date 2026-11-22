@@ -44,7 +44,7 @@ Reviewer report JSON must include `head_sha`, `reviewer` and `verdict`, matching
 ## Lifecycle
 
 1. Grok obtains accepted worker commit(s), an approved ticket and explicit independent review at the exact candidate SHA.
-2. Grok prepares the packet in the integrator's isolated worktree. Do not modify the main checkout.
+2. Grok prepares the packet in the integrator's isolated worktree. Do not modify the main checkout. An RW train worktree predating OD-AF-INT A does not contain the runner; use an absolute path to the runner from the updated development checkout, with the **current working directory still set to the RW train worktree**. Approved tickets absent from the older train can be read from the published `development` via GitHub API.
 3. Integrator checks with `python scripts/cursor/igx_integrator.py validate --packet .tmp/proof/example/packet.json`.
 4. `python scripts/cursor/igx_integrator.py publish --packet .tmp/proof/example/packet.json` non-force pushes the candidate branch and opens its PR.
 5. After required CI is green on that PR's current SHA, `python scripts/cursor/igx_integrator.py merge --packet .tmp/proof/example/packet.json` verifies all invariants and uses `gh pr merge --merge --match-head-commit`.
