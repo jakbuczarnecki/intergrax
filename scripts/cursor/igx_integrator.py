@@ -182,10 +182,12 @@ def verify_pr(p: dict[str, Any], number: int) -> None:
     changed = {f.get("filename") for f in files}
     if not changed or not changed.issubset(set(p["write_set"])) or any(not valid_path(x, p["kind"]) for x in changed):
         raise Blocked("PR changed paths outside scope")
-    if p["kind"] == "docs" and any(
-        re.search(r"(?m)^[+-]Approved:\s*", f.get("patch") or "") for f in files
-    ):
-        raise Blocked("integrator cannot add/remove ticket approval lines")
+    if p["kind"] == "docs":
+        for f in files:
+            if f.get("filename", "").startswith("governance/tickets/") and not isinstance(f.get("patch"), str):
+                raise Blocked("ticket patch unavailable: approval changes cannot be ruled out")
+            if re.search(r"(?m)^[+-]Approved:\s*", f.get("patch") or ""):
+                raise Blocked("integrator cannot add/remove ticket approval lines")
     if target_sha(p["target"]) != p["base_sha"]:
         raise Blocked("target SHA moved")
 
