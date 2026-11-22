@@ -3,12 +3,7 @@
 
 Claude Code denies ``general-purpose`` through ``permissions.deny``; Cursor does not enforce that
 file, so ``.cursor/hooks.json`` registers this script for ``subagentStart`` with the matcher
-``^(generalPurpose|general-purpose|GeneralPurpose)# © Artur Czarnecki. All rights reserved.
-"""Cursor ``subagentStart`` guard: deny known generic subagent aliases (stdlib only).
-
-Claude Code denies ``general-purpose`` through ``permissions.deny``; Cursor does not enforce that
-file, so ``.cursor/hooks.json`` registers this script for ``subagentStart`` with the matcher
-` and ``failClosed: true``. With ``failClosed`` an empty stdout, a crash or a
+``^(generalPurpose|general-purpose|GeneralPurpose)$`` and ``failClosed: true``. With ``failClosed`` an empty stdout, a crash or a
 non-zero exit would block the spawn, therefore this script always prints one valid JSON object.
 
 * ``IGX_HOOKS=off`` -> ``{"permission": "allow"}``;
