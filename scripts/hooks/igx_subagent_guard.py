@@ -20,7 +20,7 @@ import json
 import os
 import sys
 
-DENIED_TYPES = frozenset({"generalPurpose"})
+DENIED_TYPES = frozenset({"generalPurpose", "general-purpose", "GeneralPurpose"})
 ROLES = ("igx-architect", "igx-implementer", "igx-researcher", "igx-reviewer")
 
 
