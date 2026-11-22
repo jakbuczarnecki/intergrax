@@ -13,10 +13,13 @@ ACP = ROOT / "governance" / "agent-control-plane"
 GOV = ROOT / "scripts" / "governance"
 
 
-def test_role_registry_seven_roles() -> None:
+def test_role_registry_seven_legacy_roles_plus_cursor_only_integrator() -> None:
     doc = yaml.safe_load((ACP / "role_registry.yaml").read_text(encoding="utf-8"))
     assert doc["default_role"] == "orchestrator"
-    assert len(doc["roles"]) == 7
+    assert len(doc["roles"]) == 8
+    assert doc["roles"]["integrator"]["runtime"] == "cursor"
+    assert doc["roles"]["integrator"]["may_commit"] is True
+    assert doc["roles"]["orchestrator"]["may_commit"] is False
 
 
 def test_verify_agent_control_plane_exit_zero() -> None:
