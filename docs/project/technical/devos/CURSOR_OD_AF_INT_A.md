@@ -55,3 +55,21 @@ Reviewer report JSON must include `head_sha`, `reviewer` and `verdict`, matching
 ## Closure validation
 
 Run the targeted unit suite and role/pin verifiers. Then execute `agent-env/plans/cursor-live-e2e-procedure.md` in the Cursor desktop IDE (Grok parent + Composer workers). The program is not verified as fully autonomous until the operator records a real, two-wave live PASS. No developer prompt alone guarantees background execution.
+
+## Cursor-native orchestration decision (2026-11-22)
+
+The legacy `stop` hook that read the conversation transcript and auto-submitted `followup_message` is **disabled in Cursor only**. It is not an orchestration engine and its synthetic continuation created fragile protocol dependencies. The shared `scripts/hooks/igx_stop_guard.py`, `agent-env/skills/igx-run-plan/SKILL.md`, and Claude's `.claude/settings.json` Stop hook are left unchanged.
+
+- Cursor configuration: `.cursor/hooks.json` retains only permission hooks (`subagentStart`, `beforeShellExecution`); it has **no** `stop` registration.
+- Cursor-local policy: `.cursor/rules/cursor-native-orchestration.mdc` and `.cursor/skills/igx-native-run-plan/SKILL.md`.
+- Legacy Cursor `/igx-run-plan` is an automatically generated **alias** to the native skill; the Claude alias still points to the canonical `agent-env/` implementation.
+- Grok uses native typed Tasks with explicit `composer-2.5`, foreground for dependencies, parallel background for independent tasks, then consumes the parent-session completion events, verifies results and advances to the next READY node.
+- OD-AF-INT A and its exact-SHA, ticket, reviewer, CI and protected-target restrictions remain unchanged. No new authority is granted.
+
+### Acceptance (one representative workflow; no artificial T1–T8 loop)
+
+Run a real, authorized, **noncritical** two-wave code task in Cursor IDE. The first wave must produce two independent Composer worktree results; the parent must consume both native completions, independently review them, and schedule a dependent second wave without an operator go-ahead. The integrator can publish/merge **only** a legitimately approved safe PR with current required checks. Record the actual artifacts and SHA. Do not fabricate a PR or bypass CI to demonstrate a green test.
+
+The old `agent-env/plans/cursor-live-e2e-procedure.md` describes the now-retired Cursor Stop-hook experiment and its T1–T8 reason codes; **it is not the acceptance protocol for this native approach**. It remains in `agent-env/` to avoid altering shared Claude Code source. The legacy result `CURSOR_ORCHESTRATION_LIVE_PASS` is not claimed for the new architecture.
+
+**Limit:** native IDE background-task completion does not prove resurrection after app exit, disconnected sessions or machine shutdown. Persistent unattended operation would require a separately selected and authorized coordinator; no new runtime, dependencies or scheduler are introduced by this change.
