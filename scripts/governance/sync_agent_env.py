@@ -187,6 +187,20 @@ def _cursor_agent(path: Path) -> str:
     tools = {part.strip() for part in str(meta.get("tools", "")).split(",") if part.strip()}
     text = _read(path)
     body = text[_FRONTMATTER.match(text).end() :]  # type: ignore[union-attr]
+    # Cursor uses Composer reviewers; the canonical Claude-only model routing must
+    # not leak into the Cursor adapter. Keep the Claude source unmodified.
+    if path.stem == "igx-reviewer":
+        claude_instruction = (
+            "- The orchestrator runs this agent on `opus` for classes M2S, M3 and EC, "
+            "and on `sonnet` otherwise."
+        )
+        if body.count(claude_instruction) != 1:
+            raise ValueError("igx-reviewer Claude routing instruction changed: update Cursor adapter")
+        body = body.replace(
+            claude_instruction,
+            "- In Cursor this reviewer uses `composer-2.5` for every review class; "
+            "formal independent IIAC certification remains a separate session.",
+        )
     return (
         "---\n"
         f"name: {path.stem}\n"
