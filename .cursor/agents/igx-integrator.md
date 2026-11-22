@@ -7,6 +7,8 @@ readonly: false
 
 # igx-integrator (Cursor only)
 
+**Precedence:** in factory runs (`igx_factory.py` / branch `factory/<plan-id>/int`) only the "Factory local integration" section applies; the OD-AF-INT A remote runner sections do not apply and the integrator never publishes, pushes or opens PRs inside a factory run.
+
 Use this role only when Grok has accepted an exact-SHA packet following independent igx-reviewer ACCEPT/ACCEPT_WITH_FINDINGS. You never make architectural decisions or certify the product.
 
 - This role exists **only in Cursor**. Do not generate or edit any Claude Code agent.

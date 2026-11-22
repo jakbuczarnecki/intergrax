@@ -14,6 +14,7 @@ import hashlib
 import json
 import os
 import re
+import shlex
 import subprocess
 import sys
 import tempfile
@@ -33,6 +34,8 @@ ESCALATION_TYPES = (
 IMPLEMENTER = "igx-implementer"
 CAP = 2
 CORRECTION_BUDGET = 2
+LOST_AGENT = "lost"
+MAX_LOST = 2
 AI_ATTRIBUTION = re.compile(
     r"(?im)^\s*(co-authored-by:.*(claude|anthropic|openai|gpt|cursor|grok|composer|copilot|gemini|\bai\b)"
     r"|generated[ -]with|generated-by:|assisted-by:)"
@@ -254,18 +257,25 @@ def write_pointer(worktree: Path, root: str) -> None:
     pointer.write_text(root, encoding="utf-8")
 
 
-def tests_command(state: dict[str, Any], sid: str, log: str) -> str:
+def tests_argv(state: dict[str, Any], sid: str, log: str) -> list[str]:
     step = state["steps"][sid]
     raw = step["tests"].strip()
     if raw.split()[0] in ("uv", "python", "py"):
-        inner = raw
+        inner = shlex.split(raw, posix=True)
     else:
         base = re.sub(r"^pytest\s+", "", raw)
         main = Path(state["main_root"])
         scratch = main.parent / "_wt" / main.name / "_scratch" / f"{slug(state['plan_id'], 12)}-{sid.lower()}"
-        inner = f"uv run pytest {base} -q --basetemp={scratch}"
+        inner = ["uv", "run", "pytest", *shlex.split(base, posix=True), "-q", f"--basetemp={scratch}"]
     lock = Path(__file__).resolve().parent / "igx_test_lock.py"
-    return f"python {lock} --log {log} -- {inner}"
+    return [sys.executable, str(lock), "--log", log, "--", *inner]
+
+
+def tests_command(state: dict[str, Any], sid: str, log: str) -> str:
+    """Display form for the worker brief (workers run it in their own shell)."""
+    argv = tests_argv(state, sid, log)
+    argv[0] = "python"
+    return " ".join(argv)
 
 
 def build_brief(state: dict[str, Any], sid: str, findings: str | None = None) -> str:
@@ -410,7 +420,9 @@ def cmd_launch(state: dict[str, Any], sid: str, background: bool) -> str:
         raise FactoryError(f"cap reached: {CAP} implementers already running")
     root = Path(state["root"])
     if s["status"] in ("pending", "relaunch"):
-        suffix = f"-r{s['relaunches']}" if s["status"] == "relaunch" else ""
+        suffix = ""
+        if s["status"] == "relaunch":
+            suffix = f"-r{s['relaunches']}" + (f"l{s['lost']}" if s.get("lost") else "")
         branch = f"factory/{state['plan_id']}/{sid}{suffix}"
         path = wt_path(state, f"{sid.lower()}{suffix}")
         tip = git(["rev-parse", state["int_branch"]], root)
@@ -434,7 +446,8 @@ def register_failure(state: dict[str, Any], sid: str, reasons: list[str]) -> dic
     s["corrections"] += 1
     s["findings"] = "\n".join(f"- {r}" for r in reasons)
     out: dict[str, Any] = {"ok": False, "reasons": reasons}
-    if s["corrections"] <= CORRECTION_BUDGET:
+    # budget: 2 corrections, then 1 fresh worker, then park (the fresh worker gets no corrections)
+    if s["relaunches"] == 0 and s["corrections"] <= CORRECTION_BUDGET:
         s["status"] = "correction"
         out["correction_brief"] = correction_brief(state, sid, reasons)
     elif s["relaunches"] == 0:
@@ -484,10 +497,38 @@ def cmd_receive(state: dict[str, Any], sid: str, agent_id: str) -> dict[str, Any
     s = need_status(state, sid, "running")
     s["agent_id"] = agent_id
     s["background"] = False
+    root = Path(state["root"])
+    if agent_id == LOST_AGENT and not git(
+        ["rev-list", "--no-merges", f"{s['launch_base']}..{s['worker_branch']}"], root
+    ):
+        # recovery: the worker vanished without committing; relaunch without consuming a correction
+        s["lost"] = s.get("lost", 0) + 1
+        s["agent_id"] = None
+        if s["lost"] > MAX_LOST:
+            do_park(
+                state,
+                sid,
+                "missing access",
+                f"worker lost {s['lost']} times without committing",
+                "check the Cursor agent runtime; re-plan the step",
+                "inspect the agent runtime",
+            )
+            out: dict[str, Any] = {"ok": False, "status": "parked"}
+        else:
+            s["status"] = "relaunch"
+            s["findings"] = None
+            out = {
+                "ok": False,
+                "status": "relaunch",
+                "action": "worker lost: launch the step again, no correction used",
+            }
+        save_state(state)
+        return out
     reasons = validate_worker(state, sid)
     if reasons:
         out = register_failure(state, sid, reasons)
     else:
+        s["tip"] = git(["rev-parse", s["worker_branch"]], root)
         s["status"] = "received"
         s["findings"] = None
         out = {"ok": True, "status": "received"}
@@ -495,8 +536,20 @@ def cmd_receive(state: dict[str, Any], sid: str, agent_id: str) -> dict[str, Any
     return out
 
 
+def check_tip(state: dict[str, Any], sid: str) -> None:
+    s = state["steps"][sid]
+    now = git(["rev-parse", s["worker_branch"]], Path(state["root"]))
+    if s.get("tip") and now != s["tip"]:
+        raise FactoryError(
+            f"worker branch {s['worker_branch']} moved since receive ({s['tip'][:9]} -> {now[:9]}); run receive again"
+        )
+
+
 def cmd_review(state: dict[str, Any], sid: str, agent_id: str, verdict: str, findings: str | None) -> dict[str, Any]:
     s = need_status(state, sid, "received")
+    if agent_id == s.get("agent_id"):
+        raise FactoryError(f"reviewer {agent_id} is the worker of step {sid}; use an independent reviewer agent")
+    check_tip(state, sid)
     s["review"] = {"agent_id": agent_id, "verdict": verdict, "findings": findings}
     if verdict == "ACCEPT":
         s["status"] = "accepted"
@@ -522,6 +575,25 @@ def tick_checkbox(plan_path: Path, sid: str) -> None:
 def cmd_integrate(state: dict[str, Any], sid: str, run_tests: bool) -> dict[str, Any]:
     s = need_status(state, sid, "accepted")
     wt = state["int_worktree"]
+    check_tip(state, sid)
+    merged = git(["merge-base", "--is-ancestor", s["worker_branch"], "HEAD"], wt, check=False).endswith("#rc=0")
+    reverted = any(
+        git(["merge-base", "--is-ancestor", t, "HEAD"], wt, check=False).endswith("#rc=0")
+        for t in s.get("reverted_tips", [])
+    )
+    if merged or reverted:
+        do_park(
+            state,
+            sid,
+            "plan/rules/code contradiction",
+            f"{s['worker_branch']} is already merged"
+            + (" and was reverted" if reverted else "")
+            + "; a re-merge would be a no-op or lose changes; relaunch the step from the integration tip",
+            "relaunch the step as a fresh worker; or re-plan",
+            "relaunch the step",
+        )
+        save_state(state)
+        return {"ok": False, "status": "parked", "reason": "branch already merged"}
     done = subprocess.run(
         [
             "git",
@@ -555,9 +627,10 @@ def cmd_integrate(state: dict[str, Any], sid: str, run_tests: bool) -> dict[str,
         return {"ok": False, "status": "parked", "reason": "merge conflict"}
     if run_tests:
         log = state_dir(Path(state["root"]), state["plan_id"]) / sid / "integration-tests.log"
-        cmd = tests_command(state, sid, str(log))
-        rc = subprocess.run(cmd, cwd=wt, shell=True, check=False).returncode
+        argv = tests_argv(state, sid, str(log))
+        rc = subprocess.run(argv, cwd=wt, shell=False, check=False).returncode
         if rc:
+            s.setdefault("reverted_tips", []).append(s["worker_branch"])
             git(["revert", "-m", "1", "--no-edit", "HEAD"], wt)
             do_park(
                 state,

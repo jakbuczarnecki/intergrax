@@ -44,14 +44,34 @@ python scripts/cursor/igx_factory_supervisor.py --plan agent-env/plans/<plan>.md
 
 The first line runs it in the background, the second directly. The supervisor repeats `cursor-agent -p` until the plan is
 done. Options: `--max-iterations` (40), `--budget-minutes` (720), `--agent-bin`, `--workspace`. Exit codes: 0 complete,
-2 `cursor-agent` not found, 3 everything remaining is parked, 4 stalled (no progress for 3 iterations), 5 budget or
-iteration limit.
+2 `cursor-agent` not found, 3 everything remaining is parked, 4 stalled (no progress for 3 iterations; iterations with a `running` step never count), 5 budget or
+iteration limit, 6 agent failing (3 consecutive non-zero agent exits that left the state unchanged; the last ~20 lines of
+stdout and stderr of a failed iteration go to `supervisor.log`). The supervisor passes `--trust` (headless
+`cursor-agent -p` otherwise exits with "Workspace Trust Required"); the permissions in `.cursor/cli.json` stay the guard.
+Headless prompts are single-line because the agent launcher is a `.cmd` file; in headless mode parallel workers run as
+foreground Tasks in one message.
 
 ## Park and continue
 
 A real blocker (unplanned architecture; scope/cost/reversibility decision; plan/rules/code contradiction; forbidden
 action; missing access) is parked with `igx_factory.py park`. Dependants park with it; independent steps keep running.
-Correction budget per step: 2 corrections, then one fresh relaunch, then park.
+Correction budget per step: 2 corrections, then one fresh relaunch, then park (the fresh worker gets no corrections: its
+first failed validation or rejection parks the step). A worker that vanished without commits is recovered with
+`receive <S> --agent-id lost`: the step is relaunched without consuming a correction.
+
+## Review binding, revert and plan checkbox
+
+- `receive` stores the worker branch tip. `review` and `integrate` refuse when the tip moved since `receive` (run
+  `receive` again); `review` also refuses when the reviewer `--agent-id` equals the step's worker.
+- `integrate --run-tests` reverts the merge when tests fail and parks the step. The reverted merge stays in history, so a
+  fix needs a new commit and a fresh `receive` -> `review` -> `integrate`. A re-merge of a branch that is already merged
+  (no-op) or was reverted would lose changes: `integrate` detects it and parks with the reason; the path is to relaunch
+  the step as a fresh worker from the integration tip.
+- The plan checkbox tick edits the plan file in the workspace that ran `start` (uncommitted, like Claude's plan checklist).
+- `loop_limit` is 50 in the IDE; beyond that the headless supervisor re-enters.
+- Known gap: the shell guard `igx_cursor_integration_guard.py` matches only `git push` / `git reset --hard` literally
+  (`git -C x push` passes). It is owned by OD-AF-INT A and is a follow-up, not changed here.
+- In factory runs only local integration applies; the OD-AF-INT A remote runner is outside the factory loop.
 
 ## Completion report
 

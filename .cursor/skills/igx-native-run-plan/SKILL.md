@@ -38,7 +38,7 @@ complete                                # prints the completion report
 
 ## Worker outcomes
 
-- `DONE:` -> receive. `receive` failure or reviewer `REJECT` -> state moves to `correction` (up to 2) with `correction_brief`/findings: `launch <S>` again and send the new brief. After the budget the step goes to `relaunch` (one fresh worker); then it parks.
+- `DONE:` -> receive. `receive` failure or reviewer `REJECT` -> state moves to `correction` (up to 2) with `correction_brief`/findings: `launch <S>` again and send the new brief. After the budget the step goes to `relaunch` (one fresh worker); the fresh worker's first failure parks the step. `review` needs a reviewer id different from the worker and an unmoved branch tip (else `receive` again). After a revert-on-failure the fix needs a new commit and a fresh `receive`/`review`/`integrate`; `integrate` parks an already merged or reverted branch, so relaunch it as a fresh worker.
 - `BLOCKED: <type>: ...` -> decide alone if plan, ADR, rules or code answer it, then relaunch with the answer in the plan or ticket scope. Otherwise `park <S> --type ...` and continue with other READY steps. Dependants park automatically.
 - Escalation types: unplanned architecture; scope/cost/reversibility decision; plan/rules/code contradiction; forbidden action; missing access.
 
@@ -49,7 +49,7 @@ complete                                # prints the completion report
 
 ## Restart recovery
 
-After a lost session or restart: `python scripts/cursor/igx_factory.py status`, then `next`, then continue the loop. A step left `running` whose worker is gone: run `receive <S> --agent-id lost`; it validates the branch and moves the step to `received` or `correction`/`relaunch`.
+After a lost session or restart: `python scripts/cursor/igx_factory.py status`, then `next`, then continue the loop. A step left `running` whose worker is gone: run `receive <S> --agent-id lost`; if the branch has no commits it relaunches the step without consuming a correction; otherwise it validates the branch and moves the step to `received` or `correction`/`relaunch`.
 
 ## Headless option
 

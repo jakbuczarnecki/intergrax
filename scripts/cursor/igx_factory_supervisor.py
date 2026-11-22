@@ -3,7 +3,8 @@
 
 Launch it from PowerShell (Git Bash breaks the Cursor hook wrapper). Exit codes:
 0 run complete, 2 agent binary missing, 3 everything remaining is parked (escalations),
-4 stalled, 5 max iterations or budget exhausted.
+4 stalled, 5 max iterations or budget exhausted, 6 agent failing (3 consecutive non-zero iterations
+that left the state unchanged).
 """
 
 from __future__ import annotations
@@ -20,11 +21,18 @@ from typing import Any
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 import igx_factory as factory  # noqa: E402
 
+HEADLESS_NOTE = (
+    "In headless mode launch parallel workers as foreground Tasks in one message (no --background), "
+    "since no completion turn exists headless."
+)
 CONTINUE_PROMPT = (
-    "FACTORY CONTINUE: run python scripts/cursor/igx_factory.py next and continue the factory run "
-    "per /igx-native-run-plan; never ask the operator; park real blockers."
+    "FACTORY CONTINUE: invoke /igx-native-run-plan and run python scripts/cursor/igx_factory.py next "
+    "then follow the skill until igx_factory.py complete is printed; never ask the operator; "
+    "park real blockers. " + HEADLESS_NOTE
 )
 STALL_ITERATIONS = 3
+FAIL_ITERATIONS = 3
+TAIL_LINES = 20
 ID_KEYS = ("session_id", "chatId", "chat_id")
 
 
@@ -64,11 +72,16 @@ def extract_chat_id(stdout: str) -> str | None:
 
 
 def first_prompt(plan: Path) -> str:
+    """Single line without cmd.exe metacharacters (the agent launcher is a .cmd file)."""
     return (
-        f"/igx-native-run-plan {plan}\n"
-        f"Start the factory run: python scripts/cursor/igx_factory.py start {plan} , then follow the "
-        "/igx-native-run-plan skill until the run completes; never ask the operator; park real blockers."
+        f"/igx-native-run-plan {plan} - first run python scripts/cursor/igx_factory.py start {plan} "
+        "then follow the skill until igx_factory.py complete is printed; never ask the operator; "
+        "park real blockers. " + HEADLESS_NOTE
     )
+
+
+def tail(text: str | None) -> list[str]:
+    return (text or "").splitlines()[-TAIL_LINES:]
 
 
 def summary(state: dict[str, Any] | None) -> dict[str, Any]:
@@ -126,46 +139,59 @@ def main(argv: list[str] | None = None) -> int:
     chat_id: str | None = None
     last_sig: str | None = None
     same = 0
+    failing = 0
     state = factory.load_state(root, plan_id)
     for iteration in range(1, args.max_iterations + 1):
         remaining = deadline - time.monotonic()
         if remaining <= 0:
             return finish(state, 5)
         prompt = first_prompt(plan) if state is None else CONTINUE_PROMPT
-        cmd = [*agent, "-p", "--model", args.model, "--output-format", "json", "--workspace", str(workspace)]
+        cmd = [*agent, "-p", "--model", args.model, "--output-format", "json", "--trust", "--workspace", str(workspace)]
         if chat_id:
             cmd += ["--resume", chat_id]
         cmd.append(prompt)
         started = time.monotonic()
         code: int | str
+        before = json.dumps(state, sort_keys=True)
+        out_tail: list[str] = []
+        err_tail: list[str] = []
         try:
             done = subprocess.run(
                 cmd, cwd=workspace, text=True, capture_output=True, encoding="utf-8", errors="replace",
                 timeout=remaining, check=False,
             )  # fmt: skip
             code = done.returncode
+            if code != 0:
+                out_tail, err_tail = tail(done.stdout), tail(done.stderr)
             found = extract_chat_id(done.stdout)
             chat_id = found or chat_id
         except subprocess.TimeoutExpired:
             code = "timeout"
         state = factory.load_state(root, plan_id)
-        log_line(
-            log_path,
-            {
-                "iteration": iteration,
-                "exit_code": code,
-                "seconds": round(time.monotonic() - started, 2),
-                "chat_id": chat_id,
-                "next": summary(state),
-            },
-        )
+        record: dict[str, Any] = {
+            "iteration": iteration,
+            "exit_code": code,
+            "seconds": round(time.monotonic() - started, 2),
+            "chat_id": chat_id,
+            "next": summary(state),
+        }
+        if out_tail or err_tail:
+            record["stdout_tail"], record["stderr_tail"] = out_tail, err_tail
+        log_line(log_path, record)
         if code == "timeout":
             return finish(state, 5)
+        unchanged = json.dumps(state, sort_keys=True) == before
+        failing = failing + 1 if (code != 0 and unchanged) else 0
+        if failing >= FAIL_ITERATIONS:
+            return finish(state, 6)
         if state is None:
             continue
         if factory.is_finished(state):
             parked = any(s["status"] == "parked" for s in state["steps"].values())
             return finish(state, 3 if parked else 0)
+        if any(st["status"] == "running" for st in state["steps"].values()):
+            same, last_sig = 0, None  # workers may still be working; only budget bounds this
+            continue
         sig = factory.progress_signature(state)
         same = same + 1 if sig == last_sig else 1
         last_sig = sig
