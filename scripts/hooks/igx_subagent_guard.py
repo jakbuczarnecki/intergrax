@@ -1,17 +1,22 @@
 # © Artur Czarnecki. All rights reserved.
-"""Cursor ``subagentStart`` guard: deny the untyped ``generalPurpose`` subagent (stdlib only).
+"""Cursor ``subagentStart`` guard: deny known generic subagent aliases (stdlib only).
 
 Claude Code denies ``general-purpose`` through ``permissions.deny``; Cursor does not enforce that
 file, so ``.cursor/hooks.json`` registers this script for ``subagentStart`` with the matcher
-``^generalPurpose$`` and ``failClosed: true``. With ``failClosed`` an empty stdout, a crash or a
+``^(generalPurpose|general-purpose|GeneralPurpose)# © Artur Czarnecki. All rights reserved.
+"""Cursor ``subagentStart`` guard: deny known generic subagent aliases (stdlib only).
+
+Claude Code denies ``general-purpose`` through ``permissions.deny``; Cursor does not enforce that
+file, so ``.cursor/hooks.json`` registers this script for ``subagentStart`` with the matcher
+` and ``failClosed: true``. With ``failClosed`` an empty stdout, a crash or a
 non-zero exit would block the spawn, therefore this script always prints one valid JSON object.
 
 * ``IGX_HOOKS=off`` -> ``{"permission": "allow"}``;
-* ``subagent_type`` exactly ``generalPurpose`` (or missing / empty) -> ``deny`` naming the typed roles;
-* any other non-empty type (``explore``, ``igx-*``, ``general-purpose``, ``GeneralPurpose`` ...) -> ``allow``.
+* ``subagent_type`` matching a known generic alias (or missing / empty) -> ``deny`` naming the typed roles;
+* any other non-empty type (``explore``, ``igx-*`` ...) -> ``allow``.
 
-Matching is exact on purpose: another spelling is added to ``DENIED_TYPES`` only after a probe shows
-that exact string in the hook log.
+Matching remains explicit: the aliases listed in ``DENIED_TYPES`` are prohibited. Only
+known generic aliases are matched; named typed roles remain available.
 """
 
 from __future__ import annotations
