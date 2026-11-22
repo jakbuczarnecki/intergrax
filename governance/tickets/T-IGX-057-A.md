@@ -67,6 +67,13 @@ uv run python scripts/governance/sync_agent_env.py --check
 Remote integration changes (OD-AF-INT A runner stays as is), role registry or policy pin changes, Claude Code
 configuration, product code, CI workflows.
 
+## Closeout
+
+2026-11-22: merged into `development` via PR #749 (merge commit `d29a658c9`). Final readiness audit on
+`7bd4558b5`: test contract plus `test_cursor_integration_guard.py` 317 passed, `sync_agent_env.py --check` OK, Claude
+surface paths unchanged since `c98d9ac0b`. Audit follow-ups in `T-IGX-059-A`. In-IDE E2E stays
+`CURSOR_IDE_E2E_PENDING_OPERATOR`.
+
 ## Lifecycle state
 
-quality_gate
+closed
