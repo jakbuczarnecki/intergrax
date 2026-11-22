@@ -122,6 +122,19 @@ def test_ticket_requires_operator_approval_and_state(mod, tmp_path: Path) -> Non
         mod.check_ticket(p, tmp_path)
 
 
+def test_ticket_on_development_can_qualify_an_older_train_worktree(mod, monkeypatch, tmp_path: Path) -> None:
+    import base64
+
+    p = packet()
+    remote = "## Lifecycle state\nin_progress\n\nApproved: operator @ 2026-11-22T09:04:11+01:00\n"
+    def fetch(path: str):
+        assert path == f"contents/{p['ticket']}?ref=development"
+        return {"encoding": "base64", "content": base64.b64encode(remote.encode()).decode()}
+
+    monkeypatch.setattr(mod, "gh_api", fetch)
+    mod.check_ticket(p, tmp_path)
+
+
 def test_pr_requires_exact_base_head_and_allowed_files(mod, monkeypatch) -> None:
     p = packet()
     number = 17
