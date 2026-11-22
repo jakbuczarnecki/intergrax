@@ -117,6 +117,15 @@ def test_cursor_adapters_carry_no_claude_model_slugs() -> None:
         assert not re.search(r"^model:\s*(haiku|opus|sonnet)\b", path.read_text(encoding="utf-8"), re.MULTILINE)
 
 
+def test_cursor_reviewer_uses_composer_without_claude_routing() -> None:
+    cursor = (ROOT / ".cursor" / "agents" / "igx-reviewer.md").read_text(encoding="utf-8")
+    claude = (ROOT / "agent-env" / "agents" / "igx-reviewer.md").read_text(encoding="utf-8")
+    assert "model: composer-2.5" in cursor
+    assert "reviewer uses `composer-2.5`" in cursor
+    assert "runs this agent on `opus`" not in cursor
+    assert "runs this agent on `opus`" in claude
+
+
 def test_cursor_agents_use_documented_keys_and_derived_readonly() -> None:
     cursor_agents = ROOT / ".cursor" / "agents"
     names = sorted(p.stem for p in cursor_agents.glob("igx-*.md"))
