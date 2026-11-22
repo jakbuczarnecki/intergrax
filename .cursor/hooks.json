@@ -4,7 +4,7 @@
     "subagentStart": [
       {
         "command": "python scripts/hooks/igx_subagent_guard.py",
-        "matcher": "^generalPurpose$",
+        "matcher": "^(generalPurpose|general-purpose|GeneralPurpose)$",
         "failClosed": true
       }
     ],
