@@ -6,6 +6,7 @@ from __future__ import annotations
 
 import os
 import re
+import shutil
 import subprocess
 import time
 import uuid
@@ -44,6 +45,24 @@ def _redact(text: str) -> str:
     return "\n".join(lines)
 
 
+def _resolve_uv_executable() -> str:
+    env_override = os.environ.get("INTERGRAX_UV_EXECUTABLE", "").strip()
+    if env_override:
+        candidate = Path(env_override)
+        if not candidate.is_file():
+            raise FileNotFoundError(f"INTERGRAX_UV_EXECUTABLE is not a file: {env_override}")
+        return str(candidate)
+    resolved = shutil.which("uv")
+    if resolved is not None:
+        return resolved
+    uv_from_invoker = os.environ.get("UV", "").strip()
+    if uv_from_invoker:
+        candidate = Path(uv_from_invoker)
+        if candidate.is_file():
+            return str(candidate)
+    raise FileNotFoundError("uv executable not found on PATH; set INTERGRAX_UV_EXECUTABLE to an explicit path")
+
+
 def _resolve_under_repo(repo_root: Path, entrypoint: str) -> Path:
     if "::" in entrypoint:
         rel = entrypoint.split("::", 1)[0]
@@ -71,13 +90,14 @@ class CheckExecutionSandbox:
         if check.mutating:
             raise ValueError(f"mutating check not allowed in default sandbox: {check.check_id}")
         _resolve_under_repo(self._repo_root, check.entrypoint)
+        uv_executable = _resolve_uv_executable()
         started = time.perf_counter()
         if check.entrypoint_kind == "pytest_nodeid":
-            cmd = ["uv", "run", "pytest", check.entrypoint, "-q", "--tb=line", "--no-header"]
+            cmd = [uv_executable, "run", "pytest", check.entrypoint, "-q", "--tb=line", "--no-header"]
         elif check.entrypoint_kind == "pytest_file":
-            cmd = ["uv", "run", "pytest", check.entrypoint, "-q", "--tb=line", "--no-header"]
+            cmd = [uv_executable, "run", "pytest", check.entrypoint, "-q", "--tb=line", "--no-header"]
         elif check.entrypoint_kind == "python_script":
-            cmd = ["uv", "run", "python", check.entrypoint]
+            cmd = [uv_executable, "run", "python", check.entrypoint]
         else:
             raise ValueError(f"unsupported entrypoint_kind for sandbox: {check.entrypoint_kind}")
         popen_kwargs: dict = {
