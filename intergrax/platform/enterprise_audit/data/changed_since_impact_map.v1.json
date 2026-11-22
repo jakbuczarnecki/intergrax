@@ -1750,6 +1750,11 @@
       "C027",
       "C069"
     ],
+    "intergrax/platform/enterprise_audit/vbn.py": [
+      "C002",
+      "C004",
+      "C009"
+    ],
     "intergrax/queueing": [
       "ENT-A-REC-01",
       "ENT-A-REC-02",
