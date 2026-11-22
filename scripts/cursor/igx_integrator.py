@@ -23,6 +23,7 @@ BRANCH = re.compile(r"^(?:af2|integ|feat|fix)/[A-Za-z0-9._/-]{1,110}$")
 TICKET = re.compile(r"^governance/tickets/T-IGX-\d{3}-[A-Z]\.md$")
 PROTECTED = (
     ".claude/", "agent-env/", ".cursor/", "governance/agent-control-plane/",
+    "scripts/cursor/", "scripts/hooks/", "scripts/governance/",
     "governance/TRUSTED_POLICY_PIN.yaml", "CLAUDE.md",
     "docs/project/maintainers/qualification/ARCH_FREEZE_SHA_LADDER.md",
     "docs/project/maintainers/qualification/PLATFORM_ENTERPRISE_FREEZE_ACCEPTANCE_CHECKLIST.md",
@@ -245,6 +246,7 @@ def main(argv: list[str] | None = None) -> int:
             raise Blocked("packet must be a JSON object")
         validate_packet(p)
         cwd = Path.cwd()
+        local_worktree(cwd)
         verify_evidence(p, cwd)
         check_ticket(p, cwd)
         if a.action == "publish":
