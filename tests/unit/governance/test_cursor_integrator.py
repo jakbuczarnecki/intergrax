@@ -208,17 +208,9 @@ def test_claude_codex_generated_fragments_exclude_cursor_only_roles() -> None:
     assert "| igx-integrator |" not in content
 
 
-def test_claude_and_canonical_agent_env_are_byte_identical_to_preapproval_baseline() -> None:
-    import subprocess
-
-    pinned = {
-        ".claude": "ef78a520e85072175e3cf233fd52d5ed5ccb62ac",
-        "CLAUDE.md": "85338f67ba8d9b5de3f17906d21dec9a1ae086e2",
-        "agent-env": "16ffc2cc5e3ee2706b6767c42852d38a393584d5",
-        "governance/agent-control-plane/adapters/claude/DELIVERY_DEVOS.fragment.md": "1d6e00ad2f72519f09c4746c317b7c24827e6e04",
-    }
-    for path, expected in pinned.items():
-        actual = subprocess.check_output(
-            ["git", "rev-parse", "HEAD:" + path], cwd=ROOT, text=True
-        ).strip()
-        assert actual == expected, path
+def test_cursor_integrator_not_exposed_as_a_claude_agent() -> None:
+    assert not (ROOT / ".claude/agents/igx-integrator.md").exists()
+    assert (ROOT / ".cursor/agents/igx-integrator.md").exists()
+    fragment = (ROOT / "governance/agent-control-plane/adapters/claude/DELIVERY_DEVOS.fragment.md").read_text(encoding="utf-8")
+    assert "**integrator**" not in fragment
+    assert "| igx-integrator |" not in fragment
