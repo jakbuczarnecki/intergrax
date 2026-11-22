@@ -1,0 +1,28 @@
+{
+  "permissions": {
+    "allow": [
+      "Shell(git status)",
+      "Shell(git diff)",
+      "Shell(git log)",
+      "Shell(git add)",
+      "Shell(git commit)",
+      "Shell(git merge)",
+      "Shell(git worktree)",
+      "Shell(git rev-parse)",
+      "Shell(git branch)",
+      "Shell(git show)",
+      "Shell(uv)",
+      "Shell(python)",
+      "Read(**)",
+      "Write(**)"
+    ],
+    "deny": [
+      "Shell(git push)",
+      "Shell(git reset)",
+      "Shell(gh)",
+      "Shell(curl)",
+      "Shell(git clean)",
+      "Shell(rm)"
+    ]
+  }
+}

@@ -13,9 +13,14 @@ CURSOR = ROOT / ".cursor"
 CLAUDE = ROOT / ".claude"
 
 
-def test_cursor_does_not_auto_continue_from_a_stop_hook() -> None:
+def test_cursor_stop_hook_is_only_the_state_file_factory_hook() -> None:
     hooks = json.loads((CURSOR / "hooks.json").read_text(encoding="utf-8"))["hooks"]
-    assert "stop" not in hooks
+    (stop,) = hooks["stop"]
+    assert "igx_factory_stop.py" in stop["command"]
+    assert "igx_stop_guard.py" not in stop["command"]
+    assert "igx_cursor_stop.py" not in stop["command"]
+    assert stop["loop_limit"] == 50
+    assert stop["failClosed"] is False
     assert "subagentStart" in hooks  # deny generic workers
     assert "beforeShellExecution" in hooks  # OD-AF-INT A protected integration
     assert hooks["beforeShellExecution"][0]["failClosed"] is True
@@ -23,11 +28,7 @@ def test_cursor_does_not_auto_continue_from_a_stop_hook() -> None:
 
 def test_claude_keeps_its_independent_stop_hook_and_skill() -> None:
     settings = json.loads((CLAUDE / "settings.json").read_text(encoding="utf-8"))
-    assert any(
-        "igx_stop_guard.py" in hook["command"]
-        for group in settings["hooks"]["Stop"]
-        for hook in group["hooks"]
-    )
+    assert any("igx_stop_guard.py" in hook["command"] for group in settings["hooks"]["Stop"] for hook in group["hooks"])
     skill = (CLAUDE / "skills/igx-run-plan/SKILL.md").read_text(encoding="utf-8")
     assert "agent-env/skills/igx-run-plan/SKILL.md" in skill
     assert "Stop hook" in skill
@@ -57,9 +58,7 @@ def test_cursor_native_role_skill_separates_lifecycle_and_governance() -> None:
 
 
 def test_integration_role_is_still_cursor_only() -> None:
-    policy = yaml.safe_load(
-        (ROOT / "governance/agent-control-plane/role_registry.yaml").read_text(encoding="utf-8")
-    )
+    policy = yaml.safe_load((ROOT / "governance/agent-control-plane/role_registry.yaml").read_text(encoding="utf-8"))
     assert policy["roles"]["integrator"]["runtime"] == "cursor"
     assert policy["subagent_role_map"]["igx-integrator"]["runtime"] == "cursor"
     assert policy["roles"]["orchestrator"]["may_commit"] is False

@@ -84,8 +84,14 @@ def write_log(st: dict, sid: str) -> None:
     p.write_text("ok\n", encoding="utf-8")
 
 
-def state_of(root: Path, plan_id: str = "myplan") -> dict | None:
+def maybe_state(root: Path, plan_id: str = "myplan") -> dict | None:
     return factory.load_state(root, plan_id)
+
+
+def state_of(root: Path, plan_id: str = "myplan") -> dict:
+    state = maybe_state(root, plan_id)
+    assert state is not None
+    return state
 
 
 def started(repo: Path, capsys: pytest.CaptureFixture[str], text: str | None = None) -> None:
@@ -114,7 +120,7 @@ def test_start_refuses_cycle(repo: Path, capsys) -> None:
     p = write_plan(repo, plan_text(step("S1", deps="S2"), step("S2", deps="S1", write="src/b/**")))
     code, out = jrun(capsys, "start", str(p))
     assert code == 1 and "cycle" in " ".join(out["errors"])
-    assert state_of(repo) is None
+    assert maybe_state(repo) is None
 
 
 def test_start_refuses_missing_approval_and_reports_all(repo: Path, capsys) -> None:
