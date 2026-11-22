@@ -129,12 +129,13 @@ def test_cursor_reviewer_uses_composer_without_claude_routing() -> None:
 def test_cursor_agents_use_documented_keys_and_derived_readonly() -> None:
     cursor_agents = ROOT / ".cursor" / "agents"
     names = sorted(p.stem for p in cursor_agents.glob("igx-*.md"))
-    assert names == ["igx-architect", "igx-implementer", "igx-researcher", "igx-reviewer"]
+    assert names == ["igx-architect", "igx-implementer", "igx-integrator", "igx-researcher", "igx-reviewer"]
+    assert not (ROOT / ".claude" / "agents" / "igx-integrator.md").exists()
     for name in names:
         head = (cursor_agents / f"{name}.md").read_text(encoding="utf-8").split("---", 2)[1]
         keys = {line.split(":", 1)[0] for line in head.strip().splitlines()}
         assert keys == {"name", "description", "model", "readonly"}
-    for name, readonly in (("igx-reviewer", "true"), ("igx-researcher", "true"), ("igx-implementer", "false")):
+    for name, readonly in (("igx-reviewer", "true"), ("igx-researcher", "true"), ("igx-implementer", "false"), ("igx-integrator", "false")):
         assert f"readonly: {readonly}" in (cursor_agents / f"{name}.md").read_text(encoding="utf-8")
 
 

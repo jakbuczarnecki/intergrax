@@ -19,6 +19,8 @@ def _role_summary() -> str:
     roles = doc.get("roles", {})
     lines = ["# Delivery DevOS roles (generated fragment — ADVISORY)", ""]
     for name in sorted(roles):
+        if roles[name].get("runtime") == "cursor":
+            continue  # Cursor-only additions must not enter Claude/Codex fragments.
         desc = roles[name].get("description", "")
         lines.append(f"- **{name}**: {desc}")
     lines.append("")
@@ -36,7 +38,10 @@ def _subagent_summary() -> str:
         "| Subagent | maps_to | max_parallel |",
         "|----------|---------|--------------|",
     ]
+    roles = doc.get("roles", {})
     for name, meta in sorted(sub.items()):
+        if meta.get("runtime") == "cursor" or roles.get(meta.get("maps_to"), {}).get("runtime") == "cursor":
+            continue
         lines.append(f"| {name} | {meta.get('maps_to')} | {meta.get('max_parallel')} |")
     lines.append("")
     return "\n".join(lines)

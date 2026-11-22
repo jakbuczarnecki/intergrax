@@ -65,7 +65,10 @@ def test_kill_switch_allows_every_spawn() -> None:
 def test_hooks_json_registers_subagent_start_and_native_stop() -> None:
     config = json.loads(HOOKS_JSON.read_text(encoding="utf-8"))
     assert config["version"] == 1
-    assert set(config["hooks"]) == {"subagentStart", "stop"}
+    assert set(config["hooks"]) == {"subagentStart", "stop", "beforeShellExecution"}
+    (remote,) = config["hooks"]["beforeShellExecution"]
+    assert remote["failClosed"] is True
+    assert remote["command"] == "python scripts/hooks/igx_cursor_integration_guard.py"
     (entry,) = config["hooks"]["subagentStart"]
     assert entry["failClosed"] is True
     assert entry["matcher"] == "^(generalPurpose|general-purpose|GeneralPurpose)$"

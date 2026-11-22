@@ -1,0 +1,14 @@
+---
+description: Cursor-only, operator-approved least-privilege integration for Grok Composer campaigns (OD-AF-INT A).
+alwaysApply: true
+---
+# Cursor-only OD-AF-INT A scoped exception
+
+Operator recorded `Approved: OD-AF-INT A` on 2026-11-22. This overrides the general human-only push / PR / merge rule **only for** the new `igx-integrator` Cursor subagent operating through `scripts/cursor/igx_integrator.py` and exactly the approved targets.
+
+- Grok remains `may_commit: false`; existing Composer implementers and reviewers retain their current permissions. No new Claude Code subagent or privilege is created.
+- An integrator may commit on its own isolated integration worktree, and use the Cursor integration runner to publish or merge only SHA-bound, independently reviewed and required-CI-green PRs.
+- Product `arch-freeze/rw-train` and docs/tickets `development` only. `main`, FCS, freeze pin ladder, IIAC, FRZ promotions, roadmap, operator-only decisions and GitHub settings remain prohibited.
+- Direct `git push` / `gh pr create` / `gh pr merge` from any Cursor agent are forbidden. Use the guarded runner; failures are BLOCKED, never bypassed.
+- No permission change is made to Claude Code. Shared core rules apply without exception to every other role.
+- This approval is not a waiver of required checks, an IIAC PASS, or authorization for an ARCH-FREEZE CLOSED claim.
