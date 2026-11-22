@@ -60,6 +60,10 @@ class ReferenceProductionLifecycleResult:
     trust_admission_state: RevisionTrustAdmissionState | None = None
 
 
+class RevisionTrustAdmissionNotComposedError(ValueError):
+    """Trust admission is NOT_COMPOSED while the caller required a composed admission path."""
+
+
 class ReferenceProductionLifecycleError(ValueError):
     """Lifecycle launcher input or precondition violation."""
 
@@ -95,6 +99,7 @@ class DeployActivatePipelineContext:
     # composition without a capability runtime is an explicit pass-through
     # (``RevisionTrustAdmissionState.NOT_COMPOSED``, T-IGX-051-B Part B/C).
     revision_trust_admission: Callable[[RuntimeRevision], None] | None = None
+    require_composed_trust_admission: bool = False
 
 
 class RevisionTrustAdmissionState(StrEnum):
@@ -128,6 +133,17 @@ def _resolve_revision_trust_admission(
             RevisionTrustAdmissionState.COMPOSED_RUNTIME,
         )
     return None, RevisionTrustAdmissionState.NOT_COMPOSED
+
+
+def assert_composed_revision_trust_admission(
+    ctx: DeployActivatePipelineContext,
+    state: RevisionTrustAdmissionState,
+) -> None:
+    if ctx.require_composed_trust_admission and state is RevisionTrustAdmissionState.NOT_COMPOSED:
+        raise RevisionTrustAdmissionNotComposedError(
+            "revision trust admission is NOT_COMPOSED; activation requires a composed trust admission "
+            "(T-AF2-RW-GATES / RES-AB-3)"
+        )
 
 
 def run_deploy_and_activate(
@@ -211,6 +227,7 @@ def run_deploy_and_activate(
     # A-01: the trust admission runs before any store write; a refused revision is not
     # persisted, validated, registered or prepared. One check, one place.
     trust_admission, trust_admission_state = _resolve_revision_trust_admission(ctx)
+    assert_composed_revision_trust_admission(ctx, trust_admission_state)
     if trust_admission is not None:
         trust_admission(candidate)
     revision_service.persist_candidate_revision(candidate)
