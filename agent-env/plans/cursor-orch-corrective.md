@@ -1,3 +1,5 @@
+> Superseded by [CURSOR_SOFTWARE_FACTORY.md](../../docs/project/technical/devos/CURSOR_SOFTWARE_FACTORY.md) for the execution loop.
+
 # CURSOR-ORCH-CORRECTIVE - Grok parent / Composer workers in Cursor
 
 Ticket: `governance/tickets/T-IGX-055-A.md`. Branch `fix/cursor-orch-corrective`, worktree

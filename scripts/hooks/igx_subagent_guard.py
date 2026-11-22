@@ -3,8 +3,9 @@
 
 Claude Code denies ``general-purpose`` through ``permissions.deny``; Cursor does not enforce that
 file, so ``.cursor/hooks.json`` registers this script for ``subagentStart`` with the matcher
-``^(generalPurpose|general-purpose|GeneralPurpose)$`` and ``failClosed: true``. With ``failClosed`` an empty stdout, a crash or a
-non-zero exit would block the spawn, therefore this script always prints one valid JSON object.
+``^(generalPurpose|general-purpose|GeneralPurpose)$`` and ``failClosed: true``.
+With ``failClosed`` an empty stdout, a crash or a non-zero exit would block the spawn,
+therefore this script always prints one valid JSON object.
 
 * ``IGX_HOOKS=off`` -> ``{"permission": "allow"}``;
 * ``subagent_type`` matching a known generic alias (or missing / empty) -> ``deny`` naming the typed roles;
@@ -21,7 +22,7 @@ import os
 import sys
 
 DENIED_TYPES = frozenset({"generalPurpose", "general-purpose", "GeneralPurpose"})
-ROLES = ("igx-architect", "igx-implementer", "igx-researcher", "igx-reviewer")
+ROLES = ("igx-architect", "igx-implementer", "igx-integrator", "igx-researcher", "igx-reviewer")
 
 
 def decide(data: object) -> dict[str, str]:

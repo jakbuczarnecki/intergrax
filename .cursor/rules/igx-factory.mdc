@@ -1,0 +1,19 @@
+---
+description: Cursor-only software factory protocol - approved plans run to completion through igx_factory.py; supersedes Stop-hook mechanics in shared rules.
+alwaysApply: true
+---
+# Cursor software factory (Cursor only)
+
+Supersedes the Stop-hook, `active-plan` and `WAITING:` mechanics in shared `intergrax-core`, `igx-autonomy` and canonical `igx-run-plan`, for Cursor only. Claude Code behaviour is unchanged.
+
+- Approved plans run through `/igx-native-run-plan` and `python scripts/cursor/igx_factory.py`. State comes from `igx_factory.py next` / `status`, never from chat memory.
+- Loop: `next` -> `launch <step>` (Task with the printed brief verbatim; `subagent_type` = the step's agent; `model` `composer-2.5`) -> `receive` -> review by a separate `igx-reviewer` -> record with `review` -> `integrate` via `igx-integrator` -> `next`.
+- Up to 2 implementers in parallel (background Task), only when `next` lists them as ready. One pytest at a time, via `scripts/cursor/igx_test_lock.py`.
+- Never end a turn while `next` shows `ready` or `pending_actions`, unless background workers are outstanding: the native completion turn and the Cursor `stop` hook (`igx_factory_stop.py`) resume you.
+- Never ask the Operator for a go-ahead. Decide alone when plan, ADR, rules or code answer it.
+- Real blocker: `igx_factory.py park` with one of the five escalation types (unplanned architecture; scope/cost/reversibility decision; plan/rules/code contradiction; forbidden action; missing access), then continue with the other READY steps (park and continue).
+- Local integration only (OD-AF-INT A "accepted worker-branch local integration", ticket T-IGX-055-C): `igx-integrator` merges worker branches into `factory/<plan-id>/int`. Push, PR, remote merge and integration into `development` or operator branches stay human.
+- Precedence: the OD-AF-INT A remote runner (`igx_integrator.py`, PR/merge targets) is outside the factory loop; inside a factory run only local integration applies.
+- The parent never commits product code; implementers commit on their worker branch with the `Ref:` trailer.
+- Print `PLAN COMPLETE` or `PLAN COMPLETE WITH ESCALATIONS` only as printed by `igx_factory.py complete`.
+- Subagents may not inherit rules: briefs are self-contained; do not paraphrase them.
