@@ -34,5 +34,6 @@ Cursor registers the same script on `stop` in `.cursor/hooks.json` with `loop_li
 - `WAITING: <task ids>` ends the turn while background workers run; the completion turn resumes the parent. The hook checks only that this conversation spawned a background Task (`run_in_background: true`) at some point, not that it is still running, so use `WAITING:` only for workers that are really outstanding. Without any background spawn it counts as a stop without progress.
 - Otherwise the hook sends one `followup_message` with the next open step. The second stop without a checkbox change gets a stall warning; the third is allowed and marks the plan stalled (no more follow-ups until a step is ticked). Follow-ups since `start` are capped at `max(10, 3 x steps)`.
 - `status` `error` or `aborted`, a missing transcript, a repeated event or any hook error allows the stop. The hook only ever emits `followup_message`.
+- Ownership is recorded on the first stop of any status after `start`. The transcript is scanned tail-first (16 MiB) with a full streaming scan as fallback while the plan has no owner, so cost grows linearly with transcript size only until ownership is recorded; deleting `.tmp/session/autonomy/cursor-stop-state.json` forces a rescan.
 
 When the hook does not run, the Autonomy rule still applies: never ask for permission to take the next step.

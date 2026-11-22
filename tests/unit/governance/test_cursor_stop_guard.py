@@ -471,3 +471,61 @@ def test_frontmatter_bom_crlf_block_scalars_and_nested_keys() -> None:
         (True, "literal one literal two"),
         (False, "plain"),
     ]
+
+
+def _decide(mod: object, sess: Session, **over: object) -> dict | None:
+    steps = [(True, "step one"), (False, "step two"), (False, "step three")]
+    result, _clear = mod.decide_cursor(  # type: ignore[attr-defined]
+        sess.root, sess.payload(**over), sess.root / "plan.md", steps, sess.root / ACTIVE, 3
+    )
+    return result
+
+
+def _filler(count: int = 40) -> list[dict]:
+    return [_assistant("filler " + "x" * 60) for _ in range(count)]
+
+
+@pytest.fixture
+def small_tail(monkeypatch: pytest.MonkeyPatch) -> object:
+    mod = _parser()
+    monkeypatch.setattr(mod, "_SCAN_TAIL", 512)
+    return mod
+
+
+def test_start_tool_use_beyond_the_tail_is_still_claimed(sess: Session, root: Path, small_tail: object) -> None:
+    sess.write(_user("run"), _assistant("", SHELL_START), *_filler(), _assistant("progress"))
+    assert sess.path.stat().st_size > 512 * 4
+    result = _decide(small_tail, sess)
+    assert result and "followup_message" in result
+    assert _state(root)["owner"] == "c1"
+
+
+def test_background_spawn_beyond_the_tail_still_honours_waiting(sess: Session, root: Path, small_tail: object) -> None:
+    sess.write(
+        _user("run"),
+        _assistant("", SHELL_START),
+        _assistant("", SPAWN),
+        *_filler(),
+        _assistant("Spawned.\nWAITING: task-1"),
+    )
+    assert _decide(small_tail, sess) is None
+    assert _diag(root)["reason"] == "waiting"
+
+
+def test_aborted_first_stop_claims_ownership_and_next_completed_stop_follows_up(
+    sess: Session, root: Path, small_tail: object
+) -> None:
+    sess.write(_user("run"), _assistant("", SHELL_START), *_filler(), _assistant("working"))
+    assert _decide(small_tail, sess, status="aborted") is None
+    assert _diag(root)["reason"] == "status"
+    assert _state(root)["owner"] == "c1"
+    result = _decide(small_tail, sess)
+    assert result and "followup_message" in result
+    assert _diag(root)["reason"] == "followup"
+
+
+def test_plain_text_mention_beyond_the_tail_does_not_claim(sess: Session, root: Path, small_tail: object) -> None:
+    sess.write(_user(f"please run {START_CMD}"), _assistant(f"read: {START_CMD}"), *_filler(), _assistant("done"))
+    assert _decide(small_tail, sess) is None
+    assert _diag(root)["reason"] == "not_owner"
+    assert not (root / STATE).exists()

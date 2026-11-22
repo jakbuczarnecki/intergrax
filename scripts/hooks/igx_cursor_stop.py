@@ -18,6 +18,8 @@ Rules implemented here:
 * ``WAITING:`` is honoured only while the transcript holds a ``run_in_background`` Task spawn;
 * a stop without checkbox progress is followed up once, warned once, then allowed and the plan is marked
   stalled; a total follow-up cap bounds the whole activation;
+* the transcript is scanned tail-first (last ``_SCAN_TAIL`` bytes) with a full streaming scan as fallback,
+  so an owner claim or background spawn older than the tail is still found;
 * any problem allows the stop. State: ``.tmp/session/autonomy/cursor-stop-state.json``; diagnostics:
   ``cursor-stop-last.json`` (decision and reason code only).
 """
@@ -26,6 +28,7 @@ from __future__ import annotations
 
 import json
 import re
+from collections.abc import Callable
 from pathlib import Path
 
 STATE = Path(".tmp") / "session" / "autonomy" / "cursor-stop-state.json"
@@ -157,23 +160,43 @@ def turn_text(path: Path) -> str:
     return text
 
 
-def _claims_start(path: Path) -> bool:
-    """True when an assistant ``tool_use`` input holds the start command (plain text does not claim)."""
+def _is_start_claim(line: str) -> bool:
+    try:
+        obj = json.loads(line)
+    except ValueError:
+        return False
+    if not isinstance(obj, dict) or _role(obj) != "assistant":
+        return False
+    message = obj.get("message")
+    content = message.get("content") if isinstance(message, dict) else obj.get("content")
+    for item in content if isinstance(content, list) else []:
+        if isinstance(item, dict) and item.get("type") == "tool_use" and _START in json.dumps(item.get("input")):
+            return True
+    return False
+
+
+def _is_background(line: str) -> bool:
+    return bool(_BACKGROUND.search(line))
+
+
+def _find_line(path: Path, needle: str, accept: Callable[[str], bool]) -> bool:
+    """True when an accepted line holds ``needle``: the tail first, then a full streaming scan."""
     for line in _tail(path, _SCAN_TAIL).splitlines():
-        if _START not in line:
-            continue
-        try:
-            obj = json.loads(line)
-        except ValueError:
-            continue
-        if not isinstance(obj, dict) or _role(obj) != "assistant":
-            continue
-        message = obj.get("message")
-        content = message.get("content") if isinstance(message, dict) else obj.get("content")
-        for item in content if isinstance(content, list) else []:
-            if isinstance(item, dict) and item.get("type") == "tool_use" and _START in json.dumps(item.get("input")):
+        if needle in line and accept(line):
+            return True
+    if path.stat().st_size <= _SCAN_TAIL:
+        return False
+    key = needle.encode()
+    with path.open("rb") as handle:
+        for raw in handle:
+            if key in raw and accept(raw.decode("utf-8", errors="ignore")):
                 return True
     return False
+
+
+def _claims_start(path: Path) -> bool:
+    """True when an assistant ``tool_use`` input holds the start command (plain text does not claim)."""
+    return _find_line(path, _START, _is_start_claim)
 
 
 def _markers(text: str) -> set[str]:
@@ -228,30 +251,31 @@ def decide_cursor(
         _diag(root, data, None, reason, len(open_steps))
         return None, False
 
-    if str(data.get("status") or "").strip().lower() != "completed":
-        return allow("status")
+    completed = str(data.get("status") or "").strip().lower() == "completed"
     conversation = str(data.get("conversation_id") or data.get("session_id") or "")
     transcript = data.get("transcript_path")
     if not conversation or not isinstance(transcript, str) or not transcript.strip():
-        return allow("no_conversation")
+        return allow("no_conversation" if completed else "status")
     path = Path(transcript)
     if not path.is_file():
-        return allow("no_transcript")
+        return allow("no_transcript" if completed else "status")
     try:
         activation = f"{plan}|{active_path.stat().st_mtime_ns}"
     except OSError:
-        return allow("no_activation")
+        return allow("no_activation" if completed else "status")
     state: dict[str, object] = _load(root)
     if state.get("activation") != activation:
         state = {"activation": activation}
     owner = state.get("owner")
     if not owner:
         if not _claims_start(path):
-            return allow("not_owner")
+            return allow("not_owner" if completed else "status")
         state["owner"] = conversation
         _save(root, state)
     elif owner != conversation:
-        return allow("other_conversation")
+        return allow("other_conversation" if completed else "status")
+    if not completed:
+        return allow("status")
 
     done_count = len(steps) - len(open_steps)
     signature = f"{done_count}|{len(open_steps)}"
@@ -276,7 +300,7 @@ def decide_cursor(
             pass
         _diag(root, data, None, "plan_done", 0)
         return None, True
-    if "WAITING" in found and "PLAN COMPLETE" not in found and _BACKGROUND.search(_tail(path, _SCAN_TAIL)):
+    if "WAITING" in found and "PLAN COMPLETE" not in found and _find_line(path, "run_in_background", _is_background):
         return allow("waiting")
 
     step = open_steps[0]

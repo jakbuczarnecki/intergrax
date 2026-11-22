@@ -79,11 +79,9 @@ Companion files (same approval):
   by these verifiers or dropped from the patch.
 - `may_commit` stays false for `orchestrator`.
 
-## Related inconsistency (same decision)
+## Separate decision - generalPurpose registry entry (not part of this proposal)
 
-`subagent_role_map.generalPurpose` maps to `orchestrator` with `max_parallel: 2`, but `.cursor/hooks.json`
-`subagentStart` denies `generalPurpose` (fail closed) and Claude Code denies `general-purpose`. Recommendation:
-remove the `generalPurpose` entry in the same pinned change.
+`subagent_role_map.generalPurpose` maps to `orchestrator` with `max_parallel: 2`, while Cursor `subagentStart` denies `generalPurpose` and Claude Code denies `general-purpose`. This is assessed separately from the integrator role: neither decision depends on the other, approving one does not imply the other, and each needs its own pinned change and re-pin. Options: (A) remove the entry in its own pinned change (recommended: the entry has no reachable effect); (B) keep it, documented as unreachable.
 
 ## Options
 

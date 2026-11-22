@@ -84,22 +84,24 @@ Output is only ever `{"followup_message": ...}` or nothing. State lives in
 ## W4 evidence (2026-11-21, proof under `.tmp/proof/cursor-orch-corrective/`, not tracked)
 
 - `sync_agent_env.py --check` OK (70 adapters); `verify_trusted_policy_pin.py` OK; ruff clean.
-- pytest (ticket contract): stop/cursor/subagent guard tests pass; `test_agent_env_sync.py` has 3 failures that
-  pre-exist at base `ac0c0b753` (`.cursor/rules/intergrax-core.mdc` extract lost `git push` after the
-  a058cee19 core rewrite). This branch changes no rule file; fixing it touches the Claude-loaded core rule and
-  is left to a separate change.
+- pytest (ticket contract): the 3 `test_agent_env_sync.py` failures came from a058cee19 dropping `git push` from the core Autonomy line; fixed in W5 by restoring the explicit wording (same or stricter meaning, Claude Code loads it too).
 - Live probe: headless `cursor-agent -p` (2026.11.19, `composer-2.5`, scratch worktree) ran `start` and step 1,
   then ended; it never invoked the project `stop` hook (no `stop-last-keys.json`). Launched from Git Bash, the
   CLI evaluates its PowerShell hook wrapper with `bash eval` and blocks every hooked tool; launch it from
   PowerShell.
 - Offline replay of the real CLI transcript with a live-shaped `stop` payload: owner follow-up names step 2,
   duplicate event replays, another conversation is allowed, 2nd stop stall warning, 3rd allowed + stalled.
-- IDE live E2E (hook-delivered `followup_message` in the Cursor editor): `CURSOR_LIVE_E2E_NOT_EXECUTED`.
-  Procedure: in the Cursor IDE open the checkout, run `/igx-run-plan .tmp/probe/plan.md` with two steps, let the
-  agent finish step 1 and end its turn, then check that a follow-up turn naming step 2 appears and
-  `.tmp/session/autonomy/cursor-stop-last.json` shows `"reason": "followup"`.
+- IDE live E2E (hook-delivered `followup_message` in the Cursor editor): `CURSOR_LIVE_E2E_NOT_EXECUTED`. Procedure: `agent-env/plans/cursor-live-e2e-procedure.md`.
 
 ## W3 local integrator (proposal, not applied)
 
 See `agent-env/plans/cursor-local-integrator-proposal.md`. Requires an Operator decision because it adds
 commit authority to `governance/agent-control-plane/role_registry.yaml` (a pinned file).
+
+## W5 corrective batch (2026-11-22)
+
+- Core push-ban restore: `agent-env/rules/intergrax-core.md` Autonomy line names `git push` and GitHub settings again.
+- 16 MiB fix: the owner claim and the WAITING background check scan the tail first and fall back to a full streaming
+  scan; the owner is claimed on a stop of any status (measured largest local Cursor transcript 5.14 MB of 7274).
+- `generalPurpose` registry entry split into a separate decision in the integrator proposal.
+- Live E2E procedure: `agent-env/plans/cursor-live-e2e-procedure.md`.
