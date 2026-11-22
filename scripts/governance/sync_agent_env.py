@@ -164,6 +164,21 @@ def _skill_adapter(skill_id: str, description: str, *, canonical: str, kind: str
     return "\n".join(lines)
 
 
+def _cursor_native_plan_alias() -> str:
+    """Cursor-only legacy alias. The Claude skill adapter remains unchanged."""
+    return (
+        "---\n"
+        "name: igx-run-plan\n"
+        "description: Cursor-only alias for native plan execution (no Stop hook)\n"
+        "disable-model-invocation: true\n"
+        "---\n"
+        f"<!-- {GENERATED} from Cursor-only native execution policy - do not edit. -->\n"
+        "Cursor only: follow \`.cursor/skills/igx-native-run-plan/SKILL.md\` "
+        "instead of the shared \`agent-env/skills/igx-run-plan/SKILL.md\`.\n"
+        "Do not invoke \`igx_stop_guard.py start|stop\` or rely on Stop-hook followups.\n"
+    )
+
+
 def load_agents() -> dict[str, str]:
     """Canonical Claude Code agents (``agent-env/agents/igx-*.md``) as adapter text."""
     out: dict[str, str] = {}
@@ -281,6 +296,9 @@ def expected_files() -> dict[Path, str]:
     for sid, meta in skills.items():
         canonical = f"agent-env/skills/{sid}/SKILL.md"
         for tool_dir in (_CURSOR, _CLAUDE):
+            if tool_dir == _CURSOR and sid == "igx-run-plan":
+                out[tool_dir / "skills" / sid / "SKILL.md"] = _cursor_native_plan_alias()
+                continue
             out[tool_dir / "skills" / sid / "SKILL.md"] = _skill_adapter(
                 sid,
                 str(meta["description"]),
