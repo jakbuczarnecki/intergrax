@@ -1,7 +1,9 @@
 # InterGRAX agent role registry (Delivery DevOS control plane)
 # Commit SSOT: may_commit on the role. implementer=true (own worktree branch, Ref: trailer only).
 # orchestrator=false: no commit, no branch integration, no push, no pull request, no merge.
-# A subagent may commit only when maps_to has may_commit true. Push, PR, and merge stay human.
+# A subagent may commit only when maps_to has may_commit true. Existing roles retain their rules.
+# OD-AF-INT A: only cursor-runtime integrator may publish/merge scoped accepted PRs via Cursor gate.
+# No existing Claude Code role, map, or subagent is modified by the Cursor-only addition.
 # igx-implementer and best-of-n-runner max_parallel stays 2 until a recorded resource benchmark.
 # uv/pytest stay serial. A 3-4 worker target is not authorized here.
 
@@ -66,6 +68,16 @@ roles:
     may_commit: false
     declares_g6_pass: false
 
+  integrator:
+    description: Cursor-only OD-AF-INT A integration of reviewed changes via scoped runner; never Claude.
+    runtime: cursor
+    allowed_skills:
+      - igx-devos-ticket-driven-work
+      - igx-devos-enterprise-quality-gate
+    may_commit: true
+    commit_scope: own_worktree_integration_branch
+    remote_scope: cursor_scoped_pr_only
+
 subagent_role_map:
   explore:
     maps_to: architect-planner
@@ -109,3 +121,9 @@ subagent_role_map:
     maps_to: architect-planner
     max_parallel: 1
     read_only: false
+  igx-integrator:
+    maps_to: integrator
+    runtime: cursor
+    max_parallel: 1
+    read_only: false
+    requires_worktree: true
