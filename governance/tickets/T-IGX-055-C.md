@@ -16,7 +16,7 @@ Approval source: explicit operator instruction in this ChatGPT conversation date
 
 ## Implementation scope
 
-`governance/agent-control-plane/role_registry.yaml` (additive Cursor-only role/map), `governance/TRUSTED_POLICY_PIN.yaml` (matching repin), `.cursor/agents/igx-integrator.md`, `.cursor/rules/od-af-int-a.mdc`, `.cursor/hooks.json`, `scripts/cursor/igx_integrator.py`, `scripts/hooks/igx_cursor_integration_guard.py`, and only the relevant unit tests. No `.claude/**`, `CLAUDE.md`, `agent-env/**`, `intergrax/**`, `agents/**`, `applications/**`.
+`governance/agent-control-plane/role_registry.yaml` (additive Cursor-only role/map), `governance/TRUSTED_POLICY_PIN.yaml` (matching repin), `.cursor/agents/igx-integrator.md`, `.cursor/rules/od-af-int-a.mdc`, `.cursor/hooks.json`, `scripts/cursor/igx_integrator.py`, `scripts/hooks/igx_cursor_integration_guard.py`, `scripts/governance/verify_agent_control_plane.py`, `scripts/governance/sync_adapter_fragments.py` (Claude/Codex output must remain byte-identical), `docs/project/technical/devos/CURSOR_OD_AF_INT_A.md`, and only the relevant unit tests. No `.claude/**`, `CLAUDE.md`, `agent-env/**`, `intergrax/**`, `agents/**`, `applications/**`.
 
 ## Verification
 
