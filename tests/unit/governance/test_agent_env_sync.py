@@ -64,13 +64,13 @@ def _mdc_body(rule_id: str) -> str:
     return text.split("---\n", 2)[2]
 
 
-def test_always_rules_are_exactly_core_and_english_only() -> None:
+def test_always_rules_include_generated_core_and_scoped_cursor_overrides() -> None:
     always = sorted(
         p.stem
         for p in (ROOT / ".cursor" / "rules").glob("*.mdc")
         if "alwaysApply: true" in p.read_text(encoding="utf-8").split("---", 2)[1]
     )
-    assert always == sorted(ALWAYS_RULES)
+    assert always == sorted([*ALWAYS_RULES, "od-af-int-a", "cursor-native-orchestration"])
 
 
 def test_always_core_mdc_inlines_the_invariants() -> None:
