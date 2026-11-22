@@ -10,9 +10,9 @@ Operator-only exclusions: main, FCS, G2/R/M3 ladder, IIAC, FRZ promotions, roadm
 
 ## Approved
 
-Approved: OD-AF-INT A
+Approved: operator @ 2026-11-22T09:04:11+01:00
 
-Approval source: explicit operator instruction in this ChatGPT conversation dated 2026-11-22; this records the decision without impersonating an independently signed IIAC verdict.
+Operator decision: OD-AF-INT A. Approval source: explicit operator instruction `Approved: OD-AF-INT A` in this conversation on 2026-11-22. The ISO8601 timestamp above is the recorded entry time, not a claim about the exact time the user typed the instruction. This is not an independently signed IIAC verdict.
 
 ## Implementation scope
 
