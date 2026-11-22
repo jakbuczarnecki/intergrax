@@ -131,6 +131,23 @@ def _always_extract(rule_id: str) -> str:
     )
 
 
+_CORE_PLAN_DONE = (
+    "Plan finished: print `PLAN COMPLETE` and a short summary (`/igx-run-plan` enforces it via Stop hook)."
+)
+_CURSOR_PLAN_DONE = "Plan finished: Cursor lifecycle and completion per `.cursor/rules/igx-factory.mdc`."
+
+
+def _cursor_core_text(rule_id: str, text: str) -> str:
+    """Cursor-only substitution in the always-on core extract; fails loudly when the source drifts."""
+    if rule_id != "intergrax-core":
+        return text
+    if text.count(_CORE_PLAN_DONE) != 1:
+        raise ValueError(
+            "intergrax-core Autonomy sentence about PLAN COMPLETE / Stop hook changed: update the Cursor adapter"
+        )
+    return text.replace(_CORE_PLAN_DONE, _CURSOR_PLAN_DONE)
+
+
 def _cursor_rule(rule_id: str, meta: dict[str, str]) -> str:
     head = (
         "---\n"
@@ -144,7 +161,7 @@ def _cursor_rule(rule_id: str, meta: dict[str, str]) -> str:
     # Cursor does not expand "@" inside a rule body: the normative text must be inlined here.
     return (
         head
-        + _always_extract(rule_id)
+        + _cursor_core_text(rule_id, _always_extract(rule_id))
         + "\n\n"
         + f"Canonical rule (SSOT): `agent-env/rules/{rule_id}.md`. Read it only when editing rules "
         + "or when a section outside this extract is needed.\n"
@@ -179,6 +196,22 @@ def _cursor_native_plan_alias() -> str:
     )
 
 
+def _cursor_autonomy_stub() -> str:
+    """Cursor-only igx-autonomy adapter: decision rules from the canonical skill, lifecycle from the factory."""
+    return (
+        "---\n"
+        "name: igx-autonomy\n"
+        "description: Cursor-only pointer - decision rules and escalation types from the canonical skill; "
+        "lifecycle via the software factory\n"
+        "---\n"
+        f"<!-- {GENERATED} from Cursor-only factory policy - do not edit. -->\n"
+        "Read `agent-env/skills/igx-autonomy/SKILL.md` for the decision rules, the DONE/BLOCKED result protocol "
+        "and the escalation types. Ignore its Cursor, `WAITING:` and Stop-hook sections in Cursor.\n"
+        "Cursor lifecycle: `.cursor/rules/igx-factory.mdc` and `/igx-native-run-plan`. "
+        "Escalations are parked with `python scripts/cursor/igx_factory.py park`, not sent as a stop message.\n"
+    )
+
+
 def load_agents() -> dict[str, str]:
     """Canonical Claude Code agents (``agent-env/agents/igx-*.md``) as adapter text."""
     out: dict[str, str] = {}
@@ -206,8 +239,7 @@ def _cursor_agent(path: Path) -> str:
     # not leak into the Cursor adapter. Keep the Claude source unmodified.
     if path.stem == "igx-reviewer":
         claude_instruction = (
-            "- The orchestrator runs this agent on `opus` for classes M2S, M3 and EC, "
-            "and on `sonnet` otherwise."
+            "- The orchestrator runs this agent on `opus` for classes M2S, M3 and EC, and on `sonnet` otherwise."
         )
         if body.count(claude_instruction) != 1:
             raise ValueError("igx-reviewer Claude routing instruction changed: update Cursor adapter")
@@ -298,6 +330,9 @@ def expected_files() -> dict[Path, str]:
         for tool_dir in (_CURSOR, _CLAUDE):
             if tool_dir == _CURSOR and sid == "igx-run-plan":
                 out[tool_dir / "skills" / sid / "SKILL.md"] = _cursor_native_plan_alias()
+                continue
+            if tool_dir == _CURSOR and sid == "igx-autonomy":
+                out[tool_dir / "skills" / sid / "SKILL.md"] = _cursor_autonomy_stub()
                 continue
             out[tool_dir / "skills" / sid / "SKILL.md"] = _skill_adapter(
                 sid,

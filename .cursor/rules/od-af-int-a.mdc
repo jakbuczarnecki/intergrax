@@ -1,6 +1,6 @@
 ---
 description: Cursor-only, operator-approved least-privilege integration for Grok Composer campaigns (OD-AF-INT A).
-alwaysApply: true
+alwaysApply: false
 ---
 # Cursor-only OD-AF-INT A scoped exception
 

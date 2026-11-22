@@ -45,7 +45,7 @@ alwaysApply: true
 - Stop only with `ESCALATION: <type>` (unplanned architecture; scope/cost/reversibility decision; plan/rules/code contradiction; forbidden action; missing access). One batched message with options, recommendation, consequence, cost.
 - `may_commit` in `governance/agent-control-plane/role_registry.yaml` is the only commit right. Implementer: its worktree branch and the `Ref:` trailer. Orchestrator: no commit. `git push`, PR creation, merge, branch integration and GitHub settings stay human (forbidden action: escalate, do not try).
 - Sub-agents end with `DONE: <line>` or `BLOCKED: <type>: <what, options, recommendation>`; the parent decides alone when plan, ADR, rules or code answer it (`/igx-autonomy`).
-- Plan finished: print `PLAN COMPLETE` and a short summary (`/igx-run-plan` enforces it via Stop hook).
+- Plan finished: Cursor lifecycle and completion per `.cursor/rules/igx-factory.mdc`.
 <!-- igx:authority end -->
 
 ## Cursor orchestration

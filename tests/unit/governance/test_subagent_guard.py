@@ -13,7 +13,7 @@ import pytest
 ROOT = Path(__file__).resolve().parents[3]
 HOOK = ROOT / "scripts" / "hooks" / "igx_subagent_guard.py"
 HOOKS_JSON = ROOT / ".cursor" / "hooks.json"
-ROLES = ("igx-architect", "igx-implementer", "igx-researcher", "igx-reviewer")
+ROLES = ("igx-architect", "igx-implementer", "igx-integrator", "igx-researcher", "igx-reviewer")
 
 
 def _run(stdin: str, **env: str) -> dict:
