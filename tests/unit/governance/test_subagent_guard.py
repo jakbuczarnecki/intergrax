@@ -62,10 +62,10 @@ def test_kill_switch_allows_every_spawn() -> None:
     assert _run("not json", IGX_HOOKS="off") == {"permission": "allow"}
 
 
-def test_hooks_json_registers_subagent_start_and_native_stop() -> None:
+def test_hooks_json_uses_native_cursor_lifecycle_and_keeps_permission_guards() -> None:
     config = json.loads(HOOKS_JSON.read_text(encoding="utf-8"))
     assert config["version"] == 1
-    assert set(config["hooks"]) == {"subagentStart", "stop", "beforeShellExecution"}
+    assert set(config["hooks"]) == {"subagentStart", "beforeShellExecution"}
     (remote,) = config["hooks"]["beforeShellExecution"]
     assert remote["failClosed"] is True
     assert remote["command"] == "python scripts/hooks/igx_cursor_integration_guard.py"
@@ -73,7 +73,12 @@ def test_hooks_json_registers_subagent_start_and_native_stop() -> None:
     assert entry["failClosed"] is True
     assert entry["matcher"] == "^(generalPurpose|general-purpose|GeneralPurpose)$"
     assert entry["command"] == "python scripts/hooks/igx_subagent_guard.py"
-    (stop,) = config["hooks"]["stop"]
-    assert stop["command"] == "python scripts/hooks/igx_stop_guard.py"
-    assert stop.get("loop_limit") is None
-    assert (ROOT / "scripts" / "hooks" / "igx_stop_guard.py").is_file()
+    # Cursor no longer auto-submits synthetic user turns via stop followups.
+    assert "stop" not in config["hooks"]
+    # Claude Code retains its existing independent Stop hook.
+    claude = json.loads((ROOT / ".claude/settings.json").read_text(encoding="utf-8"))
+    assert any(
+        "igx_stop_guard.py" in hook.get("command", "")
+        for item in claude["hooks"]["Stop"]
+        for hook in item["hooks"]
+    )
