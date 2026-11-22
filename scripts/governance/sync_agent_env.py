@@ -173,9 +173,9 @@ def _cursor_native_plan_alias() -> str:
         "disable-model-invocation: true\n"
         "---\n"
         f"<!-- {GENERATED} from Cursor-only native execution policy - do not edit. -->\n"
-        "Cursor only: follow \`.cursor/skills/igx-native-run-plan/SKILL.md\` "
-        "instead of the shared \`agent-env/skills/igx-run-plan/SKILL.md\`.\n"
-        "Do not invoke \`igx_stop_guard.py start|stop\` or rely on Stop-hook followups.\n"
+        "Cursor only: follow `.cursor/skills/igx-native-run-plan/SKILL.md` "
+        "instead of the shared `agent-env/skills/igx-run-plan/SKILL.md`.\n"
+        "Do not invoke `igx_stop_guard.py start|stop` or rely on Stop-hook followups.\n"
     )
 
 
