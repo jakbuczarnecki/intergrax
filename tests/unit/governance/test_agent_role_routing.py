@@ -29,6 +29,7 @@ _EXPECTED_SUBAGENTS: dict[str, dict[str, object]] = {
     "igx-implementer": {"maps_to": "implementer", "max_parallel": 2, "read_only": False, "requires_worktree": True},
     "igx-reviewer": {"maps_to": "reviewer", "max_parallel": 1, "read_only": True},
     "igx-architect": {"maps_to": "architect-planner", "max_parallel": 1, "read_only": False},
+    "igx-integrator": {"maps_to": "integrator", "runtime": "cursor", "max_parallel": 1, "read_only": False, "requires_worktree": True},
 }
 
 
