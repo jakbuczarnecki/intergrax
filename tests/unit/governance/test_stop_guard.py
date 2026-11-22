@@ -191,42 +191,32 @@ def test_visible_escalation_is_allowed_with_native_status(root: Path) -> None:
     assert _stop_raw(root, {"status": "completed", "last_assistant_message": "ESCALATION: forbidden action"}) == {}
 
 
-def test_native_transcript_continues_with_followup_only(root: Path) -> None:
-    transcript = root / "transcript.jsonl"
-    transcript.write_text(json.dumps({"role": "assistant", "content": "wave finished"}) + "\n", encoding="utf-8")
+def test_native_transcript_escalation_is_allowed(root: Path) -> None:
+    transcript = root / "esc.jsonl"
+    lines = [
+        {"role": "user", "message": {"content": [{"type": "text", "text": "go"}]}},
+        {
+            "role": "assistant",
+            "message": {
+                "content": [
+                    {
+                        "type": "tool_use",
+                        "name": "Shell",
+                        "input": {"command": "python scripts/hooks/igx_stop_guard.py start plan.md"},
+                    }
+                ]
+            },
+        },
+        {"role": "assistant", "message": {"content": [{"type": "text", "text": "ESCALATION: missing access"}]}},
+    ]
+    transcript.write_text("\n".join(json.dumps(x) for x in lines) + "\n", encoding="utf-8")
     payload = {
-        "hook_event_name": "stop",
         "status": "completed",
-        "loop_count": 0,
         "conversation_id": "c1",
-        "generation_id": "g1",
+        "loop_count": 0,
         "cwd": str(root),
         "transcript_path": str(transcript),
     }
-    first = _stop_raw(root, payload)
-    assert _stop_raw(root, payload) == first
-    assert set(first) == {"followup_message"}
-    assert "step two" in first["followup_message"]
-    payload["generation_id"] = "g2"
-    payload["loop_count"] = 1
-    assert set(_stop_raw(root, payload)) == {"followup_message"}
-    payload["generation_id"] = "g3"
-    payload["loop_count"] = 2
-    stalled = _stop_raw(root, payload)
-    assert "systemMessage" in stalled and "followup_message" not in stalled
-    assert (root / ACTIVE).is_file()
-
-
-def test_native_transcript_escalation_is_allowed(root: Path) -> None:
-    transcript = root / "esc.jsonl"
-    transcript.write_text(
-        json.dumps(
-            {"message": {"role": "assistant", "content": [{"type": "text", "text": "ESCALATION: missing access"}]}}
-        )
-        + "\n",
-        encoding="utf-8",
-    )
-    payload = {"status": "completed", "loop_count": 0, "cwd": str(root), "transcript_path": str(transcript)}
     assert _stop_raw(root, payload) == {}
     assert (root / ACTIVE).is_file()
 

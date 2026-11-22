@@ -15,8 +15,9 @@ Hook mode (no arguments, Claude Code ``Stop`` event or Cursor native ``stop``, J
 * otherwise continue with the next open step.
 
 Claude-shaped input (non-empty ``last_assistant_message``) continues with ``decision: block`` and
-``reason`` only. Cursor-native input (no such message) continues with ``followup_message`` only.
-The two keys are never emitted together. ``.cursor/hooks.json`` registers ``stop`` with
+``reason`` only. Cursor-native input (no such message) is decided by ``igx_cursor_stop.py`` (plan
+ownership, end markers, stall states) and continues with ``followup_message`` only; it also reads
+Cursor plan files with frontmatter ``todos:``. ``.cursor/hooks.json`` registers ``stop`` with
 ``loop_limit: null`` so a plan that keeps ticking steps is not cut at Cursor's default of 5.
 A numeric ``loop_limit`` that drops further follow-ups leaves the plan active; that is not
 ``PLAN COMPLETE``.
@@ -40,6 +41,7 @@ import os
 import re
 import sys
 from pathlib import Path
+from urllib.parse import unquote
 
 ACTIVE = Path(".tmp") / "session" / "autonomy" / "active-plan"
 STATE = Path(".tmp") / "session" / "autonomy" / "stop-state.json"
@@ -217,6 +219,16 @@ def _event_key(data: dict, signature: str) -> str:
     )
 
 
+def _cursor_module():
+    """Import the Cursor adapter; the script may run through ``runpy.run_path`` without its dir on sys.path."""
+    here = str(Path(__file__).resolve().parent)
+    if here not in sys.path:
+        sys.path.insert(0, here)
+    import igx_cursor_stop
+
+    return igx_cursor_stop
+
+
 def decide(root: Path, data: dict) -> dict | None:
     """Hook decision as a JSON-able dict, or None to allow silently."""
     if not isinstance(data, dict):
@@ -224,6 +236,12 @@ def decide(root: Path, data: dict) -> dict | None:
     loaded = read_plan(root)
     if loaded is None:
         return None
+    if _native_cursor(data):
+        plan, steps = loaded
+        result, clear = _cursor_module().decide_cursor(root, data, plan, steps, root / ACTIVE, MAX_BLOCKS)
+        if clear:
+            _clear(root)
+        return result
     status = str(data.get("status") or "")
     if status.strip().lower() in ("error", "aborted"):
         return None
@@ -266,6 +284,30 @@ def decide(root: Path, data: dict) -> dict | None:
     return result
 
 
+def _root_path(value: str) -> Path:
+    """Workspace root string to a path; URI-style Windows roots (``/d:/x``, ``file:///d:/x``) become ``D:/x``."""
+    text = value.strip()
+    if text.lower().startswith("file://"):
+        text = unquote(text[7:])
+    drive = re.match(r"^/([A-Za-z]):[/\\]", text)
+    if drive:
+        text = drive.group(1).upper() + text[2:]
+    return Path(text)
+
+
+def _discover_root(data: dict) -> Path | None:
+    start = str(data.get("cwd") or "")
+    if start:
+        return find_root(Path(start))
+    roots = data.get("workspace_roots")
+    for value in roots if isinstance(roots, list) else []:
+        if isinstance(value, str) and value.strip():
+            found = find_root(_root_path(value))
+            if found is not None:
+                return found
+    return find_root(None)
+
+
 def hook() -> int:
     if os.environ.get("IGX_HOOKS", "").strip().lower() == "off":
         return 0
@@ -274,7 +316,7 @@ def hook() -> int:
         if not isinstance(data, dict):
             return 0
         _note_keys(data)
-        root = find_root(Path(str(data.get("cwd"))) if data.get("cwd") else None)
+        root = _discover_root(data)
         if root is None:
             return 0
         result = decide(root, data)
@@ -319,10 +361,16 @@ def cli(argv: list[str]) -> int:
 
 def _steps_of(plan: Path) -> list[tuple[bool, str]]:
     out = []
-    for line in plan.read_text(encoding="utf-8").splitlines():
+    text = plan.read_text(encoding="utf-8")
+    for line in text.splitlines():
         m = _STEP.match(line)
         if m:
             out.append((m.group(1) != " ", m.group(2)))
+    if not out:
+        try:
+            return _cursor_module().frontmatter_todos(text)
+        except ImportError:
+            return []
     return out
 
 

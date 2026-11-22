@@ -12,7 +12,7 @@ InterGRAX uses **procedural fencing** and git worktrees — not a gateway Postgr
 
 | Need | Mechanism |
 |------|-----------|
-| Read-only search | `explore` / `generalPurpose` (max 2–3 parallel) |
+| Read-only search | `explore` / `igx-researcher` (max 2–3 parallel); `generalPurpose` is denied by the Cursor `subagentStart` hook |
 | Isolated code tries | `best-of-n-runner` or new worktree |
 | Single change set | One implementer in ticket scope |
 
