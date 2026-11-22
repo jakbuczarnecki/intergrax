@@ -77,8 +77,12 @@ first failed validation or rejection parks the step). A worker that vanished wit
   the step as a fresh worker from the integration tip.
 - The plan checkbox tick edits the plan file in the workspace that ran `start` (uncommitted, like Claude's plan checklist).
 - `loop_limit` is 50 in the IDE; beyond that the headless supervisor re-enters.
-- Known gap: the shell guard `igx_cursor_integration_guard.py` matches only `git push` / `git reset --hard` literally
-  (`git -C x push` passes). It is owned by OD-AF-INT A and is a follow-up, not changed here.
+- The shell guard `igx_cursor_integration_guard.py` also catches `git -C <dir> push` and similar option-prefixed forms
+  (hardened by `T-IGX-058-A`).
+- Headless permissions (`.cursor/cli.json`): `git checkout`, `git switch`, `git restore` and `git merge` are allowed for
+  worker and integration worktrees. `git stash` is denied because the stash stack is shared by every worktree. `git push`,
+  `git reset`, `gh`, `curl`, `git clean` and `rm` stay denied (denies win). The repo rule against switching branches on
+  the main checkout still applies.
 - In factory runs only local integration applies; the OD-AF-INT A remote runner is outside the factory loop.
 
 ## Verified
@@ -91,9 +95,23 @@ first failed validation or rejection parks the step). A worker that vanished wit
   plan/rules/code contradiction with options and recommendation; S4 parked transitively; supervisor exit 3.
 - Defect seen in both runs: the Cursor CLI co-author trailer (see Prerequisites); mitigated by the brief and the
   `start` warning.
-- In-IDE run: `CURSOR_IDE_E2E_PENDING_OPERATOR`.
-- Known follow-up: shell guard `igx_cursor_integration_guard.py` matches only literal `git push` / `git reset --hard`
-  (owned by OD-AF-INT A).
+- Runs A and B predate `T-IGX-058-A` (guard hardening) and the `.cursor/cli.json` allowlist change in `T-IGX-060-A`;
+  they were not repeated because both changes only add denials or allow worktree-local git commands.
+- In-IDE run: `CURSOR_IDE_E2E_PENDING_OPERATOR` (checklist below).
+
+## In-IDE acceptance checklist (Operator)
+
+An agent cannot drive the Cursor IDE, so this one run is the Operator's. Use a throwaway plan (S1, then S2 and S3 in
+parallel, then S4) on a scratch branch that is never merged, parent model Grok, workers `composer-2.5`.
+
+1. Open the repo in Cursor; confirm `.cursor/hooks.json` shows a `stop` hook running `igx_factory_stop.py`.
+2. In a new chat run `/igx-native-run-plan` with the plan path. Expect `start` to print the integration branch.
+3. Expect S1 to run, then S2 and S3 together as background Tasks; the parent must not end its turn while READY work
+   exists (the `stop` hook answers with `FACTORY CONTINUE`).
+4. Expect each worker brief to be self-contained (rule inheritance by subagents is the unverified part).
+5. Expect `PLAN COMPLETE` from `igx_factory.py complete`, nothing pushed, no co-author trailer on any worker commit.
+6. Repeat once with S3 made impossible: expect `PLAN COMPLETE WITH ESCALATIONS` and one batched report.
+7. Record the outcome, integration SHA and date in the ticket checkpoint, then replace the pending marker.
 
 ## Completion report
 
