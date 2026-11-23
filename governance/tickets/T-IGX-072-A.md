@@ -16,9 +16,15 @@ Collision resolution: this ticket replaces the integrator campaign's contested `
 
 Plan digest: 00a49d58b53f26b2bc7d806125f311252d66af117102f1fa7628b17536d1b91f
 
+## Approved
+
+Approved: operator-delegate @ 2026-11-23T14:15:00+01:00
+Delegation: docs/project/maintainers/qualification/cursor_integration/operator_decisions/DELEGATION-T-IGX-072-A-INT.md@a6cd65b7843e018c9af471dae5bb145c4ad3c785
+Delegate session: local_5d8e91a4-7f2c-4b6e-a3d0-1e9f8c7b6a54
+
 ## Lifecycle state
 
-plan_pending
+plan_approved
 
 ## Test contract
 
