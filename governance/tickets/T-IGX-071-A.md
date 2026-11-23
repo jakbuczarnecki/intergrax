@@ -17,7 +17,7 @@ Plan digest: 09db804be84a502ea1cfb7ae2c973a86199fd824f92ca7a28612c95c0a5f7a2e
 ## Approved
 
 Approved: operator-delegate @ 2026-11-23T13:05:00+01:00
-Delegation: docs/project/maintainers/qualification/cursor_integration/operator_decisions/DELEGATION-T-IGX-071-A-INT.md@547878fbf8f68c7d6da919dd6baba54e3c7fc41a
+Delegation: docs/project/maintainers/qualification/cursor_integration/operator_decisions/DELEGATION-T-IGX-071-A-INT.md@ffc97796c977ed7223588329ce92c2a47dea0350
 Delegate session: local_f91de4a2-6c3b-4e5f-8a7d-2b1c0e9f8a7b
 
 ## Lifecycle state
