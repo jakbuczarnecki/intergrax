@@ -54,3 +54,12 @@
 | F-05 | False implementation authorization | **PASS** | All **NO** |
 
 **Audit SHA:** `360cb4887f5045ddf0f8461f038fb593a2b61292`
+
+
+## Publication-002 remainder review
+
+| Field | Value |
+| --- | --- |
+| Scope | Delta after PR #756 merge (7 files) |
+| Evidence | `.tmp/proof/sfx-r2-publish-002/review.json` |
+| Committed audit SHA | Not pinned post-review (avoids SHA recursion) |

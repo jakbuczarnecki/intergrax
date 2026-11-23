@@ -6,14 +6,14 @@
 
 ## A. Git and publication
 
-**PUBLICATION_STATUS:** NOT_PUBLISHED · **REMOTE_PUBLICATION_SHA:** NONE · **Remote base:** `3e5dedf267bc783a795ef20974a4e70809f05fbd`
+**PUBLICATION_STATUS:** PR756_PARTIAL_MERGED — remainder pending · **REMOTE_PUBLICATION_SHA:** NONE · **Remote base:** `3e5dedf267bc783a795ef20974a4e70809f05fbd`
 
 Handoff: [SFX_R2_PUBLICATION_HANDOFF.md](./SFX_R2_PUBLICATION_HANDOFF.md)
 
 | Field | Value |
 | --- | --- |
 | `BASE_SHA` (pre-corrective) | `d53be07acac08c20d8f4ac8b00746c27d709d071` |
-| `CORRECTIVE_IMPLEMENTATION_SHA` | `360cb4887f50` |
+| `CORRECTIVE_IMPLEMENTATION_SHA` | integrator `head_sha` at publish |
 | `PUBLISHED_SHA` | _after push or NONE_ |
 | Integrator branch | `integ/sfx-r2-corr-001` · PR #756 |
 | Ticket approval | **070-B:** `plan_approved` @ `3e5dedf26`; **070-A:** `plan_pending` |
