@@ -99,7 +99,7 @@ Four first-pass rates. The denominator of each is the number of scenarios that r
 - All targets are PROPOSED — OD-SFX-07 (operator, at P3 exit).
 
 
-## 4. R2 mission metrics AUTO-01..AUTO-12 (PROPOSED)
+## 6. R2 mission metrics AUTO-01..AUTO-12 (PROPOSED)
 
 | ID | Definition | Status |
 |---|---|---|
