@@ -72,7 +72,7 @@ dependencies = [
   # -----------------
   # Media / ingestion
   # -----------------
-  "chardet>=5.2,<6",
+  "chardet>=5.2,<8",
   "jsonschema>=4.23,<5",
   # -----------------
   # Time zones
