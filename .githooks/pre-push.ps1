@@ -12,5 +12,5 @@ if (-not (Get-Command uv -ErrorAction SilentlyContinue)) {
 if (-not (Get-Command uv -ErrorAction SilentlyContinue)) {
     Write-Error "pre-push: uv not found on PATH (install Astral uv or add %USERPROFILE%\.local\bin)"
 }
-& uv run python -u scripts/ci/run_push_gate.py
+& uv run --no-sync python -u scripts/ci/run_push_gate.py
 exit $LASTEXITCODE

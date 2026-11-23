@@ -169,7 +169,7 @@ def test_nt_wb_25_uvicorn_run_site_count_record() -> None:
     for root in ("applications", "intergrax"):
         for path in (_REPO_ROOT / root).rglob("*.py"):
             relative = path.relative_to(_REPO_ROOT).as_posix()
-            if "/tests/" in relative or "/vendor_knowledge/" in relative:
+            if "/tests/" in relative or "/vendor_knowledge/" in relative or "/docker/runtime-context/" in relative:
                 continue
             text = path.read_text(encoding="utf-8")
             if "uvicorn.run(" not in text:

@@ -37,10 +37,14 @@ def main(argv: Sequence[str] | None = None) -> int:
         print("[INFO] ruff changed-paths: no Python files in scope; skip.")
         return 0
     print(f"[INFO] ruff changed-paths: {len(paths)} file(s)", flush=True)
-    check = subprocess.run(["uv", "run", "ruff", "check", *paths], cwd=_REPO, check=False)
+    check = subprocess.run(["uv", "run", "--no-sync", "ruff", "check", *paths], cwd=_REPO, check=False)
     if check.returncode != 0:
         return check.returncode
-    return subprocess.run(["uv", "run", "ruff", "format", "--check", *paths], cwd=_REPO, check=False).returncode
+    return subprocess.run(
+        ["uv", "run", "--no-sync", "ruff", "format", "--check", *paths],
+        cwd=_REPO,
+        check=False,
+    ).returncode
 
 
 if __name__ == "__main__":

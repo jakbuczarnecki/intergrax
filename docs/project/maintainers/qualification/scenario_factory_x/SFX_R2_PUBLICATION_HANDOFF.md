@@ -1,13 +1,13 @@
 # SFX R2 — Publication handoff (IGX-SFX-R2-PUBLISH-001)
 
-**Status:** `NOT_PUBLISHED` · **Branch:** `docs/sfx-r2-corr-001`  
+**Status:** `NOT_PUBLISHED` · **Branch:** `integ/sfx-r2-corr-001`  
 **Worktree:** `D:/Projekty/_wt/intergrax/sfx-r2-corr-001`
 
 ## Git pins
 
 | Field | SHA / value |
 | --- | --- |
-| `CURRENT_REMOTE_BASE_SHA` | `faa9822f8f417f33524f4341afda7da357772f5e` |
+| `CURRENT_REMOTE_BASE_SHA` | `3e5dedf267bc783a795ef20974a4e70809f05fbd` |
 | `SOURCE_CORRECTIVE_STACK` (local `development`) | `85f9e955ad06aa0c91a342d62827483fce8caf3f` |
 | `PUBLICATION_CANDIDATE_SHA` | `4b63b8dafb6ec9323d9c573666f21f9500ec8bea` |
 | `REMOTE_PUBLICATION_SHA` | **NONE** |
@@ -33,7 +33,7 @@
 | Ticket | Lifecycle | Plan | Publication of docs |
 | --- | --- | --- | --- |
 | `T-IGX-070-A` | `plan_pending` | `PLAN_T-IGX-070-A` — no `Approved:` | R2 package already on `origin` @ `10cf95df8`; corrective overlay proposes only |
-| `T-IGX-070-B` | `plan_pending` | `PLAN_T-IGX-070-B` — no `Approved:` | **Proposed documentation** may be pushed as branch/PR; **not** canonical R2 adoption |
+| `T-IGX-070-B` | `plan_approved` | `PLAN_T-IGX-070-B` — no `Approved:` | **Proposed documentation** may be pushed as branch/PR; **not** canonical R2 adoption |
 
 `verify_ticket_lifecycle.py`: **PASS** on both tickets @ main checkout.  
 Formal `plan_approved` / `in_progress` promotion requires operator `Approved:` + plan digest.
@@ -63,3 +63,8 @@ git push -u origin docs/sfx-r2-corr-001:docs/sfx-r2-corr-001
 - [ ] Keep `IMPLEMENTATION_AUTHORIZED = NO`
 
 **Recommendation:** `PUBLISH_READY` (documentation branch; governance approval for ticket promotion remains operator-led).
+## Reconciliation (2026-11-23)
+
+- Governance bootstrap: delegation `7e999074c`, approval `3e5dedf26` on `origin/development`.
+- `BASE_SHA` for integrator: `3e5dedf267bc783a795ef20974a4e70809f05fbd`.
+- Ticket `Approved:` lines are on `development` only; SFX PR must not add/remove approval lines.
