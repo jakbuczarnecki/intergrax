@@ -6,7 +6,7 @@
 
 ## A. Git and publication
 
-**PUBLICATION_STATUS:** PR756_PARTIAL_MERGED — remainder pending · **REMOTE_PUBLICATION_SHA:** NONE · **Remote base:** `3e5dedf267bc783a795ef20974a4e70809f05fbd`
+**PUBLICATION_STATUS:** **COMPLETE** (PR #756 + #757) · **REMOTE_PUBLICATION_SHA:** `7ddd53266d32ce47f059456e110e414b92248453`
 
 Handoff: [SFX_R2_PUBLICATION_HANDOFF.md](./SFX_R2_PUBLICATION_HANDOFF.md)
 
@@ -14,8 +14,8 @@ Handoff: [SFX_R2_PUBLICATION_HANDOFF.md](./SFX_R2_PUBLICATION_HANDOFF.md)
 | --- | --- |
 | `BASE_SHA` (pre-corrective) | `d53be07acac08c20d8f4ac8b00746c27d709d071` |
 | `CORRECTIVE_IMPLEMENTATION_SHA` | integrator `head_sha` at publish |
-| `PUBLISHED_SHA` | _after push or NONE_ |
-| Integrator branch | `integ/sfx-r2-corr-001` · PR #756 |
+| `PUBLISHED_SHA` | `7ddd53266d32ce47f059456e110e414b92248453` |
+| Integrator branch | `integ/sfx-r2-corr-001` · PR #756 **MERGED** · PR #757 **MERGED** |
 | Ticket approval | **070-B:** `plan_approved` @ `3e5dedf26`; **070-A:** `plan_pending` |
 
 ## B. Correction matrix
@@ -55,7 +55,7 @@ Handoff: [SFX_R2_PUBLICATION_HANDOFF.md](./SFX_R2_PUBLICATION_HANDOFF.md)
 | `VALIDATION_PASS` | **PARTIAL** — JSON 6/6 OK; link test **BLOCKED** (repo-wide pre-existing); pytest not SFX-only |
 | `INDEPENDENT_REVIEW_PASS` | **PASS_WITH_FINDINGS** (matrix = SSOT; no open HIGH) |
 | `READY_FOR_OPERATOR_APPROVAL` | **YES** (documentation queue; not implementation) |
-| `CANONICAL_R2_APPROVED` | **NO** |
+| `CANONICAL_R2_APPROVED` | **NO** (pending `OD-SFX-R2-CANONICAL-ADOPTION` signature; §18 text prepared) |
 | `IMPLEMENTATION_AUTHORIZED` | **NO** |
 
 ## G. Validation log
@@ -73,11 +73,11 @@ Handoff: [SFX_R2_PUBLICATION_HANDOFF.md](./SFX_R2_PUBLICATION_HANDOFF.md)
 
 | # | Decision | Status |
 | --- | --- | --- |
-| OD-R2-CANON | Adopt R2 as canonical overlay (`CANONICAL_R2_APPROVED`) | **OPEN** |
+| OD-R2-CANON | Adopt R2 as canonical overlay (`CANONICAL_R2_APPROVED`) | **PREPARED** — [`OD-SFX-R2-CANONICAL-ADOPTION.md`](./operator_decisions/OD-SFX-R2-CANONICAL-ADOPTION.md) **PENDING SIGNATURE** |
 | OD-SEF-DELEG | Approve SFX↔SEF delegated autonomy contract (HO-2) | **OPEN** — see `SFX_R2_OPERATOR_DECISION_REGISTER.md` |
 | OD-ECAP-16 | ECAP §16 applicability to Tier-2 SFX (`C-ECAP-01`) | **OPEN** |
 | OD-070-PLAN | `Approved:` on `PLAN_T-IGX-070-A` / `PLAN_T-IGX-070-B` | **070-B CLOSED** @ delegate; **070-A OPEN** |
-| OD-PUBLISH | Push corrective batch to `origin/development` if not already | **OPEN** (hook-blocked in agent session) |
+| OD-PUBLISH | Push corrective batch to `origin/development` if not already | **CLOSED** @ `7ddd53266` (PR #756–#757) |
 ## F. Campaign IGX-SFX-R2-DOC-FINALIZATION-001
 
 | State | Value |
@@ -85,4 +85,6 @@ Handoff: [SFX_R2_PUBLICATION_HANDOFF.md](./SFX_R2_PUBLICATION_HANDOFF.md)
 | `R2_DOCUMENTATION_COMPLETE` | **YES** (documentation queue) |
 | `WBS_EXECUTION_READY` | **YES** (spec only; blocked by ARCH-FREEZE) |
 | `CONTRACT_TRACEABILITY_PASS` | **YES** — 18 REQ / 37 WBS / 6 schemas |
-| `PR_756_STATUS` | **OPEN** — merge blocked (platform CI) |
+| `PR_756_STATUS` | **MERGED** @ `67b127f3` |
+| `PR_757_STATUS` | **MERGED** @ `7ddd532` |
+| `R2_OVERLAY_IN_MASTER_PLAN` | **§18 prepared** (T-IGX-070-C) — adoption **PENDING OD** |

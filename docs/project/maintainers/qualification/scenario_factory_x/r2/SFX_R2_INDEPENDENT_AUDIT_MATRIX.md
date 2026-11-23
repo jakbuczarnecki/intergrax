@@ -61,5 +61,9 @@
 | Field | Value |
 | --- | --- |
 | Scope | Delta after PR #756 merge (7 files) |
-| Evidence | `.tmp/proof/sfx-r2-publish-002/review.json` |
-| Committed audit SHA | Not pinned post-review (avoids SHA recursion) |
+| Reviewed candidate SHA | `e2b2a2b7e72f35f1e6da4dad4d850d278a4f3e5d` |
+| Merge SHA | `7ddd53266d32ce47f059456e110e414b92248453` |
+| Merge-tree equivalence (SFX paths) | **Verified empty diff** |
+| Reviewer | igx-reviewer (read-only); adoption campaign QA T-IGX-070-C |
+| Verdict | **ACCEPT_WITH_FINDINGS** (upstream CI red; link pytest BLOCKED repo-wide) |
+| Evidence | `.tmp/proof/sfx-r2-publish-002/review.json` (session; not in repo) |

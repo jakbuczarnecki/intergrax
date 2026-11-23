@@ -33,6 +33,10 @@ uv run pytest tests/unit/docs/test_public_documentation_link_integrity.py -q
 
 plan_pending
 
+## Adoption note (T-IGX-070-C)
+
+Deliverables for 070-A are published on `development` @ `7ddd53266d32ce47f059456e110e414b92248453`. Canonical overlay text is in `SFX-MASTER-PLAN.md` §18. **`Approved:` for this ticket is not inferred from T-IGX-070-B.** Close via legitimate plan approval only.
+
 ## Deliverables
 
 Hub: [`docs/project/maintainers/qualification/scenario_factory_x/SFX_R2_AMENDMENT_DOSSIER.md`](../docs/project/maintainers/qualification/scenario_factory_x/SFX_R2_AMENDMENT_DOSSIER.md)

@@ -1,6 +1,6 @@
 # PROPOSED amendment to SFX-MASTER-PLAN (R1 → R2 overlay)
 
-**Status:** PROPOSED — does **not** modify `governance/tickets/plans/SFX-MASTER-PLAN.md` until operator adoption  
+**Status:** **MERGED into** `governance/tickets/plans/SFX-MASTER-PLAN.md` **§18** (T-IGX-070-C) — **effective when** [`OD-SFX-R2-CANONICAL-ADOPTION.md`](../operator_decisions/OD-SFX-R2-CANONICAL-ADOPTION.md) **is signed**  
 **Ticket:** T-IGX-070-A
 
 ## Frontmatter change (PROPOSED)
