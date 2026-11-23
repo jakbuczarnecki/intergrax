@@ -10,9 +10,12 @@
 | T-IGX-070-A initial R2 package | `development` @ `10cf95df89e806191d5ff801917ece91ff144bad` (historical) |
 | PR #756 corrective (partial) | **MERGED** @ `67b127f3b4a919c13d5d156ef792f359943cfe3f` |
 | PR #757 finalization remainder (7 paths) | **MERGED** @ `7ddd53266d32ce47f059456e110e414b92248453` |
-| R2 overlay in master plan | Prepared under T-IGX-070-C; **effective when OD signed** |
-| `CANONICAL_R2_APPROVED` | **NO** until `OD-SFX-R2-CANONICAL-ADOPTION` signed |
+| T-IGX-070-C G2 plan approval | **APPROVED** @ `f33501780a62ae82a718834b6521adc856ec9bfb` |
+| T-IGX-070-C G3 operator adoption | **APPROVED** @ `81c51263ea672e0f4d886dd0dc85bcf646849108` |
+| R2 overlay in master plan (§18) | **In current documentation candidate** — not yet a new `development` publication SHA |
+| `CANONICAL_R2_APPROVED` | **YES** (G3 decision authority) |
 | `IMPLEMENTATION_AUTHORIZED` | **NO** |
+| G6 + remote verification | **Required** before final master-plan publication on `development` |
 
 ## Git pins (immutable)
 
@@ -36,7 +39,7 @@
 | Concern | Status |
 | --- | --- |
 | Documentation publication | **COMPLETE** on `development` |
-| Architecture overlay (`§18`) | **PUBLISHED text**; binding adoption **PENDING OD signature** |
+| Architecture overlay (`§18`) | **Candidate text** (T-IGX-070-C); G3 adoption **APPROVED** @ `81c51263`; final remote publication **after G6** |
 | Implementation | **NOT AUTHORIZED** |
 | Enterprise certification | **NOT CLAIMED** |
 

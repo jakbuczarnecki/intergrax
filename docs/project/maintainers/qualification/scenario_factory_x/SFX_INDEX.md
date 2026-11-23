@@ -6,9 +6,10 @@
 **Base pin:** `eadb1c2116feb0a2090b234a36fd4182bd6ace8d` (`origin/development`)  
 **Sequencing:** OD-SFX-15 — pre-freeze SFX-P0..P4 open; **STOP before SFX-P5**; target `PRE_IMPLEMENTATION_READY`  
 **Closeout campaign:** [`T-IGX-037-F`](../../../../../governance/tickets/T-IGX-037-F.md) — documentation reconciliation before ARCH-FREEZE; target status `SFX_PRE_FREEZE_DOCS_CLOSED` (not `SFX_PRE_IMPLEMENTATION_READY`)  
-**R2 amendment (PROPOSED — not canonical):** [SFX_R2_AMENDMENT_DOSSIER.md](./SFX_R2_AMENDMENT_DOSSIER.md) · [T-IGX-070-A](../../../../../governance/tickets/T-IGX-070-A.md) — DOCUMENTATION_PREPARED; does not replace R1 or authorize implementation  
+**R2 amendment package (historical — DOCUMENTATION_PREPARED):** [SFX_R2_AMENDMENT_DOSSIER.md](./SFX_R2_AMENDMENT_DOSSIER.md) · [T-IGX-070-A](../../../../../governance/tickets/T-IGX-070-A.md) — pre-canonical R2 design artifacts; **not** binding R1 replacement  
 **R2 publication:** PR #756–#757 **MERGED** @ `7ddd53266d32ce47f059456e110e414b92248453` — [SFX_R2_CORRECTIVE_DOSSIER.md](./SFX_R2_CORRECTIVE_DOSSIER.md) · [SFX_R2_PUBLICATION_HANDOFF.md](./SFX_R2_PUBLICATION_HANDOFF.md)  
-**R2 canonical overlay adoption:** [`T-IGX-070-C`](../../../../../governance/tickets/T-IGX-070-C.md) · [`OD-SFX-R2-CANONICAL-ADOPTION.md`](./operator_decisions/OD-SFX-R2-CANONICAL-ADOPTION.md) — **PENDING SIGNATURE** (not implementation auth)
+**R2 ARCHITECTURE APPROVED:** G2 plan @ `f33501780a62ae82a718834b6521adc856ec9bfb` · G3 operator adoption @ `81c51263ea672e0f4d886dd0dc85bcf646849108` · [`T-IGX-070-C`](../../../../../governance/tickets/T-IGX-070-C.md) · [`OD-SFX-R2-CANONICAL-ADOPTION.md`](./operator_decisions/OD-SFX-R2-CANONICAL-ADOPTION.md) · master plan [**§18**](../../../../../governance/tickets/plans/SFX-MASTER-PLAN.md#18-r2-architectural-overlay-mission--autonomy--business-evaluation)  
+**SFX IMPLEMENTATION NOT AUTHORIZED:** `IMPLEMENTATION_AUTHORIZED = NO` — ARCH-FREEZE and GATE-SFX-ENTRY unchanged
 **Tickets:** [`T-IGX-037-A`](../../../../../governance/tickets/T-IGX-037-A.md) · [`T-IGX-037-B`](../../../../../governance/tickets/T-IGX-037-B.md) · [`T-IGX-037-C`](../../../../../governance/tickets/T-IGX-037-C.md) · [`T-IGX-037-D`](../../../../../governance/tickets/T-IGX-037-D.md) · [`T-IGX-037-E`](../../../../../governance/tickets/T-IGX-037-E.md) · [`T-IGX-070-A`](../../../../../governance/tickets/T-IGX-070-A.md)
 
 ## Authority map (one SSOT per concern)

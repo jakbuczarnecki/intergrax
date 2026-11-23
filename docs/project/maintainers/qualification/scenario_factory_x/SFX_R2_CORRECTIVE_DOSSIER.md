@@ -46,7 +46,7 @@ Handoff: [SFX_R2_PUBLICATION_HANDOFF.md](./SFX_R2_PUBLICATION_HANDOFF.md)
 | R2 WBS tasks (detailed) | 37 |
 | PROPOSED schemas | 6 |
 
-## D. Final verdict
+## D. Final verdict (T-IGX-070-B campaign — historical)
 
 | State | Value |
 | --- | --- |
@@ -69,7 +69,7 @@ Handoff: [SFX_R2_PUBLICATION_HANDOFF.md](./SFX_R2_PUBLICATION_HANDOFF.md)
 | G5 architecture invariants | PASS (reviewer + self-QA) |
 | G6 environment `uv sync` | **NOT_RUN** (parallel pytest; run when idle) |
 
-## E. Operator decisions required
+## E. Operator decisions required (T-IGX-070-B campaign — historical)
 
 | # | Decision | Status |
 | --- | --- | --- |
@@ -87,4 +87,15 @@ Handoff: [SFX_R2_PUBLICATION_HANDOFF.md](./SFX_R2_PUBLICATION_HANDOFF.md)
 | `CONTRACT_TRACEABILITY_PASS` | **YES** — 18 REQ / 37 WBS / 6 schemas |
 | `PR_756_STATUS` | **MERGED** @ `67b127f3` |
 | `PR_757_STATUS` | **MERGED** @ `7ddd532` |
-| `R2_OVERLAY_IN_MASTER_PLAN` | **§18 prepared** (T-IGX-070-C) — adoption **PENDING OD** |
+| `R2_OVERLAY_IN_MASTER_PLAN` | **§18 prepared** (T-IGX-070-C) — adoption **PENDING OD** (070-B record) |
+
+## H. Canonical adoption checkpoint — T-IGX-070-C
+
+| State | Value |
+|---|---|
+| G2 plan approval | APPROVED @ `f33501780a62ae82a718834b6521adc856ec9bfb` |
+| G3 operator adoption | APPROVED @ `81c51263ea672e0f4d886dd0dc85bcf646849108` |
+| `CANONICAL_R2_APPROVED` | YES — decision authority |
+| Master plan §18 | Included in this documentation candidate; publication verification required |
+| `IMPLEMENTATION_AUTHORIZED` | NO |
+| G6 independent audit | NOT YET COMPLETED |

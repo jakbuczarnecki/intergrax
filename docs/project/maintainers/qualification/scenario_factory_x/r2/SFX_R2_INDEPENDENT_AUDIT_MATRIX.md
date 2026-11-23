@@ -67,3 +67,15 @@
 | Reviewer | igx-reviewer (read-only); adoption campaign QA T-IGX-070-C |
 | Verdict | **ACCEPT_WITH_FINDINGS** (upstream CI red; link pytest BLOCKED repo-wide) |
 | Evidence | `.tmp/proof/sfx-r2-publish-002/review.json` (session; not in repo) |
+
+## T-IGX-070-C adoption evidence — pre-G6
+
+| Evidence | Value |
+| --- | --- |
+| G2 plan approval | **APPROVED** @ 33501780a62ae82a718834b6521adc856ec9bfb |
+| G3 operator adoption (OD-SFX-R2-CANONICAL-ADOPTION) | **APPROVED** @ 81c51263ea672e0f4d886dd0dc85bcf646849108 |
+| Approved plan digest | 7c039ad2c00db38b6a1e0ac8f0feca204cfd39c4805efc584c4aaa92752e9925 |
+| Write set (6 paths only) | SFX-MASTER-PLAN.md, SFX_INDEX.md, SFX_R2_AMENDMENT_DOSSIER.md, SFX_R2_CORRECTIVE_DOSSIER.md, SFX_R2_PUBLICATION_HANDOFF.md, SFX_R2_INDEPENDENT_AUDIT_MATRIX.md |
+| Historical R2 audits (070-A/070-B) | **Not** formal G6 PASS for this candidate |
+| IMPLEMENTATION_AUTHORIZED | **NO** |
+| G6 independent audit | **NOT COMPLETED** |

@@ -1,6 +1,6 @@
 # SCENARIO-FACTORY-X — R2 Amendment Dossier
 
-**Status:** `DOCUMENTATION_PREPARED` · **NOT** `CANONICAL_R2_APPROVED` · **NOT** `IMPLEMENTATION_AUTHORIZED`  
+**Status:** `DOCUMENTATION_PREPARED` · `CANONICAL_R2_APPROVED` (G3 @ `81c51263ea672e0f4d886dd0dc85bcf646849108`) · **NOT** `IMPLEMENTATION_AUTHORIZED` · **NOT** `SFX_PRE_IMPLEMENTATION_READY`  
 **Campaign ticket:** [`T-IGX-070-A`](../../../../../governance/tickets/T-IGX-070-A.md)  
 **Canonical binding authority:** R1 [`SFX-MASTER-PLAN.md`](../../../../../governance/tickets/plans/SFX-MASTER-PLAN.md) — **unchanged**  
 **Baseline HEAD (audit):** `b4146cbfab9858c058fc44df2ad43d8670d4925d` (`development`)  
@@ -12,9 +12,9 @@
 | --- | --- |
 | `DOCUMENTATION_PREPARED` | **YES** — package under this tree |
 | `INDEPENDENT_REVIEW_PASS` | **PASS_WITH_FINDINGS** — [`r2/SFX_R2_INDEPENDENT_AUDIT_MATRIX.md`](./r2/SFX_R2_INDEPENDENT_AUDIT_MATRIX.md) |
-| `OPERATOR_APPROVAL_PENDING` | **YES** — OD backlog §OD |
-| `CANONICAL_R2_APPROVED` | **NO** |
+| `CANONICAL_R2_APPROVED` | **YES** — G3 operator adoption @ `81c51263ea672e0f4d886dd0dc85bcf646849108` ([`OD-SFX-R2-CANONICAL-ADOPTION`](./operator_decisions/OD-SFX-R2-CANONICAL-ADOPTION.md)) |
 | `IMPLEMENTATION_AUTHORIZED` | **NO** — ARCH-FREEZE, GATE-SFX-ENTRY |
+| `SFX_PRE_IMPLEMENTATION_READY` | **NOT GRANTED** |
 
 ## Package map
 
@@ -58,9 +58,18 @@
 
 ## Critical path (earliest authorized Invoice→POC slice)
 
+**First REF-1 Assisted POC (no R2-W5-03):**
+
 ```text
-ARCH-FREEZE CLOSED → GATE-SFX-ENTRY → W3 (R2-W3-01..05 / SFX-P5*) → W4 (discovery+handoff; HO-2 human until OD-SEF/R2 grant) →
-W5 (evaluator + mission driver PROPOSED) → REF-1 autonomous loop (R2-W7-01) → internal sandbox demo gate (NOT production)
+ARCH-FREEZE CLOSED → GATE-SFX-ENTRY → R2-W3 → W4-CORE → R2-W4-06 (HO-2 human submit) → R2-W5-01 → R2-W7-01
+```
+
+Assisted path only: HO-2 human submit; **excludes** R2-W5-03 autonomous mission driver.
+
+**Later full R2 autonomous product (separate authorizations):**
+
+```text
+… → R2-W5-03 (bounded autonomous driver) → GATE-SFX-FULL evidence — requires independent SEF OD-SEF-R2 / delegation grant
 ```
 
 HO-2 blocks **autonomous multi-submit** until [`SFX_R2_SEF_CROSS_PROGRAM_AMENDMENT.md`](./r2/SFX_R2_SEF_CROSS_PROGRAM_AMENDMENT.md) is operator-approved on the SEF track.
@@ -73,9 +82,9 @@ HO-2 blocks **autonomous multi-submit** until [`SFX_R2_SEF_CROSS_PROGRAM_AMENDME
 | Environment-only commit (out of SFX scope) | `d53be07acac08c20d8f4ac8b00746c27d709d071` |
 | R2 corrective + finalization | PR #756–#757 **MERGED** @ `7ddd53266d32ce47f059456e110e414b92248453` |
 | `REMOTE_PUBLICATION_SHA` | `7ddd53266d32ce47f059456e110e414b92248453` |
-| `CANONICAL_R2_APPROVED` | **NO** — [`OD-SFX-R2-CANONICAL-ADOPTION`](./operator_decisions/OD-SFX-R2-CANONICAL-ADOPTION.md) **PENDING SIGNATURE** |
-| Master plan §18 overlay | **Published text** under T-IGX-070-C; effective on OD signature |
-| `SFX_PRE_IMPLEMENTATION_READY` | **Not granted** |
+| `CANONICAL_R2_APPROVED` | **YES** — G3 @ `81c51263ea672e0f4d886dd0dc85bcf646849108` |
+| Master plan §18 overlay | **In T-IGX-070-C documentation candidate**; G6 publication verification pending |
+| `SFX_PRE_IMPLEMENTATION_READY` | **NOT GRANTED** |
 
 Handoff SSOT: [SFX_R2_PUBLICATION_HANDOFF.md](./SFX_R2_PUBLICATION_HANDOFF.md).
 
