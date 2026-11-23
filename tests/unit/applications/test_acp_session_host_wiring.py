@@ -32,6 +32,7 @@ from intergrax.contracts.execution_identity import (
     AttemptId,
     ExecutionId,
     RunId,
+    TaskId,
     bind_active_execution_identity,
     mint_run_id,
     mint_task_id,
@@ -54,6 +55,8 @@ from intergrax.runtime.nexus.agents.catalog_declarative_invoker import (
 )
 from intergrax.runtime.nexus.budget.budget_models import RunBudget
 from intergrax.runtime.policy.policy_bundle import RuntimePolicyBundle
+from intergrax.runtime.task.active_task_registry import ActiveTaskRegistry
+from intergrax.runtime.task.task import Task
 from intergrax.skills.registry.profile import SkillProfile
 from intergrax.tools.core.contracts import ToolRiskLevel
 from intergrax.tools.execution_models import ToolExecutionRequest
@@ -274,7 +277,16 @@ def _strict_harness_with_probe(
     return runtime, probe
 
 
-def _bind_declarative_invoke_governance(*, run_id: str) -> tuple[Token[object], Token[object]]:
+def _bind_declarative_invoke_governance(
+    *,
+    run_id: str,
+    tenant_id: str,
+) -> tuple[Token[object], Token[object], Token[object]]:
+    from intergrax.runtime.governance.active_execution_governance_identity import (
+        ActiveExecutionGovernanceIdentity,
+        bind_active_execution_governance_identity,
+    )
+
     identity_token = bind_active_execution_identity(
         run_id=RunId(run_id),
         attempt_id=_ATTEMPT_ID,
@@ -284,7 +296,29 @@ def _bind_declarative_invoke_governance(*, run_id: str) -> tuple[Token[object], 
         execution_id=_EXECUTION_ID,
         ledger=create_execution_budget_ledger(RunBudget()),
     )
-    return identity_token, budget_token
+    governance_token = bind_active_execution_governance_identity(
+        ActiveExecutionGovernanceIdentity(
+            tenant_id=tenant_id,
+            workspace_id=f"workspace-{run_id}",
+            principal_id="acp-strict-test-principal",
+        ),
+    )
+    return identity_token, budget_token, governance_token
+
+
+async def _register_active_task_scope(
+    *,
+    run_id: str,
+    task_id: str,
+    tenant_id: str,
+) -> Task:
+    task = Task(
+        task_id=TaskId(task_id),
+        tenant_id=tenant_id,
+        user_id="acp-strict-test-user",
+    )
+    await ActiveTaskRegistry.register(task, RunId(run_id))
+    return task
 
 
 def test_build_acp_session_host_from_harness_attaches_decision_gate() -> None:
@@ -333,11 +367,20 @@ async def test_build_acp_session_host_from_harness_strict_tenant_governance_allo
     host_ctx = build_acp_session_host_from_harness(runtime)
     invoker = host_ctx.declarative_tool_invoker
     assert isinstance(invoker, CatalogDeclarativeToolInvoker)
+    assert invoker is runtime._owned_declarative_tool_invoker
     assert invoker.production_mode is True
 
     run_id = mint_run_id()
     task_id = mint_task_id()
-    identity_token, budget_token = _bind_declarative_invoke_governance(run_id=run_id)
+    identity_token, budget_token, governance_token = _bind_declarative_invoke_governance(
+        run_id=run_id,
+        tenant_id=_TENANT,
+    )
+    scoped_task = await _register_active_task_scope(
+        run_id=str(run_id),
+        task_id=str(task_id),
+        tenant_id=_TENANT,
+    )
     try:
         result = await invoker.invoke(
             tenant_id=_TENANT,
@@ -351,6 +394,12 @@ async def test_build_acp_session_host_from_harness_strict_tenant_governance_allo
     finally:
         reset_active_execution_budget(budget_token)
         reset_active_execution_identity(identity_token)
+        from intergrax.runtime.governance.active_execution_governance_identity import (
+            reset_active_execution_governance_identity,
+        )
+
+        reset_active_execution_governance_identity(governance_token)
+        await ActiveTaskRegistry.unregister(scoped_task.task_id, RunId(str(run_id)))
 
     assert result.status == "success"
     assert probe.count == 1
@@ -371,7 +420,15 @@ async def test_build_acp_session_host_from_harness_strict_tenant_governance_deni
 
     run_id = mint_run_id()
     task_id = mint_task_id()
-    identity_token, budget_token = _bind_declarative_invoke_governance(run_id=run_id)
+    identity_token, budget_token, governance_token = _bind_declarative_invoke_governance(
+        run_id=run_id,
+        tenant_id=_OTHER_TENANT,
+    )
+    scoped_task = await _register_active_task_scope(
+        run_id=str(run_id),
+        task_id=str(task_id),
+        tenant_id=_OTHER_TENANT,
+    )
     try:
         result = await invoker.invoke(
             tenant_id=_OTHER_TENANT,
@@ -385,6 +442,12 @@ async def test_build_acp_session_host_from_harness_strict_tenant_governance_deni
     finally:
         reset_active_execution_budget(budget_token)
         reset_active_execution_identity(identity_token)
+        from intergrax.runtime.governance.active_execution_governance_identity import (
+            reset_active_execution_governance_identity,
+        )
+
+        reset_active_execution_governance_identity(governance_token)
+        await ActiveTaskRegistry.unregister(scoped_task.task_id, RunId(str(run_id)))
 
     assert result.status != "success"
     assert probe.count == 0

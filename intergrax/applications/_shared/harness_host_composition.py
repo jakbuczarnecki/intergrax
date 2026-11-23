@@ -34,6 +34,9 @@ from intergrax.runtime.plugins.contract import RuntimePlugin
 
 if TYPE_CHECKING:
     from intergrax.applications._shared.harness_host_runtime import HarnessHostRuntime
+    from intergrax.runtime.execution.application_declarative_tool_composition import (
+        CatalogDeclarativeToolInvoker,
+    )
 
 
 @dataclass(frozen=True, slots=True)
@@ -84,6 +87,13 @@ def resolve_harness_host_decision_flow_gate(
 ) -> DecisionFlowGate[AgentExecutionResult] | None:
     """Resolve decision flow gate for ACP session host composition."""
     return _require_internal_composition(runtime).decision_flow_gate
+
+
+def resolve_harness_host_declarative_tool_invoker(
+    runtime: HarnessHostRuntime,
+) -> CatalogDeclarativeToolInvoker | None:
+    """Resolve host-owned catalog declarative tool invoker for ACP session host composition."""
+    return runtime._owned_declarative_tool_invoker
 
 
 def resolve_harness_host_plugin_bootstrap_target(
@@ -170,6 +180,7 @@ __all__ = [
     "bootstrap_harness_host_application_plugins",
     "bootstrap_harness_host_platform",
     "resolve_harness_host_decision_flow_gate",
+    "resolve_harness_host_declarative_tool_invoker",
     "resolve_harness_host_execution_budget_ledger_factory",
     "resolve_harness_host_event_bus",
     "resolve_harness_host_execution_terminal",

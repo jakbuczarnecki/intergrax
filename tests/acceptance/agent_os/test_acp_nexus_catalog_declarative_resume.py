@@ -16,8 +16,6 @@ from __future__ import annotations
 from unittest.mock import patch
 
 import pytest
-from pydantic import BaseModel
-
 from intergrax.agents.authoring.base import IntergraxAgent
 from intergrax.applications._shared.acp_session_host_wiring import (
     build_acp_session_host_from_harness,
@@ -32,12 +30,14 @@ from intergrax.tools.core.contracts import ToolContract, ToolRiskLevel
 from intergrax.tools.execution_models import ToolExecutionRequest
 from intergrax.tools.registry import ToolRegistry
 from intergrax.tools.tool_executor import ToolHandler
-from lab_application.host.settings import LabApplicationSettings
-from lab_application.manifest import build_lab_manifest
+from pydantic import BaseModel
 from testing_support.builder import FakeLLMAdapter
 from testing_support.catalog_declarative_invoker import (
     build_catalog_declarative_invoker_from_registry,
 )
+
+from lab_application.host.settings import LabApplicationSettings
+from lab_application.manifest import build_lab_manifest
 
 pytestmark = [pytest.mark.integration, pytest.mark.agent_os, pytest.mark.gate]
 
@@ -92,15 +92,15 @@ async def test_acceptance_05e_harness_catalog_declarative_invoker_wiring() -> No
     manifest = build_lab_manifest(settings)
     env = manifest.environment or build_lab_environment_profile(settings)
 
-    with patch(
-        "intergrax.applications._shared.declarative_tool_wiring.build_declarative_invoker_for_application_host",
-        return_value=catalog_invoker,
-    ), patch(
-        "intergrax.applications._shared.harness_host_runtime.build_declarative_invoker_for_application_host",
-        return_value=catalog_invoker,
-    ), patch(
-        "intergrax.applications._shared.acp_session_host_wiring.build_declarative_invoker_for_application_host",
-        return_value=catalog_invoker,
+    with (
+        patch(
+            "intergrax.applications._shared.declarative_tool_wiring.build_declarative_invoker_for_application_host",
+            return_value=catalog_invoker,
+        ),
+        patch(
+            "intergrax.applications._shared.harness_host_runtime.build_declarative_invoker_for_application_host",
+            return_value=catalog_invoker,
+        ),
     ):
         runtime = build_harness_host_runtime(
             manifest.model_copy(update={"environment": env}),
