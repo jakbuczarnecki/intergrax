@@ -215,6 +215,12 @@ def scan_source_for_evasions(source: str, *, path: str) -> tuple[RawSecretFindin
     return tuple(findings)
 
 
+def _skip_docker_runtime_mirror(relative: str) -> bool:
+    """Docker ``runtime-context`` trees are vendored mirrors, not authoritative product source."""
+    parts = Path(relative).parts
+    return "docker" in parts and "runtime-context" in parts
+
+
 def _without_allowed(
     findings: Iterable[RawSecretFinding], allowlist: Sequence[AllowedFinding]
 ) -> list[RawSecretFinding]:
@@ -239,11 +245,17 @@ def scan_product_tree(
 ) -> tuple[RawSecretFinding, ...]:
     """Both passes over ``root/<product_root>``; allowlisted findings are removed; sorted, unique."""
     roots = [root / name for name in product_roots]
-    findings = set(scan_tree_for_raw_secrets(roots, relative_to=root))
+    findings = {
+        item
+        for item in scan_tree_for_raw_secrets(roots, relative_to=root)
+        if not _skip_docker_runtime_mirror(item.path)
+    }
     for product_root in roots:
         if not product_root.exists():
             continue
         for file_path, relative in iter_python_files(product_root, relative_to=root):
+            if _skip_docker_runtime_mirror(relative):
+                continue
             try:
                 text = file_path.read_text(encoding="utf-8")
             except (OSError, UnicodeDecodeError):
