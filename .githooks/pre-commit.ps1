@@ -11,5 +11,5 @@ if (-not (Get-Command uv -ErrorAction SilentlyContinue)) {
 if (-not (Get-Command uv -ErrorAction SilentlyContinue)) {
     Write-Error "pre-commit: uv not found on PATH (install Astral uv or add %USERPROFILE%\.local\bin)"
 }
-& uv run python -u scripts/ci/run_pre_commit_gate.py
+& uv run --no-sync python -u scripts/ci/run_pre_commit_gate.py
 exit $LASTEXITCODE

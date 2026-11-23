@@ -24,4 +24,4 @@ if ! command -v uv >/dev/null 2>&1; then
   echo "pre-commit: uv not found on PATH (install Astral uv or add %USERPROFILE%\\.local\\bin)" >&2
   exit 127
 fi
-exec uv run python -u scripts/ci/run_pre_commit_gate.py
+exec uv run --no-sync python -u scripts/ci/run_pre_commit_gate.py
