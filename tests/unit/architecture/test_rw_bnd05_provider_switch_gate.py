@@ -89,6 +89,11 @@ CLOSED_PROVIDER_ROOTS: tuple[tuple[str, str], ...] = (
 )
 
 
+def _is_application_docker_runtime_context_mirror(parts: tuple[str, ...]) -> bool:
+    """Distribution mirrors are vendored copies, not composition roots (W3 C1-R)."""
+    return len(parts) >= 4 and parts[0] == "applications" and parts[2] == "docker" and parts[3] == "runtime-context"
+
+
 def _imports_provider_package(tree: ast.AST) -> bool:
     for node in ast.walk(tree):
         if isinstance(node, ast.ImportFrom) and node.module is not None and node.level == 0:
@@ -105,7 +110,10 @@ def _provider_importing_modules() -> set[str]:
     for root in _SCAN_ROOTS:
         for path in (_REPO_ROOT / root).rglob("*.py"):
             relative = path.relative_to(_REPO_ROOT).as_posix()
+            parts = path.relative_to(_REPO_ROOT).parts
             if "/tests/" in relative or relative.startswith(_AREA_PREFIX):
+                continue
+            if _is_application_docker_runtime_context_mirror(parts):
                 continue
             text = path.read_text(encoding="utf-8")
             if "integrations." not in text:
@@ -113,6 +121,28 @@ def _provider_importing_modules() -> set[str]:
             if _imports_provider_package(ast.parse(text)):
                 found.add(relative)
     return found
+
+
+@pytest.mark.parametrize(
+    ("parts", "is_mirror"),
+    [
+        (("applications", "demo", "docker", "runtime-context", "x.py"), True),
+        (("applications", "demo", "host", "x.py"), False),
+        (("applications", "demo", "docker", "other", "x.py"), False),
+        (("agents", "demo", "x.py"), False),
+        (("intergrax", "runtime", "demo", "x.py"), False),
+    ],
+)
+def test_application_docker_runtime_context_mirror_segments(parts: tuple[str, ...], is_mirror: bool) -> None:
+    assert _is_application_docker_runtime_context_mirror(parts) is is_mirror
+
+
+def test_non_mirror_modules_with_provider_imports_remain_in_scan_scope() -> None:
+    """Outside mirrors, provider imports must still be attributed to their module path."""
+    sample = "from intergrax.integrations.providers.foo import Bar\n"
+    tree = ast.parse(sample)
+    assert _imports_provider_package(tree) is True
+    assert not _is_application_docker_runtime_context_mirror(("applications", "demo", "host", "x.py"))
 
 
 def test_closed_list_has_the_ratified_class_counts() -> None:
