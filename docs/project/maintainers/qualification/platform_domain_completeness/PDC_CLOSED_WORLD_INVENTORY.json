@@ -14,7 +14,7 @@
   "summary": {
     "CONSUMER": {
       "INSPECTED": 0,
-      "INDEX_ONLY": 31,
+      "INDEX_ONLY": 30,
       "UNINSPECTED": 0
     },
     "PDC-D1": {
@@ -430,12 +430,6 @@
     {
       "kind": "consumer",
       "path": "applications/attestation_demo",
-      "category": "CONSUMER",
-      "status": "INDEX_ONLY"
-    },
-    {
-      "kind": "consumer",
-      "path": "applications/build",
       "category": "CONSUMER",
       "status": "INDEX_ONLY"
     },
