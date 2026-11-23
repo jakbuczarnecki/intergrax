@@ -11,7 +11,7 @@ handler: the assertions are on whether the executor was ever reached.
 from __future__ import annotations
 
 import ast
-from collections.abc import Iterator
+from collections.abc import Iterable, Iterator
 from contextlib import contextmanager
 from pathlib import Path
 
@@ -284,14 +284,36 @@ def test_xd03_strict_composition_refuses_to_build_without_governance() -> None:
             boundary.close()
 
 
+def _is_vendored_application_docker_runtime_context(path: Path) -> bool:
+    """Vendored distribution mirrors under ``applications/*/docker/runtime-context`` are not tier SSOT."""
+    try:
+        rel = path.relative_to(REPO_ROOT)
+    except ValueError:
+        return False
+    parts = rel.parts
+    if not parts or parts[0] != "applications":
+        return False
+    for index, segment in enumerate(parts[:-1]):
+        if segment == "docker" and parts[index + 1] == "runtime-context":
+            return True
+    return False
+
+
 def _python_files(*roots: str) -> list[Path]:
-    return [p for root in roots for p in sorted((REPO_ROOT / root).rglob("*.py")) if "__pycache__" not in p.parts]
+    paths: list[Path] = []
+    for root in roots:
+        for candidate in sorted((REPO_ROOT / root).rglob("*.py")):
+            if "__pycache__" in candidate.parts:
+                continue
+            if _is_vendored_application_docker_runtime_context(candidate):
+                continue
+            paths.append(candidate)
+    return paths
 
 
-def test_xd03_no_agent_or_application_module_owns_a_tool_execution_path() -> None:
-    """Tier-2 agents and Tier-3 applications never import or implement the physical ``ToolExecutor``."""
+def _collect_tool_executor_offender_paths(paths: Iterable[Path]) -> list[str]:
     offenders: list[str] = []
-    for path in _python_files("agents", "applications"):
+    for path in paths:
         text = path.read_text(encoding="utf-8", errors="ignore")
         if "ToolExecutor" not in text and "tool_executor" not in text:
             continue
@@ -306,4 +328,10 @@ def test_xd03_no_agent_or_application_module_owns_a_tool_execution_path() -> Non
             if any("ToolExecutor" in name or "tool_executor" in name for name in [*imported, *defined]):
                 offenders.append(path.relative_to(REPO_ROOT).as_posix())
                 break
+    return offenders
+
+
+def test_xd03_no_agent_or_application_module_owns_a_tool_execution_path() -> None:
+    """Tier-2 agents and Tier-3 applications never import or implement the physical ``ToolExecutor``."""
+    offenders = _collect_tool_executor_offender_paths(_python_files("agents", "applications"))
     assert offenders == []
