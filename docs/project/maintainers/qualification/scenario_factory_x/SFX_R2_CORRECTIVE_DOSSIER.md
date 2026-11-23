@@ -12,7 +12,7 @@ Handoff: [SFX_R2_PUBLICATION_HANDOFF.md](./SFX_R2_PUBLICATION_HANDOFF.md)
 | Field | Value |
 | --- | --- |
 | `BASE_SHA` (pre-corrective) | `d53be07acac08c20d8f4ac8b00746c27d709d071` |
-| `CORRECTIVE_IMPLEMENTATION_SHA` | _recorded at commit time_ |
+| `CORRECTIVE_IMPLEMENTATION_SHA` | `fb0d7137b` (pre-reconcile pin; updated at publish) |
 | `PUBLISHED_SHA` | _after push or NONE_ |
 | Branch | `development` |
 | Ticket approval | **070-B:** `plan_approved` @ `3e5dedf26`; **070-A:** `plan_pending` |

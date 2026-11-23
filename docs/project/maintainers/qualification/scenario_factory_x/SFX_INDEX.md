@@ -89,4 +89,4 @@ Pre-freeze: `ROADMAP REGISTERED → RESEARCH CITED → ADRs PROPOSED → UX + GE
 Stage: `GATE-SFX-ENTRY → W3..W7 (REBIND per wave) → GATE-SFX-FULL → INDEPENDENT AUDIT → IIAC PRODUCT CERTIFICATION → SCENARIO-FACTORY-X — CLOSED — INDEPENDENTLY AUDITED (INTERNAL AGENT CERTIFICATION) — PUBLISHED`.
 
 SFX closure certifies the factory only. It admits no generated scenario to production; admission happens outside SFX (OD-SFX-13 owner, SCENARIO-GATE, PROD-Q).
-. Corrective: [T-IGX-070-B](../../../../../governance/tickets/T-IGX-070-B.md).
+Corrective: [T-IGX-070-B](../../../../../governance/tickets/T-IGX-070-B.md).
