@@ -27,6 +27,7 @@ from intergrax.applications.contracts.build_context import ApplicationBuildConte
 from intergrax.applications.contracts.environment_profile import ApplicationEnvironmentProfile
 from intergrax.applications.contracts.execution_mode import ExecutionMode
 from intergrax.applications.contracts.manifest import AgentBinding, ApplicationManifest
+from intergrax.contracts.attempt_lifecycle import AttemptLifecyclePersistenceProvider
 from intergrax.contracts.execution_identity import (
     AttemptId,
     ExecutionId,
@@ -36,6 +37,7 @@ from intergrax.contracts.execution_identity import (
     mint_task_id,
     reset_active_execution_identity,
 )
+from intergrax.contracts.execution_terminal import ExecutionTerminalPersistenceProvider
 from intergrax.distributed.contracts.kv_store import DistributedKVStore
 from intergrax.integrations._shared.in_memory_document_store import InMemoryDocumentStore
 from intergrax.integrations.contracts.shipped_manifests import INMEMORY
@@ -44,6 +46,9 @@ from intergrax.runtime.execution.active_execution_budget import (
     reset_active_execution_budget,
 )
 from intergrax.runtime.execution.budget.ledger import create_execution_budget_ledger
+from intergrax.runtime.governance.orchestration_decision_bound_effect_composition import (
+    lab_orchestration_decision_requirement_policy,
+)
 from intergrax.runtime.nexus.agents.catalog_declarative_invoker import (
     CatalogDeclarativeToolInvoker,
 )
@@ -60,11 +65,15 @@ from testing_support.agent_platform_admin_harness import (
     lifecycle_proof_durable_profile_stores,
 )
 from testing_support.application_harness_test_support import build_harness_host_runtime_for_tests
-from testing_support.builder import tools_agent_make_contract
+from testing_support.builder import FakeLLMAdapter, tools_agent_make_contract
 from testing_support.dependency_concurrency_admission_config import (
     tool_dependency_concurrency_admission_configuration,
 )
 from tests.unit.applications.ac3_projection_helpers import build_test_registry_projection
+from tests.unit.applications.task_control_product_host_test_support import (
+    durable_execution_continuation_state_store_for_tests,
+    in_memory_collaborative_work_repositories_for_tests,
+)
 
 from echo.echo_agent import EchoAgent
 
@@ -171,6 +180,31 @@ def _strict_lab_environment(profile_id: str) -> ApplicationEnvironmentProfile:
                 ),
             },
         )
+
+    if strict.orchestration_profile.max_parallel_nodes is None:
+        strict = strict.model_copy(
+            update={
+                "orchestration_profile": strict.orchestration_profile.model_copy(
+                    update={"max_parallel_nodes": 2, "max_inflight_nodes": 2},
+                ),
+            },
+        )
+    if (
+        strict.reliability_profile.attempt_lifecycle_persistence_provider is None
+        or strict.reliability_profile.execution_terminal_persistence_provider is None
+    ):
+        reliability_updates: dict[str, object] = {}
+        if strict.reliability_profile.attempt_lifecycle_persistence_provider is None:
+            reliability_updates["attempt_lifecycle_persistence_provider"] = AttemptLifecyclePersistenceProvider.KV
+        if strict.reliability_profile.execution_terminal_persistence_provider is None:
+            reliability_updates["execution_terminal_persistence_provider"] = ExecutionTerminalPersistenceProvider.KV
+        strict = strict.model_copy(
+            update={
+                "reliability_profile": strict.reliability_profile.model_copy(
+                    update=reliability_updates,
+                ),
+            },
+        )
     integration = strict.integration_profile.model_copy(update={"vector_store": INMEMORY})
     memory = strict.memory_profile.model_copy(
         update={
@@ -229,6 +263,11 @@ def _strict_harness_with_probe(
         revision_store=profile_stores.revision_store,
         pinning_store=profile_stores.pinning_store,
         active_store=profile_stores.active_store,
+        collaborative_work_repositories=in_memory_collaborative_work_repositories_for_tests(),
+        orchestration_decision_requirement_policy=lab_orchestration_decision_requirement_policy(),
+        disable_human_decision_persistence=True,
+        llm_adapter=FakeLLMAdapter(),
+        execution_continuation_state_store=durable_execution_continuation_state_store_for_tests(),
     )
     probe = _ExecutionProbe()
     _register_tenant_probe_tool(runtime, probe)

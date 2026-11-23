@@ -8,12 +8,12 @@ from pathlib import Path
 from typing import TYPE_CHECKING
 
 from intergrax.agents.persistence.checkpoint_store import AgentCheckpointStore
-from intergrax.applications._shared.harness_registry_authority import RegistryAssemblyMode
-from intergrax.applications._shared.registry_projection import MaterializedRegistryProjection
 from intergrax.applications._shared.harness_host_runtime import (
     HarnessHostRuntime,
     build_harness_host_runtime,
 )
+from intergrax.applications._shared.harness_registry_authority import RegistryAssemblyMode
+from intergrax.applications._shared.registry_projection import MaterializedRegistryProjection
 from intergrax.applications.contracts.environment_profile import ApplicationEnvironmentProfile
 from intergrax.applications.contracts.manifest import ApplicationManifest
 from intergrax.applications.contracts.profile_resolution import ProfileLayerInput
@@ -26,11 +26,19 @@ from intergrax.applications.contracts.profile_resolution.execution_binding impor
 from intergrax.applications.contracts.profile_resolution.store import (
     EffectiveProfileRevisionStore,
 )
+from intergrax.collaborative_work.persistence import CollaborativeWorkMaterializedRepositories
+from intergrax.contracts.execution_continuation_state_store import (
+    ExecutionContinuationStateStore,
+)
 from intergrax.distributed.contracts.kv_store import DistributedKVStore
 from intergrax.integrations.contracts.document_store import DocumentStore
+from intergrax.llm_adapters.contracts.llm_adapter import LLMAdapter
 from intergrax.runtime.attestation.buffer import BoundaryEventBuffer
 from intergrax.runtime.governance.control_plane_mutation_authorization import (
     ControlPlaneMutationAuthorizationBoundary,
+)
+from intergrax.runtime.governance.orchestration_decision_bound_effect_composition import (
+    DecisionRequirementPolicy,
 )
 from intergrax.runtime.long_running.persistence_contract import TaskCheckpointPersistence
 from intergrax.runtime.notifications.adapter_contract import NotificationAdapter
@@ -69,6 +77,11 @@ def build_harness_host_runtime_for_tests(
     revision_store: EffectiveProfileRevisionStore | None = None,
     pinning_store: EffectiveProfileExecutionPinningStore | None = None,
     active_store: ActiveEffectiveProfileRevisionStore | None = None,
+    collaborative_work_repositories: CollaborativeWorkMaterializedRepositories | None = None,
+    orchestration_decision_requirement_policy: DecisionRequirementPolicy | None = None,
+    disable_human_decision_persistence: bool = False,
+    llm_adapter: LLMAdapter | None = None,
+    execution_continuation_state_store: ExecutionContinuationStateStore | None = None,
 ) -> HarnessHostRuntime:
     """``build_harness_host_runtime`` with explicit governance tenant identity."""
     return build_harness_host_runtime(
@@ -97,4 +110,9 @@ def build_harness_host_runtime_for_tests(
         revision_store=revision_store,
         pinning_store=pinning_store,
         active_store=active_store,
+        collaborative_work_repositories=collaborative_work_repositories,
+        orchestration_decision_requirement_policy=orchestration_decision_requirement_policy,
+        disable_human_decision_persistence=disable_human_decision_persistence,
+        llm_adapter=llm_adapter,
+        execution_continuation_state_store=execution_continuation_state_store,
     )
