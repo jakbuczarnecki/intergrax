@@ -5,10 +5,10 @@
 | **Decision ID** | OD-SFX-R2-CANONICAL-ADOPTION (maps to proposed OD-SFX-R2-02) |
 | **Campaign** | IGX-SFX-R2-CANONICAL-ADOPTION-001 |
 | **Ticket** | T-IGX-070-C |
-| **Signature status** | **PENDING SIGNATURE** |
+| **Signature status** | **APPROVED** |
 | **Commission source** | Operator mission IGX-SFX-R2-CANONICAL-ADOPTION-001 (2026-11-23) |
 
-## Decision (pending operator signature)
+## Decision (approved)
 
 1. **R2 overlay:** Accept R2 as a **versioned overlay** on R1 in `SFX-MASTER-PLAN.md` §18; R1 remains binding for all non-overlay text.
 2. **First technical reference:** REF-1 invoice↔existing PO match in **ASSISTED** mode (HO-2 human submit); no R2-W5-03 driver in first sandbox POC.
@@ -22,10 +22,18 @@
 | State | Value |
 | --- | --- |
 | `IMPLEMENTATION_AUTHORIZED` | **NO** |
-| `CANONICAL_R2_APPROVED` | **NO** until this record is signed |
+| `CANONICAL_R2_APPROVED` | **YES** — OD signed; canonical master-plan publication remains a separate step |
 | `ENTERPRISE_CERTIFICATION` | **NOT CLAIMED** |
 | SEF `CON-N-01` change | **NOT AUTHORIZED** |
 | Production admission | **NOT AUTHORIZED** |
+
+## Operator approval
+
+**Provenance:** Signed by an operator-designated signing session under `docs/project/maintainers/qualification/scenario_factory_x/operator_decisions/DELEGATION-SFX-R2-OD-CANONICAL-ADOPTION-SIGNING.md@58683f18aa029f85b487d2ae1f5df6228b3dfc68` (campaign IGX-SFX-R2-ADOPTION-FINAL-AUTH-003, G3). Signing host session: `local_e9c1e129-3d14-43b4-acdf-ca0194dfa65d`. The approval line below is recorded by that separate delegated session, not by the operator in person. G2 plan approval for `T-IGX-070-C` is published at `f33501780a62ae82a718834b6521adc856ec9bfb`.
+
+```text
+Approved: OD-SFX-R2-CANONICAL-ADOPTION @ 2026-11-23T16:35:05+01:00
+```
 
 ## Evidence anchors (historical, preserved)
 
