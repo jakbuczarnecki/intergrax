@@ -5,8 +5,6 @@
 from __future__ import annotations
 
 import pytest
-
-from testing_support.application_harness_test_support import build_harness_host_runtime_for_tests
 from intergrax.applications._shared.reliability_assembly_resolver import (
     ReliabilityAssemblyError,
     assert_reliability_assembly_valid,
@@ -29,7 +27,8 @@ from intergrax.contracts.persistence_topology import (
     resolve_idempotency_store_topology,
 )
 from intergrax.runtime.tools.in_memory_idempotency_store import InMemoryIdempotencyStore
-from intergrax.runtime.nexus.responses.response_schema import RuntimeRequest
+from testing_support.application_harness_test_support import build_harness_host_runtime_for_tests
+
 from lab_application.host.settings import LabApplicationSettings
 from lab_application.manifest import build_lab_manifest
 
@@ -55,9 +54,7 @@ def test_wire_application_reliability_uses_sqlite_when_path_provided(tmp_path) -
     wiring = wire_application_reliability(env, idempotency_db_path=tmp_path / "idempotency.db")
     assert wiring.idempotency_store is not None
     assert isinstance(wiring.idempotency_store, IdempotencyStore)
-    assert resolve_idempotency_store_topology(wiring.idempotency_store) is (
-        PersistenceTopology.DURABLE_SINGLE_HOST
-    )
+    assert resolve_idempotency_store_topology(wiring.idempotency_store) is (PersistenceTopology.DURABLE_SINGLE_HOST)
     assert wiring.circuit_breaker_config.failure_threshold == env.reliability_profile.circuit_breaker_failure_threshold
 
 
@@ -73,9 +70,7 @@ def test_wire_application_reliability_product_defaults_select_sqlite(tmp_path, m
     env = ApplicationEnvironmentProfile.product_defaults(profile_id="rel.product")
     wiring = wire_application_reliability(env)
     assert wiring.idempotency_store is not None
-    assert resolve_idempotency_store_topology(wiring.idempotency_store) is (
-        PersistenceTopology.DURABLE_SINGLE_HOST
-    )
+    assert resolve_idempotency_store_topology(wiring.idempotency_store) is (PersistenceTopology.DURABLE_SINGLE_HOST)
     assert_reliability_assembly_valid(wiring, env)
 
 
@@ -84,9 +79,7 @@ def test_wire_application_reliability_sqlite_survives_reopen(tmp_path, monkeypat
     env = ApplicationEnvironmentProfile.product_defaults(profile_id="rel.reopen")
     db_path = tmp_path / "intergrax_idempotency.db"
     first = wire_application_reliability(env, idempotency_db_path=db_path)
-    assert resolve_idempotency_store_topology(first.idempotency_store) is (
-        PersistenceTopology.DURABLE_SINGLE_HOST
-    )
+    assert resolve_idempotency_store_topology(first.idempotency_store) is (PersistenceTopology.DURABLE_SINGLE_HOST)
     first.idempotency_store.record_started("tenant-a", "key-1")
     second = wire_application_reliability(env, idempotency_db_path=db_path)
     assert second.idempotency_store is not None
@@ -123,6 +116,8 @@ def test_validate_reliability_wiring_rejects_store_when_idempotency_disabled() -
 
 
 def test_materialize_runtime_config_applies_idempotency_store() -> None:
+    from intergrax.agents.authoring.stub_llm import PrefixStubLLMAdapter
+
     env = ApplicationEnvironmentProfile.lab_defaults(profile_id="rel.runtime")
     from testing_support.builder import build_runtime_request_for_tests
 
@@ -136,7 +131,12 @@ def test_materialize_runtime_config_applies_idempotency_store() -> None:
     )
     manifest = build_lab_manifest(LabApplicationSettings.from_env())
     build_ctx = ApplicationBuildContext.for_manifest(manifest, environment=env)
-    config = materialize_runtime_config(request, build_ctx, env)
+    config = materialize_runtime_config(
+        request,
+        build_ctx,
+        env,
+        llm_adapter=PrefixStubLLMAdapter(prefix="reliability-runtime-config"),
+    )
     assert config.idempotency_store is not None
     assert isinstance(config.idempotency_store, InMemoryIdempotencyStore)
 

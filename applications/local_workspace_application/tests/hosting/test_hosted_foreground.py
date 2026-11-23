@@ -8,11 +8,13 @@ import ast
 import io
 import json
 from contextlib import redirect_stdout
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from pathlib import Path
 
 import pytest
-
+from intergrax.applications._shared.production_process_composition import (
+    ProductionProcessComposition,
+)
 from intergrax.hosting import (
     HostedApplicationExitKind,
     HostedApplicationExitRecord,
@@ -20,12 +22,7 @@ from intergrax.hosting import (
     HostedApplicationSupervisorResult,
 )
 from intergrax.hosting.supervisor import HostedApplicationSupervisorAttemptRecord
-from intergrax.applications._shared.production_process_composition import (
-    ProductionProcessComposition,
-)
-from local_workspace_application.tests.lkw_ac3_projection import (
-    create_lkw_hosted_test_process_composition,
-)
+
 from local_workspace_application.host.settings import LocalWorkspaceBackendSettings
 from local_workspace_application.hosting import foreground as foreground_module
 from local_workspace_application.hosting.__main__ import (
@@ -36,10 +33,13 @@ from local_workspace_application.hosting.__main__ import (
 from local_workspace_application.hosting.foreground import (
     run_local_workspace_hosted_application,
 )
+from local_workspace_application.tests.lkw_ac3_projection import (
+    create_lkw_hosted_test_process_composition,
+)
 
 pytestmark = [pytest.mark.unit]
 
-_OCCURRED_AT = datetime(2026, 7, 16, 12, 0, tzinfo=timezone.utc)
+_OCCURRED_AT = datetime(2026, 7, 16, 12, 0, tzinfo=UTC)
 
 
 def _exit_record(
@@ -106,15 +106,20 @@ def test_run_local_workspace_hosted_application_wiring(
         captured["process_composition"] = process_composition
         return built_profile
 
-    def _fake_run(profile: object) -> HostedApplicationSupervisorResult:
+    def _fake_run(
+        profile: object,
+        *,
+        event_publisher_factory: object | None = None,
+        **kwargs: object,
+    ) -> HostedApplicationSupervisorResult:
         nonlocal run_calls
         run_calls += 1
         captured["profile"] = profile
+        captured["event_publisher_factory"] = event_publisher_factory
+        captured["run_hosted_kwargs"] = kwargs
         return expected_result
 
-    monkeypatch.setattr(
-        foreground_module, "build_local_workspace_hosted_profile", _fake_build
-    )
+    monkeypatch.setattr(foreground_module, "build_local_workspace_hosted_profile", _fake_build)
     monkeypatch.setattr(foreground_module, "run_hosted_application", _fake_run)
 
     composition = create_lkw_hosted_test_process_composition()

@@ -91,6 +91,22 @@ def _load_agent_instance(
         agent_cls = module.__dict__[class_name]
     except KeyError as exc:
         raise RuntimeError(f"Agent class {class_name!r} not found in {agent_module}") from exc
+    from intergrax.agents.authoring.stub_llm import PrefixStubLLMAdapter
+
+    agent_id = import_path.rsplit(".", 1)[-1]
+    stub_llm = PrefixStubLLMAdapter(prefix=agent_id)
+    if class_name == "WebSearchQualifierAgent":
+        from types import SimpleNamespace
+
+        from web_search_qualifier.steps.web_search_job import ResolvedSearchProvider
+
+        search_provider = ResolvedSearchProvider(
+            provider_id="readiness-stub",
+            provider=SimpleNamespace(search=lambda *args, **kwargs: ()),  # type: ignore[arg-type]
+        )
+        return agent_cls(llm_adapter=stub_llm, search_provider=search_provider)
+    if "llm_adapter" in __import__("inspect").signature(agent_cls).parameters:
+        return agent_cls(llm_adapter=stub_llm)
     return agent_cls()
 
 
