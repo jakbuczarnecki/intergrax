@@ -70,7 +70,7 @@ def test_always_rules_include_generated_core_and_scoped_cursor_overrides() -> No
         for p in (ROOT / ".cursor" / "rules").glob("*.mdc")
         if "alwaysApply: true" in p.read_text(encoding="utf-8").split("---", 2)[1]
     )
-    assert always == sorted([*ALWAYS_RULES, "igx-factory"])
+    assert always == sorted([*ALWAYS_RULES, "igx-cursor-direct-execution"])
 
 
 def test_always_core_mdc_inlines_the_invariants() -> None:
@@ -226,24 +226,25 @@ def _load_sync():  # noqa: ANN202
 CORE_SENTENCE = "`/igx-run-plan` enforces it via Stop hook"
 
 
-def test_cursor_core_points_to_factory_and_claude_core_is_unchanged() -> None:
+def test_cursor_core_direct_execution_and_claude_core_is_unchanged() -> None:
     expected = _load_sync().expected_files()
     cursor_core = expected[ROOT / ".cursor" / "rules" / "intergrax-core.mdc"]
-    assert ".cursor/rules/igx-factory.mdc" in cursor_core
+    assert "igx-cursor-direct-execution.mdc" in cursor_core
+    assert "current checkout" in cursor_core
     assert CORE_SENTENCE not in cursor_core
     source = (ROOT / "agent-env" / "rules" / "intergrax-core.md").read_text(encoding="utf-8")
     assert CORE_SENTENCE in source  # Claude imports this source verbatim via CLAUDE.md
     claude_md = (ROOT / "CLAUDE.md").read_text(encoding="utf-8")
     assert "@agent-env/rules/intergrax-core.md" in claude_md
+    assert "igx-cursor-direct-execution" not in claude_md
 
 
-def test_cursor_core_allows_local_factory_integration_and_parking() -> None:
+def test_cursor_core_keeps_shared_git_escalation_wording() -> None:
     sync = _load_sync()
     cursor_core = sync.expected_files()[ROOT / ".cursor" / "rules" / "intergrax-core.mdc"]
-    assert "merge, branch integration and GitHub settings stay human" not in cursor_core
-    assert "integration into `development` or operator branches" in cursor_core
-    assert "`factory/<plan-id>/int` by `igx-integrator`" in cursor_core
-    assert "`igx_factory.py park`, continue the other READY steps" in cursor_core
+    assert "push origin development" in cursor_core
+    assert "branch integration and GitHub settings stay human" in cursor_core
+    assert "factory/<plan-id>/int" not in cursor_core
     source = (ROOT / "agent-env" / "rules" / "intergrax-core.md").read_text(encoding="utf-8")
     for canonical, _cursor, _label in sync._CURSOR_CORE_SUBSTITUTIONS:
         assert source.count(canonical) == 1  # Claude keeps the canonical wording
@@ -258,12 +259,12 @@ def test_cursor_core_transform_fails_loudly_on_source_drift() -> None:
     assert sync._cursor_core_text("intergrax-english-only-commits", "x") == "x"
 
 
-def test_cursor_autonomy_is_a_factory_stub_and_claude_adapter_points_to_canonical() -> None:
+def test_cursor_autonomy_is_a_direct_execution_stub_and_claude_adapter_points_to_canonical() -> None:
     expected = _load_sync().expected_files()
     cursor = expected[ROOT / ".cursor" / "skills" / "igx-autonomy" / "SKILL.md"]
     assert "agent-env/skills/igx-autonomy/SKILL.md" in cursor
-    assert "igx-factory.mdc" in cursor
-    assert "igx_factory.py park" in cursor
+    assert "igx-cursor-direct-execution.mdc" in cursor
+    assert "igx_factory.py park" not in cursor
     assert "Read and follow the canonical skill (SSOT)" not in cursor
     claude = expected[ROOT / ".claude" / "skills" / "igx-autonomy" / "SKILL.md"]
     assert "Read and follow the canonical skill (SSOT): `agent-env/skills/igx-autonomy/SKILL.md`" in claude

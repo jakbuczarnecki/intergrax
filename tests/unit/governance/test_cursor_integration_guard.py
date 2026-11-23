@@ -25,6 +25,19 @@ def _load():
 
 guard = _load()
 
+PUSH_HELPER = ROOT / "scripts/hooks/cursor_development_push.py"
+
+
+def _load_push():
+    spec = importlib.util.spec_from_file_location("cursor_development_push_t", PUSH_HELPER)
+    assert spec and spec.loader
+    module = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(module)
+    return module
+
+
+push_target_is_allowed_development = _load_push().push_target_is_allowed_development
+
 
 def _permission(cmd: str) -> str:
     return guard.decide({"command": cmd})["permission"]
@@ -168,3 +181,28 @@ def test_guard_cli_contract_stdin_to_json() -> None:
     assert run(json.dumps({"command": "git -C x push"}))["permission"] == "deny"
     assert run(json.dumps({"command": "git -C x status"}))["permission"] == "allow"
     assert run("not json")["permission"] == "deny"
+
+
+def test_push_target_allows_only_origin_development() -> None:
+    assert push_target_is_allowed_development("origin development")
+    assert push_target_is_allowed_development("origin HEAD:refs/heads/development")
+    assert not push_target_is_allowed_development("origin HEAD")
+    assert not push_target_is_allowed_development("origin feature/x")
+    assert not push_target_is_allowed_development("origin development --force-with-lease")
+
+
+@pytest.fixture(autouse=True)
+def _skip_push_precheck(monkeypatch):
+    monkeypatch.setenv("IGX_CURSOR_PUSH_PRECHECK_SKIP", "1")
+
+
+@pytest.mark.parametrize(
+    "cmd",
+    [
+        "git push origin development",
+        "git -C D:/Projekty/intergrax push origin development",
+        "git push origin HEAD:refs/heads/development",
+    ],
+)
+def test_guard_allows_scoped_development_push(cmd: str) -> None:
+    assert _permission(cmd) == "allow", cmd

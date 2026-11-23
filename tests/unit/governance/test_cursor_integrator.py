@@ -1,5 +1,6 @@
 # © Artur Czarnecki. All rights reserved.
 """Cursor-only OD-AF-INT A regression and negative tests (no network calls)."""
+
 from __future__ import annotations
 
 import importlib.util
@@ -53,21 +54,24 @@ def test_nominal_packet_scoped_and_sha_bound(mod) -> None:
     mod.validate_packet(packet())
 
 
-@pytest.mark.parametrize("field,value", [
-    ("operator_decision", None),
-    ("operator_decision", "Approved: unrelated"),
-    ("target", "main"),
-    ("target", "development"),
-    ("branch", "development"),
-    ("branch", "arch-freeze/rw-train"),
-    ("head_sha", "abc"),
-    ("review_head_sha", SHA2),
-    ("reviewer", "worker-1"),
-    ("reviewer_role", "igx-implementer"),
-    ("review_verdict", "PASS"),
-    ("review_report_sha256", "not-a-digest"),
-    ("review_report_file", "../review.json"),
-])
+@pytest.mark.parametrize(
+    "field,value",
+    [
+        ("operator_decision", None),
+        ("operator_decision", "Approved: unrelated"),
+        ("target", "main"),
+        ("target", "development"),
+        ("branch", "development"),
+        ("branch", "arch-freeze/rw-train"),
+        ("head_sha", "abc"),
+        ("review_head_sha", SHA2),
+        ("reviewer", "worker-1"),
+        ("reviewer_role", "igx-implementer"),
+        ("review_verdict", "PASS"),
+        ("review_report_sha256", "not-a-digest"),
+        ("review_report_file", "../review.json"),
+    ],
+)
 def test_packet_denies_unapproved_conditions(mod, field, value) -> None:
     p = packet()
     p[field] = value
@@ -75,16 +79,23 @@ def test_packet_denies_unapproved_conditions(mod, field, value) -> None:
         mod.validate_packet(p)
 
 
-@pytest.mark.parametrize("name", [
-    ".claude/settings.json", "CLAUDE.md", "agent-env/rules/intergrax-core.md",
-    "governance/agent-control-plane/role_registry.yaml",
-    "scripts/cursor/igx_integrator.py", "scripts/hooks/igx_stop_guard.py",
-    "scripts/governance/verify_trusted_policy_pin.py",
-    "docs/project/maintainers/qualification/ARCH_FREEZE_SHA_LADDER.md",
-    "docs/project/maintainers/qualification/PLATFORM_ENTERPRISE_FREEZE_ACCEPTANCE_CHECKLIST.md",
-    "docs/project/maintainers/qualification/INTEGRAX_ROADMAP.md",
-    "../evil.py", "intergrax/../../evil.py",
-])
+@pytest.mark.parametrize(
+    "name",
+    [
+        ".claude/settings.json",
+        "CLAUDE.md",
+        "agent-env/rules/intergrax-core.md",
+        "governance/agent-control-plane/role_registry.yaml",
+        "scripts/cursor/igx_integrator.py",
+        "scripts/hooks/igx_stop_guard.py",
+        "scripts/governance/verify_trusted_policy_pin.py",
+        "docs/project/maintainers/qualification/ARCH_FREEZE_SHA_LADDER.md",
+        "docs/project/maintainers/qualification/PLATFORM_ENTERPRISE_FREEZE_ACCEPTANCE_CHECKLIST.md",
+        "docs/project/maintainers/qualification/INTEGRAX_ROADMAP.md",
+        "../evil.py",
+        "intergrax/../../evil.py",
+    ],
+)
 def test_product_integrator_cannot_touch_protected_paths(mod, name) -> None:
     assert mod.valid_path(name, "product") is False
 
@@ -104,6 +115,7 @@ def test_review_evidence_tamper_detected(mod, tmp_path: Path) -> None:
     place.parent.mkdir(parents=True)
     place.write_text(json.dumps({"head_sha": SHA1, "reviewer": "reviewer-2", "verdict": "ACCEPT"}))
     import hashlib
+
     p["review_report_sha256"] = hashlib.sha256(place.read_bytes()).hexdigest()
     mod.verify_evidence(p, tmp_path)
     place.write_text('{"head_sha":"changed"}')
@@ -127,6 +139,7 @@ def test_ticket_on_development_can_qualify_an_older_train_worktree(mod, monkeypa
 
     p = packet()
     remote = "## Lifecycle state\nin_progress\n\nApproved: operator @ 2026-11-22T09:04:11+01:00\n"
+
     def fetch(path: str):
         assert path == f"contents/{p['ticket']}?ref=development"
         return {"encoding": "base64", "content": base64.b64encode(remote.encode()).decode()}
@@ -139,24 +152,38 @@ def test_pr_requires_exact_base_head_and_allowed_files(mod, monkeypatch) -> None
     p = packet()
     number = 17
     pr = {
-        "state": "open", "draft": False, "merged": False,
+        "state": "open",
+        "draft": False,
+        "merged": False,
         "head": {"sha": SHA1, "ref": p["branch"]},
         "base": {"sha": SHA2, "ref": p["target"]},
     }
-    monkeypatch.setattr(mod, "gh_api", lambda path: pr if path == "pulls/17" else
-                        {"object": {"sha": SHA2}} if path.startswith("git/ref/heads/") else
-                        [{"filename": "intergrax/allowed.py", "patch": "@@ -1 +1 @@"}])
+    monkeypatch.setattr(
+        mod,
+        "gh_api",
+        lambda path: (
+            pr
+            if path == "pulls/17"
+            else {"object": {"sha": SHA2}}
+            if path.startswith("git/ref/heads/")
+            else [{"filename": "intergrax/allowed.py", "patch": "@@ -1 +1 @@"}]
+        ),
+    )
     mod.verify_pr(p, number)
     pr["head"]["sha"] = SHA2
     with pytest.raises(mod.Blocked, match="head changed"):
         mod.verify_pr(p, number)
 
 
-@pytest.mark.parametrize("checks", [
-    [], [{"name": "smoke", "state": "FAILURE"}],
-    [{"name": "smoke", "state": "PENDING"}],
-    [{"name": "smoke", "state": "SKIPPING"}],
-])
+@pytest.mark.parametrize(
+    "checks",
+    [
+        [],
+        [{"name": "smoke", "state": "FAILURE"}],
+        [{"name": "smoke", "state": "PENDING"}],
+        [{"name": "smoke", "state": "SKIPPING"}],
+    ],
+)
 def test_required_checks_fail_closed(mod, monkeypatch, checks) -> None:
     monkeypatch.setattr(mod, "command", lambda argv, **kwargs: json.dumps(checks))
     with pytest.raises(mod.Blocked):
@@ -164,27 +191,41 @@ def test_required_checks_fail_closed(mod, monkeypatch, checks) -> None:
 
 
 def test_required_checks_accept_success(mod, monkeypatch) -> None:
-    monkeypatch.setattr(mod, "command", lambda argv, **kwargs:
-                        json.dumps([{"name": "smoke", "state": "SUCCESS"}]))
+    monkeypatch.setattr(mod, "command", lambda argv, **kwargs: json.dumps([{"name": "smoke", "state": "SUCCESS"}]))
     mod.required_checks(17)
 
 
-@pytest.mark.parametrize("shell", [
-    "git push origin HEAD:refs/heads/development",
-    "git.exe push origin mybranch",
-    "gh pr merge 17 --admin",
-    "gh.exe pr create --base main",
-    "gh api repos/a/b/pulls -X POST",
-    "git reset --hard origin/development",
-])
-def test_cursor_shell_hook_denies_direct_mutations(shell: str) -> None:
+@pytest.mark.parametrize(
+    "shell",
+    [
+        "git.exe push origin mybranch",
+        "git push origin HEAD",
+        "gh pr merge 17 --admin",
+        "gh.exe pr create --base main",
+        "gh api repos/a/b/pulls -X POST",
+        "git reset --hard origin/development",
+    ],
+)
+def test_cursor_shell_hook_denies_direct_mutations(shell: str, monkeypatch: pytest.MonkeyPatch) -> None:
+    monkeypatch.setenv("IGX_CURSOR_PUSH_PRECHECK_SKIP", "1")
     assert load(GUARD).decide({"command": shell})["permission"] == "deny"
 
 
-@pytest.mark.parametrize("shell", [
-    "git status --short", "gh pr view 17", "git diff --check",
-    "python scripts/cursor/igx_integrator.py merge --packet .tmp/proof/packet.json",
-])
+def test_cursor_shell_hook_allows_origin_development_push(monkeypatch: pytest.MonkeyPatch) -> None:
+    monkeypatch.setenv("IGX_CURSOR_PUSH_PRECHECK_SKIP", "1")
+    assert load(GUARD).decide({"command": "git push origin development"})["permission"] == "allow"
+    assert load(GUARD).decide({"command": "git push origin HEAD:refs/heads/development"})["permission"] == "allow"
+
+
+@pytest.mark.parametrize(
+    "shell",
+    [
+        "git status --short",
+        "gh pr view 17",
+        "git diff --check",
+        "python scripts/cursor/igx_integrator.py merge --packet .tmp/proof/packet.json",
+    ],
+)
 def test_cursor_shell_hook_allows_safe_inspection_and_guarded_runner(shell: str) -> None:
     assert load(GUARD).decide({"command": shell})["permission"] == "allow"
 
@@ -211,6 +252,8 @@ def test_claude_codex_generated_fragments_exclude_cursor_only_roles() -> None:
 def test_cursor_integrator_not_exposed_as_a_claude_agent() -> None:
     assert not (ROOT / ".claude/agents/igx-integrator.md").exists()
     assert (ROOT / ".cursor/agents/igx-integrator.md").exists()
-    fragment = (ROOT / "governance/agent-control-plane/adapters/claude/DELIVERY_DEVOS.fragment.md").read_text(encoding="utf-8")
+    fragment = (ROOT / "governance/agent-control-plane/adapters/claude/DELIVERY_DEVOS.fragment.md").read_text(
+        encoding="utf-8"
+    )
     assert "**integrator**" not in fragment
     assert "| igx-integrator |" not in fragment

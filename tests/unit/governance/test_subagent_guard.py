@@ -65,7 +65,7 @@ def test_kill_switch_allows_every_spawn() -> None:
 def test_hooks_json_uses_native_cursor_lifecycle_and_keeps_permission_guards() -> None:
     config = json.loads(HOOKS_JSON.read_text(encoding="utf-8"))
     assert config["version"] == 1
-    assert set(config["hooks"]) == {"subagentStart", "beforeShellExecution", "stop"}
+    assert set(config["hooks"]) == {"subagentStart", "beforeShellExecution"}
     (remote,) = config["hooks"]["beforeShellExecution"]
     assert remote["failClosed"] is True
     assert remote["command"] == "python scripts/hooks/igx_cursor_integration_guard.py"
@@ -73,13 +73,7 @@ def test_hooks_json_uses_native_cursor_lifecycle_and_keeps_permission_guards() -
     assert entry["failClosed"] is True
     assert entry["matcher"] == "^(generalPurpose|general-purpose|GeneralPurpose)$"
     assert entry["command"] == "python scripts/hooks/igx_subagent_guard.py"
-    # The only Cursor stop hook is the state-file factory hook (not the legacy guards).
-    (stop,) = config["hooks"]["stop"]
-    assert "igx_factory_stop.py" in stop["command"]
-    assert "igx_stop_guard.py" not in stop["command"]
-    assert "igx_cursor_stop.py" not in stop["command"]
-    assert stop["loop_limit"] == 50
-    assert stop["failClosed"] is False
+    assert "stop" not in config["hooks"]
     # Claude Code retains its existing independent Stop hook.
     claude = json.loads((ROOT / ".claude/settings.json").read_text(encoding="utf-8"))
     assert any(

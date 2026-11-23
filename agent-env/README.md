@@ -22,6 +22,7 @@ CLAUDE.md                  Claude-only rules + generated import block
 
 | `loading` | Cursor | Claude Code |
 |-----------|--------|-------------|
+| `cursor-always` | `.mdc`, `alwaysApply: true` | not imported (Cursor-only) |
 | `always` | `.cursor/rules/<id>.mdc`, `alwaysApply: true` | `@agent-env/rules/<id>.md` import block in `CLAUDE.md` |
 | `explicit` | `.mdc`, `alwaysApply: false` (use `@`) | skill `/<id>`, `disable-model-invocation: true` (operator only) |
 | `auto` | `.mdc`, `alwaysApply: false` (agent decides) | skill `/<id>`, model may invoke |
@@ -30,6 +31,7 @@ CLAUDE.md                  Claude-only rules + generated import block
 |------|-----------|
 | `intergrax-core` | always |
 | `intergrax-english-only-commits` | always |
+| `igx-cursor-direct-execution` | cursor-always |
 | `intergrax-iteration`, `intergrax-hep-step`, `intergrax-ci-hotfix`, `intergrax-micro-implement` | explicit |
 | `intergrax-agent-roles`, `intergrax-independent-audit`, `intergrax-env-vendor-qualification`, `intergrax-scenario-factory` | auto |
 | `loading: retired` (tombstone, no adapters) | `intergrax-token-budget`, `intergrax-test-process-budget`, `intergrax-session-artifacts`, `intergrax-git-branch-safety`, `intergrax-no-ai-attribution` |

@@ -14,13 +14,6 @@
         "matcher": "([gG][iI][tT]|[gG][hH]|[cC][uU][rR][lL])",
         "failClosed": true
       }
-    ],
-    "stop": [
-      {
-        "command": "python scripts/hooks/igx_factory_stop.py",
-        "loop_limit": 50,
-        "failClosed": false
-      }
     ]
   }
 }

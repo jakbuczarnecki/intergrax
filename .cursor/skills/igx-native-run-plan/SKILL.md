@@ -1,11 +1,12 @@
----
+﻿---
 name: igx-native-run-plan
-description: Run an approved Intergrax plan to completion in Cursor with the software factory (igx_factory.py), Composer subagents and local integration.
+description: Optional Cursor software factory (igx_factory.py) — use only when the Operator explicitly requests factory orchestration.
 ---
 
-# Cursor software factory runbook
+# Cursor software factory runbook (voluntary)
 
-Cursor-only replacement for `/igx-run-plan`; Claude Code keeps its own flow unchanged. Protocol summary: `.cursor/rules/igx-factory.mdc`. Operator guide: `docs/project/technical/devos/CURSOR_SOFTWARE_FACTORY.md`.
+**Not the default Cursor workflow.** Normal work follows `.cursor/rules/igx-cursor-direct-execution.mdc` (direct edit, test, commit on `development`). Use this skill only when the Operator asks for factory mode. Claude Code keeps `/igx-run-plan` and its Stop hook unchanged. Operator guide: `docs/project/technical/devos/CURSOR_SOFTWARE_FACTORY.md`.
+
 
 ## Preconditions
 
@@ -44,7 +45,7 @@ complete                                # prints the completion report
 
 ## Turn discipline
 
-- Never end a turn while `next` shows `ready` or `pending_actions`, unless background workers are outstanding (their completion turn resumes you). The `stop` hook `igx_factory_stop.py` re-prompts when you stop too early.
+- Never end a turn while `next` shows `ready` or `pending_actions`, unless background workers are outstanding (their completion turn resumes you). No Stop hook enforces factory mode in default Cursor configuration.
 - Only the Operator publishes: no `git push`, PR, remote merge or integration into `development`. `complete` prints the publish command as text.
 
 ## Restart recovery

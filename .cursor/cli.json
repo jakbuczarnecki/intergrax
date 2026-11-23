@@ -11,6 +11,8 @@
       "Shell(git rev-parse)",
       "Shell(git branch)",
       "Shell(git show)",
+      "Shell(git fetch)",
+      "Shell(git push)",
       "Shell(git checkout)",
       "Shell(git switch)",
       "Shell(git restore)",
@@ -20,7 +22,6 @@
       "Write(**)"
     ],
     "deny": [
-      "Shell(git push)",
       "Shell(git reset)",
       "Shell(gh)",
       "Shell(curl)",
