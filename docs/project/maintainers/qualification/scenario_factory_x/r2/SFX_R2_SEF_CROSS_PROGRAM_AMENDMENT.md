@@ -88,3 +88,29 @@ On each derived intent:
 | --- | --- |
 | Until OD signed | R2 code must implement **ASSISTED** only (human submit per intent) — R2-W4-06 |
 | After OD + SEF schema | Enable `BOUNDED_AUTONOMOUS` flag on mission — R2-W4-07 |
+
+## 8. Delegation semantics (15 decisions — PROPOSED)
+
+| # | Topic | SFX (PROPOSED) | SEF (PROPOSED) | Status |
+| --- | --- | --- | --- | --- |
+| 1 | Mission creation | Tier-2 composes MissionRecord (L1 persist) | — | SFX-owned |
+| 2 | Scope approval | Human signs CON-13 + AutonomyEnvelope digest | — | Human authority |
+| 3 | Approver identity | IdP principal on CON-13 | Validates issuer on grant | Existing + PROPOSED grant fields |
+| 4 | Scope vs new scope | Digest pin on goal/blueprint/envelope | Reject intent if digest ∉ grant | SEF validator |
+| 5 | Derived intent verify | Draft only | Schema + grant + ticket + budget | **REQUIRES SEF OWNER DECISION** |
+| 6 | New ticket/plan | Scope change → new CON-13 + grant | New ticket if plan_digest changes | Joint OD |
+| 7 | Multi-iteration cost | Mission driver aggregates counters | SEF authoritative job cost | Refs only in SFX |
+| 8 | Grant expiry | Driver STOP; no new handoffs | Reject new submits | Contract PROPOSED |
+| 9 | Revocation | Immediately block new submits | Cancel request on active job | **No claim of instant undo of in-flight work** |
+| 10 | In-flight jobs | SFX marks PAUSED | SEF cancel or run-to-safe-terminal | **REQUIRES SEF OWNER DECISION** |
+| 11 | Duplicate effects | Idempotent handoff digest | HO-4/5 patterns | Existing |
+| 12 | Crash resume | CW version + job ref | SEF job idempotency | Existing + mission phase |
+| 13 | Tech vs business fail | Build pass ≠ business PASS | Engineering success separate from SFX verdict | SFX-INV-R2-03 |
+| 14 | Stagnation stop | Envelope stop_on_stagnation_rounds | — | SFX driver |
+| 15 | Audited events | Mission/envelope/iteration CWs | Engineering evidence bundle | Immutable evidence |
+
+### Revocation (corrected)
+
+- **Immediate:** no new EngineeringIntent submit after effective revoke timestamp.
+- **Active job:** SEF issues cancel; if job non-cancellable, mark UNKNOWN_OUTCOME and reconcile — PROPOSED until SEF defines terminal states.
+- **Not claimed:** instantaneous reversal of all side effects already committed by SEF/backend.

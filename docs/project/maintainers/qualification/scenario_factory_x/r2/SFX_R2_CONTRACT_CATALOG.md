@@ -12,3 +12,5 @@
 | CON-R2-06 | `sfx.candidate_comparison.v1` | new | Champion selection input |
 
 All use RFC 8785 digests per `SFX_CANONICALIZATION.md`. Persistence: CW `WorkArtifactVersion` only.
+
+**Count:** six schemas under design/schemas/proposed/ (validated IGX-SFX-R2-CORR-001).

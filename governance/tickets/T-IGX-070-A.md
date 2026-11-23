@@ -31,7 +31,7 @@ uv run pytest tests/unit/docs/test_public_documentation_link_integrity.py -q
 
 ## Lifecycle state
 
-documentation
+plan_pending
 
 ## Deliverables
 
