@@ -3,6 +3,8 @@
 **Stage ID:** `SCENARIO-FACTORY-X` (SFX) — Enterprise Scenario Factory
 **Roadmap status:** `PLANNED / MANDATORY / POST-ARCH-FREEZE PRIORITY`
 **Master plan:** [`SFX-MASTER-PLAN.md`](../../../../../governance/tickets/plans/SFX-MASTER-PLAN.md) — Revision R1, operator-approved 2026-11-12; approval scope W0–W2
+**Product vision and implementation handoff (documentation-only):** [SFX_IMPLEMENTATION_HANDOFF.md](./SFX_IMPLEMENTATION_HANDOFF.md) — single navigation map for R1 + adopted R2; **not** `PRE_IMPLEMENTATION_READY` or implementation authorization
+**Original R2 strategic blueprint (archived input, not canonical):** [INTEGRAX_SFX_R2_STRATEGIC_BLUEPRINT_2026-11-23.md](./r2/research/INTEGRAX_SFX_R2_STRATEGIC_BLUEPRINT_2026-11-23.md) — the historical 2026-11-23 proposal, with adopted semantics governed by master plan §18
 **Base pin:** `eadb1c2116feb0a2090b234a36fd4182bd6ace8d` (`origin/development`)
 **Sequencing:** OD-SFX-15 — pre-freeze SFX-P0..P4 open; **STOP before SFX-P5**; target `PRE_IMPLEMENTATION_READY`
 **Closeout campaign:** [`T-IGX-037-F`](../../../../../governance/tickets/T-IGX-037-F.md) — documentation reconciliation before ARCH-FREEZE; target status `SFX_PRE_FREEZE_DOCS_CLOSED` (not `SFX_PRE_IMPLEMENTATION_READY`)
