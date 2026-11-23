@@ -36,6 +36,17 @@ flowchart TB
 3. **Product certification:** full W7 (REF+GEN) → W8-01..04 → GATE-SFX-FULL.
 4. **Client production:** external SCENARIO-GATE + PROD-Q (outside SFX W8 closure).
 
+## Gate taxonomy (ENTRY vs CERTIFICATION)
+
+| Label in table below | Meaning |
+| --- | --- |
+| **ENTRY_GATE** (column DEPENDENCIES when value is a programme gate) | Preconditions before starting the task (e.g. GATE-SFX-ENTRY, GATE-SEF-CONSUME, OD-SEF-R2). |
+| **CERTIFICATION_GATE** (column GATE) | Programme gate whose checklist must be green before the task's evidence counts toward wave certification (GATE-SFX-FULL, GATE-SEF-CONSUME). |
+| **internal demo gate** | EXIT evidence for sandbox POC packaging only (R2-W6-03, R2-W6-04); **not** factory certification. |
+| — | No programme certification gate; documentation or commercial checklist only. |
+
+Expanded I/O and ENTRY/CERT columns: [SFX_R2_IMPLEMENTATION_READINESS_MATRIX.md](./SFX_R2_IMPLEMENTATION_READINESS_MATRIX.md).
+
 ## Full task registry
 
 | TASK_ID | WAVE | OBJECTIVE | SCOPE | OUT_OF_SCOPE | OWNER | FILE_SET | DEPENDENCIES | GATE | TESTS | EVIDENCE | ACCEPTANCE | PAR | RISK | R1_MAPPING |

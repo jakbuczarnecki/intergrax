@@ -42,3 +42,15 @@
 | `READY_FOR_OPERATOR_APPROVAL` (docs only) | **YES** |
 | `CANONICAL_R2_APPROVED` | **NO** |
 | `IMPLEMENTATION_AUTHORIZED` | **NO** |
+
+## Finalization independent review (IGX-SFX-R2-DOC-FINALIZATION-001)
+
+| # | Criterion | Result | Notes |
+| --- | --- | --- | --- |
+| F-01 | Dossier reconciliation (5 SSOT files) | **PASS** | Publication lanes separated |
+| F-02 | WBS ENTRY vs CERTIFICATION | **PASS** | Matrix + gate taxonomy |
+| F-03 | REQ-R2 / WBS / schema counts | **PASS** | 18 / 37 / 6 |
+| F-04 | SEF engineering authority boundary | **PASS** | No second EEA |
+| F-05 | False implementation authorization | **PASS** | All **NO** |
+
+**Audit SHA:** _set at finalization commit_
