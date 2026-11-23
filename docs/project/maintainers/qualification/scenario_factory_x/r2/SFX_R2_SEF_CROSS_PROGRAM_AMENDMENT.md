@@ -1,8 +1,8 @@
 # SFX R2 ↔ SEF-X Cross-Program Amendment Proposal (PROPOSED)
 
 **Status:** PROPOSED — **not** incorporated into canonical `ASF-SEF-MASTER-PLAN.md`  
-**R1 binding rule:** **HO-2** — only a human submits an `EngineeringIntent`; SFX never auto-submits ([`SFX-MASTER-PLAN.md`](../../../../../governance/tickets/plans/SFX-MASTER-PLAN.md) §3.2)  
-**SEF binding rule:** **CON-N-01** — `human submit only` ([`ASF-SEF-MASTER-PLAN.md`](../../../../../governance/tickets/plans/ASF-SEF-MASTER-PLAN.md) §contracts)
+**R1 binding rule:** **HO-2** — only a human submits an `EngineeringIntent`; SFX never auto-submits ([`SFX-MASTER-PLAN.md`](../../../../../../governance/tickets/plans/SFX-MASTER-PLAN.md) §3.2)  
+**SEF binding rule:** **CON-N-01** — `human submit only` ([`ASF-SEF-MASTER-PLAN.md`](../../../../../../governance/tickets/plans/ASF-SEF-MASTER-PLAN.md) §contracts)
 
 ## 1. Problem statement
 

@@ -1,10 +1,14 @@
 # SFX R2 — Corrective Campaign Dossier (IGX-SFX-R2-CORR-001)
 
-**Campaign:** `IGX-SFX-R2-CORR-001` · **Ticket:** [`T-IGX-070-B`](../../../governance/tickets/T-IGX-070-B.md)  
+**Campaign:** `IGX-SFX-R2-CORR-001` · **Ticket:** [`T-IGX-070-B`](../../../../../governance/tickets/T-IGX-070-B.md)  
 **Parent R2 publish:** `10cf95df89e806191d5ff801917ece91ff144bad`  
 **Environment-only commit (out of SFX scope):** `d53be07acac08c20d8f4ac8b00746c27d709d071`
 
 ## A. Git and publication
+
+**PUBLICATION_STATUS:** NOT_PUBLISHED · **REMOTE_PUBLICATION_SHA:** NONE · **Remote base:** aa9822f8
+
+Handoff: [SFX_R2_PUBLICATION_HANDOFF.md](./SFX_R2_PUBLICATION_HANDOFF.md)
 
 | Field | Value |
 | --- | --- |
