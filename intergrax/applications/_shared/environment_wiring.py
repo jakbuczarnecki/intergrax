@@ -8,6 +8,7 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import Any
 
+from intergrax.applications._shared import memory_wiring as _memory_wiring_module
 from intergrax.applications._shared.application_composition_context import (
     ApplicationCompositionContext,
 )
@@ -58,10 +59,7 @@ from intergrax.applications._shared.memory_vector_wiring import (
     build_user_profile_manager,
     resolve_rag_stack_for_memory_wiring,
 )
-from intergrax.applications._shared.memory_wiring import (
-    assert_strict_memory_bootstrap_acceptable,
-    resolve_memory_platform_wiring,
-)
+from intergrax.applications._shared.memory_wiring import assert_strict_memory_bootstrap_acceptable
 from intergrax.applications._shared.modality_wiring import wire_modality_extras
 from intergrax.applications._shared.notify_tool_wiring import (
     wire_scheduled_notification_tool_binding,
@@ -403,7 +401,11 @@ def wire_application_environment(
             },
         )
 
-    memory_wiring = resolve_memory_platform_wiring(env, integration_profile=resolved_integration)
+    memory_wiring = _memory_wiring_module.resolve_memory_platform_wiring(
+        env,
+        integration_profile=resolved_integration,
+        tenant_id=normalized_tenant_id,
+    )
     assert_strict_memory_bootstrap_acceptable(env, memory_wiring)
     from intergrax.applications._shared.memory_wiring import (
         build_session_manager_from_environment,

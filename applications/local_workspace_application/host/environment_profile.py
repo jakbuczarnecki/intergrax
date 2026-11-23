@@ -25,6 +25,7 @@ from intergrax.integrations.providers.object_storage.filesystem.manifest import 
 from intergrax.integrations.registry.catalog_manifests import DOCLING, INMEMORY, KAFKA, OTEL, QDRANT, REDIS, SQLITE
 from intergrax.integrations.registry.profile import IntegrationProfile
 from intergrax.llm_adapters.registry.profile import llm_profile_from_env
+
 from local_workspace_application.host.message_bus_wiring import (
     local_workspace_message_bus_enabled,
     materialize_local_workspace_message_bus_profile,
@@ -105,18 +106,16 @@ def build_local_workspace_integration_profile(
     options["lkw_host"] = {
         "allowed_read_roots": sorted(resolved_settings.allowed_read_roots),
     }
+    embedding_provider = "ollama" if resolved_settings.enable_rag else None
     profile = IntegrationProfile(
         relational_store=IntegrationBinding.from_manifest(SQLITE),
         vector_store=IntegrationBinding.from_manifest(vector_store),
-        key_value_cache=(
-            IntegrationBinding.from_manifest(REDIS) if enable_redis else None
-        ),
-        message_bus=(
-            IntegrationBinding.from_manifest(KAFKA) if enable_message_bus else None
-        ),
+        key_value_cache=(IntegrationBinding.from_manifest(REDIS) if enable_redis else None),
+        message_bus=(IntegrationBinding.from_manifest(KAFKA) if enable_message_bus else None),
         object_storage=IntegrationBinding.from_manifest(FILESYSTEM_OBJECT_STORAGE),
         document_parser=IntegrationBinding.from_manifest(DOCLING),
         observability_backend=IntegrationBinding.from_manifest(OTEL),
+        embedding_provider=embedding_provider,
         options=options,
     )
     return materialize_local_workspace_message_bus_profile(profile)

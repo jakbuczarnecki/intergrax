@@ -59,7 +59,13 @@ def create_default_embedding_engine(
 
     compat_profile = embedding_profile
     if compat_profile is None:
-        compat_profile = embedding_profile_from_env(lab_opt_in=lab_opt_in)
+        profile_slug: str | None = None
+        if integration_profile is not None:
+            profile_slug = integration_profile.slug_for_category(IntegrationCategory.EMBEDDING_PROVIDER)
+        if profile_slug is not None:
+            compat_profile = EmbeddingProfile(provider=profile_slug, model=None)
+        else:
+            compat_profile = embedding_profile_from_env(lab_opt_in=lab_opt_in)
     resolved_model = embedding_model if embedding_model is not None else compat_profile.model
     resolved_profile = EmbeddingProfile(
         provider=resolve_embedding_provider_slug(

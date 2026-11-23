@@ -32,7 +32,12 @@ _DEMO_PROOF_EXCEPTIONS = (
 
 def _is_production(path: Path) -> bool:
     parts = path.relative_to(_REPO).parts
-    return "tests" not in parts and not path.name.startswith("test_") and path.name != "conftest.py"
+    if "tests" in parts or path.name.startswith("test_") or path.name == "conftest.py":
+        return False
+    rel = path.relative_to(_REPO).as_posix()
+    if "/docker/runtime-context/" in f"/{rel}/":
+        return False
+    return True
 
 
 def _imports_integrations_shared(tree: ast.AST) -> list[int]:

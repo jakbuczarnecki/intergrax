@@ -62,5 +62,6 @@ def apply_strict_product_memory_test_patches(monkeypatch) -> None:
         )
 
     monkeypatch.setattr(memory_wiring, "resolve_memory_platform_wiring", _wrapped)
-    monkeypatch.setattr(environment_wiring, "resolve_memory_platform_wiring", _wrapped)
+    if hasattr(environment_wiring, "resolve_memory_platform_wiring"):
+        monkeypatch.setattr(environment_wiring, "resolve_memory_platform_wiring", _wrapped)
     monkeypatch.setattr(runtime_config_bridge, "resolve_memory_platform_wiring", _wrapped)
