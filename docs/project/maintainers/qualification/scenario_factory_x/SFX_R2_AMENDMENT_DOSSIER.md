@@ -1,9 +1,9 @@
 # SCENARIO-FACTORY-X — R2 Amendment Dossier
 
-**Status:** `DOCUMENTATION_PREPARED` · `CANONICAL_R2_APPROVED` (G3 @ `81c51263ea672e0f4d886dd0dc85bcf646849108`) · **NOT** `IMPLEMENTATION_AUTHORIZED` · **NOT** `SFX_PRE_IMPLEMENTATION_READY`  
-**Campaign ticket:** [`T-IGX-070-A`](../../../../../governance/tickets/T-IGX-070-A.md)  
-**Canonical binding authority:** R1 [`SFX-MASTER-PLAN.md`](../../../../../governance/tickets/plans/SFX-MASTER-PLAN.md) — **unchanged**  
-**Baseline HEAD (audit):** `b4146cbfab9858c058fc44df2ad43d8670d4925d` (`development`)  
+**Status:** `DOCUMENTATION_PREPARED` · `CANONICAL_R2_APPROVED` (G3 @ `81c51263ea672e0f4d886dd0dc85bcf646849108`) · **NOT** `IMPLEMENTATION_AUTHORIZED` · **NOT** `SFX_PRE_IMPLEMENTATION_READY`
+**Campaign ticket:** [`T-IGX-070-A`](../../../../../governance/tickets/T-IGX-070-A.md)
+**Canonical binding authority:** R1 [`SFX-MASTER-PLAN.md`](../../../../../governance/tickets/plans/SFX-MASTER-PLAN.md) — **unchanged**
+**Baseline HEAD (audit):** `b4146cbfab9858c058fc44df2ad43d8670d4925d` (`development`)
 **External input (non-canonical):** `INTEGRAX_SFX_R2_STRATEGIC_BLUEPRINT_2026-11-23.md`
 
 ## Campaign verdict

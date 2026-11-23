@@ -1,7 +1,7 @@
 # SFX R2 — Corrective Campaign Dossier (IGX-SFX-R2-CORR-001)
 
 **Campaign:** `IGX-SFX-R2-CORR-001` · **Ticket:** [`T-IGX-070-B`](../../../../../governance/tickets/T-IGX-070-B.md)
-**Parent R2 publish:** `10cf95df89e806191d5ff801917ece91ff144bad`  
+**Parent R2 publish:** `10cf95df89e806191d5ff801917ece91ff144bad`
 **Environment-only commit (out of SFX scope):** `d53be07acac08c20d8f4ac8b00746c27d709d071`
 
 ## A. Git and publication
@@ -94,6 +94,7 @@ Handoff: [SFX_R2_PUBLICATION_HANDOFF.md](./SFX_R2_PUBLICATION_HANDOFF.md)
 | State | Value |
 |---|---|
 | G2 plan approval | APPROVED @ `f33501780a62ae82a718834b6521adc856ec9bfb` |
+33501780a62ae82a718834b6521adc856ec9bfb |
 | G3 operator adoption | APPROVED @ `81c51263ea672e0f4d886dd0dc85bcf646849108` |
 | `CANONICAL_R2_APPROVED` | YES — decision authority |
 | Master plan §18 | Included in this documentation candidate; publication verification required |

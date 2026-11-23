@@ -1,6 +1,6 @@
 # SFX R2 — Publication handoff (IGX-SFX-R2-PUBLISH-002 + adoption)
 
-**Campaign:** `IGX-SFX-R2-FINAL-PUBLICATION-002` · **Adoption:** `IGX-SFX-R2-CANONICAL-ADOPTION-001`  
+**Campaign:** `IGX-SFX-R2-FINAL-PUBLICATION-002` · **Adoption:** `IGX-SFX-R2-CANONICAL-ADOPTION-001`
 **Status:** `PUBLICATION_COMPLETE_ON_DEVELOPMENT` · **Ticket:** [`T-IGX-070-C`](../../../../../governance/tickets/T-IGX-070-C.md)
 
 ## Publication lanes
