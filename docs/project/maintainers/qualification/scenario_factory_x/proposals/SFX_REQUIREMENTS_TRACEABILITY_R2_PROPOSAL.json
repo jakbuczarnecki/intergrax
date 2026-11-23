@@ -1,0 +1,26 @@
+{
+  "schema_version": "sfx-requirements-r2-proposal.v1",
+  "status": "PROPOSED_NOT_MERGED",
+  "base_sha": "b4146cbfab9858c058fc44df2ad43d8670d4925d",
+  "extends": "SFX_REQUIREMENTS_TRACEABILITY.json",
+  "requirements": [
+    {"id": "REQ-R2-001", "title": "Three execution modes (manual, assisted, bounded autonomous)", "source": "R2 mission spec", "tasks": ["R2-D02", "R2-W5-03"], "evidence": "mode policy matrix tests", "gate": "GATE-SFX-ENTRY", "status": "PROPOSED"},
+    {"id": "REQ-R2-002", "title": "MissionRecord durable lifecycle", "source": "R2 mission spec", "tasks": ["R2-W3-04", "SFX-P5-05"], "evidence": "CAS + resume tests", "gate": "GATE-SFX-ENTRY", "status": "PROPOSED"},
+    {"id": "REQ-R2-003", "title": "AutonomyEnvelope with budgets and stop rules", "source": "R2 mission spec", "tasks": ["R2-W3-03"], "evidence": "grant expiry/revoke tests", "gate": "GATE-SFX-ENTRY", "status": "PROPOSED"},
+    {"id": "REQ-R2-004", "title": "Business goal and outcome acceptance fail-closed", "source": "R2 lifecycle", "tasks": ["R2-W3-01", "R2-W4-01"], "evidence": "validator golden tests", "gate": "GATE-SFX-ENTRY", "status": "PROPOSED"},
+    {"id": "REQ-R2-005", "title": "SourceIntakeManifest with classification", "source": "R2 lifecycle", "tasks": ["R2-W3-02"], "evidence": "provenance + tenant tests", "gate": "GATE-SFX-ENTRY", "status": "PROPOSED"},
+    {"id": "REQ-R2-006", "title": "CandidateIteration append-only lineage", "source": "R2 mission spec", "tasks": ["R2-W3-04", "R2-W4-05"], "evidence": "append-only replay", "gate": "GATE-SFX-ENTRY", "status": "PROPOSED"},
+    {"id": "REQ-R2-007", "title": "ScenarioEvaluationVerdict separates business vs code pass", "source": "R2 mission INV-R2-03", "tasks": ["R2-W5-01"], "evidence": "oracle injection tests", "gate": "GATE-SFX-FULL", "status": "PROPOSED"},
+    {"id": "REQ-R2-008", "title": "Mission driver within grant only", "source": "R2 autonomous driver", "tasks": ["R2-W5-03"], "evidence": "adversarial/budget_parallel", "gate": "GATE-SFX-FULL", "status": "PROPOSED"},
+    {"id": "REQ-R2-009", "title": "Champion selection non-regressing security", "source": "R2 improve loop", "tasks": ["R2-W5-02"], "evidence": "regression suite", "gate": "GATE-SFX-FULL", "status": "PROPOSED"},
+    {"id": "REQ-R2-010", "title": "Studio mission cockpit + parity", "source": "R2 UX", "tasks": ["R2-W5-04", "SFX-P10-03"], "evidence": "PC-1..6 mission ops", "gate": "GATE-SFX-FULL", "status": "PROPOSED"},
+    {"id": "REQ-R2-011", "title": "SEF derived submit under signed grant", "source": "SEF cross amendment", "tasks": ["R2-W4-07", "R2-W8-02"], "evidence": "HO+grant integration tests", "gate": "GATE-SEF-CONSUME", "status": "PROPOSED"},
+    {"id": "REQ-R2-012", "title": "HO-2 human path until grant OD", "source": "R1 HO-2", "tasks": ["R2-W4-06"], "evidence": "handoff/grant_required", "gate": "GATE-SEF-CONSUME", "status": "PROPOSED"},
+    {"id": "REQ-R2-013", "title": "REF-1 autonomous loop with oracles", "source": "R2 REF plan", "tasks": ["R2-W7-01", "SFX-P12-01"], "evidence": "REF1-O-* bundle", "gate": "GATE-SFX-FULL", "status": "PROPOSED"},
+    {"id": "REQ-R2-014", "title": "AUTO metrics recorded per MS rules", "source": "SFX_METRICS R2", "tasks": ["R2-W7-07", "SFX-P12-06"], "evidence": ".tmp/proof/sfx/", "gate": "GATE-SFX-FULL", "status": "PROPOSED"},
+    {"id": "REQ-R2-015", "title": "Commercial delivery package view", "source": "R2 commercial", "tasks": ["R2-W6-05"], "evidence": "handoff checklist", "gate": "—", "status": "PROPOSED"},
+    {"id": "REQ-R2-016", "title": "No production authority from mission closure", "source": "SFX-INV-01", "tasks": ["SFX-P11-04", "SFX-P13-03"], "evidence": "dossier ≠ admission", "gate": "GATE-SFX-FULL", "status": "PROPOSED"},
+    {"id": "REQ-R2-017", "title": "Adversarial mission/grant suite", "source": "R2 security plan", "tasks": ["R2-W5-06", "SFX-P9-05"], "evidence": "T-R2-* tests", "gate": "GATE-SFX-FULL", "status": "PROPOSED"},
+    {"id": "REQ-R2-018", "title": "Customer self-service documented only; no impl auth", "source": "R2 commercial §5", "tasks": ["R2-D05"], "evidence": "roadmap doc", "gate": "post-W8 programme", "status": "PROPOSED"}
+  ]
+}

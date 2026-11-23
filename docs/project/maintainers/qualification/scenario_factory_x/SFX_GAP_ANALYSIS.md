@@ -200,3 +200,10 @@ OD-SFX-13 is **not** an entry condition. It gates admission only (R1 §10).
 3. **E-3..E-5 OD-SFX-05/09/14 unsigned.** OD-SFX-05 and OD-SFX-09 must settle the lockfile treatment together (GAP-24, C-AF-01) [MISSING_EVIDENCE].
 4. **E-7 `GEN_SEAL_SHA` ladder row unset** (the seal record is published) [PROPOSED].
 5. **P-4 / P-5:** usability round 0 has no result, and the IDE v0 operator walkthrough is pending [MISSING_EVIDENCE].
+
+
+---
+
+## 6. R2 amendment gap summary (PROPOSED — T-IGX-070-A)
+
+Authoritative detail: [SFX_GAP_REGISTER.md](./SFX_GAP_REGISTER.md) rows SFX-GAP-R2-01..07 and dossier [SFX_R2_AMENDMENT_DOSSIER.md](./SFX_R2_AMENDMENT_DOSSIER.md). Canonical R1 rows unchanged. HO-2 remains binding until SEF cross-track OD.

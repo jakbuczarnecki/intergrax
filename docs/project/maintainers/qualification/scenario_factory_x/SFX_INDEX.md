@@ -6,7 +6,8 @@
 **Base pin:** `eadb1c2116feb0a2090b234a36fd4182bd6ace8d` (`origin/development`)  
 **Sequencing:** OD-SFX-15 — pre-freeze SFX-P0..P4 open; **STOP before SFX-P5**; target `PRE_IMPLEMENTATION_READY`  
 **Closeout campaign:** [`T-IGX-037-F`](../../../../../governance/tickets/T-IGX-037-F.md) — documentation reconciliation before ARCH-FREEZE; target status `SFX_PRE_FREEZE_DOCS_CLOSED` (not `SFX_PRE_IMPLEMENTATION_READY`)  
-**Tickets:** [`T-IGX-037-A`](../../../../../governance/tickets/T-IGX-037-A.md) · [`T-IGX-037-B`](../../../../../governance/tickets/T-IGX-037-B.md) · [`T-IGX-037-C`](../../../../../governance/tickets/T-IGX-037-C.md) · [`T-IGX-037-D`](../../../../../governance/tickets/T-IGX-037-D.md) · [`T-IGX-037-E`](../../../../../governance/tickets/T-IGX-037-E.md)
+**R2 amendment (PROPOSED — not canonical):** [SFX_R2_AMENDMENT_DOSSIER.md](./SFX_R2_AMENDMENT_DOSSIER.md) · [T-IGX-070-A](../../../../../governance/tickets/T-IGX-070-A.md) — DOCUMENTATION_PREPARED; does not replace R1 or authorize implementation  
+**Tickets:** [`T-IGX-037-A`](../../../../../governance/tickets/T-IGX-037-A.md) · [`T-IGX-037-B`](../../../../../governance/tickets/T-IGX-037-B.md) · [`T-IGX-037-C`](../../../../../governance/tickets/T-IGX-037-C.md) · [`T-IGX-037-D`](../../../../../governance/tickets/T-IGX-037-D.md) · [`T-IGX-037-E`](../../../../../governance/tickets/T-IGX-037-E.md) · [`T-IGX-070-A`](../../../../../governance/tickets/T-IGX-070-A.md)
 
 ## Authority map (one SSOT per concern)
 

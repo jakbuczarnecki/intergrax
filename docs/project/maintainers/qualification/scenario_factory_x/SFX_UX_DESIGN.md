@@ -394,3 +394,11 @@ The prototype is a static mock-up outside repository product paths (SFX-P3-01). 
 | UX-DEP-07 | ADR-SFX-006: authority levels, engineering modes, admission separation | §2 DP-5/6/7, §6.6, SCR-15 |
 | UX-DEP-08 | GATE-SEF-CONSUME and OD-SFX-10 | AGENTIC_ENGINEERING in §6.6 |
 | UX-DEP-09 | OD-SFX-07, OD-SFX-08 | usability targets and rounds |
+
+
+---
+
+## R2 extension (PROPOSED)
+
+Mission Dashboard, iteration timeline, candidate comparison, pause/resume — see [
+2/SFX_R2_UX_MISSION_EXTENSION.md](./r2/SFX_R2_UX_MISSION_EXTENSION.md). Eleven-step linear flow unchanged.

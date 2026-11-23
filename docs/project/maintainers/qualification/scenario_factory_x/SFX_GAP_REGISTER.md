@@ -47,6 +47,18 @@ Reported conflicts; none is resolved unilaterally by SFX.
 | C-IIAC-01 | Every post-freeze product wave needs an ACT-N11 audited re-bind. | §16 | OPEN (standing constraint) | REBIND-Wn at the end of W3..W8; OD-SFX-09 |
 | C-ECAP-01 | Applicability of ECAP §16 ("update ECAP when a new domain is added") to a Tier-2 product module. | §16 | OPEN — resolution PROPOSED | ADR-SFX-001 proposes that §16 does not apply under Option B and that no ECAP revision is needed. It stays open until the operator confirms it in the OD-SFX-06 review. ADR-SFX-001 is `Proposed` |
 
+## R2 gaps (PROPOSED — T-IGX-070-A)
+
+| Gap | Description | Status | Disposition | Owner |
+|---|---|---|---|---|
+| SFX-GAP-R2-01 | AutonomyEnvelope / mission grant | PROPOSED | R2-W3-03 | SFX |
+| SFX-GAP-R2-02 | SourceIntakeManifest | PROPOSED | R2-W3-02 | SFX |
+| SFX-GAP-R2-03 | Multi-candidate iteration lineage | PROPOSED | R2-W3-04, R2-W4-05 | SFX |
+| SFX-GAP-R2-04 | Autonomous mission driver | PROPOSED | R2-W5-03 | SFX |
+| SFX-GAP-R2-05 | Business oracle evaluator | PROPOSED | R2-W5-01 | SFX |
+| SFX-GAP-R2-06 | AUTO mission metrics | PROPOSED | SFX_METRICS R2 appendix | SFX |
+| SFX-GAP-R2-07 | HO-2 vs multi-submit | PROPOSED OPEN | SEF cross amendment | SEF + Operator |
+
 ### C-OD-02 — "Scenario Registry" in OD-SFX-01 (interpretation, recorded after review R-W0-05)
 
 OD-SFX-01 lists "Scenario Registry" among the SFX product components. The master plan implements it as a **catalog metadata sidecar** (`sfx.scenario_catalog_entry.v1`, ADR-SFX-005), not as a new registry. The reason is that the same OD forbids parallel mechanisms, and `ApplicationManifest` stays unchanged. This is an interpretation of the OD, not a change to it. It is confirmed or overruled when the operator accepts ADR-SFX-005 (OD-SFX-06).
