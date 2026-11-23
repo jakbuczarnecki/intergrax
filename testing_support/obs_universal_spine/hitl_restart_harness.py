@@ -4,8 +4,8 @@
 
 from __future__ import annotations
 
-from datetime import UTC, datetime
 from dataclasses import dataclass
+from datetime import UTC, datetime
 from pathlib import Path
 
 from intergrax.agents.harness_reference_agent import HarnessReferenceAgent
@@ -19,6 +19,7 @@ from intergrax.contracts.agent_step import AgentStep, StepOutput
 from intergrax.contracts.capability import CapabilityMatchResult
 from intergrax.contracts.execution_continuation_state_store import ExecutionContinuationStateStore
 from intergrax.contracts.execution_identity import RunId, mint_run_id
+from intergrax.contracts.human_approver import local_development_approver_evidence
 from intergrax.contracts.runtime_execution_context import RuntimeExecutionContext
 from intergrax.runtime.events.runtime_event import RuntimeEventType
 from intergrax.runtime.events.stores.sqlite_runtime_event_store import SQLiteRuntimeEventStore
@@ -26,6 +27,8 @@ from intergrax.runtime.execution.continuation.persistence import (
     ExecutionContinuationDurableBacking,
     backing_execution_continuation_state_store,
 )
+from intergrax.runtime.human.models import HumanResponseVerdict
+from intergrax.runtime.long_running.models import TaskCheckpoint
 from intergrax.runtime.long_running.store import SQLiteTaskCheckpointStore
 from intergrax.runtime.nexus.config import RuntimeConfig
 from intergrax.runtime.nexus.engine.runtime_context import RuntimeContext
@@ -35,10 +38,7 @@ from intergrax.runtime.observability.memory_causal_evidence_persistence import (
     InMemoryCausalEvidencePersistence,
 )
 from intergrax.runtime.observability.reconstruction import ExecutionReconstructor
-from intergrax.contracts.human_approver import local_development_approver_evidence
-from intergrax.runtime.human.models import HumanResponseVerdict
 from intergrax.runtime.task.task import Task, TaskContext, TaskState
-from intergrax.runtime.long_running.models import TaskCheckpoint
 from intergrax.runtime.task.task_contract import (
     HumanApprovalResolution,
     TaskExecutionOptions,
@@ -47,6 +47,7 @@ from intergrax.runtime.task.task_contract import (
 )
 from intergrax.runtime.task.unified_task_runner import UnifiedTaskRunner
 from intergrax.utils import attribute_access
+
 from testing_support.builder import FakeLLMAdapter, build_in_memory_session_manager
 from testing_support.obs_universal_spine.diagnostic_execution_stack import (
     build_diagnostic_nexus_loop,
@@ -93,7 +94,7 @@ class ObsSpineHitlAgent(HarnessReferenceAgent):
             session_manager=build_in_memory_session_manager(),
         )
 
-    def get_steps(self) -> list[AgentStep]:
+    def get_steps(self, context: RuntimeExecutionContext) -> list[AgentStep]:
         return [AgentStep(step_id="review", step_name="review", step_index=0)]
 
     async def run_step(self, step: AgentStep, ctx: RuntimeExecutionContext) -> StepOutput:
@@ -120,18 +121,12 @@ class ObsSpineHitlAgent(HarnessReferenceAgent):
             return AgentDecision(type=AgentDecisionType.COMPLETE, reason="approved")
         if ctx.metadata.get("human_approved") or (
             ctx.request
-            and (
-                ctx.request.metadata.get("human_approved")
-                or ctx.request.metadata.get("human_decision") == "approve"
-            )
+            and (ctx.request.metadata.get("human_approved") or ctx.request.metadata.get("human_decision") == "approve")
         ):
             return AgentDecision(type=AgentDecisionType.COMPLETE, reason="approved")
         if ctx.metadata.get("human_rejected") or (
             ctx.request
-            and (
-                ctx.request.metadata.get("human_rejected")
-                or ctx.request.metadata.get("human_decision") == "reject"
-            )
+            and (ctx.request.metadata.get("human_rejected") or ctx.request.metadata.get("human_decision") == "reject")
         ):
             return AgentDecision(
                 type=AgentDecisionType.FAIL,
@@ -172,10 +167,7 @@ def build_hitl_restart_runtime(
     occurrence_persistence: object | None = None,
 ) -> HitlRestartRuntimeBundle:
     backing = continuation_backing or ExecutionContinuationDurableBacking()
-    continuation_store = (
-        execution_continuation_state_store
-        or backing_execution_continuation_state_store(backing)
-    )
+    continuation_store = execution_continuation_state_store or backing_execution_continuation_state_store(backing)
     runtime_store = SQLiteRuntimeEventStore(db_path=runtime_events_db)
     checkpoint_store = SQLiteTaskCheckpointStore(db_path=checkpoint_db)
     loop, _, read_deps = build_diagnostic_nexus_loop(
@@ -272,9 +264,7 @@ def _prepare_hitl_resume_task(
     verdict = HumanResponseVerdict.APPROVE if human_approved else HumanResponseVerdict.REJECT
     pause_record = resume.runtime.governance.pause_record
     pause_id = pause_record.pause_id if pause_record is not None else "hr_obs_spine_pause"
-    human_request_id = (
-        pause_record.human_request_id if pause_record is not None else "hr_obs_spine"
-    )
+    human_request_id = pause_record.human_request_id if pause_record is not None else "hr_obs_spine"
     execution_id = None
     if loaded.runtime is not None and loaded.runtime.execution_tree.entries:
         execution_id = loaded.runtime.execution_tree.entries[0].execution_id
@@ -386,8 +376,7 @@ async def run_hitl_pause_resume_after_runtime_rebuild(
         and event.task_id == resumed.task_id
     ]
     assert terminal_events, (
-        f"expected terminal runtime event for task {resumed.task_id!r} run {run_id!r}, "
-        f"got state={resumed.state!r}"
+        f"expected terminal runtime event for task {resumed.task_id!r} run {run_id!r}, got state={resumed.state!r}"
     )
     if human_approved and not human_rejected:
         assert terminal_events[-1].event_type is RuntimeEventType.TASK_COMPLETED

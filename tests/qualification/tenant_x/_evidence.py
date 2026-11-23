@@ -11,9 +11,7 @@ from enum import StrEnum
 
 from tests.qualification.tenant_x._types import TenantAstEvidence, TenantDiscoveryEvidence
 
-_TENANT_NAMES: frozenset[str] = frozenset(
-    {"tenant_id", "tenant", "tenant_scope", "principal_tenant_id"}
-)
+_TENANT_NAMES: frozenset[str] = frozenset({"tenant_id", "tenant", "tenant_scope", "principal_tenant_id"})
 
 _SQL_EXECUTE_NAMES: frozenset[str] = frozenset({"execute", "executemany", "run", "fetchone", "fetchall"})
 
@@ -89,9 +87,7 @@ _TENANT_OWNED_SQL_TABLES: frozenset[str] = frozenset(
 
 _SQL_FROM_RE = re.compile(r"\bfrom\s+([`\"']?)(\w+)\1", re.IGNORECASE)
 
-_AMBIENT_DEFAULT_RE = re.compile(
-    r'tenant_id\s*:\s*str\s*=\s*["\']default["\']|tenant_id\s*=\s*["\']default["\']'
-)
+_AMBIENT_DEFAULT_RE = re.compile(r'tenant_id\s*:\s*str\s*=\s*["\']default["\']|tenant_id\s*=\s*["\']default["\']')
 
 
 class TenantAstEvidenceKind(StrEnum):
@@ -217,9 +213,7 @@ def _subscript_container_tenant_scoped(
         return _name_suggests_tenant_scoped_resource(symbol)
     if isinstance(node.value, ast.Attribute) and isinstance(node.value.value, ast.Name):
         if node.value.value.id == "self" and class_has_tenant_field:
-            if symbol in class_scoped_fields or _name_suggests_tenant_scoped_resource(
-                symbol, on_instance_field=True
-            ):
+            if symbol in class_scoped_fields or _name_suggests_tenant_scoped_resource(symbol, on_instance_field=True):
                 return True
     return _name_suggests_tenant_scoped_resource(symbol)
 
@@ -248,6 +242,14 @@ def _returns_same_parameter(func: ast.FunctionDef | ast.AsyncFunctionDef) -> boo
         if isinstance(node, ast.Return) and node.value is not None:
             if isinstance(node.value, ast.Name) and node.value.id in params:
                 return True
+    return False
+
+
+def _is_resolve_hosted_sandbox_session_call(node: ast.Call) -> bool:
+    if isinstance(node.func, ast.Name):
+        return node.func.id == "resolve_hosted_sandbox_session"
+    if isinstance(node.func, ast.Attribute):
+        return node.func.attr == "resolve_hosted_sandbox_session"
     return False
 
 
@@ -362,6 +364,26 @@ def _collect_authority_semantics_in_function(
                         )
                     )
         if isinstance(node, ast.Call):
+            if _is_resolve_hosted_sandbox_session_call(node):
+                for kw in node.keywords:
+                    if kw.arg != "tenant_id":
+                        continue
+                    if isinstance(kw.value, ast.Name) and kw.value.id == "normalized_tenant_id":
+                        evidence.append(
+                            TenantAstEvidence(
+                                kind=TenantAstEvidenceKind.MINT_OR_REWRITE_POSITIVE.value,
+                                detail=f"{enclosing}: host-normalized tenant binds hosted sandbox session",
+                                line_no=node.lineno,
+                            )
+                        )
+                    elif isinstance(kw.value, ast.Name) and kw.value.id.startswith("LAB_ONLY_HOSTED_SANDBOX"):
+                        evidence.append(
+                            TenantAstEvidence(
+                                kind=TenantAstEvidenceKind.TENANT_KWARG_LITERAL_REWRITE.value,
+                                detail=f"{enclosing}: lab-only sandbox tenant fallback (rewrite candidate)",
+                                line_no=node.lineno,
+                            )
+                        )
             for kw in node.keywords:
                 if _is_tenant_derivation_kwarg(kw):
                     evidence.append(
@@ -603,8 +625,10 @@ def _ambient_default_flows_to_protected(source: str, tree: ast.Module) -> bool:
                     return True
                 if isinstance(arg, ast.Tuple):
                     if any(
-                        isinstance(elt, ast.Name) and elt.id in default_names
-                        or isinstance(elt, ast.Attribute) and elt.attr in _TENANT_NAMES
+                        isinstance(elt, ast.Name)
+                        and elt.id in default_names
+                        or isinstance(elt, ast.Attribute)
+                        and elt.attr in _TENANT_NAMES
                         for elt in arg.elts
                     ):
                         return True

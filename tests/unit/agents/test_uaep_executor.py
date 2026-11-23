@@ -1,32 +1,29 @@
 # © Artur Czarnecki. All rights reserved.
 
 import pytest
-
-from intergrax.agents.agent_contract import Agent
 from intergrax.agents import supports_uaep
-from intergrax.runtime.nexus.uaep import UAEPExecutor
-from intergrax.contracts.agent_contract_meta import AgentContract
-from intergrax.contracts.agent_decision import AgentDecision, AgentDecisionType
-from intergrax.contracts.agent_run import AgentRunRequest, AgentRunResult
-from intergrax.contracts.agent_run_enums import AgentRunStatus, TerminalReason
-from intergrax.contracts.agent_step import AgentStep, StepOutput
-from intergrax.contracts.runtime_execution_context import RuntimeExecutionContext
+from intergrax.agents.agent_contract import Agent
 from intergrax.applications._shared.application_security_wiring import (
     PromptDefenseMiddleware,
     default_prompt_defense_profile,
 )
+from intergrax.contracts.agent_contract_meta import AgentContract
+from intergrax.contracts.agent_decision import AgentDecision, AgentDecisionType
+from intergrax.contracts.agent_run import AgentRunRequest, AgentRunResult
+from intergrax.contracts.agent_step import AgentStep, StepOutput
 from intergrax.contracts.execution_phase import ExecutionPhase
 from intergrax.contracts.middleware_hook_semantics import LlmInferenceHookPayload
+from intergrax.contracts.runtime_execution_context import RuntimeExecutionContext
 from intergrax.runtime.events.event_bus import RuntimeEventBus
 from intergrax.runtime.events.runtime_event import RuntimeEventType
-from intergrax.runtime.hooks.hook_context import HookAction, HookContext, HookResult
+from intergrax.runtime.hooks.hook_context import HookContext, HookResult
 from intergrax.runtime.hooks.hook_point import HookPoint
 from intergrax.runtime.middleware.base import RuntimeMiddleware
 from intergrax.runtime.middleware.pipeline import MiddlewarePipeline
 from intergrax.runtime.nexus.config import RuntimeConfig
-from intergrax.runtime.nexus.uaep import UAEPBlockedError
 from intergrax.runtime.nexus.engine.runtime_context import RuntimeContext
-from intergrax.runtime.nexus.responses.response_schema import RuntimeAnswer, RuntimeRequest
+from intergrax.runtime.nexus.responses.response_schema import RuntimeRequest
+from intergrax.runtime.nexus.uaep import UAEPBlockedError, UAEPExecutor
 from testing_support.builder import (
     FakeLLMAdapter,
     build_in_memory_session_manager,
@@ -61,7 +58,7 @@ class _UaepStubAgent(Agent):
             session_manager=build_in_memory_session_manager(),
         )
 
-    def get_steps(self) -> list[AgentStep]:
+    def get_steps(self, context: RuntimeExecutionContext) -> list[AgentStep]:
         return [
             AgentStep(step_id="s1", step_name="first", step_index=0),
             AgentStep(step_id="s2", step_name="second", step_index=1),
@@ -137,13 +134,13 @@ async def test_uaep_executor_runs_runtime_controlled_steps():
 
 
 class _TaskIdCaptureAgent(_UaepStubAgent):
-  def __init__(self) -> None:
-      super().__init__()
-      self.captured_task_id: str | None = None
+    def __init__(self) -> None:
+        super().__init__()
+        self.captured_task_id: str | None = None
 
-  async def run_step(self, step: AgentStep, ctx: RuntimeExecutionContext) -> StepOutput:
-      self.captured_task_id = ctx.task_id
-      return await super().run_step(step, ctx)
+    async def run_step(self, step: AgentStep, ctx: RuntimeExecutionContext) -> StepOutput:
+        self.captured_task_id = ctx.task_id
+        return await super().run_step(step, ctx)
 
 
 @pytest.mark.asyncio

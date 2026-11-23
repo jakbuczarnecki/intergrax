@@ -9,30 +9,30 @@ These agents implement no business value; they return deterministic stubs for ha
 
 from __future__ import annotations
 
-from typing import Optional, Sequence
+from collections.abc import Sequence
 
 from intergrax.agents.harness_reference_agent import HarnessReferenceAgent
 from intergrax.agents.reference_harness import (
     LabHarnessContext,
     default_reference_harness,
 )
-from intergrax.runtime.execution.lab_reference_agent_runtime import (
-    build_lab_agent_runtime_context,
-)
 from intergrax.contracts.agent_contract_meta import AgentContract
-from lab.contract import build_agent_contract
 from intergrax.contracts.agent_decision import AgentDecision, AgentDecisionType
 from intergrax.contracts.agent_step import AgentStep, StepOutput
 from intergrax.contracts.capability import CapabilityMatchResult
 from intergrax.contracts.runtime_execution_context import RuntimeExecutionContext
 from intergrax.llm_adapters._shared.adapter_response_builders import build_adapter_response
-from intergrax.llm_adapters.contracts.adapter_response import LLMAdapterResponse
-from intergrax.llm_adapters.contracts.llm_adapter import LLMAdapter
 from intergrax.llm_adapters.base.base_llm_adapter import BaseLLMAdapter
+from intergrax.llm_adapters.contracts.adapter_response import LLMAdapterResponse
 from intergrax.memory.conversational_memory import ChatMessage
 from intergrax.runtime.execution.agent_runtime_context import RuntimeContext
 from intergrax.runtime.execution.agent_runtime_io import RuntimeRequest
+from intergrax.runtime.execution.lab_reference_agent_runtime import (
+    build_lab_agent_runtime_context,
+)
 from intergrax.runtime.task.task import TaskContext
+
+from lab.contract import build_agent_contract
 
 
 class _StubLLM(BaseLLMAdapter):
@@ -50,9 +50,9 @@ class _StubLLM(BaseLLMAdapter):
         self,
         messages: Sequence[ChatMessage],
         *,
-        temperature: Optional[float] = None,
-        max_tokens: Optional[int] = None,
-        run_id: Optional[str] = None,
+        temperature: float | None = None,
+        max_tokens: int | None = None,
+        run_id: str | None = None,
     ) -> LLMAdapterResponse:
         call = self.usage.begin_call(run_id=run_id)
         try:
@@ -107,7 +107,7 @@ class _MockAgentBase(HarnessReferenceAgent):
             harness=self._harness,
         )
 
-    def get_steps(self) -> list[AgentStep]:
+    def get_steps(self, context: RuntimeExecutionContext) -> list[AgentStep]:
         contract = self.get_contract()
         return [
             AgentStep(

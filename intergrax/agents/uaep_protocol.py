@@ -5,7 +5,7 @@
 
 from __future__ import annotations
 
-from typing import List, Optional, Protocol, runtime_checkable
+from typing import Protocol, runtime_checkable
 
 from intergrax.contracts.agent_contract_meta import AgentContract
 from intergrax.contracts.agent_decision import AgentDecision
@@ -17,14 +17,11 @@ from intergrax.contracts.runtime_execution_context import RuntimeExecutionContex
 class UAEPAgent(Protocol):
     """Agents executed by :class:`UAEPExecutor` must implement this protocol."""
 
-    def get_contract(self) -> AgentContract:
-        ...
+    def get_contract(self) -> AgentContract: ...
 
-    def get_steps(self) -> List[AgentStep]:
-        ...
+    def get_steps(self, context: RuntimeExecutionContext) -> list[AgentStep]: ...
 
-    async def run_step(self, step: AgentStep, ctx: RuntimeExecutionContext) -> StepOutput:
-        ...
+    async def run_step(self, step: AgentStep, ctx: RuntimeExecutionContext) -> StepOutput: ...
 
 
 @runtime_checkable
@@ -34,8 +31,7 @@ class UAEPAgentWithResume(UAEPAgent, Protocol):
         step: AgentStep,
         ctx: RuntimeExecutionContext,
         cursor: dict,
-    ) -> StepOutput:
-        ...
+    ) -> StepOutput: ...
 
 
 @runtime_checkable
@@ -43,10 +39,9 @@ class UAEPAgentWithDecide(UAEPAgent, Protocol):
     def decide_after_step(
         self,
         step: AgentStep,
-        output: Optional[StepOutput],
+        output: StepOutput | None,
         ctx: RuntimeExecutionContext,
-    ) -> AgentDecision:
-        ...
+    ) -> AgentDecision: ...
 
 
 def is_uaep_agent(agent: object) -> bool:

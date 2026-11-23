@@ -9,40 +9,35 @@ from abc import abstractmethod
 from intergrax.agents.agent_contract import Agent
 from intergrax.agents.uaep_protocol import UAEPAgent
 from intergrax.contracts.agent_run import AgentRunRequest, AgentRunResult
-from intergrax.contracts.agent_run_enums import AgentRunErrorCode, AgentRunStatus, TerminalReason
 from intergrax.contracts.agent_step import AgentStep, StepOutput
 from intergrax.contracts.runtime_execution_context import RuntimeExecutionContext
 from intergrax.contracts.tier2_agent import Tier2Agent
+
+
 class HarnessReferenceAgent(Agent):
     """
-    Tier-2 reference agent base — explicitly implements :class:`UAEPAgent`.
+      Tier-2 reference agent base — explicitly implements :class:`UAEPAgent`.
 
-    Subclasses must provide UAEP step execution; registration may enforce
-  ``isinstance(agent, UAEPAgent)`` when ``requires_uaep`` is set on the binding.
+      Subclasses must provide UAEP step execution; registration may enforce
+    ``isinstance(agent, UAEPAgent)`` when ``requires_uaep`` is set on the binding.
     """
 
     async def run(self, request: AgentRunRequest) -> AgentRunResult:
         _ = request
-        raise NotImplementedError(
-            f"{type(self).__name__} is executed via AgentEngine/UAEPExecutor, not direct run()."
-        )
+        raise NotImplementedError(f"{type(self).__name__} is executed via AgentEngine/UAEPExecutor, not direct run().")
 
     @abstractmethod
-    def get_steps(self) -> list[AgentStep]:
-        ...
+    def get_steps(self, context: RuntimeExecutionContext) -> list[AgentStep]: ...
 
     @abstractmethod
     async def run_step(
         self,
         step: AgentStep,
         ctx: RuntimeExecutionContext,
-    ) -> StepOutput:
-        ...
+    ) -> StepOutput: ...
 
 
 def assert_uaep_reference_agent(agent: Tier2Agent) -> None:
     """Validate reference agent implements UAEP before registry insert."""
     if not isinstance(agent, UAEPAgent):
-        raise TypeError(
-            f"{type(agent).__name__} must implement UAEPAgent (get_steps, run_step)"
-        )
+        raise TypeError(f"{type(agent).__name__} must implement UAEPAgent (get_steps, run_step)")

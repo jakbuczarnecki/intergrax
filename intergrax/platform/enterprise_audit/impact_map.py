@@ -287,6 +287,19 @@ WAVE_DIFF_FULL_IMPACT_PREFIXES: tuple[str, ...] = (
     "intergrax/multimedia",  # RW-RUNTIME (PR #670): images loader
     "intergrax/background_tasks",
     "intergrax/runtime/sandbox",
+    # Slice 3 (043-M Part E): PDC-touched residuals — FULL impact (all manifest ids per prefix).
+    "agents/boundary_demo",
+    "agents/external_contractor_adapter",
+    "agents/lab",
+    "agents/organization_worker",
+    "intergrax/agents",
+    "intergrax/harness",
+    "intergrax/runtime/capacity",
+    "intergrax/runtime/events",
+    "intergrax/runtime/human",
+    "intergrax/runtime/nexus",
+    "intergrax/runtime/task_memory",
+    "intergrax/scaffold",
 )
 
 
@@ -357,6 +370,7 @@ def build_impact_map_from_manifest(checks: tuple[ManifestCheck, ...]) -> dict[st
         ),
         ("intergrax/platform/enterprise_audit/baseline.py", ("C022", "C023", "C028", "C026")),
         ("intergrax/platform/enterprise_audit/runner.py", ("C004", "C002", "C009")),
+        ("intergrax/platform/enterprise_audit/vbn.py", ("C004", "C002", "C009")),
         ("intergrax/platform/enterprise_audit/modes.py", ("C011", "C067", "C071")),
         ("intergrax/platform/enterprise_audit/validators.py", ("C026", "C027", "C069")),
         ("intergrax/platform/enterprise_audit/evidence.py", ("C006", "C068", "C073", "C049")),

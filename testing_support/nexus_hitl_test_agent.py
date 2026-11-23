@@ -4,6 +4,8 @@
 
 from __future__ import annotations
 
+from datetime import UTC, datetime
+
 from intergrax.agents.harness_reference_agent import HarnessReferenceAgent
 from intergrax.contracts.agent_contract_meta import AgentContract
 from intergrax.contracts.agent_decision import (
@@ -14,23 +16,22 @@ from intergrax.contracts.agent_decision import (
 )
 from intergrax.contracts.agent_step import AgentStep, StepOutput
 from intergrax.contracts.capability import CapabilityMatchResult
-from intergrax.contracts.task_envelope import TaskEnvelope
-from intergrax.contracts.runtime_execution_context import RuntimeExecutionContext
-from intergrax.runtime.nexus.config import RuntimeConfig
-from intergrax.runtime.nexus.engine.runtime_context import RuntimeContext
-from intergrax.runtime.nexus.responses.response_schema import RuntimeRequest
-from datetime import UTC, datetime
-
 from intergrax.contracts.execution_identity import RunId
 from intergrax.contracts.human_approver import (
     HumanApproverEvidence,
     local_development_approver_evidence,
 )
+from intergrax.contracts.runtime_execution_context import RuntimeExecutionContext
+from intergrax.contracts.task_envelope import TaskEnvelope
 from intergrax.runtime.human.models import HumanResponseVerdict
 from intergrax.runtime.long_running.models import TaskCheckpoint
+from intergrax.runtime.nexus.config import RuntimeConfig
+from intergrax.runtime.nexus.engine.runtime_context import RuntimeContext
+from intergrax.runtime.nexus.responses.response_schema import RuntimeRequest
 from intergrax.runtime.task.task import Task
 from intergrax.runtime.task.task_contract import HumanApprovalResolution
 from intergrax.utils import attribute_access
+
 from testing_support.builder import FakeLLMAdapter, build_in_memory_session_manager
 
 
@@ -92,9 +93,7 @@ class NexusBasicHitlTestAgent(HarnessReferenceAgent):
                 matched_capabilities=[self._capability],
                 score=1.0,
             )
-        return CapabilityMatchResult(
-            matched=False, rationale="capability not supported"
-        )
+        return CapabilityMatchResult(matched=False, rationale="capability not supported")
 
     def build_context(self, request: RuntimeRequest) -> RuntimeContext:
         config = RuntimeConfig(
@@ -108,12 +107,10 @@ class NexusBasicHitlTestAgent(HarnessReferenceAgent):
             session_manager=build_in_memory_session_manager(),
         )
 
-    def get_steps(self) -> list[AgentStep]:
+    def get_steps(self, context: RuntimeExecutionContext) -> list[AgentStep]:
         return [AgentStep(step_id="review", step_name="review", step_index=0)]
 
-    async def run_step(
-        self, step: AgentStep, ctx: RuntimeExecutionContext
-    ) -> StepOutput:
+    async def run_step(self, step: AgentStep, ctx: RuntimeExecutionContext) -> StepOutput:
         if self._track_step_runs:
             NexusBasicHitlTestAgent.step_run_count += 1
         return StepOutput(step_id=step.step_id, summary=self._step_summary)
@@ -125,9 +122,7 @@ class NexusBasicHitlTestAgent(HarnessReferenceAgent):
         ctx: RuntimeExecutionContext,
     ) -> AgentDecision:
         _ = step
-        if output is not None and _human_approved(
-            ctx, extended=self._extended_human_approval
-        ):
+        if output is not None and _human_approved(ctx, extended=self._extended_human_approval):
             return AgentDecision(type=AgentDecisionType.COMPLETE, reason="approved")
         if _human_approved(ctx, extended=self._extended_human_approval):
             return AgentDecision(type=AgentDecisionType.COMPLETE, reason="approved")
@@ -169,9 +164,7 @@ def prepare_nexus_hitl_resume_task(
         return
     pause_record = resume.runtime.governance.pause_record
     pause_id = pause_record.pause_id if pause_record is not None else "hr_hitl_pause"
-    human_request_id = (
-        pause_record.human_request_id if pause_record is not None else "hr_hitl_1"
-    )
+    human_request_id = pause_record.human_request_id if pause_record is not None else "hr_hitl_1"
     execution_id = None
     if loaded.runtime is not None and loaded.runtime.execution_tree.entries:
         execution_id = loaded.runtime.execution_tree.entries[0].execution_id

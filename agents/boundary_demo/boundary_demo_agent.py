@@ -6,17 +6,12 @@ from __future__ import annotations
 
 from typing import Any
 
-from boundary_demo.capabilities import CAPABILITIES, CAPABILITY
-from boundary_demo.contract import build_agent_contract
-from intergrax.agents.harness_reference_agent import HarnessReferenceAgent
 from intergrax.agents.authoring.patterns.reflex import ReflexAgent  # ACP-MIG-3 fleet marker
 from intergrax.agents.authoring.stub_llm import PrefixStubLLMAdapter
+from intergrax.agents.harness_reference_agent import HarnessReferenceAgent
 from intergrax.agents.reference_harness import (
     LabHarnessContext,
     default_reference_harness,
-)
-from intergrax.runtime.execution.lab_reference_agent_runtime import (
-    build_lab_agent_runtime_config,
 )
 from intergrax.agents.tool_enablement import ToolEnablementProfile
 from intergrax.contracts.agent_contract_meta import AgentContract
@@ -25,15 +20,22 @@ from intergrax.contracts.agent_run_enums import CognitivePattern
 from intergrax.contracts.agent_step import AgentStep, StepOutput
 from intergrax.contracts.capability import CapabilityMatchResult
 from intergrax.contracts.runtime_execution_context import RuntimeExecutionContext
+from intergrax.contracts.task_envelope import TaskEnvelope, routing_capability_from_envelope
 from intergrax.contracts.tool_request import ToolRequest, ToolResponseStatus
 from intergrax.runtime.attestation.buffer import BoundaryEventBuffer
 from intergrax.runtime.attestation.settings import ExecutionBoundaryExportRuntimeSettings
-from intergrax.runtime.execution.agent_runtime_context import RuntimeContext
-from intergrax.runtime.execution.agent_runtime_io import RuntimeRequest
 from intergrax.runtime.execution.agent_in_memory_session_factory import (
     build_in_memory_session_manager,
 )
-from intergrax.contracts.task_envelope import TaskEnvelope, routing_capability_from_envelope
+from intergrax.runtime.execution.agent_runtime_context import RuntimeContext
+from intergrax.runtime.execution.agent_runtime_io import RuntimeRequest
+from intergrax.runtime.execution.lab_reference_agent_runtime import (
+    build_lab_agent_runtime_config,
+)
+
+from boundary_demo.capabilities import CAPABILITY
+from boundary_demo.contract import build_agent_contract
+
 RECORDS_PUT_TOOL_ID = "records.put"
 _REFLEX_PATTERN = ReflexAgent  # retain ReflexAgent symbol for fleet inventory scan
 
@@ -89,7 +91,7 @@ class BoundaryDemoAgent(HarnessReferenceAgent):
             session_manager=build_in_memory_session_manager(),
         )
 
-    def get_steps(self) -> list[AgentStep]:
+    def get_steps(self, context: RuntimeExecutionContext) -> list[AgentStep]:
         return [
             AgentStep(
                 step_id="store_demo_record",
