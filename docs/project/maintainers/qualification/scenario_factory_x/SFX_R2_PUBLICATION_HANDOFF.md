@@ -9,13 +9,13 @@
 | --- | --- |
 | `CURRENT_REMOTE_BASE_SHA` | `faa9822f8f417f33524f4341afda7da357772f5e` |
 | `SOURCE_CORRECTIVE_STACK` (local `development`) | `85f9e955ad06aa0c91a342d62827483fce8caf3f` |
-| `PUBLICATION_CANDIDATE_SHA` | `ea86449ef4785e6bd7c5f965f4c7ed530d131ded` |
+| `PUBLICATION_CANDIDATE_SHA` | `4b63b8dafb6ec9323d9c573666f21f9500ec8bea` |
 | `REMOTE_PUBLICATION_SHA` | **NONE** |
-| Replay commits on branch | `022dc251f` → `a89e2673d` → `ea86449ef` |
+| Replay commits on branch | `022dc251f` → `a89e2673d` → `4b63b8dafb6e` |
 
 **Scope note:** source commit `e5cd9879e` included 3 out-of-scope paths (`enterprise_audit`, `test_xd_05_host_background`); publication replay **excludes** them (evidence: `.tmp/proof/sfx-r2-publish-001/git-scope-19files.txt`).
 
-## Validation @ `ea86449ef` (agent session)
+## Validation @ `4b63b8dafb6e` (agent session)
 
 | Check | Result | Evidence |
 | --- | --- | --- |
@@ -23,7 +23,7 @@
 | DAG (37 tasks) | PASS | `.tmp/session/sfx-r2-publish-001` WBS script |
 | REQ-R2 (18 rows) | PASS | `SFX_REQUIREMENTS_TRACEABILITY_R2_PROPOSAL.json` |
 | REF-1 oracles | PASS | `SFX_R2_REF_GEN_EVALUATION_PLAN.md` |
-| Architecture | PASS | reviewer @ ea86449ef |
+| Architecture | PASS | reviewer @ 4b63b8dafb6e |
 | SFX local links | PASS | `.tmp/session/sfx-r2-publish-001/sfx_link_check.py` |
 | Global link pytest | GLOBAL_PREEXISTING_FAILURE | non-SFX docs |
 | Independent audit | PASS_WITH_FINDINGS | [18ab5a33](18ab5a33-3572-4963-b477-c6ac3f457dfc) |
@@ -56,7 +56,7 @@ git push -u origin docs/sfx-r2-corr-001:docs/sfx-r2-corr-001
 
 ## Post-publication checklist
 
-- [ ] Remote contains `ea86449ef` (or merge commit) on `development`
+- [ ] Remote contains `4b63b8dafb6e` (or merge commit) on `development`
 - [ ] `git-scope-19files.txt` matches `git diff --name-only <base>..<merge>`
 - [ ] Update `PUBLISHED_SHA` / `REMOTE_PUBLICATION_SHA` in corrective dossier
 - [ ] Re-run SFX package validation on merged SHA
