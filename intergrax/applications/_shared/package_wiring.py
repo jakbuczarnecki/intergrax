@@ -45,15 +45,37 @@ from intergrax.runtime.architecture.capability_graph_applications import applica
 from intergrax.skills.registry.factory import enabled_skill_ids_for_profile
 from intergrax.tools.registry.factory import enabled_tool_ids_for_profile
 
+PACKAGE_GATE_TENANT_ID = "ci-package-gate-tenant"
+
+
+def package_gate_integration_profile() -> IntegrationProfile:
+    """Lab bindings for CI package/capability gates (RAG vector store without vendor embedding)."""
+    from intergrax.integrations.contracts.integration_profile import (
+        DOCLING,
+        INMEMORY,
+        LOG,
+        SQLITE,
+    )
+
+    return IntegrationProfile(
+        relational_store=SQLITE,
+        notification_channel=LOG,
+        document_parser=DOCLING,
+        vector_store=INMEMORY,
+    )
+
 
 def package_gate_environment(env: ApplicationEnvironmentProfile) -> ApplicationEnvironmentProfile:
     """Lab integration swap for CI package closure checks (no vendor drivers required)."""
-    from intergrax.integrations.registry.profile import IntegrationProfile
-
     return env.model_copy(
         update={
-            "integration_profile": IntegrationProfile.lab(),
-            "application_profile": ApplicationProfile.LAB,
+            "integration_profile": package_gate_integration_profile(),
+            "meta": env.meta.model_copy(
+                update={
+                    "execution_mode": ExecutionMode.BALANCED,
+                    "application_profile": ApplicationProfile.LAB,
+                },
+            ),
         },
     )
 
