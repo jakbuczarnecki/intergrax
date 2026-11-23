@@ -1,5 +1,5 @@
 ---
-description: Cursor enterprise autonomous delivery on single checkout — git, venv, publish
+description: Cursor enterprise delivery — single checkout, git, venv, publish
 loading: explicit
 ---
 

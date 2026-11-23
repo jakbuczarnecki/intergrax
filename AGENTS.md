@@ -1,6 +1,6 @@
 # Intergrax - Agent Instructions (stub)
 
-> **Doc map:** [`docs/project/technical/DOCUMENTATION_MAP.md`](docs/project/technical/DOCUMENTATION_MAP.md) - roles of instructional artifacts (human · operator · agent).
+> **Doc map:** [`DOCUMENTATION_MAP.md`](docs/project/technical/DOCUMENTATION_MAP.md).
 
 **Intergrax** is a four-tier **Agent OS / Harness AI** runtime (Python 3.12, `uv`):
 

@@ -17,5 +17,4 @@ loading: cursor-always
 - Enterprise ticket checks, test budget, and Claude Code role policy (`role_registry.yaml`) remain authoritative for delegated workers.
 - Software factory (`/igx-native-run-plan`, `igx_factory.py`) is voluntary tooling only — never required for normal Cursor work.
 - Plan Mode may specify roles and delegation; that is session-local, not a global requirement.
-- Enterprise publish batches on the main checkout: on-demand rule [`igx-cursor-enterprise-delivery.md`](igx-cursor-enterprise-delivery.md) (venv tiers, autonomous commit/push/PR when mandated).
 <!-- igx:active:end -->

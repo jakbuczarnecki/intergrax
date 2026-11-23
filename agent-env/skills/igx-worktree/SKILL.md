@@ -8,7 +8,7 @@ description: Create and use git worktrees for agents - the _agent layout, slugs,
 
 ## Default (Cursor direct execution)
 
-- **Single checkout** on `development` at the repository root is the default delivery surface (`/igx-cursor-direct-execution`, `/igx-cursor-enterprise-delivery`).
+- **Single checkout** on `development` at the repository root is the default delivery surface (`/igx-cursor-direct-execution`, `/igx-enterprise-delivery`).
 - **Do not** create a worktree for routine implementation, PR publication, or W3 qualification unless the operator explicitly requests worktree mode (Software Factory `/igx-native-run-plan`, approved parallel implementer, or a named plan slug).
 - Read-only research subagents may use the main checkout; they must not modify it.
 
