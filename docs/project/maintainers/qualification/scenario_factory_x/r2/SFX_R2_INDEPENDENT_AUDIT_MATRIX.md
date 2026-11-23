@@ -53,4 +53,4 @@
 | F-04 | SEF engineering authority boundary | **PASS** | No second EEA |
 | F-05 | False implementation authorization | **PASS** | All **NO** |
 
-**Audit SHA:** _set at finalization commit_
+**Audit SHA:** ac04b2425a493a3729439e2d6256bb30ae78910a

@@ -21,7 +21,7 @@
 | Field | SHA / value |
 | --- | --- |
 | `CURRENT_REMOTE_BASE_SHA` | `3e5dedf267bc783a795ef20974a4e70809f05fbd` |
-| `PUBLICATION_CANDIDATE_SHA` | _finalization commit on this branch_ |
+| `PUBLICATION_CANDIDATE_SHA` | ac04b2425a493a3729439e2d6256bb30ae78910a |
 | `REMOTE_PUBLICATION_SHA` | **NONE** until PR #756 merge |
 | Prior corrective HEAD | `42fe39fbf1b2acf5108cc52ba4890d1b0d33e7ac` |
 
