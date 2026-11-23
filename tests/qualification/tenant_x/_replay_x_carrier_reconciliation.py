@@ -12,9 +12,10 @@ from tests.qualification.tenant_x._inventory import raw_discovery_candidates
 
 TENANT_X_FINAL_IMMUTABLE_CARRIER_TOTAL: Final[int] = 800
 # Re-pinned once by T-IGX-041-I (PDC-X P7): 800 + 19 (REPLAY_DELTA_CLASS_FIELD_SURFACE_IDS)
-# + 15 (REPLAY_P7_ADDED_CLASSIFICATION) - 3 (REPLAY_P7_REMOVED_SURFACE_IDS). Was 819.
-TENANT_X_REPLAY_HEAD_CARRIER_TOTAL: Final[int] = 837
-# Net delta of the pin against TENANT-X-FINAL: 19 classified at ROADMAP-REPLAY-X plus the P7 net (+18).
+# + 23 (REPLAY_P7_ADDED_CLASSIFICATION) - 3 (REPLAY_P7_REMOVED_SURFACE_IDS). Was 819.
+# Re-pinned T-IGX-051-A Part I @ W3 (PT-WF E4): +2 experiment registry carriers -> 839.
+TENANT_X_REPLAY_HEAD_CARRIER_TOTAL: Final[int] = 839
+# Net delta of the pin against TENANT-X-FINAL: 19 classified at ROADMAP-REPLAY-X plus the P7 net (+20).
 TENANT_X_REPLAY_CARRIER_DELTA: Final[int] = TENANT_X_REPLAY_HEAD_CARRIER_TOTAL - TENANT_X_FINAL_IMMUTABLE_CARRIER_TOTAL
 
 # Surfaces introduced after TENANT-X-FINAL evidence @ 5ccb72f… (prod-effective tenant_id carriers).
@@ -146,6 +147,14 @@ REPLAY_P7_ADDED_CLASSIFICATION: Final[Mapping[str, tuple[str, str]]] = {
         _S,
         "Required non-empty owning tenant of the authenticated run request identity on ACP step/state contracts.",
     ),
+    "intergrax/experiments/models.py::ExperimentRecord" + _SUFFIX: (
+        _S,
+        "Required owning tenant of a persisted experiment registry row (tenant-scoped store and API).",
+    ),
+    "intergrax/experiments/models.py::RegisterExperimentRequest" + _SUFFIX: (
+        _S,
+        "Required tenant on experiment registration; foreign metadata tenant must match harness binding (PT-WF E4).",
+    ),
 }
 
 # Surfaces of the 819-pin that no longer exist: B-D8 (92ee26bf3) removed the tenant field from these
@@ -158,9 +167,9 @@ REPLAY_P7_REMOVED_SURFACE_IDS: Final[frozenset[str]] = frozenset(
     }
 )
 
-# SHA-256 (replay_class_field_ids_sha256) of all 837 class-field surface ids at the T-IGX-051-A Part I re-pin.
+# SHA-256 (replay_class_field_ids_sha256) of all 839 class-field surface ids at the T-IGX-051-A Part I re-pin.
 # A swap that keeps the count (one carrier removed, another added) changes it.
-TENANT_X_REPLAY_CLASS_FIELD_IDS_SHA256: Final[str] = "471f7d8a0f04176be329b9936c6abcde488cb4a67fc42bf84bdfd5d255f155db"
+TENANT_X_REPLAY_CLASS_FIELD_IDS_SHA256: Final[str] = "ddc15b9bb263c72a07e9e898bd14be03037532834fffaa5ce9d2959027c89e3e"
 
 
 def replay_class_field_ids_sha256(ids: Iterable[str]) -> str:
