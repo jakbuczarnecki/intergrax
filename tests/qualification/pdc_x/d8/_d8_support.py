@@ -116,11 +116,12 @@ def make_context(
     *,
     tenant_id: str = TENANT_A,
     agent_id: str = "agent-reader",
+    run_id: str | None = None,
 ) -> ArtifactAccessContext:
     return ArtifactAccessContext(
         agent=AgentIdentity(agent_id=agent_id, tenant_id=tenant_id),
         task_id=mint_task_id(),
-        run_id=mint_run_id(),
+        run_id=run_id or mint_run_id(),
         attempt_id=mint_attempt_id(),
         execution_id=mint_execution_id(),
     )
