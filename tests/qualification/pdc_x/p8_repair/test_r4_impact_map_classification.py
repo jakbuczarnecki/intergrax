@@ -45,5 +45,5 @@ def test_the_entries_are_exact_files_so_unmapped_siblings_still_fail() -> None:
     assert _unmapped(_UNMAPPED_SIBLINGS) == list(_UNMAPPED_SIBLINGS)
 
 
-def test_the_manifest_still_has_exactly_85_checks() -> None:
-    assert len(load_default_manifest()) == 85
+def test_the_manifest_still_has_exactly_91_checks() -> None:
+    assert len(load_default_manifest()) == 91

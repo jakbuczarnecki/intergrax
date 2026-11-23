@@ -24,6 +24,13 @@ def _repo_root() -> Path:
     return Path(__file__).resolve().parents[2]
 
 
+def _write_json_text(path: Path, payload: dict[str, object]) -> None:
+    path.parent.mkdir(parents=True, exist_ok=True)
+    text = json.dumps(payload, indent=2, sort_keys=True) + "\n"
+    with path.open("w", encoding="utf-8", newline="\n") as handle:
+        handle.write(text)
+
+
 def main() -> int:
     parser = argparse.ArgumentParser()
     parser.add_argument("--since-sha", help="Optional: validate selection for a git range")
@@ -43,8 +50,7 @@ def main() -> int:
             "path_prefix_to_check_ids": {k: sorted(v) for k, v in sorted(mapping.items())},
         }
         out = root / "intergrax/platform/enterprise_audit/data/changed_since_impact_map.v1.json"
-        out.parent.mkdir(parents=True, exist_ok=True)
-        out.write_text(json.dumps(payload, indent=2, sort_keys=True) + "\n", encoding="utf-8")
+        _write_json_text(out, payload)
         print(f"wrote {out}")
         return 0
     if not args.since_sha or not args.output:
@@ -67,8 +73,7 @@ def main() -> int:
         "unmapped_product_paths": list(selection.unmapped_paths),
         "reasons": list(selection.reasons),
     }
-    args.output.parent.mkdir(parents=True, exist_ok=True)
-    args.output.write_text(json.dumps(payload, indent=2, sort_keys=True) + "\n", encoding="utf-8")
+    _write_json_text(args.output, payload)
     return 0
 
 

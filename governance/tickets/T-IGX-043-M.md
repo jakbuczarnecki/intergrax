@@ -16,13 +16,14 @@ Scaffold only — no PASS, FRZ promotion, or independent-verification claim.
 
 ## Plan digest
 
-Plan digest: d13757d0b4ae6d1ea2374b1f6312cf44249f6c53a39ca891b2c7e38e60ca20f3
+Plan digest: d372ef70e739d0dca69859dbf49435d6446f0695f0ebe52017a3f7dd7422ddb6
 
 Canonical plan: [`governance/tickets/plans/PLAN_T-IGX-043-M.md`](plans/PLAN_T-IGX-043-M.md).
 
 ## Approved
 
-PENDING. Gate-meaning ENT-AUDIT changes require wave-packet approval (OD-AF-22 / RW-PLAN); RW-PLAN-AUDIT remains **BLOCKED** on `development`.
+Approved: operator @ 2026-11-23T07:30:00+01:00  
+Approval source: OD-W06-AUTH-01 (Wave 06 AUTH-01 resolution); scope Part E E0–E3 + Wave 06 slice 4 on `development` tor; plan digest `d372ef70e739d0dca69859dbf49435d6446f0695f0ebe52017a3f7dd7422ddb6`. Development direct execution (not RW-train S1/S2 signing).
 
 ## Test contract
 
@@ -45,8 +46,16 @@ Train-only baseline promotion (`T-AF2-ENT-BASELINE-PREFREEZE`), merge to `arch-f
 
 Part E manifest / consumer write set: **UNBLOCKED** (operator D3); implementation **BLOCKED** on 043-I Part C port (plan section 8.4 E0).
 
+## Implementation record (Wave 06 AUTH-01)
+
+| Step | Evidence |
+|------|----------|
+| E0 engine reconcile | WD FRZ attribution suite green @ development HEAD |
+| E1 manifest 85→91 | Six stage-gate ENT checks in manifest JSON |
+| E2 impact map | slice 4 + SSOT regen; NT-043M-S1..S4 |
+| E3 consumers / R4 | `test_r4` manifest count 91; annex C alignment green |
+
 ## Lifecycle state
 
-`in_progress` (smoke OK fala 5; product manifest Part E **BLOCKED**)
-(development tor); train scaffold: plan_pending
+`in_progress` (Part E E0–E3 authorized OD-W06-AUTH-01 @ 2026-11-23)
 

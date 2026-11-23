@@ -86,6 +86,11 @@ PDC_DOMAIN_IMPACT_RULES: tuple[tuple[str, tuple[str, ...]], ...] = (
     ("intergrax/eval", ("ENT-A-OWN-01", "ENT-A-CTR-01", "ENT-A-TYP-01")),
     # harness_01 tool budget and zero-bypass gates classify intergrax/experiments (TOOLING_INTERNAL Nexus importers).
     ("intergrax/experiments/workflow.py", ("ENT-A-REL-02", "ENT-A-REL-03")),
+    # Wave 06 PDC-touched experiment modules (exact-file; no package prefix under experiments/).
+    ("intergrax/experiments/models.py", ("ENT-A-REL-02", "ENT-A-REL-03")),
+    ("intergrax/experiments/persistence_contract.py", ("ENT-A-REL-02", "ENT-A-REL-03")),
+    ("intergrax/experiments/store.py", ("ENT-A-REL-02", "ENT-A-REL-03")),
+    ("intergrax/compat/langchain/documents.py", ("ENT-A-CTR-01", "ENT-A-CTR-02", "ENT-A-CTR-03")),
     # ee_a1 execution engine ownership + harness_w5 observability transport gate + layer boundary gate.
     (
         "intergrax/hosting",
@@ -300,6 +305,8 @@ WAVE_DIFF_FULL_IMPACT_PREFIXES: tuple[str, ...] = (
     "intergrax/runtime/nexus",
     "intergrax/runtime/task_memory",
     "intergrax/scaffold",
+    # Slice 4 (Wave 06): Campaign B compat tree touched since PDC baseline (FULL per prefix).
+    "intergrax/compat",
 )
 
 
