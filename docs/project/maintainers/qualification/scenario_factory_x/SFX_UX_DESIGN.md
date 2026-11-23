@@ -400,5 +400,4 @@ The prototype is a static mock-up outside repository product paths (SFX-P3-01). 
 
 ## R2 extension (PROPOSED)
 
-Mission Dashboard, iteration timeline, candidate comparison, pause/resume — see [
-2/SFX_R2_UX_MISSION_EXTENSION.md](./r2/SFX_R2_UX_MISSION_EXTENSION.md). Eleven-step linear flow unchanged.
+Mission Dashboard, iteration timeline, candidate comparison, pause/resume — see [R2 mission UX extension](./r2/SFX_R2_UX_MISSION_EXTENSION.md). Eleven-step linear flow unchanged.
