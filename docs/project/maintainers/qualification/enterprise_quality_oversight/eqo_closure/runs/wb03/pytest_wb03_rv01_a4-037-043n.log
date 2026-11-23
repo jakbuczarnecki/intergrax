@@ -1,0 +1,8 @@
+# WB03 A4-037 RV01 — post T-IGX-043-N @ development
+# implementation_sha: b700307a94bfe25000ef47962d3bfe2a2e06cc43
+# qualification_sha: 5e9d6d09e415700603fa4ca4cd2b66a394b050e1
+# worktree: d:/Projekty/intergrax/.tmp/session/t-igx-043-n-qual/wt
+
+# NT-FC1-26 case 2 + case 1:
+# uv run pytest ...::test_injected_human_decision_store_reaches_tool_wiring_context ...::test_acknowledgement_is_refused_when_hitl_tools_are_wired -q
+# exit 0 — 2 passed in 27.36s

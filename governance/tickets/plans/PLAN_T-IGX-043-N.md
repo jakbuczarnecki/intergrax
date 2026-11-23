@@ -19,16 +19,26 @@ After FC-1 Part B lands on `development`, STRICT harness hosts that inject `huma
 | Id | Path | Intent |
 |----|------|--------|
 | N-1 | `intergrax/applications/_shared/tool_wiring.py` | Accept optional `human_decision_store` on `build_application_tool_wiring` (or equivalent host entry) and set `ToolWiringContext.human_decision_store` from the harness-injected store (single authority) |
-| N-2 | Callers on the harness strict path that build tool wiring from the host runtime | Forward the same store reference (enumerate at plan revision 2 before implementation; cite **PLAN_T-IGX-043-A** conditional list ceiling) |
+| N-2a | `intergrax/applications/_shared/environment_wiring.py` | Add `human_decision_store` parameter to `wire_application_environment`; pass through to `build_application_tool_wiring` before registry snapshot is fixed (no post-hoc rebuild) |
+| N-2b | `intergrax/applications/_shared/harness_host_runtime.py` | Forward injected `human_decision_store` into `wire_application_environment(...)` only (one line; FC-1 Part B guards unchanged) |
 
-**Out of write set:** `intergrax/runtime/nexus/nexus_loop.py`, `harness_host_runtime.py` composition guards (043-A), TENANT / WF product slices.
+**N-2 caller ceiling (frozen):** only N-2b on harness path. Non-harness Tier-3 hosts do not inject a store in this ticket.
+
+| File | Owner | Collision risk | Test acceptance |
+|------|-------|----------------|-----------------|
+| `tool_wiring.py` | PT-FC1 / 043-N | Low vs 043-J workflow files (disjoint) | NT-FC1-26 case 2 |
+| `environment_wiring.py` | PT-FC1 / 043-N | Serialize before **051-A** if same module edited | NT-FC1-26 case 2 |
+| `harness_host_runtime.py` | PT-FC1 / 043-N | **043-J** may touch WF; not `harness_host_runtime` per ticket | NT-FC1-26 case 2 |
+| `test_fc1_harness_strict_persistence_wiring.py` | 043-N | None | `ctx_store is store` |
+
+**Out of write set:** `intergrax/runtime/nexus/nexus_loop.py`, FC-1 Part B composition logic in `harness_host_runtime.py` (043-A), TENANT / WF product slices.
 
 ## 4. Test contract
 
 | Node | Pytest target (from 043-A) | Case |
 |------|----------------------------|------|
-| NT-FC1-26 | `tests/unit/applications/_shared/test_fc1_harness_strict_persistence_wiring.py::test_acknowledgement_is_refused_when_hitl_tools_are_wired` | **Case 2 only:** store injected → `ctx.human_decision_store is` the injected instance |
-| — | Same file case 1 (ack refused when HITL wired + disable flag) | Owned by **043-A** — regression only after FC-1 lands |
+| NT-FC1-26 case 2 | `::test_injected_human_decision_store_reaches_tool_wiring_context` | `runtime.env_wiring.tool_wiring.wiring_context.human_decision_store is` injected store |
+| NT-FC1-26 case 1 | `::test_acknowledgement_is_refused_when_hitl_tools_are_wired` | **043-A** regression — must stay green |
 
 Red-first at baseline SHA before product edit; then FC-1 regression slice R3 subset (harness persistence file + loop helpers per 043-A §6). `uv run python -m scripts.governance.igx_gov ticket` before push when product paths change.
 

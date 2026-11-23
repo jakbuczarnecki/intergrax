@@ -16,7 +16,7 @@ Scaffold hardened from MEP W3 prep — no PASS, FRZ promotion, or independent-ve
 
 ## Plan digest
 
-Plan digest: 0c20182b43e9bb7abbb7cd94c08c6028ba741d3b3ee77935bf745d38802a9916
+Plan digest: c4bca151a8176b642ad569145f92a3606e595ed1716c47a34205f5778d90888f
 
 Canonical plan: [`governance/tickets/plans/PLAN_T-IGX-043-N.md`](plans/PLAN_T-IGX-043-N.md).
 
@@ -38,4 +38,4 @@ Full FC-1 rewrite, **T-IGX-043-M** Part E, **043-J** E2–E4 (D4 BLOCKED), TENAN
 
 ## Lifecycle state
 
-in_progress
+quality_gate
