@@ -8,7 +8,7 @@ Bounded adoption campaign **IGX-SFX-R2-CANONICAL-ADOPTION-001**: merge R2 overla
 
 Plan: [`PLAN_T-IGX-070-C.md`](plans/PLAN_T-IGX-070-C.md).
 
-Plan digest: 5b15f41e141c81c2de980d8e4312f3d3039c483a0a1c316e0e7c491a5928f19f
+Plan digest: 7c039ad2c00db38b6a1e0ac8f0feca204cfd39c4805efc584c4aaa92752e9925
 
 ## Baseline
 
