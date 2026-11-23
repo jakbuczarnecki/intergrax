@@ -73,14 +73,37 @@
 | Evidence | Value |
 | --- | --- |
 | G2 plan approval | **APPROVED** @ `f33501780a62ae82a718834b6521adc856ec9bfb` |
-33501780a62ae82a718834b6521adc856ec9bfb |
-33501780a62ae82a718834b6521adc856ec9bfb |
-33501780a62ae82a718834b6521adc856ec9bfb |
-33501780a62ae82a718834b6521adc856ec9bfb |
-
 | G3 operator adoption (`OD-SFX-R2-CANONICAL-ADOPTION`) | **APPROVED** @ `81c51263ea672e0f4d886dd0dc85bcf646849108` |
 | Approved plan digest | `7c039ad2c00db38b6a1e0ac8f0feca204cfd39c4805efc584c4aaa92752e9925` |
 | Write set (6 paths only) | SFX-MASTER-PLAN.md, SFX_INDEX.md, SFX_R2_AMENDMENT_DOSSIER.md, SFX_R2_CORRECTIVE_DOSSIER.md, SFX_R2_PUBLICATION_HANDOFF.md, SFX_R2_INDEPENDENT_AUDIT_MATRIX.md |
 | Historical R2 audits (070-A/070-B) | **Not** formal G6 PASS for this candidate |
 | `IMPLEMENTATION_AUTHORIZED` | **NO** |
-| G6 independent audit | **NOT COMPLETED** |
+| G6 independent audit (pre-corrective evidence) | **Recorded** in § below — full pass not claimed |
+
+## T-IGX-070-C — independent G6 post-publication audit
+
+Independent enterprise G6 audit of documentation candidate `9e4eb2d07df8621378830efd26e6c9db6a0f337a` (audit performed **after** overlay publication on `development`; not a pre-publication gate).
+
+| Field | Value |
+| --- | --- |
+| Host session (auditor) | `local_039b59d4-5f1c-4360-8fd7-28315b244478` |
+| Audited commit | `9e4eb2d07df8621378830efd26e6c9db6a0f337a` |
+| `development` HEAD at audit time | `9d3a042fcb7219ab344e526e036ae3e3ca3dde9e` |
+| `G6_CONTENT_VERDICT` | `PASS_WITH_FINDINGS` |
+| `G6_GOVERNANCE_VERDICT` | `NONCOMPLIANT` |
+| `FORMAL_CLOSURE_ELIGIBLE` at audit time | `NO` |
+
+| Finding | Severity | Notes |
+| --- | --- | --- |
+| F-DOC-01 | HIGH | Orphaned SHA lines in pre-G6 table (this file) — remediated in corrective batch |
+| F-DOC-02 | MEDIUM | Publication handoff stale vs actual `development` pins — remediated in handoff |
+| F-GOV-01 | BLOCKER | Publication of overlay candidate on `development` before formal G6; **historical**; not retroactively reversed |
+| F-R1-01 | LOW | Single REF-1 Objective row clarification in overlay delta |
+| F-ATTR-01 | LOW | `Co-authored-by: Cursor` on campaign commits |
+
+| Validation | Result |
+| --- | --- |
+| `git diff --check` (BASE→candidate) | PASS |
+| Six proposed JSON schemas (`python` json.load) | PASS |
+| `verify_plan_approval` | PASS |
+| `uv run` / full `igx_gov ticket` | BLOCKED — Windows `tiktoken` install (`Odmowa dostępu` / `.pyd` lock); not claimed PASS |
