@@ -69,12 +69,16 @@ HO-2 blocks **autonomous multi-submit** until [`SFX_R2_SEF_CROSS_PROGRAM_AMENDME
 
 | Item | Status |
 | --- | --- |
-| R2 documentation commit | `10cf95df89e806191d5ff801917ece91ff144bad` (`Ref: T-IGX-070-A`) |
+| R2 documentation commit (070-A) | `10cf95df89e806191d5ff801917ece91ff144bad` on `origin/development` |
 | Environment-only commit (out of SFX scope) | `d53be07acac08c20d8f4ac8b00746c27d709d071` |
-| R2 corrective commit | `d80c58ad50b1356e01046c6f705ba859636212b7 (stack includes e5cd9879e)` (`Ref: T-IGX-070-B`; local @ audit; push per operator publish path) |
+| R2 corrective + finalization batch | **PR #756** branch `integ/sfx-r2-corr-001` — **not merged** |
+| `REMOTE_PUBLICATION_SHA` | **NONE** until PR merge |
 | `CANONICAL_R2_APPROVED` | **NO** |
 | Canonical master plan merge | **Blocked** — requires operator R2 adoption |
 | `SFX_PRE_IMPLEMENTATION_READY` | **Not granted** |
+
+Handoff SSOT: [SFX_R2_PUBLICATION_HANDOFF.md](./SFX_R2_PUBLICATION_HANDOFF.md).
+
 
 ## R2 readiness for operator approval
 

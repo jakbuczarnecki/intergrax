@@ -2,7 +2,7 @@
 
 **Review type:** documentation-campaign independent review  
 **Campaign:** `IGX-SFX-R2-CORR-001` · **Ticket:** `T-IGX-070-B`  
-**Audit SHA:** `d80c58ad50b1356e01046c6f705ba859636212b7`  
+**Audit SHA:** `360cb4887f5045ddf0f8461f038fb593a2b61292`
 **Reviewer:** igx-reviewer (read-only, `[eb149846-2191-450b-974c-d05c85a117fc](eb149846-2191-450b-974c-d05c85a117fc)`)
 
 ## Historical (T-IGX-070-A initial pass)
@@ -42,3 +42,24 @@
 | `READY_FOR_OPERATOR_APPROVAL` (docs only) | **YES** |
 | `CANONICAL_R2_APPROVED` | **NO** |
 | `IMPLEMENTATION_AUTHORIZED` | **NO** |
+
+## Finalization independent review (IGX-SFX-R2-DOC-FINALIZATION-001)
+
+| # | Criterion | Result | Notes |
+| --- | --- | --- | --- |
+| F-01 | Dossier reconciliation (5 SSOT files) | **PASS** | Publication lanes separated |
+| F-02 | WBS ENTRY vs CERTIFICATION | **PASS** | Matrix + gate taxonomy |
+| F-03 | REQ-R2 / WBS / schema counts | **PASS** | 18 / 37 / 6 |
+| F-04 | SEF engineering authority boundary | **PASS** | No second EEA |
+| F-05 | False implementation authorization | **PASS** | All **NO** |
+
+**Audit SHA:** `360cb4887f5045ddf0f8461f038fb593a2b61292`
+
+
+## Publication-002 remainder review
+
+| Field | Value |
+| --- | --- |
+| Scope | Delta after PR #756 merge (7 files) |
+| Evidence | `.tmp/proof/sfx-r2-publish-002/review.json` |
+| Committed audit SHA | Not pinned post-review (avoids SHA recursion) |
