@@ -49,6 +49,7 @@ from intergrax.runtime.nexus.artifacts.spill import ToolOutputSpiller
 from intergrax.runtime.sandbox.network_egress import canonicalize_network_egress_allowlist
 from tests.qualification.pdc_x.d6._support import CountingSecretsStore, generated_secret
 from tests.qualification.pdc_x.d8._d8_support import (
+    DEFAULT_D8_RUN_ID,
     T0,
     TENANT_A,
     TENANT_B,
@@ -119,7 +120,7 @@ def test_xd10_cross_tenant_reference_token_cannot_be_resolved(tmp_path: Path) ->
     spiller = ToolOutputSpiller(store, threshold_bytes=64, schedule=ArtifactRetentionSchedule.default(), clock=clock)
     body = (BIG_PREFIX + "alpha,1\n" * 50).encode()
     token = spiller.spill_if_large(
-        tenant_id=TENANT_A, run_id="run-1", tool_id="t", agent_id="agent-1", content=body
+        tenant_id=TENANT_A, run_id=str(DEFAULT_D8_RUN_ID), tool_id="t", agent_id="agent-1", content=body
     ).reference
     assert token is not None
 
@@ -297,7 +298,7 @@ def test_xd10_credential_used_by_a_tool_never_lands_in_artifacts_or_evidence(tmp
     assert resolved.resolved_credential.value == secret
     vendor_rows = BIG_PREFIX + "order,1,shipped\n" * 2000  # vendor response; does not echo the credential
     spill = ToolOutputSpiller(store, threshold_bytes=4096, clock=clock).spill_if_large(
-        tenant_id=TENANT_A, run_id="run-1", tool_id="vendor.orders.read", agent_id="agent-1", content=vendor_rows
+        tenant_id=TENANT_A, run_id=str(DEFAULT_D8_RUN_ID), tool_id="vendor.orders.read", agent_id="agent-1", content=vendor_rows
     )
     assert spill.reference is not None
     # Evidence of the use is stored as a durable artifact: the broker's safe evidence only.
@@ -312,7 +313,7 @@ def test_xd10_credential_used_by_a_tool_never_lands_in_artifacts_or_evidence(tmp
 
     surfaces = [
         (tmp_path / "artifacts.sqlite3").read_bytes(),
-        repr([store.get(TENANT_A, a.artifact_id) for a in store.list_for_run(TENANT_A, "run-1")]).encode(),
+        repr([store.get(TENANT_A, a.artifact_id) for a in store.list_for_run(TENANT_A, str(DEFAULT_D8_RUN_ID))]).encode(),
         repr(harness.sink.events).encode(),
         repr(spill).encode(),
     ]
@@ -328,7 +329,7 @@ def test_xd10_tool_output_echoing_a_credential_is_not_persisted_raw(tmp_path: Pa
     store = sqlite_store(tmp_path)
     echoing_output = (BIG_PREFIX + "order,1,shipped\n" * 500 + f"debug: authorization={literal}\n").encode()
     spill = ToolOutputSpiller(store, threshold_bytes=1024).spill_if_large(
-        tenant_id=TENANT_A, run_id="run-1", tool_id="vendor.orders.read", agent_id="agent-1", content=echoing_output
+        tenant_id=TENANT_A, run_id=str(DEFAULT_D8_RUN_ID), tool_id="vendor.orders.read", agent_id="agent-1", content=echoing_output
     )
     assert spill.reference is not None
     assert literal.encode() not in store.get(TENANT_A, spill.reference.artifact_id).data

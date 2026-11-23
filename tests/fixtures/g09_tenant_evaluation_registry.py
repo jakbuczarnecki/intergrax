@@ -40,11 +40,11 @@ def tenant_scoped_online_evaluation_registry(
 @pytest.fixture
 def df5_production_memory_tenant_binding(monkeypatch: pytest.MonkeyPatch) -> None:
     """Propagate scenario tenant_id into memory admission during STRICT composition."""
-    from intergrax.applications._shared import environment_wiring as environment_wiring_module
+    from intergrax.applications._shared import memory_wiring as memory_wiring_module
     from intergrax.applications._shared import scenario_runtime_baseline as scenario_runtime_baseline_module
 
     original_wire = scenario_runtime_baseline_module.wire_application_environment
-    original_resolve = environment_wiring_module.resolve_memory_platform_wiring
+    original_resolve = memory_wiring_module.resolve_memory_platform_wiring
 
     def wire_application_environment(manifest, env, **kwargs):
         token = _SCENARIO_MEMORY_TENANT.set(kwargs.get("tenant_id"))
@@ -75,7 +75,7 @@ def df5_production_memory_tenant_binding(monkeypatch: pytest.MonkeyPatch) -> Non
         wire_application_environment,
     )
     monkeypatch.setattr(
-        environment_wiring_module,
+        memory_wiring_module,
         "resolve_memory_platform_wiring",
         resolve_memory_platform_wiring,
     )
