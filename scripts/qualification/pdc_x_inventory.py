@@ -699,8 +699,14 @@ def check(payload: dict[str, object]) -> list[str]:
     errors.extend(f"MISSING_ANCHOR:{m}" for m in missing_anchors())
     if not OUTPUT.is_file():
         errors.append(f"MISSING_OUTPUT:{_rel(OUTPUT)}")
-    elif OUTPUT.read_text(encoding="utf-8") != render(payload):
-        errors.append(f"STALE_OUTPUT:{_rel(OUTPUT)} (re-run with --write)")
+    else:
+        try:
+            committed = json.loads(OUTPUT.read_text(encoding="utf-8"))
+        except json.JSONDecodeError:
+            errors.append(f"INVALID_OUTPUT:{_rel(OUTPUT)}")
+        else:
+            if committed != payload:
+                errors.append(f"STALE_OUTPUT:{_rel(OUTPUT)} (re-run with --write)")
     return errors
 
 

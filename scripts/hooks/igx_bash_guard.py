@@ -8,6 +8,7 @@ any other PowerShell command (``Get-ChildItem`` ...) is untouched. ``IGX_HOOKS=o
 
 from __future__ import annotations
 
+import os
 import re
 import shlex
 import sys
@@ -53,6 +54,11 @@ def _powershell_script(command: str) -> str:
 
 
 def _resolve(raw: str, cwd: str) -> Path:
+    raw = raw.strip().strip('"').strip("'")
+    if os.sep == "/":
+        raw = raw.replace("\\", "/")
+        while raw.startswith("./"):
+            raw = raw[2:]
     path = Path(raw)
     return path if path.is_absolute() else Path(cwd or ".") / path
 
