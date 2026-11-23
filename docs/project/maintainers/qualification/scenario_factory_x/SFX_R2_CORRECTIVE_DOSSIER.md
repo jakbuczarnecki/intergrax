@@ -1,18 +1,21 @@
 # SFX R2 — Corrective Campaign Dossier (IGX-SFX-R2-CORR-001)
 
-**Campaign:** `IGX-SFX-R2-CORR-001` · **Ticket:** [`T-IGX-070-B`](../../../governance/tickets/T-IGX-070-B.md)  
+**Campaign:** `IGX-SFX-R2-CORR-001` · **Ticket:** [`T-IGX-070-B`](../../../../../governance/tickets/T-IGX-070-B.md)
 **Parent R2 publish:** `10cf95df89e806191d5ff801917ece91ff144bad`  
 **Environment-only commit (out of SFX scope):** `d53be07acac08c20d8f4ac8b00746c27d709d071`
 
 ## A. Git and publication
 
+**PUBLICATION_STATUS:** NOT_PUBLISHED · **REMOTE_PUBLICATION_SHA:** NONE · **Remote base:** `3e5dedf267bc783a795ef20974a4e70809f05fbd`
+
+Handoff: [SFX_R2_PUBLICATION_HANDOFF.md](./SFX_R2_PUBLICATION_HANDOFF.md)
 | Field | Value |
 | --- | --- |
 | `BASE_SHA` (pre-corrective) | `d53be07acac08c20d8f4ac8b00746c27d709d071` |
-| `CORRECTIVE_IMPLEMENTATION_SHA` | _recorded at commit time_ |
+| `CORRECTIVE_IMPLEMENTATION_SHA` | `fb0d7137b` (pre-reconcile pin; updated at publish) |
 | `PUBLISHED_SHA` | _after push or NONE_ |
 | Branch | `development` |
-| Ticket approval | **None** — `plan_pending` (070-A, 070-B) |
+| Ticket approval | **070-B:** `plan_approved` @ `3e5dedf26`; **070-A:** `plan_pending` |
 
 ## B. Correction matrix
 
@@ -71,5 +74,5 @@
 | OD-R2-CANON | Adopt R2 as canonical overlay (`CANONICAL_R2_APPROVED`) | **OPEN** |
 | OD-SEF-DELEG | Approve SFX↔SEF delegated autonomy contract (HO-2) | **OPEN** — see `SFX_R2_OPERATOR_DECISION_REGISTER.md` |
 | OD-ECAP-16 | ECAP §16 applicability to Tier-2 SFX (`C-ECAP-01`) | **OPEN** |
-| OD-070-PLAN | `Approved:` on `PLAN_T-IGX-070-A` / `PLAN_T-IGX-070-B` | **OPEN** — `plan_pending` |
+| OD-070-PLAN | `Approved:` on `PLAN_T-IGX-070-A` / `PLAN_T-IGX-070-B` | **070-B CLOSED** @ delegate; **070-A OPEN** |
 | OD-PUBLISH | Push corrective batch to `origin/development` if not already | **OPEN** (hook-blocked in agent session) |
