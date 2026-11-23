@@ -10,9 +10,6 @@ import pytest
 from intergrax.applications._shared.memory_provider_admission import (
     validate_memory_platform_wiring_admission,
 )
-from intergrax.applications._shared.memory_wiring import (
-    resolve_memory_platform_wiring,
-)
 from intergrax.applications.contracts.environment_profile import (
     ApplicationEnvironmentProfile,
 )
@@ -64,6 +61,7 @@ from tests.unit.applications.test_mem_audit5a_production_provider_admission impo
     _DurableSelfCertifiedUserProfilePlugin,
     _evidence_for_provider,
     _persistent_memory_profile,
+    _resolve_wiring,
     _SelfCertifiedDurableUserProfileStore,
 )
 
@@ -136,7 +134,7 @@ def test_gap_5a_02_evil_plugin_cannot_use_sqlite_trusted_evidence() -> None:
     )
     registry = _evidence_for_provider(BUILTIN_SQLITE_USER_PROFILE_ID)
     with pytest.raises(MemoryProviderAdmissionError) as exc_info:
-        resolve_memory_platform_wiring(
+        _resolve_wiring(
             env,
             discover_entry_points=False,
             explicit_memory_plugins=(_EvilSqliteImpersonatorPlugin,),
@@ -156,7 +154,7 @@ def test_legitimate_external_plugin_passes_with_plugin_id_evidence() -> None:
     env.memory_profile = with_durable_session_plugin(env.memory_profile)
     registry = _evidence_for_provider("test.durable_qualified_user_profile")
     durability_registry = _durability_for_provider("test.durable_qualified_user_profile")
-    wiring = resolve_memory_platform_wiring(
+    wiring = _resolve_wiring(
         env,
         discover_entry_points=False,
         explicit_memory_plugins=(_DurableSelfCertifiedUserProfilePlugin, DurableDeclaredSessionStoragePlugin),
@@ -315,7 +313,7 @@ def test_overlay_replaces_store_and_identity_together(tmp_path: Path) -> None:
     )
     registry = _evidence_for_provider("test.durable_qualified_user_profile")
     durability_registry = _durability_for_provider("test.durable_qualified_user_profile")
-    wiring = resolve_memory_platform_wiring(
+    wiring = _resolve_wiring(
         env,
         discover_entry_points=False,
         explicit_memory_plugins=(_DurableSelfCertifiedUserProfilePlugin,),
@@ -339,7 +337,7 @@ def test_sqlite_wiring_identity_matches_runner_descriptor(tmp_path: Path) -> Non
     }
     registry = _evidence_for_provider(BUILTIN_SQLITE_USER_PROFILE_ID)
     durability_registry = _durability_for_provider(BUILTIN_SQLITE_USER_PROFILE_ID)
-    wiring = resolve_memory_platform_wiring(
+    wiring = _resolve_wiring(
         env,
         qualification_evidence_registry=registry,
         durability_evidence_registry=durability_registry,

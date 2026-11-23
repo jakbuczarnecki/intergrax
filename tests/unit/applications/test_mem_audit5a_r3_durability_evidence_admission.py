@@ -8,11 +8,9 @@ import inspect
 from pathlib import Path
 
 import pytest
-
 from intergrax.applications._shared.memory_provider_admission import (
     validate_memory_platform_wiring_admission,
 )
-from intergrax.applications._shared.memory_wiring import resolve_memory_platform_wiring
 from intergrax.applications.contracts.environment_profile import ApplicationEnvironmentProfile
 from intergrax.integrations.registry.profile import IntegrationProfile
 from intergrax.memory.contracts.provider_admission import (
@@ -56,10 +54,11 @@ from intergrax.memory.stores.sqlite_user_profile_store import SQLiteUserProfileS
 from intergrax.memory.user_profile_memory import UserIdentity, UserPreferences, UserProfile
 from intergrax.memory.user_profile_store import UserProfileStore
 from tests.unit.applications.test_mem_audit5a_production_provider_admission import (
-    _SelfCertifiedDurableUserProfileStore,
     _durability_for_provider,
     _evidence_for_provider,
     _persistent_memory_profile,
+    _resolve_wiring,
+    _SelfCertifiedDurableUserProfileStore,
 )
 from tests.unit.memory.durable_provider_qualification_harness import (
     run_durable_user_profile_production_qualification,
@@ -261,9 +260,7 @@ async def test_sqlite_durable_harness_maps_to_trusted_durability_evidence(tmp_pa
         provider_version=durable.canonical.descriptor.provider_version,
         evidence_source="mem_ent13c_durable_harness",
     )
-    assert (
-        durability_evidence.durability_status is MemoryProviderTrustedDurabilityStatus.DURABLE
-    )
+    assert durability_evidence.durability_status is MemoryProviderTrustedDurabilityStatus.DURABLE
 
     behavioral = qualification_evidence_from_result(
         durable.canonical,
@@ -283,7 +280,7 @@ async def test_sqlite_durable_harness_maps_to_trusted_durability_evidence(tmp_pa
         **(env.integration_profile.options or {}),
         "sqlite": {"data_dir": str(tmp_path)},
     }
-    wiring = resolve_memory_platform_wiring(
+    wiring = _resolve_wiring(
         env,
         qualification_evidence_registry=qual_registry,
         durability_evidence_registry=dur_registry,

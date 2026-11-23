@@ -73,6 +73,18 @@ from tests.fixtures.plugin_packages.memory_store_plugin.memory_store_plugin.plug
 
 pytestmark = [pytest.mark.unit, pytest.mark.gate]
 
+_MEM_5A_TENANT = "mem-audit5a-tenant"
+
+
+def _resolve_wiring(
+    env: ApplicationEnvironmentProfile,
+    **kwargs: object,
+) -> MemoryPlatformWiring:
+    mem = env.memory_profile
+    if mem.enable_user_memory or mem.enable_org_memory or mem.enable_long_term_memory:
+        kwargs.setdefault("tenant_id", _MEM_5A_TENANT)
+    return resolve_memory_platform_wiring(env, **kwargs)
+
 
 def _persistent_memory_profile() -> MemoryProfile:
     return MemoryProfile(
@@ -198,7 +210,7 @@ def test_gap_4_01_product_postgres_persistent_memory_fails_closed() -> None:
     env.memory_profile = _persistent_memory_profile()
 
     with pytest.raises(MemoryProviderAdmissionError) as exc_info:
-        resolve_memory_platform_wiring(env)
+        _resolve_wiring(env)
 
     err = exc_info.value
     assert err.reason_code is MemoryProviderAdmissionReasonCode.REFERENCE_PROVIDER_NOT_ADMISSIBLE
@@ -209,7 +221,7 @@ def test_gap_4_01_product_postgres_persistent_memory_fails_closed() -> None:
 
 def test_product_persistent_memory_disabled_allows_in_memory_baseline() -> None:
     env = ApplicationEnvironmentProfile.product_defaults(profile_id="mem.audit5a.disabled")
-    wiring = resolve_memory_platform_wiring(env)
+    wiring = _resolve_wiring(env)
     assert isinstance(wiring.user_profile_store, InMemoryUserProfileStore)
 
 
@@ -217,7 +229,7 @@ def test_lab_persistent_memory_allows_in_memory() -> None:
     env = ApplicationEnvironmentProfile.lab_defaults(profile_id="mem.audit5a.lab")
     env.integration_profile = IntegrationProfile()
     env.memory_profile = _persistent_memory_profile()
-    wiring = resolve_memory_platform_wiring(env)
+    wiring = _resolve_wiring(env)
     assert isinstance(wiring.user_profile_store, InMemoryUserProfileStore)
 
 
@@ -230,7 +242,7 @@ def test_product_sqlite_without_trusted_evidence_fails(tmp_path: Path) -> None:
         "sqlite": {"data_dir": str(tmp_path)},
     }
     with pytest.raises(MemoryProviderAdmissionError) as exc_info:
-        resolve_memory_platform_wiring(env)
+        _resolve_wiring(env)
     assert exc_info.value.reason_code is MemoryProviderAdmissionReasonCode.QUALIFICATION_EVIDENCE_MISSING
 
 
@@ -244,7 +256,7 @@ def test_product_sqlite_with_trusted_evidence_passes(tmp_path: Path) -> None:
     }
     registry = _evidence_for_provider("sqlite.user_profile")
     durability_registry = _durability_for_provider("sqlite.user_profile")
-    wiring = resolve_memory_platform_wiring(
+    wiring = _resolve_wiring(
         env,
         qualification_evidence_registry=registry,
         durability_evidence_registry=durability_registry,
@@ -259,7 +271,7 @@ def test_product_external_reference_plugin_rejected() -> None:
         update={"user_profile_store_plugin_id": "external.in_memory_user_profile"},
     )
     with pytest.raises(MemoryProviderAdmissionError) as exc_info:
-        resolve_memory_platform_wiring(
+        _resolve_wiring(
             env,
             discover_entry_points=False,
             explicit_memory_plugins=(ExternalInMemoryUserProfileStorePlugin,),
@@ -274,7 +286,7 @@ def test_product_durable_external_plugin_rejected_without_evidence() -> None:
         update={"user_profile_store_plugin_id": "test.durable_qualified_user_profile"},
     )
     with pytest.raises(MemoryProviderAdmissionError) as exc_info:
-        resolve_memory_platform_wiring(
+        _resolve_wiring(
             env,
             discover_entry_points=False,
             explicit_memory_plugins=(_DurableSelfCertifiedUserProfilePlugin,),
@@ -291,7 +303,7 @@ def test_product_durable_external_plugin_passes_with_trusted_evidence() -> None:
     env.memory_profile = with_durable_session_plugin(env.memory_profile)
     registry = _evidence_for_provider("test.durable_qualified_user_profile")
     durability_registry = _durability_for_provider("test.durable_qualified_user_profile")
-    wiring = resolve_memory_platform_wiring(
+    wiring = _resolve_wiring(
         env,
         discover_entry_points=False,
         explicit_memory_plugins=(_DurableSelfCertifiedUserProfilePlugin, DurableDeclaredSessionStoragePlugin),
@@ -336,7 +348,7 @@ def test_strict_lab_not_product_still_allows_reference() -> None:
     env.integration_profile = IntegrationProfile()
     env.execution_mode = ExecutionMode.STRICT
     env.memory_profile = with_durable_session_plugin(_persistent_memory_profile())
-    wiring = resolve_memory_platform_wiring(
+    wiring = _resolve_wiring(
         env,
         discover_entry_points=False,
         explicit_memory_plugins=(DurableDeclaredSessionStoragePlugin,),
@@ -352,7 +364,7 @@ def test_invalid_plugin_still_resolution_error() -> None:
         update={"user_profile_store_plugin_id": "missing.plugin"},
     )
     with pytest.raises(MemoryStorePluginResolutionError):
-        resolve_memory_platform_wiring(env, discover_entry_points=False)
+        _resolve_wiring(env, discover_entry_points=False)
 
 
 def test_provider_spoof_self_certified_fails_without_registry() -> None:
@@ -463,7 +475,7 @@ async def test_runner_result_to_registry_to_admission_passes(tmp_path: Path) -> 
         **(env.integration_profile.options or {}),
         "sqlite": {"data_dir": tmp},
     }
-    wiring = resolve_memory_platform_wiring(
+    wiring = _resolve_wiring(
         env,
         qualification_evidence_registry=registry,
         durability_evidence_registry=durability_registry,
@@ -486,7 +498,7 @@ def test_product_sqlite_with_behavioral_only_fails_without_durability_evidence(
     }
     registry = _evidence_for_provider("sqlite.user_profile")
     with pytest.raises(MemoryProviderAdmissionError) as exc_info:
-        resolve_memory_platform_wiring(
+        _resolve_wiring(
             env,
             qualification_evidence_registry=registry,
         )
