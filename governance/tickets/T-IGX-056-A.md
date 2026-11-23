@@ -1,5 +1,9 @@
 # T-IGX-056-A — EQO A4-006: rebind RuntimeEvent tenant propagation gate emitters
 
+## Approved
+
+Approved: operator @ 2026-11-23T13:30:00+01:00
+
 ## Scope
 
 Repair `EQOA-A4-006` / `EDER-F-0115`: the maintenance gate `scripts/maintenance/check_runtime_event_tenant_propagation.py` still listed the removed `intergrax/agents/uaep.py` path and failed closed on a missing file. Rebind the UAEP emitter to `intergrax/runtime/nexus/uaep/uaep_executor.py`; keep `intergrax/runtime/middleware/trace_middleware.py`. Add a focused unit test and EQO packet evidence for WAVE-01 (`EQO-PKG-A4-006`). Package reference: approved plan `eqo_completion_orchestration_67c47aad.plan.md` @ `a0598ba3e4f4f903eb4da3db8ea012d5cbf71225`.

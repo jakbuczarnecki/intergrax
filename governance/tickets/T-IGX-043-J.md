@@ -20,7 +20,11 @@ Canonical plan: [`governance/tickets/plans/PLAN_T-IGX-043-J.md`](plans/PLAN_T-IG
 
 ## Approved
 
-Approved: operator (OD-AF-AUTO-03, autonomy session 2026-11-21; digest verified against canonical plan file).
+Approved: operator @ 2026-11-21T12:00:00+01:00
+
+Approval source: OD-AF-AUTO-03 (autonomy session 2026-11-21); digest verified against canonical plan file.
+
+
 
 ## Test contract
 
@@ -41,4 +45,6 @@ TENANT **T-IGX-051-A**, FC-1/FC-3 file overlap without declared merge order, `sc
 
 ## Lifecycle state
 
-`in_progress` (§7 G-09 green; wf-exec §9 documents E2–E4 anchors; product E2–E4 BLOCKED on B-1; owner batch not started)
+in_progress
+
+§7 G-09 green; wf-exec §9 documents E2–E4 anchors; product E2–E4 BLOCKED on B-1; owner batch not started

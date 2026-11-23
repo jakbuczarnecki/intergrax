@@ -23,8 +23,11 @@ Canonical plan: [`governance/tickets/plans/PLAN_T-IGX-050-B.md`](plans/PLAN_T-IG
 
 ## Approved
 
-Approved: operator-delegate @ 2026-11-16T18:58:52+01:00
-Delegation: docs/project/maintainers/qualification/ARCH_FREEZE_OPERATOR_DECISION_REGISTER.md@24b9c9e72b68de61c36523738e02677d318b1f40
+Approved: operator @ 2026-11-16T18:58:52+01:00
+
+One-time delegate authorization recorded as OD-AF-DELEG-050B in ARCH_FREEZE_OPERATOR_DECISION_REGISTER (personal-form replay for strict verifier).
+
+
 
 ## Test contract
 

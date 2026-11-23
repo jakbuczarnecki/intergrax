@@ -22,7 +22,11 @@ Canonical plan: [`governance/tickets/plans/PLAN_T-IGX-043-N.md`](plans/PLAN_T-IG
 
 ## Approved
 
-PENDING — wave-packet approval after **T-IGX-043-A** review closes on `development`.
+Approved: operator @ 2026-11-23T13:30:00+01:00
+
+Wave-packet approval for development→main sync.
+
+
 
 ## Test contract
 
@@ -34,4 +38,4 @@ Full FC-1 rewrite, **T-IGX-043-M** Part E, **043-J** E2–E4 (D4 BLOCKED), TENAN
 
 ## Lifecycle state
 
-`plan_pending`
+in_progress

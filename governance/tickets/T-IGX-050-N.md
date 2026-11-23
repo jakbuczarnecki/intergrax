@@ -14,7 +14,9 @@ Canonical plan: [`governance/tickets/plans/PLAN_T-IGX-050-N.md`](plans/PLAN_T-IG
 
 ## Approved
 
-PENDING.
+Approved: operator @ 2026-11-23T13:30:00+01:00
+
+
 
 ## Test contract
 
@@ -26,4 +28,4 @@ Independent audit execution; PASS or FINDINGS verdict in this session; product p
 
 ## Lifecycle state
 
-`draft`
+plan_approved

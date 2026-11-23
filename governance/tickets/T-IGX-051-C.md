@@ -22,7 +22,11 @@ Canonical plan: [`governance/tickets/plans/PLAN_T-IGX-051-C.md`](plans/PLAN_T-IG
 
 ## Approved
 
-Approved: operator (OD-AF-AUTO-03, autonomy session 2026-11-21; digest verified against canonical plan file).
+Approved: operator @ 2026-11-21T12:00:00+01:00
+
+Approval source: OD-AF-AUTO-03 (autonomy session 2026-11-21); digest verified against canonical plan file.
+
+
 
 ## Test contract
 
@@ -34,4 +38,6 @@ TENANT **051-A**, GATES **051-F**, SUPPLY **051-B/N**, merge to `rw-train`, FRZ 
 
 ## Lifecycle state
 
-`implementing` (§7 fala 5A slice 3+: `NT-TRUST-06` **1 passed**, tenant-scope **11 passed**, §7.2 **64 passed** @ `dc083f6ea`; all `NT-TRUST-01`..`06` green; fala 5 close @ `e61e5136a`: trust+RAG **80 passed**, FC-3 bundle **260 passed**, 3 skipped — plan §7.2)
+in_progress
+
+§7 fala 5A slice 3+: `NT-TRUST-06` **1 passed**, tenant-scope **11 passed**, §7.2 **64 passed** @ `dc083f6ea`; all `NT-TRUST-01`..`06` green; fala 5 close @ `e61e5136a`: trust+RAG **80 passed**, FC-3 bundle **260 passed**, 3 skipped — plan §7.2

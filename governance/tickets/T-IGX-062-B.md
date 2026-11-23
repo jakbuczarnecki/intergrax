@@ -34,4 +34,4 @@ uv run pytest tests/qualification/ent_audit_x/acceptance/test_ent_a_ent_a_dup_01
 
 ## Lifecycle state
 
-`approved`
+in_progress

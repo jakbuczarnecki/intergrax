@@ -14,9 +14,9 @@ Canonical plan: [`governance/tickets/plans/PLAN_T-IGX-066-A.md`](plans/PLAN_T-IG
 
 ## Approved
 
-Approved: OD-REPLAYX-09 — T-IGX-066-A wariant A; plan digest 56cff29df9b016111a0696bd8065766a28f3d0ab31af039c2c6f3ea45ff2537a; evidence pin da5ca5b53; ECAP refresh on post-PASS SHA only.
-
 Approved: operator @ 2026-11-23T07:45:00+01:00
+
+
 
 ## Write set
 

@@ -33,7 +33,9 @@ Product paths, tests, FRZ, roadmap, WBS status coercion, PT-T01, train commits, 
 
 ## Approved
 
-Approved: Operator @ 2026-11-23T09:25:00+01:00
+Approved: operator @ 2026-11-23T09:25:00+01:00
+
+
 
 ## Lifecycle state
 

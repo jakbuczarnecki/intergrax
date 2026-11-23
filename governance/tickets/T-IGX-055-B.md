@@ -1,5 +1,9 @@
 # T-IGX-055-B — EQOA-A4-027: research serving rejects missing tenant_id (no research-tenant default)
 
+## Approved
+
+Approved: operator @ 2026-11-23T13:30:00+01:00
+
 ## Scope
 
 Remove silent `research-tenant` / `research-user` defaults from research HTTP serving. `ResearchRunRequestV1` requires explicit `tenant_id` and `user_id`. The research router must not substitute a tenant when there is no authenticated principal. Maps to EQO-PKG-A4-027 / `EDER-F-0136`.

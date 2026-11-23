@@ -12,7 +12,11 @@ Canonical plan: `governance/campaigns/AGENT-OPS-X/source/plan-v2.1.md`. Computed
 
 ## Approved
 
-Approved: operator @ 2026-11-20 (AGENT-OPS-X v2.1 plan approval; bootstrap legacy form)
+Approved: operator @ 2026-11-20T12:00:00+01:00
+
+AGENT-OPS-X v2.1 plan approval; bootstrap legacy form.
+
+
 
 ## Test contract
 

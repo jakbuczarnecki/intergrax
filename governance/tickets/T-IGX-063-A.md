@@ -10,7 +10,11 @@ Minimal qualification/integration test fixes from EQO Wave 05 packages P2 (W05-0
 
 ## Approved
 
-Approved: operator @ 2026-11-23 (EQO Wave 05 sequential remediation campaign authorization).
+Approved: operator @ 2026-11-23T08:00:00+01:00
+
+EQO Wave 05 sequential remediation campaign authorization.
+
+
 
 ## Write set
 
@@ -30,4 +34,4 @@ pytest tests/integration/runtime/test_nexus_loop_governance.py tests/qualificati
 
 ## Lifecycle state
 
-`approved`
+in_progress

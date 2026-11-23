@@ -14,9 +14,9 @@ Canonical plan: [`governance/tickets/plans/PLAN_T-IGX-066-B.md`](plans/PLAN_T-IG
 
 ## Approved
 
-Approved: OD-042 — T-IGX-066-B wariant W1; plan digest 61a983729d71e0e6cea291e0596a0890fcba28d3b33ae06dbccbe99e27836006; neutral globals + env override preserved.
-
 Approved: operator @ 2026-11-23T07:45:00+01:00
+
+
 
 ## Write set
 

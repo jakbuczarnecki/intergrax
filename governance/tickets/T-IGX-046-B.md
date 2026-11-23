@@ -23,6 +23,11 @@ docs/project/maintainers/qualification/platform_domain_completeness/PDC_OWNERSHI
 
 Approved: operator-delegate @ 2026-11-16T18:14:01+01:00
 Delegation: docs/project/maintainers/qualification/eqo_a_remediation/OPERATOR_ANSWERS_CODE_WAVE_TRANSCRIPTION.md@743087d57c674100dc9119959dc875271f70e72c
+Delegate session: local_7b06d036-e322-483f-8e3f-8d2010ae9e29
+
+Implementer session: local_c8f2e1d0-4a3b-45d6-8e7f-112233445566
+
+
 
 ## Test contract
 

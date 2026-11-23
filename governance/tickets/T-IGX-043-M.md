@@ -22,8 +22,9 @@ Canonical plan: [`governance/tickets/plans/PLAN_T-IGX-043-M.md`](plans/PLAN_T-IG
 
 ## Approved
 
-Approved: operator @ 2026-11-23T07:30:00+01:00  
-Approval source: OD-W06-AUTH-01 (Wave 06 AUTH-01 resolution); scope Part E E0–E3 + Wave 06 slice 4 on `development` tor; plan digest `d372ef70e739d0dca69859dbf49435d6446f0695f0ebe52017a3f7dd7422ddb6`. Development direct execution (not RW-train S1/S2 signing).
+Approved: operator @ 2026-11-23T07:30:00+01:00
+
+
 
 ## Test contract
 
@@ -57,5 +58,6 @@ Part E manifest / consumer write set: **UNBLOCKED** (operator D3); implementatio
 
 ## Lifecycle state
 
-`in_progress` (Part E E0–E3 authorized OD-W06-AUTH-01 @ 2026-11-23)
+in_progress
 
+Part E E0–E3 authorized OD-W06-AUTH-01 @ 2026-11-23
